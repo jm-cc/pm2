@@ -1340,12 +1340,11 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		code == FUT_CALIBRATE2_CODE )
 #endif
 		print_this = 1;
-//#ifndef FUT
+#ifndef FUT
 	thispid = bufptr[1]&0xffff;
 	if( !thispid )	/* an idle process, give it the cpu number */
-			thispid=-thiscpu;
-//#else
-#if 0
+		thispid=-thiscpu;
+#else
 	thispid = lastpid[thiscpu];
 #endif
 
@@ -1516,8 +1515,7 @@ unsigned int *dumpslot( unsigned int *bufptr )
 
 	lastreltime[thiscpu] = reltime;
 
-#if 0
-//#ifdef FUT
+#ifdef FUT
 	if( code == FUT_SWITCH_TO_CODE )
 		{
 		if( thispid != bufptr[3] )

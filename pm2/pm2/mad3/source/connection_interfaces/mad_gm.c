@@ -27,7 +27,12 @@
 #include <gm.h>
 
 #if defined(MARCEL) && defined (USE_MARCEL_POLL)
-#define MAD_GM_MARCEL_POLL
+#  define MAD_GM_MARCEL_POLL
+#  undef TBX_LOCK
+#  undef TBX_UNLOCK
+#  warning Code still using old lock_task/unlock_task
+#  define TBX_LOCK() marcel_extlib_protect()
+#  define TBX_UNLOCK() marcel_extlib_unprotect()
 #endif
 
 
@@ -838,7 +843,7 @@ mad_gm_marcel_fast_poll(marcel_pollid_t id,
 
         LOG_IN();
         if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
-                status = MARCEL_POLL_SUCCESS_FOR(id);
+                status = MARCEL_POLL_SUCCESS(id);
         }
         LOG_OUT();
 
@@ -854,7 +859,8 @@ mad_gm_marcel_poll(marcel_pollid_t id,
         void                *status = MARCEL_POLL_FAILED;
 
         LOG_IN();
-        FOREACH_POLL(id) { GET_ARG(id, req);
+        FOREACH_POLL(id) { 
+		GET_ARG(id, req);
                 if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
                         status = MARCEL_POLL_SUCCESS(id);
                         goto found;

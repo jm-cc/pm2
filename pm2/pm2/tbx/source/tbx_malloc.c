@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.2  2000/01/31 15:59:25  oaumage
+- ajout de aligned_malloc
+
 Revision 1.1  2000/01/13 14:51:33  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -48,6 +51,46 @@ ______________________________________________________________________________
 #include <tbx.h>
 #define DEFAULT_BLOCK_NUMBER 1024
 
+/* 
+ * Aligned block allocation 
+ * ------------------------
+ */
+void *
+tbx_aligned_malloc(size_t   size,
+		   int      align)
+{
+  char      *ptr;
+  char      *ini;
+  unsigned   mask = align - 1;
+
+  ini = ptr = malloc (size + 2 * align - 1);
+
+  if (ptr != NULL && ((unsigned) ptr & mask) != 0)
+    {
+      ptr = (char *) (((unsigned) ptr + mask) & ~mask);
+    }
+
+  if (ptr != NULL)
+    {
+      *(char **) ptr = ini;
+      ptr += align;
+    }
+
+  return (void *)ptr;
+}
+
+void
+tbx_aligned_free (void  *ptr,
+		  int    align)
+{
+  free (*(char **) ((char *) ptr - align));
+}
+
+
+/*
+ * Fast block allocation
+ * ---------------------
+ */
 void
 tbx_malloc_init(p_tbx_memory_t *mem,
 		size_t block_len,
@@ -164,3 +207,4 @@ tbx_malloc_clean(p_tbx_memory_t mem)
   mem->first_mem = mem->current_mem = mem->first_free = NULL ;
   free(mem);
 }
+

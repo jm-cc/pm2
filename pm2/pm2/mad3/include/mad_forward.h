@@ -58,6 +58,9 @@ typedef enum e_mad_fblock_header_field
   mad_fblock_fis_an_eof_msg = 14,
   mad_fblock_fis_direct     = 15,
   mad_fblock_fclosing       = 15,
+#ifdef MAD_FORWARD_FLOW_CONTROL
+  mad_fblock_fis_an_ack     = 14,
+#endif // MAD_FORWARD_FLOW_CONTROL
   mad_fblock_fsize          = 16,
 } mad_fblock_header_field_t;
 
@@ -80,6 +83,9 @@ typedef enum e_mad_fblock_header_field_mask
   mad_fblock_fis_an_eof_msg_mask = 0x01,
   mad_fblock_fis_direct_mask     = 0x01,
   mad_fblock_fclosing_mask       = 0x02,
+#ifdef MAD_FORWARD_FLOW_CONTROL
+  mad_fblock_fis_an_ack_mask     = 0x04,
+#endif // MAD_FORWARD_FLOW_CONTROL
 } mad_fblock_header_field_mask_t;
 
 typedef enum e_mad_fblock_header_field_shift
@@ -101,6 +107,9 @@ typedef enum e_mad_fblock_header_field_shift
   mad_fblock_fis_an_eof_msg_shift =  0,
   mad_fblock_fis_direct_shift     =  0,
   mad_fblock_fclosing_shift       = -1,
+#ifdef MAD_FORWARD_FLOW_CONTROL
+  mad_fblock_fis_an_ack_shift     = -2,
+#endif // MAD_FORWARD_FLOW_CONTROL
 } mad_fblock_header_field_shift_t;
 
 
@@ -124,6 +133,9 @@ typedef struct s_mad_fblock_header
   tbx_bool_t               is_a_new_msg;
   tbx_bool_t               is_an_eof_msg;
   tbx_bool_t               closing;
+#ifdef MAD_FORWARD_FLOW_CONTROL
+  tbx_bool_t               is_an_ack;
+#endif // MAD_FORWARD_FLOW_CONTROL
   p_mad_buffer_t           block;
   mad_fblock_type_t        type;
   p_mad_connection_t       vout;

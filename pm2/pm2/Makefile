@@ -129,13 +129,14 @@ targethelp:
 	@echo "  examples: build all the example (do not use the FLAVOR="
 	@echo "    option there, unless you know what you do)"
 	@echo "  config: configure flavors"
-	@echo "  menuconfig: configure flavors (need the dialog library)"
+	@echo "  menuconfig: configure flavors (need the dialog utility)"
+	@echo "  xconfig: configure flavors (need the Xdialog utility)"
 	@echo "  doc: build the documentation"
 	@echo "  help: this help"
 	@echo "  clean: clean source tree for current flavor"
 	@echo "  distclean: clean all source tree for all flavors"
 
-.PHONY: config textconfig menuconfig
+.PHONY: config textconfig menuconfig xconfig
 config: textconfig
 
 textconfig: flavors
@@ -143,3 +144,6 @@ textconfig: flavors
 
 menuconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --dialog || :
+
+xconfig: flavors
+	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :

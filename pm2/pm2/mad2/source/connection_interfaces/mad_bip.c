@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -350,7 +350,7 @@ static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
 #if defined(MARCEL) && !defined(BASIC_POLL)
 
   int tmphost, status;
-  static int which = 0;
+  static unsigned which = 0;
 
   LOG_IN();
 

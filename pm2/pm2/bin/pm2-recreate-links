@@ -96,10 +96,9 @@ echo
 echo DSM
 make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
-# Fabrication des catégories d'options
-echo
-echo
-echo Creating option sets
-${PM2_ROOT}/bin/pm2-make-option-sets
+if [ "$1" != "--nooptionsets" ]; then
+    # Fabrication des catégories d'options
+    ${PM2_ROOT}/bin/pm2-make-option-sets
+fi
 
 echo

@@ -37,6 +37,8 @@
 
 #include "marcel.h"
 
+#define SCHED_POLICY   MARCEL_SCHED_OTHER
+
 any_t ALL_IS_OK = (any_t)0xdeadbeef;
 
 char *mess[2] = { "boys", "girls" };
@@ -73,14 +75,19 @@ any_t writer(any_t arg)
 int marcel_main(int argc, char *argv[])
 {
   any_t status;
+  marcel_attr_t attr;
   marcel_t writer1_pid, writer2_pid;
   
+   marcel_trace_on();
    marcel_init(&argc, argv);
 
 /*   marcel_create(NULL, NULL, busy, NULL); */
 
-   marcel_create(&writer1_pid, NULL, writer, (any_t)mess[1]);
-   marcel_create(&writer2_pid, NULL, writer, (any_t)mess[0]);
+   marcel_attr_init(&attr);
+   marcel_attr_setschedpolicy(&attr, SCHED_POLICY);
+
+   marcel_create(&writer1_pid, &attr, writer, (any_t)mess[1]);
+   marcel_create(&writer2_pid, &attr, writer, (any_t)mess[0]);
 
    marcel_join(writer1_pid, &status);
    if(status == ALL_IS_OK)

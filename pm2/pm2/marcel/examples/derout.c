@@ -40,17 +40,17 @@ marcel_sem_t sem;
 
 void deviation1(void *arg)
 {
-   tprintf("This is a deviation : %s\n", arg);
+   marcel_fprintf(stderr, "This is a deviation : %s\n", arg);
 }
 
 void deviation2(void *arg)
 {
-   tprintf("Deviation of a blocked thread : %s\n", arg);
+   marcel_fprintf(stderr, "Deviation of a blocked thread : %s\n", arg);
 }
 
 void deviation3(void *arg)
 {
-   tprintf("Deviation in order to wake one's self : ");
+   marcel_fprintf(stderr, "Deviation in order to wake one's self : ");
    marcel_sem_V(&sem);
 }
 
@@ -59,14 +59,14 @@ any_t func(any_t arg)
 
    for(i=0; i<10; i++) {
       marcel_delay(100);
-      tprintf("Hi %s!\n", arg);
+      marcel_printf("Hi %s!\n", arg);
    }
 
    marcel_sem_V(&sem);
 
-   tprintf("Will block...\n");
+   marcel_printf("Will block...\n");
    marcel_sem_P(&sem);
-   tprintf("OK !\n");
+   marcel_printf("OK !\n");
 
    return NULL;
 }

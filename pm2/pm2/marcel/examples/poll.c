@@ -76,6 +76,8 @@ int marcel_main(int argc, char *argv[])
   unsigned long i;
   unsigned magic = 0xdeadbeef;
 
+  marcel_trace_on();
+
   marcel_init(&argc, argv);
 
   pipe(tube);

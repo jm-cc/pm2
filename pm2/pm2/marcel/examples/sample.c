@@ -46,15 +46,17 @@ any_t ALL_IS_OK = (any_t)123456789L;
 char *mess[NB] = { "boys", "girls", "people" };
 
 any_t writer(any_t arg)
-{ int i, j;
+{
+  int i, j;
 
-   for(i=0;i<10;i++) {
-      tprintf("Hi %s! (I'm %p on vp %d)\n",
-	      (char*)arg, marcel_self(), marcel_current_vp());
-      j = 1900000; while(j--);
-   }
+  for(i=0;i<10;i++) {
+    tfprintf(stderr, "Hi %s! (I'm %p on vp %d)\n",
+	     (char*)arg, marcel_self(), marcel_current_vp());
+    //tfprintf(stderr, "LWP(%d): Locked = %d\n", marcel_current_vp(), locked());
+    j = 1900000; while(j--);
+  }
 
-   return ALL_IS_OK;
+  return ALL_IS_OK;
 }
 
 int marcel_main(int argc, char *argv[])
@@ -63,6 +65,8 @@ int marcel_main(int argc, char *argv[])
   marcel_t pid[NB];
   marcel_attr_t attr;
   int i;
+
+   marcel_trace_on();
 
    marcel_init(&argc, argv);
 

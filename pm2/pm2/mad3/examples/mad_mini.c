@@ -16,7 +16,7 @@
 /*
  * mad_mini.c
  * ==========
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,7 +52,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   ntbx_process_lrank_t       my_local_rank  =   -1;
   ntbx_process_lrank_t       its_local_rank =   -1;
   ntbx_pack_buffer_t         buffer MAD_ALIGNED;
-  
+
   DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
@@ -65,7 +65,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
   my_local_rank = ntbx_pc_global_to_local(pc, process_rank);
   DISP_VAL("My local channel rank is", my_local_rank);
-  
+
   if (my_local_rank)
     {
       p_tbx_string_t      string  = NULL;
@@ -75,7 +75,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       int                 dyn_len =    0;
       char               *dyn_buf = NULL;
       char                buf[MAX] MAD_ALIGNED;
-      
+
       memset(buf, 0, MAX);
 
 #ifdef MAD_MESSAGE_POLLING
@@ -111,7 +111,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       tbx_string_append_int(string, my_local_rank);
       dyn_buf = tbx_string_to_cstring(string);
       tbx_string_free(string);
-      string  = NULL;      
+      string  = NULL;
 
       its_local_rank = my_local_rank;
 
@@ -151,7 +151,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	if (!ntbx_pc_next_local_rank(pc, &its_local_rank))
 	  FAILURE("inconsistent error");
       }
-      
+
       ntbx_pack_int(len, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
 	       mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -196,7 +196,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	    return;
 	}
       while (!out);
-      
+
       len = strlen(msg) + 1;
       ntbx_pack_int(len, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
@@ -245,14 +245,14 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       TBX_FREE(dyn_buf);
       dyn_buf = NULL;
     }
-}  
+}
 
 #ifdef ECHO_ARGS
 void
 disp_args(int argc, char **argv)
 {
   argc --; argv ++;
-  
+
   while (argc--)
     {
       DISP_STR("argv", *argv);
@@ -261,13 +261,18 @@ disp_args(int argc, char **argv)
 }
 #endif // ECHO_ARGS
 
+/*
+ * Warning: this function is automatically renamed to marcel_main when
+ * appropriate
+ */
 int
-tbx_main(int argc, char **argv)
+main(int    argc,
+     char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
   p_tbx_slist_t     slist     = NULL;
-  
+
 #ifdef ECHO_ARGS
   disp_args(argc, argv);
 #endif // ECHO_ARGS
@@ -306,8 +311,8 @@ tbx_main(int argc, char **argv)
       DISP("No channels");
     }
 
-  DISP("Exiting");  
-  
+  DISP("Exiting");
+
   // mad_exit(madeleine);
   common_exit(NULL);
 

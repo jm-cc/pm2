@@ -16,6 +16,11 @@
 
 #include "marcel.h"
 #include <signal.h>
+#include <linux/unistd.h>
+
+#ifdef __NR_gettid
+_syscall0(pid_t,gettid)
+#endif
 
 ma_atomic_t __preemption_disabled=MA_ATOMIC_INIT(0);
 
@@ -104,7 +109,11 @@ static void fault_catcher(int sig)
 	fprintf(stderr,
 		"OOPS!!! Entering endless loop "
 		"so you can try to attach process to gdb (pid = %d)\n",
+#ifdef __NR_gettid
+		gettid()!=-1 || errno!= ENOSYS ? gettid() : getpid());
+#else
 		getpid());
+#endif
 	for(;;) ;
 #endif
 

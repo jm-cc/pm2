@@ -27,18 +27,71 @@ any_t f(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("contsw'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
   return NULL;
 }
 
 extern void stop_timer(void);
 
-int marcel_main(int argc, char *argv[])
-{ 
+void bench_setjmp(unsigned nb)
+{
+  tbx_tick_t t1, t2;
+  jmp_buf buf;
+
+  TBX_GET_TICK(t1);
+  while(--nb) {
+    setjmp(buf);
+  }
+  TBX_GET_TICK(t2);
+
+  printf("setjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  return;
+ 
+}
+
+void bench_longjmp(unsigned nb)
+{
+  tbx_tick_t t1, t2;
+  jmp_buf buf;
+  volatile int i = nb;
+
+  TBX_GET_TICK(t1);
+  setjmp(buf);
+  if(i != 0) {
+    i--;
+    longjmp(buf, 1);
+  }
+  TBX_GET_TICK(t2);
+
+  printf("longjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  return;
+ 
+}
+
+void bench_contsw(unsigned nb)
+{
   marcel_t pid;
   any_t status;
-  int nb, essais = 3;
   register int n;
+
+  if(!nb)
+    return;
+
+  n = nb >> 1;
+  n++;
+
+  marcel_create(&pid, NULL, f, (any_t)n);
+  marcel_yield();
+
+  while(--n)
+    marcel_yield();
+
+  marcel_join(pid, &status);
+}
+
+int marcel_main(int argc, char *argv[])
+{ 
+  int essais = 3;
 
   if(argc != 2) {
     fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
@@ -48,21 +101,10 @@ int marcel_main(int argc, char *argv[])
   marcel_init(&argc, argv);
 
   while(essais--) {
-    nb = atoi(argv[1]);
-    n = nb;
-    if(n==0)
-      break;
-
-    n >>= 1;
-    n++;
-
-    marcel_create(&pid, NULL, f, (any_t)n);
-    marcel_yield();
-
-    while(--n)
-      marcel_yield();
-
-    marcel_join(pid, &status);
+    bench_setjmp(atoi(argv[1]));
+    bench_longjmp(atoi(argv[1]));
+    bench_contsw(atoi(argv[1]));
   }
+
   return 0;
 }

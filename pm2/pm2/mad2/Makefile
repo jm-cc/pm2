@@ -33,33 +33,33 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MASTER_MODULE =  MAD2
-COMMON_DEFAULT_TARGET :=  mad_default
+LIBRARY=mad2
+LIBNAME=mad
 
-ifndef MAD2_ROOT
-MAD_ROOT := $(PM2_ROOT)/mad2
-MAD2_ROOT := $(MAD_ROOT)
-else
-MAD_ROOT :=  $(MAD2_ROOT)
-endif
+#marcel_CC=gcc
+#marcel_AS=gcc
 
-include $(PM2_ROOT)/make/master_vars.mak
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/libs-vars.mak
 
-# Ce makefile
-COMMON_MAKEFILES +=  $(MAD_ROOT)/Makefile
+MAD2_PROTOCOLS := $(shell $(PM2_CONFIG) --protocols $(LIBRARY))
 
-# Inclusion des variables
-include $(MAD_MAKE)/vars.mak
-include $(NTBX_MAKE)/vars.mak
-include $(TBX_MAKE)/vars.mak
+LIB_SRC2=$(LIB_SRC)/connection_interfaces
+LIB_C_SOURCES_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
+LIB_C_OBJECTS_ADDED := $(patsubst %.c,%$(LIB_EXT).o,$(subst $(LIB_SRC2),$(LIB_GEN_OBJ),$(LIB_C_SOURCES_ADDED)))
+LIB_C_PICS_ADDED := $(patsubst %.c,%$(LIB_EXT).pic,$(subst $(LIB_SRC2),$(LIB_GEN_OBJ),$(LIB_C_SOURCES_ADDED)))
+LIB_C_DEPENDS_ADDED := $(patsubst %.o,%.d,$(subst $(LIB_GEN_OBJ),$(LIB_GEN_DEP),$(LIB_C_OBJECTS_ADDED)))
+LIB_OBJECTS += $(LIB_C_OBJECTS_ADDED)
+LIB_PICS += $(LIB_C_PICS_ADDED)
 
-# Regles principales
-include $(PM2_ROOT)/make/master_rules.mak
+include $(PM2_ROOT)/make/libs-rules.mak
 
-# Inclusion des regles de compilation
-include $(MAD_MAKE)/rules.mak
-include $(NTBX_MAKE)/rules.mak
-include $(TBX_MAKE)/rules.mak
+$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC2)/%.c
+	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 
+$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC2)/%.c
+	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
 
-##############################################################################
+$(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
+	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'

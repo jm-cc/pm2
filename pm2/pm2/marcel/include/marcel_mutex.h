@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#depend "linux_spinlock.h[macros]"
+
 #section macros
 #define MARCEL_MUTEX_INITIALIZER \
   {.__m_reserved=0, .__m_count=0, .__m_owner=0, .__m_kind=MARCEL_MUTEX_TIMED_NP, .__m_lock=MA_FASTLOCK_UNLOCKED}

@@ -14,9 +14,11 @@
  * General Public License for more details.
  */
 
+#depend "linux_spinlock.h[macros]"
+
 #section macros
 
-#define MARCEL_COND_INITIALIZER {.__c_lock=MA_SPIN_LOCK_UNLOCKED,.__c_waiting=0}
+#define MARCEL_COND_INITIALIZER {.__c_lock=MA_FASTLOCK_UNLOCKED,.__c_waiting=0}
 
 #section types
 typedef struct __marcel_condattr_s marcel_condattr_t;

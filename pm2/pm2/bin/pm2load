@@ -1,14 +1,28 @@
 #!/bin/sh
 
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
 PROGNAME=pm2load
 
-error() # msg
+_pm2load_error() # msg
 {
     echo $*
     exit 1
 }
 
-usage() # exit_code
+_pm2load_usage() # exit_code
 {
     cat <<EOF
 Usage: $PROGNAME { option } command
@@ -17,21 +31,21 @@ Usage: $PROGNAME { option } command
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d      : Run command in debug mode (not supported by all implementations)
     -c name : Use console named "name"
-    -h : Display this help message
+    -h      : Display this help message
 EOF
     exit $1
 }
 
-ambiguity() # prog
+_pm2load_ambiguity() # prog
 {
-    prog=$1
+    _prog=$1
     shift
 
     echo "Error: multiple exec files found." >&2
     echo "Please remove ambiguity by using one the following:" >&2
 
-    for p in `pm2which -p $prog` ; do
-	echo "   $PROGNAME $p ..."
+    for _p in `pm2which -p $_prog` ; do
+	echo "   $PROGNAME $_p ..."
     done
 
     exit 1
@@ -44,10 +58,8 @@ PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
 PM2_CONSOLE=""
-export PM2_CONSOLE
 
 PM2_DEBUG=off
-export PM2_DEBUG
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -66,7 +78,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    ;;
 	-h)
-	    usage 0
+	    _pm2load_usage 0
 	    ;;
 	--)
 	    shift
@@ -78,7 +90,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-[ -n "$*" ] || usage 1
+[ -n "$*" ] || _pm2load_usage 1
 
 # Sauvegarde de la commande et des arguments
 prog=$1
@@ -92,14 +104,14 @@ set --  --source-mode $prog
 . ${PM2_ROOT}/bin/pm2which
 
 if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
-    ambiguity $prog
+    _pm2load_ambiguity $prog
 fi
 
 # On hérite du même coup du chemin d'accès au chargeur
 
-[ -x $_PM2WHICH_LOADER ] || error "Fatal Error: \"$_PM2WHICH_LOADER\" exec file not found!"
+[ -x $_PM2CONFIG_LOADER ] || _pm2load_error "Fatal Error: \"$_PM2CONFIG_LOADER\" exec file not found!"
 
-case $_PM2WHICH_LOADER in
+case $_PM2CONFIG_LOADER in
     *conf_not_needed)
 	# No need to try to access the pm2 conf file
 	;;
@@ -108,8 +120,44 @@ case $_PM2WHICH_LOADER in
 	set --  --source-mode
 	. ${PM2_ROOT}/bin/pm2-conf-file
 
-	[ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
+	[ -f $PM2_CONF_FILE ] || _pm2load_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
 	;;
 esac
 
-exec $_PM2WHICH_LOADER $_PM2WHICH_RESULT $prog_args
+# Variable DISPLAY
+case "_${DISPLAY}" in
+    _) DISPLAY=`uname -n`:0.0 ;;
+    _:*) DISPLAY=`uname -n`${DISPLAY} ;;
+    *) ;;
+esac
+
+# Variables automatiquement exportées
+PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}DISPLAY:PM2_CONF_FILE
+
+# Arguments à passer à pm2-pre-script.sh
+_prescript_args=""
+
+# Debug
+if [ "$PM2_DEBUG" = on ]; then
+    _prescript_args="$_prescript_args --debug"
+fi
+
+# Librairies dynamiques (LD_PRELOAD)
+if [ -n "$_PM2CONFIG_PRELOAD" ]; then
+    _prescript_args="$_prescript_args --preload $_PM2CONFIG_PRELOAD"
+fi
+
+_old_ifs="$IFS"
+IFS=":"
+set $PM2_EXPORT
+IFS=$_old_ifs
+
+# Variables à exporter
+for v in $*; do
+    eval _val=\"\$$v\"
+    _prescript_args="$_prescript_args --export $v \"$_val\""
+done
+
+set -- ${PM2_ROOT}/bin/pm2-pre-script.sh $_prescript_args -- \
+    $_PM2WHICH_RESULT $prog_args
+. $_PM2CONFIG_LOADER

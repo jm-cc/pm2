@@ -33,6 +33,12 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.25  2000/05/25 12:08:31  vdanjean
+Poll while yield and timer sig
+
+Revision 1.24  2000/05/25 00:23:42  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.23  2000/05/23 10:48:29  oaumage
 - Generalisation de l'optimisation sur le flush du flag `write'
 
@@ -103,8 +109,16 @@ ______________________________________________________________________________
  * Mad_sisci.c
  * ===========
  */
-/* #define DEBUG */
-#include <madeleine.h>
+//#define DEBUG
+#define USE_MARCEL_POLL
+#define MAD_SISCI_POLLING_MODE \
+    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD)
+
+
+#ifdef MARCEL
+#include "marcel.h"
+#endif
+#include "madeleine.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -225,6 +239,9 @@ typedef struct
 typedef struct
 {
   int nb_adapter;
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+  marcel_pollid_t mad_sisci_pollid;
+#endif
 } mad_sisci_driver_specific_t, *p_mad_sisci_driver_specific_t;
 
 typedef struct
@@ -236,7 +253,19 @@ typedef struct
 
 typedef struct
 {
+  /* Array of size configuration->size with adresse of flag for read */
+  p_mad_sisci_status_t *read;
 } mad_sisci_channel_specific_t, *p_mad_sisci_channel_specific_t;
+
+typedef struct
+{
+  ntbx_host_id_t local_host_id;
+  p_mad_channel_t channel;
+  p_mad_connection_t connection;
+  p_mad_sisci_status_t status;
+  int size_array;
+  p_mad_sisci_status_t *read;
+} mad_sisci_marcel_poll_cell_arg_t, *p_mad_sisci_marcel_poll_cell_arg_t;
 
 typedef struct
 {
@@ -491,6 +520,95 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
   return node_id;
 }
 
+/* For marcel polling
+ * --------------------- */
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+static void mad_sisci_marcel_group(marcel_pollid_t id)
+{
+  return;
+}
+
+inline static int
+mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
+{
+  ntbx_host_id_t host_id;
+  int size=info->size_array;
+  const ntbx_host_id_t rank = info->local_host_id;
+  p_mad_sisci_status_t *read = info->read;  
+  
+  LOG_IN();
+  if (size) {
+    for(host_id=0; host_id<size; host_id++) {
+      if (host_id == rank) {
+	read++;
+	continue;
+      }
+      if (mad_sisci_test(*(read++))) {
+	info->connection=&info->channel->input_connection[host_id];
+	LOG_OUT();
+	return 1;
+      }
+    }
+  } else {
+    LOG_OUT();
+    return mad_sisci_test(info->status);
+  }
+  LOG_OUT();
+  return 0;
+}
+
+static void* mad_sisci_marcel_fast_poll(marcel_pollid_t id, any_t arg)
+{
+  LOG_IN();
+  if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) arg)) {
+    LOG_OUT();
+    return MARCEL_POLL_SUCCESS_FOR(arg);
+  }
+  LOG_OUT();
+  return MARCEL_POLL_FAILED;
+}
+
+static void* mad_sisci_marcel_poll(marcel_pollid_t id, unsigned active, 
+				   unsigned sleeping, unsigned blocked)
+{
+  p_mad_sisci_marcel_poll_cell_arg_t my_arg;
+  LOG_IN();
+  FOREACH_POLL(id, my_arg) {
+    if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) my_arg)) {
+      LOG_OUT();
+      return MARCEL_POLL_SUCCESS(id);
+    }
+  }
+  LOG_OUT();
+  return MARCEL_POLL_FAILED;
+}
+
+inline static void mad_sisci_wait_for(p_mad_link_t link, 
+				      p_mad_sisci_status_t status)
+{
+  LOG_IN();
+  if(!mad_sisci_test(status)) {
+    mad_sisci_marcel_poll_cell_arg_t arg;
+    arg.size_array = 0;
+    arg.status = status;
+    LOG("Make marcel_poll");
+    marcel_poll(((p_mad_sisci_driver_specific_t)link->connection->
+		 channel->adapter->driver->specific)
+		->mad_sisci_pollid, &arg);
+  }
+  LOG_OUT();
+}
+
+#else
+
+inline static void mad_sisci_wait_for(p_mad_link_t link,
+				      p_mad_sisci_status_t flag)
+{
+  while (!mad_sisci_test(flag))
+    TBX_YIELD();
+}
+
+#endif
 
 /*
  * exported functions
@@ -523,7 +641,7 @@ mad_sisci_register(p_mad_driver_t driver)
   interface->after_close_channel        = NULL;
   interface->link_exit                  = NULL;
   interface->connection_exit            = NULL;
-  interface->channel_exit               = NULL;
+  interface->channel_exit               = mad_sisci_channel_exit;
   interface->adapter_exit               = mad_sisci_adapter_exit;
   interface->driver_exit                = NULL;
   interface->choice                     = mad_sisci_choice;
@@ -559,6 +677,13 @@ mad_sisci_driver_init(p_mad_driver_t driver)
   driver->name = TBX_MALLOC(6);
   CTRL_ALLOC(driver->name);
   strcpy(driver->name, "sisci");
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+  driver_specific->mad_sisci_pollid =
+    marcel_pollid_create(mad_sisci_marcel_group,
+			 mad_sisci_marcel_poll,
+			 mad_sisci_marcel_fast_poll,
+			 MAD_SISCI_POLLING_MODE);
+#endif
   LOG_OUT();
 }
 
@@ -919,8 +1044,17 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 void
 mad_sisci_channel_init(p_mad_channel_t channel)
 {
+  p_mad_sisci_channel_specific_t specific;
+  mad_configuration_size_t size=channel->adapter->driver->
+    madeleine->configuration.size; 
+
   LOG_IN();
-  channel->specific = NULL; /* Nothing */
+  specific = TBX_MALLOC(sizeof(mad_sisci_channel_specific_t));
+  CTRL_ALLOC(specific);
+  specific->read = TBX_MALLOC(sizeof(p_mad_sisci_status_t)*size);
+  CTRL_ALLOC(specific->read);
+  
+  channel->specific = specific;
   LOG_OUT();
 }
 
@@ -1517,12 +1651,17 @@ mad_sisci_after_open_channel(p_mad_channel_t channel)
 	    &connection_specific->remote_segment;
 	  p_mad_sisci_user_segment_data_t      remote_data         =
 	    remote_segment->map_addr;
+	  p_mad_sisci_channel_specific_t               specific            =
+	    channel->specific;
       
 	  mad_sisci_set(&remote_data->status.write);
 	  mad_sisci_flush(remote_segment);
 	  //#ifndef MARCEL
 	  connection_specific->write_flag_flushed = tbx_true;
 	  //#endif /* MARCEL */
+	  specific->read[host_id] = &((p_mad_sisci_user_segment_data_t)
+				      connection_specific->
+				      local_segment.map_addr)->status.read;
 	  LOG("mad_sisci_after_open_channel: write authorization sent");
 	}
       else
@@ -1693,10 +1832,23 @@ mad_sisci_adapter_exit(p_mad_adapter_t adapter)
   LOG_OUT();
 }
 
+void
+mad_sisci_channel_exit(p_mad_channel_t channel)
+{
+  p_mad_sisci_channel_specific_t channel_specific = channel->specific;
+  
+  LOG_IN();
+  TBX_FREE(channel_specific->read);
+  TBX_FREE(channel_specific);
+  channel->specific = NULL;
+  LOG_OUT();
+}
+
 #ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t 
 mad_sisci_poll_message(p_mad_channel_t channel)
 {
+  /* TODO : static invalide en SMP... */
   static ntbx_host_id_t                     host_id          = 0;
   p_mad_adapter_t                   adapter          =
     channel->adapter;
@@ -1722,20 +1874,12 @@ mad_sisci_poll_message(p_mad_channel_t channel)
       {
 	p_mad_connection_t                   connection          =
 	  &channel->input_connection[host_id];
+	//#ifndef MARCEL
 	p_mad_sisci_connection_specific_t    connection_specific =
 	  connection->specific;
-	p_mad_sisci_local_segment_t          local_segment       =
-	  &connection_specific->local_segment;
-	//#ifndef MARCEL
 	p_mad_sisci_remote_segment_t         remote_segment      =
 	  &connection_specific->remote_segment;
-	//#endif /* MARCEL */
-	p_mad_sisci_user_segment_data_t      local_data          =
-	  local_segment->map_addr;
-	p_mad_sisci_status_t                 read                =
-	  &local_data->status.read;
 
-	//#ifndef MARCEL
 	if (!connection_specific->write_flag_flushed)
 	  {
 	    connection_specific->write_flag_flushed = tbx_true;
@@ -1743,7 +1887,8 @@ mad_sisci_poll_message(p_mad_channel_t channel)
 	  }
 	//#endif /* MARCEL */
 
-	if (mad_sisci_test(read))
+	if (mad_sisci_test(((p_mad_sisci_channel_specific_t)channel->specific)
+			   ->read[host_id]))
 	  {
 	    LOG_OUT();
 	    return connection;
@@ -1758,6 +1903,7 @@ mad_sisci_poll_message(p_mad_channel_t channel)
 p_mad_connection_t 
 mad_sisci_receive_message(p_mad_channel_t channel)
 {
+  /* TODO : static invalide en SMP... */
   static ntbx_host_id_t                     host_id          = 0;
          p_mad_adapter_t                   adapter          =
 	   channel->adapter;
@@ -1768,6 +1914,8 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 	 const ntbx_host_id_t               rank             =
 	   configuration->local_host_id;
 	 ntbx_host_id_t                     remote_host_id;
+	 p_mad_sisci_channel_specific_t           channel_specific =
+	   channel->specific;
 	 
   LOG_IN();
 #ifndef MAD_MESSAGE_POLLING
@@ -1779,8 +1927,10 @@ mad_sisci_receive_message(p_mad_channel_t channel)
     }
 #endif /* MAD_MESSAGE_POLLING */
 
+#if !defined(MARCEL) || !defined(USE_MARCEL_POLL)
   while(tbx_true)
     {     
+#endif
       for (remote_host_id = 1; /* not 0 */
 	   remote_host_id < configuration->size;
 	   remote_host_id++)
@@ -1794,36 +1944,42 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 	  {
 	    p_mad_connection_t                   connection          =
 	      &channel->input_connection[host_id];
+	    //#ifndef MARCEL
 	    p_mad_sisci_connection_specific_t    connection_specific =
 	      connection->specific;
-	    p_mad_sisci_local_segment_t          local_segment       =
-	      &connection_specific->local_segment;
-	    //#ifndef MARCEL
 	    p_mad_sisci_remote_segment_t         remote_segment      =
 	      &connection_specific->remote_segment;
-	    //#endif /* MARCEL */
-	    p_mad_sisci_user_segment_data_t      local_data          =
-	      local_segment->map_addr;
-	    p_mad_sisci_status_t                 read                =
-	      &local_data->status.read;
 
-	    //#ifndef MARCEL
 	    if (!connection_specific->write_flag_flushed)
 	      {
 		connection_specific->write_flag_flushed = tbx_true;
 		mad_sisci_flush(remote_segment);
 	      }
 	    //#endif /* MARCEL */
-
-	    if (mad_sisci_test(read))
+	    if (mad_sisci_test(channel_specific->read[host_id]))
 	      {
 		LOG_OUT();
 		return connection;
 	      }
 	  }
 	}
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+      {
+	mad_sisci_marcel_poll_cell_arg_t arg;
+	arg.local_host_id = rank;
+	arg.channel = channel;
+	arg.connection = NULL;
+	arg.size_array = configuration->size;
+	arg.read = channel_specific->read;
+	marcel_poll(((p_mad_sisci_driver_specific_t)driver->specific)
+		    ->mad_sisci_pollid, &arg);
+	LOG_OUT();
+	return arg.connection;
+      }
+#else
       TBX_YIELD();
     }  
+#endif
 }
 
 
@@ -1860,9 +2016,8 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
       sci_error_t sisci_error;
 
       buffer->bytes_read += size;
-      
-      while (!mad_sisci_test(write))
-	TBX_YIELD();
+
+      mad_sisci_wait_for(link, write);
 
       SCIMemCopy(source,
 		 remote_segment->map,
@@ -1951,9 +2106,9 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	  connection_specific->write_flag_flushed = tbx_true;
 	  mad_sisci_flush(remote_segment);
 	}
-      //#endif /* MARCEL */      
-      while (!mad_sisci_test(read))
-	TBX_YIELD();
+      //#endif /* MARCEL */ 
+      
+      mad_sisci_wait_for(link, read);
 
       memcpy(destination, source, size);
       mad_sisci_clear(read);
@@ -1998,8 +2153,7 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
   LOG_IN();
   tbx_list_reference_init(&ref, &buffer_group->buffer_list); 
   
-  while (!mad_sisci_test(write))
-    TBX_YIELD();
+  mad_sisci_wait_for(link, write);
   
   do
     {
@@ -2052,8 +2206,7 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 	      mad_sisci_set(read);
 	      mad_sisci_flush(remote_segment);
 
-	      while (!mad_sisci_test(write))
-		TBX_YIELD();
+	      mad_sisci_wait_for(link, write);
 
 	      offset = 0;
 	    }
@@ -2123,14 +2276,13 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
       if (!mad_sisci_test(read))
 	{
 	  mad_sisci_flush(remote_segment);
-	  while (!mad_sisci_test(read))
-	    TBX_YIELD();
+
+	  mad_sisci_wait_for(link, read);
 	}
     }
   else
     {  
-      while (!mad_sisci_test(read))
-	TBX_YIELD();
+      mad_sisci_wait_for(link, read);
     }
   //#endif /* MARCEL */
   
@@ -2161,8 +2313,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
 	      //#ifndef MARCEL
 	      connection_specific->write_flag_flushed = tbx_true;
 	      //#endif MARCEL
-	      while (!mad_sisci_test(read))
-		TBX_YIELD();
+	      mad_sisci_wait_for(link, read);
 	      offset = 0;
 	    }
 	}
@@ -2313,7 +2464,7 @@ mad_sisci_receive_dma_buffer(p_mad_link_t   link,
 	  mad_sisci_flush(remote_segment);
 	}
       //#endif /* MARCEL */
-      while (!mad_sisci_test(read)) TBX_YIELD;
+      mad_sisci_wait_for(link, read);
 
       memcpy(destination, source, size);
       mad_sisci_clear(read);
@@ -2413,8 +2564,7 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
   int                               j                   = 0;
 
   LOG_IN();
-  while (!mad_sisci_test(write))
-    TBX_YIELD();
+  mad_sisci_wait_for(link, write);
   mad_sisci_clear(write);
 
   remote_ptr = data_remote_ptr++;

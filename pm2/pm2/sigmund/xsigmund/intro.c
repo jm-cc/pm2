@@ -38,6 +38,11 @@ static gint logo_area_height  = 0;
 static gint max_steps;
 static gint step = 0;
 
+
+
+/* Only for the introduction window */
+/* Might be changed */
+
 guchar *pm2_root(void)
 {
   guchar *ptr= getenv("PM2_ROOT");
@@ -188,7 +193,7 @@ static void make_initialization_window(void)
 
   win = gtk_window_new (GTK_WINDOW_DIALOG);
 
-  gtk_window_set_title (GTK_WINDOW (win), "EZFLAVOR Startup");
+  gtk_window_set_title (GTK_WINDOW (win), "SIGMUND Startup");
 
   gtk_window_set_position(GTK_WINDOW (win), GTK_WIN_POS_CENTER);
   gtk_window_set_policy(GTK_WINDOW (win), FALSE, FALSE, FALSE);

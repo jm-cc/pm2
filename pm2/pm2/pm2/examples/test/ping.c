@@ -50,7 +50,9 @@ static int glob_n;
 // #define MORE_PACKS
 // #define BUSY_NODES
 
+#ifdef MORE_PACKS
 static unsigned dummy;
+#endif
 
 void SAMPLE_service(void)
 {

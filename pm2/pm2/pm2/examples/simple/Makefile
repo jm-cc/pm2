@@ -35,6 +35,6 @@
 
 export FLAVOR_DEFAULT:=pm2-mad2
 
-PROGS := hello simple synchronous threads argv
+PROGS := hello simple synchronous threads argv essai4
 
 include $(PM2_ROOT)/make/apps.mak

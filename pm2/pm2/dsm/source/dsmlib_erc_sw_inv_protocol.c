@@ -233,7 +233,7 @@ void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_nod
   dsm_signal_page_ready(index);
   // process pending requests
   // should wait for a while ?
-  while ((node = dsm_get_next_pending_request(index)) != NO_NODE)
+  while ((node = dsm_get_next_pending_request(index)) != NOBODY)
     {
 #ifdef DSM_QUEUE_TRACE
 	tfprintf(stderr, "Processing R-req(%d) from node %d (I am %p)\n", index, node, marcel_self());

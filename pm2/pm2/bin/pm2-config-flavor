@@ -56,6 +56,7 @@ Commands:
     export [flavor [file]]  : export flavor 'flavor' to file 'file'
     import [flavor [file]]  : export flavor 'flavor' from file 'file'
     see    [flavor]         : show the flavor 'flavor'
+    check  [flavor]         : check the flavor 'flavor'
     remove [flavor]         : remove the flavor 'flavor'
 
 EOF
@@ -99,7 +100,7 @@ help_option() {
     done
 }
 
-if [ `echo -n` = "-n" ]; then
+if [ "`echo -n`" = "-n" ]; then
     NN=""
 else
     NN=-n
@@ -420,8 +421,7 @@ get_file() { # need_existing prompt
     while [  \( -z "$file" \) -o \( "$1" = 1 -a ! -f "$file" \) ]; do
 	echo
 	echo "$2"
-	read flavor
-	get_flavor_ok "$flavor" "$1" "$3" 0 && fin=1
+	read file
     done
 }
 
@@ -456,7 +456,7 @@ do_modify() {
 do_export() {
     get_flavor 1 "Choose a flavor to export"
     get_file 0 "Choose a file for export ['-' for stdout]"
-    if [ "$file" = "-" ]; then
+    if [ "$file" = '-' ]; then
 	"${PM2_FLAVOR}" get --flavor="$flavor"
     else
 	"${PM2_FLAVOR}" get --flavor="$flavor" > "$file"
@@ -475,6 +475,14 @@ do_see() {
     load_flavor "$flavor"
     echo "$SEP"
     show_flavor
+}
+
+do_check() {
+    get_flavor 1 "Choose a flavor to check"
+    load_flavor "$flavor"
+    echo "$SEP"
+    show_flavor "-v check"
+    exit $?
 }
 
 do_remove() {
@@ -497,8 +505,9 @@ main() {
 	echo " 2) export a flavor"
 	echo " 3) import a flavor"
 	echo " 4) see    a flavor"
-	echo " 5) remove a flavor"
-	echo " 6) quit this programme"
+	echo " 5) check  a flavor"
+	echo " 6) remove a flavor"
+	echo " 7) quit this programme"
 	echo
 	read i
 	case "$i" in
@@ -522,11 +531,14 @@ main() {
 	    do_see
 	    exit 0
 	    ;;
-	5|remove)
+	5|check)
+	    do_check
+	    ;;
+	6|remove)
 	    do_remove
 	    exit 0
-	    ;;
-	6|quit|q)
+	    ;; 
+	7|quit|q)
 	    exit 0
 	    ;;
 	esac
@@ -542,7 +554,7 @@ flavor="$2"
 file="$3"
 
 case "$1" in
-create|modify|export|import|see|remove)
+create|modify|export|import|see|check|remove)
     eval do_$1 '"$@"'
     ;;
 *)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.9  2000/11/20 10:26:42  oaumage
+- initialisation, nouvelle version
+
 Revision 1.8  2000/11/10 14:17:54  oaumage
 - nouvelle procedure d'initialisation
 
@@ -114,6 +117,8 @@ int main(int argc, char **argv)
   char str_buffer[STR_BUFFER_LEN];
   int k ;
   p_mad_channel_t channel[NB_CHANNELS];
+
+  fprintf(stderr, "main -->\n");
 
 #ifdef LEONIE_SPAWN
   mad_init(&argc, argv);
@@ -350,5 +355,8 @@ int main(int argc, char **argv)
 	}
     }
   mad_exit(madeleine);
+
+  fprintf(stderr, "main <--\n");
+
   return 0;
 }

@@ -1,0 +1,49 @@
+/*
+
+                          PM2 HIGH-PERF
+           High Performance Parallel Multithreaded Machine
+                           version 1.0
+
+                    Raymond Namyst, Luc Bouge
+            Laboratoire de l'Informatique du Parallelisme
+                Ecole Normale Superieure de Lyon
+
+ 	       Yves Denneulin, Benoit Planquelle,
+              Jean-Francois Mehaut, Jean-Marc Geib
+         Laboratoire d'Informatique Fondamentale de Lille
+         Universite des Sciences et Technologies de Lille
+
+                    1997 All Rights Reserved
+
+
+                             NOTICE
+
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby granted
+ provided that the above copyright notice appear in all copies and
+ that both the copyright notice and this permission notice appear in
+ supporting documentation.
+
+ Neither the institutions (Ecole Normale Superieure de Lyon,
+ Laboratoire de L'informatique du Parallelisme, Universite des
+ Sciences et Technologies de Lille, Laboratoire d'Informatique
+ Fondamentale de Lille), nor the Authors make any representations
+ about the suitability of this software for any purpose.  This
+ software is provided ``as is'' without express or implied warranty.
+
+*/
+
+#ifndef ISOMALLOC_TIMING_EST_DEF
+#define ISOMALLOC_TIMING_EST_DEF
+
+#ifdef ISOMALLOC_TIMING
+
+#include <timing.h>
+
+#else
+
+#define TIMING_EVENT(name)   /* nothing */
+
+#endif
+
+#endif

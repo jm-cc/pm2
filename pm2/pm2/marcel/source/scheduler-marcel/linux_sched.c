@@ -177,6 +177,7 @@
 #ifdef MA__LWPS
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
 #endif
+MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
 
 /*
  * Default context-switch locking:
@@ -1584,6 +1585,40 @@ need_resched:
                 goto need_resched;
 }
 MARCEL_INT(ma_preempt_schedule);
+
+#define reschedule_idle(p) RAISE(NOT_IMPLEMENTED)
+
+#define lwp_id() GET_LWP_NUMBER(MARCEL_SELF()) // TODO: Bof
+
+// Effectue un changement de contexte + éventuellement exécute des
+// fonctions de scrutation...
+DEF_MARCEL_POSIX(int, yield, (void))
+{
+  LOG_IN();
+
+  //lock_task();
+  marcel_check_polling(MARCEL_POLL_AT_YIELD);
+  ma_schedule();
+  //unlock_task();
+
+  LOG_OUT();
+  return 0;
+}
+/* La définition n'est pas toujours dans pthread.h */
+extern int pthread_yield (void) __THROW;
+DEF_PTHREAD_STRONG(yield)
+
+// Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
+// retirer le thread de la file et le replacer dans la file
+// adéquate...
+void marcel_change_vpmask(marcel_vpmask_t mask)
+{
+	LOG_IN();
+#ifdef MA__LPWS
+	RAISE(NOT_IMPLEMENTED);
+#endif
+	LOG_OUT();
+}
 
 #if 0
 int ma_default_wake_function(wait_queue_t *curr, unsigned mode, int sync)

@@ -58,8 +58,6 @@ static LIST_HEAD(__waiting_tasks);
 #endif
 static LIST_HEAD(__delayed_tasks);
 
-MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
-
 /* These two locks must be acquired before accessing the corresponding
    global queue.  They should only encapsulate *non-blocking* code
    sections. */
@@ -412,41 +410,6 @@ static inline int task_on_runqueue(marcel_task_t *p)
 }
 #endif
 
-
-#define reschedule_idle(p) RAISE(NOT_IMPLEMENTED)
-
-#define lwp_id() GET_LWP_NUMBER(MARCEL_SELF()) // TODO: Bof
-
-// Effectue un changement de contexte + éventuellement exécute des
-// fonctions de scrutation...
-DEF_MARCEL_POSIX(int, yield, (void))
-{
-  LOG_IN();
-
-  //lock_task();
-  marcel_check_polling(MARCEL_POLL_AT_YIELD);
-  ma_schedule();
-  //unlock_task();
-
-  LOG_OUT();
-  return 0;
-}
-/* La définition n'est pas toujours dans pthread.h */
-extern int pthread_yield (void) __THROW;
-DEF_PTHREAD_STRONG(yield)
-
-
-// Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
-// retirer le thread de la file et le replacer dans la file
-// adéquate...
-void marcel_change_vpmask(marcel_vpmask_t mask)
-{
-	LOG_IN();
-#ifdef MA__LPWS
-	RAISE(NOT_IMPLEMENTED);
-#endif
-	LOG_OUT();
-}
 
 #if 0 //TODO
 // Checks to see if some tasks should be waked. NOTE: The function
@@ -817,62 +780,4 @@ extern int FASTCALL(marcel_wake_up_thread(marcel_task_t * tsk))
 
 };
 #endif
-
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-/*         Initialisation                                                 */
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-
-static void marcel_sched_lwp_init(ma_lwp_t lwp)
-{
-	LOG_IN();
-
-
-	LOG_OUT();
-}
-
-static void marcel_sched_lwp_start(ma_lwp_t lwp)
-{
-	LOG_IN();
-
-
-	LOG_OUT();
-}
-
-static int sched_lwp_notify(struct ma_notifier_block *self, 
-				   unsigned long action, void *hlwp)
-{
-	ma_lwp_t lwp = (ma_lwp_t)hlwp;
-	switch(action) {
-	case MA_LWP_UP_PREPARE:
-		marcel_sched_lwp_init(lwp);
-		break;
-	case MA_LWP_ONLINE:
-		marcel_sched_lwp_start(lwp);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
-
-static struct ma_notifier_block sched_nb = {
-	.notifier_call	= sched_lwp_notify,
-	.next		= NULL,
-	.priority       = 200, /* Pour démarrer le nouveau LWP avec le lock
-                                  (il est relaché à 100) */
-};
-
-static void __init marcel_sched_init(void)
-{
-	sched_lwp_notify(&sched_nb, (unsigned long)MA_LWP_UP_PREPARE,
-			   (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&sched_nb);
-}
-
-__ma_initfunc(marcel_sched_init, MA_INIT_MARCEL_SCHED,
-	       "Start/Stop for lwp");
 

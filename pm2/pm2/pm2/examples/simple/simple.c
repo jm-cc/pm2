@@ -32,7 +32,6 @@
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
 */
-
 #include <pm2.h>
 
 static unsigned SAMPLE;
@@ -43,32 +42,30 @@ static void SAMPLE_service(void)
 
   pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, msg);
   pm2_rawrpc_waitdata();
-
   pm2_printf("%s\n", msg);
-
   pm2_halt();
 }
 
 int pm2_main(int argc, char **argv)
 {
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
-
   pm2_init(&argc, argv);
 
-  if(pm2_config_size() < 2) {
-    fprintf(stderr,
-	    "This program requires at least two processes.\n"
-	    "Please rerun pm2conf.\n");
-    exit(1);
-  }
+  if(pm2_config_size() < 2)
+    {
+      fprintf(stderr,
+	      "This program requires at least two processes.\n"
+	      "Please rerun pm2conf.\n");
+      exit(1);
+    }
 
-  if(pm2_self() == 0) { /* first process */
-    pm2_rawrpc_begin(1, SAMPLE, NULL);
-    pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, "Hello world!");
-    pm2_rawrpc_end();
-  }
+  if(pm2_self() == 0)
+    { /* first process */
+      pm2_rawrpc_begin(1, SAMPLE, NULL);
+      pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, "Hello world!");
+      pm2_rawrpc_end();
+    }
 
   pm2_exit();
-
   return 0;
 }

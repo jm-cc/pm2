@@ -64,16 +64,16 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	pm2debug_register(&marcel_mdebug);
 	pm2debug_register(&marcel_trymdebug);
 	pm2debug_register(&marcel_debug_state);
-	pm2debug_setup(&marcel_trymdebug, DEBUG_TRYONLY, 1);
+	pm2debug_setup(&marcel_trymdebug, PM2DEBUG_TRYONLY, 1);
 	pm2debug_register(&marcel_debug_work);
 	pm2debug_register(&marcel_debug_deviate);
 	pm2debug_register(&marcel_mdebug_sched_q);
 
 	pm2debug_register(&marcel_lock_task_debug);
-	pm2debug_setup(&marcel_lock_task_debug, DEBUG_SHOW_FILE, 1);
+	pm2debug_setup(&marcel_lock_task_debug, PM2DEBUG_SHOW_FILE, 1);
 
 	pm2debug_register(&marcel_sched_lock_debug);
-	pm2debug_setup(&marcel_sched_lock_debug, DEBUG_SHOW_FILE, 1);
+	pm2debug_setup(&marcel_sched_lock_debug, PM2DEBUG_SHOW_FILE, 1);
 
 	pm2debug_register(&marcel_mtrace);
 	pm2debug_register(&marcel_mtrace_timer);

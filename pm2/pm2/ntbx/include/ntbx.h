@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: ntbx.h,v $
+Revision 1.5  2000/04/27 09:01:29  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
+Revision 1.4.2.1  2000/04/03 13:46:00  oaumage
+- fichier de commandes `swann'
+
 Revision 1.4  2000/03/08 17:16:38  oaumage
 - support de Marcel sans PM2
 
@@ -81,6 +87,7 @@ ______________________________________________________________________________
 
 #include "tbx.h"
 #include "ntbx_types.h"
+#include "ntbx_net_commands.h"
 
 #ifdef NTBX_TCP
 #include "ntbx_tcp.h"

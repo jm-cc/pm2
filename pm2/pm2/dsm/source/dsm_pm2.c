@@ -32,10 +32,9 @@
   //
 static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
 {
-  unsigned long index = dsm_page_index(addr);
+  dsm_page_index_t index = dsm_page_index(addr);
   sigset_t signals;
-#define HYP_INSTRUMENT
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   extern int dsm_pf_handler_calls;
   dsm_pf_handler_calls++;
 #endif
@@ -58,14 +57,18 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
   //call the apropriate handler 
  if (access == UNKNOWN_ACCESS)
    {
-     if (dsm_get_access(index) == NO_ACCESS) // read fault
+      dsm_access_t pg_access;
+
+      pg_access = dsm_get_access(index);
+
+     if (pg_access == NO_ACCESS) // read fault
        {
 #ifdef SIGSEGV_TRACE
 	 tfprintf(stderr, "read fault: (I am %p)\n", marcel_self());
 #endif
 	 (*dsm_get_read_fault_action(dsm_get_page_protocol(index)))(index);
        }
-     else if (dsm_get_access(index) == READ_ACCESS)// write fault
+     else if (pg_access == READ_ACCESS)// write fault
        {
 #ifdef SIGSEGV_TRACE
 	 tfprintf(stderr, "write fault: (I am %p)\n", marcel_self());

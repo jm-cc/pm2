@@ -6,10 +6,10 @@
 # $1... = command and arguments
 
 num=0
-while [ -f /tmp/maddebug.$num ] ; do
+while [ -f /tmp/pm2debug.$num ] ; do
     num=`expr $num + 1`
 done
-file=/tmp/maddebug.$num
+file=/tmp/pm2debug.$num
 prog=$1
 shift
 
@@ -27,6 +27,11 @@ LEO_XTERM=${LEO_XTERM:-'xterm'}
 echo "set args $args" > $file
 title="$prog.$HOST"
 echo "set environment DISPLAY $DISPLAY" >> $file
+
+for i in $_PM2_CONFIG_MODULES ; do
+    gdbinit=$PM2_ROOT/modules/$i/gdbinit
+    [ -r $gdbinit ] && cat $gdbinit >> $file
+done
 
 [ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
 

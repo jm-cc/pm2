@@ -81,11 +81,16 @@ while [ $# -gt 0 ]; do
 	    shift
 	    # tempo file
 	    num=0
-	    while [ -f /tmp/maddebug.$num ] ; do
+	    while [ -f /tmp/pm2debug.$num ] ; do
 		num=`expr $num + 1`
 	    done
-	    debug_file=/tmp/maddebug.$num
+	    debug_file=/tmp/pm2debug.$num
 	    cp /dev/null $debug_file
+		printenv > /tmp/blip
+	    for i in $_PM2CONFIG_MODULES ; do
+	        gdbinit=$PM2_ROOT/modules/$i/gdbinit
+	        [ -r $gdbinit ] && cat $gdbinit >> $debug_file
+	    done
 	    log "Using debug mode"
 	    ;;
 	--strace)

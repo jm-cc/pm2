@@ -34,10 +34,11 @@
 */
 
 #ifdef PM2
-#include <marcel.h>
+#include "marcel.h"
 #endif
 
-#include <sys/netinterf.h>
+#include "sys/netinterf.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -59,8 +60,9 @@
 #include <assert.h>
 
 #include <vipl.h>
-#include <safe_malloc.h>
-#include <mad_timing.h>
+
+#include "safe_malloc.h"
+#include "mad_timing.h"
 
 /* #define DEBUG */
 

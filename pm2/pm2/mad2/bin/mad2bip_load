@@ -51,4 +51,4 @@ do
     chaine="${chaine} `basename $i -t`"
 done
 bipconf $chaine
-bipload -mget $command
+bipload -mget -hwflow $command

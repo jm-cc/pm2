@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_configuration.h,v $
+Revision 1.5  2000/11/10 14:17:55  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.4  2000/09/05 14:01:21  oaumage
 - support de configurations a plusieurs executables
 
@@ -60,10 +63,10 @@ ______________________________________________________________________________
  */
 typedef struct s_mad_configuration
 {
-  mad_configuration_size_t     size;
-  ntbx_host_id_t               local_host_id;
-  char                       **host_name; /* configuration host name list */
-  char                       **program_name; /* program name list */
+  mad_configuration_size_t   size;
+  ntbx_host_id_t             local_host_id;
+  char                     **host_name; /* configuration host name list */
+  char                     **program_name; /* program name list */
 } mad_configuration_t;
 
 #endif /* MAD_CONFIGURATION_H */

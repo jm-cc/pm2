@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.c,v $
+Revision 1.7  2000/04/28 13:11:31  vdanjean
+argc correct if NULL
+
 Revision 1.6  2000/04/28 10:41:40  rnamyst
 Added the marcel_cond_timedwait primitive
 
@@ -284,8 +287,6 @@ int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
 
   timeout = ((tv.tv_sec*1e6 + tv.tv_usec) -
 	     (now.tv_sec*1e6 + now.tv_usec)) / 1000;
-
-  printf("timeout = %ld\n", timeout);
 
   lock_task();
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mar_timing.h,v $
+Revision 1.3  2000/02/28 10:26:34  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:56:15  oaumage
 - ajout du Log CVS
 
@@ -44,7 +47,7 @@ ______________________________________________________________________________
 #ifndef MAR_TIMING_EST_DEF
 #define MAR_TIMING_EST_DEF
 
-#include <timing.h>
+#include "timing.h"
 
 #ifndef MAR_TIMING
 #undef TIMING_EVENT

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.h,v $
+Revision 1.2  2000/02/17 09:14:27  oaumage
+- ajout du support de TCP a la net toolbox
+- ajout de fonctions d'empaquetage de donnees numeriques
+
 Revision 1.1  2000/02/08 15:25:23  oaumage
 - ajout du sous-repertoire `net' a la toolbox
 
@@ -65,8 +69,37 @@ ______________________________________________________________________________
 #include <netinet/tcp.h>
 #include <errno.h>
 
+
+/*
+ * constants
+ * ---------
+ */
+
+#define NTBX_TCP_MAX_RETRY_BEFORE_SLEEP 10
+#define NTBX_TCP_MAX_SLEEP_RETRY         5
+#define NTBX_TCP_SLEEP_DELAY             1
+#define NTBX_TCP_MAX_TIMEOUT_RETRY       5
+
+#define NTBX_TCP_SELECT_TIMEOUT         30
+
+/*
+ * public types
+ * ------------
+ */
+
 typedef int                ntbx_tcp_port_t,    *p_ntbx_tcp_port_t;
 typedef struct sockaddr_in ntbx_tcp_address_t, *p_ntbx_tcp_address_t;
 typedef int                ntbx_tcp_socket_t,  *p_ntbx_tcp_socket_t;
+
+/*
+ * public structures
+ * -----------------
+ */
+typedef struct
+{
+  int count;
+  int sleep_count;
+  int timeout_count;
+} ntbx_tcp_retry_t, *p_ntbx_tcp_retry_t;
 
 #endif /* NTBX_TCP_H */

@@ -122,7 +122,7 @@ for mod in $THE_MODULES ; do
     if [ -z "$FUT_FILES" ] ; then
 	continue
     fi
-    for e in `cat $FUT_FILES`; do
+    for e in `cat $FUT_FILES | sort | uniq`; do
     case $e in
         *entry_code)
 	    num=`expr $value + $base`

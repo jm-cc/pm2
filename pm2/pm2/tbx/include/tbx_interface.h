@@ -34,6 +34,14 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.12  2000/12/19 16:57:50  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.11  2000/11/07 17:34:50  oaumage
 - modification des macros
 
@@ -446,6 +454,9 @@ tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 tbx_bool_t
 tbx_slist_ref_step_backward(p_tbx_slist_t        slist,
 			    p_tbx_slist_offset_t offset);
+
+void *
+tbx_slist_ref_get(p_tbx_slist_t slist);
 
 /*
  * Hash table management

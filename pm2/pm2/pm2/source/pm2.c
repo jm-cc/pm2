@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.27  2000/11/06 15:02:21  rnamyst
+pm2_init() has now a modular structure (in fact, common_init).
+
 Revision 1.26  2000/11/03 14:12:30  gantoniu
 Added support for profiling (LOG_IN/LOG_OUT).
 
@@ -108,6 +111,7 @@ ______________________________________________________________________________
 #include "isomalloc.h"
 #include "block_alloc.h"
 #include "pm2_sync.h"
+#include "common.h"
 
 #include <fcntl.h>
 #include <stdarg.h>
@@ -212,6 +216,90 @@ extern unsigned __pm2_rpc_init_called;
 extern void pm2_rpc_init(void);
 /* EOB */
 
+void pm2_init_data(int *argc, char *argv[])
+{
+  if(!__pm2_rpc_init_called)
+    pm2_rpc_init();
+
+  timing_init();
+
+#ifdef USE_SAFE_MALLOC
+  safe_malloc_init();
+#endif   
+}
+
+void pm2_init_open_channels(int *argc, char *argv[],
+				      unsigned pm2_self,
+				      unsigned pm2_config_size)
+{
+  __pm2_self = pm2_self;
+  __pm2_conf_size = pm2_config_size;
+
+#ifdef PROFILE
+  profile_set_tracefile("/tmp/prof_file_%d", __pm2_self);
+#endif
+
+#ifdef MAD2
+  if(!pm2_single_mode()) {
+    int i;
+
+    for(i=0; i<nb_of_channels; i++) {
+      pm2_channel[i] = mad_open_channel(mad_get_madeleine(), 0);
+      mdebug("Channel %d created.\n", i);
+    }
+  }
+#endif
+}
+
+void pm2_init_thread_related(int *argc, char *argv[])
+{
+  block_init(__pm2_self, __pm2_conf_size);
+
+  marcel_key_create(&_pm2_lrpc_num_key, NULL);
+  marcel_key_create(&_pm2_mad_key, NULL);
+  marcel_key_create(&_pm2_block_key, NULL);
+  marcel_key_create(&_pm2_isomalloc_nego_key, NULL);
+
+  marcel_setspecific(_pm2_block_key, (any_t)(&_pm2_main_block_descr));
+  block_init_list(&_pm2_main_block_descr);
+
+  pm2_rawrpc_register(&PM2_COMPLETION, pm2_completion_service);
+
+  pm2_thread_init();
+  pm2_printf_init();
+  pm2_migr_init();
+
+  pm2_sync_init(__pm2_self, __pm2_conf_size);
+}
+
+void pm2_init_listen_network(int *argc, char *argv[])
+{
+  while(nb_startup_funcs--)
+    (*(startup_funcs[nb_startup_funcs]))(*argc, argv,
+					 startup_args[nb_startup_funcs]);
+
+  if(!pm2_single_mode()) {
+#ifdef MAD2
+    int i;
+
+    for(i=0; i<nb_of_channels; i++)
+      netserver_start(channel(i), MAX_PRIO);
+#else
+    netserver_start(MAX_PRIO);
+#endif
+  }
+}
+
+void pm2_init_purge_cmdline(int *argc, char *argv[])
+{
+}
+
+void pm2_init(int *argc, char **argv)
+{
+  common_init(argc, argv);
+}
+
+#if 0 // Just kept for documentation purposes (!?!)
 void pm2_init(int *argc, char **argv)
 {
   if(!__pm2_rpc_init_called)
@@ -250,7 +338,7 @@ void pm2_init(int *argc, char **argv)
 
   marcel_strip_cmdline(argc, argv);
 
-  mad_buffers_init();
+  mad_init_thread_related(argc, argv);
 
   block_init(__pm2_self, __pm2_conf_size);
 
@@ -287,6 +375,7 @@ void pm2_init(int *argc, char **argv)
 #endif
   }
 }
+#endif // #if 0
 
 #ifdef MAD2
 inline void pm2_send_stop_server(int i){

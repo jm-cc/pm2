@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leoparse.h,v $
+Revision 1.3  2000/11/16 13:24:04  oaumage
+- mise a jour initialisation
+
 Revision 1.2  2000/11/03 10:42:31  oaumage
 - integration de Leoparse
 
@@ -73,8 +76,7 @@ ______________________________________________________________________________
 #include <leoparse_parser.h>
 #endif /* LEOPARSE_IN_YACC */
 
-/* Leoparse: internal interface */
-#include "leoparse_main.h"
+/* Leoparse: interface */
 #include "leoparse_interface.h"
 
 #endif /* __LEOPARSE_H */

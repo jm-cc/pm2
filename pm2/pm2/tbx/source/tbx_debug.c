@@ -47,8 +47,8 @@
 #define DEBUG_SIZE_BUFFER 1600000
 #define SIZE_FILE_NAME 25
 
-#define STRING(s) str(s)
-#define str(s) #s
+#define STRING(s) tbx_str(s)
+#define tbx_str(s) #s
 
 static int nb_debug_type_registered=0;
 static debug_type_t* debug_type_registered[MAX_DEBUG_REGISTER];

@@ -1,2 +1,2 @@
 # auto generated from generic/config/options/*
-PM2_PM2_CFLAGS_KERNEL="$PM2_PM2_CFLAGS_KERNEL -g"
+PM2_PM2_CFLAGS_KERNEL="$PM2_PM2_CFLAGS_KERNEL -ggdb -g3"

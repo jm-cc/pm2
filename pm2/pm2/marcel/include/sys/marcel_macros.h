@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.7  2000/05/09 10:52:44  vdanjean
+pm2debug module
+
 Revision 1.6  2000/04/21 11:19:26  vdanjean
 fixes for actsmp
 
@@ -75,9 +78,9 @@ ______________________________________________________________________________
 
 #ifdef MA__DEBUG
 #define SET_STATE_RUNNING_HOOK(next) \
-  mdebug("\t\t\t<State set to running %p>\n", next)
+  mdebug_state("\t\t\t<State set to running %p>\n", next)
 #define SET_STATE_READY_HOOK(next) \
-  mdebug("\t\t\t<State set to ready %p>\n", next)
+  mdebug_state("\t\t\t<State set to ready %p>\n", next)
 #else
 #define SET_STATE_RUNNING_HOOK(next)  (void)0
 #define SET_STATE_READY_HOOK(next)    (void)0
@@ -210,9 +213,15 @@ ______________________________________________________________________________
 #define goto_next_task(pid) \
   (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \
                        (MA_THR_LONGJMP((pid), NORMAL_RETURN))
+#define can_goto_next_task(current, pid) \
+  (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \
+                       (((pid)==(current)) ? (void)0 : \
+			            MA_THR_LONGJMP((pid), NORMAL_RETURN))
 #else
 #define goto_next_task(pid) \
    MA_THR_LONGJMP((pid), NORMAL_RETURN)
+#define can_goto_next_task(current, pid) \
+   (((pid)==(current)) ? (void)0 : MA_THR_LONGJMP((pid), NORMAL_RETURN))
 #endif
 
 #define FIND_NEXT            (marcel_t)0

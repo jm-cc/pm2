@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.h,v $
+Revision 1.3  2000/01/04 16:47:48  oaumage
+- ajout des fonctions `exit'
+
 Revision 1.2  2000/01/04 09:17:04  oaumage
 - ajout de la commande de log de CVS
 
@@ -102,6 +105,15 @@ mad_mpi_disconnect(p_mad_connection_t);
 
 void
 mad_mpi_after_close_channel(p_mad_channel_t);
+
+void
+mad_mpi_channel_exit(p_mad_channel_t);
+
+void
+mad_mpi_adapter_exit(p_mad_adapter_t);
+
+void
+mad_mpi_driver_exit(p_mad_driver_t);
 
 p_mad_link_t
 mad_mpi_choice(p_mad_connection_t,

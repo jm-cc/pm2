@@ -86,7 +86,7 @@ pm2_main (int argc, char *argv[])
       pm2_threads_list (N, threads, &n, MIGRATABLE_ONLY);
       pm2_migrate_group (threads, n, where);
       tprintf ("%d threads among %d migrated off"
-	       "to node % d \ n ", n, N, where);
+	       "to node %d\n", n, N, where);
 
       tprintf ("Issuing RPC to node %d\n", where);
       pm2_rawrpc_begin (where, service_id, NULL);

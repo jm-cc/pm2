@@ -60,6 +60,8 @@
 #define MA_SOFTIRQ_OFFSET	(1UL << MA_SOFTIRQ_SHIFT)
 #define MA_HARDIRQ_OFFSET	(1UL << MA_HARDIRQ_SHIFT)
 
+#define MA_PREEMPT_BUGMASK	((MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET|MA_HARDIRQ_OFFSET)<<7)
+
 /*
  * The hardirq mask has to be large enough to have
  * space for potentially all IRQ sources in the system

@@ -33,6 +33,7 @@ do { \
 #define ma_preempt_count_dec() \
 do { \
         ma_preempt_count()--; \
+	MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK); \
 } while (0)
 
 #section marcel_functions

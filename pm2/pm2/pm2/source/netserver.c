@@ -52,7 +52,7 @@ void _netserver_term_func(void *arg)
 
 #ifdef MAD2
 void pm2_send_stop_server(int i);
-extern int pm2_zero_halt;
+extern volatile int pm2_zero_halt;
 #endif
 
 static any_t netserver(any_t arg)
@@ -75,12 +75,17 @@ static any_t netserver(any_t arg)
       case NETSERVER_END : {
 #ifdef MAD2
 	mad_recvbuf_receive();
-	if ((__pm2_self==0) && !pm2_zero_halt) {
-	  mdebug("Netserver handling NETSERVER_END node 0 first...");
-	  pm2_send_stop_server(1);
-	  pm2_zero_halt=TRUE;
+
+	if (__pm2_self == 0) {
+	  if(!pm2_zero_halt) {
+	    pm2_zero_halt=TRUE;
+	    pm2_send_stop_server(1);
+	  } else {
+	    finished = TRUE;
+	  }
 	} else {
-	  mdebug("Netserver handling NETSERVER_END\n");
+	  /* On fait suivre et on termine... */
+	  pm2_send_stop_server((__pm2_self+1) % __pm2_conf_size);
 	  finished = TRUE;
 	}
 #else
@@ -115,8 +120,11 @@ void netserver_start(void)
 #ifdef ONE_VP_PER_NET_THREAD
   {
     unsigned vp = marcel_sched_add_vp();
+    extern marcel_vpmask_t __pm2_global_vpmask; // declared in netserver.c
 
-    pm2_thread_vp_is_reserved(vp);
+    marcel_vpmask_add_vp(&__pm2_global_vpmask, vp);
+
+    marcel_change_vpmask(__pm2_global_vpmask);
 
     marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp));
 
@@ -141,11 +149,13 @@ void netserver_wait_end(void)
 {
   int i;
 
+  LOG_IN();
+
   for(i=0; i<nb_netservers; i++) {
-    mdebug("netserveur waiting for %p\n", _recv_pid[i]);
     marcel_join(_recv_pid[i], NULL);
-    mdebug("netserveur wait for %p done\n", _recv_pid[i]);
   }
+
+  LOG_OUT();
 }
 
 void netserver_stop(void)

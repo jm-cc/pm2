@@ -1,1 +1,3 @@
+Provide: marcel_poll
 Depend: marcel
+Conflict: blocking_calls

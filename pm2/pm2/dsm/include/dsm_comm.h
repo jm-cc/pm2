@@ -19,7 +19,9 @@
 
 #include "dsm_const.h" // dsm_access_t, dsm_node_t
 #include "dsm_page_manager.h"
+#include "pm2.h" //pm2_completion_init, etc.
 
+#define INSTRUMENT 1
 
 void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access, int tag);
 
@@ -36,12 +38,16 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index);
 #define RECEIVE_PAGE_FILE "/tmp/dsm_pm2_dynamic_page"
 void dsm_unpack_page(void *addr, unsigned long size);
 
+#ifdef INSTRUMENT
+void dsm_rpc_dump_instrumentation(void);
+#endif
+
+void dsm_comm_init();
 /***********************  Hyperion stuff: ****************************/
 
 void dsm_send_diffs(unsigned long index, dsm_node_t dest_node);
 
-void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node,
-                          pm2_completion_t* c);
+void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node, pm2_completion_t* c);
 void dsm_send_diffs_wait(pm2_completion_t* c);
 
 #define dsm_begin_send_multiple_diffs(dest_node)  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_MULTIPLE_DIFFS, NULL)

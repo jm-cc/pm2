@@ -13,9 +13,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse profile
+LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse profile sigmundlib
 # mad1
-MODULES := leonie stackalign
+MODULES := leonie stackalign sigmund sigmundps xsigmund supertrace
 # swann
 
 # Directement dans les sources:
@@ -41,6 +41,7 @@ duplique_global:
 		echo "duplicating '$$name' for $$2" ; \
 		for lib in $$2; do \
 		    DEST=$$PM2_ROOT/modules/$$lib/config/options ;\
+	    	    mkdir -p $$DEST; \
 		    copie $$name.sh $$lib $$DEST/$$name.sh ;\
 		    copie $$name.help $$lib $$DEST/$$name.help ;\
 		    copie $$name.dep $$lib $$DEST/$$name.dep ;\

@@ -61,8 +61,15 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_GM
   mad_gm_register,
 #endif /* DRV_GM */
+#ifdef DRV_MX
+  mad_mx_register,
+#endif /* DRV_MX */
+#ifdef MARCEL /* Forwarding Transmission Module */
   mad_forward_register,
+#endif /* MARCEL */
+#ifdef MARCEL /* MultipleXing Transmission Module */
   mad_mux_register,
+#endif /* MARCEL */
 
   NULL
 };
@@ -189,6 +196,9 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	    FAILURE("Madeleine's dynamic mode specified twice");
 
           settings->leonie_dynamic_mode	= tbx_true;
+#ifndef MARCEL
+          FAILURE("Madeleine's dynamic mode requires Marcel");
+#endif /* MARCEL */
 	}
 
       argc--; argv++;

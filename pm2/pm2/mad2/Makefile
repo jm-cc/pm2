@@ -64,8 +64,8 @@ DRV_TCP = on
 # SBP
 # DRV_SBP = on
 # MPI
-# DRV_MPI = on
-# MPI_IMPL = lam
+DRV_MPI = on
+MPI_IMPL = lam
 # MPI_IMPL = bip
 
 # PM2
@@ -91,23 +91,17 @@ APPS_OBJS = mad_test.o \
 
 # objects
 OBJS = $(OBJ)/mad_channel.o \
-            $(OBJ)/mad_memory_management.o \
-            $(OBJ)/mad_list_management.o \
-            $(OBJ)/mad_communication.o \
-            $(OBJ)/mad_malloc.o \
-            $(OBJ)/mad_timing.o \
-            $(OBJ)/mad_buffers.o \
-            $(OBJ)/madeleine.o
+       $(OBJ)/mad_memory_management.o \
+       $(OBJ)/mad_communication.o \
+       $(OBJ)/mad_buffers.o \
+       $(OBJ)/madeleine.o
 
 # srcs
 SRCS = $(SRC)/mad_channel.c \
-            $(SRC)/mad_communication.c \
-            $(SRC)/mad_malloc.c \
-            $(SRC)/mad_timing.c \
-            $(SRC)/mad_memory_management.c \
-            $(SRC)/mad_list_management.c \
-            $(SRC)/mad_buffers.c \
-            $(SRC)/madeleine.c
+       $(SRC)/mad_communication.c \
+       $(SRC)/mad_memory_management.c \
+       $(SRC)/mad_buffers.c \
+       $(SRC)/madeleine.c
 
 # headers
 HEADERS = $(INC)/mad_adapter.h \
@@ -122,17 +116,11 @@ HEADERS = $(INC)/mad_adapter.h \
                $(INC)/mad_driver.h \
                $(INC)/mad_driver_interface.h \
                $(INC)/mad_link.h \
-               $(INC)/mad_list.h \
-               $(INC)/mad_list_interface.h \
-               $(INC)/mad_macros.h \
                $(INC)/mad_main.h \
-               $(INC)/mad_malloc.h \
-               $(INC)/mad_malloc_interface.h \
                $(INC)/mad_memory_interface.h \
                $(INC)/mad_modes.h \
                $(INC)/mad_pointers.h \
                $(INC)/mad_registration.h \
-               $(INC)/mad_timing.h \
                $(INC)/mad_types.h \
                $(INC)/madeleine.h 
 
@@ -141,7 +129,7 @@ LIB_MAD2 = $(LIB)/libmad2.a
 
 # compiler
 # CC = purify gcc
-# CC = gcc
+CC = gcc
 # CC = egcc
 
 # preprocessor flags
@@ -150,7 +138,7 @@ CPPFLAGS = -I$(INC) -I$(CI_INC)
 # compiler flags
 # CFLAGS = -O6 -Wall 
 # CFLAGS = -g
-CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes # -Werror
 # CFLAGS = -pg -Wall
 # CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
 # CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
@@ -161,22 +149,28 @@ LDFLAGS =
 
 CONF = 
 
+# ToolBox
+# -------
+TBX_ROOT  = $(MAD2_ROOT)/../toolbox
+CPPFLAGS += -I$(TBX_ROOT)/include
+LDFLAGS  += $(TBX_ROOT)/lib/libtbx.a
+
 # PM2
 # ---
 ifdef PM2
- CPPFLAGS += -DPM2 -D$(PM2_ARCH) -D$(PM2_SYS) -I$(MARCEL_ROOT)/include
-# CFLAGS += 
- LDFLAGS += $(MARCEL_ROOT)/lib/libmarcel.a
+  CPPFLAGS += -DPM2 -D$(PM2_ARCH) -D$(PM2_SYS) -I$(MARCEL_ROOT)/include
+# CFLAGS   += 
+  LDFLAGS  += $(MARCEL_ROOT)/lib/libmarcel.a
 endif
 
 # Drivers
 # -------
 # TCP specific
 ifdef DRV_TCP
-  OBJS    += $(OBJ)/mad_tcp.o 
-  HEADERS += $(CI_INC)/mad_tcp.h
-  SRCS    += $(CI_SRC)/mad_tcp.c
-  CPPFLAGS  += -DDRV_TCP=mad_TCP
+  OBJS     += $(OBJ)/mad_tcp.o 
+  HEADERS  += $(CI_INC)/mad_tcp.h
+  SRCS     += $(CI_SRC)/mad_tcp.c
+  CPPFLAGS += -DDRV_TCP=mad_TCP
 # CFLAGS += 
   ifdef OS_SOLARIS
     LDFLAGS += -lnsl -lsocket
@@ -185,56 +179,56 @@ endif
 
 # M-VIA specific
 ifdef DRV_VIA
-  OBJS    += $(OBJ)/mad_via.o 
-  HEADERS += $(CI_INC)/mad_via.h
-  SRCS    += $(CI_SRC)/mad_via.c
-  CPPFLAGS  += -DDRV_VIA=mad_VIA -D_REENTRANT
-# CFLAGS += 
-  LDFLAGS += -lvipl -lpthread
+  OBJS     += $(OBJ)/mad_via.o 
+  HEADERS  += $(CI_INC)/mad_via.h
+  SRCS     += $(CI_SRC)/mad_via.c
+  CPPFLAGS += -DDRV_VIA=mad_VIA -D_REENTRANT
+# CFLAGS   += 
+  LDFLAGS  += -lvipl -lpthread
 endif
 
 # SISCI specific ;
 ifdef DRV_SISCI
-  SISCI_PATH = /usr/src/DIS_990816/src/SISCI
-  OBJS    += $(OBJ)/mad_sisci.o 
-  HEADERS += $(CI_INC)/mad_sisci.h
-  SRCS    += $(CI_SRC)/mad_sisci.c
-  CPPFLAGS  += -DDRV_SISCI=mad_SISCI \
-               -I$(SISCI_PATH)/api/ \
-               -I$(SISCI_PATH)/src/
+  SISCI_PATH  = /usr/src/DIS_990816/src/SISCI
+  OBJS       += $(OBJ)/mad_sisci.o 
+  HEADERS    += $(CI_INC)/mad_sisci.h
+  SRCS       += $(CI_SRC)/mad_sisci.c
+  CPPFLAGS   += -DDRV_SISCI=mad_SISCI \
+                -I$(SISCI_PATH)/api/ \
+                -I$(SISCI_PATH)/src/
 # CFLAGS +=
-  LDFLAGS += -L$(SISCI_PATH)/api/ -lsisci
+  LDFLAGS    += -L$(SISCI_PATH)/api/ -lsisci
 endif
 
 # SBP specific
 ifdef DRV_SBP
-  OBJS    += $(OBJ)/mad_sbp.o 
-  HEADERS += $(CI_INC)/mad_sbp.h
-  SRCS    += $(CI_SRC)/mad_sbp.c
-  CPPFLAGS  += -DDRV_SBP=mad_SBP -DEXTERNAL_SPAWN=DRV_SBP
-# CFLAGS +=
-  LDFLAGS += -lded
+  OBJS     += $(OBJ)/mad_sbp.o 
+  HEADERS  += $(CI_INC)/mad_sbp.h
+  SRCS     += $(CI_SRC)/mad_sbp.c
+  CPPFLAGS += -DDRV_SBP=mad_SBP -DEXTERNAL_SPAWN=DRV_SBP
+# CFLAGS   +=
+  LDFLAGS  += -lded
 endif
 
 ifdef DRV_MPI
 # MPI specific
-  OBJS    += $(OBJ)/mad_mpi.o 
-  HEADERS += $(CI_INC)/mad_mpi.h
-  SRCS    += $(CI_SRC)/mad_mpi.c
-  CPPFLAGS  += -DDRV_MPI=mad_MPI -DEXTERNAL_SPAWN=DRV_MPI
-# CFLAGS +=
-# LDFLAGS += 
-  CONF += mad_mpi_impl
+  OBJS     += $(OBJ)/mad_mpi.o 
+  HEADERS  += $(CI_INC)/mad_mpi.h
+  SRCS     += $(CI_SRC)/mad_mpi.c
+  CPPFLAGS += -DDRV_MPI=mad_MPI -DEXTERNAL_SPAWN=DRV_MPI
+# CFLAGS   +=
+# LDFLAGS  += 
+  CONF     += mad_mpi_impl
 # LAM/MPI specific
 ifeq ($(MPI_IMPL), lam)
-  CC      = hcc
+  CC        = hcc
 endif
 
 # MPI-BIP specific
 ifeq ($(MPI_IMPL), bip)
-  CPPFLAGS  += -I/usr/local/bip/include/mpi -I/usr/local/bip/include
-# CFLAGS +=
-  LDFLAGS += -L/usr/local/bip/lib/mpi_gnu -L/usr/local/bip/lib -lmpi -lbip
+  CPPFLAGS += -I/usr/local/bip/include/mpi -I/usr/local/bip/include
+# CFLAGS   +=
+  LDFLAGS  += -L/usr/local/bip/lib/mpi_gnu -L/usr/local/bip/lib -lmpi -lbip
 endif
 endif
 
@@ -256,8 +250,21 @@ ifdef TIMING
   CPPFLAGS += -DTIMING
 endif
 
+# dependencies
+DEP_DIRS = $(TBX_ROOT)
+
+# goals transfer
+ifeq ($(MAKECMDGOALS), clean)
+DEP_GOAL = clean
+else
+DEP_GOAL = all
+endif
+
 # Rules
 # -----
+.PHONY: all lib ps html rtf clean clean_src lines dep_dirs $(DEP_DIRS)
+.PHONY: conf mad_mpi_impl
+
 all: lib $(APPS) conf
 
 lib: $(LIB_MAD2)
@@ -283,11 +290,11 @@ mad_test: mad_test.o $(LIB_MAD2)
 mad_test.o: mad_test.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(LIB_MAD2): $(OBJS)
+$(LIB_MAD2): $(OBJS) dep_dirs
 	ar -rc $(LIB_MAD2) $(OBJS); \
         ranlib $(LIB_MAD2)
 
-clean:
+clean: dep_dirs
 	rm -f $(APPS) $(APPS_OBJS) $(OBJS) $(LIB_MAD2)
 
 clean_src:
@@ -307,19 +314,10 @@ $(OBJ)/mad_channel.o: $(SRC)/mad_channel.c $(HEADERS)
 $(OBJ)/mad_buffers.o: $(SRC)/mad_buffers.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_list_management.o: $(SRC)/mad_list_management.c $(HEADERS)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
-
 $(OBJ)/mad_memory_management.o: $(SRC)/mad_memory_management.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 $(OBJ)/mad_communication.o: $(SRC)/mad_communication.c $(HEADERS)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
-
-$(OBJ)/mad_malloc.o: $(SRC)/mad_malloc.c $(HEADERS)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
-
-$(OBJ)/mad_timing.o: $(SRC)/mad_timing.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 $(OBJ)/mad_tcp.o: $(CI_SRC)/mad_tcp.c $(HEADERS)
@@ -336,6 +334,11 @@ $(OBJ)/mad_sbp.o: $(CI_SRC)/mad_sbp.c $(HEADERS)
 
 $(OBJ)/mad_mpi.o: $(CI_SRC)/mad_mpi.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+dep_dirs: $(DEP_DIRS)
+
+$(DEP_DIRS):
+	$(MAKE) -C $@ $(DEP_GOAL)
 
 conf: $(CONF)
 

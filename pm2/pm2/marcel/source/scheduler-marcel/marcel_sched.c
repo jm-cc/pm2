@@ -24,7 +24,7 @@
 #warning "[1;33m<<< [1;37mScheduler [1;32mmarcel[1;37m selected[1;33m >>>[0m"
 
 marcel_sched_attr_t marcel_sched_attr_default = {
-  .init_rq = &ma_main_runqueue,
+  .init_rq = NULL,
   .prio = MA_DEF_PRIO,
 };
 

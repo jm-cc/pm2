@@ -28,12 +28,12 @@ static marcel_sem_t sem;
 void thread_func(void *arg)
 {
   unsigned long temps;
-  unsigned n, nping;
+  unsigned long n, nping;
 
   pm2_enable_migration();
 
   for(n=0; n<ESSAIS; n++) {
-    nping = (unsigned)arg;
+    nping = (unsigned long)arg;
     TBX_GET_TICK(t1);
     while(1) {
       if(nping-- == 0)
@@ -55,7 +55,7 @@ void startup_func(int argc, char *argv[], void *arg)
 
 int pm2_main(int argc, char **argv)
 {
-  unsigned nb;
+  unsigned long nb;
 
   pm2_push_startup_func(startup_func, NULL);
 
@@ -70,12 +70,12 @@ int pm2_main(int argc, char **argv)
 
   if(pm2_self() == 0) {
 
-    tprintf("*** Migration sous %s ***\n", mad_arch_name());
+    tprintf("*** Migration ***\n");
     if(argc > 1)
       nb = atoi(argv[1]);
     else {
       tprintf("Combien d'aller-et-retour ? ");
-      scanf("%d", &nb);
+      scanf("%ld", &nb);
     }
 
     marcel_sem_init(&sem, 0);

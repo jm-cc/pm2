@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.14  2000/10/31 10:32:25  rnamyst
+Few minor changes
+
 Revision 1.13  2000/08/29 13:27:29  rnamyst
 Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
 
@@ -369,7 +372,7 @@ int marcel_write(int fildes, void *buf, size_t nbytes)
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #endif
 
-  LOG("IO writting fd %i", fildes);
+  LOG("IO writing fd %i", fildes);
   return write(fildes, buf, nbytes);
 }
 
@@ -383,7 +386,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #endif
 
-  LOG("IO writtving fd %i", fildes);
+  LOG("IO writving fd %i", fildes);
   return writev(fildes, iov, iovcnt);
 }
 

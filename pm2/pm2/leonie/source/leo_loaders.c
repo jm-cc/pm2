@@ -137,6 +137,16 @@ leo_default_loader(p_leo_application_settings_t settings,
 	    tbx_environment_append_variable(env, var);
 	  }
 
+	if (settings->log_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-l");
+	  }
+
+	if (settings->pause_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-p");
+	  }
+
 	if (settings->gdb_mode)
 	  {
 	    tbx_arguments_append_cstring(args, "-d");
@@ -502,6 +512,16 @@ leo_bipload_loader(p_leo_application_settings_t settings,
       tbx_arguments_append_cstring(args, "-mget");
       tbx_arguments_append_cstring(args, "-hwflow");
       tbx_arguments_append_cstring(args, "leo-load");
+
+      if (settings->log_mode)
+	{
+	  tbx_arguments_append_cstring(args, "-l");
+	}
+
+      if (settings->pause_mode)
+	{
+	  tbx_arguments_append_cstring(args, "-p");
+	}
 
       if (settings->gdb_mode)
 	{

@@ -52,18 +52,6 @@ You must also put the ${PM2_ROOT}/bin directory in your path:
 
 		setenv PATH $PM2_ROOT/bin:$PATH
 
-Make sure you have also correctly configured both the MARCEL and the
-MADELEINE packages (see specific README files in the marcel/ and
-madeleine/ directories). For instance, if you choosed to keep this
-directories under $PM2_ROOT, you may set :
-
-		setenv MARCEL_ROOT $PM2_ROOT/marcel
-		setenv MADELEINE_ROOT $PM2_ROOT/mad1
-		setenv MAD2_ROOT $PM2_ROOT/mad2
-		setenv DSM_ROOT $PM2_ROOT/dsm
-
-		setenv PATH $MARCEL_ROOT/bin:$MADELEINE_ROOT/bin:$MAD2_ROOT/bin:$PATH
-
 II . Compiling a PM2 application +++++++++++++++++++++++++++++++++++++
 
 NOTE: There are currently two versions of the Madeleine communication
@@ -84,9 +72,6 @@ If you want to use PVM library (in this case, make sure you have set
 the PVM_ROOT variable), type:
 
 		pm2custom pvm
-
-Please have a look into the $MADELEINE_ROOT/make/ directory to see
-which communication packages are currently supported.
 
 Once you made your choice, go into a subdirectory of
 $PM2_ROOT/examples (for instance $PM2_ROOT/examples/simple) and type:

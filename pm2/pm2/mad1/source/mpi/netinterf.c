@@ -262,7 +262,7 @@ void mad_mpi_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
   for(i=0; i<*nb; i++)
     marcel_mutex_init(&mutex[i], NULL);
 #ifdef USE_MARCEL_POLL
-  mpi_io_pollid = marcel_pollid_create(mpi_io_group, mpi_io_poll, 1);
+  mpi_io_pollid = marcel_pollid_create(mpi_io_group, mpi_io_poll, NULL, 1);
 #endif
 #endif
 

@@ -107,12 +107,12 @@ int marcel_main(int argc, char *argv[])
 {
   marcel_attr_t attr;
 
+  marcel_init(&argc, argv);
+
   if(argc != 2) {
     fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
     exit(1);
   }
-
-  marcel_init(&argc, argv);
 
   marcel_attr_init(&attr);
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));

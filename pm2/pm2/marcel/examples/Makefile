@@ -37,7 +37,7 @@ export FLAVOR_DEFAULT:=marcel
 
 PROGS := active	cleanup	contsw create daube delay derout eclone force_raise \
 	kbd keys matrix once poll raise sample stack_jump sumtime timed \
-	timeout tsp tube usersched userspace
+	timeout tsp tube usersched userspace gthreads
 
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/apps.mak

@@ -54,6 +54,6 @@ fi
 set `cat ${MAD1_ROOT}/.madconf | sort | uniq`
 
 for host in $* ; do
-	rsh $host ${MAD1_ROOT}/bin/vlocallogs ${LOG} $host
+	${PM2_RSH:-rsh} $host ${MAD1_ROOT}/bin/vlocallogs ${LOG} $host
 done
 

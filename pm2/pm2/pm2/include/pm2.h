@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.28  2000/12/14 13:41:53  bouge
+Added pm2_completion_copy
+
 Revision 1.27  2000/11/15 21:32:37  rnamyst
 Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
 
@@ -181,6 +184,9 @@ void pm2_rawrpc_end(void);
 void pm2_completion_init(pm2_completion_t *c,
 			 pm2_completion_handler_t handler,
 			 void *arg);
+
+void pm2_completion_copy(pm2_completion_t *to, 
+			 pm2_completion_t *from);
 
 void pm2_pack_completion(mad_send_mode_t sm,
 			 mad_receive_mode_t rm,

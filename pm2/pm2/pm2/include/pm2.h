@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.20  2000/07/06 14:47:18  rnamyst
+Added pm2_push_startup_func
+
 Revision 1.19  2000/07/04 08:14:17  rnamyst
 By default, netserver threads are *not* spawned when only a single
 process is running.
@@ -76,11 +79,13 @@ ______________________________________________________________________________
 #include "dsm_pm2.h"
 #endif
 
+#define MAX_STARTUP_FUNCS   32
+
 /* A startup function may be specified. If so, it will be called after
  * all modules will be spawned but before the current module will
- * listen (and respond to) incomming requests.
- */
-void pm2_set_startup_func(pm2_startup_func_t f);
+ * listen (and respond to) incomming requests.  */
+void pm2_push_startup_func(pm2_startup_func_t f);
+
 
 /* 
  * Init the system and spawns `nb_proc-1' additional processes (or one
@@ -218,5 +223,16 @@ _PRIVATE_ extern marcel_key_t _pm2_lrpc_num_key,
   _pm2_block_key, _pm2_mad_key, _pm2_isomalloc_nego_key;
 
 #define pm2_main marcel_main
+
+
+/*********************************************************/
+
+/* pm2_set_startup_func is obsolete. Please rather use the following
+   function, which allows the registration of several startup
+   functions... */
+static __inline__ void pm2_set_startup_func(pm2_startup_func_t f)
+{
+  pm2_push_startup_func(f);
+}
 
 #endif

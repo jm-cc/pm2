@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.5  2000/01/04 16:50:49  oaumage
+- mad_mpi.c: premiere version fonctionnelle du driver
+- mad_sbp.c: nouvelle correction de la transmission des noms d'hote a
+  l'initialisation
+- mad_tcp.c: remplacement des appels `exit' par des macros FAILURES
+
 Revision 1.4  2000/01/04 09:18:52  oaumage
 - ajout de la commande de log de CVS
 - phase d'initialisation `external-spawn' terminee pour mad_mpi.c
@@ -188,7 +194,11 @@ mad_tcp_fill_sockaddr(struct sockaddr_in  *sockaddr,
   struct hostent                *host;
 
   LOG_IN();
-
+  LOG_STR("mad_tcp_fill_sockaddr: host", adapter->
+	  driver->
+	  madeleine->
+	  configuration.host_name[rank]);
+  
   host = gethostbyname(adapter->
 		       driver->
 		       madeleine->
@@ -484,6 +494,8 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
     }
   
   adapter_specific->connection_port = (int)ntohs(address.sin_port);
+  LOG_VAL("mad_tcp_adapter_init: connection port",
+	      adapter_specific->connection_port);
 
   adapter->parameter = malloc(10);
   CTRL_ALLOC(adapter->parameter);
@@ -522,7 +534,7 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
 		      && (errno != EINTR))
 		{
 		  perror("master'accept");
-		  exit(1);
+		  FAILURE("accept");
 		}
 	    }
 	  while(fd == -1);
@@ -568,7 +580,9 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       LOG("mad_tcp_adapter_configuration_init: slave");
       adapter_specific->remote_connection_port[0] =
 	atoi(adapter->master_parameter);
-  
+      LOG_VAL("mad_tcp_adapter_configuration_init: master port",
+	      adapter_specific->remote_connection_port[0]);
+      
       sock = creer_socket(SOCK_STREAM, 0, NULL);
       if (sock == -1)
 	{
@@ -584,7 +598,7 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       if (status == -1)
 	{
 	      perror("mad_tcp_adapter_configuration_init: connect");
-	      exit(1);
+	      FAILURE("Connect");
 	}
       
       write(sock,
@@ -685,7 +699,7 @@ mad_tcp_accept(p_mad_channel_t channel)
 	  else
 	    {
 	      perror("slave'accept");
-	      exit(1);
+	      FAILURE("Accept");
 	    }
 	}
       mad_tcp_setup_socket(sock);
@@ -737,7 +751,7 @@ mad_tcp_connect(p_mad_connection_t connection)
   if(status == -1)
     {
       perror("mad_tcp_connect: connect");
-      exit(1);
+      FAILURE("Connect");
     }
 
   write(sock,

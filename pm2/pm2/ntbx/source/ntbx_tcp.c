@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.2  2000/02/17 09:14:40  oaumage
+- ajout du support de TCP a la net toolbox
+
 Revision 1.1  2000/02/08 15:25:30  oaumage
 - ajout du sous-repertoire `net' a la toolbox
 
@@ -47,7 +50,100 @@ ______________________________________________________________________________
  */
 #include <tbx.h>
 #include <ntbx.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
+/*
+ * Data Structures
+ * ========================================================================
+ */
+typedef struct
+{
+  ntbx_tcp_socket_t descriptor;
+  
+} ntbx_tcp_client_specific_t, *p_ntbx_tcp_client_specific_t;
+
+
+typedef struct
+{
+  ntbx_tcp_socket_t descriptor;
+  ntbx_tcp_port_t   port;
+} ntbx_tcp_server_specific_t, *p_ntbx_tcp_server_specific_t;
+
+
+/*
+ * Functions
+ * ========================================================================
+ */
+
+/*
+ * General Purpose functions
+ * -------------------------
+ */
+void
+ntbx_tcp_retry_struct_init(p_ntbx_tcp_retry_t retry)
+{
+  LOG_IN();
+  retry->count         = 0;
+  retry->sleep_count   = 0;
+  retry->timeout_count = 0;
+  LOG_OUT();
+}
+
+ntbx_status_t
+ntbx_tcp_retry(p_ntbx_tcp_retry_t retry)
+{
+  LOG_IN();
+  if (retry->count < NTBX_TCP_MAX_RETRY_BEFORE_SLEEP)
+    {
+      retry->count++;
+    }
+  else
+    {
+      if (retry->sleep_count < NTBX_TCP_MAX_SLEEP_RETRY)
+	{
+	  retry->sleep_count++;
+	  retry->count = 0;
+	  sleep(NTBX_TCP_SLEEP_DELAY);
+	}
+      else
+	{
+	  LOG_OUT();
+	  return ntbx_failure;
+	}
+    }
+  
+  LOG_OUT();
+  return ntbx_success;
+}
+
+ntbx_status_t
+ntbx_tcp_timeout(p_ntbx_tcp_retry_t retry)
+{
+  LOG_IN();
+  if (retry->timeout_count < NTBX_TCP_MAX_TIMEOUT_RETRY)
+    {
+      retry->timeout_count ++;
+      retry->count       = 0;
+      retry->sleep_count = 0;
+      sleep(NTBX_TCP_SLEEP_DELAY);
+    }
+  else
+    {
+      LOG_OUT();
+      return ntbx_failure;
+     }
+  
+  LOG_OUT();
+  return ntbx_success;
+}
+
+
+/*
+ * Setup functions
+ * ---------------
+ */
 void
 ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address, 
 		      ntbx_tcp_port_t        port,
@@ -82,6 +178,24 @@ ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc)
   LOG_OUT();
 }
 
+void
+ntbx_tcp_nb_socket_setup(ntbx_tcp_socket_t desc)
+{
+  int           val    = 1;
+  int           packet = 0x8000;
+  struct linger ling   = { 1, 50 };
+  int           len    = sizeof(int);
+  
+  LOG_IN(); 
+  SYSCALL(fcntl(desc, F_SETFL, O_NONBLOCK));
+  SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+  SYSCALL(setsockopt(desc, SOL_SOCKET, SO_LINGER, (char *)&ling,
+		     sizeof(struct linger)));
+  SYSCALL(setsockopt(desc, SOL_SOCKET, SO_SNDBUF, (char *)&packet, len));
+  SYSCALL(setsockopt(desc, SOL_SOCKET, SO_RCVBUF, (char *)&packet, len));
+  LOG_OUT();
+}
+
 ntbx_tcp_socket_t 
 ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 		       ntbx_tcp_port_t      port)
@@ -104,5 +218,664 @@ ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 
   LOG_OUT();
   return desc;
+}
+
+/*
+ * Communication functions
+ * -----------------------
+ */
+
+
+/*...Initialisation.....................*/
+
+/* Setup a server socket */
+void
+ntbx_tcp_server_init(p_ntbx_server_t server)
+{
+  p_ntbx_tcp_server_specific_t server_specific = NULL;
+  ntbx_tcp_address_t           address;
+  
+  LOG_IN();
+  if (server->state)
+    FAILURE("server already initialized");
+
+  server_specific = malloc(sizeof(ntbx_tcp_server_specific_t));
+  CTRL_ALLOC(server_specific);
+  server->specific = server_specific;
+  
+  server_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
+  SYSCALL(listen(server_specific->descriptor, min(5, SOMAXCONN)));
+  ntbx_tcp_nb_socket_setup(server_specific->descriptor);
+  
+  server_specific->port = (ntbx_tcp_port_t)ntohs(address.sin_port);
+  sprintf(server->connection_data, "%d", server_specific->port);
+  
+  server->state = ntbx_server_state_initialized;
+  LOG_OUT();
+}
+
+
+/* Setup a client socket */
+void
+ntbx_tcp_client_init(p_ntbx_client_t client)
+{
+  p_ntbx_tcp_client_specific_t client_specific = NULL;
+  ntbx_tcp_address_t           address;
+  
+  LOG_IN();
+  if (client->state)
+    FAILURE("client already initialized");
+
+  client_specific = malloc(sizeof(ntbx_tcp_client_specific_t));
+  CTRL_ALLOC(client_specific);
+  client->specific = client_specific;  
+  
+  client_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
+  ntbx_tcp_nb_socket_setup(client_specific->descriptor);
+  client->state = ntbx_client_state_initialized;
+  LOG_OUT();
+}
+
+
+/*...Reset..............................*/
+
+/* Reset a client object */
+void
+ntbx_tcp_client_reset(p_ntbx_client_t client)
+{
+  LOG_IN();
+  if (client->state != ntbx_client_state_uninitialized)
+    {
+      if (client->specific == NULL)
+	FAILURE("invalid client data");
+      
+      SYSCALL(close(((p_ntbx_tcp_client_specific_t)client->specific)->descriptor));
+      free(client->specific);
+      client->specific = NULL;
+      client->state    = ntbx_client_state_uninitialized;
+    }
+  else
+    FAILURE("invalid client state");
+  LOG_OUT();
+}
+
+
+/* Reset a server object */
+void
+ntbx_tcp_server_reset(p_ntbx_server_t server)
+{
+  LOG_IN();
+  if (server->state != ntbx_server_state_uninitialized)
+    {
+      if (server->specific == NULL)
+	FAILURE("invalid server data");
+      
+      SYSCALL(close(((p_ntbx_tcp_server_specific_t)server->specific)
+		    ->descriptor));
+      free(server->specific);
+      server->specific = NULL;
+      server->state    = ntbx_server_state_uninitialized;
+    }
+  else
+    FAILURE("invalid server state");
+  LOG_OUT();
+}
+
+
+/*...Connection.........................*/
+
+/* Connect a client socket to a server */
+ntbx_status_t
+ntbx_tcp_client_connect(p_ntbx_client_t           client,
+			char                     *server_host_name,
+			p_ntbx_connection_data_t  server_connection_data)
+{
+  p_ntbx_tcp_client_specific_t client_specific = client->specific;
+  ntbx_tcp_port_t              server_port     =
+    atoi((char *)server_connection_data);
+  ntbx_tcp_address_t           server_address;
+  ntbx_tcp_retry_t             retry;
+
+  LOG_IN();
+  if (client->state != ntbx_client_state_initialized)
+    FAILURE("invalid client state");
+
+  ntbx_tcp_address_fill(&server_address, server_port, server_host_name);
+
+  ntbx_tcp_retry_struct_init(&retry);
+
+  while(connect(client_specific->descriptor,
+		(struct sockaddr *)&server_address, 
+		sizeof(ntbx_tcp_address_t)) == -1)
+    {
+      if (errno == EINPROGRESS)
+	continue;
+      else if (errno == EINTR)
+	{
+	  if (ntbx_tcp_retry(&retry) != ntbx_success)
+	    {
+	      ntbx_tcp_client_reset(client);
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	}
+      else if (errno == EALREADY)
+	{
+	  if (ntbx_tcp_retry(&retry) != ntbx_success)
+	    {
+	      ntbx_tcp_client_reset(client);
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	}
+      else if (errno == EWOULDBLOCK)
+	{
+	  if (ntbx_tcp_retry(&retry) != ntbx_success)
+	    {
+	      ntbx_tcp_client_reset(client);
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	}
+      else if (errno == ETIMEDOUT)
+	{
+	  if (ntbx_tcp_timeout(&retry) != ntbx_success)
+	    {
+	      ntbx_tcp_client_reset(client);
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	}
+      else
+	{
+	  perror("connect");
+	  FAILURE("ntbx_tcp_client_connect failed");
+	}
+    }
+
+  client->state = ntbx_client_state_connected;
+  LOG_OUT();
+  return ntbx_success;
+}
+
+
+/* Accept an incoming client connection request */
+ntbx_status_t
+ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
+{
+  p_ntbx_tcp_server_specific_t server_specific = server->specific;
+  p_ntbx_tcp_client_specific_t client_specific = NULL;
+  ntbx_tcp_socket_t            descriptor;
+  ntbx_tcp_retry_t             retry;
+
+  LOG_IN();
+  if (client->state)
+    FAILURE("client already initialized");
+
+  ntbx_tcp_retry_struct_init(&retry);
+
+  while ((descriptor = accept(server_specific->descriptor, NULL, NULL)) == -1)
+    {
+      if (errno == EINTR)
+	{
+	  if (ntbx_tcp_retry(&retry) != ntbx_success)
+	    {
+	      client->state = ntbx_client_state_uninitialized;
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	}
+      else if (errno == EWOULDBLOCK)
+	{ 
+	  if (ntbx_tcp_retry(&retry) != ntbx_success)
+	    {
+	      client->state = ntbx_client_state_uninitialized;
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	}
+      else
+	{
+	  perror("accept");
+	  FAILURE("ntbx_tcp_server_accept");
+	}
+    }
+
+  client_specific = malloc(sizeof(ntbx_tcp_client_specific_t));
+  CTRL_ALLOC(client_specific);
+  client->specific = client_specific;  
+  
+  client_specific->descriptor = descriptor;
+  client->state = ntbx_client_state_connected;
+  LOG_OUT();
+  return ntbx_success;
+}
+
+
+/*...Disconnection......................*/
+
+/* Disconnect a client socket */
+void
+ntbx_tcp_client_disconnect(p_ntbx_client_t client)
+{
+  p_ntbx_tcp_client_specific_t client_specific = client->specific;
+  
+  LOG_IN();
+  if (client->state == ntbx_client_state_uninitialized)
+    FAILURE("client not initialized");
+
+  if (client->state == ntbx_client_state_shutdown)
+    FAILURE("client already shut down");
+
+  if (client->state == ntbx_client_state_closed)
+    FAILURE("client already closed");
+
+  if (client->state == ntbx_client_state_data_ready)
+    FAILURE("unread data remained while closing client");
+
+  if (   (client->state == ntbx_client_state_connected)
+      || (client->state == ntbx_client_state_write_ready)
+      || (client->state == ntbx_client_state_peer_closed))
+    {
+      SYSCALL(shutdown(client_specific->descriptor, 2));
+      client->state = ntbx_client_state_shutdown;
+    }
+  
+  if (   (client->state == ntbx_client_state_shutdown)
+      || (client->state == ntbx_client_state_initialized))
+    {
+      SYSCALL(close(client_specific->descriptor));
+      client->state = ntbx_client_state_closed;
+    }
+  else
+    FAILURE("invalid client state");
+
+  free(client->specific);
+  client_specific  = client->specific = NULL;
+  client->state    = ntbx_client_state_uninitialized;
+
+  LOG_OUT();
+}
+
+
+/* Disconnect a server */
+void
+ntbx_tcp_server_disconnect(p_ntbx_server_t server)
+{
+  p_ntbx_tcp_server_specific_t server_specific = server->specific;
+  
+  LOG_IN();
+  if (server->state == ntbx_server_state_uninitialized)
+    FAILURE("server not initialized");
+  
+  if (server->state == ntbx_server_state_connection_ready)
+    FAILURE("incoming connection not processed by server");
+
+  if (server->state == ntbx_server_state_shutdown)
+    FAILURE("server already shut down");
+
+  if (server->state == ntbx_server_state_closed)
+    FAILURE("server already closed");
+
+  if (   (server->state == ntbx_server_state_initialized)
+      || (server->state == ntbx_server_state_accepting))
+    {
+      SYSCALL(close(server_specific->descriptor));
+      server->state = ntbx_server_state_closed;
+    }
+  else
+    FAILURE("invalid server state");
+
+  free(server->specific);
+  server_specific  = server->specific = NULL;
+  server->state    = ntbx_server_state_uninitialized;
+
+  LOG_OUT();
+}
+
+
+/*...Polling............................*/
+
+/* data ready to read */
+int
+ntbx_tcp_read_poll(int              nb_clients,
+		   p_ntbx_client_t *client_array)
+{  
+  fd_set           read_fds;
+  int              max_fds = 0;
+  int              i;
+  ntbx_tcp_retry_t retry;
+
+  LOG_IN();
+  ntbx_tcp_retry_struct_init(&retry);
+
+  FD_ZERO(&read_fds);
+  for (i = 0; i < nb_clients; i++)
+    {
+      p_ntbx_tcp_client_specific_t client_specific =
+	client_array[i]->specific;
+	  
+      if (client_array[i]->state != ntbx_client_state_connected)
+	FAILURE("invalid client state");
+
+      FD_SET(client_specific->descriptor, &read_fds);
+      max_fds = max(max_fds, client_specific->descriptor);
+    }
+      
+  while(tbx_true)
+    {
+      fd_set         local_read_fds = read_fds;
+      struct timeval timeout;
+      int            status;
+
+      timeout.tv_sec  = NTBX_TCP_SELECT_TIMEOUT;
+      timeout.tv_usec = 0;
+
+      status = select(max_fds + 1,
+		      &local_read_fds,
+		      NULL,
+		      NULL,
+		      &timeout);
+
+      if (status == -1)
+	{
+	  if (errno == EINTR)
+	    {
+	      if (ntbx_tcp_retry(&retry) != ntbx_success)
+		{
+		  return ntbx_failure;
+		}
+
+	      continue;
+	    }
+	  else
+	    {
+	      perror("select");
+	      FAILURE("ntbx_tcp_read_poll failed");
+	    }	  
+	}
+      else if (status == 0)
+	{
+	  if (ntbx_tcp_timeout(&retry) != ntbx_success)
+	    {
+	      return ntbx_failure;
+	    }
+	  
+	  continue;
+	}
+      else
+	{
+	  for (i = 0; i < nb_clients; i++)
+	    {
+	      p_ntbx_client_t              client          =
+		client_array[i];
+	      p_ntbx_tcp_client_specific_t client_specific =
+		client->specific;
+
+	      if (FD_ISSET(client_specific->descriptor, &local_read_fds))
+		{
+		  client->state = ntbx_client_state_data_ready;
+		}
+	    }
+	  
+	  return status;
+	}
+    }
+  LOG_OUT();
+}
+
+
+/* data ready to write */
+int
+ntbx_tcp_write_poll(int              nb_clients,
+		    p_ntbx_client_t *client_array)
+{
+  fd_set           write_fds;
+  int              max_fds = 0;
+  int              i;
+  ntbx_tcp_retry_t retry;
+
+  LOG_IN();
+  ntbx_tcp_retry_struct_init(&retry);
+
+  FD_ZERO(&write_fds);
+  for (i = 0; i < nb_clients; i++)
+    {
+      p_ntbx_tcp_client_specific_t client_specific =
+	client_array[i]->specific;
+	  
+      if (client_array[i]->state != ntbx_client_state_connected)
+	FAILURE("invalid client state");
+
+      FD_SET(client_specific->descriptor, &write_fds);
+      max_fds = max(max_fds, client_specific->descriptor);
+    }
+      
+  while(tbx_true)
+    {
+      fd_set         local_write_fds = write_fds;
+      struct timeval timeout;
+      int            status;
+
+      timeout.tv_sec  = NTBX_TCP_SELECT_TIMEOUT;
+      timeout.tv_usec = 0;
+
+      status = select(max_fds + 1,
+		      NULL,
+		      &local_write_fds,
+		      NULL,
+		      &timeout);
+
+      if (status == -1)
+	{
+	  if (errno == EINTR)
+	    {
+	      if (ntbx_tcp_retry(&retry) != ntbx_success)
+		{
+		  LOG_OUT();
+		  return ntbx_failure;
+		}
+
+	      continue;
+	    }
+	  else
+	    {
+	      perror("select");
+	      FAILURE("ntbx_tcp_write_poll failed");
+	    }
+	}
+      else if (status == 0)
+	{
+	  if (ntbx_tcp_timeout(&retry) != ntbx_success)
+	    {
+	      LOG_OUT();
+	      return ntbx_failure;
+	    }
+	  
+	  continue;
+	}
+      else
+	{
+	  for (i = 0; i < nb_clients; i++)
+	    {
+	      p_ntbx_client_t              client          =
+		client_array[i];
+	      p_ntbx_tcp_client_specific_t client_specific =
+		client->specific;
+
+	      if (FD_ISSET(client_specific->descriptor, &local_write_fds))
+		{
+		  client->state = ntbx_client_state_write_ready;
+		}
+	    }
+	  
+	  LOG_OUT();
+	  return status;
+	}
+    }
+  LOG_OUT();
+}
+
+
+/*...Read/Write...(block)...............*/
+
+/* read a block */
+int
+ntbx_tcp_read_block(p_ntbx_client_t  client,
+		    void            *ptr,
+		    size_t           length)
+{
+  p_ntbx_tcp_client_specific_t client_specific = client->specific;
+  size_t                       bytes_read      = 0;
+  ntbx_tcp_retry_t             retry;
+
+  LOG_IN();
+  if (client->state != ntbx_client_state_data_ready)
+    FAILURE("invalid client state");
+  ntbx_tcp_retry_struct_init(&retry);
+
+  while (bytes_read < length)
+    {
+      int status;
+
+      status = read(client_specific->descriptor,
+		    ptr + bytes_read,
+		    length - bytes_read);
+      
+      if (status == -1)
+	{
+	  if (errno == EAGAIN)
+	    {
+	      if (ntbx_tcp_retry(&retry) != ntbx_success)
+		{
+		  ntbx_tcp_client_reset(client);
+		  LOG_OUT();
+		  return ntbx_failure;
+		}
+	      
+	      continue;
+	    }
+	  else if (errno == EINTR)
+	    {
+	      if (ntbx_tcp_retry(&retry) != ntbx_success)
+		{
+		  ntbx_tcp_client_reset(client);
+		  LOG_OUT();
+		  return ntbx_failure;
+		}
+	      
+	      continue;	      
+	    }
+	  else
+	    {
+	      perror("read");
+	      FAILURE("ntbx_tcp_read_block");
+	    }
+	}
+      else if (status == 0)
+	{
+	  client->state = ntbx_client_state_peer_closed;
+	  return ntbx_failure;
+	}
+      else
+	{
+	  ntbx_tcp_retry_struct_init(&retry);
+	  bytes_read += status;
+	} 
+    }
+  LOG_OUT();
+  return ntbx_success;
+}
+
+
+/* write a block */
+int
+ntbx_tcp_write_block(p_ntbx_client_t  client,
+		     void            *ptr,
+		     size_t           length)
+{
+  p_ntbx_tcp_client_specific_t client_specific = client->specific;
+  size_t                       bytes_written   = 0;
+  ntbx_tcp_retry_t             retry;
+
+  LOG_IN();
+  if (client->state != ntbx_client_state_write_ready)
+    FAILURE("invalid client state");
+
+  ntbx_tcp_retry_struct_init(&retry);
+
+  while (bytes_written < length)
+    {
+      int status;
+
+      status = write(client_specific->descriptor,
+		    ptr + bytes_written,
+		    length - bytes_written);
+      
+      if (status == -1)
+	{
+	  if (errno == EAGAIN)
+	    {
+	      if (ntbx_tcp_retry(&retry) != ntbx_success)
+		{
+		  ntbx_tcp_client_reset(client);
+		  return ntbx_failure;
+		}
+	      
+	      continue;
+	    }
+	  else if (errno == EINTR)
+	    {
+	      if (ntbx_tcp_retry(&retry) != ntbx_success)
+		{
+		  ntbx_tcp_client_reset(client);
+		  return ntbx_failure;
+		}
+	      
+	      continue;	      
+	    }
+	  else
+	    {
+	      perror("write");
+	      FAILURE("ntbx_tcp_write_block");
+	    }
+	}
+      else if (status == 0)
+	{
+	  client->state = ntbx_client_state_peer_closed;
+	  return ntbx_failure;
+	}
+      else
+	{
+	  ntbx_tcp_retry_struct_init(&retry);
+	  bytes_written += status;
+	} 
+    }
+  LOG_OUT();
+  return ntbx_success;
+}
+
+
+/*...Read/Write...(pack.buffer).........*/
+
+/* read a pack buffer */
+int
+ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
+			  p_ntbx_pack_buffer_t pack_buffer)
+{
+  LOG_IN();
+  LOG_OUT();
+  return ntbx_tcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+}
+
+
+/* write a pack buffer */
+int
+ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
+			   p_ntbx_pack_buffer_t pack_buffer)
+{
+  LOG_IN();
+  LOG_OUT();
+  return ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
 }
 

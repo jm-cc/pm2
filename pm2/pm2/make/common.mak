@@ -72,8 +72,7 @@
 GLOBAL_OPTIONS	=	-Wall -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
-MAD2            =       yes
-TOOLBOX         =       yes # Note: implied by MAD2
+TOOLBOX         =       no
 DSM		=	no
 
 OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
@@ -81,7 +80,7 @@ OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
 
 ################### END OF CUSTOMIZATION SECTION #################
 
-ifndef PM2_ARCH
+ifndef PM2_ARCH_SYS
 PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
 PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
 PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
@@ -97,14 +96,11 @@ ifeq ($(DSM),yes)
 PM2_FLAGS += -DDSM
 endif
 
-MAD2_MAD1	=	yes
+include $(PM2_ROOT)/make/mad.mak
 
 ifeq ($(MAD2),yes)
 TOOLBOX = yes
 PM2_FLAGS += -DMAD2
-ifeq ($(MAD2_MAD1),yes)
-PM2_FLAGS += -DMAD2_MAD1
-endif
 else
 PM2_FLAGS += -DMAD1
 endif
@@ -147,6 +143,7 @@ include $(PM2_ROOT)/toolbox/make/common.mak
 endif
 
 PM2_MAKEFILE	=	$(PM2_ROOT)/make/common.mak \
+			$(PM2_ROOT)/make/mad.mak \
 			$(MAR_MAKEFILE) \
 			$(MAD_MAKEFILE) \
 			$(DSM_MAKEFILE)
@@ -210,11 +207,12 @@ PM2_OBJECTS	=	$(PM2_SOBJ)/pm2.o $(PM2_SOBJ)/pm2_attr.o $(PM2_SOBJ)/console.o \
 			$(PM2_SOBJ)/isomalloc_rpc.o $(PM2_SOBJ)/safe_malloc.o \
 			$(PM2_SOBJ)/bitmap.o $(PM2_SOBJ)/slot_distrib.o \
 			$(PM2_SOBJ)/pm2_thread.o $(PM2_SOBJ)/pm2_printf.o \
-			$(PM2_SOBJ)/pm2_migr.o $(PM2_SOBJ)/pm2_rpc.o
+			$(PM2_SOBJ)/pm2_migr.o $(PM2_SOBJ)/pm2_rpc.o \
+			$(PM2_SOBJ)/pm2_mad.o
 
 PM2_HEADERS	=	$(PM2_INC)/pm2.h $(PM2_INC)/pm2_attr.h \
 			$(PM2_INC)/pm2_thread.h $(PM2_INC)/pm2_rpc.h \
-			$(PM2_INC)/pm2_types.h \
+			$(PM2_INC)/pm2_types.h $(PM2_INC)/pm2_mad.h \
 			$(PM2_INC)/sys/debug.h \
 			$(PM2_INC)/timing.h $(PM2_INC)/pm2_timing.h \
 			$(PM2_INC)/isomalloc_timing.h $(PM2_INC)/safe_malloc.h \
@@ -235,8 +233,8 @@ PM2_XLLIBS		=	$(X11_LIB) $(PM2_LLIBS) -lxview -lolgx -lX11
 
 PM2_XLINK		=	$(PM2_CC) $(PM2_LFLAGS) -L$$OPENWINHOME/lib -o $@ $(PM2_OBJ)/$(@F).o
 
-PM2_OSF_SYS_RANLIB	=		ranlib $(PM2_LIB)
-PM2_AIX_SYS_RANLIB	=		ranlib $(PM2_LIB)
+PM2_OSF_SYS_RANLIB	=	ranlib $(PM2_LIB)
+PM2_AIX_SYS_RANLIB	=	ranlib $(PM2_LIB)
 PM2_FREEBSD_SYS_RANLIB	=	ranlib $(PM2_LIB)
 
 RANLIB		=	$(PM2_$(PM2_SYS)_RANLIB)
@@ -272,6 +270,13 @@ $(PM2_SOBJ)/pm2_attr.o: $(PM2_SRC)/pm2_attr.c \
 		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_attr.o $(PM2_SRC)/pm2_attr.c
+
+# pm2_mad :
+
+$(PM2_SOBJ)/pm2_mad.o: $(PM2_SRC)/pm2_mad.c \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
+	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(NET_CFLAGS) -DNET_ARCH=\"$(NET_INTERF)\" $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_mad.o $(PM2_SRC)/pm2_mad.c
 
 # pm2_thread :
 

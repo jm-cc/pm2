@@ -1,3 +1,11 @@
+/*! \file tbx_parameters_management.c
+ *  \brief TBX command line management routines
+ *
+ *  This file implements TBX command line construction functions, 
+ *  command-string, argument, environment building functions
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

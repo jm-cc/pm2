@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.27  2000/11/15 21:32:37  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.26  2000/11/13 20:41:37  rnamyst
 common_init now performs calls to all libraries
 
@@ -93,7 +96,6 @@ ______________________________________________________________________________
 #define PM2_EST_DEF
 
 #include "marcel.h"
-#include "safe_malloc.h"
 #include "pm2_mad.h"
 #include "pm2_types.h"
 #include "pm2_attr.h"

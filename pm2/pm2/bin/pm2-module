@@ -1,0 +1,393 @@
+#!/bin/sh
+#
+#!/bin/sh
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+PROGNAME="pm2-module"
+
+if [ -z "${PM2_ROOT}" ]; then
+    echo "Check PM2_ROOT environment variable, please" 1>&2
+    exit 1
+fi
+
+##########################################################################
+# aide
+usage() # exit_code section
+{
+    exit_code=$1
+    vide=
+
+    Q='`'
+    cat <<EOF
+Usage: $PROGNAME COMMAND [OPTION]... [ACTION]
+
+Commands
+  version      : output pm2 version information.
+  modules      : get information about modules
+  module="mod" : get information about the module 'mod'
+  options      : get information about options
+  option="opt" : get information about the option 'opt'
+  help         : this help
+  help cmd     : help on command 'cmd'
+
+EOF
+
+    case "$2" in
+    version)
+	cat <<EOF
+No option for '$2' command
+
+EOF
+	;;
+    modules)
+	cat <<EOF
+Options for 'modules' command
+  --with-common : include the 'common' module
+
+Action for 'modules' command
+  --list       : list of all options name (default)
+
+EOF
+	;;
+    module*)
+	cat <<EOF
+Action for 'module=mod' command
+  --config     : configuration associated with the module
+  --quickhelp  : one line help (default)
+  --help       : long help text
+  --provide    : provide flags
+  --conflict   : conflict flags
+  --depend     : depend expression
+
+EOF
+	;;
+    options)
+	cat <<EOF
+Options for 'options' command
+  --module=""  : consider options for this module (default: generic options)
+
+Action for 'options' command
+  --list       : list of all options name (default)
+
+EOF
+	;;
+    option*)
+	cat <<EOF
+Options for 'option=opt' command
+  --module=""  : consider option in this module (default: generic options)
+
+Action for 'option=opt' command
+  --config     : configuration associated with the option
+  --quickhelp  : one line help (default)
+  --help       : long help text
+  --provide    : provide flags
+  --conflict   : conflict flags
+  --depend     : depend expression
+
+EOF
+	;;
+    help|$vide)
+	;;
+    *)
+	cat <<EOF
+Command '$2' unknown
+
+EOF
+	
+    esac
+#    if [ $exit_code != 0 ]; then
+#	echo "error in $PROGNAME $ARGV" 1>&2
+#    fi
+    exit $exit_code
+}
+
+##########################################################################
+# subfunction
+module_valid() { # module noabort generic
+    vide=
+    case "$1" in
+    $vide)
+	;;
+    $3)
+	return 0
+	;;
+    generic)
+	;;
+    *)
+	if [ -d "${PM2_ROOT}/modules/$1/config" ]; then
+	    return 0
+	fi
+	;;
+    esac
+    if [ -z "$2" ]; then
+	echo "requested module '$1' not valid" 1>&2
+	exit 1
+    fi
+    return 1
+}
+
+action_set=
+set_action() { # --action
+    if [ -z "$action_set" ]; then
+	action=`echo $1 | sed -e 's/^--//'`
+	action_set=true
+	return 0
+    fi
+    echo "Duplicated action --$action and $1" 1>&2
+    usage 1
+}
+
+##########################################################################
+# Main fonctions
+
+do_action() { # module option
+    case "$action" in
+    config)
+	if [ -f "$directory/$filename.sh" ]; then
+	    cat "$directory/$filename.sh"
+	fi
+	;;
+    quickhelp)
+	if [ -f "$directory/$filename.help" ]; then
+	    head -n 1 "$directory/$filename.help"
+	else
+	    echo "No help for $filename"
+	fi
+	;;
+    help)
+	if [ -f "$directory/$filename.help" ]; then
+	    cat "$directory/$filename.help"
+	else
+	    echo "No help for $filename"
+	fi
+	;;
+    provide)
+	flags="$1${2:+_$2}"
+	if [ ! -f "$directory/$filename.dep" ]; then
+	    echo $flags
+	    return 0
+	fi	
+	for fl in `cat "$directory/$filename.dep" | grep "^Provide:" \
+	    | sed -e 's/^Provide://'`; do
+	    flags="$flags $fl"
+	done
+	echo $flags
+	;;
+    conflict)
+	if [ ! -f "$directory/$filename.dep" ]; then
+	    return 0
+	fi	
+	flags=
+	for fl in `cat "$directory/$filename.dep" | grep "^Conflict:" \
+	    | sed -e 's/^Conflict://'`; do
+	    flags="$flags $fl"
+	done
+	echo $flags
+	;;
+    depend)
+	if [ ! -f "$directory/$filename.dep" ]; then
+	    return 0
+	fi	
+	flags=
+	for fl in `cat "$directory/$filename.dep" | grep "^Depend:" \
+	    | sed -e 's/^Depend://'`; do
+	    flags="$flags $fl"
+	done
+	echo $flags
+	;;
+    esac
+}
+
+do_version() {
+    echo pm2-libs 3.0
+    exit 0
+}
+
+do_help() {
+    usage 0 "$1"
+    exit 0
+}
+
+do_modules() {
+    action=list
+    with_common=
+    while test $# -gt 0; do
+	case "$1" in
+	--list)
+	    set_action $1
+	    ;;
+	--with-common)
+	    with_common=true
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    case $action in
+    list)
+	if [ -d "${PM2_ROOT}/modules" ]; then
+	    if [ "$with_common" = true ]; then
+		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v generic`
+	    else
+		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
+		    grep -v generic | grep -v common`
+	    fi
+	    new_list=
+	    for mod in `echo $list` " "; do
+		if module_valid "$mod" noabort; then
+		    new_list="${new_list:+$new_list }$mod"
+		fi
+	    done
+	    echo $new_list
+	fi
+	;;
+    esac
+}
+
+do_module() { # module ...
+    action=quickhelp
+    module_valid "$1" "" generic
+    module=$1
+    shift
+    while test $# -gt 0; do
+	case "$1" in
+	--config|--quickhelp|--help|--provide|--conflict|--depend)
+	    set_action $1
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    directory="${PM2_ROOT}/modules/$module/config"
+    filename="$module"
+    do_action $module ""
+}
+
+do_options() {
+    module="generic"
+    action=list
+    while test $# -gt 0; do
+	case "$1" in
+	--list)
+	    set_action $1
+	    ;;
+	--module=*)
+	    module=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    module_valid "$module" "" generic
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    case $action in
+    list)
+	if [ -d "${PM2_ROOT}/modules/$module/config/options" ]; then
+	    list=`( cd "${PM2_ROOT}/modules/$module/config/options"; \
+		ls -d *.sh *.help ) 2>/dev/null `
+	    new_list=
+	    for opt in `echo $list` " "; do
+		optname=`basename "$opt" .sh`
+		optname=`basename "$optname" .help`
+		case " $new_list " in
+		*\ $optname\ *)
+		    ;;
+		*)
+		    new_list="${new_list:+$new_list }$optname"
+		    ;;
+		esac
+	    done
+	    echo $new_list
+	fi
+	;;
+    esac
+}
+
+do_option() { # option ...
+    action=quickhelp
+    module="generic"
+    option=$1
+    shift
+    while test $# -gt 0; do
+	case "$1" in
+	--config|--quickhelp|--help|--provide|--conflict|--depend)
+	    set_action $1
+	    ;;
+	--module=*)
+	    module=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    module_valid "$module" "" generic
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    directory="${PM2_ROOT}/modules/$module/config/options"
+    filename="$option"
+    do_action $module $option
+}
+
+CMD="$1"
+case "$CMD" in
+version|modules|options|help)
+    shift
+    eval do_$CMD '"$@"'
+    ;;
+-h|--help)
+    do_help
+    ;;
+module=*|option=*)
+    optname=`echo $1 | sed -e 's/^\([^=]*\)=.*$/\1/'`
+    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+    shift
+    eval do_$optname '"$optarg"' '"$@"'
+    ;;
+*)
+    usage 1 "$CMD"
+    ;;
+esac
+
+exit 0
+

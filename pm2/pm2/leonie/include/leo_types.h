@@ -72,6 +72,18 @@ typedef struct s_leo_dir_channel_process_specific
   char *adapter_name;
 } leo_dir_channel_process_specific_t;
 
+typedef struct s_leo_dir_channel_common_process_specific
+{
+  char           *parameter;
+  p_tbx_darray_t  in_connection_parameter_darray;
+  p_tbx_darray_t  out_connection_parameter_darray;
+} leo_dir_channel_common_process_specific_t;
+
+typedef struct s_leo_dir_channel_common
+{
+  p_ntbx_process_container_t pc;
+} leo_dir_channel_common_t;
+
 typedef struct s_leo_dir_channel
 {
   char                       *name;
@@ -79,6 +91,7 @@ typedef struct s_leo_dir_channel
   p_leo_dir_driver_t          driver;
   tbx_bool_t                  public;
   p_ntbx_topology_table_t     ttable;
+  p_leo_dir_channel_common_t  common;
 } leo_dir_channel_t;
 
 typedef struct s_leo_dir_vchannel_process_routing_table
@@ -94,8 +107,9 @@ typedef struct s_leo_dir_vchannel_process_specific
 
 typedef struct s_leo_dir_fchannel
 {
-  char *name;
-  char *channel_name;
+  char                       *name;
+  char                       *channel_name;
+  p_leo_dir_channel_common_t  common;
 } leo_dir_fchannel_t;
 
 typedef struct s_leo_dir_vchannel
@@ -104,6 +118,7 @@ typedef struct s_leo_dir_vchannel
   p_tbx_slist_t               dir_channel_slist;
   p_tbx_slist_t               dir_fchannel_slist;
   p_ntbx_process_container_t  pc;
+  p_leo_dir_channel_common_t  common;
 } leo_dir_vchannel_t;
 
 typedef struct s_leo_directory
@@ -116,13 +131,13 @@ typedef struct s_leo_directory
   p_tbx_htable_t driver_htable;
   p_tbx_slist_t  driver_slist;
 
-  p_tbx_htable_t channel_htable;  
+  p_tbx_htable_t channel_htable;
   p_tbx_slist_t  channel_slist;
 
-  p_tbx_htable_t fchannel_htable;  
+  p_tbx_htable_t fchannel_htable;
   p_tbx_slist_t  fchannel_slist;
 
-  p_tbx_htable_t vchannel_htable;  
+  p_tbx_htable_t vchannel_htable;
   p_tbx_slist_t  vchannel_slist;
 } leo_directory_t;
 
@@ -134,7 +149,7 @@ typedef struct s_leo_networks
   p_tbx_slist_t  slist;
 } leo_networks_t;
 
-// Processes groups 
+// Processes groups
 //------------------///////////////////////////////////////////////////////
 typedef struct s_leo_spawn_group
 {

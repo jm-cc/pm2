@@ -34,97 +34,18 @@
 */
 
 #include <pm2.h>
-#include <dsm_rpc.h>
-#include "dsm_page_manager.h"
+//#include <dsm_rpc.h>
+//#include "dsm_page_manager.h"
 
-/**************************************************/
-/* SEND_DIFFS */
-/*
-PACK_REQ_STUB(DSM_LRPC_SEND_DIFFS)
-     void *addr;
-     int size;
 
-     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     while ((addr = dsm_get_next_modified_data(arg->index, &size)) != NULL)
-       {
-	 old_mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
-	 old_mad_pack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
-	 old_mad_pack_byte(MAD_IN_HEADER, (char *)addr, size);
-       }
-    // send the NULL value to terminate 
-    old_mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));   
-END_STUB
-
-UNPACK_REQ_STUB(DSM_LRPC_SEND_DIFFS)
-     void *addr;
-     int size;
-
-     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));     
-     while (addr != NULL)
-       {
-	 old_mad_unpack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
-	 old_mad_unpack_byte(MAD_IN_HEADER, (char *)addr, size); 
-	 old_mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
-       }
-END_STUB
-
-PACK_RES_STUB(DSM_LRPC_SEND_DIFFS)
-     
-END_STUB
-
-UNPACK_RES_STUB(DSM_LRPC_SEND_DIFFS)
-END_STUB
-*/
-
-/**************************************************/
-/* DSM_LRPC_LOCK */
-
-PACK_REQ_STUB(DSM_LRPC_LOCK)
-     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
-END_STUB
-
-UNPACK_REQ_STUB(DSM_LRPC_LOCK)
-     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
-END_STUB
-
-PACK_RES_STUB(DSM_LRPC_LOCK)
-END_STUB
-
-UNPACK_RES_STUB(DSM_LRPC_LOCK)
-END_STUB
-
-/**************************************************/
-/* DSM_LRPC_UNLOCK */
-
-PACK_REQ_STUB(DSM_LRPC_UNLOCK)
-     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
-END_STUB
-
-UNPACK_REQ_STUB(DSM_LRPC_UNLOCK)
-     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
-END_STUB
-
-PACK_RES_STUB(DSM_LRPC_UNLOCK)
-END_STUB
-
-UNPACK_RES_STUB(DSM_LRPC_UNLOCK)
-END_STUB
-
-/**************************************************/
-
-//EXTERN_LRPC_SERVICE(DSM_LRPC_READ_PAGE_REQ);
 extern void DSM_LRPC_READ_PAGE_REQ_func(void);
 extern void DSM_LRPC_WRITE_PAGE_REQ_func(void);
 extern void DSM_LRPC_SEND_PAGE_func(void);
 extern void DSM_LRPC_INVALIDATE_REQ_func(void);
 extern void DSM_LRPC_INVALIDATE_ACK_func(void);
 extern void DSM_LRPC_SEND_DIFFS_func(void);
-//extern void DSM_LRPC_LOCK_func(void);
-//extern void DSM_LRPC_UNLOCK_func(void);
-//extern void DSM_LRPC_MUTEX_ACK_func(void);
-EXTERN_LRPC_SERVICE(DSM_LRPC_LOCK);
-EXTERN_LRPC_SERVICE(DSM_LRPC_UNLOCK);
+extern void DSM_LRPC_LOCK_func(void);
+extern void DSM_LRPC_UNLOCK_func(void);
 
 void dsm_pm2_init_rpc()
 {
@@ -134,9 +55,8 @@ void dsm_pm2_init_rpc()
   pm2_rawrpc_register(&DSM_LRPC_INVALIDATE_REQ, DSM_LRPC_INVALIDATE_REQ_func);
   pm2_rawrpc_register(&DSM_LRPC_INVALIDATE_ACK, DSM_LRPC_INVALIDATE_ACK_func);
   pm2_rawrpc_register(&DSM_LRPC_SEND_DIFFS, DSM_LRPC_SEND_DIFFS_func);
-  //  pm2_rawrpc_register(&DSM_LRPC_LOCK, DSM_LRPC_LOCK_func);
-  //  pm2_rawrpc_register(&DSM_LRPC_UNLOCK, DSM_LRPC_UNLOCK_func);
-  //  pm2_rawrpc_register(&DSM_LRPC_MUTEX_ACK, DSM_LRPC_MUTEX_ACK_func);
-  DECLARE_LRPC(DSM_LRPC_LOCK);
-  DECLARE_LRPC(DSM_LRPC_UNLOCK);
+  pm2_rawrpc_register(&DSM_LRPC_LOCK, DSM_LRPC_LOCK_func);
+  pm2_rawrpc_register(&DSM_LRPC_UNLOCK, DSM_LRPC_UNLOCK_func);
 }
+
+

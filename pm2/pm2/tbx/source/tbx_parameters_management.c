@@ -47,9 +47,9 @@ tbx_parameter_manager_exit(void)
 
 // ... Argument option ................................................. //
 p_tbx_argument_option_t
-tbx_argument_option_init_to_c_strings(const char *option,
-				      const char  separator,
-				      const char *value)
+tbx_argument_option_init_to_cstring_ext(const char *option,
+					 const char  separator,
+					 const char *value)
 {
   p_tbx_argument_option_t object = NULL;
 
@@ -57,12 +57,12 @@ tbx_argument_option_init_to_c_strings(const char *option,
   object = TBX_CALLOC(1, sizeof(tbx_argument_option_t));
   CTRL_ALLOC(object);
   
-  object->option    = tbx_string_init_to_c_string(option);
+  object->option    = tbx_string_init_to_cstring(option);
   object->separator = separator;
 
   if (value)
     {
-      object->value = tbx_string_init_to_c_string(value);
+      object->value = tbx_string_init_to_cstring(value);
     }
   else
     {
@@ -74,17 +74,13 @@ tbx_argument_option_init_to_c_strings(const char *option,
 }
 
 p_tbx_argument_option_t
-tbx_argument_option_init(p_tbx_string_t option)
+tbx_argument_option_init_to_cstring(const char *option)
 {
   p_tbx_argument_option_t object = NULL;
 
   LOG_IN();
-  object = TBX_CALLOC(1, sizeof(tbx_argument_option_t));
-  CTRL_ALLOC(object);
-  
-  object->option    = tbx_string_init_to_string(option);
-  object->separator = '\0';
-  object->value     = NULL;
+  object = tbx_argument_option_init_to_cstring_ext(option,
+						    '\0', NULL);
   LOG_OUT();
 
   return object;
@@ -101,12 +97,37 @@ tbx_argument_option_init_ext(p_tbx_string_t option,
   object = TBX_CALLOC(1, sizeof(tbx_argument_option_t));
   CTRL_ALLOC(object);
   
-  object->option    = tbx_string_init_to_string(option);
+  object->option    = tbx_string_dup(option);
   object->separator = separator;
   if (value)
     {
-      object->value = tbx_string_init_to_string(value);
+      object->value = tbx_string_dup(value);
     }
+  LOG_OUT();
+
+  return object;
+}
+
+p_tbx_argument_option_t
+tbx_argument_option_init(p_tbx_string_t option)
+{
+  p_tbx_argument_option_t object = NULL;
+
+  LOG_IN();
+  object = tbx_argument_option_init_ext(option, '\0', NULL);
+  LOG_OUT();
+
+  return object;
+}
+
+p_tbx_argument_option_t
+tbx_argument_option_dup(p_tbx_argument_option_t arg)
+{
+  p_tbx_argument_option_t object = NULL;
+
+  LOG_IN();
+  object =
+    tbx_argument_option_init_ext(arg->option, arg->separator, arg->value);
   LOG_OUT();
 
   return object;
@@ -158,13 +179,53 @@ tbx_arguments_init(void)
   p_tbx_arguments_t args = NULL;
   
   LOG_IN();
-  args = TBX_CALLOC(1, sizeof(tbx_arguments_t));
-  CTRL_ALLOC(args);
-  
-  args->slist  = tbx_slist_nil();
+  args        = TBX_CALLOC(1, sizeof(tbx_arguments_t));
+  args->slist = tbx_slist_nil();
   LOG_OUT();
   
   return args;
+}
+
+static
+void *
+__tbx_arguments_dup_func(void *src_object)
+{
+  void *dst_object = NULL;
+  
+  LOG_IN();
+  dst_object = tbx_argument_option_dup(src_object);
+  LOG_OUT();
+
+  return dst_object;
+}
+
+p_tbx_arguments_t
+tbx_arguments_dup(p_tbx_arguments_t src_args)
+{
+  p_tbx_arguments_t dst_args  = NULL;
+  p_tbx_slist_t     src_slist = NULL;
+ 
+  LOG_IN();
+  dst_args        = TBX_CALLOC(1, sizeof(tbx_arguments_t));
+  src_slist       = src_args->slist;
+  dst_args->slist = tbx_slist_dup_ext(src_slist, __tbx_arguments_dup_func);
+  LOG_OUT();
+  
+  return dst_args;
+}
+
+void
+tbx_arguments_append_arguments(p_tbx_arguments_t dst_args,
+			       p_tbx_arguments_t src_args)
+{
+  p_tbx_slist_t dst_slist = NULL;
+  p_tbx_slist_t src_slist = NULL;
+
+  LOG_IN();
+  dst_slist = dst_args->slist;
+  src_slist = src_args->slist;
+  tbx_slist_merge_after_ext(dst_slist, src_slist, __tbx_arguments_dup_func);
+  LOG_OUT();
 }
 
 void
@@ -196,10 +257,10 @@ tbx_arguments_append_option(p_tbx_arguments_t       args,
 }
 
 void
-tbx_arguments_append_strings_option(p_tbx_arguments_t args,
-				    p_tbx_string_t    option,
-				    const char        separator,
-				    p_tbx_string_t    value)
+tbx_arguments_append_string_ext(p_tbx_arguments_t args,
+				p_tbx_string_t    option,
+				const char        separator,
+				p_tbx_string_t    value)
 {
   p_tbx_argument_option_t arg = NULL;
   
@@ -210,16 +271,34 @@ tbx_arguments_append_strings_option(p_tbx_arguments_t args,
 }
 
 void
-tbx_arguments_append_c_strings_option(p_tbx_arguments_t  args,
-				      const char        *option,
-				      const char         separator,
-				      const char        *value)
+tbx_arguments_append_string(p_tbx_arguments_t args,
+			    p_tbx_string_t    option)
+{
+  LOG_IN();
+  tbx_arguments_append_string_ext(args, option, '\0', NULL);
+  LOG_OUT();
+}
+
+void
+tbx_arguments_append_cstring_ext(p_tbx_arguments_t  args,
+				  const char        *option,
+				  const char         separator,
+				  const char        *value)
 {
   p_tbx_argument_option_t arg = NULL;
   
   LOG_IN();
-  arg = tbx_argument_option_init_to_c_strings(option, separator, value);
+  arg = tbx_argument_option_init_to_cstring_ext(option, separator, value);
   tbx_arguments_append_option(args, arg);
+  LOG_OUT();
+}
+
+void
+tbx_arguments_append_cstring(p_tbx_arguments_t  args,
+			      const char        *option)
+{
+  LOG_IN();
+  tbx_arguments_append_cstring_ext(args, option, '\0', NULL);
   LOG_OUT();
 }
 
@@ -289,7 +368,7 @@ tbx_argument_set_build(p_tbx_arguments_t args)
 	  
 	  arg        = tbx_slist_ref_get(slist);
 	  arg_string = tbx_argument_option_to_string(arg);
-	  arg_set->argv[idx++] = tbx_string_to_c_string_and_free(arg_string);
+	  arg_set->argv[idx++] = tbx_string_to_cstring_and_free(arg_string);
 	}
       while (tbx_slist_ref_forward(slist));
 
@@ -333,7 +412,7 @@ tbx_argument_set_build_ext(p_tbx_arguments_t args,
 
   LOG_IN();
   arg_set = tbx_argument_set_build(args);
-  arg_set->argv[0] = tbx_string_to_c_string(command);
+  arg_set->argv[0] = tbx_string_to_cstring(command);
   LOG_OUT();
   
   return arg_set;
@@ -380,7 +459,7 @@ tbx_environment_variable_init(p_tbx_string_t name,
 }
 
 p_tbx_environment_variable_t
-tbx_environment_variable_init_to_c_strings(const char *name,
+tbx_environment_variable_init_to_cstrings(const char *name,
 					   const char *value)
 {
   p_tbx_environment_variable_t variable = NULL;
@@ -389,10 +468,10 @@ tbx_environment_variable_init_to_c_strings(const char *name,
   variable = TBX_CALLOC(1, sizeof(tbx_environment_variable_t));
   CTRL_ALLOC(variable);
   
-  variable->name = tbx_string_init_to_c_string(name);
+  variable->name = tbx_string_init_to_cstring(name);
   if (value)
     {
-      variable->value = tbx_string_init_to_c_string(value);
+      variable->value = tbx_string_init_to_cstring(value);
     }
   else
     {
@@ -413,12 +492,12 @@ tbx_environment_variable_to_variable(const char *name)
   variable = TBX_CALLOC(1, sizeof(tbx_environment_variable_t));
   CTRL_ALLOC(variable);
   
-  variable->name = tbx_string_init_to_c_string(name);
+  variable->name = tbx_string_init_to_cstring(name);
   value = getenv(name);
 
   if (value)
     {
-      variable->value = tbx_string_init_to_c_string(value);
+      variable->value = tbx_string_init_to_cstring(value);
     }
   else
     {
@@ -430,7 +509,7 @@ tbx_environment_variable_to_variable(const char *name)
 }
 
 void
-tbx_environment_variable_append_c_string(p_tbx_environment_variable_t  var,
+tbx_environment_variable_append_cstring(p_tbx_environment_variable_t  var,
 					 const char                    sep,
 					 const char                   *data)
 {
@@ -440,7 +519,7 @@ tbx_environment_variable_append_c_string(p_tbx_environment_variable_t  var,
       tbx_string_append_char(var->value, sep);
     }
   
-  tbx_string_append_c_string(var->value, data);
+  tbx_string_append_cstring(var->value, data);
   LOG_OUT();
 }
 
@@ -489,11 +568,11 @@ tbx_environment_variable_set_to_string(p_tbx_environment_variable_t variable,
 }
 
 void
-tbx_environment_variable_set_to_c_string(p_tbx_environment_variable_t variable,
+tbx_environment_variable_set_to_cstring(p_tbx_environment_variable_t variable,
 					 const char                  *value)
 {
   LOG_IN();
-  tbx_string_set_to_c_string(variable->value, value);
+  tbx_string_set_to_cstring(variable->value, value);
   LOG_OUT();
 }
 
@@ -544,7 +623,7 @@ tbx_environment_append_variable(p_tbx_environment_t          env,
   char *name = NULL;
 
   LOG_IN();
-  name = tbx_string_to_c_string(var->name);
+  name = tbx_string_to_cstring(var->name);
 
   if (tbx_htable_get(env->htable, name))
     FAILURE("argument already exist");
@@ -621,9 +700,8 @@ tbx_command_init(p_tbx_string_t command_name)
 	p_tbx_string_t arg_string = NULL;
 	
 	arg_string = tbx_slist_extract(slist);
-	tbx_arguments_append_strings_option(command->arguments, 
-					    arg_string,
-					    0, NULL);
+	tbx_arguments_append_string_ext(command->arguments, 
+					arg_string, 0, NULL);
       }
 
     tbx_slist_free(slist);
@@ -634,13 +712,13 @@ tbx_command_init(p_tbx_string_t command_name)
 }
 
 p_tbx_command_t
-tbx_command_init_to_c_string(const char *command_name)
+tbx_command_init_to_cstring(const char *command_name)
 {
   p_tbx_command_t command = NULL;
   p_tbx_string_t  string  = NULL;
 
   LOG_IN();
-  string = tbx_string_init_to_c_string(command_name);
+  string = tbx_string_init_to_cstring(command_name);
   command = tbx_command_init(string);
   tbx_string_free(string);
   LOG_OUT();

@@ -40,11 +40,28 @@ int top_printf (char *fmt, ...) {
 }
 
 void printtask(marcel_task_t *t) {
-	unsigned long utime = ma_atomic_read(&t->top_utime);
+	unsigned long utime;
+	char state;
 
-	top_printf(" %s(%d,%lu%%)", t->name, t->sched.internal.prio, djiffies?(utime*100)/djiffies:0);
+	switch (t->sched.state) {
+		case MA_TASK_RUNNING: 		state = 'R'; break;
+		case MA_TASK_INTERRUPTIBLE:	state = 'I'; break;
+		case MA_TASK_UNINTERRUPTIBLE:	state = 'U'; break;
+		case MA_TASK_STOPPED:		state = 'S'; break;
+		case MA_TASK_ZOMBIE:		state = 'Z'; break;
+		case MA_TASK_DEAD:		state = 'D'; break;
+		case MA_TASK_GHOST:		state = 'G'; break;
+		case MA_TASK_MOVING:		state = 'M'; break;
+		case MA_TASK_FROZEN:		state = 'F'; break;
+		default:			state = '?'; break;
+	}
+	utime = ma_atomic_read(&t->top_utime);
+	top_printf("0x%p %16s %2d %3lu%% %c %p %p\r\n", t, t->name,
+		t->sched.internal.prio, djiffies?(utime*100)/djiffies:0,
+		state, t->sched.internal.init_rq, t->sched.internal. cur_rq);
 	ma_atomic_sub(utime, &t->top_utime);
 }
+#if 0
 void printrq(ma_runqueue_t *rq) {
 	int prio;
 	marcel_task_t *t;
@@ -66,26 +83,31 @@ void printrq(ma_runqueue_t *rq) {
 	if (somebody)
 		top_printf("\r\n");
 }
+#endif
 
 void marcel_top_tick(unsigned long foo) {
-#ifdef MA__LWPS
 	marcel_lwp_t *lwp;
-#endif
 	unsigned long now;
+#define NBPIDS 24
+	marcel_t pids[NBPIDS];
+	int nbpids;
 
 	lastms = marcel_clock();
 	now = ma_jiffies;
 	djiffies = now - lastjiffies;
+	lastjiffies = now;
 
 	top_printf("\e[H\e[J");
 	top_printf("top - up %02lu:%02lu:%02lu\r\n", lastms/1000/60/60, (lastms/1000/60)%60, (lastms/1000)%60);
-	printrq(&ma_main_runqueue);
+
+	//printrq(&ma_main_runqueue);
+#if 0
 #ifndef MA__LWPS
 	printtask(ma_per_lwp__current_thread);
 	top_printf("\r\n");
 #endif
 	printrq(&ma_dontsched_runqueue);
-#ifdef MA__LWPS
+#endif
 	for_all_lwp(lwp) {
 		// cette lecture n'est pas atomique, il peut y avoir un tick
 		// entre-temps, ce n'est pas extrêmement grave...
@@ -98,13 +120,17 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
+#if 0
 		printtask(ma_per_lwp(current_thread,lwp));
-		top_printf("\r\n");
 		printrq(&ma_per_lwp(runqueue,lwp));
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
-	}
 #endif
-	lastjiffies = now;
+	}
+	marcel_freeze_sched();
+	marcel_threadslist(NBPIDS,pids,&nbpids,0);
+	for (;nbpids;nbpids--)
+		printtask(pids[nbpids-1]);
+	marcel_unfreeze_sched();
 
 	timer.expires += JIFFIES_FROM_US(1000000);
 	ma_add_timer(&timer);

@@ -25,14 +25,14 @@ void __ma_read_lock_failed(ma_rwlock_t *rw)
 	do {
 		ma_atomic_inc(rw);
 		while (ma_atomic_read(rw)<0);
-	} while (ma_atomic_add_negative(-1,rw))
+	} while (ma_atomic_add_negative(-1,rw));
 }
 
-void __ma_read_lock_failed(ma_rwlock_t *rw)
+void __ma_write_lock_failed(ma_rwlock_t *rw)
 {
 	do {
 		ma_atomic_add(MA_RW_LOCK_BIAS,rw);
-		while (ma_atomic_read(rw) != MA_RW_LOCK_BIAS_STR);
+		while (ma_atomic_read(rw) != MA_RW_LOCK_BIAS);
 	} while (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw));
 }
 #endif

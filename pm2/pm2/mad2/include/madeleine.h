@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.20  2001/01/16 09:55:49  oaumage
+- integration du mecanisme de forwarding
+
 Revision 1.19  2001/01/03 11:05:28  oaumage
 - integration des headers du module de forwarding
 
@@ -182,7 +185,7 @@ ______________________________________________________________________________
 #include "connection_interfaces/mad_bip.h"
 #endif /* DRV_BIP */
 #ifdef MAD_FORWARDING
-#include "connection_interfaces/mad_fwd_interface.h"
+#include "connection_interfaces/mad_forwarder.h"
 #endif /* MAD_FORWARDING */
 
 #include "mad_main.h"

@@ -39,22 +39,14 @@ endif
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-ifdef OLD_MAKEFILE
-MODULES := $(shell $(PM2_ROOT)/bin/pm2-module modules)
-else
 -include $(PM2_ROOT)/make/main-modules.mak
-endif
 
 ifneq ($(MAKECMDGOALS),init)
 ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),textconfig)
 ifneq ($(MAKECMDGOALS),menuconfig)
 ifneq ($(MAKECMDGOALS),xconfig)
-ifdef OLD_MAKEFILE
-LIBS = $(shell $(PM2_CONFIG) --modules)
-else
 -include $(PM2_MAK_DIR)/main-libs.mak
-endif
 endif
 endif
 endif
@@ -127,7 +119,7 @@ cvsinit ARCHITECTURES:
 		$(PM2_ROOT)/bin/pm2_recreate_links ; \
 	fi
 
-flavorinit flavors: ARCHITECTURES
+flavorinit: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) echo Creating initial sample flavors...
 	$(COMMON_HIDE) if [ -d flavors ]; then \
 		echo "Aborting, some flavor already exists" ; \
@@ -181,7 +173,6 @@ $(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
 	@echo "Generating $@"
 	@$(PM2_CONFIG) --gen_mak main-libs
 
-$(PM2_ROOT)/make/main-modules.mak:
+$(PM2_ROOT)/make/main-modules.mak: $(PM2_ROOT)/modules
 	@echo "Generating $@"
 	@echo "MODULES := " `$(PM2_ROOT)/bin/pm2-module modules` > $@
-

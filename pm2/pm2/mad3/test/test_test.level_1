@@ -12,6 +12,16 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+
+compile_leonie()
+{
+	(cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
+}
+
+# Verification et compilation du lanceur leonie
+#leonie --help > /dev/null 2>&1 || compile_leonie
+compile_leonie
+
 # Configuration
 flavor="test_mad3"
 appdir="${PM2_ROOT}/mad3/examples"

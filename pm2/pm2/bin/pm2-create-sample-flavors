@@ -141,12 +141,16 @@ create_flavor() {
 	*)
 	    SAMPLE_FLAVOR=no;;
     esac
+    case " $($PM2_CREATE_FLAVOR list) " in
+        *" $name "*)
+	    SAMPLE_FLAVOR_EXIST=yes;;
+	*)
+	    SAMPLE_FLAVOR_EXIST=no;;
+    esac
 
-    if [ $SAMPLE_FLAVOR = yes -a \( \
-		$FORCE = yes -o \
-		! -d $PM2_USER_FLAVOR_DIR -o \
-		! -f "$PM2_USER_FLAVOR_DIR/$name" \) \
-	]; then
+    if [ $SAMPLE_FLAVOR = yes \
+         -a \( $FORCE = yes \
+	       -o $SAMPLE_FLAVOR_EXIST = no \) ]; then
 	# No existing flavor yet
 	echo "Creating initial sample flavor $name..."
 

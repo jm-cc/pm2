@@ -34,15 +34,15 @@
 //typedef marcel_condattr_struct marcel_condattr_t;
 
 DEC_MARCEL(int, mutex_init, (marcel_mutex_t *mutex,
-			     __const marcel_mutexattr_t *attr))
-DEC_MARCEL(int, mutex_destroy, (marcel_mutex_t *mutex))
+			     __const marcel_mutexattr_t *attr) __THROW)
+DEC_MARCEL(int, mutex_destroy, (marcel_mutex_t *mutex) __THROW)
 
-DEC_MARCEL(int, mutex_lock, (marcel_mutex_t *mutex))
-DEC_MARCEL(int, mutex_trylock, (marcel_mutex_t *mutex))
-DEC_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex))
+DEC_MARCEL(int, mutex_lock, (marcel_mutex_t *mutex) __THROW)
+DEC_MARCEL(int, mutex_trylock, (marcel_mutex_t *mutex) __THROW)
+DEC_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex) __THROW)
 
-DEC_MARCEL(int, mutexattr_init, (marcel_mutexattr_t *attr))
-DEC_MARCEL(int, mutexattr_destroy, (marcel_mutexattr_t *attr))
+DEC_MARCEL(int, mutexattr_init, (marcel_mutexattr_t *attr) __THROW)
+DEC_MARCEL(int, mutexattr_destroy, (marcel_mutexattr_t *attr) __THROW)
 
 
 

@@ -147,7 +147,9 @@ inline static int try_lock_act_lock(marcel_t self) \
 
 void act_lock(marcel_t self)
 {
+#ifdef ACT_VERBOSE
   int i = 0;
+#endif
   volatile marcel_t old;
 
   //ACTDEBUG(printf("act_lock(%p)\n", self)); 
@@ -246,9 +248,9 @@ marcel_t act_update(marcel_t new)
   return new;
 }
 
-void act_new(act_id_t aid)
+void act_new(act_id_t aid, act_id_t stopped_aid)
 {
-  ACTDEBUG(printf("act_new(%i)\n", aid));
+  ACTDEBUG(printf("act_new(%i, %i)\n", aid, stopped_aid));
   switch (act_info[aid].state) {
   case ACT_UNUSED:
     return launch_new(aid);
@@ -309,6 +311,7 @@ void act_preempt(act_id_t cur_aid, act_id_t stopped_aid, int fast_restart)
       stopped_thread->state_ext=MARCEL_READY;
       
       ACTDEBUG(printf("marcel thread %p ready\n", stopped_thread));
+#ifdef ACT_VERBOSE
       { marcel_t t = stopped_thread;
       ACTDEBUG(printf("marcel_thread info(%p(%i)->%p(%i)->%p(%i)->"
 		  "%p(%i)->%p(%i)\n", t, t->state_ext,
@@ -318,7 +321,7 @@ void act_preempt(act_id_t cur_aid, act_id_t stopped_aid, int fast_restart)
 		  t->next->next->next->next, 
 		  t->next->next->next->next->state_ext));
       }
-
+#endif
       act_info[stopped_aid].state=ACT_UNUSED;
     }
 

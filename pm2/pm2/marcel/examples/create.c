@@ -94,9 +94,20 @@ any_t main_thread()
 #ifndef SMP
       lock_task();
 #endif
-      GET_TICK(t1);
-      marcel_create(NULL, &attr, f, (any_t)&sem);
-      GET_TICK(t2);
+
+      if(nb == 0) {
+	GET_TICK(t1);
+#ifdef PROFILE
+	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
+#endif
+	marcel_create(NULL, &attr, f, (any_t)&sem);
+#ifdef PROFILE
+	profile_stop();
+#endif
+	GET_TICK(t2);
+      } else
+	marcel_create(NULL, &attr, f, (any_t)&sem);
+
 #ifndef SMP
       unlock_task();
 #endif

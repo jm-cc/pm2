@@ -28,14 +28,20 @@ LIB_C_DEPENDS_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_DEP)/mad_$(P
 LIB_C_OBJECTS_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).o)
 LIB_C_PICS_ADDED    := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).pic)
 
-LIB_OBJECTS += $(LIB_C_OBJECTS_ADDED)
-LIB_PICS    += $(LIB_C_PICS_ADDED)
-LIB_PREPROC += $(LIB_C_PREPROC_ADDED)
-LIB_FUT     += $(LIB_C_FUT_ADDED)
+LIB_OBJECTS   += $(LIB_C_OBJECTS_ADDED)
+LIB_PICS      += $(LIB_C_PICS_ADDED)
+LIB_PREPROC   += $(LIB_C_PREPROC_ADDED)
+LIB_FUT       += $(LIB_C_FUT_ADDED)
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
+
+# Dependances vers *.d
+#---------------------------------------------------------------------
+$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
+$(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
+$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
 
 # Inclusion du makefile de dependance des drivers
 #---------------------------------------------------------------------

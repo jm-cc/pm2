@@ -77,6 +77,8 @@ static void do_show_help(char *cmd)
 int main(int argc, char *argv[])
 {
   GtkWidget *window;
+  GtkWidget *main_vbox;
+  GtkWidget *sep;
   GtkWidget *top_paned;
   GtkWidget *left_vbox, *right_vbox;
 
@@ -93,6 +95,8 @@ int main(int argc, char *argv[])
 
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
+  gtk_window_set_title (GTK_WINDOW (window), "EZFLAVOR v0.9");
+
   gtk_signal_connect(GTK_OBJECT(window), "delete_event",
 		     GTK_SIGNAL_FUNC(delete_event), NULL);
 
@@ -101,10 +105,15 @@ int main(int argc, char *argv[])
 
   gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
+  main_vbox = gtk_vbox_new(FALSE, 1);
+  gtk_container_border_width(GTK_CONTAINER(main_vbox), 1);
+  gtk_container_add(GTK_CONTAINER(window), main_vbox);
+  gtk_widget_show(main_vbox);
+
   top_paned = gtk_hpaned_new();
   gtk_widget_show(top_paned);
-  gtk_container_add(GTK_CONTAINER(window), top_paned);
   gtk_container_set_border_width(GTK_CONTAINER(top_paned), 10);
+  gtk_box_pack_start(GTK_BOX (main_vbox), top_paned, FALSE, TRUE, 0);
 
   left_vbox = gtk_vbox_new(FALSE, 10);
   gtk_paned_add1((GtkPaned *)top_paned, left_vbox);
@@ -113,6 +122,10 @@ int main(int argc, char *argv[])
   right_vbox = gtk_vbox_new(FALSE, 10);
   gtk_paned_add2((GtkPaned *)top_paned, right_vbox);
   gtk_widget_show(right_vbox);
+
+  sep = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(main_vbox), sep, FALSE, TRUE, 0);
+  gtk_widget_show(sep);
 
   the_tooltip = gtk_tooltips_new();
   gtk_tooltips_set_delay(the_tooltip, 1000); /* 1 seconde */

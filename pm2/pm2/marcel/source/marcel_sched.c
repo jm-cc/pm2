@@ -1782,8 +1782,8 @@ static void marcel_fix_nb_vps(unsigned nb_lwp)
 #ifdef SOLARIS_SYS
   __nb_processors = sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(LINUX_SYS)
-  __nb_processors = WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"
-				       " | wc -l`"));
+  __nb_processors = sysconf(_SC_NPROCESSORS_CONF);
+  //__nb_processors = 2;
 #elif defined(IRIX_SYS)
   __nb_processors = sysconf(_SC_NPROC_CONF);
 #elif defined(OSF_SYS)

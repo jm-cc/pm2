@@ -47,6 +47,8 @@
 
 #include "sys/netinterf.h"
 
+#include "tbx.h"
+
 #ifdef PM2
 #include "marcel.h"
 #else
@@ -173,6 +175,8 @@ static void mad_mpi_send(void *buf, int cnt, MPI_Datatype type, int dest,
 
   mpi_io_arg_t myarg;
 
+  LOG_IN();
+
   mpi_lock();
   MPI_Isend(buf, cnt, type, dest, tag,
 	    comm, &myarg.req);
@@ -186,6 +190,8 @@ static void mad_mpi_send(void *buf, int cnt, MPI_Datatype type, int dest,
 
   int flag;
   MPI_Request request;
+
+  LOG_IN();
 
   mpi_lock();
   MPI_Isend(buf, cnt, type, dest, tag, comm, &request);
@@ -202,6 +208,8 @@ static void mad_mpi_send(void *buf, int cnt, MPI_Datatype type, int dest,
   }
 
 #endif
+
+  LOG_OUT();
 }
 
 static void mad_mpi_recv(void *buf, int cnt, MPI_Datatype type, int src,
@@ -210,6 +218,8 @@ static void mad_mpi_recv(void *buf, int cnt, MPI_Datatype type, int src,
 #if defined(PM2) && defined(USE_MARCEL_POLL)
 
   mpi_io_arg_t myarg;
+
+  LOG_IN();
 
   mpi_lock();
   MPI_Irecv(buf, cnt, type, src, tag,
@@ -224,6 +234,8 @@ static void mad_mpi_recv(void *buf, int cnt, MPI_Datatype type, int src,
 
   MPI_Request request;
   int flag;
+
+  LOG_IN();
 
   mpi_lock();
   MPI_Irecv(buf, cnt, type, src, tag, comm, &request);
@@ -240,12 +252,15 @@ static void mad_mpi_recv(void *buf, int cnt, MPI_Datatype type, int src,
   }
 
 #endif
+  LOG_OUT();
 }
 
 void mad_mpi_network_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
 {
   int i, f;
   char output[64];
+
+  LOG_IN();
 
   MPI_Init(argc, &argv);
 
@@ -266,8 +281,9 @@ void mad_mpi_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
     close(f);
   }
 
-  for(i = 0; i < *nb; i ++)
-    tids[i] = i;
+  if(tids != NULL) 
+    for(i = 0; i < *nb; i ++)
+      tids[i] = i;
 
 #ifdef PM2
   marcel_mutex_init(&mpi_mutex, NULL);
@@ -280,6 +296,7 @@ void mad_mpi_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
 				       MARCEL_POLL_AT_TIMER_SIG);
 #endif
 #endif
+  LOG_OUT();
 }
 
 void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)
@@ -294,6 +311,8 @@ void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)
   MPI_Aint *displacement;
 #endif
   int i;
+
+  LOG_IN();
 
   if(count == 0)
     RAISE(PROGRAM_ERROR);
@@ -344,6 +363,7 @@ void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)
 #ifdef PM2
   marcel_mutex_unlock(&mutex[dest_node]);
 #endif
+  LOG_OUT();
 }
 
 static int current_expeditor;
@@ -352,12 +372,16 @@ void mad_mpi_network_receive(char **head)
 {
   MPI_Status receive_status;
 
+  LOG_IN();
+
   mad_mpi_recv(header, MAX_HEADER, MPI_BYTE, MPI_ANY_SOURCE, HEADER_TAG,
 	       MPI_COMM_WORLD, &receive_status);
 
   current_expeditor = receive_status.MPI_SOURCE;
 
   *head = (char *)header;
+
+  LOG_OUT();
 }
 
 void mad_mpi_network_receive_data(struct iovec *vector, size_t count)
@@ -373,8 +397,12 @@ void mad_mpi_network_receive_data(struct iovec *vector, size_t count)
   MPI_Aint *displacement;
 #endif
 
-  if(count == 0)
+  LOG_IN();
+
+  if(count == 0) {
+    LOG_OUT();
     return;
+  }
 
   if(count == 1) {
 
@@ -410,11 +438,17 @@ void mad_mpi_network_receive_data(struct iovec *vector, size_t count)
     TBX_FREE(displacement);
 #endif
   }
+
+  LOG_OUT();
 }
 
 void mad_mpi_network_exit()
 {
+  LOG_IN();
+
   MPI_Finalize();
+
+  LOG_OUT();
 }
 
 static netinterf_t mad_mpi_netinterf = {

@@ -33,121 +33,162 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include "rpc_defs.h"
+#include <pm2.h>
 #include <sys/time.h>
 
+static unsigned WAKE, DICHO;
 
-/* ****************** fonctions de mesure du temps ************** */
+static int *les_modules, nb_modules, module_courant = 0;
 
-static struct timeval _t1, _t2;
-static struct timezone _tz;
-static unsigned long _temps_residuel = 0;
-
-#define top1() gettimeofday(&_t1, &_tz)
-#define top2() gettimeofday(&_t2, &_tz)
-
-void init_cpu_time(void)
+static __inline__ int next_module(void)
 {
-   top1(); top2();
-   _temps_residuel = 1000000L * _t2.tv_sec + _t2.tv_usec - 
-                     (1000000L * _t1.tv_sec + _t1.tv_usec );
+  int res;
+
+  lock_task();
+
+  do {
+    module_courant = (module_courant+1) % (nb_modules);
+  } while(les_modules[module_courant] == pm2_self());
+
+  res = les_modules[module_courant];
+  unlock_task();
+  return res;
 }
 
-unsigned long cpu_time(void) /* retourne des microsecondes */
+static void wake(void)
 {
-   return 1000000L * _t2.tv_sec + _t2.tv_usec - 
-           (1000000L * _t1.tv_sec + _t1.tv_usec ) - _temps_residuel;
+  marcel_sem_t *ptr_sem;
+  unsigned *ptr_res;
+
+  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+  mad_unpack_int(MAD_IN_HEADER, ptr_res, 1);
+  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+
+  pm2_rawrpc_waitdata();
+
+  marcel_sem_V(ptr_sem);
 }
 
-/* ************************************************************** */
+static void thr_dicho(void *arg)
+{
+  unsigned inf, sup, res;
+  marcel_sem_t *ptr_sem;
+  unsigned *ptr_res;
+  int father, self = pm2_self();
 
-int *les_modules, nb_modules, module_courant = 0;
+  mad_unpack_int(MAD_IN_HEADER, &inf, 1);
+  mad_unpack_int(MAD_IN_HEADER, &sup, 1);
+  mad_unpack_int(MAD_IN_HEADER, &father, 1);
+  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
 
-int next_module(void)
-{ int res;
+  pm2_rawrpc_waitdata();
 
-   lock_task();
-   module_courant = (module_courant+1) % (nb_modules);
-   res = les_modules[module_courant];
-   unlock_task();
-   return res;
-}
-
-BEGIN_SERVICE(DICHOTOMY)
- int i;
-
-   if(req.inf == req.sup) {
-      res.res = req.inf;
+   if(inf == sup) {
+      res = inf;
    } else {
-      int mid = (req.inf + req.sup)/2;
-      LRPC_REQ(DICHOTOMY) req1, req2;
-      LRPC_RES(DICHOTOMY) res1, res2;
-      pm2_rpc_wait_t att[2];
+      int mid = (inf + sup)/2;
+      unsigned res1, *ptr_res1 = &res1, res2, *ptr_res2 = &res2;
+      marcel_sem_t sem, *ptr_sem = &sem;
 
-      req1.inf = req.inf; req1.sup = mid;
-      LRP_CALL(next_module(), DICHOTOMY, STD_PRIO, DEFAULT_STACK,
-		&req1, &res1, &att[0]);
+      marcel_sem_init(&sem, 0);
 
-      req2.inf = mid+1; req2.sup = req.sup;
-      LRP_CALL(next_module(), DICHOTOMY, STD_PRIO, DEFAULT_STACK,
-		&req2, &res2, &att[1]);
+      pm2_rawrpc_begin(next_module(), DICHO, NULL);
+      mad_pack_int(MAD_IN_HEADER, &inf, 1);
+      mad_pack_int(MAD_IN_HEADER, &mid, 1);
+      mad_pack_int(MAD_IN_HEADER, &self, 1);
+      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res1, sizeof(ptr_res1));
+      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+      pm2_rawrpc_end();
 
-      for(i=0; i<2; i++)
-         LRP_WAIT(&att[i]);
+      mid++;
 
-      res.res = res1.res + res2.res;
+      pm2_rawrpc_begin(next_module(), DICHO, NULL);
+      mad_pack_int(MAD_IN_HEADER, &mid, 1);
+      mad_pack_int(MAD_IN_HEADER, &sup, 1);
+      mad_pack_int(MAD_IN_HEADER, &self, 1);
+      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res2, sizeof(ptr_res2));
+      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+      pm2_rawrpc_end();
+
+      marcel_sem_P(&sem); marcel_sem_P(&sem);
+
+      res = res1 + res2;
    }
-END_SERVICE(DICHOTOMY)
 
+   pm2_rawrpc_begin(father, WAKE, NULL);
+   mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+   mad_pack_int(MAD_IN_HEADER, &res, 1);
+   mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+   pm2_rawrpc_end();
+}
 
-BEGIN_SERVICE(LRPC_START)
+static void dicho(void)
+{
+  pm2_thread_create(thr_dicho, NULL);
+}
+
+static void f(void)
+{
+  Tick t1, t2;
   unsigned long temps;
-  LRPC_REQ(DICHOTOMY) req;
-  LRPC_RES(DICHOTOMY) res;
+  unsigned inf, sup, res, *ptr_res = &res;
+  marcel_sem_t sem, *ptr_sem = &sem;
+  int self = pm2_self();
 
-   LOOP(bcle)
-      tfprintf(stderr, "Entrez un entier raisonnable "
-		"(0 pour terminer) : ");
-      scanf("%d", &req.sup);
+  while(1) {
 
-      if(!req.sup)
-         EXIT_LOOP(bcle);
+    marcel_sem_init(&sem, 0);
 
-      req.inf = 1;
+    tfprintf(stderr, "Entrez un entier raisonnable "
+	     "(0 pour terminer) : ");
+    scanf("%d", &sup);
 
-      top1();
-      LRPC(pm2_self(), DICHOTOMY, STD_PRIO, DEFAULT_STACK, &req, &res);
-      top2();
-      temps = cpu_time();
+    if(!sup)
+      break;
 
-      tfprintf(stderr, "temps = %d.%03dms\n", temps/1000, temps%1000);
+    inf = 1;
 
-      tfprintf(stderr, "1+...+%d = %d\n", req.sup, res.res);
+    GET_TICK(t1);
 
-   END_LOOP(bcle);
+    pm2_rawrpc_begin(next_module(), DICHO, NULL);
+    mad_pack_int(MAD_IN_HEADER, &inf, 1);
+    mad_pack_int(MAD_IN_HEADER, &sup, 1);
+    mad_pack_int(MAD_IN_HEADER, &self, 1);
+    mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+    mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+    pm2_rawrpc_end();
 
-END_SERVICE(START)
+    marcel_sem_P(ptr_sem);
+
+    GET_TICK(t2);
+
+    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
+
+    tfprintf(stderr, "1+...+%d = %d\n", sup, res);
+  }
+}
 
 int pm2_main(int argc, char **argv)
 {
-   init_cpu_time();
+  pm2_rawrpc_register(&WAKE, wake);
+  pm2_rawrpc_register(&DICHO, dicho);
 
-   pm2_init_rpc();
+  pm2_init(&argc, argv, ASK_USER, &les_modules, &nb_modules);
 
-   DECLARE_LRPC_WITH_NAME(LRPC_START, "start", OPTIMIZE_IF_LOCAL);
-   DECLARE_LRPC_WITH_NAME(DICHOTOMY, "fac", OPTIMIZE_IF_LOCAL);
+  if(pm2_self() == les_modules[0]) { /* master process */
 
-   pm2_init(&argc, argv, ASK_USER, &les_modules, &nb_modules);
+    if(nb_modules < 2) {
+      fprintf(stderr, "This program requires at least two PM2 nodes...\n");
+    } else {
+      f();
+    }
 
-   if(pm2_self() == les_modules[0]) { /* master process */
+    pm2_kill_modules(les_modules, nb_modules);
+  }
 
-      LRPC(pm2_self(), LRPC_START, STD_PRIO, DEFAULT_STACK, NULL, NULL);
+  pm2_exit();
 
-      pm2_kill_modules(les_modules, nb_modules);
-   }
-
-   pm2_exit();
-
-   fprintf(stderr, "Main is ending\n");
-   return 0;
+  return 0;
 }

@@ -430,7 +430,9 @@ load_flavor() { # flavor
     if [ $? != 0 ]; then
 	return 1
     fi
-    options=`echo "$options" | sed -e 's, --, fl_,g'`
+    options_name=`echo "$options" | sed -e 's, --\([^=]*\)=[^ ]*, fl_\1=,g'`
+    eval $options_name
+    options=`echo "$options" | sed -e 's, --\([^=]*\)=\([^ ]*\), fl_\1="${fl_\1:+${fl_\1} }\2",g'`
     eval $options
 }
 

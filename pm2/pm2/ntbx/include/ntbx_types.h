@@ -123,6 +123,7 @@ typedef struct s_ntbx_client
 {
   TBX_SHARED;
   ntbx_client_state_t  state;
+  int                  blocking;
   unsigned long        local_host_ip; // network form !
   char                *local_host;
   p_tbx_slist_t        local_alias;

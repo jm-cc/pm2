@@ -22,7 +22,7 @@
 #define MAD_SISCI_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
-#undef PM2DEBUG
+//#undef PM2DEBUG
 #ifdef MARCEL
 #include "marcel.h"
 #endif
@@ -49,6 +49,9 @@
      /*#define MAD_SISCI_OPT_MAX  112*/
 #define MAD_SISCI_OPT_MAX  192
 /* #define MAD_SISCI_OPT_MAX  0 */
+
+#define MAD_SISCI_MEM_PREFETCH 1
+#define MAD_SISCI_NT_MOVE 1
 
 /* SHMem */
 #define MAD_SISCI_CHUNK_SIZE 65536
@@ -227,6 +230,30 @@ typedef struct s_mad_sisci_link_specific
 } mad_sisci_link_specific_t, *p_mad_sisci_link_specific_t;
 
 /*
+ * prototypes
+ * ----------
+ */
+
+static void
+mad_sisci_send_sci_buffer_group_1(p_mad_link_t         link,
+				  p_mad_buffer_group_t buffer_group) TBX_UNUSED;
+
+static void
+mad_sisci_receive_sci_buffer_group_1(p_mad_link_t         link,
+				     p_mad_buffer_group_t buffer_group) TBX_UNUSED;
+
+static
+void
+mad_sisci_send_sci_buffer_group_3(p_mad_link_t         lnk,
+                                  p_mad_buffer_group_t buffer_group) TBX_UNUSED;
+
+static
+void
+mad_sisci_receive_sci_buffer_group_3(p_mad_link_t           lnk,
+				     p_mad_buffer_group_t   buffer_group) TBX_UNUSED;
+
+
+/*
  * static functions
  * ----------------
  */
@@ -237,7 +264,7 @@ static  char tmp[2048] __attribute__ ((aligned (4096)));
 static
 inline
 void
-cpy4(void *src,
+cpy4(const void *src,
      volatile void *dest,
      unsigned long nbytes)
 {
@@ -264,8 +291,10 @@ cpy4(void *src,
     "    mov $32, %%ecx \n\t"
 
     "1: \n\t"
-//    "    prefetchnta 64(%%esi) \n\t"
-//    "    prefetchnta 96(%%esi) \n\t"
+#if MAD_SISCI_MEM_PREFETCH
+    "    prefetchnta 64(%%esi) \n\t"
+    "    prefetchnta 96(%%esi) \n\t"
+#endif
     "    movq  0(%%esi), %%mm1 \n\t"
     "    movq  8(%%esi), %%mm2 \n\t"
     "    movq 16(%%esi), %%mm3 \n\t"
@@ -295,8 +324,10 @@ cpy4(void *src,
     "    mov $32, %%ecx \n\t"
 
     "2: \n\t"
-//    "    prefetchnta 64(%%esi) \n\t"
-//    "    prefetchnta 96(%%esi) \n\t"
+#if MAD_SISCI_MEM_PREFETCH
+    "    prefetchnta 64(%%esi) \n\t"
+    "    prefetchnta 96(%%esi) \n\t"
+#endif
     "    movq  0(%%esi), %%mm1 \n\t"
     "    movq  8(%%esi), %%mm2 \n\t"
     "    movq 16(%%esi), %%mm3 \n\t"
@@ -305,6 +336,16 @@ cpy4(void *src,
     "    movq 40(%%esi), %%mm6 \n\t"
     "    movq 48(%%esi), %%mm7 \n\t"
     "    movq 56(%%esi), %%mm0 \n\t"
+#if MAD_SISCI_NT_MOVE
+    "    movntq %%mm1,  0(%%edi) \n\t"
+    "    movntq %%mm2,  8(%%edi) \n\t"
+    "    movntq %%mm3, 16(%%edi) \n\t"
+    "    movntq %%mm4, 24(%%edi) \n\t"
+    "    movntq %%mm5, 32(%%edi) \n\t"
+    "    movntq %%mm6, 40(%%edi) \n\t"
+    "    movntq %%mm7, 48(%%edi) \n\t"
+    "    movntq %%mm0, 56(%%edi) \n\t"
+#else
     "    movq %%mm1,  0(%%edi) \n\t"
     "    movq %%mm2,  8(%%edi) \n\t"
     "    movq %%mm3, 16(%%edi) \n\t"
@@ -313,6 +354,7 @@ cpy4(void *src,
     "    movq %%mm6, 40(%%edi) \n\t"
     "    movq %%mm7, 48(%%edi) \n\t"
     "    movq %%mm0, 56(%%edi) \n\t"
+#endif
     "    addl $64, %%esi \n\t"
     "    addl $64, %%edi \n\t"
     "    decl %%ecx \n\t"
@@ -332,8 +374,10 @@ cpy4(void *src,
     "    jz 5f \n\t"
 
     "3: \n\t"
+#if MAD_SISCI_MEM_PREFETCH
     "    prefetchnta 64(%%esi) \n\t"
     "    prefetchnta 96(%%esi) \n\t"
+#endif
     "    movq  0(%%esi), %%mm1 \n\t"
     "    movq  8(%%esi), %%mm2 \n\t"
     "    movq 16(%%esi), %%mm3 \n\t"
@@ -715,6 +759,10 @@ mad_sisci_wait_for(p_mad_link_t         link,
 {
   while (!mad_sisci_test(flag))
     TBX_YIELD();
+
+  if (*(int*)flag != 1)
+    FAILURE("suspicious flag value");
+
 }
 
 #endif // MARCEL && USE_MARCEL_POLL
@@ -1393,7 +1441,6 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
     - sizeof(mad_sisci_connection_status_t);
 
   LOG_IN();
-
   if ((buffer->bytes_written - buffer->bytes_read) < (segment_size << C0))
     {
       segment_size = (buffer->bytes_written - buffer->bytes_read) >> C0;
@@ -1425,12 +1472,11 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 	  sci_error_t sisci_error;
 
 	  buffer->bytes_read += size;
-
 	  mad_sisci_wait_for(link, write);
 
           if (((unsigned int) source) & (MAD_SISCI_SCIMEMCOPY_ALIGNMENT-1))
             {
-              memcpy(remote_segment->map, source, size);
+              memcpy(remote_data->buffer, source, size);
               source += size;
             }
           else
@@ -1463,18 +1509,18 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
                 }
             }
 
-/* 	  if (size & 60) */
-/* 	    { */
-/* 	      volatile int *destination = */
-/* 		(volatile void *)remote_data->buffer + size; */
+	  if (size & 3)
+	    {
+	      volatile char *destination =
+		(volatile void *)remote_data->buffer + size;
 
-/* 	      do */
-/* 		{ */
-/* 		  *destination++ = 0; */
-/* 		  size += 4; */
-/* 		} */
-/* 	      while (size & 60); */
-/* 	    } */
+	      do
+		{
+		  *destination++ = 0;
+		  size++;
+		}
+	      while (size & 3);
+	    }
 
 	  if (size & 63)
 	    {
@@ -1500,6 +1546,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
       os->write_flag_flushed = tbx_true;
     }
 
+
   LOG_OUT();
 }
 
@@ -1515,6 +1562,8 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
     connection_specific->remote_segment[0].size
     - sizeof(mad_sisci_connection_status_t);
 
+  LOG_IN();
+
   if ((buffer->length - buffer->bytes_written) < (segment_size << C0))
     {
       segment_size = (buffer->length - buffer->bytes_written) >> C0;
@@ -1522,8 +1571,6 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	segment_size = MAD_SISCI_MIN_SEG_SIZE;
     }
 
-
-  LOG_IN();
 
   if (!mad_buffer_full(buffer))
     {
@@ -1559,6 +1606,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	cpy4(source, destination, size);
 
 	mad_sisci_clear(read);
+
 	mad_sisci_set(write);
 	buffer->bytes_written +=size;
 	destination += size;
@@ -1582,13 +1630,18 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	  p_mad_sisci_status_t              write               =
 	    &remote_data->status.write;
 	  char   *source = local_data->buffer;
+
 	  size = tbx_min(buffer->length - buffer->bytes_written, segment_size);
+
 	  mad_sisci_flush(remote_segment);
 	  mad_sisci_wait_for(link, read);
+
 //	  memcpy(destination, source, size);
           cpy4(source, destination, size);
+
 	  mad_sisci_clear(read);
 	  mad_sisci_set(write);
+
 	  buffer->bytes_written +=size;
 	  destination += size;
 	  k ^= 1;
@@ -1663,7 +1716,7 @@ transmission:
 	  rd           = rs->map_addr;
 	  read         = &rd->status.read;
 	  write        = &ld->status.write;
-	  destination  = rd->buffer + offset;
+	  destination  = rd->buffer;
 	  size         = tbx_min(buffer->bytes_written - buffer->bytes_read, ds - offset);
 	  mod_4        = size % 4;
 	  aligned_size = size - mod_4;
@@ -1678,7 +1731,7 @@ transmission:
 
           if (((unsigned int) source) & (MAD_SISCI_SCIMEMCOPY_ALIGNMENT-1))
             {
-              memcpy(rs->map, source, size);
+              memcpy(destination+offset, source, size);
               source += size;
               offset += size;
             }

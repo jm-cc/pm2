@@ -77,9 +77,9 @@ static void eval_thread_creation(void)
   fprintf(stderr, "With static stacks :\n");
   temps = ~0L;
   {
-    char *stack = tmalloc(2*SLOT_SIZE);
-    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) & 
-			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
+    char *stack = tmalloc(2*THREAD_SLOT_SIZE);
+    unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
+			     ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
 
     for(i=0; i<10; i++) {
 

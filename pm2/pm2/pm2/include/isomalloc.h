@@ -34,6 +34,21 @@
 
 ______________________________________________________________________________
 $Log: isomalloc.h,v $
+Revision 1.3  2000/07/14 16:17:04  gantoniu
+Merged with branch dsm3
+
+Revision 1.2.10.1  2000/06/13 16:44:05  gantoniu
+New dsm branch.
+
+Revision 1.2.8.1  2000/06/07 09:19:35  gantoniu
+Merging new dsm with current PM2 : first try.
+
+Revision 1.2.4.1  2000/04/10 18:50:42  gantoniu
+Ajout couche isoaddr + integration d'une table generale des pages
+(isomalloc + dsm), avec les fonctions de gestion associees.
+
+Tests ok avec les examples isomalloc.
+
 Revision 1.2  2000/01/31 15:49:34  oaumage
 - ajout du Log CVS
 
@@ -44,10 +59,14 @@ ______________________________________________________________________________
 #ifndef ISOMALLOC_IS_DEF
 #define ISOMALLOC_IS_DEF
 
+
 /*#define DEBUG*/
 
 #include <sys/types.h>
 
+#include "slot_alloc.h"
+
+/*
 typedef struct _slot_header_t {
   size_t size;
   int magic_number;
@@ -141,4 +160,5 @@ size_t slot_get_header_size();
 
 #endif
 
+*/
 #endif

@@ -3,7 +3,7 @@
  *
  *  This file contains the macros and support functions declaration for the
  *  TBX debugging facilities.
- * 
+ *
  */
 
 /*
@@ -75,7 +75,7 @@ extern volatile int pm2debug_marcel_launched;
 #endif
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
-int pm2debug_printf(debug_type_t *type, int line, const char* file, 
+int pm2debug_printf(debug_type_t *type, int line, const char* file,
 		     const char *format, ...)
 		__attribute__ ((format (printf, 4, 5)));
 void pm2debug_register(debug_type_t *type);
@@ -142,7 +142,7 @@ debug_type_t DEBUG_NAME_LOG(DEBUG_NAME)= \
 		    #DEBUG_NAME "-log"); \
 debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
   NEW_DEBUG_TYPE(0, #DEBUG_NAME "-trace: ", \
-		    #DEBUG_NAME "-trace"); 
+		    #DEBUG_NAME "-trace");
 #define DEBUG_INIT(DEBUG_NAME) \
   { pm2debug_register(&DEBUG_NAME_DISP(DEBUG_NAME)); \
     pm2debug_register(&DEBUG_NAME_LOG(DEBUG_NAME)); \
@@ -163,9 +163,9 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define DISP(str, args...)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
 					   str "\n" , ## args)
 #define DISP_IN()            debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
-					   __FUNCTION__": -->\n")
+					   __TBX_FUNCTION__": -->\n")
 #define DISP_OUT()           debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
-					   __FUNCTION__": <--\n")
+					   __TBX_FUNCTION__": <--\n")
 #define DISP_VAL(str, val)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
 #define DISP_CHAR(val)       debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
@@ -177,8 +177,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else /* PM2DEBUG */
 
 #define DISP(str, args...)  fprintf(stderr, str "\n" , ## args)
-#define DISP_IN()           fprintf(stderr, __FUNCTION__": -->\n")
-#define DISP_OUT()          fprintf(stderr, __FUNCTION__": <--\n")
+#define DISP_IN()           fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
+#define DISP_OUT()          fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
 #define DISP_VAL(str, val)  fprintf(stderr, str " = %d\n" , (int)(val))
 #define DISP_CHAR(val)      fprintf(stderr, "%c" , (char)(val))
 #define DISP_PTR(str, ptr)  fprintf(stderr, str " = %p\n" , (void *)(ptr))
@@ -197,10 +197,10 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define LOG(str, args...)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            str "\n" , ## args)
 #define LOG_IN()              do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
-					   __FUNCTION__": -->\n"); \
+					   "%s: -->\n", __TBX_FUNCTION__); \
                               PROF_IN(); } while(0)
 #define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
-					   __FUNCTION__": <--\n"); \
+					   "%s: <--\n", __TBX_FUNCTION__); \
                               PROF_OUT(); } while(0)
 #define LOG_CHAR(val)         debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   "%c" , (char)(val))
@@ -213,8 +213,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 
 #else // else if not PM2DEBUG
 
-#define LOG(str, args...) 
-#define LOG_IN()           PROF_IN()  ; (void)(0) 
+#define LOG(str, args...)
+#define LOG_IN()           PROF_IN()  ; (void)(0)
 #define LOG_OUT()          PROF_OUT() ; (void)(0)
 #define LOG_CHAR(val)      (void)(0)
 #define LOG_VAL(str, val)  (void)(0)
@@ -233,9 +233,9 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define TRACE(str, args...)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
 					   str "\n" , ## args)
 #define TRACE_IN()            debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
-					   __FUNCTION__": -->\n")
+					   "%s: -->\n", __TBX_FUNCTION__)
 #define TRACE_OUT()           debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
-					   __FUNCTION__": <--\n")
+					   "%s: <--\n", __TBX_FUNCTION__)
 #define TRACE_VAL(str, val)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
 #define TRACE_CHAR(val)       debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \

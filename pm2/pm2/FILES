@@ -1,11 +1,9 @@
 ARCHITECTURES : supported architectures
 COPYRIGHT     : :-)
 CVS           :
-GNUmakefile   : GNUmakefile
 Makefile      : Makefile
 README        : quick introduction to PM2
 bin           : scripts used in PM2
-config        : used for the configuration and common options
 console       : PM2 consoles
 doc           : Documentation
 dsm           : Distribuated Shared Memory module
@@ -18,16 +16,14 @@ mad2          : Madeleine 2 module (communication library, the best :) )
 madeleine     : symlink to one of the previous (see bin/pm2madselect)
 make          : shared makefiles
 marcel        : Marcel module (threads library)
-ntbx          : symlink to toolbox/net : network toolbox module
+modules       : Each link or repertory in this one is a PM2 module
 pm2           : PM2 module (main library): lots of symlinks to root directory
 source        : PM2 module sources
 stamp         : used to verify up-to-date library/prog when compiling
 swann         : ??? module
-tbx           : symlink to toolbox
 toolbox       : toolbox module (library with utilities for mad2 ? )
 
 most modules have
-GNUmakefile   : GNUmakefile
 Makefile      : Makefile
 include       : include files of the module
 source        : sources of the module
@@ -36,6 +32,5 @@ config        : used for the configuration and module options
 examples      : examples that use this module (not in each module)
 
 most examples have
-GNUmakefile   : GNUmakefile
 Makefile      : Makefile
 build         : repertory with the results of compilation (obj/bin/...)

@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.35  2000/06/13 16:08:10  oaumage
+- Correction de l'affichage des messages d'erreur de SISCI
+
 Revision 1.34  2000/06/09 18:12:00  vdanjean
 cleaning debug messages
 
@@ -322,6 +325,8 @@ mad_sisci_display_error(sci_error_t error)
 	  "SISCI stripped error code : %u, %X\n",
 	  error & ~SCI_ERR_MASK,
 	  error & ~SCI_ERR_MASK);
+  
+  error &= ~SCI_ERR_MASK;
   
   switch (error)
     {

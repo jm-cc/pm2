@@ -3,6 +3,7 @@
 #include "time.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mount.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include "supertracebuffer.h"
@@ -10,6 +11,10 @@
 #include "superlwpthread.h"
 
 #include "fkt.h"
+#include <fkt/block.h>
+#include <fkt/names.h>
+#include <fkt/sysmap.h>
+#include <fkt/pids.h>
 
 #include "fut_code.h"
 
@@ -32,7 +37,9 @@ static u_64 diff_time;            // time to be substracted to the current event
 static u_64 min_fut;              // Minimum time for calibration for fut
 static u_64 min_fkt;              // Minimum time for calibration for fkt
 
+static int fd_fut;
 static FILE *f_fut;               // file where to read fut events
+static int fd_fkt;
 static FILE *f_fkt;               // file where to read fkt events
 static int thread = -1;           /* Number of thread "currently running" 
 				     in non SMP mode */
@@ -225,35 +232,8 @@ static void trace_calc(trace *tr)
 }
 
 
-/* read the fut header */
-static void read_fut_header()
-{  
-  u_64 last;
-  int n;
-  char header[200];
-  if (f_fut != NULL) {
-    // Reading  of teh fut header : Corrupted files not dealed with
-    CORRUPTED_FUT(fread(&smp, sizeof(int), 1, f_fut) == 0);
-    CORRUPTED_FUT(fread(&pid, sizeof(unsigned long), 1, f_fut) == 0);
-    CORRUPTED_FUT(fread(&cpu_cycles, sizeof(double), 1, f_fut) == 0);
-    CORRUPTED_FUT(fread(header, 2*sizeof(time_t) + sizeof(unsigned int), 1, \
-			f_fut) == 0);  
-    CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
-    CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
-    last = fut_buf.clock;
-    for(n = 0; n < 9; n++) {
-      CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
-      if (min_fut == 0)
-	min_fut = fut_buf.clock - last;
-      else if (fut_buf.clock - last < min_fut)
-	min_fut = fut_buf.clock - last;
-    }
-  }
-}
-
-
 /* read the fkt header */
-static void read_fkt_header()
+static void read_fkt_header(int fkt)
 {
   unsigned int ncpus;
   double *mhz;
@@ -262,44 +242,100 @@ static void read_fkt_header()
   unsigned long fkt_kidpid;
   time_t t1, t2;
   clock_t start_jiffies, stop_jiffies;
-  unsigned nirqs, nints;
-  unsigned int code;
-  unsigned int i;
   int n;
-  unsigned int max_nints;
-  char name[400];
-  if (f_fkt != NULL) {
-    CORRUPTED_FKT(fread(&ncpus, sizeof(ncpus), 1, f_fkt) == 0);
+  size_t size;
+  struct stat st;
+  int fd=fkt?fd_fkt:fd_fut;
+
+  if (fd >= 0) {
+    ENTER_BLOCK(fd); /* main block */
+    ENTER_BLOCK(fd);
+    CORRUPTED_FKT(read(fd, &ncpus, sizeof(ncpus)) == 0);
     nb_cpu = (short int) ncpus;
     printf("nb_cpu = %d\n",nb_cpu);
     mhz = (double *) malloc(sizeof(double)*ncpus);
     assert(mhz != NULL);
-    fread(mhz, sizeof(double), ncpus, f_fkt);
+    read(fd, mhz, sizeof(double)*ncpus);
     cpu_cycles = mhz[0];
-    CORRUPTED_FKT(fread(&fkt_pid, sizeof(unsigned int), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&fkt_kidpid, sizeof(unsigned int), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&t1, sizeof(time_t), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&t2, sizeof(time_t), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&start_jiffies, sizeof(clock_t), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&stop_jiffies, sizeof(clock_t), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&nirqs, sizeof(unsigned int), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&ncpus, sizeof(unsigned int), 1, f_fkt) == 0);
-    for(n = 0; n < nirqs; n++) {
-      unsigned k;
-      CORRUPTED_FKT(fread(&code, sizeof(unsigned int), 1, f_fkt) == 0);
-      CORRUPTED_FKT(fread(&i, sizeof(unsigned int), 1, f_fkt) == 0);
-      k = (i + 3) & ~3;
-      CORRUPTED_FKT(fread(name, sizeof(char), k, f_fkt) == 0);
+    CORRUPTED_FKT(read(fd,&fkt_pid, sizeof(fkt_pid)) < sizeof(fkt_pid));
+    CORRUPTED_FKT(read(fd,&fkt_kidpid, sizeof(fkt_kidpid)) < sizeof(fkt_kidpid));
+    CORRUPTED_FKT(read(fd,&t1, sizeof(t1)) < sizeof(t1));
+    CORRUPTED_FKT(read(fd,&t2, sizeof(t2)) < sizeof(t2));
+    CORRUPTED_FKT(read(fd,&start_jiffies, sizeof(start_jiffies)) < sizeof(start_jiffies));
+    CORRUPTED_FKT(read(fd,&stop_jiffies, sizeof(stop_jiffies)) < sizeof(stop_jiffies));
+    LEAVE_BLOCK(fd);
+
+    ENTER_BLOCK(fd);
+    fkt_load_irqs(fd);
+    LEAVE_BLOCK(fd);
+
+    ENTER_BLOCK(fd);
+    CORRUPTED_FKT(read(fd,&n,sizeof(n)) < sizeof(n));
+    {
+      char uname[n+1];
+      CORRUPTED_FKT(read(fd,uname,n) < n);
+      uname[n]='\0';
+      printf("%s\n",uname);
     }
-    CORRUPTED_FKT(fread(&max_nints, sizeof(unsigned int), 1, f_fkt) == 0);
-    CORRUPTED_FKT(fread(&nints, sizeof(unsigned int), 1, f_fkt) == 0);
-    CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
-    CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
-    last = fkt_buf.clock;
-    for(n = 0; n < 9; n++) {
+    LEAVE_BLOCK(fd);
+    
+    ENTER_BLOCK(fd);
+    fkt_load_sysmap(fd);
+    LEAVE_BLOCK(fd);
+
+    ENTER_BLOCK(fd);
+    fkt_load_pids(fd);
+    LEAVE_BLOCK(fd);
+
+    LEAVE_BLOCK(fd);
+
+    if (fstat(fd, &st)) {
+      perror("fstat");
+      exit(1);
+    }
+    if (S_ISBLK(st.st_mode)) {
+      int sectors;
+      if (ioctl(fd, BLKGETSIZE, &sectors)) {
+	perror("getting device size\n");
+	exit(1);
+      }
+      if (sectors >= 0xffffffffUL >> 9 )
+	size = 0xffffffffUL;
+      else
+	size = sectors << 9;
+    } else
+	size = st.st_size;
+
+    if (fkt) {
+      if ((f_fkt = fdopen(fd,"r")) == NULL) {
+        fprintf(stderr,"Error in fdopening file\n");
+        exit(1);
+      } 
+      fread(&n, sizeof(n), 1, f_fkt); /* size of page */
       CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
-      if (min_fkt == 0) min_fkt = fkt_buf.clock - last;
-      else if (fkt_buf.clock - last < min_fkt) min_fkt = fkt_buf.clock - last;
+      CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
+      last = fkt_buf.clock;
+      for(n = 0; n < 9; n++) {
+        CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
+        if (min_fkt == 0) min_fkt = fkt_buf.clock - last;
+        else if (fkt_buf.clock - last < min_fkt) min_fkt = fkt_buf.clock - last;
+      }
+    } else {
+      if ((f_fut = fdopen(fd,"r")) == NULL) {
+        fprintf(stderr,"Error in fdopening file\n");
+        exit(1);
+      } 
+      fread(&n, sizeof(n), 1, f_fut); /* size of page */
+      CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
+      CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
+      last = fut_buf.clock;
+      for(n = 0; n < 9; n++) {
+        CORRUPTED_FKT(read_user_trace(&fut_buf) != 0);
+        if (min_fut == 0)
+          min_fut = fut_buf.clock - last;
+        else if (fut_buf.clock - last < min_fut)
+	  min_fut = fut_buf.clock - last;
+      }
     }
   }
 }
@@ -426,24 +462,24 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative,
   assert((fut_name != NULL) || (fkt_name != NULL));    /* One trace file must
 							  be precised */
   if (fut_name != NULL) {
-    if ((f_fut = fopen(fut_name,"r")) == NULL) {
-      fprintf(stderr,"Error in opening file  %s\n", fut_name);
+    if ((fd_fut = open(fut_name,O_RDONLY)) < 0) {
+      fprintf(stderr,"Error in opening file %s\n", fut_name);
       exit(1);
-    } 
+    }
     fut_eof = 0;
   }
   if (fkt_name != NULL) {
-    if ((f_fkt = fopen(fkt_name,"r")) == NULL) {
-      fprintf(stderr,"Error in opening file  %s\n", fkt_name);
+    if ((fd_fkt = open(fkt_name,O_RDONLY)) < 0) {
+      fprintf(stderr,"Error in opening file %s\n", fkt_name);
       exit(1);
-    } 
+    }
     fkt_eof = 0;
   }
   thread = 0; 
   buf.first = EMPTY_LIST;
   buf.last = EMPTY_LIST;
-  read_fut_header();
-  read_fkt_header();
+  read_fkt_header(0);
+  read_fkt_header(1);
   while(n < TRACE_BUFFER_SIZE) {                    // Loads the buffer
     if (load_trace() != 0) break;
     n++;

@@ -36,7 +36,7 @@
 #include <stdio.h>
 
 #include "pm2.h"
-
+#include "timing.h"
 #include "dsm_slot_alloc.h"
 
 #define COUNTER 
@@ -118,8 +118,6 @@ int pm2_main(int argc, char **argv)
       fprintf(stderr, "Usage: simple <number of threads per node> <shared pages> <protocol> <offset> <private per thread data>\n");
       exit(1);
     }
-
-//  dsm_display_page_ownership();
 
   private_data_size =  atoi(argv[5]);
 

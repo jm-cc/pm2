@@ -288,8 +288,8 @@ if [ -n "${dirtoshow}" ]; then
 	;;
     --modules)
 	case " $PM2_LIBS " in
-	*\ dsm\ *)
-	    echo dsm `echo $PM2_LIBS | sed -e 's,dsm,,'`
+	*\ pm2\ *)
+	    echo pm2 `echo "$PM2_LIBS " | sed -e 's,pm2 ,,'`
 	    ;;
 	*)
 	    echo $PM2_LIBS

@@ -1,0 +1,23 @@
+!/bin/sh
+##########
+#
+
+prog=$1
+shift
+
+set `cat $PM2_ROOT/mad2/.mad2_conf`
+shift
+for h in $*
+do
+ echo copying $prog to $h:/tmp/$LOGNAME ...
+ rcp $prog $h:/tmp/$LOGNAME
+ echo copying $PM2_ROOT/mad2/.mad2_conf to $h:/tmp/$LOGNAME ...
+ rcp $PM2_ROOT/mad2/.mad2_conf $h:/tmp/$LOGNAME
+done
+echo copying $prog to /tmp/$LOGNAME ...
+cp $prog /tmp/$LOGNAME
+echo copying $PM2_ROOT/mad2/.mad2_conf to /tmp/$LOGNAME ...
+cp $PM2_ROOT/mad2/.mad2_conf /tmp/$LOGNAME
+echo launching /tmp/$LOGNAME/$prog
+/tmp/$LOGNAME/$prog
+

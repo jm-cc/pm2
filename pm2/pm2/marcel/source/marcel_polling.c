@@ -190,6 +190,7 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
     }
   }
 
-  marcel_give_hand(&cell.blocked, &__polling_lock);
+  marcel_lock_release(&__polling_lock);
+  marcel_give_hand(&cell.blocked);
   LOG_OUT();
 }

@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define USE_PIPES
-#define AUGMENT_COMPUTING_TIME
+//#define USE_PIPES
+//#define AUGMENT_COMPUTING_TIME
 
 typedef struct {
   int inf, sup, res;

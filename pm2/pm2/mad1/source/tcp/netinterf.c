@@ -414,6 +414,8 @@ void mad_tcp_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
 #else
       sprintf(output, "/tmp/%s-madlog-%d", getenv("USER"), pm2self);
 #endif
+      fflush(stdout);
+      setbuf(stdout, NULL);
       dup2((f = open(output, O_WRONLY | O_CREAT | O_TRUNC, 0600)),
 	   STDOUT_FILENO);
       dup2(STDOUT_FILENO, STDERR_FILENO);

@@ -35,10 +35,10 @@
   MA_DEBUG_VAR_ATTRIBUTE debug_type_t MA_DEBUG_VAR_NAME(name) \
   = NEW_DEBUG_TYPE_DEPEND("MA-"#name": ", "marcel-"#name, dep)
 
-#define ma_debug(name, fmt, args...) \
-  ma_debugl(name, PM2DEBUG_STDLEVEL, fmt , ##args)
-#define ma_debugl(name, level, fmt, args...) \
-  debug_printfl(&MA_DEBUG_VAR_NAME(name), level, fmt , ##args)
+#define ma_debug(name, fmt, ...) \
+  ma_debugl(name, PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
+#define ma_debugl(name, level, fmt, ...) \
+  debug_printfl(&MA_DEBUG_VAR_NAME(name), level, fmt , ##__VA_ARGS__)
 
 #if defined (MARCEL_KERNEL) && !defined(MA_FILE_DEBUG)
 #  define MA_DEBUG_NO_DEFINE
@@ -78,8 +78,8 @@ MA_DEBUG_DEFINE_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
 MA_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
 #  endif
 #  undef mdebugl
-#  define mdebugl(level, fmt, args...) \
-  ma_debugl(MA_FILE_DEBUG, level, fmt , ##args)
+#  define mdebugl(level, fmt, ...) \
+  ma_debugl(MA_FILE_DEBUG, level, fmt , ##__VA_ARGS__)
 #endif
 #endif /* PM2DEBUG */
 
@@ -106,19 +106,19 @@ extern debug_type_t marcel_mtrace_timer;
 
 #section macros
 #ifndef mdebugl
-#  define mdebugl(level, fmt, args...) \
-      debug_printfl(&marcel_mdebug, level, fmt , ##args)
+#  define mdebugl(level, fmt, ...) \
+      debug_printfl(&marcel_mdebug, level, fmt , ##__VA_ARGS__)
 #endif
-#define mdebug(fmt, args...) \
-    mdebugl(PM2DEBUG_STDLEVEL, fmt , ##args)
-#define mdebug_state(fmt, args...) \
-    debug_printf(&marcel_debug_state, fmt , ##args)
-#define mdebug_work(fmt, args...) \
-    debug_printf(&marcel_debug_work, fmt , ##args)
-#define mdebug_deviate(fmt, args...) \
-    debug_printf(&marcel_debug_deviate, fmt , ##args)
-#define mdebug_sched_q(fmt, args...) \
-    debug_printf(&marcel_mdebug_sched_q, fmt , ##args)
+#define mdebug(fmt, ...) \
+    mdebugl(PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
+#define mdebug_state(fmt, ...) \
+    debug_printf(&marcel_debug_state, fmt , ##__VA_ARGS__)
+#define mdebug_work(fmt, ...) \
+    debug_printf(&marcel_debug_work, fmt , ##__VA_ARGS__)
+#define mdebug_deviate(fmt, ...) \
+    debug_printf(&marcel_debug_deviate, fmt , ##__VA_ARGS__)
+#define mdebug_sched_q(fmt, ...) \
+    debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 
 #define MA_BUG() RAISE(PROGRAM_ERROR)
 #define MA_BUG_ON(cond) \
@@ -136,14 +136,14 @@ extern debug_type_t marcel_mtrace_timer;
   } while (0);
 
 #ifdef DEBUG_LOCK_TASK
-#  define lock_task_debug(fmt, args...) debug_printf(&marcel_lock_task_debug, \
-        fmt, ##args)
+#  define lock_task_debug(fmt, ...) debug_printf(&marcel_lock_task_debug, \
+        fmt, ##__VA_ARGS__)
 #endif
 #ifdef DEBUG_SCHED
-#  define sched_debug(fmt, args...) debug_printf(&marcel_sched_debug, \
-        fmt, ##args)
+#  define sched_debug(fmt, ...) debug_printf(&marcel_sched_debug, \
+        fmt, ##__VA_ARGS__)
 #else
-#  define sched_debug(fmt, args...) (void)0
+#  define sched_debug(fmt, ...) (void)0
 #endif
 
 #ifndef MARCEL_TRACE

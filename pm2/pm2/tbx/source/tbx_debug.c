@@ -483,9 +483,9 @@ void pm2debug_printf_state(int state)
 	__pm2debug_printf_state=state;
 }
 
-#define my_print(fmt, args...) \
+#define my_print(fmt, ...) \
 	do { \
-		size=tbx_snprintf(cur, remaining, fmt, ##args); \
+		size=tbx_snprintf(cur, remaining, fmt, ##__VA_ARGS__); \
 		remaining-=size; \
 		if (remaining<=0) \
 			goto do_write; \

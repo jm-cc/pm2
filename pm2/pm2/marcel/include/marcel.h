@@ -263,6 +263,9 @@ void marcel_free(void *ptr, char *file, unsigned line);
 #ifdef STANDARD_MAIN
 #define marcel_main main
 #else
+#ifdef MARCEL_MAIN_AS_FUNC
+int go_marcel_main(int argc, char *argv[]);
+#endif
 extern int marcel_main(int argc, char *argv[]);
 #endif
 

@@ -311,7 +311,6 @@ static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
 	}
 	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
-	MA_BUG_ON(!ma_spin_is_locked(&p->sched.internal.cur_rq->lock));
 	MA_BUG_ON(!p->sched.internal.array);
 	p->sched.internal.array = NULL;
 }

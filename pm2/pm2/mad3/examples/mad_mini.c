@@ -30,7 +30,13 @@
 // Macros
 //......................
 
-#define MAX 16
+// Maximum number of anonymous subchannels to test
+#define MAX_SUB 8
+
+// Buffer size
+#define BUFFER_SIZE 16
+
+// Display of argv contents at program startup
 //#define ECHO_ARGS
 
 // Static variables
@@ -52,7 +58,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   ntbx_process_lrank_t       my_local_rank  =   -1;
   ntbx_process_lrank_t       its_local_rank =   -1;
   ntbx_pack_buffer_t         buffer MAD_ALIGNED;
-  int                        sub_max        =    1;
   int                        sub            =    0;
 
   DISP_STR("Channel", name);
@@ -64,18 +69,11 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       return;
     }
 
-#ifdef MARCEL
-  if (channel->type == mad_channel_type_mux)
-    {
-      sub_max = 10;
-    }
-#endif /* MARCEL */
-
-  for (sub = 0; sub < sub_max; sub++)
+  for (sub = 0; sub < min(channel->max_sub, MAX_SUB); sub++)
     {
       if (sub)
 	{
-	  channel = mad_mux_get_sub_channel(channel, sub);
+	  channel = mad_get_sub_channel(channel, sub);
 	  DISP_VAL("subchannel", sub);
 	}
 
@@ -92,9 +90,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  int                 len     =    0;
 	  int                 dyn_len =    0;
 	  char               *dyn_buf = NULL;
-	  char                buf[MAX] MAD_ALIGNED;
+	  char                buf[BUFFER_SIZE] MAD_ALIGNED;
 
-	  memset(buf, 0, MAX);
+	  memset(buf, 0, BUFFER_SIZE);
 
 #ifdef MAD_MESSAGE_POLLING
 	  while (!(in = mad_begin_unpacking(channel)));
@@ -106,7 +104,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		     mad_send_SAFER, mad_receive_EXPRESS);
 
 	  len = ntbx_unpack_int(&buffer);
-	  if ((len < 1) || (len > MAX))
+	  if ((len < 1) || (len > BUFFER_SIZE))
 	    FAILURE("invalid message length");
 
 	  mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
@@ -194,7 +192,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  int                 len     =    0;
 	  int                 dyn_len =    0;
 	  char               *dyn_buf = NULL;
-	  char                buf[MAX] MAD_ALIGNED;
+	  char                buf[BUFFER_SIZE] MAD_ALIGNED;
 
 	  msg = tbx_strdup("token__");
 
@@ -238,7 +236,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 	  TBX_FREE(dyn_buf);
 	  dyn_buf = NULL;
-	  memset(buf, 0, MAX);
+	  memset(buf, 0, BUFFER_SIZE);
 
 #ifdef MAD_MESSAGE_POLLING
 	  while (!(in = mad_begin_unpacking(channel)));
@@ -250,7 +248,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		     mad_send_SAFER, mad_receive_EXPRESS);
 
 	  len = ntbx_unpack_int(&buffer);
-	  if ((len < 1) || (len > MAX))
+	  if ((len < 1) || (len > BUFFER_SIZE))
 	    FAILURE("invalid message length");
 
 	  mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
@@ -275,6 +273,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 }
 
 #ifdef ECHO_ARGS
+static
 void
 disp_args(int argc, char **argv)
 {

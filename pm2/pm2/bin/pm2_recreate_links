@@ -94,6 +94,15 @@ make_ln ${MARCEL_ROOT}/include/ ../../include/timing.h timing.h
 make_ln ${MARCEL_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
 make_ln ${MARCEL_ROOT}/source/ ../../source/timing.c timing.c
 
+# Marcel / options de configuration (cf pm2-config-flavor) exclusives
+$ECHO
+cd ${MARCEL_ROOT}/config/options
+mkdir ../conf.excl
+for f in 1* ; do
+    $ECHO
+    ( cd ../conf.excl; ln -s ../options/$f )
+done
+
 # Mad I
 echo
 echo Madeleine I
@@ -137,6 +146,14 @@ make_ln ${MAD1_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
 make_ln ${MAD1_ROOT}/source/ ../../source/timing.c timing.c
 make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 
+# Mad I / options de configuration (cf pm2-config-flavor) exclusives
+$ECHO
+cd ${MAD1_ROOT}/config/options
+mkdir ../net.excl
+for f in 1* ; do
+    $ECHO
+    ( cd ../net.excl; ln -s ../options/$f )
+done
 
 # Mad II
 echo
@@ -154,5 +171,4 @@ make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 echo .
 ${PM2_ROOT}/bin/pm2madselect 2
-
 

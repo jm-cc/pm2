@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_thread.h,v $
+Revision 1.3  2000/02/28 11:18:03  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:49:45  oaumage
 - ajout du Log CVS
 
@@ -44,13 +47,13 @@ ______________________________________________________________________________
 #ifndef PM2_THREAD_EST_DEF
 #define PM2_THREAD_EST_DEF
 
-#include <marcel.h>
+#include "marcel.h"
 
 typedef void (*pm2_func_t)(void *arg);
 
 void pm2_thread_init(void);
 void pm2_thread_exit(void);
 
-void pm2_thread_create(pm2_func_t func, void *arg);
+marcel_t pm2_thread_create(pm2_func_t func, void *arg);
 
 #endif

@@ -1,0 +1,98 @@
+
+  Il y a plusieurs niveaux de portage de Marcel sur une nouvelle architecture.
+
+			      +---------------+
+			      | Indispensable |
+			      +---------------+
+
+  Ajouter la détection de l'architecture dans bin/pm2_arch. La convention pour
+PM2_ASM est d'utiliser les même noms que le noyau linux.
+
+  Copier marcel/include/asm-new en marcel/include/asm-votrearchi.
+
+  Si votre système n'a pas stdint.h, remplissez
+marcel/include/asm-votrearchi/linux_types.h
+
+  Remplissez marcel/include/asm-votrearchi/marcel_archdep.h pour indiquer
+comment manipuler le pointeur de pile et où il se situe au sein de la structure
+jmpbuf sur votre système (en général, il suffit d'aller voir la définition de
+jmpbuf, il y a des macros à côté).
+
+  Pour le support SMP (et parfois aussi même pour mono), remplissez les
+barrières mémoire dans asm-votrearchi/linux_system.h . Il suffit de s'inspirer
+du noyau linux (include/asm-votrearchi/system.h).
+
+  Pour le support ISO Malloc, ajoutez votre architecture dans
+marcel/include/sys/isomalloc_archdep.h . Il suffit a priori de regarder
+/proc/self/maps pour trouver où se trouve la pile pour remplir la macro
+IS_ON_MAIN_STACK(), et de trouver un espace de mapping où on pourra effectuer
+les isomallocs.
+
+  Pour le profiling, il y a aussi besoin de remplir les macros dans
+marcel/include/asm-votrearchi/marcel_profile.h, utilisées pour récupérer
+efficacement le TID.
+
+  Ce niveau de portage suffit a priori pour une utilisation en mode mono.
+
+  Pour une utilisation en mode SMP, on peut implémenter un des niveaux suivants
+selon le compromis choisi entre performances et travail de portage.
+
+			     +----------------+
+			     | Niveau de base |
+			     +----------------+
+
+  Il n'y a aucun travail à faire pour le premier niveau de portage: Marcel
+se rabat automatiquement sur les fonctions pthread_mutex_lock/unlock() de la
+librairie pthread sous-jacente (on ne peut donc alors pas utiliser l'option
+"don't use pthreads").
+
+  Ce niveau est déconseillé si les fonctions pthread_mutex_lock/unlock() de la
+librairie pthread ont de mauvaises performances: si l'on utilise LinuxThreads
+par exemple. En revanche, la NPTL par exemple fournit des fonctions ayant
+a priori de très bonnes performances dans le cas non contendu. Dans le cas
+contendu, le réveil nécessite cependant une interruption inter-CPU, ce qui prend
+du temps, ce serait à mesurer...
+
+			      +--------------+
+			      | Test and Set |
+			      +--------------+
+
+  Le niveau de portage de l'ancien Marcel, encore disponible, était
+l'utilisation d'une primitive "test and set": il suffit d'implémenter
+les fonctions pm2_spinlock_testandset() et pm2_spinlock_release() dans
+marcel/include/asm-votrearchi/marcel_testandset.h
+
+				+----------+
+				| Spinlock |
+				+----------+
+
+  Pour de meilleures performances, il est possible d'implémenter directement les
+spinlocks dans marcel/include/asm-votrearchi/linux_spinlock.h . Il suffit de
+récupérer l'implémentation du noyau linux (include/asm-votrearchi/spinlock.h)
+
+  Ce niveau (tout comme les deux précédents) n'est cependant pas très efficace
+pour ce qui est des opérations atomiques: un spinlock global est utilisé pour
+leur protection.
+
+			   +--------------------+
+			   | Compare & Exchange |
+			   +--------------------+
+
+  Pour obtenir de bien meilleures performances sur les opérations atomiques, il
+est très recommandé d'implémenter aussi la fonction pm2_compareexchange dans
+marcel/include/asm-votrearchi/marcel_compareexchange.h . Il suffit de récupérer
+l'implémentation de cmpxchg du noyau linux (include/asm-votrearchi/system.h).
+
+			    +-----------------+
+			    | Portage complet |
+			    +-----------------+
+
+  Pour des performances optimales, il est possible d'implémenter les opérations
+atomiques dans marcel/include/asm-votrearchi/linux_atomic.h et linux_bitops.h
+
+				  +------+
+				  | Note |
+				  +------+
+
+  Bien sûr, il est possible que votre nouvel OS / nouvelle architecture a des
+spécificités particulières, et il faudra adapter d'autres choses...

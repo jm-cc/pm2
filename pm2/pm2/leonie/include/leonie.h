@@ -51,7 +51,14 @@
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
-#include <tbx.h>
-#include <leo_parser_types.h>
+#include "ntbx.h"
+#include "tbx.h"
+#include "leo_types.h"
+#include "leo_parser_types.h"
+#ifndef LEO_IN_YACC
+#include "y.tab.h"
+#endif /* LEO_IN_YACC */
+#include "leo_main.h"
+#include "leo_interface.h"
 
 #endif /* __LEONIE_H */

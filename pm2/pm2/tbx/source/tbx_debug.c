@@ -43,8 +43,17 @@
 /* Timeout before aborting taking the lock */
 #define TIMEOUT  10000000
 /* Buffer for the activations ... */
-#define DEBUG_SIZE_BUFFER 1600000
 #define SIZE_FILE_NAME 35
+
+/* Dans l'ordre de debug_action_t */
+static char*options_name[] = {
+	"show",
+	"prefix",
+	"file",
+	"thread",
+	"lwp",
+	NULL,
+};
 
 #define STRING(s) tbx_str(s)
 #define tbx_str(s) #s
@@ -54,10 +63,22 @@ static debug_type_t* debug_type_registered[MAX_DEBUG_REGISTER];
 static int nb_options=0;
 static char* options[MAX_DEBUG_CMDLINE_OPTIONS];
 
-debug_type_t debug_pm2debug=NEW_DEBUG_TYPE(1, "pm2debug: ", "pm2debug");
-debug_type_t debug_pm2fulldebug=NEW_DEBUG_TYPE(1, "pm2fulldebug: ", "pm2fulldebug");
-debug_type_t debug_type_register=NEW_DEBUG_TYPE(0, "register: ", "register");
-static debug_type_t debug_type_flush=NEW_DEBUG_TYPE(0, "unused", "unused");
+debug_type_t debug_pm2debug=NEW_DEBUG_TYPE("pm2debug: ", "pm2debug");
+debug_type_t debug_type_register=NEW_DEBUG_TYPE("register: ", "register");
+
+debug_type_t debug_default={
+	.show=0,
+	.actions={PM2DEBUG_DEFAULTLEVEL,0,0,1,1},
+	.prefix="default: ",
+	.option_name="default",
+	.depend=NULL,
+	.register_shown=0,
+};
+
+debug_type_t debug_disp = NEW_DEBUG_TYPE("disp: ", "disp");
+debug_type_t debug_log = NEW_DEBUG_TYPE("log: ", "log");
+debug_type_t debug_trace = NEW_DEBUG_TYPE("trace: ", "trace");
+
 DEBUG_DECLARE(init)
 #ifdef MARCEL
 DEBUG_DECLARE(marcel)
@@ -94,72 +115,85 @@ DEBUG_DECLARE(dsm)
 #endif
 DEBUG_DECLARE(app)
 
-inline void pm2debug_setup(debug_type_t* type, debug_action_t action, 
-			   int value)
+inline static int get_action_value(debug_type_t* type, debug_action_t action)
 {
-	if (type->setup) {
-		type->setup(type, action, value);
-	} else {
-		debug_setup_default(type, action, value);
+	int local;
+
+	if (!type) {
+		type=&debug_default;
 	}
+	local=type->actions[action];
+	if (local == PM2DEBUG_DEFAULT) {		
+		if (type==&debug_default) {
+			pm2debug("Default action for %i is default!\n",
+				 action);
+			return 0;
+		}
+		return get_action_value(type->depend, action);
+	}
+	return local;
 }
 
-
-void debug_setup_default(debug_type_t* type, debug_action_t action, int value)
+inline static void update_show()
 {
-	if (!type) {
-		return;
-	}
-	switch (action) {
-	case PM2DEBUG_SHOW:
-		type->show=value;
-		break;
-	case PM2DEBUG_SHOW_PREFIX:
-		type->show_prefix=value;
-		break;
-	case PM2DEBUG_SHOW_FILE:
-		type->show_file=value;
-		break;
-	case PM2DEBUG_CRITICAL:
-		type->critical=value;
-		break;
-	case PM2DEBUG_DO_NOT_SHOW_THREAD:
-		type->do_not_show_thread=value;
-		break;
-	case PM2DEBUG_DO_NOT_SHOW_LWP:
-		type->do_not_show_lwp=value;
-		break;
-	case PM2DEBUG_TRYONLY:
-		type->try_only=value;
-		break;
-	case PM2DEBUG_REGISTER:
-		break;
+	int type_ind;
+
+	for(type_ind=0; type_ind<nb_debug_type_registered; type_ind++) {
+		debug_type_t *type=debug_type_registered[type_ind];
+		if (type->show != PM2DEBUG_AUTO_REGISTER) {
+			type->show=get_action_value(type, PM2DEBUG_SHOW);
+		}
 	}
 }
 
 static void print_register(debug_type_t* type)
 {
-	debug_printf(&debug_type_register, "register debug name: %s (%s)\n", 
-		     type->option_name, type->show ? "enabled" : "disabled" );
+	int reg_level=get_action_value(&debug_type_register, PM2DEBUG_SHOW);
+
+	if ((reg_level > PM2DEBUG_STDLEVEL && !type->register_shown)
+	    ||(reg_level > PM2DEBUG_ON && type->register_shown<2)) {
+		/* Si on doit afficher quelque chose */
+		if (type->show != PM2DEBUG_AUTO_REGISTER) {
+			char *s1="", *s2="";
+			type->register_shown=2;
+			if (type->actions[PM2DEBUG_SHOW] == PM2DEBUG_DEFAULT) {
+				s1="DEFAULT (";
+				s2=")";
+			}
+			debug_printf(&debug_type_register, 
+				     "register debug name: %s [%s] (show=%s%i%s)\n", 
+				     type->option_name, 
+				     (type->depend?:&debug_default)->option_name,
+				     s1, get_action_value(type, PM2DEBUG_SHOW),
+				     s2);
+		} else if (reg_level>PM2DEBUG_ON 
+			   && type->show == PM2DEBUG_AUTO_REGISTER) {
+			type->register_shown=1;
+			debug_printf(&debug_type_register, 
+				     "register debug name: %s [%s] not yet used\n",
+				     type->option_name,
+				     (type->depend?:&debug_default)->option_name);
+		}
+	}
 }
 
-static void register_setup(debug_type_t* type, debug_action_t action, 
-			   int value)
+inline static void print_all_registered()
 {
 	int type_ind;
-	if (!type) {
-		return;
+
+	for(type_ind=0; type_ind<nb_debug_type_registered; 
+	    type_ind++) {
+		print_register(debug_type_registered[type_ind]);
 	}
-	debug_setup_default(type, action, value);
-	switch (action) {
-	case PM2DEBUG_SHOW:
-		for(type_ind=0; type_ind<nb_debug_type_registered; 
-		    type_ind++) {
-			print_register(debug_type_registered[type_ind]);
-		}
-		break;
-	default:
-		break;
+}
+
+inline static void show_registered()
+{
+	static int shown=0;
+
+	if (!shown) {
+		//shown=1;
+		print_all_registered();
 	}
 }
 
@@ -170,26 +204,12 @@ static int apply_option(debug_type_t *type, char* option)
 	int addlen;
 	debug_action_t action;
 	int value;
+	char **opt;
 
-	option+=7; /* on saute --debug */
-	if (option[0]==':') {
-		option++;
-	} else if (option[0]) {
+	if (strncmp(option, type->option_name, size))
 		return 0;
-	}
+	option+=size;
 
-	if (!*option) {
-		chaine="default";
-		addlen=0;
-	} else {
-		addlen=1;
-		chaine=option;
-	}
-	if (strncmp(chaine, type->option_name, size))
-		return 0;
-	if (addlen) {
-		option+=size;
-	}
 	if (option[0]==':') {
 		option++;
 	} else if (option[0]) {
@@ -203,31 +223,18 @@ static int apply_option(debug_type_t *type, char* option)
 		addlen=1;
 		chaine=option;
 	}
-	if (!strncmp(chaine, "show", 4)) {
-		action=PM2DEBUG_SHOW;
-		size=4;
-	} else if (!strncmp(chaine, "prefix", 6)) {
-		action=PM2DEBUG_SHOW_PREFIX;
-		size=6;
-	} else if (!strncmp(chaine, "file", 4)) {
-		action=PM2DEBUG_SHOW_FILE;
-		size=4;
-	} else if (!strncmp(chaine, "critical", 8)) {
-		action=PM2DEBUG_CRITICAL;
-		size=8;
-	} else if (!strncmp(chaine, "lwp", 3)) {
-		action=PM2DEBUG_DO_NOT_SHOW_LWP;
-		size=3;
-	} else if (!strncmp(chaine, "thread", 6)) {
-		action=PM2DEBUG_DO_NOT_SHOW_THREAD;
-		size=3;
-	} else if (!strncmp(chaine, "tryonly", 7)) {
-		action=PM2DEBUG_TRYONLY;
-		size=7;
-	} else {
-		pm2debug("Warning: unknown action %s\n", chaine);
-		return 1;
+
+	for(opt=options_name, action=PM2DEBUG_SHOW;
+	    *opt != NULL && action<PM2DEBUG_SHOW_MAX;
+	    opt++, action++) {
+		size=strlen(*opt);
+		if (!strncmp(chaine, *opt, size)) {
+			goto option_found;
+		}
 	}
+	pm2debug("Warning: unknown action %s\n", chaine);
+	return 1;
+ option_found:
 	if (addlen) {
 		option+=size;
 	}
@@ -245,24 +252,19 @@ static int apply_option(debug_type_t *type, char* option)
 		addlen=1;
 		chaine=option;
 	}
-	if (!strncmp(chaine, "on", 2)) {
-		value=1;
-		size=2;
-	} else if (!strncmp(chaine, "off", 3)) {
-		value=0;
-		size=3;
+	if (!strcmp(chaine, "on")) {
+		value=PM2DEBUG_ON;
+	} else if (!strcmp(chaine, "off")) {
+		value=PM2DEBUG_OFF;
+	} else if (!strcmp(chaine, "default")) {
+		value=PM2DEBUG_DEFAULT;
 	} else {
-		pm2debug("Warning: unknown value %s\n", chaine);
-		return 1;
-	}
-	if (addlen) {
-		option+=size;
-	}
-	if (option[0]==':') {
-		option++;
-	} else if (option[0]) {
-		pm2debug("Warning: unknown value %s\n", chaine);
-		return 1;
+		char *end;
+		value=strtol(chaine, &end, 0);
+		if (*end) {
+			pm2debug("Warning: unknown value %s\n", chaine);
+			return 1;
+		}
 	}
 	pm2debug_setup(type, action, value);
 	return 1;
@@ -277,96 +279,136 @@ static void remove_option(int opt)
 	nb_options--;
 }
 
-void pm2debug_register(debug_type_t *type)
+#define REG_AUTO    1
+#define REG_DEPEND  2
+static void pm2debug_register_real(debug_type_t *type, int option)
 {
 	int opt;
 	int type_ind;
+	int need_print=0;
+	if (type->depend) {
+		pm2debug_register_real(type->depend, option|REG_DEPEND);
+	}
+	if (option & REG_AUTO) {
+		if (type->show==PM2DEBUG_AUTO_REGISTER) {
+			need_print=1;
+			type->show=get_action_value(type, PM2DEBUG_SHOW);
+		}
+	}
 	for (type_ind=0; type_ind<nb_debug_type_registered; type_ind++) {
 		if (debug_type_registered[type_ind] ==  type) {
-			return ; /* Already registered */
+			/* Already registered */
+			if (need_print) {
+				print_register(type);
+			}
+			return ;
 		}
 	}
 	if (nb_debug_type_registered<MAX_DEBUG_REGISTER-1) {
 		debug_type_registered[nb_debug_type_registered++]=type;
 	} else {
-		pm2fulldebug("Too many debug types registered."
-			     " Please, increase\n"
-			     "MAX_DEBUG_REGISTER in " __FILE__ "\n");
+		pm2debug("Too many debug types registered."
+			 " Please, increase\n"
+			 "MAX_DEBUG_REGISTER in " __FILE__ "\n");
 	}
-	pm2debug_setup(type, PM2DEBUG_REGISTER, 0);
-	print_register(type);
+	pm2debug_register_real(&debug_default, option|REG_DEPEND);
 
 	for (opt=0; opt<nb_options; opt++) {
 		if (apply_option(type, options[opt])) {
 			remove_option(opt);
 		}
 	}
+	print_register(type);
+}
+
+void pm2debug_register(debug_type_t *type)
+{
+	pm2debug_register_real(type, 0);
+}
+
+inline static void pm2debug_register_auto(debug_type_t *type)
+{
+	pm2debug_register_real(type, REG_AUTO);
+}
+
+void pm2debug_setup(debug_type_t* type, debug_action_t action, 
+		    int value)
+{
+	if (!type) {
+		pm2debug("Arghhh: NULL debug type for pm2debug_setup\n");
+		return;
+	}
+	pm2debug_register_real(type, REG_DEPEND);
+	type->actions[action]=value;
+	if (action==PM2DEBUG_SHOW) {
+		update_show();
+	}
+}
+
+void pm2debug_init_base()
+{
+	static int called=0;
+
+	if (called)
+		return;
+
+	pm2debug_register(&debug_default);
+	pm2debug_register(&debug_pm2debug);
+	pm2debug_register(&debug_type_register);
+	DEBUG_INIT(init);
+#ifdef MARCEL
+	DEBUG_INIT(marcel);
+#endif
+#ifdef MAD1
+	DEBUG_INIT(mad1);
+#endif
+#ifdef MAD2
+	DEBUG_INIT(mad2);
+#endif
+#ifdef MAD3
+	DEBUG_INIT(mad3);
+#endif
+#ifdef LEONIE
+	DEBUG_INIT(leonie);
+#endif
+#ifdef LEOPARSE
+	DEBUG_INIT(leoparse);
+#endif
+#ifdef SWANN
+	DEBUG_INIT(swann);
+#endif
+#ifdef PM2
+	DEBUG_INIT(pm2);
+#endif
+#ifdef TBX
+	DEBUG_INIT(tbx);
+#endif
+#ifdef NTBX
+	DEBUG_INIT(ntbx);
+#endif
+#ifdef DSM
+	DEBUG_INIT(dsm);
+#endif
+	DEBUG_INIT(app);
 
 }
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 {
-	static int called=0;
-	static int arg=0;
+	static int op_done=0;
 	int type;
 	int opt=1;
 	int i;
+	int show_reg=0;
 
-	if (!called) {
-		pm2debug_register(&debug_pm2debug);
-		pm2debug_register(&debug_pm2fulldebug);
-		pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_SHOW_FILE, 1);
-		pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_CRITICAL, 1);
-		debug_type_register.setup=register_setup;
-		pm2debug_register(&debug_type_register);
-		DEBUG_INIT(init);
-#ifdef MARCEL
-		DEBUG_INIT(marcel);
-#endif
-#ifdef MAD1
-		DEBUG_INIT(mad1);
-#endif
-#ifdef MAD2
-		DEBUG_INIT(mad2);
-#endif
-#ifdef MAD3
-		DEBUG_INIT(mad3);
-#endif
-#ifdef LEONIE
-		DEBUG_INIT(leonie);
-#endif
-#ifdef LEOPARSE
-		DEBUG_INIT(leoparse);
-#endif
-#ifdef SWANN
-		DEBUG_INIT(swann);
-#endif
-#ifdef PM2
-		DEBUG_INIT(pm2);
-#endif
-#ifdef TBX
-		DEBUG_INIT(tbx);
-#endif
-#ifdef NTBX
-		DEBUG_INIT(ntbx);
-#endif
-#ifdef DSM
-		DEBUG_INIT(dsm);
-#endif
-		DEBUG_INIT(app);
-	}
-	called=1;
+	pm2debug_init_base();
 
 	if ((argc==NULL) || (argv==NULL)) {
 		return;
 	}
-	if (arg) {
-		debug_flags &= (~PM2DEBUG_DO_OPT);
-	}
 
-	if (debug_flags & PM2DEBUG_DO_OPT) {
-		arg=1;
-	}
+	debug_flags &= (~op_done);
+	op_done |= (debug_flags & PM2DEBUG_DO_OPT);
 
 	while ((opt<=(*argc)) && (argv[opt])) {
 	  
@@ -387,19 +429,29 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 		}
 #endif // LEONIE
 		
-		if (strncmp(argv[opt], "--debug", 7)) {
+		if (strncmp(argv[opt], "--debug:", 8)) {
 			opt++;
 			continue;
 		}
 
 		if (debug_flags & PM2DEBUG_DO_OPT) {
+			if (!strcmp(argv[opt]+8, "register")) {
+				if (debug_type_register.actions[PM2DEBUG_SHOW]
+				    == PM2DEBUG_DEFAULT) {
+					pm2debug_setup(&debug_type_register, 
+						       PM2DEBUG_SHOW, 
+						       PM2DEBUG_ON);
+				}
+				show_reg=1;
+				goto option_done;
+			}
 			for (type=0; type<nb_debug_type_registered; type++) {
 				if (apply_option(debug_type_registered[type], 
-						 argv[opt])) {
+						 argv[opt]+8)) {
 					goto option_done;
 				}
 			}
-			options[nb_options++]=argv[opt];
+			options[nb_options++]=argv[opt]+8;
 			//pm2debug("registering option %s\n",
 			//	 options[nb_options-1]);
 		}
@@ -412,12 +464,11 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 		} else {
 			opt++;
 		}
+
 	}
-}
-	
-void pm2debug_flush()
-{
-	pm2debug_printf(&debug_type_flush,0,__FILE__, "%s", "");
+	if (show_reg) {
+		show_registered();
+	}
 }
 
 #if !defined(MARCEL) || !defined(MA__PTHREAD_FUNCTIONS)
@@ -432,10 +483,13 @@ void pm2debug_printf_state(int state)
 }
 
 volatile int inprint=0;
-
 inline static int pm2debug_tryprint()
 {
 #ifndef MARCEL
+	if (inprint) {
+		return 0;
+	}
+	inprint=1;
 	return 1;
 #else
 	switch (__pm2debug_printf_state) {
@@ -489,7 +543,7 @@ inline static void pm2debug_endprint(int entry)
 		cur+=size; \
 	} while (0);
 
-int pm2debug_printf(debug_type_t *type, int line, const char* file, 
+int pm2debug_printf(debug_type_t *type, int level, int line, const char* file, 
 		    const char *format, ...)
 {
 	va_list ap;
@@ -499,18 +553,21 @@ int pm2debug_printf(debug_type_t *type, int line, const char* file,
 		return 0;
 	}
 	
+	if (type->show==PM2DEBUG_AUTO_REGISTER) {
+		pm2debug_register_auto(type);
+	}
 	if(0 == (can_print=pm2debug_tryprint())) {
 		/* un pm2debug dans lui même ? */
 		return 0;
 	}
 
-	if (type->show) {
+	if (type->show >= level) {
 		char buffer[PM2DEBUG_MAXLINELEN],*cur=buffer;
 		int eaten=0,remaining=PM2DEBUG_MAXLINELEN,size;
-		if (type->show_prefix) {
+		if (get_action_value(type, PM2DEBUG_SHOW_PREFIX)) {
 			my_print("%s", type->prefix);
 		}
-		if (type->show_file) {
+		if (get_action_value(type, PM2DEBUG_SHOW_FILE)) {
 			int len=strlen(file)+15;
 			char location[len];
 			if (line > 10000000) {
@@ -524,14 +581,14 @@ int pm2debug_printf(debug_type_t *type, int line, const char* file,
 		}
 #ifdef MARCEL
 #ifdef MA__LWPS
-		if (!type->do_not_show_lwp) {
+		if (get_action_value(type, PM2DEBUG_SHOW_LWP)) {
 			my_print("[P%02d] ", 
 				 (((can_print==2) 
 				   && GET_LWP(marcel_self())) 
 				  ? GET_LWP_NUMBER(marcel_self()) : -1));
 		}
 #endif
-		if (!type->do_not_show_thread) {
+		if (get_action_value(type, PM2DEBUG_SHOW_THREAD)) {
 			my_print("(%8p) ", (can_print==2) ?
 			marcel_self():(void*)-1);
 		}

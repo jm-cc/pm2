@@ -66,7 +66,7 @@ static int unix_io_group(marcel_ev_serverid_t id,
 	unix_io_serverid_t uid=struct_up(id, struct unix_io_server, server);
 	tcp_ev_t ev, tmp;
 
-	debug("Grouping IO poll\n");
+	mdebug("Grouping IO poll\n");
 	uid->nb = 0;
 	FD_ZERO(&uid->rfds);
 	FD_ZERO(&uid->wfds);
@@ -108,7 +108,7 @@ static int unix_io_group(marcel_ev_serverid_t id,
 inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 					fd_set *rfds, fd_set *wfds)
 {
-	debug("Checking select for IO poll (at least one success)\n");
+	mdebug("Checking select for IO poll (at least one success)\n");
 	switch(ev->op) {
 	case POLL_READ :
 		if(FD_ISSET(ev->fd, rfds))
@@ -251,7 +251,7 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 
 	ev.op = POLL_READ;
 	ev.fd = fildes;
-	debug("Reading in fd %i\n", fildes);
+	mdebug("Reading in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
 #endif
 
@@ -270,7 +270,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 
 	ev.op = POLL_READ;
 	ev.fd = fildes;
-	debug("Reading in fd %i\n", fildes);
+	mdebug("Reading in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
 #endif
 
@@ -286,7 +286,7 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 
 	ev.op = POLL_WRITE;
 	ev.fd = fildes;
-	debug("Writing in fd %i\n", fildes);
+	mdebug("Writing in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
 #endif
 
@@ -305,7 +305,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 
 	ev.op = POLL_WRITE;
 	ev.fd = fildes;
-	debug("Writing in fd %i\n", fildes);
+	mdebug("Writing in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
 #endif
 
@@ -324,7 +324,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	ev.rfds = rfds;
 	ev.wfds = wfds;
 	ev.nfds = nfds;
-	debug("Selecting within %i fds\n", nfds);
+	mdebug("Selecting within %i fds\n", nfds);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
 #endif
 

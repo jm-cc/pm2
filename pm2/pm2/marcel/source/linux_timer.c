@@ -155,8 +155,8 @@ int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 
 	MA_BUG_ON(!timer->function);
 
-	debug("modifying (or adding) timer from %li to %li\n",
-	      timer->expires, expires);
+	mdebug("modifying (or adding) timer from %li to %li\n",
+	       timer->expires, expires);
 
 	check_timer(timer);
 
@@ -261,7 +261,7 @@ int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 	MA_BUG_ON(!timer->function);
 
 	check_timer(timer);
-	debug("Real modifying timer at %li\n", expires);
+	mdebug("Real modifying timer at %li\n", expires);
 
 	/*
 	 * This is a common optimization triggered by the

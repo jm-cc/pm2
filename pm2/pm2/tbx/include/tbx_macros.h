@@ -78,20 +78,20 @@
 
 #  define TIME_INIT() _TBXT_POST
 #  define TIME(str)
-    _TBXT_PRE; pm2fulldebug("%s [%4f usecs]\n", str, _TBXT_DIFF); _TBXT_POST
+    _TBXT_PRE; pm2debug("%s [%4f usecs]\n", str, _TBXT_DIFF); _TBXT_POST
 #  define TIME_IN()  TIME_INIT()
 #  define TIME_OUT() TIME(__TBX_FUNCTION__)
 #  define TIME_VAL(str, val) \
     _TBXT_PRE; \
-    pm2fulldebug(str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
+    pm2debug(str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
     _TBXT_POST
 #  define TIME_PTR(str, ptr) \
     _TBXT_PRE; \
-    pm2fulldebug(str " = %p [%4f usecs]\n", (void *)(ptr), _TBXT_DIFF); \
+    pm2debug(str " = %p [%4f usecs]\n", (void *)(ptr), _TBXT_DIFF); \
     _TBXT_POST
 #  define TIME_STR(str, str2) \
     _TBXT_PRE; \
-    pm2fulldebug(str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
+    pm2debug(str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
     _TBXT_POST
 #else /* TIMING */
 #  define TIME_INIT()          (void)(0)
@@ -114,7 +114,7 @@
  */
 #define TBX_CTRL(op, val) \
   if((op) != (val))     \
-    pm2fulldebug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
+    pm2debug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
             #op " != " #val, __FILE__, __LINE__),   abort()
 
 /*
@@ -124,7 +124,7 @@
 #ifdef PM2DEBUG
 #  define TBX_VERIFY(op, val) \
   if((op) != (val))     \
-    pm2fulldebug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
+    pm2debug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
             #op " != " #val, __FILE__, __LINE__),   abort()
 #else /* DEBUG */
 #  define TBX_VERIFY(op, val) ((void)(op))
@@ -167,10 +167,10 @@
        size    = backtrace (array, TBX_BACKTRACE_DEPTH);\
        strings = backtrace_symbols (array, size);\
 \
-       pm2fulldebug("Obtained %d stack frames.\n", size);\
+       pm2debug("Obtained %d stack frames.\n", size);\
 \
        for (i = 0; i < size; i++)\
-          pm2fulldebug ("%s\n", strings[i]);\
+          pm2debug ("%s\n", strings[i]);\
 \
        free (strings);\
      })
@@ -183,14 +183,12 @@
 #endif // FAILURE_CONTEXT
 
 #define FAILURE(str) \
-     (pm2debug_flush(), \
-      pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s\n", (str)), \
+     (pm2debug("FAILURE: " FAILURE_CONTEXT "%s\n", (str)), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
 #define ERROR(str) \
-     (pm2debug_flush(), \
-      pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", (str), strerror(errno)), \
+     (pm2debug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", (str), strerror(errno)), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 

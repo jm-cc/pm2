@@ -23,11 +23,6 @@ pour la ligne de commande ou debug_pm2debug dans le programme.
   Si PM2DEBUG n'est pas défini, pm2debug() est une macro appelant
 fprintf(stderr, ...).
 
-Rem :
-  Il existe aussi 'pm2fulldebug' qui force l'affichage immédiat du
-message. Son utilisation peut conduire à un état instable, mais peut
-être utile juste avant une terminaison brutale.
-
                             +----------------------+
                             |  Macros déjà prêtes  |
                             +----------------------+
@@ -90,10 +85,11 @@ variables disponibles.)
 avec
   variable : le nom d'une variable (liste avec --debug:register)
   valeur : par défaut 'on'
-	peut être 'on' ou 'off'
+	peut être 'on' (5), 'off' (0), 'default' (-1) ou un entier
   action : par défaut 'show'
 	peut être :
-	- show : affiche ou pas les messages correspondant
+	- show : affiche les messages correspondant qui ont au plus le niveau
+	         indiqué
 	- prefix : affiche ou pas le préfix du message
 	- file : affiche ou non la ligne et le fichier du message
 	- lwp : cache ou non le lwp écrivant le message
@@ -112,17 +108,12 @@ d'action et une valeur.
 	PM2DEBUG_SHOW
 	PM2DEBUG_SHOW_PREFIX
 	PM2DEBUG_SHOW_FILE
-	PM2DEBUG_DO_NOT_SHOW_THREAD
-	PM2DEBUG_DO_NOT_SHOW_LWP
-	PM2DEBUG_CRITICAL
-	PM2DEBUG_TRYONLY
-	PM2DEBUG_REGISTER
-  Les trois dernières sont à éviter de modifier si on ne sait pas de
-quoi il s'agit. Les précédentes correspondent aux actions décrites
-précédemment.
+	PM2DEBUG_SHOW_THREAD
+	PM2DEBUG_SHOW_LWP
+  Les constantes correspondent aux actions décrites précédemment.
 
 Exemple:
-#define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 1)
+#define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 5)
 #define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)
 
 
@@ -154,13 +145,18 @@ on peut mettre dans calcul_debug.h :
 extern debug_type_t debug_calcul_trace;
 #define CALCUL_TRACE(fmt, args...) \
     debug_printf(&debug_calcul_trace, fmt , ##args)
+#define CALCUL_TRACE_LEVEL(level, fmt, args...) \
+    debug_printfl(&debug_calcul_trace, level, fmt , ##args)
 /****************************************************************/
+
+Rq: debug_type_t est un type opaque pour l'utilisateur.
+Rq2: debug_printf est équivalent à un debug_printfl de niveau 4
 
 et dans calcul_debug.c
 
 /****************************************************************/
 #include "tbx.h"
-debug_type_t debug_calcul_trace=NEW_DEBUG_TYPE(0, "CALCUL: ", "cal-trace");
+debug_type_t debug_calcul_trace=NEW_DEBUG_TYPE("CALCUL: ", "cal-trace");
 void calcul_debug_init(int* argc, char** argv, int debug_flags)
 {
 	pm2debug_register(&debug_calcul_trace);
@@ -176,9 +172,47 @@ refaire pour un programme inclu dans pm2. Il suffit d'enregistrer la
 variable avec pm2debug_register() (avant ou après l'appel à
 pm2debug_init_ext : il n'y a pas d'ordre imposé)
 
-  Rq2: NEW_DEBUG_TYPE(show, prefix, name)
-show vaut 1 ou 0 suivant si le message doit être afficher par défaut
+  Rq2: NEW_DEBUG_TYPE(prefix, name)
 prefix est une chaine pouvant être affichée devant chacun des messages
 name est le nom utilisé sur la ligne de commande
 
+  Rq3: pm2debug_register est facultatif. Un enregistrement automatique est fait
+lorsque le programme rencontre la variable. Si la variable n'est jamais
+rencontré et sans enregistrement, alors --debug:register ne pourra pas
+montrer cette variable.
+
+                            +-----------------------+
+                            |  Valeurs par défault  |
+                            +-----------------------+
+
+  Si une variable n'a pas de valeur pour une action donnée (ie elle a la valeur
+'default' ou -1), alors la valeur de sa variable de dépendance est utilisée.
+Si la variable ne possède pas de variable de dépendance, alors la pseudo
+variable 'default' (ligne de commande) est utilisée.
+  --debug:register affiche la variable de dépendance entre []
+  pm2debug_register enregistre en cascade les variables de dépendance.
+
+  Pour définir une variable de dépendance pour une variable donnée, il faut
+utiliser le constructeur NEW_DEBUG_TYPE_DEPEND au lieu de NEW_DEBUG_TYPE
+
+exemple :
+/****************************************************************/
+#include "tbx.h"
+debug_type_t debug_trace=NEW_DEBUG_TYPE("TRACE: ", "trace");
+debug_type_t debug_calcul_trace
+ =NEW_DEBUG_TYPE_DEPEND("CAL TRACE: ", "cal-trace", &debug_trace);
+debug_type_t debug_comm_trace
+ =NEW_DEBUG_TYPE_DEPEND("COMM TRACE: ", "comm-trace", &debug_trace);
+void debug_init(int* argc, char** argv, int debug_flags)
+{
+	pm2debug_register(&debug_calcul_trace);
+	pm2debug_register(&debug_comm_trace);
+	/* debug_trace est automatiquement enregistré à cause des dépendances
+	 */
+	pm2debug_init_ext(argc, argv, debug_flags);
+}
+/****************************************************************/
+
+et ainsi, --debug:trace permet d'activer les trois traces définies précédemment
+(on peut toujours en désactivé une avec par exemple --debug:cal-trace:show:off)
 

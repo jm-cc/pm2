@@ -17,8 +17,6 @@
 #define MA_FILE_DEBUG polling
 #include "marcel.h"
 
-MA_DEFINE_DEBUG_NAME(polling_full, 0);
-
 /****************************************************************
  * Voir marcel_io.c pour un exemple d'implémentation
  */
@@ -119,8 +117,8 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 
 	marcel_ev_server_start(&id->server);
 
-	debug("registering pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
-	      id, g, f, h, id->server.poll_points);
+	mdebug("registering pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
+	       id, g, f, h, id->server.poll_points);
 
 	LOG_OUT();
 
@@ -180,7 +178,7 @@ int marcel_ev_server_start(marcel_ev_serverid_t id)
 	MA_BUG_ON(id->state != MA_EV_SERVER_STATE_INIT);
 	if (!id->funcs[MARCEL_EV_FUNCTYPE_POLL_ONE]
 	    && !id->funcs[MARCEL_EV_FUNCTYPE_POLL_ALL]) {
-		debug("One poll function needed for %s\n", id->name);
+		mdebug("One poll function needed for %s\n", id->name);
 		RAISE(PROGRAM_ERROR);
 	}
 	id->state=MA_EV_SERVER_STATE_LAUNCHED;
@@ -231,12 +229,12 @@ inline static int __wake_ready(marcel_ev_serverid_t id)
 		if (ev->state & MARCEL_EV_STATE_NEED_SEM_V) {
 			marcel_sem_V(&ev->sem);
 		}
-		debug("Poll succeed with task %p\n", ev->task);
+		mdebug("Poll succeed with task %p\n", ev->task);
 	}
 	id->ev_poll_grouped_nb -= waken_some_grouped_task;
 	if (waken_some_grouped_task) {
-		debug("Nb grouped task set to %i\n", 
-		      id->ev_poll_grouped_nb);
+		mdebug("Nb grouped task set to %i\n", 
+		       id->ev_poll_grouped_nb);
 	}
 	INIT_LIST_HEAD(&id->ev_poll_ready);
 	return waken_some_grouped_task;
@@ -256,15 +254,15 @@ inline static int __poll_group(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 	if (id->funcs[MARCEL_EV_FUNCTYPE_POLL_GROUP] &&
 	    ( id->ev_poll_grouped_nb > 1 
 	      || ! id->funcs[MARCEL_EV_FUNCTYPE_POLL_ONE])) {
-		debug("Factorizing %i polling(s) with POLL_GROUP\n",
-		      id->ev_poll_grouped_nb);
+		mdebug("Factorizing %i polling(s) with POLL_GROUP\n",
+		       id->ev_poll_grouped_nb);
 		(*id->funcs[MARCEL_EV_FUNCTYPE_POLL_GROUP])
 			(id, MARCEL_EV_FUNCTYPE_POLL_ONE,
 			 ev, id->ev_poll_grouped_nb, 0);
 		return 1;
 	}
-	debug("No need to group %i polling(s)\n",
-	      id->ev_poll_grouped_nb);
+	mdebug("No need to group %i polling(s)\n",
+	       id->ev_poll_grouped_nb);
 	return 0;
 }
 
@@ -275,11 +273,11 @@ inline static void __poll_start(marcel_ev_serverid_t id)
 {
 	ma_write_lock_softirq(&ev_poll_lock);
 	MA_BUG_ON(!list_empty(&id->poll_list));
-	debug("Starting polling for %s\n", id->name);
+	mdebug("Starting polling for %s\n", id->name);
 	list_add(&id->poll_list, &ma_ev_poll_list);
 	if (id->poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
-		debug("Starting timer polling for %s at frequency %i\n",
-		      id->name, id->frequency);
+		mdebug("Starting timer polling for %s at frequency %i\n",
+		       id->name, id->frequency);
 		/* ma_mod_timer des fois qu'un ancien soit toujours
 		 * pending... */
 		ma_mod_timer(&id->poll_timer, ma_jiffies+id->frequency);
@@ -295,10 +293,10 @@ inline static void __poll_start(marcel_ev_serverid_t id)
 inline static void __poll_stop(marcel_ev_serverid_t id)
 {
 	ma_write_lock_softirq(&ev_poll_lock);
-	debug("Stopping polling for %s\n", id->name);
+	mdebug("Stopping polling for %s\n", id->name);
 	list_del_init(&id->poll_list);
 	if (id->poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
-		debug("Stopping timer polling for %s\n", id->name);
+		mdebug("Stopping timer polling for %s\n", id->name);
 		ma_del_timer(&id->poll_timer);
 	}
 	ma_write_unlock_softirq(&ev_poll_lock);
@@ -310,9 +308,8 @@ inline static void __poll_stop(marcel_ev_serverid_t id)
 inline static void __update_timer(marcel_ev_serverid_t id)
 {
 	if (id->poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
-		ma_debug(polling_full,
-			 "Update timer polling for %s at frequency %i\n",
-			 id->name, id->frequency);
+		mdebugl(7, "Update timer polling for %s at frequency %i\n",
+			id->name, id->frequency);
 		ma_mod_timer(&id->poll_timer, ma_jiffies+id->frequency);
 	}
 }
@@ -331,15 +328,16 @@ inline static void __update_timer(marcel_ev_serverid_t id)
 static void check_polling_for(marcel_ev_serverid_t id)
 {
 	int nb=id->ev_poll_grouped_nb;
+#if MA__DEBUG
 	static int count=0;
 
-	ma_debug(polling_full,
-		 "Check polling for %s\n", id->name);
+	mdebugl(7, "Check polling for %s\n", id->name);
 	
 	if (! count--) {
-		debug("Check polling 50000 for %s\n", id->name);
+		mdebugl(6, "Check polling 50000 for %s\n", id->name);
 		count=50000;
 	}
+#endif
 
 	if (!nb) 
 		return;
@@ -387,8 +385,7 @@ static void check_polling_for(marcel_ev_serverid_t id)
 void marcel_poll_from_tasklet(unsigned long hid)
 {
 	marcel_ev_serverid_t id=(marcel_ev_serverid_t)hid;
-	ma_debug(polling_full, 
-		 "Tasklet function for %s\n", id->name);
+	mdebugl(7, "Tasklet function for %s\n", id->name);
 	check_polling_for(id);
 	return;
 }
@@ -397,8 +394,7 @@ void marcel_poll_from_tasklet(unsigned long hid)
 void marcel_poll_timer(unsigned long hid)
 {
 	marcel_ev_serverid_t id=(marcel_ev_serverid_t)hid;
-	ma_debug(polling_full,
-		 "Timer function for %s\n", id->name);
+	mdebugl(7, "Timer function for %s\n", id->name);
 	ma_tasklet_schedule(&id->poll_tasklet);
 	return;
 }
@@ -414,9 +410,8 @@ void __marcel_check_polling(unsigned polling_point)
 	ma_read_lock_softirq(&ev_poll_lock);
 	list_for_each_entry(id, &ma_ev_poll_list, poll_list) {
 		if (id->poll_points & polling_point) {
-			ma_debug(polling_full,
-				 "Scheduling polling for %s at point %i\n",
-				 id->name, polling_point);
+			mdebugl(7, "Scheduling polling for %s at point %i\n",
+				id->name, polling_point);
 			ma_tasklet_schedule(&id->poll_tasklet);
 		}
 	}
@@ -427,7 +422,7 @@ void __marcel_check_polling(unsigned polling_point)
 void marcel_ev_poll_force(marcel_ev_serverid_t id)
 {
 	LOG_IN();
-	debug("Poll forced for %s\n", id->name);
+	mdebug("Poll forced for %s\n", id->name);
 	/* Pas très important si on loupe quelque chose ici (genre
 	 * liste modifiée au même instant)
 	 */
@@ -455,8 +450,8 @@ int marcel_ev_wait(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 #ifdef MA__DEBUG
 	MA_BUG_ON(id->state!=MA_EV_SERVER_STATE_LAUNCHED);
 #endif
-	debug("Marcel_poll (thread %p)...\n", marcel_self());
-	debug("using pollid %s\n", id->name);
+	mdebug("Marcel_poll (thread %p)...\n", marcel_self());
+	mdebug("using pollid %s\n", id->name);
 
 	INIT_LIST_HEAD(&ev->ev_list);
 	ev->state=0;
@@ -470,7 +465,7 @@ int marcel_ev_wait(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 	old_nb_grouped=id->ev_poll_grouped_nb;
 
 	if (id->funcs[MARCEL_EV_FUNCTYPE_POLL_ONE]) {
-		debug("Using Immediate POLL_ONE\n");
+		mdebug("Using Immediate POLL_ONE\n");
 		(*id->funcs[MARCEL_EV_FUNCTYPE_POLL_ONE])
 			(id, MARCEL_EV_FUNCTYPE_POLL_ONE,
 			 ev, id->ev_poll_grouped_nb, 0);
@@ -478,7 +473,7 @@ int marcel_ev_wait(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 	}
 	if (!(ev->state & MARCEL_EV_STATE_UNBLOCKED)) {
 		/* On doit ajouter la requête à celles en attente */
-		debug("Adding request\n");
+		mdebug("Adding request\n");
 		list_add(&ev->ev_list, &id->ev_poll_grouped);
 		marcel_sem_init(&ev->sem, 0);
 		id->ev_poll_grouped_nb++;
@@ -491,7 +486,7 @@ int marcel_ev_wait(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 #ifdef MA__DEBUG
 		MA_BUG_ON(!id->funcs[MARCEL_EV_FUNCTYPE_POLL_ALL]);
 #endif
-		debug("Using Immediate POLL_ALL\n");
+		mdebug("Using Immediate POLL_ALL\n");
 		(*id->funcs[MARCEL_EV_FUNCTYPE_POLL_ALL])
 			(id, MARCEL_EV_FUNCTYPE_POLL_ALL,
 			 ev, id->ev_poll_grouped_nb, 0);	

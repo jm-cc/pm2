@@ -213,9 +213,6 @@ int main(int argc, char *argv[])
 	static int __argc;
 	static char **__argv;
 
-	/* Quick registration */
-	pm2debug_register(&ma_debug_init);
-
 #ifdef MAD2
 	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT);
 #else
@@ -308,31 +305,35 @@ void marcel_init_section(int sec)
 {
 	__ma_init_info_t *infos, *last;
 	int section;
-	debug("Init running level %d (%s) start\n",
-	      __ma_init_start[sec].prio,
-	      __ma_init_start[sec].debug);
+
+	/* Quick registration */
+	pm2debug_register(&MA_DEBUG_VAR_NAME(MA_FILE_DEBUG));
+
+	mdebug("Init running level %d (%s) start\n",
+	       __ma_init_start[sec].prio,
+	       __ma_init_start[sec].debug);
 	for (section=0; section<=sec; section++) {
 		if (init_done[section])
 			continue;
-		debug("Init running level %d (%s)\n",
-		      __ma_init_start[section].prio,
-		      __ma_init_start[section].debug);
+		mdebug("Init running level %d (%s)\n",
+		       __ma_init_start[section].prio,
+		       __ma_init_start[section].debug);
 		
 		infos=__ma_init_start[section].infos;
 		last= (__ma_init_start[section+1].infos)-1;
 		
 		while (infos < last) {
-			debug("Init launching for prio %i: %s (%s)\n",
-			      (int)(MA_INIT_PRIO_BASE-infos->prio), 
+			mdebug("Init launching for prio %i: %s (%s)\n",
+			       (int)(MA_INIT_PRIO_BASE-infos->prio), 
 			      infos->debug, infos->file);
 			(*infos->func)();
 			infos++;
 		}
 		init_done[section]=1;
 	}
-	debug("Init running level %d (%s) done\n",
-	      __ma_init_start[sec].prio,
-	      __ma_init_start[sec].debug);
+	mdebug("Init running level %d (%s) done\n",
+	       __ma_init_start[sec].prio,
+	       __ma_init_start[sec].debug);
 }
 
 extern int marcel_lwp_force_link;

@@ -30,29 +30,35 @@ typedef enum {
 	PM2DEBUG_SHOW,
 	PM2DEBUG_SHOW_PREFIX,
 	PM2DEBUG_SHOW_FILE,
-	PM2DEBUG_CRITICAL,
-	PM2DEBUG_DO_NOT_SHOW_THREAD,
-	PM2DEBUG_DO_NOT_SHOW_LWP,
-	PM2DEBUG_TRYONLY,
-	PM2DEBUG_REGISTER,
+	PM2DEBUG_SHOW_THREAD,
+	PM2DEBUG_SHOW_LWP,
+	PM2DEBUG_SHOW_MAX,
 } debug_action_t;
 
 typedef struct struct_debug_type_t debug_type_t;
 
 typedef void (*debug_action_func_t)(debug_type_t*, debug_action_t, int);
 
+#define PM2DEBUG_AUTO_REGISTER 100
+#define PM2DEBUG_DEFAULT -1
+
+#define PM2DEBUG_ON 5
+#define PM2DEBUG_OFF 0
+#define PM2DEBUG_DEFAULTLEVEL  2
+
+#define PM2DEBUG_STDLEVEL      4
+#define PM2DEBUG_PM2DEBUGLEVEL 0
+#define PM2DEBUG_DISPLEVEL     1
+#define PM2DEBUG_LOGLEVEL      PM2DEBUG_STDLEVEL
+#define PM2DEBUG_TRACELEVEL    PM2DEBUG_STDLEVEL
+
 struct struct_debug_type_t {
 	int show;
+	int actions[PM2DEBUG_SHOW_MAX];
 	const char* prefix;
 	const char* option_name;
-	int show_prefix;
-	int show_file;
-	int critical;
-	int do_not_show_thread;
-	int do_not_show_lwp;
-	int try_only;
-	debug_action_func_t setup;
-	void* data;
+	debug_type_t *depend;
+	int register_shown;
 };
 
 enum {
@@ -60,24 +66,21 @@ enum {
         PM2DEBUG_DO_OPT=2,
 };
 
-#define NEW_DEBUG_TYPE(_show, _prefix, _name) \
-   {  .show=_show, \
+#define NEW_DEBUG_TYPE_DEPEND(_prefix, _name, _dep) \
+   {  .show=PM2DEBUG_AUTO_REGISTER, \
+      .actions={PM2DEBUG_DEFAULT, \
+		PM2DEBUG_DEFAULT, PM2DEBUG_DEFAULT, \
+                PM2DEBUG_DEFAULT, PM2DEBUG_DEFAULT }, \
       .prefix=_prefix, \
       .option_name=_name, \
-      .show_prefix=0, \
-      .show_file=0, \
-      .critical=0, \
-      .do_not_show_thread=0, \
-      .do_not_show_lwp=0, \
-      .try_only=0, \
-      .setup=NULL, \
-      .data=NULL, \
+      .depend=_dep, \
+      .register_shown=0, \
    }
 
-extern debug_type_t debug_pm2debug;
-extern debug_type_t debug_pm2fulldebug;
+#define NEW_DEBUG_TYPE(_prefix, _name) \
+  NEW_DEBUG_TYPE_DEPEND(_prefix, _name, NULL)
 
-void debug_setup_default(debug_type_t*, debug_action_t, int);
+extern debug_type_t debug_pm2debug;
 
 enum {
 	PM2DEBUG_PRINTF_UNPROTECT_ALLOWED,
@@ -91,47 +94,49 @@ void pm2debug_printf_state(int state);
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
 #define PM2DEBUG_MAXLINELEN 256
-int pm2debug_printf(debug_type_t *type, int line, const char* file,
-		     const char *format, ...)
-		__attribute__ ((format (printf, 4, 5)));
+int __attribute__ ((format (printf, 5, 6))) 
+pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
+		const char *format, ...);
 void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
-void pm2debug_flush(void);
-#define debug_printf(type, fmt, args...) \
-   ((type) && ((type)->show) ? \
-    pm2debug_printf(type, __LINE__, __FILE__, fmt, ##args) \
-    : (void)0 )
+#define debug_printfl(type, level, fmt, args...) \
+   ({ register int _level=(level); \
+   ((type) && ((type)->show >= _level) ? \
+    pm2debug_printf(type, _level, __LINE__, __FILE__, fmt , ##args) \
+    : (void)0 ); \
+   })
 #define pm2debug(fmt, args...) \
-   debug_printf(&debug_pm2debug, fmt, ##args)
-#define pm2fulldebug(fmt, args...) \
-   debug_printf(&debug_pm2fulldebug, fmt, ##args)
+   debug_printfl(&debug_pm2debug, PM2DEBUG_PM2DEBUGLEVEL, fmt , ##args)
 
 #else /* PM2DEBUG */
 
 #define pm2debug_init_ext(argc, argv, debug_flags)
-#define pm2debug_printf(type, line, file, format...)
+#define pm2debug_printf(type, level, line, file, format...) ((void)0)
 #define pm2debug_register(type)
 #define pm2debug_setup(type, action, value)
-#define pm2debug_flush() ((void)0)
-#define debug_printf(type, fmt, args...) ((void)0)
-#define pm2debug(fmt, args...) fprintf(stderr, fmt, ##args)
-#define pm2fulldebug(fmt, args...) fprintf(stderr, fmt, ##args)
+#define debug_printfl(type, level, fmt, args...) ((void)0)
+#define pm2debug(fmt, args...) fprintf(stderr, fmt , ##args)
 
 #endif /* PM2DEBUG */
 
+#define debug_printf(type, fmt, args...) \
+   debug_printfl(type, PM2DEBUG_STDLEVEL, fmt , ##args)
 #define pm2debug_init(argc, argv) \
    pm2debug_init_ext((argc), (argv), PM2DEBUG_CLEAROPT|PM2DEBUG_DO_OPT)
 
 
 #ifdef PM2DEBUG
 
-#ifndef DEBUG_NAME
-#ifndef MODULE
-#define DEBUG_NAME app
-#else
-#define DEBUG_NAME MODULE
-#endif // MODULE
+#ifndef DEBUG_NAME_MODULE
+#  ifndef MODULE
+#    define DEBUG_NAME_MODULE app
+#  else
+#    define DEBUG_NAME_MODULE MODULE
+#  endif // MODULE
 #endif // DEBUG_NAME
+#ifndef DEBUG_NAME
+#  define DEBUG_NAME DEBUG_NAME_MODULE
+#endif
 
 #define CONCAT3(a,b,c) subconcat3(a,b,c)
 #define subconcat3(a,b,c) a##b##c
@@ -145,20 +150,24 @@ void pm2debug_flush(void);
 #define DEBUG_NAME_TRACE(DEBUG_NAME) CONCAT3(debug_, DEBUG_NAME, _trace)
 #endif
 
+extern debug_type_t debug_disp;
+extern debug_type_t debug_log;
+extern debug_type_t debug_trace;
+
 extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
 extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
 
 #define DEBUG_DECLARE(DEBUG_NAME) \
 debug_type_t DEBUG_NAME_DISP(DEBUG_NAME)= \
-  NEW_DEBUG_TYPE(1, #DEBUG_NAME "-disp: ", \
-		    #DEBUG_NAME "-disp"); \
+  NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-disp: ", \
+		        #DEBUG_NAME "-disp", &debug_disp); \
 debug_type_t DEBUG_NAME_LOG(DEBUG_NAME)= \
-  NEW_DEBUG_TYPE(0, #DEBUG_NAME "-log: ", \
-		    #DEBUG_NAME "-log"); \
+  NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-log: ", \
+		        #DEBUG_NAME "-log", &debug_log); \
 debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
-  NEW_DEBUG_TYPE(0, #DEBUG_NAME "-trace: ", \
-		    #DEBUG_NAME "-trace");
+  NEW_DEBUG_TYPE_DEPEND(#DEBUG_NAME "-trace: ", \
+		        #DEBUG_NAME "-trace", &debug_trace);
 #define DEBUG_INIT(DEBUG_NAME) \
   { pm2debug_register(&DEBUG_NAME_DISP(DEBUG_NAME)); \
     pm2debug_register(&DEBUG_NAME_LOG(DEBUG_NAME)); \
@@ -175,20 +184,26 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
  * ________________//////////////////////////////////////////////////
  */
 #if defined(PM2DEBUG)
-
-#define DISP(str, args...)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP(str, args...)   debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   str "\n" , ## args)
-#define DISP_IN()            debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP_IN()            debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   __TBX_FUNCTION__": -->\n")
-#define DISP_OUT()           debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP_OUT()           debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   __TBX_FUNCTION__": <--\n")
-#define DISP_VAL(str, val)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP_VAL(str, val)   debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   str " = %d\n" , (int)(val))
-#define DISP_CHAR(val)       debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP_CHAR(val)       debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   "%c" , (char)(val))
-#define DISP_PTR(str, ptr)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP_PTR(str, ptr)   debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   str " = %p\n" , (void *)(ptr))
-#define DISP_STR(str, str2)  debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+#define DISP_STR(str, str2)  debug_printfl(&DEBUG_NAME_DISP(DEBUG_NAME), \
+                                           PM2DEBUG_DISPLEVEL, \
 					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
 
@@ -211,12 +226,15 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #if defined(PM2DEBUG)
 
 #define LOG(str, args...)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
                                            str "\n" , ## args)
 #define LOG_IN()              do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
 					   "%s: -->\n", __TBX_FUNCTION__); \
                                    PROF_IN(); \
                               } while(0)
 #define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
 					   "%s: <--\n", __TBX_FUNCTION__); \
                                    PROF_OUT(); \
                               } while(0)
@@ -225,12 +243,16 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
                                    return _ret; \
                               } while (0)
 #define LOG_CHAR(val)         debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
 					   "%c" , (char)(val))
 #define LOG_VAL(str, val)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
 					   str " = %d\n" , (int)(val))
 #define LOG_PTR(str, ptr)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
 					   str " = %p\n" , (void *)(ptr))
 #define LOG_STR(str, str2)    debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+                                           PM2DEBUG_LOGLEVEL, \
 					   str ": %s\n" , (char *)(str2))
 
 #else // else if not PM2DEBUG
@@ -254,18 +276,25 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #ifdef PM2DEBUG
 
 #define TRACE(str, args...)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   str "\n" , ## args)
 #define TRACE_IN()            debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   "%s: -->\n", __TBX_FUNCTION__)
 #define TRACE_OUT()           debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   "%s: <--\n", __TBX_FUNCTION__)
 #define TRACE_VAL(str, val)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   str " = %d\n" , (int)(val))
 #define TRACE_CHAR(val)       debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   "%c" , (char)(val))
 #define TRACE_PTR(str, ptr)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   str " = %p\n" , (void *)(ptr))
 #define TRACE_STR(str, str2)  debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+                                           PM2DEBUG_TRACELEVEL, \
 					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
 

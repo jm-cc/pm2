@@ -15,4 +15,35 @@
  */
 
 #section common
-#depend "asm-generic/linux_types.h[]"
+/*
+ * similar to:
+ * include/asm-alpha/types.h
+ */
+
+#section marcel_types
+typedef __signed__ char __ma_s8;
+typedef unsigned char __ma_u8;
+
+typedef __signed__ short __ma_s16;
+typedef unsigned short __ma_u16;
+
+typedef __signed__ int __ma_s32;
+typedef unsigned int __ma_u32;
+
+typedef __signed__ long __ma_s64;
+typedef unsigned long __ma_u64;
+
+#define BITS_PER_LONG 64
+
+typedef signed char ma_s8;
+typedef unsigned char ma_u8;
+
+typedef signed short ma_s16;
+typedef unsigned short ma_u16;
+
+typedef signed int ma_s32;
+typedef unsigned int ma_u32;
+
+typedef signed long ma_s64;
+typedef unsigned long ma_u64;
+

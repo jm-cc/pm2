@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.16  2000/05/25 00:23:51  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.15  2000/04/28 18:33:36  vdanjean
 debug actsmp + marcel_key
 
@@ -189,6 +192,9 @@ _PRIVATE_ typedef struct task_desc_struct {
   unsigned exline, not_migratable, 
     not_deviatable, next_cleanup_func;
   boolean detached, static_stack;
+#ifdef MA__WORK
+  volatile int has_work;
+#endif
 #ifdef ENABLE_STACK_JUMPING
   void *dummy;
 #endif

@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.5 2002/10/20 15:17:21 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.8 2002/10/21 14:53:42 slacour Exp $
  */
 
 /* Distributed management of the locks.  Each lock has a (central)
@@ -39,8 +39,8 @@ static void spaces (const int i) { int j; for (j=0; j<i; j++) tfprintf(stderr, "
 #undef IN
 #undef OUT
 #ifdef DBGSL
-#define IN { spaces(depth++); tfprintf(stderr, "--> [%d:%x:%s]\n", pm2_self(), marcel_self(), __FUNCTION__); }
-#define OUT { spaces(--depth); tfprintf(stderr, "[%d:%x:%s] -->\n", pm2_self(), marcel_self(), __FUNCTION__); }
+#define IN { spaces(depth++); tfprintf(stderr, "--> [%d:%s]\n", pm2_self(), __FUNCTION__); }
+#define OUT { spaces(--depth); tfprintf(stderr, "[%d:%s] -->\n", pm2_self(), __FUNCTION__); }
 #else
 #define IN ((void)0)
 #define OUT ((void)0)
@@ -48,12 +48,12 @@ static void spaces (const int i) { int j; for (j=0; j<i; j++) tfprintf(stderr, "
 
 #undef TRACE
 #ifdef TRCSL
-#define TRACE(strng, args...) { spaces(depth); tfprintf(stderr, "[%d:%x:%s] " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
+#define TRACE(strng, args...) { spaces(depth); tfprintf(stderr, "[%d:%s] " strng "\n", pm2_self(), __FUNCTION__, ##args); }
 #else
 #define TRACE(...) ((void)0)
 #endif
 
-#define STRACE(strng, args...) { tfprintf(stderr, "[%d:%x:%s] *** " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
+#define STRACE(strng, args...) { tfprintf(stderr, "[%d:%s] *** " strng "\n", pm2_self(), __FUNCTION__, ##args); }
 
 
 /**********************************************************************/
@@ -71,6 +71,13 @@ typedef enum { SL_FALSE, SL_TRUE } bool_t;
 /* a lock can be fully granted (INTERcluster) or partially granted
  * (INTRAcluster).  Otherwise, the requested lock does not exist */
 typedef enum { INTER, INTRA, DOES_NOT_EXIST } grant_state_t;
+
+/* tags used while calling update_expected_release() to modify the
+ * number of local / remote expected release notifications */
+typedef enum
+{
+   JUST_ACQUIRED, JUST_RELEASED, JUST_RECVD_NOTIF, JUST_RECVD_TOKEN
+} update_t;
 
 /* possible statuses of a lock */
 typedef enum
@@ -144,13 +151,6 @@ struct lock_list_struct
     * process */
    int expected_local_release;
 
-   /* this boolean is set to true when I am the originator of a
-    * partial grant.  False otherwise.  Set to true when I grant a
-    * partial lock to a remote cluster with no remote release
-    * notifications expected (only local release are expected).  Set
-    * to false when I send a release notification. */
-   bool_t partial_release_originator;
-
    /* list of nodes (in the local cluster) which were granted the lock
     * token while releases were expected (lock partially granted) and
     * to which I must send a release notification. */
@@ -163,7 +163,7 @@ struct lock_list_struct
 
 
 /**********************************************************************/
-/* GLOBAL PRIVATE VARIABLES */
+/* GLOBAL PRIVATE VARIABLES                                           */
 /**********************************************************************/
 
 /* hash table for the lock data structures; the pm2_config_size()
@@ -192,7 +192,7 @@ static int max_local_cluster_acquire = INFINITE_PRIORITY;
 
 
 /**********************************************************************/
-/* GLOBAL PUBLIC VARIABLES */
+/* GLOBAL PUBLIC VARIABLES                                            */
 /**********************************************************************/
 
 /* no lock */
@@ -200,7 +200,7 @@ const token_lock_id_t TOKEN_LOCK_NONE = ((token_lock_id_t)(-1));
 
 
 /**********************************************************************/
-/* PRIVATE FUNCTIONS */
+/* PRIVATE FUNCTIONS                                                  */
 /**********************************************************************/
 
 /**********************************************************************/
@@ -318,8 +318,6 @@ grant_lock (const dsm_node_t to_node, lock_list_elem * const lck_elem)
       insert_into_node_list(&(lck_elem->notif_list),
                             &(lck_elem->end_of_notif_list),
                             to_node);
-      if ( lck_elem->expected_remote_release == 0 )
-         lck_elem->partial_release_originator = SL_TRUE;
    }
    else   /* fully grant the lock token */
    {
@@ -341,43 +339,14 @@ grant_lock (const dsm_node_t to_node, lock_list_elem * const lck_elem)
       rmt_nxt = NOBODY;
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &rmt_nxt, sizeof(dsm_node_t));
    pm2_rawrpc_end();
-   TRACE("grant lock %d to node %d with state '%s' and remote_next %d",
-         lck_elem->lock_id, to_node, state == INTER ? "inter" : "intra",
-         rmt_nxt);
+   TRACE("grant lock %d to node %d with state='%s', rmt_nxt=%d, lcl_rel=%d, " \
+         "rmt_rel=%d", lck_elem->lock_id, to_node,
+         state == INTER ? "inter" : "intra", rmt_nxt,
+         lck_elem->expected_local_release, lck_elem->expected_remote_release);
 
    lck_elem->locally_present = SL_FALSE;
    lck_elem->status = UNKNOWN;
    lck_elem->local_next_owner = lck_elem->remote_next_owner = NOBODY;
-
-   OUT;
-   return;
-}
-
-
-/**********************************************************************/
-/* send a notification of release to the first node from
- * the node_list; the lock entry is assumed to be locked. */
-static void
-send_release_notifications (lock_list_elem * const lck_elem)
-{
-   IN;
-
-   if ( lck_elem->notif_list != NULL )
-   {
-      node_list_t save = lck_elem->notif_list;
-
-      assert ( save->node != pm2_self() );
-      pm2_rawrpc_begin(save->node, TOKEN_LOCK_RELEASE_NOTIFICATION, NULL);
-      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &(lck_elem->lock_id),
-                    sizeof(token_lock_id_t));
-      pm2_rawrpc_end();
-      TRACE("sending release notification to node %d for lock %d",
-            save->node, lck_elem->lock_id);
-      lck_elem->notif_list = save->next;
-      if ( lck_elem->notif_list == NULL )   /* empty list */
-         lck_elem->end_of_notif_list = NULL;
-      tfree(save);
-   }
 
    OUT;
    return;
@@ -403,16 +372,17 @@ grant_lock_if_possible (lock_list_elem * const lck_elem)
       return;
    }
 
-   TRACE("try to grant lock %d; rmt_nxt=%d, lcl_nxt=%d, rmt_rel=%d",
+   TRACE("try to grant lock %d; rmt_nxt=%d, lcl_nxt=%d, rmt_rel=%d, lcl_rel=%d",
          lck_elem->lock_id, lck_elem->remote_next_owner,
-         lck_elem->local_next_owner, lck_elem->expected_remote_release);
+         lck_elem->local_next_owner, lck_elem->expected_remote_release,
+         lck_elem->expected_local_release);
 
    /* granting the lock to a node in the local cluster is prefered to
     * granting it to a node in a remote cluster */
    if ( lck_elem->local_next_owner != NOBODY )
       grant_lock(lck_elem->local_next_owner, lck_elem);
    else if ( lck_elem->remote_next_owner != NOBODY  &&
-             lck_elem->status == FREE &&
+             lck_elem->expected_local_release == 0 &&
              lck_elem->expected_remote_release == 0 )
    {
       assert ( ! "should not be here" );
@@ -420,6 +390,112 @@ grant_lock_if_possible (lock_list_elem * const lck_elem)
    }
 
    assert ( lck_elem->local_next_owner == NOBODY );
+
+   OUT;
+   return;
+}
+
+
+/**********************************************************************/
+/* send a notification of release to the first node from
+ * the node_list; the lock entry is assumed to be locked. */
+static void
+send_release_notification (lock_list_elem * const lck_elem)
+{
+   node_list_t const save = lck_elem->notif_list;
+
+   IN;
+
+   assert ( save != NULL );
+   assert ( save->node != pm2_self() );
+   pm2_rawrpc_begin(save->node, TOKEN_LOCK_RELEASE_NOTIFICATION, NULL);
+   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &(lck_elem->lock_id),
+                 sizeof(token_lock_id_t));
+   pm2_rawrpc_end();
+   TRACE("sending release notification to node %d for lock %d",
+         save->node, lck_elem->lock_id);
+   lck_elem->notif_list = save->next;
+   if ( lck_elem->notif_list == NULL )   /* empty list */
+        lck_elem->end_of_notif_list = NULL;
+   tfree(save);
+
+   OUT;
+   return;
+}
+
+
+/**********************************************************************/
+/* decide whether a release notification should be sent or not; the
+ * lock entry is assumed to be locked. */
+static void
+update_expected_release (lock_list_elem * const lck_elem, const update_t type)
+{
+   IN;
+
+   assert ( lck_elem != NULL );
+
+   switch ( type )
+   {
+      case JUST_RECVD_TOKEN:
+         lck_elem->expected_remote_release++;
+         break;
+      case JUST_RELEASED:
+         lck_elem->expected_local_release--;
+         break;
+      case JUST_RECVD_NOTIF:
+         lck_elem->expected_remote_release--;
+         break;
+      case JUST_ACQUIRED:
+         lck_elem->expected_local_release++;
+         break;
+      default: assert ( ! "Should never reach this point" );
+   }
+
+   TRACE("lcl_rel=%d, rmt_rel=%d for lock %d", lck_elem->expected_local_release,
+         lck_elem->expected_remote_release, lck_elem->lock_id);
+
+   if ( lck_elem->notif_list == NULL )
+   {
+      assert ( lck_elem->end_of_notif_list == NULL );
+      OUT;
+      return;
+   }
+
+   /* keep at most one element in the notification list */
+   while ( lck_elem->notif_list != lck_elem->end_of_notif_list )
+   {
+      assert ( lck_elem->notif_list != NULL );
+      assert ( lck_elem->end_of_notif_list != NULL );
+      send_release_notification(lck_elem);
+   }
+   assert ( lck_elem->notif_list == lck_elem->end_of_notif_list );
+   if ( lck_elem->notif_list == NULL )
+   {
+      assert ( lck_elem->end_of_notif_list == NULL );
+      OUT;
+      return;
+   }
+
+   if ( type == JUST_RECVD_TOKEN || type == JUST_ACQUIRED )
+   {
+      assert ( lck_elem->locally_present == SL_TRUE );
+      /* empty the notification list */
+      send_release_notification(lck_elem);
+      assert ( lck_elem->notif_list == NULL );
+      assert ( lck_elem->end_of_notif_list == NULL );
+   }
+   else
+   {
+      assert ( type == JUST_RELEASED || type == JUST_RECVD_NOTIF );
+      if ( lck_elem->locally_present == SL_TRUE ||
+           ( lck_elem->expected_local_release == 0 &&
+             lck_elem->expected_remote_release == 0 ) )
+      {
+         send_release_notification(lck_elem);
+         assert ( lck_elem->notif_list == NULL );
+         assert ( lck_elem->end_of_notif_list == NULL );
+      }
+   }
 
    OUT;
    return;
@@ -445,15 +521,10 @@ recv_release_notification_func (void * unused)
    marcel_mutex_unlock(&lock_mutex);
    assert ( lck_elem != NULL );
 
+   TRACE("recv'd release notification for lock %d", lck_id);
+
    marcel_mutex_lock(&(lck_elem->mutex));
-   assert ( lck_elem->partial_release_originator == SL_FALSE );
-   lck_elem->expected_remote_release--;
-   TRACE("recv'd release notification for lock %d, rmt_rel=%d",
-         lck_id, lck_elem->expected_remote_release);
-   if ( lck_elem->expected_remote_release > 0  ||
-        ( lck_elem->expected_remote_release == 0 &&
-          lck_elem->status == FREE ) )
-      send_release_notifications(lck_elem);
+   update_expected_release(lck_elem, JUST_RECVD_NOTIF);
    grant_lock_if_possible(lck_elem);
    marcel_mutex_unlock(&(lck_elem->mutex));
 
@@ -464,7 +535,8 @@ recv_release_notification_func (void * unused)
 
 /**********************************************************************/
 /* create and initialize a lock entry in the hash table; the mutex
- * "lock_mutex" is assumed to be acquired. */
+ * "lock_mutex" is assumed to be acquired.  The calling function must
+ * set the following fields by itself: locally_present, status. */
 static lock_list_elem *
 create_lock_entry (const token_lock_id_t lck_id)
 {
@@ -474,19 +546,22 @@ create_lock_entry (const token_lock_id_t lck_id)
 
    IN;
    TRACE("creating entry for lock %d", lck_id);
+
    /* create a new lock data structure */
    lck_elem = (lock_list_elem *) tmalloc(sizeof(lock_list_elem));
    if ( lck_elem == NULL ) return NULL;
 
+   /* common initialization */
    lck_elem->lock_id = lck_id;
    marcel_mutex_init(&(lck_elem->mutex), NULL);
    lck_elem->local_next_owner = lck_elem->remote_next_owner = NOBODY;
-   lck_elem->partial_release_originator = lck_elem->just_granted = SL_FALSE;
+   lck_elem->requested = lck_elem->just_granted = SL_FALSE;
    marcel_cond_init(&(lck_elem->token_available), NULL);
    lck_elem->expected_remote_release = lck_elem->expected_local_release = 0;
    lck_elem->reservation = 0;
    lck_elem->notif_list = lck_elem->end_of_notif_list = NULL;
-   lck_elem->requested = SL_FALSE;
+
+   /* initialization depending on whether I'm the manager or not */
    if ( myself == get_lock_manager(lck_id) )
    {
       const unsigned int cluster_number = topology_get_cluster_number();
@@ -723,7 +798,7 @@ recv_lock_token_func (void * unused)
       if (state==INTRA) s="INTRA";
       else if (state==INTER) s="INTER";
       else s="DOES_NOT_EXIST";
-      TRACE("lock %d granted with state %s", lck_id, s);
+      TRACE("recv'd token %d granted with state='%s'", lck_id, s);
    }
    marcel_mutex_lock(&lock_mutex);
    lck_elem = seek_lock_in_hash(lck_id);
@@ -751,17 +826,20 @@ recv_lock_token_func (void * unused)
       }
 
       if ( state == INTRA )   /* the lock was partially granted */
-         lck_elem->expected_remote_release++;
+         update_expected_release(lck_elem, JUST_RECVD_TOKEN);
+      else
+      {
+         assert ( lck_elem->expected_local_release == 0 );
+         assert ( lck_elem->expected_remote_release == 0 );
+      }
 
-      TRACE("recv'd lock %d with state=%s, rmt_rel=%d, rmt_nxt=%d",
-            lck_id, state == INTER ? "inter" : "intra",
-            lck_elem->expected_remote_release, lck_elem->remote_next_owner);
-      TRACE("signal lock %d arrival with state=%d", lck_id, state);
+      TRACE("signal token %d available with status='FREE'", lck_id);
       marcel_cond_signal(&(lck_elem->token_available));
    }
    else
    {
       assert ( lck_elem->status == NON_EXISTENT );
+      TRACE("Bcast token available with status='NON_EXISTENT'", 0);
       marcel_cond_broadcast(&(lck_elem->token_available));
    }
 
@@ -783,6 +861,7 @@ send_no_such_token (const dsm_node_t to_node, token_lock_id_t lck_id)
 
    IN;
 
+   TRACE("sending DOES_NOT_EXIST msg to node %d for token %d", to_node, lck_id);
    pm2_rawrpc_begin(to_node, TOKEN_LOCK_RECV, NULL);
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id, sizeof(token_lock_id_t));
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &state, sizeof(grant_state_t));
@@ -811,10 +890,11 @@ lock_manager_server_func (void * unused)
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &req_tag, sizeof(request_tag_t));
    pm2_rawrpc_waitdata();
 
-   TRACE("recv'd request for lock %d for requester %d with tag '%s'",
-         lck_id, requester, req_tag == NO_TAG ? "NO_TAG" : "TOO_LATE");
+   assert ( req_tag == NO_TAG  ||  req_tag == TOO_LATE );
    assert ( pm2_self() == get_lock_manager(lck_id) );
    assert ( requester < pm2_config_size() );
+   TRACE("recv'd request for lock %d for requester %d with tag '%s'",
+         lck_id, requester, req_tag == NO_TAG ? "NO_TAG" : "TOO_LATE");
 
    marcel_mutex_lock(&lock_mutex);
    lck_elem = seek_lock_in_hash(lck_id);
@@ -852,15 +932,25 @@ lock_manager_server_func (void * unused)
          {
             send_lock_request(lck_elem->last_requester[requester_color],
                               requester, lck_elem);
+            TRACE("lock %d: force next request for cluster %d set to FALSE",
+                  lck_id, requester_color);
             lck_elem->force_next_request[requester_color] = SL_FALSE;
          }
          else
          {
             assert ( ! "should not be here" );
             if ( lck_elem->last_requester[requester_color] == requester )
+            {
+               TRACE("lock %d: force next request for cluster %d set to TRUE",
+                     lck_id, requester_color);
                lck_elem->force_next_request[requester_color] = SL_TRUE;
+            }
             else
+            {
+               TRACE("lock %d: force next request for cluster %d set to FALSE",
+                     lck_id, requester_color);
                lck_elem->force_next_request[requester_color] = SL_FALSE;
+            }
             send_request_to_current_owner_cluster(requester, lck_elem);
          }
          lck_elem->last_requester[requester_color] = requester;
@@ -877,7 +967,7 @@ lock_manager_server_func (void * unused)
 
 
 /**********************************************************************/
-/* PUBLIC FUNCTIONS */
+/* PUBLIC FUNCTIONS                                                   */
 /**********************************************************************/
 
 /**********************************************************************/
@@ -981,6 +1071,7 @@ token_lock_init (token_lock_id_t * const lck_id)
          assert ( lck_elem->status == NON_EXISTENT );
       if ( lck_elem == NULL )
       {
+         TRACE("not enough memory to create lock token %d", *lck_id);
          ret_val = DSM_ERR_MEMORY;
          *lck_id = TOKEN_LOCK_NONE;
       }
@@ -1005,7 +1096,7 @@ token_lock (const token_lock_id_t lck_id)
 {
    int ret_val = DSM_SUCCESS;
    lock_list_elem * lck_elem;
-   
+
    IN;
    TRACE("want to acquire lock %d", lck_id);
    if ( lck_id == TOKEN_LOCK_NONE )
@@ -1022,11 +1113,18 @@ token_lock (const token_lock_id_t lck_id)
    if ( lck_elem == NULL )   /* the lock is not registered locally */
    {
       if ( pm2_self() == get_lock_manager(lck_id) )
+      {
+         TRACE("lock %d not initialized", lck_id);
          ret_val = DSM_ERR_NOT_INIT;
+      }
       else
       {
          lck_elem = create_lock_entry(lck_id);
-         if ( lck_elem == NULL ) ret_val = DSM_ERR_MEMORY;
+         if ( lck_elem == NULL )
+         {
+            TRACE("not enough memory to create entry for lock %d", lck_id);
+            ret_val = DSM_ERR_MEMORY;
+         }
          else
          {
             lck_elem->locally_present = SL_FALSE;
@@ -1052,11 +1150,19 @@ token_lock (const token_lock_id_t lck_id)
    {
       request_lock_from_manager(pm2_self(), lck_elem->lock_id, NO_TAG);
       lck_elem->requested = SL_TRUE;
+   }
+
+   if ( lck_elem->requested == SL_TRUE )
+   {
+      TRACE("waiting for requested token %d", lck_id);
       marcel_cond_wait(&(lck_elem->token_available), &(lck_elem->mutex));
    }
 
-   if ( lck_elem->status == UNKNOWN || lck_elem->status == BUSY )
+   while ( lck_elem->status == UNKNOWN || lck_elem->status == BUSY )
+   {
+      TRACE("waiting for status == FREE || NON_EXISTENT for lock %d", lck_id);
       marcel_cond_wait(&(lck_elem->token_available), &(lck_elem->mutex));
+   }
 
    assert ( lck_elem->status == NON_EXISTENT || lck_elem->status == FREE );
 
@@ -1065,7 +1171,7 @@ token_lock (const token_lock_id_t lck_id)
       /* The lock is free: acquire it! */
       assert ( lck_elem->reservation > 0 );
       lck_elem->status = BUSY;
-      lck_elem->expected_local_release++;
+      update_expected_release(lck_elem, JUST_ACQUIRED);
    }
    else
       ret_val = DSM_ERR_NOT_INIT;
@@ -1099,6 +1205,7 @@ token_partial_unlock (const token_lock_id_t lck_id)
 
    IN;
 
+   TRACE("want to partially release lock %d", lck_id);
    if ( lck_id == TOKEN_LOCK_NONE )
    {
       OUT;
@@ -1111,6 +1218,7 @@ token_partial_unlock (const token_lock_id_t lck_id)
 
    if ( lck_elem == NULL )   /* lock not acquired */
    {
+      TRACE("trying to release partially lock %d while no entry", lck_id);
       OUT;
       return DSM_ERR_ILLEGAL;
    }
@@ -1118,7 +1226,10 @@ token_partial_unlock (const token_lock_id_t lck_id)
    marcel_mutex_lock(&(lck_elem->mutex));
 
    if ( lck_elem->status != BUSY )
+   {
+      TRACE("trying to release partially lock %d while not acquired", lck_id);
       ret_val = DSM_ERR_ILLEGAL;
+   }
    else
    {
       assert ( lck_elem->requested == SL_FALSE );
@@ -1127,7 +1238,13 @@ token_partial_unlock (const token_lock_id_t lck_id)
       if ( lck_elem->reservation == 0 )
          grant_lock_if_possible(lck_elem);
       else
+      {
+         TRACE("signal token available, lcl_rel=%d, rmt_rel=%d, reservation=%d",
+               lck_elem->expected_local_release,
+               lck_elem->expected_remote_release, lck_elem->reservation);
+         assert ( lck_elem->status == FREE );
          marcel_cond_signal(&(lck_elem->token_available));
+      }
    }
 
    marcel_mutex_unlock(&(lck_elem->mutex));
@@ -1147,6 +1264,7 @@ token_unlock (const token_lock_id_t lck_id)
    lock_status_t status;
 
    IN;
+   TRACE("want to (fully) release lock %d", lck_id);
    if ( lck_id == TOKEN_LOCK_NONE )
    {
       OUT;
@@ -1158,6 +1276,7 @@ token_unlock (const token_lock_id_t lck_id)
    marcel_mutex_unlock(&lock_mutex);
    if ( lck_elem == NULL )   /* lock not acquired */
    {
+      TRACE("trying to (fully) release lock %d while no entry", lck_id);
       OUT;
       return DSM_ERR_ILLEGAL;
    }
@@ -1168,9 +1287,10 @@ token_unlock (const token_lock_id_t lck_id)
    local_release = lck_elem->expected_local_release;
    marcel_mutex_unlock(&(lck_elem->mutex));
 
-   if ( local_release == 0 )
+   if ( local_release == 0  ||  status == NON_EXISTENT )
    {
-      /* lock already released */
+      /* lock already released or not initialized */
+      TRACE("lock %d already released or not initialized", lck_id);
       OUT;
       return DSM_ERR_ILLEGAL;
    }
@@ -1188,17 +1308,23 @@ token_unlock (const token_lock_id_t lck_id)
 
    assert ( lck_elem->status != NON_EXISTENT );
    if ( lck_elem->locally_present == SL_TRUE )
+   {
       lck_elem->status = FREE;
+   }
    else
       assert ( lck_elem->status == UNKNOWN );
 
-   lck_elem->expected_local_release--;
-   if ( lck_elem->reservation == 0 )
-      grant_lock_if_possible(lck_elem);
-   else
+   update_expected_release(lck_elem, JUST_RELEASED);
+   if ( lck_elem->locally_present == SL_TRUE )
    {
-      TRACE("signal lock %d locally released", lck_elem->lock_id);
-      marcel_cond_signal(&(lck_elem->token_available));
+      if ( lck_elem->reservation == 0 )
+         grant_lock_if_possible(lck_elem);
+      else
+      {
+         TRACE("signal lock %d locally released", lck_elem->lock_id);
+         assert ( lck_elem->status == FREE );
+         marcel_cond_signal(&(lck_elem->token_available));
+      }
    }
 
    marcel_mutex_unlock(&(lck_elem->mutex));
@@ -1247,54 +1373,6 @@ token_lock_manager_server (void)
    pm2_service_thread_create(lock_manager_server_func, NULL);
    return;
 }
-
-
-#if 0
-/**********************************************************************/
-/* register the number of diff/inv acks expected (positive values) or
- * received (negative values) */
-void
-token_lock_register_acks (const token_lock_id_t lck_id, const int diff_acks,
-                          const int local_inv_ack, const int remote_inv_ack)
-{
-   lock_list_elem * lck_elem;
-
-   IN;
-
-   if ( diff_acks == 0 && local_inv_ack == 0 && remote_inv_ack == 0 )
-   {
-      OUT;
-      return;
-   }
-
-   assert ( lck_id != TOKEN_LOCK_NONE );
-   marcel_mutex_lock(&lock_mutex);
-   lck_elem = seek_lock_in_hash(lck_id);
-   marcel_mutex_unlock(&lock_mutex);
-   assert ( lck_elem != NULL );
-
-   marcel_mutex_lock(&(lck_elem->mutex));
-   lck_elem->expected_diff_acks += diff_acks;
-   lck_elem->expected_local_inv_acks += local_inv_ack;
-   lck_elem->expected_remote_inv_acks += remote_inv_ack;
-
-   if ( lck_elem->expected_diff_acks == 0  &&
-        lck_elem->expected_local_inv_acks == 0  &&
-        ( lck_elem->expected_remote_inv_acks == 0  ||
-          lck_elem->partial_release_originator == SL_TRUE ) )
-   {
-      send_release_notifications(lck_elem);
-      lck_elem->partial_release_originator = SL_FALSE;
-   }
-
-   grant_lock_if_possible(lck_elem);
-
-   marcel_mutex_unlock(&(lck_elem->mutex));
-
-   OUT;
-   return;
-}
-#endif
 
 
 /**********************************************************************/

@@ -682,6 +682,7 @@ void dsm_unpack_page(void *addr, unsigned long size)
   pm2_rawrpc_waitdata(); 
   
   /*close and delete file */
+  munmap(system_view, size);
   close(fd);
   unlink(RECEIVE_PAGE_FILE);
   

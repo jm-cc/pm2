@@ -37,17 +37,16 @@
 .PHONY: default all
 default: all
 
-SRC_DIR	:=	.
+SRC_DIR     :=  ./
+APP_CFLAGS  :=
+APP_LDFLAGS :=
+APP_LLIBS   :=
 
 include ../../Makefile
 
-PM2_APP_CFLAGS	=
-PM2_APP_LDFLAGS	=
-PM2_APP_LLIBS	=
-
-all:	$(BIN_DIR)/hello	\
-	$(BIN_DIR)/simple	\
-	$(BIN_DIR)/synchronous	\
-	$(BIN_DIR)/threads	\
-	$(BIN_DIR)/ping		\
-	$(BIN_DIR)/thr_create
+all:	$(APP_BIN)/hello	\
+	$(APP_BIN)/simple	\
+	$(APP_BIN)/synchronous	\
+	$(APP_BIN)/threads	\
+	$(APP_BIN)/ping		\
+	$(APP_BIN)/thr_create

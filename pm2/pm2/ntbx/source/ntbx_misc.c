@@ -630,6 +630,36 @@ ntbx_topology_table_get(p_ntbx_topology_table_t ttable,
   return element;
 }
 
+void
+ntbx_topology_table_exit(p_ntbx_topology_table_t ttable)
+{
+  ntbx_process_lrank_t size = 0;
+
+  LOG_IN();
+  size = ttable->size;
+
+  if (size)
+    {
+      p_ntbx_topology_element_t *ptr = NULL;
+      
+      ptr   = ttable->table;
+      size *= size;
+      
+      while (size)
+	{
+	  if (*ptr)
+	    {
+	      ntbx_topology_element_dest(*ptr, NULL);
+	      *ptr = NULL;
+	    }
+	  
+	  ptr++; size--;
+	}
+    }
+
+  ntbx_topology_table_dest(ttable, NULL);
+  LOG_OUT();
+}
 
 
 //

@@ -21,6 +21,8 @@
 
 #define LI_HUDAK 0
 #define MIGRATE_THREAD 1
+#define ERC 2
+#define HBRC 3
 #define DEFAULT_DSM_PROTOCOL -1
 
 void dsm_init_protocol_table();

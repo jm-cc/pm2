@@ -19,6 +19,7 @@
 
 #define ISOADDR_PAGES                 (128*1024)
 #define THREAD_SLOT_SIZE              0x10000 /* 64 Ko */
+//#define THREAD_SLOT_SIZE              0x100000 /* 1 Mo */
 #define SLOT_AREA_TOP                 (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM
@@ -111,7 +112,7 @@ extern void *ISOADDR_AREA_TOP;
 
 #endif
 
-#define SLOT_SIZE              THREAD_SLOT_SIZE
+#define SLOT_SIZE              THREAD_SLOT_SIZE //0x10000 /* 64 Ko */
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)
 extern int _zerofd;

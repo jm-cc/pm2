@@ -128,6 +128,16 @@ tbx_slist_free(p_tbx_slist_t slist)
   LOG_OUT();
 }
 
+void
+tbx_slist_clear(p_tbx_slist_t slist)
+{
+  LOG_IN();
+  while (!tbx_slist_is_nil(slist))
+    {
+      tbx_slist_extract(slist);
+    }
+  LOG_IN();
+}
 
 /*
  * Return a new list element

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.11  2000/03/02 14:51:17  oaumage
+- indication du nom du protocole dans la structure driver
+
 Revision 1.10  2000/02/28 11:46:05  rnamyst
 Changed #include <> into #include "".
 
@@ -348,6 +351,9 @@ mad_mpi_driver_init(p_mad_driver_t driver)
   mad_mpi_driver_specific->poll_id =
     marcel_pollid_create(mpi_io_group, mpi_io_poll, 1);
 #endif /* PM2 */
+  driver->name = malloc(4);
+  CTRL_ALLOC(driver->name);
+  strcpy(driver->name, "mpi");
   LOG_OUT();
 }
 

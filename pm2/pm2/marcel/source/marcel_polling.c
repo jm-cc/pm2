@@ -1002,13 +1002,3 @@ int marcel_ev_server_stop(marcel_ev_server_t server)
 	return 0;
 }
 
-void marcel_poll_lock(void)
-{
-  marcel_lock_acquire(&__polling_lock);
-}
-
-void marcel_poll_unlock(void)
-{
-  marcel_lock_release(&__polling_lock);
-}
-

@@ -1,5 +1,10 @@
 
-$cut = 'Cut\s+here';
+$cut_here = '(?:Cut\s+here)';
+
+$start_pattern = '(?:\A\s*)';
+$cut_pattern = '(?:\s*/\*[*\s]*' . $cut_here . '[*\s]*\*/\s*)';
+$end_pattern = '(?:\s*\Z)';
+$match_pattern = '(?:[^\s].*[^\s])';
 
 if ($#ARGV != 0) {
     die "Usage: $0 file-to-split";
@@ -11,23 +16,29 @@ $in = "$filename";
 $out0 = "${filename}-0";
 $out1 = "${filename}-1";
 
-print "Splitting |$in| into |$out0| and |$out1| at |$cut|\n";
+print "Splitting |$in| into |$out0| and |$out1| at |$cut_here|\n";
 
 open (IN, "<$in") || 
 die ("Cannot open |$in| for reading");
+$text = "";
+while (defined ($line = <IN>)) {
+    $text .= $line;
+}
+close (IN);
+
+unless ($text =~ m/$start_pattern($match_pattern)$cut_pattern/si) {
+    die ("Bad match for file \|in|");
+}
 
 open (OUT, ">$out0") ||
     die ("Cannot open |$out0| for writing");
+print OUT $1;
 
-while (defined($line = <IN>)) {
-    if ($line =~ /$cut/) {
-	close (OUT);
-	open (OUT, ">$out1") ||
-	    die ("Cannot open |$out1| for writing");
-	while (($line = <IN>) =~ /^\s*$/) {;}
-	print OUT "$line";
-	next;
-    }
-    print OUT "$line";
+unless ($text =~ m/$cut_pattern($match_pattern)$end_pattern/si) {
+    die ("Bad match for file \|in|");
 }
-    
+
+open (OUT, ">$out1") ||
+    die ("Cannot open |$out1| for writing");
+print OUT $1;
+

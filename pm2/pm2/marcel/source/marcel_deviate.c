@@ -141,7 +141,7 @@ static void do_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
     pid->father = marcel_self();
 
-    initial_sp = MAL_BOT((long)marcel_ctx_get_sp(pid->ctx_yield)) -
+    initial_sp = MAL_BOT((unsigned long)marcel_ctx_get_sp(pid->ctx_yield)) -
       TOP_STACK_FREE_AREA - 256;
 
     marcel_ctx_switch_stack(marcel_self(), pid, initial_sp);

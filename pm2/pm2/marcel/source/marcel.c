@@ -100,7 +100,7 @@ marcel_t marcel_alloc_stack(unsigned size)
 
   st = marcel_slot_alloc();
 
-  t = (marcel_t)(MAL_BOT((long)st + size) - MAL(sizeof(marcel_task_t)));
+  t = (marcel_t)(MAL_BOT((unsigned long)st + size) - MAL(sizeof(marcel_task_t)));
 
   //init_task_desc(t);
   t->stack_base = st;
@@ -121,7 +121,7 @@ unsigned long marcel_cachedthreads(void)
 
 unsigned long marcel_usablestack(void)
 {
-  return (long)get_sp() - (long)marcel_self()->stack_base;
+  return (unsigned long)get_sp() - (unsigned long)marcel_self()->stack_base;
 }
 
 unsigned long marcel_unusedstack(void)

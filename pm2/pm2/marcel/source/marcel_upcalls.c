@@ -128,7 +128,7 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 		unlock_task();
 	} else if (k_param & ACT_EVENT_RESCHED) {
 		if(!locked() && preemption_enabled() &&
-		   (eip<=(long)locked_start || (long)locked_end<=eip)) {
+		   (eip<=(unsigned long)locked_start || (unsigned long)locked_end<=eip)) {
 			MTRACE("ActSched", current);
 			marcel_update_time(current);
 			lock_task();

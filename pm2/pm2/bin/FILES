@@ -1,0 +1,17 @@
+pm2-config : script to get info about flavors
+pm2_arch   : script to get the arch of the system
+pm2_create-flavor : script to create/delete flavors
+pm2_create-sample-flavors : script to create initial (sample) flavors
+pm2_mad1config : used by pm2-config
+pm2_mad2config : used by pm2-config
+pm2_recreate_links : generate the symlinks of the CVS tree
+pm2_sys : script to get the system where we run
+pm2_vars : script to set main environment variables
+pm2clean : script to clean the source tree. Try to use 'make disclean' at
+		the root instead.
+pm2conf : select the protocol(s) to use within Madeleine
+pm2custom : select the machines to use
+pm2load : launch a pm2 application
+pm2logs : see logs of a pm2 application
+pm2madselect : choose between Madeleine 1 and Madeleine 2
+pm2startcons : launch a pm2 console

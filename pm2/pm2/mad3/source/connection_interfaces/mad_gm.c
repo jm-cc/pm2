@@ -49,18 +49,18 @@
 
 /* Debugging macros */
 #if 0
-#  define __trace__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#  define __trace__(s, ...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## __VA_ARGS__)
 #else
-#  define __trace__(s, p...)
+#  define __trace__(s, ...)
 #endif
 
 #if 0
-#  define __disp__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#  define __disp__(s, ...)  fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## __VA_ARGS__)
 #  define __in__()          fprintf(stderr, "[%Ld]:%s:%d: -->\n", __RDTSC__, __FUNCTION__, __LINE__)
 #  define __out__()         fprintf(stderr, "[%Ld]:%s:%d: <--\n", __RDTSC__, __FUNCTION__, __LINE__)
 #  define __err__()         fprintf(stderr, "[%Ld]:%s:%d: <!!\n", __RDTSC__, __FUNCTION__, __LINE__)
 #else
-#  define __disp__(s, p...)
+#  define __disp__(s, ...)
 #  define __in__()
 #  define __out__()
 #  define __err__()
@@ -68,9 +68,9 @@
 
 /* Error message macros */
 #if 1
-#  define __error__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: *error* "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#  define __error__(s, ...) fprintf(stderr, "[%Ld]:%s:%d: *error* "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## __VA_ARGS__)
 #else
-#  define __error__(s, p...)
+#  define __error__(s, ...)
 #endif
 
 #define __gmerror__(x) (mad_gm_error((x), __LINE__))

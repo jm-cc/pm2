@@ -96,7 +96,9 @@ mad_free_buffer_struct(p_mad_buffer_t buffer)
         }
 
       tbx_slist_clear_and_free(buffer->parameter_slist);
+      buffer->parameter_slist = NULL;
     }
+
   tbx_free(mad_buffer_memory, buffer);
 }
 

@@ -55,7 +55,7 @@ int marcel_main(int argc, char *argv[])
 #endif
 
   for(i=0; i<NB; i++) {
-    marcel_attr_setrealtime(&attr, (i == 1));
+    marcel_attr_setrealtime(&attr, (i == 2));
 
     marcel_create(&pid[i], &attr, writer, (any_t)mess[i]);
   }

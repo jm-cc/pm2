@@ -52,6 +52,10 @@ void marcel_yield(void);
 void ma__marcel_yield(void);
 #endif
 
+#ifdef MARCEL_RT
+void ma__marcel_find_and_yield_to_rt_task(void);
+#endif
+
 /* ==== SMP scheduling policies ==== */
 
 #define MARCEL_MAX_USER_SCHED    16
@@ -172,6 +176,10 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 /* ==== Scheduler locking ==== */
 
+#ifdef MARCEL_RT
+extern unsigned __rt_task_exist;
+#endif
+
 /* Must be called each time a LWP is about to access its local task
    queue. */
 static __inline__ void ma_sched_lock(__lwp_t *lwp) __attribute__ ((unused));
@@ -197,14 +205,23 @@ static __inline__ void ma_lock_task(void)
 static __inline__ void ma_unlock_task(void) __attribute__ ((unused));
 static __inline__ void ma_unlock_task(void)
 {
-  volatile atomic_t *locked=&GET_LWP(marcel_self())->_locked;
+  volatile atomic_t *locked = &GET_LWP(marcel_self())->_locked;
+
+#ifdef MARCEL_RT
+  if(atomic_read(locked) == 1 &&
+     __rt_task_exist &&
+     !MA_TASK_REAL_TIME(marcel_self()))
+    ma__marcel_find_and_yield_to_rt_task();
+#endif
+
 #ifdef MA__WORK
-  if ((atomic_read(locked)==1) 
+  if ((atomic_read(locked) == 1) 
       && (marcel_self()->has_work || marcel_global_work)) {
     do_work(marcel_self());
   }
 #endif
   atomic_dec(locked);
+
 #if defined(PM2DEBUG) && defined(MA__ACTIVATION)
   pm2debug_flush();
 #endif

@@ -37,14 +37,14 @@
 #include "dsm_const.h"
 #include "dsm_comm.h"
 #include "dsm_page_manager.h"
+#include "dsm_page_size.h"
 #include "dsm_protocol_policy.h"
 #include "dsm_rpc.h"
-#include "dsm_page_size.h"
 #include "assert.h"
 
 //#define DEBUG1
 //#define DEBUG_HYP
-#define SEND_PAGE_CHEAPER
+//#define ASSERT
 
 /* tie in to the Hyperion instrumentation */
 #define HYP_INSTRUMENT 1
@@ -123,7 +123,6 @@ void dsm_rpc_dump_instrumentation(void)
 }
 #endif
 
-
 void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access)
 {
 #ifdef HYP_INSTRUMENT
@@ -154,12 +153,10 @@ void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req
   }
 }
 
-
 void dsm_invalidate_copyset(unsigned long index, dsm_node_t new_owner)
 {
   (*dsm_get_invalidate_server(index))(index, dsm_self(), new_owner);
 }
-
 
 void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t access)
 {
@@ -183,7 +180,7 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
     sizeof(dsm_node_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&access,
     sizeof(dsm_access_t));
-#ifdef SEND_PAGE_CHEAPER
+#ifdef DSM_SEND_PAGE_CHEAPER
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
 #else
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
@@ -193,7 +190,6 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
   fprintf(stderr, "Page %d sent -> %d for %s, a = %d \n", index, dest_node, (access == 1)?"read":"write", ((atomic_t *)addr)->counter);
 #endif
 }
-
 
 void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_node_t new_owner)
 {
@@ -224,6 +220,7 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
 {
   dsm_node_t node;
   unsigned long index;
+
 #ifdef HYP_INSTRUMENT
   hyp_readPage_in_cnt++;
 #endif
@@ -237,7 +234,7 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_READ_PAGE_REQ_func(void)
 {
-  pm2_thread_create(DSM_LRPC_READ_PAGE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_READ_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -245,10 +242,11 @@ static void DSM_LRPC_WRITE_PAGE_REQ_threaded_func(void)
 {
   dsm_node_t node;
   unsigned long index;
+
 #ifdef HYP_INSTRUMENT
   hyp_writePage_in_cnt++;
 #endif
-  
+
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&node, sizeof(dsm_node_t));
   pm2_rawrpc_waitdata(); 
@@ -258,57 +256,58 @@ static void DSM_LRPC_WRITE_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_WRITE_PAGE_REQ_func(void)
 {
-  pm2_thread_create(DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
 }
 
 
 static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 {
   dsm_node_t reply_node;
+  dsm_access_t access;
   unsigned long page_size;
   void * addr;
-  dsm_access_t access;
   unsigned long index;
-  
+
 #ifdef HYP_INSTRUMENT
   hyp_sendPage_in_cnt++;
 #endif
-  
+
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&addr, sizeof(void *));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&page_size, sizeof(unsigned long));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&reply_node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&access, sizeof(dsm_access_t));
-  
+
   index = dsm_page_index(addr);
-  
-  if  (dsm_get_expert_receive_page_server(index))
+
+  if (dsm_get_expert_receive_page_server(index))
     (*dsm_get_expert_receive_page_server(index))(addr, access, reply_node, page_size);
   else
     {
       dsm_access_t old_access = dsm_get_access(index);
+      
       if (old_access != WRITE_ACCESS)
 	dsm_protect_page(addr, WRITE_ACCESS); // to enable the page to be copied
-#ifdef DEBUG4
-      fprintf(stderr, "Page %d before unpack before wait -> %d for %s, a = %d addr = %p\n", index, reply_node, (access == 1)?"read":"write", ((atomic_t *)addr)->counter, addr);
+#ifdef DSM_SEND_PAGE_CHEAPER
+      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
+#else
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
 #endif
-       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
-#ifdef DEBUG4
-       fprintf(stderr, "Page %d after unpack before wait -> %d for %s, a = %d \n", index, reply_node, (access == 1)?"read":"write", ((atomic_t *)addr)->counter);
+      pm2_rawrpc_waitdata(); 
+      
+#ifdef DEBUG_HYP
+      tfprintf(stderr, "unpack page %ld: calling page server\n", index);
 #endif
-       pm2_rawrpc_waitdata(); 
-#ifdef DEBUG3
-       fprintf(stderr, "Page %d received -> %d for %s, a = %d \n", index, reply_node, (access == 1)?"read":"write", ((atomic_t *)addr)->counter);
-#endif
-       if (old_access != WRITE_ACCESS)
-	 dsm_protect_page(addr, old_access);
-       (*dsm_get_receive_page_server(index))(addr, access, reply_node);
+      if (access != WRITE_ACCESS)
+	dsm_protect_page(addr, old_access);
+      /* now call the protocol-specific server */
+      (*dsm_get_receive_page_server(index))(addr, access, reply_node);
     }
 }
 
 
 void DSM_LRPC_SEND_PAGE_func(void)
 {
-  pm2_thread_create(DSM_LRPC_SEND_PAGE_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_PAGE_threaded_func, NULL);
 }
  
 
@@ -333,18 +332,18 @@ static void DSM_LRPC_INVALIDATE_REQ_threaded_func(void)
 
 void DSM_LRPC_INVALIDATE_REQ_func(void)
 {
-  pm2_thread_create(DSM_LRPC_INVALIDATE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_INVALIDATE_REQ_threaded_func, NULL);
 }
 
 
 void DSM_LRPC_INVALIDATE_ACK_func(void)
 {
   unsigned long index;
-
+  
 #ifdef HYP_INSTRUMENT
   hyp_invalidateAck_in_cnt++;
 #endif
-  
+
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
   pm2_rawrpc_waitdata(); 
 #ifdef DEBUG2
@@ -384,17 +383,16 @@ void dsm_send_diffs(unsigned long index, dsm_node_t dest_node)
 
 
 #ifdef DEBUG_HYP
-tfprintf(stderr, "dsm_send_diffs: calling pm2_pack_completion\n");
+  tfprintf(stderr, "dsm_send_diffs: calling pm2_pack_completion: c.proc = %d, c.sem_ptr = %p\n", c.proc, c.sem_ptr);
 #endif
   pm2_pack_completion(&c);
-
 #ifdef DEBUG_HYP
 tfprintf(stderr, "dsm_send_diffs: calling pm2_rawrpc_end\n");
 #endif
   pm2_rawrpc_end();
 
 #ifdef DEBUG_HYP
-tfprintf(stderr, "dsm_send_diffs: calling pm2_completion_wait\n");
+tfprintf(stderr, "dsm_send_diffs: calling pm2_completion_wait (I am %p)\n", marcel_self());
 #endif
   pm2_completion_wait(&c);
 
@@ -408,8 +406,7 @@ tfprintf(stderr, "dsm_send_diffs: returning\n");
  *
  *      I still worry about the atomicity of the unpacks. Could this thread
  *      lose hand while in the process of unpacking a field? We can't have
- *      another thread see a partial update. 
- *  ga: the atomicity has to be ensured at the protocol level, using dsm_lock_page
+ *      another thread see a partial update.
  */
 void DSM_LRPC_SEND_DIFFS_func(void)
 {
@@ -435,7 +432,7 @@ void DSM_LRPC_SEND_DIFFS_func(void)
   {
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&size, sizeof(int));
 #ifdef DEBUG_HYP
-tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %p %d\n", addr, size);
+      tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %p %d\n", addr, size);
 #endif
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, size);
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&addr, sizeof(void *));
@@ -446,7 +443,7 @@ tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %p %d\n", addr, size);
   pm2_rawrpc_waitdata();
 
 #ifdef DEBUG_HYP
-  tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: msg unpacked\n");
+  tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: msg unpacked; call pm2_completion_signal\n");
 #endif
 
   /* no actual work to do, but unload the diffs which was done above */
@@ -454,7 +451,7 @@ tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %p %d\n", addr, size);
   pm2_completion_signal(&c);
 
 #ifdef DEBUG_HYP
-  tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: returning\n");
+  tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: returning (signalled c.proc = %d, c.sem_ptr = %p\n", c.proc, c.sem_ptr);
 #endif
 }
 

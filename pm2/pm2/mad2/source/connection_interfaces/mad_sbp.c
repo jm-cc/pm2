@@ -353,6 +353,11 @@ mad_sbp_register(p_mad_driver_t driver)
   interface->before_close_channel       = mad_sbp_before_close_channel;
   interface->disconnect                 = mad_sbp_disconnect;
   interface->after_close_channel        = mad_sbp_after_close_channel;
+  interface->link_exit                  = mad_sbp_link_exit;
+  interface->connection_exit            = mad_sbp_connection_exit;
+  interface->channel_exit               = mad_sbp_channel_exit;
+  interface->adapter_exit               = mad_sbp_adapter_exit;
+  interface->driver_exit                = mad_sbp_driver_exit;
   interface->choice                     = mad_sbp_choice;
   interface->get_static_buffer          = mad_sbp_get_static_buffer;
   interface->return_static_buffer       = mad_sbp_return_static_buffer;
@@ -480,7 +485,6 @@ mad_sbp_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
   /* Link initialization code */
-  lnk->specific    = NULL;
   lnk->link_mode   = mad_link_mode_buffer;
   lnk->buffer_mode = mad_buffer_mode_static;
   LOG_OUT();
@@ -657,6 +661,64 @@ mad_sbp_after_close_channel(p_mad_channel_t channel)
       mad_free(driver_specific->list_element_memory, element);
       element = next_element;
     }
+  LOG_OUT();
+}
+
+void
+mad_sbp_link_exit(p_mad_link_t link)
+{
+  LOG_IN();
+  /* nothing */
+  LOG_OUT();
+}
+
+void
+mad_sbp_connection_exit(p_mad_connection_t in,
+			p_mad_connection_t out)
+{
+  LOG_IN();
+  free(in->specific);
+  in->specific = NULL;
+  free(out->specific);
+  out->specific = NULL;
+  LOG_OUT();
+}
+
+void
+mad_sbp_channel_exit(p_mad_channel_t channel)
+{
+  LOG_IN();
+  /* Nothing */
+  LOG_OUT();
+}
+
+void
+mad_sbp_adapter_exit(p_mad_adapter_t adapter)
+{
+  p_mad_sbp_adapter_specific_t adapter_specific = adapter->specific;
+  
+  LOG_IN();
+  free(adapter_specific);
+  adapter->specific = NULL;
+  free(adapter->parameter);
+  if (adapter->master_parameter)
+    {
+      free(adapter->master_parameter);
+      adapter->master_parameter = NULL;
+    }
+  free(adapter->name);
+  LOG_OUT();
+}
+
+void
+mad_sbp_driver_exit(p_mad_driver_t driver)
+{
+  p_mad_sbp_driver_specific_t driver_specific = drive->specific;
+  
+  LOG_IN();
+  mad_malloc_clean(driver_specific->list_element_memory);
+  mad_malloc_clean(driver_specific->buffer_pool_memory);
+  free(driver->specific);
   LOG_OUT();
 }
 

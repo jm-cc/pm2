@@ -672,6 +672,45 @@ mad_read_conf(p_mad_configuration_t   configuration,
   LOG_OUT();
 }
 #endif /* EXTERNAL_SPAWN */
+
+static void
+mad_foreach_adapter_exit(void *object)
+{
+  p_mad_adapter_t            adapter = object;
+  p_mad_driver_t             driver  = adapter->driver;
+  p_mad_driver_interface_t   interface = &(driver->interface);
+  
+  LOG_IN();
+  interface->adapter_exit(adapter);
+  LOG_OUT();
+}
+
+static void
+mad_driver_exit(p_mad_madeleine_t madeleine)
+{
+  mad_driver_id_t drv;
+    
+  LOG_IN();
+  for (drv = 0;
+       drv < madeleine->nb_driver;
+       drv++)
+    {
+      p_mad_driver_t             driver;
+      p_mad_driver_interface_t   interface;
+      
+      driver    = &(madeleine->driver[drv]);      
+      interface = &(driver->interface);
+
+      mad_foreach_destroy_list(&(madeleine->channel),
+			       mad_foreach_adapter_exit);
+      interface->driver_exit(driver);
+    }
+
+  free(madeleine->adapter);
+  free(madeleine->driver);
+  LOG_OUT();
+}
+
 /* ---- */
 
 #ifdef MAD2_MAD1
@@ -715,6 +754,7 @@ mad_init(int                   *argc,
   marcel_init(argc, argv);
 #endif /* PM2 */
 
+  madeleine->nb_channel = 0;
   PM2_INIT_SHARED(madeleine);
   mad_manager_init(madeleine);
   mad_driver_fill(madeleine);
@@ -796,9 +836,11 @@ mad_exit(p_mad_madeleine_t madeleine)
 #endif
 {
   LOG_IN();
-
+  PM2_LOCK_SHARED(madeleine);
+  mad_close_channels(madeleine);
+  mad_driver_exit(madeleine);
   mad_list_manager_exit();
-  
+  PM2_UNLOCK_SHARED(madeleine);
   LOG_OUT();
 }
 

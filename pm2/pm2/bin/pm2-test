@@ -67,9 +67,9 @@ do_the_test()
     # Execution
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
-    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args 2>&1 | tee /tmp/pm2test_result | grep '^####'|sed -e 's/^####//g'
+    (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_status) 2>&1 | tee /tmp/pm2test_result | grep '^####'
 #    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_result 2>&1
-    [ $? -eq 0 ] || pm2test_error "Execution failed"
+    [ `cat /tmp/pm2test_status` -eq 0 ] || pm2test_error "Execution failed"
 
     # Destruction de la flavor
     #echo "Cleaning flavor & files..."

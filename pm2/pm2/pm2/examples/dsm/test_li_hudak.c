@@ -414,7 +414,7 @@ int pm2_main(int argc, char **argv)
   volatile int local;
 
 #ifdef PROFILE
-  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
+  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK, 0);
 #endif
   pm2_push_startup_func(startup_func, NULL);
   pm2_set_dsm_page_distribution(DSM_CENTRALIZED, 1);

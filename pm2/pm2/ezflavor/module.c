@@ -175,7 +175,7 @@ static void button_callback(GtkWidget *widget,
 
     flavor_mark_modified();
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
     if(GTK_TOGGLE_BUTTON(widget)->active)
       g_print ("The %s (%s) option was enabled\n",
 	       (char *)gtk_object_get_user_data(GTK_OBJECT(widget)),
@@ -184,7 +184,7 @@ static void button_callback(GtkWidget *widget,
       g_print ("The %s (%s) option was disabled\n",
 	       (char *)gtk_object_get_user_data(GTK_OBJECT(widget)),
 	       (char *)data);
-#endif
+#endif // PM2DEBUG
   }
 }
 

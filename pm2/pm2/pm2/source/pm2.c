@@ -179,12 +179,12 @@ void pm2_halt()
 
 void pm2_freeze(void)
 {
-  lock_task();
+  marcel_freeze_sched();
 }
 
 void pm2_unfreeze(void)
 {
-  unlock_task();
+  marcel_unfreeze_sched();
 }
 
 void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func)

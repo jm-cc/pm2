@@ -39,7 +39,9 @@ endif
 
 include $(PM2_ROOT)/make/common-vars.mak
 
+ifneq ($(MAKECMDGOALS),init)
 -include $(PM2_ROOT)/make/main-modules.mak
+endif
 
 ifneq ($(MAKECMDGOALS),init)
 ifneq ($(MAKECMDGOALS),help)
@@ -176,3 +178,4 @@ $(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
 $(PM2_ROOT)/make/main-modules.mak: $(PM2_ROOT)/modules
 	@echo "Generating $@"
 	@echo "MODULES := " `$(PM2_ROOT)/bin/pm2-module modules` > $@
+

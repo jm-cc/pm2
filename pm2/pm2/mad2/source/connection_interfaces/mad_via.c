@@ -1995,6 +1995,14 @@ mad_via_receive_credit_buffer(p_mad_link_t     link,
 	  desc = vi->out.descriptor->descriptor;
 	  mh = vi->out.descriptor->handle;
 
+	  desc->Data[0].Data.Address = vi->out.descriptor->buffer;
+	  desc->Data[0].Length = 4;
+	  desc->Control.SegCount = 1;
+	  desc->Control.Control = 0;
+	  desc->Control.Length = 4;
+	  desc->Control.Status = 0;
+	  desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
+
 	  memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,"Ack!",4);
 	  
 	  desc->Control.ImmediateData = vi->credits.returned_credits;

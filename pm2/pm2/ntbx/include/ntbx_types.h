@@ -94,47 +94,22 @@ typedef enum
  * ---------------------
  */
 
-/*...State Constants ...................*/
-typedef enum
-{
-  ntbx_client_state_uninitialized = 0,
-  ntbx_client_state_initialized,
-  ntbx_client_state_connected,
-  ntbx_client_state_data_ready,
-  ntbx_client_state_write_ready,
-  ntbx_client_state_peer_closed,
-  ntbx_client_state_shutdown,
-  ntbx_client_state_closed,
-} ntbx_client_state_t, *p_ntbx_client_state_t;
-
-typedef enum
-{
-  ntbx_server_state_uninitialized = 0,
-  ntbx_server_state_initialized,
-  ntbx_server_state_accepting,
-  ntbx_server_state_connection_ready,
-  ntbx_server_state_shutdown,
-  ntbx_server_state_closed,
-} ntbx_server_state_t, *p_ntbx_server_state_t;
-
-
 /*...Client/Server structures...........*/
 typedef struct s_ntbx_client
 {
   TBX_SHARED;
-  ntbx_client_state_t  state;
-  int                  blocking;
   unsigned long        local_host_ip; // network form !
   char                *local_host;
   p_tbx_slist_t        local_alias;
   char                *remote_host;
   p_tbx_slist_t        remote_alias;
+  tbx_bool_t           read_ok;
+  tbx_bool_t           write_ok;
   void                *specific;
 } ntbx_client_t;
 
 typedef struct s_ntbx_server
 {
-  ntbx_server_state_t     state;
   unsigned long           local_host_ip; // network form !
   char                   *local_host;
   p_tbx_slist_t           local_alias;

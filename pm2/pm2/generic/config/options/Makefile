@@ -13,8 +13,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse
-# mad1 profile stackalign
+LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse profile
+# mad1 stackalign
 MODULES := swann leonie stackalign
 
 # Directement dans les sources:

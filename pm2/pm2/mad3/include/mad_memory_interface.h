@@ -27,7 +27,7 @@ mad_memory_manager_init(int    argc TBX_UNUSED,
 			char **argv TBX_UNUSED);
 
 void
-mad_memory_manager_clean(void);
+mad_memory_manager_exit(void);
 
 p_mad_buffer_t
 mad_alloc_buffer_struct(void);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.20  2000/05/03 18:34:47  vdanjean
+few bugs fixes in key managment
+
 Revision 1.19  2000/04/28 18:33:37  vdanjean
 debug actsmp + marcel_key
 
@@ -472,6 +475,28 @@ int marcel_exit(any_t val)
 {
   marcel_t cur = marcel_self();
   DEFINE_CUR_LWP(register, , );
+
+  // gestion des thread_keys
+  {
+    int nb_keys=marcel_nb_keys;
+    int key;
+    int nb_bcl=0;
+#define NB_MAX_BCL 1
+    while (nb_keys && (nb_bcl++<NB_MAX_BCL)) {
+      nb_keys=0;
+      for(key=1; key<MAX_KEY_SPECIFIC; key++) {
+	if (marcel_key_destructor[key] && cur->key[key]) {
+	   (*(marcel_key_destructor[key]))(cur->key[key]);
+	   nb_keys++;
+	}
+      }
+    }
+#ifdef MA__DEBUG
+   if(nb_bcl==NB_MAX_BCL)
+      mdebug("  max iteration in key destructor for thread %i\n",cur->number);
+#endif
+  }
+
   SET_CUR_LWP(GET_LWP(cur));
 
 #ifdef SMP
@@ -490,29 +515,6 @@ int marcel_exit(any_t val)
     marcel_sem_V(&cur->client);
     marcel_sem_P(&cur->thread);
   }
-
-
-  // gestion des thread_keys
-  {
-    int nb_keys=marcel_nb_keys;
-    int key;
-    int nb_bcl=0;
-#define NB_MAX_BCL 10
-    while (nb_keys && (nb_bcl++<NB_MAX_BCL)) {
-      nb_keys=0;
-      for(key=1; key<MAX_KEY_SPECIFIC; key++) {
-	if (marcel_key_destructor[key] && cur->key[key]) {
-	   (*(marcel_key_destructor[key]))(cur->key[key]);
-	   nb_keys++;
-	}
-      }
-    }
-#ifdef MA__DEBUG
-   if(nb_bcl==NB_MAX_BCL)
-      mdebug("  max iteration in key destructor for thread %i\n",number);
-#endif
-  }
-
 
   // Dans le cas où la pile a été allouée à l'extérieur de Marcel
   // (typiquement par PM2/isomalloc), il faut effectuer un traitement
@@ -1240,7 +1242,7 @@ int marcel_key_create(marcel_key_t *key, marcel_key_destructor_t func)
    *key = marcel_last_key;
    marcel_nb_keys++;
    marcel_key_present[marcel_last_key]=1;
-   marcel_key_destructor[marcel_last_key]=0;
+   marcel_key_destructor[marcel_last_key]=func;
    marcel_lock_release(&marcel_key_lock);
    unlock_task();
    return 0;

@@ -252,6 +252,10 @@ static __inline__ char *marcel_stackbase(marcel_t pid)
 unsigned long marcel_cachedthreads(void);
 unsigned marcel_get_nb_lwps_np(void);
 
+_PRIVATE_ int  marcel_test_activity(void);
+_PRIVATE_ void marcel_set_activity(void);
+_PRIVATE_ void marcel_clear_activity(void);
+
 
 /* ======= MT-Safe functions from standard library ======= */
 

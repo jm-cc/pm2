@@ -1,13 +1,14 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.4 2002/10/23 14:07:09 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.6 2002/10/25 18:31:52 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
 
 /* Hierarchical protocol, taking into account the network topology in
  * the consistency operations.  This protocol implements the "partial
- * release". */
+ * release".  This protocol must be used in conjunction with the token
+ * locks only. */
 
 
 #include "pm2.h"
@@ -24,41 +25,13 @@
 /* TRACING AND DEBUGGING SYSTEM */
 /**********************************************************************/
 
+/* don't print the tracing / debugging messages */
 #undef TRCSL
 #undef DBGSL
-
 /* remove all assertions "assert" */
-#define NDEBUG
-#include <assert.h>
+#undef NDEBUG
 
-#undef PROFIN
-#undef PROFOUT
-#define PROFIN(x) ((void)0)
-#define PROFOUT(x) ((void)0)
-
-#if defined(TRCSL) || defined(DBGSL)
-static int depth = 0;
-static void spaces (const int i) { int j; for (j=0; j<i; j++) tfprintf(stderr, "   "); return; }
-#endif
-
-#undef IN
-#undef OUT
-#ifdef DBGSL
-#define IN { spaces(depth++); tfprintf(stderr, "--> [%d:%x:%s]\n", pm2_self(), marcel_self(), __FUNCTION__); }
-#define OUT { spaces(--depth); tfprintf(stderr, "[%d:%x:%s] -->\n", pm2_self(), marcel_self(), __FUNCTION__); }
-#else
-#define IN ((void)0)
-#define OUT ((void)0)
-#endif
-
-#undef TRACE
-#ifdef TRCSL
-#define TRACE(strng, args...) { spaces(depth); tfprintf(stderr, "[%d:%x:%s] " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
-#else
-#define TRACE(...) ((void)0)
-#endif
-
-#define STRACE(strng, args...) { tfprintf(stderr, "[%d:%x:%s] " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
+#include "trace_debug.h"
 
 
 /**********************************************************************/
@@ -81,6 +54,33 @@ typedef unsigned int diff_grain_t;
 /* when sending diffs, a node may or may not stay in the copyset */
 typedef enum { STILL_IN_COPYSET, OUT_OF_COPYSET } cs_stay_t;
 
+/* linked list of mutexes and condition variables associated to a
+ * token lock */
+typedef struct token_elem_struct token_elem_t;
+struct token_elem_struct
+{
+   token_lock_id_t lck_id;
+
+   /* diff_ack_lock and diff_ack_cond are used to wait for the diff
+    * acknowledgements */
+   marcel_mutex_t diff_ack_lock;
+   marcel_cond_t diff_ack_cond;
+
+   /* *_inval_ack_lock and *_inval_ack_cond are used to wait for the
+    * invalidation acknowledgements */
+   marcel_mutex_t local_inval_ack_lock;
+   marcel_mutex_t remote_inval_ack_lock;
+   marcel_cond_t local_inval_ack_cond;
+   marcel_cond_t remote_inval_ack_cond;
+
+   /* number of expected invalidations from the local cluster and from
+    * remote clusters */
+   int expected_local_invalidations;
+   int expected_remote_invalidations;
+
+   token_elem_t * next;
+};
+
 
 /**********************************************************************/
 /* GLOBAL PRIVATE VARIABLES                                           */
@@ -102,6 +102,13 @@ static marcel_mutex_t pend_inval_lock;
 static pg_list_t hosted_list;
 /* lock to handle the list of hosted pages */
 static marcel_mutex_t hosted_lock;
+
+/* linked list of mutexes and condition variables associated to a
+ * token lock */
+static token_elem_t * token_list;
+/* lock to handle the previous linked list of token synchronization
+ * objects */
+static marcel_mutex_t token_list_lock;
 
 
 /**********************************************************************/
@@ -198,35 +205,38 @@ insert_page_into_pg_list (const dsm_page_index_t index, pg_list_t * const pg_lis
 
 /**********************************************************************/
 /* send the invalidations to the nodes in the copyset, except to the
- * diffing node; The page entry is already locked. */
+ * diffing node; The page entry is already locked.  The locks
+ * remote_inval_ack_lock, local_inval_ack_lock, diff_ack_lock are
+ * assumed to be locked. */
 static void
 invalidate_copyset (dsm_page_index_t index, dsm_node_t reply_node,
-                    token_lock_id_t lck_id, int * const local_ack,
-                    int * const remote_ack)
+                    token_lock_id_t lck_id, int * const local_inv_ack,
+                    int * const remote_inv_ack)
 {
-   int i, copyset_sz;
-   dsm_node_t *copyset;
-   unsigned int reply_node_color;
+   int i;
+   int copyset_sz = dsm_get_copyset_size(index);
+   dsm_node_t * const copyset = dsm_get_copyset(index);
+   const unsigned int reply_node_clr = topology_get_cluster_color(reply_node);
 
    IN;
+   assert ( index != NO_PAGE );
    assert ( reply_node < pm2_config_size() );
-   reply_node_color = topology_get_cluster_color(reply_node);
+   assert ( reply_node != NOBODY );
    assert ( dsm_get_prob_owner(index) == pm2_self() );
-   copyset_sz = dsm_get_copyset_size(index);
-   copyset = dsm_get_copyset(index);
 
-   TRACE("copyset_size = %d", copyset_sz);
+   TRACE("copyset_sz=%d, pg=%d, diffing_node=%d, lck=%d",
+         copyset_sz, index, reply_node, lck_id);
    /* send the invalidations to the nodes in the copyset */
    for (i = 0; i < copyset_sz; i++)
    {
-      dsm_node_t nd = copyset[i];
+      const dsm_node_t nd = copyset[i];
 
       /* the owner of a page is never in the copyset of this page */
       assert ( nd != dsm_get_prob_owner(index) );
 
       if ( nd != reply_node )
       {
-         pm2_rawrpc_begin((int)nd, HIERARCH_INVALIDATE, NULL);
+         pm2_rawrpc_begin(nd, HIERARCH_INVALIDATE, NULL);
          pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &index,
                        sizeof(dsm_page_index_t));
          pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &reply_node,
@@ -234,17 +244,15 @@ invalidate_copyset (dsm_page_index_t index, dsm_node_t reply_node,
          pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id,
                        sizeof(token_lock_id_t));
          pm2_rawrpc_end();
-         if ( topology_get_cluster_color(nd) == reply_node_color )
+         if ( topology_get_cluster_color(nd) == reply_node_clr )
          {
-            (*local_ack)++;
-            TRACE("sending inval to local node %d (reply_node=%d, lock=%d)",
-                  nd, reply_node, lck_id);
+            (*local_inv_ack)++;
+            TRACE("sending inval to local node %d", nd);
          }
          else
          {
-            (*remote_ack)++;
-            TRACE("sending inval to remote node %d (reply node=%d, lock=%d)",
-                  nd, reply_node, lck_id);
+            (*remote_inv_ack)++;
+            TRACE("sending inval to remote node %d", nd);
          }
       }
    }
@@ -295,6 +303,7 @@ send_diff_to_home (const dsm_page_index_t index)
 
    IN;
    assert ( twin != NULL );
+   assert ( modif != NULL );
 
    /* idea: send contiguous chunks of memory that differ between both pages */
    for (word_offset = 0; word_offset < word_num; word_offset++)
@@ -308,8 +317,7 @@ send_diff_to_home (const dsm_page_index_t index)
          {
             /* the previous words were different */
             /* send the contiguous chunk from word_start (lenght=byte_size) */
-            send_chunk(word_start * GRANULARITY, modif + word_start,
-                               byte_size);
+            send_chunk(word_start * GRANULARITY, modif + word_start, byte_size);
             word_start = -1;
          }
       }
@@ -344,11 +352,20 @@ send_diff_to_home (const dsm_page_index_t index)
 static void
 apply_diffs (const dsm_page_index_t index)
 {
+   const dsm_access_t pg_access = dsm_get_access(index);
    int byte_offset;
    char * const page = (char *) dsm_get_page_addr(index); /* handling bytes */
 
    IN;
-   assert ( dsm_get_access(index) == WRITE_ACCESS );
+   assert ( index != NO_PAGE );
+   assert ( page != NULL );
+
+   /* setting this page in WRITE access is not a problem: even another
+    * thread in this process modifies some part of the page (on the
+    * home node), the page will be invalidated anyway after this
+    * function apply_diffs() */
+   if ( pg_access != WRITE_ACCESS )
+      dsm_set_access(index, WRITE_ACCESS);
    pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, &byte_offset, sizeof(int));
    while ( byte_offset != -1 )
    {
@@ -360,9 +377,64 @@ apply_diffs (const dsm_page_index_t index)
             byte_size, *((int*)(page + byte_offset)));
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, &byte_offset, sizeof(int));
    }
+   if ( pg_access != WRITE_ACCESS )
+      dsm_set_access(index, pg_access);
 
    OUT;
    return;
+}
+
+
+/**********************************************************************/
+/* return a pointer to the structure containing the synchronization
+ * objects attached to the given token_lock ID; create that structure
+ * and insert it in the linked list if it does not exist yet */
+static token_elem_t *
+get_token_elem (const token_lock_id_t lck_id)
+{
+   token_elem_t * token_elem;
+
+   IN;
+   marcel_mutex_lock(&token_list_lock);
+   token_elem = token_list;
+
+   while ( token_elem != NULL )
+      if ( token_elem->lck_id == lck_id )
+         break;
+      else
+         token_elem = token_elem->next;
+
+   if ( token_elem == NULL )   /* not found --> create it */
+   {
+      token_elem = (token_elem_t *) tmalloc(sizeof(token_elem_t));
+      if ( token_elem == NULL )
+      {
+         perror(__FUNCTION__);
+         OUT;
+         abort();
+      }
+
+      TRACE("creating/initializing a new token_elem for lck=%d", lck_id);
+      token_elem->lck_id = lck_id;
+      token_elem->expected_local_invalidations = 0;
+      token_elem->expected_remote_invalidations = 0;
+      marcel_mutex_init(&(token_elem->diff_ack_lock), NULL);
+      marcel_mutex_init(&(token_elem->local_inval_ack_lock), NULL);
+      marcel_mutex_init(&(token_elem->remote_inval_ack_lock), NULL);
+      marcel_cond_init(&(token_elem->diff_ack_cond), NULL);
+      marcel_cond_init(&(token_elem->local_inval_ack_cond), NULL);
+      marcel_cond_init(&(token_elem->remote_inval_ack_cond), NULL);
+
+      /* insert it in the linked list */
+      token_elem->next = token_list;
+      token_list = token_elem;
+   }
+
+   marcel_mutex_unlock(&token_list_lock);
+
+   assert ( token_elem != NULL );
+   OUT;
+   return token_elem;
 }
 
 
@@ -375,10 +447,13 @@ send_ack_number_to_diffing_node(const dsm_node_t reply_node,
                                 int remote_ack_number)
 {
    IN;
+   assert ( reply_node != NOBODY );
+   assert ( reply_node < pm2_config_size() );
    assert ( pm2_self() != reply_node );
-   TRACE("sending local_ack_num=%d, remote_ack_num=%d to node %d",
-         local_ack_number, remote_ack_number, reply_node);
-   pm2_rawrpc_begin((int)reply_node, HIERARCH_DIFF_ACK, NULL);
+   TRACE("sending local_inv_ack=%d, remote_inv_ack=%d to node %d (lck=%d)",
+         local_ack_number, remote_ack_number, reply_node, lck_id);
+
+   pm2_rawrpc_begin(reply_node, HIERARCH_DIFF_ACK, NULL);
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id, sizeof(token_lock_id_t));
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &local_ack_number, sizeof(int));
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &remote_ack_number, sizeof(int));
@@ -395,6 +470,7 @@ send_ack_number_to_diffing_node(const dsm_node_t reply_node,
 static void
 recv_diff_ack (void * unused)
 {
+   token_elem_t * token_elem;
    token_lock_id_t lck_id;
    int local_ack_num, remote_ack_num;
 
@@ -405,9 +481,19 @@ recv_diff_ack (void * unused)
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &remote_ack_num, sizeof(int));
    pm2_rawrpc_waitdata();
 
-   TRACE("recv'd diff ack with local_inv=%d, remote_inv=%d for lock %d",
+   TRACE("recv'd diff ack with local_inv_ack=%d, remote_inv_ack=%d for lck %d",
          local_ack_num, remote_ack_num, lck_id);
-   ; // hierarch_register_acks(lck_id, -1, local_ack_num, remote_ack_num);
+
+   token_elem = get_token_elem(lck_id);
+   assert ( token_elem != NULL );
+
+   marcel_mutex_lock(&(token_elem->diff_ack_lock));
+   /* the locks local_inval_ack_lock and remote_inval_ack_lock are
+    * assumed to be already acquired */
+   token_elem->expected_local_invalidations += local_ack_num;
+   token_elem->expected_remote_invalidations += remote_ack_num;
+   marcel_cond_signal(&(token_elem->diff_ack_cond));
+   marcel_mutex_unlock(&(token_elem->diff_ack_lock));
 
    OUT;
    return;
@@ -420,38 +506,45 @@ static void
 recv_diff_func (void * unused)
 {
    dsm_page_index_t index;
-   int local_ack_num, remote_ack_num;
+   int local_ack_num = 0;
+   int remote_ack_num = 0;
    dsm_node_t reply_node;
    cs_stay_t cs_stay;
    token_lock_id_t lck_id;
 
    IN;
-   local_ack_num = remote_ack_num = 0;
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id,
                    sizeof(token_lock_id_t));
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &cs_stay, sizeof(cs_stay));
    pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, &index, sizeof(dsm_page_index_t));
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &reply_node, sizeof(dsm_node_t));
 
-   dsm_lock_page(index);
+   assert ( index != NO_PAGE );
    assert ( dsm_get_prob_owner(index) == pm2_self() );
+
+   dsm_lock_page(index);
 
    /* apply the diffs */
    apply_diffs(index);
 
    /* terminate */
    pm2_rawrpc_waitdata();
-   TRACE("recv'd diff from node %d on page index %d (lock=%d)",
-         reply_node, index, lck_id);
+   assert ( cs_stay == OUT_OF_COPYSET || cs_stay == STILL_IN_COPYSET );
+   assert ( reply_node != pm2_self() );
+   assert ( reply_node != NOBODY );
+   assert ( reply_node < pm2_config_size() );
+   TRACE("recv'd diff from node %d on page index %d (lock=%d, cs_stay='%s')",
+         reply_node, index, lck_id,
+         cs_stay == OUT_OF_COPYSET ? "OUT_OF_COPYSET" : "STILL_IN_COPYSET");
 
    /* send invalidation msgs to the nodes in the copyset */
-   assert ( reply_node != pm2_self() );
    /* This code (invalidation of the copyset) could be moved before
     * the application of the diffs (to save a little time) */
    invalidate_copyset(index, reply_node, lck_id, &local_ack_num,
                       &remote_ack_num);
    TRACE("invalidated local copyset with %d nodes", local_ack_num);
    TRACE("invalidated remote copyset with %d nodes", remote_ack_num);
+
    /* has the diffing node requested to stay in the copyset? */
    if ( cs_stay == STILL_IN_COPYSET )
       dsm_add_to_copyset(index, reply_node);
@@ -479,10 +572,11 @@ diffing (dsm_page_index_t index, token_lock_id_t lck_id, cs_stay_t cs_stay)
    int byte_offset = -1;
 
    IN;
+   assert ( index != NO_PAGE );
    assert ( home != self );
    TRACE("sending diffs from %d to %d on page %d (lock=%d)",
          self, home, index, lck_id);
-   pm2_rawrpc_begin((int)home, HIERARCH_DIFF, NULL);
+   pm2_rawrpc_begin(home, HIERARCH_DIFF, NULL);
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id, sizeof(token_lock_id_t));
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &cs_stay, sizeof(cs_stay_t));
    pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, &index, sizeof(dsm_page_index_t));
@@ -508,9 +602,11 @@ diffing (dsm_page_index_t index, token_lock_id_t lck_id, cs_stay_t cs_stay)
 static void
 make_twin (const dsm_page_index_t index)
 {
+   IN;
+   assert ( index != NO_PAGE );
+   assert ( dsm_get_page_addr(index) != NULL );
    assert ( dsm_get_twin(index) != NULL );
 
-   IN;
    TRACE("twinning page index %d", index);
    memcpy(dsm_get_twin(index), dsm_get_page_addr(index),
           dsm_get_page_size(index));
@@ -525,17 +621,19 @@ make_twin (const dsm_page_index_t index)
 static void
 insert_node_into_copyset (const dsm_page_index_t index, const dsm_node_t node)
 {
-   int i, copyset_sz;
-   dsm_node_t *copyset;
+   int i;
+   const int copyset_sz = dsm_get_copyset_size(index);
+   const dsm_node_t * const copyset = dsm_get_copyset(index);
 
    IN;
+   assert ( index != NO_PAGE );
+   assert ( node != NOBODY );
+   assert ( node < pm2_config_size() );
    /* the home of a page is never in the copyset of the page */
    assert ( node != pm2_self() );
    assert ( dsm_get_prob_owner(index) == pm2_self() );
 
    /* if the node is already in the copyset, do nothing */
-   copyset_sz = dsm_get_copyset_size(index);
-   copyset = dsm_get_copyset(index);
    for (i = 0; i < copyset_sz; i++)
       if ( copyset[i] == node )
       {
@@ -594,24 +692,21 @@ flush_pending_invalidations (const token_lock_id_t lck_id)
    {
       dsm_access_t pg_access;
 
-      /* the invalidate server should not insert pages I own in the
+      /* the invalidate server should not insert pages it owns in the
        * list of pending invalidations */
       assert ( dsm_get_prob_owner(index) != pm2_self() );
 
       TRACE("invalidating page %d (lock=%d)", index, lck_id);
       dsm_lock_page(index);
       pg_access = dsm_get_access(index);
-      if ( pg_access == READ_ACCESS )
-         dsm_set_access(index, NO_ACCESS);
-      else if ( pg_access == WRITE_ACCESS )
+      assert ( pg_access != NO_ACCESS );
+      if ( pg_access == WRITE_ACCESS )
       {
-         dsm_set_access(index, READ_ACCESS);
          remove_page_from_pg_list(index, &modif_list);
          diff_ack_number++;
-         TRACE("diffing page %d", index);
          diffing(index, lck_id, OUT_OF_COPYSET);
-         dsm_set_access(index, NO_ACCESS);
       }
+      dsm_set_access(index, NO_ACCESS);
       dsm_unlock_page(index);
    }
 
@@ -633,10 +728,10 @@ flush_modified_pages (const token_lock_id_t lck_id)
    while ( (index = extract_page_from_pg_list(&modif_list)) != NO_PAGE )
    {
       diff_number++;
+      assert ( dsm_get_prob_owner(index) != pm2_self() );
       dsm_lock_page(index);
       assert ( dsm_get_access(index) == WRITE_ACCESS );
       dsm_set_access(index, READ_ACCESS);
-      TRACE("diffing page %d (lock=%d)", index, lck_id);
       diffing(index, lck_id, STILL_IN_COPYSET);
       dsm_unlock_page(index);
    }
@@ -655,6 +750,9 @@ send_inv_ack (const dsm_node_t node, token_lock_id_t lck_id)
    dsm_node_t self = pm2_self();
 
    IN;
+   assert ( node != NOBODY );
+   assert ( node < pm2_config_size() );
+   assert ( node != self );
 
    TRACE("sending an inv ack for lock %d to node %d", lck_id, node);
    pm2_rawrpc_begin(node, HIERARCH_INV_ACK, NULL);
@@ -684,6 +782,10 @@ invalidate_server_func (void * unused)
                    sizeof(token_lock_id_t));
    pm2_rawrpc_waitdata();
 
+   assert ( index != NO_PAGE );
+   assert ( reply_node != NOBODY );
+   assert ( reply_node < pm2_config_size() );
+   assert ( reply_node != pm2_self() );
    /* I can't receive an invalidation msg for a page I own */
    assert ( dsm_get_prob_owner(index) != pm2_self() );
    TRACE("recv'd invalidation for page %d (lock=%d)", index, lck_id);
@@ -706,6 +808,7 @@ invalidate_server_func (void * unused)
 static void
 recv_inv_ack (void * unused)
 {
+   token_elem_t * token_elem;
    dsm_node_t from_node;
    token_lock_id_t lck_id;
 
@@ -715,17 +818,31 @@ recv_inv_ack (void * unused)
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &from_node, sizeof(dsm_node_t));
    pm2_rawrpc_waitdata();
 
-   assert ( lck_id != TOKEN_LOCK_NONE );
    assert ( from_node != NOBODY );
    assert ( from_node < pm2_config_size() );
 
+   token_elem = get_token_elem(lck_id);
+   assert ( token_elem != NULL );
+
    if ( topology_get_cluster_color(pm2_self()) ==
         topology_get_cluster_color(from_node) )
+   {
+      TRACE("recv'd inv ack from node=%d in local cluster", from_node);
       /* local inv ack recv'd */
-      ; // hierarch_register_acks(lck_id, 0, -1, 0);
+      marcel_mutex_lock(&(token_elem->local_inval_ack_lock));
+      token_elem->expected_local_invalidations--;
+      marcel_cond_signal(&(token_elem->local_inval_ack_cond));
+      marcel_mutex_unlock(&(token_elem->local_inval_ack_lock));
+   }
    else
+   {
+      TRACE("recv'd inv ack from node=%d in remote cluster", from_node);
       /* remote inv ack recv'd */
-      ; // hierarch_register_acks(lck_id, 0, 0, -1);
+      marcel_mutex_lock(&(token_elem->remote_inval_ack_lock));
+      token_elem->expected_remote_invalidations--;
+      marcel_cond_signal(&(token_elem->remote_inval_ack_cond));
+      marcel_mutex_unlock(&(token_elem->remote_inval_ack_lock));
+   }
 
    OUT;
    return;
@@ -734,16 +851,16 @@ recv_inv_ack (void * unused)
 
 /**********************************************************************/
 /* send invalidation messages to all the nodes included in the
- * copysets of ALL the pages I host; the lock "expected_inv_acks_lock"
- * is assumed to be acquired. */
+ * copysets of ALL the pages I host; the locks remote_inval_ack_lock,
+ * local_inval_ack_lock, diff_ack_lock are assumed to be acquired. */
 static void
-invalidate_all_hosted_pages (const token_lock_id_t lck_id,
-                             int * const local_ack, int * const remote_ack)
+invalidate_writable_hosted_pages (token_elem_t * const token_elem)
 {
    pg_list_t list;
+   int local_inv_ack = 0;
+   int remote_inv_ack = 0;
 
    IN;
-   assert ( *local_ack == 0  &&  *remote_ack == 0 );
 
    marcel_mutex_lock(&hosted_lock);
    list = hosted_list;
@@ -753,15 +870,24 @@ invalidate_all_hosted_pages (const token_lock_id_t lck_id,
 
       /* I'm supposed to be the host of this page... */
       assert ( dsm_get_prob_owner(index) == pm2_self() );
-      assert ( dsm_get_access(index) == WRITE_ACCESS );
       list = list->next;
 
-      TRACE("home invalidating copyset of page %d", index);
       dsm_lock_page(index);
-      invalidate_copyset(index, pm2_self(), lck_id, local_ack, remote_ack);
+      if ( dsm_get_access(index) == WRITE_ACCESS )
+      {
+         TRACE("home invalidating copyset of page %d, lck=%d",
+               index, token_elem->lck_id);
+         dsm_set_access(index, READ_ACCESS);
+         invalidate_copyset(index, pm2_self(), token_elem->lck_id,
+                            &local_inv_ack, &remote_inv_ack);
+      }
+      assert ( dsm_get_access(index) == READ_ACCESS );
       dsm_unlock_page(index);
    }
    marcel_mutex_unlock(&hosted_lock);
+
+   token_elem->expected_local_invalidations += local_inv_ack;
+   token_elem->expected_remote_invalidations += remote_inv_ack;
 
    OUT;
    return;
@@ -775,8 +901,12 @@ provide_page (const dsm_page_index_t index, const dsm_node_t req_node,
               const dsm_access_t access, const int tag)
 {
    IN;
-   /* Who knows?... */
+   assert ( index != NO_PAGE );
+   assert ( req_node != NOBODY );
+   assert ( req_node < pm2_config_size() );
    assert ( req_node != pm2_self() );
+
+   dsm_lock_page(index);
 
    /* the page must be locked before sending it because the
     * receive_diff_server may be applying a diff on this page; here is
@@ -813,7 +943,8 @@ void
 hierarch_proto_read_fault_handler (const dsm_page_index_t index)
 {
    IN;
-   /* There can't be any page fault on the home node of a page */
+   assert ( index != NO_PAGE );
+   /* There can't be any READ page fault on the home node of a page */
    assert ( dsm_get_prob_owner(index) != pm2_self() );
 
    TRACE("caught read fault for page %d", index);
@@ -852,13 +983,26 @@ hierarch_proto_read_fault_handler (const dsm_page_index_t index)
 void
 hierarch_proto_write_fault_handler (const dsm_page_index_t index)
 {
-   IN;
-   /* There can't be any page fault on the home node of a page */
-   assert ( dsm_get_prob_owner(index) != pm2_self() );
+   const dsm_node_t myself = pm2_self();
+   const dsm_node_t home = dsm_get_prob_owner(index);
 
+   IN;
+   assert ( index != NO_PAGE );
    TRACE("caught write fault for page %d", index);
+
+   if ( myself == home )
+   {
+      TRACE("home setting page %d in WRITE access", index);
+      dsm_lock_page(index);
+      dsm_set_access(index, WRITE_ACCESS);
+      dsm_unlock_page(index);
+      OUT;
+      return;
+   }
+
    marcel_mutex_lock(&modif_list_lock);
    dsm_lock_page(index);
+
    /* In case another thread has already requested the page and the
     * page had enough time to arrive */
    if ( dsm_get_access(index) == WRITE_ACCESS )
@@ -873,11 +1017,9 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
     * just wait for the page to arrive */
    if ( dsm_get_pending_access(index) < WRITE_ACCESS )
    {
-      TRACE("sending write page req to %d for page %d",
-            dsm_get_prob_owner(index), index);
-      dsm_send_page_req(dsm_get_prob_owner(index), index,
-                        pm2_self() /* reply to me */, WRITE_ACCESS,
-                        0 /* tag */);
+      TRACE("sending write page req to %d for page %d", home, index);
+      dsm_send_page_req(home, index, pm2_self() /* reply to me */,
+                        WRITE_ACCESS, 0 /* tag */);
       dsm_set_pending_access(index, WRITE_ACCESS);
       TRACE("inserting page %d into list of modified pages", index);
       /* insert the page into the list of pages modified by this node */
@@ -899,13 +1041,11 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
 /**********************************************************************/
 /* Read Server */
 void
-hierarch_proto_read_server (const dsm_page_index_t index, const dsm_node_t req_node,
-                           const int tag)
+hierarch_proto_read_server (const dsm_page_index_t index,
+                            const dsm_node_t req_node, const int tag)
 {
    IN;
 
-   /* the page is already protected by a lock on entry in this
-    * function */
    provide_page(index, req_node, READ_ACCESS, tag);
 
    OUT;
@@ -917,12 +1057,10 @@ hierarch_proto_read_server (const dsm_page_index_t index, const dsm_node_t req_n
 /* Write Server */
 void
 hierarch_proto_write_server (const dsm_page_index_t index,
-                            const dsm_node_t req_node, const int tag)
+                             const dsm_node_t req_node, const int tag)
 {
    IN;
 
-   /* the page is already protected by a lock on entry in this
-    * function */
    provide_page(index, req_node, WRITE_ACCESS, tag);
 
    OUT;
@@ -946,14 +1084,20 @@ hierarch_invalidate_server (void)
 /* Receive Page Server */
 void
 hierarch_proto_receive_page_server (void * const addr,
-                                   const dsm_access_t access,
-                                   const dsm_node_t reply_node, const int tag)
+                                    const dsm_access_t access,
+                                    const dsm_node_t reply_node, const int tag)
 {
    /* no need to acquire the lock on the page entry: this value is constant */
-   dsm_page_index_t index = dsm_page_index(addr);
+   const dsm_page_index_t index = dsm_page_index(addr);
    dsm_access_t pending_access;
 
    IN;
+   assert ( index != NO_PAGE );
+   assert ( addr != NULL );
+   assert ( reply_node != pm2_self() );
+   assert ( reply_node != NOBODY );
+   assert ( reply_node < pm2_config_size() );
+
    dsm_lock_page(index);
 
    /* the home node is the only one that should reply! */
@@ -1002,26 +1146,63 @@ hierarch_proto_receive_page_server (void * const addr,
 
 
 /**********************************************************************/
-/* Lock Acquire */
+/* Lock Acquire; if lck_id == TOKEN_LOCK_NONE, then it is the 2nd part
+ * of a barrier (barrier == release + acquire). */
 void
 hierarch_proto_acquire_func (const token_lock_id_t lck_id)
 {
+   token_elem_t * token_elem;
    /* number of expected ack's for the diffs msgs */
    int diff_number;
-   pm2_completion_t cmpltn;
 
    IN;
-   /* completion token for the invalidation messages */
-   pm2_completion_init(&cmpltn, NULL, NULL);
 
+   token_elem = get_token_elem(lck_id);
+   assert ( token_elem != NULL );
+
+   /* to avoid deadlocks, "remote_inval_ack_lock" is always acquired
+    * before "local_inval_ack_lock"; "local_inval_ack_lock" is always
+    * acquired before "diff_ack_lock"; "diff_ack_lock" is always
+    * acquired before "modif_list_lock"; "modif_list_lock" is always
+    * acquired before "pend_inval_lock". */
+   marcel_mutex_lock(&(token_elem->remote_inval_ack_lock));
+   marcel_mutex_lock(&(token_elem->local_inval_ack_lock));
+   marcel_mutex_lock(&(token_elem->diff_ack_lock));
    marcel_mutex_lock(&modif_list_lock);
    marcel_mutex_lock(&pend_inval_lock);
    diff_number = flush_pending_invalidations(lck_id);
    marcel_mutex_unlock(&pend_inval_lock);
    marcel_mutex_unlock(&modif_list_lock);
 
-   if ( diff_number != 0 )
-      ; // hierarch_register_acks(lck_id, diff_number, 0, 0);
+   assert ( token_elem->expected_local_invalidations == 0 );
+   assert ( token_elem->expected_remote_invalidations == 0 );
+
+   TRACE("waiting for %d diff acks, lck=%d", diff_number, lck_id);
+
+   while ( diff_number > 0 )
+   {
+      marcel_cond_wait(&(token_elem->diff_ack_cond),
+                       &(token_elem->diff_ack_lock));
+      diff_number--;
+   }
+   assert ( diff_number == 0 );
+   marcel_mutex_unlock(&(token_elem->diff_ack_lock));
+
+   TRACE("wait for %d local inv acks, %d remote inv acks, lck=%d",
+         token_elem->expected_local_invalidations,
+         token_elem->expected_remote_invalidations, lck_id);
+
+   while ( token_elem->expected_local_invalidations > 0 )
+      marcel_cond_wait(&(token_elem->local_inval_ack_cond),
+                       &(token_elem->local_inval_ack_lock));
+   assert ( token_elem->expected_local_invalidations == 0 );
+   marcel_mutex_unlock(&(token_elem->local_inval_ack_lock));
+
+   while ( token_elem->expected_remote_invalidations > 0 )
+      marcel_cond_wait(&(token_elem->remote_inval_ack_cond),
+                       &(token_elem->remote_inval_ack_lock));
+   assert ( token_elem->expected_remote_invalidations == 0 );
+   marcel_mutex_unlock(&(token_elem->remote_inval_ack_lock));
 
    OUT;
    return;
@@ -1029,37 +1210,75 @@ hierarch_proto_acquire_func (const token_lock_id_t lck_id)
 
 
 /**********************************************************************/
-/* Lock Release */
+/* Lock Release; if lck_id == TOKEN_LOCK_NONE, then it is the 2nd part
+ * of a barrier (barrier == release + acquire). */
 void
 hierarch_proto_release_func (const token_lock_id_t lck_id)
 {
+   token_elem_t * token_elem;
    /* number of diffs sent to the home nodes */
    int diff_number;
-   int expected_local_inv_acks = 0;
-   int expected_remote_inv_acks = 0;
 
    IN;
-   marcel_mutex_lock(&modif_list_lock);
+
+   token_elem = get_token_elem(lck_id);
+   assert ( token_elem != NULL );
+
+   /* to avoid deadlocks, "remote_inval_ack_lock" is always acquired
+    * before "local_inval_ack_lock"; "local_inval_ack_lock" is always
+    * acquired before "diff_ack_lock"; "diff_ack_lock" is always
+    * acquired before "modif_list_lock"; "modif_list_lock" is always
+    * acquired before "pend_inval_lock". */
+   marcel_mutex_lock(&(token_elem->remote_inval_ack_lock));
+   marcel_mutex_lock(&(token_elem->local_inval_ack_lock));
+   marcel_mutex_lock(&(token_elem->diff_ack_lock));
+
+   assert ( token_elem->expected_local_invalidations == 0 );
+   assert ( token_elem->expected_remote_invalidations == 0 );
 
    /* send invalidations for the copysets of ALL the pages I host */
-   invalidate_all_hosted_pages(lck_id, &expected_local_inv_acks,
-                               &expected_remote_inv_acks);
+   invalidate_writable_hosted_pages(token_elem);
 
    /* The flushing of the pending invalidations could be postponed
     * until the next acquire operation, but the latter is Synchronous
-    * while the release operation is Asynchronous, so it might be
-    * better to flush the pending invalidations at release time; that
-    * also yields better reactivity at acquire time */
+    * while the release operation could be Asynchronous, so it might
+    * be better to flush the pending invalidations at release time;
+    * that also yields better reactivity at acquire time */
+   marcel_mutex_lock(&modif_list_lock);
    marcel_mutex_lock(&pend_inval_lock);
    diff_number = flush_pending_invalidations(lck_id);
    marcel_mutex_unlock(&pend_inval_lock);
 
    /* send diffs of modified pages */
    diff_number += flush_modified_pages(lck_id);
-
    marcel_mutex_unlock(&modif_list_lock);
 
-   ; // hierarch_register_acks (lck_id, diff_number, expected_local_inv_acks, expected_remote_inv_acks);
+   TRACE("waiting for %d diff acks, lck=%d", diff_number, lck_id);
+
+   while ( diff_number > 0 )
+   {
+      marcel_cond_wait(&(token_elem->diff_ack_cond),
+                       &(token_elem->diff_ack_lock));
+      diff_number--;
+   }
+   assert ( diff_number == 0 );
+   marcel_mutex_unlock(&(token_elem->diff_ack_lock));
+
+   TRACE("wait for %d local inv acks, %d remote inv acks, lck=%d",
+         token_elem->expected_local_invalidations,
+         token_elem->expected_remote_invalidations, lck_id);
+
+   while ( token_elem->expected_local_invalidations > 0 )
+      marcel_cond_wait(&(token_elem->local_inval_ack_cond),
+                       &(token_elem->local_inval_ack_lock));
+   assert ( token_elem->expected_local_invalidations == 0 );
+   marcel_mutex_unlock(&(token_elem->local_inval_ack_lock));
+
+   while ( token_elem->expected_remote_invalidations > 0 )
+      marcel_cond_wait(&(token_elem->remote_inval_ack_cond),
+                       &(token_elem->remote_inval_ack_lock));
+   assert ( token_elem->expected_remote_invalidations == 0 );
+   marcel_mutex_unlock(&(token_elem->remote_inval_ack_lock));
 
    OUT;
    return;
@@ -1081,9 +1300,14 @@ hierarch_proto_initialization (const int prot_id)
    pend_inval_list = NULL;
    marcel_mutex_init(&pend_inval_lock, NULL);
 
-   /* the list of hosted pages */
+   /* the list of hosted pages is initially empty */
    hosted_list = NULL;
    marcel_mutex_init(&hosted_lock, NULL);
+
+   /* the list of synchronization objects attached to each token lock
+    * is initially empty */
+   token_list = NULL;
+   marcel_mutex_init(&token_list_lock, NULL);
 
    OUT;
    return;
@@ -1096,6 +1320,8 @@ void
 hierarch_proto_page_add_func (const dsm_page_index_t index)
 {
    IN;
+   assert ( index != NO_PAGE );
+
    /* the twin is initialized to NULL beforehand */
    /* the copyset is allocated, and its size is set to 0 beforehand */
    /* the write_page and read_page condition variables are initialized
@@ -1107,20 +1333,22 @@ hierarch_proto_page_add_func (const dsm_page_index_t index)
     * this page was received from another node, then the owner is set
     * to this other node */
 
-   /* the home node has always write access to its own pages */
+   /* the home node has always at least read access to its own pages */
    /* "hosted_lock" is always acquired before the page mutex to avoid
     * deadlocks */
    marcel_mutex_lock(&hosted_lock);
    dsm_lock_page(index);
+
    TRACE("home node of page %d is %d", index, dsm_get_prob_owner(index));
-   if ( dsm_get_prob_owner(index) == pm2_self() )
+   if ( dsm_get_prob_owner(index) == pm2_self() )   /* I'm the home node */
    {
-      dsm_set_access(index, WRITE_ACCESS);
+      dsm_set_access(index, READ_ACCESS);
       /* insert this page into the list of pages I host */
       insert_page_into_pg_list(index, &hosted_list);
    }
    else
       dsm_set_access(index, NO_ACCESS);
+
    dsm_unlock_page(index);
    marcel_mutex_unlock(&hosted_lock);
 
@@ -1160,14 +1388,32 @@ hierarch_proto_finalization (void)
       /* empty the list */ ;
    marcel_mutex_destroy(&hosted_lock);
 
+   /* empty the list of synchronization objects attached to each token
+    * lock */
+   while ( token_list != NULL )
+   {
+      token_elem_t * const next = token_list->next;
+
+      marcel_cond_destroy(&(token_list->diff_ack_cond));
+      marcel_cond_destroy(&(token_list->local_inval_ack_cond));
+      marcel_cond_destroy(&(token_list->remote_inval_ack_cond));
+      marcel_mutex_destroy(&(token_list->diff_ack_lock));
+      marcel_mutex_destroy(&(token_list->local_inval_ack_lock));
+      marcel_mutex_destroy(&(token_list->remote_inval_ack_lock));
+      tfree(token_list);
+
+      token_list = next;
+   }
+   marcel_mutex_destroy(&token_list_lock);
+
    OUT;
    return;
 }
 
 
 /**********************************************************************/
-/* RPC service function to receive the number of expected ACKs after
- * applying a diff */
+/* RPC service function to receive the number of expected invalidation
+ * ACKs after applying a diff */
 void
 hierarch_diff_ack_server (void)
 {

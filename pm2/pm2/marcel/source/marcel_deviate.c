@@ -107,13 +107,13 @@ void marcel_execute_deviate_work(void)
 
 static void insertion_relai(handler_func_t f, void *arg)
 { 
-  jmp_buf back;
+  marcel_ctx_t back;
   marcel_t cur = marcel_self();
 
-  memcpy(back, cur->jbuf, sizeof(jmp_buf));
+  memcpy(back, cur->ctx_yield, sizeof(marcel_ctx_t));
 
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
-    longjmp(cur->father->jbuf, NORMAL_RETURN);
+    marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
   } else {
     MA_THR_RESTARTED(cur, "Preemption");
     unlock_task();
@@ -121,7 +121,7 @@ static void insertion_relai(handler_func_t f, void *arg)
     (*f)(arg);
 
     lock_task();
-    longjmp(back, NORMAL_RETURN);
+    marcel_ctx_longjmp(back, NORMAL_RETURN);
   }
 }
 
@@ -135,17 +135,16 @@ static void do_deviate(marcel_t pid, handler_func_t h, any_t arg)
   static void * volatile argument;
   static volatile long initial_sp;
 
-  if(setjmp(marcel_self()->jbuf) == FIRST_RETURN) {
+  if(marcel_ctx_setjmp(marcel_self()->ctx_yield) == FIRST_RETURN) {
     f_to_call = h;
     argument = arg;
 
     pid->father = marcel_self();
 
-    initial_sp = MAL_BOT((long)SP_FIELD(pid->jbuf)) -
+    initial_sp = MAL_BOT((long)marcel_ctx_get_sp(pid->ctx_yield)) -
       TOP_STACK_FREE_AREA - 256;
 
-    call_ST_FLUSH_WINDOWS();
-    set_sp(initial_sp);
+    marcel_ctx_switch_stack(marcel_self(), pid, initial_sp);
 
     (*relai_func)(f_to_call, argument);
 

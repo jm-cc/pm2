@@ -47,7 +47,7 @@ struct pm2_thread_arg {
 static struct pm2_thread_arg *next_free = NULL;
 static unsigned next_unalloc = 0;
 
-static unsigned the_granted_size;
+static size_t the_granted_size;
 
 static __inline__ void *pm2_thread_stack_alloc(void)
 {

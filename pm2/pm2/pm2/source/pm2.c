@@ -200,22 +200,61 @@ void pm2_init_purge_cmdline(int *argc, char *argv[])
 {}
 
 #ifdef MAD2
-inline void pm2_send_stop_server(int i)
+static void pm2_send_stop_server(void)
 {
   unsigned tag = NETSERVER_END;
   int c;
+  int node;
 
   LOG_IN();
   for(c=0; c<nb_of_channels; c++) {
-    LOG("pm2 halting %i\n", i);
-    mad_sendbuf_init(channel(c), i);
-    pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-    mad_sendbuf_send();
+    for(node=1; node<__pm2_conf_size; node++) {
+      LOG("pm2 halting %i on channel %i\n", node, c);
+      mad_sendbuf_init(channel(c), node);
+      pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+      mad_sendbuf_send();
+    }
   }
   LOG_OUT();
 }
 
-volatile int pm2_zero_halt = FALSE;
+static marcel_mutex_t halt_lock=MARCEL_MUTEX_INITIALIZER;
+static int pm2_zero_halt=0;
+
+inline void pm2_halt_requested(void)
+{
+  if (__pm2_self != 0) {
+    fprintf(stderr, "NETSERVER ERROR: NETSERVER_REQUEST_HALT"
+	    " tag on node %i\n", __pm2_self);
+    return;
+  }
+  marcel_mutex_lock(&halt_lock);
+  pm2_zero_halt++;
+  if (pm2_zero_halt == (__pm2_conf_size+1)*nb_of_channels) {
+    /* +1 car tous les pm2_exit() en envoient un + pm2_halt() */
+    pm2_thread_create((pm2_func_t)pm2_send_stop_server, (void*)(NULL));
+  }
+  marcel_mutex_unlock(&halt_lock);
+}
+
+inline static void pm2_request_halt_or_exit(void)
+{
+  unsigned tag = NETSERVER_REQUEST_HALT;
+  int c;
+
+  LOG_IN();
+  for(c=0; c<nb_of_channels; c++) {
+    LOG("pm2 request halt or exit on channel %i\n", c);
+    if (__pm2_self == 0) {
+      pm2_halt_requested();
+    } else {
+      mad_sendbuf_init(channel(c), 0);
+      pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+      mad_sendbuf_send();
+    }
+  }
+  LOG_OUT();
+}
 #endif
 
 static void pm2_wait_end(void)
@@ -228,6 +267,7 @@ static void pm2_wait_end(void)
     LOG_IN();
 
     if(!pm2_single_mode()) {
+      pm2_request_halt_or_exit();
       netserver_wait_end();
       mdebug("pm2_wait_end netserver_wait_end completed\n");
     }
@@ -301,12 +341,7 @@ void pm2_halt()
       }
     }
 #else
-    if(__pm2_self==0) {
-      pm2_zero_halt=TRUE;
-      pm2_send_stop_server(1);  
-    } else {
-      pm2_send_stop_server(0);  
-    }
+    pm2_request_halt_or_exit();
 #endif
   }
   LOG_OUT();

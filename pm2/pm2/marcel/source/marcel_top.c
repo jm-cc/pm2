@@ -79,11 +79,13 @@ void marcel_top_tick(unsigned long foo) {
 	printrq(&ma_main_runqueue);
 #ifndef MA__LWPS
 	printtask(ma_per_lwp__current_thread);
+	top_printf("\r\n");
 #endif
 	printrq(&ma_dontsched_runqueue);
 #ifdef MA__LWPS
 	for_all_lwp(lwp) {
 		printtask(ma_per_lwp(current_thread,lwp));
+		top_printf("\r\n");
 		printrq(&ma_per_lwp(runqueue,lwp));
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
 	}

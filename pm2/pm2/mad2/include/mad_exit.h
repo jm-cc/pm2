@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_exit.h,v $
+Revision 1.2  2000/11/18 19:45:07  rnamyst
+Makefiles now use 'recursive waves' to generate .h files, .fut files, etc.
+
 Revision 1.1  2000/05/17 14:32:43  oaumage
 - reorganisation des sources au niveau de mad_init
 
@@ -49,12 +52,7 @@ ______________________________________________________________________________
 #ifndef MAD_EXIT_H
 #define MAD_EXIT_H
 
-#ifdef PM2
-void
-mad2_exit(p_mad_madeleine_t madeleine);
-#else
 void
 mad_exit(p_mad_madeleine_t madeleine);
-#endif
 
 #endif /* MAD_EXIT_H */

@@ -49,7 +49,8 @@ int __marcel_check_polling(unsigned polling_point)
 
 	if(ps->nb_cells == 1 && ps->fastfunc) {
 	  ps->cur_cell = ps->first_cell;
-	  cell = ((poll_cell_t *)(*ps->fastfunc)(ps, ps->first_cell->arg, FALSE) ?
+	  cell = ((poll_cell_t *)
+		  (*ps->fastfunc)(ps, ps->first_cell->arg, FALSE) ?
 		  ps->first_cell : MARCEL_POLL_FAILED);
 	}
 	else
@@ -62,6 +63,7 @@ int __marcel_check_polling(unsigned polling_point)
 
 	  waked_some_task = 1;
 	  marcel_wake_task(cell->task, &cell->blocked);
+	  mdebug("Poll succeed with task %p\n", cell->task);
 
 	  /* Retrait de d'un élément de la liste */
 	  if(cell->prev != NULL)
@@ -198,3 +200,4 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
   marcel_give_hand(&cell.blocked);
   LOG_OUT();
 }
+

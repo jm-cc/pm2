@@ -4,8 +4,8 @@
 #include <asm/act.h>
 #include <asm/atomic.h>
 
-//#define ACTDEBUG(todo) (todo)
-#define ACTDEBUG(todo)
+#define ACTDEBUG(todo) (todo)
+//#define ACTDEBUG(todo)
 
 #include <marcel.h>
 

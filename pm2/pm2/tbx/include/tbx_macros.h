@@ -211,22 +211,24 @@ static const int __tbx_using_gcc2_attributes = 0;
  */
 
 #ifdef TBX_USE_SAFE_MACROS
-#  define tbx_set(f) \
+#  define tbx_flag_set(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = tbx_flag_set;})
-#  define tbx_clear(f) \
+#  define tbx_flag_clear(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = tbx_flag_clear;})
-#  define tbx_toggle(f) \
+#  define tbx_flag_toggle(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = 1 - !!*_pf;})
 #else // TBX_USE_SAFE_MACROS
-#  define tbx_set(f)    ((*(f)) = tbx_flag_set)
-#  define tbx_clear(f)  ((*(f)) = tbx_flag_clear)
-#  define tbx_toggle(f) ((*(f)) = 1 - (!!*(f)))
+#  define tbx_flag_set(f)    ((*(f)) = tbx_flag_set)
+#  define tbx_flag_clear(f)  ((*(f)) = tbx_flag_clear)
+#  define tbx_flag_toggle(f) ((*(f)) = 1 - (!!*(f)))
 #endif // TBX_USE_SAFE_MACROS
 
-#define tbx_test(f)   (!!*(f))
+#define tbx_flag_test(f)   (!!*(f))
+#define tbx_flag_is_set(f)   (!!*(f))
+#define tbx_flag_is_clear(f)   (!*(f))
 
 /*
  * Threads specific macros  _________________________________________

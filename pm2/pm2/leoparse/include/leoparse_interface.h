@@ -68,6 +68,28 @@ leoparse_yy_input(char         *buffer,
  *Objects
  *-------
  */
+p_leoparse_object_t
+leoparse_init_object(void);
+
+p_leoparse_object_t
+leoparse_init_slist_object(p_tbx_slist_t slist);
+
+p_leoparse_object_t
+leoparse_init_htable_object(p_tbx_htable_t htable);
+
+p_leoparse_object_t
+leoparse_init_id_object(char                  *id,
+			p_leoparse_modifier_t  modifier);
+
+p_leoparse_object_t
+leoparse_init_string_object(char *string);
+
+p_leoparse_object_t
+leoparse_init_val_object(int value);
+
+p_leoparse_object_t
+leoparse_init_range_object(p_leoparse_range_t range);
+
 p_tbx_slist_t
 leoparse_get_slist(p_leoparse_object_t object);
 

@@ -365,67 +365,6 @@ ntbx_tcp_write(int           socket_fd,
 #endif /* NTBX_TCP */
 
 
-/*
- * UDP support
- * -----------
- */
-#ifdef NTBX_UDP
-#if 0 // UNUSED
-void
-ntbx_udp_address_fill(p_ntbx_udp_address_t  address, 
-		      ntbx_udp_port_t       port,
-		      char                 *host_name);
-#endif // 0
-void
-ntbx_udp_socket_setup(ntbx_udp_socket_t desc,
-		      int               snd_size,
-		      int               rcv_size);
-
-ntbx_udp_socket_t
-ntbx_udp_socket_create(p_ntbx_udp_address_t address);
-
-int
-ntbx_udp_select(ntbx_udp_socket_t socket, int usec);
-
-/*
- * Send: caller must first check
- *       0 < lg <= NTBX_UDP_MAX_DGRAM_SIZE
- */
-int
-ntbx_udp_sendto(ntbx_udp_socket_t    socket,
-		const void          *ptr,
-		const int            lg,
-		p_ntbx_udp_address_t p_addr);
-/*
- * Recv: caller must first check
- *       0 < lg <= NTBX_UDP_MAX_DGRAM_SIZE
- */
-int
-ntbx_udp_recvfrom(ntbx_udp_socket_t    socket,
-		  void                *ptr,
-		  int                  lg,
-		  p_ntbx_udp_address_t p_addr);
-/*
- * Send: caller must first check that total length of all fragments
- *       does not exceed NTBX_UDP_MAX_DGRAM_SIZE
- */
-int
-ntbx_udp_sendmsg(ntbx_udp_socket_t    socket,
-		 p_ntbx_udp_iovec_t   iov,
-		 int                  iovlen,
-		 p_ntbx_udp_address_t p_addr);
-/*
- * Recv: caller must first check that total length of all fragments
- *       does not exceed NTBX_UDP_MAX_DGRAM_SIZE
- */
-int
-ntbx_udp_recvmsg(ntbx_udp_socket_t    socket,
-		 p_ntbx_udp_iovec_t   iov,
-		 int                  iovlen,
-		 p_ntbx_udp_address_t p_addr);
-
-#endif /* NTBX_UDP */
-
 #endif /* NTBX_INTERFACE_H */
 
 

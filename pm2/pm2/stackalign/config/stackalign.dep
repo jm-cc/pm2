@@ -1,0 +1,4 @@
+Depend: marcel tbx init marcel_posix
+Conflict: dsm madeleine ntbx pm2
+Provide: module
+Depend: marcel_main_as_func

@@ -513,12 +513,6 @@ marcel_t marcel_unchain_task(marcel_t t)
     if ((r->state_ext == MARCEL_RUNNING) && (r!=marcel_self()))
       ACTDEBUG(printf("marcel_unchain_task(%p) : %p yet running\n", t, r));
   } while ((r->state_ext == MARCEL_RUNNING) && (r!=t) && (r!=marcel_self()));
-  /* Pas très sur de moi ici. Apparemment, il faut renvoyer la
-     prochaine task à ordonnancer. Avec les activation, il ne faut pas
-     en prendre une tournant sur une aute activation, mais on peut
-     prendre nous-même. Mais est-ce que marcel_self() est valide
-     chaque fois que l'on appelle cette fonction (on a pu faire des
-     changements de pile...) */
 #else
   r = t->next;
 #endif
@@ -1024,13 +1018,18 @@ void stop_timer(void);
 #ifdef __ACT__
 #include <sched.h>
 /* Each processor must be able to run something */
+int nb=0;
+unsigned long temps_act=0;
+
 any_t wait_and_yield(any_t arg)
 {
   marcel_t next, cur = marcel_self();
-  int nb=1;
+  Tick t1,t2;
 
   lock_task();
+  GET_TICK(t1);
   for(;;) {
+    //printf("Idle activated\n");
     
     next=cur;
     do {
@@ -1039,6 +1038,9 @@ any_t wait_and_yield(any_t arg)
     } while ((next->state_ext == MARCEL_RUNNING) && (next != cur));
 
     if (next == cur) {
+
+      sched_yield();
+      //if (! (nb++ % 50)) printf("sleeping %i\n", nb);
       next=cur;
       do {
 	//{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
@@ -1046,8 +1048,8 @@ any_t wait_and_yield(any_t arg)
       } while ((next->state_ext == MARCEL_RUNNING) && (next != cur));
 
       if (next == cur) {
-	//printf("sleeping %i\n", nb++);
-	//printf("sleeping %i\n", nb++);
+	//if (! (nb % 10)) 
+	//  printf("sleeping %i\n", nb);
 	act_cntl(ACT_CNTL_READY_TO_WAIT,NULL);
 	nb_idle_sleeping++;
 	unlock_task();
@@ -1056,6 +1058,8 @@ any_t wait_and_yield(any_t arg)
 	//printf("wakeup\n");
 	lock_task();
 	nb_idle_sleeping--;
+	nb++;
+	//sched_yield();
 	continue;
       } 
     }
@@ -1064,9 +1068,12 @@ any_t wait_and_yield(any_t arg)
     if(setjmp(cur->jb.migr_jb) == FIRST_RETURN) {
       call_ST_FLUSH_WINDOWS();
       cur->state_ext=MARCEL_READY;
+      GET_TICK(t2);
+      temps_act += timing_tick2usec(TICK_DIFF(t1, t2));
       restart_thread(next);
     }
     cur->state_ext=MARCEL_RUNNING;
+    GET_TICK(t1);
     
   }
   //  if(!((nb++) % 1000000))

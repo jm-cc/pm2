@@ -32,8 +32,6 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_work=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-work", &marcel_debug);
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_deviate=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-deviate", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_upcall=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-debug-upcall", &marcel_debug);
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug_sched_q=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug-sched-q", &marcel_debug);
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_registration.h,v $
+Revision 1.4  2000/03/02 09:52:11  jfmehaut
+pilote Madeleine II/BIP
+
 Revision 1.3  2000/01/10 10:19:42  oaumage
 - mad_macros.h: modification de la macro de commande de trace
 
@@ -71,6 +74,9 @@ typedef enum
 #ifdef DRV_MPI
   mad_MPI,
 #endif /* DRV_MPI */,
+#ifdef DRV_BIP
+  mad_BIP,
+#endif /* DRV_BIP */,
   mad_driver_number /* Must be the last element of the enum declaration */
 } mad_driver_id_t, *p_mad_driver_id_t;
 

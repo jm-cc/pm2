@@ -42,6 +42,13 @@ static trace fkt_buf;
 
 static int pid_table[NB_MAX_CPU];
 
+static short int nb_cpu = 1;
+static u_64 begin_total;
+static u_64 end_total;
+static short int is_begining = 1;
+static double cpu_cycles;
+static int highest_thr = 0;
+
 #define zone_flou 0x01000000
 
 int le(u_64 clock1, u_64 clock2)
@@ -68,13 +75,7 @@ static int read_user_trace(trace *tr)
     fprintf(stderr,"Corrupted user trace file\n");
     exit(1);
   } 
-  if (smp) {
-
-  } else tr->thread = thread;
-  tr->pid = lwp_of_thread(tr->thread);
-  if (tr->pid == -1) tr->pid = pid;
   tr->type = USER;
-
   j = 0;
   i = ((tr->code & 0xff) - 12) / 4;
   if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {
@@ -86,12 +87,12 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
-    set_switch(tr->args[0], tr->args[1]);
+    //    set_switch(tr->args[0], tr->args[1]);
     i-=2;
     j+=2;
-    if (!smp) thread = tr->args[1];
+    //    if (!smp) thread = tr->args[1];
   } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
-    int n;
+    //    int n;
     if (fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0) {
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
@@ -104,12 +105,12 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
-    add_lwp(tr->args[0], tr->args[2], tr->args[1]);
-    for(n = 0; n < NB_MAX_CPU; n++)
-      if (pid_table[n] == tr->args[0]) {
-	set_cpu(tr->args[0], n); 
-	break;}
-    if (!smp) thread = tr->args[2]; // Is this true, I have no clue
+    /*    add_lwp(tr->args[0], tr->args[2], tr->args[1]);
+	  for(n = 0; n < NB_MAX_CPU; n++)
+	  if (pid_table[n] == tr->args[0]) {
+	  set_cpu(tr->args[0], n); 
+	  break;}
+	  if (!smp) thread = tr->args[2]; */
     i-=3;
     j+=3;
   }
@@ -121,8 +122,8 @@ static int read_user_trace(trace *tr)
     i--;
     j++;
   }
-  tr->cpu = cpu_of_lwp(tr->pid);
-  tr->relevant = 1;
+  //  tr->cpu = cpu_of_lwp(tr->pid);
+  //  tr->relevant = 1;
   return 0;
 }
 
@@ -130,7 +131,7 @@ static int read_kernel_trace(trace *tr)
 {
   int i;
   int j;
-  tr->relevant = 0;
+  //  tr->relevant = 0;
   if (fread(&j, sizeof(unsigned int), 1, f_fkt) == 0) {
     fkt_eof = 1;
     return 1;
@@ -163,6 +164,62 @@ static int read_kernel_trace(trace *tr)
       j++;
     }
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
+      //      tr->relevant = 1;
+      /*      assert(tr->args[1] < NB_MAX_CPU);
+	      pid_table[tr->args[1]] = tr->args[0];
+	      if (is_lwp(tr->args[0])) {
+	      set_cpu(tr->args[0], tr->args[1]);
+	      if (!smp) thread = thread_of_lwp(tr->args[0]);
+	      }*/
+      //      if (tr->args[0] == pid) cpu = tr->args[1]; // Modifier bazar
+    }
+  }
+  /*  if (is_lwp(tr->pid)) {
+      tr->relevant = 1;
+      tr->thread = thread_of_lwp(tr->pid);
+      } else tr->thread = -1;*/
+  return 0;
+}
+
+static void fut_trace_calc(trace *tr)
+{
+  if (smp) {
+    if (tr->code >> 8 == FUT_SWITCH_TO_CODE) {
+      tr->thread = tr->args[0];
+    } else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
+      tr->thread = tr->args[2];
+    } else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
+      tr->thread = tr->args[0];
+    } else tr->thread = tr->args[0];
+  } else tr->thread = thread;
+  tr->pid = lwp_of_thread(tr->thread);
+  if (tr->pid == -1) tr->pid = pid;
+  if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {
+    set_switch(tr->args[0], tr->args[1]);
+    if (!smp) thread = tr->args[1];
+  } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
+    int n;
+    add_lwp(tr->args[0], tr->args[2], tr->args[1]);
+    for(n = 0; n < NB_MAX_CPU; n++)
+      if (pid_table[n] == tr->args[0]) {
+	set_cpu(tr->args[0], n); 
+	break;
+      }
+    if (!smp) thread = tr->args[2];
+  }
+  tr->cpu = cpu_of_lwp(tr->pid);
+  tr->relevant = 1;
+}
+
+static void fkt_trace_calc(trace *tr)
+{
+  tr->relevant = 0;
+  if (pid_table[tr->cpu] == -1) {
+    pid_table[tr->cpu] = tr->pid;
+    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);
+  }
+  if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
+    if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
       tr->relevant = 1;
       assert(tr->args[1] < NB_MAX_CPU);
       pid_table[tr->args[1]] = tr->args[0];
@@ -170,14 +227,19 @@ static int read_kernel_trace(trace *tr)
 	set_cpu(tr->args[0], tr->args[1]);
 	if (!smp) thread = thread_of_lwp(tr->args[0]);
       }
-      //      if (tr->args[0] == pid) cpu = tr->args[1]; // Modifier bazar
     }
   }
   if (is_lwp(tr->pid)) {
     tr->relevant = 1;
     tr->thread = thread_of_lwp(tr->pid);
   } else tr->thread = -1;
-  return 0;
+}
+
+static void trace_calc(trace *tr)
+{
+  if (tr->type == USER) fut_trace_calc(tr);
+  else fkt_trace_calc(tr);
+  if (tr->thread > highest_thr) highest_thr = tr->thread;
 }
 
 static void read_fut_header()
@@ -189,8 +251,8 @@ static void read_fut_header()
     // Lecture du header de fut : Attention non gestion de la corruption de fichier
     fread(&smp, sizeof(int), 1, f_fut);
     fread(&pid, sizeof(unsigned long), 1, f_fut);
-    fread(header, sizeof(double) + 
-	  2*sizeof(time_t) + sizeof(unsigned int), 1, f_fut);  
+    fread(&cpu_cycles, sizeof(double), 1, f_fut);
+    fread(header, 2*sizeof(time_t) + sizeof(unsigned int), 1, f_fut);  
     if (read_user_trace(&fut_buf) != 0) {
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
@@ -228,9 +290,11 @@ static void read_fkt_header()
   char name[400];
   if (f_fkt != NULL) {
     fread(&ncpus, sizeof(ncpus), 1, f_fkt);
+    nb_cpu = (short int) nb_cpu;
     mhz = (double *) malloc(sizeof(double)*ncpus);
     assert(mhz != NULL);
     fread(mhz, sizeof(double), ncpus, f_fkt);
+    cpu_cycles = mhz[0];
     fread(&fkt_pid, sizeof(unsigned int), 1, f_fkt);
     fread(&fkt_kidpid, sizeof(unsigned int), 1, f_fkt);
     fread(&t1, sizeof(time_t), 1, f_fkt);
@@ -290,10 +354,10 @@ static void add_buffer(trace tr)
   while (tmp != EMPTY_LIST) {
     // Beware pb of 0
     if (le(tmp->tr.clock,tr_item->tr.clock)) break;
-    printf("One up %d(%u - %x - %u) / %d(%u - %x - %u)\n",tmp->tr.type, \
+    /*    printf("One up %d(%u - %x - %u) / %d(%u - %x - %u)\n",tmp->tr.type, \
 	   tmp->tr.cpu, tmp->tr.code, (unsigned) tmp->tr.clock, \
 	   tr_item->tr.type, tr_item->tr.cpu, tr_item->tr.code, \
-	   (unsigned)tr_item->tr.clock);
+	   (unsigned)tr_item->tr.clock); */
     tmp = tmp->prev;
   }
   tr_item->prev = tmp;
@@ -420,6 +484,42 @@ void close_trace_buffer()
 
 int get_next_trace(trace *tr)
 {
+  int r;
   load_trace();
-  return get_buffer(tr);
+  r = get_buffer(tr);
+  if (is_begining) {
+    is_begining = 0;
+    begin_total = tr->clock;
+  }
+  if (r != 0)
+    end_total = tr->clock;
+  trace_calc(tr);
+  return r;
+}
+
+void supertrace_end(FILE *f)
+{
+  int i,n,a;
+  fwrite(&nb_cpu, sizeof(short int), 1, f);
+  fwrite(&begin_total, sizeof(u_64), 1, f);
+  fwrite(&end_total, sizeof(u_64), 1, f);
+  fwrite(&cpu_cycles, sizeof(double), 1, f);
+  fwrite(&highest_thr, sizeof(int), 1, f);
+  n = number_lwp();
+  assert(n < 116);
+  fwrite(&n, sizeof(int), 1, f);
+  //  printf("%d\n",sizeof(short int)+2*sizeof(u_64)+sizeof(double)+2*sizeof(int));
+  for(i = 0; i < n; i++) {
+    a = get_next_lwp();
+    if (a == -1) {
+      fprintf(stderr, "Please report bugs to cmenier@ens-lyon.fr\n");
+      exit(1);
+    }
+    fwrite(&a, sizeof(int), 1, f);
+  }
+  a = get_next_lwp();
+  if (a != -1) {
+    fprintf(stderr, "Please report bugs to cmenier@ens-lyon.fr\n");
+    exit(1);
+  }
 }

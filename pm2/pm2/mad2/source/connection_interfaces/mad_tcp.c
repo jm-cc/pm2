@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.28  2000/11/10 14:17:58  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.27  2000/11/08 08:16:09  oaumage
 *** empty log message ***
 
@@ -194,7 +197,7 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
   p_mad_adapter_t                   adapter       = channel->adapter;
   p_mad_driver_t                    driver        = adapter->driver;
   p_mad_configuration_t             configuration =
-    &(driver->madeleine->configuration);
+    driver->madeleine->configuration;
   p_mad_connection_t                connection;
   p_mad_tcp_connection_specific_t   connection_specific;
   ntbx_host_id_t                     i;
@@ -287,7 +290,7 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
   p_mad_adapter_t                   adapter       = channel->adapter;
   p_mad_driver_t                    driver        = adapter->driver;
   p_mad_configuration_t             configuration =
-    &(driver->madeleine->configuration);
+    driver->madeleine->configuration;
   p_mad_connection_t                connection;
   p_mad_tcp_connection_specific_t   connection_specific;
   ntbx_host_id_t                     i;
@@ -295,18 +298,14 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
   LOG_IN();
   LOG_VAL("Syncing channel", channel->id);
   
-  for (i = 0;
-       i < configuration->size;
-       i++)
+  for (i = 0; i < configuration->size; i++)
     {
       if (i == configuration->local_host_id)
 	{
 	  /* Send */
 	  ntbx_host_id_t j;
 
-	  for (j = 0;
-	       j < configuration->size;
-	       j++)
+	  for (j = 0; j < configuration->size; j++)
 	    {
 	      ntbx_pack_buffer_t pack_buffer;
 	      ntbx_host_id_t host_id;
@@ -534,7 +533,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->connection_socket = ntbx_tcp_socket_create(&address, 0);
   
   SYSCALL(listen(adapter_specific->connection_socket,
-		 driver->madeleine->configuration.size - 1));
+		 driver->madeleine->configuration->size - 1));
   
   adapter_specific->connection_port =
     (ntbx_tcp_port_t)ntohs(address.sin_port);
@@ -552,13 +551,13 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
 {
   p_mad_driver_t                 driver           = adapter->driver;
   p_mad_configuration_t          configuration    =
-    &(driver->madeleine->configuration);
+    driver->madeleine->configuration;
   p_mad_tcp_adapter_specific_t   adapter_specific = adapter->specific;
   ntbx_host_id_t                 i;
 
   LOG_IN();
   adapter_specific->remote_connection_port =
-    TBX_MALLOC(driver->madeleine->configuration.size * sizeof(int));
+    TBX_MALLOC(driver->madeleine->configuration->size * sizeof(int));
   CTRL_ALLOC(adapter_specific->remote_connection_port);
 
   if (configuration->local_host_id == 0)
@@ -621,7 +620,7 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       ntbx_tcp_address_fill(&server_address,
 			    adapter_specific->remote_connection_port[0],
 			    adapter->driver->madeleine->
-			    configuration.host_name[0]);
+			    configuration->host_name[0]);
       
       SYSCALL(connect(desc, (struct sockaddr*)&server_address,
 		      sizeof(ntbx_tcp_address_t)));
@@ -743,7 +742,7 @@ mad_tcp_connect(p_mad_connection_t connection)
 			adapter_specific->
 			remote_connection_port[connection->remote_host_id],
 			adapter->driver->madeleine->
-			configuration.host_name[connection->remote_host_id]);
+			configuration->host_name[connection->remote_host_id]);
 
   SYSCALL(connect(desc, (struct sockaddr *)&server_address, 
 		  sizeof(ntbx_tcp_address_t)));
@@ -751,7 +750,7 @@ mad_tcp_connect(p_mad_connection_t connection)
   ntbx_tcp_socket_setup(desc);
   SYSCALL(write(desc,
 		&(connection->channel->adapter->driver->madeleine->
-		  configuration.local_host_id), 
+		  configuration->local_host_id), 
 		sizeof(ntbx_host_id_t)));
 
   reverse->remote_host_id = connection->remote_host_id;
@@ -768,7 +767,7 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
   ntbx_host_id_t                 host;
   p_mad_tcp_channel_specific_t   channel_specific = channel->specific;
   p_mad_configuration_t          configuration    = 
-    &(channel->adapter->driver->madeleine->configuration);
+    channel->adapter->driver->madeleine->configuration;
   
   LOG_IN();
   mad_tcp_sync_in_channel(channel);
@@ -837,7 +836,7 @@ p_mad_connection_t
 mad_tcp_poll_message(p_mad_channel_t channel)
 {
   p_mad_configuration_t configuration    = 
-    &(channel->adapter->driver->madeleine->configuration);
+    channel->adapter->driver->madeleine->configuration;
   p_mad_tcp_channel_specific_t channel_specific = channel->specific;
   fd_set rfds;
   int n;
@@ -890,7 +889,7 @@ p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t channel)
 {
   p_mad_configuration_t configuration    = 
-    &(channel->adapter->driver->madeleine->configuration);
+    channel->adapter->driver->madeleine->configuration;
 
 #if !defined(MARCEL) && !defined(MAD_MESSAGE_POLLING)
   LOG_IN();
@@ -934,9 +933,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	    }
 	  while(n <= 0);
 
-	  for (i = 0;
-	       i < configuration->size;
-	       i++)
+	  for (i = 0; i < configuration->size; i++)
 	    {
 	      p_mad_tcp_connection_specific_t connection_specific
 		= channel->input_connection[i].specific;

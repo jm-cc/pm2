@@ -158,10 +158,14 @@ struct code_name	code_table[] =
 			{FUT_CALIBRATE0_CODE,			"fut_calibrate0"},
 			{FUT_CALIBRATE1_CODE,			"fut_calibrate1"},
 			{FUT_CALIBRATE2_CODE,			"fut_calibrate2"},
+			{FUT_SWITCH_TO_CODE,			"fut_switch_to"},
+			{FUT_MAIN_ENTRY_CODE,			"main_entry"},
+			{FUT_MAIN_EXIT_CODE,			"main_exit"},
 
 
 			/*	insert new codes here */
 #include "fut_print.h"
+
 			{0, NULL}
 			};
 
@@ -171,6 +175,7 @@ static unsigned int	basetime = 0, lastreltime = 0;
 static time_t		start_time = 0, stop_time = 0;
 static int fd;
 static unsigned long pid = 0;
+static unsigned long current_id = 0;
 
 
 /* initially 1.
@@ -299,7 +304,7 @@ void print_cycles( unsigned int ratio )
 
 	total = 0.0;
 	ptot = 0.0;
-	printf("%6s %12s %11s\n", "pid", "cycles", "percent");
+	printf("%9s %12s %11s\n", "id", "cycles", "percent");
 	printf("\n");
 	for( ptr = pid_cycles_list;  ptr != NULL;  ptr = ptr->link )
 		{
@@ -311,28 +316,28 @@ void print_cycles( unsigned int ratio )
 		{
 		t = ((double)ptr->hi_cycles) * (((double)UINT_MAX) + 1.0) +
 			((double)ptr->lo_cycles);
-		printf("%6u %12.0f %10.2f%%\n", ptr->pid, t, t*100.0/total);
+		printf("%9u %12.0f %10.2f%%\n", ptr->pid, t, t*100.0/total);
 		ptot += t*100.0/total;
 		}
-	printf("%6s %12.0f %10.2f%%\n", "TOTAL", total, ptot);
+	printf("%9s %12.0f %10.2f%%\n", "TOTAL", total, ptot);
 	}
 
 
 /* first probe for this pid, create a new stack */
-struct v3_stack_item *create_stack( unsigned int thispid )
+struct v3_stack_item *create_stack( unsigned int thisid )
 	{
 	struct v3_stack_item	*v3_ptr;
 
-	fprintf(stdbug, "create_stack for pid %u\n", thispid);
+	fprintf(stdbug, "create_stack for id %u\n", thisid);
 
 	v3_ptr = (struct v3_stack_item *)malloc(sizeof(struct v3_stack_item));
 	if( v3_ptr == NULL )
 		{
-		fprintf(stderr, "=== can't malloc stack for pid %d\n", thispid);
-		fprintf(stdout, "=== can't malloc stack for pid %d\n", thispid);
+		fprintf(stderr, "=== can't malloc stack for id %d\n", thisid);
+		fprintf(stdout, "=== can't malloc stack for id %d\n", thisid);
 		exit(EXIT_FAILURE);
 		}
-	v3_ptr->v3_pid = thispid;
+	v3_ptr->v3_pid = thisid;
 	v3_ptr->v3_process_cycles = 0;
 	v3_ptr->v3_pos = 0;
 	v3_ptr->v3_code[0] = 0;
@@ -363,7 +368,7 @@ void update_stack( unsigned int delta )
 
 	/* then pop the stack */
 	v3_stack_ptr->v3_pos--;
-	fprintf(stdbug, "pop off of stack for pid %u, pos %d\n",
+	fprintf(stdbug, "pop off of stack for id %u, pos %d\n",
 							v3_stack_ptr->v3_pid, v3_stack_ptr->v3_pos);
 	}
 
@@ -409,7 +414,7 @@ void update_function( unsigned int delta, int i )
 
 
 void my_print_fun( unsigned int code, unsigned int cyc_time,
-								unsigned int thispid, int param1, int param2 )
+								unsigned int thisid, int param1, int param2 )
 	{
     int					i, j, k;
     unsigned int		cycdiff, delta, off_cyc_time;
@@ -420,8 +425,64 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 
 	if( v3_stack_ptr == NULL )
 		{/* first time through here, we need a stack */
-		v3_stack_ptr = create_stack(thispid);
+		v3_stack_ptr = create_stack(thisid);
 		}
+
+	else if( v3_stack_ptr->v3_pid != thisid )
+		{/* next probe not the current id, find a stack for the new id */
+		struct v3_stack_item	*v3_ptr;
+
+		if( v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos] == FUT_SWITCH_TO_CODE )
+			off_cyc_time = v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos];
+		else
+			{/* top of current stack is not switch_to, should be */
+			fprintf(stderr,
+						"=== top of current stack for id %u not switch_to\n",
+						v3_stack_ptr->v3_pid);
+			fprintf(stdout,
+						"=== top of current stack for id %u not switch_to\n",
+						v3_stack_ptr->v3_pid);
+			}
+		for( v3_ptr = v3_stack_head;  v3_ptr != NULL; v3_ptr = v3_ptr->v3_next )
+			{
+			if( v3_ptr->v3_pid == thisid )
+				{/* found an existing stack for the new id */
+				fprintf(stdbug, "revert to stack for id %u, pos %d\n",
+													thisid, v3_ptr->v3_pos);
+				if( v3_ptr->v3_code[v3_ptr->v3_pos] == FUT_SWITCH_TO_CODE )
+					{/* top of previous stack is switch_to, pop it off */
+					v3_stack_ptr = v3_ptr;
+					delta = off_cyc_time -
+										v3_ptr->v3_start_cycle[v3_ptr->v3_pos];
+					update_function(delta, FUT_SWITCH_TO_CODE);
+					/* move up start of all previous in nesting and pop stack */
+					update_stack(delta);
+					}
+				else if( v3_ptr->v3_pos != 0 )
+					{
+					fprintf(stderr,
+							"=== previous stack does not have switch_to on top,"
+							" pos = %d\n", v3_ptr->v3_pos);
+					fprintf(stdout,
+							"=== previous stack does not have switch_to on top,"
+							" pos = %d\n", v3_ptr->v3_pos);
+					}
+				else
+					{/* reinit previous stack with time of item at top of
+						current stack */
+					v3_ptr->v3_start_cycle[0] =
+							v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos];
+					}
+				break;
+				}
+			}
+		if( v3_ptr == NULL )
+			{/* first probe for this id, create a new stack */
+			v3_ptr = create_stack(thisid);
+			}
+		v3_stack_ptr = v3_ptr;
+		}
+
 
 	/*	now guaranteed that v3_stack_ptr points to stack for this pid */
 	/*	put traps, syscalls and irqs in v2 stack. need sys_write and fsync */
@@ -429,8 +490,11 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 	i = v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos];
 
 	/* code for a function entry/exit, including switch_to */
-	if( (code == i + FUT_GENERIC_EXIT_OFFSET) )
+	if( (code == i + FUT_GENERIC_EXIT_OFFSET) ||
+		(code == FUT_SWITCH_TO_CODE  &&  i == FUT_SWITCH_TO_CODE
+		&&  param1 == v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos]) )
 		{/* this is the exit corresponding to a previously stacked entry */
+		/* or a switch back to previously stacked switch from */
 		delta = cyc_time -
 						v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos];
 		update_function(delta, i);
@@ -452,11 +516,11 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 			v3_stack_ptr->v3_pos++;
 			v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos] = cyc_time;
 			v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos] = code;
-			v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos] = thispid;
+			v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos] = thisid;
 			fprintf(stdbug,
-						"push onto stack for pid %u, pos %d, code %04x, "
+						"push onto stack for id %u, pos %d, code %04x, "
 						"function\n",
-						thispid, v3_stack_ptr->v3_pos, code);
+						thisid, v3_stack_ptr->v3_pos, code);
 			}
 		}
 
@@ -616,7 +680,7 @@ if( v_pos > 0 )
 			"----", "----", "------", "-----", "---");
 	for ( i = 0 ; i < v_pos; i ++ )
 		{
-		if( v[i].code > 0 )
+		if( v[i].code > 0  &&  v[i].code != FUT_SWITCH_TO_CODE )
 			{
 			printf("%30s  %04x %12u %10d %12.1f\n", 
 				   find_name(v[i].code,0), v[i].code, v[i].total,
@@ -626,6 +690,8 @@ if( v_pos > 0 )
 				if (v[i].cycles_array[z] != 0)
 					{
 					if( v[i].code != FUT_SETUP_CODE  &&
+						v[i].code != FUT_KEYCHANGE_CODE &&
+						v[i].code != FUT_RESET_CODE &&
 						v[i].code != FUT_CALIBRATE0_CODE  &&
 						v[i].code != FUT_CALIBRATE1_CODE  &&
 						v[i].code != FUT_CALIBRATE2_CODE )
@@ -646,20 +712,21 @@ if( v_pos > 0 )
 	printf("%4s %25s  %4s %12s %10s\n",
 			"----", "--", "----", "------", "-----");
 	for ( z = 0; z < v_pos; z++)
-		{
-		printf("%s\n", find_name(v[z].code,0));
-		for ( i = 0; i < v_pos; i++)
+		if( v[z].code != FUT_SWITCH_TO_CODE )
 			{
-			if ( v[z].called_funs_ctr[i] != 0 ) 
+			printf("%s\n", find_name(v[z].code,0));
+			for ( i = 0; i < v_pos; i++)
 				{
-				printf("%30s  %04x %12u %10d\n", 
-						find_name(v[i].code,0), v[i].code,
-						v[z].called_funs_cycles[i], 
-						 v[z].called_funs_ctr[i]);
-				}  
+				if(v[z].called_funs_ctr[i]!=0 && v[i].code!=FUT_SWITCH_TO_CODE) 
+					{
+					printf("%30s  %04x %12u %10d\n", 
+							find_name(v[i].code,0), v[i].code,
+							v[z].called_funs_cycles[i], 
+							 v[z].called_funs_ctr[i]);
+					}  
+				}
+			printf("\n");
 			}
-		printf("\n");
-		}
 	printf("\n\n");
 	printf("%50s\n\n", "NESTING SUMMARY");
 	my_print_line('*');
@@ -667,43 +734,44 @@ if( v_pos > 0 )
 			"Name", "Code", "Cycles", "Count", "Average", "Percent");
 	my_print_line('*');
 	for ( z = 0 ; z < v_pos; z ++ )
-		{
-		Main_fun_sum = v[z].total;
-		Main_fun_sum_percent = 100.0;
-		printf("%32s  %04x %11u %7d %12.1f %7.2f%%\n", 
-			   find_name(v[z].code,0), v[z].code, v[z].total,
-			   v[z].counter, (double)v[z].total/v[z].counter, 
-						   Main_fun_sum_percent);
-
-		for ( i = 0; i < v_pos; i++)
-		{
-
-			if ( v[z].called_funs_ctr[i] != 0 ) 
+		if( v[z].code != FUT_SWITCH_TO_CODE )
 			{
-			   called_fun_percent = (double)v[z].called_funs_cycles[i]
-				   /Main_fun_sum * 100.0;
-			   printf("%32s  %04x %11u %7d %12.1f %7.2f%%\n", 
-						find_name(v[i].code,0), v[i].code,
-						v[z].called_funs_cycles[i], 
-						 v[z].called_funs_ctr[i], 
-						 (double) v[z].called_funs_cycles[i]/
-							v[z].called_funs_ctr[i], called_fun_percent );
-			   sum_other_cycles += v[z].called_funs_cycles[i];
+			Main_fun_sum = v[z].total;
+			Main_fun_sum_percent = 100.0;
+			printf("%32s  %04x %11u %7d %12.1f %7.2f%%\n", 
+				   find_name(v[z].code,0), v[z].code, v[z].total,
+				   v[z].counter, (double)v[z].total/v[z].counter, 
+							   Main_fun_sum_percent);
+
+			for ( i = 0; i < v_pos; i++)
+			{
+
+				if(v[z].called_funs_ctr[i]!=0 && v[i].code!=FUT_SWITCH_TO_CODE) 
+				{
+				   called_fun_percent = (double)v[z].called_funs_cycles[i]
+					   /Main_fun_sum * 100.0;
+				   printf("%32s  %04x %11u %7d %12.1f %7.2f%%\n", 
+							find_name(v[i].code,0), v[i].code,
+							v[z].called_funs_cycles[i], 
+							 v[z].called_funs_ctr[i], 
+							 (double) v[z].called_funs_cycles[i]/
+								v[z].called_funs_ctr[i], called_fun_percent );
+				   sum_other_cycles += v[z].called_funs_cycles[i];
+				}
 			}
-		}
-		/* for fsync, account for actual disk waiting time */
-			only_fun_percent = (double)(v[z].total - sum_other_cycles)
-							 /Main_fun_sum * 100.0;
-		printf("%27s ONLY  %04x %11u %7d %12.1f %7.2f%%\n", 
-				  find_name(v[z].code,0), v[z].code,
-				  v[z].total - sum_other_cycles,
-				  v[z].counter,
-				  (double)(v[z].total - sum_other_cycles)
-							/v[z].counter, only_fun_percent); 
-			sum_other_cycles = 0;
-		my_print_line('-');
-		printf("\n");
-		}
+			/* for fsync, account for actual disk waiting time */
+				only_fun_percent = (double)(v[z].total - sum_other_cycles)
+								 /Main_fun_sum * 100.0;
+			printf("%27s ONLY  %04x %11u %7d %12.1f %7.2f%%\n", 
+					  find_name(v[z].code,0), v[z].code,
+					  v[z].total - sum_other_cycles,
+					  v[z].counter,
+					  (double)(v[z].total - sum_other_cycles)
+								/v[z].counter, only_fun_percent); 
+				sum_other_cycles = 0;
+			my_print_line('-');
+			printf("\n");
+			}
 	}
 
 	/*	close up all open stacks */
@@ -712,14 +780,15 @@ if( v_pos > 0 )
 		{
 		if( v3_ptr->v3_pos > 1 )
 			{
-			fprintf(stdbug, "=== final stack for pid %u has pos %d\n",
+			fprintf(stdbug, "=== final stack for id %u has pos %d\n",
 											v3_ptr->v3_pid, v3_ptr->v3_pos);
 			}
-		if( v3_ptr->v3_pos > 0 )
-			{/* last thing process did in kernel was NOT a block!!! */
-			fprintf(stderr, "=== top of final stack for pid %u not switch_to\n",
+		if( v3_ptr->v3_pos > 0  &&
+						v3_ptr->v3_code[v3_ptr->v3_pos] != FUT_SWITCH_TO_CODE )
+			{/* last thing thread did was not a block */
+			fprintf(stderr, "=== top of final stack for id %u not switch_to\n",
 																v3_ptr->v3_pid);
-			fprintf(stdout, "=== top of final stack for pid %u not switch_to\n",
+			fprintf(stdout, "=== top of final stack for id %u not switch_to\n",
 																v3_ptr->v3_pid);
 			}
 		else if( v3_ptr->v3_pos > 0 )
@@ -754,7 +823,7 @@ if( v_pos > 0 )
 	for( i = 0;  i < MAX_FUNS; i++ )
 		{
 		z = v3_function_code[i];
-		if( z > 0  )
+		if( z > 0  &&  z != FUT_SWITCH_TO_CODE )
 			{/* this occurred at least once and was not switch_to, print it */
 
 			name = find_name(z,0);
@@ -868,9 +937,15 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 	fullcode = bufptr[2];
 	code = fullcode >> 8;
 	if( code == FUT_SETUP_CODE  ||
-		code == FUT_CALIBRATE0_CODE  ||
-		code == FUT_CALIBRATE1_CODE  ||
-		code == FUT_CALIBRATE2_CODE )
+		code == FUT_KEYCHANGE_CODE ||
+		code == FUT_RESET_CODE )
+		{
+		print_this = 1;
+		current_id = bufptr[4];		/* get new thread id */
+		}
+	else if( code == FUT_CALIBRATE0_CODE  ||
+			code == FUT_CALIBRATE1_CODE  ||
+			code == FUT_CALIBRATE2_CODE )
 		print_this = 1;
 	else if( start_time_glob == 0 )
 		{
@@ -881,7 +956,7 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 	print_this = 1;
     
     if (print_this)
-		printf( "%10u%4u %4lu", ptime, bufptr[1]>>16, pid);
+		printf( "%10u%9lu", ptime, current_id);
 	update_cycles(r, pid);
 
 	if (print_this)
@@ -915,10 +990,12 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
     if( fun_time > 0 )
 		{
 		if( params <= 4 )
-        	my_print_fun(code, reltime, pid, bufptr[3], 0);
+        	my_print_fun(code, reltime, current_id, bufptr[3], 0);
 		else
-        	my_print_fun(code, reltime, pid, bufptr[3], bufptr[4]);
+        	my_print_fun(code, reltime, current_id, bufptr[3], bufptr[4]);
 		}
+	if( code == FUT_SWITCH_TO_CODE )
+		current_id = bufptr[3];
 	return &bufptr[params];
 	}
 
@@ -929,7 +1006,7 @@ int dumpit( unsigned int *buffer, unsigned int nints )
 	unsigned int	*bufptr, *buflimit;
 
 
-	printf( "%10s%4s %4s %4s %22s", "cycles", "cpu", "pid", "code", "name");
+	printf( "%10s%9s %4s %22s", "cycles", "id", "code", "name");
 	printf("%11s%11s%11s\n", "P1", "P2", "P3");
 
 

@@ -88,19 +88,19 @@ typedef struct
   int credits;
 } ctrl_message_t, *p_ctrl_message_t;
 
-typedef struct 
+typedef struct s_mad_bip_driver_specific
 {
   TBX_SHARED;
   int nb_adapter;
 } mad_bip_driver_specific_t, *p_mad_bip_driver_specific_t;
 
-typedef struct 
+typedef struct s_mad_bip_adapter_specific
 {
   int bip_rank;
   int bip_size;
 } mad_bip_adapter_specific_t, *p_mad_bip_adapter_specific_t;
 
-typedef struct 
+typedef struct s_mad_bip_channel_specific
 {
   int                communicator;  // It s a BIP tag! 
   int               *small_buffer;  // [BIP_SMALL_MESSAGE]; 
@@ -133,13 +133,13 @@ typedef struct
 #endif // MARCEL
 } mad_bip_channel_specific_t, *p_mad_bip_channel_specific_t;
 
-typedef struct 
+typedef struct s_ mad_bip_connection_specific
 {
   tbx_bool_t msg;
   tbx_bool_t ack;
 } mad_bip_connection_specific_t, *p_mad_bip_connection_specific_t;
 
-typedef struct 
+typedef struct s_mad_bip_link_specific
 {
   int dummy;
 } mad_bip_link_specific_t, *p_mad_bip_link_specific_t;

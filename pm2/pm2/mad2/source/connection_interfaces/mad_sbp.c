@@ -31,6 +31,17 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: mad_sbp.c,v $
+Revision 1.3  2000/01/04 09:18:51  oaumage
+- ajout de la commande de log de CVS
+- phase d'initialisation `external-spawn' terminee pour mad_mpi.c
+- recuperation des noms de machines dans la phase
+  d'initialisation `external-spawn' de mad_sbp.c
+
+
+______________________________________________________________________________
 */
 
 /*
@@ -49,6 +60,8 @@
 #include <dedbuff.h>
 #include <sbp.h>
 #include <sbp_messages.h>
+#include <unistd.h> /* for `gethostname' */
+#include <netdb.h>  /* for `MAXHOSTNAMELEN' */
 
 /*
  * macros and constants definition
@@ -1044,10 +1057,21 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
   marcel_settimeslice(20000);
 #endif /* PM2 */
   PM2_UNLOCK();
-  /* Note: host names are currently not available */
+
   configuration->size          = sbp_configuration_size;
   configuration->local_host_id = sbp_local_host_id;
-  configuration->host_name     = NULL;
+  configuration->host_name     =
+    malloc(configuration->size * sizeof(char *));
+  CTRL_ALLOC(configuration->host_name);
+
+  for (host_id = 0;
+       host_id < configuration->size;
+       host_id++)
+    {
+      configuration->host_name[host_id] = malloc(MAXHOSTNAMELEN + 1);
+      CTRL_ALLOC(configuration->host_name[host_id]);
+      gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
+    }
   LOG_OUT();
 }
 

@@ -16,15 +16,14 @@
 export FLAVOR_DEFAULT:=marcel
 
 PROGS := active	cleanup	contsw create daube delay derout eclone force_raise \
-	kbd keys matrix nojoin once poll raise realtime sample schedpolicy \
-	smptest smpheavy stack_jump sumtime sumtree suspend timed timeout \
-	tsp tube usersched userspace vpmask
+	heavyalloc kbd keys matrix nojoin once poll raise realtime sample \
+	schedpolicy smptest smpheavy stack_jump sumtime sumtree suspend timed \
+	timeout tsp tube usersched userspace vpmask
 
 include $(PM2_ROOT)/make/apps.mak
 
 
 ifdef APP_RECURSIF
-
 
 $(APP_BIN)/eclone$(APP_EXT): $(APP_OBJ)/clone$(APP_EXT).o
 

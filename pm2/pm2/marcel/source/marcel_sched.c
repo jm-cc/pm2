@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.38  2000/09/14 02:08:30  rnamyst
+Put profile.h into common/include and added few FUT_SWITCH_TO calls
+
 Revision 1.37  2000/09/13 00:07:20  rnamyst
 Support for profiling + minor bug fixes
 
@@ -975,11 +978,10 @@ void ma__marcel_yield(void)
     return;
   }
   next=next_task_to_run(cur, cur_lwp);
+  LOG_OUT();
   can_goto_next_task(cur, next);
   MA_THR_RESTARTED(cur, "");
   unlock_task();
-
-  LOG_OUT();
 }
 
 void marcel_yield(void)
@@ -1030,14 +1032,19 @@ int ma__marcel_explicityield(marcel_t t)
 
 int marcel_explicityield(marcel_t t)
 {
+  int r;
+
   LOG_IN();
 
   lock_task();
   marcel_check_polling(MARCEL_POLL_AT_YIELD);
   unlock_task();  
-  return ma__marcel_explicityield(t);
+
+  
+  r = ma__marcel_explicityield(t);
 
   LOG_OUT();
+  return r;
 }
 
 void ma__marcel_trueyield(void)

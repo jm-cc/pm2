@@ -104,9 +104,9 @@ for c in \
     echo "{ $code, \"$label\" }," >> $printfile
 done
 
-base=4096 # 0x1000
+base=`expr 4096 + 256` # 0x1100
 value=0
-other=32768 # 0x8000
+other=15728640 # 0xf00000
 
 THE_MODULES="$_PM2CONFIG_PROF_MODULES"
 case " $_PM2CONFIG_CFLAGS " in

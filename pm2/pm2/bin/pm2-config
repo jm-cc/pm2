@@ -394,7 +394,7 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" ] ; then
+    if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" -o $PM2_SYS = "DARWIN_SYS" ] ; then
     	_PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_extra"
     else
     	_PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"

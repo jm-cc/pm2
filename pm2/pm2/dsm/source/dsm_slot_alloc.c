@@ -5,7 +5,7 @@
 #include "dsm_page_manager.h"
 #include "dsm_page_size.h"
 
-#define DEBUG_SLOT
+//#define DEBUG_SLOT
 
 void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr_t *attr)
 {
@@ -32,7 +32,7 @@ void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
   if (attr->atomic)
     dsm_enable_page_entry(base, dsm_self(), attr->protocol, ptr, gsize, TRUE);
   else
-    /* Add an entry in the page table for each alloacted page. */
+    /* Add an entry in the page table for each allocated page. */
     for (i = 0; i < gsize/DSM_PAGE_SIZE; i++)
       dsm_enable_page_entry(base - i, dsm_self(), attr->protocol, (char *)ptr + i*DSM_PAGE_SIZE, DSM_PAGE_SIZE, TRUE);
   

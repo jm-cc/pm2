@@ -6,7 +6,7 @@ CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
 
-.PHONY: all clean indent
+.PHONY: all clean
 
 CFILES		:= $(wildcard *.c)
 OFILES		:= $(CFILES:%.c=%.o)
@@ -30,5 +30,6 @@ $(CPPFILES): %.C: %.c
 $(ASFILES): %.s: %.c
 	@$(CC) -S $(CFLAGS) $<
 
-indent:
-	indent --indent-level2 --line-length65 $(CFILES)
+indent: $(CFILES)
+	indent --indent-level2 --line-length65 $?
+	@touch indent

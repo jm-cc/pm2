@@ -27,235 +27,121 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#define NEED_LEO_HELPERS
 #include "leonie.h"
+
+static
+void
+wait_for_ack(p_ntbx_client_t client) {
+  int data = 0;
+
+  data = leo_receive_int(client);
+  if (data != -1)
+    FAILURE("synchronization error");
+}
+
+static
+void
+str_sync(p_leo_directory_t dir) {
+  void _sync(p_ntbx_client_t _client) {
+    LOG_IN();
+    leo_send_string(_client, "-");
+    LOG_OUT();
+  }
+
+  LOG_IN();
+  with_all_processes(dir, _sync);
+  LOG_OUT();
+}
+
+void _int_sync(p_ntbx_client_t _client) {
+  LOG_IN();
+  leo_send_int(_client, -1);
+  wait_for_ack(_client);
+  LOG_OUT();
+}
 
 // init_drivers: initializes the selected network drivers on each session
 // process.
 void
 init_drivers(p_leonie_t leonie)
 {
-  p_leo_directory_t  dir         = NULL;
-  p_tbx_slist_nref_t process_ref = NULL;
+  p_leo_directory_t  dir = NULL;
+
+  void _pass1(void *_dir_driver) {
+    p_leo_dir_driver_t dir_driver = _dir_driver;
+
+    void _driver_name(p_ntbx_client_t _client) {
+      leo_send_string(_client, dir_driver->name);
+    }
+
+    void _adapters(p_ntbx_client_t  _client, void *_dps) {
+      p_leo_dir_driver_process_specific_t dps = _dps;
+
+      void _adapter_data(void *_dir_adapter) {
+        p_leo_dir_adapter_t dir_adapter = _dir_adapter;
+
+        TRACE_STR("Adapter", dir_adapter->name);
+        leo_send_string(_client, dir_adapter->name);
+        dir_adapter->parameter = leo_receive_string(_client);
+        dir_adapter->mtu       = leo_receive_unsigned_int(_client);
+        TRACE_STR("Parameter", dir_adapter->parameter);
+      }
+
+      do_slist(dps->adapter_slist, _adapter_data);
+
+      leo_send_string(_client, "-");
+    }
+
+    TRACE_STR("Driver", dir_driver->name);
+
+    do_pc_send(dir_driver->pc, _driver_name);
+    do_pc_send(dir_driver->pc, wait_for_ack);
+    do_pc_send_s(dir_driver->pc, _adapters);
+  }
+
+  void _pass2(p_ntbx_client_t _client) {
+    void _driver(void *_dir_driver) {
+      p_leo_dir_driver_t dir_driver  = _dir_driver;
+
+        void _f(ntbx_process_grank_t global_rank, void *_dps) {
+            p_leo_dir_driver_process_specific_t dps = _dps;
+
+            void _g(void *_adapter) {
+              p_leo_dir_adapter_t adapter = _adapter;
+
+              leo_send_string(_client, adapter->name);
+
+              leo_send_string(_client, adapter->parameter);
+              leo_send_unsigned_int(_client, adapter->mtu);
+            }
+
+            leo_send_int(_client, global_rank);
+            do_slist(dps->adapter_slist, _g);
+            leo_send_string(_client, "-");
+        }
+
+        TRACE_STR("Driver", dir_driver->name);
+        leo_send_string(_client, dir_driver->name);
+        do_pc_global_s(dir_driver->pc, _f);
+        leo_send_int(_client, -1);
+    }
+
+    do_slist(dir->driver_slist, _driver);
+    leo_send_string(_client, "-");
+  }
 
   LOG_IN();
   dir = leonie->directory;
 
   TRACE("Initializing drivers");
 
-  process_ref = tbx_slist_nref_alloc(dir->process_slist);
-
   TRACE("First pass");
-  {
-    p_tbx_slist_t slist = NULL;
-
-    slist = dir->driver_slist;
-
-    tbx_slist_ref_to_head(slist);
-    do
-      {
-	p_leo_dir_driver_t         dir_driver = NULL;
-	p_ntbx_process_container_t pc         = NULL;
-
-	dir_driver = tbx_slist_ref_get(slist);
-	pc         = dir_driver->pc;
-
-	TRACE_STR("Driver", dir_driver->name);
-
-	// Name
-	tbx_slist_nref_to_head(process_ref);
-	do
-	  {
-	    p_ntbx_process_t         process          = NULL;
-	    ntbx_process_grank_t     global_rank      =   -1;
-	    p_leo_process_specific_t process_specific = NULL;
-	    p_ntbx_client_t          client           = NULL;
-	    p_ntbx_process_info_t    process_info     = NULL;
-
-	    process      = tbx_slist_nref_get(process_ref);
-	    global_rank  = process->global_rank;
-	    process_info = ntbx_pc_get_global(pc, global_rank);
-
-	    if (!process_info)
-	      continue;
-
-	    process_specific = process->specific;
-	    client           = process_specific->client;
-
-	    TRACE_VAL("Transmitting to", global_rank);
-	    TRACE("Sending drivers");
-
-	    leo_send_string(client, dir_driver->name);
-	  }
-	while (tbx_slist_nref_forward(process_ref));
-
-	// Ack
-	tbx_slist_nref_to_head(process_ref);
-	do
-	  {
-	    p_ntbx_process_t         process          = NULL;
-	    ntbx_process_grank_t     global_rank      =   -1;
-	    p_leo_process_specific_t process_specific = NULL;
-	    p_ntbx_client_t          client           = NULL;
-	    p_ntbx_process_info_t    process_info     = NULL;
-	    int                      ack              =    0;
-
-	    process      = tbx_slist_nref_get(process_ref);
-	    global_rank  = process->global_rank;
-	    process_info = ntbx_pc_get_global(pc, global_rank);
-
-	    if (!process_info)
-	      continue;
-
-	    process_specific = process->specific;
-	    client           = process_specific->client;
-
-	    TRACE_VAL("Transmitting to", global_rank);
-	    TRACE("Receiving ack");
-	    ack = leo_receive_int(client);
-
-	    if (ack != 1)
-	      FAILURE("synchronisation error");
-	  }
-	while (tbx_slist_nref_forward(process_ref));
-
-	// Adapters
-	tbx_slist_nref_to_head(process_ref);
-	do
-	  {
-	    p_ntbx_process_t                    process          = NULL;
-	    ntbx_process_grank_t                global_rank      =   -1;
-	    p_leo_process_specific_t            process_specific = NULL;
-	    p_ntbx_client_t                     client           = NULL;
-	    p_ntbx_process_info_t               process_info     = NULL;
-	    p_leo_dir_driver_process_specific_t pi_specific      = NULL;
-	    p_tbx_slist_t                       adapter_slist    = NULL;
-
-	    process      = tbx_slist_nref_get(process_ref);
-	    global_rank  = process->global_rank;
-	    process_info = ntbx_pc_get_global(pc, global_rank);
-
-	    if (!process_info)
-	      continue;
-
-	    process_specific = process->specific;
-	    client           = process_specific->client;
-
-	    TRACE_VAL("Transmitting to", global_rank);
-	    TRACE("Sending adapters");
-	    pi_specific   = process_info->specific;
-	    adapter_slist = pi_specific->adapter_slist;
-
-	    tbx_slist_ref_to_head(adapter_slist);
-	    do
-	      {
-		p_leo_dir_adapter_t dir_adapter = NULL;
-
-		dir_adapter = tbx_slist_ref_get(adapter_slist);
-		TRACE_STR("Adapter", dir_adapter->name);
-		leo_send_string(client, dir_adapter->name);
-		dir_adapter->parameter = leo_receive_string(client);
-		dir_adapter->mtu       = leo_receive_unsigned_int(client);
-		TRACE_STR("Parameter", dir_adapter->parameter);
-	      }
-	    while (tbx_slist_ref_forward(adapter_slist));
-
-	    leo_send_string(client, "-");
-	  }
-	while (tbx_slist_nref_forward(process_ref));
-
-      }
-    while (tbx_slist_ref_forward(slist));
-  }
-
-  tbx_slist_nref_to_head(process_ref);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
-
-      process          = tbx_slist_nref_get(process_ref);
-      process_specific = process->specific;
-      client           = process_specific->client;
-
-      TRACE_VAL("Transmitting to", process->global_rank);
-      TRACE("Sending drivers");
-
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_nref_forward(process_ref));
+  do_slist(dir->driver_slist, _pass1);
+  str_sync(dir);
 
   TRACE("Second pass");
-  tbx_slist_nref_to_head(process_ref);
-  do
-    {
-      p_tbx_slist_t            slist            = NULL;
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
-
-      process          = tbx_slist_nref_get(process_ref);
-      TRACE_VAL("Transmitting to", process->global_rank);
-
-      process_specific = process->specific;
-      client           = process_specific->client;
-
-      TRACE("Sending drivers");
-      slist = dir->driver_slist;
-
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  p_leo_dir_driver_t         dir_driver  = NULL;
-	  p_ntbx_process_container_t pc          = NULL;
-	  ntbx_process_grank_t       global_rank =   -1;
-
-	  dir_driver = tbx_slist_ref_get(slist);
-	  pc = dir_driver->pc;
-
-	  TRACE_STR("Driver", dir_driver->name);
-	  leo_send_string(client, dir_driver->name);
-
-	  if (ntbx_pc_first_global_rank(pc, &global_rank))
-	    {
-	      do
-		{
-		  p_ntbx_process_info_t               process_info   = NULL;
-		  p_leo_dir_driver_process_specific_t pi_specific    = NULL;
-		  p_tbx_slist_t                       adapter_slist  = NULL;
-
-		  leo_send_int(client, global_rank);
-		  process_info  = ntbx_pc_get_global(pc, global_rank);
-		  pi_specific   = process_info->specific;
-		  adapter_slist = pi_specific->adapter_slist;
-
-		  tbx_slist_ref_to_head(adapter_slist);
-		  do
-		    {
-		      p_leo_dir_adapter_t adapter = NULL;
-
-		      adapter = tbx_slist_ref_get(adapter_slist);
-		      leo_send_string(client, adapter->name);
-
-		      leo_send_string(client, adapter->parameter);
-		      leo_send_unsigned_int(client, adapter->mtu);
-		    }
-		  while (tbx_slist_ref_forward(adapter_slist));
-
-		  leo_send_string(client, "-");
-		}
-	      while (ntbx_pc_next_global_rank(pc, &global_rank));
-	    }
-
-	  leo_send_int(client, -1);
-	}
-      while (tbx_slist_ref_forward(slist));
-
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_nref_forward(process_ref));
-
-  tbx_slist_nref_free(process_ref);
+  with_all_processes(dir, _pass2);
   LOG_OUT();
 }
 
@@ -265,621 +151,254 @@ init_drivers(p_leonie_t leonie)
 void
 init_channels(p_leonie_t leonie)
 {
-  p_leo_directory_t dir   = NULL;
-  p_tbx_slist_t     slist = NULL;
+  void _g(void *_dir_channel) {
+    p_leo_dir_channel_t dir_channel = _dir_channel;
+
+    void _f(p_ntbx_client_t client, void *_ccps) {
+      p_leo_dir_channel_common_process_specific_t ccps = _ccps;
+
+      LOG_IN();
+      leo_send_string(client, dir_channel->name);
+      ccps->parameter = leo_receive_string(client);
+      TRACE_STR("Channel connection parameter", ccps->parameter);
+      LOG_OUT();
+    }
+
+    void _src_func1(ntbx_process_lrank_t  sl,
+                    p_ntbx_client_t       src,
+                    void                 *_ccps_src) {
+      p_leo_dir_channel_common_process_specific_t ccps_src = _ccps_src;
+
+      void _dst_func1(ntbx_process_lrank_t  dl,
+                      p_ntbx_client_t       dst,
+                      void                 *_ccps_dst) {
+        p_leo_dir_channel_common_process_specific_t ccps_dst = _ccps_dst;
+        char *src_cnx_parameter = NULL;
+        char *dst_cnx_parameter = NULL;
+
+        LOG_IN();
+        if (!ntbx_topology_table_get(dir_channel->ttable, sl, dl)) {
+          LOG_OUT();
+          return;
+        }
+
+        TRACE("Initializing connection: %d to %d", sl, dl);
+
+        leo_send_int(src, 0);
+        leo_send_int(src, dl);
+        leo_send_int(dst, 1);
+        leo_send_int(dst, sl);
+
+        src_cnx_parameter = leo_receive_string(src);
+        tbx_darray_expand_and_set(ccps_src->out_connection_parameter_darray,
+                                  dl, src_cnx_parameter);
+        TRACE_STR("Src connection parameter", src_cnx_parameter);
+
+        dst_cnx_parameter = leo_receive_string(dst);
+        tbx_darray_expand_and_set(ccps_dst->in_connection_parameter_darray,
+                                  sl, dst_cnx_parameter);
+        TRACE_STR("Dst connection parameter", dst_cnx_parameter);
+
+        leo_send_string(src, ccps_dst->parameter);
+        leo_send_string(src, dst_cnx_parameter);
+        leo_send_string(dst, ccps_src->parameter);
+        leo_send_string(dst, src_cnx_parameter);
+
+        wait_for_ack(src);
+        wait_for_ack(dst);
+        LOG_OUT();
+      }
+
+      LOG_IN();
+      do_pc_send_local_s(dir_channel->common->pc, _dst_func1);
+      LOG_OUT();
+    }
+
+    void _src_func2(ntbx_process_lrank_t sl,
+                    p_ntbx_client_t      src) {
+      void _dst_func2(ntbx_process_lrank_t  dl,
+                      p_ntbx_client_t       dst) {
+
+        LOG_IN();
+        if (!ntbx_topology_table_get(dir_channel->ttable, sl, dl)) {
+          LOG_OUT();
+          return;
+        }
+
+        TRACE("Connecting %d to %d", sl, dl);
+
+        leo_send_int(src, 0);
+        leo_send_int(src, dl);
+        leo_send_int(dst, 1);
+        leo_send_int(dst, sl);
+
+        wait_for_ack(src);
+        wait_for_ack(dst);
+        LOG_OUT();
+      }
+
+      LOG_IN();
+      do_pc_send_local(dir_channel->common->pc, _dst_func2);
+      LOG_OUT();
+    }
+
+    LOG_IN();
+    TRACE_STR("Channel", dir_channel->name);
+
+    do_pc_send_s       (dir_channel->common->pc, _f);
+    do_pc_send_local_s (dir_channel->common->pc, _src_func1);
+    do_pc_send         (dir_channel->common->pc, _int_sync);
+    do_pc_send_local   (dir_channel->common->pc, _src_func2);
+    do_pc_send         (dir_channel->common->pc, _int_sync);
+    LOG_OUT();
+  }
 
   LOG_IN();
-  dir = leonie->directory;
+  do_slist(leonie->directory->channel_slist, _g);
+  str_sync(leonie->directory);
+  LOG_OUT();
+}
 
-  // Channels
-  slist = dir->channel_slist;
-  if (!tbx_slist_is_nil(slist))
-    {
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  p_leo_dir_channel_t        dir_channel = NULL;
-	  p_leo_dir_channel_common_t dir_cc      = NULL;
-	  p_ntbx_process_container_t pc          = NULL;
-	  p_ntbx_process_container_t cpc         = NULL;
-	  p_ntbx_topology_table_t    ttable      = NULL;
-	  ntbx_process_grank_t       global_rank =   -1;
-	  ntbx_process_lrank_t       l_rank_src  =   -1;
+void
+init_fchannels(p_leonie_t leonie)
+{
+  void _g(void *_dir_fchannel) {
 
-	  dir_channel = tbx_slist_ref_get(slist);
-	  dir_cc      = dir_channel->common;
-	  pc          = dir_channel->pc;
-	  cpc         = dir_cc->pc;
-	  ttable      = dir_channel->ttable;
+    p_leo_dir_fchannel_t       dir_fchannel = _dir_fchannel;
+    p_leo_dir_channel_t        dir_channel  = NULL;
 
-	  TRACE_STR("Channel", dir_channel->name);
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t                            process          = NULL;
-	      p_leo_process_specific_t                    process_specific = NULL;
-	      p_ntbx_client_t                             client           = NULL;
-	      p_leo_dir_channel_common_process_specific_t ccps             = NULL;
+    void _f(p_ntbx_client_t client, void *_ccps) {
+      p_leo_dir_channel_common_process_specific_t ccps = _ccps;
 
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 1 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-	      ccps = ntbx_pc_get_global_specific(cpc, global_rank);
-
-	      leo_send_string(client, dir_channel->name);
-	      ccps->parameter = leo_receive_string(client);
-	      TRACE_STR("Channel connection parameter", ccps->parameter);
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-
-	  ntbx_pc_first_local_rank(pc, &l_rank_src);
-	  do
-	    {
-	      p_ntbx_process_t         process_src          = NULL;
-	      p_leo_process_specific_t process_specific_src = NULL;
-	      p_leo_dir_channel_common_process_specific_t ccps_src = NULL;
-	      p_ntbx_client_t          client_src           = NULL;
-	      ntbx_process_lrank_t     l_rank_dst           =   -1;
-
-	      process_src = ntbx_pc_get_local_process(pc, l_rank_src);
-	      process_specific_src = process_src->specific;
-	      client_src           = process_specific_src->client;
-	      ccps_src = ntbx_pc_get_local_specific(cpc, l_rank_src);
-
-	      ntbx_pc_first_local_rank(pc, &l_rank_dst);
-	      do
-		{
-		  p_ntbx_process_t         process_dst          = NULL;
-		  p_leo_process_specific_t process_specific_dst = NULL;
-		  p_ntbx_client_t          client_dst           = NULL;
-		  p_leo_dir_channel_common_process_specific_t ccps_dst = NULL;
-		  int                      ack_src              =    0;
-		  int                      ack_dst              =    0;
-
-		  if (!ntbx_topology_table_get(ttable, l_rank_src, l_rank_dst))
-		    continue;
-
-		  TRACE("Initializing connection: %d to %d",
-		       l_rank_src, l_rank_dst);
-
-		  process_dst = ntbx_pc_get_local_process(pc, l_rank_dst);
-		  process_specific_dst = process_dst->specific;
-		  client_dst           = process_specific_dst->client;
-		  ccps_dst = ntbx_pc_get_local_specific(cpc, l_rank_dst);
-
-		  leo_send_int(client_src, 0);
-		  leo_send_int(client_src, l_rank_dst);
-		  leo_send_int(client_dst, 1);
-		  leo_send_int(client_dst, l_rank_src);
-
-		  {
-		    char *src_cnx_parameter = NULL;
-		    char *dst_cnx_parameter = NULL;
-
-		    src_cnx_parameter = leo_receive_string(client_src);
-		    tbx_darray_expand_and_set(ccps_src->
-					      out_connection_parameter_darray,
-					      l_rank_dst,
-					      src_cnx_parameter);
-		    TRACE_STR("Src connection parameter", src_cnx_parameter);
-
-		    dst_cnx_parameter = leo_receive_string(client_dst);
-		    tbx_darray_expand_and_set(ccps_dst->
-					      in_connection_parameter_darray,
-					      l_rank_src,
-					      dst_cnx_parameter);
-		    TRACE_STR("Dst connection parameter", dst_cnx_parameter);
-
-		    leo_send_string(client_src, ccps_dst->parameter);
-		    leo_send_string(client_src, dst_cnx_parameter);
-		    leo_send_string(client_dst, ccps_src->parameter);
-		    leo_send_string(client_dst, src_cnx_parameter);
-		  }
-
-		  ack_src = leo_receive_int(client_src);
-		  if (ack_src != -1)
-		    FAILURE("synchronization error");
-
-
-		  ack_dst = leo_receive_int(client_dst);
-		  if (ack_dst != -1)
-		    FAILURE("synchronization error");
-
-		}
-	      while (ntbx_pc_next_local_rank(pc, &l_rank_dst));
-	    }
-	  while (ntbx_pc_next_local_rank(pc, &l_rank_src));
-
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t          process          = NULL;
-	      p_leo_process_specific_t  process_specific = NULL;
-	      p_ntbx_client_t           client           = NULL;
-	      int                       ack              =    0;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 2 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      leo_send_int(client, -1);
-	      ack = leo_receive_int(client);
-	      if (ack != -1)
-		FAILURE("synchronization error");
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-
-	  ntbx_pc_first_local_rank(pc, &l_rank_src);
-	  do
-	    {
-	      p_ntbx_process_t         process_src          = NULL;
-	      p_leo_process_specific_t process_specific_src = NULL;
-	      p_ntbx_client_t          client_src           = NULL;
-	      ntbx_process_lrank_t     l_rank_dst           =   -1;
-
-	      process_src = ntbx_pc_get_local_process(pc,
-							 l_rank_src);
-	      process_specific_src = process_src->specific;
-	      client_src           = process_specific_src->client;
-
-	      ntbx_pc_first_local_rank(pc, &l_rank_dst);
-	      do
-		{
-		  p_ntbx_process_t         process_dst          =
-		    NULL;
-		  p_leo_process_specific_t process_specific_dst =
-		    NULL;
-		  p_ntbx_client_t          client_dst           =
-		    NULL;
-		  int                      ack_src              = 0;
-		  int                      ack_dst              = 0;
-
-		  if (!ntbx_topology_table_get(ttable, l_rank_src,
-					       l_rank_dst))
-		    continue;
-
-		  TRACE("Connecting %d to %d", l_rank_src, l_rank_dst);
-
-		  process_dst = ntbx_pc_get_local_process(pc, l_rank_dst);
-		  process_specific_dst = process_dst->specific;
-		  client_dst           =
-		    process_specific_dst->client;
-
-		  leo_send_int(client_src, 0);
-		  leo_send_int(client_src, l_rank_dst);
-		  leo_send_int(client_dst, 1);
-		  leo_send_int(client_dst, l_rank_src);
-
-		  ack_src = leo_receive_int(client_src);
-		  if (ack_src != -1)
-		    FAILURE("synchronization error");
-
-		  ack_dst = leo_receive_int(client_dst);
-		  if (ack_dst != -1)
-		    FAILURE("synchronization error");
-		}
-	      while (ntbx_pc_next_local_rank(pc, &l_rank_dst));
-	    }
-	  while (ntbx_pc_next_local_rank(pc, &l_rank_src));
-
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t          process          = NULL;
-	      p_leo_process_specific_t  process_specific = NULL;
-	      p_ntbx_client_t           client           = NULL;
-	      int                       ack              =    0;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 3 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      leo_send_int(client, -1);
-	      ack = leo_receive_int(client);
-	      if (ack != -1)
-		FAILURE("synchronization error");
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-	}
-      while (tbx_slist_ref_forward(slist));
+      leo_send_string(client, dir_fchannel->name);
+      ccps->parameter = leo_receive_string(client);
+      TRACE_STR("Channel connection parameter", ccps->parameter);
     }
 
-  slist = dir->process_slist;
-  tbx_slist_ref_to_head(slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
+    void _src_func1(ntbx_process_lrank_t  sl,
+                    p_ntbx_client_t       src,
+                    void                 *_ccps_src) {
+      p_leo_dir_channel_common_process_specific_t ccps_src = _ccps_src;
 
-      process          = tbx_slist_ref_get(slist);
-      process_specific = process->specific;
-      client           = process_specific->client;
+      void _dst_func1(ntbx_process_lrank_t  dl,
+                      p_ntbx_client_t       dst,
+                      void                 *_ccps_dst) {
+        p_leo_dir_channel_common_process_specific_t ccps_dst = _ccps_dst;
+        char *src_cnx_parameter = NULL;
+        char *dst_cnx_parameter = NULL;
 
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_ref_forward(slist));
+        if (!ntbx_topology_table_get(dir_channel->ttable, sl, dl))
+          return;
 
-  // Forwarding channels
-  slist = dir->fchannel_slist;
-  if (!tbx_slist_is_nil(slist))
-    {
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  p_leo_dir_fchannel_t       dir_fchannel = NULL;
-	  p_leo_dir_channel_t        dir_channel  = NULL;
-	  p_leo_dir_channel_common_t dir_cc       = NULL;
-	  p_ntbx_topology_table_t    ttable       = NULL;
-	  p_ntbx_process_container_t pc           = NULL;
-	  p_ntbx_process_container_t cpc          = NULL;
-	  ntbx_process_grank_t       global_rank  =   -1;
-	  ntbx_process_lrank_t       l_rank_src   =   -1;
+        TRACE("Initializing connection: %d to %d", sl, dl);
 
-	  dir_fchannel = tbx_slist_ref_get(slist);
-	  dir_cc       = dir_fchannel->common;
-	  dir_channel  = tbx_htable_get(dir->channel_htable,
-					dir_fchannel->channel_name);
-	  cpc          = dir_cc->pc;
+        leo_send_int(src, 0);
+        leo_send_int(src, dl);
+        leo_send_int(dst, 1);
+        leo_send_int(dst, sl);
 
-	  pc = dir_channel->pc;
-	  ttable = dir_channel->ttable;
-	  TRACE_STR("Forwarding channel", dir_fchannel->name);
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  TRACE_VAL("global_rank", global_rank);
+        src_cnx_parameter = leo_receive_string(src);
+        tbx_darray_expand_and_set(ccps_src->out_connection_parameter_darray,
+                                  dl, src_cnx_parameter);
+        TRACE_STR("Src connection parameter", src_cnx_parameter);
 
-	  do
-	    {
-	      p_ntbx_process_t                            process          = NULL;
-	      p_leo_process_specific_t                    process_specific = NULL;
-	      p_ntbx_client_t                             client           = NULL;
-	      p_leo_dir_channel_common_process_specific_t ccps             = NULL;
+        dst_cnx_parameter = leo_receive_string(dst);
+        tbx_darray_expand_and_set(ccps_dst->in_connection_parameter_darray,
+                                  sl, dst_cnx_parameter);
+        TRACE_STR("Dst connection parameter", dst_cnx_parameter);
 
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 1 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-	      ccps = ntbx_pc_get_global_specific(cpc, global_rank);
+        leo_send_string(src, ccps_dst->parameter);
+        leo_send_string(src, dst_cnx_parameter);
+        leo_send_string(dst, ccps_src->parameter);
+        leo_send_string(dst, src_cnx_parameter);
 
-	      leo_send_string(client, dir_fchannel->name);
-	      ccps->parameter = leo_receive_string(client);
-	      TRACE_STR("Channel connection parameter", ccps->parameter);
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
+        wait_for_ack(src);
+        wait_for_ack(dst);
+      }
 
-	  ntbx_pc_first_local_rank(pc, &l_rank_src);
-	  do
-	    {
-	      p_ntbx_process_t         process_src          = NULL;
-	      p_leo_process_specific_t process_specific_src = NULL;
-	      p_leo_dir_channel_common_process_specific_t ccps_src = NULL;
-	      p_ntbx_client_t          client_src           = NULL;
-	      ntbx_process_lrank_t     l_rank_dst           =   -1;
-
-	      process_src = ntbx_pc_get_local_process(pc, l_rank_src);
-	      process_specific_src = process_src->specific;
-	      client_src           = process_specific_src->client;
-	      ccps_src = ntbx_pc_get_local_specific(cpc, l_rank_src);
-
-	      ntbx_pc_first_local_rank(pc, &l_rank_dst);
-	      do
-		{
-		  p_ntbx_process_t         process_dst          = NULL;
-		  p_leo_process_specific_t process_specific_dst = NULL;
-		  p_ntbx_client_t          client_dst           = NULL;
-		  p_leo_dir_channel_common_process_specific_t ccps_dst = NULL;
-		  int                      ack_src              = 0;
-		  int                      ack_dst              = 0;
-
-		  if (!ntbx_topology_table_get(ttable, l_rank_src,
-					       l_rank_dst))
-		    continue;
-
-		  TRACE("Initializing connection: %d to %d",
-		       l_rank_src, l_rank_dst);
-
-		  process_dst = ntbx_pc_get_local_process(pc,
-							     l_rank_dst);
-		  process_specific_dst = process_dst->specific;
-		  client_dst           =
-		    process_specific_dst->client;
-		  ccps_dst = ntbx_pc_get_local_specific(cpc, l_rank_dst);
-
-		  leo_send_int(client_src, 0);
-		  leo_send_int(client_src, l_rank_dst);
-		  leo_send_int(client_dst, 1);
-		  leo_send_int(client_dst, l_rank_src);
-
-		  {
-		    char *src_cnx_parameter = NULL;
-		    char *dst_cnx_parameter = NULL;
-
-		    src_cnx_parameter = leo_receive_string(client_src);
-		    tbx_darray_expand_and_set(ccps_src->
-					      out_connection_parameter_darray,
-					      l_rank_dst,
-					      src_cnx_parameter);
-		    TRACE_STR("Src connection parameter", src_cnx_parameter);
-
-		    dst_cnx_parameter = leo_receive_string(client_dst);
-		    tbx_darray_expand_and_set(ccps_dst->
-					      in_connection_parameter_darray,
-					      l_rank_src,
-					      dst_cnx_parameter);
-		    TRACE_STR("Dst connection parameter", dst_cnx_parameter);
-
-		    leo_send_string(client_src, ccps_dst->parameter);
-		    leo_send_string(client_src, dst_cnx_parameter);
-		    leo_send_string(client_dst, ccps_src->parameter);
-		    leo_send_string(client_dst, src_cnx_parameter);
-		  }
-
-		  ack_src = leo_receive_int(client_src);
-		  if (ack_src != -1)
-		    FAILURE("synchronization error");
-
-		  ack_dst = leo_receive_int(client_dst);
-		  if (ack_dst != -1)
-		    FAILURE("synchronization error");
-		}
-	      while (ntbx_pc_next_local_rank(pc, &l_rank_dst));
-	    }
-	  while (ntbx_pc_next_local_rank(pc, &l_rank_src));
-
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t          process          = NULL;
-	      p_leo_process_specific_t  process_specific = NULL;
-	      p_ntbx_client_t           client           = NULL;
-	      int                       ack              =    0;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 2 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      leo_send_int(client, -1);
-	      ack = leo_receive_int(client);
-	      if (ack != -1)
-		FAILURE("synchronization error");
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-
-	  ntbx_pc_first_local_rank(pc, &l_rank_src);
-	  do
-	    {
-	      p_ntbx_process_t         process_src          = NULL;
-	      p_leo_process_specific_t process_specific_src = NULL;
-	      p_ntbx_client_t          client_src           = NULL;
-	      ntbx_process_lrank_t     l_rank_dst           =   -1;
-
-	      process_src = ntbx_pc_get_local_process(pc,
-							 l_rank_src);
-	      process_specific_src = process_src->specific;
-	      client_src           = process_specific_src->client;
-
-	      ntbx_pc_first_local_rank(pc, &l_rank_dst);
-	      do
-		{
-		  p_ntbx_process_t         process_dst          =
-		    NULL;
-		  p_leo_process_specific_t process_specific_dst =
-		    NULL;
-		  p_ntbx_client_t          client_dst           =
-		    NULL;
-		  int                      ack_src              = 0;
-		  int                      ack_dst              = 0;
-
-		  if (!ntbx_topology_table_get(ttable, l_rank_src,
-					       l_rank_dst))
-		    continue;
-
-		  TRACE("Connecting %d to %d", l_rank_src, l_rank_dst);
-
-		  process_dst = ntbx_pc_get_local_process(pc, l_rank_dst);
-		  process_specific_dst = process_dst->specific;
-		  client_dst           =
-		    process_specific_dst->client;
-
-		  leo_send_int(client_src, 0);
-		  leo_send_int(client_src, l_rank_dst);
-		  leo_send_int(client_dst, 1);
-		  leo_send_int(client_dst, l_rank_src);
-
-		  ack_src = leo_receive_int(client_src);
-		  if (ack_src != -1)
-		    FAILURE("synchronization error");
-
-		  ack_dst = leo_receive_int(client_dst);
-		  if (ack_dst != -1)
-		    FAILURE("synchronization error");
-		}
-	      while (ntbx_pc_next_local_rank(pc, &l_rank_dst));
-	    }
-	  while (ntbx_pc_next_local_rank(pc, &l_rank_src));
-
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t          process          = NULL;
-	      p_leo_process_specific_t  process_specific = NULL;
-	      p_ntbx_client_t           client           = NULL;
-	      int                       ack              =    0;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 3 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      leo_send_int(client, -1);
-	      ack = leo_receive_int(client);
-	      if (ack != -1)
-		FAILURE("synchronization error");
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-
-	}
-      while (tbx_slist_ref_forward(slist));
+      do_pc_send_local_s(dir_fchannel->common->pc, _dst_func1);
     }
 
-  slist = dir->process_slist;
-  tbx_slist_ref_to_head(slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
+    void _src_func2(ntbx_process_lrank_t sl,
+                    p_ntbx_client_t      src) {
+      void _dst_func2(ntbx_process_lrank_t  dl,
+                      p_ntbx_client_t       dst) {
 
-      process          = tbx_slist_ref_get(slist);
-      process_specific = process->specific;
-      client           = process_specific->client;
+        if (!ntbx_topology_table_get(dir_channel->ttable, sl, dl))
+          return;
 
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_ref_forward(slist));
+        TRACE("Connecting %d to %d", sl, dl);
 
+        leo_send_int(src, 0);
+        leo_send_int(src, dl);
+        leo_send_int(dst, 1);
+        leo_send_int(dst, sl);
 
-  // Virtual channels
-  slist = dir->vchannel_slist;
-  if (!tbx_slist_is_nil(slist))
-    {
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  p_leo_dir_vchannel_t       dir_vchannel = NULL;
-	  p_ntbx_process_container_t pc           = NULL;
-	  ntbx_process_grank_t       global_rank  =   -1;
+        wait_for_ack(src);
+        wait_for_ack(dst);
+      }
 
-	  dir_vchannel = tbx_slist_ref_get(slist);
-	  pc           = dir_vchannel->pc;
-
-	  TRACE_STR("Virtual channel", dir_vchannel->name);
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t         process          = NULL;
-	      p_leo_process_specific_t process_specific = NULL;
-	      p_ntbx_client_t          client           = NULL;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 1 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      leo_send_string(client, dir_vchannel->name);
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t          process          = NULL;
-	      p_leo_process_specific_t  process_specific = NULL;
-	      p_ntbx_client_t           client           = NULL;
-	      char                     *msg              = NULL;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 2 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      msg = leo_receive_string(client);
-	      if (strcmp(msg, "ok"))
-		FAILURE("synchronization error");
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-	}
-      while (tbx_slist_ref_forward(slist));
+      do_pc_send_local(dir_fchannel->common->pc, _dst_func2);
     }
 
-  slist = dir->process_slist;
-  tbx_slist_ref_to_head(slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
+    LOG_IN();
+    dir_channel = tbx_htable_get(leonie->directory->channel_htable,
+                                 dir_fchannel->channel_name);
+    TRACE_STR("Forwarding channel", dir_fchannel->name);
+    do_pc_send_s       (dir_fchannel->common->pc, _f);
+    do_pc_send_local_s (dir_fchannel->common->pc, _src_func1);
+    do_pc_send         (dir_fchannel->common->pc, _int_sync);
+    do_pc_send_local   (dir_fchannel->common->pc, _src_func2);
+    do_pc_send         (dir_fchannel->common->pc, _int_sync);
+    LOG_OUT();
+  }
 
-      process          = tbx_slist_ref_get(slist);
-      process_specific = process->specific;
-      client           = process_specific->client;
+  LOG_IN();
+  do_slist(leonie->directory->fchannel_slist, _g);
+  str_sync(leonie->directory);
+  LOG_OUT();
+}
 
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_ref_forward(slist));
 
-  // MultipleXing channels
-  slist = dir->xchannel_slist;
-  if (!tbx_slist_is_nil(slist))
-    {
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  p_leo_dir_xchannel_t       dir_xchannel = NULL;
-	  p_ntbx_process_container_t pc           = NULL;
-	  ntbx_process_grank_t       global_rank  =   -1;
+void
+init_vchannels(p_leonie_t leonie)
+{
+  void _g(void *_dir_vchannel) {
+    p_leo_dir_vxchannel_t dir_vchannel = _dir_vchannel;
 
-	  dir_xchannel = tbx_slist_ref_get(slist);
-	  pc           = dir_xchannel->pc;
-
-	  TRACE_STR("Multiplexing channel", dir_xchannel->name);
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t         process          = NULL;
-	      p_leo_process_specific_t process_specific = NULL;
-	      p_ntbx_client_t          client           = NULL;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 1 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      leo_send_string(client, dir_xchannel->name);
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-
-	  ntbx_pc_first_global_rank(pc, &global_rank);
-	  do
-	    {
-	      p_ntbx_process_t          process          = NULL;
-	      p_leo_process_specific_t  process_specific = NULL;
-	      p_ntbx_client_t           client           = NULL;
-	      char                     *msg              = NULL;
-
-	      process = ntbx_pc_get_global_process(pc, global_rank);
-	      TRACE_VAL("Pass 2 - Process", process->global_rank);
-	      process_specific = process->specific;
-	      client           = process_specific->client;
-
-	      msg = leo_receive_string(client);
-	      if (strcmp(msg, "ok"))
-		FAILURE("synchronization error");
-	    }
-	  while (ntbx_pc_next_global_rank(pc, &global_rank));
-	}
-      while (tbx_slist_ref_forward(slist));
+    void _f(p_ntbx_client_t client) {
+      leo_send_string(client, dir_vchannel->name);
     }
 
-  slist = dir->process_slist;
-  tbx_slist_ref_to_head(slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
+    TRACE_STR("Virtual channel", dir_vchannel->name);
+    do_pc_send(dir_vchannel->pc, _f);
+    do_pc_send(dir_vchannel->pc, wait_for_ack);
+  }
 
-      process          = tbx_slist_ref_get(slist);
-      process_specific = process->specific;
-      client           = process_specific->client;
+  LOG_IN();
+  do_slist(leonie->directory->vchannel_slist, _g);
+  str_sync(leonie->directory);
+  LOG_OUT();
+}
 
-      leo_send_string(client, "-");
+void
+init_xchannels(p_leonie_t leonie)
+{
+  void _g(void *_dir_xchannel) {
+    p_leo_dir_vxchannel_t dir_xchannel = _dir_xchannel;
+
+    void _f(p_ntbx_client_t client) {
+      leo_send_string(client, dir_xchannel->name);
     }
-  while (tbx_slist_ref_forward(slist));
+
+    TRACE_STR("Mux channel", dir_xchannel->name);
+    do_pc_send(dir_xchannel->pc, _f);
+    do_pc_send(dir_xchannel->pc, wait_for_ack);
+  }
+
+  LOG_IN();
+  do_slist(leonie->directory->xchannel_slist, _g);
+  str_sync(leonie->directory);
   LOG_OUT();
 }
 
@@ -892,7 +411,6 @@ exit_session(p_leonie_t leonie)
   p_leo_directory_t  dir           = NULL;
   p_ntbx_client_t   *client_array  = NULL;
   int                nb_clients    =    0;
-  int                i             =    0;
   tbx_bool_t         finishing     = tbx_false;
   int                barrier_count =    0;
 
@@ -902,508 +420,98 @@ exit_session(p_leonie_t leonie)
   nb_clients    = tbx_slist_get_length(dir->process_slist);
   client_array  = TBX_CALLOC(nb_clients, sizeof(ntbx_client_t));
 
-  tbx_slist_ref_to_head(dir->process_slist);
-  do
-    {
-      p_ntbx_process_t          process          = NULL;
-      p_leo_process_specific_t  process_specific = NULL;
-      p_ntbx_client_t           client           = NULL;
-
-      process           = tbx_slist_ref_get(dir->process_slist);
-      process_specific  = process->specific;
-      client            = process_specific->client;
+  {
+    int i = 0;
+    void _fill_array(p_ntbx_client_t client) {
       client_array[i++] = client;
     }
-  while (tbx_slist_ref_forward(dir->process_slist));
 
-  while (nb_clients)
-    {
-      int status = -1;
+    with_all_processes(dir, _fill_array);
+  }
 
-      status = ntbx_tcp_read_poll(nb_clients, client_array);
+  while (nb_clients) {
+    int status = -1;
 
-      if (status > 0)
-	{
-	  int j = 0;
+    status = ntbx_tcp_read_poll(nb_clients, client_array);
 
-	  while (status && (j < nb_clients))
-	    {
+    if (status > 0) {
+      int j = 0;
 
-	      p_ntbx_client_t          client           = NULL;
-	      int                      read_status      = ntbx_failure;
-	      int                      data             = 0;
-	      ntbx_pack_buffer_t       pack_buffer;
+      while (status && (j < nb_clients)) {
 
-	      client = client_array[j];
-	      TRACE("status = %d, nb_clients = %d, j = %d", status,
-		   nb_clients, j);
+        p_ntbx_client_t    client      = NULL;
+        int                read_status = ntbx_failure;
+        int                data        = 0;
+        ntbx_pack_buffer_t pack_buffer;
 
-	      if (!client->read_ok)
-		{
-		  j++;
-		  continue;
-		}
+        client = client_array[j];
+        TRACE("status = %d, nb_clients = %d, j = %d", status,
+              nb_clients, j);
 
-	      read_status = ntbx_tcp_read_pack_buffer(client, &pack_buffer);
-	      if (read_status == -1)
-		FAILURE("control link failure");
+        if (!client->read_ok) {
+          j++;
+          continue;
+        }
 
-	      data = ntbx_unpack_int(&pack_buffer);
+        read_status = ntbx_tcp_read_pack_buffer(client, &pack_buffer);
+        if (read_status == -1)
+          FAILURE("control link failure");
 
-	      switch (data)
-		{
-		case leo_command_end:
-		  {
-                          TRACE("leo_command_end");
-		    status--;
-		    nb_clients--;
-		    memmove(client_array + j, client_array + j + 1,
-			    (nb_clients - j) * sizeof(p_ntbx_client_t));
-		    finishing = tbx_true;
-		  }
-		  break;
+        data = ntbx_unpack_int(&pack_buffer);
 
-		case leo_command_print:
-		  {
-		    char *string = NULL;
+        switch (data) {
+        case leo_command_end: {
+          TRACE("leo_command_end");
+          status--;
+          nb_clients--;
+          memmove(client_array + j, client_array + j + 1,
+                  (nb_clients - j) * sizeof(p_ntbx_client_t));
+          finishing = tbx_true;
+        } break;
 
-                          TRACE("leo_command_print");
-		    string = leo_receive_string(client);
-		    DISP("%s", string);
-		    free(string);
-		    string = NULL;
-		    status--;
-                    j++;
-		  }
-		  break;
+        case leo_command_print: {
+          char *string = NULL;
 
-		case leo_command_barrier:
-		  {
-                          TRACE("leo_command_barrier");
-		    if (finishing)
-		      FAILURE("barrier request during session clean-up");
+          TRACE("leo_command_print");
+          string = leo_receive_string(client);
+          DISP("%s", string);
+          free(string);
+          string = NULL;
+          status--;
+          j++;
+        } break;
 
-		    barrier_count++;
+        case leo_command_barrier: {
+          TRACE("leo_command_barrier");
+          if (finishing)
+            FAILURE("barrier request during session clean-up");
 
-		    if (barrier_count >= nb_clients)
-		      {
-			if (barrier_count > nb_clients)
-			  FAILURE("incoherent behaviour");
+          barrier_count++;
 
-			tbx_slist_ref_to_head(dir->process_slist);
-			do
-			  {
-			    p_ntbx_process_t          process          = NULL;
-			    p_leo_process_specific_t  process_specific = NULL;
-			    p_ntbx_client_t           tmp_client       = NULL;
+          if (barrier_count >= nb_clients) {
+            if (barrier_count == nb_clients) {
+              void _barrier_passed(p_ntbx_client_t tmp_client) {
+                leo_send_int(tmp_client, leo_command_barrier_passed);
+              }
 
-			    process           =
-			      tbx_slist_ref_get(dir->process_slist);
-			    process_specific  = process->specific;
-			    tmp_client        = process_specific->client;
-			    leo_send_int(tmp_client,
-					 leo_command_barrier_passed);
-			  }
-			while (tbx_slist_ref_forward(dir->
-						     process_slist));
+              with_all_processes(dir, _barrier_passed);
+              barrier_count = 0;
+            } else
+              FAILURE("incoherent behaviour");
+          }
 
-			barrier_count = 0;
-		      }
+          status --;
+          j++;
+        } break;
 
-		    status --;
-                    j++;
-		  }
-		  break;
+        default:
+          FAILURE("unknown command or synchronization error");
+        }
+      }
 
-		default:
-		  FAILURE("unknown command or synchronization error");
-		}
-	    }
-
-	  if (status)
-	    FAILURE("incoherent behaviour");
-	}
+      if (status)
+        FAILURE("incoherent behaviour");
     }
-
-  LOG_OUT();
-}
-
-// dir_vchannel_disconnect: manages virtual channels disconnection
-void
-dir_vchannel_disconnect(p_leonie_t leonie)
-{
-  p_leo_directory_t dir = NULL;
-
-  LOG_IN();
-  dir = leonie->directory;
-
-  tbx_slist_ref_to_head(dir->process_slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
-      int                      data             =    0;
-
-      process           = tbx_slist_ref_get(dir->process_slist);
-      process_specific  = process->specific;
-      client            = process_specific->client;
-      leo_send_int(client, 1);
-
-      // Waiting for "Forward send" threads to shutdown
-      data = leo_receive_int(client);
-
-      if (data != -1)
-	FAILURE("synchronization error");
-    }
-  while (tbx_slist_ref_forward(dir->process_slist));
-
-  // Shuting down "Forward receive" threads
-  if (!tbx_slist_is_nil(dir->vchannel_slist))
-    {
-      p_tbx_slist_t vslist = NULL;
-
-      vslist = dir->vchannel_slist;
-      tbx_slist_ref_to_head(vslist);
-      do
-	{
-	  p_leo_dir_vchannel_t vchannel = NULL;
-	  p_tbx_slist_t        slist = NULL;
-
-	  vchannel = tbx_slist_ref_get(vslist);
-
-	  // Regular channels
-	  slist = vchannel->dir_channel_slist;
-	  tbx_slist_ref_to_head(slist);
-	  do
-	    {
-	      p_leo_dir_channel_t         channel   = NULL;
-	      p_ntbx_topology_table_t     ttable    = NULL;
-	      ntbx_process_lrank_t        dst_lrank =   -1;
-	      p_ntbx_process_container_t  pc        = NULL;
-
-	      channel = tbx_slist_ref_get(slist);
-	      ttable  = channel->ttable;
-	      pc      = channel->pc;
-
-	      if (ntbx_pc_first_local_rank(pc, &dst_lrank))
-		{
-		  do
-		    {
-		      ntbx_process_lrank_t src_lrank =   -1;
-
-		      ntbx_pc_first_local_rank(pc, &src_lrank);
-		      do
-			{
-			  p_ntbx_client_t src_client = NULL;
-			  p_ntbx_client_t dst_client = NULL;
-
-			  if (src_lrank == dst_lrank)
-			    continue;
-
-			  if (!ntbx_topology_table_get(ttable, src_lrank,
-						       dst_lrank))
-			    continue;
-
-			  {
-			    p_ntbx_process_t         process          = NULL;
-			    p_leo_process_specific_t process_specific = NULL;
-
-			    process          =
-			      ntbx_pc_get_local_process(pc, src_lrank);
-			    process_specific = process->specific;
-			    src_client       = process_specific->client;
-			  }
-
-			  {
-			    p_ntbx_process_t         process          = NULL;
-			    p_leo_process_specific_t process_specific = NULL;
-
-			    process          =
-			      ntbx_pc_get_local_process(pc, dst_lrank);
-			    process_specific = process->specific;
-			    dst_client       = process_specific->client;
-			  }
-
-			  leo_send_string(src_client, vchannel->name);
-			  leo_send_string(src_client, channel->name);
-			  leo_send_int(src_client, dst_lrank);
-			  leo_send_string(dst_client, vchannel->name);
-			  leo_send_string(dst_client, channel->name);
-			  leo_send_int(dst_client, -1);
-
-			  {
-			    int data = 0;
-
-			    data = leo_receive_int(src_client);
-			    if (data != -1)
-			      FAILURE("synchronization error");
-
-			    data = leo_receive_int(dst_client);
-			    if (data != -1)
-			      FAILURE("synchronization error");
-			  }
-
-			  break;
-			}
-		      while (ntbx_pc_next_local_rank(pc, &src_lrank));
-		    }
-		  while (ntbx_pc_next_local_rank(pc, &dst_lrank));
-		}
-	    }
-	  while (tbx_slist_ref_forward(slist));
-
-	  // Forwarding channels
-	  slist = vchannel->dir_fchannel_slist;
-	  tbx_slist_ref_to_head(slist);
-	  do
-	    {
-	      p_leo_dir_fchannel_t        fchannel  = NULL;
-	      p_ntbx_topology_table_t     ttable    = NULL;
-	      p_leo_dir_channel_t         channel   = NULL;
-	      ntbx_process_lrank_t        dst_lrank =   -1;
-	      p_ntbx_process_container_t  pc        = NULL;
-
-	      fchannel = tbx_slist_ref_get(slist);
-	      channel  = tbx_htable_get(dir->channel_htable,
-					fchannel->channel_name);
-	      ttable   = channel->ttable;
-	      pc       = channel->pc;
-
-	      if (ntbx_pc_first_local_rank(pc, &dst_lrank))
-		{
-		  do
-		    {
-		      ntbx_process_lrank_t src_lrank =   -1;
-
-		      ntbx_pc_first_local_rank(pc, &src_lrank);
-		      do
-			{
-			  p_ntbx_client_t src_client = NULL;
-			  p_ntbx_client_t dst_client = NULL;
-
-			  if (src_lrank == dst_lrank)
-			    continue;
-
-			  if (!ntbx_topology_table_get(ttable, src_lrank,
-						       dst_lrank))
-			    continue;
-
-			  {
-			    p_ntbx_process_t         process          = NULL;
-			    p_leo_process_specific_t process_specific = NULL;
-
-			    process          =
-			      ntbx_pc_get_local_process(pc, src_lrank);
-			    process_specific = process->specific;
-			    src_client       = process_specific->client;
-			  }
-
-			  {
-			    p_ntbx_process_t         process          = NULL;
-			    p_leo_process_specific_t process_specific = NULL;
-
-			    process          =
-			      ntbx_pc_get_local_process(pc, dst_lrank);
-			    process_specific = process->specific;
-			    dst_client       = process_specific->client;
-			  }
-
-			  leo_send_string(src_client, vchannel->name);
-			  leo_send_string(src_client, fchannel->name);
-			  leo_send_int(src_client, dst_lrank);
-			  leo_send_string(dst_client, vchannel->name);
-			  leo_send_string(dst_client, fchannel->name);
-			  leo_send_int(dst_client, -1);
-
-			  {
-			    int data = 0;
-
-			    data = leo_receive_int(src_client);
-			    if (data != -1)
-			      FAILURE("synchronization error");
-
-			    data = leo_receive_int(dst_client);
-			    if (data != -1)
-			      FAILURE("synchronization error");
-			  }
-
-			  break;
-			}
-		      while (ntbx_pc_next_local_rank(pc, &src_lrank));
-		    }
-		  while (ntbx_pc_next_local_rank(pc, &dst_lrank));
-		}
-	    }
-	  while (tbx_slist_ref_forward(slist));
-
-	}
-      while (tbx_slist_ref_forward(vslist));
-
-    }
-
-  tbx_slist_ref_to_head(dir->process_slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
-
-      process           = tbx_slist_ref_get(dir->process_slist);
-      process_specific  = process->specific;
-      client            = process_specific->client;
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_ref_forward(dir->process_slist));
-
-
-  LOG_OUT();
-}
-
-
-// dir_xchannel_disconnect: manages multipleXing channels disconnection
-void
-dir_xchannel_disconnect(p_leonie_t leonie)
-{
-  p_leo_directory_t dir = NULL;
-
-  LOG_IN();
-  dir = leonie->directory;
-
-  tbx_slist_ref_to_head(dir->process_slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
-      int                      data             =    0;
-
-      process           = tbx_slist_ref_get(dir->process_slist);
-      process_specific  = process->specific;
-      client            = process_specific->client;
-
-      // Waiting for "Forward send" threads to shutdown
-      data = leo_receive_int(client);
-
-      if (data != -1)
-	FAILURE("synchronization error");
-    }
-  while (tbx_slist_ref_forward(dir->process_slist));
-
-  // Shuting down "Forward receive" threads
-  if (!tbx_slist_is_nil(dir->xchannel_slist))
-    {
-      p_tbx_slist_t vslist = NULL;
-
-      vslist = dir->xchannel_slist;
-      tbx_slist_ref_to_head(vslist);
-      do
-	{
-	  p_leo_dir_xchannel_t xchannel = NULL;
-	  p_tbx_slist_t        slist = NULL;
-
-	  xchannel = tbx_slist_ref_get(vslist);
-
-	  // Regular channels
-	  slist = xchannel->dir_channel_slist;
-	  tbx_slist_ref_to_head(slist);
-	  do
-	    {
-	      p_leo_dir_channel_t         channel   = NULL;
-	      p_ntbx_topology_table_t     ttable    = NULL;
-	      ntbx_process_lrank_t        dst_lrank =   -1;
-	      p_ntbx_process_container_t  pc        = NULL;
-
-	      channel = tbx_slist_ref_get(slist);
-	      ttable  = channel->ttable;
-	      pc      = channel->pc;
-
-	      if (ntbx_pc_first_local_rank(pc, &dst_lrank))
-		{
-		  do
-		    {
-		      ntbx_process_lrank_t src_lrank =   -1;
-
-		      ntbx_pc_first_local_rank(pc, &src_lrank);
-		      do
-			{
-			  p_ntbx_client_t src_client = NULL;
-			  p_ntbx_client_t dst_client = NULL;
-
-			  if (src_lrank == dst_lrank)
-			    continue;
-
-			  if (!ntbx_topology_table_get(ttable, src_lrank,
-						       dst_lrank))
-			    continue;
-
-			  {
-			    p_ntbx_process_t         process          = NULL;
-			    p_leo_process_specific_t process_specific = NULL;
-
-			    process          =
-			      ntbx_pc_get_local_process(pc, src_lrank);
-			    process_specific = process->specific;
-			    src_client       = process_specific->client;
-			  }
-
-			  {
-			    p_ntbx_process_t         process          = NULL;
-			    p_leo_process_specific_t process_specific = NULL;
-
-			    process          =
-			      ntbx_pc_get_local_process(pc, dst_lrank);
-			    process_specific = process->specific;
-			    dst_client       = process_specific->client;
-			  }
-
-			  leo_send_string(src_client, xchannel->name);
-			  leo_send_string(src_client, channel->name);
-			  leo_send_int(src_client, dst_lrank);
-			  leo_send_string(dst_client, xchannel->name);
-			  leo_send_string(dst_client, channel->name);
-			  leo_send_int(dst_client, -1);
-
-			  {
-			    int data = 0;
-
-			    data = leo_receive_int(src_client);
-			    if (data != -1)
-			      FAILURE("synchronization error");
-
-			    data = leo_receive_int(dst_client);
-			    if (data != -1)
-			      FAILURE("synchronization error");
-			  }
-
-			  break;
-			}
-		      while (ntbx_pc_next_local_rank(pc, &src_lrank));
-		    }
-		  while (ntbx_pc_next_local_rank(pc, &dst_lrank));
-		}
-	    }
-	  while (tbx_slist_ref_forward(slist));
-
-	}
-      while (tbx_slist_ref_forward(vslist));
-
-    }
-
-  tbx_slist_ref_to_head(dir->process_slist);
-  do
-    {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
-
-      process           = tbx_slist_ref_get(dir->process_slist);
-      process_specific  = process->specific;
-      client            = process_specific->client;
-      leo_send_string(client, "-");
-    }
-  while (tbx_slist_ref_forward(dir->process_slist));
-
-
+  }
   LOG_OUT();
 }

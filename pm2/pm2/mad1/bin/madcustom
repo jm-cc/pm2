@@ -34,6 +34,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
+
 DIRS="${MADELEINE_ROOT}/make ${MADELEINE_ROOT}/source ${MADELEINE_ROOT}/bin"
 
 for d in $DIRS ; do

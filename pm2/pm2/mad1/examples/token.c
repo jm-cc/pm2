@@ -55,19 +55,19 @@ void circulate_token()
   if(myrank == 0) { /* Create the token */
 
     mad_sendbuf_init(nids[(myrank+1) % configsize]);
-    mad_pack_int(MAD_IN_HEADER, &tag, 1);
-    mad_pack_str(PACK_MODE, tmp);
+    old_mad_pack_int(MAD_IN_HEADER, &tag, 1);
+    old_mad_pack_str(PACK_MODE, tmp);
 
     mad_sendbuf_send();
   }
 
   mad_receive(); /* Receive the token */
-  mad_unpack_int(MAD_IN_HEADER, &tag, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &tag, 1);
   if(tag != TAG_NUMBER) {
     fprintf(stderr, "Tag error !!!\n");
     mad_exit(); exit(1);
   }
-  mad_unpack_str(PACK_MODE, message);
+  old_mad_unpack_str(PACK_MODE, message);
   mad_recvbuf_receive();
 
   if(myrank != 0) { /*  Forward the token */
@@ -75,8 +75,8 @@ void circulate_token()
     strcat(message, tmp);
 
     mad_sendbuf_init(nids[(myrank+1) % configsize]);
-    mad_pack_int(MAD_IN_HEADER, &tag, 1);
-    mad_pack_str(PACK_MODE, message);
+    old_mad_pack_int(MAD_IN_HEADER, &tag, 1);
+    old_mad_pack_str(PACK_MODE, message);
 
     mad_sendbuf_send();
   } else {

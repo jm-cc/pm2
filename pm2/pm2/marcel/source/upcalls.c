@@ -35,7 +35,7 @@
 */
 
 #include "sys/marcel_flags.h"
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 
 #ifdef ACT_TIMER
 #ifdef CONFIG_ACT_TIMER
@@ -68,12 +68,12 @@ static marcel_t marcel_next[ACT_NB_MAX_CPU];
 //volatile boolean has_new_tasks=0;
 volatile int act_nb_unblocked=0;
 
-void act_goto_next_task(marcel_t pid)
+void act_goto_next_task(marcel_t pid, int from)
 {
 	marcel_next[GET_LWP_NUMBER(marcel_self())]=pid;
 	
 	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED\n");
-	act_cntl(ACT_CNTL_RESTART_UNBLOCKED, 0);
+	act_cntl(ACT_CNTL_RESTART_UNBLOCKED, (void*)from);
 	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
 
 	if (pid) {
@@ -118,28 +118,47 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 	       new_proc, return_value, param, eip, esp);
 #endif
 	if (IS_TASK_TYPE_IDLE(current)) {
-		marcel_printf("\trestart_func in idle task %p !! \n",
-		      current);
+		if (param != ACT_RESCHEDULE) {
+			marcel_printf("\trestart_func in idle task %p !! \n",
+				      current);
+		}
 	}
   	if (param & ACT_UNBLK_RESTART_UNBLOCKED) {
-		if (marcel_next[GET_LWP_NUMBER(current)]) {
+		switch (param & 0xFF) {
+		case ACT_RESTART_FROM_SCHED:
 			MTRACE("Restarting", current);
 			MA_THR_RESTARTED(current, "Syscall");
 			SET_STATE_READY(marcel_next[GET_LWP_NUMBER(current)]);
-		} else {
+			unlock_task();
+			break;
+		case ACT_RESTART_FROM_IDLE:
 			/* we comme from the idle task */
 			MTRACE("Restarting", current);
 			mdebug("\t\tunchaining idle %p\n",
 			       GET_LWP(current)->prev_running);
 			SET_FROZEN(GET_LWP(current)->prev_running);
 			UNCHAIN_TASK(GET_LWP(current)->prev_running);
+			unlock_task();
+			break;
+		case ACT_RESTART_FROM_UPCALL_NEW:
+			MTRACE("Restarting", current);
+			break;
+		default:
+			RAISE("invalid parameter");
 		}
-		unlock_task();
   	} else if (param & ACT_UNBLK_IDLE) {
 		if ((param & 0xFF) == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
 		}
-		MTRACE("End IDLE", current);
+		SET_FROZEN(GET_LWP(current)->prev_running);
+		UNCHAIN_TASK(GET_LWP(current)->prev_running);
+		MTRACE("Restarting", current);
+		unlock_task();
+	} else if (param & ACT_RESCHEDULE) {
+		if(!locked() && preemption_enabled()) {
+			MTRACE("ActSched", current);
+			marcel_yield();
+		}
 	}
 	
 	*(&esp) = esp-4;  /* on veut empiler l'adresse de retour ret */
@@ -177,7 +196,7 @@ void upcall_new(act_proc_t proc)
 	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
 	       GET_LWP_BY_NUM(proc)->number );
 #endif
-
+	MTRACE("UpcallNew", marcel_self());
 	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
 
 	if (locked()) {
@@ -190,6 +209,15 @@ void upcall_new(act_proc_t proc)
 			act_cntl(ACT_CNTL_READY_TO_WAIT,NULL);
 			act_cntl(ACT_CNTL_DO_WAIT, (void*)ACT_NEW_WITH_LOCK);
 		}
+	}
+
+	if (act_nb_unblocked) {
+#ifdef SHOW_UPCALL
+		marcel_printf("\t\tupcall_new(%i) : restart unblocked(%i)\n",
+			      proc, act_nb_unblocked);
+#endif
+		act_cntl(ACT_CNTL_RESTART_UNBLOCKED, 
+			 (void*)ACT_RESTART_FROM_UPCALL_NEW);
 	}
 
 	/* le lock_task n'est pas pris : il n'y a pas d'appels
@@ -220,7 +248,7 @@ static void init_act(int proc, act_param_t *param)
 
 	stack=(void*)GET_LWP_BY_NUM(proc)->upcall_new_task->initial_sp;
 	param->upcall_new_sp[proc]=stack;
-  
+	param->locked[proc]=NULL; //TODO
 	mdebug("upcall_new on proc %i use stack %p\n", proc, stack);
 
 }
@@ -247,13 +275,16 @@ void init_upcalls(int nb_act)
 #endif
 	param.magic_number=ACT_MAGIC_NUMBER;
 	param.nb_proc_wanted=nb_act;
+	param.reset_count=0;
+	/* param->upcall_new_sp[proc] */
 	param.upcall_new=upcall_new;
 	param.restart_func=restart_func;
+	param.resched_func=restart_func;
 	param.nb_act_unblocked=(int*)&act_nb_unblocked;
-	param.locked_start=&locked_start;
-	param.locked_end=&locked_end;
-	param.locked=NULL;
-	
+	param.locked_start=(unsigned long)&locked_start;
+	param.locked_end=(unsigned long)&locked_end;
+	/* param->locked[proc] */
+
 //	param.upcall_unblock=upcall_unblock;
 //	param.upcall_change_proc=upcall_change_proc;
 	
@@ -262,11 +293,14 @@ void init_upcalls(int nb_act)
 			upcall_new, restart_func, &act_nb_unblocked));
 	
        
-	act_cntl(ACT_CNTL_INIT, &param);
+	if (act_cntl(ACT_CNTL_INIT, &param)) {
+		perror("Bad activations init");
+		exit(1);
+	}
 	
 	mdebug("Initialisation upcall done\n");
 	//ACTDEBUG(printf("Fin act_init\n"));
 	//scanf("%i", &proc);
 }
 
-#endif /* MA__ACT */
+#endif /* MA__ACTIVATION */

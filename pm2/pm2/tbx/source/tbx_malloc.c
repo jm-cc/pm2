@@ -1,3 +1,12 @@
+/*! \file tbx_malloc.c
+ *  \brief TBX memory allocation routines
+ *
+ *  This file implements TBX memory allocators:
+ *  - The 'safe-malloc' allocator: a debug version of malloc.
+ *  - The fast memory allocator:   a fast specialized allocator dedicated
+ *    to allocation of memory blocks of identical size.
+ *
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

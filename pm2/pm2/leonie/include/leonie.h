@@ -29,8 +29,10 @@
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
-#include "ntbx.h"
+#define FAILURE_CLEANUP() leonie_failure_cleanup()
+
 #include "tbx.h"
+#include "ntbx.h"
 #include "leoparse.h"
 
 /* Leonie: data structures */

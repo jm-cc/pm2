@@ -41,13 +41,13 @@
 /* READ_PAGE_REQ */
 
 PACK_REQ_STUB(DSM_LRPC_READ_PAGE_REQ)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_READ_PAGE_REQ)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
 END_STUB
 
 PACK_RES_STUB(DSM_LRPC_READ_PAGE_REQ)
@@ -60,13 +60,13 @@ END_STUB
 /* WRITE_PAGE_REQ */
 
 PACK_REQ_STUB(DSM_LRPC_WRITE_PAGE_REQ)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_WRITE_PAGE_REQ)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
 END_STUB
 
 PACK_RES_STUB(DSM_LRPC_WRITE_PAGE_REQ)
@@ -79,22 +79,22 @@ END_STUB
 /* SEND_PAGE */
 
 PACK_REQ_STUB(DSM_LRPC_SEND_PAGE)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->addr), sizeof(void *));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->page_size), sizeof(unsigned long));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->reply_node), sizeof(dsm_node_t));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->access), sizeof(dsm_access_t));
-     mad_pack_byte(MAD_IN_HEADER, (char *)(arg->addr), arg->page_size);   
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->addr), sizeof(void *));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->page_size), sizeof(unsigned long));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->reply_node), sizeof(dsm_node_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&(arg->access), sizeof(dsm_access_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)(arg->addr), arg->page_size);   
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_SEND_PAGE)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->addr), sizeof(void *));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->page_size), sizeof(unsigned long));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->reply_node), sizeof(dsm_node_t));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->access), sizeof(dsm_access_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->addr), sizeof(void *));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->page_size), sizeof(unsigned long));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->reply_node), sizeof(dsm_node_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&(arg->access), sizeof(dsm_access_t));
      //     fprintf(stderr, "lock_task: I am %p \n", marcel_self());  
      lock_task();
      dsm_protect_page(arg->addr, WRITE_ACCESS); // to enable the page to be coppied
-     mad_unpack_byte(MAD_IN_HEADER, (char *)(arg->addr), arg->page_size);
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)(arg->addr), arg->page_size);
      dsm_protect_page(arg->addr, dsm_get_access(dsm_page_index(arg->addr)));
      unlock_task();
 END_STUB
@@ -109,15 +109,15 @@ END_STUB
 /* INVALIDATE_REQ */
 
 PACK_REQ_STUB(DSM_LRPC_INVALIDATE_REQ)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->new_owner, sizeof(dsm_node_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->new_owner, sizeof(dsm_node_t));
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_INVALIDATE_REQ)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->new_owner, sizeof(dsm_node_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->req_node, sizeof(dsm_node_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->new_owner, sizeof(dsm_node_t));
 END_STUB
 
 PACK_RES_STUB(DSM_LRPC_INVALIDATE_REQ)
@@ -130,11 +130,11 @@ END_STUB
 /* INVALIDATE_ACK */
 
 PACK_REQ_STUB(DSM_LRPC_INVALIDATE_ACK)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_INVALIDATE_ACK)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
 END_STUB
 
 PACK_RES_STUB(DSM_LRPC_INVALIDATE_ACK)
@@ -150,28 +150,28 @@ PACK_REQ_STUB(DSM_LRPC_SEND_DIFFS)
      void *addr;
      int size;
 
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
      while ((addr = dsm_get_next_modified_data(arg->index, &size)) != NULL)
        {
-	 mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
-	 mad_pack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
-	 mad_pack_byte(MAD_IN_HEADER, (char *)addr, size);
+	 old_mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
+	 old_mad_pack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
+	 old_mad_pack_byte(MAD_IN_HEADER, (char *)addr, size);
        }
     /* send the NULL value to terminate */ 
-    mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));   
+    old_mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));   
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_SEND_DIFFS)
      void *addr;
      int size;
 
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));     
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->index, sizeof(unsigned long));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));     
      while (addr != NULL)
        {
-	 mad_unpack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
-	 mad_unpack_byte(MAD_IN_HEADER, (char *)addr, size); 
-	 mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
+	 old_mad_unpack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
+	 old_mad_unpack_byte(MAD_IN_HEADER, (char *)addr, size); 
+	 old_mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
        }
 END_STUB
 
@@ -186,11 +186,11 @@ END_STUB
 /* DSM_LRPC_LOCK */
 
 PACK_REQ_STUB(DSM_LRPC_LOCK)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_LOCK)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
 END_STUB
 
 PACK_RES_STUB(DSM_LRPC_LOCK)
@@ -203,11 +203,11 @@ END_STUB
 /* DSM_LRPC_UNLOCK */
 
 PACK_REQ_STUB(DSM_LRPC_UNLOCK)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
 END_STUB
 
 UNPACK_REQ_STUB(DSM_LRPC_UNLOCK)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
 END_STUB
 
 PACK_RES_STUB(DSM_LRPC_UNLOCK)

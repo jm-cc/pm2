@@ -34,38 +34,16 @@
 #
 
 
+.PHONY: default all
 default: all
 
-include ../../make/common.mak
+SRC_DIR	:=	.
 
-all: simple mig_handler
+include ../../Makefile
 
+PM2_APP_CFLAGS	=
+PM2_APP_LDFLAGS	=
+PM2_APP_LLIBS	=
 
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)
-
-
-# executables :
-
-
-# simple :
-
-$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-simple: $(PM2_OBJ)/simple.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# mig_handler :
-
-$(PM2_OBJ)/mig_handler.o: mig_handler.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-mig_handler: $(PM2_OBJ)/mig_handler.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
+all:	$(BIN_DIR)/simple
 

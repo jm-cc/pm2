@@ -96,7 +96,7 @@ any_t main_thread()
 #endif
 
       if(nb == 0) {
-	TBX_TBX_GET_TICK(t1);
+	TBX_GET_TICK(t1);
 #ifdef PROFILE
 	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
 #endif
@@ -104,7 +104,7 @@ any_t main_thread()
 #ifdef PROFILE
 	profile_stop();
 #endif
-	TBX_TBX_GET_TICK(t2);
+	TBX_GET_TICK(t2);
       } else
 	marcel_create(NULL, &attr, f, (any_t)&sem);
 

@@ -171,16 +171,43 @@ process_command_line(int    argc,
 	  else if (tbx_argit_arg_equals("-x"))
 	    {
 	      settings->xterm_mode = tbx_true;
+	      settings->log_mode   = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("--x"))
 	    {
 	      settings->xterm_mode = tbx_false;
 	      settings->gdb_mode   = tbx_false;
 	    }
+	  else if (tbx_argit_arg_equals("-l"))
+	    {
+	      settings->log_mode   = tbx_true;
+
+	      settings->xterm_mode = tbx_false;
+	      settings->gdb_mode   = tbx_false;
+	      settings->pause_mode = tbx_false;
+	    }
+	  else if (tbx_argit_arg_equals("--l"))
+	    {
+	      settings->log_mode = tbx_false;
+	    }
+	  else if (tbx_argit_arg_equals("-p"))
+	    {
+	      settings->pause_mode = tbx_true;
+
+	      settings->gdb_mode   = tbx_false;
+	      settings->log_mode   = tbx_false;
+	    }
+	  else if (tbx_argit_arg_equals("--p"))
+	    {
+	      settings->pause_mode = tbx_false;
+	    }
 	  else if (tbx_argit_arg_equals("-d"))
 	    {
 	      settings->gdb_mode   = tbx_true;
+	      
 	      settings->xterm_mode = tbx_true;
+	      settings->log_mode   = tbx_false;
+	      settings->pause_mode = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("--d"))
 	    {
@@ -4076,9 +4103,12 @@ main(int    argc,
   dir_driver_exit();
   directory_exit();
 
-  DISP("Session cleaned");
-  getchar();
-  leonie_processes_cleanup();
+  if (application_settings->pause_mode || application_settings->gdb_mode)
+    {
+      DISP("Session cleaned");
+      getchar();
+      leonie_processes_cleanup();
+    }
 #endif // LEO_NO_SPAWN
   LOG_OUT();
 

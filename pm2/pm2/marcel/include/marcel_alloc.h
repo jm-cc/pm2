@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_alloc.h,v $
+Revision 1.3  2000/02/28 10:26:37  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:56:19  oaumage
 - ajout du Log CVS
 
@@ -44,7 +47,7 @@ ______________________________________________________________________________
 #ifndef MARCEL_ALLOC_EST_DEF
 #define MARCEL_ALLOC_EST_DEF
 
-#include <sys/isomalloc_archdep.h>
+#include "sys/isomalloc_archdep.h"
 
 void marcel_slot_init(void);
 

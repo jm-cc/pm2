@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.c,v $
+Revision 1.3  2000/02/28 10:25:06  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:57:18  oaumage
 - ajout du Log CVS
 
@@ -41,7 +44,7 @@ Revision 1.2  2000/01/31 15:57:18  oaumage
 ______________________________________________________________________________
 */
 
-#include <marcel.h>
+#include "marcel.h"
 
 int marcel_mutexattr_init(marcel_mutexattr_t *attr)
 {

@@ -22,14 +22,14 @@ f (void *arg)
   pm2_unpack_completion (SEND_CHEAPER, RECV_CHEAPER, &my_c);
   pm2_rawrpc_waitdata ();
 
-  tprintf ("Thread %d on node %d\n", my_name, my_node);
+  tprintf ("Thread %d started on node %d\n", my_name, my_node);
 
   initial = shvar;
   for (i = 0; i < NB_ITERATIONS; i++)
     shvar++;
   final = shvar;
 
-  tfprintf (stderr, "Thread %d from node %d finished on node %d: "
+  tprintf ("Thread %d from node %d finished on node %d: "
 	    "from %d to %d!\n",
 	    my_name, my_node, pm2_self (), initial, final);
   pm2_completion_signal (&my_c);
@@ -39,7 +39,7 @@ f (void *arg)
 static void
 service ()
 {
-  pm2_thread_create (f, NULL);
+  pm2_service_thread_create (f, NULL);
 }
 
 /********************* Cut here ********************/
@@ -50,8 +50,10 @@ pm2_main (int argc, char **argv)
 {
   int i;
   int thread_id = 0;
+  pm2_completion_t c;
 
   pm2_rawrpc_register (&service_id, service);
+  pm2_completion_init (&c, NULL, NULL);
 
   dsm_set_default_protocol (LI_HUDAK);
 
@@ -61,11 +63,7 @@ pm2_main (int argc, char **argv)
     {				/* master process */
       for (i = 1; i < NB_NODES; i++)
 	{
-	  pm2_completion_t c;
-	  pm2_completion_init (&c, NULL, NULL);
-
 	  thread_id++;
-
 	  pm2_rawrpc_begin (i, service_id, NULL);
 	  pm2_pack_int (SEND_CHEAPER, RECV_CHEAPER, &thread_id, 1);
 	  pm2_pack_completion (SEND_CHEAPER, RECV_CHEAPER, &c);

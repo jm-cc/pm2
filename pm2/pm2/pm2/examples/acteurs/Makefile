@@ -34,11 +34,19 @@
 #
 
 
+.PHONY: default all
 default: all
+
+INSTALL :=  ./
+SRC_DIR	:=  ./
 
 include ../../make/common.mak
 
-all: acteurs
+APP_CFLAGS  :=
+APP_LDFLAGS :=
+APP_LLIBS   :=
+
+all: $(GEN_BIN)/acteurs
 
 
 # mailbox :

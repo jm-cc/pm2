@@ -51,7 +51,7 @@ $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=default \
 
 for i in mono smp act actsmp; do
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-$i --modules="marcel" \
-	--ext=-$i --marcel=$i --builddir=marcel --all=opt
+	--marcel=$i --builddir=marcel-$i --all=opt
 done
 $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel --modules="marcel" --all=opt --marcel=mono
 

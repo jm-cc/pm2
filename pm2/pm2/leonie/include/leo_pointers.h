@@ -45,10 +45,11 @@ typedef struct s_leo_networks             *p_leo_networks_t;
 typedef struct s_leo_spawn_group          *p_leo_spawn_group_t;
 typedef struct s_leo_spawn_groups         *p_leo_spawn_groups_t;
 typedef struct s_leo_loader               *p_leo_loader_t;
-typedef struct s_leo_application_settings *p_leo_application_settings_t;
+typedef struct s_leo_settings             *p_leo_settings_t;
+typedef struct s_leonie                   *p_leonie_t;
 
 // .. Functions ........................................................ //
-typedef void (*p_leo_loader_func_t) (p_leo_application_settings_t,
+typedef void (*p_leo_loader_func_t) (p_leo_settings_t,
 				     p_ntbx_server_t,
 				     p_tbx_slist_t);
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.4  2000/03/01 16:45:22  oaumage
+- suppression des warnings en compilation  -g
+
 Revision 1.3  2000/01/31 15:56:23  oaumage
 - ajout du Log CVS
 
@@ -96,6 +99,7 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 
 #endif  /* __ACT__ */
 
+static __inline__ int testandset(int *spinlock) __attribute__ ((unused));
 static __inline__ int testandset(int *spinlock)
 {
   int ret;
@@ -250,6 +254,7 @@ static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 #endif
 }
 
+static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock) __attribute__ ((unused));
 static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 {
 #ifdef SMP

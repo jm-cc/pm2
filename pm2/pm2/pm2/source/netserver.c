@@ -58,7 +58,7 @@ extern int pm2_zero_halt;
 static any_t netserver(any_t arg)
 {
   unsigned tag;
-  
+
   marcel_cleanup_push(_netserver_term_func, marcel_self());
 
   while(!finished) {
@@ -111,9 +111,23 @@ void netserver_start(void)
 #endif
 
   marcel_attr_init(&attr);
+
+#ifdef ONE_VP_PER_NET_THREAD
+  {
+    unsigned vp = marcel_sched_add_vp();
+
+    pm2_thread_vp_is_reserved(vp);
+
+    marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp));
+
+    mdebug("Extra vp (%d) allocated for netserver thread\n", vp);
+  }
+#endif
+
 #ifdef REALTIME_NET_THREADS
   marcel_attr_setrealtime(&attr, MARCEL_CLASS_REALTIME);
 #endif
+
   marcel_attr_setstackaddr(&attr,
 			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);

@@ -1,0 +1,4 @@
+Provide: profile_linkmode
+Provide: static_libs
+Provide: dynamic_libs
+Conflict: profile_linkmode

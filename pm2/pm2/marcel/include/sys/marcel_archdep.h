@@ -70,6 +70,7 @@ static __inline__ void SCHED_YIELD(void)
 
 /* Solaris sparc */
 #if defined(SOLARIS_SYS) && defined(SPARC_ARCH)
+#include <sys/stack.h>
 #define TOP_STACK_FREE_AREA     (WINDOWSIZE+128)
 #define SP_FIELD(buf)           ((buf)[1])
 #endif

@@ -117,7 +117,8 @@ static void mpi_io_group(marcel_pollid_t id)
 }
 
 static void *mpi_io_fast_poll(marcel_pollid_t id,
-			      any_t arg)
+			      any_t arg,
+			      boolean first_call)
 {
   mpi_io_arg_t *myarg = (mpi_io_arg_t *)arg;
   int flag;

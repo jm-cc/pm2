@@ -2215,20 +2215,20 @@ static
 void
 exit_session(void)
 {
-  p_ntbx_client_t *client_array = NULL;
-  int              nb_clients   =    0;
-  int              i            =    0;
+  p_ntbx_client_t  *client_array = NULL;
+  int               nb_clients   =    0;
+  int               i            =    0;
   
   LOG_IN();
-  nb_clients   = tbx_slist_get_length(directory->process_slist);
-  client_array = TBX_CALLOC(nb_clients, sizeof(ntbx_client_t));
+  nb_clients    = tbx_slist_get_length(directory->process_slist);
+  client_array  = TBX_CALLOC(nb_clients, sizeof(ntbx_client_t));
 
   tbx_slist_ref_to_head(directory->process_slist);
   do
     {
-      p_ntbx_process_t         process          = NULL;
-      p_leo_process_specific_t process_specific = NULL;
-      p_ntbx_client_t          client           = NULL;
+      p_ntbx_process_t          process          = NULL;
+      p_leo_process_specific_t  process_specific = NULL;
+      p_ntbx_client_t           client           = NULL;
       
       process           = tbx_slist_ref_get(directory->process_slist);
       process_specific  = process->specific;
@@ -2249,10 +2249,11 @@ exit_session(void)
 	  
 	  while (status && (j < nb_clients))
 	    {
-	      p_ntbx_client_t client      = NULL;
-	      int             read_status = ntbx_failure;
-	      int             data        = 0;
-	      ntbx_pack_buffer_t pack_buffer;
+	      
+	      p_ntbx_client_t          client           = NULL;
+	      int                      read_status      = ntbx_failure;
+	      int                      data             = 0;
+	      ntbx_pack_buffer_t       pack_buffer;
 
 	      client = client_array[j];
 	      TRACE("status = %d, nb_clients = %d, j = %d", status,
@@ -2268,14 +2269,33 @@ exit_session(void)
 	      if (read_status == -1)
 		FAILURE("control link failure");
 
-	      data   = ntbx_unpack_int(&pack_buffer);
-	      if (data != 1)
-		FAILURE("synchronization error");
+	      data = ntbx_unpack_int(&pack_buffer);
+
+	      switch (data)
+		{
+		case leo_command_end:
+		  {
+		    status--;
+		    nb_clients--;
+		    memmove(client_array + j, client_array + j + 1,
+			    (nb_clients - j) * sizeof(p_ntbx_client_t));
+		  }
+		  break;
+		case leo_command_print:
+		  {
+		    char *string = NULL;
+		    
+		    status--;
+		    string = leo_receive_string(client);
+		    DISP("%s", string);
+		    free(string);
+		    string = NULL;
+		  }
+		  break;
+		default:
+		  FAILURE("synchronization error");
+		}
 	      
-	      status--;
-	      nb_clients--;
-	      memmove(client_array + j, client_array + j + 1,
-		      (nb_clients - j) * sizeof(p_ntbx_client_t));
 	    }
 	  
 	  if (status)

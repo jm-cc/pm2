@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.4  2000/01/10 10:19:42  oaumage
+- mad_macros.h: modification de la macro de commande de trace
+
 Revision 1.3  1999/12/15 17:31:26  oaumage
 Ajout de la commande de logging de CVS
 
@@ -97,6 +100,7 @@ ______________________________________________________________________________
 #include <mad_channel_interface.h>
 
 /* connection interfaces */
+
 #ifdef DRV_TCP
 #include <connection_interfaces/mad_tcp.h>
 #endif /* DRV_TCP */

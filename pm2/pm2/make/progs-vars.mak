@@ -82,14 +82,9 @@ PRG_PIC_TO_S     =  $(PRG_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
 PRG_GEN_C_TO_H   =  $(PRG_GEN_INC)/$(patsubst %.c,%.h,$(notdir $@))
 PRG_GEN_H_TO_C   =  $(PRG_GEN_INC)/$(patsubst %.h,%.c,$(notdir $@))
 
-COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(MAKEFILE_FILE) 
+COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(MAKEFILE_FILE) $(PRG_STAMP_FILES) 
 
-$(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
-	@echo "Generating $@"
-	@$(PM2_GEN_MAK) progs
+#$(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
+#	@echo "Generating $@"
+#	@$(PM2_GEN_MAK) progs
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
-$(PM2_MAK_DIR)/progs-libs.mak: $(PRG_STAMP_FLAVOR)
-	@mkdir -p `dirname $@`
-	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@
-endif

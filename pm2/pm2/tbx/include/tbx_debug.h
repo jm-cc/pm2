@@ -71,7 +71,7 @@ void debug_setup_default(debug_type_t*, debug_action_t, int);
 #ifdef PM2DEBUG
 
 #ifdef MARCEL
-extern int pm2debug_marcel_launched;
+extern volatile int pm2debug_marcel_launched;
 #endif
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);

@@ -45,27 +45,46 @@ marcel_sem_t main_sem;
 
 int *les_modules, nb_modules;
 
+dsm_mutex_t L;
+
 BEGIN_DSM_DATA
-DSM_NEWPAGE
 atomic_t a = {0};
-int toto_on_page_0 = 1;
-int tata_on_page_0 = 2;
 DSM_NEWPAGE
-int titi_on_page_1 = 3;
+int toto1 = 0;
+DSM_NEWPAGE
+int toto2 = 0;
+DSM_NEWPAGE
+int toto3 = 0;
+DSM_NEWPAGE
+int toto4 = 0;
+DSM_NEWPAGE
+int toto5 = 0;
+DSM_NEWPAGE
+int toto6 = 0;
+DSM_NEWPAGE
+int toto7 = 0;
+DSM_NEWPAGE
+int toto8 = 0;
+DSM_NEWPAGE
+int toto9 = 0;
 END_DSM_DATA
 
 
 void f()
 {
-  int i, n = 100000;
+  int i, n = 10;
 
   for (i = 0; i < n; i++) {
-    atomic_inc(&a);
+    //    atomic_inc(&a);
     //marcel_delay(20);
+    dsm_mutex_lock(&L);
+    toto1++;
+    dsm_mutex_unlock(&L);
   }
 }
 
 BEGIN_SERVICE(TEST_DSM)
+     tfprintf(stderr,"I am %p created on node %d\n",marcel_self(),dsm_self()); 
      f();
      pm2_quick_async_rpc(les_modules[0],DSM_V,NULL,NULL);
 END_SERVICE(TEST_DSM)
@@ -96,25 +115,36 @@ int pm2_main(int argc, char **argv)
 
   marcel_sem_init(&main_sem, 0);
 
-  // pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
-
+  //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
   pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
+
+  pm2_set_dsm_page_distribution(DSM_BLOCK, 0);
+
+  dsm_mutex_init(&L, NULL);
 
   pm2_init(&argc, argv, atoi(argv[1]), &les_modules, &nb_modules);
 
+  dsm_display_page_ownership();
   if(pm2_self() == les_modules[0]) { /* master process */
 
-    /*  *((int *)0xdeadbeef) = 12; */
-    TIMING_EVENT("begin");
     for (j=0; j< nb_modules; j++)
-	for (i=0; i< atoi(argv[2]) ; i++) {
-	  pm2_async_rpc(les_modules[j], TEST_DSM, NULL, NULL);
-	}
-
+      for (i=0; i< atoi(argv[2]) ; i++) {
+	pm2_async_rpc(les_modules[j], TEST_DSM, NULL, NULL);
+      }
+    
     for (i = 0 ; i < atoi(argv[1]) * atoi(argv[2]); i++)
       marcel_sem_P(&main_sem);
-    TIMING_EVENT("end");
-    tfprintf(stderr, "a=%d\n", a.counter);
+
+    tfprintf(stderr, "toto1=%d\n", toto1);
+    //    tfprintf(stderr, "a=%d\n", a.counter);
+    /*    unsigned int t[10];
+    display_bitmap(0,80,t);
+    set_bits_to_1(31, 10, t);
+    display_bitmap(0,80,t);
+    clear_bitmap(t+1,8);
+    display_bitmap(0,80,t);
+    fprintf(stderr, "The bitmap %s\n", bitmap_is_empty(t,320)?"is empty":"is not empty");
+    */
     pm2_kill_modules(les_modules, nb_modules);
   }
 

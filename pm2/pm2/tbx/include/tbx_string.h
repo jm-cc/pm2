@@ -1,3 +1,10 @@
+/*! \file tbx_string.h
+ *  \brief TBX string object data structures.
+ *
+ *  This file contains the TBX string object data structures.
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

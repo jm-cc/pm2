@@ -31,6 +31,17 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: mad_mpi.c,v $
+Revision 1.2  2000/01/04 09:18:49  oaumage
+- ajout de la commande de log de CVS
+- phase d'initialisation `external-spawn' terminee pour mad_mpi.c
+- recuperation des noms de machines dans la phase
+  d'initialisation `external-spawn' de mad_sbp.c
+
+
+______________________________________________________________________________
 */
 
 /*
@@ -38,6 +49,7 @@
  * =========
  */
 /* #define DEBUG */
+/* #define USE_MARCEL_POLL */
 
 /*
  * headerfiles
@@ -51,15 +63,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h> /* for `gethostname' */
+#include <netdb.h>  /* for `MAXHOSTNAMELEN' */
 
 /* protocol specific header files */
-
+#include <mpi.h>
 
 /*
  * macros and constants definition
  * -------------------------------
  */
-
+#define MAD_MPI_SERVICE_TAG 0
 
 /*
  * type definition
@@ -420,6 +434,7 @@ mad_mpi_external_spawn_init(p_mad_adapter_t spawn_adapter,
 {
   LOG_IN();
   /* External spawn initialization */
+  MPI_Init(argc, &argv);
   LOG_OUT();
 }
 
@@ -433,8 +448,8 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter,
   
   LOG_IN();
   /* Code to get configuration information from the external spawn adapter */
-  configuration->size          = ??? ;
-  configuration->local_host_id = ??? ;
+  MPI_Comm_rank(MPI_COMM_WORLD, &configuration->local_host_id);
+  MPI_Comm_size(MPI_COMM_WORLD, &configuration->size);
   configuration->host_name     =
     malloc(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
@@ -443,9 +458,9 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter,
        host_id < configuration->size;
        host_id++)
     {
-      configuration->host_name[host_id] = malloc(???);
+      configuration->host_name[host_id] = malloc(MAXHOSTNAMELEN + 1);
       CTRL_ALLOC(configuration->host_name[host_id]);
-      ???
+      gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
     }
   
   LOG_OUT();
@@ -456,8 +471,22 @@ mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter,
 			       mad_host_id_t     remote_host_id,
 			       char             *parameter)
 {  
+  int len = strlen(parameter);
+
   LOG_IN();
   /* Code to send a string from the master node to one slave node */
+  MPI_Send(&len,
+	   1,
+	   MPI_INT,
+	   remote_node_id,
+	   MAD_MPI_SERVICE_TAG,
+	   MPI_COMM_WORLD);
+  MPI_Send(parameter,
+	   len + 1,
+	   MPI_CHAR,
+	   remote_node_id,
+	   MAD_MPI_SERVICE_TAG,
+	   MPI_COMM_WORLD);
   LOG_OUT();
 }
 
@@ -465,7 +494,22 @@ void
 mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter,
 				  char            **parameter)
 {
+  int len;
+  
   LOG_IN();
   /* Code to receive a string from the master node */
+  MPI_Recv(&len,
+	   1,
+	   MPI_INT,
+	   0,
+	   MAD_MPI_SERVICE_TAG,
+	   MPI_COMM_WORLD);
+  *parameter = malloc(len);
+  MPI_Send(*parameter,
+	   len + 1,
+	   MPI_CHAR,
+	   0,
+	   MAD_MPI_SERVICE_TAG,
+	   MPI_COMM_WORLD);
   LOG_OUT();
 }

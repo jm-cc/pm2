@@ -470,7 +470,7 @@ show_flavor_text() { # check
     echo
     if [ ! -z "$1" ]; then
 	do_cmdline 1
-	echo "Checking dependances in the configuration..."
+	echo "Checking dependancies in the configuration..."
 	if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
 	    echo "All seems good"
 	    echo
@@ -487,7 +487,7 @@ show_flavor_dialog() { # check init_text last_text yesno
     if [ ! -z "$1" ]; then
 	do_cmdline 1
 	( 
-	    echo "Checking dependances in the configuration..."
+	    echo "Checking dependancies in the configuration..."
 	    if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
 		echo "All seems good"
 	    fi
@@ -758,7 +758,7 @@ do_create() {
     get_flavor 0 "Choose a name for the new flavor"
     name=$flavor
     flavor="$file"
-    get_flavor 0 "Choose a model flavor if you want" "[No model]"
+    get_flavor 0 "Choose a model flavor if you want" "[no_model]"
     [ ! -z "$flavor" ] && load_flavor $flavor
     if [ "$fl_builddir" = "$flavor" ]; then
 	fl_builddir=$name

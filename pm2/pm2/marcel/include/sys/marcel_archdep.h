@@ -75,10 +75,10 @@ static __inline__ void SCHED_YIELD(void)
 #define SP_FIELD(buf)           ((buf)[1])
 #endif
 
-/* DEC Alpha farm */
-#if defined(OSF_SYS) && defined(ALPHA_ARCH)
+/* Alpha */
+#if defined(ALPHA_ARCH)
 #define TOP_STACK_FREE_AREA     128
-#define SP_FIELD(buf)           ((buf)[27])
+#define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
 #endif
 
 /* Cray T3E */
@@ -167,8 +167,16 @@ static __inline__ long get_sp()
 /* ******************* Alpha ******************* */
 
 #if defined(ALPHA_ARCH)
-extern void set_sp(long);
-extern void get_sp(long *);
+static __inline__ long get_sp(void)
+{
+  register long sp;
+
+  __asm__ __volatile__("addq $sp, $31, %0" : "=r" (sp));
+  return sp;
+}
+#define set_sp(val) \
+  __asm__ __volatile__("addq %0, $31, $sp" \
+                       : : "r" (val) : "memory" )
 #endif
 
 

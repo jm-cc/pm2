@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.24  2000/03/27 08:50:55  oaumage
+- pre-support decoupage de groupes
+- correction au niveau du support du demarrage manuel
+
 Revision 1.23  2000/03/15 16:59:16  oaumage
 - support APPLICATION_SPAWN
 
@@ -415,16 +419,16 @@ mad_generate_url(p_mad_madeleine_t madeleine)
   char             *arg          = NULL;
   char             *host_name    = NULL;
   char             *cwd          = NULL;
-  char             *program_name = NULL;
-  char             *realp        = NULL;
-  const char       *exec_name     = NULL;
+  /* char             *program_name = NULL;
+     char             *realp        = NULL;
+     const char       *exec_name     = NULL; */
   mad_adapter_id_t  ad;
   int               l;
   
   LOG_IN();
-  realp = TBX_MALLOC(PATH_MAX);
-  CTRL_ALLOC(realp);  
-  host_name = TBX_MALLOC(MAXHOSTNAMELEN);
+  /* realp = TBX_MALLOC(PATH_MAX);
+     CTRL_ALLOC(realp);  */
+  host_name = TBX_MALLOC(MAX_HOSTNAME_LEN);
   CTRL_ALLOC(host_name);  
   url = TBX_MALLOC(MAX_ARG_STR_LEN);
   CTRL_ALLOC(url);
@@ -433,7 +437,7 @@ mad_generate_url(p_mad_madeleine_t madeleine)
   arg = TBX_MALLOC(MAX_ARG_LEN);
   CTRL_ALLOC(arg);
 
-  SYSCALL(gethostname(host_name, MAXHOSTNAMELEN));
+  SYSCALL(gethostname(host_name, MAX_HOSTNAME_LEN));
 
   while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
     {    
@@ -458,7 +462,7 @@ mad_generate_url(p_mad_madeleine_t madeleine)
   l = strlen(cgi_string);
   l--;
   cgi_string[l] = 0;
-
+  /*
   exec_name = getexecname();
   if (exec_name[0] != '/')
     {
@@ -477,11 +481,16 @@ mad_generate_url(p_mad_madeleine_t madeleine)
 	  exec_name,
 	  program_name,
 	  cgi_string);
+  */
+
+  sprintf(url, "x-nexus://%s:mad2/?%s",
+	  host_name,
+	  cgi_string);
 
   TBX_FREE(host_name);
   TBX_FREE(cgi_string);
   TBX_FREE(arg);
-  TBX_FREE(realp);
+  /* TBX_FREE(realp); */
   LOG_OUT();
   return url;
 }
@@ -1188,10 +1197,10 @@ mad_init(
 	  int   i = 1;
 	  char *host_name    = NULL;
 	  
-	  host_name = TBX_MALLOC(MAXHOSTNAMELEN);
+	  host_name = TBX_MALLOC(MAX_HOSTNAME_LEN);
 	  CTRL_ALLOC(host_name);  
 
-	  SYSCALL(gethostname(host_name, MAXHOSTNAMELEN));
+	  SYSCALL(gethostname(host_name, MAX_HOSTNAME_LEN));
 	  
 	  while(i < configuration->size)
 	    {

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.10  2000/03/08 17:19:31  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.9  2000/03/02 14:51:19  oaumage
 - indication du nom du protocole dans la structure driver
 
@@ -150,7 +155,7 @@ typedef struct
 
 typedef struct
 {
-  PM2_SHARED;
+  TBX_SHARED;
   mad_sbp_key_t            input_key;
   mad_sbp_key_t            output_key;
   int                      nb_in_buffers;
@@ -210,9 +215,9 @@ mad_sbp_put_full_frame(p_mad_sbp_frame_t frame,
 		       mad_sbp_key_t     key)
 {
   LOG_IN();
-  PM2_LOCK();
+  TBX_LOCK();
   returnfullbuffer(key, (unsigned long)frame);
-  PM2_UNLOCK();
+  TBX_UNLOCK();
   LOG_OUT();
 }
 
@@ -221,9 +226,9 @@ mad_sbp_put_empty_frame(p_mad_sbp_frame_t frame,
 			mad_sbp_key_t     key)
 {
   LOG_IN();
-  PM2_LOCK();
+  TBX_LOCK();
   returnemptybuffer(key, (unsigned long)frame);
-  PM2_UNLOCK();
+  TBX_UNLOCK();
   LOG_OUT();
 }
 
@@ -243,7 +248,7 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
   
   while (tbx_true)
     {
-      PM2_LOCK_SHARED(adapter_specific);
+      TBX_LOCK_SHARED(adapter_specific);
       if ((element = connection_specific->incoming_frames_head))
 	{
 	  p_mad_sbp_frame_t frame = element->frame;
@@ -260,7 +265,7 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
 	      mad_free(driver_specific->list_element_memory, element);
 	    }
 
-	  PM2_UNLOCK_SHARED(adapter_specific);
+	  TBX_UNLOCK_SHARED(adapter_specific);
 	  LOG_OUT();
 	  return frame;
 	}
@@ -276,7 +281,7 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
 	  p_mad_sbp_list_element_t        element;
 	  
 	  frame        = mad_sbp_get_full_frame(adapter_specific->input_key);
-	  PM2_LOCK_SHARED(adapter);
+	  TBX_LOCK_SHARED(adapter);
 	  origin       = frame->sbp_header.cookie.origin;
 	  channel_id   = frame->mad_header.channel_id;
 	  message_type = frame->mad_header.message_type;
@@ -300,8 +305,8 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
 	  
 	      if ((!probe_only) && (tmp_connection == connection))
 		{
-		  PM2_UNLOCK_SHARED(adapter);
-		  PM2_UNLOCK_SHARED(adapter_specific);
+		  TBX_UNLOCK_SHARED(adapter);
+		  TBX_UNLOCK_SHARED(adapter_specific);
 		  LOG_OUT();
 		  return frame;
 		}
@@ -342,15 +347,15 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
 	    }
 	}
 
-      PM2_UNLOCK_SHARED(adapter);
-      PM2_UNLOCK_SHARED(adapter_specific);
+      TBX_UNLOCK_SHARED(adapter);
+      TBX_UNLOCK_SHARED(adapter_specific);
       if (probe_only)
 	{
 	  LOG_OUT();
 	  return NULL;
 	}
 
-      PM2_YIELD();
+      TBX_YIELD();
     }
 }
 
@@ -465,7 +470,7 @@ mad_sbp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->unknown_frames_head = NULL;
   adapter_specific->unknown_frames_tail = NULL;
   adapter->specific = adapter_specific;
-  PM2_INIT_SHARED(adapter_specific);
+  TBX_INIT_SHARED(adapter_specific);
 
   adapter->parameter = malloc(10);
   CTRL_ALLOC(adapter->parameter);
@@ -701,14 +706,14 @@ mad_sbp_receive_message(p_mad_channel_t channel)
   p_mad_sbp_connection_specific_t connection_specific;
 
   LOG_IN();
-#ifndef PM2
+#ifndef MARCEL
   if (configuration->size == 2)
     {
       connection =
 	&(channel->input_connection[1 - configuration->local_host_id]);
     }
   else
-#endif /* PM2 */
+#endif /* MARCEL */
     {
       static ntbx_host_id_t host_id = 0;
 
@@ -724,7 +729,7 @@ mad_sbp_receive_message(p_mad_channel_t channel)
 	    }
 	  else
 	    {
-	      PM2_YIELD();
+	      TBX_YIELD();
 	    }
 	  
 	  host_id = (host_id + 1) % configuration->size;
@@ -951,10 +956,10 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
   int sbp_local_host_id;
   
   LOG_IN();
-  PM2_LOCK();
-#ifdef PM2  
+  TBX_LOCK();
+#ifdef MARCEL  
   stop_timer();
-#endif /* PM2 */
+#endif /* MARCEL */
 
   sbp_initialize(0, /* !verbose */
 		 MAD_SBP_HEADER_SIZE + MAD_SBP_PAYLOAD_SIZE, 
@@ -967,10 +972,10 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
 		 &(spawn_adapter_specific->input_key),
 		 &(spawn_adapter_specific->output_key));
 
-#ifdef PM2
+#ifdef MARCEL
   marcel_settimeslice(20000);
-#endif /* PM2 */
-  PM2_UNLOCK();
+#endif /* MARCEL */
+  TBX_UNLOCK();
 
   configuration->size          = sbp_configuration_size;
   configuration->local_host_id = sbp_local_host_id;

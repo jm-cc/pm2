@@ -104,8 +104,9 @@ mad_tcp_write(int            sock,
       else
 	FAILURE("connection closed");
 
-      if (mad_more_data(buffer))
-              TBX_YIELD();
+#ifdef MARCEL
+      if (mad_more_data(buffer)) TBX_YIELD();
+#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -132,7 +133,9 @@ mad_tcp_read(int            sock,
       else
 	FAILURE("connection closed");
 
+#ifdef MARCEL
       if (!mad_buffer_full(buffer)) TBX_YIELD();
+#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -172,8 +175,9 @@ mad_tcp_writev(int           sock,
       else
 	FAILURE("connection closed");
 
-      if (count)
-              TBX_YIELD();
+#ifdef MARCEL
+      if (count) TBX_YIELD();
+#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -213,15 +217,16 @@ mad_tcp_readv(int           sock,
       else
 	FAILURE("connection closed");
 
-      if (count)
-              TBX_YIELD();
+#ifdef MARCEL
+      if (count) TBX_YIELD();
+#endif // MARCEL
     }
   LOG_OUT();
 }
 
 
 #undef DEBUG_NAME
-#define DEBUG_NAME mad4
+#define DEBUG_NAME mad3
 
 
 /*
@@ -565,9 +570,26 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	{
 	  channel_specific->active_fds = channel_specific->read_fds;
 
+#ifdef MARCEL
+#ifdef USE_MARCEL_POLL
 	  status = marcel_select(channel_specific->max_fds + 1,
 				 &channel_specific->active_fds,
 				 NULL);
+
+#else // USE_MARCEL_POLL
+	  status = tselect(channel_specific->max_fds + 1,
+			   &channel_specific->active_fds,
+			   NULL, NULL);
+	  if (status <= 0)
+	    {
+	      TBX_YIELD();
+	    }
+#endif // USE_MARCEL_POLL
+#else // MARCEL
+	  status = select(channel_specific->max_fds + 1,
+			  &channel_specific->active_fds,
+			  NULL, NULL, NULL);
+#endif // MARCEL
 
 	  if ((status == -1) && (errno != EINTR))
 	    {

@@ -144,8 +144,9 @@ mad_rand_write(int            sock,
           else
             FAILURE("connection closed");
 
-          if (mad_more_data(buffer))
-                  TBX_YIELD();
+#ifdef MARCEL
+          if (mad_more_data(buffer)) TBX_YIELD();
+#endif // MARCEL
         }
     }
   else
@@ -186,8 +187,9 @@ mad_rand_read(int            sock,
           else
             FAILURE("connection closed");
 
-          if (!mad_buffer_full(buffer))
-                  TBX_YIELD();
+#ifdef MARCEL
+          if (!mad_buffer_full(buffer)) TBX_YIELD();
+#endif // MARCEL
         }
     }
   else
@@ -565,9 +567,26 @@ mad_rand_receive_message(p_mad_channel_t channel)
 	{
 	  channel_specific->active_fds = channel_specific->read_fds;
 
+#ifdef MARCEL
+#ifdef USE_MARCEL_POLL
 	  status = marcel_select(channel_specific->max_fds + 1,
 				 &channel_specific->active_fds,
 				 NULL);
+
+#else // USE_MARCEL_POLL
+	  status = tselect(channel_specific->max_fds + 1,
+			   &channel_specific->active_fds,
+			   NULL, NULL);
+	  if (status <= 0)
+	    {
+	      TBX_YIELD();
+	    }
+#endif // USE_MARCEL_POLL
+#else // MARCEL
+	  status = select(channel_specific->max_fds + 1,
+			  &channel_specific->active_fds,
+			  NULL, NULL, NULL);
+#endif // MARCEL
 
 	  if ((status == -1) && (errno != EINTR))
 	    {

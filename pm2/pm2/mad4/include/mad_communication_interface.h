@@ -82,6 +82,7 @@ mad_unpack_ext(p_mad_connection_t   connection,
                mad_send_mode_t        send_mode,
                mad_receive_mode_t     receive_mode);
 
+#ifdef MARCEL
 void
 mad_forward_memory_manager_init(int    argc,
 				char **argv);
@@ -301,5 +302,7 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 
 void
 mad_mux_add_named_sub_channels(p_mad_channel_t xchannel);
+
+#endif // MARCEL
 
 #endif /* MAD_COMMUNICATION_INTERFACE_H */

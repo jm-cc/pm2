@@ -17,14 +17,16 @@
  * Mad_sisci.c
  * ===========
  */
+//#define USE_MARCEL_POLL
 //#define OLD_SISCI
 #define MPICH_SMP
 #define MAD_SISCI_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
 //#undef PM2DEBUG
+#ifdef MARCEL
 #include "marcel.h"
-
+#endif
 #include "madeleine.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -164,7 +166,9 @@ typedef struct s_mad_sisci_remote_segment
 typedef struct s_mad_sisci_driver_specific
 {
   int nb_adapter;
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
   marcel_pollid_t mad_sisci_pollid;
+#endif
 } mad_sisci_driver_specific_t, *p_mad_sisci_driver_specific_t;
 
 typedef struct s_mad_sisci_adapter_specific
@@ -205,11 +209,13 @@ typedef union u_mad_sisci_poll_data
   mad_sisci_poll_flag_data_t    flag_op;
 } mad_sisci_poll_data_t, *p_mad_sisci_poll_data_t;
 
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
 typedef struct s_mad_sisci_marcel_poll_cell_arg
 {
   mad_sisci_poll_op_t   op;
   mad_sisci_poll_data_t data;
 } mad_sisci_marcel_poll_cell_arg_t, *p_mad_sisci_marcel_poll_cell_arg_t;
+#endif
 
 typedef struct s_mad_sisci_connection_specific
 {
@@ -256,156 +262,6 @@ mad_sisci_receive_sci_buffer_group_3(p_mad_link_t           lnk,
 
 static  char tmp[2048] __attribute__ ((aligned (4096)));
 
-
-static
-inline
-void
-cpy4(const void *src,
-     volatile void *dest,
-     unsigned long nbytes)
-{
-
-  /*
-   *
-
-   We should use movntq instead of movq as store but it seems not to be available on PII
-
-   *
-   */
-
-  __asm__ __volatile__(
-    "    movl %0, %%esi \n\t"
-    "    movl %1, %%edi \n\t"
-    "    movl %2, %%ecx \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    shrl $11, %%ebx \n\t"
-    "    jz 4f \n\t"
-
-    "0: \n\t"
-    "    pushl %%edi \n\t"
-    "    mov %3, %%edi \n\t"
-    "    mov $32, %%ecx \n\t"
-
-    "1: \n\t"
-#if MAD_SISCI_MEM_PREFETCH
-    "    prefetchnta 64(%%esi) \n\t"
-    "    prefetchnta 96(%%esi) \n\t"
-#endif
-    "    movq  0(%%esi), %%mm1 \n\t"
-    "    movq  8(%%esi), %%mm2 \n\t"
-    "    movq 16(%%esi), %%mm3 \n\t"
-    "    movq 24(%%esi), %%mm4 \n\t"
-    "    movq 32(%%esi), %%mm5 \n\t"
-    "    movq 40(%%esi), %%mm6 \n\t"
-    "    movq 48(%%esi), %%mm7 \n\t"
-    "    movq 56(%%esi), %%mm0 \n\t"
-
-    "    movq %%mm1,  0(%%edi) \n\t"
-    "    movq %%mm2,  8(%%edi) \n\t"
-    "    movq %%mm3, 16(%%edi) \n\t"
-    "    movq %%mm4, 24(%%edi) \n\t"
-    "    movq %%mm5, 32(%%edi) \n\t"
-    "    movq %%mm6, 40(%%edi) \n\t"
-    "    movq %%mm7, 48(%%edi) \n\t"
-    "    movq %%mm0, 56(%%edi) \n\t"
-
-    "    addl $64, %%esi \n\t"
-    "    addl $64, %%edi \n\t"
-    "    decl %%ecx \n\t"
-    "    jnz 1b \n\t"
-
-    "    popl %%edi \n\t"
-    "    pushl %%esi \n\t"
-    "    mov %3, %%esi \n\t"
-    "    mov $32, %%ecx \n\t"
-
-    "2: \n\t"
-#if MAD_SISCI_MEM_PREFETCH
-    "    prefetchnta 64(%%esi) \n\t"
-    "    prefetchnta 96(%%esi) \n\t"
-#endif
-    "    movq  0(%%esi), %%mm1 \n\t"
-    "    movq  8(%%esi), %%mm2 \n\t"
-    "    movq 16(%%esi), %%mm3 \n\t"
-    "    movq 24(%%esi), %%mm4 \n\t"
-    "    movq 32(%%esi), %%mm5 \n\t"
-    "    movq 40(%%esi), %%mm6 \n\t"
-    "    movq 48(%%esi), %%mm7 \n\t"
-    "    movq 56(%%esi), %%mm0 \n\t"
-#if MAD_SISCI_NT_MOVE
-    "    movntq %%mm1,  0(%%edi) \n\t"
-    "    movntq %%mm2,  8(%%edi) \n\t"
-    "    movntq %%mm3, 16(%%edi) \n\t"
-    "    movntq %%mm4, 24(%%edi) \n\t"
-    "    movntq %%mm5, 32(%%edi) \n\t"
-    "    movntq %%mm6, 40(%%edi) \n\t"
-    "    movntq %%mm7, 48(%%edi) \n\t"
-    "    movntq %%mm0, 56(%%edi) \n\t"
-#else
-    "    movq %%mm1,  0(%%edi) \n\t"
-    "    movq %%mm2,  8(%%edi) \n\t"
-    "    movq %%mm3, 16(%%edi) \n\t"
-    "    movq %%mm4, 24(%%edi) \n\t"
-    "    movq %%mm5, 32(%%edi) \n\t"
-    "    movq %%mm6, 40(%%edi) \n\t"
-    "    movq %%mm7, 48(%%edi) \n\t"
-    "    movq %%mm0, 56(%%edi) \n\t"
-#endif
-    "    addl $64, %%esi \n\t"
-    "    addl $64, %%edi \n\t"
-    "    decl %%ecx \n\t"
-    "    jnz 2b \n\t"
-
-    "    popl %%esi \n\t"
-    "    decl %%ebx \n\t"
-    "    jnz 0b \n\t"
-
-    "    movl %2, %%ecx \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    movl $2047, %%eax \n\t"
-    "    andl %%eax, %%ecx \n\t"
-    "4: \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    shrl $6, %%ebx \n\t"
-    "    jz 5f \n\t"
-
-    "3: \n\t"
-#if MAD_SISCI_MEM_PREFETCH
-    "    prefetchnta 64(%%esi) \n\t"
-    "    prefetchnta 96(%%esi) \n\t"
-#endif
-    "    movq  0(%%esi), %%mm1 \n\t"
-    "    movq  8(%%esi), %%mm2 \n\t"
-    "    movq 16(%%esi), %%mm3 \n\t"
-    "    movq 24(%%esi), %%mm4 \n\t"
-    "    movq 32(%%esi), %%mm5 \n\t"
-    "    movq 40(%%esi), %%mm6 \n\t"
-    "    movq 48(%%esi), %%mm7 \n\t"
-    "    movq 56(%%esi), %%mm0 \n\t"
-    "    movq %%mm1,  0(%%edi) \n\t"
-    "    movq %%mm2,  8(%%edi) \n\t"
-    "    movq %%mm3, 16(%%edi) \n\t"
-    "    movq %%mm4, 24(%%edi) \n\t"
-    "    movq %%mm5, 32(%%edi) \n\t"
-    "    movq %%mm6, 40(%%edi) \n\t"
-    "    movq %%mm7, 48(%%edi) \n\t"
-    "    movq %%mm0, 56(%%edi) \n\t"
-    "    addl $64, %%esi \n\t"
-    "    addl $64, %%edi \n\t"
-    "    decl %%ebx \n\t"
-    "    jnz 3b \n\t"
-
-    "5:  \n\t"
-    "    emms \n\t"
-    "    movl %2, %%ecx \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    movl $63, %%eax \n\t"
-    "    andl %%eax, %%ecx \n\t"
-    "    cld \n\t"
-    "    rep movsb \n\t"
-    : : "m" (src), "m" (dest), "m" (nbytes), "p" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
-  //: : "m" (src), "m" (dest), "m" (nbytes), "m" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
-}
 
 static void
 mad_sisci_display_error(sci_error_t error)
@@ -646,6 +502,7 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
 
 /* For marcel polling
  * --------------------- */
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
 static void
 mad_sisci_marcel_group(marcel_pollid_t id)
 {
@@ -797,6 +654,7 @@ mad_sisci_wait_for(p_mad_link_t         link,
 
 }
 
+#endif // MARCEL && USE_MARCEL_POLL
 
 /*
  * exported functions
@@ -860,11 +718,13 @@ mad_sisci_driver_init(p_mad_driver_t driver)
   driver_specific  = TBX_MALLOC(sizeof(mad_sisci_driver_specific_t));
   driver->specific = driver_specific;
 
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
   driver_specific->mad_sisci_pollid =
     marcel_pollid_create(mad_sisci_marcel_group,
 			 mad_sisci_marcel_poll,
 			 mad_sisci_marcel_fast_poll,
 			 MAD_SISCI_POLLING_MODE);
+#endif // MARCEL && USE_MARCEL_POLL
   LOG_OUT();
 }
 
@@ -1110,6 +970,11 @@ mad_sisci_connect(p_mad_connection_t   out,
 	    {
 	      mad_sisci_display_error(sisci_error);
 	      LOG("mad_sisci: could not connect, sleeping ...");
+#ifdef MARCEL
+	    //  marcel_delay(1000);
+#else // MARCEL
+	    //  sleep(1);
+#endif // MARCEL
 	      LOG("mad_sisci: could not connect, waking up");
 	    }
 	}
@@ -1214,6 +1079,11 @@ mad_sisci_accept(p_mad_connection_t   in,
 	    {
 	      mad_sisci_display_error(sisci_error);
 	      LOG("mad_sisci: could not connect, sleeping ...");
+#ifdef MARCEL
+	     // marcel_delay(1000);
+#else // MARCEL
+	     // sleep(1);
+#endif // MARCEL
 	      LOG("mad_sisci: could not connect, waking up");
 	    }
 	}
@@ -1422,6 +1292,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   max              = channel_specific->max;
   next             = channel_specific->next;
 
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
   {
     p_mad_sisci_driver_specific_t    driver_specific = NULL;
     mad_sisci_marcel_poll_cell_arg_t arg;
@@ -1436,10 +1307,52 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 
     in = arg.data.channel_op.connection;
   }
+#else // MARCEL && USE_MARCEL_POLL
+  while (tbx_true)
+    {
+      int i = 0;
+
+
+      i = max;
+
+
+      while (i--)
+	{
+	  next = (next + 1) % max;
+	  in   = tbx_darray_get(in_darray, next);
+
+	  if (in)
+	    {
+	      p_mad_sisci_connection_specific_t in_specific = NULL;
+
+	      in_specific = in->specific;
+
+	      if (!in_specific->write_flag_flushed)
+		{
+		  p_mad_sisci_remote_segment_t remote_segment = NULL;
+
+		  remote_segment = &(in_specific->remote_segment[0]);
+
+		  mad_sisci_flush(remote_segment);
+		  in_specific->write_flag_flushed = tbx_true;
+		}
+
+	      if (mad_sisci_test(channel_specific->read[next]))
+		goto found;
+	    }
+	}
+      TBX_YIELD();
+    }
+
+found:
+  channel_specific->next = next;
+#endif // MARCEL && USE_MARCEL_POLL
+
   LOG_OUT();
 
   return in;
 }
+
 
 static void
 mad_sisci_send_sci_buffer(p_mad_link_t   link,
@@ -1620,8 +1533,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 
 	mad_sisci_wait_for(link, read);
 
-	/* memcpy(destination, source, size); */
-	cpy4(source, destination, size);
+	memcpy(destination, source, size);
 
 	mad_sisci_clear(read);
 
@@ -1654,8 +1566,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	  mad_sisci_flush(remote_segment);
 	  mad_sisci_wait_for(link, read);
 
-//	  memcpy(destination, source, size);
-          cpy4(source, destination, size);
+	  memcpy(destination, source, size);
 
 	  mad_sisci_clear(read);
 	  mad_sisci_set(write);
@@ -1897,8 +1808,7 @@ transmission:
 	      need_wait = tbx_false;
 	    }
 
-	  //memcpy(destination, (const void *)(source + offset), size);
-	  cpy4((const void *)(source + offset), destination, size);
+	  memcpy(destination, (const void *)(source + offset), size);
 
 	  offset += tbx_aligned(size, 4);
 	  destination += size;
@@ -2103,8 +2013,7 @@ mad_sisci_receive_sci_buffer_group_1(p_mad_link_t         link,
 		source_size - offset);
 
 	  buffer->bytes_written += size;
-	  //memcpy(destination, (const void *)(source + offset), size);
-	  cpy4((const void *)(source + offset), destination, size);
+	  memcpy(destination, (const void *)(source + offset), size);
 
 	  offset += tbx_aligned(size, 4);
 	  destination += size;
@@ -2343,7 +2252,9 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
       mad_sisci_flush(remote_segment);
     }
 
+#ifdef MARCEL
   while (!(descriptor = *local_ptr)) TBX_YIELD();
+#endif /* MARCEL */
 
   if (blen > 3)
     while (bwrite < blen3)

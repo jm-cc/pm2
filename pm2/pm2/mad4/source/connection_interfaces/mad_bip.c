@@ -38,6 +38,9 @@
 #include <unistd.h> 
 #include <netdb.h>
 
+#ifndef MARCEL
+#error This driver needs the MARCEL module.
+#endif
 
 DEBUG_DECLARE(bip)
 

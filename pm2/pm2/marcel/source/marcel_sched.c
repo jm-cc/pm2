@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.31  2000/05/24 15:15:22  rnamyst
+Enhanced the polling capabilities of the Marcel scheduler.
+
 Revision 1.30  2000/05/10 13:08:02  vdanjean
 minor bugs fixes
 
@@ -183,8 +186,6 @@ Revision 1.12  2000/01/31 15:57:21  oaumage
 ______________________________________________________________________________
 */
 
-//#define MA__DEBUG
-//#define TICK
 #define BIND_LWP_ON_PROCESSORS
 //#define DO_PAUSE_INSTEAD_OF_SCHED_YIELD
 
@@ -1155,12 +1156,13 @@ static int marcel_check_sleeping(void)
 }
 
 // NOTE: This function assumes that "lock_task()" was called
-// previously.
+// previously. It is currently _only_ called from within "idle_func",
+// so MARCEL_POLL_AT_IDLE is used for polling.
 static __inline__ int marcel_check_delayed_tasks(void)
 {
   // Attention : C'est bien un "ou logique" ici car on veut executer
   // les deux fonctions...
-  return marcel_check_sleeping() | marcel_check_polling();
+  return marcel_check_sleeping() | marcel_check_polling(MARCEL_POLL_AT_IDLE);
 }
 
 int marcel_setprio(marcel_t pid, unsigned prio)
@@ -1372,10 +1374,10 @@ any_t idle_func(any_t arg) // Sans activation (mono et smp)
     }
 #else /* MA__SMP */
     /* Look if some delayed tasks can be waked */
-    if(__delayed_tasks == NULL && !marcel_polling_is_required())
+    if(__delayed_tasks == NULL && !marcel_polling_is_required(MARCEL_POLL_AT_IDLE))
       RAISE(DEADLOCK_ERROR);
 
-    if(marcel_polling_is_required()) {
+    if(marcel_polling_is_required(MARCEL_POLL_AT_IDLE)) {
       while(!marcel_check_delayed_tasks())
 	/* True polling ! */ ;
     } else {
@@ -1824,7 +1826,8 @@ static void timer_interrupt(int sig)
     MTRACE_TIMER("TimerSig", cur);
 
     lock_task();
-    marcel_check_delayed_tasks();
+    marcel_check_sleeping();
+    marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
     unlock_task();
 
 #ifdef SMP

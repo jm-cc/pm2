@@ -328,7 +328,7 @@ inline static void __update_timer(marcel_ev_serverid_t id)
 static void check_polling_for(marcel_ev_serverid_t id)
 {
 	int nb=id->ev_poll_grouped_nb;
-#if MA__DEBUG
+#ifdef MA__DEBUG
 	static int count=0;
 
 	mdebugl(7, "Check polling for %s\n", id->name);

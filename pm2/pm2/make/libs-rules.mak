@@ -133,7 +133,9 @@ libclean:
 	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/*$(LIB_EXT).{o,pic} \
 		$(LIB_GEN_DEP)/*$(LIB_EXT).d $(LIB_GEN_ASM)/*$(LIB_EXT).s \
 		$(LIB_LIB) \
-		$(LIB_STAMP_FILE)
+		$(LIB_STAMP_FILE) \
+		$(LIBRARY)-config.mak
+
 
 repclean:
 	@for rep in $(LIB_REP_TO_BUILD); do \

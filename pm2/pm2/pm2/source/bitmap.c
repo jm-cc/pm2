@@ -57,7 +57,7 @@
         RESET_BIT_IN_WORD(crt_bitmap[(bit_abs_index) >> 5], (bit_abs_index) % 32)
 
 #define GET_BIT_IN_WORD(word, bit_rel_index)\
-        ((word & (int)(1 << bit_rel_index)) >> bit_rel_index)
+        ((word & (int)(1 << (bit_rel_index))) >> (bit_rel_index))
 
 #define GET_BIT(bit_abs_index, crt_bitmap) \
         GET_BIT_IN_WORD(crt_bitmap[(bit_abs_index) >> 5], (bit_abs_index) % 32)
@@ -75,11 +75,11 @@
 
 #define SHIFTED_TO_LEFT(c, n) ((c) << (n))
 
-#define SHIFT_TO_RIGHT(c, n) c >>= (n)
+#define SHIFT_TO_RIGHT(c, n) (c) >>= (n)
 
 #define SHIFTED_TO_RIGHT(c, n) ((c) >> (n))
 
-#define SEQUENCE_OF_1(n) ((1 << (n)) - 1)
+#define SEQUENCE_OF_1(n) (((n)==32)?0xffffffff:((1 << (n)) - 1))
 
 static int first_bit_set(unsigned k)
 {
@@ -105,6 +105,17 @@ static int first_bit_set(unsigned k)
     }
 
   return index;
+}
+
+
+static int first_bit_set_from_offset(unsigned int w, int offset)
+{
+  int i;
+
+  for(i = offset; i < WORD_SIZE; i++)   
+      if (GET_BIT_IN_WORD(w,i) == 1)
+	return i;
+  return -1;
 }
 
 
@@ -137,7 +148,41 @@ int first_bit_to_1(unsigned int *crt_bitmap)
   return -1;
 }
 
+int first_series_of_1_from_offset(unsigned int *crt_bitmap, int bitmap_size, int offset, int *length)
+{
+  int start, s, w_rank = offset/WORD_SIZE;
+  unsigned bitmap_size_in_words = bitmap_size/WORD_SIZE;
 
+  if ((start = first_bit_set_from_offset(crt_bitmap[w_rank], offset%WORD_SIZE)) != -1)
+      start += w_rank * WORD_SIZE;
+  else
+    {
+      w_rank++;
+      while(w_rank < bitmap_size_in_words)
+	if(crt_bitmap[w_rank] == 0)
+	  w_rank++;
+	else
+	  break;
+      
+      if (w_rank >= bitmap_size_in_words)
+	return -1;
+      else
+	start = first_bit_set(crt_bitmap[w_rank]) + w_rank * WORD_SIZE;
+    }
+
+  /* count 1's: */
+  s = start + 1;
+  while (s < bitmap_size)
+    if (GET_BIT(s, crt_bitmap))
+      s++;
+    else
+      break;
+
+  *length = s - start;
+  return start;
+}
+      
+ 
 int get_first_bit_to_1(bitmap_t crt_bitmap)
 {
   /* 
@@ -162,12 +207,12 @@ void set_bits_to_1(unsigned int start, unsigned int n,  bitmap_t crt_bitmap)
  unsigned int end = start + n, 
               first_word = start >> 5,
               last_word = (end - 1) >> 5;
- 
+
  if (first_word == last_word)
-   /* 
-      There is a single word to modify in the bitmap.
-   */
-   crt_bitmap[first_word] |= SHIFTED_TO_LEFT(SEQUENCE_OF_1(n), start % 32);
+     /* 
+	There is a single word to modify in the bitmap.
+     */
+     crt_bitmap[first_word] |= SHIFTED_TO_LEFT(SEQUENCE_OF_1(n), start % 32);
  else
    {
      int i;
@@ -180,7 +225,7 @@ void set_bits_to_1(unsigned int start, unsigned int n,  bitmap_t crt_bitmap)
        crt_bitmap[i] = ALL_BITS_SET_TO_1;
      
      /* set bits in the last word */
-     crt_bitmap[last_word] |= SEQUENCE_OF_1(end % 32);
+     crt_bitmap[last_word] |= (end % 32)?SEQUENCE_OF_1(end % 32):ALL_BITS_SET_TO_1;
    }
 }
 

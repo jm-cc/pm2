@@ -495,6 +495,10 @@ void pm2debug_printf_state(int state)
 
 #define marcel_printf_allowed() (__pm2debug_printf_state == PM2DEBUG_MARCEL_PRINTF_ALLOWED)
 
+#ifdef MA__LWPS
+static ma_spinlock_t write_lock = MA_SPIN_LOCK_UNLOCKED;
+#endif
+
 int pm2debug_printf(debug_type_t *type, int level, int line, const char* file, 
 		    const char *format, ...)
 {
@@ -548,9 +552,16 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 do_write:
 		if (eaten>PM2DEBUG_MAXLINELEN)
 			eaten=PM2DEBUG_MAXLINELEN;
-		lockf(STDERR_FILENO,F_LOCK,0);
+#ifdef MA__LWPS
+		// XXX: ma_spin_lock ne doit pas produire de debug !
+		ma_local_bh_disable();
+		ma_spin_lock(&write_lock);
+#endif
 		write(STDERR_FILENO,buffer,eaten);
-		lockf(STDERR_FILENO,F_ULOCK,0);
+#ifdef MA__LWPS
+		ma_spin_unlock(&write_lock);
+		__ma_local_bh_enable();
+#endif
 	}
 
 	return 0;

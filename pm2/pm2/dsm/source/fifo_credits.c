@@ -81,7 +81,7 @@ dsm_node_t fifo_get_next(fifo_t *fifo)
 #ifdef FIFO_DEBUG
       tfprintf(stderr, "fifo_get_next: empty queue\n");
 #endif
-      return NO_NODE;
+      return NOBODY;
     }
 
   if (fifo->end == NULL)

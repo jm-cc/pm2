@@ -39,6 +39,7 @@
 #include <marcel.h>
 #include <safe_malloc.h>
 #include <madeleine.h>
+#include <pm2_types.h>
 #include <pm2_attr.h>
 #include <pm2_thread.h>
 #include <block_alloc.h>
@@ -98,16 +99,10 @@ void pm2_rawrpc_end(void);
     marcel_sem_V((marcel_sem_t *)marcel_getspecific(_pm2_mad_key)); \
   }
 
-_PRIVATE_ typedef struct {
-  marcel_sem_t sem;
-  unsigned proc;
-  marcel_sem_t *sem_ptr;
-} pm2_completion_t;
-
 void pm2_completion_init(pm2_completion_t *c);
 
-void pm2_completion_pack(pm2_completion_t *c);
-void pm2_completion_unpack(pm2_completion_t *c);
+void pm2_pack_completion(pm2_completion_t *c);
+void pm2_unpack_completion(pm2_completion_t *c);
 
 void pm2_completion_wait(pm2_completion_t *c);
 void pm2_completion_signal(pm2_completion_t *c);
@@ -156,12 +151,6 @@ static __inline__ void pm2_migrate_self(int module)
   pm2_migrate_group(&self, 1, module);
 }
 
-_PRIVATE_ typedef struct {
-  void *stack_base;
-  marcel_t task;
-  unsigned long depl, blk;
-} pm2_migr_ctl;
-
 
 /**********************************************************/
 
@@ -187,10 +176,12 @@ typedef block_descr_t isomalloc_dataset_t;
 
 /*********************************************************/
 
+typedef void (*pm2_user_func)(int argc, char **argv);
+void pm2_set_user_func(pm2_user_func f);
+
 
 _PRIVATE_ extern marcel_key_t _pm2_lrpc_num_key,
   _pm2_block_key, _pm2_mad_key, _pm2_isomalloc_nego_key;
-
 
 #define pm2_main marcel_main
 

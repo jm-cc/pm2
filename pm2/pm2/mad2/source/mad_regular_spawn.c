@@ -26,7 +26,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <malloc.h>
 #include <errno.h>
 #include <netdb.h>
 #include <sys/wait.h>

@@ -68,6 +68,7 @@ endif
 endif
 
 LIB_PREFIX = $(COMMON_PREFIX)
+PRG_PREFIX = $(COMMON_PREFIX)
 
 COMMON_DEPS += $(PM2_ROOT)/make/config.mak
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.15  2000/06/09 08:46:25  oaumage
+- Correction d'un bug d'allocation d'une structure de taille 0
+
 Revision 1.14  2000/05/17 14:34:42  oaumage
 - correction d'une erreur au niveau de MPI_Type_free
 
@@ -392,8 +395,7 @@ mad_mpi_adapter_init(p_mad_adapter_t adapter)
 
   driver_specific->nb_adapter++;
 
-  adapter_specific = TBX_MALLOC(sizeof(mad_mpi_adapter_specific_t));
-  CTRL_ALLOC(adapter_specific);
+  adapter_specific = NULL;
 
   adapter->parameter = TBX_MALLOC(10);
   CTRL_ALLOC(adapter->parameter);

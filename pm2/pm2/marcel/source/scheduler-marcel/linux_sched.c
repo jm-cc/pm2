@@ -1458,9 +1458,8 @@ restart:
 			rq = currq;
 		}
 		if (next && ma_need_resched() && idx == prev_as_prio) {
-		/*  still wanting to schedule prev
-		 *          which needs resched
-		 *                               and this is same prio
+		/* still wanted to schedule prev, but it needs resched
+		 * and this is same prio
 		 */
 			sched_debug("found same prio %d in rq %p\n",idx,currq);
 			next = NULL;

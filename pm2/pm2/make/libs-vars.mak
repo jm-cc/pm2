@@ -59,7 +59,7 @@ CFLAGS += $(LIB_CFLAGS)
 CC := $(shell $(PM2_CONFIG) --cc $(LIBRARY))
 else
 
--include $(PM2_MAK_DIR)/$(LIBRARY).mak
+-include $(PM2_MAK_DIR)/$(LIBRARY)-config.mak
 
 endif # OLD_MAKEFILE
 
@@ -109,3 +109,5 @@ LIB_PIC_TO_S   =  $(LIB_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
 
 COMMON_DEPS += $(LIB_STAMP_FLAVOR) $(MAKEFILE_FILE) 
 
+$(PM2_MAK_DIR)/$(LIBRARY)-config.mak: $(LIB_STAMP_FLAVOR)
+	@$(PM2_CONFIG) --gen_mak $(LIBRARY)

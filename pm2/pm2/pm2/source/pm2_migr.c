@@ -49,18 +49,12 @@ typedef struct {
   boolean do_send;
 } migration_arg;
 
-#ifdef MIGRATE_IN_HEADER
-#define MIGR_MODE  MAD_IN_HEADER
-#else
-#define MIGR_MODE  MAD_IN_PLACE
-#endif
-
 static void netserver_migration(void)
 {
   int nb, i;
   pm2_migr_ctl mctl;
 
-  mad_unpack_int(MAD_IN_HEADER, &nb, 1);
+  pm2_unpack_int(SEND_SAFER, RECV_EXPRESS, &nb, 1);
 
   {
     marcel_t pids[nb];
@@ -68,12 +62,12 @@ static void netserver_migration(void)
 
     for(i=0; i<nb; i++) {
 
-      mad_unpack_byte(MAD_IN_HEADER, (char *)&mctl, sizeof(mctl));
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mctl, sizeof(mctl));
       pids[i] = mctl.task;
 
       slot_general_alloc(NULL, 0, NULL, mctl.stack_base);
 
-      mad_unpack_byte(MIGR_MODE,
+      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER,
 		      (char *)mctl.stack_base + mctl.depl,
 		      mctl.blk);
 
@@ -104,9 +98,9 @@ static void migrate_func(marcel_t task, unsigned long depl, unsigned long blk, v
   mctl.depl = depl;
   mctl.blk = blk;
 
-  mad_pack_byte(MAD_IN_HEADER, (char *)&mctl, sizeof(mctl));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mctl, sizeof(mctl));
 
-  mad_pack_byte(MIGR_MODE, (char *)mctl.stack_base + depl, blk);
+  pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)mctl.stack_base + depl, blk);
 
   block_descr_ptr = (block_descr_t *)(*marcel_specificdatalocation(task, _pm2_block_key));
   block_pack_all(block_descr_ptr);
@@ -118,17 +112,13 @@ static void migrate_func(marcel_t task, unsigned long depl, unsigned long blk, v
   slot_list_busy(&block_descr_ptr->slot_descr);
 
   if(args->do_send) {
+    int i;
+
     pm2_rawrpc_end();
 
-#ifndef MIGRATE_IN_HEADER
-    {
-      int i;
-
-      for(i=0; i<args->nb; i++)
-	if(args->pids[i] != marcel_self())
-	  marcel_cancel(args->pids[i]);
-    }
-#endif
+    for(i=0; i<args->nb; i++)
+      if(args->pids[i] != marcel_self())
+	marcel_cancel(args->pids[i]);
   }
 }
 
@@ -162,21 +152,17 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
 
     pm2_rawrpc_begin(module, PM2_MIGR, NULL);
 
-    mad_pack_int(MAD_IN_HEADER, &nb, 1);
+    pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &nb, 1);
 
     for(i=0; i<nb; i++) {
       if(pids[i] == marcel_self())
 	me_too = TRUE;
       else
-#ifdef MIGRATE_IN_HEADER
-	marcel_begin_hibernation(pids[i], migrate_func, &arg, FALSE);
-#else
       /* 
        * On met le flag "fork" à VRAI parce qu'il faut maintenir ces threads
        * en vie tant que le message n'est pas envoyé (IN_PLACE).
        */
       marcel_begin_hibernation(pids[i], migrate_func, &arg, TRUE);
-#endif
     }
 
     if(me_too) {
@@ -186,10 +172,8 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
     } else {
       pm2_rawrpc_end();
 
-#ifndef MIGRATE_IN_HEADER
       for(i=0; i<nb; i++)
 	marcel_cancel(pids[i]);
-#endif
     }
   }
 }

@@ -3,21 +3,52 @@ Files in this directory are included in the Makefile of exemple or modules
 of PM2
 
 Here is a quick description of each file:
-common-vars.mak: variables used everywhere. Included by all *-vars.mak
-common-rules.mak: rules used everywhere. Included by all *-rules.mak
-config.mak: global option configuration file. Included by common-vars.mak
-apps.mak: used for application (examples). Include the two next one.
-apps-vars.mak: variables definitions
-apps-rules.mak: rules descriptions
-libs.mak: used for module generation. Include the two next one.
-libs-vars.mak: variables definitions
-libs-rules.mak: rules descriptions
-progs.mak: used for progs generation (leonie, swann). Include the two next one.
-progs-vars.mak: variables definitions
-progs-rules.mak: rules descriptions
+config.mak:
+  * global option configuration file.
+  * Included by common-vars.mak
+common-vars.mak:
+  * variables used everywhere.
+  * Include config.mak
+  * Included by objs-vars.mak and the main PM2 Makefile
+common-rules.mak:
+  * rules used everywhere.
+  * Included by objs-vars.mak and the main PM2 Makefile
+objs-vars.mak:
+  * variables definitions for sources compilation
+  * Include common-vars
+  * Included by {apps,progs,libs}-vars.mak
+objs-rules.mak:
+  * rules descriptions for sources compilation
+  * Include common-rules
+  * Included by {apps,progs,libs}-rules.mak
+apps.mak:
+  * used for application (examples).
+  * Include the two next one.
+apps-vars.mak:
+  * variables definitions
+  * Include objs-vars
+apps-rules.mak:
+  * rules descriptions
+  * Include objs-rules
+libs.mak:
+  * used for module generation.
+  * Include the two next one.
+libs-vars.mak:
+  * variables definitions
+  * Include objs-vars
+libs-rules.mak:
+  * rules descriptions
+  * Include objs-rules
+progs.mak:
+  * used for progs generation (leonie, swann, ezflavor).
+  * Include the two next one.
+progs-vars.mak:
+  * variables definitions
+progs-rules.mak:
+  * rules descriptions
 
-In addition, *config.mak are generated for each modules/application and for
-each flavor if they do not exist (else they are included). They define
+In addition, {module}-config.mak are generated for each modules/application and
+for each flavor if they do not exist (else they are included). They define
 variables that are flavor dependant.
 Theses files are stored in the flavor build directory
 

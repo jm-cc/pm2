@@ -34,7 +34,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2_create-flavor}
+PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
 
 if [ ! -d ${PM2_ROOT}/stamp ]; then
     mkdir -p ${PM2_ROOT}/stamp
@@ -43,16 +43,18 @@ if [ ! -d ${PM2_ROOT}/flavors ]; then
     mkdir -p ${PM2_ROOT}/flavors
 fi
 
-$PM2_CREATE_FLAVOR --flavor=default --builddir=" " \
-    --modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt
+$PM2_CREATE_FLAVOR set --flavor=default --builddir="" \
+    --modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt --marcel=mono --mad2=tcp
 
 for i in mono smp act actsmp; do
-    $PM2_CREATE_FLAVOR --flavor=marcel-$i --modules="marcel" \
+    $PM2_CREATE_FLAVOR set --flavor=marcel-$i --modules="marcel" \
 	--ext=-$i --marcel=$i --builddir=marcel --all=opt
 done
-$PM2_CREATE_FLAVOR --flavor=marcel --modules="marcel" --all=opt
+$PM2_CREATE_FLAVOR set --flavor=marcel --modules="marcel" --all=opt --marcel=mono
 
-$PM2_CREATE_FLAVOR --flavor=mad1 --modules="mad1" --all=opt
-$PM2_CREATE_FLAVOR --flavor=pm2 --modules="pm2 dsm marcel mad2 tbx ntbx" \
-    --all=opt
-$PM2_CREATE_FLAVOR --flavor=pm2-mad1 --modules="pm2 dsm marcel mad1" --all=opt
+$PM2_CREATE_FLAVOR set --flavor=mad1 --modules="mad1" --all=opt --mad1=tcp
+$PM2_CREATE_FLAVOR set --flavor=pm2 --modules="pm2 dsm marcel mad2 tbx ntbx" \
+    --all=opt --marcel=mono --mad2=tcp
+$PM2_CREATE_FLAVOR set --flavor=pm2-mad1 --modules="pm2 dsm marcel mad1" --all=opt --marcel=mono --mad1=tcp
+
+

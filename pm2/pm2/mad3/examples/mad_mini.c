@@ -51,7 +51,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   p_ntbx_process_container_t pc             = NULL;
   ntbx_process_lrank_t       my_local_rank  =   -1;
   ntbx_process_lrank_t       its_local_rank =   -1;
-  ntbx_pack_buffer_t         buffer;
+  ntbx_pack_buffer_t         buffer MAD_ALIGNED;
   
   DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
@@ -98,6 +98,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       if (dyn_len < 1)
 	FAILURE("invalid message length");
       dyn_buf = TBX_CALLOC(1, dyn_len);
+
       mad_unpack(in, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_unpacking(in);
 
@@ -176,7 +177,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       char               *dyn_buf = NULL;
       char                buf[MAX] MAD_ALIGNED;
 
-      msg = tbx_strdup("token");
+      msg = tbx_strdup("token__");
 
       its_local_rank = my_local_rank;
       string  = tbx_string_init_to_cstring("the sender is ");
@@ -235,6 +236,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       if (dyn_len < 1)
 	FAILURE("invalid message length");
       dyn_buf = TBX_CALLOC(1, dyn_len);
+
       mad_unpack(in, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_unpacking(in);
 

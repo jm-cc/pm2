@@ -481,9 +481,13 @@ marcel_t marcel_unchain_task(marcel_t t)
   __lwp_t *cur_lwp = marcel_self()->lwp;
 #endif
 
-  ACTDEBUG(printf("marcel_unchain_task(%p->%p->%p->%p->%p\n", t,
-		  t->next, t->next->next, t->next->next->next, 
-		  t->next->next->next->next));
+  ACTDEBUG(printf("marcel_unchain_task(%p(%i)->%p(%i)->%p(%i)->"
+		  "%p(%i)->%p(%i)\n", t, t->state_ext,
+		  t->next, t->next->state_ext, 
+		  t->next->next, t->next->next->state_ext, 
+		  t->next->next->next, t->next->next->next->state_ext, 
+		  t->next->next->next->next, 
+		  t->next->next->next->next->state_ext));
 
   sched_lock(cur_lwp);
 

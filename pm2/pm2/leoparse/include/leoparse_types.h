@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: leoparse_types.h,v $
+Revision 1.2  2000/12/19 16:57:48  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.1  2000/11/02 14:25:04  oaumage
 Leoparse
 
@@ -50,18 +58,27 @@ ______________________________________________________________________________
 #ifndef __LEOPARSE_TYPES_H
 #define __LEOPARSE_TYPES_H
 
+typedef enum e_leoparse_entry_type
+{
+  leoparse_e_undefined = 0,
+  leoparse_e_slist,
+  leoparse_e_object,
+} leoparse_entry_type_t;
+
 typedef struct s_leoparse_htable_entry
 {
-  char          *id;
-  p_tbx_slist_t  slist;
+  char                  *id;
+  p_leoparse_object_t    object;
+  p_tbx_slist_t          slist;
+  leoparse_entry_type_t  type;
 } leoparse_htable_entry_t;
 
 typedef enum e_leoparse_object_type
 {
-  leoparse_undefined = 0,
-  leoparse_id,
-  leoparse_string,
-  leoparse_htable,
+  leoparse_o_undefined = 0,
+  leoparse_o_id,
+  leoparse_o_string,
+  leoparse_o_htable,
 } leoparse_object_type_t;
 
 typedef struct s_leoparse_object

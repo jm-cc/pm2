@@ -25,21 +25,46 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <time.h>
-#include <sys/times.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
+#include <sys/times.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/sendfile.h>
+#include <sys/mount.h>
+#include <sys/vfs.h>
+#include <sys/utsname.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
-#include <linux/fkt.h>
+#include "fkt.h"
+#include "get_cpu_info.h"
+#include "sysmap.h"
+#include "block.h"
+#include "names.h"
+#include "pids.h"
+#include "fkt-tools.h"
+
 #include "pm2_profile.h"
-#include "fkt_head.h"
 #include "fkt_pm2.h"
-
-#define MAXCPUS	16
 
 #ifndef WHITE_SPACE
 #define WHITE_SPACE	" \t\n\f\v\r"
 #endif
+
+#define FKT_DEV "/dev/fkt"
+#define MAXCPUS	16
+
+#define UNAMESTRLEN 256
+
+static clock_t	start_jiffies, stop_jiffies;
+static time_t	start_time, stop_time;
+static int fd,fkt=-1;
+static pid_t pid,kpid;
+static size_t size;
+static size_t page_size;
 
 struct code_list_item	{
   unsigned int code;
@@ -47,206 +72,11 @@ struct code_list_item	{
   struct code_list_item	*link;
 };
 
-static clock_t	start_jiffies = 0, stop_jiffies = 0;
-static time_t	start_time = 0, stop_time = 0;
-
-static void dumptime(time_t *the_time, clock_t *the_jiffies)
+static void record_time( int ncpus, double mhz[] )
 {
-  struct tms cur_time;
+  int i;
 
-  if( (*the_time = time(NULL)) == -1 )
-    perror("time");
-
-  if( (*the_jiffies = times(&cur_time)) < 0 )
-    perror("times");
-}
-
-void fkt_start_time(void)
-{
-  dumptime(&start_time, &start_jiffies);
-}
-
-void fkt_stop_time(void)
-{
-  dumptime(&stop_time, &stop_jiffies);
-}
-
-static int get_cpu_info(int maxn, double mhz[])
-{
-  FILE	*fptr;
-  char	*ptr, buffer[4096];
-  double	cpu_mhz;
-  int		n;
-
-  n = 0;
-  if( (fptr=fopen("/proc/cpuinfo", "r")) == NULL ) {
-    fprintf(stderr, "unable to open %s\n", "/proc/cpuinfo");
-    exit(EXIT_FAILURE);
-  }
-
-  for( ; ; )
-    {/* once around loop for each line in the file */
-      if( fgets(buffer, 4096, fptr) == NULL )
-	{
-	  if( feof(fptr) )
-	    {/* end of the file, did we find any cpus? */
-	      fclose(fptr);
-	      if( n <= 0 )
-		/* no, end of file was premature */
-		fprintf(stderr, "end of file on %s\n", "/proc/cpuinfo");
-	      else
-		/* yes, normal return with that number */
-		return n;
-	    }
-	  else
-	    fprintf(stderr, "unable to read %s\n", "/proc/cpuinfo");
-	  exit(EXIT_FAILURE);
-	}
-      /***** fputs(buffer, stdout); *****/
-      if( strncmp(buffer, "cpu MHz", strlen("cpu MHz")) == 0 )
-	{/* found the line starting with the tag */
-	  /***** fprintf(stderr, "found line starting with %s\n", TAG); *****/
-	  if( (ptr = strchr(buffer, ':')) == NULL )
-	    {
-	      fprintf(stderr, "cannot find ':' in %s\n", buffer);
-	      exit(EXIT_FAILURE);
-	    }
-	  if( sscanf(ptr+1, "%lf", &cpu_mhz) != 1 )
-	    {
-	      fprintf(stderr, "cannot find number after ':' in %s\n", buffer);
-	      exit(EXIT_FAILURE);
-	    }
-	  /***** fprintf(stderr, "found cpu mhz %.2f\n", cpu_mhz); *****/
-	  if( n >= maxn )
-	    fprintf(stderr,"too many cpus found, max of %d allowed\n",maxn);
-	  else
-	    {
-	      mhz[n] = cpu_mhz;
-	      n++;
-	    }
-	}
-    }
-}
-
-static void record_irqs(int fd)
-{
-  FILE					*table;
-  struct code_list_item	*ptr, *irq_list = NULL;
-  char					*lptr, *xptr, line[128];
-  unsigned int			n, i, nirqs, ncpus;
-
-
-  nirqs = 0;
-  ncpus = 0;
-  if( (table = fopen("/proc/interrupts", "r")) == NULL )
-    {
-      fprintf(stderr, "unable to open /proc/interrupts\n");
-      write(fd, (void *)&nirqs, sizeof(nirqs));
-      write(fd, (void *)&ncpus, sizeof(ncpus));
-      return;
-    }
-
-  /*	first line of file is headers of form CPUn */
-  if( fgets(line, 128, table) == NULL )
-    {
-      fprintf(stderr, "unable to read /proc/interrupts\n");
-      write(fd, (void *)&nirqs, sizeof(nirqs));
-      write(fd, (void *)&ncpus, sizeof(ncpus));
-      fclose(table);
-      return;
-    }
-	
-  for( lptr = line;  strtok(lptr, WHITE_SPACE) != NULL;  ncpus++ )
-    lptr = NULL;
-  //printf("       : ncpus %5u\n", ncpus);
-
-  /*	remaining lines of file are the IRQs */
-  nirqs = 0;
-  while( fgets(line, 128, table) != NULL )
-    {/* build circular list with 1 item for each interrupt */
-      n = strtoul(line, &lptr, 10);	/* scan off leading number */
-      if( *lptr != ':' )				/* which must end with : */
-	continue;					/* or it is not an IRQ number */
-      ptr = (struct code_list_item *)malloc(sizeof(struct code_list_item));
-      ptr->code = n;
-      
-      /*	scan over the interrupt counts, one per cpu, and controller type */
-      xptr = lptr;
-      for( lptr++, i=0;  i<=ncpus && (xptr = strtok(lptr, WHITE_SPACE))!=NULL;
-	   i++ )
-	lptr = NULL;
-      
-      /*	get to the leading character of the interrupt name */
-      xptr += strlen(xptr) + 1;
-      xptr += strspn(xptr, WHITE_SPACE);
-      
-      i = strlen(xptr);
-      ptr->name = malloc(i);
-      strncpy(ptr->name, xptr, i);
-      ptr->name[i-1] = '\0';
-      if( irq_list == NULL )
-	ptr->link = ptr;
-      else
-	{
-	  ptr->link = irq_list->link;
-	  irq_list->link = ptr;
-	}
-      irq_list = ptr;
-      //printf(" irq %2u: %s\n", ptr->code, ptr->name);
-      nirqs++;
-    }
-  //printf("       : nirqs %4u\n", nirqs);
-  //printf("       : ncpus %4u\n", ncpus);
-  fclose(table);
-  write(fd, (void *)&nirqs, sizeof(nirqs));
-  write(fd, (void *)&ncpus, sizeof(ncpus));
-  if( (ptr = irq_list) != NULL )
-    {/* make circular list into singly-linked, NULL-terminated list */
-      irq_list = irq_list->link;
-      ptr->link = NULL;
-    }
-  for( ptr = irq_list;  ptr != NULL;  ptr = ptr->link )
-    {
-      write(fd, (void *)&ptr->code, sizeof(ptr->code));
-      i = strlen(ptr->name)+1;
-      write(fd, (void *)&i, sizeof(i));
-      i = (i + 3) & ~3;
-      write(fd, ptr->name, i);
-    }
-}
-
-void fkt_record(char *file)
-{
-  int i, nints;
-  unsigned long pid, kpid;
-  int max_nints = 0;
-  double mhz[MAXCPUS];
-  int ncpus;
-  int fd;
-  unsigned int	*buffer = NULL;
-
-  fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
-  fkt_stop_time();
-
-  ncpus = get_cpu_info(MAXCPUS, mhz);
-
-  errno = 0;
-  while( (nints = fkt_getcopy(0, NULL)) < 0  &&  errno == EAGAIN )
-    errno = 0;
-
-  if( (buffer = malloc(nints*4)) == NULL ) {
-    fprintf(stderr, "unable to malloc %d ints\n", nints);
-    exit(EXIT_FAILURE);
-  }
-
-  errno = 0;
-  while( (nints = fkt_getcopy(nints, buffer)) < 0  &&  errno == EAGAIN )
-    errno = 0;
-
-  fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0666);
-  if(fd == -1)
-    perror("open");
-
+  BEGIN_BLOCK(fd);
   if( write(fd, (void *)&ncpus, sizeof(ncpus)) < 0 )
     perror("write ncpus");
   for( i = 0;  i < ncpus;  i++ ) {
@@ -267,17 +97,199 @@ void fkt_record(char *file)
     perror("write start_jiffies");
   if( write(fd, (void *)&stop_jiffies, sizeof(stop_jiffies)) < 0 )
     perror("write stop_jiffies");
+  if( write(fd, (void *)&page_size, sizeof(page_size)) < 0 )
+    perror("write page_size");
+  END_BLOCK(fd);
+}
+
+void fkt_keychange(int how, unsigned int keymask) {
+  if (ioctl(fkt, how, keymask))
+    perror("set fkt mask");
+}
+
+void fkt_record(char *file, unsigned int initmask, int powpages, int dma)
+{
+  unsigned long pid, kpid;
+  double mhz[MAXCPUS];
+  int ncpus;
+  struct statfs statfs;
+  struct stat   st;
+  off_t off, dummyoff=0;
+  struct utsname unameinfo;
+  char unamestr[UNAMESTRLEN];
+  unsigned int len;
+  ssize_t ret;
+  static const unsigned zero = 0;
+
+  if (fkt<0) {
+    if ((fkt=open(FKT_DEV, O_RDONLY|O_NONBLOCK))<0) {
+      perror("open(\"" FKT_DEV "\")");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
+
+  ncpus = get_cpu_info(MAXCPUS, mhz);
+  page_size = getpagesize();
+  pid = (unsigned long) getpid();
+
+  if ((fd = open(file, O_RDWR|O_CREAT|O_TRUNC, 0666)) < 0) {
+    perror(file);
+    exit(EXIT_FAILURE);
+  }
+
+  if (!size) {
+    if( fstat(fd, &st) ) {
+      perror("getting attributes of trace file");
+      exit(EXIT_FAILURE);
+    }
+    if( S_ISBLK(st.st_mode) ) {
+      int sectors;
+      printf("block device\n");
+      if( ioctl(fd,BLKGETSIZE,&sectors) ) {
+        perror("getting device size\n");
+        exit(EXIT_FAILURE);
+      }
+      if( sectors >= 0xffffffffUL >> 9 )
+        size=0xffffffffUL;
+      else
+        size = sectors << 9;
+    } else {
+      if( fstatfs(fd, &statfs) ) {
+        perror("getting file system size\n");
+        exit(EXIT_FAILURE);
+      }
+      if( statfs.f_bavail >= 0xffffffffUL / statfs.f_bsize )
+        size = 0xffffffffUL;
+      else
+        size = statfs.f_bsize * statfs.f_bavail;
+    }
+    printf("%uM\n",size>>20);
+  }
+
+  if (ioctl(fkt, FKT_SETINITMASK, initmask) < 0) {
+    perror("setting initial mask");
+    exit(EXIT_FAILURE);
+  }
+
+  if (powpages)
+  if (ioctl(fkt, FKT_SETINITPOWPAGES, powpages) < 0) {
+    perror("setting initial number of pages");
+    exit(EXIT_FAILURE);
+  }
+
+  if (dma)
+  if (ioctl(fkt, FKT_SETTRYDMA, dma) < 0)
+    perror("asking for trying to get dma");
+
+  dumptime(&start_time, &start_jiffies);
+
+  BEGIN_BLOCK(fd);
+
+  record_time( ncpus, mhz );
+  BEGIN_BLOCK(fd);
   record_irqs(fd);
-  if( write(fd, (void *)&max_nints, sizeof(max_nints)) < 0 )
-    perror("write max_nints");
-  if( write(fd, (void *)&nints, sizeof(nints)) < 0 )
-    perror("write nints");
-  if( write(fd, (void *)buffer, nints*4) < 0 )
-    perror("write buffer");
+  END_BLOCK(fd);
+
+  /* uname -a */
+  if( uname(&unameinfo) )
+    {
+    perror("getting uname information");
+    exit(EXIT_FAILURE);
+    }
+
+  snprintf(unamestr,UNAMESTRLEN,"%s %s %s %s %s",
+        unameinfo.sysname,
+        unameinfo.nodename,
+        unameinfo.release,
+        unameinfo.version,
+        unameinfo.machine);
+  unamestr[UNAMESTRLEN-1]='\0';
+
+  len = strlen(unamestr);
+  BEGIN_BLOCK(fd);
+  write(fd,&len,sizeof(len));
+  write(fd,unamestr,len);
+  END_BLOCK(fd);
+
+  /* merge of System.map and /proc/ksyms */
+  if( !stat("/proc/kallsyms",&st) )
+    {/* on >=2.5 kernels, kallsyms gives everything we may want */
+    get_sysmap("/proc/kallsyms",SYSMAP_MODLIST,0);
+    get_sysmap("/proc/kallsyms",SYSMAP_PROC,0);
+    }
+  else
+    {/* but on 2.4 kernels, only ksyms is available */
+    get_sysmap("/proc/ksyms",SYSMAP_MODLIST,0);
+    get_sysmap("/proc/ksyms",SYSMAP_PROC,0);
+    }
+
+  BEGIN_BLOCK(fd);
+  record_sysmap(fd);
+  END_BLOCK(fd);
+
+  BEGIN_BLOCK(fd);
+  record_pids(fd);
+  END_BLOCK(fd);
+
+  if( write(fd,&zero,sizeof(zero)) < (ssize_t) sizeof(zero) )
+    {
+    perror("ending the main block");
+    exit(EXIT_FAILURE);
+    }
+
+  /* seek to a page boundary */
+  if( (off = lseek(fd, 0, SEEK_CUR)) < 0 )
+    {
+    perror("getting seek");
+    exit(EXIT_FAILURE);
+    }
+  off = (off+page_size-1)&(~(page_size-1));
+
+  if( (dummyoff = lseek(fd, off, SEEK_SET)) != off )
+    {
+    perror("seeking to a page boundary");
+    exit(EXIT_FAILURE);
+    }
+  /* and close the main block */
+  END_BLOCK(fd);
+
+  /* ok, can now fork */
+  if (!(kpid=fork())) {
+  /* for blocking in sendfile() */
+    if ((ret=sendfile(fd, fkt, &dummyoff, size))<0) {
+      perror("sendfile");
+      fprintf(stderr,"hoping the trace wasn't lost\n");
+    }
+    dumptime(&stop_time, &stop_jiffies);
+
+    if ( lseek(fd, 0, SEEK_SET) < 0 ) {
+      perror("seeking back to the beginning");
+      exit(EXIT_FAILURE);
+    }
+    /* rewrite time. beware that record_time's record size shouldn't change in
+     * the meanwhile ! */
+    ENTER_BLOCK(fd);
+    record_time(ncpus, mhz);
+    LEAVE_BLOCK(fd);
+
+    close(fd);
+    exit(EXIT_SUCCESS);
+  }
+
+  /* wait for sendfile to be ready */
+  if (ioctl(fkt, FKT_WAITREADY)<0)
+    perror("FKT_WAITREADY");
+  EPRINTF("fkt ready\n");
 
   close(fd);
+}
 
-  fkt_endup();
+void fkt_stop(void) {
+  EPRINTF("waiting son\n");
+  kill(SIGTERM,kpid);
+  waitpid(kpid,NULL,0);
 }
 
 #endif // USE_FKT

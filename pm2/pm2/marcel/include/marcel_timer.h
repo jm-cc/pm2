@@ -17,8 +17,13 @@
 #section macros
 #define MA_JIFFIES_PER_TIMER_TICK 1
 
+#section macros
+#define JIFFIES_FROM_US(microsecs) \
+  ((microsecs)*marcel_gettimeslice()/MA_JIFFIES_PER_TIMER_TICK)
+
 #section functions
 void marcel_settimeslice(unsigned long microsecs);
+unsigned long marcel_gettimeslice();
 unsigned long marcel_clock(void);
 
 #section marcel_functions

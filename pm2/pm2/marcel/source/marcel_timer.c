@@ -229,6 +229,15 @@ void marcel_settimeslice(unsigned long microsecs)
 	LOG_OUT();
 }
 
+/* Retour en microsecondes */
+unsigned long marcel_gettimeslice(void)
+{
+	LOG_IN();
+
+	LOG_OUT();
+	return time_slice;
+}
+
 
 void marcel_sig_enable_interrupts(void)
 {

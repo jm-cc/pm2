@@ -13,6 +13,7 @@
 #include "shell.h"
 #include "intro.h"
 #include "dialog.h"
+#include "statusbar.h"
 
 static GtkWidget *the_load_button;
 static GtkWidget *the_create_button;
@@ -154,7 +155,7 @@ static flavor_t *load_flavor(char *name)
   if(!flavor_exists(name))
     return NULL;
 
-  TRACE("Getting contents of flavor %s...", name);
+  statusbar_set_message("Loading flavor %s...", name);
 
   ptr = (flavor_t *)g_malloc(sizeof(flavor_t));
   ptr->modules = ptr->options = NULL;
@@ -217,7 +218,7 @@ static flavor_t *load_flavor(char *name)
 
   the_flavors = g_list_append(the_flavors, (gpointer)ptr);
 
-  TRACE("Done.\n");
+  statusbar_concat_message("Done.");
 
   return ptr;
 }
@@ -227,7 +228,7 @@ static flavor_t *create_new_flavor(char *name)
   flavor_t *ptr;
   char buf[1024];
 
-  TRACE("Creating new flavor %s...", name);
+  statusbar_set_message("Creating flavor %s...", name);
 
   strcpy(buf, name); // Important _avant_ ...set_popdown_strings !
 
@@ -249,7 +250,7 @@ static flavor_t *create_new_flavor(char *name)
 
   flavor_modified = TRUE;
 
-  TRACE("Done.\n");
+  statusbar_concat_message("Done.");
 
   return ptr;
 }
@@ -261,7 +262,6 @@ static void update_current(void)
   // We must save "flavor_modified" because it will be set to "TRUE"
   // by module_update_with_current_flavor...
   was_modified = flavor_modified;
-
   module_update_with_current_flavor();
 
   flavor_modified = was_modified;
@@ -284,6 +284,8 @@ static void save_and_proceed(gpointer data)
     (load_flavor(name) ? : create_new_flavor(name));
 
   update_current();
+
+  statusbar_set_current_flavor(cur_flavor->name);
 }
 
 void set_current_flavor(char *name)
@@ -333,7 +335,7 @@ static void flavor_save(void)
 {
   int ret;
 
-  TRACE("Saving flavor %s...", cur_flavor->name);
+  statusbar_set_message("Saving flavor %s...", cur_flavor->name);
 
   module_save_to_flavor();
 
@@ -341,9 +343,11 @@ static void flavor_save(void)
 
   if(ret == 0) {
     flavor_modified = FALSE;
-    TRACE("Done.\n");
-  } else
+    statusbar_concat_message("Done.");
+  } else {
+    statusbar_concat_message("Oops!");
     TRACE("Operation failed: see /tmp/ezflavor.errlog for details.\n");
+  }
 
   update_the_buttons();
 
@@ -364,6 +368,8 @@ static void save_and_load(gpointer data)
     cur_flavor = find_flavor(new_fla);
     update_current();
   }
+
+  statusbar_set_current_flavor(cur_flavor->name);
 }
 
 static void flavor_save_as(void)
@@ -386,10 +392,11 @@ static void flavor_save_as(void)
     } else { // We must first create new_fla, and then save
       cur_flavor = create_new_flavor(new_fla);
       flavor_save();
+      statusbar_set_current_flavor(cur_flavor->name);
     }
-
-  } else
+  } else {
     flavor_save();
+  }
 }
 
 static void save_and_quit(gpointer data)

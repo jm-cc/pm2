@@ -136,7 +136,7 @@ static void TBX_NORETURN fault_catcher(int sig, siginfo_t *act, void *data)
 	abort();
 }
 
-static void fault_catcher_init(void)
+static void fault_catcher_init(ma_lwp_t lwp)
 {
 	static struct sigaction sa;
 
@@ -149,7 +149,7 @@ static void fault_catcher_init(void)
 	LOG_OUT();
 }
 
-static void fault_catcher_exit()
+static void fault_catcher_exit(ma_lwp_t lwp)
 {
 	struct sigaction sa;
 
@@ -161,36 +161,12 @@ static void fault_catcher_exit()
 	LOG_OUT();
 }
 
-static int fault_catcher_notify(struct ma_notifier_block *self, 
-		     		unsigned long action, void *hlwp)
-{
-	switch(action) {
-	case MA_LWP_ONLINE:
-		fault_catcher_init();
-		break;
-	case MA_LWP_OFFLINE:
-		fault_catcher_exit();
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
+MA_DEFINE_LWP_NOTIFIER_ONOFF(fault_catcher, "Fault catcher",
+			     fault_catcher_init, "Start fault catcher",
+			     fault_catcher_exit, "Stop fault catcher");
 
-static struct ma_notifier_block fault_catcher_nb = {
-	.notifier_call	= fault_catcher_notify,
-	.next		= NULL,
-};
-
-void __init fault_cacher_start(void)
-{
-	fault_catcher_notify(&fault_catcher_nb, (unsigned long)MA_LWP_ONLINE,
-			     (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&fault_catcher_nb);
-}
-
-__ma_initfunc_prio(fault_cacher_start, MA_INIT_FAULT_CATCHER,
-		   MA_INIT_FAULT_CATCHER_PRIO, "Start SEGV catcher");
+MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER,
+				 MA_INIT_FAULT_CATCHER_PRIO);
 
 /****************************************************************
  * Le signal TIMER
@@ -306,14 +282,12 @@ void marcel_sig_disable_interrupts(void)
 }
 
 
-static void sig_start_timer(void)
+static void sig_start_timer(ma_lwp_t lwp)
 {
 	static struct sigaction sa;
 
 	LOG_IN();
 
-	fault_catcher_init();
-	
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = timer_interrupt;
 #if !defined(WIN_SYS)
@@ -334,14 +308,12 @@ static void sig_start_timer(void)
 	LOG_OUT();
 }
 
-static void sig_stop_timer(void)
+static void sig_stop_timer(ma_lwp_t lwp)
 {
 	struct sigaction sa;
 	struct itimerval value;
 
 	LOG_IN();
-
-	fault_catcher_exit();
 
 	memset(&value,0,sizeof(value));
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
@@ -362,39 +334,16 @@ static void sig_stop_timer(void)
 
 void marcel_sig_exit(void)
 {
-	return sig_stop_timer();
+	fault_catcher_exit(LWP_SELF);
+	sig_stop_timer(LWP_SELF);
+	return;
 }
 
-static int sig_lwp_notify(struct ma_notifier_block *self, 
-		     unsigned long action, void *hlwp)
-{
-	switch(action) {
-	case MA_LWP_ONLINE:
-		sig_start_timer();
-		break;
-	case MA_LWP_OFFLINE:
-		sig_stop_timer();
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
+MA_DEFINE_LWP_NOTIFIER_ONOFF(sig_timer, "Signal timer",
+			     sig_start_timer, "Start signal timer",
+			     sig_stop_timer, "Stop signal timer");
 
-static struct ma_notifier_block sig_nb = {
-	.notifier_call	= sig_lwp_notify,
-	.next		= NULL,
-};
-
-void __init sig_start(void)
-{
-	sig_lwp_notify(&sig_nb, (unsigned long)MA_LWP_ONLINE,
-			 (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&sig_nb);
-}
-
-__ma_initfunc(sig_start, MA_INIT_TIMER_SIG, "Start signal timer");
-
+MA_LWP_NOTIFIER_CALL_ONLINE(sig_timer, MA_INIT_TIMER_SIG);
 
 void __init sig_init(void)
 {

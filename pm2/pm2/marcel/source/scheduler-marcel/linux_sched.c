@@ -2827,37 +2827,16 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	task_rq_unlock(rq);
 }
 
-static int linux_sched_lwp_notify(struct ma_notifier_block *self,
-					unsigned  long action, void *hlwp)
-{
-	ma_lwp_t lwp = (ma_lwp_t)hlwp;
-	switch(action) {
-	case MA_LWP_UP_PREPARE:
-		linux_sched_lwp_init(lwp);
-		break;
-	case MA_LWP_ONLINE:
-		linux_sched_lwp_start(lwp);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
+MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
+				  linux_sched_lwp_init, "Initialisation des runqueue",
+				  linux_sched_lwp_start, "Activation de la tâche courante");
 
-static struct ma_notifier_block linux_sched_nb = {
-	.notifier_call	= linux_sched_lwp_notify,
-	.next		= NULL,
-	.priority	= 100, /* TODO: que mettre ? */
-};
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 
 void __init sched_init(void)
 {
 	LOG_IN();
 
-	linux_sched_lwp_notify(&linux_sched_nb,
-				(unsigned long)MA_LWP_UP_PREPARE,
-				(void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&linux_sched_nb);
 	init_rq(&ma_main_runqueue);
 	init_rq(&ma_dontsched_runqueue);
 

@@ -531,33 +531,32 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 	LOG_RETURN(kthread);
 }
 
-
-static int __init lwp_callback(struct ma_notifier_block *nfb,
-				unsigned long action,
-				void *hlwp)
+static void ksoftirqd_init(ma_lwp_t lwp)
 {
-	ma_lwp_t lwp = (ma_lwp_t)hlwp;
-	marcel_task_t *p;
- 
-	switch (action) {
-	case MA_LWP_UP_PREPARE:
-		MA_BUG_ON(ma_per_lwp(tasklet_vec, lwp).list);
-		MA_BUG_ON(ma_per_lwp(tasklet_hi_vec, lwp).list);
+	//marcel_task_t *p;
+
+	MA_BUG_ON(ma_per_lwp(tasklet_vec, lwp).list);
+	MA_BUG_ON(ma_per_lwp(tasklet_hi_vec, lwp).list);
 #if 0
-		p = ma_kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
-		if (MA_IS_ERR(p)) {
-			pm2debug("ksoftirqd for %i failed\n", hotcpu);
-			return NOTIFY_BAD;
-		}
-		//ma_kthread_bind(p, hotcpu);
-  		ma_per_lwp(ksoftirqd, hotcpu) = p;
+	p = ma_kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
+	if (MA_IS_ERR(p)) {
+		pm2debug("ksoftirqd for %i failed\n", hotcpu);
+		return NOTIFY_BAD;
+	}
+	//ma_kthread_bind(p, hotcpu);
+	ma_per_lwp(ksoftirqd, hotcpu) = p;
 #endif
-		break;
-	case MA_LWP_ONLINE:
-		p=ksofirqd_start(lwp);
-		ma_wake_up_created_thread(p);
-  		ma_per_lwp(ksoftirqd, lwp) = p;
-		break;
+}
+
+static void ksoftirqd_start(ma_lwp_t lwp)
+{
+	marcel_task_t *p;
+
+	p=ksofirqd_start(lwp);
+	ma_wake_up_created_thread(p);
+	ma_per_lwp(ksoftirqd, lwp) = p;
+}
+
 #if 0
 #ifdef CONFIG_HOTPLUG_CPU
 	case CPU_UP_CANCELED:
@@ -571,23 +570,11 @@ static int __init lwp_callback(struct ma_notifier_block *nfb,
 		break;
 #endif /* CONFIG_HOTPLUG_CPU */
 #endif
- 	}
-	return MA_NOTIFY_OK;
-}
 
-static struct ma_notifier_block lwp_nfb = {
-	.notifier_call = lwp_callback
-};
+MA_DEFINE_LWP_NOTIFIER_START(ksoftirqd, "ksoftirqd",
+			     ksoftirqd_init, "Check tasklet lists",
+			     ksoftirqd_start, "Create and launch 'ksoftirqd'");
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(ksoftirqd, MA_INIT_SOFTIRQ_KSOFTIRQD);
+MA_LWP_NOTIFIER_CALL_ONLINE(ksoftirqd, MA_INIT_SOFTIRQ_KSOFTIRQD);
 
-__init void linux_softirq_ksoftirqd(void)
-{
-	ma_lwp_t lwp=LWP_SELF;
-	lwp_callback(&lwp_nfb, MA_LWP_UP_PREPARE, lwp);
-	lwp_callback(&lwp_nfb, MA_LWP_ONLINE, lwp);
-	ma_register_lwp_notifier(&lwp_nfb);
-	return;
-}
-
-__ma_initfunc(linux_softirq_ksoftirqd, MA_INIT_SOFTIRQ_KSOFTIRQD,
-		               "start ksoftirqd"); 
 

@@ -303,7 +303,7 @@ void marcel_init_section(int sec)
 		while (infos < last) {
 			mdebug("Init launching for prio %i: %s (%s)\n",
 			       (int)(MA_INIT_PRIO_BASE-infos->prio), 
-			      infos->debug, infos->file);
+			      *infos->debug, infos->file);
 			(*infos->func)();
 			infos++;
 		}

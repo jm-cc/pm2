@@ -1244,6 +1244,10 @@ static void __init init_timers_lwp(ma_lwp_t lwp)
 		INIT_LIST_HEAD(base->tv1.vec + j);
 
 	base->timer_jiffies = ma_jiffies;
+
+	if (IS_FIRST_LWP(lwp)) {
+		ma_open_softirq(MA_TIMER_SOFTIRQ, run_timer_softirq, NULL);
+	}
 }
 
 #ifdef CONFIG_HOTPLUG_CPU
@@ -1311,7 +1315,12 @@ unlock_again:
 	goto again;
 }
 #endif /* CONFIG_HOTPLUG_CPU */
-	
+
+MA_DEFINE_LWP_NOTIFIER_START(timers, "Timers Linux 2.6",
+			     init_timers_lwp, "Init timer",
+			     (void), "[none]");
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(timers, MA_INIT_LINUX_TIMER);
+#if 0
 static int __init timer_lwp_notify(struct ma_notifier_block *self, 
 				   unsigned long action, void *hlwp)
 {
@@ -1330,22 +1339,7 @@ static int __init timer_lwp_notify(struct ma_notifier_block *self,
 	}
 	return MA_NOTIFY_OK;
 }
-
-static struct ma_notifier_block timers_nb = {
-	.notifier_call	= timer_lwp_notify,
-};
-
-
-void __init init_timers(void)
-{
-	timer_lwp_notify(&timers_nb, (unsigned long)MA_LWP_UP_PREPARE,
-			 (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&timers_nb);
-	ma_open_softirq(MA_TIMER_SOFTIRQ, run_timer_softirq, NULL);
-}
-
-__ma_initfunc(init_timers, MA_INIT_LINUX_TIMER,
-	      "Timers Linux 2.6");
+#endif
 
 #if 0
 #ifdef CONFIG_TIME_INTERPOLATION

@@ -185,9 +185,6 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 }
 
 MA_DEFINE_PER_LWP(marcel_task_t *,idle_task)=NULL;
-#ifdef MA__ACTIVATION
-MA_DEFINE_PER_LWP(marcel_task_t *,upcall_new_task)=NULL;
-#endif
 
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {
@@ -195,10 +192,12 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	char name[MARCEL_MAXNAMESIZE];
 	LOG_IN();
 
-	if (!IS_FIRST_LWP(lwp)) {
+	if (IS_FIRST_LWP(lwp)) {
+		marcel_sem_init(&_main_struct.blocked,0);
+	} else {
 		/* run_task DOIT démarrer en contexte d'irq */
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
-	}
+	} 
 
 	/*****************************************/
 	/* Création de la tâche Idle (idle_task) */
@@ -227,38 +226,6 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 			      &attr, idle_func, (void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
 
-#ifdef MA__ACTIVATION
-  /****************************************************/
-  /* Création de la tâche pour les upcalls upcall_new */
-  /****************************************************/
-	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
-	marcel_attr_setname(&attr,name);
-	marcel_attr_setdetachstate(&attr, TRUE);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(lwp->number));
-	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
-#ifdef PM2
-	{
-		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
-
-		unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
-					 ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
-
-		marcel_attr_setstackaddr(&attr, stack);
-		marcel_attr_setstacksize(&attr, stsize);
-	}
-#endif
-
-	// la fonction ne sera jamais exécutée, c'est juste pour avoir une
-	// structure de thread marcel dans upcall_new
-	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
-	marcel_create_special(&(ma_per_lwp(upcall_new_task, lwp)),
-			      &attr, (void*)idle_func, NULL);
-	
-	MTRACE("Upcall_Task", ma_per_lwp(upcall_new_task, lwp));
-	
-	/****************************************************/
-#endif
 	LOG_OUT();
 }
 
@@ -279,35 +246,13 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 	LOG_OUT();
 }
 
-static int sched_lwp_notify(struct ma_notifier_block *self, 
-				   unsigned long action, void *hlwp)
-{
-	ma_lwp_t lwp = (ma_lwp_t)hlwp;
-	switch(action) {
-	case MA_LWP_UP_PREPARE:
-		marcel_sched_lwp_init(lwp);
-		break;
-	case MA_LWP_ONLINE:
-		marcel_sched_lwp_start(lwp);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
+MA_DEFINE_LWP_NOTIFIER_START_PRIO(generic_sched, 100, "Sched generic",
+				  marcel_sched_lwp_init, "Création de idle",
+				  marcel_sched_lwp_start, "Réveil de idle et démarrage de la préemtion");
 
-static struct ma_notifier_block generic_sched_nb = {
-	.notifier_call	= sched_lwp_notify,
-	.next		= NULL,
-	.priority       = 100, /* Pour authoriser la préemption */
-};
-
-void __init marcel_gensched_init_preempt(void)
-{
-	sched_lwp_notify(&generic_sched_nb, (unsigned long)MA_LWP_ONLINE,
-			   (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&generic_sched_nb);
-}
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(generic_sched, MA_INIT_GENSCHED_IDLE);
+MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(generic_sched, MA_INIT_GENSCHED_PREEMPT,
+				 MA_INIT_GENSCHED_PREEMPT_PRIO);
 
 #ifdef MA__LWPS
 void __init marcel_gensched_start_lwps(void)
@@ -320,24 +265,7 @@ void __init marcel_gensched_start_lwps(void)
 	mdebug("marcel_sched_init  : %i lwps created\n", get_nb_lwps());
 	LOG_OUT();
 }
-#endif /* MA__LWPS */
 
-void __init marcel_gensched_init_idle(void)
-{
-	marcel_sem_init(&_main_struct.blocked,0);
-	
-	sched_lwp_notify(&generic_sched_nb, (unsigned long)MA_LWP_UP_PREPARE,
-			   (void *)(ma_lwp_t)LWP_SELF);
-}
-
-__ma_initfunc_prio(marcel_gensched_init_preempt, MA_INIT_GENSCHED_PREEMPT,
-		   MA_INIT_GENSCHED_PREEMPT_PRIO,
-		   "Démarre la préemtion pour les LWPs");
-
-__ma_initfunc(marcel_gensched_init_idle, MA_INIT_GENSCHED_IDLE,
-	       "Création Idle");
-
-#ifdef MA__LWPS
 __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS,
 	       "Création et démarrage des LWPs");
 #endif /* MA__LWPS */

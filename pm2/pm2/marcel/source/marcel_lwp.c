@@ -47,7 +47,7 @@ MA_DEFINE_PER_LWP(unsigned, number)=0;
 MA_DEFINE_PER_LWP(int, online)=0;
 
 #ifdef MA__LWPS
-static struct ma_notifier_block *lwp_chain = NULL;
+static MA_DEFINE_NOTIFIER_CHAIN(lwp_chain, "LWP");
 
 /* Need to know about LWPs going up/down? */
 int ma_register_lwp_notifier(struct ma_notifier_block *nb)
@@ -200,8 +200,8 @@ static void *lwp_kthread_start_func(void *arg)
 }
 #endif /* MA__SMP */
 
-static int lwp_notify(struct ma_notifier_block *self, unsigned long action, void *hlwp);
-static struct ma_notifier_block lwp_nb;
+//static int lwp_notify(struct ma_notifier_block *self, unsigned long action, void *hlwp);
+//static struct ma_notifier_block lwp_nb;
 
 unsigned marcel_lwp_add_vp(void)
 {
@@ -430,31 +430,16 @@ static int lwp_start(ma_lwp_t lwp)
 	return 0;
 }
 
-static int lwp_notify(struct ma_notifier_block *self, 
-		      unsigned long action, void *hlwp)
-{
-	ma_lwp_t lwp = (ma_lwp_t)hlwp;
-	switch(action) {
-	case MA_LWP_UP_PREPARE:
-		lwp_init(lwp);
-		break;
-	case MA_LWP_ONLINE:
-		lwp_start(lwp);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
+/* Pour prendre la main au tout début : à la déclaration aussi, on se
+   dépêche de remplir le champ 'number'
+*/
+MA_DEFINE_LWP_NOTIFIER_START_PRIO(lwp, 300, "Initialisation",
+				  lwp_init, "Création de RunTask",
+				  lwp_start, "PROF_NEW et bind_on_proc");
 
-static struct ma_notifier_block lwp_nb = {
-	.notifier_call	= lwp_notify,
-	.next		= NULL,
-	.priority       = 300, /* Pour prendre la main au tout début 
-				  A la déclaration aussi, on se dépêche
-				  de remplir le champ 'number'
-				*/
-};
+MA_LWP_NOTIFIER_CALL_ONLINE(lwp, MA_INIT_LWP);
+MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(lwp, MA_INIT_LWP_MAIN_STRUCT,
+				     MA_INIT_LWP_MAIN_STRUCT_PRIO);
 
 void __init marcel_lwp_finished(void)
 {
@@ -463,23 +448,4 @@ void __init marcel_lwp_finished(void)
 
 __ma_initfunc_prio(marcel_lwp_finished, MA_INIT_LWP_FINISHED,
 		   MA_INIT_LWP_FINISHED_PRIO, "Tell __main_lwp is online");
-
-void __init marcel_lwp_decl_bind(void)
-{
-	lwp_notify(&lwp_nb, (unsigned long)MA_LWP_ONLINE,
-		   (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&lwp_nb);
-}
-
-__ma_initfunc(marcel_lwp_decl_bind, MA_INIT_LWP,
-	       "Declare (and bind) lwp");
-
-void __init marcel_lwp_init(void)
-{
-	lwp_notify(&lwp_nb, (unsigned long)MA_LWP_UP_PREPARE,
-		   (void *)(ma_lwp_t)LWP_SELF);
-}
-
-__ma_initfunc_prio(marcel_lwp_init, MA_INIT_LWP_MAIN_STRUCT,
-		   MA_INIT_LWP_MAIN_STRUCT_PRIO, "Initialise __main_lwp");
 

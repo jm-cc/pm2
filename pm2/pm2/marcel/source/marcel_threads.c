@@ -311,6 +311,12 @@ static void* postexit_thread_func(any_t arg)
 	abort(); /* For security */
 }
 
+void marcel_threads_postexit_init(marcel_lwp_t *lwp)
+{
+	marcel_sem_init(&ma_per_lwp(postexit_thread, lwp), 0);
+	marcel_sem_init(&ma_per_lwp(postexit_space, lwp), 1);
+}
+
 void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 {
 	marcel_attr_t attr;
@@ -342,46 +348,11 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	LOG_OUT();
 }
 
-static int threads_lwp_notify(struct ma_notifier_block *self, 
-			      unsigned long action, void *hlwp)
-{
-	ma_lwp_t lwp = (ma_lwp_t)hlwp;
-	switch(action) {
-	case MA_LWP_UP_PREPARE:
-		marcel_sem_init(&ma_per_lwp(postexit_thread, lwp), 0);
-		marcel_sem_init(&ma_per_lwp(postexit_space, lwp), 1);
-		break;
-	case MA_LWP_ONLINE:
-		marcel_threads_postexit_start(lwp);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
-
-static struct ma_notifier_block threads_nb = {
-	.notifier_call	= threads_lwp_notify,
-	.next		= NULL,
-};
-
-void __init marcel_threads_init_data(void)
-{
-	threads_lwp_notify(&threads_nb, (unsigned long)MA_LWP_UP_PREPARE,
-			   (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&threads_nb);
-}
-
-void __init marcel_threads_init_threads(void)
-{
-	threads_lwp_notify(&threads_nb, (unsigned long)MA_LWP_ONLINE,
-			   (void *)(ma_lwp_t)LWP_SELF);
-}
-
-__ma_initfunc(marcel_threads_init_data, MA_INIT_THREADS_DATA,
-	       "'postexit' data for lwp");
-__ma_initfunc(marcel_threads_init_threads, MA_INIT_THREADS_THREAD,
-	       "'postexit' thread for main lwp");
+MA_DEFINE_LWP_NOTIFIER_START(postexit, "Postexit thread",
+			     marcel_threads_postexit_init, "'postexit' data",
+			     marcel_threads_postexit_start, "Create and launch 'postexit' thread");
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(postexit, MA_INIT_THREADS_DATA);
+MA_LWP_NOTIFIER_CALL_ONLINE(postexit, MA_INIT_THREADS_THREAD);
 
 /****************************************************************
  *                Enregistrement des fonctions de terminaison

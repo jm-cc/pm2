@@ -31,7 +31,7 @@ unsigned marcel_sched_add_vp(void);
 
 /* ==== get current thread or LWP id ==== */
 
-static __inline__ marcel_t marcel_self(void)
+extern MARCEL_INLINE marcel_t marcel_self(void)
 {
   return __marcel_self();
 }
@@ -47,7 +47,7 @@ static __inline__ unsigned marcel_current_vp(void)
 
 /* ==== explicit preemption ==== */
 
-void marcel_yield(void);
+DEC_MARCEL_POSIX(int, yield, (void))
 
 #ifdef MARCEL_KERNEL
 void ma__marcel_yield(void);
@@ -345,7 +345,7 @@ _PRIVATE_ void marcel_one_task_less(marcel_t pid);
 _PRIVATE_ void marcel_one_more_task(marcel_t pid);
 
 _PRIVATE_ void marcel_give_hand(boolean *blocked);
-_PRIVATE_ void marcel_tempo_give_hand(unsigned long timeout, boolean *blocked, marcel_sem_t *s);
+_PRIVATE_ int __marcel_tempo_give_hand(unsigned long timeout, boolean *blocked, marcel_sem_t *s);
 
 _PRIVATE_ void ma_wake_task(marcel_t t, boolean *blocked);
 

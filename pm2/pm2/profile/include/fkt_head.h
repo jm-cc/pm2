@@ -33,17 +33,17 @@
 	returns number of 32-bit ints in buffer (>0) if all ok, else -1.
 */
 /*	int fkt_setup( unsigned int keymask ) */
-	_syscall1(int, fkt_setup, unsigned int, keymask)
-
-
+        _syscall1(int, fkt_setup, unsigned int, keymask)
+     
+     
 /*	called once to end up tracing.
 	includes freeing the buffers.
 	returns 0 if all ok, -1.
 */
 /*	int fkt_endup( void ) */
-	_syscall0(int, fkt_endup)
-
-
+     _syscall0(int, fkt_endup)
+     
+     
 /*	called to enable/disable key sets.
 	returns old key set if all ok, else -1.
 */
@@ -71,15 +71,21 @@
 
 
 /*	called to trigger a kernel probe with one parameter */
-/* int fkt_probe1( unsigned int keymask, unsigned int code,
+/*      int fkt_probe1( unsigned int keymask, unsigned int code,
 							unsigned int p1 ); */
 	_syscall3(int, fkt_probe1, unsigned int, keymask, unsigned int, code, unsigned int, p1)
 
 
 /*	called to trigger a kernel probe with two parameters */
-/* int fkt_probe2( unsigned int keymask, unsigned int code,
+/*      int fkt_probe2( unsigned int keymask, unsigned int code,
 							unsigned int p1, unsigned int p2 ); */
 	_syscall4(int, fkt_probe2, unsigned int, keymask, unsigned int, code, unsigned int, p1, unsigned int, p2)
 
+
+/*      calles to have a recording of the creation of a new lwp, its pid, its cpu, its first thread, 
+	its logical number */
+/*      int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num); */
+
+        _syscall2(int, fkt_new_lwp, unsigned int, thread_num, unsigned int, lwp_logical_num)
 
 #endif

@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #ifndef PROFILE_IS_DEF
 #define PROFILE_IS_DEF
 
@@ -49,7 +64,8 @@
 #define PROF_OUT()           GEN_PREPROC(__FUNCTION__ "_exit")
 
 #define PROF_IN_EXT(name)    GEN_PREPROC(#name "_entry")
-#define PROF_OUT_EXT(name)   GEN_PREPROC(#name "_exit");
+#define PROF_OUT_EXT(name)   GEN_PREPROC(#name "_exit")
+#define PROF_EVENT(name)     GEN_PREPROC(#name "_single")
 
 #else // ifndef DO_PROFILE
 
@@ -60,6 +76,7 @@
 
 #define PROF_IN_EXT(name)            (void)0
 #define PROF_OUT_EXT(name)           (void)0
+#define PROF_EVENT(name)             (void)0
 
 #endif // DO_PROFILE
 
@@ -88,6 +105,7 @@ void profile_stop(void);
 
 #define PROF_IN_EXT(name)            (void)0
 #define PROF_OUT_EXT(name)           (void)0
+#define PROF_EVENT(name)             (void)0
 
 #endif // PROFILE
 

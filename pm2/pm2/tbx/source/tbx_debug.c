@@ -62,6 +62,9 @@ DEBUG_DECLARE(mad1)
 #ifdef MAD2
 DEBUG_DECLARE(mad2)
 #endif
+#ifdef MAD3
+DEBUG_DECLARE(mad3)
+#endif
 #ifdef LEONIE
 DEBUG_DECLARE(leonie)
 #endif
@@ -156,8 +159,8 @@ static void register_setup(debug_type_t* type, debug_action_t action,
 
 static int apply_option(debug_type_t *type, char* option)
 {
-	int size=strlen(type->option_name);
-	char *chaine;
+	size_t size=strlen(type->option_name);
+	const char *chaine;
 	int addlen;
 	debug_action_t action;
 	int value;
@@ -331,6 +334,9 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 #ifdef MAD2
 	  DEBUG_INIT(mad2);
 #endif
+#ifdef MAD3
+	  DEBUG_INIT(mad3);
+#endif
 #ifdef LEONIE
 	  DEBUG_INIT(leonie);
 #endif
@@ -396,7 +402,7 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 }
 	
 typedef struct {
-char* file_lock;
+const char* file_lock;
 int file_line;
 int file_flush;
 } debug_lock_t;
@@ -487,8 +493,8 @@ void pm2debug_flush()
 	
 
 
-int pm2debug_printf(debug_type_t *type, int line, char* file, 
-		     const char *format, ...)
+int pm2debug_printf(debug_type_t *type, int line, const char* file, 
+		    const char *format, ...)
 {
 #ifdef ACTIVATION
 	int new_bytes=0;

@@ -86,29 +86,36 @@ static void timer_interrupt(int sig)
 }
 
 #ifdef MA_PROTECT_LOCK_TASK_FROM_SIG
-#if defined(LINUX_SYS) && ( defined(X86_ARCH) || defined(ALPHA_ARCH) )
-#include <asm/sigcontext.h>
+#  if defined(LINUX_SYS) && ( \
+	defined(X86_ARCH) || defined(ALPHA_ARCH) || defined(IA64_ARCH) )
+#    ifndef IA64_ARCH
+#      include <asm/sigcontext.h>
+#    endif
 static void timer_interrupt_protect(int sig, struct sigcontext context)
 //#elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
 //static void timer_interrupt_protect(int sig, siginfo_t *siginfo , void *p)
 //#elif defined(AIX_SYS) && defined(RS6K_ARCH)
 //static void timer_interrupt_protect(int sig, int Code, struct sigcontext *SCP)
-#elif defined(OSF_SYS) && defined(ALPHA_ARCH)
+#  elif defined(OSF_SYS) && defined(ALPHA_ARCH)
 static void timer_interrupt_protect(int sig, siginfo_t *siginfo , void *p)
-#else
-#error MA_PROTECT_LOCK_TASK_FROM_SIG is not yet implemented on that system! \
-  Sorry.
-#endif
+#  else
+#    error MA_PROTECT_LOCK_TASK_FROM_SIG is not yet implemented on that system! \
+       Sorry.
+#  endif
 {
   unsigned long pc;
 
-#if defined(LINUX_SYS) && defined(X86_ARCH)
+#  if defined(LINUX_SYS) && defined(X86_ARCH)
   pc = context.eip;
-#elif defined(LINUX_SYS) && defined(ALPHA_ARCH)
+#  elif defined(LINUX_SYS) && defined(ALPHA_ARCH)
   pc = context.sc_pc;
-#elif defined(OSF_SYS) && defined(ALPHA_ARCH)
+#  elif defined(LINUX_SYS) && defined(IA64_ARCH)
+  pc = context.sc_ip;
+#  elif defined(OSF_SYS) && defined(ALPHA_ARCH)
   pc = ((unsigned long *)p)[2];
-#endif
+#  else
+#    error pc not defiend for this arch
+#  endif
 
   if ((pc < (unsigned long)ma_sched_protect_start) || 
       ((unsigned long)ma_sched_protect_end < pc)) {

@@ -44,16 +44,20 @@ END_DSM_DATA
 
 pm2_barrier_t b;
 
+static void startup_func(int argc, char *argv[], void *arg)
+{
+  pm2_barrier_init((pm2_barrier_t *)arg);
+}
+
 int pm2_main(int argc, char **argv)
 {
   int i, j, nodes;
 
-  //dsm_set_default_protocol(MIGRATE_THREAD);
   dsm_set_default_protocol(LI_HUDAK);
 
-  pm2_set_dsm_page_distribution(DSM_BLOCK, 16);
+  pm2_set_dsm_page_distribution(DSM_CYCLIC, 16);
 
-  pm2_barrier_init(&b, 2);
+  pm2_push_startup_func(startup_func, (void *)&b);
 
   pm2_init(&argc, argv);
 

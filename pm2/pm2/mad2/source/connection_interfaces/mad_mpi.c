@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.12  2000/03/08 17:19:28  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.11  2000/03/02 14:51:17  oaumage
 - indication du nom du protocole dans la structure driver
 
@@ -119,9 +124,9 @@ ______________________________________________________________________________
 #define MAD_MPI_SERVICE_TAG      0
 #define MAD_MPI_TRANSFER_TAG     1
 #define MAD_MPI_FLOW_CONTROL_TAG 2
-#ifdef PM2
+#ifdef MARCEL
 #define MAX_MPI_REQ 64
-#endif /* PM2 */
+#endif /* MARCEL */
 
 /*
  * type definition
@@ -133,25 +138,25 @@ ______________________________________________________________________________
  * local structures
  * ----------------
  */
-#ifdef PM2
+#ifdef MARCEL
 typedef struct 
 {
   marcel_pollinst_t pollinst;
   MPI_Request       request;
   MPI_Status        status;
 } mad_mpi_poll_arg_t, *p_mad_mpi_poll_arg_t;
-#endif /* PM2 */
+#endif /* MARCEL */
 
 typedef struct
 {
-  PM2_SHARED;
+  TBX_SHARED;
   int nb_adapter;
-#ifdef PM2
+#ifdef MARCEL
   marcel_pollid_t      poll_id;
   unsigned             poll_nb_req;
   MPI_Request          poll_req[MAX_MPI_REQ];
   p_mad_mpi_poll_arg_t poll_arg[MAX_MPI_REQ];
-#endif /* PM2 */
+#endif /* MARCEL */
 } mad_mpi_driver_specific_t, *p_mad_mpi_driver_specific_t;
 
 typedef struct
@@ -175,7 +180,7 @@ typedef struct
  * static functions
  * ----------------
  */
-#ifdef PM2
+#ifdef MARCEL
 static p_mad_mpi_driver_specific_t mad_mpi_driver_specific;
 
 static void mpi_io_group(marcel_pollid_t id)
@@ -201,7 +206,7 @@ static void *mpi_io_poll(marcel_pollid_t id,
 			 unsigned        blocked)
 {
   LOG_IN();
-  if(PM2_TRYLOCK_SHARED(mad_mpi_driver_specific))
+  if(TBX_TRYLOCK_SHARED(mad_mpi_driver_specific))
     {
       int flag;
       int index;
@@ -212,7 +217,7 @@ static void *mpi_io_poll(marcel_pollid_t id,
 		  &index,
 		  &flag,
 		  &status);      
-      PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
+      TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
       
       if(flag) 
 	{
@@ -239,7 +244,7 @@ static void mad_mpi_send(void         *buffer,
 {
   mad_mpi_poll_arg_t arg;
 
-  PM2_LOCK_SHARED(mad_mpi_driver_specific);
+  TBX_LOCK_SHARED(mad_mpi_driver_specific);
   MPI_Isend(buffer,
 	    count, 
 	    type, 
@@ -247,7 +252,7 @@ static void mad_mpi_send(void         *buffer,
 	    tag,
 	    communicator,
 	    &arg.request);
-  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
+  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
   marcel_poll(mad_mpi_driver_specific->poll_id, (any_t)&arg);
   *status = arg.status;
 }
@@ -262,7 +267,7 @@ static void mad_mpi_recv(void         *buffer,
 {
   mad_mpi_poll_arg_t arg;
 
-  PM2_LOCK_SHARED(mad_mpi_driver_specific);
+  TBX_LOCK_SHARED(mad_mpi_driver_specific);
   MPI_Irecv(buffer,
 	    count,
 	    type, 
@@ -270,11 +275,11 @@ static void mad_mpi_recv(void         *buffer,
 	    tag,
 	    communicator, 
 	    &arg.request);
-  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
+  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
   marcel_poll(mad_mpi_driver_specific->poll_id, (any_t)&arg);
   *status = arg.status;
 }
-#endif /* PM2 */
+#endif /* MARCEL */
 
 /*
  * exported functions
@@ -340,18 +345,18 @@ mad_mpi_driver_init(p_mad_driver_t driver)
   /* Driver module initialization code
      Note: called only once, just after
      module registration */
-  driver_specific = malloc(sizeof(mad_mpi_driver_specific_t));
+  driver_specific = TBX_MALLOC(sizeof(mad_mpi_driver_specific_t));
   CTRL_ALLOC(driver_specific);
   driver->specific = driver_specific;
-  PM2_INIT_SHARED(driver_specific);
+  TBX_INIT_SHARED(driver_specific);
   driver_specific->nb_adapter = 0;
 
-#ifdef PM2
+#ifdef MARCEL
   mad_mpi_driver_specific = driver_specific;
   mad_mpi_driver_specific->poll_id =
     marcel_pollid_create(mpi_io_group, mpi_io_poll, 1);
-#endif /* PM2 */
-  driver->name = malloc(4);
+#endif /* MARCEL */
+  driver->name = TBX_MALLOC(4);
   CTRL_ALLOC(driver->name);
   strcpy(driver->name, "mpi");
   LOG_OUT();
@@ -374,17 +379,17 @@ mad_mpi_adapter_init(p_mad_adapter_t adapter)
   
   if (adapter->name == NULL)
     {
-      adapter->name = malloc(10);
+      adapter->name = TBX_MALLOC(10);
       CTRL_ALLOC(adapter->name);
       sprintf(adapter->name, "MPI%d", driver_specific->nb_adapter);
     }
 
   driver_specific->nb_adapter++;
 
-  adapter_specific = malloc(sizeof(mad_mpi_adapter_specific_t));
+  adapter_specific = TBX_MALLOC(sizeof(mad_mpi_adapter_specific_t));
   CTRL_ALLOC(adapter_specific);
 
-  adapter->parameter = malloc(10);
+  adapter->parameter = TBX_MALLOC(10);
   CTRL_ALLOC(adapter->parameter);
   sprintf(adapter->parameter, "-"); 
   LOG_OUT();
@@ -398,12 +403,12 @@ mad_mpi_channel_init(p_mad_channel_t channel)
   LOG_IN();
   /* Channel initialization code
      Note: called once for each new channel */
-  channel_specific = malloc(sizeof(mad_mpi_channel_specific_t));
+  channel_specific = TBX_MALLOC(sizeof(mad_mpi_channel_specific_t));
   CTRL_ALLOC(channel_specific);
 
-  PM2_LOCK_SHARED(mad_mpi_driver_specific);
+  TBX_LOCK_SHARED(mad_mpi_driver_specific);
   MPI_Comm_dup(MPI_COMM_WORLD, &channel_specific->communicator);
-  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
+  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
   channel->specific = channel_specific;
   LOG_OUT();
 }
@@ -426,10 +431,10 @@ mad_mpi_channel_exit(p_mad_channel_t channel)
   
   LOG_IN();
   /* Code to execute to clean up a channel */
-  PM2_LOCK_SHARED(mad_mpi_driver_specific);
+  TBX_LOCK_SHARED(mad_mpi_driver_specific);
   MPI_Comm_free(&channel_specific->communicator);
-  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
-  free(channel_specific);
+  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
+  TBX_FREE(channel_specific);
   channel->specific = NULL;
   LOG_OUT();
 }
@@ -439,34 +444,34 @@ mad_mpi_adapter_exit(p_mad_adapter_t adapter)
 {
   LOG_IN();
   /* Code to execute to clean up an adapter */
-  free(adapter->parameter);
-  free(adapter->name);
-  free(adapter->specific);
+  TBX_FREE(adapter->parameter);
+  TBX_FREE(adapter->name);
+  TBX_FREE(adapter->specific);
   LOG_OUT();
 }
 
 void
 mad_mpi_driver_exit(p_mad_driver_t driver)
 {
-#ifdef PM2
+#ifdef MARCEL
   unsigned count;
-#endif /* PM2 */  
+#endif /* MARCEL */  
   LOG_IN();
   /* Code to execute to clean up a driver */
-  PM2_LOCK_SHARED(mad_mpi_driver_specific);
-#ifdef PM2
+  TBX_LOCK_SHARED(mad_mpi_driver_specific);
+#ifdef MARCEL
   for (count = 0;
        count < mad_mpi_driver_specific->poll_nb_req;
        count++)
     {
       MPI_Cancel(&(mad_mpi_driver_specific->poll_req[count]));
     }
-#endif /* PM2 */  
+#endif /* MARCEL */  
   MPI_Finalize();
-  free (driver->specific);
-#ifdef PM2
+  TBX_FREE (driver->specific);
+#ifdef MARCEL
   mad_mpi_driver_specific = NULL;
-#endif /* PM2 */
+#endif /* MARCEL */
   driver->specific = NULL;
   LOG_OUT();
 }
@@ -479,12 +484,12 @@ mad_mpi_new_message(p_mad_connection_t connection)
   p_mad_mpi_channel_specific_t channel_specific = channel->specific;
   p_mad_configuration_t        configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
-#ifdef PM2
+#ifdef MARCEL
   MPI_Status status;
-#endif /* PM2 */
+#endif /* MARCEL */
   LOG_IN();
   /* Code to prepare a new message */
-#ifdef PM2
+#ifdef MARCEL
   mad_mpi_send(&configuration->local_host_id,
 	       1,
 	       MPI_INT,
@@ -501,7 +506,7 @@ mad_mpi_new_message(p_mad_connection_t connection)
 	   connection->remote_host_id,
 	   MAD_MPI_SERVICE_TAG,
 	   channel_specific->communicator);
-#endif /* PM2 */
+#endif /* MARCEL */
   LOG_OUT();
 }
 
@@ -509,16 +514,16 @@ p_mad_connection_t
 mad_mpi_receive_message(p_mad_channel_t channel)
 {
   p_mad_mpi_channel_specific_t channel_specific = channel->specific;
-#ifndef PM2
+#ifndef MARCEL
   p_mad_configuration_t configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
-#endif /* PM2 */
+#endif /* MARCEL */
   p_mad_connection_t    connection       = NULL;
   int                   remote_host_id;
   MPI_Status            status;
 
   LOG_IN();
-#ifdef PM2
+#ifdef MARCEL
   mad_mpi_recv(&remote_host_id,
 	       1,
 	       MPI_INT,
@@ -527,7 +532,7 @@ mad_mpi_receive_message(p_mad_channel_t channel)
 	       channel_specific->communicator,
 	       &status);
   connection = &(channel->input_connection[remote_host_id]);
-#else /* PM2 */
+#else /* MARCEL */
   if (configuration->size == 2)
     {
       connection =
@@ -545,7 +550,7 @@ mad_mpi_receive_message(p_mad_channel_t channel)
 	       &status);
       connection = &(channel->input_connection[remote_host_id]);
     }
-#endif /* PM2 */
+#endif /* MARCEL */
   LOG_OUT();
   return connection;
 }
@@ -557,13 +562,13 @@ mad_mpi_send_buffer(p_mad_link_t     lnk,
   p_mad_connection_t           connection       = lnk->connection;
   p_mad_channel_t              channel          = connection->channel;
   p_mad_mpi_channel_specific_t channel_specific = channel->specific;
-#ifdef PM2
+#ifdef MARCEL
   MPI_Status status;
-#endif /* PM2 */
+#endif /* MARCEL */
   
   LOG_IN();
 /* Code to send one buffer */
-#ifdef PM2
+#ifdef MARCEL
   mad_mpi_send(buffer->buffer,
 	       buffer->length,
 	       MPI_CHAR,
@@ -571,14 +576,14 @@ mad_mpi_send_buffer(p_mad_link_t     lnk,
 	       MAD_MPI_TRANSFER_TAG,
 	       channel_specific->communicator,
 	       &status);
-#else /* PM2 */
+#else /* MARCEL */
   MPI_Send(buffer->buffer,
 	   buffer->length,
 	   MPI_CHAR,
 	   connection->remote_host_id,
 	   MAD_MPI_TRANSFER_TAG,
 	   channel_specific->communicator);
-#endif /* PM2 */
+#endif /* MARCEL */
   buffer->bytes_read = buffer->length;
   LOG_OUT();
 }
@@ -595,7 +600,7 @@ mad_mpi_receive_buffer(p_mad_link_t     lnk,
   
   LOG_IN();
   /* Code to receive one buffer */
-#ifdef PM2
+#ifdef MARCEL
   mad_mpi_recv(buffer->buffer,
 	       buffer->length,
 	       MPI_CHAR,
@@ -603,7 +608,7 @@ mad_mpi_receive_buffer(p_mad_link_t     lnk,
 	       MAD_MPI_TRANSFER_TAG,
 	       channel_specific->communicator,
 	       &status);
-#else /* PM2 */
+#else /* MARCEL */
   MPI_Recv(buffer->buffer,
 	   buffer->length,
 	   MPI_CHAR,
@@ -611,7 +616,7 @@ mad_mpi_receive_buffer(p_mad_link_t     lnk,
 	   MAD_MPI_TRANSFER_TAG,
 	   channel_specific->communicator,
 	   &status);
-#endif /* PM2 */
+#endif /* MARCEL */
   buffer->bytes_written = buffer->length;
   LOG_OUT();
 }
@@ -643,11 +648,11 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 	  MPI_Aint                     displacement[buffer_count];
 	  MPI_Datatype                 hindexed;
 	  int                          count = 0;
-#ifdef PM2
+#ifdef MARCEL
 	  MPI_Status status;
-#endif /* PM2 */
+#endif /* MARCEL */
 
-	  PM2_LOCK_SHARED(mad_mpi_driver_specific);
+	  TBX_LOCK_SHARED(mad_mpi_driver_specific);
 	  do
 	    {
 	      buffer = tbx_get_list_reference_object(&ref);
@@ -664,8 +669,8 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 			    MPI_BYTE,
 			    &hindexed);
 	  MPI_Type_commit(&hindexed);
-	  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
-#ifdef PM2
+	  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
+#ifdef MARCEL
 	  mad_mpi_send(MPI_BOTTOM,
 		       1,
 		       hindexed,
@@ -673,17 +678,17 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 		       MAD_MPI_TRANSFER_TAG,
 		       channel_specific->communicator,
 		       &status);
-#else /* PM2 */
+#else /* MARCEL */
 	  MPI_Send(MPI_BOTTOM,
 		   1,
 		   hindexed,
 		   connection->remote_host_id,
 		   MAD_MPI_TRANSFER_TAG,
 		   channel_specific->communicator);
-#endif /* PM2 */
-	  PM2_LOCK_SHARED(mad_mpi_driver_specific);
-	  MPI_Type_free(&hindexed);
-	  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
+#endif /* MARCEL */
+	  TBX_LOCK_SHARED(mad_mpi_driver_specific);
+	  MPI_Type_TBX_FREE(&hindexed);
+	  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
 	}
     }
   LOG_OUT();
@@ -725,7 +730,7 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 	  MPI_Status                   status;
 	  int                          count = 0;
 	  
-	  PM2_LOCK_SHARED(mad_mpi_driver_specific);
+	  TBX_LOCK_SHARED(mad_mpi_driver_specific);
 	  do
 	    {
 	      buffer = tbx_get_list_reference_object(&ref);
@@ -742,8 +747,8 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 			    MPI_BYTE,
 			    &hindexed);
 	  MPI_Type_commit(&hindexed);
-	  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
-#ifdef PM2
+	  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
+#ifdef MARCEL
 	  mad_mpi_recv(MPI_BOTTOM,
 		       1,
 		       hindexed,
@@ -751,7 +756,7 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 		       MAD_MPI_TRANSFER_TAG,
 		       channel_specific->communicator,
 		       &status);
-#else /* PM2 */
+#else /* MARCEL */
 	  MPI_Recv(MPI_BOTTOM,
 		   1,
 		   hindexed,
@@ -759,10 +764,10 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 		   MAD_MPI_TRANSFER_TAG,
 		   channel_specific->communicator,
 		   &status);	  
-#endif /* PM2 */
-	  PM2_LOCK_SHARED(mad_mpi_driver_specific);
-	  MPI_Type_free(&hindexed);
-	  PM2_UNLOCK_SHARED(mad_mpi_driver_specific);
+#endif /* MARCEL */
+	  TBX_LOCK_SHARED(mad_mpi_driver_specific);
+	  MPI_Type_TBX_FREE(&hindexed);
+	  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
 	}
     }
   LOG_OUT();
@@ -799,14 +804,14 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter
   configuration->local_host_id = (ntbx_host_id_t)rank;
   configuration->size          = (mad_configuration_size_t)size;
   configuration->host_name     =
-    malloc(configuration->size * sizeof(char *));
+    TBX_MALLOC(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
 
   for (host_id = 0;
        host_id < configuration->size;
        host_id++)
     {
-      configuration->host_name[host_id] = malloc(MAXHOSTNAMELEN + 1);
+      configuration->host_name[host_id] = TBX_MALLOC(MAXHOSTNAMELEN + 1);
       CTRL_ALLOC(configuration->host_name[host_id]);
 
       if (host_id == rank)
@@ -907,7 +912,7 @@ mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter
 	   MAD_MPI_SERVICE_TAG,
 	   MPI_COMM_WORLD,
 	   &status);
-  *parameter = malloc(len);
+  *parameter = TBX_MALLOC(len);
   MPI_Recv(*parameter,
 	   len + 1,
 	   MPI_CHAR,

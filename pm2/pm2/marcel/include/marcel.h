@@ -59,7 +59,7 @@ __TBX_BEGIN_DECLS
 #include "marcel-master___inline.h"
 #include "scheduler/marcel-master___inline.h"
 
-#if defined(MARCEL_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
+#if defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
 #  include "asm/marcel-master___marcel_compiler.h"
 #  include "marcel-master___marcel_compiler.h"
 #  include "scheduler/marcel-master___marcel_compiler.h"

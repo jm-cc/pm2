@@ -79,6 +79,27 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
       continue;
     } else
 #endif
+#ifdef MARCEL_TOP
+    if(!strcmp(argv[i], "--marcel-top")) {
+      if (i == *argc-1) {
+	fprintf(stderr,
+		"Fatal error: --marcel-top option must be followed "
+		"by <out_file>.\n");
+	exit(1);
+      }
+      if(do_not_strip) {
+	if (marcel_init_top(argv[i+1])) {
+	  fprintf(stderr,
+		  "Error: invalid top out_file %s\n",argv[i+1]);
+	  exit(1);
+	}
+	argv[j++] = argv[i++];
+	argv[j++] = argv[i++];
+      } else
+	i += 2;
+      continue;
+    } else
+#endif
       argv[j++] = argv[i++];
   }
   *argc = j;

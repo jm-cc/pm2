@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.15  2000/05/09 11:18:03  vdanjean
+pm2debug module : minor fixes
+
 Revision 1.14  2000/05/03 18:34:46  vdanjean
 few bugs fixes in key managment
 
@@ -167,7 +170,6 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "sys/marcel_flags.h"
 #include "sys/archdep.h"
 #include "sys/archsetjmp.h"
-#include "sys/marcel_trace.h"
 #include "sys/marcel_debug.h"
 #include "exception.h"
 #include "marcel_lock.h"

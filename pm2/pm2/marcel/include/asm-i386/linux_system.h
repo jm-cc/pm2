@@ -111,6 +111,8 @@ static inline unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int 
 				:"m" (*__ma_xg(ptr)), "0" (x)
 				:"memory");
 			break;
+		default:
+			MA_BUG();
 	}
 	return x;
 }
@@ -144,6 +146,8 @@ static inline unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
 				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
 				     : "memory");
 		return prev;
+	default:
+		MA_BUG();
 	}
 	return old;
 }

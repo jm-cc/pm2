@@ -1540,7 +1540,10 @@ mad_bip_receive_sub_buffer_group(p_mad_link_t           lnk,
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
-	  mad_bip_receive_buffer(lnk, tbx_get_list_reference_object(&ref));
+	  p_mad_buffer_t buffer;
+	  
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_bip_receive_buffer(lnk, &buffer);
 	}
       while(tbx_forward_list_reference(&ref));
     }

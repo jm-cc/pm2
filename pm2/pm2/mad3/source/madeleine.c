@@ -136,16 +136,17 @@ mad_object_init(int    argc TBX_UNUSED,
   p_ntbx_client_t   client    = NULL;
 
   LOG_IN();
-  madeleine = mad_madeleine_cons();
+  madeleine                      = mad_madeleine_cons();
+  madeleine->dynamic             = mad_dynamic_cons(); 
+  madeleine->dynamic->updated    = tbx_false;
+  madeleine->dynamic->merge_done = tbx_false;
+  madeleine->dynamic->mergeable  = tbx_false; 
+  madeleine->settings            = mad_settings_cons();
+  madeleine->session             = mad_session_cons();
+  madeleine->dir                 = mad_directory_cons();
+  madeleine->old_dir             = NULL;
+  madeleine->new_dir             = NULL;
 
-  madeleine->settings    = mad_settings_cons();
-  madeleine->session     = mad_session_cons();
-  madeleine->dir         = mad_directory_cons();
-  madeleine->old_dir     = NULL;
-  madeleine->new_dir     = NULL;
-  madeleine->updated     = tbx_false;
-  madeleine->merge_done  = tbx_false;
-  madeleine->mergeable   = tbx_false;
    
   mad_driver_register(madeleine);
 

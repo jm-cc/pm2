@@ -76,26 +76,6 @@ typedef struct
   mad_via_credits_t       credits;
 } mad_via_vi_t, *p_mad_via_vi_t;
 
-/* *** preregistered memory blocks manager data ....................... *** */
-typedef struct
-{
-  void           *next;
-  VIP_MEM_HANDLE  handle;
-} mad_via_memory_element_t, *p_mad_via_memory_element_t;
-
-typedef struct
-{
-  TBX_SHARED;
-
-  void             *first_block;
-  void             *base;
-  size_t            element_size;
-  long              element_number;
-  void             *head;
-  long              first_new_element;
-  VIP_MEM_HANDLE    memory_handle;
-  p_mad_adapter_t   adapter;
-} mad_via_memory_t, *p_mad_via_memory_t;
 
 /* *** MadII's driver specific data structures ........................ *** */
 typedef struct
@@ -105,7 +85,6 @@ typedef struct
 
 typedef struct
 {
-  p_mad_via_memory_t    memory;
   VIP_NIC_HANDLE        nic_handle;
   VIP_NIC_ATTRIBUTES    nic_attributes;
   VIP_PROTECTION_HANDLE ptag;
@@ -121,6 +100,7 @@ typedef struct
 {
   p_mad_via_vi_t     vi;
   tbx_bool_t       posted; /* ack reception ready ? */
+  tbx_bool_t       new_message;
 } mad_via_connection_specific_t, *p_mad_via_connection_specific_t;
 
 typedef struct
@@ -169,12 +149,14 @@ typedef struct
 #define MAD_VIA_MESSAGE_LINK                  1
 #define MAD_VIA_RDMA_LINK                     2
 
-#define MAD_VIA_SHORT_BUFFER_LIMIT         5120 /* 5KB*/
+#define MAD_VIA_SHORT_BUFFER_LIMIT           32768
+//#define MAD_VIA_SHORT_BUFFER_LIMIT         5120 /* 5KB*/
 #define MAD_VIA_LONG_BUFFER_LIMIT         32768 /* 32KB = VIA minimum MTU */
 
 #define MAD_VIA_NB_CREDITS                   32
 #define MAD_VIA_NB_CONNECTION_CREDITS        64
-#define MAD_VIA_STATIC_BUFFER_SIZE          512
+#define MAD_VIA_STATIC_BUFFER_SIZE           64
+
 #define MAD_VIA_INITIAL_STATIC_BUFFER_NUM (MAD_VIA_NB_CREDITS * 2)
 #define CONTROL_BUFFER_SIZE                 512
 #define MAD_VIA_BUFFER_ALIGNMENT             64
@@ -216,48 +198,6 @@ static marcel_mutex_t __pm2_mutex;
 #define PM2_VIA_LOCK()
 #define PM2_VIA_UNLOCK()
 #endif /* PM2 */
-
-/*
- * functions
- * ---------==================================================================
- */
-
-static void niKo_debug_descriptor(VIP_DESCRIPTOR* desc, p_mad_buffer_t buffer) {
-
-#if 0
-  VIP_UINT32 erreur;
-  
-  VipGetError(&erreur);
-  if (erreur != VIP_DETAIL_UNKNOWN)
-    {
-      switch (erreur)
-	{
-	case VIP_DETAIL_GENERIC:
-	    fprintf(stderr, "Generic descriptor error\n");
-	    break;
-	case VIP_DETAIL_OS_SPECIFIC:
-	  {
-	    VIP_UINT32 syscall;
-	    
-	    syscall = VipReason2Syscall(erreur);
-	    fprintf(stderr, "syscall: %d\n", syscall);
-	    break;
-	  }
-	case VIP_DETAIL_VENDOR_SPECIFIC:
-	  {
-	    VIP_UINT32 errno;
-
-	    errno = VipReason2Errno(erreur);
-	    fprintf(stderr, "errno: %d\n", errno);
-	    break;
-	  }
-	}
-    }
-#endif /* 0 */
-
-  fprintf(stderr, "mad_buffer: %p\n", buffer);
-  fprintf(stderr, "\nniKo detected an error :\ndescriptor: %p\nbuffer: %p\n",desc,desc->Data[0].Data.Address);
-}
 
 
 /* VIA management
@@ -306,77 +246,6 @@ mad_via_disp_status(VIP_RETURN status)
     }
 }
 
-/* mad_via_disp_nic_attributes: display the VIA nic attributes */
-static void 
-mad_via_disp_nic_attributes(p_mad_via_adapter_specific_t device)
-{
-  fprintf (stderr, "Name: %s\n",
-	   device->nic_attributes.Name);
-  fprintf (stderr, "Hardware version: %lu\n",
-	   device->nic_attributes.HardwareVersion);
-  fprintf (stderr, "Provider version: %lu\n",
-	   device->nic_attributes.ProviderVersion);
-  fprintf (stderr, "Nic address length: %u\n",
-	   device->nic_attributes.NicAddressLen);
-  fprintf (stderr, "Nic address: %x\n",
-	   (int) device->nic_attributes.LocalNicAddress);
-  if (device->nic_attributes.ThreadSafe)
-    {
-      fprintf (stderr, "Thread safe: yes\n");
-    }
-  else
-    {
-      fprintf (stderr, "Thread safe: no\n");
-    }
-  fprintf (stderr, "Max discriminator length: %d\n",
-	   (int) device->nic_attributes.MaxDiscriminatorLen);
-  fprintf (stderr, "Max register byte: %lu\n",
-	   device->nic_attributes.MaxRegisterBytes);
-  fprintf (stderr, "Max register regions: %lu\n",
-	   device->nic_attributes.MaxRegisterRegions);
-  fprintf (stderr, "Max register block byte: %lu\n",
-	   device->nic_attributes.MaxRegisterBlockBytes);
-  fprintf (stderr, "Max VI: %lu\n",
-	   device->nic_attributes.MaxVI);
-  fprintf (stderr, "Max descriptors per queue: %lu\n",
-	   device->nic_attributes.MaxDescriptorsPerQueue);
-  fprintf (stderr, "Max segments per descriptor: %lu\n",
-	   device->nic_attributes.MaxSegmentsPerDesc);
-  fprintf (stderr, "Max CQ: %lu\n",
-	   device->nic_attributes.MaxCQ);
-  fprintf (stderr, "Max CQ entries: %lu\n",
-	   device->nic_attributes.MaxCQEntries);
-  fprintf (stderr, "Max transfer size: %lu\n",
-	   device->nic_attributes.MaxTransferSize);
-  fprintf (stderr, "Native MTU: %lu\n",
-	   device->nic_attributes.NativeMTU);
-  fprintf (stderr, "Max Ptags: %lu\n",
-	   device->nic_attributes.MaxPtags);
-  
-  switch(device->nic_attributes.ReliabilityLevelSupport)
-    {
-    case VIP_SERVICE_UNRELIABLE:
-      fprintf(stderr, "Reliability level support : unreliable\n");
-      break;
-    case VIP_SERVICE_RELIABLE_DELIVERY:
-      fprintf(stderr, "Reliability level support : reliable delivery\n");
-      break;
-    case VIP_SERVICE_RELIABLE_RECEPTION:
-      fprintf(stderr, "Reliability level support : reliable reception\n");
-      break;
-    default:
-      fprintf(stderr, "Reliability level support : unknown !!!\n");
-      break;      
-    }
-  if (device->nic_attributes.RDMAReadSupport)
-    {
-      fprintf(stderr, "RDMA read support: yes\n");
-    }
-  else
-    {
-      fprintf(stderr, "RDMA read support: no\n");
-    }
-}
 
 /* mad_via_error_callback: callback called on via asynchronous error
    to display associated error message */
@@ -384,6 +253,9 @@ static void __attribute__ ((noreturn))
 mad_via_error_callback (VIP_PVOID Context,
 			VIP_ERROR_DESCRIPTOR * ErrorDesc)
 {
+  fflush(stderr);
+  //sleep(1);
+  fflush(stderr);
   fprintf (stderr, "Asynchronous error\nResource code : ");
 
   switch (ErrorDesc->ResourceCode)
@@ -453,396 +325,8 @@ mad_via_error_callback (VIP_PVOID Context,
 
 /* -------------------------------------------------------------------------*/
 
-/*
- * Memory management
- * ------------------
- */
-
-static void *
-mad_via_indirection(p_mad_via_memory_t memory,
-		    size_t             index)
-{
-  LOG_IN();
-  LOG_OUT();
-  return memory->base + memory->element_size * index;
-  LOG_OUT();
-}
-
-static void *
-mad_via_last_element(p_mad_via_memory_t memory)
-{
-  LOG_IN();
-  LOG_OUT();
-  return mad_via_indirection(memory, memory->element_number);
-  LOG_OUT();
-}
-
-static void *
-mad_via_first_new_element(p_mad_via_memory_t memory)
-{
-  LOG_IN();
-  LOG_OUT();
-  return mad_via_indirection(memory, memory->first_new_element);
-  LOG_OUT();
-}
-
-static void
-mad_via_register_memory_block(p_mad_via_memory_t memory)
-{
-  p_mad_adapter_t                adapter          = memory->adapter;
-  p_mad_via_adapter_specific_t   adapter_specific = adapter->specific;
-
-  LOG_IN();
-  PM2_VIA_LOCK();
-  //fprintf(stderr,"VipRegisterMem\n");
-  VIA_CTRL(VipRegisterMem(adapter_specific->nic_handle,
-			  memory->base,
-			  memory->element_size * memory->element_number
-			  + sizeof(mad_via_memory_element_t),
-			  &(adapter_specific->memory_attributes),
-			  &(memory->memory_handle)));
-  PM2_VIA_UNLOCK();
-  LOG_OUT();
-}
-
-static void
-mad_via_buffer_allocator_init(p_mad_adapter_t adapter,
-			      size_t          buffer_len,
-			      long            initial_buffer_number)
-{
-  p_mad_via_adapter_specific_t adapter_specific = adapter->specific;
-  p_mad_via_memory_t           memory           =
-    malloc(sizeof(mad_via_memory_t));
-  p_mad_via_memory_element_t   last_element     = NULL;
-
-  LOG_IN();
-  CTRL_ALLOC(memory);
-  adapter_specific->memory = memory;
-
-  TBX_INIT_SHARED(memory);
-  memory->adapter = adapter;
-
-  if (initial_buffer_number <= 0)
-    {
-      initial_buffer_number = MAD_VIA_INITIAL_STATIC_BUFFER_NUM;
-    }
-
-  if (buffer_len < sizeof(mad_via_memory_element_t))
-    {
-      buffer_len = sizeof(mad_via_memory_element_t);
-    }
-
-  memory->first_block =
-    tbx_aligned_malloc(initial_buffer_number * buffer_len
-		       + sizeof(mad_via_memory_element_t),
-		       MAD_VIA_BUFFER_ALIGNMENT);
-  CTRL_ALLOC(memory->first_block);
-  memory->base              = memory->first_block;
-  memory->element_size      = buffer_len;
-  memory->element_number    = initial_buffer_number;
-  memory->head              = NULL; 
-  memory->first_new_element = 0;
-  mad_via_register_memory_block(memory);
-  
-  last_element = mad_via_indirection(memory, memory->element_number);
-  last_element->next   = NULL;
-  last_element->handle = memory->memory_handle;
-  LOG_OUT();
-}
-
-static void
-mad_via_buffer_alloc(p_mad_via_memory_t memory,
-		     p_mad_buffer_t buffer)
-{
-  LOG_IN();
-  TBX_LOCK_SHARED(memory);
-  
-  if (memory->head)
-    {
-      p_mad_via_memory_element_t element = memory->head;
-
-      buffer->buffer   = element;
-      buffer->specific = (p_mad_driver_specific_t)element->handle;
-      memory->first_block  = element->next;
-    }
-  else 
-    {
-      if (memory->first_new_element >= memory->element_number)
-	{
-	  p_mad_via_memory_element_t last_element;
-	  void *new_base =
-	    tbx_aligned_malloc(memory->element_number * memory->element_size
-			       + sizeof(mad_via_memory_element_t),
-			       MAD_VIA_BUFFER_ALIGNMENT);
-	  CTRL_ALLOC(new_base);
-
-	  last_element = mad_via_last_element(memory);
-	  last_element->next = new_base;
-
-	  memory->base = new_base;
-	  memory->first_new_element = 0;
-	  mad_via_register_memory_block(memory);
-
-	  last_element = mad_via_last_element(memory);
-	  last_element->next   = NULL;
-	  last_element->handle = memory->memory_handle;
-	}
-      
-      buffer->buffer   = mad_via_first_new_element(memory);
-      buffer->specific = (p_mad_driver_specific_t) memory->memory_handle;
-      memory->first_new_element++;
-    }  
-
-  buffer->length = memory->element_size;
-  buffer->bytes_written = 0 ;
-  buffer->bytes_read = 0 ;
-  TBX_UNLOCK_SHARED(memory);
-  LOG_OUT();
-}
-
-static void
-mad_via_buffer_free(p_mad_via_memory_t memory,
-		    p_mad_buffer_t buffer)
-{
-  p_mad_via_memory_element_t element = buffer->buffer;
-  
-  LOG_IN();
-  TBX_LOCK_SHARED(memory);
-  element->next   = memory->head;
-  element->handle = (VIP_MEM_HANDLE) buffer->specific;
-  memory->head = element;
-  TBX_UNLOCK_SHARED(memory);
-  LOG_OUT();
-}
-
 
 /* -------------------------------------------------------------------------*/
-
-/*
- * Transmission modules
- * ---------------------
- */
-
-/* ----- CREDIT TM ----- */
-
-
-/* ----- Message TM ----- */
-static void
-mad_via_msg_send_buffers(p_mad_link_t  lnk,
-			 p_tbx_list_reference_t ref)
-{
-  p_mad_via_link_specific_t link_specific = 
-    (p_mad_via_link_specific_t) lnk->specific;
-  p_mad_via_adapter_specific_t adapter_specific =
-    (p_mad_via_adapter_specific_t) lnk->connection->channel->adapter->specific;
-  VIP_DESCRIPTOR                   *desc                = NULL;
-  VIP_RETURN                        via_status;
-  size_t                            length;
-  
-  LOG_IN();
-  do
-    {
-      PM2_VIA_LOCK();
-      /*
-      via_status = VipRecvWait(link_specific->vi.handle,
-			       VIP_INFINITE,
-			       &desc);
-      */
-      VIA_CTRL(VipRecvWait(link_specific->vi.handle,
-			   VIP_INFINITE,
-			   &desc));
-      PM2_VIA_UNLOCK();
-#ifdef PM2
-      if (via_status == VIP_TIMEOUT)
-	{
-	  marcel_yield();
-	}
-#endif
-    }
-  while (via_status == VIP_TIMEOUT) ;
-  VIA_CTRL(via_status);
-  
-  length = desc->Control.ImmediateData;
-  
-  PM2_VIA_LOCK();
-  VIA_CTRL(VipPostRecv(link_specific->vi.handle,
-		       desc,
-		       adapter_specific->memory->memory_handle));
-  PM2_VIA_UNLOCK();
-  
-  desc = (VIP_DESCRIPTOR*)(link_specific->vi.out.descriptor);
-  //MAD_VIA_FILL_DESC_IMMEDIATE(desc, length);
-  desc->Control.Length   = 0;
-  desc->Control.Status   = 0;
-  desc->Control.Control  = VIP_CONTROL_OP_SENDRECV;
-  desc->Control.SegCount = 0;
-  desc->Control.ImmediateData = length;
-  desc->Control.Control |= VIP_CONTROL_IMMEDIATE;
-
-  do
-    {
-      size_t seg_length = 0 ;
-      p_mad_buffer_t buffer;
-
-      buffer = (p_mad_buffer_t)tbx_get_list_reference_object(ref);
-      
-      desc->Data[desc->Control.SegCount].Data.Address =
-	buffer->buffer + buffer->bytes_read;
-      desc->Data[desc->Control.SegCount].Handle =
-	(VIP_MEM_HANDLE)buffer->specific;
-      
-      if ((buffer->bytes_written - buffer->bytes_read) <= length)
-	{
-	  seg_length = buffer->bytes_written - buffer->bytes_read;
-	  tbx_forward_list_reference(ref);
-	  buffer->bytes_read = buffer->bytes_written;
-	}
-      else
-	{
-	  seg_length = length;
-	  buffer->bytes_read += length ;
-	}
-
-      length -= seg_length;
-      desc->Data[desc->Control.SegCount].Length = seg_length;
-      desc->Control.SegCount++;
-    }
-  while((length > 0) && (!tbx_reference_after_end_of_list(ref)));
-
-  PM2_VIA_LOCK();
-  VIA_CTRL(VipPostSend (link_specific->vi.handle,
-			desc,
-			adapter_specific->memory->memory_handle));
-  PM2_VIA_UNLOCK();
-
-  do
-    {
-      PM2_VIA_LOCK();
-      via_status = VipSendWait(link_specific->vi.handle,
-			       VIP_INFINITE,
-			       &desc);
-      PM2_VIA_UNLOCK();
-#ifdef PM2
-      if (via_status == VIP_TIMEOUT)
-	{
-	  marcel_yield();
-	}
-#endif
-    }
-  while (via_status == VIP_TIMEOUT) ;
-  VIA_CTRL(via_status);
-  LOG_OUT();
-}
-
-static void 
-mad_via_msg_receive_buffers(p_mad_link_t  lnk,
-			    p_tbx_list_reference_t ref)
-{
-  p_mad_via_link_specific_t link_specific = 
-    (p_mad_via_link_specific_t) lnk->specific;
-  p_mad_via_adapter_specific_t adapter_specific =
-    (p_mad_via_adapter_specific_t) lnk->connection->channel->adapter->specific;
-  VIP_RETURN                        via_status;
-  VIP_DESCRIPTOR                   *desc = NULL;
-  size_t                            length              = 0;
-  size_t                            max_length          =
-    MAD_VIA_MAX_TRANSFER_SIZE;
-  
-  LOG_IN();
-  do
-    {
-      length = 0 ;
-      max_length = MAD_VIA_MAX_TRANSFER_SIZE;
-
-      desc = (VIP_DESCRIPTOR*)link_specific->vi.in.descriptor;
-      desc->Control.Status = 0;
-      desc->Control.Control = VIP_CONTROL_OP_SENDRECV;
-      desc->Control.SegCount = 0;
-
-      do
-	{
-	  size_t seg_length = 0 ;
-	  p_mad_buffer_t buffer;
-	  
-	  buffer = (p_mad_buffer_t)tbx_get_list_reference_object(ref);
-	  
-	  desc->Data[desc->Control.SegCount].Data.Address =
-	    buffer->buffer + buffer->bytes_written;
-	  desc->Data[desc->Control.SegCount].Handle =
-	    (VIP_MEM_HANDLE)buffer->specific;
-	  
-	  if ((buffer->length - buffer->bytes_written) <= max_length)
-	    {
-	      seg_length = buffer->length - buffer->bytes_written;
-	      buffer->bytes_written = buffer->length;
-	      tbx_forward_list_reference(ref);
-	    }
-	  else
-	    {
-	      seg_length = max_length;
-	      buffer->bytes_written += max_length;
-	    }
-	  
-	  desc->Data[desc->Control.SegCount].Length = seg_length;
-	  desc->Control.SegCount++;
-	  length += seg_length;
-	  max_length -= seg_length;
-	}
-      while ((max_length > 0) && !tbx_reference_after_end_of_list(ref));
-
-      desc->Control.Length = length;
-
-      PM2_VIA_LOCK();
-      VIA_CTRL(VipPostRecv(link_specific->vi.handle,
-			   desc,
-			   adapter_specific->memory->memory_handle));
-      PM2_VIA_UNLOCK();
-      desc = (VIP_DESCRIPTOR*)link_specific->vi.out.descriptor;
-      //      MAD_VIA_FILL_DESC_IMMEDIATE(desc, length);
-      PM2_VIA_LOCK();
-      VIA_CTRL(VipPostSend(link_specific->vi.handle,
-			   desc,
-			   adapter_specific->memory->memory_handle));
-      PM2_VIA_UNLOCK();
-      do
-	{
-	  PM2_VIA_LOCK();
-	  via_status = VipSendWait(link_specific->vi.handle,
-				   VIP_INFINITE,
-				   &desc);
-	  PM2_VIA_UNLOCK();
-#ifdef PM2
-	  if (via_status == VIP_TIMEOUT)
-	    {
-	      marcel_yield();
-	    }
-#endif
-	}
-      while (via_status == VIP_TIMEOUT) ;
-      VIA_CTRL(via_status);
-      
-      do
-	{
-	  PM2_VIA_LOCK();
-	  via_status = VipRecvWait(link_specific->vi.handle,
-				   VIP_INFINITE,
-				   &desc);
-	  PM2_VIA_UNLOCK();
-#ifdef PM2
-	  if (via_status == VIP_TIMEOUT)
-	    {
-	      marcel_yield();
-	    }
-#endif
-	}
-      while (via_status == VIP_TIMEOUT) ;
-      VIA_CTRL(via_status);
-    }
-  while (!tbx_reference_after_end_of_list(ref));
-  LOG_OUT();
-}
-
-/* ----- RDMA TM ----- */
 
 
 
@@ -926,7 +410,6 @@ mad_via_create_ptag(p_mad_adapter_t adapter)
   adapter_specific->memory_attributes.EnableRdmaRead  = VIP_FALSE;
   LOG_OUT();
 }
-
 
 /* --- mad_via_channel_init --- */
 
@@ -1012,6 +495,16 @@ mad_via_create_vi(p_mad_connection_t connection,
   LOG_OUT();
 }
 
+static void
+mad_via_init_credits(p_mad_via_credits_t credits,
+		     mad_via_credit_t    nb_credits)
+{
+  credits->max_credits       = nb_credits;
+  credits->available_credits = credits->max_credits;
+  credits->returned_credits  = 0;
+  credits->alert             = 2;
+}
+
 static p_mad_via_descriptor_t
 mad_via_allocate_descriptor_array(p_mad_connection_t connection,
 				  size_t             descriptor_size,
@@ -1024,21 +517,41 @@ mad_via_allocate_descriptor_array(p_mad_connection_t connection,
   int                       i;
   p_mad_via_descriptor_t descriptor;
 
+  void *descriptor_buffer;
+
   LOG_IN();
   descriptor_array = malloc(array_size * sizeof(mad_via_descriptor_t));
+
+  descriptor_buffer = tbx_aligned_malloc(array_size*descriptor_size, 64);
+
+  descriptor = descriptor_array;
+
+  PM2_VIA_LOCK();
+  VIA_CTRL(VipRegisterMem(adapter_specific->nic_handle,
+			  descriptor_buffer,
+			  descriptor_size*array_size,
+			  &(adapter_specific->memory_attributes),
+			  &(descriptor->handle)));
+  PM2_VIA_UNLOCK();
 
   for (i = 0; i < array_size; i++)
     {
       descriptor = descriptor_array + i;
 
-      descriptor->descriptor = tbx_aligned_malloc(descriptor_size, MAD_VIA_BUFFER_ALIGNMENT);
+      /*
+      descriptor->descriptor = tbx_aligned_malloc(descriptor_size, 64);
       CTRL_ALLOC(descriptor->descriptor);  
       memset(descriptor->descriptor,0,descriptor_size);
-      
-      descriptor->size = descriptor_size;
+      */      
+
+      descriptor->descriptor = descriptor_buffer + i * 64;
+      descriptor->size = descriptor_size;      
       /* reference to allocated bloc of data for control and ack */
       descriptor->buffer = NULL;
 
+      descriptor->handle = descriptor_array->handle;
+
+      /*
       PM2_VIA_LOCK();
       VIA_CTRL(VipRegisterMem(adapter_specific->nic_handle,
 			      descriptor->descriptor,
@@ -1046,8 +559,9 @@ mad_via_allocate_descriptor_array(p_mad_connection_t connection,
 			      &(adapter_specific->memory_attributes),
 			      &(descriptor->handle)));
       PM2_VIA_UNLOCK();
-      
+      */
     }
+
   LOG_OUT();
   return descriptor_array;
 }
@@ -1217,19 +731,20 @@ mad_via_connection_init(p_mad_connection_t in, p_mad_connection_t out)
   in_specific->vi->out.descriptor =
     mad_via_allocate_descriptor_array(in,MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,1);
 
-  in_specific->vi->out.descriptor->buffer = tbx_aligned_malloc(64,64);
-  in_specific->vi->in.descriptor->buffer = tbx_aligned_malloc(64,64);
+  in_specific->vi->out.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+  in_specific->vi->in.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+   
   VIA_CTRL(VipRegisterMem(
 			  adapter_specific->nic_handle,
 			  in_specific->vi->out.descriptor->buffer,
-			  64,
+			  MAD_VIA_SHORT_BUFFER_LIMIT,
 			  0,
 			  &(in_specific->vi->out.descriptor->buffer_handle)
 			  ));
   VIA_CTRL(VipRegisterMem(
 			  adapter_specific->nic_handle,
 			  in_specific->vi->in.descriptor->buffer,
-			  64,
+			  MAD_VIA_SHORT_BUFFER_LIMIT,
 			  0,
 			  &(in_specific->vi->in.descriptor->buffer_handle)
 			  ));
@@ -1251,19 +766,22 @@ mad_via_connection_init(p_mad_connection_t in, p_mad_connection_t out)
   out_specific->vi->out.descriptor =
     mad_via_allocate_descriptor_array(out,MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,1);
 
-  out_specific->vi->out.descriptor->buffer = tbx_aligned_malloc(64,64);
-  out_specific->vi->in.descriptor->buffer = tbx_aligned_malloc(64,64);
+  out_specific->vi->out.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+  out_specific->vi->in.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+  memcpy(out_specific->vi->out.descriptor->buffer,"old!",4);
+  memcpy(out_specific->vi->in.descriptor->buffer,"old!",4);
+
   VIA_CTRL(VipRegisterMem(
 			  adapter_specific->nic_handle,
 			  out_specific->vi->out.descriptor->buffer,
-			  64,
+			  MAD_VIA_SHORT_BUFFER_LIMIT,
 			  0,
 			  &(out_specific->vi->out.descriptor->buffer_handle)
 			  ));
   VIA_CTRL(VipRegisterMem(
 			  adapter_specific->nic_handle,
 			  out_specific->vi->in.descriptor->buffer,
-			  64,
+			  MAD_VIA_SHORT_BUFFER_LIMIT,
 			  0,
 			  &(out_specific->vi->in.descriptor->buffer_handle)
 			  ));
@@ -1284,16 +802,18 @@ mad_via_link_init(p_mad_link_t lnk)
   lnk_specific = malloc(sizeof(mad_via_link_specific_t));
   CTRL_ALLOC(lnk_specific);
   lnk->specific = lnk_specific;
-  
 
-  if (lnk->id == MAD_VIA_MESSAGE_LINK) {
-   
+  adapter_specific =
+      (p_mad_via_adapter_specific_t) lnk->connection->channel->adapter->specific;
+
+  if (lnk->id == MAD_VIA_MESSAGE_LINK)
+   {
     lnk->link_mode   = mad_link_mode_buffer;
     lnk->buffer_mode = mad_buffer_mode_dynamic;
     lnk->group_mode = mad_group_mode_split;
     
-    mad_via_create_vi(connection, &(lnk_specific->vi));
-    
+    mad_via_create_vi(connection, &(lnk_specific->vi));    
+
     lnk_specific->vi.in.descriptor = 
       mad_via_allocate_descriptor_array(lnk->connection,
 					MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,
@@ -1303,27 +823,88 @@ mad_via_link_init(p_mad_link_t lnk)
 					MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,
 					1);
 
-    lnk_specific->vi.in.descriptor->buffer = tbx_aligned_malloc(64,64);
-    lnk_specific->vi.out.descriptor->buffer = tbx_aligned_malloc(64,64);
+    lnk_specific->vi.in.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+    lnk_specific->vi.out.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
     
-    adapter_specific =
-      (p_mad_via_adapter_specific_t) lnk->connection->channel->adapter->specific;
     VIA_CTRL(VipRegisterMem(
 			    adapter_specific->nic_handle,
 			    lnk_specific->vi.in.descriptor->buffer,
-			    64,
+			    MAD_VIA_SHORT_BUFFER_LIMIT,
 			    0,
 			    &(lnk_specific->vi.in.descriptor->buffer_handle)
 			    ));
     VIA_CTRL(VipRegisterMem(
 			    adapter_specific->nic_handle,
 			    lnk_specific->vi.out.descriptor->buffer,
-			    64,
+			    MAD_VIA_SHORT_BUFFER_LIMIT,
 			    0,
 			    &(lnk_specific->vi.out.descriptor->buffer_handle)
 			    ));
   }
-
+  else if (lnk->id == MAD_VIA_CREDIT_LINK)
+    {
+      lnk->link_mode   = mad_link_mode_buffer;
+      lnk->buffer_mode = mad_buffer_mode_dynamic;
+      lnk->group_mode = mad_group_mode_split;
+      
+      mad_via_create_vi(connection, &(lnk_specific->vi));
+      mad_via_init_credits(&(lnk_specific->vi.credits), MAD_VIA_NB_CREDITS);
+      
+      if (lnk->connection->way == mad_incoming_connection)
+	{
+	  
+	  
+	  lnk_specific->vi.in.descriptor = 
+	    mad_via_allocate_descriptor_array(lnk->connection,
+					      MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,
+					      MAD_VIA_NB_CREDITS);
+	  lnk_specific->vi.in.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_NB_CREDITS*MAD_VIA_SHORT_BUFFER_LIMIT,64);
+	  
+	  VIA_CTRL(VipRegisterMem(
+				  adapter_specific->nic_handle,
+				  lnk_specific->vi.in.descriptor->buffer,
+				  MAD_VIA_NB_CREDITS*MAD_VIA_SHORT_BUFFER_LIMIT,
+				  0,
+				  &(lnk_specific->vi.in.descriptor->buffer_handle)
+				  ));
+	  
+	}
+      else
+	{
+	  
+	  lnk_specific->vi.in.descriptor = 
+	    mad_via_allocate_descriptor_array(lnk->connection,
+					      MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,
+					      1);
+	  lnk_specific->vi.in.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+	  
+	  VIA_CTRL(VipRegisterMem(
+				  adapter_specific->nic_handle,
+				  lnk_specific->vi.in.descriptor->buffer,
+				  MAD_VIA_SHORT_BUFFER_LIMIT,
+				  0,
+				  &(lnk_specific->vi.in.descriptor->buffer_handle)
+				  ));
+	}
+      
+      
+      lnk_specific->vi.out.descriptor = 
+	mad_via_allocate_descriptor_array(lnk->connection,
+					  MAD_VIA_CONNECTION_DESCRIPTOR_SIZE,
+					  1);
+      
+      
+      lnk_specific->vi.out.descriptor->buffer = tbx_aligned_malloc(MAD_VIA_SHORT_BUFFER_LIMIT,64);
+      
+      VIA_CTRL(VipRegisterMem(
+			      adapter_specific->nic_handle,
+			      lnk_specific->vi.out.descriptor->buffer,
+			      MAD_VIA_SHORT_BUFFER_LIMIT,
+			      0,
+			      &(lnk_specific->vi.out.descriptor->buffer_handle)
+			      ));
+    }
+  
   LOG_OUT();
   return;
   
@@ -1332,7 +913,6 @@ mad_via_link_init(p_mad_link_t lnk)
 void
 mad_via_accept(p_mad_channel_t channel)
 {
-  VIP_RETURN via_status;
   VIP_NET_ADDRESS *local, *remote;
 
   p_mad_via_adapter_specific_t adapter_specific = 
@@ -1353,6 +933,7 @@ mad_via_accept(p_mad_channel_t channel)
 
   mad_via_discriminator_t discriminator;
 
+  int i;
 
   LOG_IN();
   
@@ -1406,33 +987,30 @@ mad_via_accept(p_mad_channel_t channel)
   vi = mad_via_vi->handle;
   desc = mad_via_vi->in.descriptor->descriptor;
   mh =  mad_via_vi->in.descriptor->handle;
-  //fprintf(stderr,"VI is %p; DESC is %p; MH is %p\n",vi,desc,&mh);
-
   
   /* PrePosting a Descriptor */
   desc->Data[0].Data.Address = mad_via_vi->in.descriptor->buffer;
-  desc->Data[0].Length = 64;
+  desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
   desc->Control.SegCount = 1;
   desc->Control.Control = 0;
-  desc->Control.Length = 64;
+  desc->Control.Length = MAD_VIA_SHORT_BUFFER_LIMIT;
   desc->Control.Status = 0;
   desc->Data[0].Handle = mad_via_vi->in.descriptor->buffer_handle;
   desc->Control.Reserved = 0;
   
+
   VIA_CTRL(VipPostRecv(
 		       vi,
 		       desc,
 		       mh
 		       ));
 
-
   /* Accepting a connection */
   PM2_VIA_LOCK();
   VIA_CTRL(VipConnectAccept(conn, vi));
   PM2_VIA_UNLOCK();
 
-
-
+    
 
 
   /* Accept for Message Link */
@@ -1470,6 +1048,64 @@ mad_via_accept(p_mad_channel_t channel)
 
 
 
+  //Accept for Credit Link
+  
+  // Filling Local Discriminator
+  discriminator.adapter_id = (unsigned char)channel->adapter->id;
+  discriminator.channel_id = (unsigned char)channel->id;
+  discriminator.host_id = (unsigned char)configuration->local_host_id;
+  discriminator.vi_id = 4;
+  MAD_VIA_VI_DISCRIMINATOR (local) = discriminator;
+
+  // Waiting for incoming connection
+  PM2_VIA_LOCK();
+  VIA_CTRL(VipConnectWait(nic_handle,
+			  local, VIP_INFINITE, remote, &remote_attribs, &conn));
+  PM2_VIA_UNLOCK();
+
+
+
+  // Selects the structure for credit link connection
+  discriminator = MAD_VIA_VI_DISCRIMINATOR(remote);  
+  mad_via_vi = &((
+		  (p_mad_via_link_specific_t)
+		  ((channel->input_connection + discriminator.host_id)
+		   ->link[MAD_VIA_CREDIT_LINK].specific)
+		  )->vi);
+  
+  vi = mad_via_vi->handle;
+  
+
+  // PrePosting the descriptors
+  for (i=0;i<MAD_VIA_NB_CREDITS;i++)
+    {
+      desc = (mad_via_vi->in.descriptor + i)->descriptor;
+      mh =  (mad_via_vi->in.descriptor + i)->handle;
+      
+      desc->Data[0].Data.Address = (mad_via_vi->in.descriptor->buffer) + (MAD_VIA_SHORT_BUFFER_LIMIT*i);
+      desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+      desc->Control.SegCount = 1;
+      desc->Control.Control = 0;
+      desc->Control.Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+      desc->Control.Status = 0;
+      desc->Data[0].Handle = mad_via_vi->in.descriptor->buffer_handle;
+      desc->Control.Reserved = 0;
+
+  
+      VIA_CTRL(VipPostRecv(
+			   vi,
+			   desc,
+			   mh
+			   ));
+      
+    }
+  
+  // Accepting a connection
+  PM2_VIA_LOCK();
+  VIA_CTRL(VipConnectAccept(conn, vi));
+  PM2_VIA_UNLOCK();
+  
+
   /* cleaning addresses */
   free(local);
   free(remote);
@@ -1490,7 +1126,6 @@ mad_via_connect(p_mad_connection_t connection)
   VIP_NIC_ATTRIBUTES nic_attributes = specific->nic_attributes;
   VIP_NIC_HANDLE nic_handle = specific->nic_handle;
 
-  VIP_RETURN via_status;
   mad_via_discriminator_t discriminator;
   VIP_VI_ATTRIBUTES remote_attribs;
 
@@ -1559,12 +1194,12 @@ mad_via_connect(p_mad_connection_t connection)
   mh =  mad_via_vi->in.descriptor->handle;
 
   /* Preposting a Descriptor */
-  
+
   desc->Data[0].Data.Address = mad_via_vi->in.descriptor->buffer;
-  desc->Data[0].Length = 64;
+  desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
   desc->Control.SegCount = 1;
   desc->Control.Control = 0;
-  desc->Control.Length = 64;
+  desc->Control.Length = MAD_VIA_SHORT_BUFFER_LIMIT;
   desc->Control.Status = 0;
   desc->Data[0].Handle = mad_via_vi->in.descriptor->buffer_handle;
   desc->Control.Reserved = 0;
@@ -1580,9 +1215,6 @@ mad_via_connect(p_mad_connection_t connection)
   PM2_VIA_LOCK();
   VIA_CTRL(VipConnectRequest(vi, local, remote, VIP_INFINITE, &remote_attribs));
   PM2_VIA_UNLOCK();
-
-
-
 
   /* Connect For message link */
 
@@ -1608,20 +1240,18 @@ mad_via_connect(p_mad_connection_t connection)
   vi = mad_via_vi->handle;
   desc = mad_via_vi->in.descriptor->descriptor;
   mh =  mad_via_vi->in.descriptor->handle;
-  //fprintf(stderr,"VI is %p; DESC is %p; MH is %p\n",vi,desc,&mh);
-
 
   /* Preposting a Descriptor for msg link */
 
   desc->Data[0].Data.Address = mad_via_vi->in.descriptor->buffer;
-  desc->Data[0].Length = 64;
+  desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
   desc->Control.SegCount = 1;
   desc->Control.Control = 0;
-  desc->Control.Length = 64;
+  desc->Control.Length = MAD_VIA_SHORT_BUFFER_LIMIT;
   desc->Control.Status = 0;
   desc->Data[0].Handle = mad_via_vi->in.descriptor->buffer_handle;
   desc->Control.Reserved = 0;
-  
+
   VIA_CTRL(VipPostRecv(
 		       vi,
 		       desc,
@@ -1634,6 +1264,64 @@ mad_via_connect(p_mad_connection_t connection)
   VIA_CTRL(VipConnectRequest(vi, local, remote, VIP_INFINITE, &remote_attribs));
   PM2_VIA_UNLOCK();
 
+
+
+
+  /* Connect For credit link */
+  
+  // Filling local discriminator
+  discriminator.adapter_id = (unsigned char)connection->channel->adapter->id;
+  discriminator.channel_id = (unsigned char)connection->channel->id;
+  discriminator.host_id = (unsigned char)configuration->local_host_id;
+  discriminator.vi_id = 5;
+  MAD_VIA_VI_DISCRIMINATOR (local) = discriminator ;
+   
+  // Filling remote discriminator
+  discriminator.adapter_id = (unsigned char)connection->channel->adapter->id;
+  discriminator.channel_id = (unsigned char)connection->channel->id;
+  discriminator.host_id = (unsigned char)connection->remote_host_id;
+  discriminator.vi_id = 4;
+  MAD_VIA_VI_DISCRIMINATOR (remote) = discriminator ;    
+
+  // Selects the structure for message link connection
+  mad_via_vi = &((
+		  (p_mad_via_link_specific_t)
+		  (connection->link[MAD_VIA_CREDIT_LINK].specific)
+		  )->vi);
+
+  vi = mad_via_vi->handle;
+  desc = mad_via_vi->in.descriptor->descriptor;
+  mh =  mad_via_vi->in.descriptor->handle;
+
+
+  // Preposting a Descriptor for credit link
+  
+  desc->Data[0].Data.Address = mad_via_vi->in.descriptor->buffer;
+  desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+  desc->Control.SegCount = 1;
+  desc->Control.Control = 0;
+  desc->Control.Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+  desc->Control.Status = 0;
+  desc->Data[0].Handle = mad_via_vi->in.descriptor->buffer_handle;
+  desc->Control.Reserved = 0;
+  
+  VIA_CTRL(VipPostRecv(
+		       vi,
+		       desc,
+		       mh
+		       ));
+  
+
+  // Requesting connection
+  PM2_VIA_LOCK();
+  VIA_CTRL(VipConnectRequest(vi, local, remote, VIP_INFINITE, &remote_attribs));
+  PM2_VIA_UNLOCK();
+  
+
+  /* cleaning addresses */
+  free(local);
+  free(remote);
+  
   LOG_OUT();
 }
 
@@ -1683,11 +1371,25 @@ mad_via_choice(p_mad_connection_t   connection,
 	       mad_receive_mode_t   receive_mode)
 {
   LOG_IN();
+
+  /*
   LOG_OUT();
   return &(connection->link[MAD_VIA_MESSAGE_LINK]);
+  */
+
+  if (buffer_length <= MAD_VIA_SHORT_BUFFER_LIMIT)
+    {
+      LOG_OUT();
+      return &(connection->link[MAD_VIA_CREDIT_LINK]);
+    }
+  else
+    {
+      LOG_OUT();
+      return &(connection->link[MAD_VIA_MESSAGE_LINK]);
+    }
   
   /*
-   if (buffer_length <= MAD_VIA_SHORT_BUFFER_LIMIT)
+  if (buffer_length <= MAD_VIA_SHORT_BUFFER_LIMIT)
     {
       LOG_OUT();
       return &(connection->link[MAD_VIA_CREDIT_LINK]);
@@ -1703,82 +1405,18 @@ mad_via_choice(p_mad_connection_t   connection,
       return &(connection->link[MAD_VIA_RDMA_LINK]);
     }
   */
+
 }
 
 void
 mad_via_new_message(p_mad_connection_t connection)
 {  
-  VIP_RETURN via_status;
-
   p_mad_via_connection_specific_t specific =
     (p_mad_via_connection_specific_t) connection->specific;
 
-  p_mad_via_vi_t vi = specific->vi;
-
-  p_mad_via_adapter_specific_t adapter =
-    (
-     (p_mad_via_adapter_specific_t)
-     (connection->channel->adapter->specific)
-     );
-
-  VIP_DESCRIPTOR *desc;
-  VIP_MEM_HANDLE mh;
-
   LOG_IN();
 
-  if (specific->posted == tbx_true) {
-    
-    VIA_CTRL(VipSendWait(
-			 vi->handle,
-			 VIP_INFINITE,
-			 &desc));
-    
-    
-    VIA_CTRL(VipRecvWait(
-			 vi->handle,
-			 VIP_INFINITE,
-			 &desc));
-    
-    
-    
-    desc = vi->in.descriptor->descriptor;
-    mh = vi->in.descriptor->handle;
-    
-    desc->Data[0].Data.Address = vi->in.descriptor->buffer;
-    desc->Data[0].Length = 64;
-    desc->Control.SegCount = 1;
-    desc->Control.Control = 0;
-    desc->Control.Length = 64;
-    desc->Control.Status = 0;
-    desc->Data[0].Handle = vi->in.descriptor->buffer_handle;
-    
-    VIA_CTRL(VipPostRecv(
-			 vi->handle,
-			 desc,
-			 mh
-			 ));  
-  }
-  
-  
-  /* Init descriptor needed ! */
-  desc = vi->out.descriptor->descriptor;
-  mh = vi->out.descriptor->handle;
-      
-  desc->Data[0].Data.Address = vi->out.descriptor->buffer;
-  desc->Data[0].Length = 64;
-  desc->Control.SegCount = 1;
-  desc->Control.Control = 0;
-  desc->Control.Length = 64;
-  desc->Control.Status = 0;
-  desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
-  memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,"Control!",9);
-
-  VIA_CTRL(VipPostSend(
-		       vi->handle,
-		       vi->out.descriptor->descriptor,
-		       vi->out.descriptor->handle));
-	   
-  specific->posted = tbx_true;
+  specific->new_message = tbx_true;
 
   LOG_OUT();
 }
@@ -1786,32 +1424,20 @@ mad_via_new_message(p_mad_connection_t connection)
 p_mad_connection_t
 mad_via_receive_message(p_mad_channel_t channel)
 {
-  VIP_RETURN via_status;
-  VIP_DESCRIPTOR *desc;
-  VIP_MEM_HANDLE mh;
-  
   VIP_VI_HANDLE vi_handle;
   VIP_BOOLEAN direction;
 
   p_mad_connection_t connection = NULL;
   p_mad_via_connection_specific_t specific;
-  p_mad_via_vi_t vi;
-  p_mad_via_adapter_specific_t adapter =
-    (
-     (p_mad_via_adapter_specific_t)
-     (channel->adapter->specific)
-     );
 
   int remote_host_id;
 
   LOG_IN();
 
-
   VIA_CTRL( VipCQWait( ( (p_mad_via_channel_specific_t) channel->specific )->completion_queue,
 		       VIP_INFINITE,
 		       &vi_handle,
 		       &direction));
-
 
   for ( remote_host_id = 0;
 	remote_host_id < channel->adapter->driver->madeleine->configuration->size;
@@ -1831,104 +1457,76 @@ mad_via_receive_message(p_mad_channel_t channel)
     
     if (vi_handle == specific->vi->handle)
       {
-	//fprintf(stderr,"Remote_Host_Id is %d!\n",remote_host_id);
+	specific->new_message = tbx_true;
 	break;
       }
   }
   
-  specific = (p_mad_via_connection_specific_t) 
-    ((channel->input_connection) + remote_host_id)->specific;
-  vi = specific->vi;
-
-
-  if (specific->posted == tbx_true) {
-
-    VIA_CTRL(VipSendWait(
-			 vi->handle,
-			 VIP_INFINITE,
-			 &desc));  
-  }
-
-  /* Replaced by CQWait at the beginning of the function
-  VIA_CTRL(VipRecvWait(
-		       vi->handle,
-		       VIP_INFINITE,
-		       &desc));
-  */
-
-  desc = NULL;
-  VIA_CTRL(VipRecvDone(
-		       vi->handle,
-		       &desc
-		       ));
-  
-  desc = vi->in.descriptor->descriptor;
-  mh = vi->in.descriptor->handle;
-    
-  desc->Data[0].Data.Address = vi->in.descriptor->buffer;
-  desc->Data[0].Length = 64;
-  desc->Control.SegCount = 1;
-  desc->Control.Control = 0;
-  desc->Control.Length = 64;
-  desc->Control.Status = 0;
-  desc->Data[0].Handle = vi->in.descriptor->buffer_handle;
-  desc->Control.Reserved = 0;
-  
-  VIA_CTRL(VipPostRecv(
-		       vi->handle,
-		       desc,
-		       mh
-		       ));
-  
-
-
-  desc = vi->out.descriptor->descriptor;
-  mh = vi->out.descriptor->handle;
-  desc->Data[0].Data.Address = vi->out.descriptor->buffer;
-  desc->Data[0].Length = 64;
-  desc->Control.SegCount = 1;
-  desc->Control.Control = 0;
-  desc->Control.Length = 64;
-  desc->Control.Status = 0;
-  desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
-
-  memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,"Ack!",4);
-
-  VIA_CTRL(VipPostSend(
-		       vi->handle,
-		       vi->out.descriptor->descriptor,
-		       vi->out.descriptor->handle));
-
-  specific->posted = tbx_true;
 
   LOG_OUT();
 
-  return (channel->input_connection) + remote_host_id;
+  return connection;
 }
 
 void
-mad_via_send_buffer(p_mad_link_t     link,
-		    p_mad_buffer_t   buffer)
+mad_via_send_message_buffer(p_mad_link_t     link,
+			    p_mad_buffer_t   buffer)
 {
   VIP_RETURN via_status;
   VIP_DESCRIPTOR *desc;
   VIP_MEM_HANDLE mh, mh_buffer;
 
-  p_mad_via_adapter_specific_t adapter =
-    (p_mad_via_adapter_specific_t) link->connection->channel->adapter->specific;
-
   p_mad_via_link_specific_t link_specific = 
     (p_mad_via_link_specific_t) link->specific;
-  
-  p_mad_via_vi_t vi = 
-    &((
-     (p_mad_via_link_specific_t)
-     (link->specific)
-     )->vi);
-  
 
+  p_mad_connection_t connection = link->connection;
+
+  p_mad_via_connection_specific_t specific =
+    (p_mad_via_connection_specific_t) connection->specific;
+  
+  p_mad_via_vi_t vi;
+
+  p_mad_via_adapter_specific_t adapter =
+    (
+     (p_mad_via_adapter_specific_t)
+     (connection->channel->adapter->specific)
+     );
+
+  
   LOG_IN();
 
+  if (specific->new_message == tbx_true)
+    {
+      
+      /* CTRL VI */
+      vi = specific->vi;
+
+      if (specific->posted == tbx_true)
+	{
+	  VIA_CTRL(VipSendWait(
+			       vi->handle,
+			       VIP_INFINITE,
+			       &desc));
+	}
+
+      /* Init descriptor needed ! */
+      desc = vi->out.descriptor->descriptor;
+      mh = vi->out.descriptor->handle;
+
+      memcpy(vi->out.descriptor->buffer,"Control!",8);
+      
+      VIA_CTRL(VipPostSend(
+			   vi->handle,
+			   desc,
+			   mh));
+      
+      specific->new_message = tbx_false;
+    }
+
+
+  /* MSG VI */
+  vi = &(link_specific->vi);
+  
   VIA_CTRL(VipRegisterMem(
 			  adapter->nic_handle,
 			  buffer->buffer,
@@ -1938,8 +1536,8 @@ mad_via_send_buffer(p_mad_link_t     link,
 			  ));
 
   while (mad_more_data(buffer)) {
-    size_t current_length = 0;
 
+    size_t current_length = 0;
     current_length = min (MAD_VIA_MAX_TRANSFER_SIZE, (buffer->bytes_written - buffer->bytes_read));
 
     /* RecvWait Ack */
@@ -1947,33 +1545,17 @@ mad_via_send_buffer(p_mad_link_t     link,
 			     vi->handle,
 			     VIP_INFINITE,
 			     &desc);
-
-    if (via_status == VIP_DESCRIPTOR_ERROR) {
-      niKo_debug_descriptor(desc, buffer);
-    }
-
     VIA_CTRL(via_status);
  
-    /* PostRecv Next Ack */
-    desc = vi->in.descriptor->descriptor;
-    mh = vi->in.descriptor->handle;
-    
-    desc->Data[0].Data.Address = vi->in.descriptor->buffer;
-    desc->Data[0].Length = 64;
-    desc->Control.SegCount = 1;
-    desc->Control.Control = 0;
-    desc->Control.Length = 64;
-    desc->Control.Status = 0;
-    desc->Data[0].Handle = vi->in.descriptor->buffer_handle;
-    desc->Control.Reserved = 0;
-    
-    memcpy(desc->Data[0].Data.Address,"Ack!",4);
 
+    /* PostRecv Next Ack */
+    mh = vi->in.descriptor->handle;
     VIA_CTRL(VipPostRecv(
 			 vi->handle,
 			 desc,
 			 mh
 			 ));
+
     
     /* PostSend Buffer */
     desc = vi->out.descriptor->descriptor;
@@ -1993,7 +1575,6 @@ mad_via_send_buffer(p_mad_link_t     link,
 			 vi->out.descriptor->handle));
     
     
-    
     /* SendWait Buffer */
     via_status = VipSendWait(
 			     vi->handle,
@@ -2001,10 +1582,6 @@ mad_via_send_buffer(p_mad_link_t     link,
 			     &desc
 			     );
 
-    if (via_status == VIP_DESCRIPTOR_ERROR) {
-      niKo_debug_descriptor(desc, buffer);
-    }
-    
     VIA_CTRL(via_status);
 
     buffer->bytes_read += current_length;
@@ -2015,25 +1592,188 @@ mad_via_send_buffer(p_mad_link_t     link,
 			  buffer->buffer,
 			  mh_buffer
 			  ));
-	   
+
+  specific->posted = tbx_true;
   LOG_OUT();
 }
 
 void
-mad_via_receive_buffer(p_mad_link_t     link,
-		       p_mad_buffer_t  *buffer)
+mad_via_send_credit_buffer(p_mad_link_t     link,
+			   p_mad_buffer_t   buffer)
+{
+  VIP_DESCRIPTOR *desc;
+  VIP_MEM_HANDLE mh;
+
+  p_mad_via_link_specific_t link_specific = 
+    (p_mad_via_link_specific_t) link->specific;
+
+  p_mad_connection_t connection = link->connection;
+
+  p_mad_via_connection_specific_t specific =
+    (p_mad_via_connection_specific_t) connection->specific;
+  
+  p_mad_via_vi_t vi;
+
+  LOG_IN();
+
+  if (specific->new_message == tbx_true)
+    {
+      
+      /* CTRL VI */
+      vi = specific->vi;
+      
+      if (specific->posted == tbx_true) {
+	
+	VIA_CTRL(VipSendWait(
+			     vi->handle,
+			     VIP_INFINITE,
+			     &desc));
+	
+	
+	VIA_CTRL(VipRecvWait(
+			     vi->handle,
+			     VIP_INFINITE,
+			     &desc));
+
+	mh = vi->in.descriptor->handle;
+	
+	VIA_CTRL(VipPostRecv(
+			     vi->handle,
+			     desc,
+			     mh
+			     ));  
+      }
+      
+      /* Init descriptor needed ! */
+      desc = vi->out.descriptor->descriptor;
+      mh = vi->out.descriptor->handle;
+
+      desc->Data[0].Data.Address = vi->out.descriptor->buffer;
+      //desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+      desc->Data[0].Length = buffer->length;
+      desc->Control.SegCount = 1;
+      desc->Control.Control = 0;
+      desc->Control.Length = buffer->length;
+      desc->Control.Status = 0;
+      desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
+
+      memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,buffer->buffer,buffer->length);
+      
+      VIA_CTRL(VipPostSend(
+			   vi->handle,
+			   vi->out.descriptor->descriptor,
+			   vi->out.descriptor->handle));
+      
+      
+      specific->new_message = tbx_false;
+    }
+  else
+    {
+      vi = &(link_specific->vi);
+
+      if (vi->credits.available_credits <= vi->credits.alert)
+	{
+	  VIA_CTRL(VipRecvWait(
+			       vi->handle,
+			       VIP_INFINITE,
+			       &desc));
+	      
+	      if (desc->Control.ImmediateData == 0)
+		{
+		  fprintf(stderr,"BIG PROBLEM: no more credits\n");
+		}
+	      
+	      vi->credits.available_credits += desc->Control.ImmediateData;
+	      
+	      mh = vi->in.descriptor->handle;
+
+	      VIA_CTRL(VipPostRecv(
+				   vi->handle,
+				   desc,
+				   mh
+				   ));
+	}
+
+      
+      desc = vi->out.descriptor->descriptor;
+      mh = vi->out.descriptor->handle;
+
+      desc->Data[0].Data.Address = vi->out.descriptor->buffer;
+      desc->Data[0].Length = buffer->length;
+      desc->Control.SegCount = 1;
+      desc->Control.Control = 0;
+      desc->Control.Length = buffer->length;
+      desc->Control.Status = 0;
+      desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
+
+      memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,buffer->buffer,buffer->length);
+
+      desc->Control.ImmediateData = (
+				     (p_mad_via_link_specific_t)
+				     (connection->reverse->link[MAD_VIA_CREDIT_LINK]).specific
+				     )->vi.credits.returned_credits;
+
+      ((p_mad_via_link_specific_t)(connection->reverse->link[MAD_VIA_CREDIT_LINK]).specific)
+	->vi.credits.available_credits += 
+	((p_mad_via_link_specific_t)(connection->reverse->link[MAD_VIA_CREDIT_LINK]).specific)
+	->vi.credits.returned_credits;
+      ((p_mad_via_link_specific_t)(connection->reverse->link[MAD_VIA_CREDIT_LINK]).specific)
+	->vi.credits.returned_credits = 0;
+      
+      vi->credits.available_credits --;
+
+      VIA_CTRL(VipPostSend(
+			   vi->handle,
+			   vi->out.descriptor->descriptor,
+			   vi->out.descriptor->handle));
+  
+      VIA_CTRL(VipSendWait(
+			   vi->handle,
+			   VIP_INFINITE,
+			   &desc));
+    }
+  
+  specific->posted = tbx_true;
+
+  LOG_OUT();
+}
+
+
+void
+mad_via_send_buffer(p_mad_link_t     link,
+		    p_mad_buffer_t   buffer)
+{
+  LOG_IN();
+
+  if (link->id == MAD_VIA_MESSAGE_LINK)
+    {
+      mad_via_send_message_buffer(link, buffer);
+    }
+  else if (link->id == MAD_VIA_CREDIT_LINK)
+    {
+      mad_via_send_credit_buffer(link, buffer);
+    }
+
+  LOG_OUT();
+}
+
+
+
+void
+mad_via_receive_message_buffer(p_mad_link_t     link,
+			       p_mad_buffer_t  *buffer)
 {
   VIP_RETURN via_status;
   VIP_DESCRIPTOR *desc;
   VIP_MEM_HANDLE mh, mh_buffer;
 
-  
-  p_mad_via_vi_t vi = 
-    &((
-     (p_mad_via_link_specific_t)
-     (link->specific)
-     )->vi);
+  p_mad_via_vi_t vi;
     
+  p_mad_connection_t connection = link->connection;
+
+  p_mad_via_connection_specific_t specific =
+    (p_mad_via_connection_specific_t) connection->specific;
+
   p_mad_via_link_specific_t link_specific = 
     (p_mad_via_link_specific_t) link->specific;
   
@@ -2042,6 +1782,35 @@ mad_via_receive_buffer(p_mad_link_t     link,
 
 
   LOG_IN();
+
+  /* CTRL VI */
+  vi = specific->vi;
+
+  if (specific->new_message == tbx_true)
+    {
+      VIA_CTRL(VipRecvDone(
+			   vi->handle,
+			   &desc
+			   ));
+
+      /* We can verify that we have received a CONTROL! message here */
+      //fprintf(stderr,"It should be Control!:%s\n", ((char*)(desc->Data[0].Data.Address)));
+      
+      mh = vi->in.descriptor->handle;
+     
+      VIA_CTRL(VipPostRecv(
+			   vi->handle,
+			   desc,
+			   mh
+			   ));
+      
+      specific->posted = tbx_true;
+      specific->new_message = tbx_false;
+    }
+      
+      
+  /* MSG VI */
+  vi = &(link_specific->vi);
   
   VIA_CTRL(VipRegisterMem(
 			  adapter->nic_handle,
@@ -2054,9 +1823,7 @@ mad_via_receive_buffer(p_mad_link_t     link,
   while (!mad_buffer_full(*buffer)) {
     size_t current_length = 0;
     
-    current_length = min (MAD_VIA_MAX_TRANSFER_SIZE, ((*buffer)->length - (*buffer)->bytes_written));
-    
-    
+    current_length = min (MAD_VIA_MAX_TRANSFER_SIZE, ((*buffer)->length - (*buffer)->bytes_written));    
 
     /* PostRecv Buffer */
     desc = vi->in.descriptor->descriptor;
@@ -2083,10 +1850,10 @@ mad_via_receive_buffer(p_mad_link_t     link,
     mh = vi->out.descriptor->handle;
     
     desc->Data[0].Data.Address = vi->out.descriptor->buffer;
-    desc->Data[0].Length = 64;
+    desc->Data[0].Length = 4;
     desc->Control.SegCount = 1;
     desc->Control.Control = 0;
-    desc->Control.Length = 64;
+    desc->Control.Length = 4;
     desc->Control.Status = 0;
     desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
     
@@ -2096,30 +1863,20 @@ mad_via_receive_buffer(p_mad_link_t     link,
 			 vi->handle,
 			 vi->out.descriptor->descriptor,
 			 vi->out.descriptor->handle));
-    
+
     /* SendWait Ack */
     via_status = VipSendWait(
 			 vi->handle,
 			 VIP_INFINITE,
 			 &desc);
 
-    if (via_status == VIP_DESCRIPTOR_ERROR) {
-      niKo_debug_descriptor(desc, *buffer);
-    }    
-
     VIA_CTRL(via_status);
     
-    /* RecvWait Buffer */
-    
+    /* RecvWait Buffer */    
     via_status = VipRecvWait(
 			 vi->handle,
 			 VIP_INFINITE,
 			 &desc);
-    
-    if (via_status == VIP_DESCRIPTOR_ERROR) {
-      niKo_debug_descriptor(desc, *buffer);
-    }
-
     VIA_CTRL(via_status);
 
     (*buffer)->bytes_written += current_length;
@@ -2135,11 +1892,168 @@ mad_via_receive_buffer(p_mad_link_t     link,
 }
 
 void
+mad_via_receive_credit_buffer(p_mad_link_t     link,
+			      p_mad_buffer_t  *buffer)
+{
+  VIP_DESCRIPTOR *desc;
+  VIP_MEM_HANDLE mh;
+  
+  p_mad_via_vi_t vi;
+  
+  p_mad_connection_t connection = link->connection;
+  
+  p_mad_via_connection_specific_t specific =
+    (p_mad_via_connection_specific_t) connection->specific;
+  
+  p_mad_via_link_specific_t link_specific = 
+    (p_mad_via_link_specific_t) link->specific;
+  
+  LOG_IN();
+
+  /* CTRL VI */
+  vi = specific->vi;
+
+  if (specific->new_message == tbx_true)
+    {
+      
+      if (specific->posted == tbx_true) {
+	
+	VIA_CTRL(VipSendWait(
+			     vi->handle,
+			     VIP_INFINITE,
+			     &desc));  
+      }
+      
+      VIA_CTRL(VipRecvDone(
+			   vi->handle,
+			   &desc
+			   ));
+            
+      memcpy((*buffer)->buffer,desc->Data[0].Data.Address,(*buffer)->length);
+
+      /* post next reception */
+      desc = vi->in.descriptor->descriptor;
+      mh = vi->in.descriptor->handle;
+      
+      
+      desc->Data[0].Data.Address = vi->in.descriptor->buffer;
+      desc->Data[0].Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+      desc->Control.SegCount = 1;
+      desc->Control.Control = 0;
+      desc->Control.Length = MAD_VIA_SHORT_BUFFER_LIMIT;
+      desc->Control.Status = 0;
+      desc->Data[0].Handle = vi->in.descriptor->buffer_handle;
+      desc->Control.Reserved = 0;
+      
+      
+      VIA_CTRL(VipPostRecv(
+			   vi->handle,
+			   desc,
+			   mh
+			   ));
+    
+
+      /* post acknowledge */
+      desc = vi->out.descriptor->descriptor;
+      mh = vi->out.descriptor->handle;
+
+      
+      desc->Data[0].Data.Address = vi->out.descriptor->buffer;
+      desc->Data[0].Length = 4;
+      desc->Control.SegCount = 1;
+      desc->Control.Control = 0;
+      desc->Control.Length = 4;
+      desc->Control.Status = 0;
+      desc->Data[0].Handle = vi->out.descriptor->buffer_handle;
+      
+
+      memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,"Ack!",4);
+      
+      VIA_CTRL(VipPostSend(
+			   vi->handle,
+			   vi->out.descriptor->descriptor,
+			   vi->out.descriptor->handle));      
+
+      specific->new_message = tbx_false;
+    }
+  else
+    {
+      vi = &(link_specific->vi);
+
+      if (vi->credits.available_credits <= vi->credits.alert)
+	{
+	  desc = vi->out.descriptor->descriptor;
+	  mh = vi->out.descriptor->handle;
+
+	  memcpy(vi->out.descriptor->descriptor->Data[0].Data.Address,"Ack!",4);
+	  
+	  desc->Control.ImmediateData = vi->credits.returned_credits;
+	  vi->credits.available_credits += vi->credits.returned_credits;
+	  vi->credits.returned_credits = 0;
+	  
+	  VIA_CTRL(VipPostSend(
+			       vi->handle,
+			       vi->out.descriptor->descriptor,
+			       vi->out.descriptor->handle));
+	  
+	  VIA_CTRL(VipSendWait(
+			       vi->handle,
+			       VIP_INFINITE,
+			       &desc));
+
+	}
+	  
+      vi->credits.available_credits --;
+      VIA_CTRL(VipRecvWait(
+			   vi->handle,
+			   VIP_INFINITE,
+			   &desc));
+      
+      ((p_mad_via_link_specific_t) (connection->reverse->link[MAD_VIA_CREDIT_LINK]).specific)
+	->vi.credits.available_credits += desc->Control.ImmediateData;
+
+      memcpy((*buffer)->buffer, desc->Data[0].Data.Address, (*buffer)->length);
+        
+      // it is always the same memory handle so the first one is ok!
+      mh = vi->in.descriptor->handle;
+      
+      VIA_CTRL(VipPostRecv(
+			   vi->handle,
+			   desc,
+			   mh
+			   ));
+
+      vi->credits.returned_credits ++;
+    }  
+  
+  specific->posted = tbx_true;
+  
+  LOG_OUT();
+}
+
+void
+mad_via_receive_buffer(p_mad_link_t     link,
+		       p_mad_buffer_t  *buffer)
+{
+  LOG_IN();
+
+  if (link->id == MAD_VIA_MESSAGE_LINK)
+    {
+      mad_via_receive_message_buffer(link, buffer);
+    }
+  else if (link->id == MAD_VIA_CREDIT_LINK)
+    {
+      mad_via_receive_credit_buffer(link, buffer);
+    }
+
+  LOG_OUT();
+}
+
+void
 mad_via_send_buffer_group(p_mad_link_t           lnk,
 			  p_mad_buffer_group_t   buffer_group)
 {
   LOG_IN();
-  //fprintf(stderr,"ENTERING SEND_BUFFER_GROUP\n");
 
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
@@ -2153,7 +2067,6 @@ mad_via_send_buffer_group(p_mad_link_t           lnk,
       while(tbx_forward_list_reference(&ref));
     }
 
-  //fprintf(stderr,"EXITING SEND_BUFFER_GROUP\n");
   LOG_OUT();
 }
 
@@ -2163,7 +2076,6 @@ mad_via_receive_sub_buffer_group(p_mad_link_t         lnk,
 				 p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
-  //fprintf(stderr,"ENTERING RECEIVE_SUB_BUFFER_GROUP\n");
 
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
@@ -2180,10 +2092,25 @@ mad_via_receive_sub_buffer_group(p_mad_link_t         lnk,
       while(tbx_forward_list_reference(&ref));
     }
 
-  //fprintf(stderr,"EXITING RECEIVE_SUB_BUFFER_GROUP\n");
   LOG_OUT();
 }
 
+p_mad_buffer_t
+mad_via_get_static_buffer(p_mad_link_t lnk)
+{
+  fprintf(stderr,"GET_STATIC_BUFFER\n");
+  return NULL;
+}
+
+void
+mad_via_return_static_buffer(p_mad_link_t     lnk,
+			     p_mad_buffer_t   buffer)
+
+{
+  fprintf(stderr,"RETURN_STATIC_BUFFER\n");
+}
+
+/*
 p_mad_buffer_t
 mad_via_get_static_buffer(p_mad_link_t lnk)
 {
@@ -2213,3 +2140,4 @@ mad_via_return_static_buffer(p_mad_link_t     lnk,
   mad_via_buffer_free(adapter_specific->memory, buffer);
   LOG_OUT();
 }
+*/

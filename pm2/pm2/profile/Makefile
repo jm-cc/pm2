@@ -65,13 +65,7 @@ default:
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
-# Target subdirectories
-#DUMMY_BUILD :=  $(shell mkdir -p $(PM2_MAK_DIR))
-
 -include $(PM2_MAK_DIR)/profile-specific.mak
-
-# Target subdirectories
-#DUMMY_BUILD :=  $(shell mkdir -p $(LIB_GEN_INC))
 
 .PHONY: default fut_files lib fut
 default: fut_files $(LIB_GEN_INC)/fut_entries.h lib
@@ -83,7 +77,10 @@ fut_files:
 $(LIB_GEN_INC)/fut_entries.h: $(LIB_GEN_STAMP)/fut_stamp
 	$(LIB_PREFIX) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
 
-$(LIB_GEN_STAMP)/fut_stamp: ;
+$(LIB_GEN_STAMP)/fut_stamp: $(LIB_STAMP_FLAVOR)
+	$(COMMON_HIDE) set -e; \
+	if [ ! -d $(LIB_GEN_STAMP) ] ; then mkdir -p $(LIB_GEN_STAMP) ; fi
+	$(COMMON_HIDE) touch $@
 
 lib:
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true

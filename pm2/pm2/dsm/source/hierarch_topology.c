@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.c,v 1.6 2002/10/23 13:26:51 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.c,v 1.7 2002/10/25 11:20:21 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
@@ -128,15 +128,15 @@ topology_dump_information (void)
    int i;
    const int size = pm2_config_size();
 
-   tfprintf(stderr, "Maximum number of clusters (colors): %d\n",
+   marcel_fprintf(stderr, "Maximum number of clusters (colors): %d\n",
             cluster_number);
-   tfprintf(stderr, "Node:\t");
+   marcel_fprintf(stderr, "Node:\t");
    for (i = 0; i < size; i++)
-      tfprintf(stderr, "%3d", i);
-   tfprintf(stderr, "\nColor:\t");
+      marcel_fprintf(stderr, "%3d", i);
+   marcel_fprintf(stderr, "\nColor:\t");
    for (i = 0; i < size; i++)
-      tfprintf(stderr, "%3u", cluster_colors[i]);
-   tfprintf(stderr, "\n");
+      marcel_fprintf(stderr, "%3u", cluster_colors[i]);
+   marcel_fprintf(stderr, "\n");
 
    return DSM_SUCCESS;
 }

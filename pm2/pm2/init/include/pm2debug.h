@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.10  2000/09/13 21:57:35  rnamyst
+Improvements to the profile stuff: .fut files are now only built for modules that have the -DDO_PROFILE option set.
+
 Revision 1.9  2000/09/13 00:07:17  rnamyst
 Support for profiling + minor bug fixes
 
@@ -75,6 +78,10 @@ ______________________________________________________________________________
 
 #ifndef PM2DEBUG_EST_DEF
 #define PM2DEBUG_EST_DEF
+
+#ifdef PROFILE // i.e if the profile module was selected
+#include "profile.h"
+#endif
 
 typedef enum {
 	DEBUG_SHOW,
@@ -218,15 +225,16 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
  * _______________///////////////////////////////////////////////////
  */
 
-#ifdef PROFILE
-#include "profile.h"
+#ifdef DO_PROFILE // Each module can set/unset this option independently
 
 #ifdef PREPROC
 #define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_fut_" \
                                                    __FUNCTION__ "_" #inout \
                                                    "_code"); \
                                foo=1; }
-#else
+
+#else // ifndef PREPROC
+
 #define GEN_PREPROC(inout)   { extern unsigned __code asm("fut_" __FUNCTION__ \
                                                           "_" #inout "_code"); \
                                PROF_PROBE0(PROFILE_KEYMASK, __code); }
@@ -235,7 +243,7 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define PROF_IN()            GEN_PREPROC(entry)
 #define PROF_OUT()           GEN_PREPROC(exit)
 
-#else // else ifndef PROFILE
+#else // ifndef DO_PROFILE
 
 #define PROF_IN()            (void)0
 #define PROF_OUT()           (void)0

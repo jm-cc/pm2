@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.38  2000/11/16 14:09:13  oaumage
+- corrections diverses
+
+Revision 1.37  2000/11/16 13:24:07  oaumage
+- mise a jour initialisation
+
 Revision 1.36  2000/11/10 14:17:57  oaumage
 - nouvelle procedure d'initialisation
 
@@ -198,6 +204,23 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
   NULL
 };
 
+
+/*
+ * Constantes
+ * ----------
+ */
+#define MAX_HOSTNAME_LEN  256
+
+/*
+ * Objet Madeleine
+ * ---------------
+ */
+static mad_madeleine_t main_madeleine;
+
+/*
+ * Functions
+ * ---------------
+ */
 int
 mad_protocol_available(p_mad_madeleine_t madeleine, char *name)
 {
@@ -289,6 +312,29 @@ mad_driver_fill(p_mad_madeleine_t madeleine)
 }
 
 void 
+mad_driver_init(p_mad_madeleine_t madeleine)
+{
+  mad_driver_id_t  drv;
+    
+  LOG_IN();
+  for (drv = 0;
+       drv < madeleine->nb_driver;
+       drv++)
+    {
+      p_mad_driver_t driver;
+      
+#ifdef EXTERNAL_SPAWN
+      if (drv == madeleine->settings->external_spawn_driver)
+	continue;
+#endif /* EXTERNAL_SPAWN */
+
+      driver = &(madeleine->driver[drv]);      
+      driver->interface.driver_init(driver);
+    }
+  LOG_OUT();
+}
+
+void 
 mad_adapter_fill(p_mad_madeleine_t     madeleine,
 		 p_mad_adapter_set_t   adapter_set)
 {
@@ -366,6 +412,9 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
 void
 mad_adapter_init(p_mad_madeleine_t madeleine)
 {
+#ifdef EXTERNAL_SPAWN
+  p_mad_settings_t settings = madeleine->settings;
+#endif /* EXTERNAL_SPAWN */
   mad_adapter_id_t ad;
 
   LOG_IN();
@@ -376,7 +425,13 @@ mad_adapter_init(p_mad_madeleine_t madeleine)
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
-      adapter->specific = NULL;
+
+#ifdef EXTERNAL_SPAWN
+      if (&(madeleine->driver[madeleine->settings->external_spawn_driver]) ==
+	  adapter->driver)
+	continue;
+#endif /* EXTERNAL_SPAWN */
+
       if (adapter->driver->interface.adapter_init)
 	adapter->driver->interface.adapter_init(adapter);
     }
@@ -386,6 +441,9 @@ mad_adapter_init(p_mad_madeleine_t madeleine)
 void
 mad_adapter_configuration_init(p_mad_madeleine_t madeleine)
 {
+#ifdef EXTERNAL_SPAWN
+  p_mad_settings_t settings = madeleine->settings;
+#endif /* EXTERNAL_SPAWN */
   mad_adapter_id_t ad;
 
   LOG_IN();
@@ -396,6 +454,13 @@ mad_adapter_configuration_init(p_mad_madeleine_t madeleine)
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
+
+#ifdef EXTERNAL_SPAWN
+      if (&(madeleine->driver[settings->external_spawn_driver]) ==
+	  adapter->driver)
+	continue;
+#endif /* EXTERNAL_SPAWN */
+
       if (adapter->driver->interface.adapter_configuration_init)
 	adapter->driver->interface.adapter_configuration_init(adapter);
     }
@@ -414,4 +479,349 @@ mad_get_mad_root(void)
     sprintf(buf, "%s/mad2", getenv("PM2_ROOT"));
     return buf;
   }
+}
+
+p_mad_madeleine_t
+mad_object_init(int                   argc,
+		char                **argv,
+		char                 *configuration_file,
+		p_mad_adapter_set_t   adapter_set)
+{
+  p_mad_madeleine_t     madeleine     = &(main_madeleine);
+  p_mad_settings_t      settings      = NULL;
+  p_mad_configuration_t configuration = NULL;
+
+  LOG_IN();
+ 
+  /* Structure initialization */
+  TBX_INIT_SHARED(madeleine);
+  madeleine->nb_driver     =    0;
+  madeleine->driver        = NULL;
+  madeleine->nb_adapter    =    0;
+  madeleine->adapter       = NULL;
+  madeleine->nb_channel    =    0;
+  tbx_list_init(&(madeleine->channel));
+  madeleine->settings      = NULL;
+  madeleine->configuration = NULL;
+
+  settings = TBX_MALLOC(sizeof(mad_settings_t));
+  CTRL_ALLOC(settings);
+
+  settings->rsh_cmd               =      NULL;
+  settings->configuration_file    =      NULL;
+  settings->debug_mode            = tbx_false;
+  settings->external_spawn_driver =        -1;
+
+  settings->rsh_cmd = getenv("PM2_RSH");
+  if (!settings->rsh_cmd)
+    {
+      settings->rsh_cmd = "rsh";
+    }  
+
+  if (configuration_file)
+    {
+      settings->configuration_file = TBX_MALLOC(1 + strlen(configuration_file));
+      CTRL_ALLOC(settings->configuration_file);
+      strcpy(settings->configuration_file, configuration_file);
+    }
+  else if (getenv("PM2_CONF_FILE"))
+    {
+      settings->configuration_file =
+	TBX_MALLOC(1 + strlen(getenv("PM2_CONF_FILE")));
+      CTRL_ALLOC(settings->configuration_file);
+      strcpy(settings->configuration_file, getenv("PM2_CONF_FILE"));
+    }
+  else
+    {
+      settings->configuration_file = NULL;
+    }
+
+#ifdef EXTERNAL_SPAWN
+  if (adapter_set)
+    {
+      settings->external_spawn_driver = 0;
+    }
+  else
+    {
+      settings->external_spawn_driver = EXTERNAL_SPAWN;
+    }  
+#endif /* EXTERNAL_SPAWN */
+
+  madeleine->settings = settings;
+  
+  configuration = TBX_MALLOC(sizeof(mad_configuration_t));
+  CTRL_ALLOC(configuration);
+  
+  configuration->size          =    0;
+  configuration->local_host_id =   -1;
+  configuration->host_name     = NULL;
+  configuration->program_name  = NULL;
+  
+  madeleine->configuration = configuration;
+
+  /* Network components pre-initialization */
+  mad_driver_fill(madeleine);
+  mad_adapter_fill(madeleine, adapter_set);
+
+  LOG_OUT();
+  
+  return madeleine;
+}
+
+void
+mad_cmd_line_init(p_mad_madeleine_t   madeleine,
+		  int                 argc,
+		  char              **argv)
+{
+  p_mad_adapter_t       adapter       = madeleine->adapter;
+  p_mad_configuration_t configuration = madeleine->configuration;
+  p_mad_settings_t      settings      = madeleine->settings;
+
+  LOG_IN();
+
+  argc--; argv++;
+
+  while (argc)
+    {
+      if (!strcmp(*argv, "-d"))
+	{
+	  settings->debug_mode = tbx_true;
+	}
+      else if (!strcmp(*argv, "-rank"))
+	{
+	  argc--; argv++;
+
+	  if (!argc)
+	    FAILURE("rank argument not found");
+
+	  configuration->local_host_id = atoi(*argv);
+	}
+      else if (!strcmp(*argv, "-conf"))
+	{
+	  argc--; argv++;
+
+	  if (!argc)
+	    FAILURE("conf argument not found");
+
+	  if (settings->configuration_file)
+	    {
+	      TBX_FREE(settings->configuration_file);
+	    }
+
+	  settings->configuration_file = TBX_MALLOC(strlen(*argv) + 1);
+	  CTRL_ALLOC(settings->configuration_file);
+	      
+	  strcpy(settings->configuration_file, *argv);
+	}
+      else if (!strcmp(*argv, "-device"))
+	{
+	  argc--; argv++;
+
+	  if (!argc)
+	    FAILURE("device argument not found");
+
+	  adapter->master_parameter = TBX_MALLOC(strlen(*argv) + 1);
+	  CTRL_ALLOC(adapter->master_parameter);
+	  
+	  strcpy(adapter->master_parameter, *argv);
+	  adapter++;
+	}
+      else if (!strcmp(*argv, "-cwd"))
+	{
+	  argc--; argv++;
+
+	  if (!argc)
+	    FAILURE("cwd argument not found");
+
+	  chdir(*argv);
+	}
+
+      argc--; argv++;
+    }
+
+  if (configuration->local_host_id == -1)
+    FAILURE("could not determine the node rank");
+
+  LOG_OUT();
+}
+
+void
+mad_configuration_init(p_mad_madeleine_t   madeleine,
+		       int                 argc,
+		       char              **argv)
+{
+  p_mad_configuration_t  configuration = madeleine->configuration;
+  p_mad_settings_t       settings      = madeleine->settings;
+  FILE                  *f             = NULL;
+  char                  *fmt           = "exit `cat %s | wc -w`";
+  int                    len;
+  int                    i;
+
+  LOG_IN();
+
+  if (!settings->configuration_file)
+    FAILURE("no configuration file specified");
+
+  f = fopen(settings->configuration_file, "r");
+    
+  if (!f)
+    {
+      ERROR("fopen");
+    }
+
+  len = strlen(settings->configuration_file) + strlen(fmt);
+
+  {
+    char cmd[len];
+    int  ret;
+    
+    sprintf(cmd, "exit `cat %s | wc -w`", settings->configuration_file);
+    ret = system(cmd);
+
+    if (ret == -1)
+      ERROR("system");
+    
+    configuration->size = WEXITSTATUS(ret);
+  }
+
+  configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
+  CTRL_ALLOC(configuration->host_name);
+
+   for (i = 0; i < configuration->size; i++)
+    {
+      configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN);
+      CTRL_ALLOC(configuration->host_name[i]);
+      fscanf(f, "%s", configuration->host_name[i]);
+    }
+
+   fclose(f);
+   LOG_OUT();
+}
+
+void
+mad_output_redirection_init(p_mad_madeleine_t   madeleine,
+			    int                 argc,
+			    char              **argv)
+{
+  p_mad_configuration_t  configuration = madeleine->configuration;
+  p_mad_settings_t       settings      = madeleine->settings;
+
+  LOG_IN();
+  if (configuration->local_host_id && !settings->debug_mode)
+    {
+      char *fmt  = "/tmp/%s-%s-%d";
+      char *user = NULL;
+      int   len  = 0;
+
+      user = getenv("USER");
+      if (!user)
+	FAILURE("USER environment variable not defined");
+
+      len = strlen(fmt) + strlen(user) + strlen(MAD2_LOGNAME);
+      
+      {
+	char output[len];
+	int  f;
+
+	sprintf(output, "/tmp/%s-%s-%d",
+		user, MAD2_LOGNAME, (int)configuration->local_host_id);
+
+	f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+	if (f < 0)
+	  ERROR("open");
+      
+	if (dup2(f, STDOUT_FILENO) < 0)
+	  ERROR("dup2");
+
+	if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0)
+	  ERROR("dup2");
+      }
+    }
+  LOG_OUT();
+}
+
+void
+mad_network_components_init(p_mad_madeleine_t   madeleine,
+			    int                 argc,
+			    char              **argv)
+{
+  LOG_IN();
+  mad_driver_init(madeleine);
+  mad_adapter_init(madeleine);
+  LOG_OUT();
+}
+
+void  
+mad_connect(p_mad_madeleine_t   madeleine,
+	    int                 argc,
+	    char              **argv)
+{
+  LOG_IN();
+  mad_adapter_configuration_init(madeleine);
+  LOG_OUT();
+}
+
+void
+mad_purge_command_line(p_mad_madeleine_t   madeleine,
+		       int                *_argc,
+		       char              **_argv)
+{
+  int     argc = *_argc;
+  char ** argv =  _argv;
+  LOG_IN();
+
+  argv++; _argv++; argc--;
+  
+  while (argc)
+    {
+      if (!strcmp(*argv, "-d"))
+	{
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*argv, "-rank"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("rank argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+
+	}
+      else if (!strcmp(*argv, "-conf"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("conf argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*argv, "-device"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("device argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*argv, "-cwd"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("device argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
+      else
+	{
+	  *argv++ = *_argv++;
+	}
+
+      argc--;
+    }
+  
+  LOG_OUT();
 }

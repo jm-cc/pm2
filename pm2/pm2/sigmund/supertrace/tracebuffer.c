@@ -20,7 +20,7 @@
 
 static trace_buffer buf;
 
-short int smp;
+int smp;
 
 int abs_num;
 
@@ -40,7 +40,7 @@ static int fkt_eof;
 static trace fut_buf;
 static trace fkt_buf;
 
-static long int pid_table[NB_MAX_CPU];
+static int pid_table[NB_MAX_CPU];
 
 #define zone_flou 0x01000000
 
@@ -141,6 +141,10 @@ static int read_kernel_trace(trace *tr)
   }
   tr->cpu = j >> 16;
   tr->pid = j & 0xffff;
+  if (pid_table[tr->cpu] == -1) {
+    pid_table[tr->cpu] = tr->pid;
+    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);
+  }
   if (fread(&(tr->code), sizeof(int), 1, f_fkt) == 0) {
     fprintf(stderr,"Corrupted kernel trace file\n");
     exit(1);
@@ -181,6 +185,7 @@ static void read_fut_header()
   char header[200];
   if (f_fut != NULL) {
     // Lecture du header de fut : Attention non gestion de la corruption de fichier
+    fread(&smp, sizeof(int), 1, f_fut);
     fread(&pid, sizeof(unsigned long), 1, f_fut);
     fread(header, sizeof(double) + 
 	  2*sizeof(time_t) + sizeof(unsigned int), 1, f_fut);  
@@ -376,7 +381,7 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
   fut_eof = 1;
   abs_num = 0;
   for(n = 0; n < NB_MAX_CPU; n++)
-    pid_table[n] = 0;
+    pid_table[n] = -1;
   n = 0;
   assert((fut_name != NULL) || (fkt_name != NULL));
   if (fut_name != NULL) {

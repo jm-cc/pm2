@@ -56,19 +56,10 @@ DSM_ROOT :=  $(PM2_ROOT)/dsm
 endif
 DSM_MAKE :=  $(DSM_ROOT)/make
 
-ifndef MAD1_ROOT
-MAD1_ROOT :=  $(PM2_ROOT)/mad1
+ifndef MAD_ROOT
+MAD_ROOT :=  $(PM2_ROOT)/madeleine
 endif
-
-ifndef MAD2_ROOT
-MAD2_ROOT :=  $(PM2_ROOT)/mad2
-endif
-
-ifneq ($(MAD2),yes)
-MAD_MAKE  :=  $(MAD1_ROOT)/make
-else
-MAD_MAKE  :=  $(MAD2_ROOT)/make
-endif
+MAD_MAKE  :=  $(MAD_ROOT)/make
 
 ifndef TBX_ROOT
 TBX_ROOT :=  $(PM2_ROOT)/toolbox
@@ -88,7 +79,7 @@ ifndef NAME
 NAME :=  $(CLASS)
 endif
 
-MASTER_ROOT   := $($(MASTER_MODULE)_ROOT)
+MASTER_ROOT :=  $($(MASTER_MODULE)_ROOT)
 
 GEN := build
 
@@ -104,6 +95,7 @@ COMMON_ASFLAGS   := -D$(COMMON_SYS) -D$(COMMON_ARCH)
 COMMON_LLIBS     :=
 COMMON_OPTIONS   :=
 COMMON_LINK      := static
+COMMON_DEPS      :=
 
 GEN_DIR :=  $(GEN_ROOT)/$(NAME)
 GEN_BIN :=  $(GEN_DIR)/bin
@@ -117,6 +109,9 @@ GEN_LIB :=  $(INSTALL)/lib
 else
 GEN_LIB :=  $(GEN_DIR)/lib
 endif 
+
+COMMON_CFLAGS  +=  -I$(GEN_INC)
+COMMON_LDFLAGS +=  -L$(GEN_LIB)
 
 ifneq ($(MAKECMDGOALS),distclean)
 DUMMY_BUILD :=  $(shell mkdir -p $(GEN_ASM))

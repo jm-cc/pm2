@@ -37,8 +37,7 @@ COMMON_MAKEFILES +=   $(PM2_ROOT)/make/master_rules.mak
 EMPTY :=
 SPACE :=$(EMPTY) $(EMPTY)
 OPT_FILE    :=  $(GEN_DIR)/.opt_$(subst $(SPACE),_,$(COMMON_OPTIONS))
-COMMON_DEPS :=  $(COMMON_MAKEFILES) $(OPT_FILE)
-COMMON_LDFLAGS += -L$(GEN_LIB)
+COMMON_DEPS +=  $(COMMON_MAKEFILES) $(OPT_FILE)
 
 # Regles principales
 .PHONY: default

@@ -40,31 +40,28 @@
 #ifdef MA__LWPS
 
 #define SET_STATE_RUNNING(previous, next, next_lwp) \
-  (SET_STATE_RUNNING_HOOK(next), \
-   (next)->ext_state=MARCEL_RUNNING, \
-   MTRACE("RUNNING", (next)), \
-   (next)->lwp=next_lwp, \
+  (SET_STATE_RUNNING_HOOK(next),                    \
+   (next)->ext_state=MARCEL_RUNNING,                \
+   MTRACE("RUNNING", (next)),                       \
+   (next)->lwp=next_lwp,                            \
    next_lwp->prev_running=previous)
 
-#else
+#else // MA__LWPS
 
 #define SET_STATE_RUNNING(previous, next, lwp) \
-  (SET_STATE_RUNNING_HOOK(next), \
-   (next)->ext_state=MARCEL_RUNNING, \
-   MTRACE("RUNNING", (next)), \
+  (SET_STATE_RUNNING_HOOK(next),               \
+   (next)->ext_state=MARCEL_RUNNING,           \
+   MTRACE("RUNNING", (next)),                  \
    lwp->prev_running=previous)
 
-#endif
+#endif // MA__LWPS
 
-#define SET_STATE_READY(current) \
+#define SET_STATE_READY(current)  \
   (SET_STATE_READY_HOOK(current), \
-   MTRACE("READY", (current)), \
+   MTRACE("READY", (current)),    \
    (current)->ext_state=MARCEL_READY)
 
-#define CANNOT_RUN(current) \
-  ((current)->ext_state == MARCEL_RUNNING)
-
-#else
+#else // MA__MULTIPLE_RUNNING
 
 #define SET_STATE_RUNNING(previous, next, lwp) SET_STATE_RUNNING_HOOK(next)
 
@@ -73,27 +70,26 @@
 #endif
 
 
-
 #ifdef MA__LWPS
 
-#define GET_LWP_BY_NUM(proc)    (addr_lwp[proc])
-#define GET_LWP_NUMBER(current)        ((current)->lwp->number)
-#define GET_LWP(current)        ((current)->lwp)
-#define SET_LWP(current, value) ((current)->lwp=(value))
-#define GET_CUR_LWP()           (cur_lwp)
-#define SET_CUR_LWP(value)      (cur_lwp=(value))
-#define SET_LWP_NB(proc, value) (addr_lwp[proc]=(value))
+#define GET_LWP_BY_NUM(proc)                (addr_lwp[proc])
+#define GET_LWP_NUMBER(current)             ((current)->lwp->number)
+#define GET_LWP(current)                    ((current)->lwp)
+#define SET_LWP(current, value)             ((current)->lwp=(value))
+#define GET_CUR_LWP()                       (cur_lwp)
+#define SET_CUR_LWP(value)                  (cur_lwp=(value))
+#define SET_LWP_NB(proc, value)             (addr_lwp[proc]=(value))
 #define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
    OPTIONS __lwp_t *cur_lwp signe lwp
 
 #else
 
-#define cur_lwp                 (&__main_lwp)
-#define GET_LWP_NUMBER(current)        0
-#define GET_LWP_BY_NUM(nb)      (cur_lwp)
-#define GET_LWP(current)        (cur_lwp)
+#define cur_lwp                             (&__main_lwp)
+#define GET_LWP_NUMBER(current)             0
+#define GET_LWP_BY_NUM(nb)                  (cur_lwp)
+#define GET_LWP(current)                    (cur_lwp)
 #define SET_LWP(current, value)
-#define GET_CUR_LWP()           (cur_lwp)
+#define GET_CUR_LWP()                       (cur_lwp)
 #define SET_CUR_LWP(value)
 #define SET_LWP_NB(proc, value)
 #define DEFINE_CUR_LWP(OPTIONS, signe, current)
@@ -101,12 +97,11 @@
 #endif
 
 
-
 #ifdef MA__DEBUG
 #ifdef MA__MULTIPLE_RUNNING
 #define MA_THR_DEBUG__MULTIPLE_RUNNING(current) \
-  ((current->ext_state != MARCEL_RUNNING) ? \
-   RAISE("Thread not running") : \
+  ((current->ext_state != MARCEL_RUNNING) ?     \
+   RAISE("Thread not running") :                \
    (void)0)
 #else
 #define MA_THR_DEBUG__MULTIPLE_RUNNING(current)  (void)0
@@ -119,12 +114,12 @@
 #endif
 
 #ifdef MA__MULTIPLE_RUNNING
-#define MA_THR_UPDATE_LAST_THR(current) \
-  { \
+#define MA_THR_UPDATE_LAST_THR(current)             \
+  {                                                 \
     marcel_t prev = GET_LWP(current)->prev_running; \
-    if (prev && (current != prev)) \
-      SET_STATE_READY(prev); \
-    GET_LWP(current)->prev_running=NULL; \
+    if (prev && (current != prev))                  \
+      SET_STATE_READY(prev);                        \
+    GET_LWP(current)->prev_running=NULL;            \
   }
 #else
 #define MA_THR_UPDATE_LAST_THR(current) (void)0
@@ -140,9 +135,10 @@
  * le flags RUNNING au thread qui tournait avant.
  * */
 #define MA_THR_RESTARTED(current, info) \
-   { MA_THR_DEBUG(current); \
-   MTRACE(info, current); \
-   MA_THR_UPDATE_LAST_THR(current);}
+   { MA_THR_DEBUG(current);             \
+     MTRACE(info, current);             \
+     MA_THR_UPDATE_LAST_THR(current);   \
+   }
 
 /* on effectue un longjmp. Le thread courrant ET le suivant doivent
  * être RUNNING. La variable previous_task doit être correctement
@@ -151,17 +147,17 @@
  * */
 
 #if defined(DSM_SHARED_STACK)
-#define MA_THR_LONGJMP(next, ret) \
+#define MA_THR_LONGJMP(next, ret)        \
   (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
-   __next_thread = next,  \
-   call_ST_FLUSH_WINDOWS(), \
-   PROF_SWITCH_TO(next), \
+   __next_thread = next,                 \
+   call_ST_FLUSH_WINDOWS(),              \
+   PROF_SWITCH_TO(next),                 \
    longjmp(next->jbuf, ret))
 #else
-#define MA_THR_LONGJMP(next, ret) \
+#define MA_THR_LONGJMP(next, ret)        \
   (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
-   call_ST_FLUSH_WINDOWS(), \
-   PROF_SWITCH_TO(next), \
+   call_ST_FLUSH_WINDOWS(),              \
+   PROF_SWITCH_TO(next),                 \
    longjmp(next->jbuf, ret))
 #endif
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.6  2000/07/10 14:25:45  oaumage
+- Correction de l'initialisation des objets connection
+
 Revision 1.5  2000/06/18 13:23:33  oaumage
 - Correction de l'appel a mad_managers_init
 
@@ -217,6 +220,7 @@ mad_init(
       spawn_adapter = &(madeleine->adapter[EXTERNAL_SPAWN]);
     }  
   spawn_adapter->specific = NULL;
+  mad_driver_init(madeleine);
   if (spawn_interface->adapter_init)
     spawn_interface->adapter_init(spawn_adapter);
   if (spawn_interface->external_spawn_init)

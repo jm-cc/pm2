@@ -1,3 +1,9 @@
+/*! \file tbx.c
+ *  \brief TBX setup/cleanup routines
+ *
+ *  This file contains the TBX general management functions.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.17  2000/06/16 09:29:03  cperez
+Add  marcel_set_stack_jump.
+
 Revision 1.16  2000/05/25 00:23:51  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -300,6 +303,12 @@ _PRIVATE_ extern int nb_idle_sleeping; //TODO
 static __inline__ void marcel_prepare_stack_jump(void *stack)
 {
   *(marcel_t *)(stack + SLOT_SIZE - sizeof(void *)) = __marcel_self();
+}
+static __inline__ void marcel_set_stack_jump(marcel_t m)
+{
+  register unsigned long sp = get_sp();
+
+  *(marcel_t *)((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *)) = m;
 }
 #endif
 

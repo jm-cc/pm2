@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.14  2000/03/27 08:50:53  oaumage
+- pre-support decoupage de groupes
+- correction au niveau du support du demarrage manuel
+
 Revision 1.13  2000/03/15 09:59:01  oaumage
 - renommage du polling Nexus
 - correction d'un probleme de deverrouillage au niveau
@@ -138,6 +142,7 @@ mad_begin_packing(p_mad_channel_t   channel,
       link_id++)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
+      connection->link[link_id].group_length = 0;
     }
   
   connection->pair_list_used = tbx_false;
@@ -207,6 +212,7 @@ mad_message_ready(p_mad_channel_t channel)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
       tbx_list_init(&(connection->link[link_id].user_buffer_list));
+      connection->link[link_id].group_length = 0;
     }
   
   connection->lock            = tbx_true;
@@ -270,6 +276,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
       tbx_list_init(&(connection->link[link_id].user_buffer_list));
+      connection->link[link_id].group_length = 0;
     }
   
   connection->lock            = tbx_true;
@@ -795,6 +802,11 @@ mad_pack(p_mad_connection_t   connection,
 
   source = mad_get_user_send_buffer(user_buffer, user_buffer_length);
 
+  if (connection->last_link != link)
+    {
+      link->group_length = 0;
+    }
+
   LOG("mad_pack: 3");
   if (link_mode == mad_link_mode_buffer)
     {
@@ -811,9 +823,7 @@ mad_pack(p_mad_connection_t   connection,
 	    {
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
-		  TIME("    send buffer -->");
 		  interface->send_buffer(link, source);
-		  TIME("    send buffer <--");
 		  mad_free_buffer_struct(source);		  
 		  connection->flushed = tbx_true;
 		}
@@ -1283,8 +1293,11 @@ mad_unpack(p_mad_connection_t   connection,
     }
   
   destination = mad_get_user_receive_buffer(user_buffer, user_buffer_length);
-  LOG_PTR("mad_unpack: user buffer:", user_buffer);
-  LOG_VAL("mad_unpack: user buffer length: ", user_buffer_length);
+
+  if (connection->last_link != link)
+    {
+      link->group_length = 0;
+    }
   
   if (link_mode == mad_link_mode_buffer)
     {

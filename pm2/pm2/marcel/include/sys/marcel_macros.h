@@ -35,26 +35,42 @@
 #define SET_STATE_READY_HOOK(next)    (void)0
 #endif
 
-#ifdef MA__MULTIPLE_RUNNING
-
 #ifdef MA__LWPS
+
+#define GET_LWP_BY_NUM(proc)                (addr_lwp[proc])
+#define GET_LWP_NUMBER(current)             ((current)->lwp->number)
+#define GET_LWP(current)                    ((current)->lwp)
+#define SET_LWP(current, value)             ((current)->lwp=(value))
+#define GET_CUR_LWP()                       (cur_lwp)
+#define SET_CUR_LWP(value)                  (cur_lwp=(value))
+#define SET_LWP_NB(proc, value)             (addr_lwp[proc]=(value))
+#define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
+   OPTIONS __lwp_t *cur_lwp signe lwp
+
+#else
+
+#define cur_lwp                             (&__main_lwp)
+#define GET_LWP_NUMBER(current)             0
+#define GET_LWP_BY_NUM(nb)                  (cur_lwp)
+#define GET_LWP(current)                    (cur_lwp)
+#define SET_LWP(current, value)             ((void)0)
+#define GET_CUR_LWP()                       (cur_lwp)
+#define SET_CUR_LWP(value)                  ((void)0)
+#define SET_LWP_NB(proc, value)             ((void)0)
+#define DEFINE_CUR_LWP(OPTIONS, signe, current) \
+   int __cur_lwp_unused__ __attribute__ ((unused))
+
+#endif
+
+
+#ifdef MA__MULTIPLE_RUNNING
 
 #define SET_STATE_RUNNING(previous, next, next_lwp) \
   (SET_STATE_RUNNING_HOOK(next),                    \
    (next)->ext_state=MARCEL_RUNNING,                \
    MTRACE("RUNNING", (next)),                       \
-   (next)->lwp=next_lwp,                            \
+   SET_LWP(next, next_lwp),                         \
    next_lwp->prev_running=previous)
-
-#else // MA__LWPS
-
-#define SET_STATE_RUNNING(previous, next, lwp) \
-  (SET_STATE_RUNNING_HOOK(next),               \
-   (next)->ext_state=MARCEL_RUNNING,           \
-   MTRACE("RUNNING", (next)),                  \
-   lwp->prev_running=previous)
-
-#endif // MA__LWPS
 
 #define SET_STATE_RUNNING_ONLY(next)  \
   (SET_STATE_RUNNING_HOOK(next),      \
@@ -75,34 +91,6 @@
 #define SET_STATE_READY(current)                SET_STATE_READY_HOOK(current)
 
 #endif
-
-
-#ifdef MA__LWPS
-
-#define GET_LWP_BY_NUM(proc)                (addr_lwp[proc])
-#define GET_LWP_NUMBER(current)             ((current)->lwp->number)
-#define GET_LWP(current)                    ((current)->lwp)
-#define SET_LWP(current, value)             ((current)->lwp=(value))
-#define GET_CUR_LWP()                       (cur_lwp)
-#define SET_CUR_LWP(value)                  (cur_lwp=(value))
-#define SET_LWP_NB(proc, value)             (addr_lwp[proc]=(value))
-#define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
-   OPTIONS __lwp_t *cur_lwp signe lwp
-
-#else
-
-#define cur_lwp                             (&__main_lwp)
-#define GET_LWP_NUMBER(current)             0
-#define GET_LWP_BY_NUM(nb)                  (cur_lwp)
-#define GET_LWP(current)                    (cur_lwp)
-#define SET_LWP(current, value)
-#define GET_CUR_LWP()                       (cur_lwp)
-#define SET_CUR_LWP(value)
-#define SET_LWP_NB(proc, value)
-#define DEFINE_CUR_LWP(OPTIONS, signe, current)
-
-#endif
-
 
 #ifdef MA__DEBUG
 #ifdef MA__MULTIPLE_RUNNING

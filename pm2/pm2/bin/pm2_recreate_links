@@ -69,11 +69,13 @@ make_ln ${PM2_ROOT}/toolbox/net src source
 echo
 echo Modules
 make_ln ${PM2_ROOT}/modules ../dsm dsm
+make_ln ${PM2_ROOT}/modules ../leonie leonie
 make_ln ${PM2_ROOT}/modules ../mad1 mad1
 make_ln ${PM2_ROOT}/modules ../mad2 mad2
 make_ln ${PM2_ROOT}/modules ../marcel marcel
 make_ln ${PM2_ROOT}/modules ../toolbox/net ntbx
 make_ln ${PM2_ROOT}/modules ../toolbox tbx
+make_ln ${PM2_ROOT}/modules ../swann swann
 make_ln ${PM2_ROOT}/modules/pm2 ../../example example
 make_ln ${PM2_ROOT}/modules/pm2 ../../include include
 make_ln ${PM2_ROOT}/modules/pm2 ../../source source
@@ -154,6 +156,7 @@ make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 # Madeleine default selection
 
 echo .
-${PM2_ROOT}/bin/pm2madselect 1
+# Olivier: changement de 1->2 pour etre coherent avec le parfum `default'
+${PM2_ROOT}/bin/pm2madselect 2
 
 

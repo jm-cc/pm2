@@ -89,8 +89,11 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
   arg = TBX_MALLOC(MAX_ARG_LEN);
   CTRL_ALLOC(arg);
 
-  while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
-    {    
+  cwd = TBX_MALLOC(MAX_ARG_LEN);
+  CTRL_ALLOC(cwd);
+
+  while (!(cwd = getcwd(cwd, MAX_ARG_LEN)))
+    {
       if (errno != EINTR)
 	{
 	  ERROR("getcwd");
@@ -156,7 +159,8 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
       system(cmd);
     }
 
-  TBX_FREE(prefix);
+  tbx_safe_malloc_check(tbx_safe_malloc_VERBOSE);
+
   TBX_FREE(cwd);
   TBX_FREE(cmd);
   TBX_FREE(arg_str);

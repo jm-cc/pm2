@@ -54,6 +54,14 @@ LIB_PICS += $(LIB_C_PICS_ADDED)
 
 include $(PM2_ROOT)/make/libs-rules.mak
 
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifeq ($(wildcard $(LIB_C_DEPENDS_ADDED)),$(LIB_C_DEPENDS_ADDED))
+include $(LIB_C_DEPENDS_ADDED)
+endif
+endif
+endif
+
 $(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 

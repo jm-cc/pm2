@@ -241,7 +241,7 @@ int marcel_main(int argc, char **argv)
   marcel_attr_init(&attr);
 
 #ifdef SMP
-  marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_FIXED(1));
+  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(1));
 #endif
   marcel_create(&serv_pid, &attr, server, NULL);
 #endif /* NO_IO */

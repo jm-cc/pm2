@@ -31,13 +31,13 @@ unsigned marcel_sched_add_vp(void);
 
 /* ==== get current thread or LWP id ==== */
 
-static __inline__ marcel_t marcel_self()
+static __inline__ marcel_t marcel_self(void)
 {
   return __marcel_self();
 }
 
-static __inline__ unsigned marcel_current_vp() __attribute__ ((unused));
-static __inline__ unsigned marcel_current_vp()
+static __inline__ unsigned marcel_current_vp(void) __attribute__ ((unused));
+static __inline__ unsigned marcel_current_vp(void)
 {
   DEFINE_CUR_LWP(, =, GET_LWP(marcel_self()));
 

@@ -27,7 +27,7 @@ typedef int pm__atomic_lock_t;
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
 struct _pmarcel_fastlock
 {
-  long int __status;		/* "Free" or "taken" or head of waiting list */
+  unsigned long __status;	/* "Free" or "taken" or head of waiting list */
   pm__atomic_lock_t __spinlock;	/* Used by compare_and_swap emulation. Also,
 				   adaptive SMP lock stores spin count here. */
 };

@@ -43,7 +43,7 @@ inline static int __marcel_register_spinlocked(struct _marcel_fastlock * lock,
   first=(blockcell*)(lock->__status & ~1);
   if(first == NULL) {
     /* On est le premier à attendre */
-    lock->__status = 1 | ((long int)c);
+    lock->__status = 1 | ((unsigned long)c);
     first=c;
   } else {
     first->last->next=c;
@@ -67,7 +67,7 @@ inline static int __marcel_unregister_spinlocked(struct _marcel_fastlock * lock,
     /* Il n'y a rien */
   } else if (first==c) {
     /* On est en premier */
-    lock->__status= (long int)first->next|1;
+    lock->__status= (unsigned long)first->next|1;
     if (first->next) {
       first->next->last=first->last;
     }
@@ -128,7 +128,7 @@ inline static int __marcel_unlock_spinlocked(struct _marcel_fastlock * lock)
   LOG_IN();
   first=(blockcell*)(lock->__status & ~1);
   if(first != 0) { /* waiting threads */
-    lock->__status= (long int)first->next|1;
+    lock->__status= (unsigned long)first->next|1;
     if (first->next) {
       first->next->last=first->last;
     }

@@ -1,7 +1,7 @@
 
 case " $PM2_LIBS " in
     *\ mad?\ *) ;;
-    *) PM2_DEFAULT_LOADER=${PM2_ROOT}/marcel/bin/marcelload ;;
+    *) PM2_DEFAULT_LOADER=${PM2_ROOT}/marcel/bin/marcelload_conf_not_needed ;;
 esac
 
 if [ "${PM2_ARCH}" = RS6K_ARCH ]; then

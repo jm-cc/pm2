@@ -351,9 +351,9 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
       tbx_slist_ref_to_head(dir_vchannel_slist);
       do
 	{
-	  p_mad_dir_vchannel_t dir_vchannel = NULL;
-	  p_mad_channel_t      mad_vchannel = NULL;
-	  p_tbx_slist_t        slist        = NULL;
+	  p_mad_dir_channel_t dir_vchannel = NULL;
+	  p_mad_channel_t     mad_vchannel = NULL;
+	  p_tbx_slist_t       slist        = NULL;
 
 	  dir_vchannel = tbx_slist_ref_get(dir_vchannel_slist);
 	  mad_vchannel = tbx_htable_get(channel_htable, dir_vchannel->name);
@@ -528,9 +528,9 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
       tbx_slist_ref_to_head(dir_xchannel_slist);
       do
 	{
-	  p_mad_dir_xchannel_t dir_xchannel = NULL;
-	  p_mad_channel_t      mad_xchannel = NULL;
-	  p_tbx_slist_t        slist        = NULL;
+	  p_mad_dir_channel_t dir_xchannel = NULL;
+	  p_mad_channel_t     mad_xchannel = NULL;
+	  p_tbx_slist_t       slist        = NULL;
 
 	  dir_xchannel = tbx_slist_ref_get(dir_xchannel_slist);
 	  mad_xchannel = tbx_htable_get(channel_htable, dir_xchannel->name);
@@ -760,7 +760,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
       TRACE_STR("Shutting down adapters of driver", driver_name);
       interface = mad_driver->interface;
-      mad_leonie_send_int(1);
+      //mad_leonie_send_int(-1);
 
       mad_adapter_htable = mad_driver->adapter_htable;
 
@@ -810,7 +810,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  TBX_FREE(mad_adapter);
 	  mad_adapter = NULL;
 
-	  mad_leonie_send_int(1);
+	  mad_leonie_send_int(-1);
           TBX_FREE(adapter_name);
 	}
 
@@ -860,7 +860,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
       TBX_FREE(mad_driver);
       mad_driver = NULL;
 
-      mad_leonie_send_int(1);
+      mad_leonie_send_int(-1);
       TBX_FREE(driver_name);
     }
 

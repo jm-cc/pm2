@@ -100,9 +100,9 @@ int send_message (tube *t, char *message, int len)
       break;
   }
 #else
-  printf("Before write %p\n", marcel_self());
+  //printf("Before write %p\n", marcel_self());
   n = write (t->tub[1], message, len) ;
-  printf("After write %p\n", marcel_self());
+  //printf("After write %p\n", marcel_self());
 #endif
 
   marcel_mutex_unlock(&t->mutex) ;
@@ -123,9 +123,9 @@ int receive_message (tube *t, char *message, int len)
       break;
   }
 #else
-  printf("Before read %p\n", marcel_self());
+  //printf("Before read %p\n", marcel_self());
   n = read (t->tub[0], message, len) ;
-  printf("After read %p\n", marcel_self());
+  //printf("After read %p\n", marcel_self());
 #endif
     
   return n ;

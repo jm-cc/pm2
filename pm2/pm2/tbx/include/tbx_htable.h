@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_htable.h,v $
+Revision 1.2  2000/07/10 14:23:34  oaumage
+- Corrections diverses
+
 Revision 1.1  2000/07/07 14:49:42  oaumage
 - Ajout d'un support pour les tables de hachage
 
@@ -60,10 +63,10 @@ typedef char             *tbx_htable_key_t;
 typedef tbx_htable_key_t *p_tbx_htable_key_t;
 
 typedef int                        tbx_htable_bucket_count_t;
-typedef tbx_htable_bucket_count_t *p_tbx_htable_bucket_count_t
+typedef tbx_htable_bucket_count_t *p_tbx_htable_bucket_count_t;
 
 typedef int                         tbx_htable_element_count_t;
-typedef tbx_htable_element_count_t *p_tbx_htable_element_count_t
+typedef tbx_htable_element_count_t *p_tbx_htable_element_count_t;
 
 /*
  * Data structures 
@@ -73,7 +76,7 @@ typedef struct s_tbx_htable_element
 {
   tbx_htable_key_t        key;
   void                   *object;
-  p_tbx_htable_element_t  suivant;
+  p_tbx_htable_element_t  next;
 } tbx_htable_element_t;
 
 typedef struct s_tbx_htable

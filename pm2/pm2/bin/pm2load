@@ -71,6 +71,9 @@ ambiguity() # prog
     exit 1
 }
 
+
+# Programme principal
+
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
@@ -111,19 +114,30 @@ done
 
 [ -n "$*" ] || usage 1
 
+# Sauvegarde de la commande et des arguments
 prog=$1
 shift
 
 prog_args="$@"
 
-. ${PM2_ROOT}/bin/pm2which --source-mode $prog
+# Récupération de (des) chemin(s) d'accès au fichier exécutable
+
+set --  --source-mode $prog
+. ${PM2_ROOT}/bin/pm2which $*
 
 if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
     ambiguity $prog
 fi
 
+# On hérite du même coup de chemin d'accès au chargeur
+
 [ -x $_PM2WHICH_LOADER ] || error "Fatal Error: \"$_PM2WHICH_LOADER\" exec file not found!"
 
-. ${PM2_ROOT}/bin/pm2-conf-file --source-mode
+# Récupération du chemin d'accès au fichier de config des machines
+
+set --  --source-mode
+. ${PM2_ROOT}/bin/pm2-conf-file $*
+
+[ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
 
 exec $_PM2WHICH_LOADER $_PM2WHICH_RESULT $prog_args

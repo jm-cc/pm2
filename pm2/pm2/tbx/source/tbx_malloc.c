@@ -43,6 +43,10 @@ tbx_aligned_malloc(size_t      size,
   char        *ini;
   tbx_align_t  mask = align - 1;
 
+  if (align < sizeof(void *)) {
+          align = sizeof(void *);
+  }
+
   ini = ptr = TBX_MALLOC (size + 2 * align - 1);
 
   if (ptr != NULL && ((tbx_align_t) ptr & mask) != 0)
@@ -63,6 +67,10 @@ void
 tbx_aligned_free (void *ptr,
 		  tbx_align_t   align)
 {
+  if (align < sizeof(void *)) {
+          align = sizeof(void *);
+  }
+
   TBX_FREE (*(char **) ((char *) ptr - align));
 }
 

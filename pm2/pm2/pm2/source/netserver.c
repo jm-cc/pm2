@@ -1,4 +1,19 @@
 /* #define DEBUG */
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "pm2.h"
 #include "madeleine.h"
 #include "sys/netserver.h"
@@ -87,9 +102,9 @@ static any_t netserver(any_t arg)
 }
 
 #ifdef MAD2
-void netserver_start(p_mad_channel_t channel, unsigned priority)
+void netserver_start(p_mad_channel_t channel)
 #else
-void netserver_start(unsigned priority)
+void netserver_start(void)
 #endif
 {
   marcel_attr_t attr;
@@ -99,7 +114,6 @@ void netserver_start(unsigned priority)
 #endif
 
   marcel_attr_init(&attr);
-  marcel_attr_setprio(&attr, priority);
   marcel_attr_setstackaddr(&attr,
 			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);

@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+if test $# -gt 0
+then
+    ARCH=$*
+else
+    ARCH=`cat ${MADELEINE_ROOT}/ARCHITECTURES`
+fi
+
+echo Cleaning MADELEINE:
+echo
+for i in $ARCH
+do
+	echo $i
+	# librairies 
+	for f in `ls ${MADELEINE_ROOT}/lib/$i`
+	do
+		echo "	deleting ${MADELEINE_ROOT}/lib/$i/$f"
+		rm ${MADELEINE_ROOT}/lib/$i/$f
+	done
+	# objets "source"
+	for f in `ls ${MADELEINE_ROOT}/source/obj/$i`
+	do
+		echo "	deleting ${MADELEINE_ROOT}/source/obj/$i/$f"
+		rm ${MADELEINE_ROOT}/source/obj/$i/$f
+	done
+	# exemples
+	for f in `ls ${MADELEINE_ROOT}/examples/obj/$i`
+	do
+		echo "	deleting ${MADELEINE_ROOT}/examples/obj/$i/$f"
+		rm ${MADELEINE_ROOT}/examples/obj/$i/$f
+	done
+	for f in `ls ${MADELEINE_ROOT}/examples/bin/$i`
+	do
+		echo "	deleting ${MADELEINE_ROOT}/examples/bin/$i/$f"
+		rm ${MADELEINE_ROOT}/examples/bin/$i/$f
+	done
+done

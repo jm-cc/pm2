@@ -60,7 +60,7 @@ DRV_TCP = on
 # VIA
 # DRV_VIA = on
 # SISCI
-DRV_SISCI = on
+# DRV_SISCI = on
 # SBP
 # DRV_SBP = on
 # MPI
@@ -129,7 +129,7 @@ LIB_MAD2 = $(LIB)/libmad2.a
 
 # compiler
 # CC = purify gcc
-# CC = gcc
+CC = gcc
 # CC = egcc
 
 # preprocessor flags

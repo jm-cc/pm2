@@ -51,7 +51,11 @@
 volatile unsigned __pm2_profile_active = FALSE;
 
 
-static char PROF_FILE_USER[1024], PROF_FILE_KERNEL[1024];
+static char PROF_FILE_USER[1024];
+
+#ifdef USE_FKT
+static char PROF_FILE_KERNEL[1024];
+#endif
 
 static boolean profile_initialized = FALSE;
 static boolean activate_called_before_init = FALSE;
@@ -70,7 +74,8 @@ void profile_init(void)
 
     // Initialisation de FUT
 
-    strcpy(PROF_FILE_USER, "/tmp/prof_file_user");
+    strcpy(PROF_FILE_USER, "/tmp/prof_file_user_");
+    strcat(PROF_FILE_USER, getenv("USER"));
 
     if(fut_setup(PROF_BUFFER_SIZE, FUT_KEYMASKALL, PROF_THREAD_ID()) < 0) {
       perror("fut_setup");
@@ -87,7 +92,8 @@ void profile_init(void)
 #ifdef USE_FKT
     // Initialisation de FKT
 
-    strcpy(PROF_FILE_KERNEL, "/tmp/prof_file_kernel");
+    strcpy(PROF_FILE_KERNEL, "/tmp/prof_file_kernel_");
+    strcat(PROF_FILE_KERNEL, getenv("USER"));
 
     fkt_setup(FKT_KEYMASKALL);
 
@@ -132,8 +138,16 @@ void profile_set_tracefile(char *fmt, ...)
 
   va_start(vl, fmt);
   vsprintf(PROF_FILE_USER, fmt, vl);
+#ifdef USE_FKT
+  strcpy(PROF_FILE_KERNEL, PROF_FILE_USER);
+#endif
   va_end(vl);
-  strcat(PROF_FILE_USER, "_user");
+  strcat(PROF_FILE_USER, "_user_");
+  strcat(PROF_FILE_USER, getenv("USER"));
+#ifdef USE_FKT
+  strcat(PROF_FILE_KERNEL, "_kernel_");
+  strcat(PROF_FILE_KERNEL, getenv("USER"));
+#endif
 }
 
 void profile_stop(void)

@@ -15,7 +15,7 @@
  */
 
 #section common
-#depend "asm-generic/linux_spinlock.h[]"
+#depend "asm/linux_spinlock.h[]"
 
 /*
  * Similar to:

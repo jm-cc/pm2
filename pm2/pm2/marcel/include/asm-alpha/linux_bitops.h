@@ -14,8 +14,6 @@
  */
 
 #section common
-#include <linux/kernel.h>
-#include <asm/compiler.h>
 
 /*
  * Similar to:

@@ -32,7 +32,7 @@
  * and move things around on us. We need to use _exactly_ the address
  * the user gave us, not some alias that contains the same information.
  */
-#section marcel_structs
+#section marcel_types
 typedef struct { volatile int counter; } ma_atomic_t;
 typedef struct { volatile long counter; } ma_atomic64_t;
 

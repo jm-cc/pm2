@@ -15,7 +15,7 @@
  */
 
 #section common
-#depend "asm-generic/linux_atomic.h[]"
+#depend "asm/linux_atomic.h[]"
 /*
  * Similar to:
  * include/asm-i386/rwlock.h

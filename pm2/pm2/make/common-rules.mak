@@ -53,7 +53,7 @@ commonoptionshelp:
 	@echo "Common options:"
 	@echo "  FLAVOR=flavor: build for flavor 'flavor'"
 	@echo "  BUILD_STATIC_LIBS=true: build static libraries"
-	@echo "  BUILD_STATIC_LIBS=true: build static libraries"
+	@echo "  BUILD_DYNAMIC_LIBS=true: build dynamic libraries"
 	@echo "  SHOW_FLAGS=true: show CFLAGS used"
 	@echo "  SHOW_FLAVOR=true: show flavor target"
 	@echo "  VERB=verbose|normal|quiet|silent: vebosity of building process"
@@ -70,15 +70,7 @@ thankshelp:
 
 tailhelp:
 
-#ifndef OLD_MAKEFILE
-#ifeq ($(wildcard $(PM2_MAK_DIR)/mak-rules.mak),)
-#dummy := $(shell $(PM2_CONFIG) --gen_mak)
-#endif
-#include $(PM2_MAK_DIR)/mak-rules.mak
-#endif
-
 ifndef OLD_MAKEFILE
 $(PM2_MAK_DIR):
-	$(PM2_CONFIG) --gen_mak dir
+	@make -p $@
 endif
-

@@ -5,6 +5,17 @@
 
 filter options;
 
+static int codecmp(mode type1, int code1, mode type2, int code2)
+{
+  if (type1 != type2) return FALSE;
+  if (type1 == USER) {
+    return (code1 == code2 >> 8);
+  }
+  if (code2 >= FKT_UNSHIFTED_LIMIT_CODE)
+    return (code1 == code2 >> 8);
+  else return (code1 == code2);
+}
+
 void init_filter() 
 {
   options.thread = THREAD_LIST_NULL;
@@ -52,13 +63,14 @@ void filter_add_cpu(short int cpu)
   options.cpu = tmp;
 }
 
-void filter_add_event(int code)
+void filter_add_event(mode type, int code)
 {
   event_list tmp;
   tmp = (event_list) malloc(sizeof(struct event_list_st));
   assert(tmp != NULL);
   tmp->next = options.event;
   tmp->code = code;
+  tmp->type = type;
   options.event = tmp;
 }
 
@@ -86,15 +98,17 @@ void filter_add_evnum_slice(unsigned int begin, unsigned int end)
   options.active = 0;
 }
 
-void filter_add_gen_slice(int begin, char begin_param_active, 
-			  int begin_param, int end, 
+void filter_add_gen_slice(mode begin_type, int begin, char begin_param_active, 
+			  int begin_param, mode end_type, int end, 
 			  char end_param_active, int end_param)
 {
   general_slice_list tmp;
   tmp = (general_slice_list) malloc(sizeof(struct general_slice_list_st));
   assert(tmp != NULL);
   tmp->next = options.gen_slice;
+  tmp->t.begin_type = begin_type;
   tmp->t.begin = begin;
+  tmp->t.end_type = end_type;
   tmp->t.end = end;
   tmp->t.begin_param_active = begin_param_active;
   tmp->t.end_param_active = end_param_active;
@@ -129,7 +143,7 @@ int is_valid(trace *tr)
     general_slice_list temp;
     temp = options.gen_slice;
     while (temp != GENERAL_SLICE_LIST_NULL) {
-      if (temp->t.begin == tr->code) {
+      if (codecmp(temp->t.begin_type, temp->t.begin, tr->type, tr->code)) {
 	if (temp->t.begin_param_active == FALSE)
 	  options.active++;
 	else
@@ -171,7 +185,7 @@ int is_valid(trace *tr)
     event_list temp;
     temp = options.event;
     while (temp != EVENT_LIST_NULL) {
-      if (temp->code == tr->code) break;
+      if (codecmp(temp->type, temp->code, tr->type, tr->code)) break;
       temp = temp->next;
     }
     if (temp == EVENT_LIST_NULL) return FALSE;
@@ -198,7 +212,7 @@ int is_valid(trace *tr)
     general_slice_list temp;
     temp = options.gen_slice;
     while (temp != GENERAL_SLICE_LIST_NULL) {
-      if (temp->t.end == tr->code) {
+      if (codecmp(temp->t.end_type, temp->t.end, tr->type, tr->code)) {
 	if (temp->t.end_param_active == FALSE) {
 	  if (options.active > 0) options.active--;
 	}

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.c,v $
+Revision 1.5  2000/03/08 17:19:10  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.4  2000/02/28 11:06:11  rnamyst
 Changed #include "" into #include <>.
 
@@ -96,7 +101,7 @@ p_mad_buffer_t mad_alloc_buffer(size_t length)
 
   buffer = mad_alloc_buffer_struct();
 
-  buffer->buffer = malloc(length);
+  buffer->buffer = TBX_MALLOC(length);
   if (buffer->buffer == NULL)
     {
       FAILURE("not enough memory");

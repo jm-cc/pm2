@@ -130,12 +130,16 @@ typedef struct {
 #define ma_rwlock_init(x)		do { *(x) = MA_RW_LOCK_UNLOCKED; } while(0)
 #define ma_rwlock_is_locked(x)	(*(volatile int *) (x) != 0)
 
+/* From processor.h */
+//#define ma_cpu_relax()    ma_ia64_hint(ma_ia64_hint_pause)
+#define ma_cpu_relax()    
+
 #define _ma_raw_read_lock(rw)								\
 do {											\
 	ma_rwlock_t *__ma_read_lock_ptr = (rw);						\
 											\
-	while (unlikely(ia64_fetchadd(1, (int *) __ma_read_lock_ptr, acq) < 0)) {		\
-		ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);			\
+	while (tbx_unlikely(ma_ia64_fetchadd(1, (int *) __ma_read_lock_ptr, acq) < 0)) {		\
+		ma_ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);			\
 		while (*(volatile int *)__ma_read_lock_ptr < 0)				\
 			ma_cpu_relax();							\
 	}										\
@@ -145,10 +149,10 @@ do {											\
 #define _ma_raw_read_unlock(rw)					\
 do {								\
 	ma_rwlock_t *__ma_read_lock_ptr = (rw);			\
-	ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);	\
+	ma_ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);	\
 } while (0)
 
-#define ma_raw_write_lock(rw)							\
+#define _ma_raw_write_lock(rw)							\
 do {										\
  	__asm__ __volatile__ (							\
 		"mov ar.ccv = r0\n"						\
@@ -157,7 +161,6 @@ do {										\
 		"ld4 r2 = [%0];;\n"						\
 		"cmp4.eq p0,p7 = r0,r2\n"					\
 		"(p7) br.cond.spnt.few 1b \n"					\
-
 		"cmpxchg4.acq r2 = [%0], r29, ar.ccv;;\n"			\
 		"cmp4.eq p0,p7 = r0, r2\n"					\
 		"(p7) br.cond.spnt.few 1b;;\n"					\
@@ -180,7 +183,7 @@ do {										\
 #define _ma_raw_write_unlock(x)								\
 ({											\
 	ma_smp_mb__before_clear_bit();	/* need barrier before releasing lock... */	\
-	clear_bit(31, (x));								\
+	ma_clear_bit(31, (x));								\
 })
 
 

@@ -70,6 +70,8 @@ static  int new_channel = MAD_BIP_FIRST_CHANNEL;
 #define BIP_SMALL_MESSAGE        BIPSMALLSIZE
 #define MAD_BIP_SMALL_SIZE       (BIP_SMALL_MESSAGE*sizeof(int))
 #define MAD_BIP_MAX_SIZE         (128 * 1024)
+#define MAD_BIP_SIZE_ALIGNMENT_MASK  (0x0003)
+
 
 #define MAD_NB_INTS(bytes)    ((bytes) % sizeof(int) ? \
 			       (bytes)/sizeof(int)+1 : \
@@ -1527,6 +1529,10 @@ mad_bip_send_buffer(p_mad_link_t   lnk,
 		    p_mad_buffer_t buffer)
 {
   LOG_IN();
+  if ((buffer->bytes_written - buffer->bytes_read) &
+      MAD_BIP_SIZE_ALIGNMENT_MASK)
+    FAILURE("BIP requires buffer length to be aligned on 4B");
+
   if (lnk->id == 0)
     {
       mad_bip_send_short_buffer(lnk, buffer);

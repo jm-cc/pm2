@@ -7,16 +7,6 @@
 
 filter options;
 
-struct time_st {
-  u_64 active_time;
-  u_64 idle_time;
-  u_64 last_time;
-  int old_active;
-  int first;
-};
-
-struct 
-
 #define NB_PROC 16
 
 int table[NB_PROC];
@@ -50,7 +40,7 @@ void init_filter()
   options.active_evnum_slice = 1;
   options.active_gen_slice = 1;
   options.active_thread_fun = 1;
-  //  options.active = 1;
+  options.active = 1;
 }
 
 void close_filter()
@@ -166,7 +156,6 @@ void filter_add_time_slice(u_64 begin, u_64 end)
   tmp->end = end;
   options.time = tmp;
   options.active_time = 0;
-  // options.active = 0;
 }
 
 static int is_in_time_list(trace *tr)
@@ -198,7 +187,6 @@ void filter_add_evnum_slice(unsigned int begin, unsigned int end)
   tmp->end = end;
   options.evnum_slice = tmp;
   options.active_evnum_slice = 0;
-  //  options.active = 0;
 }
 
 static int is_in_evnum_list(trace *tr)
@@ -219,34 +207,6 @@ static int is_in_evnum_list(trace *tr)
   }
   return TRUE;
 }
-
-/*
-  void search_begin_evnum_slice_list(trace *tr)
-  {
-  if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
-  evnum_slice_list temp;
-  temp = options.evnum_slice;
-  while (temp != EVNUM_SLICE_LIST_NULL) {
-  if (temp->begin == tr->number)
-  options.active_evnum_slice++;
-  temp = temp->next;
-  }
-  }
-  }
-  
-  void search_end_evnum_slice_list(trace *tr)
-  {
-  if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
-  evnum_slice_list temp;
-  temp = options.evnum_slice;
-  while (temp != EVNUM_SLICE_LIST_NULL) {
-  if (temp->end == tr->number)
-  if (options.active_evnum_slice > 0) options.active_evnum_slice--;
-  temp = temp->next;
-  }
-  } 
-  }
-*/
 
 void filter_add_function(mode begin_type, int begin, char begin_param_active, 
 			  int begin_param, mode end_type, int end, 
@@ -428,34 +388,6 @@ static void search_end_function(trace *tr)
   }
 }
 
-/*
-  int is_valid(trace *tr)
-  { 
-  if (is_in_cpu_list(tr->proc) == FALSE) return FALSE;
-  if (is_in_proc_list(tr->pid) == FALSE) return FALSE;
-  if (is_in_thread_list(tr->thread) == FALSE) return FALSE;
-  if (is_in_event_list(tr) == FALSE) return FALSE;
-  if (is_in_time_list(tr) == FALSE) return FALSE;
-  search_begin_evnum_slice_list(tr);
-  search_begin_gen_slice_list(tr);
-  search_begin_function(tr);
-  
-  //options.active = options.active_time && options.active_evnum_slice && options.active_gen_slice;
-  
-  if (options.active_time && options.active_evnum_slice && options.active_gen_slice == 0) return FALSE;
-  
-  search_end_evnum_slice_list(tr);
-  search_end_gen_slice_list(tr);
-  
-  
-  if (is_in_thread_fun_list(tr->thread) == FALSE) return FALSE;
-  
-  search_end_function(tr);  
-  
-  return TRUE;
-  }
-*/
-
 static void filter_add_lwp(int lwp, int thread, int active)
 {
   lwp_thread_list tmp;
@@ -514,7 +446,7 @@ static void change_lwp_thread(int oldthread, int newthread)
   tmp->thread = newthread;
 }
 
-int is_lwp(int lwp)
+static int is_lwp(int lwp)
 {
   lwp_thread_list tmp;
   tmp = options.lwp_thread;
@@ -525,7 +457,7 @@ int is_lwp(int lwp)
   return TRUE;
 }
 
-void set_active_lwp(int lwp, int active)
+static void set_active_lwp(int lwp, int active)
 {
   lwp_thread_list tmp;
   tmp = options.lwp_thread;
@@ -539,33 +471,6 @@ void set_active_lwp(int lwp, int active)
   return; // Erreur
 }
 
-/*
-  void set_active_thread(int thread, int active)
-  {
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-  if (tmp->thread == thread) {
-  tmp->active_thread = active;
-  return;
-  }
-  tmp = tmp->next;
-  }
-  return; // Erreur
-  }
-  
-  int is_active_thread(int thread)
-  {
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-  if (tmp->thread == thread) return tmp->active_thread;
-  tmp = tmp->next;
-  }
-  return -1; // Erreur
-  }
-*/
-
 int thread_of_lwp(int lwp)
 {
 lwp_thread_list tmp;
@@ -578,8 +483,7 @@ lwp_thread_list tmp;
 }
 
 
-
-int is_valid_new(trace *tr)
+int is_valid(trace *tr)
 {
   if (table[tr->proc] == FALSE) {
     if (is_in_cpu_list(tr->proc) == TRUE)
@@ -589,25 +493,25 @@ int is_valid_new(trace *tr)
   }
   if (tr->type == KERNEL) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
-      if ((is_in_proc_list(tr->pid) == TRUE) && (is_in_cpu_list(tr->proc) == TRUE)) {
+      if ((is_in_proc_list(tr->pid) == TRUE) && \
+	  (is_in_cpu_list(tr->proc) == TRUE)) {
 	options.active_proc--;
 	if (is_lwp(tr->pid) == TRUE) {
 	  set_active_lwp(tr->pid, FALSE);
 	  if (is_in_thread_list(tr->thread) == TRUE) {
 	    options.active_thread--;
-	    //	    set_active_thread(tr->thread, FALSE);
 	    if (is_in_thread_fun_list(tr->thread) == TRUE)
 	      options.active_thread_fun--;
 	  }
 	}
       }
-      if ((is_in_proc_list(tr->args[1]) == TRUE) && (is_in_cpu_list(tr->args[0]) == TRUE)) {
+      if ((is_in_proc_list(tr->args[1]) == TRUE) && \
+	  (is_in_cpu_list(tr->args[0]) == TRUE)) {
 	options.active_proc++;
 	if (is_lwp(tr->args[1]) == TRUE) {
 	  set_active_lwp(tr->args[1], TRUE);
 	  if (is_in_thread_list(thread_of_lwp(tr->args[1])) == TRUE) {
 	    options.active_thread++;
-	    //	    set_active_thread(thread_of_lwp(tr->args[1]), TRUE);
 	    if (is_in_thread_fun_list(thread_of_lwp(tr->args[1])) == TRUE) 
 	      options.active_thread_fun++;
 	  }
@@ -618,20 +522,19 @@ int is_valid_new(trace *tr)
     if (is_active_lwp_of_thread(tr->thread) == TRUE) {
       if (is_in_thread_list(tr->thread) == TRUE) {
 	options.active_thread--;
-	//	set_active_thread(tr->thread, FALSE);
 	if (is_in_thread_fun_list(tr->thread) == TRUE)
 	  options.active_thread_fun--;
       }
       if (is_in_thread_list(tr->args[0]) == TRUE) {
 	options.active_thread++;
-	//	set_active_thread(tr->thread, TRUE);        // not tr->args[0] we haven't switch yet in fact....
 	if (is_in_thread_fun_list(tr->args[0]) == TRUE) 
 	  options.active_thread_fun++;
       }
     }
     change_lwp_thread(tr->thread, tr->args[0]);
   } else if (tr->code >> 8 == FUT_KEYCHANGE_CODE) {
-    if ((is_in_proc_list(tr->pid) == TRUE) && (is_in_cpu_list(tr->proc) == TRUE))
+    if ((is_in_proc_list(tr->pid) == TRUE) && \
+	(is_in_cpu_list(tr->proc) == TRUE))
       filter_add_lwp(tr->proc, tr->thread, TRUE);
     else filter_add_lwp(tr->proc, tr->thread, FALSE);
   }
@@ -645,26 +548,36 @@ int is_valid_new(trace *tr)
 	    search_begin_function(tr);
 	    
 
-	    options.active = options.active_proc && options.active_thread && options.active_gen_slice && options.active_thread_fun;
+	    options.active = options.active_proc && options.active_thread && \
+	      options.active_gen_slice && options.active_thread_fun;
 
-	    if ((is_in_thread_fun_list(tr->thread) == FALSE) || (options.active_gen_slice == 0)) return FALSE;
+	    if ((is_in_thread_fun_list(tr->thread) == FALSE) \
+		|| (options.active_gen_slice == 0)) return FALSE;
 
 	    search_end_function(tr);
 	    search_end_gen_slice_list(tr);
+	    
+	    if (is_in_event_list(tr) == FALSE) return FALSE;
 	  
 	    
 	  } else {options.active = FALSE; return FALSE;}
 	} else {options.active = FALSE; return FALSE;}
       } else {
-	options.active = options.active_proc && options.active_thread && options.active_gen_slice && options.active_thread_fun && options.active_time && options.active_evnum_slice;
+	options.active = options.active_proc && options.active_thread && \
+	  options.active_gen_slice && options.active_thread_fun && \
+	  options.active_time && options.active_evnum_slice;
 	return FALSE;
       }
     } else {
-      options.active = options.active_proc && options.active_thread && options.active_gen_slice && options.active_thread_fun && options.active_time && options.active_evnum_slice;
+      options.active = options.active_proc && options.active_thread && \
+	options.active_gen_slice && options.active_thread_fun && \
+	options.active_time && options.active_evnum_slice;
       return FALSE;
     }
   } else {
-    options.active = options.active_proc && options.active_thread && options.active_gen_slice && options.active_thread_fun && options.active_time && options.active_evnum_slice;
+    options.active = options.active_proc && options.active_thread && \
+      options.active_gen_slice && options.active_thread_fun && \
+      options.active_time && options.active_evnum_slice;
     return FALSE;
   }
   return TRUE;

@@ -490,7 +490,7 @@ void dsm_unpack_page(void *addr, unsigned long size)
       if(system_view == (void *)-1) 
 	RAISE(STORAGE_ERROR);
       
-      fprintf(stderr, "system view = %p, user view = %p\n",system_view, addr);
+//      fprintf(stderr, "system view = %p, user view = %p\n",system_view, addr);
 
       dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
       /*unpack page using the system view*/

@@ -225,7 +225,7 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 
 #if defined(PM2DEBUG)
 
-#define LOG(str, args...)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG(str, args...)     debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
                                            str "\n" , ## args)
 #define LOG_IN()              do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \

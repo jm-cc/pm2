@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.7  2000/02/28 10:26:46  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.6  2000/01/31 15:56:53  oaumage
 - ajout du Log CVS
 
@@ -44,7 +47,7 @@ ______________________________________________________________________________
 #ifndef PRIVATEDEFS_EST_DEF
 #define PRIVATEDEFS_EST_DEF
 
-#include <sys/isomalloc_archdep.h>
+#include "sys/isomalloc_archdep.h"
 
 #ifdef SMP
 #include <pthread.h>

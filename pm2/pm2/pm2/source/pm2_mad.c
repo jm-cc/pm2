@@ -16,195 +16,53 @@
 
 #include "pm2_mad.h"
 
-#ifdef MAD1
+/*
+ * Definitions
+ * -----------
+ */
+#define ALIGNMASK (MAD_ALIGNMENT - 1)
 
-/* Madeleine I */
 
-void pm2_pack_byte(mad_send_mode_t sm,
-		   mad_receive_mode_t rm,
-		   char *data,
-		   size_t nb)
+/*
+ * Static variables
+ * ----------------
+ */
+static p_mad_madeleine_t pm2_mad_madeleine = NULL;
+
+/*
+ * Exported variables
+ * ------------------
+ */
+marcel_key_t pm2_mad_send_key = -1;
+marcel_key_t pm2_mad_recv_key = -1;
+
+/*
+ * Functions
+ * ---------
+ */
+#ifdef MAD3
+void
+pm2_begin_packing(p_mad_channel_t channel,
+		  int             global_rank)
 {
-  switch(sm) {
-  case SEND_CHEAPER : {
-    switch(rm) {
-    case RECV_EXPRESS : {
-      old_mad_pack_byte(MAD_IN_HEADER, data, nb);
-      break;
-    }
-    case RECV_CHEAPER : {
-      old_mad_pack_byte(MAD_IN_PLACE, data, nb);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  case SEND_SAFER : {
-    old_mad_pack_byte(MAD_IN_HEADER, data, nb);
-    break;
-  }
-  case SEND_LATER : {
-    switch(rm) {
-    case RECV_CHEAPER : {
-      old_mad_pack_byte(MAD_IN_PLACE, data, nb);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  default:
-    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-    exit(1);
-  }
+  p_ntbx_process_container_t pc         = NULL;
+  ntbx_process_lrank_t       local_rank =   -1;
+  p_mad_connection_t         out        = NULL;
+  
+  LOG_IN();
+  pc         = channel->pc;
+  local_rank = ntbx_pc_global_to_local(pc, global_rank);
+
+  if (local_rank == -1)
+    FAILURE("connection unavailable");
+  
+  out = mad_begin_packing(channel, local_rank);
+  if (!out)
+    FAILURE("invalid connection");
+  marcel_setspecific(pm2_mad_send_key, out);
+  LOG_OUT();
 }
-
-void pm2_unpack_byte(mad_send_mode_t sm,
-		     mad_receive_mode_t rm,
-		     char *data,
-		     size_t nb)
-{
-  switch(sm) {
-  case SEND_CHEAPER : {
-    switch(rm) {
-    case RECV_EXPRESS : {
-      old_mad_unpack_byte(MAD_IN_HEADER, data, nb);
-      break;
-    }
-    case RECV_CHEAPER : {
-      old_mad_unpack_byte(MAD_IN_PLACE, data, nb);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  case SEND_SAFER : {
-    old_mad_unpack_byte(MAD_IN_HEADER, data, nb);
-    break;
-  }
-  case SEND_LATER : {
-    switch(rm) {
-    case RECV_CHEAPER : {
-      old_mad_unpack_byte(MAD_IN_PLACE, data, nb);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  default:
-    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-    exit(1);
-  }
-}
-
-void pm2_pack_str(mad_send_mode_t sm,
-		  mad_receive_mode_t rm,
-		  char *data)
-{
-  switch(sm) {
-  case SEND_CHEAPER : {
-    switch(rm) {
-    case RECV_EXPRESS : {
-      old_mad_pack_str(MAD_IN_HEADER, data);
-      break;
-    }
-    case RECV_CHEAPER : {
-      old_mad_pack_str(MAD_IN_PLACE, data);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  case SEND_SAFER : {
-    old_mad_pack_str(MAD_IN_HEADER, data);
-    break;
-  }
-  case SEND_LATER : {
-    switch(rm) {
-    case RECV_CHEAPER : {
-      old_mad_pack_str(MAD_IN_PLACE, data);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  default:
-    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-    exit(1);
-  }
-}
-
-void pm2_unpack_str(mad_send_mode_t sm,
-		    mad_receive_mode_t rm,
-		    char *data)
-{
-  switch(sm) {
-  case SEND_CHEAPER : {
-    switch(rm) {
-    case RECV_EXPRESS : {
-      old_mad_unpack_str(MAD_IN_HEADER, data);
-      break;
-    }
-    case RECV_CHEAPER : {
-      old_mad_unpack_str(MAD_IN_PLACE, data);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  case SEND_SAFER : {
-    old_mad_unpack_str(MAD_IN_HEADER, data);
-    break;
-  }
-  case SEND_LATER : {
-    switch(rm) {
-    case RECV_CHEAPER : {
-      old_mad_unpack_str(MAD_IN_PLACE, data);
-      break;
-    }
-    default:
-      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-      exit(1);
-    }
-    break;
-  }
-  default:
-    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
-    exit(1);
-  }
-}
-
-#else
-
-/* Madeleine II */
-
-marcel_key_t         mad2_send_key, mad2_recv_key;
-#define ALIGNMASK        (MAD_ALIGNMENT-1)
-/* semaphore used to block sends during slot negociations: */
-_PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
-                 marcel_sem_t         sem_nego;
-
-static p_mad_madeleine_t main_madeleine;
+#elif defined (MAD2)
 #if 0
 void mad_init(int *argc, char *argv[])
 {
@@ -219,511 +77,465 @@ void mad_init(int *argc, char *argv[])
 
   LOG_OUT();
 }
-#endif
-
-void pm2_mad_init(p_mad_madeleine_t madeleine)
-{
-  main_madeleine = madeleine;
-
-  marcel_key_create(&mad2_send_key, NULL);
-  marcel_key_create(&mad2_recv_key, NULL);
-  marcel_sem_init(&sem_nego, 1);
-}
+#endif //0
 
 void
-pm2_mad_exit(void)
+pm2_begin_packing(p_mad_channel_t channel,
+		  int             rank)
+{
+  p_mad_connection_t out = NULL;
+  
+  LOG_IN();
+  out = mad_begin_packing(channel, rank);
+  marcel_setspecific(pm2_mad_send_key, out);
+  LOG_OUT();
+}
+#endif // MADII
+
+
+void
+pm2_mad_init(p_mad_madeleine_t madeleine)
 {
   LOG_IN();
-  mad_exit(main_madeleine);
+  pm2_mad_madeleine = madeleine;
+
+  marcel_key_create(&pm2_mad_send_key, NULL);
+  marcel_key_create(&pm2_mad_recv_key, NULL);
   LOG_OUT();
 }
 
-char *
-mad_arch_name(void)
+void
+pm2_end_packing(void)
 {
+  p_mad_connection_t out = NULL;
+
   LOG_IN();
+  out = marcel_getspecific(pm2_mad_send_key);
+  mad_end_packing(out);
   LOG_OUT();
-  return main_madeleine->adapter->name;
 }
 
-boolean
-mad_can_send_to_self(void)
+void
+pm2_begin_unpacking(p_mad_channel_t channel)
 {
+  p_mad_connection_t in = NULL;
+  
   LOG_IN();
+  in = mad_begin_unpacking(channel);
+  marcel_setspecific(pm2_mad_recv_key, in);
   LOG_OUT();
-  return 0;
 }
 
 void
-mad_sendbuf_init(p_mad_channel_t channel, int dest_node)
+pm2_end_unpacking(void)
 {
+  p_mad_connection_t in = NULL;
+  
   LOG_IN();
-  marcel_setspecific(mad2_send_key, mad_begin_packing(channel, dest_node));
+  in = marcel_getspecific(pm2_mad_recv_key);
+  mad_end_unpacking(in);
   LOG_OUT();
 }
 
 void
-mad_sendbuf_send(void)
+pm2_pack_byte(mad_send_mode_t     send_mode,
+	      mad_receive_mode_t  receive_mode,
+	      void               *data,
+	      size_t              len)
 {
+  p_mad_connection_t out = NULL;
+
   LOG_IN();
-  mad_end_packing(marcel_getspecific(mad2_send_key));
+  out = marcel_getspecific(pm2_mad_send_key);
+  mad_pack(out, data, len, send_mode, receive_mode);
   LOG_OUT();
 }
 
 void
-mad_sendbuf_free(void)
+pm2_unpack_byte(mad_send_mode_t     send_mode,
+		mad_receive_mode_t  receive_mode,
+		void               *data,
+		size_t              len)
 {
-  /* rien a priori */
-}
+  p_mad_connection_t in = NULL;
 
-void
-mad_receive(p_mad_channel_t channel)
-{
   LOG_IN();
-  marcel_setspecific(mad2_recv_key, mad_begin_unpacking(channel));
+  in = marcel_getspecific(pm2_mad_recv_key);
+  mad_unpack(in, data, len, send_mode, receive_mode);
   LOG_OUT();
 }
 
 void
-mad_recvbuf_receive(void)
-{
-  LOG_IN();
-  mad_end_unpacking(marcel_getspecific(mad2_recv_key));
-  LOG_OUT();
-}
-
-void
-pm2_pack_byte(mad_send_mode_t     sm,
-	      mad_receive_mode_t  rm,
-	      char               *data,
-	      size_t              nb)
-{
-  LOG_IN();  
-  mad_pack(marcel_getspecific(mad2_send_key), data, nb, sm, rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_byte(mad_send_mode_t     sm,
-		mad_receive_mode_t  rm,
-		char               *data,
-		size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key), data, nb, sm, rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_short(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
+pm2_pack_short(mad_send_mode_t     send_mode,
+	       mad_receive_mode_t  receive_mode,
 	       short              *data,
-	       size_t              nb)
+	       size_t              len)
 {
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(short),
-	   sm,
-	   rm);
+  pm2_pack_byte(send_mode, receive_mode, data, len * sizeof(short));
   LOG_OUT();
 }
 
 void
-pm2_unpack_short(mad_send_mode_t     sm,
-		 mad_receive_mode_t  rm,
+pm2_unpack_short(mad_send_mode_t     send_mode,
+		 mad_receive_mode_t  receive_mode,
 		 short              *data,
-		 size_t              nb)
+		 size_t              len)
 {
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	     data,
-	     nb*sizeof(short),
-	     sm,
-	     rm);
+  pm2_unpack_byte(send_mode, receive_mode, data, len * sizeof(short));
   LOG_OUT();
 }
 
 void
-pm2_pack_int(mad_send_mode_t     sm,
-	     mad_receive_mode_t  rm,
+pm2_pack_int(mad_send_mode_t     send_mode,
+	     mad_receive_mode_t  receive_mode,
 	     int                *data,
-	     size_t              nb)
+	     size_t              len)
 {
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(int),
-	   sm,
-	   rm);
+  pm2_pack_byte(send_mode, receive_mode, data, len * sizeof(int));
   LOG_OUT();
 }
 
 void
-pm2_unpack_int(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
+pm2_unpack_int(mad_send_mode_t     send_mode,
+	       mad_receive_mode_t  receive_mode,
 	       int                *data,
-	       size_t              nb)
+	       size_t              len)
 {
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(int),
-	   sm,
-	   rm);
+  pm2_unpack_byte(send_mode, receive_mode, data, len * sizeof(int));
   LOG_OUT();
 }
 
 void
-pm2_pack_long(mad_send_mode_t     sm,
-	      mad_receive_mode_t  rm,
+pm2_pack_long(mad_send_mode_t     send_mode,
+	      mad_receive_mode_t  receive_mode,
 	      long               *data,
-	      size_t              nb)
+	      size_t              len)
 {
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(long),
-	   sm,
-	   rm);
+  pm2_pack_byte(send_mode, receive_mode, data, len * sizeof(long));
   LOG_OUT();
 }
 
 void
-pm2_unpack_long(mad_send_mode_t     sm,
-		mad_receive_mode_t  rm,
+pm2_unpack_long(mad_send_mode_t     send_mode,
+		mad_receive_mode_t  receive_mode,
 		long               *data,
-		size_t              nb)
+		size_t              len)
 {
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(long),
-	   sm,
-	   rm);
+  pm2_unpack_byte(send_mode, receive_mode, data, len * sizeof(long));
   LOG_OUT();
 }
 
 void
-pm2_pack_float(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
+pm2_pack_float(mad_send_mode_t     send_mode,
+	       mad_receive_mode_t  receive_mode,
 	       float              *data,
-	       size_t              nb)
+	       size_t              len)
 {
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(float),
-	   sm,
-	   rm);
+  pm2_pack_byte(send_mode, receive_mode, data, len * sizeof(float));
   LOG_OUT();
 }
 
 void
-pm2_unpack_float(mad_send_mode_t     sm,
-		 mad_receive_mode_t  rm,
+pm2_unpack_float(mad_send_mode_t     send_mode,
+		 mad_receive_mode_t  receive_mode,
 		 float              *data,
-		 size_t              nb)
+		 size_t              len)
 {
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
+  mad_unpack(marcel_getspecific(pm2_mad_recv_key),
 	   data,
-	   nb*sizeof(float),
-	   sm,
-	   rm);
+	   len*sizeof(float),
+	   send_mode,
+	   receive_mode);
   LOG_OUT();
 }
 
 void
-pm2_pack_double(mad_send_mode_t     sm,
-		mad_receive_mode_t  rm,
+pm2_pack_double(mad_send_mode_t     send_mode,
+		mad_receive_mode_t  receive_mode,
 		double             *data,
-		size_t              nb)
+		size_t              len)
 {
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(double),
-	   sm,
-	   rm);
+  pm2_pack_byte(send_mode, receive_mode, data, len * sizeof(double));
   LOG_OUT();
 }
 
 void
-pm2_unpack_double(mad_send_mode_t     sm,
-		  mad_receive_mode_t  rm,
+pm2_unpack_double(mad_send_mode_t     send_mode,
+		  mad_receive_mode_t  receive_mode,
 		  double             *data,
-		  size_t              nb)
+		  size_t              len)
 {
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(double),
-	   sm,
-	   rm);
+  pm2_unpack_byte(send_mode, receive_mode, data, len * sizeof(double));
   LOG_OUT();
 }
 
 void
-pm2_pack_pointer(mad_send_mode_t     sm,
-		 mad_receive_mode_t  rm,
+pm2_pack_pointer(mad_send_mode_t     send_mode,
+		 mad_receive_mode_t  receive_mode,
 		 pointer            *data,
-		 size_t              nb)
+		 size_t              len)
 {
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(pointer),
-	   sm,
-	   rm);
+  pm2_pack_byte(send_mode, receive_mode, data, len * sizeof(pointer));
   LOG_OUT();
 }
 
 void
-pm2_unpack_pointer(mad_send_mode_t     sm,
-		   mad_receive_mode_t  rm,
+pm2_unpack_pointer(mad_send_mode_t     send_mode,
+		   mad_receive_mode_t  receive_mode,
 		   pointer            *data,
-		   size_t              nb)
+		   size_t              len)
 {
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(pointer),
-	   sm,
-	   rm);
+  pm2_unpack_byte(send_mode, receive_mode, data, len * sizeof(pointer));
   LOG_OUT();
 }
 
 void
-pm2_pack_str(mad_send_mode_t     sm,
-	     mad_receive_mode_t  rm,
+pm2_pack_str(mad_send_mode_t     send_mode,
+	     mad_receive_mode_t  receive_mode,
 	     char               *data)
 {
-  int len = strlen(data);
+  size_t len = 0;
   
   LOG_IN();
-  if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))
+  len = strlen(data);
+
+  if (send_mode == mad_send_LATER)
     FAILURE("unimplemented feature");
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   &len,
-	   sizeof(int),
-	   sm,
-	   mad_receive_EXPRESS);
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   len + 1,
-	   sm,
-	   rm);
+
+  pm2_pack_byte(send_mode, mad_receive_EXPRESS, &len, sizeof(size_t));
+  pm2_pack_byte(send_mode, receive_mode, data, len + 1);
   LOG_OUT();
 }
 
 void
-pm2_unpack_str(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
+pm2_unpack_str(mad_send_mode_t     send_mode,
+	       mad_receive_mode_t  receive_mode,
 	       char               *data)
 {
-  int len;
+  size_t len = 0;
 
   LOG_IN();
-  if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))
+  if (send_mode == mad_send_LATER)
     FAILURE("unimplemented feature");
   
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	     &len,
-	     sizeof(int),
-	     sm,
-	     mad_receive_EXPRESS);
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	     data,
-	     len + 1,
-	     sm,
-	     rm);
+  pm2_unpack_byte(send_mode, mad_receive_EXPRESS, &len, sizeof(int));
+  pm2_unpack_byte(send_mode, receive_mode, data, len + 1);
   LOG_OUT();
 }
 
 void
-old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
+old_mad_pack_byte(madeleine_part  where, 
+		  void           *data,
+		  size_t          len)
 {
   LOG_IN();
-  
-   switch(where)
-    {
-       case MAD_IN_HEADER :
-	 {
-	   mad_pack(marcel_getspecific(mad2_send_key), data, nb,
-		    mad_send_SAFER, mad_receive_EXPRESS);
-	   break;
-	 }
-       case MAD_IN_PLACE :
-	 {
-	   mad_pack(marcel_getspecific(mad2_send_key), data, nb,
-		    mad_send_CHEAPER, mad_receive_CHEAPER);
-	   break;
-	 }
-       case MAD_BY_COPY :
-	 {
-	   mad_pack(marcel_getspecific(mad2_send_key), data, nb,
-		    mad_send_SAFER, mad_receive_CHEAPER);
-	   break;
-	 }
-    default: FAILURE("Unknown pack mode");
-    }
-
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_byte(madeleine_part where, char *data, size_t nb)
-{
-  LOG_IN();
-  
   switch(where)
     {
-       case MAD_IN_HEADER :
-	 {
-	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
-		      mad_send_SAFER, mad_receive_EXPRESS);
-	   break;
-	 }
-       case MAD_IN_PLACE :
-	 {
-	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
-		      mad_send_CHEAPER, mad_receive_CHEAPER);
-	   break;
-	 }
-       case MAD_BY_COPY :
-	 {
-	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
-		      mad_send_SAFER, mad_receive_CHEAPER);
-	   break;
-	 }
-    default: FAILURE("Unknown pack mode");
+    case MAD_IN_HEADER :
+      {
+	pm2_pack_byte(mad_send_SAFER, mad_receive_EXPRESS, data, len);
+	break;
+      }
+    case MAD_IN_PLACE :
+      {
+	pm2_pack_byte(mad_send_CHEAPER, mad_receive_CHEAPER, data, len);
+	break;
+      }
+    case MAD_BY_COPY :
+      {
+	pm2_pack_byte(mad_send_SAFER, mad_receive_CHEAPER, data, len);
+	break;
+      }
+    default: 
+      FAILURE("Unknown pack mode");
     }
-
   LOG_OUT();
 }
 
 void
-old_mad_pack_short(madeleine_part where, short *data, size_t nb)
+old_mad_unpack_byte(madeleine_part  where,
+		    void           *data,
+		    size_t          len)
 {
   LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(short));
+  switch (where)
+    {
+    case MAD_IN_HEADER :
+      {
+	pm2_unpack_byte(mad_send_SAFER, mad_receive_EXPRESS, data, len);
+	break;
+      }
+    case MAD_IN_PLACE :
+      {
+	pm2_unpack_byte(mad_send_CHEAPER, mad_receive_CHEAPER, data, len);
+	break;
+      }
+    case MAD_BY_COPY :
+      {
+	pm2_unpack_byte(mad_send_SAFER, mad_receive_CHEAPER, data, len);
+	break;
+      }
+    default:
+      FAILURE("Unknown pack mode");
+    }
   LOG_OUT();
 }
 
 void
-old_mad_unpack_short(madeleine_part where, short *data, size_t nb)
+old_mad_pack_short(madeleine_part  where, 
+		   short          *data,
+		   size_t          len)
 {
   LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(short));
+  old_mad_pack_byte(where, data, len * sizeof(short));
   LOG_OUT();
 }
 
 void
-old_mad_pack_int(madeleine_part where, int *data, size_t nb)
+old_mad_unpack_short(madeleine_part  where,
+		     short          *data,
+		     size_t          len)
 {
   LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(int));
+  old_mad_unpack_byte(where, data, len * sizeof(short));
   LOG_OUT();
 }
 
 void
-old_mad_unpack_int(madeleine_part where, int *data, size_t nb)
+old_mad_pack_int(madeleine_part  where,
+		 int            *data,
+		 size_t          len)
 {
   LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(int));
+  old_mad_pack_byte(where, data, len * sizeof(int));
   LOG_OUT();
 }
 
 void
-old_mad_pack_long(madeleine_part where, long *data, size_t nb)
+old_mad_unpack_int(madeleine_part  where,
+		   int            *data,
+		   size_t          len)
 {
   LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(long));
+  old_mad_unpack_byte(where, data, len * sizeof(int));
   LOG_OUT();
 }
 
 void
-old_mad_unpack_long(madeleine_part where, long *data, size_t nb)
+old_mad_pack_long(madeleine_part  where,
+		  long           *data,
+		  size_t          len)
 {
   LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(long));
+  old_mad_pack_byte(where, data, len * sizeof(long));
   LOG_OUT();
 }
 
 void
-old_mad_pack_float(madeleine_part where, float *data, size_t nb)
+old_mad_unpack_long(madeleine_part  where,
+		    long           *data,
+		    size_t          len)
 {
   LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(float));
+  old_mad_unpack_byte(where, data, len * sizeof(long));
   LOG_OUT();
 }
 
 void
-old_mad_unpack_float(madeleine_part where, float *data, size_t nb)
+old_mad_pack_float(madeleine_part  where,
+		   float          *data,
+		   size_t          len)
 {
   LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(float));
+  old_mad_pack_byte(where, data, len * sizeof(float));
   LOG_OUT();
 }
 
 void
-old_mad_pack_double(madeleine_part where, double *data, size_t nb)
+old_mad_unpack_float(madeleine_part  where,
+		     float          *data,
+		     size_t          len)
 {
   LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(double));
+  old_mad_unpack_byte(where, data, len * sizeof(float));
   LOG_OUT();
 }
 
 void
-old_mad_unpack_double(madeleine_part where, double *data, size_t nb)
+old_mad_pack_double(madeleine_part  where,
+		    double         *data,
+		    size_t          len)
 {
   LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(double));
+  old_mad_pack_byte(where, data, len * sizeof(double));
   LOG_OUT();
 }
 
 void
-old_mad_pack_pointer(madeleine_part where, pointer *data, size_t nb)
+old_mad_unpack_double(madeleine_part  where,
+		      double         *data,
+		      size_t          len)
 {
   LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(pointer));
+  old_mad_unpack_byte(where, data, len * sizeof(double));
   LOG_OUT();
 }
 
 void
-old_mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb)
+old_mad_pack_pointer(madeleine_part  where,
+		     pointer        *data,
+		     size_t          len)
 {
   LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(pointer));
+  old_mad_pack_byte(where, data, len * sizeof(pointer));
   LOG_OUT();
 }
 
 void
-old_mad_pack_str(madeleine_part where, char *data)
+old_mad_unpack_pointer(madeleine_part  where,
+		       pointer        *data,
+		       size_t          len)
 {
-  int len = strlen(data);
   LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key), (char *)&len, sizeof(int),
-	   mad_send_SAFER, mad_receive_EXPRESS);
+  old_mad_unpack_byte(where, data, len * sizeof(pointer));
+  LOG_OUT();
+}
+
+void
+old_mad_pack_str(madeleine_part  where,
+		 char           *data)
+{
+  size_t len = 0;
+
+  LOG_IN();  
+  len = strlen(data);
+
+  old_mad_pack_int(MAD_IN_HEADER, &len, 1);
   old_mad_pack_byte(where, data, len + 1);
   LOG_OUT();
 }
 
 void
-old_mad_unpack_str(madeleine_part where, char *data)
+old_mad_unpack_str(madeleine_part  where,
+		   char           *data)
 {
-  int len;
+  size_t len = 0;
+
   LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key), (char *)&len, sizeof(int),
-	     mad_send_SAFER, mad_receive_EXPRESS);
+  old_mad_unpack_int(MAD_IN_HEADER, &len, 1);
   old_mad_unpack_byte(where, data, len + 1);
   LOG_OUT();
 }
 
-p_mad_madeleine_t mad_get_madeleine(void)
-{
-  return main_madeleine;
-}
-
-#endif

@@ -1,3 +1,5 @@
 Provide: madeleine
-Depend: mad1_proto
 Provide: module
+Provide: pm2_proto
+Depend: mad1_proto
+Conflict: madeleine

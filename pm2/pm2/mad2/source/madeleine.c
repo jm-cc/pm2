@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.19  2000/03/02 09:52:17  jfmehaut
+pilote Madeleine II/BIP
+
 Revision 1.18  2000/03/01 16:44:54  oaumage
 - get_mad_root --> mad_get_mad_root
 - correction du passage du chemin de l'application
@@ -133,6 +136,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_MPI
   mad_mpi_register,
 #endif /* DRV_MPI */
+#ifdef DRV_BIP
+  mad_bip_register,
+#endif /* DRV_BIP */
   NULL
 };
 

@@ -23,7 +23,7 @@ f (void *arg)
   pm2_unpack_int (SEND_CHEAPER, RECV_CHEAPER, &my_name, 1);
   pm2_unpack_completion (SEND_CHEAPER, RECV_CHEAPER, &my_c);
   pm2_rawrpc_waitdata ();
-  
+
   tprintf ("Thread %d started on node %d\n", my_name, my_node);
 
   dsm_mutex_lock (&L);
@@ -34,8 +34,8 @@ f (void *arg)
   dsm_mutex_unlock (&L);
 
   tprintf ("Thread %d from node %d finished on node %d: "
-	    "from %d to %d!\n",
-	    my_name, my_node, pm2_self (), initial, final);
+	   "from %d to %d!\n",
+	   my_name, my_node, pm2_self (), initial, final);
   pm2_completion_signal (&my_c);
 }
 
@@ -70,13 +70,14 @@ pm2_main (int argc, char **argv)
 	{
 	  thread_id++;
 	  pm2_rawrpc_begin (i, service_id, NULL);
-	  pm2_pack_int (SEND_CHEAPER, RECV_CHEAPER, &thread_id, 1);
+	  pm2_pack_int (SEND_CHEAPER, RECV_CHEAPER,
+			&thread_id, 1);
 	  pm2_pack_completion (SEND_CHEAPER, RECV_CHEAPER, &c);
 	  pm2_rawrpc_end ();
 	}
 
-      for (i = 1; i < NB_NODES; i++) 
-	  pm2_completion_wait (&c);
+      for (i = 1; i < NB_NODES; i++)
+	pm2_completion_wait (&c);
 
       tprintf ("shvar=%d\n", shvar);
       pm2_halt ();

@@ -21,15 +21,14 @@
 
 #define __need_schedparam
 #include <bits/sched.h>
-#include <sys/types.h> //VD: pour __atomic_lock_t
 
-//VD: typedef int __atomic_lock_t;
+typedef int pm__atomic_lock_t;
 
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
 struct _pmarcel_fastlock
 {
   long int __status;		/* "Free" or "taken" or head of waiting list */
-  __atomic_lock_t __spinlock;	/* Used by compare_and_swap emulation. Also,
+  pm__atomic_lock_t __spinlock;	/* Used by compare_and_swap emulation. Also,
 				   adaptive SMP lock stores spin count here. */
 };
 

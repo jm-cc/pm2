@@ -832,7 +832,7 @@ main_text() {
 	echo " 5) check  a flavor"
 	echo " 6) remove a flavor"
 	echo " 7) regenerate the flavors"
-	echo " 8) quit this programme"
+	echo " 8) quit this program"
 	echo
 	read i
 	case "$i" in

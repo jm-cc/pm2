@@ -1,20 +1,5 @@
 
 /*
- * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
-
-/*
  * tbx_tcp.c
  * ---------
  */
@@ -62,7 +47,6 @@ typedef struct
   ntbx_tcp_port_t   port;
 } ntbx_tcp_server_specific_t, *p_ntbx_tcp_server_specific_t;
 
-
 /*
  * Functions
  * ========================================================================
@@ -86,6 +70,7 @@ ntbx_status_t
 ntbx_tcp_retry(p_ntbx_tcp_retry_t retry)
 {
   LOG_IN();
+#ifndef MARCEL
   if (retry->count < NTBX_TCP_MAX_RETRY_BEFORE_SLEEP)
     {
       retry->count++;
@@ -104,6 +89,7 @@ ntbx_tcp_retry(p_ntbx_tcp_retry_t retry)
 	  return ntbx_failure;
 	}
     }
+#endif // MARCEL
   
   LOG_OUT();
   return ntbx_success;
@@ -113,6 +99,7 @@ ntbx_status_t
 ntbx_tcp_timeout(p_ntbx_tcp_retry_t retry)
 {
   LOG_IN();
+#ifndef MARCEL
   if (retry->timeout_count < NTBX_TCP_MAX_TIMEOUT_RETRY)
     {
       retry->timeout_count ++;
@@ -125,7 +112,7 @@ ntbx_tcp_timeout(p_ntbx_tcp_retry_t retry)
       LOG_OUT();
       return ntbx_failure;
      }
-  
+#endif // MARCEL
   LOG_OUT();
   return ntbx_success;
 }
@@ -148,7 +135,9 @@ ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address,
       
   address->sin_family = AF_INET;
   address->sin_port   = htons(port);
-  memcpy(&address->sin_addr.s_addr, host_entry->h_addr, host_entry->h_length);
+  memcpy(&address->sin_addr.s_addr,
+	 host_entry->h_addr,
+	 (size_t)host_entry->h_length);
   LOG_OUT();
 }
 
@@ -158,7 +147,7 @@ ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc)
   int           val    = 1;
   int           packet = 0x8000;
   struct linger ling   = { 1, 50 };
-  int           len    = sizeof(int);
+  socklen_t     len    = sizeof(int);
   
   LOG_IN();      
   SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
@@ -175,7 +164,7 @@ ntbx_tcp_nb_socket_setup(ntbx_tcp_socket_t desc)
   int           val    = 1;
   int           packet = 0x8000;
   struct linger ling   = { 1, 50 };
-  int           len    = sizeof(int);
+  socklen_t     len    = sizeof(int);
   
   LOG_IN(); 
   SYSCALL(fcntl(desc, F_SETFL, O_NONBLOCK));
@@ -191,7 +180,7 @@ ntbx_tcp_socket_t
 ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 		       ntbx_tcp_port_t      port)
 {
-  int                len  = sizeof(ntbx_tcp_address_t);
+  socklen_t          len  = sizeof(ntbx_tcp_address_t);
   ntbx_tcp_address_t temp;
   int                desc;
 
@@ -224,23 +213,43 @@ void
 ntbx_tcp_server_init(p_ntbx_server_t server)
 {
   p_ntbx_tcp_server_specific_t server_specific = NULL;
+  struct hostent              *local_host_entry = NULL;
   ntbx_tcp_address_t           address;
   
   LOG_IN();
   if (server->state)
     FAILURE("server already initialized");
 
-  server->local_host = malloc(MAXHOSTNAMELEN + 1);
+  server->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
   CTRL_ALLOC(server->local_host);
   gethostname(server->local_host, MAXHOSTNAMELEN);
 
+  local_host_entry = gethostbyname(server->local_host);
+
+  {
+    char **ptr = local_host_entry->h_aliases;
+    
+    while (*ptr)
+      {
+	char *alias = NULL;
+	
+	alias = tbx_strdup(*ptr);
+	tbx_slist_append(server->local_alias, alias);
+
+	ptr++;
+      }
+  }  
   server_specific = TBX_MALLOC(sizeof(ntbx_tcp_server_specific_t));
   CTRL_ALLOC(server_specific);
   server->specific = server_specific;
   
   server_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
   SYSCALL(listen(server_specific->descriptor, min(5, SOMAXCONN)));
+#ifdef MARCEL
+  ntbx_tcp_socket_setup(server_specific->descriptor);
+#else // MARCEL
   ntbx_tcp_nb_socket_setup(server_specific->descriptor);
+#endif // MARCEL
   
   server_specific->port = (ntbx_tcp_port_t)ntohs(address.sin_port);
   sprintf(server->connection_data.data, "%d", server_specific->port);
@@ -254,16 +263,34 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
 void
 ntbx_tcp_client_init(p_ntbx_client_t client)
 {
-  p_ntbx_tcp_client_specific_t client_specific = NULL;
+  p_ntbx_tcp_client_specific_t client_specific  = NULL;
+  struct hostent              *local_host_entry = NULL;
   ntbx_tcp_address_t           address;
   
   LOG_IN();
   if (client->state)
     FAILURE("client already initialized");
 
-  client->local_host = malloc(MAXHOSTNAMELEN + 1);
+  client->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
   CTRL_ALLOC(client->local_host);
   gethostname(client->local_host, MAXHOSTNAMELEN);
+
+  local_host_entry = gethostbyname(client->local_host);
+
+  {
+    char **ptr = local_host_entry->h_aliases;
+    
+    while (*ptr)
+      {
+	char *alias = NULL;
+	
+	alias = tbx_strdup(*ptr);
+	tbx_slist_append(client->local_alias, alias);
+
+	ptr++;
+      }
+  }  
+
   client->remote_host = NULL;
 
   client_specific = TBX_MALLOC(sizeof(ntbx_tcp_client_specific_t));
@@ -271,7 +298,11 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
   client->specific = client_specific;  
   
   client_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
+#ifdef MARCEL
+  ntbx_tcp_socket_setup(client_specific->descriptor);
+#else // MARCEL
   ntbx_tcp_nb_socket_setup(client_specific->descriptor);
+#endif // MARCEL
   client->state = ntbx_client_state_initialized;
   LOG_OUT();
 }
@@ -286,14 +317,30 @@ ntbx_tcp_client_reset(p_ntbx_client_t client)
   LOG_IN();
   if (client->state)
     {
+      while (!tbx_slist_is_nil(client->local_alias))
+	{
+	  char *str = NULL;
+	  
+	  str = tbx_slist_extract(client->local_alias);
+	  TBX_FREE(str);
+	}
+
+      while (!tbx_slist_is_nil(client->remote_alias))
+	{
+	  char *str = NULL;
+	  
+	  str = tbx_slist_extract(client->remote_alias);
+	  TBX_FREE(str);
+	}
+
       if (client->specific == NULL)
 	FAILURE("invalid client data");
       
       SYSCALL(close(((p_ntbx_tcp_client_specific_t)client->specific)->descriptor));
       TBX_FREE(client->specific);
       client->specific = NULL;
-      client->state    = ntbx_client_state_uninitialized;
-      free(client->remote_host);
+      client->state    = ntbx_client_state_uninitialized;      
+      TBX_FREE(client->remote_host);
       client->remote_host = NULL;
     }
   else
@@ -312,6 +359,14 @@ ntbx_tcp_server_reset(p_ntbx_server_t server)
       if (server->specific == NULL)
 	FAILURE("invalid server data");
       
+      while (!tbx_slist_is_nil(server->local_alias))
+	{
+	  char *str = NULL;
+	  
+	  str = tbx_slist_extract(server->local_alias);
+	  TBX_FREE(str);
+	}
+
       SYSCALL(close(((p_ntbx_tcp_server_specific_t)server->specific)
 		    ->descriptor));
       TBX_FREE(server->specific);
@@ -333,6 +388,7 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
 			p_ntbx_connection_data_t  server_connection_data)
 {
   p_ntbx_tcp_client_specific_t client_specific = client->specific;
+  struct hostent              *remote_host_entry  = NULL;
   ntbx_tcp_port_t              server_port     =
     atoi((char *)server_connection_data);
   ntbx_tcp_address_t           server_address;
@@ -346,11 +402,13 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
 
   ntbx_tcp_retry_struct_init(&retry);
 
-  while(connect(client_specific->descriptor,
+  while (connect(client_specific->descriptor,
 		(struct sockaddr *)&server_address, 
 		sizeof(ntbx_tcp_address_t)) == -1)
     {
-      if (errno == EINPROGRESS)
+      if (errno == EISCONN)
+	break;
+      else if (errno == EINPROGRESS)
 	continue;
       else if (errno == EINTR)
 	{
@@ -395,10 +453,24 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
 	}
     }
 
-  client->state = ntbx_client_state_connected;
-  client->remote_host = malloc(strlen(server_host_name) + 1);
-  CTRL_ALLOC(client->remote_host);
-  strcpy(client->remote_host, server_host_name);
+  client->state       = ntbx_client_state_connected;
+  remote_host_entry   = gethostbyname(server_host_name);
+  client->remote_host = tbx_strdup(remote_host_entry->h_name);  
+
+  {
+    char **ptr = remote_host_entry->h_aliases;
+    
+    while (*ptr)
+      {
+	char *alias = NULL;
+	
+	alias = tbx_strdup(*ptr);
+	tbx_slist_append(client->remote_alias, alias);
+
+	ptr++;
+      }
+  }
+
   LOG_OUT();
   return ntbx_success;
 }
@@ -408,8 +480,11 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
 ntbx_status_t
 ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
 {
-  p_ntbx_tcp_server_specific_t server_specific = server->specific;
-  p_ntbx_tcp_client_specific_t client_specific = NULL;
+  p_ntbx_tcp_server_specific_t server_specific    = server->specific;
+  p_ntbx_tcp_client_specific_t client_specific    = NULL;
+  int                          remote_address_len = sizeof(ntbx_tcp_address_t);
+  struct hostent              *remote_host_entry  = NULL;
+  ntbx_tcp_address_t           remote_address;
   ntbx_tcp_socket_t            descriptor;
   ntbx_tcp_retry_t             retry;
 
@@ -419,7 +494,9 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
 
   ntbx_tcp_retry_struct_init(&retry);
 
-  while ((descriptor = accept(server_specific->descriptor, NULL, NULL)) == -1)
+  while ((descriptor = accept(server_specific->descriptor,
+			      (struct sockaddr *)&remote_address,
+			      &remote_address_len)) == -1)
     {
       if (errno == EINTR)
 	{
@@ -448,9 +525,36 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
 
   client_specific = TBX_MALLOC(sizeof(ntbx_tcp_client_specific_t));
   CTRL_ALLOC(client_specific);
-  client->specific = client_specific;  
-  
+
   client_specific->descriptor = descriptor;
+  client->specific            = client_specific;
+
+  remote_host_entry = gethostbyaddr(&remote_address.sin_addr.s_addr,
+				    sizeof(remote_address.sin_addr.s_addr),
+				    remote_address.sin_family);
+
+  if (!remote_host_entry)
+    {
+      perror("gethostbyaddr");
+      FAILURE("ntbx_tcp_server_accept");
+    }
+  
+  client->remote_host = tbx_strdup(remote_host_entry->h_name);
+
+  {
+    char **ptr = remote_host_entry->h_aliases;
+    
+    while (*ptr)
+      {
+	char *alias = NULL;
+	
+	alias = tbx_strdup(*ptr);
+	tbx_slist_append(client->remote_alias, alias);
+
+	ptr++;
+      }
+  }
+
   client->state = ntbx_client_state_connected;
   LOG_OUT();
   return ntbx_success;
@@ -495,6 +599,22 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
   else
     FAILURE("invalid client state");
 
+  while (!tbx_slist_is_nil(client->local_alias))
+    {
+      char *str = NULL;
+	  
+      str = tbx_slist_extract(client->local_alias);
+      TBX_FREE(str);
+    }
+
+  while (!tbx_slist_is_nil(client->remote_alias))
+    {
+      char *str = NULL;
+	  
+      str = tbx_slist_extract(client->remote_alias);
+      TBX_FREE(str);
+    }
+
   TBX_FREE(client->specific);
   client_specific  = client->specific = NULL;
   client->state    = ntbx_client_state_uninitialized;
@@ -532,6 +652,14 @@ ntbx_tcp_server_disconnect(p_ntbx_server_t server)
     }
   else
     FAILURE("invalid server state");
+
+  while (!tbx_slist_is_nil(server->local_alias))
+    {
+      char *str = NULL;
+	  
+      str = tbx_slist_extract(server->local_alias);
+      TBX_FREE(str);
+    }
 
   TBX_FREE(server->specific);
   server_specific  = server->specific = NULL;
@@ -572,18 +700,21 @@ ntbx_tcp_read_poll(int              nb_clients,
   while(tbx_true)
     {
       fd_set         local_read_fds = read_fds;
-      struct timeval timeout;
       int            status;
+#ifdef MARCEL
+      {
+	status = tselect(max_fds + 1, &local_read_fds, NULL, NULL);
+      }
+#else // MARCEL
+      {
+	struct timeval timeout;
 
-      timeout.tv_sec  = NTBX_TCP_SELECT_TIMEOUT;
-      timeout.tv_usec = 0;
+	timeout.tv_sec  = NTBX_TCP_SELECT_TIMEOUT;
+	timeout.tv_usec = 0;
 
-      status = select(max_fds + 1,
-		      &local_read_fds,
-		      NULL,
-		      NULL,
-		      &timeout);
-
+	status = select(max_fds + 1, &local_read_fds, NULL, NULL, &timeout);
+      }
+#endif // MARCEL
       if (status == -1)
 	{
 	  if (errno == EINTR)
@@ -661,18 +792,23 @@ ntbx_tcp_write_poll(int              nb_clients,
   while(tbx_true)
     {
       fd_set         local_write_fds = write_fds;
-      struct timeval timeout;
       int            status;
+      
+#ifdef MARCEL
+      {
+	status = tselect(max_fds + 1, NULL, &local_write_fds, NULL);
+      }
+#else // MARCEL
+      {      
+	struct timeval timeout;
 
-      timeout.tv_sec  = NTBX_TCP_SELECT_TIMEOUT;
-      timeout.tv_usec = 0;
+	timeout.tv_sec  = NTBX_TCP_SELECT_TIMEOUT;
+	timeout.tv_usec = 0;
 
-      status = select(max_fds + 1,
-		      NULL,
-		      &local_write_fds,
-		      NULL,
-		      &timeout);
-
+	status = select(max_fds + 1, NULL, &local_write_fds, NULL, &timeout);
+      }
+#endif // MARCEL
+      
       if (status == -1)
 	{
 	  if (errno == EINTR)
@@ -799,8 +935,8 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
 /* write a block */
 int
 ntbx_tcp_write_block(p_ntbx_client_t  client,
-		     void            *ptr,
-		     size_t           length)
+		     const void      *ptr,
+		     const size_t     length)
 {
   p_ntbx_tcp_client_specific_t client_specific = client->specific;
   size_t                       bytes_written   = 0;
@@ -893,8 +1029,8 @@ ntbx_btcp_read_block(p_ntbx_client_t  client,
 /* write a block */
 int
 ntbx_btcp_write_block(p_ntbx_client_t  client,
-		      void            *ptr,
-		      size_t           length)
+		      const void      *ptr,
+		      const size_t     length)
 {
   int status = ntbx_failure;
 
@@ -999,7 +1135,7 @@ ntbx_btcp_read_string(p_ntbx_client_t   client,
     }
   
   len = ntbx_unpack_int(&pack_buffer);
-  *string = TBX_MALLOC(len);
+  *string = TBX_MALLOC((size_t)len);
   CTRL_ALLOC(*string);
   
   status = ntbx_btcp_read_block(client, *string, len);
@@ -1012,7 +1148,7 @@ ntbx_btcp_read_string(p_ntbx_client_t   client,
 /* write a string buffer */
 int
 ntbx_btcp_write_string(p_ntbx_client_t  client,
-		       char            *string)
+		       const char      *string)
 {
   int status = ntbx_failure;
   int len    =           -1;
@@ -1036,7 +1172,7 @@ ntbx_btcp_write_string(p_ntbx_client_t  client,
 
 /* read a block */
 void
-ntbx_tcp_read(int     socket,
+ntbx_tcp_read(int     socket_fd,
 	      void   *ptr,
 	      size_t  length)
 {
@@ -1047,7 +1183,7 @@ ntbx_tcp_read(int     socket,
     {
       int status;
 
-      status = read(socket, ptr + bytes_read, length - bytes_read);
+      status = read(socket_fd, ptr + bytes_read, length - bytes_read);
       
       if (status == -1)
 	{
@@ -1075,9 +1211,9 @@ ntbx_tcp_read(int     socket,
 
 /* write a block */
 void
-ntbx_tcp_write(int     socket,
-	       void   *ptr,
-	       size_t  length)
+ntbx_tcp_write(int           socket_fd,
+	       const void   *ptr,
+	       const size_t  length)
 {
   size_t bytes_written = 0;
 
@@ -1086,7 +1222,7 @@ ntbx_tcp_write(int     socket,
     {
       int status;
 
-      status = write(socket, ptr + bytes_written, length - bytes_written);
+      status = write(socket_fd, ptr + bytes_written, length - bytes_written);
       
       if (status == -1)
 	{

@@ -86,11 +86,11 @@ fi
 while [ $mynumber -lt $trueconfsize ]; do
     plusun=`expr $mynumber % $nbmachines + 1`
     host=`head -$plusun ${PM2_CONF_FILE} | tail -1`
-    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstart "$PM2_CONF_FILE" "$DISPLAY" "$MAD_DEBUG" $confsize $mynumber $host $port $serverhost $prog $args &
+    ${PM2_RSH:-rsh} -n $host ${MAD1_ROOT}/bin/tcp/madstart "$PM2_CONF_FILE" "$DISPLAY" "$MAD_DEBUG" $confsize $mynumber $host $port $serverhost $prog $args &
     mynumber=`expr $mynumber + 1`
 done
 
 if [ ! $MAD_CONSOLE = "no" ]; then
     host=`head -1 ${PM2_CONF_SIZE}`
-    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstartcons "$PM2_CONF_FILE" "$DISPLAY" "$MAD_CONSOLE" $confsize $mynumber $host $port $serverhost &
+    ${PM2_RSH:-rsh} -n $host ${MAD1_ROOT}/bin/tcp/madstartcons "$PM2_CONF_FILE" "$DISPLAY" "$MAD_CONSOLE" $confsize $mynumber $host $port $serverhost &
 fi

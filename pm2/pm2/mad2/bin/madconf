@@ -54,7 +54,7 @@ fi
 if test -f ${MAD2_ROOT}/.mad2_conf
 then
     set `cat ${MAD2_ROOT}/.mad2_conf`
-    nb=$#
+    nb=`expr $# - 1`
     echo "The current MADELEINE configuration contains $nb host(s) :"
     i=0
     shift

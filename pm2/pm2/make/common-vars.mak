@@ -1,4 +1,18 @@
 
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
 # Préférences globales
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/config.mak
@@ -54,7 +68,7 @@ COMMON_DEPS += $(PM2_ROOT)/make/config.mak
 # PM2_CONFIG -> script d'information de configuration de PM2
 #---------------------------------------------------------------------
 ifndef PM2_CONFIG
-PM2_CONFIG := $(PM2_ROOT)/bin/pm2-config
+PM2_CONFIG := PM2_ROOT=$(PM2_ROOT) $(PM2_ROOT)/bin/pm2-config
 endif
 
 # Utilite de cette commande ? 
@@ -73,8 +87,10 @@ PM2_GEN_MAK := $(PM2_ROOT)/bin/pm2-gen-make.sh $(FLAVOR)
 ifndef DO_NOT_GENERATE_MAK_FILES
 DO_NOT_GENERATE_MAK_FILES := 
 endif
-DO_NOT_GENERATE_MAK_FILES += _distclean_ _distcleanlibs_ _distcleanflavors_
-DO_NOT_GENERATE_MAK_FILES += _distcleandoc_ _distcleanall_
+DO_NOT_GENERATE_MAK_FILES += _sos_
+DO_NOT_GENERATE_MAK_FILES += _clean_ _cleanall_ _cleantools_ _cleantoolsall_
+DO_NOT_GENERATE_MAK_FILES += _distclean_ _distcleanflavors_ _distcleandoc_
+DO_NOT_GENERATE_MAK_FILES += _refresh_ _refreshall_
 DO_NOT_GENERATE_MAK_FILES += _init_ _checkmake_ _cvsinit_ _flavorinit_
 DO_NOT_GENERATE_MAK_FILES += _doc_
 DO_NOT_GENERATE_MAK_FILES += _help_

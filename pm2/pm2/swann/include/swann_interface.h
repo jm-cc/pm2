@@ -19,8 +19,8 @@
  * -----------------
  */
 
-#ifndef __SWANN_INTERFACE_H
-#define __SWANN_INTERFACE_H
+#ifndef SWANN_INTERFACE_H
+#define SWANN_INTERFACE_H
 
 
 /*
@@ -118,4 +118,4 @@ char *
 swann_net_receive_string(p_ntbx_client_t client);
 
 
-#endif /* __SWANN_INTERFACE_H */
+#endif /* SWANN_INTERFACE_H */

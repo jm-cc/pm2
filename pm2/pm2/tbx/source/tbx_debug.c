@@ -290,6 +290,17 @@ void pm2debug_register(debug_type_t *type)
 
 }
 
+#ifdef MA__ACTIVATION
+// Please, do not change order! This allows:
+// sed -e '/^PM2DEBUG BUFFER 0$/,/^PM2DEBUG BUFFER 2$/p;d' < core
+// ;)
+static char pm2debug_dummy0[50];
+static char base_buffer0[DEBUG_SIZE_BUFFER];
+static char pm2debug_dummy1[50];
+static char base_buffer1[DEBUG_SIZE_BUFFER];
+static char pm2debug_dummy2[50];
+#endif
+
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 {
 	static int called=0;
@@ -299,6 +310,11 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	int i;
 
 	if (!called) {
+#ifdef MA__ACTIVATION
+	  snprintf(pm2debug_dummy0, 49, "\nPM2DEBUG BUFFER 0\n");
+	  snprintf(pm2debug_dummy1, 49, "\nPM2DEBUG BUFFER 1\n");
+	  snprintf(pm2debug_dummy2, 49, "\nPM2DEBUG BUFFER 2\n");
+#endif
 	  pm2debug_register(&debug_pm2debug);
 	  pm2debug_register(&debug_pm2fulldebug);
 	  pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_SHOW_FILE, 1);
@@ -394,10 +410,9 @@ int pm2debug_marcel_launched=0;
 
 #ifdef ACTIVATION
 
-static char base_buffer0[DEBUG_SIZE_BUFFER];
-static char base_buffer1[DEBUG_SIZE_BUFFER];
 
-static char* base_buffer[2]={base_buffer0, base_buffer1};
+static char* base_buffer[]={base_buffer0, base_buffer1};
+
 static int cur_buffer=0;
 static volatile int buf_used[2]={0,0};
 

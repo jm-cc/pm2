@@ -71,7 +71,6 @@ pthread_t pthread_self(void)
 	return (pthread_t)marcel_self();
 }
 
-static int p_errnop_key;
 static int _fisrt_errno=0;
 static int _initialized=0;
 
@@ -80,10 +79,39 @@ int * __errno_location()
 	int * res;
 
 	if (_initialized) {
-		res=(void*)marcel_specificdatalocation(marcel_self(),
-						       p_errnop_key);
+		res=&marcel_self()->__errno;
 	} else {
 		res=&_fisrt_errno;
+	}
+	return res;
+}
+
+static int _fisrt_h_errno=0;
+
+int * __h_errno_location()
+{
+	int * res;
+
+	if (_initialized) {
+		res=&marcel_self()->__h_errno;
+	} else {
+		res=&_fisrt_h_errno;
+	}
+	return res;
+}
+
+static struct __res_state _fisrt_res_state;
+
+/* Return thread specific resolver state.  */
+struct __res_state *
+__res_state (void)
+{
+	struct __res_state * res;
+
+	if (_initialized) {
+		res=&marcel_self()->__res_state;
+	} else {
+		res=&_fisrt_res_state;
 	}
 	return res;
 }
@@ -119,13 +147,6 @@ void marcel_pthread_initialize(int* argc, char**argv)
 		/* TODO: à la création du premier thread */
 #ifdef PM2DEBUG
 		printf("Initialisation libpthread marcel-init done (and launched :-()\n");
-#endif
-		marcel_key_create(&p_errnop_key, NULL);
-		marcel_setspecific(p_errnop_key, (void*)_fisrt_errno);
-#ifdef PM2DEBUG
-		printf("Key = %d\n", p_errnop_key);
-		printf("Value = %d (just put %d)\n", (int)marcel_getspecific(p_errnop_key),
-		       _fisrt_errno);
 #endif
 	
 		_initialized=1;

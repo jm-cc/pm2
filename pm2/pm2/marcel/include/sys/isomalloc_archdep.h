@@ -80,7 +80,7 @@ extern int __zero_fd;
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
 #define IS_ON_MAIN_STACK(sp)   ((sp) > SLOT_AREA_TOP)
 
-#elif defined(WIN_SYS) || defined(X86_ARCH)
+#elif defined(WIN_SYS) && defined(X86_ARCH)
 
 extern void *ISOADDR_AREA_TOP;
 #define MAIN_STACK_BOT         (ISOADDR_AREA_TOP)
@@ -89,10 +89,13 @@ extern void *ISOADDR_AREA_TOP;
 #define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
 
-//#define ISOADDR_AREA_TOP       0x40000000
-//#define FILE_TO_MAP            -1
-//#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-//#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#elif defined(LINUX_SYS) && defined(ALPHA_ARCH)
+
+#define ISOADDR_AREA_TOP       0x30000000000
+#define MAIN_STACK_TOP         0x130000000
+#define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
+#define FILE_TO_MAP            -1
+#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
 #else
 

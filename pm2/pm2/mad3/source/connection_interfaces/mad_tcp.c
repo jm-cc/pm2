@@ -18,6 +18,7 @@
  * =========
  */
 
+
 #include "madeleine.h"
 
 #include <stdlib.h>
@@ -337,7 +338,7 @@ mad_tcp_connect(p_mad_connection_t   out,
   remote_port         = atoi(remote_adapter->parameter);
   sock                = ntbx_tcp_socket_create(NULL, 0);
 
-  ntbx_tcp_address_fill(&remote_address, remote_port, remote_node->name);
+  ntbx_tcp_address_fill_ip(&remote_address, remote_port, &remote_node->ip);
 
   SYSCALL(connect(sock, (struct sockaddr *)&remote_address, 
 		  sizeof(ntbx_tcp_address_t)));

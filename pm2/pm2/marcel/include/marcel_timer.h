@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section types
+typedef int marcel_time_t;
+
 #section macros
 #define MA_JIFFIES_PER_TIMER_TICK 1
 

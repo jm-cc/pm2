@@ -61,7 +61,7 @@ else
 
 int pm2_main(int argc, char **argv)
 {
-  int prot;
+  dsm_proto_t prot;
 
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK, 0);

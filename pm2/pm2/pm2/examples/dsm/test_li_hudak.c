@@ -410,7 +410,8 @@ void handler(void *arg)
 
 int pm2_main(int argc, char **argv)
 {
-  int prot, i;
+  int i;
+  dsm_proto_t prot;
   volatile int local;
 
 #ifdef PROFILE

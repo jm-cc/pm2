@@ -120,11 +120,11 @@ MOD_GEN_INC := $_PM2CONFIG_INCLUDE_DIR
 MOD_GEN_STAMP := $_PM2CONFIG_STAMP_DIR
 MOD_STAMP_FLAVOR := $_PM2CONFIG_FLAVOR_STAMP_FILE
 MOD_EXT := $_PM2CONFIG_EXT
-
+MOD_ARCH := $PM2_ASM
 MOD_CFLAGS := $_PM2CONFIG_KERNEL_CFLAGS
-CFLAGS += \$(MOD_CFLAGS) -I\$(MOD_GEN_INC)
-                        #^^^^^^^^^^^^^^^ should be included in pm2-config
 
+#CFLAGS est modifier au moment de la compilation (objs-rules.mak)
+#CFLAGS += \$(MOD_CFLAGS)
 CC := $_PM2CONFIG_CC
 
 EOF
@@ -223,8 +223,6 @@ MOD_CFLAGS += $_PM2CONFIG_appli_KERNEL_CFLAGS
 MOD_LDFLAGS += $_PM2CONFIG_LIBS
 MOD_LLIBS += $_PM2CONFIG_LD_LIBS
 
-CFLAGS += \$(MOD_CFLAGS) -I\$(MOD_GEN_INC)
-                        #^^^^^^^^^^^^^^^ should be included in pm2-config
 LDFLAGS += \$(MOD_LDFLAGS)
 CC := $_PM2CONFIG_CC
 

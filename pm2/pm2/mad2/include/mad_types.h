@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_types.h,v $
+Revision 1.5  2000/03/07 10:38:58  oaumage
+- pre-support multi-cluster
+
 Revision 1.4  2000/02/08 17:47:25  oaumage
 - prise en compte des types de la net toolbox
 
@@ -64,6 +67,7 @@ typedef void *p_mad_driver_specific_t;
 typedef long    mad_link_id_t,              *p_mad_link_id_t;
 typedef long    mad_channel_id_t,           *p_mad_channel_id_t;
 typedef int     mad_adapter_id_t,           *p_mad_adapter_id_t;
+typedef long    mad_cluster_id_t,           *p_mad_cluster_id_t;
 typedef int     mad_configuration_size_t,   *p_mad_configuration_size_t;
 typedef int     mad_buffer_alignment_t,     *p_mad_buffer_alignment_t;
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.10  2000/02/28 10:24:58  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.9  2000/01/31 15:57:09  oaumage
 - ajout du Log CVS
 
@@ -41,10 +44,10 @@ Revision 1.9  2000/01/31 15:57:09  oaumage
 ______________________________________________________________________________
 */
 
-#include <marcel.h>
-#include <mar_timing.h>
-#include <safe_malloc.h>
-#include <marcel_alloc.h>
+#include "marcel.h"
+#include "mar_timing.h"
+#include "safe_malloc.h"
+#include "marcel_alloc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,7 +98,7 @@ void LONGJMP(jmp_buf buf, int val)
 #endif
 
 #ifdef __ACT__
-#include <sys/upcalls.h>
+#include "sys/upcalls.h"
 #endif
 
 static long page_size;

@@ -645,7 +645,7 @@ ntbx_tcp_read_poll(int              nb_clients,
 #ifdef MARCEL
                 if (marcel_test_activity())
                   {
-                    status = tselect(max_fds + 1, &local_read_fds, NULL, NULL);
+                    status = marcel_select(max_fds + 1, &local_read_fds, NULL);
                   }
                 else
                   {
@@ -708,7 +708,7 @@ ntbx_tcp_write_poll(int              nb_clients,
 #ifdef MARCEL
                 if (marcel_test_activity())
                   {
-                    status = tselect(max_fds + 1, NULL, &local_write_fds, NULL);
+                    status = marcel_select(max_fds + 1, NULL, &local_write_fds);
                   }
                 else
                   {

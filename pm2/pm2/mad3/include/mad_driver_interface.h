@@ -138,6 +138,10 @@ typedef struct s_mad_driver_interface
 			      tbx_bool_t,
 			      p_mad_buffer_group_t);
 
+  p_mad_channel_t
+  (*get_sub_channel)(p_mad_channel_t,
+		     unsigned int);
+
 } mad_driver_interface_t;
 
 #endif /* MAD_DRIVER_INTERFACE_H */

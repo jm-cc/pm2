@@ -23,6 +23,8 @@
 #define MAD_MUX_H
 
 #define MAD_MUX_MAX_MTU 0xFFFFFFFFUL
+#define MAD_MUX_MAX_SUB 256
+#define MAD_MUX_MAX_MUX 256
 
 #ifdef MARCEL
 typedef struct s_mad_xmessage_queue_entry

@@ -18,6 +18,9 @@
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
 #define ISOADDR_PAGES                 (128*1024)
+/* Attention : ASM_THREAD_SLOT_SIZE redéfini pour ia64 */
+/* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisée
+   dans un source assembleur */
 #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */
 #define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)
 #define SLOT_AREA_TOP                 (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
@@ -52,7 +55,10 @@ extern int __zero_fd;
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #  elif defined(IA64_ARCH)
-#    define ISOADDR_AREA_TOP       0x7fff0000
+#    undef ASM_THREAD_SLOT_SIZE
+     /* 0x30000 nécessaire pour pthread_create */
+#    define ASM_THREAD_SLOT_SIZE   (0x40000) /* 1 Mo */
+#    define ISOADDR_AREA_TOP       0x80000000
 #    define MAIN_STACK_BOT         0x6000000000000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #    define FILE_TO_MAP            -1

@@ -384,7 +384,7 @@ of Marcel threads: \texttt{info threads} will only show LWPs,
 Marcel thread running in the chosen LWPs.
 
 However, if the program was compiled with the gdb option, one may
-switch to sleeping threads' context thanks PM2-provided functions
+switch to not-running threads' context thanks PM2-provided functions
 \footnote{yet implemented on X86 only}:
 
 \begin{verbatim}
@@ -409,7 +409,7 @@ switching to __main_thread(0xbffefc40)
 \end{verbatim}
 
 One can then use usual functions like \texttt{frame}, \texttt{print},
-etc. to inspect the sleeping thread.
+etc. to inspect the thread.
 
 The user should be aware that although \texttt{set-ctx} achieves a
 context switch so as to get correct \texttt{PC} and \texttt{SP},

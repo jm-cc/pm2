@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.h,v $
+Revision 1.3  2000/07/14 16:17:07  gantoniu
+Merged with branch dsm3
+
+Revision 1.2.10.1  2000/07/12 15:10:48  gantoniu
+*** empty log message ***
+
 Revision 1.2  2000/02/28 11:18:00  rnamyst
 Changed #include <> into #include "".
 
@@ -91,11 +97,21 @@ void pm2_unpack_str(mad_send_mode_t sm,
 static void __inline__ pm2_pack_int(mad_send_mode_t sm,
 				    mad_receive_mode_t rm,
 				    int *data,
+				    size_t nb) __attribute__ ((unused));
+static void __inline__ pm2_pack_int(mad_send_mode_t sm,
+				    mad_receive_mode_t rm,
+				    int *data,
 				    size_t nb)
 {
   pm2_pack_byte(sm, rm, (char *)data, nb*sizeof(int));
 }
 
+
+
+static void __inline__ pm2_unpack_int(mad_send_mode_t sm,
+				      mad_receive_mode_t rm,
+				      int *data,
+				      size_t nb) __attribute__ ((unused));
 static void __inline__ pm2_unpack_int(mad_send_mode_t sm,
 				      mad_receive_mode_t rm,
 				      int *data,

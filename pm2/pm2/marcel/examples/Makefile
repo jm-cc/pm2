@@ -15,10 +15,10 @@
 
 export FLAVOR_DEFAULT:=marcel
 
-PROGS := active	cleanup	contsw create daube delay derout eclone force_raise \
-	heavyalloc kbd keys matrix nojoin once poll raise realtime sample \
+PROGS := active	blocking cleanup	contsw create daube delay derout eclone force_raise \
+	heavyalloc kbd keys matrix mutex nojoin once poll raise realtime sample \
 	schedpolicy smptest smpheavy stack_jump sumtime sumtree suspend timed \
-	timeout tsp tube usersched userspace vpmask
+	timeout tsp tube usersched userspace vpmask toto
 
 include $(PM2_ROOT)/make/apps.mak
 

@@ -49,7 +49,7 @@ static time_t	fut_start_time = 0, fut_stop_time = 0;
 	includes mallocing the buffer to hold the trace.
 	returns number of bytes allocated if all ok, else a negative error code.
 */
-int fut_setup( unsigned int nints, unsigned int keymask )
+int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 	{
 	unsigned int	nbytes, *iptr;
 
@@ -90,7 +90,7 @@ int fut_setup( unsigned int nints, unsigned int keymask )
 	fut_next_slot = (unsigned int *)bufptr;
 	fut_active = keymask & FULL_ACTIVE_MASK;
 
-	FUT_PROBE2(-1, FUT_SETUP_CODE, keymask, nints);
+	FUT_PROBE3(-1, FUT_SETUP_CODE, fut_active, threadid, nints);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
@@ -109,7 +109,7 @@ int fut_setup( unsigned int nints, unsigned int keymask )
 /*	called repeatedly to restart tracing.
 	returns previous value of fut_active if all ok, else a negative error code.
 */
-int fut_keychange( int how, unsigned int keymask )
+int fut_keychange( int how, unsigned int keymask, unsigned int threadid )
 	{
 	unsigned int	old_active = fut_active;
 
@@ -132,7 +132,7 @@ int fut_keychange( int how, unsigned int keymask )
 		return -EINVAL;
 		}
 
-	FUT_PROBE1(-1, FUT_KEYCHANGE_CODE, fut_active);
+	FUT_PROBE2(-1, FUT_KEYCHANGE_CODE, fut_active, threadid);
 	return old_active;
 	}
 
@@ -160,7 +160,7 @@ int fut_done( void )
 /*	called to reset tracing to refill the entire buffer again.
 	returns number of bytes in buffer if all ok, else a negative error code.
 */
-int fut_reset( unsigned int keymask )
+int fut_reset( unsigned int keymask, unsigned int threadid )
 	{
 	unsigned int	nints;
 
@@ -179,7 +179,7 @@ int fut_reset( unsigned int keymask )
 	fut_active = keymask & FULL_ACTIVE_MASK;
 	nints = nallocated >> 2;
 
-	FUT_PROBE2(-1, FUT_RESET_CODE, keymask, nints);
+	FUT_PROBE3(-1, FUT_RESET_CODE, fut_active, threadid, nints);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);

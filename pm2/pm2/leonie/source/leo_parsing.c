@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_parsing.c,v $
+Revision 1.2  2000/06/09 08:45:58  oaumage
+- Progression du code
+
 Revision 1.1  2000/05/15 13:51:55  oaumage
 - Reorganisation des sources de Leonie
 
@@ -336,9 +339,10 @@ void
 leo_parser_init(void)
 {
   yyin = NULL;
+  /*
 #ifdef DEBUG
   yydebug = 1;
-#endif /* DEBUG */
+#endif  DEBUG */
 
   parser_file_handle = NULL;
   parser_file_ptr    = NULL;

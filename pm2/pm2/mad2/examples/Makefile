@@ -37,13 +37,13 @@
 .PHONY: default all
 default: all
 
-SRC_DIR	:=	.
+
+SRC_DIR     :=  ./
+APP_CFLAGS  :=
+APP_LDFLAGS :=
+APP_LLIBS   :=
 
 include ../Makefile
 
-MAD_APP_CFLAGS	=
-MAD_APP_LDFLAGS	=
-MAD_APP_LLIBS	=
-
-all:	$(BIN_DIR)/mad_ping	\
-	$(BIN_DIR)/mad_test	\
+all:	$(APP_BIN)/mad_ping	\
+	$(APP_BIN)/mad_test	\

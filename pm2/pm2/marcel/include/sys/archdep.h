@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: archdep.h,v $
+Revision 1.6  2001/01/03 14:12:20  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.5  2000/05/09 10:52:43  vdanjean
 pm2debug module
 
@@ -66,6 +69,7 @@ ______________________________________________________________________________
 #define ARCHDEP_EST_DEF
 
 #include "sys/marcel_flags.h"
+#include "sys/marcel_for_win.h"
 
 #ifdef MA__LWPS
 

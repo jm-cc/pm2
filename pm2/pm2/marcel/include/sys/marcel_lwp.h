@@ -37,10 +37,12 @@ struct marcel_lwp {
 };
 
 #section marcel_variables
-#ifdef MA__LWPS
 #depend "linux_perlwp.h[marcel_macros]"
+#ifdef MA__LWPS
 MA_DECLARE_PER_LWP(unsigned, number);
 #endif
+#depend "marcel_descr.h[types]"
+MA_DECLARE_PER_LWP(marcel_task_t *, run_task);
 
 #section marcel_macros
 

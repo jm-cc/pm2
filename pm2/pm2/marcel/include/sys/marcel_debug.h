@@ -17,7 +17,7 @@
 #ifndef MARCEL_DEBUG_EST_DEF
 #define MARCEL_DEBUG_EST_DEF
 
-#include "pm2debug.h"
+#include "tbx_debug.h"
 #include "sys/marcel_flags.h"
 
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.6  2000/05/22 13:44:55  oaumage
+- ajout du support application_spawn & leonie_spawn
+
 Revision 1.5  2000/03/02 14:27:54  oaumage
 - support d'un protocole par defaut
 
@@ -493,7 +496,12 @@ int marcel_main(int argc, char **argv)
 int main(int argc, char **argv)
 #endif
 {
-  p_mad_madeleine_t   madeleine;
+  p_mad_madeleine_t   madeleine = NULL;
+#ifdef LEONIE_SPAWN
+  mad_init(&argc, argv);
+  DISP("Returned from mad_init");
+  exit(EXIT_SUCCESS);
+#else  /* LEONIE_SPAWN */
   p_mad_adapter_set_t adapter_set;
   
   /* VIA - loopback
@@ -513,7 +521,30 @@ int main(int argc, char **argv)
   /* Default */
   adapter_set = mad_adapter_set_init(1, mad_DRIVER_DEFAULT, NULL); 
 
+#ifdef APPLICATION_SPAWN
+  {
+    char *url;
+    
+    url = mad_pre_init(adapter_set);
+    if (argc > 1)
+      {
+	madeleine = mad_init(-1, /* rank, -1 = default */
+			     NULL, /* Configuration file */
+			     argv[1] /* URL */
+			     );
+      }
+    else
+      {
+	DISP("Master: url = %s\n", url);
+	madeleine = mad_init(-1, NULL, NULL);
+      }
+    
+    // exit(EXIT_SUCCESS);
+  }
+#else /* APPLICATION_SPAWN */
   madeleine = mad_init(&argc, argv, NULL, adapter_set);
+#endif /* APPLICATION_SPAWN */
+#endif /* LEONIE_SPAWN */  
 
   /* command line args analysis */
   {

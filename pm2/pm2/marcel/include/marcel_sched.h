@@ -34,6 +34,39 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.8  2000/04/11 09:07:12  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.7.2.12  2000/04/11 08:17:10  rnamyst
+Comments are back !
+
+Revision 1.7.2.11  2000/04/10 09:56:06  rnamyst
+Moved the polling stuff into marcel_polling....
+
+Revision 1.7.2.10  2000/04/08 15:09:11  vdanjean
+few bugs fixed
+
+Revision 1.7.2.9  2000/03/31 18:38:37  vdanjean
+Activation mono OK
+
+Revision 1.7.2.8  2000/03/31 08:06:59  rnamyst
+Added disable_preemption() and enable_preemption().
+
+Revision 1.7.2.7  2000/03/29 09:46:17  vdanjean
+*** empty log message ***
+
+Revision 1.7.2.5  2000/03/24 17:55:08  vdanjean
+fixes
+
+Revision 1.7.2.4  2000/03/22 16:34:01  vdanjean
+*** empty log message ***
+
+Revision 1.7.2.2  2000/03/15 15:54:48  vdanjean
+réorganisation de marcel : commit pour CVS
+
+Revision 1.7.2.1  2000/03/15 15:41:14  vdanjean
+réorganisation de marcel. branche de développement
+
 Revision 1.7  2000/03/09 11:07:34  rnamyst
 Modified to use the sched_data() macro.
 
@@ -57,6 +90,7 @@ ______________________________________________________________________________
 #define MARCEL_SCHED_EST_DEF
 
 #include "sys/marcel_flags.h"
+#include "sys/marcel_macros.h"
 
 /* ==== Starting and Shuting down the scheduler ==== */
 
@@ -74,7 +108,7 @@ static __inline__ marcel_t marcel_self()
 static __inline__ unsigned marcel_current_vp() __attribute__ ((unused));
 static __inline__ unsigned marcel_current_vp()
 {
-#ifdef SMP
+#ifdef MA__LWPS
   __lwp_t *cur_lwp = marcel_self()->lwp;
 #endif
 
@@ -152,40 +186,6 @@ void marcel_snapshot(snapshot_func_t f);
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 
-/* ==== polling  ==== */
-
-#define MAX_POLL_IDS    16
-
-_PRIVATE_ struct _poll_struct;
-_PRIVATE_ struct _poll_cell_struct;
-
-typedef struct _poll_struct *marcel_pollid_t;
-typedef struct _poll_cell_struct *marcel_pollinst_t;
-
-typedef void (*marcel_pollgroup_func_t)(marcel_pollid_t id);
-
-typedef void *(*marcel_poll_func_t)(marcel_pollid_t id,
-				    unsigned active,
-				    unsigned sleeping,
-				    unsigned blocked);
-
-marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
-				     marcel_poll_func_t f,
-				     int divisor);
-
-#define MARCEL_POLL_FAILED                NULL
-#define MARCEL_POLL_SUCCESS(id)           ((id)->cur_cell)
-#define MARCEL_POLL_SUCCESS_FOR(pollinst) (pollinst)
-
-void marcel_poll(marcel_pollid_t id, any_t arg);
-
-#define FOREACH_POLL(id, _arg) \
-  for((id)->cur_cell = (id)->first_cell; \
-      (id)->cur_cell != NULL && (_arg = (typeof(_arg))((id)->cur_cell->arg)); \
-      (id)->cur_cell = (id)->cur_cell->next)
-
-#define GET_CURRENT_POLLINST(id) ((id)->cur_cell)
-
 /* ==== Scheduler locking ==== */
 
 /* Must be called each time a LWP is about to access its local task
@@ -193,7 +193,7 @@ void marcel_poll(marcel_pollid_t id, any_t arg);
 static __inline__ void sched_lock(__lwp_t *lwp) __attribute__ ((unused));
 static __inline__ void sched_lock(__lwp_t *lwp)
 {
-  marcel_lock_acquire(&(sched_data(lwp).sched_queue_lock));
+  marcel_lock_acquire(&(SCHED_DATA(lwp).sched_queue_lock));
 }
 
 /* Must be called when a LWP is not modifying the local queue any
@@ -201,94 +201,105 @@ static __inline__ void sched_lock(__lwp_t *lwp)
 static __inline__ void sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
 static __inline__ void sched_unlock(__lwp_t *lwp)
 {
-  marcel_lock_release(&(sched_data(lwp).sched_queue_lock));
+  marcel_lock_release(&(SCHED_DATA(lwp).sched_queue_lock));
 }
 
 #ifdef X86_ARCH
 
-#ifdef __ACT__
-#include "sys/upcalls.h"
-#endif
-
-static __inline__ void lock_task(void) __attribute__ ((unused));
-static __inline__ void lock_task(void)
+static __inline__ void ma_lock_task(void) __attribute__ ((unused));
+static __inline__ void ma_lock_task(void)
 {
-#ifdef SMP
-  atomic_inc(&marcel_self()->lwp->_locked);
-  /* NDR: vincent, je pense qu'il suffit de supprimer le cas suivant... */
-#elif defined(__ACT__)
-  marcel_t self=marcel_self();
-  if (! self->marcel_lock) {
-    act_lock(self);
-  }
-  self->marcel_lock++;
-#else
-  atomic_inc(&cur_lwp->_locked);
-#endif
+  atomic_inc(&GET_LWP(marcel_self())->_locked);
 }
 
-static __inline__ void unlock_task(void) __attribute__ ((unused));
-static __inline__ void unlock_task(void)
+static __inline__ void ma_unlock_task(void) __attribute__ ((unused));
+static __inline__ void ma_unlock_task(void)
 {
-#ifdef SMP
-  atomic_dec(&marcel_self()->lwp->_locked);
-  /* NDR: vincent, je pense qu'il suffit de supprimer le cas suivant... */
-#elif defined(__ACT__)
-  marcel_t self=marcel_self();
-  self->marcel_lock--;  
-  if (! self->marcel_lock) {
-    act_unlock(self);
-  }
-#else
-  atomic_dec(&cur_lwp->_locked);
-#endif
+  atomic_dec(&GET_LWP(marcel_self())->_locked);
 }
 
 static __inline__ int locked(void) __attribute__ ((unused));
 static __inline__ int locked(void)
 {
-#ifdef SMP
-  return atomic_read(&marcel_self()->lwp->_locked);
-  /* NDR: vincent, je pense qu'il suffit de supprimer le cas suivant... */
-#elif defined(__ACT__)
-  return marcel_self()->marcel_lock;
-#else
-  return atomic_read(&cur_lwp->_locked);
-#endif
+  return atomic_read(&GET_LWP(marcel_self())->_locked);
+}
+
+extern volatile atomic_t __preemption_disabled;
+
+static __inline__ void disable_preemption(void) __attribute__ ((unused));
+static __inline__ void disable_preemption(void)
+{
+  atomic_inc(&__preemption_disabled);
+}
+
+static __inline__ void enable_preemption(void) __attribute__ ((unused));
+static __inline__ void enable_preemption(void)
+{
+  atomic_dec(&__preemption_disabled);
+}
+
+static __inline__ unsigned int preemption_enabled(void) __attribute__ ((unused));
+static __inline__ unsigned int preemption_enabled(void)
+{
+  return atomic_read(&__preemption_disabled) == 0;
 }
 
 #else
 
-static __inline__ __volatile__ void lock_task(void)
+static __inline__ __volatile__ void ma_lock_task(void)
 {
-#ifndef SMP
-  cur_lwp->_locked++;
-#else
-  marcel_self()->lwp->_locked++;
-#endif
+  GET_LWP(marcel_self())->_locked++;
 }
 
-static __inline__ __volatile__ void unlock_task(void)
+static __inline__ __volatile__ void ma_unlock_task(void)
 {
-#ifndef SMP
-  cur_lwp->_locked--;
-#else
-  marcel_self()->lwp->_locked--;
-#endif
+  GET_LWP(marcel_self())->_locked--;
 }
 
 static __inline__ __volatile__ unsigned locked(void)
 {
-#ifndef SMP
-  return cur_lwp->_locked;
-#else
-  return marcel_self()->lwp->_locked;
-#endif
+  return GET_LWP(marcel_self())->_locked;
+}
+
+extern volatile unsigned int __preemption_disabled;
+
+static __inline__ void disable_preemption(void) __attribute__ ((unused));
+static __inline__ void disable_preemption(void)
+{
+  __preemption_disabled++;
+}
+
+static __inline__ void enable_preemption(void) __attribute__ ((unused));
+static __inline__ void enable_preemption(void)
+{
+  __preemption_disabled--;
+}
+
+static __inline__ unsigned int preemption_enabled(void) __attribute__ ((unused));
+static __inline__ unsigned int preemption_enabled(void)
+{
+  return __preemption_disabled == 0;
 }
 
 #endif
 
+#ifdef DEBUG_LOCK_TASK
+#define unlock_task() \
+   (ma_unlock_task(), \
+   mdebug("\t=> unlock --%i (" __FILE__ ":%i)\n", locked(), __LINE__))
+#define lock_task() \
+   (mdebug("\t=> lock %i++ (" __FILE__ ":%i)\n", locked(), __LINE__), \
+   ma_lock_task())
+#else
+#define unlock_task() ma_unlock_task()
+#define lock_task() ma_lock_task()
+#endif
+
 /* ==== miscelaneous private defs ==== */
+
+#ifdef DEBUG
+extern void breakpoint();
+#endif
 
 #ifndef DO_NOT_CHAIN_BLOCKED_THREADS
 _PRIVATE_ extern volatile marcel_t __waiting_tasks;
@@ -301,24 +312,10 @@ _PRIVATE_ void marcel_one_more_task(marcel_t pid);
 _PRIVATE_ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock);
 _PRIVATE_ void marcel_tempo_give_hand(unsigned long timeout, boolean *blocked, marcel_sem_t *s);
 _PRIVATE_ void marcel_wake_task(marcel_t t, boolean *blocked);
-_PRIVATE_ marcel_t marcel_unchain_task(marcel_t t);
+_PRIVATE_ marcel_t marcel_unchain_task_and_find_next(marcel_t t, 
+						     marcel_t find_next);
 _PRIVATE_ void marcel_insert_task(marcel_t t);
 _PRIVATE_ marcel_t marcel_radical_next_task(void);
-
-_PRIVATE_ typedef struct _poll_struct {
-  marcel_pollgroup_func_t gfunc;
-  marcel_poll_func_t func;
-  unsigned divisor, count;
-  struct _poll_cell_struct *first_cell, *cur_cell;
-  struct _poll_struct *prev, *next;
-} poll_struct_t;
-
-_PRIVATE_ typedef struct _poll_cell_struct {
-  marcel_t task;
-  boolean blocked;
-  any_t arg;
-  struct _poll_cell_struct *prev, *next;
-} poll_cell_t;
 
 #ifdef USE_VIRTUAL_TIMER
 

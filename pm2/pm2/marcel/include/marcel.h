@@ -19,7 +19,9 @@
 
 #define _GNU_SOURCE 1
 #include "sys/marcel_flags.h"
+#ifdef LINUX_SYS // AD:
 #include <features.h>
+#endif
 
 #ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
 #  define MARCEL_INLINE
@@ -56,8 +58,9 @@
 #if 0
 typedef enum { FALSE, TRUE } boolean;
 #else
+#if !(defined(FALSE) || defined(TRUE)) // AD: TRUE/FALSE are sometimes already defined in libc
 enum { FALSE, TRUE };
-
+#endif
 typedef int boolean;
 #endif
 

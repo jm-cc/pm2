@@ -400,9 +400,9 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&tag, sizeof(int));
   pm2_rawrpc_waitdata();
   
-  // dsm_lock_page(index);
+  //  dsm_lock_page(index);
   (*dsm_get_read_server(dsm_get_page_protocol(index)))(index, node, tag);
-  // dsm_unlock_page(index);
+  //  dsm_unlock_page(index);
 
   LOG_OUT();
 }
@@ -437,9 +437,9 @@ tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func called\n");
 tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func waitdata done"
                  " for node %ld\n", node);
 #endif
-  // dsm_lock_page(index);
+//  dsm_lock_page(index);
   (*dsm_get_write_server(dsm_get_page_protocol(index)))(index, node, tag);
-  // dsm_unlock_page(index);
+  //  dsm_unlock_page(index);
 
   LOG_OUT();
 }
@@ -519,12 +519,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
   }
   else
     {
-    //  tbx_tick_t t_start, t_end;
-   //   double total;
-
       dsm_access_t old_access = dsm_get_access(index);
-
-  //    TBX_GET_TICK(t_start);
 
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
 
@@ -534,6 +529,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
       /*  Old stuff  */
 
 //     if (old_access != WRITE_ACCESS)
+
         dsm_protect_page(to_receive.addr, WRITE_ACCESS); // to enable the page to be copied
        pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)to_receive.addr, to_receive.page_size);
 
@@ -542,6 +538,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 #endif
 
 #endif // USE_DOUBLE_MAPPING
+
 	pm2_rawrpc_waitdata(); 
 
 	if (to_receive.access != WRITE_ACCESS)
@@ -1008,9 +1005,9 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 
   while (index != NO_PAGE)
     {
-      // dsm_lock_page(index);
+      //      dsm_lock_page(index);
       (*dsm_get_read_server(index))(index, req_node, tag);
-      // dsm_unlock_page(index);
+      //      dsm_unlock_page(index);
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
     }
   pm2_rawrpc_waitdata(); 
@@ -1046,9 +1043,9 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 
   while (index != NO_PAGE)
     {
-      // dsm_lock_page(index);
+      //      dsm_lock_page(index);
       (*dsm_get_write_server(index))(index, req_node, tag);
-      // dsm_unlock_page(index);
+      //      dsm_unlock_page(index);
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
     }
   pm2_rawrpc_waitdata(); 

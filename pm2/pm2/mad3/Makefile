@@ -31,61 +31,23 @@ ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/mad3-specific.mak
 endif
 
-# Gestion des drivers : prise en compte des fichiers
+# Gestion des drivers : prise en compte des fichiers sources supplémentaires
 #---------------------------------------------------------------------
 LIB_SRC2=$(LIB_SRC)/connection_interfaces
+LIB_C_SOURCES += $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
 
-LIB_C_SOURCES_ADDED := $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
-LIB_C_PREPROC_ADDED := $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_GEN_CPP)/mad_$(PROT)$(LIB_EXT).i)
-LIB_C_FUT_ADDED     := $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_GEN_CPP)/mad_$(PROT)$(LIB_EXT).fut)
-LIB_C_DEPENDS_ADDED := $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_GEN_DEP)/mad_$(PROT)$(LIB_EXT).d)
-LIB_C_OBJECTS_ADDED := $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).o)
-LIB_C_PICS_ADDED    := $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).pic)
-
-LIB_OBJECTS   += $(LIB_C_OBJECTS_ADDED)
-LIB_PICS      += $(LIB_C_PICS_ADDED)
-LIB_PREPROC   += $(LIB_C_PREPROC_ADDED)
-LIB_FUT       += $(LIB_C_FUT_ADDED)
+# Le vpath supplémentaire
+#---------------------------------------------------------------------
+vpath %.c $(LIB_SRC2)
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
 
-# Dependances vers *.d
-#---------------------------------------------------------------------
-$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
-$(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
-$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
-
-# Inclusion du makefile de dependance des drivers
-#---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
-ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
--include $(LIB_C_DEPENDS_ADDED)
-endif
-endif
-
-# Construction des drivers
-#---------------------------------------------------------------------
-$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
-
-$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
-
-# -> le separateur du sed est `|'
-# Note: interet de l'ajout de $@ comme dependance ?
-$(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
-		| sed '\''s|.*:|$(LIB_DEP_TO_OBJ) $@ :|g'\'' > $@'
-
-$(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
-
 # Construction du cache specifique a Madeleine III
 #---------------------------------------------------------------------
 $(PM2_MAK_DIR)/mad3-specific.mak: $(LIB_STAMP_FLAVOR)
-	@_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\
+	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\
 	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
 	echo "MAD3_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
 	fi;

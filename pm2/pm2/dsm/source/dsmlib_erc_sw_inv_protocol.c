@@ -20,8 +20,8 @@
 #include "dsm_protocol_policy.h"
 #include "dsm_protocol_lib.h"
 #include "dsm_page_manager.h"
-/* the following is useful for "hierarch_lock_id_t" */
-#include "hierarch_lock.h"
+/* the following is useful for "token_lock_id_t" */
+#include "token_lock.h"
 
 //#define TRACE_ERC
 //#define DSM_QUEUE_TRACE
@@ -260,7 +260,7 @@ void dsmlib_erc_acquire()
   return;
 }
 
-void dsmlib_erc_release(const hierarch_lock_id_t unused)
+void dsmlib_erc_release(const token_lock_id_t unused)
 {
   dsm_page_index_t index;
 

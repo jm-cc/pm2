@@ -223,18 +223,33 @@ static __inline__ void init_task_desc(marcel_t t)
   SET_STATE_READY(t);
   t->special_flags = 0;
   marcel_sem_init(&t->suspend_sem, 0);
+  t->p_readlock_list=NULL;
+  t->p_readlock_free=NULL;
+  t->p_untracked_readlock_count=0;
+  t->p_nextwaiting=NULL;
+  marcel_sem_init(&t->pthread_sync, 0);  
+
 }
 
-int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t arg)
+int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func, any_t arg)
 {
   marcel_t cur = marcel_self(), new_task;
+#ifdef MA__POSIX_BEHAVIOUR
+  marcel_attr_t myattr;
+#endif
 
   LOG_IN();
 
   TIMING_EVENT("marcel_create");
 
-  if(!attr)
+  if(!attr) {
+#ifdef MA__POSIX_BEHAVIOUR
+    marcel_attr_init(&myattr);
+    attr=&myattr;
+#else
     attr = &marcel_attr_default;
+#endif
+  }
 
   lock_task();
 
@@ -248,11 +263,11 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     LOG_OUT();
     return 0;
   } else {
-    if(attr->stack_base) {
-      register unsigned long top = MAL_BOT((long)attr->stack_base +
-					   attr->stack_size);
+    if(attr->__stackaddr_set) {
+      register unsigned long top = MAL_BOT((long)attr->__stackaddr +
+					   attr->__stacksize);
 #ifdef MA__DEBUG
-      mdebug("top=%p, stack_base=%p\n", top, attr->stack_base);
+      mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
       if(top & (THREAD_SLOT_SIZE-1)) { /* Not slot-aligned */
 	unlock_task();
 	RAISE(CONSTRAINT_ERROR);
@@ -260,17 +275,17 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #endif
       new_task = (marcel_t)(top - MAL(sizeof(task_desc)));
 #ifdef STACK_CHECKING_ALLOWED
-      memset(attr->stack_base, 0, attr->stack_size);
+      memset(attr->__stackaddr, 0, attr->__stacksize);
 #endif
       init_task_desc(new_task);
-      new_task->stack_base = attr->stack_base;
+      new_task->stack_base = attr->__stackaddr;
 
       new_task->static_stack = TRUE;
     } else { /* (!attr->stack_base) */
       char *bottom;
 
 #ifdef MA__DEBUG
-      if(attr->stack_size > THREAD_SLOT_SIZE)
+      if(attr->__stacksize > THREAD_SLOT_SIZE)
 	RAISE(NOT_IMPLEMENTED);
 #endif
       bottom = marcel_slot_alloc();
@@ -284,17 +299,17 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       new_task->static_stack = FALSE;
     } /* fin (attr->stack_base) */
 
-    new_task->sched_policy = attr->sched_policy;
+    new_task->sched_policy = attr->__schedpolicy;
     new_task->not_migratable = attr->not_migratable;
     new_task->not_deviatable = attr->not_deviatable;
-    new_task->detached = attr->detached;
+    new_task->detached = (attr->__detachstate == MARCEL_CREATE_DETACHED);
     new_task->vpmask = attr->vpmask;
     new_task->special_flags = attr->flags;
 
     if(attr->rt_thread)
       new_task->special_flags |= MA_SF_RT_THREAD;
 
-    if(!attr->detached) {
+    if(!attr->__detachstate) {
       marcel_sem_init(&new_task->client, 0);
       marcel_sem_init(&new_task->thread, 0);
     }
@@ -409,7 +424,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
   return 0;
 }
 
-int marcel_join(marcel_t pid, any_t *status)
+DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status))
 {
   LOG_IN();
 
@@ -426,8 +441,9 @@ int marcel_join(marcel_t pid, any_t *status)
   LOG_OUT();
   return 0;
 }
+DEF_PTHREAD(join)
 
-int marcel_exit(any_t val)
+DEF_MARCEL_POSIX(void, exit, (any_t val))
 {
   marcel_t cur = marcel_self();
   DEFINE_CUR_LWP(register, , );
@@ -451,7 +467,7 @@ int marcel_exit(any_t val)
     }
 #ifdef MA__DEBUG
    if((NB_MAX_BCL>1) && (nb_bcl==NB_MAX_BCL))
-      mdebug("  max iteration in key destructor for thread %i\n",cur->number);
+      mdebug("  max iteration in key destructor for thread %li\n",cur->number);
 #endif
   }
 
@@ -645,26 +661,29 @@ int marcel_exit(any_t val)
 		   cur_lwp->sec_desc->child, NORMAL_RETURN);
   }
 
-  return 0; /* Silly, isn't it ? */
+  abort(); // For security
 }
+DEF_PTHREAD(exit)
 
-int marcel_cancel(marcel_t pid)
+DEF_MARCEL_POSIX(int, cancel, (marcel_t pid))
 {
   if(pid == marcel_self()) {
     marcel_exit(NULL);
   } else {
     pid->ret_val = NULL;
-    mdebug("marcel %i kill %i\n", marcel_self()->number, pid->number);
+    mdebug("marcel %li kill %li\n", marcel_self()->number, pid->number);
     marcel_deviate(pid, (handler_func_t)marcel_exit, NULL);
   }
   return 0;
 }
+DEF_PTHREAD(cancel)
 
-int marcel_detach(marcel_t pid)
+DEF_MARCEL_POSIX(int, detach, (marcel_t pid))
 {
    pid->detached = TRUE;
    return 0;
 }
+DEF_PTHREAD(detach)
 
 void marcel_getuserspace(marcel_t pid, void **user_space)
 {
@@ -700,8 +719,10 @@ void marcel_resume(marcel_t pid)
   marcel_deviate(pid, suspend_handler, (any_t)0);
 }
 
-
-int marcel_cleanup_push(cleanup_func_t func, any_t arg)
+#undef NAME_PREFIX
+#define NAME_PREFIX _
+DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
+				     cleanup_func_t func, any_t arg))
 {
   marcel_t cur = marcel_self();
 
@@ -710,10 +731,11 @@ int marcel_cleanup_push(cleanup_func_t func, any_t arg)
 
    cur->cleanup_args[cur->next_cleanup_func] = arg;
    cur->cleanup_funcs[cur->next_cleanup_func++] = func;
-   return 0;
 }
+DEF_PTHREAD(cleanup_push)
 
-int marcel_cleanup_pop(boolean execute)
+DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
+				    boolean execute))
 {
   int i;
   marcel_t cur = marcel_self();
@@ -724,20 +746,10 @@ int marcel_cleanup_pop(boolean execute)
    i = --cur->next_cleanup_func;
    if(execute)
       (*cur->cleanup_funcs[i])(cur->cleanup_args[i]);
-   return 0;
 }
-
-int marcel_once(marcel_once_t *once, void (*f)(void))
-{
-   marcel_mutex_lock(&once->mutex);
-   if(!once->executed) {
-      once->executed = TRUE;
-      marcel_mutex_unlock(&once->mutex);
-      (*f)();
-   } else
-      marcel_mutex_unlock(&once->mutex);
-   return 0;
-}
+DEF_PTHREAD(cleanup_pop)
+#undef NAME_PREFIX
+#define NAME_PREFIX
 
 static void __inline__ freeze(marcel_t t)
 {
@@ -1116,7 +1128,8 @@ static unsigned marcel_last_key=0;
  * 0 is a RESERVED value. DON'T CHANGE IT !!! 
 */
 
-int marcel_key_create(marcel_key_t *key, marcel_key_destructor_t func)
+DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
+				   marcel_key_destructor_t func))
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    lock_task();
@@ -1148,8 +1161,10 @@ int marcel_key_create(marcel_key_t *key, marcel_key_destructor_t func)
    unlock_task();
    return 0;
 }
+DEF_PTHREAD(key_create)
+DEF___PTHREAD(key_create)
 
-int marcel_key_delete(marcel_key_t key)
+DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key))
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    lock_task();
@@ -1163,6 +1178,18 @@ int marcel_key_delete(marcel_key_t key)
    unlock_task();
    return 0;
 }
+DEF_PTHREAD(key_delete)
+//DEF___PTHREAD(key_delete)
+
+DEFINLINE_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
+					  __const void* value))
+DEF_PTHREAD(setspecific)
+DEF___PTHREAD(setspecific)
+
+DEFINLINE_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key))
+DEF_PTHREAD(getspecific)
+DEF___PTHREAD(getspecific)
+
 
 /* ================== Gestion des exceptions : ================== */
 
@@ -1208,6 +1235,7 @@ void win_stack_allocate(unsigned n)
 
 #ifdef MARCEL_MAIN_AS_FUNC
 int go_marcel_main(int argc, char *argv[])
+#warning go_marcel_main defined
 #else
 int main(int argc, char *argv[])
 #endif // MARCEL_MAIN_AS_FUNC
@@ -1248,5 +1276,6 @@ int main(int argc, char *argv[])
 
   return __main_ret;
 }
+
 
 #endif // STANDARD_MAIN

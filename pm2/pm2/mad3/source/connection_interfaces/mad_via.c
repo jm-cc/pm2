@@ -183,7 +183,7 @@ typedef struct s_mad_via_in_connection_specific
   mad_via_vi_id_base_t       vi_id_base;
   p_mad_via_vi_t             vi;
   p_mad_via_descriptor_set_t descriptor_set;
-  int                        nb_posted;
+  int                        nb_consumed;
 } mad_via_in_connection_specific_t, *p_mad_via_in_connection_specific_t;
 
 typedef struct s_mad_via_out_connection_specific
@@ -211,6 +211,121 @@ TBX_CRITICAL_SECTION(vi_id_base_computation);
  * Static functions
  * ----------------------------------------------------------------------------
  */
+
+static
+void
+mad_via_disp_discriminator(char                    *msg,
+			   mad_via_discriminator_t  d)
+{
+  LOG_IN();
+  DISP_STR("Discriminator", msg);
+  DISP_VAL("process", d.process_grank);
+  DISP_VAL("id base", d.vi_id_base);
+  DISP_VAL("id idx",  d.vi_id_idx);
+  LOG_OUT();
+}
+
+
+static
+VIP_UINT32
+mad_via_descriptor_status(VIP_UINT32 status)
+{
+  VIP_UINT32 s = 0;
+
+  LOG_IN();
+  s = status & ~VIP_STATUS_RESERVED;
+
+  if (s & VIP_STATUS_DONE)
+    {
+      DISP("Done");
+    }
+
+  if (s & VIP_STATUS_FORMAT_ERROR)
+    {
+      DISP("Format Error");
+    }
+
+  if (s & VIP_STATUS_PROTECTION_ERROR)
+    {
+      DISP("Protection Error");
+    }
+
+  if (s & VIP_STATUS_LENGTH_ERROR)
+    {
+      DISP("Length Error");
+    }
+
+  if (s & VIP_STATUS_PARTIAL_ERROR)
+    {
+      DISP("Partial Error");
+    }
+
+  if (s & VIP_STATUS_DESC_FLUSHED_ERROR)
+    {
+      DISP("Flushed Error");
+    }
+
+  if (s & VIP_STATUS_TRANSPORT_ERROR)
+    {
+      DISP("Transport Error");
+    }
+
+  if (s & VIP_STATUS_RDMA_PROT_ERROR)
+    {
+      DISP("RDMA Prot Error");
+    }
+
+  if (s & VIP_STATUS_REMOTE_DESC_ERROR)
+    {
+      DISP("Remote Desc Error");
+    }
+
+  if (s & VIP_STATUS_ERROR_MASK)
+    {
+      DISP("Error Mask");
+    }
+
+  if (s & VIP_STATUS_OP_SEND)
+    {
+      DISP("Op Send");
+    }
+
+  if (s & VIP_STATUS_OP_RECEIVE)
+    {
+      DISP("Op Receive");
+    }
+
+  if (s & VIP_STATUS_OP_RDMA_WRITE)
+    {
+      DISP("Op RDMA write");
+    }
+
+  if (s & VIP_STATUS_OP_REMOTE_RDMA_WRITE)
+    {
+      DISP("Op Remote RDMA write");
+    }
+
+  if (s & VIP_STATUS_OP_RDMA_READ)
+    {
+      DISP("Op RDMA Read");
+    }
+
+  if (s & VIP_STATUS_OP_MASK)
+    {
+      DISP("Op Mask");
+    }
+
+  if (s & VIP_STATUS_IMMEDIATE)
+    {
+      DISP("Immediate");
+    }
+
+  LOG_OUT();
+
+  return status;
+}
+
+
 static
 const char *
 mad_via_status_string(VIP_RETURN status)
@@ -236,7 +351,7 @@ mad_via_status_string(VIP_RETURN status)
       s = "VIA: error - resource";
       break;
     case VIP_TIMEOUT:
-      s = "VIA: not done";
+      s = "VIA: timeout";
       break;
     case VIP_REJECT:
       s = "VIA: reject";
@@ -370,7 +485,7 @@ static
 VIP_RETURN
 __(VIP_RETURN status)
 {
-  if ((status != VIP_SUCCESS) && (status != VIP_NOT_DONE))
+  if ((status != VIP_SUCCESS) && (status != VIP_TIMEOUT))
     {
       const char *s = NULL;
 
@@ -384,55 +499,61 @@ __(VIP_RETURN status)
 static void
 mad_via_disp_nic_attributes(VIP_NIC_ATTRIBUTES *na)
 {
-  LOG("Name: %s",               na->Name);
-  LOG("Hardware version: %lu",  na->HardwareVersion);
-  LOG("Provider version: %lu",  na->ProviderVersion);
-  LOG("Nic address length: %u", na->NicAddressLen);
-  LOG("Nic address: %x",        (int) na->LocalNicAddress);
+  DISP("Name: %s",               na->Name);
+  DISP("Hardware version: %lu",  na->HardwareVersion);
+  DISP("Provider version: %lu",  na->ProviderVersion);
+  DISP("Nic address length: %u", na->NicAddressLen);
+  DISP("Nic address: %x",        (int) na->LocalNicAddress);
   if (na->ThreadSafe)
     {
-      LOG("Thread safe: yes");
+      DISP("Thread safe: yes");
     }
   else
     {
-      LOG("Thread safe: no");
+      DISP("Thread safe: no");
     }
-  LOG("Max discriminator length: %d",     (int) na->MaxDiscriminatorLen);
-  LOG("Max register byte: %lu",           na->MaxRegisterBytes);
-  LOG("Max register regions: %lu",        na->MaxRegisterRegions);
-  LOG("Max register block byte: %lu",     na->MaxRegisterBlockBytes);
-  LOG("Max VI: %lu",                      na->MaxVI);
-  LOG("Max descriptors per queue: %lu",   na->MaxDescriptorsPerQueue);
-  LOG("Max segments per descriptor: %lu", na->MaxSegmentsPerDesc);
-  LOG("Max CQ: %lu",                      na->MaxCQ);
-  LOG("Max CQ entries: %lu",              na->MaxCQEntries);
-  LOG("Max transfer size: %lu",           na->MaxTransferSize);
-  LOG("Native MTU: %lu",                  na->NativeMTU);
-  LOG("Max Ptags: %lu",                   na->MaxPtags);
+  DISP("Max discriminator length: %d",     (int) na->MaxDiscriminatorLen);
+  DISP("Max register byte: %lu",           na->MaxRegisterBytes);
+  DISP("Max register regions: %lu",        na->MaxRegisterRegions);
+  DISP("Max register block byte: %lu",     na->MaxRegisterBlockBytes);
+  DISP("Max VI: %lu",                      na->MaxVI);
+  DISP("Max descriptors per queue: %lu",   na->MaxDescriptorsPerQueue);
+  DISP("Max segments per descriptor: %lu", na->MaxSegmentsPerDesc);
+  DISP("Max CQ: %lu",                      na->MaxCQ);
+  DISP("Max CQ entries: %lu",              na->MaxCQEntries);
+  DISP("Max transfer size: %lu",           na->MaxTransferSize);
+  DISP("Native MTU: %lu",                  na->NativeMTU);
+  DISP("Max Ptags: %lu",                   na->MaxPtags);
 
-  switch (na->ReliabilityLevelSupport)
+  if (na->ReliabilityLevelSupport & (VIP_SERVICE_UNRELIABLE|VIP_SERVICE_RELIABLE_DELIVERY|VIP_SERVICE_RELIABLE_RECEPTION))
     {
-    case VIP_SERVICE_UNRELIABLE:
-      LOG("Reliability level support : unreliable");
-      break;
-    case VIP_SERVICE_RELIABLE_DELIVERY:
-      LOG("Reliability level support : reliable delivery");
-      break;
-    case VIP_SERVICE_RELIABLE_RECEPTION:
-      LOG("Reliability level support : reliable reception");
-      break;
-    default:
-      LOG("Reliability level support : unknown !!!");
-      break;
+      if (na->ReliabilityLevelSupport & VIP_SERVICE_UNRELIABLE)
+	{
+	  DISP("Reliability level support : unreliable");
+	}
+
+      if (na->ReliabilityLevelSupport & VIP_SERVICE_RELIABLE_DELIVERY)
+	{
+	  DISP("Reliability level support : reliable delivery");
+	}
+      
+      if (na->ReliabilityLevelSupport & VIP_SERVICE_RELIABLE_RECEPTION)
+	{
+	  DISP("Reliability level support : reliable reception");
+	}
+    }
+  else
+    {
+      DISP("Reliability level support : unknown");
     }
 
   if (na->RDMAReadSupport)
     {
-      LOG("RDMA read support: yes");
+      DISP("RDMA read support: yes");
     }
   else
     {
-      LOG("RDMA read support: no");
+      DISP("RDMA read support: no");
     }
 }
 
@@ -921,10 +1042,14 @@ mad_via_channel_init(p_mad_channel_t channel)
   adapter = channel->adapter;
 
   cq = mad_via_cq_init(adapter, MAD_VIA_INITIAL_CHANNEL_CQ_SIZE);
+
+  chs = TBX_CALLOC(1, sizeof(mad_via_channel_specific_t));
+
   chs->input_cq      = cq;
   channel->specific  = chs;
   parameter_string   = tbx_string_init_to_int(channel->id);
   channel->parameter = tbx_string_to_cstring(parameter_string);
+
   tbx_string_free(parameter_string);
   parameter_string   = NULL;
   LOG_OUT();
@@ -962,7 +1087,9 @@ mad_via_connection_init(p_mad_connection_t in,
       p_tbx_string_t                     s  = NULL;
 
       cq = chs->input_cq;
-      vi = mad_via_vi_init(adapter, rdma_off, cq, NULL, vi_id_idx_in_main);
+      vi = mad_via_vi_init(adapter, rdma_off, NULL, cq, vi_id_idx_in_main);
+
+      is = TBX_CALLOC(1, sizeof(mad_via_in_connection_specific_t));
 
       is->vi         = vi;
       in->specific   = is;
@@ -970,6 +1097,7 @@ mad_via_connection_init(p_mad_connection_t in,
       is->vi_id_base = id_base;
       s              = tbx_string_init_to_int(id_base);
       in->parameter  = tbx_string_to_cstring(s);
+
       tbx_string_free(s);
       s              = NULL;
 
@@ -978,7 +1106,7 @@ mad_via_connection_init(p_mad_connection_t in,
 				    MAD_VIA_RECV_MAIN_DESC_NUM,
 				    MAD_VIA_RECV_MAIN_DESC_ADDR_NUM,
 				    MAD_VIA_RECV_MAIN_DESC_DATA_NUM);
-      is->nb_posted      = 0;
+      is->nb_consumed    = 0;
     }
 
   if (out)
@@ -989,12 +1117,15 @@ mad_via_connection_init(p_mad_connection_t in,
 
       vi = mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_out_main);
 
+      os = TBX_CALLOC(1, sizeof(mad_via_out_connection_specific_t));
+
       os->vi          = vi;
       out->specific   = os;
       out->nb_link    =  1;
       os->vi_id_base  = id_base;
       s               = tbx_string_init_to_int(id_base);
       out->parameter  = tbx_string_to_cstring(s);
+
       tbx_string_free(s);
       s               = NULL;
       os->nb_consumed = 0;
@@ -1082,8 +1213,6 @@ mad_via_accept(p_mad_connection_t   in,
   rn  = ai->dir_node;
   ra  = ai->dir_adapter;
 
-  DISP_STR("accept: remote channel parameter",    ai->channel_parameter);
-  DISP_STR("accept: remote connection parameter", ai->connection_parameter);
   local_id_base  = is->vi_id_base;
   local_g_rank   = s->process_rank;
   remote_id_base = atoi(ai->connection_parameter);
@@ -1110,20 +1239,25 @@ mad_via_accept(p_mad_connection_t   in,
 
 	remote                   = TBX_MALLOC(addr_len);
 	memset(remote, 0, addr_len);
+	remote->HostAddressLen   = na->NicAddressLen;
 	remote->DiscriminatorLen = disc_len;
 
 	d.vi_id_base    = local_id_base;
 	d.process_grank = local_g_rank;
-	d.vi_id_idx     = vi->id;
+	d.vi_id_idx     = vi->id & ~1;
 	MAD_VIA_DISCRIMINATOR(local) = d;
+	//	mad_via_disp_discriminator("Accept local", d);
 
 	d.vi_id_base    = remote_id_base;
 	d.process_grank = remote_g_rank;
-	d.vi_id_idx     = vi->id;
+	d.vi_id_idx     = vi->id | 1;
 	MAD_VIA_DISCRIMINATOR(remote) = d;
+	//	mad_via_disp_discriminator("Accept remote", d);
 
-	_(VipConnectWait(as->nic_handle, local, VIP_INFINITE, remote, &rattr,
-			 &cnx_h));
+	while (__(VipConnectWait(as->nic_handle, local, VIP_INFINITE,
+				 remote, &rattr, &cnx_h))
+	       == VIP_TIMEOUT)
+	       LOG("*** Mad/VIA is waiting ***");
 
 	_(VipConnectAccept(cnx_h, vi->handle));
       }
@@ -1153,7 +1287,6 @@ mad_via_accept(p_mad_connection_t   in,
 		desc->CS.Reserved = 0;
 
 		_(VipPostRecv(vi->handle, desc, mem_handle));
-		is->nb_posted++;
 	      }
 	    while (mad_via_descriptor_set_desc_avail(set));
 	  }
@@ -1214,9 +1347,6 @@ mad_via_connect(p_mad_connection_t   out,
   rn  = ai->dir_node;
   ra  = ai->dir_adapter;
 
-  DISP_STR("connect: remote channel parameter",    ai->channel_parameter);
-  DISP_STR("connect: remote connection parameter", ai->connection_parameter);
-
   local_id_base  = os->vi_id_base;
   local_g_rank   = s->process_rank;
   remote_id_base = atoi(ai->connection_parameter);
@@ -1234,28 +1364,54 @@ mad_via_connect(p_mad_connection_t   out,
 
     void connect(void)
       {
+	local                   = TBX_MALLOC(addr_len);
+	local->HostAddressLen   = na->NicAddressLen;
+	local->DiscriminatorLen = disc_len;
+	memcpy(local->HostAddress, na->LocalNicAddress, na->NicAddressLen);
+	
+	remote                   = TBX_MALLOC(addr_len);
+	memset(remote, 0, addr_len);
+	remote->HostAddressLen   = na->NicAddressLen;
+	remote->DiscriminatorLen = disc_len;
+	_(VipNSGetHostByName(as->nic_handle, rn->name, remote, 0));
+
+	remote->DiscriminatorLen = disc_len;
+
 	d.vi_id_base    = local_id_base;
 	d.process_grank = local_g_rank;
-	d.vi_id_idx     = vi->id;
+	d.vi_id_idx     = vi->id | 1;
 	MAD_VIA_DISCRIMINATOR(local) = d;
+	//	mad_via_disp_discriminator("Connect local", d);
 
 	d.vi_id_base    = remote_id_base;
 	d.process_grank = remote_g_rank;
-	d.vi_id_idx     = vi->id;
+	d.vi_id_idx     = vi->id & ~1;
 	MAD_VIA_DISCRIMINATOR(remote) = d;
+	//	mad_via_disp_discriminator("Connect remote", d);
 
-      _(VipConnectRequest(vi->handle, local, remote, VIP_INFINITE, &rattr));
+	while (1)
+	  {
+	    VIP_RETURN status = VIP_SUCCESS;
+
+	    status =
+	      VipConnectRequest(vi->handle, local, remote, VIP_INFINITE, &rattr);
+
+	    switch (status)
+	      {
+	      default:
+		_(status);
+		FAILURE("nexpected path");
+
+	      case VIP_SUCCESS:
+		goto connected;
+
+	      case VIP_NO_MATCH:
+		break;
+	      }
+	  }
+	
+      connected:
       }
-
-    local                   = TBX_MALLOC(addr_len);
-    local->HostAddressLen   = na->NicAddressLen;
-    local->DiscriminatorLen = disc_len;
-    memcpy(local->HostAddress, na->LocalNicAddress, na->NicAddressLen);
-
-    remote                   = TBX_MALLOC(addr_len);
-    memset(remote, 0, addr_len);
-    remote->DiscriminatorLen = disc_len;
-    _(VipNSGetHostByName(as->nic_handle, rn->name, remote, 0));
 
     // Main connection
     {
@@ -1328,6 +1484,55 @@ void
 mad_via_disconnect(p_mad_connection_t connection)
 {
   LOG_IN();
+  if (connection->way == mad_incoming_connection)
+    {
+      p_mad_connection_t                 in = NULL;
+      p_mad_via_in_connection_specific_t is = NULL;
+      p_mad_via_vi_t                     vi = NULL;
+
+      in = connection;
+      is = in->specific;
+      
+      {
+	p_mad_link_t              l  = NULL;
+	p_mad_via_link_specific_t ls = NULL;
+	
+	l  = in->link_array[msg_link_id];
+	ls = l->specific;
+	vi = ls->vi;
+	
+	VipDisconnect(vi->handle);
+      }
+
+      vi = is->vi;
+      VipDisconnect(vi->handle);
+    }
+  else if (connection->way == mad_outgoing_connection)
+    {
+      p_mad_connection_t                  out = NULL;
+      p_mad_via_out_connection_specific_t os  = NULL;
+      p_mad_via_vi_t                      vi = NULL;
+
+      out = connection;
+      os  = out->specific;
+      
+      {
+	p_mad_link_t              l  = NULL;
+	p_mad_via_link_specific_t ls = NULL;
+	
+	l  = out->link_array[msg_link_id];
+	ls = l->specific;
+	vi = ls->vi;
+	
+	VipDisconnect(vi->handle);
+      }
+
+      vi = os->vi;
+      VipDisconnect(vi->handle);
+    }
+  else
+    FAILURE("invalid connection direction");
+ 
   LOG_OUT();
 }
 
@@ -1343,11 +1548,16 @@ mad_via_after_close_channel(p_mad_channel_t channel)
 void
 mad_via_link_exit(p_mad_link_t lnk)
 {
-  p_mad_via_link_specific_t lnk_specific = NULL;
+  p_mad_via_link_specific_t ls = NULL;
+  p_mad_via_vi_t            vi = NULL;
 
   LOG_IN();
-  lnk_specific = lnk->specific;
-  TBX_FREE(lnk_specific);
+  ls = lnk->specific;
+  vi = ls->vi;
+	
+  VipDestroyVi(vi->handle);
+
+  TBX_FREE(ls);
   lnk->specific = NULL;
   LOG_OUT();
 }
@@ -1356,16 +1566,32 @@ void
 mad_via_connection_exit(p_mad_connection_t in,
 			p_mad_connection_t out)
 {
-  p_mad_via_in_connection_specific_t in_specific  = NULL;
-  p_mad_via_out_connection_specific_t out_specific = NULL;
-
   LOG_IN();
-  in_specific  = in->specific;
-  out_specific = out->specific;
-  TBX_FREE(in_specific);
-  TBX_FREE(out_specific);
-  in->specific  = NULL;
-  out->specific = NULL;
+  if (in)
+    {
+      p_mad_via_in_connection_specific_t is = NULL;
+      p_mad_via_vi_t                     vi = NULL;
+
+      is  = in->specific;
+      vi = is->vi;
+      VipDestroyVi(vi->handle);
+
+      TBX_FREE(is);
+      in->specific  = NULL;
+    }
+  
+  if (out)
+    {
+      p_mad_via_out_connection_specific_t os = NULL;
+      p_mad_via_vi_t                      vi = NULL;
+
+      os = out->specific;
+      vi = os->vi;
+      VipDestroyVi(vi->handle);
+
+      TBX_FREE(os);
+      out->specific = NULL;
+    } 
   LOG_OUT();
 }
 
@@ -1461,7 +1687,13 @@ mad_via_new_message(p_mad_connection_t out)
 
       os->nb_consumed = 0;
 
+      desc->CS.SegCount = 0;
+      desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+      desc->CS.Length   = 0;
+      desc->CS.Status   = 0;
+      desc->CS.Reserved = 0;
       mem_handle = vi->input_mem_handle;
+
       _(VipPostRecv(vi->handle, desc, mem_handle));
     }
 
@@ -1477,8 +1709,18 @@ mad_via_new_message(p_mad_connection_t out)
     desc->CS.Length   = 0;
     desc->CS.Status   = 0;
     desc->CS.Reserved = 0;
+
     _(VipPostSend(vi->handle, desc, mem_handle));
     os->need_send_wait = tbx_true;
+
+
+#warning temp
+      _(VipSendWait(vi->handle, VIP_INFINITE, &desc));
+
+      if (desc != vi->output_desc)
+	FAILURE("unexpected descriptor");
+
+      os->need_send_wait = tbx_false;
   }
 
   LOG_OUT();
@@ -1494,9 +1736,98 @@ mad_via_finalize_message(p_mad_connection_t out)
 p_mad_connection_t
 mad_via_receive_message(p_mad_channel_t channel)
 {
-  p_mad_connection_t in = NULL;
+  p_mad_via_channel_specific_t        cs        =  NULL;
+  p_mad_connection_t                  in        =  NULL;
+  p_mad_via_in_connection_specific_t  is        =  NULL;
 
   LOG_IN();
+  cs = channel->specific;
+  {
+    p_mad_via_cq_t     cq        =      NULL;
+    p_tbx_darray_t     darray    =      NULL;
+    tbx_darray_index_t idx       =        -1;
+    VIP_BOOLEAN        is_recv   = VIP_FALSE;
+    VIP_VI_HANDLE      vi_handle =         0;
+
+    cq = cs->input_cq;
+    __(VipCQWait(cq->handle, VIP_INFINITE, &vi_handle, &is_recv));
+
+    darray = channel->in_connection_darray;
+
+    if ((in = tbx_darray_first_idx(darray, &idx)))
+      {
+	do
+	  {
+	    is = in->specific;
+
+	    if (is->vi->handle == vi_handle)
+	      goto found;
+	  }
+	while ((in = tbx_darray_next_idx(darray, &idx)));
+
+	FAILURE("unexpected vi handle");
+      }
+    else
+      FAILURE("empty channel");
+  }
+
+ found:
+
+  {
+    p_mad_via_vi_t vi = NULL;
+
+    vi = is->vi;
+
+    {
+      p_mad_via_descriptor_set_t  set  = NULL;
+      VIP_DESCRIPTOR             *desc = NULL;
+
+      set = is->descriptor_set;
+      _(VipRecvDone(vi->handle, &desc));
+      mad_via_descriptor_set_return_desc(set, desc);
+    }
+    
+    {
+      p_mad_via_descriptor_set_t  set        = NULL;
+      VIP_DESCRIPTOR             *desc       = NULL;
+      VIP_MEM_HANDLE              mem_handle =    0;
+
+      set        = is->descriptor_set;
+      mem_handle = mad_via_descriptor_set_get_handle(set);    
+      desc       = mad_via_descriptor_set_get_desc(set);
+
+      desc->CS.SegCount = 0;
+      desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+      desc->CS.Length   = 0;
+      desc->CS.Status   = 0;
+      desc->CS.Reserved = 0;
+
+      _(VipPostRecv(vi->handle, desc, mem_handle));
+    }
+  
+    is->nb_consumed++;
+    
+    if (is->nb_consumed >= MAD_VIA_RECV_MAIN_DESC_NUM)
+      {
+	VIP_DESCRIPTOR *desc       = NULL;
+	VIP_MEM_HANDLE  mem_handle =    0;
+
+	desc       = vi->output_desc;
+	mem_handle = vi->output_mem_handle;
+
+	desc->CS.SegCount = 0;
+	desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+	desc->CS.Length   = 0;
+	desc->CS.Status   = 0;
+	desc->CS.Reserved = 0;
+
+	_(VipPostSend(vi->handle, desc, mem_handle));
+	_(VipSendWait(vi->handle, VIP_INFINITE, &desc));
+
+	if (desc != vi->output_desc)
+	  FAILURE("unexpected descriptor");
+      }
+  }
   LOG_OUT();
 
   return in;
@@ -1559,7 +1890,13 @@ mad_via_send_buffer(p_mad_link_t   lnk,
     if (desc != vi->input_desc)
       FAILURE("unexpected descriptor");
 
+    desc->CS.SegCount = 0;
+    desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+    desc->CS.Length   = 0;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
     mem_handle = vi->input_mem_handle;
+
     _(VipPostRecv(vi->handle, desc, mem_handle));
   }
 
@@ -1573,26 +1910,97 @@ mad_via_send_buffer(p_mad_link_t   lnk,
 
     desc->CS.SegCount = 1;
     desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
-    desc->CS.Length   = buffer->bytes_written;
+    desc->CS.Length   = buffer->bytes_written - buffer->bytes_read;
     desc->CS.Status   = 0;
     desc->CS.Reserved = 0;
 
-    desc->DS[0].Local.Data.Address = buffer->buffer;
+    desc->DS[0].Local.Data.Address = buffer->buffer + buffer->bytes_read;
     desc->DS[0].Local.Handle       = (VIP_MEM_HANDLE)buffer->specific;
-    desc->DS[0].Local.Length       = buffer->bytes_written;
+    desc->DS[0].Local.Length       = buffer->bytes_written - buffer->bytes_read;
 
     _(VipPostSend(vi->handle, desc, mem_handle));
-  }
+    _(VipSendWait(vi->handle, VIP_INFINITE, &desc));
 
+    if (desc != vi->output_desc)
+      FAILURE("unexpected descriptor");
+
+    buffer->bytes_read = buffer->bytes_written;
+  }
   mad_via_unregister_buffer(lnk->connection->channel->adapter, buffer);
   LOG_OUT();
 }
 
 void
 mad_via_receive_buffer(p_mad_link_t    lnk,
-		       p_mad_buffer_t *buffer)
+		       p_mad_buffer_t *pbuffer)
 {
+  p_mad_buffer_t                     buffer = NULL;
+  p_mad_connection_t                 in     = NULL;
+  p_mad_via_in_connection_specific_t is     = NULL;
+  p_mad_via_link_specific_t          ls     = NULL;
+  p_mad_via_vi_t                     vi     = NULL;
+
   LOG_IN();
+  buffer = *pbuffer;
+  in     =  lnk->connection;
+  is     =  in->specific;
+  ls     =  lnk->specific;
+  vi     =  ls->vi;
+
+  mad_via_register_buffer(lnk->connection->channel->adapter, buffer);
+  {
+    VIP_DESCRIPTOR *desc       = NULL;
+    VIP_MEM_HANDLE  mem_handle =    0;
+
+    desc       = vi->input_desc;
+    mem_handle = vi->input_mem_handle;
+
+    desc->CS.SegCount = 1;
+    desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+    desc->CS.Length   = buffer->length - buffer->bytes_written;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
+
+    desc->DS[0].Local.Data.Address = buffer->buffer + buffer->bytes_written;
+    desc->DS[0].Local.Handle       = (VIP_MEM_HANDLE)buffer->specific;
+    desc->DS[0].Local.Length       = buffer->length - buffer->bytes_written;
+
+    _(VipPostRecv(vi->handle, desc, mem_handle));
+  }
+
+  {
+    VIP_DESCRIPTOR *desc       = NULL;
+    VIP_MEM_HANDLE  mem_handle =    0;
+
+    desc       = vi->output_desc;
+    mem_handle = vi->output_mem_handle;
+
+    desc->CS.SegCount = 0;
+    desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+    desc->CS.Length   = 0;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
+
+    _(VipPostSend(vi->handle, desc, mem_handle));
+    _(VipSendWait(vi->handle, VIP_INFINITE, &desc));
+
+    if (desc != vi->output_desc)
+      FAILURE("unexpected descriptor");
+  }
+
+  {
+    VIP_DESCRIPTOR *desc = NULL;
+
+    _(VipRecvWait(vi->handle, VIP_INFINITE, &desc));
+    
+    if (desc != vi->input_desc)
+      FAILURE("unexpected descriptor");
+
+    buffer->bytes_written = buffer->length;
+  }
+
+  
+  mad_via_unregister_buffer(lnk->connection->channel->adapter, buffer);
   LOG_OUT();
 }
 
@@ -1602,6 +2010,20 @@ mad_via_send_buffer_group(p_mad_link_t         lnk,
 			  p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      tbx_list_reference_t ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      do
+	{
+	  p_mad_buffer_t buffer = NULL;
+
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_via_send_buffer(lnk, buffer);
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
   LOG_OUT();
 }
 
@@ -1611,5 +2033,19 @@ mad_via_receive_sub_buffer_group(p_mad_link_t         lnk,
 				 p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      tbx_list_reference_t ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      do
+	{
+	  p_mad_buffer_t buffer = NULL;
+
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_via_receive_buffer(lnk, &buffer);
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
   LOG_OUT();
 }

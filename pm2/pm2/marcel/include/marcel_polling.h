@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.h,v $
+Revision 1.4  2000/05/24 15:15:20  rnamyst
+Enhanced the polling capabilities of the Marcel scheduler.
+
 Revision 1.3  2000/05/16 09:05:19  rnamyst
 Fast Polling added into Marcel + make xconfig
 
@@ -68,10 +71,15 @@ typedef void *(*marcel_poll_func_t)(marcel_pollid_t id,
 typedef void *(*marcel_fastpoll_func_t)(marcel_pollid_t id,
 					any_t arg);
 
+#define MARCEL_POLL_AT_TIMER_SIG  1
+#define MARCEL_POLL_AT_YIELD      2
+#define MARCEL_POLL_AT_LIB_ENTRY  4
+#define MARCEL_POLL_AT_IDLE       8
+
 marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
 				     marcel_poll_func_t f,
 				     marcel_fastpoll_func_t h,
-				     int divisor);
+				     unsigned polling_points);
 
 #define MARCEL_POLL_FAILED                NULL
 #define MARCEL_POLL_SUCCESS(id)           ((id)->cur_cell)
@@ -87,18 +95,14 @@ void marcel_poll(marcel_pollid_t id, any_t arg);
 #define GET_CURRENT_POLLINST(id) ((id)->cur_cell)
 
 
-
-_PRIVATE_ int marcel_check_polling(void);
-_PRIVATE_ int marcel_polling_is_required(void);
-
 _PRIVATE_ typedef struct _poll_struct {
-  marcel_pollgroup_func_t gfunc;
+  unsigned polling_points;
+  unsigned nb_cells;
   marcel_poll_func_t func;
   marcel_fastpoll_func_t fastfunc;
-  unsigned divisor, count;
   struct _poll_cell_struct *first_cell, *cur_cell;
-  unsigned nb_cells;
   struct _poll_struct *prev, *next;
+  marcel_pollgroup_func_t gfunc;
 } poll_struct_t;
 
 _PRIVATE_ typedef struct _poll_cell_struct {
@@ -107,5 +111,22 @@ _PRIVATE_ typedef struct _poll_cell_struct {
   any_t arg;
   struct _poll_cell_struct *prev, *next;
 } poll_cell_t;
+
+_PRIVATE_ extern poll_struct_t *__polling_tasks;
+_PRIVATE_ int __marcel_check_polling(unsigned polling_point);
+
+// TODO: use polling_point to evaluate more precisely if polling is
+// necessary at this point.
+_PRIVATE_ static __inline__ int marcel_polling_is_required(unsigned polling_point)
+{
+  return __polling_tasks != NULL;
+}
+
+_PRIVATE_ static __inline__ int marcel_check_polling(unsigned polling_point)
+{
+  if(marcel_polling_is_required(polling_point))
+    return __marcel_check_polling(polling_point);
+  return 0;
+}
 
 #endif

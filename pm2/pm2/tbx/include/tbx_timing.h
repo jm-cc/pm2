@@ -47,16 +47,29 @@ typedef union u_tbx_tick
 
 /* Hum hum... Here we suppose that X86ARCH => Pentium! */
 
-#ifdef X86_ARCH
-#define TBX_GET_TICK(t) __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))
+#if defined(X86_ARCH)
 
-#define TBX_TICK_RAW_DIFF(t1, t2) ((t2).tick - (t1).tick)
-#else /* X86_ARCH */
-#define TBX_GET_TICK(t) gettimeofday(&(t).timev, NULL)
+#define TBX_GET_TICK(t) \
+   __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))
 #define TBX_TICK_RAW_DIFF(t1, t2) \
-    ((t2.timev.tv_sec * 1000000L + t2.timev.tv_usec) - \
-     (t1.timev.tv_sec * 1000000L + t1.timev.tv_usec))
-#endif /* X86_ARCH */
+   ((t2).tick - (t1).tick)
+
+#elif defined(ALPHA_ARCH)
+
+#define TBX_GET_TICK(t) \
+   __asm__ volatile("rpcc %0\n\t" : "=r"((t).tick))
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+   (((t2).tick & 0xFFFFFFFF) - ((t1).tick & 0xFFFFFFFF))
+
+#else
+
+#define TBX_GET_TICK(t) \
+   gettimeofday(&(t).timev, NULL)
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+   ((t2.timev.tv_sec * 1000000L + t2.timev.tv_usec) - \
+    (t1.timev.tv_sec * 1000000L + t1.timev.tv_usec))
+
+#endif
 
 #define TBX_TICK_DIFF(t1, t2) (TBX_TICK_RAW_DIFF(t1, t2) - tbx_residual)
 #define TBX_TIMING_DELAY(t1, t2) tbx_tick2usec(TBX_TICK_DIFF(t1, t2))

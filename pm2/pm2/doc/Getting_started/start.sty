@@ -86,6 +86,13 @@
 \end{center}
 }}
 
-\catcode`\^^A=0          %% Similar to \\
-\def\verbatimemph|#1\par{{\bfseriesaux #1}\par}
+
+\catcode`\^^A=\active
+\catcode`\^^B=\active
+
+\def\@startverbatimemph{\fontseries{b}\selectfont}
+\def\@endverbatimemph{\fontseries{m}\selectfont}
+
+\let^^A=\@startverbatimemph
+\let^^B=\@endverbatimemph
 

@@ -112,7 +112,7 @@ void pm2_rawrpc_end(void);
 
 #define pm2_rawrpc_waitdata() \
   { \
-    mad_recvbuf_receive(); \
+    pm2_end_unpacking(); \
     marcel_sem_V((marcel_sem_t *)marcel_getspecific(_pm2_mad_key)); \
   }
 
@@ -137,7 +137,8 @@ void pm2_completion_signal_begin(pm2_completion_t *c);
 void pm2_completion_signal_end(void);
 
 
-void pm2_channel_alloc(pm2_channel_t *channel);
+void pm2_channel_alloc(pm2_channel_t *channel,
+		       char          *name);
 
 
 /******************** Migration **************************/

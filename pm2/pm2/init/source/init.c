@@ -451,6 +451,7 @@ void common_post_init(int *argc, char *argv[],
 
 #ifdef MAD3
   mad_dir_channel_init(attr->madeleine);
+  mad_leonie_print_init(attr->madeleine, *argc, argv);
 #endif /* MAD3 */
 
 #ifdef PM2

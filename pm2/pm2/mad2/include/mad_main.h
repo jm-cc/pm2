@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.10  2000/05/17 14:32:44  oaumage
+- reorganisation des sources au niveau de mad_init
+
 Revision 1.9  2000/03/15 16:59:13  oaumage
 - support APPLICATION_SPAWN
 
@@ -101,40 +104,27 @@ mad_protocol_available(p_mad_madeleine_t madeleine, char *name);
 p_mad_adapter_set_t
 mad_adapter_set_init(int nb_adapter, ...);
 
-#ifdef APPLICATION_SPAWN
-char*
-mad_pre_init(p_mad_adapter_set_t   adapter_set);
-#endif /* APPLICATION_SPAWN */
+/*
+ * Private part : these functions should not be called directly
+ * --------------...............................................
+ */
+void 
+mad_managers_init(void);
 
-#ifdef PM2
-p_mad_madeleine_t
-mad2_init(int                  *argc,
-	  char                **argv,
-	  char                 *configuration_file,
-	  p_mad_adapter_set_t   adapter_set);
-#else /* PM2 */
-p_mad_madeleine_t
-mad_init(
-#ifndef APPLICATION_SPAWN
-	 int                  *argc,
-	 char                **argv,
-#else /* APPLICATION_SPAWN */
-	 ntbx_host_id_t        rank,
-#endif /* APPLICATION_SPAWN */
-	 char                 *configuration_file,
-#ifdef APPLICATION_SPAWN
-	 char                 *url);
-#else /* APPLICATION_SPAWN */
-	 p_mad_adapter_set_t   adapter_set);
-#endif /* APPLICATION_SPAWN */
-#endif /* PM2 */
+void 
+mad_driver_fill(p_mad_madeleine_t madeleine);
 
-#ifdef PM2
-void mad2_exit(p_mad_madeleine_t madeleine);
-#else /* PM2 */
-void mad_exit(p_mad_madeleine_t madeleine);
-#endif /* PM2 */
+void 
+mad_adapter_fill(p_mad_madeleine_t     madeleine,
+		 p_mad_adapter_set_t   adapter_set);
 
-/* p_mad_channel_t mad_get_channel(mad_channel_id_t id); */
+void
+mad_adapter_init(p_mad_madeleine_t madeleine);
+
+void
+mad_adapter_configuration_init(p_mad_madeleine_t madeleine);
+
+char *
+mad_get_mad_root(void);
 
 #endif /* MAD_MAIN_H */

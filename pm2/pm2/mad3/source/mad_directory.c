@@ -727,7 +727,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 	  mad_ntbx_send_string(client, mad_adapter->parameter);
 	  if (!mad_adapter->mtu)
 	    {
-	      mad_adapter->mtu = 1UL << 31;
+	      mad_adapter->mtu = 0xFFFFFFFFUL;
 	    }
 	  mad_ntbx_send_unsigned_int(client, mad_adapter->mtu);
 	}

@@ -365,9 +365,7 @@ static int effective_prio(marcel_task_t *p)
  */
 static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
-#ifdef MA__LWPS
 	p->sched.internal.cur_rq = rq;
-#endif
 	enqueue_task(p, rq->active);
 	nr_running_inc(rq);
 }
@@ -497,9 +495,7 @@ static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
 	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
 		rq->nr_uninterruptible++;
 	dequeue_task(p, p->sched.internal.array);
-#ifdef MA__LWPS
 	p->sched.internal.cur_rq = NULL;
-#endif
 }
 
 /*
@@ -1670,7 +1666,6 @@ need_resched:
 	prev_as_next = prev = MARCEL_SELF;
 	MA_BUG_ON(!prev);
 	prev_as_rq = prevrq = ma_this_rq();
-	MA_BUG_ON(!prev->sched.internal.cur_rq);
 	MA_BUG_ON(!prevrq);
 	prev_as_prio = MARCEL_SELF->sched.internal.prio;
 

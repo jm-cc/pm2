@@ -172,41 +172,15 @@ leo_dir_driver_init(void)
   return object;
 }
 
-p_leo_dir_channel_process_specific_t
-leo_dir_channel_process_specific_init(void)
+p_leo_dir_connection_t
+leo_dir_connection_init(void)
 {
-  p_leo_dir_channel_process_specific_t object = NULL;
+  p_leo_dir_connection_t object = NULL;
 
   LOG_IN();
-  object = TBX_CALLOC(1, sizeof(leo_dir_channel_process_specific_t));
-  LOG_OUT();
-
-  return object;
-}
-
-p_leo_dir_channel_common_process_specific_t
-leo_dir_channel_common_process_specific_init(void)
-{
-  p_leo_dir_channel_common_process_specific_t object = NULL;
-
-  LOG_IN();
-  object = TBX_CALLOC(1, sizeof(leo_dir_channel_common_process_specific_t));
-
+  object = TBX_CALLOC(1, sizeof(leo_dir_connection_t));
   object->in_connection_parameter_darray  = tbx_darray_init();
   object->out_connection_parameter_darray = tbx_darray_init();
-  LOG_OUT();
-
-  return object;
-}
-
-p_leo_dir_channel_common_t
-leo_dir_channel_common_init(void)
-{
-  p_leo_dir_channel_common_t object = NULL;
-
-  LOG_IN();
-  object = TBX_CALLOC(1, sizeof(leo_dir_channel_common_t));
-
   object->pc = ntbx_pc_cons();
   LOG_OUT();
 
@@ -223,7 +197,6 @@ leo_dir_channel_init(void)
 
   object->pc     = ntbx_pc_cons();
   object->public = tbx_true;
-  object->common = leo_dir_channel_common_init();
   LOG_OUT();
 
   return object;
@@ -237,35 +210,21 @@ leo_dir_fchannel_init(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(leo_dir_fchannel_t));
 
-  object->common = leo_dir_channel_common_init();
+  object->pc = ntbx_pc_cons();
   LOG_OUT();
 
   return object;
 }
 
-p_leo_dir_vxchannel_process_routing_table_t
-leo_dir_vxchannel_process_routing_table_init(void)
+p_leo_dir_connection_data_t
+leo_dir_connection_data_init(void)
 {
-  p_leo_dir_vxchannel_process_routing_table_t object = NULL;
+  p_leo_dir_connection_data_t object = NULL;
 
   LOG_IN();
-  object = TBX_CALLOC(1, sizeof(leo_dir_vxchannel_process_routing_table_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_connection_data_t));
 
   object->destination_rank = -1;
-  LOG_OUT();
-
-  return object;
-}
-
-p_leo_dir_vxchannel_process_specific_t
-leo_dir_vxchannel_process_specific_init(void)
-{
-  p_leo_dir_vxchannel_process_specific_t object = NULL;
-
-  LOG_IN();
-  object = TBX_CALLOC(1, sizeof(leo_dir_vxchannel_process_specific_t));
-
-  object->pc = ntbx_pc_cons();
   LOG_OUT();
 
   return object;

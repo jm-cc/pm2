@@ -31,17 +31,12 @@ typedef struct s_leo_dir_adapter         *p_leo_dir_adapter_t;
 typedef struct s_leo_dir_driver_process_specific
                                   *p_leo_dir_driver_process_specific_t;
 typedef struct s_leo_dir_driver          *p_leo_dir_driver_t;
-typedef struct s_leo_dir_channel_common_process_specific
-                                  *p_leo_dir_channel_common_process_specific_t;
-typedef struct s_leo_dir_channel_process_specific
-                                  *p_leo_dir_channel_process_specific_t;
-typedef struct s_leo_dir_channel_common  *p_leo_dir_channel_common_t;
+typedef struct s_leo_dir_connection
+                                  *p_leo_dir_connection_t;
 typedef struct s_leo_dir_channel         *p_leo_dir_channel_t;
 typedef struct s_leo_dir_fchannel        *p_leo_dir_fchannel_t;
-typedef struct s_leo_dir_vxchannel_process_routing_table
-                                  *p_leo_dir_vxchannel_process_routing_table_t;
-typedef struct s_leo_dir_vxchannel_process_specific
-                                  *p_leo_dir_vxchannel_process_specific_t;
+typedef struct s_leo_dir_connection_data
+                                  *p_leo_dir_connection_data_t;
 typedef struct s_leo_dir_vxchannel        *p_leo_dir_vxchannel_t;
 typedef struct s_leo_directory            *p_leo_directory_t;
 typedef struct s_leo_networks             *p_leo_networks_t;

@@ -69,22 +69,15 @@ typedef struct s_leo_dir_driver
   p_ntbx_process_container_t  pc;
 } leo_dir_driver_t;
 
-typedef struct s_leo_dir_channel_process_specific
-{
-  char *adapter_name;
-} leo_dir_channel_process_specific_t;
 
-typedef struct s_leo_dir_channel_common_process_specific
+typedef struct s_leo_dir_connection
 {
-  char           *parameter;
-  p_tbx_darray_t  in_connection_parameter_darray;
-  p_tbx_darray_t  out_connection_parameter_darray;
-} leo_dir_channel_common_process_specific_t;
-
-typedef struct s_leo_dir_channel_common
-{
-  p_ntbx_process_container_t pc;
-} leo_dir_channel_common_t;
+  char                       *adapter_name;
+  p_ntbx_process_container_t  pc;
+  char                       *parameter;
+  p_tbx_darray_t              in_connection_parameter_darray;
+  p_tbx_darray_t              out_connection_parameter_darray;
+} leo_dir_connection_t;
 
 typedef struct s_leo_dir_channel
 {
@@ -93,26 +86,20 @@ typedef struct s_leo_dir_channel
   p_leo_dir_driver_t          driver;
   tbx_bool_t                  public;
   p_ntbx_topology_table_t     ttable;
-  p_leo_dir_channel_common_t  common;
 } leo_dir_channel_t;
 
 typedef struct s_leo_dir_fchannel
 {
   char                       *name;
   char                       *channel_name;
-  p_leo_dir_channel_common_t  common;
+  p_ntbx_process_container_t  pc;
 } leo_dir_fchannel_t;
 
-typedef struct s_leo_dir_vxchannel_process_routing_table
+typedef struct s_leo_dir_connection_data
 {
   char                 *channel_name;
   ntbx_process_grank_t  destination_rank;
-} leo_dir_vxchannel_process_routing_table_t;
-
-typedef struct s_leo_dir_vxchannel_process_specific
-{
-  p_ntbx_process_container_t  pc;
-} leo_dir_vxchannel_process_specific_t;
+} leo_dir_connection_data_t;
 
 typedef struct s_leo_dir_vxchannel
 {
@@ -121,7 +108,6 @@ typedef struct s_leo_dir_vxchannel
   p_tbx_slist_t               dir_fchannel_slist;
   p_tbx_slist_t               sub_channel_name_slist;
   p_ntbx_process_container_t  pc;
-  p_leo_dir_channel_common_t  common;
 } leo_dir_vxchannel_t;
 
 typedef struct s_leo_directory

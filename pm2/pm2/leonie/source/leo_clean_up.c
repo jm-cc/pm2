@@ -521,16 +521,16 @@ dir_vchannel_cleanup(p_leo_directory_t dir)
       p_leo_dir_vxchannel_t dir_vchannel = _r;
 
       void _g(void *_q) {
-        p_leo_dir_vxchannel_process_specific_t vps = _q;
+        p_leo_dir_connection_t cnx = _q;
 
         void _f(void *_p) {
-          p_leo_dir_vxchannel_process_routing_table_t rtable = _p;
-          TBX_FREE2(rtable->channel_name);
+          p_leo_dir_connection_data_t cnx_data = _p;
+          TBX_FREE2(cnx_data->channel_name);
         }
 
-        do_pc_s(vps->pc, _f);
-        ntbx_pc_dest(vps->pc, tbx_default_specific_dest);
-        vps->pc = NULL;
+        do_pc_s(cnx->pc, _f);
+        ntbx_pc_dest(cnx->pc, tbx_default_specific_dest);
+        cnx->pc = NULL;
       }
 
       tbx_htable_extract(dir->vchannel_htable, dir_vchannel->name);
@@ -573,16 +573,16 @@ dir_xchannel_cleanup(p_leo_directory_t dir)
     p_leo_dir_vxchannel_t dir_xchannel   = _r;
 
     void _g(void *_q) {
-      p_leo_dir_vxchannel_process_specific_t vps = _q;
+      p_leo_dir_connection_t cnx = _q;
 
       void _f(void *_p) {
-        p_leo_dir_vxchannel_process_routing_table_t rtable = _p;
-        TBX_FREE2(rtable->channel_name);
+        p_leo_dir_connection_data_t cnx_data = _p;
+        TBX_FREE2(cnx_data->channel_name);
       }
 
-      do_pc_s(vps->pc, _f);
-      ntbx_pc_dest(vps->pc, tbx_default_specific_dest);
-      vps->pc = NULL;
+      do_pc_s(cnx->pc, _f);
+      ntbx_pc_dest(cnx->pc, tbx_default_specific_dest);
+      cnx->pc = NULL;
     }
 
     tbx_htable_extract(dir->xchannel_htable, dir_xchannel->name);
@@ -649,10 +649,10 @@ dir_channel_cleanup(p_leo_directory_t dir)
     p_leo_dir_channel_t dir_channel = _q;
 
     void _f(void *_p) {
-      p_leo_dir_channel_process_specific_t cps = _p;
+      p_leo_dir_connection_t cnx = _p;
 
-      if (cps) {
-        TBX_CFREE2(cps->adapter_name);
+      if (cnx) {
+        TBX_CFREE2(cnx->adapter_name);
       }
     }
 

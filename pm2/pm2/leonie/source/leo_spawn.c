@@ -367,14 +367,14 @@ send_channels(p_leo_directory_t dir,
   void _send_channel_data(void *_dir_channel) {
     p_leo_dir_channel_t dir_channel = _dir_channel;
 
-    void _f(ntbx_process_lrank_t l, void *_cps) {
-      p_leo_dir_channel_process_specific_t cps = _cps;
+    void _f(ntbx_process_lrank_t l, void *_cnx) {
+      p_leo_dir_connection_t cnx = _cnx;
       ntbx_process_grank_t                 g   = -1;
 
       g = ntbx_pc_local_to_global(dir_channel->pc, l);
       leo_send_int(client, g);
       leo_send_int(client, l);
-      leo_send_string(client, cps->adapter_name);
+      leo_send_string(client, cnx->adapter_name);
     }
 
     void _g(ntbx_process_lrank_t sl,
@@ -389,7 +389,6 @@ send_channels(p_leo_directory_t dir,
     TRACE_STR("Channel", dir_channel->name);
     leo_send_string(client, dir_channel->name);
     leo_send_unsigned_int(client, dir_channel->public);
-    DISP_PTR("dir_channel", dir_channel);
     leo_send_string(client, dir_channel->driver->name);
 
     do_pc_local_s(dir_channel->pc, _f);
@@ -444,23 +443,23 @@ void
 send_table(p_leo_dir_vxchannel_t dir_vxchannel,
            p_ntbx_client_t       client)
 {
-  void _cnx_src(ntbx_process_grank_t sg, void *_vxps) {
-    p_leo_dir_vxchannel_process_specific_t vxps  = _vxps;
+  void _cnx_src(ntbx_process_grank_t sg, void *_cnx) {
+    p_leo_dir_connection_t cnx  = _cnx;
 
-    void _cnx_dst(ntbx_process_grank_t dg, void *_vxprt) {
-      p_leo_dir_vxchannel_process_routing_table_t vxprt =
-        _vxprt;
+    void _cnx_dst(ntbx_process_grank_t dg, void *_cdata) {
+      p_leo_dir_connection_data_t cdata =
+        _cdata;
 
       LOG_IN();
       leo_send_int   (client, dg);
-      leo_send_string(client, vxprt->channel_name);
-      leo_send_int   (client, vxprt->destination_rank);
+      leo_send_string(client, cdata->channel_name);
+      leo_send_int   (client, cdata->destination_rank);
       LOG_OUT();
     }
 
     LOG_IN();
     leo_send_int(client, sg);
-    do_pc_global_s(vxps->pc, _cnx_dst);
+    do_pc_global_s(cnx->pc, _cnx_dst);
     leo_send_int(client, -1);
     LOG_OUT();
   }

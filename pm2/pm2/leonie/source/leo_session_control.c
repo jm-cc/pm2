@@ -154,25 +154,25 @@ init_channels(p_leonie_t leonie)
   void _g(void *_dir_channel) {
     p_leo_dir_channel_t dir_channel = _dir_channel;
 
-    void _f(p_ntbx_client_t client, void *_ccps) {
-      p_leo_dir_channel_common_process_specific_t ccps = _ccps;
+    void _f(p_ntbx_client_t client, void *_cnx) {
+      p_leo_dir_connection_t cnx = _cnx;
 
       LOG_IN();
       leo_send_string(client, dir_channel->name);
-      ccps->parameter = leo_receive_string(client);
-      TRACE_STR("Channel connection parameter", ccps->parameter);
+      cnx->parameter = leo_receive_string(client);
+      TRACE_STR("Channel connection parameter", cnx->parameter);
       LOG_OUT();
     }
 
     void _src_func1(ntbx_process_lrank_t  sl,
                     p_ntbx_client_t       src,
-                    void                 *_ccps_src) {
-      p_leo_dir_channel_common_process_specific_t ccps_src = _ccps_src;
+                    void                 *_cnx_src) {
+      p_leo_dir_connection_t cnx_src = _cnx_src;
 
       void _dst_func1(ntbx_process_lrank_t  dl,
                       p_ntbx_client_t       dst,
-                      void                 *_ccps_dst) {
-        p_leo_dir_channel_common_process_specific_t ccps_dst = _ccps_dst;
+                      void                 *_cnx_dst) {
+        p_leo_dir_connection_t cnx_dst = _cnx_dst;
         char *src_cnx_parameter = NULL;
         char *dst_cnx_parameter = NULL;
 
@@ -190,18 +190,18 @@ init_channels(p_leonie_t leonie)
         leo_send_int(dst, sl);
 
         src_cnx_parameter = leo_receive_string(src);
-        tbx_darray_expand_and_set(ccps_src->out_connection_parameter_darray,
+        tbx_darray_expand_and_set(cnx_src->out_connection_parameter_darray,
                                   dl, src_cnx_parameter);
         TRACE_STR("Src connection parameter", src_cnx_parameter);
 
         dst_cnx_parameter = leo_receive_string(dst);
-        tbx_darray_expand_and_set(ccps_dst->in_connection_parameter_darray,
+        tbx_darray_expand_and_set(cnx_dst->in_connection_parameter_darray,
                                   sl, dst_cnx_parameter);
         TRACE_STR("Dst connection parameter", dst_cnx_parameter);
 
-        leo_send_string(src, ccps_dst->parameter);
+        leo_send_string(src, cnx_dst->parameter);
         leo_send_string(src, dst_cnx_parameter);
-        leo_send_string(dst, ccps_src->parameter);
+        leo_send_string(dst, cnx_src->parameter);
         leo_send_string(dst, src_cnx_parameter);
 
         wait_for_ack(src);
@@ -210,7 +210,7 @@ init_channels(p_leonie_t leonie)
       }
 
       LOG_IN();
-      do_pc_send_local_s(dir_channel->common->pc, _dst_func1);
+      do_pc_send_local_s(dir_channel->pc, _dst_func1);
       LOG_OUT();
     }
 
@@ -238,18 +238,18 @@ init_channels(p_leonie_t leonie)
       }
 
       LOG_IN();
-      do_pc_send_local(dir_channel->common->pc, _dst_func2);
+      do_pc_send_local(dir_channel->pc, _dst_func2);
       LOG_OUT();
     }
 
     LOG_IN();
     TRACE_STR("Channel", dir_channel->name);
 
-    do_pc_send_s       (dir_channel->common->pc, _f);
-    do_pc_send_local_s (dir_channel->common->pc, _src_func1);
-    do_pc_send         (dir_channel->common->pc, _int_sync);
-    do_pc_send_local   (dir_channel->common->pc, _src_func2);
-    do_pc_send         (dir_channel->common->pc, _int_sync);
+    do_pc_send_s       (dir_channel->pc, _f);
+    do_pc_send_local_s (dir_channel->pc, _src_func1);
+    do_pc_send         (dir_channel->pc, _int_sync);
+    do_pc_send_local   (dir_channel->pc, _src_func2);
+    do_pc_send         (dir_channel->pc, _int_sync);
     LOG_OUT();
   }
 
@@ -267,23 +267,23 @@ init_fchannels(p_leonie_t leonie)
     p_leo_dir_fchannel_t       dir_fchannel = _dir_fchannel;
     p_leo_dir_channel_t        dir_channel  = NULL;
 
-    void _f(p_ntbx_client_t client, void *_ccps) {
-      p_leo_dir_channel_common_process_specific_t ccps = _ccps;
+    void _f(p_ntbx_client_t client, void *_cnx) {
+      p_leo_dir_connection_t cnx = _cnx;
 
       leo_send_string(client, dir_fchannel->name);
-      ccps->parameter = leo_receive_string(client);
-      TRACE_STR("Channel connection parameter", ccps->parameter);
+      cnx->parameter = leo_receive_string(client);
+      TRACE_STR("Channel connection parameter", cnx->parameter);
     }
 
     void _src_func1(ntbx_process_lrank_t  sl,
                     p_ntbx_client_t       src,
-                    void                 *_ccps_src) {
-      p_leo_dir_channel_common_process_specific_t ccps_src = _ccps_src;
+                    void                 *_cnx_src) {
+      p_leo_dir_connection_t cnx_src = _cnx_src;
 
       void _dst_func1(ntbx_process_lrank_t  dl,
                       p_ntbx_client_t       dst,
-                      void                 *_ccps_dst) {
-        p_leo_dir_channel_common_process_specific_t ccps_dst = _ccps_dst;
+                      void                 *_cnx_dst) {
+        p_leo_dir_connection_t cnx_dst = _cnx_dst;
         char *src_cnx_parameter = NULL;
         char *dst_cnx_parameter = NULL;
 
@@ -298,25 +298,25 @@ init_fchannels(p_leonie_t leonie)
         leo_send_int(dst, sl);
 
         src_cnx_parameter = leo_receive_string(src);
-        tbx_darray_expand_and_set(ccps_src->out_connection_parameter_darray,
+        tbx_darray_expand_and_set(cnx_src->out_connection_parameter_darray,
                                   dl, src_cnx_parameter);
         TRACE_STR("Src connection parameter", src_cnx_parameter);
 
         dst_cnx_parameter = leo_receive_string(dst);
-        tbx_darray_expand_and_set(ccps_dst->in_connection_parameter_darray,
+        tbx_darray_expand_and_set(cnx_dst->in_connection_parameter_darray,
                                   sl, dst_cnx_parameter);
         TRACE_STR("Dst connection parameter", dst_cnx_parameter);
 
-        leo_send_string(src, ccps_dst->parameter);
+        leo_send_string(src, cnx_dst->parameter);
         leo_send_string(src, dst_cnx_parameter);
-        leo_send_string(dst, ccps_src->parameter);
+        leo_send_string(dst, cnx_src->parameter);
         leo_send_string(dst, src_cnx_parameter);
 
         wait_for_ack(src);
         wait_for_ack(dst);
       }
 
-      do_pc_send_local_s(dir_fchannel->common->pc, _dst_func1);
+      do_pc_send_local_s(dir_fchannel->pc, _dst_func1);
     }
 
     void _src_func2(ntbx_process_lrank_t sl,
@@ -338,18 +338,18 @@ init_fchannels(p_leonie_t leonie)
         wait_for_ack(dst);
       }
 
-      do_pc_send_local(dir_fchannel->common->pc, _dst_func2);
+      do_pc_send_local(dir_fchannel->pc, _dst_func2);
     }
 
     LOG_IN();
     dir_channel = tbx_htable_get(leonie->directory->channel_htable,
                                  dir_fchannel->channel_name);
     TRACE_STR("Forwarding channel", dir_fchannel->name);
-    do_pc_send_s       (dir_fchannel->common->pc, _f);
-    do_pc_send_local_s (dir_fchannel->common->pc, _src_func1);
-    do_pc_send         (dir_fchannel->common->pc, _int_sync);
-    do_pc_send_local   (dir_fchannel->common->pc, _src_func2);
-    do_pc_send         (dir_fchannel->common->pc, _int_sync);
+    do_pc_send_s       (dir_fchannel->pc, _f);
+    do_pc_send_local_s (dir_fchannel->pc, _src_func1);
+    do_pc_send         (dir_fchannel->pc, _int_sync);
+    do_pc_send_local   (dir_fchannel->pc, _src_func2);
+    do_pc_send         (dir_fchannel->pc, _int_sync);
     LOG_OUT();
   }
 

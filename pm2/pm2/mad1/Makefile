@@ -39,10 +39,11 @@ LIBNAME=mad
 #marcel_CC=gcc
 #marcel_AS=gcc
 
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/mad1-specific.mak
+endif
 
 LIB_C_SOURCES_ADDED := $(LIB_SRC)/$(LIB_PROT)/netinterf.c
 LIB_C_OBJECTS_ADDED := $(LIB_GEN_OBJ)/netinterf$(LIB_EXT).o

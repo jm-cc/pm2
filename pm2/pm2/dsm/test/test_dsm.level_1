@@ -20,8 +20,6 @@ args="10 1 0 0 0"
 hosts="`uname -n` `uname -n`"
 cat > /tmp/pm2test_expected <<EOF
 *ptr=400
-[Threads : 25 created, 0 imported (0 cached)]
-Main is ending
 EOF
 
 # Creation de la flavor

@@ -452,7 +452,6 @@ void common_post_init(int *argc, char *argv[],
   if (!marcel_test_activity())
      {
 	marcel_start_sched(argc, argv);
-	marcel_set_activity();
      }
 #endif /* MARCEL */
 

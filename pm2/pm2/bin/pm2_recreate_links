@@ -64,4 +64,4 @@ cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
 cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
 cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 
-
+pm2madselect 1

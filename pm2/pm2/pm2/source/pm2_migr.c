@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_migr.c,v $
+Revision 1.4  2000/02/28 11:17:12  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/01/31 15:58:28  oaumage
 - ajout du Log CVS
 
@@ -41,8 +44,8 @@ Revision 1.3  2000/01/31 15:58:28  oaumage
 ______________________________________________________________________________
 */
 
-#include <pm2.h>
-#include <sys/pm2_migr.h>
+#include "pm2.h"
+#include "sys/pm2_migr.h"
 
 static unsigned PM2_MIGR;
 

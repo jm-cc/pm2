@@ -65,3 +65,9 @@ tailhelp:
 #---------------------------------------------------------------------
 $(PM2_MAK_DIR):
 	@mkdir -p $@
+
+# Generation du cache principal des librairies
+#---------------------------------------------------------------------
+$(PM2_MAK_DIR)/main-config.mak: $(MAIN_STAMP_FLAVOR)
+	$(COMMON_HIDE) $(PM2_GEN_MAK) all
+

@@ -28,7 +28,7 @@
 
 typedef struct {
   dsm_mutex_t dsm_mutex;
-  int prot[_MAX_PROT_PER_LOCK];
+  dsm_proto_t prot[_MAX_PROT_PER_LOCK];
   int nb_prot;
 } dsm_lock_struct_t;
 
@@ -36,7 +36,7 @@ typedef dsm_lock_struct_t *dsm_lock_t;
 
 typedef struct {
   dsm_mutexattr_t dsm_mutex_attr;
-  int prot[_MAX_PROT_PER_LOCK];
+  dsm_proto_t prot[_MAX_PROT_PER_LOCK];
   int nb_prot;
 } dsm_lock_attr_t;
 
@@ -45,7 +45,7 @@ typedef struct {
 
 void dsm_lock_attr_init(dsm_lock_attr_t *attr);
 
-void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, int prot);
+void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, dsm_proto_t prot);
 
 void dsm_lock_init(dsm_lock_t *lock, dsm_lock_attr_t *attr);
 

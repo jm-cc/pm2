@@ -19,17 +19,17 @@ f (void *arg)
 
   for (i = 0; i < N; i++)
     {
-      marcel_mutex_lock (&mutex);	// Here!
+      marcel_mutex_lock (&mutex);	/* Here! */
 
       tmp = counter;
-      marcel_yield ();		// Here!
+      marcel_yield ();		/* Here! */
       if (forward)
 	tmp++;
       else
 	tmp--;
       counter = tmp;
 
-      marcel_mutex_unlock (&mutex);	// Here!
+      marcel_mutex_unlock (&mutex);	/* Here! */
     }
   pm2_completion_signal (&c);
 }
@@ -46,7 +46,7 @@ pm2_main (int argc, char *argv[])
       pm2_completion_init (&c, NULL, NULL);
       tprintf ("Initial value: %d\n", counter);
 
-      marcel_mutex_init (&mutex, NULL);	// Here!
+      marcel_mutex_init (&mutex, NULL);	/* Here! */
 
       for (i = 0; i < NB_THREADS; i++)
 	{

@@ -16,7 +16,7 @@ f (void *arg)
   volatile int tmp;
   for (i = 0; i < N; i++)
     {
-      pm2_freeze ();		// Here!
+      pm2_freeze ();		/* Here! */
 
       tmp = counter;
       if (forward)
@@ -25,7 +25,7 @@ f (void *arg)
 	tmp--;
       counter = tmp;
 
-      pm2_unfreeze ();		// Here!
+      pm2_unfreeze ();		/* Here! */
     }
   pm2_completion_signal (&c);
 }

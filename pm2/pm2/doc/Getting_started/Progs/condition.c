@@ -9,7 +9,7 @@ pm2_completion_t c;
 volatile int counter = 0;
 marcel_mutex_t mutex;
 marcel_sem_t sem;
-marcel_cond_t forward_enabled, backward_enabled;	// Here!
+marcel_cond_t forward_enabled, backward_enabled;	/* Here! */
 
 static void
 f (void *arg)
@@ -24,16 +24,16 @@ f (void *arg)
 
       if (forward)
 	{
-	  while (counter >= MAX_COUNTER)		// Here!
-	    marcel_cond_wait (&forward_enabled, &mutex);
+	  while (counter >= MAX_COUNTER)
+	    marcel_cond_wait (&forward_enabled, &mutex);	/* Here! */
 	  counter++;
 	  tprintf ("%d\t%d\n", counter, name);
 	  marcel_cond_signal (&backward_enabled);
 	}
       else
 	{
-	  while (counter <= MIN_COUNTER)		// Here!
-	    marcel_cond_wait (&backward_enabled, &mutex);
+	  while (counter <= MIN_COUNTER)
+	    marcel_cond_wait (&backward_enabled, &mutex);	/* Here! */
 	  counter--;
 	  tprintf ("%d\t%d\n", counter, name);
 	  marcel_cond_signal (&forward_enabled);
@@ -58,8 +58,8 @@ pm2_main (int argc, char *argv[])
 
       tprintf ("Initial value: %d\n", counter);
       marcel_mutex_init (&mutex, NULL);
-      marcel_cond_init (&forward_enabled, NULL);
-      marcel_cond_init (&backward_enabled, NULL);	// Here!
+      marcel_cond_init (&forward_enabled, NULL);	/* Here! */
+      marcel_cond_init (&backward_enabled, NULL);	/* Here! */
 
       for (i = 0; i < NB_THREADS; i++)
 	{

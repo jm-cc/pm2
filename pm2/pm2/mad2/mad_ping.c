@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.5  2000/01/10 10:18:09  oaumage
+- TCP par defaut
+
 Revision 1.4  2000/01/04 16:45:50  oaumage
 - mise a jour pour support de MPI
 - mad_test.c: support multiprotocole MPI+TCP
@@ -461,14 +464,14 @@ int main(int argc, char **argv)
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
-  /* TCP 
-     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
+  /* TCP */
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
   /* SISCI
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
-  /* MPI */
-     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); 
+  /* MPI 
+     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); */
 
   mad_timing_init();
   madeleine = mad_init(&argc, argv, "mad2_conf", adapter_set);

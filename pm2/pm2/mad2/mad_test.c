@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.5  2000/01/10 10:18:09  oaumage
+- TCP par defaut
+
 Revision 1.4  2000/01/04 16:45:51  oaumage
 - mise a jour pour support de MPI
 - mad_test.c: support multiprotocole MPI+TCP
@@ -56,7 +59,7 @@ ______________________________________________________________________________
 #include <unistd.h>
 #include <madeleine.h>
 
-#define BI_PROTO
+/* #define BI_PROTO */
 #define NB_CHANNELS 4
 #define STR_BUFFER_LEN 64
 

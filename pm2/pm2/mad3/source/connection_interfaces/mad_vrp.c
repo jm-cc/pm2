@@ -284,16 +284,17 @@ static
 void *
 mad_vrp_marcel_fast_poll(marcel_pollid_t id,
                          any_t           req,
-                         boolean         first_call) {
-        void *status = MARCEL_POLL_FAILED;
+                         boolean         first_call)
+{
+  void *status = MARCEL_POLL_FAILED;
 
-        LOG_IN();
-        if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
-                status = MARCEL_POLL_SUCCESS_FOR(id);
-        }
-        LOG_OUT();
+  LOG_IN();
+  if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
+    status = MARCEL_POLL_SUCCESS_FOR(id);
+  }
+  LOG_OUT();
 
-        return status;
+  return status;
 }
 
 static
@@ -301,22 +302,23 @@ void *
 mad_vrp_marcel_poll(marcel_pollid_t id,
                     unsigned        active,
                     unsigned        sleeping,
-                    unsigned        blocked) {
-        p_mad_vrp_poll_req_t  req    = NULL;
-        void                 *status = MARCEL_POLL_FAILED;
+                    unsigned        blocked)
+{
+  p_mad_vrp_poll_req_t  req    = NULL;
+  void                 *status = MARCEL_POLL_FAILED;
 
-        LOG_IN();
-        FOREACH_POLL(id, req) {
-                if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
-                        status = MARCEL_POLL_SUCCESS(id);
-                        goto found;
-                }
-        }
+  LOG_IN();
+  FOREACH_POLL(id, req) {
+    if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
+      status = MARCEL_POLL_SUCCESS(id);
+      goto found;
+    }
+  }
 
  found:
-        LOG_OUT();
+  LOG_OUT();
 
-        return status;
+  return status;
 }
 
 
@@ -328,7 +330,8 @@ mad_vrp_marcel_poll(marcel_pollid_t id,
  */
 
 void
-mad_vrp_register(p_mad_driver_t driver){
+mad_vrp_register(p_mad_driver_t driver) 
+{
   p_mad_driver_interface_t interface = NULL;
 
   LOG_IN();
@@ -427,7 +430,7 @@ mad_vrp_channel_init(p_mad_channel_t c)
 
   LOG_IN();
   cs          = TBX_MALLOC(sizeof(mad_vrp_channel_specific_t));
-  cs->next   = 0;
+  cs->next    = 0;
   c->specific = cs;
   LOG_OUT();
 }

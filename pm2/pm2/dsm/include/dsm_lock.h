@@ -2,7 +2,7 @@
 #ifndef DSM_LOCK_EST_DEF
 #define DSM_LOCK_EST_DEF
 
-#define TRACE_LOCK
+//#define TRACE_LOCK
 
 #include "dsm_mutex.h"
 #include "dsm_protocol_policy.h"
@@ -44,12 +44,15 @@ static __inline__ void dsm_lock(dsm_lock_t lock)
     int i;
 
 #ifdef TRACE_LOCK
-  fprintf(stderr,"[%s]: Entering...\n", __FUNCTION__);
+  fprintf(stderr,"[%s]: Entering...(I am %p)\n", __FUNCTION__, marcel_self());
 #endif
     dsm_mutex_lock(&(lock->dsm_mutex)); 
     for (i = 0; i < lock->nb_prot; i++) 
       if (dsm_get_acquire_func(lock->prot[i]) != NULL)
 	(*dsm_get_acquire_func(lock->prot[i]))(); 
+#ifdef TRACE_LOCK
+  fprintf(stderr,"[%s]: Exiting...\n", __FUNCTION__);
+#endif
 }
    
 
@@ -66,6 +69,9 @@ static __inline__ void dsm_unlock(dsm_lock_t lock)
       if (dsm_get_release_func(lock->prot[i]) != NULL)
 	(*dsm_get_release_func(lock->prot[i]))(); 
     dsm_mutex_unlock(&(lock->dsm_mutex)); 
+#ifdef TRACE_LOCK
+  fprintf(stderr,"[%s]: Exiting...\n", __FUNCTION__);
+#endif
 }
 
 #endif

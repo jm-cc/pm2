@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.10  2000/01/31 15:53:37  oaumage
+- mad_channel.c : verrouillage au niveau des canaux au lieu des drivers
+- madeleine.c : deplacement de aligned_malloc vers la toolbox
+
 Revision 1.9  2000/01/21 17:27:28  oaumage
 - mise a jour de l'interface de compatibilite /mad1 et renommage des anciennes
   fonctions
@@ -73,6 +77,7 @@ ______________________________________________________________________________
 #include <unistd.h>
 #include <fcntl.h>
 #include <malloc.h>
+#include <errno.h>
 #ifdef MAD2_MAD1
 #include <sys/wait.h>
 #endif /* MAD2_MAD1 */
@@ -124,35 +129,6 @@ _PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
 #endif /* MAD2_MAD1 */
 
 /* ---- */
-
-void *mad_aligned_malloc(size_t   size,
-			 int      align)
-{
-  char      *ptr;
-  char      *ini;
-  unsigned   mask = align - 1;
-
-  ini = ptr = malloc (size + 2 * align - 1);
-
-  if (ptr != NULL && ((unsigned) ptr & mask) != 0)
-    {
-      ptr = (char *) (((unsigned) ptr + mask) & ~mask);
-    }
-
-  if (ptr != NULL)
-    {
-      *(char **) ptr = ini;
-      ptr += align;
-    }
-
-  return (void *)ptr;
-}
-
-void mad_aligned_free (void  *ptr,
-		       int    align)
-{
-  free (*(char **) ((char *) ptr - align));
-}
 
 p_mad_adapter_set_t 
 mad_adapter_set_init(int nb_adapter, ...)
@@ -398,12 +374,15 @@ mad_master_spawn(int                    *argc,
   arg = malloc(MAX_ARG_LEN);
   CTRL_ALLOC(arg);
   
-  cwd = getcwd(NULL, MAX_ARG_LEN);
-  if(cwd == NULL)
-    {
-      perror("getcwd");
-      exit(1);
+  while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
+    {    
+      if (errno != EINTR)
+	{
+	  perror("getcwd");
+	  exit(1);
+	}
     }
+  
   for (i = 1;
        i < *argc;
        i++)
@@ -474,11 +453,13 @@ mad_slave_spawn(int                *argc,
   arg = malloc(MAX_ARG_LEN);
   CTRL_ALLOC(arg);
 
-  cwd = getcwd(NULL, MAX_ARG_LEN);
-  if(cwd == NULL)
-    {
-      perror("getcwd");
-      exit(1);
+  while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
+    {    
+      if(errno != EINTR)
+	{
+	  perror("getcwd");
+	  exit(1);
+	}
     }
 
   arg_str[0] = 0;
@@ -904,6 +885,7 @@ mad_exit(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
+/*
 p_mad_channel_t
 mad_get_channel(mad_channel_id_t id)
 {
@@ -927,7 +909,7 @@ mad_get_channel(mad_channel_id_t id)
 
   return NULL;
 }
-
+*/
 
 /* ========================================================================
  *
@@ -1247,7 +1229,7 @@ pm2_pack_str(mad_send_mode_t     sm,
 	     mad_receive_mode_t  rm,
 	     char               *data)
 {
-  const int len = strlen(data);
+  int len = strlen(data);
   
   LOG_IN();
   if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))

@@ -168,14 +168,14 @@ PM2_LIB_A	=	$(PM2_LIBD)/libpm2$(COMMON_EXT).a
 PM2_LIB_SO	=	$(PM2_LIBD)/libpm2$(COMMON_EXT).so
 
 ifeq ($(PM2_LINK),dyn)
-PM2_LIB		:=	$(PM2_LIB_SO)
+PM2_LIB		=	$(PM2_LIB_SO)
 else 
-PM2_LIB		:=	$(PM2_LIB_A)
+PM2_LIB		=	$(PM2_LIB_A)
 endif
 
-COMMON_LIBS	:=	$(PM2_LIB)
+COMMON_LIBS	+=	$(PM2_LIB)
 
-PM2_USER_MAK		:=	$(PM2_ROOT)/make/user$(COMMON_EXT).mak
+PM2_USER_MAK		=	$(PM2_ROOT)/make/user$(COMMON_EXT).mak
 
 
 COMMON_DEFAULT_TARGET	+=	pm2_default

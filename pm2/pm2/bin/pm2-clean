@@ -73,7 +73,7 @@ done
 if [ $# -eq 0 ] ; then
     fla=${PM2_FLAVOR:-default}
 else
-    fla="$@"
+    fla=${@:+"$@"}
 fi
 
 set -- --source-mode

@@ -20,8 +20,37 @@
 #ifndef _BITS_MARCELTYPES_H
 #define _BITS_MARCELTYPES_H	1
 
+#ifdef LINUX_SYS
 #define __need_schedparam
 #include <bits/sched.h>
+#else // AD: fake Linux-like structures on other systems
+#include <sys/signal.h>
+struct __sched_param
+{
+  int __sched_priority;
+};
+typedef sigset_t __sigset_t;
+#endif
+
+// AD: not all systems define __BEGIN|END_DECLS
+#if !(defined(__BEGIN_DECLS) && defined(__END_DECLS))
+#ifdef  __cplusplus
+# define __BEGIN_DECLS extern "C" {
+# define __END_DECLS   }
+#else
+# define __BEGIN_DECLS
+# define __END_DECLS
+#endif
+#endif
+
+// AD: not all systems define __THROW
+#if !defined(__THROW)
+# if defined __cplusplus && (__GNUC__ >= 3 || __GNUC_MINOR__ >= 8)
+#  define __THROW throw ()
+# else
+#  define __THROW
+# endif
+#endif
 
 typedef int __marcel_atomic_lock_t;
 

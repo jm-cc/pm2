@@ -16,13 +16,16 @@
 #ifndef _MARCEL_H
 #define _MARCEL_H	1
 
+#ifdef LINUX_SYS // AD:
 #include <features.h>
+#endif
 
 #include <sched.h>
 #include <time.h>
 
 #define __need_sigset_t
 #include <signal.h>
+#undef __need_sigset_t
 #include <bits/marceltypes.h>
 #include <bits/initspin.h>
 

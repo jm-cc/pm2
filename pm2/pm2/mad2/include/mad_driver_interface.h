@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_driver_interface.h,v $
+Revision 1.5  2000/02/08 17:47:24  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.4  2000/01/13 14:44:31  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -167,7 +170,7 @@ typedef struct s_mad_driver_interface
   (*configuration_init)(p_mad_adapter_t, p_mad_configuration_t);
 
   void
-  (*send_adapter_parameter)(p_mad_adapter_t, mad_host_id_t, char *);
+  (*send_adapter_parameter)(p_mad_adapter_t, ntbx_host_id_t, char *);
 
   void
   (*receive_adapter_parameter)(p_mad_adapter_t, char **);

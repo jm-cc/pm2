@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_pack.c,v $
+Revision 1.4  2000/05/18 11:36:18  oaumage
+- Remplacement des types `tableau' par des types `structure de tableau'
+
 Revision 1.3  2000/04/27 08:59:19  oaumage
 - fusion de la branche pm2_mad2_multicluster
 
@@ -77,7 +80,7 @@ void
 ntbx_pack_int(int                  data,
 	      p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer;
+  void *ptr = pack_buffer->buffer;
   int   i;
   
   LOG_IN();
@@ -97,7 +100,7 @@ ntbx_pack_int(int                  data,
 int
 ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer;
+  void *ptr = pack_buffer->buffer;
   int   data;
   int   i;
  
@@ -122,7 +125,7 @@ void
 ntbx_pack_long(long                 data,
 	       p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer;
+  void *ptr = pack_buffer->buffer;
   int   i;
   
   LOG_IN();
@@ -140,7 +143,7 @@ ntbx_pack_long(long                 data,
 long
 ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer;
+  void *ptr = pack_buffer->buffer;
   long  data;
   int   i;
  
@@ -163,7 +166,7 @@ void
 ntbx_pack_double(double               data,
 		 p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer;
+  void *ptr = pack_buffer->buffer;
   int   i;
   
   LOG_IN();
@@ -181,7 +184,7 @@ ntbx_pack_double(double               data,
 int
 ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
 {
-  void   *ptr = pack_buffer;
+  void   *ptr = pack_buffer->buffer;
   double  data;
   int     i;
  

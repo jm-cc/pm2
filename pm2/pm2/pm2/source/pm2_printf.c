@@ -24,14 +24,12 @@ static unsigned PM2_PRINTF;
 static marcel_sem_t print_mutex;
 static char _pm2_print_buf[1024] __MAD_ALIGNED__;
 
-extern int pm2_main_module(void);
-
 void pm2_printf(char *format, ...)
 {
   va_list args;
   char *ptr;
 
-  if(pm2_main_module() == __pm2_self) {
+  if(!__pm2_self) {
     lock_task();
     va_start(args, format);
     vprintf(format, args);
@@ -47,7 +45,7 @@ void pm2_printf(char *format, ...)
     {
       unsigned len = strlen(_pm2_print_buf)+1;
 
-      pm2_rawrpc_begin(pm2_main_module(), PM2_PRINTF, NULL);
+      pm2_rawrpc_begin(0, PM2_PRINTF, NULL);
       pm2_pack_int(SEND_CHEAPER, RECV_EXPRESS, &len, 1);
       pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, _pm2_print_buf, len);
       pm2_rawrpc_end();
@@ -75,4 +73,5 @@ void pm2_printf_init(void)
 
   pm2_rawrpc_register(&PM2_PRINTF, netserver_printf);
 }
+
 

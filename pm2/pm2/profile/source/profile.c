@@ -50,6 +50,7 @@
 #define PROF_BUFFER_SIZE  (2*1024*1024)
 
 volatile unsigned __pm2_profile_active = FALSE;
+int fkt_ok;
 
 
 static char PROF_FILE_USER[1024];
@@ -98,13 +99,14 @@ void profile_init(void)
     strcpy(PROF_FILE_KERNEL, "/tmp/prof_file_kernel_");
     strcat(PROF_FILE_KERNEL, getenv("USER"));
 
-    fkt_record(PROF_FILE_KERNEL,0,0,0);
+    if ((fkt_ok=!(fkt_record(PROF_FILE_KERNEL,0,0,0)))) {
 
-    if(activate_called_before_init) {
-      fkt_keychange(activate_params.how,
-		    activate_params.kernel_keymask);
-    } else
-      fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
+      if(activate_called_before_init) {
+        fkt_keychange(activate_params.how,
+		      activate_params.kernel_keymask);
+      } else
+        fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
+    }
 #endif
 
   }
@@ -117,7 +119,8 @@ void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask)
     fut_keychange(how, user_keymask, PROF_THREAD_ID());
 
 #ifdef USE_FKT
-    fkt_keychange(how, kernel_keymask);
+    if (fkt_ok)
+      fkt_keychange(how, kernel_keymask);
 #endif
 
   } else {
@@ -158,7 +161,8 @@ void profile_stop(void)
   fut_endup(PROF_FILE_USER);
 
 #ifdef USE_FKT
-  fkt_stop();
+  if (fkt_ok)
+    fkt_stop();
 #endif
 }
 

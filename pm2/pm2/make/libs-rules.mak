@@ -257,8 +257,7 @@ endif
 #---------------------------------------------------------------------
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 $(PM2_MAK_DIR)/$(LIBRARY)-config.mak: $(LIB_STAMP_FLAVOR)
-	@echo "Generating $@"
-	@$(PM2_CONFIG) --gen_mak $(LIBRARY)
+	$(COMMON_HIDE) $(PM2_GEN_MAK) $(LIBRARY)
 endif
 
 ######################################################################

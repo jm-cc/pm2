@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.4  2000/06/16 13:47:47  oaumage
+- Mise a jour des routines d'initialisation de Madeleine II
+- Progression du code de mad_leonie_spawn.c
+
 Revision 1.3  2000/06/15 08:45:03  rnamyst
 pm2load/pm2conf/pm2logs are now handled by pm2.
 
@@ -109,70 +113,6 @@ mad_driver_init(p_mad_madeleine_t madeleine)
 }
 
 static void
-mad_parse_command_line(int                *argc,
-		       char              **argv,
-		       p_mad_madeleine_t   madeleine,
-		       char               *conf_file,
-		       p_tbx_bool_t        master,
-		       p_tbx_bool_t        slave)
-{
-  int              i;
-  int              j;
-  
-  LOG_IN();
-  i = j = 1;    
-  
-  while (i < (*argc))
-    {
-      if(!strcmp(argv[i], "-master"))
-	{
-	  *master = tbx_true;
-	}
-      else if(!strcmp(argv[i], "-slave"))
-	{
-	  *slave = tbx_true;
-	}
-      else if(!strcmp(argv[i], "-rank"))
-	{
-	  if (i == ((*argc) - 1))
-	    FAILURE("-rank option must be followed "
-		    "by the rank of the process");
-
-	  madeleine->configuration.local_host_id = atoi(argv[i + 1]);
-	  i++;
-	}
-      else if (!strcmp(argv[i], "-conf"))
-	{
-	  if (i == ((*argc) - 1))
-	    FAILURE("-conf must be followed "
-		    "by the path of mad2 root directory");
-
-	  if (!conf_file)
-	    FAILURE("configuration file already specified");
-	  
-	  sprintf(conf_file, "%s/.mad2_conf", argv[i + 1]);
-	  i++;
-	}
-      else if (!strcmp(argv[i], "-cwd"))
-	{
-	  if(i == ((*argc) - 1))
-	    FAILURE("-cwd must be followed "
-		    "by the current working directory of the master process");
-	  chdir(argv[i + 1]);
-	  i++;
-	}
-      else
-	{
-	  argv[j++] = argv[i];
-	}
-      i++;
-    }
-  *argc = j;
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
-  LOG_OUT();
-}
-
-static void
 mad_connect_hosts(p_mad_madeleine_t   madeleine)
 {
   p_mad_driver_interface_t spawn_interface;
@@ -225,14 +165,14 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine)
 p_mad_madeleine_t
 mad2_init(int                  *argc,
 	  char                **argv,
-	  char                 *configuration_file,
+	  char                 *configuration_file TBX_UNUSED,
 	  p_mad_adapter_set_t   adapter_set)
 #else /* PM2 */
 p_mad_madeleine_t
 mad_init(
 	 int                   *argc,
 	 char                 **argv,
-	 char                  *configuration_file __attribute__ ((unused)),
+	 char                  *configuration_file TBX_UNUSED,
 	 p_mad_adapter_set_t    adapter_set
 	 )
 #endif /* PM2 */
@@ -246,20 +186,13 @@ mad_init(
   p_mad_driver_t             spawn_driver    = NULL;
   p_mad_driver_interface_t   spawn_interface = NULL;
   p_mad_adapter_t            spawn_adapter   = NULL;
-  char                       conf_file[128];
-  tbx_bool_t                 conf_spec = tbx_false;
-
-  if (!configuration_file)
-    {    
-      configuration_file = conf_file;
-      sprintf(conf_file, "%s/.mad2_conf", mad_get_mad_root());
-      conf_spec = tbx_true;
-    }  
 
 #ifdef MARCEL  
   marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #endif /* MARCEL */
   tbx_init(argc, argv, PM2DEBUG_DO_OPT);
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
+
   LOG_IN();  /* After pm2debug_init ... */
   
   madeleine->nb_channel = 0;
@@ -285,25 +218,6 @@ mad_init(
     spawn_interface->adapter_init(spawn_adapter);
   if (spawn_interface->external_spawn_init)
     spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
-
-  if (conf_spec)
-    {      
-      mad_parse_command_line(argc,
-			     argv,
-			     madeleine,
-			     conf_file,
-			     &master,
-			     &slave);
-    }
-  else
-    {
-      mad_parse_command_line(argc,
-			     argv,
-			     madeleine,
-			     NULL,
-			     &master,
-			     &slave);
-    }
 
   spawn_interface->configuration_init(spawn_adapter, configuration);
   if (spawn_interface->adapter_configuration_init)

@@ -31,6 +31,117 @@ static MA_DEFINE_PER_LWP(marcel_task_t *,upcall_new_task)=NULL;
 marcel_t marcel_next[ACT_NB_MAX_CPU];
 //volatile boolean has_new_tasks=0;
 volatile int act_nb_unblocked=0;
+
+
+#define DEFINE_UPCALL(type) \
+  extern int upcall_##type(act_proc_t new_proc, act_id_t old, \
+		           act_id_t restarted, act_event_t event, \
+		           act_register_placeholder_t regs) \
+  asm ("upcall_" #type); \
+  extern void stub_upcall_##type(act_proc_t new_proc, act_id_t old, \
+			        act_id_t restarted, act_event_t event, \
+			        act_register_placeholder_t regs) \
+  asm ("stub_upcall_"#type); \
+  __asm__ (".text \n\
+        .align 16 \n\
+.globl stub_upcall_"#type" \n\
+        .type    stub_upcall_"#type", @function \n\
+stub_upcall_"#type": \n\
+        addl $4, %esp \n\
+        movl %ebx, 40(%esp) \n\
+        movl %ecx, 44(%esp) \n\
+        movl %edx, 48(%esp) \n\
+        call upcall_"#type" \n\
+        movl 48(%esp), %edx \n\
+        movl 44(%esp), %ecx \n\
+        movl 40(%esp), %ebx \n\
+        movl 20(%esp), %esp \n\
+        ret \n\
+        .size    stub_upcall_"#type", .-stub_upcall_"#type" \n\
+")
+
+MA_DEFINE_PER_LWP(act_proc_info_t, act_info)= {
+        .disallowed_events=0,
+        .current_act_id=0,
+        .critical_section=NULL	
+};
+
+DEFINE_UPCALL(new);
+DEFINE_UPCALL(restart);
+DEFINE_UPCALL(event);
+
+#define DISP_UPCALL(name) mdebug("upcall " #name " (proc:%i, old:%p, restart:%p," \
+				 " {ev:%x, old_dis_ev:%i, nb_unbk:%i}, ...)\n", \
+				 new_proc, (void*)old, (void*)restarted, \
+				 event.events, \
+				 event.old_disallowed_events, \
+				 event.nb_unblocked)
+#define DISP_INFO(p) mdebug("info for 0x%p : {%i, 0x%8x, 0x%p}\n", (p), \
+                            (p)->disallowed_events, (p)->current_act_id, \
+                            (p)->critical_section);
+
+int upcall_new(act_proc_t new_proc, act_id_t old,
+	       act_id_t restarted, act_event_t event,
+	       act_register_placeholder_t regs)
+{
+	DISP_UPCALL(new);
+	RAISE(NOT_IMPLEMENTED);
+}
+
+int upcall_restart(act_proc_t new_proc, act_id_t old,
+		   act_id_t restarted, act_event_t event,
+		   act_register_placeholder_t regs)
+{
+	DISP_UPCALL(restart);
+	RAISE(NOT_IMPLEMENTED);
+
+
+	/* on veut empiler l'adresse de retour ret */
+        event.restart_info.esp -= 4;
+	/* C'est fait :-) */
+        *((int*)event.restart_info.esp) = event.restart_info.eip;
+        /* PS : Ça marche car le noyau descend suffisamment la pile :
+         * il y a une vingtaine d'octets entre esp et &esp
+         * */
+        return event.restart_info.eax;
+}
+
+int upcall_event(act_proc_t new_proc, act_id_t old,
+		 act_id_t restarted, act_event_t event,
+		 act_register_placeholder_t regs)
+{
+	act_proc_info_t *cur_info=&__ma_get_lwp_var(act_info);
+
+	DISP_UPCALL(event);
+	DISP_INFO(cur_info);
+
+	//handle unblocked
+	if (event.events & (ACT_EVENT_NEW | ACT_EVENT_RESTART |
+			    ACT_EVENT_BLOCKED | ACT_EVENT_UNBLOCKED)) {
+		RAISE(NOT_IMPLEMENTED);
+	}
+	// On restaure l'ancien masque
+	cur_info->disallowed_events=event.old_disallowed_events;		
+	// On traite le timer si nécessaire
+	if (event.events & ACT_EVENT_RESCHED) {
+		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
+	}
+	// On resort de la section critique.
+	/* On utilise le fait ici que la section critique est le champ
+         * preempt_count et que la valeur est celle d'une interruption
+         * matérielle */
+	ma_irq_exit();
+
+	/* on veut empiler l'adresse de retour ret */
+        event.restart_info.esp -= 4;
+	/* C'est fait :-) */
+        *((int*)event.restart_info.esp) = event.restart_info.eip;
+        /* PS : Ça marche car le noyau descend suffisamment la pile :
+         * il y a une vingtaine d'octets entre esp et &esp
+         * */
+        return event.restart_info.eax;
+}
+
 #if 0
 
 void locked_start() {}
@@ -42,7 +153,6 @@ extern int real_restart_func (act_proc_t new_proc, int return_value,
 extern void restart_func (act_proc_t new_proc, int return_value, 
 		  int k_param, long eip, long esp, int u_param) 
      asm ("restart_func");
-
 __asm__ (".align 16 \n\
 .globl restart_func \n\
 	.type	 restart_func,@function \n\
@@ -204,20 +314,29 @@ void upcall_new(act_proc_t proc)
 void locked_end() {}
 
 #endif
-static void init_act(int proc, act_param_t *param)
+
+void marcel_upcalls_disallow(void)
 {
-	void *stack;
-
-	stack=(void*)GET_LWP_BY_NUM(proc)->upcall_new_task->initial_sp;
-	param->upcall_new_sp[proc]=stack;
-	//param->locked[proc]=(unsigned long)(&(GET_LWP_BY_NUM(proc)->_locked));
-	mdebug("upcall_new on proc %i use stack %p\n", proc, stack);
-
+	ma_per_lwp(act_info, LWP_SELF).disallowed_events=-1;
 }
 
-void init_upcalls(int nb_act)
+static void init_act(int proc, act_param_t *param)
+{
+	unsigned long stack;
+
+	stack=ma_per_lwp(upcall_new_task, GET_LWP_BY_NUM(proc))
+		->initial_sp;
+	param->upcall_new_sp[proc]=stack;
+	mdebug("upcall_new on proc %i use stack 0x%8lx\n", proc, stack);	
+	param->upcall_infos[proc]=&ma_per_lwp(act_info, GET_LWP_BY_NUM(proc));
+	mdebug("upcalls on proc %i use infos at 0x%p\n", proc, &ma_per_lwp(act_info, GET_LWP_BY_NUM(proc)));	
+	DISP_INFO(&ma_per_lwp(act_info, GET_LWP_BY_NUM(proc)));
+}
+
+void __init init_upcalls(void)
 {
 	act_param_t param;
+	int nb_act=get_nb_lwps();
 #ifdef MA__LWPS
 	int proc;
 #endif
@@ -226,8 +345,8 @@ void init_upcalls(int nb_act)
 	if (nb_act<=0)
 		nb_act=0;
 
-	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
-	mdebug("init_upcalls(%i)", nb_act);
+	mdebug("init_upcalls(%i)\n", nb_act);
+
 #ifdef MA__LWPS
 	for(proc=0; proc<nb_act; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */
@@ -239,12 +358,12 @@ void init_upcalls(int nb_act)
 
 	param.magic_number=ACT_MAGIC_NUMBER;
 	param.nb_proc_wanted=nb_act;
-	//param.reset_count=0;
-	param.reset_count=-1; /* No preemption */
+	param.reset_count=20;
+	//param.reset_count=-1; /* No preemption */
 	param.critical_section=MA_HARDIRQ_OFFSET;
+
 	/* param->upcall_new_sp[proc] */
 	param.upcall_new=stub_upcall_new;
-	//param.restart_func=restart_func;
 	param.upcall_restart=stub_upcall_restart;
 	param.upcall_event=stub_upcall_event;
 
@@ -252,12 +371,11 @@ void init_upcalls(int nb_act)
 	//		param.upcall_new_sp[0], 
 	//		upcall_new, restart_func, &act_nb_unblocked));
 	
-       
+       	mdebug("Enabling upcalls\n");
 	if (act_cntl(ACT_CNTL_INIT, &param)) {
 		perror("Bad activations init");
 		exit(1);
 	}
-	
 	//mdebug("Initialisation nearly done\n");
 	//mysleep();
 	mdebug("Initialisation upcall done\n");
@@ -266,9 +384,13 @@ void init_upcalls(int nb_act)
 	LOG_OUT();
 }
 
+__ma_initfunc_prio(init_upcalls, MA_INIT_UPCALL_START, 
+		   MA_INIT_UPCALL_START_PRIO,
+		   "Démarrage des upcalls");
+
 static void *upcall_no_func(void* p)
 {
-	RAISE(PROGRAM_ERROR);
+       RAISE(PROGRAM_ERROR);
 }
 
 static void marcel_upcall_lwp_init(marcel_lwp_t* lwp)

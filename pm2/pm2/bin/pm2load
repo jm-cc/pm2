@@ -31,6 +31,7 @@ Usage: $PROGNAME { option } command
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d      : Run command in debug mode (not supported by all implementations)
     -c name : Use console named "name"
+    -l      : Also generate a log file on first node
     -h      : Display this help message
 EOF
     exit $1
@@ -60,29 +61,37 @@ export PM2_FLAVOR
 PM2_CONSOLE=""
 
 PM2_DEBUG=off
+PM2_LOGS_ON_NODE_0=off
 
 while [ $# -gt 0 ]; do
     case $1 in
-	-f)
+	-f|--flavor)
 	    shift
 	    PM2_FLAVOR="$1"
 	    shift
 	    ;;
-	-d)
+	-d|--debug)
 	    shift
 	    PM2_DEBUG=on
 	    ;;
-	-c)
+	-c|--console)
 	    shift
 	    PM2_CONSOLE="$1"
 	    shift
 	    ;;
-	-h)
+	-l|--log)
+	    shift
+	    PM2_LOGS_ON_NODE_0=on
+	    ;;
+	-h|--help)
 	    _pm2load_usage 0
 	    ;;
 	--)
 	    shift
 	    break
+	    ;;
+	-*)
+	    _pm2load_usage 1
 	    ;;
 	*)
 	    break
@@ -161,6 +170,12 @@ for v in $*; do
     _prescript_args="$_prescript_args --export $v \"$_val\""
 done
 
-set -- ${PM2_ROOT}/bin/pm2-pre-script.sh $_prescript_args -- \
-    $_PM2WHICH_RESULT $prog_args
-. $_PM2CONFIG_LOADER
+if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
+    $_PM2CONFIG_LOADER ${PM2_ROOT}/bin/pm2-pre-script.sh $_prescript_args -- \
+	$_PM2WHICH_RESULT $prog_args 2>&1 | tee /tmp/${USER}-pm2log-0
+    exit 0
+else
+    set -- ${PM2_ROOT}/bin/pm2-pre-script.sh $_prescript_args -- \
+	$_PM2WHICH_RESULT $prog_args
+    . $_PM2CONFIG_LOADER
+fi

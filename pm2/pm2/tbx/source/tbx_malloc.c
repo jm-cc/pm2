@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.11  2000/10/30 16:03:32  oaumage
+- correction d'un probleme de type
+
 Revision 1.10  2000/10/30 14:21:01  oaumage
 - correction du support Alpha pour MadII au niveau de la toolbox
   (safe_malloc)
@@ -310,7 +313,7 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
       if(mode == tbx_safe_malloc_VERBOSE) 
 	fprintf(stderr,
 		"\t[addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
-		ptrh, p->size, ptrf, p->line);
+		ptrh, (unsigned long)p->size, ptrf, p->line);
     }
 }
 

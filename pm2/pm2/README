@@ -70,8 +70,13 @@ use three machines named riri, fifi and loulou, just type:
 
 Please refer to the help (pm2conf -h) for a list of possible inputs.
 
-Once your configuration is set, you're able to run a PM2 application
-simply by invoking the pm2load loader:
+Once your configuration is set, make sure to set PM2_RSH to your remote
+shell tool:
+
+	export PM2_RSH=ssh
+	
+Then you're able to run a PM2 application simply by invoking the pm2load
+loader:
 
 	pm2load simple
 

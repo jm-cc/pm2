@@ -53,7 +53,7 @@
 #include <sys/act_spinlock.h>
 #include <sys/upcalls.h>
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
 #include <stdio.h>
 #endif
 

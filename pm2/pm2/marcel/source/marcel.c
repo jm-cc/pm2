@@ -143,7 +143,6 @@ void *marcel_malloc(unsigned size, char *file, unsigned line)
 {
   void *p;
 
-  if(size) {
     lock_task();
     if((p = __TBX_MALLOC(size, file, line)) == NULL) {
       fprintf(stderr, "Storage error at %s:%d\n", file, line);
@@ -152,8 +151,6 @@ void *marcel_malloc(unsigned size, char *file, unsigned line)
       unlock_task();
       return p;
     }
-  }
-  return NULL;
 }
 
 void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line)

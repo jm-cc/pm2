@@ -45,7 +45,6 @@ SETTINGS='### SETTINGS:'
 
 PM2_MODULE="${PM2_ROOT}/bin/pm2-module"
 PM2_CONFIGPROG="${PM2_ROOT}/bin/pm2-config"
-PM2_FLAVOR="${PM2_ROOT}/bin/pm2-flavor"
 
 MODULES=`"${PM2_ROOT}/bin/pm2-module" modules --with-common`
 
@@ -645,7 +644,8 @@ do_get() {
 	shift
     done
     if [ -z "$file" ]; then
-	file="${PM2_ROOT}/flavors/default"
+	flavor=${PM2_FLAVOR:-default}
+	file="`find_flavor`"
     fi
     if [ ! -f "$file" ]; then
 	if [ -z "$flavor" ]; then

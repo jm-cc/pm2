@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.9  2000/11/08 08:16:16  oaumage
+*** empty log message ***
+
 Revision 1.8  2000/05/18 11:36:19  oaumage
 - Remplacement des types `tableau' par des types `structure de tableau'
 
@@ -949,3 +952,81 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
   return ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
 }
 
+/* ...Read/Write services ..............*/
+
+/* read a block */
+void
+ntbx_tcp_read(int     socket,
+	      void   *ptr,
+	      size_t  length)
+{
+  size_t bytes_read = 0;
+
+  LOG_IN();
+  while (bytes_read < length)
+    {
+      int status;
+
+      status = read(socket, ptr + bytes_read, length - bytes_read);
+      
+      if (status == -1)
+	{
+	  if (errno == EAGAIN)
+	    {
+	      continue;
+	    }
+	  else if (errno == EINTR)
+	    {
+	      continue;	      
+	    }
+	  else
+	    ERROR("read");
+	}
+      else if (status == 0)
+	FAILURE("connection closed");
+      else
+	{
+	  bytes_read += status;
+	} 
+    }
+  LOG_OUT();
+}
+
+
+/* write a block */
+void
+ntbx_tcp_write(int     socket,
+	       void   *ptr,
+	       size_t  length)
+{
+  size_t bytes_written = 0;
+
+  LOG_IN();
+  while (bytes_written < length)
+    {
+      int status;
+
+      status = write(socket, ptr + bytes_written, length - bytes_written);
+      
+      if (status == -1)
+	{
+	  if (errno == EAGAIN)
+	    {
+	      continue;
+	    }
+	  else if (errno == EINTR)
+	    {
+	      continue;	      
+	    }
+	  else
+	    ERROR("write");
+	}
+      else if (status == 0)
+	FAILURE("connection closed");
+      else
+	{
+	  bytes_written += status;
+	} 
+    }
+  LOG_OUT();
+}

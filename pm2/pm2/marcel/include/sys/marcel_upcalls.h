@@ -30,11 +30,12 @@
 #include "marcel.h"
 
 extern volatile int act_nb_unblocked;
+extern marcel_t marcel_next[ACT_NB_MAX_CPU];
 
 void act_lock(marcel_t self);
 void act_unlock(marcel_t self);
 
-void act_goto_next_task(marcel_t pid, int from);
+//void act_goto_next_task(marcel_t pid, int from);
 //void restart_thread(task_desc *desc);
 
 void init_upcalls(int nb_act);

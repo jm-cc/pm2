@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_config.c,v $
+Revision 1.2  2000/06/09 08:45:56  oaumage
+- Progression du code
+
 Revision 1.1  2000/05/15 13:51:55  oaumage
 - Reorganisation des sources de Leonie
 
@@ -118,7 +121,7 @@ leo_get_cluster_entry_point(p_leo_clu_cluster_t  cluster,
 /*
  * Session management
  * ------------------
- */
+
 void
 leo_cluster_setup(p_leonie_t               leonie,
 		  p_leo_app_application_t  application,
@@ -138,12 +141,10 @@ leo_cluster_setup(p_leonie_t               leonie,
 
       if (!strcmp(local_cluster_def->cluster->id, app_cluster->id))
 	{
-	  /* cluster is local */
 	  DISP("Cluster %s is local", app_cluster->id);
 	}
       else
 	{
-	  /* cluster is remote */
 	  p_leo_clu_host_name_t host_description;
 
 	  DISP("Cluster %s is remote", app_cluster->id);
@@ -165,3 +166,4 @@ leo_cluster_setup(p_leonie_t               leonie,
   while(tbx_forward_list_reference(&ref));
   LOG_OUT();
 }
+*/

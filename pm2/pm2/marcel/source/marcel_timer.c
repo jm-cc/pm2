@@ -189,17 +189,24 @@ static sigset_t sigalrmset, sigeptset;
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
 // courant
+#ifdef MA__INTERRUPTS_USE_SIGINFO
+static void timer_interrupt(int sig, siginfo_t *info, void *uc)
+#else
 static void timer_interrupt(int sig)
+#endif
 {
 #ifdef MA__DEBUG
 	static unsigned long tick = 0;
+#endif
 
+	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
+
+#ifdef MA__DEBUG
 	if (++tick == TICK_RATE) {
 		mdebugl(7,"\t\t\t<<Sig handler>>\n");
 		tick = 0;
 	}
 #endif
-
 	ma_irq_enter();
 	ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef MA__SMP
@@ -217,6 +224,7 @@ static void timer_interrupt(int sig)
 	 * il faut réarmer les signaux AVANT
 	 */
 	ma_irq_exit();
+	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);
 }
 
 
@@ -300,7 +308,6 @@ static void sig_start_timer(ma_lwp_t lwp)
 	LOG_IN();
 
 	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = timer_interrupt;
 #if !defined(WIN_SYS)
 	sa.sa_flags = SA_RESTART|SA_NOMASK;
 #if defined(OSF_SYS) && defined(ALPHA_ARCH)
@@ -308,6 +315,12 @@ static void sig_start_timer(ma_lwp_t lwp)
 #endif
 #else
 	sa.sa_flags = 0;
+#endif
+#ifdef MA__INTERRUPTS_USE_SIGINFO
+	sa.sa_flags |= SA_SIGINFO;
+	sa.sa_sigaction = timer_interrupt;
+#else
+	sa.sa_handler = timer_interrupt;
 #endif
 	
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER

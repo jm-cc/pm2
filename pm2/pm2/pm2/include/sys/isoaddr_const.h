@@ -24,6 +24,7 @@ typedef struct _isoaddr_attr_t {
   int protocol;
   int atomic;
   int align;
+  int special;
 }isoaddr_attr_t;
 
 #endif

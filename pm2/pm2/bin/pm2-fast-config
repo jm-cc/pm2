@@ -154,7 +154,7 @@ pm2config_init()
 
     # Get the flavor script file path
     set --  --source-mode -f $_PM2CONFIG_FLAVOR
-    . ${PM2_ROOT}/bin/pm2-flavor-file $*
+    . ${PM2_ROOT}/bin/pm2-flavor-file
     _PM2CONFIG_FLAVOR_FILE=$PM2_FLAVOR_FILE
     export _PM2CONFIG_FLAVOR_FILE
 
@@ -172,8 +172,8 @@ pm2config_set_vars()
     pm2config_init
 
     set -- --source-mode
-    . ${PM2_ROOT}/bin/pm2_sys $*
-    . ${PM2_ROOT}/bin/pm2_arch $*
+    . ${PM2_ROOT}/bin/pm2_sys
+    . ${PM2_ROOT}/bin/pm2_arch
 
     # Source the flavor script file
     set --

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+prog=`basename $1`
+
+shift;
+
+echo "**********************************************"
+echo "Cmd: $prog $@"
+if [ -x ./$prog-unix ]; then
+  echo "************** Unix"
+  ./$prog-unix "$@"
+  echo "************** Clone"
+  ./$prog-clone "$@"
+fi
+echo "************** LinuxThread"
+LD_ASSUME_KERNEL=2.4.5 ./$prog-linuxthread "$@"
+echo "************** NPTL"
+./$prog-nptl "$@"
+echo "************** GNUPth"
+./$prog-pth "$@"
+echo "************** NGPT"
+LD_LIBRARY_PATH=/home/vdanjean/opt/libc-2.2.5/lib:/home/vdanjean/opt/ngpt-2.2.2/lib /home/vdanjean/opt/libc-2.2.5/lib/ld-linux.so.2 ./$prog-ngpt  "$@"
+#echo "************** Marcel-libpthread"
+#LD_PRELOAD=/home/vdanjean/build/libpthread/lib/libstackalign.so LD_LIBRARY_PATH=/home/vdanjean/build/libpthread/lib ./$prog-pthread "$@"
+echo "************** Marcel-mono"
+./$prog-marcel-mono "$@"
+echo "************** Marcel-smp"
+#LD_PRELOAD=$PM2_ROOT/lib/LINUX_SYS/X86_ARCH/libpthread.so ./$prog-marcel-smp "$@"
+./$prog-marcel-smp "$@"
+
+

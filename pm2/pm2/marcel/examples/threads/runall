@@ -1,0 +1,19 @@
+#!/bin/sh
+
+FILE=result-$(uname -n)
+
+echo adding result to $FILE
+
+(
+
+./try contsw 1000
+./try contsw 1000
+./try contsw 10000
+./try contsw 10000
+
+./try create 1000
+./try create 1000
+./try create 10000
+./try create 10000
+
+) >> $FILE

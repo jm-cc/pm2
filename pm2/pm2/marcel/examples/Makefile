@@ -33,11 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-CONFIG_MODULES=marcel
-
-ifndef FLAVOR
-export FLAVOR:=marcel
-endif
+export FLAVOR_DEFAULT:=marcel
 
 PROGS := active	cleanup	contsw create daube delay derout eclone force_raise \
 	kbd keys matrix once poll raise sample stack_jump sumtime timed \

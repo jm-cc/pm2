@@ -26,6 +26,12 @@ static trace_buffer buf;
 
 int abs_num;
 
+static int dec;
+static int rel;
+static u_64 diff_time;
+static u_64 min_fut;
+static u_64 min_fkt;
+
 static FILE *f_fut;
 static FILE *f_fkt;
 static int thread;
@@ -38,56 +44,6 @@ static trace fkt_buf;
 
 static long int pid_table[NB_MAX_PROC];
 static long int proc = 0;
-
-static void read_fut_header()
-{  
-  char header[200];
-  if (f_fut != NULL) {
-    // Lecture du header de fut : Attention non gestion de la corruption de fichier
-    fread(&pid, sizeof(unsigned long), 1, f_fut);
-    fread(header, sizeof(double) + 
-	  2*sizeof(time_t) + sizeof(unsigned int), 1, f_fut);
-  }
-}
-
-static void read_fkt_header()
-{
-  unsigned int ncpus;
-  double *mhz;
-  unsigned long fkt_pid;
-  unsigned long fkt_kidpid;
-  time_t t1, t2;
-  clock_t start_jiffies, stop_jiffies;
-  unsigned nirqs, nints;
-  unsigned int code;
-  unsigned int i;
-  int n;
-  unsigned int max_nints;
-  char name[400];
-  if (f_fkt != NULL) {
-    fread(&ncpus, sizeof(ncpus), 1, f_fkt);
-    mhz = (double *) malloc(sizeof(double)*ncpus);
-    assert(mhz != NULL);
-    fread(mhz, sizeof(double), ncpus, f_fkt);
-    fread(&fkt_pid, sizeof(unsigned int), 1, f_fkt);
-    fread(&fkt_kidpid, sizeof(unsigned int), 1, f_fkt);
-    fread(&t1, sizeof(time_t), 1, f_fkt);
-    fread(&t2, sizeof(time_t), 1, f_fkt);
-    fread(&start_jiffies, sizeof(clock_t), 1, f_fkt);
-    fread(&stop_jiffies, sizeof(clock_t), 1, f_fkt);
-    fread(&nirqs, sizeof(unsigned int), 1, f_fkt);
-    fread(&ncpus, sizeof(unsigned int), 1, f_fkt);
-    for(n = 0; n < nirqs; n++) {
-      unsigned k;
-      fread(&code, sizeof(unsigned int), 1, f_fkt);
-      fread(&i, sizeof(unsigned int), 1, f_fkt);
-      k = (i + 3) & ~3;
-      fread(name, sizeof(char), k, f_fkt);
-    }
-    fread(&max_nints, sizeof(unsigned int), 1, f_fkt);
-    fread(&nints, sizeof(unsigned int), 1, f_fkt);
-  }
-}
 
 // Returns 0 if OK 1 if EOF
 static int read_user_trace(trace *tr)
@@ -132,7 +88,6 @@ static int read_kernel_trace(trace *tr)
 {
   int i;
   int j;
-  //  printf("One trace being read\n");
   if (fread(&j, sizeof(unsigned int), 1, f_fkt) == 0) {
     fkt_eof = 1;
     return 1;
@@ -149,11 +104,9 @@ static int read_kernel_trace(trace *tr)
     fprintf(stderr,"Corrupted kernel trace file\n");
     exit(1);
   }
-  //  printf("code = %x\n", tr->code);
   if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
     j = 0;
     i = ((tr->code & 0xff) - 12) / 4;
-    //    printf("Reading args\n");
     while (i != 0) {
       if (fread(&(tr->args[j]), sizeof(int), 1, f_fkt) == 0) {
 	fprintf(stderr,"Corrupted kernel trace file\n");
@@ -168,9 +121,97 @@ static int read_kernel_trace(trace *tr)
       if (tr->args[0] == pid) proc = tr->args[1];
     }
   }
-  //  printf("End reading\n");
   return 0;
 }
+
+static void read_fut_header()
+{  
+  u_64 last;
+  int n;
+  char header[200];
+  if (f_fut != NULL) {
+    // Lecture du header de fut : Attention non gestion de la corruption de fichier
+    fread(&pid, sizeof(unsigned long), 1, f_fut);
+    fread(header, sizeof(double) + 
+	  2*sizeof(time_t) + sizeof(unsigned int), 1, f_fut);  
+    if (read_user_trace(&fut_buf) != 0) {
+      fprintf(stderr,"Corrupted user trace file\n");
+      exit(1);
+    }
+    if (read_user_trace(&fut_buf) != 0) {
+      fprintf(stderr,"Corrupted user trace file\n");
+      exit(1);
+    }
+    last = fut_buf.clock;
+    for(n = 0; n < 9; n++) {
+      if (read_user_trace(&fut_buf) != 0) {
+	fprintf(stderr,"Corrupted user trace file\n");
+	exit(1);
+      }
+      if (min_fut == 0) min_fut = fut_buf.clock - last;
+      else if (fut_buf.clock - last < min_fut) min_fut = fut_buf.clock - last;
+    }
+  }
+}
+
+static void read_fkt_header()
+{
+  unsigned int ncpus;
+  double *mhz;
+  u_64 last;
+  unsigned long fkt_pid;
+  unsigned long fkt_kidpid;
+  time_t t1, t2;
+  clock_t start_jiffies, stop_jiffies;
+  unsigned nirqs, nints;
+  unsigned int code;
+  unsigned int i;
+  int n;
+  unsigned int max_nints;
+  char name[400];
+  if (f_fkt != NULL) {
+    fread(&ncpus, sizeof(ncpus), 1, f_fkt);
+    mhz = (double *) malloc(sizeof(double)*ncpus);
+    assert(mhz != NULL);
+    fread(mhz, sizeof(double), ncpus, f_fkt);
+    fread(&fkt_pid, sizeof(unsigned int), 1, f_fkt);
+    fread(&fkt_kidpid, sizeof(unsigned int), 1, f_fkt);
+    fread(&t1, sizeof(time_t), 1, f_fkt);
+    fread(&t2, sizeof(time_t), 1, f_fkt);
+    fread(&start_jiffies, sizeof(clock_t), 1, f_fkt);
+    fread(&stop_jiffies, sizeof(clock_t), 1, f_fkt);
+    fread(&nirqs, sizeof(unsigned int), 1, f_fkt);
+    fread(&ncpus, sizeof(unsigned int), 1, f_fkt);
+    for(n = 0; n < nirqs; n++) {
+      unsigned k;
+      fread(&code, sizeof(unsigned int), 1, f_fkt);
+      fread(&i, sizeof(unsigned int), 1, f_fkt);
+      k = (i + 3) & ~3;
+      fread(name, sizeof(char), k, f_fkt);
+    }
+    fread(&max_nints, sizeof(unsigned int), 1, f_fkt);
+    fread(&nints, sizeof(unsigned int), 1, f_fkt);
+    if (read_kernel_trace(&fkt_buf) != 0) {
+      fprintf(stderr,"Corrupted kernel trace file\n");
+      exit(1);
+    } 
+    if (read_kernel_trace(&fkt_buf) != 0) {
+      fprintf(stderr,"Corrupted kernel trace file\n");
+      exit(1);
+    }
+    last = fkt_buf.clock;
+    for(n = 0; n < 9; n++) {
+      if (read_kernel_trace(&fkt_buf) != 0) {
+	fprintf(stderr,"Corrupted kernel trace file\n");
+	exit(1);
+      }
+      if (min_fkt == 0) min_fkt = fkt_buf.clock - last;
+      else if (fkt_buf.clock - last < min_fkt) min_fkt = fkt_buf.clock - last;
+    }
+  }
+}
+
+
 
 static void add_buffer(trace tr)
 {
@@ -213,6 +254,15 @@ static int get_buffer(trace *tr)
 {
   assert(buf.first != NULL);
   *tr = buf.first->tr;
+  if (rel) {
+    diff_time = tr->clock;
+    rel = 0;
+  }
+  tr->clock = tr->clock - diff_time;
+  if (dec) {
+    if (tr->type == USER) diff_time += min_fut;
+    else diff_time += min_fkt;
+  }
   tr->number = abs_num++;
   if (buf.first->next == EMPTY_LIST) {
     free(buf.first);
@@ -258,11 +308,16 @@ static int load_trace()
   return 0;
 }
 
-void init_trace_buffer(char *fut_name, char *fkt_name)
+void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt)
 {
   int n = 0;
   f_fut = NULL;
   f_fkt = NULL;
+  rel = relative;
+  dec = dec_opt;
+  min_fut = 0;
+  min_fkt = 0;
+  diff_time = 0;
   fkt_eof = 1;
   fut_eof = 1;
   abs_num = 0;
@@ -281,23 +336,11 @@ void init_trace_buffer(char *fut_name, char *fkt_name)
     } 
     fkt_eof = 0;
   }
-  read_fut_header();
-  read_fkt_header();
+  thread = 0; // Et oh, c'est de la bidouille
   buf.first = EMPTY_LIST;
   buf.last = EMPTY_LIST;
-  thread = 0;
-  if (f_fut != NULL) {
-    if (read_user_trace(&fut_buf) != 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
-  }
-  if (f_fkt != NULL) {
-    if (read_kernel_trace(&fut_buf) != 0) {
-      fprintf(stderr,"Corrupted kernel trace file\n");
-      exit(1);
-    }
-  }
+  read_fut_header();
+  read_fkt_header();
   while(n < TRACE_BUFFER_SIZE) {
     if (load_trace() != 0) break;
     n++;

@@ -19,7 +19,7 @@ appdir="${PM2_ROOT}/marcel/examples"
 prog="sumtime"
 args="100"
 hosts="localhost"
-cat > /tmp/pm2test_expected <<EOF
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 100 = 5050
 EOF
 

@@ -184,16 +184,29 @@
  * Threads specific macros  _________________________________________
  * ________________________//////////////////////////////////////////
  */
-#ifdef MARCEL
-#define TBX_SHARED marcel_mutex_t __pm2_mutex
-#define TBX_INIT_SHARED(st) marcel_mutex_init((&((st)->__pm2_mutex)), NULL)
-#define TBX_LOCK_SHARED(st) marcel_mutex_lock((&((st)->__pm2_mutex)))
-#define TBX_TRYLOCK_SHARED(st) marcel_mutex_trylock((&((st)->__pm2_mutex)))
-#define TBX_UNLOCK_SHARED(st) marcel_mutex_unlock((&((st)->__pm2_mutex)))
-#define TBX_LOCK() lock_task()
+#if defined (MARCEL)       //# Thread sync : Marcel mode
+#define TBX_SHARED             marcel_mutex_t __tbx_mutex
+#define TBX_INIT_SHARED(st)    marcel_mutex_init((&((st)->__tbx_mutex)), NULL)
+#define TBX_LOCK_SHARED(st)    marcel_mutex_lock((&((st)->__tbx_mutex)))
+#define TBX_TRYLOCK_SHARED(st) marcel_mutex_trylock((&((st)->__tbx_mutex)))
+#define TBX_UNLOCK_SHARED(st)  marcel_mutex_unlock((&((st)->__tbx_mutex)))
+#define TBX_LOCK()   lock_task()
 #define TBX_UNLOCK() unlock_task()
-#define TBX_YIELD() marcel_yield()
-#else /* MARCEL */
+#define TBX_YIELD()  marcel_yield()
+#elif defined (_REENTRANT) //# Thread sync : Pthread mode
+#define TBX_SHARED             pthread_mutex_t __tbx_mutex
+#define TBX_INIT_SHARED(st)    pthread_mutex_init((&((st)->__tbx_mutex)), NULL)
+#define TBX_LOCK_SHARED(st)    pthread_mutex_lock((&((st)->__tbx_mutex)))
+#define TBX_TRYLOCK_SHARED(st) pthread_mutex_trylock((&((st)->__tbx_mutex)))
+#define TBX_UNLOCK_SHARED(st)  pthread_mutex_unlock((&((st)->__tbx_mutex)))
+#define TBX_LOCK()
+#define TBX_UNLOCK()
+#if defined (SOLARIS_SYS)     //# pthread yield : 'not available' case
+#define TBX_YIELD()        
+#else                         //# pthread yield : 'available' case
+#define TBX_YIELD()        pthread_yield()
+#endif                        //# pthread yield : end
+#else                      //# Threads sync : no thread mode
 #define TBX_SHARED 
 #define TBX_INIT_SHARED(st) 
 #define TBX_LOCK_SHARED(st) 
@@ -202,7 +215,7 @@
 #define TBX_LOCK()
 #define TBX_UNLOCK()
 #define TBX_YIELD()
-#endif /* MARCEL */
+#endif                      //# Threads sync : end
 
 
 /*

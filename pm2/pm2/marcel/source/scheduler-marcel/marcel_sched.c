@@ -914,7 +914,7 @@ static struct ma_notifier_block sched_nb = {
                                   (il est relaché à 100) */
 };
 
-void __init marcel_sched_init(void)
+static void __init marcel_sched_init(void)
 {
 	sched_lwp_notify(&sched_nb, (unsigned long)MA_LWP_UP_PREPARE,
 			   (void *)(ma_lwp_t)LWP_SELF);

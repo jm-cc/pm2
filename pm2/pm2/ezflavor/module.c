@@ -81,7 +81,10 @@ static void module_rescan(void)
 
   string_list_destroy(&mod_names);
 
-  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
+  if(show_all_modules)
+    parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
+  else
+    parser_start_cmd("%s/bin/pm2-module modules --user-only", pm2_root());
 
   mod_names = string_list_from_parser();
 

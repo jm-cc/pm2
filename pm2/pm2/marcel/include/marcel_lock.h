@@ -34,6 +34,18 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.7  2000/04/11 09:07:11  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.6.2.3  2000/03/22 16:28:31  vdanjean
+*** empty log message ***
+
+Revision 1.6.2.2  2000/03/22 02:10:55  vdanjean
+*** empty log message ***
+
+Revision 1.6.2.1  2000/03/15 15:54:45  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.6  2000/03/08 17:37:23  vdanjean
 *** empty log message ***
 
@@ -64,7 +76,7 @@ ______________________________________________________________________________
 
 #ifdef X86_ARCH
 
-#ifdef ACT_OR_SMP
+#ifdef MA__LWPS
 #define LOCK_PREFIX "lock\n\t"
 #else
 #define LOCK_PREFIX ""
@@ -72,7 +84,7 @@ ______________________________________________________________________________
 
 #define __atomic_fool_gcc(x) (*(volatile struct { int a[100]; } *)x)
 
-#if defined(ACT_OR_SMP) || defined(__ACT__)
+#if defined(MA__LWPS) || defined(MA__ACT)
 typedef struct { volatile int counter; } atomic_t;
 #else
 typedef struct { int counter; } atomic_t;
@@ -83,6 +95,8 @@ typedef struct { int counter; } atomic_t;
 #define atomic_read(v)		((v)->counter)
 #define atomic_set(v,i)		(((v)->counter) = (i))
 
+static __inline__ 
+void atomic_inc(volatile atomic_t *v) __attribute__ ((unused));
 static __inline__ void atomic_inc(volatile atomic_t *v)
 {
 	__asm__ __volatile__(
@@ -91,6 +105,8 @@ static __inline__ void atomic_inc(volatile atomic_t *v)
 		:"m" (0));
 }
 
+static __inline__ 
+void atomic_dec(volatile atomic_t *v) __attribute__ ((unused));
 static __inline__ void atomic_dec(volatile atomic_t *v)
 {
 	__asm__ __volatile__(
@@ -244,7 +260,7 @@ void marcel_lock_init(marcel_lock_t *lock);
 
 static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 {
-#ifdef ACT_OR_SMP
+#ifdef MA__LWPS
   unsigned counter = 0;
 
   while(testandset(lock)) {
@@ -257,7 +273,7 @@ static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock) __attribute__ ((unused));
 static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 {
-#ifdef ACT_OR_SMP
+#ifdef MA__LWPS
   return !testandset(lock);
 #else
   return 1;
@@ -265,7 +281,7 @@ static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 }
 static __inline__ void marcel_lock_release(marcel_lock_t *lock)
 {
-#ifdef ACT_OR_SMP
+#ifdef MA__LWPS
   release(lock);
 #endif
 }

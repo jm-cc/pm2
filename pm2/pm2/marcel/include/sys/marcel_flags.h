@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.9  2000/05/25 00:23:51  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.8  2000/05/09 14:37:31  vdanjean
 minor bugs fixes
 
@@ -172,11 +175,22 @@ ______________________________________________________________________________
 #endif
 
 /* MA__TIMER : indique qu'il faut utiliser le timer unix (signaux)
- * pour la préemption.
+ * pour la préemption. (ne pas valider avec les activations)
  * */
 #ifdef MA__TIMER
 #undef MA__TIMER
 #endif
+
+/* MA__WORK : utilisation des files de travail à la fin des unlock_task()
+ * */
+#ifdef MA__WORK
+#undef MA__WORK
+#endif
+
+#ifdef MARCEL_MONO /* Marcel Mono */
+#define MA__ONE_QUEUE
+#define MA__TIMER
+#endif /* Fin Marcel Mono */
 
 #ifdef MARCEL_SMP /* Marcel SMP */
 #define SMP
@@ -185,46 +199,25 @@ ______________________________________________________________________________
 #define MA__TIMER
 #endif /* Fin Marcel SMP */
 
-#ifdef MARCEL_ACT /* Marcel Activation Mono */
-#define MA__ACT
+#if defined(MARCEL_ACT) || defined(MARCEL_ACTSMP) /* Marcel Activation */
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING
 #define MA__ACTIVATION
 #define ACTIVATION
+#define MA__WORK
+#endif /* Fin Marcel Activation */
+
+#ifdef MARCEL_ACT /* Marcel Activation Mono */
+#define MA__ACT
 #undef CONFIG_SMP
 #endif /* Fin Marcel Activation Mono */
 
 #ifdef MARCEL_ACTSMP /* Marcel Activation SMP */
 #define MA__ACTSMP
-#define MA__ONE_QUEUE
-#define MA__MULTIPLE_RUNNING
 #define CONFIG_SMP
-#define MA__ACTIVATION
-#define ACTIVATION
 #define __SMP__
 #define MA__LWPS
 #endif /* Fin Marcel Activation SMP */
-
-#ifdef MARCEL_MONO /* Marcel Mono */
-#define MA__ONE_QUEUE
-#define MA__TIMER
-#endif /* Fin Marcel Mono */
-
-#ifdef MARCEL_SHOW_FLAGS
-
-#ifdef MARCEL_SMP
-#warning Compilation de Marcel SMP
-#elif defined(MARCEL_ACT)
-#warning Compilation de Marcel Activation Mono
-#elif defined(MARCEL_ACTSMP)
-#warning Compilation de Marcel Activation SMP
-#elif defined(MARCEL_MONO)
-#warning Compilation de Marcel Mono
-#else
-#error Pas de compilation de Marcel
-#endif
-
-#endif /* MARCEL_SHOW_FLAGS */
 
 #endif
 

@@ -56,7 +56,7 @@
  * ------------
  */
 
-typedef int                ntbx_tcp_port_t,    *p_ntbx_tcp_port_t;
+typedef unsigned int       ntbx_tcp_port_t,    *p_ntbx_tcp_port_t;
 typedef struct sockaddr_in ntbx_tcp_address_t, *p_ntbx_tcp_address_t;
 typedef int                ntbx_tcp_socket_t,  *p_ntbx_tcp_socket_t;
 

@@ -22,34 +22,54 @@ class Fchannel:
 
 class VXchannel:
 
-    def __init__(self, session, vxchannel_cfg):
-        self.name	= vxchannel_cfg['name']
-        logger.debug('new vxchannel %s', self.name)
+    def __init__(self, session, vxchannel_cfg, channel_list, name):
+        if len(channel_list) == 0:
+	    self.name	= vxchannel_cfg['name']
+	    logger.debug('new vxchannel %s', self.name)
+	    
+	    self.session		= session
+	    self.channel_list	= []
+	    self.ps_dict		= {}
+	    self.rt			= {}
+	    self.g_set		= sets.ImmutableSet()
+	    
+	    # liste de noms, telle que dans le fichier de configuration
+	    old_channel_list	= vxchannel_cfg['channels']
+	    
+	    # parcours des noms de canaux et initialisation du canal virtuel
+	    for channel_name in old_channel_list:
+		
+		# récupération du canal régulier
+		channel	= self.session.channel_dict[channel_name]
+		
+		# changement du status du canal
+		channel.public	= False
+		
+		# ajout à la liste de canaux
+		self.channel_list.append(channel)
+		
+		self.call_integrate_channel(channel)
+		
+	    self.compute_rt()
+	else:
+	    self.session       	= session
+	    self.channel_list   = []
+	    self.ps_dict	= {}
+	    self.rt		= {}
+	    self.g_set		= sets.ImmutableSet()
+	    
+	    self.name = name
+	    for channel in channel_list:
 
-        self.session		= session
-        self.channel_list	= []
-        self.ps_dict		= {}
-        self.rt			= {}
-        self.g_set		= sets.ImmutableSet()
-
-        # liste de noms, telle que dans le fichier de configuration
-        old_channel_list	= vxchannel_cfg['channels']
-
-        # parcours des noms de canaux et initialisation du canal virtuel
-        for channel_name in old_channel_list:
-
-            # récupération du canal régulier
-            channel	= self.session.channel_dict[channel_name]
-
-            # changement du status du canal
-            channel.public	= False
-
-            # ajout à la liste de canaux
-            self.channel_list.append(channel)
-
-            self.call_integrate_channel(channel)
-
-        self.compute_rt()
+		# changement du status du canal
+		channel.public	= False
+		
+		# ajout à la liste de canaux
+		self.channel_list.append(channel)
+		
+		self.call_integrate_channel(channel)
+		
+	    self.compute_rt()
 
     def integrate_channel(self, channel, fchannel):
         
@@ -72,7 +92,7 @@ class VXchannel:
                 # la table de routage est indexée par
                 # un tuple (rang global source, rang global destination)
                 key	= (g_src, g_dst)
-                logger.debug('direct route %s', str(key))
+                logger.info('direct route %s', str(key))
 
                 # s'il n'y a pas déja une route entre src et dst
                 if not self.rt.has_key(key):
@@ -87,12 +107,12 @@ class VXchannel:
                     # - booleen indiquant si la route est directe ou non
                     self.rt[key] = (channel, fchannel, g_dst, True)
 
-        logger.debug('channel %s: globals %s', str(channel.name), str(channel_g_set))
+        logger.info('channel %s: globals %s', str(channel.name), str(channel_g_set))
         
         # rajout des rangs globaux du canal régulier aux rangs
         # globaux du canal virtuel par union des deux ensembles
         self.g_set = self.g_set.union(channel_g_set)
-        logger.debug('vchannel: globals %s', str(self.g_set))
+        logger.info('vchannel: globals %s', str(self.g_set))
 
     def compute_rt(self):
         
@@ -118,7 +138,7 @@ class VXchannel:
                     # construction de la clé de la connexion virtuelle
                     # considérée
                     key	= (g_src, g_dst)
-                    logger.debug('routing %s', str(key))
+                    logger.info('routing %s', str(key))
 
                     # si une route existe pour cette connexion virtuelle
                     if self.rt.has_key(key):
@@ -150,7 +170,7 @@ class VXchannel:
 
                         # si on arrive ici, c'est qu'on a trouvé un med
                         # accessible depuis src et capable d'atteindre dst
-                        logger.debug('new path: %s, %s by %s', str(g_src), str(g_dst), str(g_med))
+                        logger.info('new path: %s, %s by %s', str(g_src), str(g_dst), str(g_med))
 
                         # le premier saut de la route indirecte est le même
                         # que src->med, mais avec le flag 'route directe' à
@@ -200,10 +220,11 @@ class VXchannel:
 
 class Vchannel(VXchannel):
 
-    def __init__(self, session, vxchannel_cfg):
+    def __init__(self, session, vxchannel_cfg, channel_list,name):
         self.fchannel_list	= []
-        VXchannel.__init__(self, session, vxchannel_cfg)
-
+	VXchannel.__init__(self, session, vxchannel_cfg, channel_list,name)
+	
+	    
     def call_integrate_channel(self, channel):
         fchannel	= Fchannel(channel)
 
@@ -216,8 +237,8 @@ class Vchannel(VXchannel):
 
 class Xchannel(VXchannel):
 
-    def __init__(self, session, vxchannel_cfg):
-        VXchannel.__init__(self, session, vxchannel_cfg)
+    def __init__(self, session, vxchannel_cfg, channel_list,name):
+        VXchannel.__init__(self, session, vxchannel_cfg, channel_list,name)
         if vxchannel_cfg.has_key('sub_channels'):
             self.sub_channel_list = leo_pp.list_normalize(vxchannel_cfg['sub_channels'])
         else:
@@ -252,9 +273,9 @@ def vchannels_process(s, mux_p):
     for vxchannel_cfg in vxchannel_list:
 
         if mux_p:
-            vxchannel = Xchannel(s, vxchannel_cfg)
+            vxchannel = Xchannel(s, vxchannel_cfg,[],'')
         else:
-            vxchannel = Vchannel(s, vxchannel_cfg)        
+            vxchannel = Vchannel(s, vxchannel_cfg,[],'')        
         
 
 

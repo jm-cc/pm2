@@ -28,7 +28,7 @@
 #include "fut.h"
 
 #define PROF_PROBE0(keymask, code) do { \
-                                     if(keymask & fut_active ) { \
+                                     if(keymask & fut_active) { \
                                         fut_header(code); \
                                      } \
                                    } while(0)

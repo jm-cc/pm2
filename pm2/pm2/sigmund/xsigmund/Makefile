@@ -20,7 +20,9 @@ CFLAGS		+=	-fnative-struct
 LDFLAGS		+=	-e _mainCRTStartup
 endif
 
-CFLAGS += $(shell gtk-config --cflags)
-LDFLAGS += $(shell gtk-config --libs)
+#CFLAGS += $(shell gtk-config --cflags)
+#LDFLAGS += $(shell gtk-config --libs)
+CFLAGS += -DGTK2 $(shell pkg-config --cflags gtk+-2.0)
+LDFLAGS += $(shell pkg-config --libs gtk+-2.0)
 
 include $(PM2_ROOT)/make/progs.mak

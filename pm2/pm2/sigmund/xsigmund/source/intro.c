@@ -152,7 +152,9 @@ static void logo_load(GtkWidget *window)
 		   0, 0, 0, 0, logo_width, logo_height);
   gdk_gc_destroy (gc);
 
+#ifndef GTK2
   gtk_widget_unref (preview);
+#endif
   g_free (pixelrow);
 
   fclose (fp);
@@ -192,8 +194,15 @@ static void make_initialization_window(void)
   GtkWidget *vbox;
   GtkWidget *logo_hbox;
 
+#ifdef GTK2
+  win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  //win = gtk_window_new (GTK_WINDOW_POPUP);
+  g_object_ref (G_OBJECT (win));
+  gtk_object_sink (GTK_OBJECT (win));
+#else
   win = gtk_window_new (GTK_WINDOW_DIALOG);
-
+#endif
+  
   gtk_window_set_title (GTK_WINDOW (win), "SIGMUND Startup");
 
   gtk_window_set_position(GTK_WINDOW (win), GTK_WIN_POS_CENTER);

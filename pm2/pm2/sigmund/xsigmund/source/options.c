@@ -1,3 +1,9 @@
+
+#ifdef GTK2
+#define GTK_ENABLE_BROKEN
+#warning TODO: fix GTK2 code
+#endif
+
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 
@@ -55,7 +61,6 @@ static char *itoa(int i)
   sprintf(s,"%d",i);
   return s;
 }
-
 
 /* add a thread to the filter */
 static void add_thread(char *s)
@@ -201,7 +206,7 @@ static void add_evnum(char *s)
 /* add the action given by the string s in the filter */
 static void add_begin(char *s)
 {
-  gchar *m = gtk_editable_get_chars(GTK_EDITABLE(&(GTK_TEXT(text_begin)->editable)), 0, -1);
+  gchar *m = gtk_editable_get_chars(GTK_EDITABLE(&(GTK_TEXT(text_begin)->old_editable)), 0, -1);
   strcat(s, m);
   g_free(m);
 }

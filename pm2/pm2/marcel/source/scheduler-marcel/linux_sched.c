@@ -311,6 +311,7 @@ static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
 	}
 	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
+	MA_BUG_ON(!ma_spin_is_locked(&p->sched.internal.cur_rq->lock));
 	MA_BUG_ON(!p->sched.internal.array);
 	p->sched.internal.array = NULL;
 }
@@ -321,6 +322,7 @@ static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 	__ma_set_bit(p->sched.internal.prio, array->bitmap);
 	array->nr_active++;
 	sched_debug("enqueued %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
+	MA_BUG_ON(!ma_spin_is_locked(&p->sched.internal.cur_rq->lock));
 	MA_BUG_ON(p->sched.internal.array);
 	p->sched.internal.array = array;
 }
@@ -363,10 +365,10 @@ static int effective_prio(marcel_task_t *p)
  */
 static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
-	enqueue_task(p, rq->active);
 #ifdef MA__LWPS
 	p->sched.internal.cur_rq = rq;
 #endif
+	enqueue_task(p, rq->active);
 	nr_running_inc(rq);
 }
 
@@ -654,7 +656,7 @@ repeat_lock_task:
 	rq = task_rq_lock(p);
 	old_state = p->sched.state;
 	if (old_state & state) {
-		if (!ma_task_cur_rq(p)) {
+		if (!ma_task_cur_rq(p)) { /* not running or runnable */
 			/*
 			 * Fast-migrate the task if it's not running or runnable
 			 * currently. Do not violate hard affinity.
@@ -1679,14 +1681,9 @@ need_resched:
 			prev->sched.state = MA_TASK_RUNNING;
 		else {
 			sched_debug("schedule: go to sleep\n");
-			ma_spin_lock(&prevrq->lock);
 			prev_as_next = NULL;
 			prev_as_rq = &ma_idle_runqueue;
 			prev_as_prio = MAX_PRIO-1;
-			/* XXX: muff: */
-			enqueue_task(prev, prevrq->active);
-			deactivate_task(prev, prevrq);
-			ma_spin_unlock(&prevrq->lock);
 		}
 	}
 
@@ -1767,6 +1764,7 @@ restart:
 
 	idx = ma_sched_find_first_bit(array->bitmap);
 	queue = array->queue + idx;
+	/* we may here see ourselves, if someone awoked us */
 	next = list_entry(queue->next, marcel_task_t, sched.internal.run_list);
 	
 	sched_debug("prio %d in %p, next %p(%s)\n",idx,rq,next,next->name);
@@ -1784,6 +1782,13 @@ restart:
 //	}
 //	next->activated = 0;
 switch_tasks:
+	/* still wanting to go to sleep ? */
+	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+		/* XXX: pas joli: */
+		enqueue_task(prev,prevrq->active);
+		deactivate_task(prev, prevrq);
+	}
+
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
 //Pour quand on voudra ce mécanisme...
@@ -1804,9 +1809,9 @@ switch_tasks:
 //		++*switch_count;
 
 		dequeue_task(next, next->sched.internal.array);
-		/* needs to be enqueued */
-		if (prev->sched.internal.cur_rq && !prev->sched.internal.array)
-			enqueue_task(prev, prevrq->active);
+		/* still runnable */
+		if (prev->sched.internal.cur_rq)
+			enqueue_task(prev,prevrq->active);
 		ma_set_task_lwp(next, LWP_SELF);
 
 		prepare_arch_switch(rq, next);
@@ -3069,6 +3074,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 #ifdef MA__LWPS
 	init_rq(ma_lwp_rq(lwp));
+	ma_lwp_rq(lwp)->curr = ma_per_lwp(run_task,lwp);
 #endif
 	LOG_OUT();
 }
@@ -3122,8 +3128,10 @@ void __init sched_init(void)
 	 */
 	ma_main_runqueue.curr = MARCEL_SELF;
 	ma_wake_up_created_thread(MARCEL_SELF);
-	/* since it is actually already running, no need to lock */
+	/* since it is actually already running */
+	ma_spin_lock(&ma_main_runqueue.lock);
 	dequeue_task(MARCEL_SELF, MARCEL_SELF->sched.internal.array);
+	ma_spin_unlock(&ma_main_runqueue.lock);
 
 //	init_timers();
 

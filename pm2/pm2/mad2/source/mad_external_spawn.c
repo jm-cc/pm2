@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.16  2000/12/11 08:31:18  oaumage
+- support Leonie
+
 Revision 1.15  2000/11/20 17:17:44  oaumage
 - suppression de certains fprintf
 
@@ -520,6 +523,9 @@ mad_init(int                  *argc,
    */
 
   mad_connect(madeleine, *argc, argv);
+
+  ntbx_purge_cmd_line(argc, argv);
+  tbx_purge_cmd_line(argc, argv);
 
 #ifdef PM2DEBUG  
 /*

@@ -115,6 +115,15 @@ void dsm_set_page_state(unsigned long index, dsm_state_t state);
 
 dsm_state_t dsm_get_page_state(unsigned long index);
 
+void pm2_set_dsm_page_distribution(int mode, ...);
+
+void dsm_display_page_ownership();
+
+#define DSM_CENTRALIZED 0
+#define DSM_BLOCK       1
+#define DSM_CYCLIC      2
+#define DSM_CUSTOM      3
+
 /*********************** Hyperion stuff: ****************************/
 
 void dsm_invalidate_not_owned_pages();
@@ -132,4 +141,5 @@ boolean dsm_page_bitmap_is_empty(unsigned long index);
 void dsm_page_bitmap_clear(unsigned long index) ;
 
 #endif
+
 

@@ -1,3 +1,10 @@
+/*! \file tbx_htable_management.c
+ *  \brief TBX hash-table management routines
+ *
+ *  This file implements hash-table TBX associative arrays.
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

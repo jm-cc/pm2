@@ -89,6 +89,9 @@ export PM2_XMODE
 PM2_PMODE=off
 export PM2_PMODE
 
+PM2_SMPMODE=off
+export PM2_SMPMODE
+
 PM2_LOGMODE=off
 export PM2_LOGMODE
 
@@ -102,6 +105,10 @@ while [ $# -gt 0 ]; do
 	-d)
 	    shift
 	    PM2_DEBUG=on
+	    ;;
+	-s)
+	    shift
+	    PM2_SMPMODE=on
 	    ;;
 	-x)
 	    shift
@@ -148,6 +155,8 @@ set --  --source-mode $prog
 if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
     ambiguity $prog
 fi
+
+[ "${PM2_SMPMODE}" = on ] && export LEO_LD_PRELOAD=`${PM2_ROOT}/bin/pm2-config --flavor=${PM2_FLAVOR:-default} --preload`
 
 # Execution
 if [ "${PM2_DEBUG}" = on ]; then

@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.16 2002/10/23 13:26:51 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.17 2002/10/25 11:20:21 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
@@ -22,41 +22,13 @@
 /* TRACING AND DEBUGGING SYSTEM                                       */
 /**********************************************************************/
 
+/* don't print tracing / debugging messages */
 #undef TRCSL
 #undef DBGSL
-
 /* remove all assertions "assert" */
 #define NDEBUG
-#include <assert.h>
 
-#undef PROFIN
-#undef PROFOUT
-#define PROFIN(x) ((void)0)
-#define PROFOUT(x) ((void)0)
-
-#if defined(TRCSL) || defined(DBGSL)
-static int depth = 0;
-static void spaces (const int i) { int j; for (j=0; j<i; j++) tfprintf(stderr, "   "); return; }
-#endif
-
-#undef IN
-#undef OUT
-#ifdef DBGSL
-#define IN { spaces(depth++); tfprintf(stderr, "--> [%d:%x:%s]\n", pm2_self(), marcel_self(), __FUNCTION__); }
-#define OUT { spaces(--depth); tfprintf(stderr, "[%d:%x:%s] -->\n", pm2_self(), marcel_self(), __FUNCTION__); }
-#else
-#define IN ((void)0)
-#define OUT ((void)0)
-#endif
-
-#undef TRACE
-#ifdef TRCSL
-#define TRACE(strng, args...) { spaces(depth); tfprintf(stderr, "[%d:%x:%s] " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
-#else
-#define TRACE(...) ((void)0)
-#endif
-
-#define STRACE(strng, args...) { tfprintf(stderr, "[%d:%x:%s] *** " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
+#include "trace_debug.h"
 
 
 /**********************************************************************/

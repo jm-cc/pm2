@@ -235,7 +235,7 @@ pm2_net_server_start(p_mad_channel_t channel)
 #endif // REALTIME_NET_THREADS
   
   {
-    unsigned int  granted = 0;
+    size_t  granted = 0;
     void         *slot    = NULL;
     
     slot = slot_general_alloc(NULL, 0, &granted, NULL, NULL);

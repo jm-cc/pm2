@@ -26,15 +26,15 @@
 typedef enum e_leo_loader_priority
 {
   leo_loader_priority_undefined = -1,
-  leo_loader_priority_low    = 0,
-  leo_loader_priority_medium = 1,
-  leo_loader_priority_high   = 2,
+  leo_loader_priority_low       =  0,
+  leo_loader_priority_medium    =  1,
+  leo_loader_priority_high      =  2,
   leo_loader_priority_count
 } leo_loader_priority_t;
 
 typedef struct s_leo_process_specific
 {
-  p_ntbx_client_t       client;
+  p_ntbx_client_t        client;
   char                  *current_loader_name;
   char                  *current_spawn_group_name;
   leo_loader_priority_t  current_loader_priority;

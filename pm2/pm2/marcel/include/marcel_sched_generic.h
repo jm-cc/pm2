@@ -132,6 +132,14 @@ inline static int marcel_sched_create(marcel_task_t* cur,
 						special_mode, base_stack));
 }
 
+#section marcel_functions
+inline static void marcel_yield_intern();
+#section marcel_inline
+inline static void marcel_yield_intern(){
+  ma_set_need_resched();
+  ma_schedule(); 
+}
+
 /****************************************************************/
 /*               Virtual Processors                             */
 /****************************************************************/

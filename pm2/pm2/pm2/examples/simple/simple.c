@@ -59,8 +59,8 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
 
 #ifdef PROFILE
-//  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
-  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
+  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
+  //profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
 #endif
 
   pm2_init(&argc, argv);

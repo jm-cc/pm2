@@ -625,6 +625,8 @@ mad_sisci_adapter_init(p_mad_adapter_t adapter)
   adapter_specific  = TBX_MALLOC(sizeof(mad_sisci_adapter_specific_t));
   adapter->specific = adapter_specific;
 
+  adapter->mtu      = 0xFFFFFFFFUL;
+ 
   if (!strcmp(adapter->dir_adapter->name, "default"))
     {
       adapter_specific->local_adapter_id = 0;

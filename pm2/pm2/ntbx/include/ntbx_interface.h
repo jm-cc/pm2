@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_interface.h,v $
+Revision 1.4  2000/11/07 17:56:47  oaumage
+- ajout de commandes de lecture/ecriture resistantes sur sockets
+
 Revision 1.3  2000/04/27 09:01:29  oaumage
 - fusion de la branche pm2_mad2_multicluster
 
@@ -64,8 +67,12 @@ ______________________________________________________________________________
  * --------------
  */
 void
-ntbx_init(void);
+ntbx_init(int    argc,
+	  char **argv);
 
+void
+ntbx_purge_cmd_line(int   *argc,
+		    char **argv);
 
 /*
  * Pack/Unpack

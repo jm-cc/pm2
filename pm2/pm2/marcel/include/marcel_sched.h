@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.4  2000/02/28 10:26:38  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/01/31 15:56:26  oaumage
 - ajout du Log CVS
 
@@ -191,7 +194,7 @@ static __inline__ void sched_unlock(__lwp_t *lwp)
 #ifdef X86_ARCH
 
 #ifdef __ACT__
-#include <sys/upcalls.h>
+#include "sys/upcalls.h"
 #endif
 
 static __inline__ void lock_task()

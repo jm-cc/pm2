@@ -330,7 +330,7 @@ static void add_common_options(GtkWidget *box)
   GtkWidget *frame;
   GtkWidget *vbox;
 
-  frame = gtk_frame_new("Application options");
+  frame = gtk_frame_new(" Application options ");
   gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
   gtk_widget_show(frame);
 
@@ -433,7 +433,7 @@ static void module_build_notebook(GtkWidget *box)
   GtkWidget *vbox, *hbox;
   module_t *cur_mod;
 
-  module_frame = gtk_frame_new("Modules");
+  module_frame = gtk_frame_new(" Modules ");
   gtk_widget_set_sensitive(module_frame, FALSE);
   gtk_container_set_border_width (GTK_CONTAINER(module_frame), 10);
   gtk_box_pack_start(GTK_BOX(box), module_frame, TRUE, TRUE, 0);
@@ -501,7 +501,7 @@ static void module_build_general_options(GtkWidget *box)
   GtkWidget *vbox, *subvbox;
   GtkWidget *label;
 
-  general_frame = gtk_frame_new("General settings");
+  general_frame = gtk_frame_new(" General settings ");
   gtk_widget_set_sensitive(general_frame, FALSE);
   gtk_container_set_border_width (GTK_CONTAINER(general_frame), 10);
   gtk_box_pack_start(GTK_BOX(box), general_frame, FALSE, TRUE, 0);

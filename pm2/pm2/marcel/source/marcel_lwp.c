@@ -27,6 +27,7 @@
 #ifdef MA__LWPS
 MA_DEFINE_PER_LWP(unsigned, number)=0;
 #endif
+MA_DEFINE_PER_LWP(int, online)=0;
 
 #ifdef MA__LWPS
 static struct ma_notifier_block *lwp_chain = NULL;
@@ -125,7 +126,9 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
                                 __FUNCTION__, lwp);
 		RAISE(PROGRAM_ERROR);
         }
-	
+
+	ma_per_lwp(online,lwp)=1;
+
 	MA_BUG_ON(!preemption_enabled());
 }
 
@@ -191,9 +194,7 @@ unsigned marcel_lwp_add_vp(void)
   LOG_IN();
 
   // Initialisation de la structure marcel_lwp_t
-  //marcel_lwp_init(lwp);
   ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
-#warning initialisation de la structure à faire...
 
   lwp_list_lock_write();
   {
@@ -425,6 +426,14 @@ static struct ma_notifier_block lwp_nb = {
 				  de remplir le champ 'number'
 				*/
 };
+
+void __init marcel_lwp_finished(void)
+{
+	ma_per_lwp(online,(ma_lwp_t)LWP_SELF)=1;
+}
+
+__ma_initfunc_prio(marcel_lwp_finished, MA_INIT_LWP_FINISHED,
+		   MA_INIT_LWP_FINISHED_PRIO, "Declare (and bind) lwp");
 
 void __init marcel_lwp_decl_bind(void)
 {

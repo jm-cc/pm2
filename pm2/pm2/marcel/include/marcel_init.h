@@ -141,6 +141,8 @@ typedef struct __ma_init_info {
 #define MA_INIT_TIMER_SIG_DATA        MA_INIT_MAIN_LWP
 #define MA_INIT_TIMER                 MA_INIT_MAIN_LWP
 #define MA_INIT_LINUX_TIMER           MA_INIT_MAIN_LWP
+#define MA_INIT_LWP_FINISHED          MA_INIT_MAIN_LWP
+#define MA_INIT_LWP_FINISHED_PRIO                   'Z'
 #define MA_INIT_GENSCHED_PREEMPT      MA_INIT_SCHEDULER
 #define MA_INIT_GENSCHED_PREEMPT_PRIO               'C'
 #define MA_INIT_THREADS_THREAD        MA_INIT_SCHEDULER

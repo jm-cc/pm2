@@ -188,50 +188,50 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 
 #define GET_LWP_NUMBER(current)             (LWP_NUMBER(THREAD_GETMEM(current,sched.lwp)))
 #ifdef MA__LWPS
+#  define LWP_NUMBER(lwp)                     (ma_per_lwp(number, lwp))
+#  define GET_LWP_BY_NUM(proc)                (addr_lwp[proc])
+#  define GET_LWP(current)                    ((current)->sched.lwp)
+#  define SET_LWP(current, value)             ((current)->sched.lwp=(value))
+#  define GET_CUR_LWP()                       (cur_lwp)
+#  define SET_CUR_LWP(value)                  (cur_lwp=(value))
+#  define SET_LWP_NB(number, lwp)             (addr_lwp[number]=(lwp), \
+	                                       LWP_NUMBER(lwp)=number)
+#  define GET_LWP_BY_NUMBER(number)           (addr_lwp[number])
+#  define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
+     OPTIONS marcel_lwp_t *cur_lwp signe lwp
+#  define IS_FIRST_LWP(lwp)                   (LWP_NUMBER(lwp)==0)
 
-#define LWP_NUMBER(lwp)                     (ma_per_lwp(number, lwp))
-#define GET_LWP_BY_NUM(proc)                (addr_lwp[proc])
-#define GET_LWP(current)                    ((current)->sched.lwp)
-#define SET_LWP(current, value)             ((current)->sched.lwp=(value))
-#define GET_CUR_LWP()                       (cur_lwp)
-#define SET_CUR_LWP(value)                  (cur_lwp=(value))
-#define SET_LWP_NB(number, lwp)             (addr_lwp[number]=(lwp), \
-	                                     LWP_NUMBER(lwp)=number)
-#define GET_LWP_BY_NUMBER(number)           (addr_lwp[number])
-#define DEFINE_CUR_LWP(OPTIONS, signe, lwp) \
-   OPTIONS marcel_lwp_t *cur_lwp signe lwp
-#define IS_FIRST_LWP(lwp)                   (LWP_NUMBER(lwp)==0)
-#define for_all_lwp(lwp) \
-   list_for_each_entry(lwp, &list_lwp_head, lwp_list)
-#define for_each_lwp_begin(lwp) \
-   list_for_each_entry(lwp, &list_lwp_head, lwp_list) {\
-      if (ma_lwp_online(lwp)) {
-#define for_each_lwp_end() \
-      } \
-   }
+#  define for_all_lwp(lwp) \
+     list_for_each_entry(lwp, &list_lwp_head, lwp_list)
+#  define for_each_lwp_begin(lwp) \
+     list_for_each_entry(lwp, &list_lwp_head, lwp_list) {\
+        if (ma_lwp_online(lwp)) {
+#  define for_each_lwp_end() \
+        } \
+     }
 
-#define lwp_isset(num, map) ma_test_bit(num, &map)
-#define lwp_is_offline(lwp) 0
-
+#  define lwp_isset(num, map) ma_test_bit(num, &map)
+#  define lwp_is_offline(lwp) 0
 #else
+#  define cur_lwp                             (&__main_lwp)
+#  define LWP_NUMBER(lwp)                     ((void)(lwp),0)
+#  define GET_LWP_BY_NUM(nb)                  (cur_lwp)
+#  define GET_LWP(current)                    (cur_lwp)
+#  define SET_LWP(current, value)             ((void)0)
+#  define GET_CUR_LWP()                       (cur_lwp)
+#  define SET_CUR_LWP(value)                  ((void)0)
+#  define SET_LWP_NB(proc, value)             ((void)0)
+#  define GET_LWP_BY_NUMBER(number)           (cur_lwp)
+#  define DEFINE_CUR_LWP(OPTIONS, signe, current) \
+     int __cur_lwp_unused__ __attribute__ ((unused))
+#  define IS_FIRST_LWP(lwp)                   (1)
 
-#define cur_lwp                             (&__main_lwp)
-#define LWP_NUMBER(lwp)                     ((void)(lwp),0)
-#define GET_LWP_BY_NUM(nb)                  (cur_lwp)
-#define GET_LWP(current)                    (cur_lwp)
-#define SET_LWP(current, value)             ((void)0)
-#define GET_CUR_LWP()                       (cur_lwp)
-#define SET_CUR_LWP(value)                  ((void)0)
-#define SET_LWP_NB(proc, value)             ((void)0)
-#define GET_LWP_BY_NUMBER(number)           (cur_lwp)
-#define DEFINE_CUR_LWP(OPTIONS, signe, current) \
-   int __cur_lwp_unused__ __attribute__ ((unused))
-#define IS_FIRST_LWP(lwp)                   (1)
+#  define for_all_lwp(lwp) lwp=cur_lwp;
+#  define for_each_lwp_begin(lwp) for_all_lwp(lwp) {
+#  define for_each_lwp_end() }
 
-#define for_all_lwp(lwp) lwp=cur_lwp;
-#define for_each_lwp_begin(lwp) for_all_lwp(lwp) {
-#define for_each_lwp_end() }
-
+#  define lwp_isset(num, map) 1
+#  define lwp_is_offline(lwp) 0
 #endif
 
 #define LWP_GETMEM(lwp, member) ((lwp)->member)
@@ -246,6 +246,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 
 #section marcel_macros
+
 #define MA_DEFINE_LWP_NOTIFIER_START(name, help, \
 			             prepare, prepare_help, \
 			             online, online_help) \
@@ -257,7 +258,8 @@ MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 				          online, online_help) \
   MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
 				  UP_PREPARE, prepare, prepare_help, \
-				  ONLINE, online, online_help)
+				  ONLINE, online, online_help, \
+				  0, 1, 4, 5)
 #define MA_DEFINE_LWP_NOTIFIER_ONOFF(name, help, \
 			             online, online_help, \
 			             offline, offline_help) \
@@ -269,11 +271,14 @@ MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 			                  offline, offline_help) \
   MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
 				  ONLINE, online, online_help, \
-				  OFFLINE, offline, offline_help)
+				  OFFLINE, offline, offline_help, \
+		  		  0, 1, 3, 4)
 
 #define MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
 				        ONE, one, one_help, \
-				        TWO, two, two_help) \
+				        TWO, two, two_help, \
+					a, b, c, d \
+					) \
   static int name##_notify(struct ma_notifier_block *self, \
 		           unsigned long action, void *hlwp) \
   { \
@@ -291,18 +296,16 @@ MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 	return 0; \
   } \
   static const char * name##_helps[6] = { \
-	  [0]="Notifier [" help "] [none]", \
-	  [1]="Notifier [" help "] [none]", \
-	  [2]="Notifier [" help "] [none]", \
-	  [3]="Notifier [" help "] [none]", \
-	  [4]="Notifier [" help "] [none]", \
-	  [5]="Notifier [" help "] [none]", \
 	  [MA_LWP_##ONE]="Notifier [" help "] " one_help, \
 	  [MA_LWP_##TWO]="Notifier [" help "] " two_help, \
+	  [a]="Notifier [" help "] [none]", \
+	  [b]="Notifier [" help "] [none]", \
+	  [c]="Notifier [" help "] [none]", \
+	  [d]="Notifier [" help "] [none]", \
   }; \
   static MA_DEFINE_NOTIFIER_BLOCK_INTERNAL(name##_nb, name##_notify, \
 	prio, help, 4, name##_helps); \
-  void __init marcel_##name##_notifier_register(void) \
+  void __marcel_init marcel_##name##_notifier_register(void) \
   { \
         ma_register_lwp_notifier(&name##_nb); \
   } \
@@ -320,7 +323,7 @@ MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 #define MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(name, section, prio) \
   MA_LWP_NOTIFIER_CALL(name, section, prio, ONLINE)
 #define MA_LWP_NOTIFIER_CALL(name, section, prio, PART) \
-  void __init marcel_##name##_call_##PART(void) \
+  void __marcel_init marcel_##name##_call_##PART(void) \
   { \
 	name##_notify(&name##_nb, (unsigned long)MA_LWP_##PART, \
 		   (void *)(ma_lwp_t)LWP_SELF); \

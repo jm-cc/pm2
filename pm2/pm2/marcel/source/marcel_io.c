@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.8  2000/05/16 09:05:22  rnamyst
+Fast Polling added into Marcel + make xconfig
+
 Revision 1.7  2000/04/17 16:09:40  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -64,8 +67,6 @@ Revision 1.2  2000/01/31 15:57:15  oaumage
 
 ______________________________________________________________________________
 */
-
-/* #define MA__DEBUG */
 
 #include "marcel.h"
 
@@ -221,12 +222,98 @@ static void *unix_io_poll(marcel_pollid_t id,
   return MARCEL_POLL_FAILED;
 }
 
+static void *unix_io_fast_poll(marcel_pollid_t id, any_t arg)
+{
+  unix_io_arg_t *myarg = (unix_io_arg_t *)arg;
+  fd_set rfds, wfds;
+  unsigned nb = 0;
+  struct timeval tv;
+  int r;
+
+#ifndef MA__ACTIVATION
+  // Trop de messages avec les activations
+  mdebug("Fast Polling function called on LWP %d\n",
+	 marcel_current_vp());
+#endif
+  FD_ZERO(&rfds);
+  FD_ZERO(&wfds);
+
+  switch(myarg->op) {
+    case POLL_READ : {
+      FD_SET(myarg->fd, &rfds);
+      nb = myarg->fd + 1;
+      break;
+    }
+    case POLL_WRITE : {
+      FD_SET(myarg->fd, &wfds);
+      nb = myarg->fd + 1;
+      break;
+    }
+    case POLL_SELECT : {
+      if(myarg->rfds != NULL)
+	rfds = *(myarg->rfds);
+      if(myarg->wfds != NULL)
+	wfds = *(myarg->wfds);
+      nb = myarg->nfds;
+      break;
+    }
+    default :
+      RAISE(PROGRAM_ERROR);
+  }
+
+  timerclear(&tv);
+
+  r = select(nb, &rfds, &wfds, NULL, &tv);
+
+  if(r > 0) {
+    switch(myarg->op) {
+    case POLL_READ :
+      if(FD_ISSET(myarg->fd, &rfds))
+	return MARCEL_POLL_SUCCESS(id);
+      break;
+    case POLL_WRITE :
+      if(FD_ISSET(myarg->fd, &wfds))
+	return MARCEL_POLL_SUCCESS(id);
+      break;
+    case POLL_SELECT : {
+      unsigned i;
+      if(myarg->rfds != NULL) {
+	for(i=0; i<nb; i++)
+	  if(FD_ISSET(i, &rfds)) {
+	    FD_ZERO(myarg->rfds);
+	    if(myarg->wfds != NULL)
+	      FD_ZERO(myarg->wfds);
+	    FD_SET(i, myarg->rfds);
+	    return MARCEL_POLL_SUCCESS(id);
+	  }
+      }
+      if(myarg->wfds != NULL) {
+	for(i=0; i<nb; i++)
+	  if(FD_ISSET(i, &wfds)) {
+	    FD_ZERO(myarg->wfds);
+	    if(myarg->rfds != NULL)
+	      FD_ZERO(myarg->rfds);
+	    FD_SET(i, myarg->wfds);
+	    return MARCEL_POLL_SUCCESS(id);
+	  }
+      }
+      break;
+    }
+    default :
+      RAISE(PROGRAM_ERROR);
+    }
+  }
+
+  return MARCEL_POLL_FAILED;
+}
+
 void marcel_io_init()
 {
   const unsigned divisor = 1;
 
   unix_io_pollid = marcel_pollid_create(unix_io_group,
 					unix_io_poll,
+					unix_io_fast_poll,
 					divisor);
 }
 

@@ -1011,6 +1011,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   return tbx_true;
 }
 
+#ifdef MARCEL
 static
 void
 vchannel_connection_open(p_mad_madeleine_t          madeleine,
@@ -1126,7 +1127,7 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
   tbx_darray_expand_and_set(mad_channel->in_connection_darray, l_dst, in);
   tbx_darray_expand_and_set(mad_channel->out_connection_darray, l_dst, out);
 }
-
+#endif /* MARCEL */
 
 static
 tbx_bool_t
@@ -1259,6 +1260,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   return tbx_true;
 }
 
+#ifdef MARCEL
 static
 void
 xchannel_connection_open(p_mad_madeleine_t          madeleine,
@@ -1367,6 +1369,7 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
   tbx_darray_expand_and_set(mad_channel->in_connection_darray,  l_dst, in);
   tbx_darray_expand_and_set(mad_channel->out_connection_darray, l_dst, out);
 }
+#endif /* MARCEL */
 
 static
 tbx_bool_t

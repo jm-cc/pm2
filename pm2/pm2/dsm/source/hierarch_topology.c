@@ -1,9 +1,9 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.c,v 1.7 2002/10/25 11:20:21 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.c,v 1.8 2002/10/27 14:09:14 slacour Exp $
  */
 
-/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+/* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
 
 /* This module stores the information about the underlying topology of
  * the nodes connected over a hierarchical network.  It offers 'set'
@@ -20,15 +20,15 @@
 /* PRIVATE GLOBAL VARIABLES                                           */
 /**********************************************************************/
 
-static unsigned int cluster_number = 0;
-static unsigned int * cluster_colors = NULL;
+static int cluster_number = 0;
+static int * cluster_colors = NULL;
 
 
 /**********************************************************************/
 /* PUBLIC GLOBAL VARIABLES                      */
 /**********************************************************************/
 
-const unsigned int NO_COLOR = ((unsigned int)(-1));
+const int NO_COLOR = ((int)(-1));
 
 
 /**********************************************************************/
@@ -47,7 +47,7 @@ topology_initialization (void)
 
    cluster_number = 1;
 
-   cluster_colors = tmalloc(size * sizeof(unsigned int));
+   cluster_colors = tmalloc(size * sizeof(int));
    if ( cluster_colors == NULL ) return DSM_ERR_MEMORY;
    for (i = 0; i < size; i++)
       cluster_colors[i] = 0;
@@ -74,7 +74,7 @@ topology_finalization (void)
 /**********************************************************************/
 /* return the number of clusters; this function is NOT protected
  * against concurrency and must be called after pm2_init(). */
-unsigned int
+int
 topology_get_cluster_number (void)
 {
    return cluster_number;
@@ -85,7 +85,7 @@ topology_get_cluster_number (void)
 /* return the color of the given node to determine to what cluster it
  * belongs; this function is NOT protected against concurrency and
  * must be called after pm2_init(). */
-unsigned int
+int
 topology_get_cluster_color (const dsm_node_t node)
 {
    if ( node < pm2_config_size() && node != NOBODY )
@@ -100,7 +100,7 @@ topology_get_cluster_color (const dsm_node_t node)
  * cluster; this function is NOT protected against concurrency and
  * must be called after pm2_init(). */
 int
-topology_set_cluster_colors (const unsigned int * const tab)
+topology_set_cluster_colors (const int * const tab)
 {
    int i;
    const int size = pm2_config_size();

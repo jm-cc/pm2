@@ -14,4 +14,38 @@
 # General Public License for more details.
 
 
-exec "$@"
+prog="$1"
+shift
+
+args=""
+_is_master=yes
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	--mad-slave)
+	    _is_master=no
+	    shift
+	    ;;
+	*)
+	    args="$args '$1'"
+	    shift
+	    ;;
+    esac
+done
+
+# Append the command name
+if [ -n "$PM2_CMD_NAME" ]; then
+    args="$args --mad-app-cmd $PM2_CMD_NAME"
+else
+    args="$args --mad-app-cmd $prog"
+fi
+
+if [ $_is_master = yes ]; then
+    # The first node has rank 0
+    args="$args --mad-rank 0"
+fi
+
+cmd="PM2_CMDLINE='${PM2_CMDLINE}';export PM2_CMDLINE;\
+     $prog $args"
+
+exec /bin/sh -c "$cmd"

@@ -75,7 +75,6 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
   if (dsm_addr(addr))
     (*pagefault_handler)(sig, addr);
   else { // regular seg fault
-    int i;
 #ifdef DEBUG1
     fprintf(stderr, "Not a DSM page fault!\n");
 #endif

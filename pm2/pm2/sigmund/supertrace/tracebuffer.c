@@ -15,43 +15,51 @@
 
 #define TRUE 1
 #define FALSE 0
+#define CORRUPTED_FUT(s) do {if (s) {fprintf(stderr,"Corrupted user trace file\n"); exit(1);}} while(0)
+#define CORRUPTED_FKT(s) do {if (s) {fprintf(stderr,"Corrupted kernel trace file\n"); exit(1);}} while(0)
 
 #define NB_MAX_CPU  16
 
-static trace_buffer buf;
+static trace_buffer buf;          // Buffer of traces
 
-int smp;
+int smp;                          // If the user trace is in smp or not
 
-int abs_num;
+int abs_num;                      // Shouldn't be here it's a bug
 
-static int dec;
-static int rel;
-static u_64 diff_time;
-static u_64 min_fut;
-static u_64 min_fkt;
+static int dec;                   // Whether dec option is on or no
+static int rel;                   // Whether rel option is on or no
+static u_64 diff_time;            // time to be substracted to the current event
+static u_64 min_fut;              // Minimum time for calibration for fut
+static u_64 min_fkt;              // Minimum time for calibration for fkt
 
-static FILE *f_fut;
-static FILE *f_fkt;
-static int thread = -1;
-static int pid;
+static FILE *f_fut;               // file where to read fut events
+static FILE *f_fkt;               // file where to read fkt events
+static int thread = -1;           /* Number of thread "currently running" 
+				     in non SMP mode */
+static int pid;                   // pid given by fut trace file
 
-static int fut_eof;
-static int fkt_eof;
-static trace fut_buf;
-static trace fkt_buf;
+static int fut_eof;               // indicates the end of fut trace file
+static int fkt_eof;               // indicates the end of fkt trace file
+static trace fut_buf;             // 1 trace of pre-buffer for fut
+static trace fkt_buf;             /* 1 trace of pre-buffer for fkt
+				     So we can always take the first event
+				     in time between fut and fkt */
 
-static int pid_table[NB_MAX_CPU];
+static int pid_table[NB_MAX_CPU]; // Gives which pid is running on which cpu
 
-static short int nb_cpu = 1;
-static u_64 begin_total;
-static u_64 end_total;
-static short int is_begining = 1;
-static double cpu_cycles;
-static int highest_thr = 0;
+static short int nb_cpu = 1;      // Number of cpus given by fkt
+static u_64 begin_total;          // Time of the first event
+static u_64 end_total;            // Time of the last event
+static short int is_begining = 1; /* Indicates if it is the first event we see
+				     (for begin_total) */
+static double cpu_cycles;         /* read from fut or fkt to know the speed of 
+				     the cpu */
+static int highest_thr = 0;       // To know the higest number of threads
 
-#define zone_flou 0x01000000
+#define zone_flou 0x01000000      // fuzzy zone for the comparison function
 
-int le(u_64 clock1, u_64 clock2)
+int le(u_64 clock1, u_64 clock2)  /* Returns TRUE if clock1 <= clock2, 
+				     handles zero problem */
 {
   unsigned a;
   unsigned b;
@@ -62,7 +70,10 @@ int le(u_64 clock1, u_64 clock2)
   return FALSE;
 }
 
-// Returns 0 if OK 1 if EOF
+/*
+  reads an event from f_fut and places it in tr.
+  If no more events in fut, returns 1 else returns 0
+*/
 static int read_user_trace(trace *tr)
 {
   int i;
@@ -71,52 +82,35 @@ static int read_user_trace(trace *tr)
     fut_eof = 1;
     return 1;
   }  
-  if (fread(&(tr->code), sizeof(int), 1, f_fut) == 0) {
-    fprintf(stderr,"Corrupted user trace file\n");
-    exit(1);
-  } 
+  CORRUPTED_FUT(fread(&(tr->code), sizeof(int), 1, f_fut) == 0);
   tr->type = USER;
   j = 0;
   i = ((tr->code & 0xff) - 12) / 4;
-  if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {
-    if (fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
-    if (fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
+  // These instructions are useless
+  if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {  
+    CORRUPTED_FUT(fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0);
     i-=2;
     j+=2;
   } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
-    if (fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
-    if (fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
-    if (fread(&(tr->args[2]), sizeof(int), 1, f_fut) == 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
+    CORRUPTED_FUT(fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(&(tr->args[2]), sizeof(int), 1, f_fut) == 0);
     i-=3;
     j+=3;
   }
-  while (i != 0) {
-    if (fread(&(tr->args[j]), sizeof(int), 1, f_fut) == 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
+  while (i != 0) {                                 // reads arguments
+    CORRUPTED_FUT(fread(&(tr->args[j]), sizeof(int), 1, f_fut) == 0);
     i--;
     j++;
   }
   return 0;
 }
 
-/* idem */
+/*
+  reads an event from f_fkt and places it in tr.
+  If no more events in fkt, returns 1 else returns 0
+*/
 static int read_kernel_trace(trace *tr)
 {
   int i;
@@ -127,31 +121,22 @@ static int read_kernel_trace(trace *tr)
   }
   tr->clock = j;
   tr->type = KERNEL;
-  if (fread(&j, sizeof(unsigned int), 1, f_fkt) == 0) {
-    fprintf(stderr,"Corrupted kernel trace file\n");
-    exit(1);
-  }
+  CORRUPTED_FKT(fread(&j, sizeof(unsigned int), 1, f_fkt) == 0);
   tr->cpu = j >> 16;
   tr->pid = j & 0xffff;
   if (pid_table[tr->cpu] == -1) {
     pid_table[tr->cpu] = tr->pid;
   }
-  if (fread(&(tr->code), sizeof(int), 1, f_fkt) == 0) {
-    fprintf(stderr,"Corrupted kernel trace file\n");
-    exit(1);
-  }
+  CORRUPTED_FKT(fread(&(tr->code), sizeof(int), 1, f_fkt) == 0);
   if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
     j = 0;
     i = ((tr->code & 0xff) - 12) / 4;
     while (i != 0) {
-      if (fread(&(tr->args[j]), sizeof(int), 1, f_fkt) == 0) {
-	fprintf(stderr,"Corrupted kernel trace file\n");
-	exit(1);
-      }
+      CORRUPTED_FKT(fread(&(tr->args[j]), sizeof(int), 1, f_fkt) == 0);
       i--;
       j++;
     }
-    if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
+    if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {  // This should not be here !!!
       if (pid_table[tr->args[1]] == -1) {
 	pid_table[tr->args[1]] = tr->args[0];
       }
@@ -161,10 +146,10 @@ static int read_kernel_trace(trace *tr)
 }
 
 
-/* calculate all the informations (cpu number...)  */
+/* calculate all the informations (cpu number...)  for an user event */
 static void fut_trace_calc(trace *tr)
 {
-  if (smp) {
+  if (smp) {                                       // thread calculation
     if (tr->code >> 8 == FUT_SWITCH_TO_CODE) {
       tr->thread = tr->args[0];
     } else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
@@ -175,41 +160,48 @@ static void fut_trace_calc(trace *tr)
       tr->thread = 0;  // For now on
     } else tr->thread = tr->args[0];
   } else tr->thread = thread;
-  tr->pid = lwp_of_thread(tr->thread);
+  tr->pid = lwp_of_thread(tr->thread);              // Pid of this thread
   if (tr->pid == -1) tr->pid = pid;
-  if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {
+  if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {      /* If switch_to, sets the 
+						      new thread to lwp */
     set_switch(tr->args[0], tr->args[1]);
-    if (!smp) thread = tr->args[1];
-  } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
+    if (!smp) thread = tr->args[1];                 // If !smp, updates thread
+  } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) { // IN case of FUT_NEW_LWP
     int n;
-    add_lwp(tr->args[0], tr->args[2], tr->args[1]);
-    for(n = 0; n < NB_MAX_CPU; n++)
+    add_lwp(tr->args[0], tr->args[2], tr->args[1]); /* adds this new lwp to
+						       the lwp list */
+    for(n = 0; n < NB_MAX_CPU; n++)                 /* tries to find the cpu
+						       number */
       if (pid_table[n] == tr->args[0]) {
-	set_cpu(tr->args[0], n); 
+	set_cpu(tr->args[0], n);                    // sets the cpu to this lwp
 	break;
       }
-    if (!smp) thread = tr->args[2];
+    if (!smp) thread = tr->args[2];                 // This is false!!!!!!!
   }
-  tr->cpu = cpu_of_lwp(tr->pid);
-  if ((tr->cpu >= NB_MAX_CPU) || (tr->cpu < 0)) {
-    printf("OUps %d %d %d\n",tr->cpu, tr->pid, tr->thread);
+  tr->cpu = cpu_of_lwp(tr->pid);                    // gets the cpu of this event
+  if ((tr->cpu >= NB_MAX_CPU) || (tr->cpu < 0)) {   /* Bad luck, no way of 
+						       finding the cpu number */
+    printf("Oups %d %d %d\n",tr->cpu, tr->pid, tr->thread);
   }
   tr->relevant = 1;
 }
 
 
-/* calculates all the informations (thread number, pid)...*/
+/* calculates all the informations (thread number, pid)... for a kernel event*/
 static void fkt_trace_calc(trace *tr)
 {
   tr->relevant = 0;
-  if (pid_table[tr->cpu] == -1) {
+  if (pid_table[tr->cpu] == -1) {               // We found usefull information
     pid_table[tr->cpu] = tr->pid;
-    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);
+    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);   /* Sets this lwp to its 
+							 correct cpu */
   }
   if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
       tr->relevant = 1;
       assert(tr->args[1] < NB_MAX_CPU);
+      if (tr->args[1] != tr->cpu)
+	fprintf(stderr, "Strange kernel switch_to: might cause problems to sigmund\n");
       pid_table[tr->args[1]] = tr->args[0];
       if (is_lwp(tr->args[0])) {
 	set_cpu(tr->args[0], tr->args[1]);
@@ -217,7 +209,7 @@ static void fkt_trace_calc(trace *tr)
       }
     }
   }
-  if (is_lwp(tr->pid)) {
+  if (is_lwp(tr->pid)) {               // If this event is an event from PM2
     tr->relevant = 1;
     tr->thread = thread_of_lwp(tr->pid);
   } else tr->thread = -1;
@@ -239,25 +231,17 @@ static void read_fut_header()
   int n;
   char header[200];
   if (f_fut != NULL) {
-    // Reading  of teh fut header : Corrupted files not dealed with */
-    fread(&smp, sizeof(int), 1, f_fut);
-    fread(&pid, sizeof(unsigned long), 1, f_fut);
-    fread(&cpu_cycles, sizeof(double), 1, f_fut);
-    fread(header, 2*sizeof(time_t) + sizeof(unsigned int), 1, f_fut);  
-    if (read_user_trace(&fut_buf) != 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
-    if (read_user_trace(&fut_buf) != 0) {
-      fprintf(stderr,"Corrupted user trace file\n");
-      exit(1);
-    }
+    // Reading  of teh fut header : Corrupted files not dealed with
+    CORRUPTED_FUT(fread(&smp, sizeof(int), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(&pid, sizeof(unsigned long), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(&cpu_cycles, sizeof(double), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(header, 2*sizeof(time_t) + sizeof(unsigned int), 1, \
+			f_fut) == 0);  
+    CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
+    CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
     last = fut_buf.clock;
     for(n = 0; n < 9; n++) {
-      if (read_user_trace(&fut_buf) != 0) {
-	fprintf(stderr,"Corrupted user trace file\n");
-	exit(1);
-      }
+      CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
       if (min_fut == 0) min_fut = fut_buf.clock - last;
       else if (fut_buf.clock - last < min_fut) min_fut = fut_buf.clock - last;
     }
@@ -282,44 +266,35 @@ static void read_fkt_header()
   unsigned int max_nints;
   char name[400];
   if (f_fkt != NULL) {
-    fread(&ncpus, sizeof(ncpus), 1, f_fkt);
+    CORRUPTED_FKT(fread(&ncpus, sizeof(ncpus), 1, f_fkt) == 0);
     nb_cpu = (short int) nb_cpu;
     printf("nb_cpu = %d\n",nb_cpu);
     mhz = (double *) malloc(sizeof(double)*ncpus);
     assert(mhz != NULL);
     fread(mhz, sizeof(double), ncpus, f_fkt);
     cpu_cycles = mhz[0];
-    fread(&fkt_pid, sizeof(unsigned int), 1, f_fkt);
-    fread(&fkt_kidpid, sizeof(unsigned int), 1, f_fkt);
-    fread(&t1, sizeof(time_t), 1, f_fkt);
-    fread(&t2, sizeof(time_t), 1, f_fkt);
-    fread(&start_jiffies, sizeof(clock_t), 1, f_fkt);
-    fread(&stop_jiffies, sizeof(clock_t), 1, f_fkt);
-    fread(&nirqs, sizeof(unsigned int), 1, f_fkt);
-    fread(&ncpus, sizeof(unsigned int), 1, f_fkt);
+    CORRUPTED_FKT(fread(&fkt_pid, sizeof(unsigned int), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&fkt_kidpid, sizeof(unsigned int), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&t1, sizeof(time_t), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&t2, sizeof(time_t), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&start_jiffies, sizeof(clock_t), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&stop_jiffies, sizeof(clock_t), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&nirqs, sizeof(unsigned int), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&ncpus, sizeof(unsigned int), 1, f_fkt) == 0);
     for(n = 0; n < nirqs; n++) {
       unsigned k;
-      fread(&code, sizeof(unsigned int), 1, f_fkt);
-      fread(&i, sizeof(unsigned int), 1, f_fkt);
+      CORRUPTED_FKT(fread(&code, sizeof(unsigned int), 1, f_fkt) == 0);
+      CORRUPTED_FKT(fread(&i, sizeof(unsigned int), 1, f_fkt) == 0);
       k = (i + 3) & ~3;
-      fread(name, sizeof(char), k, f_fkt);
+      CORRUPTED_FKT(fread(name, sizeof(char), k, f_fkt) == 0);
     }
-    fread(&max_nints, sizeof(unsigned int), 1, f_fkt);
-    fread(&nints, sizeof(unsigned int), 1, f_fkt);
-    if (read_kernel_trace(&fkt_buf) != 0) {
-      fprintf(stderr,"Corrupted kernel trace file\n");
-      exit(1);
-    } 
-    if (read_kernel_trace(&fkt_buf) != 0) {
-      fprintf(stderr,"Corrupted kernel trace file\n");
-      exit(1);
-    }
+    CORRUPTED_FKT(fread(&max_nints, sizeof(unsigned int), 1, f_fkt) == 0);
+    CORRUPTED_FKT(fread(&nints, sizeof(unsigned int), 1, f_fkt) == 0);
+    CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
+    CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
     last = fkt_buf.clock;
     for(n = 0; n < 9; n++) {
-      if (read_kernel_trace(&fkt_buf) != 0) {
-	fprintf(stderr,"Corrupted kernel trace file\n");
-	exit(1);
-      }
+      CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
       if (min_fkt == 0) min_fkt = fkt_buf.clock - last;
       else if (fkt_buf.clock - last < min_fkt) min_fkt = fkt_buf.clock - last;
     }
@@ -327,7 +302,9 @@ static void read_fkt_header()
 }
 
 
-/* add an event in the buffer */
+/* add an event in the buffer 
+   Takes care of reordering by time
+*/
 static void add_buffer(trace tr)
 {
   int i;
@@ -346,7 +323,6 @@ static void add_buffer(trace tr)
     tr_item->tr.args[i] = tr.args[i];
   tmp = buf.last;
   while (tmp != EMPTY_LIST) {
-    // Beware pb of 0
     if (le(tmp->tr.clock,tr_item->tr.clock)) break;
     tmp = tmp->prev;
   }
@@ -378,7 +354,7 @@ static int get_buffer(trace *tr)
     if (tr->type == USER) diff_time += min_fut;
     else diff_time += min_fkt;
   }
-  tr->number = abs_num++;
+  tr->number = abs_num++;                       // NO, shouldn't be there!!
   if (buf.first->next == EMPTY_LIST) {
     free(buf.first);
     buf.first = EMPTY_LIST;
@@ -395,7 +371,11 @@ static int get_buffer(trace *tr)
   return 0;
 }
 
-// Returns 0 if good 1 if EOF
+/*
+    Loads an event in the buffer, returns 1 if no more to add, 0 if ok
+    Adds to the buffer the first event between the events in the pre_buffers. 
+    Recharge the pre-buffer used
+*/
 static int load_trace()
 {
   if (fut_eof && fkt_eof) return 1;
@@ -409,7 +389,6 @@ static int load_trace()
       read_kernel_trace(&fkt_buf);
     }
     else {
-      // Take care of the problem with the 0 clock
       if (le(fut_buf.clock, fkt_buf.clock)) {
 	add_buffer(fut_buf);
 	read_user_trace(&fut_buf);
@@ -424,7 +403,8 @@ static int load_trace()
 }
 
 /* initialise the buffer and open the trace*/
-void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt)
+void init_trace_buffer(char *fut_name, char *fkt_name, int relative, 
+		       int dec_opt)
 {
   int n = 0;
   f_fut = NULL;
@@ -436,11 +416,12 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
   diff_time = 0;
   fkt_eof = 1;
   fut_eof = 1;
-  abs_num = 0;
+  abs_num = 0;                                         // Should move
   for(n = 0; n < NB_MAX_CPU; n++)
     pid_table[n] = -1;
   n = 0;
-  assert((fut_name != NULL) || (fkt_name != NULL));
+  assert((fut_name != NULL) || (fkt_name != NULL));    /* One trace file must
+							  be precised */
   if (fut_name != NULL) {
     if ((f_fut = fopen(fut_name,"r")) == NULL) {
       fprintf(stderr,"Error in opening file  %s\n", fut_name);
@@ -460,7 +441,7 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
   buf.last = EMPTY_LIST;
   read_fut_header();
   read_fkt_header();
-  while(n < TRACE_BUFFER_SIZE) {
+  while(n < TRACE_BUFFER_SIZE) {                    // Loads the buffer
     if (load_trace() != 0) break;
     n++;
   }
@@ -495,7 +476,16 @@ int get_next_trace(trace *tr)
 }
 
 
-/* generate the supertrace header */
+/* generate the supertrace header 
+   short int        number of cpus 
+                    (problem in mono mode always 1 but maybe 4 real cpus)
+   u_64             time of beginning
+   u_64             time of last event
+   double           cpu_cycles
+   int              highest number of thread
+   int              number of lwp
+   int[]            numeros of lwp
+*/
 void supertrace_end(FILE *f)
 {
   int i,n,a;

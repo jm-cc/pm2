@@ -100,27 +100,39 @@ restart_func: \n\
 	.size	 restart_func,.Lmye-restart_func \n\
 ") ;
 
+int mysleep()
+{
+	volatile int i,j;
+	for (i=0; i<10000; i++)
+		for (j=0; j<10000; j++)
+			;
+}
+
+extern int flag;
+
 int hack_restart_func(act_proc_t new_proc, int return_value, 
 		      int param, long eip, long esp)
 {
 	marcel_t current = marcel_self();
 	
-	SET_LWP(current, GET_LWP_BY_NUM(proc));
+	SET_LWP(current, GET_LWP_BY_NUM(new_proc));
 #ifdef SHOW_UPCALL
 	marcel_printf("\trestart_func (proc %i, ret %i, param 0x%8x,"
 		      " ip 0x%8x, sp 0x%8x)\n",
 		      new_proc, return_value, param, eip, esp);
 #else
-	mdebug("\trestart_func (proc %i, ret %i, param 0x%8x,"
+	mdebug("\trestart_func (proc %i, ret %i, param %p,"
 	       " ip 0x%8x, sp 0x%8x)\n",
-	       new_proc, return_value, param, eip, esp);
+	       new_proc, return_value, (void*)param, eip, esp);
 #endif
+	//mysleep();
 	if (IS_TASK_TYPE_IDLE(current)) {
 		if (param != ACT_RESCHEDULE) {
-			marcel_printf("\trestart_func in idle task %p !! \n",
+			printf("\trestart_func in idle task %p !! \n",
 				      current);
 		}
 	}
+	mdebug("\tcoucou\n");
   	if (param & ACT_UNBLK_RESTART_UNBLOCKED) {
 		switch (param & 0xFF) {
 		case ACT_RESTART_FROM_SCHED:
@@ -145,12 +157,19 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 			RAISE("invalid parameter");
 		}
   	} else if (param & ACT_UNBLK_IDLE) {
+		mdebug("\trestarting unblocked\n");
 		if ((param & 0xFF) == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
 		}
+		mdebug("\trestarting unblocked 1\n");
 		SET_FROZEN(GET_LWP(current)->prev_running);
+		mdebug("\trestarting unblocked 2\n");
+		flag=1;
 		UNCHAIN_TASK(GET_LWP(current)->prev_running);
+		flag=0;
+		mdebug("\trestarting unblocked 3\n");
 		MTRACE("Restarting", current);
+		mdebug("\trestarting unblocked 4\n");
 		unlock_task();
 	} else if (param & ACT_RESCHEDULE) {
 		if(!locked() && preemption_enabled()) {
@@ -230,7 +249,7 @@ void upcall_new(act_proc_t proc)
 	//ACTDEBUG(printf("upcall_new launch %p\n", next));  
 
 	/* On ne veut pas être mis en non_running */
-	GET_LWP(self)->prev_running=NULL;
+	GET_LWP(marcel_self())->prev_running=NULL;
 	MA_THR_LONGJMP(next, NORMAL_RETURN);
 	
 
@@ -264,7 +283,7 @@ void init_upcalls(int nb_act)
 	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
 
 #ifdef MA__LWPS
-	for(proc=0; proc<ACT_NB_MAX_CPU; proc++) {
+	for(proc=0; proc<nb_act; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */
 		init_act(proc, &param);
 	}
@@ -274,6 +293,7 @@ void init_upcalls(int nb_act)
 	param.magic_number=ACT_MAGIC_NUMBER;
 	param.nb_proc_wanted=nb_act;
 	param.reset_count=0;
+	//param.reset_count=-1; /* No preemption */
 	/* param->upcall_new_sp[proc] */
 	param.upcall_new=upcall_new;
 	param.restart_func=restart_func;
@@ -296,6 +316,8 @@ void init_upcalls(int nb_act)
 		exit(1);
 	}
 	
+	//mdebug("Initialisation nearly done\n");
+	//mysleep();
 	mdebug("Initialisation upcall done\n");
 	//ACTDEBUG(printf("Fin act_init\n"));
 	//scanf("%i", &proc);

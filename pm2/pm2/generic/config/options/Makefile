@@ -30,6 +30,7 @@ duplique_global:
 		    < $$1 > $$3.new ; \
 		cmp -s $$3.new $$3 || ( \
 		    echo "updating $$lib//$$1" ;\
+		    bk edit $$3 ;\
 		    mv -f $$3.new $$3 ;\
 		    false ) && rm -f $$3.new ; \
 	    fi ;\

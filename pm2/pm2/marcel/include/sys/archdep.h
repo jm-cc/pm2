@@ -34,6 +34,21 @@
 
 ______________________________________________________________________________
 $Log: archdep.h,v $
+Revision 1.4  2000/04/11 09:07:14  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.3.2.4  2000/04/04 07:59:26  rnamyst
+Modified a lot of macros so that they can be used as "single" instructions.
+
+Revision 1.3.2.3  2000/03/30 16:57:28  rnamyst
+Introduced TOP_STACK_FREE_AREA...
+
+Revision 1.3.2.2  2000/03/22 16:34:04  vdanjean
+*** empty log message ***
+
+Revision 1.3.2.1  2000/03/15 15:54:52  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.3  2000/03/06 14:56:02  rnamyst
 Modified to include "marcel_flags.h".
 
@@ -49,7 +64,7 @@ ______________________________________________________________________________
 
 #include "sys/marcel_flags.h"
 
-#ifdef ACT_OR_SMP
+#ifdef MA__LWPS
 
 #if defined(SOLARIS_SYS)
 #include <thread.h>
@@ -80,43 +95,44 @@ static __inline__ void SCHED_YIELD(void)
 
 /* Solaris sparc */
 #if defined(SOLARIS_SYS) && defined(SPARC_ARCH)
+#define TOP_STACK_FREE_AREA     (WINDOWSIZE+128)
 #define SP_FIELD(buf)           ((buf)[1])
 #endif
 
 /* DEC Alpha farm */
 #if defined(OSF_SYS) && defined(ALPHA_ARCH)
-#define WINDOWSIZE              128
+#define TOP_STACK_FREE_AREA     128
 #define SP_FIELD(buf)           ((buf)[27])
 #endif
 
 /* Cray T3E */
 #if defined(UNICOS_SYS) && defined(ALPHA_ARCH)
-#define WINDOWSIZE		256
+#define TOP_STACK_FREE_AREA	256
 #define SP_FIELD(buf)           ((buf)[2])
 #define FP_FIELD(buf)           ((buf)[3])
 #endif
 
 /* Any Intel x86 system */
 #if defined(X86_ARCH)
-#define WINDOWSIZE              32
+#define TOP_STACK_FREE_AREA     64
 #define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
 #endif
 
 /* IBM SP2 */
 #if defined(AIX_SYS) && defined(RS6K_ARCH)
-#define WINDOWSIZE              256
+#define TOP_STACK_FREE_AREA     256
 #define SP_FIELD(buf)           ((buf)[3])
 #endif
 
 /* Linux PPC */
 #if defined(LINUX_SYS) && defined(PPC_ARCH)
-#define WINDOWSIZE              256
+#define TOP_STACK_FREE_AREA     256
 #define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_GPR1])
 #endif
 
 /* SGI */
 #if defined(IRIX_SYS) && defined(MIPS_ARCH)
-#define WINDOWSIZE              128
+#define TOP_STACK_FREE_AREA     128
 #define SP_FIELD(buf)           ((buf)[JB_SP])
 #endif
 
@@ -136,7 +152,7 @@ static __inline__ long get_sp()
                          : : "r" (val) : "memory")
 extern void call_ST_FLUSH_WINDOWS(void);
 #else
-#define call_ST_FLUSH_WINDOWS() /* Only exists for sparc */
+#define call_ST_FLUSH_WINDOWS()  (void)0
 #endif
 
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.4  2000/05/25 00:23:58  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.3  2000/03/13 09:48:38  oaumage
 - ajout de l'option TBX_SAFE_MALLOC
 - support de safe_malloc
@@ -54,8 +57,29 @@ ______________________________________________________________________________
 
 #include "tbx.h"
 
-void tbx_init()
+#include "pm2debug.h"
+
+#ifdef PM2DEBUG
+#ifdef TBX_DEBUG
+debug_type_t tbx_debug_log=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-log");
+#else
+debug_type_t tbx_debug_log=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-log");
+#endif
+#ifdef TBX_DEBUG
+debug_type_t tbx_debug_trace=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-trace");
+#else
+debug_type_t tbx_debug_trace=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-trace");
+#endif
+#endif
+
+void tbx_init(int *argc, char **argv, int debug_flags)
 {
+  
+  pm2debug_register(&tbx_debug_log);
+  pm2debug_register(&tbx_debug_trace);
+
+  pm2debug_init_ext(argc, argv, debug_flags);
+
   /* Safe malloc */
 #ifdef TBX_SAFE_MALLOC
   tbx_safe_malloc_init();

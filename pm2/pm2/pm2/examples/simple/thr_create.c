@@ -126,9 +126,9 @@ static void eval_thread_creation(void)
 
     GET_TICK(t1);
 
-    /* marcel_trace_on(); */
+    marcel_trace_on();
     pm2_thread_create(null_pm2_thread, NULL);
-    /* marcel_trace_off(); */
+    marcel_trace_off();
 
     GET_TICK(t2);
 

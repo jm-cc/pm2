@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.5  2000/03/15 16:58:33  oaumage
+- support APPLICATION_SPAWN
+- mad_test.c: demo `application spawn'
+
 Revision 1.4  2000/03/02 14:27:55  oaumage
 - support d'un protocole par defaut
 
@@ -125,8 +129,30 @@ int main(int argc, char **argv)
   adapter_set = mad_adapter_set_init(1, mad_DRIVER_DEFAULT, NULL); 
 #endif /* BI_PROTO */
 
+#ifdef APPLICATION_SPAWN
+  {
+    char *url;
+    
+    url = mad_pre_init(adapter_set);
+    if (argc > 1)
+      {
+	madeleine = mad_init(-1, /* rank, -1 = default */
+			     NULL, /* Configuration file */
+			     argv[1] /* URL */
+			     );
+      }
+    else
+      {
+	DISP("Master: url = %s\n", url);
+	madeleine = mad_init(-1, NULL, NULL);
+      }
+    
+    // exit(EXIT_SUCCESS);
+  }
+#else /* APPLICATION_SPAWN */
   madeleine = mad_init(&argc, argv, NULL, adapter_set);
-
+#endif /* APPLICATION_SPAWN */
+  
   for (k = 0 ; k < NB_CHANNELS ; k++)
     {
 #ifdef BI_PROTO

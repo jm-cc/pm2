@@ -64,7 +64,7 @@ mad_alloc_buffer(size_t length)
 
   buffer = mad_alloc_buffer_struct();
 
-  buffer->buffer = TBX_MALLOC(length);
+  buffer->buffer = tbx_aligned_malloc(length, MAD_ALIGNMENT);
   
   if (!buffer->buffer)
     FAILURE("not enough memory");

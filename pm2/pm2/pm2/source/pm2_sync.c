@@ -196,8 +196,9 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
 
   marcel_sem_P(&bar->mutex);
   if(++bar->nb == bar->local) {
-    int i;
 #ifdef DSM
+    int i;
+
     /* Here we handle consistency (first phase: release) */
     for (i = 0; i < bar->nb_prot; i++) 
       {

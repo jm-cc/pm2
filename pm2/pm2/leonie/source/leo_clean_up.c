@@ -791,7 +791,7 @@ dir_channel_exit(p_leo_directory_t dir)
 					       l_rank_dst))
 		    continue;
 
-		  TRACE("Disconnecting %d to %d", l_rank_src, l_rank_dst);
+		  TRACE("Disconnecting %d from %d", l_rank_src, l_rank_dst);
 
 		  process_dst = ntbx_pc_get_local_process(pc, l_rank_dst);
 		  process_specific_dst = process_dst->specific;

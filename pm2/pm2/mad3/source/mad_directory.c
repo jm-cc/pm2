@@ -1251,14 +1251,14 @@ void
    LOG_IN();
    TRACE("Updating  directory");
    
-   if (madeleine->updated == tbx_false)
+   if (madeleine->dynamic->updated == tbx_false)
      {	
 	if ( madeleine->new_dir != NULL )
 	  {	     
 	     madeleine->old_dir = madeleine->dir;
 	     madeleine->dir     = madeleine->new_dir;
 	     madeleine->new_dir = NULL;
-	     madeleine->updated = tbx_true;
+	     madeleine->dynamic->updated = tbx_true;
 	  }	
      }   
    LOG_OUT();
@@ -1269,16 +1269,14 @@ void
 {   
    LOG_IN();
    TRACE("Getting old  directory");
-   if (madeleine->updated == tbx_false)
+   if (madeleine->dynamic->updated == tbx_false)
      {	
 	if ( madeleine->old_dir != NULL )
 	  {	     
-	     p_mad_directory_t  dir  = NULL;
-	     dir                = madeleine->new_dir;
-	     madeleine->new_dir = madeleine->dir;
-	     madeleine->dir     = madeleine->old_dir;
-	     madeleine->old_dir = dir;
-	     madeleine->updated = tbx_true;
+	     madeleine->dir              = madeleine->old_dir;
+	     madeleine->new_dir          = NULL;
+	     madeleine->old_dir          = NULL;
+	     madeleine->dynamic->updated = tbx_true;
 	  }	
      }   
    LOG_OUT();
@@ -1291,10 +1289,10 @@ volatile int
    tbx_bool_t res = tbx_false;
    
    LOG_IN();
-   if ( madeleine->updated == tbx_true )
+   if ( madeleine->dynamic->updated == tbx_true )
      {	
-	madeleine->updated = tbx_false;
-	res                = tbx_true;
+	madeleine->dynamic->updated = tbx_false;
+	res                         = tbx_true;
      }
    LOG_OUT();
    return res;

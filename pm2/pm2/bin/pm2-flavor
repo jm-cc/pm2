@@ -186,8 +186,10 @@ find_flavor() {
 
 get_liste_flavor() {
     liste_flavor_tmp=""
-    liste_flavor_tmp="$liste_flavor_tmp `(cd $USER_FLAVOR_DIR; ls) | sort | uniq`"
-    liste_flavor="`echo $liste_flavor_tmp`"
+    if [ -d "$USER_FLAVOR_DIR" ]; then
+        liste_flavor_tmp="$liste_flavor_tmp `(cd $USER_FLAVOR_DIR; ls) | sort | uniq`"
+        liste_flavor="`echo $liste_flavor_tmp`"
+    fi
     return 0
 }
 

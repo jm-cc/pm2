@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <glib.h>
 #include <gtk/gtk.h>

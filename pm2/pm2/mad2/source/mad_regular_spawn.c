@@ -69,7 +69,6 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
       return;
     }
 
-  // Faut-il garder ce code Olivier ???
   if (settings->app_cmd)
     {
       exec = settings->app_cmd;
@@ -113,7 +112,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
     {
       p_mad_adapter_t adapter = &(madeleine->adapter[ad]);
 
-      sprintf(arg, " -device %s ", adapter->parameter);
+      sprintf(arg, " --mad-device %s ", adapter->parameter);
       strcat (arg_str, arg);
     }
 
@@ -129,7 +128,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
       if (exec[0] != '/')
 	{
 	  sprintf(cmd,
-		  "%s %s %s %s/%s -cwd %s -rank %d -conf %s %s &",
+		  "%s %s %s %s/%s --mad-cwd %s --mad-rank %d --mad-conf %s %s &",
 		  settings->rsh_cmd,
 		  configuration->host_name[i],
 		  prefix,
@@ -143,7 +142,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
       else
 	{
 	  sprintf(cmd,
-		  "%s %s %s %s -cwd %s -rank %d -conf %s %s &",
+		  "%s %s %s %s --mad-cwd %s --mad-rank %d --mad-conf %s %s &",
 		  settings->rsh_cmd,
 		  configuration->host_name[i],
 		  prefix,

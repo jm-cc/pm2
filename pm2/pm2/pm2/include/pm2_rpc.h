@@ -34,6 +34,15 @@
 
 ______________________________________________________________________________
 $Log: pm2_rpc.h,v $
+Revision 1.5  2000/07/14 16:17:07  gantoniu
+Merged with branch dsm3
+
+Revision 1.4.10.1  2000/06/13 16:44:06  gantoniu
+New dsm branch.
+
+Revision 1.4.8.1  2000/06/07 09:19:36  gantoniu
+Merging new dsm with current PM2 : first try.
+
 Revision 1.4  2000/03/01 16:43:05  oaumage
 - suppression des warnings en compilation  -g
 
@@ -67,7 +76,6 @@ void pm2_rpc_init(void);
 #define END_LRPC_LIST	;
 
 #include "sys/console.h"
-#include "sys/isomalloc_rpc.h"
 #ifdef DSM
 #include "dsm_rpc.h"
 #endif

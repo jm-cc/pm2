@@ -97,19 +97,22 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
 /*   init functions: dsm_pm2_init_before_startup_funcs() and */
 /*   dsm_pm2_init_after_startup_funcs()  */
 
-/*  void dsm_pm2_init(int my_rank, int confsize) */
-/*  {   */
-/*    LOG_IN(); */
+#if 0
+void dsm_pm2_init(int my_rank, int confsize)
+{
+   LOG_IN();
 
-/*    dsm_init_protocol_table(); */
-/*    dsm_page_table_init(my_rank, confsize); */
-/*    dsm_comm_init(); */
-/*    dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler); */
-/*    token_lock_initialization(); */
-/*    topology_initialization(); */
+   dsm_init_protocol_table();
+   dsm_page_table_init(my_rank, confsize);
+   dsm_comm_init();
+   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
+   token_lock_initialization();
+   topology_initialization();
 
-/*    LOG_OUT(); */
-/*  } */
+   LOG_OUT();
+}
+#endif
+
 
 void dsm_pm2_exit()
 {

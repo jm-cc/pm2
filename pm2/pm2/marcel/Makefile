@@ -113,8 +113,10 @@ KFILES=$(shell find include source -iname "linux_*.[ch]" | \
 		-e 's,lwp,cpu,' \
 		-e 's,kernel/notifier.c,kernel/sys.c,')
 
+# Répertoire contenant (ou lien vers) les sources du noyau 
 KDIR= linux_tree
 
+# Répertoire contenant la copie des fichiers du noyau que l'on a adapté à marcel
 COPYDIR=linux_archive
 
 .PHONY: linux
@@ -124,7 +126,12 @@ linux:
 			if [ ! -f $(COPYDIR)/$$f ]; then \
 				echo "Copying new file $$f"; \
 				mkdir -p $$(dirname $(COPYDIR)/$$f); \
-				cp -a $(KDIR)/$$f $(COPYDIR)/$$f ; \
+				bk get $(KDIR)/$$f 2>/dev/null || true ; \
+				if [ ! -f $(KDIR)/$$f ]; then \
+					echo "No $$f in $(KDIR) !!!" ;\
+				else \
+					cp -a $(KDIR)/$$f $(COPYDIR)/$$f ; \
+				fi ; \
 			elif cmp --quiet $(KDIR)/$$f $(COPYDIR)/$$f; then \
 				: ;\
 			else \
@@ -132,7 +139,7 @@ linux:
 			fi ; \
 		done
 	$(COMMON_MAIN)set -e ; LST=""; KFILES="$(KFILES)" ; \
-		for f in $$(find $(COPYDIR) -type f -printf "%P\n") ; do \
+		for f in $$(find $(COPYDIR) -type d -name SCCS -prune -o -type f -printf "%P\n") ; do \
 			case " $$KFILES " in \
 			*\ $$f\ *) ;; \
 			*) echo "$$f: present in archive but not in sources (to remove ?)" ; \
@@ -144,7 +151,3 @@ linux:
 			echo "rm -v $$LST" ; \
 		fi
 
-.PHONY: toto
-toto:
-	$(MAKE)
-	gcc /home/vdanjean/travail/pm2/marcel/marcel.lds /home/vdanjean/build/marcel/examples/obj/sample.o -L/home/vdanjean/build/marcel/lib -Xlinker --start-group  -linit -lmarcel -ltbx     -Xlinker --end-group -o /home/vdanjean/build/marcel/examples/bin/sample

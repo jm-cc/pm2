@@ -548,8 +548,9 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 do_write:
 		if (eaten>PM2DEBUG_MAXLINELEN)
 			eaten=PM2DEBUG_MAXLINELEN;
-		// TODO: syscall carrément
+		lockf(STDERR_FILENO,F_LOCK,0);
 		write(STDERR_FILENO,buffer,eaten);
+		lockf(STDERR_FILENO,F_ULOCK,0);
 	}
 
 	return 0;

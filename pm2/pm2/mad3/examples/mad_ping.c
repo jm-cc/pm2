@@ -63,7 +63,7 @@ static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
-static const int param_one_way           = 1;
+static const int param_one_way           = 0;
 
 static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;
@@ -460,7 +460,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	    {
 	      lrank_dst = lrank_src;
 
-	      if (!ntbx_pc_first_local_rank(pc, &lrank_dst))
+	      if (!ntbx_pc_next_local_rank(pc, &lrank_dst))
 		break;
 	    }
 	  

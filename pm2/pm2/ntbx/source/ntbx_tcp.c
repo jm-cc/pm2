@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.6  2000/04/25 14:33:55  vdanjean
+Nouveaux Makefiles :-)
+
 Revision 1.5  2000/03/08 17:17:00  oaumage
 - utilisation de TBX_MALLOC
 
@@ -70,7 +73,7 @@ ______________________________________________________________________________
 typedef struct
 {
   ntbx_tcp_socket_t descriptor;
-  
+
 } ntbx_tcp_client_specific_t, *p_ntbx_tcp_client_specific_t;
 
 

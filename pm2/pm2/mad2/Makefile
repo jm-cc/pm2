@@ -175,6 +175,7 @@ endif
 
 # dependencies
 DEP_DIRS = $(TBX_ROOT) $(NTBX_ROOT)
+DEP_LIBS = $(TBX_ROOT)/lib/libtbx.a $(NTBX_ROOT)/lib/libntbx.a
 
 # Rules
 # -----
@@ -197,10 +198,10 @@ rtf:
 mad_ping: mad_ping.o $(LIB_MAD2)
 	$(CC) $< $(LIB_MAD2) $(LDFLAGS) -o $@
 
-mad_ping.o: mad_ping.c $(HEADERS)
+mad_ping.o: mad_ping.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-mad_test: mad_test.o $(LIB_MAD2)
+mad_test: mad_test.o $(LIB_MAD2) $(DEP_LIBS)
 	$(CC) $< $(LIB_MAD2) $(LDFLAGS) -o $@ 
 
 mad_test.o: mad_test.c $(HEADERS)
@@ -221,35 +222,37 @@ lines:
               $(SRC)/*.c $(CI_SRC)/*.c \
               $(INC)/*.h $(CI_INC)/*.h
 
-$(OBJ)/madeleine.o: $(SRC)/madeleine.c $(HEADERS)
+$(OBJ)/madeleine.o: $(SRC)/madeleine.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_channel.o: $(SRC)/mad_channel.c $(HEADERS)
+$(OBJ)/mad_channel.o: $(SRC)/mad_channel.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_buffers.o: $(SRC)/mad_buffers.c $(HEADERS)
+$(OBJ)/mad_buffers.o: $(SRC)/mad_buffers.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_memory_management.o: $(SRC)/mad_memory_management.c $(HEADERS)
+$(OBJ)/mad_memory_management.o: $(SRC)/mad_memory_management.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_communication.o: $(SRC)/mad_communication.c $(HEADERS)
+$(OBJ)/mad_communication.o: $(SRC)/mad_communication.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_tcp.o: $(CI_SRC)/mad_tcp.c $(HEADERS)
+$(OBJ)/mad_tcp.o: $(CI_SRC)/mad_tcp.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_via.o: $(CI_SRC)/mad_via.c $(HEADERS)
+$(OBJ)/mad_via.o: $(CI_SRC)/mad_via.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_sisci.o: $(CI_SRC)/mad_sisci.c $(HEADERS)
+$(OBJ)/mad_sisci.o: $(CI_SRC)/mad_sisci.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_sbp.o: $(CI_SRC)/mad_sbp.c $(HEADERS)
+$(OBJ)/mad_sbp.o: $(CI_SRC)/mad_sbp.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-$(OBJ)/mad_mpi.o: $(CI_SRC)/mad_mpi.c $(HEADERS)
+$(OBJ)/mad_mpi.o: $(CI_SRC)/mad_mpi.c $(HEADERS) $(DEP_LIBS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+$(DEP_LIBS): dep_dirs
 
 dep_dirs: $(DEP_DIRS)
 

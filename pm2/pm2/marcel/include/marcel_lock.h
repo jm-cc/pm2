@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.6  2000/03/08 17:37:23  vdanjean
+*** empty log message ***
+
 Revision 1.5  2000/03/06 14:55:42  rnamyst
 Modified to include "marcel_flags.h".
 
@@ -69,17 +72,11 @@ ______________________________________________________________________________
 
 #define __atomic_fool_gcc(x) (*(volatile struct { int a[100]; } *)x)
 
-#ifdef ACT_OR_SMP
+#if defined(ACT_OR_SMP) || defined(__ACT__)
 typedef struct { volatile int counter; } atomic_t;
 #else
-#ifndef __ACT__
 typedef struct { int counter; } atomic_t;
 #endif
-#endif
-
-#ifdef __ACT__
-#include <asm/atomic.h>
-#else
 
 #define ATOMIC_INIT(i)	{ (i) }
 
@@ -101,8 +98,6 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 		:"=m" (__atomic_fool_gcc(v))
 		:"m" (0));
 }
-
-#endif  /* __ACT__ */
 
 static __inline__ int testandset(int *spinlock) __attribute__ ((unused));
 static __inline__ int testandset(int *spinlock)

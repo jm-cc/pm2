@@ -110,7 +110,7 @@ void g(int bytes)
 
 static void set_data_dir(char *buf, char *suffix)
 {
-  char *s = getenv("MADELEINE_ROOT");
+  char *s = getenv("MAD1_ROOT");
 
   if(s)
     sprintf(buf, "%s/examples/data/%s_%s", s, mad_arch_name(), suffix);

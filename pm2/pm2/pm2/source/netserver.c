@@ -77,7 +77,7 @@ static any_t netserver(any_t arg)
 	mad_recvbuf_receive();
 	if ((__pm2_self==0) && !pm2_zero_halt) {
 	  mdebug("Netserver handling NETSERVER_END node 0 first...");
-	  pm2_send_stop_server(1);  
+	  pm2_send_stop_server(1);
 	  pm2_zero_halt=TRUE;
 	} else {
 	  mdebug("Netserver handling NETSERVER_END\n");

@@ -61,25 +61,33 @@ do
 	# librairies 
 	for f in `ls ${PM2_ROOT}/lib/$i`
 	do
+	    if [ ! -d ${PM2_ROOT}/lib/$i/$f ] ; then
 		echo "	deleting ${PM2_ROOT}/lib/$i/$f"
 		rm ${PM2_ROOT}/lib/$i/$f
+	    fi
 	done
 	# objets "source"
 	for f in `ls ${PM2_ROOT}/source/obj/$i`
 	do
+	    if [ ! -d ${PM2_ROOT}/source/obj/$i/$f ] ; then
 		echo "	deleting ${PM2_ROOT}/source/obj/$i/$f"
 		rm ${PM2_ROOT}/source/obj/$i/$f
+	    fi
 	done
 	# console
 	for f in `ls ${PM2_ROOT}/console/obj/$i`
 	do
+	    if [ ! -d ${PM2_ROOT}/console/obj/$i/$f ] ; then
 		echo "	deleting ${PM2_ROOT}/console/obj/$i/$f"
 		rm ${PM2_ROOT}/console/obj/$i/$f
+	    fi
 	done
 	for f in `ls ${PM2_ROOT}/console/bin/$i`
 	do
+	    if [ ! -d ${PM2_ROOT}/console/bin/$i/$f ] ; then
 		echo "	deleting ${PM2_ROOT}/console/bin/$i/$f"
 		rm ${PM2_ROOT}/console/bin/$i/$f
+	    fi
 	done
 	# exemples
 	for rep in `ls ${PM2_ROOT}/examples`

@@ -18,12 +18,6 @@ typedef struct pid_on_list_st {
   struct pid_on_list_st *next;
 } * pid_on_list;
 
-typedef struct thread_graph_num_list_st {
-  int thread;
-  int num;
-  struct thread_graph_num_list_st *next;
-} * thread_graph_num_list;
-
 extern void set_pid_last_up(int pid, u_64 last_up);
 
 extern u_64 get_pid_last_up(int pid);

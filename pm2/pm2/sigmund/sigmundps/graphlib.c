@@ -3,7 +3,6 @@
 #include "assert.h"
 
 static thread_on_list thr_on;
-static thread_graph_num_list thr_graph_num;
 static pid_on_list pid_on;
 
 /* This file is used to deal with the graphic library */
@@ -134,9 +133,4 @@ int get_thread_dec(int thread)
     tmp = tmp->next;
   }
   return -1; //Erreur
-}
-
-void set_thread_new_num(int thread)
-{
-
 }

@@ -75,7 +75,7 @@ pm2: libs
 #       librairies
 #---------------------------------------------------------------------
 libs: flavors
-	$(COMMON_HIDE) echo "*** Making libs"
+	$(COMMON_HIDE) echo ">>> Making libs"
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@; \
@@ -102,7 +102,7 @@ preproc: flavors
 # fut: descente recursive dans chaque module pour action `fut'
 #---------------------------------------------------------------------
 fut: flavors
-	$(COMMON_HIDE) echo "*** Making fut files"
+	$(COMMON_HIDE) echo ">>> Making fut files"
 	$(COMMON_HIDE) set -e; EMPTY=""; \
 	for i in $(PROF_LIBS) $$EMPTY; do \
 		$(MAKE) -C modules/$$i $@ ; \
@@ -111,7 +111,7 @@ fut: flavors
 # dot_h: descente recursive dans chaque module pour génération des `headers'
 #-------------------------------------------------------------------------
 dot_h: flavors
-	$(COMMON_HIDE) echo "*** Generating specific header files"
+	$(COMMON_HIDE) echo ">>> Generating specific header files"
 	$(COMMON_HIDE) set -e; EMPTY=""; \
 	for i in $(DOT_H_GEN_LIBS) $$EMPTY; do \
 		$(MAKE) -C modules/$$i $@ ; \

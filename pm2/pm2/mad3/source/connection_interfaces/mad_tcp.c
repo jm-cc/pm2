@@ -134,14 +134,96 @@ mad_tcp_read(int            sock,
 	FAILURE("connection closed");
 
 #ifdef MARCEL
-      if (!mad_buffer_full(buffer))
-	{
-	  TBX_YIELD();
-	}
+      if (!mad_buffer_full(buffer)) TBX_YIELD();
 #endif // MARCEL
     }
   LOG_OUT();
 }
+
+static
+void
+mad_tcp_writev(int           sock,
+	       struct iovec *array,
+	       int           count)
+{
+  LOG_IN();
+  while (count)
+    {
+      ssize_t result;
+
+      SYSTEST(result = writev(sock, array, count));
+
+      if (result > 0)
+	{
+	  do
+	    {
+	      if (result >= array->iov_len)
+		{
+		  result -= array->iov_len;
+		  array++;
+		  count--;
+		}
+	      else
+		{
+		  array->iov_base += result;
+		  array->iov_len  -= result;
+		  result = 0;
+		}
+	    }
+	  while (result);
+	}
+      else
+	FAILURE("connection closed");
+
+#ifdef MARCEL
+      if (count) TBX_YIELD();
+#endif // MARCEL
+    }
+  LOG_OUT();
+}
+
+static
+void
+mad_tcp_readv(int           sock,
+	      struct iovec *array,
+	      int           count)
+{
+  LOG_IN();
+  while (count)
+    {
+      ssize_t result;
+
+      SYSTEST(result = readv(sock, array, count));
+
+      if (result > 0)
+	{
+	  do
+	    {
+	      if (result >= array->iov_len)
+		{
+		  result -= array->iov_len;
+		  array++;
+		  count--;
+		}
+	      else
+		{
+		  array->iov_base += result;
+		  array->iov_len  -= result;
+		  result = 0;
+		}
+	    }
+	  while (result);
+	}
+      else
+	FAILURE("connection closed");
+
+#ifdef MARCEL
+      if (count) TBX_YIELD();
+#endif // MARCEL
+    }
+  LOG_OUT();
+}
+
 
 #undef DEBUG_NAME
 #define DEBUG_NAME mad3
@@ -282,7 +364,8 @@ void
 mad_tcp_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
-  lnk->link_mode   = mad_link_mode_buffer;
+  lnk->link_mode   = mad_link_mode_buffer_group;
+  /*  lnk->link_mode   = mad_link_mode_buffer; */
   lnk->buffer_mode = mad_buffer_mode_dynamic;
   lnk->group_mode  = mad_group_mode_aggregate;
   LOG_OUT();
@@ -571,7 +654,7 @@ mad_tcp_receive_buffer(p_mad_link_t    lnk,
 }
 
 void
-mad_tcp_send_buffer_group(p_mad_link_t         lnk,
+mad_tcp_send_buffer_group_1(p_mad_link_t         lnk,
 			  p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
@@ -593,9 +676,7 @@ mad_tcp_send_buffer_group(p_mad_link_t         lnk,
 }
 
 void
-mad_tcp_receive_sub_buffer_group(p_mad_link_t         lnk,
-				 tbx_bool_t           first_sub_group
-				   __attribute__ ((unused)),
+mad_tcp_receive_sub_buffer_group_1(p_mad_link_t         lnk,
 				 p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
@@ -613,6 +694,100 @@ mad_tcp_receive_sub_buffer_group(p_mad_link_t         lnk,
 	}
       while(tbx_forward_list_reference(&ref));
     }
+  LOG_OUT();
+}
+
+
+void
+mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
+			    p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      p_mad_tcp_connection_specific_t connection_specific =
+	lnk->connection->specific;
+      tbx_list_reference_t            ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      
+      {
+	struct iovec array[buffer_group->buffer_list.length];
+	int          i     = 0;
+
+	do
+	  {
+	    p_mad_buffer_t buffer = NULL;
+	    
+	    buffer = tbx_get_list_reference_object(&ref);
+	    array[i].iov_base = buffer->buffer;
+	    array[i].iov_len  = buffer->bytes_written - buffer->bytes_read;
+	    buffer->bytes_read = buffer->bytes_written;
+	    i++;
+	  }
+	while(tbx_forward_list_reference(&ref));
+
+	mad_tcp_writev(connection_specific->socket, array, i);
+      }
+    }
+  LOG_OUT();
+}
+
+void
+mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
+				 p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      p_mad_tcp_connection_specific_t connection_specific =
+	lnk->connection->specific;
+      tbx_list_reference_t            ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+
+      {
+	struct iovec array[buffer_group->buffer_list.length];
+	int          i     = 0;
+
+	do
+	  {
+	    p_mad_buffer_t buffer = NULL;
+	    
+	    buffer = tbx_get_list_reference_object(&ref);
+	    array[i].iov_base = buffer->buffer;
+	    array[i].iov_len  = buffer->length - buffer->bytes_written;
+	    buffer->bytes_written = buffer->length;
+	    i++;
+	  }
+	while(tbx_forward_list_reference(&ref));
+
+	mad_tcp_readv(connection_specific->socket, array, i);
+      }
+    }
+  LOG_OUT();
+}
+
+
+
+
+void
+mad_tcp_send_buffer_group(p_mad_link_t         lnk,
+			  p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  mad_tcp_send_buffer_group_2(lnk, buffer_group);
+  LOG_OUT();
+}
+
+void
+mad_tcp_receive_sub_buffer_group(p_mad_link_t         lnk,
+				 tbx_bool_t           first_sub_group
+				   __attribute__ ((unused)),
+				 p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  mad_tcp_receive_sub_buffer_group_2(lnk, buffer_group);
   LOG_OUT();
 }
 

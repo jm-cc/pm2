@@ -31,11 +31,17 @@ ntbx_client_cons(void)
 
   TBX_INIT_SHARED(object);
 
-  object->local_host   = NULL;
-  object->local_alias  = tbx_slist_nil();
-  object->remote_host  = NULL;
-  object->remote_alias = tbx_slist_nil();
-  object->specific     = NULL;
+  object->local_host	= NULL;
+  object->local_alias	= tbx_slist_nil();
+  object->remote_host	= NULL;
+  object->remote_alias	= tbx_slist_nil();
+  object->specific	= NULL;
+  object->read_ok	= tbx_false;
+  object->write_ok	= tbx_false;
+  object->read_rq	= 0;
+  object->read_rq_flag	= tbx_false;
+  object->write_rq	= 0;
+  object->write_rq_flag	= tbx_false;
   LOG_OUT();
 
   return object;

@@ -105,6 +105,10 @@ typedef struct s_ntbx_client
   p_tbx_slist_t        remote_alias;
   tbx_bool_t           read_ok;
   tbx_bool_t           write_ok;
+  unsigned long        read_rq;
+  tbx_bool_t           read_rq_flag;
+  unsigned long        write_rq;
+  tbx_bool_t           write_rq_flag;
   void                *specific;
 } ntbx_client_t;
 

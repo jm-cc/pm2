@@ -380,6 +380,11 @@ ntbx_tcp_client_reset(p_ntbx_client_t client)
 
         TBX_FREE(client->remote_host);
         client->remote_host = NULL;
+
+        client->read_rq		= 0;
+        client->read_rq_flag	= tbx_false;
+        client->write_rq	= 0;
+        client->write_rq_flag	= tbx_false;
         LOG_OUT();
 }
 
@@ -726,7 +731,6 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
         size_t                       bytes_read      = 0;
 
         LOG_IN();
-
         while (bytes_read < length) {
                 int status;
 
@@ -753,6 +757,11 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
                         bytes_read += status;
                 }
         }
+
+        if (!client->read_rq_flag) {
+                TRACE("read block[%lu], %u bytes", client->read_rq, length);
+                client->read_rq++;
+        }
         LOG_OUT();
 
         return ntbx_success;
@@ -769,30 +778,35 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
 
         LOG_IN();
         while (bytes_written < length) {
-                        int status;
+                int status;
 
 #ifdef MARCEL
-                        status = marcel_write(client_specific->descriptor,
-                                              ptr + bytes_written,
-                                              length - bytes_written);
+                status = marcel_write(client_specific->descriptor,
+                                      ptr + bytes_written,
+                                      length - bytes_written);
 #else /* MARCEL */
-                        status = write(client_specific->descriptor,
-                                       ptr + bytes_written,
-                                       length - bytes_written);
+                status = write(client_specific->descriptor,
+                               ptr + bytes_written,
+                               length - bytes_written);
 #endif /* MARCEL */
-                        if (status == -1) {
-                                if (errno == EINTR) {
-                                        continue;
-                                } else {
-                                        perror("write");
-                                        FAILURE("ntbx_tcp_write_block");
-                                }
-                        } else if (status == 0) {
-                                return ntbx_failure;
+                if (status == -1) {
+                        if (errno == EINTR) {
+                                continue;
                         } else {
-                                bytes_written += status;
+                                perror("write");
+                                FAILURE("ntbx_tcp_write_block");
                         }
+                } else if (status == 0) {
+                        return ntbx_failure;
+                } else {
+                        bytes_written += status;
                 }
+        }
+
+        if (!client->write_rq_flag) {
+                TRACE("write block[%lu], %u bytes", client->write_rq, length);
+                client->write_rq++;
+        }
         LOG_OUT();
 
         return ntbx_success;
@@ -805,10 +819,21 @@ int
 ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
 			  p_ntbx_pack_buffer_t pack_buffer)
 {
-        int status = ntbx_failure;
+        int	   status		= ntbx_failure;
+        tbx_bool_t rq_flag_toggled	= tbx_false;
 
         LOG_IN();
+        if (!client->read_rq_flag) {
+                client->read_rq_flag = tbx_true;
+                rq_flag_toggled      = tbx_true;
+        }
+
         status = ntbx_tcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+        if (rq_flag_toggled) {
+                TRACE("read buffer[%lu]", client->read_rq);
+                client->read_rq++;
+                client->read_rq_flag = tbx_false;
+        }
         LOG_OUT();
 
         return status;
@@ -821,9 +846,20 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 			   p_ntbx_pack_buffer_t pack_buffer)
 {
         int status = ntbx_failure;
+        tbx_bool_t rq_flag_toggled	= tbx_false;
 
         LOG_IN();
+        if (!client->write_rq_flag) {
+                client->write_rq_flag = tbx_true;
+                rq_flag_toggled      = tbx_true;
+        }
+
         status = ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+        if (rq_flag_toggled) {
+                TRACE("write buffer[%lu]", client->write_rq);
+                client->write_rq++;
+                client->write_rq_flag = tbx_false;
+        }
         LOG_OUT();
         return status;
 }
@@ -834,13 +870,20 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 /* read a string buffer */
 int
 ntbx_tcp_read_string(p_ntbx_client_t   client,
-		      char            **string)
+                     char            **string)
 {
-        int status = ntbx_failure;
-        int len    =           -1;
+        int                status          = ntbx_failure;
+        int                len             =           -1;
+        tbx_bool_t         rq_flag_toggled = tbx_false;
         ntbx_pack_buffer_t pack_buffer;
 
+
         LOG_IN();
+        if (!client->read_rq_flag) {
+                client->read_rq_flag = tbx_true;
+                rq_flag_toggled      = tbx_true;
+        }
+
         memset(&pack_buffer, 0, sizeof(ntbx_pack_buffer_t));
         *string = NULL;
 
@@ -855,6 +898,11 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
 
         status = ntbx_tcp_read_block(client, *string, len);
 
+        if (rq_flag_toggled) {
+                TRACE("read string[%lu] = '%s'", client->read_rq, *string);
+                client->read_rq++;
+                client->read_rq_flag = tbx_false;
+        }
         LOG_OUT();
         return status;
 }
@@ -865,11 +913,17 @@ int
 ntbx_tcp_write_string(p_ntbx_client_t  client,
 		       const char      *string)
 {
-        int status = ntbx_failure;
-        int len    =           -1;
+        int                status          = ntbx_failure;
+        int                len             =           -1;
+        tbx_bool_t         rq_flag_toggled = tbx_false;
         ntbx_pack_buffer_t pack_buffer;
 
         LOG_IN();
+        if (!client->write_rq_flag) {
+                client->write_rq_flag = tbx_true;
+                rq_flag_toggled      = tbx_true;
+        }
+
         memset(&pack_buffer, 0, sizeof(ntbx_pack_buffer_t));
         len = strlen(string) + 1;
         ntbx_pack_int(len, &pack_buffer);
@@ -879,6 +933,11 @@ ntbx_tcp_write_string(p_ntbx_client_t  client,
         }
 
         status = ntbx_tcp_write_block(client, string, len);
+        if (rq_flag_toggled) {
+                TRACE("write string[%lu] = '%s'", client->write_rq, string);
+                client->write_rq++;
+                client->write_rq_flag = tbx_false;
+        }
         LOG_OUT();
         return status;
 }

@@ -69,8 +69,6 @@ int hyp_lrpcUnlock_in_cnt = 0;
 int hbrc_diffs_out_cnt = 0;
 int hbrc_diffs_in_cnt = 0;
 
-static marcel_mutex_t dsm_comm_lock;
-
 void dsm_rpc_clear_instrumentation(void)
 {
   dsm_pf_handler_calls = 0;
@@ -163,13 +161,16 @@ void dsm_rpc_dump_instrumentation(void)
 #endif
 
 
+static marcel_mutex_t dsm_comm_lock;
+
+
 void dsm_comm_init()
 {
- marcel_mutex_init(&dsm_comm_lock, NULL);
+   marcel_mutex_init(&dsm_comm_lock, NULL);
 }
 
 
-void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access, int tag)
+void dsm_send_page_req(dsm_node_t dest_node, dsm_page_index_t index, dsm_node_t req_node, dsm_access_t req_access, int tag)
 {
  LOG_IN();
 
@@ -200,7 +201,7 @@ tfprintf(stderr, "dsm_send_page_req(%d, %ld, %s)\n", dest_node, index,
   default:
     RAISE(PROGRAM_ERROR);
   }
-  pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(unsigned long));
+  pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(dsm_page_index_t));
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&req_node, sizeof(dsm_node_t));
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&tag, sizeof(int));
   pm2_rawrpc_end();
@@ -208,7 +209,7 @@ tfprintf(stderr, "dsm_send_page_req(%d, %ld, %s)\n", dest_node, index,
  LOG_OUT();
 }
 
-void dsm_invalidate_copyset(unsigned long index, dsm_node_t new_owner)
+void dsm_invalidate_copyset(dsm_page_index_t index, dsm_node_t new_owner)
 {
   LOG_IN();
 
@@ -225,7 +226,7 @@ typedef struct {
  int tag;
 } page_header_t;
 
-void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t access, int tag)
+void dsm_send_page(dsm_node_t dest_node, dsm_page_index_t index, dsm_access_t access, int tag)
 {
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
   page_header_t to_send;
@@ -280,7 +281,7 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
 }
 
 
-void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm_access_t access, void *user_addr, int user_length, int tag)
+void dsm_send_page_with_user_data(dsm_node_t dest_node, dsm_page_index_t index, dsm_access_t access, void *user_addr, int user_length, int tag)
 {
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
   page_header_t to_send;
@@ -342,7 +343,7 @@ void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm
 }
 
 
-void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_node_t new_owner)
+void dsm_send_invalidate_req(dsm_node_t dest_node, dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner)
 {
 
   LOG_IN();
@@ -355,7 +356,7 @@ void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node
   tfprintf(stderr, "[%s]: sending inv req to node %d for page %ld!\n", __FUNCTION__, dest_node, index);
 #endif
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_INVALIDATE_REQ, NULL);
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&new_owner, sizeof(dsm_node_t));
   pm2_rawrpc_end();
@@ -363,7 +364,7 @@ void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node
   LOG_OUT();
 }
 
-void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index)
+void dsm_send_invalidate_ack(dsm_node_t dest_node, dsm_page_index_t index)
 {
 
   LOG_IN();
@@ -375,7 +376,7 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index)
   fprintf(stderr, "[%s]: sending inv ack to node %d for page %ld!\n", __FUNCTION__, dest_node, index);
 #endif
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_INVALIDATE_ACK, NULL);
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
   pm2_rawrpc_end();
 
   LOG_OUT();
@@ -385,7 +386,7 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index)
 static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
 {
   dsm_node_t node;
-  unsigned long index;
+  dsm_page_index_t index;
   int tag;
 
   LOG_IN();
@@ -394,7 +395,7 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
   hyp_readPage_in_cnt++;
 #endif
 
-  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(dsm_page_index_t));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&tag, sizeof(int));
   pm2_rawrpc_waitdata();
@@ -416,7 +417,7 @@ void DSM_LRPC_READ_PAGE_REQ_func(void)
 static void DSM_LRPC_WRITE_PAGE_REQ_threaded_func(void)
 {
   dsm_node_t node;
-  unsigned long index;
+  dsm_page_index_t index;
   int tag;
 
   LOG_IN();
@@ -428,7 +429,7 @@ static void DSM_LRPC_WRITE_PAGE_REQ_threaded_func(void)
 tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func called\n");
 #endif
 
-  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(dsm_page_index_t));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&tag, sizeof(int));
   pm2_rawrpc_waitdata(); 
@@ -463,7 +464,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
   int tag;
 #endif
 
-  unsigned long index;
+  dsm_page_index_t index;
 
   LOG_IN();
 
@@ -601,7 +602,7 @@ void DSM_LRPC_SEND_PAGE_func(void)
 static void DSM_LRPC_INVALIDATE_REQ_threaded_func(void)
 {
   dsm_node_t req_node, new_owner;
-  unsigned long index;
+  dsm_page_index_t index;
 
   LOG_IN();
 
@@ -609,7 +610,7 @@ static void DSM_LRPC_INVALIDATE_REQ_threaded_func(void)
   hyp_invalidate_in_cnt++;
 #endif
 
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&new_owner, sizeof(dsm_node_t));
   pm2_rawrpc_waitdata(); 
@@ -629,7 +630,7 @@ void DSM_LRPC_INVALIDATE_REQ_func(void)
 
 void DSM_LRPC_INVALIDATE_ACK_func(void)
 {
-  unsigned long index;
+  dsm_page_index_t index;
   
   LOG_IN();
 
@@ -637,7 +638,7 @@ void DSM_LRPC_INVALIDATE_ACK_func(void)
   hyp_invalidateAck_in_cnt++;
 #endif
 
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
   pm2_rawrpc_waitdata(); 
 #ifdef DSM_COMM_TRACE
   tfprintf(stderr, "Received ack(%d)\n", index);
@@ -650,7 +651,8 @@ void DSM_LRPC_INVALIDATE_ACK_func(void)
 #define ISOADDR_TEMP_AREA_SIZE 0x4000000
 #define ISOADDR_AREA_NEW_TOP (ISOADDR_AREA_TOP - ISOADDR_TEMP_AREA_SIZE)
 
-static char buf[67108864];
+/* a buffer of size 64 MegaBytes... for some reason */
+static char buf[64 * 1024 * 1024];
 
 void dsm_unpack_page(void *addr, unsigned long size)
 {
@@ -696,7 +698,7 @@ typedef struct {
 } diff_header_t;
 
 /* pjh: This must be synchronous! */
-void dsm_send_diffs(unsigned long index, dsm_node_t dest_node)
+void dsm_send_diffs(dsm_page_index_t index, dsm_node_t dest_node)
 {
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
   diff_header_t header, empty_header = {0,0};
@@ -716,8 +718,7 @@ void dsm_send_diffs(unsigned long index, dsm_node_t dest_node)
 
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_DIFFS, NULL);
 
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index,
-    sizeof(unsigned long));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
 
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
   while ((header.addr = dsm_get_next_modified_data(index, &header.size)) != NULL)
@@ -767,7 +768,7 @@ tfprintf(stderr, "dsm_send_diffs: returning\n");
  *  deadlock. Note that the caller must provide the address of a
  *  pm2_completion_t variable.
  */
-void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node,
+void dsm_send_diffs_start(dsm_page_index_t index, dsm_node_t dest_node,
                           pm2_completion_t* c)
 {
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
@@ -787,8 +788,7 @@ void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node,
 
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_DIFFS, NULL);
 
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index,
-    sizeof(unsigned long));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
   while ((header.addr = dsm_get_next_modified_data(index, &header.size)) != NULL)
     {
@@ -852,7 +852,7 @@ tfprintf(stderr, "dsm_send_diffs_wait: returning\n");
  */
 void DSM_LRPC_SEND_DIFFS_threaded_func(void)
 {
-  unsigned long index;
+  dsm_page_index_t index;
   pm2_completion_t c;
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
   diff_header_t header;
@@ -870,8 +870,7 @@ void DSM_LRPC_SEND_DIFFS_threaded_func(void)
   tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: entered\n");
 #endif
 
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index,
-    sizeof(unsigned long));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
 #ifdef DSM_COMM_TRACE
   tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %ld\n", index);
 #endif
@@ -929,7 +928,7 @@ void DSM_LRPC_SEND_DIFFS_func(void)
 
 void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
 {
-  unsigned long index;
+  dsm_page_index_t index;
   void *addr;
   int size;
   pm2_completion_t c;
@@ -943,7 +942,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
   tfprintf(stderr,"DSM_LRPC_SEND_MULTIPLE_DIFFS_func: entered\n");
 #endif
 
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
   while (index != -1)
     {
 #ifdef DEBUG_HYP
@@ -959,7 +958,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
 	  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, size);
 	  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&addr, sizeof(void *));
 	}
-      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(unsigned long));
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
     }
 
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER,&c);
@@ -991,7 +990,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_func(void)
 static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 {
   dsm_node_t req_node;
-  unsigned long index;
+  dsm_page_index_t index;
   int tag;
 
   LOG_IN();
@@ -1001,7 +1000,7 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 #endif
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));
-  pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
 
   dsm_begin_send_multiple_pages(req_node, READ_ACCESS, tag);
 
@@ -1010,7 +1009,7 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
       dsm_lock_page(index);
       (*dsm_get_read_server(index))(index, req_node, tag);
       dsm_unlock_page(index);
-      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
     }
   pm2_rawrpc_waitdata(); 
 
@@ -1029,7 +1028,7 @@ void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_func(void)
 static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 {
   dsm_node_t req_node;
-  unsigned long index;
+  dsm_page_index_t index;
   int tag;
 
   LOG_IN();
@@ -1039,7 +1038,7 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 #endif
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
 
   dsm_begin_send_multiple_pages(req_node, WRITE_ACCESS, tag);
 
@@ -1048,7 +1047,7 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
       dsm_lock_page(index);
       (*dsm_get_write_server(index))(index, req_node, tag);
       dsm_unlock_page(index);
-      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
     }
   pm2_rawrpc_waitdata(); 
 
@@ -1069,7 +1068,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func(void)
   dsm_node_t reply_node;
   unsigned long page_size;
   void * addr;
-  unsigned long index = -1;
+  dsm_page_index_t index = (dsm_page_index_t)-1;
   int tag;
 
   LOG_IN();
@@ -1130,7 +1129,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func()
   dsm_node_t reply_node;
   unsigned long page_size;
   void *addr;
-  unsigned long index = -1;
+  dsm_page_index_t index = (dsm_page_index_t)-1;
   int tag;
 
   LOG_IN();

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.33  2000/07/13 10:04:20  oaumage
+- Correction de l'identificateur d'adaptateur
+
 Revision 1.32  2000/06/16 14:03:51  oaumage
 - Mise a jour par rapport au nouveau fonctionnement de pm2conf
 
@@ -356,7 +359,7 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
 	  tbx_append_list(&(driver->adapter_list), adapter);
       
 	  adapter->driver                  = driver;
-	  adapter->id                      = description->driver_id;
+	  adapter->id                      = ad;
 	  adapter->name                    = description->adapter_selector;
 	  adapter->master_parameter        = NULL;
 	  adapter->parameter               = NULL;

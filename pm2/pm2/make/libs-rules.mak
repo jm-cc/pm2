@@ -118,44 +118,44 @@ $(LIB_LIB_SO):
 	@echo "The flavor $(FLAVOR) do not need this library"
 else
 $(LIB_LIB_A): $(LIB_OBJECTS)
-	$(COMMON_HIDE) rm -f $(LIB_LIB_A)
-	$(LIB_PREFIX) ar cr $(LIB_LIB_A) $(LIB_OBJECTS)
+	$(COMMON_HIDE) rm -f $@
+	$(LIB_PREFIX) ar cr $@ $^
 
 $(LIB_LIB_SO): $(LIB_PICS)
-	$(COMMON_HIDE) rm -f $(LIB_LIB_SO)
-	$(LIB_PREFIX) $(LD) -shared -o $(LIB_LIB_SO) $(LIB_PICS)
+	$(COMMON_HIDE) rm -f $@
+	$(LIB_PREFIX) $(LD) -shared -o $@ $^
 endif
 
 # Dependances vers *.c
 #---------------------------------------------------------------------
-$(LIB_C_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.c
+$(LIB_C_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: %.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 
-$(LIB_C_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC)/%.c
+$(LIB_C_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: %.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
 
-$(LIB_C_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.c
+$(LIB_C_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: %.c
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
 		| sed '\''s|.*:|$(LIB_DEP_TO_OBJ) $@ :|g'\'' > $@'
 
-$(LIB_C_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC)/%.c
+$(LIB_C_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).i: %.c
 	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
 # Dependances vers *.S
 #---------------------------------------------------------------------
-$(LIB_S_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.S
+$(LIB_S_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: %.S
 	$(COMMON_HIDE) $(CC) -E -P $(CFLAGS) $< > $(LIB_OBJ_TO_S)
 	$(LIB_PREFIX) $(AS) $(CFLAGS) -c $(LIB_OBJ_TO_S) -o $@
 
-$(LIB_S_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC)/%.S
+$(LIB_S_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: %.S
 	$(COMMON_HIDE) $(CC) -E -P $(CFLAGS) $< > $(LIB_PIC_TO_S)
 	$(LIB_PREFIX) $(AS) $(CFLAGS) -fPIC -c $(LIB_PIC_TO_S) -o $@
 
-$(LIB_S_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.S
+$(LIB_S_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: %.S
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
 		| sed '\''s|.*:|$(LIB_DEP_TO_OBJ) $@ :|g'\'' > $@'
 
-$(LIB_S_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).si: $(LIB_SRC)/%.S
+$(LIB_S_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).si: %.S
 	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
 

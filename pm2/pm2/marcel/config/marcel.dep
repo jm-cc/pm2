@@ -1,2 +1,3 @@
 Depend: marcel_proctype tbx init
 Provide: module
+Depend: marcel_linkmode

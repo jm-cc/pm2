@@ -31,7 +31,7 @@ static void term_func(void *arg)
 
 static void *null_thread(void *arg)
 {
-  marcel_cleanup_push(term_func, marcel_self());
+  marcel_postexit(term_func, marcel_self());
   return NULL;
 }
 

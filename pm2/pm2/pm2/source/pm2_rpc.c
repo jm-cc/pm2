@@ -92,7 +92,7 @@ static __inline__ pm2_channel_t channel(pm2_rpc_channel_t c,
 					unsigned to,
 					comm_direction_t dir)
 {
-  extern int __pm2_self;
+  extern unsigned int __pm2_self;
 
   if(dir == REQUEST) {
     return (to > __pm2_self) ? pm2_rpc_channel[c].channel[0] : pm2_rpc_channel[c].channel[1];

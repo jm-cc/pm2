@@ -34,12 +34,25 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.21  2000/07/14 16:17:06  gantoniu
+Merged with branch dsm3
+
+<<<<<<< pm2.h
 Revision 1.20  2000/07/06 14:47:18  rnamyst
 Added pm2_push_startup_func
 
 Revision 1.19  2000/07/04 08:14:17  rnamyst
 By default, netserver threads are *not* spawned when only a single
 process is running.
+
+Revision 1.18.10.2  2000/07/12 15:10:48  gantoniu
+*** empty log message ***
+
+Revision 1.18.10.1  2000/06/13 16:44:05  gantoniu
+New dsm branch.
+
+Revision 1.18.8.1  2000/06/07 09:19:35  gantoniu
+Merging new dsm with current PM2 : first try.
 
 Revision 1.18  2000/03/01 16:43:04  oaumage
 - suppression des warnings en compilation  -g
@@ -70,10 +83,12 @@ ______________________________________________________________________________
 #include "pm2_attr.h"
 #include "pm2_thread.h"
 #include "block_alloc.h"
-#include "sys/slot_distrib.h"
+//#include "sys/slot_distrib.h"
 #include "pm2_timing.h"
 #include "sys/debug.h"
 #include "pm2_rpc.h"
+#include "isoaddr_attr.h"
+
 
 #ifdef DSM
 #include "dsm_pm2.h"
@@ -198,13 +213,13 @@ static __inline__ void pm2_migrate_self(int module)
 typedef block_descr_t isomalloc_dataset_t;
 
 #define pm2_isomalloc(size) \
-   block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size)
+   block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size, NULL)
 #define pm2_isofree(addr) \
    block_free((block_descr_t *)marcel_getspecific(_pm2_block_key), addr)
 #define pm2_isomalloc_dataset_init(descr) \
    block_init_list(descr)
 #define pm2_isomalloc_dataset(descr, size) \
-   block_alloc(descr, size)
+   block_alloc(descr, size, NULL)
 #define pm2_isofree_dataset(descr, addr) \
    block_free(descr, addr)
 #define pm2_dataset_attach(descr) \
@@ -212,6 +227,8 @@ typedef block_descr_t isomalloc_dataset_t;
                      (block_descr_t *)marcel_getspecific(_pm2_block_key))
 #define pm2_dataset_attach_other(task,descr) \
    block_merge_lists(descr, (block_descr_t *) task->key[_pm2_block_key])
+
+void *pm2_malloc(size_t size, isoaddr_attr_t *attr);
 
 /*********************************************************/
 
@@ -227,9 +244,11 @@ _PRIVATE_ extern marcel_key_t _pm2_lrpc_num_key,
 
 /*********************************************************/
 
-/* pm2_set_startup_func is obsolete. Please rather use the following
+/* pm2_set_user_func is obsolete. Please rather use the following
    function, which allows the registration of several startup
    functions... */
+
+static __inline__ void pm2_set_startup_func(pm2_startup_func_t f) __attribute__ ((unused));
 static __inline__ void pm2_set_startup_func(pm2_startup_func_t f)
 {
   pm2_push_startup_func(f);

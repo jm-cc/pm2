@@ -11,8 +11,8 @@
 #                 Ecole Normale Superieure de Lyon
 #
 #                      External Contributors:
-#                 Yves Denneulin (PM2_LMC - Grenoble),
-#                 Benoit Planquelle (PM2_LIFL - Lille)
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
 #
 #                    1998 All Rights Reserved
 #
@@ -25,7 +25,7 @@
 # that both the copyright notice and this permission notice appear in
 # supporting documentation.
 #
-# Neither the institutions (PM2_Ecole Normale Superieure de Lyon,
+# Neither the institutions (Ecole Normale Superieure de Lyon,
 # Laboratoire de L'informatique du Parallelisme, Universite des
 # Sciences et Technologies de Lille, Laboratoire d'Informatique
 # Fondamentale de Lille), nor the Authors make any representations
@@ -33,18 +33,19 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+CONFIG_MODULES=marcel pm2 mad1
 
-.PHONY: default all
-default: all
+ifndef FLAVOR
+export FLAVOR:=pm2-mad1
+endif
 
-SRC_DIR	:=	.
+CFLAGS += -I/usr/X11R6/include -I$$OPENWINHOME/include
+LDFLAGS += -L/usr/X11R6/lib -L$$OPENWINHOME/lib -lxview -lolgx -lX11
 
-include ../../Makefile
+PROGS := polygon
 
-PM2_APP_CFLAGS	=	-I/usr/X11R6/include -I$$OPENWINHOME/include
-PM2_APP_LDFLAGS	=	-L/usr/X11R6/lib -L$$OPENWINHOME/lib
-PM2_APP_LLIBS	=	-lxview -lolgx -lX11
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/apps.mak
 
-all:	$(BIN_DIR)/polygon
+$(APP_BIN)/polygon$(APP_EXT): $(APP_OBJ)/regul$(APP_EXT).o $(APP_OBJ)/custom$(APP_EXT).o
 
-$(BIN_DIR)/polygon: $(OBJ_DIR)/regul.o $(OBJ_DIR)/custom.o

@@ -66,6 +66,7 @@ static __inline__ void my_longjmp(my_jmp_buf buf, int val) __attribute__ ((unuse
 static __inline__ void my_longjmp(my_jmp_buf buf, int val) 
 {
   __asm__ __volatile__("movl %0, %%ecx\n\t"
+                       "movl %1, %%eax\n\t"
 		       "movl 0(%%ecx), %%ebx\n\t"
 		       "movl 4(%%ecx), %%esi\n\t"
 		       "movl 8(%%ecx), %%edi\n\t"
@@ -73,7 +74,7 @@ static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 		       "movl 16(%%ecx), %%esp\n\t"
 		       "movl 20(%%ecx), %%ecx\n\t"
 		       "jmp *%%ecx"
-		       : : "g" (buf), "ax" (val) : "memory");
+		       : : "g" (buf), "g" (val) : "memory");
 }
 
 #define jmp_buf my_jmp_buf

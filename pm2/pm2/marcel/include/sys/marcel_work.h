@@ -24,8 +24,14 @@ enum {
   MARCEL_WORK_DEVIATE = 0x1,
 };
 
-#define HAS_WORK(self)          ((self)->has_work)
-#define HAS_DEVIATE_WORK(self)  ((self)->has_work & MARCEL_WORK_DEVIATE)
+#define HAS_WORK(pid)          ((pid)->has_work)
+
+#define HAS_DEVIATE_WORK(pid) \
+  ((pid)->has_work & MARCEL_WORK_DEVIATE)
+#define SET_DEVIATE_WORK(pid) \
+  do { (pid)->has_work |= MARCEL_WORK_DEVIATE; } while(0)
+#define CLR_DEVIATE_WORK(pid) \
+  do { (pid)->has_work &= ~MARCEL_WORK_DEVIATE; } while(0)
 
 void do_work(marcel_t self);
 

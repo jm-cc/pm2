@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.c,v $
+Revision 1.4  2000/03/06 15:30:31  rnamyst
+Modified to use the MARCEL_MUTEX_INITIALIZER macro.
+
 Revision 1.3  2000/02/28 10:25:06  rnamyst
 Changed #include <> into #include "".
 
@@ -56,7 +59,7 @@ int marcel_mutexattr_destroy(marcel_mutexattr_t *attr)
    return 0;
 }
 
-static marcel_mutexattr_t marcel_mutexattr_default = { 0 };
+static marcel_mutexattr_t marcel_mutexattr_default = MARCEL_MUTEX_INITIALIZER;
 
 int marcel_mutex_init(marcel_mutex_t *mutex, marcel_mutexattr_t *attr)
 {

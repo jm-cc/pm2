@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.14  2000/03/01 16:48:14  oaumage
+- suppression des warnings CVS
+- ajout d'une compilation conditionnelle des  `find_lwp_*'  par rapport a SMP
+
 Revision 1.13  2000/02/28 10:25:09  rnamyst
 Changed #include <> into #include "".
 
@@ -210,6 +214,7 @@ static __inline__ void display_sched_queue(marcel_t pid)
 }
 #endif
 
+#ifdef SMP
 /* Returns the LWP of number 'vp % NB_LWPS' */
 static __inline__ __lwp_t *find_lwp(unsigned vp)
 {
@@ -235,6 +240,7 @@ static __inline__ __lwp_t *find_good_lwp(__lwp_t *suggested)
   }
 }
 
+
 /* Returns the least underloaded LWP */
 static __inline__ __lwp_t *find_best_lwp(void)
 {
@@ -252,6 +258,7 @@ static __inline__ __lwp_t *find_best_lwp(void)
     }
   }
 }
+#endif /* SMP */
 
 unsigned long marcel_createdthreads(void)
 {

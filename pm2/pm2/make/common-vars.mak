@@ -34,7 +34,15 @@
 #
 
 ifndef FLAVOR
+ifdef PM2_FLAVOR
+export FLAVOR:=$(PM2_FLAVOR)
+else
+ifdef FLAVOR_DEFAULT
+export FLAVOR:=$(FLAVOR_DEFAULT)
+else
 export FLAVOR:=default
+endif
+endif
 endif
 
 ifeq ($(MAK_VERB),verbose)

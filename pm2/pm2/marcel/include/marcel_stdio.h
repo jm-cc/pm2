@@ -26,5 +26,6 @@
 
 int marcel_printf(char *format, ...);
 int marcel_fprintf(FILE *stream, char *format, ...);
-
+int marcel_sprintf(char *string, char *format, ...);
+int marcel_snprintf(char *string, size_t size, char *format,...);
 #endif

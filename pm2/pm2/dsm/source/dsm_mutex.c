@@ -78,7 +78,7 @@ int dsm_mutex_lock(dsm_mutex_t *mutex)
       pm2_completion_t c;
 
       pm2_completion_init(&c, NULL, NULL);
-      pm2_rawrpc_begin((int)mutex->owner, DSM_LRPC_LOCK, NULL);
+      pm2_rawrpc_begin(mutex->owner, DSM_LRPC_LOCK, NULL);
       pm2_pack_byte(SEND_SAFER, RECV_EXPRESS,
 		    (char *)&mutex, sizeof(dsm_mutex_t *));
       pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
@@ -104,7 +104,7 @@ int dsm_mutex_unlock(dsm_mutex_t *mutex)
       pm2_completion_t c;
 
       pm2_completion_init(&c, NULL, NULL);
-      pm2_rawrpc_begin((int)mutex->owner, DSM_LRPC_UNLOCK, NULL);
+      pm2_rawrpc_begin(mutex->owner, DSM_LRPC_UNLOCK, NULL);
       pm2_pack_byte(SEND_SAFER, RECV_EXPRESS,
 		    (char *)&mutex, sizeof(dsm_mutex_t *));
       pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);

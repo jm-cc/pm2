@@ -1,5 +1,6 @@
 import leo_args
 import leo_cfg
+import leo_comm
 import leo_dir_activate
 import leo_dir_deactivate
 import leo_dir_send
@@ -11,7 +12,7 @@ logger	= logging.getLogger()
 
 class Session:
 
-    def __init__(self, leo, name, args):
+    def __init__(self, leo, name, args, mode):
         self.name		= name
         self.leo		= leo
         self.process_list	= []
@@ -24,7 +25,7 @@ class Session:
         self.xchannel_dict	= {}
 
         leo.session_dict[name] = self
-        leo_args.cmdline_parse(self, args)
+        leo_args.cmdline_parse(self, args, mode)
 
     def node_process_dict_get(self, host_name):
         if not self.node_dict.has_key(host_name):
@@ -96,5 +97,10 @@ class Session:
         logger.info('80% - synchronizing processes')
         leo_dir_deactivate.sync_exit(self)
         logger.info('100% - session removed')
+
+        for ps in self.process_list:
+            leo_comm.client_close(ps.client)
+            ps.client = None
+
 
 #_____________

@@ -106,15 +106,23 @@ static void pm2_completion_service(void)
 {
   marcel_sem_t *sem_ptr;
 
-  mad_unpack_byte(MAD_IN_HEADER, (char *)&sem_ptr, sizeof(sem_ptr));
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&sem_ptr, sizeof(sem_ptr));
 
   pm2_rawrpc_waitdata();
 
   marcel_sem_V(sem_ptr);
 }
 
+/* BEURK!!! This should *go away* very soon!!! */
+extern unsigned __pm2_rpc_init_called;
+extern void pm2_rpc_init(void);
+/* EOB */
+
 void pm2_init(int *argc, char **argv)
 {
+  if(!__pm2_rpc_init_called)
+    pm2_rpc_init();
+
   timing_init();
 
 #ifdef USE_SAFE_MALLOC
@@ -226,12 +234,12 @@ void pm2_halt()
 
       for(c=0; c<nb_of_channels; c++) {
 	mad_sendbuf_init(channel(c), i);
-	mad_pack_int(MAD_IN_HEADER, &tag, 1);
+	pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
 	mad_sendbuf_send();
       }
 #else
       mad_sendbuf_init(i);
-      mad_pack_int(MAD_IN_HEADER, &tag, 1);
+      pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
       mad_sendbuf_send();
 #endif
     }
@@ -264,7 +272,7 @@ void pm2_rawrpc_begin(int module, int num,
 #else
   mad_sendbuf_init(module);
 #endif
-  mad_pack_int(MAD_IN_HEADER, &num, 1);
+  pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &num, 1);
 }
 
 void pm2_rawrpc_end(void)
@@ -280,16 +288,16 @@ void pm2_completion_init(pm2_completion_t *c)
   c->sem_ptr = &c->sem;
 }
 
-void pm2_completion_pack(pm2_completion_t *c)
+void pm2_pack_completion(pm2_completion_t *c)
 {
-  mad_pack_int(MAD_IN_HEADER, &c->proc, 1);
-  mad_pack_byte(MAD_IN_HEADER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+  pm2_pack_int(SEND_CHEAPER, RECV_EXPRESS, &c->proc, 1);
+  pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
 }
 
-void pm2_completion_unpack(pm2_completion_t *c)
+void pm2_unpack_completion(pm2_completion_t *c)
 {
-  mad_unpack_int(MAD_IN_HEADER, &c->proc, 1);
-  mad_unpack_byte(MAD_IN_HEADER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+  pm2_unpack_int(SEND_CHEAPER, RECV_EXPRESS, &c->proc, 1);
+  pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
 }
 
 void pm2_completion_wait(pm2_completion_t *c)
@@ -300,10 +308,10 @@ void pm2_completion_wait(pm2_completion_t *c)
 void pm2_completion_signal(pm2_completion_t *c)
 {
   if(c->proc == pm2_self())
-    marcel_sem_V(&c->sem);
+    marcel_sem_V(c->sem_ptr);
   else {
     pm2_rawrpc_begin(c->proc, PM2_COMPLETION, NULL);
-    mad_pack_byte(MAD_IN_HEADER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
     pm2_rawrpc_end();
   }
 }

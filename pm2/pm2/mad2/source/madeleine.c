@@ -81,12 +81,10 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 
 /* ---- */
 
-          static mad_madeleine_t      main_madeleine;
+static mad_madeleine_t      main_madeleine;
 
 #ifdef MAD2_MAD1
-          static marcel_key_t         mad2_send_key;
-          static p_mad_connection_t   mad2_receive_connection;
-          static p_mad_channel_t      main_channel;
+marcel_key_t         mad2_send_key, mad2_recv_key;
 #define ALIGNMASK        (MAD_ALIGNMENT-1)
 /* semaphore used to block sends during slot negociations: */
 _PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
@@ -888,15 +886,11 @@ mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
   p_mad_adapter_set_t   adapter_set;
   
   LOG_IN();
-  mad2_receive_connection = NULL;
 
   adapter_set =
     mad_adapter_set_init(1, MAD2_MAD1_MAIN_PROTO, MAD2_MAD1_MAIN_PROTO_PARAM);
 
-  /*sprintf(mad_conf, "%s/.mad2_conf", getenv("MAD2_ROOT"));*/
-
   madeleine    = mad2_init(argc, argv, NULL, adapter_set);
-  main_channel = mad_open_channel(madeleine, 0);
 
   *nb = madeleine->configuration.size;
   *whoami = (int)madeleine->configuration.local_host_id;
@@ -905,12 +899,8 @@ mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
   {
     int i;
 
-    for (i = 0;
-	 i < *nb;
-	 i++)
-      {
-	tids[i] = i;
-      }
+    for (i = 0; i < *nb; i++)
+      tids[i] = i;
   }
 
   LOG_OUT();
@@ -920,6 +910,7 @@ void
 mad_buffers_init(void)
 {
   marcel_key_create(&mad2_send_key, NULL);
+  marcel_key_create(&mad2_recv_key, NULL);
   marcel_sem_init(&sem_nego, 1);
 }
 
@@ -949,33 +940,19 @@ mad_can_send_to_self(void)
   return 0;
 }
 
-void *
-mad_sendbuf_init(int dest_node)
+void
+mad_sendbuf_init(p_mad_channel_t channel, int dest_node)
 {
-  p_mad_connection_t   connection;
-  
   LOG_IN();
-  connection = mad_begin_packing(main_channel, dest_node);
-  
-  marcel_setspecific(mad2_send_key, connection);
+  marcel_setspecific(mad2_send_key, mad_begin_packing(channel, dest_node));
   LOG_OUT();
-
-  return NULL;
 }
 
 void
 mad_sendbuf_send(void)
 {
-  p_mad_connection_t connection;
-
   LOG_IN();
-  if (marcel_getspecific(_pm2_isomalloc_nego_key) != (any_t)-1)
-    marcel_sem_P(&sem_nego);
-  connection = marcel_getspecific(mad2_send_key);
-  mad_end_packing(connection);
-  marcel_setspecific(mad2_send_key, NULL);
-  if(marcel_getspecific(_pm2_isomalloc_nego_key) != (any_t) -1)
-    marcel_sem_V(&sem_nego);
+  mad_end_packing(marcel_getspecific(mad2_send_key));
   LOG_OUT();
 }
 
@@ -986,10 +963,10 @@ mad_sendbuf_free(void)
 }
 
 void
-mad_receive(void)
+mad_receive(p_mad_channel_t channel)
 {
   LOG_IN();
-  mad2_receive_connection = mad_begin_unpacking(main_channel);
+  marcel_setspecific(mad2_recv_key, mad_begin_unpacking(channel));
   LOG_OUT();
 }
 
@@ -997,7 +974,7 @@ void
 mad_recvbuf_receive(void)
 {
   LOG_IN();
-  mad_end_unpacking(mad2_receive_connection);
+  mad_end_unpacking(marcel_getspecific(mad2_recv_key));
   LOG_OUT();
 }
 
@@ -1041,19 +1018,19 @@ mad_unpack_byte(madeleine_part where, char *data, size_t nb)
     {
        case MAD_IN_HEADER :
 	 {
-	   mad_unpack(mad2_receive_connection, data, nb,
+	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
 		      mad_send_SAFER, mad_receive_EXPRESS);
 	   break;
 	 }
        case MAD_IN_PLACE :
 	 {
-	   mad_unpack(mad2_receive_connection, data, nb,
+	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
 		      mad_send_CHEAPER, mad_receive_CHEAPER);
 	   break;
 	 }
        case MAD_BY_COPY :
 	 {
-	   mad_unpack(mad2_receive_connection, data, nb,
+	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
 		      mad_send_SAFER, mad_receive_CHEAPER);
 	   break;
 	 }
@@ -1175,14 +1152,13 @@ mad_unpack_str(madeleine_part where, char *data)
 {
   int len;
   LOG_IN();
-  mad_unpack(mad2_receive_connection, (char *)&len, sizeof(int),
+  mad_unpack(marcel_getspecific(mad2_recv_key), (char *)&len, sizeof(int),
 	     mad_send_SAFER, mad_receive_EXPRESS);
   mad_unpack_byte(where, data, len + 1);
   LOG_OUT();
-  /*  data[len] = 0; */
 }
 
-/* This function is supposed to be called after pm2_init/mad_init has been called */
+/* This function is supposed to be called after pm2_init/mad_init. */
 p_mad_madeleine_t mad_get_madeleine()
 {
   return &main_madeleine;

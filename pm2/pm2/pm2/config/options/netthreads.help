@@ -1,0 +1,1 @@
+Forces the PM2 runtime to use netserver threads even in single process mode

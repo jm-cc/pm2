@@ -18,8 +18,6 @@
  * =========
  */
 
-//#define USE_MARCEL_POLL
-//#define DEBUG
 #include "madeleine.h"
 
 #include <stdlib.h>
@@ -145,7 +143,7 @@ mad_tcp_read(int            sock,
 void
 mad_tcp_register(p_mad_driver_t driver)
 {
-  p_mad_driver_interface_t interface;
+  p_mad_driver_interface_t interface = NULL;
 
   LOG_IN();
   TRACE("Registering TCP driver");
@@ -250,7 +248,7 @@ mad_tcp_connection_init(p_mad_connection_t in,
   p_mad_tcp_connection_specific_t specific = NULL;
   
   LOG_IN();
-  specific   = TBX_MALLOC(sizeof(mad_tcp_connection_specific_t));
+  specific     = TBX_MALLOC(sizeof(mad_tcp_connection_specific_t));
   in->specific = out->specific = specific;
   in->nb_link  = 1;
   out->nb_link = 1;

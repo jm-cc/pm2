@@ -149,7 +149,7 @@
  * Min/Max macros  __________________________________________________
  * _______________///////////////////////////////////////////////////
  */
-#ifdef __GNUC__
+#if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 8)
 #define max(a, b) \
        ({typedef _ta = (a), _tb = (b);  \
          _ta _a = (a); _tb _b = (b);     \
@@ -168,7 +168,7 @@
  * _____________________/////////////////////////////////////////////
  */
 
-#ifdef __GNUC__
+#if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 8)
 #define tbx_set(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = tbx_flag_set;})
@@ -295,14 +295,18 @@
  * _________________/////////////////////////////////////////////////
  */
 #ifdef __GNUC__
+#define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
+#else // __GNUC__
+#define TBX_ALIGN(a)
+#endif // __GNUC__
+
+#if (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 8)
 #define tbx_aligned(v, a) \
         ({typedef _tv = (v), _ta = (a); \
          _tv _v = (v); _ta _a = (a); \
          (((_v) + (_a - 1)) & ~(_a - 1));})
-#define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
 #else // __GNUC__
 #define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
-#define TBX_ALIGN(a)
 #endif // __GNUC__
 
 

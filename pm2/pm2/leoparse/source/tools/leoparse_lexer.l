@@ -56,7 +56,7 @@ INTEGER        {DIGIT}+
 {INTEGER}                            {
   char *tmp = malloc(yyleng+1);
   strncpy(tmp, yytext, yyleng);
-  tmp[yyleng + 1] = '\0';
+  tmp[yyleng] = '\0';
   yylval.val = atoi(tmp);
   LOG_VAL("INTEGER", yylval.val);
   free(tmp);

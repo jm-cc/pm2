@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_via.c,v $
+Revision 1.4  2000/03/02 14:51:25  oaumage
+- indication du nom du protocole dans la structure driver
+
 Revision 1.3  2000/02/28 11:46:11  rnamyst
 Changed #include <> into #include "".
 
@@ -1618,6 +1621,9 @@ mad_via_driver_init(p_mad_driver_t driver)
 #ifdef PM2
   marcel_mutex_init(&__pm2_mutex, NULL);
 #endif /* PM2 */
+  driver->name = malloc(4);
+  CTRL_ALLOC(driver->name);
+  strcpy(driver->name, "via");
   LOG_OUT();
 }
 

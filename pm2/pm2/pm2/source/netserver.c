@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: netserver.c,v $
+Revision 1.12  2000/06/06 07:12:32  rnamyst
+Uncommented registration of cleanup_func
+
 Revision 1.11  2000/06/02 09:57:43  rnamyst
 Removed some LOG_IN/LOG_OUT calls
 
@@ -95,7 +98,7 @@ static any_t netserver(any_t arg)
 {
   unsigned tag;
   
-  //marcel_cleanup_push(_netserver_term_func, marcel_self());
+  marcel_cleanup_push(_netserver_term_func, marcel_self());
 
   while(!finished) {
 #ifdef MAD2

@@ -200,14 +200,14 @@ void marcel_ev_poll_force_sync(marcel_ev_server_t server);
  * Les différents opérations call-backs possibles
  */
 typedef enum {
-	/* id, XX, req to poll, nb_req_grouped, flags */
+	/* server, XX, req to poll, nb_req_grouped, flags */
 	MARCEL_EV_FUNCTYPE_POLL_POLLONE,
-	/* id, XX, NA, nb_ev_grouped, NA */
+	/* server, XX, NA, nb_req_grouped, NA */
 	MARCEL_EV_FUNCTYPE_POLL_GROUP,
-	/* id, XX, NA, nb_ev_grouped, NA */
+	/* server, XX, NA, nb_req_grouped, NA */
 	MARCEL_EV_FUNCTYPE_POLL_POLLANY,
 	/* Les suivants ne sont pas encore utilisés... */
-	/* id, XX, ev to block, NA, NA */
+	/* server, XX, req to block, NA, NA */
 	MARCEL_EV_FUNCTYPE_BLOCK_WAITONE,
 	MARCEL_EV_FUNCTYPE_BLOCK_WAITONE_TIMEOUT,
 	MARCEL_EV_FUNCTYPE_BLOCK_GROUP,
@@ -221,7 +221,7 @@ typedef enum {
 
 /*[C]****************************************************************
  * Le prototype des call-back
- * id : le serveur
+ * server : le serveur
  * op : l'opération (call-back) demandée
  * req : pour *(POLL|WAIT)ONE* : la requête à tester en particulier
  * nb_req : pour POLL_* : le nombre de requêtes groupées

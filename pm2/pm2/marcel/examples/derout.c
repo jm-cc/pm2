@@ -23,23 +23,29 @@ static volatile boolean stay_busy = TRUE;
 
 void deviation0(void *arg)
 {
-  fprintf(stderr, "Deviation of a busy thread : %s\n", (char *)arg);
+  marcel_fprintf(stderr, "Deviation of a busy thread : %s\n", (char *)arg);
   stay_busy = FALSE;
 }
 
 void deviation1(void *arg)
 {
-  fprintf(stderr, "Deviation of a sleeping thread: %s\n", (char *)arg);
+  marcel_fprintf(stderr, "Deviation of a sleeping thread: %s\n", (char *)arg);
+  marcel_disable_deviation();
 }
 
 void deviation2(void *arg)
 {
-  fprintf(stderr, "Deviation of a blocked thread: %s\n", (char *)arg);
+  marcel_fprintf(stderr, "Delayed deviation: %s\n", (char *)arg);
 }
 
 void deviation3(void *arg)
 {
-  fprintf(stderr, "Deviation in order to wake one's self: ");
+  marcel_fprintf(stderr, "Deviation of a blocked thread: %s\n", (char *)arg);
+}
+
+void deviation4(void *arg)
+{
+  marcel_fprintf(stderr, "Deviation in order to wake one's self: ");
   marcel_sem_V(&sem);
 }
 
@@ -47,20 +53,22 @@ any_t func(any_t arg)
 {
   int i;
 
-  fprintf(stderr, "I'm on VP(%d)\n", marcel_current_vp());
+  marcel_fprintf(stderr, "I'm on VP(%d)\n", marcel_current_vp());
 
   while(stay_busy) ;
 
   for(i=0; i<10; i++) {
     marcel_delay(100);
-    fprintf(stderr, "Hi %s!\n", (char *)arg);
+    marcel_fprintf(stderr, "Hi %s!\n", (char *)arg);
   }
+
+  marcel_enable_deviation();
 
   marcel_sem_V(&sem);
 
-  fprintf(stderr, "Will block...\n");
+  marcel_fprintf(stderr, "Will block...\n");
   marcel_sem_P(&sem);
-  fprintf(stderr, "OK !\n");
+  marcel_fprintf(stderr, "OK !\n");
 
   return NULL;
 }
@@ -88,15 +96,19 @@ int marcel_main(int argc, char *argv[])
 
   marcel_deviate(pid, deviation1, "Ok!");
 
+  marcel_delay(50);
+
+  marcel_deviate(pid, deviation2, "Only now!");
+
   marcel_sem_P(&sem);
 
   marcel_delay(500);
 
-  marcel_deviate(pid, deviation2, "Ok!");
+  marcel_deviate(pid, deviation3, "Ok!");
 
-  marcel_delay(500);
+  marcel_delay(100);
 
-  marcel_deviate(pid, deviation3, NULL);
+  marcel_deviate(pid, deviation4, NULL);
 
   marcel_join(pid, &status);
 

@@ -101,7 +101,7 @@ mad_rand_write(int            sock,
           p_mad_buffer_slice_parameter_t param = NULL;
 
           param = tbx_slist_ref_get(buffer->parameter_slist);
-          if (param->opcode == mad_rand_op_optional_block)
+          if (param->opcode == mad_op_optional_block)
             {
               if (rand_threshold)
                 FAILURE("duplicate rand 'optional block' parameter");
@@ -122,8 +122,10 @@ mad_rand_write(int            sock,
 
   if (rand_threshold)
     {
-      boolean = (rand() * 100.0 / (double)RAND_MAX) < rand_threshold;
+      boolean = (rand() * 100.0 / (double)RAND_MAX) >= rand_threshold;
     }
+
+  TRACE_VAL("computed boolean", boolean);
 
   SYSTEST((result = write(sock, &boolean, 1)));
   if (result <= 0)
@@ -158,7 +160,7 @@ mad_rand_write(int            sock,
 }
 
 static
-int
+void
 mad_rand_read(int            sock,
 	     p_mad_buffer_t buffer)
 {
@@ -169,6 +171,8 @@ mad_rand_read(int            sock,
   SYSTEST((result = read(sock, &boolean, 1)));
   if (result <= 0)
     FAILURE("connection closed");
+
+  TRACE_VAL("received boolean", boolean);
 
   if (boolean)
     {
@@ -202,17 +206,15 @@ mad_rand_read(int            sock,
       bsp->base   = buffer->buffer;
       bsp->offset = 0;
       bsp->length = buffer->length;
-      bsp->opcode = mad_rand_os_lost_block;
+      bsp->opcode = mad_os_lost_block;
       bsp->value  = 0; // unused
 
-      tbx_slist_append(buffer->parameter_slist, bsp);
+      tbx_slist_append(slist, bsp);
 
       buffer->parameter_slist = slist;
       buffer->bytes_written = buffer->length;
     }
   LOG_OUT();
-
-  return (int)boolean;
 }
 
 // static

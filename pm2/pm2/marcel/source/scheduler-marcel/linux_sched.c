@@ -1703,6 +1703,8 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 	LOG_IN();
 	/* empêcher ma_schedule() */
 	ma_preempt_disable();
+	/* empêcher même scheduler_tick() */
+	ma_local_bh_disable();
 	old_rq=ma_this_rq();
 	new_rq=marcel_sched_vpmask_init_rq(mask);
 	if (old_rq==new_rq) {
@@ -1715,9 +1717,11 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 	/* On teste si le LWP courant est interdit ou pas */
 	if (marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);
+		ma_local_bh_enable();
 		ma_preempt_enable();
 		ma_schedule();
 	} else {
+		ma_local_bh_enable();
 		ma_preempt_enable();
 	}
 	LOG_OUT();

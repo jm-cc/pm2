@@ -144,23 +144,27 @@ process_command_line(int    argc,
 		}
 	      
 	      {
-		char *base = NULL;
-		char *ptr  = NULL;
-		char *file = NULL;
+		p_leoparse_object_t  object = NULL;
+		char                *base   = NULL;
+		char                *ptr    = NULL;
+		char                *file   = NULL;
 		
 		base = network_file;
 		
 		while ((ptr = strchr(network_file, ',')))
 		  {
-		    *ptr = '\0';
-		    file = tbx_strdup(base);
-		    tbx_slist_append(settings->network_file_slist, file);
+		    *ptr   = '\0';
+		    file   = tbx_strdup(base);
+		    object = leoparse_init_id_object(file, NULL);
 		    file = NULL;
+		    tbx_slist_append(settings->network_file_slist, object);
 		    base = ptr + 1; 
 		  }
 		
-		file = tbx_strdup(base);
-		tbx_slist_append(settings->network_file_slist, file);
+		file   = tbx_strdup(base);
+		object = leoparse_init_id_object(file, NULL);
+		file   = NULL;
+		tbx_slist_append(settings->network_file_slist, object);
 		TBX_FREE(network_file);
 	      }
 	    }
@@ -1121,6 +1125,11 @@ process_application(p_tbx_htable_t application)
 
   if (settings->network_file_slist)
     {
+      if (!include_slist)
+	{
+	  include_slist = tbx_slist_nil();
+	}
+
       tbx_slist_merge_after(include_slist, settings->network_file_slist);
     }
   

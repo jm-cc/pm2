@@ -69,8 +69,8 @@ all: $(PROGS)
 include $(PM2_ROOT)/make/common-rules.mak
 
 $(PROGS):
-	@$(MAKE_LIBS) APP_TARGET="$@" APP_DIR=$(CURDIR)
-	@$(MAKE) APP_RECURSIF=true $@$(APP_EXT)
+	$(COMMON_HIDE)$(MAKE_LIBS) APP_TARGET="$@" APP_DIR=$(CURDIR)
+	$(COMMON_HIDE)$(MAKE) APP_RECURSIF=true $@$(APP_EXT)
 
 
 # Regles de nettoyage

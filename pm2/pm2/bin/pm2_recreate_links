@@ -62,6 +62,8 @@ make_ln() # Create $3 pointing on $2 in the directory $1
 echo PM2
 make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
 make_ln ${PM2_ROOT}/console graphic/icons icons
+make_ln ${PM2_ROOT}/bin pm2textconfig pm2xconfig
+make_ln ${PM2_ROOT}/bin pm2textconfig pm2menuconfig
 
 # module links
 echo

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "tracebuffer.h"
 #include "assert.h"
+#include "lwpthread.h"
 
 #include "fkt.h"
 
@@ -61,9 +62,24 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
-    i--;
-    j++;
+    if (fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0) {
+      fprintf(stderr,"Corrupted user trace file\n");
+      exit(1);
+    }
+    i-=2;
+    j+=2;
     thread = tr->args[0];
+  } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
+    if (fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0) {
+      fprintf(stderr,"Corrupted user trace file\n");
+      exit(1);
+    }
+    if (fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0) {
+      fprintf(stderr,"Corrupted user trace file\n");
+      exit(1);
+    }
+    i-=2;
+    j+=2;
   }
   while (i != 0) {
     if (fread(&(tr->args[j]), sizeof(int), 1, f_fut) == 0) {
@@ -224,7 +240,7 @@ static void add_buffer(trace tr)
   while (tmp != EMPTY_LIST) {
     // Beware pb of 0
     if ((unsigned) tmp->tr.clock < (unsigned) tr_item->tr.clock) break;
-    printf("One up\n");
+    printf("One up %d (%u - %x - %u) (%u - %x - %u)\n",tmp->tr.type, tmp->tr.cpu, tmp->tr.code, (unsigned) tmp->tr.clock, tr_item->tr.cpu, tr_item->tr.code, (unsigned)tr_item->tr.clock);
     tmp = tmp->prev;
   }
   tr_item->prev = tmp;

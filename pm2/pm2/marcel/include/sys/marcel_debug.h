@@ -24,15 +24,6 @@
 
 #undef mdebug
 
-#define LWPS_HACK
-#if defined(MA__LWPS) && (1)
-#define LWPS_FM "[P%02d]"
-#define LWPS_VAL ,((pm2debug_marcel_launched && (marcel_self())->lwp) ? (marcel_self())->lwp->number : -1)
-#else
-#define LWPS_FM
-#define LWPS_VAL
-#endif
-
 #ifdef PM2DEBUG
 extern debug_type_t marcel_mdebug;
 extern debug_type_t marcel_trymdebug;
@@ -49,17 +40,17 @@ extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
 
 #define mdebug(fmt, args...) \
-    debug_printf(&marcel_mdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_mdebug, fmt, ##args)
 #define try_mdebug(fmt, args...) \
-    debug_printf(&marcel_trymdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_trymdebug, fmt, ##args)
 #define mdebug_state(fmt, args...) \
-    debug_printf(&marcel_debug_state, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_debug_state, fmt, ##args)
 #define mdebug_work(fmt, args...) \
-    debug_printf(&marcel_debug_work, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_debug_work, fmt, ##args)
 #define mdebug_deviate(fmt, args...) \
-    debug_printf(&marcel_debug_deviate, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_debug_deviate, fmt, ##args)
 #define mdebug_sched_q(fmt, args...) \
-    debug_printf(&marcel_mdebug_sched_q, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_mdebug_sched_q, fmt, ##args)
 
 #else // PM2DEBUG
 
@@ -73,20 +64,19 @@ extern debug_type_t marcel_mtrace_timer;
 
 #ifdef DEBUG_LOCK_TASK
 #define lock_task_debug(fmt, args...) debug_printf(&marcel_lock_task_debug, \
-        LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+        fmt, ##args)
 #endif
 #ifdef DEBUG_SCHED_LOCK
 #define sched_lock_debug(fmt, args...) debug_printf(&marcel_sched_lock_debug, \
-        LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+        fmt, ##args)
 #endif
 
 #ifdef MARCEL_TRACE
 
 #define MTRACE(msg, pid) \
     (msg[0] ? debug_printf(&marcel_mtrace, \
-            "[P%02d][%-11s:%3ld (pid=%p:%X)." \
+            "[%-11s:%3ld (pid=%p:%X)." \
             " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
-            ((pid)->lwp ? (pid)->lwp->number : -1), \
             msg, (pid)->number, (pid), (pid)->special_flags, \
             marcel_activethreads(), \
             marcel_sleepingthreads(), \
@@ -95,17 +85,16 @@ extern debug_type_t marcel_mtrace_timer;
             marcel_nbthreads() + 1) : (void)0)
 #define MTRACE_TIMER(msg, pid) \
     debug_printf(&marcel_mtrace_timer, \
-            "[P%02d][%-11s:%3ld (pid=%p:%X)." \
+            "[%-11s:%3ld (pid=%p:%X)." \
             " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
-            ((pid)->lwp ? (pid)->lwp->number : -1), \
             msg, (pid)->number, (pid), (pid)->special_flags, \
             marcel_activethreads(), \
             marcel_sleepingthreads(), \
             marcel_blockedthreads(), \
             marcel_frozenthreads(), \
             marcel_nbthreads() + 1)
-#define marcel_trace_on() pm2debug_setup(&marcel_mtrace, DEBUG_SHOW, 1)
-#define marcel_trace_off() pm2debug_setup(&marcel_mtrace, DEBUG_SHOW, 0)
+#define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 1)
+#define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)
 
 #else
 

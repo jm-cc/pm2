@@ -36,6 +36,12 @@
 
 ______________________________________________________________________________
 $Log: swann_net.h,v $
+Revision 1.2  2000/03/27 12:53:57  oaumage
+- progression des fonctionnalites:
+  * support reseau
+  * support execution
+  * extension du support fichier
+
 Revision 1.1  2000/02/17 09:29:25  oaumage
 - ajout des fichiers constitutifs de Swann
 
@@ -51,5 +57,18 @@ ______________________________________________________________________________
 #ifndef __SWANN_NET_H
 #define __SWANN_NET_H
 
+typedef struct s_swann_net_client
+{
+  swann_net_client_id_t id;
+  p_ntbx_client_t       client;
+} swann_net_client_t;
+
+typedef struct s_swann_net_server
+{
+  swann_net_server_id_t id;
+  p_ntbx_server_t       server;
+  p_swann_net_client_t  controler;
+  tbx_list_t            client_list;
+} swann_net_server_t;
 
 #endif /* __SWANN_NET_H */

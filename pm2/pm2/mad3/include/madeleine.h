@@ -83,6 +83,9 @@
 #ifdef DRV_TCP
 #include "connection_interfaces/mad_tcp.h"
 #endif /* DRV_TCP */
+#ifdef DRV_VRP
+#include "connection_interfaces/mad_vrp.h"
+#endif /* DRV_VRP */
 #ifdef DRV_UDP
 #include "connection_interfaces/mad_udp.h"
 #endif /* DRV_UDP */

@@ -489,13 +489,12 @@ static __inline__ void display_sched_queue(__lwp_t *lwp)
 static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
 {
   marcel_t idle;
-#if defined(MA__ACTIVATION) || defined(MA__SMP)
+
   if (cur && IS_TASK_TYPE_IDLE(cur)) {
     /* c'est déjà idle qui regarde s'il y a autre chose. Apparemment,
      * ce n'est pas le cas */
     return NULL;
   }
-#endif
 
   idle = lwp->idle_task;
   mdebug("\t\t\t<Idle rescheduled: %d on LWP(%d)\n",

@@ -4,6 +4,7 @@
 {FKT_CALIBRATE0_CODE,                   "fkt_calibrate0"},
 {FKT_CALIBRATE1_CODE,                   "fkt_calibrate1"},
 {FKT_CALIBRATE2_CODE,                   "fkt_calibrate2"},
+{FKT_NEW_LWP_CODE,                      "fkt_new_lwp"},
 {FKT_RET_FROM_SYS_CALL_CODE,            "ret_from_sys_call"},
   
   //			{FKT_EXT2_WRITE_ENTRY_CODE,		"ext2_file_write_entry"},

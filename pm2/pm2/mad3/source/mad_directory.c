@@ -2497,44 +2497,47 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 #ifdef MARCEL
   dir_vchannel_slist = dir->vchannel_slist;
 
-  tbx_slist_ref_to_head(dir_vchannel_slist);
-  do
+  if (!tbx_slist_is_nil(dir_vchannel_slist))
     {
-      p_mad_dir_vchannel_t dir_vchannel = NULL;
-      p_mad_channel_t      mad_vchannel = NULL;
-      p_tbx_slist_t        slist        = NULL;
-      
-      dir_vchannel = tbx_slist_ref_get(dir_vchannel_slist);
-      mad_vchannel = tbx_htable_get(channel_htable, dir_vchannel->name);
-
-      // Regular channels
-      slist = mad_vchannel->channel_slist;
-      
-      tbx_slist_ref_to_head(slist);
+      tbx_slist_ref_to_head(dir_vchannel_slist);
       do
 	{
-	  p_mad_channel_t channel = NULL;
-
-	  channel = tbx_slist_ref_get(slist);
-	  mad_forward_stop_direct_retransmit(channel);
-	}
-      while (tbx_slist_ref_forward(slist));
-
-      // Forwarding channels
-      slist = mad_vchannel->fchannel_slist;
+	  p_mad_dir_vchannel_t dir_vchannel = NULL;
+	  p_mad_channel_t      mad_vchannel = NULL;
+	  p_tbx_slist_t        slist        = NULL;
       
-      tbx_slist_ref_to_head(slist);
-      do
-	{
-	  p_mad_channel_t channel = NULL;
+	  dir_vchannel = tbx_slist_ref_get(dir_vchannel_slist);
+	  mad_vchannel = tbx_htable_get(channel_htable, dir_vchannel->name);
 
-	  channel = tbx_slist_ref_get(slist);
-	  mad_forward_stop_indirect_retransmit(channel);
+	  // Regular channels
+	       slist = mad_vchannel->channel_slist;
+      
+	  tbx_slist_ref_to_head(slist);
+	  do
+	    {
+	      p_mad_channel_t channel = NULL;
+
+	      channel = tbx_slist_ref_get(slist);
+	      mad_forward_stop_direct_retransmit(channel);
+	    }
+	  while (tbx_slist_ref_forward(slist));
+
+	  // Forwarding channels
+	       slist = mad_vchannel->fchannel_slist;
+      
+	  tbx_slist_ref_to_head(slist);
+	  do
+	    {
+	      p_mad_channel_t channel = NULL;
+
+	      channel = tbx_slist_ref_get(slist);
+	      mad_forward_stop_indirect_retransmit(channel);
+	    }
+	  while (tbx_slist_ref_forward(slist));
+
 	}
-      while (tbx_slist_ref_forward(slist));
-
-    }
-  while (tbx_slist_ref_forward(dir_vchannel_slist));
+      while (tbx_slist_ref_forward(dir_vchannel_slist));
+    }  
 #endif // MARCEL
 
   mad_ntbx_send_int(client, -1);

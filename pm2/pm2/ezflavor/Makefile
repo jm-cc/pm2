@@ -13,9 +13,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=ezflavor
+FLAVOR_DEFAULT:=ezflavor
 
-PROGRAM :=  ezflavor
-LEX     :=  flex
-YACC    :=  bison -y -d
 include $(PM2_ROOT)/make/progs.mak

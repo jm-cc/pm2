@@ -178,7 +178,7 @@ clean cleanall refresh refreshall sos:
 #---------------------------------------------------------------------
 .PHONY: examples
 examples:
-	@set -e; \
+	$(COMMON_HIDE)set -e; \
 	if [ -d examples ]; then \
 		$(MAKE) -C examples ; \
 	fi

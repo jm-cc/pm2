@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.10  2000/02/08 17:49:04  oaumage
+- support de la net toolbox
+
 Revision 1.9  2000/02/03 17:37:37  oaumage
 - mad_channel.c : correction de la liberation des donnees specifiques aux
                   connections
@@ -84,7 +87,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   p_mad_driver_t             driver        = adapter->driver;
   p_mad_driver_interface_t   interface     = &(driver->interface);
   p_mad_channel_t            channel;
-  mad_host_id_t              host;
+  ntbx_host_id_t              host;
 
   LOG_IN();
   PM2_LOCK();
@@ -212,7 +215,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	    {
 	      if (host == configuration->local_host_id)
 		{
-		  mad_host_id_t remote_host;
+		  ntbx_host_id_t remote_host;
 
 		  for (remote_host = 0;
 		       remote_host < configuration->size;
@@ -254,7 +257,7 @@ mad_foreach_close_channel(void *object)
   p_mad_driver_interface_t   interface     = &(driver->interface);
   p_mad_madeleine_t          madeleine     = driver->madeleine;
   p_mad_configuration_t      configuration = &(madeleine->configuration);
-  mad_host_id_t              host;
+  ntbx_host_id_t              host;
 
   LOG_IN();
 
@@ -292,7 +295,7 @@ mad_foreach_close_channel(void *object)
 	    {
 	      if (host == configuration->local_host_id)
 		{
-		  mad_host_id_t remote_host;
+		  ntbx_host_id_t remote_host;
 
 		  for (remote_host = 0 ;
 		       remote_host < configuration->size;

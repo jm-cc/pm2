@@ -1,0 +1,556 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+PM2_FLAVOR="${PM2_ROOT}/bin/pm2-flavor"
+PM2_MODULE="${PM2_ROOT}/bin/pm2-module"
+
+ARGV="$@"
+
+PROGNAME=pm2-config-flavor
+
+##########################################################################
+# aide
+usage()
+{
+    exit_code=$1
+
+    cat <<EOF
+Usage: $PROGNAME [Command ...]
+
+Commands:
+    create [flavor [model]] : create flavor 'flavor' based on model 'model'
+    modify [flavor]         : modify flavor 'flavor'
+    export [flavor [file]]  : export flavor 'flavor' to file 'file'
+    import [flavor [file]]  : export flavor 'flavor' from file 'file'
+    see    [flavor]         : show the flavor 'flavor'
+    remove [flavor]         : remove the flavor 'flavor'
+
+EOF
+    if [ $exit_code != 0 ]; then
+	echo "error in pm2_make-flavor $ARGV" 1>&2
+    fi
+    exit $exit_code
+}
+
+##########################################################################
+
+get_modules() {
+    common_ok=true
+#    echo "Modules selected: $fl_modules"
+#    settings_ok 0 && return 0
+
+#    while : ; do
+	get_options modules "Modules to include in the flavor" "" module
+
+	echo
+	echo "Modules selected: $fl_modules"
+#	settings_ok 1 && return 0
+#    done
+}
+
+help_option() {
+    echo "Commands:"
+    echo "add opt1 [opt2 ...]   : add the options"
+    echo "sub opt1 [opt2 ...]   : remove the options" 
+    echo "opt1 [opt2 ...]       : add or remove the options"
+    echo "q|quit|exit           : quit"
+    echo "clear                 : clear the options"
+    echo "check                 : check config"
+    echo "help                  : this help"
+    echo "help opt              : help on option 'opt' if any"
+    echo
+    echo "Available options:"
+    for opt in $listopt; do
+	deb="`echo $opt'                ' | cut -c-12`"                   
+	echo "$deb: "`"$PM2_MODULE" $helpcmd1$opt $helpcmd2 --quickhelp`
+    done
+}
+
+if [ `echo -n` = "-n" ]; then
+    NN=""
+else
+    NN=-n
+fi
+get_options() { # mod help list_options_to_add option/module
+    curopts=
+    case $4 in
+    option)
+	case $1 in
+	all)
+	    module=""
+	    ;;
+	*)
+	    module="--module=$1"
+	    for opt in $3 `eval echo \\$fl_$1` " "; do
+		case $opt in
+		\ )
+		    ;;
+		*)
+		    case " $curopts " in
+		    *\ $opt\ *)
+			;;
+		    *)
+			curopts="${curopts:+$curopts }$opt"
+			;;
+		    esac
+		    ;;
+		esac
+	    done
+	    ;;
+	esac
+	listopt=`"$PM2_MODULE" options $module`
+	helpcmd1="option="
+	helpcmd2="$module"
+	;;
+    module)
+	for opt in $3 `eval echo \\$fl_$1` " "; do
+	    case $opt in
+	    \ )
+		;;
+	    *)
+		case " $curopts " in
+		*\ $opt\ *)
+		    ;;
+		*)
+		    curopts="${curopts:+$curopts }$opt"
+		    ;;
+		esac
+		;;
+	    esac
+	done	
+	listopt=`"$PM2_MODULE" modules`
+	helpcmd1="module="
+	helpcmd2=""
+	;;
+    esac
+
+    if [ -z "$listopt" ]; then
+	return 0
+    fi
+
+    echo "$SEP"
+    echo "$2 (type help for help)"
+    echo "Permited ${4}s: $listopt"
+    while : ; do
+	echo "Current selection: $curopts"
+	read i
+	case "$i" in
+	help)
+	    echo
+	    help_option
+	    echo
+	    echo "$2"
+	    echo "Permited ${4}s: $listopt"
+	    ;;
+	check)
+	    echo "$SEP"
+	    eval fl_$1='"$curopts"'
+	    show_flavor "-v check"
+	    echo "$SEP"
+	    ;;
+	help\ *)
+	    opt="`echo $i | sed -e 's,^help ,,'`"
+	    echo
+	    echo $NN "$opt: "
+	    "$PM2_MODULE" $helpcmd1$opt $helpcmd2 --help
+	    echo
+	    ;;
+	clear)
+	    curopts=
+	    ;;
+	add\ *)
+	    options="`echo $i | sed -e 's,^add ,,'`"
+	    for opt in $options " "; do
+		case $opt in
+		\ )
+		    ;;
+		*)
+		    case " $curopts " in
+		    *\ $opt\ *)
+			;;
+		    *)
+			case " $listopt " in
+			*\ $opt\ *)
+			    curopts="${curopts:+$curopts }$opt"
+			    ;;
+			*)
+			    echo "Unknown $4 $opt"
+			esac
+			;;
+		    esac
+		    ;;
+		esac
+	    done
+	    ;;
+	sub\ *)
+	    options="`echo $i | sed -e 's,^sub ,,'`"
+	    for opt in $options " "; do
+		case $opt in
+		\ )
+		    ;;
+		*)
+		    case " $curopts " in
+		    *\ $opt\ *)
+			curopts=`echo "$curopts " | sed -e "s,$opt ,," -e 's, $,,'`
+			;;
+		    *)
+			;;
+		    esac
+		    ;;
+		esac
+	    done  
+	    ;;
+	quit|exit|q)
+	    break
+	    ;;
+	*)
+	    options="$i"
+	    for opt in $options " "; do
+		case $opt in
+		\ )
+		    ;;
+		*)
+		    case " $curopts " in
+		    *\ $opt\ *)
+			curopts=`echo "$curopts " | sed -e "s,$opt ,," -e 's, $,,'`
+			;;
+		    *)
+			case " $listopt " in
+			*\ $opt\ *)
+			    curopts="${curopts:+$curopts }$opt"
+			    ;;
+			*)
+			    echo "Unknown $4 $opt"
+			esac
+			;;
+		    esac
+		    ;;
+		esac
+	    done
+	    ;;
+	esac
+    done
+    eval fl_$1='"$curopts"'
+}
+
+SEP="******************************************************"
+
+get_value() { # needed name help
+    default="`eval echo \\$$2`"
+    end=false
+    while [ $end = false ]; do
+	echo "$3 [$default] ?"
+	read rep
+	if [ "$rep" = "" ]; then
+	    rep="$default"
+	fi
+	if [ "$rep" = "_" ]; then
+	    rep=""
+	fi
+	if [ $1 = 0 -o "$rep" ]; then
+	    end=true
+	fi
+    done
+    eval $2="$rep"
+}
+
+settings_ok() { # ok
+    if [ $1 = 0 ]; then
+	echo "Do these settings are correct [Y/n] ?"
+	read i
+	[ -z "$i" ] && i=Y
+    else
+	echo "Do these settings are correct [y/N] ?"
+	read i
+	[ -z "$i" ] && i=N
+    fi
+    case "$i" in
+    Y*|y*|O*|o*)
+	return 0
+	;;
+    *)
+	return 1
+	;;
+    esac
+}
+
+##########################################################################
+
+do_cmdline() { # no_flavor
+    if [ "$1" ]; then
+	cmdline=
+    else
+	cmdline="--flavor=$fl_flavor"
+    fi
+    cmdline="$cmdline --builddir=$fl_builddir"
+    cmdline="$cmdline --ext=$fl_ext"
+    cmdline="$cmdline --modules=\"$fl_modules\""
+    cmdline="$cmdline --common=\"$fl_common\""
+    for mod in $fl_modules; do
+	cmdline="$cmdline --$mod=\"`eval echo \\$fl_$mod`\""
+    done
+}
+
+show_flavor() { # check
+    echo "Current settings:"
+    echo "flavor name: $fl_flavor"
+    echo "builddir   : $fl_builddir"
+    echo "extension  : $fl_ext"
+    echo "modules    : $fl_modules"
+    [ ! -z "$fl_common" ] &&
+	echo "  Common options             : $fl_common"
+    for mod in $fl_modules "" ; do
+	module="`echo $mod'             ' | cut -c-6`"
+	[ ! -z "$mod" ] &&
+	    echo "  Modules $module with options: `eval echo \\$fl_$mod`"
+    done
+    echo
+    if [ ! -z "$1" ]; then
+	do_cmdline 1
+	echo "Checking dependances in the configuration..."
+	if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
+	    echo "All seem good"
+	    echo
+	    return 0
+	else
+	    echo
+	    return 1
+	fi
+    fi
+}
+
+do_edite() {
+    fin=
+    while [ "$fin" != true ]; do
+	echo "$SEP"
+	show_flavor
+	echo "$SEP"
+	echo "Editing $flavor"
+	echo "Tips:"
+	echo "  You can abort at any time with C-c"
+	echo "  Use _ to select an empty value"
+	echo
+	get_value 0 fl_builddir "Directory for compiling"
+	get_value 0 fl_ext "Extension added to libraries and binaries"
+	get_modules
+	get_options all "Options for all modules and applications" "" option
+	get_options common "Common options" "$fl_all" option
+	for mod in $fl_modules; do
+	    get_options $mod "Options for module $mod" "$fl_all" option
+	done
+	
+	show_flavor check
+	if settings_ok $?; then
+	    fin=true
+	fi
+    done
+    do_cmdline
+    eval '"$PM2_FLAVOR"' set "$cmdline"
+}
+
+list_flavors=`"$PM2_FLAVOR" list`
+get_flavor_ok() { # flavor need_existing can_be_empty first
+    f=`echo "$1" | tr -c -d '[\-_a-zA-Z0-9]'`
+    if [ "$1" != "$f" ]; then
+	return 1
+    fi
+    if [ "$2" = 1 ]; then
+	[ -z "$1" ] && return 1 
+	case " $list_flavors " in
+	*\ $1\ *) ;;
+	*) return 1 ;;
+	esac
+    fi
+    if [ -z "$1" ]; then
+	if [ "$4" = 1 -o "$3" = 0 ]; then
+	    return 1
+	fi
+    fi
+    return 0
+}
+
+get_flavor() { # need_existing prompt can_be_empty
+    get_flavor_ok "$flavor" "$1" "$3" 1 && return 0
+    fin=0
+    while [ $fin = 0 ]; do
+	echo
+	echo "Existing flavors:"
+	echo "$list_flavors"
+	echo
+	echo "$2"
+	read flavor
+	get_flavor_ok "$flavor" "$1" "$3" 0 && fin=1
+    done
+}
+
+get_file() { # need_existing prompt
+    while [  \( -z "$file" \) -o \( "$1" = 1 -a ! -f "$file" \) ]; do
+	echo
+	echo "$2"
+	read flavor
+	get_flavor_ok "$flavor" "$1" "$3" 0 && fin=1
+    done
+}
+
+load_flavor() { # flavor
+    options=`"${PM2_FLAVOR}" get --flavor="$1" 2>/dev/null`
+    if [ $? != 0 ]; then
+	return 1
+    fi
+    options=`echo "$options" | sed -e 's, --, fl_,g'`
+    eval $options
+}
+
+do_create() {
+    get_flavor 0 "Choose a name for the new flavor"
+    name=$flavor
+    flavor="$file"
+    get_flavor 0 "Choose a model flavor if you want" 1
+    [ ! -z "$flavor" ] && load_flavor $flavor
+    if [ "$fl_builddir" = "$flavor" ]; then
+	fl_builddir=$name
+    fi
+    fl_flavor=$name
+    do_edite
+}
+
+do_modify() {
+    get_flavor 1 "Choose a flavor to modify"
+    load_flavor $flavor
+    do_edite
+}
+
+do_export() {
+    get_flavor 1 "Choose a flavor to export"
+    get_file 0 "Choose a file for export ['-' for stdout]"
+    if [ "$file" = "-" ]; then
+	"${PM2_FLAVOR}" get --flavor="$flavor"
+    else
+	"${PM2_FLAVOR}" get --flavor="$flavor" > "$file"
+    fi
+}
+
+do_import() {
+    get_flavor 0 "Choose a name for the flavor"
+    get_file 1
+    options=`cat "$file"`
+    eval "${PM2_FLAVOR}" set --flavor=$flavor `echo ${options}`
+}
+
+do_see() {
+    get_flavor 1 "Choose a flavor to see"
+    load_flavor "$flavor"
+    echo "$SEP"
+    show_flavor
+}
+
+do_remove() {
+    get_flavor 1 "Choose a flavor to delete"
+    "${PM2_FLAVOR}" delete --flavor=$flavor
+}
+
+
+main() {
+    listflavors=`$PM2_FLAVOR list`
+    while :; do
+	echo "================= Flavors management =================="
+	echo "Existing flavors :"
+	echo $listflavors
+	echo
+	echo "$SEP"
+	echo "You can :"
+	echo " 0) create a flavor"
+	echo " 1) modify a flavor"
+	echo " 2) export a flavor"
+	echo " 3) import a flavor"
+	echo " 4) see    a flavor"
+	echo " 5) remove a flavor"
+	echo " 6) quit this programme"
+	echo
+	read i
+	case "$i" in
+	0|create)
+	    do_create
+	    exit 0
+	    ;;
+	1|modify)
+	    do_modify
+	    exit 0
+	    ;;
+	2|export)
+	    do_export
+	    exit 0
+	    ;;
+	3|import)
+	    do_import
+	    exit 0
+	    ;;
+	4|see)
+	    do_see
+	    exit 0
+	    ;;
+	5|remove)
+	    do_remove
+	    exit 0
+	    ;;
+	6|quit|q)
+	    exit 0
+	    ;;
+	esac
+    done
+}
+
+if test $# -eq 0; then
+    main
+    exit 0
+fi
+
+flavor="$2"
+file="$3"
+
+case "$1" in
+create|modify|export|import|see|remove)
+    eval do_$1 '"$@"'
+    ;;
+*)
+    usage 0
+    ;;
+esac
+
+exit 0
+
+
+

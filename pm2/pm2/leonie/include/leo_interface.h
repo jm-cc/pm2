@@ -221,6 +221,13 @@ do_pc_global_s(p_ntbx_process_container_t _pc,
 
 static
 void
+do_pc_global_local_s(p_ntbx_process_container_t _pc,
+                     void (*_f)(ntbx_process_grank_t  _g,
+                                ntbx_process_lrank_t  _l,
+                                void                 *_s)) TBX_UNUSED;
+
+static
+void
 do_pc_send_global(p_ntbx_process_container_t _pc,
                  void (*_f)(ntbx_process_grank_t _g,
                             p_ntbx_client_t      _client)) TBX_UNUSED;
@@ -411,6 +418,28 @@ do_pc_global_s(p_ntbx_process_container_t _pc,
     {
       void *_s = ntbx_pc_get_global_specific(_pc, _g);
       _f(_g, _s);
+    }
+  while (ntbx_pc_next_global_rank(_pc, &_g));
+}
+
+static
+void
+do_pc_global_local_s(p_ntbx_process_container_t _pc,
+                     void (*_f)(ntbx_process_grank_t  _g,
+                                ntbx_process_lrank_t  _l,
+                                void                 *_s))
+{
+  ntbx_process_grank_t _g = -1;
+  ntbx_process_grank_t _l = -1;
+
+  if (!ntbx_pc_first_global_rank(_pc, &_g))
+    return;
+
+  do
+    {
+      void *_s = ntbx_pc_get_global_specific(_pc, _g);
+      _l = ntbx_pc_global_to_local(_pc, _g);
+      _f(_g, _l, _s);
     }
   while (ntbx_pc_next_global_rank(_pc, &_g));
 }

@@ -187,7 +187,7 @@ pm2config_set_vars()
 
     # Build directory
     if [ -z "$PM2_BUILD" ] ; then
-	_PM2CONFIG_BUILD=$HOME/build/$flavor
+	_PM2CONFIG_BUILD=${PM2_HOME:-${HOME}}/build/$flavor
     else
 	eval _PM2CONFIG_BUILD="$PM2_BUILD"
     fi
@@ -195,7 +195,7 @@ pm2config_set_vars()
 	/*)
 	    ;;
 	*)
-	    eval _PM2CONFIG_BUILD="${PM2_BUILD_DIR:-$HOME/build}"'/$_PM2CONFIG_BUILD'
+	    eval _PM2CONFIG_BUILD="${PM2_BUILD_DIR:-${PM2_HOME:-${HOME}}/build}"'/$_PM2CONFIG_BUILD'
     esac
     export _PM2CONFIG_BUILD
 

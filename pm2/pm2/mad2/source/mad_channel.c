@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.15  2000/06/06 12:54:51  oaumage
+- Ajout du calcul de la taille des groupes de buffers dynamiques
+
 Revision 1.14  2000/05/18 14:05:48  oaumage
 - Suppression des TBX_LOCK
 
@@ -185,12 +188,10 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	  
 	  in_link->connection            = in;
 	  in_link->id                    = link_id;
-	  in_link->prefered_group_length = 0;
 	  in_link->specific              = NULL;
 
 	  out_link->connection            = out;
 	  out_link->id                    = link_id;
-	  out_link->prefered_group_length = 0;
 	  out_link->specific              = NULL;
 
 	  if (interface->link_init)

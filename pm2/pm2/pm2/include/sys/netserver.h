@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: netserver.h,v $
+Revision 1.6  2000/01/31 15:50:23  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #ifndef NETSERVER_EST_DEF

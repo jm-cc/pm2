@@ -199,6 +199,7 @@ if [ $target = all -o $target = main-libs ]; then
     echo "MAIN_STAMP_FLAVOR := `$PM2_CONFIG --stampfile`" >> $destdir/main-libs.mak
     echo "LIBS := $LIBRARIES" >> $destdir/main-libs.mak
     echo "PROF_LIBS := `$PM2_CONFIG --profmods`" >> $destdir/main-libs.mak
+    echo "DOT_H_GEN_LIBS := `$PM2_CONFIG --headgenmods`" >> $destdir/main-libs.mak
     exit 0
 fi
 

@@ -72,7 +72,7 @@
 GLOBAL_OPTIONS	=	-Wall -O6 #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
-MAD2            =       yes
+MAD2            =       no
 DSM		=	no
 
 OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING

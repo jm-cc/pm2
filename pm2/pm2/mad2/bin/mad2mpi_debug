@@ -10,32 +10,7 @@ export MAD2_ROOT
 # set DBG_SCRIPT = mad2_run_gdb
 set DBG_SCRIPT = mad2_run_ddd
 
-if (! -e ${MAD2_ROOT}/.mad2mpi_implementation) then
-echo "No MPI implementation has been selected"
-exit 0
-endif
+echo Calling mpirun ...
+mpirun N -x DISPLAY ${DBG_SCRIPT} $*
 
-set IMPL = `cat ${MAD2_ROOT}/.mad2mpi_implementation`
-
-switch(${IMPL})
-# LAM MPI
-#---------
-  case "lam":
-    echo Calling mpirun ...
-    mpirun N -x DISPLAY ${DBG_SCRIPT} $*
-  breaksw
-
-# MPI/BIP
-#---------
-  case "bip":
-#   bipconf
-  breaksw
-
-# Default case
-#--------------
-  default:
-    echo "invalid MPI implementation name"
-    exit 0
-  breaksw
-endsw
 ##########

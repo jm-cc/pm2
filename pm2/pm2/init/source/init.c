@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.9  2000/11/20 10:26:39  oaumage
+- initialisation, nouvelle version
+
 Revision 1.8  2000/11/16 16:16:37  rnamyst
 mad1 is up-to-date again + various bug fixes (Malefiles)
 
@@ -109,6 +112,20 @@ void common_init(int *argc, char *argv[])
    */
   profile_init();
 #endif /* PROFILE */
+
+#ifdef PM2DEBUG  
+/*
+   * Logging services
+   * ------------------
+   *
+   * Provides:
+   * - runtime activable logs
+   *
+   * Requires:
+   * - ??? <to be completed>
+   */
+  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT); 
+#endif /* PM2DEBUG */
 
 #ifdef PM2
   /*
@@ -236,6 +253,25 @@ void common_init(int *argc, char *argv[])
    */
   pm2_mad_init(madeleine);
 #endif /* PM2 && MAD2 */
+
+#if defined(MAD2) && defined(EXTERNAL_SPAWN)
+  /*
+   * Mad2 spawn driver initialization
+   * --------------------------------
+   *
+   * Provides:
+   * - Mad2 initialization from driver info
+   *
+   * Should provide:
+   * - node rank
+   * - pm2_self
+   * - pm2_conf_size
+   *
+   * Requires:
+   * - the `madeleine' object
+   */
+  mad_spawn_driver_init(madeleine, argc, argv);
+#endif /* MAD2 && EXTERNAL_SPAWN */
 
 #ifdef MAD2
   /*
@@ -391,4 +427,19 @@ void common_init(int *argc, char *argv[])
 #ifdef MARCEL
   marcel_purge_cmdline(argc, argv);
 #endif /* PM2 */
+
+#ifdef PM2DEBUG  
+/*
+   * Logging services - args clean-up
+   * --------------------------------
+   *
+   * Provides:
+   * - pm2debug command line arguments clean-up
+   *
+   * Requires:
+   * - ??? <to be completed>
+   */
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT); 
+#endif /* PM2DEBUG */
+
 }

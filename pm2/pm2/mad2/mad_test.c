@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.8  2000/02/03 17:37:36  oaumage
+- mad_channel.c : correction de la liberation des donnees specifiques aux
+                  connections
+- mad_sisci.c   : support DMA avec double buffering
+
 Revision 1.7  2000/01/31 15:50:56  oaumage
 - retour a TCP
 
@@ -67,7 +72,7 @@ ______________________________________________________________________________
 #include <madeleine.h>
 
 /* #define BI_PROTO */
-#define NB_CHANNELS 4
+#define NB_CHANNELS 1
 #define STR_BUFFER_LEN 64
 
 #ifdef PM2
@@ -95,8 +100,8 @@ int main(int argc, char **argv)
   /* VIA - ethernet 
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_eth0"); */
   /* TCP */
-     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
-  /* SISCI
+  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
+  /* SISCI 
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */

@@ -1,0 +1,758 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+PM2_CONFIG=${PM2_ROOT}/flavors
+PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
+PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
+
+ARGV="$@"
+
+PROGNAME=pm2-flavor
+SETTINGS='### SETTINGS:'
+
+PM2_MODULE="${PM2_ROOT}/bin/pm2-module"
+PM2_CONFIGPROG="${PM2_ROOT}/bin/pm2-config"
+
+MODULES=`"${PM2_ROOT}/bin/pm2-module" modules --with-common`
+
+if [ -z "$MODULES" ]; then
+    echo "No PM2 module detected." 1>&2
+    echo "Check PM2_ROOT environment variable and/or do 'make init'" 1>&2
+    exit 1
+fi
+
+##########################################################################
+# aide
+usage() # exit_code section
+{
+    exit_code=$1
+    vide=
+
+    Q='`'
+    cat <<EOF
+Usage: $PROGNAME [GLOBAL_OPTION]... COMMAND [OPTION]...
+
+Global Options
+  --verbose : add outputs
+
+Commands
+  version   : output pm2 version information.
+  set       : create or modify a flavor (default command)
+  delete    : delete a flavor (and all the libs/examples)
+  list      : list existing flavors
+  get       : print a command line that can be used to generate the flavor
+  help      : this help
+  help cmd  : help on command 'cmd'
+  check     : check correctness
+
+EOF
+
+    case "$2" in
+    set)
+	cat <<EOF
+Options for '$2' command 
+  --flavor=""      name of the flavor (default: "default")
+  --builddir=""    directory used for building (default: if ${Q}flavor${Q}=default,
+                     set to "", else set to ${Q}flavor${Q})
+  --ext=""         extension to use (default: none)
+
+  --clear          reset all options and module list
+  --clear-modules  reset module list
+  --clear-all      reset all options
+  --clear-'module' reset options for module 'module'
+
+  --add            next options (or modules) will be added (default)
+  --sub            next options (or modules) will be substracted
+
+  --all=""         options for all modules and applications (as if you
+		   put the option(s) for all the modules)
+  --'module'=""    options for module 'module'
+  --modules=""     modules for the flavor
+
+Modules configurated are:
+  ${MODULES}
+
+  Option arguments are evaluated from left to right. Only the first occurence
+    of --flavor --builddir and --ext is evaluated. So, you can write (in sh)
+  $PROGNAME set --flavor=myflavor --build= ext= $Q$PROGNAME get base-flavor$Q
+    mad="sisci"
+
+EOF
+	;;
+    delete)
+	cat <<EOF
+Options for '$2' command
+  --flavor=""     flavor to $2
+
+EOF
+	;;
+    get)
+	cat <<EOF
+Options for 'get' command
+  --flavor=""     flavor to describe
+  --fromfile=""   file to get the flavor description from (file as the ones
+                    in the flavors/ directory)
+
+EOF
+	;;
+    version|list)
+	cat <<EOF
+No option for '$2' command
+
+EOF
+	;;
+    help|$vide)
+	;;
+    check)
+	cat <<EOF
+Options for '$2' command 
+  --flavor=""      name of the flavor to check (default: "default")
+                   other options are ignored in this case
+
+  --clear          reset all options and module list
+  --clear-modules  reset module list
+  --clear-all      reset all options
+  --clear-'module' reset options for module 'module'
+
+  --add            next options (or modules) will be added (default)
+  --sub            next options (or modules) will be substracted
+
+  --all=""         options for all modules and applications (as if you
+		   put the option(s) for all the modules)
+  --'module'=""    options for module 'module'
+  --modules=""     modules for the flavor
+
+Modules configurated are:
+  ${MODULES}
+
+  Option arguments are evaluated from left to right.
+
+EOF
+	;;
+    *)
+	cat <<EOF
+Command '$2' unknown
+
+EOF
+	
+    esac
+#    if [ $exit_code != 0 ]; then
+#	echo "error in $PROGNAME $ARGV" 1>&2
+#    fi
+    exit $exit_code
+}
+
+##########################################################################
+# usefull function
+
+get_liste_flavor() {
+    if [ -d "$PM2_ROOT/flavors" ]; then
+	liste_flavor_tmp=`( cd "$PM2_ROOT/flavors" ; ls * )`
+	liste_flavor="`eval echo $liste_flavor_tmp`"
+	return 0
+    fi
+    return 1
+}
+
+#
+flavor=
+nb_flavor=
+fromfile=
+nb_fromfile=
+
+set_option() { # option max_val filtre null_allowed
+    optname=`echo $1 | sed -e 's/^--\([^=]*\)=.*$/\1/'`
+
+    nb=`eval echo \\$nb_$optname`
+    [ -z "$nb" ] && nb=0
+    nb=`expr $nb + 1`
+    eval nb_$optname=$nb
+    if [ "$2" = 0 -o "$nb" -le "$2" ]; then
+	case "$1" in
+	-*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+	*) optarg= ;;
+	esac
+
+	if [ ! -z "$3" ]; then
+	    optverif=`echo "$optarg" | tr -c -d "$3"`
+	    if [ "$optverif" != "$optarg" ]; then
+		echo "Invalid caracters in parameter --$optname" 1>&2
+		exit 1
+	    fi
+	fi
+
+	if [ -z "$optarg$4" ]; then
+	    echo "Null parameter not allowed for --$optname" 1>&2
+	    exit 1
+	fi
+
+	eval $optname='"$optarg"'
+    fi
+    return 0
+}
+
+##########################################################################
+# Création réelle
+create_flavor() {
+    $ECHO "Creating flavor '$flavor'"
+    OUT="${PM2_CONFIG}/$flavor"
+    echo "# Flavor $flavor" > ${OUT} || exit 1
+    echo "${SETTINGS} --flavor=$flavor" >> ${OUT}
+    echo "${SETTINGS} --builddir=$builddir" >> ${OUT}
+    echo "${SETTINGS} --ext=$ext" >> ${OUT}
+    modules=
+    for mod in $lst_opt_modules " "; do
+	case $mod in
+	" "|common)
+	    ;;
+	*)
+	    modules="${modules:+$modules }$mod"
+	    ;;
+	esac
+    done
+    echo "${SETTINGS} --modules=\"$modules\"" >> ${OUT}
+    for mod in $lst_opt_modules common; do
+	[ "`eval echo \\$lst_opt_$mod`" ] && 
+	    echo "${SETTINGS} --$mod=\"`eval echo \\$lst_opt_$mod`\"" >> ${OUT}
+    done
+    echo "PM2_BUILD=$builddir" >> ${OUT}
+    echo "PM2_LIBS=\"$modules\"" >> ${OUT}
+    echo "PM2_EXT=$ext" >> ${OUT}
+
+    for mod in $modules common; do
+	options="`eval echo \\$lst_opt_$mod`"
+	echo "# Configuring $mod" >> ${OUT}
+	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod.sh" ]; then
+	    cat "${PM2_ROOT}/modules/$mod/config/$mod.sh" >> ${OUT}
+	fi
+	if [ -z "$options" ]; then
+	    echo "# No option for $mod" >> ${OUT}
+	else
+	    for opt in $options; do
+		echo "# Option $opt" >> ${OUT}
+		"$PM2_MODULE" option=$opt --module=$mod --config >> ${OUT}
+	    done
+	fi
+    done
+    
+    mkdir -p "${PM2_ROOT}/stamp${builddir:+/$builddir}"
+    echo $flavor > "${PM2_ROOT}/stamp${builddir:+/$builddir}/stamp$ext"
+}
+    
+##########################################################################
+# Deletion
+delete_flavor() {
+    $ECHO "Deleting flavor '$flavor'"
+    make -C ${PM2_ROOT} FLAVOR=$flavor clean
+    STAMP_FILE=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampfile`
+    STAMP_REP=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampdir`
+    BUILDDIR=`"${PM2_CONFIGPROG}" --flavor=$flavor --builddir`
+    PM2_EXT=`"${PM2_CONFIGPROG}" --flavor=$flavor --ext`
+    if [ -f "$STAMP_FILE" ]; then
+	rm -f "$STAMP_FILE"
+    fi
+    if [ "$BUILDDIR" -a -d "$STAMP_REP" ]; then
+	rmdir "$STAMP_REP"
+    fi
+    if [ -f "$PM2_CONFIG/$flavor" ]; then
+	rm -f "$PM2_CONFIG/$flavor"
+    fi
+}
+
+##########################################################################
+# fonctions pour set...
+
+verify_option() { # module name
+    # not yet implemented
+    name=`echo $2 | tr -c -d '[\-_a-zA-Z0-9]'`
+    if [ "$2" != "$name" ]; then
+	echo "Invalid caracters in option --$2" 1>&2
+	exit 1
+    fi
+    return 0
+}
+
+do_clear() {
+    do_clear_modules
+    do_clear_all
+}
+
+do_clear_modules() {
+    modules=
+}
+
+do_clear_all() {
+    for mod in $MODULES; do
+	do_clear_mod $mod
+    done
+}
+
+do_clear_mod() { # module
+    eval lst_opt_${1}=""
+}
+
+do_add() {
+    addsub=add
+}
+
+do_sub() {
+    addsub=sub
+}
+
+do_list_addsub() { # module liste_opt
+    for opt in $2 " "; do
+	[ " " = "$opt" ] && continue
+	verify_option $1 $opt
+	eval do_list_$addsub $1 $opt
+    done
+}
+
+do_list_add() { # module opt
+    lst_opt="`eval echo \\$lst_opt_$1`"
+    case " $lst_opt " in
+    *\ $2\ *)
+	;;
+    *)
+	eval lst_opt_$1='"${lst_opt:+$lst_opt }$2"'
+	;;
+    esac
+}
+
+do_list_sub() { # module liste_opt
+    lst_opt=
+    for opt in `eval echo \\$lst_opt_$1` " "; do
+	case $opt in
+	" "|$2)
+	    ;;
+	*)
+	    lst_opt="${lst_opt:+$lst_opt }$opt"
+	    ;;
+	esac
+    done
+    eval lst_opt_$1='"${lst_opt}"'
+}
+
+##########################################################################
+# Check functions
+
+vide=
+
+do_read_provide() {
+    $ECHO "Reading provides..."
+    for mod in common $modules; do
+	for name in `"$PM2_MODULE" module=$mod --provide`; do
+	    before="`eval echo \\$provide_${name}`"
+	    eval provide_${name}='"${before:+$before }$mod"'
+	    $DEBUG providing ${name} by $mod
+	done
+	lst_opt="`eval echo \\$lst_opt_${mod}`"
+	[ -z "$lst_opt" ] && continue
+	for opt in $lst_opt; do
+	    for name in `"$PM2_MODULE" option=$opt --module=$mod --provide`; do
+		before="`eval echo \\$provide_${name}`"
+		eval provide_${name}='"${before:+$before }${mod}_$opt"'
+		$DEBUG providing ${name} by ${mod}_$opt
+	    done
+	done
+    done
+}
+
+do_check_depend() {
+    $ECHO "Checking depends..."
+    depend_list=""
+    for mod in common $modules; do
+	for name in `"$PM2_MODULE" module=$mod --depend`; do
+	    value="`eval echo \\$provide_${name}`"
+	    if [ -z "$value" ]; then
+		check_result=1
+		depend_list="${depend_list:+$depend_list }$name"
+		echo "Depend \"$name\" from module '$mod' unsatisfied"
+	    fi
+	done
+	lst_opt="`eval echo \\$lst_opt_${mod}`"
+	[ -z "$lst_opt" ] && continue
+	for opt in $lst_opt; do
+	    for name in `"$PM2_MODULE" option=$opt --module=$mod --depend`; do
+		value="`eval echo \\$provide_${name}`"
+		if [ -z "$value" ]; then
+		    check_result=1
+		    echo "Depend \"$name\" from option '$mod/$opt' unsatisfied"
+		    depend_list="${depend_list:+$depend_list }$name"
+		fi
+	    done
+	done
+    done
+    if [ -z "$depend_list" ]; then
+	return 0
+    fi
+    for mod in $MODULES; do
+	for name in `"$PM2_MODULE" module=$mod --provide`; do
+	    case " $depend_list " in
+	    *\ $name\ *)
+		echo "Module '$mod' provide \"$name\""
+		;;
+	    *)
+		;;
+	    esac
+	done
+	lst_opt=`"$PM2_MODULE" options --module=$mod`
+	[ -z "$lst_opt" ] && continue
+	for opt in $lst_opt; do
+	    for name in `"$PM2_MODULE" option=$opt --module=$mod --provide`; do
+		case " $depend_list " in
+		*\ $name\ *)
+		    echo "Option '$opt' from module '$mod' provide \"$name\""
+		    ;;
+		*)
+		    ;;
+		esac
+	    done
+	done
+    done
+}
+
+do_check_confict() {
+    $ECHO "Checking conflicts..."
+    for mod in common $modules; do
+	for name in `"$PM2_MODULE" module=$mod --conflict`; do
+	    value="`eval echo \\$provide_${name}`"
+	    if [ \( ! -z "$value" \) -a \( "$value" != "$mod" \) ]; then
+		echo "$name in module $mod conflict with `echo $value\
+		    | sed -e 's,_,/,g'`"
+		check_result=1
+	    fi
+	done
+	lst_opt="`eval echo \\$lst_opt_${mod}`"
+	[ -z "$lst_opt" ] && continue
+	for opt in $lst_opt; do
+	    for name in `"$PM2_MODULE" option=$opt --module=$mod --conflict`; do
+		value="`eval echo \\$provide_${name}`"
+		if [ \( ! -z "$value" \) -a \( "$value" != "${mod}_$opt" \) ]; then
+		    echo "$name in option $mod/$opt conflict with `echo $value\
+			| sed -e 's,_,/,g'`"
+		    check_result=1
+		fi
+	    done
+	done
+    done
+}
+
+##########################################################################
+# Main fonctions
+do_version() {
+    echo pm2-libs 3.0
+    exit 0
+}
+
+do_set() {
+    do_add
+    while test $# -gt 0; do
+	case "$1" in
+	--flavor=*)
+	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
+	    ;;
+	--builddir=*|--ext=*)
+	    set_option "$1" 1 '[\-_a-zA-Z0-9]' "ok"
+	    ;;	
+	--clear|--clear-modules|--clear-all|--add|--sub)
+	    optname=`echo $1 | sed -e 's/^--//' -e 's/-/_/g'`
+	    eval do_$optname
+	    ;;
+	--clear-*)
+	    optname=`echo $1 | sed -e 's/^--clear-//'`
+	    case " $MODULES " in
+	    *\ $optname\ *)
+		do_clear_mod $optname
+		;;
+	    *)
+		echo "Ignoring unknown module \`$optname' in clear option" 1>&2
+		exit 1
+		;;
+	    esac
+	    ;;
+	--all=*)
+	    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    for mod in $MODULES; do
+		do_list_addsub $mod "$optarg"
+	    done
+	    ;;
+	--*=*)
+	    optname=`echo $1 | sed -e 's/^--\([^=]*\)=.*$/\1/'`
+	    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    if [ "$1" != "--${optname}=${optarg}" ]; then
+		echo Unknown option \`$1\' 1>&2
+		usage 1
+	    fi
+	    case " $MODULES modules " in
+	    *\ $optname\ *)
+		do_list_addsub $optname "$optarg"
+		;;
+	    *)
+		echo "Ignoring unknown module \`$optname' options" 1>&2
+		exit 1
+		;;
+	    esac
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    if [ -z "$flavor" ]; then
+	flavor=default
+    fi
+    if [ -z "$builddir" -a "$flavor" != default ]; then
+	builddir="$flavor"
+    fi
+
+    STAMPDIR="${PM2_ROOT}/stamp${builddir:+/$builddir}"
+    if [ -f "${STAMPDIR}/stamp$ext" ]; then
+	if [ "`cat ${STAMPDIR}/stamp$ext`" = "$flavor" ]; then
+	    echo "Modifying flavor '$flavor'"
+	else
+	    echo 'Flavor `'"`cat ${STAMPDIR}/stamp$ext`"'` already use this repertory/extention'
+	    echo "Aborting..."
+	    echo 'If you know that flavor `'"`cat ${STAMPDIR}/stamp$ext`"'` does not exist'
+	    echo "then remove ${STAMPDIR}/stamp$ext"
+	    echo 'else remove it with `pm2_create-flavor --delete --flavor='"`cat ${STAMPDIR}/stamp$ext`"'`'
+	    exit 1
+	fi
+    elif [ -f ${PM2_CONFIG}/$flavor ]; then
+	echo "Modifying $flavor and changing repertory/extention"
+	echo "removing the old one"
+	delete_flavor || ( echo Error: aborting; exit 1 )
+    else
+	echo "Creating flavor $flavor"
+    fi
+    create_flavor
+    exit 0
+}
+
+do_delete() {
+    file=
+    while test $# -gt 0; do
+	case "$1" in
+	--flavor=*)
+	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
+	    file="${PM2_ROOT}/$flavor"
+	    ;;	
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    if [ -f "${PM2_ROOT}/flavors/$flavor" ]; then
+	delete_flavor
+    else
+	echo "Flavor $flavor does not exist. Cannot delete it"
+    fi
+    exit 0
+}
+
+do_list() {
+    test $# -gt 0 && usage 1 list
+    if get_liste_flavor; then
+	echo "$liste_flavor"
+	exit 0
+    fi
+    exit 1
+}
+
+do_get() {
+    file=
+    while test $# -gt 0; do
+	case "$1" in
+	--flavor=*)
+	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
+	    file="${PM2_ROOT}/flavors/$flavor"
+	    nb_fromfile=$nb_flavor
+	    ;;	
+	--fromfile=*)
+	    set_option "$1" 1 "" ""
+	    file="$fromfile"
+	    nb_flavor=$nb_fromfile
+	    ;;	
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    if [ -z "$file" ]; then
+	file="${PM2_ROOT}/flavors/default"
+    fi
+    if [ ! -f "$file" ]; then
+	if [ -z "$flavor" ]; then
+	    echo "$file does not exist" 1>&2
+	else
+	    echo "flavor '$flavor' does not exist" 1>&2
+	fi
+	exit 1
+    fi
+    cat "$file" | grep '^'"$SETTINGS" | sed -e "s,^$SETTINGS,,"
+    exit 0
+}
+
+do_help() {
+    usage 0 "$1"
+    exit 0
+}
+
+do_check() {
+    do_add
+    while test $# -gt 0; do
+	case "$1" in
+	--flavor=*)
+	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
+	    options=`do_get "$1"`
+	    if [ $? != 0 ]; then
+		exit 1
+	    fi
+	    options=`echo "$options" | sed -e 's, --, lst_opt_,g'`
+	    eval $options
+	    break
+	    ;;
+	--builddir=*|--ext=*)
+	    #set_option "$1" 1 '[\-_a-zA-Z0-9]' "ok"
+	    ;;	
+	--clear|--clear-modules|--clear-all|--add|--sub)
+	    optname=`echo $1 | sed -e 's/^--//' -e 's/-/_/g'`
+	    eval do_$optname
+	    ;;
+	--clear-*)
+	    optname=`echo $1 | sed -e 's/^--clear-//'`
+	    case " $MODULES " in
+	    *\ $optname\ *)
+		do_clear_mod $optname
+		;;
+	    *)
+		echo "Ignoring unknown module \`$optname' in clear option" 1>&2
+		exit 1
+		;;
+	    esac
+	    ;;
+	--all=*)
+	    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    for mod in $MODULES; do
+		do_list_addsub $mod "$optarg"
+	    done
+	    ;;
+	--*=*)
+	    optname=`echo $1 | sed -e 's/^--\([^=]*\)=.*$/\1/'`
+	    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    if [ "$1" != "--${optname}=${optarg}" ]; then
+		echo Unknown option \`$1\' 1>&2
+		usage 1
+	    fi
+	    case " $MODULES modules " in
+	    *\ $optname\ *)
+		do_list_addsub $optname "$optarg"
+		;;
+	    *)
+		echo "Ignoring unknown module \`$optname' options" 1>&2
+		exit 1
+		;;
+	    esac
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    if [ -z "$flavor" ]; then
+	flavor=default
+    fi
+    modules=
+    for mod in $lst_opt_modules " "; do
+	case $mod in
+	" "|common)
+	    ;;
+	*)
+	    modules="${modules:+$modules }$mod"
+	    ;;
+	esac
+    done
+    check_result=0
+    do_read_provide
+    do_check_depend
+    do_check_confict
+    exit $check_result
+}
+
+if test $# -eq 0; then
+    usage 1
+fi
+
+DEBUG=":"
+ECHO=":"
+while test $# -gt 0; do
+    CMD="$1"
+    case "$CMD" in
+    version|set|delete|list|get|help|check)
+	shift
+	$DEBUG "Executing $CMD"
+	eval do_$CMD '"$@"'
+	exit 0
+	;;
+    --verbose|-v)
+	if [ "$ECHO" = ":" ]; then
+	    ECHO=echo
+	else
+	    DEBUG=echo
+	fi
+	;;
+    -h|--help)
+	do_help
+	exit 0
+	;;
+    *)
+	usage 1 "$CMD"
+	;;
+    esac
+    shift
+done
+
+exit 0
+
+
+

@@ -158,6 +158,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  TBX_FREE(dyn_buf);
 	  dyn_buf = NULL;
 	  continue;
+	  DISP("End of iteration");
 
 
 	last:
@@ -181,7 +182,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  mad_end_packing(out);
 	  TBX_FREE(dyn_buf);
 	  dyn_buf = NULL;
-	  continue;
 	}
       else
 	{

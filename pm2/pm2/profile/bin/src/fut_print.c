@@ -29,14 +29,14 @@
 
 	singleton codes (i.e., those that are NOT paired in entry-exit pairs)
 		MUST be greater than FKT_UNPAIRED_LIMIT_CODE
-		and be less thant GCC_TRACED_FUNCTION
+		and be less thant GCC_TRACED_FUNCTION_MINI
 		FKT_SETUP_CODE and less than FKT_LAST_FKT_CORE.
 
 	function entry and exit codes MUST be greater than
 		FKT_UNSHIFTED_LIMIT_CODE.
 	function entry codes MUST have the FKT_GENERIC_EXIT_OFFSET bit set.
 
-	gcc traced functions codes are greater than GCC_TRACED_FUNCTION
+	gcc traced functions codes are greater than GCC_TRACED_FUNCTION_MINI
 		entry codes must have GCC_TRACED_FUNCTION_EXIT bit set
 */
 #define FUT
@@ -59,21 +59,42 @@
 #include <stdint.h>
 #include <linux/unistd.h>
 #ifndef FUT
-#include "fkt.h"
+#include <linux/fkt.h>
 #else
 #include "fut.h"
 #endif
 
 #include "fkt-tools.h"
-#include "names.h"
+#include "fkt/names.h"
 #ifndef FUT
-#define find_name(code, keep, maxlen) find_name(code, keep, maxlen, fkt_code_table)
+#define find_name(code, keep, maxlen) ({ \
+	char *_res; \
+	if (code >= FKT_GCC_TRACED_FUNCTION_MINI) \
+		_res=fkt_lookup_symbol(code|FKT_GCC_TRACED_FUNCTION_EXIT); \
+	else \
+		_res=fkt_find_name(code, keep, maxlen, fkt_code_table); \
+	_res; \
+	})
 #else
-#define find_name(code, keep, maxlen) find_name(code, keep, maxlen, fut_code_table)
+struct fkt_code_name fut_code_table [] = 
+	{
+#if !defined(PREPROC) && !defined(DEPEND)
+#include "fut_print.h"
 #endif
-#include "sysmap.h"
-#include "block.h"
-#include "pids.h"
+	{0, NULL }
+	};
+#define find_name(code, keep, maxlen) ({ \
+	char *_res; \
+	if (code >= FUT_GCC_TRACED_FUNCTION_MINI) \
+		_res=fkt_lookup_symbol(code&~FUT_GCC_TRACED_FUNCTION_EXIT); \
+	else \
+		_res=fkt_find_name(code, keep, maxlen, fut_code_table); \
+	_res; \
+	})
+#endif
+#include "fkt/sysmap.h"
+#include "fkt/block.h"
+#include "fkt/pids.h"
 
 #define MALLOC(t,fmt,...) \
 	do \
@@ -249,7 +270,7 @@ void find_category( int z, char *category, char **name )
 	{
 	if( z == kidpid )
 		{/* this is the user process */
-		*name=lookup_pid(z);
+		*name=fkt_lookup_pid(z);
 		*category = 'u';
 		}
 	else if( z <= 0 )
@@ -260,12 +281,12 @@ void find_category( int z, char *category, char **name )
 	else if( z == pid )
 		{
 		/* this is fkt_record process */
-		*name=lookup_pid(z);
+		*name=fkt_lookup_pid(z);
 		*category = 'f';
 		}
 	else
 		{/* this is some other process (z != 0) */
-		*name=lookup_pid(z);
+		*name=fkt_lookup_pid(z);
 		*category = 'o';
 		}
 	}
@@ -289,7 +310,7 @@ void update_pid_cycles( u_64 cycles, int pid )
 	ptr->pid = pid;
 	ptr->total_cycles = cycles;
 	ptr->dead = 0;
-	strcpy(ptr->name,lookup_pid(pid));
+	strcpy(ptr->name,fkt_lookup_pid(pid));
 	ptr->next = pid_cycles_list;		/* add to front of list */
 	pid_cycles_list = ptr;
 	fprintf(stdbug,"create new cycles for pid %d, initial %llu\n",pid,cycles);
@@ -627,7 +648,10 @@ static unsigned int	syscall_counter[FKT_UNSHIFTED_LIMIT_CODE];
 /*	lastreltime[thiscpu] is last relative time ever seen for thiscpu */
 /*	should have lastreltime = lasttime - basetime */
 /*	basehigh is the current 32bit hi part of the 64bit time */
-static u_64		*basetime, *basehigh, *lasttime;
+static u_64		*basetime,*lasttime;
+#ifndef FUT
+static u_64		*basehigh;
+#endif
 static u_64		*lastreltime;
 
 /*	start_time_cpu[thiscpu] is 1st relative time for thiscpu once taking stats*/
@@ -854,7 +878,7 @@ void return_from_sys_call( struct stack_item	*stack, unsigned long code,
 
 	if( stack->pos > 0 && code<FKT_UNSHIFTED_LIMIT_CODE )
 		{/* stacked code was a trap/syscall/IRQ */
-		find_syscall(code, &category, &name, &should_be_hex);
+		fkt_find_syscall(code, &category, &name, &should_be_hex);
 		delta = cyc_time - stack->start_cycle[stack->pos];
 		syscall_cycles[code] +=  delta;
 		syscall_counter[code] += 1;
@@ -881,8 +905,6 @@ void return_from_sys_call( struct stack_item	*stack, unsigned long code,
 void close_stack( struct stack_item	*stack, int thispid, u_64 cyc_time )
 	{
 	unsigned long	code;
-	int				z, should_be_hex;
-	char			category, *name;
 
 	fprintf(stdbug, "close stack for pid %4d, pos %u, cyc_time %llu\n",
 		thispid, stack->pos, cyc_time);
@@ -906,7 +928,9 @@ void close_stack( struct stack_item	*stack, int thispid, u_64 cyc_time )
 #ifndef FUT
 		if( code < FKT_UNSHIFTED_LIMIT_CODE )
 			{/* this is a trap/syscall/irq entry */
-			z = find_syscall(code, &category, &name, &should_be_hex);
+			int				z, should_be_hex;
+			char			category, *name;
+			z = fkt_find_syscall(code, &category, &name, &should_be_hex);
 			fprintf(stdbug, "%c ", category);
 			if( should_be_hex )
 				fprintf(stdbug, "%04x", z);
@@ -967,8 +991,8 @@ void bury_stack( int pid, u_64 cyc_time )
 
 			grave->pid = pid;
 			grave->user_cycles = stack->user_cycles;
-			strcpy(grave->name,lookup_pid(pid));
-			remove_pid(pid);
+			strcpy(grave->name,fkt_lookup_pid(pid));
+			fkt_remove_pid(pid);
 			grave->next = grave_head;
 			grave_head = grave;
 
@@ -1022,9 +1046,9 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 	else
 #endif
 #ifndef FUT
-	if( code >= FKT_UNPAIRED_LIMIT_CODE && code < GCC_TRACED_FUNCTION_MINI )
+	if( code >= FKT_UNPAIRED_LIMIT_CODE && code < FKT_GCC_TRACED_FUNCTION_MINI )
 #else
-	if( code >= FUT_UNPAIRED_LIMIT_CODE && code < GCC_TRACED_FUNCTION_MINI )
+	if( code >= FUT_UNPAIRED_LIMIT_CODE && code < FUT_GCC_TRACED_FUNCTION_MINI )
 #endif
 		{
 		switch( code )
@@ -1038,11 +1062,11 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 				bury_stack(param1, cyc_time);
 				break;
 			case FKT_DO_FORK_CODE:
-				add_pid(param1,lookup_pid(thispid));
+				fkt_add_pid(param1,fkt_lookup_pid(thispid));
 				break;
 			case FKT_DO_EXECVE_CODE: {
 				char *name=(char *)params;
-				if( add_pid(thispid,name) )
+				if( fkt_add_pid(thispid,name) )
 					EPRINTF("new pid execve()ing\n");
 				update_pid_name(thispid,name);
 				break;
@@ -1053,33 +1077,42 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 		}
 	else
 		{/* code for the exit of a function entry/exit */
-		if( (!(code>=GCC_TRACED_FUNCTION_MINI) &&
 #ifndef FUT
+		if( (!(code>=FKT_GCC_TRACED_FUNCTION_MINI) &&
 				(code & FKT_GENERIC_EXIT_OFFSET) == 0  &&
 				code == i + FKT_GENERIC_EXIT_OFFSET)
+			||
+			((code>=FKT_GCC_TRACED_FUNCTION_MINI) &&
+			 	(code & FKT_GCC_TRACED_FUNCTION_EXIT) == 0 &&
+				code == i - FKT_GCC_TRACED_FUNCTION_EXIT))
 #else
+		if( (!(code>=FUT_GCC_TRACED_FUNCTION_MINI) &&
 				(code & FUT_GENERIC_EXIT_OFFSET) == 0  &&
 				code == i + FUT_GENERIC_EXIT_OFFSET)
-#endif
 			||
-			((code>=GCC_TRACED_FUNCTION_MINI) &&
-			 	(code & GCC_TRACED_FUNCTION_EXIT) == 0 &&
-				code == i - GCC_TRACED_FUNCTION_EXIT))
+			((code>=FUT_GCC_TRACED_FUNCTION_MINI) &&
+			 	(code & FUT_GCC_TRACED_FUNCTION_EXIT) != 0 &&
+				code == i + FUT_GCC_TRACED_FUNCTION_EXIT))
+#endif
 			{
 			/* this is the exit corresponding to a previously stacked entry */
 			return_from_function(cpu_stack[lastcpu], i, cyc_time);
 			}
 		else
 			{/* this should be an entry code */
-			if( (!(code>=GCC_TRACED_FUNCTION_MINI) &&
 #ifndef FUT
+			if( (!(code>=FKT_GCC_TRACED_FUNCTION_MINI) &&
 					(code & FKT_GENERIC_EXIT_OFFSET) == 0)
-#else
-					(code & FUT_GENERIC_EXIT_OFFSET) == 0)
-#endif
 				||
-				( (code>=GCC_TRACED_FUNCTION_MINI) &&
-					(code & GCC_TRACED_FUNCTION_EXIT) == 0) )
+				( (code&FKT_GCC_TRACED_FUNCTION_MINI) &&
+					(code & FKT_GCC_TRACED_FUNCTION_EXIT) == 0) )
+#else
+			if( (!(code>=FUT_GCC_TRACED_FUNCTION_MINI) &&
+					(code & FUT_GENERIC_EXIT_OFFSET) == 0)
+				||
+				( (code&FUT_GCC_TRACED_FUNCTION_MINI) &&
+					(code & FUT_GCC_TRACED_FUNCTION_EXIT) != 0) )
+#endif
 				{/* this is an exit code, not an entry code */
 				/* if the stack is not empty, it means something bad happened */
 				if (cpu_stack[lastcpu]->pos>0)
@@ -1124,11 +1157,12 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 		{
 		if( code == funs[k].code  ||
 #ifndef FUT
-			(!(code>=GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FKT_GENERIC_EXIT_OFFSET) ||
+			(!(code>=FKT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FKT_GENERIC_EXIT_OFFSET) ||
+			((code>=FKT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code - FKT_GCC_TRACED_FUNCTION_EXIT) )
 #else
-			(!(code>=GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FUT_GENERIC_EXIT_OFFSET) ||
+			(!(code>=FUT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FUT_GENERIC_EXIT_OFFSET) ||
+			((code>=FUT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FUT_GCC_TRACED_FUNCTION_EXIT) )
 #endif
-			((code>=GCC_TRACED_FUNCTION_MINI) && code == funs[k].code - GCC_TRACED_FUNCTION_EXIT) )
 			{/* funs[k] is the entry code that matches this code's entry or exit */
 			if ( code == funs[k].code )
 				{/* this code is the entry code */
@@ -1200,11 +1234,12 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 		}
 
 #ifndef FUT
-	if( (!(code >= GCC_TRACED_FUNCTION_MINI) && code & FKT_GENERIC_EXIT_OFFSET) ||
+	if( (!(code >= FKT_GCC_TRACED_FUNCTION_MINI) && code & FKT_GENERIC_EXIT_OFFSET) ||
+		( (code >= FKT_GCC_TRACED_FUNCTION_MINI) && code & FKT_GCC_TRACED_FUNCTION_EXIT) )
 #else
-	if( (!(code >= GCC_TRACED_FUNCTION_MINI) && code & FUT_GENERIC_EXIT_OFFSET) ||
+	if( (!(code >= FUT_GCC_TRACED_FUNCTION_MINI) && code & FUT_GENERIC_EXIT_OFFSET) ||
+		( (code >= FUT_GCC_TRACED_FUNCTION_MINI) && !(code & FUT_GCC_TRACED_FUNCTION_EXIT)) )
 #endif
-		( (code >= GCC_TRACED_FUNCTION_MINI) && code & GCC_TRACED_FUNCTION_EXIT) )
 		{/* if this is an entry */
 		/* also push pointer to this called function on fun_index */
 		cpu_stack[lastcpu]->fun_index
@@ -1293,7 +1328,6 @@ unsigned int *dumpslot( unsigned int *bufptr )
 	unsigned int	params, i, thiscpu;
 	u_64			reltime, r, x;
 	int				thispid, print_this = printing;
-	char			workspace[128];
 
 	fprintf(stdbug,"\n");
 
@@ -1315,6 +1349,7 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		lastcpu = thiscpu;
 		}
 
+#ifndef FUT
 	x = ((u_64)bufptr[0])+basehigh[thiscpu];/* cnv 32-bit cycles to 64-bit */
 	if( x < lasttime[thiscpu] )
 		{
@@ -1325,6 +1360,9 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		fprintf(stdbug,"after overflow: x %llu, lasttime %llu, basehigh %llu\n",
 			x, lasttime[thiscpu], basehigh[thiscpu]);
 		}
+#else
+	x = (*(u_64*)bufptr); /* read 64 bits value */
+#endif
 	lasttime[thiscpu] = x;
 	reltime = x - basetime[thiscpu];
 	r = reltime-lastreltime[thiscpu];
@@ -1357,8 +1395,8 @@ unsigned int *dumpslot( unsigned int *bufptr )
 
 	fprintf(stdbug,
 	"dumpslot: thiscpu %u, lastpid %d(%s), thispid %d(%s), code 0x%04lx, delta %llu\n",
-		thiscpu, lastpid[thiscpu], lookup_pid(lastpid[thiscpu]),
-		thispid, lookup_pid(thispid), fullcode, r);
+		thiscpu, lastpid[thiscpu], fkt_lookup_pid(lastpid[thiscpu]),
+		thispid, fkt_lookup_pid(thispid), fullcode, r);
 
 	if( fun_time == 0 && (statspid == -1 || (statspid > 0 && thispid == statspid)) )
 		start_taking_stats();		/* start taking stats */
@@ -1372,7 +1410,7 @@ unsigned int *dumpslot( unsigned int *bufptr )
 	if( print_this )
 		printf( "%8llu "CYCNUM" %2u %5d"COMMSTR, r, reltime, thiscpu, thispid,
 #ifndef FUT
-			lookup_pid(thispid)
+			fkt_lookup_pid(thispid)
 #else
 			""
 #endif
@@ -1381,6 +1419,7 @@ unsigned int *dumpslot( unsigned int *bufptr )
 #ifndef FUT
 	if( fullcode < FKT_UNSHIFTED_LIMIT_CODE )
 		{/* unshifted code, no parameters */
+		char			workspace[128];
 		code = fullcode;
 		if( fullcode <= FKT_SYS_CALL_MASK )
 			if ( fullcode == FKT_LCALL7 || fullcode == FKT_LCALL27 )
@@ -1394,33 +1433,33 @@ unsigned int *dumpslot( unsigned int *bufptr )
 				{
 				i = fullcode;
 				sprintf(workspace, "system call %u", i);
-				if( i > NSYS_CALLS )
-					i = NSYS_CALLS;
+				if( i > FKT_NSYSCALLS )
+					i = FKT_NSYSCALLS;
 				if( print_this )
-					printf(" "NAMESTR"  %-s", workspace, sys_calls[i]);
+					printf(" "NAMESTR"  %-s", workspace, fkt_syscalls[i]);
 				}
 		else if( fullcode < FKT_TRAP_LIMIT_CODE )
 			{
 			i = fullcode - FKT_TRAP_BASE;
 			sprintf(workspace, "trap %u", i);
-			if( i > NTRAPS )
-				i = NTRAPS;
+			if( i > FKT_NTRAPS )
+				i = FKT_NTRAPS;
 			if( print_this )
-				printf(" "NAMESTR"  %-s", workspace, traps[i]);
+				printf(" "NAMESTR"  %-s", workspace, fkt_traps[i]);
 			}
 		else if( fullcode < FKT_IRQ_SYS )
 			{
 			i = fullcode - FKT_IRQ_TIMER;
 			sprintf(workspace, "IRQ %u", i);
 			if( print_this )
-				printf(" "NAMESTR"  %-s", workspace, find_irq(i));
+				printf(" "NAMESTR"  %-s", workspace, fkt_find_irq(i));
 			}
 		else
 			{
 			i = fullcode - FKT_IRQ_SYS;
 			sprintf(workspace, "sysIRQ 0x%x", i+0xef);
 			if( print_this )
-				printf(" "NAMESTR"  %-s", workspace, sys_irqs[i]);
+				printf(" "NAMESTR"  %-s", workspace, fkt_sysirqs[i]);
 			}
 		params = 3;
 		}
@@ -1447,13 +1486,13 @@ unsigned int *dumpslot( unsigned int *bufptr )
 #ifndef FUT
 			printf(" "NAMESTR, code==FKT_GCC_INSTRUMENT_ENTRY_CODE?
 						"gcc-traced function entry":"gcc-traced function exit");
-		code=bufptr[3]-(code==FKT_GCC_INSTRUMENT_ENTRY_CODE?0:GCC_TRACED_FUNCTION_EXIT);
-		if( print_this && (s=lookup_symbol(code|GCC_TRACED_FUNCTION_EXIT)) )
+		code=bufptr[3]-(code==FKT_GCC_INSTRUMENT_ENTRY_CODE?0:FKT_GCC_TRACED_FUNCTION_EXIT);
+		if( print_this && (s=fkt_lookup_symbol(code|FKT_GCC_TRACED_FUNCTION_EXIT)) )
 #else
 			printf(" "NAMESTR, code==FUT_GCC_INSTRUMENT_ENTRY_CODE?
 						"gcc-traced function entry":"gcc-traced function exit");
-		code=bufptr[3]+(code==FUT_GCC_INSTRUMENT_ENTRY_CODE?GCC_TRACED_FUNCTION_EXIT:0);
-		if( print_this && (s=lookup_symbol(code&(~(GCC_TRACED_FUNCTION_EXIT)))) )
+		code=bufptr[3]+(code==FUT_GCC_INSTRUMENT_ENTRY_CODE?0:FUT_GCC_TRACED_FUNCTION_EXIT);
+		if( print_this && (s=fkt_lookup_symbol(code&(~(FUT_GCC_TRACED_FUNCTION_EXIT)))) )
 #endif
 			{
 			printf("  %s",s);
@@ -1907,7 +1946,7 @@ if( newfun_pos > 0 )
 			{/* this occurred at least once, print it */
 			int	should_be_hex;
 
-			z = find_syscall(i, &category, &name, &should_be_hex);
+			z = fkt_find_syscall(i, &category, &name, &should_be_hex);
 			if( (histo_name[k] = malloc(strlen(name)+10)) == NULL )
 				{
 				fprintf(stderr, "no space to malloc histo_name\n");
@@ -2223,7 +2262,9 @@ int main( int argc, char *argv[] )
 		}
 
 	CALLOC(basetime,ncpus);
+#ifndef FUT
 	CALLOC(basehigh,ncpus);
+#endif
 	CALLOC(lasttime,ncpus);
 	CALLOC(lastreltime,ncpus);
 	CALLOC(start_time_cpu,ncpus);
@@ -2276,7 +2317,7 @@ int main( int argc, char *argv[] )
 	LEAVE_BLOCK(fd);
 
 	ENTER_BLOCK(fd);
-	load_irqs(fd);
+	fkt_load_irqs(fd);
 	LEAVE_BLOCK(fd);
 
 	ENTER_BLOCK(fd);
@@ -2299,11 +2340,11 @@ int main( int argc, char *argv[] )
 	LEAVE_BLOCK(fd);
 
 	ENTER_BLOCK(fd);
-	load_sysmap(fd);
+	fkt_load_sysmap(fd);
 	LEAVE_BLOCK(fd);
 
 	ENTER_BLOCK(fd);
-	load_pids(fd);
+	fkt_load_pids(fd);
 	LEAVE_BLOCK(fd);
 
 	LEAVE_BLOCK(fd); /* main block */

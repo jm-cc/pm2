@@ -35,6 +35,9 @@
 
 libs: $(LIBRARY)
 
+.PHONY: preproc
+preproc: $(LIB_PREPROC)
+
 $(LIBRARY):
 
 include $(PM2_ROOT)/make/common-rules.mak
@@ -84,6 +87,8 @@ endif
 
 $(LIB_DEPENDS): $(COMMON_DEPS)
 $(LIB_OBJECTS): $(LIB_GEN_OBJ)/%.o: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
+$(LIB_C_PREPROC): $(LIB_GEN_CPP)/%.i: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
+$(LIB_S_PREPROC): $(LIB_GEN_CPP)/%.si: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
 $(LIB_PICS): $(LIB_GEN_OBJ)/%.pic: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
 
 ifeq ($(LIB_GEN_OBJ),)
@@ -113,6 +118,8 @@ $(LIB_C_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.c
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
+$(LIB_C_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC)/%.c
+	$(LIB_PREFIX) $(CC) $(CFLAGS) -E -P $< > $@
 
 $(LIB_S_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.S
 	$(COMMON_HIDE) $(CC) -E -P $(CFLAGS) $< > $(LIB_OBJ_TO_S)
@@ -125,6 +132,9 @@ $(LIB_S_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC)/%.S
 $(LIB_S_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.S
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
+
+$(LIB_S_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).si: $(LIB_SRC)/%.S
+	$(LIB_PREFIX) $(CC) -E -P $(CFLAGS) $< > $@
 
 .PHONY: clean libclean repclean examplesclean distclean
 clean: libclean repclean examplesclean

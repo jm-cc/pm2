@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.11  2000/09/12 14:55:14  rnamyst
+Added support for generating .i files in Makefiles
+
 Revision 1.10  2000/09/12 14:40:00  oaumage
 - support -d
 
@@ -544,6 +547,7 @@ mad_init(
   tbx_bool_t                 debug_mode      = tbx_false;
 
   mad_managers_init(argc, argv);
+
   LOG_IN(); /* After pm2debug_init ... */
   
   if (!conf_spec)

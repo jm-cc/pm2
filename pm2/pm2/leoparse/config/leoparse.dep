@@ -1,2 +1,3 @@
 Depend: tbx ntbx init
 Provide: module
+Depend: leoparse_linkmode

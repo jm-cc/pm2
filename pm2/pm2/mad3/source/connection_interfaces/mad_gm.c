@@ -111,30 +111,30 @@ mad_gm_control(gm_status_t gm_status)
   LOG_IN();
   switch (gm_status)
     {
-    GM_SUCCESS:
+    case GM_SUCCESS:
       break;
 
-    GM_SEND_TIMED_OUT:
+    case GM_SEND_TIMED_OUT:
       msg = "send timed out";
       break;
 
-    GM_SEND_REJECTED:
+    case GM_SEND_REJECTED:
       msg = "send rejected";
       break;
 
-    GM_SEND_TARGET_PORT_CLOSED:
+    case GM_SEND_TARGET_PORT_CLOSED:
       msg = "send target port closed";
       break;
 
-    GM_SEND_TARGET_NODE_UNREACHABLE:
+    case GM_SEND_TARGET_NODE_UNREACHABLE:
       msg = "send target node unreachable";
       break;
 
-    GM_SEND_DROPPED:
+    case GM_SEND_DROPPED:
       msg = "send dropped";
       break;
 
-    GM_SEND_PORT_CLOSED:
+    case GM_SEND_PORT_CLOSED:
       msg = "send port closed";
       break;
 
@@ -159,7 +159,7 @@ __mad_gm_send_callback(struct gm_port *port TBX_UNUSED,
 
   LOG_IN();
   mad_gm_control(gms);
-  os->lock = 0;
+  chs->lock = 0;
   LOG_OUT();
 }
 
@@ -176,7 +176,7 @@ mad_gm_write(p_mad_link_t   l,
 
   LOG_IN();
   ls  = l->specific;
-  out = lnk->connection;
+  out = l->connection;
   os  = out->specific;
   ch  = out->channel;
   chs = ch->specific;
@@ -239,10 +239,10 @@ mad_gm_read(p_mad_link_t   l,
 	    {
 	    case GM_FAST_PEER_RECV_EVENT:
 	    case GM_FAST_RECV_EVENT:
-	      if (e->recv.buffer != chs->recv_user_buffer)
+	      if (gm_ntohp(e->recv.buffer) != chs->recv_user_buffer)
 		FAILURE("unexpected message");
 
-	      if (e->tag != user_tag)
+	      if (gm_ntohc(e->recv.tag) != user_tag)
 		FAILURE("unexpected message");
 
 	      gm_bcopy(gm_ntohp(e->recv.message),
@@ -257,10 +257,10 @@ mad_gm_read(p_mad_link_t   l,
 
 	    case GM_PEER_RECV_EVENT:
 	    case GM_RECV_EVENT:
-	      if (e->recv.buffer != chs->recv_user_buffer)
+	      if (gm_ntohp(e->recv.buffer) != chs->recv_user_buffer)
 		FAILURE("unexpected message");
 
-	      if (e->tag != user_tag)
+	      if (gm_ntohc(e->recv.tag) != user_tag)
 		FAILURE("unexpected message");
 
 	      gm_bcopy(gm_ntohp(e->recv.buffer),
@@ -283,9 +283,9 @@ mad_gm_read(p_mad_link_t   l,
 	}
 
     reception:
-      if (gm_num_receive_tokens())
+      if (gm_num_receive_tokens(port))
 	{
-	  gm_provide_receive_buffer_with_tag(chs->port,
+	  gm_provide_receive_buffer_with_tag(port,
 					     chs->recv_user_buffer,
 					     chs->recv_user_buffer_size,
 					     GM_LOW_PRIORITY,
@@ -378,13 +378,13 @@ mad_gm_adapter_init(p_mad_adapter_t a)
   int                         device_id =    0;
 
   LOG_IN();
-  if (tbx_streq(adapter->dir_adapter->name, "default"))
+  if (tbx_streq(a->dir_adapter->name, "default"))
     {
       device_id = 0;
     }
   else
     {
-      device_id = strtol(adapter->dir_adapter->name, NULL, 0);
+      device_id = strtol(a->dir_adapter->name, NULL, 0);
     }
 
   as               = TBX_MALLOC(sizeof(mad_gm_adapter_specific_t));
@@ -422,7 +422,7 @@ mad_gm_channel_init(p_mad_channel_t ch)
   as      	= a->specific;
   port_id 	= as->next_port_id++;
 
-  gms     	= gm_open(&port, as->device_id, port_id, channel->name);
+  gms     	= gm_open(&port, as->device_id, port_id, ch->name, GM_API_VERSION_1_1);
   mad_gm_control(gms);
 
   {
@@ -446,8 +446,8 @@ mad_gm_channel_init(p_mad_channel_t ch)
   ch->specific  = chs;
 
   param_str     = tbx_string_init_to_int(port_id);
-  tbx_string_append_char(param_str);
-  tbx_string_append_uint(node_id)
+  tbx_string_append_char(param_str, ' ');
+  tbx_string_append_uint(param_str, node_id);
   ch->parameter = tbx_string_to_cstring(param_str);
   tbx_string_free(param_str);
   param_str     = NULL;
@@ -455,7 +455,7 @@ mad_gm_channel_init(p_mad_channel_t ch)
   chs->recv_sys_buffer      = gm_dma_malloc(chs->port, SYS_MSG_LENGTH);
   chs->recv_sys_buffer_size = gm_min_size_for_length(SYS_MSG_LENGTH);
 
-  if (gm_num_receive_tokens())
+  if (gm_num_receive_tokens(port))
     {
       gm_provide_receive_buffer_with_tag(chs->port,
 					 chs->recv_sys_buffer,
@@ -470,7 +470,7 @@ mad_gm_channel_init(p_mad_channel_t ch)
   chs->recv_user_buffer      = gm_dma_malloc(chs->port, USER_MSG_LENGTH);
   chs->recv_user_buffer_size = gm_min_size_for_length(USER_MSG_LENGTH);
 
-  if (gm_num_receive_tokens())
+  if (gm_num_receive_tokens(port))
     {
       gm_provide_receive_buffer_with_tag(chs->port,
 					 chs->recv_user_buffer,
@@ -532,7 +532,6 @@ mad_gm_accept(p_mad_connection_t   in,
   p_mad_gm_channel_specific_t    chs = NULL;
   p_mad_adapter_t                a   = NULL;
   p_mad_gm_adapter_specific_t    as  = NULL;
-  p_mad_link_t                   l   = NULL;
 
   LOG_IN();
   is  = in->specific;
@@ -578,12 +577,12 @@ mad_gm_connect(p_mad_connection_t   out,
     char *ptr1 = NULL;
     char *ptr2 = NULL;
 
-    is->remote_port_id  = strtol(ai->channel_parameter, &ptr1, 0);
-    if ((!is->remote_port_id) && (ai->channel_parameter == ptr1))
+    os->remote_port_id  = strtol(ai->channel_parameter, &ptr1, 0);
+    if ((!os->remote_port_id) && (ai->channel_parameter == ptr1))
       FAILURE("could not extract the remote port id");
 
-    is->remote_node_id  = strtoul(ptr1, &ptr2, 0);
-    if ((!is->remote_node_id) && (ptr1 == ptr2))
+    os->remote_node_id  = strtoul(ptr1, &ptr2, 0);
+    if ((!os->remote_node_id) && (ptr1 == ptr2))
       FAILURE("could not extract the remote node id");
   }
 
@@ -648,7 +647,7 @@ mad_gm_new_message(p_mad_connection_t out)
   LOG_IN();
   os  = out->specific;
   ch  = out->channel;
-  chs = chs->specific;
+  chs = ch->specific;
 
   while(chs->lock);
   chs->lock = 1;
@@ -698,15 +697,15 @@ mad_gm_receive_message(p_mad_channel_t ch)
 	{
 	case GM_FAST_PEER_RECV_EVENT:
 	case GM_FAST_RECV_EVENT:
-	  gm_memorize_message (gm_ntohp (e->recv.buffer),
-			       gm_ntohp (e->recv.message),
-			       gm_ntohl (e->recv.length));
+	  gm_memorize_message (gm_ntohp(e->recv.buffer),
+			       gm_ntohp(e->recv.message),
+			       gm_ntohl(e->recv.length));
 	case GM_PEER_RECV_EVENT:
 	case GM_RECV_EVENT:
-	  if (e->recv.buffer != chs->recv_sys_buffer)
+	  if (gm_ntohp(e->recv.buffer) != chs->recv_sys_buffer)
 	    FAILURE("unexpected message");
 
-	  if (e->tag != sys_tag)
+	  if (gm_ntohc(e->recv.tag) != sys_tag)
 	    FAILURE("unexpected message");
 
 	  goto reception;
@@ -722,26 +721,30 @@ mad_gm_receive_message(p_mad_channel_t ch)
 	}
     }
 
- reception:
-  in_darray = ch->in_connection_darray;
-  in        = tbx_darray_first_idx(in_darray, &channel_specific->last_idx);
+reception:
+  {
+    int idx = 0;
 
-  while (in)
-    {
-      p_mad_gm_connection_specific_t is = NULL;
+    in_darray = ch->in_connection_darray;
+    in        = tbx_darray_first_idx(in_darray, &idx);
 
-      is = in->specific;
+    while (in)
+      {
+	p_mad_gm_connection_specific_t is = NULL;
 
-      if ((is->remote_node_id == e->sender_node_id)
-	  && (is->remote_port_id == e->sender_port_id))
-	{
-	  LOG_OUT();
+	is = in->specific;
 
-	  return in;
-	}
+	if ((is->remote_node_id == gm_ntohl(e->recv.sender_node_id))
+	    && (is->remote_port_id == gm_ntohl(e->recv.sender_port_id)))
+	  {
+	    LOG_OUT();
 
-      in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
-    }
+	    return in;
+	  }
+
+	in = tbx_darray_next_idx(in_darray, &idx);
+      }
+  }
 
   FAILURE("invalid channel state");
 }
@@ -756,7 +759,7 @@ mad_gm_message_received(p_mad_connection_t in)
   ch  = in->channel;
   chs = ch->specific;
 
-  if (gm_num_receive_tokens())
+  if (gm_num_receive_tokens(chs->port))
     {
       gm_provide_receive_buffer_with_tag(chs->port,
 					 chs->recv_sys_buffer,
@@ -848,7 +851,7 @@ mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
 
 
 void
-mad_channel_exit(p_mad_channel_t ch)
+mad_gm_channel_exit(p_mad_channel_t ch)
 {
   p_mad_gm_channel_specific_t chs = NULL;
 
@@ -870,6 +873,6 @@ mad_gm_driver_exit(p_mad_driver_t d)
   gm_finalize();
   ds = d->specific;
   TBX_FREE(ds);
-  driver->specific = ds = NULL;
+  d->specific = ds = NULL;
   LOG_OUT();
 }

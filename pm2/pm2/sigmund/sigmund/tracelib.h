@@ -22,6 +22,8 @@ extern char *fkt_code2name(int code);
 
 extern void tracelib_init(char *supertrace);
 
+int get_next_loose_filtered_trace(trace *tr);
+
 extern int get_next_filtered_trace(trace *tr);
 
 extern void tracelib_close();

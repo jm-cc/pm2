@@ -43,7 +43,7 @@ if [ ! -d ${PM2_ROOT}/flavors ]; then
     mkdir -p ${PM2_ROOT}/flavors
 fi
 
-$PM2_CREATE_FLAVOR set --flavor=default --builddir="" \
+$PM2_CREATE_FLAVOR set --flavor=default --builddir=default \
     --modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt --marcel=mono --mad2=tcp
 
 for i in mono smp act actsmp; do

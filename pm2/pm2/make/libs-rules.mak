@@ -35,8 +35,10 @@
 
 libs: $(LIBRARY)
 
-.PHONY: preproc
+.PHONY: preproc fut
 preproc: $(LIB_PREPROC)
+
+fut: $(LIB_FUT)
 
 $(LIBRARY):
 
@@ -119,7 +121,7 @@ $(LIB_C_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.c
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(LIB_C_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC)/%.c
-	$(LIB_PREFIX) $(CC) $(CFLAGS) -E -P $< > $@
+	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
 $(LIB_S_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.S
 	$(COMMON_HIDE) $(CC) -E -P $(CFLAGS) $< > $(LIB_OBJ_TO_S)
@@ -134,7 +136,14 @@ $(LIB_S_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.S
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(LIB_S_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).si: $(LIB_SRC)/%.S
-	$(LIB_PREFIX) $(CC) -E -P $(CFLAGS) $< > $@
+	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
+
+
+$(LIB_FUT): $(LIB_GEN_CPP)/%.fut: $(LIB_GEN_CPP)/%.i
+	$(LIB_PREFIX) cp /dev/null $@
+	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo.o
+	$(COMMON_HIDE) nm /tmp/foo.o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
+
 
 .PHONY: clean libclean repclean examplesclean distclean
 clean: libclean repclean examplesclean

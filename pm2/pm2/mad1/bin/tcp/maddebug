@@ -34,12 +34,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# $1 = display
-# $2... = command and arguments
-
-DISPLAY=$1
-export DISPLAY
-shift
+# $1... = command and arguments
 
 num=0
 while test -f /tmp/maddebug.$num
@@ -50,7 +45,13 @@ file=/tmp/maddebug.$num
 prog=$1
 shift
 
-echo "set args $*" > $file
+args=""
+while [ $# -gt 0 ]; do
+    args="$args '$1'"
+    shift
+done
+
+echo "set args $args" > $file
 if test -n "$MAD_MY_NUMBER"
 then
     title="$prog.$MAD_MY_NUMBER"
@@ -64,6 +65,7 @@ else
 fi
 echo "set environment DISPLAY $DISPLAY" >> $file
 echo "set environment MAD_DEBUG on" >> $file
+echo "set environment PM2_CONF_FILE $PM2_CONF_FILE" >> $file
 
 xterm -title $title -e gdb -x $file $prog
 

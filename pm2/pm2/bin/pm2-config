@@ -1,5 +1,19 @@
 #!/bin/sh
 
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
 
 pm2config_usage()
 {
@@ -34,6 +48,7 @@ Other options
   --cc          : C compiler used
   --stampfile   : stampfile generated
   --loader      : loader used
+  --preload     : dynamic libraries to be pre-loaded
 
 Known values for MODULE are:
     ${_PM2CONFIG_MODULES}
@@ -178,6 +193,10 @@ pm2config_set_vars()
 	_PM2CONFIG_LOADER=""
     fi
     export _PM2CONFIG_LOADER
+
+    # Dynamic libraries to be pre-loaded
+    _PM2CONFIG_PRELOAD="$PM2_LD_PRELOAD"
+    export _PM2CONFIG_PRELOAD
 
     # Flavor stamp file
     _PM2CONFIG_FLAVOR_STAMP_FILE=$_PM2CONFIG_FLAVOR_FILE
@@ -393,7 +412,7 @@ pm2config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader)
+    --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload)
 	_other=$1
 	;;
     --cflags)
@@ -484,6 +503,10 @@ pm2config_parse_cmdline() # args
 		;;
 	    --loader)
 		echo $_PM2CONFIG_LOADER
+		exit 0
+		;;
+	    --preload)
+		echo $_PM2CONFIG_PRELOAD
 		exit 0
 		;;
 	    --stampfile)

@@ -433,7 +433,7 @@ static void _ISOADDR_INFO_REQ_threaded_func(void)
 
 void ISOADDR_INFO_REQ_func(void)
 {
-  pm2_thread_create((pm2_func_t) _ISOADDR_INFO_REQ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) _ISOADDR_INFO_REQ_threaded_func, NULL);
 }
 
 
@@ -511,7 +511,7 @@ static void _ISOADDR_INFO_threaded_func(void)
 
 void ISOADDR_INFO_func(void)
 {
-  pm2_thread_create((pm2_func_t) _ISOADDR_INFO_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) _ISOADDR_INFO_threaded_func, NULL);
 }
 #endif //DSM 
 
@@ -1438,7 +1438,7 @@ void LRPC_ISOMALLOC_GLOBAL_LOCK_threaded_func(void)
 
 void LRPC_ISOMALLOC_GLOBAL_LOCK_func(void)
 {
-  pm2_thread_create((pm2_func_t) LRPC_ISOMALLOC_GLOBAL_LOCK_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) LRPC_ISOMALLOC_GLOBAL_LOCK_threaded_func, NULL);
 }
 
 
@@ -1506,7 +1506,7 @@ void LRPC_ISOMALLOC_LOCAL_LOCK_threaded_func(void)
 
 void LRPC_ISOMALLOC_LOCAL_LOCK_func(void)
 {
-  pm2_thread_create((pm2_func_t) LRPC_ISOMALLOC_LOCAL_LOCK_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) LRPC_ISOMALLOC_LOCAL_LOCK_threaded_func, NULL);
 }
 
 

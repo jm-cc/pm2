@@ -19,12 +19,9 @@
 
 #include "sys/marcel_flags.h"
 #include "sys/isomalloc_archdep.h"
+#include "sys/marcel_kthread.h"
 #include "pm2_list.h"
 #include "marcel_exception.h"
-
-#ifdef MA__SMP
-#include <pthread.h>
-#endif
 
 #define MARCEL_ALIGN    64L
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
@@ -149,7 +146,7 @@ _PRIVATE_ typedef struct __lwp_struct {
   volatile marcel_t sec_desc;              /* Task descriptor for security stack */
 #ifdef MA__SMP
   jmp_buf home_jb;
-  pthread_t pid;
+  marcel_kthread_t pid;
 #endif
 #ifndef MA__ONE_QUEUE
   __sched_t __sched_data;

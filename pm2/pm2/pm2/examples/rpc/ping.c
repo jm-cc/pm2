@@ -111,7 +111,7 @@ void f(int bytes)
 
     tfprintf(stderr, "temps QUICK_LRPC = %d.%03dms\n",
 	     temps/1000, temps%1000);
-    fprintf(f2, "%d %ld\n", bytes, temps/1000);
+    tfprintf(f2, "%d %ld\n", bytes, temps/1000);
 #endif /* ONLY_ASYNC */
 
 #ifndef ONLY_QUICK
@@ -132,18 +132,18 @@ void f(int bytes)
 
     tfprintf(stderr, "temps ASYNC_LRPC = %ld.%03ldms\n",
 	     temps/1000, temps%1000);
-    fprintf(f3, "%d %ld\n", bytes, temps/1000);
+    tfprintf(f3, "%d %ld\n", bytes, temps/1000);
 #endif /* ifndef ONLY_QUICK */
 }
 
 static void set_data_dir(char *buf, char *suffix)
 {
-  char *s = getenv("PM2_ROOT");
+  char *s = getenv("USER");
 
   if(s)
-    sprintf(buf, "%s/examples/rpc/data/%s_%s", s, mad_arch_name(), suffix);
+    sprintf(buf, "/tmp/%s_mad_%s", s, suffix);
   else
-    sprintf(buf, "./%s_%s", mad_arch_name(), suffix);
+    sprintf(buf, "/tmp/mad_%s", suffix);
 }
 
 static void startup_func(int argc, char *argv[], void *arg)
@@ -168,8 +168,7 @@ int pm2_main(int argc, char **argv)
 
   if(pm2_self() == 0) { /* master process */
 
-    tprintf("*** Performances des différents LRPC sous %s ***\n",
-	    mad_arch_name());
+    tprintf("*** Performances des différents LRPC sous mad ***\n");
 #ifndef ONLY_ASYNC
 #ifndef ONLY_QUICK
     set_data_dir(name, "lrpc");

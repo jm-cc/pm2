@@ -41,14 +41,14 @@ static unsigned long temps;
 any_t f(any_t arg)
 {
   register int n = (int)arg;
-  Tick t1, t2;
+  tbx_tick_t t1, t2;
 
-  GET_TICK(t1);
+  TBX_GET_TICK(t1);
   while(--n)
     marcel_yield();
-  GET_TICK(t2);
+  TBX_GET_TICK(t2);
 
-  temps = timing_tick2usec(TICK_DIFF(t1, t2));
+  temps = TBX_TIMING_DELAY(t1, t2);
   return NULL;
 }
 

@@ -37,13 +37,17 @@
 
 static unsigned SAMPLE;
 
+#define __ALIGNED__       __attribute__ ((aligned (sizeof(int))))
+
 #define NB	3
 
-static char *mess[NB] = {
-  "Hi Guys !",
-  "Hi Girls !",
-  "Hello world !"
-};
+#define STRING_SIZE  12
+
+static char msg1[STRING_SIZE] __ALIGNED__ = "Hi Guys!   ";
+static char msg2[STRING_SIZE] __ALIGNED__ = "Hi Girls!  ";
+static char msg3[STRING_SIZE] __ALIGNED__ = "Hi world!  ";
+
+static char *mess[NB];
 
 static void SAMPLE_thread(void *arg)
 {
@@ -51,7 +55,7 @@ static void SAMPLE_thread(void *arg)
   char str[64];
   pm2_completion_t c;
 
-  pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, str);
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, str, STRING_SIZE);
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
 
   pm2_rawrpc_waitdata();
@@ -74,6 +78,8 @@ int pm2_main(int argc, char **argv)
 {
   int i;
 
+  mess[0] = msg1; mess[1] = msg2; mess[2] = msg3;
+
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
 
   pm2_init(&argc, argv);
@@ -85,7 +91,6 @@ int pm2_main(int argc, char **argv)
     exit(1);
   }
 
-
   if(pm2_self() == 0) { /* master process */
     pm2_completion_t c;
 
@@ -93,7 +98,7 @@ int pm2_main(int argc, char **argv)
 
     for(i=0; i<NB; i++) {
       pm2_rawrpc_begin(1, SAMPLE, NULL);
-      pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, mess[i]);
+      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, mess[i], STRING_SIZE);
       pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
       pm2_rawrpc_end();
     }

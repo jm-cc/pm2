@@ -37,8 +37,6 @@
 
 #define ESSAIS 5
 
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
 static Tick t1, t2;
 
 static void term_func(void *arg)

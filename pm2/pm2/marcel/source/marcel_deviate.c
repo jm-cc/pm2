@@ -118,7 +118,8 @@ static void insertion_relai(handler_func_t f, void *arg)
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
     marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
   } else {
-    MA_THR_RESTARTED(cur, "Preemption");
+    MA_THR_RESTARTED(cur, "Deviation");
+    MA_BUG_ON(!ma_in_atomic());
     unlock_task();
 
     (*f)(arg);
@@ -132,7 +133,7 @@ static void insertion_relai(handler_func_t f, void *arg)
 typedef void (*relai_func_t)(handler_func_t f, void *arg);
 static volatile relai_func_t relai_func = insertion_relai;
 
-static void do_deviate(marcel_t pid, handler_func_t h, any_t arg)
+void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
 {
   static volatile handler_func_t f_to_call;
   static void * volatile argument;
@@ -188,88 +189,45 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     LOG_OUT();
     return;
   }
-  RAISE(NOT_IMPLEMENTED);
-
 #if 0
-TODO: Vieux code, à réécrire
-
-#ifndef MA__ONE_QUEUE
-  // Pour l'instant, le SMP-multi files n'est pas supporté...
-  RAISE(NOT_IMPLEMENTED);
+  // Idée abandonnée
+  if (marcel_sched_try_deviate(pid, h, arg)) {
+    marcel_lock_release(&deviate_lock);
+    unlock_task();
+    LOG_OUT();
+    return;
+  }
 #endif
 
   // En premier lieu, il faut empêcher la tâche 'cible' de changer
   // d'état
-  state_lock(pid);
+  //state_lock(pid);
 
-  if(IS_RUNNING(pid)) {
-    // La tâche est actuellement dans la file des threads prêts. On
-    // peut 'figer' le LWP sur lequel elle se trouve avec
-    // sched_lock (rappel : on est en mode ONE_QUEUE).
-    sched_lock(GET_LWP(pid));
-
-    mdebug("Deviate: self_lwp = %d, target_lwp = %d\n",
-	   GET_LWP(marcel_self())->number, GET_LWP(pid)->number);
-
-TODO: savoir si on est en MULTIPLE_RUNNING est à la charge du scheduler
-#ifdef MA__MULTIPLE_RUNNING
-#warning task->sched should be delegated to scheduler
-    if(pid->sched.internal.ext_state == MARCEL_RUNNING)
-      {
-	// La tâche est actuellement en cours d'exécution sur un autre
-	// LWP...
 #ifdef MA__WORK
-	// On est sauvé (?)
-	marcel_lwp_t *lwp = GET_LWP(pid);
-
-	sched_unlock(lwp);
-	state_unlock(pid);
-
-	marcel_deviate_record(pid, h, arg);
-
-	marcel_lock_release(&deviate_lock);
-	unlock_task();
+  marcel_deviate_record(pid, h, arg);
+  
+  marcel_lock_release(&deviate_lock);
+  unlock_task();
 
 #ifdef MA__SMP
-	// Heuristique: on va essayer d'accélérer les choses...
-	marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
+  // Heuristique: on va essayer d'accélérer les choses...
+  marcel_kthread_kill(GET_LWP(pid)->pid, MARCEL_TIMER_SIGNAL);
 #endif
 
-	LOG_OUT();
-	return;
+  LOG_OUT();
+  return;
 #else
 	// Tant pis !
-	RAISE(NOT_IMPLEMENTED);
+  RAISE(NOT_IMPLEMENTED);
 #endif
-      }
-    else
-#endif // MULTIPLE_RUNNING
-      {
-	// Ici, on sait que la tâche est prête mais non active. On peut
-	// donc la dévier tranquillement...
-
-	do_deviate(pid, h, arg);
-      }
-
-    sched_unlock(GET_LWP(pid));
-
-  } else {
     // La tâche n'est pas dans la file des threads prêts. On va donc
     // l'y insérer. ATTENTION: il faut éviter qu'un autre LWP 'vole'
     // la tâche avant que l'on ait pu la dévier. Il suffit pour cela
     // de la dévier _avant_ sa réinsertion...
-    do_deviate(pid, h, arg);
+    //marcel_do_deviate(pid, h, arg);
 
-#warning ma_wake_task(pid,NULL) -> marcel_wake_up_thread(pid)
-    marcel_wake_up_thread(pid);
-  }
+    //marcel_wake_up_thread(pid);
 
-  state_unlock(pid);
-
-  marcel_lock_release(&deviate_lock);
-
-  unlock_task();
-#endif
   LOG_OUT();
 }
 

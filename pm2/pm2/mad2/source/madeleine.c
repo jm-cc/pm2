@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.22  2000/03/08 17:19:17  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.21  2000/03/02 15:45:48  oaumage
 - support du polling Nexus
 
@@ -158,7 +163,7 @@ mad_protocol_available(p_mad_madeleine_t madeleine, char *name)
        drv < mad_driver_number;
        drv++)
     {
-      p_mad_driver_t driver;
+      p_mad_driver_t driver = &madeleine->driver[drv];
       
       if (!strcmp(name, driver->name))
 	{
@@ -194,11 +199,11 @@ mad_adapter_set_init(int nb_adapter, ...)
   
   LOG_VAL("nb_adapter", nb_adapter);
   
-  set = malloc(sizeof(mad_adapter_set_t));
+  set = TBX_MALLOC(sizeof(mad_adapter_set_t));
   CTRL_ALLOC(set);
   set->size = nb_adapter;
   set->description =
-    malloc(nb_adapter * sizeof(mad_adapter_description_t));
+    TBX_MALLOC(nb_adapter * sizeof(mad_adapter_description_t));
   CTRL_ALLOC(set->description);
   for (i = 0;
        i < nb_adapter;
@@ -232,7 +237,7 @@ mad_driver_fill(p_mad_madeleine_t madeleine)
   mad_driver_id_t drv;
     
   LOG_IN();
-  madeleine->driver = malloc(mad_driver_number * sizeof(mad_driver_t));
+  madeleine->driver = TBX_MALLOC(mad_driver_number * sizeof(mad_driver_t));
   CTRL_ALLOC(madeleine->driver);
   madeleine->nb_driver = mad_driver_number;
   
@@ -244,7 +249,7 @@ mad_driver_fill(p_mad_madeleine_t madeleine)
       
       driver = &(madeleine->driver[drv]);
       
-      PM2_INIT_SHARED(driver);
+      TBX_INIT_SHARED(driver);
       driver->madeleine = madeleine;
       driver->id        = drv;
       driver->specific  = NULL;
@@ -290,7 +295,7 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
 
   if (!adapter_set)
     {      
-      madeleine->adapter = malloc(mad_driver_number * sizeof(mad_adapter_t));
+      madeleine->adapter = TBX_MALLOC(mad_driver_number * sizeof(mad_adapter_t));
       CTRL_ALLOC(madeleine->adapter);
 
       madeleine->nb_adapter = mad_driver_number;
@@ -308,7 +313,7 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
 	  interface   = &(driver->interface);
 	  adapter     = &(madeleine->adapter[ad]);
 
-	  PM2_INIT_SHARED(adapter);
+	  TBX_INIT_SHARED(adapter);
 	  tbx_append_list(&(driver->adapter_list), adapter);
       
 	  adapter->driver                  = driver;
@@ -321,7 +326,7 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
     }
   else
     {
-      madeleine->adapter = malloc(adapter_set->size * sizeof(mad_adapter_t));
+      madeleine->adapter = TBX_MALLOC(adapter_set->size * sizeof(mad_adapter_t));
       CTRL_ALLOC(madeleine->adapter);
 
       madeleine->nb_adapter = adapter_set->size;
@@ -341,7 +346,7 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
 	  interface   = &(driver->interface);
 	  adapter     = &(madeleine->adapter[ad]);
 
-	  PM2_INIT_SHARED(adapter);
+	  TBX_INIT_SHARED(adapter);
 	  tbx_append_list(&(driver->adapter_list), adapter);
       
 	  adapter->driver                  = driver;
@@ -410,7 +415,7 @@ mad_parse_command_line(int                *argc,
 	    FAILURE(" -device must be followed by a master device parameter");
 
 	  current_adapter->master_parameter
-	    = malloc(strlen(argv[i + 1]) + 1);
+	    = TBX_MALLOC(strlen(argv[i + 1]) + 1);
 	  CTRL_ALLOC(current_adapter->master_parameter);
 	    
 	  strcpy(current_adapter->master_parameter,
@@ -467,11 +472,11 @@ mad_master_spawn(int                    *argc,
   char  *arg     = NULL;
   
   LOG_IN();
-  cmd = malloc(MAX_ARG_STR_LEN);
+  cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
   CTRL_ALLOC(cmd);
-  arg_str = malloc(MAX_ARG_STR_LEN);
+  arg_str = TBX_MALLOC(MAX_ARG_STR_LEN);
   CTRL_ALLOC(arg_str);
-  arg = malloc(MAX_ARG_LEN);
+  arg = TBX_MALLOC(MAX_ARG_LEN);
   CTRL_ALLOC(arg);
   
   while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
@@ -553,11 +558,11 @@ mad_slave_spawn(int                *argc,
   mad_adapter_id_t        ad;
 	
   LOG_IN();
-  cmd = malloc(MAX_ARG_STR_LEN);
+  cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
   CTRL_ALLOC(cmd);
-  arg_str = malloc(MAX_ARG_STR_LEN);
+  arg_str = TBX_MALLOC(MAX_ARG_STR_LEN);
   CTRL_ALLOC(arg_str);
-  arg = malloc(MAX_ARG_LEN);
+  arg = TBX_MALLOC(MAX_ARG_LEN);
   CTRL_ALLOC(arg);
 
   while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
@@ -653,10 +658,10 @@ mad_slave_spawn(int                *argc,
       LOG_STR("mad_init: Spawn", cmd);
       system(cmd);	
     }
-  free(cwd);
-  free(cmd);
-  free(arg_str);
-  free(arg);  
+  TBX_FREE(cwd);
+  TBX_FREE(cmd);
+  TBX_FREE(arg_str);
+  TBX_FREE(arg);  
   LOG_OUT();
 }
 #endif /* !EXTERNAL_SPAWN */
@@ -774,14 +779,14 @@ mad_read_conf(p_mad_configuration_t   configuration,
     }
 
   fscanf(f, "%d", &(configuration->size));
-  configuration->host_name = malloc(configuration->size * sizeof(char *));
+  configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
 
   for (i = 0;
        i < configuration->size;
        i++)
     {
-      configuration->host_name[i] = malloc(MAX_HOSTNAME_LEN);
+      configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN);
       CTRL_ALLOC(configuration->host_name[i]);
       fscanf(f, "%s", configuration->host_name[i]);
     }
@@ -807,7 +812,7 @@ mad_foreach_adapter_exit(void *object)
     {
       if (adapter->specific)
 	{
-	  free(adapter->specific);
+	  TBX_FREE(adapter->specific);
 	}
     }
   LOG_OUT();
@@ -839,13 +844,13 @@ mad_driver_exit(p_mad_madeleine_t madeleine)
 	{
 	  if (driver->specific)
 	    {
-	      free(driver->specific);
+	      TBX_FREE(driver->specific);
 	    }
 	}
     }
 
-  free(madeleine->adapter);
-  free(madeleine->driver);
+  TBX_FREE(madeleine->adapter);
+  TBX_FREE(madeleine->driver);
   LOG_OUT();
 }
 
@@ -893,7 +898,7 @@ mad_init(int                   *argc,
   tbx_init();
   
   madeleine->nb_channel = 0;
-  PM2_INIT_SHARED(madeleine);
+  TBX_INIT_SHARED(madeleine);
   mad_managers_init();
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
@@ -1001,11 +1006,11 @@ mad_exit(p_mad_madeleine_t madeleine)
 #endif
 {
   LOG_IN();
-  PM2_LOCK_SHARED(madeleine);
+  TBX_LOCK_SHARED(madeleine);
   mad_close_channels(madeleine);
   mad_driver_exit(madeleine);
   tbx_list_manager_exit();
-  PM2_UNLOCK_SHARED(madeleine);
+  TBX_UNLOCK_SHARED(madeleine);
   LOG_OUT();
 }
 

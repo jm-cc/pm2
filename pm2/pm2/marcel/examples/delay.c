@@ -35,7 +35,7 @@
 
 /* delay.c */
 
-#include <marcel.h>
+#include "marcel.h"
 
 any_t ALL_IS_OK = (any_t)0xdeadbeef;
 

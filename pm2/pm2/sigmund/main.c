@@ -23,12 +23,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "tracebuffer.h"
+#include "temp.h"
 
-#define FUT_SWITCH_TO_CODE			0x230
-
-extern void init(void);
-
-char *code2name(int code)
+char *fut_code2name(int code)
 {
   int i = 0;
   while(1) {
@@ -38,50 +36,68 @@ char *code2name(int code)
   }
 }
 
+char *fkt_code2name(int code)
+{
+  int i = 0;
+  while(1) {
+    if (fkt_code_table[i].code == 0) return NULL;
+    if (fkt_code_table[i].code == code) return fkt_code_table[i].name;
+    i++;
+  }
+}
+
+void print_trace(trace tr)
+{
+  int i, j = 0;
+  i = tr.code & 0xff;
+  i = (i - 12) / 4;
+  printf("%s",(tr.type == USER)? "USER: " : "KERN: ");
+  if (tr.type == USER)
+    printf("%u ", tr.thread);
+  printf("%9u ",(unsigned) tr.clock);
+  printf("%4u %1u ",tr.pid, tr.proc);
+  printf("%6x",tr.code);
+  if (tr.type == USER) {
+    printf("%40s", fut_code2name(tr.code >> 8));
+  } else {
+    if (tr.code >= FKT_UNSHIFTED_LIMIT_CODE)
+      printf("%40s", fkt_code2name(tr.code >> 8));
+    else {
+      if (tr.code < FKT_SYS_CALL_LIMIT_CODE) {
+	printf("\t\t\t\t\t  system call    %u", tr.code);
+	printf("   %s", sys_calls[tr.code]);
+      }
+      else if (tr.code < FKT_TRAP_LIMIT_CODE) {
+	i = tr.code - FKT_SYS_CALL_LIMIT_CODE;
+	printf("\t\t\t\t\t  trap    %u", i);
+	printf("   %s", traps[i]);
+      }
+      else {
+	i = tr.code -  FKT_TRAP_LIMIT_CODE;
+	printf("\t\t\t\t\t  IRQ    %u", i);
+      }
+      i = 0;
+    }
+  }
+  while(i != 0) {
+    printf("%9x  ",tr.args[j]);
+    i--;
+    j++;
+  }
+  printf("\n");
+}
+
 int main()
 {
-  FILE *fin;
-  u_64 a;
-  u_64 olda;
-  int c;
-  int thread = 0;
-  char header[200];
-  init();
-  if ((fin = fopen("prof_file_single","r")) == NULL) {
-    fprintf(stderr,"Erreur dans l'ouverture du fichier\n");
-    exit(1);
-  } 
-  fread(header, sizeof(unsigned long) + sizeof(double) + 2*sizeof(time_t) + sizeof(unsigned int), 1, fin);
-  fread(&a, sizeof(u_64), 1, fin);
-  olda = a;
-  while(!feof(fin)) {
-    int i;
-    u_64 r;
-    r = a - olda;
-    printf("%u\t%u ", thread, (unsigned) r);
-    fread(&c, sizeof(int), 1, fin);
-    i = c & 0xff;
-    printf("\t0x%x",c >> 8);
-    i -= 12;
-    i = i / 4;
-    printf("\t%d ",i);
-    printf("\t%s", code2name(c >> 8)); 
-    if ((c >> 8) == FUT_SWITCH_TO_CODE) {
-      fread(&c, sizeof(int), 1, fin);
-      printf("\t%d",c);
-      i--;
-      thread = c;
-    }
-    while (i != 0) {
-      fread(&c, sizeof(int), 1, fin);
-      printf("\t%x",c);
-      i--;
-    }
-    printf("\n");
-    olda = a;
-    fread(&a, sizeof(u_64), 1, fin);
+  trace tr;
+  int i;
+  init_trace_buffer("prof_file_single", "trace_file");
+  i = get_next_trace(&tr);
+  print_trace(tr);
+  while(i == 0) {
+    i = get_next_trace(&tr);
+    print_trace(tr);
   }
-  fclose(fin);
   return 0;
 }
 

@@ -85,7 +85,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 #endif // MAD_MESSAGE_POLLING
 
       mad_unpack(in, &buffer, sizeof(buffer),
-		 mad_send_CHEAPER, mad_receive_EXPRESS);
+		 mad_send_SAFER, mad_receive_EXPRESS);
 
       len = ntbx_unpack_int(&buffer);
       if ((len < 1) || (len > MAX))
@@ -93,7 +93,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
       mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_unpack(in, &buffer, sizeof(buffer),
-		 mad_send_CHEAPER, mad_receive_EXPRESS);
+		 mad_send_SAFER, mad_receive_EXPRESS);
       dyn_len = ntbx_unpack_int(&buffer);
       if (dyn_len < 1)
 	FAILURE("invalid message length");
@@ -130,13 +130,13 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
       ntbx_pack_int(len, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
       mad_pack(out, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
 
       dyn_len = strlen(dyn_buf) + 1;
       ntbx_pack_int(dyn_len, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
       mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
       TBX_FREE(dyn_buf);
@@ -154,12 +154,12 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
       ntbx_pack_int(len, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
       mad_pack(out, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
       dyn_len = strlen(dyn_buf) + 1;
       ntbx_pack_int(dyn_len, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
       mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
       TBX_FREE(dyn_buf);
@@ -199,13 +199,18 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
       len = strlen(msg) + 1;
       ntbx_pack_int(len, &buffer);
+      /* Message 1 length */
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
+      /* Message 1 */
       mad_pack(out, msg, len, mad_send_CHEAPER, mad_receive_CHEAPER);
+
       dyn_len = strlen(dyn_buf) + 1;
       ntbx_pack_int(dyn_len, &buffer);
+      /* Message 2 length */
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
+      /* Message 2 */
       mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
 
@@ -223,7 +228,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 #endif // MAD_MESSAGE_POLLING
 
       mad_unpack(in, &buffer, sizeof(buffer),
-		 mad_send_CHEAPER, mad_receive_EXPRESS);
+		 mad_send_SAFER, mad_receive_EXPRESS);
 
       len = ntbx_unpack_int(&buffer);
       if ((len < 1) || (len > MAX))
@@ -231,7 +236,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
       mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_unpack(in, &buffer, sizeof(buffer),
-		 mad_send_CHEAPER, mad_receive_EXPRESS);
+		 mad_send_SAFER, mad_receive_EXPRESS);
       dyn_len = ntbx_unpack_int(&buffer);
       if (dyn_len < 1)
 	FAILURE("invalid message length");

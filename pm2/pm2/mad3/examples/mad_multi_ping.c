@@ -355,6 +355,8 @@ ping(p_mad_channel_t      channel,
 	      if ((pack != 1) && (msg != 1) && param_cross)
 		goto skip;
 
+              DISP("size: %d, msg: %d, pack: %d", size, msg, pack);
+
 	      if (param_one_way)
 		{
 		  int nb_tests = param_nb_tests * param_nb_samples;
@@ -575,6 +577,8 @@ pong(p_mad_channel_t      channel,
 
 	      if ((pack != 1) && (msg != 1) && param_cross)
 		goto skip;
+
+              DISP("size: %d, msg: %d, pack: %d", size, msg, pack);
 
 	      if (param_one_way)
 		{

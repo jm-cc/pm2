@@ -29,7 +29,7 @@ if [ ! -d $PM2_USER_FLAVOR_DIR ]; then
 
     for i in mono smp act actsmp; do
 	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-$i \
-	    --modules="marcel tbx" --marcel=$i --builddir=marcel-$i \
+	    --modules="marcel tbx" --marcel=$i \
 	    --all=opt
     done
 

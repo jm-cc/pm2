@@ -50,7 +50,7 @@ tbx_timing_init()
     tbx_residual = min(tbx_residual, TBX_TICK_RAW_DIFF(t1, t2));
   }
 
-#if defined(X86_ARCH) || defined(ALPHA_ARCH)
+#if defined(X86_ARCH) || (defined(ALPHA_ARCH) && defined(LINUX_SYS))
   {
     struct timeval tv1,tv2;
 

@@ -93,6 +93,8 @@ static void timer_interrupt_protect(int sig, struct sigcontext context)
 //static void timer_interrupt_protect(int sig, siginfo_t *siginfo , void *p)
 //#elif defined(AIX_SYS) && defined(RS6K_ARCH)
 //static void timer_interrupt_protect(int sig, int Code, struct sigcontext *SCP)
+#elif defined(OSF_SYS) && defined(ALPHA_ARCH)
+static void timer_interrupt_protect(int sig, siginfo_t *siginfo , void *p)
 #else
 #error MA_PROTECT_LOCK_TASK_FROM_SIG is not yet implemented on that system! \
   Sorry.
@@ -104,6 +106,8 @@ static void timer_interrupt_protect(int sig, struct sigcontext context)
   pc = context.eip;
 #elif defined(LINUX_SYS) && defined(ALPHA_ARCH)
   pc = context.sc_pc;
+#elif defined(OSF_SYS) && defined(ALPHA_ARCH)
+  pc = ((unsigned long *)p)[2];
 #endif
 
   if ((pc < (unsigned long)ma_sched_protect_start) || 
@@ -216,6 +220,9 @@ void marcel_sig_start_timer(void)
 #endif
 #if !defined(WIN_SYS)
   sa.sa_flags = SA_RESTART;
+#if defined(OSF_SYS) && defined(ALPHA_ARCH)
+  sa.sa_flags |= SA_SIGINFO;
+#endif
 #else
   sa.sa_flags = 0;
 #endif

@@ -21,7 +21,7 @@
 #include "isomalloc.h"
 #include "block_alloc.h"
 #include "pm2_sync.h"
-#include "common.h"
+#include "pm2_common.h"
 
 #include <fcntl.h>
 #include <stdarg.h>
@@ -35,7 +35,7 @@
 #endif
 
 #ifdef PROFILE
-#include "profile.h"
+#include "pm2_profile.h"
 #endif
 
 #undef min

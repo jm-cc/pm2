@@ -36,65 +36,38 @@
 
 default: all
 
-include ../../make/common.mak
+include $(PM2_ROOT)/make/common.mak
 
-all: migr migr2 pong pingdata pointers
-
-
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)
+all: simple ping migr_hook
 
 
 # executables :
 
 
-# migr :
+# simple :
 
-$(PM2_OBJ)/migr.o: migr.c $(PM2_HEADERS) rpc_defs.h
+$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
-migr: $(PM2_OBJ)/migr.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-# migr2 :
-
-$(PM2_OBJ)/migr2.o: migr2.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-migr2: $(PM2_OBJ)/migr2.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
+simple: $(PM2_OBJ)/simple.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
 
 # ping :
 
-$(PM2_OBJ)/pong.o: pong.c $(PM2_HEADERS) rpc_defs.h
+$(PM2_OBJ)/ping.o: ping.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
-pong: $(PM2_OBJ)/pong.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
+ping: $(PM2_OBJ)/ping.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
 
+# migr_hook :
 
-# pingdata :
-
-$(PM2_OBJ)/pingdata.o: pingdata.c $(PM2_HEADERS) rpc_defs.h
+$(PM2_OBJ)/migr_hook.o: migr_hook.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
-pingdata: $(PM2_OBJ)/pingdata.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
+migr_hook: $(PM2_OBJ)/migr_hook.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
-
-
-# pointers :
-
-$(PM2_OBJ)/pointers.o: pointers.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-pointers: $(PM2_OBJ)/pointers.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
 

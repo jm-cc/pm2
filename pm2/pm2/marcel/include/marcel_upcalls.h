@@ -26,7 +26,9 @@
 #endif
 
 #section marcel_variables
+#ifdef MA__ACTIVATION
 MA_DECLARE_PER_LWP(act_proc_info_t, act_info);
+#endif
 
 #section marcel_macros
 #ifdef MA__DEBUG
@@ -43,12 +45,16 @@ MA_DECLARE_PER_LWP(act_proc_info_t, act_info);
 
 //        MA_ACT_SET_THREAD_DEBUG(lwp, thread);
 
+#ifdef MA__ACTIVATION
 #define MA_ACT_SET_THREAD(lwp, thread) \
   do { \
         ma_per_lwp(act_info, (lwp)).current_act_id=(unsigned long)(thread); \
         ma_per_lwp(act_info, (lwp)).critical_section=&(thread)->preempt_count;\
 	ma_mb(); \
   } while (0)
+#else
+#define MA_ACT_SET_THREAD(lwp, thread) ((void)0)
+#endif
 
 #section marcel_functions
 void marcel_upcalls_disallow(void);

@@ -789,6 +789,10 @@ mad_mux_receive_block(void *arg)
 	      p_mad_buffer_t buffer = NULL;
 
 	      TBX_LOCK_SHARED(block_slist);
+	      if (!tbx_slist_is_nil(buffer_slist))
+		{
+		  buffer = tbx_slist_dequeue(buffer_slist);
+		}
 	      if (xbh->data_available)
 		{
 		  if (buffer)
@@ -1732,11 +1736,11 @@ mad_mux_extract_buffer(p_mad_link_t            lnk,
 
   if (nb_block > 1)
     {
+      tbx_free(mad_xbheader_memory, xbh);
+      xbh = NULL;
+
       while (nb_block--)
 	{
-	  tbx_free(mad_xbheader_memory, xbh);
-	  xbh = NULL;
-
 	  marcel_sem_P(block_to_forward);
 	  TBX_LOCK_SHARED(block_slist);
 	  xbh = tbx_slist_extract(block_slist);

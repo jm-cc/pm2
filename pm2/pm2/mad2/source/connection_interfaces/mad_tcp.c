@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.26  2000/10/31 16:21:15  oaumage
+- support de communications entre architectures heterogenes avec Mad2/TCP
+- correction de testandset pour Alpha
+
 Revision 1.25  2000/06/13 16:57:58  vdanjean
 Adding marcel_poll option
 
@@ -208,7 +212,8 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 	       j < configuration->size;
 	       j++)
 	    {
-	      mad_channel_id_t channel_id;	      
+	      ntbx_pack_buffer_t pack_buffer;
+	      mad_channel_id_t   channel_id;
 	      
 	      if (j == configuration->local_host_id)
 		{
@@ -220,8 +225,9 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 
 	      LOG_VAL("Receiving channel id from host", j);
 	      SYSCALL(read(connection_specific->socket, 
-			   &channel_id,
-			   sizeof(mad_channel_id_t)));
+			   &pack_buffer,
+			   sizeof(ntbx_pack_buffer_t)));
+	      channel_id = (mad_channel_id_t)ntbx_unpack_int(&pack_buffer);
 	      LOG_VAL("Received channel id from host", j);
 	      LOG_VAL("Channel id", channel_id);
 	      
@@ -229,31 +235,36 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 		{
 		  FAILURE("wrong channel id");
 		}
+
 	      LOG_VAL("Writing local host id", configuration->local_host_id);
+	      ntbx_pack_int((int)configuration->local_host_id, &pack_buffer);
 	      SYSCALL(write(connection_specific->socket,
-			    &(configuration->local_host_id),
-			    sizeof(ntbx_host_id_t)));	      
+			    &pack_buffer,
+			    sizeof(ntbx_pack_buffer_t)));	      
 	      LOG_VAL("Wrote local host id", configuration->local_host_id);
 	    }
 	}
       else
 	{
 	  /* send */
-	  ntbx_host_id_t host_id;
+	  ntbx_pack_buffer_t pack_buffer;
+	  ntbx_host_id_t     host_id;
 
-	  connection = &(channel->output_connection[i]);
+	  connection          = &(channel->output_connection[i]);
 	  connection_specific = connection->specific;
 
 	  LOG_VAL("Writing channel id", channel->id);
+	  ntbx_pack_int((int)channel->id, &pack_buffer);
 	  SYSCALL(write(connection_specific->socket,
-			&(channel->id),
-			sizeof(mad_channel_id_t)));
+			&pack_buffer,
+			sizeof(ntbx_pack_buffer_t)));
 	  LOG_VAL("Wrote channel id", channel->id);
 	      
 	  LOG_VAL("Receiving host id from host", i);
 	  SYSCALL(read(connection_specific->socket,
-		       &(host_id),
-		       sizeof(ntbx_host_id_t)));
+		       &pack_buffer,
+		       sizeof(ntbx_pack_buffer_t)));
+	  host_id = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 	  LOG_VAL("Received host id from host", i);
 	  LOG_VAL("Host id", host_id);
 	  
@@ -294,6 +305,7 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	       j < configuration->size;
 	       j++)
 	    {
+	      ntbx_pack_buffer_t pack_buffer;
 	      ntbx_host_id_t host_id;
 	      
 	      if (j == configuration->local_host_id)
@@ -305,15 +317,17 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	      connection_specific = connection->specific;
 
 	      LOG_VAL("Writing channel id", channel->id);
+	      ntbx_pack_int((int)channel->id, &pack_buffer);
 	      SYSCALL(write(connection_specific->socket,
-			    &(channel->id),
-			    sizeof(mad_channel_id_t)));
+			    &pack_buffer,
+			    sizeof(ntbx_pack_buffer_t)));
 	      LOG_VAL("Wrote channel id", channel->id);	      	  
 
 	      LOG_VAL("Receiving host id from host", j);
 	      SYSCALL(read(connection_specific->socket,
-			   &(host_id),
-			   sizeof(ntbx_host_id_t)));
+			   &pack_buffer,
+			   sizeof(ntbx_pack_buffer_t)));
+	      host_id = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 	      LOG_VAL("Received host id from host", j);
 	      LOG_VAL("Host id", host_id);
 
@@ -326,6 +340,7 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
       else
 	{
 	  /* Receive */
+	  ntbx_pack_buffer_t pack_buffer;
 	  mad_channel_id_t channel_id;	      
 
 	  connection = &(channel->input_connection[i]);
@@ -333,8 +348,9 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 
 	  LOG_VAL("Receiving channel id from host", i);
 	  SYSCALL(read(connection_specific->socket, 
-		       &channel_id,
-		       sizeof(mad_channel_id_t)));
+		       &pack_buffer,
+		       sizeof(ntbx_pack_buffer_t)));
+	  channel_id = (mad_channel_id_t)ntbx_unpack_int(&pack_buffer);
 	  LOG_VAL("Received channel id from host", i);
 	  LOG_VAL("Channel id", channel_id);
 	      
@@ -344,9 +360,10 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	    }
 
 	  LOG_VAL("Writing local host id", configuration->local_host_id);
+	  ntbx_pack_int((int)configuration->local_host_id, &pack_buffer);
 	  SYSCALL(write(connection_specific->socket,
-			&(configuration->local_host_id),
-			sizeof(ntbx_host_id_t)));	      
+			&pack_buffer,
+			sizeof(ntbx_pack_buffer_t)));	      
 	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 	}
     }
@@ -507,6 +524,8 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->connection_port =
     (ntbx_tcp_port_t)ntohs(address.sin_port);
 
+  LOG_VAL("mad_tcp_adapter_init: port",
+	  adapter_specific->connection_port);
   adapter->parameter = TBX_MALLOC(10);
   CTRL_ALLOC(adapter->parameter);
   sprintf(adapter->parameter, "%d", adapter_specific->connection_port);
@@ -530,9 +549,10 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
   if (configuration->local_host_id == 0)
     {
       /* Master */
-      int            desc_array[configuration->size];
-      int            desc;
-      ntbx_host_id_t rank;
+      int                desc_array[configuration->size];
+      int                desc;
+      ntbx_host_id_t     rank;
+      ntbx_pack_buffer_t pack_buffer;
       
       LOG("mad_tcp_adapter_configuration_init: master");
       for(i = 1; i < configuration->size; i++)
@@ -540,11 +560,13 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
 	  SYSCALL(desc =
 		  accept(adapter_specific->connection_socket, NULL, NULL));
       
-	  SYSCALL(read(desc, &rank, sizeof(ntbx_host_id_t)));
+	  SYSCALL(read(desc, &pack_buffer, sizeof(ntbx_pack_buffer_t)));
+	  rank = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 	  desc_array[rank] = desc;
-	  SYSCALL(read(desc_array[rank],
-		       &(adapter_specific->remote_connection_port[rank]),
-		       sizeof(ntbx_tcp_port_t)));
+
+	  SYSCALL(read(desc_array[rank], &pack_buffer, sizeof(ntbx_pack_buffer_t)));
+	  adapter_specific->remote_connection_port[rank] = 
+	    (ntbx_tcp_port_t)ntbx_unpack_int(&pack_buffer);
 	}
       
       LOG("mad_tcp_adapter_configuration_init: phase 1 terminee");
@@ -555,9 +577,13 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
 	  for (j = 1; j < configuration->size; j++)
 	    {
 	      if (j != i)
-		SYSCALL(write(desc_array[i],
-			      &(adapter_specific->remote_connection_port[j]),
-			      sizeof(ntbx_tcp_port_t)));
+		{
+		  ntbx_pack_int((int)adapter_specific->
+				remote_connection_port[j], 
+				&pack_buffer);
+		  SYSCALL(write(desc_array[i],
+				&pack_buffer, sizeof(ntbx_pack_buffer_t)));
+		}
 	    }
 	  SYSCALL(close(desc_array[i]));
 	}
@@ -568,11 +594,14 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       /* Slave */
       ntbx_tcp_address_t server_address;
       ntbx_tcp_socket_t  desc;
+      ntbx_pack_buffer_t pack_buffer;
       
       LOG("mad_tcp_adapter_configuration_init: slave");
       adapter_specific->remote_connection_port[0] =
 	atoi(adapter->master_parameter);
       
+      LOG_VAL("mad_tcp_adapter_configuration_init: port",
+	      adapter_specific->remote_connection_port[0]);
       desc = ntbx_tcp_socket_create(NULL, 0);
       ntbx_tcp_address_fill(&server_address,
 			    adapter_specific->remote_connection_port[0],
@@ -582,17 +611,21 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       SYSCALL(connect(desc, (struct sockaddr*)&server_address,
 		      sizeof(ntbx_tcp_address_t)));
       
-      SYSCALL(write(desc, &(configuration->local_host_id),
-		    sizeof(ntbx_host_id_t)));
-      SYSCALL(write(desc, &(adapter_specific->connection_port),
-		    sizeof(ntbx_tcp_port_t)));
+      ntbx_pack_int((int)configuration->local_host_id, &pack_buffer);
+      SYSCALL(write(desc, &pack_buffer, sizeof(ntbx_pack_buffer_t)));
+
+      ntbx_pack_int((int)adapter_specific->connection_port, &pack_buffer);
+      SYSCALL(write(desc, &pack_buffer, sizeof(ntbx_pack_buffer_t)));
       
       LOG("mad_tcp_adapter_configuration_init: phase 1 terminee");
       for (i = 1; i < configuration->size; i++)
 	{
 	  if (i != configuration->local_host_id)
-	    SYSCALL(read(desc, &(adapter_specific->remote_connection_port[i]),
-			 sizeof(ntbx_tcp_port_t)));
+	    {
+	      SYSCALL(read(desc, &pack_buffer, sizeof(ntbx_pack_buffer_t)));
+	      adapter_specific->remote_connection_port[i] = 
+		(ntbx_tcp_port_t)ntbx_unpack_int(&pack_buffer);
+	    }
 	}
 
       close(desc);

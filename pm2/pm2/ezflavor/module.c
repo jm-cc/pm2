@@ -588,10 +588,10 @@ void module_update_with_current_flavor(void)
     }
   }
 
-  update_select_buttons(gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook)));
-
   gtk_widget_set_sensitive(module_frame, TRUE);
   gtk_widget_set_sensitive(general_frame, TRUE);
+
+  update_select_buttons(gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook)));
 }
 
 static void module_save_module_options(module_t *m)

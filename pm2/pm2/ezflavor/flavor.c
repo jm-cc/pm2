@@ -62,11 +62,54 @@ static void flavor_print(void)
 }
 #endif
 
+static gint flavor_exists(char *name);
+
+static void update_the_buttons(void)
+{
+  char *selected = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+  gint load_enabled, create_enabled, save_enabled;
+
+  if(flavor_exists(selected)) {
+    create_enabled = FALSE;
+    if(cur_flavor == NULL) {
+      // Initial state
+      load_enabled = TRUE;
+      save_enabled = FALSE; // Really nothing to save !
+    } else if(strcmp(cur_flavor->name, selected)) {
+      load_enabled = TRUE;
+      save_enabled = TRUE;  // Actually a "save as"
+    } else {
+      // Selected flavor is the current one
+      load_enabled = FALSE;
+      if(flavor_modified)
+	save_enabled = TRUE;
+      else
+	save_enabled = FALSE;
+    }
+  } else if(!strcmp(selected, "")) {
+    // No selected flavor
+    load_enabled = save_enabled = create_enabled = FALSE;
+  } else {
+    // Selected flavor does not exist yet
+    load_enabled = FALSE;
+    create_enabled = TRUE;
+    if(cur_flavor == NULL)
+      save_enabled = FALSE; // Nothing to save
+    else
+      save_enabled = TRUE;
+  }
+
+  gtk_widget_set_sensitive(the_load_button, load_enabled);
+  gtk_widget_set_sensitive(the_create_button, create_enabled);
+  gtk_widget_set_sensitive(the_save_button, save_enabled);
+}
+
 void flavor_mark_modified(void)
 {
   if(!flavor_modified) {
     flavor_modified = TRUE;
-    flavor_save_enable(TRUE);
+
+    update_the_buttons();
   }
 }
 
@@ -216,9 +259,7 @@ static void update_current(void)
 
   flavor_modified = was_modified;
 
-  flavor_load_enable(FALSE);
-  flavor_create_enable(FALSE);
-  flavor_save_enable(flavor_modified);
+  update_the_buttons();
 }
 
 static void save_and_proceed(gpointer data)
@@ -291,13 +332,13 @@ static void flavor_save(void)
 
   ret = flavor_save_on_disk();
 
-  flavor_save_enable(FALSE);
-
   if(ret == 0) {
     flavor_modified = FALSE;
     TRACE("Done.\n");
   } else
     TRACE("Operation failed: see /tmp/ezflavor.errlog for details.\n");
+
+  update_the_buttons();
 
 #ifdef DEBUG
   flavor_print();
@@ -402,16 +443,7 @@ static void flavor_name_changed(GtkWidget *widget,
   if(!destroy_phase) {
     name = gtk_entry_get_text(GTK_ENTRY(widget));
 
-    if(cur_flavor && !strcmp(cur_flavor->name, name)) {
-      flavor_load_enable(FALSE);
-      flavor_create_enable(FALSE);
-    } else if(flavor_exists(name)) {
-      flavor_load_enable(TRUE);
-      flavor_create_enable(FALSE);
-    } else {
-      flavor_create_enable(TRUE);
-      flavor_load_enable(FALSE);
-    }
+    update_the_buttons();
   }
 }
 
@@ -487,24 +519,7 @@ static void flavor_build_selector(GtkWidget *vbox)
 		     (gpointer)(GTK_COMBO(combo)->entry));
   gtk_widget_show(the_save_button);
 
-  flavor_load_enable(TRUE);
-  flavor_create_enable(FALSE);
-  flavor_save_enable(FALSE);
-}
-
-void flavor_load_enable(gint enable)
-{
-  gtk_widget_set_sensitive(the_load_button, enable);
-}
-
-void flavor_create_enable(gint enable)
-{
-  gtk_widget_set_sensitive(the_create_button, enable);
-}
-
-void flavor_save_enable(gint enable)
-{
-  gtk_widget_set_sensitive(the_save_button, enable);
+  update_the_buttons();
 }
 
 char *flavor_name(void)

@@ -33,6 +33,13 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+ifeq ($(COMMON_USE_EXTENSION),yes)
+COMMON_EXTRA_DEP	:=
+COMMON_EXT		:=	$(COMMON_TEMPO_EXT)
+else
+COMMON_EXT		:=
+endif
+
 # Sources
 MAD_REG_SOURCES	:=	$(wildcard $(MAD_SRC)/*.c)
 MAD_NET_SOURCES	:=	$(wildcard $(MAD_SRC)/$(NET_INTERF)/*.c)
@@ -70,18 +77,13 @@ endif
 endif
 
 .PHONY: mad_default
-mad_default: $(MAD_LIB) $(MAD_USER_MAK)
+mad_default: $(MAD_LIB)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(MAD_DEPENDS)),$(MAD_DEPENDS))
 include $(MAD_DEPENDS)
 endif
 endif
-
-$(MAD_USER_MAK):
-	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user*.mak
-	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD_USER_MAK)
-	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD_USER_MAK)
 
 $(MAD_EXTRA_DEP_FILE):
 	$(MAD_HIDE) rm -f $(MAD1_ROOT)/.opt*
@@ -94,11 +96,17 @@ $(MAD_LIB_A): $(MAD_OBJECTS)
 	$(MAD_HIDE) rm -f $(MAD_LIB_A)
 	$(MAD_HIDE) rm -f $(MAD_LIB_SO)
 	$(MAD_PREFIX) ar cr $(MAD_LIB_A) $(MAD_OBJECTS)
+	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user*.mak
+	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD_USER_MAK)
+	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD_USER_MAK)
 
 $(MAD_LIB_SO): $(MAD_OBJECTS)
 	$(MAD_HIDE) rm -f $(MAD_LIB_A)
 	$(MAD_HIDE) rm -f $(MAD_LIB_SO)
 	$(MAD_PREFIX) ld -Bdynamic -shared -o $(MAD_LIB_SO) $(MAD_OBJECTS)
+	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user*.mak
+	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD_USER_MAK)
+	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD_USER_MAK)
 
 $(MAD_REG_OBJECTS): $(MAD_OBJ)/%$(COMMON_EXT).o: $(MAD_SRC)/%.c
 	$(MAD_PREFIX) $(MAD_CC) $(MAD_KCFLAGS) -c $< -o $@

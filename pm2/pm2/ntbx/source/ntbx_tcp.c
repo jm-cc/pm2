@@ -309,7 +309,7 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
 
         LOG_IN();
         client->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
-        CTRL_ALLOC(client->local_host);
+        memset(client->local_host, 0, MAXHOSTNAMELEN + 1);
         gethostname(client->local_host, MAXHOSTNAMELEN);
 
         local_host_entry = gethostbyname(client->local_host);

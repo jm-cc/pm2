@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
+#include "pm2.h"
 
 int pm2_main(int argc, char **argv)
 {

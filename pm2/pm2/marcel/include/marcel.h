@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.14  2000/05/03 18:34:46  vdanjean
+few bugs fixes in key managment
+
 Revision 1.13  2000/05/02 13:55:53  vdanjean
 little bugs correction
 
@@ -227,7 +230,7 @@ static __inline__ int marcel_setspecific(marcel_key_t key, any_t value) __attrib
 static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
 {
 #ifdef MA__DEBUG
-   if((key < 0) || (key >= _nb_keys))
+   if((key < 0) || (key >= marcel_nb_keys))
       RAISE(CONSTRAINT_ERROR);
 #endif
    marcel_self()->key[key] = value;

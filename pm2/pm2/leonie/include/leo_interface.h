@@ -51,14 +51,8 @@ leo_dir_node_init(void);
 p_leo_dir_driver_t
 leo_dir_driver_init(void);
 
-p_leo_dir_channel_common_process_specific_t
-leo_dir_channel_common_process_specific_init(void);
-
-p_leo_dir_channel_common_t
-leo_dir_channel_common_init(void);
-
-p_leo_dir_channel_process_specific_t
-leo_dir_channel_process_specific_init(void);
+p_leo_dir_connection_t
+leo_dir_connection_init(void);
 
 p_leo_dir_channel_t
 leo_dir_channel_init(void);
@@ -66,11 +60,8 @@ leo_dir_channel_init(void);
 p_leo_dir_fchannel_t
 leo_dir_fchannel_init(void);
 
-p_leo_dir_vxchannel_process_routing_table_t
-leo_dir_vxchannel_process_routing_table_init(void);
-
-p_leo_dir_vxchannel_process_specific_t
-leo_dir_vxchannel_process_specific_init(void);
+p_leo_dir_connection_data_t
+leo_dir_connection_data_init(void);
 
 p_leo_dir_vxchannel_t
 leo_dir_vxchannel_init(void);
@@ -199,6 +190,145 @@ leonie_processes_cleanup(void);
 // Helpers
 //---------////////////////////////////////////////////////////////////////
 #ifdef NEED_LEO_HELPERS
+
+// prototypes
+
+static
+p_ntbx_client_t
+process_to_client(p_ntbx_process_t p) TBX_UNUSED;
+
+static
+p_ntbx_client_t
+get_client(p_ntbx_process_container_t pc,
+           ntbx_process_lrank_t       l) TBX_UNUSED;
+
+static
+void
+do_pc_global(p_ntbx_process_container_t _pc,
+             void (*_f)(ntbx_process_grank_t _g)) TBX_UNUSED;
+
+static
+void
+do_pc2_global(p_ntbx_process_container_t _pc,
+             void (*_f)(ntbx_process_grank_t _g1,
+                        ntbx_process_grank_t _g2)) TBX_UNUSED;
+
+static
+void
+do_pc_global_s(p_ntbx_process_container_t _pc,
+              void (*_f)(ntbx_process_grank_t  _g,
+                         void                 *_s)) TBX_UNUSED;
+
+static
+void
+do_pc_send_global(p_ntbx_process_container_t _pc,
+                 void (*_f)(ntbx_process_grank_t _g,
+                            p_ntbx_client_t      _client)) TBX_UNUSED;
+
+static
+void
+do_pc_cond_global(p_ntbx_process_container_t _pc,
+                  tbx_bool_t (*_f)(ntbx_process_grank_t _g)) TBX_UNUSED;
+
+static
+void
+do_pc_cond_send_global(p_ntbx_process_container_t _pc,
+                      tbx_bool_t (*_f)(ntbx_process_grank_t _l,
+                                       p_ntbx_client_t _client)) TBX_UNUSED;
+
+// pc/local
+static
+void
+do_pc_local(p_ntbx_process_container_t _pc,
+            void (*_f)(ntbx_process_lrank_t _l)) TBX_UNUSED;
+
+static
+void
+do_pc2_local(p_ntbx_process_container_t _pc,
+             void (*_f)(ntbx_process_lrank_t _l1,
+                        ntbx_process_lrank_t _l2)) TBX_UNUSED;
+
+static
+void
+do_pc_local_s(p_ntbx_process_container_t _pc,
+              void (*_f)(ntbx_process_lrank_t  _l,
+                         void                 *_s)) TBX_UNUSED;
+
+static
+void
+do_pc_local_p(p_ntbx_process_container_t _pc,
+              void (*_f)(ntbx_process_lrank_t _l,
+                         p_ntbx_process_t     _p)) TBX_UNUSED;
+
+static
+void
+do_pc_send_local(p_ntbx_process_container_t _pc,
+                 void (*_f)(ntbx_process_lrank_t _l,
+                            p_ntbx_client_t      _client)) TBX_UNUSED;
+
+static
+void
+do_pc_send_local_s(p_ntbx_process_container_t _pc,
+                   void (*_f)(ntbx_process_lrank_t  _l,
+                              p_ntbx_client_t       _client,
+                              void                 *_s)) TBX_UNUSED;
+
+static
+void
+do_pc_cond_local(p_ntbx_process_container_t _pc,
+                 tbx_bool_t (*_f)(ntbx_process_lrank_t _l)) TBX_UNUSED;
+
+static
+void
+do_pc_cond_send_local(p_ntbx_process_container_t _pc,
+                      tbx_bool_t (*_f)(ntbx_process_lrank_t _l,
+                                       p_ntbx_client_t _client)) TBX_UNUSED;
+
+static
+void
+do_pc_s(p_ntbx_process_container_t _pc,
+        void (*_f)(void *_s)) TBX_UNUSED;
+
+static
+void
+do_pc_send(p_ntbx_process_container_t _pc,
+           void (*_f)(p_ntbx_client_t _client)) TBX_UNUSED;
+
+static
+void
+do_pc_send_string(p_ntbx_process_container_t _pc,
+                  char*                      _str) TBX_UNUSED;
+
+static
+void
+do_pc_send_s(p_ntbx_process_container_t _pc,
+                 void (*_f)(p_ntbx_client_t  _client,
+                            void            *_s)) TBX_UNUSED;
+
+static
+void
+do_slist(p_tbx_slist_t _l,
+         void (*_f)(void *_p)) TBX_UNUSED;
+
+static
+void
+do_extract_slist(p_tbx_slist_t _l,
+                 void (*_f)(void *_p)) TBX_UNUSED;
+
+static
+void
+do_slist_nref(p_tbx_slist_t _l,
+              p_tbx_slist_nref_t _nref,
+              void (*_f)(void *_p)) TBX_UNUSED;
+
+static
+void
+with_all_processes(p_leo_directory_t dir,
+                   void (*_f)(p_ntbx_client_t _client)) TBX_UNUSED;
+
+
+// definitions
+
 static
 p_ntbx_client_t
 process_to_client(p_ntbx_process_t p)
@@ -397,6 +527,25 @@ do_pc_local_s(p_ntbx_process_container_t _pc,
     {
       void *_s = ntbx_pc_get_local_specific(_pc, _l);
       _f(_l, _s);
+    }
+  while (ntbx_pc_next_local_rank(_pc, &_l));
+}
+
+static
+void
+do_pc_local_p(p_ntbx_process_container_t _pc,
+              void (*_f)(ntbx_process_lrank_t _l,
+                         p_ntbx_process_t     _p))
+{
+  ntbx_process_lrank_t _l = -1;
+
+  if (!ntbx_pc_first_local_rank(_pc, &_l))
+    return;
+
+  do
+    {
+      p_ntbx_process_t _p = ntbx_pc_get_local_process(_pc, _l);
+      _f(_l, _p);
     }
   while (ntbx_pc_next_local_rank(_pc, &_l));
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.19  2001/01/03 11:05:28  oaumage
+- integration des headers du module de forwarding
+
 Revision 1.18  2000/06/15 08:45:00  rnamyst
 pm2load/pm2conf/pm2logs are now handled by pm2.
 
@@ -113,9 +116,9 @@ ______________________________________________________________________________
  * Headers
  * -------
  */
-#ifdef PM2
+#if (defined PM2) || (defined MAD_FORWARDING)
 #include "marcel.h"
-#endif /* PM2 */
+#endif /* PM2 || FORWARDING */
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -146,15 +149,20 @@ ______________________________________________________________________________
 #include "mad_adapter_description.h"
 #include "mad_configuration.h"
 #include "mad_cluster.h"
+#ifdef MAD_FORWARDING
+#include "mad_forward.h"
+#endif //MAD_FORWARDING
 
 /* Function prototypes */
 #include "mad_memory_interface.h"
 #include "mad_buffer_interface.h"
 #include "mad_communication_interface.h"
 #include "mad_channel_interface.h"
+#ifdef MAD_FORWARDING
+#include "mad_forward_interface.h"
+#endif //MAD_FORWARDING
 
 /* connection interfaces */
-
 #ifdef DRV_TCP
 #include "connection_interfaces/mad_tcp.h"
 #endif /* DRV_TCP */
@@ -173,6 +181,9 @@ ______________________________________________________________________________
 #ifdef DRV_BIP
 #include "connection_interfaces/mad_bip.h"
 #endif /* DRV_BIP */
+#ifdef MAD_FORWARDING
+#include "connection_interfaces/mad_fwd_interface.h"
+#endif /* MAD_FORWARDING */
 
 #include "mad_main.h"
 

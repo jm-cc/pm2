@@ -1043,8 +1043,10 @@ mad_forward_register(p_mad_driver_t driver)
   interface->driver_exit                = NULL;
   interface->choice                     =
     mad_forward_choice;
-  interface->get_static_buffer          = NULL;
-  interface->return_static_buffer       = NULL;
+  interface->get_static_buffer          =
+    mad_forward_get_static_buffer;
+  interface->return_static_buffer       =
+    mad_forward_return_static_buffer;
   interface->new_message                =
     mad_forward_new_message;
   interface->finalize_message           =
@@ -1626,6 +1628,61 @@ mad_forward_choice(p_mad_connection_t connection,
 
   return lnk;
 }
+
+void
+mad_forward_return_static_buffer(p_mad_link_t   lnk,
+				 p_mad_buffer_t buffer)
+{
+  p_mad_connection_t       vin       = NULL;
+  p_mad_connection_t       in        = NULL;
+  p_mad_driver_interface_t interface = NULL;  
+  
+  LOG_IN();
+  vin       = lnk->connection;
+  in        = vin->regular;
+  interface = in->channel->adapter->driver->interface;
+  
+  if (vin->nature == mad_connection_nature_direct_virtual)
+    {
+      p_mad_link_t regular_lnk = NULL;
+      
+      regular_lnk = in->link_array[lnk->id];
+      interface->return_static_buffer(regular_lnk, buffer);
+    }
+  else if (vin->nature == mad_connection_nature_indirect_virtual)
+    FAILURE("invalid function call");
+
+  LOG_OUT();
+}
+
+p_mad_buffer_t
+mad_forward_get_static_buffer(p_mad_link_t lnk)
+{
+  p_mad_buffer_t           buffer    = NULL;
+  p_mad_connection_t       vout      = NULL;
+  p_mad_connection_t       out       = NULL;
+  p_mad_driver_interface_t interface = NULL;  
+  
+  LOG_IN();
+  vout      = lnk->connection;
+  out       = vout->regular;
+  interface = out->channel->adapter->driver->interface;
+  
+  if (vout->nature == mad_connection_nature_direct_virtual)
+    {
+      p_mad_link_t regular_lnk = NULL;
+      
+      regular_lnk = out->link_array[lnk->id];
+      buffer = interface->get_static_buffer(regular_lnk);
+    }
+  else if (vout->nature == mad_connection_nature_indirect_virtual)
+    FAILURE("invalid function call");
+
+  LOG_OUT();
+
+  return buffer;  
+}
+
 
 void
 mad_forward_send_buffer(p_mad_link_t   lnk,

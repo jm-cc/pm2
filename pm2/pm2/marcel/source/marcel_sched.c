@@ -29,7 +29,6 @@
 #ifdef MA__SMP
 #include <errno.h>
 #include <sched.h>
-#include <pthread.h>
 #ifdef SOLARIS_SYS
 #include <sys/types.h>
 #include <sys/processor.h>
@@ -134,13 +133,12 @@ static struct {
 void marcel_schedpolicy_create(int *policy,
 			       marcel_schedpolicy_func_t func)
 {
-  if(next_schedpolicy_available <=
-     __MARCEL_SCHED_AVAILABLE - MARCEL_MAX_USER_SCHED)
+  if(next_schedpolicy_available <
+     MARCEL_MAX_USER_SCHED + __MARCEL_SCHED_AVAILABLE)
     RAISE(CONSTRAINT_ERROR);
 
-  user_policy[__MARCEL_SCHED_AVAILABLE -
-	      next_schedpolicy_available] = func;
-  *policy = next_schedpolicy_available--;
+  user_policy[next_schedpolicy_available - __MARCEL_SCHED_AVAILABLE] = func;
+  *policy = next_schedpolicy_available++;
 }
 
 /**************************************************************************/
@@ -214,55 +212,60 @@ static __inline__ int CANNOT_RUN(__lwp_t *lwp, marcel_t pid)
 
 #ifndef MA__ONE_QUEUE
 
-// Retourne le LWP de numero "vp modulo NB_LWPS" en parcourant
-// betement la liste chainee. A ameliorer en utilisant un tableau pour
-// indexer les LWPs...
-static __inline__ __lwp_t *find_lwp(unsigned vp)
+// On cherche le premier LWP compatible avec le 'vpmask' de la tâche
+// en commençant par 'first'.
+static __inline__ __lwp_t *find_first_lwp(marcel_t pid, __lwp_t *first)
 {
-  register __lwp_t *lwp = &__main_lwp;
+  __lwp_t *lwp = first;
 
-  while(vp--)
+  do {
+    if(!marcel_vpmask_vp_ismember(pid->vpmask, lwp->number))
+      return lwp;
     lwp = next_lwp(lwp);
+  } while(lwp != first);
 
-  return lwp;
+  // Si on arrive ici, c'est une erreur de l'application
+  RAISE(CONSTRAINT_ERROR);
+  return NULL;
 }
 
 // Le cas echeant, retourne un LWP fortement sous-charge (nb de
-// threads running < THREAD_THREASHOLD_LOW), ou alors retourne le LWP
+// threads running < THREAD_THRESHOLD_LOW), ou alors retourne le LWP
 // "suggested".
-static __inline__ __lwp_t *find_good_lwp(__lwp_t *suggested)
+static __inline__ __lwp_t *find_good_lwp(marcel_t pid, __lwp_t *suggested)
 {
-  __lwp_t *lwp = suggested;
+  __lwp_t *first = find_first_lwp(pid, suggested);
+  __lwp_t *lwp = first;
 
   for(;;) {
     if(SCHED_DATA(lwp).running_tasks < THREAD_THRESHOLD_LOW)
       return lwp;
-    lwp = next_lwp(lwp);
-    if(lwp == suggested)
-      return lwp; /* No underloaded LWP, so return the suggested one */
+
+    // On avance au prochain possible
+    lwp = find_first_lwp(pid, next_lwp(lwp));
+
+    // Si on a fait le tour de la liste sans succès, on prend le
+    // premier...
+    if(lwp == first)
+      return first;
   }
 }
 
 // Retourne le LWP le moins charge (ce qui oblige a parcourir toute la
 // liste)
-static __inline__ __lwp_t *find_best_lwp(void)
+static __inline__ __lwp_t *find_best_lwp(marcel_t pid)
 {
-  __lwp_t *lwp = &__main_lwp;
-  __lwp_t *best = lwp;
-  unsigned nb = SCHED_DATA(lwp).running_tasks;
+  __lwp_t *first = find_first_lwp(pid, &__main_lwp);
+  unsigned nb = SCHED_DATA(first).running_tasks;
+  __lwp_t *best, *lwp;
 
-  mdebug("find_best_lwp: there are %d running tasks on lwp %d\n",
-	 SCHED_DATA(lwp).running_tasks,
-	 lwp->number);
-
+  lwp = best = first;
   for(;;) {
-    lwp = next_lwp(lwp);
-    if(lwp == &__main_lwp)
-      return best;
+    // On avance au prochain possible
+    lwp = find_first_lwp(pid, next_lwp(lwp));
 
-    mdebug("find_best_lwp: there are %d running tasks on lwp %d\n",
-	   SCHED_DATA(lwp).running_tasks,
-	   lwp->number);
+    if(lwp == first)
+      return best;
 
     if(SCHED_DATA(lwp).running_tasks < nb) {
       nb = SCHED_DATA(lwp).running_tasks;
@@ -271,26 +274,27 @@ static __inline__ __lwp_t *find_best_lwp(void)
   }
 }
 
-inline static __lwp_t *choose_lwp(marcel_t t)
+static __inline__ __lwp_t *choose_lwp(marcel_t t)
 {
-  switch(t->sched_policy) {
-  case MARCEL_SCHED_OTHER :
-    return GET_LWP(marcel_self());
-  case MARCEL_SCHED_AFFINITY :
-    return find_good_lwp(t->previous_lwp ? : GET_LWP(marcel_self()));
-  case MARCEL_SCHED_BALANCE :
-    return find_best_lwp();
-  default:
-    if(t->sched_policy >= 0) {
-      /* MARCEL_SCHED_FIXED(vp) */
-      mdebug("\t\t\t<Insertion of task %p requested on LWP %d>\n", 
-	     t, t->sched_policy);
-      return (t->previous_lwp ? : find_lwp(t->sched_policy));
-    } else
+  marcel_t cur = marcel_self();
+  DEFINE_CUR_LWP(, =, GET_LWP(cur));
+  
+  switch(t->sched_policy)
+    {
+    case MARCEL_SCHED_OTHER :
+      return find_first_lwp(t, cur_lwp);
+    case MARCEL_SCHED_AFFINITY :
+      return find_good_lwp(t, t->previous_lwp ? : cur_lwp);
+    case MARCEL_SCHED_BALANCE :
+      return find_best_lwp(t);
+    default:
       /* MARCEL_SCHED_USER_... */
-      return (*user_policy[__MARCEL_SCHED_AVAILABLE - 
-			  (t->sched_policy)])(t, GET_LWP(marcel_self()));
-  }
+      return (*user_policy[t->sched_policy - __MARCEL_SCHED_AVAILABLE])
+	(t, cur_lwp);
+    }
+
+  RAISE(PROGRAM_ERROR);
+  return NULL;
 }
   
 #endif /* MA__ONE_QUEUE */
@@ -884,12 +888,11 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
   cur->vpmask = mask;
 
   if(marcel_vpmask_vp_ismember(mask, cur_lwp->number)) {
+#ifdef MA__ONE_QUEUE
     // Le LWP courant n'est plus autorisé : il faut s'extraire de la
-    // file pour se ré-insérer dans la bonne (éventuellement dans la
-    // même !)
+    // file pour s'y ré-insérer !
     marcel_t next;
 
-#ifdef MA__ONE_QUEUE
     // Il suffit d'effectuer un 'radical_next_task' en fait
     sched_lock(cur_lwp);
 
@@ -1034,7 +1037,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
   unsigned long ttw = __milliseconds + timeout;
   volatile boolean first_time = TRUE;
 
-#if defined(MA__SMP) || defined(MA__ACTIVATION)
+#if defined(MA__ACTIVATION)
   RAISE(NOT_IMPLEMENTED);
 #endif
 
@@ -1534,8 +1537,6 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   lwp->idle_task->previous_lwp = NULL;
 #endif
 
-  // ATTENTION: les 'sched_policy' seront bientôt obsolètes
-  lwp->idle_task->sched_policy = MARCEL_SCHED_FIXED(lwp->number);
   // Il vaut mieux généraliser l'utilisation des 'vpmask'
   lwp->idle_task->vpmask = MARCEL_VPMASK_ALL_BUT_VP(lwp->number);
 
@@ -1630,13 +1631,13 @@ static void *lwp_startup_func(void *arg)
     fprintf(stderr, "sched %d Exiting\n", lwp->number);
 #endif
     LOG_OUT();
-    pthread_exit(0);
+    marcel_kthread_exit(NULL);
   }
 
 #ifdef MARCEL_DEBUG
   if(marcel_mdebug.show)
-    fprintf(stderr, "\t\t\t<LWP %d started (pthread_self == %lx)>\n",
-	    lwp->number, (unsigned long)pthread_self());
+    fprintf(stderr, "\t\t\t<LWP %d started (self == %lx)>\n",
+	    lwp->number, (unsigned long)marcel_kthread_self());
 #endif
 
 #if defined(BIND_LWP_ON_PROCESSORS) && defined(SOLARIS_SYS)
@@ -1664,19 +1665,11 @@ static void *lwp_startup_func(void *arg)
   return NULL;
 }
 
-static void start_lwp(__lwp_t *lwp)
+static __inline__ void start_lwp(__lwp_t *lwp)
 {
-  pthread_attr_t attr;
-
-  LOG_IN();
-
-  /* Start new Pthread */
-  pthread_attr_init(&attr);
-  pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
-  pthread_create(&lwp->pid, &attr, lwp_startup_func, (void *)lwp);
-
-  LOG_OUT();
+  marcel_kthread_create(&lwp->pid, lwp_startup_func, (void *)lwp);
 }
+
 #endif
 
 void marcel_sched_init(unsigned nb_lwp)
@@ -1733,7 +1726,13 @@ void marcel_sched_init(unsigned nb_lwp)
   __main_thread->not_migratable = 1;
 
   __main_thread->sched_policy = MARCEL_SCHED_OTHER;
+#ifdef MA__ONE_QUEUE
   __main_thread->vpmask = MARCEL_VPMASK_EMPTY;
+#else
+  // Limitation (actuelle) du mode 'SMP multi-files' : le thread
+  // 'main' doit toujours rester sur le LWP 0
+  __main_thread->vpmask = MARCEL_VPMASK_ALL_BUT_VP(0);
+#endif
 
   // Initialization of "main LWP" is _required_ even when SMP not set.
   // 'init_sched' is called indirectly
@@ -1802,15 +1801,11 @@ void marcel_sched_start(void)
    This should be fixed! */
 static void stop_lwp(__lwp_t *lwp)
 {
-  int cc;
-
   LOG_IN();
 
   lwp->has_to_stop = TRUE;
-  /* Join corresponding Pthread */
-  do {
-    cc = pthread_join(lwp->pid, NULL);
-  } while(cc == -1 && errno == EINTR);
+
+  marcel_kthread_join(lwp->pid);
 
   LOG_OUT();
 }
@@ -1852,8 +1847,10 @@ void marcel_sched_shutdown()
   stop_timer();
 #endif
 
+#if defined(MA__ONE_QUEUE) && defined(MA__MULTIPLE_RUNNING)
   // Si nécessaire, on bascule sur le LWP(0)
   marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
+#endif
 
 #ifdef MA__SMP
   if(marcel_self()->lwp != &__main_lwp)
@@ -1925,7 +1922,7 @@ static void timer_interrupt(int sig)
     unlock_task();
 
 #ifdef MA__SMP
-    pthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
+    marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
     sigrelse(MARCEL_TIMER_SIGNAL);
@@ -1949,7 +1946,7 @@ static void set_timer(void)
   LOG_IN();
 
 #ifdef MA__SMP
-    pthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
+    marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
 
   if(marcel_initialized) {

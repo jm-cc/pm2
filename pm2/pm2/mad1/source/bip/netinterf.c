@@ -92,7 +92,7 @@ static int receive_from_network (int *src, int tag, int *buff, int buff_len)
 
     if (received_credits != -1)
        update_credits (src_credits) ;
-    marcel_givehandback () ;
+    marcel_yield () ;
 #endif
     lock_task () ;
           received = bip_rtestx (status, src) ;
@@ -116,7 +116,7 @@ static void send_to_network (int dest, int tag, int *buff, int buff_len)
  while (cr == 0)
     {
 #ifdef PM2
-     marcel_givehandback () ;
+     marcel_yield () ;
 #endif
      lock_task () ;
         cr = bip_stest (status) ;

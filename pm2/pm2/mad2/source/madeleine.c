@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.6  2000/01/04 16:49:10  oaumage
+- madeleine: corrections au niveau du support `external spawn'
+- support des fonctions non definies dans les drivers
+
 Revision 1.5  1999/12/15 17:31:28  oaumage
 Ajout de la commande de logging de CVS
 
@@ -56,7 +60,7 @@ ______________________________________________________________________________
 #endif /* MAD2_MAD1 */
 
 /* #define DEBUG */
-/*#define TIMING*/
+/* #define TIMING */
 #include <madeleine.h>
 
 
@@ -78,6 +82,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_SBP
   mad_sbp_register,
 #endif /* DRV_SBP */
+#ifdef DRV_MPI
+  mad_mpi_register,
+#endif /* DRV_MPI */
   NULL
 };
 
@@ -132,12 +139,13 @@ void mad_aligned_free (void  *ptr,
 p_mad_adapter_set_t 
 mad_adapter_set_init(int nb_adapter, ...)
 {
-  p_mad_adapter_set_t           set;
-  int                           i;
-  va_list                       pa;
-  
-  va_start(pa, nb_adapter);
+  p_mad_adapter_set_t  set;
+  int                  i;
+  va_list              pa;
 
+  LOG_IN();
+  va_start(pa, nb_adapter);
+  
   LOG_VAL("nb_adapter", nb_adapter);
   
   set = malloc(sizeof(mad_adapter_set_t));
@@ -155,10 +163,9 @@ mad_adapter_set_init(int nb_adapter, ...)
       description                   = &(set->description[i]);
       description->driver_id        = va_arg(pa, mad_driver_id_t);
       description->adapter_selector = va_arg(pa, char *);
-      LOG_VAL("driver_id = ", description->driver_id);
-      LOG_STR("selector  = ", description->adapter_selector);
     }
 
+  LOG_OUT();
   va_end(pa);
   return set;
 }
@@ -208,21 +215,19 @@ mad_driver_init(p_mad_madeleine_t madeleine)
   mad_driver_id_t drv;
     
   LOG_IN();
-#ifdef EXTERNAL_SPAWN
-  for (drv = 1;
-       drv < madeleine->nb_driver;
-       drv++)
-#else /* EXTERNAL_SPAWN */
   for (drv = 0;
        drv < madeleine->nb_driver;
        drv++)
-#endif /* EXTERNAL_SPAWN */
     {
       p_mad_driver_t driver;
       
+#ifdef EXTERNAL_SPAWN
+      if (drv == EXTERNAL_SPAWN)
+	continue;
+#endif /* EXTERNAL_SPAWN */
       driver = &(madeleine->driver[drv]);      
       driver->interface.driver_init(driver);
-    }  
+    }
   LOG_OUT();
 }
 
@@ -565,7 +570,8 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
-      adapter->driver->interface.adapter_init(adapter);
+      if (adapter->driver->interface.adapter_init)
+	adapter->driver->interface.adapter_init(adapter);
       if (!rank)
 	{
 	  mad_host_id_t host_id;
@@ -585,8 +591,8 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
 						     &(adapter->
 						       master_parameter));
 	}
-      
-      adapter->driver->interface.adapter_configuration_init(adapter);
+      if (adapter->driver->interface.adapter_configuration_init)
+	adapter->driver->interface.adapter_configuration_init(adapter);
     }
   LOG_OUT();
 }
@@ -609,7 +615,8 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
-      adapter->driver->interface.adapter_init(adapter);
+      if (adapter->driver->interface.adapter_init)
+	adapter->driver->interface.adapter_init(adapter);
     }
 
   if (rank == 0)
@@ -624,7 +631,8 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
-      adapter->driver->interface.adapter_configuration_init(adapter);
+      if (adapter->driver->interface.adapter_configuration_init)
+	adapter->driver->interface.adapter_configuration_init(adapter);
     }  
   LOG_OUT();
 }
@@ -770,7 +778,8 @@ mad_init(int                   *argc,
   spawn_interface = &(madeleine->driver[EXTERNAL_SPAWN].interface);
   spawn_interface->driver_init(spawn_driver);
   spawn_adapter = &(madeleine->adapter[0]);
-  spawn_interface->adapter_init(spawn_adapter);
+  if (spawn_interface->adapter_init)
+    spawn_interface->adapter_init(spawn_adapter);
   spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
 #endif /* EXTERNAL_SPAWN */
   
@@ -785,7 +794,8 @@ mad_init(int                   *argc,
   
 #ifdef EXTERNAL_SPAWN
   spawn_interface->configuration_init(spawn_adapter, configuration);
-  spawn_interface->adapter_configuration_init(spawn_adapter);
+  if (spawn_interface->adapter_configuration_init)
+    spawn_interface->adapter_configuration_init(spawn_adapter);
   rank = configuration->local_host_id;
 
   if (rank == 0)

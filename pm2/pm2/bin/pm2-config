@@ -259,10 +259,11 @@ pm2config_set_vars()
 	eval export _PM2CONFIG_${_lib}_BUILD_STATIC
 
 	# Libs stamp files
-	eval _PM2CONFIG_${_libname}_STAMP_FILE='"'$STAMP_FILES'"'
-	eval export _PM2CONFIG_${_libname}_STAMP_FILE
-	eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
-
+	if [ -n "$_libname" ]; then
+	    eval _PM2CONFIG_${_libname}_STAMP_FILE='"'$STAMP_FILES'"'
+	    eval export _PM2CONFIG_${_libname}_STAMP_FILE
+	    eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
+	fi
     done
 
     # Make directory

@@ -138,10 +138,6 @@ void pm2_init_set_rank(int *argc, char *argv[],
 {
   __pm2_self = pm2_self;
   __pm2_conf_size = pm2_config_size;
-
-#ifdef PROFILE
-  profile_set_tracefile("/tmp/prof_file_%d", __pm2_self);
-#endif
 }
 
 void pm2_init_thread_related(int *argc, char *argv[])

@@ -16,6 +16,7 @@
 
 /* Options: DSM_TABLE_TRACE */
 
+//#define DSM_TABLE_TRACE
 
 #include <stdio.h>
 #include <sys/mman.h>
@@ -39,6 +40,8 @@
 
 typedef struct _dsm_page_table_entry
 {
+  marcel_mutex_t   mutex;
+  marcel_mutex_t   mutex2;
   dsm_node_t       prob_owner;
   dsm_node_t       next_owner;
   fifo_t           pending_req;
@@ -46,8 +49,8 @@ typedef struct _dsm_page_table_entry
   int              copyset_size;
   dsm_access_t     access;
   dsm_access_t     pending_access;
-  marcel_mutex_t   mutex;
   marcel_cond_t    cond;
+  marcel_cond_t    cond2;
   marcel_sem_t     sem;
   unsigned long    size;
   void             *addr;
@@ -56,6 +59,7 @@ typedef struct _dsm_page_table_entry
   int user_data1[USER_DATA_SIZE];
   void *user_data2;
   void *twin;
+  int pending_inv;
 } dsm_page_table_entry_t;
 
 typedef dsm_page_table_entry_t **dsm_page_table_t;
@@ -551,7 +555,9 @@ void dsm_page_table_init(int my_rank, int confsize)
       dsm_page_table[i]->copyset_size = 0;
       dsm_page_table[i]->pending_access = NO_ACCESS;
       marcel_mutex_init(&dsm_page_table[i]->mutex, NULL);
+      marcel_mutex_init(&dsm_page_table[i]->mutex2, NULL);
       marcel_cond_init(&dsm_page_table[i]->cond, NULL);
+      marcel_cond_init(&dsm_page_table[i]->cond2, NULL);
       marcel_sem_init(&dsm_page_table[i]->sem, 0);
       dsm_page_table[i]->size = DSM_PAGE_SIZE;
       if (i < nb_static_dsm_pages )
@@ -568,8 +574,9 @@ void dsm_page_table_init(int my_rank, int confsize)
 
       /* pjh: to avoid repeated allocation */
       dsm_page_table[i]->bitmap = NULL;
-      dsm_page_table[i]->twin = NULL; /// Big bug: the twin field was uninitialized !!!
-					    }
+      dsm_page_table[i]->twin = NULL; 
+      dsm_page_table[i]-> pending_inv = 0;
+	}
 
   _dsm_page_ownership_init();
   if (pseudo_static_dsm_area_size != 0)
@@ -713,17 +720,26 @@ dsm_node_t dsm_get_prob_owner(unsigned long index)
 void dsm_set_next_owner(unsigned long index, dsm_node_t next)
 {
   dsm_page_table[index]->next_owner = next;
+#ifdef DSM_TABLE_TRACE
+  fprintf(stderr, "next owner (%ld) set to %d\n", index, next);
+#endif
 }
 
 
 void dsm_clear_next_owner(unsigned long index)
 {
   dsm_page_table[index]->next_owner = NO_NODE;
+#ifdef DSM_TABLE_TRACE
+  fprintf(stderr, "cleared next owner (%ld): %d\n", index, dsm_page_table[index]->next_owner);
+#endif
 }
 
 
 dsm_node_t dsm_get_next_owner(unsigned long index)
 {
+#ifdef DSM_TABLE_TRACE
+  fprintf(stderr, "get next owner (%ld): %d\n", index, dsm_page_table[index]->next_owner);
+#endif
   return dsm_page_table[index]->next_owner;
 }
 
@@ -781,14 +797,32 @@ dsm_access_t dsm_get_access(unsigned long index)
 }
 
 
+boolean dsm_pending_invalidation(unsigned long index)
+{
+  return dsm_page_table[index]->pending_inv;
+}
+
+void dsm_set_pending_invalidation(unsigned long index)
+{
+  dsm_page_table[index]->pending_inv = 1;
+}
+
+void dsm_clear_pending_invalidation(unsigned long index)
+{
+  dsm_page_table[index]->pending_inv = 0;
+}
+
+
 void dsm_set_pending_access(unsigned long index, dsm_access_t access)
 {
   dsm_page_table[index]->pending_access = access;
+//  fprintf(stderr, "set pending(%ld) = %d\n", index,  dsm_page_table[index]->pending_access);
 }
 
 
 dsm_access_t dsm_get_pending_access(unsigned long index)
 {
+//  fprintf(stderr, "pending(%ld) = %d\n", index,  dsm_page_table[index]->pending_access);
   return dsm_page_table[index]->pending_access;
 }
 
@@ -825,9 +859,23 @@ void dsm_wait_for_page(unsigned long index)
 
 void dsm_signal_page_ready(unsigned long index)
 {
-  //  dsm_lock_page(index);
+//  dsm_lock_page(index);
   marcel_cond_broadcast(&dsm_page_table[index]->cond);
-  //  dsm_unlock_page(index);
+//  dsm_unlock_page(index);
+}
+
+
+void dsm_wait_for_inv(unsigned long index)
+{
+  marcel_cond_wait(&dsm_page_table[index]->cond2, &dsm_page_table[index]->mutex2);
+}
+
+
+void dsm_signal_inv_done(unsigned long index)
+{
+//  dsm_lock_inv(index);
+  marcel_cond_broadcast(&dsm_page_table[index]->cond2);
+//  dsm_unlock_inv(index);
 }
 
 
@@ -835,6 +883,7 @@ void dsm_lock_page(unsigned long index)
 {
 #ifdef DSM_TABLE_TRACE
   tfprintf(stderr,"  Before lock page(%ld):(I am %p)\n", index, marcel_self());
+  fprintf(stderr,"@base =%p, @mutex=%p\n",dsm_page_table[index], &(dsm_page_table[index]->mutex));
 #endif
   marcel_mutex_lock(&dsm_page_table[index]->mutex);
 #ifdef DSM_TABLE_TRACE
@@ -842,12 +891,32 @@ void dsm_lock_page(unsigned long index)
 #endif
 }
 
-
 void dsm_unlock_page(unsigned long index)
 {
   marcel_mutex_unlock(&dsm_page_table[index]->mutex);
 #ifdef DSM_TABLE_TRACE
   tfprintf(stderr,"  Unlocked page(%ld): (I am %p)\n", index, marcel_self());
+#endif
+}
+
+
+void dsm_lock_inv(unsigned long index)
+{
+#ifdef DSM_TABLE_TRACE
+  tfprintf(stderr,"  Before lock inv(%ld):(I am %p)\n", index, marcel_self());
+#endif
+  marcel_mutex_lock(&dsm_page_table[index]->mutex2);
+#ifdef DSM_TABLE_TRACE
+  tfprintf(stderr,"  After lock inv(%ld):(I am %p)\n", index, marcel_self());
+#endif
+}
+
+
+void dsm_unlock_inv(unsigned long index)
+{
+  marcel_mutex_unlock(&dsm_page_table[index]->mutex2);
+#ifdef DSM_TABLE_TRACE
+  tfprintf(stderr,"  Unlocked inv(%ld): (I am %p)\n", index, marcel_self());
 #endif
 }
 
@@ -984,13 +1053,15 @@ void dsm_set_user_data2(unsigned long index, void *addr)
 
 void dsm_alloc_twin(unsigned long index)
 {
-#ifdef PM2DEBUG
+#ifdef DEBUG
   assert(dsm_page_table[index]->twin == NULL);
-#endif // PM2DEBUG
-
-  dsm_page_table[index]->twin = TBX_MALLOC(DSM_PAGE_SIZE);
+#endif //DEBUG
+  dsm_page_table[index]->twin = TBX_MALLOC(dsm_page_table[index]->size);
   CTRL_ALLOC(dsm_page_table[index]->twin);
-  memcpy(dsm_page_table[index]->twin, dsm_page_table[index]->addr, DSM_PAGE_SIZE);
+  memcpy(dsm_page_table[index]->twin, dsm_page_table[index]->addr, dsm_page_table[index]->size);
+#ifdef DSM_TABLE_TRACE
+  fprintf(stderr,"dsm_alloc_twin (%ld) called: twin @ = %p\n", index, dsm_page_table[index]->twin);
+#endif
 }
 
 
@@ -998,6 +1069,9 @@ void dsm_free_twin(unsigned long index)
 {
   free(dsm_page_table[index]->twin);
   dsm_page_table[index]->twin = NULL;
+#ifdef DSM_TABLE_TRACE
+  fprintf(stderr,"dsm_free_twin (%ld) called: twin @ = %p\n", index, dsm_page_table[index]->twin);
+#endif
 }
 
 void *dsm_get_twin(unsigned long index)
@@ -1036,6 +1110,8 @@ void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, 
   fprintf(stderr,"Enabling table entry for page %ld, owner = %d , prot = %d, addr = %p, size = %d (I am %p)\n", index, owner, protocol, addr, size, marcel_self());
 #endif
   dsm_page_table[index] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));
+  fprintf(stderr,"Allocated entry, @=%p\n", dsm_page_table[index]);
+
   dsm_page_table[index]->next_owner = (dsm_node_t)-1;
   fifo_init(&dsm_page_table[index]->pending_req, 2 * dsm_nb_nodes - 1);
   if ((dsm_page_table[index]->copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
@@ -1043,7 +1119,9 @@ void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, 
   dsm_page_table[index]->copyset_size = 0;
   dsm_page_table[index]->pending_access = NO_ACCESS;
   marcel_mutex_init(&dsm_page_table[index]->mutex, NULL);
+  marcel_mutex_init(&dsm_page_table[index]->mutex2, NULL);
   marcel_cond_init(&dsm_page_table[index]->cond, NULL);
+  marcel_cond_init(&dsm_page_table[index]->cond2, NULL);
   marcel_sem_init(&dsm_page_table[index]->sem, 0);
   dsm_page_table[index]->size = size;//DSM_PAGE_SIZE;
   dsm_page_table[index]->addr = addr;//isoaddr_page_addr(index - nb_static_dsm_pages - nb_pseudo_static_dsm_pages);
@@ -1069,6 +1147,7 @@ void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, 
    if (dsm_get_page_add_func(protocol) != NULL)
     (*dsm_get_page_add_func(protocol))(index); 
    dsm_page_table[index]->twin = NULL;
+   dsm_page_table[index]->pending_inv = 0;
 }
 
 
@@ -1241,4 +1320,30 @@ boolean dsm_page_bitmap_is_allocated(unsigned long index)
 {
   return (dsm_page_table[index]->bitmap != NULL);
 }
+
+
+void dsm_set_page_ownership(void *addr, dsm_node_t owner)
+     /* This function needs to be called in parallel on all nodes
+        exactly once (so, with no concurrency) at initialization and
+        should be protected by global synchronization (barriers) to
+        make sure shared data is not accessed while the function is
+        being executed. */
+{
+  unsigned long index;
+
+  /* checking status implicitly enables page entry if necessary */
+  if (isoaddr_page_get_status(isoaddr_page_index(addr)) != ISO_SHARED)
+    RAISE(PROGRAM_ERROR);
+  
+  index = dsm_page_index(addr);
+
+  if (owner == dsm_self())
+    dsm_set_access(index, WRITE_ACCESS);
+  else
+    dsm_set_access(index, NO_ACCESS);
+
+  dsm_set_prob_owner(index, owner);
+}
+
+
 

@@ -17,6 +17,10 @@
 #ifndef PM2_COMMON_IS_DEF
 #define PM2_COMMON_IS_DEF
 
+// Beurk!!!
+struct _struct_common_attr_t;
+typedef struct _struct_common_attr_t common_attr_t;
+
 #if !defined(MARCEL_KERNEL) && \
     !defined(MAD2_KERNEL) && \
     !defined(PM2_KERNEL) && \
@@ -50,7 +54,7 @@
 #include "pm2.h"
 #endif /* PM2 */
 
-typedef struct {
+struct _struct_common_attr_t {
 #ifdef MAD2
   p_mad_madeleine_t madeleine; // OUT
   int rank; // OUT
@@ -59,7 +63,9 @@ typedef struct {
   char *url; // IN/OUT
 #endif
 #endif
-} common_attr_t;
+};
+
+#endif // *_KERNEL
 
 void common_attr_init(common_attr_t *attr);
 
@@ -75,7 +81,5 @@ static __inline__ void common_init(int *argc, char *argv[],
   common_pre_init(argc, argv, attr);
   common_post_init(argc, argv, attr);
 }
-
-#endif // *_KERNEL
 
 #endif

@@ -25,27 +25,33 @@
 #  include "asm/act.h"
 #endif
 
-#section marcel_macros
-#ifndef MA__ACTIVATION
-#  define marcel_upcall_enable(lwp, upcall) ((void)0)
-#  define marcel_upcall_disable(lwp, upcall) ((void)0)
-#  define marcel_upcall_init(nb_act) ((void)0)
-#endif
-
 #section marcel_variables
-#ifdef MA__ACTIVATION
-//extern volatile int act_nb_unblocked;
-extern marcel_t marcel_next[ACT_NB_MAX_CPU];
+MA_DECLARE_PER_LWP(act_proc_info_t, act_info);
+
+#section marcel_macros
+#ifdef MA__DEBUG
+#define MA_ACT_SET_THREAD_DEBUG(lwp, thread) \
+  do { \
+	MA_BUG_ON(!((marcel_task_t*) \
+		    (ma_per_lwp(act_info, (lwp)).current_act_id)) \
+                    ->preempt_count);\
+        MA_BUG_ON(!thread->preempt_count); \
+  } while (0)
+#else
+#define MA_ACT_SET_THREAD_DEBUG(lwp, thread)
 #endif
 
-//void act_goto_next_task(marcel_t pid, int from);
-//void restart_thread(task_desc *desc);
+//        MA_ACT_SET_THREAD_DEBUG(lwp, thread);
+
+#define MA_ACT_SET_THREAD(lwp, thread) \
+  do { \
+        ma_per_lwp(act_info, (lwp)).current_act_id=(unsigned long)(thread); \
+        ma_per_lwp(act_info, (lwp)).critical_section=&(thread)->preempt_count;\
+	ma_mb(); \
+  } while (0)
 
 #section marcel_functions
-#ifdef MA__ACTIVATION
-void init_upcalls(int nb_act);
-//#define launch_upcalls(__nb_act_wanted)
-#endif
+void marcel_upcalls_disallow(void);
 
 #section marcel_types
 enum {

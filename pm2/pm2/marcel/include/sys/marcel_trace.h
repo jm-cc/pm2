@@ -41,7 +41,7 @@
 #define MTRACE(msg, pid) \
   (__mar_trace ? \
     (void)fprintf(stderr, \
-            "[P%02d][%-9s:%3ld (pid=%p)." \
+            "[P%02d][%-11s:%3ld (pid=%p)." \
             " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
             ((pid)->lwp ? (pid)->lwp->number : -1), \
             msg, (pid)->number, (pid), \

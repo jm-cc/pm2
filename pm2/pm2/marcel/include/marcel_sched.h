@@ -314,13 +314,6 @@ static __inline__ unsigned state_locked(marcel_t pid)
   return marcel_lock_locked(&(pid->state_lock));
 }
 
-static __inline__ void marcel_set_blocked(marcel_t pid) __attribute__ ((unused));
-static __inline__ void marcel_set_blocked(marcel_t pid)
-{
-  state_lock(pid);
-  SET_BLOCKED(pid);
-}
-
 static __inline__ void marcel_set_sleeping(marcel_t pid) __attribute__ ((unused));
 static __inline__ void marcel_set_sleeping(marcel_t pid)
 {
@@ -344,7 +337,7 @@ extern void breakpoint();
 _PRIVATE_ void marcel_one_task_less(marcel_t pid);
 _PRIVATE_ void marcel_one_more_task(marcel_t pid);
 
-_PRIVATE_ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock);
+_PRIVATE_ void marcel_give_hand(boolean *blocked);
 _PRIVATE_ void marcel_tempo_give_hand(unsigned long timeout, boolean *blocked, marcel_sem_t *s);
 
 _PRIVATE_ void ma_wake_task(marcel_t t, boolean *blocked);

@@ -164,21 +164,21 @@ extern unsigned long temps_act;
 void * consommateur (void * arg)
 {
   int i, n ;
-  Tick t1, t2;
+  tbx_tick_t t1, t2;
   unsigned long temps;
 
   for (i=0; i < 3 ; i++) {
     receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
     send_message (&tube_2, (char *)&i, sizeof(int)) ;
   }
-  GET_TICK(t1);
+  TBX_GET_TICK(t1);
   for (i=3; i < ITERATIONS ; i++) {
     receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
     send_message (&tube_2, (char *)&i, sizeof(int)) ;
   }
-  GET_TICK(t2);
+  TBX_GET_TICK(t2);
 
-  temps = timing_tick2usec(TICK_DIFF(t1, t2));
+  temps = TBX_TIMING_DELAY(t1, t2);
   printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 #ifdef __ACT__
   printf("nb=%i\n",nb);

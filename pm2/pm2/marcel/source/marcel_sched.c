@@ -1230,7 +1230,7 @@ static __inline__ marcel_t idle_find_runnable_task(__lwp_t *lwp)
 {
   marcel_t next = NULL, cur = marcel_self();
 
-#ifdef MA__MULTIPLE_RUNNING // SMP + ONE_QUEUE ou bien ACTIVATIONS
+#ifdef MA__ONE_QUEUE
 
   // next sera positionné à NULL si aucune autre tâche prête n'est
   // trouvée (et dans ce cas SET_RUNNING(cur) est effectué par
@@ -1238,31 +1238,26 @@ static __inline__ marcel_t idle_find_runnable_task(__lwp_t *lwp)
   SET_FROZEN(cur);
   next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
-#else // Reste les cas "SMP avec plusieurs files" et "mono"
+#ifdef MA__MONO
+  // Le but de ce code est de détecter une situation de deadlock.
+  if(next == NULL) {
+    if(list_empty(&__delayed_tasks)
+       && !marcel_polling_is_required(MARCEL_POLL_AT_IDLE)) {
+      RAISE(DEADLOCK_ERROR);
+    }
+  }
+#endif
 
-#ifdef MA__SMP // Mode "SMP avec plusieurs files"
+#else // Reste le cas "SMP avec plusieurs files"
+
   if(SCHED_DATA(lwp).has_new_tasks) {
     SET_FROZEN(cur);
     next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
   } else {
     next = do_work_stealing();
   }
-#else // Mode MONO
-  // On tente sa chance avec next_task : à ce stade, il y a peut-être
-  // d'autres tâches dans la file.
-  if(next_task(cur) != cur) {
-    SET_FROZEN(cur);
-    next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
-  } else {
-    /* On va quand même tester s'il n'y a pas un petit deadlock dans
-       l'air... */
-    if(list_empty(&__delayed_tasks)
-       && !marcel_polling_is_required(MARCEL_POLL_AT_IDLE)) {
-      RAISE(DEADLOCK_ERROR);
-    }
-  }
-#endif // MA__SMP
-#endif // MA__MULTIPLE_RUNNING
+
+#endif // MA__ONE_QUEUE
 
   return next;
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.5  2000/04/05 16:10:09  oaumage
+- remplacement de marcel_givehandback par marcel_yield
+
 Revision 1.4  2000/03/13 09:48:18  oaumage
 - ajout de l'option TBX_SAFE_MALLOC
 - support de safe_malloc
@@ -203,7 +206,7 @@ typedef enum
 #ifdef OOPS
 #define FAILURE(str) \
   fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
-            (str), __FILE__, __LINE__),   *(int *)0 = 0,   exit(1)
+            (str), __FILE__, __LINE__),   abort()
 #else /* OOPS */
 #define FAILURE(str) \
   fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
@@ -254,7 +257,7 @@ typedef enum
 #define TBX_UNLOCK_SHARED(st) marcel_mutex_unlock((&((st)->__pm2_mutex)))
 #define TBX_LOCK() lock_task()
 #define TBX_UNLOCK() unlock_task()
-#define TBX_YIELD() marcel_givehandback()
+#define TBX_YIELD() marcel_yield()
 #else /* MARCEL */
 #error unsupported thread package
 #endif /* MARCEL */

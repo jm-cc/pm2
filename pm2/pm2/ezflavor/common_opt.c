@@ -17,15 +17,10 @@
 
 #include "common_opt.h"
 #include "menu.h"
-
-static char *well_known_options[] = {
-  "debug",
-  "warning",
-  "gdb",
-  "opt",
-  "profile",
-  NULL
-};
+#include "shell.h"
+#include "parser.h"
+#include "intro.h"
+#include "str_list.h"
 
 typedef enum {
   OPT_AS_IS,
@@ -84,11 +79,21 @@ static GList *create_option_list(void)
 {
   GList *l = NULL;
   opt_t *ptr_opt;
-  unsigned i;
+  GList *wko = NULL;
+  GList *ptr;
 
-  for(i=0; well_known_options[i] != NULL; i++) {
+  parser_start_cmd("%s/bin/pm2-module options --module=generic", pm2_root());
+
+  wko = string_list_from_parser();
+
+  parser_stop();
+
+  for(ptr = g_list_first(wko);
+      ptr != NULL;
+      ptr = g_list_next(ptr)) {
+
     ptr_opt = (opt_t *)g_malloc(sizeof(opt_t));
-    ptr_opt->name = well_known_options[i];
+    ptr_opt->name = (char *)ptr->data;
     ptr_opt->state = OPT_AS_IS;
     ptr_opt->widgets = NULL;
     l = g_list_append(l, (gpointer)ptr_opt);

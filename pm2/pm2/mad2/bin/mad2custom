@@ -40,19 +40,19 @@ export MAD2_ROOT
 
 DIR_MAKE=${MAD2_ROOT}/make
 
-#for d in $DIRS ; do
-#    if [ ! -h $d/custom -a -d $d/custom ] ; then
-#	echo "ATTENTION: Verifiez votre installation."
-#	echo "$d/custom ne doit pas etre un répertoire, mais un lien symbolique !"
-#	exit 1
-#    fi
-#done
+for d in $DIRS ; do
+    if [ ! -h $d/custom -a -d $d/custom ] ; then
+	echo "ATTENTION: Verifiez votre installation."
+	echo "$d/custom ne doit pas etre un répertoire, mais un lien symbolique !"
+	exit 1
+    fi
+done
 
-#if test $# -ge 1
-#then
-#    echo "MAD2_PROTOCOLS := $@" > ${DIR_MAKE}/protocols.mak
-#    touch ${MAD2_ROOT}/src/connection_interfaces/*.c
-#fi
+if test $# -ge 1
+then
+    echo "MAD2_PROTOCOLS := $@" > ${DIR_MAKE}/protocols.mak
+    touch ${MAD2_ROOT}/src/connection_interfaces/*.c
+fi
 
 if [ ! -f ${DIR_MAKE}/protocols.mak ] ; then
     echo "MAD2_PROTOCOLS := tcp" > ${DIR_MAKE}/protocols.mak

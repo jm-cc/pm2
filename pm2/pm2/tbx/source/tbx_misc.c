@@ -1,3 +1,10 @@
+/*! \file tbx_misc.c
+ *  \brief TBX miscellaneous routines.
+ *
+ *  This file implements TBX miscellaneous routines.
+ * 
+ */
+
 
 /*
  * PM2: Parallel Multithreaded Machine

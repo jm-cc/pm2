@@ -36,6 +36,10 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <errno.h>
+
+#ifndef VRP_MADELEINE
+#  define VRP_MADELEINE
+#endif
 #include <VRP.h>
 
 #define MAD_VRP_LEVEL1_POLLING_MODE \
@@ -134,7 +138,7 @@ mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
 
   if (b)
     {
-      size_t copy_len = min(vrp_b->size, b->length - b->bytes_written);
+      size_t copy_len = tbx_min(vrp_b->size, b->length - b->bytes_written);
 
       memcpy(b->buffer + b->bytes_written, vrp_b->data, copy_len);
       b->bytes_written += copy_len;
@@ -539,7 +543,7 @@ mad_vrp_adapter_init(p_mad_adapter_t a)
   a->specific = as;
 
 #ifdef SSIZE_MAX
-  a->mtu = min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
+  a->mtu = tbx_min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
 #else // SSIZE_MAX
   a->mtu = MAD_FORWARD_MAX_MTU;
 #endif // SSIZE_MAX
@@ -666,7 +670,7 @@ mad_vrp_connect(p_mad_connection_t   out,
   }
   vrp_port = mad_ntbx_receive_int(net_client);
 
-  os->vrp_out = vrp_outgoing_construct(r_node->name, vrp_port, 0, 0);
+  os->vrp_out = vrp_outgoing_construct(r_node->name, vrp_port, 0, 0, -1);
   marcel_create(&(os->thread), NULL, mad_vrp_outgoing_thread, out);
   ntbx_tcp_client_disconnect(net_client);
   ntbx_client_dest(net_client);

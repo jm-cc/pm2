@@ -34,6 +34,10 @@ static size_t           mad_print_buffer_size =    0;
 static char            *mad_print_buffer      = NULL;
 static p_ntbx_client_t  mad_leo_client        = NULL;
 
+#ifdef MARCEL
+static marcel_sem_t    *barrier_passed        = NULL;
+#endif /* MARCEL */
+
 static TBX_CRITICAL_SECTION(mad_ntbx_cs_print);
 static TBX_CRITICAL_SECTION(mad_ntbx_cs_barrier);
 
@@ -422,10 +426,12 @@ mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 			int                 argc TBX_UNUSED,
 			char              **argv TBX_UNUSED)
 {
-  p_mad_session_t session = NULL;
+  p_mad_session_t  session  = NULL;
+  p_mad_settings_t settings = NULL;
 
   LOG_IN();
   session        = madeleine->session;
+  settings       = madeleine->settings;
   mad_leo_client = session->leonie_link;
 
   TBX_LOCK_SHARED(mad_leo_client);
@@ -501,14 +507,91 @@ mad_leonie_barrier(void)
   mad_ntbx_send_int(mad_leo_client, mad_leo_command_barrier);
   TBX_UNLOCK_SHARED(mad_leo_client);
 
+#ifdef MARCEL
+  if (barrier_passed) {
+    DISP("marcel_sem_P");
+    marcel_sem_P(barrier_passed);
+    goto end;
+  }
+#endif /* MARCEL */
   TBX_LOCK_SHARED(mad_leo_client);
   result = mad_ntbx_receive_int(mad_leo_client);
   if (result != mad_leo_command_barrier_passed)
     FAILURE("synchronization error");
 
   TBX_UNLOCK_SHARED(mad_leo_client);
+#ifdef MARCEL
+  end:
+#endif /* MARCEL */
   TBX_CRITICAL_SECTION_LEAVE(mad_ntbx_cs_barrier);
   LOG_OUT();
 }
 
+#ifdef MARCEL
+static
+void *
+mad_command_thread(void *_madeleine)
+{
+  p_mad_madeleine_t madeleine = _madeleine;
+  p_mad_session_t   session   = NULL;
 
+  LOG_IN();
+  session = madeleine->session;
+  while (1) {
+    int command = 0;
+
+    command = mad_ntbx_receive_int(mad_leo_client);
+
+    DISP_VAL("Leonie server command", command);
+
+    switch (command) {
+
+    case mad_leo_command_end_ack:
+      {
+        DISP("leaving command thread loop");
+        goto end;
+      }
+      break;
+    case mad_leo_command_barrier_passed:
+      {
+        DISP("marcel_sem_V");
+        marcel_sem_V(barrier_passed);
+      }
+      break;
+    default:
+      FAILURE("invalid command from Leonie server");
+    }
+  }
+
+ end:
+  LOG_OUT();
+
+  return NULL;
+}
+
+void
+mad_command_thread_init(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t session = NULL;
+
+  LOG_IN();
+  session = madeleine->session;
+  barrier_passed = TBX_MALLOC(sizeof(marcel_sem_t));
+  marcel_sem_init(barrier_passed, 0);
+  marcel_create(&(session->command_thread), NULL, mad_command_thread, madeleine);
+  LOG_OUT();
+}
+
+void
+mad_command_thread_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t  session = NULL;
+  void            *status  = NULL;
+
+  LOG_IN();
+  session = madeleine->session;
+  marcel_join(session->command_thread, &status);
+  LOG_OUT();
+}
+
+#endif /* MARCEL */

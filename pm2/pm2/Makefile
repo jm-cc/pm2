@@ -162,6 +162,14 @@ DISTCLEAN_DEP   =       mardistclean maddistclean dsmdistclean
 default: pm2_default mad_default mar_default dsm_default
 endif
 
+PM2_MAKEFILE	=	$(PM2_ROOT)/Makefile \
+			$(PM2_ROOT)/make/mad.mak \
+			$(MAR_MAKEFILE) \
+			$(MAD_MAKEFILE) \
+			$(DSM_MAKEFILE) \
+                        $(TBX_MAKEFILE) \
+                        $(NTBX_MAKEFILE)
+
 include $(MARCEL_ROOT)/Makefile
 
 ifeq ($(MAD2),yes)
@@ -181,14 +189,6 @@ endif
 ifeq ($(NETTOOLBOX),yes)
 include $(PM2_ROOT)/toolbox/net/Makefile
 endif
-
-PM2_MAKEFILE	=	$(PM2_ROOT)/Makefile \
-			$(PM2_ROOT)/make/mad.mak \
-			$(MAR_MAKEFILE) \
-			$(MAD_MAKEFILE) \
-			$(DSM_MAKEFILE) \
-                        $(TBX_MAKEFILE) \
-                        $(NTBX_MAKEFILE)
 
 PM2_CC		=	gcc
 
@@ -243,7 +243,7 @@ include $(PM2_DEPENDS)
 endif
 endif
 
-$(PM2_OBJECTS): $(PM2_OBJ)/%.o: $(PM2_DEP)/%.d
+$(PM2_OBJECTS): $(PM2_OBJ)/%.o: $(PM2_DEP)/%.d $(PM2_MAKEFILE)
 $(PM2_DEPENDS): $(PM2_MAKEFILE)
 
 
@@ -297,7 +297,7 @@ ifeq ($(SRC_DIR),.)
 SRC_DIR		:=	./
 endif
 
-THIS_MAKEFILE	:=	$(SRC_DIR)/Makefile
+PM2_MAKEFILE	+=	$(SRC_DIR)/Makefile
 
 DEP_DIR	=	$(SRC_DIR)/depend
 OBJ_DIR	=	$(SRC_DIR)/obj/$(PM2_ARCH_SYS)
@@ -332,8 +332,8 @@ include $(wildcard $(DEPENDS))
 endif
 endif
 
-$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d
-$(DEPENDS): $(THIS_MAKEFILE) $(PM2_MAKEFILE)
+$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d $(PM2_MAKEFILE)
+$(DEPENDS): $(PM2_MAKEFILE)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(PM2_CC) $(PM2_CFLAGS) $(PM2_APP_CFLAGS) -c $< -o $@

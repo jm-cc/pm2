@@ -301,6 +301,7 @@ _PRIVATE_ marcel_t marcel_unchain_task_and_find_next(marcel_t t,
 						     marcel_t find_next);
 _PRIVATE_ void marcel_insert_task(marcel_t t);
 _PRIVATE_ marcel_t marcel_radical_next_task(void);
+_PRIVATE_ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, __lwp_t *lwp);
 
 #ifdef USE_VIRTUAL_TIMER
 

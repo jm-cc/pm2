@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.12  2000/03/06 12:57:33  vdanjean
+*** empty log message ***
+
+Revision 1.11  2000/03/06 09:24:01  vdanjean
+Nouvelle version des activations
+
 Revision 1.10  2000/02/28 10:24:58  rnamyst
 Changed #include <> into #include "".
 
@@ -254,12 +260,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
   lock_task();
 
-#ifdef __ACT__
-  cur->sched_by = SCHED_BY_MARCEL;
-  if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
-#else
   if(setjmp(cur->jb) == NORMAL_RETURN) {
-#endif
 #ifdef __ACT__
     marcel_self()->state_ext=MARCEL_RUNNING;
 #endif
@@ -361,21 +362,12 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 				 ? NULL /* do not insert now */
 				 : new_task); /* insert asap */
 
-#ifdef __ACT__
-      act_update(new_task);
-#endif
-
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
 
       MTRACE("Preemption", marcel_self());
 
-#ifdef __ACT__
-      marcel_self()->sched_by = SCHED_BY_MARCEL;
-      if(setjmp(marcel_self()->jb.migr_jb) == FIRST_RETURN) {
-#else
       if(setjmp(marcel_self()->jb) == FIRST_RETURN) {
-#endif
 	call_ST_FLUSH_WINDOWS();
 #ifdef __ACT__
 	marcel_self()->state_ext=MARCEL_READY;
@@ -407,7 +399,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       MTRACE("Preemption", marcel_self());
 
 #ifdef __ACT__
-      act_update(marcel_self())->state_ext=MARCEL_RUNNING;
+      marcel_self()->state_ext=MARCEL_RUNNING;
 #endif
 
       unlock_task();
@@ -494,9 +486,6 @@ int marcel_exit(any_t val)
 #ifdef SMP
     cur_lwp = marcel_self()->lwp;
 #endif
-#ifdef __ACT__
-    act_update(marcel_self());
-#endif
 
     unlock_task();
 
@@ -560,9 +549,6 @@ int marcel_exit(any_t val)
 
 #ifdef SMP
     cur_lwp = marcel_self()->lwp;
-#endif
-#ifdef __ACT__
-    act_update(marcel_self());
 #endif
 
 #ifdef STACK_OVERFLOW_DETECT
@@ -1038,16 +1024,16 @@ void marcel_init(int *argc, char *argv[])
     marcel_slot_init();
     ACTDEBUG(printf("marcel_init slot_init done\n")); 
 
-#ifdef __ACT__
-    init_upcalls(0);
-    ACTDEBUG(printf("marcel_init upcalls_init done\n")); 
-#endif
-
     marcel_sched_init(__nb_lwp);
     ACTDEBUG(printf("marcel_init schedt_init done\n")); 
 
     marcel_io_init();
     ACTDEBUG(printf("marcel_init io_init done\n")); 
+
+#ifdef __ACT__
+    init_upcalls(0);
+    ACTDEBUG(printf("marcel_init upcalls_init done\n")); 
+#endif
 
 #ifdef __ACT__
     launch_upcalls(WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"

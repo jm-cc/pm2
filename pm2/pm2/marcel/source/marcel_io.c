@@ -332,7 +332,9 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 
 int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 {
-#ifndef MA__ACTIVATION
+#ifdef MA__ACTIVATION
+  select(nfds, rfds, wfds, NULL, NULL);
+#else
   unix_io_arg_t myarg;
 
   myarg.op = POLL_SELECT;
@@ -341,9 +343,6 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
   myarg.nfds = nfds;
 
   marcel_poll(unix_io_pollid, (any_t)&myarg);
-#else
-  LOG("IO selecting");
-  select(nfds, rfds, wfds, NULL, NULL);
 #endif
 
   return 1;
@@ -391,4 +390,34 @@ int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
   return marcel_writev(fildes, iov, iovcnt);
 }
 
+/* =============== Gestion des E/S non bloquantes =============== */
+
+int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
+{
+#ifdef MA__ACTIVATION
+  return select(width, readfds, writefds, exceptfds, NULL);
+#else
+  int res = 0;
+  struct timeval timeout;
+  fd_set rfds, wfds, efds;
+
+   do {
+      FD_ZERO(&rfds); FD_ZERO(&wfds); FD_ZERO(&efds);
+      if(readfds) rfds = *readfds;
+      if(writefds) wfds = *writefds;
+      if(exceptfds) efds = *exceptfds;
+
+      timerclear(&timeout);
+      res = select(width, &rfds, &wfds, &efds, &timeout);
+      if(res <= 0)
+	marcel_yield();
+   } while(res <= 0);
+
+   if(readfds) *readfds = rfds;
+   if(writefds) *writefds = wfds;
+   if(exceptfds) *exceptfds = efds;
+
+   return res;
+#endif /* MA__ACTIVATION */
+}
 

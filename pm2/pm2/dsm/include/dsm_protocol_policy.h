@@ -20,12 +20,6 @@
 #include "dsm_const.h"
 
 
-
-/* Garbage... to get rid of */
-#define DEFAULT_DSM_PROTOCOL -1
-
-
-
 /**********************************************************************/
 /* PUBLIC TYPE DEFINITIONS                                            */
 /**********************************************************************/
@@ -47,18 +41,26 @@ extern dsm_proto_t HIERARCH;
 
 
 /* illegal protocol identifier */
-extern const dsm_proto_t NO_PROTOCOL;
+#define DSM_NO_PROTOCOL ((dsm_proto_t)(-1))
 
-/* default protocol as set by dsm_set_default_protocol() */
-extern const dsm_proto_t DEFAULT_PROTOCOL;
+/* symbolic constant refering to the default protocol as set by
+* dsm_set_default_protocol() */
+#define DSM_DEFAULT_PROTOCOL ((dsm_proto_t)(-2))
 
-/* default protocol in case dsm_set_default_protocol() is not called */
-#define DEFAULT_DEFAULT_PROTOCOL LI_HUDACK
+/* default protocol in case dsm_set_default_protocol() is not called
+* by the user application */
+#define DSM_DEFAULT_DEFAULT_PROTOCOL LI_HUDAK
 
 
 /**********************************************************************/
 /* PUBLIC FUNCTIONS                                                   */
 /**********************************************************************/
+
+extern dsm_proto_t
+dsm_get_default_protocol (void);
+
+extern void
+dsm_set_default_protocol (dsm_proto_t protocol);
 
 extern void
 dsm_init_protocol_table (void);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.33  2000/05/29 08:59:26  vdanjean
+work added (mainly for SMP and ACT), minor modif in polling
+
 Revision 1.32  2000/05/25 00:23:54  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -1237,7 +1240,7 @@ any_t idle_func(any_t arg) // Pour les activations
   SET_CUR_LWP(GET_LWP(cur));
 
   lock_task();
-
+  MA_THR_SETJMP(cur);
   for(;;){
 
     mdebug("\t\t\t<Scheduler scheduled> (LWP = %d)\n", cur_lwp->number);
@@ -1796,7 +1799,7 @@ void marcel_sched_shutdown()
 #elif defined(MA__ACTIVATION)
   // TODO : arrêter les autres activations...
 
-  act_cntl(ACT_CNTL_UPCALLS, (void*)ACT_DISABLE_UPCALLS);
+  //act_cntl(ACT_CNTL_UPCALLS, (void*)ACT_DISABLE_UPCALLS);
 #else
   /* Destroy master-sched's stack */
   marcel_cancel(__main_lwp.idle_task);

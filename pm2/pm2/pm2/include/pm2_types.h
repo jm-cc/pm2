@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: pm2_types.h,v $
+Revision 1.6  2000/10/10 13:31:16  gantoniu
+Modified the startup function mechanism to allow functions to get an argument.
+Updated the pm2_sync functions: global (= node-level) barriers are ready !
+
 Revision 1.5  2000/09/22 08:45:12  rnamyst
 PM2 startup funcs now use argc+argv. Modified the programs accordingly + fixed a bug in the TSP example.
 
@@ -55,7 +59,7 @@ ______________________________________________________________________________
 
 #include "marcel.h"
 
-typedef void (*pm2_startup_func_t)(int argc, char *argv[]);
+typedef void (*pm2_startup_func_t)(int argc, char *argv[], void *args);
 
 typedef void (*pm2_rawrpc_func_t)(void);
 

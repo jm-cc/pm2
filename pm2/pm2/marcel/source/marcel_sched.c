@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.34  2000/06/05 15:40:40  vdanjean
+activation bug fix in idle_func
+
 Revision 1.33  2000/05/29 08:59:26  vdanjean
 work added (mainly for SMP and ACT), minor modif in polling
 
@@ -1236,11 +1239,19 @@ any_t idle_func(any_t arg) // Pour les activations
   marcel_t next, cur = marcel_self();
   static int counter=0;
   int lc;
+  int init=0;
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
 
   lock_task();
+  MTRACE("coucou", cur);  
   MA_THR_SETJMP(cur);
+  if(!init) {
+    init=1;
+    MTRACE("Starting idle_func", cur);   
+  } else {
+    MA_THR_RESTARTED(cur, "Idle restart");
+  }
   for(;;){
 
     mdebug("\t\t\t<Scheduler scheduled> (LWP = %d)\n", cur_lwp->number);

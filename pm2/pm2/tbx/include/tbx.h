@@ -34,6 +34,9 @@
  * Headers
  * -------
  */
+#ifdef _REENTRANT
+#include <pthread.h>
+#endif /* _REENTRANT */
 #ifdef MARCEL
 #include "marcel.h"
 #endif /* MARCEL */

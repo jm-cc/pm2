@@ -197,8 +197,10 @@ static int unix_io_poll(marcel_ev_server_t server,
 	wfds = uid->wfds;
 	r = select(uid->nb, &rfds, &wfds, NULL, ptv);
 
-	if (tbx_unlikely(r==EBADF)) {
+	if (tbx_unlikely(r==-1)) {
 		int found=0;
+		if (errno != EBADF)
+			return 0;
 		/* L'un des fd est invalide */
 		FOREACH_REQ_POLL(ev, server, inst) {
 			mdebug("Checking select for IO poll (with badFD)\n");
@@ -223,9 +225,7 @@ static int unix_io_poll(marcel_ev_server_t server,
 						"Please, fix marcel code\n");
 			}
 		}
-	}
-		
-	if (r <= 0)
+	} else if (r == 0)
 		return 0;
 
 	FOREACH_REQ_POLL(ev, server, inst) {
@@ -280,10 +280,11 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 
 	timerclear(&tv);
 	
+	errno = 0;
 	r = select(nb, &rfds, &wfds, NULL, &tv);
 
 	if(r <= 0) {
-		ev->ret_val=r;
+		ev->ret_val=-errno;
 		return 0;
 	}
 
@@ -387,7 +388,8 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	ev.NFDS = nfds;
 	mdebug("Selecting within %i fds\n", nfds);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
-	LOG_RETURN(ev.ret_val);
+	LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
+			errno = -ev.ret_val, -1);
 #endif
 }
 

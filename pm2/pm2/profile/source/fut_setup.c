@@ -33,7 +33,12 @@
 #include <fkt/block.h>
 #include <fkt/sysmap.h>
 #include <fkt/pids.h>
+#include <fkt/names.h>
 #include "fkt-tools.h"
+
+#ifdef MARCEL
+#  include "sys/marcel_flags.h"
+#endif
 
 #define MAXCPUS 16
 
@@ -272,6 +277,13 @@ static void record_time( int fd, int ncpus, double mhz[], size_t page_size )
   int i;
   int kpid;
   int pid;
+  int format;
+
+#ifdef MA__LWPS
+  format=FUT_FORMAT_SMP_THREAD;
+#else
+  format=FUT_FORMAT_MONO;
+#endif
 
   BEGIN_BLOCK(fd);
   if( write(fd, (void *)&ncpus, sizeof(ncpus)) < 0 )
@@ -296,6 +308,8 @@ static void record_time( int fd, int ncpus, double mhz[], size_t page_size )
     perror("write stop_jiffies");
   if( write(fd, (void *)&page_size, sizeof(page_size)) < 0 )
     perror("write page_size");
+  if( write(fd, (void *)&format, sizeof(format)) < 0 )
+    perror("write format");
   END_BLOCK(fd);
 }
 

@@ -343,7 +343,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* le fils sera déjà démarré */
 		new_task->father->child = NULL;
 
-		PROF_SWITCH_TO(cur->number, new_task->number);
+		PROF_SWITCH_TO(cur->number, new_task);
 		PROF_IN_EXT(newborn_thread);
 		
 		/* activer le fils */

@@ -20,8 +20,8 @@
 
 #define TRUE 1
 #define FALSE 0
-#define CORRUPTED_FUT(s) do {if (s) {fprintf(stderr,"Corrupted user trace file\n"); exit(1);}} while(0)
-#define CORRUPTED_FKT(s) do {if (s) {fprintf(stderr,"Corrupted kernel trace file\n"); exit(1);}} while(0)
+#define CORRUPTED_FUT(s) do {if (s) {fprintf(stderr,"Corrupted user trace file\n"); abort();}} while(0)
+#define CORRUPTED_FKT(s) do {if (s) {fprintf(stderr,"Corrupted kernel trace file\n"); abort();}} while(0)
 
 #define NB_MAX_CPU  16
 

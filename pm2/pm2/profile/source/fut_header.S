@@ -58,8 +58,10 @@
 /* 	fut_active is also reset to 0 by the first thread that fills the buffer. */
 /*  */
 
+#ifdef MARCEL
+#  include "asm/marcel_profile.h"
+#endif
 #include <asm/page.h>
-#define __ASSEMBLY__
 #include "fut.h"
 
 #undef PAGE_SIZE
@@ -73,8 +75,12 @@ caller_code	= 8
 /* 	Offsets into probe record */
 probe_lo_cycles		= 0
 probe_hi_cycles		= 4
+probe_threadid		= 8 /* with LWPS only */
+#ifdef MA__LWPS
+probe_code			= 12
+#else
 probe_code			= 8
-probe_param1		= 12
+#endif
 
 	.text
 	.align	4
@@ -86,9 +92,9 @@ fut_header:							/*  normal entry point to take a probe */
 1:
 	movl	%eax,%ecx				/*  also need this in ecx */
 	addl	%edx,%ecx				/*  add on bytes needed by this record */
-/* ifdef __SMP__ */
+#ifdef MA__LWPS
 	lock
-/* endif */
+#endif
 	cmpxchg	%ecx,fut_next_slot		/*  atomically update ptr to next free slot */
 	jnz		1b						/*  jump back if did not get it */
 	cmp		%ecx,fut_last_slot		/*  are we off the end of the buffer? */
@@ -98,6 +104,10 @@ fut_header:							/*  normal entry point to take a probe */
 	rdtsc							/*  get 64-bit cpu cycle counter in edx-eax */
 	movl	%eax,probe_lo_cycles(%ecx)	/*  low-order 32 bits from eax to 1st slot */
 	movl	%edx,probe_hi_cycles(%ecx)	/*  hi-order 32 bits from edx to 2nd slot */
+#ifdef MA__LWPS
+	MA_PROFILE_ASM_GET_TID(eax)
+	movl	%eax,probe_threadid(%ecx)
+#endif
 	leal	caller_code(%esp),%edx	/*  point edx at header value in call */
 	leal	probe_code(%ecx),%ecx	/*  point ecx at header slot in record */
 9:
@@ -127,7 +137,7 @@ __cyg_profile_func_enter:
 0:
 	movl	4(%esp),%eax
 	movl	%eax,8(%esp)
-	movl	$(((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|16),4(%esp)
+	movl	$(((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|FUT_SIZE(1)),4(%esp)
 	jmp		fut_header
 
 	.align 4
@@ -139,7 +149,7 @@ __cyg_profile_func_exit:
 0:
 	movl	4(%esp),%eax
 	movl	%eax,8(%esp)
-	movl	$(((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|16),4(%esp)
+	movl	$(((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|FUT_SIZE(1)),4(%esp)
 	jmp		fut_header
 
 

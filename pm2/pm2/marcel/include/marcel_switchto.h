@@ -37,7 +37,7 @@
  * */
 #define MA_THR_LONGJMP(cur_num, next, ret) \
   do {                                     \
-    PROF_SWITCH_TO(cur_num, next->number); \
+    PROF_SWITCH_TO(cur_num, next); \
     call_ST_FLUSH_WINDOWS();               \
     marcel_ctx_longjmp(next->ctx_yield, ret);              \
   } while(0)

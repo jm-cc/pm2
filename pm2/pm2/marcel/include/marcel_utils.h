@@ -24,10 +24,11 @@
 #define __ma_stringify(x)          marcel_str(x)
 
 #section types
-#if !(defined(FALSE) || defined(TRUE)) // AD: TRUE/FALSE are sometimes already defined in libc
+#ifndef __ASSEMBLY__
+#  if !(defined(FALSE) || defined(TRUE)) // AD: TRUE/FALSE are sometimes already defined in libc
 enum { FALSE, TRUE };
-#endif
+#  endif
 typedef int boolean;
 typedef void* any_t;
 typedef void (*handler_func_t)(any_t);
-
+#endif

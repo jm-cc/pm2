@@ -115,13 +115,13 @@
   do {							\
     extern void fun(void) asm(__FUNCTION__);		\
     /*__cyg_profile_func_enter(fun,NULL);	*/	\
-    PROF_PROBE2(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|16, fun, marcel_self()->number);	\
+    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|FUT_SIZE(1), fun);	\
   } while(0)
 #define PROF_OUT()					\
   do {							\
     extern void fun(void) asm(__FUNCTION__);		\
     /*__cyg_profile_func_exit(fun,NULL);	*/	\
-    PROF_PROBE2(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|16, fun, marcel_self()->number);	\
+    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|FUT_SIZE(1), fun);	\
   } while(0)
 #endif
 
@@ -153,9 +153,9 @@
 #define PROF_SWITCH_TO(thr1, thr2)                               \
  do {                                                            \
    if(__pm2_profile_active) {                                    \
-      fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | 20, \
-                 (unsigned int)(thr1),                           \
-                 (unsigned int)(thr2));                          \
+      fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | FUT_SIZE(2), \
+                 (unsigned int)(MA_PROFILE_TID(thr2)),           \
+                 (unsigned int)thr2->number);                    \
    }                                                             \
  } while(0)
 
@@ -170,7 +170,9 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
 #define PROF_NEW_LWP(num, thr)                                      \
  do {                                                               \
    if (__pm2_profile_active) {                                      \
-      fkt_new_lwp(thr, num);                                        \
+      fut_header((((unsigned int)(FUT_NEW_LWP_CODE))<<8) | FUT_SIZE(2), \
+                 (unsigned int)(LWP_SELF), num);                    \
+      fkt_new_lwp(MA_PROFILE_TID(thr), num);                        \
    }                                                                \
  } while(0)
 
@@ -186,16 +188,16 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
 #define PROF_THREAD_BIRTH(thr)                                      \
  do {                                                               \
    if(__pm2_profile_active) {                                       \
-      fut_header((((unsigned int)(FUT_THREAD_BIRTH_CODE))<<8) | 16, \
-                 (unsigned int)(thr));                              \
+      fut_header((((unsigned int)(FUT_THREAD_BIRTH_CODE))<<8) | FUT_SIZE(1), \
+                 (unsigned int)(MA_PROFILE_TID(thr)));                              \
    }                                                                \
  } while(0)
 
 #define PROF_THREAD_DEATH(thr)                                      \
  do {                                                               \
    if(__pm2_profile_active) {                                       \
-      fut_header((((unsigned int)(FUT_THREAD_DEATH_CODE))<<8) | 16, \
-                 (unsigned int)(thr));                              \
+      fut_header((((unsigned int)(FUT_THREAD_DEATH_CODE))<<8) | FUT_SIZE(1), \
+                 (unsigned int)(MA_PROFILE_TID(thr)));                              \
    }                                                                \
  } while(0)
 

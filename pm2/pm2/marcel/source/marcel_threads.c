@@ -238,7 +238,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	}
 	MTRACE("Creation", new_task);
 	
-	PROF_THREAD_BIRTH(new_task->number);
+	PROF_THREAD_BIRTH(new_task);
 	
 	PROF_IN_EXT(newborn_thread);
 

@@ -18,116 +18,95 @@
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
 #define ISOADDR_PAGES                 (128*1024)
-
-#define THREAD_SLOT_SIZE              ((long)0x10000) /* 64 Ko */
-
+#define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */
+#define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)
 #define SLOT_AREA_TOP                 (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM
-#define DYN_DSM_AREA_SIZE             (ISOADDR_PAGES * 4096)
+#  define DYN_DSM_AREA_SIZE             (ISOADDR_PAGES * 4096)
 #else
-#define DYN_DSM_AREA_SIZE             0
+#  define DYN_DSM_AREA_SIZE             0
 #endif
 
-#if defined(SOLARIS_SYS) && defined(SPARC_ARCH)
-
+#ifdef SOLARIS_SYS
 extern int __zero_fd;
-#define ISOADDR_AREA_TOP       0xe0000000
-#define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)
-#define FILE_TO_MAP            __zero_fd
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
-
-#elif defined(LINUX_SYS) && defined(X86_ARCH)
-
-#define ISOADDR_AREA_TOP       0x40000000
-#define SLOT_AREA_BOTTOM       0x10000000
-#define MAIN_STACK_BOT         0xa0000000
-#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
-
-#elif defined(LINUX_SYS) && defined(IA64_ARCH)
-
-#define ISOADDR_AREA_TOP       0x7fff0000
-#define MAIN_STACK_BOT         0x6000000000000000
-#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
-
-#elif defined(LINUX_SYS) && defined(PPC_ARCH)
-
-#define ISOADDR_AREA_TOP       0x30000000
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
-
-#elif defined(SOLARIS_SYS) && defined(X86_ARCH)
-
-extern int __zero_fd;
-extern int main();
-#define ISOADDR_AREA_TOP       0xafff0000
-#define IS_ON_MAIN_STACK(sp)   ((sp) < (unsigned long)common_init)
-#define FILE_TO_MAP            __zero_fd
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
-
-#elif defined(FREEBSD_SYS) && defined(X86_ARCH)
-
-#define ISOADDR_AREA_TOP       0x40000000
-#define MAIN_STACK_BOT         0xa0000000
-#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#define FILE_TO_MAP            __zero_fd
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
-
-#elif defined(DARWIN_SYS) && defined(PPC_ARCH)
-
-#define ISOADDR_AREA_TOP       0xb0000000
-#define MAIN_STACK_BOT         0x90000000
-#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANON)
-
-#elif defined(AIX_SYS) && defined(RS6K_ARCH)
-
-#define ISOADDR_AREA_TOP       0xcfff0000
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
-
-#elif defined(IRIX_SYS) && defined(MIPS_ARCH)
-
-extern int __zero_fd;
-#define ISOADDR_AREA_TOP       0x40000000
-#define FILE_TO_MAP            __zero_fd
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
-#define IS_ON_MAIN_STACK(sp)   ((sp) > SLOT_AREA_TOP)
-
-#elif defined(WIN_SYS) && defined(X86_ARCH)
-
-extern void *ISOADDR_AREA_TOP;
-#define MAIN_STACK_BOT         (ISOADDR_AREA_TOP)
-#define ISOADDR_AREA_SIZE      (512 * THREAD_SLOT_SIZE)
-#define FILE_TO_MAP            -1
-#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
-
-#elif defined(LINUX_SYS) && defined(ALPHA_ARCH)
-
-#define ISOADDR_AREA_TOP       0x30000000000
-#define MAIN_STACK_TOP         0x130000000
-#define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
-
+#  ifdef SPARC_ARCH
+#    define ISOADDR_AREA_TOP       0xe0000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)
+#    define FILE_TO_MAP            __zero_fd
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
+#  elif defined(X86_ARCH)
+#    define ISOADDR_AREA_TOP       0xafff0000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) < (unsigned long)common_init)
+#    define FILE_TO_MAP            __zero_fd
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
+#  else
+#    error Sorry. This architecture is not yet supported.
+#  endif
+#elif defined(LINUX_SYS)
+#  ifdef X86_ARCH
+#    define ISOADDR_AREA_TOP       0x40000000
+#    define SLOT_AREA_BOTTOM       0x10000000
+#    define MAIN_STACK_BOT         0xa0000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#  elif defined(IA64_ARCH)
+#    define ISOADDR_AREA_TOP       0x7fff0000
+#    define MAIN_STACK_BOT         0x6000000000000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#  elif defined(PPC_ARCH)
+#    define ISOADDR_AREA_TOP       0x30000000
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#  elif defined(ALPHA_ARCH)
+#    define ISOADDR_AREA_TOP       0x30000000000
+#    define MAIN_STACK_TOP         0x130000000
+#    define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#  else
+#    error Sorry. This architecture is not yet supported.
+#  endif
 #elif defined(OSF_SYS) && defined(ALPHA_ARCH)
-
-#define ISOADDR_AREA_TOP       0x30000000000
-#define MAIN_STACK_TOP         0x130000000
-#define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
-#define FILE_TO_MAP            -1
-#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
-
+#    define ISOADDR_AREA_TOP       0x30000000000
+#    define MAIN_STACK_TOP         0x130000000
+#    define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#elif defined(FREEBSD_SYS) && defined(X86_ARCH)
+#    define ISOADDR_AREA_TOP       0x40000000
+#    define MAIN_STACK_BOT         0xa0000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#    define FILE_TO_MAP            __zero_fd
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
+#elif defined(DARWIN_SYS) && defined(PPC_ARCH)
+#    define ISOADDR_AREA_TOP       0xb0000000
+#    define MAIN_STACK_BOT         0x90000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANON)
+#elif defined(AIX_SYS) && defined(RS6K_ARCH)
+#    define ISOADDR_AREA_TOP       0xcfff0000
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#elif defined(IRIX_SYS) && defined(MIPS_ARCH)
+extern int __zero_fd;
+#    define ISOADDR_AREA_TOP       0x40000000
+#    define FILE_TO_MAP            __zero_fd
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > SLOT_AREA_TOP)
+#elif defined(WIN_SYS) && defined(X86_ARCH)
+extern void *ISOADDR_AREA_TOP;
+#    define MAIN_STACK_BOT         (ISOADDR_AREA_TOP)
+#    define ISOADDR_AREA_SIZE      (512 * THREAD_SLOT_SIZE)
+#    define FILE_TO_MAP            -1
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
 #else
-
-#error Sorry. This system/architecture is not yet supported.
-
+#  error Sorry. This system/architecture is not yet supported.
 #endif
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)

@@ -20,7 +20,9 @@
 
 /*	fut = Fast User Tracing */
 
-
+#ifdef MARCEL
+#  include "sys/marcel_flags.h"
+#endif
 
 /*	Macros for use from within the kernel */
 
@@ -28,36 +30,36 @@
 
 #define FUT_ALWAYS_PROBE0(KEYMASK,CODE)	do { \
 								if( KEYMASK & fut_active ) \
-								fut_header( (((unsigned int)(CODE))<<8) | 12 );\
+								fut_header( (((unsigned int)(CODE))<<8) | FUT_SIZE(0));\
 								} while(0)
 #define FUT_ALWAYS_PROBE1(KEYMASK,CODE,P1)	do { \
 								if( KEYMASK & fut_active ) \
-								fut_header( (((unsigned int)(CODE))<<8) | 16, \
+								fut_header( (((unsigned int)(CODE))<<8) | FUT_SIZE(1), \
 								(unsigned int)(P1) ); \
 								} while(0)
 #define FUT_ALWAYS_PROBE2(KEYMASK,CODE,P1,P2)	do { \
 								if( KEYMASK & fut_active ) \
-								fut_header( (((unsigned int)(CODE))<<8) | 20, \
+								fut_header( (((unsigned int)(CODE))<<8) | FUT_SIZE(2), \
 								(unsigned int)(P1), (unsigned int)(P2) ); \
 								} while(0)
 #define FUT_ALWAYS_PROBE3(KEYMASK,CODE,P1,P2,P3) \
 								do { \
 								if( KEYMASK & fut_active ) \
-								fut_header( (((unsigned int)(CODE))<<8) | 24, \
+								fut_header( (((unsigned int)(CODE))<<8) | FUT_SIZE(3), \
 								(unsigned int)(P1), (unsigned int)(P2), \
 								(unsigned int)(P3) ); \
 								} while(0)
 #define FUT_ALWAYS_PROBE4(KEYMASK,CODE,P1,P2,P3,P4) \
 								do { \
 								if( KEYMASK & fut_active ) \
-								fut_header( (((unsigned int)(CODE))<<8) | 28, \
+								fut_header( (((unsigned int)(CODE))<<8) | FUT_SIZE(4), \
 								(unsigned int)(P1), (unsigned int)(P2), \
 								(unsigned int)(P3), (unsigned int)(P4) ); \
 								} while(0)
 #define FUT_ALWAYS_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5) \
 								do { \
 								if( KEYMASK & fut_active ) \
-								fut_header( (((unsigned int)(CODE))<<8) | 32, \
+								fut_header( (((unsigned int)(CODE))<<8) | FUT_SIZE(5), \
 								(unsigned int)(P1), (unsigned int)(P2), \
 								(unsigned int)(P3), (unsigned int)(P4), \
 								(unsigned int)(P5) ); \
@@ -173,6 +175,12 @@
 /* -finstrument-functions code */
 #define FUT_GCC_INSTRUMENT_ENTRY_CODE	0x320
 #define FUT_GCC_INSTRUMENT_EXIT_CODE	0x420
+
+#ifdef MA__LWPS
+#  define FUT_SIZE(nb_param) ((nb_param)*4+16)
+#else
+#  define FUT_SIZE(nb_param) ((nb_param)*4+12)
+#endif
 
 #ifndef __ASSEMBLY__
 extern volatile unsigned int fut_active;

@@ -762,6 +762,7 @@ void pm2_rpc_init(void)
   pm2_console_init_rpc();
   isoaddr_init_rpc();
   pm2_barrier_init_rpc();
+  block_init_rpc();
 
 #ifdef DSM
   dsm_pm2_init_rpc();

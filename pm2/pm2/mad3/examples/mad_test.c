@@ -30,6 +30,10 @@
 // Macros
 //......................
 
+#ifdef MAX
+#undef MAX
+#endif
+
 #define MAX 16
 
 // Static variables

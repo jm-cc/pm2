@@ -191,6 +191,43 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
 #endif
 }
 
+
+void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm_access_t access, void *user_addr, int user_length)
+{
+  void *addr = dsm_get_page_addr(index);
+  unsigned long page_size = dsm_get_page_size(index);
+  dsm_node_t reply_node = dsm_self();
+
+#ifdef HYP_INSTRUMENT
+  hyp_sendPage_out_cnt++;
+#endif
+
+#ifdef DEBUG_HYP
+  tfprintf(stderr, "dsm_send_page: sending page %ld!\n", index);
+#endif
+
+  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_PAGE, NULL);
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&addr, sizeof(void *));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&page_size,
+    sizeof(unsigned long));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&reply_node,
+    sizeof(dsm_node_t));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&access,
+    sizeof(dsm_access_t));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)user_addr, user_length);
+#ifdef DSM_SEND_PAGE_CHEAPER
+  pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
+#else
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
+#endif
+  
+  pm2_rawrpc_end();
+#ifdef DEBUG3
+  fprintf(stderr, "Page %d sent -> %d for %s, a = %d \n", index, dest_node, (access == 1)?"read":"write", ((atomic_t *)addr)->counter);
+#endif
+}
+
+
 void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_node_t new_owner)
 {
 #ifdef HYP_INSTRUMENT

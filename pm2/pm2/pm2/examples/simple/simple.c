@@ -58,6 +58,10 @@ int pm2_main(int argc, char **argv)
 {
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
 
+#ifdef PROFILE
+  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
+#endif
+
   pm2_init(&argc, argv);
 
   if(pm2_config_size() < 2) {
@@ -75,5 +79,10 @@ int pm2_main(int argc, char **argv)
   }
 
   pm2_exit();
+
+#ifdef PROFILE
+  profile_stop();
+#endif
+
   return 0;
 }

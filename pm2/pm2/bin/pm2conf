@@ -124,7 +124,7 @@ evaluate()
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
-PREF_DIR=${PM2_HOME:-${HOME}}/.pm2/preferences/conf
+PREF_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/preferences/conf
 
 pref_file=""
 

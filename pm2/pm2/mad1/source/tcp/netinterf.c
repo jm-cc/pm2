@@ -38,10 +38,11 @@
 /*#define DEBUG*/
 
 #ifdef PM2
-#include <marcel.h>
+#include "marcel.h"
 #endif
 
-#include <sys/netinterf.h>
+#include "sys/netinterf.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -61,10 +62,10 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include <mad_types.h>
-#include <mad_timing.h>
-#include <safe_malloc.h>
-#include <sys/debug.h>
+#include "mad_types.h"
+#include "mad_timing.h"
+#include "safe_malloc.h"
+#include "sys/debug.h"
 
 static long header[MAX_HEADER/sizeof(long)] __MAD_ALIGNED__;
 

@@ -48,6 +48,9 @@ _PRIVATE_ typedef struct {
   int sched_policy;
 } marcel_attr_t;
 
+#define MARCEL_CREATE_JOINABLE    FALSE
+#define MARCEL_CREATE_DETACHED    TRUE
+
 int marcel_attr_init(marcel_attr_t *attr);
 #define marcel_attr_destroy(attr_ptr)	0
 

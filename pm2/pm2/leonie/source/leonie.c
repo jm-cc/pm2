@@ -3640,11 +3640,386 @@ dir_driver_exit(void)
   LOG_OUT();
 }
 
+static
+void
+dir_vchannel_cleanup(void)
+{
+  p_tbx_htable_t     vchannel_htable = NULL;
+  p_tbx_slist_t      vchannel_slist  = NULL;
+
+  LOG_IN();
+  vchannel_htable = directory->vchannel_htable;
+  vchannel_slist  = directory->vchannel_slist;
+
+  while (!tbx_slist_is_nil(vchannel_slist))
+    {
+      p_leo_dir_vchannel_t       dir_vchannel   = NULL;
+      p_tbx_slist_t              channel_slist  = NULL;
+      p_tbx_slist_t              fchannel_slist = NULL;
+      p_ntbx_process_container_t pc             = NULL;
+      ntbx_process_grank_t       g_rank_src     =   -1;
+
+      dir_vchannel   = tbx_slist_extract(vchannel_slist);
+      tbx_htable_extract(vchannel_htable, dir_vchannel->name);
+
+      channel_slist  = dir_vchannel->dir_channel_slist;
+      fchannel_slist = dir_vchannel->dir_fchannel_slist;
+
+      while (!tbx_slist_is_nil(channel_slist))
+	{
+	  tbx_slist_extract(channel_slist);
+	}
+
+      tbx_slist_free(channel_slist);
+      channel_slist                   = NULL;
+      dir_vchannel->dir_channel_slist = NULL;
+      
+      while (!tbx_slist_is_nil(fchannel_slist))
+	{
+	  tbx_slist_extract(fchannel_slist);
+	}
+      
+      tbx_slist_free(fchannel_slist);
+      fchannel_slist                   = NULL;
+      dir_vchannel->dir_fchannel_slist = NULL;
+
+      pc = dir_vchannel->pc;
+
+      if (ntbx_pc_first_global_rank(pc, &g_rank_src))
+	{
+	  do
+	    {
+	      p_leo_dir_vchannel_process_specific_t vps        = NULL;
+	      p_ntbx_process_container_t            ppc        = NULL;
+	      ntbx_process_grank_t                  g_rank_dst =   -1;
+	      
+	      vps = ntbx_pc_get_global_specific(pc, g_rank_src);
+	      ppc = vps->pc;
+	      
+	      ntbx_pc_first_global_rank(ppc, &g_rank_dst);
+	      do
+		{
+		  p_leo_dir_vchannel_process_routing_table_t rtable = NULL;
+		  
+		  rtable = ntbx_pc_get_global_specific(ppc, g_rank_dst);
+		  TBX_FREE(rtable->channel_name);
+		  rtable->channel_name = NULL;
+		}
+	      while (ntbx_pc_next_global_rank(ppc, &g_rank_dst));
+
+	      ntbx_pc_dest(ppc, tbx_default_specific_dest);
+	    }
+	  while (ntbx_pc_next_global_rank(pc, &g_rank_src));
+	}
+
+      ntbx_pc_dest(pc, tbx_default_specific_dest);
+      dir_vchannel->pc   = NULL;
+
+      TBX_FREE(dir_vchannel->name);
+      dir_vchannel->name = NULL;
+      
+      TBX_FREE(dir_vchannel);
+    }
+
+  tbx_slist_free(directory->vchannel_slist);
+  directory->vchannel_slist = NULL;
+
+  tbx_htable_free(directory->vchannel_htable);
+  directory->vchannel_htable = NULL;
+  LOG_OUT();
+}
+
+static
+void
+dir_fchannel_cleanup(void)
+{
+  p_tbx_htable_t    fchannel_htable = NULL;
+  p_tbx_slist_t     fchannel_slist  = NULL;
+
+  LOG_IN();
+  fchannel_htable = directory->fchannel_htable;
+  fchannel_slist  = directory->fchannel_slist;
+
+  while (!tbx_slist_is_nil(fchannel_slist))
+    {
+      p_leo_dir_fchannel_t dir_fchannel = NULL;
+  
+      dir_fchannel = tbx_slist_extract(fchannel_slist);
+      tbx_htable_extract(fchannel_htable, dir_fchannel->name);
+
+      TBX_FREE(dir_fchannel->name);
+      dir_fchannel->name = NULL;
+
+      TBX_FREE(dir_fchannel->channel_name);
+      dir_fchannel->channel_name = NULL;
+      
+      TBX_FREE(dir_fchannel);
+    }
+
+  tbx_slist_free(directory->fchannel_slist);
+  directory->fchannel_slist = NULL;
+
+  tbx_htable_free(directory->fchannel_htable);
+  directory->fchannel_htable = NULL;
+  LOG_OUT();
+}
+
+static
+void
+dir_channel_cleanup(void)
+{
+  p_tbx_htable_t    channel_htable = NULL;
+  p_tbx_slist_t     channel_slist  = NULL;
+
+  LOG_IN();
+  channel_htable = directory->channel_htable;
+  channel_slist  = directory->channel_slist;
+
+  while (!tbx_slist_is_nil(channel_slist))
+    {
+      p_leo_dir_channel_t        dir_channel = NULL;
+      p_ntbx_process_container_t pc          = NULL;
+      ntbx_process_lrank_t       l_rank      =   -1;
+
+      dir_channel = tbx_slist_extract(channel_slist);
+      tbx_htable_extract(channel_htable, dir_channel->name);
+
+      ntbx_topology_table_exit(dir_channel->ttable);
+      dir_channel->ttable = NULL;
+
+      pc = dir_channel->pc;
+
+      if (ntbx_pc_first_local_rank(pc, &l_rank))
+	{
+	  do
+	    {
+	      p_leo_dir_channel_process_specific_t cps = NULL;
+
+	      cps = ntbx_pc_get_local_specific(pc, l_rank);
+	      
+	      if (cps && cps->adapter_name)
+		{
+		  TBX_FREE(cps->adapter_name);
+		  cps->adapter_name = NULL;
+		}
+	    }
+	  while (ntbx_pc_next_global_rank(pc, &l_rank));
+	}
+      
+      ntbx_pc_dest(dir_channel->pc, tbx_default_specific_dest);
+      dir_channel->pc = NULL;
+
+      TBX_FREE(dir_channel->name);
+      dir_channel->name = NULL;
+
+      dir_channel->driver = NULL;
+      dir_channel->public = tbx_false;
+
+      TBX_FREE(dir_channel);
+    }
+
+  tbx_slist_free(directory->channel_slist);
+  directory->channel_slist = NULL;
+
+  tbx_htable_free(directory->channel_htable);
+  directory->channel_htable = NULL;
+  LOG_OUT();
+}
+
+static
+void
+dir_driver_cleanup(void)
+{
+  p_tbx_htable_t    driver_htable = NULL;
+  p_tbx_slist_t     driver_slist  = NULL;
+
+  LOG_IN();
+  driver_htable = directory->driver_htable;
+  driver_slist  = directory->driver_slist;
+
+  while (!tbx_slist_is_nil(driver_slist))
+    {
+      p_leo_dir_driver_t         dir_driver = NULL;
+      p_ntbx_process_container_t pc         = NULL;
+      ntbx_process_lrank_t       l_rank     =   -1;
+
+      dir_driver = tbx_slist_extract(driver_slist);
+      tbx_htable_extract(driver_htable, dir_driver->name);
+
+      pc = dir_driver->pc;
+
+      if (ntbx_pc_first_local_rank(pc, &l_rank))
+	{
+	  do
+	    {
+	      p_leo_dir_driver_process_specific_t dps = NULL;
+
+	      dps = ntbx_pc_get_local_specific(pc, l_rank);
+	      
+	      if (dps)
+		{
+		  p_tbx_htable_t adapter_htable = NULL;
+		  p_tbx_slist_t  adapter_slist  = NULL;
+	  
+		  adapter_htable = dps->adapter_htable;
+		  adapter_slist  = dps->adapter_slist;
+
+		  while (!tbx_slist_is_nil(adapter_slist))
+		    {
+		      p_leo_dir_adapter_t dir_adapter = NULL;
+			  
+		      dir_adapter = tbx_slist_extract(adapter_slist);
+		      tbx_htable_extract(adapter_htable, dir_adapter->name);
+
+		      TBX_FREE(dir_adapter->name);
+		      dir_adapter->name = NULL;
+		      
+		      if (dir_adapter->selector)
+			{
+			  TBX_FREE(dir_adapter->selector);
+			  dir_adapter->selector = NULL;
+			}
+
+		      if (dir_adapter->parameter)
+			{
+			  TBX_FREE(dir_adapter->parameter);
+			  dir_adapter->parameter = NULL;
+			}
+
+		      dir_adapter->mtu = 0;
+
+		      TBX_FREE(dir_adapter);
+		    }
+
+		  tbx_slist_free(adapter_slist);
+		  dps->adapter_slist = NULL;
+
+		  tbx_htable_free(adapter_htable);
+		  dps->adapter_htable = NULL;
+		}
+	    }
+	  while (ntbx_pc_next_global_rank(pc, &l_rank));
+	}
+      
+      ntbx_pc_dest(dir_driver->pc, tbx_default_specific_dest);
+      dir_driver->pc = NULL;
+
+      TBX_FREE(dir_driver->name);
+      dir_driver->name = NULL;
+
+      TBX_FREE(dir_driver);
+    }
+  
+  tbx_slist_free(directory->driver_slist);
+  directory->driver_slist = NULL;
+
+  tbx_htable_free(directory->driver_htable);
+  directory->driver_htable = NULL;
+  LOG_OUT();
+}
+
+static
+void
+dir_node_cleanup(void)
+{
+  p_tbx_htable_t    node_htable = NULL;
+  p_tbx_slist_t     node_slist  = NULL;
+  
+  LOG_IN();
+  node_htable = directory->node_htable;
+  node_slist  = directory->node_slist;
+
+  while (!tbx_slist_is_nil(node_slist))
+    {
+      p_leo_dir_node_t dir_node = NULL;
+
+      dir_node = tbx_slist_extract(node_slist);
+      tbx_htable_extract(node_htable, dir_node->name);
+
+      ntbx_pc_dest(dir_node->pc, tbx_default_specific_dest);
+      dir_node->pc   = NULL;
+
+      TBX_FREE(dir_node->name);
+      dir_node->name = NULL;
+
+      TBX_FREE(dir_node);
+    }
+  
+  tbx_slist_free(directory->node_slist);
+  directory->node_slist = NULL;
+
+  tbx_htable_free(directory->node_htable);
+  directory->node_htable = NULL;
+  LOG_OUT();
+}
+
+static
+void
+dir_process_cleanup(void)
+{
+  p_tbx_slist_t process_slist = NULL;
+
+  LOG_IN();
+  process_slist = directory->process_slist;
+  
+  while (!tbx_slist_is_nil(process_slist))
+    {
+      p_ntbx_process_t process = NULL;
+      p_tbx_htable_t   ref     = NULL;
+      p_tbx_slist_t    keys    = NULL;
+      
+      process = tbx_slist_extract(process_slist);
+      ref     = process->ref;
+      keys    = tbx_htable_get_key_slist(ref);
+      
+      while (!tbx_slist_is_nil(keys))
+	{
+	  char *key = NULL;
+
+	  key = tbx_slist_extract(keys);
+	  tbx_htable_extract(ref, key);
+	  TBX_FREE(key);
+	}
+
+      tbx_slist_free(keys);
+      tbx_htable_free(ref);
+    }
+
+  tbx_slist_free(directory->process_slist);
+  directory->process_slist = NULL;
+  LOG_OUT();
+}
+
 void
 directory_exit(void)
 {
+  p_tbx_slist_t slist = NULL;
+
   LOG_IN();
-#warning unimplemented
+  TRACE("Directory clean-up");
+
+  slist = directory->process_slist;
+  tbx_slist_ref_to_head(slist);
+
+  do
+    {
+      p_ntbx_process_t         process          = NULL;
+      p_leo_process_specific_t process_specific = NULL;
+      p_ntbx_client_t          client           = NULL;
+
+      process          = tbx_slist_ref_get(slist);
+      process_specific = process->specific;
+      client           = process_specific->client;
+      leo_send_string(client, "clean{directory}");
+    }
+  while (tbx_slist_ref_forward(slist));
+
+  dir_vchannel_cleanup();
+  dir_fchannel_cleanup();
+  dir_channel_cleanup();
+  dir_driver_cleanup();
+  dir_node_cleanup();
+  dir_process_cleanup();
   LOG_OUT();
 }
 

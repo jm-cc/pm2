@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.16  2000/11/13 20:41:34  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.15  2000/07/12 15:01:28  cperez
 Add unlock_task_debug for non X86 machine.
 
@@ -117,6 +120,7 @@ ______________________________________________________________________________
 /* ==== Starting and Shuting down the scheduler ==== */
 
 void marcel_sched_init(unsigned nb_lwp);
+void marcel_sched_start(void);
 void marcel_sched_shutdown(void);
 
 

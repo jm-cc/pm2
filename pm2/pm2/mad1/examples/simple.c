@@ -68,8 +68,8 @@ int main(int argc, char **argv)
     printf("*** Simple message sending with Madeleine over %s ***\n", mad_arch_name());
 
     mad_receive();
-    mad_unpack_int(MAD_IN_HEADER, &taille, 1);
-    mad_unpack_byte(MODE, (char *)buffer, taille);
+    old_mad_unpack_int(MAD_IN_HEADER, &taille, 1);
+    old_mad_unpack_byte(MODE, (char *)buffer, taille);
     mad_recvbuf_receive();
 
     printf("Message received : size = %d\n", taille);
@@ -86,8 +86,8 @@ int main(int argc, char **argv)
      memset(buffer, MAGIC_CHAR, taille);
 
      mad_sendbuf_init(autre);
-     mad_pack_int(MAD_IN_HEADER, &taille, 1);
-     mad_pack_byte(MODE, (char *)buffer, taille);
+     old_mad_pack_int(MAD_IN_HEADER, &taille, 1);
+     old_mad_pack_byte(MODE, (char *)buffer, taille);
      mad_sendbuf_send();
 
      printf("Message sent : size = %d\n", taille);

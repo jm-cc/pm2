@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 #include <signal.h>
+#include <errno.h>
 #include <linux/unistd.h>
 
 #ifdef __NR_gettid

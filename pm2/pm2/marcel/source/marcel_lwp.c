@@ -409,7 +409,11 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 
 	CPU_ZERO(&mask);
 	CPU_SET(target, &mask);
+#ifdef HAVE_OLD_SCHED_SETAFFINITY
 	if(sched_setaffinity(0,&mask)<0) {
+#else /* HAVE_OLD_SCHED_SETAFFINITY */
+	if(sched_setaffinity(0,sizeof(mask),&mask)<0) {
+#endif /* HAVE_OLD_SCHED_SETAFFINITY */
 		perror("sched_setaffinity");
 		exit(1);
 	}

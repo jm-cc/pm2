@@ -90,6 +90,19 @@ static void parse_cmd_line(int *argc, char **argv)
   argv[j] = NULL;
 }
 
+static char *get_mad_root(void)
+{
+  static char buf[1024];
+  char *ptr;
+
+  if((ptr = getenv("MADELEINE_ROOT")) != NULL)
+    return ptr;
+  else {
+    sprintf(buf, "%s/mad1", getenv("PM2_ROOT"));
+    return buf;
+  }
+}
+
 void mad_pvm_network_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
 {
   int nhosts = 0;
@@ -128,7 +141,7 @@ void mad_pvm_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
       }
 
       if(nb_proc == NETWORK_ONE_PER_NODE) {
-	int ret = system("exit `cat ${MADELEINE_ROOT}/.madconf | wc -w`");
+	int ret = system("exit `cat ${MADELEINE_ROOT-${PM2_ROOT}/mad1}/.madconf | wc -w`");
 
 	n = WEXITSTATUS(ret) - 1;
 
@@ -141,7 +154,7 @@ void mad_pvm_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
 	strcat(execname, argv[0]);
 	argv[0] = execname;
       }
-      sprintf(cmd, "%s/bin/pvm/madstart", getenv("MADELEINE_ROOT"));
+      sprintf(cmd, "%s/bin/pvm/madstart", get_mad_root());
 
       sprintf(num_nodes, "%d", (strcmp(cons_image, "no") ? n+2 : n+1));
       arguments[0] = num_nodes;
@@ -167,7 +180,7 @@ void mad_pvm_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
       }
       if(strcmp(cons_image, "no")) {
 
-	sprintf(cmd, "%s/bin/pvm/madstartcons", getenv("MADELEINE_ROOT"));
+	sprintf(cmd, "%s/bin/pvm/madstartcons", get_mad_root());
 	arguments[2] = cons_image;
 	arguments[3] = NULL;
 

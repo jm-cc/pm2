@@ -685,7 +685,12 @@ leo_bipload_loader(p_leo_settings_t settings,
 	  tbx_arguments_append_arguments(args, settings->args);
 	}
 
-#ifdef LEO_IP
+#ifndef LEO_IP
+      tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
+                                       net_server->local_host);
+
+
+#else // LEO_IP
       {
 	char ip[11];
 

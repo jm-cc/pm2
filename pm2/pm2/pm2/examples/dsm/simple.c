@@ -37,6 +37,7 @@
 #include "pm2.h"
 #include "dsm_pm2.h"
 #include "rpc_defs.h"
+#include "timing.h"
 
 #define COUNTER 
 
@@ -81,6 +82,7 @@ END_SERVICE(DSM_V)
 int pm2_main(int argc, char **argv)
 {
   int i, j;
+  dsm_protocol_t protocol;
 
   if (argc != 3)
     {
@@ -94,12 +96,16 @@ int pm2_main(int argc, char **argv)
 
   marcel_sem_init(&main_sem, 0);
 
+  //  pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
+
+  pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
+
   pm2_init(&argc, argv, atoi(argv[1]), &les_modules, &nb_modules);
 
   if(pm2_self() == les_modules[0]) { /* master process */
 
     /*  *((int *)0xdeadbeef) = 12; */
-
+    TIMING_EVENT("begin");
     for (j=0; j< nb_modules; j++)
 	for (i=0; i< atoi(argv[2]) ; i++) {
 	  pm2_async_rpc(les_modules[j], TEST_DSM, NULL, NULL);
@@ -107,7 +113,7 @@ int pm2_main(int argc, char **argv)
 
     for (i = 0 ; i < atoi(argv[1]) * atoi(argv[2]); i++)
       marcel_sem_P(&main_sem);
-
+    TIMING_EVENT("end");
     tfprintf(stderr, "a=%d\n", a.counter);
     pm2_kill_modules(les_modules, nb_modules);
   }

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_buffer_interface.h,v $
+Revision 1.3  2000/01/13 14:44:30  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.2  1999/12/15 17:31:18  oaumage
 Ajout de la commande de logging de CVS
 
@@ -53,13 +57,13 @@ p_mad_buffer_t mad_get_user_send_buffer(void    *ptr,
 					size_t   length);
 p_mad_buffer_t mad_get_user_receive_buffer(void    *ptr, 
 					   size_t   length);
-mad_bool_t mad_buffer_full(p_mad_buffer_t buffer);
-mad_bool_t mad_more_data(p_mad_buffer_t buffer);
+tbx_bool_t mad_buffer_full(p_mad_buffer_t buffer);
+tbx_bool_t mad_more_data(p_mad_buffer_t buffer);
 size_t mad_copy_buffer(p_mad_buffer_t   source,
 		       p_mad_buffer_t   destination);
 p_mad_buffer_t mad_duplicate_buffer(p_mad_buffer_t source);
 void mad_make_buffer_group(p_mad_buffer_group_t   buffer_group,
-			   p_mad_list_t           buffer_list, 
+			   p_tbx_list_t           buffer_list, 
 			   p_mad_link_t           lnk);
 size_t mad_copy_length(p_mad_buffer_t   source, 
 		       p_mad_buffer_t   destination);

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.h,v $
+Revision 1.3  2000/01/13 14:44:30  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.2  1999/12/15 17:31:19  oaumage
 Ajout de la commande de logging de CVS
 
@@ -80,7 +84,7 @@ typedef struct s_mad_buffer_pair
 
 typedef struct s_mad_buffer_group
 {
-  mad_list_t      buffer_list;
+  tbx_list_t      buffer_list;
   p_mad_link_t    link; /* associated link */
 } mad_buffer_group_t;
 

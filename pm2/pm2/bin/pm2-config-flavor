@@ -268,7 +268,7 @@ get_options_dialog() { # mod help list_options_to_add option/module
     addtext="`cat /tmp/tmp-dialog.$$`"
     rm -f /tmp/tmp-dialog.$$ 2>/dev/null
 
-    eval $DIALOG --title '"$2"' --checklist '"$addtext"' 0 0 $nb_opt "$text_opt"\
+    eval $DIALOG --title '"$2"' --checklist '"$addtext"' $DELTA $DELTA $nb_opt "$text_opt"\
 		    2> /tmp/tmp-dialog.$$
     retval=$?
     choice=`cat /tmp/tmp-dialog.$$`
@@ -368,7 +368,7 @@ get_value_dialog() { # needed name help
     end=false
     title=`echo $2 | sed -e 's/fl_//'`
     while [ $end = false ]; do
-	$DIALOG --title "$title" --inputbox "\n$3\n" 0 0 "$default" \
+	$DIALOG --title "$title" --inputbox "\n$3\n" $DELTA $DELTA "$default" \
 	    2> /tmp/tmp-dialog.$$
 	retval=$?
 	choice=`cat /tmp/tmp-dialog.$$`
@@ -507,7 +507,7 @@ show_flavor_dialog() { # check init_text last_text yesno
 	boite="--msgbox"
 	;;
     esac
-    $DIALOG --title "Flavor description" $boite "$text$addtext$3" 0 0
+    $DIALOG --title "Flavor description" $boite "$text$addtext$3" $DELTA $DELTA
     #return $return_value
 }
 
@@ -610,7 +610,7 @@ get_flavor_dialog() { # need_existing prompt can_be_empty
     addtxt=
     while [ $fin = 0 ]; do
 	if [ "$1" = 0 -a -z "$3" ]; then
-	    $DIALOG --title Flavors --inputbox "$2$addtxt" 0 0 "newflavor" \
+	    $DIALOG --title Flavors --inputbox "$2$addtxt" $DELTA $DELTA "newflavor" \
 		    2> /tmp/tmp-dialog.$$
 	    retval=$?
 	    choice=`cat /tmp/tmp-dialog.$$`
@@ -628,7 +628,7 @@ get_flavor_dialog() { # need_existing prompt can_be_empty
 		items="$items '$i' ''"
 		count=`expr $count + 1`
 	    done
-	    eval $DIALOG --title Flavors --menu '"$2"' 0 0 "$count" "$items"\
+	    eval $DIALOG --title Flavors --menu '"$2"' $DELTA $DELTA "$count" "$items"\
 		2> /tmp/tmp-dialog.$$
 	    retval=$?
 	    choice=`cat /tmp/tmp-dialog.$$`
@@ -680,7 +680,7 @@ get_file_dialog() { # need_existing prompt
 		fi
 		count=`expr $count + 1`
 	    done
-	    eval $DIALOG --title Files --menu '"$2"' 0 0 "$count" "$items" \
+	    eval $DIALOG --title Files --menu '"$2"' $DELTA $DELTA "$count" "$items" \
 		2> /tmp/tmp-dialog.$$
 	    retval=$?
 	    choice=`cat /tmp/tmp-dialog.$$`
@@ -697,7 +697,7 @@ get_file_dialog() { # need_existing prompt
 	fi
 	;;
     *)
-	$DIALOG --title Files --inputbox "$2" 0 0 "newfile" \
+	$DIALOG --title Files --inputbox "$2" $DELTA $DELTA "newfile" \
 		2> /tmp/tmp-dialog.$$
 	retval=$?
 	choice=`cat /tmp/tmp-dialog.$$`
@@ -868,7 +868,7 @@ main_dialog() {
     done
     $DIALOG --title "Flavors management" --menu \
 	"Existing flavors :\n$list_text\n\nYou can :" \
-	0 0 7 \
+	$DELTA $DELTA 7 \
 	"create" "a flavor" \
 	"modify" "a flavor" \
 	"export" "a flavor" \
@@ -912,6 +912,7 @@ while [ $# != 0 ]; do
     --dialog)
 	interf=dialog
 	DIALOG=dialog
+	DELTA=-1
 	dialog --version >/dev/null 2>&1
 	if [ $? = 0 ]; then
 	    dialcomp="''"
@@ -922,6 +923,7 @@ while [ $# != 0 ]; do
     --xdialog)
 	interf=dialog
 	DIALOG=Xdialog
+	DELTA=0
 	;;
     --text)
 	interf=text
@@ -935,6 +937,3 @@ done
 main
 
 exit 0
-
-
-

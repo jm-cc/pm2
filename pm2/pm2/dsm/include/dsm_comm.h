@@ -22,18 +22,19 @@
 #include "pm2.h" //pm2_completion_init, etc.
 
 #define INSTRUMENT 1
+#undef INSTRUMENT
 
-void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access, int tag);
+void dsm_send_page_req(dsm_node_t dest_node, dsm_page_index_t index, dsm_node_t req_node, dsm_access_t req_access, int tag);
 
-void dsm_invalidate_copyset(unsigned long index, dsm_node_t new_owner);
+void dsm_invalidate_copyset(dsm_page_index_t index, dsm_node_t new_owner);
 
-void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t access, int tag);
+void dsm_send_page(dsm_node_t dest_node, dsm_page_index_t index, dsm_access_t access, int tag);
 
-void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm_access_t access, void *user_addr, int user_length, int tag);
+void dsm_send_page_with_user_data(dsm_node_t dest_node, dsm_page_index_t index, dsm_access_t access, void *user_addr, int user_length, int tag);
 
-void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_node_t new_owner);
+void dsm_send_invalidate_req(dsm_node_t dest_node, dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner);
 
-void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index);
+void dsm_send_invalidate_ack(dsm_node_t dest_node, dsm_page_index_t index);
 
 #define RECEIVE_PAGE_FILE "/tmp/dsm_pm2_dynamic_page"
 void dsm_unpack_page(void *addr, unsigned long size);
@@ -43,22 +44,23 @@ void dsm_rpc_dump_instrumentation(void);
 #endif
 
 void dsm_comm_init();
+
 /***********************  Hyperion stuff: ****************************/
 
-void dsm_send_diffs(unsigned long index, dsm_node_t dest_node);
+void dsm_send_diffs(dsm_page_index_t index, dsm_node_t dest_node);
 
-void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node, pm2_completion_t* c);
+void dsm_send_diffs_start(dsm_page_index_t index, dsm_node_t dest_node, pm2_completion_t* c);
 void dsm_send_diffs_wait(pm2_completion_t* c);
 
 #define dsm_begin_send_multiple_diffs(dest_node)  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_MULTIPLE_DIFFS, NULL)
 
-static __inline__ void dsm_pack_diffs(unsigned long index) __attribute__ ((unused));
-static __inline__ void dsm_pack_diffs(unsigned long index)
+static __inline__ void dsm_pack_diffs(dsm_page_index_t index) __attribute__ ((unused));
+static __inline__ void dsm_pack_diffs(dsm_page_index_t index)
 {
   void *addr;
   int size;
 
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(unsigned long)); 
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t)); 
   while ((addr = dsm_get_next_modified_data(index, &size)) != NULL) 
     { 
       pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&addr, sizeof(void *)); 
@@ -106,14 +108,14 @@ static __inline__ void dsm_begin_send_multiple_page_req(dsm_node_t dest_node, ds
  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));
 }
 
-#define dsm_pack_page_req(index) pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long))
+#define dsm_pack_page_req(index) pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t))
 
 static __inline__ void  dsm_end_send_multiple_page_req()  __attribute__ ((unused));
 static __inline__ void  dsm_end_send_multiple_page_req()
 {
- int end = -1;
+ dsm_page_index_t end = -1;
 
- pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&end, sizeof(unsigned long));
+ pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&end, sizeof(dsm_page_index_t));
  pm2_rawrpc_end();
 }
 
@@ -140,8 +142,8 @@ static __inline__ void dsm_begin_send_multiple_pages(dsm_node_t dest_node, dsm_a
  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));
 }
 
-static __inline__ void dsm_pack_page(unsigned long index) __attribute__ ((unused));
-static __inline__ void dsm_pack_page(unsigned long index)
+static __inline__ void dsm_pack_page(dsm_page_index_t index) __attribute__ ((unused));
+static __inline__ void dsm_pack_page(dsm_page_index_t index)
 {
   void *addr = dsm_get_page_addr(index);
   unsigned long page_size = dsm_get_page_size(index);

@@ -28,4 +28,6 @@ void module_update_with_current_flavor(void);
 
 void module_save_to_flavor(void);
 
+extern char *known_static_modules[];
+
 #endif

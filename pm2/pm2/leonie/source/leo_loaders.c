@@ -31,8 +31,6 @@
  * ============================
  */
 
-#define LEO_SILENT_MODE
-// #define LEO_DETACH_MODE
 // #define LEO_DEBUG_MODE
 // #define LEO_MAD_DEBUG_MODE
 // #define LEO_TBX_DEBUG_MODE
@@ -45,18 +43,6 @@
  * Leonie loaders general modes information
  * ========================================
  */
-
-#ifdef LEO_SILENT_MODE
-#warning [1;33m<<< [1;37mLeonie loaders silent mode:       [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders silent mode:       [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_SILENT_MODE
-
-#ifdef LEO_DETACH_MODE
-#warning [1;33m<<< [1;37mLeonie loaders detach mode:       [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders detach mode:       [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_DETACH_MODE
 
 #ifdef LEO_DEBUG_MODE
 #warning [1;33m<<< [1;37mLeonie loaders debug mode:        [1;32mactivated [1;33m    >>>[0m
@@ -245,6 +231,12 @@ leo_default_loader(char              *application_name,
 	rsh_command = tbx_command_init_to_c_string(leo_rsh);
 	args = rsh_command->arguments;
 
+	if (strstr(leo_rsh, "ssh"))
+	  {
+	    // tbx_arguments_append_c_strings_option(args, "-f", 0, NULL);
+	    tbx_arguments_append_c_strings_option(args, "-n", 0, NULL);
+	  }
+
 	tbx_arguments_append_c_strings_option(args, host_name, 0, NULL);
 
 	tbx_arguments_append_strings_option(args, env_command_string,
@@ -269,16 +261,6 @@ leo_default_loader(char              *application_name,
 
 	if (!pid)
 	  {
-#if defined(LEO_DETACH_MODE) || defined(LEO_SILENT_MODE)
-	    close(STDIN_FILENO);
-	    close(STDOUT_FILENO);
-	    close(STDERR_FILENO);
-#endif // LEO_DETACH_MODE || LEO_SILENT_MODE
-
-#ifdef LEO_DETACH_MODE
-	    setpgrp();
-#endif // LEO_DETACH_MODE
-
 	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
 	    leo_error("execvp");

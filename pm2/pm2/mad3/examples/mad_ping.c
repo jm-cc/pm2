@@ -63,8 +63,12 @@ static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
-static const int param_one_way           = 1;
-static const int param_unreliable        = 1;
+static const int param_one_way           = 0;
+static const int param_unreliable        = 0;
+static const int param_dynamic_allocation	= 0;
+#ifdef MARCEL
+static const int param_nb_working_threads	= 0;
+#endif /* MARCEL */
 
 static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;
@@ -79,7 +83,7 @@ static unsigned char *main_buffer = NULL;
 
 #ifndef STARTUP_ONLY
 static void
-mark_buffer(int len) TBX_UNUSED;
+mark_buffer(int len);
 
 static void
 mark_buffer(int len)
@@ -99,7 +103,7 @@ mark_buffer(int len)
 }
 
 static void
-clear_buffer(void) TBX_UNUSED;
+clear_buffer(void);
 
 static void
 clear_buffer(void)
@@ -114,7 +118,7 @@ fill_buffer(void)
 }
 
 static void
-control_buffer(int len) TBX_UNUSED;
+control_buffer(int len);
 
 static void
 control_buffer(int len)
@@ -145,6 +149,11 @@ control_buffer(int len)
   if (!ok)
     {
       DISP("%d bytes reception failed", len);
+      FAILURE("data corruption");
+    }
+  else
+    {
+      DISP("ok");
     }
 }
 
@@ -241,6 +250,23 @@ process_results(p_mad_channel_t     channel,
 
 static
 void
+cond_alloc_main_buffer(size_t size) {
+  if (param_dynamic_allocation) {
+    main_buffer = tbx_aligned_malloc(size, MAD_ALIGNMENT);
+  }
+}
+
+static
+void
+cond_free_main_buffer(void) {
+  if (param_dynamic_allocation) {
+    tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
+  }
+}
+
+
+static
+void
 ping(p_mad_channel_t      channel,
      ntbx_process_lrank_t lrank_dst)
 {
@@ -249,7 +275,7 @@ ping(p_mad_channel_t      channel,
   LOG_IN();
   DISP_VAL("ping with", lrank_dst);
 
-  if (param_fill_buffer)
+  if (!param_dynamic_allocation && param_fill_buffer)
     {
       fill_buffer();
     }
@@ -258,6 +284,8 @@ ping(p_mad_channel_t      channel,
     {
       p_mad_connection_t connection = NULL;
 
+
+      cond_alloc_main_buffer(param_max_size);
       connection = mad_begin_packing(channel, lrank_dst);
       if (param_unreliable)
         {
@@ -277,11 +305,14 @@ ping(p_mad_channel_t      channel,
         }
 
       mad_end_packing(connection);
+      cond_free_main_buffer();
 
+      cond_alloc_main_buffer(param_max_size);
       connection = mad_begin_unpacking(channel);
       mad_unpack(connection, main_buffer, param_max_size,
 		 param_send_mode, param_receive_mode);
       mad_end_unpacking(connection);
+      cond_free_main_buffer();
     }
 
   for (size = param_min_size;
@@ -305,6 +336,7 @@ ping(p_mad_channel_t      channel,
 	  TBX_GET_TICK(t1);
 	  while (nb_tests--)
 	    {
+              cond_alloc_main_buffer(_size);
 	      connection = mad_begin_packing(channel, lrank_dst);
               if (param_unreliable)
                 {
@@ -324,6 +356,7 @@ ping(p_mad_channel_t      channel,
                 }
 
 	      mad_end_packing(connection);
+              cond_free_main_buffer();
 	    }
 
 	  connection = mad_begin_unpacking(channel);
@@ -347,6 +380,7 @@ ping(p_mad_channel_t      channel,
 		{
 		  p_mad_connection_t connection = NULL;
 
+                  cond_alloc_main_buffer(_size);
 		  connection = mad_begin_packing(channel, lrank_dst);
                   if (param_unreliable)
                     {
@@ -361,16 +395,28 @@ ping(p_mad_channel_t      channel,
                     }
                   else
                     {
+                      if (param_control_receive) {
+                        mark_buffer(_size);
+                      }
+
                       mad_pack(connection, main_buffer, _size,
                                param_send_mode, param_receive_mode);
                     }
 
 		  mad_end_packing(connection);
 
+                  if (!param_unreliable && param_control_receive) {
+                    clear_buffer();
+                  }
+
 		  connection = mad_begin_unpacking(channel);
 		  mad_unpack(connection, main_buffer, _size,
 			     param_send_mode, param_receive_mode);
 		  mad_end_unpacking(connection);
+                  if (!param_unreliable && param_control_receive) {
+                    control_buffer(_size);
+                  }
+                  cond_free_main_buffer();
 		}
 	      TBX_GET_TICK(t2);
 
@@ -404,7 +450,7 @@ pong(p_mad_channel_t      channel,
   LOG_IN();
   DISP_VAL("pong with", lrank_dst);
 
-  if (param_fill_buffer)
+  if (!param_dynamic_allocation && param_fill_buffer)
     {
       fill_buffer();
     }
@@ -413,11 +459,14 @@ pong(p_mad_channel_t      channel,
     {
       p_mad_connection_t connection = NULL;
 
+      cond_alloc_main_buffer(param_max_size);
       connection = mad_begin_unpacking(channel);
       mad_unpack(connection, main_buffer, param_max_size,
 		 param_send_mode, param_receive_mode);
       mad_end_unpacking(connection);
+      cond_free_main_buffer();
 
+      cond_alloc_main_buffer(param_max_size);
       connection = mad_begin_packing(channel, lrank_dst);
       if (param_unreliable)
         {
@@ -436,6 +485,7 @@ pong(p_mad_channel_t      channel,
                    param_send_mode, param_receive_mode);
         }
       mad_end_packing(connection);
+      cond_free_main_buffer();
     }
 
   for (size = param_min_size;
@@ -453,10 +503,12 @@ pong(p_mad_channel_t      channel,
 
 	  while (nb_tests--)
 	    {
+              cond_alloc_main_buffer(_size);
 	      connection = mad_begin_unpacking(channel);
 	      mad_unpack(connection, main_buffer, _size,
 			 param_send_mode, param_receive_mode);
 	      mad_end_unpacking(connection);
+              cond_free_main_buffer();
 	    }
 
 	  connection = mad_begin_packing(channel, lrank_dst);
@@ -492,6 +544,7 @@ pong(p_mad_channel_t      channel,
 		{
 		  p_mad_connection_t connection = NULL;
 
+                  cond_alloc_main_buffer(_size);
 		  connection = mad_begin_unpacking(channel);
 		  mad_unpack(connection, main_buffer, _size,
 			     param_send_mode, param_receive_mode);
@@ -515,6 +568,7 @@ pong(p_mad_channel_t      channel,
                                param_send_mode, param_receive_mode);
                     }
 		  mad_end_packing(connection);
+                  cond_free_main_buffer();
 		}
 	    }
 	}
@@ -739,29 +793,28 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 }
 #endif // STARTUP_ONLY
 
-/*
- * Warning: this function is automatically renamed to marcel_main when
- * appropriate
- */
-int
-main(int    argc,
-     char **argv)
-{
-  p_mad_madeleine_t madeleine = NULL;
+#ifdef MARCEL
+static
+void *
+working_thread(void *arg) {
+        marcel_detach(marcel_self());
+
+        while (1) {
+                /* nothing */
+        }
+
+        return NULL;
+}
+
+#endif /* MARCEL */
+
+void *
+pseudo_main(void *_madeleine) {
+  p_mad_madeleine_t madeleine = _madeleine;
   p_mad_session_t   session   = NULL;
 #ifndef STARTUP_ONLY
   p_tbx_slist_t     slist     = NULL;
 #endif // STARTUP_ONLY
-
-#ifdef USE_MAD_INIT
-  madeleine = mad_init(&argc, argv);
-  TRACE("Returned from mad_init");
-#else // USE_MAD_INIT
-  common_pre_init(&argc, argv, NULL);
-  common_post_init(&argc, argv, NULL);
-  TRACE("Returned from common_init");
-  madeleine = mad_get_madeleine();
-#endif // USE_MAD_INIT
 
   session       = madeleine->session;
   process_grank = session->process_rank;
@@ -775,11 +828,24 @@ main(int    argc,
   DISP_VAL("The configuration size is",
 	   tbx_slist_get_length(madeleine->dir->process_slist));
 
+#ifdef MARCEL
+  if (param_nb_working_threads > 0) {
+          int i = 0;
+
+          for (i = 0; i < param_nb_working_threads; i++) {
+                  marcel_t t;
+                  marcel_create(&t, NULL, working_thread, NULL);
+          }
+  }
+#endif /* MARCEL */
+
 #ifndef STARTUP_ONLY
   slist = madeleine->public_channel_slist;
   if (!tbx_slist_is_nil(slist))
     {
-      main_buffer = tbx_aligned_malloc(param_max_size, MAD_ALIGNMENT);
+      if (!param_dynamic_allocation) {
+        main_buffer = tbx_aligned_malloc(param_max_size, MAD_ALIGNMENT);
+      }
 
       tbx_slist_ref_to_head(slist);
       do
@@ -792,13 +858,54 @@ main(int    argc,
 	}
       while (tbx_slist_ref_forward(slist));
 
-      tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
+      if (!param_dynamic_allocation) {
+        tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
+      }
     }
   else
     {
       DISP("No channels");
     }
 #endif // STARTUP_ONLY
+
+  return NULL;
+}
+
+
+/*
+ * Warning: this function is automatically renamed to marcel_main when
+ * appropriate
+ */
+int
+main(int    argc,
+     char **argv)
+{
+  p_mad_madeleine_t madeleine = NULL;
+
+#ifdef USE_MAD_INIT
+  madeleine = mad_init(&argc, argv);
+  TRACE("Returned from mad_init");
+#else // USE_MAD_INIT
+  common_pre_init(&argc, argv, NULL);
+  common_post_init(&argc, argv, NULL);
+  TRACE("Returned from common_init");
+  madeleine = mad_get_madeleine();
+#endif // USE_MAD_INIT
+
+#ifdef MARCEL
+ {
+   marcel_attr_t attr;
+   marcel_t t;
+
+   marcel_attr_init(&attr);
+   //marcel_attr_setrealtime(&attr, 1);
+   marcel_create(&t, &attr, pseudo_main, madeleine);
+   marcel_join(t, NULL);
+ }
+#else /* MARCEL */
+  pseudo_main(madeleine);
+#endif /* MARCEL */
+
 
   DISP("Exiting");
 

@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_slist_management.c,v $
+Revision 1.6  2000/06/08 13:57:24  oaumage
+- Corrections diverses
+
 Revision 1.5  2000/06/07 08:58:38  oaumage
 - Suppression de Warnings
 
@@ -344,9 +347,9 @@ tbx_slist_get(p_tbx_slist_reference_t ref)
 }
 
 /* ------------- */
-void
+static void
 tbx_slist_elt_append_head(p_tbx_slist_t         slist,
-			  p_tbx_slist_element_t slist_element) __attribute__((unused));
+			  p_tbx_slist_element_t slist_element) TBX_UNUSED;
 
 static void
 tbx_slist_elt_append_head(p_tbx_slist_t         slist,
@@ -370,9 +373,9 @@ tbx_slist_elt_append_head(p_tbx_slist_t         slist,
   LOG_OUT();
 }
 
-void
+static void
 tbx_slist_elt_append_tail(p_tbx_slist_t         slist,
-			  p_tbx_slist_element_t slist_element) __attribute__((unused));
+			  p_tbx_slist_element_t slist_element) TBX_UNUSED;
 
 static void
 tbx_slist_elt_append_tail(p_tbx_slist_t         slist,
@@ -396,8 +399,8 @@ tbx_slist_elt_append_tail(p_tbx_slist_t         slist,
   LOG_OUT();
 }
 
-p_tbx_slist_element_t
-tbx_slist_elt_extract_head(p_tbx_slist_t slist) __attribute__((unused));
+static p_tbx_slist_element_t
+tbx_slist_elt_extract_head(p_tbx_slist_t slist) TBX_UNUSED;
 
 static p_tbx_slist_element_t
 tbx_slist_elt_extract_head(p_tbx_slist_t slist)
@@ -427,8 +430,8 @@ tbx_slist_elt_extract_head(p_tbx_slist_t slist)
     FAILURE("empty slist");
 }
 
-p_tbx_slist_element_t
-tbx_slist_elt_extract_tail(p_tbx_slist_t slist) __attribute__((unused));
+static p_tbx_slist_element_t
+tbx_slist_elt_extract_tail(p_tbx_slist_t slist) TBX_UNUSED;
 
 static p_tbx_slist_element_t
 tbx_slist_elt_extract_tail(p_tbx_slist_t slist)
@@ -458,9 +461,9 @@ tbx_slist_elt_extract_tail(p_tbx_slist_t slist)
     FAILURE("empty slist");
 }
 
-void
+static void
 tbx_slist_elt_add_after(p_tbx_slist_reference_t ref,
-			p_tbx_slist_element_t   slist_element) __attribute__((unused));
+			p_tbx_slist_element_t   slist_element) TBX_UNUSED;
 
 static void
 tbx_slist_elt_add_after(p_tbx_slist_reference_t ref,
@@ -489,9 +492,9 @@ tbx_slist_elt_add_after(p_tbx_slist_reference_t ref,
   LOG_OUT();
 }
 
-void
+static void
 tbx_slist_elt_add_before(p_tbx_slist_reference_t ref,
-			 p_tbx_slist_element_t   slist_element) __attribute__((unused));
+			 p_tbx_slist_element_t   slist_element) TBX_UNUSED;
 
 static void
 tbx_slist_elt_add_before(p_tbx_slist_reference_t ref,
@@ -518,8 +521,8 @@ tbx_slist_elt_add_before(p_tbx_slist_reference_t ref,
   LOG_OUT();
 }
 
-p_tbx_slist_element_t
-tbx_slist_elt_remove(p_tbx_slist_reference_t ref) __attribute__((unused));
+static p_tbx_slist_element_t
+tbx_slist_elt_remove(p_tbx_slist_reference_t ref) TBX_UNUSED;
 
 static p_tbx_slist_element_t
 tbx_slist_elt_remove(p_tbx_slist_reference_t ref)

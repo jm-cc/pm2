@@ -35,33 +35,25 @@
 
 #include <pm2.h>
 
-static unsigned SAMPLE, COMPLETED;
-static marcel_sem_t sem;
+static unsigned SAMPLE;
 
 static void SAMPLE_service(void)
 {
   char msg[1024];
+  pm2_completion_t c;
 
   mad_unpack_str(MAD_IN_HEADER, msg);
+  pm2_completion_unpack(&c);
   pm2_rawrpc_waitdata();
 
   pm2_printf("%s\n", msg);
 
-  pm2_rawrpc_begin(0, COMPLETED, NULL);
-  pm2_rawrpc_end();
-}
-
-static void COMPLETED_service(void)
-{
-  pm2_rawrpc_waitdata();
-
-  marcel_sem_V(&sem);
+  pm2_completion_signal(&c);
 }
 
 int pm2_main(int argc, char **argv)
 {
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
-  pm2_rawrpc_register(&COMPLETED, COMPLETED_service);
 
   pm2_init(&argc, argv);
 
@@ -73,14 +65,16 @@ int pm2_main(int argc, char **argv)
   }
 
   if(pm2_self() == 0) { /* first process */
+    pm2_completion_t c;
 
-    marcel_sem_init(&sem, 0);
+    pm2_completion_init(&c);
 
     pm2_rawrpc_begin(1, SAMPLE, NULL);
     mad_pack_str(MAD_IN_HEADER, "Hello world!");
+    pm2_completion_pack(&c);
     pm2_rawrpc_end();
 
-    marcel_sem_P(&sem);
+    pm2_completion_wait(&c);
 
     pm2_halt();
   }

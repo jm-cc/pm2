@@ -1,6 +1,6 @@
 from optparse import OptionParser
 
-def cmdline_parse(session):
+def cmdline_parse(session, args):
     """Parse the command line arguments."""
     
     usage = 'usage: %prog [options] FILENAME -- [appli options]'
@@ -15,6 +15,9 @@ def cmdline_parse(session):
     parser.add_option('-n', '--net',	dest='net',
                       metavar='NETCFG',
                       help='set network configuration FILENAME')
+    parser.add_option('-t', '--trace',	dest='trace',
+                      metavar='LOGCFG',
+                      help='set Python logging module configuration FILENAME')
 
     parser.add_option('-x', '--xterm',
                       action='store_true', dest='xterm_mode', default=True)
@@ -34,7 +37,12 @@ def cmdline_parse(session):
     parser.add_option('-D', '--nogdb',
                       action='store_false', dest='gdb_mode')
 
-    (session.options, session.args) = parser.parse_args()
+    parser.add_option('-y', '--dyn',
+                      action='store_true', dest='dyn_mode', default=False)
+    parser.add_option('-Y', '--nodyn',
+                      action='store_false', dest='dyn_mode')
+
+    (session.options, session.args) = parser.parse_args(args)
     
     if len(session.args) < 1:
         parser.error('incorrect number of arguments')

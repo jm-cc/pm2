@@ -16,7 +16,7 @@
 /*
  * leo_includes.c
  * ==============
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -62,7 +62,7 @@ process_network_include_file(p_leo_networks_t networks,
     {
       if (tbx_slist_is_nil(network_slist))
 	goto empty_list;
-      
+
       tbx_slist_merge_after(networks->slist, network_slist);
 
       do
@@ -71,10 +71,10 @@ process_network_include_file(p_leo_networks_t networks,
 	  p_tbx_htable_t       network_entry = NULL;
 	  p_tbx_htable_t       old_entry     = NULL;
 	  char                *name          = NULL;
-	  
+
 	  object = tbx_slist_remove_from_head(network_slist);
 	  network_entry = leoparse_get_htable(object);
-	  
+
 	  name      = leoparse_read_id(network_entry, "name");
 	  old_entry = tbx_htable_get(networks->htable, name);
 
@@ -105,15 +105,15 @@ include_network_files(p_leo_networks_t networks,
   LOG_IN();
   filename_htable = tbx_htable_empty_table();
 
-  tbx_slist_ref_to_head(include_files_slist);      
+  tbx_slist_ref_to_head(include_files_slist);
   do
     {
       p_leoparse_object_t  object         = NULL;
       char                *filename       = NULL;
-      
+
       object = tbx_slist_ref_get(include_files_slist);
       filename = leoparse_get_id(object);
-      
+
       if (!tbx_htable_get(filename_htable, filename))
 	{
 	  p_tbx_htable_t include_htable = NULL;
@@ -123,7 +123,7 @@ include_network_files(p_leo_networks_t networks,
 
 	  include_htable = leoparse_parse_local_file(filename);
 	  process_network_include_file(networks, include_htable);
-	  
+
 	  tbx_htable_free(include_htable);
 	  include_htable = NULL;
 	}

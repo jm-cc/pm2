@@ -26,7 +26,7 @@
 
 /* Global data structures for the protocol policy module */
 
-#define NB_BUILT_IN_PROTOCOLS 2
+#define NB_BUILT_IN_PROTOCOLS 4
 
 typedef struct _dsm_protocol_t
 {

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_pointers.h,v $
+Revision 1.5  2001/01/03 11:05:28  oaumage
+- integration des headers du module de forwarding
+
 Revision 1.4  2000/11/10 14:17:55  oaumage
 - nouvelle procedure d'initialisation
 
@@ -101,6 +104,11 @@ typedef struct s_mad_cluster              *p_mad_cluster_t;
 
 /* ... Virtual channel characteristics ............................... */
 typedef struct s_mad_channel_description  *p_mad_channel_description_t;
+
+#ifdef MAD_FORWARDING
+/* ... User channel characteristics .................................. */
+typedef struct s_mad_user_channel_t       *p_mad_user_channel_t;
+#endif /* MAD_FORWARDING */
 
 #endif /* MAD_POINTERS_H */
 

@@ -34,6 +34,39 @@
 
 ______________________________________________________________________________
 $Log: bitmap.c,v $
+Revision 1.6  2000/07/14 16:17:09  gantoniu
+Merged with branch dsm3
+
+Revision 1.5.10.3  2000/07/12 15:10:46  gantoniu
+*** empty log message ***
+
+Revision 1.5.10.2  2000/06/23 16:52:22  gantoniu
+Minor changes.
+
+Revision 1.5.10.1  2000/06/13 16:44:07  gantoniu
+New dsm branch.
+
+Revision 1.5.8.3  2000/06/09 17:55:52  gantoniu
+Added support for alignment of dynamic allocated data. Thread stacks are now
+guaranteed to be aligned with respect to THREAD_SLOT_SIZE whatever the
+isoaddress page distribution may be.
+
+Revision 1.5.8.2  2000/06/07 18:06:11  gantoniu
+Worked on aligned stack alignment.
+
+Revision 1.5.8.1  2000/06/07 09:19:38  gantoniu
+Merging new dsm with current PM2 : first try.
+
+Revision 1.5.4.2  2000/04/30 18:54:06  gantoniu
+Extended negociation procedure to allow multi-slot data allocation.
+Negociation ok (old RPCs).
+
+Revision 1.5.4.1  2000/04/10 18:50:43  gantoniu
+Ajout couche isoaddr + integration d'une table generale des pages
+(isomalloc + dsm), avec les fonctions de gestion associees.
+
+Tests ok avec les examples isomalloc.
+
 Revision 1.5  2000/02/28 11:16:55  rnamyst
 Changed #include <> into #include "".
 
@@ -92,6 +125,10 @@ ______________________________________________________________________________
 
 #define SEQUENCE_OF_1(n) (((n)==32)?0xffffffff:((1 << (n)) - 1))
 
+static int _bitmap_size = BITMAP_SIZE;
+static int _bitmap_size_in_words = BITMAP_SIZE_IN_WORDS;
+
+
 static int first_bit_set(unsigned k)
 {
   /*
@@ -137,7 +174,7 @@ int first_bit_to_1(unsigned int *crt_bitmap)
      This function has no side effects; the next call to
     "first_bit_to_1()" will return the same address.  
   */
-  unsigned int i = 0, max = BITMAP_SIZE;
+  unsigned int i = 0, max = _bitmap_size_in_words;
 
   /*
     Look for the first non-zero word.
@@ -194,7 +231,7 @@ int first_series_of_1_from_offset(unsigned int *crt_bitmap, int bitmap_size, int
 }
       
  
-int get_first_bit_to_1(bitmap_t crt_bitmap)
+int get_first_bit_to_1(unsigned int *crt_bitmap)
 {
   /* 
      Returns the rank of the first slot that can be mmapped and marks
@@ -209,7 +246,7 @@ int get_first_bit_to_1(bitmap_t crt_bitmap)
 }
 
 
-void set_bits_to_1(unsigned int start, unsigned int n,  bitmap_t crt_bitmap)
+void set_bits_to_1(unsigned int start, unsigned int n,  unsigned int *crt_bitmap)
 {
   /* 
      Sets to 1 'n' contiguous bits in the given bitmap, starting at
@@ -220,7 +257,9 @@ void set_bits_to_1(unsigned int start, unsigned int n,  bitmap_t crt_bitmap)
               last_word = (end - 1) >> 5;
  if (n <= 0)
    return;
- 
+#ifdef DEBUG 
+ fprintf(stderr,"set_bits_to_1: %d from %d; touched from %p to %p\n",n,start, &crt_bitmap[first_word], &crt_bitmap[last_word]);
+#endif
 
  if (first_word == last_word)
      /* 
@@ -244,7 +283,7 @@ void set_bits_to_1(unsigned int start, unsigned int n,  bitmap_t crt_bitmap)
 }
 
 
-void reset_bits_to_0(unsigned int start, unsigned int n, bitmap_t crt_bitmap )
+void reset_bits_to_0(unsigned int start, unsigned int n, unsigned int *crt_bitmap )
 {
   /* 
      Resets to 0 'n' contiguous bits in the given bitmap, starting at
@@ -253,7 +292,9 @@ void reset_bits_to_0(unsigned int start, unsigned int n, bitmap_t crt_bitmap )
  unsigned int end = start + n, 
               first_word = start >> 5,
               last_word = (end - 1 ) >> 5;
- 
+#ifdef DEBUG 
+ fprintf(stderr,"reset to 0: touches from %p to %p\n", &crt_bitmap[first_word], &crt_bitmap[last_word]);
+#endif 
  if (first_word == last_word)
    crt_bitmap[first_word] &= ~(((1 << n) - 1) << (start % 32));
  else
@@ -312,6 +353,25 @@ static int count_msb_set_to_1(unsigned int word, unsigned int *crt_bitmap)
 }
 
 
+int count_aligned_msb_set_to_1(unsigned int word, unsigned int *crt_bitmap, unsigned int align)
+{
+   unsigned int width, mask;
+
+   width = align; 
+   mask = ~(SEQUENCE_OF_1(WORD_SIZE - width)); 
+
+   while((crt_bitmap[word] & mask) == mask)
+     { 
+       width += align; 
+       if (width > WORD_SIZE)
+	 break;
+       mask = ~(SEQUENCE_OF_1(WORD_SIZE - width)); 
+     } 
+
+   return width - align;
+}
+
+
 int first_bits_to_1(unsigned int n, unsigned int *crt_bitmap)
 {
   /* 
@@ -326,7 +386,7 @@ int first_bits_to_1(unsigned int n, unsigned int *crt_bitmap)
 
 if (n < WORD_SIZE)
   {
-    while(k < BITMAP_SIZE)
+    while(k < _bitmap_size_in_words)
       {
 	mask = SEQUENCE_OF_1(n);
 	i = 0;
@@ -360,7 +420,7 @@ if (n < WORD_SIZE)
      int nb;
      unsigned int k1;
  
-     while (k < BITMAP_SIZE)
+     while (k < _bitmap_size_in_words)
        {
 	 if (n >= WORD_SIZE * 2 - 1) /* At least a full word set to 0xffffffff is required */
 	   /*
@@ -435,6 +495,194 @@ if (n < WORD_SIZE)
 }
 
 
+int first_bits_to_1_aligned(unsigned int n, unsigned int *crt_bitmap, unsigned int align)
+{
+  /* 
+     Returns the rank of the first bit in the first series of n
+     contiguous bits set to 1 in the bitmap (starting from the lsb), where
+     the first bit is aligned with respect to 'align'.  This last parameter
+     needs to be a power of 2.  This function has no side effects; the next
+     call to "first_bits_set_to_1()" will return the same rank.  
+  */
+ unsigned int mask, remainder_mask;
+ int remainder, k = 0, k1;
+ int i;
+
+#ifdef DEBUG 
+ fprintf(stderr,"aligned: n = %d, align = %d\n", n, align);
+#endif
+
+ if (align < WORD_SIZE)
+   {
+     if (n < WORD_SIZE)
+       {
+	 while(k < _bitmap_size_in_words)
+	   {
+	     mask = SEQUENCE_OF_1(n);
+	     i = 0;
+	     while( (i < WORD_SIZE) && ((crt_bitmap[k] & mask) != mask))
+	       {
+		 SHIFT_TO_LEFT(mask, align); 
+		 i+=align;
+	       }
+	     if (i <= WORD_SIZE - (int)n)
+	       /*
+		 n contiguous bits set 1 have been found.
+		 */
+	       return (k * WORD_SIZE) + i;
+	     else
+	       if (i < WORD_SIZE)
+		 {
+		   /*
+		     Less than n contiguous bits set 1 have been found.
+		     Check if the remaining necessary bits are set to 1 
+		     in the next word.
+		     */
+		   remainder_mask = SEQUENCE_OF_1(n - WORD_SIZE + i);
+		   if ((crt_bitmap[k + 1] & remainder_mask) == remainder_mask)
+		     return ((k * WORD_SIZE) + i);
+		 }
+	     k++;
+	   }
+       }
+     else
+       {
+	 int nb;
+	 
+	 while (k < _bitmap_size_in_words)
+	   {
+	     if (n >= WORD_SIZE * 2 - 1) /* At least a full word set to 0xffffffff is required */
+	       /*
+		 Look for the next word set to 0xffffffff
+		 */
+	   while (crt_bitmap[k] != ALL_BITS_SET_TO_1)
+	     k++;
+	     else
+	       /*
+		Look for the next word whose 'align' msb are set to 1
+		*/
+	       {
+		 mask = SHIFTED_TO_LEFT(SEQUENCE_OF_1(align), WORD_SIZE - align);
+		 while ((crt_bitmap[k] & mask) != mask)
+		   k++;
+		 k++; /* !! For uniformity reasons !! */
+	      }
+	     /* 
+		In both cases above we are now interested in the
+		msb set to 1 in the word k - 1.
+		*/
+	     nb = (k > 0)?count_aligned_msb_set_to_1(k - 1, crt_bitmap, align):0;
+	     
+	    /*
+	      Count the remaining bits that are necessary and the index where to start checking.
+	      */
+	     if(n >= WORD_SIZE * 2 - 1)
+	       {
+		 remainder = (int)n - WORD_SIZE - nb;
+		 k1 = k + 1;
+	       }
+	     else
+	       {
+		 remainder = (int)n - nb;
+		 k1 = k;
+	       }
+	     /* 
+		As long as the remainder is longer than a word, check word by word, if
+		all bits are set to 1.
+		*/
+	     while (remainder >= WORD_SIZE) 
+	       if (crt_bitmap[k1] != ALL_BITS_SET_TO_1)
+		 break;
+	       else
+		 {
+		   remainder -= WORD_SIZE;
+		   k1++;
+		 }
+	     /*
+	       Here the remainder (if it exists) is shorted than a word.
+	       Check if all remaining bits are set to 1.
+	       */
+	     if ((remainder < WORD_SIZE) && (remainder != 0))
+	       {
+		 remainder_mask = SEQUENCE_OF_1(remainder);
+		 if ((crt_bitmap[k1] & remainder_mask) == remainder_mask)
+		   return (k * WORD_SIZE - nb);
+	       }
+	     /*
+	       Not enough contiguous bits set to 1. Keep searching...
+	       Note that when looking for a word whose bits are all set to 1, 
+	       the search may go on with the word k1 + 1, since the word k1 is
+	       guaranteed to have a zero, otherwise the test above would not 
+	       have failed. Nevertheless, then looking for a word whose msb is set
+	       to 1, the search must go on with the word k1.
+	       */
+	     
+	     k+=(n >= WORD_SIZE * 2 - 1)?k1 + 1: k1;
+	   }
+       }
+     return -1;
+   }
+ else /* align >= 32 */
+   {
+     int step = align/WORD_SIZE;
+     
+     if (n <= WORD_SIZE)
+      {
+	mask = SEQUENCE_OF_1(n);
+	while (k < _bitmap_size_in_words)
+	  {
+	    if ((crt_bitmap[k] & mask) != mask)
+	      k+= step;
+	    else
+	      return k * WORD_SIZE;
+	  }
+	return -1;
+      }
+    else /* n > WORD_SIZE and  align is a multiple of WORD_SIZE */
+      {
+	while (k < _bitmap_size_in_words) 
+	  {
+	    if (crt_bitmap[k] == ALL_BITS_SET_TO_1)
+	      {
+		/* Found 32 bits set to 1 */
+		remainder = (int)n - WORD_SIZE;
+		k1 = k + 1;
+		/* 
+		   As long as the remainder is longer than a word, check word by word, if
+		   all bits are set to 1.
+		*/
+		while (remainder >= WORD_SIZE) 
+		  {
+		    if (crt_bitmap[k1] != ALL_BITS_SET_TO_1)
+		      break;
+		    else
+		      {
+			remainder -= WORD_SIZE;
+			k1++;
+		      }
+		  }
+		/*
+		  Here the remainder (if it exists) is shorter than a word.
+		  Check if all remaining bits are set to 1.
+		  */
+		if (remainder == 0 )
+		  return k * WORD_SIZE;
+		else
+		  if (remainder < WORD_SIZE)
+		    {
+		      remainder_mask = SEQUENCE_OF_1(remainder);
+		      if ((crt_bitmap[k1] & remainder_mask) == remainder_mask)
+			return k * WORD_SIZE;
+		    }
+	      }
+	    k+=step;
+	  }
+	return -1;
+      }
+   }
+}
+
+
 int get_first_bits_to_1(unsigned int n, unsigned int *crt_bitmap)
 {
   /* 
@@ -453,7 +701,27 @@ int get_first_bits_to_1(unsigned int n, unsigned int *crt_bitmap)
    return -1;
 }
 
-void OR_bitmaps_1(bitmap_t dest, bitmap_t src1, bitmap_t src2)
+
+int get_first_bits_to_1_aligned(unsigned int n, unsigned int *crt_bitmap, unsigned int align)
+{
+  /* Returns the rank of the first bit in the first series of n
+     contiguous bits set to 1 in the bitmap (starting from the lsb),
+     where the first bit is aligned with respect to 'align' and resets
+     them to 0.  Thus, this function has side effects; the next call
+     to "get_first_bits_set_to_1()" will return another value.  */
+
+ int i = first_bits_to_1_aligned(n, crt_bitmap, align);
+ if (i != -1)
+   {
+     reset_bits_to_0(i, n, crt_bitmap);
+     return i;
+   }
+ else
+   return -1;
+}
+
+
+void OR_bitmaps_1(unsigned int *dest, unsigned int *src1, unsigned int *src2)
 {
   unsigned int *p, *p1, *p2;
   int j;
@@ -462,12 +730,12 @@ void OR_bitmaps_1(bitmap_t dest, bitmap_t src1, bitmap_t src2)
   p2 = (unsigned int *)src2; 
   p = (unsigned int *)dest; 
 
-  for (j = 0 ; j < BITMAP_SIZE; j++, p++, p1++, p2++) 
+  for (j = 0 ; j < _bitmap_size_in_words; j++, p++, p1++, p2++) 
    *p = *p1 | *p2; 
 }
 
 
-void OR_bitmaps_2(bitmap_t dest, bitmap_t src)
+void OR_bitmaps_2(unsigned int *dest, unsigned int *src)
 {
   unsigned int *p, *p1;
   int j;
@@ -475,33 +743,33 @@ void OR_bitmaps_2(bitmap_t dest, bitmap_t src)
   p1 = (unsigned int *)src; 
   p = (unsigned int *)dest; 
 
-  for (j = 0 ; j < BITMAP_SIZE; j++, p++, p1++) 
+  for (j = 0 ; j < _bitmap_size_in_words; j++, p++, p1++) 
     *p |= *p1; 
 }
 
 
-void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned int period, int nb_cycles, bitmap_t crt_bitmap)
+void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned int period, int nb_cycles, unsigned int *crt_bitmap)
 {
   int j;
  
   if (bits_to_1 > period)
     RAISE(PROGRAM_ERROR); 
 
-  /* Do not go beyond MAX_BITS */ 
-  if (start + bits_to_1 > MAX_BITS)
+  /* Do not go beyond _bitmap_size */ 
+  if (start + bits_to_1 > _bitmap_size)
     return;
 
   if (nb_cycles == -1) 
     /* 
        Fill in the whole bitmap.
     */
-    nb_cycles = (MAX_BITS - start)/period;
+    nb_cycles = (_bitmap_size - start)/period;
 
   for (j = 0 ; j < nb_cycles; j++, start += period)
     set_bits_to_1(start, bits_to_1, crt_bitmap);
-#ifdef DEBUG
+  //#ifdef DEBUG
   fprintf(stderr, "last local slot: %d\n", start + bits_to_1 - 1);
-#endif
+  //#endif
 
 }
 
@@ -520,3 +788,14 @@ int bitmap_is_empty(unsigned int *crt_bitmap, int size)
 }
 
 
+void bitmap_set_size(int size)
+{
+  _bitmap_size = size;
+  _bitmap_size_in_words = size >> 5;
+}
+
+
+int bitmap_get_size()
+{
+ return _bitmap_size;
+}

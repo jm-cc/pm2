@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.c,v 1.8 2002/10/27 14:09:14 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.c,v 1.9 2002/11/29 18:44:20 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -25,7 +25,7 @@ static int * cluster_colors = NULL;
 
 
 /**********************************************************************/
-/* PUBLIC GLOBAL VARIABLES                      */
+/* PUBLIC GLOBAL VARIABLES                                            */
 /**********************************************************************/
 
 const int NO_COLOR = ((int)(-1));

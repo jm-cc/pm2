@@ -33,8 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
+#include "pm2.h"
 #include "custom.h"
+
 #include <ctype.h>
 #include <stdlib.h>
 

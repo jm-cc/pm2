@@ -8,7 +8,7 @@ f (void *arg)
   int *p;
   int proc;
 
-  p = (int *) malloc (sizeof (*p));
+  p = (int *) malloc (sizeof (*p));	/* Here! */
 
   *p = 1234;
 
@@ -38,7 +38,7 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       pm2_thread_create (f, NULL);
     }
 

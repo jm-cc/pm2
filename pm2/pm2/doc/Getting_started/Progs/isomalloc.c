@@ -8,11 +8,11 @@ service (void *arg)
   int **p, *q;
   int proc;
 
-  p = (int **) pm2_isomalloc (sizeof (*p));
-  q = (int *) pm2_isomalloc (sizeof (*q));
+  p = (int **) pm2_isomalloc (sizeof (*p));	/* Here! */
+  q = (int *) pm2_isomalloc (sizeof (*q));	/* Here! */
 
-  *p = q;
-  *q = 1234;
+  *p = q;			/* Here! */
+  *q = 1234;			/* Here! */
 
   pm2_enable_migration ();
   proc = pm2_self ();
@@ -22,7 +22,7 @@ service (void *arg)
 	   pm2_self (), hostname, p, *p, **p);
 
   proc = (proc + 1) % pm2_config_size ();
-  pm2_migrate_self (proc);
+  pm2_migrate_self (proc);	/* Here! */
 
   tprintf ("Then, I am on node %d, host %s...\n"
 	   "p = %p, *p = %p, **p = %d\n",
@@ -41,7 +41,7 @@ pm2_main (int argc, char *argv[])
   gethostname (hostname, 128);
   pm2_init (&argc, argv);
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       pm2_thread_create (service, NULL);
     }
   pm2_exit ();

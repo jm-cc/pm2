@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.10  2000/02/28 11:46:05  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.9  2000/02/08 17:49:44  oaumage
 - support de la net toolbox
 - mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
@@ -91,7 +94,7 @@ ______________________________________________________________________________
  */
 
 /* MadII header files */
-#include <madeleine.h>
+#include "madeleine.h"
 
 /* system header files */
 #include <stdlib.h>

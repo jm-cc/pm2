@@ -34,6 +34,13 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.11  2000/03/02 15:45:46  oaumage
+- support du polling Nexus
+
+Revision 1.10  2000/03/02 14:25:06  oaumage
+- optimisation: envoi d'un buffer lorsqu'un groupe est de taille 1,
+  et le mode est split
+
 Revision 1.9  2000/02/28 11:06:14  rnamyst
 Changed #include "" into #include <>.
 
@@ -135,6 +142,73 @@ mad_begin_packing(p_mad_channel_t   channel,
   return connection;
 }
 
+#ifdef MAD_NEXUS
+p_mad_connection_t
+mad_message_ready(p_mad_channel_t channel)
+{
+  p_mad_driver_interface_t   interface =
+    &(channel->adapter->driver->interface);
+  p_mad_connection_t         connection;
+  mad_link_id_t              link_id;
+  
+  LOG_IN();
+  TRACE("New reception request");
+  TIME_INIT();
+  
+  PM2_LOCK_SHARED(channel);
+#ifdef PM2
+  if (channel->reception_lock == tbx_true)
+    {
+      PM2_UNLOCK_SHARED(channel) ;
+      return NULL;
+    }
+#else /* PM2 */
+  /* NOTE: the test and the affectation must be done
+     atomically in a multithreaded environnement*/
+  if (channel->reception_lock == tbx_true)
+    FAILURE("mad_begin_unpacking: reception dead lock");
+#endif /* PM2 */
+  channel->reception_lock = tbx_true;
+  PM2_UNLOCK_SHARED(channel);
+
+  /* now we wait for an incoming communication */
+
+  if (!(connection = interface->poll_message(channel)))
+    {
+      LOG_OUT();
+      return NULL;
+    }
+
+  if (connection->lock == tbx_true)
+    FAILURE("connection dead lock");
+
+   tbx_list_init(&(connection->buffer_list));
+   tbx_list_init(&(connection->buffer_group_list));
+   tbx_list_init(&(connection->user_buffer_list));
+   tbx_list_reference_init(&(connection->user_buffer_list_reference),
+			   &(connection->user_buffer_list));
+   
+  for(link_id = 0;
+      link_id < connection->nb_link;
+      link_id++)
+    {
+      tbx_list_init(&(connection->link[link_id].buffer_list));
+      tbx_list_init(&(connection->link[link_id].user_buffer_list));
+    }
+  
+  connection->lock            = tbx_true;
+  connection->send            = tbx_false;
+  connection->pair_list_used  = tbx_false;
+  connection->delayed_send    = tbx_false;
+  connection->flushed         = tbx_true;
+  connection->last_link       = NULL;
+  connection->first_sub_buffer_group = tbx_true;
+  connection->more_data       = tbx_false;
+  LOG_OUT();
+  return connection;
+}
+#endif /* MAD_NEXUS */
+
 p_mad_connection_t
 mad_begin_unpacking(p_mad_channel_t channel)
 {
@@ -206,7 +280,7 @@ mad_end_packing(p_mad_connection_t connection)
   mad_link_id_t              link_id;
   p_mad_driver_interface_t   interface =
     &(connection->channel->adapter->driver->interface);
-
+  
   LOG_IN();
   LOG_PTR("mad_end_packing: ", connection->specific);
   TIME_INIT();
@@ -234,7 +308,16 @@ mad_end_packing(p_mad_connection_t connection)
 	      mad_make_buffer_group(&buffer_group,
 				    buffer_list,
 				    last_link);
-	      interface->send_buffer_group(last_link, &buffer_group);
+	      if (last_link->group_mode == mad_group_mode_split
+		  && buffer_group.buffer_list.length == 1)
+		{
+		  interface->send_buffer(last_link,
+					 buffer_group.buffer_list.first->object);
+		}
+	      else
+		{
+		  interface->send_buffer_group(last_link, &buffer_group);
+		}
 	    }
 	  else
 	    FAILURE("invalid link mode");
@@ -295,7 +378,16 @@ mad_end_packing(p_mad_connection_t connection)
 	  p_mad_buffer_group_t buffer_group ;
 
 	  buffer_group = tbx_get_list_reference_object(&list_ref);
-	  interface->send_buffer_group(buffer_group->link, buffer_group);
+	  if (   buffer_group->link->group_mode == mad_group_mode_split
+	      && buffer_group->buffer_list.length == 1)
+	    {
+	      interface->send_buffer(buffer_group->link,
+				     buffer_group->buffer_list.first->object);
+	    }
+	  else
+	    {
+	      interface->send_buffer_group(buffer_group->link, buffer_group);
+	    }
 	}
       while (tbx_forward_list_reference(&list_ref));
     }
@@ -314,7 +406,16 @@ mad_end_packing(p_mad_connection_t connection)
 	  mad_make_buffer_group(&buffer_group,
 				&(link->buffer_list),
 				link);
-	  interface->send_buffer_group(link, &buffer_group);
+	  if (   link->group_mode == mad_group_mode_split
+	      && buffer_group.buffer_list.length == 1)
+	    {
+	      interface->send_buffer(link,
+				     buffer_group.buffer_list.first->object);
+	    }
+	  else
+	    {
+	      interface->send_buffer_group(link, &buffer_group);
+	    }
 	  }
     }
   
@@ -415,10 +516,20 @@ mad_end_unpacking(p_mad_connection_t connection)
 	      mad_make_buffer_group(&buffer_group,
 				    src_list,
 				    last_link);
-	      interface->
-		receive_sub_buffer_group(last_link,
-					 connection->first_sub_buffer_group,
-					 &buffer_group);
+	      if (last_link->group_mode == mad_group_mode_split
+		  && buffer_group.buffer_list.length == 1)
+		{
+		  interface->
+		    receive_buffer(last_link,
+				   (p_mad_buffer_t *)&buffer_group.buffer_list.first->object);
+		}
+	      else
+		{
+		  interface->
+		    receive_sub_buffer_group(last_link,
+					     connection->first_sub_buffer_group,
+					     &buffer_group);
+		}	      
 	    }
 	}
       else if (connection->last_link_mode == mad_link_mode_buffer)
@@ -483,8 +594,21 @@ mad_end_unpacking(p_mad_connection_t connection)
 	      mad_buffer_group_t buffer_group;
 	      
 	      mad_make_buffer_group(&buffer_group, src_list, link);
-	      interface->
-		receive_sub_buffer_group(link, tbx_true, &buffer_group);
+
+	      if (link->group_mode == mad_group_mode_split
+		  && buffer_group.buffer_list.length == 1)
+		{
+		  interface->
+		    receive_buffer(link,
+				   (p_mad_buffer_t *)&buffer_group.buffer_list.first->object);
+		}
+	      else
+		{
+		  interface->
+		    receive_sub_buffer_group(link,
+					     connection->first_sub_buffer_group,
+					     &buffer_group);
+		}	      
 	    }
 	}
     }
@@ -534,7 +658,7 @@ mad_pack(p_mad_connection_t   connection,
   p_tbx_list_t               dest_list         = &(connection->buffer_list);
   p_tbx_list_t               buffer_group_list =
     &(connection->buffer_group_list);
-  
+
   LOG_IN();
   LOG_PTR("mad_pack (1): ", connection->specific);
   TIME_INIT();
@@ -624,7 +748,16 @@ mad_pack(p_mad_connection_t   connection,
 	      mad_buffer_group_t buffer_group;
 	      
 	      mad_make_buffer_group(&buffer_group, dest_list, last_link);
-	      interface->send_buffer_group(last_link, &buffer_group);
+	      if (last_link->group_mode == mad_group_mode_split
+		  && buffer_group.buffer_list.length == 1)
+		{
+		  interface->send_buffer(last_link,
+					 buffer_group.buffer_list.first->object);
+		}
+	      else
+		{
+		  interface->send_buffer_group(last_link, &buffer_group);
+		}
 	    }
 	  else
 	    FAILURE("invalid link mode");
@@ -824,7 +957,15 @@ mad_pack(p_mad_connection_t   connection,
 	      mad_buffer_group_t buffer_group;
 		  
 	      mad_make_buffer_group(&buffer_group, dest_list, link);
-	      interface->send_buffer_group(link, &buffer_group);
+	      if (buffer_group.buffer_list.length == 1)
+		{
+		  interface->send_buffer(link,
+					 buffer_group.buffer_list.first->object);
+		}
+	      else
+		{
+		  interface->send_buffer_group(link, &buffer_group);
+		}
 	    }
 	  else
 	    {
@@ -1093,11 +1234,21 @@ mad_unpack(p_mad_connection_t   connection,
 		  mad_make_buffer_group(&buffer_group,
 					src_list,
 					last_link);
-		  interface->
-		    receive_sub_buffer_group(last_link,
-					     connection->
-					     first_sub_buffer_group,
-					    &buffer_group);
+
+		  if (last_link->group_mode == mad_group_mode_split
+		      && buffer_group.buffer_list.length == 1)
+		    {
+		      interface->
+			receive_buffer(last_link,
+				       (p_mad_buffer_t *)&buffer_group.buffer_list.first->object);
+		    }
+		  else
+		    {
+		      interface->
+			receive_sub_buffer_group(last_link,
+						 connection->first_sub_buffer_group,
+						 &buffer_group);
+		    }
 		}
 	    }
 	  else if (connection->last_link_mode == mad_link_mode_buffer)
@@ -1219,11 +1370,21 @@ mad_unpack(p_mad_connection_t   connection,
 
 		  tbx_append_list(src_list, destination);
 		  mad_make_buffer_group(&buffer_group, src_list, link);
-		  interface->
-		    receive_sub_buffer_group(link,
-					     connection->
-					     first_sub_buffer_group,
-					     &buffer_group);
+
+		  if (link->group_mode == mad_group_mode_split
+		      && buffer_group.buffer_list.length == 1)
+		    {
+		      interface->
+			receive_buffer(link,
+				       (p_mad_buffer_t *)&buffer_group.buffer_list.first->object);
+		    }
+		  else
+		    {
+		      interface->
+			receive_sub_buffer_group(link,
+						 connection->first_sub_buffer_group,
+						 &buffer_group);
+		    }	      
 		  
 		  connection->flushed                = tbx_true;
 		  connection->more_data              = tbx_false;

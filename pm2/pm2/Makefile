@@ -63,7 +63,7 @@
 # MADELEINE.
 #
 
-GLOBAL_OPTIONS	=	-Wall -g # -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
+GLOBAL_OPTIONS	=	-Wall -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
 TOOLBOX         =       no
@@ -134,6 +134,7 @@ PM2_OBJ		:=	$(PM2_SRC)/obj/$(PM2_ARCH_SYS)
 PM2_INC		:=	$(PM2_ROOT)/include
 PM2_LIBD	:=	$(PM2_ROOT)/lib/$(PM2_ARCH_SYS)
 
+ifneq ($(MAKECMDGOALS),distclean) # avoid auto-building of directories
 ifneq ($(wildcard $(PM2_DEP)),$(PM2_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(PM2_DEP))
 endif
@@ -144,6 +145,7 @@ endif
 
 ifneq ($(wildcard $(PM2_LIBD)),$(PM2_LIBD))
 DUMMY_BUILD	:=	$(shell mkdir -p $(PM2_LIBD))
+endif
 endif
 
 PM2_LIB		=	$(PM2_LIBD)/libpm2.a

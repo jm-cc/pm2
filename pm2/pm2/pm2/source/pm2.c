@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: pm2.c,v $
+Revision 1.11  2000/01/31 15:58:26  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #include <pm2.h>
@@ -225,10 +233,13 @@ void pm2_halt()
   int i;
   unsigned tag = NETSERVER_END;
 
-  for(i=0; i<__conf_size; i++) {
-    if(i == __pm2_self && !mad_can_send_to_self()) {
+  if (!mad_can_send_to_self())
+    {
       netserver_stop();
-    } else {
+    }
+  
+  for(i=0; i<__conf_size; i++) {
+    if (!(i == __pm2_self && !mad_can_send_to_self())) {
 #ifdef MAD2
       int c;
 

@@ -46,6 +46,9 @@ include $(PM2_ROOT)/make/libs-vars.mak
 
 -include $(PM2_MAK_DIR)/profile-specific.mak
 
+# The profile.c file includes fut_entries.h, but it cannot be actually
+# detected by make depend since there would be a circular dependency
+# problem...
 ifneq ($(MAKECMDGOALS),fut)
 $(LIB_GEN_OBJ)/profile.o: $(LIB_GEN_INC)/fut_entries.h
 endif
@@ -67,15 +70,27 @@ include $(PM2_ROOT)/make/libs-vars.mak
 
 -include $(PM2_MAK_DIR)/profile-specific.mak
 
+ifneq ($(LIB_GEN_BIN),)
+DUMMY_BUILD := $(shell mkdir -p $(LIB_GEN_BIN))
+endif
+
 .PHONY: default fut_files lib fut
-default: fut_files $(LIB_GEN_INC)/fut_entries.h lib
+default: fut_files $(LIB_GEN_INC)/fut_entries.h $(LIB_GEN_BIN)/fut_print lib
 
 .PHONY: fut_files
 fut_files:
 	$(COMMON_HIDE) $(MAKE) -C ${PM2_ROOT} fut
 
+# The $(LIB_GEN_STAMP)/fut_stamp file is touched whenever one .fut
+# file is generated (see libs-rules.mak)
+
 $(LIB_GEN_INC)/fut_entries.h: $(LIB_GEN_STAMP)/fut_stamp
 	$(LIB_PREFIX) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
+
+$(LIB_GEN_BIN)/fut_print: $(LIB_GEN_INC)/fut_entries.h
+
+$(LIB_GEN_BIN)/fut_print: ./bin/src/fut_print.c
+	$(LIB_PREFIX) $(CC) -g -o $@ -I./include -I${LIB_GEN_INC} $<
 
 $(LIB_GEN_STAMP)/fut_stamp: $(LIB_STAMP_FLAVOR)
 	$(COMMON_HIDE) set -e; \

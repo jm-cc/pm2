@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.h,v $
+Revision 1.6  2000/08/29 13:27:29  rnamyst
+Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
+
 Revision 1.5  2000/05/29 08:59:23  vdanjean
 work added (mainly for SMP and ACT), minor modif in polling
 
@@ -72,7 +75,8 @@ typedef void *(*marcel_poll_func_t)(marcel_pollid_t id,
 				    unsigned blocked);
 
 typedef void *(*marcel_fastpoll_func_t)(marcel_pollid_t id,
-					any_t arg);
+					any_t arg,
+					boolean first_call);
 
 #define MARCEL_POLL_AT_TIMER_SIG  1
 #define MARCEL_POLL_AT_YIELD      2
@@ -85,6 +89,7 @@ marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
 				     unsigned polling_points);
 
 #define MARCEL_POLL_FAILED                NULL
+#define MARCEL_POLL_OK                    (void*)1
 #define MARCEL_POLL_SUCCESS(id)           ((id)->cur_cell)
 #define MARCEL_POLL_SUCCESS_FOR(pollinst) (pollinst)
 
@@ -97,7 +102,6 @@ void marcel_poll(marcel_pollid_t id, any_t arg);
 
 #define GET_CURRENT_POLLINST(id) ((id)->cur_cell)
 
-
 _PRIVATE_ typedef struct _poll_struct {
   unsigned polling_points;
   unsigned nb_cells;
@@ -106,7 +110,21 @@ _PRIVATE_ typedef struct _poll_struct {
   struct _poll_cell_struct *first_cell, *cur_cell;
   struct _poll_struct *prev, *next;
   marcel_pollgroup_func_t gfunc;
+  void *specific;
 } poll_struct_t;
+
+static __inline__ void marcel_pollid_setspecific(marcel_pollid_t id,
+						 void *specific)
+{
+  id->specific = specific;
+}
+
+static __inline__ void *marcel_pollid_getspecific(marcel_pollid_t id)
+{
+  return id->specific;
+}
+
+// =============== PRIVATE ===============
 
 _PRIVATE_ typedef struct _poll_cell_struct {
   marcel_t task;

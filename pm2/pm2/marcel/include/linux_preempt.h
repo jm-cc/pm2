@@ -45,10 +45,21 @@ do { \
         ma_barrier(); \
 } while (0)
 
+#ifndef MA__WORK
+#define check_work()
+#else
+#define check_work() \
+do { \
+	if (HAS_DEVIATE_WORK(MARCEL_SELF)) \
+		do_work(MARCEL_SELF); \
+} while (0)
+#endif
+
 #define ma_preempt_enable_no_resched() \
 do { \
         ma_barrier(); \
         ma_preempt_count_dec(); \
+        check_work(); \
 } while (0)
 
 #define ma_preempt_check_resched() \

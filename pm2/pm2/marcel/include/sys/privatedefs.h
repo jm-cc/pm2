@@ -199,4 +199,8 @@ _PRIVATE_ enum {
   NORMAL_RETURN
 };
 
+#ifdef __ACT__
+_PRIVATE_ extern int nb_idle_sleeping;
+#endif
+
 #endif

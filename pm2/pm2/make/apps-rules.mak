@@ -84,8 +84,11 @@ include $(PM2_ROOT)/make/common-rules.mak
 all: examples
 
 examples:
+	@echo before step 1
 	$(COMMON_HIDE) $(MAKE_LIBS)
+	@echo between step 1 and step 2
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
+	@echo after step 2
 
 .PHONY: clean appclean repclean libclean
 clean: appclean repclean

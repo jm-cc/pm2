@@ -223,20 +223,22 @@ static __inline__ void ma_lock_task(void)
 static __inline__ void ma_unlock_task(void) __attribute__ ((unused));
 static __inline__ void ma_unlock_task(void)
 {
+  marcel_t cur __attribute__ ((unused)) = marcel_self();
+
+  if(atomic_read(&GET_LWP(cur)->_locked) == 1) {
+
 #ifdef MARCEL_RT
-  if(__rt_task_exist &&
-     atomic_read(&GET_LWP(marcel_self())->_locked) == 1 &&
-     !MA_TASK_REAL_TIME(marcel_self()))
-    ma__marcel_find_and_yield_to_rt_task();
+    if(__rt_task_exist && !MA_TASK_REAL_TIME(cur))
+      ma__marcel_find_and_yield_to_rt_task();
 #endif
 
 #ifdef MA__WORK
-  if ((atomic_read(&GET_LWP(marcel_self())->_locked) == 1) 
-      && (marcel_self()->has_work || marcel_global_work)) {
-    do_work(marcel_self());
-  }
+    if(cur->has_work)
+      do_work(cur);
 #endif
-  atomic_dec(&GET_LWP(marcel_self())->_locked);
+  }
+
+  atomic_dec(&GET_LWP(cur)->_locked);
 
 #if defined(PM2DEBUG) && defined(MA__ACTIVATION)
   pm2debug_flush();
@@ -344,7 +346,18 @@ _PRIVATE_ void marcel_one_more_task(marcel_t pid);
 
 _PRIVATE_ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock);
 _PRIVATE_ void marcel_tempo_give_hand(unsigned long timeout, boolean *blocked, marcel_sem_t *s);
-_PRIVATE_ void marcel_wake_task(marcel_t t, boolean *blocked);
+
+_PRIVATE_ void ma_wake_task(marcel_t t, boolean *blocked);
+
+_PRIVATE_ static __inline__
+void marcel_wake_task(marcel_t t, boolean *blocked) __attribute__ ((unused));
+void marcel_wake_task(marcel_t t, boolean *blocked)
+{
+  state_lock(t);
+  ma_wake_task(t, blocked);
+  state_unlock(t);
+}
+
 _PRIVATE_ marcel_t marcel_unchain_task_and_find_next(marcel_t t, 
 						     marcel_t find_next);
 _PRIVATE_ void marcel_insert_task(marcel_t t);

@@ -63,8 +63,6 @@ typedef __ma_u32 ma_u32;
 typedef __ma_s64 ma_s64;
 typedef __ma_u64 ma_u64;
 
-#define MA_BITS_PER_LONG 64
-
 /* DMA addresses are 64-bits wide, in general.  */
 
 typedef ma_u64 ma_dma_addr_t;
@@ -73,3 +71,6 @@ typedef ma_u64 ma_dma_addr_t;
 //#endif /* !__ASSEMBLY__ */
 
 //#endif /* _ASM_IA64_TYPES_H */
+#section macros
+#define MA_BITS_PER_LONG 64
+

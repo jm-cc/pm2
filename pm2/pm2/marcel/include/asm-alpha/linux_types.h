@@ -33,8 +33,6 @@ typedef unsigned int __ma_u32;
 typedef __signed__ long __ma_s64;
 typedef unsigned long __ma_u64;
 
-#define BITS_PER_LONG 64
-
 typedef signed char ma_s8;
 typedef unsigned char ma_u8;
 
@@ -46,4 +44,7 @@ typedef unsigned int ma_u32;
 
 typedef signed long ma_s64;
 typedef unsigned long ma_u64;
+
+#section macros
+#define BITS_PER_LONG 64
 

@@ -51,8 +51,6 @@ typedef unsigned long long __ma_u64;
  */
 //#ifdef __KERNEL__
 
-#define MA_BITS_PER_LONG 32
-
 //#ifndef __ASSEMBLY__
 
 //#include <linux/config.h>
@@ -72,4 +70,7 @@ typedef unsigned long long ma_u64;
 //#endif /* __ASSEMBLY__ */
 
 //#endif /* __KERNEL__ */
+
+#section macros
+#define MA_BITS_PER_LONG 32
 

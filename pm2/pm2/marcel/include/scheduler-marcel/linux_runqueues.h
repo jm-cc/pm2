@@ -19,6 +19,7 @@
  */
 
 #section marcel_macros
+#depend "asm/linux_types.h[macros]"
 /*
  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL tasks are
@@ -46,7 +47,7 @@
 
 #define ma_rt_task(p)		((p)->sched.internal.prio < MA_MAX_RT_PRIO)
 
-#define MA_BITMAP_SIZE ((((MA_MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
+#define MA_BITMAP_SIZE ((MA_MAX_PRIO+1+MA_BITS_PER_LONG)/MA_BITS_PER_LONG)
 
 #section marcel_structures
 #depend "pm2_list.h"

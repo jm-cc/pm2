@@ -89,7 +89,7 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&page_size, sizeof(unsigned long));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&reply_node, sizeof(dsm_node_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&access, sizeof(dsm_access_t));
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
+  pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
   pm2_rawrpc_end();
 #ifdef DEBUG3
   fprintf(stderr, "Page %d sent -> %d for %s, a = %d \n", index, dest_node, (access == 1)?"read":"write", ((atomic_t *)addr)->counter);
@@ -166,13 +166,13 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
   old_access = dsm_get_access(index);
 
   //     fprintf(stderr, "lock_task: I am %p \n", marcel_self());  
-  lock_task();
+  // lock_task();
   dsm_protect_page(addr, WRITE_ACCESS); // to enable the page to be copied
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
+  //unlock_task();
+  pm2_rawrpc_waitdata(); 
   if (old_access != access)
     dsm_protect_page(addr, old_access);
-  unlock_task();
-  pm2_rawrpc_waitdata(); 
   (*dsm_get_receive_page_server(index))(addr, access, reply_node);
 }
 

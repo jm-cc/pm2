@@ -49,7 +49,7 @@ if [ -f ${PM2_CONF_FILE} ] ; then
     for node in $*
     do
 	echo On "$node":
-        ${PM2_RSH:-rsh} $node $cmd 
+        ${PM2_RSH:-ssh} $node $cmd 
     done
 else
     error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\"."

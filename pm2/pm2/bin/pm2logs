@@ -92,6 +92,6 @@ fi
 for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do
     varname=`echo logs_on_host_$host | tr .- __`
     eval logs=\"\$$varname\"
-    ${PM2_RSH:-rsh} $host ${PM2_VLOCALLOGS} $host $logs
+    ${PM2_RSH:-ssh} $host ${PM2_VLOCALLOGS} $host $logs
 done
 

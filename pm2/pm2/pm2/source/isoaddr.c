@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.4  2000/09/04 07:42:47  rnamyst
+Minor modifs (removed some debug messages)
+
 Revision 1.3  2000/07/20 09:04:16  oaumage
 - Corrections diverses
 
@@ -218,8 +221,9 @@ static int _page_distrib_arg = 16;
 
 #ifdef min
 #undef min
-#define min(a,b) ((a) < (b))?(a):(b)
 #endif /* min */
+
+#define min(a,b) ((a) < (b))?(a):(b)
 
 static void _page_ownership_init()
 {

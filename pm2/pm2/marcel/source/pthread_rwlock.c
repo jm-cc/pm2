@@ -21,7 +21,11 @@
 
 #include "marcel.h" //VD:
 
+#ifdef __USE_UNIX98 // AD:
+
+#ifdef LINUX_SYS // AD:
 #include <bits/libc-lock.h>
+#endif
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -693,3 +697,6 @@ DEF_MARCEL_POSIX(int,
   return 0;
 }
 DEF_PTHREAD(rwlockattr_setkind_np)
+
+
+#endif // __USE_UNIX98 (AD:)

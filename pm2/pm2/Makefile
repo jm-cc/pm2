@@ -298,5 +298,11 @@ sos:
 	./bin/pm2-flavor check --flavor=$(FLAVOR) ; \
 	echo "Humm... Well, all should be ok now!"
 
+.PHONY: lines
+lines: distclean
+	( for i in * ; do \
+		echo "$$(cat /dev/null $$(find $$i -type f ! -path '*SCCS/*' ! -path '*BitKeeper/*' ) | wc -l) $$(basename $$i)" ; \
+	done ) | xdu
+
 # Fin du Makefile
 ######################################################################

@@ -18,8 +18,8 @@
  * ===========
  */
 
-#ifndef MAD_H
-#define MAD_H
+#ifndef MADELEINE_H
+#define MADELEINE_H
 
 /*
  * Checks
@@ -110,5 +110,4 @@
 #include "mad_main.h"
 #include "mad_exit.h"
 
-#endif /* MAD_H */
-
+#endif /* MADELEINE_H */

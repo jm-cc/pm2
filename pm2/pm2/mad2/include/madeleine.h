@@ -145,13 +145,13 @@ char *mad_arch_name(void);
 
 boolean mad_can_send_to_self(void);
 
-void *mad_sendbuf_init(int dest_node);
+void mad_sendbuf_init(p_mad_channel_t channel, int dest_node);
 
 void mad_sendbuf_send(void);
 
 void mad_sendbuf_free(void);
 
-void mad_receive(void);
+void mad_receive(p_mad_channel_t channel);
 
 void mad_recvbuf_receive(void);
 

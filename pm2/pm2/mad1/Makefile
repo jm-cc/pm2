@@ -33,31 +33,32 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MASTER_MODULE =  MAD1
-COMMON_DEFAULT_TARGET :=  mad_default
+LIBRARY=mad1
+LIBNAME=mad
 
-ifndef MAD1_ROOT
-MAD_ROOT := $(PM2_ROOT)/mad1
-MAD1_ROOT := $(MAD_ROOT)
-else
-MAD_ROOT :=  $(MAD1_ROOT)
-endif
+#marcel_CC=gcc
+#marcel_AS=gcc
 
-include $(PM2_ROOT)/make/master_vars.mak
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/libs-vars.mak
 
-COMMON_CFLAGS += -DNET_ARCH=\"$(NET_INTERF)\" $(NET_INIT)
+LIB_PROT := $(shell $(PM2_CONFIG) --protocols $(LIBRARY))
+LIB_C_SOURCES_ADDED := $(LIB_SRC)/$(LIB_PROT)/netinterf.c
+LIB_C_OBJECTS_ADDED := $(LIB_GEN_OBJ)/netinterf$(LIB_EXT).o
+LIB_C_PICS_ADDED := $(LIB_GEN_OBJ)/netinterf$(LIB_EXT).pic
+LIB_C_DEPENDS_ADDED := $(LIB_GEN_DEP)/netinterf$(LIB_EXT).d
+LIB_OBJECTS += $(LIB_C_OBJECTS_ADDED)
+LIB_PICS += $(LIB_C_PICS_ADDED)
 
-# Ce makefile
-COMMON_MAKEFILES +=  $(MAD_ROOT)/Makefile 
+include $(PM2_ROOT)/make/libs-rules.mak
 
-# Inclusion des variables
-include $(MAD_MAKE)/vars.mak
+$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/$(LIB_PROT)/%.c
+	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 
-# Regles principales
-include $(PM2_ROOT)/make/master_rules.mak
+$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC)/$(LIB_PROT)/%.c
+	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
 
-# Inclusion des regles de compilation
-include $(MAD_MAKE)/rules.mak
+$(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/$(LIB_PROT)/%.c
+	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
-
-##############################################################################

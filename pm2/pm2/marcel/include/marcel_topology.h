@@ -29,9 +29,11 @@ typedef unsigned ma_cpu_set_t;
 #define MA_CPU_SET(cpu, cpusetp)	(*(cpusetp)|=1UL<<(cpu))
 #define MA_CPU_CLR(cpu, cpusetp)	(*(cpusetp)&=~(1UL<<(cpu)))
 #define MA_CPU_ISSET(cpu, cpusetp)	((*(cpusetp)&(1UL<<(cpu))) != 0)
+#define MA_CPU_WEIGHT(cpusetp)		ma_hweight32(*(cpusetp))
 #else
 #define MA_CPU_FILL(cpusetp)		(*(cpusetp)=1)
 #define MA_CPU_SET(cpu, cpusetp)	MA_CPU_FILL(cpusetp)
 #define MA_CPU_CLR(cpu, cpusetp)	MA_CPU_ZERO(cpusetp)
 #define MA_CPU_ISSET(cpu, cpusetp)	(*(cpusetp))
+#define MA_CPU_WEIGHT(cpusetp)		(*(cpusetp))
 #endif

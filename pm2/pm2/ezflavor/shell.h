@@ -3,6 +3,7 @@
 #define SHELL_IS_DEF
 
 #include <stdlib.h>
+#include <unistd.h>
 
 
 // These three functions return the pid of the child process

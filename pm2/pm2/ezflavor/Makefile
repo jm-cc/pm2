@@ -5,7 +5,7 @@ OPTIONS		:=	-DUSE_TRACE
 
 CC		:=	gcc
 CFLAGS		:=	-O6 -Wall $(shell gtk-config --cflags) $(OPTIONS)
-LDFLAGS		:=	$(shell gtk-config --libs) -ll
+LDFLAGS		:=	$(shell gtk-config --libs) -lfl
 
 SOURCES		:=	$(wildcard *.c)
 
@@ -17,6 +17,7 @@ OBJECTS		:=	$(subst .c,.o,$(SOURCES))
 DEPENDS		:=	$(subst .c,.d,$(SOURCES))
 
 DEP_TO_OBJ	=	$(subst .d,.o,$@)
+LEX             =       flex
 
 default: $(PROGRAM)
 

@@ -22,6 +22,57 @@
 #include "madeleine.h"
 
 void
+mad_leonie_sync(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t session = NULL;
+  p_ntbx_client_t client  = NULL;
+  int             data    =    0;
+
+  LOG_IN();
+  TRACE("Termination sync");  
+  session = madeleine->session;
+  client  = session->leonie_link;
+
+  mad_ntbx_send_int(client, mad_leo_command_end);
+  data = mad_ntbx_receive_int(client);
+  if (data != 1)
+    FAILURE("synchronization error");
+
+  LOG_OUT();
+}
+
+void
+mad_leonie_link_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t session = NULL;
+  p_ntbx_client_t client  = NULL;
+
+  LOG_IN();
+  session        = madeleine->session;
+  client         = session->leonie_link;
+  
+  ntbx_tcp_client_disconnect(client);
+  ntbx_client_dest(client);
+  session->leonie_link = NULL;
+  LOG_OUT();
+}
+
+void
+mad_object_exit(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+
+
+
+
+
+
+
+#if 0
+void
 mad_close_channel(p_mad_channel_t channel)
 {
   p_mad_madeleine_t          madeleine   = NULL;
@@ -219,7 +270,7 @@ mad_close_channel(p_mad_channel_t channel)
   LOG_OUT();  
 }
 
-static
+
 void
 mad_leonie_sync(p_mad_madeleine_t madeleine)
 {
@@ -238,6 +289,7 @@ mad_leonie_sync(p_mad_madeleine_t madeleine)
     FAILURE("synchronization error");
 
   mad_dir_vchannel_exit(madeleine);
+#error supprimer l appel a mad_dir_vchannel_exit
   LOG_OUT();
 }
 
@@ -245,6 +297,7 @@ void
 mad_exit(p_mad_madeleine_t madeleine)
 {
   LOG_IN();
+#error mad_leonie_sync est appelee separement
   mad_leonie_sync(madeleine);
   LOG_OUT();
 
@@ -282,3 +335,4 @@ mad_exit(p_mad_madeleine_t madeleine)
   LOG_OUT();
 #endif // 0
 }
+#endif // 0

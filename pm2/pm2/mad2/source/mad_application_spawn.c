@@ -50,7 +50,7 @@
  * ---------------
  */
 static mad_madeleine_t main_madeleine;
-
+static p_mad_madeleine_t madeleine;
 /*
  * Initialisation des drivers
  * --------------------------
@@ -173,15 +173,15 @@ mad_generate_url(p_mad_madeleine_t madeleine)
  * --------------------------------------------
  */
 char *
-mad_pre_init(p_mad_adapter_set_t adapter_set)
+old_mad_pre_init(p_mad_adapter_set_t adapter_set)
 {
   p_mad_madeleine_t  madeleine  = &main_madeleine;
   int                dummy_argc = 1;
-  char              *dummy_argv[0] = "unavailable";
+  char              *dummy_argv[] = { NULL } ;
 
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
-  mad_managers_init(&argc, argv);
+  mad_managers_init(&dummy_argc, dummy_argv);
   LOG_IN(); /* After pm2debug_init ... */
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
@@ -270,7 +270,7 @@ mad_parse_url(p_mad_madeleine_t  madeleine,
  * --------
  */
 p_mad_madeleine_t
-mad_init(
+old_mad_init(
 	 ntbx_host_id_t  rank,
 	 char           *configuration_file,
 	 char           *url
@@ -347,31 +347,31 @@ mad_init(
 
 
 char *
-new_mad_pre_init(p_mad_adapter_set_t adapter_set)
+mad_pre_init(p_mad_adapter_set_t adapter_set)
 {
   p_mad_madeleine_t  madeleine     =    NULL;
   int                dummy_argc    =       1;
-  char              *dummy_argv[0] = "<N/A>";
+  char              *dummy_argv[] = { NULL } ;
 
-  tbx_init(*dummy_argc, dummy_argv);
-  ntbx_init(*dummy_argc, dummy_argv);
-  mad_memory_manager_init(*dummy_argc, dummy_argv);
+  tbx_init(dummy_argc, dummy_argv);
+  ntbx_init(dummy_argc, dummy_argv);
+  mad_memory_manager_init(dummy_argc, dummy_argv);
 
-  madeleine = mad_object_init(*dummy_argc, dummy_argv, NULL, adapter_set);
-  mad_network_components_init(madeleine, *dummy_argc, dummy_argv);
+  madeleine = mad_object_init(dummy_argc, dummy_argv, NULL, adapter_set);
+  mad_network_components_init(madeleine, dummy_argc, dummy_argv);
 
   return mad_generate_url(madeleine);
 }
 
 p_mad_madeleine_t
-new_mad_init(
+mad_init(
 	 ntbx_host_id_t  rank,
 	 char           *configuration_file,
 	 char           *url
 	 )
 {
   int                dummy_argc    =        1;
-  char              *dummy_argv[0] = "<N/A>";
+  char              *dummy_argv[] = { NULL };
 
   madeleine->configuration->local_host_id = rank;
 

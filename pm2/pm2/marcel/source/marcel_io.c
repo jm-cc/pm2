@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.7  2000/04/17 16:09:40  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.6  2000/04/17 08:31:51  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -140,7 +143,7 @@ static void *unix_io_poll(marcel_pollid_t id,
   fd_set rfds, wfds;
   struct timeval tv, *ptv;
   
-#ifndef MA__ACT
+#ifndef MA__ACTIVATION
   // Trop de messages avec les activations
   mdebug("Polling function called on LWP %d (%2d A, %2d S, %2d B)\n",
 	 marcel_current_vp(), active, sleeping, blocked);
@@ -151,7 +154,7 @@ static void *unix_io_poll(marcel_pollid_t id,
 
     timerclear(&tv);
     ptv = &tv;
-#ifndef MA__ACT
+#ifndef MA__ACTIVATION
   } else if(sleeping) {
     mdebug("E/S a duree limitee\n");
 

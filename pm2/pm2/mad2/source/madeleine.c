@@ -465,7 +465,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	{
 	  settings->debug_mode = tbx_true;
 	}
-      else if (!strcmp(*argv, "-rank"))
+      else if (!strcmp(*argv, "--mad-rank"))
 	{
 	  argc--; argv++;
 
@@ -474,7 +474,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 
 	  configuration->local_host_id = atoi(*argv);
 	}
-      else if (!strcmp(*argv, "-conf"))
+      else if (!strcmp(*argv, "--mad-conf"))
 	{
 	  argc--; argv++;
 
@@ -491,7 +491,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	      
 	  strcpy(settings->configuration_file, *argv);
 	}
-      else if (!strcmp(*argv, "-mad_app_cmd"))
+      else if (!strcmp(*argv, "--mad-app-cmd"))
 	{
 	  argc--; argv++;
 
@@ -506,7 +506,24 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	      
 	  strcpy(settings->app_cmd, *argv);
 	}
-      else if (!strcmp(*argv, "-device"))
+#ifdef APPLICATION_SPAWN
+      else if (!strcmp(*argv, "--mad-url"))
+	{
+	  argc--; argv++;
+
+	  if (!argc)
+	    FAILURE("url argument not found");
+
+	  if (settings->url)
+	    FAILURE("url specified more than once");
+
+	  settings->url = TBX_MALLOC(strlen(*argv) + 1);
+	  CTRL_ALLOC(settings->url);
+
+	  strcpy(settings->url, *argv);
+	}
+#endif
+      else if (!strcmp(*argv, "--mad-device"))
 	{
 	  argc--; argv++;
 
@@ -519,7 +536,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  strcpy(adapter->master_parameter, *argv);
 	  adapter++;
 	}
-      else if (!strcmp(*argv, "-cwd"))
+      else if (!strcmp(*argv, "--mad-cwd"))
 	{
 	  argc--; argv++;
 
@@ -732,7 +749,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	{
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*_argv, "-rank"))
+      else if (!strcmp(*_argv, "--mad-rank"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -742,7 +759,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--;
 
 	}
-      else if (!strcmp(*_argv, "-conf"))
+      else if (!strcmp(*_argv, "--mad-conf"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -751,7 +768,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*_argv, "-mad_app_cmd"))
+      else if (!strcmp(*_argv, "--mad-app-cmd"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -760,7 +777,16 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*_argv, "-device"))
+      else if (!strcmp(*_argv, "--mad-url"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("url argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*_argv, "--mad-device"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -769,7 +795,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*_argv, "-leonie"))
+      else if (!strcmp(*_argv, "--leonie"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -778,7 +804,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*_argv, "-link"))
+      else if (!strcmp(*_argv, "--mad-link"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -787,7 +813,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*_argv, "-cwd"))
+      else if (!strcmp(*_argv, "--mad-cwd"))
 	{
 	  _argv++; (*_argc)--; argc--;
 

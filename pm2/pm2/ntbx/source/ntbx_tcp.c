@@ -519,29 +519,36 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
 			      (struct sockaddr *)&remote_address,
 			      &remote_address_len)) == -1)
     {
-      if (errno == EINTR)
+      switch (errno)
 	{
-	  if (ntbx_tcp_retry(&retry) != ntbx_success)
-	    {
-	      client->state = ntbx_client_state_uninitialized;
-	      LOG_OUT();
-	      return ntbx_failure;
-	    }
-	}
-      else if (errno == EWOULDBLOCK)
-	{ 
-	  if (ntbx_tcp_retry(&retry) != ntbx_success)
-	    {
-	      client->state = ntbx_client_state_uninitialized;
-	      LOG_OUT();
-	      return ntbx_failure;
-	    }
-	}
-      else
-	{
-	  perror("accept");
-	  FAILURE("ntbx_tcp_server_accept");
-	}
+	case EINTR:
+	  {
+	    if (ntbx_tcp_retry(&retry) != ntbx_success)
+	      {
+		client->state = ntbx_client_state_uninitialized;
+		LOG_OUT();
+		return ntbx_failure;
+	      }
+	  }
+	  break;
+
+	case EWOULDBLOCK:
+	  { 
+	    if (ntbx_tcp_retry(&retry) != ntbx_success)
+	      {
+		client->state = ntbx_client_state_uninitialized;
+		LOG_OUT();
+		return ntbx_failure;
+	      }
+	  }
+	  break;
+	  
+	default:
+	  {
+	    perror("accept");
+	    FAILURE("ntbx_tcp_server_accept");
+	  }
+	}      
     }
 
   client_specific = TBX_MALLOC(sizeof(ntbx_tcp_client_specific_t));
@@ -608,19 +615,42 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
       || (client->state == ntbx_client_state_write_ready)
       || (client->state == ntbx_client_state_peer_closed))
     {
-      SYSCALL(shutdown(client_specific->descriptor, 2));
+      int status = 0;
+      
+      status = shutdown(client_specific->descriptor, 2);
+      if (status == -1)
+	{
+	  switch (errno)
+	    {
+	    case ENOTCONN:
+	      {
+		client->state = ntbx_client_state_closed;
+	      }
+	      break;
+
+	    default:
+	      {
+		perror("shutdown");
+		FAILURE("ntbx_tcp_client_disconnect");
+	      }
+	      break;
+	    }
+	}
       client->state = ntbx_client_state_shutdown;
     }
   
-  if (   (client->state == ntbx_client_state_shutdown)
-      || (client->state == ntbx_client_state_initialized))
+  if (client->state != ntbx_client_state_closed)
     {
-      SYSCALL(close(client_specific->descriptor));
-      client->state = ntbx_client_state_closed;
+      if (   (client->state == ntbx_client_state_shutdown)
+	     || (client->state == ntbx_client_state_initialized))
+	{
+	  SYSCALL(close(client_specific->descriptor));
+	  client->state = ntbx_client_state_closed;
+	}
+      else
+	FAILURE("invalid client state");
     }
-  else
-    FAILURE("invalid client state");
-
+  
   while (!tbx_slist_is_nil(client->local_alias))
     {
       char *str = NULL;

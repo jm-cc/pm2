@@ -1,4 +1,18 @@
 
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
 ifdef APP_RECURSIF
 
 # Target subdirectories
@@ -9,7 +23,6 @@ DUMMY_BUILD :=  $(shell mkdir -p $(APP_DEP))
 ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
 include $(DEPENDS)
 endif
-#include $(wildcard $(DEPENDS))
 
 examples: $(APPS)
 .PHONY: examples
@@ -36,10 +49,6 @@ $(APP_BIN)/%: $(APP_OBJ)/%.o
 
 else 
 
-#MAKE_LIBS = set -e ; for module in $(PM2_MODULES); do \
-#		$(MAKE) -C $(PM2_ROOT)/modules/$$module libs ; \
-#	    done
-
 MAKE_LIBS = $(MAKE) -C $(PM2_ROOT) libs
 
 examples:
@@ -53,40 +62,17 @@ examples:
 	$(COMMON_HIDE) $(MAKE_LIBS)
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
 
-.PHONY: clean appclean repclean libclean
-clean: appclean repclean
+# Regles de nettoyage
+#---------------------------------------------------------------------
+.PHONY: clean cleanall refresh refreshall sos
+clean cleanall refresh refreshall sos:
+	$(COMMON_HIDE) make -s -C $(PM2_ROOT) $@
 
-libclean:
-	$(COMMON_HIDE) for module in $(PM2_MODULES); do \
-		$(MAKE) -C $(PM2_ROOT)/modules/$$module clean ; \
-	done
-
-appclean:
-	$(COMMON_CLEAN) $(RM) $(APP_OBJ)/*$(APP_EXT).o \
-		$(APP_DEP)/*$(APP_EXT).d $(APP_ASM)/*$(LIB_EXT).s \
-		$(APPS)
-
-repclean:
-	$(COMMON_HIDE) for rep in $(APP_OBJ) $(APP_ASM) $(APP_BIN) \
-		$(APP_DEP) ; do \
-		if rmdir $$rep 2> /dev/null; then \
-			echo "empty repertory $$rep removed" ; \
-		fi ; \
-	done
-
-#distclean:
-#	$(RM) -r build
 
 $(PROGS):
 	@$(MAKE_LIBS)
 	@$(MAKE) APP_RECURSIF=true $@$(APP_EXT)
 
-config:
-	$(PM2_ROOT)/bin/pm2_create-flavor --flavor=$(FLAVOR) --ext=$(EXT) \
-		--builddir=$(BUILDDIR) --modules="$(CONFIG_MODULES)" \
-		--all="$(ALL_OPTIONS)" --marcel="$(MARCEL_OPTIONS)" \
-		--mad="$(MAD_OPTIONS)" --pm2="$(PM2_OPTIONS)" \
-		--dsm="$(DSM_OPTIONS)" --common="$(COMMON_OPTIONS)"
 
 .PHONY: help bannerhelpapps targethelpapps
 help: globalhelp

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.12  2001/01/30 08:17:29  oaumage
+- pre-support Leonie
+
 Revision 1.11  2001/01/03 14:12:19  rnamyst
 Added support for Win2K. For now, only Marcel is available under Cygwin...
 
@@ -372,7 +375,7 @@ void common_init(int *argc, char *argv[])
 
 #ifdef MAD2
 
-#ifndef EXTERNAL_SPAWN
+#if (!defined EXTERNAL_SPAWN) && (!defined LEONIE_SPAWN)
   /*
    * Mad2 slave nodes spawn
    * ----------------------
@@ -386,7 +389,7 @@ void common_init(int *argc, char *argv[])
    * - connection data
    */
   mad_slave_spawn(madeleine, *argc, argv);
-#endif /* EXTERNAL_SPAWN */
+#endif /* EXTERNAL_SPAWN && LEONIE_SPAWN */
   
 #endif /* MAD 2 */
 

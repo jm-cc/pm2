@@ -1155,6 +1155,18 @@ int main( int argc, char *argv[] )
 
 	/*	the order of reading items from the trace file must obviously
 		correspond with the order they were written by fut_record	*/
+	{
+	  // Added by Raymond
+	  unsigned int smp_mode;
+
+	  if( read(fd, (void *)&smp_mode, sizeof(smp_mode)) <= 0 )
+	    {
+	      perror("read smp_mode");
+	      exit(EXIT_FAILURE);
+	    }
+	  printf("%14s = %lu\n", "smp_mode", smp_mode);
+	}
+
 	if( read(fd, (void *)&pid, sizeof(pid)) <= 0 )
 		{
 		perror("read pid");

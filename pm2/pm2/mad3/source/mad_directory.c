@@ -34,6 +34,18 @@
 
 #include "madeleine.h"
 
+
+
+static
+void
+mad_default_link_init(p_mad_link_t link)
+{
+  link->link_mode   = mad_link_mode_buffer;
+  link->buffer_mode = mad_buffer_mode_dynamic;
+  link->group_mode  = mad_group_mode_split;
+}
+
+
 static
 void
 mad_dir_process_get(p_mad_madeleine_t madeleine)
@@ -687,7 +699,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
       mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver not available");      
+	FAILURE("driver not available");
 
       TRACE_STR("Initializing driver", driver_name);
       mad_driver->id         = mad_driver_id++;
@@ -1167,7 +1179,11 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 			      interface->link_init(in_link);
 			      interface->link_init(out_link);
 			    }
-
+			  else
+			    {
+			      mad_default_link_init(in_link);
+			      mad_default_link_init(out_link);
+			    }
 			  in_link->buffer_list      =
 			    TBX_MALLOC(sizeof(tbx_list_t));
 			  in_link->user_buffer_list =
@@ -1242,9 +1258,9 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 		      out->link_array[link_id] = out_link;
 
 		      if (interface->link_init)
-			{
-			  interface->link_init(out_link);
-			}
+			interface->link_init(out_link);
+		      else
+			mad_default_link_init(out_link);
 
 		      out_link->buffer_list      =
 			TBX_MALLOC(sizeof(tbx_list_t));
@@ -1361,6 +1377,11 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 			      interface->link_init(in_link);
 			      interface->link_init(out_link);
 			    }
+			  else
+			    {
+			      mad_default_link_init(in_link);
+			      mad_default_link_init(out_link);
+			    }
 
 			  in_link->buffer_list      =
 			    TBX_MALLOC(sizeof(tbx_list_t));
@@ -1434,10 +1455,10 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 		      in->link_array[link_id] = in_link;
 
 		      if (interface->link_init)
-			{
-			  interface->link_init(in_link);
-			}
-
+			interface->link_init(in_link);
+		      else
+			mad_default_link_init(in_link);
+		      
 		      in_link->buffer_list      =
 			TBX_MALLOC(sizeof(tbx_list_t));
 		      in_link->user_buffer_list =
@@ -1743,6 +1764,11 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 			      interface->link_init(in_link);
 			      interface->link_init(out_link);
 			    }
+			  else
+			    {
+			      mad_default_link_init(in_link);
+			      mad_default_link_init(out_link);
+			    }
 
 			  in_link->buffer_list      =
 			    TBX_MALLOC(sizeof(tbx_list_t));
@@ -1817,9 +1843,9 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 		      out->link_array[link_id] = out_link;
 
 		      if (interface->link_init)
-			{
-			  interface->link_init(out_link);
-			}
+			interface->link_init(out_link);
+		      else
+			mad_default_link_init(out_link);
 
 		      out_link->buffer_list      =
 			TBX_MALLOC(sizeof(tbx_list_t));
@@ -1933,6 +1959,11 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 			      interface->link_init(in_link);
 			      interface->link_init(out_link);
 			    }
+			  else
+			    {
+			      mad_default_link_init(in_link);
+			      mad_default_link_init(out_link);
+			    }
 
 			  in_link->buffer_list      =
 			    TBX_MALLOC(sizeof(tbx_list_t));
@@ -2005,9 +2036,9 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 		      in->link_array[link_id] = in_link;
 
 		      if (interface->link_init)
-			{
-			  interface->link_init(in_link);
-			}
+			interface->link_init(in_link);
+		      else
+			mad_default_link_init(in_link);
 
 		      in_link->buffer_list      =
 			TBX_MALLOC(sizeof(tbx_list_t));
@@ -2441,6 +2472,11 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 		{
 		  interface->link_init(in_link);
 		  interface->link_init(out_link);
+		}
+	      else
+		{
+		  mad_default_link_init(in_link);
+		  mad_default_link_init(out_link);
 		}
 
 	      in_link->buffer_list      =

@@ -4,6 +4,7 @@
 #define YYDEBUG 1
 #define LEOPARSE_IN_YACC
 #define YYERROR_VERBOSE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,47 +44,57 @@
 entree:  
   leop_file
 {
+  LOG("entree -->");
   $$ = $1;
   leoparse_result = $$;
+  LOG("entree <--");
 }
 ;
 
 leop_file:
-  leop_htable ';'
+  leop_htable
 {
+  LOG("leop_file -->");
   $$ = $1;
+  LOG("leop_file <--");
 }
 ;
 
 leop_htable:
   leop_htable ';' leop_htable_entry
 {
-  tbx_htable_add($1, $3->id, $3->slist);
-  free($3->id);
-  $3->id    = NULL;
-  $3->slist = NULL;
-  free($3);
-  $3 = NULL;  
+  LOG("leop_htable (1) -->");
+  tbx_htable_add($1, $3->id, $3);
+  $$ = $1;
+  
+  LOG("leop_htable (1) <--");
 }
 | leop_htable_entry
 {
+  LOG("leop_htable (2) -->");
   $$ = malloc(sizeof(tbx_htable_t));
   tbx_htable_init($$, 0);
-  tbx_htable_add($$, $1->id, $1->slist);
-  free($1->id);
-  $1->id    = NULL;
-  $1->slist = NULL;
-  free($1);
-  $1 = NULL;
+  tbx_htable_add($$, $1->id, $1);
+  LOG("leop_htable (2) <--");
 }
 ;
 
 leop_htable_entry:
-  LEOP_ID ':' leop_list
+  LEOP_ID '=' leop_list
 {
   $$ = malloc(sizeof(leoparse_htable_entry_t));
-  $$->id    = $1;
-  $$->slist = $3;
+  $$->id     = $1;
+  $$->type   = leoparse_e_slist;
+  $$->object = NULL;
+  $$->slist  = $3;
+}
+| LEOP_ID ':' leop_object
+{
+  $$ = malloc(sizeof(leoparse_htable_entry_t));
+  $$->id     = $1;
+  $$->type   = leoparse_e_object;
+  $$->object = $3;
+  $$->slist  = NULL;
 }
 ;
 
@@ -91,6 +102,7 @@ leop_list:
   leop_list ',' leop_object
 {
   tbx_slist_enqueue($1, $3);  
+  $$ = $1;
 }
 | leop_object
 {
@@ -103,19 +115,19 @@ leop_object:
   '{' leop_htable '}'
 {
   $$ = calloc(1, sizeof(leoparse_object_t));
-  $$->type   = leoparse_htable;
+  $$->type   = leoparse_o_htable;
   $$->htable = $2;
 }
 | LEOP_ID
 {
   $$ = calloc(1, sizeof(leoparse_object_t));
-  $$->type = leoparse_id;
+  $$->type = leoparse_o_id;
   $$->id   = $1;
 }
 | LEOP_STRING
 {
   $$ = calloc(1, sizeof(leoparse_object_t));
-  $$->type   = leoparse_string;
+  $$->type   = leoparse_o_string;
   $$->string = $1;
 }
 ;

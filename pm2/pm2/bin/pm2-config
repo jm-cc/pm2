@@ -34,32 +34,13 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
-PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
 
-ARGV="$@"
-
-PROGNAME="pm2-config"
-
-MODULES=`${PM2_ROOT}/bin/pm2-module modules`
-
-if [ -z "$MODULES" ]; then
-    echo "No PM2 module detected." 1>&2
-    echo "Check PM2_ROOT environment variable and/or do 'make init'" 1>&2
-    exit 1
-fi
-
-DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
-DIRTY_ORDERED_LIBS="common leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
-
-##########################################################################
-# aide
-usage()
+pm2config_usage()
 {
     exit_code=$1
 
     cat <<EOF
-Usage: $PROGNAME [--flavor=name] [OPTION]... [MODULE]...
+Usage: $_PM2CONFIG_PROGNAME [--flavor=name] [OPTION]... [MODULE]...
   If '--flavor' is not specified, then it uses fisrt \$PM2_FLAVOR, or,
   if not set, 'default'.
 
@@ -88,83 +69,345 @@ Other options
   --stampfile   : stampfile generated
   --loader      : loader used
 
-  --gen_mak   : generate flavor specific makefiles
-
 Known values for MODULE are:
-    ${MODULES}
+    ${_PM2CONFIG_MODULES}
     all : all modules included in the flavor
 
 EOF
-    if [ $exit_code != 0 ]; then
-	echo "error in pm2-config $ARGV" 1>&2
+    if [ $1 != 0 ]; then
+	echo "error in $_PROGNAME $_ARGV" 1>&2
     fi
-    exit $exit_code
+    exit $1
 }
 
-##########################################################################
-# fonctions annexes
-
-get_lib_dir() # library
+pm2config_add_list() # var list_val
 {
-    echo "${PM2_BUILD}/$1/lib"
-}
-
-get_include_dir() # library
-{
-    echo "${PM2_BUILD}/$1/include${PM2_EXT}"
-}
-
-add_list() { # var list_val
-    old_val=`eval echo '$'${1}`
-    for val in $2 " "; do
-	case " $old_val   " in
-	*\ $val\ *) # Already there 
+    eval _old_val='$'${1}
+    for _val in $2 ; do
+	case " $_old_val " in
+	*\ $_val\ *) # Already there 
 	    ;;
 	*) # Added
-	    old_val="${old_val:+$old_val }$val"
+	    _old_val="${_old_val:+$_old_val }$_val"
 	    ;;
 	esac
     done
-    eval $1='"${old_val}"'
+    eval $1='"${_old_val}"'
 }
 
-##########################################################################
-# traitement des options
+pm2config_remove_dupplicates() # list
+{
+    eval _items=\"'$'$1\"
 
-if test $# -eq 0; then
-    usage 1
-fi
+    _rev=""
+    for _i in $_items ; do
+	_rev="$_i $_rev"
+    done
 
-cflags=false
-libs_L=false
-libs_l=false
-#modversion=false
-flavor=
-libs=
-libdir=false
-includedir=false
-bindir=false
-srcdir=false
-objdir=false
-cppdir=false
-depdir=false
-asmdir=false
-tmpdir=false
-stampdir=false
-builddir=false
-dirtoshow=
-libs_add_mad=false
-libs_add_all=false
-kernel=false
-other=false
-gen_mak=false
-makdir=false
+    _l=""
+    for _i in $_rev ; do
+	case " $_l " in
+	    *\ $_i\ *) ;;
+	    *) _l="${_i}${_l:+ $_l}"
+	esac
+    done
+    eval $1=\"'$'_l\"
+}
 
-while test $# -gt 0; do
-    case "$1" in
-    -*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
-    *) optarg= ;;
+pm2config_remove_dupplicates_keep_first() # list
+{
+    eval _items=\"'$'$1\"
+
+    _l=""
+    for _i in $_items ; do
+	case " $_l " in
+	    *\ $_i\ *) ;;
+	    *) _l="${_l:+$_l }$_i"
+	esac
+    done
+    eval $1=\"'$'_l\"
+}
+
+pm2config_build_uppercase() # list
+{
+    _list=$*
+    _LIST=`echo $_list | tr a-z A-Z`
+    while [ -n "$_list" ] ; do
+	set $_LIST
+	_big=$1
+	shift
+	_LIST=$*
+
+	set $_list
+	_small=$1
+	shift
+	_list=$*
+
+	eval ${_small}_to_upper=\$_big
+    done
+}
+
+pm2config_init()
+{
+    _PM2CONFIG_FLAVOR=${PM2_FLAVOR:-default}
+    export _PM2CONFIG_FLAVOR
+
+    # Get the flavor script file path
+    set --  --source-mode -f $_PM2CONFIG_FLAVOR
+    . ${PM2_ROOT}/bin/pm2-flavor-file
+    _PM2CONFIG_FLAVOR_FILE=$PM2_FLAVOR_FILE
+    export _PM2CONFIG_FLAVOR_FILE
+
+    if [ ! -f "$_PM2CONFIG_FLAVOR_FILE" ]; then
+	echo "Flavor '$_PM2CONFIG_FLAVOR' do not exists yet. Create it before." 1>&2
+	echo "You can use 'make init' to create the basic flavors of pm2" 1>&2
+	echo "or 'make config|menuconfig|xdialogconfig|xconfig' to create your own flavor." 1>&2
+	exit 1
+    fi
+}
+
+pm2config_set_vars()
+{
+    # Initialize flavor script file name
+    pm2config_init
+
+    set -- --source-mode
+    . ${PM2_ROOT}/bin/pm2_sys
+    . ${PM2_ROOT}/bin/pm2_arch
+
+    # Source the flavor script file
+    set --
+    . $_PM2CONFIG_FLAVOR_FILE
+
+    # Special variable (may be used within the build directory path for instance)
+    flavor=$_PM2CONFIG_FLAVOR
+
+    # Optimizations
+    pm2config_build_uppercase common $_PM2CONFIG_DIRTY_ORDERED_MODULES leonie swann
+
+    # Build directory
+    if [ -z "$PM2_BUILD" ] ; then
+	_PM2CONFIG_BUILD=${PM2_HOME:-${HOME}}/build/$flavor
+    else
+	eval _PM2CONFIG_BUILD="$PM2_BUILD"
+    fi
+    case "$_PM2CONFIG_BUILD" in
+	/*)
+	    ;;
+	*)
+	    eval _PM2CONFIG_BUILD="${PM2_BUILD_DIR:-${PM2_HOME:-${HOME}}/build}"'/$_PM2CONFIG_BUILD'
     esac
+    export _PM2CONFIG_BUILD
+
+    # Extension
+    _PM2CONFIG_EXT="$PM2_EXT"
+    export _PM2CONFIG_EXT
+
+    # Loader
+    if [ -n "${PM2_LOADER}" ]; then
+	_PM2CONFIG_LOADER="$PM2_LOADER"
+    elif [ -n "$PM2_DEFAULT_LOADER" ]; then
+	_PM2CONFIG_LOADER="$PM2_DEFAULT_LOADER"
+    else
+	_PM2CONFIG_LOADER=""
+    fi
+    export _PM2CONFIG_LOADER
+
+    # Flavor stamp file
+    _PM2CONFIG_FLAVOR_STAMP_FILE=$_PM2CONFIG_FLAVOR_FILE
+    export _PM2CONFIG_FLAVOR_STAMP_FILE
+
+    _PM2CONFIG_LIB_STAMP_FILES=""
+    export _PM2CONFIG_LIB_STAMP_FILES
+    for _lib in common $PM2_LIBS ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _libname='$'PM2_${_LIB}_LIBNAME
+
+	# Libs stamp files
+	eval _PM2CONFIG_${_libname}_STAMP_FILE=${_PM2CONFIG_BUILD}/${_lib}/lib/lib${_libname}${PM2_EXT}.a
+	eval export _PM2CONFIG_${_libname}_STAMP_FILE
+	eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
+
+	# Directories
+	eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/${_lib}/lib
+	eval export _PM2CONFIG_${_lib}_LIB_DIR
+
+	eval _PM2CONFIG_${_lib}_BIN_DIR=$_PM2CONFIG_BUILD/${_lib}/bin
+	eval export _PM2CONFIG_${_lib}_BIN_DIR
+
+	eval _PM2CONFIG_${_lib}_SRC_DIR=$_PM2CONFIG_BUILD/${_lib}/src
+	eval export _PM2CONFIG_${_lib}_SRC_DIR
+
+	eval _PM2CONFIG_${_lib}_OBJ_DIR=$_PM2CONFIG_BUILD/${_lib}/obj
+	eval export _PM2CONFIG_${_lib}_OBJ_DIR
+
+	eval _PM2CONFIG_${_lib}_CPP_DIR=$_PM2CONFIG_BUILD/${_lib}/cpp
+	eval export _PM2CONFIG_${_lib}_CPP_DIR
+
+	eval _PM2CONFIG_${_lib}_DEP_DIR=$_PM2CONFIG_BUILD/${_lib}/dep
+	eval export _PM2CONFIG_${_lib}_DEP_DIR
+
+	eval _PM2CONFIG_${_lib}_TMP_DIR=$_PM2CONFIG_BUILD/${_lib}/tmp
+	eval export _PM2CONFIG_${_lib}_TMP_DIR
+
+	eval _PM2CONFIG_${_lib}_ASM_DIR=$_PM2CONFIG_BUILD/${_lib}/asm
+	eval export _PM2CONFIG_${_lib}_ASM_DIR
+
+	eval _PM2CONFIG_${_lib}_INCLUDE_DIR=$_PM2CONFIG_BUILD/${_lib}/include${_PM2CONFIG_EXT}
+	eval export _PM2CONFIG_${_lib}_INCLUDE_DIR
+    done
+
+    # Make directory
+    _PM2CONFIG_MAK_DIR=$_PM2CONFIG_BUILD/mak
+    export _PM2CONFIG_MAK_DIR
+
+    # Stamp directory
+    _PM2CONFIG_STAMP_DIR=$_PM2CONFIG_BUILD/stamp
+    export _PM2CONFIG_STAMP_DIR
+
+    # Modules
+    _PM2CONFIG_MODULES=""
+    for _l in $_PM2CONFIG_DIRTY_ORDERED_MODULES ; do
+	case " $PM2_LIBS " in
+	    *\ $_l\ *)
+		_PM2CONFIG_MODULES="${_PM2CONFIG_MODULES:+$_PM2CONFIG_MODULES }$_l"
+		;;
+	esac
+    done
+    export _PM2CONFIG_MODULES
+
+    # Profiled modules
+    _PM2CONFIG_PROF_MODULES=""
+    for _l in $_PM2CONFIG_DIRTY_ORDERED_MODULES ; do
+	eval _L='$'${_l}_to_upper
+	eval _CFK='$'PM2_${_L}_CFLAGS_KERNEL
+	case " $_CFK " in
+	    *\ -DDO_PROFILE\ *)
+		case " $PM2_LIBS " in
+		    *\ $_l\ *)
+			_PM2CONFIG_PROF_MODULES="${_PM2CONFIG_PROF_MODULES:+$_PM2CONFIG_PROF_MODULES }$_l"
+			;;
+		esac
+		;;
+	esac
+    done
+    export _PM2CONFIG_PROF_MODULES
+
+    # Modules generating headers
+    _PM2CONFIG_HEADGEN_MODULES=""
+    for _l in $_PM2CONFIG_DIRTY_ORDERED_MODULES ; do
+	eval _L='$'${_l}_to_upper
+	eval _GENINC='$'PM2_${_L}_GENERATE_INCLUDE
+	if [ "$_GENINC" = true ] ; then
+	    case " $PM2_LIBS " in
+		*\ $_l\ *)
+		    _PM2CONFIG_HEADGEN_MODULES="${_PM2CONFIG_HEADGEN_MODULES:+$_PM2CONFIG_HEADGEN_MODULES }$_l"
+		    ;;
+	    esac
+	fi
+    done
+    export _PM2CONFIG_HEADGEN_MODULES
+
+    # Protocols
+    _PM2CONFIG_PROTOCOLS="$PM2_PROTOCOLS"
+    export _PM2CONFIG_PROTOCOLS
+
+    # C Compiler
+    _PM2CONFIG_CC=${PM2_CC:-gcc}
+    export _PM2CONFIG_CC
+
+    # CFLAGS
+    _PM2CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS} ${PM2_COMMON_CFLAGS_KERNEL}"
+    for _lib in common $PM2_LIBS ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"
+	if [ -d "${PM2_ROOT}/modules/$_lib/include" ]; then
+	    _flags="$_flags -I${PM2_ROOT}/modules/$_lib/include"
+	fi
+	eval _geninc='$'PM2_${_LIB}_GENERATE_INCLUDE
+	if [ "$_geninc" = true ]; then
+	    eval _flags=\"$_flags -I\$_PM2CONFIG_${_lib}_INCLUDE_DIR\"
+	fi
+	_PM2CONFIG_CFLAGS="$_PM2CONFIG_CFLAGS $_flags"
+    done
+    export _PM2CONFIG_CFLAGS
+    pm2config_remove_dupplicates_keep_first _PM2CONFIG_CFLAGS
+
+    # CFLAGS "kernel"
+    for _lib in common $PM2_LIBS ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _PM2CONFIG_${_lib}_KERNEL_CFLAGS=\"\$_PM2CONFIG_CFLAGS '$'PM2_${_LIB}_CFLAGS_KERNEL -D${_LIB}_KERNEL -DMODULE=${_lib}\"
+	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS
+	eval pm2config_remove_dupplicates_keep_first _PM2CONFIG_${_lib}_KERNEL_CFLAGS
+    done
+
+    # LDFLAGS
+    _requested=""
+    _extra=""
+    _PM2CONFIG_LD_PATH=""
+    for _lib in common $PM2_LIBS ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _requested=\"\$_requested \$PM2_${_LIB}_LIBNAME\"
+	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
+	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
+    done
+    export _PM2CONFIG_LD_PATH
+
+    _PM2CONFIG_LD_LIBS=""
+    for _lib in $_PM2CONFIG_DIRTY_ORDERED_LIBS ; do
+	case " $_requested " in
+	    *\ $_lib\ *)
+		_PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS -l${_lib}${_PM2CONFIG_EXT}"
+		;;
+	    *) ;;
+	esac
+    done
+    _PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_extra"
+    export _PM2CONFIG_LD_LIBS
+
+    _PM2CONFIG_LIBS="$_PM2CONFIG_LD_PATH $_PM2CONFIG_LD_LIBS"
+    export _PM2CONFIG_LIBS
+}
+
+pm2config_parse_cmdline() # args
+{
+    _ARGV="$@"
+
+    _PROGNAME="pm2-config"
+
+    [ $# -ge 1 ] || pm2config_usage 1
+
+    _cflags=false
+    _libs_L=false
+    _libs_l=false
+    _flavor=
+    _libs=
+
+    _libdir=false
+    _includedir=false
+    _bindir=false
+    _srcdir=false
+    _objdir=false
+    _cppdir=false
+    _depdir=false
+    _asmdir=false
+    _tmpdir=false
+    _stampdir=false
+    _builddir=false
+    _makdir=false
+
+    _dirtoshow=
+    _libs_add_mad=false
+    _libs_add_all=false
+    _kernel=false
+    _other=false
+    _gen_mak=false
+
+    while [ $# -gt 0 ] ; do
+	case "$1" in
+	    -*=*) _optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+	    *) _optarg= ;;
+	esac
 
     case $1 in
     --version)
@@ -172,58 +415,56 @@ while test $# -gt 0; do
 	exit 0
 	;;
     --help)
-	usage 0
+	pm2config_usage 0
 	;;
     --kernel)
-	kernel=true
+	_kernel=true
 	;;
     --*dir)
-	dirname1=`echo $1 | sed -e 's,^--,,' -e 's,dir$,,'`
-	dirname=`eval echo '$'${dirname1}dir`
-	test -z "$dirname" && exit 1
-	eval ${dirname}dir=true
-	dirtoshow="$dirname1"
+	_dirname1=`echo $1 | sed -e 's,^--,,' -e 's,dir$,,'`
+	eval _dirname='$'_${_dirname1}dir
+	test -z "$_dirname" && exit 1
+	eval ${_dirname1}dir=true
+	_dirtoshow="$_dirname1"
 	;;
     --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader)
-	other=$1
-	;;
-    --help)
-	usage 0
+	_other=$1
 	;;
     --cflags)
-       	cflags=true
+       	_cflags=true
        	;;
     --libs)
-       	libs_L=true
-	libs_l=true
+       	_libs_L=true
+	_libs_l=true
        	;;
     --libs-only-L)
-	libs_L=true
+	_libs_L=true
 	;;
     --libs-only-l)
-	libs_l=true
+	_libs_l=true
 	;;
     --flavor=*)
-	flavor=$optarg
-	;;
-    --gen_mak)
-        gen_mak=true
-	if [ $# -gt 1 ]; then
-	    gen_param=$2
-	    shift
-	fi
+	PM2_FLAVOR=$_optarg
 	;;
     -*)
 	echo Unknown option \`$1\' 1>&2
-	usage 1
+	pm2config_usage 1
 	;;
     all)
-	libs_add_all=true
+	_libs_add_all=true
 	;;
     *)
-	case " $MODULES common " in
+	_PM2CONFIG_ALL_MODULES=`${PM2_ROOT}/bin/pm2-module modules`
+
+	if [ -z "$_PM2CONFIG_ALL_MODULES" ]; then
+	    echo "No PM2 module detected." 1>&2
+	    echo "Please check your PM2_ROOT environment variable and/or do 'make init'" 1>&2
+	    exit 1
+	fi
+
+	case " $_PM2CONFIG_ALL_MODULES common " in
 	*\ $1\ *)
-	    add_list libs "$1"
+	    pm2config_add_list _libs "$1"
 	    ;;
 	*)
 	    echo Unknown library \`$1\' 1>&2
@@ -232,306 +473,137 @@ while test $# -gt 0; do
 	;;
     esac
     shift
-done
+    done    
 
-##########################################################################
-# corrections et valeurs par défaut
-if [ -z "$flavor" ]; then
-    flavor=${PM2_FLAVOR:-default}
-fi
+    ##########################################################################
 
-FLAVOR_FILE=`${PM2_ROOT}/bin/pm2-flavor find --flavor=$flavor`
+    pm2config_set_vars
 
-if [ ! -f $FLAVOR_FILE ]; then
-    echo "Flavor '$flavor' do not exists yet. Create it before." 1>&2
-    echo "You can use 'make init' to create the basic flavors of pm2" 1>&2
-    echo "or 'make config|menuconfig|xdialogconfig|xconfig' to create your own flavor." 1>&2
-    exit 1
-fi
+    ##########################################################################
 
-. $FLAVOR_FILE
+    if [ "$_libs_add_all" = true ]; then
+	pm2config_add_list _libs "common $PM2_LIBS"
+    fi
 
-if [ $libs_add_all = true ]; then
-    add_list libs "common $PM2_LIBS"
-fi
+    if [ "$_other" != false ]; then
+	_dirtoshow=$_other
+    fi
 
-if [ "$other" != false ]; then
-    dirtoshow=$other
-fi
-
-if [ -z "$PM2_BUILD" ] ; then
-    PM2_BUILD=${PM2_HOME:-${HOME}}/build/$flavor
-else
-    eval PM2_BUILD="$PM2_BUILD"
-fi
-
-case "$PM2_BUILD" in
-
-    /*)
-	;;
-    *)
-	eval PM2_BUILD="${PM2_BUILD_DIR:-${PM2_HOME:-${HOME}}/build}"'/$PM2_BUILD'
-esac
-
-
-##########################################################################
-# generation des repertoires
-
-if [ "$gen_mak" = true ]; then
-    ${PM2_ROOT}/bin/pm2-gen-make.sh $flavor $gen_param
-    exit 0
-fi
-
-##########################################################################
-# on a demandé des repertoires/réglages...
-if [ -n "${dirtoshow}" ]; then
-    case $dirtoshow in
-    --ext)
-	echo $PM2_EXT
+    # on a demandé des repertoires/réglages...
+    if [ -n "${_dirtoshow}" ]; then
+	case $_dirtoshow in
+	    --ext)
+		echo $_PM2CONFIG_EXT
+		exit 0
+		;;
+	    --protocols)
+		echo $_PM2CONFIG_PROTOCOLS
+		exit 0
+		;;
+	    --modules)
+		echo $_PM2CONFIG_MODULES
+		exit 0
+		;;
+	    --profmods)
+		echo $_PM2CONFIG_PROF_MODULES
+		exit 0
+		;;
+	    --headgenmods)
+		echo $_PM2CONFIG_HEADGEN_MODULES
+		exit 0
+		;;
+	    --cc)
+		echo $_PM2CONFIG_CC
+		exit 0
+		;;
+	    --loader)
+		echo $_PM2CONFIG_LOADER
+		exit 0
+		;;
+	    --stampfile)
+		if [ -z "$_libs" ]; then
+		    echo $_PM2CONFIG_FLAVOR_STAMP_FILE
+		elif [ "$_libs_add_all" = "true" ] ; then
+		    echo $_PM2CONFIG_LIB_STAMP_FILES
+		else
+		    for _lib in $_libs; do
+			_LIB=`echo $_lib | tr 'a-z' 'A-Z'`
+			eval _libname=\$PM2_${_LIB}_LIBNAME
+			eval echo \$_PM2CONFIG_${_libname}_STAMP_FILE
+		    done
+		fi
+		exit 0
+		;;
+	    build)
+		echo $_PM2CONFIG_BUILD
+		exit 0
+		;;
+	    stamp)
+		echo $_PM2CONFIG_STAMP_DIR
+		exit 0
+		;;
+	    mak)
+		echo $_PM2CONFIG_MAK_DIR
+		exit 0
+		;;
+	esac
+	if [ `echo "$_libs" | wc -w` != 1 ]; then
+	    echo "This option needs exactly ONE lib" 1>&2
+	    exit 1
+	fi
+	case " $PM2_LIBS common " in
+	    *\ $_libs\ *)
+		_d=`echo $_dirtoshow | tr a-z A-Z`
+		eval echo \$_PM2CONFIG_${_libs}_${_d}_DIR
+		;;
+	    *)
+		;;
+	esac
 	exit 0
-	;;
-    --protocols)
-	echo $PM2_PROTOCOLS
-	exit 0
-	;;
-    --modules)
-	ordered_list=
-	for l in $DIRTY_ORDERED_MODULES ; do
-	    case " $PM2_LIBS " in
-		*\ $l\ *)
-		    ordered_list="$ordered_list $l"
-		    ;;
-	    esac
-	done
-	echo $ordered_list
-	exit 0
-	;;
-    --profmods)
-	ordered_list=
-	for l in $DIRTY_ORDERED_MODULES ; do
-	    L=`echo $l | tr a-z A-Z`
-	    CFK=`eval echo '$'PM2_${L}_CFLAGS_KERNEL`
-	    case " $CFK " in
-		*\ -DDO_PROFILE\ *)
-		    case " $PM2_LIBS " in
-			*\ $l\ *)
-			    ordered_list="$ordered_list $l"
-			    ;;
-		    esac
-		    ;;
-	    esac
-	done
-	echo $ordered_list
-	exit 0
-	;;
-    --headgenmods)
-	ordered_list=
-	for l in $DIRTY_ORDERED_MODULES ; do
-	    L=`echo $l | tr a-z A-Z`
-	    GENINC=`eval echo '$'PM2_${L}_GENERATE_INCLUDE`
-	    if [ "$GENINC" = "true" ] ; then
-		case " $PM2_LIBS " in
-		    *\ $l\ *)
-			ordered_list="$ordered_list $l"
-			;;
-		esac
+    fi
+
+    if [ -z "$_libs" ]; then
+	_libs="common $PM2_LIBS"
+    fi
+
+    # On a demandé les CFLAGS
+    if [ "$_cflags" = true ] ; then
+	if [ "$_kernel" = true ] ; then
+	    if [ `echo "$_libs" | wc -w` != 1 ]; then
+		echo "This option needs exactly ONE lib" 1>&2
+		exit 1
 	    fi
-	done
-	echo $ordered_list
-	exit 0
-	;;
-    --cc)
-	echo ${PM2_CC:-gcc}
-	exit 0
-	;;
-    --loader)
-        if [ -n "${PM2_LOADER}" ]; then
-	    echo ${PM2_LOADER}
-	    exit 0
-	fi
-        if [ -n "${PM2_DEFAULT_LOADER}" ]; then
-	    echo ${PM2_DEFAULT_LOADER}
-	    exit 0
-	fi
-        # if no loader, simply exit...
-	exit 0
-	;;
-    --stampfile)
-	if [ -z "$libs" ]; then
-	    echo "$FLAVOR_FILE"
+	    eval echo \$_PM2CONFIG_${_libs}_KERNEL_CFLAGS
 	else
-	    list=
-	    for lib in $libs; do
-		LIB=`echo $lib | tr 'a-z' 'A-Z'`
-		libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
-		list="${list:+$list }${PM2_BUILD}/${lib}/lib/lib${libname}${PM2_EXT}.a"
-	    done
-	    echo $list
+	    echo $_PM2CONFIG_CFLAGS
 	fi
 	exit 0
-	;;
-    build)
-	echo $PM2_BUILD
-	exit 0
-	;;
-    stamp)
-	echo "${PM2_BUILD}/stamp"
-	exit 0
-	;;
-    mak)
-	echo $PM2_BUILD/mak
-	exit 0
-	;;
-    esac
-    if [ `echo "$libs" | wc -w` != 1 ]; then
-	echo "This option needs exactly ONE lib" 1>&2
-	exit 1
     fi
-    case " $PM2_LIBS common " in
-    *\ $libs\ *)
-	case $dirtoshow in
-	include)
-	    echo ${PM2_BUILD}/${libs}/include${PM2_EXT}
-	    ;;
-	*)
-	    echo ${PM2_BUILD}/${libs}/$dirtoshow
-	    ;;
-	esac
-	;;
-    *)
-	;;
-    esac
+
+    # on a demandé les LDFLAGS
+    _libs=""
+    if [ "$_libs_L" = true ] ; then
+	_libs="$_PM2CONFIG_LD_PATH"
+    fi
+    if [ "$_libs_l" = true ]; then
+	_libs="$_libs $_PM2CONFIG_LD_LIBS"
+    fi
+    echo $_libs
+    exit 0
+}
+
+######################
+# Programme principal
+######################
+
+_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
+
+_PM2CONFIG_DIRTY_ORDERED_LIBS="common leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
+
+if [ $# -eq 1 -a "$1" = --source-mode ] ; then
+    pm2config_set_vars
+else
+    pm2config_parse_cmdline "$@"
     exit 0
 fi
 
-if [ -z "$libs" ]; then
-    libs="common $PM2_LIBS"
-fi
-
-##########################################################################
-# CFLAGS et LDFLAGS...
-the_flags="-D${PM2_ARCH} -D${PM2_SYS} $PM2_COMMON_CFLAGS_KERNEL"
-the_libs="$PM2_COMMON_LIBS"
-#if [ -d "$PM2_ROOT/modules/common/include" ]; then
-#    the_flags="$the_flags -I$PM2_ROOT/modules/common/include"
-#fi
-
-# CFLAGS : on prend tous les cflags
-for lib in common $PM2_LIBS; do
-    LIB=`echo $lib | tr 'a-z' 'A-Z'`
-    the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS` -D${LIB}"
-    if [ -d "$PM2_ROOT/modules/$lib/include" ]; then
-	the_flags="$the_flags -I$PM2_ROOT/modules/$lib/include"
-    fi
-    if [ "`eval echo \\$PM2_${LIB}_GENERATE_INCLUDE`" = true ]; then
-	the_flags="$the_flags -I`get_include_dir $lib`"
-    fi
-done
-
-vide=
-libs_pm2=
-# LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
-for lib in $libs; do
-    LIB=`echo $lib | tr 'a-z' 'A-Z'`
-    libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
-    case "$libname" in
-    $vide)
-	;;
-    *)
-	the_libs="$the_libs -L`get_lib_dir $lib`"
-	libs_pm2="$libs_pm2 ${libname}"
-#	for l in `eval echo \\$PM2_${LIB}_MODULE_DEPEND_LIB`; do
-#	    case " $libs " in
-#		*\ $l\ *)
-#		    LIB2=`echo $l | tr a-z A-Z`
-#		    libname2="`eval echo \\$PM2_${LIB2}_LIBNAME`"
-#		    the_libs="$the_libs -l${libname2}$PM2_EXT"
-#		    ;;
-#		*)
-#		    ;;
-#	    esac
-#	done
-	;;
-    esac
-    the_libs="$the_libs `eval echo '$'PM2_${LIB}_LIBS`"
-    # CFLAGS spécifique à la compilation d'une lib
-    if [ "$kernel" = true ]; then
-	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL -DMODULE=${lib}"
-    fi
-done
-
-libs_pm2_ordered=
-#ordering pm2libs hardcoded :-(
-for l in $DIRTY_ORDERED_LIBS ; do
-    case " $libs_pm2 " in
-    *\ $l\ *)
-	libs_pm2_ordered="$libs_pm2_ordered -l${l}$PM2_EXT"
-	;;
-    esac
-done
-for l in $libs_pm2; do
-    case " $libs_pm2_ordered " in
-    *\ -l${l}$PM2_EXT\ *)
-	;;
-    *)
-	libs_pm2_ordered="$libs_pm2_ordered -l${l}$PM2_EXT"
-	;;
-    esac
-done
-
-the_libs="$libs_pm2_ordered $the_libs"
-
-if $cflags; then
-    all_flags="$the_flags"
-fi
-
-if $libs_L || $libs_l; then
-    all_flags="$all_flags $the_libs"
-fi
-
-if test -z "$all_flags" || test "x$all_flags" = "x "; then
-    exit 1
-fi
-
-# Straight out any possible duplicates, but be careful to
-# get `-lfoo -lbar -lbaz' for `-lfoo -lbaz -lbar -lbaz'
-other_flags=
-lib_L_flags=
-rev_libs=
-for i in $all_flags; do
-    case "$i" in
-    # a library, save it for later, in reverse order
-    -l*) rev_libs="$i $rev_libs" ;;
-    -L*|-R*)
-	if $libs_L; then
-	    case " $lib_L_flags " in
-	    *\ $i\ *) ;;			# already there
-	    *) lib_L_flags="$lib_L_flags $i" ;;	# add it to output
-	    esac 
-	fi;;
-    *)
-	case " $other_flags " in
-	*\ $i\ *) ;;				# already there
-	*) other_flags="$other_flags $i" ;;	# add it to output
-        esac ;;
-    esac
-done
-
-ord_libs=
-if $libs_l; then
-    for i in $rev_libs; do
-	case " $ord_libs " in
-	*\ $i\ *) ;;			# already there
-	*) ord_libs="$i $ord_libs" ;;	# add it to output in reverse order
-	esac
-    done
-fi
-
-# Horrible hack !!! (Ray)
-#if [ -n "$ord_libs" ]; then
-#    ord_libs="-lcommon $ord_libs"
-#fi
-
-echo $other_flags $lib_L_flags $ord_libs
-
-exit 0

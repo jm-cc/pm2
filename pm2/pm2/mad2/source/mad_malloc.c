@@ -155,7 +155,5 @@ mad_malloc_clean(p_mad_memory_t mem)
     }
 
   mem->first_mem = mem->current_mem = mem->first_free = NULL ;
-
-  PM2_UNLOCK_SHARED(mem);
   free(mem);
 }

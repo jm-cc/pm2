@@ -64,12 +64,12 @@ mad_begin_packing(p_mad_channel_t   channel,
       PM2_YIELD();
       PM2_LOCK_SHARED(channel) ;
     }
-#else
+#else /* PM2 */
   /* NOTE: the test and the affectation must be done
      atomically in a multithreaded environnement*/
   if (connection->lock == mad_true)
     FAILURE("mad_begin_packing: connection dead lock");      
-#endif
+#endif /* PM2 */
   connection->lock = mad_true;
   connection->send = mad_true;
   PM2_UNLOCK_SHARED(channel) ;

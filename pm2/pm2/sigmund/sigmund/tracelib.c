@@ -2,6 +2,7 @@
 #include "filter.h"
 #include "tracelib.h"
 #include "temp.h"
+#include "fkt.h"
 
 char *fut_code2name(int code)
 {
@@ -30,7 +31,7 @@ int name2code(char *name, mode *type, int *a)
     if (code_table[i].code == 0) break;
     if (!strcmp(code_table[i].name,name)) {
       *type = USER;
-      *a = code_table[i].code;
+      *a = code_table[i].code << 8;
       return 0;
     }
     i++;
@@ -40,7 +41,7 @@ int name2code(char *name, mode *type, int *a)
     if (fkt_code_table[i].code == 0) return -1;
     if (!strcmp(fkt_code_table[i].name,name)) {
       *type = KERNEL;
-      *a = fkt_code_table[i].code;
+      *a = fkt_code_table[i].code << 8;
       return 0;
     }
     i++;
@@ -78,6 +79,19 @@ int get_next_filtered_trace(trace *tr)
   int i = 0;
   while (i == 0) {
     i = get_next_trace(tr);
+    if (is_valid(tr) == TRUE) break;
+  }
+  return i;
+}
+
+int get_next_loose_filtered_trace(trace *tr)
+{
+  int i = 0;
+  while (i == 0) {
+    i = get_next_trace(tr);
+    if (tr->type == KERNEL) {
+      if (tr->code >> 8 == FKT_SWITCH_TO_CODE) break;
+    } else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) break;
     if (is_valid(tr) == TRUE) break;
   }
   return i;

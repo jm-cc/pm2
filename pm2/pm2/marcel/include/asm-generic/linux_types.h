@@ -16,6 +16,7 @@
 
 #section marcel_types
 
+#include <limits.h>
 #include <stdint.h>
 
 typedef int8_t __ma_s8, ma_s8;
@@ -30,4 +31,14 @@ typedef uint32_t __ma_u32, ma_u32;
 typedef int64_t __ma_s64, ma_s64;
 typedef uint64_t __ma_u64, ma_u64;
 
-#define MA_BITS_PER_LONG ((sizeof(unsigned long))*8)
+#if ULONG_MAX == UINT8_MAX
+#define MA_BITS_PER_LONG 8
+#elif ULONG_MAX == UINT16_MAX
+#define MA_BITS_PER_LONG 16
+#elif ULONG_MAX == UINT32_MAX
+#define MA_BITS_PER_LONG 32
+#elif ULONG_MAX == UINT64_MAX
+#define MA_BITS_PER_LONG 64
+#else
+#error "unsigned long too long !"
+#endif

@@ -50,10 +50,8 @@ extern int __zero_fd;
 #  ifdef X86_ARCH
 #    define ISOADDR_AREA_TOP       0x40000000
 #    define SLOT_AREA_BOTTOM       0x10000000
-#    define MAIN_STACK_BOT         0xa0000000
+#    define MAIN_STACK_BOT         0xb8000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#    define FILE_TO_MAP            -1
-#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #  elif defined(IA64_ARCH)
 #    undef ASM_THREAD_SLOT_SIZE
      /* 0x30000 nécessaire pour pthread_create */
@@ -61,21 +59,22 @@ extern int __zero_fd;
 #    define ISOADDR_AREA_TOP       0x80000000
 #    define MAIN_STACK_BOT         0x6000000000000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
-#    define FILE_TO_MAP            -1
-#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #  elif defined(PPC_ARCH)
 #    define ISOADDR_AREA_TOP       0x30000000
-#    define FILE_TO_MAP            -1
-#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #  elif defined(ALPHA_ARCH)
 #    define ISOADDR_AREA_TOP       0x30000000000
 #    define MAIN_STACK_TOP         0x130000000
 #    define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
-#    define FILE_TO_MAP            -1
-#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+#  elif defined(SPARC_ARCH)
+#    define ISOADDR_AREA_TOP       0x70000000
+#    define SLOT_AREA_BOTTOM       0x10000000
+#    define MAIN_STACK_BOT         0xe8000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  else
 #    error Sorry. This architecture is not yet supported.
 #  endif
+#  define FILE_TO_MAP            -1
+#  define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #elif defined(GNU_SYS) && defined(X86_ARCH)
 #    define ISOADDR_AREA_TOP       0xc0000000
 #    define SLOT_AREA_BOTTOM       0x10000000

@@ -43,6 +43,14 @@
 #ifndef __LEONIE_H
 #define __LEONIE_H
 
+/*
+ * Checks
+ * ------
+ */
+#ifndef __GNUC__
+#error The GNU C Compiler is required to build this tool
+#endif __GNUC__
+
 #include <tbx.h>
 #include <leo_parser_types.h>
 

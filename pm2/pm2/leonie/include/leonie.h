@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.h,v $
+Revision 1.9  2001/01/29 16:59:31  oaumage
+- transmission des donnees de configuration
+
 Revision 1.8  2000/12/11 08:31:14  oaumage
 - support Leonie
 
@@ -71,17 +74,15 @@ ______________________________________________________________________________
 #include "pm2debug.h"
 #include "ntbx.h"
 #include "tbx.h"
+#include "leoparse.h"
 
 /* Leonie: data structures */
 #include "leo_pointers.h"
 #include "leo_types.h"
-#include "leo_parser_types.h"
 #include "leo_main.h"
 
 /* Leonie: internal interface */
-#include "leo_config.h"
 #include "leo_net.h"
-#include "leo_parsing.h"
 #include "leo_swann.h"
 #include "leo_interface.h"
 

@@ -2,7 +2,7 @@
  *  \brief TBX general include file.
  *
  *  This file includes every file needed for TBX application use.
- * 
+ *
  */
 
 /*

@@ -30,6 +30,7 @@ _PRIVATE_ typedef struct {
   int sched_policy;
   boolean rt_thread;
   marcel_vpmask_t vpmask;
+  int flags;
 } marcel_attr_t;
 
 /* detachstate */
@@ -72,6 +73,10 @@ int marcel_attr_getrealtime(marcel_attr_t *attr, boolean *realtime);
 
 int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
 int marcel_attr_getvpmask(marcel_attr_t *attr, marcel_vpmask_t *mask);
+
+// only for internal use
+int marcel_attr_setflags(marcel_attr_t *attr, int flags);
+int marcel_attr_getflags(marcel_attr_t *attr, int *flags);
 
 _PRIVATE_ extern marcel_attr_t marcel_attr_default;
 

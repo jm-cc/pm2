@@ -1,5 +1,20 @@
 
 /*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+/*
  * Mad_regular_spawn.c
  * ===================
  */
@@ -54,6 +69,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
       return;
     }
 
+  // Faut-il garder ce code Olivier ???
   if (settings->app_cmd)
     {
       exec = settings->app_cmd;
@@ -62,7 +78,8 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
     {
       exec = argv[0];
     }
-  
+  /////////////////////////////
+
   cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
   CTRL_ALLOC(cmd);
 
@@ -80,7 +97,13 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 	}
     }
 
-  arg_str[0] = 0;
+  /* pré-script de lancement */
+  prefix = getenv("PM2_CMD_PREFIX");
+
+  if (!prefix)
+    FAILURE("PM2_CMD_PREFIX variable undefined");
+
+  arg_str[0] = '\0';
 
   /* 1: adapters' connection parameter */
   for (ad = 0; ad < madeleine->nb_adapter; ad++)
@@ -96,27 +119,6 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
     {
       sprintf(arg, " %s ", argv[i]);
       strcat(arg_str, arg);
-    }
-
-  if (settings->debug_mode)
-    {
-      char *display;
-      
-      prefix = TBX_MALLOC(MAX_ARG_LEN);
-      CTRL_ALLOC(prefix);
-
-      display = getenv("DISPLAY");
-
-      if (!display)
-	FAILURE("DISPLAY variable undefined");
-
-      sprintf(prefix, "env DISPLAY=%s pm2_gdb_load", display);
-    }
-  else
-    {
-      prefix = TBX_MALLOC(1);
-      CTRL_ALLOC(prefix);
-      prefix[0] = 0;
     }
 
   for (i = 1; i < configuration->size; i++)
@@ -150,6 +152,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 	}
 	    
       LOG_STR("mad_init: Spawn", cmd);
+
       system(cmd);
     }
 

@@ -36,6 +36,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_slist_management.c,v $
+Revision 1.4  2000/06/05 11:38:02  oaumage
+- Ajout d'une fonction de duplication
+- Corrections diverses
+
 Revision 1.3  2000/05/31 14:24:50  oaumage
 - Ajout au niveau des slists
 
@@ -613,7 +617,10 @@ tbx_slist_ref_fwd(p_tbx_slist_reference_t ref)
       return (ref->reference = ref->reference->next) != NULL;
     }
   else
-    FAILURE("empty slist reference");
+    {
+      LOG_OUT();
+      return tbx_false;
+    }
 }
 
 tbx_bool_t
@@ -626,7 +633,10 @@ tbx_slist_ref_rew(p_tbx_slist_reference_t ref)
       return (ref->reference = ref->reference->previous) != NULL;
     }
   else
-    FAILURE("empty slist reference");
+    {
+      LOG_OUT();
+      return tbx_false;
+    }
 }
 
 void

@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leo_main.h,v $
+Revision 1.5  2000/06/09 08:45:43  oaumage
+- Progression du code
+
 Revision 1.4  2000/05/17 12:40:50  oaumage
 - reorganisation du code de demarrage de Leonie
 
@@ -52,10 +55,11 @@ ______________________________________________________________________________
 
 typedef struct s_leo_swann_module
 {
-  int                   id;
-  char                 *cluster_id;
-  p_leo_swann_module_t  relay;
-  p_ntbx_client_t       net_client;
+  int                         id;
+  p_leo_application_cluster_t app_cluster;
+  p_leo_cluster_definition_t  clu_def;
+  p_leo_swann_module_t        relay;
+  p_ntbx_client_t             net_client;
 } leo_swann_module_t;
 
 typedef struct s_leo_mad_module
@@ -64,6 +68,8 @@ typedef struct s_leo_mad_module
   char                 *cluster_id;
   p_leo_swann_module_t  relay;
   p_ntbx_client_t       net_client;
+  p_leo_cluster_definition_t  clu_def;
+  p_leo_application_cluster_t app_cluster;
 } leo_mad_module_t;
 
 typedef struct s_leonie

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_rpc.h,v $
+Revision 1.3  2000/02/28 11:18:02  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:49:42  oaumage
 - ajout du Log CVS
 
@@ -60,10 +63,10 @@ void pm2_rpc_init(void);
 #define BEGIN_LRPC_LIST unsigned int
 #define END_LRPC_LIST	;
 
-#include <sys/console.h>
-#include <sys/isomalloc_rpc.h>
+#include "sys/console.h"
+#include "sys/isomalloc_rpc.h"
 #ifdef DSM
-#include <dsm_rpc.h>
+#include "dsm_rpc.h"
 #endif
 
 #define LRPC_REQ(name) _##name##_req

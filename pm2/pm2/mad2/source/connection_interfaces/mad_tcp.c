@@ -445,6 +445,7 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
   ntbx_host_id_t               i;
 
   LOG_IN();
+
   adapter_specific->remote_connection_port = TBX_MALLOC(size * sizeof(int));
   CTRL_ALLOC(adapter_specific->remote_connection_port);
 

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_adapter.h,v $
+Revision 1.3  2000/03/08 17:18:46  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+
 Revision 1.2  1999/12/15 17:31:18  oaumage
 Ajout de la commande de logging de CVS
 
@@ -51,7 +55,7 @@ ______________________________________________________________________________
 typedef struct s_mad_adapter
 {
   /* Common use fields */
-  PM2_SHARED;
+  TBX_SHARED;
   p_mad_driver_t            driver;
   mad_adapter_id_t          id; 
   char                     *name;

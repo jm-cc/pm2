@@ -43,6 +43,7 @@
 
 
 //#define DEBUG1
+#define DEBUG_HYP
 
 void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access)
 {

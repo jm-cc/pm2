@@ -537,7 +537,7 @@ void dsm_free_page_bitmap(unsigned long index)
   dsm_bitmap_free(dsm_page_table[index].bitmap);
 }
 
-#define DEBUG_HYP
+//#define DEBUG_HYP
 void dsm_mark_dirty(void *addr, int length)
 {
 #ifdef DEBUG_HYP
@@ -547,12 +547,13 @@ void dsm_mark_dirty(void *addr, int length)
     dsm_bitmap_mark_dirty(dsm_page_offset(addr), length, dsm_page_table[dsm_page_index(addr)].bitmap);
 }
 
+
 void *dsm_get_next_modified_data(unsigned long index, int *size)
 {
   static int _offset = 0;
   int start;
   
-  if ((start = first_series_of_1_from_offset(dsm_page_table[index].bitmap, dsm_page_table[index].size/sizeof(char), _offset, size)) == -1)
+  if ((start = first_series_of_1_from_offset(dsm_page_table[index].bitmap, dsm_page_table[index].size/8, _offset, size)) == -1)
     {
       _offset = 0;
       return NULL;
@@ -565,4 +566,13 @@ void *dsm_get_next_modified_data(unsigned long index, int *size)
 }
 
 
+boolean dsm_page_bitmap_is_empty(unsigned long index) 
+{
+  return dsm_bitmap_is_empty(dsm_page_table[index].bitmap, dsm_page_table[index].size/8);
+}
 
+
+void dsm_page_bitmap_clear(unsigned long index) 
+{
+  dsm_bitmap_clear(dsm_page_table[index].bitmap, dsm_page_table[index].size);
+}

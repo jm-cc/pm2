@@ -54,7 +54,6 @@
  * sequential memory pages only.
  */
 
-#error "to write !"
 #define ma_mb()		__asm__ __volatile__("mb": : :"memory")
 #define ma_rmb()	ma_mb()
 #define ma_wmb()	__asm__ __volatile__("wmb": : :"memory")

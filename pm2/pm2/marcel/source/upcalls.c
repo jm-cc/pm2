@@ -100,8 +100,10 @@ static void end_launch_new()
     }
     
     self->state_ext=MARCEL_READY;
+    next->state_ext=MARCEL_RUNNING;
     ACTDEBUG(printf("act_new launch %p\n", next));  
-    restart_thread(act_update(next));
+    //restart_thread(act_update(next));
+    restart_thread(next);
 
     /** Never there normally */
   something_wrong:
@@ -304,6 +306,17 @@ void act_preempt(act_id_t cur_aid, act_id_t stopped_aid, int fast_restart)
       /** Once we set to READY, this thread can be rescheduled */
       stopped_thread->state_ext=MARCEL_READY;
       
+      ACTDEBUG(printf("marcel thread %p ready\n", stopped_thread));
+      { marcel_t t = stopped_thread;
+      ACTDEBUG(printf("marcel_thread info(%p(%i)->%p(%i)->%p(%i)->"
+		  "%p(%i)->%p(%i)\n", t, t->state_ext,
+		  t->next, t->next->state_ext, 
+		  t->next->next, t->next->next->state_ext, 
+		  t->next->next->next, t->next->next->next->state_ext, 
+		  t->next->next->next->next, 
+		  t->next->next->next->next->state_ext));
+      }
+
       act_info[stopped_aid].state=ACT_UNUSED;
     }
 

@@ -33,24 +33,22 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-ifndef MARCEL_ROOT
-MARCEL_ROOT	:=	$(PM2_ROOT)/marcel
-endif
+MASTER_MODULE := MARCEL
+COMMON_DEFAULT_TARGET :=  marcel_default
 
-# Ce fichier Makefile doit etre ajoute a la liste globales
-COMMON_MAKEFILES	+=	$(MARCEL_ROOT)/Makefile
+include $(PM2_ROOT)/make/master_vars.mak
 
-# Inclusion des definition de variables (macros)
-include $(MARCEL_ROOT)/make/vars.mak
+# Ce makefile
+COMMON_MAKEFILES +=  $(MAD2_ROOT)/Makefile
 
-.PHONY: default
-default: $(COMMON_DEFAULT_TARGET)
+# Inclusion des variables
+include $(MARCEL_MAKE)/vars.mak
 
-.PHONY: clean
-clean: $(COMMON_CLEAN_TARGET)
-
-.PHONY: distclean
-distclean: $(COMMON_DISTCLEAN_TARGET)
+# Regles principales
+include $(PM2_ROOT)/make/master_rules.mak
 
 # Inclusion des regles de compilation
-include $(MARCEL_ROOT)/make/rules.mak
+include $(MARCEL_MAKE)/rules.mak
+
+
+##############################################################################

@@ -34,9 +34,9 @@
 */
 
 #include <stdio.h>
+
 #include "pm2.h"
-#include "dsm_pm2.h"
-#include "rpc_defs.h"
+
 #include "timing.h"
 
 #define COUNTER 
@@ -100,7 +100,8 @@ int pm2_main(int argc, char **argv)
       fprintf(stderr, "Usage: simple <number of threads per node>\n");
       exit(1);
     }
-  pm2_rpc_init();
+
+
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
   //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
@@ -142,12 +143,3 @@ int pm2_main(int argc, char **argv)
   tfprintf(stderr, "Main is ending\n");
   return 0;
 }
-
-
-
-
-
-
-
-
-

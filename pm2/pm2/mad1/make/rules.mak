@@ -70,16 +70,18 @@ endif
 endif
 
 .PHONY: mad_default
-mad_default: $(MAD_LIB)
-	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
-	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
-	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
+mad_default: $(MAD_LIB) $(MAD_USER_MAK)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(MAD_DEPENDS)),$(MAD_DEPENDS))
 include $(MAD_DEPENDS)
 endif
 endif
+
+$(MAD_USER_MAK):
+	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user*.mak
+	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD_USER_MAK)
+	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD_USER_MAK)
 
 $(MAD_EXTRA_DEP_FILE):
 	$(MAD_HIDE) rm -f $(MAD1_ROOT)/.opt*

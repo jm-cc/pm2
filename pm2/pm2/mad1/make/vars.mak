@@ -67,24 +67,22 @@ include $(MAD_OPT_FILES)
 
 COMMON_MAKEFILES	+=	$(MAD_OPT_FILES)
 
-# Fichier de dépendance artificiel pour forcer la recompilation
-# lorsque les options changent
+# Calcul du suffixe
 ifdef MAD_OPTIONS
-MAD_EXTRA_DEP_FILE	:=	$(MAD1_ROOT)/.opt_$(subst $(SPACE),_,$(sort $(MAD_OPTIONS)))
-else
-MAD_EXTRA_DEP_FILE	:=	$(MAD1_ROOT)/.opt
-endif
-
-# Si on étend les noms de fichiers, il faut calculer le suffixe, sinon
-# il faut ajouter une dépendance supplémentaire...
-ifeq ($(MAD_USE_EXTENSION),yes)
 MAD_EXT		:=	-mad_$(subst $(SPACE),_,$(sort $(MAD_OPTIONS)))
 else
-COMMON_MAKEFILES	+=	$(MAD_EXTRA_DEP_FILE)
+MAD_EXT		:=	-mad_none
 endif
 
-# Petite entorse a l'utilisation du '+=' ...
+# Si on étend les noms de fichiers, il faut mettre a jour COMMON_EXT,
+# sinon il faut mettre a jour COMMON_EXTRA_DEP...
+ifeq ($(MAD_USE_EXTENSION),yes)
 COMMON_EXT		:=	$(COMMON_EXT)$(MAD_EXT)
+else
+COMMON_EXTRA_DEP	:=	$(COMMON_EXTRA_DEP)$(MAD_EXT)
+MAD_EXTRA_DEP_FILE	:=	$(MAD1_ROOT)/.opt$(COMMON_EXTRA_DEP)
+COMMON_MAKEFILES	+=	$(MAD_EXTRA_DEP_FILE)
+endif
 
 # Inclusion des options specifiques au protocole reseau
 include $(MAD1_ROOT)/make/custom/options.mak
@@ -155,6 +153,8 @@ endif
 COMMON_LIBS	+=	$(MAD_LIB)
 
 COMMON_LDFLAGS	+=	$(NET_LFLAGS) $(NET_LLIBS) $(ARCHDLIB)
+
+MAD_USER_MAK		:=	$(MAD1_ROOT)/make/user$(COMMON_EXT).mak
 
 
 COMMON_DEFAULT_TARGET	+=	mad_default

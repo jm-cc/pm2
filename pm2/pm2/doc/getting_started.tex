@@ -1,0 +1,312 @@
+\documentclass[a4paper,11pt]{article}
+
+% packages
+\usepackage{moreverb}
+\usepackage{fullpage}
+\usepackage{boxedminipage}
+\usepackage[dvips]{graphics}
+\usepackage{url}
+\usepackage{psboxit}
+\usepackage{xspace}
+
+% settings
+\let\bfseriesaux=\bfseries \def\bfseries{\sffamily\bfseriesaux}
+
+
+% macros
+\def\pm2{PM$^2$\xspace}
+\def\mad{\emph{Madeleine}\xspace}
+\def\madii{\emph{Madeleine~II}\xspace}
+\def\mar{\emph{Marcel}\xspace}
+
+
+% first page
+\title{Getting Started with \pm2}
+\author{Gabriel Antoniu \and%
+        Olivier Aumage \and%
+        Luc Boug\'e \and%
+        Jean-Fran\c{c}ois M\'ehaut \and%
+        Raymond Namyst}
+
+
+%%%%%%%%%%%%%%%%
+\begin{document}
+\maketitle
+
+
+% Introduction
+%______________
+\section{Introduction : What is PM2?}
+
+%===========
+\subsection{Multithreaded Programming Environment}
+        API (C language) + set of libraries
+
+%===========
+\subsection{Programing model}
+
+
+% Installation
+%_____________________________________________________________________________
+\section{Installation}
+
+%===========
+\subsection{Currently Supported Platforms}
+
+\subsubsection{OS/Processors}
+\pm2 has been currently tested on the following platforms:
+\begin{itemize}
+\footnotesize
+\item \textsc{Linux}: \textsc{x86}, \textsc{PPC}, \textsc{Alpha}
+\item \textsc{Solaris}: \textsc{Sparc}, \textsc{x86}
+\item \textsc{FreeBSD}: \textsc{x86}
+\item \textsc{Aix}: \textsc{RS6000}
+\item \textsc{Irix}: \textsc{Mips}
+\item \textsc{OSF}: \textsc{Alpha}
+\item \textsc{Unicos}: \textsc{Alpha}
+\end{itemize}
+
+\subsubsection{Network procotols}
+The network subsystem of the \pm2 environment currently supports
+the following protocols:
+\begin{itemize}
+\footnotesize
+\item TCP
+\item MPI (LAM-MPI, MPI-BIP)
+\item VIA
+\item SCI/SISCI
+\item SBP
+\end{itemize}
+
+\subsubsection{Required development tools}
+\pm2 relies on the availability of the following development tools:
+\begin{itemize}
+\footnotesize
+\item GNU C Compiler \textsc{gcc} (versions 2.7.2.3, 2.8.1 and \textsc{Egcs}
+versions have been successfully tested)
+\item GNU Make
+\end{itemize}
+ 
+%===========
+\subsection{Getting the PM2 software and help}
+The \pm2 archive is available on the \pm2 web site at 
+\url{http://www.ens-lyon.fr/~rnamyst/pm2.html}.
+
+Contact guru: \url{bouge@ens-lyon.fr}
+
+%===========
+\subsection{Unpacking the PM2 distribution}
+        $\rightarrow$ making a personal installation
+
+\subsubsection{Contents of the package}
+The \pm2 distribution is organized as follows:
+\begin{footnotesize}
+\begin{verbatim}
+        pm2 --+
+              |
+              +-- bin........: PM2 scripts
+              |  
+              +-- doc........: documentation files
+              |
+              +-- dsm........: DSM-PM2 distributed shared memory manager
+              |
+              +-- examples...: variety of PM2 examples
+              |
+              +-- include....: PM2 header files
+              |
+              +-- lib........: PM2 library destination
+              |
+              +-- madeleine..: network subsystem
+              |
+              +-- make.......: PM2 makefiles
+              |
+              +-- marcel.....: multithreading management subsystem
+              |
+              +-- source.....: PM2 source files
+              |
+              +-- toolbox....: general purpose library
+              
+\end{verbatim}
+\end{footnotesize}
+\subsubsection{Environment variables}
+        PM2\_ROOT, etc.
+        PATH
+
+%===========
+\subsection{Configuring}
+
+\subsubsection{OS/Processor}
+
+\subsubsection{Network}
+        pm2custom
+
+\subsubsection{Advanced configuration}
+        Makefiles $\rightarrow$ cf Advanced settings/Makefiles
+
+%===========
+\subsection{Compiling}
+        not really required, but can be done by typing "cd pm2; make"
+
+%===========
+\subsection{Cleanning the directory tree}
+        pm2clean
+
+
+% PM2 Step by Step
+%_____________________________________________________________________________
+\section{PM2 step by step}
+
+%===========
+\subsection{The minimal PM2 program}
+\begin{figure}
+\begin{center}
+\begin{boxedminipage}{0.8\textwidth}
+\begin{small}
+\begin{listing}{0}
+ #include <stdio.h>
+ #include <pm2.h>
+
+ int pm2_main(int argc, char **argv)
+ {
+   pm2_init(&argc, argv);
+
+   print("Hello World !\n");
+  
+   if (pm2_self() == 0)
+     pm2_halt();
+  
+   pm2_exit();
+   return 0;
+ }
+\end{listing}
+\end{small}
+\end{boxedminipage}
+\end{center}
+\caption{Minimal \pm2 program\label{fig:ex1}}
+\end{figure}
+Let us start our \pm2 tour by writting the minimal \pm2 program. The
+Figure~\ref{fig:ex1} shows an example of such a minimalist \pm2
+code. As we can see, a \pm2 program must first include the \texttt{pm2.h}
+header file along with other standards header files. 
+
+We now write the program body. The line~7 illustrates that the main
+function should be called \texttt{pm2\_main} instead of the classical
+\texttt{main} when using \pm2. Yet, the arguments remain the regular
+\texttt{argc}/\texttt{argv} pair. A call to \texttt{pm2\_init}
+effectively initializes the \pm2 runtime system. Once the
+\texttt{pm2\_init} function returns, the actual application specific
+\emph{parallel processing} can begin. Here, this processing reduces to
+a call to the \texttt{printf} function of the standard library. This
+call will be concurrently performed on any process constituting the
+session configuration during the program execution.
+
+Finally, the termination phasis concludes our minimal \pm2 program. It
+is splitted into two steps. One (and only one) of the nodes should
+first perform a call to \texttt{pm2\_halt}. This step ensures that no
+further incoming service request will be accepted by any of the
+session processes. The \texttt{pm2\_self} function is used to retrieve
+the local process rank. So, the \texttt{pm2\_halt} call is executed by
+the process \texttt{0} (sometimes called the \emph{master} process).
+Once each process reaches the \texttt{pm2\_exit} second termination
+step, the \pm2 session ends.
+
+%===========
+\subsection{Running a PM2 program}
+        $\rightarrow$ pm2conf, pm2load, pm2logs
+
+%===========
+\subsection{Common pitfalls}
+
+%===========
+\subsection{Getting the output in the console}
+
+%===========
+\subsection{Invoking a remote service}
+
+\subsubsection{Example}
+
+%===========
+\subsection{Passing parameters}
+
+\subsubsection{Example}
+
+\subsubsection{Packing/unpacking API}
+        pack\_int/pack\_byte
+        send\_CHEAPER, etc.
+
+\subsubsection{A more interesting example}
+
+%===========
+\subsection{"Treaded" services}
+        Services handlers are executed sequentially
+        Thread creation: pm2\_thread\_create
+        Caveat! pm2\_waitdata...
+
+
+% Advandced Threading
+%_____________________________________________________________________________
+\section{Advanced thread features}
+
+%===========
+\subsection{Thread synchronization}
+
+%===========
+\subsection{Invoking services synchronously}
+        2 one-way invocations + synchronization
+
+\subsubsection{Examples}
+        Better: using the "pm2\_rawrpc\_wait" features
+
+%===========
+\subsection{Thread migration}
+        Thread state : migratable/non-...
+
+\subsubsection{Migration in 3 steps}
+        freezing the local scheduler
+        getting the list of migratable threads
+        selecting and migrating threads
+
+\subsubsection{Example}
+        Iso-address migration
+
+%===========
+\subsection{Migrating with dynamically allocated data}
+
+\subsubsection{Isomalloc}
+
+
+% DSM
+%_____________________________________________________________________________
+\section{Sharing data across clusters}
+        DSM-PM2
+
+
+% FAQ
+%_____________________________________________________________________________
+\section{FAQ}
+        Why does my program crash the entire cluster?
+        Why do I get the message "Permission denied" when running pm2load?
+
+
+% Bibliography
+%_____________________________________________________________________________
+\section{Bibliography}
+                
+\end{document}
+_______________________________________________________________________________
+$Log: getting_started.tex,v $
+Revision 1.5  2000/01/14 16:06:15  oaumage
+- exemple minimal + texte
+
+Revision 1.4  2000/01/14 15:38:05  oaumage
+- nouveau programme minimal
+
+Revision 1.3  2000/01/14 14:05:45  oaumage
+- quelques corrections au niveau du titre
+- ajout de l'arborescence et de la disponibilite
+
+Revision 1.2  2000/01/14 13:25:34  oaumage
+- quelques corrections pour que le document compile
+
+Revision 1.1  2000/01/14 13:10:54  oaumage
+- Document Latex `Getting started with PM2'

@@ -98,8 +98,23 @@ static __inline__ void SCHED_YIELD(void)
 
 /* Any Intel x86 system */
 #if defined(X86_ARCH)
-#define TOP_STACK_FREE_AREA     64
-#define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
+#  define TOP_STACK_FREE_AREA     64
+#  define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
+/* If MEMORY_BARRIER isn't defined in pt-machine.h, assume the
+   architecture doesn't need a memory barrier instruction (e.g. Intel
+   x86).  Still we need the compiler to respect the barrier and emit
+   all outstanding operations which modify memory.  Some architectures
+   distinguish between full, read and write barriers.  */
+
+#  ifndef MEMORY_BARRIER
+#    define MEMORY_BARRIER() asm ("" : : : "memory")
+#  endif
+#  ifndef READ_MEMORY_BARRIER
+#    define READ_MEMORY_BARRIER() MEMORY_BARRIER()
+#  endif
+#  ifndef WRITE_MEMORY_BARRIER
+#    define WRITE_MEMORY_BARRIER() MEMORY_BARRIER()
+#  endif
 #endif
 
 /* IBM SP2 */
@@ -143,6 +158,26 @@ extern void call_ST_FLUSH_WINDOWS(void);
 /* ******************* Intel ******************* */
 
 #if defined(X86_ARCH)
+
+#ifdef MARCEL_SELF_IN_REG
+//register marcel_t __marcel_self_in_reg asm ("%%gs");
+#define SET_MARCEL_SELF_FROM_SP(sp) \
+  __asm__ __volatile__("movl %0, %%gs" \
+                         : : "m" ( \
+  ((((sp) & ~(SLOT_SIZE-1)) + SLOT_SIZE) - MAL(sizeof(task_desc)))\
+  ) : "memory" )
+#else
+#define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
+#endif
+
+static __inline__ long get_gs(void)
+{
+  register long gs;
+
+    __asm__ __volatile__("movl %%gs, %0" : "=r" (gs));
+    return gs;
+}
+
 static __inline__ long get_sp(void)
 {
   register long sp;
@@ -151,8 +186,11 @@ static __inline__ long get_sp(void)
   return sp;
 }
 #define set_sp(val) \
-  __asm__ __volatile__("movl %0, %%esp" \
-                       : : "m" (val) : "memory" )
+  do { \
+    SET_MARCEL_SELF_FROM_SP(val); \
+    __asm__ __volatile__("movl %0, %%esp" \
+                       : : "m" (val) : "memory" ); \
+  } while (0)
 #endif
 
 

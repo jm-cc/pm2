@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
+Revision 1.10  2000/06/05 11:37:11  oaumage
+- Progression du code
+
 Revision 1.9  2000/05/31 14:17:19  oaumage
 - Leonie
 
@@ -84,45 +87,6 @@ static p_leonie_t main_leonie = NULL;
  * Functions
  * ==========================================================================
  */
-
-/*
- * Cluster list/host list building
- * -------------------------------
- */
-p_undefined_t
-leo_build_host_list(p_leo_app_application_t  application,
-		    p_leo_clu_cluster_file_t local_cluster_def);
-{
-  tbx_slist_t          host_list;
-  tbx_slist_t          cluster_list;
-  tbx_list_reference_t ref;
-
-  tbx_slist_init(&host_list);
-  tbx_slist_init(&cluster_list);
-
-  tbx_list_reference_init(&ref, application->cluster_list);
-
-  do
-    {
-      p_leo_app_cluster_t app_cluster = tbx_get_list_reference_object(&ref);
-      p_leo_cluster_t     cluster     = NULL;
-
-      cluster->name = malloc(strlen(app_cluster->id) + 1);
-      CTRL_ALLOC(cluster->name);
-      strcpy(cluster->name, app_cluster->id);
-
-      cluster->dist       = -1;
-      cluster->master     = NULL;
-      cluster->host_list  = malloc(sizeof(tbx_slist_t));
-      CTRL_ALLOC(cluster->host_list);
-      tbx_slist_init(&cluster->host_list);
-      cluster->spawn_mode = -1;
-
-      tbx_slist_append_tail(cluster_list, cluster);
-    }
-  while (tbx_forward_list_reference(&ref));
-}
-
 
 /*
  * Madeleine interfacing
@@ -186,7 +150,7 @@ p_leonie_t leo_init()
   LOG_OUT();
   return leonie;
 }
-
+/*
 void
 leo_start(p_leo_app_application_t  application,
 	  p_leo_clu_cluster_file_t local_cluster_def)
@@ -199,7 +163,6 @@ leo_start(p_leo_app_application_t  application,
     FAILURE("no cluster in application description file");
 
 
-#error a completer
   leo_build_host_list(application, local_cluster_def);
   
 
@@ -218,7 +181,6 @@ leo_start(p_leo_app_application_t  application,
     {
       p_leo_clu_host_name_t host_description;
 
-      /* Cluster is remote */
       host_description =
 	leo_get_cluster_entry_point(local_cluster_def->cluster,
 				    app_cluster->id);
@@ -229,8 +191,7 @@ leo_start(p_leo_app_application_t  application,
     }
   else
     {
-      /* Cluster is local */
-      /*
+      *
        *  TODO:
        *  - recuperer les noeuds concernes
        *  - recuperer les canaux requis
@@ -241,22 +202,20 @@ leo_start(p_leo_app_application_t  application,
        *    . soit par ligne de commande, mais le reseau est probablement
        *      mieux en vue de la suite
        *  - executer la session.
-       */
-      /*
+       *
+      *
         p_tbx_list_t       host_list        = app_cluster->hosts;
         p_tbx_list_t       channel_list     = app_cluster->channels;
-      */
+      *
       p_leo_mad_module_t mad_module       = NULL;
 
       DISP("Launching mad module");
       mad_module = leo_launch_mad_module(NULL, app_cluster);
     }
 
-  /* Rajouter un type pour designer une session madeleine */
-
   LOG_OUT();
 }
-
+*/
 /*
  * List building
  * -------------
@@ -326,7 +285,7 @@ leo_build_cluster_definition(p_leo_clu_cluster_file_t cluster_file)
 
   cluster->id = malloc(strlen(cluster_file->cluster->id) + 1);
   CTRL_ALLOC(cluster->id);
-  strpcy(cluster->id, cluster_file->cluster->id);
+  strcpy(cluster->id, cluster_file->cluster->id);
 
   cluster->host_model_list = malloc(sizeof(tbx_slist_t));
   CTRL_ALLOC(cluster->host_model_list);
@@ -364,7 +323,7 @@ leo_build_host_list(p_leo_app_cluster_t app_cluster,
       CTRL_ALLOC(host_name);
       strcpy(host_name, host);
 
-      tbx_slist_append_tail(cluster->host_list, cluster);
+      tbx_slist_append_tail(host_list, host_name);
     }
   while(tbx_forward_list_reference(&h_ref));
   LOG_OUT();
@@ -381,15 +340,15 @@ leo_build_channel_list(p_leo_app_cluster_t app_cluster,
 
   do
     {
-      p_leo_app_channel_t  channel   =
-	tbx_get_list_reference_object(&h_ref);
-      char                *n_channel = NULL;
+      p_leo_app_channel_t channel   =
+	tbx_get_list_reference_object(&c_ref);
+      p_leo_app_channel_t n_channel = NULL;
 
       n_channel = malloc(sizeof(leo_app_channel_t));
       CTRL_ALLOC(n_channel);
       *n_channel = *channel;
 
-      tbx_slist_append_tail(cluster->channel_list, n_channel);
+      tbx_slist_append_tail(channel_list, n_channel);
     }
   while(tbx_forward_list_reference(&c_ref));
   LOG_OUT();
@@ -434,6 +393,60 @@ leo_build_application_cluster_list(p_leo_app_application_t  application,
   LOG_OUT();
 }
 
+/*
+ * Search functions
+ * ----------------
+ */
+tbx_bool_t
+leo_search_for_host_name(void *ref_obj, void *obj)
+{
+  tbx_list_reference_t   ref;
+  char                  *ref_name = ref_obj;
+  p_leo_clu_host_name_t  host     = obj;
+  
+  LOG_IN();
+  tbx_list_reference_init(&ref, host->name_list);
+
+  do
+    {
+      char *name =  tbx_get_list_reference_object(&ref);
+
+      if (!strcmp(ref_name, name))
+	{
+	  LOG_OUT();
+	  return tbx_true;
+	}
+    }
+  while(tbx_forward_list_reference(&ref));
+
+  LOG_OUT();
+  return tbx_false;
+}
+
+
+tbx_bool_t
+leo_search_for_cluster_entry_point(void *ref_obj, void *obj)
+{
+  p_leo_cluster_definition_t  clu_def = ref_obj;
+  p_leo_application_cluster_t app_clu = obj;
+  tbx_slist_reference_t       ref;
+
+  LOG_IN();
+  tbx_slist_ref_init(clu_def->host_list, &ref);
+  LOG_OUT();
+  return tbx_slist_search(leo_search_for_host_name, app_clu->id, &ref);
+}
+
+tbx_bool_t
+leo_search_for_cluster(void *ref_obj, void *obj)
+{
+  p_leo_cluster_definition_t  clu_def = ref_obj;
+  p_leo_application_cluster_t app_clu = obj;
+
+  LOG_IN();
+  LOG_OUT();
+  return strcmp(clu_def->id, app_clu->id) == 0;
+}
 
 /*
  * Initialization
@@ -449,7 +462,7 @@ main (int argc, char *argv[])
   p_tbx_slist_t            cluster_definition_list  = NULL;
 
   LOG_IN();
-  tbx_init();
+  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
   ntbx_init();
   main_leonie = leo_init();
   leo_parser_init();
@@ -483,20 +496,66 @@ main (int argc, char *argv[])
   
   {
     /* Cluster list construction */
+    p_leo_cluster_definition_t local = NULL;
 
     /* Local Cluster */
-    tbx_slist_append_tail(cluster_definition_list,
-			  leo_build_cluster_definition(local_cluster_def));
-    
-    /* Remote Clusters */
-    {
-      tbx_slist_t temp_list;
+    local = leo_build_cluster_definition(local_cluster_def);
+    tbx_slist_append_tail(cluster_definition_list, local);
 
-      tbx_slist_init(&temp_list);
+    if (application_cluster_list->length)
+      /* Remote Clusters */
+      {
+	tbx_slist_t           temp_list;
+	tbx_slist_reference_t app_ref;
+	tbx_slist_reference_t clu_ref;
 
-      tbx_slist_dup(&temp_list, application_cluster_list);
-#error modification stopped here
-    }
+	tbx_slist_init(&temp_list);
+	tbx_slist_dup(&temp_list, application_cluster_list);
+      
+	tbx_slist_init_ref(cluster_definition_list, &clu_ref);
+
+	tbx_slist_init_ref(temp_list, &app_ref);
+	tbx_slist_search(leo_search_for_cluster, local, &app_ref);
+	tbx_slist_remove(&app_ref);
+	
+
+	while (temp_list->length)
+	  {
+	    tbx_bool_t iteration_status = tbx_false;
+	    int        length           = temp_list->length;
+	    
+	    while (length--)
+	      {
+		p_leo_application_cluster_t remote = NULL;
+
+		remote = tbx_slist_extract_head(&temp_list);
+
+		if (tbx_slist_search(leo_search_for_cluster_entry_point,
+				     remote,
+				     &clu_ref))
+		  {
+		    p_cluster_definition_t clu_def =
+		      tbx_slist_get(&clu_ref);
+
+		    DISP("Found %s cluster entry point on %% cluster",
+			 remote->id,
+			 clu_def->id);
+		    
+		    iteration_status = tbx_true;
+		    /* Remote cluster connection */
+		    DISP("Cluster not connected");
+		  }
+		else
+		  {
+		    tbx_slist_append_tail(&temp_list, remote);
+		  }
+	      }
+
+	    if (!iteration_status)
+	      FAILURE("Some clusters are unreachable");
+	  }
+      
+      }
     
   }
   
@@ -506,7 +565,7 @@ main (int argc, char *argv[])
    * Cluster initialization
    * ---------------------
    */
-  leo_start(application, local_cluster_def);
+  //leo_start(application, local_cluster_def);
   
   //leo_cluster_setup(main_leonie, application, local_cluster_def);
 

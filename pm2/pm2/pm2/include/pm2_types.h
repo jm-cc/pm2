@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_types.h,v $
+Revision 1.3  2000/02/14 10:00:37  rnamyst
+Modified to propose a new interface to the "pm2_completion" facilities.
+
 Revision 1.2  2000/01/31 15:49:47  oaumage
 - ajout du Log CVS
 
@@ -46,10 +49,23 @@ ______________________________________________________________________________
 
 #include <marcel.h>
 
-_PRIVATE_ typedef struct {
+typedef void (*pm2_startup_func_t)(void);
+
+typedef void (*pm2_rawrpc_func_t)(void);
+
+typedef void (*pm2_completion_handler_t)(void *);
+
+typedef void (*pm2_pre_migration_hook)(marcel_t pid);
+typedef any_t (*pm2_post_migration_hook)(marcel_t pid);
+typedef void (*pm2_post_post_migration_hook)(any_t key);
+
+
+_PRIVATE_ typedef struct pm2_completion_struct_t {
   marcel_sem_t sem;
   unsigned proc;
-  marcel_sem_t *sem_ptr;
+  struct pm2_completion_struct_t *c_ptr;
+  pm2_completion_handler_t handler;
+  void *arg;
 } pm2_completion_t;
 
 _PRIVATE_ typedef struct {

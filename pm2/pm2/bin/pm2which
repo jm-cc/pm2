@@ -60,7 +60,14 @@ pm2which_prettyprint() # path path...
     for p
     do
 	if [ $_PM2WHICH_SHOW_PREFIX = yes ]; then
-	    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|'
+	    case "$PM2_SYS" in
+		WIN*_SYS)
+		    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|' -e 's|\.exe$||g'
+		    ;;
+		*)
+		    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|'
+		    ;;
+	    esac
 	else
 	    echo $p
 	fi
@@ -132,21 +139,33 @@ pm2which_calc()
     export _PM2WHICH_RESULT
     export _PM2WHICH_NB_FOUND
     # On regarde si le nom de la commande est relatif/absolu
-    case "$1" in
+
+    case "$PM2_SYS" in
+	WIN*_SYS)
+	    _ext=".exe"
+	    ;;
+	*)
+	    _ext=""
+	    ;;
+    esac
+
+    _prog="$1"
+
+    case "$_prog" in
 	/*)
-	    [ -x $1 ] || pm2which_error "Error: \"$1\" exec file not found."
+	    [ -x "$_prog" ] || pm2which_error "Error: \"$_prog\" exec file not found."
 	    _PM2WHICH_RESULT=$1
 	    _PM2WHICH_NB_FOUND=1
 	    ;;
 	*:*)
-	    pm2which_handle_colon $1
+	    pm2which_handle_colon $_prog$_ext
 	    ;;
 	*)
-	    if [ -f "$1" -a -x "$1" ]; then
-		_PM2WHICH_RESULT="$PWD/$1"
+	    if [ -f "$_prog" -a -x "$_prog" ]; then
+		_PM2WHICH_RESULT="$PWD/$_prog"
 		_PM2WHICH_NB_FOUND=1
 	    else
-		pm2which_do_search $1
+		pm2which_do_search $_prog$_ext
 	    fi
 	    ;;
     esac
@@ -205,6 +224,9 @@ if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
 else
     _PM2WHICH_LOADER=`pm2-config --flavor="${PM2_FLAVOR}" --loader 2> /dev/null`
     export _PM2WHICH_LOADER
+
+    PM2_ARCH=`pm2_arch`
+    PM2_SYS=`pm2_sys`
 fi
 
 set -- $_PM2WHICH_ARGS

@@ -56,6 +56,18 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+set `${PM2_ROOT}/bin/pm2-config --modules`
+
+mod='pm2'
+
+for i
+do
+    case $i in
+      pm2) mod='pm2'; break;;
+      mad2) mod='mad2'; break;; 
+    esac
+done
+
 PM2_CONF_FILE=`pm2-conf-file`
 [ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
 export PM2_CONF_FILE
@@ -63,6 +75,6 @@ export PM2_CONF_FILE
 [ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf)."
 
 for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do
-	${PM2_RSH:-rsh} $host ${PM2_ROOT}/bin/pm2_vlocallogs $host
+	${PM2_RSH:-rsh} $host ${PM2_ROOT}/bin/pm2_vlocallogs $host $mod
 done
 

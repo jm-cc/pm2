@@ -65,14 +65,14 @@ static int unix_io_group(marcel_ev_serverid_t id,
 			  int nb_ev, int option)
 {
 	unix_io_serverid_t uid=struct_up(id, struct unix_io_server, server);
-	tcp_ev_t ev, tmp;
+	tcp_ev_t ev;
 
 	mdebug("Grouping IO poll\n");
 	uid->nb = 0;
 	FD_ZERO(&uid->rfds);
 	FD_ZERO(&uid->wfds);
 	
-	FOREACH_EV_POLL(ev, tmp, id, inst) {
+	FOREACH_EV_POLL(ev, id, inst) {
 		switch(ev->op) {
 		case POLL_READ : {
 			FD_SET(ev->fd, &uid->rfds);
@@ -164,14 +164,14 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 			 int nb_ev, int option)
 {
 	unix_io_serverid_t uid=struct_up(id, struct unix_io_server, server);
-	tcp_ev_t ev, tmp;
+	tcp_ev_t ev;
 	int r;
 	fd_set rfds, wfds;
 	struct timeval tv, *ptv;
   
 #ifndef MA__ACTIVATION
 	// Trop de messages avec les activations
-	mdebug("Polling function called on LWP %d\n",
+	mdebugl(6, "Polling function called on LWP %d\n",
 	       marcel_current_vp());
 #endif
 
@@ -187,7 +187,7 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 	if (tbx_unlikely(r==EBADF)) {
 		int found=0;
 		/* L'un des fd est invalide */
-		FOREACH_EV_POLL(ev, tmp, id, inst) {
+		FOREACH_EV_POLL(ev, id, inst) {
 			mdebug("Checking select for IO poll (with badFD)\n");
 			switch(ev->op) {
 			case POLL_READ :
@@ -215,7 +215,7 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 	if (r <= 0)
 		return 0;
 
-	FOREACH_EV_POLL(ev, tmp, id, inst) {
+	FOREACH_EV_POLL(ev, id, inst) {
 		unix_io_check_select(uid, ev, &rfds, &wfds);
 	}
 	return 0;
@@ -236,7 +236,7 @@ static int unix_io_fast_poll(marcel_ev_serverid_t id,
 
 #ifndef MA__ACTIVATION
 	// Trop de messages avec les activations
-	mdebug("Fast Polling function called on LWP %d\n",
+	mdebugl(6, "Fast Polling function called on LWP %d\n",
 	       marcel_current_vp());
 #endif
 	FD_ZERO(&rfds);
@@ -283,18 +283,19 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 	int n;
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
+#endif	
 
-	ev.op = POLL_READ;
-	ev.fd = fildes;
-	mdebug("Reading in fd %i\n", fildes);
-	marcel_ev_wait(&unix_io_server.server, &ev.inst);
-#endif
-
-	LOG("IO reading fd %i", fildes);
 	do {
+#ifndef MA__ACTIVATION
+		ev.op = POLL_READ;
+		ev.fd = fildes;
+		mdebug("Reading in fd %i\n", fildes);
+		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
+#endif
+		LOG("IO reading fd %i", fildes);
 		n = read(fildes, buf, nbytes);
 	} while( n == -1 && errno == EINTR);
-	
+
 	return n;
 }
 
@@ -306,7 +307,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 	ev.op = POLL_READ;
 	ev.fd = fildes;
 	mdebug("Reading in fd %i\n", fildes);
-	marcel_ev_wait(&unix_io_server.server, &ev.inst);
+	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
 #endif
 
 	LOG("IO readving fd %i", fildes);
@@ -318,15 +319,16 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 	int n;
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-
-	ev.op = POLL_WRITE;
-	ev.fd = fildes;
-	mdebug("Writing in fd %i\n", fildes);
-	marcel_ev_wait(&unix_io_server.server, &ev.inst);
+#endif
+	do {
+#ifndef MA__ACTIVATION
+		ev.op = POLL_WRITE;
+		ev.fd = fildes;
+		mdebug("Writing in fd %i\n", fildes);
+		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
 #endif
 
-	LOG("IO writing fd %i", fildes);
-	do {
+		LOG("IO writing fd %i", fildes);
 		n = write(fildes, buf, nbytes);
 	} while( n == -1 && errno == EINTR);
 	
@@ -341,7 +343,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 	ev.op = POLL_WRITE;
 	ev.fd = fildes;
 	mdebug("Writing in fd %i\n", fildes);
-	marcel_ev_wait(&unix_io_server.server, &ev.inst);
+	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
 #endif
 
 	LOG("IO writving fd %i", fildes);
@@ -360,7 +362,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	ev.wfds = wfds;
 	ev.nfds = nfds;
 	mdebug("Selecting within %i fds\n", nfds);
-	marcel_ev_wait(&unix_io_server.server, &ev.inst);
+	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
 	return ev.ret_val;
 #endif
 }

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.c,v $
+Revision 1.3  2000/01/13 14:45:55  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+- mad_channel.c, madeleine.c: amelioration des fonctions `par defaut' au niveau
+  du support des drivers
+
 Revision 1.2  1999/12/15 17:31:27  oaumage
 Ajout de la commande de logging de CVS
 
@@ -102,27 +108,27 @@ p_mad_buffer_t mad_alloc_buffer(size_t length)
   return buffer;
 }
 
-mad_bool_t mad_buffer_full(p_mad_buffer_t buffer)
+tbx_bool_t mad_buffer_full(p_mad_buffer_t buffer)
 {
   if (buffer->bytes_written < buffer->length)
     {
-      return mad_false ;
+      return tbx_false ;
     }
   else
     {
-      return mad_true ;
+      return tbx_true ;
     }
 }
 
-mad_bool_t mad_more_data(p_mad_buffer_t buffer)
+tbx_bool_t mad_more_data(p_mad_buffer_t buffer)
 {
   if (buffer->bytes_read < buffer->bytes_written)
     {
-      return mad_true ;
+      return tbx_true ;
     }
   else
     {
-      return mad_false ;
+      return tbx_false ;
     }
 }
 
@@ -207,9 +213,9 @@ p_mad_buffer_t mad_duplicate_buffer(p_mad_buffer_t source)
 }
 
 void mad_make_buffer_group(p_mad_buffer_group_t   buffer_group,
-			   p_mad_list_t           buffer_list,
+			   p_tbx_list_t           buffer_list,
 			   p_mad_link_t           link)
 {
-  mad_extract_sub_list(buffer_list, &(buffer_group->buffer_list));
+  tbx_extract_sub_list(buffer_list, &(buffer_group->buffer_list));
   buffer_group->link = link;
 }

@@ -43,7 +43,7 @@ void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req
 
 void dsm_invalidate_copyset(unsigned long index, dsm_node_t new_owner);
 
-void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_node_t reply_node, dsm_access_t access);
+void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t access);
 
 void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_node_t new_owner);
 

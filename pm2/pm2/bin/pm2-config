@@ -330,17 +330,22 @@ vide=
 # LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
 for lib in $libs; do
     LIB=`echo $lib | tr [a-z] [A-Z]`
-    libs="`eval echo \\$PM2_${LIB}_LIBNAME`"
-    case "$libs" in
+    libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
+    case "$libname" in
     $vide)
 	;;
     *)
-	the_libs="$the_libs -L`get_lib_dir $lib`"
-	for l in $libs; do
-	    the_libs="$the_libs -l${l}$PM2_EXT"
-	done
-	for l in `eval echo \\$PM2_${LIB}_LIBS_PM2`; do
-	    the_libs="$the_libs -l${l}$PM2_EXT"
+	the_libs="$the_libs -L`get_lib_dir $lib` -l${libname}$PM2_EXT"
+	for l in `eval echo \\$PM2_${LIB}_MODULE_DEPEND_LIB`; do
+	    case " $libs " in
+		*\ $l\ *)
+		    LIB2=`echo $l | tr [a-z] [A-Z]`
+		    libname2="`eval echo \\$PM2_${LIB2}_LIBNAME`"
+		    the_libs="$the_libs -l${libname2}$PM2_EXT"
+		    ;;
+		*)
+		    ;;
+	    esac
 	done
 	;;
     esac

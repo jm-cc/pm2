@@ -17,15 +17,7 @@ flavor="test_pm2"
 appdir="${PM2_ROOT}/pm2/examples/simple"
 prog="remote_hello"
 args="a b c"
-hosts="`uname -n` `uname -n`"
-cat > /tmp/pm2test_expected <<EOF
-[n1] Hello world!
-[n1] argc = 4
-[n1] argv[0] = </tmp/test_pm2/examples/simple/bin/remote_hello>
-[n1] argv[1] = <a>
-[n1] argv[2] = <b>
-[n1] argv[3] = <c>
-EOF
+hosts=${TESTCONFIG:-"`uname -n` `uname -n`"}
 
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
@@ -34,4 +26,13 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--marcel=\"mono\" --marcel=\"marcel_main\" \
 	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
 	--all=\"opt\" --common=\"static\" $_output_redirect
+
+cat > /tmp/pm2test_expected <<EOF
+[n1] Hello world!
+[n1] argc = 4
+[n1] argv[0] = <`pm2-config --builddir --flavor=$flavor`/examples/simple/bin/remote_hello>
+[n1] argv[1] = <a>
+[n1] argv[2] = <b>
+[n1] argv[3] = <c>
+EOF
 

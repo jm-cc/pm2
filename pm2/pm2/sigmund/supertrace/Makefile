@@ -54,6 +54,8 @@ DEP_TO_OBJ	=	$(subst .d,.o,$@)
 LEX             =       flex
 
 default: $(PROGRAM)
+supertrace: $(PROGRAM)
+.PHONY: supertrace
 
 ifneq ($(wildcard $(DEPENDS)),)
 include $(wildcard $(DEPENDS))

@@ -252,8 +252,11 @@ static __inline__ void _dsm_global_vars_init(int my_rank, int confsize)
     nb_static_dsm_pages++;
 }
 
-
+#ifdef min
+/* Suppression d'une collision avec la macro min de la toolbox */
+#undef min
 #define min(a,b) ((a) < (b))?(a):(b)
+#endif /* min */
 
 static __inline__ void _dsm_page_ownership_init()
 {

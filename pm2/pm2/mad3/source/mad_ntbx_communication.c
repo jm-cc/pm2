@@ -579,7 +579,7 @@ mad_command_thread(void *_madeleine)
 			if ( channel != NULL)
 			  {
 			     if (channel->mergeable == tbx_true)
-			       madeleine->mergeable = tbx_true ; 		     
+			       madeleine->dynamic->mergeable = tbx_true ; 		     
 			  }
 		     }
 		   while (tbx_slist_ref_forward(slist));
@@ -594,13 +594,13 @@ mad_command_thread(void *_madeleine)
 	 mad_leonie_send_int(-1);	 
       }       
       break;
+       
     case mad_leo_command_shutdown_channel:
       {	    
 	 DISP("mad_leo_command_shutdown_channel");
 	 name = mad_leonie_receive_string();
-	 marcel_fprintf(stderr,"Channel name to shutdown :%s \n", name);
-	 mad_channel = tbx_htable_get(madeleine->channel_htable, name);
-	 mad_leonie_send_int(-1);
+	 //marcel_fprintf(stderr,"Channel name to shutdown :%s \n", name);
+	 mad_channel = tbx_htable_extract(madeleine->channel_htable, name);	 
 	 common_channel_exit2(mad_channel);
 	 mad_leonie_send_int(-1);
       }       
@@ -612,7 +612,17 @@ mad_command_thread(void *_madeleine)
 	 channel_reopen(madeleine);
 	 mad_channel_merge_done(madeleine);
       }       
-      break;       
+      break;
+       
+     case mad_leo_command_split_channel:
+      {	    
+	 DISP("mad_leo_command_split_channel");
+	 mad_leonie_send_int(-1);
+	 mad_dir_driver_init(madeleine);
+	 channel_reopen(madeleine);
+	 mad_channel_split_done(madeleine);
+      }       
+      break;          
     default:
        FAILURE("invalid command from Leonie server");
     }

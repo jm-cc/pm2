@@ -155,7 +155,7 @@ typedef struct s_leo_loader
   p_leo_loader_func_t  loader_func;
 } leo_loader_t;
 
-typedef struct s_leo_application_settings
+typedef struct s_leo_settings
 {
   char              *name;
   char              *flavor;
@@ -167,6 +167,27 @@ typedef struct s_leo_application_settings
   tbx_bool_t         log_mode;
   tbx_bool_t         pause_mode;
   tbx_bool_t         smp_mode;
-} leo_application_settings_t;
+} leo_settings_t;
+
+typedef struct s_leonie
+{
+ // Topology
+  p_leo_networks_t     networks;
+  p_leo_directory_t    directory;
+  p_leo_spawn_groups_t spawn_groups;
+
+  // Net server
+  p_ntbx_server_t      net_server;
+
+  // Loaders
+  p_tbx_htable_t       loaders;
+
+  // Command line options
+  p_leo_settings_t     settings;
+
+  // Application information
+  p_tbx_htable_t       application_htable;
+  p_tbx_htable_t       application_networks;
+} leonie_t;
 
 #endif /* LEO_TYPES_H */

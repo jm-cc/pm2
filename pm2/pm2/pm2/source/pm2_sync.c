@@ -88,6 +88,17 @@ static int _received_from_all_other_nodes (pm2_barrier_t *bar)
 }
 
 
+void pm2_barrier_init(pm2_barrier_t *bar)
+{
+  int i, size = pm2_config_size();
+  
+  bar->tab_sync = (int *)tmalloc(size * sizeof(int));
+  marcel_mutex_init(&bar->sync_mutex, NULL);
+  for (i = 0; i < size; i++)
+    bar->tab_sync[i] = 0;
+}
+
+
 void pm2_barrier(pm2_barrier_t *bar)
 {
  int i;
@@ -139,16 +150,6 @@ void pm2_barrier_init_rpc()
   pm2_rawrpc_register(&BARRIER_LRPC, BARRIER_LRPC_func);
 }
 
-
-void pm2_barrier_init(pm2_barrier_t *bar, int size)
-{
-  int i;
-  
-  bar->tab_sync = (int *)tmalloc(size * sizeof(int));
-  marcel_mutex_init(&bar->sync_mutex, NULL);
-  for (i = 0; i < size; i++)
-    bar->tab_sync[i] = 0;
-}
 
 void pm2_sync_init(int myself, int confsize)
 {

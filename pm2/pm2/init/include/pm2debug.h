@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.11  2000/09/14 02:08:27  rnamyst
+Put profile.h into common/include and added few FUT_SWITCH_TO calls
+
 Revision 1.10  2000/09/13 21:57:35  rnamyst
 Improvements to the profile stuff: .fut files are now only built for modules that have the -DDO_PROFILE option set.
 
@@ -79,9 +82,7 @@ ______________________________________________________________________________
 #ifndef PM2DEBUG_EST_DEF
 #define PM2DEBUG_EST_DEF
 
-#ifdef PROFILE // i.e if the profile module was selected
 #include "profile.h"
-#endif
 
 typedef enum {
 	DEBUG_SHOW,

@@ -271,7 +271,7 @@ void init_upcalls(int nb_act)
 		nb_act=0;
 
 	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
-
+	printf("init_upcalls(%i)\n", nb_act);
 #ifdef MA__LWPS
 	for(proc=0; proc<nb_act; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */

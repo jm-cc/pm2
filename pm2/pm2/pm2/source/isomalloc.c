@@ -1126,7 +1126,7 @@ void slot_pack_all(slot_descr_t *descr)
    /* 
       pack the address of the first slot 
    */
-   mad_pack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
+   old_mad_pack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
    /* 
       pack the slot list 
    */
@@ -1135,11 +1135,11 @@ void slot_pack_all(slot_descr_t *descr)
        /* 
 	  pack the header 
        */
-       mad_pack_byte(MAD_IN_HEADER, (char*)slot_ptr, sizeof(slot_header_t));
+       old_mad_pack_byte(MAD_IN_HEADER, (char*)slot_ptr, sizeof(slot_header_t));
        /*
 	 pack the remaining slot data 
        */
-       mad_pack_byte(MAD_BY_COPY, (char*)slot_ptr + SLOT_HEADER_SIZE, slot_get_usable_size(slot_ptr));
+       old_mad_pack_byte(MAD_BY_COPY, (char*)slot_ptr + SLOT_HEADER_SIZE, slot_get_usable_size(slot_ptr));
 
        slot_ptr = slot_get_next(slot_ptr);
      }
@@ -1155,7 +1155,7 @@ void slot_unpack_all()
    /* 
       unpack the address of the first slot 
    */
-   mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
+   old_mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
 #ifdef DEBUG
    tfprintf(stderr,"the address of the first slot is %p\n", slot_ptr);
 #endif
@@ -1168,7 +1168,7 @@ void slot_unpack_all()
        /* 
 	  unpack the slot header 
        */
-       mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_header, sizeof(slot_header_t));
+       old_mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_header, sizeof(slot_header_t));
        /* 
 	  allocate memory for the slot 
        */
@@ -1180,7 +1180,7 @@ void slot_unpack_all()
        /* 
 	  unpack the remaining slot data
        */
-       mad_unpack_byte(MAD_BY_COPY, (char*)slot_ptr + SLOT_HEADER_SIZE, slot_get_usable_size(slot_ptr));
+       old_mad_unpack_byte(MAD_BY_COPY, (char*)slot_ptr + SLOT_HEADER_SIZE, slot_get_usable_size(slot_ptr));
 
        slot_ptr = slot_ptr->next;
      }

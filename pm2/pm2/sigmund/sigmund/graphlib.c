@@ -3,33 +3,31 @@
 #include "assert.h"
 
 static thread_on_list thr_on;
-static lwp_on_list lwp_on;
-
-
+static pid_on_list pid_on;
 
 /* This file is used to deal with the graphic library */
-void set_lwp_last_up(int lwp, u_64 last_up)
+void set_pid_last_up(int pid, u_64 last_up)
 {
-  lwp_on_list tmp;
-  tmp = lwp_on;
+  pid_on_list tmp;
+  tmp = pid_on;
   while (tmp != NULL) {
-    if (tmp->lwp == lwp) {  tmp->last_up = last_up; return;}
+    if (tmp->pid == pid) {  tmp->last_up = last_up; return;}
     tmp = tmp->next;
   }
-  tmp = (lwp_on_list) malloc(sizeof(struct lwp_on_list_st));
+  tmp = (pid_on_list) malloc(sizeof(struct pid_on_list_st));
   assert(tmp != NULL);
-  tmp->next = lwp_on;
+  tmp->next = pid_on;
   tmp->last_up = last_up;
-  tmp->lwp = lwp;
-  lwp_on = tmp;
+  tmp->pid = pid;
+  pid_on = tmp;
 }
 
-u_64 get_lwp_last_up(int lwp)
+u_64 get_pid_last_up(int pid)
 {
-  lwp_on_list tmp;
-  tmp = lwp_on;
+  pid_on_list tmp;
+  tmp = pid_on;
   while (tmp != NULL) {
-    if (tmp->lwp == lwp) return tmp->last_up;
+    if (tmp->pid == pid) return tmp->last_up;
     tmp = tmp->next;
   }
   return -1; // Error
@@ -48,6 +46,7 @@ void set_thread_disactivated(int thread, int disactivated)
   tmp->next = thr_on;
   tmp->disactivated = disactivated;
   tmp->thread = thread;
+  tmp->dec = 0;
   thr_on = tmp;
 }
 
@@ -84,7 +83,8 @@ void set_last_type_thread(int thread, mode type)
   return; // Error
 }
 
-void set_thread_last_up(int thread, u_64 last_up)
+/*
+void set_thread_last_up(int thread, u_64 last_up)   // ?
 {
   thread_on_list tmp;
   tmp = thr_on;
@@ -96,11 +96,13 @@ void set_thread_last_up(int thread, u_64 last_up)
   assert(tmp != NULL);
   tmp->next = thr_on;
   tmp->last_up = last_up;
+  tmp->disactivated = 1;
   tmp->thread = thread;
+  tmp->dec = 0;
   thr_on = tmp;
 }
 
-u_64 get_thread_last_up(int thread)
+u_64 get_thread_last_up(int thread)           // ?
 {
   thread_on_list tmp;
   tmp = thr_on;
@@ -109,4 +111,26 @@ u_64 get_thread_last_up(int thread)
     tmp = tmp->next;
   }
   return -1; // Error
+}
+*/
+
+void add_thread_dec(int thread, int add)
+{
+  thread_on_list tmp;
+  tmp = thr_on;
+  while (tmp != NULL) {
+    if (tmp->thread == thread) {tmp->dec += add; return;}
+    tmp = tmp->next;
+  }
+}
+
+int get_thread_dec(int thread)
+{
+ thread_on_list tmp;
+  tmp = thr_on;
+  while (tmp != NULL) {
+    if (tmp->thread == thread) return tmp->dec;
+    tmp = tmp->next;
+  }
+  return -1; //Erreur
 }

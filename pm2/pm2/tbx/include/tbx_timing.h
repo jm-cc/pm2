@@ -49,7 +49,7 @@ typedef union
 #define TBX_TICK_DIFF(t1, t2) (TBX_TICK_RAW_DIFF(t1, t2) - tbx_residual)
 #define TBX_TIMING_DELAY(t1, t2) tbx_tick2usec(TBX_TICK_DIFF(t1, t2))
 
-extern long long     tbx_residual;
-extern tbx_tick_t    tbx_new_event, tbx_last_event;
+extern unsigned long long tbx_residual;
+extern tbx_tick_t         tbx_new_event, tbx_last_event;
 
 #endif /* TBX_TIMING_H */

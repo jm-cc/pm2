@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.26  2000/04/28 10:41:41  rnamyst
+Added the marcel_cond_timedwait primitive
+
 Revision 1.25  2000/04/25 14:39:38  vdanjean
 remove debug stuff
 
@@ -986,6 +989,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
 {
   marcel_t next, cur = marcel_self();
   unsigned long ttw = __milliseconds + timeout;
+  volatile boolean first_time = TRUE;
 
 #if defined(MA__SMP) || defined(MA__ACTIVATION)
   RAISE(NOT_IMPLEMENTED);
@@ -1024,6 +1028,12 @@ void marcel_tempo_give_hand(unsigned long timeout,
 	RAISE(TIME_OUT);
       }
     } else {
+
+      if(first_time) {
+	first_time = FALSE;
+	
+	marcel_lock_release(&s->lock);
+      }
 
       cur->time_to_wake = ttw;
       SET_SLEEPING(cur);

@@ -18,7 +18,7 @@ _PM2TEST_PROGNAME=pm2-test
 
 _ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
 
-_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad2 pm2 dsm"
+_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad2 mad3 pm2 dsm"
 
 pm2test_error() # msg
 {
@@ -67,7 +67,8 @@ do_the_test()
     # Execution
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
-    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_result 2>&1
+    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args 2>&1 | tee /tmp/pm2test_result | grep '^####'|sed -e 's/^####//g'
+#    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_result 2>&1
     [ $? -eq 0 ] || pm2test_error "Execution failed"
 
     # Destruction de la flavor
@@ -77,7 +78,8 @@ do_the_test()
 
     # Le moment de verite
     echo "Checking results..."
-    if head -$nbl /tmp/pm2test_result | diff - /tmp/pm2test_expected ; then
+#    if head -$nbl /tmp/pm2test_result | diff - /tmp/pm2test_expected ; then
+    if grep -v '^####' /tmp/pm2test_result | head -$nbl - | diff - /tmp/pm2test_expected ; then
 	echo "Test ok!"
     else
 	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_result)"

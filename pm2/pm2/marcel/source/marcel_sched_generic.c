@@ -149,7 +149,6 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
-	struct list_head *pod;
 	DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
 
 	ma_spin_lock(&__wait_lock);

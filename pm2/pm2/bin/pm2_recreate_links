@@ -81,6 +81,7 @@ make_ln ${PM2_ROOT}/modules ../marcel marcel
 make_ln ${PM2_ROOT}/modules ../ntbx ntbx
 make_ln ${PM2_ROOT}/modules ../pm2 pm2
 make_ln ${PM2_ROOT}/modules ../pm2debug pm2debug
+make_ln ${PM2_ROOT}/modules ../profile profile
 make_ln ${PM2_ROOT}/modules ../tbx tbx
 make_ln ${PM2_ROOT}/modules ../swann swann
 

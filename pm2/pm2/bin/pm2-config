@@ -81,6 +81,7 @@ Other options
   --modules   : modules included in the flavor
   --cc        : C compiler used
   --stampfile : stampfile generated
+  --loader    : loader used
 
 Known values for MODULE are:
     ${MODULES}
@@ -177,7 +178,7 @@ while test $# -gt 0; do
 	eval ${dirname}dir=true
 	dirtoshow="$dirname1"
 	;;
-    --ext|--protocols|--modules|--cc|--stampfile)
+    --ext|--protocols|--modules|--cc|--stampfile|--loader)
 	other=$1
 	;;
     --help)
@@ -266,6 +267,18 @@ if [ ! -z "${dirtoshow}" ]; then
 	;;
     --cc)
 	echo ${PM2_CC:-gcc}
+	exit 0
+	;;
+    --loader)
+        if [ ! -z "${PM2_LOADER}" ]; then
+	echo ${PM2_LOADER}
+	exit 0
+	fi
+        if [ ! -z "${PM2_DEFAULT_LOADER}" ]; then
+	echo ${PM2_DEFAULT_LOADER}
+	exit 0
+	fi
+        echo ${PM2_ROOT}/bin/pm2load
 	exit 0
 	;;
     --stampfile)

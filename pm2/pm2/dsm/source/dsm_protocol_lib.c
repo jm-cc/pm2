@@ -138,13 +138,13 @@ void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node)
   if (dsm_get_access(index) >= READ_ACCESS) // there is a local copy of the page
     {
       dsm_add_to_copyset(index, req_node);
-      //      lock_task();
-      //      if (dsm_get_access(index) != WRITE_ACCESS)
-      //	dsm_set_access(index, WRITE_ACCESS);
-      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+      //        lock_task();
+      if (dsm_get_access(index) != WRITE_ACCESS)
+      	dsm_set_access(index, WRITE_ACCESS);
+      //dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
       dsm_send_page(req_node, index, READ_ACCESS);
-      //      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
-      //      unlock_task();
+      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+    //        unlock_task();
 #ifdef DEBUG3
       tfprintf(stderr,"RS after send page: a = %d\n",((atomic_t *)dsm_get_page_addr(index))->counter);
 #endif
@@ -182,13 +182,13 @@ void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_no
 #ifdef DEBUG3
       tfprintf(stderr,"WS before send page: a = %d\n",((atomic_t *)dsm_get_page_addr(index))->counter);
 #endif
-      //      lock_task();
-      //      if (dsm_get_access(index) != WRITE_ACCESS)
-      //	dsm_set_access(index, WRITE_ACCESS);
-      dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
+     // lock_task();
+      if (dsm_get_access(index) != WRITE_ACCESS)
+     	dsm_set_access(index, WRITE_ACCESS);
+      //dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
       dsm_send_page(req_node, index, WRITE_ACCESS);
       dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
-      //      unlock_task();
+     // unlock_task();
     }
   else // no access; maybe a pending access ?
     if (dsm_get_pending_access(index) == WRITE_ACCESS && !dsm_next_owner_is_set(index))

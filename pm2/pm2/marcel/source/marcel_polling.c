@@ -735,7 +735,7 @@ int marcel_req_attr_set(marcel_ev_req_t req, int attr)
 }
 
 /* Enregistrement d'un événement */
-int marcel_req_register(marcel_ev_server_t server, marcel_ev_req_t req)
+int marcel_ev_req_submit(marcel_ev_server_t server, marcel_ev_req_t req)
 {
 	marcel_task_t *lock;
 	LOG_IN();
@@ -744,6 +744,8 @@ int marcel_req_register(marcel_ev_server_t server, marcel_ev_req_t req)
 
 	verify_server_state(server);
 	MA_BUG_ON(req->state & MARCEL_EV_STATE_REGISTERED);
+
+	req->server=server;
 
 	server->registered_req_not_yet_polled++;
 
@@ -757,17 +759,20 @@ int marcel_req_register(marcel_ev_server_t server, marcel_ev_req_t req)
 }
 
 /* Abandon d'un événement et retour des threads en attente sur cet événement */
-int marcel_req_unregister(marcel_ev_server_t server, marcel_ev_req_t req)
+int marcel_ev_req_cancel(marcel_ev_req_t req, int ret_code)
 {
 	marcel_task_t *lock;
+	marcel_ev_server_t server;
 	LOG_IN();
+
+	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
+	server=req->server;
 
 	lock=ensure_lock_server(server);
 
 	verify_server_state(server);
-	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
 
-	__wake_req_waiters(server, req, -ECANCELED);
+	__wake_req_waiters(server, req, ret_code);
 
 	if (__unregister_poll(server, req)) {
 		if (__need_poll(server)) {
@@ -805,17 +810,20 @@ inline static int __wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 }
 
 /* Attente d'un thread sur un événement déjà enregistré */
-int marcel_ev_wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
-		       marcel_ev_wait_t wait, marcel_time_t timeout)
+int marcel_ev_req_wait(marcel_ev_req_t req, marcel_ev_wait_t wait,
+		       marcel_time_t timeout)
 {
 	marcel_task_t *lock;
 	int ret=0;
+	marcel_ev_server_t server;
 	LOG_IN();
+
+	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
+	server=req->server;
 
 	lock=ensure_lock_server(server);
 
 	verify_server_state(server);
-	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
 
 	req->state &= ~MARCEL_EV_STATE_OCCURED;
 
@@ -835,7 +843,7 @@ int marcel_ev_wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 }
 
 /* Attente d'un thread sur un quelconque événement du serveur */
-int marcel_ev_wait_server(marcel_ev_server_t server, marcel_time_t timeout)
+int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout)
 {
 	marcel_task_t *lock;
 	struct marcel_ev_wait wait;

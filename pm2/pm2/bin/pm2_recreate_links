@@ -62,6 +62,13 @@ make_ln()
 echo PM2
 make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
 make_ln ${PM2_ROOT}/console graphic/icons icons
+make_ln ${PM2_ROOT} toolbox tbx
+make_ln ${PM2_ROOT}/toolbox src source
+make_ln ${PM2_ROOT} toolbox/net ntbx
+make_ln ${PM2_ROOT}/toolbox/net src source
+make_ln ${PM2_ROOT}/pm2 ../examples examples
+make_ln ${PM2_ROOT}/pm2 ../include include
+make_ln ${PM2_ROOT}/pm2 ../source source
 
 
 # architecture-specific directories for the storage of binaries, etc.
@@ -128,6 +135,7 @@ make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 echo
 echo Madeleine II
 make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
+make_ln ${MAD2_ROOT}/ src source
 
 # DSM
 echo

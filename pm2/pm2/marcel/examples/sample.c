@@ -35,7 +35,7 @@
 
 /* sample.c */
 
-#include <marcel.h>
+#include "marcel.h"
 
 #define SCHED_POLICY   MARCEL_SCHED_BALANCE
 

@@ -180,6 +180,9 @@ void dsm_validate_page_entry(dsm_page_index_t index);
 
 void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map);
 
+extern int
+dsm_get_default_protocol (void);
+
 void dsm_set_default_protocol(int protocol);
 
 void dsm_set_page_protocol(dsm_page_index_t index, int protocol);

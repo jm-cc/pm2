@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define _GNU_SOURCE
 #include "marcel.h"
 
 #ifdef MA__SMP
@@ -40,6 +41,7 @@ _syscall0(pid_t,gettid)
 // WARNING: stack is never freed. That's not a problem since kernel
 // threads only terminate at the end of the program, but...
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
+			   void* stack_base,
 			   marcel_kthread_func_t func, void *arg)
 {
   void *stack;
@@ -112,6 +114,7 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 #include <errno.h>
 
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
+			   void *stack_base,
 			   marcel_kthread_func_t func, void *arg)
 {
 	pthread_attr_t attr;
@@ -120,7 +123,7 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
-	pthread_attr_setstackaddr (&attr, sp);
+	pthread_attr_setstack (&attr, stack_base, (sp-stack_base));
 	pthread_create(pid, &attr, func, arg);
 	LOG_OUT();
 }

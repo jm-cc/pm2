@@ -24,6 +24,8 @@ include $(PM2_ROOT)/make/common-vars.mak
 #---------------------------------------------------------------------
 MOD_SRC ?= source
 
+MOD_AFLAGS += -D__ASSEMBLY__
+
 # Inclusion du cache de configuration du module
 #---------------------------------------------------------------------
 DO_NOT_GENERATE_MAK_FILES+=_default_ _no_goal_

@@ -118,7 +118,7 @@ $(MOD_I_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.i
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS)  -DPREPROC $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d $$(MOD_GEN_CPP)/\1:|' > $@
-$(MOD_SI_DEPENDS): CFLAGS+=$(MOD_CFLAGS)
+$(MOD_SI_DEPENDS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_SI_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.si
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS)  -DPREPROC $(CFLAGS) $< | \
@@ -147,17 +147,17 @@ $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 
 # Dependances vers *.S
 #---------------------------------------------------------------------
-$(MOD_S_OBJECTS): CFLAGS+=$(MOD_CFLAGS)
+$(MOD_S_OBJECTS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -x assembler-with-cpp -c $< -o $@
 
-$(MOD_S_PICS): CFLAGS+=$(MOD_CFLAGS)
+$(MOD_S_PICS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -x assembler-with-cpp -c $< -o $@
 
-$(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS)
+$(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).si: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -P -DPREPROC $(CFLAGS) $< > $@

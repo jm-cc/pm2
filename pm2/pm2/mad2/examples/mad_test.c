@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.6  2000/05/22 13:44:56  oaumage
+- ajout du support application_spawn & leonie_spawn
+
 Revision 1.5  2000/03/15 16:58:33  oaumage
 - support APPLICATION_SPAWN
 - mad_test.c: demo `application spawn'
@@ -97,12 +100,19 @@ int marcel_main(int argc, char **argv)
 int main(int argc, char **argv)
 #endif
 {
-  p_mad_madeleine_t madeleine;
+  p_mad_madeleine_t madeleine = NULL;
+#ifndef LEONIE_SPAWN
   p_mad_adapter_set_t adapter_set;
+#endif /* LEONIE_SPAWN */
   char str_buffer[STR_BUFFER_LEN];
   int k ;
   p_mad_channel_t channel[NB_CHANNELS];
 
+#ifdef LEONIE_SPAWN
+  mad_init(&argc, argv);
+  DISP("Returned from mad_init");
+  exit(EXIT_SUCCESS);
+#else  /* LEONIE_SPAWN */
 #ifdef BI_PROTO
   /*  adapter_set =
       mad_adapter_set_init(2, mad_VIA, "/dev/via_lo", mad_TCP, NULL);*/
@@ -152,7 +162,7 @@ int main(int argc, char **argv)
 #else /* APPLICATION_SPAWN */
   madeleine = mad_init(&argc, argv, NULL, adapter_set);
 #endif /* APPLICATION_SPAWN */
-  
+#endif /* LEONIE_SPAWN */  
   for (k = 0 ; k < NB_CHANNELS ; k++)
     {
 #ifdef BI_PROTO

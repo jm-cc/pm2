@@ -25,13 +25,13 @@
 #include <sys/wait.h>
 #include "leonie.h"
 
-p_leo_application_settings_t  
-leo_application_settings_init(void)
+p_leo_settings_t  
+leo_settings_init(void)
 {
-  p_leo_application_settings_t object = NULL;
+  p_leo_settings_t object = NULL;
 
   LOG_IN();
-  object = TBX_CALLOC(1, sizeof(leo_application_settings_t));
+  object = TBX_CALLOC(1, sizeof(leo_settings_t));
   
   object->gdb_mode   = tbx_false;
   object->xterm_mode = tbx_true;
@@ -40,8 +40,7 @@ leo_application_settings_init(void)
   object->smp_mode   = tbx_false;
   LOG_OUT();
 
-  return object;
- 
+  return object; 
 }
 
 p_leo_process_specific_t
@@ -297,6 +296,18 @@ leo_loader_init(void)
 
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(leo_loader_t));
+  LOG_OUT();
+  
+  return object;
+}
+
+p_leonie_t
+leonie_init(void)
+{
+  p_leonie_t object = NULL;
+
+  LOG_IN();
+  object = TBX_CALLOC(1, sizeof(leonie_t));
   LOG_OUT();
   
   return object;

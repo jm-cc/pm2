@@ -97,14 +97,6 @@ make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/timing.h timing.h
 make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/safe_malloc.c safe_malloc.c
 make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/timing.c timing.c
 
-# Marcel / options de configuration (cf pm2-config-flavor) exclusives
-$ECHO
-cd ${MARCEL_ROOT}/config/options
-mkdir -p ../conf.excl
-for f in 1* ; do
-    make_ln ../conf.excl ../options/$f $f
-done
-
 # Mad I
 echo
 echo Madeleine I
@@ -121,14 +113,6 @@ make_ln ${MAD1_ROOT}/source/ ../../pm2/source/safe_malloc.c safe_malloc.c
 make_ln ${MAD1_ROOT}/source/ ../../pm2/source/timing.c timing.c
 make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 
-# Mad I / options de configuration (cf pm2-config-flavor) exclusives
-$ECHO
-cd ${MAD1_ROOT}/config/options
-mkdir -p ../net.excl
-for f in 1* ; do
-    make_ln ../net.excl ../options/$f $f
-done
-
 # Mad II
 echo
 echo Madeleine II
@@ -140,5 +124,8 @@ echo DSM
 make_ln ${DSM_ROOT}/include/ ../../pm2/include/timing.h timing.h
 make_ln ${DSM_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
+
+# Fabrication des catégories d'options
+pm2-make-option-sets
 
 echo

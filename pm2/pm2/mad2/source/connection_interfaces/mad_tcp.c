@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.18  2000/05/29 09:15:15  oaumage
+- Modificationde mad_tcp_sync_channel en deux fonctions mad_tcp_sync_in_channel
+  (synchronisation par reception) et mad_tcp_sync_out_channel
+  (synchronisation par emission) pour eviter des interferences avec les
+  applications en fin de session
+
 Revision 1.17  2000/04/17 15:47:42  oaumage
 - correction de l'allocation du tableau des ports
 
@@ -155,7 +161,7 @@ typedef struct
  * ----------------
  */
 static void
-mad_tcp_sync_channel(p_mad_channel_t channel)
+mad_tcp_sync_in_channel(p_mad_channel_t channel)
 {
   p_mad_adapter_t                   adapter       = channel->adapter;
   p_mad_driver_t                    driver        = adapter->driver;
@@ -234,6 +240,92 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
 	    {
 	      FAILURE("wrong host id");
 	    }
+	}
+    }
+  LOG_VAL("Channel synced", channel->id);
+  LOG_OUT();
+}
+
+static void
+mad_tcp_sync_out_channel(p_mad_channel_t channel)
+{
+  p_mad_adapter_t                   adapter       = channel->adapter;
+  p_mad_driver_t                    driver        = adapter->driver;
+  p_mad_configuration_t             configuration =
+    &(driver->madeleine->configuration);
+  p_mad_connection_t                connection;
+  p_mad_tcp_connection_specific_t   connection_specific;
+  ntbx_host_id_t                     i;
+
+  LOG_IN();
+  LOG_VAL("Syncing channel", channel->id);
+  
+  for (i = 0;
+       i < configuration->size;
+       i++)
+    {
+      if (i == configuration->local_host_id)
+	{
+	  /* Send */
+	  ntbx_host_id_t j;
+
+	  for (j = 0;
+	       j < configuration->size;
+	       j++)
+	    {
+	      ntbx_host_id_t host_id;
+	      
+	      if (j == configuration->local_host_id)
+		{
+		  continue;
+		}
+
+	      connection = &(channel->output_connection[j]);
+	      connection_specific = connection->specific;
+
+	      LOG_VAL("Writing channel id", channel->id);
+	      SYSCALL(write(connection_specific->socket,
+			    &(channel->id),
+			    sizeof(mad_channel_id_t)));
+	      LOG_VAL("Wrote channel id", channel->id);
+	      
+	      LOG_VAL("Receiving host id from host", j);
+	      SYSCALL(read(connection_specific->socket,
+			   &(host_id),
+			   sizeof(ntbx_host_id_t)));
+	      LOG_VAL("Received host id from host", j);
+	      LOG_VAL("Host id", host_id);
+	  
+	      if (host_id != j)
+		{
+		  FAILURE("wrong host id");
+		}
+	    }
+	}
+      else
+	{
+	  /* Receive */
+	  mad_channel_id_t channel_id;	      
+
+	  connection = &(channel->input_connection[i]);
+	  connection_specific = connection->specific;
+
+	  LOG_VAL("Receiving channel id from host", i);
+	  SYSCALL(read(connection_specific->socket, 
+		       &channel_id,
+		       sizeof(mad_channel_id_t)));
+	  LOG_VAL("Received channel id from host", i);
+	  LOG_VAL("Channel id", channel_id);
+	      
+	  if (channel_id != channel->id)
+	    {
+	      FAILURE("wrong channel id");
+	    }
+	  LOG_VAL("Writing local host id", configuration->local_host_id);
+	  SYSCALL(write(connection_specific->socket,
+			&(configuration->local_host_id),
+			sizeof(ntbx_host_id_t)));	      
+	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 	}
     }
   LOG_VAL("Channel synced", channel->id);
@@ -611,7 +703,7 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
     &(channel->adapter->driver->madeleine->configuration);
   
   LOG_IN();
-  mad_tcp_sync_channel(channel);
+  mad_tcp_sync_in_channel(channel);
 
   for (host = 0 ;
        host < configuration->size ;
@@ -637,7 +729,7 @@ void
 mad_tcp_before_close_channel(p_mad_channel_t channel)
 {
   LOG_IN();
-  mad_tcp_sync_channel(channel);
+  mad_tcp_sync_out_channel(channel);
   LOG_OUT();
 }
 

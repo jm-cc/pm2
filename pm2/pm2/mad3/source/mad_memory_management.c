@@ -59,7 +59,7 @@ mad_memory_manager_init(int    argc TBX_UNUSED,
 }
 
 void
-mad_memory_manager_clean(void)
+mad_memory_manager_exit(void)
 {
   tbx_malloc_clean(mad_buffer_memory);
   tbx_malloc_clean(mad_buffer_group_memory);

@@ -56,11 +56,11 @@ OS_SOLARIS = on
 #  Drivers
 #-----------
 # TCP
-# DRV_TCP = on
+DRV_TCP = on
 # VIA
 # DRV_VIA = on
 # SISCI
-DRV_SISCI = on
+# DRV_SISCI = on
 # SBP
 # DRV_SBP = on
 # MPI
@@ -129,8 +129,8 @@ LIB_MAD2 = $(LIB)/libmad2.a
 
 # compiler
 # CC = purify gcc
-# CC = gcc
-CC = egcc
+CC = gcc
+# CC = egcc
 
 # preprocessor flags
 CPPFLAGS = -I$(INC) -I$(CI_INC) 
@@ -139,10 +139,10 @@ CPPFLAGS = -I$(INC) -I$(CI_INC)
 # CFLAGS = -O6 -Wall 
 # CFLAGS = -g
 # CFLAGS = 
-# CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes # -Werror
+CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes # -Werror
 # CFLAGS = -pg -Wall
 # CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
-CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
+# CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
 
 # linker flags 
 # LDFLAGS = -pg 

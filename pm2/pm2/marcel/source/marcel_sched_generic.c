@@ -210,6 +210,11 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_t attr;
 	LOG_IN();
 
+	if (!IS_FIRST_LWP(lwp)) {
+		/* run_task DOIT démarrer en contexte d'irq */
+		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
+	}
+
 	/*****************************************/
 	/* Création de la tâche Idle (idle_task) */
 	/*****************************************/
@@ -302,7 +307,7 @@ static int sched_lwp_notify(struct ma_notifier_block *self,
 	return 0;
 }
 
-static struct ma_notifier_block sched_nb = {
+static struct ma_notifier_block generic_sched_nb = {
 	.notifier_call	= sched_lwp_notify,
 	.next		= NULL,
 	.priority       = 100, /* Pour authoriser la préemption */
@@ -310,16 +315,16 @@ static struct ma_notifier_block sched_nb = {
 
 void __init marcel_gensched_init_preempt(void)
 {
-	sched_lwp_notify(&sched_nb, (unsigned long)MA_LWP_ONLINE,
+	sched_lwp_notify(&generic_sched_nb, (unsigned long)MA_LWP_ONLINE,
 			   (void *)(ma_lwp_t)LWP_SELF);
-	ma_register_lwp_notifier(&sched_nb);
+	ma_register_lwp_notifier(&generic_sched_nb);
 }
 
 void __init marcel_gensched_init_idle(void)
 {
 	marcel_sem_init(&_main_struct.blocked,0);
 	
-	sched_lwp_notify(&sched_nb, (unsigned long)MA_LWP_UP_PREPARE,
+	sched_lwp_notify(&generic_sched_nb, (unsigned long)MA_LWP_UP_PREPARE,
 			   (void *)(ma_lwp_t)LWP_SELF);
 }
 

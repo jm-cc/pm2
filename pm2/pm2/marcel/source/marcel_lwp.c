@@ -141,7 +141,7 @@ static void* lwp_start_func(void* arg)
 	return NULL; /* For gcc */
 }
 
-static MA_DEFINE_PER_LWP(marcel_task_t *, run_task)=NULL;
+MA_DEFINE_PER_LWP(marcel_task_t *, run_task)=NULL;
 
 #ifdef MA__LWPS
 #ifdef MA__SMP
@@ -192,7 +192,7 @@ unsigned marcel_lwp_add_vp(void)
 
   // Initialisation de la structure marcel_lwp_t
   //marcel_lwp_init(lwp);
-  ma_call_lwp_notifier((unsigned long)MA_LWP_UP_PREPARE, lwp);
+  ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
 #warning initialisation de la structure à faire...
 
   lwp_list_lock_write();
@@ -346,9 +346,6 @@ static void lwp_init(ma_lwp_t lwp)
 #endif
 	marcel_create_special(&(ma_per_lwp(run_task, lwp)), &attr, lwp_start_func, NULL);
 	SET_LWP(ma_per_lwp(run_task, lwp), lwp);
-	/* run_task DOIT démarrer avec preempt_count pris */
-	/* (un pour le changement de ctx, un pour la suite */
-	ma_per_lwp(run_task, lwp)->preempt_count=-1;
 	ma_barrier();
 	MTRACE("RunTask", ma_per_lwp(run_task, lwp));
 

@@ -53,7 +53,7 @@ typedef unsigned long   mad_sbp_message_id_t,   *p_mad_sbp_message_id_t;
 typedef unsigned char   mad_sbp_channel_id_t,   *p_mad_sbp_channel_id_t;
 typedef unsigned char   mad_sbp_message_type_t, *p_mad_sbp_message_type_t;
 
-typedef enum
+typedef enum e_mad_sbp_message_type_constant
 {
   mad_sbp_REQUEST,
   mad_sbp_ACK,
@@ -65,7 +65,7 @@ typedef enum
  * local structures
  * ----------------
  */
-typedef struct 
+typedef struct s_mad_sbp_mad_header
 {
   mad_sbp_channel_id_t   channel_id;
   mad_sbp_message_type_t message_type;  
@@ -73,7 +73,7 @@ typedef struct
 
 typedef SbpHeader_t mad_sbp_sbp_header_t, *p_mad_sbp_sbp_header_t;
 
-typedef struct
+typedef struct s_mad_sbp_frame
 {
   mad_sbp_sbp_header_t sbp_header;
   mad_sbp_mad_header_t mad_header;
@@ -87,14 +87,14 @@ typedef struct s_mad_sbp_list_element
   p_mad_sbp_list_element_t next;
 } mad_sbp_list_element_t;
 
-typedef struct
+typedef struct s_mad_sbp_driver_specific
 {
   p_tbx_memory_t list_element_memory;
   p_tbx_memory_t buffer_pool_memory;
   int            nb_adapter;
 } mad_sbp_driver_specific_t, *p_mad_sbp_driver_specific_t;
 
-typedef struct
+typedef struct s_mad_sbp_adapter_specific
 {
   TBX_SHARED;
   mad_sbp_key_t            input_key;
@@ -107,11 +107,12 @@ typedef struct
   p_mad_sbp_list_element_t unknown_frames_tail;
 } mad_sbp_adapter_specific_t, *p_mad_sbp_adapter_specific_t;
 
-typedef struct
+typedef struct s_mad_sbp_channel_specific
 {
+  int dummy;
 } mad_sbp_channel_specific_t, *p_mad_sbp_channel_specific_t;
 
-typedef struct
+typedef struct s_mad_sbp_connection_specific
 {
   p_mad_sbp_list_element_t incoming_frames_head;
   p_mad_sbp_list_element_t incoming_frames_tail;
@@ -121,8 +122,9 @@ typedef struct
 #endif /* SOFTWARE_FLOW_CONTROL */
 } mad_sbp_connection_specific_t, *p_mad_sbp_connection_specific_t;
 
-typedef struct
+typedef struct s_mad_sbp_link_specific
 {
+  int dummy;
 } mad_sbp_link_specific_t, *p_mad_sbp_link_specific_t;
 
 /*

@@ -1,3 +1,10 @@
+/*! \file tbx_string_management.c
+ *  \brief TBX string object management routines.
+ *
+ *  This file contains the TBX string object management functions.
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

@@ -163,6 +163,21 @@ typedef marcel_lwp_t *(*marcel_schedpolicy_func_t)(marcel_t pid,
 #section marcel_functions
 void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
 
+/* ==== scheduling policies ==== */
+#section types
+struct marcel_sched_param {
+	int __sched_priority;
+};
+#ifndef sched_policy
+#define sched_policy __sched_policy
+#endif
+
+#section functions
+int marcel_sched_setparam(marcel_t t, const struct marcel_sched_param *p);
+int marcel_sched_getparam(marcel_t t, struct marcel_sched_param *p);
+int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_param *p);
+int marcel_sched_getscheduler(marcel_t t);
+
 /* ==== SMP scheduling directives ==== */
 
 void marcel_change_vpmask(marcel_vpmask_t mask);

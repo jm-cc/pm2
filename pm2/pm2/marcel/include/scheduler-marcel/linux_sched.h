@@ -359,6 +359,9 @@ extern int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
  static inline void ma_kick_process(marcel_task_t *tsk) { }
 #endif
 extern void FASTCALL(ma_wake_up_created_thread(marcel_task_t * tsk));
+
+int ma_sched_change_prio(marcel_t t, int prio);
+
 //extern void FASTCALL(ma_sched_fork(marcel_task_t * p));
 //extern void FASTCALL(ma_sched_exit(marcel_task_t * p));
 

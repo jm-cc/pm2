@@ -121,6 +121,24 @@ inline static marcel_t prev_task(marcel_t task)
 }
 #endif
 
+int marcel_sched_setparam(marcel_t t, const struct marcel_sched_param *p) {
+	return ma_sched_change_prio(t,p->sched_priority);
+}
+
+int marcel_sched_getparam(marcel_t t, struct marcel_sched_param *p) {
+	p->sched_priority=t->sched.internal.prio;
+	return 0;
+}
+
+int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_param *p) {
+	t->sched.internal.sched_policy=policy;
+	return ma_sched_change_prio(t,p->sched_priority);
+}
+
+int marcel_sched_getscheduler(marcel_t t) {
+	return t->sched.internal.sched_policy;
+}
+
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/

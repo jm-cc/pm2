@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.12  2000/05/25 00:23:50  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.11  2000/05/09 10:52:42  vdanjean
 pm2debug module
 
@@ -100,6 +103,7 @@ ______________________________________________________________________________
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_macros.h"
+#include "sys/marcel_work.h"
 
 /* ==== Starting and Shuting down the scheduler ==== */
 
@@ -223,6 +227,19 @@ static __inline__ void ma_lock_task(void)
 
 static __inline__ void ma_unlock_task(void) __attribute__ ((unused));
 static __inline__ void ma_unlock_task(void)
+{
+  volatile atomic_t *locked=&GET_LWP(marcel_self())->_locked;
+#ifdef MA__WORK
+  if ((atomic_read(locked)==1) 
+      && (marcel_self()->has_work || marcel_global_work)) {
+    do_work(marcel_self());
+  }
+#endif
+  atomic_dec(locked);
+}
+
+static __inline__ void unlock_task_for_debug(void) __attribute__ ((unused));
+static __inline__ void unlock_task_for_debug(void)
 {
   atomic_dec(&GET_LWP(marcel_self())->_locked);
 }
@@ -349,5 +366,7 @@ _PRIVATE_ marcel_t marcel_radical_next_task(void);
 #define MARCEL_ITIMER_TYPE    ITIMER_REAL
 
 #endif
+
+void marcel_update_time(marcel_t cur);
 
 #endif

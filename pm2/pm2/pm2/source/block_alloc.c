@@ -818,7 +818,7 @@ void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func()
 
 void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_func(void)
 {
-  pm2_thread_create((pm2_func_t) ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func, NULL);
 }
 
 

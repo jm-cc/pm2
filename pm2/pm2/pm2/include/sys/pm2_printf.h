@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: pm2_printf.h,v $
+Revision 1.2  2000/01/31 15:50:26  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #ifndef PM2_PRINTF_EST_DEF

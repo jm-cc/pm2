@@ -120,11 +120,17 @@ extern void restart_func (act_proc_t new_proc, int return_value,
 /*  		  int param, long eip, long esp); */
 
 __asm__ (".align 16 \n\
-	.globl restart_func \n\
+.globl restart_func \n\
 	.type	 restart_func,@function \n\
 restart_func: \n\
 	addl $4, %esp \n\
+	movl %ebx, 20(%esp) \n\
+	movl %ecx, 24(%esp) \n\
+	movl %edx, 28(%esp) \n\
 	call hack_restart_func \n\
+	movl 28(%esp), %edx \n\
+	movl 24(%esp), %ecx \n\
+	movl 20(%esp), %ebx \n\
 	movl 16(%esp), %esp \n\
 	ret \n\
 .Lmye: \n\
@@ -197,7 +203,10 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 		if(!locked() && preemption_enabled()) {
 			MTRACE("ActSched", current);
 			marcel_update_time(current);
-			marcel_yield();
+			lock_task();
+			marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
+			unlock_task();
+			ma__marcel_yield();
 		}
 	}
 	
@@ -247,6 +256,7 @@ void upcall_new(act_proc_t proc)
 	//mdebug("adr de desc = %i\n", *((int*)0xbffefdd8));
 /*  #endif */
 	MTRACE("UpcallNew", marcel_self());
+	//LOG_PTR("*(0x40083756)", *((int**)0x40083756));
 	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
 
 	if (locked()>1) {
@@ -308,11 +318,12 @@ void init_upcalls(int nb_act)
 	int proc;
 #endif
 
+	LOG_IN();
 	if (nb_act<=0)
 		nb_act=0;
 
 	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
-	debug("init_upcalls(%i)\n", nb_act);
+	DISP("init_upcalls(%i)", nb_act);
 #ifdef MA__LWPS
 	for(proc=0; proc<nb_act; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */
@@ -356,6 +367,7 @@ void init_upcalls(int nb_act)
 	mdebug("Initialisation upcall done\n");
 	//ACTDEBUG(printf("Fin act_init\n"));
 	//scanf("%i", &proc);
+	LOG_OUT();
 }
 
 #endif /* MA__ACTIVATION */

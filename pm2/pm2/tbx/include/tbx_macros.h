@@ -188,8 +188,19 @@
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
+#define FAILUREF(fmt, ...) \
+     (pm2debug_flush(), \
+      pm2fulldebug("FAILURE: " FAILURE_CONTEXT fmt "\n" , ## __VA_ARGS__), \
+      __TBX_PRINT_TRACE(), \
+      _TBX_EXIT_FAILURE())
+
 #define ERROR(str) \
      (pm2debug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", (str), strerror(errno)), \
+      __TBX_PRINT_TRACE(), \
+      _TBX_EXIT_FAILURE())
+
+#define ERRORF(fmt, ...) \
+     (pm2debug("FAILURE: " FAILURE_CONTEXT ": %s" fmt "\n", strerror(errno) , ## __VA_ARGS__), \
       __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -32,7 +31,7 @@
  */
 
 void
-mad_tcp_register(p_mad_driver_t driver);
+mad_tcp_register(p_mad_driver_t);
 
 void
 mad_tcp_driver_init(p_mad_driver_t);

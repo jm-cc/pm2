@@ -1,3 +1,9 @@
+/*! \file tbx.h
+ *  \brief TBX general include file.
+ *
+ *  This file includes every file needed for TBX application use.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

@@ -22,6 +22,7 @@
 
 enum {
    NETSERVER_END,
+   NETSERVER_REQUEST_HALT,
    NETSERVER_RAW_RPC  /* Must be the last one */
 };
 

@@ -87,6 +87,11 @@ static void end_launch_new()
 {
   marcel_t next, self;
   act_resume(NULL, 0);
+  //sched_yield();
+  //sched_yield();
+  //sched_yield();
+  //sched_yield();
+  //sleep(0);
   self=marcel_self();
   do {
     act_lock(self);

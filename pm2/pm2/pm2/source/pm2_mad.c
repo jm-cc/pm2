@@ -34,13 +34,16 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.c,v $
+Revision 1.2  2000/02/28 11:17:11  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.1  2000/02/02 10:29:50  rnamyst
 Sorry, I forgot to ad it...
 
 ______________________________________________________________________________
 */
 
-#include <pm2_mad.h>
+#include "pm2_mad.h"
 
 #ifdef MAD1
 
@@ -284,7 +287,7 @@ mad_arch_name(void)
 {
   LOG_IN();
   LOG_OUT();
-  return NET_ARCH;
+  return "[ArchNameNotAvail]";
 }
 
 boolean

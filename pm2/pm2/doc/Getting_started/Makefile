@@ -1,5 +1,4 @@
-
-## $Id: Makefile,v 1.6 2001/04/17 11:25:34 bouge Exp $
+## $Id: Makefile,v 1.8 2001/04/18 16:13:48 bouge Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -8,7 +7,9 @@ FIG2DEV= fig2dev
 
 .SUFFIXES: .eps .dvi .ps .tex .bbl .gp .eps .c
 
-.PHONY: all eps bbl dvi ps touch tar  clean open split ezflavor
+XWDGOAL		:= ezflavor options
+
+.PHONY: all eps bbl dvi ps touch tar  clean open split emph $(XWDGOAL)
 
 TEXFILES	:= appendicing.tex discovering.tex \
 		installing.tex mastering.tex title.tex \
@@ -21,16 +22,19 @@ STYFILES	:= start.sty
 TO_SPLIT	:= rpc-threads1 migration3 migrate-group \
 		dsm dsm1 dsm2 freeze mutex semaphore condition
 
-CFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c)
-CFILES_SPLIT_0	:= $(CFILES_TO_SPLIT:%=%-0) 
-CFILES_SPLIT_1	:= $(CFILES_TO_SPLIT:%=%-1)
+CFILES		:= $(wildcard Progs/*.c Progs/Makefile1)
+EMPHCFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c-emph)
+
+
+EMPHCFILES	:= $(CFILES:%=%-emph) 
+EMPHCFILES_SPLIT_0	:= $(EMPHCFILES_TO_SPLIT:%=%-0) 
+EMPHCFILES_SPLIT_1	:= $(EMPHCFILES_TO_SPLIT:%=%-1)
 
 BIBFILES	:= $(wildcard *.bib)
 FIGFILES	:= $(wildcard Figures/*.fig)
 GPFILES 	:= $(wildcard Measures/*.gp)
 PLOTFILES	:= $(wildcard Measures/*.plot)
-XWDFILES	:= $(wildcard Figures/*.xwd)
-CFILES		:= $(wildcard Progs/*.c)
+XWDFILES	:= $(XWDGOAL:%=Figures/%.xwd)
 
 BBLFILES	:= $(ROOTTEXFILES:%.tex=%.bbl)
 AUXFILES	:= $(ROOTTEXFILES:%.tex=%.aux)
@@ -48,18 +52,23 @@ OFILES		:= $(CFILES:%.c=%.o)
 EXEFILES	:= $(CFILES:%.c=%)
 
 BBLFILES	:= 
-INCLUDEFILES	:= $(CFILES) $(CFILES_SPLIT_0) $(CFILES_SPLIT_1) \
+INCLUDEFILES	:= $(EMPHCFILES) $(EMPHCFILES_SPLIT_0) $(EMPHCFILES_SPLIT_1) \
 			$(EPSFILES) $(BBLFILES) $(STYFILES)
 
 all: eps dvi split
 
-$(CFILES_SPLIT_0): %-0: %
+$(EMPHCFILES): %-emph: %
+	@perl -w emph.pl $< 
+
+emph: $(EMPHCFILES)
+
+$(EMPHCFILES_SPLIT_0): %-0: %
 	@perl -w split.pl $<
 
-$(CFILES_SPLIT_1): %-1: %
+$(EMPHCFILES_SPLIT_1): %-1: %
 	@perl -w split.pl $<
 
-split: $(CFILES_SPLIT_0) $(CFILES_SPLIT_1)
+split: $(EMPHCFILES_SPLIT_0) $(EMPHCFILES_SPLIT_1)
 
 $(GPEPSFILES): %.eps: $(PLOTFILES) %.gp
 	$(GNUPLOT) $*.gp > $*.eps		
@@ -107,7 +116,7 @@ ps: $(PSFILES)
 clean: open
 	-rm *.bbl *.aux *.log *.cb *.ps *.blg *~ *.dvi *.toc 
 	-rm $(OFILES) $(EXEFILES)
-	-rm $(CFILES_SPLIT_0) $(CFILES_SPLIT_1)
+	-rm $(EMPHCFILES) $(EMPHCFILES_SPLIT_0) $(EMPHCFILES_SPLIT_1)
 ##	-rm $(AUXEPSFILES)
 
 open:
@@ -125,7 +134,7 @@ tar:
 	chmod a+rX *; \
 	ls -la $(DIRNAME)_$(DATE).tgz
 
-Figures/ezflavor.eps: Figures/ezflavor.xwd
+$(XWDEPSFILES): %.eps: %.xwd
 ## xpr -device ps -portrait -gray 4 -psfig -compact $< > $@ See
 ## Using xpr seems deprecated.
 ## Using xv is quite painful, as there is no script mode.
@@ -135,12 +144,16 @@ Figures/ezflavor.eps: Figures/ezflavor.xwd
 	-convert $< $@
 	touch $@
 
-Figures/ezflavor.xwd: 
-	@echo 'Capturing the current ezflavor window: wait for the rings!'
+Figures/ezflavor.xwd: WINDOWNAME=	"ezflavor"
+Figures/options.xwd:  WINDOWNAME=	"Common options"
+
+$(XWDFILES):
+	@echo 'Capturing window named "$(WINDOWNAME)"...'
+	@echo 'Wait for the rings!'
 	@echo 'Warning: You should first raise this window on top!'
 	@sleep 3
-	xwd -debug -nobdrs -name ezflavor -out $@
+	xwd -debug -nobdrs -name $(WINDOWNAME) -out $@
 
-ezflavor: 
-	-rm Figures/ezflavor.xwd
-	$(MAKE) Figures/ezflavor.xwd
+$(XWDGOAL):
+	-mv Figures/$@.xwd Figures/$@.xwd.sv
+	$(MAKE) Figures/$@.xwd

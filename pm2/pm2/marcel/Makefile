@@ -80,20 +80,37 @@
 MAR_OPTIONS	=	#-DSTANDARD_MAIN -DUSE_PRIORITIES \
 		        #-DDO_NOT_CHAIN_BLOCKED_THREADS
 
-MAR_SMP		=	no
-MAR_ACTI	=	no
+#MAR_SMP		=      	no
+#MAR_ACTI	=	no
+#MAR_ACTI_SMP	=	no
 
-MAR0	=	-Wall #-g -DDEBUG
+ifndef MARCEL_FLAVOR
+# if yes, then different .o, .a and prg and made for each variante of marcel
+MARCEL_USE_FLAVOR = no
+# choose one for default
+MARCEL_FLAVOR = mono
+#MARCEL_FLAVOR = smp
+#MARCEL_FLAVOR = act
+#MARCEL_FLAVOR = actsmp
+else
+MARCEL_USE_FLAVOR = yes
+endif
+
+MAR0	=	-Wall
 MAR1	=	-O6
-MAR2	=	#-DMAR_TRACE
-MAR3	=	#-DMAR_TIMING
-MAR4	=	#-DUSE_SAFE_MALLOC
-MAR5	=	#-DACT_TIMER  #Pour les temps de deblockage
-MAR6	=	#-DACT_VERBOSE  #Pour les messages ACTDEBUG()
-MAR7	=	#-DENABLE_STACK_JUMPING
-MAR8	=	
+MAR2	=	#-g
+MAR3	=	#-DDEBUG
+MAR4	=	#-DMAR_TRACE
+MAR5	=	#-DUSE_SAFE_MALLOC
+MAR6	=	#-DACT_TIMER  #Pour les temps de deblockage
+MAR7	=	#-DSHOW_UPCALL  #Pour voir les upcalls
+#MAR7	=	#-DACT_VERBOSE  #Pour les messages ACTDEBUG()
+MAR8	=	#-DMAR_TIMING
+MAR9	=	#-DTICK_RATE=100
+MAR10	=	#-DENABLE_STACK_JUMPING
+MAR11	=	#-DDEBUG_LOCK_TASK
 
-MAR_STANDALONE_OPTIONS	= $(MAR0) $(MAR1) $(MAR2) $(MAR3) $(MAR4) $(MAR5) $(MAR6) $(MAR7) $(MAR8)
+MAR_STANDALONE_OPTIONS	= $(MAR0) $(MAR1) $(MAR2) $(MAR3) $(MAR4) $(MAR5) $(MAR6) $(MAR7) $(MAR8) $(MAR9) $(MAR10) $(MAR11)
 
 #
 # SEE ALSO :
@@ -121,23 +138,44 @@ ifndef SMP
 SMP	=	$(MAR_SMP)
 endif
 
+MAR_EXT = -mono
+
 ifeq ($(SMP),yes)
-MAR_STANDALONE_OPTIONS += -DSMP -D_REENTRANT
+MARCEL_FLAVOR	:=	smp
 endif
 
-ifeq ($(MAR_ACTI),yes)
-MAR_OPTIONS	+=	-D__ACT__
+ifeq ($(MARCEL_FLAVOR),smp)
+MAR_OPTIONS	+= -DMARCEL_SMP -D_REENTRANT
+MAR_EXT			:= -smp
+else 
+ifeq ($(MARCEL_FLAVOR),act)
+MAR_OPTIONS	+=	-DMARCEL_ACT
+MAR_EXT 	:=	-act
+else 
+ifeq ($(MARCEL_FLAVOR),actsmp)
+MAR_OPTIONS	+=	-DMARCEL_ACTSMP
+MAR_EXT		:=	-act-smp
+else
+MAR_OPTIONS	+=	-DMARCEL_MONO
+MAR_EXT		:=	-mono
+endif
+endif
+endif
+
+ifneq ($(MARCEL_USE_FLAVOR),yes)
+MAR_EXT := 
 endif
 
 ifdef PM2_FLAGS
 MAR_MAKEFILE	=	$(MARCEL_ROOT)/Makefile $(MARCEL_ROOT)/.mar_pm2
+PM2_FLAGS	+=	$(MAR_OPTIONS)
 else
 MAR_MAKEFILE	=	$(MARCEL_ROOT)/Makefile $(MARCEL_ROOT)/.mar_standalone
 endif
 
 MAR_SRC		:= $(MARCEL_ROOT)/source
-MAR_DEP		:= $(MAR_SRC)/depend
-MAR_OBJ		:= $(MAR_SRC)/obj/$(PM2_ARCH_SYS)
+MAR_DEP		:= $(MAR_SRC)/depend$(MAR_EXT)
+MAR_OBJ		:= $(MAR_SRC)/obj$(MAR_EXT)/$(PM2_ARCH_SYS)
 MAR_INC		:= $(MARCEL_ROOT)/include
 MAR_LIBD	:= $(MARCEL_ROOT)/lib/$(PM2_ARCH_SYS)
 
@@ -170,10 +208,11 @@ endif
 MAR_ASFLAGS	=	-D$(PM2_ARCH) -D$(PM2_SYS)
 
 MAR_LDFLAGS	=	
+MAR_LIB_FLAVOR	=	$(MAR_LIBD)/libmarcel$(MAR_EXT).a
 MAR_LIB		=	$(MAR_LIBD)/libmarcel.a
 MAR_LLIB	=	
 
-ifeq ($(SMP),yes)
+ifeq ($(MARCEL_FLAVOR),smp)
 MAR_LLIB	+=	-lpthread
 ifeq ($(PM2_SYS),SOLARIS_SYS)
 MAR_LLIB	+=	-lposix4
@@ -209,17 +248,28 @@ else
 THE_MAKEFILES	=	$(MAR_MAKEFILE)
 endif
 
+ifeq ($(MARCEL_USE_FLAVOR),yes)
+$(MAR_OBJECTS): $(MAR_OBJ)/%.o: $(MAR_DEP)/%.d
+else
 $(MAR_DEPENDS): $(THE_MAKEFILES)
 $(MAR_OBJECTS): $(MAR_OBJ)/%.o: $(MAR_DEP)/%.d $(THE_MAKEFILES)
+endif
 
-$(MAR_LIB): $(MAR_OBJECTS)
+$(MAR_LIB_FLAVOR): $(MAR_OBJECTS)
 ifdef PM2_FLAGS
 	rm -f $(MARCEL_ROOT)/.mar_standalone
 else
 	rm -f $(MARCEL_ROOT)/.mar_pm2
 endif
-	rm -f $(MAR_LIB)
-	ar cr $(MAR_LIB) $(MAR_OBJECTS)
+	rm -f $(MAR_LIB_FLAVOR)
+	ar cr $(MAR_LIB_FLAVOR) $(MAR_OBJECTS)
+
+ifneq ($(MAR_LIB_FLAVOR),$(MAR_LIB))
+$(MAR_LIB): $(MAR_LIB_FLAVOR)
+	@cd `dirname $(MAR_LIB)` ; \
+	  ln -sfv `basename $(MAR_LIB_FLAVOR)` `basename $(MAR_LIB)`
+.PHONY: $(MAR_LIB)
+endif
 
 $(MARCEL_ROOT)/.mar_pm2:
 	cp /dev/null $(MARCEL_ROOT)/.mar_pm2
@@ -294,8 +344,8 @@ endif
 
 MAR_MAKEFILE	+=	$(SRC_DIR)/Makefile
 
-DEP_DIR	=	$(SRC_DIR)/depend
-OBJ_DIR	=	$(SRC_DIR)/obj/$(PM2_ARCH_SYS)
+DEP_DIR	=	$(SRC_DIR)/depend$(MAR_EXT)
+OBJ_DIR	=	$(SRC_DIR)/obj$(MAR_EXT)/$(PM2_ARCH_SYS)
 BIN_DIR	=	$(SRC_DIR)/bin/$(PM2_ARCH_SYS)
 
 ifneq ($(MAKECMDGOALS),distclean)
@@ -324,8 +374,12 @@ include $(wildcard $(DEPENDS))
 endif
 endif
 
+ifeq ($(MARCEL_USE_FLAVOR),yes)
+$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d
+else
 $(DEPENDS): $(MAR_MAKEFILE)
 $(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d $(MAR_MAKEFILE)
+endif
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(MAR_CC) $(MAR_CFLAGS) -c $< -o $@
@@ -334,8 +388,13 @@ $(DEPENDS): $(DEP_DIR)/%.d: $(SRC_DIR)/%.c
 	$(SHELL) -ec '$(MAR_CC) -MM $(MAR_CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
-$(BIN_DIR)/%: $(OBJ_DIR)/%.o $(MAR_LIB)
+$(BIN_DIR)/%$(MAR_EXT): $(OBJ_DIR)/%.o $(MAR_LIB_FLAVOR)
 	$(MAR_CC) $(MAR_CFLAGS) $(MAR_LDFLAGS) $^ -o $@ $(MAR_LLIB)
+
+ifeq ($(MARCEL_USE_FLAVOR),yes)
+$(BIN_DIR)/%: $(OBJ_DIR)/%.o $(MAR_LIB_FLAVOR)
+	$(MAR_CC) $(MAR_CFLAGS) $(MAR_LDFLAGS) $^ -o $@$(MAR_EXT) $(MAR_LLIB)
+endif
 
 %: $(BIN_DIR)/% ;
 

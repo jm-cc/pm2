@@ -304,25 +304,25 @@ static inline void rq_unlock(ma_runqueue_t *rq)
  */
 static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
-	MA_BUG_ON(!p->sched.internal.array);
 	array->nr_active--;
 	list_del(&p->sched.internal.run_list);
 	if (list_empty(array->queue + p->sched.internal.prio)) {
 		sched_debug("array %p empty\n",array);
 		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
 	}
-	p->sched.internal.array = NULL;
 	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
+	MA_BUG_ON(!p->sched.internal.array);
+	p->sched.internal.array = NULL;
 }
 
 static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
-	MA_BUG_ON(p->sched.internal.array);
 	list_add_tail(&p->sched.internal.run_list, array->queue + p->sched.internal.prio);
 	__ma_set_bit(p->sched.internal.prio, array->bitmap);
 	array->nr_active++;
-	p->sched.internal.array = array;
 	sched_debug("enqueued %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
+	MA_BUG_ON(p->sched.internal.array);
+	p->sched.internal.array = array;
 }
 
 /*
@@ -495,7 +495,6 @@ static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
 	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
 		rq->nr_uninterruptible++;
 	dequeue_task(p, p->sched.internal.array);
-	p->sched.internal.array = NULL;
 #ifdef MA__LWPS
 	p->sched.internal.cur_rq = NULL;
 #endif
@@ -775,7 +774,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
-//	if (tbx_unlikely(!p->sched.internal.array))
+//	if (tbx_unlikely(!MARCEL_SELF->sched.internal.array))
 		__activate_task(p, rq);
 //	else {
 //		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
@@ -1730,7 +1729,7 @@ restart:
 	if (tbx_unlikely(rq == &ma_idle_runqueue)) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
-		sched_debug("rebalance");
+		sched_debug("rebalance\n");
 #warning TODO: demander à l application de rebalancer
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #endif
@@ -1770,7 +1769,7 @@ restart:
 	queue = array->queue + idx;
 	next = list_entry(queue->next, marcel_task_t, sched.internal.run_list);
 	
-	sched_debug("prio %d in %p, next %p\n",idx,rq,next);
+	sched_debug("prio %d in %p, next %p(%s)\n",idx,rq,next,next->name);
 
 //	if (next->activated > 0) {
 //		unsigned long long delta = now - next->timestamp;
@@ -1805,7 +1804,8 @@ switch_tasks:
 //		++*switch_count;
 
 		dequeue_task(next, next->sched.internal.array);
-		if (prev->sched.internal.cur_rq)
+		/* needs to be enqueued */
+		if (prev->sched.internal.cur_rq && !prev->sched.internal.array)
 			enqueue_task(prev, prevrq->active);
 		ma_set_task_lwp(next, LWP_SELF);
 
@@ -3075,8 +3075,13 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 
 static void linux_sched_lwp_start(ma_lwp_t lwp)
 {
+	ma_runqueue_t *rq;
+	marcel_task_t *p = ma_per_lwp(run_task,lwp);
 	/* Cette tâche est en train d'être exécutée */
-	dequeue_task(ma_per_lwp(run_task,lwp),ma_per_lwp(run_task,lwp)->sched.internal.array);
+	rq=task_rq_lock(p);
+	__activate_task(p, rq);
+	dequeue_task(p,p->sched.internal.array);
+	task_rq_unlock(rq);
 }
 
 static int linux_sched_lwp_notify(struct ma_notifier_block *self,
@@ -3117,7 +3122,7 @@ void __init sched_init(void)
 	 */
 	ma_main_runqueue.curr = MARCEL_SELF;
 	ma_wake_up_created_thread(MARCEL_SELF);
-	/* since it is actually already running */
+	/* since it is actually already running, no need to lock */
 	dequeue_task(MARCEL_SELF, MARCEL_SELF->sched.internal.array);
 
 //	init_timers();

@@ -190,12 +190,12 @@ tfprintf(stderr, "dsm_send_page_req(%d, %ld, %s)\n", dest_node, index,
   switch(req_access){
   case READ_ACCESS: 
     {
-      pm2_rawrpc_begin((int)dest_node, DSM_LRPC_READ_PAGE_REQ, NULL);
+      pm2_rawrpc_begin(dest_node, DSM_LRPC_READ_PAGE_REQ, NULL);
       break;
     }
   case WRITE_ACCESS: 
     {
-      pm2_rawrpc_begin((int)dest_node, DSM_LRPC_WRITE_PAGE_REQ, NULL);
+      pm2_rawrpc_begin(dest_node, DSM_LRPC_WRITE_PAGE_REQ, NULL);
       break;
     }
   default:
@@ -257,7 +257,7 @@ void dsm_send_page(dsm_node_t dest_node, dsm_page_index_t index, dsm_access_t ac
     dest_node);
 #endif
 
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_PAGE, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_SEND_PAGE, NULL);
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
   pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&to_send, sizeof(to_send));
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)to_send.addr, to_send.page_size); 
@@ -304,7 +304,7 @@ void dsm_send_page_with_user_data(dsm_node_t dest_node, dsm_page_index_t index, 
 #endif
 
 
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_PAGE, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_SEND_PAGE, NULL);
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
 #ifdef DSM_COMM_TRACE
   tfprintf(stderr,
@@ -355,7 +355,7 @@ void dsm_send_invalidate_req(dsm_node_t dest_node, dsm_page_index_t index, dsm_n
 #ifdef DSM_COMM_TRACE
   tfprintf(stderr, "[%s]: sending inv req to node %d for page %ld!\n", __FUNCTION__, dest_node, index);
 #endif
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_INVALIDATE_REQ, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_INVALIDATE_REQ, NULL);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&new_owner, sizeof(dsm_node_t));
@@ -375,7 +375,7 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, dsm_page_index_t index)
 #ifdef DSM_COMM_TRACE
   fprintf(stderr, "[%s]: sending inv ack to node %d for page %ld!\n", __FUNCTION__, dest_node, index);
 #endif
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_INVALIDATE_ACK, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_INVALIDATE_ACK, NULL);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(dsm_page_index_t));
   pm2_rawrpc_end();
 
@@ -718,7 +718,7 @@ void dsm_send_diffs(dsm_page_index_t index, dsm_node_t dest_node)
 
   pm2_completion_init(&c, NULL, NULL);
 
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_DIFFS, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_SEND_DIFFS, NULL);
 
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
 
@@ -788,7 +788,7 @@ void dsm_send_diffs_start(dsm_page_index_t index, dsm_node_t dest_node,
 
   pm2_completion_init(c, NULL, NULL);
 
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_DIFFS, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_SEND_DIFFS, NULL);
 
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER

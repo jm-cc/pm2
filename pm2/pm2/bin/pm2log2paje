@@ -185,6 +185,21 @@ sub Name {
     }
 }
 
+sub CurScheduler {
+    my $self=shift;
+    if (@_) {
+	my $next=shift;
+        if ($next) {
+	    $debug && print $self->Name, " scheduled on ", $next->Name, "\n";
+	    $self->{SCHEDULER} = $next;
+	} else {
+	    $debug && print $self->Name, " unscheduled\n";
+	    $self->{SCHEDULER} = undef;
+	}
+    }
+    return $self->{SCHEDULER};
+}
+
 #use overload '""' => \&ToString, "fallback" => 1;
 
 sub ToString {
@@ -285,6 +300,9 @@ sub LastSW {
 	    $self->{LASTSW} = $next;
 	} else {
 	    $debug && print "SW: ", $self->Name, " flushing old\n";
+	    if (defined($self->{LASTSW})) {
+		$self->{LASTSW}->CurScheduler(0);
+	    }
 	    $self->{LASTSW} = undef;
 	}
     }
@@ -332,7 +350,13 @@ sub EnsureSW {
 		$self->Debug("Sw reproted at $date\n");
 		$self->MoveSW($date);
 	    } else {
-		print STDERR "Arg, qu'est-ce qui se passe at $date!\n";
+		print STDERR "Arg, qu'est-ce qui se passe at $date!\n",
+		"CurSW=", $self->CurSW->Name, " SW=", $SW->Name, 
+		" LastSW=", defined($self->LastSW) && $self->LastSW || "UNDEF","\n";
+		$debug && print "Arg, qu'est-ce qui se passe at $date!\n",
+		"In ", $self->Name, ": ",
+		"CurSW=", $self->CurSW->Name, " SW=", $SW->Name, 
+		" LastSW=", defined($self->LastSW) && $self->LastSW || "UNDEF","\n";
 	    }
 	}
     }
@@ -353,6 +377,12 @@ sub ProposeSW {
     $self->CurSW($newSW);
     $self->DateSW($date);
     $self->InfoSW($info);
+    if ($newSW->CurScheduler) {
+	print STDERR "Arghh, on a encore une entité qui nous ordonnance!\n";
+	$debug && print "Arg SW propose ", $newSW->Name, " in ", $self->Name,
+	" while having ", $newSW->CurScheduler->Name, "\n";
+    }
+    $newSW->CurScheduler($self);
 }
 
 sub FlushSW {
@@ -372,14 +402,16 @@ sub FlushSW {
 	}
     } else {
 	my $SW=shift;
-	$debug && print "Flushing for ",$self->Name, " ";
-	if (defined($SW)) {
-	    $debug && print "(",$SW->Name,")";
+	if ($debug) {
+	    print "Flushing for ",$self->Name, " ";
+	    if (defined($SW)) {
+		print "(",$SW->Name,")";
+	    }
+	    if (defined($self->LastSW)) {
+		print "[",$self->LastSW->Name,"]";
+	    }
+	    print "\n";
 	}
-	if (defined($self->LastSW)) {
-	    $debug && print "[",$self->LastSW->Name,"]";
-	}
-	$debug && print "\n";
         if (defined($self->LastSW) &&
 	         (!(defined($SW)) || ($SW == $self->LastSW))) {
 	    $debug && print "Yes, do flush\n";
@@ -472,7 +504,7 @@ sub DelayedUEV {
 	    push @{$self->{DELAYED_UEV}}, $elem;
 	} else {
 	    $debug && print "purging\n";
-	    @{$self->{DELAYED_UEV}} = ();
+	    @{$self->{DELAYED_UEV}} = undef;
 	}
     }
     return $self->{DELAYED_UEV};
@@ -501,45 +533,18 @@ sub MoveSW {
     my $utid=$self->LastSW;
     my $ev;
     
-    foreach $ev (@{$self->DelayedUEV}) {
+    if (defined($self->DelayedUEV)) {
+	foreach $ev (@{$self->DelayedUEV}) {
 	    $debug && print "moving $ev to $utid: ";
 	    my $field;
 	    for $field (@{$ev}) {
 	        $debug && print $field, " ";
 	    }
 	    $debug && print "\n";
-       SuperTrace::Update_Utid($ev, $utid);
+	    SuperTrace::Update_Utid($ev, $utid);
+	}
     }
     $self->DelayedUEV(0);
-}
-
-sub ScheduledUtid {
-    my $class=shift;
-    my $utid=shift;
-    
-    if (not defined($utid)) {
-	return undef;
-    }
-    
-    my $lwp;
-    
-    foreach $lwp (values %{$class->GetCollection}) {
-	if (defined($lwp->CurSW) && $utid == $lwp->CurSW) {
-	    return $lwp;
-	}
-	if (defined($lwp->LastSW) && $utid == $lwp->LastSW) {
-	    return $lwp;
-	}
-    }
-    return undef;
-}
-
-sub Proc {
-    my $self=shift;
-    if (@_) {
-	$self->{PROC} = shift;
-    }
-    return $self->{PROC};
 }
 
 sub EventEntityCreate {
@@ -564,6 +569,29 @@ sub GetCollection {
 
 sub NameClass {
     return "Thread";
+}
+
+sub Name {
+    my $self=shift;
+    if (@_) {
+	$self->{NAME} = shift;
+    }
+    if (defined($self->Named)) {
+	return $self->Named;
+    }
+    if (defined($self->{NAME})) {
+	return $self->{NAME}.'['.$self->Id.']';
+    } else {
+        return $self->SUPER::Name;
+    }
+}
+
+sub Named {
+    my $self=shift;
+    if (@_) {
+	$self->{NAMED} = shift;
+    }
+    return $self->{NAMED};
 }
 
 sub EventEntityCreate {
@@ -756,11 +784,7 @@ sub PajeEvent {
 	Paje::paje_kt_get_hand($date, $proc, undef, $lwp, $utid);
     } elsif ($ev_type==Event::FUT || $ev_type==Event::FKT) {
 	my @ev=@{$event_infos};
-	if ($ev_type==Event::FUT) {
-	    splice(@ev,0,4);
-	} else {
-	    splice(@ev,0,5);
-	}
+	splice(@ev,0,5);
 	if ($ev[0] eq "gcc-traced") {
 	    if ($ev[2] eq "entry") {
 		Paje::paje_function_enter($date, $ev[3], $utid, \@ev);
@@ -822,7 +846,6 @@ sub InsertFKT {
     
     if (EventIsKSW($event)) {
 	my $next=LWP->Ensure(KFirst($event), $date);
-	$next->Proc($proc);
 	$proc->ProposeSW($date, $lwp, $next, undef);
     } else {
 	my $utid;
@@ -830,6 +853,7 @@ sub InsertFKT {
 	    $utid=Thread->Ensure(KFirst($event), $date);
 	    $lwp->FlushSW;
 	    $lwp->CurSW($utid);
+	    $utid->CurScheduler($lwp);
         } else {
     	    $utid=$lwp->Utid;
 	}
@@ -846,14 +870,40 @@ sub InsertFUT {
     my $event=shift;
 
     $utid=Thread->Ensure($utid, $date);
-    my $lwp=LWP->ScheduledUtid($utid);
+    if (!$utid->Named) {
+	#$utid->Name($event->[4]);
+    }
+    if ($event->[5] eq "fut_set_thread_name") {
+	my($name)="";
+	my($val);
+	for $val ($event->[6], $event->[7], $event->[8], $event->[9]) {
+	    if ($val =~ /^0x/) {
+		$val =hex($val);
+	    } else {
+		$val += 0;
+	    }
+	    my($i);
+	    my($l);
+	    for $i (0, 1, 2, 3) {
+		$l=($val >> (8*$i)) & 0xFF;
+		last if ($l == 0);
+		$name.= chr $l;
+	    }
+	    last if ($l == 0);
+	}
+	$utid->Named($name);
+    }
+    my $lwp=$utid->CurScheduler;
     if (not defined($lwp)) {
 	print STDERR "Skipping User event at date $date (no LWP)\n";
+	$debug && print "Skipping User event at date $date (no LWP)\n";
 	return;
     }
-    my $proc=$lwp->Proc;
+    $debug && print "CurLWP: ", $lwp->Name, "\n";
+    my $proc=$lwp->CurScheduler;
     if (not defined($proc)) {
 	print STDERR "Skipping User event at date $date (no Processor)\n";
+	$debug && print "Skipping User event at date $date (no Processor)\n";
 	return;
     }
     
@@ -876,7 +926,7 @@ sub EventIsKSW {
 
 sub EventIsUSW {
     my $event=shift;
-    my $type=$event->[4];
+    my $type=$event->[5];
 
     return $type =~ /switch_to/;    
 }
@@ -897,7 +947,7 @@ sub KFirst {
 sub UFirst {
     my $event=shift;
 
-    return $event->[5];
+    return $event->[6];
 }
 
 1;
@@ -1053,16 +1103,16 @@ sub Entete {
     
     GroupRegister("UT",
 		  EventDef("U", 
-			   1, "UV\t\"user thread\"",
+			   1, "UV\t\"User Thread\"",
 			   \&paje_event_create_u,
 			   \&paje_event_destroy_u),
 		  EventDef("LU",
-			   3, "L\t\"LUser Thread\"",
+			   3, "L\t\"Threads per LWP\"",
 			   \&paje_event_create_lu,
 			   \&paje_event_destroy_lu, 
 			   "L"),
 		  EventDef("PU",
-			   3, "P\t\"PUser Thread\"",
+			   3, "P\t\"Threads per Processor\"",
 			   \&paje_event_create_pu,
 			   \&paje_event_destroy_pu, 
 			   "P")
@@ -1073,12 +1123,12 @@ sub Entete {
 			   \&paje_event_create_l,
 			   \&paje_event_destroy_l),
 		  EventDef("UL",
-			   3, "U\t\"ULWP\"",
+			   3, "U\t\"LWPs running Thread\"",
 			   \&paje_event_create_ul,
 			   \&paje_event_destroy_ul, 
 			   "U"),
 		  EventDef("PL",
-			   3, "P\t\"PLWP\"",
+			   3, "P\t\"LWPs per Processor\"",
 			   \&paje_event_create_pl,
 			   \&paje_event_destroy_pl, 
 			   "P")
@@ -1089,12 +1139,12 @@ sub Entete {
 			   \&paje_event_create_p,
 			   \&paje_event_destroy_p),
 		  EventDef("UP",
-			   3, "U\t\"UProc \"",
+			   3, "U\t\"Processors running Thread \"",
 			   \&paje_event_create_up,
 			   \&paje_event_destroy_up, 
 			   "U"),
 		  EventDef("LP",
-			   3, "L\t\"LProc \"",
+			   3, "L\t\"Processors running LWP \"",
 			   \&paje_event_create_lp,
 			   \&paje_event_destroy_lp, 
 			   "L")
@@ -1106,7 +1156,7 @@ sub Entete {
 			   \&paje_event_destroy_uf));
     GroupRegister("UE",
 		  EventDef("UE",
-			   2, "U\t\"Alt_Events\"",
+			   2, "U\t\"Misc Events\"",
 			   \&paje_event_create_ue,
 			   \&paje_event_destroy_ue));
     
@@ -1690,16 +1740,17 @@ sub paje_function_exit {
 ################################################################
 my($last_date)=0;
 my($rand_delay)=0;
+use Math::BigInt  lib => 'GMP';
 sub Print {
     my($type) = shift;
     my($date) = shift;
     my($infos) = shift;
-    my($pdate);
+    my($pdate) = Math::BigInt->new(0);
 
     if ($date < SuperTrace::DateStart()) {
 	$pdate = SuperTrace::DateStart();
     } else {
-	$pdate = $date;
+	$pdate += $date*1;
     }
 
 #    if ($date < $last_date) {
@@ -1713,8 +1764,11 @@ sub Print {
 #    }
 #    $pdate=$date+$rand_delay;
 #    $last_date=$date;
+    my($cycle)=$pdate % 2657798000;
+    my($s)=$pdate/2657798000;
+    my($ns)=($cycle*1000000000) / 2657798000;
 
-    printf("%i %3.3f %s\n", $type, $pdate, $infos);
+    printf("%i $s.%09s %s\n", $type, $ns, $infos);
 }
 
 sub Events {
@@ -1855,6 +1909,9 @@ sub input_from_fxt {
 		    $read_user=-($max_prefetch*2+10);
 		    next;
 		}
+		if (/^===/) {
+		    next;
+		}
 		$read_user--;
 		$type="FUT_EV";
 		$offset=$user_offset;
@@ -1862,6 +1919,9 @@ sub input_from_fxt {
 		$_=<FKT>;
 		if ((not $_) || ($_ eq "\n")) {
 		    $read_kernel=-($max_prefetch*2+10);
+		    next;
+		}
+		if (/^===/) {
 		    next;
 		}
 		$read_kernel--;
@@ -1882,6 +1942,8 @@ sub input_from_fxt {
 	    last;
 	}
 	my $field;
+	$debug && print "--------------------------------------------------\n";
+	$debug && print "Insert: ";
 	for $field (@{$ev}) {
 	    $field =~ s/,$//;
 	    $debug && print $field, " ";
@@ -1971,12 +2033,13 @@ sub input_test {
 
 
 sub main {
-    my($test, $dump);
+    my($test, $dump)=(0,0);
     our($pm2logs, $user_traces, $kernel_traces);
     GetOptions ("log=s"	=> \$pm2logs,
 	    	"user=s" => \$user_traces,
 		"kernel=s" => \$kernel_traces,
 		"test"   =>  \$test,
+		"debug"   =>  \$debug,
 		"dump"   =>  \$dump);
 
     if ($user_traces || $kernel_traces) {

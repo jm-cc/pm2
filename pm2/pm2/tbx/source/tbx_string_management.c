@@ -60,14 +60,27 @@ tbx_strdup(const char *src)
   LOG_IN();
   length = strlen(src);
   dst    = TBX_MALLOC(length + 1);
-  CTRL_ALLOC(dst);
-
   strcpy(dst, src);
   LOG_OUT();  
 
   return dst;
 }
 
+tbx_bool_t
+tbx_streq(const char *s1,
+	  const char *s2)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (!strcmp(s1, s2))
+    {
+      result = tbx_true;
+    }
+  LOG_OUT();
+  
+  return result;
+}
 
 p_tbx_string_t
 tbx_string_init(void)
@@ -76,8 +89,6 @@ tbx_string_init(void)
 
   LOG_IN();
   string = TBX_CALLOC(1, sizeof(tbx_string_t));
-  CTRL_ALLOC(string);
-
   string->length           =    0;
   string->allocated_length =    0;
   string->data             = NULL;
@@ -123,55 +134,52 @@ tbx_string_reset(p_tbx_string_t string)
 }
 
 char *
-tbx_string_to_c_string(p_tbx_string_t string)
+tbx_string_to_cstring(p_tbx_string_t string)
 {
-  char   *c_string = NULL;
+  char   *cstring = NULL;
   size_t  length   =    0;
   
   LOG_IN();
   length   = string->length;
   
-  c_string = TBX_MALLOC(length + 1);
-  CTRL_ALLOC(c_string);
+  cstring = TBX_MALLOC(length + 1);
   
   if (length)
     {
-      memcpy(c_string, string->data, length);
+      memcpy(cstring, string->data, length);
     }
   
-  c_string[length] = '\0';
+  cstring[length] = '\0';
   LOG_OUT();  
 
-  return c_string;
+  return cstring;
 }
 
 char *
-tbx_string_to_c_string_and_free(p_tbx_string_t string)
+tbx_string_to_cstring_and_free(p_tbx_string_t string)
 {
-  char *c_string = NULL;
+  char *cstring = NULL;
   
   LOG_IN();
-  c_string = tbx_string_to_c_string(string);
+  cstring = tbx_string_to_cstring(string);
   tbx_string_free(string);
   LOG_OUT();  
 
-  return c_string;
+  return cstring;
 }
 
 void
-tbx_string_set_to_c_string(p_tbx_string_t  string,
-			   const char     *c_string)
+tbx_string_set_to_cstring(p_tbx_string_t  string,
+			   const char     *cstring)
 {
   size_t length = 0;
 
   LOG_IN();
   tbx_string_reset(string);
-  if ((length = strlen(c_string)))
+  if ((length = strlen(cstring)))
     {
       string->data = TBX_MALLOC(length);
-      CTRL_ALLOC(string->data);
-      
-      memcpy(string->data, c_string, length);
+      memcpy(string->data, cstring, length);
       string->length           = length;
       string->allocated_length = length;
     }  
@@ -179,12 +187,12 @@ tbx_string_set_to_c_string(p_tbx_string_t  string,
 }
 
 void
-tbx_string_set_to_c_string_and_free(p_tbx_string_t  string,
-				    char           *c_string)
+tbx_string_set_to_cstring_and_free(p_tbx_string_t  string,
+				    char           *cstring)
 {
   LOG_IN();
-  tbx_string_set_to_c_string(string, c_string);
-  TBX_FREE(c_string);
+  tbx_string_set_to_cstring(string, cstring);
+  TBX_FREE(cstring);
   LOG_OUT();
 }
 
@@ -195,8 +203,6 @@ tbx_string_set_to_char(p_tbx_string_t string,
   LOG_IN();
   tbx_string_reset(string);
   string->data = TBX_MALLOC(1);
-  CTRL_ALLOC(string->data);
-      
   string->data[0]          = data;
   string->length           =    1;
   string->allocated_length =    1;
@@ -204,26 +210,26 @@ tbx_string_set_to_char(p_tbx_string_t string,
 }
 
 p_tbx_string_t
-tbx_string_init_to_c_string(const char *c_string)
+tbx_string_init_to_cstring(const char *cstring)
 {
   p_tbx_string_t string = NULL;
 
   LOG_IN();
   string = tbx_string_init();
-  tbx_string_set_to_c_string(string, c_string);
+  tbx_string_set_to_cstring(string, cstring);
   LOG_OUT();
 
   return string;
 }
 
 p_tbx_string_t
-tbx_string_init_to_c_string_and_free(char *c_string)
+tbx_string_init_to_cstring_and_free(char *cstring)
 {
   p_tbx_string_t string = NULL;
 
   LOG_IN();
   string = tbx_string_init();
-  tbx_string_set_to_c_string_and_free(string, c_string);
+  tbx_string_set_to_cstring_and_free(string, cstring);
   LOG_OUT();
 
   return string;
@@ -243,15 +249,15 @@ tbx_string_init_to_char(const int data)
 }
 
 void
-tbx_string_append_c_string(p_tbx_string_t  string,
-			   const char     *c_string)
+tbx_string_append_cstring(p_tbx_string_t  string,
+			   const char     *cstring)
 {
   LOG_IN();
   if (string->allocated_length)
     {
       size_t length = 0;
       
-      if ((length = strlen(c_string)))
+      if ((length = strlen(cstring)))
 	{
 	  if (string->length + length > string->allocated_length)
 	    {
@@ -260,27 +266,26 @@ tbx_string_append_c_string(p_tbx_string_t  string,
 		    string->allocated_length + length);
 	      string->data =
 		TBX_REALLOC(string->data, string->allocated_length);
-	      CTRL_ALLOC(string->data);
 	    }
 
-	  memcpy(string->data + string->length, c_string, length);
+	  memcpy(string->data + string->length, cstring, length);
 	  string->length += length;
 	}
     }
   else
     {
-      tbx_string_set_to_c_string(string, c_string);
+      tbx_string_set_to_cstring(string, cstring);
     }
   LOG_OUT();
 }
 
 void
-tbx_string_append_c_string_and_free(p_tbx_string_t  string,
-				    char           *c_string)
+tbx_string_append_cstring_and_free(p_tbx_string_t  string,
+				    char           *cstring)
 {
   LOG_IN();
-  tbx_string_append_c_string(string, c_string);
-  TBX_FREE(c_string);
+  tbx_string_append_cstring(string, cstring);
+  TBX_FREE(cstring);
   LOG_OUT();
 }
 
@@ -296,7 +301,6 @@ tbx_string_append_char(p_tbx_string_t string,
 	{
 	  string->allocated_length = 2 * (string->allocated_length + 1);
 	  string->data = TBX_REALLOC(string->data, string->allocated_length);
-	  CTRL_ALLOC(string->data);
 	}
       
       string->data[string->length - 1] = (char)data;
@@ -392,8 +396,6 @@ tbx_string_set_to_string(p_tbx_string_t dst_string,
   if (src_string->length)
     {
       dst_string->data = TBX_MALLOC(src_string->length);
-      CTRL_ALLOC(dst_string->data);
-      
       memcpy(dst_string->data, src_string->data, src_string->length);
       dst_string->length           = src_string->length;
       dst_string->allocated_length = src_string->length;
@@ -428,7 +430,6 @@ tbx_string_append_string(p_tbx_string_t dst_string,
 		    dst_string->allocated_length + src_string->length);
 	      dst_string->data =
 		TBX_REALLOC(dst_string->data, dst_string->allocated_length);
-	      CTRL_ALLOC(dst_string->data);
 	    }
 
 	  memcpy(dst_string->data + dst_string->length, 
@@ -461,6 +462,18 @@ tbx_string_init_to_string(p_tbx_string_t src_string)
   LOG_IN();
   dst_string = tbx_string_init();
   tbx_string_set_to_string(dst_string, src_string);
+  LOG_OUT();
+
+  return dst_string;
+}
+
+p_tbx_string_t
+tbx_string_dup(p_tbx_string_t src_string)
+{
+  p_tbx_string_t dst_string = NULL;
+
+  LOG_IN();
+  dst_string = tbx_string_init_to_string(src_string);
   LOG_OUT();
 
   return dst_string;
@@ -695,8 +708,8 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
 
   LOG_IN();
   name = tbx_string_init();
-  
-  idx = path_name->length;
+  idx  = path_name->length;
+
   if (idx)
     {
       while ((idx > 0) && (path_name->data[idx - 1] != '\\'))
@@ -708,8 +721,7 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
       if (name->length)
 	{
 	  name->allocated_length = name->length;
-	  name->data = TBX_MALLOC(name->allocated_length);
-	  CTRL_ALLOC(name->data);
+	  name->data             = TBX_MALLOC(name->allocated_length);
 	  
 	  memcpy(name->data, path_name->data + idx, name->length);
 
@@ -723,7 +735,6 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
 	    }
 	}
     }
-  
   LOG_OUT();
 
   return name;

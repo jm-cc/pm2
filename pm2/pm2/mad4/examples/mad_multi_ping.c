@@ -56,7 +56,7 @@ typedef struct s_mad_ping_result
 static const int param_control_receive   =  0;
 static const int param_send_mode         =  mad_send_CHEAPER;
 static const int param_receive_mode      =  mad_receive_CHEAPER;
-static const int param_nb_samples        =  100;
+static const int param_nb_samples        =  10;
 static const int param_min_size          =  MAD_LENGTH_ALIGNMENT;
 static const int param_max_size          =  1024*1024*16;
 static const int param_step              =    0; /* 0 = progression log. */
@@ -70,6 +70,7 @@ static const int param_no_zero           =    1;
 static const int param_fill_buffer       =    1;
 static const int param_fill_buffer_value =    1;
 static const int param_one_way           =    1;
+static const int param_unreliable        =    1;
 
 static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;
@@ -335,8 +336,23 @@ ping(p_mad_channel_t      channel,
 			  out = mad_begin_packing(channel, lrank_dst);
 			  for (i = 0; i < pack; i++)
 			    {
-			      mad_pack(out, ptr, _size,
-				       param_send_mode, param_receive_mode);
+                              if (param_unreliable)
+                                {
+                                  p_mad_buffer_slice_parameter_t param = NULL;
+
+                                  param = mad_alloc_slice_parameter();
+                                  param->length = 0;
+                                  param->opcode = mad_op_optional_block;
+                                  param->value  = 100;
+                                  mad_pack_ext(out, ptr, _size,
+                                           param_send_mode, param_receive_mode, param, NULL);
+                                }
+                              else
+                                {
+                                  mad_pack(out, ptr, _size,
+                                           param_send_mode, param_receive_mode);
+                                }
+
 			      ptr += _size;
 			    }
 			  mad_end_packing(out);
@@ -401,11 +417,27 @@ ping(p_mad_channel_t      channel,
 				out = mad_begin_packing(channel, lrank_dst);
 				for (i = 0; i < pack; i++)
 				  {
-				    mad_pack(out, ptr, _size,
-					     param_send_mode,
-					     param_receive_mode);
-				    ptr += _size;
-				  }
+                                    if (param_unreliable)
+                                      {
+                                        p_mad_buffer_slice_parameter_t param = NULL;
+
+                                        param = mad_alloc_slice_parameter();
+                                        param->length = 0;
+                                        param->opcode = mad_op_optional_block;
+                                        param->value  = 100;
+                                        mad_pack_ext(out, ptr, _size,
+                                                     param_send_mode,
+                                                     param_receive_mode, param, NULL);
+                                      }
+                                    else
+                                      {
+                                        mad_pack(out, ptr, _size,
+                                                 param_send_mode,
+                                                 param_receive_mode);
+                                      }
+
+                                    ptr += _size;
+                                  }
 				mad_end_packing(out);
 			      }
 			  }
@@ -533,8 +565,24 @@ pong(p_mad_channel_t      channel,
 		      p_mad_connection_t out = NULL;
 
 		      out = mad_begin_packing(channel, lrank_dst);
-		      mad_pack(out, main_buffer, _length,
-			       param_send_mode, param_receive_mode);
+                      if (param_unreliable)
+                        {
+                          p_mad_buffer_slice_parameter_t param = NULL;
+
+                          param = mad_alloc_slice_parameter();
+                          param->length = 0;
+                          param->opcode = mad_op_optional_block;
+                          param->value  = 100;
+                          mad_pack_ext(out, main_buffer, _length,
+                                       param_send_mode, param_receive_mode,
+                                       param, NULL);
+                        }
+                      else
+                        {
+                          mad_pack(out, main_buffer, _length,
+                                   param_send_mode, param_receive_mode);
+                        }
+
 		      mad_end_packing(out);
 		    }
 		  else
@@ -543,8 +591,23 @@ pong(p_mad_channel_t      channel,
 		      int                dummy =    0;
 
 		      out = mad_begin_packing(channel, lrank_dst);
-		      mad_pack(out, &dummy, sizeof(dummy),
-			       param_send_mode, param_receive_mode);
+                      if (param_unreliable)
+                        {
+                          p_mad_buffer_slice_parameter_t param = NULL;
+
+                          param = mad_alloc_slice_parameter();
+                          param->length = 0;
+                          param->opcode = mad_op_optional_block;
+                          param->value  = 100;
+                          mad_pack_ext(out, &dummy, sizeof(dummy),
+                                   param_send_mode, param_receive_mode,
+                                   param, NULL);
+                        }
+                      else
+                        {
+                          mad_pack(out, &dummy, sizeof(dummy),
+                                   param_send_mode, param_receive_mode);
+                        }
 		      mad_end_packing(out);
 		    }
 		}
@@ -591,9 +654,26 @@ pong(p_mad_channel_t      channel,
 				out = mad_begin_packing(channel, lrank_dst);
 				for (i = 0; i < pack; i++)
 				  {
-				    mad_pack(out, ptr, _size,
-					     param_send_mode,
-					     param_receive_mode);
+                                    if (param_unreliable)
+                                      {
+                                        p_mad_buffer_slice_parameter_t param = NULL;
+
+                                        param = mad_alloc_slice_parameter();
+                                        param->length = 0;
+                                        param->opcode = mad_op_optional_block;
+                                        param->value  = 100;
+                                        mad_pack_ext(out, ptr, _size,
+                                                     param_send_mode,
+                                                     param_receive_mode,
+                                                     param, NULL);
+                                      }
+                                    else
+                                      {
+                                        mad_pack(out, ptr, _size,
+                                                 param_send_mode,
+                                                 param_receive_mode);
+                                      }
+
 				    ptr += _size;
 				  }
 				mad_end_packing(out);
@@ -826,13 +906,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 }
 #endif // STARTUP_ONLY
 
-/*
- * Warning: this function is automatically renamed to marcel_main when
- * appropriate
- */
 int
-main(int    argc,
-     char **argv)
+marcel_main(int    argc,
+            char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;

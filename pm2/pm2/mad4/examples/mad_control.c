@@ -764,13 +764,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 }
 #endif // STARTUP_ONLY
 
-/*
- * Warning: this function is automatically renamed to marcel_main when
- * appropriate
- */
 int
-main(int    argc,
-     char **argv)
+marcel_main(int    argc,
+            char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;

@@ -26,12 +26,17 @@
 #include "isomalloc_timing.h"
 #include "block_alloc.h"
 #include "magic.h"
+#include "pm2.h"
 
 #define BLOCK_ALIGN_UNIT 32
 #define BLOCK_HEADER_SIZE (ALIGN(sizeof(block_header_t), BLOCK_ALIGN_UNIT))
 #define BLOCK_ALIGN(s) (ALIGN(s,BLOCK_ALIGN_UNIT))
 #define MIN_BLOCK_SIZE 32
 
+
+BEGIN_LRPC_LIST
+  ISOMALLOC_LRPC_SEND_SPECIAL_SLOT
+END_LRPC_LIST
 
 static unsigned _self = 0;
 
@@ -101,7 +106,7 @@ static block_header_t *block_get_prev(block_header_t *block_ptr)
 }
 
 
-static void * block_get_usable_address(block_header_t *block_ptr)
+void * block_get_usable_address(block_header_t *block_ptr)
 {
   if (block_ptr != NULL)
     {
@@ -279,12 +284,21 @@ TIMING_EVENT("block_alloc_in_new_slot:before block_create");
 
 void *block_search_hole_in_slot_sublist(block_descr_t *descr, slot_header_t *first, slot_header_t *last, size_t size)
 {
-slot_header_t *slot_ptr;
-block_header_t *block_ptr;
-TIMING_EVENT("search_hole:start");
+  slot_header_t *slot_ptr;
+  block_header_t *block_ptr;
+  TIMING_EVENT("search_hole:start");
   slot_ptr = first; 
   while (slot_ptr != last)
     {
+      if (slot_ptr->special)
+	{
+	  /*
+	    Go on to the next slot.
+	    */
+	  slot_ptr = slot_get_next(slot_ptr);
+	  continue;
+	}
+
       block_ptr = (block_header_t *)slot_get_usable_address(slot_ptr);
       /*
 	Look for an appropriate hole in the current slot.
@@ -324,12 +338,20 @@ void * addr;
 TIMING_EVENT("block_alloc is starting");
   if (descr == NULL)
     {
-    LOG_OUT();
-    return (void *)NULL;
+      LOG_OUT();
+      return (void *)NULL;
     }
-
+  
   /*  block_lock;*/
-
+  
+  /* If the block needs to be alone in the slot, just allocate a new slot. */
+  if (attr && attr->special)
+    {
+      addr = block_alloc_in_new_slot(descr, size, attr);
+      LOG_OUT();
+      return addr;
+    }
+    
   /*
     If the last block set free is large enough, use it.
   */
@@ -337,11 +359,9 @@ TIMING_EVENT("block_alloc is starting");
   if (last_block_set_free != NULL && block_get_usable_size(last_block_set_free) >= size)
     {
      addr = block_create(last_block_set_free, size);
-
      LOG_OUT();
-
      return addr;
-      }
+    }
 
   /*
     Look for a hole large enough in the slots already allocated.
@@ -656,4 +676,153 @@ block_descr_t *block_merge_lists(block_descr_t *src, block_descr_t *dest)
  block_init_list(src);
 
  return dest;
+}
+
+
+void block_special_pack(void *addr, int dest_node, unpack_isomalloc_func_t f, void *extra, size_t size)
+{
+
+  block_header_t *next_block_ptr, *block_ptr = block_get_header_address(addr);
+  slot_header_t *slot_ptr = slot_get_header_address(block_ptr);
+
+  LOG_IN();
+
+#ifdef BLOCK_ALLOC_TRACE
+  fprintf(stderr,"start pack_special:\n");
+#endif
+  pm2_rawrpc_begin((int)dest_node, ISOMALLOC_LRPC_SEND_SPECIAL_SLOT, NULL);
+   /* 
+      pack the address of the slot 
+   */
+  pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&slot_ptr, sizeof(slot_header_t *));
+  /* 
+     pack the slot 
+     */
+  if (slot_ptr != NULL)
+    {
+      int status;
+      
+      /* 
+	  pack the header 
+	  */
+      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)slot_ptr, sizeof(slot_header_t));
+      status = isoaddr_page_get_status(isoaddr_page_index(slot_ptr));
+      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&status, sizeof(int));
+      /*
+	pack the remaining slot data 
+	*/
+      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)block_ptr, sizeof(block_header_t));
+      next_block_ptr = block_get_next(block_ptr);
+      /* pack the extra data size*/
+      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)size, sizeof(size_t));
+      
+      /* pack the data */
+      if ((next_block_ptr != NULL) && (block_get_usable_size(block_ptr) == 0))
+	pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, addr, (char *)next_block_ptr - (char*)addr);
+      
+      /* pack the extra data */
+      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)extra, size);
+
+      /* pack the handler */
+      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)f, sizeof(unpack_isomalloc_func_t));
+      pm2_rawrpc_end();
+
+      /* Migrating slots change owner */
+      isoaddr_page_set_owner(isoaddr_page_index(slot_ptr), dest_node); 
+    }
+#ifdef BLOCK_ALLOC_TRACE
+  fprintf(stderr, "pack_special ended\n");
+#endif
+  
+  LOG_OUT();
+}
+
+
+void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func()
+{
+  slot_header_t *slot_ptr;
+  slot_header_t slot_header;
+  void *usable_add;
+  block_header_t *block_ptr, *next_block_ptr;
+  isoaddr_attr_t attr;
+  unpack_isomalloc_func_t f;
+  size_t size;
+  void *extra;
+  char *addr;
+
+  LOG_IN();
+
+   /* 
+      unpack the address of the first slot 
+   */
+   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&slot_ptr, sizeof(slot_header_t *));
+#ifdef BLOCK_ALLOC_TRACE
+   tfprintf(stderr,"unpack_special:the address of the first slot is %p\n", slot_ptr);
+#endif
+
+   /* 
+      unpack the slot
+   */
+   if(slot_ptr != NULL)
+     {
+       isoaddr_page_set_owner(isoaddr_page_index(slot_ptr), _self); // Migrating slots change owner
+       isoaddr_page_set_status(isoaddr_page_index(slot_ptr), ISO_PRIVATE);
+       /* 
+	  unpack the slot header 
+       */
+       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&slot_header, sizeof(slot_header_t));
+       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&attr.status, sizeof(int));
+       attr.protocol = slot_header.prot;
+       attr.atomic = slot_header.atomic;
+       /* 
+	  allocate memory for the slot 
+       */
+       usable_add = slot_general_alloc(NULL, slot_get_usable_size(&slot_header), NULL, slot_get_usable_address(slot_ptr), &attr);
+       /* 
+	  copy the header 
+       */
+       *slot_ptr = slot_header;
+       /* 
+	  unpack the remaining slot data
+       */
+       block_ptr = (block_header_t *)slot_get_usable_address(slot_ptr);
+       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)block_ptr, sizeof(block_header_t));
+       /* unpack the extra data size*/
+       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)size, sizeof(size_t));
+       next_block_ptr = block_get_next(block_ptr);
+       /* unpack the data */
+       if ((next_block_ptr != NULL) && (block_get_usable_size(block_ptr) == 0))
+	 {
+	   addr = (char *)block_get_usable_address(block_ptr);
+	   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, addr, (char *)next_block_ptr - addr);
+	 }
+
+       extra = malloc(size);
+       if (!extra)
+	 RAISE(STORAGE_ERROR);
+       /* unpack the extra data */
+       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)extra, size);
+       
+       /* unpack the handler */
+       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)f, sizeof(unpack_isomalloc_func_t));
+       pm2_rawrpc_waitdata(); 
+       (*f)(addr, extra, size);
+     }
+#ifdef BLOCK_ALLOC_TRACE
+  fprintf(stderr,"Existing unpack_special\n");
+#endif
+
+  LOG_OUT();
+}
+
+
+void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_func(void)
+{
+  pm2_thread_create((pm2_func_t) ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func, NULL);
+}
+
+
+void block_init_rpc()
+{
+  pm2_rawrpc_register(&ISOMALLOC_LRPC_SEND_SPECIAL_SLOT, ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_func);
 }

@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 #                      PM2 HIGH-PERF/ISOMALLOC
 #           High Performance Parallel Multithreaded Machine

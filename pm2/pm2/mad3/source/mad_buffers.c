@@ -28,12 +28,13 @@ mad_get_user_send_buffer(void   *ptr,
 
   buffer = mad_alloc_buffer_struct();
 
-  buffer->buffer        = ptr;
-  buffer->length        = length;
-  buffer->bytes_written = length ;
-  buffer->bytes_read    = 0;
-  buffer->type          = mad_user_buffer;
-  buffer->specific      = NULL;
+  buffer->buffer          = ptr;
+  buffer->length          = length;
+  buffer->bytes_written   = length ;
+  buffer->bytes_read      = 0;
+  buffer->type            = mad_user_buffer;
+  buffer->specific        = NULL;
+  buffer->parameter_slist = NULL;
 
   return buffer;
 }
@@ -46,12 +47,13 @@ mad_get_user_receive_buffer(void   *ptr,
 
   buffer = mad_alloc_buffer_struct();
 
-  buffer->buffer        = ptr;
-  buffer->length        = length;
-  buffer->bytes_written = 0 ;
-  buffer->bytes_read    = 0;
-  buffer->type          = mad_user_buffer;
-  buffer->specific      = NULL;
+  buffer->buffer          = ptr;
+  buffer->length          = length;
+  buffer->bytes_written   = 0 ;
+  buffer->bytes_read      = 0;
+  buffer->type            = mad_user_buffer;
+  buffer->specific        = NULL;
+  buffer->parameter_slist = NULL;
 
   return buffer;
 }

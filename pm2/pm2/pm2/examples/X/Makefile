@@ -38,13 +38,8 @@ default: all
 
 include ../../make/common.mak
 
-all: fractale polygon
+all: polygon
 
-
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)
 
 # custom :
 
@@ -58,23 +53,13 @@ $(PM2_OBJ)/regul.o: regul.c regul.h $(PM2_HEADERS)
 
 # executables :
 
-# fractale :
-
-$(PM2_OBJ)/fractale.o: fractale.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_XCC)
-
-fractale: $(PM2_OBJ)/fractale.o $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_LIBS)
-	$(PM2_XLINK) $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_XLLIBS)
-	$(PM2_MOVE)
-
-
 # polygon :
 
-$(PM2_OBJ)/polygon.o: polygon.c $(PM2_HEADERS) rpc_defs.h
+$(PM2_OBJ)/polygon.o: polygon.c $(PM2_HEADERS)
 	$(PM2_XCC)
 
-polygon: $(PM2_OBJ)/polygon.o $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_LIBS)
-	$(PM2_XLINK) $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_XLLIBS)
+polygon: $(PM2_OBJ)/polygon.o $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_LIBS)
+	$(PM2_XLINK) $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_XLLIBS)
 	$(PM2_MOVE)
 
 

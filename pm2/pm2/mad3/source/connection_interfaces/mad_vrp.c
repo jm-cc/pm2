@@ -40,6 +40,7 @@
 
 #define MAD_VRP_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
+#define MAD_VRP_MAX_FIRST_PACKET_LENGTH 65536
 
 /*
  * global variables
@@ -75,6 +76,8 @@ typedef struct s_mad_vrp_in_connection_specific
   marcel_sem_t   sem_put;
   marcel_sem_t   sem_get;
   p_mad_buffer_t buffer;
+  unsigned char  first_packet_data[MAD_VRP_MAX_FIRST_PACKET_LENGTH];
+  size_t         first_packet_length;
   tbx_bool_t     active;
 } mad_vrp_in_connection_specific_t, *p_mad_vrp_in_connection_specific_t;
 
@@ -83,6 +86,7 @@ typedef struct s_mad_vrp_out_connection_specific
   int            socket;
   int            port;
   vrp_outgoing_t vrp_out;
+  tbx_bool_t     first;
   marcel_t       thread;
 } mad_vrp_out_connection_specific_t, *p_mad_vrp_out_connection_specific_t;
 
@@ -120,13 +124,19 @@ mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
 
       memcpy(b->buffer + b->bytes_written, vrp_b->data, copy_len);
       b->bytes_written += copy_len;
-
-      marcel_sem_V(&(is->sem_get));
     }
   else
     {
       is->active = tbx_true;
+
+      if (vrp_b->size <= MAD_VRP_MAX_FIRST_PACKET_LENGTH)
+        {
+          memcpy(is->first_packet_data, vrp_b->data, vrp_b->size);
+          is->first_packet_length = vrp_b->size;
+        }
     }
+
+  marcel_sem_V(&(is->sem_get));
   LOG_OUT();
 }
 
@@ -434,11 +444,14 @@ mad_vrp_connection_init(p_mad_connection_t in,
     {
       is = TBX_MALLOC(sizeof(mad_vrp_in_connection_specific_t));
 
-      is->socket =   -1;
-      is->port   =   -1;
-      is->vrp_in = NULL;
-      is->active = tbx_false;
-      is->buffer = NULL;
+      is->socket              =   -1;
+      is->port                =   -1;
+      is->vrp_in              = NULL;
+      is->thread              = NULL;
+      is->buffer              = NULL;
+      is->active              = tbx_false;
+      memset(is->first_packet_data, 0, MAD_VRP_MAX_FIRST_PACKET_LENGTH);
+      is->first_packet_length =    0;
 
       marcel_sem_init(&(is->sem_put), 1);
       marcel_sem_init(&(is->sem_get), 0);
@@ -454,6 +467,8 @@ mad_vrp_connection_init(p_mad_connection_t in,
       os->socket  =   -1;
       os->port    =   -1;
       os->vrp_out = NULL;
+      os->first   = tbx_true;
+      os->thread  = NULL;
 
       out->specific = os;
       out->nb_link  =  1;
@@ -571,17 +586,10 @@ void
 mad_vrp_new_message(p_mad_connection_t out)
 {
   p_mad_vrp_out_connection_specific_t os = NULL;
-  int                                 s  =    0;
-  unsigned char                       c  =    1;
-  vrp_buffer_t                        vrp_b;
 
   LOG_IN();
   os = out->specific;
-
-  vrp_b = vrp_buffer_construct(&c, 1);
-  vrp_buffer_set_loss_rate(vrp_b, 0, 0);
-  s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
-  vrp_buffer_destroy(vrp_b);
+  os->first = tbx_true;
   LOG_OUT();
 }
 
@@ -644,16 +652,38 @@ void
 mad_vrp_send_buffer(p_mad_link_t   lnk,
 		    p_mad_buffer_t b)
 {
-  p_mad_vrp_out_connection_specific_t os = NULL;
-  int                                 s  =    0;
-  vrp_buffer_t                        vrp_b;
+  p_mad_vrp_out_connection_specific_t  os  = NULL;
+  int                                  s   =    0;
+  void                                *ptr = NULL;
+  size_t                               len = 0;
+  vrp_buffer_t                         vrp_b;
 
   LOG_IN();
   os = lnk->connection->specific;
-  vrp_b = vrp_buffer_construct(b->buffer + b->bytes_read, b->bytes_written - b->bytes_read);
+
+  ptr = b->buffer + b->bytes_read;
+  len = b->bytes_written - b->bytes_read;
+
+  if (os->first)
+    {
+      if (len > MAD_VRP_MAX_FIRST_PACKET_LENGTH)
+        {
+          unsigned char c = 0;
+
+          vrp_b = vrp_buffer_construct(&c, 1);
+          vrp_buffer_set_loss_rate(vrp_b, 0, 0);
+          s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
+          vrp_buffer_destroy(vrp_b);
+        }
+
+      os->first = tbx_false;
+    }
+
+  vrp_b = vrp_buffer_construct(ptr, len);
   vrp_buffer_set_loss_rate(vrp_b, 0, 0);
   s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
   vrp_buffer_destroy(vrp_b);
+  b->bytes_read += len;
   LOG_OUT();
 }
 
@@ -661,13 +691,45 @@ void
 mad_vrp_receive_buffer(p_mad_link_t    lnk,
 		       p_mad_buffer_t *p_b)
 {
-  p_mad_vrp_in_connection_specific_t is = NULL;
+  p_mad_vrp_in_connection_specific_t is    = NULL;
+  p_mad_buffer_t                     b     = NULL;
+  tbx_bool_t                         first = tbx_false;
 
   LOG_IN();
-  is = lnk->connection->specific;
-  is->buffer = *p_b;
-  marcel_sem_V(&(is->sem_put));
+  is    =  lnk->connection->specific;
+  b     = *p_b;
+  first =  (is->buffer == NULL);
+
+  is->buffer = b;
+
+  if (!first)
+    {
+      marcel_sem_V(&(is->sem_put));
+    }
+
   marcel_sem_P(&(is->sem_get));
+
+  if (first)
+    {
+      size_t len = 0;
+
+      len = b->length - b->bytes_written;
+
+      if (len <= MAD_VRP_MAX_FIRST_PACKET_LENGTH)
+        {
+          if (len != is->first_packet_length)
+            FAILURE("stream out of sync");
+
+          memcpy(b->buffer+b->bytes_written, is->first_packet_data, len);
+          b->bytes_written += len;
+        }
+      else
+        {
+          marcel_sem_V(&(is->sem_put));
+          marcel_sem_P(&(is->sem_get));
+        }
+    }
+
   LOG_OUT();
 }
 

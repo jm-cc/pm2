@@ -52,8 +52,6 @@ ifneq ($(MAKECMDGOALS),fut)
 $(LIB_GEN_OBJ)/profile.o: $(LIB_GEN_INC)/fut_entries.h
 endif
 
-include $(PM2_ROOT)/make/libs-rules.mak
-
 else # !APP_RECURSIF
 
 ifneq ($(LIB_GEN_BIN),)
@@ -103,3 +101,4 @@ $(PM2_MAK_DIR)/profile-specific.mak: $(LIB_STAMP_FLAVOR)
 		echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
 	fi;
 
+include $(PM2_ROOT)/make/libs-rules.mak

@@ -107,6 +107,9 @@ if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
     _pm2load_ambiguity $prog
 fi
 
+PM2_CMD_NAME="$_PM2WHICH_RESULT"
+export PM2_CMD_NAME
+
 # On hérite du même coup du chemin d'accès au chargeur
 
 [ -x $_PM2CONFIG_LOADER ] || _pm2load_error "Fatal Error: \"$_PM2CONFIG_LOADER\" exec file not found!"

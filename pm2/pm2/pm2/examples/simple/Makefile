@@ -34,81 +34,20 @@
 #
 
 
+.PHONY: default all
 default: all
 
-include ../../make/common.mak
+SRC_DIR	:=	.
 
-all: hello simple synchronous threads ping thr_create
+include ../../Makefile
 
+PM2_APP_CFLAGS	=
+PM2_APP_LDFLAGS	=
+PM2_APP_LLIBS	=
 
-# executables :
-
-
-# hello :
-
-$(PM2_OBJ)/hello.o: hello.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-hello: $(PM2_OBJ)/hello.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# simple :
-
-$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-simple: $(PM2_OBJ)/simple.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# synchronous :
-
-$(PM2_OBJ)/synchronous.o: synchronous.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-synchronous: $(PM2_OBJ)/synchronous.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# threads :
-
-$(PM2_OBJ)/threads.o: threads.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-threads: $(PM2_OBJ)/threads.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# ping :
-
-$(PM2_OBJ)/ping.o: ping.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-ping: $(PM2_OBJ)/ping.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# thr_create :
-
-$(PM2_OBJ)/thr_create.o: thr_create.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-thr_create: $(PM2_OBJ)/thr_create.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-# test :
-
-$(PM2_OBJ)/test.o: test.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-test: $(PM2_OBJ)/test.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
+all:	$(BIN_DIR)/hello	\
+	$(BIN_DIR)/simple	\
+	$(BIN_DIR)/synchronous	\
+	$(BIN_DIR)/threads	\
+	$(BIN_DIR)/ping		\
+	$(BIN_DIR)/thr_create

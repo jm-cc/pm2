@@ -322,9 +322,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 			marcel_ctx_longjmp(marcel_self()->father->ctx_yield,
 					   NORMAL_RETURN);
 		}
-		MA_THR_RESTARTED(MARCEL_SELF, "Preemption");
+		MA_THR_RESTARTED(MARCEL_SELF, "Start");
 		/* Drop preempt_count with ma_spin_unlock_softirq */
-		ma_schedule_tail(MARCEL_SELF);
+		ma_schedule_tail();
 		
 	} else {
 		ma_runqueue_t *rq;
@@ -335,7 +335,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// ne change rien ici...
 
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			ma_schedule_tail(MARCEL_SELF);
+			ma_schedule_tail();
 			MA_THR_RESTARTED(cur, "Father Preemption");
 			LOG_OUT();
 			return 0;
@@ -372,7 +372,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		enqueue_task(marcel_self()->father, rq->active);
 		ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
 		
-		MTRACE("Preemption", marcel_self());
+		MTRACE("Early start", marcel_self());
 		
 		PROF_OUT_EXT(newborn_thread);
 		PROF_SET_THREAD_NAME();

@@ -1,4 +1,5 @@
 
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -36,10 +37,10 @@ void print_trace(trace tr)
   i = (i - 12) / 4;
   printf("%s",(tr.type == USER)? "USER: " : "KERN: ");
   printf("%9u ",(unsigned) tr.clock);
-  if (tr.type != USER)
-    printf("%5u %1u ", tr.pid, tr.proc);
+  if (tr.type == USER)
+    printf("%5u  %1u  %1u ", tr.pid, tr.proc, tr.thread);
   else
-    printf("%1u    %1u ", tr.proc, tr.thread);
+    printf("%5u  %1u    ", tr.pid, tr.proc);
   printf("%6x",tr.code);
   if (tr.type == USER) {
     printf("%40s", fut_code2name(tr.code >> 8));
@@ -108,23 +109,26 @@ void active_time()
   int active = 1;
   u_64 total_time = 0;
   u_64 slice_begin_time;
+  u_64 slice_end_time;
   if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
   slice_begin_time = tr.clock;
+  slice_end_time = tr.clock;
   if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
     active = 0;
   for(;;) {
     if (get_next_loose_filtered_trace(&tr) == 1) break;
     if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
-      if (active == 1) total_time += (unsigned) (tr.clock - slice_begin_time);
+      if (active == 1) total_time += (unsigned) (slice_end_time - slice_begin_time);
       active = 0;
     } else {
       if (active == 0) {
 	active = 1;
 	slice_begin_time = tr.clock;
       }
+      slice_end_time = tr.clock;
     }
   }
-  printf("Temps actif total = %d\n",(unsigned) total_time);
+  printf("Temps actif total = %u\n",(unsigned) total_time);
 }
 
 void idle_time()
@@ -145,7 +149,7 @@ void idle_time()
       active = 0;
     } else active = 1;
   }
-  printf("Temps inactif total = %d\n",(unsigned) total_time);
+  printf("Temps inactif total = %u\n",(unsigned) total_time);
 }
 
 void time()
@@ -156,6 +160,7 @@ void time()
 void nb_calls()
 {
   // La il faut que l'on m'explique
+  nb_events();
 }
 
 void active_slices()
@@ -175,7 +180,7 @@ void active_slices()
       if (active == 0) active = 1;
     }
   }
-  printf("Nombre de tranches actives = %d\n", nb_active_slice);
+  printf("Nombre de tranches actives = %u\n", nb_active_slice);
 }
 
 void idle_slices()
@@ -193,7 +198,7 @@ void idle_slices()
       active = 0;
     } else active = 1;
   }
-  printf("Nombre de tranches inactives = %d\n", nb_idle_slice);
+  printf("Nombre de tranches inactives = %u\n", nb_idle_slice);
 }
 
 void avg_active_slice()
@@ -203,6 +208,7 @@ void avg_active_slice()
   int nb_active_slice = 0;
   u_64 total_time = 0;
   u_64 slice_begin_time = 0;
+  u_64 slice_end_time = 0;
   if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
   slice_begin_time = tr.clock;
   if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
@@ -211,7 +217,7 @@ void avg_active_slice()
     if (get_next_loose_filtered_trace(&tr) == 1) break;
     if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
       if (active == 1) {
-	total_time += (unsigned) (tr.clock - slice_begin_time);
+	total_time += (unsigned) (slice_end_time - slice_begin_time);
 	nb_active_slice++;
       }
       active = 0;
@@ -220,9 +226,10 @@ void avg_active_slice()
 	active = 1;
 	slice_begin_time = tr.clock;
       }
+      slice_end_time = tr.clock;
     }
   }
-  printf("Temps moyen d'une tranche active = %d\n",(unsigned) total_time / nb_active_slice);
+  printf("Temps moyen d'une tranche active = %u\n",(unsigned) (total_time / nb_active_slice));
 }
 
 
@@ -273,13 +280,14 @@ int main(int argc, char **argv)
       int end;
       mode end_type;
       char s[400];
+      if (argc <= 1) error_usage();
       strcpy(s,*(argv+1));
       strcat(s,"_entry");
       if (name2code(s, &begin_type, &begin) != 0) error_usage();
       strcpy(s,*(argv+1));
       strcat(s,"_exit");
       if (name2code(s, &end_type, &end) != 0) error_usage();
-      filter_add_gen_slice(begin_type, begin, FALSE, 0, end_type, end, FALSE, 0);
+      filter_add_function(begin_type, begin, FALSE, 0, end_type, end, FALSE, 0);
       argCount = 2;
     } else if (!strcmp(*argv, "--event")) {
       int a;

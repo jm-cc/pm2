@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.10  2000/04/21 11:19:25  vdanjean
+fixes for actsmp
+
 Revision 1.9  2000/04/17 16:09:37  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -113,7 +116,7 @@ ______________________________________________________________________________
 
 #define MAX_CLEANUP_FUNCS	5
 
-/* Only meaningful when the SMP flag is on */
+/* Only meaningful when the SMP or ACT flag is on */
 #define MAX_LWP                 16
 
 #define THREAD_THRESHOLD_LOW    1
@@ -142,6 +145,12 @@ typedef void (*handler_func_t)(any_t);
 _PRIVATE_ struct task_desc_struct;
 _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
+#ifdef MA__ACTIVATION
+#include <asm/act.h>
+#undef MAX_LWP
+#define MAX_LWP ACT_NB_MAX_CPUS
+#endif
+
 #include "sys/marcel_flags.h"
 #include "sys/archdep.h"
 #include "sys/archsetjmp.h"
@@ -158,7 +167,6 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "marcel_attr.h"
 #include "mar_timing.h"
 #include "marcel_stdio.h"
-
 
 /* = initialization & termination == */
 

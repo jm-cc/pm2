@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.h,v $
+Revision 1.5  2001/01/03 11:05:24  oaumage
+- integration des headers du module de forwarding
+
 Revision 1.4  2000/06/06 12:54:38  oaumage
 - Ajout du calcul de la taille des groupes de buffers dynamiques
 
@@ -64,6 +67,15 @@ typedef enum
   mad_internal_buffer /* buffer to be used by the internal routines only */
 } mad_buffer_type_t, *p_mad_buffer_type_t;
 
+#ifdef MAD_FORWARDING
+typedef struct s_mad_buffer_info
+{
+  mad_send_mode_t    send_mode;
+  mad_receive_mode_t recv_mode;
+  
+} mad_buffer_info_t;
+#endif //MAD_FORWARDING
+
 /* mad_buffer: generic buffer object */
 typedef struct s_mad_buffer
 {
@@ -72,6 +84,9 @@ typedef struct s_mad_buffer
   size_t                    bytes_written;
   size_t                    bytes_read;
   mad_buffer_type_t         type;
+#ifdef MAD_FORWARDING
+  mad_buffer_info_t         informations;
+#endif //MAD_FORWARDING
   p_mad_driver_specific_t   specific; /* may be used by connection
 				         layer to store data
 				         related to static buffers */

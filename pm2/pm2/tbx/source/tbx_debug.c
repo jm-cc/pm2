@@ -1,3 +1,10 @@
+/*! \file tbx_debug.c
+ *  \brief TBX debug support routines
+ *
+ *  This file contains the support functions for the
+ *  TBX debugging facilities.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

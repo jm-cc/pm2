@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: leoparse_interface.h,v $
+Revision 1.5  2000/12/19 16:57:47  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.4  2000/12/11 08:31:16  oaumage
 - support Leonie
 
@@ -51,56 +59,6 @@ Leoparse
 
 ______________________________________________________________________________
 */
-/*
- * leoparse_interface.h
- * ---------------
- */
-
-/*
-                      PM2 HIGH-PERF/ISOMALLOC
-           High Performance Parallel Multithreaded Machine
-                           version 3.0
-
-     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
-       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
-
-            Laboratoire de l'Informatique du Parallelisme
-                        UMR 5668 CNRS-INRIA
-                 Ecole Normale Superieure de Lyon
-
-                      External Contributors:
-                 Yves Denneulin (LMC - Grenoble),
-                 Benoit Planquelle (LIFL - Lille)
-
-                    1998 All Rights Reserved
-
-
-                             NOTICE
-
- Permission to use, copy, modify, and distribute this software and
- its documentation for any purpose and without fee is hereby granted
- provided that the above copyright notice appear in all copies and
- that both the copyright notice and this permission notice appear in
- suppong documentation.
-
- Neither the institutions (Ecole Normale Superieure de Lyon,
- Laboratoire de L'informatique du Parallelisme, Universite des
- Sciences et Technologies de Lille, Laboratoire d'Informatique
- Fondamentale de Lille), nor the Authors make any representations
- about the suitability of this software for any purpose. This
- software is provided ``as is'' without express or implied warranty.
-
-______________________________________________________________________________
-$Log: leoparse_interface.h,v $
-Revision 1.4  2000/12/11 08:31:16  oaumage
-- support Leonie
-
-Revision 1.3  2000/11/16 13:24:04  oaumage
-- mise a jour initialisation
-
-
-______________________________________________________________________________
-*/
 
 /*
  * Leoparse_interface.h
@@ -110,7 +68,10 @@ ______________________________________________________________________________
 #ifndef __LEOPARSE_INTERFACE_H
 #define __LEOPARSE_INTERFACE_H
 
-/* Parsing */
+/*
+ * Parsing
+ * -------
+ */
 void
 leoparse_open_local_parser_file(char *file_name);
 
@@ -130,7 +91,10 @@ leoparse_close_remote_parser_file(void);
 #endif /* LEOPARSE_REMOTE */
 
 
-/* Initialization */
+/*
+ * Initialization
+ * --------------
+ */
 void
 leoparse_init(int    argc,
 	      char **argv);
@@ -139,11 +103,47 @@ void
 leoparse_purge_cmd_line(int   *argc,
 			char **argv);
 
-/* Yacc interface */
+/*
+ * Yacc interface
+ * --------------
+ */
 int
 leoparse_yy_input(char *buffer,
 		  int   max_size);
 
+/*
+ * Objects
+ * -------
+ */
+p_leoparse_object_t
+leoparse_get_object(p_leoparse_htable_entry_t entry);
 
+p_tbx_slist_t
+leoparse_get_slist(p_leoparse_htable_entry_t entry);
+
+p_tbx_htable_t
+leoparse_get_htable(p_leoparse_object_t object);
+
+char *
+leoparse_get_string(p_leoparse_object_t object);
+
+char *
+leoparse_get_id(p_leoparse_object_t object);
+
+p_tbx_slist_t
+leoparse_read_slist(p_tbx_htable_t  htable,
+		    char           *key);
+
+char *
+leoparse_read_id(p_tbx_htable_t  htable,
+		 char           *key);
+
+char *
+leoparse_read_string(p_tbx_htable_t  htable,
+		     char           *key);
+
+p_tbx_htable_t
+leoparse_read_htable(p_tbx_htable_t  htable,
+		     char           *key);
 
 #endif /* __LEOPARSE_INTERFACE_H */

@@ -123,7 +123,7 @@ prog_args="$@"
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
 
 set --  --source-mode $prog
-. ${PM2_ROOT}/bin/pm2which $*
+. ${PM2_ROOT}/bin/pm2which
 
 if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
     ambiguity $prog
@@ -136,7 +136,7 @@ fi
 # Récupération du chemin d'accès au fichier de config des machines
 
 set --  --source-mode
-. ${PM2_ROOT}/bin/pm2-conf-file $*
+. ${PM2_ROOT}/bin/pm2-conf-file
 
 [ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
 

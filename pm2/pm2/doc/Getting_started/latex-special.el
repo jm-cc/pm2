@@ -2,10 +2,6 @@
 
 (require 'latex)
 
-(require 'hilit-LaTeX)
-
-(setq hilit-auto-highlight-maxout 200000)
-
 (setq LaTeX-indent-environment-list
       (append
        '(("program" current-indentation)
@@ -13,6 +9,10 @@
 	 ("script" current-indentation)
 	 ("makefile" current-indentation))
        LaTeX-indent-environment-list))
+
+(require 'hilit-LaTeX)
+
+(setq hilit-auto-highlight-maxout 200000)
 
 (hilit-set-mode-patterns
  '(LaTeX-mode japanese-LaTeX-mode slitex-mode SliTeX-mode japanese-SliTeX-mode 
@@ -135,6 +135,43 @@
        '(("\\(^\\|[^\\\\]\\)\\(\\\\[a-zA-Z\\\\]+\\)" 2 summary-killed)))))
 
 
+(require 'ispell)
+
+(setq ispell-tex-skip-alists
+  '((("%\\[" . "%\\]")
+     ;; All the standard LaTeX keywords from L. Lamport's guide:
+     ;; \cite, \hspace, \hspace*, \hyphenation, \include, \includeonly, \input,
+     ;; \label, \nocite, \rule (in ispell - rest included here)
+     ("\\\\addcontentsline"              ispell-tex-arg-end 2)
+     ("\\\\add\\(tocontents\\|vspace\\)" ispell-tex-arg-end)
+     ("\\\\\\([aA]lph\\|arabic\\)"	 ispell-tex-arg-end)
+     ("\\\\author"			 ispell-tex-arg-end)
+     ("\\\\bibliographystyle"		 ispell-tex-arg-end)
+     ("\\\\makebox"			 ispell-tex-arg-end 0)
+;; LB: \figurelisting
+     ("\\\\figurelisting[a-z]*"			 ispell-tex-arg-end 3)
+;; End of addition
+     ;;("\\\\epsfig"		ispell-tex-arg-end)
+     ("\\\\document\\(class\\|style\\)" .
+      "\\\\begin[ \t\n]*{[ \t\n]*document[ \t\n]*}")
+;; Added by LB: \|name|
+     ("\\\\|[^|]" . "[^|]|")
+     ("\\$Id". "\\$")
+     ("^echo". "#")
+     ("cat <<". "#")
+;; End of addition
+     )
+    (;; delimited with \begin.  In ispell: displaymath, eqnarray, eqnarray*,
+     ;; equation, minipage, picture, tabular, tabular* (ispell)
+     ("\\(figure\\|table\\)\\*?"  ispell-tex-arg-end 0)
+     ("list"			  ispell-tex-arg-end 2)
+     ("shell"		. "\\\\end[ \t\n]*{[ \t\n]*shell[ \t\n]*}")
+     ("script"		. "\\\\end[ \t\n]*{[ \t\n]*script[ \t\n]*}")
+     ("makefile"		. "\\\\end[ \t\n]*{[ \t\n]*makefile[ \t\n]*}")
+     ("program"		. "\\\\end[ \t\n]*{[ \t\n]*program[ \t\n]*}")
+     ("verbatim\\*?"	. "\\\\end[ \t\n]*{[ \t\n]*verbatim\\*?[ \t\n]*}"))
+    )
+)
 
 
 

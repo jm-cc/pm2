@@ -245,6 +245,90 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #depend "linux_perlwp.h[marcel_macros]"
 MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 
+#section marcel_macros
+#define MA_DEFINE_LWP_NOTIFIER_START(name, help, \
+			             prepare, prepare_help, \
+			             online, online_help) \
+  MA_DEFINE_LWP_NOTIFIER_START_PRIO(name, 0, help, \
+				    prepare, prepare_help, \
+				    online, online_help)
+#define MA_DEFINE_LWP_NOTIFIER_START_PRIO(name, prio, help, \
+				          prepare, prepare_help, \
+				          online, online_help) \
+  MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
+				  UP_PREPARE, prepare, prepare_help, \
+				  ONLINE, online, online_help)
+#define MA_DEFINE_LWP_NOTIFIER_ONOFF(name, help, \
+			             online, online_help, \
+			             offline, offline_help) \
+  MA_DEFINE_LWP_NOTIFIER_ONOFF_PRIO(name, 0, help, \
+			            online, online_help, \
+			            offline, offline_help)
+#define MA_DEFINE_LWP_NOTIFIER_ONOFF_PRIO(name, prio, help, \
+			                  online, online_help, \
+			                  offline, offline_help) \
+  MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
+				  ONLINE, online, online_help, \
+				  OFFLINE, offline, offline_help)
+
+#define MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
+				        ONE, one, one_help, \
+				        TWO, two, two_help) \
+  static int name##_notify(struct ma_notifier_block *self, \
+		           unsigned long action, void *hlwp) \
+  { \
+	ma_lwp_t lwp = (ma_lwp_t)hlwp; \
+	switch(action) { \
+	case MA_LWP_##ONE: \
+		one(lwp); \
+		break; \
+	case MA_LWP_##TWO: \
+		two(lwp); \
+		break; \
+	default: \
+		break; \
+	} \
+	return 0; \
+  } \
+  static const char * name##_helps[6] = { \
+	  [0]="Notifier [" help "] [none]", \
+	  [1]="Notifier [" help "] [none]", \
+	  [2]="Notifier [" help "] [none]", \
+	  [3]="Notifier [" help "] [none]", \
+	  [4]="Notifier [" help "] [none]", \
+	  [5]="Notifier [" help "] [none]", \
+	  [MA_LWP_##ONE]="Notifier [" help "] " one_help, \
+	  [MA_LWP_##TWO]="Notifier [" help "] " two_help, \
+  }; \
+  static MA_DEFINE_NOTIFIER_BLOCK_INTERNAL(name##_nb, name##_notify, \
+	prio, help, 4, name##_helps); \
+  void __init marcel_##name##_notifier_register(void) \
+  { \
+        ma_register_lwp_notifier(&name##_nb); \
+  } \
+  __ma_initfunc_prio(marcel_##name##_notifier_register, \
+                MA_INIT_REGISTER_LWP_NOTIFIER, \
+                MA_INIT_REGISTER_LWP_NOTIFIER_PRIO, \
+                "Registering notifier " #name " (" help ") at prio "#prio)
+
+#define MA_LWP_NOTIFIER_CALL_UP_PREPARE(name, section) \
+  MA_LWP_NOTIFIER_CALL(name, section, MA_INIT_PRIO_BASE, UP_PREPARE)
+#define MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(name, section, prio) \
+  MA_LWP_NOTIFIER_CALL(name, section, prio, UP_PREPARE)
+#define MA_LWP_NOTIFIER_CALL_ONLINE(name, section) \
+  MA_LWP_NOTIFIER_CALL(name, section, MA_INIT_PRIO_BASE, ONLINE)
+#define MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(name, section, prio) \
+  MA_LWP_NOTIFIER_CALL(name, section, prio, ONLINE)
+#define MA_LWP_NOTIFIER_CALL(name, section, prio, PART) \
+  void __init marcel_##name##_call_##PART(void) \
+  { \
+	name##_notify(&name##_nb, (unsigned long)MA_LWP_##PART, \
+		   (void *)(ma_lwp_t)LWP_SELF); \
+  } \
+  __ma_initfunc_prio_internal(marcel_##name##_call_##PART, section, prio, \
+                              &name##_helps[MA_LWP_##PART])
+
+
 #section marcel_functions
 static inline int ma_lwp_online(ma_lwp_t lwp);
 #ifdef MA__LWPS

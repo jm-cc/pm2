@@ -17,8 +17,8 @@
 #ifndef DSM_CONST_IS_DEF
 #define DSM_CONST_IS_DEF
 
-/* the following is useful for "hierarch_lock_id_t" */
-#include "hierarch_lock.h"
+/* the following is useful for "token_lock_id_t" */
+#include "token_lock.h"
 
 typedef enum
 { NO_ACCESS, READ_ACCESS, WRITE_ACCESS, UNKNOWN_ACCESS } dsm_access_t;
@@ -27,7 +27,7 @@ typedef unsigned long int dsm_page_index_t;
 
 typedef unsigned int dsm_node_t;
 
-#define NO_NODE -1
+#define NO_NODE ((dsm_node_t)-1)
 
 typedef void (*dsm_rf_action_t)(dsm_page_index_t index); // read fault handler
 
@@ -43,9 +43,9 @@ typedef void (*dsm_rp_action_t)(void *addr, dsm_access_t access, dsm_node_t repl
 
 typedef void (*dsm_erp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size, int tag); // expert receive page server
 
-typedef void (*dsm_acq_action_t)(const hierarch_lock_id_t); // acquire func
+typedef void (*dsm_acq_action_t)(const token_lock_id_t); // acquire func
 
-typedef void (*dsm_rel_action_t)(const hierarch_lock_id_t); // release func
+typedef void (*dsm_rel_action_t)(const token_lock_id_t); // release func
 
 typedef void (*dsm_pi_action_t)(int prot_id); // protocol init func
 

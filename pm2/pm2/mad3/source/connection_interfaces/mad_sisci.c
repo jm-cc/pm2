@@ -17,7 +17,6 @@
  * Mad_sisci.c
  * ===========
  */
-//#define USE_MARCEL_POLL
 //#define OLD_SISCI
 #define MPICH_SMP
 #define MAD_SISCI_POLLING_MODE \
@@ -166,7 +165,7 @@ typedef struct s_mad_sisci_remote_segment
 typedef struct s_mad_sisci_driver_specific
 {
   int nb_adapter;
-#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+#if defined(MARCEL)
   struct marcel_ev_server mad_sisci_marcel_ev_server;
 #endif
 } mad_sisci_driver_specific_t, *p_mad_sisci_driver_specific_t;
@@ -209,13 +208,13 @@ typedef union u_mad_sisci_poll_data
   mad_sisci_poll_flag_data_t    flag_op;
 } mad_sisci_poll_data_t, *p_mad_sisci_poll_data_t;
 
-#if defined(MARCEL) && defined(USE_MARCEL_POLL)
-typedef struct s_mad_sisci_marcel_ev_req
+#if defined(MARCEL)
+typedef struct s_mad_sisci_ev
 {
-  struct marcel_ev_req  req;
+  struct marcel_ev_req  inst;
   mad_sisci_poll_op_t   op;
   mad_sisci_poll_data_t data;
-} mad_sisci_marcel_ev_req_t, *p_mad_sisci_marcel_ev_req_t;
+} mad_sisci_ev_t, *p_mad_sisci_ev_t;
 #endif
 
 typedef struct s_mad_sisci_connection_specific
@@ -260,9 +259,6 @@ mad_sisci_receive_sci_buffer_group_3(p_mad_link_t           lnk,
  * static functions
  * ----------------
  */
-
-static  char tmp[2048] __attribute__ ((aligned (4096)));
-
 
 static void
 mad_sisci_display_error(sci_error_t error)
@@ -503,23 +499,25 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
 
 /* For marcel polling
  * --------------------- */
-#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+#if defined(MARCEL)
 
-static int mad_sisci_ev_pollone(marcel_ev_server_t server, 
-				marcel_ev_op_t _op,
-				marcel_ev_req_t req, 
-				int nb_ev, int option)
+static int mad_sisci_ev_pollone(marcel_ev_server_t	server,
+				marcel_ev_op_t		_op,
+				marcel_ev_req_t		req,
+				int			nb_ev,
+                                int			option)
 {
-  int status = 0;
-  p_mad_sisci_marcel_ev_req_t info=NULL;
+  p_mad_sisci_ev_t	ev	= NULL;
+  int			status	= 0;
 
   LOG_IN();
-  info=tbx_container_of(req, mad_sisci_marcel_ev_req_t, req);
-  if (info->op == mad_sisci_poll_flag)
+  ev = tbx_container_of(req, mad_sisci_ev_t, inst);
+
+  if (ev->op == mad_sisci_poll_flag)
     {
-      status = mad_sisci_test(info->data.flag_op.flag);
+      status = mad_sisci_test(ev->data.flag_op.flag);
     }
-  else if (info->op == mad_sisci_poll_channel)
+  else if (ev->op == mad_sisci_poll_channel)
     {
       p_mad_channel_t                channel          = NULL;
       p_mad_sisci_channel_specific_t channel_specific = NULL;
@@ -529,7 +527,7 @@ static int mad_sisci_ev_pollone(marcel_ev_server_t server,
       int                            max              =    0;
       int                            i                =    0;
 
-      channel          = info->data.channel_op.channel;
+      channel          = ev->data.channel_op.channel;
       channel_specific = channel->specific;
       in_darray        = channel->in_connection_darray;
       max              = channel_specific->max;
@@ -560,7 +558,7 @@ static int mad_sisci_ev_pollone(marcel_ev_server_t server,
 
 	      if (mad_sisci_test(channel_specific->read[next]))
 		{
-		  info->data.channel_op.connection = in;
+		  ev->data.channel_op.connection = in;
 		  status                           =  1;
 		  break;
 		}
@@ -589,22 +587,22 @@ mad_sisci_wait_for(p_mad_link_t         link,
   LOG_IN();
   if (!mad_sisci_test(flag))
     {
-      p_mad_sisci_driver_specific_t    driver_specific = NULL;
-      mad_sisci_marcel_ev_req_t req;
+      p_mad_sisci_driver_specific_t	ds = NULL;
+      mad_sisci_ev_t			ev;
       struct marcel_ev_wait wait;
 
-      driver_specific = link->connection->channel->adapter->driver->specific;
+      ds = link->connection->channel->adapter->driver->specific;
 
-      req.op                = mad_sisci_poll_flag;
-      req.data.flag_op.flag = flag;
+      ev.op                = mad_sisci_poll_flag;
+      ev.data.flag_op.flag = flag;
 
-      marcel_ev_wait(&driver_specific->mad_sisci_marcel_ev_server,
-		     &req.req, &wait, 0);
+      marcel_ev_wait(&ds->mad_sisci_marcel_ev_server,
+		     &ev.inst, &wait, 0);
     }
   LOG_OUT();
 }
 
-#else // MARCEL && USE_MARCEL_POLL
+#else // MARCEL
 inline static
 void
 mad_sisci_wait_for(p_mad_link_t         link,
@@ -618,7 +616,7 @@ mad_sisci_wait_for(p_mad_link_t         link,
 
 }
 
-#endif // MARCEL && USE_MARCEL_POLL
+#endif // MARCEL
 
 /*
  * exported functions
@@ -683,21 +681,21 @@ mad_sisci_driver_init(p_mad_driver_t driver)
   driver_specific  = TBX_MALLOC(sizeof(mad_sisci_driver_specific_t));
   driver->specific = driver_specific;
 
-#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+#if defined(MARCEL)
   server=&driver_specific->mad_sisci_marcel_ev_server;
 
   marcel_ev_server_init(server, "Mad SISCI");
 
-  marcel_ev_server_set_poll_settings(server, 
+  marcel_ev_server_set_poll_settings(server,
 				     MAD_SISCI_POLLING_MODE,
 				     1);
-  
+
   marcel_ev_server_add_callback(server,
 				MARCEL_EV_FUNCTYPE_POLL_POLLONE,
 				&mad_sisci_ev_pollone);
   marcel_ev_server_start(server);
-  
-#endif // MARCEL && USE_MARCEL_POLL
+
+#endif // MARCEL
   LOG_OUT();
 }
 
@@ -889,7 +887,7 @@ mad_sisci_connect(p_mad_connection_t   out,
 #ifdef MPICH_SMP
   int                               local_node_sci_id  =    0;
 #endif //MPICH_SMP
-   
+
   LOG_IN();
   channel            = out->channel;
   adapter            = channel->adapter;
@@ -899,9 +897,9 @@ mad_sisci_connect(p_mad_connection_t   out,
   dir_remote_adapter = ai->dir_adapter;
   remote_node_sci_id = atoi(dir_remote_adapter->parameter);
 #ifdef MPICH_SMP
-  local_node_sci_id  = atoi(adapter->parameter); 
+  local_node_sci_id  = atoi(adapter->parameter);
 #endif //MPICH_SMP
-   
+
   if (channel->type == mad_channel_type_forwarding)
     {
       channel_id |= 0x80;
@@ -969,7 +967,7 @@ mad_sisci_connect(p_mad_connection_t   out,
       mad_sisci_flush(remote_segment);
       out_specific->write_flag_flushed = tbx_true;
 #ifdef MPICH_SMP
-	 }       
+	 }
        else
 	 {
 	    remote_segment->map_addr = NULL;
@@ -999,7 +997,7 @@ mad_sisci_accept(p_mad_connection_t   in,
 #ifdef MPICH_SMP
    int                               local_node_sci_id  =    0;
 #endif //MPICH_SMP
-   
+
   LOG_IN();
   channel            = in->channel;
   adapter            = channel->adapter;
@@ -1086,7 +1084,7 @@ mad_sisci_accept(p_mad_connection_t   in,
 	    in_specific->write_flag_flushed = tbx_true;
 	 }
 #endif //MPICH_SMP
-    }   
+    }
   LOG_OUT();
 }
 
@@ -1118,7 +1116,7 @@ mad_sisci_disconnect(p_mad_connection_t connection)
       p_mad_sisci_remote_segment_t remote_segment =
 	&(connection_specific->remote_segment[k]);
 
-#ifdef MPICH_SMP       
+#ifdef MPICH_SMP
        if(remote_segment->map_addr != NULL)
 	 {
 #endif //MPICH_SMP
@@ -1134,7 +1132,7 @@ mad_sisci_disconnect(p_mad_connection_t connection)
 	 }
        if(local_segment->map_addr != NULL)
 	 {
-#endif //MPICH_SMP	    
+#endif //MPICH_SMP
       SCISetSegmentUnavailable(local_segment->segment,
 			       adapter_specific->local_adapter_id,
 			       0, &sisci_error);
@@ -1151,7 +1149,7 @@ mad_sisci_disconnect(p_mad_connection_t connection)
 #ifdef MPICH_SMP
 	 }
 #endif //MPICH_SMP
-    }   
+    }
   LOG_OUT();
 }
 
@@ -1264,24 +1262,24 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   max              = channel_specific->max;
   next             = channel_specific->next;
 
-#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+#if defined(MARCEL)
   {
-    p_mad_sisci_driver_specific_t    driver_specific = NULL;
-    mad_sisci_marcel_ev_req_t req;
-    struct marcel_ev_wait wait;
+    p_mad_sisci_driver_specific_t	ds = NULL;
+    mad_sisci_ev_t			ev;
+    struct marcel_ev_wait		wait;
 
-    driver_specific = channel->adapter->driver->specific;
+    ds = channel->adapter->driver->specific;
 
-    req.op                          = mad_sisci_poll_channel;
-    req.data.channel_op.channel     = channel;
-    req.data.channel_op.connection  = NULL;
+    ev.op                          = mad_sisci_poll_channel;
+    ev.data.channel_op.channel     = channel;
+    ev.data.channel_op.connection  = NULL;
 
-    marcel_ev_wait(&driver_specific->mad_sisci_marcel_ev_server,
-		   &req.req, &wait, 0);
+    marcel_ev_wait(&ds->mad_sisci_marcel_ev_server,
+		   &ev.inst, &wait, 0);
 
-    in = req.data.channel_op.connection;
+    in = ev.data.channel_op.connection;
   }
-#else // MARCEL && USE_MARCEL_POLL
+#else // MARCEL
   while (tbx_true)
     {
       int i = 0;
@@ -1320,7 +1318,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 
 found:
   channel_specific->next = next;
-#endif // MARCEL && USE_MARCEL_POLL
+#endif // MARCEL
 
   LOG_OUT();
 

@@ -140,10 +140,9 @@ int get_next_loose_filtered_trace(trace *tr)
     if (is_valid_calc(tr, eof) == TRUE) {
       if (eof != 0) eof = 2;
       break;
-    } else if ((tr->type == KERNEL) && \
-	       (tr->code >> 8 == FKT_SWITCH_TO_CODE)) {
+    } else if ((tr->type == KERNEL) && (tr->code >> 8 == FKT_SWITCH_TO_CODE))
       break;
-    }
+    else if ((tr->type == USER) && (tr->code >> 8 == FUT_SWITCH_TO_CODE)) break;
   }
   return eof;
 }
@@ -200,10 +199,30 @@ int is_a_valid_logic(int logic)
 
 int max_cpu()
 {
-  return 16;
+  return nb_cpu;
 }
 
 u_64 get_begin_lwp(int lwp)
 {
   return get_lwp_last_up(lwp);
+}
+
+int pid_of_cpu(int i)
+{
+  return filter_pid_of_cpu(i);
+}
+
+u_64 get_begin_str()
+{
+  return begin_str;
+}
+
+u_64 get_end_str()
+{
+  return end_str;
+}
+
+double get_cpu_cycles()
+{
+  return cpu_cycles;
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.4  2000/04/14 14:01:18  rnamyst
+Minor modifs.
+
 Revision 1.3  2000/04/14 11:41:47  vdanjean
 move SCHED_DATA(lwp).sched_task to lwp->idle_task
 
@@ -118,7 +121,7 @@ ______________________________________________________________________________
 #error You must define at most one of MARCEL_SMP, MARCEL_ACT, MARCEL_ACTSMP or MARCEL_MONO
 #endif
 
-/* MA__LWPS : indique que l'on a plusieurs entité ordonnancées par
+/* MA__LWPS : indique que l'on a plusieurs entités ordonnancées par
  * le noyau en parallèle.
  *
  *  Cela arrive en SMP ou en Activation sur multiprocesseur 
@@ -128,7 +131,7 @@ ______________________________________________________________________________
 #endif
 
 /* MA__ONE_QUEUE : indique qu'il n'y a qu'une seule queue pour les threads
- * marcels pour tous les lwp 
+ * marcels pour tous les lwps
  *
  * C'est le cas tout le temps sauf en SMP
  * */
@@ -199,7 +202,4 @@ ______________________________________________________________________________
 #endif /* MARCEL_SHOW_FLAGS */
 
 #endif
-
-
-
 

@@ -59,7 +59,7 @@ void user_func(int argc, char **argv)
    if(argc > 0) {
       if(!strcmp(argv[0], "-enable_mig")) {
          if(argc < 2) {
-            mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
+            old_mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
          } else {
             for(i=1; i<argc; i++)
                marcel_enablemigration((marcel_t)xtoi(argv[i]));
@@ -67,7 +67,7 @@ void user_func(int argc, char **argv)
          }
       } else if(!strcmp(argv[0], "-disable_mig")) {
          if(argc < 2) {
-            mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
+            old_mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
          } else {
             for(i=1; i<argc; i++)
                marcel_disablemigration((marcel_t)xtoi(argv[i]));
@@ -96,7 +96,7 @@ void user_func(int argc, char **argv)
 	   color_string = pids[i]->key[color_key];
 
 	   sprintf(buf, "Thread %lx : %s", (unsigned long)pids[i], (char *)color_string);
-	   mad_pack_str(MAD_IN_HEADER, buf);
+	   old_mad_pack_str(MAD_IN_HEADER, buf);
 	 }
 
          unlock_task();
@@ -122,7 +122,7 @@ void user_func(int argc, char **argv)
 	   marcel_cancel(pids[i]);
 
 	   sprintf(buf, "Killed thread %lx", (unsigned long)pids[i]);
-	   mad_pack_str(MAD_IN_HEADER, buf);
+	   old_mad_pack_str(MAD_IN_HEADER, buf);
 	 }
 	 
 	 redessiner();
@@ -132,14 +132,14 @@ void user_func(int argc, char **argv)
          return;
       }
    }
-   mad_pack_str(MAD_IN_HEADER, "Syntax : user [ -t task_id ] command");
-   mad_pack_str(MAD_IN_HEADER, "command may be:");
-   mad_pack_str(MAD_IN_HEADER, "\t-save <filename>");
-   mad_pack_str(MAD_IN_HEADER, "\t-load <filename>");
-   mad_pack_str(MAD_IN_HEADER, "\t-enable_mig <thread_id> { <thread_id> }");
-   mad_pack_str(MAD_IN_HEADER, "\t-disable_mig <thread_id> { <thread_id> }");
-   mad_pack_str(MAD_IN_HEADER, "\t-setprio <prio> <thread_id> { <thread_id> }");
-   mad_pack_str(MAD_IN_HEADER, "\t-colors { <thread_id> }");
-   mad_pack_str(MAD_IN_HEADER, "\t-kill { <thread_id> }");
+   old_mad_pack_str(MAD_IN_HEADER, "Syntax : user [ -t task_id ] command");
+   old_mad_pack_str(MAD_IN_HEADER, "command may be:");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-save <filename>");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-load <filename>");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-enable_mig <thread_id> { <thread_id> }");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-disable_mig <thread_id> { <thread_id> }");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-setprio <prio> <thread_id> { <thread_id> }");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-colors { <thread_id> }");
+   old_mad_pack_str(MAD_IN_HEADER, "\t-kill { <thread_id> }");
 }
 

@@ -57,9 +57,9 @@ static void wake(void)
   marcel_sem_t *ptr_sem;
   unsigned *ptr_res;
 
-  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-  mad_unpack_int(MAD_IN_HEADER, ptr_res, 1);
-  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+  old_mad_unpack_int(MAD_IN_HEADER, ptr_res, 1);
+  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
 
   pm2_rawrpc_waitdata();
 
@@ -73,11 +73,11 @@ static void thr_dicho(void *arg)
   unsigned *ptr_res;
   int father, self = pm2_self();
 
-  mad_unpack_int(MAD_IN_HEADER, &inf, 1);
-  mad_unpack_int(MAD_IN_HEADER, &sup, 1);
-  mad_unpack_int(MAD_IN_HEADER, &father, 1);
-  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-  mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+  old_mad_unpack_int(MAD_IN_HEADER, &inf, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &sup, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &father, 1);
+  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
 
   pm2_rawrpc_waitdata();
 
@@ -91,21 +91,21 @@ static void thr_dicho(void *arg)
       marcel_sem_init(&sem, 0);
 
       pm2_rawrpc_begin(next_proc(), DICHO, NULL);
-      mad_pack_int(MAD_IN_HEADER, &inf, 1);
-      mad_pack_int(MAD_IN_HEADER, &mid, 1);
-      mad_pack_int(MAD_IN_HEADER, &self, 1);
-      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res1, sizeof(ptr_res1));
-      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+      old_mad_pack_int(MAD_IN_HEADER, &inf, 1);
+      old_mad_pack_int(MAD_IN_HEADER, &mid, 1);
+      old_mad_pack_int(MAD_IN_HEADER, &self, 1);
+      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res1, sizeof(ptr_res1));
+      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
       pm2_rawrpc_end();
 
       mid++;
 
       pm2_rawrpc_begin(next_proc(), DICHO, NULL);
-      mad_pack_int(MAD_IN_HEADER, &mid, 1);
-      mad_pack_int(MAD_IN_HEADER, &sup, 1);
-      mad_pack_int(MAD_IN_HEADER, &self, 1);
-      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res2, sizeof(ptr_res2));
-      mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+      old_mad_pack_int(MAD_IN_HEADER, &mid, 1);
+      old_mad_pack_int(MAD_IN_HEADER, &sup, 1);
+      old_mad_pack_int(MAD_IN_HEADER, &self, 1);
+      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res2, sizeof(ptr_res2));
+      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
       pm2_rawrpc_end();
 
       marcel_sem_P(&sem); marcel_sem_P(&sem);
@@ -114,9 +114,9 @@ static void thr_dicho(void *arg)
    }
 
    pm2_rawrpc_begin(father, WAKE, NULL);
-   mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-   mad_pack_int(MAD_IN_HEADER, &res, 1);
-   mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+   old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+   old_mad_pack_int(MAD_IN_HEADER, &res, 1);
+   old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
    pm2_rawrpc_end();
 }
 
@@ -149,11 +149,11 @@ static void f(void)
     GET_TICK(t1);
 
     pm2_rawrpc_begin(next_proc(), DICHO, NULL);
-    mad_pack_int(MAD_IN_HEADER, &inf, 1);
-    mad_pack_int(MAD_IN_HEADER, &sup, 1);
-    mad_pack_int(MAD_IN_HEADER, &self, 1);
-    mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-    mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+    old_mad_pack_int(MAD_IN_HEADER, &inf, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &sup, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &self, 1);
+    old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
+    old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
     pm2_rawrpc_end();
 
     marcel_sem_P(ptr_sem);

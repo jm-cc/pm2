@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -26,13 +25,16 @@
  * ___________________________________________________________________________
  */
 #define INITIAL_SLIST_ELEMENT 256
+#define INITIAL_SLIST_NREF    64
+#define INITIAL_SLIST_NUMBER 64
 
 /*
  * data structures
  * ___________________________________________________________________________
  */
-static p_tbx_memory_t tbx_slist_element_manager_memory;
-static p_tbx_memory_t tbx_slist_struct_manager_memory;
+static p_tbx_memory_t tbx_slist_element_manager_memory = NULL;
+static p_tbx_memory_t tbx_slist_nref_manager_memory    = NULL;
+static p_tbx_memory_t tbx_slist_struct_manager_memory  = NULL;
 
 /*
  *  Functions
@@ -51,9 +53,12 @@ tbx_slist_manager_init(void)
   tbx_malloc_init(&tbx_slist_element_manager_memory,
 		  sizeof(tbx_slist_element_t),
 		  INITIAL_SLIST_ELEMENT);
+  tbx_malloc_init(&tbx_slist_nref_manager_memory,
+		  sizeof(tbx_slist_nref_t),
+		  INITIAL_SLIST_NREF);
   tbx_malloc_init(&tbx_slist_struct_manager_memory,
 		  sizeof(tbx_slist_t),
-		  INITIAL_SLIST_ELEMENT);
+		  INITIAL_SLIST_NUMBER);
   LOG_OUT();
 }
 
@@ -62,6 +67,7 @@ tbx_slist_manager_exit(void)
 {
   LOG_IN();
   tbx_malloc_clean(tbx_slist_element_manager_memory);
+  tbx_malloc_clean(tbx_slist_nref_manager_memory);
   tbx_malloc_clean(tbx_slist_struct_manager_memory);
   LOG_OUT();
 }
@@ -77,10 +83,12 @@ tbx_slist_nil(void)
 
   LOG_IN();
   slist = tbx_malloc(tbx_slist_struct_manager_memory);
-  slist->length = 0;
-  slist->head   = NULL;
-  slist->tail   = NULL;
-  slist->ref    = NULL;
+  TBX_INIT_SHARED(slist);
+  slist->length    = 0;
+  slist->head      = NULL;
+  slist->tail      = NULL;
+  slist->ref       = NULL;
+  slist->nref_head = NULL;
   LOG_OUT();
 
   return slist;
@@ -91,13 +99,27 @@ void
 __tbx_slist_free_struct(p_tbx_slist_t slist)
 {
   LOG_IN();
-  slist->length = 0;
-  slist->head   = NULL;
-  slist->tail   = NULL;
-  slist->ref    = NULL;
+  slist->length    = 0;
+  slist->head      = NULL;
+  slist->tail      = NULL;
+  slist->ref       = NULL;
+  slist->nref_head = NULL;
   tbx_free(tbx_slist_struct_manager_memory, slist);
   LOG_OUT();
 }
+
+void
+tbx_slist_free(p_tbx_slist_t slist)
+{
+  LOG_IN();
+  if (slist->length)
+    FAILURE("slist not empty");
+  if (slist->nref_head)
+    FAILURE("nrefs still exist");
+  __tbx_slist_free_struct(slist);
+  LOG_OUT();
+}
+
 
 /*
  * Return a new list element
@@ -157,6 +179,22 @@ __tbx_slist_free_element(p_tbx_slist_t         slist,
       slist->ref = NULL;
     }
 
+  if (slist->nref_head)
+    {
+      p_tbx_slist_nref_t nref = slist->nref_head;
+      
+      do
+	{
+	  if (nref->element == element)
+	    {
+	      nref->element = NULL;
+	    }
+	  
+	  nref = nref->next;
+	}
+      while (nref);
+    }
+  
   element->previous = NULL;
   element->next     = NULL;
   element->object   = NULL;
@@ -545,7 +583,7 @@ tbx_slist_reverse(p_tbx_slist_t source)
  */
 void *
 tbx_slist_index_get(p_tbx_slist_t     slist,
-		    tbx_slist_index_t index)
+		    tbx_slist_index_t idx)
 {
   LOG_IN();
 
@@ -557,9 +595,9 @@ tbx_slist_index_get(p_tbx_slist_t     slist,
 
       while (element)
 	{
-	  if (index)
+	  if (idx)
 	    {
-	      index--;
+	      idx--;
 	      element = element->next;
 	    }
 	  else
@@ -582,7 +620,7 @@ tbx_slist_index_get(p_tbx_slist_t     slist,
 static 
 p_tbx_slist_element_t
 __tbx_slist_index_get_element(p_tbx_slist_t     slist,
-			      tbx_slist_index_t index)
+			      tbx_slist_index_t idx)
 {
   p_tbx_slist_element_t  element = NULL;
 
@@ -591,9 +629,9 @@ __tbx_slist_index_get_element(p_tbx_slist_t     slist,
   element = slist->head;
   while (element)
     {
-      if (index)
+      if (idx)
 	{
-	  index--;
+	  idx--;
 	  element = element->next;
 	}
       else
@@ -609,13 +647,13 @@ __tbx_slist_index_get_element(p_tbx_slist_t     slist,
 
 void *
 tbx_slist_index_extract(p_tbx_slist_t     slist,
-			tbx_slist_index_t index)
+			tbx_slist_index_t idx)
 {
   p_tbx_slist_element_t  element = NULL;
   void                  *object  = NULL;
 
   LOG_IN();
-  element = __tbx_slist_index_get_element(slist, index);
+  element = __tbx_slist_index_get_element(slist, idx);
   
   if (element)
     {
@@ -631,7 +669,7 @@ tbx_slist_index_extract(p_tbx_slist_t     slist,
 
 void
 tbx_slist_index_set_ref(p_tbx_slist_t     slist,
-			tbx_slist_index_t index)
+			tbx_slist_index_t idx)
 {
   LOG_IN();
 
@@ -643,15 +681,54 @@ tbx_slist_index_set_ref(p_tbx_slist_t     slist,
 
       while (element)
 	{
-	  if (index)
+	  if (idx)
 	    {
-	      index--;
+	      idx--;
 	      element = element->next;
 	    }
 	  else
 	    {
 	      slist->ref = element;
 	      LOG_OUT();
+
+	      return;
+	    }
+	}
+
+      FAILURE("out-of-bound index");
+    }
+  else
+    FAILURE("empty list");
+}
+
+void
+tbx_slist_index_set_nref(p_tbx_slist_nref_t nref,
+			 tbx_slist_index_t  idx)
+{
+  p_tbx_slist_t slist = NULL;
+
+  LOG_IN();
+  slist = nref->slist;
+
+  if (!tbx_slist_is_nil(slist))
+    {
+      p_tbx_slist_element_t element = NULL;
+      
+      element = slist->head;
+
+      while (element)
+	{
+	  if (idx)
+	    {
+	      idx--;
+	      element = element->next;
+	    }
+	  else
+	    {
+	      nref->element = element;
+	      LOG_OUT();
+
+	      return;
 	    }
 	}
 
@@ -670,7 +747,7 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
 			   p_tbx_slist_search_func_t  sfunc,
 			   void                      *object)
 {
-  tbx_slist_index_t index = 0;
+  tbx_slist_index_t idx = 0;
   
   LOG_IN();
   if (!tbx_slist_is_nil(slist))
@@ -687,10 +764,10 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
 		{
 		  LOG_OUT();
 
-		  return index;
+		  return idx;
 		}
 
-	      index++;
+	      idx++;
 	      ptr = ptr->next;
 	    } 
 	}
@@ -702,10 +779,10 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
 		{
 		  LOG_OUT();
 
-		  return index;		  
+		  return idx;		  
 		}
 
-	      index++;
+	      idx++;
 	      ptr = ptr->next;
 	    } 
 	}
@@ -715,6 +792,58 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
   LOG_OUT();
 
   return -1;
+}
+
+void *
+tbx_slist_search_and_extract(p_tbx_slist_t              slist,
+			     p_tbx_slist_search_func_t  sfunc,
+			     void                      *object)
+{
+  void *result = NULL;
+
+  LOG_IN();
+  if (!tbx_slist_is_nil(slist))
+    {
+      p_tbx_slist_element_t element = NULL;
+      
+      element = slist->head;
+      
+      if (sfunc)
+	{
+	  while (element)
+	    {
+	      if (sfunc(object, element->object))
+		{
+		  result = __tbx_slist_free_element(slist, element);
+		  LOG_OUT();
+
+		  return result;
+		}
+
+	      element = element->next;
+	    } 
+	}
+      else
+	{
+	  while (element)
+	    {
+	      if (element->object == object)
+		{
+		  result = __tbx_slist_free_element(slist, element);
+		  LOG_OUT();
+
+		  return result;
+		}
+
+	      element = element->next;
+	    } 
+	}
+    }
+  else
+    FAILURE("empty list");
+  LOG_OUT();
+
+  return NULL;
 }
 
 tbx_bool_t
@@ -909,15 +1038,236 @@ tbx_slist_search_previous_set_ref(p_tbx_slist_t              slist,
   return tbx_false;
 }
 
+tbx_bool_t
+tbx_slist_search_forward_set_nref(p_tbx_slist_nref_t         nref,
+				  p_tbx_slist_search_func_t  sfunc,
+				  void                      *object)
+{
+  p_tbx_slist_t         slist        = NULL;
+  p_tbx_slist_element_t nref_element = NULL;
+
+  LOG_IN();
+  slist = nref->slist;
+  
+  if (!tbx_slist_is_nil(slist))
+    {
+      nref_element = slist->head;
+      
+      if (sfunc)
+	{
+	  while (nref_element)
+	    {
+	      if (sfunc(object, nref_element->object))
+		{
+		  nref->element = nref_element;
+		  LOG_OUT();
+
+		  return tbx_true;
+		}
+
+	      nref_element = nref_element->next;
+	    } 
+	}
+      else
+	{
+	  while (slist->ref)
+	    {
+	      if (slist->ref->object == object)
+		{
+		  nref->element = nref_element;
+		  LOG_OUT();
+
+		  return tbx_true;  
+		}
+
+	      nref_element = nref_element->next;
+	    } 
+	}
+    }
+  else
+    FAILURE("empty list");
+  LOG_OUT();
+
+  return tbx_false;
+}
+
+
+tbx_bool_t
+tbx_slist_search_backward_set_nref(p_tbx_slist_nref_t         nref,
+				   p_tbx_slist_search_func_t  sfunc,
+				   void                      *object)
+{
+  p_tbx_slist_t         slist        = NULL;
+  p_tbx_slist_element_t nref_element = NULL;
+
+  LOG_IN();
+  slist = nref->slist;
+  
+  if (!tbx_slist_is_nil(slist))
+    {
+      nref_element = slist->tail;
+      
+      if (sfunc)
+	{
+	  while (nref_element)
+	    {
+	      if (sfunc(object, nref_element->object))
+		{
+		  nref->element = nref_element;
+		  LOG_OUT();
+
+		  return tbx_true;
+		}
+
+	      nref_element = nref_element->previous;
+	    } 
+	}
+      else
+	{
+	  while (nref_element)
+	    {
+	      if (nref_element->object == object)
+		{
+		  nref->element = nref_element;
+		  LOG_OUT();
+
+		  return tbx_true;  
+		}
+
+	      nref_element = nref_element->previous;
+	    } 
+	}
+    }
+  else
+    FAILURE("empty list");
+  LOG_OUT();
+
+  return tbx_false;
+}
+
+tbx_bool_t
+tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
+			       p_tbx_slist_search_func_t  sfunc,
+			       void                      *object)
+{
+  p_tbx_slist_t         slist        = NULL;
+  p_tbx_slist_element_t nref_element = NULL;
+
+  LOG_IN();
+  slist        = nref->slist;
+  nref_element = nref->element;
+  
+  if (nref_element)
+    {
+      if (!tbx_slist_is_nil(slist))
+	{
+	  if (sfunc)
+	    {
+	      while (nref_element)
+		{
+		  if (sfunc(object, nref_element->object))
+		    {
+		      nref->element = nref_element;
+		      LOG_OUT();
+
+		      return tbx_true;
+		    }
+
+		  nref_element = nref_element->next;
+		} 
+	    }
+	  else
+	    {
+	      while (nref_element)
+		{
+		  if (nref_element->object == object)
+		    {
+		      nref->element = nref_element;
+		      LOG_OUT();
+
+		      return tbx_true;  
+		    }
+
+		  nref_element = nref_element->next;
+		} 
+	    }
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return tbx_false;
+}
+
+
+tbx_bool_t
+tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
+				   p_tbx_slist_search_func_t  sfunc,
+				   void                      *object)
+{
+  p_tbx_slist_t         slist        = NULL;
+  p_tbx_slist_element_t nref_element = NULL;
+
+  LOG_IN();
+  slist        = nref->slist;
+  nref_element = nref->element;
+  
+  if (nref_element)
+    {
+      if (!tbx_slist_is_nil(slist))
+	{
+	  if (sfunc)
+	    {
+	      while (nref_element)
+		{
+		  if (sfunc(object, nref_element->object))
+		    {
+		      nref->element = nref_element;
+		      LOG_OUT();
+
+		      return tbx_true;
+		    }
+
+		  nref_element = nref_element->previous;
+		} 
+	    }
+	  else
+	    {
+	      while (nref_element)
+		{
+		  if (nref_element->object == object)
+		    {
+		      nref->element = nref_element;
+		      LOG_OUT();
+
+		      return tbx_true;  
+		    }
+
+		  nref_element = nref_element->previous;
+		} 
+	    }
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return tbx_false;
+}
+
 /*
  * Reference access functions
  * --------------------------
  */
-
 tbx_slist_index_t
 tbx_slist_ref_get_index(p_tbx_slist_t slist)
 {
-  tbx_slist_index_t index = -1;
+  tbx_slist_index_t idx = -1;
 
   LOG_IN();
   if (slist->ref)
@@ -928,14 +1278,14 @@ tbx_slist_ref_get_index(p_tbx_slist_t slist)
 
       do
 	{
-	  index++;
+	  idx++;
 	  element = element->previous;
 	}
       while (element);
     }
   LOG_OUT();
 
-  return index;
+  return idx;
 }
 
 void
@@ -1090,3 +1440,246 @@ tbx_slist_ref_get(p_tbx_slist_t slist)
   else
     FAILURE("uninitialized reference");
 }
+
+/*
+ * NReference access functions
+ * --------------------------
+ */
+p_tbx_slist_nref_t
+tbx_slist_nref_alloc(p_tbx_slist_t slist)
+{
+  p_tbx_slist_nref_t nref = NULL;
+
+  LOG_IN();
+  nref = tbx_malloc(tbx_slist_nref_manager_memory);
+  nref->element  = NULL;
+  nref->previous = NULL;
+  nref->next     = NULL;
+  nref->slist    = slist;
+
+  if (slist->nref_head)
+    {
+      nref->next           = slist->nref_head;
+      nref->next->previous = nref;
+      slist->nref_head     = nref;
+    }
+
+  slist->nref_head = nref;
+  LOG_OUT();
+
+  return nref;
+}
+
+void
+tbx_slist_nref_free(p_tbx_slist_nref_t nref)
+{
+  p_tbx_slist_t slist = NULL;
+
+  LOG_IN();
+  slist = nref->slist;
+  
+  if (slist->nref_head == nref)
+    {
+      slist->nref_head = nref->next;
+    }
+  else
+    {
+      nref->previous->next = nref->next;
+    }
+
+  if (nref->next)
+    {
+      nref->next->previous = nref->previous;
+    }
+  
+  nref->element  = NULL;
+  nref->previous = NULL;
+  nref->next     = NULL;
+  nref->slist    = NULL;
+  tbx_free(tbx_slist_nref_manager_memory, nref);
+  LOG_OUT();
+}
+
+tbx_slist_index_t
+tbx_slist_nref_get_index(p_tbx_slist_nref_t nref)
+{
+  tbx_slist_index_t idx = -1;
+
+  LOG_IN();
+  if (nref->element)
+    {
+      p_tbx_slist_element_t element = NULL;
+
+      element = nref->element;
+
+      do
+	{
+	  idx++;
+	  element = element->previous;
+	}
+      while (element);
+    }
+  LOG_OUT();
+
+  return idx;
+}
+
+void
+tbx_slist_nref_to_head(p_tbx_slist_nref_t nref)
+{
+  p_tbx_slist_t slist = NULL;
+
+  LOG_IN();
+  slist = nref->slist;
+  if (!tbx_slist_is_nil(slist))
+    {
+      nref->element = slist->head;
+    }
+  else
+    FAILURE("empty list");
+  LOG_OUT();
+}
+
+void
+tbx_slist_nref_to_tail(p_tbx_slist_nref_t nref)
+{
+  p_tbx_slist_t slist = NULL;
+
+  LOG_IN();
+  slist = nref->slist;
+
+  if (!tbx_slist_is_nil(slist))
+    {
+      nref->element = slist->tail;
+    }
+  else
+    FAILURE("empty list");
+  LOG_OUT();
+}
+
+tbx_bool_t
+tbx_slist_nref_forward(p_tbx_slist_nref_t nref)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (nref->element)
+    {
+      if (!tbx_slist_is_nil( nref->slist))
+	{
+	  nref->element = nref->element->next;
+	  result = (nref->element != NULL);
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return result;
+}
+
+tbx_bool_t
+tbx_slist_nref_backward(p_tbx_slist_nref_t nref)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (nref->element)
+    {
+      if (!tbx_slist_is_nil(nref->slist))
+	{
+	  nref->element = nref->element->previous;
+	  result = (nref->element != NULL);
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return result;
+}
+
+tbx_bool_t
+tbx_slist_nref_step_forward(p_tbx_slist_nref_t   nref,
+			    p_tbx_slist_offset_t offset)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (nref->element)
+    {
+      if (!tbx_slist_is_nil(nref->slist))
+	{
+	  while (offset && nref->element)
+	    {
+	      offset--;
+	      nref->element = nref->element->next;
+	    }
+	  
+	  result = (nref->element != NULL);
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return result;
+}
+
+tbx_bool_t
+tbx_slist_nref_step_backward(p_tbx_slist_nref_t   nref,
+			     p_tbx_slist_offset_t offset)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (nref->element)
+    {
+      if (!tbx_slist_is_nil(nref->slist))
+	{
+	  while (offset && nref->element)
+	    {
+	      offset--;
+	      nref->element = nref->element->previous;
+	    }
+	  
+	  result = (nref->element != NULL);
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return result;
+}
+
+void *
+tbx_slist_nref_get(p_tbx_slist_nref_t nref)
+{
+  LOG_IN();
+  if (nref->element)
+    {
+      if (!tbx_slist_is_nil(nref->slist))
+	{
+	  void *object = NULL;
+
+	  object = nref->element->object;
+	  LOG_OUT();
+
+	  return object;
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+}
+

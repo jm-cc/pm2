@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+nomore=0
+MAD_DEBUG=off
+MAD_CONSOLE=no
+while [ $# -ge 1 -a $nomore = 0 ]; do
+	case "$1" in
+	-d) MAD_DEBUG=on; shift;;
+	-c) shift;
+	    if [ $# -lt 1 ] ; then
+		echo "Usage: $0 [ -d | -c <console> ] <execname> [ <arg1> ... <argn> ]"
+		exit 1
+	    else
+		MAD_CONSOLE=$1; shift
+	    fi;;
+	--) nomore=1; shift;;
+	-*) echo "Usage: $0 [ -d | -c <console> ] <execname> [ <arg1> ... <argn> ]"; exit 1 ;;
+	*) nomore=1;;
+	esac
+done
+
+if test $# -lt 1
+then
+	echo "Usage: $0 [ -d | -c <console> ] <execname> [ <arg1> ... <argn> ]"
+	exit 1
+fi
+
+if test ! -f ${MADELEINE_ROOT}/.madconf
+then
+	echo "ERROR: madconf should be runned before $0..."
+	exit 1
+fi
+
+case $1 in
+    /*) command=$* ;;
+    *) command=`pwd`/$*
+esac
+
+case _$DISPLAY in
+    _) DISPLAY=`uname -n` ;;
+    _:*) DISPLAY=`uname -n`$DISPLAY ;;
+    *) ;;
+esac
+
+set `cat ${MADELEINE_ROOT}/.madconf`
+
+exec rsh $1 ${MADELEINE_ROOT}/bin/pvm/madinit $MAD_DEBUG $MAD_CONSOLE "$DISPLAY" $command

@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+#
+# madspawn attend les paramètres suivants :
+# $1 : machine serveur
+# $2 : confsize
+# $3 : port serveur...
+# $4 : console
+# $5 à ... : executable a lancer et arguments
+#
+
+MAD_CONSOLE=no
+
+
+confsize=$1
+shift
+
+command=$*
+
+mynumber=1
+nbmachines=`cat ${MADELEINE_ROOT}/.madconf | wc -w`
+
+if test -z "$MAD_DEBUG"
+then
+    MAD_DEBUG=off
+fi
+
+if test -z "$DISPLAY"
+then
+    DISPLAY=:0
+fi
+
+if test $MAD_CONSOLE = "no"
+then
+    trueconfsize=$confsize
+else
+    trueconfsize=`expr $confsize - 1`
+fi
+
+while test $mynumber -lt $trueconfsize
+do
+    plusun=`expr $mynumber % $nbmachines + 1`
+    host=`head -$plusun ${MADELEINE_ROOT}/.madconf | tail -1`
+    rsh -n $host ${MADELEINE_ROOT}/bin/shm/madstart $DISPLAY $MAD_DEBUG $confsize $mynumber $host $command &
+    mynumber=`expr $mynumber + 1`
+done
+
+if test ! $MAD_CONSOLE = "no"
+then
+    host=`head -1 ${MADELEINE_ROOT}/.madconf`
+    rsh -n $host ${MADELEINE_ROOT}/bin/shm/madstartcons $DISPLAY $MAD_CONSOLE $confsize $mynumber $host $port $serverhost &
+fi

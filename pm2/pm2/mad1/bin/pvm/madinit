@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+MAD_DEBUG=$1
+shift
+MAD_CONSOLE=$1
+shift
+DISPLAY=$1
+shift
+export DISPLAY
+
+if test $MAD_CONSOLE = "no"
+then
+    command=$*
+else
+    prog=$1
+    shift
+    args=$*
+    command="$prog -pm2cons $MAD_CONSOLE $args"
+fi
+
+set `cat ${MADELEINE_ROOT}/.madconf`
+first=$1
+shift
+
+echo "add $*" | ${PVM_ROOT}/lib/pvm -n$first > /dev/null
+
+if test $MAD_DEBUG = "on"
+then
+    ${MADELEINE_ROOT}/bin/pvm/maddebug $DISPLAY $command
+else
+    PVM_EXPORT="DISPLAY"
+    export PVM_EXPORT
+    $command
+fi
+
+echo "halt" | ${PVM_ROOT}/lib/pvm > /dev/null

@@ -284,7 +284,10 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 		ma_preempt_disable();
 		/* On sauve l'état du père sachant qu'on va y revenir
-		 * tout de suite 
+		 * tout de suite
+		 *
+		 * On ne modifie pas l'état enregistré des activations
+		 * car les appels bloquants sont déjà désactivés
 		 */
 		if(marcel_ctx_setjmp(cur->ctx_yield) == NORMAL_RETURN) {
 			/* retour dans le père*/
@@ -358,6 +361,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		{
 			ma_runqueue_t *rq;
 
+			/* Signaler le changement de thread aux activations */
+			MA_ACT_SET_THREAD(LWP_SELF, MARCEL_SELF);
 			/* ré-enqueuer le père */
 			rq = ma_prev_rq();
 			_ma_raw_spin_lock(&rq->lock);
@@ -388,6 +393,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
  * */
 #define MA_THR_RESTARTED(current, info) \
   do {                                 \
+    MA_ACT_SET_THREAD(LWP_SELF, MARCEL_SELF); \
     MTRACE(info, current);             \
   } while(0)
 

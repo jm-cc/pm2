@@ -213,6 +213,8 @@ boolean dsm_page_bitmap_is_empty(unsigned long index);
 
 void dsm_page_bitmap_clear(unsigned long index) ;
 
+boolean dsm_page_bitmap_is_allocated(unsigned long index);
+
 /* user code to migrate to hyperion files: */
 
 #define dsm_get_waiter_count(index)  dsm_get_user_data1(index, 0)

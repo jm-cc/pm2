@@ -64,7 +64,7 @@ tailhelp:
 # Construction du repertoire destination des makefiles generes
 #---------------------------------------------------------------------
 $(PM2_MAK_DIR):
-	@mkdir -p $@
+	$(COMMON_HIDE)mkdir -p $@
 
 # Generation du cache principal des librairies
 #---------------------------------------------------------------------

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_debug.h,v $
+Revision 1.7  2000/05/16 09:05:21  rnamyst
+Fast Polling added into Marcel + make xconfig
+
 Revision 1.6  2000/05/10 13:08:01  vdanjean
 minor bugs fixes
 
@@ -131,6 +134,7 @@ extern debug_type_t marcel_mtrace_timer;
 #else
 
 #define MTRACE(msg, pid) (void)0
+#define MTRACE_TIMER(msg, pid) (void)0
 #define marcel_trace_on() (void)0
 #define marcel_trace_off() (void)0
 

@@ -99,8 +99,25 @@
 
 #endif // PREPROC
 
+#if 0
+/* __FUNCTION__ can't be catenated with strings litterals, since it may be a
+ * variable */
 #define PROF_IN()            GEN_PREPROC(__FUNCTION__ "_entry")
 #define PROF_OUT()           GEN_PREPROC(__FUNCTION__ "_exit")
+#else
+#define PROF_IN()					\
+  do {							\
+    extern void fun(void) asm(__FUNCTION__);		\
+    /*__cyg_profile_func_enter(fun,NULL);	*/	\
+    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|16, fun);	\
+  } while(0)
+#define PROF_OUT()					\
+  do {							\
+    extern void fun(void) asm(__FUNCTION__);		\
+    /*__cyg_profile_func_exit(fun,NULL);	*/	\
+    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|16, fun);	\
+  } while(0)
+#endif
 
 #define PROF_IN_EXT(name)    GEN_PREPROC(#name "_entry")
 #define PROF_OUT_EXT(name)   GEN_PREPROC(#name "_exit")
@@ -141,6 +158,8 @@
 // idle_task).
 
 #ifdef USE_FKT
+
+extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
 
 #define PROF_NEW_LWP(num, thr)                                      \
  do {                                                               \

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.10  2000/05/09 11:18:04  vdanjean
+pm2debug module : minor fixes
+
+Revision 1.9  2000/05/09 10:52:42  vdanjean
+pm2debug module
+
 Revision 1.8  2000/04/28 18:33:35  vdanjean
 debug actsmp + marcel_key
 
@@ -69,13 +75,9 @@ ______________________________________________________________________________
 #define MARCEL_LOCK_EST_DEF
 
 #include "sys/marcel_flags.h"
+#include "testandset.h"
 
 #define MARCEL_SPIN_ITERATIONS 100
-
-/* 
- * Architecture-dependant definitions.
- * Most are extracted from Linux kernel sources & LinuxThreads sources.
- */
 
 #ifdef X86_ARCH
 
@@ -118,137 +120,8 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 		:"m" (0));
 }
 
-static __inline__ int testandset(int *spinlock) __attribute__ ((unused));
-static __inline__ int testandset(int *spinlock)
-{
-  int ret;
 
-  __asm__ __volatile__(
-       "xchgl %0, %1"
-       : "=r"(ret), "=m"(*spinlock)
-       : "0"(1), "m"(*spinlock)
-       : "memory");
-
-  return ret;
-}
-
-#define release(spinlock) (*(spinlock) = 0)
-
-#endif /* ix86 */
-
-
-#ifdef SPARC_ARCH
-
-static __inline__ int testandset(int *spinlock)
-{
-  char ret = 0;
-
-  __asm__ __volatile__("ldstub [%0], %1"
-	: "=r"(spinlock), "=r"(ret)
-	: "0"(spinlock), "1" (ret) : "memory");
-
-  return (int)ret;
-}
-
-#define release(spinlock) \
-  __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0));
-
-#endif /* SPARC */
-
-#ifdef ALPHA_ARCH
-
-static __inline__ long int testandset(int *spinlock)
-{
-  long int ret, temp;
-
-  __asm__ __volatile__(
-	"/* Inline spinlock test & set */\n"
-	"1:\t"
-	"ldl_l %0,%3\n\t"
-	"bne %0,2f\n\t"
-	"or $31,1,%1\n\t"
-	"stl_c %1,%2\n\t"
-	"beq %1,1b\n"
-	"2:\tmb\n"
-	"/* End spinlock test & set */"
-	: "=&r"(ret), "=&r"(temp), "=m"(*spinlock)
-	: "m"(*spinlock)
-        : "memory");
-
-  return ret;
-}
-
-#define release(spinlock) \
-  __asm__ __volatile__("mb" : : : "memory"); \
-  *spinlock = 0
-
-#endif /* ALPHA */
-
-#ifdef RS6K_ARCH
-
-#define testandset(int *spinlock) \
-  (*(spinlock) ? 1 : (*(spinlock)=1,0))
-
-#define release(spinlock) (*(spinlock) = 0)
-
-#endif
-
-#ifdef MIPS_ARCH
-
-static __inline__ long int testandset(int *spinlock)
-{
-  long int ret, temp;
-
-  __asm__ __volatile__(
-        ".set\tmips2\n"
-        "1:\tll\t%0,0(%2)\n\t"
-        "bnez\t%0,2f\n\t"
-        ".set\tnoreorder\n\t"
-        "li\t%1,1\n\t"
-        "sc\t%1,0(%2)\n\t"
-        ".set\treorder\n\t"
-        "beqz\t%1,1b\n\t"
-        "2:\t.set\tmips0\n\t"
-        : "=&r"(ret), "=&r" (temp)
-        : "r"(spinlock)
-        : "memory");
-
-  return ret;
-}
-
-#define release(spinlock) (*(spinlock) = 0)
-
-#endif /* MIPS */
-
-#ifdef PPP_ARCH
-
-#define sync() __asm__ __volatile__ ("sync")
-
-static __inline__ int __compare_and_swap (long int *p, long int oldval, long int newval)
-{
-  int ret;
-
-  sync();
-  __asm__ __volatile__(
-		       "0:    lwarx %0,0,%1 ;"
-		       "      xor. %0,%3,%0;"
-		       "      bne 1f;"
-		       "      stwcx. %2,0,%1;"
-		       "      bne- 0b;"
-		       "1:    "
-	: "=&r"(ret)
-	: "r"(p), "r"(newval), "r"(oldval)
-	: "cr0", "memory");
-  sync();
-  return ret == 0;
-}
-
-#define testandset(spinlock) __compare_and_swap(spinlock, 0, 1)
-
-#define release(spinlock) (*(spinlock) = 0)
-
-#endif /* POWERPC */
-
+#endif /* X86_ARCH */
 
 /* 
  * Generic Part.

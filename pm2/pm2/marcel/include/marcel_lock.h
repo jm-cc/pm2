@@ -63,6 +63,27 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 		:"m" (0));
 }
 
+#else /* X86_ARCH */
+
+typedef unsigned atomic_t;
+
+#define ATOMIC_INIT(i)	        (i)
+#define atomic_read(v)		(v)
+#define atomic_set(v, i)	((v) = (i))
+
+static __inline__ 
+void atomic_inc(volatile atomic_t *v) __attribute__ ((unused));
+static __inline__ void atomic_inc(volatile atomic_t *v)
+{
+  (*v)++;
+}
+
+static __inline__ 
+void atomic_dec(volatile atomic_t *v) __attribute__ ((unused));
+static __inline__ void atomic_dec(volatile atomic_t *v)
+{
+  (*v)--;
+}
 
 #endif /* X86_ARCH */
 

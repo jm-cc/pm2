@@ -579,7 +579,7 @@ static void get_busy_slot(void *addr, size_t size, int *signal)
 
 static void *isomalloc_malloc(size_t size, size_t *granted_size, void *addr)
 {
- void *ptr, *add;
+ void *ptr;
 
   size = (size_t)(ALIGN_TO_SLOT(size));
 
@@ -592,17 +592,25 @@ static void *isomalloc_malloc(size_t size, size_t *granted_size, void *addr)
        {
 	if(cache_not_empty(slot_cache)) 
           {
-	    add = take_from_cache(slot_cache);
+	    ptr = take_from_cache(slot_cache);
 #ifdef DEBUG_MARCEL
-	    fprintf(stderr, "isomalloc_malloc: slot allocated in cache: %p (index = %d)\n", add, SLOT_INDEX(add));
+	    fprintf(stderr, "isomalloc_malloc: slot allocated in cache: %p (index = %d)\n", ptr, SLOT_INDEX(ptr));
 #endif
 	  }
 	else
 	  {
-	    add = GET_SLOT_ADDR(GET_FIRST_SLOT_AVAILABLE(local_slot_map));
+	    ptr = GET_SLOT_ADDR(GET_FIRST_SLOT_AVAILABLE(local_slot_map));
 #ifdef DEBUG_MARCEL
-	     fprintf(stderr, "isomalloc_malloc: before mmap: first slot available = %d\n", SLOT_INDEX(add));
+	     fprintf(stderr, "isomalloc_malloc: before mmap: first slot available = %d\n", SLOT_INDEX(ptr));
 #endif
+	     ptr = mmap(ptr,
+			size,
+			PROT_READ | PROT_WRITE,
+			MMAP_MASK,
+			FILE_TO_MAP, 0);
+	     if(ptr == (void *)-1) 
+	       RAISE(STORAGE_ERROR);
+
 	   }
        }
      else /* Constraint-free multi-slot allocation */
@@ -611,22 +619,19 @@ static void *isomalloc_malloc(size_t size, size_t *granted_size, void *addr)
 
 	 if (i == -1) /* The necessary number of slots are not locally available. */
 	   {
-	     add = isomalloc_negociate(size/SLOT_SIZE);
+	     ptr = isomalloc_negociate(size/SLOT_SIZE);
 	   }
 	 else
-	   add = GET_SLOT_ADDR(i + size/SLOT_SIZE - 1);
+	   ptr = GET_SLOT_ADDR(i + size/SLOT_SIZE - 1);
 
+	 ptr = mmap(ptr,
+		    size,
+		    PROT_READ | PROT_WRITE,
+		    MMAP_MASK,
+		    FILE_TO_MAP, 0);
+	 if(ptr == (void *)-1) 
+	   RAISE(STORAGE_ERROR);
        }
-
-/* TIMING_EVENT("before mmap"); */
-     ptr = mmap(add,
-		size,
-		PROT_READ | PROT_WRITE,
-		MMAP_MASK,
-		FILE_TO_MAP, 0);
-/* TIMING_EVENT("after mmap"); */
-      if(ptr == (void *)-1) 
-	RAISE(STORAGE_ERROR);
 
 #ifdef DEBUG
       fprintf(stderr, "mmap non-contraint => %p, starting slot index = %d, slots = %ld\n", ptr, SLOT_INDEX(ptr), size/SLOT_SIZE);

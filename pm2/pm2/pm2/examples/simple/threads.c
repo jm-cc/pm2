@@ -51,7 +51,7 @@ static void SAMPLE_thread(void *arg)
   int i;
   char str[64];
 
-  mad_unpack_str(MAD_IN_HEADER, str);
+  old_mad_unpack_str(MAD_IN_HEADER, str);
 
   pm2_rawrpc_waitdata();
 
@@ -100,7 +100,7 @@ int pm2_main(int argc, char **argv)
 
     for(i=0; i<NB; i++) {
       pm2_rawrpc_begin(1, SAMPLE, NULL);
-      mad_pack_str(MAD_IN_HEADER, mess[i]);
+      old_mad_pack_str(MAD_IN_HEADER, mess[i]);
       pm2_rawrpc_end();
     }
 

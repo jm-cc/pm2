@@ -124,13 +124,19 @@ tbx_safe_malloc(size_t    size,
 		char     *file,
 		unsigned  line)
 {
-  p_tbx_safe_malloc_header_t p =
-    malloc(TBX_SAFE_MALLOC_HEADER_SIZE +
-	   size +
-	   TBX_SAFE_MALLOC_MAGIC_SIZE +
-	   strlen(file) +
-	   1);
-  void *ptr = p;
+  p_tbx_safe_malloc_header_t p;
+  void *ptr;
+
+#ifdef TBX_PARANO_MALLOC
+  tbx_safe_malloc_check(tbx_safe_malloc_ERRORS_ONLY);
+#endif
+
+  p = malloc(TBX_SAFE_MALLOC_HEADER_SIZE +
+	     size +
+	     TBX_SAFE_MALLOC_MAGIC_SIZE +
+	     strlen(file) +
+	     1);
+  ptr = p;
 
   if (!ptr)
     return NULL;
@@ -215,6 +221,10 @@ tbx_safe_free(void     *ptr,
 
   if (!p)
     FAILURE("cannot free NULL ptr");
+
+#ifdef TBX_PARANO_MALLOC
+  tbx_safe_malloc_check(tbx_safe_malloc_ERRORS_ONLY);
+#endif
 
   tbx_safe_malloc_check_chunk(p);
 

@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
+#include "pm2.h"
 
 #define NB	2
 static char *mess[NB] = { "Hi guys !", "Hi girls !" };

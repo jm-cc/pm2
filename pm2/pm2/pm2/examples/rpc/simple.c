@@ -24,12 +24,6 @@ static char *mess[NB] = {
   "Hello world !"
 };
 
-static unsigned sched_policy[NB] = {
-  MARCEL_SCHED_FIXED(2),
-  MARCEL_SCHED_FIXED(1),
-  MARCEL_SCHED_FIXED(0)
-};
-
 BEGIN_SERVICE(SAMPLE)
    int i, j;
 
@@ -50,7 +44,6 @@ void f(void)
   pm2_attr_init(&attr);
   for(i=0; i<NB; i++) {
     strcpy(req.tab, mess[i]);
-    pm2_attr_setschedpolicy(&attr, sched_policy[i]);
     pm2_rpc_call(1, SAMPLE, &attr, &req, NULL, &att[i]);
   }
 

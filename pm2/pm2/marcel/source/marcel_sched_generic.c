@@ -85,29 +85,6 @@ void marcel_one_task_less(marcel_t pid)
 	ma_spin_unlock(&__wait_lock);
 }
 
-void marcel_sched_start(unsigned nb_lwp)
-{
-#ifdef MA__LWPS
-	int i;
-#endif
-	LOG_IN();
-
-
-#ifdef MA__LWPS
-	marcel_lwp_fix_nb_vps(nb_lwp);
-
-	for(i=1; i<get_nb_lwps(); i++)
-		marcel_lwp_add_vp();
-	
-	mdebug("marcel_sched_init  : %i lwps created\n",
-	       get_nb_lwps());
-#endif /* MA__LWPS */
-	
-	mdebug("marcel_sched_init done\n");
-	
-	LOG_OUT();
-}
-
 // Attend que toutes les taches soient terminees. Cette fonction
 // _doit_ etre appelee par la tache "main".
 static void wait_all_tasks_end(void)
@@ -137,7 +114,7 @@ static void wait_all_tasks_end(void)
 	LOG_OUT();
 }
 
-void marcel_sched_shutdown()
+void marcel_gensched_shutdown(void)
 {
 #ifdef MA__SMP
 	marcel_lwp_t *lwp, *lwp_found;
@@ -332,6 +309,19 @@ void __init marcel_gensched_init_preempt(void)
 	ma_register_lwp_notifier(&generic_sched_nb);
 }
 
+#ifdef MA__LWPS
+void __init marcel_gensched_start_lwps(void)
+{
+	int i;
+	LOG_IN();
+	for(i=1; i<get_nb_lwps(); i++)
+		marcel_lwp_add_vp();
+	
+	mdebug("marcel_sched_init  : %i lwps created\n", get_nb_lwps());
+	LOG_OUT();
+}
+#endif /* MA__LWPS */
+
 void __init marcel_gensched_init_idle(void)
 {
 	marcel_sem_init(&_main_struct.blocked,0);
@@ -347,3 +337,7 @@ __ma_initfunc_prio(marcel_gensched_init_preempt, MA_INIT_GENSCHED_PREEMPT,
 __ma_initfunc(marcel_gensched_init_idle, MA_INIT_GENSCHED_IDLE,
 	       "Création Idle");
 
+#ifdef MA__LWPS
+__ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS,
+	       "Création et démarrage des LWPs");
+#endif /* MA__LWPS */

@@ -1,4 +1,7 @@
 #!/bin/sh
+##########
+
+# Re-ajoute dans le CVS pour compatibilite avec Leonie/MadIII
 
 # $1... = command and arguments
 

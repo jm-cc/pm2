@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.10  2000/01/31 15:55:01  oaumage
+- mad_mpi.c : terminaison amelioree sous PM2
+- mad_tcp.c : debogage de la synchronisation finale
+
 Revision 1.9  2000/01/25 14:16:10  oaumage
 - suppression (temporaire) du sync lors de la fermeture du canal pour
   resoudre un probleme de blocage a la terminaison d'une session PM2
@@ -137,6 +141,8 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
   mad_host_id_t                     i;
 
   LOG_IN();
+  LOG_VAL("Syncing channel", channel->id);
+  
   for (i = 0;
        i < configuration->size;
        i++)
@@ -160,18 +166,22 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
 	      connection = &(channel->input_connection[j]);
 	      connection_specific = connection->specific;
 
-	      read(connection_specific->socket, 
-		   &channel_id,
-		   sizeof(mad_channel_id_t));
+	      LOG_VAL("Receiving channel id from host", j);
+	      SYSCALL(read(connection_specific->socket, 
+			   &channel_id,
+			   sizeof(mad_channel_id_t)));
+	      LOG_VAL("Received channel id from host", j);
+	      LOG_VAL("Channel id", channel_id);
 	      
 	      if (channel_id != channel->id)
 		{
 		  FAILURE("wrong channel id");
 		}
-	      
-	      write(connection_specific->socket,
-		    &(configuration->local_host_id),
-		    sizeof(mad_host_id_t));	      
+	      LOG_VAL("Writing local host id", configuration->local_host_id);
+	      SYSCALL(write(connection_specific->socket,
+			    &(configuration->local_host_id),
+			    sizeof(mad_host_id_t)));	      
+	      LOG_VAL("Wrote local host id", configuration->local_host_id);
 	    }
 	}
       else
@@ -182,13 +192,18 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
 	  connection = &(channel->output_connection[i]);
 	  connection_specific = connection->specific;
 
-	  write(connection_specific->socket,
-	       &(channel->id),
-	       sizeof(mad_channel_id_t));	      
+	  LOG_VAL("Writing channel id", channel->id);
+	  SYSCALL(write(connection_specific->socket,
+			&(channel->id),
+			sizeof(mad_channel_id_t)));
+	  LOG_VAL("Wrote channel id", channel->id);
 	      
-	  read(connection_specific->socket,
-	       &(host_id),
-	       sizeof(mad_host_id_t));	      
+	  LOG_VAL("Receiving host id from host", i);
+	  SYSCALL(read(connection_specific->socket,
+		       &(host_id),
+		       sizeof(mad_host_id_t)));
+	  LOG_VAL("Received host id from host", i);
+	  LOG_VAL("Host id", host_id);
 	  
 	  if (host_id != i)
 	    {
@@ -196,6 +211,7 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
 	    }
 	}
     }
+  LOG_VAL("Channel synced", channel->id);
   LOG_OUT();
 }
 
@@ -213,10 +229,8 @@ mad_tcp_fill_sockaddr(struct sockaddr_in  *sockaddr,
 	  madeleine->
 	  configuration.host_name[rank]);
   
-  host = gethostbyname(adapter->
-		       driver->
-		       madeleine->
-		       configuration.host_name[rank]);
+  host =
+    gethostbyname(adapter->driver->madeleine->configuration.host_name[rank]);
   
   if (host == NULL)
     {
@@ -239,65 +253,23 @@ mad_tcp_fill_sockaddr(struct sockaddr_in  *sockaddr,
 static void
 mad_tcp_setup_socket(int sock)
 {
-  int             un     = 1;
+  int             u      = 1;
   int             packet = 0x8000;
   struct linger   ling   = { 1, 50 };
-  int             status;
-
-  LOG_IN();      
-  status = setsockopt(sock,
-		      IPPROTO_TCP,
-		      TCP_NODELAY,
-		      (char*)&un,
-		      sizeof(int));
-      
-  if (status == -1)
-    {
-      perror("setsockopt failed");
-      exit(1);
-    }
-
-  status = setsockopt(sock,
-		      SOL_SOCKET,
-		      SO_LINGER,
-		      (char *)&ling,
-		      sizeof(struct linger));
-      
-  if (status == -1)
-    {
-      perror("setsockopt failed");
-      exit(1);
-    }
+  int             sint   = sizeof(int);
   
-  status = setsockopt(sock,
-		      SOL_SOCKET,
-		      SO_SNDBUF,
-		      (char *)&packet,
-		      sizeof(int));
-      
-  if (status == -1)
-    {
-      perror("setsockopt failed");
-      exit(1);
-    }
-
-  status = setsockopt(sock,
-		      SOL_SOCKET,
-		      SO_RCVBUF,
-		      (char *)&packet,
-		      sizeof(int));
-  if (status == -1)
-    {
-      perror("setsockopt failed");
-      exit(1);
-    }
+  LOG_IN();      
+  SYSCALL(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&u, sint));
+  SYSCALL(setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *)&ling,
+		     sizeof(struct linger)));
+  SYSCALL(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char *)&packet, sint));
+  SYSCALL(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&packet, sint));
   LOG_OUT();
 }
 
 static int creer_socket(int type, int port, struct sockaddr_in *adresse)
 {
   struct sockaddr_in temp;
-  int status;
   int desc;
   int length = sizeof(struct sockaddr_in);
   /*int packet = 0x8000;
@@ -305,36 +277,16 @@ static int creer_socket(int type, int port, struct sockaddr_in *adresse)
   int un = 1;*/
 
   LOG_IN();
-  desc = socket(AF_INET, type, 0);
-  if (desc == -1)
-    {
-      perror("ERROR: Cannot create socket\n");
-      return -1;
-    }
+  SYSCALL(desc = socket(AF_INET, type, 0));
   
   temp.sin_family      = AF_INET;
   temp.sin_addr.s_addr = htonl(INADDR_ANY);
   temp.sin_port        = htons(port);
 
-  status = bind(desc, (struct sockaddr *)&temp, sizeof(struct sockaddr_in));
-  
-  if (status == -1)
-    {
-      perror("ERROR: Cannot bind socket\n");
-      close(desc);
-      return -1;
-    }
+  SYSCALL(bind(desc, (struct sockaddr *)&temp, sizeof(struct sockaddr_in)));
 
-  if (adresse != NULL)
-    {
-      status = getsockname(desc, (struct sockaddr *)adresse, &length);
-      
-      if (status == -1)
-	{
-	  perror("ERROR: Cannot get socket name\n");
-	  return -1;
-	}
-    }
+  if (adresse)
+    SYSCALL(getsockname(desc, (struct sockaddr *)adresse, &length));
 
   LOG_OUT();
   return desc;
@@ -344,28 +296,18 @@ static void
 mad_tcp_write(int              sock,
 	      p_mad_buffer_t   buffer)
 {
-  ssize_t result;
-  
   LOG_IN();
   while (mad_more_data(buffer))
     {
-      PM2_LOCK();
-      result = write(sock,
-		     (const void*)(buffer->buffer +
-				   buffer->bytes_read),
-		     buffer->bytes_written - buffer->bytes_read);
-      PM2_UNLOCK();
-      if (result == -1)
-	{
-	  perror("write");
-	  FAILURE("write failed");
-	}
-      buffer->bytes_read += result;
+      ssize_t result;
+      SYSTEST(result = write(sock,
+			     (const void*)(buffer->buffer +
+					   buffer->bytes_read),
+			     buffer->bytes_written - buffer->bytes_read));
+
+      if (result > 0) buffer->bytes_read += result;
 #ifdef PM2
-      if (mad_more_data(buffer))
-	{
-	  PM2_YIELD();
-	}
+      if (mad_more_data(buffer)) PM2_YIELD();
 #endif /* PM2 */
     }
   LOG_OUT();
@@ -380,18 +322,12 @@ mad_tcp_read(int              sock,
     {
       ssize_t result;
 
-      PM2_LOCK();
-      result = read(sock,
-		    (void*)(buffer->buffer +
-			    buffer->bytes_written),
-		    buffer->length - buffer->bytes_written);
-      PM2_UNLOCK();
-      if (result == -1)
-	{
-	  perror("read");
-	  FAILURE("read failed");
-	}
-      buffer->bytes_written += result;
+      SYSTEST(result = read(sock,
+			    (void*)(buffer->buffer +
+				    buffer->bytes_written),
+			    buffer->length - buffer->bytes_written));
+
+      if (result > 0) buffer->bytes_written += result;
 #ifdef PM2
       if (!mad_buffer_full(buffer))
 	{
@@ -425,7 +361,7 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->accept                     = mad_tcp_accept;
   interface->connect                    = mad_tcp_connect;
   interface->after_open_channel         = mad_tcp_after_open_channel;
-  interface->before_close_channel       = NULL;
+  interface->before_close_channel       = mad_tcp_before_close_channel;
   interface->disconnect                 = mad_tcp_disconnect;
   interface->after_close_channel        = NULL;
   interface->link_exit                  = NULL;
@@ -500,21 +436,16 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->connection_socket =
     creer_socket(SOCK_STREAM, 0, &address);
   
-  if (listen(adapter_specific->connection_socket,
-	     driver->madeleine->configuration.size - 1) == -1)
-    {
-      perror("mad_tcp_adapter_init: listen");
-      exit(1);
-    }
+  SYSCALL(listen(adapter_specific->connection_socket,
+		 driver->madeleine->configuration.size - 1));
   
   adapter_specific->connection_port = (int)ntohs(address.sin_port);
   LOG_VAL("mad_tcp_adapter_init: connection port",
-	      adapter_specific->connection_port);
+	  adapter_specific->connection_port);
 
   adapter->parameter = malloc(10);
   CTRL_ALLOC(adapter->parameter);
-  sprintf(adapter->parameter,
-	  "%d", adapter_specific->connection_port);
+  sprintf(adapter->parameter, "%d", adapter_specific->connection_port);
   LOG_OUT();
 }
 
@@ -540,24 +471,14 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
 	  i < configuration->size;
 	  i++)
 	{
-	  do
-	    {
-	      fd =
-		accept(adapter_specific->connection_socket, NULL, NULL);
-	      if (    (fd == -1)
-		      && (errno != EINTR))
-		{
-		  perror("master'accept");
-		  FAILURE("accept");
-		}
-	    }
-	  while(fd == -1);
+	  SYSCALL(fd = accept(adapter_specific->connection_socket, NULL,
+			      NULL));
       
-	  read(fd, &rank, sizeof(mad_host_id_t));
+	  SYSCALL(read(fd, &rank, sizeof(mad_host_id_t)));
 	  sock[rank] = fd;
-	  read(sock[rank],
-	       &(adapter_specific->remote_connection_port[rank]),
-	       sizeof(int));
+	  SYSCALL(read(sock[rank],
+		       &(adapter_specific->remote_connection_port[rank]),
+		       sizeof(int)));
 	}
       
       LOG("mad_tcp_adapter_configuration_init: phase 1 terminee");
@@ -571,16 +492,12 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
 	       j < configuration->size;
 	       j++)
 	    {
-	      if (j == i)
-		{
-		  continue;
-		}
-	      
-	      write(sock[i],
-		    &(adapter_specific->remote_connection_port[j]),
-		    sizeof(int));
+	      if (j != i)
+		SYSCALL(write(sock[i],
+			      &(adapter_specific->remote_connection_port[j]),
+			      sizeof(int)));
 	    }
-	  close(sock[i]);
+	  SYSCALL(close(sock[i]));
 	}
       LOG("mad_tcp_adapter_configuration_init: phase 2 terminee");
     }
@@ -589,7 +506,6 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       /* Slave */
       struct sockaddr_in server;
       int sock;
-      int status;
       
       LOG("mad_tcp_adapter_configuration_init: slave");
       adapter_specific->remote_connection_port[0] =
@@ -597,44 +513,26 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
       LOG_VAL("mad_tcp_adapter_configuration_init: master port",
 	      adapter_specific->remote_connection_port[0]);
       
-      sock = creer_socket(SOCK_STREAM, 0, NULL);
-      if (sock == -1)
-	{
-	  FAILURE("mad_tcp_adapter_configuration_init: creer_socket");
-	}
-      
+      SYSCALL(sock = creer_socket(SOCK_STREAM, 0, NULL));      
       mad_tcp_fill_sockaddr(&server, adapter, 0);
+      SYSCALL(connect(sock, (struct sockaddr*)&server,
+		      sizeof(struct sockaddr_in)));
       
-      status = connect(sock,
-		       (struct sockaddr*)&server,
-		       sizeof(struct sockaddr_in));
-
-      if (status == -1)
-	{
-	      perror("mad_tcp_adapter_configuration_init: connect");
-	      FAILURE("Connect");
-	}
-      
-      write(sock,
-	    &(configuration->local_host_id),
-	    sizeof(mad_host_id_t));
-      write(sock,
-		&(adapter_specific->connection_port),
-	    sizeof(int));
+      SYSCALL(write(sock,
+		    &(configuration->local_host_id),
+		    sizeof(mad_host_id_t)));
+      SYSCALL(write(sock,
+		    &(adapter_specific->connection_port),
+		    sizeof(int)));
       
       LOG("mad_tcp_adapter_configuration_init: phase 1 terminee");
       for (i = 1;
 	   i < configuration->size;
 	   i++)
 	{
-	  if (i == configuration->local_host_id)
-	    {
-	      continue;
-	    }
-	  
-	  read(sock,
-	       &(adapter_specific->remote_connection_port[i]),
-	       sizeof(int));
+	  if (i != configuration->local_host_id)
+	    SYSCALL(read(sock, &(adapter_specific->remote_connection_port[i]),
+			 sizeof(int)));
 	}
 
       close(sock);
@@ -702,28 +600,10 @@ mad_tcp_accept(p_mad_channel_t channel)
   int                               sock;
   
   LOG_IN();
-  do
-    {
-      sock = accept(adapter_specific->connection_socket, NULL, NULL);
-      if (sock == -1)
-	{
-	  if (errno == EINTR)
-	    {
-	      continue;
-	    }
-	  else
-	    {
-	      perror("slave'accept");
-	      FAILURE("Accept");
-	    }
-	}
-      mad_tcp_setup_socket(sock);
-    }
-  while (sock == -1);
+  SYSCALL(sock = accept(adapter_specific->connection_socket, NULL, NULL));
+  mad_tcp_setup_socket(sock);
 
-  read(sock,
-       &remote_host_id,
-       sizeof(mad_host_id_t));
+  SYSCALL(read(sock, &remote_host_id, sizeof(mad_host_id_t)));
   channel->input_connection[remote_host_id].remote_host_id =
     remote_host_id;
   channel->output_connection[remote_host_id].remote_host_id =
@@ -748,7 +628,6 @@ mad_tcp_connect(p_mad_connection_t connection)
   struct sockaddr_in                adresse;
   struct sockaddr_in                server;
   int                               sock;
-  int                               status;
   
   LOG_IN();
   sock = creer_socket(SOCK_STREAM, 0, &adresse);
@@ -761,23 +640,20 @@ mad_tcp_connect(p_mad_connection_t connection)
 			connection->channel->adapter,
 			connection->remote_host_id);
 
-  status =
-    connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in));
-  if(status == -1)
-    {
-      perror("mad_tcp_connect: connect");
-      FAILURE("Connect");
-    }
+  SYSCALL(connect(sock, (struct sockaddr *)&server,
+		  sizeof(struct sockaddr_in)));
 
-  write(sock,
-	&(connection->
-	  channel->
-	  adapter->
-	  driver->
-	  madeleine->
-	  configuration.local_host_id),
-	sizeof(mad_host_id_t));
   mad_tcp_setup_socket(sock);
+  
+  SYSCALL(write(sock,
+		&(connection->
+		  channel->
+		  adapter->
+		  driver->
+		  madeleine->
+		  configuration.local_host_id),
+		sizeof(mad_host_id_t)));
+  
 
   reverse->remote_host_id = connection->remote_host_id;
   /* Note:
@@ -818,20 +694,21 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
   LOG_OUT();
 }
 
+void
+mad_tcp_before_close_channel(p_mad_channel_t channel)
+{
+  LOG_IN();
+  mad_tcp_sync_channel(channel);
+  LOG_OUT();
+}
+
 void 
 mad_tcp_disconnect(p_mad_connection_t connection)
 {
   p_mad_tcp_connection_specific_t connection_specific = connection->specific;
-  int status;
   
   LOG_IN();
-  status = close(connection_specific->socket);
-  if (status == -1)
-    {
-      perror("mad_tcp_disconnect: close");
-      exit(EXIT_FAILURE);
-    }
-  
+  SYSCALL(close(connection_specific->socket));
   connection_specific->socket = -1;
   LOG_OUT();
 }
@@ -842,7 +719,7 @@ mad_tcp_adapter_exit(p_mad_adapter_t adapter)
   p_mad_tcp_adapter_specific_t adapter_specific = adapter->specific;
   
   LOG_IN();
-  close(adapter_specific->connection_socket);
+  SYSCALL(close(adapter_specific->connection_socket));
   free(adapter_specific->remote_connection_port);
   free(adapter_specific);
   adapter->specific = NULL;

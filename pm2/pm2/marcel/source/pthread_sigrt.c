@@ -27,6 +27,7 @@
 #include <sys/time.h>
 //VD:#include <shlib-compat.h>
 #include "pthread.h"
+#include "sys/marcel_flags.h"
 //VD:#include "internals.h"
 //VD:#include "spinlock.h"
 //VD:#include "restart.h"
@@ -35,6 +36,7 @@
 //VD:#include <tls.h>
 //VD:#include <locale.h>		/* for __uselocale */
 //VD:#include <version.h>
+#ifdef MA__PTHREAD_FUNCTIONS
 
 #define __ASSUME_REALTIME_SIGNALS 1 //VD:
 /* Sanity check.  */
@@ -150,3 +152,4 @@ __libc_allocate_rtsig (int high)
 #endif
 }
 
+#endif /* MA__PTHREAD_FUNCTIONS */

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.h,v $
+Revision 1.7  2000/10/18 12:41:17  rnamyst
+Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
+
 Revision 1.6  2000/07/03 15:51:48  rnamyst
 Bug fixed in macro MARCEL_MUTEX_INITIALIZER
 
@@ -85,9 +88,9 @@ int marcel_mutexattr_destroy(marcel_mutexattr_t *attr);
 int marcel_mutex_init(marcel_mutex_t *mutex, marcel_mutexattr_t *attr);
 int marcel_mutex_destroy(marcel_mutex_t *mutex);
 
-int marcel_mutex_lock(marcel_mutex_t *mutex);
-int marcel_mutex_trylock(marcel_mutex_t *mutex);
-int marcel_mutex_unlock(marcel_mutex_t *mutex);
+int marcel_mutex_lock(marcel_mutex_t *mutex) __attribute__((regparm(1)));
+int marcel_mutex_trylock(marcel_mutex_t *mutex) __attribute__((regparm(1)));
+int marcel_mutex_unlock(marcel_mutex_t *mutex) __attribute__((regparm(1)));
 
 int marcel_condattr_init(marcel_condattr_t *attr);
 int marcel_condattr_destroy(marcel_condattr_t *attr);

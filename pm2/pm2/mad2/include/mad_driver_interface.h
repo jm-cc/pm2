@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_driver_interface.h,v $
+Revision 1.4  2000/01/13 14:44:31  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.3  1999/12/15 17:31:21  oaumage
 Ajout de la commande de logging de CVS
 
@@ -152,7 +156,7 @@ typedef struct s_mad_driver_interface
   
   void
   (*receive_sub_buffer_group)(p_mad_link_t,
-			      mad_bool_t,
+			      tbx_bool_t,
 			      p_mad_buffer_group_t);
 
   /* External spawn support */

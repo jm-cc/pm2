@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_pointers.h,v $
+Revision 1.6  2001/01/16 09:55:48  oaumage
+- integration du mecanisme de forwarding
+
 Revision 1.5  2001/01/03 11:05:28  oaumage
 - integration des headers du module de forwarding
 
@@ -107,7 +110,7 @@ typedef struct s_mad_channel_description  *p_mad_channel_description_t;
 
 #ifdef MAD_FORWARDING
 /* ... User channel characteristics .................................. */
-typedef struct s_mad_user_channel_t       *p_mad_user_channel_t;
+typedef struct s_mad_user_channel         *p_mad_user_channel_t;
 #endif /* MAD_FORWARDING */
 
 #endif /* MAD_POINTERS_H */

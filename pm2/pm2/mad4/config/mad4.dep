@@ -1,0 +1,5 @@
+Provide: madeleine
+Depend: mad4_proto tbx ntbx init marcel
+Provide: module
+Conflict: madeleine
+Depend: mad4_linkmode 

@@ -234,6 +234,7 @@ int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
   cell c, *cp;
   struct timeval now, tv;
   unsigned long timeout;
+  int r = 0;
 
   tv.tv_sec = abstime->tv_sec;
   tv.tv_usec = abstime->tv_nsec / 1000;
@@ -276,7 +277,7 @@ int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
       marcel_tempo_give_hand(timeout, &c.blocked, cond);
     EXCEPTION
       WHEN(TIME_OUT)
-        return ETIMEDOUT;
+        r = ETIMEDOUT;
     END
   } else {
    marcel_lock_release(&cond->lock);
@@ -306,5 +307,5 @@ int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
     unlock_task();
   }
 
-  return 0;
+  return r;
 }

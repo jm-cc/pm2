@@ -27,7 +27,7 @@
 #include "dsm_rpc.h"
 #include "assert.h"
 
-#define DSM_COMM_TRACE
+//#define DSM_COMM_TRACE
 //#define ASSERT
 //#define MINIMIZE_PACKS_ON_PAGE_TRANSFER
 //#define MINIMIZE_PACKS_ON_DIFF_TRANSFER

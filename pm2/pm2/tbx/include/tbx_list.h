@@ -1,3 +1,11 @@
+/*! \file tbx_list.h
+ *  \brief TBX linked-list data structures
+ *
+ *  This file contains the TBX management data structures for the
+ *  Madeleine-specialized linked list.
+ * 
+ */
+
 
 /*
  * PM2: Parallel Multithreaded Machine

@@ -17,7 +17,7 @@
 
 static common_attr_t default_static_attr;
 
-#ifdef PM2
+#if defined(PM2)
 static unsigned int pm2self       = 0;
 static unsigned int pm2_conf_size = 0;
 #endif // PM2
@@ -301,7 +301,9 @@ void common_pre_init(int *argc, char *argv[],
    */
   mad_cmd_line_init(attr->madeleine, *argc, argv);
 
+#ifdef PM2
   pm2self = attr->madeleine->configuration->local_host_id;
+#endif
 
   if (attr)
     attr->rank = attr->madeleine->configuration->local_host_id;

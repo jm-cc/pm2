@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.c,v $
+Revision 1.6  2000/05/25 00:23:54  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.5  2000/05/24 15:15:22  rnamyst
 Enhanced the polling capabilities of the Marcel scheduler.
 
@@ -144,6 +147,7 @@ marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
 {
   marcel_pollid_t id;
 
+  //LOG_IN();
   lock_task();
 
   if(nb_poll_structs == MAX_POLL_IDS) {
@@ -162,6 +166,10 @@ marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
   id->fastfunc = h;
   id->polling_points = polling_points | MARCEL_POLL_AT_IDLE;
 
+  mdebug("registering pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
+	 id, g, f, h, id->polling_points);
+
+  //LOG_OUT();
   return id;
 }
 
@@ -169,10 +177,13 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
 {
   poll_cell_t cell;
 
+  //LOG_IN();
   mdebug("Marcel_poll (thread %p)...\n", marcel_self());
+  mdebug("using pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
+	 id, id->gfunc, id->func, id->fastfunc, id->polling_points);
 
   if(id->fastfunc) {
-    mdebug("Using Immediate FastPoll\n");
+    mdebug("Using Immediate FastPoll %p\n", id->fastfunc);
     if((*id->fastfunc)(id, arg) != MARCEL_POLL_FAILED) {
       mdebug("Fast Poll completed ok!\n");
       return;
@@ -214,5 +225,10 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
     }
   }
 
+  //LOG("marcel_poll give hand");
   marcel_give_hand(&cell.blocked, &__polling_lock);
+  //LOG_OUT();
 }
+
+
+

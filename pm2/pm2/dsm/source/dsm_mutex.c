@@ -40,7 +40,7 @@
 #include "dsm_mutex.h"
 
 
-static dsm_mutexattr_t dsm_mutexattr_default ;
+// static dsm_mutexattr_t dsm_mutexattr_default ;
 
 
 int dsm_mutexattr_setowner(dsm_mutexattr_t *attr, dsm_node_t owner)
@@ -73,7 +73,8 @@ void DSM_LRPC_LOCK_threaded_func()
   dsm_mutex_t *mutex;
   pm2_completion_t c;
   
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS,
+		  (char *)&mutex, sizeof(dsm_mutex_t *));
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata();
   marcel_mutex_lock(&mutex->mutex);
@@ -92,7 +93,8 @@ void DSM_LRPC_UNLOCK_func(void)
   dsm_mutex_t *mutex;
   pm2_completion_t c;
 
-  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS,
+		  (char *)&mutex, sizeof(dsm_mutex_t *));
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata();
   marcel_mutex_unlock(&mutex->mutex);
@@ -110,7 +112,8 @@ int dsm_mutex_lock(dsm_mutex_t *mutex)
 
       pm2_completion_init(&c, NULL, NULL);
       pm2_rawrpc_begin((int)mutex->owner, DSM_LRPC_LOCK, NULL);
-      pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+      pm2_pack_byte(SEND_SAFER, RECV_EXPRESS,
+		    (char *)&mutex, sizeof(dsm_mutex_t *));
       pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
       pm2_rawrpc_end();
       pm2_completion_wait(&c);
@@ -129,7 +132,8 @@ int dsm_mutex_unlock(dsm_mutex_t *mutex)
 
       pm2_completion_init(&c, NULL, NULL);
       pm2_rawrpc_begin((int)mutex->owner, DSM_LRPC_UNLOCK, NULL);
-      pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+      pm2_pack_byte(SEND_SAFER, RECV_EXPRESS,
+		    (char *)&mutex, sizeof(dsm_mutex_t *));
       pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
       pm2_rawrpc_end();
       pm2_completion_wait(&c);

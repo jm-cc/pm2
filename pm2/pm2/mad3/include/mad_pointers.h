@@ -154,22 +154,6 @@ typedef struct s_mad_directory
 typedef struct s_mad_fmessage_queue_entry
 *p_mad_fmessage_queue_entry_t;
 
-/* ... Forwarding block type ......................................... */
-typedef enum e_mad_fblock_type
-*p_mad_fblock_type_t;
-
-/* ... Forwarding block header fields ................................ */
-typedef enum e_mad_fblock_header_field
-*p_mad_fblock_header_field_t;
-
-/* ... Forwarding block header field masks ........................... */
-typedef enum e_mad_fblock_header_field_mask
-*p_mad_fblock_header_field_mask_t;
-
-/* ... Forwarding block header field shifts .......................... */
-typedef enum e_mad_fblock_header_field_shift
-*p_mad_fblock_header_field_shift_t;
-
 /* ... Forwarding block header ....................................... */
 typedef struct s_mad_fblock_header
  *p_mad_fblock_header_t;
@@ -192,14 +176,6 @@ typedef struct s_mad_forward_poll_channel_arg
 
 
 typedef struct s_mad_xmessage_queue_entry *p_mad_xmessage_queue_entry_t;
-
-typedef enum e_mad_xblock_buffer_type *p_mad_xblock_buffer_type_t;
-
-typedef enum e_mad_xblock_header_field *p_mad_xblock_header_field_t;
-
-typedef enum e_mad_xblock_header_field_mask *p_mad_xblock_header_field_mask_t;
-
-typedef enum e_mad_xblock_header_field_shift *p_mad_xblock_header_field_shift_t;
 
 typedef struct s_mad_xblock_header *p_mad_xblock_header_t;
 

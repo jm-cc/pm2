@@ -69,7 +69,7 @@ mad_spawn_driver_init(p_mad_madeleine_t   madeleine,
     &(madeleine->driver[settings->external_spawn_driver].interface);
   spawn_interface->driver_init(spawn_driver);
   
-  spawn_adapter = &(madeleine->adapter[settings->external_spawn_driver]);
+  spawn_adapter = &(madeleine->adapter[0]);
   
   if (spawn_interface->adapter_init)
     spawn_interface->adapter_init(spawn_adapter);

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.4  2000/01/04 16:49:09  oaumage
+- madeleine: corrections au niveau du support `external spawn'
+- support des fonctions non definies dans les drivers
+
 Revision 1.3  1999/12/15 17:31:27  oaumage
 Ajout de la commande de logging de CVS
 
@@ -73,7 +77,8 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   channel->reception_lock = mad_false;
   channel->specific       = NULL;
 
-  interface->channel_init(channel);
+  if (interface->channel_init)
+    interface->channel_init(channel);
 
   channel->input_connection =
     malloc(configuration->size * sizeof(mad_connection_t));
@@ -109,13 +114,21 @@ mad_open_channel(p_mad_madeleine_t madeleine,
       out->send           = mad_false;
       out->specific       = NULL;
       
-      interface->connection_init(in, out);
-
-      if (   (in->nb_link <= 0)
-	  || (out->nb_link <= 0)
-	  || (in->nb_link != out->nb_link))
+      if (interface->connection_init)
 	{
-	  FAILURE("mad_open_channel: invalid link number");
+	  interface->connection_init(in, out);
+
+	  if (   (in->nb_link  <= 0)
+	      || (out->nb_link <= 0)
+	      || (in->nb_link  != out->nb_link))
+	    {
+	      FAILURE("mad_open_channel: invalid link number");
+	    }
+	}
+      else
+	{
+	  in->nb_link  = 1;
+	  out->nb_link = 1;
 	}
       
       in->link  = malloc( in->nb_link * sizeof(mad_link_t));
@@ -138,57 +151,65 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	  out_link->id         = link_id;
 	  out_link->specific   = NULL;
 
-	  interface->link_init(in_link);
-	  interface->link_init(out_link);
-	}
-    }
-
-  interface->before_open_channel(channel);
-
-  if (driver->connection_type == mad_bidirectional_connection)
-    {
-      for (host = 0;
-	   host < configuration->local_host_id;
-	   host++)
-	{
-	  interface->accept(channel);
-	}      
-
-      for(host = madeleine->configuration.local_host_id + 1;
-	  host < configuration->size;
-	  host++)
-	{
-	  interface->connect(&(channel->output_connection[host]));
-	}
-    }
-  else
-    {
-      for(host = 0;
-	  host < configuration->size;
-	  host++)
-	{
-	  if (host == configuration->local_host_id)
+	  if (interface->link_init)
 	    {
-	      mad_host_id_t remote_host;
-
-	      for (remote_host = 0;
-		   remote_host < configuration->size;
-		   remote_host++)
-		{
-		  if (remote_host != configuration->local_host_id)
-		    {
-		      interface->accept(channel);
-		    }
-		}
+	      interface->link_init(in_link);
+	      interface->link_init(out_link);
 	    }
-	  else
+	}
+    }
+
+  if (interface->before_open_channel)
+    interface->before_open_channel(channel);
+  
+  if (interface->accept && interface->connect)
+    {
+      if (driver->connection_type == mad_bidirectional_connection)
+	{
+	  for (host = 0;
+	       host < configuration->local_host_id;
+	       host++)
+	    {
+	      interface->accept(channel);
+	    }      
+
+	  for(host = madeleine->configuration.local_host_id + 1;
+	      host < configuration->size;
+	      host++)
 	    {
 	      interface->connect(&(channel->output_connection[host]));
 	    }
 	}
-    }
+      else
+	{
+	  for(host = 0;
+	      host < configuration->size;
+	      host++)
+	    {
+	      if (host == configuration->local_host_id)
+		{
+		  mad_host_id_t remote_host;
 
-  interface->after_open_channel(channel);
+		  for (remote_host = 0;
+		       remote_host < configuration->size;
+		       remote_host++)
+		    {
+		      if (remote_host != configuration->local_host_id)
+			{
+			  interface->accept(channel);
+			}
+		    }
+		}
+	      else
+		{
+		  interface->connect(&(channel->output_connection[host]));
+		}
+	    }
+	}
+    }
+  
+  if (interface->after_open_channel)
+    interface->after_open_channel(channel);
 
   mad_append_list(&(madeleine->channel), channel);
   PM2_UNLOCK_SHARED(channel);
@@ -214,80 +235,125 @@ mad_foreach_close_channel(void *object)
 
   PM2_LOCK_SHARED(adapter);
   PM2_LOCK_SHARED(channel);
-  
-  interface->before_close_channel(channel);
 
-  if (driver->connection_type == mad_bidirectional_connection)
-    {
-      for(host = 0;
-	  host < configuration->local_host_id;
-	  host++)
-	{
-	  interface->disconnect(&(channel->input_connection[host]));
-	}
+  if (interface->before_close_channel)
+    interface->before_close_channel(channel);
 
-      for(host = madeleine->configuration.local_host_id + 1;
-	  host < configuration->size;
-	  host++)
+  if (interface->disconnect)
+    {      
+      if (driver->connection_type == mad_bidirectional_connection)
 	{
-	  interface->disconnect(&(channel->output_connection[host]));
-	}
-    }
-  else
-    {
-      for(host = 0;
-	  host < configuration->size;
-	  host++)
-	{
-	  if (host == configuration->local_host_id)
+	  for(host = 0;
+	      host < configuration->local_host_id;
+	      host++)
 	    {
-	      mad_host_id_t remote_host;
-
-	      for (remote_host = 0 ;
-		   remote_host < configuration->size;
-		   remote_host++)
-		{
-		  if (remote_host != configuration->local_host_id)
-		    {
-		      interface->
-			disconnect(&(channel
-				     ->input_connection[remote_host]));
-		    }
-		}
+	      interface->disconnect(&(channel->input_connection[host]));
 	    }
-	  else
+
+	  for(host = madeleine->configuration.local_host_id + 1;
+	      host < configuration->size;
+	      host++)
 	    {
 	      interface->disconnect(&(channel->output_connection[host]));
 	    }
 	}
+      else
+	{
+	  for(host = 0;
+	      host < configuration->size;
+	      host++)
+	    {
+	      if (host == configuration->local_host_id)
+		{
+		  mad_host_id_t remote_host;
+
+		  for (remote_host = 0 ;
+		       remote_host < configuration->size;
+		       remote_host++)
+		    {
+		      if (remote_host != configuration->local_host_id)
+			{
+			  interface->
+			    disconnect(&(channel
+					 ->input_connection[remote_host]));
+			}
+		    }
+		}
+	      else
+		{
+		  interface->disconnect(&(channel->output_connection[host]));
+		}
+	    }
+	}
     }
-   
-  interface->after_close_channel(channel);
+
+  if (interface->after_close_channel)
+    interface->after_close_channel(channel);
   for (host = 0; host < configuration->size; host++)
     {
       p_mad_connection_t   in  = &(channel->input_connection[host]);
       p_mad_connection_t   out = &(channel->output_connection[host]);
       mad_link_id_t        link_id;
 
-      for (link_id = 0;
-	   link_id < in->nb_link;
-	   link_id++)
+      if (interface->link_exit)
 	{
-	  p_mad_link_t   in_link  = &(in->link[link_id]);
-	  p_mad_link_t   out_link = &(out->link[link_id]);
-
-	  interface->link_exit(out->link);
-	  interface->link_exit(in->link);
+	  for (link_id = 0;
+	       link_id < in->nb_link;
+	       link_id++)
+	    {
+	      p_mad_link_t   in_link  = &(in->link[link_id]);
+	      p_mad_link_t   out_link = &(out->link[link_id]);
+	      
+	      interface->link_exit(out->link);
+	      interface->link_exit(in->link);
+	    }
 	}
+      else
+	{
+	  if (out->link->specific)
+	    {
+	      free(out->link->specific);
+	    }
 
+	  if (in->link->specific)
+	    {
+	      free(in->link->specific);
+	    }	  
+	}
+      
       free(out->link);
       free(in->link);
-      interface->connection_exit(in, out);
+      if (interface->connection_exit)
+	{
+	  interface->connection_exit(in, out);
+	}
+      else
+	{
+	  if (out->specific)
+	    {
+	      free(out->specific);
+	    }
+
+	  if (in->specific)
+	    {
+	      free(in->specific);
+	    }	  
+	}
     }
 
   free(channel->output_connection);
   free(channel->input_connection);
-  interface->channel_exit(channel);
+  if (interface->channel_exit)
+    {
+      interface->channel_exit(channel);
+    }
+  else
+    {
+      if (channel->specific)
+	{
+	  free(channel->specific);
+	}
+    }
   free(channel);
   /* Note: the channel is never unlocked since it is being destroyed */
   PM2_UNLOCK_SHARED(adapter);

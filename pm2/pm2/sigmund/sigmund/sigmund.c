@@ -23,28 +23,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "temp.h"
 #include "tracelib.h"
+#include "fkt.h"
 
-char *fut_code2name(int code)
-{
-  int i = 0;
-  while(1) {
-    if (code_table[i].code == 0) return NULL;
-    if (code_table[i].code == code) return code_table[i].name;
-    i++;
-  }
-}
-
-char *fkt_code2name(int code)
-{
-  int i = 0;
-  while(1) {
-    if (fkt_code_table[i].code == 0) return NULL;
-    if (fkt_code_table[i].code == code) return fkt_code_table[i].name;
-    i++;
-  }
-}
+extern char **traps;
+extern char **sys_calls;
 
 void print_trace(trace tr)
 {
@@ -88,11 +71,63 @@ void print_trace(trace tr)
   printf("\n");
 }
 
-int main()
+void error_usage()
+{
+  fprintf(stderr,"Usage: sigmund [options] [filters] action\n");
+  exit(1);
+}
+
+int main(int argc, char **argv)
 {
   trace tr;
-  tracelib_init("prof_file");
-  filter_add_time_slice(1630702193,1632249253);
+  int argCount;
+  char *trace_file_name = NULL;
+  init();
+  init_filter();
+  for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
+    argCount = 1;
+    if (!strcmp(*argv, "--trace-file")) {
+      if (argc <= 1) error_usage();
+      trace_file_name = *(argv + 1);
+      argCount = 2;
+    } else if (!strcmp(*argv, "--thread")) {
+      if (argc <= 1) error_usage();
+      filter_add_thread(atoi(*(argv + 1)));
+      argCount = 2;
+    } else if (!strcmp(*argv, "--process")) {
+      if (argc <= 1) error_usage();
+      filter_add_proc(atoi(*(argv + 1)));
+      argCount = 2;
+    } else if (!strcmp(*argv, "--cpu")) {
+      if (argc <= 1) error_usage();
+      filter_add_cpu(atoi(*(argv + 1)));
+      argCount = 2;
+    } else if (!strcmp(*argv, "--slice")) {
+      if (argc <= 2) error_usage();
+      filter_add_time_slice(atoi(*(argv + 1)), atoi(*(argv + 2)));
+      argCount = 3;
+    } else if (!strcmp(*argv, "--function")) {
+      fprintf(stderr, "--function: unsupported yet\n");
+      exit(1);
+    } else if (!strcmp(*argv, "--event")) {
+      int a;
+      mode type;
+      if (argc <= 1) error_usage();
+      name2code(*(argv+1), &type, &a);
+      filter_add_event(type, a);
+      argCount = 2;
+    } else if (!strcmp(*argv, "--event-slice")) {
+      if (argc <= 2) error_usage();
+      filter_add_evnum_slice(atoi(*(argv + 1)), atoi(*(argv + 2)));
+      argCount = 3;
+    } else if (!strcmp(*argv, "--begin")) {
+      if (argc <= 3) error_usage();
+      fprintf(stderr, "--begin --end: unsupported yet\n");
+      exit(1);
+      argCount = 4;
+    } else error_usage();
+  }
+  tracelib_init(trace_file_name);
   for(;;) {
     if (get_next_filtered_trace(&tr) == 1) break;
     print_trace(tr);

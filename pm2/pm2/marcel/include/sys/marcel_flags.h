@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.6  2000/04/17 16:09:38  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.5  2000/04/17 08:31:14  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -88,13 +91,13 @@ ______________________________________________________________________________
 #endif
 
 #ifdef __ACT__
-#warning use of __ACT__ depreciated. Define MARCEL_ACT instead
+#error use of __ACT__ depreciated. Define MARCEL_ACT instead
 #undef __ACT__
 #define MARCEL_ACT
 #endif
 
 #ifdef SMP
-#warning use of SMP depreciated. Define MARCEL_SMP instead
+#error use of SMP depreciated. Define MARCEL_SMP instead
 #undef SMP
 #define MARCEL_SMP
 #endif

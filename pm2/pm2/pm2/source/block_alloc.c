@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: block_alloc.c,v $
+Revision 1.4  2000/02/01 17:28:43  rnamyst
+Minor modifications.
+
 Revision 1.3  2000/01/31 15:58:18  oaumage
 - ajout du Log CVS
 
@@ -53,7 +56,7 @@ ______________________________________________________________________________
 
 #include <marcel.h>
 #include <sys/archdep.h>
-#include  <madeleine.h>
+#include  <pm2_mad.h>
 
 #include <isomalloc_timing.h>
 

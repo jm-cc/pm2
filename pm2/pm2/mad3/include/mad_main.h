@@ -21,6 +21,16 @@
 #ifndef MAD_MAIN_H
 #define MAD_MAIN_H
 
+typedef enum e_mad_vrp_parameter_opcode
+  {
+    mad_op_optional_block,
+  } mad_parameter_opcode_t, *p_mad_parameter_opcode_t;
+
+typedef enum e_mad_status_opcode
+  {
+    mad_os_lost_block,
+  } mad_status_opcode_t, *p_mad_status_opcode_t;
+
 /*
  * Structures
  * ----------

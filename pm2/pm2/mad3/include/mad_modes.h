@@ -52,7 +52,7 @@ typedef enum
   mad_link_mode_buffer_group = 2,       /* as much data as possible
 				XXX: WARNING !!!
 				This mode may require special support
-				and link buffering at the low level 
+				and link buffering at the low level
 				layer on the receiving side for EXPRESS
 				data reception
 				XXX: WARNING 2 !!!
@@ -72,7 +72,7 @@ typedef enum
 				XXX: WARNING 3 !!!
 				This mode is automatically selected
 				for no-EXPRESS/LATER data */
-			 
+
 } mad_link_mode_t, *p_mad_link_mode_t;
 
 typedef enum

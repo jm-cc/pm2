@@ -229,7 +229,11 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 		marcel_one_more_task(new_task);
 	} else {
 		static int norun_pid=0;
-		new_task->number= --norun_pid;
+		int norun_pid_new;
+		do {
+			norun_pid_new=norun_pid;
+		} while ( norun_pid_new != ma_cmpxchg(&norun_pid, norun_pid_new, norun_pid_new-1));
+		new_task->number= norun_pid_new-1;
 	}
 	MTRACE("Creation", new_task);
 	
@@ -459,8 +463,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	/* Durant cette fonction, il ne faut pas que le thread soit
 	   "déplacé" intempestivement (e.g. après avoir acquis
 	   stack_mutex) sur un autre LWP. */
-#warning task->sched should be delegated to scheduler
-// ST: à remettre	cur->sched.vpmask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(cur_lwp));
+	marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(cur_lwp)));
 #endif
 	ma_preempt_enable();
 

@@ -10,6 +10,9 @@ case "$PM2_SYS" in
     WIN*_SYS)
 	PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -DWIN_SYS"
 	;;
+    DARWIN_SYS)
+        PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -fno-common -no-cpp-precomp -traditional-cpp"
+        ;;
     *)
 	;;
 esac

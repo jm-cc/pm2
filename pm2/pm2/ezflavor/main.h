@@ -21,6 +21,7 @@ extern gint destroy_phase;
 extern gint tips_enabled;
 extern gint skip_intro;
 extern gint with_sound;
+extern gint show_all_modules;
 
 extern GtkWidget *main_window;
 extern GtkTooltips *the_tooltip;

@@ -1,8 +1,9 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.c,v 1.5 2002/10/22 18:17:59 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.c,v 1.6 2002/10/23 13:26:51 slacour Exp $
  */
 
+/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
 
 /* This module stores the information about the underlying topology of
  * the nodes connected over a hierarchical network.  It offers 'set'

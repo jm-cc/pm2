@@ -303,7 +303,7 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
         server->specific = tcp_specific;
 
         tcp_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
-        SYSCALL(listen(tcp_specific->descriptor, min(5, SOMAXCONN)));
+        SYSCALL(listen(tcp_specific->descriptor, tbx_min(5, SOMAXCONN)));
 
         ntbx_tcp_socket_setup(tcp_specific->descriptor);
 
@@ -635,7 +635,7 @@ ntbx_tcp_read_poll(int              nb_clients,
 
                 client_array[i]->read_ok = tbx_false;
                 FD_SET(tcp_specific->descriptor, &read_fds);
-                max_fds = max(max_fds, tcp_specific->descriptor);
+                max_fds = tbx_max(max_fds, tcp_specific->descriptor);
         }
 
         while(tbx_true) {
@@ -698,7 +698,7 @@ ntbx_tcp_write_poll(int              nb_clients,
 
                 client_array[i]->write_ok = tbx_false;
                 FD_SET(tcp_specific->descriptor, &write_fds);
-                max_fds = max(max_fds, tcp_specific->descriptor);
+                max_fds = tbx_max(max_fds, tcp_specific->descriptor);
         }
 
         while(tbx_true) {

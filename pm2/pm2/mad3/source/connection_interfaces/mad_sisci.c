@@ -58,7 +58,7 @@
 //#define MAD_SISCI_BUFFER_SIZE (131072 + sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (32768 + sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (16384 + sizeof(mad_sisci_connection_status_t))
-#define MAD_SISCI_MIN_SEG_SIZE (min(MAD_SISCI_CHUNK_SIZE, 8192))
+#define MAD_SISCI_MIN_SEG_SIZE (tbx_min(MAD_SISCI_CHUNK_SIZE, 8192))
 
 /* Links */
 #define MAD_SISCI_LINK_OPT      0
@@ -1440,7 +1440,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 	  volatile p_mad_sisci_status_t     write               =
 	    &local_data->status.write;
 	  size_t   size        =
-	    min(buffer->bytes_written - buffer->bytes_read, segment_size);
+	    tbx_min(buffer->bytes_written - buffer->bytes_read, segment_size);
 	  size_t   mod_4       = size % 4;
 	  sci_error_t sisci_error;
 
@@ -1558,7 +1558,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	p_mad_sisci_status_t              write               =
 	  &remote_data->status.write;
 	char   *source = local_data->buffer;
-	size = min(buffer->length - buffer->bytes_written, segment_size);
+	size = tbx_min(buffer->length - buffer->bytes_written, segment_size);
 
 	if (!connection_specific->write_flag_flushed)
 	  {
@@ -1595,7 +1595,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	  p_mad_sisci_status_t              write               =
 	    &remote_data->status.write;
 	  char   *source = local_data->buffer;
-	  size = min(buffer->length - buffer->bytes_written, segment_size);
+	  size = tbx_min(buffer->length - buffer->bytes_written, segment_size);
 	  mad_sisci_flush(remote_segment);
 	  mad_sisci_wait_for(link, read);
 //	  memcpy(destination, source, size);
@@ -1677,7 +1677,7 @@ transmission:
 	  read         = &rd->status.read;
 	  write        = &ld->status.write;
 	  destination  = rd->buffer + offset;
-	  size         = min(buffer->bytes_written - buffer->bytes_read, ds - offset);
+	  size         = tbx_min(buffer->bytes_written - buffer->bytes_read, ds - offset);
 	  mod_4        = size % 4;
 	  aligned_size = size - mod_4;
 
@@ -1813,7 +1813,7 @@ transmission:
 	  read   = &ld->status.read;
 	  write  = &rd->status.write;
 	  source = ld->buffer;
-	  size   = min(buffer->length - buffer->bytes_written, ss - offset);
+	  size   = tbx_min(buffer->length - buffer->bytes_written, ss - offset);
 
 	  buffer->bytes_written += size;
 
@@ -1891,7 +1891,7 @@ mad_sisci_send_sci_buffer_group_1(p_mad_link_t         link,
       while (mad_more_data(buffer))
 	{
 	  size_t         size         =
-	    min(buffer->bytes_written - buffer->bytes_read,
+	    tbx_min(buffer->bytes_written - buffer->bytes_read,
 	    destination_size - offset);
 	  size_t         mod_4        = size % 4;
 	  size_t         aligned_size = size - mod_4;
@@ -2016,7 +2016,7 @@ mad_sisci_receive_sci_buffer_group_1(p_mad_link_t         link,
       while (!mad_buffer_full(buffer))
 	{
 	  size_t         size         =
-	    min(buffer->length - buffer->bytes_written,
+	    tbx_min(buffer->length - buffer->bytes_written,
 		source_size - offset);
 
 	  buffer->bytes_written += size;

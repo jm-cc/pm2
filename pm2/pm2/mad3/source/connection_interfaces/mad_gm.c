@@ -1477,8 +1477,8 @@ mad_gm_send_buffer(p_mad_link_t   l,
         os->buffer = b;
 
         while (mad_more_data(b)) {
-                int len = min(MAD_GM_MAX_BLOCK_LEN,
-                              b->bytes_written - b->bytes_read);
+                int len = tbx_min(MAD_GM_MAX_BLOCK_LEN,
+                                  b->bytes_written - b->bytes_read);
 
                 os->length          = len;
                 os->request->status = GM_SUCCESS;
@@ -1587,7 +1587,7 @@ mad_gm_receive_buffer(p_mad_link_t     l,
         port->active_input = in;
 
         while (!mad_buffer_full(b)) {
-                int len = min(MAD_GM_MAX_BLOCK_LEN,
+                int len = tbx_min(MAD_GM_MAX_BLOCK_LEN,
                               b->length - b->bytes_written);
                 is->length = len;
                 TBX_CRITICAL_SECTION_ENTER(mad_gm_access);

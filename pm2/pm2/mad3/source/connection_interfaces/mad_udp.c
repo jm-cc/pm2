@@ -577,7 +577,7 @@ _mad_udp_nb_select(p_mad_udp_marcel_poll_arg_t poll_arg)
 	   || ((poll_arg->mode == POLL_SELECT_FOR_WRITE)
 	       && (channel_specific->socket[st]).write_free)) {
 	desc   = (channel_specific->socket[st]).desc;
-	max_fd = max(max_fd, desc);
+	max_fd = tbx_max(max_fd, desc);
 	FD_SET(desc, &fds);
 	//marcel_mutex_lock(&((channel_specific->socket[st]).mutex));
       }
@@ -773,7 +773,7 @@ mad_udp_select_r(p_mad_udp_socket_t *socket_set, int set_nb, int msec)
   FD_ZERO(&fds);
   max_fd = 0;
   for (i = 0; i < set_nb; i++) {
-    max_fd = max(max_fd, (socket_set[i])->desc);
+    max_fd = tbx_max(max_fd, (socket_set[i])->desc);
     FD_SET((socket_set[i])->desc, &fds);
   }
   SYSTEST(result = select(max_fd + 1, &fds, NULL, NULL, &tv));
@@ -886,7 +886,7 @@ mad_udp_marcel_group(marcel_pollid_t id)
       for (st = REQUEST; st < NB_SOCKET; st++) {
 	if (arg->poll_on_socket[st]) {
 	  int desc = (ch_sp->socket[st]).desc;
-	  max_fds = max(max_fds, desc);
+	  max_fds = tbx_max(max_fds, desc);
 	  FD_SET(desc, (arg->mode == POLL_SELECT_FOR_WRITE) ? &(ch_sp->wfds) : &(ch_sp->rfds));
 	}
       }
@@ -1143,7 +1143,7 @@ mad_udp_marcel_fast_poll(marcel_pollid_t id, any_t arg,
 #ifdef PM2DEBUG
 	  nb_polled_socket++;
 #endif // PM2DEBUG
-	  max_fds = max(max_fds, desc);
+	  max_fds = tbx_max(max_fds, desc);
 	  FD_SET(desc, (poll_arg->mode == POLL_SELECT_FOR_WRITE) ? &wfds : &rfds);
 	}
       }
@@ -1315,7 +1315,7 @@ mad_udp_sendreq(p_mad_connection_t  connection,
   so_snd           = &(channel_specific->socket[SND_DATA]);
   rm_in_addr       = specific->rm_in_addr;
   rm_rcv_port      = specific->rm_port[RCV_DATA];
-  bytes_read       = min(first_buffer->bytes_written,
+  bytes_read       = tbx_min(first_buffer->bytes_written,
 			 MAD_UDP_REQ_SIZE - MAD_UDP_REQ_HD_SIZE);
 
   MAD_UDP_REQ_SET_MSGID(req, specific->snd_msgid);
@@ -1380,7 +1380,7 @@ mad_udp_sendreq(p_mad_connection_t  connection,
       if (result < 0)
 	continue;
       mad_udp_recvfrom(so_snd,
-		       ack, max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE),
+		       ack, tbx_max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE),
 		       &remote_address);
 #endif // MARCEL
       /* If first ACK is lost, then timeout on RCV_DATA socket make
@@ -1463,7 +1463,7 @@ mad_udp_recvreq(p_mad_channel_t channel)
   p_mad_connection_t              in;
   p_mad_udp_connection_specific_t in_specific = NULL;
   tbx_darray_index_t              idx;
-  char                            buf[max(MAD_UDP_ACK_SIZE,
+  char                            buf[tbx_max(MAD_UDP_ACK_SIZE,
 					  MAD_UDP_RRM_HD_SIZE)];
 #ifdef MARCEL
   mad_udp_marcel_poll_arg_t       poll_arg;
@@ -1724,7 +1724,7 @@ mad_udp_adapter_init(p_mad_adapter_t adapter)
   specific->tcp_socket = -1;
   adapter->specific    = specific;
 #ifdef SSIZE_MAX
-  adapter->mtu         = min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
+  adapter->mtu         = tbx_min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
 #else // SSIZE_MAX
   adapter->mtu         = MAD_FORWARD_MAX_MTU;
 #endif // SSIZE_MAX
@@ -1732,7 +1732,7 @@ mad_udp_adapter_init(p_mad_adapter_t adapter)
   /* A TCP socket is created on each node. It will be used only for
      for channel initialisations */
   specific->tcp_socket = ntbx_tcp_socket_create(&address, 0);
-  SYSCALL(listen(specific->tcp_socket, min(5, SOMAXCONN)));
+  SYSCALL(listen(specific->tcp_socket, tbx_min(5, SOMAXCONN)));
   
   /* adapter->parameter is only the TCP port */
   parameter_string   =
@@ -1761,7 +1761,7 @@ mad_udp_channel_init(p_mad_channel_t channel)
 					   | MARCEL_POLL_AT_YIELD
 					   | MARCEL_POLL_AT_IDLE));
   //specific->max_fds        = 0;
-  specific->ack_max_size   = max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE);
+  specific->ack_max_size   = tbx_max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE);
   specific->ack            = TBX_MALLOC(specific->ack_max_size);
   specific->nb_snd_threads = 0;
 #endif // MARCEL
@@ -1841,7 +1841,7 @@ mad_udp_connection_init(p_mad_connection_t in,
   specific->pause            = 0;
   specific->pause_min_size   = 0;
 #ifdef MARCEL
-  specific->rcv_ack_max_size = max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE);
+  specific->rcv_ack_max_size = tbx_max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE);
   specific->rcv_ack          = TBX_MALLOC(specific->rcv_ack_max_size);
 #endif // MARCEL
   in->specific = out->specific = specific;
@@ -2357,7 +2357,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
       MAD_UDP_ACK_SET_MSGID(afack, msgid);
       MAD_UDP_ACK_SET_BUFID(afack, bufid - 1);
       MAD_UDP_DGRAM_SET_DGRID(dgram_hd, nb_packet);
-      last_packet_size = min(lg_to_snd, MAD_UDP_ACKDG_BODY_SIZE);
+      last_packet_size = tbx_min(lg_to_snd, MAD_UDP_ACKDG_BODY_SIZE);
       iov[0].iov_base  = afack;
       iov[0].iov_len   = MAD_UDP_ACKDG_HD_SIZE;
       iov[1].iov_base  = (caddr_t)(ptr + bytes_read);
@@ -2386,7 +2386,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
     while (lg_to_snd > 0) {
 
       MAD_UDP_DGRAM_SET_DGRID(dgram_hd, nb_packet);
-      last_packet_size = min(lg_to_snd, MAD_UDP_DGRAM_BODY_SIZE);
+      last_packet_size = tbx_min(lg_to_snd, MAD_UDP_DGRAM_BODY_SIZE);
       iov[1].iov_base  = (caddr_t)(ptr + bytes_read);
       iov[1].iov_len   = last_packet_size;
 
@@ -2409,7 +2409,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
      * for reemission arrive.
      */
     
-    ack_rrm_len = max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE + nb_packet);
+    ack_rrm_len = tbx_max(MAD_UDP_ACK_SIZE, MAD_UDP_RRM_HD_SIZE + nb_packet);
 #ifdef MARCEL
     if (channel_specific->ack_max_size < ack_rrm_len) {
       TBX_LOCK_SHARED(channel_specific);
@@ -2487,7 +2487,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
 	    iov[0].iov_base  = afack;
 	    iov[0].iov_len   = MAD_UDP_ACKDG_HD_SIZE;
 	    iov[1].iov_base  = (caddr_t)(ptr + buffer->bytes_read);
-	    iov[1].iov_len   = min(MAD_UDP_ACKDG_BODY_SIZE,
+	    iov[1].iov_len   = tbx_min(MAD_UDP_ACKDG_BODY_SIZE,
 				   buffer->length - buffer->bytes_read);
 #ifdef MARCEL
 	    lg_snt = mad_udp_nb_sendmsg(&poll_arg, iov, 2);
@@ -2533,7 +2533,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
 	// "Sream control"
 	if (reemission_nb) {
 	  connection_specific->pause_min_size = (connection_specific->pause_min_size)
-	    ?  min(connection_specific->pause_min_size, buffer->length)
+	    ?  tbx_min(connection_specific->pause_min_size, buffer->length)
 	    :  buffer->length;
 	  for (i = 0; i < nb_packet; i++) {
 	    if (to_send[i])
@@ -2713,7 +2713,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
   if (!bufid) {
     int bytes_written;
 
-    bytes_written = min(buffer->length,
+    bytes_written = tbx_min(buffer->length,
 			(MAD_UDP_REQ_SIZE - MAD_UDP_REQ_HD_SIZE));
     memcpy(buffer->buffer,
 	   channel_specific->request_buffer + MAD_UDP_REQ_HD_SIZE,
@@ -2768,7 +2768,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 #endif // PM2DEBUG
 
       // Read data in connection_specific->rcv_early_dgr
-      lg_to_read = min(MAD_UDP_ACKDG_BODY_SIZE,
+      lg_to_read = tbx_min(MAD_UDP_ACKDG_BODY_SIZE,
 		       buffer->length - bytes_written);
       memcpy((caddr_t)(ptr + bytes_written),
 	     connection_specific->rcv_early_dgr + MAD_UDP_DGRAM_HD_SIZE,
@@ -2792,7 +2792,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
       first_waited = 1; // To avoid the loop
     }
 
-    rrm_buf = TBX_MALLOC(max(1 + last_packet + MAD_UDP_RRM_HD_SIZE,
+    rrm_buf = TBX_MALLOC(tbx_max(1 + last_packet + MAD_UDP_RRM_HD_SIZE,
 			     MAD_UDP_ACK_SIZE));
     waited  = rrm_buf + MAD_UDP_RRM_HD_SIZE;
     memset(waited, 0xFF, last_packet + 1);
@@ -2875,7 +2875,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 
 	  waited[rcv_dgrid] = 0x00;
 	  memcpy(ptr + offset, ptr + bytes_written,
-		 min(MAD_UDP_DGRAM_BODY_SIZE, buffer->length - offset));
+		 tbx_min(MAD_UDP_DGRAM_BODY_SIZE, buffer->length - offset));
 #if defined(MAD_UDP_STATS) && defined(MARCEL)
 	} else { // Ignore doubled packets.
 	  TBX_LOCK_SHARED_IF_MARCEL(channel_specific);

@@ -609,11 +609,11 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
 		FAILURE("fread: unknown state");
 	    }
 
-	  if (tbx_test(&state))
+	  if (tbx_flag_test(&state))
 	    {
 	      if (c <= ' ')
 		{
-		  tbx_toggle(&state);
+		  tbx_flag_toggle(&state);
 		}
 	    }
 	  else
@@ -621,7 +621,7 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
 	      if (c > ' ')
 		{
 		  configuration->size++;
-		  tbx_toggle(&state);
+		  tbx_flag_toggle(&state);
 		}
 	    }
 	}

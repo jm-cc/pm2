@@ -54,6 +54,8 @@ static char *itoa(int i)
   return s;
 }
 
+
+/* add a thread to the filter */
 static void add_thread(char *s)
 {
   int first = 1;
@@ -112,6 +114,8 @@ static void add_thread(char *s)
   }
 }
 
+
+/* add a time-slice zone */
 static void add_time(char *s)
 {
   int first = 1;
@@ -123,7 +127,7 @@ static void add_time(char *s)
   for(i = 0; (m = GTK_TEXT_INDEX(t, i)) != '\0'; i++) {
     if (m == ' ') {continue;}
     if (m == ';') {
-      strcat(s, " --time_slice ");
+      strcat(s, " --time-slice ");
       strcat(s, itoa(begin_time));
       strcat(s, " ");
       strcat(s, itoa(end_time));
@@ -144,13 +148,15 @@ static void add_time(char *s)
     }
   }
   if (!first) {
-    strcat(s, " --time_slice ");
+    strcat(s, " --time-slice ");
     strcat(s, itoa(begin_time));
     strcat(s, " ");
     strcat(s, itoa(end_time));
   }
 }
 
+
+/* add an event in the filter */
 static void add_evnum(char *s)
 {
   int first = 1;
@@ -190,6 +196,7 @@ static void add_evnum(char *s)
   }
 }
 
+/* add the action given by the string s in the filter */
 static void add_begin(char *s)
 {
   gchar *m = gtk_editable_get_chars(GTK_EDITABLE(&(GTK_TEXT(text_begin)->editable)), 0, -1);
@@ -197,9 +204,11 @@ static void add_begin(char *s)
   g_free(m);
 }
 
+/* associate the graphic otions to the string that 
+   must be given in the console mode */
 void options_to_string(char *s)
 {
-  gboolean cpu_1;
+  gboolean cpu_1;        /* cpu */
   gboolean cpu_2;
   gboolean cpu_3;
   gboolean cpu_4;
@@ -212,6 +221,9 @@ void options_to_string(char *s)
   cpu_4 = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbutton_cpu_4));
 
   s[0] = '\0';
+
+  strcat(s, " --trace-file ");
+  strcat(s, supertrace);
   
   if (!cpu_1 || !cpu_2 || !cpu_3 || !cpu_4) {
     if (cpu_1) strcat(s," --cpu 0");
@@ -220,19 +232,19 @@ void options_to_string(char *s)
     if (cpu_4) strcat(s," --cpu 3");
   }
   
-  for(row = 0;; row ++) {
+  for(row = 0;; row ++) {         /* process */
     if (gtk_clist_get_text(GTK_CLIST(clist_proc), row, 0, &m) == 0) break;
     strcat(s, " --process ");
     strcat(s, m);
   }
   
-  for(row = 0;; row ++) {
+  for(row = 0;; row ++) {        /* events */
     if (gtk_clist_get_text(GTK_CLIST(clist_event), row, 0, &m) == 0) break;
     strcat(s, " --event ");
     strcat(s, m);
   }
   
-  for(row = 0;; row ++) {
+  for(row = 0;; row ++) {       /* functions */
     if (gtk_clist_get_text(GTK_CLIST(clist_function), row, 0, &m) == 0) break;
     strcat(s, " --function ");
     strcat(s, m);
@@ -251,6 +263,7 @@ void options_to_string(char *s)
 }
 
 
+/* callbacks to select the process wanted in the filter */
 static void proc_all_callback(GtkWidget *w, gpointer data)
 {
   GList *tmp;
@@ -268,7 +281,6 @@ static void proc_add_one_callback(GtkWidget *w, gpointer data)
 {
   gchar *adding;
   adding = gtk_entry_get_text(GTK_ENTRY(entry_proc)); 
-  //  if (gtk_clist_find_row_from_data(GTK_CLIST(clist_proc), adding) == -1)
   gtk_clist_append(GTK_CLIST(clist_proc), &adding);
 }
 
@@ -293,6 +305,8 @@ static void proc_unselect_callback(GtkWidget *w, gint row, gint column, GdkEvent
   proc_row_select = -1;
 }
 
+
+/* callbacks to select the events wanted in the filter */
 static void event_all_callback(GtkWidget *w, gpointer data)
 {
   GList *tmp;
@@ -310,7 +324,6 @@ static void event_add_one_callback(GtkWidget *w, gpointer data)
 {
   gchar *adding;
   adding = gtk_entry_get_text(GTK_ENTRY(entry_events));
-  //  if (gtk_clist_find_row_from_data(GTK_CLIST(clist_event), &adding) == -1)
   gtk_clist_append(GTK_CLIST(clist_event), &adding);
 }
 
@@ -335,6 +348,8 @@ static void event_unselect_callback(GtkWidget *w, gint row, gint column, GdkEven
   event_row_select = -1;
 }
 
+
+/* callbacks to select the functions wanted in the filter */
 static void function_all_callback(GtkWidget *w, gpointer data)
 {
   GList *tmp;
@@ -376,6 +391,8 @@ static void function_unselect_callback(GtkWidget *w, gint row, gint column, GdkE
   function_row_select = -1;
 }
 
+
+/* reset all the options and does not select anything, as at the beginning */
 static void reset_callback(GtkWidget *w, gpointer data)
 {
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbutton_cpu_1), TRUE);
@@ -404,8 +421,11 @@ static void reset_callback(GtkWidget *w, gpointer data)
   
 }
 
+/* this sis the window contained in the main one 
+   where you can select the options you want for the filters */
 static void create_window(GtkWidget *main_vbox)
 {
+  /* the components */
   GtkWidget *vbox;
   GtkWidget *vbox_notebook;
   GtkWidget *notebook;
@@ -478,7 +498,7 @@ static void create_window(GtkWidget *main_vbox)
   GtkWidget *hbuttonbox_reset;
   GtkWidget *button_reset;
 
-
+  
   vbox = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox);
   gtk_widget_show (vbox);
@@ -493,14 +513,16 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_ref (notebook);
   gtk_widget_show (notebook);
   gtk_box_pack_start (GTK_BOX (vbox_notebook), notebook, TRUE, TRUE, 0);
-
+  
+  /* vbox for the cpu choice */
   vbox_cpu = gtk_vbox_new (FALSE, 15);
   gtk_widget_ref (vbox_cpu);
   gtk_widget_show (vbox_cpu);
   gtk_container_add (GTK_CONTAINER (notebook), vbox_cpu);
   gtk_container_set_border_width (GTK_CONTAINER (vbox_cpu), 120);
   GTK_WIDGET_SET_FLAGS (vbox_cpu, GTK_CAN_DEFAULT);
-
+  
+  /* the checkbuttons for the cpu */
   checkbutton_cpu_1 = gtk_check_button_new_with_label ("CPU 1");
   gtk_widget_ref (checkbutton_cpu_1);
   gtk_widget_show (checkbutton_cpu_1);
@@ -525,17 +547,20 @@ static void create_window(GtkWidget *main_vbox)
   gtk_box_pack_start (GTK_BOX (vbox_cpu), checkbutton_cpu_4, FALSE, FALSE, 0);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (checkbutton_cpu_4), TRUE);
 
+  /* the label cpu, on the top of the notebook */
   label_cpu = gtk_label_new ("cpu");
   gtk_widget_ref (label_cpu);
   gtk_widget_show (label_cpu);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 0), label_cpu);
   gtk_label_set_justify (GTK_LABEL (label_cpu), GTK_JUSTIFY_FILL);
 
+  /* vbox for the process choice */
   vbox_proc = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_proc);
   gtk_widget_show (vbox_proc);
   gtk_container_add (GTK_CONTAINER (notebook), vbox_proc);
-
+  
+  /* the buttons on the top of the vbox */
   hbuttonbox_proc = gtk_hbutton_box_new ();
   gtk_widget_ref (hbuttonbox_proc);
   gtk_widget_show (hbuttonbox_proc);
@@ -577,6 +602,7 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (hbox_proc_select);
   gtk_box_pack_start (GTK_BOX (vbox_proc), hbox_proc_select, TRUE, TRUE, 0);
 
+  /* the combo box with all the process */
   combo_proc = gtk_combo_new ();
   gtk_widget_ref (combo_proc);
   gtk_widget_show (combo_proc);
@@ -612,6 +638,8 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (label_proc);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 1), label_proc);
 
+
+  /* vbox for the thread choice */
   vbox_thread = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_thread);
   gtk_widget_show (vbox_thread);
@@ -677,6 +705,8 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (label_thread);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 2), label_thread);
 
+
+  /* vbox for the time selection */
   vbox_time = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_time);
   gtk_widget_show (vbox_time);
@@ -742,6 +772,8 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (label_time);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 3), label_time);
 
+
+  /* vbox for the event choices */
   vbox_event = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_event);
   gtk_widget_show (vbox_event);
@@ -822,6 +854,8 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (label_event);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 4), label_event);
 
+
+  /* vbox for the --function */
   vbox_function = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_function);
   gtk_widget_show (vbox_function);
@@ -900,6 +934,8 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (label_function);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 5), label_function);
 
+
+  /* vbox for the evnum selection */
   vbox_evnum = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_evnum);
   gtk_widget_show (vbox_evnum);
@@ -965,6 +1001,8 @@ static void create_window(GtkWidget *main_vbox)
   gtk_widget_show (label_evnum);
   gtk_notebook_set_tab_label (GTK_NOTEBOOK (notebook), gtk_notebook_get_nth_page (GTK_NOTEBOOK (notebook), 6), label_evnum);
 
+
+  /* vbox for the begin/end selection */
   vbox_begin = gtk_vbox_new (FALSE, 0);
   gtk_widget_ref (vbox_begin);
   gtk_widget_show (vbox_begin);
@@ -1008,7 +1046,9 @@ static void create_window(GtkWidget *main_vbox)
 		     GTK_SIGNAL_FUNC(reset_callback), NULL);
 
 }
+/* end!!! of create_window */
 
+/*  file selector */
 static void filesel_destroy( GtkWidget *widget, gpointer   data )
 {
   gtk_widget_destroy(widget);
@@ -1054,6 +1094,8 @@ void create_fileselection(void)
   gtk_widget_show(fileselection);
 }
 
+
+/* initialize the list of the events */
 static void function_events_list_init()
 {
   int i;
@@ -1081,6 +1123,7 @@ static void function_events_list_init()
   gtk_combo_set_popdown_strings(GTK_COMBO(combo_function), combo_function_items);
 }
 
+/* initialize the cpu list */
 void cpu_list_init(char *supertracename)
 {
   FILE *f;
@@ -1107,6 +1150,9 @@ void cpu_list_init(char *supertracename)
   fclose(f);
 }
 
+
+
+/* creates the window and initialze the events list */
 void options_init(GtkWidget *main_vbox)
 {
   create_window(main_vbox);

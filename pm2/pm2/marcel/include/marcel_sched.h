@@ -185,18 +185,33 @@ extern unsigned __rt_task_exist;
 
 /* Must be called each time a LWP is about to access its local task
    queue. */
-static __inline__ void ma_sched_lock(__lwp_t *lwp) __attribute__ ((unused));
-static __inline__ void ma_sched_lock(__lwp_t *lwp)
+static __inline__ void sched_lock(__lwp_t *lwp) __attribute__ ((unused));
+static __inline__ void sched_lock(__lwp_t *lwp)
 {
+#ifdef DEBUG_SCHED_LOCK
+  sched_lock_debug("sched_lock: try\n");
+#endif
   marcel_lock_acquire(&(SCHED_DATA(lwp).sched_queue_lock));
+#ifdef DEBUG_SCHED_LOCK
+  sched_lock_debug("sched_lock: success\n");
+#endif
 }
 
 /* Must be called when a LWP is not modifying the local queue any
    more. */
-static __inline__ void ma_sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
-static __inline__ void ma_sched_unlock(__lwp_t *lwp)
+static __inline__ void sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
+static __inline__ void sched_unlock(__lwp_t *lwp)
 {
+#ifdef DEBUG_SCHED_LOCK
+  sched_lock_debug("sched_unlock\n");
+#endif
   marcel_lock_release(&(SCHED_DATA(lwp).sched_queue_lock));
+}
+
+static __inline__ unsigned sched_locked(__lwp_t *lwp) __attribute__ ((unused));
+static __inline__ unsigned sched_locked(__lwp_t *lwp)
+{
+  return marcel_lock_locked(&(SCHED_DATA(lwp).sched_queue_lock));
 }
 
 static __inline__ void ma_lock_task(void) __attribute__ ((unused));
@@ -227,6 +242,25 @@ static __inline__ void ma_unlock_task(void)
   pm2debug_flush();
 #endif
 }
+
+// Il faut éviter de placer les appels à '*lock_task_debug' au sein
+// des fonctions elles-mêmes, car il y aurait un pb de récursivité
+// dans tbx_debug...
+#ifdef DEBUG_LOCK_TASK
+#define lock_task()    \
+  do { \
+    lock_task_debug("\t=> lock %i++\n", locked()); \
+    ma_lock_task(); \
+  } while(0)
+#define unlock_task() \
+  do { \
+    ma_unlock_task(); \
+    lock_task_debug("\t=> unlock --%i\n", locked()); \
+  } while(0)
+#else
+#define lock_task()    ma_lock_task()
+#define unlock_task()  ma_unlock_task()
+#endif
 
 static __inline__ void unlock_task_for_debug(void) __attribute__ ((unused));
 static __inline__ void unlock_task_for_debug(void)
@@ -260,30 +294,44 @@ static __inline__ unsigned int preemption_enabled(void)
   return atomic_read(&__preemption_disabled) == 0;
 }
 
-#ifdef DEBUG_LOCK_TASK
-#define unlock_task() \
-   (ma_unlock_task(), \
-   lock_task_debug("\t=> unlock --%i\n", locked()))
-#define lock_task() \
-   (lock_task_debug("\t=> lock %i++\n", locked()), \
-   ma_lock_task())
-#else
-#define unlock_task() ma_unlock_task()
-#define lock_task() ma_lock_task()
-#endif
+static __inline__ void state_lock(marcel_t pid) __attribute__ ((unused));
+static __inline__ void state_lock(marcel_t pid)
+{
+  marcel_lock_acquire(&(pid->state_lock));
+}
 
-#ifdef DEBUG_SCHED_LOCK
-#define sched_lock(lwp) \
-   (sched_lock_debug("sched_lock: try\n"), \
-   ma_sched_lock(lwp),                     \
-   sched_lock_debug("sched_lock: success\n"))
-#define sched_unlock(lwp) \
-   (sched_lock_debug("sched_unlock\n"), \
-   ma_sched_unlock(lwp))
-#else
-#define sched_lock(lwp) ma_sched_lock(lwp)
-#define sched_unlock(lwp) ma_sched_unlock(lwp)
-#endif
+static __inline__ void state_unlock(marcel_t pid) __attribute__ ((unused));
+static __inline__ void state_unlock(marcel_t pid)
+{
+  marcel_lock_release(&(pid->state_lock));
+}
+
+static __inline__ unsigned state_locked(marcel_t pid) __attribute__ ((unused));
+static __inline__ unsigned state_locked(marcel_t pid)
+{
+  return marcel_lock_locked(&(pid->state_lock));
+}
+
+static __inline__ void marcel_set_blocked(marcel_t pid) __attribute__ ((unused));
+static __inline__ void marcel_set_blocked(marcel_t pid)
+{
+  state_lock(pid);
+  SET_BLOCKED(pid);
+}
+
+static __inline__ void marcel_set_sleeping(marcel_t pid) __attribute__ ((unused));
+static __inline__ void marcel_set_sleeping(marcel_t pid)
+{
+  state_lock(pid);
+  SET_SLEEPING(pid);
+}
+
+static __inline__ void marcel_set_frozen(marcel_t pid) __attribute__ ((unused));
+static __inline__ void marcel_set_frozen(marcel_t pid)
+{
+  state_lock(pid);
+  SET_FROZEN(pid);
+}
 
 /* ==== miscelaneous private defs ==== */
 

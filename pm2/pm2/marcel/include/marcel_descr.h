@@ -148,6 +148,7 @@ static __inline__ marcel_t __marcel_self(void);
 #section marcel_inline
 #depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h"
+#depend "marcel_threads.h[marcel_macros]"
 static __inline__ marcel_t __marcel_self(void)
 {
 #ifdef MARCEL_SELF_IN_REG

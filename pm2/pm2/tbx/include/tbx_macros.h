@@ -425,6 +425,12 @@ __tbx_backtrace(void)
 #  define TBX_FREE(s)       (__TBX_FREE_OP    ((s)))
 #endif /* TBX_MALLOC_CTRL */
 
+
+#define TBX_CFREE(s)  ((s)?__TBX_FREE_OP((s)): )
+#define TBX_FREE2(s)  (__TBX_FREE_OP((s)), (s)=NULL)
+#define TBX_CFREE2(s) ((s)?(__TBX_FREE_OP((s)), (s)=NULL):NULL)
+
+
 /*
  * Alignment macros  ________________________________________________
  * _________________/////////////////////////////////////////////////

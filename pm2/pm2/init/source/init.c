@@ -464,12 +464,16 @@ void common_post_init(int *argc, char *argv[],
 #endif /* PM2 */
 
 #ifdef DSM
-  dsm_pm2_init(pm2self, pm2_conf_size);
+  dsm_pm2_init_before_startup_funcs(pm2self, pm2_conf_size);
 #endif /* DSM */
 
 #ifdef PM2
   pm2_init_exec_startup_funcs(argc, argv);
 #endif
+
+#ifdef DSM
+   dsm_pm2_init_after_startup_funcs(pm2self, pm2_conf_size);
+#endif /* DSM */
 
 #ifdef PM2
   pm2_net_init_channels(argc, argv);

@@ -46,18 +46,28 @@
 
 #ifdef DO_PROFILE
 
-#define PROF_PROBE0(keymask, code)   (((keymask) & fut_active) ? fut_header(code) : 0)
+#define PROF_PROBE0(keymask, code)                        \
+  do {                                                    \
+    if((keymask) & fut_active)                            \
+      fut_header(code);                                   \
+  } while(0)
 
 #ifdef PREPROC
 
-#define GEN_PREPROC(name)   { extern int foo asm ("this_is_the_fut_" \
-                                                  name "_code"); \
-                               foo=1; }
+#define GEN_PREPROC(name)                                 \
+  do {                                                    \
+    extern int foo asm ("this_is_the_fut_" name "_code"); \
+    foo = 1;                                              \
+  } while(0)
 
 #else // ifndef PREPROC
 
-#define GEN_PREPROC(name)   { extern unsigned __code asm("fut_" name "_code"); \
-                               PROF_PROBE0(PROFILE_KEYMASK, __code); }
+#define GEN_PREPROC(name)                                 \
+  do {                                                    \
+    extern unsigned __code asm("fut_" name "_code");      \
+    PROF_PROBE0(PROFILE_KEYMASK, __code);                 \
+  } while(0)
+
 #endif // PREPROC
 
 #define PROF_IN()            GEN_PREPROC(__FUNCTION__ "_entry")
@@ -80,12 +90,34 @@
 
 #endif // DO_PROFILE
 
-// The keymask of PROF_SWITCH_TO() is -1 because this
-// trace-instruction should be activated whenever one other
-// trace-instruction is active...
-#define PROF_SWITCH_TO(thr) ((fut_active && thr != marcel_self()) ? \
-                fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | 16, \
-                           (unsigned int)((thr)->number)) : 0)
+// In the following calls to fut_header, the keymask is ignored in
+// PROF_SWITCH_TO() because this trace-instruction should _always_ be
+// active...
+
+// Must be called each time a context switch is performed between two
+// user-level threads. The parameters are the values of the 'number'
+// fields of the task_desc structure.
+#define PROF_SWITCH_TO(thr1, thr2)                               \
+ do {                                                            \
+   if(__pm2_profile_active) {                                    \
+      fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | 20, \
+                 (unsigned int)(thr1),                           \
+                 (unsigned int)(thr2));                          \
+   }                                                             \
+ } while(0)
+
+// Must be called when a new kernel threads (SMP or activation flavors
+// only) is about to execute the very first thread (usually the
+// idle_task).
+#define PROF_NEW_LWP(pid, num, thr)                              \
+  do {                                                           \
+    if(__pm2_profile_active) {                                   \
+      fut_header((((unsigned int)(FUT_NEW_LWP_CODE))<<8) | 24,   \
+                 (unsigned int)(pid),                            \
+                 (unsigned int)(num),                            \
+                 (unsigned int)(thr));                           \
+    }                                                            \
+  } while(0)
 
 void profile_init(void);
 
@@ -95,10 +127,16 @@ void profile_activate(int how, unsigned keymask);
 
 void profile_stop(void);
 
+void profile_exit(void);
+
+extern volatile unsigned __pm2_profile_active;
+
 #else // ifndef PROFILE
 
 #define PROF_PROBE0(keymask, code)   (void)0
-#define PROF_SWITCH_TO(thr)          (void)0
+
+#define PROF_SWITCH_TO(thr1, thr2)   (void)0
+#define PROF_NEW_LWP(pid, num, thr)  (void)0
 
 #define PROF_IN()                    (void)0
 #define PROF_OUT()                   (void)0

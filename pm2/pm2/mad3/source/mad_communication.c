@@ -593,11 +593,13 @@ mad_pack(p_mad_connection_t   connection,
   LOG_IN();
   if (!user_buffer_length) return;
 
+#if 0
   if ((unsigned long)user_buffer & (MAD_ALIGNMENT - 1))
     FAILURE("buffer is not aligned on MAD_ALIGNMENT bytes");
 
   if (user_buffer_length & (MAD_LENGTH_ALIGNMENT - 1))
     FAILURE("buffer length is not aligned on MAD_LENGTH_ALIGNMENT bytes");
+#endif
 
   if (interface->choice)
     {
@@ -1022,11 +1024,13 @@ mad_unpack(p_mad_connection_t   connection,
   LOG_IN();
   if (!user_buffer_length) return;
 
+#if 0
   if ((unsigned long)user_buffer & (MAD_ALIGNMENT - 1))
     FAILURE("buffer is not aligned on MAD_ALIGNMENT bytes");
 
   if (user_buffer_length & (MAD_LENGTH_ALIGNMENT - 1))
     FAILURE("buffer length is not aligned on MAD_LENGTH_ALIGNMENT bytes");
+#endif
 
   if (interface->choice)
     {

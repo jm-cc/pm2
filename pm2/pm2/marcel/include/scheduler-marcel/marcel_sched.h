@@ -414,7 +414,8 @@ inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t 
 			MA_THR_RESTARTED(cur, "Preemption");
 			return __ma_get_lwp_var(previous_thread);
 		}
-		debug_printf(&marcel_mdebug, "switchto(%p, %p) on LWP(%d)\n",
+		debug_printf(&MA_DEBUG_VAR_NAME(default),
+			     "switchto(%p, %p) on LWP(%d)\n",
 		       cur, next, LWP_NUMBER(GET_LWP(cur)));
 		__ma_get_lwp_var(previous_thread)=cur;
 		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);

@@ -27,19 +27,25 @@
 #define MA_DECLARE_DEBUG_NAME_S(name) \
   extern debug_type_t MA_DEBUG_VAR_NAME(name)
 
-#define MA_DEFINE_DEBUG_NAME_DEPEND(name, dep) \
-  MA_DEFINE_DEBUG_NAME_S(name, dep)
-#define MA_DEFINE_DEBUG_NAME(name) \
-  MA_DEFINE_DEBUG_NAME_S(name, &marcel_debug)
-#define MA_DEFINE_DEBUG_NAME_S(name, dep) \
-  debug_type_t MA_DEBUG_VAR_NAME(name) \
-    MA_DEBUG_VAR_ATTRIBUTE \
+#define MA_DEBUG_DEFINE_NAME_DEPEND(name, dep) \
+  MA_DEBUG_DEFINE_NAME_S(name, dep)
+#define MA_DEBUG_DEFINE_NAME(name) \
+  MA_DEBUG_DEFINE_NAME_S(name, &marcel_debug)
+#define MA_DEBUG_DEFINE_NAME_S(name, dep) \
+  MA_DEBUG_VAR_ATTRIBUTE debug_type_t MA_DEBUG_VAR_NAME(name) \
   = NEW_DEBUG_TYPE_DEPEND("MA-"#name": ", "marcel-"#name, dep)
 
 #define ma_debug(name, fmt, args...) \
   ma_debugl(name, PM2DEBUG_STDLEVEL, fmt , ##args)
 #define ma_debugl(name, level, fmt, args...) \
   debug_printfl(&MA_DEBUG_VAR_NAME(name), level, fmt , ##args)
+
+#if defined (MARCEL_KERNEL) && !defined(MA_FILE_DEBUG)
+#  define MA_DEBUG_NO_DEFINE
+#  define MA_FILE_DEBUG default
+#endif
+
+MA_DECLARE_DEBUG_NAME(default);
 
 #ifdef MA_FILE_DEBUG
 #  depend "tbx_debug.h"
@@ -54,31 +60,28 @@ extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
 #  define DEBUG_NAME_DISP_MODULE  DEBUG_NAME_DISP(DEBUG_NAME_MODULE)
 #  define DEBUG_NAME_LOG_MODULE   DEBUG_NAME_LOG(DEBUG_NAME_MODULE)
 #  define DEBUG_NAME_TRACE_MODULE DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
-#  define MA_DEBUG_DECLARE_STANDARD(DEBUG_VAR_NAME, DEBUG_STR_NAME) \
-debug_type_t DEBUG_NAME_DISP(DEBUG_VAR_NAME) \
-    MA_DEBUG_VAR_ATTRIBUTE \
+#  define MA_DEBUG_DEFINE_STANDARD(DEBUG_VAR_NAME, DEBUG_STR_NAME) \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_DISP(DEBUG_VAR_NAME) \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-disp: ", \
 		          DEBUG_STR_NAME "-disp", &DEBUG_NAME_DISP_MODULE); \
-debug_type_t DEBUG_NAME_LOG(DEBUG_VAR_NAME) \
-    MA_DEBUG_VAR_ATTRIBUTE \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_LOG(DEBUG_VAR_NAME) \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-log: ", \
 		          DEBUG_STR_NAME "-log", &DEBUG_NAME_LOG_MODULE); \
-debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
-    MA_DEBUG_VAR_ATTRIBUTE \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-trace: ", \
 		          DEBUG_STR_NAME "-trace", &DEBUG_NAME_TRACE_MODULE)
 
 /* Une variable de debug à définir pour ce fichier C */
 #  ifndef MA_DEBUG_NO_DEFINE
 /* On peut avoir envie de le définir nous même (à 1 par exemple) */
-MA_DEFINE_DEBUG_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
-MA_DEBUG_DECLARE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
+MA_DEBUG_DEFINE_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
+MA_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
 #  endif
 #  undef mdebugl
 #  define mdebugl(level, fmt, args...) \
   ma_debugl(MA_FILE_DEBUG, level, fmt , ##args)
 #endif
-#endif
+#endif /* PM2DEBUG */
 
 
 #section types

@@ -19,35 +19,38 @@
 
 #ifdef PM2DEBUG
 
-debug_type_t marcel_debug=
+MA_DEBUG_DEFINE_NAME_DEPEND(default, &marcel_mdebug);
+MA_DEBUG_DEFINE_STANDARD(marcel_default, "marcel-default");
+
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug=
   NEW_DEBUG_TYPE_DEPEND("MA: ", "ma", NULL);
-debug_type_t marcel_mdebug=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug", &marcel_debug);
-debug_type_t marcel_debug_state=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_state=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-state", &marcel_debug);
-debug_type_t marcel_debug_work=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_work=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-work", &marcel_debug);
-debug_type_t marcel_debug_deviate=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_deviate=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-deviate", &marcel_debug);
-debug_type_t marcel_debug_upcall=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_upcall=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-debug-upcall", &marcel_debug);
-debug_type_t marcel_mdebug_sched_q=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug_sched_q=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug-sched-q", &marcel_debug);
 
 #ifdef DEBUG_LOCK_TASK
-debug_type_t marcel_lock_task_debug=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_lock_task_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-locktask", &marcel_debug);
 #endif
 
 #ifdef DEBUG_SCHED
-debug_type_t marcel_sched_debug=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);
 #endif
 
 #ifdef MARCEL_TRACE
-debug_type_t marcel_mtrace=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace=
   NEW_DEBUG_TYPE_DEPEND("MAR_TRACE: ", "mar-trace", &marcel_debug);
-debug_type_t marcel_mtrace_timer=
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace_timer=
   NEW_DEBUG_TYPE_DEPEND("MAR_TRACE: ", "mar-trace-timer", &marcel_debug);
 #endif
 
@@ -59,27 +62,15 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	if (called) 
 		return;
 	called=1;
-	pm2debug_register(&marcel_mdebug);
-	pm2debug_register(&marcel_debug_state);
-	pm2debug_register(&marcel_debug_work);
-	pm2debug_register(&marcel_debug_deviate);
-	pm2debug_register(&marcel_mdebug_sched_q);
-	pm2debug_register(&marcel_debug_upcall);
 
 #ifdef DEBUG_LOCK_TASK
-	pm2debug_register(&marcel_lock_task_debug);
 	pm2debug_setup(&marcel_lock_task_debug, PM2DEBUG_SHOW_FILE, 1);
 #endif
 
 #ifdef DEBUG_SCHED
-	pm2debug_register(&marcel_sched_debug);
 	pm2debug_setup(&marcel_sched_debug, PM2DEBUG_SHOW_FILE, 1);
 #endif
 
-#ifdef MARCEL_TRACE
-	pm2debug_register(&marcel_mtrace);
-	pm2debug_register(&marcel_mtrace_timer);
-#endif
 	pm2debug_init_ext(argc, argv, debug_flags);
 }
 

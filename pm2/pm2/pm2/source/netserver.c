@@ -94,9 +94,6 @@ static any_t netserver(any_t arg)
       }
     }
   }
-#ifdef MINIMAL_PREEMPTION
-   marcel_setspecialthread(NULL);
-#endif
 
   return NULL;
 }
@@ -121,10 +118,6 @@ void netserver_start(void)
   marcel_create(&_recv_pid[nb_netservers], &attr,
 		netserver, (any_t)channel);
   nb_netservers++;
-
-#ifdef MINIMAL_PREEMPTION
-  marcel_setspecialthread(_recv_pid[0]);
-#endif
 }
 
 void netserver_wait_end(void)

@@ -101,9 +101,9 @@ endif # clean, cleanall
 
 .PHONY: clean cleanall
 clean:
-	@echo "Cleaning sigmund..."
+	@echo "Cleaning supertrace..."
 	@rm -rf $(PROGRAM) $(TMP_DIR)
 
 cleanall:
-	@echo "Cleaning sigmund..."
-	@rm -rf $(BIN_DIR)/sigmund_* /tmp/$(USER)_sigmund_*
+	@echo "Cleaning supertrace..."
+	@rm -rf $(BIN_DIR)/supertrace_* /tmp/$(USER)_supertrace_*

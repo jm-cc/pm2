@@ -26,19 +26,21 @@ while (defined ($line = <IN>)) {
 }
 close (IN);
 
-unless ($text =~ m/$start_pattern($match_pattern)$cut_pattern/si) {
-    die ("Bad match for file \|in|");
+unless ($text =~ m/$start_pattern($match_pattern)$cut_pattern/sio) {
+    die ("Bad match for file \|in|, first part");
 }
 
 open (OUT, ">$out0") ||
     die ("Cannot open |$out0| for writing");
 print OUT $1;
 
-unless ($text =~ m/$cut_pattern($match_pattern)$end_pattern/si) {
-    die ("Bad match for file \|in|");
+unless ($text =~ m/$cut_pattern($match_pattern)$end_pattern/sio) {
+    die ("Bad match for file \|in|, second part");
 }
 
+close (OUT);
 open (OUT, ">$out1") ||
     die ("Cannot open |$out1| for writing");
 print OUT $1;
 
+close (OUT);

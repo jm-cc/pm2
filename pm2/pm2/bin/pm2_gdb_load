@@ -28,12 +28,12 @@ echo "set args $args" > $file
 title="$prog.$HOST"
 echo "set environment DISPLAY $DISPLAY" >> $file
 
-. pm2_arch --source-mode
+. "$PM2_ROOT/bin/pm2_arch" --source-mode
 for i in $_PM2CONFIG_MODULES ; do
-    gdbinit=$PM2_ROOT/modules/$i/gdbinit-$PM2_ARCH
-    [ -r $gdbinit ] && cat $gdbinit >> $debug_file
-    gdbinit=$PM2_ROOT/modules/$i/gdbinit
-    [ -r $gdbinit ] && cat $gdbinit >> $file
+    gdbinit="$PM2_ROOT/modules/$i/gdbinit-$PM2_ARCH"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
+    gdbinit="$PM2_ROOT/modules/$i/gdbinit"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
 done
 
 [ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file

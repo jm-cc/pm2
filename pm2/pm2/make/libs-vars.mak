@@ -48,9 +48,12 @@ LIB_GEN_OBJ := $(shell $(PM2_CONFIG) --objdir $(LIBRARY))
 LIB_GEN_ASM := $(shell $(PM2_CONFIG) --asmdir $(LIBRARY))
 LIB_GEN_DEP := $(shell $(PM2_CONFIG) --depdir $(LIBRARY))
 LIB_GEN_STAMP := $(shell $(PM2_CONFIG) --stampdir $(LIBRARY))
+LIB_STAMP_FLAVOR := $(shell $(PM2_CONFIG) --stampfile)
+LIB_STAMP_FILE := $(shell $(PM2_CONFIG) --stampfile $(LIBRARY))
 LIB_EXT := $(shell $(PM2_CONFIG) --ext $(LIBRARY))
 
-CFLAGS += $(shell $(PM2_CONFIG) --kernel --cflags $(LIBRARY))
+LIB_CFLAGS := $(shell $(PM2_CONFIG) --kernel --cflags $(LIBRARY))
+CFLAGS += $(LIB_CFLAGS)
 
 CC := $(shell $(PM2_CONFIG) --cc $(LIBRARY))
 
@@ -98,5 +101,5 @@ LIB_DEP_TO_OBJ =  $(LIB_GEN_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 LIB_OBJ_TO_S   =  $(LIB_GEN_ASM)/$(patsubst %.o,%.s,$(notdir $@))
 LIB_PIC_TO_S   =  $(LIB_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
 
-COMMON_DEPS += $(LIB_GEN_STAMP)/stamp$(LIB_EXT) $(MAKEFILE_FILE) 
+COMMON_DEPS += $(LIB_STAMP_FLAVOR) $(MAKEFILE_FILE) 
 

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -42,6 +41,14 @@ ntbx_init(int    argc TBX_UNUSED,
 void
 ntbx_purge_cmd_line(int   *argc TBX_UNUSED,
 		    char **argv TBX_UNUSED)
+{
+  LOG_IN();
+  /* --- */
+  LOG_OUT();
+}
+
+void
+ntbx_exit(void)
 {
   LOG_IN();
   /* --- */

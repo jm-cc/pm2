@@ -1,11 +1,15 @@
 ## This Makefile should be run with GNU make
 
+ifndef PM2_FLAVOR
+$(error PM2_FLAVOR is not yet defined!)
+endif
+
 FLAVOR		:= $(shell echo $$PM2_FLAVOR")
 CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
 
-.PHONY: clean indent
+.PHONY: clean
 
 CFILES		:= $(wildcard *.c)
 OFILES		:= $(CFILES:%.c=%.o)

@@ -63,17 +63,26 @@ leo_dir_channel_process_specific_init(void);
 p_leo_dir_channel_t
 leo_dir_channel_init(void);
 
+p_leo_dir_fchannel_t
+leo_dir_fchannel_init(void);
+
 p_leo_dir_vchannel_process_routing_table_t
 leo_dir_vchannel_process_routing_table_init(void);
 
 p_leo_dir_vchannel_process_specific_t
 leo_dir_vchannel_process_specific_init(void);
 
-p_leo_dir_fchannel_t
-leo_dir_fchannel_init(void);
-
 p_leo_dir_vchannel_t
 leo_dir_vchannel_init(void);
+
+p_leo_dir_xchannel_process_routing_table_t
+leo_dir_xchannel_process_routing_table_init(void);
+
+p_leo_dir_xchannel_process_specific_t
+leo_dir_xchannel_process_specific_init(void);
+
+p_leo_dir_xchannel_t
+leo_dir_xchannel_init(void);
 
 p_leo_networks_t
 leo_networks_init(void);
@@ -159,6 +168,9 @@ exit_session(p_leonie_t leonie);
 //----------///////////////////////////////////////////////////////////////
 void
 dir_vchannel_disconnect(p_leonie_t leonie);
+
+void
+dir_xchannel_disconnect(p_leonie_t leonie);
 
 void
 directory_exit(p_leonie_t leonie);

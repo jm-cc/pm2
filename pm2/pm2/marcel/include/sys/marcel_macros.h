@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.6  2000/04/21 11:19:26  vdanjean
+fixes for actsmp
+
 Revision 1.5  2000/04/17 16:09:38  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -84,12 +87,12 @@ ______________________________________________________________________________
 
 #ifdef MA__LWPS
 
-#define SET_STATE_RUNNING(previous, next, lwp) \
+#define SET_STATE_RUNNING(previous, next, next_lwp) \
   (SET_STATE_RUNNING_HOOK(next), \
    (next)->ext_state=MARCEL_RUNNING, \
    MTRACE("RUNNING", (next)), \
-   (next)->lwp=lwp, \
-   lwp->prev_running=previous)
+   (next)->lwp=next_lwp, \
+   next_lwp->prev_running=previous)
 
 #else
 

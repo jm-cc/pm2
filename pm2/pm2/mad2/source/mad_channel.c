@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.17  2000/11/10 14:17:56  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.16  2000/07/10 14:25:45  oaumage
 - Correction de l'initialisation des objets connection
 
@@ -102,7 +105,7 @@ p_mad_channel_t
 mad_open_channel(p_mad_madeleine_t madeleine,
 		 mad_adapter_id_t adapter_id)
 {
-  p_mad_configuration_t      configuration = &(madeleine->configuration);
+  p_mad_configuration_t      configuration = madeleine->configuration;
   p_mad_adapter_t            adapter       =
     &(madeleine->adapter[adapter_id]);
   p_mad_driver_t             driver        = adapter->driver;
@@ -220,7 +223,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	      interface->accept(channel);
 	    }      
 
-	  for(host = madeleine->configuration.local_host_id + 1;
+	  for(host = configuration->local_host_id + 1;
 	      host < configuration->size;
 	      host++)
 	    {
@@ -274,7 +277,7 @@ mad_foreach_close_channel(void *object)
   p_mad_driver_t             driver        = adapter->driver;
   p_mad_driver_interface_t   interface     = &(driver->interface);
   p_mad_madeleine_t          madeleine     = driver->madeleine;
-  p_mad_configuration_t      configuration = &(madeleine->configuration);
+  p_mad_configuration_t      configuration = madeleine->configuration;
   ntbx_host_id_t              host;
 
   LOG_IN();
@@ -297,7 +300,7 @@ mad_foreach_close_channel(void *object)
 	      interface->disconnect(&(channel->input_connection[host]));
 	    }
 
-	  for(host = madeleine->configuration.local_host_id + 1;
+	  for(host = configuration->local_host_id + 1;
 	      host < configuration->size;
 	      host++)
 	    {

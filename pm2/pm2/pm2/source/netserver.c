@@ -1,4 +1,4 @@
-/* #define DEBUG */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -20,105 +20,205 @@
 #include "isomalloc.h"
 #include "pm2_timing.h"
 
-#define MAX_NETSERVERS   128
 
-static marcel_t _recv_pid[MAX_NETSERVERS];
-static unsigned nb_netservers = 0;
+/*
+ * Constants
+ * ---------
+ */
+#ifdef MAD3
+static const char *pm2_net_pm2_channel_name = "pm2";
+#endif // MAD3
 
-static volatile boolean finished = FALSE;
 
+/*
+ * Static variables
+ * ----------------
+ */
+static marcel_t            *pm2_net_server_pid_array = NULL;
+static unsigned int         pm2_net_server_nb        =    1;
+static p_mad_channel_t     *pm2_net_channel_array    = NULL;
+static volatile tbx_bool_t  pm2_net_finished         = tbx_false;
+static marcel_mutex_t       pm2_net_halt_lock        =MARCEL_MUTEX_INITIALIZER;
+static int                  pm2_net_zero_halt        =    0;
+
+#ifdef MAD3
+static p_tbx_slist_t        pm2_net_channel_slist  = NULL;
+static p_tbx_htable_t       pm2_net_channel_htable = NULL;
+#endif // MAD3
+
+
+/*
+ * Extern variables
+ * ----------------
+ */
 extern pm2_rawrpc_func_t pm2_rawrpc_func[];
 
-static void netserver_raw_rpc(int num)
+/*
+ * Static functions
+ * ----------------
+ */
+static
+int
+pm2_net_single_mode(void)
+{
+#ifdef FORCE_NET_THREADS
+  return 0;
+#else // FORCE_NET_THREADS
+  return pm2_config_size() == 1;
+#endif // FORCE_NET_THREADS
+}
+
+
+static
+void
+pm2_net_server_raw_rpc(int num)
 {
   marcel_sem_t sem;
 
+  LOG_IN();
   marcel_sem_init(&sem, 0);
   marcel_setspecific(_pm2_mad_key, &sem);
 
   (*pm2_rawrpc_func[num])();
 
   marcel_sem_P(&sem);
+  LOG_OUT();
 }
 
-void _netserver_term_func(void *arg)
+static
+void
+pm2_net_server_term_func(void *arg)
 {
-#ifdef DEBUG
-  tfprintf(stderr, "netserver is ending.\n");
-#endif
-
+  LOG_IN();
+  LOG("netserver is ending.");
   slot_free(NULL, marcel_stackbase((marcel_t)arg));
+  LOG_OUT();
 }
 
-#ifdef MAD2
-void pm2_halt_requested(void);
-#endif
+static
+void
+pm2_net_send_server_end_request(void)
+{
+  unsigned tag  = NETSERVER_END;
+  int      c    = 0;
+  int      node = 0;
 
-static any_t netserver(any_t arg)
+  LOG_IN();
+  for (c = 0; c < pm2_net_server_nb; c++)
+    {
+      p_mad_channel_t channel = NULL;
+      
+      channel = pm2_net_channel_array[c];
+
+      for (node = 1; node < __pm2_conf_size; node++)
+	{
+	  pm2_begin_packing(channel, node);
+	  pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+	  pm2_end_packing();
+	}
+    }
+  LOG_OUT();
+}
+
+static
+void
+pm2_net_halt_request(void)
+{
+  LOG_IN();
+  if (__pm2_self) 
+    {
+      DISP("NETSERVER ERROR: NETSERVER_REQUEST_HALT tag on node %i",
+	   __pm2_self);
+      goto end;
+    }
+
+  marcel_mutex_lock(&pm2_net_halt_lock);
+  pm2_net_zero_halt++;
+
+  if (pm2_net_zero_halt == (__pm2_conf_size + 1) * pm2_net_server_nb) 
+    {
+      /* +1 car tous les pm2_exit() en envoient un + pm2_halt() */
+      pm2_thread_create((pm2_func_t)pm2_net_send_server_end_request, NULL);
+    }
+
+  marcel_mutex_unlock(&pm2_net_halt_lock);
+
+ end:
+  LOG_OUT();
+}
+
+static
+any_t
+pm2_net_server(any_t arg)
 {
   unsigned tag;
 
-  marcel_cleanup_push(_netserver_term_func, marcel_self());
+  marcel_cleanup_push(pm2_net_server_term_func, marcel_self());
 
-  while(!finished) {
-#ifdef MAD2
-    mad_receive((p_mad_channel_t)arg);
-#else
-    mad_receive();
-#endif
-    pm2_unpack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-    if(tag >= NETSERVER_RAW_RPC)
-      netserver_raw_rpc(tag - NETSERVER_RAW_RPC);
-    else {
-      switch(tag) {
-#ifdef MAD2
-      case NETSERVER_REQUEST_HALT :
-	mad_recvbuf_receive();
-	pm2_halt_requested();
-	break;
-#endif
-      case NETSERVER_END : {
-#ifdef MAD2
-	mad_recvbuf_receive();
+  while (!pm2_net_finished) 
+    {
+      pm2_begin_unpacking((p_mad_channel_t)arg);
 
-	if (__pm2_self == 1) {
-	  /* On arrête le noeud 0... */
-	  mad_sendbuf_init(arg, 0);
-	  pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-	  mad_sendbuf_send();
+      pm2_unpack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+
+      if (tag >= NETSERVER_RAW_RPC)
+	{
+	  pm2_net_server_raw_rpc(tag - NETSERVER_RAW_RPC);
 	}
-#endif
-	finished = TRUE;
-	break;
-      }
-      default : {
-	fprintf(stderr, "NETSERVER ERROR: %d is not a valid tag.\n", tag);
-      }
-      }
+      else
+	{
+	  switch (tag)
+	    {
+
+	    case NETSERVER_REQUEST_HALT:
+	      {
+		pm2_end_unpacking();
+		pm2_net_halt_request();
+	      }
+	      break;
+
+	    case NETSERVER_END:
+	      {
+		pm2_end_unpacking();
+
+		if (__pm2_self == 1)
+		  {
+		    /* On arrête le noeud 0... */
+		    pm2_begin_packing(arg, 0);
+		    pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+		    pm2_end_packing();
+		  }
+
+		pm2_net_finished = tbx_true;
+	      }
+	      break;
+	      
+	    default:
+	      {
+		pm2_end_unpacking();
+		DISP("NETSERVER ERROR: %d is not a valid tag.", tag);
+	      }
+	    }
+	}
     }
-  }
 
   return NULL;
 }
 
-#ifdef MAD2
-void netserver_start(p_mad_channel_t channel)
-#else
-void netserver_start(void)
-#endif
+static
+marcel_t
+pm2_net_server_start(p_mad_channel_t channel)
 {
+  marcel_t      pid = NULL;
   marcel_attr_t attr;
-  unsigned granted;
-#ifndef MAD2
-  void *channel = NULL;
-#endif
 
+  LOG_IN();
   marcel_attr_init(&attr);
 
 #ifdef ONE_VP_PER_NET_THREAD
   {
     unsigned vp = marcel_sched_add_vp();
-    extern marcel_vpmask_t __pm2_global_vpmask; // declared in netserver.c
+    extern marcel_vpmask_t __pm2_global_vpmask; // declared in pm2_thread.c
 
     marcel_vpmask_add_vp(&__pm2_global_vpmask, vp);
 
@@ -128,46 +228,233 @@ void netserver_start(void)
 
     mdebug("Extra vp (%d) allocated for netserver thread\n", vp);
   }
-#endif
+#endif // ONE_VP_PER_NET_THREAD
 
 #ifdef REALTIME_NET_THREADS
   marcel_attr_setrealtime(&attr, MARCEL_CLASS_REALTIME);
-#endif
+#endif // REALTIME_NET_THREADS
+  
+  {
+    unsigned int  granted = 0;
+    void         *slot    = NULL;
+    
+    slot = slot_general_alloc(NULL, 0, &granted, NULL, NULL);
+    marcel_attr_setstackaddr(&attr, slot);
+    marcel_attr_setstacksize(&attr, granted);
+  }
+  
+  marcel_create(&pid, &attr, pm2_net_server, (any_t)channel);
+  LOG_OUT();
 
-  marcel_attr_setstackaddr(&attr,
-			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
-  marcel_attr_setstacksize(&attr, granted);
-
-  marcel_create(&_recv_pid[nb_netservers], &attr,
-		netserver, (any_t)channel);
-  nb_netservers++;
+  return pid;
 }
 
-void netserver_wait_end(void)
+static
+void
+pm2_net_halt_or_exit_request(void)
 {
-  int i;
+  int c = 0;
 
   LOG_IN();
+  for (c = 0; c < pm2_net_server_nb; c++) 
+    {
+      if (!__pm2_self) 
+	{
+	  pm2_net_halt_request();
+	}
+      else 
+	{
+	  unsigned        tag     = NETSERVER_REQUEST_HALT;
+	  p_mad_channel_t channel = NULL;
+      
+	  channel = pm2_net_channel_array[c];
 
-  for(i=0; i<nb_netservers; i++) {
-    marcel_join(_recv_pid[i], NULL);
-  }
-
+	  pm2_begin_packing(channel, 0);
+	  pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+	  pm2_end_packing();
+	}
+    }
   LOG_OUT();
 }
 
-void netserver_stop(void)
-{
-#ifndef MAD2
-  int i;
 
-  for(i=0; i<nb_netservers; i++) {
-    if(_recv_pid[i] == marcel_self())
-      finished = TRUE;
-    else {
-      mdebug("netserveur killing %p\n", _recv_pid[i]);
-      marcel_cancel(_recv_pid[i]);
-    }
+/*
+ * Functions
+ * ---------
+ */
+void
+pm2_net_init_channels(int   *argc,
+		      char **argv)
+{
+  LOG_IN();
+  if (pm2_net_single_mode())
+    goto end;
+
+  pm2_net_channel_array =
+    TBX_CALLOC(pm2_net_server_nb, sizeof(p_mad_channel_t));
+  
+#ifdef MAD3
+  {
+    char *name = NULL;
+
+    if (!pm2_net_channel_slist)
+      {
+	pm2_net_channel_slist  = tbx_slist_nil();
+	pm2_net_channel_htable = tbx_htable_empty_table();
+      }
+    else
+      {
+	if (tbx_htable_get(pm2_net_channel_htable, name))
+	  FAILURE("'pm2' channel is reserved");
+      }
+    
+    name = tbx_strdup(pm2_net_pm2_channel_name);
+    tbx_slist_enqueue(pm2_net_channel_slist, name);
+    tbx_htable_add(pm2_net_channel_htable, name, name);
   }
-#endif
+
+  {
+    p_mad_madeleine_t madeleine = NULL;
+    p_tbx_slist_t     slist     = NULL;
+    p_tbx_htable_t    htable    = NULL;
+    int               i         =    0;
+    
+    madeleine = mad_get_madeleine();
+    slist     = pm2_net_channel_slist;
+    htable    = pm2_net_channel_htable;
+
+    for (i = 0; i < pm2_net_server_nb; i++)
+      {
+	p_mad_channel_t  channel = NULL;
+	char            *name    = NULL;
+	  
+	name                     = tbx_slist_extract(slist);
+	channel                  = mad_get_channel(madeleine, name);
+	pm2_net_channel_array[i] = channel;
+	tbx_htable_replace(htable, name, channel);
+	tbx_slist_append(slist, channel);
+      }
+  }
+#else // MAD2
+  {
+    p_mad_madeleine_t madeleine = NULL;
+    int               i         =    0;
+    
+    madeleine = mad_get_madeleine();
+
+    for (i = 0; i < pm2_net_server_nb; i++)
+      {
+	pm2_net_channel_array[i] = mad_open_channel(madeleine, 0);
+	LOG_VAL("Created channel", i);
+      }
+  }
+#endif // MAD2
+
+ end:
+  LOG_OUT();
+}
+
+void
+pm2_net_servers_start(int   *argc,
+		      char **argv)
+{
+  LOG_IN();
+  if (!pm2_net_single_mode())  
+    {
+      int i;
+      
+      pm2_net_server_pid_array =
+	TBX_CALLOC(pm2_net_server_nb, sizeof(marcel_t));
+
+      for (i = 0; i < pm2_net_server_nb; i++)
+	{
+	  p_mad_channel_t channel = NULL;
+	  marcel_t        pid     = NULL;
+	  
+	  channel                     = pm2_net_channel_array[i];
+	  pid                         = pm2_net_server_start(channel);
+	  pm2_net_server_pid_array[i] = pid;
+	}
+    }
+  LOG_OUT();
+}
+
+void
+pm2_net_request_end(void)
+{
+  LOG_IN();
+  if (!pm2_net_single_mode())
+    {
+      pm2_net_halt_or_exit_request();
+    }
+  LOG_OUT();
+}
+
+void
+pm2_net_wait_end(void)
+{
+  LOG_IN();
+  if (!pm2_net_single_mode())  
+    {
+      int i = 0;
+      
+      for (i = 0; i < pm2_net_server_nb; i++)
+	{
+	  marcel_t pid = NULL;
+	  
+	  pid = pm2_net_server_pid_array[i];
+	  marcel_join(pid, NULL);
+	  pm2_net_server_pid_array[i] = NULL;
+	}
+    }
+  LOG_OUT();
+}
+
+p_mad_channel_t
+pm2_net_get_channel(pm2_channel_t c)
+{
+  p_mad_channel_t channel = NULL;
+
+  LOG_IN();
+  channel = pm2_net_channel_array[c];
+  LOG_OUT();
+  
+  return channel;
+}
+
+/*
+ * Interface
+ * ---------
+ */
+void
+pm2_channel_alloc(pm2_channel_t *channel,
+		  char          *name)
+{
+  LOG_IN();
+#ifdef MAD3
+  {
+    if (!pm2_net_channel_slist)
+      {
+	pm2_net_channel_slist  = tbx_slist_nil();
+	pm2_net_channel_htable = tbx_htable_empty_table();
+      }
+  else
+    {
+      if (tbx_htable_get(pm2_net_channel_htable, name))
+	FAILURE("duplicate channel allocation");
+    }
+
+    name = tbx_strdup(name);
+    tbx_slist_append(pm2_net_channel_slist, name);
+    tbx_htable_add(pm2_net_channel_htable, name, name);
+  }
+#else // MAD2
+  {
+    if (name)
+      FAILURE("channel naming unsupported with MadII");
+  }
+#endif // MAD2
+
+  *channel = pm2_net_server_nb++;  
+  LOG_OUT();
 }

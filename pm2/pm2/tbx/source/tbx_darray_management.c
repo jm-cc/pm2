@@ -135,9 +135,9 @@ __tbx_darray_grow(p_tbx_darray_t     darray,
     }
   else
     {
-      darray->allocated_length = idx + 1;
+      darray->allocated_length =  max(idx, TBX_DARRAY_MIN_SIZE);
 
-      darray->data = TBX_CALLOC(TBX_DARRAY_MIN_SIZE, sizeof(void *));
+      darray->data = TBX_CALLOC(darray->allocated_length, sizeof(void *));
       CTRL_ALLOC(darray->data);
     }
   LOG_OUT();

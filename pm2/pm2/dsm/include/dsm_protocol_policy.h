@@ -18,14 +18,37 @@
 #define DSM_PROTOCOL_POLICY_H
 
 #include "dsm_const.h"
+/* the following is useful for "token_lock_id_t" */
+#include "token_lock.h"
+/* the following is useful for "dsm_page_index_t" */
+#include "dsm_page_manager.h"
 
 
 /**********************************************************************/
 /* PUBLIC TYPE DEFINITIONS                                            */
 /**********************************************************************/
 
-/* protocol identifier */
-typedef int dsm_proto_t;
+typedef void (*dsm_rf_action_t)(dsm_page_index_t index); // read fault handler
+
+typedef void (*dsm_wf_action_t)(dsm_page_index_t index); // write fault handler
+
+typedef void (*dsm_rs_action_t)(dsm_page_index_t index, dsm_node_t req_node, int tag); // read server
+
+typedef void (*dsm_ws_action_t)(dsm_page_index_t index, dsm_node_t req_node, int tag); // write server
+
+typedef void (*dsm_is_action_t)(dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner); // invalidate server
+
+typedef void (*dsm_rp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node, int tag); // receive page server
+
+typedef void (*dsm_erp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size, int tag); // expert receive page server
+
+typedef void (*dsm_acq_action_t)(const token_lock_id_t); // acquire func
+
+typedef void (*dsm_rel_action_t)(const token_lock_id_t); // release func
+
+typedef void (*dsm_pi_action_t)(dsm_proto_t prot_id); // protocol init func
+
+typedef void (*dsm_pa_action_t)(dsm_page_index_t index); // page add func
 
 
 /**********************************************************************/

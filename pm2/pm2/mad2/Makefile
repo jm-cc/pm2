@@ -1,4 +1,18 @@
 
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
 # LIBRARY -> nom du module
 #---------------------------------------------------------------------
 LIBRARY=mad2
@@ -13,7 +27,7 @@ include $(PM2_ROOT)/make/libs-vars.mak
 
 # Inclusion du cache specifique a madeleine
 #---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/mad2-specific.mak
 endif
 
@@ -45,7 +59,7 @@ $(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_GEN_DEP)/%$(LIB_EXT).
 
 # Inclusion du makefile de dependance des drivers
 #---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
 -include $(LIB_C_DEPENDS_ADDED)
 endif

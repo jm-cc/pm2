@@ -1,3 +1,6 @@
 PM2_PM2_LIBNAME=pm2
+if [ "${PM2_ARCH}" = RS6K_ARCH ]; then
+  PM2_PM2_CFLAGS="$PM2_PM2_CFLAGS -mno-powerpc"
+fi
 PM2_PM2_MODULE_DEPEND_LIB="${PM2_PM2_MODULE_DEPEND_LIB} mad1 mad2 dsm marcel"
 

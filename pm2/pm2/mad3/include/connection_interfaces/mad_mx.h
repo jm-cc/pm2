@@ -46,9 +46,6 @@ void
 mad_mx_channel_init(p_mad_channel_t);
 
 void
-mad_mx_before_open_channel(p_mad_channel_t);
-
-void
 mad_mx_connection_init(p_mad_connection_t,
 			p_mad_connection_t);
 
@@ -64,22 +61,13 @@ mad_mx_connect(p_mad_connection_t,
 	       p_mad_adapter_info_t);
 
 void
-mad_mx_after_open_channel(p_mad_channel_t);
-
-void
-mad_mx_before_close_channel(p_mad_channel_t);
-
-void
 mad_mx_disconnect(p_mad_connection_t);
-
-void
-mad_mx_after_close_channel(p_mad_channel_t);
 
 void
 mad_mx_link_exit(p_mad_link_t);
 void
 mad_mx_connection_exit(p_mad_connection_t,
-			p_mad_connection_t);
+                       p_mad_connection_t);
 
 void
 mad_mx_channel_exit(p_mad_channel_t);

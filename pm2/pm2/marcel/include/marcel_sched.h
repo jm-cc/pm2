@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.14  2000/06/09 17:36:52  vdanjean
+integrating MARCEL_POLL_AT_YIELD
+
 Revision 1.13  2000/05/29 08:59:23  vdanjean
 work added (mainly for SMP and ACT), minor modif in polling
 
@@ -137,7 +140,11 @@ static __inline__ unsigned marcel_current_vp()
 void marcel_yield(void);
 void marcel_trueyield(void);
 int marcel_explicityield(marcel_t pid);
-
+#ifdef MARCEL_KERNEL
+void ma__marcel_yield(void);
+void ma__marcel_trueyield(void);
+int ma__marcel_explicityield(marcel_t pid);
+#endif
 
 /* ==== SMP scheduling policies ==== */
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.41  2000/11/20 14:40:29  rnamyst
+Fixed the '_argv' bug again. Thanks Olivier ;-)
+
 Revision 1.40  2000/11/20 10:39:37  oaumage
 - suppression d'un warning
 
@@ -815,11 +818,11 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
   
   while (argc)
     {
-      if (!strcmp(*argv, "-d"))
+      if (!strcmp(*_argv, "-d"))
 	{
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*argv, "-rank"))
+      else if (!strcmp(*_argv, "-rank"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -829,7 +832,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--;
 
 	}
-      else if (!strcmp(*argv, "-conf"))
+      else if (!strcmp(*_argv, "-conf"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -838,7 +841,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*argv, "-device"))
+      else if (!strcmp(*_argv, "-device"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -847,7 +850,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*argv, "-cwd"))
+      else if (!strcmp(*_argv, "-cwd"))
 	{
 	  _argv++; (*_argc)--; argc--;
 

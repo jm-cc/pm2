@@ -19,7 +19,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "sys/marcel_archdep.h"
+#include "asm/marcel_archdep.h"
 #include "sys/bitmap.h"
 #include "marcel.h"
 

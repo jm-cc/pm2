@@ -16,7 +16,7 @@
 
 
 #include "clone.h"
-#include "sys/marcel_archdep.h"
+#include "asm/marcel_archdep.h"
 
 marcel_key_t _clone_key, _slave_key;
 

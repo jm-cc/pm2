@@ -82,6 +82,8 @@ struct marcel_sched_internal_task {
 	ma_runqueue_t *cur_rq;
 	int sched_policy;
 	int prio;
+	unsigned long timestamp, last_ran;
+	unsigned int time_slice;
 	ma_prio_array_t *array;
 };
 
@@ -125,7 +127,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	LOG_IN();
 	INIT_LIST_HEAD(&t->sched.internal.run_list);
 	//t->sched.internal.lwps_runnable=~0UL;
-	t->sched.internal.prio=attr->sched.prio;
 	if (attr->sched.init_rq)
 		t->sched.internal.init_rq=attr->sched.init_rq;
 	else
@@ -133,6 +134,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	sched_debug("%p's init_rq is %p\n",t, t->sched.internal.init_rq);
 	t->sched.internal.cur_rq=NULL;
 	t->sched.internal.sched_policy = attr->__schedpolicy;
+	t->sched.internal.prio=attr->sched.prio;
+	t->sched.internal.time_slice=1; /* TODO: utiliser les priorités pour le calculer */
 	t->sched.internal.array=NULL;
 	LOG_OUT();
 }

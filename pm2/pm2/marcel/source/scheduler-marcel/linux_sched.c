@@ -564,6 +564,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 
 	MA_BUG_ON(p->sched.state != MA_TASK_RUNNING);
 
+	p->sched.internal.timestamp = marcel_clock();
 	/*
 	 * We decrease the sleep average of forking parents
 	 * and children as well, to keep max-interactive tasks
@@ -1262,7 +1263,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 
 	LOG_IN();
 
-	//rq->timestamp_last_tick = sched_clock();
+	rq->timestamp_last_tick = marcel_clock();
 
 #ifdef MA__DEBUG
 #warning rcu not yet implemented (utile pour les numa ?)
@@ -1332,22 +1333,24 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 		goto out_unlock;
 	}
-	if (!--p->time_slice) {
-		dequeue_task(p, rq->active);
-		set_tsk_need_resched(p);
-		p->prio = effective_prio(p);
-		p->time_slice = task_timeslice(p);
-		p->first_time_slice = 0;
+#endif
+	if (preemption_enabled() && ma_thread_preemptible() &&
+			!--p->sched.internal.time_slice) {
+		ma_set_tsk_need_resched(p);
+		//p->prio = effective_prio(p);
+		p->sched.internal.time_slice = 1; /* TODO: utiliser la priorité pour le calculer */
+				//task_timeslice(p);
+		//p->first_time_slice = 0;
 
-		if (!rq->expired_timestamp)
-			rq->expired_timestamp = jiffies;
-		if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
-			enqueue_task(p, rq->expired);
+		//if (!rq->expired_timestamp)
+			//rq->expired_timestamp = jiffies;
+		//if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
 //			if (p->static_prio < rq->best_expired_prio)
 //				rq->best_expired_prio = p->static_prio;
-		} else
-			enqueue_task(p, rq->active);
-	} else {
+		//}
+	}
+#if 0
+	else {
 		/*
 		 * Prevent a too long timeslice allowing a task to monopolize
 		 * the CPU. We do this by splitting up the timeslice into
@@ -1368,14 +1371,12 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			p->time_slice) % TIMESLICE_GRANULARITY(p)) &&
 			(p->time_slice >= TIMESLICE_GRANULARITY(p)) &&
 			(p->array == rq->active)) {
-#endif
 			if (preemption_enabled() && ma_thread_preemptible()) {
 				//dequeue_task(p, rq->active);
 				ma_set_tsk_need_resched(p);
 //				p->prio = effective_prio(p);
 				//enqueue_task(p, rq->active);
 			}
-#if 0
 		}
 	}
 out_unlock:
@@ -1398,8 +1399,8 @@ asmlinkage void ma_schedule(void)
 	ma_runqueue_t *rq,*prevrq,*currq, *prev_as_rq;
 	ma_prio_array_t *array;
 	struct list_head *queue;
-//	unsigned long long now;
-//	unsigned long run_time;
+	unsigned long now;
+	unsigned long run_time;
 	int idx;
 	int max_prio, prev_as_prio;
 	LOG_IN();
@@ -1412,9 +1413,7 @@ asmlinkage void ma_schedule(void)
 	if (tbx_likely(!(MARCEL_SELF->sched.state & (MA_TASK_DEAD | MA_TASK_ZOMBIE)))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
-			RAISE(PROGRAM_ERROR);
-			//printk(KERN_ERR "bad: scheduling while atomic!\n");
-			//dump_stack();
+			MA_BUG();
 		}
 	}
 
@@ -1426,6 +1425,15 @@ need_resched:
 	/* by default, reschedule this thread */
 	prev_as_next = prev = MARCEL_SELF;
 	MA_BUG_ON(!prev);
+
+	now = marcel_clock();
+	//if (likely(now - prev->timestamp < NS_MAX_SLEEP_AVG))
+		run_time = now - prev->sched.internal.timestamp;
+	/*
+	else
+		run_time = NS_MAX_SLEEP_AVG;
+		*/
+
 	prev_as_rq = prevrq = ma_this_rq();
 	MA_BUG_ON(!prevrq);
 	prev_as_prio = MARCEL_SELF->sched.internal.prio;
@@ -1558,7 +1566,7 @@ switch_tasks:
 //		if (!(HIGH_CREDIT(prev) || LOW_CREDIT(prev)))
 //			prev->interactive_credit--;
 //	}
-//	prev->timestamp = now;
+	prev->sched.internal.timestamp = prev->sched.internal.last_ran = now;
 
 	if (tbx_likely(prev != next)) {
 //		next->timestamp = now;

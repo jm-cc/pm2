@@ -107,6 +107,9 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
 	    const char                 *name,
 	    void                       *specific);
 
+ntbx_process_lrank_t
+ntbx_pc_local_max(p_ntbx_process_container_t pc);
+
 ntbx_process_grank_t
 ntbx_pc_local_to_global(p_ntbx_process_container_t pc,
 			ntbx_process_lrank_t       local_rank);
@@ -130,6 +133,9 @@ ntbx_pc_first_local_rank(p_ntbx_process_container_t pc,
 tbx_bool_t
 ntbx_pc_next_local_rank(p_ntbx_process_container_t pc,
 			p_ntbx_process_lrank_t     local_rank);
+
+ntbx_process_grank_t
+ntbx_pc_global_max(p_ntbx_process_container_t pc);
 
 ntbx_process_lrank_t
 ntbx_pc_global_to_local(p_ntbx_process_container_t pc,

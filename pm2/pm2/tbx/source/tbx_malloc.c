@@ -367,6 +367,8 @@ tbx_malloc(p_tbx_memory_t mem)
 	    TBX_MALLOC(mem->mem_len * mem->block_len + sizeof(void *));
 	  CTRL_ALLOC(new_mem);
 
+	  DISP_PTR("tbx_memory, expanding", mem);
+
 	  *(void **)(new_mem + mem->mem_len * mem->block_len) = NULL;
 	  *(void **)(mem->current_mem
 		     + mem->mem_len * mem->block_len) = new_mem;

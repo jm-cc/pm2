@@ -111,7 +111,7 @@ extern void *ISOADDR_AREA_TOP;
 
 #endif
 
-#define SLOT_SIZE              0x10000 /* 64 Ko */
+#define SLOT_SIZE              THREAD_SLOT_SIZE
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)
 extern int _zerofd;

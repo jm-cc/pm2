@@ -60,12 +60,12 @@ DRV_TCP = on
 # VIA
 # DRV_VIA = on
 # SISCI
-# DRV_SISCI = on
+DRV_SISCI = on
 # SBP
 # DRV_SBP = on
 # MPI
-DRV_MPI = on
-MPI_IMPL = lam
+# DRV_MPI = on
+# MPI_IMPL = lam
 # MPI_IMPL = bip
 
 # PM2
@@ -105,31 +105,31 @@ SRCS = $(SRC)/mad_channel.c \
 
 # headers
 HEADERS = $(INC)/mad_adapter.h \
-               $(INC)/mad_adapter_description.h \
-               $(INC)/mad_buffer_interface.h \
-               $(INC)/mad_buffers.h \
-               $(INC)/mad_channel.h \
-               $(INC)/mad_channel_interface.h \
-               $(INC)/mad_communication_interface.h \
-               $(INC)/mad_configuration.h \
-               $(INC)/mad_connection.h \
-               $(INC)/mad_driver.h \
-               $(INC)/mad_driver_interface.h \
-               $(INC)/mad_link.h \
-               $(INC)/mad_main.h \
-               $(INC)/mad_memory_interface.h \
-               $(INC)/mad_modes.h \
-               $(INC)/mad_pointers.h \
-               $(INC)/mad_registration.h \
-               $(INC)/mad_types.h \
-               $(INC)/madeleine.h 
+          $(INC)/mad_adapter_description.h \
+          $(INC)/mad_buffer_interface.h \
+          $(INC)/mad_buffers.h \
+          $(INC)/mad_channel.h \
+          $(INC)/mad_channel_interface.h \
+          $(INC)/mad_communication_interface.h \
+          $(INC)/mad_configuration.h \
+          $(INC)/mad_connection.h \
+          $(INC)/mad_driver.h \
+          $(INC)/mad_driver_interface.h \
+          $(INC)/mad_link.h \
+          $(INC)/mad_main.h \
+          $(INC)/mad_memory_interface.h \
+          $(INC)/mad_modes.h \
+          $(INC)/mad_pointers.h \
+          $(INC)/mad_registration.h \
+          $(INC)/mad_types.h \
+          $(INC)/madeleine.h 
 
 # libs
 LIB_MAD2 = $(LIB)/libmad2.a
 
 # compiler
 # CC = purify gcc
-CC = gcc
+# CC = gcc
 # CC = egcc
 
 # preprocessor flags
@@ -138,7 +138,8 @@ CPPFLAGS = -I$(INC) -I$(CI_INC)
 # compiler flags
 # CFLAGS = -O6 -Wall 
 # CFLAGS = -g
-CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes # -Werror
+CFLAGS = 
+# CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes # -Werror
 # CFLAGS = -pg -Wall
 # CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
 # CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall

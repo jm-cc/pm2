@@ -248,6 +248,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 	if(
 		// On ne peut pas céder la main maintenant
 		(ma_in_atomic())
+		// ou bien on ne veut pas
+		|| ma_thread_preemptible()
 		// On n'a pas encore de scheduler...
 		|| special_mode
 #ifdef MA__LWPS

@@ -268,14 +268,23 @@ static void sig_start_timer(void)
 static void sig_stop_timer(void)
 {
 	struct sigaction sa;
+	struct itimerval value;
+
+	LOG_IN();
 
 	fault_catcher_exit();
+
+	memset(&value,0,sizeof(value));
+	setitimer(MARCEL_ITIMER_TYPE, &value,
+		  (struct itimerval *)NULL);
 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = SIG_DFL;
 	sa.sa_flags = 0;
 
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+
+	LOG_OUT();
 }
 
 void marcel_sig_exit(void)

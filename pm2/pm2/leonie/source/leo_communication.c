@@ -37,6 +37,7 @@ leo_send_int(p_ntbx_client_t client,
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(buffer));
   ntbx_pack_int(data, &buffer);
   status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
@@ -73,6 +74,7 @@ leo_send_unsigned_int(p_ntbx_client_t    client,
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(buffer));
   ntbx_pack_unsigned_int(data, &buffer);
   status = ntbx_tcp_write_pack_buffer(client, &buffer);
 

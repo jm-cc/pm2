@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.24  2000/04/21 11:19:28  vdanjean
+fixes for actsmp
+
 Revision 1.23  2000/04/17 16:09:40  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -454,11 +457,10 @@ static void wait_all_tasks_end(void)
 
 // Insere la tache "idle" et retourne son identificateur. Cette
 // fonction est uniquement appelee dans "radical_next_task" lorsqu'il
-// n'y a pas d'autres taches "pretes" dans la file.
+// n'y a pas d'autres taches "prêtes" dans la file.
 static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
 {
   marcel_t idle;
-  /* TODO A completer pour les activations */
 #ifdef MA__ACTIVATION
   if (cur && IS_TASK_TYPE_IDLE(cur)) {
     /* c'est déjà idle qui regarde s'il y a autre chose. Apparemment,
@@ -497,8 +499,6 @@ static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
 #ifdef MA__DEBUG
     if (!next)
       mdebug("NULL pointer !!\n");
-    if ((CANNOT_RUN(next)) && (next != marcel_self()))
-      ACTDEBUG(printf("marcel_unchain_task(%p) : %p yet running\n", cur, next));
 #endif
   } while ((CANNOT_RUN(next)) && (next != cur));
   mdebug("marcel_unchain_task choose %p on lwp %p\n", next, lwp);
@@ -578,8 +578,9 @@ void marcel_insert_task(marcel_t t)
 #if defined(MA__LWPS) || defined(MA__MULTIPLE_RUNNING)
 #ifndef MA__ONE_QUEUE
   __lwp_t *self_lwp = GET_LWP(marcel_self());
-  DEFINE_CUR_LWP(,,);
 #endif
+  DEFINE_CUR_LWP(,,);
+  SET_CUR_LWP(GET_LWP(marcel_self()));
 #endif
 
   MTRACE("INSERT", t);
@@ -732,6 +733,7 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
     *blocked = FALSE;
 }
 
+int flag=0;
 /* Remove from ready queue and insert into waiting queue
    (if it is BLOCKED) or delayed queue (if it is WAITING). */
 marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
@@ -740,7 +742,9 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
   DEFINE_CUR_LWP( , , );
   SET_CUR_LWP(GET_LWP(cur));
 
+  if (flag) mdebug("zone0\n");
   sched_lock(cur_lwp);
+  if (flag) mdebug("zone1\n");
 
   one_active_task_less(t, cur_lwp);
 #if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
@@ -756,6 +760,7 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
       if(r == NULL) {
 	/* dans le cas où on est la tache de poll et que l'on ne
          * trouve personne d'autre */
+	sched_unlock(cur_lwp);
 	return r;
       }
       SET_STATE_RUNNING(t, r, cur_lwp);
@@ -872,11 +877,8 @@ static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
 #ifdef MA__MULTIPLE_RUNNIG
   res=t;
   do {
-    //{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
     res = res->next;
   } while ((CANNOT_RUN(res)) && (res != t));
-  //{if (res!=t) ACTDEBUG(printf("next_task : find %p\n", res));}
-  //ACTDEBUG(printf("next_task(%p) : next=%p\n", t, res));  
 #else
   res = t->next;
 #endif
@@ -892,9 +894,8 @@ static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
 void marcel_yield(void)
 {
   register marcel_t cur = marcel_self();
-#ifdef SMP
-  __lwp_t *cur_lwp = cur->lwp;
-#endif
+  DEFINE_CUR_LWP(,,);
+  SET_CUR_LWP(GET_LWP(cur));
 
   lock_task();
 
@@ -906,22 +907,31 @@ void marcel_yield(void)
   goto_next_task(next_task_to_run(cur, cur_lwp));
 }
 
-//TODO : adadter aux activations...
-void marcel_explicityield(marcel_t t)
+//TODO : is it correct for marcel-smp ?
+int marcel_explicityield(marcel_t t)
 {
   register marcel_t cur = marcel_self();
 
-#ifdef MA__ACTIVATION
-  RAISE("Not implemented");
+  lock_task();
+
+#ifdef MA__MULTIPLE_RUNNING
+  sched_lock(GET_LWP(cur));
+  if (CANNOT_RUN(t)) {
+    sched_unlock(GET_LWP(cur));
+    return 0;
+  }  
+  SET_STATE_RUNNING(cur, t, GET_LWP(cur));
+
+  sched_unlock(GET_LWP(cur));
 #endif
 
-  lock_task();
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
     MA_THR_RESTARTED(cur, "Preemption");
     unlock_task();
-    return;
+    return 1;
   }
   goto_next_task(t);
+  return 1; /* for gcc */
 }
 
 void marcel_trueyield(void)
@@ -1171,22 +1181,87 @@ void stop_timer(void);
 #define PAUSE()	  SCHED_YIELD()
 #endif
 
+#ifdef MA__ACTIVATION
 /* Except at the beginning, lock_task() is supposed to be permanently
    handled */
-any_t idle_func(any_t arg)
+any_t idle_func(any_t arg) // Pour les activations
 {
   marcel_t next, cur = marcel_self();
-#ifdef SMP
-  __lwp_t *cur_lwp = cur->lwp;
-#endif
+  DEFINE_CUR_LWP(,,);
+  SET_CUR_LWP(GET_LWP(cur));
 
-#ifndef MA__ACTIVATION
+  lock_task();
+
+  for(;;){
+
+    mdebug("\t\t\t<Scheduler scheduled> (LWP = %d)\n", cur_lwp->number);
+
+    //has_new_tasks=0;
+	  
+    //act_cntl(ACT_CNTL_READY_TO_WAIT,0);
+    SET_FROZEN(cur);
+    marcel_check_delayed_tasks();
+    next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
+    GET_LWP(cur)->prev_running=cur;
+
+    while (!(next || act_nb_unblocked)) {
+//	    int i;
+	    MTRACE("active wait", cur);
+	      
+#ifndef ACT_DONT_USE_SYSCALL
+	    act_cntl(ACT_CNTL_READY_TO_WAIT,0);
+	    if (act_nb_unblocked) break;
+	    act_cntl(ACT_CNTL_DO_WAIT,0);	
+#else      
+	    while(!act_nb_unblocked) {
+		    i=0;
+		    while((i++<100000000) && !act_nb_unblocked)
+			    ;
+		    if (!act_nb_unblocked)
+			    fprintf(stderr, "act_nb_unblocked=%i\n",
+				    act_nb_unblocked);
+	    }
+	    MTRACE("end active wait", cur);
+	    mdebug("fin attente active\n");
+#endif
+	    marcel_check_delayed_tasks();
+	    SET_FROZEN(cur);
+	    next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
+    }
+    mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d) next=%p\n",
+	   cur_lwp->number, next);
+    
+    if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
+	    if (next) {
+		    goto_next_task(next);
+	    } else {
+		    act_goto_next_task(NULL, ACT_RESTART_FROM_IDLE);
+	    }
+    }
+    MA_THR_RESTARTED(cur, "Preemption");
+  }
+  // Pour la terminaison...
+  for (;;) {
+	  act_cntl(ACT_CNTL_READY_TO_WAIT,0);
+	  act_cntl(ACT_CNTL_DO_WAIT,0);
+  }
+}
+#else
+/* Except at the beginning, lock_task() is supposed to be permanently
+   handled */
+any_t idle_func(any_t arg) // Sans activation (mono et smp)
+{
+  marcel_t next, cur = marcel_self();
+  DEFINE_CUR_LWP(,,);
+  SET_CUR_LWP(GET_LWP(cur));
+
+#ifdef MA__TIMER
   start_timer(); /* May be redundant for main LWP */
 #endif
 
   lock_task();
 
-  do {
+  for(;;) {
 
     mdebug("\t\t\t<Scheduler scheduled> (LWP = %d)\n", cur_lwp->number);
 
@@ -1238,82 +1313,15 @@ any_t idle_func(any_t arg)
     }
 #else /* MA__SMP */
     /* Look if some delayed tasks can be waked */
-#ifdef MA__ACTIVATION
-//    if(__delayed_tasks == NULL && !marcel_polling_is_required()) {
-      mdebug("attente active\n");
-
-      //has_new_tasks=0;
-
-      //act_cntl(ACT_CNTL_READY_TO_WAIT,0);
-      SET_FROZEN(cur);
-      marcel_check_delayed_tasks();
-      next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
-      GET_LWP(cur)->prev_running=cur;
-
-#define ACT_USE_SYSCALL
-
-      while (!(next || act_nb_unblocked)) {
-	      int i;
-	      MTRACE("active wait", cur);
-	      
-//#ifdef ACT_USE_SYSCALL
-/*  	      i=0; */
-/*  	      while((i++<1000000) && !act_nb_unblocked) */
-/*  		      ; */
-/*  	      if (act_nb_unblocked) break; */
-	      act_cntl(ACT_CNTL_READY_TO_WAIT,0);
-	      if (act_nb_unblocked) break;
-	      //fprintf(stderr,"ready to wait\n");
-	      act_cntl(ACT_CNTL_DO_WAIT,0);	
-	      //fprintf(stderr,"neu\n");
-//#else      
-	      while(!act_nb_unblocked) {
-		      i=0;
-		      while((i++<100000000) && !act_nb_unblocked)
-			      ;
-		      if (!act_nb_unblocked)
-			      fprintf(stderr, "act_nb_unblocked=%i\n",
-				      act_nb_unblocked);
-	      }
-	      MTRACE("end active wait", cur);
-	      mdebug("fin attente active\n");
-//#endif
-	      marcel_check_delayed_tasks();
-	      SET_FROZEN(cur);
-	      next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
-      }
-      mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d) next=%p\n",
-	     cur_lwp->number, next);
-      
-      if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
-	      /* next cannot be NULL in goto_next_task */
-	      if (next) {
-		      goto_next_task(next);
-	      } else {
-		      //GET_LWP(cur)->prev_running=cur;
-		      act_goto_next_task(NULL, ACT_RESTART_FROM_IDLE);
-	      }
-      }
-      
-      MA_THR_RESTARTED(cur, "Preemption");
-
-      continue;
-//    }
-#else
     if(__delayed_tasks == NULL && !marcel_polling_is_required())
       RAISE(DEADLOCK_ERROR);
-#endif
 
     if(marcel_polling_is_required()) {
       while(!marcel_check_delayed_tasks())
 	/* True polling ! */ ;
     } else {
       while(!marcel_check_delayed_tasks()) {
-#ifdef MA__ACTIVATION
-        RAISE("on est la ?");
-#else
 	pause();
-#endif
       }
     }
 #endif /* MA__SMP */
@@ -1327,9 +1335,9 @@ any_t idle_func(any_t arg)
       goto_next_task(next);
 
     MA_THR_RESTARTED(cur, "Preemption");
-
-  } while(1);
+  };
 }
+#endif
 
 #ifdef MA__ACTIVATION
 static void void_func(void* param)
@@ -1491,6 +1499,20 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
 #if defined(MA__LWPS)
 static unsigned __nb_processors = 1;
+
+static void create_new_lwp(void)
+{
+  __lwp_t *lwp = (__lwp_t *)MALLOC(sizeof(__lwp_t)),
+          *cur_lwp = marcel_self()->lwp;
+
+  init_lwp(lwp, NULL);
+
+  /* Add to global linked list */
+  lwp->next = cur_lwp;
+  lwp->prev = cur_lwp->prev;
+  cur_lwp->prev->next = lwp;
+  cur_lwp->prev = lwp;
+}
 #endif
 
 #ifdef SMP
@@ -1531,20 +1553,6 @@ static void *lwp_startup_func(void *arg)
   MA_THR_LONGJMP(lwp->idle_task, NORMAL_RETURN);
   
   return NULL;
-}
-
-static void create_new_lwp(void)
-{
-  __lwp_t *lwp = (__lwp_t *)MALLOC(sizeof(__lwp_t)),
-          *cur_lwp = marcel_self()->lwp;
-
-  init_lwp(lwp, NULL);
-
-  /* Add to global linked list */
-  lwp->next = cur_lwp;
-  lwp->prev = cur_lwp->prev;
-  cur_lwp->prev->next = lwp;
-  cur_lwp->prev = lwp;
 }
 
 static void start_lwp(__lwp_t *lwp)
@@ -1594,13 +1602,12 @@ void marcel_sched_init(unsigned nb_lwp)
 
   mdebug("%d processors available\n", __nb_processors);
 
-  //TODO
-  //#ifdef MA__ACTIVATION
-  //_main_struct.nb_tasks = -1-__nb_processors;
-  //#else
+#ifdef MA__ACTSMP
+  SET_NB_LWPS(nb_lwp ? nb_lwp : ACT_NB_MAX_CPU);
+#else
   SET_NB_LWPS(nb_lwp ? nb_lwp : __nb_processors);
+#endif
   _main_struct.nb_tasks = -GET_NB_LWPS;
-  //#endif
 
 #else /* MA__LWPS */
   _main_struct.nb_tasks = -1;
@@ -1641,10 +1648,15 @@ void marcel_sched_init(unsigned nb_lwp)
      demarrer tres vite sur certains LWP... */
   {
     int i;
+#ifdef MA__SMP
     __lwp_t *lwp;
+#endif
 
     for(i=1; i<GET_NB_LWPS; i++)
       create_new_lwp();
+ 
+    mdebug("marcel_sched_init  : %i lwps created\n",
+	   GET_NB_LWPS);
 
 #ifdef MA__SMP
     for(lwp = __main_lwp.next; lwp != &__main_lwp; lwp = lwp->next)
@@ -1663,7 +1675,7 @@ void marcel_sched_init(unsigned nb_lwp)
   start_timer();
 #endif
   mdebug("marcel_sched_init done : idle task= %p\n",
-	 GET_LWP(0)->idle_task);
+	 GET_LWP_BY_NUM(0)->idle_task);
 }
 
 #ifdef MA__SMP
@@ -1690,11 +1702,9 @@ void marcel_sched_shutdown()
 
   wait_all_tasks_end();
 
-#ifdef MA__ACTIVATION
-  act_cntl(ACT_CNTL_UPCALLS, (void*)ACT_DISABLE_UPCALLS);
-#endif
-
+#ifdef MA__TIMER
   stop_timer();
+#endif
 
 #ifdef MA__SMP
   if(marcel_self()->lwp != &__main_lwp)
@@ -1705,6 +1715,10 @@ void marcel_sched_shutdown()
     lwp = lwp->next;
     FREE(lwp->prev);
   }
+#elif defined(MA__ACTIVATION)
+  // TODO : arrêter les autres activations...
+
+  act_cntl(ACT_CNTL_UPCALLS, (void*)ACT_DISABLE_UPCALLS);
 #else
   /* Destroy master-sched's stack */
   marcel_cancel(__main_lwp.idle_task);

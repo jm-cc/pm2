@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.16  2000/11/16 11:11:49  rnamyst
+Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
+
 Revision 1.15  2000/11/10 14:17:57  oaumage
 - nouvelle procedure d'initialisation
 
@@ -526,11 +529,15 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
   
   while (argc)
     {
-      if (!strcmp(*argv, "-d"))
+      if (!strcmp(*_argv, "-d"))
 	{
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*argv, "-rank"))
+      else if (!strcmp(*_argv, "-slave"))
+	{
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*_argv, "-rank"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -540,7 +547,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  _argv++; (*_argc)--;
 
 	}
-      else if (!strcmp(*argv, "-conf"))
+      else if (!strcmp(*_argv, "-conf"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -549,7 +556,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*argv, "-device"))
+      else if (!strcmp(*_argv, "-device"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
@@ -558,12 +565,12 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
-      else if (!strcmp(*argv, "-cwd"))
+      else if (!strcmp(*_argv, "-cwd"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("device argument disappeared");
+	    FAILURE("cwd argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}

@@ -260,7 +260,7 @@ if [ "$other" != false ]; then
 fi
 
 if [ -z "$PM2_BUILD" ] ; then
-    PM2_BUILD=$HOME/build/$flavor
+    PM2_BUILD=${PM2_HOME:-${HOME}}/build/$flavor
 else
     eval PM2_BUILD="$PM2_BUILD"
 fi
@@ -270,7 +270,7 @@ case "$PM2_BUILD" in
     /*)
 	;;
     *)
-	eval PM2_BUILD="${PM2_BUILD_DIR:-$HOME/build}"'/$PM2_BUILD'
+	eval PM2_BUILD="${PM2_BUILD_DIR:-${PM2_HOME:-${HOME}}/build}"'/$PM2_BUILD'
 esac
 
 

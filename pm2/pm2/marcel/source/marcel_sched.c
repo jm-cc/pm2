@@ -518,8 +518,8 @@ marcel_t marcel_unchain_task(marcel_t t)
     r = cur_lwp->sched_task;
     marcel_wake_task(r, NULL);
   }
-  r->prev = t->prev;
-  r->prev->next = r;
+  t->next->prev = t->prev;
+  t->prev->next = t->next;
 #ifdef USE_PRIORITIES
   if(cur_lwp->__first[t->prio] == t) {
     cur_lwp->__first[t->prio] = ((r->prio == t->prio) ? r : NULL);

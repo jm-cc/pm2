@@ -203,7 +203,7 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
 
     marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
-    marcel_getuserspace(pid, (void **)&arg);
+    marcel_getuserspace(pid, (void *)&arg);
 
     arg->num = num;
     arg->tid = __pm2_self;
@@ -224,7 +224,11 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     pointer p;
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self && !mad_can_send_to_self())
+    if(module == __pm2_self 
+#ifdef MAD2
+       && !mad_can_send_to_self()
+#endif
+	    )
       RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -272,7 +276,7 @@ static void netserver_lrpc(void)
 
   marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
 
-  marcel_getuserspace(pid, (void **)&args);
+  marcel_getuserspace(pid, (void *)&args);
   old_mad_unpack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
 
   args->num = num;
@@ -326,7 +330,11 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     pointer p;
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self && !mad_can_send_to_self())
+    if(module == __pm2_self 
+#ifdef MAD2
+       && !mad_can_send_to_self()
+#endif
+	    )
       RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -401,7 +409,7 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
 
     marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
-    marcel_getuserspace(pid, (void **)&arg);
+    marcel_getuserspace(pid, (void *)&arg);
 
     arg->num = num;
     arg->tid = __pm2_self;
@@ -419,7 +427,11 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
   } else {
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self && !mad_can_send_to_self())
+    if(module == __pm2_self 
+#ifdef MAD2
+       && !mad_can_send_to_self()
+#endif
+	    )
       RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -465,7 +477,7 @@ static void netserver_async_lrpc(void)
 
   marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
 
-  marcel_getuserspace(pid, (void **)&args);
+  marcel_getuserspace(pid, (void *)&args);
   args->num = num;
   args->tid = tid;
   args->quick = FALSE;
@@ -515,7 +527,7 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
 
 	marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
-	marcel_getuserspace(pid, (void **)&arg);
+	marcel_getuserspace(pid, (void *)&arg);
 
 	arg->num = num;
 	arg->req = args;
@@ -533,8 +545,12 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
       } else {
 
 #ifdef PM2DEBUG
-	if(modules[i] == __pm2_self && !mad_can_send_to_self())
-	  RAISE(NOT_IMPLEMENTED);
+        if(modules[i] == __pm2_self 
+#ifdef MAD2
+           && !mad_can_send_to_self()
+#endif
+	        )
+          RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
 	{
@@ -588,7 +604,11 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
   } else {
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self && !mad_can_send_to_self())
+    if(module == __pm2_self 
+#ifdef MAD2
+       && !mad_can_send_to_self()
+#endif
+	    )
       RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -662,8 +682,12 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
       } else {
 
 #ifdef PM2DEBUG
-	if(modules[i] == __pm2_self && !mad_can_send_to_self())
-	  RAISE(NOT_IMPLEMENTED);
+        if(modules[i] == __pm2_self 
+#ifdef MAD2
+           && !mad_can_send_to_self()
+#endif
+	    )
+          RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
 	{

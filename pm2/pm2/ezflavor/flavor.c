@@ -79,14 +79,22 @@ static void update_the_buttons(void)
     if(cur_flavor == NULL) {
       // Initial state
       load_enabled = TRUE;
-      save_enabled = FALSE; // Really nothing to save !
+      if(flavor_modified) {
+	save_enabled = TRUE; save_as = TRUE; // Actually a "save as"
+      } else {
+	save_enabled = FALSE; // Really nothing to save !
+      }
     } else if(strcmp(cur_flavor->name, selected)) {
       load_enabled = TRUE;
       save_enabled = TRUE; save_as = TRUE; // Actually a "save as"
     } else {
       // Selected flavor is the current one
       if(flavor_modified) {
-	load_enabled = TRUE; reload = TRUE; // Actually a "reload"
+	if(flavor_never_saved) {
+	  load_enabled = FALSE;
+	} else {
+	  load_enabled = TRUE; reload = TRUE; // Actually a "reload"
+	}
 	save_enabled = TRUE;
       } else {
 	load_enabled = FALSE;
@@ -102,7 +110,11 @@ static void update_the_buttons(void)
     load_enabled = FALSE;
     create_enabled = TRUE;
     if(cur_flavor == NULL) {
-      save_enabled = FALSE; // Nothing to save
+      if(flavor_modified) {
+	save_enabled = TRUE; save_as = TRUE;
+      } else {
+	save_enabled = FALSE; // Nothing to save
+      }
     } else {
       save_enabled = TRUE; save_as = TRUE;
     }
@@ -305,6 +317,8 @@ static void update_current(void)
 
   gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry),
 		     (cur_flavor ? cur_flavor->name : ""));
+
+  statusbar_set_current_flavor(cur_flavor ? cur_flavor->name : "<none>");
 }
 
 static void flavor_destroy(char *name)
@@ -392,8 +406,6 @@ static void save_and_proceed(gpointer data)
     (load_flavor(name) ? : create_new_flavor(name));
 
   update_current();
-
-  statusbar_set_current_flavor(cur_flavor->name);
 }
 
 static void reload_flavor(gpointer data)
@@ -415,12 +427,19 @@ void set_current_flavor(char *name)
 
   // First of all, we must check if the old flavor was saved
   if(flavor_modified) {
-    sprintf(str, "Warning: Flavor \"%s\" was modified!", cur_flavor->name);
+    if(cur_flavor == NULL) {
+      dialog_prompt("Warning: You will loose your edits!",
+		    "Proceed", save_and_proceed, (gpointer)FALSE,
+		    "Cancel", NULL, NULL,
+		    NULL, NULL, NULL);
+    } else {
+      sprintf(str, "Warning: Flavor \"%s\" was modified!", cur_flavor->name);
 
-    dialog_prompt(str,
-		  "Save and proceed", save_and_proceed, (gpointer)TRUE,
-		  "Proceed without saving", save_and_proceed, (gpointer)FALSE,
-		  "Cancel", NULL, NULL);
+      dialog_prompt(str,
+		    "Save and proceed", save_and_proceed, (gpointer)TRUE,
+		    "Proceed without saving", save_and_proceed, (gpointer)FALSE,
+		    "Cancel", NULL, NULL);
+    }
   } else
     save_and_proceed((gpointer)FALSE);
 }
@@ -552,10 +571,10 @@ static void save_and_load(gpointer data)
     if(flavor_save() != 0)
       return;
     cur_flavor = find_flavor(new_fla);
-    update_current();
+    //update_current();
   }
 
-  statusbar_set_current_flavor(cur_flavor->name);
+  update_current();
 }
 
 void flavor_save_as(void)
@@ -565,6 +584,26 @@ void flavor_save_as(void)
   static char str1[1024], str2[1024];
 
   strcpy(new_fla, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
+
+  if(cur_flavor == NULL) { // Particular "save _AS_"
+    ptr = (find_flavor(new_fla) ? : load_flavor(new_fla));
+
+    if(ptr) { // new_flavor already exists
+       sprintf(str1, "Warning: Flavor \"%s\" already exists!", new_fla);
+       dialog_prompt(str1,
+		     "Override", save_and_load, (gpointer)TRUE,
+		     "Cancel", NULL, NULL,
+		     NULL, NULL, NULL);
+    } else { // We must first create new_fla, and then save
+
+      cur_flavor = create_new_flavor(new_fla);
+      if(flavor_save() != 0)
+	return;
+
+      update_current();
+    }
+    return;
+  }
 
   if(strcmp(new_fla,cur_flavor->name)) { // Really a "save _AS_"!
 
@@ -587,7 +626,6 @@ void flavor_save_as(void)
 	return;
 
       update_current();
-      statusbar_set_current_flavor(cur_flavor->name);
     }
   } else {
     if(flavor_save() != 0)
@@ -619,6 +657,11 @@ static void save_and_quit(gpointer data)
 void flavor_check_quit(void)
 {
   char str1[128], *new_fla;
+
+  if(cur_flavor == NULL) {
+    save_and_quit((gpointer)FALSE);
+    return;
+  }
 
   sprintf(str1, "Flavor \"%s\" was modified. Quit anyway?", cur_flavor->name);
 
@@ -712,6 +755,7 @@ static void flavor_build_selector(GtkWidget *vbox)
   combo = gtk_combo_new();
   gtk_combo_set_popdown_strings(GTK_COMBO(combo),
 				flavor_list());
+  gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry), "");
   gtk_signal_connect(GTK_OBJECT(GTK_ENTRY(GTK_COMBO(combo)->entry)), "changed",
 		     GTK_SIGNAL_FUNC(flavor_name_changed), NULL);
   gtk_container_set_border_width (GTK_CONTAINER(combo), 10);

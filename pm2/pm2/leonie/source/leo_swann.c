@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_swann.c,v $
+Revision 1.2  2000/05/17 12:41:00  oaumage
+- reorganisation du code de demarrage de Leonie
+
 Revision 1.1  2000/05/15 13:51:56  oaumage
 - Reorganisation des sources de Leonie
 
@@ -81,6 +84,7 @@ leo_launch_swann_module(p_leonie_t             leonie,
   CTRL_ALLOC(module);
 
   module->id         = ++leonie->cluster_counter;
+  module->relay      = NULL;
   module->cluster_id = malloc(strlen(cluster_id) + 1);
   CTRL_ALLOC(module->cluster_id);
   strcpy(module->cluster_id, cluster_id);

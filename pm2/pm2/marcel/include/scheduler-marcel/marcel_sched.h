@@ -67,21 +67,27 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	INIT_LIST_HEAD(&t->sched.internal.run_list);
 	//t->sched.internal.lwps_runnable=~0UL;
 	t->sched.internal.prio=DEF_PRIO;
+	if (attr->vpmask==MARCEL_VPMASK_EMPTY) {
 #ifdef MA__LWPS
-	if (attr->vpmask==MARCEL_VPMASK_EMPTY)
 		t->sched.internal.init_rq=&ma_main_runqueue;
-	else if (attr->vpmask==MARCEL_VPMASK_FULL) {
+#endif
+	} else if (attr->vpmask==MARCEL_VPMASK_FULL) {
+#ifdef MA__LWPS
 		t->sched.internal.init_rq=&ma_idle_runqueue;
+#endif
 		t->sched.internal.prio=IDLE_PRIO;
 	} else {
+#ifdef MA__LWPS
 		int first_vp;
 		first_vp=ma_ffz(attr->vpmask);
 		MA_BUG_ON(attr->vpmask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
 		MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
 		t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
+#endif
 	}
 	if (attr->rt_thread)
 		t->sched.internal.prio=RT_PRIO;
+#ifdef MA__LWPS
 	t->sched.internal.cur_rq=NULL;
 #endif
 	t->sched.internal.sched_policy = attr->__schedpolicy;

@@ -109,6 +109,7 @@ void LONGJMP(jmp_buf buf, int val)
   lock_task();
   memcpy(_buf, buf, sizeof(jmp_buf));
   _val = val;
+#warning set_sp() should not be directly used
   set_sp(SP_FIELD(buf)-256);
   longjmp(_buf, _val);
 }
@@ -173,7 +174,7 @@ void print_thread(marcel_t pid)
    if(pid == marcel_self()) {
      sp = (long)get_sp();
    } else {
-     sp = (long)SP_FIELD(pid->jbuf);
+     sp = (long)marcel_ctx_get_sp(pid->ctx_yield);
    }
 
   mdebug("thread %p :\n"
@@ -196,13 +197,18 @@ void print_jmp_buf(char *name, jmp_buf buf)
 {
   int i;
 
+#ifdef IA64_ARCH
+#  define SHOW_SP ""
+#else
+#  define SHOW_SP (((char **)buf + i) == (char **)&SP_FIELD(buf) ? "(sp)":"")
+#endif
   for(i=0; i<sizeof(jmp_buf)/sizeof(char *); i++) {
     mdebug("%s[%d] = %p %s\n",
 	   name,
 	   i,
 	   ((char **)buf)[i],
-	   (((char **)buf + i) == (char **)&SP_FIELD(buf) ? "(sp)" : "")
-	   );
+	   SHOW_SP
+	  );
   }
 }
 
@@ -377,8 +383,7 @@ int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func
       else
 	SET_STATE_READY(new_task);
 
-      call_ST_FLUSH_WINDOWS();
-      set_sp(new_task->initial_sp);
+      marcel_ctx_set_new_stack(new_task, new_task->initial_sp);
 
       MTRACE("Preemption", marcel_self());
 
@@ -387,7 +392,7 @@ int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func
       if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
 	// On rend la main au père
 	call_ST_FLUSH_WINDOWS();
-	longjmp(marcel_self()->father->jbuf, NORMAL_RETURN);
+	marcel_ctx_longjmp(marcel_self()->father->ctx_yield, NORMAL_RETURN);
       }
       MA_THR_RESTARTED(marcel_self(), "Preemption");
       unlock_task();
@@ -407,8 +412,7 @@ int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func
       SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
       marcel_insert_task(new_task);
 
-      call_ST_FLUSH_WINDOWS();
-      set_sp(new_task->initial_sp);
+      marcel_ctx_set_new_stack(new_task, new_task->initial_sp);
       SET_STATE_READY(marcel_self()->father);
 
       MTRACE("Preemption", marcel_self());
@@ -534,11 +538,11 @@ DEF_MARCEL_POSIX(void, exit, (any_t val))
     // l'ancien thread dans une variable statique propre au LWP
     // courant de manière à pouvoir le détruire par la suite...
     cur_lwp->sec_desc->private_val = (any_t)cur;
+    cur_lwp->sec_desc->stack_base = (void*)SECUR_STACK_BOTTOM(cur_lwp);
 
     // On bascule maintenant sur la pile de secours : marcel_self()
     // devient donc égal à cur_lwp->sec_desc...
-    call_ST_FLUSH_WINDOWS();
-    set_sp(SECUR_STACK_TOP(cur_lwp));
+    marcel_ctx_set_new_stack(cur_lwp->sec_desc, SECUR_STACK_TOP(cur_lwp));
 #ifdef MA__LWPS
     // On recalcule "cur_lwp" car c'est une variable locale.
     cur_lwp = GET_LWP(marcel_self());
@@ -637,8 +641,7 @@ DEF_MARCEL_POSIX(void, exit, (any_t val))
     cur_lwp->sec_desc->number = cur->number;
 
     // Ca y est, on peut basculer sur la pile de secours.
-    call_ST_FLUSH_WINDOWS();
-    set_sp(SECUR_STACK_TOP(cur_lwp));
+    marcel_ctx_set_new_stack(cur_lwp->sec_desc, SECUR_STACK_TOP(cur_lwp));
 
 #ifdef MA__LWPS
     // On recalcule "cur_lwp" car c'est une variable locale.
@@ -815,18 +818,18 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
 
   if(t == cur) {
     lock_task();
-    if(setjmp(cur->migr_jb) == FIRST_RETURN) {
+    if(marcel_ctx_setjmp(cur->ctx_migr) == FIRST_RETURN) {
 
       call_ST_FLUSH_WINDOWS();
       top = (long)cur + ALIGNED_32(sizeof(task_desc));
-      bottom = ALIGNED_32((long)SP_FIELD(cur->migr_jb)) - ALIGNED_32(1);
+      bottom = ALIGNED_32((long)marcel_ctx_get_sp(cur->ctx_migr)) - ALIGNED_32(1);
       blk = top - bottom;
       depl = bottom - (long)cur->stack_base;
       unlock_task();
 
       mdebug("hibernation of thread %p", cur);
       mdebug("sp = %lu\n", get_sp());
-      mdebug("sp_field = %u\n", SP_FIELD(cur->migr_jb));
+      mdebug("sp_field = %u\n", (int)marcel_ctx_get_sp(cur->ctx_migr));
       mdebug("bottom = %lu\n", bottom);
       mdebug("top = %lu\n", top);
       mdebug("blk = %lu\n", blk);
@@ -842,15 +845,15 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       unlock_task();
     }
   } else {
-    memcpy(t->migr_jb, t->jbuf, sizeof(jmp_buf));
+    memcpy(t->ctx_migr, t->ctx_yield, sizeof(marcel_ctx_t));
 
     top = (long)t + ALIGNED_32(sizeof(task_desc));
-    bottom = ALIGNED_32((long)SP_FIELD(t->jbuf)) - ALIGNED_32(1);
+    bottom = ALIGNED_32((long)marcel_ctx_get_sp(t->ctx_yield)) - ALIGNED_32(1);
     blk = top - bottom;
     depl = bottom - (long)t->stack_base;
 
     mdebug("hibernation of thread %p", t);
-    mdebug("sp_field = %u\n", SP_FIELD(t->migr_jb));
+    mdebug("sp_field = %u\n", (int)marcel_ctx_get_sp(cur->ctx_migr));
     mdebug("bottom = %lu\n", bottom);
     mdebug("top = %lu\n", top);
     mdebug("blk = %lu\n", blk);
@@ -897,7 +900,7 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
   RAISE("Not implemented");
 #endif
 
-  memcpy(t->jbuf, t->migr_jb, sizeof(jmp_buf));
+  memcpy(t->ctx_yield, t->ctx_migr, sizeof(marcel_ctx_t));
 
   mdebug("end of hibernation for thread %p", t);
 
@@ -1210,7 +1213,7 @@ int _raise(marcel_exception_t ex)
    } else {
       cur->cur_exception = ex ;
       call_ST_FLUSH_WINDOWS();
-      longjmp(cur->cur_excep_blk->jb, 1);
+      marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
    }
    return 0;
 }
@@ -1222,7 +1225,7 @@ extern int marcel_main(int argc, char *argv[]);
 marcel_t __main_thread;
 static volatile int __main_ret;
 
-static jmp_buf __initial_main_jb;
+static marcel_ctx_t __initial_main_ctx;
 
 #ifdef WIN_SYS
 void win_stack_allocate(unsigned n)
@@ -1248,7 +1251,7 @@ int main(int argc, char *argv[])
 #else
   marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
 #endif
-  if(!setjmp(__initial_main_jb)) {
+  if(!marcel_ctx_setjmp(__initial_main_ctx)) {
 
     __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
 				~(THREAD_SLOT_SIZE-1)) -
@@ -1262,6 +1265,7 @@ int main(int argc, char *argv[])
       win_stack_allocate(THREAD_SLOT_SIZE);
 #endif
 
+    /* On se contente de descendre la pile. Tout va bien, même sur Itanium */
     set_sp((unsigned long)__main_thread - TOP_STACK_FREE_AREA);
 
 #ifdef ENABLE_STACK_JUMPING
@@ -1271,7 +1275,7 @@ int main(int argc, char *argv[])
 
     __main_ret = marcel_main(__argc, __argv);
 
-    longjmp(__initial_main_jb, 1);
+    marcel_ctx_longjmp(__initial_main_ctx, 1);
   }
 
   return __main_ret;

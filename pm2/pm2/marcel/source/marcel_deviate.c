@@ -209,10 +209,14 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   marcel_lock_release(&deviate_lock);
   unlock_task();
 
-  ma_wake_up_thread(pid);
+  ma_wake_up_state(pid,MA_TASK_STOPPED|MA_TASK_INTERRUPTIBLE);
 #ifdef MA__SMP
   // Heuristique: on va essayer d'accélérer les choses...
-  marcel_kthread_kill(GET_LWP(pid)->pid, MARCEL_TIMER_SIGNAL);
+#warning TODO: deroute() dérègle l horloge
+  // TODO: chercher plutôt un lwp qui atteint la runqueue...
+  ma_lwp_t target_lwp = GET_LWP(pid);
+  if (target_lwp!=LWP_SELF)
+    marcel_kthread_kill(target_lwp->pid, MARCEL_TIMER_SIGNAL);
 #endif
 
   LOG_OUT();

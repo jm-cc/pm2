@@ -1,2 +1,4 @@
 BitKeeper/*/*
 PENDING/*
+*.incl/*
+*.excl/*

@@ -58,18 +58,16 @@ typedef struct s_mad_mx_channel_specific
         mx_endpoint_addr_t	 endpoint_addr;
         mx_endpoint_t		 endpoint;
         uint32_t		 endpoint_id;
-        char			*buffer;
-        uint32_t		 length;
+        char			*first_packet;
+        uint32_t		 first_packet_length;
 } mad_mx_channel_specific_t, *p_mad_mx_channel_specific_t;
 
 typedef struct s_mad_mx_connection_specific
 {
+        tbx_bool_t		first_incoming_packet_flag;
+        tbx_bool_t		first_outgoing_packet_flag;
         uint32_t		remote_endpoint_id;
         mx_endpoint_addr_t	remote_endpoint_addr;
-
-
-        uint32_t               begin_packing;
-
 } mad_mx_connection_specific_t, *p_mad_mx_connection_specific_t;
 
 typedef struct s_mad_mx_link_specific
@@ -80,15 +78,74 @@ typedef struct s_mad_mx_link_specific
 #ifdef MARCEL
 typedef struct s_mad_mx_poll_req {
         mx_endpoint_t 	endpoint;
-        mx_request_t	request;
-        mx_return_t     test_return;
-        mx_status_t	status;
-        uint32_t	result;
+        mx_request_t	*p_request;
+        mx_return_t     *p_rc;
+        mx_status_t	*p_status;
+        uint32_t	*p_result;
 } mad_mx_poll_req_t, *p_mad_mx_poll_req_t;
 #endif /* MARCEL */
 
-#define THRESHOLD 32768
-#define FIRST_MSG_SIZE 32768
+#define GATHER_SCATTER_THRESHOLD	32768
+#define FIRST_PACKET_THRESHOLD		32768
+
+
+/*
+ * Malloc protection hooks
+ * -----------------------
+ *
+ * Note: this driver is incompatible with any other driver also using
+ * malloc hooks.
+ */
+
+/* Prototypes */
+static
+void *
+mad_mx_malloc_hook(size_t len, const void *caller);
+
+static
+void *
+mad_mx_memalign_hook(size_t alignment, size_t len, const void *caller);
+
+static
+void
+mad_mx_free_hook(void *ptr, const void *caller);
+
+static
+void *
+mad_mx_realloc_hook(void *ptr, size_t len, const void *caller);
+
+static
+void
+mad_mx_malloc_initialize_hook(void);
+
+
+/* Previous handlers */
+static
+void *
+(*mad_mx_old_malloc_hook)(size_t len, const void *caller) = NULL;
+
+static
+void *
+(*mad_mx_old_memalign_hook)(size_t alignment, size_t len, const void *caller) = NULL;
+
+static
+void
+(*mad_mx_old_free_hook)(void *PTR, const void *CALLER) = NULL;
+
+static
+void *
+(*mad_mx_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
+
+/* Entry point */
+#if MAD_MX_MEMORY_CACHE
+void (*__malloc_initialize_hook) (void) = mad_gm_malloc_initialize_hook;
+#endif // MAD_MX_MEMORY_CACHE
+
+/* Flag to prevent multiple hooking */
+static
+int mad_mx_malloc_hooked = 0;
+
+
 
 /*
  * static functions
@@ -97,9 +154,159 @@ typedef struct s_mad_mx_poll_req {
 static
 inline
 void
+__mad_mx_hook_lock(void) {
+#ifdef MARCEL
+        marcel_poll_lock();
+        //DISP("<mx hook LOCK>");
+        //DISP(".");
+#endif /* MARCEL */
+}
+
+static
+inline
+void
+__mad_mx_hook_unlock(void) {
+#ifdef MARCEL
+        //DISP("<mx hook UNLOCK>");
+        //DISP(".");
+        marcel_poll_unlock();
+#endif /* MARCEL */
+}
+
+static
+void
+mad_mx_install_hooks(void) {
+        LOG_IN();
+        mad_mx_old_malloc_hook		= __malloc_hook;
+        mad_mx_old_memalign_hook	= __memalign_hook;
+        mad_mx_old_free_hook		= __free_hook;
+        mad_mx_old_realloc_hook		= __realloc_hook;
+
+        if (__malloc_hook == mad_mx_malloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__memalign_hook == mad_mx_memalign_hook)
+                FAILURE("hooks corrupted");
+
+        if (__realloc_hook == mad_mx_realloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__free_hook == mad_mx_free_hook)
+                FAILURE("hooks corrupted");
+
+        __malloc_hook		= mad_mx_malloc_hook;
+        __memalign_hook		= mad_mx_memalign_hook;
+        __free_hook		= mad_mx_free_hook;
+        __realloc_hook		= mad_mx_realloc_hook;
+        LOG_OUT();
+}
+
+static
+void
+mad_mx_remove_hooks(void) {
+        LOG_IN();
+        if (__malloc_hook == mad_mx_old_malloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__memalign_hook == mad_mx_old_memalign_hook)
+                FAILURE("hooks corrupted");
+
+        if (__realloc_hook == mad_mx_old_realloc_hook)
+                FAILURE("hooks corrupted");
+
+        if (__free_hook == mad_mx_old_free_hook)
+                FAILURE("hooks corrupted");
+
+        __malloc_hook		= mad_mx_old_malloc_hook;
+        __memalign_hook		= mad_mx_old_memalign_hook;
+        __free_hook		= mad_mx_old_free_hook;
+        __realloc_hook		= mad_mx_old_realloc_hook;
+        LOG_OUT();
+}
+
+
+static
+void *
+mad_mx_malloc_hook(size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __mad_mx_hook_lock();
+        mad_mx_remove_hooks();
+        LOG_IN();
+        new_ptr = malloc(len);
+        LOG_OUT();
+        mad_mx_install_hooks();
+        __mad_mx_hook_unlock();
+
+        return new_ptr;
+}
+
+
+static
+void *
+mad_mx_memalign_hook(size_t alignment, size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __mad_mx_hook_lock();
+        mad_mx_remove_hooks();
+        LOG_IN();
+        new_ptr = memalign(alignment, len);
+        LOG_OUT();
+        mad_mx_install_hooks();
+        __mad_mx_hook_unlock();
+
+        return new_ptr;
+}
+
+
+static
+void *
+mad_mx_realloc_hook(void *ptr, size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __mad_mx_hook_lock();
+        mad_mx_remove_hooks();
+        LOG_IN();
+        new_ptr = realloc(ptr, len);
+        LOG_OUT();
+        mad_mx_install_hooks();
+        __mad_mx_hook_unlock();
+
+        return new_ptr;
+}
+
+
+static
+void
+mad_mx_free_hook(void *ptr, const void *caller) {
+
+        __mad_mx_hook_lock();
+        mad_mx_remove_hooks();
+        LOG_IN();
+        free(ptr);
+        LOG_OUT();
+        mad_mx_install_hooks();
+        __mad_mx_hook_unlock();
+}
+
+
+static
+void
+mad_mx_malloc_initialize_hook(void) {
+        mad_mx_malloc_hooked = 1;
+        mad_mx_install_hooks();
+}
+
+
+static
+inline
+void
 mad_mx_lock(void) {
 #ifdef MARCEL
         marcel_poll_lock();
+        mad_mx_remove_hooks();
+        //DISP("<mx LOCK>");
+        //DISP(".");
 #endif /* MARCEL */
 }
 
@@ -108,6 +315,9 @@ inline
 void
 mad_mx_unlock(void) {
 #ifdef MARCEL
+        //DISP("<mx UNLOCK>");
+        //DISP(".");
+        mad_mx_install_hooks();
         marcel_poll_unlock();
 #endif /* MARCEL */
 }
@@ -151,8 +361,10 @@ mad_mx_print_status(mx_status_t s) {
                 break;
         case MX_STATUS_ENDPOINT_UNREACHABLE:
                 DISP("Connectivity is broken between the source and the destination");
-                //case MX_STATUS_BAD_SESSION:
-                //DISP("Bad session (no mx_connect done?)"
+                /*
+                 * case MX_STATUS_BAD_SESSION:
+                 * DISP("Bad session (no mx_connect done?)"
+                 */
                 break;
         case MX_STATUS_BAD_KEY:
                 DISP("Connect failed because of bad credentials");
@@ -340,12 +552,15 @@ mad_mx_startup_info(void) {
 
         LOG_IN();
         DISP("Madeleine/MX: hardware configuration");
+
+        // NICs count
         mad_mx_lock();
         return_code = mx_get_info(NULL, MX_NIC_COUNT, &nb_nic, sizeof(nb_nic));
         mad_mx_unlock();
         mad_mx_check_return("mad_mx_startup_info", return_code);
         DISP("NIC count: %d", nb_nic);
 
+        // NIC ids
         nic_id_array = TBX_MALLOC((nb_nic+1) * sizeof(*nic_id_array));
         mad_mx_check_return("mad_mx_startup_info", return_code);
 
@@ -357,7 +572,10 @@ mad_mx_startup_info(void) {
         for (i = 0; i < nb_nic; i++) {
                 DISP("NIC %d id: %llx", i, nic_id_array[i]);
         }
+        TBX_FREE(nic_id_array);
+        nic_id_array = NULL;
 
+        // Number of native endpoints
         mad_mx_lock();
         return_code = mx_get_info(NULL, MX_MAX_NATIVE_ENDPOINTS, &nb_native_ep, sizeof(nb_native_ep));
         mad_mx_unlock();
@@ -377,11 +595,16 @@ mad_mx_marcel_group(marcel_pollid_t id)
 static
 int
 mad_mx_do_poll(p_mad_mx_poll_req_t rq) {
+        int success = 0;
+
         LOG_IN();
-        rq->test_return = mx_test(rq->endpoint, &(rq->request), &(rq->status), &(rq->result));
+        mad_mx_remove_hooks();
+        *(rq->p_rc)	= mx_test(rq->endpoint, rq->p_request, rq->p_status, rq->p_result);
+        success		= !(*(rq->p_rc) == MX_SUCCESS && !*(rq->p_result));
+        mad_mx_install_hooks();
         LOG_OUT();
 
-        return !(rq->test_return == MX_SUCCESS && !rq->result);
+        return success;
 }
 
 static void *
@@ -422,59 +645,143 @@ mad_mx_marcel_poll(marcel_pollid_t id,
 }
 #endif /* MARCEL */
 
-//static void
-static mx_request_t
-mad_mx_send(mx_endpoint_t ep, mx_segment_t *seg_list,
-            uint32_t nb_seg, mx_endpoint_addr_t dest_address, uint64_t match_info){
-        mx_request_t request	= 0;
-        //mx_status_t  status;
-        //uint32_t     result	= 0;
-        mx_return_t  rc         = MX_SUCCESS;
+static void
+mad_mx_blocking_test(p_mad_channel_t	 ch,
+                     mx_request_t	*p_request,
+                     mx_status_t	*p_status){
+        p_mad_mx_channel_specific_t	chs	= NULL;
+        mx_endpoint_t			ep	= NULL;
+        mx_status_t	 		status;
+        uint32_t	 		result	= 0;
+        mx_return_t 	 		rc 	= MX_SUCCESS;
 
-        //DISP("mad_mx_send-->");
-        rc = mx_isend(ep,
-                      seg_list, nb_seg,
-                      dest_address,
-                      match_info,
-                      NULL, &request);
-        mad_mx_check_return("mx_isend", rc);
+        LOG_IN();
+        chs	= ch->specific;
+        ep	= chs->endpoint;
 
-        return request;
+        if (!p_status) {
+                p_status = &status;
+        }
 
-        //do {
-        //        rc = mx_test(ep, &request, &status, &result);
-        //} while (rc == MX_SUCCESS && !result);
-        //mad_mx_check_status("mx_wait", rc);
-        //DISP("mad_mx_send<--");
+#ifdef MARCEL
+ {
+         p_mad_mx_driver_specific_t	ds	= NULL;
+         marcel_pollid_t     		pollid	= 0;
+         mad_mx_poll_req_t 		req	=
+                 {
+                         .endpoint 	=  ep,
+                         .p_request	=  p_request,
+                         .p_rc		= &rc,
+                         .p_status	=  p_status,
+                         .p_result	= &result
+                 };
+
+         ds	= ch->adapter->driver->specific;
+         pollid	= ds->mx_pollid;
+
+         marcel_poll(pollid, &req);
+ }
+#else /* MARCEL */
+        do {
+                rc = mx_test(chs->endpoint, p_request, p_status, &result);
+        } while (rc == MX_SUCCESS && !result);
+#endif /* MARCEL */
+
+        mad_mx_check_return("mx_test", rc);
+        LOG_OUT();
 }
 
+static void
+mad_mx_irecv(p_mad_channel_t	 ch,
+             mx_segment_t	*seg_list,
+             uint32_t		 nb_seg,
+             uint64_t		*p_match_info,
+             uint64_t		 match_mask,
+             mx_request_t	*p_request){
+        p_mad_mx_channel_specific_t	chs	= NULL;
+        mx_endpoint_t			ep	= NULL;
+        mx_return_t     		rc	= MX_SUCCESS;
 
-//static void
-static mx_request_t
-mad_mx_recv(mx_endpoint_t ep, mx_segment_t *seg_list,
-            uint32_t nb_seg,  uint64_t match_info){
-        mx_request_t	request	= 0;
-        // mx_status_t	status;
-        //uint32_t	result	= 0;
-        mx_return_t     rc = MX_SUCCESS;
+        LOG_IN();
+        chs	= ch->specific;
+        ep	= chs->endpoint;
 
-        //DISP("mad_mx_recv-->");
-        rc = mx_irecv(ep,
+        mad_mx_lock();
+        rc	= mx_irecv(ep,
                       seg_list, nb_seg,
-                      match_info,
-                      MX_MATCH_MASK_NONE, NULL, &request);
+                      *p_match_info,
+                      match_mask, NULL, p_request);
+        mad_mx_unlock();
         mad_mx_check_return("mx_irecv", rc);
-
-        return request;
-
-
-//        do {
-//                rc = mx_test(ep, &request, &status, &result);
-//        } while (rc == MX_SUCCESS && !result);
-//        mad_mx_check_status("mx_wait", rc);
-        //DISP("mad_mx_recv<--");
+        LOG_OUT();
 }
 
+static void
+mad_mx_isend(p_mad_connection_t	 out,
+             mx_segment_t	*seg_list,
+             uint32_t		 nb_seg,
+             uint64_t		 match_info,
+             mx_request_t 	*p_request){
+        p_mad_mx_channel_specific_t	chs	= NULL;
+        p_mad_mx_connection_specific_t	os	= NULL;
+        mx_endpoint_t			ep	= NULL;
+        mx_endpoint_addr_t		dest_address;
+        mx_return_t  			rc	= MX_SUCCESS;
+
+        LOG_IN();
+        os 	= out->specific;
+        chs	= out->channel->specific;
+        ep 	= chs->endpoint;
+
+        dest_address	= os->remote_endpoint_addr;
+
+        mad_mx_lock();
+        rc	= mx_isend(ep,
+                           seg_list, nb_seg,
+                           dest_address,
+                           match_info,
+                           NULL, p_request);
+        mad_mx_unlock();
+        mad_mx_check_return("mx_isend", rc);
+        LOG_OUT();
+}
+
+static void
+mad_mx_send(p_mad_connection_t	 out,
+            mx_segment_t	*seg_list,
+            uint32_t		 nb_seg,
+            uint64_t		 match_info){
+        mx_request_t	request	= 0;
+
+        LOG_IN();
+        mad_mx_isend(out,
+                     seg_list, nb_seg,
+                     match_info, &request);
+
+        mad_mx_blocking_test(out->channel, &request, NULL);
+        LOG_OUT();
+}
+
+static uint32_t
+mad_mx_recv(p_mad_channel_t	 ch,
+            mx_segment_t	*seg_list,
+            uint32_t		 nb_seg,
+            uint64_t		*p_match_info,
+            uint64_t		 match_mask){
+        mx_request_t	request;
+        mx_status_t	status;
+        uint32_t	length	= 0;
+
+        LOG_IN();
+        mad_mx_irecv(ch, seg_list, nb_seg, p_match_info, match_mask, &request);
+        mad_mx_blocking_test(ch, &request, &status);
+
+        *p_match_info	= status.match_info;
+        length		= status.msg_length;
+        LOG_OUT();
+
+        return length;
+}
 
 /*
  * Registration function
@@ -536,6 +843,11 @@ mad_mx_driver_init(p_mad_driver_t d) {
 
         LOG_IN();
         TRACE("Initializing MX driver");
+#ifdef MARCEL
+        if (!mad_mx_malloc_hooked) {
+                mad_mx_malloc_initialize_hook();
+        }
+#endif /* MARCEL */
         ds  		= TBX_MALLOC(sizeof(mad_mx_driver_specific_t));
 #ifdef MARCEL
         ds->mx_pollid =
@@ -546,7 +858,6 @@ mad_mx_driver_init(p_mad_driver_t d) {
 #endif /* MARCEL */
         d->specific	= ds;
 
-        /* needed? */
         mad_mx_lock();
         mx_set_error_handler(MX_ERRORS_RETURN);
         mad_mx_unlock();
@@ -602,20 +913,22 @@ mad_mx_channel_init(p_mad_channel_t ch) {
                                                    NULL,
                                                    0,
                                                    &e);
-                //DISP("e_id = %u, return_code = %d", e_id, (int)return_code);
         } while (return_code == MX_BUSY && e_id++);
         mad_mx_unlock();
         mad_mx_check_return("mx_open_endpoint", return_code);
 
+        mad_mx_lock();
         return_code	= mx_get_endpoint_addr(e, &e_addr);
+        mad_mx_unlock();
         mad_mx_check_return("mx_get_endpoint", return_code);
 
-
         chs			= TBX_MALLOC(sizeof(mad_mx_channel_specific_t));
-        chs->endpoint		= e;
-        chs->endpoint_id	= e_id;
-        chs->buffer		= TBX_MALLOC(FIRST_MSG_SIZE);
-        ch->specific		= chs;
+        chs->endpoint			= e;
+        chs->endpoint_id		= e_id;
+        chs->first_packet		= TBX_MALLOC(FIRST_PACKET_THRESHOLD);
+        chs->first_packet_length	= 0;
+        ch->specific			= chs;
+
         param_str	= tbx_string_init_to_int(e_id);
         ch->parameter	= tbx_string_to_cstring(param_str);
         tbx_string_free(param_str);
@@ -627,17 +940,12 @@ void
 mad_mx_connection_init(p_mad_connection_t in,
                        p_mad_connection_t out) {
         p_mad_mx_connection_specific_t	cs	= NULL;
-        p_mad_channel_t			ch	= NULL;
 
         LOG_IN();
-        ch = in->channel;
-
         cs			= TBX_MALLOC(sizeof(mad_mx_connection_specific_t));
         cs->remote_endpoint_id	= 0;
-
-        // mettre un type booleen : tbx_bool...
-        cs->begin_packing = 0;
-
+        cs->first_incoming_packet_flag	= tbx_false;
+        cs->first_outgoing_packet_flag	= tbx_false;
 
         in->specific		= cs;
         in->nb_link		= 1;
@@ -651,16 +959,16 @@ void
 mad_mx_link_init(p_mad_link_t lnk) {
         LOG_IN();
         lnk->link_mode   = mad_link_mode_buffer_group;
-        //lnk->link_mode   = mad_link_mode_buffer;
         lnk->buffer_mode = mad_buffer_mode_dynamic;
         lnk->group_mode  = mad_group_mode_split;
         LOG_OUT();
 }
 
+static
 void
-mad_mx_accept(p_mad_connection_t   in,
-              p_mad_adapter_info_t ai TBX_UNUSED) {
-        p_mad_mx_connection_specific_t	 is		= NULL;
+mad_mx_accept_connect(p_mad_connection_t   cnx,
+                      p_mad_adapter_info_t ai) {
+        p_mad_mx_connection_specific_t	 cs		= NULL;
         p_mad_mx_channel_specific_t	 chs		= NULL;
         mx_return_t			 return_code	= MX_SUCCESS;
         uint32_t			 nb_r_nic_ids	= 1;
@@ -671,8 +979,8 @@ mad_mx_accept(p_mad_connection_t   in,
         mx_endpoint_addr_t 		 re_addr;
 
         LOG_IN();
-        is	= in->specific;
-        chs	= in->channel->specific;
+        cs	= cnx->specific;
+        chs	= cnx->channel->specific;
 
         r_hostname_len	= strlen(ai->dir_node->name) + 2;
         r_hostname	= TBX_MALLOC(r_hostname_len + 1);
@@ -689,10 +997,11 @@ mad_mx_accept(p_mad_connection_t   in,
 
         strcat(r_hostname, ":0");
 
+
         {
                 char *ptr = NULL;
 
-                is->remote_endpoint_id = strtol(ai->channel_parameter, &ptr, 0);
+                cs->remote_endpoint_id = strtol(ai->channel_parameter, &ptr, 0);
                 if (ai->channel_parameter == ptr)
                         FAILURE("invalid channel parameter");
         }
@@ -709,76 +1018,29 @@ mad_mx_accept(p_mad_connection_t   in,
         mad_mx_lock();
         return_code	= mx_connect(chs->endpoint,
                                      r_nic_id,
-                                     is->remote_endpoint_id,
+                                     cs->remote_endpoint_id,
                                      e_key,
                                      MX_INFINITE,
                                      &re_addr);
         mad_mx_unlock();
         mad_mx_check_return("mx_connect", return_code);
-        is->remote_endpoint_addr	= re_addr;
+        cs->remote_endpoint_addr	= re_addr;
+        LOG_OUT();
+}
+
+void
+mad_mx_accept(p_mad_connection_t   in,
+              p_mad_adapter_info_t ai) {
+        LOG_IN();
+        mad_mx_accept_connect(in, ai);
         LOG_OUT();
 }
 
 void
 mad_mx_connect(p_mad_connection_t   out,
                p_mad_adapter_info_t ai) {
-        p_mad_mx_connection_specific_t	 os		= NULL;
-        p_mad_mx_channel_specific_t	 chs		= NULL;
-        mx_return_t			 return_code	= MX_SUCCESS;
-        uint32_t			 nb_r_nic_ids	= 1;
-        uint64_t			 r_nic_id	= 0;
-        const uint32_t			 e_key		= 0xFFFFFFFF;
-        char				*r_hostname	= NULL;
-        size_t				 r_hostname_len	= 0;
-        mx_endpoint_addr_t 		 re_addr;
-
         LOG_IN();
-        os	= out->specific;
-        chs	= out->channel->specific;
-
-        r_hostname_len	= strlen(ai->dir_node->name) + 2;
-        r_hostname	= TBX_MALLOC(r_hostname_len + 1);
-        strcpy(r_hostname, ai->dir_node->name);
-
-        {
-                char *tmp = NULL;
-
-                tmp = strchr(r_hostname, '.');
-                if (tmp) {
-                        *tmp = '\0';
-                }
-        }
-
-        strcat(r_hostname, ":0");
-
-
-        {
-                char *ptr = NULL;
-
-                os->remote_endpoint_id = strtol(ai->channel_parameter, &ptr, 0);
-                if (ai->channel_parameter == ptr)
-                        FAILURE("invalid channel parameter");
-        }
-
-        mad_mx_lock();
-        return_code	= mx_hostname_to_nic_ids(r_hostname, &r_nic_id, &nb_r_nic_ids);
-        mad_mx_unlock();
-        mad_mx_check_return("mx_hostname_to_nic_ids", return_code);
-
-        TBX_FREE(r_hostname);
-        r_hostname	= NULL;
-        r_hostname_len	= 0;
-
-        mad_mx_lock();
-        return_code	= mx_connect(chs->endpoint,
-                                     r_nic_id,
-                                     os->remote_endpoint_id,
-                                     e_key,
-                                     MX_INFINITE,
-                                     &re_addr);
-        mad_mx_unlock();
-        mad_mx_check_return("mx_connect", return_code);
-        os->remote_endpoint_addr	= re_addr;
+        mad_mx_accept_connect(out, ai);
         LOG_OUT();
 }
 
@@ -815,6 +1077,9 @@ mad_mx_channel_exit(p_mad_channel_t ch) {
         return_code	= mx_close_endpoint(chs->endpoint);
         mad_mx_unlock();
         mad_mx_check_return("mx_close_endpoint", return_code);
+        TBX_FREE(chs->first_packet);
+        chs->first_packet = NULL;
+
         TBX_FREE(chs);
         ch->specific	= NULL;
         LOG_OUT();
@@ -850,263 +1115,42 @@ mad_mx_driver_exit(p_mad_driver_t d) {
         LOG_OUT();
 }
 
-
-#ifdef MAD_MESSAGE_POLLING
-p_mad_connection_t
-mad_mx_poll_message(p_mad_channel_t channel)
-{
-        FAILURE("unsupported");
-}
-#endif // MAD_MESSAGE_POLLING
-
 void
 mad_mx_new_message(p_mad_connection_t out){
-
-//        p_mad_mx_connection_specific_t	os		= NULL;
-//        p_mad_mx_channel_specific_t	chs		= NULL;
-//        mx_endpoint_addr_t		dest_address;
-//        uint64_t			match_info	= 0;
-//
-//        LOG_IN();
-//        os		= out->specific;
-//        chs		= out->channel->specific;
-//        dest_address	= os->remote_endpoint_addr;
-//
-//        match_info = (uint64_t)out->channel->id <<32 | out->channel->process_lrank;
-//
-//#ifdef MARCEL
-//        {
-//                p_mad_mx_driver_specific_t	ds	= NULL;
-//                mx_return_t		rc	= MX_SUCCESS;
-//                marcel_pollid_t		pollid	= 0;
-//                mad_mx_poll_req_t	req	= {
-//                        .endpoint	= NULL,
-//                        .request	= 0,
-//                        .test_return	= MX_SUCCESS,
-//                        .result		= 0
-//                };
-//
-//                ds		= out->channel->adapter->driver->specific;
-//                pollid		= ds->mx_pollid;
-//                req.endpoint	= chs->endpoint;
-//                mad_mx_lock();
-//                rc		= mx_isend(req.endpoint,
-//                                           NULL, 0,
-//                                           dest_address,
-//                                           match_info,
-//                                           NULL, &(req.request));
-//                mad_mx_unlock();
-//                mad_mx_check_status("mx_isend", rc);
-//
-//                marcel_poll(pollid, &req);
-//                mad_mx_check_status("mx_test", req.test_return);
-//        }
-//#else /* MARCEL */
-//        {
-//                mx_endpoint_t	ep	= NULL;
-//                mx_request_t	request = 0;
-//                mx_status_t	status;
-//                uint32_t	result	= 0;
-//                mx_return_t	rc	= MX_SUCCESS;
-//
-//                ep	= chs->endpoint;
-//                rc	= mx_isend(ep,
-//                                   NULL, 0,
-//                                   dest_address,
-//                                   match_info,
-//                                   NULL, &request);
-//
-//                mad_mx_check_status("mx_isend", rc);
-//
-//                do {
-//                        rc = mx_test(ep, &request, &status, &result);
-//                } while (rc == MX_SUCCESS && !result);
-//
-//                mad_mx_check_status("mx_test", rc);
-//        }
-//#endif /* MARCEL */
-//        LOG_OUT();
-
         p_mad_mx_connection_specific_t	os	= NULL;
-        p_mad_mx_channel_specific_t	chs		= NULL;
-        mx_endpoint_addr_t		dest_address;
-        uint64_t			match_info	= 0;
 
         LOG_IN();
-
-        os		= out->specific;
-        chs		= out->channel->specific;
-        dest_address	= os->remote_endpoint_addr;
-
-        match_info = (uint64_t)out->channel->id <<32 | out->channel->process_lrank;
-#ifdef MARCEL
-        {
-                p_mad_mx_driver_specific_t	ds	= NULL;
-                mx_return_t		rc	= MX_SUCCESS;
-                marcel_pollid_t		pollid	= 0;
-                mad_mx_poll_req_t	req	= {
-                        .endpoint	= NULL,
-                        .request	= 0,
-                        .test_return	= MX_SUCCESS,
-                        .result		= 0
-                };
-
-                ds		= out->channel->adapter->driver->specific;
-                pollid		= ds->mx_pollid;
-                req.endpoint	= chs->endpoint;
-                mad_mx_lock();
-                rc		= mx_isend(req.endpoint,
-                                           NULL, 0,
-                                           dest_address,
-                                           match_info,
-                                           NULL, &(req.request));
-                mad_mx_unlock();
-                mad_mx_check_return("mx_isend", rc);
-                marcel_poll(pollid, &req);
-
-                mad_mx_check_return("mx_test", req.test_return);
-        }
-#else /* MARCEL */
-        {
-                mx_endpoint_t	ep	= NULL;
-                mx_request_t	request = 0;
-                mx_status_t	status;
-                uint32_t	result	= 0;
-                mx_return_t	rc	= MX_SUCCESS;
-
-                ep	= chs->endpoint;
-                rc	= mx_isend(ep,
-                                   NULL, 0,
-                                   dest_address,
-                                   match_info,
-                                   NULL, &request);
-        os =  out->specific;
-        os->begin_packing = 1;
-
-                mad_mx_check_return("mx_isend", rc);
-
-                do {
-                        rc = mx_test(ep, &request, &status, &result);
-                } while (rc == MX_SUCCESS && !result);
-
-                mad_mx_check_return("mx_test", rc);
-        }
-#endif /* MARCEL */
+        os	= out->specific;
+        os->first_outgoing_packet_flag	= tbx_true;
+        TRACE("nm: first_packet_flag = true");
         LOG_OUT();
 }
 
-
-
-
-
 p_mad_connection_t
 mad_mx_receive_message(p_mad_channel_t ch) {
-        //p_mad_mx_channel_specific_t	chs		= NULL;
-        //p_tbx_darray_t			in_darray	= NULL;
-        //p_mad_connection_t		in		= NULL;
-        //uint64_t 			match_info	= 0;
-        //
-        //LOG_IN();
-        //chs		= ch->specific;
-        //in_darray	= ch->in_connection_darray;
-        //match_info	= (uint64_t)ch->id <<32;
-        //
-#ifdef MARCEL
-        //{
-        //        p_mad_mx_driver_specific_t	ds	= NULL;
-        //        mx_return_t		rc	= MX_SUCCESS;
-        //        marcel_pollid_t		pollid	= 0;
-        //        mad_mx_poll_req_t	req	= {
-        //                .endpoint	= NULL,
-        //                .request	= 0,
-        //                .test_return	= MX_SUCCESS,
-        //                .result		= 0
-        //        };
-        //
-        //        ds		= ch->adapter->driver->specific;
-        //        pollid		= ds->mx_pollid;
-        //        req.endpoint	= chs->endpoint;
-        //
-        //        mad_mx_lock();
-        //        rc		= mx_irecv(req.endpoint,
-        //                                   NULL, 0,
-        //                                   match_info,
-        //                                   MX_MATCH_MASK_BC, NULL, &(req.request));
-        //        mad_mx_unlock();
-        //        mad_mx_check_status("mx_irecv", rc);
-        //
-        //        marcel_poll(pollid, &req);
-        //        mad_mx_check_status("mx_test", req.test_return);
-        //
-        //        in = tbx_darray_get(in_darray, req.status.match_info & 0xFFFFFFFF);
-        //}
-#else /* MARCEL */
-        //{
-        //        mx_endpoint_t	ep	= NULL;
-        //        mx_request_t	request	= 0;
-        //        mx_status_t	status;
-        //        uint32_t	result	= 0;
-        //        mx_return_t	rc	= MX_SUCCESS;
-        //
-        //        ep = chs->endpoint;
-        //        rc = mx_irecv(ep,
-        //                      NULL, 0,
-        //                      //&seg, 1,
-        //                      match_info,
-        //                      MX_MATCH_MASK_BC, NULL, &request);
-        //        mad_mx_check_status("mx_irecv", rc);
-        //        do {
-        //                rc = mx_test(ep, &request, &status, &result);
-        //        } while (rc == MX_SUCCESS && !result);
-        //        mad_mx_check_status("mx_test", rc);
-        //
-        //        in = tbx_darray_get(in_darray, status.match_info & 0xFFFFFFFF);
-        //}
-#endif /* MARCEL */
-        //
-        //LOG_OUT();
-        //
-        //return in;
-
-
-
         p_mad_mx_channel_specific_t	chs		= NULL;
-        uint64_t 			match_info	= 0;
         p_mad_connection_t		in		= NULL;
-        p_mad_mx_connection_specific_t	is	= NULL;
-        mx_request_t request	= 0;
-        mx_status_t	status;
-        uint32_t	result	= 0;
-        mx_return_t	rc	= MX_SUCCESS;
+        p_mad_mx_connection_specific_t	is		= NULL;
         p_tbx_darray_t			in_darray	= NULL;
-
-        mx_segment_t seg_temp;
+        uint64_t 			match_info	= 0;
+        mx_segment_t 			s;
 
         LOG_IN();
         chs		= ch->specific;
         in_darray	= ch->in_connection_darray;
         match_info	= (uint64_t)ch->id <<32;
 
-        seg_temp.segment_ptr = chs->buffer;
-        seg_temp.segment_length = FIRST_MSG_SIZE;
+        s.segment_ptr	= chs->first_packet;
+        s.segment_length	= FIRST_PACKET_THRESHOLD;
 
-        rc = mx_irecv(chs->endpoint,
-                      &seg_temp, 1,
-                      match_info,
-                      MX_MATCH_MASK_BC, NULL, &request);
-        mad_mx_check_return("mx_irecv", rc);
-        do {
-                rc = mx_test(chs->endpoint, &request, &status, &result);
-        } while (rc == MX_SUCCESS && !result);
-        mad_mx_check_return("mx_test", rc);
+        chs->first_packet_length = mad_mx_recv(ch, &s, 1, &match_info, MX_MATCH_MASK_BC);
+        TRACE("rm: first_packet_length = %x", chs->first_packet_length);
 
-        in = tbx_darray_get(in_darray, status.match_info & 0xFFFFFFFF);
+        in	= tbx_darray_get(in_darray, match_info & 0xFFFFFFFF);
+        is	= in->specific;
 
-        is = in->specific;
-        is->begin_packing = 1;
-        chs->length	= status.msg_length;
-        //DISP_VAL("receive_msg, chs->length", chs->length);
-
+        is-> first_incoming_packet_flag		= tbx_true;
+        TRACE("rm: first_packet_flag = true");
         LOG_OUT();
 
         return in;
@@ -1114,196 +1158,103 @@ mad_mx_receive_message(p_mad_channel_t ch) {
 
 void
 mad_mx_send_buffer(p_mad_link_t     lnk,
-                   p_mad_buffer_t   buffer) {
-        p_mad_connection_t		out	= NULL;
-        p_mad_mx_connection_specific_t	os	= NULL;
-        p_mad_mx_channel_specific_t	chs	= NULL;
-        mx_return_t			rc	= MX_SUCCESS;
-        mx_endpoint_addr_t		dest_address ;
-        uint64_t			match_info = 0;
-        mx_segment_t			seg;
+                   p_mad_buffer_t   b) {
+        p_mad_connection_t		out		= NULL;
+        p_mad_mx_connection_specific_t	os		= NULL;
+        uint64_t			match_info	= 0;
+        mx_segment_t 			s;
 
         LOG_IN();
         out	= lnk->connection;
         os	= out->specific;
-        chs	= out->channel->specific;
 
-        dest_address	= os->remote_endpoint_addr;
         match_info	= (uint64_t)out->channel->id <<32 | out->channel->process_lrank;
 
-#ifdef MARCEL
-//        {
-//                p_mad_mx_driver_specific_t	ds	= NULL;
-//                marcel_pollid_t		pollid	= 0;
-//                mad_mx_poll_req_t	req	= {
-//                        .endpoint	= NULL,
-//                        .request	= 0,
-//                        .test_return	= MX_SUCCESS,
-//                        .result		= 0
-//                };
-//
-//                ds		= out->channel->adapter->driver->specific;
-//                pollid		= ds->mx_pollid;
-//                req.endpoint	= chs->endpoint;
-//
-//                mad_mx_lock();
-// #error the segment is not filled
-//                rc = mx_isend(req.endpoint,
-//                              &seg, 1,
-//                              dest_address,
-//                              match_info,
-//                              NULL, &req.request);
-//                mad_mx_unlock();
-//                mad_mx_check_status("mx_isend", rc);
-//
-//                marcel_poll(pollid, &req);
-//                mad_mx_check_status("mx_test", req.test_return);
-//        }
-#else /* MARCEL */
-        {
-                mx_endpoint_t	ep = NULL;
-                mx_request_t	request = 0;
-                mx_status_t	status;
-                uint32_t	result = 0;
+        if (os->first_outgoing_packet_flag) {
+                uint32_t length = 0;
 
-                ep = chs->endpoint;
+                os->first_outgoing_packet_flag = tbx_false;
 
-                if (os->begin_packing) {
-                        uint32_t length = 0;
+                length	= tbx_min(b->bytes_written - b->bytes_read,
+                                  FIRST_PACKET_THRESHOLD);
 
-                        os->begin_packing = 0;
+                s.segment_ptr		= b->buffer + b->bytes_read;
+                s.segment_length	= length;
 
-                        length = tbx_min(buffer->bytes_written - buffer->bytes_read,
-                                         FIRST_MSG_SIZE);
+                TRACE("sb: first packet length: %x", length);
+                mad_mx_send(out, &s, 1, match_info);
 
-                        seg.segment_ptr		= buffer->buffer+buffer->bytes_read;
-                        seg.segment_length	= length;
+                b->bytes_read += length;
 
-
-                        rc = mx_isend(ep,
-                                      &seg, 1,
-                                      dest_address,
-                                      match_info,
-                                      NULL, &request);
-                        mad_mx_check_return("mx_isend", rc);
-
-                        do {
-                                rc = mx_test(ep, &request, &status, &result);
-                        } while (rc == MX_SUCCESS && !result);
-                        mad_mx_check_return("mx_wait", rc);
-
-                        buffer->bytes_read += length;
-
-                        if (!mad_more_data(buffer))
-                                goto no_more_data;
-                }
-
-                seg.segment_ptr = buffer->buffer+buffer->bytes_read;
-                seg.segment_length = buffer->bytes_written - buffer->bytes_read;
-
-                rc = mx_isend(ep,
-                              &seg, 1,
-                              dest_address,
-                              match_info,
-                              NULL, &request);
-                mad_mx_check_return("mx_isend", rc);
-
-                do {
-                        rc = mx_test(ep, &request, &status, &result);
-                } while (rc == MX_SUCCESS && !result);
-                mad_mx_check_return("mx_wait", rc);
-
-        no_more_data:
-                ;
+                if (!mad_more_data(b))
+                        goto no_more_data;
         }
-#endif /* MARCEL */
+
+        s.segment_ptr		= b->buffer + b->bytes_read;
+        s.segment_length	= b->bytes_written - b->bytes_read;
+
+        b->bytes_read += s.segment_length;
+
+        TRACE("sb: packet length: %x", s.segment_length);
+        mad_mx_send(out, &s, 1, match_info);
+
+ no_more_data:
+        ;
         LOG_OUT();
 }
 
 void
 mad_mx_receive_buffer(p_mad_link_t    lnk,
                       p_mad_buffer_t *_buffer) {
-        p_mad_buffer_t			buffer  = *_buffer;
-        p_mad_connection_t		in	= NULL;
-        p_mad_mx_connection_specific_t	is	= NULL;
-        p_mad_mx_channel_specific_t	chs	= NULL;
-        mx_return_t			rc	= MX_SUCCESS;
-        uint64_t match_info = 0;
-        mx_segment_t seg;
+        p_mad_buffer_t			b	  	= *_buffer;
+        p_mad_connection_t		in		= NULL;
+        p_mad_mx_connection_specific_t	is		= NULL;
+        p_mad_channel_t			ch		= NULL;
+        p_mad_mx_channel_specific_t	chs		= NULL;
+        uint64_t			match_info	= 0;
+        mx_segment_t			s;
 
         LOG_IN();
         in	= lnk->connection;
         is	= in->specific;
-        chs	= in->channel->specific;
+        ch	= in->channel;
+        chs	= ch->specific;
 
-        if (is->begin_packing) {
-                is->begin_packing = 0;
+        if (is->first_incoming_packet_flag) {
+                void *          data_ptr	= NULL;
+                uint32_t	data_length	= 0;
 
-                if (chs->length > buffer->length - buffer->bytes_written)
-                        FAILURE("message size larger than expected");
+                is->first_incoming_packet_flag = tbx_false;
 
-                memcpy(buffer->buffer + buffer->bytes_written, chs->buffer, chs->length);
-                buffer->bytes_written += chs->length;
+                data_ptr	= b->buffer + b->bytes_written;
+                data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
 
-                if (mad_buffer_full(buffer))
+
+                TRACE("rb: first packet length: %x", chs->first_packet_length);
+                TRACE("rb: expected first packet length: %x", data_length);
+
+                if (chs->first_packet_length != data_length)
+                        FAILURE("invalid first packet length");
+
+                memcpy(data_ptr, chs->first_packet, data_length);
+                b->bytes_written	+= data_length;
+
+                if (mad_buffer_full(b))
                         goto no_more_data;
         }
 
-        seg.segment_ptr = buffer->buffer + buffer->bytes_written;
-        seg.segment_length = buffer->length - buffer->bytes_written;
+        s.segment_ptr		= b->buffer + b->bytes_written;
+        s.segment_length	= b->length - b->bytes_written;
+
+        TRACE("rb: segment length: %x", s.segment_length);
+        b->bytes_written += s.segment_length;
 
         match_info = (uint64_t)in->channel->id <<32 | in->remote_rank;
 
-#ifdef MARCEL
-//        {
-//                p_mad_mx_driver_specific_t	ds	= NULL;
-//                marcel_pollid_t		pollid	= 0;
-//                mad_mx_poll_req_t	req	= {
-//                        .endpoint	= NULL,
-//                        .request	= 0,
-//                        .test_return	= MX_SUCCESS,
-//                        .result		= 0
-//                };
-//
-//                ds		= in->channel->adapter->driver->specific;
-//                pollid		= ds->mx_pollid;
-//                req.endpoint	= chs->endpoint;
-//
-//                mad_mx_lock();
-//                rc = mx_irecv(req.endpoint,
-//                              &seg, 1,
-//                              match_info,
-//                              MX_MATCH_MASK_NONE, NULL, &req.request);
-//                mad_mx_unlock();
-//                mad_mx_check_status("mx_irecv", rc);
-//
-//                marcel_poll(pollid, &req);
-//                mad_mx_check_status("mx_test", req.test_return);
-//        }
-#else /* MARCEL */
-        {
-                mx_endpoint_t	ep	= NULL;
-                mx_request_t	request	= 0;
-                mx_status_t	status;
-                uint32_t	result	= 0;
-
-                ep = chs->endpoint;
-
-                rc = mx_irecv(ep,
-                              &seg, 1,
-                              match_info,
-                              MX_MATCH_MASK_NONE, NULL, &request);
-                mad_mx_check_return("mx_irecv", rc);
-
-                do {
-                        rc = mx_test(ep, &request, &status, &result);
-                } while (rc == MX_SUCCESS && !result);
-                mad_mx_check_return("mx_wait", rc);
-        }
+        mad_mx_recv(ch, &s, 1, &match_info, MX_MATCH_MASK_NONE);
 
  no_more_data:
         ;
-#endif /* MARCEL */
         LOG_OUT();
 }
 
@@ -1349,141 +1300,109 @@ mad_mx_receive_sub_buffer_group_1(p_mad_link_t         lnk,
 void
 mad_mx_send_buffer_group_2(p_mad_link_t         lnk,
                            p_mad_buffer_group_t buffer_group) {
-        p_mad_connection_t		out	= NULL;
-        p_mad_mx_connection_specific_t	os	= NULL;
-        p_mad_mx_channel_specific_t	chs	= NULL;
-        uint64_t                        match_info = 0;
-        mx_endpoint_addr_t		dest_address ;
-        p_tbx_list_t buffer_list = NULL;
-        mx_return_t  rc         = MX_SUCCESS;
-        mx_status_t  status;
-        uint32_t     result	= 0;
+        p_mad_connection_t		out		= NULL;
+        p_mad_mx_connection_specific_t	os		= NULL;
+        p_mad_mx_channel_specific_t	chs		= NULL;
+        uint64_t                        match_info	= 0;
+        p_tbx_list_t 			buffer_list	= NULL;
 
         LOG_IN();
         out	= lnk->connection;
         os	= out->specific;
         chs	= out->channel->specific;
         match_info = (uint64_t)out->channel->id <<32 | out->channel->process_lrank;
-        dest_address = os->remote_endpoint_addr;
 
         buffer_list = &buffer_group->buffer_list;
 
         if (!tbx_empty_list(buffer_list)) {
-                mx_segment_t seg_list[buffer_list->length];
-                mx_request_t test_list[2 * buffer_list->length];
-                tbx_list_reference_t ref;
-                unsigned int current_length = 0, i = 0, j = 0, k = 0;
-                mx_segment_t seg_temp;
+                mx_segment_t		seg_list[buffer_list->length];
+                tbx_list_reference_t	ref;
+                uint32_t		offset	= 0;
+                unsigned int		i	= 0;
 
-                seg_temp.segment_length = 0;
+                TRACE_VAL("sbg: group length", buffer_list->length);
 
                 tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
 
-                do{
-                        p_mad_buffer_t b = NULL;
-                        unsigned int missing_length = 0;
+                do {
+                        p_mad_buffer_t	b		= NULL;
+                        void *          data_ptr	= NULL;
+                        uint32_t	data_length	= 0;
 
                         b = tbx_get_list_reference_object(&ref);
 
-                        if(os->begin_packing){
-                                mx_request_t	request	= 0;
-                                mx_status_t	status;
-                                uint32_t	result	= 0;
-                                uint32_t	length	= 0;
+                        if (os->first_outgoing_packet_flag){
+                                mx_segment_t s;
 
-                                os->begin_packing = 0;
+                                os->first_outgoing_packet_flag = 0;
 
                                 // on envoie une premiere partie en guise de new_msg
-                                length = tbx_min(b->bytes_written - b->bytes_read,
-                                                 FIRST_MSG_SIZE);
+                                data_ptr	= b->buffer + b->bytes_read;
+                                data_length	= tbx_min(b->bytes_written - b->bytes_read, FIRST_PACKET_THRESHOLD);
 
-                                seg_temp.segment_length = length;
-                                seg_temp.segment_ptr = b->buffer;
-                                rc = mx_isend(chs->endpoint,
-                                              &seg_temp, 1,
-                                              dest_address,
-                                              match_info,
-                                              NULL, &request);
-                                mad_mx_check_return("mx_isend", rc);
-                                do {
-                                        rc = mx_test(chs->endpoint, &request, &status, &result);
-                                } while (rc == MX_SUCCESS && !result);
-                                mad_mx_check_return("mx_wait", rc);
+                                TRACE("sbg: first packet length: %x", data_length);
+                                b->bytes_read		+= data_length;
 
-                                //DISP_VAL("mad_mx_send_buffer_group_2, length", length);
+                                s.segment_ptr		 = data_ptr;
+                                s.segment_length	 = data_length;
 
-                                b->bytes_read += length;
-
-                                seg_temp.segment_length = 0;
+                                mad_mx_send(out, &s, 1, match_info);
 
                                 if(!mad_more_data(b))
                                         goto no_more_data;
-
                         }
 
-                        missing_length = b->bytes_written - b->bytes_read;
+                        TRACE("sbg: offset: %x", offset);
+                        data_ptr	 = b->buffer        + b->bytes_read;
+                        data_length	 =
+                                i?tbx_min(b->bytes_written - b->bytes_read,
+                                          GATHER_SCATTER_THRESHOLD - offset)
+                                :b->bytes_written - b->bytes_read;
 
-                        if(current_length + missing_length > THRESHOLD) {
-                                unsigned int x_threshold = 0;
+                        TRACE("sbg: segment length: %x", data_length);
 
-                                // on complete le multi_segment courant
-                                seg_list[i].segment_ptr = b->buffer + b->bytes_read;
-                                seg_list[i].segment_length = (THRESHOLD - current_length);
+                        b->bytes_read	+= data_length;
 
-                                missing_length -= (THRESHOLD - current_length);
-                                // on envoie le reste du tampon considéré par morceau de taille THRESHOLD
-                                x_threshold = missing_length / THRESHOLD;
+                        seg_list[i].segment_ptr		= data_ptr;
+                        seg_list[i].segment_length	= data_length;
 
-                                if(x_threshold > 0){
-                                        seg_temp.segment_ptr =  seg_list[i].segment_ptr + seg_list[i].segment_length;
-                                        seg_temp.segment_length = THRESHOLD * x_threshold;
-
-                                        test_list[j++] = mad_mx_send(chs->endpoint, &seg_temp, 1, dest_address, match_info);
-                                        missing_length -= x_threshold * THRESHOLD;
-                                }
-                                //on garde le surplus pour le multi_segment suivant
-                                seg_temp.segment_ptr = seg_list[i].segment_ptr + seg_list[i].segment_length + THRESHOLD * x_threshold;
-                                seg_temp.segment_length = missing_length;
-                        } else {
-                                seg_list[i].segment_ptr = b->buffer + b->bytes_read;
-                                seg_list[i].segment_length = missing_length;
-                        }
-                        current_length += seg_list[i].segment_length;
                         i++;
+                        offset += data_length;
 
-                        if(current_length == THRESHOLD){
-                                test_list[j++] = mad_mx_send(chs->endpoint, seg_list, i, dest_address, match_info);
-                                current_length = 0;
-                                if(seg_temp.segment_length != 0){
-                                        seg_list[0] = seg_temp;
-                                        i = 1;
-                                        current_length = seg_temp.segment_length;
-                                        seg_temp.segment_length = 0;
-                                } else {
-                                        i = 0;
-                                        current_length = 0;
+                        if (offset >= GATHER_SCATTER_THRESHOLD){
+                                TRACE("sbg: seg_list full, flushing");
+                                mad_mx_send(out, seg_list, i, match_info);
+
+                                if (mad_more_data(b)) {
+                                        mx_segment_t s;
+
+                                        data_ptr	+= data_length;
+                                        data_length	 = b->bytes_written - b->bytes_read;
+
+                                        b->bytes_read	+= data_length;
+
+                                        TRACE("sbg: sending large block: %x", data_length);
+
+                                        s.segment_ptr		= data_ptr;
+                                        s.segment_length	= data_length;
+
+                                        mad_mx_send(out, &s, 1, match_info);
                                 }
+
+                                i = 0;
+                                offset = 0;
                         }
 
                 no_more_data:
                         ;
 
-                }while(tbx_forward_list_reference(&ref));
+                        TRACE("sbg: while");
 
-                if(i != 0) {
-                        test_list[j++] = mad_mx_send(chs->endpoint, seg_list, i, dest_address, match_info);
-                }
+                } while (tbx_forward_list_reference(&ref));
 
-                //DISP_VAL("em : j", j);
-
-
-                for(k = 0; k < j; k++){
-
-                        //      DISP_VAL("em: k dans while", k);
-                        do {
-                                rc = mx_test(chs->endpoint, &test_list[k], &status, &result);
-                        } while (rc == MX_SUCCESS && !result);
-                        mad_mx_check_return("mx_wait", rc);
+                if (offset) {
+                        TRACE("sbg: remaining offset: %x", offset);
+                        mad_mx_send(out, seg_list, i, match_info);
                 }
         }
         LOG_OUT();
@@ -1494,112 +1413,125 @@ mad_mx_receive_sub_buffer_group_2(p_mad_link_t         lnk,
                                   p_mad_buffer_group_t buffer_group) {
         p_mad_connection_t		in	    = NULL;
         p_mad_mx_connection_specific_t	is	    = NULL;
+        p_mad_channel_t			ch	    = NULL;
         p_mad_mx_channel_specific_t	chs	    = NULL;
         uint64_t                        match_info  = 0;
+        uint64_t                        mi	    = 0;
         p_tbx_list_t                    buffer_list = NULL;
-        mx_return_t  rc         = MX_SUCCESS;
-        mx_status_t  status;
-        uint32_t     result	= 0;
 
         LOG_IN();
         in	= lnk->connection;
         is	= in->specific;
-        chs	= in->channel->specific;
+        ch	= in->channel;
+        chs	= ch->specific;
         match_info = (uint64_t)in->channel->id <<32 | in->remote_rank;
+
         buffer_list = &buffer_group->buffer_list;
 
         if (!tbx_empty_list(buffer_list)) {
-                mx_segment_t seg_list[buffer_list->length];
-                mx_request_t test_list[2 * buffer_list->length];
-                tbx_list_reference_t ref;
-                unsigned int current_length = 0, i =0, j = 0, k = 0;
-                mx_segment_t seg_temp;
+                mx_segment_t		seg_list[buffer_list->length];
+                mx_request_t		req_list[buffer_list->length*2];
+                tbx_list_reference_t	ref;
+                uint32_t		offset	= 0;
+                unsigned int		i	= 0;
+                unsigned int		j	= 0;
+                unsigned int		k	= 0;
 
-                seg_temp.segment_length = 0;
+                TRACE_VAL("rbg: group length", buffer_list->length);
                 tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
 
-                do{
+                do {
                         p_mad_buffer_t b = NULL;
-                        unsigned int missing_length = 0;
+                        void *          data_ptr	= NULL;
+                        uint32_t	data_length	= 0;
 
                         b = tbx_get_list_reference_object(&ref);
 
-                        if(is->begin_packing){
-                                is->begin_packing = 0;
+                        if (is->first_incoming_packet_flag){
+
+
+                                is->first_incoming_packet_flag = 0;
 
                                 //on a deja recu une premiere partie dans receive_message
-                                if (chs->length > (b->length - b->bytes_written))
-                                        FAILURE("message size larger than expected");
-                                memcpy(b->buffer + b->bytes_written, chs->buffer, chs->length);
+                                data_ptr	= b->buffer + b->bytes_written;
+                                data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
 
-                                b->bytes_written += chs->length;
+                                TRACE("rbg: first packet length: %x", chs->first_packet_length);
+                                TRACE("rbg: expected first packet length: %x", data_length);
+
+                                if (chs->first_packet_length != data_length)
+                                        FAILURE("invalid first packet length");
+
+                                memcpy(data_ptr, chs->first_packet, data_length);
+
+                                b->bytes_written += data_length;
 
                                 if (mad_buffer_full(b))
                                         goto no_more_data;
                         }
 
-                        missing_length = b->length - b->bytes_written;
+                        TRACE("rbg: offset: %x", offset);
+                        data_ptr	= b->buffer + b->bytes_written;
+                        data_length	=
+                                i?tbx_min(b->length - b->bytes_written,
+                                          GATHER_SCATTER_THRESHOLD - offset)
+                                :b->length - b->bytes_written;
 
-                        if(current_length + missing_length > THRESHOLD) {
-                                unsigned int x_threshold = 0;
-                                // on complete le multi_segment courant
-                                seg_list[i].segment_ptr = b->buffer + b->bytes_written;
-                                seg_list[i].segment_length = (THRESHOLD - current_length);
+                        TRACE("rbg: segment length: %x", data_length);
 
-                                missing_length -= (THRESHOLD - current_length);
-                                // on envoie le reste du tampon considéré par morceau de taille THRESHOLD
-                                x_threshold = missing_length / THRESHOLD;
+                        b->bytes_written	+= data_length;
 
-                                if(x_threshold > 0){
-                                        seg_temp.segment_ptr =  seg_list[i].segment_ptr + seg_list[i].segment_length;
-                                        seg_temp.segment_length = THRESHOLD * x_threshold;
+                        seg_list[i].segment_ptr		= data_ptr;
+                        seg_list[i].segment_length	= data_length;
 
-                                        test_list[j++] = mad_mx_recv(chs->endpoint, &seg_temp, 1, match_info);
-
-                                        missing_length -= x_threshold * THRESHOLD;
-                                }
-                                //on garde le surplus pour le multi_segment suivant
-                                seg_temp.segment_ptr = seg_list[i].segment_ptr + seg_list[i].segment_length + THRESHOLD * x_threshold;
-                                seg_temp.segment_length = missing_length;
-                        } else {
-                                seg_list[i].segment_ptr = b->buffer + b->bytes_written;
-                                seg_list[i].segment_length = missing_length;
-                        }
-                        current_length += seg_list[i].segment_length;
                         i++;
+                        offset += data_length;
 
-                        if(current_length == THRESHOLD){
-                                test_list[j++] = mad_mx_recv(chs->endpoint, seg_list, i, match_info);
-                                current_length = 0;
-                                if(seg_temp.segment_length != 0){
-                                        seg_list[0] = seg_temp;
-                                        i = 1;
-                                        current_length = seg_temp.segment_length;
-                                        seg_temp.segment_length = 0;
-                                } else {
-                                        i = 0;
-                                        current_length = 0;
+                        if (offset >= GATHER_SCATTER_THRESHOLD){
+                                TRACE("rbg: seg_list full, flushing");
+                                mi	= match_info;
+                                mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
+                                j++;
+
+                                if (!mad_buffer_full(b)) {
+                                        mx_segment_t s;
+
+                                        data_ptr	+= data_length;
+                                        data_length	 = b->length - b->bytes_written;
+
+                                        b->bytes_written	+= data_length;
+
+                                        TRACE("rbg: receiving large block: %x", data_length);
+                                        s.segment_ptr		= data_ptr;
+                                        s.segment_length	= data_length;
+
+                                        mi	= match_info;
+                                        mad_mx_irecv(ch, &s, 1, &mi, MX_MATCH_MASK_NONE, req_list+j);
+                                        j++;
                                 }
+
+                                i = 0;
+                                offset = 0;
                         }
 
                 no_more_data:
                         ;
-                }while(tbx_forward_list_reference(&ref));
 
-                if(i != 0) {
-                        test_list[j++] = mad_mx_recv(chs->endpoint, seg_list, i, match_info);
+                        TRACE("rbg: while");
+
+                } while(tbx_forward_list_reference(&ref));
+
+                if (offset) {
+                        TRACE("rbg: remaining offset: %x", offset);
+                        mi 	= match_info;
+                        mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
+                        j++;
                 }
 
-
-                //                DISP_VAL("recv : j", j);
-
-
                 for(k = 0; k < j; k++){
-                        //                        DISP_VAL("recv : k dans while", k);
-                        do {
-                                rc = mx_test(chs->endpoint, &test_list[k], &status, &result);
-                        } while (rc == MX_SUCCESS && !result);
-                        mad_mx_check_return("mx_wait", rc);
+                        TRACE("rbg: %d/%d...", k+1, j);
+                        mad_mx_blocking_test(ch, req_list+k, NULL);
+                        TRACE("rbg: %d/%d.", k+1, j);
                 }
         }
         LOG_OUT();

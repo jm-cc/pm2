@@ -1,7 +1,7 @@
 #ifndef TRACEBUFFER
 #define TRACEBUFFER
 
-/* Maximal nulmber of arguments for a trace */
+/* Maximal number of arguments for a trace */
 #define MAX_NB_ARGS 6
 
 /* 64 bits integer type */

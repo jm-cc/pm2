@@ -1,0 +1,4 @@
+Provide: sigmundlib_linkmode
+Provide: static_libs
+Provide: dynamic_libs
+Conflict: sigmundlib_linkmode

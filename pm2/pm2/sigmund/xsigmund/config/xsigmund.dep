@@ -1,0 +1,3 @@
+Depend: sigmundlib
+Provide: module
+Conflict: pm2 madeleine dsm marcel swann

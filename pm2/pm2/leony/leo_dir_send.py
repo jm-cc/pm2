@@ -38,9 +38,9 @@ def send_drivers(s, cl):
     l = len(s.driver_dict)
     leo_comm.send_int(cl, l)
     
-    for driver_name, process_driver_list in s.driver_dict.iteritems():
+    for driver_name, driver in s.driver_dict.iteritems():
         leo_comm.send_string(cl, driver_name)
-        for id, process in enumerate(process_driver_list):
+        for id, process in enumerate(driver['processes']):
             leo_comm.send_int(cl, process.global_rank)
             leo_comm.send_int(cl, id)
             send_adapters(s, cl)
@@ -55,7 +55,10 @@ def send_channels(s, cl):
 
     for channel_name, channel in s.channel_dict.iteritems():
         leo_comm.send_string(cl, channel_name)
-        leo_comm.send_uint(cl, 1) # channel.public
+        if channel['public']:
+            leo_comm.send_uint(cl, 1)
+        else:
+            leo_comm.send_uint(cl, 0)
         leo_comm.send_string(cl, s.net_dict[channel['net']]['dev'])
 
         # processes
@@ -79,11 +82,59 @@ def send_channels(s, cl):
     leo_comm.send_string(cl, 'end{channels}')
 
 def send_fchannels(s, cl):
-    leo_comm.send_int(cl, 0)
+    l = len(s.fchannel_dict)
+    print 'nb fchannels', l
+    leo_comm.send_int(cl, l)
+
+    for fchannel_name, fchannel in s.fchannel_dict.iteritems():
+        print 'fchannel name', fchannel_name
+        leo_comm.send_string(cl, fchannel_name)
+        print 'fchannel channel name', fchannel['channel']['name']
+        leo_comm.send_string(cl, fchannel['channel']['name'])
+    
     leo_comm.send_string(cl, 'end{fchannels}')
 
 def send_vchannels(s, cl):
-    leo_comm.send_int(cl, 0)
+    l = len(s.vchannel_dict)
+    leo_comm.send_int(cl, l)
+
+    for vchannel_name, vchannel in s.vchannel_dict.iteritems():
+        leo_comm.send_string(cl, vchannel_name)
+        
+        channel_list	= vchannel['channels']
+        l		= len(channel_list)
+        leo_comm.send_int(cl, l)
+
+        for channel in channel_list:
+            leo_comm.send_string(cl, channel['name'])
+        
+        fchannel_list	= vchannel['fchannels']
+        l		= len(fchannel_list)
+        leo_comm.send_int(cl, l)
+
+        for fchannel in fchannel_list:
+            leo_comm.send_string(cl, fchannel['name'])
+
+        rt	= vchannel['rt']
+        g_set	= vchannel['g_set']
+        
+        for g_src in g_set:
+            leo_comm.send_int(cl, g_src)
+            
+            for g_dst in g_set:
+                leo_comm.send_int(cl, g_dst)
+                (channel, fchannel, g_med, final) = rt[(g_src, g_dst)]
+                if final:
+                    leo_comm.send_string(cl, channel['name'])
+                else:
+                    leo_comm.send_string(cl, fchannel['name'])
+                    
+                leo_comm.send_int(cl, g_med)
+
+            leo_comm.send_int(cl, -1)
+        
+        leo_comm.send_int(cl, -1)
+        
     leo_comm.send_string(cl, 'end{vchannels}')
 
 def send_xchannels(s, cl):

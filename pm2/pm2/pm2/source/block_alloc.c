@@ -163,7 +163,7 @@ static void block_print_header(block_header_t *ptr)
   if (ptr == NULL)return;
   fprintf(stderr,"\nblock header:\n");
   assert(ptr->magic_number == BLOCK_MAGIC_NUM);
-  fprintf(stderr, "  start address = %p  available size = %d  magic number = %x\n  previous block address = %p  next block address = %p\n", ptr, ptr->size, ptr->magic_number, ptr->prev, ptr->next);
+  fprintf(stderr, "  start address = %p  available size = %d  magic number = %x\n  previous block address = %p  next block address = %p\n", ptr, (unsigned)ptr->size, ptr->magic_number, ptr->prev, ptr->next);
 }
 
 

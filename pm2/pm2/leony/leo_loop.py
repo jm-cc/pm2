@@ -1,3 +1,4 @@
+import leo_args
 import leo_comm
 import leo_session
 import leo_merge
@@ -23,7 +24,8 @@ _LEO_COMMAND_BARRIER_PASSED	= 4
 _LEO_COMMAND_SESSION_ADDED      = 5
 _LEO_COMMAND_UPDATE_DIR         = 6
 _LEO_COMMAND_MERGE_CHANNEL      = 7
-_LEO_COMMAND_SHUTDOWN_CHANNEL   = 8
+_LEO_COMMAND_SPLIT_CHANNEL      = 8
+_LEO_COMMAND_SHUTDOWN_CHANNEL   = 9
 
 
 
@@ -36,6 +38,7 @@ command_string_dict = {
     _LEO_COMMAND_SESSION_ADDED: 'SESSION_ADDED',
     _LEO_COMMAND_UPDATE_DIR: 'UPDATE_DIR',
     _LEO_COMMAND_MERGE_CHANNEL: 'MERGE_CHANNEL',
+    _LEO_COMMAND_SPLIT_CHANNEL: 'SPLIT_CHANNEL',
     _LEO_COMMAND_SHUTDOWN_CHANNEL: 'SHUTDOWN_CHANNEL',
     }
 
@@ -62,8 +65,10 @@ def process_user_command(leo):
     elif command_word == 'add':
         name	= command_tokens.pop(0)
         logger.info("opening session '%s'" % name)
-        s	= leo_session.Session(leo, name, command_tokens, 'session')
-        s.init()
+        s	= leo_session.Session(leo, name )
+        leo_args.cmdline_parse(s, command_tokens, 'session')
+	s.init()
+	
 	if not s.leo.compatibility_mode and s.options.dyn_mode:
 	    found = 0
 	    for channel in s.channel_dict.values():
@@ -121,32 +126,32 @@ def process_user_command(leo):
 		if not found2 == 2:
 		    logger.error('One session hasn\'t a mergeable channel: no merge possible')
 		else:
-		    if not channel1.net_name == channel2.net_name:
-			logger.error('Channels feature different networks: no merge possible')
-			#pour le moment, mais en fait, faire un canal virtuel ...
-		    else:
-			logger.info("Merging sessions '%s' and '%s' into '%s'" % ( name1 ,name2, name3 ))
+		    logger.info("Merging sessions '%s' and '%s' into '%s'" % ( name1 ,name2, name3 ))
 
-			#leo_merge.print_session( leo.session_dict[name1] )
-			#print 'closing channel 1', channel1.name
-			#ps_list = channel1.processes
-			#leo_comm.mcast_int(ps_list, _LEO_COMMAND_SHUTDOWN_CHANNEL)
-			#leo_comm.mcast_string(ps_list, channel1.name)
-			#for ps in ps_list:
-			#    leo_comm.wait_for_ack(ps)
-			#leo_dir_deactivate.connections_exit(leo.session_dict[name1], ps_list, False)
-			
-			#leo_merge.print_session( leo.session_dict[name2] )
-			#print 'closing channel 2', channel2.name
-			#ps_list = channel2.processes
-			#leo_comm.mcast_int(ps_list, _LEO_COMMAND_SHUTDOWN_CHANNEL)
-			#leo_comm.mcast_string(ps_list, channel2.name)
-			#for ps in ps_list:
-			#    leo_comm.wait_for_ack(ps)
-			#leo_dir_deactivate.connections_exit(leo.session_dict[name2], ps_list, False)
-			    
-			    
-		    leo.session_dict[name3] = leo_merge.merge_sessions( leo.session_dict[name1] , leo.session_dict[name2] , name3 )
+		    #leo_merge.print_session( leo.session_dict[name1] )
+		    
+		    #leo_merge.print_session( leo.session_dict[name2] )
+		    #print 'closing channel 2', channel2.name
+		    #ps_list = channel2.processes
+		    #leo_comm.mcast_int(ps_list, _LEO_COMMAND_SHUTDOWN_CHANNEL)
+		    #leo_comm.mcast_string(ps_list, channel2.name)
+		    #for ps in ps_list:
+		    #    leo_comm.wait_for_ack(ps)
+		    #leo_dir_deactivate.connections_exit(leo.session_dict[name2], ps_list, False)
+		    		    
+		    leo.session_dict[name1].parent_name = name3
+		    leo.merged_session_dict[name1] = leo.session_dict[name1]
+		    
+		    leo.session_dict[name2].parent_name = name3		    
+		    leo.merged_session_dict[name2] = leo.session_dict[name2]
+		    
+		    if not channel1.net_name == channel2.net_name:
+			logger.info('Channels feature different networks: creating Virtual Channel')
+			leo.session_dict[name3] = leo_merge.merge_sessions( leo.session_dict[name1] , leo.session_dict[name2] , name3 , False)
+		    else:
+			logger.info('Expanding Physical Channel')
+			leo.session_dict[name3] = leo_merge.merge_sessions( leo.session_dict[name1] , leo.session_dict[name2] , name3 , True)				
+		    
 		    leo_comm.bcast_int(leo.session_dict[name3], _LEO_COMMAND_UPDATE_DIR)
 		    leo_dir_send.send_dir(leo.session_dict[name3])
 		    ps_list = leo.session_dict[name3].active_process_dict.values()
@@ -154,14 +159,16 @@ def process_user_command(leo):
 			leo_comm.wait_for_ack(ps)
 			    
 		    logger.info("Session '%s' created" % name3)
-		    del leo.session_dict[name1]
-		    logger.info("Session '%s' removed" % name1)			
+		    #leo_merge.print_session(leo.session_dict[name3])
+		    
+		    del leo.session_dict[name1]		    
+		    logger.info("Session '%s' removed" % name1)
+
 		    del leo.session_dict[name2]
 		    logger.info("Session '%s' removed" % name2)
 			
     elif command_word == 'split':
 	name1  = command_tokens.pop(0)
-	name2  = command_tokens.pop(0)
 	if leo.session_dict == {}:
 	    logger.error('No session found: no split possible')
 	else:
@@ -173,13 +180,11 @@ def process_user_command(leo):
 		    found = found + 1
 		else:
 		    logger.debug("Session '%s' not dynamic" % name1)
-	    if leo.session_dict.has_key( name2 ):
-		logger.debug("Session '%s' already exists" % name2)
-		found = found - 1
 	    if not found == 1:
 		logger.error('No split possible')
 	    else:
-		logger.info("splitting  session '%s' into '%s' and '%s'" % ( name1 , name1, name2) )
+		logger.error('Split possible')
+		
     else:
         logger.error('invalid command')
 
@@ -229,7 +234,7 @@ def process_client_command(ps):
 		
     elif command == _LEO_COMMAND_UPDATE_DIR:
 	logger.error('Invalid client command: %d' % command)
-			
+    
     elif command == _LEO_COMMAND_MERGE_CHANNEL:
 	name = leo_comm.receive_string(ps)
 	
@@ -244,14 +249,101 @@ def process_client_command(ps):
 		logger.warning('inconsistent barrier request: duplicate barrier command')
 	    
 	    if len(s.barrier_dict) == s.size:
+
+		#for session in s.leo.merged_session_dict.values():
+		#    if  session.parent_name == s.name:
+		#	logger.info('Found right child session %s:' % session.name)
+		#       channel = session.channel_dict[name]
+		#	print 'closing channel ', channel.name
+		#	ps_list = channel.processes
+		#	leo_comm.mcast_int(ps_list, _LEO_COMMAND_SHUTDOWN_CHANNEL)
+		#	leo_comm.mcast_string(ps_list, channel.name)
+		#	leo_dir_deactivate.connections_exit(session, ps_list, False)
+		#	for ps in ps_list:
+		#	    leo_comm.wait_for_ack(ps)
+		#    else :	
+		#	logger.info('NOT Found right child')    
+
+		#last step
 		channel = s.channel_dict[name]
 		ps_list = channel.processes
-		#print 'Mcasting to channel processes', name, len(ps_list)
 		leo_comm.mcast_int(ps_list,_LEO_COMMAND_MERGE_CHANNEL)
 		leo_dir_activate.driver_init(s)
 		leo_dir_activate.channel_init_2(s, name, channel)
 		s.barrier_dict = None
 		
+    elif command == _LEO_COMMAND_SPLIT_CHANNEL:
+	name = leo_comm.receive_string(ps)
+	
+	if s.barrier_dict == None:
+	    s.barrier_dict = {ps: ps}
+	    if len(s.active_process_dict) < s.size:
+		logger.warning('inconsistent barrier request: some processes have already leaved the session')
+	else:
+	    if not s.barrier_dict.has_key(ps):
+		s.barrier_dict[ps] = ps
+	    else:
+		logger.warning('inconsistent barrier request: duplicate barrier command')
+	    
+	    if len(s.barrier_dict) == s.size:
+
+		name1 = s.name
+		name2 = s.child_name_list.pop(0)	    		
+		name3 = s.child_name_list.pop(0)
+		logger.info("splitting  session '%s' into '%s' and '%s'", name1 , name2, name3 )
+		
+		sub_session1 = s.leo.merged_session_dict[name2]
+		s.leo.session_dict[name2] = sub_session1
+		s.leo.session_dict[name2].parent_name = ''
+		for i,v in enumerate(s.leo.session_dict[name2].process_list):
+		    #print ('Process :'),i, v
+		    v.session = s.leo.session_dict[name2]
+		del s.leo.merged_session_dict[name2]
+		
+		sub_session2 = s.leo.merged_session_dict[name3]
+		s.leo.session_dict[name3] = sub_session2
+		s.leo.session_dict[name3].parent_name = ''
+		for i,v in enumerate(s.leo.session_dict[name3].process_list):
+		    #print ('Process :'),i, v
+		    v.session = s.leo.session_dict[name3]
+		del s.leo.merged_session_dict[name3]
+				
+		#FIXME:  faire l'update pour tous les dict !!!
+		#driver dict
+		for nom, driver2 in s.leo.session_dict[name3].driver_dict.iteritems():
+		    if s.leo.session_dict[name2].driver_dict.has_key(nom):
+			driver = s.leo.session_dict[name2].driver_dict[nom]
+			for i,v in enumerate(driver2.processes):
+			    driver.processes.remove(v)    
+
+		#FIXME:  faire l'update pour tous les dict !!!
+		#channel dict
+		for nom, channel2 in s.leo.session_dict[name3].channel_dict.iteritems():
+		    if s.leo.session_dict[name2].channel_dict.has_key(nom):			
+			channel = s.leo.session_dict[name2].channel_dict[nom]
+			if channel.mergeable == True:
+			    for i,v in enumerate(channel2.processes):
+				channel.processes.remove(v)    	    
+		
+		leo_comm.bcast_int(s.leo.session_dict[name2], _LEO_COMMAND_SPLIT_CHANNEL)
+		#leo_comm.bcast_string(s.leo.session_dict[name2], name)
+		ps_list = s.leo.session_dict[name2].active_process_dict.values()
+		for ps in ps_list:
+		    leo_comm.wait_for_ack(ps)
+		channel = s.leo.session_dict[name2].channel_dict[name]
+		leo_dir_activate.driver_init(s.leo.session_dict[name2])
+		leo_dir_activate.channel_init_2( s.leo.session_dict[name2], name, channel)
+		
+		leo_comm.bcast_int(s.leo.session_dict[name3], _LEO_COMMAND_SPLIT_CHANNEL)
+		#leo_comm.bcast_string(s.leo.session_dict[name3], name)
+		ps_list = s.leo.session_dict[name3].active_process_dict.values()
+		for ps in ps_list:
+		    leo_comm.wait_for_ack(ps)		
+		channel = s.leo.session_dict[name3].channel_dict[name]
+		leo_dir_activate.driver_init(s.leo.session_dict[name3])
+		leo_dir_activate.channel_init_2( s.leo.session_dict[name3], name, channel)
+		
+		del s.leo.session_dict[name1]	
     else:
         logger.error('invalid command: %d' % command)
 

@@ -20,7 +20,7 @@ PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
 PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
 
 BIN_DIR		:=	$(PM2_HOME)/.pm2/bin
-TMP_DIR		:=	/tmp/sigmund_$(PM2_ARCH)_$(PM2_SYS)_$(USER)
+TMP_DIR		:=	/tmp/$(USER)_sigmund_$(PM2_ARCH)_$(PM2_SYS)
 
 PROGRAM		:=	$(BIN_DIR)/sigmund_$(PM2_ARCH)_$(PM2_SYS)
 
@@ -106,4 +106,4 @@ clean:
 
 cleanall:
 	@echo "Cleaning sigmund..."
-	@rm -rf $(BIN_DIR)/sigmund_* /tmp/sigmund_*
+	@rm -rf $(BIN_DIR)/sigmund_* /tmp/$(USER)_sigmund_*

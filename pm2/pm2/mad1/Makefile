@@ -45,8 +45,10 @@ endif
 
 include $(PM2_ROOT)/make/master_vars.mak
 
+COMMON_CFLAGS += -DNET_ARCH=\"$(NET_INTERF)\" $(NET_INIT)
+
 # Ce makefile
-COMMON_MAKEFILES +=  $(MAD_ROOT)/Makefile
+COMMON_MAKEFILES +=  $(MAD_ROOT)/Makefile 
 
 # Inclusion des variables
 include $(MAD_MAKE)/vars.mak

@@ -60,7 +60,7 @@ libs:
 include $(PM2_ROOT)/make/common-rules.mak
 
 all: pm2 examples
-.PHONY: pm2 examples all libs
+.PHONY: pm2 examples all libs preproc
 
 pm2: libs
 
@@ -75,6 +75,12 @@ examples: flavors
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i examples ; \
+	done
+
+preproc: flavors
+	$(COMMON_HIDE) set -e; \
+	for i in $(LIBS) ; do \
+		$(MAKE) -C modules/$$i preproc ; \
 	done
 
 .PHONY: clean cleanlibs

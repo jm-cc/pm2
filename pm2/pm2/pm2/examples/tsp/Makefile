@@ -39,6 +39,4 @@ PROGS := tsp
 
 LDFLAGS += -lm
 
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/apps.mak
-

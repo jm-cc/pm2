@@ -31,6 +31,17 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: mad_via.c,v $
+Revision 1.2  2000/01/04 09:18:52  oaumage
+- ajout de la commande de log de CVS
+- phase d'initialisation `external-spawn' terminee pour mad_mpi.c
+- recuperation des noms de machines dans la phase
+  d'initialisation `external-spawn' de mad_sbp.c
+
+
+______________________________________________________________________________
 */
 
 /*

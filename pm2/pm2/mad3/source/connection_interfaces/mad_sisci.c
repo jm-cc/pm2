@@ -160,7 +160,7 @@ typedef struct s_mad_sisci_driver_specific
 {
   int nb_adapter;
 #if defined(MARCEL) && defined(USE_MARCEL_POLL)
-  marcel_pollid_t mad_sisci_pollid;
+  struct marcel_ev_server mad_sisci_marcel_ev_server;
 #endif
 } mad_sisci_driver_specific_t, *p_mad_sisci_driver_specific_t;
 
@@ -202,11 +202,12 @@ typedef union u_mad_sisci_poll_data
   mad_sisci_poll_flag_data_t    flag_op;
 } mad_sisci_poll_data_t, *p_mad_sisci_poll_data_t;
 
-typedef struct s_mad_sisci_marcel_poll_cell_arg
+typedef struct s_mad_sisci_marcel_ev_req
 {
+  struct marcel_ev_req  req;
   mad_sisci_poll_op_t   op;
   mad_sisci_poll_data_t data;
-} mad_sisci_marcel_poll_cell_arg_t, *p_mad_sisci_marcel_poll_cell_arg_t;
+} mad_sisci_marcel_ev_req_t, *p_mad_sisci_marcel_ev_req_t;
 
 typedef struct s_mad_sisci_connection_specific
 {
@@ -602,18 +603,17 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
 /* For marcel polling
  * --------------------- */
 #if defined(MARCEL) && defined(USE_MARCEL_POLL)
-static void
-mad_sisci_marcel_group(marcel_pollid_t id)
-{
-  return;
-}
 
-inline static int
-mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
+static int mad_sisci_ev_pollone(marcel_ev_server_t server, 
+				marcel_ev_op_t _op,
+				marcel_ev_req_t req, 
+				int nb_ev, int option)
 {
   int status = 0;
+  p_mad_sisci_marcel_ev_req_t info=NULL;
 
   LOG_IN();
+  info=tbx_container_of(req, mad_sisci_marcel_ev_req_t, req);
   if (info->op == mad_sisci_poll_flag)
     {
       status = mad_sisci_test(info->data.flag_op.flag);
@@ -673,46 +673,9 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
 
   LOG_OUT();
 
-  return status;
-}
-
-static void *
-mad_sisci_marcel_fast_poll(marcel_pollid_t id,
-			   any_t           arg,
-			   boolean         first_call)
-{
-  void *status = MARCEL_POLL_FAILED;
-
-  LOG_IN();
-  if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) arg))
-    {
-      status = MARCEL_POLL_SUCCESS_FOR(arg);
-    }
-  LOG_OUT();
-
-  return status;
-}
-
-static void *
-mad_sisci_marcel_poll(marcel_pollid_t id,
-		      unsigned        active,
-		      unsigned        sleeping,
-		      unsigned        blocked)
-{
-  p_mad_sisci_marcel_poll_cell_arg_t  my_arg = NULL;
-  void                               *status = MARCEL_POLL_FAILED;
-
-  LOG_IN();
-  FOREACH_POLL(id) { GET_ARG(id, my_arg);
-      if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) my_arg))
-	{
-	  status = MARCEL_POLL_SUCCESS(id);
-	  goto found;
-	}
-    }
-
-found:
-  LOG_OUT();
+  if (status) {
+	  MARCEL_EV_REQ_SUCCESS(req);
+  }
 
   return status;
 }
@@ -726,14 +689,16 @@ mad_sisci_wait_for(p_mad_link_t         link,
   if (!mad_sisci_test(flag))
     {
       p_mad_sisci_driver_specific_t    driver_specific = NULL;
-      mad_sisci_marcel_poll_cell_arg_t arg;
+      mad_sisci_marcel_ev_req_t req;
+      struct marcel_ev_wait wait;
 
       driver_specific = link->connection->channel->adapter->driver->specific;
 
-      arg.op                = mad_sisci_poll_flag;
-      arg.data.flag_op.flag = flag;
+      req.op                = mad_sisci_poll_flag;
+      req.data.flag_op.flag = flag;
 
-      marcel_poll(driver_specific->mad_sisci_pollid, &arg);
+      marcel_ev_wait(&driver_specific->mad_sisci_marcel_ev_server,
+		     &req.req, &wait, 0);
     }
   LOG_OUT();
 }
@@ -806,6 +771,7 @@ void
 mad_sisci_driver_init(p_mad_driver_t driver)
 {
   p_mad_sisci_driver_specific_t driver_specific = NULL;
+  struct marcel_ev_server *server = NULL;
 
   LOG_IN();
   TRACE("Initializing SISCI driver");
@@ -813,11 +779,19 @@ mad_sisci_driver_init(p_mad_driver_t driver)
   driver->specific = driver_specific;
 
 #if defined(MARCEL) && defined(USE_MARCEL_POLL)
-  driver_specific->mad_sisci_pollid =
-    marcel_pollid_create(mad_sisci_marcel_group,
-			 mad_sisci_marcel_poll,
-			 mad_sisci_marcel_fast_poll,
-			 MAD_SISCI_POLLING_MODE);
+  server=&driver_specific->mad_sisci_marcel_ev_server;
+
+  marcel_ev_server_init(server, "Mad SISCI");
+
+  marcel_ev_server_set_poll_settings(server, 
+				     MAD_SISCI_POLLING_MODE,
+				     1);
+  
+  marcel_ev_server_add_callback(server,
+				MARCEL_EV_FUNCTYPE_POLL_POLLONE,
+				&mad_sisci_ev_pollone);
+  marcel_ev_server_start(server);
+  
 #endif // MARCEL && USE_MARCEL_POLL
   LOG_OUT();
 }
@@ -1342,17 +1316,19 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 #if defined(MARCEL) && defined(USE_MARCEL_POLL)
   {
     p_mad_sisci_driver_specific_t    driver_specific = NULL;
-    mad_sisci_marcel_poll_cell_arg_t arg;
+    mad_sisci_marcel_ev_req_t req;
+    struct marcel_ev_wait wait;
 
     driver_specific = channel->adapter->driver->specific;
 
-    arg.op                          = mad_sisci_poll_channel;
-    arg.data.channel_op.channel     = channel;
-    arg.data.channel_op.connection  = NULL;
+    req.op                          = mad_sisci_poll_channel;
+    req.data.channel_op.channel     = channel;
+    req.data.channel_op.connection  = NULL;
 
-    marcel_poll(driver_specific->mad_sisci_pollid, &arg);
+    marcel_ev_wait(&driver_specific->mad_sisci_marcel_ev_server,
+		   &req.req, &wait, 0);
 
-    in = arg.data.channel_op.connection;
+    in = req.data.channel_op.connection;
   }
 #else // MARCEL && USE_MARCEL_POLL
   while (tbx_true)

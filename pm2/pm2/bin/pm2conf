@@ -183,17 +183,14 @@ if [ -n "$pref_file" -a -n "$*" ] ; then
     echo "Parameters stored in file \"${PREF_DIR}/$pref_file\""
 fi
 
-PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
-
-[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
-
-[ -d ${PM2_CONF_DIR} ] || mkdir -p ${PM2_CONF_DIR}
-
-PM2_CONF_FILE=${PM2_CONF_DIR}/.pm2conf
+PM2_CONF_FILE=`pm2-conf-file`
+[ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
 export PM2_CONF_FILE
 
 # Modification éventuelle de la configuration courante
 if [ $# -gt 0 ] ; then
+    PM2_CONF_DIR=`dirname ${PM2_CONF_FILE}`
+    [ -d ${PM2_CONF_DIR} ] || mkdir -p ${PM2_CONF_DIR}
     LINE=''
     while [ $# -ge 1 ]; do
 	case "$1" in

@@ -1,5 +1,6 @@
 BIP_DIR=${BIP_DIR:-/usr/local/bip}
 PM2_PROTOCOLS=bip
+PM2_LOADER=${PM2_ROOT}/mad1/bin/bip/madload
 PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -I${BIP_DIR}/include"
 PM2_MAD1_LIBS="$PM2_MAD1_LIBS -L${BIP_DIR}/lib -lbip"
 PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -DNET_ARCH="'\"'bip'\"'

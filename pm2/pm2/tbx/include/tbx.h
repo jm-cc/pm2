@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.h,v $
+Revision 1.3  2000/03/01 11:02:49  oaumage
+- mise a jour des commandes #include ("")
+
 Revision 1.2  2000/01/31 15:59:07  oaumage
 - detection de l'absence de GCC
 - ajout de aligned_malloc
@@ -72,14 +75,14 @@ ______________________________________________________________________________
 #include <stddef.h>
 #include <string.h>
 
-#include <tbx_timing.h>
-#include <tbx_macros.h>
-#include <tbx_pointers.h>
-#include <tbx_types.h>
+#include "tbx_timing.h"
+#include "tbx_macros.h"
+#include "tbx_pointers.h"
+#include "tbx_types.h"
 
-#include <tbx_malloc.h>
-#include <tbx_list.h>
+#include "tbx_malloc.h"
+#include "tbx_list.h"
 
-#include <tbx_interface.h>
+#include "tbx_interface.h"
 
 #endif /* TBX_H */

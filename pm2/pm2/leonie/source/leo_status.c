@@ -176,6 +176,9 @@ leo_help(void)
   __leo_option_help("[-x]", "", "Open an Xterm for each session process");
   __leo_option_help("--x", "", "Do not open Xterms for session processes");
 
+  __leo_option_help("-w", "", "Wait for the loader to fork");
+  __leo_option_help("[--w]", "", "Do not wait for the loader to fork");
+
   DISP("");
   exit(EXIT_SUCCESS);
 }

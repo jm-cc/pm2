@@ -173,6 +173,14 @@ process_command_line(int    argc,
 	    {
 	      settings->export_mode = tbx_false;
 	    }
+	  else if (tbx_argit_arg_equals("-w"))
+	    {
+	      settings->wait_mode = tbx_true;
+	    }
+	  else if (tbx_argit_arg_equals("--w"))
+	    {
+	      settings->wait_mode = tbx_false;
+	    }
 	  else
 	    tbx_argit_invalid_arg();
 

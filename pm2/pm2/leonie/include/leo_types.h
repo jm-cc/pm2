@@ -176,6 +176,7 @@ typedef struct s_leo_settings
   tbx_bool_t         pause_mode;
   tbx_bool_t         smp_mode;
   tbx_bool_t         export_mode;
+  tbx_bool_t         wait_mode;
 } leo_settings_t;
 
 typedef struct s_leonie

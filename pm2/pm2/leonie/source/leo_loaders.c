@@ -242,7 +242,15 @@ leo_default_loader(p_leo_settings_t settings,
 	    leo_error("execvp");
 	  }
 
-	process->pid = pid;
+        if (settings->wait_mode)
+          {
+            waitpid(pid, NULL, 0);
+            process->pid =  -1;
+          }
+        else
+          {
+            process->pid = pid;
+          }
 
         //sleep(3);
       }

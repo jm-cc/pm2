@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.9  2000/02/04 16:47:32  oaumage
+- restauration des reglages par defaut
+
 Revision 1.8  2000/02/03 17:37:35  oaumage
 - mad_channel.c : correction de la liberation des donnees specifiques aux
                   connections
@@ -481,7 +484,7 @@ int main(int argc, char **argv)
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
   /* TCP */
-  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL);  
+  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
   /* SISCI 
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 

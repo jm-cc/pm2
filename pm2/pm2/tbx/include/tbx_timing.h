@@ -54,12 +54,19 @@ typedef union u_tbx_tick
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    ((t2).tick - (t1).tick)
 
-#elif defined(ALPHA_ARCH) && defined(LINUX_SYS)
+#elif defined(ALPHA_ARCH)
 
 #define TBX_GET_TICK(t) \
    __asm__ volatile("rpcc %0\n\t" : "=r"((t).tick))
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    (((t2).tick & 0xFFFFFFFF) - ((t1).tick & 0xFFFFFFFF))
+
+#elif defined(ALPHA_ARCH)
+
+#define TBX_GET_TICK(t) \
+   __asm__ volatile("mov %0=ar%1" : "=r" ((t).tick) : "i"(44))
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+   ((t2).tick - (t1).tick)
 
 #else
 

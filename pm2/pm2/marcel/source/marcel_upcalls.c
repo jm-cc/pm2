@@ -14,17 +14,19 @@
  * General Public License for more details.
  */
 
-#ifdef MA__ACTIVATION
-
+#define MA_FILE_DEBUG upcall
 #include "marcel.h"
+
+#ifdef MA__ACTIVATION
 
 #include <sched.h>
 #include <stdlib.h>
 
 #define SHOW_UPCALL
 
-#define STACK_SIZE 100000
 #define ACT_NEW_WITH_LOCK 1
+
+static MA_DEFINE_PER_LWP(marcel_task_t *,upcall_new_task)=NULL;
 
 marcel_t marcel_next[ACT_NB_MAX_CPU];
 //volatile boolean has_new_tasks=0;
@@ -225,7 +227,7 @@ void init_upcalls(int nb_act)
 		nb_act=0;
 
 	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
-	DISP("init_upcalls(%i)", nb_act);
+	mdebug("init_upcalls(%i)", nb_act);
 #ifdef MA__LWPS
 	for(proc=0; proc<nb_act; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */
@@ -234,32 +236,23 @@ void init_upcalls(int nb_act)
 #else
 	init_act(0, &param);
 #endif
-#if 0
+
 	param.magic_number=ACT_MAGIC_NUMBER;
 	param.nb_proc_wanted=nb_act;
-	param.reset_count=0;
-	//param.reset_count=-1; /* No preemption */
+	//param.reset_count=0;
+	param.reset_count=-1; /* No preemption */
+	param.critical_section=MA_HARDIRQ_OFFSET;
 	/* param->upcall_new_sp[proc] */
-	param.upcall_new=upcall_new;
+	param.upcall_new=stub_upcall_new;
 	//param.restart_func=restart_func;
-	param.resched_func=restart_func;
-	param.nb_act_unblocked=(int*)&act_nb_unblocked;
-	//param.locked_start=(unsigned long)&locked_start;
-	//param.locked_end=(unsigned long)&locked_end;
-	/* param->locked[proc] */
+	param.upcall_restart=stub_upcall_restart;
+	param.upcall_event=stub_upcall_event;
 
-//	param.upcall_unblock=upcall_unblock;
-//	param.upcall_change_proc=upcall_change_proc;
-	
 	//ACTDEBUG(printf("sp=%p, new = %p, restart=%p, nb_unblk=%p\n",
 	//		param.upcall_new_sp[0], 
 	//		upcall_new, restart_func, &act_nb_unblocked));
 	
        
-#ifdef PM2DEBUG
-	fflush(stderr);
-	pm2debug_marcel_launched=1;
-#endif
 	if (act_cntl(ACT_CNTL_INIT, &param)) {
 		perror("Bad activations init");
 		exit(1);
@@ -270,8 +263,58 @@ void init_upcalls(int nb_act)
 	mdebug("Initialisation upcall done\n");
 	//ACTDEBUG(printf("Fin act_init\n"));
 	//scanf("%i", &proc);
-#endif
 	LOG_OUT();
 }
+
+static void *upcall_no_func(void* p)
+{
+	RAISE(PROGRAM_ERROR);
+}
+
+static void marcel_upcall_lwp_init(marcel_lwp_t* lwp)
+{
+	marcel_attr_t attr;
+	char name[MARCEL_MAXNAMESIZE];
+	LOG_IN();
+
+	/****************************************************/
+	/* Création de la tâche pour les upcalls upcall_new */
+	/****************************************************/
+	marcel_attr_init(&attr);
+	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
+	marcel_attr_setname(&attr,name);
+	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
+#ifdef PM2
+	{
+		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
+
+		unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
+					 ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
+
+		marcel_attr_setstackaddr(&attr, stack);
+		marcel_attr_setstacksize(&attr, stsize);
+	}
+#endif
+
+	// la fonction ne sera jamais exécutée, c'est juste pour avoir une
+	// structure de thread marcel dans upcall_new
+	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
+	marcel_create_special(&(ma_per_lwp(upcall_new_task, lwp)),
+			      &attr, (void*)upcall_no_func, NULL);
+	
+	MTRACE("Upcall_Task", ma_per_lwp(upcall_new_task, lwp));
+	
+	/****************************************************/
+	LOG_OUT();
+}
+
+MA_DEFINE_LWP_NOTIFIER_START(upcall, "Upcalls",
+			     marcel_upcall_lwp_init, "Création task for New upcalls",
+			     (void), "[none]");
+
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(upcall, MA_INIT_UPCALL_TASK_NEW);
+
 
 #endif /* MA__ACTIVATION */

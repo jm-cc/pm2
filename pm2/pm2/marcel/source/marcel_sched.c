@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.30  2000/05/10 13:08:02  vdanjean
+minor bugs fixes
+
 Revision 1.29  2000/05/09 10:52:46  vdanjean
 pm2debug module
 
@@ -1126,6 +1129,7 @@ static int marcel_check_sleeping(void)
   int waked_some_task = 0;
   register marcel_t next;
 
+  mdebug("marcel_check_sleeping start\n");
   if(marcel_lock_tryacquire(&__delayed_lock)) {
 
     next = __delayed_tasks;
@@ -1146,6 +1150,7 @@ static int marcel_check_sleeping(void)
     mdebug("LWP(%d) failed to acquire __delayed_lock\n",
 	   marcel_self()->lwp->number);
 
+  mdebug("marcel_check_sleeping end\n");
   return waked_some_task;
 }
 
@@ -1215,6 +1220,8 @@ void stop_timer(void);
 any_t idle_func(any_t arg) // Pour les activations
 {
   marcel_t next, cur = marcel_self();
+  static int counter=0;
+  int lc;
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
 
@@ -1235,9 +1242,11 @@ any_t idle_func(any_t arg) // Pour les activations
 #define ACT_DONT_USE_SYSCALL
 #endif
 #define myfprintf(arg...) mdebug(##arg)
+    lc=counter++;
     while (!(next || act_nb_unblocked)) {
 //	    int i;
 	    MTRACE("active wait", cur);
+	    mdebug("active wait *0* / %i\n", lc);
 	      
 #ifndef ACT_DONT_USE_SYSCALL
 	    act_cntl(ACT_CNTL_READY_TO_WAIT,0);
@@ -1260,8 +1269,9 @@ any_t idle_func(any_t arg) // Pour les activations
 				    act_nb_unblocked, cur_lwp->number);
 		    }
 	    }
+	    mdebug("fin attente active *1* / %i\n", lc);
 	    MTRACE("end active wait", cur);
-	    mdebug("fin attente active\n");
+	    mdebug("fin attente active *2* / %i\n", lc);
 	    if (next) {
 		    myfprintf("idle has job (LWP = %d)\n",
 			    cur_lwp->number);
@@ -1272,8 +1282,9 @@ any_t idle_func(any_t arg) // Pour les activations
 	    SET_FROZEN(cur);
 	    next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
     }
-    mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d) next=%p\n",
-	   cur_lwp->number, next);
+    mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d) next=%p"
+	   " act_nb_unblocked=%i / %i\n", 
+	   cur_lwp->number, next, act_nb_unblocked, lc);
     
     if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
 	    if (next) {
@@ -1442,6 +1453,8 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 			  SCHED_DATA(lwp).__first[initial_task->prio] = 
 			  initial_task;
 		  initial_task->lwp = lwp;
+		  mdebug("marcel_self : %p, lwp : %i\n", marcel_self(),
+			 marcel_self()->lwp->number);
 		  initial_task->prev = initial_task->next = initial_task;
 		  SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
 		  /* Désormais, on s'exécute dans le lwp 0 */
@@ -1715,6 +1728,10 @@ void marcel_sched_init(unsigned nb_lwp)
 #endif /* MA__LWPS */
 #ifdef MA__ACTIVATION
   init_upcalls(GET_NB_LWPS);
+#endif
+
+#ifdef PM2DEBUG
+  pm2debug_marcel_launched=1;
 #endif
 
 #ifdef MA__TIMER

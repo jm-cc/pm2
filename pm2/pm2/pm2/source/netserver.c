@@ -31,8 +31,16 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
-*/
 
+______________________________________________________________________________
+$Log: netserver.c,v $
+Revision 1.8  2000/01/31 15:58:24  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
+*/
+/* #define DEBUG */
 #include <pm2.h>
 #include <madeleine.h>
 #include <sys/netserver.h>
@@ -73,7 +81,7 @@ void _netserver_term_func(void *arg)
 static any_t netserver(any_t arg)
 {
   unsigned tag;
-
+  
   marcel_cleanup_push(_netserver_term_func, marcel_self());
 
   while(!finished) {

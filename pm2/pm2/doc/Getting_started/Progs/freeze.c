@@ -52,7 +52,7 @@ pm2_main (int argc, char *argv[])
 	}
 
       for (i = 0; i < NB_THREADS; i++)
-	  pm2_completion_wait (&c);
+	pm2_completion_wait (&c);
 
       tprintf ("Final value: %d\n", counter);
 

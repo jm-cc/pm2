@@ -22,7 +22,7 @@ f (void *arg)
       marcel_mutex_lock (&mutex);	// Here!
 
       tmp = counter;
-      marcel_yield ();			// Here!
+      marcel_yield ();		// Here!
       if (forward)
 	tmp++;
       else
@@ -55,7 +55,7 @@ pm2_main (int argc, char *argv[])
 	}
 
       for (i = 0; i < NB_THREADS; i++)
-	  pm2_completion_wait (&c);
+	pm2_completion_wait (&c);
 
       tprintf ("Final value: %d\n", counter);
       pm2_halt ();

@@ -51,6 +51,8 @@ if [ ! -d ${GENDIR} ] ; then
     mkdir -p ${GENDIR}
 fi
 
+echo "// This is an empty file for compatibility with FUT" > ${GENDIR}/fut_defines.h
+
 deffile=${GENDIR}/fut_entries.h
 echo "#ifndef FUT_ENTRIES_IS_DEF" > $deffile
 echo "#define FUT_ENTRIES_IS_DEF" >> $deffile

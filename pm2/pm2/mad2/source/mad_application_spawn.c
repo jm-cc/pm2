@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_application_spawn.c,v $
+Revision 1.6  2000/06/16 16:32:59  oaumage
+- Correction du parsing du fichier de configuration
+
+Revision 1.5  2000/06/16 14:03:50  oaumage
+- Mise a jour par rapport au nouveau fonctionnement de pm2conf
+
 Revision 1.4  2000/05/19 08:20:07  oaumage
 - correction de la fonction de generation de l'URL
 
@@ -132,7 +138,17 @@ mad_read_conf(p_mad_configuration_t   configuration,
       exit(1);
     }
 
-  fscanf(f, "%d", &(configuration->size));
+    {
+      char commande[MAX_ARG_STR_LEN];
+      int ret;
+      
+      sprintf(commande, "exit `cat %s | wc -w`", configuration_file);
+
+      ret = system(commande);
+
+      configuration->size = WEXITSTATUS(ret);
+    }
+
   configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
 
@@ -203,12 +219,14 @@ mad_generate_url(p_mad_madeleine_t madeleine)
 char *
 mad_pre_init(p_mad_adapter_set_t adapter_set)
 {
-  p_mad_madeleine_t madeleine = &main_madeleine;
+  p_mad_madeleine_t  madeleine  = &main_madeleine;
+  int                dummy_argc = 1;
+  char              *dummy_argv[0] = "unavailable";
 
   LOG_IN();
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
-  mad_managers_init();
+  mad_managers_init(&argc, argv);
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
 
@@ -298,7 +316,7 @@ mad_parse_url(p_mad_madeleine_t  madeleine,
 p_mad_madeleine_t
 mad_init(
 	 ntbx_host_id_t  rank,
-	 char           *configuration_file __attribute__ ((unused)),
+	 char           *configuration_file,
 	 char           *url
 	 )
 {
@@ -308,15 +326,18 @@ mad_init(
   tbx_bool_t                 master          = tbx_false;
   tbx_bool_t                 slave           = tbx_false;
   char                       conf_file[128];
-  tbx_bool_t                 conf_spec = tbx_false;
 
   LOG_IN(); 
   if (!configuration_file)
     {    
-      configuration_file = conf_file;
-      sprintf(conf_file, "%s/.mad2_conf", mad_get_mad_root());
-      conf_spec = tbx_true;
-    }
+      if (getenv("PM2_CONF_FILE"))
+	{
+	  configuration_file = conf_file;
+	  sprintf(conf_file, "%s", getenv("PM2_CONF_FILE"));
+	}
+      else
+	FAILURE("configuration file not specified");
+    }  
 
   mad_read_conf(configuration, configuration_file);
   mad_parse_url(madeleine, url, &master);
@@ -334,8 +355,8 @@ mad_init(
     {
       if (rank == -1)
 	{
-	  int   i = 1;
-	  char *host_name    = NULL;
+	  int   i         = 1;
+	  char *host_name = NULL;
 	  
 	  host_name = TBX_MALLOC(MAX_HOSTNAME_LEN);
 	  CTRL_ALLOC(host_name);  

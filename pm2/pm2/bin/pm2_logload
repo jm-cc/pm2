@@ -21,7 +21,7 @@ do
     num=`expr $num + 1`
 done
 
-logfile="/tmp/mad3log-${USER:-nobody}-${num}"
+logfile="/tmp/pm2log-${USER:-nobody}-${num}"
 
 [ -f $logfile ] && rm -f $logfile
 

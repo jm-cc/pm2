@@ -35,6 +35,7 @@ typedef struct s_mad_channel		*p_mad_channel_t;
 typedef struct s_mad_channel_process	*p_mad_channel_process_t;
 typedef struct s_mad_madeleine          *p_mad_madeleine_t;
 typedef struct s_mad_settings           *p_mad_settings_t;
+typedef struct s_mad_dynamic            *p_mad_dynamic_t;
 typedef struct s_mad_session		*p_mad_session_t;
 typedef struct s_mad_adapter_description	*p_mad_adapter_description_t;
 typedef struct s_mad_adapter_set	*p_mad_adapter_set_t;

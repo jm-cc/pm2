@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: slot_alloc.c,v $
+Revision 1.4  2000/09/12 15:45:53  gantoniu
+Made all necessary modifications to allow flavors without dsm be created and compiled.
+
 Revision 1.3  2000/09/04 07:42:47  rnamyst
 Minor modifs (removed some debug messages)
 
@@ -191,7 +194,12 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
 {
   size_t overall_size;
   slot_header_t *header_ptr;
+
+#ifdef DSM
   static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, DEFAULT_DSM_PROTOCOL, 1, 32};
+#else
+  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 0, 1, 32};
+#endif
 
 #ifdef ISOADDR_SLOT_ALLOC_TRACE
   fprintf(stderr,"Slot_alloc is starting, req_size = %d\n", req_size);
@@ -474,6 +482,8 @@ size_t slot_get_header_size()
 
 #endif // ifndef ISOMALLOC_USE_MACROS
 
+#ifdef DSM
+
 #include "dsm_page_manager.h"
 
 void slot_set_shared(void *addr)
@@ -551,6 +561,6 @@ void slot_set_shared(void *addr)
 
 
 }
-
+#endif //DSM
 
 

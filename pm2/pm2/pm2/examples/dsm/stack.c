@@ -102,7 +102,8 @@ void local() {
   /* first, jump to the other stack */
   marcel_prepare_stack_jump(start);
 
-  tfprintf(stderr,"[%p, %p] In local, with start=%p\n", marcel_self(), (void*) get_sp());
+  tfprintf(stderr,"[%p, %p] In local, with start=%p\n", marcel_self(), (void*) get_sp(),
+	   start);
 
   if (setjmp(buf)==0) {
     marcel_setspecific(bufkey, (any_t) &buf);

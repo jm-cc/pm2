@@ -165,7 +165,7 @@ EOF
 ############################################################
 # Main
 
-PM2_CONFIG="pm2-config --flavor=$flavor"
+PM2_CONFIG="${PM2_ROOT}/bin/pm2-config --flavor=$flavor"
 
 # Generating directories
 

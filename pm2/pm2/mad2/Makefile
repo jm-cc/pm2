@@ -41,19 +41,15 @@ LIBRARY=mad2
 #---------------------------------------------------------------------
 LIBNAME=mad
 
-# Regle par defaut
-#---------------------------------------------------------------------
-.PHONY: default
-default:
-
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
 # Inclusion du cache specifique a madeleine
 #---------------------------------------------------------------------
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/mad2-specific.mak
+endif
 
 # Gestion des drivers : prise en compte des fichiers
 #---------------------------------------------------------------------
@@ -77,18 +73,11 @@ include $(PM2_ROOT)/make/libs-rules.mak
 
 # Inclusion du makefile de dependance des drivers
 #---------------------------------------------------------------------
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
 -include $(LIB_C_DEPENDS_ADDED)
 endif
 endif
-endif
-
-# Regle par defaut: make dans le repertoire de PM2
-#---------------------------------------------------------------------
-default:
-	$(MAKE) -C $(PM2_ROOT)
 
 # Construction des drivers
 #---------------------------------------------------------------------

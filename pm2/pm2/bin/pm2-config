@@ -169,7 +169,7 @@ pm2config_set_vars()
 
     # Build directory
     if [ -z "$PM2_BUILD" ] ; then
-	_PM2CONFIG_BUILD=${PM2_HOME:-${HOME}}/build/$flavor
+	_PM2CONFIG_BUILD="${PM2_BUILD_DIR:-${PM2_HOME:-${HOME}}/build}/$flavor"
     else
 	eval _PM2CONFIG_BUILD="$PM2_BUILD"
     fi

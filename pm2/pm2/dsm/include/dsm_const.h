@@ -25,9 +25,10 @@ typedef enum
 
 typedef unsigned long int dsm_page_index_t;
 
-typedef unsigned int dsm_node_t;
+typedef int dsm_node_t;
 
-#define NOBODY ((dsm_node_t)-1)
+extern const dsm_node_t NOBODY;
+
 
 
 /* error codes returned by some functions */

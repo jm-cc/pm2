@@ -28,12 +28,17 @@
  * Macros and constants
  */
 
-#define DEBUG 1
 DEBUG_DECLARE(udp)
+
 #undef  DEBUG_NAME
 #define DEBUG_NAME udp
 
+#ifdef DEBUG
 #define MAD_UDP_STATS     1
+#else  // DEBUG
+#define MAD_UDP_STATS     0
+#endif // DEBUG
+
 #define MAD_UDP_USE_IOVEC 0
 
 #undef  max
@@ -216,7 +221,7 @@ mad_udp_send_request(p_mad_connection_t   connection,
 					   MAD_UDP_RRM_HD_SIZE,
 					   MAD_UDP_REQ_SIZE)];
 #endif // MAD_UDP_USE_IOVEC
-  int                             msgid;
+  ntbx_udp_request_id_t           msgid;
   tbx_bool_t                      ack_received;
 #if MAD_UDP_STATS
   int                             loop_cnt = -1;
@@ -302,7 +307,7 @@ mad_udp_send_request(p_mad_connection_t   connection,
     
   } while (!ack_received);
   
-#if DEBUG
+#ifdef DEBUG
   if (msgid > specific->snd_msgid)
     DISP("Request ACK or RRM msgid too high !");
 #endif // DEBUG
@@ -327,7 +332,7 @@ mad_udp_recv_request(p_mad_channel_t channel)
   ntbx_udp_request_id_t           msgid = 0;
   
   p_mad_connection_t              in;
-  p_mad_udp_connection_specific_t in_specific;
+  p_mad_udp_connection_specific_t in_specific = NULL;
   tbx_darray_index_t              idx;
   
   ntbx_udp_socket_t               so_req;
@@ -398,7 +403,7 @@ mad_udp_recv_request(p_mad_channel_t channel)
     if (msgid > in_specific->rcv_msgid)
       specific->strange_reqs++;
 #endif // MAD_UDP_STATS
-#if DEBUG
+#ifdef DEBUG
     if (msgid > in_specific->rcv_msgid) {
       DISP("REQ msgid too high !");
       break;
@@ -434,7 +439,7 @@ mad_udp_register(p_mad_driver_t driver)
 {
   p_mad_driver_interface_t interface = NULL;
 
-#if DEBUG
+#ifdef DEBUG
   DEBUG_INIT(udp);
 #endif // DEBUG
   
@@ -828,7 +833,7 @@ mad_udp_finalize_message(p_mad_connection_t out)
   LOG_IN();
   specific = out->specific;
   specific->snd_msgid = (specific->snd_msgid + 1) % MAD_UDP_REQ_MAXNO;
-#if DEBUG
+#ifdef DEBUG
   if (!specific->snd_msgid)
     DISP("*** Tour du compteur de req snd ***");
 #endif // DEBUG
@@ -863,7 +868,7 @@ mad_udp_message_received(p_mad_connection_t in)
   LOG_IN();
   specific = in->specific;
   specific->rcv_msgid = (specific->rcv_msgid + 1) % MAD_UDP_REQ_MAXNO;
-#if DEBUG
+#ifdef DEBUG
   if (!specific->rcv_msgid)
     DISP("*** Tour du compteur de req rcv ***");
 #endif // DEBUG
@@ -928,16 +933,17 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
     char              *to_send;
     int                ack_rrm_len;
     
-    bytes_read      = buffer->bytes_read;
-    lg_to_snd       = buffer->bytes_written - bytes_read;
-    ptr             = (void *)buffer->buffer;
-    nb_packet       = 0;
-    msgid           = connection_specific->snd_msgid;
-    iov[0].iov_base = dgram_hd;
-    iov[0].iov_len  = MAD_UDP_DGRAM_HD_SIZE;
+    bytes_read       = buffer->bytes_read;
+    lg_to_snd        = buffer->bytes_written - bytes_read;
+    ptr              = (void *)buffer->buffer;
+    nb_packet        = 0;
+    last_packet_size = 0;
+    msgid            = connection_specific->snd_msgid;
+    iov[0].iov_base  = dgram_hd;
+    iov[0].iov_len   = MAD_UDP_DGRAM_HD_SIZE;
     MAD_UDP_DGRAM_SET_MSGID(dgram_hd, msgid);
-    rm_rcv_port     = connection_specific->rm_port[RCV_DATA];
-    rm_rcv_in_addr  = connection_specific->rm_in_addr;
+    rm_rcv_port      = connection_specific->rm_port[RCV_DATA];
+    rm_rcv_in_addr   = connection_specific->rm_in_addr;
     
     /*
      * Send buffer in MAX_DGRAM_SIZE-length packets.
@@ -954,7 +960,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
       
       lg_snt = ntbx_udp_sendmsg(so_snd, iov, 2, &remote_address);
       nb_packet++;
-#if DEBUG
+#ifdef DEBUG
       if (lg_snt != last_packet_size + MAD_UDP_DGRAM_HD_SIZE)
 	printf("warning: %de packet not fully sent !\n", nb_packet);
 #endif // DEBUG
@@ -973,54 +979,47 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
     memset(to_send, 0xFF, nb_packet);
     
     do {
-      tbx_bool_t reemit;
+      tbx_bool_t reemit = tbx_false;
       
       /* Wait for ACK or RRM on SND_DATA socket. */
-      //if (ntbx_udp_select(so_snd, 500000)) {
-	ntbx_udp_recvfrom(so_snd, ack_rrm, ack_rrm_len, &remote_address);
-	if (MAD_UDP_IS_RRM(ack_rrm)) {
-	  if (   (MAD_UDP_RRM_MSGID(ack_rrm) == msgid)
-	      && (remote_address.sin_port == rm_rcv_port)
-	      && (remote_address.sin_addr.s_addr == rm_rcv_in_addr.s_addr)) {
-	    reemit = tbx_true;
+
+      ntbx_udp_recvfrom(so_snd, ack_rrm, ack_rrm_len, &remote_address);
+      if (MAD_UDP_IS_RRM(ack_rrm)) {
+	reemit =
+	  ((MAD_UDP_RRM_MSGID(ack_rrm) == msgid)
+	   && (remote_address.sin_port == rm_rcv_port)
+	   && (remote_address.sin_addr.s_addr == rm_rcv_in_addr.s_addr));
 #if MAD_UDP_STATS
-	  } else { // Ignore all other RRM's
-	    if ((remote_address.sin_addr.s_addr != rm_rcv_in_addr.s_addr)
-		|| (remote_address.sin_port != rm_rcv_port)) {
-	      channel_specific->strange_rrms++;
-	    } else if (msgid < connection_specific->snd_msgid) {
-	      channel_specific->old_rrms++;
-	    } else {
-	      channel_specific->wrong_rrms++;
-	    }
-#endif // MAD_UDP_STATS
-	  }
-	  
-	} else if (MAD_UDP_IS_ACK(ack_rrm)) {
-	  if (   (MAD_UDP_ACK_MSGID(ack_rrm) == msgid)
-	      && (remote_address.sin_port == rm_rcv_port)
-	      && (remote_address.sin_addr.s_addr == rm_rcv_in_addr.s_addr)) {
-	    /* Buffer ACK received: use it as ACK for ACK. */
-	    break;
+	if (!reemit) { // Ignore all other RRM's
+	  if ((remote_address.sin_addr.s_addr != rm_rcv_in_addr.s_addr)
+	      || (remote_address.sin_port != rm_rcv_port)) {
+	    channel_specific->strange_rrms++;
+	  } else if (msgid < connection_specific->snd_msgid) {
+	    channel_specific->old_rrms++;
 	  } else {
-	    // An old buffer "End of emission" ACK was received.
-	    // It means that ACK for ACK was lost => resend it.
-	    MAD_UDP_ACK_SET_MSGID(ack_rrm, MAD_UDP_ACK_MSGID(ack_rrm));
-	    ntbx_udp_sendto(so_snd,
-			    ack_rrm, MAD_UDP_ACK_SIZE, &remote_address);
-	    reemit = tbx_false;
+	    channel_specific->wrong_rrms++;
 	  }
-#if MAD_UDP_STATS
-	} else {
-	  channel_specific->strange_rrms++;
-#endif // MAD_UDP_STATS
 	}
+#endif // MAD_UDP_STATS
 	
-	//} else {
-	// Nothing incoming => reemit last "to_send" packets
-	//reemit = tbx_true;
-	//}
-      
+      } else if (MAD_UDP_IS_ACK(ack_rrm)) {
+	if (   (MAD_UDP_ACK_MSGID(ack_rrm) == msgid)
+	       && (remote_address.sin_port == rm_rcv_port)
+	       && (remote_address.sin_addr.s_addr == rm_rcv_in_addr.s_addr)) {
+	  /* Buffer ACK received. */
+	  break;
+	} else {
+	  // An old buffer "End of emission" ACK was received.
+	  // It means that ACK for ACK was lost => resend it.
+	  MAD_UDP_ACK_SET_MSGID(ack_rrm, MAD_UDP_ACK_MSGID(ack_rrm));
+	  ntbx_udp_sendto(so_snd,
+			  ack_rrm, MAD_UDP_ACK_SIZE, &remote_address);
+	}
+#if MAD_UDP_STATS
+      } else {
+	channel_specific->strange_rrms++;
+#endif // MAD_UDP_STATS
+      }
       
       /* Reemit specified packets
 	 (in to_send, == ack_rrm+MAD_UDP_RRM_HD_SIZE). */
@@ -1245,7 +1244,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 	ntbx_udp_sendto(so_rcv,
 			rrm_buf, MAD_UDP_RRM_HD_SIZE + last_packet + 1,
 			&remote_address);
-#if DEBUG
+#ifdef DEBUG
 	channel_specific->rrm_nb++;
 #endif // DEBUG
       }

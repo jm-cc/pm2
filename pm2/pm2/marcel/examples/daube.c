@@ -63,7 +63,9 @@
 
 #else
 
+#ifndef __ACT__
 #define NON_BLOCKING_IO
+#endif
 
 #include <marcel.h>
 

@@ -55,13 +55,19 @@ typedef struct s_mad_settings
   tbx_bool_t    leonie_dynamic_mode;
 } mad_settings_t;
 
+typedef struct s_mad_dynamic
+{
+  volatile tbx_bool_t mergeable; 
+  volatile tbx_bool_t updated;
+  volatile tbx_bool_t merge_done;
+  volatile tbx_bool_t split_done;
+} mad_dynamic_t;
+
 
 typedef struct s_mad_madeleine
 {
   TBX_SHARED;
-  volatile tbx_bool_t mergeable; 
-  volatile tbx_bool_t updated;
-  volatile tbx_bool_t merge_done;
+  p_mad_dynamic_t     dynamic; 
   p_mad_settings_t    settings;
   p_mad_session_t     session;
   p_mad_directory_t   dir;

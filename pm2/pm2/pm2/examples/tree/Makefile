@@ -42,21 +42,10 @@ include ../../make/common.mak
 all: tree
 
 
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
+$(PM2_OBJ)/tree.o: tree.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
-
-# executables :
-
-
-# test :
-
-$(PM2_OBJ)/tree.o: tree.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-tree: $(PM2_OBJ)/tree.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
+tree: $(PM2_OBJ)/tree.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
 

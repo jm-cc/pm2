@@ -128,7 +128,7 @@ clean: cleantools
 
 cleantools:
 	$(COMMON_HIDE) set -e; \
-	for i in ezflavor sigmund/sigmund; do \
+	for i in ezflavor sigmund; do \
 		$(MAKE) -s -C $$i clean ; \
 	done
 
@@ -138,7 +138,7 @@ cleanall: cleantoolsall
 
 cleantoolsall:
 	$(COMMON_HIDE) set -e; \
-	for i in ezflavor sigmund/sigmund; do \
+	for i in ezflavor sigmund; do \
 		$(MAKE) -s -C $$i cleanall ; \
 	done
 

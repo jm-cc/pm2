@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.7  2000/11/18 19:45:10  rnamyst
+Makefiles now use 'recursive waves' to generate .h files, .fut files, etc.
+
 Revision 1.6  2000/11/03 14:12:30  gantoniu
 Added support for profiling (LOG_IN/LOG_OUT).
 
@@ -640,7 +643,9 @@ void ISOADDR_INFO_func(void)
 
 int isoaddr_page_get_status(int index)
 {
+#ifdef ISOADDR_INFO_TRACE
   int master = _info_table[index].master;
+#endif
 
   LOG_IN();
 

@@ -162,6 +162,8 @@ void dsm_set_user_data2_init_func(dsm_user_data2_init_func_t func);
 
 void dsm_invalidate_not_owned_pages();
 
+void dsm_invalidate_not_owned_pages_without_protect();
+
 void dsm_alloc_page_bitmap(unsigned long index); 
 
 void dsm_free_page_bitmap(unsigned long index);

@@ -76,7 +76,7 @@ any_t sum(any_t arg)
   return NULL;
 }
 
-Tick t1, t2;
+tbx_tick_t t1, t2;
 
 int marcel_main(int argc, char **argv)
 {
@@ -94,20 +94,20 @@ int marcel_main(int argc, char **argv)
   j.inf = 1;
   if(argc > 1) {
     j.sup = atoi(argv[1]);
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
     marcel_create(NULL, &attr, sum, (any_t)&j);
     marcel_sem_P(&j.sem);
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
     printf("Sum from 1 to %d = %d\n", j.sup, j.res);
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    temps = TBX_TIMING_DELAY(t1, t2);
     printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
     j.sup = atoi(argv[1]);
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
     marcel_create(NULL, &attr, sum, (any_t)&j);
     marcel_sem_P(&j.sem);
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
     printf("Sum from 1 to %d = %d\n", j.sup, j.res);
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    temps = TBX_TIMING_DELAY(t1, t2);
     printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
   } else {
     LOOP(bcle)
@@ -116,12 +116,12 @@ int marcel_main(int argc, char **argv)
       scanf("%d", &j.sup);
       if(j.sup == 0)
 	EXIT_LOOP(bcle);
-      GET_TICK(t1);
+      TBX_GET_TICK(t1);
       marcel_create(NULL, &attr, sum, (any_t)&j);
       marcel_sem_P(&j.sem);
-      GET_TICK(t2);
+      TBX_GET_TICK(t2);
       printf("Sum from 1 to %d = %d\n", j.sup, j.res);
-      temps = timing_tick2usec(TICK_DIFF(t1, t2));
+      temps = TBX_TIMING_DELAY(t1, t2);
       printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
     END_LOOP(bcle)
   }

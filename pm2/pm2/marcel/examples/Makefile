@@ -36,48 +36,51 @@
 .PHONY: default all
 default: all
 
-MAR_EX_DIR	:=	.
+SRC_DIR     :=  ./
+APP_CFLAGS  :=
+APP_LDFLAGS :=
+APP_LLIBS   :=
 
 include ../Makefile
 
-all:	$(BIN_DIR)/active	\
-	$(BIN_DIR)/cleanup	\
-	$(BIN_DIR)/contsw	\
-	$(BIN_DIR)/create	\
-	$(BIN_DIR)/daube	\
-	$(BIN_DIR)/delay	\
-	$(BIN_DIR)/derout	\
-	$(BIN_DIR)/eclone	\
-	$(BIN_DIR)/force_raise	\
-	$(BIN_DIR)/kbd		\
-	$(BIN_DIR)/keys		\
-	$(BIN_DIR)/matrix	\
-	$(BIN_DIR)/once		\
-	$(BIN_DIR)/poll		\
-	$(BIN_DIR)/raise	\
-	$(BIN_DIR)/sample	\
-	$(BIN_DIR)/stack_jump	\
-	$(BIN_DIR)/sumtime	\
-	$(BIN_DIR)/timeout	\
-	$(BIN_DIR)/tsp		\
-	$(BIN_DIR)/tube		\
-	$(BIN_DIR)/usersched	\
-	$(BIN_DIR)/userspace
+all:	$(APP_BIN)/active	\
+	$(APP_BIN)/cleanup	\
+	$(APP_BIN)/contsw	\
+	$(APP_BIN)/create	\
+	$(APP_BIN)/daube	\
+	$(APP_BIN)/delay	\
+	$(APP_BIN)/derout	\
+	$(APP_BIN)/eclone	\
+	$(APP_BIN)/force_raise	\
+	$(APP_BIN)/kbd		\
+	$(APP_BIN)/keys		\
+	$(APP_BIN)/matrix	\
+	$(APP_BIN)/once		\
+	$(APP_BIN)/poll		\
+	$(APP_BIN)/raise	\
+	$(APP_BIN)/sample	\
+	$(APP_BIN)/stack_jump	\
+	$(APP_BIN)/sumtime	\
+	$(APP_BIN)/timeout	\
+	$(APP_BIN)/tsp		\
+	$(APP_BIN)/tube		\
+	$(APP_BIN)/usersched	\
+	$(APP_BIN)/userspace
 
 
-$(BIN_DIR)/eclone: $(OBJ_DIR)/clone.o
+$(APP_BIN)/eclone: $(APP_OBJ)/clone.o
 
-$(OBJ_DIR)/eclone.o: $(SRC_DIR)/eclone.c
-	$(MAR_CC) $(MAR_CFLAGS) -O0 -c $< -o $@
+$(APP_OBJ)/eclone.o: $(SRC_DIR)/eclone.c
+	$(MARCEL_CC) $(MARCEL_CFLAGS) -O0 -c $< -o $@
 
 
-$(BIN_DIR)/tsp: $(OBJ_DIR)/tsp-main.o $(OBJ_DIR)/tsp-job.o
+$(APP_BIN)/tsp: $(APP_OBJ)/tsp-main.o $(APP_OBJ)/tsp-job.o
 
-$(OBJ_DIR)/tsp.o: $(SRC_DIR)/tsp.c
-	$(MAR_CC) $(MAR_CFLAGS) -DMARCEL -DMT -c $< -o $@
+$(APP_OBJ)/tsp.o: $(SRC_DIR)/tsp.c
+	$(MARCEL_CC) $(MARCEL_CFLAGS) -DMARCEL -DMT -c $< -o $@
 
-$(OBJ_DIR)/tsp-main.o: $(SRC_DIR)/tsp-main.c
-	$(MAR_CC) $(MAR_CFLAGS) -DMARCEL -DMT -c $< -o $@
+$(APP_OBJ)/tsp-main.o: $(SRC_DIR)/tsp-main.c
+	$(MARCEL_CC) $(MARCEL_CFLAGS) -DMARCEL -DMT -c $< -o $@
 
-$(OBJ_DIR)/tsp-job.o: $(SRC_DIR)/tsp-job.c
-	$(MAR_CC) $(MAR_CFLAGS) -DMARCEL -DMT -c $< -o $@
+$(APP_OBJ)/tsp-job.o: $(SRC_DIR)/tsp-job.c
+	$(MARCEL_CC) $(MARCEL_CFLAGS) -DMARCEL -DMT -c $< -o $@

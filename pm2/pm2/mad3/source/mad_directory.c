@@ -296,8 +296,8 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
 	TBX_MALLOC(strlen("channel") + strlen(dir_channel->name) + 2);
       sprintf(channel_reference_name, "%s:%s", "channel", dir_channel->name);
 
-      dir_channel->public = mad_leonie_receive_unsigned_int();
-      if (dir_channel->public)
+      dir_channel->not_private = mad_leonie_receive_unsigned_int();
+      if (dir_channel->not_private)
 	{
 	  tbx_slist_append(mad_public_channel_slist, dir_channel->name);
 	}
@@ -1238,7 +1238,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->id            = channel_id++;
       mad_channel->name          = tbx_strdup(dir_channel->name);
       mad_channel->pc            = dir_channel->pc;
-      mad_channel->public        = dir_channel->public;
+      mad_channel->not_private   = dir_channel->not_private;
       mad_channel->dir_channel   = dir_channel;
       mad_channel->adapter       = mad_adapter;
 
@@ -1823,7 +1823,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->id            = channel_id++;
       mad_channel->name          = tbx_strdup(dir_fchannel->name);
       mad_channel->pc            = dir_channel->pc;
-      mad_channel->public        = tbx_false;
+      mad_channel->not_private   = tbx_false;
       mad_channel->dir_channel   = dir_channel;
       mad_channel->dir_fchannel  = dir_fchannel;
       mad_channel->adapter       = mad_adapter;
@@ -2381,7 +2381,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->id             = channel_id++;
       mad_channel->name           = tbx_strdup(dir_vchannel->name);
       mad_channel->pc             = dir_vchannel->pc;
-      mad_channel->public         = tbx_true;
+      mad_channel->not_private    = tbx_true;
       mad_channel->dir_vchannel   = dir_vchannel;
       mad_channel->adapter        = forwarding_adapter;
 
@@ -2684,7 +2684,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->id                 = channel_id++;
       mad_channel->name               = dir_xchannel->name;
       mad_channel->pc                 = dir_xchannel->pc;
-      mad_channel->public             = tbx_true;
+      mad_channel->not_private        = tbx_true;
       mad_channel->dir_xchannel       = dir_xchannel;
       mad_channel->adapter            = mux_adapter;
 
@@ -5397,9 +5397,9 @@ mad_dir_channel_cleanup(p_mad_madeleine_t madeleine)
       TBX_FREE(dir_channel->name);
       dir_channel->name = NULL;
 
-      dir_channel->id     = 0;
-      dir_channel->driver = NULL;
-      dir_channel->public = tbx_false;
+      dir_channel->id          = 0;
+      dir_channel->driver      = NULL;
+      dir_channel->not_private = tbx_false;
 
       TBX_FREE(dir_channel);
     }

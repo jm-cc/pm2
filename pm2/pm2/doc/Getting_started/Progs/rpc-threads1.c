@@ -1,12 +1,11 @@
-#include <stdio.h>
 #include "pm2.h"
+
+static int service_id;
 
 #define SIZE 32
 
-int sample_id;
-
-void
-sample_thread (void *arg)
+static void
+f (void *arg)
 {
   char rec_msg[SIZE];
   char sent_msg[SIZE];
@@ -26,7 +25,7 @@ sample_thread (void *arg)
       sprintf (sent_msg, "%s %d", rec_msg, pm2_self ());
       tprintf ("Passing on string: %s\n", sent_msg);
 
-      pm2_rawrpc_begin (next, sample_id, NULL);
+      pm2_rawrpc_begin (next, service_id, NULL);
       pm2_pack_byte (SEND_CHEAPER, RECV_CHEAPER, sent_msg, SIZE);
       pm2_rawrpc_end ();
     }
@@ -35,15 +34,15 @@ sample_thread (void *arg)
 /********************* Cut here ********************/
 
 static void
-sample_service (void)
+service (void)
 {
-  pm2_thread_create (sample_thread, NULL);
+  pm2_service_thread_create (f, NULL);
 }
 
 int
 pm2_main (int argc, char *argv[])
 {
-  pm2_rawrpc_register (&sample_id, sample_service);
+  pm2_rawrpc_register (&service_id, service);
 
   pm2_init (&argc, argv);
 
@@ -53,7 +52,7 @@ pm2_main (int argc, char *argv[])
       strcpy (msg, "Init");
 
       tprintf ("Sending string: %s\n", msg);
-      pm2_rawrpc_begin (1, sample_id, NULL);
+      pm2_rawrpc_begin (1, service_id, NULL);
       pm2_pack_byte (SEND_CHEAPER, RECV_CHEAPER, msg, SIZE);
       pm2_rawrpc_end ();
     }

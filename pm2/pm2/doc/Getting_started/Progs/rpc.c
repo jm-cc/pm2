@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <pm2.h>
 
 static int service_id;

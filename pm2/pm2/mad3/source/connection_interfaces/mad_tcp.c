@@ -571,20 +571,9 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	  channel_specific->active_fds = channel_specific->read_fds;
 
 #ifdef MARCEL
-#ifdef USE_MARCEL_POLL
 	  status = marcel_select(channel_specific->max_fds + 1,
 				 &channel_specific->active_fds,
 				 NULL);
-
-#else // USE_MARCEL_POLL
-	  status = tselect(channel_specific->max_fds + 1,
-			   &channel_specific->active_fds,
-			   NULL, NULL);
-	  if (status <= 0)
-	    {
-	      TBX_YIELD();
-	    }
-#endif // USE_MARCEL_POLL
 #else // MARCEL
 	  status = select(channel_specific->max_fds + 1,
 			  &channel_specific->active_fds,

@@ -5,6 +5,7 @@
 #include "menu.h"
 #include "flavor.h"
 #include "module.h"
+#include "common_opt.h"
 
 static GtkItemFactory *item_factory;
 
@@ -58,6 +59,16 @@ static void dummy_callback(GtkWidget *w, gpointer data)
   g_print("Sorry: not yet implemented!\n");
 }
 
+static void common_opt_show(GtkWidget *w, gpointer data)
+{
+  common_opt_display_panel();
+}
+
+static void common_opt_hide(GtkWidget *w, gpointer data)
+{
+  common_opt_hide_panel();
+}
+
 static GtkItemFactoryEntry menu_items[] = {
          { "/_Flavor",         NULL,         NULL, 0, "<Branch>" },
 	 { "/Flavor/_New",     "<control>N", new_callback, 0, NULL },
@@ -74,6 +85,10 @@ static GtkItemFactoryEntry menu_items[] = {
          { "/_Module",         NULL,         NULL, 0, "<Branch>" },
          { "/Module/_Select",  "<control>T", select_callback, 0, NULL },
          { "/Module/_Deselect","<control>D", deselect_callback, 0, NULL },
+	 { "/_View",           NULL,         NULL, 0, "<Branch>" },
+	 { "/View/_Common Options", NULL,    NULL, 0, "<Branch>" },
+	 { "/View/Common Options/_Display Panel", NULL, common_opt_show, 0, NULL },
+	 { "/View/Common Options/_Hide Panel", NULL, common_opt_hide, 0, NULL },
          { "/_Help",           NULL,         NULL, 0, "<LastBranch>" },
          { "/_Help/About",     NULL,         dummy_callback, 0, NULL },
        };
@@ -100,6 +115,7 @@ void menu_init(GtkWidget *vbox)
 
   menu_update_flavor(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
   menu_update_module(FALSE, FALSE);
+  menu_update_common_opt(FALSE);
 }
 
 void menu_update_flavor(gint load_enabled, gint reload,
@@ -145,4 +161,14 @@ void menu_update_module(gint select_enabled, gint deselect_enabled)
   gtk_widget_set_sensitive(gtk_item_factory_get_widget(item_factory,
 						       "/Module/Deselect"),
 			   deselect_enabled);
+}
+
+void menu_update_common_opt(gint displayed)
+{
+  gtk_widget_set_sensitive(gtk_item_factory_get_widget(item_factory,
+						       "/View/Common Options/Display Panel"),
+			   !displayed);
+  gtk_widget_set_sensitive(gtk_item_factory_get_widget(item_factory,
+						       "/View/Common Options/Hide Panel"),
+			   displayed);
 }

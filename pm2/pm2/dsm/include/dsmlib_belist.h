@@ -15,10 +15,11 @@
  */
 
 #include "tbx.h"
+#include "marcel.h"
 
 typedef struct be_cell { unsigned long number; struct be_cell * next;} be_cell;
+typedef struct be_list { be_cell *the_list; marcel_mutex_t the_mutex;} be_list;
 
-typedef be_cell *be_list;
 
 be_list init_be_list(long nb_preallocated_cells); //Warning: To be called only
                                                   //         ONCE!!! 
@@ -29,3 +30,9 @@ unsigned long remove_first_from_be_list(be_list *my_list);
 int remove_if_noted(be_list *my_list, unsigned long to_remove);
 
 void fprintf_be_list(be_list the_list);
+void lock_be_list(be_list the_list);
+void unlock_be_list(be_list the_list);
+
+
+
+

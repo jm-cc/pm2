@@ -16,6 +16,9 @@
 /*
  * leo_includes.c
  * ==============
+ *
+ * - helper routines used by leo_file_processing to handle the
+ *   inclusion of the networks configuration file
  */
 
 #include <stdlib.h>

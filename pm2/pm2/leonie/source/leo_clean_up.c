@@ -16,6 +16,9 @@
 /*
  * leonie_clean_up.c
  * =================
+ *
+ * - session disconnect routines
+ *
  */
 
 #include <stdlib.h>

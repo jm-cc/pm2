@@ -16,6 +16,9 @@
 /*
  * leo_communication.c
  * ===================
+ *
+ * - simple ntbx_client wrappers
+ *
  */
 
 #include <stdlib.h>

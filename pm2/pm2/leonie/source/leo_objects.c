@@ -16,6 +16,9 @@
 /*
  * leo_objects.c
  * =============
+ *
+ * - object constructors
+ *
  */
 
 #include <stdlib.h>

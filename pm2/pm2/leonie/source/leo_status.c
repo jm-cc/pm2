@@ -16,7 +16,10 @@
 /*
  * leo_status.c
  * ============
- */ 
+ *
+ * - user level messages
+ *
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,7 +57,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
       char *comma = NULL;
       char buf_txt[41];
       char buf_opt[61];
-      
+
       strncpy(buf_opt, l_opt, 60);
       buf_opt[60] = '\0';
 
@@ -66,13 +69,13 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	{
 	  comma = " ";
 	}
-      
+
       DISP("%5s%s %s", s_opt, comma, buf_opt);
-      
+
       if (strlen(l_opt) > 60)
 	{
 	  l_opt += 60;
-	  
+
 	  while (strlen(l_opt) > 60)
 	    {
 	      strncpy(buf_opt, l_opt, 60);
@@ -81,7 +84,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	      l_opt += 60;
 	    }
 
-	  DISP("      %s", buf_opt);	  
+	  DISP("      %s", buf_opt);
 	}
 
       while (strlen(txt) > 40)
@@ -98,7 +101,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
     {
       char *comma = NULL;
       char buf_txt[41];
-      
+
       strncpy(buf_txt, txt, 40);
       buf_txt[40] = '\0';
       if (*s_opt && *l_opt)
@@ -109,13 +112,13 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	{
 	  comma = " ";
 	}
-      
+
       DISP("%5s%s %-20s %s", s_opt, comma, l_opt, buf_txt);
 
       if (strlen(txt) > 40)
 	{
 	  txt += 40;
-	  
+
 	  while (strlen(txt) > 40)
 	    {
 	      strncpy(buf_txt, txt, 40);
@@ -148,7 +151,7 @@ leo_help(void)
 		    "Export PATH, PM2_ROOT and LEO_XTERM     to client nodes");
   __leo_option_help("[--e]", "",
 		    "Do not export local PATH, PM2_ROOT and  LEO_XTERM to client nodes");
-  
+
   __leo_option_help("", "--flavor=FLAVOR",
 		    "Select FLAVOR as the application flavor");
   DISP("");
@@ -169,7 +172,7 @@ leo_help(void)
 		    "Preload required libraries for Marcel   SMP support");
   __leo_option_help("", "--smp",
 		    "Do not preload Marcel SMP support       libraries");
-  
+
   __leo_option_help("[-x]", "", "Open an Xterm for each session process");
   __leo_option_help("--x", "", "Do not open Xterms for session processes");
 
@@ -181,7 +184,7 @@ void
 leonie_failure_cleanup(void)
 {
   pid_t pid = 0;
-  
+
   LOG_IN();
   DISP("A failure has been detected, hit return to close the session");
   getchar();
@@ -199,7 +202,7 @@ leo_terminate(const char *msg)
 }
 
 void
-leo_error(const char *command) 
+leo_error(const char *command)
 {
   perror(command);
   leonie_failure_cleanup();
@@ -210,7 +213,7 @@ void
 leonie_processes_cleanup(void)
 {
   pid_t pid = 0;
-  
+
   LOG_IN();
   pid = getpid();
   kill(-pid, SIGHUP);

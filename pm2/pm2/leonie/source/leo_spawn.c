@@ -16,6 +16,9 @@
 /*
  * leo_spawn.c
  * ===========
+ *
+ * - loader-independant session building routines
+ *
  */
 
 #include <stdlib.h>

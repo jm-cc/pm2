@@ -16,6 +16,11 @@
 /*
  * leonie_loaders.c
  * ================
+ *
+ * - loader-dependent session building routines
+ * - loaders currently available:
+ *   . default
+ *   . bipload
  */
 
 #include <stdlib.h>
@@ -26,16 +31,6 @@
 #include <sys/wait.h>
 #include "leonie.h"
 
-
-/*
- * Leonie loaders general modes
- * ============================
- */
-
-/*
- * Leonie loaders general modes information
- * ========================================
- */
 
 //
 // PM2 scripts

@@ -16,6 +16,9 @@
 /*
  * leo_file_processing.c
  * =====================
+ *
+ * - configuration file processing
+ * - Madeleine's "directory" structure construction
  */
 
 #include <stdlib.h>

@@ -16,6 +16,9 @@
 /*
  * leo_session_control.c
  * =====================
+ *
+ * - routines responsible for session initialization and monitoring
+ *
  */
 
 #include <stdlib.h>

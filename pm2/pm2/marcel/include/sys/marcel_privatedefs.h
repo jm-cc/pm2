@@ -24,6 +24,8 @@
 #include "pm2_list.h"
 #include "marcel_exception.h"
 
+#include "marcel_ctx.h"
+
 #define MARCEL_ALIGN    64L
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
@@ -49,7 +51,7 @@ _PRIVATE_ typedef enum {
 #define SET_GHOST(pid)      (pid)->state = GHOST
 
 _PRIVATE_ typedef struct _struct_exception_block {
-  jmp_buf jb;
+  marcel_ctx_t ctx;
   struct _struct_exception_block *old_blk;
 } _exception_block;
 
@@ -102,10 +104,10 @@ _PRIVATE_ typedef struct _marcel_desc_struct {
 #ifdef MA__WORK
   volatile unsigned has_work;
 #endif
-  jmp_buf jbuf;
+  marcel_ctx_t ctx_yield;
   deviate_record_t *deviate_work;
   int sched_policy;
-  jmp_buf migr_jb;
+  marcel_ctx_t ctx_migr;
   marcel_t child, father;
   _exception_block *cur_excep_blk;
   marcel_sem_t client, thread;
@@ -123,11 +125,14 @@ _PRIVATE_ typedef struct _marcel_desc_struct {
     not_deviatable, next_cleanup_func;
   boolean detached, static_stack;
   marcel_sem_t suspend_sem;
+
+  /* Pour le code provenant de la libpthread */
   marcel_readlock_info *p_readlock_list;  /* List of readlock info structs */
   marcel_readlock_info *p_readlock_free;  /* Free list of structs */
   int p_untracked_readlock_count;       /* Readlocks not tracked by list */
   marcel_t p_nextwaiting;  /* Next element in the queue holding the thr */
   marcel_sem_t pthread_sync;
+
 #ifdef ENABLE_STACK_JUMPING
   void *dummy; // Doit rester le _dernier_ champ
 #endif
@@ -157,15 +162,20 @@ _PRIVATE_ typedef struct __lwp_struct {
 #endif
 #ifdef MA__ACTIVATION
   marcel_t upcall_new_task;                /* Task used in upcall_new */
+  union {
 #endif
-  volatile atomic_t _locked;               /* Lock for (un)lock_task() */
+    volatile atomic_t _locked;               /* Lock for (un)lock_task() */
+#ifdef MA__ACTIVATION
+    act_proc_info_t act_infos;
+  };
+#endif
   volatile boolean has_to_stop;            /* To force pthread_exit() */
   struct list_head lwp_list;
   char __security_stack[2 * THREAD_SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
   volatile marcel_t sec_desc;              /* Task descriptor for security stack */
 #ifdef MA__SMP
-  jmp_buf home_jb;
+  marcel_ctx_t home_ctx;
   marcel_kthread_t pid;
 #endif
 #ifndef MA__ONE_QUEUE
@@ -240,6 +250,8 @@ static __inline__ marcel_t __marcel_self(void)
 	        & ~(THREAD_SLOT_SIZE-1)) - MAL(sizeof(task_desc))))
 #define SECUR_STACK_TOP(lwp) \
    ((unsigned long)SECUR_TASK_DESC(lwp) - MAL(1) - TOP_STACK_FREE_AREA)
+#define SECUR_STACK_BOTTOM(lwp) \
+   ((unsigned long)(lwp)->__security_stack) 
 
 
 _PRIVATE_ enum {
@@ -269,6 +281,8 @@ static __inline__ void marcel_set_stack_jump(marcel_t m)
 extern volatile marcel_t __next_thread;
 
 static __inline__ marcel_t marcel_get_cur_thread() {
+#error Ca ne marche absolument pas en SMP !!!!
+#error Pourquoi pas marcel_self() ?
   return __next_thread;
 }
 #endif

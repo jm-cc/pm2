@@ -558,6 +558,7 @@ void fastcall marcel_freeze_sched(void)
 {
 	ma_local_bh_disable();
 	ma_preempt_disable();
+	_ma_raw_spin_lock(&ma_main_runqueue.lock);
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
@@ -565,12 +566,10 @@ void fastcall marcel_freeze_sched(void)
 			_ma_raw_spin_lock(&ma_lwp_rq(lwp)->lock);
 	}
 #endif
-	_ma_raw_spin_lock(&ma_main_runqueue.lock);
 }
 
 void fastcall marcel_unfreeze_sched(void)
 {
-	_ma_raw_spin_unlock(&ma_main_runqueue.lock);
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
@@ -578,8 +577,9 @@ void fastcall marcel_unfreeze_sched(void)
 			_ma_raw_spin_unlock(&ma_lwp_rq(lwp)->lock);
 	}
 #endif
-	ma_preempt_disable();
-	ma_local_bh_disable();
+	_ma_raw_spin_unlock(&ma_main_runqueue.lock);
+	ma_preempt_enable();
+	ma_local_bh_enable();
 }
 
 /*
@@ -3117,4 +3117,5 @@ void __ma_preempt_write_lock(ma_rwlock_t *lock)
 
 MARCEL_INT(__ma_preempt_write_lock);
 #endif 
+
 

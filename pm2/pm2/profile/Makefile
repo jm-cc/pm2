@@ -34,16 +34,13 @@
 #
 
 LIBRARY=profile
-#LIBNAME=profile
 
-#marcel_CC=gcc
-#marcel_AS=gcc
 
 include $(PM2_ROOT)/make/libs-vars.mak
 
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/profile-specific.mak
-
-ifdef APP_RECURSIF
+endif
 
 # The profile.c file includes fut_entries.h, but it cannot be actually
 # detected by make depend since there would be a circular dependency
@@ -52,21 +49,13 @@ ifneq ($(MAKECMDGOALS),fut)
 $(LIB_GEN_OBJ)/profile.o: $(LIB_GEN_INC)/fut_entries.h
 endif
 
-else # !APP_RECURSIF
-
 ifneq ($(LIB_GEN_BIN),)
 DUMMY_BUILD := $(shell mkdir -p $(LIB_GEN_BIN))
 endif
 
-.PHONY: default libs fut_files proflib fut
+.PHONY: default libs fut_files
 
-libs: fut_files $(LIB_GEN_INC)/fut_entries.h $(LIB_GEN_BIN)/fut_print proflib
-
-fut_files:
-	$(COMMON_HIDE) $(MAKE) -C ${PM2_ROOT} fut
-
-# The $(LIB_GEN_STAMP)/fut_stamp file is touched whenever one .fut
-# file is generated (see libs-rules.mak)
+libs: $(LIB_GEN_INC)/fut_entries.h $(LIB_GEN_BIN)/fut_print
 
 $(LIB_GEN_INC)/fut_entries.h: $(LIB_GEN_STAMP)/fut_stamp
 	$(LIB_PREFIX) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
@@ -81,19 +70,14 @@ $(LIB_GEN_STAMP)/fut_stamp: $(LIB_STAMP_FLAVOR)
 	if [ ! -d $(LIB_GEN_STAMP) ] ; then mkdir -p $(LIB_GEN_STAMP) ; fi
 	$(COMMON_HIDE) touch $@
 
-proflib:
-	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true
-
-fut:
-	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
+# Nothing can be done at 'do_h generation time'
+dot_h: ;
 
 clean:
 	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
 	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
 	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
 	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
-
-endif # APP_RECURSIF
 
 $(PM2_MAK_DIR)/profile-specific.mak: $(LIB_STAMP_FLAVOR)
 	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \

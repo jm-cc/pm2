@@ -13,8 +13,8 @@
 # General Public License for more details.
 
 # Configuration
-flavor="test_mad3"
-appdir="${PM2_ROOT}/mad3/examples"
+flavor="test_mad4"
+appdir="${PM2_ROOT}/mad4/examples"
 prog="mad_control"
 args="--x --p --l"
 hosts=${TESTCONFIG:-"localhost localhost"}
@@ -29,9 +29,9 @@ done
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ext=\"\" \
- --modules=\"init mad3 ntbx tbx marcel\" \
+ --modules=\"init mad4 ntbx tbx marcel\" \
  --init=\"opt\" \
- --mad3=\"opt ${net} marcel_poll\" \
+ --mad4=\"opt ${net}\" \
  --ntbx=\"opt\" \
  --tbx=\"opt\" \
  --marcel=\"opt mono\" \

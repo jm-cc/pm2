@@ -113,9 +113,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       TBX_FREE(dyn_buf);
       dyn_buf = NULL;
 
-      string  = tbx_string_init_to_c_string("the sender is ");
+      string  = tbx_string_init_to_cstring("the sender is ");
       tbx_string_append_int(string, my_local_rank);
-      dyn_buf = tbx_string_to_c_string(string);
+      dyn_buf = tbx_string_to_cstring(string);
       tbx_string_free(string);
       string  = NULL;      
 
@@ -186,9 +186,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       msg = tbx_strdup("token");
 
       its_local_rank = my_local_rank;
-      string  = tbx_string_init_to_c_string("the sender is ");
+      string  = tbx_string_init_to_cstring("the sender is ");
       tbx_string_append_int(string, my_local_rank);
-      dyn_buf = tbx_string_to_c_string(string);
+      dyn_buf = tbx_string_to_cstring(string);
       tbx_string_free(string);
       string  = NULL;
 
@@ -301,7 +301,8 @@ tbx_main(int argc, char **argv)
 
   DISP("Exiting");  
   
-  mad_exit(madeleine);
+  // mad_exit(madeleine);
+  common_exit(NULL);
 
   return 0;
 }

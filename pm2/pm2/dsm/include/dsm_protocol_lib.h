@@ -50,6 +50,8 @@ typedef void (*dsm_is_action_t)(unsigned long index, dsm_node_t req_node, dsm_no
 
 typedef void (*dsm_rp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node); // receive page server
 
+typedef void (*dsm_erp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size); // expert receive page server
+
 void dsmlib_rf_ask_for_read_copy(unsigned long index);
 
 void dsmlib_migrate_thread(unsigned long index);
@@ -61,13 +63,15 @@ void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node);
 void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_node);
 
 void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner);
+
 void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node);
+
 
 /****************** Hyperion protocols *********************************************/
 
 void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t req_node);
 
-void dsmlib_rp_hyp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node);
+void dsmlib_erp_hyp_receive_page(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size);
 
 #endif
 

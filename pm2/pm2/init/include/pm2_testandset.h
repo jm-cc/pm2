@@ -64,7 +64,9 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 
 #endif
 
-#define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
+//AD: #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
+// cette définition semble redondante.
+
 #ifdef SPARC_ARCH
 #  define SPINLOCK_DEFINED
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)

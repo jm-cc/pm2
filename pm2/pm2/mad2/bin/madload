@@ -62,7 +62,8 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "${PM2_DEBUG}" = on ]; then
-    prefix=${MAD2_ROOT}/bin/tcp/maddebug
+    prefix='pm2_gdb_load'
+    args="$args -d"
 else
     prefix=""
 fi

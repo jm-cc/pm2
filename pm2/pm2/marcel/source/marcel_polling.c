@@ -831,7 +831,6 @@ int marcel_ev_wait_one(marcel_ev_server_t server, marcel_ev_req_t req,
 	lock=ensure_lock_server(server);
 
 	verify_server_state(server);
-	MA_BUG_ON(req->state & MARCEL_EV_STATE_REGISTERED);
 
 	__init_req(req);
 	req->server=server;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.8  2000/04/17 08:31:05  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.7  2000/04/11 09:07:10  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -201,7 +204,7 @@ _PRIVATE_ extern volatile unsigned _nb_keys;
 static __inline__ int marcel_setspecific(marcel_key_t key, any_t value) __attribute__ ((unused));
 static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
 {
-#ifdef DEBUG
+#ifdef MA__DEBUG
    if((key < 0) || (key >= _nb_keys))
       RAISE(CONSTRAINT_ERROR);
 #endif
@@ -212,7 +215,7 @@ static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
 static __inline__ any_t marcel_getspecific(marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t marcel_getspecific(marcel_key_t key)
 {
-#ifdef DEBUG
+#ifdef MA__DEBUG
    if((key < 0) || (key >= _nb_keys))
       RAISE(CONSTRAINT_ERROR);
 #endif
@@ -222,7 +225,7 @@ static __inline__ any_t marcel_getspecific(marcel_key_t key)
 static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
-#ifdef DEBUG
+#ifdef MA__DEBUG
    if((key < 0) || (key >= _nb_keys))
       RAISE(CONSTRAINT_ERROR);
 #endif

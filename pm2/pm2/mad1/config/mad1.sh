@@ -1,4 +1,5 @@
 PM2_MAD1_LIBNAME=mad
+PM2_DEFAULT_LOADER=${PM2_ROOT}/mad1/bin/tcp/madload
 PM2_MAD1_MODULE_DEPEND_LIB="${PM2_MAD1_MODULE_DEPEND_LIB} marcel"
 
     case ${PM2_SYS} in

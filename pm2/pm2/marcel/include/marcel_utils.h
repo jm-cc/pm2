@@ -25,7 +25,7 @@
 
 #section types
 #ifndef __ASSEMBLY__
-#  if !(defined(FALSE) || defined(TRUE)) // AD: TRUE/FALSE are sometimes already defined in libc
+#  if !(defined(FALSE) || defined(TRUE)) /* AD: TRUE/FALSE are sometimes already defined in libc */
 enum { FALSE, TRUE };
 #  endif
 typedef int boolean;

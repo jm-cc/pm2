@@ -649,7 +649,7 @@ marcel_pollid_create_X(marcel_pollgroup_func_t g,
 #define MARCEL_POLL_SUCCESS_FOR(pollinst) ({MARCEL_EV_REQ_SUCCESS(&(pollinst)->inst); (void*)1;})
 
 
-// ATTENTION : changement d'interface
+// ATTENTION : changement d interface
 // Remplacer : "FOREACH_POLL(id, _arg) { ..."
 // par : "FOREACH_POLL(id) { GET_ARG(id, _arg); ..."
 // Ou mieux: utiliser FOREACH_EV_POLL[_BASE]

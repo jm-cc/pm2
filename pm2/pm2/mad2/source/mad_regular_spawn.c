@@ -43,6 +43,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
   char                  *arg           = NULL;
   char                  *cwd           = NULL;
   char                  *prefix        = NULL;
+  char                  *exec          = NULL;
   int                    i;
   mad_adapter_id_t       ad;
 
@@ -51,6 +52,15 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
     {
       LOG_OUT();
       return;
+    }
+
+  if (settings->app_cmd)
+    {
+      exec = settings->app_cmd;
+    }
+  else
+    {
+      exec = argv[0];
     }
   
   cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
@@ -111,7 +121,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 
   for (i = 1; i < configuration->size; i++)
     {
-      if (argv[0][0] != '/')
+      if (exec[0] != '/')
 	{
 	  sprintf(cmd,
 		  "%s %s %s %s/%s -cwd %s -rank %d -conf %s %s &",
@@ -119,7 +129,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 		  configuration->host_name[i],
 		  prefix,
 		  cwd,
-		  argv[0],
+		  exec,
 		  cwd,
 		  i,  /* rank */
 		  settings->configuration_file,
@@ -132,7 +142,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 		  settings->rsh_cmd,
 		  configuration->host_name[i],
 		  prefix,
-		  argv[0],
+		  exec,
 		  cwd,
 		  i,  /* rank */
 		  settings->configuration_file,
@@ -147,7 +157,10 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
   TBX_FREE(cwd);
   TBX_FREE(cmd);
   TBX_FREE(arg_str);
-  TBX_FREE(arg);  
+  TBX_FREE(arg);
+
+  exec = NULL;
+
   LOG_OUT();
 }
 
@@ -163,7 +176,7 @@ mad_init(int                  *argc,
 
 #ifdef PM2DEBUG
   pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);  
-#endif /* PM2_DEBUG */
+#endif /* PM2DEBUG */
 
   tbx_init(*argc, argv);
   ntbx_init(*argc, argv);

@@ -49,13 +49,10 @@
 
 /* A startup function may be specified. If so, it will be called after
  * all modules will be spawned but before the current module will
- * listen (and respond to) incomming request 
+ * listen (and respond to) incomming requests.
  */
-typedef void (*pm2_startup_func_t)(int *modules, int nb);
+typedef void (*pm2_startup_func_t)(void);
 void pm2_set_startup_func(pm2_startup_func_t f);
-
-#define ASK_USER	-1
-#define ONE_PER_NODE	0
 
 /* 
  * Init the system and spawns `nb_proc-1' additional processes (or one
@@ -64,22 +61,26 @@ void pm2_set_startup_func(pm2_startup_func_t f);
  * for the initial process.
  */
 
-void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb);
+void pm2_init(int *argc, char **argv);
+
+void pm2_halt(void);
 
 void pm2_exit(void);
 
-void pm2_kill_modules(int *modules, int nb);
+_PRIVATE_ extern unsigned __pm2_self, __conf_size;
 
-_PRIVATE_ extern int __pm2_self;
-
-static __inline__ int pm2_self(void)
+static __inline__ unsigned pm2_self(void)
 {
   return __pm2_self;
 }
 
+static __inline__ unsigned pm2_config_size(void)
+{
+  return __conf_size;
+}
+
 void pm2_printf(char *format, ...);
 
-void pm2_channel_alloc(pm2_channel_t *channel);
 
 /****************** "RAW" RPC : *******************/
 
@@ -96,6 +97,8 @@ void pm2_rawrpc_end(void);
     mad_recvbuf_receive(); \
     marcel_sem_V((marcel_sem_t *)marcel_getspecific(_pm2_mad_key)); \
   }
+
+void pm2_channel_alloc(pm2_channel_t *channel);
 
 
 /******************** Migration **************************/

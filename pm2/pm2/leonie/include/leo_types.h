@@ -43,6 +43,8 @@ typedef struct s_leo_process_specific
 typedef struct s_leo_dir_node
 {
   char                       *name;
+  p_tbx_htable_t              device_host_names;
+  p_tbx_htable_t              channel_host_names;
   unsigned long               ip;  // network form !
   p_ntbx_process_container_t  pc;
 } leo_dir_node_t;

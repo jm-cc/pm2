@@ -539,7 +539,8 @@ leo_bipload_loader(p_leo_settings_t settings,
 
 	  process   = tbx_slist_ref_get(process_slist);
 	  dir_node  = tbx_htable_get(process->ref, "node");
-	  host_name = dir_node->name;
+          host_name = tbx_htable_get(dir_node->device_host_names, "bip");
+	  //host_name = dir_node->name;
 
 	  if (!master_host_name)
 	    {

@@ -97,6 +97,7 @@ connection_disconnect(p_mad_channel_t ch)
   return tbx_true;
 }
 
+#ifdef MARCEL
 tbx_bool_t
   connection_disconnect2(p_mad_channel_t ch)
 {
@@ -187,6 +188,7 @@ tbx_bool_t
 
    return tbx_true;
 }
+#endif /* MARCEL */
 
 static
 void
@@ -421,6 +423,7 @@ common_channel_exit(p_mad_channel_t mad_channel)
   mad_channel->sub_channel_darray = NULL;
 }
 
+#ifdef MARCEL
 void
   common_channel_exit2(p_mad_channel_t mad_channel)
 {
@@ -478,13 +481,16 @@ void
    tbx_darray_free(mad_channel->sub_channel_darray);
    mad_channel->sub_channel_darray = NULL;
 }
+#endif /* MARCEL */
 
 static
 void
 mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 {
   p_mad_directory_t dir                = NULL;
+#ifdef MARCEL
   p_tbx_slist_t     dir_vchannel_slist = NULL;
+#endif // MARCEL
   p_tbx_htable_t    channel_htable     = NULL;
 
   LOG_IN();
@@ -492,6 +498,7 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
   channel_htable = madeleine->channel_htable;
 
   // "Forward send" threads shutdown
+#ifdef MARCEL
   dir_vchannel_slist = dir->vchannel_slist;
 
   if (!tbx_slist_is_nil(dir_vchannel_slist))
@@ -535,6 +542,7 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 	}
       while (tbx_slist_ref_forward(dir_vchannel_slist));
     }
+#endif // MARCEL
 
   mad_leonie_send_int(-1);
 
@@ -542,8 +550,10 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
   for (;;)
     {
       ntbx_process_lrank_t  lrank         = -1;
+#ifdef MARCEL
       p_mad_channel_t       channel       = NULL;
       p_mad_channel_t       vchannel      = NULL;
+#endif // MARCEL      
       char                 *channel_name  = NULL;
       char                 *vchannel_name = NULL;
 
@@ -559,6 +569,7 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
       channel_name = mad_leonie_receive_string();
       lrank = mad_leonie_receive_int();
 
+#ifdef MARCEL
       vchannel = tbx_htable_get(channel_htable, vchannel_name);
       if (!vchannel)
 	FAILURE("channel not found");
@@ -568,6 +579,7 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 	FAILURE("channel not found");
 
       mad_forward_stop_reception(vchannel, channel, lrank);
+#endif // MARCEL      
       mad_leonie_send_int(-1);
       TBX_FREE(channel_name);
       TBX_FREE(vchannel_name);
@@ -593,7 +605,9 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 
   while (1)
     {
+#ifdef MARCEL
       p_mad_channel_t  mad_channel  = NULL;
+#endif // MARCEL
       char            *channel_name = NULL;
 
       channel_name = mad_leonie_receive_string();
@@ -604,6 +618,7 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
           break;
         }
 
+#ifdef MARCEL
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
 
       if (!mad_channel)
@@ -637,6 +652,7 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
       memset(mad_channel, 0, sizeof(mad_channel_t));
       TBX_FREE(mad_channel);
       mad_channel = NULL;
+#endif // MARCEL
 
       mad_leonie_send_int(-1);
       TBX_FREE(channel_name);
@@ -649,7 +665,9 @@ void
 mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
 {
   p_mad_directory_t dir                = NULL;
+#ifdef MARCEL
   p_tbx_slist_t     dir_xchannel_slist = NULL;
+#endif // MARCEL
   p_tbx_htable_t    channel_htable     = NULL;
 
   LOG_IN();
@@ -657,6 +675,7 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
   channel_htable = madeleine->channel_htable;
 
   // "Forward send" threads shutdown
+#ifdef MARCEL
   dir_xchannel_slist = dir->xchannel_slist;
 
   if (!tbx_slist_is_nil(dir_xchannel_slist))
@@ -687,6 +706,7 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
 	}
       while (tbx_slist_ref_forward(dir_xchannel_slist));
     }
+#endif // MARCEL
 
   mad_leonie_send_int(-1);
 
@@ -694,8 +714,10 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
   for (;;)
     {
       ntbx_process_lrank_t  lrank         = -1;
+#ifdef MARCEL
       p_mad_channel_t       channel       = NULL;
       p_mad_channel_t       xchannel      = NULL;
+#endif // MARCEL
       char                 *channel_name  = NULL;
       char                 *xchannel_name = NULL;
 
@@ -711,6 +733,7 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
       channel_name = mad_leonie_receive_string();
       lrank = mad_leonie_receive_int();
 
+#ifdef MARCEL
       xchannel = tbx_htable_get(channel_htable, xchannel_name);
       if (!xchannel)
 	FAILURE("channel not found");
@@ -720,6 +743,7 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
 	FAILURE("channel not found");
 
       mad_mux_stop_reception(xchannel, channel, lrank);
+#endif // MARCEL
       mad_leonie_send_int(-1);
       TBX_FREE(channel_name);
       TBX_FREE(xchannel_name);
@@ -745,7 +769,9 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
 
   while (1)
     {
+#ifdef MARCEL
       p_mad_channel_t           mad_channel  = NULL;
+#endif // MARCEL
       char                     *channel_name = NULL;
 
       channel_name = mad_leonie_receive_string();
@@ -756,6 +782,7 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
           break;
         }
 
+#ifdef MARCEL
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
 
       if (!mad_channel)
@@ -781,6 +808,7 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
       memset(mad_channel, 0, sizeof(mad_channel_t));
       TBX_FREE(mad_channel);
       mad_channel = NULL;
+#endif // MARCEL
 
       mad_leonie_send_int(-1);
       TBX_FREE(channel_name);
@@ -1010,7 +1038,9 @@ mad_leonie_sync(p_mad_madeleine_t madeleine)
 
   mad_ntbx_send_int(client, mad_leo_command_end);
   if (settings->leonie_dynamic_mode) {
+#ifdef MARCEL
     mad_command_thread_exit(madeleine);
+#endif // MARCEL
     } else {
     data = mad_ntbx_receive_int(client);
     if (data != 1)

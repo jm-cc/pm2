@@ -40,10 +40,10 @@ mad_get_channel(p_mad_madeleine_t  madeleine,
   LOG_IN();
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
-    FAILURE("channel not found");
+    FAILUREF("channel <%s> not found", name);
 
   if (!channel->not_private)
-    FAILURE("invalid channel");
+    FAILUREF("invalid channel <%s>", name);
 
   LOG_OUT();
 
@@ -88,6 +88,7 @@ mad_get_sub_channel(p_mad_channel_t channel,
   return sub_channel;
 }
 
+#ifdef MARCEL
 tbx_bool_t
     channel_reopen(p_mad_madeleine_t  madeleine)
 {
@@ -284,4 +285,4 @@ tbx_bool_t
      }
    return res;
 }
-
+#endif /* MARCEL */

@@ -62,7 +62,13 @@ mad_begin_packing(p_mad_channel_t      channel,
       return NULL;
     }
 
+#ifdef MARCEL
   marcel_mutex_lock(&(connection->lock_mutex));
+#else /* MARCEL */
+  if (connection->lock == tbx_true)
+    FAILURE("mad_begin_packing: connection dead lock");
+  connection->lock = tbx_true;
+#endif /* MARCEL */
 
   if (interface->new_message)
     interface->new_message(connection);
@@ -103,16 +109,26 @@ mad_message_ready(p_mad_channel_t channel)
 
   interface = channel->adapter->driver->interface;
 
+#ifdef MARCEL
   if (!marcel_mutex_trylock(&(channel->reception_lock_mutex)))
     {
       LOG_OUT();
 
       return NULL;
     }
+#else /* MARCEL */
+  if (channel->reception_lock == tbx_true)
+    FAILURE("mad_begin_unpacking: reception dead lock");
+  channel->reception_lock = tbx_true;
+#endif /* MARCEL */
 
   if (!(connection = interface->poll_message(channel)))
     {
+#ifdef MARCEL
       marcel_mutex_unlock(&(channel->reception_lock_mutex));
+#else // MARCEL
+      channel->reception_lock = tbx_false;
+#endif // MARCEL
       LOG_OUT();
 
       return NULL;
@@ -158,7 +174,13 @@ mad_begin_unpacking(p_mad_channel_t channel)
 
   interface = channel->adapter->driver->interface;
 
+#ifdef MARCEL
   marcel_mutex_lock(&(channel->reception_lock_mutex));
+#else /* MARCEL */
+  if (channel->reception_lock == tbx_true)
+    FAILURE("mad_begin_unpacking: reception dead lock");
+  channel->reception_lock = tbx_true;
+#endif /* MARCEL */
 
   TRACE("Receiving message");
   connection = interface->receive_message(channel);
@@ -342,7 +364,12 @@ mad_end_packing(p_mad_connection_t connection)
   if (interface->finalize_message)
     interface->finalize_message(connection);
 
+#ifdef MARCEL
   marcel_mutex_unlock(&(connection->lock_mutex));
+#else // MARCEL
+  connection->lock = tbx_false;
+#endif // MARCEL
+
   TRACE("Emission request completed");
   LOG_OUT();
 }
@@ -673,7 +700,11 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
   parameter_slist = connection->parameter_slist;
   connection->parameter_slist = NULL;
 
+#ifdef MARCEL
   marcel_mutex_unlock(&(connection->channel->reception_lock_mutex));
+#else // MARCEL
+  connection->channel->reception_lock = tbx_false;
+#endif // MARCEL
 
   TRACE("Reception request completed");
   LOG_OUT();

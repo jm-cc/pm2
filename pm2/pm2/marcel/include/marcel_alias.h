@@ -38,13 +38,13 @@
 
 #define LOCAL_SYMBOL(local_symbol, symbol) \
   extern __typeof(symbol) local_symbol \
-    __attribute__ ((alias(symbol)))
+    __attribute__ ((alias(#symbol)))
 // l'attribut visibility n'est pas encore disponible...
 //    __attribute__ ((alias(symbol), visibility("hidden")))
 
 #define ALIAS_SYMBOL(alias_symbol, symbol) \
   extern __typeof(symbol) alias_symbol \
-    __attribute__ ((alias(symbol)))
+    __attribute__ ((alias(#symbol)))
 
 
 #ifdef HAVE_VISIBILITY_ATTRIBUTE

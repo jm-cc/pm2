@@ -1,0 +1,62 @@
+\chapter{Additional PM2 material}
+
+\stamp $Id: appendicing.tex,v 1.2 2001/04/12 16:00:57 bouge Exp $
+
+% Standard Main
+%_____________________________________________________________________________
+\section{Using a standard main}
+\label{sec:tradimain}
+
+Some application may require to use the traditional \|main| function
+name instead of \|pm2_main|. In this case, the \|STANDARD_MAIN|
+compilation flag must be defined for each PM2 file. This can be done
+by adding the definition in the PM2 makefile (\|pm2/make/common.mak|):
+
+\begin{small}
+\begin{makefile}
+   GLOBAL_OPTIONS   =   -Wall -O6 -DSTANDARD_MAIN
+\end{makefile}
+\end{small}
+
+Note that this may affect the performance of several thread management
+functions...
+
+% Scripts
+%_____________________________________________________________________________
+\section{Synopsys of PM2 scripts}
+\label{sec:scripts}
+
+\subsection{pm2custom}
+
+\subsection{pm2conf}
+
+\subsection{pm2load}
+
+% Common Pitfalls
+%_____________________________________________________________________________
+\section{Common Pitfalls}
+\label{sec:commonpitfalls}
+
+The Table~\ref{tbl:pitfalls} sums up the symptoms together with
+possible solutions.
+\begin{table}
+\caption{Common Pitfalls\label{tbl:pitfalls}}
+\begin{center}
+\begin{tabular}{|p{5cm}|p{7cm}|}                             \hline
+Symptoms                       & Solutions                    \\ \hline
+`Permission denied' error      & Each configuration node must be made
+accessible by \|rsh| from the local host: update you
+\|.rhosts| file                                         \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+% FAQ
+%_____________________________________________________________________________
+\section{FAQ}
+\label{sec:faq}
+\begin{quote}
+  Why do I get the message "Permission denied" when running pm2load?
+  
+  Why does my program crash the entire cluster?
+\end{quote}

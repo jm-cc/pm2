@@ -86,7 +86,7 @@ static void timer_interrupt(int sig)
 }
 
 #ifdef MA_PROTECT_LOCK_TASK_FROM_SIG
-#if defined(LINUX_SYS) && defined(X86_ARCH)
+#if defined(LINUX_SYS) && ( defined(X86_ARCH) || defined(ALPHA_ARCH) )
 #include <asm/sigcontext.h>
 static void timer_interrupt_protect(int sig, struct sigcontext context)
 //#elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
@@ -102,6 +102,8 @@ static void timer_interrupt_protect(int sig, struct sigcontext context)
 
 #if defined(LINUX_SYS) && defined(X86_ARCH)
   pc = context.eip;
+#elif defined(LINUX_SYS) && defined(ALPHA_ARCH)
+  pc = context.sc_pc;
 #endif
 
   if ((pc < (unsigned long)ma_sched_protect_start) || 

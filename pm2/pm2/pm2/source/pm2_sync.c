@@ -87,7 +87,8 @@ static int _received_from_all_other_nodes (pm2_barrier_t *bar)
   return (i == _nb_nodes);
 }
 
-
+/* The following primitive needs to be called by PM2 in a startup function,
+to allow for proper barrier initialization. */
 void pm2_barrier_init(pm2_barrier_t *bar)
 {
   int i, size = pm2_config_size();
@@ -99,6 +100,7 @@ void pm2_barrier_init(pm2_barrier_t *bar)
 }
 
 
+/* Node-level barrier */
 void pm2_barrier(pm2_barrier_t *bar)
 {
  int i;
@@ -155,4 +157,31 @@ void pm2_sync_init(int myself, int confsize)
 {
   _nb_nodes = confsize;
   _local_node_rank = myself;
+}
+
+/*************************** thread barrier *************************************/
+
+/* The following primitive needs to be called by PM2 in a startup function,
+to allow for proper barrier initialization. */
+void pm2_thread_barrier_init(pm2_thread_barrier_t *bar, pm2_thread_barrier_attr_t *attr)
+{
+  pm2_barrier_init(&bar->node_barrier);
+  marcel_sem_init(&bar->mutex, 1);
+  marcel_sem_init(&bar->wait, 0);
+  bar->local = attr->local;
+  bar->nb = 0;
+}
+
+/*Thread-level barrier */
+void pm2_thread_barrier(pm2_thread_barrier_t *bar)
+{
+  marcel_sem_P(&bar->mutex);
+  if(++bar->nb == bar->local) {
+    pm2_barrier(&bar->node_barrier);
+    marcel_sem_unlock_all(&bar->wait);
+    bar->nb = 0;
+    marcel_sem_V(&bar->mutex);
+  } else {
+    marcel_sem_VP(&bar->mutex, &bar->wait);
+  }
 }

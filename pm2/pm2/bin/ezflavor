@@ -33,4 +33,4 @@ if [ ! -x $prog ]; then
     exit 1
 fi
 
-exec ${PM2_HOME:-${HOME}}/.pm2/bin/ezflavor_${PM2_ARCH}_${PM2_SYS}${ext} "$@"
+exec ${PM2_HOME:-${HOME}}/.pm2/bin/ezflavor_${PM2_ARCH}_${PM2_SYS}${ext} ${@:+"$@"}

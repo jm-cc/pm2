@@ -47,10 +47,12 @@ SRC = $(ROOT)/src
 LIB = $(ROOT)/lib
 
 # objects
-OBJS = $(OBJ)/ntbx.o
+OBJS = $(OBJ)/ntbx_pack.o \
+       $(OBJ)/ntbx.o
 
 # srcs
-SRCS = $(SRC)/ntbx.c
+SRCS = $(OBJ)/ntbx_pack.c \
+       $(SRC)/ntbx.c
 
 # headers
 HEADERS = $(INC)/ntbx_interface.h \
@@ -96,6 +98,9 @@ lines:
 	wc -l $(SRC)/*.c $(INC)/*.h
 
 $(OBJ)/ntbx.o: $(SRC)/ntbx.c $(HEADERS)
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+$(OBJ)/ntbx_pack.o: $(SRC)/ntbx_pack.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 $(OBJ)/ntbx_tcp.o: $(SRC)/ntbx_tcp.c $(HEADERS)

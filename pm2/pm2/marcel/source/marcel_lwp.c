@@ -22,8 +22,6 @@
 #endif
 #endif
 
-#define BIND_LWP_ON_PROCESSORS
-
 #ifdef MA__LWPS
 MA_DEFINE_PER_LWP(unsigned, number)=0;
 #endif

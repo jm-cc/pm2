@@ -11,7 +11,7 @@ shift
 DISPLAY=${DISPLAY:-':0'}
 export DISPLAY
 
-echo $HOST:$PATH
+# echo $HOST:$PATH
 LEO_XTERM=${LEO_XTERM:-'xterm'}
 
 title="$prog.$HOST"

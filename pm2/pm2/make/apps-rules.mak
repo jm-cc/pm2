@@ -22,7 +22,8 @@ all: $(APPS_LIST)
 examples: all
 
 .PHONY: flavor
-flavor $(MOD_STAMP_FILES):
+$(MOD_STAMP_FILES): flavor
+flavor:
 	$(COMMON_HIDE) echo ">>> Generating libraries..."
 	$(COMMON_MAIN) $(MAKE) -C $(PM2_ROOT)
 	$(COMMON_HIDE) echo "<<< Generating libraries: done"

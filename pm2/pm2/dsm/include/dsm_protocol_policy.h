@@ -23,6 +23,8 @@ extern int LI_HUDAK;
 extern int MIGRATE_THREAD;
 extern int ERC;
 extern int HBRC;
+extern int HIERARCH;
+
 #define DEFAULT_DSM_PROTOCOL -1
 
 void dsm_init_protocol_table();

@@ -25,7 +25,7 @@ static void *next_slot;
 
 static marcel_lock_t alloc_lock = MARCEL_LOCK_INIT;
 
-#if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)
+#if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)
 static int __zero_fd;
 #endif
 
@@ -36,7 +36,7 @@ static struct {
 
 void marcel_slot_init(void)
 {
-#if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)
+#if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)
   __zero_fd = open("/dev/zero", O_RDWR);
 #endif
   stack_cache.last = 0;

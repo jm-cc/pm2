@@ -25,7 +25,7 @@ pm2which_error() # msg
 pm2which_usage() # exit_code
 {
     cat <<EOF
-Usage: $_PM2WHICH_PROGNAME { option } command
+Usage: $_PM2WHICH_PROGNAME [option..] command
 
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
@@ -136,7 +136,7 @@ pm2which_calc()
     _old_ifs="$IFS"
     _ifs_not_set=${IFS-yes}
     IFS=":"
-    set $DIRS
+    set -- $DIRS
     IFS=" "
     if [ "$_ifs_not_set" = yes ]; then
         unset IFS
@@ -157,7 +157,7 @@ pm2which_calc()
         case "$_prog" in
             /*)
                 if [ -x "$_prog" ]; then
-                    _PM2WHICH_RESULT=$1
+                    _PM2WHICH_RESULT="$_prog"
                     _PM2WHICH_NB_FOUND=1
                 fi
                 ;;
@@ -221,22 +221,26 @@ while [ $# -gt 0 ]; do
 	    break
 	    ;;
 	*)
-	    break
+	    if [ "$_PM2WHICH_PROG" ]; then
+		pm2which_usage 1
+	    fi
+	    _PM2WHICH_PROG="$1"
+	    shift
 	    ;;
     esac
 done
 
-[ $# -eq 1 ] || pm2which_usage 1
+_PROG="$_PM2WHICH_PROG"
 
-_PROG=$1
-_PM2WHICH_ARGS="$*"
-
-set -- --source-mode
+#On rajoute puis on vire un --source-mode
+set -- --source-mode "$@"
 . ${PM2_ROOT}/bin/pm2-config
-pm2which_calc $_PM2WHICH_ARGS
+shift
+
+pm2which_calc "$_PM2WHICH_PROG"
 if [ $_PM2WHICH_SOURCE_MODE = no ]; then
     if [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
-        echo "pm2which: '${_PROG}' exec file not found"
+        echo "pm2which: '${_PROG}' exec file not found" 1>&2
     else
         pm2which_prettyprint $_PM2WHICH_RESULT
     fi
@@ -247,13 +251,10 @@ if [ $_PM2WHICH_SOURCE_MODE = no ]; then
     fi
 else
     if [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
-        echo "pm2which: '${_PROG}' exec file not found"
-        exit 1
+        pm2which_error "pm2which: '${_PROG}' exec file not found"
     fi
     if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
-        echo "pm2which: multiple ${_PROG} example binaries found"
-        exit 1
+        pm2which_error "pm2which: multiple ${_PROG} example binaries found"
     fi
-
 fi
 

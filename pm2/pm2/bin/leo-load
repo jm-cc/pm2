@@ -142,18 +142,15 @@ done
 
 [ -n "$*" ] || usage 1
 
-# Sauvegarde de la commande et des arguments
-prog=$1
+prog="$1"
 shift
 
-prog_args=${@:+"$@"}
-
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
-set --  --source-mode $prog
+set --  --source-mode "$prog" -- "$@"
 . ${PM2_ROOT}/bin/pm2which
 
 if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
-    ambiguity $prog
+    ambiguity "$prog"
 fi
 
 [ "${PM2_SMPMODE}" = on ] && export LEO_LD_PRELOAD=`${PM2_ROOT}/bin/pm2-config --flavor=${PM2_FLAVOR:-default} --preload`
@@ -170,5 +167,5 @@ else
 fi
 
 # echo "### Leonie loader ###"
-# echo exec $prefix $_PM2WHICH_RESULT $prog_args
-exec $prefix $_PM2WHICH_RESULT $prog_args
+# echo exec $prefix "$_PM2WHICH_RESULT" "$@"
+exec $prefix "$_PM2WHICH_RESULT" "$@"

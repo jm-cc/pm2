@@ -1,3 +1,11 @@
+/*! \file tbx_debug.h
+ *  \brief TBX debug support definitions and macros
+ *
+ *  This file contains the macros and support functions declaration for the
+ *  TBX debugging facilities.
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
@@ -205,12 +213,12 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else // else if not PM2DEBUG
 
 #define LOG(str, args...) 
-#define LOG_IN()           PROF_IN()
-#define LOG_OUT()          PROF_OUT()
-#define LOG_CHAR(val)
-#define LOG_VAL(str, val) 
-#define LOG_PTR(str, ptr) 
-#define LOG_STR(str, str2)
+#define LOG_IN()           PROF_IN()  ; (void)(0) 
+#define LOG_OUT()          PROF_OUT() ; (void)(0)
+#define LOG_CHAR(val)      (void)(0)
+#define LOG_VAL(str, val)  (void)(0)
+#define LOG_PTR(str, ptr)  (void)(0)
+#define LOG_STR(str, str2) (void)(0)
 
 #endif // PM2DEBUG
 
@@ -237,13 +245,13 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
 
-#define TRACE(str, args...) 
-#define TRACE_IN()
-#define TRACE_OUT()
-#define TRACE_VAL(str, val) 
-#define TRACE_CHAR(val)
-#define TRACE_PTR(str, ptr) 
-#define TRACE_STR(str, str2) 
+#define TRACE(str, args...)  (void)(0)
+#define TRACE_IN()           (void)(0)
+#define TRACE_OUT()          (void)(0)
+#define TRACE_VAL(str, val)  (void)(0)
+#define TRACE_CHAR(val)      (void)(0)
+#define TRACE_PTR(str, ptr)  (void)(0)
+#define TRACE_STR(str, str2) (void)(0)
 
 #endif /* PM2DEBUG */
 

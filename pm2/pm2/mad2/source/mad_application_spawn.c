@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_application_spawn.c,v $
+Revision 1.7  2000/07/12 07:55:13  oaumage
+- Correction de la logique de localisation du fichier de configuration
+
 Revision 1.6  2000/06/16 16:32:59  oaumage
 - Correction du parsing du fichier de configuration
 
@@ -71,9 +74,7 @@ ______________________________________________________________________________
 #include <malloc.h>
 #include <errno.h>
 #include <netdb.h>
-#ifdef PM2
 #include <sys/wait.h>
-#endif /* PM2 */
 
 /* #define DEBUG */
 /* #define TIMING */
@@ -223,10 +224,10 @@ mad_pre_init(p_mad_adapter_set_t adapter_set)
   int                dummy_argc = 1;
   char              *dummy_argv[0] = "unavailable";
 
-  LOG_IN();
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
   mad_managers_init(&argc, argv);
+  LOG_IN(); /* After pm2debug_init ... */
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
 
@@ -333,7 +334,7 @@ mad_init(
       if (getenv("PM2_CONF_FILE"))
 	{
 	  configuration_file = conf_file;
-	  sprintf(conf_file, "%s", getenv("PM2_CONF_FILE"));
+	  sprintf(configuration_file, "%s", getenv("PM2_CONF_FILE"));
 	}
       else
 	FAILURE("configuration file not specified");

@@ -142,7 +142,7 @@ p_tbx_slist_t
 leoparse_get_slist(p_leoparse_object_t object)
 {
   p_tbx_slist_t result = NULL;
-  
+
   LOG_IN();
   if (object->type == leoparse_o_slist)
     {
@@ -172,7 +172,7 @@ leoparse_get_as_slist(p_leoparse_object_t object)
       tbx_slist_append(result, object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -180,7 +180,7 @@ p_tbx_htable_t
 leoparse_get_htable(p_leoparse_object_t object)
 {
   p_tbx_htable_t result = NULL;
-  
+
   LOG_IN();
   if (object->type == leoparse_o_htable)
     {
@@ -190,7 +190,7 @@ leoparse_get_htable(p_leoparse_object_t object)
     FAILURE("parse error: table expected");
 
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -198,7 +198,7 @@ char *
 leoparse_get_string(p_leoparse_object_t object)
 {
   char *result = NULL;
-  
+
   LOG_IN();
   if (object->type == leoparse_o_string)
     {
@@ -208,7 +208,7 @@ leoparse_get_string(p_leoparse_object_t object)
     FAILURE("parse error: string expected");
 
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -252,7 +252,7 @@ p_leoparse_range_t
 leoparse_get_range(p_leoparse_object_t object)
 {
   p_leoparse_range_t result = NULL;
-  
+
   LOG_IN();
   if (object->type == leoparse_o_range)
     {
@@ -282,9 +282,9 @@ leoparse_read_slist(p_tbx_htable_t  htable,
   if (object)
     {
       result = leoparse_get_slist(object);
-    }  
+    }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -304,7 +304,7 @@ leoparse_read_as_slist(p_tbx_htable_t  htable,
       result = leoparse_get_as_slist(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -364,7 +364,7 @@ leoparse_read_htable(p_tbx_htable_t  htable,
       result = leoparse_get_htable(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -384,7 +384,7 @@ leoparse_read_val(p_tbx_htable_t  htable,
       result = leoparse_get_val(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -425,9 +425,9 @@ leoparse_extract_slist(p_tbx_htable_t  htable,
     {
       result = leoparse_get_slist(object);
       leoparse_release_object(object);
-    }  
+    }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -448,7 +448,7 @@ leoparse_extract_as_slist(p_tbx_htable_t  htable,
       leoparse_release_object(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -511,7 +511,7 @@ leoparse_extract_htable(p_tbx_htable_t  htable,
       leoparse_release_object(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -532,7 +532,7 @@ leoparse_extract_val(p_tbx_htable_t  htable,
       leoparse_release_object(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -569,7 +569,7 @@ leoparse_try_get_slist(p_leoparse_object_t object)
       result = object->slist;
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -611,7 +611,7 @@ leoparse_try_get_string(p_leoparse_object_t object)
       result = object->string;
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -619,7 +619,7 @@ char *
 leoparse_try_get_id(p_leoparse_object_t object)
 {
   char *result = NULL;
-  
+
   LOG_IN();
   if (object->type == leoparse_o_id)
     {
@@ -650,7 +650,7 @@ p_leoparse_range_t
 leoparse_try_get_range(p_leoparse_object_t object)
 {
   p_leoparse_range_t result = NULL;
-  
+
   LOG_IN();
   if (object->type == leoparse_o_range)
     {
@@ -677,7 +677,7 @@ leoparse_try_read_slist(p_tbx_htable_t  htable,
       result = leoparse_try_get_slist(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -697,7 +697,7 @@ leoparse_try_read_as_slist(p_tbx_htable_t  htable,
       result = leoparse_try_get_as_slist(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -717,7 +717,7 @@ leoparse_try_read_id(p_tbx_htable_t  htable,
       result = leoparse_try_get_id(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -778,7 +778,7 @@ leoparse_try_read_val(p_tbx_htable_t  htable,
       result = leoparse_try_get_val(object, result);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -798,7 +798,7 @@ leoparse_try_read_range(p_tbx_htable_t  htable,
       result = leoparse_try_get_range(object);
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -822,7 +822,7 @@ leoparse_convert_to_slist(p_tbx_htable_t  htable,
       if (object->type != leoparse_o_slist)
 	{
 	  p_tbx_slist_t slist = NULL;
-	  
+
 	  slist = tbx_slist_nil();
 	  tbx_slist_append(slist, object);
 
@@ -855,7 +855,7 @@ leoparse_write_slist(p_tbx_htable_t  htable,
       object        = TBX_CALLOC(1, sizeof(leoparse_object_t));
       object->type  = leoparse_o_slist;
       object->slist = slist;
-    }  
+    }
   else
     FAILURE("trying to overwrite an object");
 
@@ -878,7 +878,7 @@ leoparse_write_id(p_tbx_htable_t  htable,
       object       = TBX_CALLOC(1, sizeof(leoparse_object_t));
       object->type = leoparse_o_id;
       object->id   = id;
-    }  
+    }
   else
     FAILURE("trying to overwrite an object");
 
@@ -901,7 +901,7 @@ leoparse_write_string(p_tbx_htable_t  htable,
       object         = TBX_CALLOC(1, sizeof(leoparse_object_t));
       object->type   = leoparse_o_string;
       object->string = string;
-    }  
+    }
   else
     FAILURE("trying to overwrite an object");
 
@@ -924,7 +924,7 @@ leoparse_write_htable(p_tbx_htable_t  htable,
       object         = TBX_CALLOC(1, sizeof(leoparse_object_t));
       object->type   = leoparse_o_htable;
       object->htable = table;
-    }  
+    }
   else
     FAILURE("trying to overwrite an object");
 
@@ -947,7 +947,7 @@ leoparse_write_val(p_tbx_htable_t  htable,
       object       = TBX_CALLOC(1, sizeof(leoparse_object_t));
       object->type = leoparse_o_integer;
       object->val  = val;
-    }  
+    }
   else
     FAILURE("trying to overwrite an object");
 
@@ -970,7 +970,7 @@ leoparse_write_range(p_tbx_htable_t      htable,
       object        = TBX_CALLOC(1, sizeof(leoparse_object_t));
       object->type  = leoparse_o_range;
       object->range = range;
-    }  
+    }
   else
     FAILURE("trying to overwrite an object");
 

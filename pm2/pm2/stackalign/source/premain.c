@@ -125,7 +125,7 @@ int BP_SYM (__libc_start_main) (int (*main) (int, char **, char **),
 		exit(1);    
 	} else {
 #ifdef PM2DEBUG
-		printf("starting direct. go_marcel_main=%p, %p\n", go_marcel_main);
+		printf("starting direct. go_marcel_main=%p\n", go_marcel_main);
 #endif
 		launch_libc_start_main();
 	}

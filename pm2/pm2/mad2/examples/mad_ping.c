@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.10  2000/11/10 14:17:54  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.9  2000/06/09 13:18:10  rnamyst
 Max size reduced to 2MB in mad_ping.c
 
@@ -692,7 +695,7 @@ int main(int argc, char **argv)
 	}
     }
   
-  if (madeleine->configuration.local_host_id == 0)
+  if (madeleine->configuration->local_host_id == 0)
     {
       /* Master */
       if ((!param_simul_migr) && param_control_receive)

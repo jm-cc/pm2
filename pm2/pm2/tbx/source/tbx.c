@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.11  2000/11/15 21:32:45  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.10  2000/11/07 17:40:31  oaumage
 - initialisation
 
@@ -85,9 +88,9 @@ tbx_init(int    argc,
       initialized = tbx_true;
 
       /* Safe malloc */
-#ifdef TBX_SAFE_MALLOC
+      //#ifdef TBX_SAFE_MALLOC
       tbx_safe_malloc_init();
-#endif /* TBX_SAFE_MALLOC */
+      //#endif /* TBX_SAFE_MALLOC */
 
       /* Timer */
       tbx_timing_init();

@@ -41,6 +41,7 @@ marcel_attr_t marcel_attr_default = {
   NULL,              /* stack base */
   FALSE,             /* detached */
   0,                 /* user space */
+  FALSE,             /* immediate activation (only if user_space != 0) */
   STD_PRIO,          /* priority */
   1,                 /* not_migratable */
   0,                 /* not_deviatable */
@@ -103,6 +104,18 @@ int marcel_attr_getuserspace(marcel_attr_t *attr, unsigned *space)
 {
    *space = attr->user_space;
    return 0;
+}
+
+int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate)
+{
+  attr->immediate_activation = immediate;
+  return 0;
+}
+
+int marcel_attr_getactivation(marcel_attr_t *attr, boolean *immediate)
+{
+  *immediate = attr->immediate_activation;
+  return 0;
 }
 
 int marcel_attr_setprio(marcel_attr_t *attr, unsigned prio)

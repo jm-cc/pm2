@@ -128,7 +128,7 @@ static struct {
 #define one_more_active_task(t, lwp) \
   __active_threads++, \
   INC_STATS((t), (lwp)), \
-  MTRACE("Actived", (t))
+  MTRACE("Activation", (t))
 
 #define one_active_task_less(t, lwp) \
   __active_threads--, \
@@ -141,13 +141,13 @@ static struct {
   __sleeping_threads--
 
 #define one_more_blocked_task(t) \
-  __blocked_threads++, MTRACE("Blocked", (t))
+  __blocked_threads++, MTRACE("Blocking", (t))
 
 #define one_blocked_task_less(t) \
   __blocked_threads--
 
 #define one_more_frozen_task(t) \
-  __frozen_threads++, MTRACE("Frozen", (t))
+  __frozen_threads++, MTRACE("Freezing", (t))
 
 #define one_frozen_task_less(t) \
   __frozen_threads--
@@ -581,7 +581,7 @@ void marcel_yield(void)
 #ifdef DEBUG
     breakpoint();
 #endif
-    MTRACE("Yield", cur);
+    MTRACE("Preemption", cur);
     unlock_task();
     return;
   }
@@ -599,7 +599,7 @@ void marcel_explicityield(marcel_t t)
 #ifdef DEBUG
     breakpoint();
 #endif
-    MTRACE("Yield", cur);
+    MTRACE("Preemption", cur);
     unlock_task();
   } else {
     call_ST_FLUSH_WINDOWS();
@@ -620,7 +620,7 @@ void marcel_trueyield(void)
 #ifdef DEBUG
     breakpoint();
 #endif
-    MTRACE("Yield", cur);
+    MTRACE("Preemption", cur);
     unlock_task();
   } else {
     call_ST_FLUSH_WINDOWS();
@@ -644,7 +644,7 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
       breakpoint();
 #endif
 
-      MTRACE("Yield", cur);
+      MTRACE("Preemption", cur);
     } else {
       SET_BLOCKED(cur);
       next = marcel_unchain_task(cur);
@@ -682,7 +682,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
 #ifdef DEBUG
       breakpoint();
 #endif
-      MTRACE("Yield", cur);
+      MTRACE("Preemption", cur);
 
       if((*blocked) && __milliseconds >= ttw) {
 	/* Expiration timer ou retour d'une deviation : */
@@ -761,7 +761,7 @@ void marcel_delay(unsigned long millisecs)
 #ifdef DEBUG
       breakpoint();
 #endif
-      MTRACE("Yield", cur);
+      MTRACE("Preemption", cur);
     } else {
 
       cur->time_to_wake = ttw;
@@ -995,7 +995,7 @@ any_t sched_func(any_t arg)
       longjmp(next->jb, NORMAL_RETURN);
     }
 
-    MTRACE("Yield", cur);
+    MTRACE("Preemption", cur);
 
   } while(1);
 }

@@ -20,6 +20,7 @@
 typedef struct s_mad_settings
 {
   char            *rsh_cmd;
+  char            *app_cmd;
   char            *configuration_file;
   tbx_bool_t       debug_mode;
   mad_driver_id_t  external_spawn_driver;

@@ -276,10 +276,6 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     marcel_one_more_task(new_task);
     MTRACE("Creation", new_task);
 
-    PROF_SWITCH_TO(new_task);
-
-    PROF_IN_EXT(newborn_thread);
-
     if(
           // On ne peut pas céder la main maintenant
           (locked() > 1)
@@ -301,8 +297,10 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       // immédiatement : lock_task() a été appelé, ou alors le fils va
       // être inséré sur un autre LWP, ou alors "immediate_activation"
       // a été positionné à FALSE. La conséquence est que le thread
-      // fils est créé et initialisé, mais pas "inséré" dans aucune
-      // file pour l'instant.
+      // fils est créé et initialisé, mais pas "inséré" dans une
+      // quelconque file pour l'instant.
+
+      PROF_IN_EXT(newborn_thread);
 
       // Il y a un cas où il ne faut même pas insérer le fils tout de
       // suite : c'est celui ou "userspace" n'est pas 0, auquel cas le
@@ -328,7 +326,9 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       PROF_OUT_EXT(newborn_thread);
 
       if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
-	MA_THR_LONGJMP(marcel_self()->father, NORMAL_RETURN);
+	// On rend la main au père
+	call_ST_FLUSH_WINDOWS();
+	longjmp(marcel_self()->father->jbuf, NORMAL_RETURN);
       }
       MA_THR_RESTARTED(marcel_self(), "Preemption");
       unlock_task();
@@ -338,6 +338,10 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       // sauve son contexte et on démarre le fils immédiatement. Note
       // : si le thread est un 'real-time thread', cela ne change
       // rien ici...
+
+      PROF_SWITCH_TO(cur->number, new_task->number);
+
+      PROF_IN_EXT(newborn_thread);
 
       new_task->father->child = NULL;
 
@@ -518,7 +522,7 @@ int marcel_exit(any_t val)
 
     LOG_OUT();
 
-    MA_THR_LONGJMP((cur), NORMAL_RETURN);
+    MA_THR_LONGJMP(cur_lwp->sec_desc->number, (cur), NORMAL_RETURN);
 
   } else { // Ici, la pile a été allouée par le noyau Marcel
 
@@ -566,6 +570,10 @@ int marcel_exit(any_t val)
     // correctement le champ lwp...
     SET_LWP(cur_lwp->sec_desc, cur_lwp);
 
+    // Pour les informations de debug, on reprend le numéro du thread
+    // précédent
+    cur_lwp->sec_desc->number = cur->number;
+
     // Ca y est, on peut basculer sur la pile de secours.
     call_ST_FLUSH_WINDOWS();
     set_sp(SECUR_STACK_TOP(cur_lwp));
@@ -585,7 +593,7 @@ int marcel_exit(any_t val)
     LOG_OUT();
 
     // Enfin, on effectue un changement de contexte vers le thread suivant.
-    MA_THR_LONGJMP((cur_lwp->sec_desc->child), NORMAL_RETURN);
+    MA_THR_LONGJMP(cur_lwp->sec_desc->number, (cur_lwp->sec_desc->child), NORMAL_RETURN);
   }
 
   return 0; /* Silly, isn't it ? */

@@ -10,10 +10,12 @@ be_list erc_sw_inv_list;
 
 void dsmlib_erc_sw_inv_init(int protocol_number){
   erc_sw_inv_list = init_be_list(10);
+#ifdef TRACE_ERC
   fprintf(stderr,"Initial  printing\n");
   fprintf_be_list(erc_sw_inv_list);
   fprintf(stderr,"Done printing\n");
   fprintf(stderr,"Nb total pages: %lu\n", dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages());
+#endif
   /*  for(i = 0; i < dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages(); i++)
     if(dsm_get_page_protocol(i) == protocol_number){
       count++;
@@ -27,20 +29,26 @@ void dsmlib_erc_sw_inv_init(int protocol_number){
 }
 
 void dsmlib_erc_sw_inv_rfh(unsigned long index){
+#ifdef TRACE_ERC
   fprintf(stderr, "Read Fault Handler called\n");
+#endif
   return dsmlib_rf_ask_for_read_copy(index);
 }
 
 
 void dsmlib_erc_sw_inv_wfh(unsigned long index)
 {  
+#ifdef TRACE_ERC
   fprintf(stderr, "Write Fault Handler called\n");
+#endif
   if (dsm_get_access(index) == WRITE_ACCESS)
       return;
 
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
     {
+#ifdef TRACE_ERC
       fprintf(stderr, "Adding to belist: %lu\n", index);
+#endif
       add_to_be_list(&erc_sw_inv_list, index);
       dsm_set_access(index, WRITE_ACCESS);
     }
@@ -57,11 +65,16 @@ void dsmlib_erc_sw_inv_wfh(unsigned long index)
 }
 
 void dsmlib_erc_sw_inv_rs(unsigned long index, dsm_node_t req_node, int arg){
+  dsm_access_t access;
+
   dsm_lock_page(index);
-  if (dsm_get_access(index) >= READ_ACCESS) // there is a local copy of the page
+  if ((access = dsm_get_access(index)) >= READ_ACCESS) // there is a local copy of the page
     {
       dsm_add_to_copyset(index, req_node);
+      dsm_set_access(index,WRITE_ACCESS);
       dsm_send_page(req_node, index, READ_ACCESS, arg);
+      if (access < WRITE_ACCESS) 
+	dsm_set_access(index, READ_ACCESS);
     }
   else // no access; maybe a pending access ?
     if (dsm_get_pending_access(index) != NO_ACCESS && !dsm_next_owner_is_set(index))
@@ -76,7 +89,9 @@ void dsmlib_erc_sw_inv_rs(unsigned long index, dsm_node_t req_node, int arg){
 }
 
 void dsmlib_erc_sw_inv_ws(unsigned long index, dsm_node_t req_node, int arg){
+#ifdef TRACE_ERC
   fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
+#endif
   dsm_lock_page(index);
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
     {
@@ -86,7 +101,7 @@ void dsmlib_erc_sw_inv_ws(unsigned long index, dsm_node_t req_node, int arg){
 	  //assert(dsm_get_access(index) == WRITE_ACCESS);
 	  dsm_invalidate_copyset(index, req_node);
 	}
-      dsm_set_access(index, READ_ACCESS);
+//      dsm_set_access(index, READ_ACCESS);
       dsm_send_page(req_node, index, WRITE_ACCESS, arg);
       dsm_set_access(index, NO_ACCESS);
     }
@@ -105,14 +120,18 @@ void dsmlib_erc_sw_inv_ws(unsigned long index, dsm_node_t req_node, int arg){
 }
 
 void dsmlib_erc_sw_inv_is(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner){
+#ifdef TRACE_ERC
   fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
+#endif
   return dsmlib_is_invalidate(index, req_node, new_owner);
 }
 
 void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_node, int arg){
   unsigned long index = dsm_page_index(addr);
   dsm_node_t node;
+#ifdef TRACE_ERC
   fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
+#endif
   dsm_lock_page(index); 
 
   if (access == READ_ACCESS)
@@ -165,24 +184,30 @@ void dsmlib_erc_acquire()
 void dsmlib_erc_release()
 {
   unsigned long index;
+#ifdef TRACE_ERC
   fprintf(stderr,"Start of release\n");
   fprintf_be_list(erc_sw_inv_list);
   fprintf(stderr,"Done printing\n");
+#endif
   index = remove_first_from_be_list(&erc_sw_inv_list);
+#ifdef TRACE_ERC
   fprintf(stderr,"First One removed: %lu\n", index);
+#endif
   while(index != (unsigned long)-1)
     {
-      fprintf(stderr,"Trying to lock page: %lu\n", index);
+//      fprintf(stderr,"Trying to lock page: %lu\n", index);
       dsm_lock_page(index);
-      fprintf(stderr,"Invalidating copyset: %lu\n", index);
+//      fprintf(stderr,"Invalidating copyset: %lu\n", index);
       dsm_invalidate_copyset(index, dsm_self());
-      fprintf(stderr,"Changing access: %lu\n", index);
+//      fprintf(stderr,"Changing access: %lu\n", index);
       dsm_set_access(index, READ_ACCESS);
       dsm_unlock_page(index);
       index = remove_first_from_be_list(&erc_sw_inv_list);
-      fprintf(stderr,"Removed: %ld\n", index);
+//      fprintf(stderr,"Removed: %ld\n", index);
     }
+#ifdef TRACE_ERC
   fprintf(stderr,"End of release\n");
+#endif
   return;
 }
 

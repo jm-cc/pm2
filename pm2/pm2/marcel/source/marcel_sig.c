@@ -78,6 +78,7 @@ static void timer_interrupt(int sig)
 #endif
 
     ma__marcel_yield();
+
     unlock_task();
 
     LOG_OUT();
@@ -211,7 +212,7 @@ void marcel_sig_start_timer(void)
 #else
   sa.sa_handler = timer_interrupt;
 #endif
-#ifndef WIN_SYS
+#if !defined(WIN_SYS)
   sa.sa_flags = SA_RESTART;
 #else
   sa.sa_flags = 0;

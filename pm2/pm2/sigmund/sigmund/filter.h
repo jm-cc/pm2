@@ -6,6 +6,7 @@
 
 #define THREAD_LIST_NULL (thread_list) NULL
 #define PROC_LIST_NULL (proc_list) NULL
+#define LOGIC_LIST_NULL (logic_list) NULL
 #define CPU_LIST_NULL (cpu_list) NULL
 #define EVENT_LIST_NULL (event_list) NULL
 #define TIME_SLICE_LIST_NULL (time_slice_list) NULL
@@ -13,6 +14,7 @@
 #define GENERAL_SLICE_LIST_NULL (general_slice_list) NULL
 #define LWP_THREAD_LIST_NULL (lwp_thread_list) NULL
 #define THREAD_FUN_LIST_NULL (thread_fun_list) NULL
+#define FUNCTION_TIME_LIST_NULL (function_time_list) NULL
 
 typedef struct thread_list_st {
   int thread;
@@ -23,6 +25,11 @@ typedef struct proc_list_st {
   int proc;
   struct proc_list_st *next;
 } * proc_list;
+
+typedef struct logic_list_st {
+  int logic;
+  struct logic_list_st *next;
+} * logic_list;
 
 typedef struct cpu_list_st {
   short int cpu;
@@ -47,6 +54,14 @@ typedef struct evnum_slice_list_st {
   struct evnum_slice_list_st *next;
 } * evnum_slice_list;
 
+typedef struct function_time_list_st {
+  mode type;
+  int code;
+  int thread;
+  u_64 time;
+  struct function_time_list_st *next;
+} * function_time_list;
+
 typedef struct general_slice_list_st {
   mode begin_type;
   int begin;
@@ -65,8 +80,10 @@ typedef struct thread_fun_list_st {
   struct thread_fun_list_st *next;
 } * thread_fun_list;
 
+
 typedef struct lwp_thread_list_st {
   int lwp;
+  int logic;
   int thread;
   int active;
   int active_thread;
@@ -77,6 +94,7 @@ typedef struct {
   thread_list thread;
   int active_thread;
   proc_list proc;
+  logic_list logic;
   int active_proc;
   cpu_list cpu;
   lwp_thread_list lwp_thread;
@@ -87,6 +105,8 @@ typedef struct {
   int active_evnum_slice;
   general_slice_list function;
   thread_fun_list thread_fun;
+  function_time_list function_begin;
+  function_time_list function_time;
   int active_thread_fun;
   general_slice_list gen_slice;
   int active_gen_slice;
@@ -100,6 +120,8 @@ extern void close_filter();
 extern void filter_add_thread(int thread);
 
 extern void filter_add_proc(int proc);
+
+extern void filter_add_logic(int logic);
 
 extern void filter_add_cpu(short int cpu);
 

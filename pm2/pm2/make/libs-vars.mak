@@ -148,13 +148,4 @@ LIB_PIC_TO_S   = $(LIB_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
 #---------------------------------------------------------------------
 COMMON_DEPS += $(LIB_STAMP_FLAVOR) $(MAKEFILE_FILE) 
 
-# Regle de construction du cache de configuration de la librairie
-#---------------------------------------------------------------------
-#     Note: pourquoi ici plutot que dans libs-rules.mak ?
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
-$(PM2_MAK_DIR)/$(LIBRARY)-config.mak: $(LIB_STAMP_FLAVOR)
-	@echo "Generating $@"
-	@$(PM2_CONFIG) --gen_mak $(LIBRARY)
-endif
-
 ######################################################################

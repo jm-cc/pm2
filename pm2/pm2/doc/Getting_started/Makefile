@@ -1,5 +1,5 @@
 
-## $Id: Makefile,v 1.5 2001/04/13 07:57:51 bouge Exp $
+## $Id: Makefile,v 1.6 2001/04/17 11:25:34 bouge Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -19,7 +19,7 @@ ROOTTEXFILES	:= start.tex
 STYFILES	:= start.sty
 
 TO_SPLIT	:= rpc-threads1 migration3 migrate-group \
-		dsm dsm1 dsm2 freeze mutex semaphore
+		dsm dsm1 dsm2 freeze mutex semaphore condition
 
 CFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c)
 CFILES_SPLIT_0	:= $(CFILES_TO_SPLIT:%=%-0) 
@@ -54,10 +54,10 @@ INCLUDEFILES	:= $(CFILES) $(CFILES_SPLIT_0) $(CFILES_SPLIT_1) \
 all: eps dvi split
 
 $(CFILES_SPLIT_0): %-0: %
-	perl -w Progs/split.pl $<
+	@perl -w split.pl $<
 
 $(CFILES_SPLIT_1): %-1: %
-	perl -w Progs/split.pl $<
+	@perl -w split.pl $<
 
 split: $(CFILES_SPLIT_0) $(CFILES_SPLIT_1)
 

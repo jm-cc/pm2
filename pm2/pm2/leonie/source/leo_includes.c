@@ -32,7 +32,7 @@ process_network_include_file(p_leo_networks_t networks,
   p_tbx_slist_t network_slist = NULL;
 
   LOG_IN();
-  network_slist = leoparse_read_slist(include_htable, "networks");
+  network_slist = leoparse_read_as_slist(include_htable, "networks");
   if (network_slist && !tbx_slist_is_nil(network_slist))
     {
       tbx_slist_merge_after(networks->slist, network_slist);

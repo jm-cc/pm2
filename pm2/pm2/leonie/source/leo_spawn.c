@@ -76,7 +76,9 @@ connect_processes(p_leonie_t leonie,
     {
       p_ntbx_client_t           client           = NULL;
       p_tbx_slist_t             slist            = NULL;
+#ifdef LEO_IP
       p_tbx_slist_t             host_name_list   = NULL;
+#endif // LEO_IP
       char                     *host_name        = NULL;
       char                     *true_name        = NULL;
       p_ntbx_process_t          process          = NULL;

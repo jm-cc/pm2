@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.5  2000/04/17 08:31:14  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.4  2000/04/14 14:01:18  rnamyst
 Minor modifs.
 
@@ -79,6 +82,10 @@ ______________________________________________________________________________
 
 #ifndef MARCEL_FLAGS_EST_DEF
 #define MARCEL_FLAGS_EST_DEF
+
+#ifdef MARCEL_DEBUG
+#define MA__DEBUG
+#endif
 
 #ifdef __ACT__
 #warning use of __ACT__ depreciated. Define MARCEL_ACT instead

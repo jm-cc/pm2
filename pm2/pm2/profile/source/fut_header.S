@@ -97,7 +97,7 @@ fut_header:							/*  normal entry point to take a probe */
 	movl	%eax,%ecx				/*  point ecx at first slot of this record */
 	rdtsc							/*  get 64-bit cpu cycle counter in edx-eax */
 	movl	%eax,probe_lo_cycles(%ecx)	/*  low-order 32 bits from eax to 1st slot */
-	movl	%edx,probe_lo_cycles(%ecx)	/*  hi-order 32 bits from edx to 2nd slot */
+	movl	%edx,probe_hi_cycles(%ecx)	/*  hi-order 32 bits from edx to 2nd slot */
 	leal	caller_code(%esp),%edx	/*  point edx at header value in call */
 	leal	probe_code(%ecx),%ecx	/*  point ecx at header slot in record */
 9:

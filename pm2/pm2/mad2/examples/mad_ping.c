@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.9  2000/06/09 13:18:10  rnamyst
+Max size reduced to 2MB in mad_ping.c
+
 Revision 1.8  2000/06/07 08:11:18  oaumage
 - Ajout du calcul en Megaoctets
 
@@ -112,7 +115,7 @@ static int param_send_mode       = mad_send_CHEAPER;
 static int param_receive_mode    = mad_receive_CHEAPER;
 static int param_nb_echantillons = 100;
 static int param_min_size        = 1;
-static int param_max_size        = 16*1024*1024;
+static int param_max_size        = 2*1024*1024;
 static int param_step            = 0; /* 0 = progression log. */
 static int param_nb_tests        = 5;
 static int param_bandwidth       = 1;

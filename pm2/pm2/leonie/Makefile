@@ -89,7 +89,6 @@ LEO_LY_OBJECTS  :=  $(patsubst %.c,%.o,$(subst $(LEO_LY),$(LEO_OBJ),$(LEO_LY_SOU
 LEO_OBJECTS     :=  $(LEO_REG_OBJECTS) $(LEO_LY_OBJECTS) 
 
 LEO_APP   =  $(LEO_BIND)/leonie
-LEO_LLIBS =  $(ARCHDLIB) -lfl  $(TBX_LIB) $(NTBX_LIB) $(TBX_LLIB) $(NTBX_LLIB)
 
 LEO_REG_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(LEO_OBJ),$(LEO_DEP),$(LEO_REG_OBJECTS)))
 LEO_LY_DEPENDS  :=  $(patsubst %.o,%.d,$(subst $(LEO_OBJ),$(LEO_DEP),$(LEO_LY_OBJECTS)))
@@ -100,6 +99,7 @@ MASTER         :=  leonie
 MASTER_CC      :=  gcc
 MASTER_OPTIONS :=  $(LEO_OPTIONS)
 MASTER_DEP     :=  $(LEO_MAKEFILE) $(LEO_SUB_MAKEFILE)
+MASTER_LDFLAGS := 
 
 LEO_LEX  =  flex
 LEO_YACC =  bison -y
@@ -108,7 +108,7 @@ LEO_CC   =  $(MASTER_CC)
 LEO_CFLAGS  =  $(MASTER_OPTIONS) $(PM2_FLAGS) \
                -I$(LEO_INC) -I$(LEO_LY) -I$(TBX_ROOT)/include \
                -I$(SWANN_ROOT)/include -I$(NTBX_ROOT)/include
-LEO_LDFLAGS = 
+LEO_LDFLAGS = $(MASTER_LDFLAGS) -lfl
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(LEO_DEPENDS)),$(LEO_DEPENDS))
@@ -126,7 +126,7 @@ $(LEO_DEPENDS): $(MASTER_DEP)
 
 $(LEO_APP): $(LEO_OBJECTS) tbx_default ntbx_default
 	@ echo "  -  $(@F)"
-	$(LEO_CC) -o $(LEO_APP) $(LEO_OBJECTS) $(LEO_LLIBS)
+	$(LEO_CC) -o $(LEO_APP) $(LEO_OBJECTS) $(LEO_LDFLAGS)
 
 $(LEO_REG_OBJECTS): $(LEO_OBJ)/%.o: $(LEO_SRC)/%.c ${LEO_LY}/y.tab.h
 	@ echo "  -  $(@F)"
@@ -147,10 +147,10 @@ $(LEO_LY_DEPENDS): $(LEO_DEP)/%.d: $(LEO_LY)/%.c ${LEO_LY}/y.tab.h
 		| sed '\''s/.*:/$(subst /,\/,$(LEO_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 ${LEO_LY}/lex.yy.c:  $(LEO_LY)/leo_lexer.l $(LEO_LY)/y.tab.h 
-	cd $(LEO_LY); $(LEX) leo_lexer.l
+	cd $(LEO_LY); $(LEO_LEX) leo_lexer.l
 
 ${LEO_LY}/y.tab.c ${LEO_LY}/y.tab.h: $(LEO_LY)/leo_parser.y
-	cd $(LEO_LY); $(YACC) -d leo_parser.y
+	cd $(LEO_LY); $(LEO_YACC) -d leo_parser.y
 
 .PHONY: clean distclean
 clean: tbxclean ntbxclean

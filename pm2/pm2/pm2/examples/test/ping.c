@@ -73,7 +73,7 @@ static void threaded_rpc(void *arg)
 
 void SAMPLE_THR_service(void)
 {
-  pm2_thread_create(threaded_rpc, NULL);
+  pm2_service_thread_create(threaded_rpc, NULL);
 }
 
 void f(void)

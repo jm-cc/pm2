@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leoparse_interface.h,v $
+Revision 1.4  2000/12/11 08:31:16  oaumage
+- support Leonie
+
 Revision 1.3  2000/11/16 13:24:04  oaumage
 - mise a jour initialisation
 
@@ -89,6 +92,9 @@ ______________________________________________________________________________
 
 ______________________________________________________________________________
 $Log: leoparse_interface.h,v $
+Revision 1.4  2000/12/11 08:31:16  oaumage
+- support Leonie
+
 Revision 1.3  2000/11/16 13:24:04  oaumage
 - mise a jour initialisation
 
@@ -107,6 +113,9 @@ ______________________________________________________________________________
 /* Parsing */
 void
 leoparse_open_local_parser_file(char *file_name);
+
+p_tbx_htable_t
+leoparse_parse_local_file(char* filename);
 
 void
 leoparse_close_local_parser_file(void);

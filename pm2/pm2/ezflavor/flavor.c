@@ -68,6 +68,7 @@ static void update_the_buttons(void)
 {
   char *selected = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
   gint load_enabled, create_enabled, save_enabled;
+  gint save_as = FALSE;
 
   if(flavor_exists(selected)) {
     create_enabled = FALSE;
@@ -77,7 +78,7 @@ static void update_the_buttons(void)
       save_enabled = FALSE; // Really nothing to save !
     } else if(strcmp(cur_flavor->name, selected)) {
       load_enabled = TRUE;
-      save_enabled = TRUE;  // Actually a "save as"
+      save_enabled = TRUE; save_as = TRUE; // Actually a "save as"
     } else {
       // Selected flavor is the current one
       load_enabled = FALSE;
@@ -93,11 +94,17 @@ static void update_the_buttons(void)
     // Selected flavor does not exist yet
     load_enabled = FALSE;
     create_enabled = TRUE;
-    if(cur_flavor == NULL)
+    if(cur_flavor == NULL) {
       save_enabled = FALSE; // Nothing to save
-    else
-      save_enabled = TRUE;
+    } else {
+      save_enabled = TRUE; save_as = TRUE;
+    }
   }
+
+  if(save_as)
+    gtk_label_set_text(GTK_LABEL(GTK_BIN(the_save_button)->child), "Save As");
+  else
+    gtk_label_set_text(GTK_LABEL(GTK_BIN(the_save_button)->child), "Save");
 
   gtk_widget_set_sensitive(the_load_button, load_enabled);
   gtk_widget_set_sensitive(the_create_button, create_enabled);
@@ -503,7 +510,7 @@ static void flavor_build_selector(GtkWidget *vbox)
 		     (gpointer)(GTK_COMBO(combo)->entry));
   gtk_widget_show(the_load_button);
 
-  the_create_button = gtk_button_new_with_label("Create");
+  the_create_button = gtk_button_new_with_label("New");
   gtk_box_pack_start(GTK_BOX(int_vbox), the_create_button, FALSE, FALSE, 0);
   gtk_container_set_border_width (GTK_CONTAINER(the_create_button), 10);
   gtk_signal_connect(GTK_OBJECT(the_create_button), "clicked",

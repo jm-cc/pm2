@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: profile.h,v $
+Revision 1.4  2000/09/18 14:22:43  rnamyst
+Few re-arrangements in .h files
+
 Revision 1.3  2000/09/15 17:37:13  rnamyst
 Tracefiles are now generated correctly with PM2 applications using multiple processes
 
@@ -80,11 +83,31 @@ ______________________________________________________________________________
 
 #define PROF_PROBE0(keymask, code)   (((keymask) & fut_active) ? fut_header(code) : 0)
 
+#ifdef PREPROC
+
+#define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_fut_" \
+                                                   __FUNCTION__ "_" #inout \
+                                                   "_code"); \
+                               foo=1; }
+
+#else // ifndef PREPROC
+
+#define GEN_PREPROC(inout)   { extern unsigned __code asm("fut_" __FUNCTION__ \
+                                                          "_" #inout "_code"); \
+                               PROF_PROBE0(PROFILE_KEYMASK, __code); }
+#endif // PREPROC
+
+#define PROF_IN()            GEN_PREPROC(entry)
+#define PROF_OUT()           GEN_PREPROC(exit)
+
 #else // ifndef DO_PROFILE
 
 #define PROF_PROBE0(keymask, code)   (void)0
 
-#endif
+#define PROF_IN()                    (void)0
+#define PROF_OUT()                   (void)0
+
+#endif // DO_PROFILE
 
 // The keymask of PROF_SWITCH_TO() is -1 because this
 // trace-instruction should be activated whenever one other
@@ -106,6 +129,9 @@ void profile_stop(void);
 #define PROF_PROBE0(keymask, code)   (void)0
 #define PROF_SWITCH_TO(thr)          (void)0
 
-#endif
+#define PROF_IN()                    (void)0
+#define PROF_OUT()                   (void)0
+
+#endif // PROFILE
 
 #endif

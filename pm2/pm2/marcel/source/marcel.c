@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.23  2000/06/09 09:09:09  vdanjean
+Correction de l'initialisation de la toolbox avec Marcel
+
 Revision 1.22  2000/05/25 00:23:52  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -1144,6 +1147,9 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
   static volatile boolean already_called = FALSE;
 
   if(!already_called) {
+#ifdef TBX
+    tbx_init(argc, argv, debug_flags);
+#endif
     marcel_debug_init(argc, argv, debug_flags);
 
     mdebug("\t\t\t<marcel_init>\n");

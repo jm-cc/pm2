@@ -32,7 +32,7 @@ DUMMY_BUILD	:=	$(shell if [ ! -d $(TMP_DIR) ]; then mkdir -p $(TMP_DIR); fi)
 OPTIONS		:=	-g
 
 CC		:=	gcc
-CFLAGS		:=	-O6 -Wall $(OPTIONS)
+CFLAGS		:=	-O6 -Wall $(OPTIONS) $(CFLAGS)
 LDFLAGS		:=	 -lfl
 
 ifneq (,$(findstring $(PM2_SYS),"WIN98_SYS_WINNT_SYS_WIN2K_SYS"))

@@ -43,27 +43,27 @@ MODULES := $(shell $(PM2_ROOT)/bin/pm2-module modules)
 
 ifneq ($(MAKECMDGOALS),init)
 ifneq ($(MAKECMDGOALS),help)
-ifneq ($(MAKECMDGOALS),)
 LIBS = $(shell $(PM2_CONFIG) --modules)
 endif
 endif
-endif
 
-help:
+libs:
 
 include $(PM2_ROOT)/make/common-rules.mak
 
 all: pm2 examples
-.PHONY: pm2 examples all
+.PHONY: pm2 examples all libs
 
-pm2: flavors
-	@set -e; \
+pm2: libs
+
+libs: flavors ARCHITECTURES
+	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i ; \
 	done
 
 examples: flavors
-	@set -e; \
+	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i examples ; \
 	done
@@ -72,7 +72,7 @@ examples: flavors
 clean: cleanlibs
 
 cleanlibs:
-	@set -e; \
+	$(COMMON_HIDE) set -e; \
 	for i in $(MODULES) ; do \
 		$(MAKE) -C modules/$$i clean ; \
 	done
@@ -81,7 +81,7 @@ cleanlibs:
 distclean: distcleanlibs distcleanflavors distcleandoc
 
 distcleanlibs:
-	@set -e; \
+	$(COMMON_HIDE) set -e; \
 	for i in $(MODULES) ; do \
 		$(MAKE) -C modules/$$i distclean ; \
 	done
@@ -97,13 +97,13 @@ distcleandoc:
 init: cvsinit flavorinit
 
 cvsinit ARCHITECTURES:
-	@if [ -d CVS ]; then \
+	$(COMMON_HIDE) if [ -d CVS ]; then \
 		$(PM2_ROOT)/bin/pm2_recreate_links ; \
 	fi
 
 flavorinit flavors: ARCHITECTURES
-	@echo Creating initial sample flavors...
-	@if [ -d flavors ]; then \
+	$(COMMON_HIDE) echo Creating initial sample flavors...
+	$(COMMON_HIDE) if [ -d flavors ]; then \
 		echo "Aborting, some flavor already exists" ; \
 		echo "Do 'make distclean' to remove all" ; \
 	else \
@@ -136,4 +136,4 @@ targethelp:
 
 .PHONY: config
 config: flavors
-	@$(PM2_ROOT)/bin/pm2-config-flavor || :
+	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor || :

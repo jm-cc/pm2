@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.6  2000/04/17 08:31:51  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.5  2000/04/11 09:07:21  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -59,7 +62,7 @@ Revision 1.2  2000/01/31 15:57:15  oaumage
 ______________________________________________________________________________
 */
 
-/* #define DEBUG */
+/* #define MA__DEBUG */
 
 #include "marcel.h"
 

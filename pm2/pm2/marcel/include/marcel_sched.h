@@ -208,22 +208,20 @@ static __inline__ void ma_lock_task(void)
 static __inline__ void ma_unlock_task(void) __attribute__ ((unused));
 static __inline__ void ma_unlock_task(void)
 {
-  volatile atomic_t *locked = &GET_LWP(marcel_self())->_locked;
-
 #ifdef MARCEL_RT
   if(__rt_task_exist &&
-     atomic_read(locked) == 1 &&
+     atomic_read(&GET_LWP(marcel_self())->_locked) == 1 &&
      !MA_TASK_REAL_TIME(marcel_self()))
     ma__marcel_find_and_yield_to_rt_task();
 #endif
 
 #ifdef MA__WORK
-  if ((atomic_read(locked) == 1) 
+  if ((atomic_read(&GET_LWP(marcel_self())->_locked) == 1) 
       && (marcel_self()->has_work || marcel_global_work)) {
     do_work(marcel_self());
   }
 #endif
-  atomic_dec(locked);
+  atomic_dec(&GET_LWP(marcel_self())->_locked);
 
 #if defined(PM2DEBUG) && defined(MA__ACTIVATION)
   pm2debug_flush();

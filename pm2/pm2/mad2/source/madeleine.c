@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.43  2001/01/16 09:55:22  oaumage
+- integration du mecanisme de forwarding
+- modification de l'usage des flags
+
 Revision 1.42  2000/11/20 17:17:45  oaumage
 - suppression de certains fprintf
 
@@ -664,38 +668,63 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
 {
   p_mad_configuration_t  configuration = madeleine->configuration;
   p_mad_settings_t       settings      = madeleine->settings;
-  FILE                  *f             = NULL;
-  char                  *fmt           = "exit `cat %s | wc -w`";
-  int                    len;
-  ntbx_host_id_t         i;
 
   LOG_IN();
 
   if (settings->configuration_file)
     {
+      FILE           *f      = NULL;
+      size_t          status = 0;
+      tbx_flag_t      state  = tbx_flag_clear;
+      ntbx_host_id_t  i;
+      char            c;
+
+      configuration->size = 0;
+      
       f = fopen(settings->configuration_file, "r");
     
       if (!f)
+	ERROR("fopen");
+
+      for (;;)
 	{
-	  ERROR("fopen");
+	  status = fread(&c, 1, 1, f);
+	    
+	  if (!status)
+	    {
+	      if (ferror(f))
+		{
+		  ERROR("fread");
+		}
+	      else if (feof(f))
+		{
+		  break;
+		}
+	      else
+		FAILURE("fread: unknown state");
+	    }
+
+	  if (tbx_test(&state))
+	    {
+	      if (c <= ' ')
+		{
+		  tbx_toggle(&state);
+		}
+	    }
+	  else
+	    {
+	      if (c > ' ')
+		{
+		  configuration->size++;
+		  tbx_toggle(&state);
+		}
+	    }
 	}
 
-      len = strlen(settings->configuration_file) + strlen(fmt);
-
-      {
-	char cmd[len];
-	int  ret;
-    
-	sprintf(cmd, "exit `cat %s | wc -w`", settings->configuration_file);
-	ret = system(cmd);
-
-	if (ret == -1)
-	  ERROR("system");
-    
-	configuration->size = WEXITSTATUS(ret);
-      }
-
-      configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
+      rewind(f);
+      
+      configuration->host_name =
+	TBX_MALLOC(configuration->size * sizeof(char *));
       CTRL_ALLOC(configuration->host_name);
 
       for (i = 0; i < configuration->size; i++)
@@ -715,6 +744,7 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
       if (configuration->size)
 	{
 	  ntbx_host_id_t rank = configuration->local_host_id;
+	  ntbx_host_id_t i;
 
 	  configuration->host_name =
 	    TBX_CALLOC(configuration->size, sizeof(char *));

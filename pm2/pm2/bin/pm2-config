@@ -58,6 +58,8 @@ usage()
 
     cat <<EOF
 Usage: $PROGNAME [--flavor=name] [OPTION]... [MODULE]...
+  If '--flavor' is not specified, then it uses fisrt \$PM2_FLAVOR, or,
+  if not set, 'default'.
 
 Generic options
   --version	output pm2 version information.
@@ -219,7 +221,7 @@ done
 ##########################################################################
 # corrections et valeurs par défaut
 if [ -z "$flavor" ]; then
-    flavor=default
+    flavor=${PM2_FLAVOR:-default}
 fi
 
 if [ ! -f $PM2_CONFIG/$flavor ]; then

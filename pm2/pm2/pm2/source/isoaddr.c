@@ -60,10 +60,10 @@ BEGIN_LRPC_LIST
 END_LRPC_LIST
 
 #define SLOT_INDEX(addr) \
-        ((int)(((int)ISOADDR_AREA_TOP  - ((int)addr & ~(_SLOT_SIZE - 1))) / _SLOT_SIZE) - 1) // big bug out 5/05/00 !
+        ((long)(((long)ISOADDR_AREA_TOP  - ((long)addr & ~(_SLOT_SIZE - 1))) / _SLOT_SIZE) - 1) // big bug out 5/05/00 !
 
 #define GET_SLOT_ADDR(bit_abs_index) \
-        ((void *)((int)ISOADDR_AREA_TOP  - (bit_abs_index + 1) * _SLOT_SIZE))
+        ((void *)((long)ISOADDR_AREA_TOP  - (bit_abs_index + 1) * _SLOT_SIZE))
 
 int isoaddr_page_index(void *addr)
 {
@@ -105,7 +105,7 @@ typedef page_info_entry_t *page_info_table_t;
 
 static page_info_table_t _info_table;
 static int _page_distrib_mode = CYCLIC;
-static int _page_distrib_arg = 16;
+static long _page_distrib_arg = 16;
 
 #ifdef min
 #undef min
@@ -312,7 +312,7 @@ void isoaddr_page_set_distribution(int mode, ...)
   switch(mode) {
   case CENTRALIZED: 
   case CYCLIC: _page_distrib_arg = va_arg(l, int); break;
-  case CUSTOM: _page_distrib_arg = (int)va_arg(l, int *); break;
+  case CUSTOM: _page_distrib_arg = (long)va_arg(l, int *); break;
   case BLOCK: break;
   }
   va_end(l);
@@ -1026,7 +1026,7 @@ static __inline__ void _get_busy_slot(void *addr, size_t size, int *signal)
     } else {
       mmap(addr,
 	   size,
-	   PROT_READ | PROT_WRITE,
+	   PROT_READ | PROT_WRITE | PROT_EXEC,
 	   MMAP_MASK,
 	   FILE_TO_MAP, 0);
 #ifdef ISOADDR_ALOC_TRACE
@@ -1081,7 +1081,7 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 #endif
 	     ptr = mmap(ptr,
 			size,
-			PROT_READ | PROT_WRITE,
+			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MMAP_MASK,
 			FILE_TO_MAP, 0);
 	     if(ptr == (void *)-1) 
@@ -1124,12 +1124,13 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 	       }
 	     ptr = mmap(ptr,
 			size,
-			PROT_READ | PROT_WRITE,
+			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MMAP_MASK,
 			FILE_TO_MAP, 0);
-	     if(ptr == (void *)-1) 
+	     if(ptr == (void *)-1) {
+	       fprintf(stderr, "addr = %p\n", ptr);
 	       RAISE(STORAGE_ERROR);
-
+	     }
 	   }
        }
      

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.c,v $
+Revision 1.8  2000/06/07 08:12:04  oaumage
+- Retour a des bases saines
+
 Revision 1.7  2000/06/06 12:54:51  oaumage
 - Ajout du calcul de la taille des groupes de buffers dynamiques
 
@@ -229,12 +232,12 @@ p_mad_buffer_t mad_duplicate_buffer(p_mad_buffer_t source)
 
 void mad_make_buffer_group(p_mad_buffer_group_t   buffer_group,
 			   p_tbx_list_t           buffer_list,
-			   p_mad_link_t           link,
-			   size_t                 cumulated_length)
+			   p_mad_link_t           link)
+			   //,		   size_t     cumulated_length)
 {
   tbx_extract_sub_list(buffer_list, &(buffer_group->buffer_list));
   buffer_group->link   = link;
-  buffer_group->length = cumulated_length;
+  //buffer_group->length = cumulated_length;
 }
 
 p_mad_buffer_t mad_split_buffer(p_mad_buffer_t buffer,

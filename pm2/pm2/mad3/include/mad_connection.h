@@ -51,7 +51,8 @@ typedef struct s_mad_connection
   p_mad_connection_t       reverse;
   mad_connection_way_t     way;
   tbx_bool_t               connected;
-  p_mad_connection_t       regular;  
+  p_mad_connection_t       regular;
+  char                    *parameter;
 
   /* Forwarding connections only */
 #ifdef MARCEL
@@ -69,14 +70,14 @@ typedef struct s_mad_connection
   unsigned int             first_block_is_a_group;
 #ifdef MAD_FORWARD_FLOW_CONTROL
   marcel_sem_t             ack;
-#endif // MAD_FORWARD_FLOW_CONTROL 
+#endif // MAD_FORWARD_FLOW_CONTROL
 #endif // MARCEL
 
   /* Internal use fields */
-  int                      nb_link; 
+  int                      nb_link;
   p_mad_link_t            *link_array;
-  p_tbx_list_reference_t   user_buffer_list_reference; 
-  p_tbx_list_t             user_buffer_list; 
+  p_tbx_list_reference_t   user_buffer_list_reference;
+  p_tbx_list_t             user_buffer_list;
   p_tbx_list_t             buffer_list;
   p_tbx_list_t             buffer_group_list;
   p_tbx_list_t             pair_list;
@@ -89,7 +90,7 @@ typedef struct s_mad_connection
 #else // MARCEL
   volatile tbx_bool_t      lock;
 #endif // MARCEL
-  tbx_bool_t               delayed_send; 
+  tbx_bool_t               delayed_send;
   tbx_bool_t               flushed;
   tbx_bool_t               pair_list_used;
   tbx_bool_t               first_sub_buffer_group;

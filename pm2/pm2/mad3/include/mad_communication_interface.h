@@ -155,8 +155,7 @@ mad_forward_send_buffer_group(p_mad_link_t         lnk,
 
 void
 mad_forward_receive_sub_buffer_group(p_mad_link_t         lnk,
-				     tbx_bool_t           first_sub_group
-				     __attribute__ ((unused)),
+				     tbx_bool_t __attribute__ ((unused)) first_sub_group,
 				     p_mad_buffer_group_t buffer_group);
 
 void
@@ -264,9 +263,9 @@ mad_mux_send_buffer_group(p_mad_link_t         lnk,
 
 void
 mad_mux_receive_sub_buffer_group(p_mad_link_t         lnk,
-				     tbx_bool_t           first_sub_group
-				     __attribute__ ((unused)),
-				     p_mad_buffer_group_t buffer_group);
+                                 tbx_bool_t __attribute__ ((unused))
+                                 first_sub_group,
+                                 p_mad_buffer_group_t buffer_group);
 
 void
 mad_mux_stop_indirect_retransmit(p_mad_channel_t channel);

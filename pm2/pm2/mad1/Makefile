@@ -244,15 +244,6 @@ endif
 $(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d
 $(DEPENDS): $(THIS_MAKEFILE) $(MAD_MAKEFILE)
 
-.PHONY: clean
-clean:
-	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d \
-		$(DEP_DIR)/*.d $(OBJ_DIR)/*.o $(BIN_DIR)/*)
-
-.PHONY: dep
-dep: $(MAD_DEPENDS) $(DEPENDS) ;
-
-
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(MAD_CC) $(MAD_CFLAGS) -c $< -o $@
 

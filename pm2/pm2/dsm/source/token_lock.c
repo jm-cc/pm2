@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.26 2002/11/07 15:37:42 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.27 2002/11/29 18:44:59 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -28,7 +28,7 @@
 #undef TRCSL
 #undef DBGSL
 /* remove all assertions "assert" */
-#undef NDEBUG
+#define NDEBUG
 
 #include "trace_debug.h"
 

@@ -207,6 +207,9 @@ void set_bits_to_1(unsigned int start, unsigned int n,  bitmap_t crt_bitmap)
  unsigned int end = start + n, 
               first_word = start >> 5,
               last_word = (end - 1) >> 5;
+ if (n <= 0)
+   return;
+ 
 
  if (first_word == last_word)
      /* 
@@ -489,6 +492,20 @@ void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned i
   fprintf(stderr, "last local slot: %d\n", start + bits_to_1 - 1);
 #endif
 
+}
+
+
+int bitmap_is_empty(unsigned int *crt_bitmap, int size)
+{
+  unsigned int i = 0, bitmap_size_in_words =  size/WORD_SIZE;
+  
+  while(i < bitmap_size_in_words)
+    if(crt_bitmap[i] == 0)
+      i++;
+    else
+      break;
+  
+  return (i < bitmap_size_in_words)?0:1;
 }
 
 

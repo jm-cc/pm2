@@ -1,13 +1,37 @@
 
+
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
+
+# Regular Makefile
+
 # PM2_ROOT -> racine des sources de PM2
 #---------------------------------------------------------------------
 ifndef PM2_ROOT
 export PM2_ROOT := $(CURDIR)
 endif
 
+# Par securite, il vaut mieux considerer ROOT que PM2_ROOT, pour ne
+# pas inclure de Makefiles provenant d'une distribution obsolete par
+# exemple...
+ROOT	:=	.
+
 # Variables communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/common-vars.mak
+include $(ROOT)/make/common-vars.mak
 
 # Cache - partie principale des librairies
 #---------------------------------------------------------------------
@@ -25,7 +49,7 @@ libs: ARCHITECTURES dot_h fut
 
 # Regles communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/common-rules.mak
+include $(ROOT)/make/common-rules.mak
 
 # all : construction de la distribution PM2 et des exemples
 #---------------------------------------------------------------------
@@ -58,7 +82,6 @@ examples: flavors
 
 # preproc: descente recursive dans chaque module pour preprocessing
 #---------------------------------------------------------------------
-#          Note: utilise dans quel cadre ???
 preproc: flavors
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
@@ -85,29 +108,40 @@ dot_h: flavors
 
 # Nettoyage
 #---------------------------------------------------------------------
-#         Note: quel est le status actuel des commandes de nettoyage ?
-.PHONY: clean cleanlibs cleanmak
-clean: cleanlibs cleanmak
+.PHONY: refresh refreshall
 
-cleanlibs:
+refresh:
 	$(COMMON_HIDE) set -e; \
-	for i in `$(PM2_ROOT)/bin/pm2-module modules` ; do \
-		$(MAKE) -C modules/$$i clean ; \
+	$(ROOT)/bin/pm2-clean --refresh $(FLAVOR)
+
+refreshall:
+	$(COMMON_HIDE) set -e; \
+	$(ROOT)/bin/pm2-clean --all --refresh
+
+.PHONY: clean cleantools cleanall cleantoolsall
+clean: cleantools
+	$(COMMON_HIDE) set -e; \
+	$(ROOT)/bin/pm2-clean $(FLAVOR)
+
+cleantools:
+	$(COMMON_HIDE) set -e; \
+	for i in ezflavor sigmund; do \
+		$(MAKE) -s -C $$i clean ; \
 	done
 
-cleanmak:
-	$(COMMON_CLEAN) $(RM) $(PM2_MAK_DIR)/*.mak
+cleanall: cleantoolsall
+	$(COMMON_HIDE) set -e; \
+	$(ROOT)/bin/pm2-clean --all
 
-.PHONY: distclean distcleanlibs distcleanflavors distcleandoc distcleanall
-distclean: distcleandoc distcleanlibs
-distcleanall: distclean distcleanflavors
+cleantoolsall:
+	$(COMMON_HIDE) set -e; \
+	for i in ezflavor sigmund; do \
+		$(MAKE) -s -C $$i cleanall ; \
+	done
 
-distcleanlibs:
-	@echo "*********************"
-	@echo "Remove your building tree yourself to clean all your compiled files."
-	@echo "Without specific settings, your building tree should be in"
-	@echo $$HOME/build
-	@echo "*********************"
+.PHONY: distclean distcleandoc
+
+distclean: cleanall distcleandoc distcleanflavors
 
 distcleanflavors:
 	@echo "*********************"
@@ -120,7 +154,7 @@ distcleanflavors:
 distcleandoc:
 	$(MAKE) -C doc distclean
 
-# Initialisation de la distriubtion PM2
+# Initialisation de la distribution PM2
 #---------------------------------------------------------------------
 .PHONY: init checkmake cvsinit flavorinit
 init: checkmake cvsinit flavorinit
@@ -132,17 +166,13 @@ checkmake:
 
 cvsinit ARCHITECTURES modules:
 	$(COMMON_HIDE) if [ -d CVS ]; then \
-		$(PM2_ROOT)/bin/pm2_recreate_links ; \
+		$(ROOT)/bin/pm2-recreate-links ; \
 	fi
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :
-	$(COMMON_HIDE) echo Creating initial sample flavors...
-	$(COMMON_HIDE) if [ -d flavors ]; then \
-		echo "Aborting, some flavor already exists" ; \
-		echo "Do 'make distcleanall' to remove all" ; \
-	else \
-		$(PM2_ROOT)/bin/pm2_create-sample-flavors ;\
-	fi
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors
+
+flavors:
 
 # Documentation
 #---------------------------------------------------------------------
@@ -150,35 +180,30 @@ flavorinit: ARCHITECTURES # remove _flavors_ before :
 doc:
 	$(MAKE) -C doc
 
-# ???
-#---------------------------------------------------------------------
-#      Note: quel est l'objet de ces deux^H^H^H^H^H^Htte lignes^H ?
-flavors: # To remove ? This does not test any more the sample flavors
-
-
 # Aide
 #---------------------------------------------------------------------
 .PHONY: help
 help: globalhelp
 
 bannerhelp:
-	@echo "This is PM2 main Makefile"
+	@echo "This is the PM2 main Makefile"
 
 targethelp:
-	@echo "  init: initialise PM2 source tree"
-	@echo "  pm2: build the PM2 libraries"
-	@echo "  examples: build all the examples (do not use the FLAVOR="
-	@echo "    option there, unless you know what you do)"
+	@echo "  init       : initialise PM2 source tree"
+	@echo "  pm2        : build the PM2 libraries"
+	@echo "  examples   : build all the examples (do not use the FLAVOR="
+	@echo "               option here, unless you know what you do!)"
 	@echo "  config|menuconfig|xdialogconfig|xconfig: configure flavors"
-	@echo "    menuconfig: require the dialog utility"
-	@echo "    dialogconfig: require the Xdialog utility"
-	@echo "    xconfig: require X11 and GTK (libs and *.h)"
-	@echo "  doc: build the documentation"
-	@echo "  help: this help"
-	@echo "  clean: clean source tree for current flavor"
-	@echo "  distclean: clean all source tree for all flavors"
-	@echo "  distcleanall: clean all source tree for all flavors and the"
-	@echo "     flavors themselves"
+	@echo "    menuconfig   : require the dialog utility"
+	@echo "    dialogconfig : require the Xdialog utility"
+	@echo "    xconfig      : require X11 and GTK (libs and *.h)"
+	@echo "  doc        : build the documentation"
+	@echo "  help       : show this help"
+	@echo "  clean      : clean binary tree for current flavor"
+	@echo "  cleanall   : clean binary tree for all flavors"
+	@echo "  distclean  : cleanall + destroy the flavors themselves"
+	@echo "  refresh    : regenerate the current flavor"
+	@echo "  refreshall : regenerate all flavors"
 
 # Configuration
 #---------------------------------------------------------------------
@@ -186,17 +211,17 @@ targethelp:
 config: textconfig
 
 textconfig: flavors
-	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --text || :
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --text || :
 
 menuconfig: flavors
-	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --dialog || :
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --dialog || :
 
 xdialogconfig: flavors
-	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --xdialog || :
 
 xconfig: flavors
 	$(COMMON_HIDE) $(MAKE) -C ezflavor NO_REBUILD=1
-	$(PM2_ROOT)/bin/ezflavor
+	$(ROOT)/bin/ezflavor
 
 # Generation du cache principal des librairies
 #---------------------------------------------------------------------
@@ -209,6 +234,51 @@ $(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
 		exit 1 ;\
 	fi
 
+
+
+else #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
+
+# sos: verification des variables d'environnement PM2_*
+#---------------------------------------------------------------------
+
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    ifdef FLAVOR_DEFAULT
+      export FLAVOR:=$(FLAVOR_DEFAULT)
+    else # FLAVOR_DEFAULT
+      export FLAVOR:=default
+    endif # FLAVOR_DEFAULT
+  endif # PM2_FLAVOR
+endif # FLAVOR
+
+.PHONY: sos
+sos:
+	@set -e ; \
+	echo "********* Checking environment variables *********" ; \
+	echo "PM2_HOME = $(PM2_HOME)" ; \
+	echo "FLAVOR = $(FLAVOR)" ; \
+	if [ ! -f `./bin/pm2-flavor-file -f $(FLAVOR)` ] ; then \
+		echo "ERROR: the flavor \"$(FLAVOR)\" does not exist." ; \
+		exit 1 ; \
+	fi ; \
+	echo "CURDIR = $(CURDIR)" ; \
+	echo "PM2_ROOT = $(PM2_ROOT)" ; \
+	if [ ! -d "$(PM2_ROOT)" ] ; then \
+		echo "ERROR: \"$(PM2_ROOT)\" is not a valid directory." ; \
+		exit 1 ; \
+	fi ; \
+	if [ `ls -id $(CURDIR) | awk '{print $$1;}'` -ne `ls -id $(PM2_ROOT) | awk '{print $$1;}'` ]; then \
+		echo "ERROR: PM2_ROOT does not have a proper value (should be: $(CURDIR))." ; \
+		exit 1 ; \
+	fi ; \
+	echo "PM2_BUILD_DIR = $(PM2_BUILD_DIR)" ; \
+	echo "********* Refreshing files for current flavor *********" ; \
+	$(MAKE) -C . refresh ; \
+	echo "Humm... Well, all should be ok now!"
+
+endif #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
 
 # Fin du Makefile
 ######################################################################

@@ -29,7 +29,10 @@
  */
 #include "tbx.h"
 #include <stdarg.h>
-#include <ctype.h>
+
+static inline int isdigit(int c) {
+	return (c>='0' && c<='9');
+}
 
 static size_t strnlen(const char *s, size_t count) {
 	const char *sc;
@@ -43,7 +46,7 @@ static int skip_atoi(const char **s)
 {
 	int i=0;
 
-	while (isdigit(**s)) /* isdigit should be safe (mere macro reading in a table) */
+	while (isdigit(**s))
 		i = i*10 + *((*s)++) - '0';
 	return i;
 }

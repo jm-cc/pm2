@@ -248,7 +248,6 @@ _PRIVATE_ typedef struct {
   boolean sync, quick;
   any_t req;
   marcel_sem_t *sem;
-  marcel_t initiator;
   pointer ptr_att;
   pm2_rpc_wait_t *true_ptr_att;
   block_descr_t sd;
@@ -257,11 +256,7 @@ _PRIVATE_ typedef struct {
 #define EXTERN_LRPC_SERVICE(name) \
 	void _##name##_func(rpc_args *arg)
 
-#ifdef MINIMAL_PREEMPTION
-#define RELEASE_CALLER(arg) if(!_quick) marcel_explicityield((arg)->initiator)
-#else
 #define RELEASE_CALLER(arg) marcel_sem_V((arg)->sem)
-#endif
 
 _PRIVATE_ extern int _pm2_optimize[];
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.27  2000/04/28 18:33:37  vdanjean
+debug actsmp + marcel_key
+
 Revision 1.26  2000/04/28 10:41:41  rnamyst
 Added the marcel_cond_timedwait primitive
 
@@ -1213,7 +1216,10 @@ any_t idle_func(any_t arg) // Pour les activations
     marcel_check_delayed_tasks();
     next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
     GET_LWP(cur)->prev_running=cur;
-
+#ifdef MA__ACTSMP
+#define ACT_DONT_USE_SYSCALL
+#endif
+#define myfprintf(arg...) fprintf(##arg)
     while (!(next || act_nb_unblocked)) {
 //	    int i;
 	    MTRACE("active wait", cur);
@@ -1223,16 +1229,28 @@ any_t idle_func(any_t arg) // Pour les activations
 	    if (act_nb_unblocked) break;
 	    act_cntl(ACT_CNTL_DO_WAIT,0);	
 #else      
-	    while(!act_nb_unblocked) {
-		    i=0;
-		    while((i++<100000000) && !act_nb_unblocked)
-			    ;
-		    if (!act_nb_unblocked)
-			    fprintf(stderr, "act_nb_unblocked=%i\n",
-				    act_nb_unblocked);
+	    while(!(act_nb_unblocked || next)) {
+		    volatile int i=0;
+		    volatile int j=0;
+		    while((i++<100000000) && !(act_nb_unblocked||next)) {
+			    //SET_FROZEN(cur);
+			    //next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
+			    j=0;
+			    while((j++<10) && !(act_nb_unblocked||next))
+				    ;
+		    }
+		    if (!act_nb_unblocked) {
+			    myfprintf(stderr, "act_nb_unblocked=%i (LWP = %d)\n",
+				    act_nb_unblocked, cur_lwp->number);
+		    }
 	    }
 	    MTRACE("end active wait", cur);
 	    mdebug("fin attente active\n");
+	    if (next) {
+		    myfprintf(stderr, "idle has job (LWP = %d)\n",
+			    cur_lwp->number);
+		    break;
+	    }
 #endif
 	    marcel_check_delayed_tasks();
 	    SET_FROZEN(cur);
@@ -1243,8 +1261,12 @@ any_t idle_func(any_t arg) // Pour les activations
     
     if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
 	    if (next) {
+		    myfprintf(stderr, "idle has job (LWP = %d)\n",
+			    cur_lwp->number);
 		    goto_next_task(next);
 	    } else {
+		    myfprintf(stderr, "idle can have job (LWP = %d)\n",
+			    cur_lwp->number);
 		    act_goto_next_task(NULL, ACT_RESTART_FROM_IDLE);
 	    }
     }

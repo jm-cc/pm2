@@ -16,5 +16,5 @@ fi
 echo "process terminated with code $?"
 if [ "${PM2_PMODE}" = on ]; then
     sleep 2
-    read
+    read dummy
 fi

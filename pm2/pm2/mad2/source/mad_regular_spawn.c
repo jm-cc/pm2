@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.3  2000/06/06 15:58:00  oaumage
+- suppression des fonctions *exit redondantes
+
 Revision 1.2  2000/05/25 00:23:38  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -435,64 +438,6 @@ mad_read_conf(p_mad_configuration_t   configuration,
     }
 
   fclose(f);
-  LOG_OUT();
-}
-
-static void
-mad_foreach_adapter_exit(void *object)
-{
-  p_mad_adapter_t            adapter = object;
-  p_mad_driver_t             driver  = adapter->driver;
-  p_mad_driver_interface_t   interface = &(driver->interface);
-  
-  LOG_IN();
-  if (interface->adapter_exit)
-    {
-      interface->adapter_exit(adapter);
-    }
-  else
-    {
-      if (adapter->specific)
-	{
-	  TBX_FREE(adapter->specific);
-	}
-    }
-  LOG_OUT();
-}
-
-static void
-mad_driver_exit(p_mad_madeleine_t madeleine)
-{
-  mad_driver_id_t drv;
-    
-  LOG_IN();
-  for (drv = 0;
-       drv < madeleine->nb_driver;
-       drv++)
-    {
-      p_mad_driver_t             driver;
-      p_mad_driver_interface_t   interface;
-      
-      driver    = &(madeleine->driver[drv]);      
-      interface = &(driver->interface);
-
-      tbx_foreach_destroy_list(&(madeleine->channel),
-			       mad_foreach_adapter_exit);
-      if (interface->driver_exit)
-	{
-	  interface->driver_exit(driver);
-	}
-      else
-	{
-	  if (driver->specific)
-	    {
-	      TBX_FREE(driver->specific);
-	    }
-	}
-    }
-
-  TBX_FREE(madeleine->adapter);
-  TBX_FREE(madeleine->driver);
   LOG_OUT();
 }
 

@@ -271,12 +271,12 @@ if [ ! -z "${dirtoshow}" ]; then
 	;;
     --loader)
         if [ ! -z "${PM2_LOADER}" ]; then
-	echo ${PM2_LOADER}
-	exit 0
+	    echo ${PM2_LOADER}
+	    exit 0
 	fi
         if [ ! -z "${PM2_DEFAULT_LOADER}" ]; then
-	echo ${PM2_DEFAULT_LOADER}
-	exit 0
+	    echo ${PM2_DEFAULT_LOADER}
+	    exit 0
 	fi
         echo ${PM2_ROOT}/bin/pm2load
 	exit 0
@@ -309,6 +309,9 @@ if [ ! -z "${dirtoshow}" ]; then
     case " $PM2_LIBS " in
     *\ $libs\ *)
 	case $dirtoshow in
+	stamp)
+	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow${PM2_EXT}
+	    ;;
 	include)
 	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow${PM2_EXT}
 	    ;;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.16  2001/01/29 17:01:58  oaumage
+- progression de l'interaction avec Leonie
+
 Revision 1.15  2000/12/11 08:31:17  oaumage
 - support Leonie
 
@@ -120,6 +123,9 @@ typedef struct s_mad_madeleine
   tbx_list_t            channel;
   p_mad_settings_t      settings;
   p_mad_configuration_t configuration;
+#ifdef LEONIE_SPAWN
+  p_ntbx_client_t       master_link;
+#endif /* LEONIE_SPAWN */
 } mad_madeleine_t;
 
 /*

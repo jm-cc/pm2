@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-/* sample.c */
+/* realtime.c */
 
 #include "marcel.h"
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: slot_distrib.c,v $
+Revision 1.3  2000/02/28 11:17:22  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:58:35  oaumage
 - ajout du Log CVS
 
@@ -46,11 +49,10 @@ ______________________________________________________________________________
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <sys/archdep.h>
-
-#include <pm2.h>
-#include <isomalloc.h>
-#include <sys/slot_distrib.h>
+#include "sys/archdep.h"
+#include "pm2.h"
+#include "isomalloc.h"
+#include "sys/slot_distrib.h"
 
 void UNIFORM_BLOCK_CYCLIC_DISTRIB_FUNC(int *arg)
 {

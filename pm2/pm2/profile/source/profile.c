@@ -43,6 +43,9 @@
 
 #define PROF_BUFFER_SIZE  (2*1024*1024)
 
+volatile unsigned __pm2_profile_active = FALSE;
+
+
 static char PROF_FILE[1024];
 
 static boolean profile_initialized = FALSE;
@@ -65,6 +68,7 @@ void profile_init(void)
     }
 
     profile_initialized = TRUE;
+    __pm2_profile_active = TRUE;
 
     if(activate_called_before_init)
       fut_keychange(activate_params.how,
@@ -103,6 +107,11 @@ void profile_set_tracefile(char *fmt, ...)
 
 void profile_stop(void)
 {
+  __pm2_profile_active = FALSE;
   fut_endup(PROF_FILE);
 }
 
+void profile_exit(void)
+{
+  fut_done();
+}

@@ -17,6 +17,8 @@
 #ifndef MARCEL_EST_DEF
 #define MARCEL_EST_DEF
 
+#define MARCEL_VERSION 0x020000 /* Version 2.0000 */
+
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
 #include "sys/marcel_flags.h"

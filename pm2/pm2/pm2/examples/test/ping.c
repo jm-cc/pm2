@@ -43,7 +43,7 @@ static unsigned autre;
 
 static marcel_sem_t sem;
 
-static Tick t1, t2;
+static tbx_tick_t t1, t2;
 
 static int glob_n;
 
@@ -103,7 +103,7 @@ void f(void)
   fprintf(stderr, "Non-threaded RPC:\n");
   for(i=0; i<ESSAIS; i++) {
 
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
 
     for(j=N/2; j; j--) {
       pm2_rawrpc_begin(autre, SAMPLE, NULL);
@@ -115,16 +115,16 @@ void f(void)
       marcel_sem_P(&sem);
     }
 
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
 
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    temps = TBX_TIMING_DELAY(t1, t2);
     fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
   }
 
   fprintf(stderr, "Threaded RPC:\n");
   for(i=0; i<ESSAIS; i++) {
 
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
 
     glob_n = N/2-1;
     pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
@@ -135,9 +135,9 @@ void f(void)
 
     marcel_sem_P(&sem);
 
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
 
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    temps = TBX_TIMING_DELAY(t1, t2);
     fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
   }
 }

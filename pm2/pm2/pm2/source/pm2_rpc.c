@@ -156,7 +156,7 @@ void _end_service(rpc_args *args, any_t res, int local)
     pm2_rawrpc_begin(args->tid, PM2_LRPC_DONE, NULL);
 #endif
 
-    mad_pack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
+    old_mad_pack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
     (*_pm2_pack_res_funcs[args->num])(res);
 
     pm2_rawrpc_end();
@@ -168,7 +168,7 @@ static void netserver_lrpc_done(void)
   pm2_rpc_wait_t *ptr_att;
   pointer p;
 
-  mad_unpack_pointer(MAD_IN_HEADER, &p, 1);
+  old_mad_unpack_pointer(MAD_IN_HEADER, &p, 1);
   ptr_att = (pm2_rpc_wait_t *)to_any_t(&p);
   (*ptr_att->unpack)(ptr_att->result);
   pm2_rawrpc_waitdata();
@@ -281,12 +281,12 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 #endif
     pm2_rawrpc_begin(module, PM2_LRPC, pm2_attr);
 
-    mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
-    mad_pack_int(MAD_IN_HEADER, &num, 1);
-    mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
-    mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &num, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
 
-    mad_pack_pointer(MAD_IN_HEADER, &p, 1);
+    old_mad_pack_pointer(MAD_IN_HEADER, &p, 1);
 
     (*_pm2_pack_req_funcs[num])(args);
 
@@ -305,10 +305,10 @@ static void netserver_lrpc(void)
 #endif
   unsigned granted;
 
-  mad_unpack_int(MAD_IN_HEADER, &tid, 1);
-  mad_unpack_int(MAD_IN_HEADER, &num, 1);
-  mad_unpack_int(MAD_IN_HEADER, &priority, 1);
-  mad_unpack_int(MAD_IN_HEADER, &sched_policy, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &num, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &priority, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &sched_policy, 1);
 
   attr = _pm2_lrpc_attr[num];
   marcel_attr_setstackaddr(&attr,
@@ -320,7 +320,7 @@ static void netserver_lrpc(void)
   marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
 
   marcel_getuserspace(pid, (void **)&args);
-  mad_unpack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
+  old_mad_unpack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
 
   args->num = num;
   args->tid = tid;
@@ -398,9 +398,9 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 #endif
     pm2_rawrpc_begin(module, PM2_QUICK_LRPC, pm2_attr);
 
-    mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
-    mad_pack_int(MAD_IN_HEADER, &num, 1);
-    mad_pack_pointer(MAD_IN_HEADER, &p, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &num, 1);
+    old_mad_pack_pointer(MAD_IN_HEADER, &p, 1);
 
     (*_pm2_pack_req_funcs[num])(args);
 
@@ -413,9 +413,9 @@ static void netserver_quick_lrpc(void)
   rpc_args args;
   marcel_sem_t sem;
 
-  mad_unpack_int(MAD_IN_HEADER, &args.tid, 1);
-  mad_unpack_int(MAD_IN_HEADER, &args.num, 1);
-  mad_unpack_pointer(MAD_IN_HEADER, &args.ptr_att, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &args.tid, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &args.num, 1);
+  old_mad_unpack_pointer(MAD_IN_HEADER, &args.ptr_att, 1);
 
   args.sem = &sem;
   args.sync = TRUE;
@@ -500,10 +500,10 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
 #endif
     pm2_rawrpc_begin(module, PM2_ASYNC_LRPC, pm2_attr);
 
-    mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
-    mad_pack_int(MAD_IN_HEADER, &num, 1);
-    mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
-    mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &num, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
 
     (*_pm2_pack_req_funcs[num])(args);
 
@@ -524,10 +524,10 @@ static void netserver_async_lrpc(void)
 #endif
   unsigned granted;
 
-  mad_unpack_int(MAD_IN_HEADER, &tid, 1);
-  mad_unpack_int(MAD_IN_HEADER, &num, 1);
-  mad_unpack_int(MAD_IN_HEADER, &priority, 1);
-  mad_unpack_int(MAD_IN_HEADER, &sched_policy, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &num, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &priority, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &sched_policy, 1);
 
   attr = _pm2_lrpc_attr[num];
   marcel_attr_setstackaddr(&attr,
@@ -637,10 +637,10 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 #endif
 	pm2_rawrpc_begin(modules[i], PM2_ASYNC_LRPC, pm2_attr);
 
-	mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
-	mad_pack_int(MAD_IN_HEADER, &num, 1);
-	mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
-	mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
+	old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+	old_mad_pack_int(MAD_IN_HEADER, &num, 1);
+	old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
+	old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
 
 	(*_pm2_pack_req_funcs[num])(args);
 
@@ -694,8 +694,8 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
 #endif
     pm2_rawrpc_begin(module, PM2_QUICK_ASYNC_LRPC, pm2_attr);
 
-    mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
-    mad_pack_int(MAD_IN_HEADER, &num, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &num, 1);
 
     (*_pm2_pack_req_funcs[num])(args);
 
@@ -710,8 +710,8 @@ static void netserver_quick_async_lrpc(void)
   rpc_args args;
   marcel_sem_t sem;
 
-  mad_unpack_int(MAD_IN_HEADER, &args.tid, 1);
-  mad_unpack_int(MAD_IN_HEADER, &args.num, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &args.tid, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &args.num, 1);
 
   args.sem = &sem;
   args.sync = FALSE;
@@ -769,8 +769,8 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
 #endif
 	pm2_rawrpc_begin(modules[i], PM2_QUICK_ASYNC_LRPC, pm2_attr);
 
-	mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
-	mad_pack_int(MAD_IN_HEADER, &num, 1);
+	old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+	old_mad_pack_int(MAD_IN_HEADER, &num, 1);
 
 	(*_pm2_pack_req_funcs[num])(args);
 
@@ -780,6 +780,8 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
     pm2_enable_migration();
   }
 }
+
+unsigned __pm2_rpc_init_called = 0;
 
 void pm2_rpc_init(void)
 {
@@ -801,4 +803,6 @@ void pm2_rpc_init(void)
   pm2_rawrpc_register(&PM2_ASYNC_LRPC, netserver_async_lrpc);
   pm2_rawrpc_register(&PM2_QUICK_LRPC, netserver_quick_lrpc);
   pm2_rawrpc_register(&PM2_QUICK_ASYNC_LRPC, netserver_quick_async_lrpc);
+
+  __pm2_rpc_init_called = 1;
 }

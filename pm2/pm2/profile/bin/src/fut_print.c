@@ -43,11 +43,7 @@ Document regarding printing cycles for each function
 MAX_FUNS is to be set to the number of functions that contain probes.
 MAX_EACH_FUN_RECUR is the number of times that the same function
 could be calling itself recursively.
-MAX_UNSHIFTED_FUN_RECUR - is used to store the cycles for all codes
-less than 0x200. that is, these codes are all entered in a single array
-and when a return from system call is seen, then the last element
-from the array is popped out and subtracted from the cycle at the
-return from system call .
+MAX_NESTING is the depth of call nesting allowed.
 
 "fun_cycles_time" is the structure that holds a counter ( for the number
 of times the "entry" to the function is seen), the code ( for the
@@ -67,9 +63,9 @@ for the same function is seen, no problem, this can also be stored
 in the cycles_array..and popped out appropriately...
 */
 
-#define MAX_FUNS 100
-#define MAX_EACH_FUN_RECUR 10
-#define MAX_UNSHIFTED_FUN_RECUR 64
+#define MAX_FUNS 200
+#define MAX_EACH_FUN_RECUR 100
+#define MAX_NESTING 100
 
 
 struct fun_cycles_item {
@@ -92,10 +88,6 @@ struct fun_cycles_item v[MAX_FUNS];
 struct prev_cycle previous;
 struct prev_cycle previous_switchto;
 
-/*	keep trap/syscall/irq statistics in these arrays */
-/* pointer into v2 stacks */
-static int v2_pos = 0;
-
 
 /*	keep nesting statistics in these arrays */
 /*	every cycle is accounted for exactly once */
@@ -108,9 +100,9 @@ struct v3_stack_item
 				int						v3_pos;
 				unsigned int			v3_pid;
 				unsigned int			v3_process_cycles;
-				unsigned int			v3_start_cycle[MAX_UNSHIFTED_FUN_RECUR];
-				unsigned int			v3_code[MAX_UNSHIFTED_FUN_RECUR];
-				unsigned int			v3_switch_pid[MAX_UNSHIFTED_FUN_RECUR];
+				unsigned int			v3_start_cycle[MAX_NESTING];
+				unsigned int			v3_code[MAX_NESTING];
+				unsigned int			v3_switch_pid[MAX_NESTING];
 				struct v3_stack_item	*v3_next;
 				};
 
@@ -163,8 +155,10 @@ struct code_name	code_table[] =
 			{FUT_MAIN_EXIT_CODE,			"main_exit"},
 
 
-			/*	insert new codes here */
+			/*	insert new codes here (ifdefs for Raymond) */
+#if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_print.h"
+#endif
 
 			{0, NULL}
 			};
@@ -189,57 +183,7 @@ static unsigned long current_id = 0;
  */
 static int fun_time = 0;
 
-struct code_list_item	*irq_list = NULL;
-unsigned int nirqs = 0;
-unsigned int ncpus = 0;
 
-
-
-void load_irqs( void )
-	{
-	struct code_list_item	*ptr;
-	unsigned int			i, k, n;
-
-
-	printf("\n");
-	for( n = 0;  n < nirqs;  n++ )
-		{/* build circular list with 1 item for each interrupt */
-		ptr = (struct code_list_item *)malloc(sizeof(struct code_list_item));
-		read(fd, (void *)&ptr->code, sizeof(ptr->code));
-		read(fd, (void *)&i, sizeof(i));
-		k = (i + 3) & ~3;
-		ptr->name = malloc(k);
-		read(fd, (void *)ptr->name, k);
-		ptr->name[i-1] = '\0';
-		if( irq_list == NULL )
-			ptr->link = ptr;
-		else
-			{
-			ptr->link = irq_list->link;
-			irq_list->link = ptr;
-			}
-		irq_list = ptr;
-		printf("irq %2u: %s\n", ptr->code, ptr->name);
-		}
-	printf("\n");
-	if( (ptr = irq_list) != NULL )
-		{/* make circular list into singly-linked, NULL-terminated list */
-		irq_list = irq_list->link;
-		ptr->link = NULL;
-		}
-	}
-
-char *find_irq( unsigned int code )
-	{
-	struct code_list_item	*ptr;
-
-	for( ptr = irq_list;  ptr != NULL;  ptr = ptr->link )
-		{
-		if( ptr->code == code )
-			return ptr->name;
-		}
-	return "unknown irq";
-	}
 
 char *find_name( unsigned int code, int keep_entry )
 	{
@@ -368,7 +312,7 @@ void update_stack( unsigned int delta )
 
 	/* then pop the stack */
 	v3_stack_ptr->v3_pos--;
-	fprintf(stdbug, "pop off of stack for id %u, pos %d\n",
+	fprintf(stdbug, "pop off v3 stack for id %u, top %d\n",
 							v3_stack_ptr->v3_pid, v3_stack_ptr->v3_pos);
 	}
 
@@ -447,7 +391,7 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 			{
 			if( v3_ptr->v3_pid == thisid )
 				{/* found an existing stack for the new id */
-				fprintf(stdbug, "revert to stack for id %u, pos %d\n",
+				fprintf(stdbug, "back to v3 stack for id %u, top %d\n",
 													thisid, v3_ptr->v3_pos);
 				if( v3_ptr->v3_code[v3_ptr->v3_pos] == FUT_SWITCH_TO_CODE )
 					{/* top of previous stack is switch_to, pop it off */
@@ -485,7 +429,6 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 
 
 	/*	now guaranteed that v3_stack_ptr points to stack for this pid */
-	/*	put traps, syscalls and irqs in v2 stack. need sys_write and fsync */
 	/*	i gets code at top of this stack */
 	i = v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos];
 
@@ -502,23 +445,28 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 		update_stack(delta);
 		}
 	else if( code != FUT_SETUP_CODE  &&
+			code != FUT_KEYCHANGE_CODE &&
+			code != FUT_RESET_CODE &&
 			code != FUT_CALIBRATE0_CODE  &&
 			code != FUT_CALIBRATE1_CODE  &&
 			code != FUT_CALIBRATE2_CODE )
 		{/* this must be an entry code, just stack it  */
-		if( v3_stack_ptr->v3_pos >= MAX_UNSHIFTED_FUN_RECUR )
+		if( v3_stack_ptr->v3_pos >= MAX_NESTING )
 			{
-			fprintf(stderr, "=== nesting stack overflow\n");
-			fprintf(stdout, "=== nesting stack overflow\n");
+			fprintf(stderr, "=== v3 stack overflow, max depth %d\n",
+													MAX_NESTING);
+			fprintf(stdout, "=== v3 stack overflow, max depth %d\n",
+													MAX_NESTING);
+			exit(EXIT_FAILURE);
 			}
 		else
-			{
+			{/* stack will not overflow, ok to push onto it */
 			v3_stack_ptr->v3_pos++;
 			v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos] = cyc_time;
 			v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos] = code;
 			v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos] = thisid;
 			fprintf(stdbug,
-						"push onto stack for id %u, pos %d, code %04x, "
+						"push on v3 stack for id %u, top %d, code %04x, "
 						"function\n",
 						thisid, v3_stack_ptr->v3_pos, code);
 			}
@@ -527,12 +475,27 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 	previous.code = code;
 	previous.cycle_value = cyc_time;
 	previous.first_param = param1;
+
+	/* have we hit this code before? if so, use previous entry for stats */
     for( k = 0;  k < v_pos;  k++ )
     	{
         if( code == v[k].code  ||  code == v[k].code + FUT_GENERIC_EXIT_OFFSET )
-        	{
+        	{/* yes, this code was seen before in slot k of v array */
             if ( code == v[k].code )
-            	{
+            	{/* this is the entry code */
+				if( v_index_arr_pos >= MAX_FUNS )
+					{
+					fprintf(stderr,
+						"v_index_arr_pos = %d hit MAX_FUNS"
+						" limit %d\n", v_index_arr_pos, MAX_FUNS );
+					printf( "v_index_arr_pos = %d hit MAX_FUNS"
+						" limit %d\n", v_index_arr_pos, MAX_FUNS );
+					exit(EXIT_FAILURE);
+					}
+				fprintf(stdbug,
+						"push on index stack for id %u, top %d, code %04x, "
+						"index %d\n",
+						thisid, v_index_arr_pos, code, k);
                 v_index_array[v_index_arr_pos] = k;
                 
                 if ( v_index_arr_pos >= 1 )
@@ -540,8 +503,8 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 					j = v_index_array[v_index_arr_pos - 1];
 					v[j].called_funs_ctr[k]++;
 					}
-                
 				v_index_arr_pos++;
+                
 				for ( i = 0; i < MAX_EACH_FUN_RECUR; i ++ )
 					{
 					if ( v[k].cycles_array[i] == 0 )
@@ -552,8 +515,8 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 				return;
 				}                
 			if( code == v[k].code + FUT_GENERIC_EXIT_OFFSET )
-				{
-                /*
+				{/* this is the exit code */
+                /*****
                 if (k == v_index_array[v_index_arr_pos])
                 {
                     j = v_index_array[v_index_arr_pos - 1] ; 
@@ -562,7 +525,7 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
                     v_index_array[v_index_arr_pos] = -1;
                     v_index_arr_pos--;
                 }
-                */
+                *****/
                 for ( i = 0; i < MAX_EACH_FUN_RECUR; i ++ )
 					{
                     if ( v[k].cycles_array[i] == 0 )
@@ -571,37 +534,74 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
                 cycdiff = cyc_time - v[k].cycles_array[i - 1];
                 v[k].total += cyc_time - v[k].cycles_array[i - 1];
                     
-                /* v[k].cycles_array[i - 1] = 0; */
                 if (k == v_index_array[v_index_arr_pos - 1])
                 	{
                     if (v_index_arr_pos >= 2 )
-                    {
-                        j = v_index_array[v_index_arr_pos - 2] ; 
-                       v[j].called_funs_cycles[k] += cycdiff;  
-                    }
-                   /*
-                   printf("here %u\n", v[j].called_funs_cycles[k]);
-                   */
+						{
+						j = v_index_array[v_index_arr_pos - 2] ; 
+						v[j].called_funs_cycles[k] += cycdiff;  
+						}
                                              
-                    v_index_array[v_index_arr_pos] = -1;
+                    v_index_array[v_index_arr_pos-1] = -1;
                     v_index_arr_pos--;
+					fprintf(stdbug,
+						"pop off index stack for id %u, top %d, code %04x, "
+						"index %d\n",
+						thisid, v_index_arr_pos-1, code, k);
                 	}
+				else
+					fprintf(stdbug,
+						"no match on index stack for id %u, top %d, code %04x, "
+						"index %d, stack val %d\n",
+						thisid, v_index_arr_pos-1, code, k,
+						v_index_array[v_index_arr_pos - 1]);
                 v[k].cycles_array[i - 1] = 0;
                 return;
              	} 
         	}     
     	} 
 
+	/* if loop finishes we know this is the first time we have seen this code */
+	/* so we need to create a new entry in the v array for this code */
+	if( v_pos >= MAX_FUNS )
+		{/* too many unique functions being traced */
+		fprintf(stderr,
+			"v_pos = %d hit MAX_FUNS"
+			" limit %d\n", v_pos, MAX_FUNS );
+		printf( "v_pos = %d hit MAX_FUNS"
+			" limit %d\n", v_pos, MAX_FUNS );
+		exit(EXIT_FAILURE);
+		}
+
+	fprintf(stdbug, "create v[%d] for code %04x with name %s\n",
+											v_pos, code, find_name(code, 1));
+
+	/* initialize new entry to all zeroes except counter = 1 and cycles[0] */
 	v[v_pos].code = code; 
 	v[v_pos].total = 0;
 	v[v_pos].counter = 1;
-	for ( i = 0; i < MAX_EACH_FUN_RECUR; i ++)
+	v[v_pos].cycles_array[0] = cyc_time;
+	for( i = 1; i < MAX_EACH_FUN_RECUR; i++ )
 		v[v_pos].cycles_array[i] = 0;
-	for(a = 0; a < MAX_FUNS; a++ )
+	for( a = 0; a < MAX_FUNS; a++ )
 		{
 		v[v_pos].called_funs_cycles[a] = 0;
 		v[v_pos].called_funs_ctr[a] = 0;
 		}
+
+	if( v_index_arr_pos >= MAX_FUNS )
+		{
+		fprintf(stderr,
+			"v_index_arr_pos = %d hit MAX_FUNS"
+			" limit %d\n", v_index_arr_pos, MAX_FUNS );
+		printf( "v_index_arr_pos = %d hit MAX_FUNS"
+			" limit %d\n", v_index_arr_pos, MAX_FUNS );
+		exit(EXIT_FAILURE);
+		}
+	fprintf(stdbug,
+			"push on index stack for id %u, top %d, code %04x, "
+			"index %d\n",
+			thisid, v_index_arr_pos, code, k);
 	v_index_array[v_index_arr_pos] = v_pos;
 	if ( v_index_arr_pos >= 1 )
 		{
@@ -610,7 +610,6 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 			v[j].called_funs_ctr[k]++;
 		}
 	v_index_arr_pos++;
-	v[v_pos].cycles_array[0] = cyc_time;
 	v_pos++;
 	return;
 	}
@@ -701,11 +700,6 @@ if( v_pos > 0 )
 			}
 		}
 
-	if ( v2_pos != 0 )
-	{
-		printf("panic, v2_pos is not zero!!!!!\n");
-		exit(EXIT_FAILURE);
-	}
 	printf("\n\n");
 	printf("%4s %25s  %4s %12s %10s\n",
 			"From", "To", "Code", "Cycles", "Count");
@@ -907,8 +901,8 @@ void stop_taking_stats( unsigned int thispid, unsigned int reltime )
 
 
 /*
-bufptr[0] is the first item for each line ie cycles
-bufptr[1] is pid in low half, processor number in high half
+bufptr[0] is the first item for each line, lo-cycles
+bufptr[1] is the hi-cycles, which is currently ignored
 bufptr[2] is code
 bufptr[3] is P1
 bufptr[4] is P2
@@ -946,7 +940,9 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 	else if( code == FUT_CALIBRATE0_CODE  ||
 			code == FUT_CALIBRATE1_CODE  ||
 			code == FUT_CALIBRATE2_CODE )
+		{
 		print_this = 1;
+		}
 	else if( start_time_glob == 0 )
 		{
 		start_time_glob = reltime;
@@ -971,21 +967,19 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 		}
 	params = (params>>2);
 	if (print_this)
+		{
 		printf(" %22s",  find_name(code, 1));
 
-	for( i = 3;  i < params;  i++ )
-		{
-		if( bufptr[i] <= 0xfffffff )
-			{
-            if (print_this)
-			    printf("%11u", bufptr[i]);
+		for( i = 3;  i < params;  i++ )
+			{/* hueristic - "small" numbers print in decimal, large in hex */
+			if( bufptr[i] <= 0xfffffff )
+				printf("%11u", bufptr[i]);
+			else
+				printf(" %#010x", bufptr[i]);
 			}
-		else if (print_this)
-			printf(" %#010x", bufptr[i]);
-		}
-    if (print_this)
 		printf("\n");
-	/***** fflush(stdout); *****/
+		/***** fflush(stdout); *****/
+		}
 	*n += params;
     if( fun_time > 0 )
 		{

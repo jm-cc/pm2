@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_leonie_spawn.c,v $
+Revision 1.2  2000/06/16 13:47:48  oaumage
+- Mise a jour des routines d'initialisation de Madeleine II
+- Progression du code de mad_leonie_spawn.c
+
 Revision 1.1  2000/05/31 14:24:01  oaumage
 - Spawn Leonie
 
@@ -165,10 +169,12 @@ mad_parse_command_line(int                *argc,
     {
       if (!strcmp(argv[i], "-leonie"))
 	{
+	  DISP("Launcher is Leonie");
 	  command_line->leonie_flag = tbx_true;
 	}
       else if (!strcmp(argv[i], "-swann"))
 	{
+	  DISP("Launcher is Swann");
 	  command_line->swann_flag = tbx_true;
 	}
       else if(!strcmp(argv[i], "-id"))
@@ -178,6 +184,7 @@ mad_parse_command_line(int                *argc,
 		    "by the id of the process");
 
 	  command_line->id = atoi(argv[i + 1]);
+	  DISP_VAL("My id", command_line->id);
 	  i++;
 	}
       else if (!strcmp(argv[i], "-cnx"))
@@ -187,6 +194,8 @@ mad_parse_command_line(int                *argc,
 		    "by the connection data");
 
 	  strcpy(command_line->connection_data.data, argv[i + 1]);
+	  DISP_STR("Launcher connection data is",
+		   command_line->connection_data.data);
 	  i++;
 	}
       else if (!strcmp(argv[i], "-master"))
@@ -199,7 +208,7 @@ mad_parse_command_line(int                *argc,
 	  CTRL_ALLOC(command_line->master_host_name);
 	    
 	  strcpy(command_line->master_host_name, argv[i + 1]);
-	  LOG_STR("mad_init: master_parameter",
+	  DISP_STR("The maser is",
 		  command_line->master_host_name);
 	  i++;
 	}

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.9  2000/01/25 14:16:10  oaumage
+- suppression (temporaire) du sync lors de la fermeture du canal pour
+  resoudre un probleme de blocage a la terminaison d'une session PM2
+
 Revision 1.8  2000/01/13 14:46:14  oaumage
 - adaptation pour la prise en compte de la toolbox
 
@@ -421,7 +425,7 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->accept                     = mad_tcp_accept;
   interface->connect                    = mad_tcp_connect;
   interface->after_open_channel         = mad_tcp_after_open_channel;
-  interface->before_close_channel       = mad_tcp_before_close_channel;
+  interface->before_close_channel       = NULL;
   interface->disconnect                 = mad_tcp_disconnect;
   interface->after_close_channel        = NULL;
   interface->link_exit                  = NULL;
@@ -811,14 +815,6 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
 	= max(connection_specific->socket, channel_specific->max_fds);
     }
   
-  LOG_OUT();
-}
-
-void
-mad_tcp_before_close_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  mad_tcp_sync_channel(channel);
   LOG_OUT();
 }
 

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.21  2000/03/02 15:45:48  oaumage
+- support du polling Nexus
+
+Revision 1.20  2000/03/02 14:50:54  oaumage
+- support de detection des protocoles au niveau runtime
+
 Revision 1.19  2000/03/02 09:52:17  jfmehaut
 pilote Madeleine II/BIP
 
@@ -142,6 +148,29 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
   NULL
 };
 
+int
+mad_protocol_available(p_mad_madeleine_t madeleine, char *name)
+{
+  mad_driver_id_t drv;
+    
+  LOG_IN();
+  for (drv = 0;
+       drv < mad_driver_number;
+       drv++)
+    {
+      p_mad_driver_t driver;
+      
+      if (!strcmp(name, driver->name))
+	{
+	  LOG_OUT();
+	  return drv;
+	}
+    }
+
+  LOG_OUT();
+  return -1;
+}
+
 /* ---- */
 #define MAX_HOSTNAME_LEN 256
 #define MAX_ARG_STR_LEN 1024
@@ -219,6 +248,7 @@ mad_driver_fill(p_mad_madeleine_t madeleine)
       driver->madeleine = madeleine;
       driver->id        = drv;
       driver->specific  = NULL;
+      driver->name      = NULL;
 
       tbx_list_init(&(driver->adapter_list));
       mad_driver_registration[drv](driver);
@@ -257,37 +287,70 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
   mad_adapter_id_t ad;
 
   LOG_IN();
-  madeleine->adapter = malloc(adapter_set->size * sizeof(mad_adapter_t));
-  CTRL_ALLOC(madeleine->adapter);
 
-  madeleine->nb_adapter = adapter_set->size;
-  
-  /* Local Init */
-  for (ad = 0;
-       ad < madeleine->nb_adapter;
-       ad++)
+  if (!adapter_set)
+    {      
+      madeleine->adapter = malloc(mad_driver_number * sizeof(mad_adapter_t));
+      CTRL_ALLOC(madeleine->adapter);
+
+      madeleine->nb_adapter = mad_driver_number;
+
+      /* Local Init */
+      for (ad = 0;
+	   ad < madeleine->nb_adapter;
+	   ad++)
+	{
+	  p_mad_driver_t                driver;
+	  p_mad_driver_interface_t      interface;
+	  p_mad_adapter_t               adapter;
+      
+	  driver      = &(madeleine->driver[ad]);
+	  interface   = &(driver->interface);
+	  adapter     = &(madeleine->adapter[ad]);
+
+	  PM2_INIT_SHARED(adapter);
+	  tbx_append_list(&(driver->adapter_list), adapter);
+      
+	  adapter->driver                  = driver;
+	  adapter->id                      = ad;
+	  adapter->name                    = NULL;
+	  adapter->master_parameter        = NULL;
+	  adapter->parameter               = NULL;
+	  adapter->specific                = NULL;
+	}
+    }
+  else
     {
-      p_mad_adapter_description_t   description;
-      p_mad_driver_t                driver;
-      p_mad_driver_interface_t      interface;
-      p_mad_adapter_t               adapter;
-      
-      description = &(adapter_set->description[ad]);
-      driver      = &(madeleine->driver[description->driver_id]);
-      interface   = &(driver->interface);
-      adapter     = &(madeleine->adapter[ad]);
+      madeleine->adapter = malloc(adapter_set->size * sizeof(mad_adapter_t));
+      CTRL_ALLOC(madeleine->adapter);
 
-      PM2_INIT_SHARED(adapter);
-      tbx_append_list(&(driver->adapter_list), adapter);
+      madeleine->nb_adapter = adapter_set->size;
+  
+      /* Local Init */
+      for (ad = 0;
+	   ad < madeleine->nb_adapter;
+	   ad++)
+	{
+	  p_mad_adapter_description_t   description;
+	  p_mad_driver_t                driver;
+	  p_mad_driver_interface_t      interface;
+	  p_mad_adapter_t               adapter;
       
-      adapter->driver                  = driver;
-      adapter->id                      = description->driver_id;
-      adapter->name                    = description->adapter_selector;
-      adapter->master_parameter        = NULL;
-      adapter->parameter               = NULL;
-      adapter->specific                = NULL;
+	  description = &(adapter_set->description[ad]);
+	  driver      = &(madeleine->driver[description->driver_id]);
+	  interface   = &(driver->interface);
+	  adapter     = &(madeleine->adapter[ad]);
+
+	  PM2_INIT_SHARED(adapter);
+	  tbx_append_list(&(driver->adapter_list), adapter);
       
-      /* interface->init_adapter(adapter); */
+	  adapter->driver                  = driver;
+	  adapter->id                      = description->driver_id;
+	  adapter->name                    = description->adapter_selector;
+	  adapter->master_parameter        = NULL;
+	  adapter->parameter               = NULL;
+	  adapter->specific                = NULL;
+	}
     }
   LOG_OUT();
 }
@@ -840,7 +903,14 @@ mad_init(int                   *argc,
   spawn_interface = &(madeleine->driver[EXTERNAL_SPAWN].interface);
   spawn_driver->specific = NULL;
   spawn_interface->driver_init(spawn_driver);
-  spawn_adapter = &(madeleine->adapter[0]);
+  if (adapter_set)
+    {
+      spawn_adapter = &(madeleine->adapter[0]);
+    }
+  else
+    {
+      spawn_adapter = &(madeleine->adapter[EXTERNAL_SPAWN]);
+    }  
   spawn_adapter->specific = NULL;
   if (spawn_interface->adapter_init)
     spawn_interface->adapter_init(spawn_adapter);
@@ -938,30 +1008,4 @@ mad_exit(p_mad_madeleine_t madeleine)
   PM2_UNLOCK_SHARED(madeleine);
   LOG_OUT();
 }
-
-/*
-p_mad_channel_t
-mad_get_channel(mad_channel_id_t id)
-{
-  tbx_list_reference_t ref;
-  
-  if (tbx_empty_list(&(main_madeleine.channel)))
-    return NULL;
-  
-  tbx_list_reference_init(&ref, &(main_madeleine.channel));
-
-  do
-    {
-      p_mad_channel_t tmp_channel = tbx_get_list_reference_object(&ref);
-      
-      if (tmp_channel->id == id)
-	{
-	  return tmp_channel;
-	}    
-    }
-  while(tbx_forward_list_reference(&ref));
-
-  return NULL;
-}
-*/
 

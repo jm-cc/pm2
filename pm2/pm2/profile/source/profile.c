@@ -29,6 +29,11 @@
 #include "fut_entries.h"
 #endif
 
+#ifdef USE_FKT
+#include <linux/fkt.h>
+#include "fkt_pm2.h"
+#endif
+
 #ifdef MARCEL
 
 #include "marcel.h"
@@ -46,13 +51,13 @@
 volatile unsigned __pm2_profile_active = FALSE;
 
 
-static char PROF_FILE[1024];
+static char PROF_FILE_USER[1024], PROF_FILE_KERNEL[1024];
 
 static boolean profile_initialized = FALSE;
 static boolean activate_called_before_init = FALSE;
 static struct {
   int how;
-  unsigned keymask;
+  unsigned user_keymask, kernel_keymask;
   unsigned thread_id;
 } activate_params;
 
@@ -60,40 +65,65 @@ void profile_init(void)
 {
   if(!profile_initialized) {
 
-    strcpy(PROF_FILE, "/tmp/prof_file_single");
+    profile_initialized = TRUE;
+    __pm2_profile_active = TRUE;
+
+    // Initialisation de FUT
+
+    strcpy(PROF_FILE_USER, "/tmp/prof_file_user");
 
     if(fut_setup(PROF_BUFFER_SIZE, FUT_KEYMASKALL, PROF_THREAD_ID()) < 0) {
       perror("fut_setup");
       exit(EXIT_FAILURE);
     }
 
-    profile_initialized = TRUE;
-    __pm2_profile_active = TRUE;
-
     if(activate_called_before_init)
       fut_keychange(activate_params.how,
-		    activate_params.keymask,
+		    activate_params.user_keymask,
 		    activate_params.thread_id);
     else
       fut_keychange(FUT_DISABLE, FUT_KEYMASKALL, PROF_THREAD_ID());
+
+#ifdef USE_FKT
+    // Initialisation de FKT
+
+    strcpy(PROF_FILE_KERNEL, "/tmp/prof_file_kernel");
+
+    fkt_setup(FKT_KEYMASKALL);
+
+    if(activate_called_before_init) {
+      fkt_start_time();
+      fkt_keychange(activate_params.how,
+		    activate_params.kernel_keymask);
+    } else
+      fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
+#endif
+
   }
 }
 
-void profile_activate(int how, unsigned keymask)
+void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask)
 {
   if(profile_initialized) {
 
-    fut_keychange(how, keymask, PROF_THREAD_ID());
+    fut_keychange(how, user_keymask, PROF_THREAD_ID());
+
+#ifdef USE_FKT
+    fkt_start_time();
+    fkt_keychange(how, kernel_keymask);
+#endif
 
   } else {
 
     activate_params.how = how;
-    activate_params.keymask = keymask;
+    activate_params.user_keymask = user_keymask;
+    activate_params.kernel_keymask = kernel_keymask;
     activate_params.thread_id = PROF_THREAD_ID();
 
     activate_called_before_init = TRUE;
 
   }
+
 }
 
 void profile_set_tracefile(char *fmt, ...)
@@ -101,14 +131,20 @@ void profile_set_tracefile(char *fmt, ...)
   va_list vl;
 
   va_start(vl, fmt);
-  vsprintf(PROF_FILE, fmt, vl);
+  vsprintf(PROF_FILE_USER, fmt, vl);
   va_end(vl);
+  strcat(PROF_FILE_USER, "_user");
 }
 
 void profile_stop(void)
 {
   __pm2_profile_active = FALSE;
-  fut_endup(PROF_FILE);
+
+  fut_endup(PROF_FILE_USER);
+
+#ifdef USE_FKT
+  fkt_record(PROF_FILE_KERNEL);
+#endif
 }
 
 void profile_exit(void)

@@ -205,10 +205,19 @@ static __inline__ __lwp_t *find_best_lwp(void)
   __lwp_t *best = lwp;
   unsigned nb = SCHED_DATA(lwp).running_tasks;
 
+  mdebug("find_best_lwp: there are %d running tasks on lwp %d\n",
+	 SCHED_DATA(lwp).running_tasks,
+	 lwp->number);
+
   for(;;) {
     lwp = lwp->next;
     if(lwp == &__main_lwp)
       return best;
+
+    mdebug("find_best_lwp: there are %d running tasks on lwp %d\n",
+	   SCHED_DATA(lwp).running_tasks,
+	   lwp->number);
+
     if(SCHED_DATA(lwp).running_tasks < nb) {
       nb = SCHED_DATA(lwp).running_tasks;
       best = lwp;
@@ -609,7 +618,9 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
 
   sched_lock(cur_lwp);
 
+  mdebug("unchain.before: %d running tasks\n", SCHED_DATA(cur_lwp).running_tasks);
   one_active_task_less(t, cur_lwp);
+  mdebug("unchain.after: %d running tasks\n", SCHED_DATA(cur_lwp).running_tasks);
 #if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
   /* For affinity scheduling: */
   t->previous_lwp = cur_lwp;
@@ -1438,12 +1449,13 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   //if(lwp->number == 0)
   //  sched_unlock(lwp);
 
-  lwp->idle_task->special_flags |= \
-	  MA_SF_POLL | MA_SF_NORUN | MA_SF_NOSCHEDLOCK;
+  lwp->idle_task->special_flags |= MA_SF_POLL | MA_SF_NOSCHEDLOCK;
 
   MTRACE("IdleTask", lwp->idle_task);
   SET_FROZEN(lwp->idle_task);
   UNCHAIN_TASK(lwp->idle_task);
+
+  lwp->idle_task->special_flags |= MA_SF_NORUN;
 
 #ifndef MA__ONE_QUEUE
   if (!initial_task) {

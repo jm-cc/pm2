@@ -60,7 +60,7 @@ duplique_global:
 		fi ; \
 	    done ; \
 	} ; \
-	send "debug gdb opt profile gcc_instrument" "$(LIBS)" ; \
+	send "debug gdb opt profile gcc_instrument" "$(LIBS) appli" ; \
 	send "debug gdb opt" "$(MODULES)" ; \
 	send "build_static build_dynamic build_both" "$(LIBS)" ; \
 	append_ligne_dep "`cat linkmode.dep | head -1`" "$(LIBS)"

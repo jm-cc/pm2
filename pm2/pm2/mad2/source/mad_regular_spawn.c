@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.10  2000/09/12 14:40:00  oaumage
+- support -d
+
 Revision 1.9  2000/09/12 09:39:39  oaumage
 - correction des problemes de log
 
@@ -363,7 +366,7 @@ mad_slave_spawn(int                *argc,
       if (!display)
 	FAILURE("DISPLAY variable undefined");
 
-      sprintf(prefix, "xterm -display %s -e gdb", display);
+      sprintf(prefix, "pm2_gdb_load", display);
     }
   else
     {

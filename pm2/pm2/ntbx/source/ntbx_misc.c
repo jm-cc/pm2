@@ -90,7 +90,7 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
 	  ntbx_process_lrank_t old_size = pc->local_array_size;
 
 	  pc->local_array_size =
-	    max(2 * pc->local_array_size, local_rank + 1);
+	    tbx_max(2 * pc->local_array_size, local_rank + 1);
 
 	  pc->local_index =
 	    TBX_REALLOC(pc->local_index,
@@ -109,7 +109,7 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
 	  ntbx_process_grank_t old_size = pc->global_array_size;
 
 	  pc->global_array_size =
-	    max(2 * pc->global_array_size, process->global_rank + 1);
+	    tbx_max(2 * pc->global_array_size, process->global_rank + 1);
 
 	  pc->global_index =
 	    TBX_REALLOC(pc->global_index,

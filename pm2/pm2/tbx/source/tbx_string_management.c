@@ -269,7 +269,7 @@ tbx_string_append_cstring(p_tbx_string_t  string,
 	  if (string->length + length > string->allocated_length)
 	    {
 	      string->allocated_length =
-		max(2 * (string->allocated_length + 1),
+		tbx_max(2 * (string->allocated_length + 1),
 		    string->allocated_length + length);
 	      string->data =
 		TBX_REALLOC(string->data, string->allocated_length);
@@ -479,7 +479,7 @@ tbx_string_append_string(p_tbx_string_t dst_string,
 	      dst_string->allocated_length)
 	    {
 	      dst_string->allocated_length =
-		max(2 * (dst_string->allocated_length + 1),
+		tbx_max(2 * (dst_string->allocated_length + 1),
 		    dst_string->allocated_length + src_string->length);
 	      dst_string->data =
 		TBX_REALLOC(dst_string->data, dst_string->allocated_length);

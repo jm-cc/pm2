@@ -48,7 +48,7 @@ tbx_timing_init()
   for(i=0; i<5; i++) {
     TBX_GET_TICK(t1);
     TBX_GET_TICK(t2);
-    tbx_residual = min(tbx_residual, TBX_TICK_RAW_DIFF(t1, t2));
+    tbx_residual = tbx_min(tbx_residual, TBX_TICK_RAW_DIFF(t1, t2));
   }
 
 #if defined(X86_ARCH) || (defined(ALPHA_ARCH) && defined(LINUX_SYS))

@@ -687,7 +687,7 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
       
       FD_SET(connection_specific->socket, &(channel_specific->read_fds));
       channel_specific->max_fds
-	= max(connection_specific->socket, channel_specific->max_fds);
+	= tbx_max(connection_specific->socket, channel_specific->max_fds);
     }
   
   LOG_OUT();

@@ -125,7 +125,7 @@ __tbx_darray_grow(p_tbx_darray_t     darray,
       if (idx > darray->allocated_length)
 	{
 	  darray->allocated_length =
-	    max(2 * (darray->allocated_length + 1), idx);
+	    tbx_max(2 * (darray->allocated_length + 1), idx);
 
 	  darray->data =
 	    TBX_REALLOC(darray->data,
@@ -135,7 +135,7 @@ __tbx_darray_grow(p_tbx_darray_t     darray,
     }
   else
     {
-      darray->allocated_length =  max(idx, TBX_DARRAY_MIN_SIZE);
+      darray->allocated_length =  tbx_max(idx, TBX_DARRAY_MIN_SIZE);
 
       darray->data = TBX_CALLOC(darray->allocated_length, sizeof(void *));
       CTRL_ALLOC(darray->data);

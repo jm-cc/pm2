@@ -292,7 +292,7 @@ connection_mtu(p_mad_dir_channel_t  channel,
       FAILURE("invalid mtu");
   }
 
-  mtu = min(src_mtu, dst_mtu);
+  mtu = tbx_min(src_mtu, dst_mtu);
   LOG_OUT();
 
   return mtu;
@@ -348,7 +348,7 @@ compute_mtu(p_mad_directory_t          dir,
 
       mtu1 = connection_mtu(channel, src, med);
       mtu2 = compute_mtu(dir, src_pc, med, dst, dedicated_fchannel);
-      mtu  = min(mtu1, mtu2);
+      mtu  = tbx_min(mtu1, mtu2);
     }
   LOG_OUT();
 

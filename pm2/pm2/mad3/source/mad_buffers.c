@@ -86,8 +86,8 @@ size_t
 mad_copy_length(p_mad_buffer_t source,
 		p_mad_buffer_t destination)
 {
-  return min((source->bytes_written - source->bytes_read),
-	     (destination->length - destination->bytes_written));
+  return tbx_min((source->bytes_written - source->bytes_read),
+                 (destination->length - destination->bytes_written));
 }
 
 void
@@ -122,14 +122,14 @@ mad_copy_buffer_parameters(p_mad_buffer_t source,
       if (src_param->offset > source->bytes_read)
         {
           param_offset = src_param->offset - source->bytes_read;
-          param_length = min(length-param_offset, src_param->length);
+          param_length = tbx_min(length-param_offset, src_param->length);
         }
       else
         {
           param_offset = 0;
           param_length =
-            min(length,
-                src_param->length-(source->bytes_read-src_param->offset));
+            tbx_min(length,
+                    src_param->length-(source->bytes_read-src_param->offset));
         }
 
       dst_param = mad_alloc_slice_parameter();

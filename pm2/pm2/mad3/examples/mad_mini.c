@@ -249,7 +249,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
   /* If the channel provides several multiplexed sub-channels, let's
      play with them, just for fun, ... but do not play to much */
-  for (sub = 0; sub < ((min(channel->max_sub, MAX_SUB))?:1); sub++)
+  for (sub = 0; sub < ((tbx_min(channel->max_sub, MAX_SUB))?:1); sub++)
     {
       /* sub==0 is the channel itself, so we only call get_sub_channel
          for 'true' sub_channels */

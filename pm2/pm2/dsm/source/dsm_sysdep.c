@@ -214,6 +214,8 @@ static volatile int _dsm_handler_oqp=0;
 static void _internal_sig_handler(int sig, struct sigcontext_struct context)
 #elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
 static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
+#elif defined(AIX_SYS) && defined(RS6K_ARCH)
+static void _internal_sig_handler(int sig, int Code, struct sigcontext *SCP)
 #endif
 {
   dsm_access_t access = UNKNOWN_ACCESS;
@@ -222,6 +224,8 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
   access = context.err & 2 ? WRITE_ACCESS : READ_ACCESS;
 #elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
   char *addr = siginfo->si_addr;
+#elif defined(AIX_SYS) && defined(RS6K_ARCH)
+  char *addr = (char*)((int*)SCP)[20]; /* 20 ou 23 */
 #else
 #error DSM-PM2 is not yet implemented on that system! Sorry.
 #endif

@@ -67,7 +67,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	  comma = " ";
 	}
       
-      DISP("%4s%s %s", s_opt, comma, buf_opt);
+      DISP("%5s%s %s", s_opt, comma, buf_opt);
       
       if (strlen(l_opt) > 60)
 	{
@@ -110,7 +110,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	  comma = " ";
 	}
       
-      DISP("%4s%s %-20s  %s", s_opt, comma, l_opt, buf_txt);
+      DISP("%5s%s %-20s %s", s_opt, comma, l_opt, buf_txt);
 
       if (strlen(txt) > 40)
 	{
@@ -138,29 +138,42 @@ leo_help(void)
 
   __leo_option_help("", "--appli=APPLICATION",
 		    "Select APPLICATION as executable");
-
+  DISP("");
+  __leo_option_help("-d", "",
+		    "Open session processes in gdb           (implies  -x)");
+  __leo_option_help("[--d]", "",
+		    "Do not open session processes in gdb");
+  DISP("");
+  __leo_option_help("-e", "",
+		    "Export PATH, PM2_ROOT and LEO_XTERM     to client nodes");
+  __leo_option_help("[--e]", "",
+		    "Do not export local PATH, PM2_ROOT and  LEO_XTERM to client nodes");
+  
   __leo_option_help("", "--flavor=FLAVOR",
 		    "Select FLAVOR as the application flavor");
-  
+  DISP("");
+  __leo_option_help("-l", "",
+		    "Log session processes output to files");
+  __leo_option_help("[--l]", "",
+		    "Do not log session processes output");
+  DISP("");
   __leo_option_help("", "--net=NETWORK_FILE[,NETWORK_FILE]...",
 		    "Use NETWORK_FILE for network definitions");
-
-  __leo_option_help("-x", "", "Open an Xterm for each session process");
-  __leo_option_help("--x", "", "Do not open Xterms for session processes");
-  
-  __leo_option_help("-l", "", "Log session processes output to files");
-  __leo_option_help("--l", "", "Do not log session processes output");
-  
-  __leo_option_help("-p", "", "Pause after session processes           termination");
+  DISP("");
+  __leo_option_help("[-p]", "",
+		    "Pause after session processes           termination");
   __leo_option_help("--p", "",
 		    "Do not pause after session processes    termination");
+
+  __leo_option_help("", "-smp",
+		    "Preload required libraries for Marcel   SMP support");
+  __leo_option_help("", "--smp",
+		    "Do not preload Marcel SMP support       libraries");
   
-  __leo_option_help("-d", "", "Open session processes in gdb (implies  -x)");
-  __leo_option_help("--d", "", "Do not open session processes in gdb");
-  
-  __leo_option_help("", "-smp", "Preload required libraries for Marcel   SMP support");
-  __leo_option_help("", "--smp", "Do not preload Marcel SMP support       libraries");
-  
+  __leo_option_help("[-x]", "", "Open an Xterm for each session process");
+  __leo_option_help("--x", "", "Do not open Xterms for session processes");
+
+  DISP("");
   exit(EXIT_SUCCESS);
 }
 

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -19,8 +18,8 @@
  * --------
  */
 
-#ifndef __LEONIE_H
-#define __LEONIE_H
+#ifndef LEONIE_H
+#define LEONIE_H
 
 /*
  * Checks
@@ -30,7 +29,6 @@
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
-#include "tbx_debug.h"
 #include "ntbx.h"
 #include "tbx.h"
 #include "leoparse.h"
@@ -38,11 +36,8 @@
 /* Leonie: data structures */
 #include "leo_pointers.h"
 #include "leo_types.h"
-#include "leo_main.h"
 
 /* Leonie: internal interface */
-#include "leo_net.h"
-#include "leo_swann.h"
 #include "leo_interface.h"
 
-#endif /* __LEONIE_H */
+#endif /* LEONIE_H */

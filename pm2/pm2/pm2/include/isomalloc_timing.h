@@ -33,6 +33,9 @@
 
 ______________________________________________________________________________
 $Log: isomalloc_timing.h,v $
+Revision 1.3  2000/02/28 11:17:57  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:49:35  oaumage
 - ajout du Log CVS
 
@@ -45,7 +48,7 @@ ______________________________________________________________________________
 
 #ifdef ISOMALLOC_TIMING
 
-#include <timing.h>
+#include "timing.h"
 
 #else
 

@@ -31,7 +31,6 @@
  * Connection registration array
  * -----------------------------
  */
-
 typedef struct s_mad_settings
 {
   char            *rsh_cmd;
@@ -61,6 +60,7 @@ typedef struct s_mad_madeleine
 #endif /* LEONIE_SPAWN */
 } mad_madeleine_t;
 
+
 /*
  * Functions 
  * ---------
@@ -71,6 +71,10 @@ mad_protocol_available(p_mad_madeleine_t  madeleine,
 
 p_mad_adapter_set_t
 mad_adapter_set_init(int nb_adapter, ...);
+
+p_mad_madeleine_t
+mad_get_madeleine(void);
+
 
 /*
  * Private part : these functions should not be called directly

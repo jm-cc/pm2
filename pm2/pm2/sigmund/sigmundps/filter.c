@@ -11,6 +11,7 @@ filter options;
 
 int table[NB_PROC];
 
+/* compare 2 codes of events. returns true if codes are equal */
 static int codecmp(mode type1, int code1, mode type2, int code2)
 {
   if (type1 != type2) return FALSE;
@@ -22,6 +23,8 @@ static int codecmp(mode type1, int code1, mode type2, int code2)
   else return (code1 == code2);
 }
 
+
+/* the names of the funcyion are explicit enough */
 void init_filter() 
 {
   int i;
@@ -291,9 +294,9 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
   function_time_list prev;
   prev = options.function_begin;
   if (prev == FUNCTION_TIME_LIST_NULL) {
-    // Erreur de parenthésage, bon la c'est la merde on fait quoi...
-    fprintf(stderr, "Erreur de parenthésage 1\n");
-    return;   // La c'est méchant mais bon: return; ??
+    // Error with the bracketts(?), very bad problem, OUPS
+    fprintf(stderr, "Erreur de parenthésage\n");
+    return;   // Bad: return
   }
   if ((codecmp(prev->type, prev->code, begin_type, begin_code)) && \
       (tr->thread == prev->thread)) {
@@ -314,9 +317,9 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
     prev = tmp;
     tmp = tmp->next;
   }
-  // Erreur de parenthésage, bon la c'est la merde on fait quoi...
-  fprintf(stderr, "Erreur de parenthésage 2\n");
-  return;   // La c'est méchant mais bon (on peut supprimer => plus cool)
+   // Error with the bracketts(?), very bad problem, OUPS
+  fprintf(stderr, "Erreur de parenthésage\n");
+  return;    // Bad: return
 }
 
 int filter_get_function_time(struct function_time_list_st *fct_time)
@@ -361,7 +364,7 @@ static void filter_del_thread_fun(int thread)
 {
   thread_fun_list tmp;
   thread_fun_list prev;
-  if (options.thread_fun == THREAD_FUN_LIST_NULL) return; // Erreur
+  if (options.thread_fun == THREAD_FUN_LIST_NULL) return; // Error
   tmp = options.thread_fun->next;
   if (options.thread_fun->thread == thread) {
     options.thread_fun->number--;
@@ -385,7 +388,7 @@ static void filter_del_thread_fun(int thread)
       return;
     }
   }
-  return; // Erreur
+  return; // Error
 }
 
 static int is_in_thread_fun_list(int thread)
@@ -420,7 +423,6 @@ void filter_add_gen_slice(mode begin_type, int begin, char begin_param_active,
   tmp->end_param = end_param;
   options.gen_slice = tmp;
   options.active_gen_slice = 0;
-  //  options.active = 0;
 }
 
 static void search_begin_gen_slice_list(trace *tr)
@@ -507,10 +509,13 @@ static void search_end_function(trace *tr)
   }
 }
 
+
+/* say if an event is valid for the filter given */
 int is_valid(trace *tr)
 {
+  /* We found interesting information about cpu */
   if (table[tr->cpu] == -1) {
-    set_lwp_last_up(tr->pid, tr->clock);
+    set_pid_last_up(tr->pid, tr->clock);
     if (is_in_cpu_list(tr->cpu) == TRUE)
       if (is_in_proc_list(tr->pid) == TRUE)
 	if (is_in_logic_list(logic_of_lwp(tr->pid)) == TRUE)
@@ -519,7 +524,16 @@ int is_valid(trace *tr)
   }
   if (tr->type == KERNEL) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
+      /* FKT_SITCH_TO: We must update the information about cpu and last_up
+	 If the old process was traced, active_proc--
+	    If the thread associated was traced, active_thread--
+               If it was traced in a function active_thread_fun--
+	 If the new process is to be traced, active_proc++
+	    If the thread associated is to be traced, active_thread++
+	       If it is to be traced in a function active_thread_fun++
+       */
       table[tr->args[1]]= tr->args[0];
+      set_pid_last_up(tr->args[0], tr->clock);
       if ((is_in_proc_list(tr->pid) == TRUE) && \
 	  (is_in_cpu_list(tr->cpu) == TRUE) && \
 	  (is_in_logic_list(logic_of_lwp(tr->pid)) == TRUE)) {
@@ -527,8 +541,8 @@ int is_valid(trace *tr)
 	if (is_lwp(tr->pid) == TRUE) {
 	  set_active_lwp(tr->pid, FALSE);
 	  if (is_in_thread_list(tr->thread) == TRUE) {
-	    options.active_thread--;
-	    set_thread_disactivated(tr->thread, TRUE);
+	    options.active_thread--;	
+	    //	    set_thread_disactivated(tr->thread, TRUE);
 	    if (is_in_thread_fun_list(tr->thread) == TRUE)
 	      options.active_thread_fun--;
 	  }
@@ -540,7 +554,6 @@ int is_valid(trace *tr)
 	options.active_proc++;
 	if (is_lwp(tr->args[0]) == TRUE) {
 	  set_active_lwp(tr->args[0], TRUE);
-	  set_lwp_last_up(tr->args[0], tr->clock);
 	  set_cpu_lwp(tr->args[0], tr->args[0]);
 	  if (is_in_thread_list(thread_of_lwp(tr->args[0])) == TRUE) {
 	    options.active_thread++;
@@ -551,6 +564,8 @@ int is_valid(trace *tr)
       }
     }
   } else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) {
+    /* FUT_SWITCH_TO: update active_thread and active_thread_fun
+     */
     if (is_active_lwp_of_thread(tr->thread) == TRUE) {
       if (is_in_thread_list(tr->thread) == TRUE) {
 	options.active_thread--;
@@ -566,15 +581,20 @@ int is_valid(trace *tr)
     }
     change_lwp_thread(tr->thread, tr->args[1]);
   } else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
+    /* FUT_NEW_LWP: adds to lwpthread with activity corresponding to its
+       being traced or not
+     */
     if ((is_in_proc_list(tr->args[0]) == TRUE) && \
 	(is_in_cpu_list(tr->cpu) == TRUE) && \
 	(is_in_logic_list(tr->args[1])))
       filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
     else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);
   } else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
+    /* THREAD_BIRTH: adds this thread in graphlib and disactivate it*/
     set_thread_disactivated(tr->args[0], TRUE);
   }
 
+  // Updates the graphical decalage for this thread
   if (tr->type == USER) {
     if (((tr->code >> 8) < 0x8000) && (tr->code > 0x40000)) {
       if (((tr->code >> 8) & 0x100) == 0) add_thread_dec(tr->thread, 1);

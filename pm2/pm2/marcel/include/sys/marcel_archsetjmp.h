@@ -50,6 +50,7 @@ _PRIVATE_ extern void LONGJMP(jmp_buf buf, int val);
 
 #if defined(X86_ARCH)
 
+#if 1 /* A adapter pour gcc 3.0 */
 #define MARCEL_JB_BX   0
 #define MARCEL_JB_SI   1
 #define MARCEL_JB_DI   2
@@ -63,10 +64,16 @@ extern int my_setjmp(my_jmp_buf buf);
 
 static __inline__ void my_longjmp(my_jmp_buf buf, int val) __attribute__ ((unused));
 
-static __inline__ void my_longjmp(my_jmp_buf buf, int val) 
+#if (__GNUC__ >= 3)
+#define FASTCALL(x)     x __attribute__((regparm(3)))
+
+void FASTCALL(my_longjmp_gcc3(int val, int edx, my_jmp_buf buf));
+#endif
+
+static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 {
-  __asm__ __volatile__("movl %0, %%ecx\n\t"
-                       "movl %1, %%eax\n\t"
+#if (__GNUC__ < 2)
+  __asm__ __volatile__ (
 		       "movl 0(%%ecx), %%ebx\n\t"
 		       "movl 4(%%ecx), %%esi\n\t"
 		       "movl 8(%%ecx), %%edi\n\t"
@@ -74,7 +81,10 @@ static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 		       "movl 16(%%ecx), %%esp\n\t"
 		       "movl 20(%%ecx), %%ecx\n\t"
 		       "jmp *%%ecx"
-		       : : "g" (buf), "g" (val) : "memory");
+		       : : "cx" (buf), "ax" (val) : "memory");
+#else
+  my_longjmp_gcc3(val, 0 ,buf);
+#endif
 }
 
 #define jmp_buf my_jmp_buf
@@ -82,7 +92,8 @@ static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 #define setjmp my_setjmp
 #undef longjmp
 #define longjmp my_longjmp
-
 #endif
+
+#endif /* gcc 3.0 */
 
 #endif

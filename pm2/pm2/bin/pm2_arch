@@ -24,20 +24,20 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	fi
 
 	case "$_os,$_ht" in
-	SunOS,sun*)        PM2_ARCH=SPARC_ARCH ;;
-	*,sparc*)          PM2_ARCH=SPARC_ARCH ;;
-	*,i86pc)           PM2_ARCH=X86_ARCH ;;
-	*,i[3456]86)       PM2_ARCH=X86_ARCH ;;
-	BSD/OS,i[3456]86)  PM2_ARCH=X86_ARCH ;;
-	FreeBSD,i386)      PM2_ARCH=X86_ARCH ;;
-	*,ia64)            PM2_ARCH=IA64_ARCH ;;
-	AIX*,*)            PM2_ARCH=RS6K_ARCH ;;
-	*,alpha)           PM2_ARCH=ALPHA_ARCH ;;
-	*,mips)            PM2_ARCH=MIPS_ARCH ;;
-	*,IP*)             PM2_ARCH=MIPS_ARCH ;;
-	*,ppc)  	   PM2_ARCH=PPC_ARCH ;;
-        *,Power*)          PM2_ARCH=PPC_ARCH ;;
-        *)                 PM2_ARCH=UNKNOWN_ARCH ;;
+	SunOS,sun*)        PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
+	*,sparc*)          PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
+	*,i86pc)           PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*,i[3456]86)       PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	BSD/OS,i[3456]86)  PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	FreeBSD,i386)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*,ia64)            PM2_ARCH=IA64_ARCH ; PM2_ASM=ia64 ;;
+	AIX*,*)            PM2_ARCH=RS6K_ARCH ; PM2_ASM=rs8k ;;
+	*,alpha)           PM2_ARCH=ALPHA_ARCH ; PM2_ASM=alpha ;;
+	*,mips)            PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
+	*,IP*)             PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
+	*,ppc)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
+        *,Power*)          PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
+        *)                 PM2_ARCH=UNKNOWN_ARCH ; PM2_ASM=unknown ;;
 	esac
 fi
 

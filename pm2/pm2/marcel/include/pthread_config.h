@@ -3,6 +3,8 @@
 # error "glibc cannot be compiled without optimization"
 #endif
 
+
+
 /* Another evil option when it comes to compiling the C library is
    --ffast-math since it alters the ABI.  */
 #if defined __FAST_MATH__ && !defined TEST_FAST_MATH

@@ -80,6 +80,15 @@
 #  undef MA__ONE_QUEUE
 #endif
 
+/* MA__MULTIPLE_QUEUES : indique qu'il n'y a plusieurs queues pour les threads
+ * marcels (donc plusieurs LWP)
+ *
+ * C'est le cas tout le temps sauf en SMP
+ * */
+#ifdef MA__MULTIPLE_QUEUES
+#  undef MA__MULTIPLES_QUEUES
+#endif
+
 /* MA__MULTIPLE_RUNNING : indique qu'il peut y avoir plusieurs threads
  * marcel en exécution dans une queue
  *
@@ -123,6 +132,8 @@
 #  ifndef SMP_MULTIPLE_QUEUES
 #    define MA__ONE_QUEUE
 #    define MA__MULTIPLE_RUNNING
+#  else
+     define MA__MULTIPLE_QUEUES
 #  endif
 #endif /* Fin Marcel SMP */
 

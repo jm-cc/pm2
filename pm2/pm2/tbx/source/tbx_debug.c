@@ -39,7 +39,7 @@
 #include "marcel.h"
 #endif
 
-#define MAX_DEBUG_REGISTER 50
+#define MAX_DEBUG_REGISTER 100
 #define MAX_DEBUG_CMDLINE_OPTIONS 50
 /* Timeout before aborting taking the lock */
 #define TIMEOUT  10000000

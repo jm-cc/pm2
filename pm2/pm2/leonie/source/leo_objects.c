@@ -320,8 +320,9 @@ leo_dir_xchannel_init(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(leo_dir_xchannel_t));
 
-  object->dir_channel_slist = tbx_slist_nil();
-  object->pc                = ntbx_pc_cons();
+  object->dir_channel_slist      = tbx_slist_nil();
+  object->pc                     = ntbx_pc_cons();
+  object->sub_channel_name_slist = tbx_slist_nil();
   LOG_OUT();
 
   return object;

@@ -36,7 +36,7 @@
  * Usage
  * -----
  */
-static const char *usage_str = "leonie <net_conf_file> <app_conf_file>";
+static const char *usage_str = "leonie <app_conf_file>";
 
 void
 leo_usage(void)

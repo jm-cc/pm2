@@ -115,6 +115,28 @@ void marcel_sig_init(void)
   __marcel_sig_initialized = TRUE;
 }
 
+int vince_dummy = 0;
+
+void marcel_sig_exit(void)
+{
+#ifdef MA__TIMER
+  struct sigaction sa;
+
+  vince_dummy = 1;
+
+  sigemptyset(&sa.sa_mask);
+  sa.sa_handler = SIG_DFL;
+  sa.sa_flags = 0;
+  sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
+
+  sigemptyset(&sa.sa_mask);
+  sa.sa_handler = SIG_DFL;
+  sa.sa_flags = 0;
+
+  sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+#endif
+}
+
 void marcel_sig_pause(void)
 {
 #ifndef USE_VIRTUAL_TIMER

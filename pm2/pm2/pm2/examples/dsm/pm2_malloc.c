@@ -15,7 +15,6 @@
  */
 
 #include <stdio.h>
-
 #include "pm2.h"
 #include "dsm_slot_alloc.h"
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.16  2000/07/10 14:25:45  oaumage
+- Correction de l'initialisation des objets connection
+
 Revision 1.15  2000/06/06 12:54:51  oaumage
 - Ajout du calcul de la taille des groupes de buffers dynamiques
 
@@ -149,8 +152,9 @@ mad_open_channel(p_mad_madeleine_t madeleine,
       
       out->remote_host_id = host;
       out->channel        = channel;
-      out->reverse        = out;
-      out->way            = mad_incoming_connection;
+      /* A voir */
+      out->reverse        = in;
+      out->way            = mad_outgoing_connection;
       out->nb_link        = 0;
       out->link           = NULL;
       out->lock           = tbx_false;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.c,v $
+Revision 1.4  2000/02/28 11:06:11  rnamyst
+Changed #include "" into #include <>.
+
 Revision 1.3  2000/01/13 14:45:55  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -51,7 +54,7 @@ ______________________________________________________________________________
  * =============
  */
 
-#include <madeleine.h>
+#include "madeleine.h"
 
 p_mad_buffer_t mad_get_user_send_buffer(void    *ptr,
 					size_t   length)

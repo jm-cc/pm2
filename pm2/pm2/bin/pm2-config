@@ -40,6 +40,16 @@ PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
 
 ARGV="$@"
 
+PROGNAME="pm2-config"
+
+MODULES=`${PM2_ROOT}/bin/pm2-module modules`
+
+if [ -z "$MODULES" ]; then
+    echo "No PM2 module detected." 1>&2
+    echo "Check PM2_ROOT environment variable and/or do 'make init'" 1>&2
+    exit 1
+fi
+
 ##########################################################################
 # aide
 usage()
@@ -47,11 +57,10 @@ usage()
     exit_code=$1
 
     cat <<EOF
-Usage: pm2-config [--flavor=name] [OPTION]... [LIBRARY]...
+Usage: $PROGNAME [--flavor=name] [OPTION]... [MODULE]...
 
 Generic options
   --version	output pm2 version information.
-  --modversion  output the module version information.
   --help	display this help and exit.
 
 Compilation support options
@@ -64,27 +73,16 @@ Compilation support options
 Directories pm2-libs was configured to
   --libdir --objdir --dependdir --asmdir --stampdir --builddir --includedir
 
-Extension used was configured to
-  --ext
+Other options
+  --ext       : extension used
+  --protocols : communication libraries used
+  --modules   : modules included in the flavor
+  --cc        : C compiler used
+  --stampfile : stampfile generated
 
-Communication libraries was configured to
-  --protocols
-
-Included modules was configured to
-  --modules
-
-C Compiler was configured to
-  --cc
-
-Known values for LIBRARY are:
-
-    pm2
-    madeleine
-    mad
-    mad1
-    mad2
-    marcel
-    dsm
+Known values for MODULE are:
+    ${MODULES}
+    all : all modules included in the flavor
 
 EOF
     if [ $exit_code != 0 ]; then
@@ -95,29 +93,34 @@ EOF
 
 ##########################################################################
 # fonctions annexes
-. ${PM2_ROOT}/bin/pm2_mad2config
-. ${PM2_ROOT}/bin/pm2_mad1config
+
+#. ${PM2_ROOT}/bin/pm2_mad2config
+#. ${PM2_ROOT}/bin/pm2_mad1config
 
 get_lib_dir() # library
 {
-    echo $PM2_ROOT/$1/build/${PM2_BUILD:+$PM2_BUILD/}lib
+    BASEDIR=`(cd "$PM2_ROOT/modules/$1"; pwd)`
+    echo "$BASEDIR/build/${PM2_BUILD:+$PM2_BUILD/}lib"
 }
 
 get_include_dir() # library
 {
-    echo $PM2_ROOT/$1/build${PM2_BUILD:+/$PM2_BUILD}/include${PM2_EXT}
+    BASEDIR=`(cd "$PM2_ROOT/modules/$1"; pwd)`
+    echo "$BASEDIR/build/${PM2_BUILD:+$PM2_BUILD/}include${PM2_EXT}"
 }
 
-get_lib_name() # library
-{
-    case $1 in
-    mad1|mad2)
-	echo mad
-	;;
-    *)
-	echo $1
-	;;
-    esac
+add_list() { # var list_val
+    old_val=`eval echo '$'${1}`
+    for val in $2 " "; do
+	case " $old_val   " in
+	*\ $val\ *) # Already there 
+	    ;;
+	*) # Added
+	    old_val="${old_val:+$old_val }$val"
+	    ;;
+	esac
+    done
+    eval $1='"${old_val}"'
 }
 
 ##########################################################################
@@ -142,6 +145,7 @@ stampdir=false
 builddir=false
 dirtoshow=
 libs_add_mad=false
+libs_add_all=false
 kernel=false
 other=false
 
@@ -169,7 +173,7 @@ while test $# -gt 0; do
 	eval ${dirname}dir=true
 	dirtoshow="$dirname1"
 	;;
-    --ext|--protocols|--modules|--cc)
+    --ext|--protocols|--modules|--cc|--stampfile)
 	other=$1
 	;;
     --help)
@@ -188,27 +192,25 @@ while test $# -gt 0; do
     --libs-only-l)
 	libs_l=true
 	;;
-#    --modversion)
-#        modversion=true
-#	;;
     --flavor=*)
 	flavor=$optarg
 	;;
-    --*)
+    -*)
 	echo Unknown option \`$1\' 1>&2
 	usage 1
 	;;
-    pm2|marcel|mad1|mad2|dsm|tbx|ntbx)
-	libs="$libs $1"
-	;;
-    madeleine|mad)
-	libs_add_mad=true;
+    all)
+	libs_add_all=true
 	;;
     *)
-        error=true
-	if $error; then
+	case " $MODULES " in
+	*\ $1\ *)
+	    add_list libs "$1"
+	    ;;
+	*)
 	    echo Unknown library \`$1\' 1>&2
-	fi
+	    ;;
+	esac
 	;;
     esac
     shift
@@ -227,18 +229,8 @@ fi
 
 . $PM2_CONFIG/$flavor
 
-if [ $libs_add_mad = true ]; then
-    for lib in $PM2_LIBS; do
-	case $lib in
-	mad*)
-	    libs="${libs:+$libs }$lib"
-	    ;;
-	esac
-    done
-fi
-
-if [ -z "$libs" ]; then
-    libs="$PM2_LIBS"
+if [ $libs_add_all = true ]; then
+    add_list libs "$PM2_LIBS"
 fi
 
 if [ "$other" != false ]; then
@@ -272,32 +264,55 @@ if [ ! -z "${dirtoshow}" ]; then
 	echo ${PM2_CC:-gcc}
 	exit 0
 	;;
+    --stampfile)
+	if [ -z "$libs" ]; then
+	    echo "$PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}/stamp${PM2_EXT}"
+	else
+	    list=
+	    for lib in $libs; do
+		list="${list:+$list }$PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}/libstamp-${lib}${PM2_EXT}"
+	    done
+	    echo $list
+	fi
+	exit 0
+	;;
     build)
 	echo $PM2_BUILD
 	exit 0
 	;;
     stamp)
-	echo $PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}
+	echo "$PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}"
 	exit 0
 	;;
     esac
     if [ `echo "$libs" | wc -w` != 1 ]; then
-	usage 1
+	echo "This option need ONE lib" 1>&2
+	exit 1
     fi
-    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow
+    case " $PM2_LIBS " in
+    *\ $libs\ *)
+	echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow
+	;;
+    *)
+	;;
+    esac
     exit 0
 fi
 
+if [ -z "$libs" ]; then
+    libs="$PM2_LIBS"
+fi
+
 ##########################################################################
-# traitement de la configuration de Madeleine
-case " $PM2_LIBS " in
-*\ mad1\ *)
-    config_mad1
-    ;;
-*\ mad2\ *)
-    config_mad2
-    ;;
-esac
+# traitement de la configuration des modules
+
+# Postconfiguration
+for mod in $PM2_LIBS " "; do
+    MOD=`echo $mod | tr [a-z] [A-Z]`
+    if [ "`eval echo \\$PM2_${MOD}_POST_CONF`" = true ]; then
+	eval PM2_${MOD}_POST_CONF_FUNC
+    fi
+done
 
 ##########################################################################
 # CFLAGS et LDFLAGS...
@@ -307,26 +322,29 @@ the_flags="-D${PM2_ARCH} -D${PM2_SYS} $PM2_COMMON_CFLAGS_KERNEL $PM2_COMMON_LIBS
 for lib in $PM2_LIBS; do
     LIB=`echo $lib | tr [a-z] [A-Z]`
     the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS` -D${LIB}"
-    if [ -d $PM2_ROOT/$lib/include ]; then
-	the_flags="$the_flags -I$PM2_ROOT/$lib/include"
+    if [ -d "$PM2_ROOT/modules/$lib/include" ]; then
+	the_flags="$the_flags -I$PM2_ROOT/modules/$lib/include"
     fi
-    if [ "$lib" = ntbx ]; then
-	the_flags="$the_flags -DNTBX_TCP"
-    fi
-    if [ "$lib" = dsm ]; then
+    if [ "`eval echo \\$PM2_${LIB}_GENERATE_INCLUDE`" = true ]; then
 	the_flags="$the_flags -I`get_include_dir $lib`"
     fi
 done
 
+vide=
 # LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
 for lib in $libs; do
-    case $lib in
-    marcel|mad1|mad2|pm2|dsm|tbx|ntbx)
+    LIB=`echo $lib | tr [a-z] [A-Z]`
+    libs="`eval echo \\$PM2_${LIB}_LIBNAME`"
+    case "libs" in
+    $vide)
+	;;
+    *)
 	the_libs="$the_libs -L`get_lib_dir $lib`"
-	the_libs="$the_libs -l`get_lib_name $lib`$PM2_EXT"
+	for l in $libs; do
+	    the_libs="$the_libs -l${l}$PM2_EXT"
+	done
 	;;
     esac
-    LIB=`echo $lib | tr [a-z] [A-Z]`
     the_libs="$the_libs `eval echo '$'PM2_${LIB}_LIBS`"
     # CFLAGS spécifique à la compilation d'une lib
     if [ "$kernel" = true ]; then

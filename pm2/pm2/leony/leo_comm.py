@@ -2,6 +2,7 @@ import leo_channel
 
 import select
 import socket
+import struct
 
 def client_wrapper(obj):
     if type(obj) is not tuple:
@@ -144,7 +145,15 @@ def server_init(leo):
     leo.server		= server
 
 def client_accept(leo):
-    return leo.server.socket.accept()
+    client	= leo.server.socket.accept()
+    (cs, addr)	= client
+    linger_arg	= struct.pack("ii", 1, 50)
+    cs.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger_arg)
+    return client
+
+def client_close(client):
+    (cs, addr) = client
+    cs.close()
 
 def hostname_normalize(hostname):
     """Normalize the hostname."""
@@ -174,6 +183,13 @@ def wait_for_ack(client):
     ack = receive_int(client)
     if not ack == -1:
         print 'invalid ack value'
+
+def wait_for_specific_ack(client, ack_value):
+    ack = receive_int(client)
+    if not ack == ack_value:
+        print 'invalid ack value:', ack, 'expected:', ack_value
+    else:
+        print 'got expected ack:', ack
 
 def mcast(ps_list, f, *a, **b):
     for ps in ps_list:

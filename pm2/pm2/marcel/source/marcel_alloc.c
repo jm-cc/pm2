@@ -3,10 +3,6 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#ifdef AIX_SYS
-#define MAP_FAILED       -1
-#endif
-
 #include "marcel.h"
 #include "marcel_alloc.h"
 

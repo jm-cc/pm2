@@ -37,8 +37,7 @@
 # $1... = command and arguments
 
 num=0
-while test -f /tmp/maddebug.$num
-do
+while [ -f /tmp/maddebug.$num ] ; do
     num=`expr $num + 1`
 done
 file=/tmp/maddebug.$num
@@ -46,7 +45,7 @@ prog=$1
 shift
 
 args=""
-while [ $# -gt 0 ]; do
+while [ $# -gt 0 ] ; do
     args="$args '$1'"
     shift
 done

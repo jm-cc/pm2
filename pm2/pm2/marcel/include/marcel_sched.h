@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.5  2000/03/01 16:45:23  oaumage
+- suppression des warnings en compilation  -g
+
 Revision 1.4  2000/02/28 10:26:38  rnamyst
 Changed #include <> into #include "".
 
@@ -61,6 +64,7 @@ static __inline__ marcel_t marcel_self()
   return __marcel_self();
 }
 
+static __inline__ unsigned marcel_current_vp() __attribute__ ((unused));
 static __inline__ unsigned marcel_current_vp()
 {
 #ifdef SMP
@@ -179,6 +183,7 @@ void marcel_poll(marcel_pollid_t id, any_t arg);
 
 /* Must be called each time a LWP is about to access its local task
    queue. */
+static __inline__ void sched_lock(__lwp_t *lwp) __attribute__ ((unused));
 static __inline__ void sched_lock(__lwp_t *lwp)
 {
   marcel_lock_acquire(&lwp->sched_queue_lock);
@@ -186,6 +191,7 @@ static __inline__ void sched_lock(__lwp_t *lwp)
 
 /* Must be called when a LWP is not modifying the local queue any
    more. */
+static __inline__ void sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
 static __inline__ void sched_unlock(__lwp_t *lwp)
 {
   marcel_lock_release(&lwp->sched_queue_lock);
@@ -197,6 +203,7 @@ static __inline__ void sched_unlock(__lwp_t *lwp)
 #include "sys/upcalls.h"
 #endif
 
+static __inline__ void lock_task() __attribute__ ((unused));
 static __inline__ void lock_task()
 {
 #ifdef SMP
@@ -212,6 +219,7 @@ static __inline__ void lock_task()
 #endif
 }
 
+static __inline__ void unlock_task() __attribute__ ((unused));
 static __inline__ void unlock_task()
 {
 #ifdef SMP
@@ -227,6 +235,7 @@ static __inline__ void unlock_task()
 #endif
 }
 
+static __inline__ int locked() __attribute__ ((unused));
 static __inline__ int locked()
 {
 #ifdef SMP

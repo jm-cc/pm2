@@ -114,7 +114,7 @@ int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
 int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask);
 
 int marcel_attr_setname(marcel_attr_t *attr, const char name[MARCEL_MAXNAMESIZE]);
-int marcel_attr_getname(marcel_attr_t *attr, char name[MARCEL_MAXNAMESIZE], size_t n);
+int marcel_attr_getname(__const marcel_attr_t *attr, char name[MARCEL_MAXNAMESIZE], size_t n);
 
 // only for internal use
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);

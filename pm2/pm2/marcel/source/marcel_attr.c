@@ -187,7 +187,7 @@ int marcel_attr_setname(marcel_attr_t *attr, const char *name)
   return 0;
 }
 
-int marcel_attr_getname(marcel_attr_t *attr, char *name, size_t n)
+int marcel_attr_getname(__const marcel_attr_t *attr, char *name, size_t n)
 {
   strncpy(name,attr->name,n);
   if (MARCEL_MAXNAMESIZE>n)

@@ -104,28 +104,28 @@ int marcel_main(int argc, char **argv)
     profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
 #endif
 
-   j.inf = 1;
-   j.sup = atoi(argv[1]);
+    j.inf = 1;
+    j.sup = atoi(argv[1]);
 
 #ifdef USE_PIPES
-   do_pipe(j.channel);
+    do_pipe(j.channel);
 #endif
 
-   TBX_GET_TICK(t1);
-   marcel_create(&pid, NULL, sum, (any_t)&j);
+    TBX_GET_TICK(t1);
+    marcel_create(&pid, NULL, sum, (any_t)&j);
 #ifdef USE_PIPES
-   marcel_read(j.channel[0], &j.res, sizeof(j.res));
-   close(j.channel[0]); close(j.channel[1]);
+    marcel_read(j.channel[0], &j.res, sizeof(j.res));
+    close(j.channel[0]); close(j.channel[1]);
 #endif
-   marcel_join(pid, NULL);
-   TBX_GET_TICK(t2);
+    marcel_join(pid, NULL);
+    TBX_GET_TICK(t2);
 
-   temps = TBX_TIMING_DELAY(t1, t2);
-   printf("Sum from 1 to %d = %d\n", j.sup, j.res);
-   printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+    temps = TBX_TIMING_DELAY(t1, t2);
+    printf("Sum from 1 to %d = %d\n", j.sup, j.res);
+    printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
 #ifdef PROFILE
-   profile_stop();
+    profile_stop();
 #endif
   }
 

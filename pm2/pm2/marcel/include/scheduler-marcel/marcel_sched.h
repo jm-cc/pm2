@@ -362,7 +362,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 			ma_runqueue_t *rq;
 
 			/* Signaler le changement de thread aux activations */
-			MA_ACT_SET_THREAD(LWP_SELF, MARCEL_SELF);
+			MA_ACT_SET_THREAD(MARCEL_SELF);
 			/* ré-enqueuer le père */
 			rq = ma_prev_rq();
 			_ma_raw_spin_lock(&rq->lock);
@@ -381,60 +381,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 	marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
 	return 0;
 }
-#section marcel_macros
-
-/* effectue un setjmp. On doit être RUNNING avant et après
- * */
-#define MA_THR_SETJMP(current) \
-  marcel_ctx_setjmp(current->ctx_yield)
-
-/* On vient de reprendre la main. On doit déjà être RUNNING. On enlève
- * le flags RUNNING au thread qui tournait avant.
- * */
-#define MA_THR_RESTARTED(current, info) \
-  do {                                 \
-    MA_ACT_SET_THREAD(LWP_SELF, MARCEL_SELF); \
-    MTRACE(info, current);             \
-  } while(0)
-
-/* on effectue un longjmp. Le thread courrant ET le suivant doivent
- * être RUNNING. La variable previous_task doit être correctement
- * positionnée pour pouvoir annuler la propriété RUNNING du thread
- * courant.
- * */
-#define MA_THR_LONGJMP(cur_num, next, ret) \
-  do {                                     \
-    PROF_SWITCH_TO(cur_num, next->number); \
-    call_ST_FLUSH_WINDOWS();               \
-    marcel_ctx_longjmp(next->ctx_yield, ret);              \
-  } while(0)
-
-
 
 #section marcel_variables
-MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
 MA_DECLARE_PER_LWP(ma_runqueue_t *, prev_rq);
-
-#section marcel_functions
-
-inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
-#section marcel_inline
-
-inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
-{
-	if (cur != next) {
-		MA_BUG_ON(!ma_in_atomic());
-		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			MA_THR_RESTARTED(cur, "Preemption");
-			MA_BUG_ON(!ma_in_atomic());
-			return __ma_get_lwp_var(previous_thread);
-		}
-		debug_printf(&MA_DEBUG_VAR_NAME(default),
-			     "switchto(%p, %p) on LWP(%d)\n",
-		       cur, next, LWP_NUMBER(GET_LWP(cur)));
-		__ma_get_lwp_var(previous_thread)=cur;
-		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);
-	}
-	return cur;
-}
 

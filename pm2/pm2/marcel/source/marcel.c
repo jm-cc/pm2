@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.19  2000/04/28 18:33:37  vdanjean
+debug actsmp + marcel_key
+
+Revision 1.18  2000/04/28 13:11:30  vdanjean
+argc correct if NULL
+
 Revision 1.17  2000/04/21 11:19:28  vdanjean
 fixes for actsmp
 
@@ -484,6 +490,29 @@ int marcel_exit(any_t val)
     marcel_sem_V(&cur->client);
     marcel_sem_P(&cur->thread);
   }
+
+
+  // gestion des thread_keys
+  {
+    int nb_keys=marcel_nb_keys;
+    int key;
+    int nb_bcl=0;
+#define NB_MAX_BCL 10
+    while (nb_keys && (nb_bcl++<NB_MAX_BCL)) {
+      nb_keys=0;
+      for(key=1; key<MAX_KEY_SPECIFIC; key++) {
+	if (marcel_key_destructor[key] && cur->key[key]) {
+	   (*(marcel_key_destructor[key]))(cur->key[key]);
+	   nb_keys++;
+	}
+      }
+    }
+#ifdef MA__DEBUG
+   if(nb_bcl==NB_MAX_BCL)
+      mdebug("  max iteration in key destructor for thread %i\n",number);
+#endif
+  }
+
 
   // Dans le cas où la pile a été allouée à l'extérieur de Marcel
   // (typiquement par PM2/isomalloc), il faut effectuer un traitement
@@ -992,6 +1021,9 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
 {
   int i, j;
 
+  if (!argc)
+    return;
+
   i = j = 1;
 
   while(i < *argc) {
@@ -1171,21 +1203,60 @@ void tfree(void *ptr)
    }
 }
 
-volatile unsigned _nb_keys = 1;
+marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
+int marcel_key_present[MAX_KEY_SPECIFIC]={0};
+marcel_lock_t marcel_key_lock=MARCEL_LOCK_INIT_UNLOCKED;
+unsigned marcel_nb_keys=1;
+static unsigned marcel_last_key=0;
 /* 
  * Hummm... Should be 0, but for obscure reasons,
  * 0 is a RESERVED value. DON'T CHANGE IT !!! 
 */
 
-int marcel_key_create(marcel_key_t *key, void (*func)(any_t))
+int marcel_key_create(marcel_key_t *key, marcel_key_destructor_t func)
 { /* pour l'instant, le destructeur n'est pas utilise */
 
    lock_task();
-   if(_nb_keys == MAX_KEY_SPECIFIC) {
+   marcel_lock_acquire(&marcel_key_lock);
+   while ((++marcel_last_key < MAX_KEY_SPECIFIC) &&
+	  (marcel_key_present[marcel_last_key])) {
+   }
+   if(marcel_last_key == MAX_KEY_SPECIFIC) {
+     /* sinon, il faudrait remettre à 0 toutes les valeurs spécifiques
+	des threads existants */
+      marcel_lock_release(&marcel_key_lock);
       unlock_task();
       RAISE(CONSTRAINT_ERROR);
+/*        marcel_last_key=0; */
+/*        while ((++marcel_last_key < MAX_KEY_SPECIFIC) && */
+/*  	     (marcel_key_present[marcel_last_key])) { */
+/*        } */
+/*        if(new_key == MAX_KEY_SPECIFIC) { */
+/*  	 marcel_lock_release(&marcel_key_lock); */
+/*  	 unlock_task(); */
+/*  	 RAISE(CONSTRAINT_ERROR); */
+/*        } */
    }
-   *key = _nb_keys++;
+   *key = marcel_last_key;
+   marcel_nb_keys++;
+   marcel_key_present[marcel_last_key]=1;
+   marcel_key_destructor[marcel_last_key]=0;
+   marcel_lock_release(&marcel_key_lock);
+   unlock_task();
+   return 0;
+}
+
+int marcel_key_delete(marcel_key_t key)
+{ /* pour l'instant, le destructeur n'est pas utilise */
+
+   lock_task();
+   marcel_lock_acquire(&marcel_key_lock);
+   if (marcel_key_present[key]) {
+      marcel_nb_keys--;
+      marcel_key_present[key]=0;
+      marcel_key_destructor[key]=NULL;
+   }
+   marcel_lock_release(&marcel_key_lock);
    unlock_task();
    return 0;
 }

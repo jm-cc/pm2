@@ -1,7 +1,19 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.h,v 1.5 2002/10/22 18:18:00 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.h,v 1.6 2002/10/23 13:26:52 slacour Exp $
  */
+
+/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+
+/* This module stores the information about the underlying topology of
+ * the nodes connected over a hierarchical network.  It offers 'set'
+ * functions for the user to specify the topology, and 'get' functions
+ * for the token_locks and the hierarchical consistency protocol. */
+
+
+#ifndef HIERARCH_TOPOLOGY_H
+#define HIERARCH_TOPOLOGY_H
+
 
 #include "dsm_const.h"   /* dsm_node_t */
 
@@ -42,4 +54,6 @@ topology_set_cluster_colors (const unsigned int * const);
  * must be called after pm2_init(). */
 extern int
 topology_dump_information (void);
+
+#endif   /* HIERARCH_TOPOLOGY_H */
 

@@ -37,6 +37,9 @@ fi
 # The first node has rank 0
 args="$args -rank 0"
 
+# Append the command name
+args="$args -mad_app_cmd $prog"
+
 PM2_RSH=${PM2_RSH:-rsh} 
 
 cmd="PM2_RSH='${PM2_RSH}';export PM2_RSH;DISPLAY=$DISPLAY;export DISPLAY;PM2_CONF_FILE=$PM2_CONF_FILE;export PM2_CONF_FILE;$prefix $prog $args"

@@ -228,7 +228,11 @@
 #define MA_TASK_NO_USE_SCHEDLOCK(task) \
    (((task)->special_flags) & MA_SF_NOSCHEDLOCK)
 
+#ifdef MARCEL_RT
 #define MA_TASK_REAL_TIME(task) \
    (((task)->special_flags) & MA_SF_RT_THREAD)
+#else
+#define MA_TASK_REAL_TIME(task) 0
+#endif
 
 #endif

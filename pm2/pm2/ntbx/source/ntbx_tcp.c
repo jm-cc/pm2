@@ -533,9 +533,10 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
   client_specific->descriptor = descriptor;
   client->specific            = client_specific;
 
-  remote_host_entry = gethostbyaddr(&remote_address.sin_addr.s_addr,
-				    sizeof(remote_address.sin_addr.s_addr),
-				    remote_address.sin_family);
+  remote_host_entry =
+    gethostbyaddr((const char *)&remote_address.sin_addr.s_addr,
+		  sizeof(remote_address.sin_addr.s_addr),
+		  remote_address.sin_family);
 
   if (!remote_host_entry)
     {

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.3  2000/04/14 08:47:55  vdanjean
+new kernel activation version : adaptation of marcel
+
 Revision 1.2  2000/04/11 09:07:17  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -196,7 +199,7 @@ ______________________________________________________________________________
 // cas ou l'on sait deja qu'une activation est debloquee.
 #ifdef MA__ACT
 #define goto_next_task(pid) \
-  (act_nb_unblocked) ? (act_goto_next_task(pid)): \
+  (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \
                        (MA_THR_LONGJMP((pid), NORMAL_RETURN))
 #else
 #define goto_next_task(pid) \

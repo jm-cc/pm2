@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.7  2000/01/31 15:50:54  oaumage
+- retour a TCP
+
 Revision 1.6  2000/01/13 14:43:59  oaumage
 - Makefile: adaptation pour la prise en compte de la toolbox
 - mad_ping.c: mise a jour relative aux commandes de timing
@@ -468,14 +471,14 @@ int main(int argc, char **argv)
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
-  /* TCP 
-     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
+  /* TCP */
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
   /* SISCI
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
-  /* MPI */
-     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); 
+  /* MPI 
+     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL);  */
 
   madeleine = mad_init(&argc, argv, "mad2_conf", adapter_set);
 
@@ -605,7 +608,7 @@ int main(int argc, char **argv)
 
   if (!param_simul_migr)
     {
-      buffer = mad_aligned_malloc(param_max_size, 64);
+      buffer = tbx_aligned_malloc(param_max_size, 64);
     }
   
   if (madeleine->configuration.local_host_id == 0)
@@ -629,7 +632,7 @@ int main(int argc, char **argv)
   mad_exit(madeleine);
   if (!param_simul_migr)
     {
-      mad_aligned_free(buffer, 64);
+      tbx_aligned_free(buffer, 64);
     }
   
   return 0;

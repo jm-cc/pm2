@@ -36,4 +36,6 @@ extern int get_active_slices();
 
 extern int get_idle_slices();
 
+extern int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end, u_64 *time);
+
 #endif

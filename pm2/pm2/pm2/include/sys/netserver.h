@@ -73,4 +73,6 @@ void netserver_start(unsigned priority);
 
 void netserver_wait_end(void);
 
+void netserver_stop(void);
+
 #endif

@@ -90,7 +90,7 @@ static p_mad_madeleine_t main_madeleine = NULL;
  */
 
 static
-void 
+void
 mad_driver_register(p_mad_madeleine_t madeleine)
 {
   p_tbx_htable_t  driver_htable = NULL;
@@ -125,7 +125,7 @@ mad_object_init(int    argc TBX_UNUSED,
 
   LOG_IN();
   madeleine = mad_madeleine_cons();
- 
+
   madeleine->settings = mad_settings_cons();
   madeleine->session  = mad_session_cons();
   madeleine->dir      = mad_directory_cons();
@@ -138,7 +138,7 @@ mad_object_init(int    argc TBX_UNUSED,
 
   main_madeleine = madeleine;
   LOG_OUT();
-  
+
   return madeleine;
 }
 
@@ -162,12 +162,16 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  if (!argc)
 	    FAILURE("mad_leonie argument not found");
 
+#ifndef LEO_IP
+	  settings->leonie_server_host_name = tbx_strdup(*argv);
+#else // LEO_IP
 	  {
 	    char *dummy;
 	    // Read server IP address in hexadecimal format
 	    settings->leonie_server_ip = strtoul(*argv, &dummy, 16);
 	  }
-	} 
+#endif // LEO_IP
+	}
       else if (!strcmp(*argv, "--mad_link"))
 	{
 	  argc--; argv++;
@@ -200,6 +204,16 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   client   = session->leonie_link;
 
   strcpy(data.data, settings->leonie_server_port);
+#ifndef LEO_IP
+  status =
+    ntbx_tcp_client_connect(client, settings->leonie_server_host_name, &data);
+  if (status == ntbx_failure)
+    FAILURE("could not setup the Leonie link");
+
+  TRACE("Leonie link is up");
+
+  mad_ntbx_send_string(client, client->local_host);
+#else // LEO_IP
   status = ntbx_tcp_client_connect_ip(client,
 				      settings->leonie_server_ip, &data);
   if (status == ntbx_failure)
@@ -208,10 +222,12 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   TRACE("Leonie link is up");
   {
     char ip[11];
-    
+
     sprintf(ip, "0x%lx", client->local_host_ip);
     mad_ntbx_send_string(client, ip);
   }
+#endif // LEO_IP
+
   session->process_rank = mad_ntbx_receive_int(client);
   TRACE_VAL("process rank", session->process_rank);
   LOG_OUT();
@@ -249,7 +265,7 @@ mad_output_redirection_init(p_mad_madeleine_t   madeleine,
 	FAILURE("USER environment variable not defined");
 
       len = strlen(fmt) + strlen(user) + strlen(MAD3_LOGNAME);
-      
+
       {
 	char output[len];
 	int  f;
@@ -260,7 +276,7 @@ mad_output_redirection_init(p_mad_madeleine_t   madeleine,
 	f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 	if (f < 0)
 	  ERROR("open");
-      
+
 	if (dup2(f, STDOUT_FILENO) < 0)
 	  ERROR("dup2");
 
@@ -282,7 +298,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
   LOG_IN();
 
   argv++; _argv++; argc--;
-  
+
   while (argc)
     {
       if (!strcmp(*_argv, "-d"))
@@ -295,7 +311,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 
 	  if (!argc)
 	    FAILURE("leonie argument disappeared");
-	  
+
 	  _argv++; (*_argc)--;
 	}
       else if (!strcmp(*_argv, "--mad_link"))
@@ -304,7 +320,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 
 	  if (!argc)
 	    FAILURE("link argument disappeared");
-	  
+
 	  _argv++; (*_argc)--;
 	}
       else
@@ -314,7 +330,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 
       argc--;
     }
-  
+
   LOG_OUT();
 }
 
@@ -335,14 +351,14 @@ mad_init(int   *argc,
 	 char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
-  
+
   LOG_IN();
   common_pre_init(argc, argv, NULL);
   common_post_init(argc, argv, NULL);
   madeleine = mad_get_madeleine();
 
 #if 0
-  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);  
+  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);
   tbx_init(*argc, argv);
   ntbx_init(*argc, argv);
   mad_memory_manager_init(*argc, argv);
@@ -351,11 +367,11 @@ mad_init(int   *argc,
   mad_cmd_line_init(madeleine, *argc, argv);
   mad_leonie_link_init(madeleine, *argc, argv);
   mad_directory_init(madeleine, *argc, argv);
-  
+
   mad_purge_command_line(madeleine, argc, argv);
   ntbx_purge_cmd_line(argc, argv);
   tbx_purge_cmd_line(argc, argv);
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);  
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
 #endif // 0
   LOG_OUT();
 

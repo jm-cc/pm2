@@ -13,6 +13,7 @@
 #include "trace.h"
 #include "flavor.h"
 #include "intro.h"
+#include "menu.h"
 
 static GtkWidget *notebook;
 static GtkWidget *module_frame, *general_frame;
@@ -325,7 +326,7 @@ static void add_common_options(GtkWidget *box)
   GtkWidget *frame;
   GtkWidget *vbox;
 
-  frame = gtk_frame_new("Common options");
+  frame = gtk_frame_new("Application options");
   gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
   gtk_widget_show(frame);
 
@@ -356,51 +357,60 @@ static void set_page_select_state(GtkWidget *page, gint selected)
 static void update_select_buttons(gint active_page)
 {
    GtkWidget *page;
+   gint select_ok;
 
    page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), active_page);
 
-   if(page->state == GTK_STATE_INSENSITIVE) {
-     gtk_widget_set_sensitive(select_button, TRUE);
-     gtk_widget_set_sensitive(deselect_button, FALSE);
-   } else {
-     gtk_widget_set_sensitive(select_button, FALSE);
-     gtk_widget_set_sensitive(deselect_button, TRUE);
-   }
+   select_ok = page->state == GTK_STATE_INSENSITIVE;
+   gtk_widget_set_sensitive(select_button, select_ok);
+   gtk_widget_set_sensitive(deselect_button, !select_ok);
+
+   menu_update_module(select_ok, !select_ok);
+}
+
+void module_select(void)
+{
+  GtkWidget *page;
+  gint num;
+
+  num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+  page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), num);
+
+  set_page_select_state(page, TRUE);
+
+  update_select_buttons(num);
+
+  flavor_mark_modified();
+}
+
+void module_deselect(void)
+{
+  GtkWidget *page;
+  gint num;
+
+  num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+  page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), num);
+
+  set_page_select_state(page, FALSE);
+
+  update_select_buttons(num);
+
+  flavor_mark_modified();
 }
 
 static void select_pressed(GtkWidget *widget,
 			   gpointer data)
 {
-  GtkWidget *page;
-  gint num;
-
   if(!destroy_phase) {
-    num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
-    page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), num);
-
-    set_page_select_state(page, TRUE);
-
-    update_select_buttons(num);
-
-    flavor_mark_modified();
+    module_select();
   }
 }
 
 static void deselect_pressed(GtkWidget *widget,
 			     gpointer data)
 {
-  GtkWidget *page;
-  gint num;
-
   if(!destroy_phase) {
-    num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
-    page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook), num);
-
-    set_page_select_state(page, FALSE);
-
-    update_select_buttons(num);
-
-    flavor_mark_modified();
+    module_deselect();
   }
 }
 
@@ -566,6 +576,12 @@ static void module_update_general_settings(void)
 void module_update_with_current_flavor(void)
 {
   GList *mod;
+
+  if(!strcmp(flavor_name(),"")) {
+    gtk_widget_set_sensitive(module_frame, FALSE);
+    gtk_widget_set_sensitive(general_frame, FALSE);
+    return;
+  }
 
   module_update_general_settings();
 

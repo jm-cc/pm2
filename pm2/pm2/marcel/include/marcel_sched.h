@@ -38,22 +38,18 @@ static __inline__ marcel_t marcel_self()
 static __inline__ unsigned marcel_current_vp() __attribute__ ((unused));
 static __inline__ unsigned marcel_current_vp()
 {
-  DEFINE_CUR_LWP(,,);
-  SET_CUR_LWP(GET_LWP(marcel_self()));
+  DEFINE_CUR_LWP(, =, GET_LWP(marcel_self()));
 
   return cur_lwp->number;
 }
 
 
-/* ==== explicit preemtion ==== */
+/* ==== explicit preemption ==== */
 
 void marcel_yield(void);
-//void marcel_trueyield(void);
-int marcel_explicityield(marcel_t pid);
+
 #ifdef MARCEL_KERNEL
 void ma__marcel_yield(void);
-void ma__marcel_trueyield(void);
-int ma__marcel_explicityield(marcel_t pid);
 #endif
 
 /* ==== SMP scheduling policies ==== */
@@ -69,6 +65,74 @@ int ma__marcel_explicityield(marcel_t pid);
 typedef __lwp_t *(*marcel_schedpolicy_func_t)(marcel_t pid,
 					      __lwp_t *current_lwp);
 void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
+
+/* ==== SMP scheduling directives ==== */
+
+// Primitives & macros de construction de "masques" de processeurs
+// virtuels. 
+
+// ATTENTION : le placement d'un thread est autorise sur un 'vp' si le
+// bit correspondant est a _ZERO_ dans le masque (similitude avec
+// sigset_t pour la gestion des masques de signaux).
+
+#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0)
+#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)-1)
+#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
+#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
+
+#define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
+
+static __inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask) __attribute__ ((unused));
+static __inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
+{
+  *mask = 0;
+}
+
+static __inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask) __attribute__ ((unused));
+static __inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
+{
+  *mask = -1;
+}
+
+static __inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
+					    unsigned vp) __attribute__ ((unused));
+static __inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
+					    unsigned vp)
+{
+  *mask |= 1U << vp;
+}
+
+static __inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
+					     unsigned vp) __attribute__ ((unused));
+static __inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
+					     unsigned vp)
+{
+  *mask = 1U << vp;
+}
+
+static __inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
+					    unsigned vp) __attribute__ ((unused));
+static __inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
+					    unsigned vp)
+{
+  *mask &= ~(1U << vp);
+}
+
+static __inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
+						unsigned vp) __attribute__ ((unused));
+static __inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
+						unsigned vp)
+{
+  *mask = ~(1U << vp);
+}
+
+static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
+						unsigned vp) __attribute__ ((unused));
+static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
+						unsigned vp)
+{
+  return 1 & ((*mask) >> vp);
+}
 
 
 /* ==== `sleep' functions ==== */
@@ -87,24 +151,17 @@ unsigned marcel_frozenthreads(void);
 unsigned long marcel_createdthreads(void);
 
 
-/* ==== preemption directed to one special thread ==== */
-
-void marcel_setspecialthread(marcel_t pid);
-
-void marcel_givehandback(void);
-
-
 /* ==== snapshot ==== */
 
 typedef void (*snapshot_func_t)(marcel_t pid);
 
 void marcel_snapshot(snapshot_func_t f);
 
-#define ALL_THREADS		0
-#define MIGRATABLE_ONLY		1
-#define NOT_MIGRATABLE_ONLY	2
-#define DETACHED_ONLY		4
-#define NOT_DETACHED_ONLY	8
+#define ALL_THREADS		 0
+#define MIGRATABLE_ONLY		 1
+#define NOT_MIGRATABLE_ONLY	 2
+#define DETACHED_ONLY		 4
+#define NOT_DETACHED_ONLY	 8
 #define BLOCKED_ONLY		16
 #define NOT_BLOCKED_ONLY	32
 #define SLEEPING_ONLY           64
@@ -130,8 +187,6 @@ static __inline__ void ma_sched_unlock(__lwp_t *lwp)
 {
   marcel_lock_release(&(SCHED_DATA(lwp).sched_queue_lock));
 }
-
-#ifdef X86_ARCH
 
 static __inline__ void ma_lock_task(void) __attribute__ ((unused));
 static __inline__ void ma_lock_task(void)
@@ -187,50 +242,6 @@ static __inline__ unsigned int preemption_enabled(void)
   return atomic_read(&__preemption_disabled) == 0;
 }
 
-#else
-
-static __inline__ __volatile__ void ma_lock_task(void)
-{
-  GET_LWP(marcel_self())->_locked++;
-}
-
-static __inline__ __volatile__ void ma_unlock_task(void)
-{
-  GET_LWP(marcel_self())->_locked--;
-}
-
-static __inline__ __volatile__ void unlock_task_for_debug(void)
-{
-  GET_LWP(marcel_self())->_locked--;
-}
-
-static __inline__ __volatile__ unsigned locked(void)
-{
-  return GET_LWP(marcel_self())->_locked;
-}
-
-extern volatile unsigned int __preemption_disabled;
-
-static __inline__ void disable_preemption(void) __attribute__ ((unused));
-static __inline__ void disable_preemption(void)
-{
-  __preemption_disabled++;
-}
-
-static __inline__ void enable_preemption(void) __attribute__ ((unused));
-static __inline__ void enable_preemption(void)
-{
-  __preemption_disabled--;
-}
-
-static __inline__ unsigned int preemption_enabled(void) __attribute__ ((unused));
-static __inline__ unsigned int preemption_enabled(void)
-{
-  return __preemption_disabled == 0;
-}
-
-#endif
-
 #ifdef DEBUG_LOCK_TASK
 #define unlock_task() \
    (ma_unlock_task(), \
@@ -245,8 +256,9 @@ static __inline__ unsigned int preemption_enabled(void)
 
 #ifdef DEBUG_SCHED_LOCK
 #define sched_lock(lwp) \
-   (sched_lock_debug("sched_lock\n"), \
-   ma_sched_lock(lwp))
+   (sched_lock_debug("sched_lock: try\n"), \
+   ma_sched_lock(lwp),                     \
+   sched_lock_debug("sched_lock: success\n"))
 #define sched_unlock(lwp) \
    (sched_lock_debug("sched_unlock\n"), \
    ma_sched_unlock(lwp))

@@ -35,7 +35,7 @@
 
 ###################### CUSTOMIZATION SECTION #####################
 
-MAD_OPTIONS		= # -DMAD_MESSAGE_POLLING  # -DDEBUG
+MAD_OPTIONS		= # -DAPPLICATION_SPAWN # -DMAD_MESSAGE_POLLING  # -DDEBUG
 
 MAD_STANDALONE_CC       = gcc #egcc
 

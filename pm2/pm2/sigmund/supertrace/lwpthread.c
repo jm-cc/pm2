@@ -81,3 +81,27 @@ short int cpu_of_lwp(int lwp)
   }
   return -1;
 }
+
+int number_lwp()
+{
+  int i = 0;
+  lwpthread_list tmp;
+  tmp = lwpthread;
+  while(tmp != LWPTHREAD_LIST_NULL) {
+    i++;
+    tmp = tmp->next;
+  }
+  return i;
+}
+
+int get_next_lwp()
+{
+  lwpthread_list tmp;
+  int lwp;
+  tmp = lwpthread;
+  if (lwpthread == NULL) return -1;
+  lwpthread = lwpthread->next;
+  lwp = tmp->lwp;
+  free(tmp);
+  return lwp;
+}

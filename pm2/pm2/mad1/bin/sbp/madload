@@ -34,16 +34,16 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
 command=$*
 
 set $command
 prog=$1
 
-set `cat ${MADELEINE_ROOT}/.madconf`
+set `cat ${MAD1_ROOT}/.madconf`
 
 rm -rf /tmp/host_sbp_pm2 /tmp/script_sbp_pm2
   

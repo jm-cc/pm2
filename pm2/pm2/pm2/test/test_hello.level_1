@@ -12,20 +12,31 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+compile_leonie()
+{
+        (cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
+}
+
+# Verification et compilation du lanceur leonie
+#leonie --help > /dev/null 2>&1 || compile_leonie
+compile_leonie
+
 # Configuration
 flavor="test_pm2"
 appdir="${PM2_ROOT}/pm2/examples/simple"
 prog="remote_hello"
 args="a b c"
-hosts=${TESTCONFIG:-"`uname -n` `uname -n`"}
+hosts=${TESTCONFIG:-"localhost localhost"}
 
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
-	--modules=\"marcel mad2 ntbx tbx pm2 init\" \
-	--marcel=\"mono\" --marcel=\"marcel_main\" \
-	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
-	--all=\"opt\" --common=\"static\" $_output_redirect
+	--modules=\"marcel mad3 ntbx tbx pm2 init\" \
+	--marcel=\"mono poll\" --marcel=\"marcel_main\" \
+	--mad3=\"tcp\" \
+	--all=\"opt\" --all=\"build_static\" $_output_redirect
+#	--modules=\"marcel mad2 ntbx tbx pm2 init\" \
+#	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 [n1] Hello world!

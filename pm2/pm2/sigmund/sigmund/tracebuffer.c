@@ -11,7 +11,7 @@
 #include "assert.h"
 
 #include "fkt.h"
-
+#include "fut_code.h"
 
 
 #define NB_MAX_PROC  16

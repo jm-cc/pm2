@@ -38,34 +38,67 @@
 
 # pm2 links
 
+echo -n .
 cd ${PM2_ROOT}; 		ln -s marcel/ARCHITECTURES ARCHITECTURES
+echo -n .
 cd ${MADELEINE_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+echo -n .
 cd ${MADELEINE_ROOT}/bin/;	ln -s custom/madload madload
+echo -n .
 cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
+echo -n .
 cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
+echo -n .
 cd ${MADELEINE_ROOT}/bin/via/;	ln -s ../tcp/madload madload
+echo -n .
 cd ${MADELEINE_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
+echo -n .
+cd ${MADELEINE_ROOT}/bin/sisci/;	ln -s ../tcp/madload madload
+echo -n .
+cd ${MADELEINE_ROOT}/bin/sisci/;	ln -s ../tcp/madspawn madspawn
+echo -n .
 cd ${MADELEINE_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+echo -n .
 cd ${MADELEINE_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
+echo -n .
 cd ${MADELEINE_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+echo -n .
 cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-bip
+echo -n .
 cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-lam
+echo -n .
 cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-sgi
+echo -n .
 cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-sp2
+echo -n .
 cd ${MADELEINE_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
+echo -n .
 cd ${MADELEINE_ROOT}/source/;	ln -s ../../source/timing.c timing.c
+echo -n .
 cd ${MADELEINE_ROOT}/source/via/;	ln -s via2.c netinterf.c
+echo -n .
 cd ${MAD2_ROOT}/;	ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+echo -n .
 cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
+echo -n .
 cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
+echo -n .
 cd ${MARCEL_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+echo -n .
 cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
+echo -n .
 cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
+echo -n .
 cd ${MARCEL_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+echo -n .
 cd ${MARCEL_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
+echo -n .
 cd ${MARCEL_ROOT}/source/;	ln -s ../../source/timing.c timing.c
+echo -n .
 cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+echo -n .
 cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+echo -n .
 cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 
 
@@ -106,6 +139,7 @@ cd ${DSM_ROOT}/source/obj/;         pm2_makedirs
 
 # Madeleine default selection
 
+echo .
 pm2madselect 1
 
 

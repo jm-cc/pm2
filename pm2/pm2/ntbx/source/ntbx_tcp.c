@@ -1,9 +1,24 @@
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
 
 /*
- * tbx_tcp.c
- * ---------
+ * Ntbx_tcp.c
+ * ----------
  */
-/* #define DEBUG */
+
+
 #include "tbx.h"
 #include "ntbx.h"
 #include <stdlib.h>
@@ -159,6 +174,28 @@ ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address,
   memcpy(&address->sin_addr.s_addr,
 	 host_entry->h_addr,
 	 (size_t)host_entry->h_length);
+  memset(address->sin_zero, 0, 8);
+  LOG_OUT();
+}
+
+void
+ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t   address, 
+			 ntbx_tcp_port_t        port,
+			 unsigned long         *ip)
+{
+  struct hostent *host_entry;
+
+  LOG_IN();
+  if (!(host_entry = gethostbyaddr((char *)ip,
+				   sizeof(unsigned long), AF_INET)))
+    FAILURE("ERROR: Cannot find host internet address");
+      
+  address->sin_family = AF_INET;
+  address->sin_port   = htons(port);
+  memcpy(&address->sin_addr.s_addr,
+	 host_entry->h_addr,
+	 (size_t)host_entry->h_length);
+  memset(address->sin_zero, 0, 8);
   LOG_OUT();
 }
 
@@ -240,13 +277,15 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
   LOG_IN();
   if (server->state)
     FAILURE("server already initialized");
-
+  
   server->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
   CTRL_ALLOC(server->local_host);
   gethostname(server->local_host, MAXHOSTNAMELEN);
 
   local_host_entry = gethostbyname(server->local_host);
-
+  server->local_host_ip =
+    (unsigned long) *(unsigned long *)(local_host_entry->h_addr);
+  
   {
     char **ptr = local_host_entry->h_aliases;
     
@@ -297,6 +336,8 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
   gethostname(client->local_host, MAXHOSTNAMELEN);
 
   local_host_entry = gethostbyname(client->local_host);
+  client->local_host_ip =
+    (unsigned long) *(unsigned long *)(local_host_entry->h_addr);
 
   {
     char **ptr = local_host_entry->h_aliases;
@@ -403,10 +444,12 @@ ntbx_tcp_server_reset(p_ntbx_server_t server)
 /*...Connection.........................*/
 
 /* Connect a client socket to a server */
+static
 ntbx_status_t
-ntbx_tcp_client_connect(p_ntbx_client_t           client,
-			char                     *server_host_name,
-			p_ntbx_connection_data_t  server_connection_data)
+ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
+			     char                     *server_host_name,
+			     unsigned long            *server_ip,
+			     p_ntbx_connection_data_t  server_connection_data)
 {
   p_ntbx_tcp_client_specific_t client_specific = client->specific;
   struct hostent              *remote_host_entry  = NULL;
@@ -419,7 +462,12 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
   if (client->state != ntbx_client_state_initialized)
     FAILURE("invalid client state");
 
-  ntbx_tcp_address_fill(&server_address, server_port, server_host_name);
+  if (server_ip)
+    ntbx_tcp_address_fill_ip(&server_address, server_port, server_ip);
+  else if (server_host_name)
+    ntbx_tcp_address_fill(&server_address, server_port, server_host_name);
+  else
+    FAILURE("TCP client connect failed");
 
   ntbx_tcp_retry_struct_init(&retry);
 
@@ -475,7 +523,9 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
     }
 
   client->state       = ntbx_client_state_connected;
-  remote_host_entry   = gethostbyname(server_host_name);
+  remote_host_entry   = (server_ip)
+    ? gethostbyaddr((char *)server_ip, sizeof(unsigned long), AF_INET)
+    : gethostbyname(server_host_name);
   client->remote_host = tbx_strdup(remote_host_entry->h_name);  
 
   {
@@ -496,6 +546,25 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
   return ntbx_success;
 }
 
+/* Connect a client socket to a server from its ip (network format) */
+ntbx_status_t
+ntbx_tcp_client_connect_ip(p_ntbx_client_t           client,
+			   unsigned long             server_ip,
+			   p_ntbx_connection_data_t  server_connection_data)
+{
+  return ntbx_tcp_client_connect_body(client, NULL, &server_ip,
+				      server_connection_data);
+}
+
+/* Connect a client socket to a server from its name */
+ntbx_status_t
+ntbx_tcp_client_connect(p_ntbx_client_t           client,
+			char                     *server_host_name,
+			p_ntbx_connection_data_t  server_connection_data)
+{
+  return ntbx_tcp_client_connect_body(client, server_host_name, NULL,
+				      server_connection_data);
+}
 
 /* Accept an incoming client connection request */
 ntbx_status_t

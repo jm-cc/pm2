@@ -781,14 +781,15 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
   mdebug("\t\t\t<Waking thread %p (num %d)>\n",
 	 t, t->number);
 
+  state_lock(t);
+
   if(IS_SLEEPING(t)) {
 
-    // Le cas SLEEPING est un cas particulier : la fonction est
-    // forcément appelée depuis "check_sleeping" qui a déjà acquis le
-    // verrou "__delayed_lock", donc il ne faut pas tenter de
-    // l'acquérir à nouveau...
+    marcel_lock_acquire(&__delayed_lock);
 
     list_del(&t->task_list);
+
+    marcel_lock_release(&__delayed_lock);
 
     one_sleeping_task_less(t);
 
@@ -821,6 +822,8 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
   if(blocked != NULL)
     *blocked = FALSE;
 
+  state_unlock(t);
+
   LOG_OUT();
 }
 
@@ -849,11 +852,20 @@ static __inline__ void do_unchain_from_queue(marcel_t pid, __lwp_t *lwp)
   }
 }
 
-/* Remove from ready queue and insert into waiting queue
-   (if it is BLOCKED) or delayed queue (if it is WAITING). */
+// Extrait la tâche de la file 'ready' et l'insère soit dans la file
+// des tâches bloquées (IS_BLOCKED(t)), dans la file des tâches qui
+// dorment en attente d'alarme (IS_SLEEPING(t)), ou le cas échéant
+// dans aucune file du tout (IS_FROZEN(t)).
+// Dans certaines conditions (FIND_NEXT), la fonction peut abandonner
+// si l'on tente d'extraire idle alors que plus aucune autre tâche
+// n'est prête. Dans ce cas, le flag 'RUNNING' est positionné de
+// nouveau.
+// NB: Cette fonction est _toujours_ appelée alors que le verrou
+// 'state_lock' de la tâche 't' est acquis. Il faut donc veiller à le
+// relâcher avant de retourner !
 marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
 {
-  marcel_t r, cur=marcel_self();
+  marcel_t r, cur = marcel_self();
   DEFINE_CUR_LWP(,= , GET_LWP(cur));
 
   IDLE_LOG_IN();
@@ -872,15 +884,18 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
     /* on s'enlève nous même, on doit se trouver un remplaçant */
     if (find_next == FIND_NEXT) {
       r = radical_next_task(cur, cur_lwp);
+
       if(r == NULL) {
-	/* dans le cas où on est la tache idle et que l'on ne trouve
-         * personne d'autre */
+	// Cas où 't' est la tache idle et que l'on ne trouve personne
+	// d'autre
 	SET_RUNNING(cur);
 	sched_unlock(cur_lwp);
+	state_unlock(cur);
 
 	IDLE_LOG_OUT();
 	return r;
       }
+
       SET_STATE_RUNNING(t, r, cur_lwp);
 #ifdef MA__DEBUG
     } else if (find_next == DO_NOT_REMOVE_MYSELF){
@@ -942,6 +957,8 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
     INIT_LIST_HEAD(&t->task_list);
 
   }
+
+  state_unlock(t);
 
   IDLE_LOG_OUT();
 
@@ -1103,9 +1120,7 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
 {
   marcel_t next;
   register marcel_t cur = marcel_self();
-#ifdef MA__LWPS
   volatile boolean first_time = TRUE;
-#endif
 
   LOG_IN();
 
@@ -1122,16 +1137,17 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
       }
 #endif
     } else {
-      SET_BLOCKED(cur);
+
+      if(first_time)
+	first_time = FALSE;
+      else
+	marcel_lock_acquire(lock);
+
+      marcel_set_blocked(cur);
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
-#ifdef MA__LWPS
-      if(first_time) {
-	first_time = FALSE;
-	
-	marcel_lock_release(lock);
-      }
-#endif
+      marcel_lock_release(lock);
+
       goto_next_task(next);
     }
   } while(*blocked);
@@ -1187,15 +1203,17 @@ void marcel_tempo_give_hand(unsigned long timeout,
       }
     } else {
 
-      if(first_time) {
+      if(first_time)
 	first_time = FALSE;
-	
-	marcel_lock_release(&s->lock);
-      }
+      else
+	marcel_lock_acquire(&s->lock);
 
       cur->time_to_wake = ttw;
-      SET_SLEEPING(cur);
+
+      marcel_set_sleeping(cur);
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
+
+      marcel_lock_release(&s->lock);
 
       goto_next_task(next);
     }
@@ -1226,7 +1244,8 @@ void marcel_delay(unsigned long millisecs)
     } else {
 
       cur->time_to_wake = ttw;
-      SET_SLEEPING(cur);
+
+      marcel_set_sleeping(cur);
       p = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
       goto_next_task(p);
@@ -1292,30 +1311,41 @@ int marcel_check_sleeping(void)
 {
   unsigned long now = marcel_clock();
   int waked_some_task = 0;
-  register struct list_head *pos;
 
   IDLE_LOG_IN();
 
-  if(marcel_lock_tryacquire(&__delayed_lock)) {
+  for(;;) {
 
-    pos=__delayed_tasks.next;
-    while(pos != &__delayed_tasks) {
-      register marcel_t t = list_entry(pos, task_desc, task_list);
-      if (t->time_to_wake > now)
+    if(marcel_lock_tryacquire(&__delayed_lock)) {
+      marcel_t t;
+
+      if(list_empty(&__delayed_tasks)) {
+	marcel_lock_release(&__delayed_lock);
 	break;
-      
+      }
+
+      t = list_entry(__delayed_tasks.next, task_desc, task_list);
+
+      if (t->time_to_wake > now) {
+	marcel_lock_release(&__delayed_lock);
+	break;
+      }
+
+      marcel_lock_release(&__delayed_lock);
+
       mdebug("\t\t\t<Check delayed: waking thread %p (%ld)>\n",
 	     t, t->number);
-      pos=pos->next;
+
       marcel_wake_task(t, NULL);
-      waked_some_task = 1;
+      waked_some_task++;
+
+    } else {
+      mdebug("LWP(%d) failed to acquire __delayed_lock\n",
+	     GET_LWP(marcel_self())->number);
+      break;
     }
 
-    marcel_lock_release(&__delayed_lock);
-
-  } else
-    mdebug("LWP(%d) failed to acquire __delayed_lock\n",
-	   GET_LWP(marcel_self())->number);
+  } // for
 
   IDLE_LOG_OUT();
 
@@ -1399,7 +1429,7 @@ static __inline__ marcel_t idle_find_runnable_task(__lwp_t *lwp)
   // next sera positionné à NULL si aucune autre tâche prête n'est
   // trouvée (et dans ce cas SET_RUNNING(cur) est effectué par
   // unchain_task).
-  SET_FROZEN(cur);
+  marcel_set_frozen(cur);
   next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
 #ifdef MA__MONO
@@ -1416,7 +1446,7 @@ static __inline__ marcel_t idle_find_runnable_task(__lwp_t *lwp)
 #else // Reste le cas "SMP avec plusieurs files"
 
   if(SCHED_DATA(lwp).has_new_tasks) {
-    SET_FROZEN(cur);
+    marcel_set_frozen(cur);
     next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
   } else {
     next = do_work_stealing();
@@ -1467,13 +1497,12 @@ any_t idle_func(any_t arg)
 
   LOG_IN();
 
-  marcel_sig_start_timer(); /* May be redundant for main LWP */
+  marcel_sig_start_timer(); // May be redundant for main LWP
 
-  /* Except at the beginning, lock_task() is supposed to be permanently
-     handled */
+  // From now on, lock_task() is supposed to be permanently handled
   lock_task();
 
-  /* Nécessaire pour les activations, sans effet pour le reste */
+  // Nécessaire pour les activations, sans effet pour le reste
   MA_THR_SETJMP(cur);
   if(!init_done) {
     init_done=1;
@@ -1488,7 +1517,7 @@ any_t idle_func(any_t arg)
     next = idle_body();
     mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d)\n", cur_lwp->number);
 
-    // next peut être NULL avec les activations (une serait prête à
+    // 'next' peut être NULL avec les activations (une serait prête à
     // être réveillée)
     if (next)
       marcel_switch_to(cur, next);
@@ -1526,9 +1555,27 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
   LOG_IN();
 
+  // ATTENTION: la tentation est forte d'initialiser _locked à 1 pour
+  // éviter le 'lock_task' juste après. Erreur: cela ne serait valable
+  // que pour la création du _premier_ lwp car ensuite, cur_lwp !=
+  // lwp...
+  atomic_set(&lwp->_locked, 0);
+
+  if(initial_task) {
+    SCHED_DATA(lwp).first = initial_task;
+    SET_LWP(initial_task, lwp);
+    INIT_LIST_HEAD(&initial_task->task_list);
+    SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
+    /* Désormais, on s'exécute dans le lwp 0 */
+  }
+
+  // A cet endroit, on peut enfin appeler 'lock_task' grâce au SET_LWP
+  // qui précède...
+  lock_task();
+
   lwp_list_lock();
   {
-    if (__nb_lwp >= MA__MAX_LWPS) 
+    if(__nb_lwp >= MA__MAX_LWPS) 
       RAISE("Too many lwp\n");
 
     SET_LWP_NB(__nb_lwp, lwp);
@@ -1537,13 +1584,11 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   lwp_list_unlock();
 
 #ifdef MA__MULTIPLE_RUNNING
-  lwp->prev_running=NULL;
+  lwp->prev_running = NULL;
 #endif
 #ifdef MA__ACTIVATION
-  lwp->upcall_new_task=NULL;
+  lwp->upcall_new_task = NULL;
 #endif
-
-  atomic_set(&lwp->_locked, 0);
 
   lwp->has_to_stop = FALSE;
 
@@ -1552,23 +1597,13 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
 #ifdef MA__ONE_QUEUE
   /* on initialise une seule fois la structure. */
-  if (initial_task) 
+  if(initial_task) 
 #endif
   {
     SCHED_DATA(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
     SCHED_DATA(lwp).running_tasks = 0;
     SCHED_DATA(lwp).has_new_tasks = FALSE;
     SCHED_DATA(lwp).rt_first = NULL;
-
-    if(initial_task) {
-      SCHED_DATA(lwp).first = initial_task;
-      SET_LWP(initial_task, lwp);
-      mdebug("marcel_self : %p, lwp : %i\n", marcel_self(),
-	     GET_LWP(marcel_self())->number);
-      INIT_LIST_HEAD(&initial_task->task_list);
-      SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
-      /* Désormais, on s'exécute dans le lwp 0 */
-    }
   }
 
   /*****************************************/
@@ -1588,7 +1623,6 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
     marcel_attr_setstacksize(&attr, stsize);
   }
 #endif
-  lock_task();
 
   marcel_create(&(lwp->idle_task), &attr, idle_func, NULL);
 
@@ -1602,7 +1636,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
     {
       // En mode 'smp multi-files', on doit retirer _toutes_ les tâches idle
       mdebug("Extracting idle of LWP(%d)\n", lwp->number);
-      SET_FROZEN(lwp->idle_task);
+      marcel_set_frozen(lwp->idle_task);
       UNCHAIN_TASK(lwp->idle_task);
     }
 
@@ -1624,8 +1658,6 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
   /***************************************************/
 
-  unlock_task();
-
 #ifdef MA__ACTIVATION
   /****************************************************/
   /* Création de la tâche pour les upcalls upcall_new */
@@ -1644,16 +1676,15 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
     marcel_attr_setstacksize(&attr, stsize);
   }
 #endif
-  lock_task();
-  /* la fonction ne sera jamais exécutée, c'est juste pour avoir une
-  * structure de thread marcel dans upcall_new
-  * */
+
   sched_unlock(lwp);
   
+  // la fonction ne sera jamais exécutée, c'est juste pour avoir une
+  // structure de thread marcel dans upcall_new
   marcel_create(&lwp->upcall_new_task, &attr, (void*)void_func, NULL);
 
   MTRACE("Upcall_Task", lwp->upcall_new_task);
-  SET_FROZEN(lwp->upcall_new_task);
+  marcel_set_frozen(lwp->upcall_new_task);
   UNCHAIN_TASK(lwp->upcall_new_task);
   SET_LWP(lwp->upcall_new_task, lwp);
 
@@ -1662,9 +1693,8 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   MTRACE("U_T OK", lwp->upcall_new_task);
   /****************************************************/
 
-  unlock_task();
   /* libéré dans marcel_init_sched */
-  if (initial_task)
+  if(initial_task)
     sched_lock(lwp);
 #else // MA__ACTIVATION
   /* libéré dans lwp_startup_func pour SMP ou marcel_init_sched pour
@@ -1677,6 +1707,8 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
     sched_lock(lwp);
 
 #endif /* MA__ACTIVATION */
+
+  unlock_task();
 
   LOG_OUT();
 }

@@ -25,7 +25,7 @@ void marcel_io_init(void);
 
 int marcel_read(int fildes, void *buf, size_t nbytes);
 
-int marcel_write(int fildes, void *buf, size_t nbytes);
+int marcel_write(int fildes, const void *buf, size_t nbytes);
 
 int marcel_select(int nfds, fd_set *rfds, fd_set *wfds);
 
@@ -37,7 +37,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt);
 
 int marcel_read_exactly(int fildes, void *buf, size_t nbytes);
 
-int marcel_write_exactly(int fildes, void *buf, size_t nbytes);
+int marcel_write_exactly(int fildes, const void *buf, size_t nbytes);
 
 int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
 

@@ -188,10 +188,10 @@ void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func)
 void pm2_rawrpc_begin(int module, int num,
 		      pm2_attr_t *pm2_attr)
 {
-#ifdef DEBUG
+#ifdef PM2DEBUG
   if(module == __pm2_self && !mad_can_send_to_self())
     RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
   if(pm2_attr == NULL)
     pm2_attr = &pm2_attr_default;

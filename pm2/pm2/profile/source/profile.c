@@ -77,10 +77,9 @@ void profile_init(void)
     // Initialisation de FUT
 
     fkt_get_mysymbols();
-
-    strcpy(PROF_FILE_USER, "/tmp/prof_file_user_");
-    strcat(PROF_FILE_USER, getenv("USER"));
-
+		
+    profile_set_tracefile("/tmp/prof_file");
+    
     if(fut_setup(PROF_BUFFER_SIZE, FUT_KEYMASKALL, PROF_THREAD_ID()) < 0) {
       perror("fut_setup");
       exit(EXIT_FAILURE);
@@ -95,9 +94,6 @@ void profile_init(void)
 
 #ifdef USE_FKT
     // Initialisation de FKT
-
-    strcpy(PROF_FILE_KERNEL, "/tmp/prof_file_kernel_");
-    strcat(PROF_FILE_KERNEL, getenv("USER"));
 
     if ((fkt_ok=!(fkt_record(PROF_FILE_KERNEL,0,0,0)))) {
 
@@ -140,6 +136,12 @@ void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask)
 void profile_set_tracefile(char *fmt, ...)
 {
   va_list vl;
+  //char *prof_id;
+
+  //prof_id=getenv("PM2_PROFILE_ID");
+  //if (prof_id) {
+    //fprintf(stderr, "Using ID : %s\n", prof_id);
+  //}
 
   va_start(vl, fmt);
   vsprintf(PROF_FILE_USER, fmt, vl);
@@ -149,9 +151,15 @@ void profile_set_tracefile(char *fmt, ...)
   va_end(vl);
   strcat(PROF_FILE_USER, "_user_");
   strcat(PROF_FILE_USER, getenv("USER"));
+  //if (prof_id) {
+  //  strcat(PROF_FILE_USER, prof_id);
+  //}
 #ifdef USE_FKT
   strcat(PROF_FILE_KERNEL, "_kernel_");
   strcat(PROF_FILE_KERNEL, getenv("USER"));
+  //if (prof_id) {
+  //  strcat(PROF_FILE_KERNEL, prof_id);
+  //}
 #endif
 }
 

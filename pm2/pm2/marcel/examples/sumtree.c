@@ -19,13 +19,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define USE_PIPES
+#define AUGMENT_COMPUTING_TIME
+
 typedef struct {
   int inf, sup, res;
+#ifdef USE_PIPES
+  int channel[2];
+#endif
 } job;
+
+int do_pipe(int *array)
+{
+  int r = pipe(array);
+
+  if(r == -1) {
+    perror("pipe");
+    exit(1);
+  }
+
+  return r;
+}
 
 any_t sum(any_t arg)
 {
   job *j = (job *)arg;
+
+#ifdef AUGMENT_COMPUTING_TIME
+  { int j = 100000; while(j--); }
+#endif
 
   if(j->inf == j->sup) {
     j->res = j->inf;
@@ -36,14 +58,30 @@ any_t sum(any_t arg)
     j1.inf = j->inf; j1.sup = (j->inf + j->sup) / 2;
     j2.inf = j1.sup + 1; j2.sup = j->sup;
 
+#ifdef USE_PIPES
+    do_pipe(j1.channel); do_pipe(j2.channel);
+#endif
+
     marcel_create(&pid1, NULL, sum, (any_t)&j1);
     marcel_create(&pid2, NULL, sum, (any_t)&j2);
+
+#ifdef USE_PIPES
+    marcel_read(j1.channel[0], &j1.res, sizeof(j1.res));
+    marcel_read(j2.channel[0], &j2.res, sizeof(j2.res));
+
+    close(j1.channel[0]); close(j1.channel[1]);
+    close(j2.channel[0]); close(j2.channel[1]);
+#endif
 
     marcel_join(pid1, NULL);
     marcel_join(pid2, NULL);
 
     j->res = j1.res + j2.res;
   }
+
+#ifdef USE_PIPES
+  marcel_write(j->channel[1], &j->res, sizeof(j->res));
+#endif
 
   return NULL;
 }
@@ -67,8 +105,16 @@ int marcel_main(int argc, char **argv)
    j.inf = 1;
    j.sup = atoi(argv[1]);
 
+#ifdef USE_PIPES
+   do_pipe(j.channel);
+#endif
+
    TBX_GET_TICK(t1);
    marcel_create(&pid, NULL, sum, (any_t)&j);
+#ifdef USE_PIPES
+   marcel_read(j.channel[0], &j.res, sizeof(j.res));
+   close(j.channel[0]); close(j.channel[1]);
+#endif
    marcel_join(pid, NULL);
    TBX_GET_TICK(t2);
 

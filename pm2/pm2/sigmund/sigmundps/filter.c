@@ -562,14 +562,21 @@ int is_valid(trace *tr)
 	  }
 	}
       }
+    } else if (tr->code >> 8 == FKT_NEW_LWP_CODE) {
+      if ((is_in_proc_list(tr->pid) == TRUE) && \
+	  (is_in_cpu_list(tr->cpu) == TRUE) && \
+	  (is_in_logic_list(tr->args[1])))
+	filter_add_lwp(tr->pid, tr->args[1], tr->args[0], TRUE, tr->cpu);
+      else filter_add_lwp(tr->pid, tr->args[1], tr->args[0], FALSE, tr->cpu);
     }
-  } else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) {
+  }
+  else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) {
     /* FUT_SWITCH_TO: update active_thread and active_thread_fun
      */
     if (is_active_lwp_of_thread(tr->thread) == TRUE) {
       if (is_in_thread_list(tr->thread) == TRUE) {
 	options.active_thread--;
-	//       	set_thread_disactivated(tr->thread, TRUE);
+  	//       	set_thread_disactivated(tr->thread, TRUE);
 	if (is_in_thread_fun_list(tr->thread) == TRUE)
 	  options.active_thread_fun--;
       }
@@ -580,16 +587,17 @@ int is_valid(trace *tr)
       }
     }
     change_lwp_thread(tr->thread, tr->args[1]);
-  } else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
-    /* FUT_NEW_LWP: adds to lwpthread with activity corresponding to its
-       being traced or not
-     */
-    if ((is_in_proc_list(tr->args[0]) == TRUE) && \
-	(is_in_cpu_list(tr->cpu) == TRUE) && \
-	(is_in_logic_list(tr->args[1])))
-      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
-    else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);
-  } else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
+  } 
+  //else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
+  //    /* FUT_NEW_LWP: adds to lwpthread with activity corresponding to its
+  //       being traced or not
+  //     */
+  //    if ((is_in_proc_list(tr->args[0]) == TRUE) && \
+//	(is_in_cpu_list(tr->cpu) == TRUE) && \
+//	(is_in_logic_list(tr->args[1])))
+  //      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
+  //  else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);
+  /* { */ else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
     /* THREAD_BIRTH: adds this thread in graphlib and disactivate it*/
     set_thread_disactivated(tr->args[0], TRUE);
   }

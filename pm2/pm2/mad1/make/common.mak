@@ -54,6 +54,10 @@ MAD_STANDALONE_OPTIONS	=	-Wall -O6 # -DMAD_TIMING -DUSE_SAFE_MALLOC
 
 ################### END OF CUSTOMIZATION SECTION #################
 
+ifndef MADELEINE_ROOT
+MADELEINE_ROOT	=	$(PM2_ROOT)/mad1
+endif
+
 ifndef PM2_ARCH
 PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
 PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)

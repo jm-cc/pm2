@@ -34,20 +34,12 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+
 # $1 = host name
+# $2 = 'pm2' or 'mad2'
 
 hostname=$1
-set `pm2-config --modules`
-
-mod='pm2'
-
-for i
-do
-    case $i in
-      pm2) mod='pm2'; break;;
-      mad2) mod='mad2'; break;; 
-    esac
-done
+mod=$2
 
 for file in /tmp/${USER}-${mod}log-* ; do
 	if [ -f $file ] ; then

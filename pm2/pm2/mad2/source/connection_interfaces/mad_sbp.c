@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.8  2000/02/28 11:46:07  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.7  2000/02/08 17:49:48  oaumage
 - support de la net toolbox
 - mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
@@ -69,7 +72,7 @@ ______________________________________________________________________________
 /* #define DEBUG */
 
 /*#define SOFTWARE_FLOW_CONTROL*/
-#include <madeleine.h>
+#include "madeleine.h"
 
 #include <stdlib.h>
 #include <stdio.h>

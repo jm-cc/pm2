@@ -3,6 +3,7 @@
 #include "tracelib.h"
 #include "temp.h"
 #include "fkt.h"
+#include "fut_code.h"
 
 char *fut_code2name(int code)
 {

@@ -454,7 +454,7 @@ CMD="$1"
 case "$CMD" in
 version|modules|options|help)
     shift
-    eval do_$CMD '"$@"'
+    eval do_$CMD '${@:+"$@"}'
     ;;
 -h|--help)
     do_help
@@ -463,7 +463,7 @@ module=*|option=*)
     optname=`echo $1 | sed -e 's/^\([^=]*\)=.*$/\1/'`
     optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
     shift
-    eval do_$optname '"$optarg"' '"$@"'
+    eval do_$optname '"$optarg"' '${@:+"$@"}'
     ;;
 *)
     usage 1 "$CMD"

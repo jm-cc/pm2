@@ -274,7 +274,7 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 		marcel_setspecific(_pm2_block_key, (any_t)&_arg->sd); \
 		marcel_setspecific(_pm2_isomalloc_nego_key, (any_t) 0);\
 		block_init_list(&_arg->sd); \
-		marcel_cleanup_push(_pm2_term_func, marcel_self()); \
+		marcel_postexit(_pm2_term_func, marcel_self()); \
 	} \
 	if(_arg->tid == pm2_self() && _pm2_optimize[name]) { \
 		if(_quick) {\
@@ -301,7 +301,7 @@ _PRIVATE_ void _end_service(rpc_args *args, any_t res, int local);
 				marcel_self()->not_migratable = _arg->not_migratable; \
 		} else { \
 			marcel_disablemigration(marcel_self()); \
-			marcel_getuserspace(marcel_self(), (void **)&args); \
+			marcel_getuserspace(marcel_self(), (void *)&args); \
 		} \
 		_end_service(args, &res, _local); \
 		} else if(_local && _quick) \

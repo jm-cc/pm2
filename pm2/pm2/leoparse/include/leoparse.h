@@ -31,7 +31,7 @@
 #endif __GNUC__
 
 #include "pm2_common.h"
-#include "pm2debug.h"
+#include "tbx_debug.h"
 #include "tbx.h"
 
 /* Leoparse: data structures */

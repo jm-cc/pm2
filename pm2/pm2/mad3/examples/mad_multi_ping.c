@@ -221,7 +221,7 @@ process_results(p_mad_channel_t     channel,
 	    results->bandwidth_mbit,
 	    results->bandwidth_mbyte);
 	}
-      
+
     }
   else if (results)
     {
@@ -319,9 +319,9 @@ ping(p_mad_channel_t      channel,
 		  TBX_GET_TICK(t1);
 		  if (param_control_receive)
 		    {
-		      mark_buffer(_length);	      
+		      mark_buffer(_length);
 		    }
-		  
+
 		  while (nb_tests--)
 		    {
 		      p_mad_connection_t  out = NULL;
@@ -345,9 +345,9 @@ ping(p_mad_channel_t      channel,
 
 		  if (param_control_receive)
 		    {
-		      clear_buffer();	      
+		      clear_buffer();
 		    }
-		  
+
 
 		  if (param_control_receive)
 		    {
@@ -386,9 +386,9 @@ ping(p_mad_channel_t      channel,
 			{
 			  if (param_control_receive)
 			    {
-			      mark_buffer(_length);	      
+			      mark_buffer(_length);
 			    }
-			  
+
 			  {
 			    p_mad_connection_t  out = NULL;
 			    void               *ptr = main_buffer;
@@ -437,7 +437,7 @@ ping(p_mad_channel_t      channel,
 			  }
 			  if (param_control_receive)
 			    {
-			      control_buffer(_length);	      
+			      control_buffer(_length);
 			    }
 			}
 		      TBX_GET_TICK(t2);
@@ -531,7 +531,7 @@ pong(p_mad_channel_t      channel,
 		  if (param_control_receive)
 		    {
 		      p_mad_connection_t out = NULL;
-		      
+
 		      out = mad_begin_packing(channel, lrank_dst);
 		      mad_pack(out, main_buffer, _length,
 			       param_send_mode, param_receive_mode);
@@ -541,7 +541,7 @@ pong(p_mad_channel_t      channel,
 		    {
 		      p_mad_connection_t out   = NULL;
 		      int                dummy =    0;
-		      
+
 		      out = mad_begin_packing(channel, lrank_dst);
 		      mad_pack(out, &dummy, sizeof(dummy),
 			       param_send_mode, param_receive_mode);

@@ -43,10 +43,17 @@ case $1 in
     *) command=`pwd`/$*
 esac
 
-lamboot $MAD1_ROOT/.madconf
-
 set `cat $MAD1_ROOT/.madconf`
 nb_hosts=$#
+
+tmpfile=/tmp/$user-lamhosts
+while [ -f $tmpfile ]; do
+    tmpfile="${tmpfile}-bis"
+done
+
+echo $* | sort | uniq > $tmpfile
+
+lamboot $tmpfile
 
 set $command
 prog=$1
@@ -54,5 +61,6 @@ shift
 
 mpirun -f -w -nger -c2c -c $nb_hosts $prog -- $*
 
-wipe $MAD1_ROOT/.madconf
+wipe $tmpfile
+rm -f $tmpfile
 

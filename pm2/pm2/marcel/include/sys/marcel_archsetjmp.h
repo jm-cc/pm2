@@ -17,19 +17,7 @@
 #ifndef ARCHSETJMP_EST_DEF
 #define ARCHSETJMP_EST_DEF
 
-#if defined(ALPHA_ARCH)
-
-typedef long jmp_buf[32];
-
-extern void longjmp(jmp_buf buf, int val);
-extern int setjmp(jmp_buf buf);
-
-#else
-
 #include <setjmp.h>
-
-#endif
-
 
 #if defined(RS6K_ARCH)
 

@@ -36,7 +36,11 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #endif
 
 #section marcel_macros
+#ifdef MA_HAVE_COMPAREEXCHANGE
+#define MA_ATOMIC_INIT(i)	{ (i) }
+#else
 #define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
+#endif
 
 /**
  * ma_atomic_read - read atomic variable

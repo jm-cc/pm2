@@ -377,16 +377,46 @@ ravel% xrdb -merge < ${HOME}/.Xdefaults
 \end{shell}
 \end{warning}
 
-The user should be aware that \|gdb| is \emph{not} aware of the Marcel
-threads, so that one cannot rely upon the value of the local variables
-of the threads in general. Only the values of the global variables are
-certified. Therefore, you may wish to equip your program with
-additional debugging code to spy into static, global variables the
-contents of dynamic, local variables.
+The user should be aware that \|gdb| itself is \emph{not} aware
+of Marcel threads: \texttt{info threads} will only show LWPs,
+\texttt{thread <num>} will only let switch between LWPs, and
+\texttt{backtrace} will only show the backtrace of the \emph{current}
+Marcel thread running in the chosen LWPs.
 
-\begin{note}
-  LB to RN: Is the paragraph above correct?
-\end{note}
+However, if the program was compiled with the gdb option, one may
+switch to sleeping threads' context thanks PM2-provided functions
+\footnote{yet implemented on X86 only}:
+
+\begin{verbatim}
+(gdb) r
+Program received signal SIGINT, Interrupt.
+[Switching to Thread 16386 (LWP 25769)]
+0x4013c3e7 in sched_yield () from /lib/libc.so.6
+(gdb) bt
+#0  0x4013c3e7 in sched_yield () from /lib/libc.so.6
+#1  0x0804dc6d in idle_func (arg=0x0) at marcel_archdep.h:41
+#2  0x0804973a in marcel_create (pid=0x0, attr=0x3ffe0000, func=0, arg=0x0)
+    at marcel_sched.h:35
+(gdb) set-ctx  __main_thread
+switching to __main_thread(0xbffefc40)
+(gdb) bt
+#0  0x0804d5d8 in marcel_give_hand (blocked=0xbffefb6c)
+    at source/marcel_sched.c:1173
+#1  0x0804ef40 in marcel_sem_P (s=0xbffefb6c) at source/marcel_sem.c:47
+#2  0x08049049 in marcel_main (argc=1, argv=0xbfffcb94) at sumtime.c:75
+#3  0x08049dc1 in main (argc=1, argv=0xbfffcb94) at source/marcel.c:1276
+(gdb)
+\end{verbatim}
+
+One can then use usual functions like \texttt{frame}, \texttt{print},
+etc. to inspect the sleeping thread.
+
+The user should be aware that although \texttt{set-ctx} achieves a
+context switch so as to get correct \texttt{PC} and \texttt{SP},
+\texttt{continue}-like commands automatically switch back to the
+current running thread\footnote{In theory, the PM2 process should
+then continue properly, but it seems gdb does not yet let this work
+correctly}.
 
 The user should be aware that some of the names of PM2 routine are in
 fact on-line definitions in internal header files. Thus, one has to

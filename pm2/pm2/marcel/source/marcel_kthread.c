@@ -30,6 +30,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <linux/sched.h>
 #include <linux/unistd.h>
 
 #define __STACK_SIZE  (1024 * 1024)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.37  2000/09/13 00:07:20  rnamyst
+Support for profiling + minor bug fixes
+
 Revision 1.36  2000/07/04 14:01:12  gantoniu
 Added support for DSM located stacks.
 
@@ -568,6 +571,8 @@ marcel_t marcel_radical_next_task(void)
 
   SET_CUR_LWP(GET_LWP(cur));
 
+  LOG_IN();
+
   sched_lock(cur_lwp);
 
 #ifdef MA__ACTIVATION
@@ -605,6 +610,7 @@ marcel_t marcel_radical_next_task(void)
 
   sched_unlock(cur_lwp);
 
+  LOG_OUT();
   return t;
 }
 
@@ -626,6 +632,8 @@ void marcel_insert_task(marcel_t t)
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(marcel_self()));
 #endif
+
+  LOG_IN();
 
   MTRACE("INSERT", t);
 #ifndef MA__ONE_QUEUE
@@ -712,6 +720,8 @@ void marcel_insert_task(marcel_t t)
   else
     self_lwp->has_new_tasks = FALSE;
 #endif
+
+  LOG_OUT();
 }
 
 // Réveille la tâche t. Selon son état (sleeping, blocked, frozen), la
@@ -723,6 +733,8 @@ void marcel_insert_task(marcel_t t)
 void marcel_wake_task(marcel_t t, boolean *blocked)
 {
   register marcel_t p;
+
+  LOG_IN();
 
   mdebug("\t\t\t<Waking thread %p (num %d)>\n",
 	 t, t->number);
@@ -775,6 +787,8 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
 
   if(blocked != NULL)
     *blocked = FALSE;
+
+  LOG_OUT();
 }
 
 /* Remove from ready queue and insert into waiting queue
@@ -784,6 +798,8 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
   marcel_t p, r, cur=marcel_self();
   DEFINE_CUR_LWP( , , );
   SET_CUR_LWP(GET_LWP(cur));
+
+  LOG_IN();
 
   sched_lock(cur_lwp);
 
@@ -802,6 +818,8 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
 	/* dans le cas où on est la tache de poll et que l'on ne
          * trouve personne d'autre */
 	sched_unlock(cur_lwp);
+
+	LOG_OUT();
 	return r;
       }
       SET_STATE_RUNNING(t, r, cur_lwp);
@@ -889,12 +907,16 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
 
   }
 
+  LOG_OUT();
+
   return r;
 }
 
 static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
 {
   register marcel_t res;
+
+  LOG_IN();
 
   sched_lock(lwp);
 
@@ -929,6 +951,8 @@ static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
   SET_STATE_RUNNING(t, res, lwp);
   sched_unlock(lwp);
 
+  LOG_OUT();
+
   return res;
 }
 
@@ -939,25 +963,35 @@ void ma__marcel_yield(void)
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
 
+  LOG_IN();
+
   lock_task();
 
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
     MA_THR_RESTARTED(cur, "Preemption");
     unlock_task();
+
+    LOG_OUT();
     return;
   }
   next=next_task_to_run(cur, cur_lwp);
   can_goto_next_task(cur, next);
   MA_THR_RESTARTED(cur, "");
   unlock_task();
+
+  LOG_OUT();
 }
 
 void marcel_yield(void)
 {
+  LOG_IN();
+
   lock_task();
   marcel_check_polling(MARCEL_POLL_AT_YIELD);
   unlock_task();
   ma__marcel_yield();
+
+  LOG_OUT();
 }
 
 //TODO : is it correct for marcel-smp ?
@@ -965,12 +999,16 @@ int ma__marcel_explicityield(marcel_t t)
 {
   register marcel_t cur = marcel_self();
 
+  LOG_IN();
+
   lock_task();
 
 #ifdef MA__MULTIPLE_RUNNING
   sched_lock(GET_LWP(cur));
   if (CANNOT_RUN(t)) {
     sched_unlock(GET_LWP(cur));
+
+    LOG_OUT();
     return 0;
   }  
   SET_STATE_RUNNING(cur, t, GET_LWP(cur));
@@ -981,18 +1019,25 @@ int ma__marcel_explicityield(marcel_t t)
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
     MA_THR_RESTARTED(cur, "Preemption");
     unlock_task();
+
+    LOG_OUT();
     return 1;
   }
   goto_next_task(t);
+
   return 1; /* for gcc */
 }
 
 int marcel_explicityield(marcel_t t)
 {
+  LOG_IN();
+
   lock_task();
   marcel_check_polling(MARCEL_POLL_AT_YIELD);
   unlock_task();  
   return ma__marcel_explicityield(t);
+
+  LOG_OUT();
 }
 
 void ma__marcel_trueyield(void)
@@ -1000,11 +1045,15 @@ void ma__marcel_trueyield(void)
   marcel_t next;
   register marcel_t cur = marcel_self();
 
+  LOG_IN();
+
   lock_task();
 
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
     MA_THR_RESTARTED(cur, "Preemption");
     unlock_task();
+
+    LOG_OUT();
     return;
   }
 
@@ -1014,10 +1063,14 @@ void ma__marcel_trueyield(void)
 
 void marcel_trueyield(void)
 {
+  LOG_IN();
+
   lock_task();
   marcel_check_polling(MARCEL_POLL_AT_YIELD);
   unlock_task();  
   ma__marcel_trueyield();
+
+  LOG_OUT();
 }
 
 void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
@@ -1027,6 +1080,8 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
 #ifdef MA__LWPS
   volatile boolean first_time = TRUE;
 #endif
+
+  LOG_IN();
 
   if(locked() != 1)
     RAISE(LOCK_TASK_ERROR);
@@ -1054,6 +1109,8 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
     }
   } while(*blocked);
   unlock_task();
+
+  LOG_OUT();
 }
 
 void marcel_tempo_give_hand(unsigned long timeout,

@@ -1,6 +1,6 @@
 #include "pm2.h"
 
-char hostname[MAXHOSTNAMELEN];
+char hostname[128];
 
 void
 service (void *arg)
@@ -38,7 +38,7 @@ service (void *arg)
 int
 pm2_main (int argc, char *argv[])
 {
-  gethostname (hostname, MAXHOSTNAMELEN);
+  gethostname (hostname, 128);
   pm2_init (&argc, argv);
   if (pm2_self () == 0)
     {				/* master process */

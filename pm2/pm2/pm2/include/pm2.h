@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.15  2000/02/01 17:17:49  rnamyst
+Modified to include pm2_mad.h
+
 Revision 1.14  2000/01/31 15:49:38  oaumage
 - ajout du Log CVS
 
@@ -46,7 +49,7 @@ ______________________________________________________________________________
 
 #include <marcel.h>
 #include <safe_malloc.h>
-#include <madeleine.h>
+#include <pm2_mad.h>
 #include <pm2_types.h>
 #include <pm2_attr.h>
 #include <pm2_thread.h>

@@ -144,7 +144,7 @@ int pm2_main(int argc, char **argv)
       pm2_completion_wait(&c);
       TBX_GET_TICK(t2);
       temps = TBX_TIMING_DELAY(t1, t2);
-      printf("ping %d: round trip time = %ld.%03ldms\n",
+      fprintf(stderr, "ping %d: round trip time = %ld.%03ldms\n",
 	     i, temps/1000, temps%1000);
     }
 

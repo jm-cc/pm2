@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.13  2000/03/27 08:50:51  oaumage
+- pre-support decoupage de groupes
+- correction au niveau du support du demarrage manuel
+
 Revision 1.12  2000/03/08 17:19:12  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -178,13 +182,15 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	  p_mad_link_t   in_link  = &(in->link[link_id]);
 	  p_mad_link_t   out_link = &(out->link[link_id]);
 	  
-	  in_link->connection = in;
-	  in_link->id         = link_id;
-	  in_link->specific   = NULL;
+	  in_link->connection            = in;
+	  in_link->id                    = link_id;
+	  in_link->prefered_group_length = 0;
+	  in_link->specific              = NULL;
 
-	  out_link->connection = out;
-	  out_link->id         = link_id;
-	  out_link->specific   = NULL;
+	  out_link->connection            = out;
+	  out_link->id                    = link_id;
+	  out_link->prefered_group_length = 0;
+	  out_link->specific              = NULL;
 
 	  if (interface->link_init)
 	    {

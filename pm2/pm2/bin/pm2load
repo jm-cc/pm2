@@ -62,6 +62,71 @@ log()
     fi
 }
 
+mad3()
+{
+    PM2_PROG_NAME=$1
+    export PM2_PROG_NAME
+    shift
+    prog_args="$@"
+    echo "Args: $prog_args"
+
+    set -- --protocols
+    protocol=`. ${PM2_ROOT}/bin/pm2-config`
+    echo "Protocol: $protocol"
+
+    # Récupération du chemin d'accès au fichier de config des machines
+    set --  --source-mode
+    . ${PM2_ROOT}/bin/pm2-conf-file
+
+    [ -f $PM2_CONF_FILE ] || _pm2load_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
+    echo "PM2 config file: ${PM2_CONF_FILE}"
+
+    PM2_LEONIE_FILE="${PM2_CONF_FILE}.cfg"
+    echo "Leonie config file: ${PM2_LEONIE_FILE}"
+
+    PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
+
+    host_list=`cat ${PM2_CONF_FILE}`
+    set ${PM2_LEONIE_NETWORK_FILE} $protocol $host_list
+    network_name=`. leo-network`
+
+    new_list=""
+
+    for i in $host_list
+    do
+	[ -z "$new_list" ] && new_list="${i}[0]" && continue
+	k='0'
+	for j in $new_list 
+	do
+	    [ $j != "${i}[${k}]" ] && continue
+	    k=`expr $k + 1`
+	done
+
+	new_list="$new_list ${i}[${k}]"
+    done
+
+    tmp_list=`echo $new_list|tr ' ' ','`
+    echo "Host list: " $tmp_list
+
+    [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
+    echo "application: {"                      >  $PM2_LEONIE_FILE
+    echo "    networks: {"                     >> $PM2_LEONIE_FILE
+    echo "        channels: {"                 >> $PM2_LEONIE_FILE
+    echo "            name : pm2;"             >> $PM2_LEONIE_FILE
+    echo "            net  : ${network_name};" >> $PM2_LEONIE_FILE
+    echo "            hosts: (${tmp_list});"   >> $PM2_LEONIE_FILE
+    echo "        };"                          >> $PM2_LEONIE_FILE
+    echo "    };"                              >> $PM2_LEONIE_FILE
+    echo "};"                                  >> $PM2_LEONIE_FILE
+
+    pm2load_args=""
+    [ "$PM2_DEBUG" = "on" ] && pm2load_args="${pm2load_args} -d"
+
+    ${PM2_ROOT}/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE $prog_args
+
+    exit $?
+}
+
 # Programme principal
 log "Running $*"
 
@@ -123,6 +188,21 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$*" ] || _pm2load_usage 1
+
+# Mad3 special case
+args="$@"
+echo "Testing communication library"
+set -- --modules
+case `. ${PM2_ROOT}/bin/pm2-config` in
+    *mad3*)
+	# Mad III mode
+	echo "Mad III selected"
+	mad3 $args
+	exit $?
+	;;
+    *)  set $args
+	;;
+esac
 
 # Initialisation des arguments passés à pm2-pre-script.sh
 _prescript_args=""

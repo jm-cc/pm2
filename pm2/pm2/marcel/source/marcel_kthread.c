@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-#include "sys/marcel_kthread.h"
+#include "marcel.h"
 
 #ifdef MA__SMP
 
@@ -29,39 +29,64 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <linux/unistd.h>
 
 #define __STACK_SIZE  (1024 * 1024)
 
+#ifdef __NR_gettid
+_syscall0(pid_t,gettid)
+#endif
+
 // WARNING: stack is never freed. That's not a problem since kernel
 // threads only terminate at the end of the program, but...
-void marcel_kthread_create(marcel_kthread_t *pid,
+void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   marcel_kthread_func_t func, void *arg)
 {
   void *stack;
 
+  LOG_IN();
   //stack = mmap(NULL, __STACK_SIZE, PROT_READ | PROT_WRITE,
   //	       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS | MAP_GROWSDOWN,
   //	       -1, 0);
-  stack = malloc(__STACK_SIZE);
+  if (!sp) {
+	  stack = malloc(__STACK_SIZE);
+	  sp = stack + __STACK_SIZE;
+	  mdebug("Allocating stack for kthread at %p\n", stack);
+  }
+  sp -= 64;
+  mdebug("Stack for kthread set at %p\n", sp);
 
-  *pid = clone((int (*)(void *))func, (stack + __STACK_SIZE - 64),
+  *pid = clone((int (*)(void *))func, 
+	       sp,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	       CLONE_THREAD | CLONE_PARENT |
 	       SIGCHLD, arg);
+  LOG_OUT();
 }
 
 void marcel_kthread_join(marcel_kthread_t pid)
 {
-  waitpid(pid, NULL, 0);
+	LOG_IN();
+	waitpid(pid, NULL, 0);
+	LOG_OUT();
 }
 
 void marcel_kthread_exit(void *retval)
 {
-  _exit((int)retval);
+	LOG_IN();
+	_exit((int)retval);
+	LOG_OUT();
 }
 
 marcel_kthread_t marcel_kthread_self(void)
 {
-  return getpid();
+  pid_t pid;
+#ifdef __NR_gettid
+/* 2.6 kernels and above have tids */
+  if ((pid=gettid())==-1 && errno==ENOSYS)
+#endif
+    pid=getpid();
+  return pid;
 }
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
@@ -71,7 +96,9 @@ void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
-  kill(pid, sig);
+	LOG_IN();
+	kill(pid, sig);
+	LOG_OUT();	
 }
 
 #else
@@ -84,44 +111,56 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 
 #include <errno.h>
 
-void marcel_kthread_create(marcel_kthread_t *pid,
+void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   marcel_kthread_func_t func, void *arg)
 {
-  pthread_attr_t attr;
+	pthread_attr_t attr;
 
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-  pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
-  pthread_create(pid, &attr, func, arg);
+	LOG_IN();
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
+	pthread_attr_setstackaddr (&attr, sp);
+	pthread_create(pid, &attr, func, arg);
+	LOG_OUT();
 }
 
 void marcel_kthread_join(marcel_kthread_t pid)
 {
-  int cc;
+	int cc;
+	LOG_IN();
 
-  do {
-    cc = pthread_join(pid, NULL);
-  } while(cc == -1 && errno == EINTR);
+	do {
+		cc = pthread_join(pid, NULL);
+	} while(cc == -1 && errno == EINTR);
+	LOG_OUT();
+
 }
 
 void marcel_kthread_exit(void *retval)
 {
-  pthread_exit(retval);
+	LOG_IN();
+	pthread_exit(retval);
+	LOG_OUT();
 }
 
 marcel_kthread_t marcel_kthread_self(void)
 {
-  return pthread_self();
+	return pthread_self();
 }
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 {
-  pthread_sigmask(how, newmask, oldmask);
+	LOG_IN();
+	pthread_sigmask(how, newmask, oldmask);
+	LOG_OUT();
 }
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
-  pthread_kill(pid, sig);
+	LOG_IN();
+	pthread_kill(pid, sig);
+	LOG_OUT();
 }
 
 #endif

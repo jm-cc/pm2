@@ -1,14 +1,10 @@
 ifndef PM2_FLAVOR
-$(error PM2_FLAVOR is not defined!)
+$(error PM2_FLAVOR is not yet defined!)
 endif
 
 CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
-
-ifeq ($(OSTYPE),linux-gnu)
-CFLAGS		+= -DMAXHOSTNAMELEN=64
-endif
 
 .PHONY: clean indent
 

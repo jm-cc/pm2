@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.h,v $
+Revision 1.3  2000/05/16 09:05:19  rnamyst
+Fast Polling added into Marcel + make xconfig
+
 Revision 1.2  2000/04/11 09:07:12  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -62,8 +65,12 @@ typedef void *(*marcel_poll_func_t)(marcel_pollid_t id,
 				    unsigned sleeping,
 				    unsigned blocked);
 
+typedef void *(*marcel_fastpoll_func_t)(marcel_pollid_t id,
+					any_t arg);
+
 marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
 				     marcel_poll_func_t f,
+				     marcel_fastpoll_func_t h,
 				     int divisor);
 
 #define MARCEL_POLL_FAILED                NULL
@@ -87,8 +94,10 @@ _PRIVATE_ int marcel_polling_is_required(void);
 _PRIVATE_ typedef struct _poll_struct {
   marcel_pollgroup_func_t gfunc;
   marcel_poll_func_t func;
+  marcel_fastpoll_func_t fastfunc;
   unsigned divisor, count;
   struct _poll_cell_struct *first_cell, *cur_cell;
+  unsigned nb_cells;
   struct _poll_struct *prev, *next;
 } poll_struct_t;
 

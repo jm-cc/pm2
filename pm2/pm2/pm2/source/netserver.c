@@ -289,6 +289,15 @@ static void netserver_async_lrpc()
 #endif
 }
 
+static void netserver_raw_rpc()
+{
+  int num;
+
+  mad_unpack_int(MAD_IN_HEADER, &num, 1);
+
+  (*_pm2_rpc_funcs[num])(NULL);
+}
+
 static void netserver_quick_lrpc()
 {
   rpc_args args;
@@ -364,6 +373,10 @@ static any_t netserver(any_t arg)
 #endif
     mad_unpack_int(MAD_IN_HEADER, &tag, 1);
     switch(tag) {
+    case NETSERVER_RAW_RPC : {
+      netserver_raw_rpc();
+      break;
+    }
     case NETSERVER_LRPC : {
       netserver_lrpc();
       break;

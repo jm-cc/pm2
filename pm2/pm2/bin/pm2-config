@@ -50,6 +50,7 @@ if [ -z "$MODULES" ]; then
 fi
 
 DIRTY_ORDERED_MODULES="profile pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
+DIRTY_ORDERED_LIBS="pm2 dsm mad marcel tbx ntbx profile pm2debug"
 
 ##########################################################################
 # aide
@@ -265,7 +266,7 @@ case "$PM2_BUILD" in
     /*)
 	;;
     *)
-	eval PM2_BUILD="$HOME/build/$PM2_BUILD"
+	eval PM2_BUILD="${PM2_BUILD_DIR:-$HOME/build}/$PM2_BUILD"
 esac
 
 
@@ -441,7 +442,7 @@ done
 
 libs_pm2_ordered=
 #ordering pm2libs hardcoded :-(
-for l in pm2 dsm mad marcel tbx ntbx profile pm2debug ; do
+for l in $DIRTY_ORDERED_LIBS ; do
     case " $libs_pm2 " in
     *\ $l\ *)
 	libs_pm2_ordered="$libs_pm2_ordered -l${l}$PM2_EXT"

@@ -81,6 +81,15 @@ static mad_madeleine_t main_madeleine;
  * Functions
  * ---------------
  */
+p_mad_madeleine_t
+mad_get_madeleine(void)
+{
+  LOG_IN();
+  LOG_OUT();
+  
+  return &main_madeleine;
+}
+
 int
 mad_protocol_available(p_mad_madeleine_t madeleine, char *name)
 {

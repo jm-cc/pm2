@@ -5,6 +5,8 @@
 #include "module.h"
 #include "flavor.h"
 #include "intro.h"
+#include "statusbar.h"
+#include "menu.h"
 
 gint destroy_phase = FALSE;
 
@@ -14,6 +16,7 @@ gint skip_intro = FALSE;
 gint with_sound = FALSE;
 static gint show_help = FALSE;
 
+GtkWidget *main_window;
 GtkTooltips *the_tooltip = NULL;
 
 static gint delete_event(GtkWidget *widget,
@@ -76,9 +79,9 @@ static void do_show_help(char *cmd)
 
 int main(int argc, char *argv[])
 {
-  GtkWidget *window;
   GtkWidget *main_vbox;
-  GtkWidget *sep;
+  GtkWidget *bottom_frame;
+  GtkWidget *bottom_hbox;
   GtkWidget *top_paned;
   GtkWidget *left_vbox, *right_vbox;
 
@@ -93,27 +96,29 @@ int main(int argc, char *argv[])
 
   intro_init();
 
-  window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
-  gtk_window_set_title (GTK_WINDOW (window), "EZFLAVOR v0.9");
+  gtk_window_set_title (GTK_WINDOW (main_window), "EZFLAVOR v0.9");
 
-  gtk_signal_connect(GTK_OBJECT(window), "delete_event",
+  gtk_signal_connect(GTK_OBJECT(main_window), "delete_event",
 		     GTK_SIGNAL_FUNC(delete_event), NULL);
 
-  gtk_signal_connect(GTK_OBJECT(window), "destroy",
+  gtk_signal_connect(GTK_OBJECT(main_window), "destroy",
 		     GTK_SIGNAL_FUNC(destroy), NULL);
 
-  gtk_container_set_border_width(GTK_CONTAINER(window), 10);
+  gtk_container_set_border_width(GTK_CONTAINER(main_window), 0);
 
   main_vbox = gtk_vbox_new(FALSE, 1);
   gtk_container_border_width(GTK_CONTAINER(main_vbox), 1);
-  gtk_container_add(GTK_CONTAINER(window), main_vbox);
+  gtk_container_add(GTK_CONTAINER(main_window), main_vbox);
   gtk_widget_show(main_vbox);
+
+  menu_init(main_vbox);
 
   top_paned = gtk_hpaned_new();
   gtk_widget_show(top_paned);
   gtk_container_set_border_width(GTK_CONTAINER(top_paned), 10);
-  gtk_box_pack_start(GTK_BOX (main_vbox), top_paned, FALSE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX (main_vbox), top_paned, TRUE, TRUE, 0);
 
   left_vbox = gtk_vbox_new(FALSE, 10);
   gtk_paned_add1((GtkPaned *)top_paned, left_vbox);
@@ -123,12 +128,19 @@ int main(int argc, char *argv[])
   gtk_paned_add2((GtkPaned *)top_paned, right_vbox);
   gtk_widget_show(right_vbox);
 
-  sep = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(main_vbox), sep, FALSE, TRUE, 0);
-  gtk_widget_show(sep);
+  bottom_frame = gtk_frame_new(NULL);
+  gtk_frame_set_shadow_type(GTK_FRAME(bottom_frame), GTK_SHADOW_OUT);
+  gtk_box_pack_end(GTK_BOX(main_vbox), bottom_frame, FALSE, FALSE, 0);
+  gtk_widget_show(bottom_frame);
+
+  bottom_hbox = gtk_hbox_new(FALSE, 1);
+  gtk_container_add(GTK_CONTAINER(bottom_frame), bottom_hbox);
+  gtk_widget_show(bottom_hbox);
 
   the_tooltip = gtk_tooltips_new();
   gtk_tooltips_set_delay(the_tooltip, 1000); /* 1 seconde */
+
+  statusbar_init(bottom_hbox);
 
   flavor_init(left_vbox);
 
@@ -136,7 +148,7 @@ int main(int argc, char *argv[])
 
   intro_exit();
 
-  gtk_widget_show(window);
+  gtk_widget_show(main_window);
 
   gtk_main();
 

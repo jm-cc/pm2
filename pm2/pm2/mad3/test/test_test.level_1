@@ -29,10 +29,10 @@ prog="mad_test"
 args="--x --p --l"
 hosts=${TESTCONFIG:-"localhost localhost"}
 net=${TESTNET:-tcp}
-rm -f /tmp/pm2test_expected
+rm -f /tmp/pm2test_"${USER}"_expected
 for i in $hosts
 do
-  echo "success" >> /tmp/pm2test_expected
+  echo "success" >> /tmp/pm2test_"${USER}"_expected
 done
 
 # Creation de la flavor

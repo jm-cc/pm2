@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.14  2000/04/17 16:09:39  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.13  2000/04/14 11:41:47  vdanjean
 move SCHED_DATA(lwp).sched_task to lwp->idle_task
 
@@ -139,15 +142,7 @@ _PRIVATE_ typedef struct _struct_exception_block {
 
 _PRIVATE_ struct __lwp_struct;
 
-#ifdef MA__ACT
-
-#ifdef ACT_TIMER
-#ifdef CONFIG_ACT_TIMER
-#undef CONFIG_ACT_TIMER
-#endif
-#define CONFIG_ACT_TIMER
-#endif
-
+#ifdef MA__ACTIVATION
 #include <asm/act.h>
 #endif
 
@@ -213,7 +208,7 @@ _PRIVATE_ typedef struct __lwp_struct {
 #ifdef MA__MULTIPLE_RUNNING
   marcel_t prev_running;                   /* Previous task after yielding */
 #endif
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   marcel_t upcall_new_task;                /* Task used in upcall_new */
 #endif
 #ifdef X86_ARCH
@@ -288,8 +283,8 @@ _PRIVATE_ enum {
   NORMAL_RETURN
 };
 
-#ifdef __ACT__
-_PRIVATE_ extern int nb_idle_sleeping;
+#ifdef MA__ACTIVATION
+_PRIVATE_ extern int nb_idle_sleeping; //TODO
 #endif
 
 #ifdef ENABLE_STACK_JUMPING

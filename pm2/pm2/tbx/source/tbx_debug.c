@@ -472,67 +472,15 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	}
 }
 
-#if !defined(MARCEL) || !defined(MA__PTHREAD_FUNCTIONS)
-int __pm2debug_printf_state=PM2DEBUG_PRINTF_UNPROTECT_ALLOWED;
+#if !defined(MARCEL)
+int __pm2debug_printf_state=PM2DEBUG_MARCEL_PRINTF_ALLOWED;
 #else
-int __pm2debug_printf_state=PM2DEBUG_PRINTF_DENY;
+int __pm2debug_printf_state=PM2DEBUG_MARCEL_PRINTF_DENY;
 #endif
 
 void pm2debug_printf_state(int state)
 {
 	__pm2debug_printf_state=state;
-}
-
-volatile int inprint=0;
-inline static int pm2debug_tryprint()
-{
-#ifndef MARCEL
-	if (inprint) {
-		return 0;
-	}
-	inprint=1;
-	return 1;
-#else
-	return 1;
-	switch (__pm2debug_printf_state) {
-	case PM2DEBUG_PRINTF_UNPROTECT_ALLOWED:
-		if (inprint) {
-			return 0;
-		}
-		inprint=1;
-		return 1;
-	case PM2DEBUG_PRINTF_DENY:
-		return 0;
-	case PM2DEBUG_PRINTF_ALLOWED:
-		ma_local_bh_disable();
-		if(tbx_unlikely(ma_test_and_set_thread_flag(TIF_DEBUG_IN_PROGRESS))) {
-			/* Déjà en cours de pm2debug */
-			ma_local_bh_enable();
-			return 0;
-		}
-		return 2;
-	}
-	RAISE(PROGRAM_ERROR);
-	return 0;
-#endif
-}
-
-inline static void pm2debug_endprint(int entry)
-{
-#ifdef MARCEL
-	switch(entry) {
-	case 1:
-		inprint=0;
-		break;
-	case 2:
-		ma_smp_mb__before_clear_bit();
-		ma_clear_thread_flag(TIF_DEBUG_IN_PROGRESS);
-		ma_local_bh_enable();
-		break;
-	case 0:
-		break;
-	}
-#endif
 }
 
 #define my_print(fmt, args...) \
@@ -545,11 +493,12 @@ inline static void pm2debug_endprint(int entry)
 		cur+=size; \
 	} while (0);
 
+#define marcel_printf_allowed() (__pm2debug_printf_state == PM2DEBUG_MARCEL_PRINTF_ALLOWED)
+
 int pm2debug_printf(debug_type_t *type, int level, int line, const char* file, 
 		    const char *format, ...)
 {
 	va_list ap;
-	int can_print;
 
 	if (!type) { 
 		return 0;
@@ -557,10 +506,6 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 	
 	if (type->show==PM2DEBUG_AUTO_REGISTER) {
 		pm2debug_register_auto(type);
-	}
-	if(0 == (can_print=pm2debug_tryprint())) {
-		/* un pm2debug dans lui même ? */
-		return 0;
 	}
 
 	if (type->show >= level) {
@@ -585,15 +530,15 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 #ifdef MA__LWPS
 		if (get_action_value(type, PM2DEBUG_SHOW_LWP)) {
 			my_print("[P%02d] ", 
-				 (((can_print==2) 
+				 ((marcel_printf_allowed()
 				   && GET_LWP(marcel_self())) 
 				  ? GET_LWP_NUMBER(marcel_self()) : -1));
 		}
 #endif
 		if (get_action_value(type, PM2DEBUG_SHOW_THREAD)) {
-			my_print("(%8p:% 3d:%-15s) ", (can_print==2) ?
-			marcel_self():(void*)-1, (can_print==2) ?
-			marcel_self()->number:-99, (can_print==2) ?
+			my_print("(%8p:% 3d:%-15s) ", marcel_printf_allowed() ?
+			marcel_self():(void*)-1, marcel_printf_allowed() ?
+			marcel_self()->number:-99, marcel_printf_allowed() ?
 			marcel_self()->name:"");
 		}
 #endif /* MARCEL */
@@ -603,13 +548,9 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 do_write:
 		if (eaten>PM2DEBUG_MAXLINELEN)
 			eaten=PM2DEBUG_MAXLINELEN;
+		// TODO: syscall carrément
 		write(STDERR_FILENO,buffer,eaten);
 	}
 
-	pm2debug_endprint(can_print);
 	return 0;
 }
-
-
-
-

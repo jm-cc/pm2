@@ -87,9 +87,8 @@ enum {
 extern debug_type_t debug_pm2debug;
 
 enum {
-	PM2DEBUG_PRINTF_UNPROTECT_ALLOWED,
-	PM2DEBUG_PRINTF_DENY,
-	PM2DEBUG_PRINTF_ALLOWED
+	PM2DEBUG_MARCEL_PRINTF_DENY,
+	PM2DEBUG_MARCEL_PRINTF_ALLOWED
 };
 
 void pm2debug_printf_state(int state);

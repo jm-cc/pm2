@@ -880,7 +880,7 @@ TODO: vieux code
 	ma_set_current_state(MA_TASK_RUNNING);
 
 #ifdef PM2DEBUG
-	pm2debug_printf_state(PM2DEBUG_PRINTF_ALLOWED);
+	pm2debug_printf_state(PM2DEBUG_MARCEL_PRINTF_ALLOWED);
 #endif
 	LOG_OUT();
 }

@@ -68,6 +68,10 @@ registering_flavors() {
 	--marcel=mono --marcel=smp_shared_queue --marcel=main_as_func \
 	--marcel=posix --marcel=pthread --common=link_pm2_shared
 
+    register_flavor sigmund \
+	--modules="sigmundlib sigmund sigmundps xsigmund supertrace" \
+	--all=build_dynamic
+
 #########################################################
 # END OF LIST OF SAMPLE FLAVORS
 #########################################################

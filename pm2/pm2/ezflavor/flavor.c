@@ -53,7 +53,7 @@ static gint flavor_never_saved = FALSE;
 
 static int flavor_save(void);
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
 static void flavor_print(void)
 {  GList *ptr;
 
@@ -76,7 +76,7 @@ static void flavor_print(void)
     g_print("\n");
   }
 }
-#endif
+#endif // PM2DEBUG
 
 static gint flavor_exists(char *name);
 

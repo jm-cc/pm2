@@ -362,21 +362,18 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 /* XXX FIXME: base_stack n'est pas correct ici pour l'ia 64 !! */
 					 -0x200);
 		/* départ du fils, en mode interruption */
-		{
-			ma_runqueue_t *rq;
 
-			/* Signaler le changement de thread aux activations */
-			MA_ACT_SET_THREAD(MARCEL_SELF);
-			/* ré-enqueuer le père */
-			rq = ma_prev_rq();
-			_ma_raw_spin_lock(&rq->lock);
-			enqueue_task(marcel_self()->father, rq->active);
-			ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
-			
-			MTRACE("Preemption", marcel_self());
-			
-			PROF_OUT_EXT(newborn_thread);
-		}
+		/* Signaler le changement de thread aux activations */
+		MA_ACT_SET_THREAD(MARCEL_SELF);
+		/* ré-enqueuer le père */
+		rq = ma_prev_rq();
+		_ma_raw_spin_lock(&rq->lock);
+		enqueue_task(marcel_self()->father, rq->active);
+		ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
+		
+		MTRACE("Preemption", marcel_self());
+		
+		PROF_OUT_EXT(newborn_thread);
 	}
 	
 	/* pas de unlock_task ici : le preempt a déjà été mangé dans ma_schedule_tail */

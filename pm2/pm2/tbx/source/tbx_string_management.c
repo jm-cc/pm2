@@ -377,6 +377,52 @@ tbx_string_init_to_int(int data)
 }
 
 void
+tbx_string_append_uint(p_tbx_string_t string,
+		       unsigned int   data)
+{
+  char       temp[MAX_NUMBER_LENGTH + 1];
+  size_t     offset = 0;
+
+  LOG_IN();
+  do
+    {
+      temp[offset++] = '0' + data % 10;
+      data /= 10;
+    }
+  while (data);
+
+  do
+    {
+      tbx_string_append_char(string, temp[--offset]);
+    }
+  while (offset);
+  LOG_OUT();
+}
+
+void
+tbx_string_set_to_uint(p_tbx_string_t string,
+		       unsigned int   data)
+{
+  LOG_IN();
+  tbx_string_reset(string);
+  tbx_string_append_uint(string, data);
+  LOG_OUT();
+}
+
+p_tbx_string_t
+tbx_string_init_to_uint(unsigned int data)
+{
+  p_tbx_string_t string = NULL;
+
+  LOG_IN();
+  string = tbx_string_init();
+  tbx_string_set_to_uint(string, data);
+  LOG_OUT();
+
+  return string;
+}
+
+void
 tbx_string_reverse(p_tbx_string_t string)
 {
   size_t offset_left  = 0;

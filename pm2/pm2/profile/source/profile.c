@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: profile.c,v $
+Revision 1.9  2000/11/18 09:38:33  rnamyst
+Updated mad1 implementation over LAM MPI.
+
 Revision 1.8  2000/10/18 12:41:20  rnamyst
 Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
 
@@ -71,10 +74,6 @@ ______________________________________________________________________________
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"
-#endif
-
-#ifdef PM2
-#include "pm2.h"
 #endif
 
 #ifdef MARCEL

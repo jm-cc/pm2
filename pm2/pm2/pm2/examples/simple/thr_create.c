@@ -35,6 +35,10 @@
 
 #include "pm2.h"
 
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 #define ESSAIS 5
 
 static Tick t1, t2;

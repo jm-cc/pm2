@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leoparse_interface.h,v $
+Revision 1.2  2000/11/10 14:17:53  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.1  2000/11/02 14:25:03  oaumage
 Leoparse
 
@@ -49,6 +52,15 @@ ______________________________________________________________________________
 
 #ifndef __LEOPARSE_INTERFACE_H
 #define __LEOPARSE_INTERFACE_H
+
+/* Initialization */
+void
+leoparse_init(int    argc,
+	      char **argv);
+
+void
+leoparse_purge_cmd_line(int   *argc,
+			char **argv);
 
 /* Yacc interface */
 int

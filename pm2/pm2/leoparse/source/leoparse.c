@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leoparse.c,v $
+Revision 1.2  2000/11/10 14:17:53  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.1  2000/11/02 14:25:04  oaumage
 Leoparse
 
@@ -77,7 +80,10 @@ ______________________________________________________________________________
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include "tbx.h"
 #include "leoparse.h"
+
+static volatile tbx_bool_t initialized = tbx_false;
 
 /*
  * Lex/Yacc and related external objects
@@ -337,28 +343,42 @@ leoparse_parse_local_file(char* filename)
  * --------------
  */
 void
-leoparse_init(void)
+leoparse_init(int    argc,
+	      char **argv)
 {
   LOG_IN();
-  yyin = NULL;
+  if (!initialized)
+    {
+      initialized = tbx_true;
+      yyin = NULL;
 
-  /*
-#ifdef DEBUG
-  yydebug = 1;
-#endif  DEBUG
-  */
+      /*
+	#ifdef DEBUG
+	yydebug = 1;
+	#endif  DEBUG
+	*/
 
-  parser_file_ptr    = NULL;
+      parser_file_ptr    = NULL;
 
 #ifdef LEOPARSE_REMOTE
-  parser_file_source = NULL;
-  parser_file_handle = NULL;
-  parser_file_buffer = TBX_MALLOC(TBX_FILE_TRANSFER_BLOCK_SIZE + 1);
-  ((char *)parser_file_buffer)[TBX_FILE_TRANSFER_BLOCK_SIZE] = 0;
+      parser_file_source = NULL;
+      parser_file_handle = NULL;
+      parser_file_buffer = TBX_MALLOC(TBX_FILE_TRANSFER_BLOCK_SIZE + 1);
+      ((char *)parser_file_buffer)[TBX_FILE_TRANSFER_BLOCK_SIZE] = 0;
 
-  parser_buf_bytes_written = 0;
-  parser_buf_bytes_read    = 0;
+      parser_buf_bytes_written = 0;
+      parser_buf_bytes_read    = 0;
 #endif /* LEOPARSE_REMOTE */
+    }
+  
   LOG_OUT();
 }
 
+void
+leoparse_purge_cmd_line(int   *argc,
+			char **argv)
+{
+  LOG_IN();
+  /* --- */
+  LOG_OUT();
+}

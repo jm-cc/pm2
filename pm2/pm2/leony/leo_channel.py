@@ -30,8 +30,8 @@ def channel_process(s, channel):
                     ps.driver_dict      = {}
                     ps.driver_dict[dev] = adapter_dict
                     
-                    ps.global_rank	= s.next_global_rank
-                    s.next_global_rank	= s.next_global_rank + 1
+                    ps.global_rank	= s.leo.next_global_rank
+                    s.leo.next_global_rank	= s.leo.next_global_rank + 1
                     
                     node_ps_dict[id]	= ps
                     s.process_list.append(ps)
@@ -46,12 +46,6 @@ def channel_process(s, channel):
 
 def channels_process(s):
     """Channel list processing."""
-    s.process_list	= []
-    s.channel_dict	= {}
-    s.process_dict	= {}
-    s.driver_dict	= {}
-    s.loader_dict	= {}
-    s.next_global_rank	= 0
 
     channel_l = leo_pp.channel_list_get(s)
 

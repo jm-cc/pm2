@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.26  2000/11/03 14:12:30  gantoniu
+Added support for profiling (LOG_IN/LOG_OUT).
+
 Revision 1.25  2000/10/10 13:31:17  gantoniu
 Modified the startup function mechanism to allow functions to get an argument.
 Updated the pm2_sync functions: global (= node-level) barriers are ready !
@@ -509,3 +512,8 @@ void *pm2_malloc(size_t size, isoaddr_attr_t *attr)
   return (void *)NULL;
 }
 
+void pm2_empty()
+{
+LOG_IN();
+LOG_OUT();
+}

@@ -59,6 +59,8 @@ typedef struct _marcel_rwlock_info {
 struct marcel_task {
 	/* =0 : preemption allowed, <0 : BUG */
 	int preempt_count;
+	/* Idem, but just for timer preemption */
+	int not_preemptible;
 	/* Données relatives au scheduler */
 	struct marcel_sched_task sched;
 	/* Changements de contexte (sauvegarde état) */

@@ -97,8 +97,6 @@ typedef struct {
 static machine_t machine[MAX_MODULES];
 static int nb_machines;
 
-static int nb_modules, *les_modules;
-
 typedef struct {
  char cmd_principale[32];
  char *parametres[128];
@@ -330,9 +328,9 @@ int user_cmd(pm2_cmd instr)
       *p = 0;
    }
 
-   for(i = 0; i < nb_modules; i++) {
-     if(this_tid == -1 || this_tid == les_modules[i])
-       QUICK_LRPC(les_modules[i], LRPC_CONSOLE_USER, &req, NULL);
+   for(i = 0; i < pm2_config_size()-1; i++) {
+     if(this_tid == -1 || this_tid == i)
+       QUICK_LRPC(i, LRPC_CONSOLE_USER, &req, NULL);
    }
 
    return 0;
@@ -427,13 +425,13 @@ int ping_cmd(pm2_cmd instr)
 	 this_tid = tidtoi(instr.parametres[skip]);
    }
 
-   for (i = 0; i < nb_modules; i++) { 
+   for (i = 0; i < pm2_config_size()-1; i++) { 
 
-     if(this_tid == -1 || les_modules[i] == this_tid) {
+     if(this_tid == -1 || i == this_tid) {
 
-       tprintf("Trying task :[%x]....\n",les_modules[i]);
+       tprintf("Trying task :[%x]....\n", i);
        marcel_sem_init(&_ping_sem,0);
-       QUICK_LRP_CALL(les_modules[i], LRPC_CONSOLE_PING,
+       QUICK_LRP_CALL(i, LRPC_CONSOLE_PING,
 		      &_ping_req, &res, &_ping_rpc_wait);
        for(cpt_tent=1;cpt_tent<=nb_try;cpt_tent++) { 
 	 BEGIN
@@ -474,14 +472,14 @@ int th_cmd(pm2_cmd instr)
    tprintf("\t       THREAD_ID     NUM  PRIO    STATE   STACK  MIGRATABLE  SERVICE\n");
 
    for(m = 0; m < nb_machines; m++) {
-     for(i = m; i < nb_modules; i += nb_machines) {
-       if(this_tid == -1 || les_modules[i] == this_tid) {
+     for(i = m; i < pm2_config_size()-1; i += nb_machines) {
+       if(this_tid == -1 || i == this_tid) {
 	 if(ma < m) {
 	   tprintf("\nHost : %s \n", machine[m].nom);
 	   ma = m;
 	 }
-	 tprintf("Task : %x  \n",les_modules[i]);
-	 QUICK_LRPC(les_modules[i], LRPC_CONSOLE_THREADS, NULL, &les_threads);
+	 tprintf("Task : %x  \n", i);
+	 QUICK_LRPC(i, LRPC_CONSOLE_THREADS, NULL, &les_threads);
        }
      }
    }
@@ -629,10 +627,8 @@ int help_cmd(pm2_cmd instr)
 
 int quit_cmd(pm2_cmd instr)
 {
-  int self = pm2_self();
-
   tprintf("\n");
-  pm2_kill_modules(&self, 1);
+  pm2_halt();
   pm2_exit();
   exit(0);
 }
@@ -690,10 +686,10 @@ int ps_cmd(pm2_cmd instr)
 	}
 
 	tprintf("                    HOST      TID   COMMAND\n");
-	for(i = 0; i < nb_modules; i++) {
+	for(i = 0; i < pm2_config_size()-1; i++) {
 	  m = i % nb_machines;
 	  tprintf("%24s", machine[m].nom);
-	  tprintf(" %8x", les_modules[i]);
+	  tprintf(" %8x", i);
 	  tprintf("   %-12s", "-");
 	  tprintf("\n");
 	}
@@ -866,8 +862,7 @@ int pm2_main(argc,argv)
    
    pm2_rpc_init();
 
-   pm2_init(&argc, argv, 1, &les_modules, &nb_modules);
-   nb_modules--; /* On ne se compte pas soi-meme ! */
+   pm2_init(&argc, argv);
 
    init_machines();
 

@@ -1,36 +1,90 @@
 #!/bin/sh
+###########
 
-# PM2: Parallel Multithreaded Machine
-# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or (at
-# your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+flavor=sigmund
+module=`basename $0`
+progname=$module
 
+args="$@"
 
-PM2_ARCH=`$PM2_ROOT/bin/pm2_arch`
-PM2_SYS=`$PM2_ROOT/bin/pm2_sys`
+error()
+{
+  for ligne in ${@:+"$@"}; do
+    echo "$ligne";
+  done
+  exit 1
+}
 
-case "$PM2_SYS" in
-    WIN*_SYS)
-	ext=".exe"
-	;;
-    *)
-	ext=""
-	;;
-esac
+reexec()
+{
+  echo
+  echo "***************************************************"
+  echo "Restarting `basename $0` $@"
+  exec $0 ${@:+"$@"}
+}
 
-prog=${PM2_HOME:-${HOME}}/.pm2/bin/supertrace_${PM2_ARCH}_${PM2_SYS}${ext}
+error_compile()
+{
+  cmd=""
+  while [ $# != 0 ]; do
+    case "$1" in
+    	--cmd)
+	  cmd="${cmd:+$cmd ; }$2"
+	  ;;
+	--)
+	  shift
+	  break
+	  ;;
+	*)
+	  echo "$1"
+	  ;;
+    esac
+    shift
+  done
+  if [ "$cmd" ]; then
+    echo -n "[Y/n]"
+    read rep
+    case "$rep" in
+      Y|y|O|o|"")
+	sh -c "$cmd" && reexec ${@:+"$@"};;
+    esac
+  fi
+  echo "Aborting"
+  exit 1
+}
 
-if [ ! -x $prog ]; then
-    echo "ERROR: supertrace was not compiled for $PM2_ARCH/$PM2_SYS" >&2
-    exit 1
+# Main part
+[ -n "${PM2_ROOT}"    ] || error 'PM2_ROOT variable is not set'
+
+PM2_CONFIG="${PM2_ROOT}/bin/pm2-config"
+[ -x "${PM2_CONFIG}" ] || error "cannot execute ${PM2_CONFIG}"
+
+FLAVOR_DIR=`${PM2_CONFIG} --flavor=$flavor --bindir $module 2>/dev/null`
+if [ $? != 0 ]; then
+  error_compile "The flavor $flavor does not seem to exist, yet." \
+  	"" \
+        "Do you want to try to create it by executing :" \
+  	--cmd "pm2-create-sample-flavors --force $flavor" \
+	-- ${@:+"$@"}
+	
+fi
+if [ ! -d "${FLAVOR_DIR}"  ] ; then
+  error_compile "Directory ${FLAVOR_DIR} not found" \
+	"" \
+        "Do you want to try to compile it by executing :" \
+	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor" \
+	-- ${@:+"$@"}
 fi
 
-exec ${PM2_HOME:-${HOME}}/.pm2/bin/supertrace_${PM2_ARCH}_${PM2_SYS}${ext} ${@:+"$@"}
+PROG="${FLAVOR_DIR}/$progname"
+if [ ! -x "${PROG}" ]; then
+  error_compile "cannot execute ${PROG}" \
+	"" \
+        "Do you want to try to compile it by executing :" \
+	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor" \
+	-- ${@:+"$@"}
+fi
+
+LD_LIBRARY_PATH=`${PM2_CONFIG} --flavor=$flavor --libdir $module` exec ${PROG} ${@:+"$@"}
+
+# End

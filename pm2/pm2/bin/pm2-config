@@ -327,7 +327,7 @@ pm2config_set_vars()
 
     # CFLAGS
     _PM2CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS} ${PM2_COMMON_CFLAGS_KERNEL}"
-    for _lib in common $PM2_LIBS ; do
+    for _lib in appli common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"
 	if [ -d "${PM2_ROOT}/modules/$_lib/include" ]; then
@@ -343,7 +343,7 @@ pm2config_set_vars()
     pm2config_remove_dupplicates_keep_first _PM2CONFIG_CFLAGS
 
     # CFLAGS "kernel"
-    for _lib in common $PM2_LIBS ; do
+    for _lib in appli common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2CONFIG_${_lib}_KERNEL_CFLAGS=\"\$_PM2CONFIG_CFLAGS '$'PM2_${_LIB}_CFLAGS_KERNEL -D${_LIB}_KERNEL -DMODULE=${_lib}\"
 	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS

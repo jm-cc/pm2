@@ -283,7 +283,7 @@ int fut_endup( char *filename )
 	if( close(fd) < 0 )
 		perror(filename);
 
-	fut_done();
+	//fut_done(); // Removed by Raymond
 
 	return nints;
 	}

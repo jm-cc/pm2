@@ -68,7 +68,9 @@
 /* Inclusion de marcel.h uniquement si on compile les sources de tbx 
  * Les autres modules doivent l'inclure si nécesaire
  */
+#ifdef MARCEL
 #include "marcel-master___structures.h"
+#endif
 //#endif
 
 #include "tbx_malloc.h"
@@ -82,10 +84,13 @@
 #include "tbx_interface.h"
 
 #ifdef TBX_KERNEL
+#ifdef MARCEL
 /* Inclusion de marcel.h uniquement si on compile les sources de tbx 
+ * avec marcel.
  * Les autres modules doivent l'inclure si nécesaire
  */
 #include "marcel.h"
+#endif
 #endif
 
 #endif /* TBX_H */

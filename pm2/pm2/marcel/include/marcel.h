@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.6  2000/03/01 16:45:21  oaumage
+- suppression des warnings en compilation  -g
+
 Revision 1.5  2000/02/28 10:26:36  rnamyst
 Changed #include <> into #include "".
 
@@ -144,7 +147,8 @@ int marcel_detach(marcel_t pid);
 
 int marcel_cancel(marcel_t pid);
 
-static __inline__ int marcel_equal(pid1, pid2)
+static __inline__ int marcel_equal(marcel_t pid1, marcel_t pid2) __attribute__ ((unused));
+static __inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 {
   return (pid1 == pid2);
 }
@@ -167,6 +171,7 @@ typedef int marcel_key_t;
 int marcel_key_create(marcel_key_t *key, void (*func)(any_t));
 
 _PRIVATE_ extern volatile unsigned _nb_keys;
+static __inline__ int marcel_setspecific(marcel_key_t key, any_t value) __attribute__ ((unused));
 static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
 {
 #ifdef DEBUG
@@ -177,6 +182,7 @@ static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
    return 0;
 }
 
+static __inline__ any_t marcel_getspecific(marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t marcel_getspecific(marcel_key_t key)
 {
 #ifdef DEBUG
@@ -186,6 +192,7 @@ static __inline__ any_t marcel_getspecific(marcel_key_t key)
    return marcel_self()->key[key];
 }
 
+static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
 #ifdef DEBUG
@@ -222,11 +229,13 @@ typedef void (*transfert_func_t)(marcel_t t, unsigned long depl, unsigned long b
 
 typedef void (*post_migration_func_t)(void *arg);
 
+static __inline__ void marcel_disablemigration(marcel_t pid) __attribute__ ((unused));
 static __inline__ void marcel_disablemigration(marcel_t pid)
 {
   pid->not_migratable++;
 }
 
+static __inline__ void marcel_enablemigration(marcel_t pid) __attribute__ ((unused));
 static __inline__ void marcel_enablemigration(marcel_t pid)
 {
   pid->not_migratable--;
@@ -247,6 +256,7 @@ unsigned long marcel_usablestack(void);
 
 unsigned long marcel_unusedstack(void);
 
+static __inline__ char *marcel_stackbase(marcel_t pid) __attribute__ ((unused));
 static __inline__ char *marcel_stackbase(marcel_t pid)
 {
   return pid->stack_base;

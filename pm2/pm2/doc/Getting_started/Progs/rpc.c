@@ -1,9 +1,9 @@
 #include <pm2.h>
 
-static int service_id;
+static int service_id;		/* Here! */
 
-static void
-service (void)
+static void			/* Here! */
+service (void)			/* Here! */
 {
   pm2_rawrpc_waitdata ();
   tprintf ("Hello, World!\n");
@@ -12,13 +12,13 @@ service (void)
 int
 pm2_main (int argc, char *argv[])
 {
-  pm2_rawrpc_register (&service_id, service);
+  pm2_rawrpc_register (&service_id, service);	/* Here! */
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
     {
-      pm2_rawrpc_begin (1, service_id, NULL);
-      pm2_rawrpc_end ();
+      pm2_rawrpc_begin (1, service_id, NULL);	/* Here! */
+      pm2_rawrpc_end ();	/* Here! */
 
       pm2_halt ();
     }

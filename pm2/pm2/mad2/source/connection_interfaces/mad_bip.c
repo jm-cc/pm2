@@ -350,7 +350,7 @@ static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
 #if defined(MARCEL) && !defined(BASIC_POLL)
 
   int tmphost, status;
-  static which = 0;
+  static int which = 0;
 
   LOG_IN();
 

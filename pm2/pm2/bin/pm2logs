@@ -19,7 +19,8 @@ export PM2_FLAVOR
 
 usage()
 {
-    echo "Usage : `basename $0` [-f flavor] [node [node...]]"
+    echo "Usage : `basename $0` [-u] [-f flavor] [node [node...]]"
+    echo "  -u      : Use local flavor (re-run pm2-config on each node)"
 }
 
 error() # msg
@@ -35,6 +36,9 @@ while [ $# -gt 0 ]; do
     case $1 in
 	-f)
 	    PM2_FLAVOR="$2"; shift
+	    ;;
+	-u)
+	    PM2_USE_LOCAL_FLAVOR=on
 	    ;;
 	[0-9]*)
 	    PM2_LOGS="$PM2_LOGS $1 "
@@ -69,7 +73,8 @@ n=0
 for host in `cat ${PM2_CONF_FILE}`; do
     case " $PM2_LOGS " in
 	*" $n "*|"  ")
-	    eval logs_on_host_$host=\"\$logs_on_host_$host /tmp/${USER}-${mod}log-$n\"
+	    varname=`echo logs_on_host_$host | tr .- __`
+	    eval $varname=\"\$$varname /tmp/${USER}-${mod}log-$n\"
 	    ;;
 	*)
 	    echo Do not display node $n
@@ -78,8 +83,15 @@ for host in `cat ${PM2_CONF_FILE}`; do
     n=`expr $n + 1`
 done
 
+if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
+    PM2_VLOCALLOGS=pm2-vlocallogs
+else
+    PM2_VLOCALLOGS="${PM2_ROOT}/bin/pm2-vlocallogs"
+fi
+
 for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do
-    eval logs=\"\$logs_on_host_$host\"
-    ${PM2_RSH:-rsh} $host ${PM2_ROOT}/bin/pm2-vlocallogs $host $logs
+    varname=`echo logs_on_host_$host | tr .- __`
+    eval logs=\"\$$varname\"
+    ${PM2_RSH:-rsh} $host ${PM2_VLOCALLOGS} $host $logs
 done
 

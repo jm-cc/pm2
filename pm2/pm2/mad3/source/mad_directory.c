@@ -124,6 +124,7 @@ mad_dir_node_get(p_mad_madeleine_t madeleine)
       TRACE_STR("Node name", dir_node->name);
 
       tbx_htable_add(node_htable, dir_node->name, dir_node);
+      dir_node->id = tbx_slist_get_length(node_slist);
       tbx_slist_append(node_slist, dir_node);
 
       while (1)
@@ -199,6 +200,7 @@ mad_dir_driver_get(p_mad_madeleine_t madeleine)
       sprintf(driver_reference_name, "%s:%s", "driver", dir_driver->name);
 
       tbx_htable_add(driver_htable, dir_driver->name, dir_driver);
+      dir_driver->id = tbx_slist_get_length(driver_slist);
       tbx_slist_append(driver_slist, dir_driver);
 
       while (1)
@@ -234,6 +236,7 @@ mad_dir_driver_get(p_mad_madeleine_t madeleine)
 	      adapter->selector  = mad_ntbx_receive_string(client);
 	      TRACE_STR("- name", adapter->name);
 
+	      adapter->id = tbx_slist_get_length(adapter_slist);
 	      tbx_slist_append(adapter_slist, adapter);
 	      tbx_htable_add(adapter_htable, adapter->name, adapter);
 	    }
@@ -317,6 +320,7 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
       TBX_FREE(driver_name);
       
       tbx_htable_add(channel_htable, dir_channel->name, dir_channel);
+      dir_channel->id = tbx_slist_get_length(channel_slist);
       tbx_slist_append(channel_slist, dir_channel);
 
       TRACE("Adapters:");     
@@ -438,6 +442,7 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
 	      "%s:%s", "fchannel", dir_fchannel->name);
 
       tbx_htable_add(fchannel_htable, dir_fchannel->name, dir_fchannel);
+      dir_fchannel->id = tbx_slist_get_length(fchannel_slist);
       tbx_slist_append(fchannel_slist, dir_fchannel);
       TBX_FREE(fchannel_reference_name);
     }
@@ -551,6 +556,7 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
       while (--dir_fchannel_slist_len);
 
       tbx_htable_add(vchannel_htable, dir_vchannel->name, dir_vchannel);
+      dir_vchannel->id = tbx_slist_get_length(vchannel_slist);
       tbx_slist_append(vchannel_slist, dir_vchannel);
 
       TRACE("Virtual channel routing table");

@@ -54,27 +54,6 @@ $ECHO
 # architecture-specific directories for the storage of binaries, etc.
 
 # Toolbox
-echo
-echo Toolbox
-if [ ! -d ${PM2_ROOT}/toolbox/lib ]; then
-    cd ${PM2_ROOT}/toolbox/; mkdir lib
-fi
-cd ${PM2_ROOT}/toolbox/lib/;        pm2_makedirs
-
-if [ ! -d ${PM2_ROOT}/toolbox/obj ]; then
-    cd ${PM2_ROOT}/toolbox/; mkdir obj
-fi
-cd ${PM2_ROOT}/toolbox/obj/;        pm2_makedirs
-
-if [ ! -d ${PM2_ROOT}/toolbox/net/obj ]; then
-    cd ${PM2_ROOT}/toolbox/net; mkdir obj
-fi
-cd ${PM2_ROOT}/toolbox/net/obj/;    pm2_makedirs
-
-if [ ! -d ${PM2_ROOT}/toolbox/net/lib ]; then
-    cd ${PM2_ROOT}/toolbox/net/; mkdir lib
-fi
-cd ${PM2_ROOT}/toolbox/net/lib/;    pm2_makedirs
 
 # Marcel
 echo

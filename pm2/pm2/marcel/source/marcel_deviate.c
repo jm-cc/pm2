@@ -105,6 +105,9 @@ void marcel_execute_deviate_work(void)
   }
 }
 
+#ifdef MA__ACTIVATION
+#warning activations non gérées
+#endif
 static void insertion_relai(handler_func_t f, void *arg)
 { 
   marcel_ctx_t back;

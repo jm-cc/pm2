@@ -33,6 +33,8 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+libs: $(LIBRARY)
+
 $(LIBRARY):
 
 include $(PM2_ROOT)/make/common-rules.mak
@@ -41,9 +43,7 @@ ifneq ($(LIBRARY),$(LIBNAME))
 $(LIBNAME): $(LIBRARY)
 endif
 
-libs: $(LIBRARY)
-
-all: $(LIBRARY)
+all: libs
 
 .PHONY: $(LIBRARY) $(LIBNAME) libs
 

@@ -72,11 +72,11 @@ END_DSM_DATA
 
 void f()
 {
-  int i, n = 10;
+  int i, n = 20;
 
   for (i = 0; i < n; i++) {
     // atomic_inc(&a);
-       dsm_mutex_lock(&L);
+    dsm_mutex_lock(&L);
     toto1++;
     dsm_mutex_unlock(&L);
   }
@@ -97,10 +97,10 @@ int pm2_main(int argc, char **argv)
 
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
-  //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
-  pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
+  //dsm_set_default_protocol(MIGRATE_THREAD);
+  dsm_set_default_protocol(LI_HUDAK);
 
-  pm2_set_dsm_page_distribution(DSM_CENTRALIZED, 0);
+  pm2_set_dsm_page_distribution(DSM_BLOCK, 16);
 
   dsm_mutex_init(&L, NULL);
 
@@ -108,12 +108,6 @@ int pm2_main(int argc, char **argv)
 
   if (argc != 2)
     {
-      fprintf(stderr, "argc = %d\n", argc);
-      while (--argc)
-	{
-	  fprintf(stderr, "%d, %s\n", argc, argv[argc]);
-	}
-      
       fprintf(stderr, "Usage: simple <number of threads per node>\n");
       exit(1);
     }

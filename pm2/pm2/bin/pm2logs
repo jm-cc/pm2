@@ -34,4 +34,6 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+. ${PM2_ROOT}/bin/pm2_vars
+
 exec ${MADELEINE_ROOT}/bin/madlogs -pm2

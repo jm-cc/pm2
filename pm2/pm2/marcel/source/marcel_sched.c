@@ -31,10 +31,18 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: marcel_sched.c,v $
+Revision 1.12  2000/01/31 15:57:21  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 /* #define DEBUG */
-
+/* #define TICK */
 #define BIND_LWP_ON_PROCESSORS
 
 /* #define DO_PAUSE_INSTEAD_OF_SCHED_YIELD */
@@ -1491,8 +1499,16 @@ void marcel_sched_shutdown()
    of marcel_yield() that do not lock_task()... */
 static void timer_interrupt(int sig)
 {
+#ifdef TICK
+  static char tick = 0;
+#endif /* TICK */
   marcel_t cur = marcel_self();
 
+#ifdef TICK
+  if (!tick++)
+    fprintf(stderr, ">> tick <<\n");
+#endif /* TICK */
+  
   if(cur->lwp == &__main_lwp)
     __milliseconds += time_slice/1000;
 

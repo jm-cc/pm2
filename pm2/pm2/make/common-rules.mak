@@ -69,3 +69,16 @@ thankshelp:
 	@echo "Have a good day with PM2"
 
 tailhelp:
+
+#ifndef OLD_MAKEFILE
+#ifeq ($(wildcard $(PM2_MAK_DIR)/mak-rules.mak),)
+#dummy := $(shell $(PM2_CONFIG) --gen_mak)
+#endif
+#include $(PM2_MAK_DIR)/mak-rules.mak
+#endif
+
+ifndef OLD_MAKEFILE
+$(PM2_MAK_DIR):
+	$(PM2_CONFIG) --gen_mak dir
+endif
+

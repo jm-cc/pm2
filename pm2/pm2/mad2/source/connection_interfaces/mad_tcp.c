@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.16  2000/03/15 09:59:43  oaumage
+- renommage du polling Nexus
+
 Revision 1.15  2000/03/08 17:19:47  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -315,9 +318,9 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
   interface->new_message                = NULL;
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
   interface->poll_message            = mad_tcp_poll_message;
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
   interface->receive_message            = mad_tcp_receive_message;
   interface->send_buffer                = mad_tcp_send_buffer;
   interface->receive_buffer             = mad_tcp_receive_buffer;
@@ -666,7 +669,7 @@ mad_tcp_adapter_exit(p_mad_adapter_t adapter)
   LOG_OUT();
 }
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_tcp_poll_message(p_mad_channel_t channel)
 {
@@ -681,22 +684,6 @@ mad_tcp_poll_message(p_mad_channel_t channel)
     {
       struct timeval timeout;
       rfds = channel_specific->read_fds;
-#ifdef MARCEL
-#ifdef USE_MARCEL_POLL
-      n = marcel_select(channel_specific->max_fds + 1, &rfds, NULL);
-	      
-#else /* USE_MARCEL_POLL */
-      n = tselect(channel_specific->max_fds + 1, &rfds, NULL, NULL);
-      if(n == 0)
-	{
-	  return NULL;
-	}
-      else if (n < 0)
-	{
-	  TBX_YIELD();
-	}
-#endif /* USE_MARCEL_POLL */  
-#else /* MARCEL */
       timeout.tv_sec  = 0;
       timeout.tv_usec = 0;
 		
@@ -710,7 +697,6 @@ mad_tcp_poll_message(p_mad_channel_t channel)
 	  LOG_OUT();
 	  return NULL;
 	}
-#endif /* MARCEL */
     }
   while(n < 0);
 
@@ -735,7 +721,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
   LOG_OUT();
   return &(channel->input_connection[i]);
 }
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t channel)
@@ -743,7 +729,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
   p_mad_configuration_t configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
 
-#if !defined(MARCEL) && !defined(MAD_NEXUS)
+#if !defined(MARCEL) && !defined(MAD_MESSAGE_POLLING)
   LOG_IN();
   if (configuration->size == 2)
     {
@@ -752,7 +738,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	       input_connection[1 - configuration->local_host_id]);
     }
   else
-#endif /* MARCEL/MAD_NEXUS */
+#endif /* MARCEL/MAD_MESSAGE_POLLING */
     {
       p_mad_tcp_channel_specific_t channel_specific = channel->specific;
       fd_set rfds;

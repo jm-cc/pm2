@@ -25,7 +25,7 @@ void marcel_sem_init(marcel_sem_t *s, int initial)
 
 void marcel_sem_P(marcel_sem_t *s)
 {
-  cell c;
+  semcell c;
 
   LOG_IN();
 
@@ -80,7 +80,7 @@ int marcel_sem_try_P(marcel_sem_t *s)
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
-  cell c;
+  semcell c;
 
   LOG_IN();
 
@@ -106,7 +106,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last = &c;
     }
     marcel_lock_release(&s->lock);
-    marcel_tempo_give_hand(timeout, &c.blocked, s);
+    __marcel_tempo_give_hand(timeout, &c.blocked, s);
   } else {
     marcel_lock_release(&s->lock);
     unlock_task();
@@ -117,7 +117,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 
 void marcel_sem_V(marcel_sem_t *s)
 {
-  cell *c;
+  semcell *c;
 
   LOG_IN();
 
@@ -139,7 +139,7 @@ void marcel_sem_V(marcel_sem_t *s)
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {
-  cell c, *ce;
+  semcell c, *ce;
 
 /* 
    V(s1)  suivi de
@@ -184,7 +184,7 @@ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 
 void marcel_sem_unlock_all(marcel_sem_t *s)
 {
-  cell *cur;
+  semcell *cur;
 
   LOG_IN();
 

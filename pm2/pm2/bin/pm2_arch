@@ -36,6 +36,7 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	*,mips)            PM2_ARCH=MIPS_ARCH ;;
 	*,IP*)             PM2_ARCH=MIPS_ARCH ;;
 	*,ppc)  	   PM2_ARCH=PPC_ARCH ;;
+        *,Power*)          PM2_ARCH=PPC_ARCH ;;
         *)                 PM2_ARCH=UNKNOWN_ARCH ;;
 	esac
 fi

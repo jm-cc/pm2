@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.6  2000/05/25 00:23:57  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.5  2000/05/22 13:45:45  oaumage
 - ajout d'une fonction de tri aux listes de recherche
 - correction de bugs divers
@@ -69,7 +72,7 @@ ______________________________________________________________________________
  * ------
  */
 void
-tbx_init(void);
+tbx_init(int* argc, char** argv, int debug_flags);
 
 /*
  * Timing

@@ -1,0 +1,17 @@
+# Mad2_application
+# ----------------
+
+application test:
+{
+  executable : mad_test;
+  path: "/home1/oaumage/These/PM2/mad2_apps/";
+  
+  hosts: muddy-waters, cuervo, singha;
+  
+  channels:
+    { alias: Control; adapter: TCP; },
+    { alias: Calc;    adapter: MPI; };
+
+  makefile:
+    { name: Makefile; rule: mad_test; };
+}

@@ -306,6 +306,7 @@ ifndef BIN_DIR
 BIN_DIR	=	$(SRC_DIR)/bin/$(PM2_ARCH_SYS)
 endif
 
+ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(wildcard $(DEP_DIR)),$(DEP_DIR))
 DUMMY_BUILD	:=	$(shell mkdir -p $(DEP_DIR))
 endif
@@ -317,6 +318,7 @@ endif
 ifneq ($(wildcard $(BIN_DIR)),$(BIN_DIR))
 DUMMY_BUILD	:=	$(shell mkdir -p $(BIN_DIR))
 endif
+endif
 
 SOURCES	:=	$(wildcard $(SRC_DIR)/*.c)
 OBJECTS	:=	$(patsubst %.c,%.o,$(subst $(SRC_DIR),$(OBJ_DIR),$(SOURCES)))
@@ -325,8 +327,8 @@ DEPENDS	:=	$(patsubst %.c,%.d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
 DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
 
 ifneq ($(MAKECMDGOALS),clean)
-ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
-include $(DEPENDS)
+ifeq ($(wildcard $(DEPENDS)),)
+include $(wildcard $(DEPENDS))
 endif
 endif
 

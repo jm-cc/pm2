@@ -1,8 +1,8 @@
 
-$emph = '(?:here\s*!*)';
+$emph = '(?:here\s*[!]?)';
 
 $emph_pattern = '(?:\s*/\*[*\s]*' . $emph . '[*\s]*\*/\s*)';
-$substpattern = "\001verbatimbf|";
+$substpattern = "\001verbatimemph|";
 
 if ($#ARGV != 0) {
     die "Usage: $0 file-to-emph";

@@ -1,0 +1,62 @@
+divert(-1)
+define(BARRIER, `marcel_barrier_np(&$1, $2)')
+define(BARDEC,  `marcel_bar_t_np $1;')
+define(BARINIT, `marcel_barinit_np(&$1)')
+      
+define(LOCKDEC, `marcel_mutex_t $1;')
+define(LOCKINIT, `marcel_mutex_init(&$1, NULL)')
+define(LOCK, `marcel_mutex_lock(&$1)')
+define(UNLOCK, `marcel_mutex_unlock(&$1)')
+      
+define(ALOCKDEC, `marcel_mutex_t $1[$2];')
+define(ALOCKINIT, `{
+                    int i;
+                    for (i = 0; i < $2; i++)
+                      marcel_mutex_init(&$1[i], NULL);
+                   }')
+define(ALOCK, `marcel_mutex_lock(&$1[$2])')
+define(AULOCK, `marcel_mutex_unlock(&$1[$2])')
+      
+define(PAUSEDEC, `struct {
+			marcel_mutex_t lock;
+			marcel_cond_t cond;
+			int flag;
+		  } $1;')
+define(PAUSEINIT, `marcel_mutex_init(&$1.lock, NULL);
+		   marcel_cond_init(&$1.cond, NULL);
+		   $1.flag = FALSE;')
+define(SETPAUSE, `marcel_mutex_lock(&$1.lock);
+		  $1.flag = TRUE;
+		  marcel_mutex_unlock(&$1.lock);
+		  marcel_cond_signal(&$1.cond);')
+define(CLEARPAUSE, `marcel_mutex_lock(&$1.lock);
+		    $1.flag = FALSE;
+		    marcel_mutex_unlock(&$1.lock);')
+define(WAITPAUSE, `marcel_mutex_lock(&$1.lock);
+		   while (!$1.flag)
+		     marcel_cond_wait(&$1.cond, &$1.lock);
+		   marcel_mutex_unlock(&$1.lock);')
+
+define(WAIT_FOR_END, `marcel_wait_for_end_np($1);')
+define(SIGNAL_END, `marcel_signal_end_np($1, $2);')
+      
+define(CREATE, `marcel_create_np($1)')
+
+define(MAIN_INITENV, `marcel_init(&argc, argv);marcel_mutex_init(&marcel_end_lock_np, NULL);marcel_cond_init(&marcel_end_cond_np, NULL);')
+define(MAIN_END, `marcel_end_np()')
+define(MAIN_ENV, `#include <marcel_np.h>
+                  marcel_mutex_t marcel_end_lock_np;
+                  marcel_cond_t marcel_end_cond_np;
+                  int marcel_end_np_np = 0;')
+define(MAIN_ENV_END, `')
+define(EXTERN_ENV, `#include <marcel_np.h>
+                    extern marcel_mutex_t marcel_end_lock_np;
+                    extern marcel_cond_t marcel_end_cond_np;
+                    extern int marcel_end_np_np;')
+      
+define(G_MALLOC, `malloc($1)')
+
+define(MALLOC, `tmalloc($1)')
+
+define(CLOCK, GET_MILISECONDS($1))
+divert(0)

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.9  2000/01/21 17:27:28  oaumage
+- mise a jour de l'interface de compatibilite /mad1 et renommage des anciennes
+  fonctions
+
 Revision 1.8  2000/01/13 14:45:58  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -1037,7 +1041,256 @@ mad_recvbuf_receive(void)
 }
 
 void
-mad_pack_byte(madeleine_part where, char *data, size_t nb)
+pm2_pack_byte(mad_send_mode_t     sm,
+	      mad_receive_mode_t  rm,
+	      char               *data,
+	      size_t              nb)
+{
+  LOG_IN();  
+  mad_pack(marcel_getspecific(mad2_send_key), data, nb, sm, rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_byte(mad_send_mode_t     sm,
+		mad_receive_mode_t  rm,
+		char               *data,
+		size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key), data, nb, sm, rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_short(mad_send_mode_t     sm,
+	       mad_receive_mode_t  rm,
+	       short              *data,
+	       size_t              nb)
+{
+  LOG_IN();
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   nb*sizeof(short),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_short(mad_send_mode_t     sm,
+		 mad_receive_mode_t  rm,
+		 short              *data,
+		 size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	     data,
+	     nb*sizeof(short),
+	     sm,
+	     rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_int(mad_send_mode_t     sm,
+	     mad_receive_mode_t  rm,
+	     int                *data,
+	     size_t              nb)
+{
+  LOG_IN();
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   nb*sizeof(int),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_int(mad_send_mode_t     sm,
+	       mad_receive_mode_t  rm,
+	       int                *data,
+	       size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	   data,
+	   nb*sizeof(int),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_long(mad_send_mode_t     sm,
+	      mad_receive_mode_t  rm,
+	      long               *data,
+	      size_t              nb)
+{
+  LOG_IN();
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   nb*sizeof(long),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_long(mad_send_mode_t     sm,
+		mad_receive_mode_t  rm,
+		long               *data,
+		size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	   data,
+	   nb*sizeof(long),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_float(mad_send_mode_t     sm,
+	       mad_receive_mode_t  rm,
+	       float              *data,
+	       size_t              nb)
+{
+  LOG_IN();
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   nb*sizeof(float),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_float(mad_send_mode_t     sm,
+		 mad_receive_mode_t  rm,
+		 float              *data,
+		 size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	   data,
+	   nb*sizeof(float),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_double(mad_send_mode_t     sm,
+		mad_receive_mode_t  rm,
+		double             *data,
+		size_t              nb)
+{
+  LOG_IN();
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   nb*sizeof(double),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_double(mad_send_mode_t     sm,
+		  mad_receive_mode_t  rm,
+		  double             *data,
+		  size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	   data,
+	   nb*sizeof(double),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_pointer(mad_send_mode_t     sm,
+		 mad_receive_mode_t  rm,
+		 pointer            *data,
+		 size_t              nb)
+{
+  LOG_IN();
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   nb*sizeof(pointer),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_pointer(mad_send_mode_t     sm,
+		   mad_receive_mode_t  rm,
+		   pointer            *data,
+		   size_t              nb)
+{
+  LOG_IN();
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	   data,
+	   nb*sizeof(pointer),
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_pack_str(mad_send_mode_t     sm,
+	     mad_receive_mode_t  rm,
+	     char               *data)
+{
+  const int len = strlen(data);
+  
+  LOG_IN();
+  if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))
+    FAILURE("unimplemented feature");
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   &len,
+	   sizeof(int),
+	   sm,
+	   mad_receive_EXPRESS);
+  mad_pack(marcel_getspecific(mad2_send_key),
+	   data,
+	   len + 1,
+	   sm,
+	   rm);
+  LOG_OUT();
+}
+
+void
+pm2_unpack_str(mad_send_mode_t     sm,
+	       mad_receive_mode_t  rm,
+	       char               *data)
+{
+  int len;
+
+  LOG_IN();
+  if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))
+    FAILURE("unimplemented feature");
+  
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	     &len,
+	     sizeof(int),
+	     sm,
+	     mad_receive_EXPRESS);
+  mad_unpack(marcel_getspecific(mad2_recv_key),
+	     data,
+	     len + 1,
+	     sm,
+	     rm);
+  LOG_OUT();
+}
+
+void
+old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 {
   LOG_IN();
   
@@ -1068,7 +1321,7 @@ mad_pack_byte(madeleine_part where, char *data, size_t nb)
 }
 
 void
-mad_unpack_byte(madeleine_part where, char *data, size_t nb)
+old_mad_unpack_byte(madeleine_part where, char *data, size_t nb)
 {
   LOG_IN();
   
@@ -1099,120 +1352,120 @@ mad_unpack_byte(madeleine_part where, char *data, size_t nb)
 }
 
 void
-mad_pack_short(madeleine_part where, short *data, size_t nb)
+old_mad_pack_short(madeleine_part where, short *data, size_t nb)
 {
   LOG_IN();
-  mad_pack_byte(where, (char *)data, nb*sizeof(short));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(short));
   LOG_OUT();
 }
 
 void
-mad_unpack_short(madeleine_part where, short *data, size_t nb)
+old_mad_unpack_short(madeleine_part where, short *data, size_t nb)
 {
   LOG_IN();
-  mad_unpack_byte(where, (char *)data, nb*sizeof(short));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(short));
   LOG_OUT();
 }
 
 void
-mad_pack_int(madeleine_part where, int *data, size_t nb)
+old_mad_pack_int(madeleine_part where, int *data, size_t nb)
 {
   LOG_IN();
-  mad_pack_byte(where, (char *)data, nb*sizeof(int));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(int));
   LOG_OUT();
 }
 
 void
-mad_unpack_int(madeleine_part where, int *data, size_t nb)
+old_mad_unpack_int(madeleine_part where, int *data, size_t nb)
 {
   LOG_IN();
-  mad_unpack_byte(where, (char *)data, nb*sizeof(int));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(int));
   LOG_OUT();
 }
 
 void
-mad_pack_long(madeleine_part where, long *data, size_t nb)
+old_mad_pack_long(madeleine_part where, long *data, size_t nb)
 {
   LOG_IN();
-  mad_pack_byte(where, (char *)data, nb*sizeof(long));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(long));
   LOG_OUT();
 }
 
 void
-mad_unpack_long(madeleine_part where, long *data, size_t nb)
+old_mad_unpack_long(madeleine_part where, long *data, size_t nb)
 {
   LOG_IN();
-  mad_unpack_byte(where, (char *)data, nb*sizeof(long));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(long));
   LOG_OUT();
 }
 
 void
-mad_pack_float(madeleine_part where, float *data, size_t nb)
+old_mad_pack_float(madeleine_part where, float *data, size_t nb)
 {
   LOG_IN();
-  mad_pack_byte(where, (char *)data, nb*sizeof(float));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(float));
   LOG_OUT();
 }
 
 void
-mad_unpack_float(madeleine_part where, float *data, size_t nb)
+old_mad_unpack_float(madeleine_part where, float *data, size_t nb)
 {
   LOG_IN();
-  mad_unpack_byte(where, (char *)data, nb*sizeof(float));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(float));
   LOG_OUT();
 }
 
 void
-mad_pack_double(madeleine_part where, double *data, size_t nb)
+old_mad_pack_double(madeleine_part where, double *data, size_t nb)
 {
   LOG_IN();
-  mad_pack_byte(where, (char *)data, nb*sizeof(double));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(double));
   LOG_OUT();
 }
 
 void
-mad_unpack_double(madeleine_part where, double *data, size_t nb)
+old_mad_unpack_double(madeleine_part where, double *data, size_t nb)
 {
   LOG_IN();
-  mad_unpack_byte(where, (char *)data, nb*sizeof(double));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(double));
   LOG_OUT();
 }
 
 void
-mad_pack_pointer(madeleine_part where, pointer *data, size_t nb)
+old_mad_pack_pointer(madeleine_part where, pointer *data, size_t nb)
 {
   LOG_IN();
-  mad_pack_byte(where, (char *)data, nb*sizeof(pointer));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(pointer));
   LOG_OUT();
 }
 
 void
-mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb)
+old_mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb)
 {
   LOG_IN();
-  mad_unpack_byte(where, (char *)data, nb*sizeof(pointer));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(pointer));
   LOG_OUT();
 }
 
 void
-mad_pack_str(madeleine_part where, char *data)
+old_mad_pack_str(madeleine_part where, char *data)
 {
   int len = strlen(data);
   LOG_IN();
   mad_pack(marcel_getspecific(mad2_send_key), (char *)&len, sizeof(int),
 	   mad_send_SAFER, mad_receive_EXPRESS);
-  mad_pack_byte(where, data, len + 1);
+  old_mad_pack_byte(where, data, len + 1);
   LOG_OUT();
 }
 
 void
-mad_unpack_str(madeleine_part where, char *data)
+old_mad_unpack_str(madeleine_part where, char *data)
 {
   int len;
   LOG_IN();
   mad_unpack(marcel_getspecific(mad2_recv_key), (char *)&len, sizeof(int),
 	     mad_send_SAFER, mad_receive_EXPRESS);
-  mad_unpack_byte(where, data, len + 1);
+  old_mad_unpack_byte(where, data, len + 1);
   LOG_OUT();
 }
 

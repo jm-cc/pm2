@@ -1,7 +1,6 @@
-#include <stdio.h>
-#include <unistd.h>
 #include "pm2.h"
 
+static int service_id;
 char hostname[MAXHOSTNAMELEN];
 
 #define N 4
@@ -43,18 +42,17 @@ thread_function (void *arg)
       marcel_yield ();
     }
 
-  tprintf ("Thread %d: Now on node %d, host %s\n", i, pm2_self (), hostname);
+  tprintf ("Thread %d: Now on node %d, host %s\n",
+	   i, pm2_self (), hostname);
 }
 
 /********************* Cut here ********************/
-
-static int service_id;
-
 static void
 service (void)
 {
   pm2_rawrpc_waitdata ();
-  tprintf ("Service activated on node %d, host %s\n", pm2_self (), hostname);
+  tprintf ("Service activated on node %d, host %s\n",
+	   pm2_self (), hostname);
   barrier = 1;
 }
 
@@ -73,7 +71,6 @@ pm2_main (int argc, char *argv[])
 
   if (pm2_self () == 0)
     {				/* master process */
-
       for (i = 0; i < N; i++)
 	{
 	  pm2_completion_t c;
@@ -88,19 +85,17 @@ pm2_main (int argc, char *argv[])
       pm2_freeze ();
       pm2_threads_list (N, threads, &n, MIGRATABLE_ONLY);
       pm2_migrate_group (threads, n, where);
-
-      tprintf ("%d threads among %d migrated off to node %d\n", n, N, where);
+      tprintf ("%d threads among %d migrated off"
+	       "to node % d \ n ", n, N, where);
 
       tprintf ("Issuing RPC to node %d\n", where);
       pm2_rawrpc_begin (where, service_id, NULL);
       pm2_rawrpc_end ();
-
       barrier = 1;
 
       tprintf ("Just halting\n");
       pm2_halt ();
     }
   pm2_exit ();
-
   return 0;
 }

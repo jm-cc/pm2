@@ -1680,8 +1680,7 @@ DEF_MARCEL_POSIX(int, yield, (void))
 
   //lock_task();
   marcel_check_polling(MARCEL_POLL_AT_YIELD);
-  ma_set_need_resched();
-  ma_schedule();
+  marcel_yield_intern();
   //unlock_task();
 
   LOG_OUT();

@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: leoparse.h,v $
+Revision 1.4  2000/12/19 16:57:47  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.3  2000/11/16 13:24:04  oaumage
 - mise a jour initialisation
 
@@ -65,6 +73,7 @@ ______________________________________________________________________________
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
+#include "common.h"
 #include "pm2debug.h"
 #include "tbx.h"
 

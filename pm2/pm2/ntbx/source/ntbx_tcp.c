@@ -337,8 +337,10 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
   gethostname(client->local_host, MAXHOSTNAMELEN);
 
   local_host_entry = gethostbyname(client->local_host);
+#ifdef LEO_IP
   client->local_host_ip =
     (unsigned long) *(unsigned long *)(local_host_entry->h_addr);
+#endif // LEO_IP
 
   {
     char **ptr = local_host_entry->h_aliases;

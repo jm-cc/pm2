@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -34,6 +33,9 @@ void
 ntbx_purge_cmd_line(int   *argc,
 		    char **argv);
 
+void
+ntbx_exit(void);
+
 /*
  * Ntbx - constructors
  * -------------------
@@ -64,12 +66,18 @@ ntbx_topology_table_cons(void);
  * ------------------
  */
 void
-ntbx_client_dest(p_ntbx_client_t            object,
-		 p_tbx_specific_dest_func_t dest_func);
+ntbx_client_dest_ext(p_ntbx_client_t            object,
+		     p_tbx_specific_dest_func_t dest_func);
 
 void
-ntbx_server_dest(p_ntbx_server_t            object,
-		 p_tbx_specific_dest_func_t dest_func);
+ntbx_client_dest(p_ntbx_client_t object);
+
+void
+ntbx_server_dest_ext(p_ntbx_server_t            object,
+		     p_tbx_specific_dest_func_t dest_func);
+
+void
+ntbx_server_dest(p_ntbx_server_t object);
 
 void
 ntbx_process_info_dest(p_ntbx_process_info_t      object,

@@ -342,7 +342,6 @@ MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
 
 inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
 #section marcel_inline
-#include "sys/marcel_debug.h"
 
 inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
@@ -353,7 +352,7 @@ inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t 
 			MA_THR_RESTARTED(cur, "Preemption");
 			return __ma_get_lwp_var(previous_thread);
 		}
-		mdebug("switchto(%p, %p) on LWP(%d)\n",
+		debug_printf(&marcel_mdebug, "switchto(%p, %p) on LWP(%d)\n",
 		       cur, next, LWP_NUMBER(GET_LWP(cur)));
 		__ma_get_lwp_var(previous_thread)=cur;
 		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);

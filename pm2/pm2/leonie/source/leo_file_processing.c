@@ -318,8 +318,12 @@ process_channel(p_leonie_t     leonie,
       dir_node = tbx_htable_get(dir->node_htable, host_name);
       if (!dir_node)
 	{
+	  struct hostent *h;
+	  
 	  dir_node = leo_dir_node_init();
 	  dir_node->name = strdup(host_name);
+	  h = gethostbyname(host_name);
+	  dir_node->ip   = (unsigned long) *((unsigned long *) h->h_addr);
 	  tbx_htable_add(dir->node_htable, host_name, dir_node);
 	  tbx_slist_append(dir->node_slist, dir_node);
 	}

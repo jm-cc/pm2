@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.h,v $
+Revision 1.7  2000/06/09 08:45:46  oaumage
+- Progression du code
+
 Revision 1.6  2000/05/17 12:40:50  oaumage
 - reorganisation du code de demarrage de Leonie
 
@@ -62,6 +65,7 @@ ______________________________________________________________________________
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
+#include "pm2debug.h"
 #include "ntbx.h"
 #include "tbx.h"
 

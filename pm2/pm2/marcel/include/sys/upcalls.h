@@ -9,7 +9,6 @@
 #endif
 
 #include <asm/act.h>
-#include <asm/atomic.h>
 
 #ifdef ACT_VERBOSE
 #define ACTDEBUG(todo) (todo)

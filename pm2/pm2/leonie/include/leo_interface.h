@@ -24,8 +24,8 @@
 // Objects initialisation
 //------------------------/////////////////////////////////////////////////
 
-p_leo_application_settings_t  
-leo_application_settings_init(void);
+p_leo_settings_t  
+leo_settings_init(void);
 
 p_leo_process_specific_t
 leo_process_specific_init(void);
@@ -81,6 +81,9 @@ leo_spawn_group_init(void);
 p_leo_loader_t
 leo_loader_init(void);
 
+p_leonie_t
+leonie_init(void);
+
 
 // Include files processing
 //--------------------------///////////////////////////////////////////////
@@ -99,8 +102,8 @@ p_tbx_htable_t
 leo_loaders_register(void);
 
 
-// Loaders
-//---------////////////////////////////////////////////////////////////////
+// Communications
+//----------------/////////////////////////////////////////////////////////
 void
 leo_send_int(p_ntbx_client_t client,
 	     const int       data);
@@ -122,6 +125,37 @@ leo_send_string(p_ntbx_client_t  client,
 char *
 leo_receive_string(p_ntbx_client_t client);
 
+// File Processing
+//-----------------////////////////////////////////////////////////////////
+void
+process_application(p_leonie_t leonie);
+
+// Processes Spawning
+//--------------------/////////////////////////////////////////////////////
+void
+spawn_processes(p_leonie_t leonie);
+
+void
+send_directory(p_leonie_t leonie);
+
+// Session Control
+//-----------------////////////////////////////////////////////////////////
+void
+init_drivers(p_leonie_t leonie);
+
+void
+init_channels(p_leonie_t leonie);
+
+void
+exit_session(p_leonie_t leonie);
+
+// Clean-up
+//----------///////////////////////////////////////////////////////////////
+void
+dir_vchannel_disconnect(p_leonie_t leonie);
+
+void
+directory_exit(p_leonie_t leonie);
 
 
 // Usage

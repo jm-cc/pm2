@@ -76,7 +76,8 @@ extern volatile int pm2debug_marcel_launched;
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
 int pm2debug_printf(debug_type_t *type, int line, const char* file, 
-		     const char *format, ...);
+		     const char *format, ...)
+		__attribute__ ((format (printf, 4, 5)));
 void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 void pm2debug_flush(void);

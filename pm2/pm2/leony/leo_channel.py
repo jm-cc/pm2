@@ -4,11 +4,11 @@ import leo_pp
 class Process:
 
     def __init__(self, session, hostname, id):
-        self.session		= session
-        self.location		= (hostname, id)
-        self.global_rank	= session.leo.next_global_rank
-        session.leo.next_global_rank	= session.leo.next_global_rank + 1
-        self.driver_dict	= {}
+        self.session		      = session
+        self.location		      = (hostname, id)
+        self.global_rank	      = session.leo.next_global_rank
+        session.leo.next_global_rank  = session.leo.next_global_rank + 1
+        self.driver_dict	      = {}
 
 class Driver:
 
@@ -78,7 +78,13 @@ class Channel:
 
         self.name	= cfg_dict['name']
         self.net_name	= cfg_dict['net']
-
+        self.merge      = cfg_dict['merge']
+	
+	if self.merge == 'yes' :
+	    self.mergeable = True
+	else:
+	    self.mergeable = False
+			
         normalized_list	= leo_pp.list_normalize(cfg_dict['hosts'])
         self.hosts	= map(self._host_normalize, normalized_list)
 

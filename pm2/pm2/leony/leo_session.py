@@ -15,6 +15,7 @@ class Session:
     def __init__(self, leo, name, args, mode):
         self.name		= name
         self.leo		= leo
+	self.session_id         = leo.session_number
         self.process_list	= []
         self.node_dict		= {}
         self.driver_dict	= {}
@@ -25,7 +26,8 @@ class Session:
         self.xchannel_dict	= {}
 
         leo.session_dict[name] = self
-        leo_args.cmdline_parse(self, args, mode)
+        leo.session_number = leo.session_number + 1
+	leo_args.cmdline_parse(self, args, mode)
 
     def node_process_dict_get(self, host_name):
         if not self.node_dict.has_key(host_name):
@@ -70,7 +72,7 @@ class Session:
         leo_dir_activate.xchannels_init(self)
         
         logger.info('80% - building active processes container')
-        self.active_process_dict	= dict([(ps, ps) for ps in self.process_list])
+        self.active_process_dict = dict([(ps, ps) for ps in self.process_list])
         logger.info('90% - initializing remaining internal state structures')
         self.size	= len(self.process_list)
         self.barrier_dict	= None
@@ -101,6 +103,7 @@ class Session:
         for ps in self.process_list:
             leo_comm.client_close(ps.client)
             ps.client = None
-
-
+	    self.leo.next_global_rank =  self.leo.next_global_rank - 1
+	    logger.debug('Next global rank is %d' % self.leo.next_global_rank )
+	    
 #_____________

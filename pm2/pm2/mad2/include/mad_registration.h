@@ -38,13 +38,13 @@ typedef enum
 #endif /* DRV_SISCI */
 #ifdef DRV_SBP
   mad_SBP,
-#endif /* DRV_SBP */,
+#endif /* DRV_SBP */
 #ifdef DRV_MPI
   mad_MPI,
-#endif /* DRV_MPI */,
+#endif /* DRV_MPI */
 #ifdef DRV_BIP
   mad_BIP,
-#endif /* DRV_BIP */,
+#endif /* DRV_BIP */
   mad_driver_number /* Must be the last element of the enum declaration */
 } mad_driver_id_t, *p_mad_driver_id_t;
 

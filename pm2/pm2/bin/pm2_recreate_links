@@ -62,8 +62,6 @@ make_ln()
 echo PM2
 make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
 make_ln ${PM2_ROOT}/console graphic/icons icons
-make_ln ${PM2_ROOT}/toolbox src source
-make_ln ${PM2_ROOT}/toolbox/net src source
 
 # module links
 echo
@@ -73,8 +71,8 @@ make_ln ${PM2_ROOT}/modules ../leonie leonie
 make_ln ${PM2_ROOT}/modules ../mad1 mad1
 make_ln ${PM2_ROOT}/modules ../mad2 mad2
 make_ln ${PM2_ROOT}/modules ../marcel marcel
-make_ln ${PM2_ROOT}/modules ../toolbox/net ntbx
-make_ln ${PM2_ROOT}/modules ../toolbox tbx
+make_ln ${PM2_ROOT}/modules ../ntbx ntbx
+make_ln ${PM2_ROOT}/modules ../tbx tbx
 make_ln ${PM2_ROOT}/modules ../swann swann
 make_ln ${PM2_ROOT}/modules/pm2 ../../example example
 make_ln ${PM2_ROOT}/modules/pm2 ../../include include
@@ -144,8 +142,6 @@ make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 echo
 echo Madeleine II
 make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
-make_ln ${MAD2_ROOT}/ src source
-make_ln ${MAD2_ROOT}/ test examples
 
 # DSM
 echo

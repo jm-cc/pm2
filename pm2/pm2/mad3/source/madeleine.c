@@ -221,10 +221,38 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
 
   TRACE("Leonie link is up");
   {
+    p_tbx_slist_t alias = client->local_alias;
     char ip[11];
 
     sprintf(ip, "0x%lx", client->local_host_ip);
     mad_ntbx_send_string(client, ip);
+    {
+      char *hostname = NULL;
+
+      hostname = TBX_MALLOC(128);
+      gethostname(hostname, 127);
+      /*DISP_STR("sending hostname", hostname);*/
+      mad_ntbx_send_string(client, hostname);
+      TBX_FREE(hostname);
+    }
+    if (!tbx_slist_is_nil(alias))
+      {
+	tbx_slist_ref_to_head(alias);
+	do
+	  {
+	    char *a = NULL;
+
+	    a = tbx_slist_ref_get(alias);
+
+	    if (tbx_streq(a, ""))
+	      break;
+
+	    /*DISP_STR("sending alias", a);*/
+	    mad_ntbx_send_string(client, a);
+	  }
+	while (tbx_slist_ref_forward(alias));
+      }
+    mad_ntbx_send_string(client, "-");
   }
 #endif // LEO_IP
 

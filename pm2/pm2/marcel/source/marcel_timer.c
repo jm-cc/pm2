@@ -191,15 +191,26 @@ static sigset_t sigalrmset, sigeptset;
 // courant
 static void timer_interrupt(int sig)
 {
+#ifdef MA__DEBUG
+	static unsigned long tick = 0;
+
+	if (++tick == TICK_RATE) {
+		mdebugl(7,"\t\t\t<<Sig handler>>\n");
+		tick = 0;
+	}
+#endif
+
 	ma_irq_enter();
 	ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef MA__SMP
-	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
+	//SA_NOMASK est mis dans l'appel à sigaction
+	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
 	sigrelse(MARCEL_TIMER_SIGNAL);
 #else
-	sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
+	//SA_NOMASK est mis dans l'appel à sigaction
+	//sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
 #endif
 	/* ma_irq_exit risque de déclancher un changement de contexte,
@@ -284,14 +295,14 @@ void marcel_sig_disable_interrupts(void)
 
 static void sig_start_timer(ma_lwp_t lwp)
 {
-	static struct sigaction sa;
+	struct sigaction sa;
 
 	LOG_IN();
 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = timer_interrupt;
 #if !defined(WIN_SYS)
-	sa.sa_flags = SA_RESTART;
+	sa.sa_flags = SA_RESTART|SA_NOMASK;
 #if defined(OSF_SYS) && defined(ALPHA_ARCH)
 	sa.sa_flags |= SA_SIGINFO;
 #endif

@@ -1,9 +1,9 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.h,v 1.4 2002/10/23 14:07:07 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.h,v 1.5 2002/10/27 14:09:15 slacour Exp $
  */
 
-/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+/* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
 
 /* Hierarchical protocol, taking into account the network topology in
  * the consistency operations.  This protocol implements the "partial

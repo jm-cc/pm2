@@ -25,6 +25,7 @@
 #include "intro.h"
 #include "trace.h"
 #include "parser.h"
+#include "module.h"
 
 static GtkWidget *win = NULL;
 static GtkWidget *label1 = NULL;
@@ -242,7 +243,14 @@ static void make_initialization_window(void)
 static void compute_nb_steps(void)
 {
   token_t tok;
-  max_steps = 2; // pm2-module + pm2-flavor...
+  int i = 0;
+
+  max_steps = 2; // pm2-module + pm2-flavor ...
+
+  while(known_static_modules[i] != NULL) {
+    max_steps++;
+    i++;
+  }
 
   parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
 

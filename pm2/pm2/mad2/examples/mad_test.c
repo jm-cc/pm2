@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.4  2000/03/02 14:27:55  oaumage
+- support d'un protocole par defaut
+
 Revision 1.3  2000/03/02 09:52:22  jfmehaut
 pilote Madeleine II/BIP
 
@@ -109,15 +112,17 @@ int main(int argc, char **argv)
   /* VIA - ethernet 
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_eth0"); */
   /* TCP 
-  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
   /* SISCI 
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
   /* MPI 
      adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); */
-  /* BIP */ 
-     adapter_set = mad_adapter_set_init(1, mad_BIP, NULL); 
+  /* BIP 
+     adapter_set = mad_adapter_set_init(1, mad_BIP, NULL); */
+  /* Default */
+  adapter_set = mad_adapter_set_init(1, mad_DRIVER_DEFAULT, NULL); 
 #endif /* BI_PROTO */
 
   madeleine = mad_init(&argc, argv, NULL, adapter_set);

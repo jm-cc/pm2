@@ -54,11 +54,15 @@ GLOBAL_ENTRY(ma_ia64_spinlock_contention)
         .prologue
         .altrp b6
         .body
-        tbit.nz p15,p0=r27,MA_IA64_PSR_I_BIT
+#if 0
+	tbit.nz p15,p0=r27,MA_IA64_PSR_I_BIT
         ;;
+#endif
 .wait:
+#if 0
 (p15)   ssm psr.i               // reenable interrupts if they were on
                                 // DavidM says that srlz.d is slow and is not required in this case
+#endif
 .wait2:
         // exponential backoff, kdb, lockmeter etc. go in here
         //hint @pause
@@ -67,7 +71,9 @@ GLOBAL_ENTRY(ma_ia64_spinlock_contention)
         cmp4.ne p14,p0=r30,r0
         mov r30 = 1
 (p14)   br.cond.sptk.few .wait2
+#if 0
 (p15)   rsm psr.i               // disable interrupts if we reenabled them
+#endif
         ;;
         cmpxchg4.acq r30=[r31], r30, ar.ccv
         ;;

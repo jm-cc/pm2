@@ -73,10 +73,10 @@
  * note: 's' is supposed to be a pointer on a status structure
  */
 #define MAD_SISCI_DISPLAY_ERROR(s) DISP("SISCI failure: " s "\n")
-#define mad_sisci_set(s)    tbx_set(&((s)->flag))
-#define mad_sisci_clear(s)  tbx_clear(&((s)->flag))
-#define mad_sisci_toggle(s) tbx_toggle(&((s)->flag))
-#define mad_sisci_test(s)   tbx_test(&((s)->flag))
+#define mad_sisci_set(s)    tbx_flag_set(&((s)->flag))
+#define mad_sisci_clear(s)  tbx_flag_clear(&((s)->flag))
+#define mad_sisci_toggle(s) tbx_flag_toggle(&((s)->flag))
+#define mad_sisci_test(s)   tbx_flag_test(&((s)->flag))
 #define mad_sisci_control() if (sisci_error != SCI_ERR_OK)\
  {mad_sisci_display_error(sisci_error);FAILURE("Aborting");} else {}
 

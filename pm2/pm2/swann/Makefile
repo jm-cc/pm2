@@ -84,7 +84,6 @@ SWANN_REG_SOURCES   :=  $(wildcard $(SWANN_SRC)/*.c)
 SWANN_REG_OBJECTS   :=  $(patsubst %.c,%.o,$(subst $(SWANN_SRC),$(SWANN_OBJ),$(SWANN_REG_SOURCES)))
 SWANN_OBJECTS       :=  $(SWANN_REG_OBJECTS)
 SWANN_APP            =  $(SWANN_BIND)/swann
-SWANN_LLIBS          =  $(ARCHDLIB) -lfl  $(TBX_LIB) $(NTBX_LIB) $(TBX_LLIB) $(NTBX_LLIB)
 
 SWANN_REG_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(SWANN_OBJ),$(SWANN_DEP),$(SWANN_REG_OBJECTS)))
 SWANN_DEPENDS     :=  ($strip $(SWANN_REG_DEPENDS))
@@ -94,12 +93,13 @@ MASTER         :=  swann
 MASTER_CC      :=  gcc
 MASTER_OPTIONS :=  $(SWANN_OPTIONS)
 MASTER_DEP     :=  $(SWANN_MAKEFILE) $(SWANN_SUB_MAKEFILE)
+MASTER_LDFLAGS := 
 
 SWANN_CC      =  $(MASTER_CC)
 SWANN_CFLAGS  =  $(MASTER_OPTIONS) $(PM2_FLAGS) \
 		 -I$(SWANN_INC) -I$(TBX_ROOT)/include \
 		 -I$(SWANN_ROOT)/include -I$(NTBX_ROOT)/include
-SWANN_LDFLAGS =	
+SWANN_LDFLAGS =	$(MASTER_LDFLAGS)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(SWANN_DEPENDS)),$(SWANN_DEPENDS))
@@ -117,7 +117,7 @@ $(SWANN_DEPENDS): $(MASTER_DEP)
 
 $(SWANN_APP): $(SWANN_OBJECTS) tbx_default ntbx_default
 	@ echo "  -  $(@F)"
-	$(SWANN_CC) -o $(SWANN_APP) $(SWANN_OBJECTS) $(SWANN_LLIBS)
+	$(SWANN_CC) -o $(SWANN_APP) $(SWANN_OBJECTS) $(SWANN_LDFLAGS)
 
 $(SWANN_REG_OBJECTS): $(SWANN_OBJ)/%.o: $(SWANN_SRC)/%.c
 	@ echo "  -  $(@F)"

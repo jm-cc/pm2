@@ -20,8 +20,11 @@
 
 #include "madeleine.h"
 
-#include <sys/time.h>
+#include <netinet/in.h>
+#include <netinet/udp.h>
+//#include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 /*
@@ -61,10 +64,19 @@ DEBUG_DECLARE(udp)
 
 
 
+
+
 /*
  * Communication protocol
  */
 
+/* Three predefined sizes for UDP socket buffers */
+#define MAD_UDP_SO_BUF_LARGE   0x20000
+#define MAD_UDP_SO_BUF_MID     0x4000
+#define MAD_UDP_SO_BUF_SMALL   0x400
+
+/* Max size in bytes of a UDP datagram */
+#define MAD_UDP_MAX_DGRAM_SIZE    (0x10000 - 48)
 
 /* Each node must tell the others what are its request and data ports. This
    two ports are dumped in a string, separated by MAD_UDP_PORT_SEPARATOR. */
@@ -108,28 +120,11 @@ DEBUG_DECLARE(udp)
 #define MAD_UDP_IS_RRM(rrm) \
         (!strncmp((rrm),"RRM-",4))
 
-/* Extract Ids for ACK and RRM packets */
-static
-void
-mad_udp_ack_rrm_extract_ids(char *buf,
-			    ntbx_udp_id_t *msgid, ntbx_udp_id_t *bufid)
-{
-  char *pos = buf + 15;
-  
-  *pos   = '\0';
-  *msgid = atoi(buf + 4);
-  *bufid = atoi(pos + 1);
-  *pos   = ':';
-}
-
-
 /* DGR (datagram) format: "DGR-%-11d:%-15d:%-15d"<data>
    .                          <msgid><bufid><dgrid>    */
 #define MAD_UDP_DGRAM_HD_SIZE                    48
 #define MAD_UDP_DGRAM_BODY_SIZE \
-        (NTBX_UDP_MAX_DGRAM_SIZE - MAD_UDP_DGRAM_HD_SIZE)
-#define MAD_UDP_DGRAM_SIZE \
-        (MAD_UDP_DGRAM_HD_SIZE + MAD_UDP_DGRAM_BODY_SIZE)
+        (MAD_UDP_MAX_DGRAM_SIZE - MAD_UDP_DGRAM_HD_SIZE)
 #define MAD_UDP_DGRAM_SET_MSGID(dgr,msgid) \
         sprintf((dgr),"DGR-%-11d",(msgid)); *((dgr)+15)=':'
 #define MAD_UDP_DGRAM_SET_BUFID(dgr,bufid) \
@@ -138,22 +133,6 @@ mad_udp_ack_rrm_extract_ids(char *buf,
         sprintf((dgr)+32,"%-15d",(dgrid))
 #define MAD_UDP_IS_DGRAM_HD(dgr) \
         (!strncmp((dgr), "DGR-", 4))
-
-/* Extract DGR packet Ids */
-static
-void
-mad_udp_dgr_extract_ids(char *buf, ntbx_udp_id_t *msgid,
-			ntbx_udp_id_t *bufid, ntbx_udp_id_t *dgrid)
-{
-  char *pos = buf + 31;
-
-  *pos = '\0';
-  mad_udp_ack_rrm_extract_ids(buf, msgid, bufid);
-  *dgrid = atoi(pos + 1);
-  *pos = ':';
-}
-
-
 
 /* Piggy-backing - ACK for ACK with data format:
    "ACK-%-11d\0DGR-%-11d:%-15d:%-15d"<data>"
@@ -169,6 +148,20 @@ mad_udp_dgr_extract_ids(char *buf, ntbx_udp_id_t *msgid,
  * Local structures
  * ----------------
  */
+
+#ifdef SOLARIS_SYS
+#define socklen_t int
+#endif // SOLARIS_SYS
+
+typedef unsigned int       mad_udp_port_t,    *p_mad_udp_port_t;
+typedef struct in_addr     mad_udp_in_addr_t, *p_mad_udp_in_addr_t;
+typedef struct sockaddr_in mad_udp_address_t, *p_mad_udp_address_t;
+typedef int                mad_udp_socket_t,  *p_mad_udp_socket_t;
+
+typedef int                mad_udp_id_t;
+
+typedef struct iovec       mad_udp_iovec_t,   *p_mad_udp_iovec_t;
+
 
 /* Each adapter has got a socket to transmit infos
    on local request and data ports */
@@ -195,55 +188,373 @@ enum {
 /* The four socket are created at channel level */
 typedef struct s_mad_udp_channel_specific
 {
-  ntbx_udp_port_t   port[NB_SOCKET];
-  ntbx_udp_socket_t socket[NB_SOCKET];
+  mad_udp_port_t   port[NB_SOCKET];
+  mad_udp_socket_t socket[NB_SOCKET];
 #if MAD_UDP_USE_IOVEC_FOR_REQS
-  char              request_buffer[MAD_UDP_REQ_SIZE - MAD_UDP_REQ_HD_SIZE];
+  char             request_buffer[MAD_UDP_REQ_SIZE - MAD_UDP_REQ_HD_SIZE];
 #else  // MAD_UDP_USE_IOVEC_FOR_REQS
-  char              request_buffer[MAD_UDP_REQ_SIZE];
+  char             request_buffer[MAD_UDP_REQ_SIZE];
 #endif // MAD_UDP_USE_IOVEC_FOR_REQS
 #if MAD_UDP_STATS
-  int               nb_snd_msg;
-  int               nb_rcv_msg;
-  int               reemitted_requests;
-  int               reemitted_dgrams;
-  int               reemitted_acks;
-  int               reemitted_afacks;
-  int               old_acks;
-  int               wrong_acks;
-  int               strange_acks;
-  int               old_dgrams;
-  int               wrong_dgrams;
-  int               strange_dgrams;
-  int               old_reqs;
-  int               wrong_reqs;
-  int               strange_reqs;
-  int               rrm_nb;
-  int               old_rrms;
-  int               wrong_rrms;
-  int               strange_rrms;
+  int              nb_snd_msg;
+  int              nb_rcv_msg;
+  int              reemitted_requests;
+  int              reemitted_dgrams;
+  int              reemitted_acks;
+  int              reemitted_afacks;
+  int              old_acks;
+  int              wrong_acks;
+  int              strange_acks;
+  int              old_dgrams;
+  int              wrong_dgrams;
+  int              strange_dgrams;
+  int              old_reqs;
+  int              wrong_reqs;
+  int              strange_reqs;
+  int              rrm_nb;
+  int              old_rrms;
+  int              wrong_rrms;
+  int              strange_rrms;
 #endif // MAD_UDP_STATS
 } mad_udp_channel_specific_t, *p_mad_udp_channel_specific_t;
 
 /* A connection registers remote (rm) ports for all sockets */
 typedef struct s_mad_udp_connection_specific
 {
-  ntbx_udp_in_addr_t rm_in_addr;
-  ntbx_udp_port_t    rm_port[NB_SOCKET];
-  ntbx_udp_id_t      snd_msgid; // msg to send (or being sent)
-  ntbx_udp_id_t      snd_bufid; // buffer to send (or being sent)
-  ntbx_udp_id_t      rcv_msgid; // msg to be received (or being received)
-  ntbx_udp_id_t      rcv_bufid; // buffer to be received (or being received)
+  mad_udp_in_addr_t rm_in_addr;
+  mad_udp_port_t    rm_port[NB_SOCKET];
+  mad_udp_id_t      snd_msgid; // msg to send (or being sent)
+  mad_udp_id_t      snd_bufid; // buffer to send (or being sent)
+  mad_udp_id_t      rcv_msgid; // msg to be received (or being received)
+  mad_udp_id_t      rcv_bufid; // buffer to be received (or being received)
   // Store data arrived with ACK for ACK (data for next buffer in msg)
   char               rcv_early_dgr[MAD_UDP_ACKDG_DGR_SIZE];
 } mad_udp_connection_specific_t, *p_mad_udp_connection_specific_t;
 
 
 
+/* ------------------------ *
+ * Static functions headers
+ * ------------------------ */
+
 /*
- * Static functions
- * ----------------
+ * Communication protocol utilities
  */
+
+static
+void
+mad_udp_dgr_extract_ids(char *buf, mad_udp_id_t *msgid,
+			mad_udp_id_t *bufid, mad_udp_id_t *dgrid);
+static
+void
+mad_udp_ack_rrm_extract_ids(char *buf,
+			    mad_udp_id_t *msgid, mad_udp_id_t *bufid);
+
+/*
+ * Network utilities
+ */
+
+static
+void
+mad_udp_socket_setup(mad_udp_socket_t desc,
+		     int              snd_size,
+		     int              rcv_size);
+static
+mad_udp_socket_t
+mad_udp_socket_create(p_mad_udp_address_t address);
+
+static
+int
+mad_udp_select(mad_udp_socket_t socket, int usec);
+
+static
+int
+mad_udp_sendto(mad_udp_socket_t    socket,
+	       const void         *ptr,
+	       const int           lg,
+	       p_mad_udp_address_t p_addr);
+static
+int
+mad_udp_recvfrom(mad_udp_socket_t    socket,
+		 void               *ptr,
+		 int                 lg,
+		 p_mad_udp_address_t p_addr);
+static
+int
+mad_udp_sendmsg(mad_udp_socket_t    socket,
+		p_mad_udp_iovec_t   iov,
+		int                 iovlen,
+		p_mad_udp_address_t p_addr);
+static
+int
+mad_udp_recvmsg(mad_udp_socket_t    socket,
+		p_mad_udp_iovec_t   iov,
+		int                 iovlen,
+		p_mad_udp_address_t p_addr);
+
+/*
+ * Send/receive request
+ */
+
+static
+void
+mad_udp_sendreq(p_mad_connection_t  connection,
+	       p_mad_buffer_t      first_buffer,
+	       p_mad_udp_address_t p_remote_address);
+static
+p_mad_connection_t
+mad_udp_recvreq(p_mad_channel_t channel);
+
+
+
+/* ------------------------------------------------- *
+ * Communication protocol utilities static functions
+ * ------------------------------------------------- */
+
+/* Extract DGR packet Ids */
+static
+void
+mad_udp_dgr_extract_ids(char *buf, mad_udp_id_t *msgid,
+			mad_udp_id_t *bufid, mad_udp_id_t *dgrid)
+{
+  char *pos = buf + 31;
+
+  *pos = '\0';
+  mad_udp_ack_rrm_extract_ids(buf, msgid, bufid);
+  *dgrid = atoi(pos + 1);
+  *pos = ':';
+}
+
+/* Extract Ids for ACK and RRM packets */
+static
+void
+mad_udp_ack_rrm_extract_ids(char *buf,
+			    mad_udp_id_t *msgid, mad_udp_id_t *bufid)
+{
+  char *pos = buf + 15;
+  
+  *pos   = '\0';
+  *msgid = atoi(buf + 4);
+  *bufid = atoi(pos + 1);
+  *pos   = ':';
+}
+
+
+/* ---------------------------------- *
+ * Network utilities static functions
+ * ---------------------------------- */
+
+static
+void
+mad_udp_socket_setup(mad_udp_socket_t socket,
+		     int              snd_size,
+		     int              rcv_size)
+{
+  int           snd, rcv;
+  socklen_t     lg = sizeof(int);
+  
+  LOG_IN();
+  snd = snd_size;
+  rcv = rcv_size;
+  SYSCALL(setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char *)&snd, lg));
+  SYSCALL(setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char *)&rcv, lg));
+  LOG_OUT();
+}
+
+static
+mad_udp_socket_t 
+mad_udp_socket_create(p_mad_udp_address_t address)
+{
+  socklen_t         lg  = sizeof(mad_udp_address_t);
+  mad_udp_address_t temp;
+  int               desc;
+
+  LOG_IN();
+  SYSCALL(desc = socket(AF_INET, SOCK_DGRAM, 0));
+  temp.sin_family      = AF_INET;
+  temp.sin_addr.s_addr = htonl(INADDR_ANY);
+  temp.sin_port        = htons(0);
+  SYSCALL(bind(desc, (struct sockaddr *)&temp, lg));
+  if (address)
+    SYSCALL(getsockname(desc, (struct sockaddr *)address, &lg));
+  LOG_OUT();
+  return (mad_udp_socket_t)desc;
+}
+
+static
+int
+mad_udp_select(mad_udp_socket_t socket, int usec)
+{
+  struct timeval tv;
+  fd_set fds;
+  int    result;
+
+  LOG_IN();
+  tv.tv_sec  = 0;
+  tv.tv_usec = usec;
+  FD_ZERO(&fds);
+  FD_SET(socket, &fds);
+  SYSTEST(result = select(socket + 1, &fds, NULL, NULL, &tv));
+  LOG_OUT();
+  return result;
+}
+
+static
+int
+mad_udp_sendto(mad_udp_socket_t    socket,
+	       const void         *ptr,
+	       const int           lg,
+	       p_mad_udp_address_t p_addr)
+{
+  int result;
+
+  LOG_IN();
+#ifdef DEBUG
+  if (lg > MAD_UDP_MAX_DGRAM_SIZE)
+    FAILURE("UDP send: message too big.");
+#endif // DEBUG
+  do {
+    SYSTEST(result = sendto(socket, ptr, lg, 0,
+			    (struct sockaddr *)p_addr,
+			    sizeof(mad_udp_address_t)));
+    if (result == -1) {
+      if ((errno != EAGAIN) && (errno != EINTR)) {
+	ERROR("UDP sendto");
+      }
+    } else if (result == 0) {
+      FAILURE("connection closed");
+    } else {
+      LOG_OUT();
+      return result;
+    }
+  } while (result < 0);
+  LOG_OUT();
+  return 0;
+}
+
+static
+int
+mad_udp_recvfrom(mad_udp_socket_t    socket,
+		 void               *ptr,
+		 int                 lg,
+		 p_mad_udp_address_t p_addr)
+{
+  int result;
+  int addr_lg = sizeof(mad_udp_address_t);
+
+  LOG_IN();
+#ifdef DEBUG
+  if (lg > MAD_UDP_MAX_DGRAM_SIZE)
+    FAILURE("UDP receive: message too big.");
+#endif // DEBUG
+  do {
+    SYSTEST(result = recvfrom(socket, ptr, lg, 0,
+			      (struct sockaddr *)p_addr, &addr_lg));
+    if (result == -1) {
+      if ((errno != EAGAIN) && (errno != EINTR)) {
+	ERROR("UDP recvfrom");
+      }
+    } else if (result == 0) {
+      FAILURE("connection closed");
+    } else {
+      LOG_OUT();
+      return result;
+    }
+  } while (result < 0);
+  LOG_OUT();
+  return 0;
+}
+
+static
+int
+mad_udp_sendmsg(mad_udp_socket_t    socket,
+		p_mad_udp_iovec_t   iov,
+		int                 iovlen,
+		p_mad_udp_address_t p_addr)
+{
+  int           result;
+  struct msghdr msghdr;
+
+  LOG_IN();
+#ifdef DEBUG
+  {
+    int i, lg = 0;
+    for (i=0; i < iovlen; i++)
+      lg += iov[i].iov_len;
+    if (lg > MAD_UDP_MAX_DGRAM_SIZE)
+      FAILURE("UDP receive: message too big.");
+  }
+#endif // DEBUG
+  memset(&msghdr, 0, sizeof(msghdr));
+  msghdr.msg_name    = (caddr_t) p_addr;
+  msghdr.msg_namelen = sizeof(mad_udp_address_t);
+  msghdr.msg_iov     = (struct iovec *)iov;
+  msghdr.msg_iovlen  = iovlen;
+  do {
+    SYSTEST(result = sendmsg(socket, &msghdr, 0));
+    if (result == -1) {
+      if ((errno != EAGAIN) && (errno != EINTR)) {
+	ERROR("UDP sendto");
+      }
+    } else if (result == 0) {
+      FAILURE("connection closed");
+    } else {
+      LOG_OUT();
+      return result;
+    }
+  } while (result < 0);
+  LOG_OUT();
+  return 0;
+}
+
+static
+int
+mad_udp_recvmsg(mad_udp_socket_t    socket,
+		p_mad_udp_iovec_t   iov,
+		int                 iovlen,
+		p_mad_udp_address_t p_addr)
+{
+  int           result;
+  struct msghdr msghdr;
+  
+  LOG_IN();
+#ifdef DEBUG
+  {
+    int i, lg = 0;
+    for (i=0; i < iovlen; i++)
+      lg += iov[i].iov_len;
+    if (lg > MAD_UDP_MAX_DGRAM_SIZE)
+      FAILURE("UDP receive: message too big.");
+  }
+#endif // DEBUG
+  memset(&msghdr, 0, sizeof(msghdr));
+  msghdr.msg_name    = (caddr_t) p_addr;
+  msghdr.msg_namelen = sizeof(mad_udp_address_t);
+  msghdr.msg_iov     = (struct iovec *)iov;
+  msghdr.msg_iovlen  = iovlen;
+  do {
+    SYSTEST(result = recvmsg(socket, &msghdr, 0));
+    if (result == -1) {
+      if ((errno != EAGAIN) && (errno != EINTR)) {
+	ERROR("UDP recvfrom");
+      }
+    } else if (result == 0) {
+      FAILURE("connection closed");
+    } else {
+      LOG_OUT();
+      return result;
+    }
+  } while (result < 0);
+  LOG_OUT();
+  return 0;
+}
+
+
+
+/* ---------------------------------- *
+ * Request utilities static functions
+ * ---------------------------------- */
+
 
 /**
  * Send REQ and wait for its ACK.
@@ -251,18 +562,18 @@ typedef struct s_mad_udp_connection_specific
  */
 static
 void
-mad_udp_send_request(p_mad_connection_t   connection,
-		     p_mad_buffer_t       first_buffer,
-		     p_ntbx_udp_address_t p_remote_address)
+mad_udp_sendreq(p_mad_connection_t  connection,
+	       p_mad_buffer_t      first_buffer,
+	       p_mad_udp_address_t p_remote_address)
 {
   p_mad_udp_connection_specific_t specific;
   p_mad_udp_channel_specific_t    channel_specific;
   int                             bytes_read;
-  ntbx_udp_socket_t               so_req, so_snd;
-  ntbx_udp_in_addr_t              rm_in_addr;
-  ntbx_udp_port_t                 rm_rcv_port;
+  mad_udp_socket_t                so_req, so_snd;
+  mad_udp_in_addr_t               rm_in_addr;
+  mad_udp_port_t                  rm_rcv_port;
 #if MAD_UDP_USE_IOVEC_FOR_REQS
-  ntbx_udp_iovec_t                iov[2];
+  mad_udp_iovec_t                 iov[2];
   char                            buf[max3(MAD_UDP_REQ_HD_SIZE,
 					   MAD_UDP_ACK_SIZE,
 					   MAD_UDP_RRM_HD_SIZE)];
@@ -271,7 +582,7 @@ mad_udp_send_request(p_mad_connection_t   connection,
 					   MAD_UDP_ACK_SIZE,
 					   MAD_UDP_RRM_HD_SIZE)];
 #endif // MAD_UDP_USE_IOVEC_FOR_REQS
-  ntbx_udp_id_t                   msgid, bufid;
+  mad_udp_id_t                    msgid, bufid;
   tbx_bool_t                      ack_received;
 #if MAD_UDP_STATS
   int                             loop_cnt = -1;
@@ -306,19 +617,19 @@ mad_udp_send_request(p_mad_connection_t   connection,
     loop_cnt++;
 #endif // MAD_UDP_STATS
 #if MAD_UDP_USE_IOVEC_FOR_REQS
-    ntbx_udp_sendmsg(so_req, (p_ntbx_udp_iovec_t)iov, 2, p_remote_address);
+    mad_udp_sendmsg(so_req, (p_mad_udp_iovec_t)iov, 2, p_remote_address);
 #else  // MAD_UDP_USE_IOVEC_FOR_REQS
     memcpy(buf + MAD_UDP_REQ_HD_SIZE, first_buffer->buffer, bytes_read);
-    ntbx_udp_sendto(so_req, buf, MAD_UDP_REQ_SIZE, p_remote_address);
+    mad_udp_sendto(so_req, buf, MAD_UDP_REQ_SIZE, p_remote_address);
 #endif // MAD_UDP_USE_IOVEC_FOR_REQS
     
     
     /* Wait for ack. */
     
-    while (ntbx_udp_select(so_snd, 100000)) {
-      ntbx_udp_recvfrom(so_snd,
-			buf, max(MAD_UDP_RRM_HD_SIZE, MAD_UDP_ACK_SIZE),
-			p_remote_address);
+    while (mad_udp_select(so_snd, 100000)) {
+      mad_udp_recvfrom(so_snd,
+		       buf, max(MAD_UDP_RRM_HD_SIZE, MAD_UDP_ACK_SIZE),
+		       p_remote_address);
       /* If first ACK is lost, then timeout on RCV_DATA socket make
 	 receiver send a request for reemission.
 	 That is why we choose to use an empty RRM for request ACK. */
@@ -331,7 +642,7 @@ mad_udp_send_request(p_mad_connection_t   connection,
 	  break;
 #if MAD_UDP_STATS
 	} else { // Ignore all other RRM's
-	  if (   (p_remote_address->sin_addr.s_addr != rm_in_addr.s_addr)
+	  if ((p_remote_address->sin_addr.s_addr != rm_in_addr.s_addr)
 	      || (p_remote_address->sin_port != rm_rcv_port)) {
 	    channel_specific->strange_rrms++;
 	  } else if (msgid < specific->snd_msgid) {
@@ -344,7 +655,7 @@ mad_udp_send_request(p_mad_connection_t   connection,
       } else if (MAD_UDP_IS_ACK(buf)) {
 	/* An ACK of a buffer "End of reception".
 	   It means that ACK for ACK was lost => resend it. */
-	ntbx_udp_sendto(so_snd, buf, MAD_UDP_ACK_SIZE, p_remote_address);
+	mad_udp_sendto(so_snd, buf, MAD_UDP_ACK_SIZE, p_remote_address);
 #if MAD_UDP_STATS
 	channel_specific->reemitted_afacks++;
       } else {
@@ -377,19 +688,19 @@ mad_udp_send_request(p_mad_connection_t   connection,
  */
 static
 p_mad_connection_t
-mad_udp_recv_request(p_mad_channel_t channel)
+mad_udp_recvreq(p_mad_channel_t channel)
 {
   p_mad_udp_channel_specific_t    specific;
-  ntbx_udp_address_t              remote_address;
-  ntbx_udp_id_t                   msgid = 0;
+  mad_udp_address_t               remote_address;
+  mad_udp_id_t                    msgid = 0;
   
   p_mad_connection_t              in;
   p_mad_udp_connection_specific_t in_specific = NULL;
   tbx_darray_index_t              idx;
   
-  ntbx_udp_socket_t               so_req;
+  mad_udp_socket_t                so_req;
 #if MAD_UDP_USE_IOVEC_FOR_REQS
-  ntbx_udp_iovec_t                iov[2];
+  mad_udp_iovec_t                 iov[2];
   char                            buf[max(MAD_UDP_RRM_HD_SIZE,
 					  MAD_UDP_REQ_HD_SIZE)];
 #else  // MAD_UDP_USE_IOVEC_FOR_REQS
@@ -411,11 +722,11 @@ mad_udp_recv_request(p_mad_channel_t channel)
 #endif // MAD_UDP_USE_IOVEC_FOR_REQS
 
   do {
-    ntbx_udp_port_t remote_port;
+    mad_udp_port_t remote_port;
     unsigned long   remote_in_addr;
 
 #if MAD_UDP_USE_IOVEC_FOR_REQS
-    ntbx_udp_recvmsg(so_req, (p_ntbx_udp_iovec_t)iov, 2, &remote_address);
+    mad_udp_recvmsg(so_req, (p_mad_udp_iovec_t)iov, 2, &remote_address);
     if (MAD_UDP_IS_REQ(buf))
       msgid = MAD_UDP_REQ_MSGID(buf);
     else {
@@ -425,7 +736,7 @@ mad_udp_recv_request(p_mad_channel_t channel)
       continue;
     }
 #else  // MAD_UDP_USE_IOVEC_FOR_REQS
-    ntbx_udp_recvfrom(so_req, specific->request_buffer, MAD_UDP_REQ_SIZE,
+    mad_udp_recvfrom(so_req, specific->request_buffer, MAD_UDP_REQ_SIZE,
 		      &remote_address);
     if (MAD_UDP_IS_REQ(specific->request_buffer))
       msgid = MAD_UDP_REQ_MSGID(specific->request_buffer);
@@ -443,9 +754,9 @@ mad_udp_recv_request(p_mad_channel_t channel)
     idx = -1;
     do {
       in = tbx_darray_next_idx(channel->in_connection_darray, &idx);
-    } while (   (in)
+    } while ((in)
 	     && (in_specific = in->specific)
-	     && (   (in_specific->rm_port[REQUEST]  != remote_port)
+	     && ((in_specific->rm_port[REQUEST]  != remote_port)
 		 || (in_specific->rm_in_addr.s_addr != remote_in_addr)));
     
     // Ignore doubled requests (msgid < in_specific->rcv_msgid)
@@ -472,7 +783,7 @@ mad_udp_recv_request(p_mad_channel_t channel)
   MAD_UDP_RRM_SET_MSGID(buf, msgid);
   MAD_UDP_RRM_SET_BUFID(buf, 0);
   remote_address.sin_port = in_specific->rm_port[SND_DATA];
-  ntbx_udp_sendto(specific->socket[RCV_DATA],
+  mad_udp_sendto(specific->socket[RCV_DATA],
 		  buf, MAD_UDP_RRM_HD_SIZE, &remote_address);
   
   LOG_OUT();
@@ -481,10 +792,9 @@ mad_udp_recv_request(p_mad_channel_t channel)
 
 
 
-/*
- * Registration function
- * ---------------------
- */
+/* -------------- *
+ * Init functions
+ * -------------- */
 
 void
 mad_udp_register(p_mad_driver_t driver)
@@ -586,7 +896,7 @@ void
 mad_udp_channel_init(p_mad_channel_t channel)
 {
   p_mad_udp_channel_specific_t specific;
-  ntbx_udp_address_t           address;
+  mad_udp_address_t            address;
   int                          i;
   
   LOG_IN();
@@ -601,16 +911,16 @@ mad_udp_channel_init(p_mad_channel_t channel)
   }
   channel->specific     = specific;
   for (i = REQUEST; i < NB_SOCKET; i++) {
-    specific->socket[i] = ntbx_udp_socket_create(&address);
-    specific->port[i]   = (ntbx_udp_port_t)address.sin_port;
+    specific->socket[i] = mad_udp_socket_create(&address);
+    specific->port[i]   = (mad_udp_port_t)address.sin_port;
   }
   
-  ntbx_udp_socket_setup(specific->socket[REQUEST],
-			NTBX_UDP_SO_BUF_SMALL, NTBX_UDP_SO_BUF_LARGE);
-  ntbx_udp_socket_setup(specific->socket[SND_DATA],
-			NTBX_UDP_SO_BUF_LARGE, NTBX_UDP_SO_BUF_MID);
-  ntbx_udp_socket_setup(specific->socket[RCV_DATA],
-			NTBX_UDP_SO_BUF_MID, NTBX_UDP_SO_BUF_LARGE);
+  mad_udp_socket_setup(specific->socket[REQUEST],
+		       MAD_UDP_SO_BUF_SMALL, MAD_UDP_SO_BUF_LARGE);
+  mad_udp_socket_setup(specific->socket[SND_DATA],
+		       MAD_UDP_SO_BUF_LARGE, MAD_UDP_SO_BUF_MID);
+  mad_udp_socket_setup(specific->socket[RCV_DATA],
+		       MAD_UDP_SO_BUF_MID, MAD_UDP_SO_BUF_LARGE);
 
 #if !MAD_UDP_USE_IOVEC_FOR_REQS
   memset(specific->request_buffer, 0, MAD_UDP_REQ_SIZE);
@@ -728,7 +1038,7 @@ mad_udp_accept(p_mad_connection_t   in,
   ntbx_tcp_read(tcp_socket, ports_buffer, MAD_UDP_PORTS_BUF_MAX_LENGTH);
   
   connection_specific->rm_in_addr =
-    (ntbx_udp_in_addr_t)remote_address.sin_addr;
+    (mad_udp_in_addr_t)remote_address.sin_addr;
   port = ports_buffer;
   for (i = REQUEST; i < RCV_DATA; i++) {
     separator  = strchr(port, MAD_UDP_PORT_SEPARATOR);
@@ -737,7 +1047,7 @@ mad_udp_accept(p_mad_connection_t   in,
     port       = 1 + separator;
   }
   connection_specific->rm_port[i] = htons(atoi(port));
-  
+
   SYSCALL(close(tcp_socket));
   LOG_OUT();
 }
@@ -790,7 +1100,7 @@ mad_udp_connect(p_mad_connection_t   out,
   ntbx_tcp_read(tcp_socket, ports_buffer, MAD_UDP_PORTS_BUF_MAX_LENGTH);
   
   connection_specific->rm_in_addr =
-    (ntbx_udp_in_addr_t)remote_address.sin_addr;
+    (mad_udp_in_addr_t)remote_address.sin_addr;
   port = ports_buffer;
   for (i = REQUEST; i < RCV_DATA; i++) {
     separator  = strchr(port, MAD_UDP_PORT_SEPARATOR);
@@ -888,7 +1198,7 @@ mad_udp_finalize_message(p_mad_connection_t out)
 {
   p_mad_udp_connection_specific_t specific;
   p_mad_udp_channel_specific_t    channel_specific;
-  ntbx_udp_address_t              remote_address;
+  mad_udp_address_t               remote_address;
   char                            afack[MAD_UDP_ACK_SIZE];
   
   LOG_IN();
@@ -902,8 +1212,8 @@ mad_udp_finalize_message(p_mad_connection_t out)
   remote_address.sin_addr   = specific->rm_in_addr;
   remote_address.sin_port   = specific->rm_port[RCV_DATA];
   memset(remote_address.sin_zero, '\0', 8);
-  ntbx_udp_sendto(channel_specific->socket[SND_DATA],
-		  afack, MAD_UDP_ACK_SIZE, &remote_address);
+  mad_udp_sendto(channel_specific->socket[SND_DATA],
+		 afack, MAD_UDP_ACK_SIZE, &remote_address);
 
   specific->snd_msgid = (specific->snd_msgid + 1) % MAD_UDP_REQ_MAXNO;
   specific->snd_bufid = 0;
@@ -928,7 +1238,7 @@ mad_udp_receive_message(p_mad_channel_t channel)
   p_mad_connection_t              in;
   p_mad_udp_connection_specific_t in_specific;
  
-  in = mad_udp_recv_request(channel);
+  in = mad_udp_recvreq(channel);
   in_specific = in->specific;
   in_specific->rcv_bufid = 0;
   return in;
@@ -966,9 +1276,9 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
   p_mad_connection_t              connection;
   p_mad_udp_connection_specific_t connection_specific;
   p_mad_udp_channel_specific_t    channel_specific;
-  ntbx_udp_address_t              remote_address;
-  ntbx_udp_socket_t               so_snd;
-  ntbx_udp_id_t                   bufid, msgid;
+  mad_udp_address_t               remote_address;
+  mad_udp_socket_t                so_snd;
+  mad_udp_id_t                    bufid, msgid;
   char                            afack[MAD_UDP_ACKDG_HD_SIZE];
   
   LOG_IN();
@@ -990,7 +1300,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
   
   if (!bufid) {
     remote_address.sin_port = connection_specific->rm_port[REQUEST];
-    mad_udp_send_request(connection, buffer, &remote_address);
+    mad_udp_sendreq(connection, buffer, &remote_address);
   }
 
   /*
@@ -1005,9 +1315,9 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
     void              *ptr;
     int                nb_packet, last_packet_size;
     char              *dgram_hd;
-    ntbx_udp_port_t    rm_rcv_port;
-    ntbx_udp_in_addr_t rm_rcv_in_addr;
-    ntbx_udp_iovec_t   iov[2];
+    mad_udp_port_t    rm_rcv_port;
+    mad_udp_in_addr_t rm_rcv_in_addr;
+    mad_udp_iovec_t   iov[2];
     char              *to_send;
     int                ack_rrm_len;
     char              *ack_rrm;
@@ -1034,7 +1344,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
       iov[0].iov_len   = MAD_UDP_ACKDG_HD_SIZE;
       iov[1].iov_base  = (caddr_t)(ptr + bytes_read);
       iov[1].iov_len   = last_packet_size;
-      lg_snt = ntbx_udp_sendmsg(so_snd, iov, 2, &remote_address);
+      lg_snt = mad_udp_sendmsg(so_snd, iov, 2, &remote_address);
       nb_packet++;
       CHECK(lg_snt == last_packet_size + MAD_UDP_ACKDG_HD_SIZE,
 	    "First packet not fully sent !");
@@ -1056,7 +1366,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
       iov[1].iov_base  = (caddr_t)(ptr + bytes_read);
       iov[1].iov_len   = last_packet_size;
 
-      lg_snt = ntbx_udp_sendmsg(so_snd, iov, 2, &remote_address);
+      lg_snt = mad_udp_sendmsg(so_snd, iov, 2, &remote_address);
       nb_packet++;
       CHECK(lg_snt == last_packet_size + MAD_UDP_DGRAM_HD_SIZE,
 	    "Packet not fully sent !");
@@ -1075,12 +1385,12 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
     memset(to_send, 0xFF, nb_packet);
     
     do {
-      tbx_bool_t    reemit = tbx_false;
-      ntbx_udp_id_t rcv_msgid, rcv_bufid;
+      tbx_bool_t   reemit = tbx_false;
+      mad_udp_id_t rcv_msgid, rcv_bufid;
       
       /* Wait for ACK or RRM on SND_DATA socket. */
 
-      ntbx_udp_recvfrom(so_snd, ack_rrm, ack_rrm_len, &remote_address);
+      mad_udp_recvfrom(so_snd, ack_rrm, ack_rrm_len, &remote_address);
       if (MAD_UDP_IS_RRM(ack_rrm)) {
 	mad_udp_ack_rrm_extract_ids(ack_rrm, &rcv_msgid, &rcv_bufid);
 	reemit =
@@ -1118,7 +1428,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
 	    iov[0].iov_len   = MAD_UDP_ACKDG_HD_SIZE;
 	    iov[1].iov_base  = (caddr_t)(ptr + bytes_read);
 	    iov[1].iov_len   = min(lg_to_snd, MAD_UDP_ACKDG_BODY_SIZE);
-	    lg_snt = ntbx_udp_sendmsg(so_snd, iov, 2, &remote_address);
+	    lg_snt = mad_udp_sendmsg(so_snd, iov, 2, &remote_address);
 	    CHECK(lg_snt == last_packet_size + MAD_UDP_ACKDG_HD_SIZE,
 		  "First packet not fully RE-sent !");
 #if MAD_UDP_STATS
@@ -1130,8 +1440,8 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
 	  CHECK(0, "Received wrong ACK: this case should not occur");
 	  // An old buffer "End of emission" ACK was received.
 	  // It means that ACK for ACK was lost => resend it.
-	  ntbx_udp_sendto(so_snd,
-			  ack_rrm, MAD_UDP_ACK_SIZE, &remote_address);
+	  mad_udp_sendto(so_snd,
+			 ack_rrm, MAD_UDP_ACK_SIZE, &remote_address);
 	}
 #if MAD_UDP_STATS
       } else {
@@ -1158,7 +1468,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
 	    MAD_UDP_DGRAM_SET_DGRID(dgram_hd, i);
 	    iov[1].iov_base = (caddr_t)(ptr + bytes_read);
 	    iov[1].iov_len  = MAD_UDP_DGRAM_BODY_SIZE;
-	    ntbx_udp_sendmsg(so_snd, iov, 2, &remote_address);
+	    mad_udp_sendmsg(so_snd, iov, 2, &remote_address);
 #if MAD_UDP_STATS
 	    channel_specific->reemitted_dgrams++;
 #endif // MAD_UDP_STATS
@@ -1170,7 +1480,7 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
 	  MAD_UDP_DGRAM_SET_DGRID(dgram_hd, nb_packet - 1);
 	  iov[1].iov_base = (caddr_t)(ptr + bytes_read);
 	  iov[1].iov_len  = last_packet_size;
-	  ntbx_udp_sendmsg(so_snd, iov, 2, &remote_address);	  
+	  mad_udp_sendmsg(so_snd, iov, 2, &remote_address);	  
 #if MAD_UDP_STATS
 	  channel_specific->reemitted_dgrams++;
 #endif // MAD_UDP_STATS
@@ -1189,8 +1499,8 @@ mad_udp_send_buffer(p_mad_link_t   lnk,
     /* No more data to send but a previous buffer to ack. */
     MAD_UDP_ACK_SET_MSGID(afack, msgid);
     MAD_UDP_ACK_SET_BUFID(afack, bufid - 1);
-    lg_snt = ntbx_udp_sendto(so_snd, afack, MAD_UDP_ACK_SIZE,
-			     &remote_address);
+    lg_snt = mad_udp_sendto(so_snd, afack, MAD_UDP_ACK_SIZE,
+			    &remote_address);
     CHECK(lg_snt == MAD_UDP_ACK_SIZE,
 	  "First packet not fully sent !");
   }
@@ -1209,13 +1519,13 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
   p_mad_udp_connection_specific_t connection_specific;
   p_mad_udp_channel_specific_t    channel_specific;
   p_mad_buffer_t                  buffer;
-  ntbx_udp_address_t              remote_address;
-  ntbx_udp_port_t                 rm_snd_port;
-  ntbx_udp_in_addr_t              rm_snd_in_addr;
-  ntbx_udp_socket_t               so_rcv;
+  mad_udp_address_t               remote_address;
+  mad_udp_port_t                  rm_snd_port;
+  mad_udp_in_addr_t               rm_snd_in_addr;
+  mad_udp_socket_t                so_rcv;
   char                           *rrm_buf;
-  ntbx_udp_id_t                   bufid, msgid;
-  ntbx_udp_iovec_t                iov[2];
+  mad_udp_id_t                    bufid, msgid;
+  mad_udp_iovec_t                 iov[2];
 
   LOG_IN();
   //specific            = lnk->specific;
@@ -1271,24 +1581,24 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
      *     has already been sent with ACK for ACK of previous buffer.
      */
   
-    int                bytes_written;
-    void              *ptr;
-    int                last_packet, last_packet_size;
-    char               dgram_hd[MAD_UDP_DGRAM_HD_SIZE];
-    char              *waited;
-    int                first_waited;
+    int   bytes_written;
+    void *ptr;
+    int  last_packet, last_packet_size;
+    char dgram_hd[MAD_UDP_DGRAM_HD_SIZE];
+    char *waited;
+    int   first_waited;
 
     bytes_written  = buffer->bytes_written;
     ptr            = (void *)buffer->buffer;
 
     if (bufid) {
-      int           lg_to_read;
+      int lg_to_read;
 
       CHECK(MAD_UDP_IS_DGRAM_HD(connection_specific->rcv_early_dgr),
 	    "ACK for ACK data not saved !!!");
 #ifdef DEBUG
       {
-	ntbx_udp_id_t rcv_bufid, rcv_dgrid, rcv_msgid;
+	mad_udp_id_t rcv_bufid, rcv_dgrid, rcv_msgid;
 	mad_udp_dgr_extract_ids(connection_specific->rcv_early_dgr,
 				&rcv_msgid, &rcv_bufid, &rcv_dgrid);
 	CHECK(rcv_msgid == msgid && rcv_bufid == bufid && rcv_dgrid,
@@ -1327,15 +1637,15 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 
     while (first_waited <= last_packet) {
       int           lg_rcv;
-      ntbx_udp_id_t rcv_bufid, rcv_dgrid, rcv_msgid;
+      mad_udp_id_t rcv_bufid, rcv_dgrid, rcv_msgid;
 
-      if (ntbx_udp_select(so_rcv, 500000)) {
+      if (mad_udp_select(so_rcv, 500000)) {
 
 	iov[1].iov_base = (caddr_t)(ptr + bytes_written);
 	// If last_packet, receive only last_packet_size bytes.
 	iov[1].iov_len  = (first_waited == last_packet)
 	  ? last_packet_size : MAD_UDP_DGRAM_BODY_SIZE;
-	lg_rcv = ntbx_udp_recvmsg(so_rcv, iov, 2, &remote_address);
+	lg_rcv = mad_udp_recvmsg(so_rcv, iov, 2, &remote_address);
 
 	if (MAD_UDP_IS_DGRAM_HD(dgram_hd)) {
 	  mad_udp_dgr_extract_ids(dgram_hd,
@@ -1388,7 +1698,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 #endif // MAD_UDP_STATS
 	}
 	
-      } else { // ntbx_udp_select
+      } else { // mad_udp_select
 	
 	if (remote_address.sin_port == htons(0)) {
 	  // No packet has arrived to set remote_address.
@@ -1399,9 +1709,9 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 	}
 	MAD_UDP_RRM_SET_MSGID(rrm_buf, msgid);
 	MAD_UDP_RRM_SET_BUFID(rrm_buf, bufid);
-	ntbx_udp_sendto(so_rcv,
-			rrm_buf, MAD_UDP_RRM_HD_SIZE + last_packet + 1,
-			&remote_address);
+	mad_udp_sendto(so_rcv,
+		       rrm_buf, MAD_UDP_RRM_HD_SIZE + last_packet + 1,
+		       &remote_address);
 #if MAD_UDP_STATS
 	channel_specific->rrm_nb++;
 #endif // MAD_UDP_STATS
@@ -1420,7 +1730,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
     }
     MAD_UDP_ACK_SET_MSGID(rrm_buf, msgid);
     MAD_UDP_ACK_SET_BUFID(rrm_buf, bufid);
-    ntbx_udp_sendto(so_rcv, rrm_buf, MAD_UDP_ACK_SIZE, &remote_address);
+    mad_udp_sendto(so_rcv, rrm_buf, MAD_UDP_ACK_SIZE, &remote_address);
 
   }
 
@@ -1435,11 +1745,11 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
   iov[1].iov_len  = MAD_UDP_ACKDG_DGR_SIZE;
 
   do {
-    ntbx_udp_id_t rcv_bufid, rcv_msgid;
+    mad_udp_id_t rcv_bufid, rcv_msgid;
 
     /* Wait for ack for ack ... */
-    if (ntbx_udp_select(so_rcv, 500000)) {
-      ntbx_udp_recvmsg(so_rcv, iov, 2, &remote_address);
+    if (mad_udp_select(so_rcv, 500000)) {
+      mad_udp_recvmsg(so_rcv, iov, 2, &remote_address);
       mad_udp_ack_rrm_extract_ids(rrm_buf, &rcv_msgid, &rcv_bufid);
       if (MAD_UDP_IS_ACK(rrm_buf)
 	  && (rcv_msgid == msgid && rcv_bufid == bufid)
@@ -1475,7 +1785,7 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
     }
     MAD_UDP_ACK_SET_MSGID(rrm_buf, msgid);
     MAD_UDP_ACK_SET_BUFID(rrm_buf, bufid);
-    ntbx_udp_sendto(so_rcv, rrm_buf, MAD_UDP_ACK_SIZE, &remote_address);
+    mad_udp_sendto(so_rcv, rrm_buf, MAD_UDP_ACK_SIZE, &remote_address);
 #if MAD_UDP_STATS
     channel_specific->reemitted_acks++;
 #endif // MAD_UDP_STATS
@@ -1501,7 +1811,7 @@ mad_udp_send_buffer_group(p_mad_link_t         lnk TBX_UNUSED,
   /*p_mad_connection_t              connection;
     p_mad_udp_connection_specific_t connection_specific;
     p_mad_udp_channel_specific_t    channel_specific;
-    ntbx_udp_address_t              remote_address;*/
+    mad_udp_address_t              remote_address;*/
 
   LOG_IN();
 
@@ -1542,7 +1852,7 @@ mad_udp_receive_sub_buffer_group(p_mad_link_t         lnk,
   /*p_mad_connection_t              connection;
     p_mad_udp_connection_specific_t connection_specific;
     p_mad_udp_channel_specific_t    channel_specific;
-    ntbx_udp_address_t              remote_address;*/
+    mad_udp_address_t              remote_address;*/
 
   LOG_IN();
 #if 0

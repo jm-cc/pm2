@@ -11,15 +11,16 @@ import sys
 
 class Leony:
     def __init__(self):
-        self.session_dict = {}
-        self.next_global_rank = 0
+        self.session_dict	= {}
+        self.next_global_rank	= 0
         leo_comm.server_init(self)
 #__________
 
 logger	= logging.getLogger()
 leo	= Leony()
-s = leo_session.Session(leo, 'main', sys.argv[1:])
+s	= leo_session.Session(leo, 'main', sys.argv[1:])
 leo_log.log_init(s.options.trace)
+logger.info("opening session 'main'")
 s.init()
 leo_loop.loop(leo)
 

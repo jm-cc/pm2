@@ -38,10 +38,8 @@
 #include <errno.h>
 #include <VRP.h>
 
-DEBUG_DECLARE(vrp)
-
-#undef DEBUG_NAME
-#define DEBUG_NAME vrp
+#define MAD_VRP_POLLING_MODE \
+    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
 /*
  * global variables
@@ -55,7 +53,7 @@ int vrp_log_fd = 1;
  */
 typedef struct s_mad_vrp_driver_specific
 {
-  int dummy;
+  marcel_pollid_t pollid;
 } mad_vrp_driver_specific_t, *p_mad_vrp_driver_specific_t;
 
 typedef struct s_mad_vrp_adapter_specific
@@ -93,6 +91,11 @@ typedef struct s_mad_vrp_link_specific
   int dummy;
 } mad_vrp_link_specific_t, *p_mad_vrp_link_specific_t;
 
+typedef struct s_mad_vrp_poll_req
+{
+        p_mad_channel_t    ch;
+        p_mad_connection_t c;
+} mad_vrp_poll_req_t, *p_mad_vrp_poll_req_t;
 
 /*
  * static functions
@@ -145,13 +148,14 @@ mad_vrp_incoming_thread(void *arg)
 
       FD_ZERO(&fds);
       FD_SET(fd, &fds);
-      status = marcel_select(fd+1, &fds, NULL);
 
-      if (!status)
-        break;
+      status = tselect(fd+1, &fds, NULL, NULL);
 
       if ((status == -1) && (errno != EINTR))
         {
+          if (errno == EBADF)
+            break;
+
           perror("select");
           FAILURE("system call failed");
         }
@@ -188,13 +192,13 @@ mad_vrp_outgoing_thread(void *arg)
 
       FD_ZERO(&fds);
       FD_SET(fd, &fds);
-      status = marcel_select(fd+1, &fds, NULL);
-
-      if (!status)
-        break;
+      status = tselect(fd+1, &fds, NULL, NULL);
 
       if ((status == -1) && (errno != EINTR))
         {
+          if (errno == EBADF)
+            break;
+
           perror("select");
           FAILURE("system call failed");
         }
@@ -213,9 +217,99 @@ mad_vrp_outgoing_thread(void *arg)
   return NULL;
 }
 
+static
+void
+mad_vrp_marcel_group(marcel_pollid_t id)
+{
+  return;
+}
 
-#undef DEBUG_NAME
-#define DEBUG_NAME mad3
+static
+int
+mad_vrp_do_poll(p_mad_vrp_poll_req_t rq)
+{
+  p_mad_channel_t              ch     = NULL;
+  p_mad_vrp_channel_specific_t chs    = NULL;
+  p_tbx_darray_t               darray = NULL;
+  int                          r      =    0;
+  int                          n      =    0;
+  int                          i      =    0;
+
+  LOG_IN();
+  ch     = rq->ch;
+  chs    = ch->specific;
+  darray = ch->in_connection_darray;
+
+  i = n = tbx_darray_length(darray);
+
+  while (i--)
+    {
+      p_mad_connection_t _in = NULL;
+
+      _in = tbx_darray_get(darray, chs->next);
+      chs->next = (chs->next + 1) % n;
+
+      if (_in)
+        {
+          p_mad_vrp_in_connection_specific_t _is = NULL;
+
+          _is = _in->specific;
+
+          if (_is->active)
+            {
+              _is->active =  tbx_false;
+              rq->c       = _in;
+              r           =  1;
+
+              break;
+            }
+        }
+    }
+  LOG_OUT();
+
+  return r;
+}
+
+static
+void *
+mad_vrp_marcel_fast_poll(marcel_pollid_t id,
+                         any_t           req,
+                         boolean         first_call) {
+        void *status = MARCEL_POLL_FAILED;
+
+        LOG_IN();
+        if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
+                status = MARCEL_POLL_SUCCESS_FOR(id);
+        }
+        LOG_OUT();
+
+        return status;
+}
+
+static
+void *
+mad_vrp_marcel_poll(marcel_pollid_t id,
+                    unsigned        active,
+                    unsigned        sleeping,
+                    unsigned        blocked) {
+        p_mad_vrp_poll_req_t  req    = NULL;
+        void                 *status = MARCEL_POLL_FAILED;
+
+        LOG_IN();
+        FOREACH_POLL(id, req) {
+                if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
+                        status = MARCEL_POLL_SUCCESS(id);
+                        goto found;
+                }
+        }
+
+ found:
+        LOG_OUT();
+
+        return status;
+}
+
+
 
 
 /*
@@ -226,10 +320,6 @@ mad_vrp_outgoing_thread(void *arg)
 void
 mad_vrp_register(p_mad_driver_t driver){
   p_mad_driver_interface_t interface = NULL;
-
-#ifdef DEBUG
-  DEBUG_INIT(vrp);
-#endif // DEBUG
 
   LOG_IN();
   TRACE("Registering VRP driver");
@@ -282,7 +372,12 @@ mad_vrp_driver_init(p_mad_driver_t d)
   LOG_IN();
   TRACE("Initializing VRP driver");
   ds          = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
-  ds->dummy   = 0;
+
+  ds->pollid = marcel_pollid_create(mad_vrp_marcel_group,
+                                    mad_vrp_marcel_poll,
+                                    mad_vrp_marcel_fast_poll,
+                                    MAD_VRP_POLLING_MODE);
+
   d->specific = ds;
 
   vrp_init();
@@ -445,16 +540,18 @@ mad_vrp_disconnect(p_mad_connection_t c)
       p_mad_vrp_in_connection_specific_t is = NULL;
 
       is = c->specific;
-
-      /* ajouter code de deconnexion VRP */
+      vrp_incoming_close(is->vrp_in);
+      marcel_join(is->thread, NULL);
+      TBX_FREE(is->vrp_in);
     }
   else if (c->way == mad_outgoing_connection)
     {
       p_mad_vrp_out_connection_specific_t os = NULL;
 
       os = c->specific;
-
-      /* ajouter code de deconnexion VRP */
+      vrp_outgoing_close(os->vrp_out);
+      marcel_join(os->thread, NULL);
+      TBX_FREE(os->vrp_out);
     }
   else
     FAILURE("invalid connection way");
@@ -484,7 +581,6 @@ mad_vrp_new_message(p_mad_connection_t out)
   vrp_b = vrp_buffer_construct(&c, 1);
   vrp_buffer_set_loss_rate(vrp_b, 0, 0);
   s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
-  DISP_VAL("vrp_outgoing_send_frame status", s);
   vrp_buffer_destroy(vrp_b);
   LOG_OUT();
 }
@@ -512,40 +608,19 @@ mad_vrp_poll_message(p_mad_channel_t ch)
 p_mad_connection_t
 mad_vrp_receive_message(p_mad_channel_t ch)
 {
-  p_mad_vrp_channel_specific_t chs    = NULL;
-  p_tbx_darray_t               darray = NULL;
-  p_mad_connection_t           in     = NULL;
+  p_mad_connection_t          in = NULL;
+  p_mad_vrp_driver_specific_t ds = NULL;
+  mad_vrp_poll_req_t req;
 
   LOG_IN();
-  chs    = ch->specific;
-  darray = ch->in_connection_darray;
+  ds = ch->adapter->driver->specific;
 
-  /*
-   * WARNING: active polling for now
-   */
-  while (1)
-    {
-      p_mad_connection_t _in = NULL;
+  req.ch = ch;
+  req.c  = NULL;
 
-      _in = tbx_darray_get(darray, chs->next);
-      chs->next = (chs->next + 1) % tbx_darray_length(darray);
+  marcel_poll(ds->pollid, &req);
 
-      if (_in)
-        {
-          p_mad_vrp_in_connection_specific_t _is = NULL;
-
-          _is = _in->specific;
-
-          if (_is->active)
-            {
-              _is->active = tbx_false;
-              in = _in;
-
-              break;
-            }
-        }
-    }
-
+  in = req.c;
   LOG_OUT();
 
   return in;
@@ -578,7 +653,6 @@ mad_vrp_send_buffer(p_mad_link_t   lnk,
   vrp_b = vrp_buffer_construct(b->buffer + b->bytes_read, b->bytes_written - b->bytes_read);
   vrp_buffer_set_loss_rate(vrp_b, 0, 0);
   s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
-  DISP_VAL("vrp_outgoing_send_frame status", s);
   vrp_buffer_destroy(vrp_b);
   LOG_OUT();
 }
@@ -648,5 +722,6 @@ mad_vrp_receive_sub_buffer_group(p_mad_link_t         lnk,
 /*
  * Local variables:
  *  c-basic-offset: 2
+ *  c-hanging-braces-alist: '((defun-open before after) (class-open before after) (inline-open before after) (block-open before after) (brace-list-open) (brace-entry-open) (substatement-open before after) (block-close . c-snug-do-while) (extern-lang-open before after) (inexpr-class-open before after) (inexpr-class-close before))
  * End:
  */

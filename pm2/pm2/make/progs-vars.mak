@@ -33,9 +33,16 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# needed at least by PM2_CONFIG --gen_mak progs
+export PROGRAM
+
 include $(PM2_ROOT)/make/common-vars.mak
 
+ifdef OLD_MAKEFILE
 CONFIG_MODULES=$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --modules)
+else
+-include $(PM2_MAK_DIR)/progs-libs.mak
+endif
 
 $(PROGRAM):
 
@@ -45,6 +52,8 @@ endif
 
 PRG_SRC := source
 
+
+ifdef OLD_MAKEFILE
 PRG_GEN_BIN := $(shell $(PM2_CONFIG) --bindir $(PROGRAM))
 PRG_GEN_OBJ := $(shell $(PM2_CONFIG) --objdir $(PROGRAM))
 PRG_GEN_ASM := $(shell $(PM2_CONFIG) --asmdir $(PROGRAM))
@@ -70,6 +79,10 @@ PRG_STAMP_FILES :=  $(shell $(PM2_CONFIG) --stampfile all)
 PRG_BUILDDIR :=  $(shell $(PM2_CONFIG) --builddir)
 
 CC := $(shell $(PM2_CONFIG) --cc $(PROGRAM))
+else
+-include $(PM2_MAK_DIR)/progs-config.mak
+endif
+
 
 ifneq ($($(PROGRAM)_CC),)
 CC := $($(PROGRAM)_CC)
@@ -121,3 +134,9 @@ PRG_GEN_H_TO_C   =  $(PRG_GEN_INC)/$(patsubst %.h,%.c,$(notdir $@))
 
 COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(PRG_STAMP_FILES) $(MAKEFILE_FILE) 
 
+$(PM2_MAK_DIR)/progs-config.mak:
+	@$(PM2_CONFIG) --gen_mak progs
+
+$(PM2_MAK_DIR)/progs-libs.mak:
+	@mkdir -p `dirname $@`
+	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@

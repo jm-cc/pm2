@@ -30,7 +30,6 @@
 #include "sys/marcel_debug.h"
 #include "sys/marcel_sig.h"
 #include "pm2_list.h"
-
 #ifdef MA__SMP
 #include <errno.h>
 #include <sched.h>
@@ -1792,7 +1791,7 @@ static void *lwp_startup_func(void *arg)
   sched_unlock(lwp);
 #endif
 
-  PROF_NEW_LWP(getpid(), lwp->number, lwp->idle_task->number);
+  PROF_NEW_LWP(lwp->number, lwp->idle_task->number);
 
   call_ST_FLUSH_WINDOWS();
   longjmp(lwp->idle_task->jbuf, NORMAL_RETURN);
@@ -1855,7 +1854,7 @@ void marcel_sched_init(void)
   __main_thread->vpmask = MARCEL_VPMASK_ALL_BUT_VP(0);
 #endif
 
-  PROF_NEW_LWP(getpid(), 0, 0);
+  PROF_NEW_LWP(0, 0);
 
   // Initialization of "main LWP" is _required_ even when SMP not set.
   // 'init_sched' is called indirectly

@@ -56,14 +56,16 @@ EOF
     exit $1
 }
 
-ambiguity() # prog ex_dir find_result
+ambiguity() # prog
 {
-    echo "Error: there are multiple exec files named \"$1\" under \"$2\"."
-    echo "Please remove ambiguity by using one the following:"
+    prog=$1
+    shift
 
-    for p in $3 ; do
-	rep=`echo $p | sed -e 's/.*examples\/\(.*\)\/bin.*/\1/'`
-	echo "   $PROGNAME $rep:$1 ..."
+    echo "Error: multiple exec files found." >&2
+    echo "Please remove ambiguity by using one the following:" >&2
+
+    for p in `pm2which -p $prog` ; do
+	echo "   $PROGNAME $p ..."
     done
 
     exit 1
@@ -121,39 +123,15 @@ export PM2_CONF_FILE
 
 [ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf)."
 
-
-echo "Using flavor \"${PM2_FLAVOR}\" to search for \"$1\"..."
+#echo "Using flavor \"${PM2_FLAVOR}\" to search for \"$1\"..."
 
 ex_dir=`pm2-config --flavor="${PM2_FLAVOR}" --builddir 2> /dev/null`/examples
 
-# On regarde si le nom de la commande est relatif/absolu
-case "$1" in
-    /*)
-	[ -x $1 ] || error "Error: \"$1\" exec file not found."
-	cmd_prefix=$1
-	shift
-	;;
-    *:*)
-	f_dir=`echo $1 | cut -d: -f1`
-	f_name=`echo $1 | cut -d: -f2`
-	[ -x ${ex_dir}/${f_dir}/bin/${f_name} ] || error "Error: \"${ex_dir}/${f_dir}/bin/${f_name}\" exec file not found."
-	cmd_prefix="${ex_dir}/${f_dir}/bin/${f_name} "
-	shift
-	;;
-    *)
-	if [ -f "$1" -a -x "$1" ]; then
-	    cmd_prefix="`pwd`/$1"
-        else
-	    files=`find ${ex_dir} -name "$1" -type f -print`
-	    [ -n "$files" ] || error "Error: no \"$1\" exec file found under \"${ex_dir}\""
-	    nb_found=`echo $files | wc -w`
-	    [ $nb_found -eq 1 ] || ambiguity $1 ${ex_dir} "$files"
-	    cmd_prefix="`dirname $files`/$1"
-        fi
-	shift
-	;;
-esac
+prog=$1
+shift
 
-exec ${loader} ${cmd_prefix} "$@"
+command=`${PM2_ROOT}/bin/pm2which $prog`
 
+[ $? -eq 0 ] || ambiguity $prog
 
+exec ${loader} ${command} "$@"

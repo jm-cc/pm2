@@ -454,7 +454,7 @@ do_option() { # option ...
     directory="${PM2_ROOT}/modules/$module/config/options"
     if [ -d "${PM2_ROOT}/modules/$module/config/options" ]; then
 	filename=`( cd "${PM2_ROOT}/modules/$module/config/options" ; ls -1 ) \
-	    | grep "$option\\." | head -n 1 | cut -d. -f1`
+	    | grep '^[0-9]*'"$option\\." | head -n 1 | cut -d. -f1`
     else
 	filename="$option"
     fi

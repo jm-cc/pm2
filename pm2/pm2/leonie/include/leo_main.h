@@ -33,6 +33,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: leo_main.h,v $
+Revision 1.4  2000/05/17 12:40:50  oaumage
+- reorganisation du code de demarrage de Leonie
+
+
+______________________________________________________________________________
 */
 /*
  * leo_main.h
@@ -44,16 +52,26 @@
 
 typedef struct s_leo_swann_module
 {
-  int              id;
-  char            *cluster_id;
-  p_ntbx_client_t  net_client;
-} leo_swann_module_t, *p_leo_swann_module_t;
+  int                   id;
+  char                 *cluster_id;
+  p_leo_swann_module_t  relay;
+  p_ntbx_client_t       net_client;
+} leo_swann_module_t;
+
+typedef struct s_leo_mad_module
+{
+  int                   id;
+  char                 *cluster_id;
+  p_leo_swann_module_t  relay;
+  p_ntbx_client_t       net_client;
+} leo_mad_module_t;
 
 typedef struct s_leonie
 {
-  int                   cluster_counter;
-  tbx_list_t            swann_modules;
-  p_ntbx_server_t       net_server;
-} leonie_t, *p_leonie_t;
+  int             cluster_counter;
+  tbx_list_t      swann_modules;
+  tbx_list_t      mad_modules;
+  p_ntbx_server_t net_server;
+} leonie_t;
 
 #endif /* __LEO_MAIN_H */

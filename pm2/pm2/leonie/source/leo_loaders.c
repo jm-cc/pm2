@@ -95,10 +95,7 @@ leo_default_loader(p_leo_settings_t settings,
 
 	if (settings->smp_mode)
 	  {
-	    var =
-	      tbx_environment_variable_init_to_cstrings("LEO_LD_PRELOAD",
-							"${HOME}/lib/libpthread.so");
-	    tbx_environment_append_variable(env, var);
+	    tbx_arguments_append_cstring(args, "-s");
 	  }
 
 	if (!auto_display)
@@ -324,6 +321,9 @@ leo_default_loader(p_leo_settings_t settings,
 
 	var = tbx_environment_variable_to_variable("LEO_XTERM");
 	tbx_environment_append_variable(env, var);
+
+	var = tbx_environment_variable_to_variable("LEO_EXTERNAL_WRAPPER");
+	tbx_environment_append_variable(env, var);
 #else // LEO_EXPORT_MODE
 	if (settings->export_mode)
 	  {
@@ -336,15 +336,15 @@ leo_default_loader(p_leo_settings_t settings,
 
 	    var = tbx_environment_variable_to_variable("LEO_XTERM");
 	    tbx_environment_append_variable(env, var);
+
+	    var = tbx_environment_variable_to_variable("LEO_EXTERNAL_WRAPPER");
+	    tbx_environment_append_variable(env, var);
 	  }
 #endif // LEO_EXPORT_MODE
 
 	if (settings->smp_mode)
 	  {
-	    var =
-	      tbx_environment_variable_init_to_cstrings("LEO_LD_PRELOAD",
-							"${HOME}/lib/libpthread.so");
-	    tbx_environment_append_variable(env, var);
+	    tbx_arguments_append_cstring(args, "-s");
 	  }
 
 	if (!auto_display)
@@ -758,10 +758,7 @@ leo_bipload_loader(p_leo_settings_t settings,
 
       if (settings->smp_mode)
 	{
-	  var =
-	    tbx_environment_variable_init_to_cstrings("LEO_LD_PRELOAD",
-						      "${HOME}/lib/libpthread.so");
-	  tbx_environment_append_variable(env, var);
+	    tbx_arguments_append_cstring(args, "-s");
 	}
 
       //	tbx_arguments_append_cstring(args, "-v");

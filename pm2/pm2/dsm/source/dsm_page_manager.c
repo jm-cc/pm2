@@ -1152,6 +1152,14 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
 }
 
 
+/**********************************************************************/
+int
+dsm_get_default_protocol (void)
+{
+   return _default_dsm_protocol;
+}
+
+
 void dsm_set_default_protocol(int protocol)
 {
   _default_dsm_protocol = protocol;

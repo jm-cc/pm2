@@ -35,11 +35,10 @@
 
 /*#define DEBUG*/
 
-#include <madeleine.h>
-#include <mad_types.h>
-#include <mad_timing.h>
-
-#include <sys/netinterf.h>
+#include "madeleine.h"
+#include "mad_types.h"
+#include "mad_timing.h"
+#include "sys/netinterf.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -56,7 +55,7 @@ static marcel_key_t buffer_key;
 #else
 
 char *ALIGN_ERROR = "ALIGNMENT ERROR", *CONSTRAINT_ERROR = "CONSTRAINT_ERROR";
-#include <safe_malloc.h>
+#include "safe_malloc.h"
 #define CUR_BUF buffer_pool
 #define tmalloc MALLOC
 #define tfree   FREE

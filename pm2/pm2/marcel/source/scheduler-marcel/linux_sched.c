@@ -151,6 +151,7 @@
 #define LOW_CREDIT(p) \
 	((p)->interactive_credit < -CREDIT_LIMIT)
 
+// TODO: plus de curr, puisqu'une rq peut être utilisée pour une machine entière...
 #define TASK_PREEMPTS_CURR(p, rq) \
 	((p)->sched.internal.prio < (rq)->curr->sched.internal.prio)
 
@@ -175,6 +176,7 @@
 //}
 
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
+MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
 
 /*
  * Default context-switch locking:
@@ -182,7 +184,7 @@ MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
 #ifndef ma_prepare_arch_switch
 # define ma_prepare_arch_switch(rq, next)	do { } while(0)
 # define ma_finish_arch_switch(rq, next)	ma_spin_unlock_softirq(&(rq)->lock)
-# define ma_task_running(rq, p)		((rq)->curr == (p))
+# define ma_task_running(rq, p)		((p)->sched.internal.cur_rq && !(p)->sched.internal.array) //((rq)->curr == (p))
 #endif
 
 /*
@@ -485,8 +487,12 @@ repeat_lock_task:
 				__activate_task(p, rq);
 			else {
 				activate_task(p, rq);
+				/* TODO: vérifier si c'est une rq de lwp,
+				 * auquel cas effectuer un resched_task.
+				 * sinon, trouver qqun pour l'exécuter ?
 				if (TASK_PREEMPTS_CURR(p, rq))
 					resched_task(rq->curr);
+				*/
 			}
 			success = 1;
 		}
@@ -1552,7 +1558,7 @@ switch_tasks:
 	if (tbx_likely(prev != next)) {
 //		next->timestamp = now;
 //		rq->nr_switches++;
-		rq->curr = next;
+		ma_per_lwp(current_thread, LWP_SELF) = next;
 //		++*switch_count;
 
 		dequeue_task(next, next->sched.internal.array);
@@ -1577,6 +1583,39 @@ switch_tasks:
 }
 
 MARCEL_INT(ma_schedule);
+
+int marcel_yield_to(marcel_t next)
+{
+	marcel_t prev = MARCEL_SELF;
+	ma_runqueue_t *prevrq = ma_this_rq(), *nextrq;
+
+	if (next==prev)
+		return 0;
+
+	nextrq = task_rq_rq_lock(next, prevrq);
+
+	if (!next->sched.internal.cur_rq || !next->sched.internal.array) {
+		double_rq_unlock_softirq(prevrq, nextrq);
+		sched_debug("marcel_yield: %s task %p\n",
+			!next->sched.internal.cur_rq?"not enqueued":"busy", next);
+		return -1;
+	}
+
+	// we suppose we don't want to go to sleep, and we're not yielding to a
+	// dontsched thread like idle or activations
+	
+	ma_per_lwp(current_thread, LWP_SELF) = next;
+	dequeue_task(next, next->sched.internal.array);
+	enqueue_task(prev, prevrq->active);
+	ma_set_task_lwp(next, LWP_SELF);
+
+	ma_prepare_arch_switch(nextrq,next);
+	prev = context_switch(prevrq, prev, next);
+	ma_barrier();
+	finish_task_switch(prev);
+
+	return 0;
+}
 
 asmlinkage void ma_preempt_schedule(void)
 {
@@ -1905,6 +1944,7 @@ void set_user_nice(task_t *p, long nice)
 		 * If the task increased its priority or is running and
 		 * lowered its priority, then reschedule its CPU:
 		 */
+		// TODO: plus de curr
 		if (delta < 0 || (delta > 0 && ma_task_running(rq, p)))
 			resched_task(rq->curr);
 	}
@@ -2100,6 +2140,7 @@ static int setscheduler(pid_t pid, int policy, struct sched_param __user *param)
 		 * our priority decreased, or if we are not currently running on
 		 * this runqueue and our priority is higher than the current's
 		 */
+		// todo: plus de cur
 		if if (ma_task_running(rq, p)) {
 			if (p->prio > oldprio)
 				resched_task(rq->curr);
@@ -2568,7 +2609,8 @@ void __marcel_init init_idle(task_t *idle, int cpu)
 	local_irq_save(flags);
 	double_rq_lock(idle_rq, rq);
 
-	idle_rq->curr = idle_rq->idle = idle;
+	// supprimé
+	//idle_rq->curr = idle_rq->idle = idle;
 	deactivate_task(idle, rq);
 	idle->array = NULL;
 	idle->prio = MA_MAX_PRIO;
@@ -2654,6 +2696,7 @@ static void move_task_away(struct task_struct *p, int dest_cpu)
 	if (p->array) {
 		deactivate_task(p, ma_this_rq());
 		activate_task(p, rq_dest);
+		// TODO: plus de curr
 		if (p->prio < rq_dest->curr->prio)
 			resched_task(rq_dest->curr);
 	}
@@ -2843,7 +2886,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 #ifdef MA__LWPS
 	init_rq(ma_lwp_rq(lwp));
 	init_rq(&ma_per_lwp(dontsched_runqueue,lwp));
-	ma_lwp_rq(lwp)->curr = ma_per_lwp(run_task,lwp);
+	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #endif
 	LOG_OUT();
 }
@@ -2875,7 +2918,9 @@ void __marcel_init sched_init(void)
 	 * We have to do a little magic to get the first
 	 * thread right in SMP mode.
 	 */
-	ma_main_runqueue.curr = MARCEL_SELF;
+#ifndef MA__LWPS
+	ma_per_lwp__current_thread = MARCEL_SELF;
+#endif
 	ma_wake_up_created_thread(MARCEL_SELF);
 	/* since it is actually already running */
 	ma_spin_lock(&ma_main_runqueue.lock);

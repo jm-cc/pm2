@@ -43,17 +43,11 @@ int top_printf (char *fmt, ...) {
 void printtask(marcel_task_t *t) {
 	top_printf(" %s(%d)", t->name, t->sched.internal.prio);
 }
-
 void printrq(ma_runqueue_t *rq) {
 	int prio;
 	int banner=0;
 	marcel_task_t *t;
 	ma_spin_lock(&rq->lock);
-	if (rq->curr) {
-		top_printf("rq %p\r\n",rq);
-		banner=1;
-		printtask(rq->curr);
-	}
 	for (prio=0; prio<MA_MAX_PRIO; prio++) {
 		list_for_each_entry(t, rq->active->queue+prio, sched.internal.run_list) {
 			if (!banner) {
@@ -83,9 +77,13 @@ void marcel_top_tick(unsigned long foo) {
 	top_printf("\e[H\e[J");
 	top_printf("top - up %02lu:%02lu:%02lu\r\n", marcel_top_lastms/1000/60/60, (marcel_top_lastms/1000/60)%60, (marcel_top_lastms/1000)%60);
 	printrq(&ma_main_runqueue);
+#ifndef MA__LWPS
+	printtask(ma_per_lwp__current_thread);
+#endif
 	printrq(&ma_dontsched_runqueue);
 #ifdef MA__LWPS
 	for_all_lwp(lwp) {
+		printtask(ma_per_lwp(current_thread,lwp));
 		printrq(&ma_per_lwp(runqueue,lwp));
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
 	}

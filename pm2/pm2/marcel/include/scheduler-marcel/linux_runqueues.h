@@ -82,7 +82,6 @@ struct ma_runqueue {
 	unsigned long long nr_switches;
 	unsigned long nr_running, expired_timestamp, nr_uninterruptible,
 		timestamp_last_tick;
-	marcel_task_t *curr;//, *idle;
 	struct mm_struct *prev_mm;
 	ma_prio_array_t *active, *expired, arrays[2];
 //	int best_expired_prio, prev_cpu_load[NR_CPUS];
@@ -129,7 +128,7 @@ extern ma_runqueue_t ma_dontsched_runqueue;
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
 #endif
-#define ma_lwp_curr(lwp)	(ma_lwp_rq(lwp)->curr) //ma_per_lwp(current_thread, lwp))
+#define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
 
 #section marcel_functions
 #ifdef CONFIG_NUMA
@@ -198,6 +197,30 @@ repeat_lock_task:
 	}
 	sched_debug("task_rq_locked(%p)\n",rq);
 	return rq;
+}
+
+#section marcel_functions
+static inline ma_runqueue_t *task_rq_rq_lock(marcel_task_t *p, ma_runqueue_t *rq);
+#section marcel_inline
+static inline ma_runqueue_t *task_rq_rq_lock(marcel_task_t *p, ma_runqueue_t *rq1)
+{
+	ma_runqueue_t *rq2;
+
+repeat_lock_task:
+	//local_irq_save(*flags);
+	ma_local_bh_disable();
+	rq2 = task_rq(p);
+	sched_debug("task_rq_rq_locking(%p,%p)\n",rq1,rq2);
+	if (rq2==&ma_main_runqueue)
+	  sched_debug("main queue\n");
+	double_rq_lock(rq1,rq2);
+	if (tbx_unlikely(rq2 != task_rq(p))) {
+		sched_debug("rask_rq_unlocking(%p,%p)\n",rq1,rq2);
+		double_rq_unlock_softirq(rq1,rq2);
+		goto repeat_lock_task;
+	}
+	sched_debug("task_rq_locked(%p,%p)\n",rq1,rq2);
+	return rq2;
 }
 
 #section marcel_functions

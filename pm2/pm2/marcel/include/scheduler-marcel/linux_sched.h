@@ -21,10 +21,12 @@
  */
 
 #depend "sys/marcel_lwp.h[marcel_macros]"
+#depend "asm-generic/linux_perlwp.h[marcel_macros]"
+#depend "marcel_descr.h[types]"
 extern int nr_threads;
 //extern int last_tid;
 //MA_DECLARE_PER_LWP(unsigned long, process_counts);
-//MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
+MA_DECLARE_PER_LWP(marcel_task_t *, current_thread);
 //MA_DEFINE_PER_LWP(marcel_task_t *, idle_thread)=NULL;
 
 #section marcel_functions
@@ -84,6 +86,10 @@ extern void ma_scheduler_tick(int user_tick, int system);
 
 #section marcel_macros
 #define	MA_MAX_SCHEDULE_TIMEOUT	LONG_MAX
+
+#section functions
+int marcel_yield_to(marcel_t next);
+
 #section marcel_functions
 extern signed long FASTCALL(ma_schedule_timeout(signed long timeout));
 asmlinkage void ma_schedule(void);

@@ -119,10 +119,14 @@ case "$1" in
 	shift
 	;;
     */*)
-	f_dir=`dirname $1`
-	f_name=`basename $1`
-	[ -x ${ex_dir}/${f_dir}/bin/${f_name} ] || error "Error: \"${ex_dir}/${f_dir}/bin/${f_name}\" exec file not found."
-	cmd_prefix="${ex_dir}/${f_dir}/bin/${f_name} "
+	if [ -f "$1" -a -x "$1" ]; then
+	    cmd_prefix="`pwd`/$1"
+        else
+	    f_dir=`dirname $1`
+	    f_name=`basename $1`
+	    [ -x ${ex_dir}/${f_dir}/bin/${f_name} ] || error "Error: \"${ex_dir}/${f_dir}/bin/${f_name}\" exec file not found."
+	    cmd_prefix="${ex_dir}/${f_dir}/bin/${f_name} "
+	fi
 	shift
 	;;
     *)

@@ -82,7 +82,7 @@ static void f(void)
 {
   LRPC_REQ(DICHOTOMY) req;
   LRPC_RES(DICHOTOMY) res;
-  Tick t1, t2;
+  tbx_tick_t t1, t2;
   unsigned long temps;
 
   while(1) {
@@ -95,13 +95,13 @@ static void f(void)
 
     req.inf = 1;
 
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
 
     LRPC(pm2_self(), DICHOTOMY, STD_PRIO, DEFAULT_STACK, &req, &res);
 
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
 
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    temps = TBX_TIMING_DELAY(t1, t2);
     fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
 
     tfprintf(stderr, "1+...+%d = %d\n", req.sup, res.res);

@@ -121,7 +121,7 @@ class Server:
     """Store the Leony TCP server attributes."""
     pass
 
-def server_init(s):
+def server_init(leo):
     """Initialize the Leony TCP server."""
     server		= Server()
     server.socket	= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -131,10 +131,10 @@ def server_init(s):
     (ip, port)		= server.socket.getsockname()
     server.port		= port
     server.ip		= ip
-    s.server		= server
+    leo.server		= server
 
-def client_accept(s):
-    return s.server.socket.accept()
+def client_accept(leo):
+    return leo.server.socket.accept()
 
 def hostname_normalize(hostname):
     """Normalize the hostname."""
@@ -152,7 +152,7 @@ def client_select(client_list):
         idx_dict[fd] = num
         fd_list.append(fd)
 
-    (ilist, olist, elist) = select.select(fd_list, [], [])
+    (ilist, olist, elist) = select.select(fd_list, [], [], 0.9)
 
     result_list = [ client_list[idx_dict[x]] for x in ilist ]
 

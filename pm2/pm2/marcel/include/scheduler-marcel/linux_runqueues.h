@@ -120,7 +120,7 @@ ma_runqueue_t ma_norun_runqueue;
 #define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
 #define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
 #define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
-#define ma_norun_rq(lwp)	(ma_per_lwp(norun_runqueue, (lwp)))
+#define ma_norun_rq(lwp)	(&ma_per_lwp(norun_runqueue, (lwp)))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_norun_runqueue)

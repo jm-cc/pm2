@@ -34,6 +34,45 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.12  2000/04/11 09:07:18  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.11.2.12  2000/04/06 07:38:00  vdanjean
+Activations mono OK :-)
+
+Revision 1.11.2.11  2000/03/31 18:38:38  vdanjean
+Activation mono OK
+
+Revision 1.11.2.10  2000/03/31 08:07:30  rnamyst
+I do not remember... ;-)
+
+Revision 1.11.2.9  2000/03/30 16:57:29  rnamyst
+Introduced TOP_STACK_FREE_AREA...
+
+Revision 1.11.2.8  2000/03/29 16:49:32  vdanjean
+ajout de du champs special_flags dans marcel_t
+
+Revision 1.11.2.7  2000/03/29 11:29:12  vdanjean
+move lwp.sched_task to SCHED_DATA(lwp).sched_task
+
+Revision 1.11.2.6  2000/03/29 09:46:19  vdanjean
+*** empty log message ***
+
+Revision 1.11.2.5  2000/03/22 16:34:08  vdanjean
+*** empty log message ***
+
+Revision 1.11.2.4  2000/03/22 10:32:54  vdanjean
+*** empty log message ***
+
+Revision 1.11.2.3  2000/03/17 20:09:52  vdanjean
+*** empty log message ***
+
+Revision 1.11.2.2  2000/03/15 15:54:56  vdanjean
+réorganisation de marcel : commit pour CVS
+
+Revision 1.11.2.1  2000/03/15 15:41:17  vdanjean
+réorganisation de marcel. branche de développement
+
 Revision 1.11  2000/03/09 11:07:43  rnamyst
 Modified to use the sched_data() macro.
 
@@ -62,7 +101,7 @@ ______________________________________________________________________________
 #include "sys/marcel_flags.h"
 #include "sys/isomalloc_archdep.h"
 
-#ifdef SMP
+#ifdef MA__SMP
 #include <pthread.h>
 #endif
 
@@ -97,7 +136,7 @@ _PRIVATE_ typedef struct _struct_exception_block {
 
 _PRIVATE_ struct __lwp_struct;
 
-#ifdef __ACT__
+#ifdef MA__ACT
 
 #ifdef ACT_TIMER
 #ifdef CONFIG_ACT_TIMER
@@ -107,31 +146,29 @@ _PRIVATE_ struct __lwp_struct;
 #endif
 
 #include <asm/act.h>
+#endif
 
+#ifdef MA__MULTIPLE_RUNNING
 _PRIVATE_ typedef enum {
-  SCHED_BY_MARCEL,
-  SCHED_BY_ACT
-} sched_by_t;
-
-_PRIVATE_ typedef enum {
-  MARCEL_READY=0, /* needed in act_resume (upcall.c / upcall_unblock()) */
+  MARCEL_READY=0, /* value 0 needed in act_resume (upcall.c /
+                     upcall_unblock()) */
   MARCEL_RUNNING=1,
 } marcel_state_t;
-
 #endif
 
 _PRIVATE_ typedef struct task_desc_struct {
-#ifdef __ACT__
-  // TODO : merge state and state_ext in one field
-  volatile int state_ext;
-  volatile int marcel_lock;
-
-  act_proc_t aid;
+#ifdef MA__MULTIPLE_RUNNING
+  volatile marcel_state_t ext_state;
 #endif
-  jmp_buf jb;
+  jmp_buf jbuf;
   struct task_desc_struct *next,*prev;
-  struct __lwp_struct *lwp, *previous_lwp;
+  struct __lwp_struct *lwp;
+#if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
+  struct __lwp_struct *previous_lwp;
+#endif
   int sched_policy;
+  /* utilisé pour marquer les task idle, upcall, idle, ... */
+  int special_flags; 
   task_state state;
   jmp_buf migr_jb;
   marcel_t child, father;
@@ -150,7 +187,7 @@ _PRIVATE_ typedef struct task_desc_struct {
   char *cur_exception, *exfile, *user_space_ptr;
   unsigned exline, not_migratable, 
     not_deviatable, next_cleanup_func;
-  boolean in_sighandler, detached, static_stack;
+  boolean detached, static_stack;
 #ifdef ENABLE_STACK_JUMPING
   void *dummy;
 #endif
@@ -166,46 +203,56 @@ _PRIVATE_ typedef struct __sched_struct {
   volatile marcel_t __first[MAX_PRIO+1];   /* Scheduler queue */
   volatile unsigned running_tasks;         /* Nb of user running tasks */
   marcel_lock_t sched_queue_lock;          /* Lock for scheduler queue */
+  marcel_t sched_task;                     /* "Idle" task */
 } __sched_t;
 
 _PRIVATE_ typedef struct __lwp_struct {
   unsigned number;                         /* Serial number */
+#ifdef MA__MULTIPLE_RUNNING
+  marcel_t prev_running;                   /* Previous task after yielding */
+#endif
+#ifdef MA__ACT
+  marcel_t upcall_new_task;                /* Task used in upcall_new */
+#endif
 #ifdef X86_ARCH
   volatile atomic_t _locked;               /* Lock for (un)lock_task() */
 #else
   volatile unsigned _locked;               /* Lock for (un)lock_task() */
 #endif
-  marcel_t sched_task;                     /* "Idle" task */
+#ifndef MA__ONE_QUEUE
   volatile boolean has_to_stop;            /* To force pthread_exit() */
   volatile boolean has_new_tasks;          /* Somebody gave us some work */
+#endif
   struct __lwp_struct *prev, *next;        /* Double linking */
   char __security_stack[2 * SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
   volatile marcel_t sec_desc;              /* Task descriptor for security stack */
-#ifdef SMP
+#ifdef MA__SMP
   jmp_buf home_jb;
   pthread_t pid;
+#endif
+#ifndef MA__ONE_QUEUE
   __sched_t __sched_data;
+#elif defined(MA__LWPS)
+  marcel_t idle_task;
 #endif
 } __lwp_t;
 
-#ifndef SMP
-_PRIVATE_ extern __sched_t __sched_data;
+#ifdef MA__LWPS
+#define MA__MAX_LWPS 32
+extern __lwp_t* addr_lwp[MA__MAX_LWPS];
+#else
+#define MA__MAX_LWPS 1
 #endif
 
-#ifdef SMP
-#define sched_data(lwp) ((lwp)->__sched_data)
-#else
-#define sched_data(lwp) (__sched_data)
+
+#ifdef MA__ONE_QUEUE
+_PRIVATE_ extern __sched_t __sched_data;
 #endif
 
 _PRIVATE_ extern __lwp_t __main_lwp;
 _PRIVATE_ extern task_desc __main_thread_struct;
 _PRIVATE_ extern char __security_stack[];
-
-#ifndef SMP
-#define cur_lwp   (&__main_lwp)
-#endif
 
 static __inline__ marcel_t __marcel_self()
 {
@@ -228,7 +275,7 @@ static __inline__ marcel_t __marcel_self()
    ((marcel_t)((((unsigned long)(lwp)->__security_stack + 2 * SLOT_SIZE) \
 	        & ~(SLOT_SIZE-1)) - MAL(sizeof(task_desc))))
 #define SECUR_STACK_TOP(lwp) \
-   ((unsigned long)SECUR_TASK_DESC(lwp) - MAL(1) - 2*WINDOWSIZE)
+   ((unsigned long)SECUR_TASK_DESC(lwp) - MAL(1) - TOP_STACK_FREE_AREA)
 
 
 _PRIVATE_ enum {

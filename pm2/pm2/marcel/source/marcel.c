@@ -916,6 +916,9 @@ void marcel_init_data(int *argc, char *argv[])
     return;
   already_called = TRUE;
 
+  // Windows/Cygwin specific stuff
+  marcel_win_sys_init(argc, argv);
+
   // Initialize debug facilities
   marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 

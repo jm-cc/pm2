@@ -175,6 +175,8 @@
 #define FUT_CALIBRATE2_CODE			0x222
 #define FUT_SWITCH_TO_CODE			0x230
 #define FUT_NEW_LWP_CODE                        0x231
+#define FUT_THREAD_BIRTH_CODE                   0x232
+#define FUT_THREAD_DEATH_CODE                   0x233
 #define FUT_MAIN_ENTRY_CODE			0x240
 #define FUT_MAIN_EXIT_CODE			0x340
 

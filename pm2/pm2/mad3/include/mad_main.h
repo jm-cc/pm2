@@ -121,6 +121,23 @@ mad_ntbx_send_string(p_ntbx_client_t  client,
 char *
 mad_ntbx_receive_string(p_ntbx_client_t client);
 
+
+void
+mad_leonie_print_init(p_mad_madeleine_t   madeleine,
+		      int                 argc,
+		      char              **argv);
+
+void
+mad_leonie_print(char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
+
+#define LDISP(str, args...)  mad_leonie_print(str , ## args)
+#define LDISP_IN()           mad_leonie_print(__FUNCTION__": -->")
+#define LDISP_OUT()          mad_leonie_print(__FUNCTION__": <--")
+#define LDISP_VAL(str, val)  mad_leonie_print(str " = %d" , (int)(val))
+#define LDISP_CHAR(val)      mad_leonie_print("%c" , (char)(val))
+#define LDISP_PTR(str, ptr)  mad_leonie_print(str " = %p" , (void *)(ptr))
+#define LDISP_STR(str, str2) mad_leonie_print(str ": %s" , (char *)(str2))
+
 // Directory transmission
 void
 mad_dir_directory_get(p_mad_madeleine_t madeleine);

@@ -21,6 +21,19 @@
 
 #include "marcel.h"
 
+// Signal utilisé pour la préemption automatique
+#ifdef USE_VIRTUAL_TIMER
+
+#define MARCEL_TIMER_SIGNAL   SIGVTALRM
+#define MARCEL_ITIMER_TYPE    ITIMER_VIRTUAL
+
+#else
+
+#define MARCEL_TIMER_SIGNAL   SIGALRM
+#define MARCEL_ITIMER_TYPE    ITIMER_REAL
+
+#endif
+
 void marcel_sig_init(void);
 
 void marcel_sig_pause(void);

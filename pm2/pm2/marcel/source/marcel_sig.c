@@ -17,19 +17,6 @@
 #include "sys/marcel_sig.h"
 #include "marcel.h"
 
-// Signal utilisé pour la préemption automatique
-#ifdef USE_VIRTUAL_TIMER
-
-#define MARCEL_TIMER_SIGNAL   SIGVTALRM
-#define MARCEL_ITIMER_TYPE    ITIMER_VIRTUAL
-
-#else
-
-#define MARCEL_TIMER_SIGNAL   SIGALRM
-#define MARCEL_ITIMER_TYPE    ITIMER_REAL
-
-#endif
-
 #define MIN_TIME_SLICE		10000
 #define DEFAULT_TIME_SLICE	MIN_TIME_SLICE
 

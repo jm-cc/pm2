@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.16  2000/02/14 10:00:35  rnamyst
+Modified to propose a new interface to the "pm2_completion" facilities.
+
 Revision 1.15  2000/02/01 17:17:49  rnamyst
 Modified to include pm2_mad.h
 
@@ -63,7 +66,6 @@ ______________________________________________________________________________
  * all modules will be spawned but before the current module will
  * listen (and respond to) incomming requests.
  */
-typedef void (*pm2_startup_func_t)(void);
 void pm2_set_startup_func(pm2_startup_func_t f);
 
 /* 
@@ -96,8 +98,6 @@ void pm2_printf(char *format, ...);
 
 /****************** "RAW" RPC : *******************/
 
-typedef void (*pm2_rawrpc_func_t)(void);
-
 void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func);
 
 void pm2_rawrpc_begin(int module, int num, pm2_attr_t *pm2_attr);
@@ -110,23 +110,28 @@ void pm2_rawrpc_end(void);
     marcel_sem_V((marcel_sem_t *)marcel_getspecific(_pm2_mad_key)); \
   }
 
-void pm2_completion_init(pm2_completion_t *c);
+void pm2_completion_init(pm2_completion_t *c,
+			 pm2_completion_handler_t handler,
+			 void *arg);
 
-void pm2_pack_completion(pm2_completion_t *c);
-void pm2_unpack_completion(pm2_completion_t *c);
+void pm2_pack_completion(mad_send_mode_t sm,
+			 mad_receive_mode_t rm,
+			 pm2_completion_t *c);
+void pm2_unpack_completion(mad_send_mode_t sm,
+			   mad_receive_mode_t rm,
+			   pm2_completion_t *c);
 
 void pm2_completion_wait(pm2_completion_t *c);
+
 void pm2_completion_signal(pm2_completion_t *c);
+void pm2_completion_signal_begin(pm2_completion_t *c);
+void pm2_completion_signal_end(void);
 
 
 void pm2_channel_alloc(pm2_channel_t *channel);
 
 
 /******************** Migration **************************/
-
-typedef void (*pm2_pre_migration_hook)(marcel_t pid);
-typedef any_t (*pm2_post_migration_hook)(marcel_t pid);
-typedef void (*pm2_post_post_migration_hook)(any_t key);
 
 void pm2_set_pre_migration_func(pm2_pre_migration_hook f);
 void pm2_set_post_migration_func(pm2_post_migration_hook f);

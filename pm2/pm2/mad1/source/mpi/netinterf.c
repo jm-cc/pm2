@@ -48,14 +48,8 @@
 #include "sys/netinterf.h"
 
 #ifdef PM2
-
 #include "marcel.h"
-
 #else
-
-#include "safe_malloc.h"
-#define tfree         FREE
-#define tmalloc       MALLOC
 #define mpi_lock()
 #define mpi_unlock()
 static char *PROGRAM_ERROR = "PROGRAM_ERROR";
@@ -322,8 +316,8 @@ void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)
   } else if(count > 1) {
 
 #ifndef USE_DYN_ARRAYS
-    blocklength = (int *)tmalloc(count*sizeof(int));
-    displacement = (MPI_Aint *)tmalloc(count*sizeof(MPI_Aint));
+    blocklength = (int *)TBX_MALLOC(count*sizeof(int));
+    displacement = (MPI_Aint *)TBX_MALLOC(count*sizeof(MPI_Aint));
 #endif
 
     mpi_lock();
@@ -343,8 +337,8 @@ void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)
     mpi_unlock();
 
 #ifndef USE_DYN_ARRAYS
-    tfree(blocklength);
-    tfree(displacement);
+    TBX_FREE(blocklength);
+    TBX_FREE(displacement);
 #endif
   }
 #ifdef PM2
@@ -390,8 +384,8 @@ void mad_mpi_network_receive_data(struct iovec *vector, size_t count)
   } else {
 
 #ifndef USE_DYN_ARRAYS
-    blocklength = (int *)tmalloc(count*sizeof(int));
-    displacement = (MPI_Aint *)tmalloc(count*sizeof(MPI_Aint));
+    blocklength = (int *)TBX_MALLOC(count*sizeof(int));
+    displacement = (MPI_Aint *)TBX_MALLOC(count*sizeof(MPI_Aint));
 #endif
 
     mpi_lock();
@@ -412,8 +406,8 @@ void mad_mpi_network_receive_data(struct iovec *vector, size_t count)
     mpi_unlock();
 
 #ifndef USE_DYN_ARRAYS
-    tfree(blocklength);
-    tfree(displacement);
+    TBX_FREE(blocklength);
+    TBX_FREE(displacement);
 #endif
   }
 }

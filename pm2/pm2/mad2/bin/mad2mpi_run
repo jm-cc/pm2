@@ -1,6 +1,10 @@
 #!/bin/csh -f
 ##########
 
+# Just in case MAD2_ROOT is not defined
+MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
+export MAD2_ROOT
+
 if (! -e ${MAD2_ROOT}/.mad2mpi_implementation) then
 echo "No MPI implementation has been selected"
 exit 0

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.15  2000/04/20 13:32:06  oaumage
+- modifications diverses
+
 Revision 1.14  2000/03/27 08:50:53  oaumage
 - pre-support decoupage de groupes
 - correction au niveau du support du demarrage manuel
@@ -680,7 +683,6 @@ mad_pack(p_mad_connection_t   connection,
     &(connection->buffer_group_list);
 
   LOG_IN();
-  LOG_PTR("mad_pack (1): ", connection->specific);
   TIME_INIT();
   
   if (!connection->lock)
@@ -743,7 +745,6 @@ mad_pack(p_mad_connection_t   connection,
 	}
     }
 
-  LOG("mad_pack: 2");
   if (   (connection->last_link != NULL)
       && (link_mode != mad_link_mode_link_group)
       && (   (link != connection->last_link)
@@ -807,7 +808,6 @@ mad_pack(p_mad_connection_t   connection,
       link->group_length = 0;
     }
 
-  LOG("mad_pack: 3");
   if (link_mode == mad_link_mode_buffer)
     {
       /* B U F F E R   mode
@@ -1094,8 +1094,6 @@ mad_pack(p_mad_connection_t   connection,
   else
     FAILURE("unknown link mode");
 
-  LOG("mad_pack: 4");
-  LOG_PTR("mad_pack (2): ", connection->specific);
   TIME("mad_pack <--");
   LOG_OUT();
 }
@@ -1197,7 +1195,6 @@ mad_unpack(p_mad_connection_t   connection,
       p_mad_link_t        last_link        = connection->last_link;
       mad_buffer_mode_t   last_buffer_mode = last_link->buffer_mode;
 
-      LOG("mad_unpack: 1");
       if (connection->flushed == tbx_false)
 	{
 	  if (connection->last_link_mode == mad_link_mode_buffer_group)
@@ -1282,14 +1279,12 @@ mad_unpack(p_mad_connection_t   connection,
 	  else
 	    FAILURE("invalid link mode");
 	  
-	  LOG("mad_unpack: data flushed");
 	  tbx_mark_list(src_list);
 	  connection->more_data = tbx_false;
 	  connection->flushed   = tbx_true ;
 	}
 
       connection->first_sub_buffer_group = tbx_true;
-      LOG("mad_unpack: 2");
     }
   
   destination = mad_get_user_receive_buffer(user_buffer, user_buffer_length);
@@ -1314,12 +1309,10 @@ mad_unpack(p_mad_connection_t   connection,
 	    {
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
-		  LOG("mad_unpack: 3");
 		  TIME("    receive buffer -->");
 		  interface->receive_buffer(link, &destination);
 		  TIME("    receive buffer <--");
 		  connection->flushed        = tbx_true;
-		  LOG("mad_unpack: 4");
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
 		{
@@ -1429,7 +1422,6 @@ mad_unpack(p_mad_connection_t   connection,
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
 		{
-		  LOG("mad_unpack: static buffer buffer_group");
 		  tbx_append_list(dest_list, destination);
 		  
 		  if (   (tbx_empty_list(src_list))

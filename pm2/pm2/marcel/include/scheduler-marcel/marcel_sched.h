@@ -384,6 +384,18 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 	marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
 }
 
+#section marcel_structures
+struct ma_lwp_usage_stat {
+	unsigned long long user;
+	unsigned long long nice;
+	unsigned long long system;
+	unsigned long long softirq;
+	unsigned long long irq;
+	unsigned long long idle;
+	unsigned long long iowait;
+};
+
 #section marcel_variables
 MA_DECLARE_PER_LWP(ma_runqueue_t *, prev_rq);
 
+MA_DECLARE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage);

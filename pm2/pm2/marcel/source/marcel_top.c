@@ -45,29 +45,23 @@ void printtask(marcel_task_t *t) {
 }
 void printrq(ma_runqueue_t *rq) {
 	int prio;
-	int banner=0;
 	marcel_task_t *t;
 	ma_spin_lock(&rq->lock);
+	int somebody = 0;
 	for (prio=0; prio<MA_MAX_PRIO; prio++) {
 		list_for_each_entry(t, rq->active->queue+prio, sched.internal.run_list) {
-			if (!banner) {
-				top_printf("rq %p\r\n",rq);
-				banner=1;
-			}
 			printtask(t);
+			somebody = 1;
 		}
 	}
 	for (prio=0; prio<MA_MAX_PRIO; prio++) {
 		list_for_each_entry(t, rq->expired->queue+prio, sched.internal.run_list) {
-			if (!banner) {
-				top_printf("rq %p\r\n",rq);
-				banner=1;
-			}
 			printtask(t);
+			somebody = 1;
 		}
 	}
 	ma_spin_unlock(&rq->lock);
-	if (banner)
+	if (somebody)
 		top_printf("\r\n");
 }
 
@@ -84,6 +78,15 @@ void marcel_top_tick(unsigned long foo) {
 	printrq(&ma_dontsched_runqueue);
 #ifdef MA__LWPS
 	for_all_lwp(lwp) {
+		// cette lecture n'est pas atomique, il peut y avoir un tick
+		// entre-temps, ce n'est pas extrêmement grave...
+		struct ma_lwp_usage_stat lst = ma_per_lwp(lwp_usage,lwp);
+		unsigned long long tot = lst.user + lst.nice + lst.softirq +
+			lst.irq + lst.idle;
+		top_printf("\
+lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
+			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 		printtask(ma_per_lwp(current_thread,lwp));
 		top_printf("\r\n");
 		printrq(&ma_per_lwp(runqueue,lwp));

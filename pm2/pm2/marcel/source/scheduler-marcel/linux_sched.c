@@ -177,6 +177,7 @@
 
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
 MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
+MA_DEFINE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage);
 
 /*
  * Default context-switch locking:
@@ -1255,7 +1256,7 @@ static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	//int cpu = smp_processor_id();
-	//struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+	struct ma_lwp_usage_stat *lwpstat = &ma_per_lwp(lwp_usage,LWP_SELF);
 	ma_runqueue_t *rq = ma_this_rq();
 	marcel_task_t *p = MARCEL_SELF;
 
@@ -1269,30 +1270,34 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	//if (rcu_pending(cpu))
 	//      rcu_check_callbacks(cpu, user_ticks);
 
-#if 0
-	/* note: this timer irq context must be accounted for as well */
-	if (hardirq_count() - HARDIRQ_OFFSET) {
-		cpustat->irq += sys_ticks;
+// TODO Pour l'instant, on n'a pas de notion de tick système.
+#define sys_ticks user_ticks
+	if (ma_hardirq_count()) {
+		lwpstat->irq += sys_ticks;
 		sys_ticks = 0;
-	} else if (softirq_count()) {
-		cpustat->softirq += sys_ticks;
+	/* note: this timer irq context must be accounted for as well */
+	} else if (ma_softirq_count() - MA_SOFTIRQ_OFFSET) {
+		lwpstat->softirq += sys_ticks;
 		sys_ticks = 0;
 	}
 
-	if (p == rq->idle) {
-		if (atomic_read(&rq->nr_iowait) > 0)
-			cpustat->iowait += sys_ticks;
-		else
-			cpustat->idle += sys_ticks;
-		rebalance_tick(rq, 1);
-		return;
+	if (p->sched.internal.init_rq->type == MA_DONTSCHED_RQ) {
+		// TODO on n'a pas non plus de notion d'iowait
+		/*if (atomic_read(&rq->nr_iowait) > 0)
+			lwpstat->iowait += sys_ticks;
+		else*/
+			lwpstat->idle += sys_ticks;
+		//rebalance_tick(rq, 1);
+		//return;
+		sys_ticks = 0;
 	}
-	if (TASK_NICE(p) > 0)
-		cpustat->nice += user_ticks;
+	//if (TASK_NICE(p) > 0)
+	if (p->sched.internal.prio >= MA_BATCH_PRIO)
+		lwpstat->nice += user_ticks;
 	else
-		cpustat->user += user_ticks;
-	cpustat->system += sys_ticks;
-#endif
+		lwpstat->user += user_ticks;
+	//lwpstat->system += sys_ticks;
+#undef sys_ticks
 
 	/* Task might have expired already, but not scheduled off yet */
 	//if (p->sched.internal.array != rq->active) {
@@ -2884,8 +2889,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
-	init_rq(ma_lwp_rq(lwp));
-	init_rq(&ma_per_lwp(dontsched_runqueue,lwp));
+	init_rq(ma_lwp_rq(lwp), MA_LWP_RQ);
+	init_rq(&ma_per_lwp(dontsched_runqueue,lwp), MA_DONTSCHED_RQ);
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #endif
 	LOG_OUT();
@@ -2911,8 +2916,8 @@ void __marcel_init sched_init(void)
 {
 	LOG_IN();
 
-	init_rq(&ma_main_runqueue);
-	init_rq(&ma_dontsched_runqueue);
+	init_rq(&ma_main_runqueue, MA_MACHINE_RQ);
+	init_rq(&ma_dontsched_runqueue, MA_DONTSCHED_RQ);
 
 	/*
 	 * We have to do a little magic to get the first

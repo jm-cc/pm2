@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_macros.h,v $
+Revision 1.5  2000/01/10 10:19:42  oaumage
+- mad_macros.h: modification de la macro de commande de trace
+
 Revision 1.4  2000/01/05 15:47:57  oaumage
 - mad_list.h: changement de `len' en `length'
 - mad_macros.h: ajout de la macros PM2_TRYLOCK_SHARED
@@ -62,8 +65,8 @@ ______________________________________________________________________________
 /* TIMING: main timing flag */
 /* #define TIMING */
 
-/* TRACE: main trace flag */
-/* #define TRACE */
+/* TRACING: main trace flag */
+/* #define TRACING */
 
 /* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
 #define OOPS
@@ -199,7 +202,7 @@ typedef enum
 #endif
 
 /* Trace macros */
-#ifdef TRACE
+#ifdef TRACING
 #define TRACE(str) \
     fprintf(stderr, str "\n")
 #define TRACE_VAL(str, val) \
@@ -208,12 +211,12 @@ typedef enum
     fprintf(stderr, str " = %p\n", (void *)(ptr))
 #define TRACE_STR(str, str2) \
     fprintf(stderr, str " : %s\n", (char *)(str2))
-#else /* TRACE */
+#else /* TRACING */
 #define TRACE(str) 
 #define TRACE_VAL(str, val) 
 #define TRACE_PTR(str, ptr) 
 #define TRACE_STR(str, str2) 
-#endif /* TRACE */
+#endif /* TRACING */
 
 /* Timing macros */
 #ifdef TIMING

@@ -1,10 +1,32 @@
 /*	get_cpu_mhz.c	*/
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+#include "get_cpu_mhz.h"
+
+#ifndef X86_ARCH
+#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86 ARCHITECTURES"
+#endif
+
+
+#ifdef LINUX_SYS
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "get_cpu_mhz.h"
 
 #define BUF_SIZE	4096
 #define TAG			"cpu MHz"
@@ -51,3 +73,26 @@ double get_cpu_mhz( void )
 			}
 		}
 	}
+
+#endif // LINUX_SYS
+
+
+#ifdef SOLARIS_SYS
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/processor.h>
+
+
+double get_cpu_mhz( void )
+{
+  processor_info_t info;
+
+  processor_info(0, &info);
+
+  return (double)info.pi_clock;
+
+}
+
+#endif // SOLARIS_SYS
+

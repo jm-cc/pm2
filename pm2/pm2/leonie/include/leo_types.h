@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leo_types.h,v $
+Revision 1.5  2000/05/31 14:17:05  oaumage
+- types Leonie
+
 Revision 1.4  2000/05/23 15:32:49  oaumage
 - ajout de types cluster et host
 
@@ -58,84 +61,18 @@ typedef leo_file_handle_t *p_file_handle_t;
 
 typedef void undefined_t, *p_undefined_t;
 
-typedef struct s_leo_host_name
+typedef struct s_leo_application_cluster
 {
-  char *name;
-  char *domain_name;
-} leo_host_name_t, *p_host_name_t;
-
-
-
-typedef struct s_leo_host *p_leo_host_t;
-typedef struct s_leo_cluster *p_leo_cluster_t;
-
-
-
-
-
-
-
-
-typedef struct s_leo_host
-{
-  /*
-   * Liste des noms de l'hote et des domaines associes
-   * -------------------------------------------------
-   */
-  p_tbx_list_t  host_name_list;
-
-  /*
-   * Modele de description principal
-   * -------------------------------
-   */
-  undefined_t   model;
-
-  /*
-   * = tbx_true si une session MadII a ete lancee sur cet hote
-   * = tbx_false sinon
-   * -----------------
-   */
-  tbx_bool_t    running;
-
-  /*
-   * Liste des clusters auxquels appartient l'hote
-   * ---------------------------------------------
-   */
-  p_tbx_slist_t  cluster_list;
-
-  /*
-   * Cluster principal: servant au lancement de cet hote
-   * ---------------------------------------------------
-   */
-  p_undefined_t main_cluster;
-  
-  /*
-   * Hote maitre sur le cluster principal
-   * ------------------------------------
-   */
-  p_leo_host_t  master;
-
-  /*
-   * Liste des canaux disponibles sur cet hote
-   * -----------------------------------------
-   */
+  char          *id;
+  p_tbx_slist_t  host_list;
   p_tbx_slist_t  channel_list;
-  
-} leo_host_t;
+} leo_application_cluster_t, *p_leo_application_cluster_t;
 
-
-
-
-
-
-typedef struct s_leo_cluster_t
+typedef struct s_leo_cluster_definition
 {
-  char            *name;
-  p_leo_cluster_t  master;
-  int              distance;
-  p_tbx_slist_t    host_list;
-  int              spawn_mode;
-} leo_cluster_t;
-
+  char          *id;
+  p_tbx_slist_t  host_model_list;
+  p_tbx_slist_t  host_list;
+} leo_cluster_definition_t, *p_leo_cluster_definition_t;
 
 #endif /* __LEO_TYPES_H */

@@ -130,26 +130,14 @@ refreshall:
 	$(COMMON_HIDE) set -e; \
 	$(ROOT)/bin/pm2-clean --all --refresh
 
-.PHONY: clean cleantools cleanall cleantoolsall
-clean: cleantools
+.PHONY: clean cleanall
+clean:
 	$(COMMON_HIDE) set -e; \
 	$(ROOT)/bin/pm2-clean $(FLAVOR)
 
-cleantools:
-	$(COMMON_HIDE) set -e; \
-	for i in sigmund; do \
-		$(MAKE) -s -C $$i clean ; \
-	done
-
-cleanall: cleantoolsall
+cleanall:
 	$(COMMON_HIDE) set -e; \
 	$(ROOT)/bin/pm2-clean --all
-
-cleantoolsall:
-	$(COMMON_HIDE) set -e; \
-	for i in sigmund; do \
-		$(MAKE) -s -C $$i cleanall ; \
-	done
 
 .PHONY: distclean distcleandoc
 

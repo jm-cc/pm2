@@ -675,7 +675,7 @@ mad_sisci_adapter_init(p_mad_adapter_t adapter)
 
   parameter_string   =
     tbx_string_init_to_int(adapter_specific->local_node_id);
-  adapter->parameter = tbx_string_to_c_string(parameter_string);
+  adapter->parameter = tbx_string_to_cstring(parameter_string);
   tbx_string_free(parameter_string);
   parameter_string   = NULL;
   LOG_OUT();

@@ -25,20 +25,23 @@ if [ ! -d $PM2_USER_FLAVOR_DIR ]; then
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=default \
 	--modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt \
-	--marcel=mono --mad2=auto_spawn --mad2=tcp
+	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
+	--mad2=auto_spawn --mad2=tcp
 
     for i in mono smp act actsmp; do
 	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-$i \
-	    --modules="marcel tbx" --marcel=$i \
-	    --all=opt
+	    --modules="marcel tbx" --all=opt \
+	    --marcel=$i --marcel=smp_shared_queue --marcel=marcel_main
     done
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel \
-	--modules="marcel tbx" --all=opt --marcel=mono
+	--modules="marcel tbx" --all=opt \
+	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-prof \
-	--modules="marcel profile tbx" --marcel=mono --marcel=profile \
-	--all=opt
+	--modules="marcel profile tbx" --all=opt \
+	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
+	--marcel=profile
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=swann \
 	--modules="swann tbx ntbx" --all=opt
@@ -50,12 +53,13 @@ if [ ! -d $PM2_USER_FLAVOR_DIR ]; then
 	--modules="leoparse tbx ntbx" --all=opt
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad2 \
-	--modules="mad2 tbx ntbx" --all=opt --mad2=auto_spawn \
-	--mad2=tcp
+	--modules="mad2 tbx ntbx" --all=opt \
+	--mad2=auto_spawn --mad2=tcp
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2 \
 	--modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt \
-	--marcel=mono --mad2=auto_spawn --mad2=tcp
+	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
+	--mad2=auto_spawn --mad2=tcp
 
 else
 

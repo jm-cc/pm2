@@ -5,9 +5,31 @@ X11 sur des machines avec le même compte $HOME (partagé par NFS par
 exemple), les "xauth" sont fait en parallèles et essaye d'accéder tous
 en même temps au fichier $HOME/.Xauthority.
 
-  Pour résoudre ce problème, en attendant que xauth soit corrigé, il est
-possible d'utiliser un fichier Xauthority différent pour chaque
-connection ssh, ce qui évite les problèmes d'accès concurrent.
+  Pour résoudre ce problème, en attendant que xauth soit corrigé, il
+existe deux solutions :
+
+-1- sérialiser les appels à ssh
+
+-2- utiliser un fichier Xauthority différent pour chaque connection
+ssh, ce qui évite les problèmes d'accès concurrent.
+
+
+
+Solution 1 (Alexandre DENIS)
+----------
+
+-- positionner LEO_RSH à "ssh -f" ('-f' demande à ssh de forker dès
+que la connexion est établie)
+-- lancer l'application avec "leonie -w" ('-w' demande à leonie
+d'attendre que le lanceur forke quand il est prêt).
+
+L'impact sur la vitesse de lancement n'est pas flagrant.
+
+
+
+
+Solution 2 (Vincent DANJEAN)
+----------
 
   Pour cela :
 rajouter le script ${HOME}/.ssh/rc contenant :

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.8  2000/02/03 17:37:35  oaumage
+- mad_channel.c : correction de la liberation des donnees specifiques aux
+                  connections
+- mad_sisci.c   : support DMA avec double buffering
+
 Revision 1.7  2000/01/31 15:50:54  oaumage
 - retour a TCP
 
@@ -76,16 +81,17 @@ ______________________________________________________________________________
 
 /* parameter values */
 static int param_control_receive = 0;
-static int param_send_mode = mad_send_CHEAPER;
-static int param_receive_mode = mad_receive_CHEAPER;
+static int param_send_mode       = mad_send_CHEAPER;
+static int param_receive_mode    = mad_receive_CHEAPER;
 static int param_nb_echantillons = 1000;
-static int param_min_size = 0;
-static int param_max_size = 256;
-static int param_step = 16;
-static int param_nb_tests = 5;
-static int param_bandwidth = 0;
-static int param_no_zero = 1;
-static int param_simul_migr = 0;
+static int param_min_size        = 16;
+static int param_max_size        = 256;
+static int param_step            = 16; /* 0 = progression log. */
+static int param_nb_tests        = 5;
+static int param_bandwidth       = 1;
+static int param_no_zero         = 1;
+static int param_simul_migr      = 0;
+
 
 /* static variables */
 static unsigned char *buffer;
@@ -233,7 +239,8 @@ static void master(p_mad_madeleine_t madeleine)
     {
       for (tst_taille_courante = param_min_size ;
 	   tst_taille_courante <= param_max_size;
-	   tst_taille_courante += param_step)
+	   tst_taille_courante = param_step?tst_taille_courante + param_step:
+	     tst_taille_courante * 2)
 	{
 	  int taille_courante = ((tst_taille_courante == 0)
 				 && (param_no_zero))?1:tst_taille_courante;
@@ -348,7 +355,8 @@ static void slave(p_mad_madeleine_t madeleine)
     {      
       for (tst_taille_courante = param_min_size;
 	   tst_taille_courante <= param_max_size;
-	   tst_taille_courante+= param_step)
+	   tst_taille_courante = param_step?tst_taille_courante + param_step:
+	     tst_taille_courante * 2)
 	{
 	  int taille_courante = ((tst_taille_courante == 0)
 				 && (param_no_zero))?1:tst_taille_courante;
@@ -398,7 +406,8 @@ static void master_ctrl(p_mad_madeleine_t madeleine)
 
   for (tst_taille_courante = param_min_size;
        tst_taille_courante <= param_max_size;
-       tst_taille_courante+= param_step)
+       tst_taille_courante = param_step?tst_taille_courante + param_step:
+	 tst_taille_courante * 2)
     {
       int taille_courante = (   (tst_taille_courante == 0)
 			     && (param_no_zero))?1:tst_taille_courante;
@@ -472,8 +481,8 @@ int main(int argc, char **argv)
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
   /* TCP */
-     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
-  /* SISCI
+  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL);  
+  /* SISCI 
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */

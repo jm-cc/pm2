@@ -1,4 +1,4 @@
-# -*- encoding: iso-8859-1 -*-
+# -*- encoding: iso-8859-15 -*-
 
 import logging
 import sys

@@ -40,77 +40,77 @@ WD             [_a-zA-Z][_a-zA-Z0-9\-]*
 ID             {WD}("."{WD})*
 INTEGER        {DIGIT}+
 %%
-{ID}                               { 
+{ID}                               {
   yylval.str = malloc(yyleng + 1);
   strcpy(yylval.str, yytext);
   LOG_STR("ID", yylval.str);
-  return LEOP_ID; 
+  return LEOP_ID;
 }
-{STRING}                            { 
+{STRING}                            {
   yylval.str = malloc(yyleng - 1);
   strncpy(yylval.str, yytext + 1, yyleng - 2);
   yylval.str[yyleng - 1] = '\0';
   LOG_STR("STRING", yylval.str);
-  return LEOP_STRING; 
+  return LEOP_STRING;
 }
-{INTEGER}                            { 
+{INTEGER}                            {
   char *tmp = malloc(yyleng+1);
   strncpy(tmp, yytext, yyleng);
   tmp[yyleng + 1] = '\0';
   yylval.val = atoi(tmp);
   LOG_VAL("INTEGER", yylval.val);
   free(tmp);
-  return LEOP_INTEGER; 
+  return LEOP_INTEGER;
 }
 
 ".."                                 {
   LOG("<..>");
-  return LEOP_RANGE; 
+  return LEOP_RANGE;
 }
 "{"                                 {
   LOG("<{>");
-  return '{'; 
+  return '{';
 }
 "}"                                 {
   LOG("<}>");
-  return '}'; 
+  return '}';
 }
 ":"                                 {
   LOG("<:>");
-  return ':'; 
+  return ':';
 }
 "="                                 {
   LOG("<=>");
-  return '='; 
+  return '=';
 }
 ";"                                 {
   LOG("<;>");
-  return ';'; 
+  return ';';
 }
-","                                 { 
+","                                 {
   LOG("<,>");
-  return ','; 
+  return ',';
 }
-"["                                 { 
+"["                                 {
   LOG("<[>");
-  return '['; 
+  return '[';
 }
-"]"                                 { 
+"]"                                 {
   LOG("<]>");
-  return ']'; 
+  return ']';
 }
-"("                                 { 
+"("                                 {
   LOG("<(>");
-  return '('; 
+  return '(';
 }
-")"                                 { 
+")"                                 {
   LOG("<)>");
-  return ')'; 
+  return ')';
 }
 \/\/.*                              ;
 "#".*                               ;
 [ \n\t]                             ;
-.                                   { 
+.                                   {
   LOG("Inconnu !!!");
   return INCONNU;
 }

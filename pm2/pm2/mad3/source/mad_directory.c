@@ -134,7 +134,15 @@ mad_dir_node_get(p_mad_madeleine_t madeleine)
       dir_node = mad_dir_node_cons();
       dir_node->name = mad_ntbx_receive_string(client);
       TRACE_STR("Node name", dir_node->name);
+      {
+	char *ip_str, *dummy;
 
+	ip_str = mad_ntbx_receive_string(client);
+	dir_node->ip = strtoul(ip_str, &dummy, 16);
+	TRACE_STR("Node IP", ip_str);
+	TBX_FREE(ip_str);
+      }
+      
       tbx_htable_add(node_htable, dir_node->name, dir_node);
       dir_node->id = tbx_slist_get_length(node_slist);
       tbx_slist_append(node_slist, dir_node);

@@ -1,6 +1,6 @@
 
 # PM2: Parallel Multithreaded Machine
-# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ flavor="test_madeleine"
 appdir="${PM2_ROOT}/mad2/examples"
 prog="mad_test"
 args=""
-hosts="localhost localhost"
+hosts="`uname -n` `uname -n`"
 cat > /tmp/pm2test_expected <<EOF
 adapter: TCP0
 Express data 1 : 1

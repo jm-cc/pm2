@@ -45,5 +45,5 @@ PM2_APP_CFLAGS	=
 PM2_APP_LDFLAGS	=
 PM2_APP_LLIBS	=
 
-all:	$(BIN_DIR)/simple
+all:	$(BIN_DIR)/simple2
 

@@ -38,6 +38,7 @@
 /* Leonie: data structures */
 #include "leo_pointers.h"
 #include "leo_types.h"
+#include "leo_commands.h"
 
 /* Leonie: internal interface */
 #include "leo_interface.h"

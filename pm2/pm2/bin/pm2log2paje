@@ -772,10 +772,20 @@ sub PajeEvent {
 	}
     } elsif ($ev_type==Event::CREATE_PROC) {
 	Paje::paje_proc_register($date, $event_infos);
+    } elsif ($ev_type==Event::DESTROY_PROC) {
+	Paje::paje_proc_unregister($date, $event_infos);
     } elsif ($ev_type==Event::CREATE_LWP) {
 	Paje::paje_lwp_register($date, $event_infos);
+    } elsif ($ev_type==Event::DESTROY_LWP) {
+	Paje::paje_lwp_unregister($date, $event_infos);
     } elsif ($ev_type==Event::CREATE_UT) {
+	my @ev=(undef, undef, undef, "Existing");
 	Paje::paje_ut_register($date, $event_infos);
+	Paje::paje_function_enter($date, "Existing", $event_infos, \@ev);
+    } elsif ($ev_type==Event::DESTROY_UT) {
+	my @ev=(undef, undef, undef, "Existing");
+	Paje::paje_function_exit($date, "Existing", $event_infos, \@ev);
+	Paje::paje_ut_unregister($date, $event_infos);
 #    } elsif (/UEV_FUNC_ENTER/) {
 #	my($function)=$event_infos->{"function"};
 #	paje_function_enter($date, $function, $utid, $event_infos);
@@ -892,7 +902,29 @@ sub UFirst {
 
 1;
 
+################################################################
+################################################################
+################################################################
 package Paje;
+
+use constant SetLimits => 0;
+use constant DefineContainerType => 1;
+use constant DefineEventType     => 2;
+use constant DefineStateType     => 3;
+use constant DefineVariableType  => 4;
+use constant DefineLinkType      => 5;
+use constant DefineEntityValue   => 6;
+use constant CreateContainer     => 7;
+use constant DestroyContainer    => 8;
+use constant NewEvent    => 9;
+use constant SetState    => 10;
+use constant PushState   => 11;
+use constant PopState    => 12;
+use constant SetVariable => 13;
+use constant AddVariable => 14;
+use constant SubVariable => 15;
+use constant StartLink   => 16;
+use constant EndLink     => 17;
 
 ################################################################
 # Génération d'une trace paje
@@ -900,36 +932,36 @@ sub Entete {
     my($first_date)=SuperTrace::DateStart();
     my($end_date)=SuperTrace::DateEnd();
     print
-	'%EventDef       SetLimits       0'."\n".
+	'%EventDef       SetLimits       '.SetLimits."\n".
 	'%       Time    date'."\n".
 	'%       StartTime       date'."\n".
 	'%       EndTime date'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDefineContainerType 1'."\n".
+	'%EventDef       PajeDefineContainerType '.DefineContainerType."\n".
 	'%       Time    date'."\n".
 	'%       NewType string'."\n".
 	'%       ContainerType   string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDefineEventType     2'."\n".
+	'%EventDef       PajeDefineEventType '.DefineEventType."\n".
 	'%       Time    date'."\n".
 	'%       NewType string'."\n".
 	'%       ContainerType   string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDefineStateType     3'."\n".
+	'%EventDef       PajeDefineStateType '.DefineStateType."\n".
 	'%       Time    date'."\n".
 	'%       NewType string'."\n".
 	'%       ContainerType   string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDefineVariableType  4'."\n".
+	'%EventDef       PajeDefineVariableType '.DefineVariableType."\n".
 	'%       Time    date'."\n".
 	'%       NewType string'."\n".
 	'%       ContainerType   string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDefineLinkType      5'."\n".
+	'%EventDef       PajeDefineLinkType '.DefineLinkType."\n".
 	'%       Time    date'."\n".
 	'%       NewType string'."\n".
 	'%       ContainerType   string'."\n".
@@ -937,66 +969,66 @@ sub Entete {
 	'%       DestContainerType       string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDefineEntityValue   6'."\n".
+	'%EventDef       PajeDefineEntityValue '.DefineEntityValue."\n".
 	'%       Time    date'."\n".
 	'%       NewValue        string'."\n".
 	'%       EntityType      string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeCreateContainer     7'."\n".
+	'%EventDef       PajeCreateContainer '.CreateContainer."\n".
 	'%       Time    date'."\n".
 	'%       NewContainer    string'."\n".
 	'%       NewContainerType        string'."\n".
 	'%       Container       string'."\n".
 	'%       NewName string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeDestroyContainer    8'."\n".
+	'%EventDef       PajeDestroyContainer '.DestroyContainer."\n".
 	'%       Time    date'."\n".
 	'%       Container       string'."\n".
-	'%       NewContainerType        string'."\n".
+	'%       Type        string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeNewEvent    9'."\n".
-	'%       Time    date'."\n".
-	'%       EntityType      string'."\n".
-	'%       Container       string'."\n".
-	'%       Value   string'."\n".
-	'%EndEventDef'."\n".
-	'%EventDef       PajeSetState    10'."\n".
+	'%EventDef       PajeNewEvent '.NewEvent."\n".
 	'%       Time    date'."\n".
 	'%       EntityType      string'."\n".
 	'%       Container       string'."\n".
 	'%       Value   string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajePushState   11'."\n".
+	'%EventDef       PajeSetState '.SetState."\n".
 	'%       Time    date'."\n".
 	'%       EntityType      string'."\n".
 	'%       Container       string'."\n".
 	'%       Value   string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajePopState    12'."\n".
+	'%EventDef       PajePushState '.PushState."\n".
+	'%       Time    date'."\n".
+	'%       EntityType      string'."\n".
+	'%       Container       string'."\n".
+	'%       Value   string'."\n".
+	'%EndEventDef'."\n".
+	'%EventDef       PajePopState '.PopState."\n".
 	'%       Time    date'."\n".
 	'%       EntityType      string'."\n".
 	'%       Container       string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeSetVariable 13'."\n".
-	'%       Time    date'."\n".
-	'%       EntityType      string'."\n".
-	'%       Container       string'."\n".
-	'%       Value   double'."\n".
-	'%EndEventDef'."\n".
-	'%EventDef       PajeAddVariable 14'."\n".
-	'%       Time    date'."\n".
-	'%       EntityType      string'."\n".
-	'%       Container       string'."\n".
-	'%       Value   double'."\n".
-	'%EndEventDef'."\n".
-	'%EventDef       PajeSubVariable 15'."\n".
+	'%EventDef       PajeSetVariable '.SetVariable."\n".
 	'%       Time    date'."\n".
 	'%       EntityType      string'."\n".
 	'%       Container       string'."\n".
 	'%       Value   double'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeStartLink   16'."\n".
+	'%EventDef       PajeAddVariable '.AddVariable."\n".
+	'%       Time    date'."\n".
+	'%       EntityType      string'."\n".
+	'%       Container       string'."\n".
+	'%       Value   double'."\n".
+	'%EndEventDef'."\n".
+	'%EventDef       PajeSubVariable '.SubVariable."\n".
+	'%       Time    date'."\n".
+	'%       EntityType      string'."\n".
+	'%       Container       string'."\n".
+	'%       Value   double'."\n".
+	'%EndEventDef'."\n".
+	'%EventDef       PajeStartLink '.StartLink."\n".
 	'%       Time    date'."\n".
 	'%       EntityType      string'."\n".
 	'%       Container       string'."\n".
@@ -1004,7 +1036,7 @@ sub Entete {
 	'%       SourceContainer string'."\n".
 	'%       Key     string'."\n".
 	'%EndEventDef'."\n".
-	'%EventDef       PajeEndLink     17'."\n".
+	'%EventDef       PajeEndLink '.EndLink."\n".
 	'%       Time    date'."\n".
 	'%       EntityType      string'."\n".
 	'%       Container       string'."\n".
@@ -1022,61 +1054,61 @@ sub Entete {
     GroupRegister("UT",
 		  EventDef("U", 
 			   1, "UV\t\"user thread\"",
-			   7, \&paje_event_create_u,
-			   \&paje_event_distroy),
+			   \&paje_event_create_u,
+			   \&paje_event_destroy_u),
 		  EventDef("LU",
 			   3, "L\t\"LUser Thread\"",
-			   6, \&paje_event_create_lu,
-			   \&paje_event_distroy, 
+			   \&paje_event_create_lu,
+			   \&paje_event_destroy_lu, 
 			   "L"),
 		  EventDef("PU",
 			   3, "P\t\"PUser Thread\"",
-			   6, \&paje_event_create_pu,
-			   \&paje_event_distroy, 
+			   \&paje_event_create_pu,
+			   \&paje_event_destroy_pu, 
 			   "P")
 		  );
     GroupRegister("LWP",
 		  EventDef("L", 
 			   1, "LV\t\"LWP\"",
-			   7, \&paje_event_create_l,
-			   \&paje_event_distroy),
+			   \&paje_event_create_l,
+			   \&paje_event_destroy_l),
 		  EventDef("UL",
 			   3, "U\t\"ULWP\"",
-			   6, \&paje_event_create_ul,
-			   \&paje_event_distroy, 
+			   \&paje_event_create_ul,
+			   \&paje_event_destroy_ul, 
 			   "U"),
 		  EventDef("PL",
 			   3, "P\t\"PLWP\"",
-			   6, \&paje_event_create_pl,
-			   \&paje_event_distroy, 
+			   \&paje_event_create_pl,
+			   \&paje_event_destroy_pl, 
 			   "P")
 		  );
     GroupRegister("PROC",
 		  EventDef("P", 
 			   1, "PV\t\"Processor\"",
-			   7, \&paje_event_create_p,
-			   \&paje_event_distroy),
+			   \&paje_event_create_p,
+			   \&paje_event_destroy_p),
 		  EventDef("UP",
 			   3, "U\t\"UProc \"",
-			   6, \&paje_event_create_up,
-				       \&paje_event_distroy, 
+			   \&paje_event_create_up,
+			   \&paje_event_destroy_up, 
 			   "U"),
 		  EventDef("LP",
 			   3, "L\t\"LProc \"",
-			   6, \&paje_event_create_lp,
-			   \&paje_event_distroy, 
+			   \&paje_event_create_lp,
+			   \&paje_event_destroy_lp, 
 			   "L")
 			);
     GroupRegister("UF",
 		  EventDef("UF",
 			   3, "U\tFunctions",
-			   6, \&paje_event_create_uf,
-			   \&paje_event_distroy));
+			   \&paje_event_create_uf,
+			   \&paje_event_destroy_uf));
     GroupRegister("UE",
 		  EventDef("UE",
 			   2, "U\t\"Alt_Events\"",
-			   6, \&paje_event_create_ue,
-			   \&paje_event_distroy));
+			   \&paje_event_create_ue,
+			   \&paje_event_destroy_ue));
     
     GroupPrint($first_date);
     #paje_print(3,$first_date,' UTV_UT_LWP   UTV_UT LWP');
@@ -1116,9 +1148,8 @@ my(%paje_groups)=();
 #- name
 #- master_type
 #- master_enddef
-#- sub_type
 #- sub_enddef_func_create (date, group, event, elem)
-#- sub_enddef_func_distroy (date, group, event, elem)
+#- sub_enddef_func_destroy (date, group, event, elem)
 #- depends
 #- master_printed
 #
@@ -1130,17 +1161,15 @@ sub EventDef {
     my($name)=shift;
     my($master_type)=shift;
     my($master_enddef)=shift;
-    my($sub_type)=shift;
     my($sub_enddef_func_create)=shift;
-    my($sub_enddef_func_distroy)=shift;
+    my($sub_enddef_func_destroy)=shift;
     my(@depends)=@_;
     
     my(%hash)=("name" => $name,
 	       "master_type" => $master_type,
 	       "master_enddef" => $master_enddef,
-	       "sub_type" => $sub_type,
 	       "sub_enddef_func_create" => $sub_enddef_func_create,
-	       "sub_enddef_func_distroy" => $sub_enddef_func_distroy,
+	       "sub_enddef_func_destroy" => $sub_enddef_func_destroy,
 	       "depends" => \@depends);
     return \%hash;
 }
@@ -1287,22 +1316,23 @@ sub paje_group_create {
 
 }
 
-sub paje_group_distroy {
+sub paje_group_destroy {
     my($gr)=paje_group_find(shift);
     my($cle)=shift;
     my($elem)=paje_group_get_elem($gr, $cle);
     my($date)=shift;
+    my($infos)=shift;
+
+#    if ($cle == 3221158976) {
+#	die;
+#    }
 
     my($sub_event);
-    for $sub_event (values %{$gr->{"events"}}) {
-	($sub_event->{"sub_enddef_func_distroy"})->
+    for $sub_event (reverse (values %{$gr->{"events"}})) {
+	($sub_event->{"sub_enddef_func_destroy"})->
 	    ($date, $gr, $sub_event, $elem);
     }
-    delete $gr->{"cles"}->{$cle};
-}
-
-sub paje_event_distroy {
-
+    delete ($gr->{"cles"}->{$cle});
 }
 
 ################################################################
@@ -1313,16 +1343,11 @@ sub paje_event_create_ue {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
 	       $event->{"name"}.' "'.$elem->{"infos"}.'"');
 }
 
-sub paje_event_get_id {
-    my($cle)=shift;
-    my($date)=shift;
-    my($infos)=shift;
-    my($id)=paje_group_get_id("UE", undef, $cle, $date, $infos);
-    return $id;
+sub paje_event_destroy_ue {
 }
 
 sub paje_event_create_id {
@@ -1337,6 +1362,9 @@ sub paje_event_create_id {
 	       $gr->{"cles"}->{$cle}->{"infos"}.'"');
 }
 
+sub paje_event_destroy_id {
+}
+
 sub paje_event_gen {
     my($date)= shift;
     my($utid)= shift;
@@ -1346,7 +1374,7 @@ sub paje_event_gen {
 	my($id)=paje_group_get_id("UE", "UE", "none", $date, $event);
 	my($tid)=paje_group_get_id("UT", "U", $utid->Name, $date);
 	Print(10,$date,"UE $tid $id");
-	paje_group_distroy("UE", "none");
+	paje_group_destroy("UE", "none");
     }
 }
 
@@ -1358,8 +1386,18 @@ sub paje_event_create_u {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' UV1 "'.$elem->{"cle"}.'"');
+    Print(CreateContainer, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' UV1 "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_u {
+    my($date)=shift;
+    my($gr)=shift;
+    my($event)=shift;
+    my($elem)=shift;
+
+    Print(DestroyContainer, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"});
 }
 
 sub paje_event_create_lu {
@@ -1368,8 +1406,11 @@ sub paje_event_create_lu {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_lu {
 }
 
 sub paje_event_create_pu {
@@ -1378,8 +1419,11 @@ sub paje_event_create_pu {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_pu {
 }
 
 sub paje_event_create_l {
@@ -1388,8 +1432,18 @@ sub paje_event_create_l {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' LV1 "'.$elem->{"cle"}.'"');
+    Print(CreateContainer, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' LV1 "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_l {
+    my($date)=shift;
+    my($gr)=shift;
+    my($event)=shift;
+    my($elem)=shift;
+
+    Print(DestroyContainer, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"});
 }
 
 sub paje_event_create_ul {
@@ -1398,8 +1452,11 @@ sub paje_event_create_ul {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_ul {
 }
 
 sub paje_event_create_pl {
@@ -1408,8 +1465,11 @@ sub paje_event_create_pl {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_pl {
 }
 
 sub paje_event_create_p {
@@ -1418,8 +1478,18 @@ sub paje_event_create_p {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' PV1 "'.$elem->{"cle"}.'"');
+    Print(CreateContainer, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' PV1 "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_p {
+    my($date)=shift;
+    my($gr)=shift;
+    my($event)=shift;
+    my($elem)=shift;
+
+    Print(DestroyContainer, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"});
 }
 
 sub paje_event_create_up {
@@ -1428,8 +1498,11 @@ sub paje_event_create_up {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_up {
 }
 
 sub paje_event_create_lp {
@@ -1438,8 +1511,11 @@ sub paje_event_create_lp {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' "'.$elem->{"cle"}.'"');
+}
+
+sub paje_event_destroy_lp {
 }
 
 sub paje_ut_register {
@@ -1449,6 +1525,13 @@ sub paje_ut_register {
     my($id)=paje_group_create("UT", $utid->Name, $date);
 }
 
+sub paje_ut_unregister {
+    my($date)=shift;
+    my($utid)=shift;
+
+    my($id)=paje_group_destroy("UT", $utid->Name, $date);
+}
+
 sub paje_lwp_register {
     my($date)=shift;
     my($lwp)=shift;
@@ -1456,11 +1539,25 @@ sub paje_lwp_register {
     my($id)=paje_group_create("LWP", $lwp->Name, $date);
 }
 
+sub paje_lwp_unregister {
+    my($date)=shift;
+    my($lwp)=shift;
+
+    my($id)=paje_group_destroy("LWP", $lwp->Name, $date);
+}
+
 sub paje_proc_register {
     my($date)=shift;
     my($proc)=shift;
 
     my($id)=paje_group_create("PROC", $proc->Name, $date);
+}
+
+sub paje_proc_unregister {
+    my($date)=shift;
+    my($proc)=shift;
+
+    my($id)=paje_group_destroy("PROC", $proc->Name, $date);
 }
 
 my($actif)=-1;
@@ -1564,8 +1661,8 @@ sub paje_event_create_uf {
     my($event)=shift;
     my($elem)=shift;
 
-    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' '.$elem->{"infos"}->[3]);
+    Print(DefineEntityValue, $date, $event->{"name"}.$elem->{"id"}." ".
+	  $event->{"name"}.' '.$elem->{"infos"}->[3]);
 }
 
 sub paje_function_enter {
@@ -1826,44 +1923,6 @@ sub disp {
     }
 }
 
-sub main {
-    our($pm2logs, $user_traces, $kernel_traces);
-    GetOptions ("log=s"	=> \$pm2logs,
-	    	"user=s" => \$user_traces,
-		"kernel=s" => \$kernel_traces);
-
-    if ($user_traces || $kernel_traces) {
-	disp("Using FKT/FUT Traces\n");
-	input_from_fxt($user_traces, $kernel_traces);
-    } elsif ($pm2logs) {
-	disp("Using pm2logs\n");
-	input_from_marcel_debug($pm2logs);
-    } else {
-	usage();
-	return 1;
-    }
-
-    Processor->FlushSW;
-    LWP->FlushSW;
-    Processor->CreateEntities;
-    LWP->CreateEntities;
-    Thread->CreateEntities;
-    SuperTrace::Sort;
-
-    #SuperTrace::Dump;
-    #return;
-    #display_events();
-
-    Paje::Entete();
-
-    Paje::Events();
-
-    Paje::End();
-
-    #display_events();
-
-}
- 
 sub insert {
     $_=shift;
     chomp;
@@ -1877,37 +1936,84 @@ sub insert {
     }
 }
 
-if (0) {
-insert("U 00	0 T01		fut_setup	0x7fffffff, 0, 2097152");
-insert("K 10	2 1181	unknown	switch_to	_K1_");
-insert("K 20	0 0	idle	switch_to	457");
-insert("K 30	1 460	klogd	switch_to	-1");
-insert("K 40	2 _K1_	traces	fkt_keychange	0x100000 0x24169980");
-insert("U 50	0 T01		fut_new_lwp	T01 0");
-insert("K 60	0 457	syslogd	switch_to	0");
-insert("K 70	2 _K1_	traces	user_fork	T01 0");
-insert("U 80	2 T01		fut_thread_birth T02");
-insert("U 85	2 T01		fut_thread_birth T11");
-insert("U 85	2 T01		fut_thread_birth T12");
-insert("U 90	2 T01		fut_thread_birth T03");
-insert("U 95	2 T01		fut_thread_birth T13");
-insert("K 97    1 -1    traces  switch_to       _K2_");
-insert("K 99    1 _K2_	traces  user_fork       T13");
-insert("U 100   2 T01		fut_switch_to	T02");
-insert("U 110   2 T02		fut_switch_to	T03");
-insert("U 115   1 T13		fut_switch_to	T12");
-insert("U 120   2 T03		fut_switch_to	T01");
-insert("K 125   1 _K2_	traces  switch_to       TOTO");
-insert("U 130   2 T01		fut_switch_to	T02");
-insert("U 140   2 T02		fut_switch_to	T03");
-insert("U 150   2 T03		fut_switch_to	T01");
-insert("K 155   0 0     traces  switch_to       _K2_");
-insert("U 160   2 T01		fut_switch_to	T02");
-insert("U 170   2 T02		fut_switch_to	T03");
-insert("U 172   0 T13		event 		T13_a_encore_la_main");
-insert("U 175   0 T12		fut_switch_to	T11");
-insert("U 180   2 T03		fut_switch_to	T01");
+sub input_test {
+    insert("U 00	0 T01		fut_setup	0x7fffffff, 0, 2097152");
+    insert("K 10	2 1181	unknown	switch_to	_K1_");
+    insert("K 20	0 0	idle	switch_to	457");
+    insert("K 30	1 460	klogd	switch_to	-1");
+    insert("K 40	2 _K1_	traces	fkt_keychange	0x100000 0x24169980");
+    insert("U 50	0 T01		fut_new_lwp	T01 0");
+    insert("K 60	0 457	syslogd	switch_to	0");
+    insert("K 70	2 _K1_	traces	user_fork	T01 0");
+    insert("U 80	2 T01		fut_thread_birth T02");
+    insert("U 85	2 T01		fut_thread_birth T11");
+    insert("U 85	2 T01		fut_thread_birth T12");
+    insert("U 90	2 T01		fut_thread_birth T03");
+    insert("U 95	2 T01		fut_thread_birth T13");
+    insert("K 97    1 -1    traces  switch_to       _K2_");
+    insert("K 99    1 _K2_	traces  user_fork       T13");
+    insert("U 100   2 T01		fut_switch_to	T02");
+    insert("U 110   2 T02		fut_switch_to	T03");
+    insert("U 115   1 T13		fut_switch_to	T12");
+    insert("U 120   2 T03		fut_switch_to	T01");
+    insert("K 125   1 _K2_	traces  switch_to       TOTO");
+    insert("U 130   2 T01		fut_switch_to	T02");
+    insert("U 140   2 T02		fut_switch_to	T03");
+    insert("U 150   2 T03		fut_switch_to	T01");
+    insert("K 155   0 0     traces  switch_to       _K2_");
+    insert("U 160   2 T01		fut_switch_to	T02");
+    insert("U 170   2 T02		fut_switch_to	T03");
+    insert("U 172   0 T13		event 		T13_a_encore_la_main");
+    insert("U 175   0 T12		fut_switch_to	T11");
+    insert("U 180   2 T03		fut_switch_to	T01");
+    insert("K 190   2 _K1_	traces	switch_to	0");
+}
+
+
+sub main {
+    my($test, $dump);
+    our($pm2logs, $user_traces, $kernel_traces);
+    GetOptions ("log=s"	=> \$pm2logs,
+	    	"user=s" => \$user_traces,
+		"kernel=s" => \$kernel_traces,
+		"test"   =>  \$test,
+		"dump"   =>  \$dump);
+
+    if ($user_traces || $kernel_traces) {
+	disp("Using FKT/FUT Traces\n");
+	input_from_fxt($user_traces, $kernel_traces);
+    } elsif ($pm2logs) {
+	disp("Using pm2logs\n");
+	input_from_marcel_debug($pm2logs);
+    } elsif ($test) {
+	input_test();
+    } else {
+	usage();
+	return 1;
+    }
+
+    Processor->FlushSW;
+    LWP->FlushSW;
+    Processor->CreateEntities;
+    LWP->CreateEntities;
+    Thread->CreateEntities;
+    SuperTrace::Sort;
+
+    if ($dump) {
+	SuperTrace::Dump;
+	  return;
+      }
+    #display_events();
+
+    Paje::Entete();
+
+    Paje::Events();
+
+    Paje::End();
+
+    #display_events();
 
 }
+ 
 
 main();

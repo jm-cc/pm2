@@ -39,9 +39,9 @@ typedef struct s_mad_settings
   char            *configuration_file;
   tbx_bool_t       debug_mode;
   mad_driver_id_t  external_spawn_driver;
-#ifdef MAD_APPLICATION_SPAWN
+#ifdef APPLICATION_SPAWN
   char            *url;
-#endif /* MAD_APPLICATION_SPAWN */
+#endif /* APPLICATION_SPAWN */
 } mad_settings_t;
 
 

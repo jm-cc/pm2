@@ -19,7 +19,7 @@ f (void *arg)
 static void
 service (void)
 {
-  pm2_service_thread_create (f, NULL);
+  pm2_service_thread_create (f, NULL);	/* Here! */
 }
 
 int

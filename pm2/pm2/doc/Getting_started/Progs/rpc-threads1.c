@@ -12,8 +12,8 @@ f (void *arg)
 
   int next = (pm2_self () + 1) % pm2_config_size ();
 
-  pm2_unpack_byte (SEND_CHEAPER, RECV_CHEAPER, rec_msg, SIZE);
-  pm2_rawrpc_waitdata ();
+  pm2_unpack_byte (SEND_CHEAPER, RECV_CHEAPER, rec_msg, SIZE);	/* Here! */
+  pm2_rawrpc_waitdata ();	/* Here! */
 
   if (pm2_self () == 0)
     {
@@ -25,9 +25,9 @@ f (void *arg)
       sprintf (sent_msg, "%s %d", rec_msg, pm2_self ());
       tprintf ("Passing on string: %s\n", sent_msg);
 
-      pm2_rawrpc_begin (next, service_id, NULL);
-      pm2_pack_byte (SEND_CHEAPER, RECV_CHEAPER, sent_msg, SIZE);
-      pm2_rawrpc_end ();
+      pm2_rawrpc_begin (next, service_id, NULL);	/* Here! */
+      pm2_pack_byte (SEND_CHEAPER, RECV_CHEAPER, sent_msg, SIZE);	/* Here! */
+      pm2_rawrpc_end ();	/* Here! */
     }
 }
 

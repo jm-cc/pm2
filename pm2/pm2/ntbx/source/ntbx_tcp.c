@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.4  2000/03/07 15:43:48  oaumage
+- suppression de l'usage de socketlen_t au profit de int (probleme sur info)
+
 Revision 1.3  2000/03/01 11:03:37  oaumage
 - mise a jour des #includes ("")
 
@@ -203,7 +206,7 @@ ntbx_tcp_socket_t
 ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 		       ntbx_tcp_port_t      port)
 {
-  socklen_t          len  = sizeof(ntbx_tcp_address_t);
+  int                len  = sizeof(ntbx_tcp_address_t);
   ntbx_tcp_address_t temp;
   int                desc;
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_driver_interface.h,v $
+Revision 1.6  2000/03/02 15:45:27  oaumage
+- support du polling Nexus
+
 Revision 1.5  2000/02/08 17:47:24  oaumage
 - prise en compte des types de la net toolbox
 
@@ -142,6 +145,11 @@ typedef struct s_mad_driver_interface
 
   p_mad_connection_t
   (*receive_message)(p_mad_channel_t);
+
+#ifdef MAD_NEXUS
+  p_mad_connection_t
+  (*poll_message)(p_mad_channel_t);
+#endif /* MAD_NEXUS */
   
   /* Buffer transfer */
   void

@@ -5,9 +5,9 @@ pm2_main (int argc, char *argv[])
 {
   pm2_init (&argc, argv);
 
-  tprintf ("Hello World!\n");	/* Here */
+  tprintf ("Hello World!\n");	/* Here! */
 
-  if (pm2_self () == 0)
+  if (pm2_self () == 0)		/* Here! */
     pm2_halt ();
 
   pm2_exit ();

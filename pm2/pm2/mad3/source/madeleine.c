@@ -73,6 +73,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_GM
   mad_gm_register,
 #endif /* DRV_GM */
+#ifdef DRV_MX
+  mad_mx_register,
+#endif /* DRV_MX */
 #ifdef MARCEL /* Forwarding Transmission Module */
   mad_forward_register,
 #endif /* MARCEL */

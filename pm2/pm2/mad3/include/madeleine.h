@@ -110,6 +110,9 @@
 #ifdef DRV_GM
 #include "connection_interfaces/mad_gm.h"
 #endif /* DRV_GM */
+#ifdef DRV_MX
+#include "connection_interfaces/mad_mx.h"
+#endif /* DRV_MX */
 
 #include "mad_main.h"
 #include "mad_exit.h"

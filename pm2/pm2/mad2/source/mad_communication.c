@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.4  2000/01/04 16:49:10  oaumage
+- madeleine: corrections au niveau du support `external spawn'
+- support des fonctions non definies dans les drivers
+
 Revision 1.3  1999/12/15 17:31:27  oaumage
 Ajout de la commande de logging de CVS
 
@@ -81,7 +85,8 @@ mad_begin_packing(p_mad_channel_t   channel,
   connection->send = mad_true;
   PM2_UNLOCK_SHARED(channel) ;
 
-  interface->new_message(connection);
+  if (interface->new_message)
+    interface->new_message(connection);
   
   /* structure initialisation */
   mad_list_init(&(connection->buffer_list));
@@ -509,10 +514,18 @@ mad_pack(p_mad_connection_t   connection,
 
   if (user_buffer_length == 0) return;
 
-  link = interface->choice(connection,
-			   user_buffer_length,
-			   send_mode,
-			   receive_mode);
+  if (interface->choice)
+    {
+      link = interface->choice(connection,
+			       user_buffer_length,
+			       send_mode,
+			       receive_mode);
+    }
+  else
+    {
+      link = &(connection->link[0]);
+    }
+  
   link_id               = link->id;
   LOG("mad_pack: 1");
   link_mode             = link->link_mode;
@@ -902,10 +915,18 @@ mad_unpack(p_mad_connection_t   connection,
 
   if (user_buffer_length == 0) return;
 
-  link = interface->choice(connection,
-			   user_buffer_length,
-			   send_mode,
-			   receive_mode);
+  if (interface->choice)
+    {
+      link = interface->choice(connection,
+			       user_buffer_length,
+			       send_mode,
+			       receive_mode);
+    }
+  else
+    {
+      link = &(connection->link[0]);
+    }
+  
   link_id               = link->id;
   link_mode             = link->link_mode;
   buffer_mode           = link->buffer_mode;

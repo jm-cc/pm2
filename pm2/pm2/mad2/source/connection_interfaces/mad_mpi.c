@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.9  2000/02/08 17:49:44  oaumage
+- support de la net toolbox
+- mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
+              vers la net toolbox
+
 Revision 1.8  2000/01/31 15:54:57  oaumage
 - mad_mpi.c : terminaison amelioree sous PM2
 - mad_tcp.c : debogage de la synchronisation finale
@@ -773,7 +778,7 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter
 			   __attribute__ ((unused)),
 			   p_mad_configuration_t configuration)
 {
-  mad_host_id_t                host_id;
+  ntbx_host_id_t               host_id;
   int                          rank;
   int                          size;
 
@@ -782,7 +787,7 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  configuration->local_host_id = (mad_host_id_t)rank;
+  configuration->local_host_id = (ntbx_host_id_t)rank;
   configuration->size          = (mad_configuration_size_t)size;
   configuration->host_name     =
     malloc(configuration->size * sizeof(char *));
@@ -797,7 +802,7 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter
 
       if (host_id == rank)
 	{
-	  mad_host_id_t remote_host_id;
+	  ntbx_host_id_t remote_host_id;
 	  
 	  gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
 	  
@@ -854,7 +859,7 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter
 void
 mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter
 			       __attribute__ ((unused)),
-			       mad_host_id_t     remote_host_id,
+			       ntbx_host_id_t    remote_host_id,
 			       char             *parameter)
 {  
   int len = strlen(parameter);

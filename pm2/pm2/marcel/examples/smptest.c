@@ -24,13 +24,13 @@ static marcel_sem_t sem[NB];
 
 any_t thread_func(any_t arg)
 {
-  unsigned num = (int)arg;
+  unsigned long num = (int)arg;
 
   marcel_detach(marcel_self());
 
   marcel_sem_P(&sem[num]);
 
-  fprintf(stderr, "Hi! I'm thread %d on VP %d\n",
+  fprintf(stderr, "Hi! I'm thread %ld on VP %d\n",
 	  num, marcel_current_vp());
 
   if(num != NB-1)
@@ -42,7 +42,7 @@ any_t thread_func(any_t arg)
 int marcel_main(int argc, char *argv[])
 {
   marcel_attr_t attr;
-  int i;
+  unsigned long i;
 
   marcel_init(&argc, argv);
 

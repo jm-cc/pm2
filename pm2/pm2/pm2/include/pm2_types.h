@@ -19,6 +19,8 @@
 
 #include "marcel.h"
 
+#define _PRIVATE_
+
 typedef void (*pm2_startup_func_t)(int argc, char *argv[], void *args);
 
 typedef void (*pm2_rawrpc_func_t)(void);

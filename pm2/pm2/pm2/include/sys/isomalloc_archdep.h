@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: isomalloc_archdep.h,v $
+Revision 1.5  2000/09/22 09:17:29  gantoniu
+Added double mapping.
+
 Revision 1.4  2000/07/14 16:17:09  gantoniu
 Merged with branch dsm3
 
@@ -71,7 +74,7 @@ ______________________________________________________________________________
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
-#define ISOADDR_PAGES (64*1024)
+#define ISOADDR_PAGES (128*1024)
 #define DYN_DSM_AREA_SIZE (ISOADDR_PAGES * 4096)
 #define THREAD_SLOT_SIZE              0x10000 /* 64 Ko */
 

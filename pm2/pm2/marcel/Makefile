@@ -28,6 +28,117 @@ ifeq ($(LIBPTHREAD),true)
 LIBNAME=pthread
 endif
 
+SCHED_NAME=marcel
+
+MOD_HSPLITS_COMMON:=splitall_section_def.h
+MOD_HSPLITS_SOURCES:=$(shell echo `pwd` > /dev/stderr ; cd include ; \
+	grep -l '^\#section' *.h sys/*.h)
+
+#MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)
+MOD_HSPLITS_GENDIR = $(CURDIR)/autogen-include
+
+MOD_SRC += source/scheduler-$(SCHED_NAME)
+MOD_SRC += source/arch-$(MOD_ARCH)
+
+$(eval $(call MOD_HSPLITS_ADD_MASTER,,,))
+#$(warning $(call MOD_HSPLITS_ADD_MASTER,,,))
+
+define ADD_SUBDIR # subdir SUBNAME base
+ $$(eval $$(call MOD_HSPLITS_ADD_MASTER,-$(1),_$(2),$(1)))
+ MOD_HSPLITS_PARTS_$(2) += MOD_HSPLITS_$(2)_section MOD_HSPLITS_$(2)_nosection
+ MOD_HSPLITS_$(2)_section_COMMON:=splitall_section_def.h
+ MOD_HSPLITS_$(2)_section_SRCDIR:=include/$(1)
+ MOD_HSPLITS_$(2)_section_GENSUBDIR:=$(1)
+ MOD_HSPLITS_$(2)_section_DEFAULT_SECTION:=null
+ MOD_HSPLITS_$(2)_SOURCES:=$$(patsubst include/$(1)/%,%,$$(wildcard include/$(1)/*.h))
+ MOD_HSPLITS_$(2)_section_SOURCES=$$(shell cd include/$(1); grep </dev/null -l '^\#section' $$(MOD_HSPLITS_$(2)_SOURCES))
+ MOD_HSPLITS_$(2)_nosection_COMMON:=splitall_nosection_def.h
+ MOD_HSPLITS_$(2)_nosection_SRCDIR:=include/$(1)
+ MOD_HSPLITS_$(2)_nosection_GENSUBDIR:=$(1)
+ MOD_HSPLITS_$(2)_nosection_DEFAULT_SECTION:=all
+ MOD_HSPLITS_$(2)_nosection_SOURCES=$$(filter-out $$(MOD_HSPLITS_$(2)_section_SOURCES),$$(MOD_HSPLITS_$(2)_SOURCES))
+endef
+
+$(eval $(call ADD_SUBDIR,asm-$(MOD_ARCH),ARCH))
+$(eval $(call ADD_SUBDIR,asm-generic,ARCH_GENERIC))
+$(eval $(call ADD_SUBDIR,scheduler-$(SCHED_NAME),SCHED))
+
+.PHONY: symlinks
+dot_h: symlinks
+
+symlinks: $(MOD_GEN_INC)/asm $(MOD_GEN_INC)/scheduler
+
+$(MOD_GEN_INC)/asm:
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) ln -sfv $(MOD_HSPLITS_GENDIR)/asm-$(MOD_ARCH) $@
+$(MOD_GEN_INC)/scheduler:
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) ln -sfv $(MOD_HSPLITS_GENDIR)/scheduler-$(SCHED_NAME) $@
+
+.PHONY: clean_autogen
+clean: clean_autogen
+
+clean_autogen:
+	$(COMMON_CLEAN) $(RM) -r autogen-include
+
+#$(foreach rep,$(patsubst include/%,%, \
+#		$(wildcard include/asm-* include/scheduler-*)), \
+#	$(eval $(call ADD_SUBDIR,$(rep),$(rep))))
+
+#sys/marcel_sched.h scheduler/sched_marcel.h marcel_alias.h \
+#	marcel_threads.h
+
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
+
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+# Règles locales pour maintenir à jour les fichiers provenant
+# des sources du noyaux linux
+
+# Récupération du nom des fichiers originaux
+KFILES=$(shell find include source -iname "linux_*.[ch]" | \
+	sed	-e 's,^.*/old/.*$$,,' \
+		-e 's,\(asm[^/]*/\)linux_,\1,' \
+		-e 's,include/\(asm-.*\)/linux_,include/\1/,' \
+		-e 's,include/.*linux_,include/linux/,' \
+		-e 's,source/.*linux_,kernel/,' \
+		-e 's,lwp,cpu,' \
+		-e 's,kernel/notifier.c,kernel/sys.c,')
+
+KDIR= linux_tree
+
+COPYDIR=linux_archive
+
+.PHONY: linux
+linux:
+	$(COMMON_MAIN)set -e ; LST="" ; \
+		for f in $(KFILES) ; do \
+			if [ ! -f $(COPYDIR)/$$f ]; then \
+				echo "Copying new file $$f"; \
+				mkdir -p $$(dirname $(COPYDIR)/$$f); \
+				cp -a $(KDIR)/$$f $(COPYDIR)/$$f ; \
+			elif cmp --quiet $(KDIR)/$$f $(COPYDIR)/$$f; then \
+				: ;\
+			else \
+				echo "$$f has been updated in kernel sources" ; \
+			fi ; \
+		done
+	$(COMMON_MAIN)set -e ; LST=""; KFILES="$(KFILES)" ; \
+		for f in $$(find $(COPYDIR) -type f -printf "%P\n") ; do \
+			case " $$KFILES " in \
+			*\ $$f\ *) ;; \
+			*) echo "$$f: present in archive but not in sources (to remove ?)" ; \
+			   LST="$$LST $(COPYDIR)/$$f" ;; \
+			esac ; \
+		done ; \
+		if [ ! -z "$$LST" ]; then \
+			echo "You should verify and execute : " ; \
+			echo "rm -v $$LST" ; \
+		fi
+
+.PHONY: toto
+toto:
+	$(MAKE)
+	gcc /home/vdanjean/travail/pm2/marcel/marcel.lds /home/vdanjean/build/marcel/examples/obj/sample.o -L/home/vdanjean/build/marcel/lib -Xlinker --start-group  -linit -lmarcel -ltbx     -Xlinker --end-group -o /home/vdanjean/build/marcel/examples/bin/sample

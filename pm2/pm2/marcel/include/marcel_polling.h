@@ -23,7 +23,8 @@
    - le nom du champ interne dans la structure englobante
  */
 #define struct_up(ptr, type, member) \
-        ((type *)((char *)(typeof (&((type *)0)->member))(ptr)-(unsigned long)(&((type *)0)->member)))
+        ((type *)((char *)(typeof (&((type *)0)->member))(ptr)- \
+		  (unsigned long)(&((type *)0)->member)))
 
 
 #section types

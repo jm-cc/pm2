@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: mad_sbp.h,v $
+Revision 1.3  2000/01/04 09:17:05  oaumage
+- ajout de la commande de log de CVS
+
+
+______________________________________________________________________________
 */
 
 /*

@@ -5,6 +5,7 @@
 #include "tracebuffer.h"
 #include "fkt.h"
 
+#define NB_PROC 16
 #define TRUE 1
 #define FALSE 0
 
@@ -45,5 +46,11 @@ extern int is_a_valid_cpu(int logic);
 extern int max_cpu();
 
 extern u_64 get_begin_lwp(int lwp);
+
+extern u_64 get_begin_str();
+
+extern u_64 get_end_str();
+
+extern double get_cpu_cycles();
 
 #endif

@@ -33,6 +33,8 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
+/* Options: SIGSEGV_TRACE */
+
 
 #include <stdio.h>
 #include <signal.h>
@@ -43,11 +45,6 @@
 #include "marcel.h" /* tfprintf */
 #include "dsm_pm2.h"
 
-static dsm_protocol_t _dsm_protocol;
-static int _dsm_protocol_set = 0;
-
-//#define DEBUG
-
   //
   // dsm_pagefault - signal handling routine for page fault access (BUS/SEGV)
   //
@@ -55,8 +52,13 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
 {
   unsigned long index = dsm_page_index(addr);
   sigset_t signals;
+#define HYP_INSTRUMENT
+#ifdef HYP_INSTRUMENT
+  extern int dsm_pf_handler_calls;
+  dsm_pf_handler_calls++;
+#endif
 
-#ifdef DEBUG1
+#ifdef SIGSEGV_TRACE
   tfprintf(stderr, "Starting handler: sig = %d addr = %p index = %ld (I am %p)\n", sig, addr, index, marcel_self() );
 #endif
       // Unblock SIGALARM to enable thread preemption and SIGSEGV to enable
@@ -74,25 +76,25 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
    {
      if (dsm_get_access(index) == NO_ACCESS) // read fault
        {
-#ifdef DEBUG1
+#ifdef SIGSEGV_TRACE
 	 tfprintf(stderr, "read fault: (I am %p)\n", marcel_self());
 #endif
-	 (*dsm_get_read_fault_action(index))(index);
+	 (*dsm_get_read_fault_action(dsm_get_page_protocol(index)))(index);
        }
      else if (dsm_get_access(index) == READ_ACCESS)// write fault
        {
-#ifdef DEBUG1
+#ifdef SIGSEGV_TRACE
 	 tfprintf(stderr, "write fault: (I am %p)\n", marcel_self());
 #endif
 	 
-	 (*dsm_get_write_fault_action(index))(index);
+	 (*dsm_get_write_fault_action(dsm_get_page_protocol(index)))(index);
        }
      // else nothing to do; pagefault processed in the meantime
    }
   else
     switch(access){
-    case READ_ACCESS: (*dsm_get_read_fault_action(index))(index);break;
-    case WRITE_ACCESS:  (*dsm_get_write_fault_action(index))(index);break;
+    case READ_ACCESS: (*dsm_get_read_fault_action(dsm_get_page_protocol(index)))(index);break;
+    case WRITE_ACCESS:  (*dsm_get_write_fault_action(dsm_get_page_protocol(index)))(index);break;
     default: RAISE(PROGRAM_ERROR); break;
 				     }
   dsm_unlock_page(index);
@@ -100,34 +102,14 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
 
 
 void dsm_pm2_init(int my_rank, int confsize)
-
-{
+{  
+  dsm_init_protocol_table();
   dsm_page_table_init(my_rank, confsize);
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
-  if (_dsm_protocol_set == 0) // no protocol specified; use the default protocol
-    {
-      dsm_protocol_t protocol;
-
-      protocol.read_fault = dsmlib_rf_ask_for_read_copy;
-      protocol.write_fault = dsmlib_wf_ask_for_write_access;
-      protocol.read_server = dsmlib_rs_send_read_copy;
-      protocol.write_server = dsmlib_ws_send_page_for_write_access;
-      protocol.invalidate_server = dsmlib_is_invalidate;
-      protocol.receive_page_server = dsmlib_rp_validate_page;
-      dsm_init_protocol_table(&protocol);
-    }
-  else
-    dsm_init_protocol_table(&_dsm_protocol);
-
 }
+
 void dsm_pm2_exit()
 {
   dsm_uninstall_pagefault_handler();
 }
 
-
-void pm2_set_dsm_protocol(dsm_protocol_t *protocol)
-{
-  _dsm_protocol = *protocol;
-  _dsm_protocol_set = 1;
-}

@@ -194,7 +194,7 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     marcel_t pid;
     marcel_attr_t attr;
     marcel_sem_t sem; /* pour attendre l'initialisation du processus */
-    unsigned granted;
+    size_t granted;
 
     attr = _pm2_lrpc_attr[num];
     marcel_attr_setstackaddr(&attr,
@@ -259,7 +259,7 @@ static void netserver_lrpc(void)
   marcel_attr_t attr;
   marcel_t pid;
   marcel_sem_t sem;
-  unsigned granted;
+  size_t granted;
 
   old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
   old_mad_unpack_int(MAD_IN_HEADER, &num, 1);
@@ -392,7 +392,7 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     marcel_t pid;
     marcel_attr_t attr;
     marcel_sem_t sem;
-    unsigned granted;
+    size_t granted;
 
     attr = _pm2_lrpc_attr[num];
     marcel_attr_setstackaddr(&attr,
@@ -452,7 +452,7 @@ static void netserver_async_lrpc(void)
   marcel_attr_t attr;
   marcel_t pid;
   marcel_sem_t sem;
-  unsigned granted;
+  size_t granted;
 
   old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
   old_mad_unpack_int(MAD_IN_HEADER, &num, 1);
@@ -506,7 +506,7 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	marcel_t pid;
 	marcel_attr_t attr;
 	marcel_sem_t sem;
-	unsigned granted;
+	size_t granted;
 
 	attr = _pm2_lrpc_attr[num];
 	marcel_attr_setstackaddr(&attr,

@@ -1,2 +1,2 @@
-Provide: marcel_proctype
+Provide: marcel_proctype marcel_smp
 Conflict: marcel_proctype

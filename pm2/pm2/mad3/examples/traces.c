@@ -34,7 +34,7 @@
 #define MAX_SUB 8
 
 // Buffer size
-#define BUFFER_SIZE 16
+#define BUFFER_SIZE 16000
 
 // Display of argv contents at program startup
 //#define ECHO_ARGS
@@ -344,37 +344,36 @@ void* thr_func(void* arg)
 	return NULL;
 }
 
-/*
- * Warning: this function is automatically renamed to marcel_main when
- * appropriate
- */
-int
-main(int    argc,
-     char **argv)
+void do_calcul(void* arg)
+{
+
+  	p_mad_madeleine_t madeleine = NULL;
+	volatile int *a=arg;
+	*a += 1;
+	madeleine    = mad_get_madeleine();
+	while(*a!=-1) {
+		;
+	}
+	madeleine    = mad_get_madeleine();
+
+}
+
+void* wait_func(void* arg)
+{
+
+	do_calcul(arg);
+	return NULL;
+}
+
+
+void*communication(void* arg)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
   p_tbx_slist_t     slist     = NULL;
-  marcel_t tid;
-  
-#ifdef ECHO_ARGS
-  disp_args(argc, argv);
-#endif // ECHO_ARGS
 
-  /*
-   * Initialization of various libraries.
-   */
-#ifdef PROFILE
-  profile_activate(FUT_SETMASK, MARCEL_PROF_MASK|MAD_PROF_MASK|
-		  FUT_GCC_INSTRUMENT_KEYMASK, 0);
-#endif
+  volatile int*a=arg;
 
-  common_pre_init(&argc, argv, NULL);
-  common_post_init(&argc, argv, NULL);
-  TRACE("Returned from common_init");
-
-  marcel_create(&tid, NULL, thr_func, NULL);
-  
   /*
    * Reference to the Madeleine object.
    */
@@ -390,6 +389,11 @@ main(int    argc,
    */
   process_rank = session->process_rank;
   DISP_VAL("My global rank is", process_rank);
+
+  if (process_rank == 0) {
+	  marcel_delay(2000);
+	  while(*a!=3) ;
+  }
 
   /*
    * How to obtain the configuration size.
@@ -442,8 +446,91 @@ main(int    argc,
        */
       DISP("No channels");
     }
+  return NULL;
+}
 
-  marcel_join(tid, NULL);
+
+/*
+ * Warning: this function is automatically renamed to marcel_main when
+ * appropriate
+ */
+int
+main(int    argc,
+     char **argv)
+{
+  marcel_t calcul1, calcul2, calcul3, calcul4, comm;
+  int stop=0;
+  p_mad_madeleine_t madeleine = NULL;
+  p_mad_session_t   session   = NULL;
+  marcel_attr_t attr;
+
+  
+#ifdef ECHO_ARGS
+  disp_args(argc, argv);
+#endif // ECHO_ARGS
+
+  /*
+   * Initialization of various libraries.
+   */
+#ifdef PROFILE
+  profile_activate(FUT_SETMASK, MARCEL_PROF_MASK|MAD_PROF_MASK|
+		  FUT_GCC_INSTRUMENT_KEYMASK, 0);
+#endif
+
+  common_pre_init(&argc, argv, NULL);
+  common_post_init(&argc, argv, NULL);
+  TRACE("Returned from common_init");
+
+  /*
+   * Reference to the Madeleine object.
+   */
+  madeleine    = mad_get_madeleine();
+
+  DISP_VAL("Madeleine", madeleine);
+  /*
+   * Reference to the session information object
+   */
+  session      = madeleine->session;
+
+  /*
+   * Globally unique process rank.
+   */
+  process_rank = session->process_rank;
+
+  marcel_attr_init(&attr);
+  marcel_attr_setname(&attr, "communication");
+  marcel_attr_setprio(&attr, MA_RT_PRIO);
+  marcel_create(&comm, &attr, communication, &stop);
+
+  marcel_yield();
+
+  if (process_rank==0) {
+	  marcel_attr_init(&attr);
+	  marcel_attr_setname(&attr, "calcul1");
+	  marcel_create(&calcul1, &attr, wait_func, &stop);
+
+	  marcel_attr_init(&attr);
+	  marcel_attr_setname(&attr, "calcul2");
+	  marcel_create(&calcul2, &attr, wait_func, &stop);
+
+	  marcel_attr_init(&attr);
+	  marcel_attr_setname(&attr, "calcul3");
+	  marcel_create(&calcul3, &attr, wait_func, &stop);
+
+	  marcel_attr_init(&attr);
+	  marcel_attr_setname(&attr, "calcul4");
+	  //marcel_create(&calcul4, &attr, wait_func, &stop);
+  }
+
+
+  marcel_join(comm, NULL);
+  if (process_rank==0) {
+	  stop=-1;
+	  marcel_join(calcul1, NULL);
+	  marcel_join(calcul2, NULL);
+	  marcel_join(calcul3, NULL);
+	  //marcel_join(calcul4, NULL);
+  }
   DISP("Exiting");
 
 #ifdef PROFILE

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx.h,v $
+Revision 1.4  2000/03/08 17:16:38  oaumage
+- support de Marcel sans PM2
+
 Revision 1.3  2000/03/01 11:03:23  oaumage
 - mise a jour des #includes ("")
 
@@ -68,9 +71,9 @@ ______________________________________________________________________________
  * Headers
  * -------
  */
-#ifdef PM2
-#include <marcel.h>
-#endif /* PM2 */
+#ifdef MARCEL
+#include "marcel.h"
+#endif /* MARCEL */
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>

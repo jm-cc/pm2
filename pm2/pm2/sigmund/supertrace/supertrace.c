@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tracebuffer.h"
-#include "../../../linux/include/linux/fkt.h"
+#include "fkt.h"
 
 void print_trace(trace tr, FILE *supertrace)
 {
@@ -29,8 +29,10 @@ void print_trace(trace tr, FILE *supertrace)
   fwrite(&(tr.type), sizeof(mode), 1, supertrace);
   fwrite(&(tr.number), sizeof(unsigned int), 1, supertrace);
   fwrite(&(tr.code), sizeof(int), 1, supertrace);
-  for(i = 0; i < ((tr.code & 0xff) - 12) / 4; i++) {
-    fwrite(&(tr.args[i]), sizeof(int), 1, supertrace);
+  if ((tr.type == USER) || (tr.code > FKT_UNSHIFTED_LIMIT_CODE)) {
+    for(i = 0; i < ((tr.code & 0xff) - 12) / 4; i++) {
+      fwrite(&(tr.args[i]), sizeof(int), 1, supertrace);
+    }
   }
 }
 

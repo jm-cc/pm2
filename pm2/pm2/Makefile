@@ -45,7 +45,7 @@ include $(PM2_ROOT)/make/common-vars.mak
 
 # Cache - partie principale des librairies
 #---------------------------------------------------------------------
-ifeq ($(SIMPLE_TARGET),true)
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/main-libs.mak
 endif
 
@@ -102,56 +102,59 @@ preproc: flavors
 fut: flavors
 	$(COMMON_HIDE) set -e; \
 	if [ -n "$(PROF_LIBS)" ] ; then \
-	for i in $(PROF_LIBS) ; do \
-		$(MAKE) -C modules/$$i $@ ; \
-	done \
+		for i in $(PROF_LIBS) ; do \
+			$(MAKE) -C modules/$$i $@ ; \
+		done \
 	fi
 
 # Nettoyage
 #---------------------------------------------------------------------
 #         Note: quel est le status actuel des commandes de nettoyage ?
-.PHONY: clean cleanlibs
-clean: cleanlibs
+.PHONY: clean cleanlibs cleanmak
+clean: cleanlibs cleanmak
 
 cleanlibs:
 	$(COMMON_HIDE) set -e; \
-	for i in $(MODULES) ; do \
+	for i in `$(PM2_ROOT)/bin/pm2-module modules` ; do \
 		$(MAKE) -C modules/$$i clean ; \
 	done
 
+cleanmak:
+	$(COMMON_CLEAN) $(RM) $(PM2_MAK_DIR)/*.mak
+
 .PHONY: distclean distcleanlibs distcleanflavors distcleandoc distcleanall
-distclean: distcleanlibs distcleandoc
+distclean: distcleandoc distcleanlibs
 distcleanall: distclean distcleanflavors
 
 distcleanlibs:
-	$(COMMON_HIDE) set -e; \
-	for i in $(MODULES) ; do \
-		$(MAKE) -C modules/$$i distclean ; \
-	done
-	if [ -d stamp ]; then \
-		find stamp -iname "libstamp*" -exec rm {} ;\
-	fi
+	@echo "*********************"
+	@echo "Remove your building tree yourself to clean all your compiled files."
+	@echo "Without specific settings, your building tree should be in"
+	@echo $$HOME/build
+	@echo "*********************"
 
 distcleanflavors:
-	$(RM) -r flavors
-	$(RM) -r stamp
+	@echo "*********************"
+	@echo "Remove your flavors yourself if you want."
+	@echo "You can find them in $$HOME/.pm2/flavors."
+	@echo "*********************"
+#	$(RM) -r flavors
+#	$(RM) -r stamp
 
 distcleandoc:
 	$(MAKE) -C doc distclean
 
 # Initialisation de la distriubtion PM2
 #---------------------------------------------------------------------
-.PHONY: init cvsinit flavorinit
+.PHONY: init checkmake cvsinit flavorinit
 init: checkmake cvsinit flavorinit
-
 
 checkmake:
 	@if ( expr $(MAKE_VERSION) \< 3.76 >> /dev/null ) then \
 	echo "Wrong make version. Upgrade to version 3.77"; exit 1;\
 	fi
 
-
-cvsinit ARCHITECTURES:
+cvsinit ARCHITECTURES modules:
 	$(COMMON_HIDE) if [ -d CVS ]; then \
 		$(PM2_ROOT)/bin/pm2_recreate_links ; \
 	fi
@@ -173,9 +176,8 @@ doc:
 
 # ???
 #---------------------------------------------------------------------
-#      Note: quel est l'objet de ces deux lignes ?
-flavors:
-ARCHITECTURES:
+#      Note: quel est l'objet de ces deux^H^H^H^H^H^Htte lignes^H ?
+flavors: # To remove ? This does not test any more the sample flavors
 
 
 # Aide
@@ -189,11 +191,12 @@ bannerhelp:
 targethelp:
 	@echo "  init: initialise PM2 source tree"
 	@echo "  pm2: build the PM2 libraries"
-	@echo "  examples: build all the example (do not use the FLAVOR="
+	@echo "  examples: build all the examples (do not use the FLAVOR="
 	@echo "    option there, unless you know what you do)"
-	@echo "  config: configure flavors"
-	@echo "  menuconfig: configure flavors (need the dialog utility)"
-	@echo "  xconfig: configure flavors (need the Xdialog utility)"
+	@echo "  config|menuconfig|xdialogconfig|xconfig: configure flavors"
+	@echo "    menuconfig: require the dialog utility"
+	@echo "    dialogconfig: require the Xdialog utility"
+	@echo "    xconfig: require X11 and GTK (libs and *.h)"
 	@echo "  doc: build the documentation"
 	@echo "  help: this help"
 	@echo "  clean: clean source tree for current flavor"
@@ -203,7 +206,7 @@ targethelp:
 
 # Configuration
 #---------------------------------------------------------------------
-.PHONY: config textconfig menuconfig xconfig
+.PHONY: config textconfig menuconfig xdialogconfig xconfig
 config: textconfig
 
 textconfig: flavors
@@ -212,15 +215,24 @@ textconfig: flavors
 menuconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --dialog || :
 
-xconfig: flavors
+xdialogconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :
+
+xconfig: flavors
+	$(COMMON_HIDE) $(MAKE) -C ezflavor
+	$(PM2_ROOT)/bin/ezflavor
 
 # Generation du cache principal des librairies
 #---------------------------------------------------------------------
 #         Note: pourquoi pas dans libs-rules.mak ?
 $(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
-	@echo "Generating $@"
-	@$(PM2_CONFIG) --gen_mak main-libs
+	@if [ ! -z "$(PM2_MAK_DIR)" ]; then \
+		echo "Generating $@" ;\
+		$(PM2_CONFIG) --gen_mak main-libs ;\
+	else \
+		echo "Not generating $@" ;\
+		exit 1 ;\
+	fi
 
 
 # Fin du Makefile

@@ -239,10 +239,12 @@ if [ -z "$flavor" ]; then
     flavor=${PM2_FLAVOR:-default}
 fi
 
-FLAVOR_FILE=`pm2-flavor find --flavor=$flavor`
+FLAVOR_FILE=`${PM2_ROOT}/bin/pm2-flavor find --flavor=$flavor`
 
 if [ ! -f $FLAVOR_FILE ]; then
-    echo "Flavor $flavor do not exists yet. Create it before with _make init_." 1>&2
+    echo "Flavor '$flavor' do not exists yet. Create it before." 1>&2
+    echo "You can use 'make init' to create the basic flavors of pm2" 1>&2
+    echo "or 'make config|menuconfig|xdialogconfig|xconfig' to create your own flavor." 1>&2
     exit 1
 fi
 
@@ -267,7 +269,7 @@ case "$PM2_BUILD" in
     /*)
 	;;
     *)
-	eval PM2_BUILD="${PM2_BUILD_DIR:-$HOME/build}/$PM2_BUILD"
+	eval PM2_BUILD="${PM2_BUILD_DIR:-$HOME/build}"'/$PM2_BUILD'
 esac
 
 
@@ -275,7 +277,7 @@ esac
 # generation des repertoires
 
 if [ "$gen_mak" = true ]; then
-    pm2-gen-make.sh $flavor $gen_param
+    ${PM2_ROOT}/bin/pm2-gen-make.sh $flavor $gen_param
     exit 0
 fi
 
@@ -343,7 +345,7 @@ if [ -n "${dirtoshow}" ]; then
 	else
 	    list=
 	    for lib in $libs; do
-		LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
+		LIB=`echo $lib | tr 'a-z' 'A-Z'`
 		libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
 		list="${list:+$list }${PM2_BUILD}/${lib}/lib/lib${libname}${PM2_EXT}.a"
 	    done
@@ -399,7 +401,7 @@ the_libs="$PM2_COMMON_LIBS"
 
 # CFLAGS : on prend tous les cflags
 for lib in $PM2_LIBS common; do
-    LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
+    LIB=`echo $lib | tr 'a-z' 'A-Z'`
     the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS` -D${LIB}"
     if [ -d "$PM2_ROOT/modules/$lib/include" ]; then
 	the_flags="$the_flags -I$PM2_ROOT/modules/$lib/include"
@@ -413,7 +415,7 @@ vide=
 libs_pm2=
 # LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
 for lib in $libs; do
-    LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
+    LIB=`echo $lib | tr 'a-z' 'A-Z'`
     libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
     case "$libname" in
     $vide)
@@ -424,7 +426,7 @@ for lib in $libs; do
 #	for l in `eval echo \\$PM2_${LIB}_MODULE_DEPEND_LIB`; do
 #	    case " $libs " in
 #		*\ $l\ *)
-#		    LIB2=`echo $l | tr [a-z] [A-Z]`
+#		    LIB2=`echo $l | tr a-z A-Z`
 #		    libname2="`eval echo \\$PM2_${LIB2}_LIBNAME`"
 #		    the_libs="$the_libs -l${libname2}$PM2_EXT"
 #		    ;;

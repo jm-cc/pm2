@@ -15,6 +15,4 @@
  */
 
 #section marcel_functions
-#ifdef MARCEL_TOP
 int marcel_init_top(char *outfile);
-#endif

@@ -79,7 +79,6 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
       continue;
     } else
 #endif
-#ifdef MARCEL_TOP
     if(!strcmp(argv[i], "--marcel-top")) {
       if (i == *argc-1) {
 	fprintf(stderr,
@@ -109,7 +108,6 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
       } else
 	i++;
     } else
-#endif
       argv[j++] = argv[i++];
   }
   *argc = j;

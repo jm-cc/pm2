@@ -324,7 +324,7 @@ get_options() { # mod help list_options_to_add option/module
 			get_options_$interf "$@" excl
 		    fi
 		done
-		listopt=`"$PM2_MODULE" options $module --get-incl`
+		listopt=`"$PM2_MODULE" options $module --get-all-incl`
 		if [ -n "$listopt" ]; then
 		    get_options_$interf "$@"
 		fi
@@ -470,7 +470,7 @@ show_flavor_text() { # check
     echo
     if [ ! -z "$1" ]; then
 	do_cmdline 1
-	echo "Checking dependancies in the configuration..."
+	echo "Checking dependencies in the configuration..."
 	if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
 	    echo "All seems good"
 	    echo
@@ -487,7 +487,7 @@ show_flavor_dialog() { # check init_text last_text yesno
     if [ ! -z "$1" ]; then
 	do_cmdline 1
 	( 
-	    echo "Checking dependancies in the configuration..."
+	    echo "Checking dependencies in the configuration..."
 	    if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
 		echo "All seems good"
 	    fi

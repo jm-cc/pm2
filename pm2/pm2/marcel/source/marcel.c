@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.16  2000/04/17 16:09:39  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.15  2000/04/17 08:31:51  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -126,7 +129,7 @@ ______________________________________________________________________________
 #include <fcntl.h>
 #include <signal.h>
 
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 #include "sys/upcalls.h"
 #endif
 
@@ -164,10 +167,6 @@ void LONGJMP(jmp_buf buf, int val)
 
 #ifdef STACK_OVERFLOW_DETECT
 #error "STACK_OVERFLOW_DETECT IS CURRENTLY NOT IMPLEMENTED"
-#endif
-
-#ifdef __ACT__
-#include "sys/upcalls.h"
 #endif
 
 static long page_size;
@@ -757,13 +756,17 @@ void marcel_unfreeze(marcel_t *pids, int nb)
 /* WARNING!!! MUST BE LESS CONSTRAINED THAN MARCEL_ALIGN (64) */
 #define ALIGNED_32(addr)(((unsigned long)(addr) + 31) & ~(31L))
 
-#ifndef __ACT__
+// TODO : Vérifier le code avec les activations
 void marcel_begin_hibernation(marcel_t t, transfert_func_t transf, 
 			      void *arg, boolean fork)
 {
   unsigned long depl, blk;
   unsigned long bottom, top;
   marcel_t cur = marcel_self();
+
+#ifdef MA__ACTIVATION
+  RAISE("Not implemented");
+#endif
 
   if(t == cur) {
     lock_task();
@@ -814,7 +817,6 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
     }
   }
 }
-#endif
 
 marcel_t marcel_alloc_stack(unsigned size)
 {
@@ -846,9 +848,13 @@ marcel_t marcel_alloc_stack(unsigned size)
   return t;
 }
 
-#ifndef __ACT__
+// TODO : Vérifier le code avec les activations
 void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 {
+#ifdef MA__ACTIVATION
+  RAISE("Not implemented");
+#endif
+
   memcpy(t->jbuf, t->migr_jb, sizeof(jmp_buf));
 
   mdebug("end of hibernation for thread %p", t);
@@ -863,7 +869,6 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 
   unlock_task();
 }
-#endif
 
 void marcel_enabledeviation(void)
 {
@@ -892,7 +897,7 @@ static void insertion_relai(handler_func_t f, void *arg)
   jmp_buf back;
   marcel_t cur = marcel_self();
 
-#ifdef __ACT__
+#ifdef MA__ACTIVATION
   RAISE(NOT_IMPLEMENTED);
 #endif
 
@@ -926,7 +931,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   static void * volatile argument;
   static volatile long initial_sp;
 
-#ifdef __ACT__
+#ifdef MA__ACTIVATION
   RAISE(NOT_IMPLEMENTED);
 #endif
 
@@ -1064,17 +1069,6 @@ void marcel_init(int *argc, char *argv[])
 
     marcel_io_init();
     mdebug("\t\t\t<marcel_init: io_init done>\n");
-
-#ifdef __ACT__
-    init_upcalls(0);
-    mdebug("\t\t\t<marcel_init upcalls_init done>\n");
-#endif
-
-#ifdef __ACT__
-    launch_upcalls(WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"
-				       " | wc -l`")));
-    mdebug("\t\t\t<marcel now uses upcalls\n>");
-#endif
 
     mdebug("\t\t\t<marcel_init completed>\n");
 
@@ -1218,9 +1212,14 @@ int _raise(exception ex)
 
 /* =============== Gestion des E/S non bloquantes =============== */
 
-#ifndef __ACT__
 int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 {
+#ifdef MA__ACTIVATION
+  RAISE("Not implemented yet (easy to do)");
+  //return select(width, readfds, writefds, exceptfds); // il manque
+  // un/des params...
+  return 0;
+#else
   int res = 0;
   struct timeval timeout;
   fd_set rfds, wfds, efds;
@@ -1247,8 +1246,8 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
    if(exceptfds) *exceptfds = efds;
 
    return res;
+#endif /* MA__ACTIVATION */
 }
-#endif /* __ACT__ */
 
 #ifndef STANDARD_MAIN
 
@@ -1292,7 +1291,7 @@ int main(int argc, char *argv[])
 #endif
 
 
-#ifndef __ACT__
+#ifndef MA__ACTIVATION
 /* *** Christian Perez Stuff ;-) *** */
 
 void marcel_special_init(marcel_t *liste)
@@ -1421,4 +1420,4 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
 
 /* End of Christian Perez Stuff */
 
-#endif /* __ACT__ */
+#endif /* MA__ACTIVATION */

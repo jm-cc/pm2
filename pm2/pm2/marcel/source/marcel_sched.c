@@ -379,7 +379,7 @@ static __inline__ __lwp_t *choose_lwp(marcel_t t)
 {
   marcel_t cur = marcel_self();
   DEFINE_CUR_LWP(, =, GET_LWP(cur));
-  
+
   switch(t->sched_policy)
     {
     case MARCEL_SCHED_OTHER :
@@ -397,7 +397,7 @@ static __inline__ __lwp_t *choose_lwp(marcel_t t)
   RAISE(PROGRAM_ERROR);
   return NULL;
 }
-  
+
 #endif /* MA__ONE_QUEUE */
 
 /**************************************************************************/
@@ -559,7 +559,7 @@ static __inline__ marcel_t next_runnable_task(marcel_t cur, __lwp_t *lwp,
      // * avoid_self : on doit retourner une autre tâche que nous
      // même. Utile uniquement en mode RT pour aller voir dans l'autre
      // file si cur est RT et qu'on ne trouve pas d'autres tâche RT
-     // convenables.  
+     // convenables.
      // * cur_is_valid : TRUE sauf si cur n'est pas dans une des deux
      // files. Ceci ne survient qu'avec les pseudo threads des upcalls
      // new.
@@ -587,7 +587,7 @@ static __inline__ marcel_t next_runnable_task(marcel_t cur, __lwp_t *lwp,
 	return first;
       }
     }
-    res = next_task(first);    
+    res = next_task(first);
 #ifdef MA__MULTIPLE_RUNNING
     while (res != first) {
       if (CAN_RUN(lwp, res)) {
@@ -595,7 +595,7 @@ static __inline__ marcel_t next_runnable_task(marcel_t cur, __lwp_t *lwp,
 	return res;
       }
       mdebug_sched_q("non, pas rt %p\n", res);
-      res = next_task(res);      
+      res = next_task(res);
     }
 #else
     if (res != cur) {
@@ -657,7 +657,7 @@ static __inline__ marcel_t next_runnable_task(marcel_t cur, __lwp_t *lwp,
   } while (0);
 
   // On n'a pas trouvé de tâche. On renvoie cur.
-  
+
   IDLE_LOG_OUT();
   return cur;
 }
@@ -976,8 +976,8 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
       register struct list_head *pos;
 
       list_for_each(pos, &__delayed_tasks) {
-	if ( list_entry(pos, task_desc, task_list)->time_to_wake 
-	     >= t->time_to_wake ) 
+	if ( list_entry(pos, task_desc, task_list)->time_to_wake
+	     >= t->time_to_wake )
 	  break;
       }
       /* Insertion juste avant la position trouvée */
@@ -1029,7 +1029,7 @@ marcel_t marcel_next[ACT_NB_MAX_CPU];
 inline static void act_goto_next_task(marcel_t pid, int from)
 {
   marcel_next[GET_LWP_NUMBER(marcel_self())]=pid;
-	
+
   mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED\n");
   act_cntl(ACT_CNTL_RESTART_UNBLOCKED, (void*)from);
   mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
@@ -1070,7 +1070,7 @@ inline static int can_goto_next_task(marcel_t current, marcel_t pid)
     act_goto_next_task(pid, ACT_RESTART_FROM_SCHED);
     return 0;
   }
-    
+
   if (pid != current) {
     MA_THR_LONGJMP(current->number, (pid), NORMAL_RETURN);
   }
@@ -1100,11 +1100,11 @@ void ma__marcel_yield(void)
   DEFINE_CUR_LWP(, =, GET_LWP(cur));
 
   LOG_IN();
-
+  LOG_PTR("next", cur->task_list.next);
   display_sched_queue(cur_lwp);
 
   marcel_switch_to(cur, next_task_to_run(cur, cur_lwp));
-  
+  LOG_PTR("next", cur->task_list.next);
   LOG_OUT();
 }
 
@@ -1551,7 +1551,7 @@ any_t idle_func(any_t arg)
   MA_THR_SETJMP(cur);
   if(!init_done) {
     init_done=1;
-    MTRACE("Starting idle_func", cur);   
+    MTRACE("Starting idle_func", cur);
   } else {
     MA_THR_RESTARTED(cur, "Idle restart");
   }
@@ -1620,7 +1620,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
   lwp_list_lock();
   {
-    if(__nb_lwp >= MA__MAX_LWPS) 
+    if(__nb_lwp >= MA__MAX_LWPS)
       RAISE("Too many lwp\n");
 
     SET_LWP_NB(__nb_lwp, lwp);
@@ -1642,7 +1642,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
 #ifdef MA__ONE_QUEUE
   /* on initialise une seule fois la structure. */
-  if(initial_task) 
+  if(initial_task)
 #endif
   {
     SCHED_DATA(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
@@ -1661,7 +1661,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   {
     char *stack = __TBX_MALLOC(2*SLOT_SIZE, __FILE__, __LINE__);
 
-    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) & 
+    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) &
 			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
 
     marcel_attr_setstackaddr(&attr, stack);
@@ -1694,7 +1694,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 #endif
 
   SET_LWP(lwp->idle_task, lwp);
-#if defined(MA__LWPS) && !defined(MA__ONE_QUEUE) 
+#if defined(MA__LWPS) && !defined(MA__ONE_QUEUE)
   lwp->idle_task->previous_lwp = NULL;
 #endif
 
@@ -1714,7 +1714,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   {
     char *stack = __TBX_MALLOC(2*SLOT_SIZE, __FILE__, __LINE__);
 
-    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) & 
+    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) &
 			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
 
     marcel_attr_setstackaddr(&attr, stack);
@@ -1723,7 +1723,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 #endif
 
   sched_unlock(lwp);
-  
+
   // la fonction ne sera jamais exécutée, c'est juste pour avoir une
   // structure de thread marcel dans upcall_new
   marcel_create(&lwp->upcall_new_task, &attr, (void*)void_func, NULL);
@@ -1798,7 +1798,7 @@ static void marcel_bind_on_processor(__lwp_t *lwp)
 		    NULL) != 0) {
     perror("processor_bind");
     exit(1);
-  } 
+  }
 #ifdef MARCEL_DEBUG
   if(marcel_mdebug.show)
     fprintf(stderr, "LWP %d bound to processor %d\n",
@@ -1841,7 +1841,7 @@ static void *lwp_startup_func(void *arg)
 
   call_ST_FLUSH_WINDOWS();
   longjmp(lwp->idle_task->jbuf, NORMAL_RETURN);
-  
+
   return NULL;
 }
 
@@ -1936,7 +1936,7 @@ void marcel_sched_start(unsigned nb_lwp)
 
   for(i=1; i<get_nb_lwps(); i++)
     marcel_sched_add_vp();
- 
+
   mdebug("marcel_sched_init  : %i lwps created\n",
 	 get_nb_lwps());
 #endif /* MA__LWPS */
@@ -2136,7 +2136,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 
   list_for_each(pos, &__delayed_tasks) {
     t = list_entry(pos, task_desc, task_list);
-    if (want_to_see(t, which)) {    
+    if (want_to_see(t, which)) {
       if(nb_pids < max)
 	pids[nb_pids++] = t;
       else
@@ -2148,7 +2148,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 
   list_for_each(pos, &__waiting_tasks) {
     t = list_entry(pos, task_desc, task_list);
-    if (want_to_see(t, which)) {    
+    if (want_to_see(t, which)) {
       if(nb_pids < max)
 	pids[nb_pids++] = t;
       else

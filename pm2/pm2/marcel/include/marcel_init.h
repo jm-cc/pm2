@@ -150,5 +150,6 @@ typedef struct __ma_init_info {
 #define MA_INIT_GENSCHED_PREEMPT_PRIO               'C'
 #define MA_INIT_THREADS_THREAD        MA_INIT_SCHEDULER
 #define MA_INIT_TIMER_SIG             MA_INIT_SCHEDULER
+#define MA_INIT_GENSCHED_START_LWPS   MA_INIT_START_LWPS
 
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx.h,v $
+Revision 1.3  2000/03/01 11:03:23  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.2  2000/02/17 09:14:25  oaumage
 - ajout du support de TCP a la net toolbox
 - ajout de fonctions d'empaquetage de donnees numeriques
@@ -73,13 +76,13 @@ ______________________________________________________________________________
 #include <stddef.h>
 #include <string.h>
 
-#include <tbx.h>
-#include <ntbx_types.h>
+#include "tbx.h"
+#include "ntbx_types.h"
 
 #ifdef NTBX_TCP
-#include <ntbx_tcp.h>
+#include "ntbx_tcp.h"
 #endif /* NTBX_TCP */
 
-#include <ntbx_interface.h>
+#include "ntbx_interface.h"
 
 #endif /* NTBX_H */

@@ -39,27 +39,6 @@
 #include "dsm_page_manager.h"
 #include "dsm_protocol_policy.h" 
 
-#if 1
-dsm_protocol_t 
-dsmlib_hyp_java_prot = {NULL, 
-			NULL, 
-			NULL, 
-			dsmlib_ws_hyp_send_page_for_write_access, 
-			NULL,
-			NULL, 
-			dsmlib_erp_hyp_receive_page
-};
-#endif
-#if 0
-dsm_protocol_t 
-dsmlib_hyp_java_prot = {NULL, 
-			NULL, 
-			NULL, 
-			dsmlib_ws_hyp_send_page_for_write_access, 
-			NULL,
-			dsmlib_rp_hyp_validate_page
-};
-#endif
 
 dsm_protocol_t 
 dsmlib_ddm_li_hudak_prot = {dsmlib_rf_ask_for_read_copy,
@@ -97,7 +76,7 @@ void dsm_init_protocol_table(dsm_protocol_t *protocol)
 {
   int i;
 
-  dsm_protocol_info.size = dsm_get_nb_static_pages();
+  dsm_protocol_info.size = dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages();
   dsm_protocol_info.protocol_table = (dsm_protocol_t *)malloc(dsm_protocol_info.size * sizeof(dsm_protocol_t));
 
   for (i = 0; i < dsm_protocol_info.size; i++)

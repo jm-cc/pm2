@@ -436,7 +436,7 @@ int tbx_snprintf(char * buf, size_t size, const char *fmt, ...)
 	int i;
 
 	va_start(args, fmt);
-	i=vsnprintf(buf,size,fmt,args);
+	i=tbx_vsnprintf(buf,size,fmt,args);
 	va_end(args);
 	return i;
 }

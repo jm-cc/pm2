@@ -34,20 +34,22 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MAD2_ROOT is not defined
-MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
-export MAD2_ROOT
-
-case $1 in
-    /*) command=$* ;;
-    *) command=`pwd`/$*
-esac
-
-set ${PM2_CONF_FILE}
 chaine=""
-for i in $*
-do
+for i in `cat ${PM2_CONF_FILE}`; do
     chaine="${chaine} `basename $i -t`"
 done
+
 bipconf $chaine
-bipload -mget $command
+
+dbgopt=""
+if [ ${PM2_DEBUG} = "on" ]; then
+    confsize=`cat ${PM2_CONF_FILE} | wc -w`
+    n=1
+    while [ $n -le $confsize ]; do
+	dbgopt="$dbgopt -d $n"
+	n=`expr $n + 1`
+    done
+fi
+
+bipload $dbgopt -mget "$@"
+

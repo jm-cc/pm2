@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: bitmap.c,v $
+Revision 1.5  2000/02/28 11:16:55  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.4  2000/01/31 15:58:16  oaumage
 - ajout du Log CVS
 
@@ -45,10 +48,10 @@ ______________________________________________________________________________
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <sys/archdep.h>
 
-#include <sys/bitmap.h>
-#include <marcel.h>
+#include "sys/archdep.h"
+#include "sys/bitmap.h"
+#include "marcel.h"
 
 /* #define DEBUG */
 

@@ -48,8 +48,8 @@ lamboot $tmpfile
 prog=$1
 shift
 
-mpirun -f -w -nger -c2c -c $nb_hosts $prog -- "$@"
+mpirun -f -w -nger -c2c -c $nb_hosts -x DISPLAY,PM2_CONF_FILE $prog -- "$@"
 
-wipe $tmpfile
+lamwipe $tmpfile
 rm -f $tmpfile
 

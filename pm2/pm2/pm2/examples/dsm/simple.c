@@ -37,9 +37,9 @@
 
 #include "pm2.h"
 
+#include "timing.h"
 
-
-#define COUNTER 
+#define N 20
 
 int DSM_SERVICE;
 
@@ -72,22 +72,41 @@ END_DSM_DATA
 
 void f()
 {
-  int i, n = 20;
+  int i;
 
-  for (i = 0; i < n; i++) {
-    // atomic_inc(&a);
-    dsm_mutex_lock(&L);
+  dsm_mutex_lock(&L);
+  tfprintf(stderr,"user thread ! (I am %p)\n", marcel_self());
+  for (i = 0; i < N; i++) {
     toto1++;
-    dsm_mutex_unlock(&L);
   }
+  tfprintf(stderr,"user thread finished!\n");
+  dsm_mutex_unlock(&L);
   pm2_completion_signal(&c); 
 }
 
+
+void threaded_f()
+{
+  int i;
+  pm2_completion_t my_c;
+
+  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &my_c);
+  pm2_rawrpc_waitdata(); 
+
+  dsm_mutex_lock(&L);
+  tfprintf(stderr,"user thread ! (I am %p)\n", marcel_self());
+  for (i = 0; i < N; i++) {
+    toto1++;
+  }  
+  tfprintf(stderr,"user thread finished! \n");
+  dsm_mutex_unlock(&L);
+  pm2_completion_signal(&my_c); 
+}
+
+
 static void DSM_func(void)
 {
-  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
-  pm2_rawrpc_waitdata(); 
-  pm2_thread_create(f, NULL);
+  pm2_thread_create(threaded_f, NULL);
 }
 
 
@@ -97,10 +116,10 @@ int pm2_main(int argc, char **argv)
 
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
-  //dsm_set_default_protocol(MIGRATE_THREAD);
-  dsm_set_default_protocol(LI_HUDAK);
+  dsm_set_default_protocol(MIGRATE_THREAD);
+  //dsm_set_default_protocol(LI_HUDAK);
 
-  pm2_set_dsm_page_distribution(DSM_BLOCK, 16);
+  pm2_set_dsm_page_distribution(DSM_CYCLIC, 16);
 
   dsm_mutex_init(&L, NULL);
 
@@ -131,14 +150,12 @@ int pm2_main(int argc, char **argv)
 
     for (i = 0 ; i < atoi(argv[1]) * pm2_config_size(); i++)
       pm2_completion_wait(&c);
-
-      tfprintf(stderr, "toto1=%d\n", toto1);
-    //tfprintf(stderr, "a=%d\n", a.counter);
+    tfprintf(stderr, "toto1=%d\n", toto1);
     pm2_halt();
   }
-
+  
   pm2_exit();
-
+  
   tfprintf(stderr, "Main is ending\n");
   return 0;
 }

@@ -20,6 +20,8 @@
 #include "dsm_protocol_policy.h"
 #include "dsm_protocol_lib.h"
 #include "dsm_page_manager.h"
+/* the following is useful for "hierarch_lock_id_t" */
+#include "hierarch_lock.h"
 
 //#define TRACE_ERC
 //#define DSM_QUEUE_TRACE
@@ -62,7 +64,7 @@ void dsmlib_erc_sw_inv_init(int protocol_number){
   return;
 }
 
-void dsmlib_erc_sw_inv_rfh(unsigned long index){
+void dsmlib_erc_sw_inv_rfh(dsm_page_index_t index){
 #ifdef TRACE_ERC
   fprintf(stderr, "Read Fault Handler called\n");
 #endif
@@ -70,12 +72,14 @@ void dsmlib_erc_sw_inv_rfh(unsigned long index){
 }
 
 
-void dsmlib_erc_sw_inv_wfh(unsigned long index)
+void dsmlib_erc_sw_inv_wfh(dsm_page_index_t index)
 {  
   ENTER();
 
+  dsm_lock_page(index);
   if (dsm_get_access(index) == WRITE_ACCESS)
     {
+      dsm_unlock_page(index);
       EXIT();
       return;
     }
@@ -99,15 +103,16 @@ void dsmlib_erc_sw_inv_wfh(unsigned long index)
       dsm_wait_for_page(index);
     }
 
+  dsm_unlock_page(index);
   EXIT();
 }
 
-void dsmlib_erc_sw_inv_rs(unsigned long index, dsm_node_t req_node, int arg){
+void dsmlib_erc_sw_inv_rs(dsm_page_index_t index, dsm_node_t req_node, int arg){
   dsm_access_t access;
 
   ENTER();
+  dsm_lock_page(index);
 
-  //  dsm_lock_page(index);
  if (!dsm_next_owner_is_set(index))
    {
      if ((access = dsm_get_access(index)) >= READ_ACCESS) // there is a local copy of the page
@@ -143,27 +148,27 @@ void dsmlib_erc_sw_inv_rs(unsigned long index, dsm_node_t req_node, int arg){
      else
        dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, arg);
    }
-  //  dsm_unlock_page(index);
  
+ dsm_unlock_page(index);
  EXIT();
  
 }
 
-void dsmlib_erc_sw_inv_ws(unsigned long index, dsm_node_t req_node, int arg){
+void dsmlib_erc_sw_inv_ws(dsm_page_index_t index, dsm_node_t req_node, int arg){
 #ifdef TRACE_ERC
   fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
 #endif
 
   ENTER();
+  dsm_lock_page(index);
 
-  //  dsm_lock_page(index);
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
     {
       if (remove_if_noted(&erc_sw_inv_list, index))
 	{
 	  // In data-races free programs, this should not happen...
 	  //assert(dsm_get_access(index) == WRITE_ACCESS);
-	  dsm_invalidate_copyset(index, req_node);
+	  dsmlib_is_invalidate_internal(index, dsm_self(), req_node);
 	}
       dsm_set_access(index, READ_ACCESS);
       dsm_send_page(req_node, index, WRITE_ACCESS, arg);
@@ -180,12 +185,12 @@ void dsmlib_erc_sw_inv_ws(unsigned long index, dsm_node_t req_node, int arg){
 	dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, WRITE_ACCESS, arg);
       }
   dsm_set_prob_owner(index,req_node); // req_node will soon be owner
-  //  dsm_unlock_page(index);
 
+  dsm_unlock_page(index);
   EXIT();
 }
 
-void dsmlib_erc_sw_inv_is(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner){
+void dsmlib_erc_sw_inv_is(dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner){
 #ifdef TRACE_ERC
   fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
 #endif
@@ -193,7 +198,7 @@ void dsmlib_erc_sw_inv_is(unsigned long index, dsm_node_t req_node, dsm_node_t n
 }
 
 void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_node, int arg){
-  unsigned long index = dsm_page_index(addr);
+  dsm_page_index_t index = dsm_page_index(addr);
   dsm_node_t node;
 
   ENTER();
@@ -221,7 +226,7 @@ void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_nod
       else{
 	fprintf(stderr, "Something REALLY wrong happened\n");
 	dsm_set_prob_owner(index, dsm_self());
-	dsm_invalidate_copyset(index, dsm_self());
+	dsmlib_is_invalidate_internal(index, dsm_self(), dsm_self());
 	dsm_set_access(index, READ_ACCESS);
       }
     }
@@ -255,9 +260,9 @@ void dsmlib_erc_acquire()
   return;
 }
 
-void dsmlib_erc_release()
+void dsmlib_erc_release(const hierarch_lock_id_t unused)
 {
-  unsigned long index;
+  dsm_page_index_t index;
 
   ENTER();
 
@@ -270,12 +275,12 @@ void dsmlib_erc_release()
 #ifdef TRACE_ERC
   fprintf(stderr,"First One removed: %lu\n", index);
 #endif
-  while(index != (unsigned long)-1)
+  while(index != (dsm_page_index_t)-1)
     {
 //      fprintf(stderr,"Trying to lock page: %lu\n", index);
       dsm_lock_page(index);
 //      fprintf(stderr,"Invalidating copyset: %lu\n", index);
-      dsm_invalidate_copyset(index, dsm_self());
+      dsmlib_is_invalidate_internal(index, dsm_self(), dsm_self());
 //      fprintf(stderr,"Changing access: %lu\n", index);
       dsm_set_access(index, READ_ACCESS);
       dsm_unlock_page(index);
@@ -291,7 +296,7 @@ void dsmlib_erc_release()
 
 
 
-void dsmlib_erc_add_page(unsigned long index)
+void dsmlib_erc_add_page(dsm_page_index_t index)
 {
   ENTER();
 

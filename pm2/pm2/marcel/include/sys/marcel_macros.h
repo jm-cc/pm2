@@ -66,21 +66,27 @@
 #ifdef MA__MULTIPLE_RUNNING
 
 #define SET_STATE_RUNNING(previous, next, next_lwp) \
-  (SET_STATE_RUNNING_HOOK(next),                    \
-   (next)->ext_state=MARCEL_RUNNING,                \
-   MTRACE("RUNNING", (next)),                       \
-   SET_LWP(next, next_lwp),                         \
-   next_lwp->prev_running=previous)
+  do {                                              \
+    SET_STATE_RUNNING_HOOK(next);                   \
+    (next)->ext_state = MARCEL_RUNNING;             \
+    MTRACE("RUNNING", (next));                      \
+    SET_LWP(next, next_lwp);                        \
+    next_lwp->prev_running = previous;              \
+  } while(0)
 
-#define SET_STATE_RUNNING_ONLY(next)  \
-  (SET_STATE_RUNNING_HOOK(next),      \
-   (next)->ext_state=MARCEL_RUNNING,  \
-   MTRACE("RUNNING", (next)))
+#define SET_STATE_RUNNING_ONLY(next)    \
+  do {                                  \
+    SET_STATE_RUNNING_HOOK(next),       \
+    (next)->ext_state = MARCEL_RUNNING; \
+    MTRACE("RUNNING", (next));          \
+  } while(0)
 
-#define SET_STATE_READY(current)      \
-  (SET_STATE_READY_HOOK(current),     \
-   MTRACE("READY", (current)),        \
-   (current)->ext_state=MARCEL_READY)
+#define SET_STATE_READY(current)         \
+  do {                                   \
+    SET_STATE_READY_HOOK(current);       \
+    MTRACE("READY", (current));          \
+    (current)->ext_state = MARCEL_READY; \
+  } while(0)
 
 #else // MA__MULTIPLE_RUNNING
 
@@ -93,31 +99,48 @@
 #endif
 
 #ifdef MA__DEBUG
+
 #ifdef MA__MULTIPLE_RUNNING
+
 #define MA_THR_DEBUG__MULTIPLE_RUNNING(current) \
-  ((current->ext_state != MARCEL_RUNNING) ?     \
-   RAISE("Thread not running") :                \
-   (void)0)
+  do {                                          \
+    if(current->ext_state != MARCEL_RUNNING)    \
+      RAISE("Thread not running");              \
+  } while(0)
+
 #else
+
 #define MA_THR_DEBUG__MULTIPLE_RUNNING(current)  (void)0
+
 #endif
-#define MA_THR_DEBUG(current) \
-  (breakpoint(), MA_THR_DEBUG__MULTIPLE_RUNNING(current))
+
+#define MA_THR_DEBUG(current)                \
+  do {                                       \
+    breakpoint();                            \
+    MA_THR_DEBUG__MULTIPLE_RUNNING(current); \
+  } while(0)
+
 #else
+
 #define MA_THR_DEBUG__MULTIPLE_RUNNING(current)  (void)0
 #define MA_THR_DEBUG(current)                    (void)0
+
 #endif
 
 #ifdef MA__MULTIPLE_RUNNING
+
 #define MA_THR_UPDATE_LAST_THR(current)             \
-  {                                                 \
+  do {                                              \
     marcel_t prev = GET_LWP(current)->prev_running; \
     if (prev && (current != prev))                  \
       SET_STATE_READY(prev);                        \
     GET_LWP(current)->prev_running=NULL;            \
-  }
+  } while(0)
+
 #else
+
 #define MA_THR_UPDATE_LAST_THR(current) (void)0
+
 #endif
 
 
@@ -130,10 +153,11 @@
  * le flags RUNNING au thread qui tournait avant.
  * */
 #define MA_THR_RESTARTED(current, info) \
-   { MA_THR_DEBUG(current);             \
-     MTRACE(info, current);             \
-     MA_THR_UPDATE_LAST_THR(current);   \
-   }
+  do {                                 \
+    MA_THR_DEBUG(current);             \
+    MTRACE(info, current);             \
+    MA_THR_UPDATE_LAST_THR(current);   \
+  } while(0)
 
 /* on effectue un longjmp. Le thread courrant ET le suivant doivent
  * être RUNNING. La variable previous_task doit être correctement
@@ -142,37 +166,27 @@
  * */
 
 #if defined(DSM_SHARED_STACK)
-#define MA_THR_LONGJMP(next, ret)        \
-  (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
-   __next_thread = next,                 \
-   call_ST_FLUSH_WINDOWS(),              \
-   PROF_SWITCH_TO(next),                 \
-   longjmp(next->jbuf, ret))
-#else
-#define MA_THR_LONGJMP(next, ret)        \
-  (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
-   call_ST_FLUSH_WINDOWS(),              \
-   PROF_SWITCH_TO(next),                 \
-   longjmp(next->jbuf, ret))
-#endif
 
-// TODO: C'est dans cette fonction qu'il faut tester si une activation
-// est debloquee...  NOTE: Le parametre "pid" peut etre NULL dans le
-// cas ou l'on sait deja qu'une activation est debloquee.
-/*  #ifdef MA__ACTIVATION */
-/*  #define goto_next_task(pid) \ */
-/*    (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \ */
-/*                         (MA_THR_LONGJMP((pid), NORMAL_RETURN)) */
-/*  #define can_goto_next_task(current, pid) \ */
-/*    (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \ */
-/*                         (((pid)==(current)) ? (void)0 : \ */
-/*  			            MA_THR_LONGJMP((pid), NORMAL_RETURN)) */
-/*  #else */
-/*  #define goto_next_task(pid) \ */
-/*     MA_THR_LONGJMP((pid), NORMAL_RETURN) */
-/*  #define can_goto_next_task(current, pid) \ */
-/*     (((pid)==(current)) ? (void)0 : MA_THR_LONGJMP((pid), NORMAL_RETURN)) */
-/*  #endif */
+#define MA_THR_LONGJMP(cur_num, next, ret) \
+  do {                                     \
+    MA_THR_DEBUG__MULTIPLE_RUNNING(next);  \
+    __next_thread = next;                  \
+    PROF_SWITCH_TO(cur_num, next->number); \
+    call_ST_FLUSH_WINDOWS();               \
+    longjmp(next->jbuf, ret);              \
+  } while(0)
+
+#else
+
+#define MA_THR_LONGJMP(cur_num, next, ret) \
+  do {                                     \
+    MA_THR_DEBUG__MULTIPLE_RUNNING(next);  \
+    PROF_SWITCH_TO(cur_num, next->number); \
+    call_ST_FLUSH_WINDOWS();               \
+    longjmp(next->jbuf, ret);              \
+  } while(0)
+
+#endif
 
 #define FIND_NEXT            (marcel_t)0
 #define DO_NOT_REMOVE_MYSELF (marcel_t)1

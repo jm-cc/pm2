@@ -51,47 +51,13 @@ int xtoi(char *p)
 
 extern marcel_key_t color_key;
 
-extern void redessiner();
+extern void redessiner(void);
 
 void user_func(int argc, char **argv)
 { int i;
 
    if(argc > 0) {
-      if(!strcmp(argv[0], "-save")) {
-         if(argc != 2) {
-            mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
-         } else {
-            marcel_t pids[64];
-            int nb;
-
-            pm2_freeze();
-            pm2_threads_list(64, pids, &nb, MIGRATABLE_ONLY);
-            BEGIN
-               pm2_backup_group(pids, min(nb, 64), argv[1]);
-
-               mad_pack_str(MAD_IN_HEADER, "Save operation completed");
-            EXCEPTION
-               WHEN(CONSTRAINT_ERROR)
-                  mad_pack_str(MAD_IN_HEADER, "Error: Bad filename");
-            END
-
-            return;
-         }
-      } else if(!strcmp(argv[0], "-load")) {
-         if(argc != 2) {
-            mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
-         } else {
-            BEGIN
-               pm2_restore_group(argv[1]);
-
-               mad_pack_str(MAD_IN_HEADER, "Load operation completed");
-            EXCEPTION
-               WHEN(CONSTRAINT_ERROR)
-                  mad_pack_str(MAD_IN_HEADER, "Error: Bad filename");
-            END
-            return;
-         }
-      } else if(!strcmp(argv[0], "-enable_mig")) {
+      if(!strcmp(argv[0], "-enable_mig")) {
          if(argc < 2) {
             mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
          } else {
@@ -106,19 +72,6 @@ void user_func(int argc, char **argv)
             for(i=1; i<argc; i++)
                marcel_disablemigration((marcel_t)xtoi(argv[i]));
             return;
-         }
-      } else if(!strcmp(argv[0], "-setprio")) {
-         if(argc < 3) {
-            mad_pack_str(MAD_IN_HEADER, "Wrong number of parameters");
-         } else {
-            int prio = atoi(argv[1]);
-            if(prio < 1 || prio > MAX_PRIO)
-               mad_pack_str(MAD_IN_HEADER, "Bad priority value");
-            else {
-               for(i=2; i<argc; i++)
-                  marcel_setprio((marcel_t)xtoi(argv[i]), prio);
-               return;
-            }
          }
       } else if(!strcmp(argv[0], "-colors")) {
          marcel_t pids[64];

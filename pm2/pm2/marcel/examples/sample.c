@@ -48,6 +48,11 @@ int marcel_main(int argc, char *argv[])
   for(i=0; i<NB; i++)
     marcel_create(&pid[i], NULL, writer, (any_t)mess[i]);
 
+  marcel_yield();
+  marcel_yield();
+  marcel_yield();
+  marcel_yield();
+
   for(i=0; i<NB; i++) {
     marcel_join(pid[i], &status);
     if(status == ALL_IS_OK)

@@ -1,0 +1,188 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use diagnostics;
+
+use Getopt::Long;
+
+my(%sections)=("common" => 1);
+my(@source_names)=();
+my($header)=1;
+my($master)=0;
+my($file)=1;
+my($footer)=1;
+
+my($progname);
+($progname = $0) =~ s|^.*/([^/]*)$|$1|;
+
+my($filename);
+my($SYMB)="";
+my($SYMB_SUFFIX)="";
+my($symbole_nosuffix);
+
+sub symbole_from_suffix {
+    my($suffix)=shift;
+    my($symb);
+    my($FILE);
+    my($EXT);
+
+    $FILE=uc($filename);
+    $FILE =~ s,^(.*)/([^/]*)$,$2,;
+    $FILE =~ tr /./_/;
+    $FILE =~ s,^(.*)(_H)$,$1,;
+    $EXT = $2;
+    $symb=$FILE.$suffix.$EXT;
+    $symb =~ tr /./_/;
+    $symb =~ tr /[A-Za-z_]//cd;
+    return $symb;
+}
+
+sub filename_with_suffix {
+    my($suffix)=shift;
+    my($symb);
+    my($FILE);
+    my($EXT);
+
+    $FILE = $filename;
+    $FILE =~ s,^(.*)(.h)$,$1,;
+    $EXT = $2;
+    $symb=$FILE.$suffix.$EXT;
+    return $symb;
+}
+
+sub manage_options {
+    GetOptions ("section=s"         => \%sections,
+                "source=s"          => \$filename,
+		"header!"           => \$header,
+		"master!"           => \$master,
+		"file!"             => \$file,
+		"footer!"           => \$footer,
+		"symbole=s"         => \$SYMB,
+		"symbole-suffix=s"  => \$SYMB_SUFFIX,
+		"symbole-nosuffix"  => \$symbole_nosuffix,
+		'only-header'       => sub { $header=1; $master=0; $file=0; $footer=0; },
+		'only-master'       => sub { $header=0; $master=1; $file=0; $footer=0; },
+		'only-file'         => sub { $header=0; $master=0; $file=1; $footer=0; },
+		'only-footer'       => sub { $header=0; $master=0; $file=0; $footer=1; },
+		'no-common-section' => sub { delete $sections{"common"}; },
+		) or die "Options error\n";
+    if (scalar @ARGV != 1) {
+	die "need one input file\n";
+    }
+    if (!$filename) {
+	$filename=$ARGV[0];
+    }
+    if (!$SYMB) {
+	if ($SYMB_SUFFIX || $symbole_nosuffix) {
+	    $SYMB=symbole_from_suffix($SYMB_SUFFIX);
+	} else {
+	    my($key);
+	    my($suffix)="";
+	    for $key (keys %sections) {
+		$suffix.="_".uc($key);
+	    }
+	    $SYMB=symbole_from_suffix($suffix);
+	}
+    }
+    $SYMB =~ tr /./_/;
+    $SYMB =~ tr /[A-Za-z_]//cd;
+}
+
+sub print_header {
+    my($key);
+    my($names);
+    print "/***************/\n";
+    print "/* DO NOT EDIT */\n";
+    print "/***************/\n";
+    print "/* This file has been autogenerate with $progname\n";
+    print " * Source file is $filename\n";
+    print " * Sections included are :";
+    for $key (keys %sections) {
+	print " $key";
+    }
+    print "\n */\n\n\n";
+    print "#ifndef $SYMB\n";
+    print "#define $SYMB\n\n";
+}
+
+sub print_master {
+    my($key);
+    my($names);
+    for $key (keys %sections) {
+	print "#include \"", filename_with_suffix("_".$key),"\"\n";
+    }
+}
+
+sub print_file {
+    my($cursection)="common";
+    my($line)=1;
+    my($diese)="#";
+    my($print)=1;
+
+    print "#line $line \"$filename\"\n";
+    while(<>) {
+	chomp;
+	if (m,^(\s*((//)|(/[*]))?\s*$diese\s*)endsection(\s*([*]/)?\s*)$,) {
+	    $_="$1#section common$5";
+	}
+	if (m,^(\s*((//)|(/[*]))?)\s*$diese\s*section\s+([\w]([\s\w]*[\w])?)\s*([*]/)?\s*$,) {
+	    my($newsections)=$5;
+	    $_=$newsections;
+	    my(@newsections)=split;
+	    my($select)=0;
+	    my($newsection, $section, $ligne);
+	    loop:for $newsection (@newsections) {
+		for $section (keys %sections) {
+		    if ( $newsection =~ /^$section$/ ) {
+			if ( $newsection eq $newsections ) {
+			    $_="// INCLUDE SECTION $newsection";
+			} else {
+			    $_="// INCLUDE $newsection FROM SECTIONS LIST $newsections";
+			} 
+			if ($section ne $newsection) {
+			    $_.=" (SECTIONS $section REQUESTED)";
+			}
+			$select=1;
+			last loop;
+		    }
+		}
+	    }
+	    if ($select) {
+		if (!$print) {
+		    print "#line $line\n";
+		}
+		print "$_\n";
+	    } else {
+		print "// section $newsections not selected\n";
+	    }
+	    $print=$select;
+	} else {
+	    $print && print $_, "\n";
+	}
+	$line++;
+    }
+}
+
+sub print_footer {
+    print "\n#endif /* $SYMB */\n";
+}
+
+sub main {
+    manage_options();
+
+    if ($header) {
+	print_header();
+    }
+    if ($master) {
+	print_master();
+    }
+    if ($file) {
+	print_file();
+    }
+    if ($footer) {
+	print_footer();
+    }
+}
+
+main();

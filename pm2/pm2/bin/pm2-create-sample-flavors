@@ -51,7 +51,7 @@ if [ $FORCE = yes -o ! -d $PM2_USER_FLAVOR_DIR ]; then
 	--marcel=profile
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=swann \
-	--modules="swann tbx ntbx init" $COMMON_OPTIONS
+	--modules="swann leoparse tbx ntbx init" $COMMON_OPTIONS
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leonie \
 	--modules="leonie leoparse tbx ntbx init" $COMMON_OPTIONS

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.3  2000/01/04 16:50:48  oaumage
+- mad_mpi.c: premiere version fonctionnelle du driver
+- mad_sbp.c: nouvelle correction de la transmission des noms d'hote a
+  l'initialisation
+- mad_tcp.c: remplacement des appels `exit' par des macros FAILURES
+
 Revision 1.2  2000/01/04 09:18:49  oaumage
 - ajout de la commande de log de CVS
 - phase d'initialisation `external-spawn' terminee pour mad_mpi.c
@@ -73,7 +79,9 @@ ______________________________________________________________________________
  * macros and constants definition
  * -------------------------------
  */
-#define MAD_MPI_SERVICE_TAG 0
+#define MAD_MPI_SERVICE_TAG  0
+#define MAD_MPI_TRANSFER_TAG 1
+#define MAD_MPI_FLOW_CONTROL_TAG 2
 
 /*
  * type definition
@@ -87,7 +95,7 @@ ______________________________________________________________________________
  */
 typedef struct
 {
-  int            nb_adapter;
+  int nb_adapter;
 } mad_mpi_driver_specific_t, *p_mad_mpi_driver_specific_t;
 
 typedef struct
@@ -96,6 +104,7 @@ typedef struct
 
 typedef struct
 {
+  MPI_Comm communicator;
 } mad_mpi_channel_specific_t, *p_mad_mpi_channel_specific_t;
 
 typedef struct
@@ -135,18 +144,23 @@ mad_mpi_register(p_mad_driver_t driver)
   
   interface->driver_init                = mad_mpi_driver_init;
   interface->adapter_init               = mad_mpi_adapter_init;
-  interface->adapter_configuration_init = mad_mpi_adapter_configuration_init;
+  interface->adapter_configuration_init = NULL;
   interface->channel_init               = mad_mpi_channel_init;
-  interface->before_open_channel        = mad_mpi_before_open_channel;
-  interface->connection_init            = mad_mpi_connection_init;
+  interface->before_open_channel        = NULL;
+  interface->connection_init            = NULL;
   interface->link_init                  = mad_mpi_link_init;
-  interface->accept                     = mad_mpi_accept;
-  interface->connect                    = mad_mpi_connect;
-  interface->after_open_channel         = mad_mpi_after_open_channel;
-  interface->before_close_channel       = mad_mpi_before_close_channel;
-  interface->disconnect                 = mad_mpi_disconnect;
-  interface->after_close_channel        = mad_mpi_after_close_channel;
-  interface->choice                     = mad_mpi_choice;
+  interface->accept                     = NULL;
+  interface->connect                    = NULL;
+  interface->after_open_channel         = NULL;
+  interface->before_close_channel       = NULL;
+  interface->disconnect                 = NULL;
+  interface->after_close_channel        = NULL;
+  interface->link_exit                  = NULL;
+  interface->connection_exit            = NULL;
+  interface->channel_exit               = mad_mpi_channel_exit;
+  interface->adapter_exit               = mad_mpi_adapter_exit;
+  interface->driver_exit                = mad_mpi_driver_exit;
+  interface->choice                     = NULL;
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
   interface->new_message                = mad_mpi_new_message;
@@ -213,44 +227,18 @@ mad_mpi_adapter_init(p_mad_adapter_t adapter)
 }
 
 void
-mad_mpi_adapter_configuration_init(p_mad_adapter_t adapter)
-{
-  LOG_IN();
-  /* Adapter initialization code (part II)
-     Note: called once for each adapter,
-     after remote nodes connection information
-     has been transmitted (if needed) */
-  LOG_OUT();
-}
-
-void
 mad_mpi_channel_init(p_mad_channel_t channel)
 {
+  p_mad_mpi_channel_specific_t channel_specific;
+  
   LOG_IN();
   /* Channel initialization code
      Note: called once for each new channel */
-  LOG_OUT();
-}
+  channel_specific = malloc(sizeof(mad_mpi_channel_specific_t));
+  CTRL_ALLOC(channel_specific);
 
-void
-mad_mpi_connection_init(p_mad_connection_t in, p_mad_connection_t out)
-{
-  p_mad_mpi_connection_specific_t in_specific;
-  p_mad_mpi_connection_specific_t out_specific;
-  
-  LOG_IN();
-  /* Point-to-point connection initialization code
-     Note: called once for each connection pair during
-     channel opening */
-  in_specific = malloc(sizeof(mad_mpi_connection_specific_t));
-  CTRL_ALLOC(in_specific);
-  in->specific = in_specific;
-  in->nb_link  = 1;
-
-  out_specific = malloc(sizeof(mad_mpi_connection_specific_t));
-  CTRL_ALLOC(out_specific);
-  out->specific = out_specific;
-  out->nb_link  = 1;
+  MPI_Comm_dup(MPI_COMM_WORLD, &channel_specific->communicator);
+  channel->specific = channel_specific;
   LOG_OUT();
 }
 
@@ -265,87 +253,72 @@ mad_mpi_link_init(p_mad_link_t lnk)
 }
 
 void
-mad_mpi_before_open_channel(p_mad_channel_t channel)
-{
+mad_mpi_channel_exit(p_mad_channel_t channel)
+{  
+  p_mad_mpi_channel_specific_t channel_specific = channel->specific;
+  
   LOG_IN();
-  /* Code to execute before opening a new channel */
+  /* Code to execute to clean up a channel */
+  MPI_Comm_free(&channel_specific->communicator);
+  free(channel_specific);
+  channel->specific = NULL;
   LOG_OUT();
 }
 
 void
-mad_mpi_accept(p_mad_channel_t channel)
+mad_mpi_adapter_exit(p_mad_adapter_t adapter)
 {
+  p_mad_mpi_adapter_specific_t adapter_specific = adapter->specific;
+  
   LOG_IN();
-  /* Incoming connection acceptation */
+  /* Code to execute to clean up an adapter */
+  free(adapter->parameter);
+  free(adapter->name);
+  free(adapter->specific);
   LOG_OUT();
 }
 
 void
-mad_mpi_connect(p_mad_connection_t connection)
+mad_mpi_driver_exit(p_mad_driver_t driver)
 {
+  p_mad_mpi_driver_specific_t driver_specific = driver->specific;
+  
   LOG_IN();
-  /* Outgoing connection establishment */
+  /* Code to execute to clean up a driver */
+  MPI_Finalize();
   LOG_OUT();
 }
 
-void
-mad_mpi_after_open_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Code to execute after opening a channel */
-  LOG_OUT();
-}
-
-void
-mad_mpi_before_close_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Code to execute before closing a channel */
-  LOG_OUT();
-}
-
-void 
-mad_mpi_disconnect(p_mad_connection_t connection)
-{
-  LOG_IN();
-  /* Code to execute to close a connection */
-  LOG_OUT();
-}
-
-void
-mad_mpi_after_close_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Code to execute after a channel as been closed */
-  LOG_OUT();
-}
-
-p_mad_link_t
-mad_mpi_choice(p_mad_connection_t   connection,
-	       size_t               size,
-	       mad_send_mode_t      send_mode,
-	       mad_receive_mode_t   receive_mode)
-{
-  LOG_IN();
-  /* Link selection function */
-  LOG_OUT();
-  return &(connection->link[0]);
-}
 
 void
 mad_mpi_new_message(p_mad_connection_t connection)
 {
+  p_mad_channel_t              channel          = connection->channel;
+  p_mad_mpi_channel_specific_t channel_specific = channel->specific;
+  p_mad_configuration_t        configuration    = 
+    &(channel->adapter->driver->madeleine->configuration);
   LOG_IN();
   /* Code to prepare a new message */
+#ifndef PM2
+  if (configuration->size == 2)
+    return;
+#endif /* PM2 */
+  MPI_Send(&configuration->local_host_id,
+	   1,
+	   MPI_INT,
+	   connection->remote_host_id,
+	   MAD_MPI_SERVICE_TAG,
+	   channel_specific->communicator);
   LOG_OUT();
 }
 
 p_mad_connection_t
 mad_mpi_receive_message(p_mad_channel_t channel)
 {
-  p_mad_configuration_t           configuration    = 
+  p_mad_mpi_channel_specific_t channel_specific = channel->specific;
+  p_mad_configuration_t configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
-  p_mad_connection_t              connection       = NULL;
+  p_mad_connection_t    connection       = NULL;
 
   LOG_IN();
 #ifndef PM2
@@ -358,6 +331,17 @@ mad_mpi_receive_message(p_mad_channel_t channel)
 #endif /* PM2 */
     {
       /* Incoming communication detection code */      
+      int remote_host_id;
+      MPI_Status status;
+      
+      MPI_Recv(&remote_host_id,
+	       1,
+	       MPI_INT,
+	       MPI_ANY_SOURCE,
+	       MAD_MPI_SERVICE_TAG,
+	       channel_specific->communicator,
+	       &status);
+      connection = &(channel->input_connection[remote_host_id]);
     }
   LOG_OUT();
   return connection;
@@ -367,8 +351,20 @@ void
 mad_mpi_send_buffer(p_mad_link_t     lnk,
 		    p_mad_buffer_t   buffer)
 {
+  p_mad_connection_t           connection       = lnk->connection;
+  p_mad_channel_t              channel          = connection->channel;
+  p_mad_mpi_channel_specific_t channel_specific = channel->specific;
+  
   LOG_IN();
   /* Code to send one buffer */
+
+  MPI_Send(buffer->buffer,
+	   buffer->length,
+	   MPI_CHAR,
+	   connection->remote_host_id,
+	   MAD_MPI_TRANSFER_TAG,
+	   channel_specific->communicator);
+  buffer->bytes_read = buffer->length;
   LOG_OUT();
 }
 
@@ -376,9 +372,22 @@ void
 mad_mpi_receive_buffer(p_mad_link_t     lnk,
 		       p_mad_buffer_t  *buf)
 {
+  p_mad_connection_t           connection       = lnk->connection;
+  p_mad_channel_t              channel          = connection->channel;
+  p_mad_mpi_channel_specific_t channel_specific = channel->specific;
   p_mad_buffer_t buffer = *buf;
+  MPI_Status status;
+  
   LOG_IN();
   /* Code to receive one buffer */
+  MPI_Recv(buffer->buffer,
+	   buffer->length,
+	   MPI_CHAR,
+	   connection->remote_host_id,
+	   MAD_MPI_TRANSFER_TAG,
+	   channel_specific->communicator,
+	   &status);
+  buffer->bytes_written = buffer->length;
   LOG_OUT();
 }
 
@@ -412,6 +421,7 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
    *  Code to receive a part of a group of buffers
    *                    ====
    */
+
   if (!mad_empty_list(&(buffer_group->buffer_list)))
     {
       mad_list_reference_t ref;
@@ -419,7 +429,8 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
       mad_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
-	  mad_mpi_receive_buffer(lnk, mad_get_list_reference_object(&ref));
+	  p_mad_buffer_t buffer = mad_get_list_reference_object(&ref);
+	  mad_mpi_receive_buffer(lnk, &buffer);
 	}
       while(mad_forward_list_reference(&ref));
     }
@@ -444,12 +455,17 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter,
 {
   p_mad_mpi_adapter_specific_t spawn_adapter_specific =
     spawn_adapter->specific;
-  p_mad_host_id_t              host_id;
-  
+  mad_host_id_t                host_id;
+  int                          rank;
+  int                          size;
+
   LOG_IN();
   /* Code to get configuration information from the external spawn adapter */
-  MPI_Comm_rank(MPI_COMM_WORLD, &configuration->local_host_id);
-  MPI_Comm_size(MPI_COMM_WORLD, &configuration->size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  configuration->local_host_id = (mad_host_id_t)rank;
+  configuration->size          = (mad_configuration_size_t)size;
   configuration->host_name     =
     malloc(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
@@ -460,9 +476,60 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter,
     {
       configuration->host_name[host_id] = malloc(MAXHOSTNAMELEN + 1);
       CTRL_ALLOC(configuration->host_name[host_id]);
-      gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
+
+      if (host_id == rank)
+	{
+	  mad_host_id_t remote_host_id;
+	  
+	  gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
+	  
+	  for (remote_host_id = 0;
+	       remote_host_id < configuration->size;
+	       remote_host_id++)
+	    {
+	      int len;
+	      
+	      len = strlen(configuration->host_name[host_id]);
+	      
+	      if (remote_host_id != rank)
+		{
+		  MPI_Send(&len,
+			   1,
+			   MPI_INT,
+			   remote_host_id,
+			   MAD_MPI_SERVICE_TAG,
+			   MPI_COMM_WORLD);
+		  MPI_Send(configuration->host_name[host_id],
+			   len + 1,
+			   MPI_CHAR,
+			   remote_host_id,
+			   MAD_MPI_SERVICE_TAG,
+			   MPI_COMM_WORLD);
+		}
+	    }
+	}
+      else
+	{
+	  int len;
+	  MPI_Status status;
+
+	  MPI_Recv(&len,
+		   1,
+		   MPI_INT,
+		   host_id,
+		   MAD_MPI_SERVICE_TAG,
+		   MPI_COMM_WORLD,
+		   &status);
+
+	  MPI_Recv(configuration->host_name[host_id],
+		   len + 1,
+		   MPI_CHAR,
+		   host_id,
+		   MAD_MPI_SERVICE_TAG,
+		   MPI_COMM_WORLD,
+		   &status);
+	}      
     }
-  
   LOG_OUT();
 }
 
@@ -478,13 +545,13 @@ mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter,
   MPI_Send(&len,
 	   1,
 	   MPI_INT,
-	   remote_node_id,
+	   remote_host_id,
 	   MAD_MPI_SERVICE_TAG,
 	   MPI_COMM_WORLD);
   MPI_Send(parameter,
 	   len + 1,
 	   MPI_CHAR,
-	   remote_node_id,
+	   remote_host_id,
 	   MAD_MPI_SERVICE_TAG,
 	   MPI_COMM_WORLD);
   LOG_OUT();
@@ -494,6 +561,7 @@ void
 mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter,
 				  char            **parameter)
 {
+  MPI_Status status;
   int len;
   
   LOG_IN();
@@ -503,13 +571,15 @@ mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter,
 	   MPI_INT,
 	   0,
 	   MAD_MPI_SERVICE_TAG,
-	   MPI_COMM_WORLD);
+	   MPI_COMM_WORLD,
+	   &status);
   *parameter = malloc(len);
-  MPI_Send(*parameter,
+  MPI_Recv(*parameter,
 	   len + 1,
 	   MPI_CHAR,
 	   0,
 	   MAD_MPI_SERVICE_TAG,
-	   MPI_COMM_WORLD);
+	   MPI_COMM_WORLD,
+	   &status);
   LOG_OUT();
 }

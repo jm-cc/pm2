@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx.c,v $
+Revision 1.3  2000/11/07 17:56:48  oaumage
+- ajout de commandes de lecture/ecriture resistantes sur sockets
+
 Revision 1.2  2000/03/01 11:03:34  oaumage
 - mise a jour des #includes ("")
 
@@ -45,15 +48,33 @@ ______________________________________________________________________________
 */
 
 /*
- * ntbx.c
- * ------
+ * Ntbx.c
+ * ======
  */
 
+#include "tbx.h"
 #include "ntbx.h"
 
+static volatile tbx_bool_t initialized = tbx_false;
+
 void
-ntbx_init()
+ntbx_init(int    argc,
+	  char **argv)
 {
-  /* --- */
+  LOG_IN();
+  if (!initialized)
+    {
+      initialized = tbx_true;
+    }
+  LOG_OUT();
+
 }
 
+void
+ntbx_purge_cmd_line(int   *argc,
+		    char **argv)
+{
+  LOG_IN();
+  /* --- */
+  LOG_OUT();
+}

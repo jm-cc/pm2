@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.h,v $
+Revision 1.3  2000/03/13 09:48:19  oaumage
+- ajout de l'option TBX_SAFE_MALLOC
+- support de safe_malloc
+- extension des macros de logging
+
 Revision 1.2  2000/03/08 17:16:05  oaumage
 - support de Marcel sans PM2
 - support de tmalloc en mode `Marcel'
@@ -52,6 +57,21 @@ ______________________________________________________________________________
 #ifndef TBX_MALLOC_H
 #define TBX_MALLOC_H
 
+/*
+ * tbx_safe_malloc
+ * ---------------
+ */
+typedef enum 
+{
+  tbx_safe_malloc_ERRORS_ONLY,
+  tbx_safe_malloc_VERBOSE
+} tbx_safe_malloc_mode_t, *p_tbx_safe_malloc_mode_t;
+
+
+/*
+ * tbx_malloc
+ * ----------
+ */
 typedef struct s_tbx_memory
 {
   TBX_SHARED; 

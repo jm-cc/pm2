@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.17  2001/01/15 15:51:44  oaumage
+- TBX_FREE incorrect
+
 Revision 1.16  2000/12/11 08:31:18  oaumage
 - support Leonie
 
@@ -218,7 +221,7 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 
 		      if (configuration->host_name[i])
 			{
-			  TBX_FREE(answer);
+			  TBX_FREE(host_name);
 			}
 		      else
 			{

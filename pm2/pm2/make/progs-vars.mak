@@ -38,11 +38,7 @@ export PROGRAM
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-ifdef OLD_MAKEFILE
-CONFIG_MODULES=$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --modules)
-else
 -include $(PM2_MAK_DIR)/progs-libs.mak
-endif
 
 $(PROGRAM):
 
@@ -52,37 +48,7 @@ endif
 
 PRG_SRC := source
 
-
-ifdef OLD_MAKEFILE
-PRG_GEN_BIN := $(shell $(PM2_CONFIG) --bindir $(PROGRAM))
-PRG_GEN_OBJ := $(shell $(PM2_CONFIG) --objdir $(PROGRAM))
-PRG_GEN_ASM := $(shell $(PM2_CONFIG) --asmdir $(PROGRAM))
-PRG_GEN_DEP := $(shell $(PM2_CONFIG) --depdir $(PROGRAM))
-PRG_GEN_SRC := $(shell $(PM2_CONFIG) --srcdir $(PROGRAM))
-PRG_GEN_INC := $(shell $(PM2_CONFIG) --includedir $(PROGRAM))
-PRG_GEN_STAMP := $(shell $(PM2_CONFIG) --stampdir $(PROGRAM))
-PRG_STAMP_FLAVOR := $(shell $(PM2_CONFIG) --stampfile)
-PRG_STAMP_FILE := $(shell $(PM2_CONFIG) --stampfile $(PROGRAM))
-PRG_EXT := $(shell $(PM2_CONFIG) --ext $(PROGRAM))
-
-PRG_CFLAGS := $(shell $(PM2_CONFIG) --kernel --cflags $(PROGRAM))
-CFLAGS += $(PRG_CFLAGS) -I$(PRG_GEN_INC)
-                        #^^^^^^^^^^^^^^^ should be included in pm2-config
-
-PRG_LDFLAGS := $(shell $(PM2_CONFIG) --libs)
-LDFLAGS += $(PRG_LDFLAGS)
-
-PRG_LLIBS += $(shell $(PM2_CONFIG) --libs-only-l
-
-# Necessaire ?
-PRG_STAMP_FILES :=  $(shell $(PM2_CONFIG) --stampfile all)
-PRG_BUILDDIR :=  $(shell $(PM2_CONFIG) --builddir)
-
-CC := $(shell $(PM2_CONFIG) --cc $(PROGRAM))
-else
 -include $(PM2_MAK_DIR)/progs-config.mak
-endif
-
 
 ifneq ($($(PROGRAM)_CC),)
 CC := $($(PROGRAM)_CC)
@@ -134,9 +100,9 @@ PRG_GEN_H_TO_C   =  $(PRG_GEN_INC)/$(patsubst %.h,%.c,$(notdir $@))
 
 COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(PRG_STAMP_FILES) $(MAKEFILE_FILE) 
 
-$(PM2_MAK_DIR)/progs-config.mak:
+$(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
 	@$(PM2_CONFIG) --gen_mak progs
 
-$(PM2_MAK_DIR)/progs-libs.mak:
+$(PM2_MAK_DIR)/progs-libs.mak: $(PRG_STAMP_FLAVOR)
 	@mkdir -p `dirname $@`
 	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@

@@ -86,13 +86,12 @@ while [ $# -gt 0 ]; do
 	    done
 	    debug_file=/tmp/pm2debug.$num
 	    cp /dev/null $debug_file
-		printenv > /tmp/blip
-	    . pm2_arch --source-mode
+	    . "$PM2_ROOT/bin/pm2_arch" --source-mode
 	    for i in $_PM2CONFIG_MODULES ; do
-	        gdbinit=$PM2_ROOT/modules/$i/gdbinit-$PM2_ARCH
-	        [ -r $gdbinit ] && cat $gdbinit >> $debug_file
-	        gdbinit=$PM2_ROOT/modules/$i/gdbinit
-	        [ -r $gdbinit ] && cat $gdbinit >> $debug_file
+	        gdbinit="$PM2_ROOT/modules/$i/gdbinit-$PM2_ARCH"
+		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
+	        gdbinit="$PM2_ROOT/modules/$i/gdbinit"
+		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
 	    done
 	    log "Using debug mode"
 	    ;;

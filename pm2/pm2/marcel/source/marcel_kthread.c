@@ -109,7 +109,7 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 
 #endif
 
-#else
+#else /* On utilise les pthread */
 
 #include <errno.h>
 
@@ -118,12 +118,24 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   marcel_kthread_func_t func, void *arg)
 {
 	pthread_attr_t attr;
+	int err;
+	size_t stack_size;
 
 	LOG_IN();
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
-	pthread_attr_setstack (&attr, stack_base, (sp-stack_base));
+	/* Contraintes d'alignement (16 pour l'IA64) */
+	stack_base=(void*)(((unsigned long int)stack_base+15)&(~0xF));
+	stack_size=(sp-stack_base)&(~0xF);
+	if ((err=pthread_attr_setstack (&attr, stack_base, stack_size))) {
+		char s[256];
+		strerror_r(err,s,256);
+		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p, %lx):"
+			" (%d)%s\n", &attr, stack_base, stack_size, err, s);
+		fprintf(stderr, "PTHREAD_STACK_MIN: %x\n", PTHREAD_STACK_MIN);
+		abort();
+	}
 	pthread_create(pid, &attr, func, arg);
 	LOG_OUT();
 }

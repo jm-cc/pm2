@@ -35,7 +35,7 @@
 
 /* active.c */
 
-#include <marcel.h>
+#include "marcel.h"
 
 volatile boolean have_to_work = TRUE;
 

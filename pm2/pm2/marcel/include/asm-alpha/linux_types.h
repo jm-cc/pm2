@@ -46,5 +46,5 @@ typedef signed long ma_s64;
 typedef unsigned long ma_u64;
 
 #section macros
-#define BITS_PER_LONG 64
+#define MA_BITS_PER_LONG 64
 

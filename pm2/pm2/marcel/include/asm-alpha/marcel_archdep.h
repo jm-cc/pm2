@@ -37,6 +37,7 @@
 
 /* Linux */
 #if defined(LINUX_SYS)
+#  include <setjmp.h>
 #  define TOP_STACK_FREE_AREA   256 /* XXX: how much ?? */
 #  define SP_FIELD(buf)         ((buf)->__jmpbuf[JB_SP])
 #  define FP_FIELD(buf)         ((buf)->__jmpbuf[JB_FP])
@@ -56,3 +57,4 @@ static __inline__ long get_sp(void)
                        : : "r" (val) : "memory" )
 
 #endif
+

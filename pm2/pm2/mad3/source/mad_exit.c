@@ -21,6 +21,9 @@
 /* #define TIMING */
 #include "madeleine.h"
 
+#define _LEO_OUT_CONNECTION 0
+#define _LEO_IN_CONNECTION  1
+
 static
 tbx_bool_t
 connection_disconnect(p_mad_channel_t ch)
@@ -44,7 +47,7 @@ connection_disconnect(p_mad_channel_t ch)
   if (!i->disconnect)
     goto channel_connection_closed;
 
-  if (command)
+  if (command == _LEO_OUT_CONNECTION)
     {
       // Output connection
       p_mad_connection_t out = NULL;
@@ -65,7 +68,7 @@ connection_disconnect(p_mad_channel_t ch)
           i->disconnect(out);
         }
     }
-  else
+  else if (command == _LEO_IN_CONNECTION)
     {
       // Input connection
       p_mad_connection_t in = NULL;
@@ -92,6 +95,97 @@ connection_disconnect(p_mad_channel_t ch)
   mad_leonie_send_int(-1);
 
   return tbx_true;
+}
+
+tbx_bool_t
+  connection_disconnect2(p_mad_channel_t ch)
+{   
+   p_mad_driver_t            d      = NULL;
+   p_mad_driver_interface_t  i      = NULL;
+   int                  command     = -1;
+   ntbx_process_lrank_t remote_rank = -1;
+   
+   marcel_fprintf(stderr, "================= Getting command ...\n");
+   command = mad_leonie_receive_int();
+   marcel_fprintf(stderr, "Getting command %i \n", command );
+   
+   if (command == -1)
+     {	
+	return tbx_false;
+     }
+      
+   remote_rank = mad_leonie_receive_int();
+   
+   d = ch->adapter->driver;
+   i = d->interface;
+   
+   if (!i->disconnect)
+     goto channel_connection_closed;
+   
+   if (command == _LEO_OUT_CONNECTION)
+     {	
+	// Output connection
+	      p_mad_connection_t out = NULL;
+	
+	TRACE_VAL("Closing connection to", remote_rank);
+	
+	out = tbx_darray_get(ch->out_connection_darray, remote_rank);
+	if (d->connection_type == mad_bidirectional_connection)
+	  {
+	     marcel_fprintf(stderr, "Remote rank is %i \n", remote_rank );
+	     marcel_fprintf(stderr, "channel is %p \n", ch );
+	     marcel_fprintf(stderr, "out is %p \n", out );
+	     
+	     //      out = tbx_darray_get(ch->out_connection_darray, 1);
+	     //      marcel_fprintf(stderr, "out is %p \n", out );
+	       
+	     if (!out->connected)
+	       goto channel_connection_closed;
+	     
+	     marcel_fprintf(stderr, "Disconnecting out \n");
+	     i->disconnect(out);
+	     marcel_fprintf(stderr, "Disconnecting out done \n");
+	     out->reverse->connected = tbx_false;
+	  }
+	else
+	  {
+	     i->disconnect(out);
+	  }
+     }
+   else if (command == _LEO_IN_CONNECTION)
+     {	
+	// Input connection
+	p_mad_connection_t in = NULL;
+	
+	in = tbx_darray_get(ch->in_connection_darray, remote_rank);
+	      if (d->connection_type == mad_bidirectional_connection)
+	  {	     
+	     marcel_fprintf(stderr, "Remote rank is %i \n", remote_rank );
+	     marcel_fprintf(stderr, "channel is %p \n", ch );
+	     marcel_fprintf(stderr, "in is %p \n", in );
+	     
+	     //     in = tbx_darray_get(ch->in_connection_darray, 0);
+	     //      marcel_fprintf(stderr, "in is %p \n", in );
+	     if (!in->connected)
+	       goto channel_connection_closed;
+	     
+	     marcel_fprintf(stderr, "Disconnecting in  \n");
+	     i->disconnect(in);
+	     marcel_fprintf(stderr, "Disconnecting in done \n");
+	     in->reverse->connected = tbx_false;
+	  }	
+	else
+	  {	     
+	     i->disconnect(in);
+	  }	
+     }
+   
+   channel_connection_closed:
+   marcel_fprintf(stderr, "Sending int for ack \n");
+   mad_leonie_send_int(-1);
+   marcel_fprintf(stderr, "Sending int for ack done \n");
+   
+   return tbx_true;
 }
 
 static
@@ -327,6 +421,63 @@ common_channel_exit(p_mad_channel_t mad_channel)
   mad_channel->sub_channel_darray = NULL;
 }
 
+void
+  common_channel_exit2(p_mad_channel_t mad_channel)
+{   
+   p_mad_adapter_t          mad_adapter = NULL;
+   p_mad_driver_t           mad_driver  = NULL;
+   p_mad_driver_interface_t interface   = NULL;
+   
+   mad_adapter = mad_channel->adapter;
+   mad_driver  = mad_adapter->driver;
+   interface   = mad_driver->interface;
+   
+   if (interface->before_close_channel)
+     interface->before_close_channel(mad_channel);
+   
+   fprintf(stderr,"PAss 1\n");
+   
+   while (connection_disconnect2(mad_channel))
+     ;
+   
+   fprintf(stderr,"PAss 2\n");
+   mad_leonie_send_int(-1);
+   
+   fprintf(stderr,"PAss 3\n");
+   if (interface->after_close_channel)
+     interface->after_close_channel(mad_channel);
+   
+   fprintf(stderr,"PAss 4\n");
+   while (connection_exit(mad_channel))
+     ;
+   
+   fprintf(stderr,"PAss 5\n");
+   tbx_darray_free(mad_channel->in_connection_darray);
+   tbx_darray_free(mad_channel->out_connection_darray);
+   
+   mad_channel->in_connection_darray  = NULL;
+   mad_channel->out_connection_darray = NULL;
+   
+   if (interface->channel_exit)
+     {	
+	interface->channel_exit(mad_channel);
+     }
+   else if (mad_channel->specific)
+     {	
+	TBX_FREE(mad_channel->specific);
+	mad_channel->specific = NULL;
+     }
+   
+   fprintf(stderr,"PAss 6\n");
+   
+   tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
+   
+   TBX_FREE(mad_channel->name);
+     mad_channel->name = NULL;
+   
+   tbx_darray_free(mad_channel->sub_channel_darray);
+   mad_channel->sub_channel_darray = NULL;
+}
 
 static
 void

@@ -30,6 +30,11 @@ static int infile=0;
 
 #define ND2(function)
 
+#define ND3(function) \
+  int function(void) { \
+        return 0; \
+  }
+
 /*ND(_IO_flockfile) ND(_IO_ftrylockfile) ND(_IO_funlockfile)*/ 
 /*ND(__close) ND(__connect) ND(__fcntl) ND(__lseek) ND(__open) ND(__read) ND(__send) ND(__wait)*/ 
 /*ND(__errno_location) ND(__h_errno_location)*/ 
@@ -62,7 +67,7 @@ ND(pthread_kill_other_threads_np) /*ND(pthread_mutexattr_getkind_np)*/
 ND(pthread_mutexattr_init) ND(pthread_once) ND(pthread_self)*/ ND(pthread_setcancelstate) 
 /*ND(pthread_mutexattr_setkind_np)*/ 
 ND(pthread_setcanceltype) ND(pthread_setschedparam) /*ND(pthread_setspecific)*/ 
-ND(pthread_sigmask) ND(pthread_testcancel) 
+ND3(pthread_sigmask) ND(pthread_testcancel) 
 ND(sem_destroy) ND(sem_getvalue) /*ND(sem_init) ND(sem_post)*/ ND(sem_trywait) /*ND(sem_wait)*/ 
 /*ND(sendmsg) ND(sendto)*/ ND2(sigaction) ND(siglongjmp) /*ND(system) ND(tcdrain) ND(wait)*/ 
 ND(sigwait) 

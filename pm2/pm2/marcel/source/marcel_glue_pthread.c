@@ -128,7 +128,7 @@ void __pthread_initialize_minimal(void)
 #endif
 }
 
-void __pthread_initialize(void)
+void __pthread_initialize(int* argc, char**argv)
 {
 #ifdef PM2DEBUG
 	printf("__Initialisation libpthread marcel-based\n");

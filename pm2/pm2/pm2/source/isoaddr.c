@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.6  2000/11/03 14:12:30  gantoniu
+Added support for profiling (LOG_IN/LOG_OUT).
+
 Revision 1.5  2000/09/12 15:45:52  gantoniu
 Made all necessary modifications to allow flavors without dsm be created and compiled.
 
@@ -192,7 +195,11 @@ int isoaddr_page_index(void *addr)
 
 int isoaddr_addr(void *addr)
 {
-  return ((int)addr < ISOADDR_AREA_TOP && (int)addr > (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE));
+#if 0
+  fprintf(stderr,"isoaddr(%p)? -> %d (top = %p, bottom = %p, dyn = %ld)\n", addr,((int)addr < ISOADDR_AREA_TOP && (int)addr > (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)), ISOADDR_AREA_TOP,  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE), DYN_DSM_AREA_SIZE); 
+#endif
+  return (int)(((char *)addr < (char *)ISOADDR_AREA_TOP) && ((char *)addr > ((char *)ISOADDR_AREA_TOP - (int)DYN_DSM_AREA_SIZE)));
+//return (unsigned long)addr > (unsigned long)((long int)ISOADDR_AREA_TOP - (long int)DYN_DSM_AREA_SIZE);
 }
 
 
@@ -231,6 +238,8 @@ static int _page_distrib_arg = 16;
 static void _page_ownership_init()
 {
   int i;
+
+  LOG_IN();
 
   switch(_page_distrib_mode){
   case CENTRALIZED :
@@ -302,12 +311,16 @@ static void _page_ownership_init()
       break;
     }
   }
+
+ LOG_OUT();
 }
 
 
 static void _isoaddr_page_info_init()
 {
   int i;
+
+  LOG_IN();
 
 #ifdef ISOADDR_INFO_TRACE
   fprintf(stderr,"Alloc page table(%d)\n",sizeof(page_info_entry_t) * ISOADDR_PAGES);
@@ -325,6 +338,8 @@ static void _isoaddr_page_info_init()
       marcel_cond_init(&_info_table[i].cond, NULL);
     }
   _page_ownership_init();
+
+  LOG_OUT();
 }
 
 
@@ -346,7 +361,7 @@ node_t isoaddr_page_get_owner(int index)
 void isoaddr_page_set_master(int index, int master)
 {
 #ifdef ISOADDR_INFO_TRACE
-  //  fprintf(stderr,"  Set master (%d) -> %d\n", index, master);
+    fprintf(stderr,"  Set master (%d) -> %d\n", index, master);
 #endif
   _info_table[index].master = master;
 }
@@ -438,8 +453,11 @@ void isoaddr_page_display_info()
 /******* a few comm functionalities for page info ********/
 
 
-static __inline__ void _isoaddr_send_info_req(node_t dest_node, int index, node_t req_node)
+static void _isoaddr_send_info_req(node_t dest_node, int index, node_t req_node)
 {
+
+  LOG_IN();
+
 #ifdef ASSERT
   assert(dest_node != _local_node_rank);
 #endif
@@ -453,13 +471,17 @@ static __inline__ void _isoaddr_send_info_req(node_t dest_node, int index, node_
 #ifdef ISOADDR_INFO_TRACE
   tfprintf(stderr, "isoaddr_send_info_req: sent (%ld)!\n", index);
 #endif
+
+  LOG_OUT();
 }
 
 
-static __inline__ void _isoaddr_send_info(node_t dest_node, int index)
+static void _isoaddr_send_info(node_t dest_node, int index)
 {
   int prot = 0, master = isoaddr_page_get_master(index), nb_pages = 1, k, shared;
   node_t dsm_owner;
+
+  LOG_IN();
 
   //  if (_info_table[index].status == ISO_PRIVATE)
   if (_info_table[master].status == ISO_DEFAULT)
@@ -499,13 +521,17 @@ static __inline__ void _isoaddr_send_info(node_t dest_node, int index)
   else
     fprintf(stderr, "Page info (%d) sent -> %d: status = %d, master = %d, nb_pages = %d\n", index, dest_node, _info_table[master].status, master, nb_pages); 
 #endif
+
+  LOG_OUT();
 }
 
 
-static __inline__ void _ISOADDR_INFO_REQ_threaded_func(void)
+static void _ISOADDR_INFO_REQ_threaded_func(void)
 {
   node_t req_node, owner;
   int index;
+
+  LOG_IN();
 
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(int));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&req_node, sizeof(node_t));
@@ -522,6 +548,8 @@ static __inline__ void _ISOADDR_INFO_REQ_threaded_func(void)
     _isoaddr_send_info_req(owner, index, req_node);
 
   isoaddr_page_info_unlock(index); // Useful ?
+
+  LOG_OUT();
 }
 
 
@@ -535,6 +563,8 @@ static void _ISOADDR_INFO_threaded_func(void)
 {
   int index, master, prot, nb_pages, owner, status, i;
   dsm_node_t dsm_owner;
+
+  LOG_IN();
 
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&index, sizeof(int));
 
@@ -596,6 +626,8 @@ static void _ISOADDR_INFO_threaded_func(void)
   _isoaddr_page_info_ready(index);
 
   isoaddr_page_info_unlock(index);
+
+  LOG_OUT();
 }
 
 
@@ -609,6 +641,9 @@ void ISOADDR_INFO_func(void)
 int isoaddr_page_get_status(int index)
 {
   int master = _info_table[index].master;
+
+  LOG_IN();
+
 #ifdef ISOADDR_INFO_TRACE
   fprintf(stderr, "Entering get_status (%d), master = %d, status = %d, owner = %d\n", index, master, _info_table[master].status, _info_table[master].owner );
 #endif
@@ -628,15 +663,18 @@ int isoaddr_page_get_status(int index)
 	 }
        _isoaddr_page_info_wait(index);
 #ifdef ISOADDR_INFO_TRACE
-       fprintf(stderr, "Got status ! (%d) master = %d, status = %d\n", index, master, _info_table[master].status );
+       fprintf(stderr, "Got status ! (%d) master = %d, status = %d\n", index, _info_table[index].master, _info_table[_info_table[index].master].status );
 #endif       
        isoaddr_page_info_unlock(index);
      }
 #ifdef ISOADDR_INFO_TRACE
-       fprintf(stderr, "get_status (%d) returns %d\n", index, _info_table[master].status);
+       fprintf(stderr, "get_status (%d) returns %d\n", index, _info_table[_info_table[index].master].status);
 #endif
 #endif// DSM
-  return _info_table[master].status;
+
+  LOG_OUT();
+
+  return _info_table[_info_table[index].master].status;
 }
 
 /********************************  slot map configuration ****************************/
@@ -1143,6 +1181,8 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
  void *ptr;
  int i, master;
 
+  LOG_IN();
+
   local_lock();//6/04/00
 
   size = (size_t)((size == THREAD_STACK_SIZE)?THREAD_SLOT_SIZE:(ALIGN_TO_SLOT(size)));
@@ -1273,7 +1313,10 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 	    }
 	}
 	  
-	  local_unlock();
+      local_unlock();
+
+      LOG_OUT();
+
       return ptr;
     }
   else 
@@ -1343,6 +1386,9 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 #ifdef ISOADDR_ALOC_TRACE
     fprintf(stderr, "end of isoaddr_malloc: first slot available = %d\n", FIRST_SLOT_AVAILABLE(local_slot_map));
 #endif
+
+    LOG_OUT();
+
     return addr;
     }
 }
@@ -1351,6 +1397,8 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 void isoaddr_free(void *addr, size_t size)
 {
   int i, n_slots, index ;
+ 
+  LOG_IN();
 
   local_lock();//6/04/00
 
@@ -1403,12 +1451,16 @@ void isoaddr_free(void *addr, size_t size)
   /*  for (i = 0; i < size/SLOT_SIZE; i++)
       isoaddr_page_set_status(SLOT_INDEX(addr) - i, ISO_AVAILABLE);*/
   local_unlock();//6/04/00
+
+  LOG_OUT();
 }
 
 
 void isoaddr_init(unsigned myrank, unsigned confsize)
 {
   int i;
+
+  LOG_IN();
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)
   __zero_fd = open("/dev/zero", O_RDWR);
@@ -1446,12 +1498,16 @@ void isoaddr_init(unsigned myrank, unsigned confsize)
   display_bitmap(0, 100, local_slot_map); 
   //  isoaddr_page_display_info();
 #endif
+ 
+  LOG_OUT();
 }
 
 
 void isoaddr_exit()
 {
   int i;
+
+  LOG_IN();
 
   flush_cache(&slot_cache, _SLOT_SIZE, "slot");
   flush_cache(&slot_cache, THREAD_SLOT_SIZE, "stack");
@@ -1465,6 +1521,8 @@ void isoaddr_exit()
 #ifdef ISOADDR_INFO_TRACE
   fprintf(stderr, "Isoaddr exited\n");
 #endif
+
+  LOG_OUT();
 }
 
 

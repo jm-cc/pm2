@@ -40,7 +40,6 @@ LDFLAGS += -L/usr/X11R6/lib -L$$OPENWINHOME/lib -lxview -lolgx -lX11
 
 PROGS := polygon
 
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/apps.mak
 
 $(APP_BIN)/polygon$(APP_EXT): $(APP_OBJ)/regul$(APP_EXT).o $(APP_OBJ)/custom$(APP_EXT).o

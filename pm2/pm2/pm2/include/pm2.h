@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.22  2000/09/13 21:57:43  rnamyst
+Improvements to the profile stuff: .fut files are now only built for modules that have the -DDO_PROFILE option set.
+
 Revision 1.21  2000/07/14 16:17:06  gantoniu
 Merged with branch dsm3
 
@@ -88,7 +91,6 @@ ______________________________________________________________________________
 #include "sys/debug.h"
 #include "pm2_rpc.h"
 #include "isoaddr_attr.h"
-
 
 #ifdef DSM
 #include "dsm_pm2.h"

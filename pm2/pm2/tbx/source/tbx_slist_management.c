@@ -1,3 +1,11 @@
+/*! \file tbx_slist_management.c
+ *  \brief TBX double-linked search list management routines
+ *
+ *  This file contains the TBX double-linked multi-purpose search list 
+ *  management functions.
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

@@ -25,15 +25,14 @@
 #define PM2DEBUG
 #endif
 
+/* On a besoin de partie de marcel non exportées */
+#define MARCEL_INTERNAL_INCLUDE
+
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include "tbx_debug.h"
-#include "pm2_testandset.h"
-#if defined(MARCEL_SMP) || defined(MARCEL_ACTIVATION)
-#include <sched.h>
-#endif
 
 #ifdef MARCEL
 #include "marcel.h"
@@ -45,7 +44,7 @@
 #define TIMEOUT  10000000
 /* Buffer for the activations ... */
 #define DEBUG_SIZE_BUFFER 1600000
-#define SIZE_FILE_NAME 25
+#define SIZE_FILE_NAME 35
 
 #define STRING(s) tbx_str(s)
 #define tbx_str(s) #s
@@ -226,7 +225,8 @@ static int apply_option(debug_type_t *type, char* option)
 		action=PM2DEBUG_TRYONLY;
 		size=7;
 	} else {
-		return 0;
+		pm2debug("Warning: unknown action %s\n", chaine);
+		return 1;
 	}
 	if (addlen) {
 		option+=size;
@@ -234,7 +234,8 @@ static int apply_option(debug_type_t *type, char* option)
 	if (option[0]==':') {
 		option++;
 	} else if (option[0]) {
-		return 0;
+		pm2debug("Warning: unknown action %s\n", chaine);
+		return 1;
 	}
 	
 	if (!*option) {
@@ -251,7 +252,8 @@ static int apply_option(debug_type_t *type, char* option)
 		value=0;
 		size=3;
 	} else {
-		return 0;
+		pm2debug("Warning: unknown value %s\n", chaine);
+		return 1;
 	}
 	if (addlen) {
 		option+=size;
@@ -259,7 +261,8 @@ static int apply_option(debug_type_t *type, char* option)
 	if (option[0]==':') {
 		option++;
 	} else if (option[0]) {
-		return 0;
+		pm2debug("Warning: unknown value %s\n", chaine);
+		return 1;
 	}
 	pm2debug_setup(type, action, value);
 	return 1;
@@ -271,6 +274,7 @@ static void remove_option(int opt)
 	for (i=opt+1; i<nb_options; i++) {
 		options[i-1]=options[i];
 	}
+	nb_options--;
 }
 
 void pm2debug_register(debug_type_t *type)
@@ -300,17 +304,6 @@ void pm2debug_register(debug_type_t *type)
 
 }
 
-#ifdef MA__ACTIVATION
-// Please, do not change order! This allows:
-// sed -e '/^PM2DEBUG BUFFER 0$/,/^PM2DEBUG BUFFER 2$/p;d' < core
-// ;)
-static char pm2debug_dummy0[50];
-static char base_buffer0[DEBUG_SIZE_BUFFER];
-static char pm2debug_dummy1[50];
-static char base_buffer1[DEBUG_SIZE_BUFFER];
-static char pm2debug_dummy2[50];
-#endif
-
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 {
 	static int called=0;
@@ -320,304 +313,239 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	int i;
 
 	if (!called) {
-#ifdef MA__ACTIVATION
-	  snprintf(pm2debug_dummy0, 49, "\nPM2DEBUG BUFFER 0\n");
-	  snprintf(pm2debug_dummy1, 49, "\nPM2DEBUG BUFFER 1\n");
-	  snprintf(pm2debug_dummy2, 49, "\nPM2DEBUG BUFFER 2\n");
-#endif
-	  pm2debug_register(&debug_pm2debug);
-	  pm2debug_register(&debug_pm2fulldebug);
-	  pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_SHOW_FILE, 1);
-	  pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_CRITICAL, 1);
-	  debug_type_register.setup=register_setup;
-	  pm2debug_register(&debug_type_register);
-	  DEBUG_INIT(init);
+		pm2debug_register(&debug_pm2debug);
+		pm2debug_register(&debug_pm2fulldebug);
+		pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_SHOW_FILE, 1);
+		pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_CRITICAL, 1);
+		debug_type_register.setup=register_setup;
+		pm2debug_register(&debug_type_register);
+		DEBUG_INIT(init);
 #ifdef MARCEL
-	  DEBUG_INIT(marcel);
+		DEBUG_INIT(marcel);
 #endif
 #ifdef MAD1
-	  DEBUG_INIT(mad1);
+		DEBUG_INIT(mad1);
 #endif
 #ifdef MAD2
-	  DEBUG_INIT(mad2);
+		DEBUG_INIT(mad2);
 #endif
 #ifdef MAD3
-	  DEBUG_INIT(mad3);
+		DEBUG_INIT(mad3);
 #endif
 #ifdef LEONIE
-	  DEBUG_INIT(leonie);
+		DEBUG_INIT(leonie);
 #endif
 #ifdef LEOPARSE
-	  DEBUG_INIT(leoparse);
+		DEBUG_INIT(leoparse);
 #endif
 #ifdef SWANN
-	  DEBUG_INIT(swann);
+		DEBUG_INIT(swann);
 #endif
 #ifdef PM2
-	  DEBUG_INIT(pm2);
+		DEBUG_INIT(pm2);
 #endif
 #ifdef TBX
-	  DEBUG_INIT(tbx);
+		DEBUG_INIT(tbx);
 #endif
 #ifdef NTBX
-	  DEBUG_INIT(ntbx);
+		DEBUG_INIT(ntbx);
 #endif
 #ifdef DSM
-	  DEBUG_INIT(dsm);
+		DEBUG_INIT(dsm);
 #endif
-	  DEBUG_INIT(app);
+		DEBUG_INIT(app);
 	}
 	called=1;
 
 	if ((argc==NULL) || (argv==NULL)) {
-	  return;
+		return;
 	}
 	if (arg) {
-	  debug_flags &= (~PM2DEBUG_DO_OPT);
+		debug_flags &= (~PM2DEBUG_DO_OPT);
 	}
 
 	if (debug_flags & PM2DEBUG_DO_OPT) {
-	  arg=1;
+		arg=1;
 	}
 
 	while ((opt<=(*argc)) && (argv[opt])) {
 	  
 #ifdef LEONIE
-	  // If the TBX lib is included as part of Leonie 
-	  // only the args up to the configuration file name should
-	  // be extracted.
-	  // Args appeating after the cfg file name on the command line
-	  // are dedicated to the application
-	  if ((argv[opt])[0] != '-')
-	    {
-	      break;
-	    }
-
-	  if (!strcmp(argv[opt], "--"))
-	    {
-	      break;
-	    }
+		// If the TBX lib is included as part of Leonie 
+		// only the args up to the configuration file name should
+		// be extracted.
+		// Args appeating after the cfg file name on the command line
+		// are dedicated to the application
+		if ((argv[opt])[0] != '-')
+		{
+			break;
+		}
+		
+		if (!strcmp(argv[opt], "--"))
+		{
+			break;
+		}
 #endif // LEONIE
-
+		
 		if (strncmp(argv[opt], "--debug", 7)) {
 			opt++;
 			continue;
 		}
 
 		if (debug_flags & PM2DEBUG_DO_OPT) {
-		  for (type=0; type<nb_debug_type_registered; type++) {
-		    if (apply_option(debug_type_registered[type], 
-				     argv[opt])) {
-		      goto option_done;
-		    }
-		  }
-		  options[nb_options++]=argv[opt];
+			for (type=0; type<nb_debug_type_registered; type++) {
+				if (apply_option(debug_type_registered[type], 
+						 argv[opt])) {
+					goto option_done;
+				}
+			}
+			options[nb_options++]=argv[opt];
+			//pm2debug("registering option %s\n",
+			//	 options[nb_options-1]);
 		}
 	option_done:
 		if (debug_flags & PM2DEBUG_CLEAROPT) {
-		  for (i=opt; i<(*argc); i++) {
-		    argv[i]=argv[i+1];
-		  }
-		  argv[(*argc)--]=NULL;
+			for (i=opt; i<(*argc); i++) {
+				argv[i]=argv[i+1];
+			}
+			argv[(*argc)--]=NULL;
 		} else {
-		  opt++;
+			opt++;
 		}
 	}
 }
 	
-typedef struct {
-const char* file_lock;
-int file_line;
-int file_flush;
-} debug_lock_t;
-
-debug_lock_t dl={NULL,0,0};
-static volatile int lock_debug=0;
-
-#ifdef MARCEL
-volatile int pm2debug_marcel_launched = 0;
-#endif
-
-#ifdef ACTIVATION
-
-
-static char* base_buffer[]={base_buffer0, base_buffer1};
-
-static int cur_buffer=0;
-static volatile int buf_used[2]={0,0};
-
-static char* pos_buffer=base_buffer0;
-volatile int debug_buffer_lenght=0;
-
-static volatile int in_flush=0;
-
-static volatile int debug_overflow[2]={0,0};
-
-void real_flush(int profondeur_lock)
-{
-	int nb_write;
-	int pos=0;
-	int num_buf=cur_buffer;
-	
-	if (debug_buffer_lenght && !buf_used[1-num_buf]) {
-		cur_buffer=1-num_buf;
-		buf_used[num_buf]=debug_buffer_lenght;
-		debug_buffer_lenght=0;
-		pos_buffer=base_buffer[cur_buffer];
-		//printf("Write buf %i\n", num_buf);
-	}
-
-	in_flush=0;
-
-	dl.file_flush=0;
-
-	lock_debug=0;
-	while (profondeur_lock--)
-		unlock_task_for_debug();
-	if (debug_overflow[num_buf]) {
-		write(2, "\n\n\nOVERFLOW\n\n\n", 
-		      strlen("\n\n\nOVERFLOW\n\n\n"));
-	}
-	while (buf_used[num_buf]) {
-		//write(2, "£", 1);
-		nb_write=write(2, base_buffer[num_buf]+pos, buf_used[num_buf]);
-		//write(2, "$", 1);
-		if (nb_write<0) {
-			perror("Debug error in write");
-			exit(1);
-		}
-		buf_used[num_buf] -= nb_write;
-		pos += nb_write;
-	}
-}
-
-#endif
-
 void pm2debug_flush()
 {
 	pm2debug_printf(&debug_type_flush,0,__FILE__, "%s", "");
 }
 
-#ifdef ACTIVATION
-#define my_print(prefix, args...) \
-	if (_launched) { \
-		new_bytes=prefix##snprintf(pos_buffer, \
-				   DEBUG_SIZE_BUFFER-10-debug_buffer_lenght, \
-				   ##args); \
-			pos_buffer+=new_bytes; \
-		debug_buffer_lenght+=new_bytes; \
-	} else { \
-		prefix##fprintf(stderr, ##args); \
-	}
+#if !defined(MARCEL) || !defined(MA__PTHREAD_FUNCTIONS)
+int __pm2debug_printf_state=PM2DEBUG_PRINTF_UNPROTECT_ALLOWED;
 #else
-#define my_print(prefix, args...) prefix##fprintf(stderr, ##args)
+int __pm2debug_printf_state=PM2DEBUG_PRINTF_DENY;
 #endif
 
+void pm2debug_printf_state(int state)
+{
+	__pm2debug_printf_state=state;
+}
 
-	
+volatile int inprint=0;
 
+inline static int pm2debug_tryprint()
+{
+#ifndef MARCEL
+	return 1;
+#else
+	switch (__pm2debug_printf_state) {
+	case PM2DEBUG_PRINTF_UNPROTECT_ALLOWED:
+		if (inprint) {
+			return 0;
+		}
+		inprint=1;
+		return 1;
+	case PM2DEBUG_PRINTF_DENY:
+		return 0;
+	case PM2DEBUG_PRINTF_ALLOWED:
+		ma_local_bh_disable();
+		if(tbx_unlikely(ma_test_and_set_thread_flag(TIF_DEBUG_IN_PROGRESS))) {
+			/* Déjà en cours de pm2debug */
+			ma_local_bh_enable();
+			return 0;
+		}
+		return 2;
+	}
+	RAISE(PROGRAM_ERROR);
+	return 0;
+#endif
+}
+
+inline static void pm2debug_endprint(int entry)
+{
+#ifdef MARCEL
+	switch(entry) {
+	case 1:
+		inprint=0;
+		break;
+	case 2:
+		ma_smp_mb__before_clear_bit();
+		ma_clear_thread_flag(TIF_DEBUG_IN_PROGRESS);
+		ma_local_bh_enable();
+		break;
+	case 0:
+		break;
+	}
+#endif
+}
+
+#define my_print(fmt, args...) \
+	do { \
+		size=tbx_snprintf(cur, remaining, fmt, ##args); \
+		remaining-=size; \
+		if (remaining<=0) \
+			goto do_write; \
+		eaten+=size; \
+		cur+=size; \
+	} while (0);
 
 int pm2debug_printf(debug_type_t *type, int line, const char* file, 
 		    const char *format, ...)
 {
-#ifdef ACTIVATION
-	int new_bytes=0;
-#endif
-	volatile int timeout=TIMEOUT;
 	va_list ap;
-#ifdef MARCEL
-	int _launched;
-#endif
+	int can_print;
 
 	if (!type) { 
 		return 0;
 	}
-
-#ifdef MARCEL
-	_launched = pm2debug_marcel_launched;
-	if (_launched) {
-		ma_lock_task(); /* Pas de debug ici ! */
-	}
-#endif
-	if (pm2_spinlock_testandset(&lock_debug)) {
-		if (type->try_only) {
-#ifdef MARCEL
-			unlock_task_for_debug(); /* Pas de debug ici ! */
-#endif			
-			return 0;
-		}
-		
-		while (timeout--) {
-			if (!pm2_spinlock_testandset(&lock_debug)) {
-				goto have_lock;
-			}
-#if defined(MARCEL_SMP) || defined(MARCEL_ACTIVATION)
-			sched_yield();
-#endif
-		}
-#ifdef MARCEL
-		if (_launched) {
-			unlock_task_for_debug(); /* Pas de debug ici ! */
-		}
-#endif			
+	
+	if(0 == (can_print=pm2debug_tryprint())) {
+		/* un pm2debug dans lui même ? */
 		return 0;
 	}
-have_lock:
-
-	dl.file_lock=file;
-	dl.file_line=line;
 
 	if (type->show) {
+		char buffer[PM2DEBUG_MAXLINELEN],*cur=buffer;
+		int eaten=0,remaining=PM2DEBUG_MAXLINELEN,size;
 		if (type->show_prefix) {
-			my_print(,"%s", type->prefix);
+			my_print("%s", type->prefix);
 		}
 		if (type->show_file) {
-			my_print(,"%-" STRING(SIZE_FILE_NAME)
-				 "s{%4i} ", file, line);
+			int len=strlen(file)+15;
+			char location[len];
+			if (line > 10000000) {
+				line=0;
+			}
+			if (tbx_snprintf(location, len, "%s:%i", file, line)>=len) {
+				strcpy(location,"BUG");
+			}
+			my_print("%-" STRING(SIZE_FILE_NAME)
+				 "s ", location);
 		}
 #ifdef MARCEL
 #ifdef MA__LWPS
-		if (_launched && !type->do_not_show_lwp) {
-			my_print(,"[P%02d] ", 
-				 ((_launched 
+		if (!type->do_not_show_lwp) {
+			my_print("[P%02d] ", 
+				 (((can_print==2) 
 				   && GET_LWP(marcel_self())) 
 				  ? GET_LWP_NUMBER(marcel_self()) : -1));
 		}
 #endif
-		if (_launched && !type->do_not_show_thread) {
-			my_print(,"(%8p) ", _launched ?
+		if (!type->do_not_show_thread) {
+			my_print("(%8p) ", (can_print==2) ?
 			marcel_self():(void*)-1);
 		}
 #endif /* MARCEL */
 		va_start(ap, format);
-		my_print(v, format, ap);
+		eaten+=tbx_vsnprintf(cur, remaining, format, ap);
 		va_end(ap);
+do_write:
+		if (eaten>PM2DEBUG_MAXLINELEN)
+			eaten=PM2DEBUG_MAXLINELEN;
+		write(STDERR_FILENO,buffer,eaten);
 	}
-#ifdef ACTIVATION
-	if (_launched) {
-		if (!pm2_spinlock_testandset(&in_flush)) {
-			if ((locked()==1) // appel sans lock_task
-			    && (MA_GET_TASK_TYPE(marcel_self())==
-				MA_TASK_TYPE_NORMAL)) { // tache normale
-				dl.file_lock=NULL;
-				dl.file_line=0;
-				dl.file_flush=1;
-				real_flush(1);
-				return 0;
-			} else {
-				in_flush=0;
-			}
-		}
-	}
-#endif
-	dl.file_lock=NULL;
-	dl.file_line=0;
-	lock_debug=0;
-#ifdef MARCEL	
-	if (_launched) {
-		unlock_task_for_debug();
-	}
-#endif
+
+	pm2debug_endprint(can_print);
 	return 0;
 }
 

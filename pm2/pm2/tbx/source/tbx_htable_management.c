@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_htable_management.c,v $
+Revision 1.5  2001/01/29 17:00:36  oaumage
+- extension du support des tables de hachage
+
 Revision 1.4  2000/12/19 16:57:51  oaumage
 - finalisation de leoparse
 - exemples pour leoparse
@@ -152,18 +155,13 @@ __tbx_htable_get_bucket(p_tbx_htable_t   htable,
 
   LOG_IN();
   key_len = strlen(key);
-  LOG_PTR("*** htable", htable);
-  LOG_STR("*** key", key);
-  LOG_VAL("*** len", key_len);
 
   while(key_len--)
     {
       bucket += key[key_len];
     }
 
-  LOG_VAL("*** pre_bucket", bucket);
   bucket %= htable->nb_bucket;
-  LOG_VAL("*** post_bucket", bucket);
   LOG_OUT();
 
   return bucket;
@@ -178,14 +176,7 @@ tbx_htable_add(p_tbx_htable_t    htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
-  LOG_PTR("htable", htable);
-  LOG_PTR("object", object);
-  LOG_STR("key", key);
-  
   bucket  = __tbx_htable_get_bucket(htable, key);
-
-  LOG_VAL("bucket", bucket);
-
   element = tbx_malloc(tbx_htable_manager_memory);  
   element->key = TBX_MALLOC(strlen(key) + 1);
   CTRL_ALLOC(element->key);
@@ -208,10 +199,6 @@ tbx_htable_get(p_tbx_htable_t   htable,
   
   LOG_IN();
   bucket  = __tbx_htable_get_bucket(htable, key);
-  LOG_PTR("htable", htable);
-  LOG_STR("key", key);
-  LOG_VAL("bucket", bucket);
-  
   element = htable->bucket_array[bucket];
   
   while(element)
@@ -221,7 +208,6 @@ tbx_htable_get(p_tbx_htable_t   htable,
 	  void *object = NULL;
 	  
 	  object = element->object;
-	  LOG_PTR("object", object);
 	  LOG_OUT();
 
 	  return object;
@@ -322,4 +308,38 @@ tbx_htable_manager_exit(void)
   LOG_IN();
   tbx_malloc_clean(tbx_htable_manager_memory);
   LOG_OUT();
+}
+
+p_tbx_slist_t
+tbx_htable_get_key_slist(p_tbx_htable_t htable)
+{
+  p_tbx_slist_t slist = NULL;
+
+  LOG_IN();
+  slist = tbx_slist_nil();
+
+  if (htable->nb_element)
+    {
+      while (htable->nb_bucket--)
+	{
+	  p_tbx_htable_element_t element = NULL;
+
+	  element = htable->bucket_array[htable->nb_bucket];
+
+	  while (element)
+	    {
+	      char *key_copy = NULL;
+	      
+	      key_copy = TBX_MALLOC(strlen(element->key) + 1);
+	      strcpy(key_copy, element->key);
+
+	      tbx_slist_append(slist, key_copy);
+
+	      element = element->next;
+	    }
+	}  
+    }
+  LOG_OUT();
+
+  return tbx_slist_nil();
 }

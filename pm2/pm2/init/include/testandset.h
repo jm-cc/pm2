@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: testandset.h,v $
+Revision 1.2  2000/10/31 16:21:13  oaumage
+- support de communications entre architectures heterogenes avec Mad2/TCP
+- correction de testandset pour Alpha
+
 Revision 1.1  2000/05/09 10:49:36  vdanjean
 pm2debug module
 
@@ -50,7 +54,6 @@ ______________________________________________________________________________
  */
 
 #ifdef X86_ARCH
-
 static __inline__ int testandset(volatile int *spinlock) __attribute__ ((unused));
 static __inline__ int testandset(volatile int *spinlock)
 {
@@ -66,13 +69,11 @@ static __inline__ int testandset(volatile int *spinlock)
 }
 
 #define release(spinlock) (*(spinlock) = 0)
-
-#endif /* ix86 */
+#endif /* X86_ARCH */
 
 
 #ifdef SPARC_ARCH
-
-static __inline__ int testandset(int *spinlock)
+static __inline__ int testandset(volatile int *spinlock)
 {
   char ret = 0;
 
@@ -85,12 +86,10 @@ static __inline__ int testandset(int *spinlock)
 
 #define release(spinlock) \
   __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0));
-
-#endif /* SPARC */
+#endif /* SPARC_ARCH */
 
 #ifdef ALPHA_ARCH
-
-static __inline__ long int testandset(int *spinlock)
+static __inline__ long int testandset(volatile int *spinlock)
 {
   long int ret, temp;
 
@@ -114,21 +113,17 @@ static __inline__ long int testandset(int *spinlock)
 #define release(spinlock) \
   __asm__ __volatile__("mb" : : : "memory"); \
   *spinlock = 0
-
-#endif /* ALPHA */
+#endif /* ALPHA_ARCH */
 
 #ifdef RS6K_ARCH
-
-#define testandset(int *spinlock) \
+#define testandset(volatile int *spinlock) \
   (*(spinlock) ? 1 : (*(spinlock)=1,0))
 
 #define release(spinlock) (*(spinlock) = 0)
-
-#endif
+#endif /* RS6K_ARCH */
 
 #ifdef MIPS_ARCH
-
-static __inline__ long int testandset(int *spinlock)
+static __inline__ long int testandset(volatile int *spinlock)
 {
   long int ret, temp;
 
@@ -150,11 +145,9 @@ static __inline__ long int testandset(int *spinlock)
 }
 
 #define release(spinlock) (*(spinlock) = 0)
+#endif /* MIPS_ARCH */
 
-#endif /* MIPS */
-
-#ifdef PPP_ARCH
-
+#ifdef PPC_ARCH
 #define sync() __asm__ __volatile__ ("sync")
 
 static __inline__ int __compare_and_swap (long int *p, long int oldval, long int newval)
@@ -179,7 +172,6 @@ static __inline__ int __compare_and_swap (long int *p, long int oldval, long int
 #define testandset(spinlock) __compare_and_swap(spinlock, 0, 1)
 
 #define release(spinlock) (*(spinlock) = 0)
-
-#endif /* POWERPC */
+#endif /* PPC_ARCH */
 
 #endif /* TESTANDSET_EST_DEF */

@@ -20,26 +20,29 @@
 #include "parser.h"
 #include <stdlib.h>
 #include "tracelib.h"
-#include "string.h"
+#include <string.h>
 
 #include "fut_code.h"
-
-
 
 /* deals with the main function,
    creates the filters with the selected parameters
    runs the action */
+
 extern char *traps[];
 extern char *sys_calls[];
 
-enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME, IDLE_TIME,
-	     TIME, NB_CALLS, ACTIVE_SLICES, IDLE_SLICES, AVG_ACTIVE_SLICE, FUNCTION_TIME};
+enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME,
+	     IDLE_TIME, TIME, NB_CALLS, ACTIVE_SLICES, IDLE_SLICES,
+	     AVG_ACTIVE_SLICE, FUNCTION_TIME}; // Possible action
 
+// Prints the header when printing events
 void print_help()
 {
   printf("type  date_tick  pid cpu thr  code                          name                  args\n");  
 }
 
+
+// Prints an event tr accordingly to the format given above
 void print_trace(trace tr)
 {
   int i, j = 0;
@@ -80,7 +83,9 @@ void print_trace(trace tr)
 }
 
 
-/* the handlers */
+/* The handlers */
+
+// List events
 void list_events()
 {
   trace tr;
@@ -88,9 +93,9 @@ void list_events()
   for(;;) {
     switch(get_next_filtered_trace(&tr))
       {
-      case 0 : { print_trace(tr); break;}
-      case 1 : { return; }
-      case 2 : { print_trace(tr); return;}
+      case 0 : { print_trace(tr); break;}    // Not end of file
+      case 1 : { return; }                   // End of file and last one not valid
+      case 2 : { print_trace(tr); return;}   // End of file and last one is valid
       default: { 
 	fprintf(stderr,"Please report bug to cmenier@ens-lyon.fr\n");
 	exit(1);
@@ -99,6 +104,7 @@ void list_events()
   }
 }
 
+// Prints the number of events 
 void nb_events()
 {
   int n;
@@ -109,6 +115,7 @@ void nb_events()
   printf("%d événements\n",n);
 }
 
+// Prints the nth event taking account of the filter
 void nth_event(int nth)
 {
   int n;
@@ -129,6 +136,7 @@ void nth_event(int nth)
   printf("L'événement %d n'a pas pu être trouvé.\n", nth);
 }
 
+// Prints the total active time taking account of the filter
 void active_time()
 {
   trace tr;
@@ -138,6 +146,7 @@ void active_time()
   printf("Temps actif total = %u\n",(unsigned) get_active_time());
 }
 
+// Prints the total idle timem taking account of the filter
 void idle_time()
 {
   trace tr;
@@ -147,20 +156,24 @@ void idle_time()
   printf("Temps inactif total = %u\n",(unsigned) get_idle_time());
 }
 
+// Prints the total time taking account of the filter
 void time()
 {
   trace tr;
   int eof = 0;
   while (eof == 0) 
     eof = get_next_filtered_trace(&tr);
-  printf("Temps total = %u\n",(unsigned) get_idle_time() + (unsigned) get_active_time());
+  printf("Temps total = %u\n",
+	 (unsigned) get_idle_time() + (unsigned) get_active_time());
 }
 
+// Idem to nb_events
 void nb_calls()
 {
   nb_events();
 }
 
+// Prints the number of active slices taking account of the filter
 void active_slices()
 {
   trace tr;
@@ -170,6 +183,7 @@ void active_slices()
   printf("Nombre de tranches actives = %u\n", (unsigned) get_active_slices());
 }
 
+// Prints the number of idle slices taking account of the filter
 void idle_slices()
 {
   trace tr;
@@ -179,6 +193,7 @@ void idle_slices()
   printf("Nombre de tranches inactives = %u\n", (unsigned) get_idle_slices);
 }
 
+// Prints the average time spent in an active slice
 void avg_active_slice()
 {
   trace tr;
@@ -189,6 +204,7 @@ void avg_active_slice()
 	 (unsigned) (get_active_time() / get_active_slices()));
 }
 
+// Gives the time spent in each function
 void function_time()
 {
   int code;
@@ -201,31 +217,36 @@ void function_time()
   while (eof == 0) 
     eof = get_next_filtered_trace(&tr);
   while(1) {
-    if (get_function_time(&code, &type, &thread, &begin, &end, &time) == -1) break;
+    if (get_function_time(&code, &type, &thread, &begin, &end, &time) == -1) 
+      break;
     if (type == USER)
       name = fut_code2name(code >> 8);
     else name = fkt_code2name(code >> 8);
-    printf("%s sur thread %d de %u à %u en %u\n", name, thread, (unsigned) begin, (unsigned) end, (unsigned) time);
+    printf("%s sur thread %d de %u à %u en %u\n", name, thread,
+	   (unsigned) begin, (unsigned) end, (unsigned) time);
   }
 }
 
+// Error message or help
 void error_usage()
 {
   fprintf(stderr,"Usage: sigmund [options] [filters] action\n");
   fprintf(stderr,"Options:\n");
   fprintf(stderr,"   --trace-file <nom_supertrace>        Indique la supertrace à utiliser\n");
   fprintf(stderr,"                                          par défaut: prof_file\n");
+  fprintf(stderr,"   --help                               Affiche ce message\n");
+  fprintf(stderr,"Filters:\n");
   fprintf(stderr,"   --cpu <num_cpu>                      Restreint les traces considérées à celles concernant ce cpu\n");
   fprintf(stderr,"   --process <pid>                      Restreint les traces considérées à celles concernant ce processus\n");
   fprintf(stderr,"   --logic <num>                        Restreint les traces considérées à celles concernant ce numéro logique de lwp\n");
   fprintf(stderr,"   --thread <num>                       Restreint les traces considérées à celles concernant ce thread\n");
-  fprintf(stderr,"   --time_slice <begin_tick> <end_tick> Restreint les traces considérées à celles concernant cette zone de temps\n");
+  fprintf(stderr,"   --time-slice <begin_tick> <end_tick> Restreint les traces considérées à celles concernant cette zone de temps\n");
   fprintf(stderr,"   --function <function_name>           Restreint les traces considérées à celles concernant cette fonction\n");
   fprintf(stderr,"   --event <event_name>                 Ne considére que cet événement là.\n");
   fprintf(stderr,"                                          Attention ce filtre est inutilisée lors des calculs de temps\n");
   fprintf(stderr,"   --event-slice <begin_num> <end_num>  Restreint les traces considérées à celles entre le <begin_num> ème événement\n");
   fprintf(stderr,"                                          et le <end_num> ème\n");
-  fprintf(stderr,"   --sys_call                           Identique à --event mais pour les appels systèmes\n");
+  fprintf(stderr,"   --sys-call                           Identique à --event mais pour les appels systèmes\n");
   fprintf(stderr,"   --begin <func_name[:param]> --end <func_name[:param]>\n");
   fprintf(stderr,"                                        Indique des zones à considérées comprises entre ces 2 événements avec la possibilité\n");
   fprintf(stderr,"                                           de préciser un argument (le 1er)\n");
@@ -249,14 +270,19 @@ int main(int argc, char **argv)
 {
   int argCount;
   char *trace_file_name = NULL;
-  enum action ac;
-  int nth = 0;
-  ac = NONE;
+  enum action ac;                                       // Action asked
+  int nth = 0;                                          // If nth-event
+  ac = NONE;                                            // No action precised yet
+  // Initialise fut names
   init();
+  // Initialise the filter to none
   init_filter();
+  // Parse the arguments
   for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
     argCount = 1;
-    if (!strcmp(*argv, "--trace-file")) {
+    if (!strcmp(*argv, "--help")) {
+      error_usage();
+    } else if (!strcmp(*argv, "--trace-file")) {
       if (argc <= 1) error_usage();
       trace_file_name = *(argv + 1);
       argCount = 2;
@@ -388,10 +414,12 @@ int main(int argc, char **argv)
       ac = FUNCTION_TIME;
     } else error_usage();
   }
+  // Initialise the supertrace library with this supertrace
   tracelib_init(trace_file_name);
+  // Switch action
   switch(ac) {
   case NONE : {
-    list_events();
+    list_events();          // No action -> list_events
     break;
   }
   case LIST_EVENTS : {

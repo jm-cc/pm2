@@ -1,3 +1,10 @@
+/*! \file tbx_list_management.c
+ *  \brief TBX linked-list management routines
+ *
+ *  This file contains the TBX management functions for the
+ *  Madeleine-specialized linked list.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

@@ -34,8 +34,8 @@ typedef struct s_mad_session
 
 typedef struct s_mad_settings
 {
-  char *leonie_server_host_name;
-  char *leonie_server_port;
+  unsigned long leonie_server_ip;
+  char         *leonie_server_port;
 } mad_settings_t;
 
 

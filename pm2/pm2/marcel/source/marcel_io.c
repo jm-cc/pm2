@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.10  2000/05/29 08:59:25  vdanjean
+work added (mainly for SMP and ACT), minor modif in polling
+
 Revision 1.9  2000/05/24 15:15:21  rnamyst
 Enhanced the polling capabilities of the Marcel scheduler.
 
@@ -320,50 +323,59 @@ void marcel_io_init()
 
 int marcel_read(int fildes, void *buf, size_t nbytes)
 {
+#ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
   myarg.op = POLL_READ;
   myarg.fd = fildes;
   marcel_poll(unix_io_pollid, (any_t)&myarg);
+#endif
 
   return read(fildes, buf, nbytes);
 }
 
 int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
+#ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
   myarg.op = POLL_READ;
   myarg.fd = fildes;
   marcel_poll(unix_io_pollid, (any_t)&myarg);
+#endif
 
   return readv(fildes, iov, iovcnt);
 }
 
 int marcel_write(int fildes, void *buf, size_t nbytes)
 {
+#ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
   myarg.op = POLL_WRITE;
   myarg.fd = fildes;
   marcel_poll(unix_io_pollid, (any_t)&myarg);
+#endif
 
   return write(fildes, buf, nbytes);
 }
 
 int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
+#ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
   myarg.op = POLL_WRITE;
   myarg.fd = fildes;
   marcel_poll(unix_io_pollid, (any_t)&myarg);
+#endif
 
   return writev(fildes, iov, iovcnt);
 }
 
 int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 {
+#ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
   myarg.op = POLL_SELECT;
@@ -372,6 +384,9 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
   myarg.nfds = nfds;
 
   marcel_poll(unix_io_pollid, (any_t)&myarg);
+#else
+  select(nfds, rfds, wfds, NULL, NULL);
+#endif
 
   return 1;
 }

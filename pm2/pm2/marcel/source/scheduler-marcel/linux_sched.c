@@ -1606,7 +1606,7 @@ DEF_PTHREAD_STRONG(yield)
 void marcel_change_vpmask(marcel_vpmask_t mask)
 {
 	LOG_IN();
-#ifdef MA__LPWS
+#ifdef MA__LWPS
 	RAISE(NOT_IMPLEMENTED);
 #endif
 	LOG_OUT();

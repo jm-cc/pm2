@@ -62,8 +62,9 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "${PM2_DEBUG}" = on ]; then
-    echo "DISPLAY=$DISPLAY;export DISPLAY;PM2_CONF_FILE=$PM2_CONF_FILE;export PM2_CONF_FILE; ${MAD1_ROOT}/bin/tcp/maddebug $prog $args" | ${PM2_RSH:-rsh} $host /bin/sh
+    prefix=${MAD2_ROOT}/bin/tcp/maddebug
 else
-    echo "DISPLAY=$DISPLAY;export DISPLAY;PM2_CONF_FILE=$PM2_CONF_FILE;export PM2_CONF_FILE;$prog $args" | ${PM2_RSH:-rsh} $host /bin/sh
+    prefix=""
 fi
 
+${PM2_RSH:-rsh} $host /bin/sh -c \"DISPLAY=$DISPLAY\;export DISPLAY\;PM2_CONF_FILE=$PM2_CONF_FILE\;export PM2_CONF_FILE\;$prefix $prog $args\"

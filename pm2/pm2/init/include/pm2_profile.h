@@ -136,15 +136,24 @@
 // Must be called when a new kernel threads (SMP or activation flavors
 // only) is about to execute the very first thread (usually the
 // idle_task).
-#define PROF_NEW_LWP(pid, num, thr)                              \
-  do {                                                           \
-    if(__pm2_profile_active) {                                   \
-      fut_header((((unsigned int)(FUT_NEW_LWP_CODE))<<8) | 24,   \
-                 (unsigned int)(pid),                            \
-                 (unsigned int)(num),                            \
-                 (unsigned int)(thr));                           \
-    }                                                            \
-  } while(0)
+
+#ifdef USE_FKT
+
+#define PROF_NEW_LWP(num, thr)                                      \
+ do {                                                               \
+   if (__pm2_profile_active) {                                      \
+      fkt_new_lwp(thr, num);                                        \
+   }                                                                \
+ } while(0)
+
+#else /* USE_FKT */
+
+#define PROF_NEW_LWP(num, thr)                                      \
+ do {                                                             \
+ } while(0)
+
+#endif /* USE_FKT */
+
 
 #define PROF_THREAD_BIRTH(thr)                                      \
  do {                                                               \
@@ -181,7 +190,7 @@ extern volatile unsigned __pm2_profile_active;
 #define PROF_PROBE1(keymask, code, arg) (void)0
 
 #define PROF_SWITCH_TO(thr1, thr2)      (void)0
-#define PROF_NEW_LWP(pid, num, thr)     (void)0
+#define PROF_NEW_LWP(num, thr)     (void)0
 #define PROF_THREAD_BIRTH(thr)          (void)0
 #define PROF_THREAD_DEATH(thr)          (void)0
 

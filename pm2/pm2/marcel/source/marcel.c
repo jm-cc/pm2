@@ -1021,6 +1021,7 @@ void marcel_start_sched(int *argc, char *argv[])
 
   // Start scheduler (i.e. run LWP/activations, start timer)
   marcel_sched_start(__nb_lwp);
+  marcel_set_activity();
 }
 
 void marcel_purge_cmdline(int *argc, char *argv[])

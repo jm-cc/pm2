@@ -450,7 +450,6 @@ void common_post_init(int *argc, char *argv[],
 
 #ifdef MARCEL
   marcel_start_sched(argc, argv);
-  marcel_set_activity();
 #endif /* MARCEL */
 
 #ifdef MAD3

@@ -680,53 +680,13 @@ DEF_PTHREAD(cleanup_pop)
 #undef NAME_PREFIX
 #define NAME_PREFIX
 
-static void __inline__ freeze(marcel_t t)
-{
-  RAISE(NOT_IMPLEMENTED);
-#if 0
-#ifndef MA__MONO
-  RAISE(NOT_IMPLEMENTED);
-#endif
-   if(t != marcel_self()) {
-      lock_task();
-      if(MA_TASK_IS_BLOCKED(t) || MA_TASK_IS_FROZEN(t)) {
-         unlock_task();
-         RAISE(PROGRAM_ERROR);
-      } else if(MA_TASK_IS_SLEEPING(t)) {
-#warning marcel_wake_up_thread instead of marcel_wake_task
-         marcel_wake_up_thread(t);
-         //marcel_wake_task(t, NULL);
-      }
-      state_lock(t);
-#warning to reimplement
-      //marcel_set_frozen(t);
-      //UNCHAIN_TASK(t);
-      unlock_task();
-   }
-#endif
-}
-
-static void __inline__ unfreeze(marcel_t t)
-{
-  RAISE(NOT_IMPLEMENTED);
-#ifndef MA__MONO
-  RAISE(NOT_IMPLEMENTED);
-#endif
-  //if(IS_FROZEN(t)) {
-      lock_task();
-#warning marcel_wake_up_thread instead of marcel_wake_task
-      ma_wake_up_thread(t);
-      //marcel_wake_task(t, NULL);
-      unlock_task();
-      //}
-}
-
 void marcel_freeze(marcel_t *pids, int nb)
 {
   int i;
 
    for(i=0; i<nb; i++)
-      freeze(pids[i]);
+     if(pids[i] != marcel_self())
+        ma_freeze_thread(pids[i]);
 }
 
 void marcel_unfreeze(marcel_t *pids, int nb)
@@ -734,7 +694,8 @@ void marcel_unfreeze(marcel_t *pids, int nb)
   int i;
 
    for(i=0; i<nb; i++)
-      unfreeze(pids[i]);
+      if(pids[i] != marcel_self())
+        ma_unfreeze_thread(pids[i]);
 }
 
 /* WARNING!!! MUST BE LESS CONSTRAINED THAN MARCEL_ALIGN (64) */
@@ -761,7 +722,6 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(cur->ctx_migr)) - ALIGNED_32(1);
       blk = top - bottom;
       depl = bottom - (unsigned long)cur->stack_base;
-      unlock_task();
 
       mdebug("hibernation of thread %p", cur);
       mdebug("sp = %lu\n", get_sp());
@@ -771,6 +731,7 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       mdebug("blk = %lu\n", blk);
 
       (*transf)(cur, depl, blk, arg);
+      unlock_task();
 
       if(!fork)
 	marcel_exit(NULL);
@@ -816,6 +777,7 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
   lock_task();
 
   marcel_sched_init_marcel_thread(t, &marcel_attr_default);
+  t->preempt_count=MA_PREEMPT_OFFSET; /* one for use, one for the scheduler */
   marcel_one_more_task(t);
   ma_wake_up_created_thread(t);
 

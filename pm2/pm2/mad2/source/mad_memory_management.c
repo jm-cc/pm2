@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_memory_management.c,v $
+Revision 1.5  2000/11/10 14:17:56  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.4  2000/02/28 11:06:15  rnamyst
 Changed #include "" into #include <>.
 
@@ -71,7 +74,8 @@ static p_tbx_memory_t mad_buffer_pair_memory;
 /* tbx_memory_manager_init:
    initialize mad memory manager */
 void
-mad_memory_manager_init()
+mad_memory_manager_init(int    argc,
+			char **argv)
 {
   tbx_malloc_init(&mad_buffer_memory,
 		  sizeof(mad_buffer_t),

@@ -231,7 +231,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
 
   parameter_string   =
     tbx_string_init_to_int(adapter_specific->connection_port);
-  adapter->parameter = tbx_string_to_c_string(parameter_string);
+  adapter->parameter = tbx_string_to_cstring(parameter_string);
   tbx_string_free(parameter_string);
   parameter_string   = NULL;
   LOG_OUT();

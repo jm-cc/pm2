@@ -2,7 +2,14 @@
 # set -x
 
 PROG=$1
-CONF="ravel debussy faure"
+
+if [ "$OSTYPE" = "linux-gnu" ]
+then
+	CONF="resama cluster10 cluster11"
+else
+	CONF="ravel debussy faure"
+fi
+
 HOSTNAME=`hostname`
 PROG=`basename $PROG /`
 

@@ -33,6 +33,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+ifndef FLAVOR
+export FLAVOR:=default
+endif
+
 ifeq ($(MAK_VERB),verbose)
 COMMON_PREFIX  =#
 COMMON_HIDE   :=#

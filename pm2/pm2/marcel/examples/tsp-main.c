@@ -23,6 +23,13 @@
 #include "tsp.h"
 #include "tsp-job.h"
 
+#ifdef	MARCEL
+# ifdef	MT
+#  undef MT
+# endif	/* MT */
+# define MT
+#endif	/* MARCEL */
+
 static struct timeval _t1, _t2;
 static struct timezone _tz;
 static unsigned long _temps_residuel = 0;

@@ -17,6 +17,12 @@
 #include "tsp-types.h"
 #include "tsp-job.h"
 
+#ifdef	MARCEL
+# ifdef	MT
+#  undef MT
+# endif	/* MT */
+# define MT
+#endif	/* MARCEL */
 
 extern int          minimum ;
 extern TSPqueue     q ;

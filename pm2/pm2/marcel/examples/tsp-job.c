@@ -16,6 +16,13 @@
 
 #include <malloc.h>
 
+#ifdef	MARCEL
+# ifdef	MT
+#  undef MT
+# endif	/* MT */
+# define MT
+#endif	/* MARCEL */
+
 #ifdef MT
 #ifdef MARCEL
 #include "marcel.h"

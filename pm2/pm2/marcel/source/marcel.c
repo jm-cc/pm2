@@ -273,9 +273,9 @@ int _marcel_raise(marcel_exception_t ex)
 
    if(cur->cur_excep_blk == NULL) {
       ma_preempt_disable();
-      fprintf(stderr, "\nUnhandled exception %s in task %ld"
+      fprintf(stderr, "\nUnhandled exception %s in task %ld on LWP(%d)"
 	      "\nFILE : %s, LINE : %d\n",
-	      ex, cur->number, cur->exfile, cur->exline);
+	      ex, cur->number, cur->exfile, cur->exline, LWP_NUMBER(LWP_SELF));
       abort(); /* To generate a core file */
       exit(1);
    } else {

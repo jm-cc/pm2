@@ -146,6 +146,27 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
   LOG_OUT();
 }
 
+ntbx_process_lrank_t
+ntbx_pc_local_max(p_ntbx_process_container_t pc)
+{
+  ntbx_process_lrank_t lrank = -1;
+  
+  LOG_IN();
+  if (pc->local_array_size)
+    {
+      lrank = pc->local_array_size;
+
+      do
+	{
+	  lrank--;
+	}
+      while ((lrank >= 0) && !pc->local_index[lrank]);
+    }
+  LOG_OUT();
+
+  return lrank;
+}
+
 ntbx_process_grank_t
 ntbx_pc_local_to_global(p_ntbx_process_container_t pc,
 			ntbx_process_lrank_t       local_rank)
@@ -274,6 +295,27 @@ ntbx_pc_next_local_rank(p_ntbx_process_container_t  pc,
   LOG_OUT();
 
   return result;
+}
+
+ntbx_process_grank_t
+ntbx_pc_global_max(p_ntbx_process_container_t pc)
+{
+  ntbx_process_grank_t grank = -1;
+  
+  LOG_IN();
+  if (pc->global_array_size)
+    {
+      grank = pc->global_array_size;
+
+      do
+	{
+	  grank--;
+	}
+      while ((grank >= 0) && !pc->local_index[grank]);
+    }
+  LOG_OUT();
+
+  return grank;
 }
 
 ntbx_process_lrank_t
@@ -616,7 +658,6 @@ ntbx_true_name(char *host_name)
   else
     {
         result = TBX_MALLOC(MAXHOSTNAMELEN + 1);
-	CTRL_ALLOC(result);
 	gethostname(result, MAXHOSTNAMELEN);
     }
   LOG_OUT();

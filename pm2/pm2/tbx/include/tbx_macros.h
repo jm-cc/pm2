@@ -34,6 +34,14 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.18  2000/12/19 16:57:51  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.17  2000/11/15 21:32:43  rnamyst
 Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
 
@@ -120,18 +128,11 @@ ______________________________________________________________________________
 /* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
 #define OOPS
 
-#include "pm2debug.h"
-
-#ifdef MARCEL
-#include "marcel.h"
-#endif
-
 /*
  * Constant definition  _____________________________________________
  * ____________________//////////////////////////////////////////////
  */
 #define TBX_FILE_TRANSFER_BLOCK_SIZE 1024
-
 
 /*
  * Timing macros  __________________________________________________
@@ -145,6 +146,8 @@ ______________________________________________________________________________
 #define TIME_INIT() _TBXT_POST
 #define TIME(str)
     _TBXT_PRE; fprintf(stderr, str " [%4f usecs]\n", _TBXT_DIFF); _TBXT_POST
+#define TIME_IN()  TIME_INIT()
+#define TIME_OUT() TIME(__FUNCTION__)
 #define TIME_VAL(str, val) \
     _TBXT_PRE; \
     fprintf(stderr, str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
@@ -160,11 +163,12 @@ ______________________________________________________________________________
 #else /* TIMING */
 #define TIME_INIT()
 #define TIME(str) 
+#define TIME_IN()
+#define TIME_OUT()
 #define TIME_VAL(str, val) 
 #define TIME_PTR(str, ptr) 
 #define TIME_STR(str, str2) 
 #endif /* TIMING */
-
 
 /*
  * Control macros  __________________________________________________
@@ -225,24 +229,51 @@ ______________________________________________________________________________
       } \
   }
 
-
 /*
  * Min/Max macros  __________________________________________________
  * _______________///////////////////////////////////////////////////
  */
-#define max(a, b) (((a) >= (b))?(a):(b))
-#define min(a, b) (((a) <= (b))?(a):(b))
-
+#ifdef __GNUC__
+#define max(a,b) \
+       ({typedef _ta = (a), _tb = (b);  \
+         _ta _a = (a); _tb _b = (b);     \
+         _a > _b ? _a : _b; })
+#define min(a,b) \
+       ({typedef _ta = (a), _tb = (b);  \
+         _ta _a = (a); _tb _b = (b);     \
+         _a < _b ? _a : _b; })
+#else // __GNUC__
+#define max(a, b) (((a) > (b))?(a):(b))
+#define min(a, b) (((a) < (b))?(a):(b))
+#endif // __GNUC__
 
 /*
  * Flags control macros  ____________________________________________
  * _____________________/////////////////////////////////////////////
  */
+#ifdef __GNUC__
+#define tbx_set(f) \
+        ({typedef _tf = (f); \
+          _tf *_pf = &(f); \
+          *_pf = tbx_flag_set;})
+#define tbx_clear(f) \
+        ({typedef _tf = (f); \
+          _tf *_pf = &(f); \
+          *_pf = tbx_flag_clear;})
+#define tbx_toggle(f) \
+        ({typedef _tf = (f); \
+          _tf *_pf = &(f); \
+          *_pf = 1 - *_pf;})
+#define tbx_test(f) \
+        ({typedef _tf = (f); \
+          _tf *_pf = &(f); \
+          !!*_pf;})
+#else // __GNUC__ 
 #define tbx_set(f)    ((f) = tbx_flag_set)
 #define tbx_clear(f)  ((f) = tbx_flag_clear)
 #define tbx_toggle(f) ((f) = 1 - (f))
 #define tbx_test(f)   (f)
-
+#endif // __GNUC__
 
 /*
  * Threads specific macros  _________________________________________
@@ -308,8 +339,15 @@ ______________________________________________________________________________
  * Alignment macros  ________________________________________________
  * _________________/////////////////////////////////////////////////
  */
-#define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
+#ifdef __GNUC__
+#define tbx_aligned(v, a) \
+        ({typedef _tv = (v), _ta = (a); \
+         _tv _v = (v); _ta _a = (a); \
+         (((_v) + (_a - 1)) & ~(_a - 1));})
 #define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
+#else // __GNUC__
+#define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
+#endif // __GNUC__
 
 /*
  * Attribute macros  ________________________________________________

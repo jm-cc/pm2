@@ -52,10 +52,38 @@ any_t g(any_t arg)
   return NULL;
 }
 
+any_t g2(any_t arg)
+{
+  unsigned i;
+
+  marcel_detach(marcel_self());
+
+  marcel_delay(50);
+
+  marcel_printf("I'm waiting for a pipe input 2\n");
+  marcel_read(tube[0], &i, sizeof(i));
+  marcel_printf("Input from [pipe 2] detected on LWP %d: %x\n",
+		marcel_current_vp(), i);
+
+  return NULL;
+}
+
+volatile int out=0;
+
+any_t h(any_t arg)
+{
+	marcel_detach(marcel_self());
+	while (!out) ;
+	return NULL;
+}
+
 int marcel_main(int argc, char *argv[])
 {
-  unsigned long i;
-  unsigned magic = 0xdeadbeef;
+  volatile unsigned long i;
+  struct {
+	  unsigned a;
+	  unsigned b;
+  } magic = { 0xdeadbeef, 0xfecabead };
 
   marcel_trace_on();
 
@@ -63,19 +91,25 @@ int marcel_main(int argc, char *argv[])
 
   pipe(tube);
 
+  //marcel_create(NULL, NULL, h, NULL);
   marcel_create(NULL, NULL, f, NULL);
+  marcel_delay(500);
   marcel_create(NULL, NULL, g, NULL);
+  marcel_delay(100);
+  marcel_create(NULL, NULL, g2, NULL);
 
-  mdebug("busy waiting...\n");
+  marcel_printf("busy waiting...\n");
 
   i = 200000000L; while(--i);
 
-  mdebug("marcel_delay...\n");
+  marcel_printf("marcel_delay...\n");
 
   marcel_delay(5000);
 
-  write(tube[1], &magic, sizeof(magic));
+  marcel_printf("writing in pipe...\n");
+  marcel_write(tube[1], &magic, sizeof(magic));
 
+  out=1;
   marcel_end();
   return 0;
 }

@@ -2,7 +2,7 @@
 %{
   /*#define YYSTYPE long */
 #define YYDEBUG 1
-#define LEO_IN_YACC
+#define LEOPARSE_IN_YACC
 #define YYERROR_VERBOSE
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,7 +14,7 @@
   extern int yylex(void);
 
   /* Global variables */
-  p_leo_parser_result_t leo_parser_result = NULL;
+  p_tbx_htable_t leo_parser_result = NULL;
 
   /* Prototypes */
   void yyerror(char *s); 
@@ -22,12 +22,12 @@
 
 %union
 {
-  char                 *str;
-  char                 *id;
-  p_tbx_slist_t         list;
-  p_tbx_htable_t        htable;
-  p_tbx_htable_entry_t  htable_entry;
-  p_leoparse_object_t   object;
+  char                      *str;
+  char                      *id;
+  p_tbx_slist_t              list;
+  p_tbx_htable_t             htable;
+  p_leoparse_htable_entry_t  htable_entry;
+  p_leoparse_object_t        object;
 }
 
 %token <str> LEOP_ID LEOP_STRING 

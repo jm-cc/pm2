@@ -1,3 +1,4 @@
+import select
 import socket
 
 def pack_int(i):
@@ -41,7 +42,7 @@ def unpack_ulong(b):
 def send(client, b):
     """Sent a string over a client socket."""
     (cs, addr) = client
-    print "sending:", b
+    #print "sending:", b
     o = 0
     s = len(b)
     while s > 0:
@@ -143,3 +144,16 @@ def hostname_normalize(hostname):
     (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(hostname) 
     return hostname
 
+def client_select(client_list):
+    idx_dict = {}
+    fd_list  = []
+
+    for num, (fd, addr) in enumerate(client_list):
+        idx_dict[fd] = num
+        fd_list.append(fd)
+
+    (ilist, olist, elist) = select.select(fd_list, [], [])
+
+    result_list = [ client_list[idx_dict[x]] for x in ilist ]
+
+    return result_list

@@ -15,9 +15,9 @@
  */
 
 
-#include "sys/marcel_debug.h"
+#include "marcel.h"
 
-#define NULL ((void*)0)
+//#define NULL ((void*)0)
 
 #ifdef PM2DEBUG
 
@@ -82,5 +82,33 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 #endif
 	pm2debug_init_ext(argc, argv, debug_flags);
 }
+
+debug_type_t ma_dummy1 __attribute__((section(".ma.debug.size.0"))) =  NEW_DEBUG_TYPE(1, "dummy", "dummy");
+debug_type_t ma_dummy2 __attribute__((section(".ma.debug.size.1"))) =  NEW_DEBUG_TYPE(1, "dummy", "dummy");
+extern debug_type_t __ma_debug_pre_start[];
+extern debug_type_t __ma_debug_start[];
+extern debug_type_t __ma_debug_end[];
+
+void __init marcel_debug_init_auto(void)
+{
+	debug_type_t *var;
+	unsigned long __ma_debug_size_entry=(void*)&ma_dummy2-(void*)&ma_dummy1;
+	if (__ma_debug_size_entry != sizeof(debug_type_t)) {
+		pm2debug("Warning : entry_size %li differ from sizeof %i\n"
+			 "Someone to correct the linker script (that does extra alignments) ?\n",
+			 __ma_debug_size_entry, sizeof(debug_type_t));
+		for(var=__ma_debug_start; var < __ma_debug_end; 
+		    var=(debug_type_t *)((void*)(var)+__ma_debug_size_entry)) {
+			pm2debug_register(var);
+		}
+	} else {
+		for(var=__ma_debug_start; var < __ma_debug_end; var++) {
+			pm2debug_register(var);
+		}
+	}
+}
+
+__ma_initfunc_prio(marcel_debug_init_auto, MA_INIT_DEBUG, MA_INIT_DEBUG_PRIO, 
+	      "Register debug variables");
 
 

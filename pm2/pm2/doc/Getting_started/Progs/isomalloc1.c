@@ -5,7 +5,7 @@
 char hostname[MAXHOSTNAMELEN];
 
 void
-service_thread (void *arg)
+f (void *arg)
 {
   int *p;
   int proc;
@@ -41,7 +41,7 @@ pm2_main (int argc, char *argv[])
 
   if (pm2_self () == 0)
     {				/* master process */
-      pm2_thread_create (service_thread, NULL);
+      pm2_thread_create (f, NULL);
     }
 
   pm2_exit ();

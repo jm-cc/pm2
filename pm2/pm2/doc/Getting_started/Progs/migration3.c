@@ -7,7 +7,7 @@ char hostname[MAXHOSTNAMELEN];
 static int service_id;
 
 void
-service_thread (void *arg)
+f (void *arg)
 {
   int i, proc;
   pm2_completion_t my_c;
@@ -35,7 +35,7 @@ service_thread (void *arg)
 void
 service (void)
 {
-  pm2_thread_create (service_thread, NULL);
+  pm2_service_thread_create (f, NULL);
 }
 
 /********************* Cut here ********************/

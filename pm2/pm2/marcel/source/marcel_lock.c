@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.c,v $
+Revision 1.3  2000/02/28 10:25:04  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:57:17  oaumage
 - ajout du Log CVS
 
@@ -45,7 +48,7 @@ ______________________________________________________________________________
 #include <sched.h>
 #endif
 
-#include <marcel.h>
+#include "marcel.h"
 
 void marcel_lock_init(marcel_lock_t *lock)
 {

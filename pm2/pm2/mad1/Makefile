@@ -68,5 +68,8 @@ $(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/$(LIB_PROT)/%.c
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
-$(PM2_MAK_DIR)/mad1-specific.mak:
-	@echo "LIB_PROT := `$(PM2_CONFIG) --protocols $(LIBRARY)`" >  $@
+$(PM2_MAK_DIR)/mad1-specific.mak: $(LIB_STAMP_FLAVOR)
+	@_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\
+	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
+	echo "LIB_PROT := $$_PM2_OUTPUT" > $@ ;\
+	fi;

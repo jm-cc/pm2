@@ -145,7 +145,7 @@ typedef unsigned long marcel_vpmask_t;
 // Primitives & macros de construction de "masques" de processeurs
 // virtuels. 
 
-// ATTENTION : le placement d'un thread est autorise sur un 'vp' si le
+// ATTENTION : le placement d un thread est autorise sur un 'vp' si le
 // bit correspondant est a _ZERO_ dans le masque (similitude avec
 // sigset_t pour la gestion des masques de signaux).
 

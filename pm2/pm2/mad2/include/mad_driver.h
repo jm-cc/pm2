@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_driver.h,v $
+Revision 1.4  2000/03/02 14:51:55  oaumage
+- support de detection des protocoles au niveau runtime
+
 Revision 1.3  2000/01/13 14:44:31  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -63,6 +66,7 @@ typedef struct s_mad_driver
 {
   /* Common use fields */
   PM2_SHARED;
+  char                       *name;
   p_mad_madeleine_t           madeleine;
   mad_driver_id_t             id;
   mad_driver_interface_t      interface;

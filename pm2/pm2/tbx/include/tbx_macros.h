@@ -34,11 +34,20 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.7  2000/04/27 09:05:52  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
 Revision 1.6  2000/04/20 12:17:39  oaumage
 - corrections diverses
 
 Revision 1.5  2000/04/05 16:10:09  oaumage
 - remplacement de marcel_givehandback par marcel_yield
+
+Revision 1.4.2.2  2000/04/03 08:55:51  oaumage
+- ajout d'une constante (taille des blocs lors d'un transfert de fichier)
+
+Revision 1.4.2.1  2000/03/30 14:13:51  oaumage
+- correction d'un bug au niveau de la macro DISP (il faut un espace avant la ,)
 
 Revision 1.4  2000/03/13 09:48:18  oaumage
 - ajout de l'option TBX_SAFE_MALLOC
@@ -88,6 +97,14 @@ typedef enum
   tbx_true
 } tbx_bool_t, *p_tbx_bool_t;
 
+
+/*
+ * Constant definition  _____________________________________________
+ * ____________________//////////////////////////////////////////////
+ */
+#define TBX_FILE_TRANSFER_BLOCK_SIZE 1024
+
+
 /*
  * Display  macros  _________________________________________________
  * ________________//////////////////////////////////////////////////
@@ -126,7 +143,7 @@ typedef enum
  * _______________///////////////////////////////////////////////////
  */
 #ifdef TRACING
-#define TRACE(str, args...)   fprintf(stderr, str "\n", ## args)
+#define TRACE(str, args...)   fprintf(stderr, str "\n" , ## args)
 #define TRACE_IN()            fprintf(stderr, __FUNCTION__": -->\n")
 #define TRACE_OUT()           fprintf(stderr, __FUNCTION__": <--\n")
 #define TRACE_VAL(str, val)   fprintf(stderr, str " = %d\n" , (int)(val))
@@ -309,6 +326,7 @@ typedef enum
 #define TBX_FREE(s)       free    ((s))
 #endif /* TBX_SAFE_MALLOC */
 #endif /* MARCEL */
+
 
 /*
  * Alignment macros  ________________________________________________

@@ -41,7 +41,7 @@
 
 #define ESSAIS  2
 
-#define MODE            MAD_IN_PLACE
+#define MODE            MAD_IN_HEADER
 #define MAX_MESSAGE     (4*1024*1024)
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -149,13 +149,15 @@ int main(int argc, char **argv)
      mad_pack_int(MAD_IN_HEADER, &nb, 1);
      mad_sendbuf_send();
 
+     f(16);
+     /*
      for(i=0; i<4096; i+=16)
        f(i);
      for(i=4096; i<128*1024; i+=1024)
        f(i);
      for(i=128*1024; i<4*1024*1024; i+=128*1024)
        f(i);
-
+     */
      fclose(file);
      fclose(file_deb);
 
@@ -168,12 +170,15 @@ int main(int argc, char **argv)
 
      fprintf(stderr, "nb de messages = %d\n", nb);
 
+     g(16);
+     /*
      for(i=0; i<4096; i+=16)
        g(i);
      for(i=4096; i<128*1024; i+=1024)
        g(i);
      for(i=128*1024; i<4*1024*1024; i+=128*1024)
        g(i);
+     */
    }
 
    mad_exit();

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.h,v $
+Revision 1.7  2000/11/16 13:24:08  oaumage
+- mise a jour initialisation
+
 Revision 1.6  2000/11/16 11:11:50  rnamyst
 Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
 
@@ -161,7 +164,9 @@ typedef union {
 
 void pm2_mad_init(p_mad_madeleine_t madeleine);
 
-void mad_exit(void);
+void mad_init_thread_related(int *argc, char *argv[]);
+
+void pm2_mad_exit(void);
 
 char *mad_arch_name(void);
 

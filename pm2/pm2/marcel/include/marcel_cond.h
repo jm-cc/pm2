@@ -23,20 +23,20 @@ _PRIVATE_ typedef struct {
 	int dummy;
 } marcel_condattr_struct;
 
-DEC_MARCEL(int, condattr_init, (marcel_condattr_t *attr))
-DEC_MARCEL(int, condattr_destroy, (marcel_condattr_t *attr))
+DEC_MARCEL(int, condattr_init, (marcel_condattr_t *attr) __THROW)
+DEC_MARCEL(int, condattr_destroy, (marcel_condattr_t *attr) __THROW)
 
 DEC_MARCEL(int, cond_init, (marcel_cond_t *cond,
-			    __const marcel_condattr_t *attr))
-DEC_MARCEL(int, cond_destroy, (marcel_cond_t *cond))
+			    __const marcel_condattr_t *attr) __THROW)
+DEC_MARCEL(int, cond_destroy, (marcel_cond_t *cond) __THROW)
 
-DEC_MARCEL(int, cond_signal, (marcel_cond_t *cond))
-DEC_MARCEL(int, cond_broadcast, (marcel_cond_t *cond))
+DEC_MARCEL(int, cond_signal, (marcel_cond_t *cond) __THROW)
+DEC_MARCEL(int, cond_broadcast, (marcel_cond_t *cond) __THROW)
 
 DEC_MARCEL(int, cond_wait, (marcel_cond_t *cond,
-			    marcel_mutex_t *mutex))
+			    marcel_mutex_t *mutex) __THROW)
 DEC_MARCEL(int, cond_timedwait, (marcel_cond_t *cond, marcel_mutex_t *mutex,
-				 const struct timespec *abstime))
+				 const struct timespec *abstime) __THROW)
 
 
 DEC_POSIX(int, condattr_init, (pmarcel_condattr_t *attr))

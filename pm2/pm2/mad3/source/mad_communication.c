@@ -1186,6 +1186,7 @@ mad_unpack(p_mad_connection_t   connection,
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
 		  interface->receive_buffer(lnk, &destination);
+		  mad_free_buffer_struct(destination);		  
 		  connection->flushed        = tbx_true;
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)

@@ -60,6 +60,7 @@
 
 /* Fundamental data types */
 #include "mad_types.h"
+#include "mad_leonie_commands.h"
 #include "mad_modes.h"
 #include "mad_buffers.h"
 #include "mad_link.h"

@@ -64,7 +64,7 @@ void *marcel_slot_alloc(void)
 
     ptr = mmap(next_slot,
 	       SLOT_SIZE,
-	       PROT_READ | PROT_WRITE,
+	       PROT_READ | PROT_WRITE | PROT_EXEC,
 	       MMAP_MASK,
 	       FILE_TO_MAP, 0);
 

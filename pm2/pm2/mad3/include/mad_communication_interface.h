@@ -27,6 +27,9 @@
  * ---------
  */
 
+void
+mad_free_parameter_slist(p_tbx_slist_t parameter_slist);
+
 #ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_message_ready(p_mad_channel_t channel);

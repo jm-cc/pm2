@@ -77,8 +77,8 @@ endif
 
 # Sources
 #---------------------------------------------------------------------
-LIB_C_SOURCES :=  $(wildcard $(LIB_SRC)/*.c)
-LIB_S_SOURCES :=  $(wildcard $(LIB_SRC)/*.S)
+LIB_C_SOURCES +=  $(wildcard $(LIB_SRC)/*.c)
+LIB_S_SOURCES +=  $(wildcard $(LIB_SRC)/*.S)
 
 # Bases : fichiers sans extension ni repertoire
 #---------------------------------------------------------------------
@@ -127,5 +127,16 @@ LIB_PIC_TO_S   = $(LIB_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
 # - makefile
 #---------------------------------------------------------------------
 COMMON_DEPS += $(LIB_STAMP_FLAVOR) $(MAKEFILE_FILE) 
+
+# paths pour éviter d'avoir à spécifier le chemin exact tout le temps
+# permet de rajouter facilement d'autres répertoires sources (cf mad2) 
+#---------------------------------------------------------------------
+vpath %.c $(LIB_SRC)
+vpath %.S $(LIB_SRC)
+vpath %.o $(LIB_GEN_OBJ)
+vpath %.pic $(LIB_GEN_OBJ)
+vpath %.d $(LIB_GEN_DEP)
+vpath %.i $(LIB_GEN_CPP)
+vpath %.si $(LIB_GEN_CPP)
 
 ######################################################################

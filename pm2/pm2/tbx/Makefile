@@ -33,143 +33,21 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-###################### CUSTOMIZATION SECTION #####################
+MASTER_MODULE =  TBX
+COMMON_DEFAULT_TARGET :=  tbx_default
 
-TBX_OPTIONS		= -O6 -g -fomit-frame-pointer # -DDEBUG
+include $(PM2_ROOT)/make/master_vars.mak
 
-TBX_STANDALONE_OPTIONS	= -g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
+# Ce makefile
+COMMON_MAKEFILES +=  $(TBX2_ROOT)/Makefile
 
-################### END OF CUSTOMIZATION SECTION #################
+# Inclusion des variables
+include $(TBX_MAKE)/vars.mak
 
-ifndef TBX_ROOT
-TBX_ROOT	=	$(PM2_ROOT)/toolbox
-endif
+# Regles principales
+include $(PM2_ROOT)/make/master_rules.mak
 
-ifndef PM2_ARCH_SYS
-PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
-PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
-PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
-endif
+# Inclusion des regles de compilation
+include $(TBX_MAKE)/rules.mak
 
-TBX_MAKEFILE	=	$(TBX_ROOT)/Makefile
-
-TBX_OBJ         :=      $(TBX_ROOT)/obj
-TBX_SRC		:=	$(TBX_ROOT)/src
-TBX_DEP		:=	$(TBX_SRC)/depend
-TBX_INC		:=	$(TBX_ROOT)/include
-TBX_LIBD	=	$(TBX_ROOT)/lib/$(PM2_ARCH_SYS)
-
-ifndef PM2_FLAGS
-ifdef MAD_ALONE
-TBX_OPTIONS    += $(MAD_OPTIONS)
-else
-TBX_OPTIONS    += $(TBX_STANDALONE_OPTIONS) -DTBX
-TBX_ALONE       :=  true
-endif
-
-ifdef MARCEL_FLAGS
-TBX_OPTIONS    += -DMARCEL -DTHREADS
-else 
-  ifdef MAD_THREAD_SUPPORT
-  TBX_OPTIONS    += -DTHREADS
-  endif
-endif
-else
-TBX_OPTIONS    += -DMARCEL -DTHREADS
-endif
-
-ifneq ($(wildcard $(TBX_DEP)),$(TBX_DEP))
-DUMMY_BUILD	:=	$(shell mkdir -p $(TBX_DEP))
-endif
-
-ifneq ($(wildcard $(TBX_OBJ)),$(TBX_OBJ))
-DUMMY_BUILD	:=	$(shell mkdir -p $(TBX_OBJ))
-endif
-
-ifneq ($(wildcard $(TBX_LIBD)),$(TBX_LIBD))
-DUMMY_BUILD	:=	$(shell mkdir -p $(TBX_LIBD))
-endif
-
-TBX_REG_SOURCES	:=	$(wildcard $(TBX_SRC)/*.c)
-
-TBX_REG_OBJECTS	:=	$(patsubst %.c,%.o,$(subst $(TBX_SRC),$(TBX_OBJ),$(TBX_REG_SOURCES)))
-TBX_OBJECTS	:=	$(TBX_REG_OBJECTS) 
-
-TBX_LIB		=	$(TBX_LIBD)/libtbx.a
-TBX_LLIB	=	$(ARCHDLIB)
-
-ifdef MAD_ALONE
-TBX_CC          =       $(MAD_STANDALONE_CC)
-else
-TBX_CC		=	gcc
-endif
-
-TBX_CFLAGS	=	$(TBX_OPTIONS) $(PM2_FLAGS) \
-			-I$(TBX_INC) -I$(MAD_ROOT)/include \
-			-I$(MAR_INC) -I$(PM2_ROOT)/include
-
-TBX_LDFLAGS	=	
-
-TBX_REG_DEPENDS	:=	$(patsubst %.o,%.d,$(subst $(TBX_OBJ),$(TBX_DEP),$(TBX_REG_OBJECTS)))
-TBX_DEPENDS	:=	($strip $(TBX_REG_DEPENDS))
-
-TBX_DEP_TO_OBJ	=	$(TBX_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
-
-ifneq ($(MAKECMDGOALS),clean)
-ifeq ($(wildcard $(TBX_DEPENDS)),$(TBX_DEPENDS))
-include $(TBX_DEPENDS)
-endif
-endif
-
-ifdef $(TBX_ALONE)
-$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d $(TBX_MAKEFILE)
-$(TBX_DEPENDS): $(TBX_MAKEFILE)
-else
-ifdef $(MAD_ALONE)
-$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d $(MAD_MAKEFILE)
-$(TBX_DEPENDS): $(MAD_MAKEFILE)
-else
-$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d $(PM2_MAKEFILE)
-$(TBX_DEPENDS): $(PM2_MAKEFILE)
-endif
-endif
-
-.PHONY: tbx_default
-tbx_default: $(TBX_LIB) 
-
-$(TBX_LIB): $(TBX_OBJECTS)
-	rm -f $(TBX_LIB)
-	@ echo "  -  $(@F)"
-	ar cr $(TBX_LIB) $(TBX_OBJECTS)
-
-$(TBX_REG_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_SRC)/%.c
-	@ echo "  -  $(@F)"
-	$(TBX_CC) $(TBX_CFLAGS) $(TBX_FLAGS) -c $< -o $@
-
-$(TBX_REG_DEPENDS): $(TBX_DEP)/%.d: $(TBX_SRC)/%.c
-	@ echo "  -  $(@F)"
-	$(SHELL) -ec '$(TBX_CC) -MM $(TBX_CFLAGS) $(TBX_FLAGS) $< \
-		| sed '\''s/.*:/$(subst /,\/,$(TBX_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
-
-
-ifndef TBX_ALONE
-.PHONY: tbxclean
-tbxclean:
-	@ echo "Cleaning toolbox"
-	rm -f $(wildcard $(TBX_LIBD)/*.a $(TBX_OBJ)/*.o $(TBX_DEP)/*.d)
-
-tbxdistclean:
-	rm -rf $(wildcard $(TBX_ROOT)/lib \
-		$(TBX_ROOT)/obj \
-		$(TBX_ROOT)/source/depend)
-else 
-.PHONY: clean distclean
-clean:
-	@ echo "Cleaning toolbox"
-	rm -f $(wildcard $(TBX_LIBD)/*.a $(TBX_OBJ)/*.o $(TBX_DEP)/*.d) \
-
-distclean:
-	rm -rf $(wildcard $(TBX_ROOT)/lib \
-		$(TBX_ROOT)/obj \
-		$(TBX_ROOT)/source/depend)
-endif
+##############################################################################

@@ -129,17 +129,17 @@ mad_directory_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_directory_t));
 
-  object->process_darray  = tbx_darray_init();
-  object->process_slist   = tbx_slist_nil();
-  object->node_htable     = tbx_htable_empty_table();
-  object->node_slist      = tbx_slist_nil();
-  object->driver_htable   = tbx_htable_empty_table();
-  object->driver_slist    = tbx_slist_nil();
-  object->channel_htable  = tbx_htable_empty_table();
-  object->channel_slist   = tbx_slist_nil();
-  object->fchannel_slist  = tbx_slist_nil();
-  object->vchannel_slist  = tbx_slist_nil();
-  object->xchannel_slist  = tbx_slist_nil();
+  object->process_darray     = tbx_darray_init();
+  object->process_slist      = tbx_slist_nil();
+  object->node_htable        = tbx_htable_empty_table();
+  object->node_slist         = tbx_slist_nil();
+  object->driver_htable      = tbx_htable_empty_table();
+  object->driver_slist       = tbx_slist_nil();
+  object->channel_htable     = tbx_htable_empty_table();
+  object->channel_slist      = tbx_slist_nil();
+  object->fchannel_slist     = tbx_slist_nil();
+  object->vchannel_slist     = tbx_slist_nil();
+  object->xchannel_slist     = tbx_slist_nil();
   LOG_OUT();
 
   return object;
@@ -294,6 +294,20 @@ mad_settings_cons(void)
 
   return object;
 }
+
+// mad_dynamic_t
+p_mad_dynamic_t
+mad_dynamic_cons(void)
+{
+  p_mad_dynamic_t object = NULL;
+
+  LOG_IN();
+  object = TBX_CALLOC(1, sizeof(mad_dynamic_t));
+  LOG_OUT();
+
+  return object;
+}
+
 
 // mad_madeleine_t
 p_mad_madeleine_t

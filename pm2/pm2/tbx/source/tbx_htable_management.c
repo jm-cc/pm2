@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_htable_management.c,v $
+Revision 1.2  2000/07/10 14:25:58  oaumage
+- Corrections diverses
+
 Revision 1.1  2000/07/07 14:49:49  oaumage
 - Ajout d'un support pour les tables de hachage
 
@@ -202,9 +205,9 @@ tbx_htable_extract(p_tbx_htable_t   htable,
   
   while(*element)
     {
-      if (strcmp(key, element->key))
+      if (strcmp(key, (*element)->key))
 	{
-	  element = &(*element->next);
+	  element = &((*element)->next);
 	}
       else
 	{
@@ -237,7 +240,7 @@ tbx_htable_free(p_tbx_htable_t htable)
 	    {
 	      p_tbx_htable_element_t temp = element->next;
 	      
-	      tbx_free(tbx_htable_manager_memory, *element);
+	      tbx_free(tbx_htable_manager_memory, element);
 	      element = temp;
 	    }
 

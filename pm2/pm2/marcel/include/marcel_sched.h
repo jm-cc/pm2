@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.10  2000/04/21 11:19:26  vdanjean
+fixes for actsmp
+
 Revision 1.9  2000/04/17 08:31:05  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -123,7 +126,7 @@ static __inline__ unsigned marcel_current_vp()
 
 void marcel_yield(void);
 void marcel_trueyield(void);
-void marcel_explicityield(marcel_t pid);
+int marcel_explicityield(marcel_t pid);
 
 
 /* ==== SMP scheduling policies ==== */
@@ -193,16 +196,16 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 /* Must be called each time a LWP is about to access its local task
    queue. */
-static __inline__ void sched_lock(__lwp_t *lwp) __attribute__ ((unused));
-static __inline__ void sched_lock(__lwp_t *lwp)
+static __inline__ void ma_sched_lock(__lwp_t *lwp) __attribute__ ((unused));
+static __inline__ void ma_sched_lock(__lwp_t *lwp)
 {
   marcel_lock_acquire(&(SCHED_DATA(lwp).sched_queue_lock));
 }
 
 /* Must be called when a LWP is not modifying the local queue any
    more. */
-static __inline__ void sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
-static __inline__ void sched_unlock(__lwp_t *lwp)
+static __inline__ void ma_sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
+static __inline__ void ma_sched_unlock(__lwp_t *lwp)
 {
   marcel_lock_release(&(SCHED_DATA(lwp).sched_queue_lock));
 }
@@ -296,6 +299,18 @@ static __inline__ unsigned int preemption_enabled(void)
 #else
 #define unlock_task() ma_unlock_task()
 #define lock_task() ma_lock_task()
+#endif
+
+#ifdef DEBUG_SCHED_LOCK
+#define sched_lock(lwp) \
+   (mdebug("\t=> sched_lock (" __FILE__ ":%i)\n", __LINE__), \
+   ma_sched_lock(lwp))
+#define sched_unlock(lwp) \
+   (mdebug("\t=> sched_unlock (" __FILE__ ":%i)\n", __LINE__), \
+   ma_sched_unlock(lwp))
+#else
+#define sched_lock(lwp) ma_sched_lock(lwp)
+#define sched_unlock(lwp) ma_sched_unlock(lwp)
 #endif
 
 /* ==== miscelaneous private defs ==== */

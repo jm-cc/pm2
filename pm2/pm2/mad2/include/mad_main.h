@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.6  2000/02/01 17:22:28  rnamyst
+Replaced MAD2_MAD1 by PM2.
+
 Revision 1.5  2000/01/31 15:52:01  oaumage
 - mad_main.h  : deplacement de aligned_malloc vers la toolbox
 - madeleine.h : detection de l'absence de GCC
@@ -85,25 +88,25 @@ typedef struct s_mad_madeleine
 p_mad_adapter_set_t
 mad_adapter_set_init(int nb_adapter, ...);
 
-#ifdef MAD2_MAD1
+#ifdef PM2
 p_mad_madeleine_t
 mad2_init(int                  *argc,
 	  char                **argv,
 	  char                 *configuration_file,
 	  p_mad_adapter_set_t   adapter_set);
-#else /* MAD2_MAD1 */
+#else /* PM2 */
 p_mad_madeleine_t
 mad_init(int                  *argc,
 	 char                **argv,
 	 char                 *configuration_file,
 	 p_mad_adapter_set_t   adapter_set);
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 
-#ifdef MAD2_MAD1
+#ifdef PM2
 void mad2_exit(p_mad_madeleine_t madeleine);
-#else /* MAD2_MAD1 */
+#else /* PM2 */
 void mad_exit(p_mad_madeleine_t madeleine);
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 
 /* p_mad_channel_t mad_get_channel(mad_channel_id_t id); */
 

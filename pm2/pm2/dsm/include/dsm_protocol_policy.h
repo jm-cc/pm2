@@ -48,9 +48,9 @@ typedef struct _dsm_protocol_t
   dsm_rp_action_t receive_page_server;
 } dsm_protocol_t;
 
-extern const dsm_protocol_t dsmlib_hyp_java_prot;
-extern const dsm_protocol_t dsmlib_ddm_li_hudak_prot;
-extern const dsm_protocol_t dsmlib_migrate_thread_prot;
+extern dsm_protocol_t dsmlib_hyp_java_prot;
+extern dsm_protocol_t dsmlib_ddm_li_hudak_prot;
+extern dsm_protocol_t dsmlib_migrate_thread_prot;
 
 void dsm_init_protocol_table(dsm_protocol_t *protocol);
 

@@ -46,6 +46,11 @@
 #include "dsm_protocol_lib.h" 
 #include "dsm_protocol_policy.h"
 
+/* to enable the user to configure the distribution of dsm pages */
+#include "dsm_page_manager.h"
+
+/* to enable the user to use dsm mutex */
+#include "dsm_mutex.h"
 
 #define BEGIN_DSM_DATA \
   asm (".data"); \

@@ -21,10 +21,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
-#include <sched.h>
 #include <stdio.h>
 #include "tbx_debug.h"
 #include "pm2_testandset.h"
+#if defined(MARCEL_SMP) || defined(MARCEL_ACTIVATION)
+#include <sched.h>
+#endif
 
 #ifdef MARCEL
 #include "marcel.h"

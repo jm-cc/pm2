@@ -23,10 +23,11 @@
 
 /* ==== Starting and Shuting down the scheduler ==== */
 
-void marcel_sched_init(unsigned nb_lwp);
-void marcel_sched_start(void);
+void marcel_sched_init(void);
+void marcel_sched_start(unsigned nb_lwp);
 void marcel_sched_shutdown(void);
 
+unsigned marcel_sched_add_vp(void);
 
 /* ==== get current thread or LWP id ==== */
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.22  2000/09/13 00:07:21  rnamyst
+Support for profiling + minor bug fixes
+
 Revision 1.21  2000/09/12 15:45:52  gantoniu
 Made all necessary modifications to allow flavors without dsm be created and compiled.
 
@@ -102,6 +105,10 @@ ______________________________________________________________________________
 #ifdef DSM
 #include "dsm_slot_alloc.h"
 #include "dsm_pm2.h"
+#endif
+
+#ifdef PROFILE
+#include "profile.h"
 #endif
 
 #undef min
@@ -194,6 +201,10 @@ void pm2_init(int *argc, char **argv)
     pm2_rpc_init();
 
   timing_init();
+
+#ifdef PROFILE
+  profile_init();
+#endif
 
 #ifdef USE_SAFE_MALLOC
   safe_malloc_init();

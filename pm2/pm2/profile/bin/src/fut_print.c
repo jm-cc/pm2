@@ -172,22 +172,10 @@ struct code_name	{
 
 struct code_name	code_table[] =
 			{
-			{FUT_SETUP_CODE,				"fut_setup"},
-			{FUT_KEYCHANGE_CODE,			"fut_keychange"},
-			{FUT_RESET_CODE,				"fut_reset"},
-			{FUT_CALIBRATE0_CODE,			"fut_calibrate0"},
-			{FUT_CALIBRATE1_CODE,			"fut_calibrate1"},
-			{FUT_CALIBRATE2_CODE,			"fut_calibrate2"},
-			{FUT_SWITCH_TO_CODE,			"fut_switch_to"},
-			{FUT_MAIN_ENTRY_CODE,			"main_entry"},
-			{FUT_MAIN_EXIT_CODE,			"main_exit"},
-
-
 			/*	insert new codes here (ifdefs for Raymond) */
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_print.h"
 #endif
-
 			{0, NULL}
 			};
 
@@ -569,7 +557,7 @@ void my_print_fun( unsigned int code, u_64 cyc_time,
 	/* code for a function entry/exit, including switch_to */
 	if( (code == i + FUT_GENERIC_EXIT_OFFSET) ||
 		(code == FUT_SWITCH_TO_CODE  &&  i == FUT_SWITCH_TO_CODE
-		&&  param1 == v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos]) )
+		&&  param2 == v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos]) )
 
 		{/* this is the exit corresponding to a previously stacked entry */
 		/* or a switch back to previously stacked switch from */
@@ -1035,7 +1023,7 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 			my_print_fun(code, reltime, current_id, bufptr[3], bufptr[4]);
 		}
 	if( code == FUT_SWITCH_TO_CODE )
-		current_id = bufptr[3];
+		current_id = bufptr[4];
 	lastreltime = reltime;
 
 	return &bufptr[params];

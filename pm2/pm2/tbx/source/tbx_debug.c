@@ -48,7 +48,8 @@ static debug_type_t* debug_type_registered[MAX_DEBUG_REGISTER];
 static int nb_options=0;
 static char* options[MAX_DEBUG_CMDLINE_OPTIONS];
 
-debug_type_t debug_type_default=NEW_DEBUG_TYPE(1, "debug: ", "debug");
+debug_type_t debug_pm2debug=NEW_DEBUG_TYPE(1, "pm2debug: ", "pm2debug");
+debug_type_t debug_pm2fulldebug=NEW_DEBUG_TYPE(1, "pm2fulldebug: ", "pm2fulldebug");
 debug_type_t debug_type_register=NEW_DEBUG_TYPE(0, "register: ", "register");
 static debug_type_t debug_type_flush=NEW_DEBUG_TYPE(0, "unused", "unused");
 DEBUG_DECLARE(common)
@@ -101,22 +102,28 @@ void debug_setup_default(debug_type_t* type, debug_action_t action, int value)
 		return;
 	}
 	switch (action) {
-	case DEBUG_SHOW:
+	case PM2DEBUG_SHOW:
 		type->show=value;
 		break;
-	case DEBUG_SHOW_PREFIX:
+	case PM2DEBUG_SHOW_PREFIX:
 		type->show_prefix=value;
 		break;
-	case DEBUG_SHOW_FILE:
+	case PM2DEBUG_SHOW_FILE:
 		type->show_file=value;
 		break;
-	case DEBUG_CRITICAL:
+	case PM2DEBUG_CRITICAL:
 		type->critical=value;
 		break;
-	case DEBUG_TRYONLY:
+	case PM2DEBUG_DO_NOT_SHOW_THREAD:
+		type->do_not_show_thread=value;
+		break;
+	case PM2DEBUG_DO_NOT_SHOW_LWP:
+		type->do_not_show_lwp=value;
+		break;
+	case PM2DEBUG_TRYONLY:
 		type->try_only=value;
 		break;
-	case DEBUG_REGISTER:
+	case PM2DEBUG_REGISTER:
 		break;
 	}
 }
@@ -136,7 +143,7 @@ static void register_setup(debug_type_t* type, debug_action_t action,
 	}
 	debug_setup_default(type, action, value);
 	switch (action) {
-	case DEBUG_SHOW:
+	case PM2DEBUG_SHOW:
 		for(type_ind=0; type_ind<nb_debug_type_registered; 
 		    type_ind++) {
 			print_register(debug_type_registered[type_ind]);
@@ -188,19 +195,25 @@ static int apply_option(debug_type_t *type, char* option)
 		chaine=option;
 	}
 	if (!strncmp(chaine, "show", 4)) {
-		action=DEBUG_SHOW;
+		action=PM2DEBUG_SHOW;
 		size=4;
 	} else if (!strncmp(chaine, "prefix", 6)) {
-		action=DEBUG_SHOW_PREFIX;
+		action=PM2DEBUG_SHOW_PREFIX;
 		size=6;
 	} else if (!strncmp(chaine, "file", 4)) {
-		action=DEBUG_SHOW_FILE;
+		action=PM2DEBUG_SHOW_FILE;
 		size=4;
 	} else if (!strncmp(chaine, "critical", 8)) {
-		action=DEBUG_CRITICAL;
+		action=PM2DEBUG_CRITICAL;
 		size=8;
+	} else if (!strncmp(chaine, "lwp", 3)) {
+		action=PM2DEBUG_DO_NOT_SHOW_LWP;
+		size=3;
+	} else if (!strncmp(chaine, "thread", 6)) {
+		action=PM2DEBUG_DO_NOT_SHOW_THREAD;
+		size=3;
 	} else if (!strncmp(chaine, "tryonly", 7)) {
-		action=DEBUG_TRYONLY;
+		action=PM2DEBUG_TRYONLY;
 		size=7;
 	} else {
 		return 0;
@@ -262,10 +275,11 @@ void pm2debug_register(debug_type_t *type)
 	if (nb_debug_type_registered<MAX_DEBUG_REGISTER-1) {
 		debug_type_registered[nb_debug_type_registered++]=type;
 	} else {
-		debug("Too many debug types registered. Please, increase\n"
-		      "MAX_DEBUG_REGISTER in " __FILE__ "\n");
+		pm2fulldebug("Too many debug types registered."
+			     " Please, increase\n"
+			     "MAX_DEBUG_REGISTER in " __FILE__ "\n");
 	}
-	pm2debug_setup(type, DEBUG_REGISTER, 0);
+	pm2debug_setup(type, PM2DEBUG_REGISTER, 0);
 	print_register(type);
 
 	for (opt=0; opt<nb_options; opt++) {
@@ -285,7 +299,10 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	int i;
 
 	if (!called) {
-	  pm2debug_register(&debug_type_default);
+	  pm2debug_register(&debug_pm2debug);
+	  pm2debug_register(&debug_pm2fulldebug);
+	  pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_SHOW_FILE, 1);
+	  pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_CRITICAL, 1);
 	  debug_type_register.setup=register_setup;
 	  pm2debug_register(&debug_type_register);
 	  DEBUG_INIT(common);
@@ -436,6 +453,25 @@ void pm2debug_flush()
 	pm2debug_printf(&debug_type_flush,0,"","");
 }
 
+#ifdef ACTIVATION
+#define my_print(prefix, args...) \
+	if (pm2debug_marcel_launched) { \
+		new_bytes=prefix##snprintf(pos_buffer, \
+				   DEBUG_SIZE_BUFFER-10-debug_buffer_lenght, \
+				   ##args); \
+			pos_buffer+=new_bytes; \
+		debug_buffer_lenght+=new_bytes; \
+	} else { \
+		prefix##fprintf(stderr, ##args); \
+	}
+#else
+#define my_print(prefix, args...) prefix##fprintf(stderr, ##args)
+#endif
+
+
+	
+
+
 int pm2debug_printf(debug_type_t *type, int line, char* file, 
 		     const char *format, ...)
 {
@@ -484,52 +520,28 @@ int pm2debug_printf(debug_type_t *type, int line, char* file,
 
 	if (type->show) {
 		if (type->show_prefix) {
-#ifdef ACTIVATION
-			if (pm2debug_marcel_launched) {
-				new_bytes=snprintf(pos_buffer,
-						   DEBUG_SIZE_BUFFER-10-
-						   debug_buffer_lenght,
-						   "%s", type->prefix);
-				pos_buffer+=new_bytes;
-				debug_buffer_lenght+=new_bytes;
-			} else
-#endif
-			{
-				fprintf(stderr, "%s", type->prefix);
-			}
-
+			my_print(,"%s", type->prefix);
 		}
 		if (type->show_file) {
-#ifdef ACTIVATION
-			if (pm2debug_marcel_launched) {
-				new_bytes=snprintf(pos_buffer,
-						   DEBUG_SIZE_BUFFER-10-
-						   debug_buffer_lenght,
-						   "%-" STRING(SIZE_FILE_NAME)
-						   "s(%-4i): ", file, line);
-				pos_buffer+=new_bytes;
-				debug_buffer_lenght+=new_bytes;
-			} else
-#endif
-			{
-				fprintf(stderr, "%-" STRING(SIZE_FILE_NAME)
-					"s(%-4i): ", file, line);
-			}
+			my_print(,"%-" STRING(SIZE_FILE_NAME)
+				 "s{%4i} ", file, line);
 		}
+#ifdef MARCEL
+#ifdef MA__LWPS
+		if (pm2debug_marcel_launched && !type->do_not_show_lwp) {
+			my_print(,"[P%02d] ", 
+				 ((pm2debug_marcel_launched 
+				   && (marcel_self())->lwp) 
+				  ? (marcel_self())->lwp->number : -1));
+		}
+#endif
+		if (pm2debug_marcel_launched && !type->do_not_show_thread) {
+			my_print(,"(%8p) ", pm2debug_marcel_launched ?
+			marcel_self():(void*)-1);
+		}
+#endif /* MARCEL */
 		va_start(ap, format);
-#ifdef ACTIVATION
-		if (pm2debug_marcel_launched) {
-			new_bytes=vsnprintf(pos_buffer, 
-					    DEBUG_SIZE_BUFFER-10-
-					    debug_buffer_lenght,
-					    format, ap);
-			pos_buffer+=new_bytes;
-			debug_buffer_lenght+=new_bytes;
-		} else
-#endif
-		{
-			vfprintf(stderr, format, ap);
-		}
+		my_print(v, format, ap);
 		va_end(ap);
 	}
 #ifdef ACTIVATION

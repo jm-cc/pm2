@@ -43,8 +43,6 @@
 
 marcel_sem_t main_sem;
 
-int *les_modules, nb_modules;
-
 dsm_mutex_t L;
 
 BEGIN_DSM_DATA
@@ -84,7 +82,7 @@ void f()
 
 BEGIN_SERVICE(TEST_DSM)
      f();
-     pm2_quick_async_rpc(les_modules[0],DSM_V,NULL,NULL);
+     pm2_quick_async_rpc(0,DSM_V,NULL,NULL);
 END_SERVICE(TEST_DSM)
 
 
@@ -103,7 +101,7 @@ int pm2_main(int argc, char **argv)
       fprintf(stderr, "Usage: simple <number of nodes> <number of threads per node>\n");
       exit(1);
     }
-  pm2_init_rpc();
+  pm2_rpc_init();
 
   DECLARE_LRPC(TEST_DSM);
   DECLARE_LRPC(DSM_V);
@@ -117,22 +115,22 @@ int pm2_main(int argc, char **argv)
 
   dsm_mutex_init(&L, NULL);
 
-  pm2_init(&argc, argv, atoi(argv[1]), &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
   dsm_display_page_ownership();
-  if(pm2_self() == les_modules[0]) { /* master process */
+  if(pm2_self() == 0) { /* master process */
 
-    for (j=0; j< nb_modules; j++)
+    for (j=0; j < pm2_config_size(); j++)
       for (i=0; i< atoi(argv[2]) ; i++) {
-	pm2_async_rpc(les_modules[j], TEST_DSM, NULL, NULL);
+	pm2_async_rpc(j, TEST_DSM, NULL, NULL);
       }
-    
+
     for (i = 0 ; i < atoi(argv[1]) * atoi(argv[2]); i++)
       marcel_sem_P(&main_sem);
 
     tfprintf(stderr, "toto1=%d\n", toto1);
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
   }
 
   pm2_exit();

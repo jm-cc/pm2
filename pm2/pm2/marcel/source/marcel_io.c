@@ -417,8 +417,11 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 
       timerclear(&timeout);
       res = select(width, &rfds, &wfds, &efds, &timeout);
-      if(res <= 0)
+      if(res <= 0) {
+        if (res < 0 && (errno != EINTR))
+          break;
 	marcel_yield();
+      }
    } while(res <= 0);
 
    if(readfds) *readfds = rfds;

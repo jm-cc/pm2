@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.11 2002/10/28 17:44:59 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.13 2002/10/29 16:56:44 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -1036,6 +1036,7 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
       assert ( dsm_get_pending_access(index) == NO_ACCESS );
       allocate_twin(index);
       make_twin(index);
+      insert_page_into_pg_list(index, &modif_list);
       dsm_set_access(index, WRITE_ACCESS);
    }
    else   /* I have no access to the page */
@@ -1176,11 +1177,8 @@ hierarch_proto_acquire_func (const token_lock_id_t lck_id)
    marcel_mutex_unlock(&modif_list_lock);
 
    assert ( token_elem->expected_local_invalidations == 0 );
-   /* the token lock can be acquired when local invalidations are
-    * expected because the acquire consistency function does not wait
-    * for the local invalidation ACKs to arrive; and it can be
-    * acquired while remote invalidations are expected due to partial
-    * unlock. */
+   /* the token lock can be acquired while remote invalidations are
+    * expected due to partial unlock. */
 
    TRACE("waiting for %d diff acks, lck=%d", diff_number, lck_id);
 

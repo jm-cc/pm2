@@ -34,6 +34,8 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+. ${PM2_ROOT}/bin/pm2_vars
+
 ${MARCEL_ROOT}/bin/marcelclean $*
 echo
 

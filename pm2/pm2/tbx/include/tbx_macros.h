@@ -233,7 +233,11 @@ static const int __tbx_using_gcc2_attributes = 0;
  * ________________________//////////////////////////////////////////
  */
 #if defined (MARCEL)       //# Thread sync : Marcel mode
-#  define tbx_main                                marcel_main
+#  ifdef STANDARD_MAIN
+#    define tbx_main main
+#  else  // STANDARD_MAIN
+#    define tbx_main marcel_main
+#  endif // STANDARD_MAIN
 #  define TBX_CRITICAL_SECTION(name)              marcel_mutex_t __tbx_section_ ## name = MARCEL_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        marcel_mutex_lock(&(__tbx_section_ ## name))
 #  define TBX_CRITICAL_SECTION_TRY_ENTERING(name) marcel_mutex_trylock(&(__tbx_section_ ## name))

@@ -40,17 +40,17 @@ marcel_sem_t sem;
 
 void deviation1(void *arg)
 {
-   marcel_fprintf(stderr, "This is a deviation : %s\n", arg);
+   marcel_fprintf(stdout, "This is a deviation : %s\n", arg);
 }
 
 void deviation2(void *arg)
 {
-   marcel_fprintf(stderr, "Deviation of a blocked thread : %s\n", arg);
+   marcel_fprintf(stdout, "Deviation of a blocked thread : %s\n", arg);
 }
 
 void deviation3(void *arg)
 {
-   marcel_fprintf(stderr, "Deviation in order to wake one's self : ");
+   marcel_fprintf(stdout, "Deviation in order to wake one's self : ");
    marcel_sem_V(&sem);
 }
 

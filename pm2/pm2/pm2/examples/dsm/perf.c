@@ -64,7 +64,7 @@ int pm2_main(int argc, char **argv)
   int prot;
 
 #ifdef PROFILE
-  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
+  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK, 0);
 #endif
   pm2_push_startup_func(startup_func, NULL);
   pm2_set_dsm_page_protection(DSM_UNIFORM_PROTECT, WRITE_ACCESS);

@@ -49,7 +49,7 @@ fi
 
 . ${PM2_ROOT}/bin/pm2_vars
 
-make_ln()
+make_ln() # Create $3 pointing on $2 in the directory $1
 {
     $ECHO
     cd $1
@@ -100,10 +100,9 @@ make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/timing.c timing.c
 # Marcel / options de configuration (cf pm2-config-flavor) exclusives
 $ECHO
 cd ${MARCEL_ROOT}/config/options
-mkdir ../conf.excl
+mkdir -p ../conf.excl
 for f in 1* ; do
-    $ECHO
-    ( cd ../conf.excl; ln -s ../options/$f )
+    make_ln ../conf.excl ../options/$f $f
 done
 
 # Mad I
@@ -152,10 +151,9 @@ make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 # Mad I / options de configuration (cf pm2-config-flavor) exclusives
 $ECHO
 cd ${MAD1_ROOT}/config/options
-mkdir ../net.excl
+mkdir -p ../net.excl
 for f in 1* ; do
-    $ECHO
-    ( cd ../net.excl; ln -s ../options/$f )
+    make_ln ../net.excl ../options/$f $f
 done
 
 # Mad II

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.12  2000/03/08 17:19:14  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.11  2000/03/02 15:45:46  oaumage
 - support du polling Nexus
 
@@ -95,16 +100,16 @@ mad_begin_packing(p_mad_channel_t   channel,
   TRACE("New emission request");
   TIME_INIT();
   
-  PM2_LOCK_SHARED(channel);
+  TBX_LOCK_SHARED(channel);
   connection =
     &(channel->output_connection[remote_host_id]);
   
 #ifdef PM2
   while (connection->lock == tbx_true)
     {
-      PM2_UNLOCK_SHARED(channel) ;
-      PM2_YIELD();
-      PM2_LOCK_SHARED(channel) ;
+      TBX_UNLOCK_SHARED(channel) ;
+      TBX_YIELD();
+      TBX_LOCK_SHARED(channel) ;
     }
 #else /* PM2 */
   /* NOTE: the test and the affectation must be done
@@ -114,7 +119,7 @@ mad_begin_packing(p_mad_channel_t   channel,
 #endif /* PM2 */
   connection->lock = tbx_true;
   connection->send = tbx_true;
-  PM2_UNLOCK_SHARED(channel) ;
+  TBX_UNLOCK_SHARED(channel) ;
 
   if (interface->new_message)
     interface->new_message(connection);
@@ -155,11 +160,11 @@ mad_message_ready(p_mad_channel_t channel)
   TRACE("New reception request");
   TIME_INIT();
   
-  PM2_LOCK_SHARED(channel);
+  TBX_LOCK_SHARED(channel);
 #ifdef PM2
   if (channel->reception_lock == tbx_true)
     {
-      PM2_UNLOCK_SHARED(channel) ;
+      TBX_UNLOCK_SHARED(channel) ;
       return NULL;
     }
 #else /* PM2 */
@@ -169,7 +174,7 @@ mad_message_ready(p_mad_channel_t channel)
     FAILURE("mad_begin_unpacking: reception dead lock");
 #endif /* PM2 */
   channel->reception_lock = tbx_true;
-  PM2_UNLOCK_SHARED(channel);
+  TBX_UNLOCK_SHARED(channel);
 
   /* now we wait for an incoming communication */
 
@@ -221,13 +226,13 @@ mad_begin_unpacking(p_mad_channel_t channel)
   TRACE("New reception request");
   TIME_INIT();
   
-  PM2_LOCK_SHARED(channel);
+  TBX_LOCK_SHARED(channel);
 #ifdef PM2
   while (channel->reception_lock == tbx_true)
     {
-      PM2_UNLOCK_SHARED(channel) ;
+      TBX_UNLOCK_SHARED(channel) ;
       marcel_yield();
-      PM2_LOCK_SHARED(channel) ;
+      TBX_LOCK_SHARED(channel) ;
     }
 #else /* PM2 */
   /* NOTE: the test and the affectation must be done
@@ -236,7 +241,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
     FAILURE("mad_begin_unpacking: reception dead lock");
 #endif /* PM2 */
   channel->reception_lock = tbx_true;
-  PM2_UNLOCK_SHARED(channel);
+  TBX_UNLOCK_SHARED(channel);
 
   /* now we wait for an incoming communication */
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.4  2000/05/25 00:23:56  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.3  2000/05/15 14:06:26  vdanjean
 syntaxe bug fixes
 
@@ -83,6 +86,11 @@ struct struct_debug_type_t {
 	void* data;
 };
 
+enum {
+        PM2DEBUG_CLEAROPT=1,
+        PM2DEBUG_DO_OPT=2,
+};
+
 #define NEW_DEBUG_TYPE(show, prefix, name) \
    {show, prefix, name, 0, 0, 0, 0, NULL, NULL}
 
@@ -93,18 +101,20 @@ void debug_setup_default(debug_type_t*, debug_action_t, int);
 #ifdef MARCEL
 extern int pm2debug_marcel_launched;
 #endif
-void pm2debug_init(int *argc, char **argv);
+void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
 int pm2debug_printf(debug_type_t *type, int line, char* file, 
 		     const char *format, ...);
 void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 #else
-#define pm2debug_init(argc, argv)
+#define pm2debug_init_ext(argc, argv, debug_flags)
 #define pm2debug_printf(type, line, file, format...)
 #define pm2debug_register(type)
 #define pm2debug_setup(type, action, value)
 #endif
 
+#define pm2debug_init(argc, argv) \
+   pm2debug_init_ext((argc), (argv), PM2DEBUG_CLEAROPT|PM2DEBUG_DO_OPT)
 #define debug_printf(type, fmt, args...) \
    ((type) && ((type)->show) ? \
     pm2debug_printf(type, __LINE__, __BASE_FILE__, fmt, ##args) \

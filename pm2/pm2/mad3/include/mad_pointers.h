@@ -122,25 +122,17 @@ typedef struct s_mad_dir_channel
 typedef struct s_mad_dir_fchannel
 *p_mad_dir_fchannel_t;
 
-/* ... Directory: virtual channel routing table element .............. */
-typedef struct s_mad_dir_vchannel_process_routing_table
-*p_mad_dir_vchannel_process_routing_table_t;
+/* ... Directory: virtual/mux channel routing table element .......... */
+typedef struct s_mad_dir_vxchannel_process_routing_table
+*p_mad_dir_vxchannel_process_routing_table_t;
 
-/* ... Directory: per process virtual channel specific data .......... */
-typedef struct s_mad_dir_vchannel_process_specific
-*p_mad_dir_vchannel_process_specific_t;
+/* ... Directory: per process virtual/mux channel specific data ...... */
+typedef struct s_mad_dir_vxchannel_process_specific
+*p_mad_dir_vxchannel_process_specific_t;
 
 /* ... Directory: mux channel data ................................... */
 typedef struct s_mad_dir_vchannel
 *p_mad_dir_vchannel_t;
-
-/* ... Directory: mux channel routing table element .................. */
-typedef struct s_mad_dir_xchannel_process_routing_table
-*p_mad_dir_xchannel_process_routing_table_t;
-
-/* ... Directory: per process mux channel specific data .............. */
-typedef struct s_mad_dir_xchannel_process_specific
-*p_mad_dir_xchannel_process_specific_t;
 
 /* ... Directory: virtual channel data ............................... */
 typedef struct s_mad_dir_xchannel

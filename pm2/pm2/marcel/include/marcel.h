@@ -270,4 +270,8 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
 #define marcel_main main
 #endif
 
+#ifndef ACTDEBUG
+#define ACTDEBUG(todo)
+#endif
+
 #endif

@@ -33,6 +33,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: leo_parser_types.h,v $
+Revision 1.4  2000/05/15 13:50:49  oaumage
+- Reorganisation des sources de Leonie
+
+
+______________________________________________________________________________
 */
 
 /*

@@ -52,9 +52,14 @@ def driver_process_list_get(s, channel):
     net = s.net_dict[channel['net']]
     dev = net['dev']
     if not s.driver_dict.has_key(dev):
-        s.driver_dict[dev] = []
-
-    return s.driver_dict[dev]
+        driver	= {}
+        driver['processes']	= []
+        
+        s.driver_dict[dev]	= driver
+    else:
+        driver = s.driver_dict[dev]
+        
+    return driver['processes']
 
 def channel_lists_get(s, channel):
     process_l		= []

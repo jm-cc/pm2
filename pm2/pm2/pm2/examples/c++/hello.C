@@ -1,7 +1,12 @@
 
-#include <iostream.h>
+#include <iostream>
+using namespace std;
 
 #include "pm2.h"
+	
+extern "C" {
+int pm2_main(int argc, char *argv[]);
+}
 
 int pm2_main(int argc, char *argv[])
 {

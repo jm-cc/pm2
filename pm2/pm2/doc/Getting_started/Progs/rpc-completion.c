@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "pm2.h"
 
 #define SIZE 32
@@ -16,7 +15,6 @@ sample_thread (void *arg)
   pm2_rawrpc_waitdata ();
 
   tprintf ("%s\n", msg);
-
   pm2_completion_signal (&c);
 }
 
@@ -35,7 +33,6 @@ pm2_main (int argc, char *argv[])
 
   if (pm2_self () == 0)
     {
-
       pm2_completion_t c;
       pm2_completion_init (&c, NULL, NULL);
 
@@ -47,7 +44,6 @@ pm2_main (int argc, char *argv[])
       pm2_rawrpc_end ();
 
       pm2_completion_wait (&c);
-
       pm2_halt ();		/* Correct!!! */
     }
 

@@ -34,14 +34,16 @@ f ()
 //  char *p = (char*)pm2_isomalloc(private_data_size);
 
   dsm_mutex_lock (&L);
-  tprintf ("user thread ! ptr = %p, *ptr = %d (I am %p)\n", ptr,
-	   *ptr, marcel_self ());
+  tprintf ("user thread ! ptr = %p, *ptr = %d (I am %p)\n",
+	   ptr, *ptr, marcel_self ());
   for (i = 0; i < n; i++)
     {
       (*ptr)++;
       //    tfprintf(stderr,"ptr = %p, *ptr = %d\n",ptr, *ptr);
     }
-  tfprintf (stderr, "user thread finished! ptr = %p, *ptr = %d\n", ptr, *ptr);
+  tfprintf (stderr,
+	    "user thread finished! ptr = %p, *ptr = %d\n",
+	    ptr, *ptr);
   dsm_mutex_unlock (&L);
   pm2_completion_signal (&c);
 }
@@ -56,20 +58,22 @@ threaded_f ()
 //  char *p = (char*)pm2_isomalloc(private_data_size);
 
   pm2_unpack_completion (SEND_CHEAPER, RECV_CHEAPER, &my_c);
-  pm2_unpack_byte (SEND_CHEAPER, RECV_CHEAPER, (char *) &my_ptr,
-		   sizeof (int *));
+  pm2_unpack_byte (SEND_CHEAPER, RECV_CHEAPER,
+		   (char *) &my_ptr, sizeof (int *));
   pm2_rawrpc_waitdata ();
 
   dsm_mutex_lock (&L);
-  tfprintf (stderr, "user thread ! ptr = %p, *ptr = %d (I am %p)\n", my_ptr,
-	    *my_ptr, marcel_self ());
+  tfprintf (stderr,
+	    "user thread ! ptr = %p, *ptr = %d (I am %p)\n",
+	    my_ptr, *my_ptr, marcel_self ());
   for (i = 0; i < n; i++)
     {
       (*my_ptr)++;
       //    tfprintf(stderr,"ptr = %p, *ptr = %d\n",my_ptr, *my_ptr);
     }
-  tfprintf (stderr, "user thread finished! ptr = %p, *ptr = %d\n", my_ptr,
-	    *my_ptr);
+  tfprintf (stderr,
+	    "user thread finished! ptr = %p, *ptr = %d\n",
+	    my_ptr, *my_ptr);
 
   dsm_mutex_unlock (&L);
   pm2_completion_signal (&my_c);
@@ -121,7 +125,8 @@ pm2_main (int argc, char **argv)
       //isoaddr_attr_set_protocol(&attr, LI_HUDAK);
       //    isoaddr_attr_set_protocol(&attr, MIGRATE_THREAD);
       isoaddr_attr_set_protocol (&attr, atoi (argv[3]));
-      start = (int *) pm2_malloc ((atoi (argv[2])) * 4096, &attr);
+      start =
+	(int *) pm2_malloc ((atoi (argv[2])) * 4096, &attr);
       ptr = (int *) ((char *) start + atoi (argv[4]) * 4096);
       tfprintf (stderr, "ptr = %p\n", ptr);
 
@@ -138,8 +143,8 @@ pm2_main (int argc, char **argv)
 	  {
 	    pm2_rawrpc_begin (j, DSM_SERVICE, NULL);
 	    pm2_pack_completion (SEND_CHEAPER, RECV_CHEAPER, &c);
-	    pm2_pack_byte (SEND_CHEAPER, RECV_CHEAPER, (char *) &ptr,
-			   sizeof (int *));
+	    pm2_pack_byte (SEND_CHEAPER, RECV_CHEAPER,
+			   (char *) &ptr, sizeof (int *));
 	    pm2_rawrpc_end ();
 	  }
 

@@ -37,7 +37,7 @@
 #define DSM_SYSDEP_IS_DEF
 
 #include "dsm_page_size.h" /* generated file */
-#include <dsm_const.h> 
+#include "dsm_const.h"
 
 typedef void ( *dsm_pagefault_handler_t)(int sig, void *addr, dsm_access_t access);
 

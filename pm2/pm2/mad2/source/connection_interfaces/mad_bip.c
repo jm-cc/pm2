@@ -76,6 +76,8 @@ static  int new_channel = MAD_BIP_FIRST_CHANNEL ;
 			       (bytes)/sizeof(int)+1 : \
                                (bytes)/sizeof(int))
 
+#define MAD_NB_BYTES(words)   ((words)*sizeof(int))
+
 typedef struct {
   int credits;
 } new_message_t;
@@ -1349,7 +1351,7 @@ mad_bip_send_long_buffer(p_mad_link_t lnk,
 		  ptr,
 		  chunk);
 
-    ptr += chunk;
+    ptr += MAD_NB_BYTES(chunk);
     to_send -= chunk;
 
   } while(to_send);
@@ -1404,7 +1406,7 @@ mad_bip_receive_long_buffer(p_mad_link_t     lnk,
 
     status = bip_recv_wait(channel_specific, request, &host);
 
-    ptr += chunk;
+    ptr += MAD_NB_BYTES(chunk);
     to_recv -= chunk;
 
   } while(to_recv);

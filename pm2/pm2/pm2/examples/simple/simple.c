@@ -36,7 +36,6 @@
 #include <pm2.h>
 
 static unsigned SAMPLE, COMPLETED;
-static int *les_modules, nb_modules;
 static marcel_sem_t sem;
 
 static void SAMPLE_service(void)
@@ -48,7 +47,7 @@ static void SAMPLE_service(void)
 
   pm2_printf("%s\n", msg);
 
-  pm2_rawrpc_begin(les_modules[0], COMPLETED, NULL);
+  pm2_rawrpc_begin(0, COMPLETED, NULL);
   pm2_rawrpc_end();
 }
 
@@ -64,19 +63,26 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
   pm2_rawrpc_register(&COMPLETED, COMPLETED_service);
 
-  pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  if(pm2_self() == les_modules[0]) { /* first process */
+  if(pm2_config_size() < 2) {
+    fprintf(stderr,
+	    "This program requires at least two processes.\n"
+	    "Please rerun pm2conf.\n");
+    exit(1);
+  }
+
+  if(pm2_self() == 0) { /* first process */
 
     marcel_sem_init(&sem, 0);
 
-    pm2_rawrpc_begin(les_modules[1], SAMPLE, NULL);
+    pm2_rawrpc_begin(1, SAMPLE, NULL);
     mad_pack_str(MAD_IN_HEADER, "Hello world!");
     pm2_rawrpc_end();
 
     marcel_sem_P(&sem);
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
   }
 
   pm2_exit();

@@ -147,5 +147,9 @@
 #define MA__LWPS
 #endif /* Fin Marcel Activation SMP */
 
+#if defined(MA__LWPS) && defined(MA__TIMER)
+#define MA_PROTECT_LOCK_TASK_FROM_SIG
+#endif
+
 #endif
 

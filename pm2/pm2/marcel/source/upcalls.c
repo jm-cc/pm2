@@ -66,6 +66,7 @@ void restart_thread(marcel_t next)
 }
 
 static act_spinlock_t act_spinlock=ACT_SPIN_LOCK_UNLOCKED;
+static marcel_t marcel_idle[32];
 
 void act_lock(marcel_t self)
 {
@@ -82,6 +83,7 @@ void act_unlock(marcel_t self)
 void upcall_new(act_proc_t proc)
 {
  	marcel_t next;
+	marcel_t new_task=marcel_idle[proc];
 
 #ifdef SHOW_UPCALL
 	printf("upcall_new(%i)\n", proc);
@@ -89,10 +91,16 @@ void upcall_new(act_proc_t proc)
 	ACTDEBUG(printf("upcall_new(%i)\n", proc));
 #endif
 
+
+	new_task->state_ext=MARCEL_RUNNING;
+	
+	call_ST_FLUSH_WINDOWS();
+	set_sp(new_task->initial_sp);
+	
 	//self=marcel_self();
 	do {
-		act_lock(NULL);
-		
+		lock_task(NULL);
+
 		next=cur_lwp->__first[0];
 		if (next->state_ext != MARCEL_READY) {
 			do {
@@ -167,19 +175,39 @@ void upcall_change_proc(act_proc_t new_proc)
 	printf("Tiens ! un upcall_change_proc(%i)\n", new_proc);
 }
 
+static void init_act(int proc, act_param_t *param)
+{
+	char* bottom;
+	marcel_t new_task;
+	void *stack;
+
+	stack=malloc(STACK_SIZE+512);
+	param->upcall_new_sp[proc]=stack+STACK_SIZE;
+  
+	bottom = marcel_slot_alloc();
+	new_task = (marcel_t)(MAL_BOT((long)bottom + SLOT_SIZE) 
+			      - MAL(sizeof(task_desc)));
+	memset(new_task, 0, sizeof(*new_task));
+	new_task->stack_base = bottom;
+	new_task->initial_sp = (long)new_task - MAL(1) - 2*WINDOWSIZE;
+	marcel_idle[proc]=new_task;
+}
+
 void init_upcalls(int nb_act)
 {
 	act_param_t param;
-	void *stack;
-  
+	int proc;
+
 	if (nb_act<=0)
 		nb_act=0;
 
 	ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
-  
-	stack=malloc(STACK_SIZE+512);
+
+	for(proc=0; proc<32; proc++) {
+		/* WARNING : value 32 hardcoded : max of processors */
+		init_act(proc, &param);
+	}
 	param.nb_proc_wanted=nb_act;
-	param.upcall_new_sp[0]=stack+STACK_SIZE;
 	param.upcall_new=upcall_new;
 	param.upcall_unblock=upcall_unblock;
 	param.upcall_change_proc=upcall_change_proc;
@@ -188,6 +216,7 @@ void init_upcalls(int nb_act)
 			stack, param.upcall_new_sp[0], 
 			upcall_new, upcall_unblock, upcall_change_proc));
 	
+       
 	act_cntl(ACT_CNTL_INIT, &param);
 	
 	ACTDEBUG(printf("Fin act_init\n"));

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_leonie_spawn.c,v $
+Revision 1.3  2001/01/29 17:01:59  oaumage
+- progression de l'interaction avec Leonie
+
 Revision 1.2  2000/06/16 13:47:48  oaumage
 - Mise a jour des routines d'initialisation de Madeleine II
 - Progression du code de mad_leonie_spawn.c
@@ -70,185 +73,303 @@ ______________________________________________________________________________
 
 #ifdef LEONIE_SPAWN
 
-
-/*
- * Types locaux
- * ------------
- */
-typedef struct
+void
+mad_master_link_init(p_mad_madeleine_t   madeleine,
+		     int                 argc,
+		     char              **argv)
 {
-  tbx_bool_t              leonie_flag;
-  tbx_bool_t              swann_flag;
-  int                     id;
-  ntbx_connection_data_t  connection_data;
-  char                   *master_host_name;
-} mad_command_line_t, *p_mad_command_line_t;
-
-
-/*
- *
- *
- */
-typedef struct
-{
-  int             id;
-  p_ntbx_client_t client;
-} mad_net_client_t, *p_mad_net_client_t;
-
-
-/*
- * Objet Madeleine
- * ---------------
- *
-static mad_madeleine_t main_madeleine;
- */
-
-/*
- * Objet Netserver
- * ---------------
- */
-static p_mad_net_client_t mad_net_client = NULL;
-
-
-/*
- * Initialisation du client reseau
- * -------------------------------
- */
-static p_mad_net_client_t
-mad_net_client_init(int                       id,
-		    char                     *master_host_name,
-		    p_ntbx_connection_data_t  connection_data)
-{
-  p_mad_net_client_t net_client = NULL;
-  ntbx_status_t      ntbx_status;
+  char            *leonie_server_host_name = NULL;
+  char            *leonie_server_port      = NULL;
+  p_ntbx_client_t  client                  = madeleine->master_link;
 
   LOG_IN();
-  net_client = TBX_MALLOC(sizeof(mad_net_client_t));
-  CTRL_ALLOC(net_client);
-  net_client->id     = id;
-  net_client->client = TBX_MALLOC(sizeof(ntbx_client_t));
-  CTRL_ALLOC(net_client->client);
-  net_client->client->state = ntbx_client_state_uninitialized;
-  ntbx_tcp_client_init(net_client->client);
-  ntbx_status = ntbx_tcp_client_connect(net_client->client,
-					master_host_name,
-					connection_data);
-  if (ntbx_status != ntbx_success)
-    FAILURE("ntbx_tcp_client_connect failed");
-  
-  LOG_OUT();
-  return net_client;
-}
+  argc--; argv++;
 
-
-/*
- * Analyse des parametres en ligne de commande
- * -------------------------------------------
- */
-static p_mad_command_line_t
-mad_parse_command_line(int                *argc,
-		       char              **argv)
-{
-  p_mad_command_line_t command_line    = NULL;
-  int                  i;
-  int                  j;
-  
-  LOG_IN();
-  command_line = TBX_MALLOC(sizeof(mad_command_line_t));
-  CTRL_ALLOC(command_line);
-
-  command_line->leonie_flag          = tbx_false;
-  command_line->swann_flag           = tbx_false;
-  command_line->id                   = -1;
-  command_line->connection_data.data[0] = 0;
-  command_line->master_host_name     = NULL;
-
-  i = j = 1;    
-  
-  while (i < (*argc))
+  while (argc)
     {
-      if (!strcmp(argv[i], "-leonie"))
+      if (!strcmp(*argv, "-leonie"))
 	{
-	  DISP("Launcher is Leonie");
-	  command_line->leonie_flag = tbx_true;
-	}
-      else if (!strcmp(argv[i], "-swann"))
-	{
-	  DISP("Launcher is Swann");
-	  command_line->swann_flag = tbx_true;
-	}
-      else if(!strcmp(argv[i], "-id"))
-	{
-	  if (i == ((*argc) - 1))
-	    FAILURE("-id must be followed "
-		    "by the id of the process");
+	  argc--; argv++;
 
-	  command_line->id = atoi(argv[i + 1]);
-	  DISP_VAL("My id", command_line->id);
-	  i++;
-	}
-      else if (!strcmp(argv[i], "-cnx"))
-	{
-	  if (i == ((*argc) - 1))
-	    FAILURE("-cnx must be followed "
-		    "by the connection data");
+	  if (!argc)
+	    FAILURE("leonie argument not found");
 
-	  strcpy(command_line->connection_data.data, argv[i + 1]);
-	  DISP_STR("Launcher connection data is",
-		   command_line->connection_data.data);
-	  i++;
+	  if (!leonie_server_host_name)
+	    {
+	      leonie_server_host_name = *argv;
+	    }
+	  else
+	    FAILURE("too much leonie arguments");
 	}
-      else if (!strcmp(argv[i], "-master"))
+      else if (!strcmp(*argv, "-link"))
 	{
-	  if(i == ((*argc) - 1))
-	    FAILURE(" -master must be followed by the master host name");
+	  argc--; argv++;
 
-	  command_line->master_host_name
-	    = TBX_MALLOC(strlen(argv[i + 1]) + 1);
-	  CTRL_ALLOC(command_line->master_host_name);
-	    
-	  strcpy(command_line->master_host_name, argv[i + 1]);
-	  DISP_STR("The maser is",
-		  command_line->master_host_name);
-	  i++;
+	  if (!argc)
+	    FAILURE("link argument not found");
+
+	  if (!leonie_server_port)
+	    {
+	      leonie_server_port = *argv;
+	    }
+	  else
+	    FAILURE("too much link arguments");
 	}
-      else
-	{
-	  argv[j++] = argv[i];
-	}
-      i++;
+      
+      argc--; argv++;
     }
-  *argc = j;
 
+  if (!leonie_server_host_name && !leonie_server_port)
+    FAILURE("leonie server connect information unavailable");
+  
+  // Master link setup
+  {
+    int status = ntbx_failure;
+    ntbx_connection_data_t data;
+
+    strcpy(&(data.data), leonie_server_port);
+
+    status = ntbx_tcp_client_connect(client,
+				     leonie_server_host_name,
+				     &data);
+
+    if (status == ntbx_failure)
+      FAILURE("could not setup the master link");
+
+    DISP("Master link is up");
+  }
+  
   LOG_OUT();
-  return command_line;
 }
 
+void
+mad_master_link_get_info(p_mad_madeleine_t   madeleine,
+			 int                 argc,
+			 char              **argv)
+{
+  p_mad_configuration_t configuration = madeleine->configuration;
+  p_ntbx_client_t       client        = madeleine->master_link;
+  int                   status        = ntbx_failure;
+  ntbx_pack_buffer_t    buffer;
 
-/*
- * Initialisation de Madeleine
- * ---------------------------
- */
+  LOG_IN();
+  // Get the configuration size
+  status = ntbx_btcp_read_pack_buffer(client, &buffer);
+  if (status == ntbx_failure)
+    FAILURE("master link failure");
+
+  configuration->size = ntbx_unpack_int(&buffer);
+  DISP_VAL("Received configuration size", configuration->size);
+  
+  // Get the node rank
+  status = ntbx_btcp_read_pack_buffer(client, &buffer);
+  if (status == ntbx_failure)
+    FAILURE("master link failure");
+  
+  configuration->local_host_id = ntbx_unpack_int(&buffer);
+  DISP_VAL("Received configuration rank", configuration->local_host_id);
+  LOG_OUT();
+}
+
+void
+mad_master_link_get_adapters(p_mad_madeleine_t   madeleine,
+			     int                 argc,
+			     char              **argv)
+{
+  int             nb_adapters = 0;
+  p_ntbx_client_t client      = madeleine->master_link;
+  int             status      = ntbx_failure;
+  ntbx_pack_buffer_t buffer;
+  int                i;
+
+  LOG_IN();
+  status = ntbx_btcp_read_pack_buffer(client, &buffer);
+  if (status == ntbx_failure)
+    FAILURE("master link failure");
+
+  nb_adapters = ntbx_unpack_int(&buffer);
+  DISP_VAL("Received adapter number", nb_adapters);
+
+  i = nb_adapters;
+  while (i--)
+    {
+      char *name = NULL;
+
+      status = ntbx_btcp_read_string(client, &name);
+      
+      DISP_STR("Received an adapter name", name);
+      TBX_FREE(name);
+    }
+
+  i = nb_adapters;
+  while (i--)
+    {
+      char *name = NULL;
+      int   size =    0;
+      int   rank =   -1;
+
+      status = ntbx_btcp_read_string(client, &name);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+      
+      DISP_STR("Received an adapter name", name);
+      TBX_FREE(name);
+
+      status = ntbx_btcp_read_pack_buffer(client, &buffer);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      size = ntbx_unpack_int(&buffer);
+      DISP_VAL("Adapter - configuration size", size);
+
+      status = ntbx_btcp_read_pack_buffer(client, &buffer);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      rank = ntbx_unpack_int(&buffer);
+      DISP_VAL("Adapter - node rank", rank);
+
+      ntbx_pack_int(rank, &buffer);
+      status = ntbx_btcp_write_pack_buffer(client, &buffer);
+
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+    }
+  LOG_OUT();
+}
+
+void
+mad_master_link_get_channels(p_mad_madeleine_t   madeleine,
+			     int                 argc,
+			     char              **argv)
+{
+  int             nb_channels = 0;
+  p_ntbx_client_t client      = madeleine->master_link;
+  int             status      = ntbx_failure;
+  ntbx_pack_buffer_t buffer;
+  int                i;
+
+  LOG_IN();
+  status = ntbx_btcp_read_pack_buffer(client, &buffer);
+  if (status == ntbx_failure)
+    FAILURE("master link failure");
+
+  nb_channels = ntbx_unpack_int(&buffer);
+  DISP_VAL("Received channels number", nb_channels);
+
+  i = nb_channels;
+  while (i--)
+    {
+      char *name = NULL;
+
+      status = ntbx_btcp_read_string(client, &name);
+      
+      DISP_STR("Received an channel name", name);
+      TBX_FREE(name);
+    }
+
+  i = nb_channels;
+  while (i--)
+    {
+      char *name = NULL;
+      char *dev  = NULL;
+      int   size =    0;
+      int   rank =   -1;
+
+      status = ntbx_btcp_read_string(client, &name);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");      
+      
+      DISP_STR("Received the channel name", name);
+      TBX_FREE(name);
+
+      status = ntbx_btcp_read_pack_buffer(client, &buffer);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      size = ntbx_unpack_int(&buffer);
+      DISP_VAL("Channel - configuration size", size);
+
+      status = ntbx_btcp_read_pack_buffer(client, &buffer);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      rank = ntbx_unpack_int(&buffer);
+      DISP_VAL("Channel - node rank", rank);
+
+      status = ntbx_btcp_read_string(client, &dev);
+      if (status == ntbx_failure)
+	FAILURE("master link failure");      
+      
+      DISP_STR("Received the channel device", dev);
+      TBX_FREE(name);
+
+      ntbx_pack_int(rank, &buffer);
+      status = ntbx_btcp_write_pack_buffer(client, &buffer);
+
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+    }
+  LOG_OUT();
+}
+
 p_mad_madeleine_t
 mad_init(int   *argc,
 	 char **argv)
 {
-  p_mad_command_line_t command_line = NULL;
-
-  LOG_IN();
-  command_line = mad_parse_command_line(argc, argv);
-  if (command_line->leonie_flag)
-    {
-      mad_net_client = mad_net_client_init(0,
-					   command_line->master_host_name,
-					   &command_line->connection_data);
-      DISP("connection with Leonie session manager has been established");
-    }
-  else
-    FAILURE("swann connection not yet supported");
+  p_mad_madeleine_t madeleine = NULL;
   
+  LOG_IN();
+  fprintf(stderr, "Leonie spawn initialization\n");
+  
+#ifdef PM2_DEBUG
+  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);  
+#endif /* PM2_DEBUG */
+
+  tbx_init(*argc, argv);
+  ntbx_init(*argc, argv);
+  
+  mad_memory_manager_init(*argc, argv);
+
+  /*
+   * BEGIN: Madeleine initialisation
+   * -------------------------------
+   */
+
+  madeleine = mad_object_init(*argc, argv, NULL, NULL);
+
+  mad_cmd_line_init(madeleine, *argc, argv);
+  mad_master_link_init(madeleine, *argc, argv);
+  mad_master_link_get_info(madeleine, *argc, argv);
+  mad_master_link_get_adapters(madeleine, *argc, argv);
+  mad_master_link_get_channels(madeleine, *argc, argv);
+
+  {
+    ntbx_tcp_client_disconnect(madeleine->master_link);
+    exit(7);
+  }
+  
+  mad_output_redirection_init(madeleine, *argc, argv);
+  mad_configuration_init(madeleine, *argc, argv);
+  mad_network_components_init(madeleine, *argc, argv);
+
+  /*
+   * END: Madeleine initialisation
+   * -----------------------------
+   */
+
+  mad_purge_command_line(madeleine, argc, argv);
+
+  ntbx_purge_cmd_line(argc, argv);
+  tbx_purge_cmd_line(argc, argv);
+
+#ifdef PM2_DEBUG
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);  
+#endif /* PM2_DEBUG */
+
   LOG_OUT();
-  return NULL;
+
+  return madeleine;
 }
 
 #endif /* LEONIE_SPAWN */

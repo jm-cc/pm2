@@ -19,7 +19,7 @@
 
 #include <setjmp.h>
 
-#ifdef ALPHA_ARCH
+#if defined(ALPHA_ARCH) && defined(LINUX_SYS)
 
 #ifdef setjmp
 #undef setjmp

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.5  2000/11/16 11:11:48  rnamyst
+Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
+
 Revision 1.4  2000/11/13 20:41:33  rnamyst
 common_init now performs calls to all libraries
 
@@ -81,14 +84,50 @@ void common_init(int *argc, char *argv[])
 #endif
 
 #ifdef PROFILE
+  /*
+   * Profiling services
+   * ------------------
+   *
+   * Provides:
+   * - Fast User Traces internal initialization
+   *
+   * Requires:
+   * - nothing
+   */
   profile_init();
 #endif
 
 #ifdef PM2
+  /*
+   * PM2 Data Initialization
+   * -----------------------
+   *
+   * Provides:
+   * - Initialization of internal static data structures
+   * - Calls pm2_rpc_init if not already called
+   *
+   * Requires:
+   * - Nothing
+   *
+   * Enforces:
+   * - Further calls to pm2_register are not allowed
+   */
   pm2_init_data(argc, argv);
 #endif
 
 #ifdef MARCEL
+  /*
+   * Marcel Data Initialization
+   * --------------------------
+   *
+   * Provides:
+   * - Initialization of internal static data structures
+   * - Initialization of internal mutexes and locks
+   * - Initialization of Scheduler (but no activity is started)
+   *
+   * Requires:
+   * - Nothing
+   */
   marcel_init_data(argc, argv);
 #endif
 
@@ -106,7 +145,7 @@ void common_init(int *argc, char *argv[])
    * - htable objects
    *
    * Requires:
-   * - marcel mutexes
+   * - Marcel Data Initialization
    */
   tbx_init(*argc, argv);
 #endif /* TBX */
@@ -117,7 +156,7 @@ void common_init(int *argc, char *argv[])
    * --------------------
    *
    * Provides:
-   * - pack/unpack routines for hetereogenous architecture communication
+   * - pack/unpack routines for hetereogeneous architecture communication
    * - safe non-blocking client-server framework over TCP
    *
    * Requires:
@@ -144,7 +183,7 @@ void common_init(int *argc, char *argv[])
 #ifdef MAD2
   /*
    * Mad2 core initialization 
-   * -------------------
+   * ------------------------
    *
    * Provides:
    * - Mad2 core objects initialization
@@ -167,6 +206,18 @@ void common_init(int *argc, char *argv[])
 #endif
 
 #if defined(PM2) && defined(MAD2)
+  /*
+   * PM2 mad2/mad1 compatibility layer initialization
+   * ------------------------------------------------
+   *
+   * Provides:
+   * - Stores the value of the main "madeleine" object
+   * - Initializes some internal mutexes
+   *
+   * Requires:
+   * - Mad2 core initialization
+   * - Marcel Data Initialization
+   */
   pm2_mad_init(madeleine);
 #endif
 
@@ -297,9 +348,6 @@ void common_init(int *argc, char *argv[])
 
 #ifdef PM2
   pm2_init_thread_related(argc, argv);
-#ifdef MAD2
-  mad_init_thread_related(argc, argv);
-#endif
 #endif
 
 #ifdef DSM

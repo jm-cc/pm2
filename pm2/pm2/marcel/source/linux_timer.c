@@ -705,10 +705,10 @@ static inline void do_process_times(struct marcel_task *p,
 	p->utime += user;
 	p->stime += system;
 	*/
-	if (user)
+	//if (user)
 		ma_atomic_inc(&p->top_utime);
-	else
-		ma_atomic_inc(&p->top_stime);
+	//else
+		//ma_atomic_inc(&p->top_stime);
 }
 
 #if 0

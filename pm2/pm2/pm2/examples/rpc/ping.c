@@ -44,31 +44,7 @@
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
-/* ****************** fonctions de mesure du temps ************** */
-
-static struct timeval _t1, _t2;
-static struct timezone _tz;
-static unsigned long _temps_residuel = 0;
-
-#define top1() gettimeofday(&_t1, &_tz)
-#define top2() gettimeofday(&_t2, &_tz)
-
-void init_cpu_time(void)
-{
-   top1(); top2();
-   _temps_residuel = 1000000L * _t2.tv_sec + _t2.tv_usec - 
-                     (1000000L * _t1.tv_sec + _t1.tv_usec );
-}
-
-unsigned long cpu_time(void) /* retourne des microsecondes */
-{
-   return 1000000L * _t2.tv_sec + _t2.tv_usec - 
-           (1000000L * _t1.tv_sec + _t1.tv_usec ) - _temps_residuel;
-}
-
-/* ************************************************************** */
-
-int *les_modules, nb_modules, autre;
+static unsigned autre;
 
 static unsigned nb;
 static marcel_sem_t fin_async_lrpc;
@@ -108,6 +84,7 @@ void informer(unsigned size, unsigned nbping)
 
 void f(int bytes)
 {
+  Tick t1, t2;
   unsigned long temps;
   unsigned n;
 #ifndef ONLY_ASYNC
@@ -126,12 +103,12 @@ void f(int bytes)
     temps = ~0L;
     for(n=0; n<ESSAIS; n++) {
       informer(bytes, nb/2);
-      top1();
+      GET_TICK(t1);
       for(i=0; i<nb/2; i++)
 	LRPC(autre, LRPC_PING, STD_PRIO, DEFAULT_STACK,
 	     NULL, NULL);
-      top2();
-      temps = min(cpu_time(), temps);
+      GET_TICK(t2);
+      temps = min(timing_tick2usec(TICK_DIFF(t1, t2)), temps);
     }
 
     tfprintf(stderr, "temps LRPC = %d.%03dms\n",
@@ -143,11 +120,11 @@ void f(int bytes)
     temps = ~0L;
     for(n=0; n<ESSAIS; n++) {
       informer(bytes, nb/2);
-      top1();
+      GET_TICK(t1);
       for(i=0; i<nb/2; i++)
 	QUICK_LRPC(autre, LRPC_PING, NULL, NULL);
-      top2();
-      temps = min(cpu_time(),temps);
+      GET_TICK(t2);
+      temps = min(timing_tick2usec(TICK_DIFF(t1, t2)), temps);
     }
 
     tfprintf(stderr, "temps QUICK_LRPC = %d.%03dms\n",
@@ -163,12 +140,12 @@ void f(int bytes)
     for(n=0; n<ESSAIS; n++) {
       informer(bytes, nb/2);
       NB_PING--;
-      top1();
+      GET_TICK(t1);
       ASYNC_LRPC(autre, LRPC_PING_ASYNC, STD_PRIO, DEFAULT_STACK, NULL);
       marcel_sem_P(&fin_async_lrpc);
-      top2();
+      GET_TICK(t2);
 
-      temps = min(cpu_time(), temps);
+      temps = min(timing_tick2usec(TICK_DIFF(t1, t2)), temps);
     }
 
     tfprintf(stderr, "temps ASYNC_LRPC = %ld.%03ldms\n",
@@ -187,64 +164,66 @@ static void set_data_dir(char *buf, char *suffix)
     sprintf(buf, "./%s_%s", mad_arch_name(), suffix);
 }
 
+static void startup_func()
+{
+  autre = (pm2_self() == 0) ? 1 : 0;
+}
+
 int pm2_main(int argc, char **argv)
 {
   int i;
   char name[256];
 
-   init_cpu_time();
+  pm2_rpc_init();
 
-   pm2_rpc_init();
+  DECLARE_LRPC(INFO);
+  DECLARE_LRPC(LRPC_PING);
+  DECLARE_LRPC(LRPC_PING_ASYNC);
 
-   DECLARE_LRPC(INFO);
-   DECLARE_LRPC(LRPC_PING);
-   DECLARE_LRPC(LRPC_PING_ASYNC);
+  pm2_set_startup_func(startup_func);
 
-   pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-   if(pm2_self() == les_modules[0]) { /* master process */
+  if(pm2_self() == 0) { /* master process */
 
-     autre = les_modules[1];
-
-     tprintf("*** Performances des différents LRPC sous %s ***\n", mad_arch_name());
+    tprintf("*** Performances des différents LRPC sous %s ***\n",
+	    mad_arch_name());
 #ifndef ONLY_ASYNC
 #ifndef ONLY_QUICK
-     set_data_dir(name, "lrpc");
-     f1 = fopen(name, "w");
+    set_data_dir(name, "lrpc");
+    f1 = fopen(name, "w");
 #endif
-     set_data_dir(name, "quick_lrpc");
-     f2 = fopen(name, "w");
+    set_data_dir(name, "quick_lrpc");
+    f2 = fopen(name, "w");
 #endif
 #ifndef ONLY_QUICK
-     set_data_dir(name, "async_lrpc");
-     f3 = fopen(name, "w");
+    set_data_dir(name, "async_lrpc");
+    f3 = fopen(name, "w");
 #endif
 
-     if(argc > 1)
-       nb = atoi(argv[1]);
-     else {
-       tprintf("Combien de rpc ? ");
-       scanf("%d", &nb);
-     }
+    if(argc > 1)
+      nb = atoi(argv[1]);
+    else {
+      tprintf("Combien de rpc ? ");
+      scanf("%d", &nb);
+    }
 
-     f(0); 
-     f(512);
-     for(i=1; i<=16; i++)
-       f(i*1024);
+    f(0); 
+    f(512);
+    for(i=1; i<=16; i++)
+      f(i*1024);
 
 #ifndef ONLY_ASYNC
 #ifndef ONLY_QUICK
-     fclose(f1);
+    fclose(f1);
 #endif
-     fclose(f2);
+    fclose(f2);
 #endif
 #ifndef ONLY_QUICK
-     fclose(f3);
+    fclose(f3);
 #endif
 
-     pm2_kill_modules(les_modules, nb_modules);
-   } else {
-     autre = les_modules[0];
+    pm2_halt();
    }
 
    pm2_exit();

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.9  2000/03/06 12:57:54  vdanjean
+*** empty log message ***
+
+Revision 1.8  2000/03/06 09:24:56  vdanjean
+Nouvelle version des activations
+
 Revision 1.7  2000/02/28 10:26:46  rnamyst
 Changed #include <> into #include "".
 
@@ -101,27 +107,21 @@ _PRIVATE_ typedef enum {
 } sched_by_t;
 
 _PRIVATE_ typedef enum {
-  MARCEL_READY,
-  MARCEL_RUNNING,
+  MARCEL_READY=0, /* needed in act_resume (upcall.c / upcall_unblock()) */
+  MARCEL_RUNNING=1,
 } marcel_state_t;
 
 #endif
 
 _PRIVATE_ typedef struct task_desc_struct {
 #ifdef __ACT__
-  union {
-    jmp_buf migr_jb;
-    act_buf_t act_jb;
-  } jb;
-  sched_by_t sched_by;
   // TODO : merge state and state_ext in one field
-  volatile marcel_state_t state_ext;
+  volatile int state_ext;
   volatile int marcel_lock;
 
-  act_id_t aid;
-#else
-  jmp_buf jb;
+  act_proc_t aid;
 #endif
+  jmp_buf jb;
   struct task_desc_struct *next,*prev;
   struct __lwp_struct *lwp, *previous_lwp;
   int sched_policy;

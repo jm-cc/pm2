@@ -36,10 +36,17 @@
 MASTER_MODULE =  MAD1
 COMMON_DEFAULT_TARGET :=  mad_default
 
+ifndef MAD1_ROOT
+MAD_ROOT := $(PM2_ROOT)/mad1
+MAD1_ROOT := $(MAD_ROOT)
+else
+MAD_ROOT :=  $(MAD1_ROOT)
+endif
+
 include $(PM2_ROOT)/make/master_vars.mak
 
 # Ce makefile
-COMMON_MAKEFILES +=  $(MAD1_ROOT)/Makefile
+COMMON_MAKEFILES +=  $(MAD_ROOT)/Makefile
 
 # Inclusion des variables
 include $(MAD_MAKE)/vars.mak

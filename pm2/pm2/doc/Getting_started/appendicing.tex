@@ -1,60 +1,95 @@
 \chapter{Additional PM2 material}
 
-\stamp $Id: appendicing.tex,v 1.2 2001/04/12 16:00:57 bouge Exp $
+\stamp $Id: appendicing.tex,v 1.3 2001/04/17 14:15:12 bouge Exp $
 
-% Standard Main
-%_____________________________________________________________________________
 \section{Using a standard main}
 \label{sec:tradimain}
 
 Some application may require to use the traditional \|main| function
-name instead of \|pm2_main|. In this case, the \|STANDARD_MAIN|
-compilation flag must be defined for each PM2 file. This can be done
-by adding the definition in the PM2 makefile (\|pm2/make/common.mak|):
+name instead of the regular \|pm2_main|. This can be enabled through
+the \|standard_main| options of the Marcel flavors. This option
+defines the \|STANDARD_MAIN| compilation flag, tobe used for each of
+the PM2 programs. Note that this may affect the performance of several
+thread management functions. The user is therefore discouraged to do
+this unless explicitly required.
 
-\begin{small}
-\begin{makefile}
-   GLOBAL_OPTIONS   =   -Wall -O6 -DSTANDARD_MAIN
-\end{makefile}
-\end{small}
-
-Note that this may affect the performance of several thread management
-functions...
-
-% Scripts
-%_____________________________________________________________________________
 \section{Synopsys of PM2 scripts}
 \label{sec:scripts}
 
-\subsection{pm2custom}
-
 \subsection{pm2conf}
+
+\begin{shell}
+ravel% pm2conf -h
+Usage: pm2conf { option } { item }
+  option:
+    -f <name> : Use flavor "name" (default=$PM2_FLAVOR or default)
+    -p <name> : Store parameters in file "name" under the preference directory
+    -h        : Display this help message
+  item:
+    <host>            : Add machine "host" to the configuration
+    -l <file>         : Use <file> as an input for host names
+    -e <host> <i>-<j> : Expand to <hosti> <hosti+1> ... <hostj>
+    -s <suffix> item  : Add <suffix> to the "item" expression
+\end{shell}
+
+A typical use of the extended options could thus be:
+\begin{shell}
+ravel% pm2conf -s tcp cluster0 -s tcp -e cluster 10-14
+0 : cluster0tcp
+1 : cluster10tcp
+2 : cluster11tcp
+3 : cluster12tcp
+4 : cluster13tcp
+5 : cluster14tcp
+\end{shell}
 
 \subsection{pm2load}
 
-% Common Pitfalls
-%_____________________________________________________________________________
+\begin{shell}
+ravel% pm2load -h
+Usage: pm2load { option } command
+
+  option:
+    -f name : Use flavor named "name" (default=$PM2_FLAVOR or default)
+    -d      : Run command in debug mode (not supported by all implementations)
+    -c name : Use console named "name"
+    -l      : Also generate a log file on first node
+    -L      : Only generate a log file on first node
+    -h      : Display this help message
+\end{shell}
+
+\begin{note}
+  LB to RN: The -L option does not seem to work properly
+\end{note}
+
+
 \section{Common Pitfalls}
 \label{sec:commonpitfalls}
 
-The Table~\ref{tbl:pitfalls} sums up the symptoms together with
+Table~\ref{tbl:pitfalls} sums up the symptoms together with
 possible solutions.
-\begin{table}
+\begin{table}[p]
 \caption{Common Pitfalls\label{tbl:pitfalls}}
 \begin{center}
-\begin{tabular}{|p{5cm}|p{7cm}|}                             \hline
-Symptoms                       & Solutions                    \\ \hline
-`Permission denied' error      & Each configuration node must be made
-accessible by \|rsh| from the local host: update you
-\|.rhosts| file                                         \\ \hline
+\begin{tabular}{|p{0.3\linewidth}|p{0.7\linewidth}|}                          \hline
+Symptoms & 
+Solutions                   
+\\ 
+\hline
+\|Permission denied| error at load time & 
+Each configuration node must be made
+accessible by \|rsh| from the local host: update your
+\|.rhosts| file                                  
+\\ 
+\hline
 \end{tabular}
 \end{center}
 \end{table}
 
-% FAQ
-%_____________________________________________________________________________
-\section{FAQ}
+\section{Frequently asked questions}
 \label{sec:faq}
+
+
 \begin{quote}
   Why do I get the message "Permission denied" when running pm2load?
   

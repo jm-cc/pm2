@@ -26,11 +26,13 @@ char *mess[NB] = { "boys", "girls", "people" };
 
 any_t writer(any_t arg)
 {
-  int i, j;
+  int i;
+  volatile int j;
 
   for(i=0;i<10;i++) {
     tfprintf(stderr, "Hi %s! (I'm %p on vp %d)\n",
 	     (char*)arg, marcel_self(), marcel_current_vp());
+    j = 20000000; while(j--);
     j = 20000000; while(j--);
   }
 
@@ -48,14 +50,18 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
-  marcel_attr_init(&attr);
-
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
 #endif
 
   for(i=0; i<NB; i++) {
-    marcel_attr_setrealtime(&attr, (i == 2));
+    marcel_attr_init(&attr);
+    if (i == 1) {
+      marcel_attr_setrealtime(&attr, MARCEL_CLASS_REALTIME);
+      if (marcel_nbvps()>1) {
+	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ONLY_VP(0));
+      }
+    }
 
     marcel_create(&pid[i], &attr, writer, (any_t)mess[i]);
   }

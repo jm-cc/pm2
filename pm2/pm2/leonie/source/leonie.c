@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
+Revision 1.7  2000/05/18 11:34:18  oaumage
+- remplacement des types `tableau' par des types `structure de tableau'
+  par securite
+
 Revision 1.6  2000/05/17 12:41:00  oaumage
 - reorganisation du code de demarrage de Leonie
 
@@ -110,7 +114,7 @@ leo_launch_mad_module(p_leo_swann_module_t  swann_module,
 	  app_cluster->path,
 	  app_cluster->executable,
 	  mad_module->id,
-	  main_leonie->net_server->connection_data,
+	  main_leonie->net_server->connection_data.data,
 	  mad_module->net_client->local_host);
   system(cmd);
   status =
@@ -187,9 +191,10 @@ leo_start(p_leo_app_application_t  application,
        *      mieux en vue de la suite
        *  - executer la session.
        */
-
-      p_tbx_list_t       host_list        = app_cluster->hosts;
-      p_tbx_list_t       channel_list     = app_cluster->channels;
+      /*
+        p_tbx_list_t       host_list        = app_cluster->hosts;
+        p_tbx_list_t       channel_list     = app_cluster->channels;
+      */
       p_leo_mad_module_t mad_module       = NULL;
 
       DISP("Launching mad module");

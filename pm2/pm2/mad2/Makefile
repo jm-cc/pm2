@@ -37,6 +37,10 @@
 # Makefile : Madeleine 2
 ##########################
 
+ifndef MAD2_ROOT
+MAD2_ROOT	=	$(PM2_ROOT)/mad2
+endif
+
 include $(MAD2_ROOT)/make/config.mak
 
 # directories

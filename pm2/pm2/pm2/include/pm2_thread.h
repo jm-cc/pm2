@@ -25,5 +25,8 @@ void pm2_thread_init(void);
 void pm2_thread_exit(void);
 
 marcel_t pm2_thread_create(pm2_func_t func, void *arg);
+marcel_t pm2_service_thread_create(pm2_func_t func, void *arg);
+
+void pm2_thread_vp_is_reserved(unsigned vp);
 
 #endif

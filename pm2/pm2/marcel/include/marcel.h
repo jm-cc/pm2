@@ -100,7 +100,7 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
 #include <sys/archdep.h>
 #include <sys/archsetjmp.h>
-#include <sys/trace.h>
+#include <sys/marcel_trace.h>
 #include <sys/debug.h>
 #include <exception.h>
 #include <marcel_lock.h>

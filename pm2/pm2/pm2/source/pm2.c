@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.20  2000/09/12 13:23:30  rnamyst
+Minor bug fixes
+
 Revision 1.19  2000/07/14 16:17:13  gantoniu
 Merged with branch dsm3
 
@@ -193,11 +196,13 @@ void pm2_init(int *argc, char **argv)
   safe_malloc_init();
 #endif   
 
+#ifndef MAD2
   marcel_init(argc, argv);
+#endif
 
   mad_init(argc, argv, 0, spmd_conf, &__pm2_conf_size, &__pm2_self);
 
-#if MAD2
+#ifdef MAD2
   if(!pm2_single_mode()) {
     int i;
 

@@ -92,6 +92,15 @@
 #  undef MA__TIMER
 #endif
 
+/* MA__INTERRUPTS_USE_SIGINFO : indique que les interruptions utilisent
+ * siginfo. Les macros MA_ARCH_(SWITCHTO|INTERRUPT_(ENTER|EXIT))_LWP_FIX
+ * peuvent être adaptées pour tranférer le LWP de la libpthread
+ * Suppose MA__LWPS && !MA__PTHREAD_FUNCTIONS
+ * */
+#ifdef MA__INTERRUPTS_USE_SIGINFO
+#  undef MA__INTERRUPTS_USE_SIGINFO
+#endif
+
 /* MA__WORK : utilisation des files de travail à la fin des unlock_task()
  * */
 #ifdef MA__WORK
@@ -161,5 +170,8 @@
 #  define MA__PTHREAD_FUNCTIONS
 #endif
 
+#if defined(MA__LWPS) && !defined(MA__PTHREAD_FUNCTIONS)
+#  define MA__INTERRUPTS_USE_SIGINFO
 #endif
 
+#endif /* MARCEL_FLAGS_EST_DEF */

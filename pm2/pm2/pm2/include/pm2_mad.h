@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.h,v $
+Revision 1.2  2000/02/28 11:18:00  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.1  2000/02/02 10:29:38  rnamyst
 Sorry, I forgot to ad it...
 
@@ -43,7 +46,7 @@ ______________________________________________________________________________
 #ifndef PM2_MAD_EST_DEF
 #define PM2_MAD_EST_DEF
 
-#include <madeleine.h>
+#include "madeleine.h"
 
 #ifdef MAD1
 

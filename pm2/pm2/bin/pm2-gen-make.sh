@@ -175,7 +175,7 @@ LDFLAGS += \$(APP_LDFLAGS)
 EOF
 
 case " $_PM2CONFIG_CFLAGS " in
-    *\ -APPLI_PROFILE\ *)
+    *\ -DAPPLI_PROFILE\ *)
 	echo "APP_PROFILE := yes" >> $dst
 	;;
     *)
@@ -233,7 +233,7 @@ if [ $target = all -o $target = main-config ]; then
     echo "PROF_LIBS := $_PM2CONFIG_PROF_MODULES" >> $dst
     echo "DOT_H_GEN_LIBS := $_PM2CONFIG_HEADGEN_MODULES" >> $dst
     case " $_PM2CONFIG_CFLAGS " in
-	*\ -DCOMMON_PROFILE\ *)
+	*\ -DAPPLI_PROFILE\ *)
 	    echo "APP_PROFILE := yes" >> $dst
 	    ;;
 	*)

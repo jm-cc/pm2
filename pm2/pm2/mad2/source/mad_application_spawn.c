@@ -46,17 +46,10 @@
 #define MAX_ARG_LEN       256
 
 /*
- * Objet Madeleine
- * ---------------
- */
-static p_mad_madeleine_t madeleine;
-
-
-/*
  * Generation de l'URL de connexion
  * --------------------------------
  */
-static char *
+char *
 mad_generate_url(p_mad_madeleine_t madeleine)
 {
   char             *url          = NULL;
@@ -103,21 +96,18 @@ mad_generate_url(p_mad_madeleine_t madeleine)
  * Interpretation de l'URL de connexion
  * ------------------------------------
  */
-static void
-mad_parse_url(p_mad_madeleine_t  madeleine,
-	      char              *url)
+void
+mad_parse_url(p_mad_madeleine_t  madeleine)
 {
   mad_adapter_id_t  ad = 0;
   char             *tag;
   char             *param;
   char             *c;
+  char             *url;
   
   LOG_IN();
-  if (!url)
-    {
-      LOG_OUT();
-      return;
-    }
+
+  url = madeleine->settings->url;
 
   c = strchr(url, '?');
   if (!c)
@@ -167,82 +157,6 @@ mad_parse_url(p_mad_madeleine_t  madeleine,
     FAILURE("not enough parameters");
   LOG_OUT();
 }
-
-char *
-mad_pre_init(p_mad_adapter_set_t adapter_set)
-{
-  int   dummy_argc    =       1;
-  char *dummy_argv[] = { NULL } ;
-
-  tbx_init(dummy_argc, dummy_argv);
-  ntbx_init(dummy_argc, dummy_argv);
-  mad_memory_manager_init(dummy_argc, dummy_argv);
-
-  madeleine = mad_object_init(dummy_argc, dummy_argv, NULL, adapter_set);
-  mad_network_components_init(madeleine, dummy_argc, dummy_argv);
-
-  return mad_generate_url(madeleine);
-}
-
-p_mad_madeleine_t
-mad_init(
-	 ntbx_host_id_t  rank,
-	 char           *configuration_file,
-	 char           *url
-	 )
-{
-  int   dummy_argc   =        1;
-  char *dummy_argv[] = { NULL };
-
- 
-  if (configuration_file)
-    {
-      if (madeleine->settings->configuration_file)
-	{
-	  TBX_FREE(madeleine->settings->configuration_file);
-	  madeleine->settings->configuration_file = NULL;
-	}
-
-      madeleine->settings->configuration_file =
-	TBX_MALLOC(strlen(configuration_file) + 1);
-      CTRL_ALLOC(madeleine->settings->configuration_file);
-      strcpy(madeleine->settings->configuration_file, configuration_file);
-    }
-
-  if (url)
-    {
-      madeleine->settings->url = TBX_MALLOC(strlen(url) + 1);
-      CTRL_ALLOC(madeleine->settings->url);
-      strcpy(madeleine->settings->url, url);
-
-      if (rank < 0)
-	{
-	  madeleine->configuration->local_host_id = 1;
-	}
-      else
-	{
-	  madeleine->configuration->local_host_id = rank;
-	}
-    }
-  else
-    {
-      if (rank < 0)
-	{
-	  madeleine->configuration->local_host_id = 0;
-	}
-      else
-	{
-	  madeleine->configuration->local_host_id = rank;
-	}
-    }
-  mad_output_redirection_init(madeleine, dummy_argc, dummy_argv);
-  mad_configuration_init(madeleine, dummy_argc, dummy_argv);
-  mad_parse_url(madeleine, url);
-  mad_connect(madeleine, dummy_argc, dummy_argv);
-  
-  return madeleine;
-}
-
 
 #endif /* APPLICATION_SPAWN */
 

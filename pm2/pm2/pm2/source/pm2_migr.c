@@ -34,6 +34,15 @@
 
 ______________________________________________________________________________
 $Log: pm2_migr.c,v $
+Revision 1.5  2000/07/14 16:17:13  gantoniu
+Merged with branch dsm3
+
+Revision 1.4.10.1  2000/06/13 16:44:11  gantoniu
+New dsm branch.
+
+Revision 1.4.8.1  2000/06/07 09:19:40  gantoniu
+Merging new dsm with current PM2 : first try.
+
 Revision 1.4  2000/02/28 11:17:12  rnamyst
 Changed #include <> into #include "".
 
@@ -53,6 +62,7 @@ static unsigned _pm2_imported_threads = 0;
 static pm2_pre_migration_hook _pm2_pre_migr_func = NULL;
 static pm2_post_migration_hook _pm2_post_migr_func = NULL;
 static pm2_post_post_migration_hook _pm2_post_post_migr_func = NULL;
+static int _isoaddr_migr_dest = 0;
 
 typedef struct {
   int nb;
@@ -76,12 +86,13 @@ static void netserver_migration(void)
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mctl, sizeof(mctl));
       pids[i] = mctl.task;
 
-      slot_general_alloc(NULL, 0, NULL, mctl.stack_base);
+      slot_general_alloc(NULL, 0, NULL, mctl.stack_base, NULL);
 
       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER,
 		      (char *)mctl.stack_base + mctl.depl,
 		      mctl.blk);
-
+      isoaddr_page_set_owner(isoaddr_page_index(mctl.stack_base), pm2_self());
+      isoaddr_page_set_status(isoaddr_page_index(mctl.stack_base), ISO_PRIVATE);
       block_unpack_all();
 
       if(_pm2_post_migr_func != NULL)
@@ -114,7 +125,9 @@ static void migrate_func(marcel_t task, unsigned long depl, unsigned long blk, v
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)mctl.stack_base + depl, blk);
 
   block_descr_ptr = (block_descr_t *)(*marcel_specificdatalocation(task, _pm2_block_key));
-  block_pack_all(block_descr_ptr);
+  block_pack_all(block_descr_ptr, _isoaddr_migr_dest);
+  isoaddr_page_set_owner(isoaddr_page_index(mctl.stack_base), _isoaddr_migr_dest);
+
 
   if(_pm2_pre_migr_func != NULL)
     (*_pm2_pre_migr_func)(task);
@@ -162,6 +175,9 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
     arg.nb = nb;
 
     pm2_rawrpc_begin(module, PM2_MIGR, NULL);
+
+    /* GA: modif 3/05/2000: record destination */
+    _isoaddr_migr_dest = module;
 
     pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &nb, 1);
 

@@ -385,7 +385,7 @@ for lib in $libs; do
     the_libs="$the_libs `eval echo '$'PM2_${LIB}_LIBS`"
     # CFLAGS spécifique à la compilation d'une lib
     if [ "$kernel" = true ]; then
-	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL -DMODULE=${LIB}"
+	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL -DMODULE=${lib}"
     fi
 done
 

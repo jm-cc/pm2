@@ -29,6 +29,92 @@
  * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
  */
 
+#section marcel_functions
+/*
+ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+ * Note 2: xchg has side effect, so that attribute volatile is necessary,
+ *	  but generally the primitive is invalid, *ptr is output argument. --ANK
+ */
+#define __ma_xg(x) ((volatile long *)(x))
+static inline unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
+{
+	switch (size) {
+		case 1:
+			__asm__ __volatile__("xchgb %b0,%1"
+				:"=q" (x)
+				:"m" (*__ma_xg(ptr)), "0" (x)
+				:"memory");
+			break;
+		case 2:
+			__asm__ __volatile__("xchgw %w0,%1"
+				:"=r" (x)
+				:"m" (*__ma_xg(ptr)), "0" (x)
+				:"memory");
+			break;
+		case 4:
+			__asm__ __volatile__("xchgl %k0,%1"
+				:"=r" (x)
+				:"m" (*__ma_xg(ptr)), "0" (x)
+				:"memory");
+			break;
+		case 8:
+			__asm__ __volatile__("xchgq %0,%1"
+				:"=r" (x)
+				:"m" (*__ma_xg(ptr)), "0" (x)
+				:"memory");
+			break;
+		default:
+			MA_BUG();
+	}
+	return x;
+}
+/*
+ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+ * store NEW in MEM.  Return the initial value in MEM.  Success is
+ * indicated by comparing RETURN with OLD.
+ */
+
+#ifdef MA__LWPS
+#define MA_LOCK_PREFIX "lock ; "
+#else
+#define MA_LOCK_PREFIX ""
+#endif
+
+static inline unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
+				      unsigned long new, int size)
+{
+	unsigned long prev;
+	switch (size) {
+	case 1:
+		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgb %b1,%2"
+				     : "=a"(prev)
+				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "memory");
+		return prev;
+	case 2:
+		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgw %w1,%2"
+				     : "=a"(prev)
+				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "memory");
+		return prev;
+	case 4:
+		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgl %k1,%2"
+				     : "=a"(prev)
+				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "memory");
+		return prev;
+	case 8:
+		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgq %1,%2"
+				     : "=a"(prev)
+				     : "q"(new), "m"(*__ma_xg(ptr)), "0"(old)
+				     : "memory");
+		return prev;
+	default:
+		MA_BUG();
+	}
+	return old;
+}
+
 #section marcel_macros
 
 /*
@@ -62,24 +148,24 @@
 //#define ma_wmb()	__asm__ __volatile__("" ::: "memory")
 #define ma_read_barrier_depends()	do { } while(0)
 
+#define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
+#define ma_cmpxchg(ptr,o,n)\
+	((__typeof__(*(ptr)))__ma_cmpxchg((ptr),(unsigned long)(o),\
+					(unsigned long)(n),sizeof(*(ptr))))
+
 #ifdef MA__LWPS
 # define ma_smp_mb()	ma_mb()
 # define ma_smp_rmb()	ma_rmb()
 # define ma_smp_wmb()	ma_wmb()
 # define ma_smp_read_barrier_depends()	ma_read_barrier_depends()
+# define ma_set_mb(var, value) do { ma_xchg(&(var), (value)); } while (0)
 #else
 # define ma_smp_mb()	ma_barrier()
 # define ma_smp_rmb()	ma_barrier()
 # define ma_smp_wmb()	ma_barrier()
 # define ma_smp_read_barrier_depends()	do { } while(0)
+# define ma_set_mb(var, value) do { (var) = (value); ma_barrier(); } while (0)
 #endif
 
-/*
- * XXX check on these---I suspect what Linus really wants here is
- * acquire vs release semantics but we can't discuss this stuff with
- * Linus just yet.  Grrr...
- */
-#depend "asm/marcel_compareexchange.h[]"
-#define ma_set_mb(var, value)	do { pm2_compareexchange(&(var),(var),(value),sizeof(var)); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 

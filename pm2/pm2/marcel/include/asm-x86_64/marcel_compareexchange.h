@@ -15,4 +15,8 @@
  */
 
 #section common
-#depend "asm-generic/marcel_compareexchange.h[]"
+#depend "asm/linux_system.h[]"
+#section macros
+#define MA_HAVE_COMPAREEXCHANGE 1
+#section marcel_macros
+#define pm2_compareexchange(p,o,n,s) __ma_cmpxchg(p,(o),(n),(s))

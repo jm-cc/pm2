@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -19,8 +18,8 @@
  * ----------
  */
 
-#ifndef __LEOPARSE_H
-#define __LEOPARSE_H
+#ifndef LEOPARSE_H
+#define LEOPARSE_H
 
 /*
  * Checks
@@ -45,4 +44,4 @@
 /* Leoparse: interface */
 #include "leoparse_interface.h"
 
-#endif /* __LEOPARSE_H */
+#endif /* LEOPARSE_H */

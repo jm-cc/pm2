@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.10  2001/01/08 10:48:58  rnamyst
+Minor modifs to support .exe files in pm2which and pm2load. EZ-flavor is also available under win2k now...
+
 Revision 1.9  2000/11/20 20:13:03  rnamyst
 Slight modification to avoid warning when DSM is not used
 
@@ -191,10 +194,10 @@ BEGIN_LRPC_LIST
 END_LRPC_LIST
 
 #define SLOT_INDEX(addr) \
-        ((int)((ISOADDR_AREA_TOP  - ((int)addr & ~(_SLOT_SIZE - 1))) / _SLOT_SIZE) - 1) // big bug out 5/05/00 !
+        ((int)(((int)ISOADDR_AREA_TOP  - ((int)addr & ~(_SLOT_SIZE - 1))) / _SLOT_SIZE) - 1) // big bug out 5/05/00 !
 
 #define GET_SLOT_ADDR(bit_abs_index) \
-        ((void *)(ISOADDR_AREA_TOP  - (bit_abs_index + 1) * _SLOT_SIZE))
+        ((void *)((int)ISOADDR_AREA_TOP  - (bit_abs_index + 1) * _SLOT_SIZE))
 
 int isoaddr_page_index(void *addr)
 {

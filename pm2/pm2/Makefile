@@ -53,8 +53,9 @@ endif
 #/////////////////////////////////////////////////////////////////////
 
 # Regle par defaut : construction des librairies
+# ATTENTION: l'ordre des dépendances est TRES IMPORTANT !
 #---------------------------------------------------------------------
-libs:
+libs: ARCHITECTURES dot_h fut
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -64,7 +65,7 @@ include $(PM2_ROOT)/make/common-rules.mak
 #---------------------------------------------------------------------
 #       Note: s'agit-il de tous les exemples ou de ceux de PM2 ?
 all: pm2 examples
-.PHONY: pm2 examples all libs preproc fut
+.PHONY: pm2 examples all libs preproc fut dot_h
 
 # pm2: construction des librairies
 #---------------------------------------------------------------------
@@ -73,7 +74,8 @@ pm2: libs
 # libs: descente recursive dans chaque module pour construction des
 #       librairies
 #---------------------------------------------------------------------
-libs: flavors ARCHITECTURES
+libs: flavors
+	$(COMMON_HIDE) echo "*** Making libs"
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@; \
@@ -100,12 +102,20 @@ preproc: flavors
 # fut: descente recursive dans chaque module pour action `fut'
 #---------------------------------------------------------------------
 fut: flavors
-	$(COMMON_HIDE) set -e; \
-	if [ -n "$(PROF_LIBS)" ] ; then \
-		for i in $(PROF_LIBS) ; do \
-			$(MAKE) -C modules/$$i $@ ; \
-		done \
-	fi
+	$(COMMON_HIDE) echo "*** Making fut files"
+	$(COMMON_HIDE) set -e; EMPTY=""; \
+	for i in $(PROF_LIBS) $$EMPTY; do \
+		$(MAKE) -C modules/$$i $@ ; \
+	done
+
+# dot_h: descente recursive dans chaque module pour génération des `headers'
+#-------------------------------------------------------------------------
+dot_h: flavors
+	$(COMMON_HIDE) echo "*** Generating specific header files"
+	$(COMMON_HIDE) set -e; EMPTY=""; \
+	for i in $(DOT_H_GEN_LIBS) $$EMPTY; do \
+		$(MAKE) -C modules/$$i $@ ; \
+	done
 
 # Nettoyage
 #---------------------------------------------------------------------

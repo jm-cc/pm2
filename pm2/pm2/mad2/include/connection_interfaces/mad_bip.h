@@ -120,6 +120,12 @@ mad_bip_poll_message(p_mad_channel_t);
 p_mad_connection_t
 mad_bip_receive_message(p_mad_channel_t);
 
+p_mad_buffer_t
+mad_bip_get_static_buffer(p_mad_link_t);
+
+void
+mad_bip_return_static_buffer(p_mad_link_t,
+			     p_mad_buffer_t);
 void
 mad_bip_send_buffer(p_mad_link_t,
 		    p_mad_buffer_t);

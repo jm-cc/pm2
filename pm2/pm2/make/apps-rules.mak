@@ -74,7 +74,7 @@ $(APP_BIN)/%: $(APP_OBJ)/%.o
 
 else 
 
-MAKE_LIBS = for module in $(PM2_MODULES); do \
+MAKE_LIBS = set -e ; for module in $(PM2_MODULES); do \
 		$(MAKE) -C $(PM2_ROOT)/modules/$$module ; \
 	    done
 

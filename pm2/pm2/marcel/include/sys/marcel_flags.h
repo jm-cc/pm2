@@ -91,6 +91,26 @@
 #  undef MA__WORK
 #endif
 
+/* MA__POSIX_FUNCTIONS_NAMES : définit les fonctions pthread_...
+ * */
+#ifdef MA__POSIX_FUNCTIONS_NAMES
+#  define MA__POSIX_FUNCTIONS_NAMES
+#endif
+
+/* MA__POSIX_BEHAVIOUR : définit les fonctions pmarcel_ compatibles avec
+ * les propriétées (et structures de données) de la libpthread
+ * */
+#ifdef MA__POSIX_BEHAVIOUR
+#  define MA__POSIX_BEHAVIOUR
+#endif
+
+/* MA__PTHREAD_FUNCTIONS : definit les fonctions nécessaires pour construire
+ * une libpthread (ABI)
+ * */
+#ifdef MA__PTHREAD_FUNCTIONS
+#  define MA__PTHREAD_FUNCTIONS
+#endif
+
 #ifdef MARCEL_MONO /* Marcel Mono */
 #  define MA__MONO
 #  define MA__TIMER

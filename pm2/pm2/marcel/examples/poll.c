@@ -47,10 +47,10 @@ any_t f(any_t arg)
 
   marcel_delay(100);
 
-  printf("I'm waiting for a keyboard input\n");
+  marcel_printf("I'm waiting for a keyboard input\n");
   marcel_read(STDIN_FILENO, chaine, 1024);
-  printf("Input from [keyboard] detected on LWP %d: %s",
-	 marcel_current_vp(), chaine);
+  marcel_printf("Input from [keyboard] detected on LWP %d: %s",
+		marcel_current_vp(), chaine);
    
   return NULL;
 }
@@ -63,10 +63,10 @@ any_t g(any_t arg)
 
   marcel_delay(100);
 
-  printf("I'm waiting for a pipe input\n");
+  marcel_printf("I'm waiting for a pipe input\n");
   marcel_read(tube[0], &i, sizeof(i));
-  printf("Input from [pipe] detected on LWP %d: %x\n",
-	 marcel_current_vp(), i);
+  marcel_printf("Input from [pipe] detected on LWP %d: %x\n",
+		marcel_current_vp(), i);
 
   return NULL;
 }
@@ -85,11 +85,11 @@ int marcel_main(int argc, char *argv[])
   marcel_create(NULL, NULL, f, NULL);
   marcel_create(NULL, NULL, g, NULL);
 
-  fprintf(stderr, "busy waiting...\n");
+  mdebug("busy waiting...\n");
 
   i = 200000000L; while(--i);
 
-  fprintf(stderr, "marcel_delay...\n");
+  mdebug("marcel_delay...\n");
 
   marcel_delay(5000);
 

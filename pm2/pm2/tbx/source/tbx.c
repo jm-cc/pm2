@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.9  2000/09/12 14:55:15  rnamyst
+Added support for generating .i files in Makefiles
+
 Revision 1.8  2000/07/07 14:49:49  oaumage
 - Ajout d'un support pour les tables de hachage
 
@@ -76,7 +79,6 @@ void tbx_init(int *argc, char **argv, int debug_flags)
     {
       initialized = tbx_true;
       pm2debug_init_ext(argc, argv, debug_flags);
-
       /* Safe malloc */
 #ifdef TBX_SAFE_MALLOC
       tbx_safe_malloc_init();

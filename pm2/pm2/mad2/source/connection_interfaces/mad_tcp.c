@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.22  2000/06/06 16:52:51  oaumage
+- Correction synchronisation
+
+Revision 1.21  2000/06/06 16:40:48  oaumage
+- Retablissement du sync final
+
 Revision 1.20  2000/06/06 12:13:19  oaumage
 - suppression du sync terminal
 
@@ -289,6 +295,12 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	      connection = &(channel->output_connection[j]);
 	      connection_specific = connection->specific;
 
+	      LOG_VAL("Writing channel id", channel->id);
+	      SYSCALL(write(connection_specific->socket,
+			    &(channel->id),
+			    sizeof(mad_channel_id_t)));
+	      LOG_VAL("Wrote channel id", channel->id);	      	  
+
 	      LOG_VAL("Receiving host id from host", j);
 	      SYSCALL(read(connection_specific->socket,
 			   &(host_id),
@@ -300,12 +312,6 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 		{
 		  FAILURE("wrong host id");
 		}
-
-	      LOG_VAL("Writing channel id", channel->id);
-	      SYSCALL(write(connection_specific->socket,
-			    &(channel->id),
-			    sizeof(mad_channel_id_t)));
-	      LOG_VAL("Wrote channel id", channel->id);	      	  
 	    }
 	}
       else
@@ -315,12 +321,6 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 
 	  connection = &(channel->input_connection[i]);
 	  connection_specific = connection->specific;
-
-	  LOG_VAL("Writing local host id", configuration->local_host_id);
-	  SYSCALL(write(connection_specific->socket,
-			&(configuration->local_host_id),
-			sizeof(ntbx_host_id_t)));	      
-	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 
 	  LOG_VAL("Receiving channel id from host", i);
 	  SYSCALL(read(connection_specific->socket, 
@@ -333,6 +333,12 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	    {
 	      FAILURE("wrong channel id");
 	    }
+
+	  LOG_VAL("Writing local host id", configuration->local_host_id);
+	  SYSCALL(write(connection_specific->socket,
+			&(configuration->local_host_id),
+			sizeof(ntbx_host_id_t)));	      
+	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 	}
     }
   LOG_VAL("Channel synced", channel->id);
@@ -408,8 +414,8 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->accept                     = mad_tcp_accept;
   interface->connect                    = mad_tcp_connect;
   interface->after_open_channel         = mad_tcp_after_open_channel;
-  interface->before_close_channel       = NULL;
-  /* interface->before_close_channel    = mad_tcp_before_close_channel; */
+  /* interface->before_close_channel       = NULL; */
+  interface->before_close_channel    = mad_tcp_before_close_channel;
   interface->disconnect                 = mad_tcp_disconnect;
   interface->after_close_channel        = NULL;
   interface->link_exit                  = NULL;
@@ -752,7 +758,7 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
   
   LOG_OUT();
 }
-/*
+
 void
 mad_tcp_before_close_channel(p_mad_channel_t channel)
 {
@@ -760,7 +766,7 @@ mad_tcp_before_close_channel(p_mad_channel_t channel)
   mad_tcp_sync_out_channel(channel);
   LOG_OUT();
 }
-*/
+
 void 
 mad_tcp_disconnect(p_mad_connection_t connection)
 {

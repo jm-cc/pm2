@@ -41,14 +41,14 @@ examples:
 include $(PM2_ROOT)/make/common-rules.mak
 
 .PHONY: all clean distclean examples
-all clean distclean examples:
+all clean examples:
 	$(COMMON_HIDE) set -e;\
 	for rep in $(SUBDIR); do \
 		$(MAKE) -C $$rep $@; \
 	done
 all:
 clean:
-distclean:
+#distclean:
 examples:
 
 SUBDIRSLASH := $(foreach DIR, $(SUBDIR), $(DIR)/)
@@ -71,7 +71,7 @@ targethelpapps:
 	@echo "  all|examples: build the examples in each directory"
 	@echo "  help: this help"
 	@echo "  clean: clean examples source tree for current flavor"
-	@echo "  distclean: clean examples source tree for all flavors"
+#	@echo "  distclean: clean examples source tree for all flavors"
 	@echo
 	@echo "Repertories with examples:"
 	@echo "  $(DIRLIST)"

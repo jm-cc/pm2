@@ -17,12 +17,10 @@
 
 static common_attr_t default_static_attr;
 
-#if defined(PM2)
+#if defined(MAD2) || defined(MAD3)
 static unsigned int pm2self       = 0;
 static unsigned int pm2_conf_size = 0;
-#endif // PM2
-
-
+#endif
 
 void common_attr_init(common_attr_t *attr)
 {

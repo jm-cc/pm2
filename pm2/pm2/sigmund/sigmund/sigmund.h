@@ -28,7 +28,7 @@ struct trace_st{
   int code;                        // code
   int pid;                         // pid
   mode type;                       // KERNEL or USER
-  short int proc;                  // n°proc if KERNEL
+  short int cpu;                  // n°proc if KERNEL
   unsigned int number;                      // Absolute number
   int args[MAX_NB_ARGS];           // Table of arguments
 };

@@ -62,7 +62,7 @@ void thread_func(void *arg)
   marcel_sem_V(&sem);
 }
 
-void startup_func(int argc, char *argv[])
+void startup_func(int argc, char *argv[], void *arg)
 {
   autre = (pm2_self() == 0) ? 1 : 0;
 }
@@ -111,7 +111,7 @@ int pm2_main(int argc, char **argv)
 {
   marcel_key_create(&user_key, NULL);
 
-  pm2_push_startup_func(startup_func);
+  pm2_push_startup_func(startup_func, NULL);
 
   pm2_set_pre_migration_func(pre_migration);
   pm2_set_post_migration_func(post_migration);

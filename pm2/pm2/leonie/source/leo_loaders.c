@@ -273,11 +273,7 @@ leo_default_loader(p_leo_settings_t settings,
 
 	process->pid = pid;
 
-	if (settings->xterm_mode)
-	  {
-	    // Necessary to avoid Xlib multiple connection overflow
-	    sleep(2);
-	  }
+        sleep(3);
       }
     }
   while (tbx_slist_ref_forward(process_slist));

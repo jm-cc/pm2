@@ -38,10 +38,11 @@
 #define MIN_LENGTH_POWER 2
 #define MAX_LENGTH_POWER 16
 #endif
-#define MAX_PACKS		4
-#define NB_PACKS_OFFSET		4
-#define MAX_MSGS		4
-#define NB_MSGS_OFFSET		4
+#define MAX_PACKS		128
+#define NB_PACKS_OFFSET		128
+#define MAX_MSGS		128
+#define NB_MSGS_OFFSET		128
+
 #define NB_SEND_MODES		 3
 #define NB_RECEIVE_MODES	 2
 
@@ -122,25 +123,25 @@ static ntbx_process_grank_t 	process_rank	= -1;
 static long int			next_seed_val	=  0;
 
 static mad_send_mode_t send_mode_array[] = {
+        mad_send_CHEAPER,
         mad_send_SAFER,
         mad_send_LATER,
-        mad_send_CHEAPER
 };
 
 static const char * send_mode_array_string[] = {
+        "mad_send_CHEAPER",
         "mad_send_SAFER",
         "mad_send_LATER",
-        "mad_send_CHEAPER"
 };
 
 static mad_receive_mode_t receive_mode_array[] = {
+        mad_receive_CHEAPER,
         mad_receive_EXPRESS,
-        mad_receive_CHEAPER
 };
 
 static const char * receive_mode_array_string[] = {
+        "mad_receive_CHEAPER",
         "mad_receive_EXPRESS",
-        "mad_receive_CHEAPER"
 };
 
 static
@@ -174,6 +175,8 @@ listener_thread(void *_arg)
         p_listener_t	arg	= _arg;
         p_mad_channel_t channel	= NULL;
 
+        LDISP("[%d]listener thread: %p", process_rank, marcel_self());
+
         channel = tbx_htable_get(arg->madeleine->channel_htable, arg->name);
         if (!channel) {
                 DISP1("listener: channel not found, leaving");
@@ -188,6 +191,8 @@ listener_thread(void *_arg)
                 LOCK(&(arg->active_receiver_lock));
                 if (!arg->nb_active_receivers)
                         break;
+
+                DISP1("lt: nb_active_receivers: %d", arg->nb_active_receivers);
 
                 UNLOCK(&(arg->active_receiver_lock));
 
@@ -220,6 +225,8 @@ receiver_thread(void *_arg)
         long int	i_msg		= 0;
         long int	nb_msgs		= 0;
         struct drand48_data rand_buffer;
+
+        LDISP("[%d]receiver thread: %p", process_rank, marcel_self());
 
         channel = tbx_htable_get(arg->madeleine->channel_htable, arg->name);
         if (!channel) {
@@ -303,7 +310,7 @@ receiver_thread(void *_arg)
 #endif /* DATA_CHECK */
 
                                 buffer = TBX_MALLOC(length);
-                                DISP2("new unpack: %ld bytes, %s, %s, %p", length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value], buffer);
+                                DISP2("[%ld/%ld] new unpack(%ld/%ld): %ld/%lx bytes, %s, %s, %p", i_msg+1, nb_msgs, i_pack+1, nb_packs, length, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value], buffer);
 #ifdef DATA_CHECK
                                 pack_info = TBX_MALLOC(sizeof(pack_info_t));
                                 pack_info->num		= i_pack;
@@ -336,8 +343,8 @@ receiver_thread(void *_arg)
                                                 }
 
                                                 if (cumulative_check) {
-                                                        DISP("data check failed for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, i_pack+1, nb_packs, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value]);
-
+                                                        DISP("data check failed for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld/%lx bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, i_pack+1, nb_packs, length, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value]);
+                                                        FAILURE("data corruption");
 #if (DISP_LEVEL > 3)
                                                         for (i = 0; i < length; i++) {
                                                                 unsigned char received = 0;
@@ -350,7 +357,7 @@ receiver_thread(void *_arg)
                                                         }
 #endif
                                                 } else {
-                                                        DISP3("data check successful for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, i_pack+1, nb_packs, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value]);
+                                                        DISP3("data check successful for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld/%lx bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, i_pack+1, nb_packs, length, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value]);
                                                 }
                                         }
                                         TBX_FREE(pack_info->check_buffer);
@@ -363,6 +370,14 @@ receiver_thread(void *_arg)
                 }
 
                 mad_end_unpacking(in);
+
+                if (i_msg+1 == nb_msgs) {
+                        LOCK(&(arg->listener->active_receiver_lock));
+                        arg->listener->nb_active_receivers--;
+                        DISP_VAL("rt: nb_active_receivers", arg->listener->nb_active_receivers);
+                        UNLOCK(&(arg->listener->active_receiver_lock));
+                }
+
                 UNLOCK(&(arg->listener->channel_ready));
 
 #ifdef DATA_CHECK
@@ -382,7 +397,7 @@ receiver_thread(void *_arg)
                         }
 
                         if (cumulative_check) {
-                                DISP("data check failed for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, pack_info->num+1, nb_packs, pack_info->length, send_mode_array_string[pack_info->send_mode_value], receive_mode_array_string[pack_info->receive_mode_value]);
+                                DISP("data check failed for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld/%lx bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, pack_info->num+1, nb_packs, pack_info->length, pack_info->length, send_mode_array_string[pack_info->send_mode_value], receive_mode_array_string[pack_info->receive_mode_value]);
 
 #if (DISP_LEVEL > 3)
                                 for (i = 0; i < pack_info->length; i++) {
@@ -396,7 +411,7 @@ receiver_thread(void *_arg)
                                 }
 #endif
                         } else {
-                                DISP3("data check successful for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, pack_info->num+1, nb_packs, pack_info->length, send_mode_array_string[pack_info->send_mode_value], receive_mode_array_string[pack_info->receive_mode_value]);
+                                DISP3("data check successful for message %d-->%d [%ld/%ld], pack %ld/%ld, %ld/%lx bytes, %s, %s", arg->remote_lrank, arg->local_lrank, i_msg+1, nb_msgs, pack_info->num+1, nb_packs, pack_info->length, pack_info->length, send_mode_array_string[pack_info->send_mode_value], receive_mode_array_string[pack_info->receive_mode_value]);
                         }
 
                         TBX_FREE(pack_info->check_buffer);
@@ -411,9 +426,6 @@ receiver_thread(void *_arg)
                 }
         }
 
-        LOCK(&(arg->listener->active_receiver_lock));
-        arg->listener->nb_active_receivers--;
-        UNLOCK(&(arg->listener->active_receiver_lock));
         DISP1("receiver[%d]: leaving", arg->remote_lrank);
         return NULL;
 }
@@ -428,7 +440,10 @@ sender_thread(void *_arg)
         p_mad_connection_t	out	= NULL;
         p_tbx_slist_t	buffer_slist	= NULL;
         long int	nb_msgs		= 0;
+        long int	i_msg		= 0;
         struct drand48_data rand_buffer;
+
+        LDISP("[%d]sender thread: %p", process_rank, marcel_self());
 
         channel = tbx_htable_get(arg->madeleine->channel_htable, arg->name);
         if (!channel) {
@@ -448,12 +463,12 @@ sender_thread(void *_arg)
         // rand: nb_msgs
         nb_msgs = rand48(&rand_buffer, MAX_MSGS) + NB_MSGS_OFFSET;
         DISP1("sender nb messages: %d-->%d = %ld", arg->local_lrank, arg->remote_lrank, nb_msgs);
-        while (nb_msgs--) {
+        for (i_msg = 0; i_msg < nb_msgs; i_msg++) {
                 long int nb_packs	= 0;
                 long int i_pack		= 0;
 
                 out = mad_begin_packing(channel, arg->remote_lrank);
-                DISP2("sender new message %d-->%d, %ld remaining", arg->local_lrank, arg->remote_lrank, nb_msgs);
+                DISP2("sender new message %d-->%d, %ld remaining", arg->local_lrank, arg->remote_lrank, nb_msgs-i_msg-1);
 
                 // rand: nb_packs
                 nb_packs = rand48(&rand_buffer, MAX_PACKS) + NB_PACKS_OFFSET;
@@ -495,7 +510,7 @@ sender_thread(void *_arg)
                                 void *buffer = NULL;
 
                                 buffer = TBX_MALLOC(length);
-                                DISP2("new pack: %ld bytes, %s, %s, %p", length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value], buffer);
+                                DISP2("[%ld/%ld] new pack(%ld/%ld): %ld/%lx bytes, %s, %s, %p", i_msg+1, nb_msgs, i_pack+1, nb_packs, length, length, send_mode_array_string[send_mode_value], receive_mode_array_string[receive_mode_value], buffer);
 #ifdef DATA_CHECK
                                 {
                                         long int i = 0;
@@ -538,6 +553,8 @@ test(p_mad_madeleine_t   madeleine,
   p_tbx_slist_t			receiver_slist	= NULL;
   p_tbx_slist_t			sender_slist	= NULL;
   p_ntbx_topology_table_t	ttable		= NULL;
+
+  LDISP("[%d]main thread: %p", process_rank, marcel_self());
 
   receivers	= tbx_darray_init();
 

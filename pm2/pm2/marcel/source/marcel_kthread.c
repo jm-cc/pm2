@@ -14,7 +14,6 @@
  * General Public License for more details.
  */
 
-#define _GNU_SOURCE
 #include "marcel.h"
 
 #ifdef MA__SMP
@@ -30,7 +29,6 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <linux/sched.h>
 #include <linux/unistd.h>
 
 #define __STACK_SIZE  (1024 * 1024)

@@ -34,6 +34,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
+
 if [ "$1" = "-pm2" ] ; then
 	shift
 	LOG=pm2log
@@ -47,7 +51,7 @@ else
 	fi
 fi
 
-set `cat ${MADELEINE_ROOT}/.madconf`
+set `cat ${MADELEINE_ROOT}/.madconf | sort | uniq`
 
 for host in $* ; do
 	rsh $host ${MADELEINE_ROOT}/bin/vlocallogs ${LOG} $host

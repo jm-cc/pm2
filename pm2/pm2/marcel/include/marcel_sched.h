@@ -182,30 +182,48 @@ static __inline__ void sched_unlock(__lwp_t *lwp)
 
 #ifdef X86_ARCH
 
+#ifdef __ACT__
+#include <sys/upcalls.h>
+#endif
+
 static __inline__ void lock_task()
 {
-#ifndef SMP
-  atomic_inc(&cur_lwp->_locked);
-#else
+#ifdef SMP
   atomic_inc(&marcel_self()->lwp->_locked);
+#elif defined(__ACT__)
+  marcel_t self=marcel_self();
+  if (! self->marcel_lock) {
+    act_lock(self);
+  }
+  self->marcel_lock++;
+#else
+  atomic_inc(&cur_lwp->_locked);
 #endif
 }
 
 static __inline__ void unlock_task()
 {
-#ifndef SMP
-  atomic_dec(&cur_lwp->_locked);
-#else
+#ifdef SMP
   atomic_dec(&marcel_self()->lwp->_locked);
+#elif defined(__ACT__)
+  marcel_t self=marcel_self();
+  self->marcel_lock--;  
+  if (! self->marcel_lock) {
+    act_unlock(self);
+  }
+#else
+  atomic_dec(&cur_lwp->_locked);
 #endif
 }
 
 static __inline__ int locked()
 {
-#ifndef SMP
-  return atomic_read(&cur_lwp->_locked);
-#else
+#ifdef SMP
   return atomic_read(&marcel_self()->lwp->_locked);
+#elif defined(__ACT__)
+  return marcel_self()->marcel_lock;
+#else
+  return atomic_read(&cur_lwp->_locked);
 #endif
 }
 

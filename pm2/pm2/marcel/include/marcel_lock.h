@@ -56,8 +56,14 @@
 #ifdef SMP
 typedef struct { volatile int counter; } atomic_t;
 #else
+#ifndef __ACT__
 typedef struct { int counter; } atomic_t;
 #endif
+#endif
+
+#ifdef __ACT__
+#include <asm/atomic.h>
+#else
 
 #define ATOMIC_INIT(i)	{ (i) }
 
@@ -79,6 +85,8 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 		:"=m" (__atomic_fool_gcc(v))
 		:"m" (0));
 }
+
+#endif  /* __ACT__ */
 
 static __inline__ int testandset(int *spinlock)
 {

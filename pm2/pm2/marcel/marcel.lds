@@ -27,16 +27,16 @@ SECTIONS {
       . = ALIGN(4096) ;
       *( SORT(.ma.debug.size*) )
     }
-  .rodata :
-    {
-      . = ALIGN(4096) ;
-      __ma_init_start = . ;
-      *( SORT(.ma.init.*))
-      __ma_init_end = . ;
-    }
   .text :
     {
       /* On regroupe les fonctions rarement utilisées */
       *(.ma.initfunc*)
+    }
+  .rodata :
+    {
+      . = ALIGN(8);
+      __ma_init_start = . ;
+      *( SORT(.ma.init.*))
+      __ma_init_end = . ;
     }
 }

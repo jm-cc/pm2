@@ -66,6 +66,7 @@ MAD_OPTIONS    += $(MAD_STANDALONE_OPTIONS) -DNTBX -DNTBX_TCP -DTBX -DMAD2
 MAD_ALONE       :=  true
 endif
 
+ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(wildcard $(MAD_DEP)),$(MAD_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_DEP))
 endif
@@ -76,6 +77,7 @@ endif
 
 ifneq ($(wildcard $(MAD_LIBD)),$(MAD_LIBD))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_LIBD))
+endif
 endif
 
 MAD_NET_CFLAGS	=
@@ -103,10 +105,7 @@ MAD_LIB		=	$(MAD_LIBD)/libmad2.a
 .PHONY: mad_default
 mad_default: tbx_default ntbx_default $(MAD_LIB) 
 
-
 include $(MAD2_SUB_MAKEFILES)
-
-
 
 MAD_REG_SOURCES	:=	$(wildcard $(MAD_SRC)/*.c)
 # MAD_NET_SOURCES is defined in ./make/custom/options.mak
@@ -209,6 +208,7 @@ ifndef BIN_DIR
 BIN_DIR	=	$(SRC_DIR)/bin/$(PM2_ARCH_SYS)
 endif
 
+ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(wildcard $(DEP_DIR)),$(DEP_DIR))
 DUMMY_BUILD	:=	$(shell mkdir -p $(DEP_DIR))
 endif
@@ -219,6 +219,7 @@ endif
 
 ifneq ($(wildcard $(BIN_DIR)),$(BIN_DIR))
 DUMMY_BUILD	:=	$(shell mkdir -p $(BIN_DIR))
+endif
 endif
 
 SOURCES	:=	$(wildcard $(SRC_DIR)/*.c)

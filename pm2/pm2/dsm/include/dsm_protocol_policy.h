@@ -36,7 +36,7 @@
 #ifndef DSM_PROT_POL_IS_DEF
 #define DSM_PROT_POL_IS_DEF
 
-#include <dsm_protocol_lib.h> /* dsm_rf_action_t, etc */
+#include "dsm_protocol_lib.h" /* dsm_rf_action_t, etc */
 
 typedef struct _dsm_protocol_t
 {

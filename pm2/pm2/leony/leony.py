@@ -1,30 +1,26 @@
 #!/usr/bin/env /usr/bin/python
 
-import leo_args
-import leo_cfg
 import leo_comm
-import leo_spawn
-import leo_dir_send
-import leo_dir_activate
+import leo_log
 import leo_loop
+import leo_session
 
+import logging
 import time
+import sys
 
-class Session:
-    pass
+class Leony:
+    def __init__(self):
+        self.session_dict = {}
+        self.next_global_rank = 0
+        leo_comm.server_init(self)
+#__________
 
-s = Session()
-leo_args.cmdline_parse(s)
-leo_cfg.appcfg_process(s)
-leo_comm.server_init(s)
-leo_spawn.session_spawn(s)
-leo_dir_send.send_dir(s)
-leo_dir_activate.driver_init(s)
-leo_dir_activate.channels_init(s)
-leo_dir_activate.fchannels_init(s)
-leo_dir_activate.vchannels_init(s)
-leo_dir_activate.xchannels_init(s)
-leo_loop.loop(s)
+logger	= logging.getLogger()
+leo	= Leony()
+s = leo_session.Session(leo, 'main', sys.argv[1:])
+leo_log.log_init(s.options.trace)
+s.init()
+leo_loop.loop(leo)
 
-time.sleep(10)
 # end

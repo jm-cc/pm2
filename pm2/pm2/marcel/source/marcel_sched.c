@@ -708,7 +708,6 @@ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, __lwp_t *lwp)
 
   DEFINE_CUR_LWP( , ,);
 
-
   LOG_IN();
 
   SET_CUR_LWP(lwp);

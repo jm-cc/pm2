@@ -213,9 +213,14 @@ PM2_OBJECTS	=	$(PM2_SOBJ)/pm2.o $(PM2_SOBJ)/pm2_attr.o $(PM2_SOBJ)/console.o \
 			$(PM2_SOBJ)/pm2_migr.o $(PM2_SOBJ)/pm2_rpc.o
 
 PM2_HEADERS	=	$(PM2_INC)/pm2.h $(PM2_INC)/pm2_attr.h \
-			$(PM2_INC)/timing.h $(PM2_INC)/pm2_timing.h \
-			$(PM2_INC)/safe_malloc.h $(PM2_INC)/sys/console.h \
 			$(PM2_INC)/pm2_thread.h $(PM2_INC)/pm2_rpc.h \
+			$(PM2_INC)/pm2_types.h \
+			$(PM2_INC)/sys/debug.h \
+			$(PM2_INC)/timing.h $(PM2_INC)/pm2_timing.h \
+			$(PM2_INC)/isomalloc_timing.h $(PM2_INC)/safe_malloc.h \
+			$(PM2_INC)/block_alloc.h $(PM2_INC)/isomalloc.h $(PM2_INC)/magic.h \
+			$(PM2_INC)/sys/console.h $(PM2_INC)/sys/isomalloc_rpc.h \
+			$(PM2_INC)/sys/slot_distrib.h \
 			$(MAD_HEADERS) \
 			$(MAR_HEADERS) \
 			$(DSM_HEADERS) \
@@ -247,141 +252,123 @@ $(PM2_LIB): $(PM2_OBJECTS)
 
 # pm2 :
 
-$(PM2_SOBJ)/pm2.o: $(PM2_SRC)/pm2.c $(PM2_INC)/pm2.h \
-		$(PM2_INC)/sys/console.h \
-		$(PM2_INC)/sys/netserver.h \
-		$(PM2_INC)/isomalloc.h \
-		$(PM2_INC)/sys/isomalloc_rpc.h \
-		$(PM2_INC)/sys/bitmap.h \
-		$(PM2_INC)/sys/slot_distrib.h \
-		$(PM2_INC)/block_alloc.h \
-		$(PM2_INC)/timing.h \
-		$(PM2_INC)/safe_malloc.h \
-		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+$(PM2_SOBJ)/pm2.o: $(PM2_SRC)/pm2.c \
+		$(PM2_INC)/sys/netserver.h $(PM2_INC)/sys/bitmap.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2.o $(PM2_SRC)/pm2.c
 
 # pm2_rpc :
 
-$(PM2_SOBJ)/pm2_rpc.o: $(PM2_SRC)/pm2_rpc.c $(PM2_INC)/pm2_rpc.h \
-			$(PM2_INC)/sys/console.h \
-			$(PM2_INC)/sys/netserver.h \
-			$(PM2_INC)/sys/isomalloc_rpc.h \
-	$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+$(PM2_SOBJ)/pm2_rpc.o: $(PM2_SRC)/pm2_rpc.c \
+		$(PM2_INC)/sys/netserver.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_rpc.o $(PM2_SRC)/pm2_rpc.c
 
 # pm2_attr :
 
-$(PM2_SOBJ)/pm2_attr.o: $(PM2_SRC)/pm2_attr.c $(PM2_INC)/pm2_attr.h \
-		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+$(PM2_SOBJ)/pm2_attr.o: $(PM2_SRC)/pm2_attr.c \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_attr.o $(PM2_SRC)/pm2_attr.c
 
 # pm2_thread :
 
-$(PM2_SOBJ)/pm2_thread.o: $(PM2_SRC)/pm2_thread.c $(PM2_INC)/pm2_thread.h \
-		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+$(PM2_SOBJ)/pm2_thread.o: $(PM2_SRC)/pm2_thread.c \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_thread.o $(PM2_SRC)/pm2_thread.c
 
 # pm2_printf :
 
-$(PM2_SOBJ)/pm2_printf.o: $(PM2_SRC)/pm2_printf.c $(PM2_INC)/sys/pm2_printf.h \
-		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+$(PM2_SOBJ)/pm2_printf.o: $(PM2_SRC)/pm2_printf.c \
+		$(PM2_INC)/sys/pm2_printf.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_printf.o $(PM2_SRC)/pm2_printf.c
 
 # pm2_migr :
 
-$(PM2_SOBJ)/pm2_migr.o: $(PM2_SRC)/pm2_migr.c $(PM2_INC)/sys/pm2_migr.h \
-		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+$(PM2_SOBJ)/pm2_migr.o: $(PM2_SRC)/pm2_migr.c \
+		$(PM2_INC)/sys/pm2_migr.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_migr.o $(PM2_SRC)/pm2_migr.c
 
 # console :
 
-$(PM2_SOBJ)/console.o: $(PM2_SRC)/console.c $(PM2_INC)/sys/console.h \
-			$(PM2_INC)/pm2.h \
-			$(PM2_INC)/safe_malloc.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/console.o: $(PM2_SRC)/console.c \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/console.o $(PM2_SRC)/console.c
 
 
 # netserver :
 
-$(PM2_SOBJ)/netserver.o: $(PM2_SRC)/netserver.c $(PM2_INC)/sys/netserver.h \
-			$(PM2_INC)/pm2.h \
-			$(PM2_INC)/block_alloc.h \
-			$(PM2_INC)/isomalloc.h \
-			$(PM2_INC)/timing.h \
-			$(PM2_INC)/safe_malloc.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/netserver.o: $(PM2_SRC)/netserver.c \
+		$(PM2_INC)/sys/netserver.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/netserver.o $(PM2_SRC)/netserver.c
 
 
 # isomalloc :
 
-$(PM2_SOBJ)/isomalloc.o: $(PM2_SRC)/isomalloc.c $(PM2_INC)/isomalloc.h $(PM2_INC)/sys/isomalloc_rpc.h \
-			$(PM2_INC)/pm2.h \
-			$(PM2_INC)/sys/bitmap.h \
-			$(PM2_INC)/sys/isomalloc_archdep.h \
-			$(PM2_INC)/timing.h \
-			$(PM2_INC)/safe_malloc.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/isomalloc.o: $(PM2_SRC)/isomalloc.c \
+		$(PM2_INC)/sys/bitmap.h \
+		$(PM2_INC)/sys/isomalloc_archdep.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/isomalloc.o $(PM2_SRC)/isomalloc.c
 
 
 # block_alloc :
 
-$(PM2_SOBJ)/block_alloc.o: $(PM2_SRC)/block_alloc.c $(PM2_INC)/block_alloc.h $(PM2_INC)/isomalloc.h \
-			$(PM2_INC)/sys/isomalloc_rpc.h \
-			$(PM2_INC)/sys/bitmap.h \
-			$(PM2_INC)/timing.h \
-			$(PM2_INC)/safe_malloc.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/block_alloc.o: $(PM2_SRC)/block_alloc.c \
+		$(PM2_INC)/sys/bitmap.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/block_alloc.o $(PM2_SRC)/block_alloc.c
 
 
 # isomalloc_rpc :
 
-$(PM2_SOBJ)/isomalloc_rpc.o: $(PM2_SRC)/isomalloc_rpc.c $(PM2_INC)/sys/isomalloc_rpc.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/isomalloc_rpc.o: $(PM2_SRC)/isomalloc_rpc.c \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/isomalloc_rpc.o $(PM2_SRC)/isomalloc_rpc.c
 
 
 # bitmap :
 
-$(PM2_SOBJ)/bitmap.o: $(PM2_SRC)/bitmap.c $(PM2_INC)/sys/bitmap.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/bitmap.o: $(PM2_SRC)/bitmap.c \
+		$(PM2_INC)/sys/bitmap.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/bitmap.o $(PM2_SRC)/bitmap.c
 
 
 # slot_distrib :
 
-$(PM2_SOBJ)/slot_distrib.o: $(PM2_SRC)/slot_distrib.c $(PM2_INC)/sys/slot_distrib.h $(PM2_INC)/isomalloc.h \
-			$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
-			$(PM2_MAKEFILE)
+$(PM2_SOBJ)/slot_distrib.o: $(PM2_SRC)/slot_distrib.c \
+		$(PM2_INC)/sys/slot_distrib.h \
+		$(PM2_HEADERS) $(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/slot_distrib.o $(PM2_SRC)/slot_distrib.c
 
 
 # timing :
 
 $(PM2_SOBJ)/timing.o: $(PM2_SRC)/timing.c $(PM2_INC)/timing.h \
-			$(PM2_MAKEFILE)
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/timing.o $(PM2_SRC)/timing.c
 
 
 # safe_malloc :
 
 $(PM2_SOBJ)/safe_malloc.o: $(PM2_SRC)/safe_malloc.c $(PM2_INC)/safe_malloc.h \
-			$(PM2_MAKEFILE)
+		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/safe_malloc.o $(PM2_SRC)/safe_malloc.c
 
 

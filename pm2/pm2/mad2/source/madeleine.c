@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.27  2000/05/15 08:08:08  oaumage
+- corrections diverses
+
 Revision 1.26  2000/04/20 13:32:07  oaumage
 - modifications diverses
 
@@ -137,7 +140,7 @@ ______________________________________________________________________________
 #include <sys/wait.h>
 #endif /* PM2 */
 
-/* #define DEBUG */
+#define DEBUG
 /* #define TIMING */
 #include "madeleine.h"
 

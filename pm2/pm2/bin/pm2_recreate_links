@@ -91,8 +91,6 @@ make_ln ${PM2_ROOT}/modules ../swann swann
 # Marcel
 echo
 echo Marcel
-make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_arch pm2_arch
-make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_sys pm2_sys
 make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${MARCEL_ROOT}/include/sys/ ../../../pm2/include/sys/isomalloc_archdep.h isomalloc_archdep.h
 make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/timing.h timing.h
@@ -111,33 +109,6 @@ done
 echo
 echo Madeleine I
 make_ln ${MAD1_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
-make_ln ${MAD1_ROOT}/bin/ custom/madload madload
-make_ln ${MAD1_ROOT}/bin/ ../../bin/pm2_arch pm2_arch
-make_ln ${MAD1_ROOT}/bin/ ../../bin/pm2_sys pm2_sys
-
-# Mad I / VIA
-if [ -d ${MAD1_ROOT}/bin/via ] ; then
-    make_ln ${MAD1_ROOT}/bin/via/ ../tcp/madload madload    
-    make_ln ${MAD1_ROOT}/bin/via/ ../tcp/madspawn madspawn
-else
-    make_ln ${MAD1_ROOT}/bin ./tcp via
-fi
-
-# Mad I / SISCI
-if [ -d ${MAD1_ROOT}/bin/sisci ] ; then
-    make_ln ${MAD1_ROOT}/bin/sisci/ ../tcp/madload madload
-    make_ln ${MAD1_ROOT}/bin/sisci/ ../tcp/madspawn madspawn
-else
-    make_ln ${MAD1_ROOT}/bin ./tcp sisci
-fi
-
-# Mad I / SHM
-if [ -d ${MAD1_ROOT}/bin/shm ] ; then
-    make_ln ${MAD1_ROOT}/bin/shm/ ../tcp/madload madload
-    make_ln ${MAD1_ROOT}/bin/shm/ ../tcp/madspawn madspawn
-else
-    make_ln ${MAD1_ROOT}/bin ./tcp shm
-fi
 
 make_ln ${MAD1_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${MAD1_ROOT}/include/sys/ ../../../pm2/include/sys/debug.h debug.h
@@ -170,8 +141,4 @@ make_ln ${DSM_ROOT}/include/ ../../pm2/include/timing.h timing.h
 make_ln ${DSM_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
-# Madeleine default selection
-
-echo .
-${PM2_ROOT}/bin/pm2madselect 2
-
+echo

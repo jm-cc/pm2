@@ -4,4 +4,9 @@
 
 void menu_init(GtkWidget *vbox);
 
+void menu_update_flavor(gint load_enabled, gint create_enabled, gint save_enabled,
+			gint save_as, gint delete_enabled);
+
+void menu_update_module(gint select_enabled, gint deselect_enabled);
+
 #endif

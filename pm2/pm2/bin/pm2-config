@@ -378,7 +378,7 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    if [ $PM2_SYS = "SOLARIS_SYS" ] ; then
+    if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" ] ; then
     	_PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_extra"
     else
     	_PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
@@ -392,7 +392,7 @@ pm2config_set_vars()
 
 pm2config_parse_cmdline() # args
 {
-    _ARGV="$@"
+    _ARGV=${@:+"$@"}
 
     _PROGNAME="pm2-config"
 
@@ -632,7 +632,7 @@ _PM2CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad marcel tbx ntbx profile
 if [ $# -eq 1 -a "$1" = --source-mode ] ; then
     pm2config_set_vars
 else
-    pm2config_parse_cmdline "$@"
+    pm2config_parse_cmdline ${@:+"$@"}
     exit 0
 fi
 

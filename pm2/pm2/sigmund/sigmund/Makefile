@@ -55,6 +55,9 @@ LEX             =       flex
 
 default: $(PROGRAM)
 
+sigmund: $(PROGRAM)
+.PHONY: sigmund
+
 ifneq ($(wildcard $(DEPENDS)),)
 include $(wildcard $(DEPENDS))
 endif

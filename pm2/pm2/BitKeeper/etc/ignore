@@ -3,4 +3,4 @@ PENDING/*
 *.incl/*
 *.excl/*
 tags
-modules/mad4
+*.swp

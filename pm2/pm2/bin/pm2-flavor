@@ -34,7 +34,6 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-PM2_CONFIG=${PM2_ROOT}/flavors
 PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
 PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
 
@@ -185,44 +184,24 @@ EOF
 Command '$2' unknown
 
 EOF
-	
+
     esac
-#    if [ $exit_code != 0 ]; then
-#	echo "error in $PROGNAME $ARGV" 1>&2
-#    fi
     exit $exit_code
 }
 
 ##########################################################################
 # usefull function
 
-USER_FLAVOR_DIR=${PM2_FLAVOR_DIR:-$HOME/.pm2/flavors}
-
-output_flavor_dir() {
-    if [ ${EDIT_MODE} = "admin" ] ; then
-	echo "${PM2_CONFIG}"
-    else
-	echo "$USER_FLAVOR_DIR"
-    fi
-}
+_dummy_fla=`${PM2_ROOT}/bin/pm2-flavor-file -f dummy`
+USER_FLAVOR_DIR=`dirname $_dummy_fla`
 
 find_flavor() {
-    if [ ${EDIT_MODE} = "normal" -a -f "$USER_FLAVOR_DIR/$flavor" ]; then
-	echo "$USER_FLAVOR_DIR/$flavor"
-    else
-	echo "${PM2_CONFIG}/$flavor"
-    fi
+    echo "$USER_FLAVOR_DIR/$flavor"
 }
 
 get_liste_flavor() {
-    if [ -d "$PM2_ROOT/flavors" ]; then
-	liste_flavor_tmp=`(cd $PM2_ROOT/flavors; ls)`
-    else
-	liste_flavor_tmp=""
-    fi
-    if [ ${EDIT_MODE} = "normal" -a -d "$USER_FLAVOR_DIR" ]; then
-	liste_flavor_tmp="$liste_flavor_tmp `(cd $USER_FLAVOR_DIR; ls) | sort | uniq`"
-    fi
+    liste_flavor_tmp=""
+    liste_flavor_tmp="$liste_flavor_tmp `(cd $USER_FLAVOR_DIR; ls) | sort | uniq`"
     liste_flavor="`echo $liste_flavor_tmp`"
     return 0
 }
@@ -268,8 +247,8 @@ set_option() { # option max_val filtre null_allowed
 # Création réelle
 create_flavor() {
     $ECHO "Creating flavor '$flavor'"
-    mkdir -p `output_flavor_dir`
-    OUT="`output_flavor_dir`/$flavor.new"
+    mkdir -p $USER_FLAVOR_DIR
+    OUT="$USER_FLAVOR_DIR/$flavor.new"
     OUTOLD=`find_flavor`
     echo "# Flavor $flavor" > ${OUT} || exit 1
     echo "${SETTINGS} --flavor=$flavor" >> ${OUT}
@@ -793,6 +772,8 @@ do_find() {
     flavor=${flavor:-default}
     echo `find_flavor`
 }
+
+# Programme principal
 
 if test $# -eq 0; then
     usage 1

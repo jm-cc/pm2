@@ -84,9 +84,6 @@ endif
 endif
 endif
 
-#$(LIB_GEN_STAMP)/$(LIBRARY)$(LIB_EXT): $(LIB_LIB)
-#	$(COMMON_HIDE) touch $@
-
 $(LIB_DEPENDS): $(COMMON_DEPS)
 $(LIB_OBJECTS): $(LIB_GEN_OBJ)/%.o: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
 $(LIB_C_PREPROC): $(LIB_GEN_CPP)/%.i: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
@@ -102,12 +99,10 @@ else
 $(LIB_LIB_A): $(LIB_OBJECTS)
 	$(COMMON_HIDE) rm -f $(LIB_LIB_A)
 	$(LIB_PREFIX) ar cr $(LIB_LIB_A) $(LIB_OBJECTS)
-	$(COMMON_HIDE) touch $(LIB_STAMP_FILE)
 
 $(LIB_LIB_SO): $(LIB_PICS)
 	$(COMMON_HIDE) rm -f $(LIB_LIB_SO)
 	$(LIB_PREFIX) $(LD) -shared -o $(LIB_LIB_SO) $(LIB_PICS)
-	$(COMMON_HIDE) touch $(LIB_STAMP_FILE)
 endif
 
 $(LIB_C_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.c
@@ -152,7 +147,6 @@ libclean:
 	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/*$(LIB_EXT).{o,pic} \
 		$(LIB_GEN_DEP)/*$(LIB_EXT).d $(LIB_GEN_ASM)/*$(LIB_EXT).s \
 		$(LIB_LIB) \
-		$(LIB_STAMP_FILE) \
 		$(LIBRARY)-config.mak
 
 ifneq ($(strip $(LIB_REP_TO_BUILD)),)

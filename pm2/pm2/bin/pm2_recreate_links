@@ -34,7 +34,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-cd ${PM2_ROOT}; 		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+cd ${PM2_ROOT}; 		ln -s marcel/ARCHITECTURES ARCHITECTURES
 cd ${MADELEINE_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 cd ${MADELEINE_ROOT}/bin/;	ln -s custom/madload madload
 cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch

@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.1 2002/10/13 12:14:00 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.2 2002/10/14 15:42:05 slacour Exp $
  */
 
 /* Distributed management of the locks.  Each lock has a (central)
@@ -12,11 +12,7 @@
 #include "token_lock.h"
 #include "hierarch_topology.h"
 #include "pm2.h"
-
-
-/* The program might be slightly slower to run if the correctness of
- * the arguments of the functions called by the user application were
- * checked.  Those checks are replaced with assertions "assert". */
+#include "dsm_const.h"
 
 
 /**********************************************************************/
@@ -27,7 +23,7 @@
 #undef DBGSL
 
 /* remove all assertions "assert" */
-#define NDEBUG
+#undef NDEBUG
 #include <assert.h>
 
 #undef PROFIN
@@ -73,19 +69,22 @@ typedef enum { NO_TAG, TOO_LATE, FORCE_TAG } request_tag_t;
 typedef enum { SL_TRUE, SL_FALSE } bool_t;
 
 /* a lock can be fully granted (INTERcluster) or partially granted
- * (INTRAcluster) */
-typedef enum { INTER, INTRA } grant_state_t;
+ * (INTRAcluster).  Otherwise, the requested lock does not exist */
+typedef enum { INTER, INTRA, DOES_NOT_EXIST } grant_state_t;
 
 /* possible statuses of a lock */
 typedef enum
 {
-   UNKNOWN,  /* I'm not the owner of the lock */
-   FREE,     /* I own the lock, it's free or partially released */
-   BUSY,     /* I own the lock, it is busy */
-   REQUESTED /* the lock has already been requested but has not arrived yet */
+   BEING_CREATED, /* the lock entry has just been allocated in memory */
+   NON_EXISTENT,  /* the lock was requested but was not initialized */
+   UNKNOWN,       /* I'm not the owner of the lock */
+   FREE,          /* I own the lock, it's free or partially released */
+   BUSY,          /* I own the lock, it is busy */
+   REQUESTED      /* the lock has already been requested but has not
+                     arrived yet */
 } lock_status_t;
 
-/* linked list of nodes (to which I must send a release notification) */
+/* linked list of nodes */
 typedef struct node_list_struct node_list_elem_t;
 typedef node_list_elem_t * node_list_t;
 struct node_list_struct
@@ -156,7 +155,8 @@ struct lock_list_struct
    bool_t partial_release_originator;
 
    /* list of nodes (in the local cluster) which were granted the lock
-    * token while releases were expected (lock partially granted). */
+    * token while releases were expected (lock partially granted) and
+    * to which I must send a release notification. */
    node_list_t notif_list;
    /* pointer to the last element of the previous linked list */
    node_list_t end_of_notif_list;
@@ -173,7 +173,7 @@ struct lock_list_struct
  * should not be a multiple of LOCK_HASH_SIZE.  This particular point
  * (the hash table size) could be improved, taking the
  * pm2_config_size() into account. */
-#define LOCK_HASH_SIZE 10
+#define LOCK_HASH_SIZE 11
 static lock_list_t lock_hash[LOCK_HASH_SIZE];
 
 /* Total number of locks initialized locally (this is the number of
@@ -183,18 +183,15 @@ static token_lock_id_t local_lock_number = 0;
 /* Lock for any operation on the lock data structures */
 static marcel_mutex_t lock_mutex;
 
-/* no node */
-static const dsm_node_t NOBODY = (dsm_node_t)-1;
-
 /* maximum number of lock acquisitions inside a given process to the
  * detriment of other nodes (0 to disable the local thread priority;
  * -1 to mean "no limit", "infinity") */
-const int max_local_thread_acquire = -1;
+int max_local_thread_acquire = -1;
 
 /* maximum number of lock acquisitions inside a cluster to the
  * detriment of remote nodes (0 to disable the local node priority; -1
  * to mean "no limit", "infinity") */
-const int max_local_node_acquire = -1;
+int max_local_node_acquire = -1;
 
 
 /**********************************************************************/
@@ -244,11 +241,8 @@ lock_hash_func (const token_lock_id_t lck_id)
 static lock_list_elem *
 seek_lock_in_hash (const token_lock_id_t lck_id)
 {
-   unsigned int hash_bucket;
-   lock_list_t lock_list;
-
-   hash_bucket = lock_hash_func(lck_id);
-   lock_list = lock_hash[hash_bucket];
+   const unsigned int hash_bucket = lock_hash_func(lck_id);
+   lock_list_t lock_list = lock_hash[hash_bucket];
 
    while ( lock_list != NULL )
       if ( lck_id == lock_list->lock_id )
@@ -322,7 +316,8 @@ grant_lock (const dsm_node_t to_node, lock_list_elem * const lck_elem)
         lck_elem->expected_remote_release > 0 )   /* grant partially */
    {
       assert ( lck_elem->expected_remote_inv_acks > 0 );
-      assert ( cluster_colors[to_node] == cluster_colors[pm2_self()] );
+      assert ( topology_get_cluster_color(to_node) ==
+               topology_get_cluster_color(pm2_self()) );
       state = INTRA;   /* intra-cluster only */
       /* add the node into the list of nodes to which i'll forward the
        * full release signal */
@@ -336,7 +331,8 @@ grant_lock (const dsm_node_t to_node, lock_list_elem * const lck_elem)
    {
       assert ( lck_elem->notif_list == NULL );
       state = INTER;
-      if ( cluster_colors[to_node] != cluster_colors[pm2_self()] )
+      if ( topology_get_cluster_color(to_node) !=
+           topology_get_cluster_color(pm2_self()) )
          lck_elem->just_granted = SL_TRUE;
    }
 
@@ -482,15 +478,10 @@ create_lock_entry (const token_lock_id_t lck_id)
    TRACE("creating entry for lock %d", lck_id);
    /* create a new lock data structure */
    lck_elem = (lock_list_elem *) tmalloc(sizeof(lock_list_elem));
-   if ( lck_elem == NULL )
-   {
-      perror(__FUNCTION__);
-      abort();
-   }
+   if ( lck_elem == NULL ) return NULL;
 
    lck_elem->lock_id = lck_id;
    marcel_mutex_init(&(lck_elem->mutex), NULL);
-   lck_elem->status = UNKNOWN;
    lck_elem->local_next_owner = lck_elem->remote_next_owner = NOBODY;
    lck_elem->partial_release_originator = lck_elem->just_granted = SL_FALSE;
    lck_elem->force_next_request = lck_elem->last_requester = NULL;
@@ -519,11 +510,11 @@ send_lock_request (const dsm_node_t to_node, dsm_node_t requester,
                    lock_list_elem * lck_elem)
 {
    request_tag_t tag;
-   const unsigned int color = cluster_colors[to_node];
+   const unsigned int color = topology_get_cluster_color(to_node);
 
    IN;
    assert ( get_lock_manager(lck_elem->lock_id) == pm2_self() );
-   assert ( color < cluster_number );
+   assert ( color < topology_get_cluster_number() );
 
    if ( lck_elem->force_next_request[color] == SL_TRUE )
    {
@@ -557,11 +548,11 @@ request_lock_from_manager (dsm_node_t requester, token_lock_id_t lck_id,
 {
    IN;
 
-   TRACE("requesting lock %d from manager for requester %d with tag '%s'",
-         lck_id, requester, tag == NO_TAG ? "NO_TAG" : "TOO_LATE");
+   TRACE("requesting lock %d from manager %d for requester %d with tag '%s'",
+         lck_id, get_lock_manager(lck_id), requester,
+         tag == NO_TAG ? "NO_TAG" : "TOO_LATE");
 
-   pm2_rawrpc_begin(get_lock_manager(lck_id),
-                    TOKEN_LOCK_MANAGER_SERVER, NULL);
+   pm2_rawrpc_begin(get_lock_manager(lck_id), TOKEN_LOCK_MANAGER_SERVER, NULL);
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &requester, sizeof(dsm_node_t));
    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id,
                  sizeof(token_lock_id_t));
@@ -582,7 +573,8 @@ register_next_owner (const dsm_node_t node, lock_list_elem * lck_elem)
 
    assert ( lck_elem->status != UNKNOWN );
 
-   if ( cluster_colors[pm2_self()] == cluster_colors[node] )
+   if ( topology_get_cluster_color(pm2_self()) ==
+        topology_get_cluster_color(node) )
    {
       assert ( lck_elem->local_next_owner == NOBODY );
       TRACE("registering node %d as local next owner of lock %d", node,
@@ -610,12 +602,12 @@ static void
 send_request_to_current_owner_cluster (dsm_node_t requester,
                                        lock_list_elem * lck_elem)
 {
-   const unsigned int requester_color = cluster_colors[requester];
+   const unsigned int requester_color = topology_get_cluster_color(requester);
 
    IN;
    assert ( get_lock_manager(lck_elem->lock_id) == pm2_self() );
-   assert ( requester_color < cluster_number );
-   assert ( lck_elem->last_cluster < cluster_number );
+   assert ( requester_color < topology_get_cluster_number() );
+   assert ( lck_elem->last_cluster < topology_get_cluster_number() );
    assert ( lck_elem->last_cluster != requester_color );
    assert ( lck_elem->last_requester[lck_elem->last_cluster] != NOBODY );
    assert ( lck_elem->last_requester[lck_elem->last_cluster] != requester );
@@ -685,19 +677,22 @@ request_lock (lock_list_elem * const lck_elem)
 {
    IN;
    assert ( lck_elem->reservation > 0 );
-   assert ( lck_elem->status == UNKNOWN  ||  lck_elem->status == REQUESTED );
+   assert ( lck_elem->status == UNKNOWN  ||  lck_elem->status == REQUESTED  ||
+            lck_elem->status == BEING_CREATED );
 
    TRACE("request lock %d", lck_elem->lock_id);
 
    /* if the lock has already been requested, just wait for it to arrive */
-   if ( lck_elem->status == UNKNOWN )
+   if ( lck_elem->status != REQUESTED )
    {
-      lck_elem->status = REQUESTED;
+      if ( lck_elem->status == UNKNOWN )
+         lck_elem->status = REQUESTED;
       request_lock_from_manager(pm2_self(), lck_elem->lock_id, NO_TAG);
    }
 
    /* wait for the lock token to arrive */
-   while ( lck_elem->status == REQUESTED  ||  lck_elem->status == UNKNOWN )
+   while ( lck_elem->status != FREE  &&  lck_elem->status != BUSY  &&
+           lck_elem->status != NON_EXISTENT )
       marcel_cond_wait(&(lck_elem->token_arrival), &(lck_elem->mutex));
 
    OUT;
@@ -722,7 +717,7 @@ recv_lock_token_func (void * unused)
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &state, sizeof(grant_state_t));
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &remote_nxt, sizeof(dsm_node_t));
    pm2_rawrpc_waitdata();
-   assert ( state == INTRA  ||  state == INTER );
+   assert ( state == INTRA  ||  state == INTER  ||  state == DOES_NOT_EXIST );
 
    marcel_mutex_lock(&lock_mutex);
    lck_elem = seek_lock_in_hash(lck_id);
@@ -730,28 +725,57 @@ recv_lock_token_func (void * unused)
    assert ( lck_elem != NULL );
 
    marcel_mutex_lock(&(lck_elem->mutex));
-   assert ( lck_elem->reservation > 0 );
-   assert ( lck_elem->status == REQUESTED );
-   lck_elem->status = FREE;
-   lck_elem->just_granted = SL_FALSE;
-
-   if ( remote_nxt != NOBODY )
+   if ( state != DOES_NOT_EXIST )
    {
-      assert ( lck_elem->remote_next_owner == NOBODY );
-      assert ( cluster_colors[pm2_self()] != cluster_colors[remote_nxt] );
-      lck_elem->remote_next_owner = remote_nxt;
+      assert ( lck_elem->reservation > 0 );
+      assert ( lck_elem->status == REQUESTED ||
+               lck_elem->status == BEING_CREATED );
+      lck_elem->status = FREE;
+      lck_elem->just_granted = SL_FALSE;
+
+      if ( remote_nxt != NOBODY )
+      {
+         assert ( lck_elem->remote_next_owner == NOBODY );
+         assert ( topology_get_cluster_color(pm2_self()) !=
+                  topology_get_cluster_color(remote_nxt) );
+         lck_elem->remote_next_owner = remote_nxt;
+      }
+
+      if ( state == INTRA )   /* the lock was partially granted */
+         lck_elem->expected_remote_release++;
+
+      TRACE("recv'd lock %d with state=%s, rmt_rel=%d, rmt_nxt=%d",
+            lck_id, state == INTER ? "inter" : "intra",
+            lck_elem->expected_remote_release, lck_elem->remote_next_owner);
    }
+   else
+      lck_elem->status = NON_EXISTENT;
 
-   if ( state == INTRA )   /* the lock was partially granted */
-      lck_elem->expected_remote_release++;
-
-   TRACE("recv'd lock %d with state=%s, rmt_rel=%d, rmt_nxt=%d",
-         lck_id, state == INTER ? "inter" : "intra",
-         lck_elem->expected_remote_release, lck_elem->remote_next_owner);
-
-   TRACE("signal lock %d arrival", lck_id);
+   TRACE("signal lock %d arrival with state=%d", lck_id, state);
    marcel_cond_broadcast(&(lck_elem->token_arrival));
    marcel_mutex_unlock(&(lck_elem->mutex));
+
+   OUT;
+   return;
+}
+
+
+/**********************************************************************/
+/* send a msg to the requester notifying the requested lock token does
+ * not exist */
+static void
+send_no_such_token (const dsm_node_t to_node, token_lock_id_t lck_id)
+{
+   dsm_node_t dummy = 0;
+   grant_state_t state = DOES_NOT_EXIST;
+
+   IN;
+
+   pm2_rawrpc_begin(to_node, TOKEN_LOCK_RECV, NULL);
+   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &lck_id, sizeof(token_lock_id_t));
+   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &state, sizeof(grant_state_t));
+   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, &dummy, sizeof(dsm_node_t));
+   pm2_rawrpc_end();
 
    OUT;
    return;
@@ -776,44 +800,55 @@ lock_manager_server_func (void * unused)
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &req_tag, sizeof(request_tag_t));
    pm2_rawrpc_waitdata();
 
-   requester_color = cluster_colors[requester];
+   requester_color = topology_get_cluster_color(requester);
 
    TRACE("recv'd request for lock %d for requester %d with tag '%s'",
          lck_id, requester, req_tag == NO_TAG ? "NO_TAG" : "TOO_LATE");
    assert ( pm2_self() == get_lock_manager(lck_id) );
-   assert ( requester_color < cluster_number );
+   assert ( requester_color < topology_get_cluster_number() );
 
    marcel_mutex_lock(&lock_mutex);
    lck_elem = seek_lock_in_hash(lck_id);
    marcel_mutex_unlock(&lock_mutex);
-   assert ( lck_elem != NULL );
+
+   if ( lck_elem == NULL )
+   {
+      send_no_such_token(requester, lck_id);
+      OUT;
+      return;
+   }
 
    marcel_mutex_lock(&(lck_elem->mutex));
 
-   if ( req_tag == TOO_LATE )
-      /* the lock request was bounced, because it arrived just
-       * after the lock token was granted to another cluster */
-      send_request_to_current_owner_cluster(requester, lck_elem);
+   if ( lck_elem->status == BEING_CREATED )
+      send_no_such_token(requester, lck_id);
    else
    {
-      if ( lck_elem->last_requester[requester_color] != NOBODY  &&
-           lck_elem->last_requester[requester_color] != requester )
-      {
-         send_lock_request(lck_elem->last_requester[requester_color],
-                           requester, lck_elem);
-         lck_elem->force_next_request[requester_color] = SL_FALSE;
-      }
+      if ( req_tag == TOO_LATE )
+         /* the lock request was bounced, because it arrived just
+          * after the lock token was granted to another cluster */
+         send_request_to_current_owner_cluster(requester, lck_elem);
       else
       {
-         if ( lck_elem->last_requester[requester_color] == requester )
-            lck_elem->force_next_request[requester_color] = SL_TRUE;
-         else
+         if ( lck_elem->last_requester[requester_color] != NOBODY  &&
+              lck_elem->last_requester[requester_color] != requester )
+         {
+            send_lock_request(lck_elem->last_requester[requester_color],
+                              requester, lck_elem);
             lck_elem->force_next_request[requester_color] = SL_FALSE;
-         send_request_to_current_owner_cluster(requester, lck_elem);
+         }
+         else
+         {
+            if ( lck_elem->last_requester[requester_color] == requester )
+               lck_elem->force_next_request[requester_color] = SL_TRUE;
+            else
+               lck_elem->force_next_request[requester_color] = SL_FALSE;
+            send_request_to_current_owner_cluster(requester, lck_elem);
+         }
+         lck_elem->last_requester[requester_color] = requester;
+         TRACE("last requester of cluster %d becoming node %d",
+               requester_color, requester);
       }
-      lck_elem->last_requester[requester_color] = requester;
-      TRACE("last requester of cluster %d becoming node %d", requester_color,
-            requester);
    }
 
    marcel_mutex_unlock(&(lck_elem->mutex));
@@ -831,7 +866,7 @@ lock_manager_server_func (void * unused)
 /* this function initializes the data structures for the locks; this
  * should be called by dsm_pm2_init(); there's only one thread per
  * process executing this function. */
-void
+int
 token_lock_initialization (void)
 {
    int i;
@@ -844,14 +879,15 @@ token_lock_initialization (void)
       lock_hash[i] = NULL;
 
    OUT;
-   return;
+   return DSM_SUCCESS;
 }
 
 
 /**********************************************************************/
 /* this function cleans up the data structures for the locks; there's
- * only one thread per process executing this function. */
-void
+ * only one thread per process executing this function; this function
+ * is called by dsm_pm2_exit(). */
+int
 token_lock_finalization (void)
 {
    int i;
@@ -867,7 +903,7 @@ token_lock_finalization (void)
 
       while ( lck_list != NULL )
       {
-         lock_list_t save = lck_list;
+         lock_list_t const save = lck_list;
          node_list_t lst;
 
          lck_list = save->next;
@@ -892,16 +928,15 @@ token_lock_finalization (void)
    }
 
    local_lock_number = 0;
+   max_local_thread_acquire = max_local_node_acquire = -1;
 
    OUT;
-   return;
+   return DSM_SUCCESS;
 }
 
 
 /**********************************************************************/
-/* initialize a new lock; return 0 in case of success, return -1 in
- * case of failure (wrong attribute values in future extensions).  The
- * default manager of the lock is myself. */
+/* initialize a new lock; The default manager of the lock is myself. */
 int
 token_lock_init (token_lock_id_t * const lck_id)
 {
@@ -914,6 +949,7 @@ token_lock_init (token_lock_id_t * const lck_id)
       lock_list_elem * lck_elem;
       int i;
       const dsm_node_t myself = pm2_self();
+      const unsigned int cluster_number = topology_get_cluster_number();
 
       /* initialize this new lock data structure */
       /* the local node can only deliver lock_id's which are congruent
@@ -924,16 +960,13 @@ token_lock_init (token_lock_id_t * const lck_id)
       lck_elem = create_lock_entry(*lck_id);
       /* I'm the manager of this node */
       lck_elem->status = FREE;
-      lck_elem->last_cluster = cluster_colors[myself];
+      lck_elem->last_cluster = topology_get_cluster_color(myself);
       lck_elem->last_requester = (dsm_node_t *) tmalloc(cluster_number *
                                                            sizeof(dsm_node_t));
       lck_elem->force_next_request = (dsm_node_t *) tmalloc(cluster_number *
                                                            sizeof(dsm_node_t));
       if ( lck_elem->last_requester==NULL || lck_elem->force_next_request==NULL )
-      {
-         perror(__FUNCTION__);
-         abort();
-      }
+         return DSM_ERR_MEMORY;
       for (i = 0; i < cluster_number; i++)
       {
          lck_elem->last_requester[i] = NOBODY;
@@ -944,22 +977,27 @@ token_lock_init (token_lock_id_t * const lck_id)
    }
 
    OUT;
-   return 0;
+   return DSM_SUCCESS;
 }
 
 
 /**********************************************************************/
 /* acquire a DSM lock */
-void
+int
 token_lock (const token_lock_id_t lck_id)
 {
+   int return_value = DSM_SUCCESS;
    dsm_acq_action_t acquire_func;
    lock_list_elem * lck_elem;
+   const dsm_node_t my_self = pm2_self();
    
    IN;
    TRACE("want to acquire lock %d", lck_id);
-   assert ( lck_id != TOKEN_LOCK_NONE );
-   acquire_func = dsm_get_acquire_func(dsm_get_default_protocol());
+   if ( lck_id == TOKEN_LOCK_NONE )
+   {
+      OUT;
+      return DSM_ERR_ILLEGAL;
+   }
 
    /* Is this lock registered in my lock hash table? */
    marcel_mutex_lock(&lock_mutex);
@@ -969,62 +1007,97 @@ token_lock (const token_lock_id_t lck_id)
     * this lock, then request it from the manager. */
    if ( lck_elem == NULL )   /* the lock is not registered locally */
    {
-      lck_elem = create_lock_entry(lck_id);
-      assert ( lck_elem->status == UNKNOWN );
+      if ( my_self == get_lock_manager(lck_id) )
+         return_value = DSM_ERR_NOT_INIT;
+      else
+      {
+         lck_elem = create_lock_entry(lck_id);
+         if ( lck_elem == NULL ) return_value = DSM_ERR_MEMORY;
+         else lck_elem->status = BEING_CREATED;
+      }
    }
    marcel_mutex_unlock(&lock_mutex);
+
+   if ( return_value != DSM_SUCCESS )
+   {
+      OUT;
+      return return_value;
+   }
    assert ( lck_elem != NULL );
 
    marcel_mutex_lock(&(lck_elem->mutex));
    /* reserve the lock locally so that the token could not be passed
     * to another process */
    lck_elem->reservation++;
-   if ( lck_elem->status == UNKNOWN  ||  lck_elem->status == REQUESTED )
+   if ( lck_elem->status != FREE  &&  lck_elem->status != BUSY )
       request_lock(lck_elem);
 
-   /* at this point, the lock entry exists in my local hash table, and
-    * I own the lock */
-   assert ( lck_elem->status == FREE  ||  lck_elem->status == BUSY );
-   /* wait for the lock to be free */
-   while ( lck_elem->status != FREE )
-      marcel_cond_wait(&(lck_elem->local_release), &(lck_elem->mutex));
+   if ( lck_elem->status != NON_EXISTENT )
+   {
+      /* at this point, the lock entry exists in my local hash table,
+       * and I own the lock */
+      assert ( lck_elem->status == FREE  ||  lck_elem->status == BUSY );
+      /* wait for the lock to be free */
+      while ( lck_elem->status != FREE )
+         marcel_cond_wait(&(lck_elem->local_release), &(lck_elem->mutex));
 
-   /* The lock is free: acquire it! */
-   assert ( lck_elem->reservation > 0 );
-   assert ( lck_elem->status == FREE );
-   lck_elem->status = BUSY;
+      /* The lock is free: acquire it! */
+      assert ( lck_elem->reservation > 0 );
+      assert ( lck_elem->status == FREE );
+      lck_elem->status = BUSY;
+   }
+   else return_value = DSM_ERR_NOT_INIT;
+
    lck_elem->reservation--;
 
    marcel_mutex_unlock(&(lck_elem->mutex));
 
-   TRACE("lock %d acquired, calling acquire consistency function", lck_id);
-   /* protocol specific action at acquire time */
-   if ( acquire_func != NULL ) (*acquire_func)(lck_id);
+   if ( return_value == DSM_SUCCESS )
+   {
+      TRACE("lock %d acquired, calling acquire consistency function", lck_id);
+      /* protocol specific action at acquire time */
+      acquire_func = dsm_get_acquire_func(dsm_get_default_protocol());
+      if ( acquire_func != NULL ) (*acquire_func)(lck_id);
+   }
 
    OUT;
-   return;
+   return return_value;
 }
 
 
 /**********************************************************************/
 /* release a DSM lock. */
-void
+int
 token_unlock (const token_lock_id_t lck_id)
 {
    lock_list_elem * lck_elem;
    int local_reserv;
 
    IN;
-   assert ( lck_id != TOKEN_LOCK_NONE );
+   if ( lck_id == TOKEN_LOCK_NONE )
+   {
+      OUT;
+      return DSM_ERR_ILLEGAL;
+   }
 
    marcel_mutex_lock(&lock_mutex);
    lck_elem = seek_lock_in_hash(lck_id);
    marcel_mutex_unlock(&lock_mutex);
-   assert ( lck_elem != NULL );
+   if ( lck_elem == NULL )   /* lock not acquired */
+   {
+      OUT;
+      return DSM_ERR_ILLEGAL;
+   }
 
    marcel_mutex_lock(&(lck_elem->mutex));
    local_reserv = lck_elem->reservation;
    marcel_mutex_unlock(&(lck_elem->mutex));
+
+   if ( lck_elem->status != BUSY )   /* lock already released */
+   {
+      OUT;
+      return DSM_ERR_ILLEGAL;
+   }
 
    if ( local_reserv == 0 )
    {
@@ -1051,7 +1124,7 @@ token_unlock (const token_lock_id_t lck_id)
    marcel_mutex_unlock(&(lck_elem->mutex));
 
    OUT;
-   return;
+   return DSM_SUCCESS;
 }
 
 

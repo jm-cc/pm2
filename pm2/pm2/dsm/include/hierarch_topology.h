@@ -1,10 +1,24 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.h,v 1.1 2002/10/11 18:03:49 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.h,v 1.2 2002/10/14 15:42:05 slacour Exp $
  */
 
-/* Description of the topology (clusters of nodes) using colors: two
- * nodes in the same cluster have the same color */
-extern unsigned int cluster_colors[];
-extern unsigned int cluster_number;
+#include "dsm_const.h"   /* dsm_node_t */
+
+
+/* initialization function of the topology, called from dsm_pm2_init() */
+extern int
+topology_initialization (void);
+
+/* finalization function called from dsm_pm2_exit() */
+extern int
+topology_finalization (void);
+
+/* get the number of clusters */
+extern unsigned int
+topology_get_cluster_number (void);
+
+/* get the color of a node to determine to what cluster it belongs */
+extern unsigned int
+topology_get_cluster_color (const dsm_node_t);
 

@@ -45,7 +45,7 @@
 static marcel_t _recv_pid[MAX_NETSERVERS];
 static unsigned nb_netservers = 0;
 
-static boolean finished = FALSE;
+static volatile boolean finished = FALSE;
 
 extern pm2_rawrpc_func_t pm2_rawrpc_func[];
 
@@ -143,6 +143,10 @@ void netserver_stop(void)
 {
   int i;
 
-  for(i=0; i<nb_netservers; i++)
-    marcel_cancel(_recv_pid[i]);
+  for(i=0; i<nb_netservers; i++) {
+    if(_recv_pid[i] == marcel_self())
+      finished = TRUE;
+    else
+      marcel_cancel(_recv_pid[i]);
+  }
 }

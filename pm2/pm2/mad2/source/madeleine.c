@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.34  2000/09/12 09:39:40  oaumage
+- correction des problemes de log
+
 Revision 1.33  2000/07/13 10:04:20  oaumage
 - Correction de l'identificateur d'adaptateur
 
@@ -252,6 +255,7 @@ void
 mad_managers_init(int   *argc,
 		  char **argv)
 {
+  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #ifdef MARCEL  
   marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #endif /* MARCEL */

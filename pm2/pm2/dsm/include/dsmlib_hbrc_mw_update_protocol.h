@@ -53,7 +53,11 @@ void dsmlib_hbrc_add_page(unsigned long index);
 
 void dsmlib_hbrc_mw_update_prot_init(int prot);
 
-void dsmlib_hrbc_send_diffs(unsigned long index, dsm_node_t dest_node);
+void dsmlib_hrbc_start_send_diffs(unsigned long index, dsm_node_t dest_node, int invalidate, pm2_completion_t *c);
+
+void dsmlib_hrbc_start_send_empty_diffs(unsigned long index, dsm_node_t dest_node, int invalidate,  pm2_completion_t *c);
+
+void dsmlib_hrbc_wait_diffs_done(pm2_completion_t *c);
 
 void DSM_HRBC_DIFFS_threaded_func(void);
 

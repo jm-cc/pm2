@@ -1211,7 +1211,7 @@ mad_mux_new_message(p_mad_connection_t xout)
     unsigned int       src            =    0;
     unsigned int       dst            =    0;
     p_mad_driver_interface_t interface = NULL;
-    unsigned char      data[mad_xblock_fsize];
+    unsigned char      data[mad_xblock_fsize] = {0};
 
     out = xout->regular;
     interface = out->channel->adapter->driver->interface;
@@ -1262,7 +1262,7 @@ mad_mux_finalize_message(p_mad_connection_t xout)
   unsigned int             src       =    0;
   unsigned int             dst       =    0;
   p_mad_driver_interface_t interface = NULL;
-  unsigned char            data[mad_xblock_fsize];
+  unsigned char            data[mad_xblock_fsize] = {0};
 
   LOG_IN();
   channel   = xout->channel;
@@ -1335,7 +1335,7 @@ mad_mux_poll_message(p_mad_channel_t channel)
     {
       p_mad_connection_t xout = NULL;
       p_mad_connection_t out  = NULL;
-      unsigned char      data[mad_xblock_fsize];
+      unsigned char      data[mad_xblock_fsize] = {0};
       p_mad_driver_interface_t interface = NULL;
 
       xout = connection->reverse;
@@ -1436,7 +1436,7 @@ mad_mux_receive_message(p_mad_channel_t channel)
     {
       p_mad_connection_t xout = NULL;
       p_mad_connection_t out  = NULL;
-      unsigned char      data[mad_xblock_fsize];
+      unsigned char      data[mad_xblock_fsize] = {0};
       p_mad_driver_interface_t interface = NULL;
 
       xout = xin->reverse;
@@ -1592,7 +1592,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
     tbx_bool_t     is_a_new_msg   = tbx_false;
     unsigned char *ptr            = NULL;
     unsigned int   bytes_read     =    0;
-    unsigned char  data[mad_xblock_fsize];
+    unsigned char  data[mad_xblock_fsize] = {0};
 
     mtu            = xout->mtu;
     nb_block       =
@@ -2025,7 +2025,7 @@ mad_mux_stop_reception(p_mad_channel_t      xchannel,
       // Sender
       p_mad_connection_t       out       = NULL;
       p_mad_driver_interface_t interface = NULL;
-      unsigned char            data[mad_xblock_fsize];
+      unsigned char            data[mad_xblock_fsize] = {0};
 
       out = tbx_darray_get(channel->out_connection_darray, lrank);
 
@@ -2069,12 +2069,10 @@ __mad_mux_generate_sub_channel_skel(p_mad_channel_t xchannel)
   channel->process_lrank = xchannel->process_lrank;
   channel->type          = mad_channel_type_mux;
   channel->id            = xchannel->id;
-
-  channel->pc           = xchannel->pc;
-  channel->not_private  = xchannel->not_private;
-  channel->dir_channel  = xchannel->dir_channel;
-  channel->dir_xchannel = xchannel->dir_xchannel;
-  channel->adapter      = xchannel->adapter;
+  channel->pc            = xchannel->pc;
+  channel->not_private   = xchannel->not_private;
+  channel->dir_channel   = xchannel->dir_channel;
+  channel->adapter       = xchannel->adapter;
 
   // in+out
   {
@@ -2257,17 +2255,17 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 void
 mad_mux_add_named_sub_channels(p_mad_channel_t xchannel)
 {
-  p_mad_madeleine_t    madeleine    = NULL;
-  p_mad_adapter_t      mux_adapter  = NULL;
-  p_mad_dir_xchannel_t dir_xchannel = NULL;
-  unsigned int         mux          =    0;
-  p_tbx_darray_t       darray       = NULL;
-  p_tbx_slist_t        slist        = NULL;
+  p_mad_madeleine_t   madeleine    = NULL;
+  p_mad_adapter_t     mux_adapter  = NULL;
+  p_mad_dir_channel_t dir_xchannel = NULL;
+  unsigned int        mux          =    0;
+  p_tbx_darray_t      darray       = NULL;
+  p_tbx_slist_t       slist        = NULL;
 
   LOG_IN();
   mux_adapter  = xchannel->adapter;
   madeleine    = mux_adapter->driver->madeleine;
-  dir_xchannel = xchannel->dir_xchannel;
+  dir_xchannel = xchannel->dir_channel;
   slist        = dir_xchannel->sub_channel_name_slist;
   darray       = xchannel->mux_channel_darray;
 

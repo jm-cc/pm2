@@ -58,6 +58,7 @@ make_ln() # Create $3 pointing on $2 in the directory $1
     fi
 }
 
+echo "Recreating symlink..."
 # pm2 links
 echo PM2
 make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
@@ -128,6 +129,9 @@ make_ln ${DSM_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 # Fabrication des catégories d'options
-pm2-make-option-sets
+echo
+echo
+echo Creating option sets
+${PM2_ROOT}/bin/pm2-make-option-sets
 
 echo

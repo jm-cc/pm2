@@ -887,8 +887,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 
         if (!param->length)
           {
-            param->offset = 0;
-            param->length = source->length;
+            param->length = source->length - param->offset;
           }
 
         TRACE_VAL("source->length", source->length);

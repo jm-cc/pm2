@@ -37,9 +37,9 @@
 DIRS="${MADELEINE_ROOT}/make ${MADELEINE_ROOT}/source ${MADELEINE_ROOT}/bin"
 
 for d in $DIRS ; do
-    if [ ! -h $d/custom ] ; then
+    if [ ! -h $d/custom -a -d $d/custom ] ; then
 	echo "ATTENTION: Verifiez votre installation."
-	echo "$d/custom doit etre un lien symbolique !"
+	echo "$d/custom ne doit pas etre un répertoire, mais un lien symbolique !"
 	exit 1
     fi
 done
@@ -73,6 +73,14 @@ then
 
     touch ${MADELEINE_ROOT}/source/*.c ${MADELEINE_ROOT}/source/custom/*.c
 fi
+
+for d in $DIRS ; do
+    if [ ! -h $d/custom ] ; then
+	echo "ATTENTION: Verifiez votre installation."
+	echo "Il faut executer $0 <protocol> au moins une fois"
+	exit 1
+    fi
+done
 
 if test -f ${MADELEINE_ROOT}/.net_interf
 then

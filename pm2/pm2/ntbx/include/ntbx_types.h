@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_types.h,v $
+Revision 1.4  2000/05/18 11:36:12  oaumage
+- Remplacement des types `tableau' par des types `structure de tableau'
+
 Revision 1.3  2000/04/27 09:01:30  oaumage
 - fusion de la branche pm2_mad2_multicluster
 
@@ -82,17 +85,22 @@ typedef struct s_ntbx_server *p_ntbx_server_t;
  */
 #define NTBX_PACK_BUFFER_LEN     17
 #define NTBX_PACK_BUFFER_TAG_LEN  4
-typedef char                ntbx_pack_buffer_t[NTBX_PACK_BUFFER_LEN];
-typedef ntbx_pack_buffer_t *p_ntbx_pack_buffer_t;
+typedef struct
+{
+  char buffer[NTBX_PACK_BUFFER_LEN];
+} ntbx_pack_buffer_t, *p_ntbx_pack_buffer_t;
 
 
 /*
  * Connection data
  * ---------------
+ * (Attention aux types tableaux !!!)
  */
 #define NTBX_CONNECTION_DATA_LEN 11
-typedef char ntbx_connection_data_t[NTBX_CONNECTION_DATA_LEN];
-typedef ntbx_connection_data_t *p_ntbx_connection_data_t;
+typedef struct
+{
+  char data[NTBX_CONNECTION_DATA_LEN];
+} ntbx_connection_data_t, *p_ntbx_connection_data_t;
 
 
 /*

@@ -34,6 +34,21 @@
 
 ______________________________________________________________________________
 $Log: netserver.c,v $
+Revision 1.13  2000/07/14 16:17:12  gantoniu
+Merged with branch dsm3
+
+Revision 1.12.4.3  2000/07/12 15:10:47  gantoniu
+*** empty log message ***
+
+Revision 1.12.4.2  2000/07/04 17:31:45  gantoniu
+I don't remember.
+
+Revision 1.12.4.1  2000/06/13 16:44:11  gantoniu
+New dsm branch.
+
+Revision 1.12.2.1  2000/06/07 09:19:39  gantoniu
+Merging new dsm with current PM2 : first try.
+
 Revision 1.12  2000/06/06 07:12:32  rnamyst
 Uncommented registration of cleanup_func
 
@@ -155,7 +170,7 @@ void netserver_start(unsigned priority)
   marcel_attr_init(&attr);
   marcel_attr_setprio(&attr, priority);
   marcel_attr_setstackaddr(&attr,
-			   slot_general_alloc(NULL, 0, &granted, NULL));
+			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);
 
   marcel_create(&_recv_pid[nb_netservers], &attr,

@@ -7,6 +7,10 @@
 #undef DEBUG
 #define YY_INPUT(buf, result, max_size) \
    {result = leoparse_yy_input(buf, max_size);}
+
+extern int parser_line_num  ;
+extern int parser_column_num;
+extern const char *parser_filename;
 %}
 DIGIT          [0-9]
 A              [aA]
@@ -44,6 +48,11 @@ INTEGER        {DIGIT}+
   yylval.str = malloc(yyleng + 1);
   strcpy(yylval.str, yytext);
   LOG_STR("ID", yylval.str);
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  parser_column_num += strlen(yytext);
+  yylloc.last_column  = parser_column_num - 1;
   return LEOP_ID;
 }
 {STRING}                            {
@@ -51,6 +60,11 @@ INTEGER        {DIGIT}+
   strncpy(yylval.str, yytext + 1, yyleng - 2);
   yylval.str[yyleng - 1] = '\0';
   LOG_STR("STRING", yylval.str);
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  parser_column_num += strlen(yytext);
+  yylloc.last_column  = parser_column_num - 1;
   return LEOP_STRING;
 }
 {INTEGER}                            {
@@ -60,58 +74,153 @@ INTEGER        {DIGIT}+
   yylval.val = atoi(tmp);
   LOG_VAL("INTEGER", yylval.val);
   free(tmp);
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  parser_column_num += strlen(yytext);
+  yylloc.last_column  = parser_column_num - 1;
   return LEOP_INTEGER;
 }
 
 ".."                                 {
   LOG("<..>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num+1;
+  parser_column_num+=2;
   return LEOP_RANGE;
 }
 "{"                                 {
   LOG("<{>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return '{';
 }
 "}"                                 {
   LOG("<}>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return '}';
 }
 ":"                                 {
   LOG("<:>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return ':';
-}
-"="                                 {
-  LOG("<=>");
-  return '=';
 }
 ";"                                 {
   LOG("<;>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return ';';
 }
 ","                                 {
   LOG("<,>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return ',';
 }
 "["                                 {
   LOG("<[>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return '[';
 }
 "]"                                 {
   LOG("<]>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return ']';
 }
 "("                                 {
   LOG("<(>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return '(';
 }
 ")"                                 {
   LOG("<)>");
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
   return ')';
 }
-\/\/.*                              ;
-"#".*                               ;
-[ \n\t]                             ;
-.                                   {
-  LOG("Inconnu !!!");
-  return INCONNU;
+\/\/.*                              {
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  parser_column_num += strlen(yytext);
+  yylloc.last_column  = parser_column_num - 1;
+}
+"#".*                               {
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  parser_column_num += strlen(yytext);
+  yylloc.last_column  = parser_column_num - 1;
+}
+[ ]                                 {
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_column_num++;
+}
+[\n]                                {
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  yylloc.last_column  = parser_column_num;
+  parser_line_num++;
+  parser_column_num=0;
+}
+[\t]                                {
+  yylloc.first_line   = parser_line_num;
+  yylloc.first_column = parser_column_num;
+  yylloc.last_line    = parser_line_num;
+  parser_column_num += 8 - parser_column_num % 8;
+  yylloc.last_column  = parser_column_num - 1;
+}
+. {
+  fflush(stdout);
+  fprintf(stderr, "invalid token at %s:%d:%d\n", parser_filename, parser_line_num, parser_column_num);
+  FAILURE("lexical error");
 }
 %%
+//.                                   {
+//  yylloc.first_line   = parser_line_num;
+//  yylloc.first_column = parser_column_num;
+//  yylloc.last_line    = parser_line_num;
+//  yylloc.last_column  = parser_column_num;
+//  parser_column_num++;
+//  yylval.str = "unknown token";
+//  LOG("Inconnu !!!");
+//  return yytext[0];
+//}

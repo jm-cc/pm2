@@ -1,1 +1,2 @@
-PM2_LIB_CFLAGS_KERNEL="$PM2_LIB_CFLAGS_KERNEL -O6"
+# auto generated from generic/config/options/*
+PM2_@LIB@_CFLAGS_KERNEL="$PM2_@LIB@_CFLAGS_KERNEL -O6"

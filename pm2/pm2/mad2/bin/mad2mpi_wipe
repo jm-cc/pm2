@@ -5,33 +5,7 @@
 MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
 export MAD2_ROOT
 
-if (! -e ${MAD2_ROOT}/.mad2mpi_implementation) then
-echo "No MPI implementation has been selected"
-exit 0
-endif
-
-set IMPL = `cat ${MAD2_ROOT}/.mad2mpi_implementation`
-
-switch(${IMPL})
-# LAM MPI
-#---------
-  case "lam":
-    echo Calling wipe ...
-    wipe -v ${MAD2_ROOT}/.mad2_conf
-  breaksw
-
-# MPI/BIP
-#---------
-  case "bip":
-#   bipconf
-  breaksw
-
-# Default case
-#--------------
-  default:
-    echo "invalid MPI implementation name"
-    exit 0
-  breaksw
-endsw
+echo Calling wipe ...
+wipe -v ${MAD2_ROOT}/.mad2_conf
 
 ###########

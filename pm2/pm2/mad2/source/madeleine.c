@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.40  2000/11/20 10:39:37  oaumage
+- suppression d'un warning
+
 Revision 1.39  2000/11/20 10:26:45  oaumage
 - initialisation, nouvelle version
 
@@ -717,13 +720,9 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
 	  CTRL_ALLOC(configuration->host_name[rank]);
 	  
 	  gethostname(configuration->host_name[rank], MAX_HOSTNAME_LEN);
-	    
 
 	  for (i = 0; i < configuration->size; i++)
 	    {
-	      p_mad_driver_interface_t spawn_interface;
-	      p_mad_adapter_t          spawn_adapter;
-	      
 	      configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN + 1);
 	      CTRL_ALLOC(configuration->host_name[i]);
 	      strcpy(configuration->host_name[i], "<unknown>");

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.12  2000/09/18 14:22:43  rnamyst
+Few re-arrangements in .h files
+
 Revision 1.11  2000/09/14 02:08:27  rnamyst
 Put profile.h into common/include and added few FUT_SWITCH_TO calls
 
@@ -225,31 +228,6 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
  * Logging macros  __________________________________________________
  * _______________///////////////////////////////////////////////////
  */
-
-#ifdef DO_PROFILE // Each module can set/unset this option independently
-
-#ifdef PREPROC
-#define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_fut_" \
-                                                   __FUNCTION__ "_" #inout \
-                                                   "_code"); \
-                               foo=1; }
-
-#else // ifndef PREPROC
-
-#define GEN_PREPROC(inout)   { extern unsigned __code asm("fut_" __FUNCTION__ \
-                                                          "_" #inout "_code"); \
-                               PROF_PROBE0(PROFILE_KEYMASK, __code); }
-#endif
-
-#define PROF_IN()            GEN_PREPROC(entry)
-#define PROF_OUT()           GEN_PREPROC(exit)
-
-#else // ifndef DO_PROFILE
-
-#define PROF_IN()            (void)0
-#define PROF_OUT()           (void)0
-
-#endif
 
 #if defined(PM2DEBUG)
 #ifdef DEBUG

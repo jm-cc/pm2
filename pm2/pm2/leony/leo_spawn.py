@@ -12,7 +12,7 @@ def session_spawn(s):
     """Spawn the session loader by loader."""
 
     s.process_list	= []
-    temp_process_dict	= {}
+    temp_node_dict	= {}
 
     for loader in s.loader_dict.keys():
         loader_stub = eval('leo_loaders.'+loader+'_loader')
@@ -23,18 +23,17 @@ def session_spawn(s):
 
         while l > 0:
             l = l-1
-            print "waiting for client to connect"
-            client   = leo_comm.client_accept(s)
+            client   = leo_comm.client_accept(s.leo)
             hostname = hostname_receive(client)
 
-            node_process_dict = s.process_dict[hostname]
+            node_process_dict = s.node_dict[hostname]
 
-            if not temp_process_dict.has_key(hostname):
+            if not temp_node_dict.has_key(hostname):
                 keys = node_process_dict.keys()
                 keys.sort()
-                temp_process_dict[hostname] = keys
+                temp_node_dict[hostname] = keys
 
-            key	= temp_process_dict[hostname].pop(0)
+            key	= temp_node_dict[hostname].pop(0)
 
             ps	= node_process_dict[key]
             ps.client	= client

@@ -179,7 +179,7 @@ void marcel_purge_cmdline(int *argc, char *argv[])
   marcel_strip_cmdline(argc, argv);
 }
 
-void marcel_end(void)
+void marcel_finish(void)
 {
   marcel_sched_shutdown();
   marcel_slot_exit();

@@ -175,26 +175,6 @@ Used for patterns like:
         (backward-char 1)
         (cons the-start (point)))))
 
-(defun hilit-inside-barred-region (open)
-  "Find region within curly brackets for hilit pattern.
-ARG is pattern for beginning of pattern and ends with |.
-It cannot be white space.  
-Patterns ends simply at the matching closing bracket.
-
-Used for patterns like:
- \\textbf{only stuff within bracket is highlited}"
-  (if (re-search-forward open nil t)
-      (let ((the-start (point)))
-        (backward-char 1)               ; point is on bracket
-        (if hilit-on-the-fly-in-use
-            (or (re-search-forward "|" nil t)
-                (end-of-line))
-          (forward-list 1))
-        (backward-char 1)
-        (cons the-start (point)))))
-
-
-
 (defun hilit-inside-environment (open)
   "Find region within curly brackets for hilit pattern.
 ARG is pattern for \\begin{something}."

@@ -32,6 +32,7 @@ marcel_attr_t marcel_attr_default = {
   .immediate_activation= FALSE,
   .not_migratable= 1,
   .not_deviatable= 0,
+  .not_preemptible= 0,
   .vpmask= MARCEL_VPMASK_EMPTY,
   .flags= 0,
   .name= "user_task",
@@ -203,5 +204,17 @@ int marcel_attr_setflags(marcel_attr_t *attr, int flags)
 int marcel_attr_getflags(__const marcel_attr_t *attr, int *flags)
 {
   *flags = attr->flags;
+  return 0;
+}
+
+int marcel_attr_setpreemptible(marcel_attr_t *attr, int preemptible)
+{
+  attr->not_preemptible = preemptible?0:1;
+  return 0;
+}
+
+int marcel_attr_getpreemptible(__const marcel_attr_t *attr, int *preemptible)
+{
+  *preemptible = !attr->not_preemptible;
   return 0;
 }

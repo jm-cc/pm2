@@ -62,6 +62,7 @@ struct __marcel_attr_s
   /*boolean*/int immediate_activation;
   unsigned not_migratable;
   unsigned not_deviatable;
+  int not_preemptible;
   //int sched_policy;
   /*boolean int rt_thread; On utilise la priorité maintenant */
   marcel_vpmask_t vpmask;
@@ -119,6 +120,9 @@ int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask);
 
 int marcel_attr_setname(marcel_attr_t *attr, const char name[MARCEL_MAXNAMESIZE]);
 int marcel_attr_getname(__const marcel_attr_t *attr, char name[MARCEL_MAXNAMESIZE], size_t n);
+
+int marcel_attr_setpreemptible(marcel_attr_t *attr, int preemptible);
+int marcel_attr_getpreemptible(__const marcel_attr_t *attr, int *preemptible);
 
 // only for internal use
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.13  2000/03/15 09:59:01  oaumage
+- renommage du polling Nexus
+- correction d'un probleme de deverrouillage au niveau
+  de la fonction de polling, en cas d'echec du polling
+
 Revision 1.12  2000/03/08 17:19:14  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -104,19 +109,19 @@ mad_begin_packing(p_mad_channel_t   channel,
   connection =
     &(channel->output_connection[remote_host_id]);
   
-#ifdef PM2
+#ifdef MARCEL
   while (connection->lock == tbx_true)
     {
       TBX_UNLOCK_SHARED(channel) ;
       TBX_YIELD();
       TBX_LOCK_SHARED(channel) ;
     }
-#else /* PM2 */
+#else /* MARCEL */
   /* NOTE: the test and the affectation must be done
      atomically in a multithreaded environnement*/
   if (connection->lock == tbx_true)
     FAILURE("mad_begin_packing: connection dead lock");      
-#endif /* PM2 */
+#endif /* MARCEL */
   connection->lock = tbx_true;
   connection->send = tbx_true;
   TBX_UNLOCK_SHARED(channel) ;
@@ -147,7 +152,7 @@ mad_begin_packing(p_mad_channel_t   channel,
   return connection;
 }
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_message_ready(p_mad_channel_t channel)
 {
@@ -161,18 +166,19 @@ mad_message_ready(p_mad_channel_t channel)
   TIME_INIT();
   
   TBX_LOCK_SHARED(channel);
-#ifdef PM2
+#ifdef MARCEL
   if (channel->reception_lock == tbx_true)
     {
       TBX_UNLOCK_SHARED(channel) ;
+      LOG_OUT();
       return NULL;
     }
-#else /* PM2 */
+#else /* MARCEL */
   /* NOTE: the test and the affectation must be done
      atomically in a multithreaded environnement*/
   if (channel->reception_lock == tbx_true)
     FAILURE("mad_begin_unpacking: reception dead lock");
-#endif /* PM2 */
+#endif /* MARCEL */
   channel->reception_lock = tbx_true;
   TBX_UNLOCK_SHARED(channel);
 
@@ -180,6 +186,8 @@ mad_message_ready(p_mad_channel_t channel)
 
   if (!(connection = interface->poll_message(channel)))
     {
+      channel->reception_lock = tbx_false;
+      TBX_UNLOCK_SHARED(channel) ;
       LOG_OUT();
       return NULL;
     }
@@ -212,7 +220,7 @@ mad_message_ready(p_mad_channel_t channel)
   LOG_OUT();
   return connection;
 }
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t
 mad_begin_unpacking(p_mad_channel_t channel)
@@ -227,19 +235,19 @@ mad_begin_unpacking(p_mad_channel_t channel)
   TIME_INIT();
   
   TBX_LOCK_SHARED(channel);
-#ifdef PM2
+#ifdef MARCEL
   while (channel->reception_lock == tbx_true)
     {
       TBX_UNLOCK_SHARED(channel) ;
       marcel_yield();
       TBX_LOCK_SHARED(channel) ;
     }
-#else /* PM2 */
+#else /* MARCEL */
   /* NOTE: the test and the affectation must be done
      atomically in a multithreaded environnement*/
   if (channel->reception_lock == tbx_true)
     FAILURE("mad_begin_unpacking: reception dead lock");
-#endif /* PM2 */
+#endif /* MARCEL */
   channel->reception_lock = tbx_true;
   TBX_UNLOCK_SHARED(channel);
 

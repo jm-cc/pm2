@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.h,v $
+Revision 1.6  2000/07/03 15:51:48  rnamyst
+Bug fixed in macro MARCEL_MUTEX_INITIALIZER
+
 Revision 1.5  2000/04/28 10:40:49  rnamyst
 Added the marcel_cond_timedwait primitive
 
@@ -58,7 +61,7 @@ ______________________________________________________________________________
 
 #include <sys/time.h>
 
-#define MARCEL_MUTEX_INITIALIZER { 0 }
+#define MARCEL_MUTEX_INITIALIZER { 1 }
 
 _PRIVATE_ typedef struct {
 	int dummy;

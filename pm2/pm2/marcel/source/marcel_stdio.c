@@ -19,17 +19,20 @@
 #include <stdarg.h>
 
 static marcel_lock_t __io_lock = MARCEL_LOCK_INIT;
+//static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
 
 static __inline__ void io_lock()
 {
   disable_preemption();
   marcel_lock_acquire(&__io_lock);
+  //marcel_mutex_lock(&ma_io_lock);
 }
 
 static __inline__ void io_unlock()
 {
   marcel_lock_release(&__io_lock);
   enable_preemption();
+  // marcel_mutex_unlock(&ma_io_lock);
 }
 
 int marcel_printf(char *format, ...)
@@ -91,4 +94,34 @@ int marcel_snprintf(char *string, size_t size, char *format, ...)
 
   io_unlock();
   return retour;
+} 
+
+FILE *marcel_fopen(char *path, char *mode)
+ {
+    FILE *file;
+    
+    io_lock();
+    file = fopen(path,mode);
+    io_unlock();
+    return file;
+ } 
+
+int marcel_fclose(FILE *stream)
+ {
+    int retour;
+    
+    io_lock();
+    retour  = fclose(stream);
+    io_unlock();
+    return retour;
+} 
+
+int marcel_fflush(FILE *stream)
+  {
+    int retour;
+    
+    io_lock();
+    retour  = fflush(stream);
+    io_unlock();
+    return retour;
 } 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.11  2000/04/28 10:40:49  rnamyst
+Added the marcel_cond_timedwait primitive
+
 Revision 1.10  2000/04/21 11:19:25  vdanjean
 fixes for actsmp
 
@@ -91,6 +94,7 @@ ______________________________________________________________________________
 
 #define _PRIVATE_
 
+#include <errno.h>
 #include <stdio.h>
 #include <memory.h>
 #include <sys/types.h>

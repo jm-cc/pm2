@@ -58,6 +58,8 @@ typedef struct function_time_list_st {
   mode type;
   int code;
   int thread;
+  u_64 begin;
+  u_64 end;
   u_64 time;
   struct function_time_list_st *next;
 } * function_time_list;
@@ -140,6 +142,8 @@ extern void filter_add_function(mode begin_type, int begin,
 				 char begin_param_active, int begin_param, 
 				 mode end_type, int end, 
 				 char end_param_active, int end_param);
+
+extern int filter_get_function_time(struct function_time_list_st *fct_time);
 
 int is_valid(trace *tr);
 

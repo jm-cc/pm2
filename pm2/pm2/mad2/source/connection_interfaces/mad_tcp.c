@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.17  2000/04/17 15:47:42  oaumage
+- correction de l'allocation du tableau des ports
+
 Revision 1.16  2000/03/15 09:59:43  oaumage
 - renommage du polling Nexus
 
@@ -380,11 +383,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
     FAILURE("Adapter selection currently unimplemented on top of TCP");
 
   driver_specific->nb_adapter++;  
-
-  adapter_specific->remote_connection_port =
-    TBX_MALLOC(driver->madeleine->configuration.size * sizeof(int));
-  CTRL_ALLOC(adapter_specific->remote_connection_port);
-
+  adapter_specific->remote_connection_port = NULL;
   adapter_specific->connection_socket = ntbx_tcp_socket_create(&address, 0);
   
   SYSCALL(listen(adapter_specific->connection_socket,
@@ -409,6 +408,10 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
   ntbx_host_id_t                 i;
 
   LOG_IN();
+  adapter_specific->remote_connection_port =
+    TBX_MALLOC(driver->madeleine->configuration.size * sizeof(int));
+  CTRL_ALLOC(adapter_specific->remote_connection_port);
+
   if (configuration->local_host_id == 0)
     {
       /* Master */

@@ -36,6 +36,9 @@
  * C language equivalents written by Theodore Ts'o, 9/26/92
  */
 
+#section marcel_functions
+extern __inline__ int ma_set_bit(int nr,long * addr);
+#section marcel_inline
 extern __inline__ int ma_set_bit(int nr,long * addr)
 {
 	int	mask, retval;
@@ -49,6 +52,9 @@ extern __inline__ int ma_set_bit(int nr,long * addr)
 	return retval;
 }
 
+#section marcel_functions
+extern __inline__ int ma_clear_bit(int nr, long * addr);
+#section marcel_inline
 extern __inline__ int ma_clear_bit(int nr, long * addr)
 {
 	int	mask, retval;
@@ -62,6 +68,9 @@ extern __inline__ int ma_clear_bit(int nr, long * addr)
 	return retval;
 }
 
+#section marcel_functions
+extern __inline__ int ma_test_bit(int nr, const unsigned long * addr);
+#section marcel_inline
 extern __inline__ int ma_test_bit(int nr, const unsigned long * addr)
 {
 	int	mask;
@@ -75,6 +84,7 @@ extern __inline__ int ma_test_bit(int nr, const unsigned long * addr)
  * fls: find last bit set.
  */
 
+#section common
 #define ma_fls(x) ma_generic_fls(x)
 
 /*
@@ -94,4 +104,3 @@ extern __inline__ int ma_test_bit(int nr, const unsigned long * addr)
 #define ma_hweight16(x) ma_generic_hweight16(x)
 #define ma_hweight8(x) ma_generic_hweight8(x)
 
-#endif /* _ASM_GENERIC_BITOPS_H */

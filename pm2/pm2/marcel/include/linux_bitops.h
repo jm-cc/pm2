@@ -19,7 +19,7 @@
  * Similar to:
  * include/linux/bitops.h
  */
-#depend "asm/linux_bitops.h"
+#depend "asm/linux_bitops.h[]"
 
 /*
  * ma_ffs: find first bit set. This is defined the same way as
@@ -27,7 +27,10 @@
  * differs in spirit from the above ffz (man ffs).
  */
 
-static inline int ma_generic_ffs(int x)
+#section marcel_functions
+static __inline__ int ma_generic_ffs(int x);
+#section marcel_inline
+static __inline__ int ma_generic_ffs(int x)
 {
 	int r = 1;
 
@@ -60,6 +63,9 @@ static inline int ma_generic_ffs(int x)
  * ma_fls: find last bit set.
  */
 
+#section marcel_functions
+extern __inline__ int ma_generic_fls(int x);
+#section marcel_inline
 extern __inline__ int ma_generic_fls(int x)
 {
 	int r = 32;
@@ -89,6 +95,9 @@ extern __inline__ int ma_generic_fls(int x)
 	return r;
 }
 
+#section marcel_functions
+extern __inline__ int ma_get_bitmask_order(unsigned int count);
+#section marcel_inline
 extern __inline__ int ma_get_bitmask_order(unsigned int count)
 {
 	int order;
@@ -102,6 +111,9 @@ extern __inline__ int ma_get_bitmask_order(unsigned int count)
  * of bits set) of a N-bit word
  */
 
+#section marcel_functions
+static inline unsigned int ma_generic_hweight32(unsigned int w);
+#section marcel_inline
 static inline unsigned int ma_generic_hweight32(unsigned int w)
 {
         unsigned int res = (w & 0x55555555) + ((w >> 1) & 0x55555555);
@@ -111,6 +123,9 @@ static inline unsigned int ma_generic_hweight32(unsigned int w)
         return (res & 0x0000FFFF) + ((res >> 16) & 0x0000FFFF);
 }
 
+#section marcel_functions
+static inline unsigned int ma_generic_hweight16(unsigned int w);
+#section marcel_inline
 static inline unsigned int ma_generic_hweight16(unsigned int w)
 {
         unsigned int res = (w & 0x5555) + ((w >> 1) & 0x5555);
@@ -119,6 +134,9 @@ static inline unsigned int ma_generic_hweight16(unsigned int w)
         return (res & 0x00FF) + ((res >> 8) & 0x00FF);
 }
 
+#section marcel_functions
+static inline unsigned int ma_generic_hweight8(unsigned int w);
+#section marcel_inline
 static inline unsigned int ma_generic_hweight8(unsigned int w)
 {
         unsigned int res = (w & 0x55) + ((w >> 1) & 0x55);
@@ -126,7 +144,10 @@ static inline unsigned int ma_generic_hweight8(unsigned int w)
         return (res & 0x0F) + ((res >> 4) & 0x0F);
 }
 
-static inline unsigned long ma_generic_hweight64(__u64 w)
+#section marcel_functions
+static inline unsigned long ma_generic_hweight64(unsigned long long w);
+#section marcel_inline
+static inline unsigned long ma_generic_hweight64(unsigned long long w)
 {
 #if BITS_PER_LONG < 64
 	return ma_generic_hweight32((unsigned int)(w >> 32)) +
@@ -142,6 +163,9 @@ static inline unsigned long ma_generic_hweight64(__u64 w)
 #endif
 }
 
+#section marcel_functions
+static inline unsigned long ma_hweight_long(unsigned long w);
+#section marcel_inline
 static inline unsigned long ma_hweight_long(unsigned long w)
 {
 	return sizeof(w) == 4 ? ma_generic_hweight32(w) : ma_generic_hweight64(w);

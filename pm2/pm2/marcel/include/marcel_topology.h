@@ -23,7 +23,7 @@ typedef unsigned ma_cpu_set_t;
 #endif
 
 #section marcel_macros
-#depend "linux_bitops.h"
+#depend "linux_bitops.h[]"
 #define MA_CPU_ZERO(cpusetp)		(*(cpusetp)=0)
 #ifdef MA__LWPS
 #define MA_CPU_FILL(cpusetp)		(*(cpusetp)=~0UL)

@@ -36,11 +36,16 @@
 #ifndef MAD_TIMING_EST_DEF
 #define MAD_TIMING_EST_DEF
 
-#include "timing.h"
+#ifdef MAD_TIMING
 
-#ifndef MAD_TIMING
-#undef TIMING_EVENT
+#include "tbx.h"
+
+#define TIMING_EVENT(name)   TIME(name)
+
+#else
+
 #define TIMING_EVENT(name)   /* nothing */
+
 #endif
 
 #endif

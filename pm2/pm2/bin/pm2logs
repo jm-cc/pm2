@@ -17,6 +17,11 @@
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
+usage()
+{
+    echo "Usage : `basename $0` [-f flavor] [node [node...]]"
+}
+
 error() # msg
 {
     echo $*
@@ -25,15 +30,21 @@ error() # msg
 
 # Début du script
 
+PM2_LOGS=""
 while [ $# -gt 0 ]; do
     case $1 in
 	-f)
-	    shift; PM2_FLAVOR="$1"; shift
+	    PM2_FLAVOR="$2"; shift
+	    ;;
+	[0-9]*)
+	    PM2_LOGS="$PM2_LOGS $1 "
 	    ;;
 	*)
-	    break
+	    usage
+	    error "Aborting : unknown option $1"
 	    ;;
     esac
+    shift
 done
 
 set `${PM2_ROOT}/bin/pm2-config --modules`
@@ -48,7 +59,7 @@ do
     esac
 done
 
-PM2_CONF_FILE=`pm2-conf-file`
+PM2_CONF_FILE=`${PM2_ROOT}/bin/pm2-conf-file`
 [ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
 export PM2_CONF_FILE
 
@@ -56,7 +67,14 @@ export PM2_CONF_FILE
 
 n=0
 for host in `cat ${PM2_CONF_FILE}`; do
-    eval logs_on_host_$host=\"\$logs_on_host_$host /tmp/${USER}-${mod}log-$n\"
+    case " $PM2_LOGS " in
+	*" $n "*|"  ")
+	    eval logs_on_host_$host=\"\$logs_on_host_$host /tmp/${USER}-${mod}log-$n\"
+	    ;;
+	*)
+	    echo Do not display node $n
+	    ;;
+    esac
     n=`expr $n + 1`
 done
 

@@ -50,6 +50,12 @@ static void __marcel_init marcel_slot_init(void)
 	stack_cache_unmapped = NULL;
 	
 	next_slot = (void *)SLOT_AREA_TOP;
+	/* SLOT_AREA_TOP doit être un multiple de THREAD_SLOT_SIZE
+	 * et THREAD_SLOT_SIZE doit être une puissance de deux (non vérifié
+	 * ici)
+	 */
+	MA_BUG_ON(0 != (SLOT_AREA_TOP & (THREAD_SLOT_SIZE-1)));
+
 	LOG_OUT();
 }
 

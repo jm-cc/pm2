@@ -38,7 +38,7 @@
 #ifdef PTHREAD
 
 #include <pthread.h>
-#include <timing.h>
+#include "timing.h"
 
 #define marcel_mutex_t             pthread_mutex_t
 #define marcel_mutex_init          pthread_mutex_init
@@ -59,7 +59,7 @@
 /* #define NON_BLOCKING_IO */
 #endif
 
-#include <marcel.h>
+#include "marcel.h"
 
 #endif
 

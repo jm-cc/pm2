@@ -141,6 +141,7 @@ MAR_OBJ		:= $(MAR_SRC)/obj/$(PM2_ARCH_SYS)
 MAR_INC		:= $(MARCEL_ROOT)/include
 MAR_LIBD	:= $(MARCEL_ROOT)/lib/$(PM2_ARCH_SYS)
 
+ifneq ($(MAKECMDGOALS),distclean) # avoid auto-building of directories
 ifneq ($(wildcard $(MAR_DEP)),$(MAR_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAR_DEP))
 endif
@@ -151,6 +152,7 @@ endif
 
 ifneq ($(wildcard $(MAR_LIBD)),$(MAR_LIBD))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAR_LIBD))
+endif
 endif
 
 MAR_CC		=	gcc
@@ -249,7 +251,8 @@ marclean:
 	rm -f $(wildcard $(MAR_LIBD)/*.a $(MAR_OBJ)/*.o $(MAR_DEP)/*.d \
 		$(MARCEL_ROOT)/examples/depend/*.d \
 		$(MARCEL_ROOT)/examples/obj/$(PM2_ARCH_SYS)/*.o \
-		$(MARCEL_ROOT)/examples/bin/$(PM2_ARCH_SYS)/*)
+		$(MARCEL_ROOT)/examples/bin/$(PM2_ARCH_SYS)/* \
+		$(MARCEL_ROOT)/.mar*)
 
 mardistclean:
 	rm -rf $(wildcard $(MARCEL_ROOT)/lib \
@@ -257,14 +260,16 @@ mardistclean:
 		$(MARCEL_ROOT)/source/depend \
 		$(MARCEL_ROOT)/examples/depend \
 		$(MARCEL_ROOT)/examples/obj \
-		$(MARCEL_ROOT)/examples/bin)
+		$(MARCEL_ROOT)/examples/bin \
+		$(MARCEL_ROOT)/.mar*)
 else
 .PHONY: clean distclean
 clean:
 	rm -f $(wildcard $(MAR_LIBD)/*.a $(MAR_OBJ)/*.o $(MAR_DEP)/*.d \
 		$(MARCEL_ROOT)/examples/depend/*.d \
 		$(MARCEL_ROOT)/examples/obj/$(PM2_ARCH_SYS)/*.o \
-		$(MARCEL_ROOT)/examples/bin/$(PM2_ARCH_SYS)/*)
+		$(MARCEL_ROOT)/examples/bin/$(PM2_ARCH_SYS)/* \
+		$(MARCEL_ROOT)/.mar*)
 
 distclean:
 	rm -rf $(wildcard $(MARCEL_ROOT)/lib \
@@ -272,7 +277,8 @@ distclean:
 		$(MARCEL_ROOT)/source/depend \
 		$(MARCEL_ROOT)/examples/depend \
 		$(MARCEL_ROOT)/examples/obj \
-		$(MARCEL_ROOT)/examples/bin)
+		$(MARCEL_ROOT)/examples/bin \
+		$(MARCEL_ROOT)/.mar*)
 endif
 
 

@@ -37,11 +37,12 @@
 COMMAND=$1
 shift
 
+echo "Transmitting request to LAM-MPI"
 while [ $# -gt 0 ]; do
     case $1 in
 	-b)
-	    recon   -v ${PM2_CONF_FILE}
-	    lamboot -v ${PM2_CONF_FILE}
+	    recon   -d -v ${PM2_CONF_FILE}
+	    lamboot -d -v ${PM2_CONF_FILE}
 	    exit
 	    ;;
 	-w)
@@ -65,7 +66,7 @@ done
 
 recon   -v ${PM2_CONF_FILE}
 lamboot -v ${PM2_CONF_FILE}
-mpirun N ${COMMAND} "$@"
-wipe -v ${PM2_CONF_FILE}
+mpirun -v N ${COMMAND} "$@"
+wipe -d -v ${PM2_CONF_FILE}
 
 ##########

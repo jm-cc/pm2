@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication_interface.h,v $
+Revision 1.5  2000/03/15 09:56:32  oaumage
+- renommage du polling Nexus
+
 Revision 1.4  2000/03/02 15:45:26  oaumage
 - support du polling Nexus
 
@@ -59,10 +62,10 @@ ______________________________________________________________________________
  * ---------
  */
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_message_ready(p_mad_channel_t channel);
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,

@@ -303,18 +303,14 @@ void
 mad_tcp_accept(p_mad_connection_t   in,
 	       p_mad_adapter_info_t adapter_info TBX_UNUSED)
 {
-  p_mad_channel_t                 channel             = NULL;
-  p_mad_adapter_t                 adapter             = NULL;
   p_mad_tcp_adapter_specific_t    adapter_specific    = NULL;
   p_mad_tcp_connection_specific_t connection_specific = NULL; 
   ntbx_tcp_socket_t               desc                =   -1;
   
   LOG_IN();
   connection_specific = in->specific;
-  channel             = in->channel;
-  adapter             = channel->adapter;
-  adapter_specific    = adapter->specific;
-
+  adapter_specific    = in->channel->adapter->specific;
+  
   SYSCALL(desc = accept(adapter_specific->connection_socket, NULL, NULL));
   ntbx_tcp_socket_setup(desc);
   
@@ -328,8 +324,6 @@ mad_tcp_connect(p_mad_connection_t   out,
 		p_mad_adapter_info_t adapter_info)
 {
   p_mad_tcp_connection_specific_t   connection_specific   = NULL;
-  p_mad_adapter_t                   adapter               = NULL;
-  p_mad_tcp_adapter_specific_t      adapter_specific      = NULL;
   p_mad_dir_node_t                  remote_node           = NULL;
   p_mad_dir_adapter_t               remote_adapter        = NULL;
   ntbx_tcp_port_t                   remote_port           =    0;
@@ -338,8 +332,6 @@ mad_tcp_connect(p_mad_connection_t   out,
   
   LOG_IN();
   connection_specific = out->specific;
-  adapter             = out->channel->adapter;
-  adapter_specific    = adapter->specific;
   remote_node         = adapter_info->dir_node;
   remote_adapter      = adapter_info->dir_adapter;
   remote_port         = atoi(remote_adapter->parameter);
@@ -360,7 +352,6 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t  channel_specific = NULL;
   p_mad_dir_channel_t           dir_channel      = NULL;
-  p_ntbx_process_container_t    pc               = NULL;
   tbx_darray_index_t            idx              =    0;
   p_tbx_darray_t                in_darray        = NULL;
   p_mad_connection_t            in               = NULL;
@@ -371,7 +362,6 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
   channel_specific = channel->specific;
   dir_channel      = channel->dir_channel;
   in_darray        = channel->in_connection_darray;
-  pc               = dir_channel->pc;
   read_fds         = &(channel_specific->read_fds);
 
   in = tbx_darray_first_idx(in_darray, &idx);
@@ -410,12 +400,10 @@ mad_tcp_poll_message(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific = NULL;
   p_tbx_darray_t               in_darray        = NULL;
-  p_ntbx_process_container_t   pc               = NULL;
   p_mad_connection_t           in               = NULL;
   
   LOG_IN();
   channel_specific = channel->specific;
-  pc               = channel->dir_channel->pc;
   in_darray        = channel->in_connection_darray;
 
   if (!channel_specific->active_number)
@@ -480,12 +468,10 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific = NULL;
   p_tbx_darray_t               in_darray        = NULL;
-  p_ntbx_process_container_t   pc               = NULL;
   p_mad_connection_t           in               = NULL;
   
   LOG_IN();
   channel_specific = channel->specific;
-  pc               = channel->dir_channel->pc;
   in_darray        = channel->in_connection_darray;
 
   if (!channel_specific->active_number)

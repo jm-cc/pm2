@@ -60,7 +60,12 @@
 #endif
 
 #define nb_words(x) x/sizeof(int)+((x%sizeof(int))?1:0)
-enum                  {REQUEST, ACK, DATA, CREDITS} ;
+enum {
+  REQUEST,
+  ACK,
+  DATA,
+  CREDITS
+};
 
 static int              sender_node ;
 static int              small_iov_base [BIPSMALLSIZE] ;

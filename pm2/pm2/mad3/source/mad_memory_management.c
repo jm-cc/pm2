@@ -164,7 +164,10 @@ mad_foreach_free_buffer(void *object)
 p_mad_buffer_pair_t
 mad_alloc_buffer_pair_struct()
 {
-  return tbx_malloc(mad_buffer_pair_memory);
+  p_mad_buffer_pair_t bp = NULL;
+  bp = tbx_malloc(mad_buffer_pair_memory);
+  memset(bp, 0, sizeof(mad_buffer_pair_t));
+  return bp;
 }
 
 void

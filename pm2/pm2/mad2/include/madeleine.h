@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.10  2000/02/08 17:47:26  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.9  2000/02/01 17:22:30  rnamyst
 Replaced MAD2_MAD1 by PM2.
 
@@ -89,6 +92,7 @@ ______________________________________________________________________________
 #include <stdio.h>
 #include <string.h>
 #include <tbx.h>
+#include <ntbx.h>
 
 /* Protocol registration */
 #include <mad_registration.h>

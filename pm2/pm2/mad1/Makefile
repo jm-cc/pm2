@@ -13,6 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+$(error Makefile need to be rewrite)
 LIBRARY=mad1
 LIBNAME=mad
 

@@ -641,6 +641,9 @@ any_t idle_func(any_t arg)
 #endif
 
   LOG_IN();
+  /* Code plus maintenu (cf marcel_sched_generic.c pour la vraie
+   * fonction idle_func) */
+  RAISE(PROGRAM_ERROR);
 
   marcel_sig_start_timer(); // May be redundant for main LWP
 

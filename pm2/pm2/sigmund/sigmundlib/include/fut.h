@@ -166,6 +166,7 @@
 #define FUT_NEW_LWP_CODE                        0xfffff9
 #define FUT_THREAD_BIRTH_CODE                   0xfffff8
 #define FUT_THREAD_DEATH_CODE                   0xfffff7
+#define FUT_SET_THREAD_NAME_CODE                0xfffff6
 
 #define FUT_SWITCH_TO_CODE			0x31a
 

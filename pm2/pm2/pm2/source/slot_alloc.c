@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: slot_alloc.c,v $
+Revision 1.3  2000/09/04 07:42:47  rnamyst
+Minor modifs (removed some debug messages)
+
 Revision 1.2  2000/07/14 16:17:15  gantoniu
 Merged with branch dsm3
 
@@ -469,7 +472,7 @@ size_t slot_get_header_size()
   return SLOT_HEADER_SIZE;
 }
 
-#endif
+#endif // ifndef ISOMALLOC_USE_MACROS
 
 #include "dsm_page_manager.h"
 

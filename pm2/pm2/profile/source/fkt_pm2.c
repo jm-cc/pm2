@@ -40,11 +40,11 @@
 #include <sys/wait.h>
 
 #include "fkt.h"
-#include "fkt/get_cpu_info.h"
-#include "fkt/sysmap.h"
-#include "fkt/block.h"
-#include "fkt/names.h"
-#include "fkt/pids.h"
+#include <fkt/get_cpu_info.h>
+#include <fkt/sysmap.h>
+#include <fkt/block.h>
+#include <fkt/names.h>
+#include <fkt/pids.h>
 #include "fkt-tools.h"
 
 #include "pm2_profile.h"

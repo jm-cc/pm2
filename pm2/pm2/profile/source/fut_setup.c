@@ -29,10 +29,10 @@
 #include <sys/utsname.h>
 #include <sys/types.h>
 #include "fut.h"
-#include "fkt/get_cpu_info.h"
-#include "fkt/block.h"
-#include "fkt/sysmap.h"
-#include "fkt/pids.h"
+#include <fkt/get_cpu_info.h>
+#include <fkt/block.h>
+#include <fkt/sysmap.h>
+#include <fkt/pids.h>
 #include "fkt-tools.h"
 
 #define MAXCPUS 16

@@ -24,7 +24,7 @@
 #include <stdarg.h>
 
 #include "pm2_profile.h"
-#include "fkt/sysmap.h"
+#include <fkt/sysmap.h>
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"

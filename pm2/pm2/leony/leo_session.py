@@ -12,9 +12,11 @@ logger	= logging.getLogger()
 
 class Session:
 
-    def __init__(self, leo, name, args, mode):
+    def __init__(self, leo, name):
         self.name		= name
         self.leo		= leo
+	self.parent_name        = ''
+	self.child_name_list    = []
 	self.session_id         = leo.session_number
         self.process_list	= []
         self.node_dict		= {}
@@ -27,7 +29,6 @@ class Session:
 
         leo.session_dict[name] = self
         leo.session_number = leo.session_number + 1
-	leo_args.cmdline_parse(self, args, mode)
 
     def node_process_dict_get(self, host_name):
         if not self.node_dict.has_key(host_name):

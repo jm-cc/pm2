@@ -24,6 +24,9 @@ def cnx_graph_traversal(series_dict, f, g):
 
 def driver_init(s):
     for driver_name, driver in s.driver_dict.iteritems():
+	
+	print 'Driver.processes : ', driver_name,  len(driver.processes)
+	
         leo_comm.mcast_string(driver.processes, driver_name)
         leo_comm.mcast(driver.processes, leo_comm.wait_for_ack)
 

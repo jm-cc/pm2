@@ -39,7 +39,6 @@
  * Constantes
  * ----------
  */
-#define MAX_ARG_LEN 256
 
 /*
  * Objet Madeleine

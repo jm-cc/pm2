@@ -24,7 +24,7 @@ AS := gcc # needed for some gcc specific flags
 LD := gcc # needed for some gcc specific flags
 
 LEX  :=  flex
-YACC :=  bison -y -d
+YACC :=  bison -y -d --locations
 
 # Controle du niveau d'affichage
 #---------------------------------------------------------------------

@@ -34,7 +34,8 @@
 
 */
 
-#ifdef __ACT__
+#include "sys/marcel_flags.h"
+#ifdef MA__ACT
 
 #ifdef ACT_TIMER
 #ifdef CONFIG_ACT_TIMER
@@ -50,6 +51,7 @@
 #include <sched.h>
 #include <stdlib.h>
 #include <sys/act_spinlock.h>
+#include <sys/upcalls.h>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -57,172 +59,214 @@
 
 //#define SHOW_UPCALL
 
-#define STACK_SIZE 10000
+#define STACK_SIZE 100000
+#define ACT_NEW_WITH_LOCK 1
 
-//void restart_thread(marcel_t next)
-//{
-//	next->state_ext=MARCEL_RUNNING;
-//	longjmp(next->jb, NORMAL_RETURN);
-//}
+//static act_spinlock_t act_spinlock=ACT_SPIN_LOCK_UNLOCKED;
+static marcel_t marcel_next[ACT_NB_MAX_CPU];
 
-static act_spinlock_t act_spinlock=ACT_SPIN_LOCK_UNLOCKED;
-static marcel_t marcel_idle[32];
+//volatile boolean has_new_tasks=0;
+volatile int act_nb_unblocked=0;
+
+void act_goto_next_task(marcel_t pid)
+{
+	marcel_next[GET_LWP_NUMBER(marcel_self())]=pid;
+	
+	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED\n");
+	act_cntl(ACT_CNTL_RESTART_UNBLOCKED, 0);
+	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
+
+	if (pid) {
+		MA_THR_LONGJMP((pid), NORMAL_RETURN);
+	}
+}
+
+void locked_start() {}
+
+extern int hack_restart_func (act_proc_t new_proc, int return_value, 
+		  int param, long eip, long esp) asm ("hack_restart_func");
+extern void restart_func (act_proc_t new_proc, int return_value, 
+		  int param, long eip, long esp) asm ("restart_func");
+/*  void restart_func(act_proc_t new_proc, int return_value,  */
+/*  		  int param, long eip, long esp); */
+
+__asm__ (".align 16 \n\
+	.globl restart_func \n\
+	.type	 restart_func,@function \n\
+restart_func: \n\
+	addl $4, %esp \n\
+	call hack_restart_func \n\
+	movl 16(%esp), %esp \n\
+	ret \n\
+.Lmye: \n\
+	.size	 restart_func,.Lmye-restart_func \n\
+") ;
+
+int hack_restart_func(act_proc_t new_proc, int return_value, 
+		      int param, long eip, long esp)
+{
+	marcel_t current = marcel_self();
+	
+	SET_LWP(current, GET_LWP_BY_NUM(proc));
+#ifdef SHOW_UPCALL
+	marcel_printf("\trestart_func (proc %i, ret %i, param 0x%8x,"
+		      " ip 0x%8x, sp 0x%8x)\n",
+		      new_proc, return_value, param, eip, esp);
+#else
+	mdebug("\trestart_func (proc %i, ret %i, param 0x%8x,"
+	       " ip 0x%8x, sp 0x%8x)\n",
+	       new_proc, return_value, param, eip, esp);
+#endif
+	if (IS_TASK_TYPE_IDLE(current)) {
+		marcel_printf("\trestart_func in idle task %p !! \n",
+		      current);
+	}
+  	if (param & ACT_UNBLK_RESTART_UNBLOCKED) {
+		if (marcel_next[GET_LWP_NUMBER(current)]) {
+			MTRACE("Restarting", current);
+			MA_THR_RESTARTED(current, "Syscall");
+			SET_STATE_READY(marcel_next[GET_LWP_NUMBER(current)]);
+		} else {
+			/* we comme from the idle task */
+			MTRACE("Restarting", current);
+			mdebug("\t\tunchaining idle %p\n",
+			       GET_LWP(current)->prev_running);
+			SET_FROZEN(GET_LWP(current)->prev_running);
+			UNCHAIN_TASK(GET_LWP(current)->prev_running);
+		}
+		unlock_task();
+  	} else if (param & ACT_UNBLK_IDLE) {
+		if ((param & 0xFF) == ACT_NEW_WITH_LOCK) {
+			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
+		}
+		MTRACE("End IDLE", current);
+	}
+	
+	*(&esp) = esp-4;  /* on veut empiler l'adresse de retour ret */
+	*((int*)esp) = eip; /* C'est fait :-) */
+	/* PS : Ça marche car le noyau descend suffisamment la pile :
+	 * il y a une vingtaine d'octets entre esp et &esp
+	 * */
+	
+	return return_value;
+}
 
 void act_lock(marcel_t self)
 {
 	ACTDEBUG(printf("act_lock (%p)\n", self));
-	act_spin_lock(&act_spinlock);
+	//act_spin_lock(&act_spinlock);
 }
 
 void act_unlock(marcel_t self)
 {
 	ACTDEBUG(printf("act_unlock(%p)\n", self));
-	act_spin_unlock(&act_spinlock);
+	//act_spin_unlock(&act_spinlock);
 }
 
 void upcall_new(act_proc_t proc)
 {
  	marcel_t next;
-	marcel_t new_task=marcel_idle[proc];
+	//marcel_t new_task=GET_LWP_BY_NUM(proc)->upcall_new_task;
 
 #ifdef SHOW_UPCALL
-	printf("upcall_new(%i)\n", proc);
+	marcel_printf("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
+		      proc, marcel_self(),GET_LWP_BY_NUM(proc), 
+		      GET_LWP_BY_NUM(proc)->number );
 #else
-	ACTDEBUG(printf("upcall_new(%i)\n", proc));
+	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
+	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
+	       GET_LWP_BY_NUM(proc)->number );
 #endif
 
+	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
 
-	new_task->state_ext=MARCEL_RUNNING;
-	
-	call_ST_FLUSH_WINDOWS();
-	set_sp(new_task->initial_sp);
-	
-	//self=marcel_self();
-	do {
-		sched_lock(cur_lwp);
-
-		next=cur_lwp->__first[0];
-		if (next->state_ext != MARCEL_READY) {
-			do {
-				next=next->next;
-			} while ( (next->state_ext != MARCEL_READY) && 
-				  (next->next != cur_lwp->__first[0]));
-			if (next->next == cur_lwp->__first[0])
-				goto something_wrong;
+	if (locked()) {
+		mdebug("Kai kai kai : appel bloquant dans marcel !"
+		       " (locked=%i)\n", locked());
+		/* C'est peut-être juste un printf, on va essayer de s'en
+		   sortir */
+		for (;;) {
+			mdebug("\t==> waiting end of blocking syscall\n");
+			act_cntl(ACT_CNTL_READY_TO_WAIT,NULL);
+			act_cntl(ACT_CNTL_DO_WAIT, (void*)ACT_NEW_WITH_LOCK);
 		}
-		
-
-		next->state_ext=MARCEL_RUNNING;
-		ACTDEBUG(printf("upcall_new launch %p\n", next));  
-
-		sched_unlock(cur_lwp);
-
-		longjmp(next->jb, NORMAL_RETURN);
-		
-		/** Never there normally */
-	something_wrong:
-		act_unlock(NULL);
-		
-		mdebug("No new thread to launch !!!\n");
-	} while (1);
- 
-
-#ifdef DEBUG
-	printf("Error : come to end of act_new\n");
-#endif
-}
-
-void upcall_unblock(act_proc_t interrupted_proc, 
-		    act_proc_t unblocked_proc,
-		    act_state_buf_t *interrupted_state,
-		    act_state_buf_t *unblocked_state)
-{
-	/* cur = marcel thread unblocked */
-	marcel_t cur=marcel_self();
-
-#ifdef SHOW_UPCALL
-	printf("act_unblock(%i, %i, %p, %p)...\n", 
-	       interrupted_proc, unblocked_proc,
-	       interrupted_state, unblocked_state);
-#else
-	ACTDEBUG(printf("act_unblock(%i, %i, %p, %p)...\n", 
-			interrupted_proc, unblocked_proc,
-			interrupted_state, unblocked_state));
-#endif
-	
-	if(setjmp(cur->jb) == NORMAL_RETURN) {
-#ifdef DEBUG
-		breakpoint();
-#endif
-		MTRACE("Preemption is act_unblock", cur);
-		ACTDEBUG(printf("act_unblock(%i, %i, %p, %p)... resuming blocked\n", 
-				interrupted_proc, unblocked_proc,
-				interrupted_state, unblocked_state));
-		cur->state_ext=MARCEL_RUNNING;
-		//unlock_task(); // Pas de unlock : On n'en avait pas pris.
-		// Mais on libère qd même le verrou pris avant le longjmp
-		act_unlock(cur);
-		act_resume(unblocked_state, NULL, 0);
-		//return;
 	}
-	ACTDEBUG(printf("act_unblock(%i, %i, %p, %p)... continuing\n", 
-			interrupted_proc, unblocked_proc,
-			interrupted_state, unblocked_state));
-	act_resume(interrupted_state, &(cur->state_ext), 
-		   ACT_RESTART_SLEEPING_ACT);
+
+	/* le lock_task n'est pas pris : il n'y a pas d'appels
+	 * bloquant DANS marcel.
+	 * */
+	lock_task();
+	//sched_lock(cur_lwp);
+	
+	next=marcel_radical_next_task();
+	mdebug("\tupcall_new next=%p (state %i)\n", next, next->ext_state);
+	
+	//ACTDEBUG(printf("upcall_new launch %p\n", next));  
+
+	/* On ne veut pas être mis en non_running */
+	GET_LWP(self)->prev_running=NULL;
+	MA_THR_LONGJMP(next, NORMAL_RETURN);
+	
+
+	/** Never there normally */	
+	RAISE("Aie, aie aie !\n");
 }
 
-void upcall_change_proc(act_proc_t new_proc)
-{
-	printf("Tiens ! un upcall_change_proc(%i)\n", new_proc);
-}
+void locked_end() {}
 
 static void init_act(int proc, act_param_t *param)
 {
-	char* bottom;
-	marcel_t new_task;
 	void *stack;
 
-	stack=malloc(STACK_SIZE+512);
-	param->upcall_new_sp[proc]=stack+STACK_SIZE;
+	stack=(void*)GET_LWP_BY_NUM(proc)->upcall_new_task->initial_sp;
+	param->upcall_new_sp[proc]=stack;
   
-	bottom = marcel_slot_alloc();
-	new_task = (marcel_t)(MAL_BOT((long)bottom + SLOT_SIZE) 
-			      - MAL(sizeof(task_desc)));
-	memset(new_task, 0, sizeof(*new_task));
-	new_task->stack_base = bottom;
-	new_task->initial_sp = (long)new_task - MAL(1) - 2*WINDOWSIZE;
-	marcel_idle[proc]=new_task;
+	mdebug("upcall_new on proc %i use stack %p\n", proc, stack);
+
 }
 
 void init_upcalls(int nb_act)
 {
 	act_param_t param;
+#ifdef MA__LWPS
 	int proc;
+#endif
 
 	if (nb_act<=0)
 		nb_act=0;
 
 	ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
 
-	for(proc=0; proc<32; proc++) {
+#ifdef MA__LWPS
+	for(proc=0; proc<ACT_NB_MAX_CPU; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */
 		init_act(proc, &param);
 	}
+#else
+	init_act(0, &param);
+#endif
+	param.magic_number=ACT_MAGIC_NUMBER;
 	param.nb_proc_wanted=nb_act;
 	param.upcall_new=upcall_new;
-	param.upcall_unblock=upcall_unblock;
-	param.upcall_change_proc=upcall_change_proc;
+	param.restart_func=restart_func;
+	param.nb_act_unblocked=(int*)&act_nb_unblocked;
+	param.locked_start=&locked_start;
+	param.locked_end=&locked_end;
+	param.locked=NULL;
 	
-	ACTDEBUG(printf("mem_base_sp=%p, sp=%p, new = %p, unbk=%p, chp=%p\n",
-			stack, param.upcall_new_sp[0], 
-			upcall_new, upcall_unblock, upcall_change_proc));
+//	param.upcall_unblock=upcall_unblock;
+//	param.upcall_change_proc=upcall_change_proc;
+	
+	ACTDEBUG(printf("sp=%p, new = %p, restart=%p, nb_unblk=%p\n",
+			param.upcall_new_sp[0], 
+			upcall_new, restart_func, &act_nb_unblocked));
 	
        
 	act_cntl(ACT_CNTL_INIT, &param);
 	
-	ACTDEBUG(printf("Fin act_init\n"));
+	mdebug("Initialisation upcall done\n");
+	//ACTDEBUG(printf("Fin act_init\n"));
+	//scanf("%i", &proc);
 }
 
-
-#endif /* __ACT__ */
+#endif /* MA__ACT */

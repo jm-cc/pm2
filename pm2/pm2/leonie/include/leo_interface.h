@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leo_interface.h,v $
+Revision 1.3  2000/06/09 08:45:43  oaumage
+- Progression du code
+
 Revision 1.2  2000/05/15 13:50:48  oaumage
 - Reorganisation des sources de Leonie
 
@@ -53,5 +56,8 @@ ______________________________________________________________________________
 int
 leo_yy_input(char *buffer,
 	     int   max_size);
+
+p_leo_cluster_definition_t
+leo_build_cluster_definition(p_leo_clu_cluster_file_t cluster_file);
 
 #endif /* __LEO_INTERFACE_H */

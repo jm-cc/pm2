@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.9  2000/03/02 14:51:19  oaumage
+- indication du nom du protocole dans la structure driver
+
 Revision 1.8  2000/02/28 11:46:07  rnamyst
 Changed #include <> into #include "".
 
@@ -427,6 +430,9 @@ mad_sbp_driver_init(p_mad_driver_t driver)
   tbx_malloc_init(&(driver_specific->list_element_memory),
 		  sizeof(mad_sbp_list_element_t),
 		  MAD_SBP_INITIAL_LIST_ELEMENT_COUNT);
+  driver->name = malloc(4);
+  CTRL_ALLOC(driver->name);
+  strcpy(driver->name, "sbp");
   LOG_OUT();
 }
 

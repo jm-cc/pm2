@@ -204,6 +204,11 @@
  */
 #if defined (MARCEL)       //# Thread sync : Marcel mode
 #define tbx_main marcel_main
+#define TBX_CRITICAL_SECTION(name)         marcel_mutex_t __tbx_section_ ## name = MARCEL_MUTEX_INITIALIZER
+#define TBX_CRITICAL_SECTION_ENTER(name)    marcel_mutex_lock(&(__tbx_section_ ## name))
+#define TBX_CRITICAL_SECTION_TRY_ENTERING(name) marcel_mutex_trylock(&(__tbx_section_ ## name))
+#define TBX_CRITICAL_SECTION_LEAVE(name)  marcel_mutex_unlock(&(__tbx_section_ ## name))
+
 #define TBX_SHARED             marcel_mutex_t __tbx_mutex
 #define TBX_INIT_SHARED(st)    marcel_mutex_init((&((st)->__tbx_mutex)), NULL)
 #define TBX_LOCK_SHARED(st)    marcel_mutex_lock((&((st)->__tbx_mutex)))
@@ -214,6 +219,11 @@
 #define TBX_YIELD()  marcel_yield()
 #elif defined (_REENTRANT) //# Thread sync : Pthread mode
 #define tbx_main main
+#define TBX_CRITICAL_SECTION(name)         pthread_mutex_t __tbx_section_ ## name = PTHREAD_MUTEX_INITIALIZER
+#define TBX_CRITICAL_SECTION_ENTER(name)    pthread_mutex_lock(&(__tbx_secion ## name))
+#define TBX_CRITICAL_SECTION_TRY_ENTERING(name) pthread_mutex_trylock(&(__tbx_secion ## name))
+#define TBX_CRITICAL_SECTION_LEAVE(name)  pthread_mutex_unlock(&(__tbx_secion ## name))
+
 #define TBX_SHARED             pthread_mutex_t __tbx_mutex
 #define TBX_INIT_SHARED(st)    pthread_mutex_init((&((st)->__tbx_mutex)), NULL)
 #define TBX_LOCK_SHARED(st)    pthread_mutex_lock((&((st)->__tbx_mutex)))
@@ -228,6 +238,12 @@
 #endif                        //# pthread yield : end
 #else                      //# Threads sync : no thread mode
 #define tbx_main main
+
+#define TBX_CRITICAL_SECTION(name)
+#define TBX_CRITICAL_SECTION_ENTER(name)
+#define TBX_CRITICAL_SECTION_TRY_ENTERING(name)
+#define TBX_CRITICAL_SECTION_LEAVE(name)
+
 #define TBX_SHARED 
 #define TBX_INIT_SHARED(st)    (void)(0)
 #define TBX_LOCK_SHARED(st)    (void)(0)

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -40,12 +39,12 @@
 #include <string.h>
 #include <unistd.h> 
 #include <netdb.h>
-
+/*
 DEBUG_DECLARE(bip)
 
 #undef DEBUG_NAME
 #define DEBUG_NAME bip
-
+*/
 
 /*
  * macros and constants definition
@@ -135,10 +134,8 @@ typedef struct
 
 typedef struct 
 {
-  int begin_receive;
-  int ack_sent;
-  int begin_send;
-  int ack_received;
+  tbx_bool_t msg;
+  tbx_bool_t ack;
 } mad_bip_connection_specific_t, *p_mad_bip_connection_specific_t;
 
 typedef struct 
@@ -957,24 +954,42 @@ void
 mad_bip_connection_init(p_mad_connection_t in,
 			p_mad_connection_t out)
 {
-  p_mad_bip_connection_specific_t connection_specific = NULL;
   
   LOG_IN();
-  connection_specific = TBX_MALLOC(sizeof(mad_bip_connection_specific_t));
+  if (in)
+    {
+      p_mad_bip_connection_specific_t in_specific = NULL;
 
-  connection_specific->begin_send    = 0;
-  connection_specific->begin_receive = 0;
-  
-  in->specific  = connection_specific;
-  out->specific = connection_specific;
+      in_specific = TBX_MALLOC(sizeof(mad_bip_connection_specific_t));
+
+      in_specific->msg = tbx_false;
+      in_specific->ack = tbx_false;
+      in->specific     = in_specific;
 
 #ifdef GROUP_SMALL_PACKS
-  in->nb_link  = 3;
-  out->nb_link = 3;
+      in->nb_link  = 3;
 #else // GROUP_SMALL_PACKS
-  in->nb_link  = 2;
-  out->nb_link = 2;
+      in->nb_link  = 2;
 #endif // GROUP_SMALL_PACKS
+    }
+  
+  if (out)
+    {
+      p_mad_bip_connection_specific_t out_specific = NULL;
+
+      out_specific = TBX_MALLOC(sizeof(mad_bip_connection_specific_t));
+
+      out_specific->msg = tbx_false;
+      out_specific->ack = tbx_false;
+      out->specific     = out_specific;
+
+#ifdef GROUP_SMALL_PACKS
+      out->nb_link = 3;
+#else // GROUP_SMALL_PACKS
+      out->nb_link = 2;
+#endif // GROUP_SMALL_PACKS
+    }
+  
   LOG_OUT();
 }
 
@@ -1043,18 +1058,18 @@ mad_bip_driver_exit(p_mad_driver_t driver)
 
 
 void
-mad_bip_new_message(p_mad_connection_t connection)
+mad_bip_new_message(p_mad_connection_t out)
 {
-  p_mad_bip_connection_specific_t connection_specific = NULL;
+  p_mad_bip_connection_specific_t out_specific = NULL;
 
   LOG_IN();
-  connection_specific = connection->specific;
+  out_specific = out->specific;
 
 #ifdef MARCEL
   TRACE("Threads %p begins a new message", marcel_self());
 #endif // MARCEL
 
-  connection_specific->begin_send = 1;
+  out_specific->msg = tbx_true;
   LOG_OUT();
 }
 
@@ -1091,7 +1106,7 @@ mad_bip_poll_message(p_mad_channel_t channel)
   in_darray                    = channel->in_connection_darray;
   in                           = tbx_darray_get(in_darray, lrank);
   in_specific                  = in->specific;      
-  in_specific->begin_receive   = 1;
+  in_specific->msg             = tbx_true;
 
  end:
   LOG_OUT();
@@ -1110,6 +1125,7 @@ mad_bip_receive_message(p_mad_channel_t channel)
   ntbx_process_lrank_t            lrank            =   -1;
 
   LOG_IN();
+  channel_specific               = channel->specific;
   channel_specific->small_buffer =
     tbx_malloc(channel_specific->bip_buffer_key);
 
@@ -1120,10 +1136,10 @@ mad_bip_receive_message(p_mad_channel_t channel)
 		  BIP_SMALL_MESSAGE,
 		  &lrank);
 
-  in_darray                    = channel->in_connection_darray;
-  in                           = tbx_darray_get(in_darray, lrank);
-  in_specific                  = in->specific;      
-  in_specific->begin_receive   = 1;
+  in_darray        = channel->in_connection_darray;
+  in               = tbx_darray_get(in_darray, lrank);
+  in_specific      = in->specific;      
+  in_specific->msg = tbx_true;
   LOG_OUT();
 
   return in;
@@ -1179,7 +1195,7 @@ mad_bip_send_short_buffer(p_mad_link_t   lnk,
   channel          = out->channel;
   channel_specific = channel->specific;
 
-  if (out_specific->begin_send)
+  if (out_specific->msg)
     {
       TRACE("Sending short buffer. Size = %d. First int = %d\n",
 	    (buffer->bytes_written), ((int*)buffer->buffer)[0]);
@@ -1188,16 +1204,16 @@ mad_bip_send_short_buffer(p_mad_link_t   lnk,
 		     channel_specific->communicator + MAD_BIP_SERVICE_TAG,
 		     buffer->buffer, MAD_NB_INTS(buffer->bytes_written));
 
-      out_specific->begin_send   = 0;
-      out_specific->ack_received = 0;
+      out_specific->msg = tbx_false;
+      out_specific->ack = tbx_false;
     }
   else
     {
       /* On n'envoie un ACK *que* pour le second paquet... */
-      if (!out_specific->ack_received)
+      if (!out_specific->ack)
 	{
 	  wait_ack(channel_specific, out->remote_rank);
-	  out_specific->ack_received = 1;
+	  out_specific->ack = tbx_true;
 	}
       else
 	{
@@ -1236,7 +1252,7 @@ mad_bip_receive_short_buffer(p_mad_link_t   lnk,
   channel          = in->channel;
   channel_specific = channel->specific;
 
-  if (in_specific->begin_receive)
+  if (in_specific->msg)
     {
       /* Normalement, on n'arrive JAMAIS ici si buffer = statique ! */
       memcpy (buffer->buffer,
@@ -1252,16 +1268,16 @@ mad_bip_receive_short_buffer(p_mad_link_t   lnk,
       tbx_free(channel_specific->bip_buffer_key,
 	       channel_specific->small_buffer);
 
-      in_specific->begin_receive = 0;      
-      in_specific->ack_sent      = 0;
+      in_specific->msg = tbx_false;
+      in_specific->ack = tbx_false;
     }
   else
     {
       /* On n'envoie un ACK *que* pour le second paquet... */
-      if (!in_specific->ack_sent)
+      if (!in_specific->ack)
 	{
 	  send_ack(channel_specific, in->remote_rank);
-	  in_specific->ack_sent = 1;
+	  in_specific->ack = tbx_true;
 	}
       else
 	{
@@ -1302,23 +1318,30 @@ mad_bip_send_long_buffer(p_mad_link_t   lnk,
   channel          = out->channel;
   channel_specific = channel->specific;
 
-  if (out_specific->begin_send)
+  if (out_specific->msg)
     {
       send_new(channel_specific, out->remote_rank);
 
-      out_specific->begin_send   = 0;
-      out_specific->ack_received = 0;
+      out_specific->msg = tbx_false;
+      out_specific->ack = tbx_false;
     }
 
-  wait_ack(channel_specific, out->remote_rank);
+  while (mad_more_data(buffer))
+    {
+      size_t length = 0;
 
-  out_specific->ack_received = 1;
+      length = min(524288, (buffer->bytes_written - buffer->bytes_read));
 
-  bip_sync_send(out->remote_rank,
-		channel_specific->communicator + MAD_BIP_TRANSFER_TAG,
-		buffer->buffer, MAD_NB_INTS(buffer->bytes_written));
+      wait_ack(channel_specific, out->remote_rank);
+      out_specific->ack = tbx_true;
 
-  buffer->bytes_read = buffer->bytes_written;
+      bip_sync_send(out->remote_rank,
+		    channel_specific->communicator + MAD_BIP_TRANSFER_TAG,
+		    buffer->buffer + buffer->bytes_read,
+		    MAD_NB_INTS(length));
+
+      buffer->bytes_read += length;
+    }  
   LOG_OUT();
 }
 
@@ -1333,7 +1356,6 @@ mad_bip_receive_long_buffer(p_mad_link_t   lnk,
   p_mad_bip_channel_specific_t    channel_specific = NULL;
   ntbx_process_lrank_t            lrank            =   -1;
   int                             request          =   -1;
-  int                             status           =   -1;
 
   LOG_IN();
   /* Code to receive one buffer */
@@ -1342,7 +1364,7 @@ mad_bip_receive_long_buffer(p_mad_link_t   lnk,
   channel          = in->channel;
   channel_specific = channel->specific;
  
-  if (in_specific->begin_receive)
+  if (in_specific->msg)
     {
       credits_received(channel_specific, in->remote_rank,
 		       ((new_message_t *)(channel_specific->small_buffer))->
@@ -1351,21 +1373,31 @@ mad_bip_receive_long_buffer(p_mad_link_t   lnk,
       tbx_free(channel_specific->bip_buffer_key,
 	       channel_specific->small_buffer);
 
-     in_specific->begin_receive = 0;
-     in_specific->ack_sent      = 0;
+     in_specific->msg = tbx_false;
+     in_specific->ack = tbx_false;
     }
 
-  request = bip_recv_post(channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
-			  buffer->buffer, MAD_NB_INTS(buffer->length));
+  while (!mad_buffer_full(buffer))
+    {
+      size_t length = 0;
+ 
+      length = min(524288, (buffer->length - buffer->bytes_written));
 
-  send_ack(channel_specific, in->remote_rank);
+      request =
+	bip_recv_post(channel_specific->communicator + MAD_BIP_TRANSFER_TAG,
+		      buffer->buffer, MAD_NB_INTS(length));
+      
+      buffer->bytes_written += length;
 
-  status = bip_recv_wait(channel_specific, request, &lrank);
+      send_ack(channel_specific, in->remote_rank);
+      bip_recv_wait(channel_specific, request, &lrank);
+    }
 
-  in_specific->ack_sent      = 1;
-  in_specific->begin_receive = 0;
-
-  buffer->bytes_written = status * sizeof(int);
+  if (request != -1)
+    {
+      in_specific->ack = tbx_true;
+      in_specific->msg = tbx_false;
+    }
   LOG_OUT();
 }
 
@@ -1465,13 +1497,13 @@ mad_bip_receive_buffer(p_mad_link_t   lnk,
 
       *buffer = buf;
   
-      if (connection_specific->begin_receive)
+      if (connection_specific->msg)
 	{
 	  buf->buffer        = channel_specific->small_buffer;
 	  buf->bytes_written = channel_specific->message_size*sizeof(int);
 
-	  connection_specific->begin_receive = 0;      
-	  connection_specific->ack_sent      = 0;
+	  connection_specific->msg = tbx_false;      
+	  connection_specific->ack = tbx_false;
 	}
       else
 	{

@@ -41,6 +41,14 @@
 
 #define COUNTER 
 
+#ifndef DISP
+#define DISP(arg...)
+#endif
+
+#ifndef DISP_VAL
+#define DISP_VAL(arg...)
+#endif
+
 int DSM_SERVICE;
 dsm_mutex_t L;
 pm2_completion_t c;
@@ -50,18 +58,25 @@ int *ptr, *start;
 void f()
 {
   int i, n = 10;
-
+  DISP("Entering f");
   for (i = 0; i < n; i++) {
+    DISP_VAL("f: i", i);
     dsm_mutex_lock(&L);
+    DISP_VAL("f: locked", i);
     (*ptr)++;
+    DISP_VAL("f: incremented", i);
     dsm_mutex_unlock(&L);
+    DISP_VAL("f: unlocked", i);
     tfprintf(stderr,"ptr = %p, *ptr = %d\n",ptr, *ptr);
   }
+  DISP("Sending completion signal");
   pm2_completion_signal(&c); 
+  DISP("Completion signal sent");
 }
 
 static void DSM_func(void)
 {
+  DISP("Starting service");
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata(); 
   pm2_thread_create(f, NULL);
@@ -71,13 +86,6 @@ static void DSM_func(void)
 int pm2_main(int argc, char **argv)
 {
   int i, j;
-
-  if (argc != 2)
-    {
-      fprintf(stderr, "Usage: simple <number of threads per node>\n");
-      exit(1);
-    }
-
 
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
@@ -91,6 +99,12 @@ int pm2_main(int argc, char **argv)
   dsm_set_pseudo_static_area_size(4096 * 16);
 
   pm2_init(&argc, argv);
+
+  if (argc != 2)
+    {
+      fprintf(stderr, "Usage: simple <number of threads per node>\n");
+      exit(1);
+    }
 
   dsm_display_page_ownership();
 
@@ -115,7 +129,12 @@ int pm2_main(int argc, char **argv)
       }
 
     for (i = 0 ; i < atoi(argv[1]) * pm2_config_size(); i++)
-      pm2_completion_wait(&c);
+      {
+	DISP("waiting for completion");
+	pm2_completion_wait(&c);
+	DISP("completion ok");
+      }
+    
 
     tfprintf(stderr, "*ptr=%d\n", *ptr );
     pm2_halt();

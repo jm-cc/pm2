@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.c,v $
+Revision 1.4  2000/05/16 09:05:23  rnamyst
+Fast Polling added into Marcel + make xconfig
+
 Revision 1.3  2000/05/10 13:08:02  vdanjean
 minor bugs fixes
 
@@ -81,10 +84,17 @@ int marcel_check_polling(void)
 #endif
 
 	  ps->count = 0;
-	  cell = (poll_cell_t *)(*ps->func)(ps,
-					    SCHED_DATA(cur_lwp).running_tasks,
-					    marcel_sleepingthreads(),
-					    marcel_blockedthreads());
+
+	  if(ps->nb_cells == 1 && ps->fastfunc) {
+	    ps->cur_cell = ps->first_cell;
+	    cell = (poll_cell_t *)(*ps->fastfunc)(ps, ps->first_cell->arg);
+	  }
+	  else
+	    cell = (poll_cell_t *)(*ps->func)(ps,
+					      SCHED_DATA(cur_lwp).running_tasks,
+					      marcel_sleepingthreads(),
+					      marcel_blockedthreads());
+
 	  if(cell != MARCEL_POLL_FAILED) {
 
 	    waked_some_task = 1;
@@ -97,12 +107,10 @@ int marcel_check_polling(void)
 	      ps->first_cell = cell->next;
 	    if(cell->next != NULL)
 	      cell->next->prev = cell->prev;
+	    ps->nb_cells--;
 
-	    if(ps->first_cell != NULL) {
-	      /* S'il reste des éléments, alors il faut re-factoriser */
-	      (*(ps->gfunc))((marcel_pollid_t)ps);
-	    } else {
-	      /* Sinon, il faut retirer la tache de __polling_task */
+	    if(!ps->nb_cells) {
+	      /* Il faut retirer la tache de __polling_task */
 	      if((p = ps->prev) == ps) {
 		__polling_tasks = NULL;
 		break;
@@ -111,6 +119,13 @@ int marcel_check_polling(void)
 		  __polling_tasks = p;
 		p->next = ps->next;
 		p->next->prev = p;
+	      }
+	    } else {
+	      /* S'il reste au moins 2 requetes ou s'il ny a pas de
+                 "fast poll", alors il faut factoriser. */
+	      if(ps->nb_cells > 1 || !ps->fastfunc) {
+		mdebug("Factorizing polling");
+		(*(ps->gfunc))((marcel_pollid_t)ps);
 	      }
 	    }
 	  }
@@ -127,21 +142,27 @@ int marcel_check_polling(void)
 
 marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
 				     marcel_poll_func_t f,
+				     marcel_fastpoll_func_t h,
 				     int divisor)
 {
   marcel_pollid_t id;
 
   lock_task();
+
   if(nb_poll_structs == MAX_POLL_IDS) {
     unlock_task();
     RAISE(CONSTRAINT_ERROR);
   }
+
   id = &poll_structs[nb_poll_structs++];
+
   unlock_task();
 
   id->first_cell = id->cur_cell = NULL;
+  id->nb_cells = 0;
   id->gfunc = g;
   id->func = f;
+  id->fastfunc = h;
   id->divisor = divisor;
   id->count = 0;
 
@@ -154,6 +175,14 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
 
   lock_task();
 
+  if(id->fastfunc) {
+    mdebug("Using FastPoll function\n");
+    if((*id->fastfunc)(id, arg) != MARCEL_POLL_FAILED) {
+      unlock_task();
+      return;
+    }
+  }
+
   cell.task = marcel_self();
   cell.blocked = TRUE;
   cell.arg = arg;
@@ -165,9 +194,14 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
   if((cell.next = id->first_cell) != NULL)
     cell.next->prev = &cell;
   id->first_cell = &cell;
+  id->nb_cells++;
 
-  /* Factorisation "utilisateur" du polling */
-  (*(id->gfunc))(id);
+  /* Si pas de "fast poll" ou si au moins 2 requetes de poll, il faut
+     factoriser... */
+  if(!id->fastfunc || id->nb_cells > 1) {
+    mdebug("Factorizing polling");
+    (*(id->gfunc))(id);
+  }
 
   /* Enregistrement éventuel dans la __polling_tasks */
   if(cell.next == NULL) {

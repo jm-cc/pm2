@@ -43,9 +43,9 @@
 # $5 à ... : executable a lancer et arguments
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
 serverhost=$1
 shift
@@ -59,7 +59,7 @@ shift
 command=$*
 
 mynumber=1
-nbmachines=`cat ${MADELEINE_ROOT}/.madconf | wc -w`
+nbmachines=`cat ${MAD1_ROOT}/.madconf | wc -w`
 
 if test -z "$MAD_DEBUG"
 then
@@ -81,13 +81,13 @@ fi
 while test $mynumber -lt $trueconfsize
 do
     plusun=`expr $mynumber % $nbmachines + 1`
-    host=`head -$plusun ${MADELEINE_ROOT}/.madconf | tail -1`
-    rsh -n $host ${MADELEINE_ROOT}/bin/tcp/madstart $DISPLAY $MAD_DEBUG $confsize $mynumber $host $port $serverhost $command &
+    host=`head -$plusun ${MAD1_ROOT}/.madconf | tail -1`
+    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstart $DISPLAY $MAD_DEBUG $confsize $mynumber $host $port $serverhost $command &
     mynumber=`expr $mynumber + 1`
 done
 
 if test ! $MAD_CONSOLE = "no"
 then
-    host=`head -1 ${MADELEINE_ROOT}/.madconf`
-    rsh -n $host ${MADELEINE_ROOT}/bin/tcp/madstartcons $DISPLAY $MAD_CONSOLE $confsize $mynumber $host $port $serverhost &
+    host=`head -1 ${MAD1_ROOT}/.madconf`
+    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstartcons $DISPLAY $MAD_CONSOLE $confsize $mynumber $host $port $serverhost &
 fi

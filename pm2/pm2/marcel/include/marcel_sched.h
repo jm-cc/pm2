@@ -214,6 +214,12 @@ static __inline__ unsigned sched_locked(__lwp_t *lwp)
   return marcel_lock_locked(&(SCHED_DATA(lwp).sched_queue_lock));
 }
 
+#ifdef MA_PROTECT_LOCK_TASK_FROM_SIG
+void ma_sched_protect_start(void);
+void ma_lock_task(void);
+void ma_unlock_task(void);
+void ma_sched_protect_end(void);
+#else
 static __inline__ void ma_lock_task(void) __attribute__ ((unused));
 static __inline__ void ma_lock_task(void)
 {
@@ -244,6 +250,7 @@ static __inline__ void ma_unlock_task(void)
   pm2debug_flush();
 #endif
 }
+#endif
 
 // Il faut éviter de placer les appels à '*lock_task_debug' au sein
 // des fonctions elles-mêmes, car il y aurait un pb de récursivité

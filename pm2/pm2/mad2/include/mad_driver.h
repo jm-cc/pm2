@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_driver.h,v $
+Revision 1.3  2000/01/13 14:44:31  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.2  1999/12/15 17:31:21  oaumage
 Ajout de la commande de logging de CVS
 
@@ -68,7 +72,7 @@ typedef struct s_mad_driver
   mad_connection_type_t       connection_type;
 
   /* Internal use fields */
-  mad_list_t                  adapter_list;
+  tbx_list_t                  adapter_list;
 
   /* Driver specific */
   p_mad_driver_specific_t     specific;

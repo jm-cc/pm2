@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_connection.h,v $
+Revision 1.3  2000/01/13 14:44:31  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.2  1999/12/15 17:31:21  oaumage
 Ajout de la commande de logging de CVS
 
@@ -69,22 +73,22 @@ typedef struct s_mad_connection
   /* Internal use fields */
            int                     nb_link; 
            p_mad_link_t            link;
-           mad_list_t              user_buffer_list; 
-           mad_list_reference_t    user_buffer_list_reference; 
-           mad_list_t              buffer_list;
-           mad_list_t              buffer_group_list;
-           mad_list_t              pair_list;
+           tbx_list_t              user_buffer_list; 
+           tbx_list_reference_t    user_buffer_list_reference; 
+           tbx_list_t              buffer_list;
+           tbx_list_t              buffer_group_list;
+           tbx_list_t              pair_list;
            p_mad_link_t            last_link;
            mad_link_mode_t         last_link_mode;
 
   /* Flags */
-  volatile mad_bool_t              lock;
-           mad_bool_t              send;
-           mad_bool_t              delayed_send; 
-           mad_bool_t              flushed;
-           mad_bool_t              pair_list_used;
-           mad_bool_t              first_sub_buffer_group;
-           mad_bool_t              more_data;
+  volatile tbx_bool_t              lock;
+           tbx_bool_t              send;
+           tbx_bool_t              delayed_send; 
+           tbx_bool_t              flushed;
+           tbx_bool_t              pair_list_used;
+           tbx_bool_t              first_sub_buffer_group;
+           tbx_bool_t              more_data;
 
   /* Driver specific data */
   p_mad_driver_specific_t          specific;

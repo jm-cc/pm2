@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.h,v $
+Revision 1.3  2000/01/13 14:44:31  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.2  1999/12/15 17:31:19  oaumage
 Ajout de la commande de logging de CVS
 
@@ -53,7 +57,7 @@ typedef struct s_mad_channel
   PM2_SHARED;
   mad_channel_id_t          id ;
   p_mad_adapter_t           adapter;
-  volatile mad_bool_t       reception_lock;
+  volatile tbx_bool_t       reception_lock;
   p_mad_connection_t        input_connection; 
   p_mad_connection_t        output_connection;
   p_mad_driver_specific_t   specific;

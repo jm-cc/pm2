@@ -15,5 +15,5 @@
  */
 
 #section common
-#depend "asm-generic/marcel_ctx_jmp.h[]"
 
+#depend "asm-generic/marcel_ctx.h[]"

@@ -14,6 +14,7 @@
  */
 
 #section marcel_macros
+#depend "asm/marcel_arch_switchto.h[]"
 
 /* effectue un setjmp. On doit être RUNNING avant et après
  * */

@@ -209,12 +209,14 @@ typedef union u_mad_sisci_poll_data
   mad_sisci_poll_flag_data_t    flag_op;
 } mad_sisci_poll_data_t, *p_mad_sisci_poll_data_t;
 
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
 typedef struct s_mad_sisci_marcel_ev_req
 {
   struct marcel_ev_req  req;
   mad_sisci_poll_op_t   op;
   mad_sisci_poll_data_t data;
 } mad_sisci_marcel_ev_req_t, *p_mad_sisci_marcel_ev_req_t;
+#endif
 
 typedef struct s_mad_sisci_connection_specific
 {

@@ -58,17 +58,17 @@ void print_trace(trace tr)
     if (tr.code >= FKT_UNSHIFTED_LIMIT_CODE)
       printf("%40s", fkt_code2name(tr.code >> 8));
     else {
-      if (tr.code < FKT_SYS_CALL_LIMIT_CODE) {
+      if (tr.code < FKT_TRAP_BASE) {
 	printf("\t\t\t       system call   %3u", tr.code);
 	printf("   %s", sys_calls[tr.code]);
       }
       else if (tr.code < FKT_TRAP_LIMIT_CODE) {
-	i = tr.code - FKT_SYS_CALL_LIMIT_CODE;
+	i = tr.code - FKT_TRAP_BASE;
 	printf("\t\t\t\t      trap   %3u", i);
 	printf("   %s", traps[i]);
       }
       else {
-	i = tr.code -  FKT_TRAP_LIMIT_CODE;
+	i = tr.code -  FKT_IRQ_TIMER;
 	printf("\t\t\t\t       IRQ   %3u", i);
       }
       i = 0;

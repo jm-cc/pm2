@@ -64,6 +64,8 @@ extern struct task_struct *fkt_sendfile_proc;
 extern asmlinkage void fkt_header( unsigned int head, ... );
 extern asmlinkage void fkt_eax0( void );
 extern asmlinkage void fkt_eax1( void );
+extern void __cyg_profile_func_enter(void *this_fn, void *call_site);
+extern void __cyg_profile_func_exit(void *this_fn, void *call_site);
 #endif /* __ASSEMBLY__ */
 
 #ifndef __ASSEMBLY__
@@ -218,6 +220,10 @@ extern ssize_t (*fkt_sendfile)(struct file *, loff_t *, size_t, read_actor_t, vo
 #define FKT_FREEBUFFER		0xCE07	/* free allocated pages */
 #define FKT_WAITREADY		0xCE08	/* wait for the sendfile mecanism to be ready */
 
+#define FKT_USER_PROBE0		0xCE10	/* user probe */
+#define FKT_USER_PROBE1		0xCE11	/* user probe */
+#define FKT_USER_PROBE2		0xCE12	/* user probe */
+
 /*	Simple keymasks */
 #define FKT_KEYMASK0				0x00000001	/* IRQs, exceptions, syscalls */
 #define FKT_KEYMASK1				0x00000002
@@ -301,6 +307,7 @@ extern ssize_t (*fkt_sendfile)(struct file *, loff_t *, size_t, read_actor_t, vo
 #define FKT_DO_FORK_CODE				0xfffff1
 #define FKT_DO_EXECVE_CODE				0xfffff0
 #define FKT_END_OF_PID_CODE				0xffffef
+#define FKT_USER_FORK_CODE				0xffffee
 #define FKT_RET_FROM_SYS_CALL_CODE		0x300	/* generic ret_from_sys_call */
 
 /*	Codes for use with fkt items */
@@ -662,23 +669,6 @@ extern ssize_t (*fkt_sendfile)(struct file *, loff_t *, size_t, read_actor_t, vo
 /* code in requeue_sd_request P=1 */
 
 /* vs end */
-
-#ifndef __ASSEMBLY__
-/* special syscalls to make probes in user programs as well :) */
-#ifdef __KERNEL__
-extern int sys_fkt_probe0( unsigned int keymask, unsigned int code );
-extern int sys_fkt_probe1( unsigned int keymask, unsigned int code,
-					unsigned int p1 );
-extern int sys_fkt_probe2( unsigned int keymask, unsigned int code,
-					unsigned int p1, unsigned int p2);
-#else	/* __KERNEL__ */
-extern int fkt_probe0( unsigned int keymask, unsigned int code );
-extern int fkt_probe1( unsigned int keymask, unsigned int code,
-					unsigned int p1 );
-extern int fkt_probe2( unsigned int keymask, unsigned int code,
-					unsigned int p1, unsigned int p2);
-#endif	/* __KERNEL__ */
-#endif	/* __ASSEMBLY__ */
 
 /* vi: ts=4
  */

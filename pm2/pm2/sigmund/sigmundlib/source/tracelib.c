@@ -91,7 +91,7 @@ int trap2code(char *name, int *code)
   for(i = 0; i < NTRAPS; i++)
     if (!strcmp(traps[i], name)) break;
   if (i == NTRAPS) return -1;
-  *code = i + FKT_SYS_CALL_LIMIT_CODE;
+  *code = i + FKT_TRAP_BASE;
   return 0;
 }
 

@@ -35,6 +35,4 @@ struct trace_st{
 
 typedef struct trace_st trace;
 
-#define FKT_UNSHIFTED_LIMIT_CODE	        0x200
-
 #endif

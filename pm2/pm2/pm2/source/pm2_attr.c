@@ -36,8 +36,9 @@
 #include <pm2_attr.h>
 
 pm2_attr_t pm2_attr_default = {
-  STD_PRIO,          /* priority */
-  MARCEL_SCHED_OTHER /* scheduling policy */
+  STD_PRIO,           /* priority */
+  MARCEL_SCHED_OTHER, /* scheduling policy */
+  0                   /* channel number */
 };
 
 int pm2_attr_init(pm2_attr_t *attr)
@@ -70,4 +71,16 @@ int pm2_attr_getschedpolicy(pm2_attr_t *attr, int *policy)
 {
   *policy = attr->sched_policy;
   return 0;
+}
+
+int pm2_attr_setchannel(pm2_attr_t *attr, pm2_channel_t channel)
+{
+   attr->channel = channel;
+   return 0;
+}
+
+int pm2_attr_getchannel(pm2_attr_t *attr, pm2_channel_t *channel)
+{
+   *channel = attr->channel;
+   return 0;
 }

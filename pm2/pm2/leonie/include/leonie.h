@@ -33,6 +33,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: leonie.h,v $
+Revision 1.5  2000/05/15 13:51:05  oaumage
+- Reorganisation des sources de Leonie
+
+
+______________________________________________________________________________
 */
 
 /*
@@ -56,9 +64,15 @@
 #include "leo_types.h"
 #include "leo_parser_types.h"
 #ifndef LEO_IN_YACC
-#include "y.tab.h"
+#include "leo_parser.h"
 #endif /* LEO_IN_YACC */
 #include "leo_main.h"
+
+/* Leonie: internal interface */
+#include "leo_config.h"
+#include "leo_net.h"
+#include "leo_parsing.h"
+#include "leo_swann.h"
 #include "leo_interface.h"
 
 #endif /* __LEONIE_H */

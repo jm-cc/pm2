@@ -35,8 +35,6 @@
 
 #include "rpc_defs.h"
 
-int *les_modules, nb_modules;
-
 #define NB	3
 
 static char *mess[NB] = {
@@ -72,8 +70,7 @@ void f(void)
   for(i=0; i<NB; i++) {
     strcpy(req.tab, mess[i]);
     pm2_attr_setschedpolicy(&attr, sched_policy[i]);
-    pm2_rpc_call(les_modules[1], SAMPLE, &attr,
-		 &req, NULL, &att[i]);
+    pm2_rpc_call(1, SAMPLE, &attr, &req, NULL, &att[i]);
   }
 
   for(i=0; i<NB; i++)
@@ -86,20 +83,20 @@ int pm2_main(int argc, char **argv)
 
   DECLARE_LRPC(SAMPLE);
 
-  pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  {
-    int i;
-
-    for(i=1; i<argc; i++)
-      fprintf(stderr, "argv[%d] = %s\n", i, argv[i]);
+  if(pm2_config_size() < 2) {
+    fprintf(stderr,
+	    "This program requires at least two processes.\n"
+	    "Please rerun pm2conf.\n");
+    exit(1);
   }
 
-  if(pm2_self() == les_modules[0]) { /* master process */
+  if(pm2_self() == 0) { /* master process */
 
     f();
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
   }
 
   pm2_exit();

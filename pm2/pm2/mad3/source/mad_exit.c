@@ -124,6 +124,8 @@ links_exit(p_mad_connection_t cnx)
             }
         }
 
+      TBX_FREE(cnx_link->buffer_list);
+      TBX_FREE(cnx_link->user_buffer_list);
       memset(cnx_link, 0, sizeof(mad_link_t));
 
       TBX_FREE(cnx_link);
@@ -203,6 +205,18 @@ connection_exit(p_mad_channel_t ch)
             }
         }
 
+      TBX_FREE(in->user_buffer_list_reference);
+      TBX_FREE(in->user_buffer_list);
+      TBX_FREE(in->buffer_list);
+      TBX_FREE(in->buffer_group_list);
+      TBX_FREE(in->pair_list);
+
+      TBX_FREE(out->user_buffer_list_reference);
+      TBX_FREE(out->user_buffer_list);
+      TBX_FREE(out->buffer_list);
+      TBX_FREE(out->buffer_group_list);
+      TBX_FREE(out->pair_list);
+
       memset(in,  0, sizeof(mad_connection_t));
       memset(out, 0, sizeof(mad_connection_t));
 
@@ -243,6 +257,12 @@ connection_exit(p_mad_channel_t ch)
               cnx->specific = NULL;
             }
         }
+
+      TBX_FREE(cnx->user_buffer_list_reference);
+      TBX_FREE(cnx->user_buffer_list);
+      TBX_FREE(cnx->buffer_list);
+      TBX_FREE(cnx->buffer_group_list);
+      TBX_FREE(cnx->pair_list);
 
       memset(cnx, 0, sizeof(mad_connection_t));
       TBX_FREE(cnx);
@@ -289,12 +309,22 @@ common_channel_exit(p_mad_channel_t mad_channel)
   mad_channel->out_connection_darray = NULL;
 
   if (interface->channel_exit)
-    interface->channel_exit(mad_channel);
+    {
+      interface->channel_exit(mad_channel);
+    }
+  else if (mad_channel->specific)
+    {
+      TBX_FREE(mad_channel->specific);
+      mad_channel->specific = NULL;
+    }
 
   tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
 
   TBX_FREE(mad_channel->name);
   mad_channel->name = NULL;
+
+  tbx_darray_free(mad_channel->sub_channel_darray);
+  mad_channel->sub_channel_darray = NULL;
 }
 
 
@@ -375,7 +405,11 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 
       vchannel_name = mad_leonie_receive_string();
       if (tbx_streq(vchannel_name, "-"))
-	break;
+        {
+          TBX_FREE(vchannel_name);
+
+          break;
+        }
 
       channel_name = mad_leonie_receive_string();
       lrank = mad_leonie_receive_int();
@@ -392,6 +426,8 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
       mad_forward_stop_reception(vchannel, channel, lrank);
 #endif // MARCEL
       mad_leonie_send_int(-1);
+      TBX_FREE(channel_name);
+      TBX_FREE(vchannel_name);
     }
 
   // Vchannel closing
@@ -421,7 +457,11 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 
       channel_name = mad_leonie_receive_string();
       if (tbx_streq(channel_name, "-"))
-	break;
+        {
+          TBX_FREE(channel_name);
+
+          break;
+        }
 
 #ifdef MARCEL
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
@@ -460,6 +500,7 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 #endif // MARCEL
 
       mad_leonie_send_int(-1);
+      TBX_FREE(channel_name);
     }
   LOG_OUT();
 }
@@ -528,7 +569,11 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
 
       xchannel_name = mad_leonie_receive_string();
       if (tbx_streq(xchannel_name, "-"))
-	break;
+        {
+          TBX_FREE(xchannel_name);
+
+          break;
+        }
 
       channel_name = mad_leonie_receive_string();
       lrank = mad_leonie_receive_int();
@@ -545,6 +590,8 @@ mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
       mad_mux_stop_reception(xchannel, channel, lrank);
 #endif // MARCEL
       mad_leonie_send_int(-1);
+      TBX_FREE(channel_name);
+      TBX_FREE(xchannel_name);
     }
 
   // Xchannel closing
@@ -574,7 +621,11 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
 
       channel_name = mad_leonie_receive_string();
       if (tbx_streq(channel_name, "-"))
-	break;
+        {
+          TBX_FREE(channel_name);
+
+          break;
+        }
 
 #ifdef MARCEL
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
@@ -605,6 +656,7 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
 #endif // MARCEL
 
       mad_leonie_send_int(-1);
+      TBX_FREE(channel_name);
     }
   LOG_OUT();
 }
@@ -629,7 +681,11 @@ mad_dir_channel_exit(p_mad_madeleine_t madeleine)
 
       channel_name = mad_leonie_receive_string();
       if (tbx_streq(channel_name, "-"))
-	break;
+        {
+          TBX_FREE(channel_name);
+
+          break;
+        }
 
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
       if (!mad_channel)
@@ -644,6 +700,7 @@ mad_dir_channel_exit(p_mad_madeleine_t madeleine)
       mad_channel = NULL;
 
       mad_leonie_send_int(-1);
+      TBX_FREE(channel_name);
     }
   LOG_OUT();
 }
@@ -692,7 +749,10 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
       driver_name = mad_leonie_receive_string();
       if (tbx_streq(driver_name, "-"))
-	break;
+        {
+          TBX_FREE(driver_name);
+          break;
+        }
 
       mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
       if (!mad_driver)
@@ -711,7 +771,10 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
 	  adapter_name = mad_leonie_receive_string();
 	  if (tbx_streq(adapter_name, "-"))
-	    break;
+            {
+              TBX_FREE(adapter_name);
+              break;
+            }
 
 	  mad_adapter =
 	    tbx_htable_extract(mad_adapter_htable, adapter_name);
@@ -748,11 +811,13 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  mad_adapter = NULL;
 
 	  mad_leonie_send_int(1);
+          TBX_FREE(adapter_name);
 	}
 
       tbx_htable_free(mad_adapter_htable);
       mad_adapter_htable         = NULL;
       mad_driver->adapter_htable = NULL;
+      TBX_FREE(driver_name);
     }
 
   // Drivers
@@ -764,7 +829,10 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
       driver_name = mad_leonie_receive_string();
       if (tbx_streq(driver_name, "-"))
-	break;
+        {
+          TBX_FREE(driver_name);
+          break;
+        }
 
       mad_driver =
 	tbx_htable_extract(mad_driver_htable, driver_name);
@@ -793,6 +861,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
       mad_driver = NULL;
 
       mad_leonie_send_int(1);
+      TBX_FREE(driver_name);
     }
 
   LOG_OUT();
@@ -821,27 +890,59 @@ mad_leonie_sync(p_mad_madeleine_t madeleine)
 void
 mad_leonie_link_exit(p_mad_madeleine_t madeleine)
 {
-  p_mad_session_t session = NULL;
-  p_ntbx_client_t client  = NULL;
-
   LOG_IN();
-  session        = madeleine->session;
-  client         = session->leonie_link;
-
-  ntbx_tcp_client_disconnect(client);
-  ntbx_client_dest(client);
-  session->leonie_link = NULL;
+  ntbx_tcp_client_disconnect(madeleine->session->leonie_link);
   LOG_OUT();
+}
+
+static
+void
+session_exit(p_mad_session_t s)
+{
+  ntbx_client_dest(s->leonie_link);
+  s->leonie_link  = NULL;
+  s->process_rank =    0;
+  TBX_FREE(s);
+}
+
+static
+void
+settings_exit(p_mad_settings_t s)
+{
+#ifndef LEO_IP
+  TBX_FREE(s->leonie_server_host_name);
+  s->leonie_server_host_name = NULL;
+#endif /* LEO_IP */
+
+  TBX_FREE(s->leonie_server_port);
+  s->leonie_server_port = NULL;
+  TBX_FREE(s);
 }
 
 void
 mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
 {
   LOG_IN();
-  /* TODO: liberer les champs (tables, listes, ...) */
   TBX_FREE(madeleine->dir);
-  TBX_FREE(madeleine->session);
-  TBX_FREE(madeleine->settings);
+  session_exit(madeleine->session);
+
+  settings_exit(madeleine->settings);
+  madeleine->settings = NULL;
+
+  while (!tbx_slist_is_nil(madeleine->public_channel_slist))
+    {
+      tbx_slist_extract(madeleine->public_channel_slist);
+    }
+
+  tbx_slist_free(madeleine->public_channel_slist);
+  madeleine->public_channel_slist = NULL;
+
+  tbx_htable_free(madeleine->channel_htable);
+  madeleine->channel_htable = NULL;
+
+  tbx_htable_free(madeleine->driver_htable);
+  madeleine->driver_htable = NULL;
+
   TBX_FREE(madeleine);
   LOG_OUT();
 }

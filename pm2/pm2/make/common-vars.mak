@@ -86,8 +86,10 @@ ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),textconfig)
 ifneq ($(MAKECMDGOALS),menuconfig)
 ifneq ($(MAKECMDGOALS),xconfig)
+ifneq ($(MAKECMDGOALS),config)
 ifeq ($(PM2_MAK_DIR),)
 export PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
+endif
 endif
 endif
 endif

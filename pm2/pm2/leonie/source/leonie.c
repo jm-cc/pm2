@@ -33,7 +33,6 @@
 // #define LEO_NO_SPAWN
 #define LEO_VCHANNELS
 
-
 /*
  * Leonie general modes
  * ====================
@@ -1145,6 +1144,7 @@ connect_processes(p_tbx_slist_t process_slist)
     found:
       TRACE_STR("retained host name", host_name);
       process = tbx_slist_extract(slist);
+
       if (tbx_slist_is_nil(slist))
 	{
 	  slist = tbx_htable_extract(node_htable, host_name);

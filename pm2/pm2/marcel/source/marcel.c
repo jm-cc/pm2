@@ -1065,7 +1065,7 @@ void marcel_init_data(int *argc, char *argv[])
   marcel_slot_init();
 
   // Initialize scheduler
-  marcel_sched_init(__nb_lwp);
+  marcel_sched_init();
 
   // Initialize mechanism for handling Unix I/O through the scheduler
   marcel_io_init();
@@ -1083,7 +1083,7 @@ void marcel_start_sched(int *argc, char *argv[])
   already_called = TRUE;
 
   // Start scheduler (i.e. run LWP/activations, start timer)
-  marcel_sched_start();
+  marcel_sched_start(__nb_lwp);
 }
 
 void marcel_purge_cmdline(int *argc, char *argv[])
@@ -1098,60 +1098,6 @@ void marcel_purge_cmdline(int *argc, char *argv[])
   // Remove marcel-specific arguments from command line
   marcel_strip_cmdline(argc, argv);
 }
-
-#if 0 // Just kept for documentation purposes (!?!)
-void marcel_init_ext(int *argc, char *argv[], int debug_flags)
-{
-  static volatile boolean already_called = FALSE;
-
-  if(!already_called) {
-
-#ifdef PROFILE
-    profile_init();
-#endif
-
-#ifdef TBX
-    tbx_init(*argc, argv);
-#endif
-    marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
-
-    mdebug("\t\t\t<marcel_init>\n");
-
-    /* Analyse but do not strip */
-    marcel_parse_cmdline(argc, argv, TRUE);
-
-#ifndef PM2
-    /* Strip without analyse */
-    marcel_strip_cmdline(argc, argv);
-#endif
-
-#ifdef SOLARIS_SYS
-    page_size = sysconf(_SC_PAGESIZE);
-#else
-#ifdef UNICOS_SYS
-    page_size = 1024;
-#else
-    page_size = getpagesize();
-#endif
-#endif
-
-    marcel_slot_init();
-
-    marcel_sched_init(__nb_lwp);
-    mdebug("\t\t\t<marcel_init: sched_init done>\n");
-
-    marcel_sched_start();
-    mdebug("\t\t\t<marcel_init: sched_start done>\n");
-
-    marcel_io_init();
-    mdebug("\t\t\t<marcel_init: io_init done>\n");
-
-    mdebug("\t\t\t<marcel_init completed>\n");
-
-    already_called = TRUE;
-  }
-}
-#endif // #if 0
 
 void marcel_end(void)
 {

@@ -15,6 +15,7 @@
  */
 
 #include "marcel.h"
+#include "tbx_compiler.h"
 #include <signal.h>
 #include <errno.h>
 #include <linux/unistd.h>
@@ -98,7 +99,7 @@ __ma_initfunc(timer_start, MA_INIT_TIMER, "Install TIMER SoftIRQ");
  * Trappeur de SIGSEGV, de manière à obtenir des indications sur le
  * thread fautif (ça aide pour le debug !)
  */
-static void fault_catcher(int sig)
+static void TBX_NORETURN fault_catcher(int sig)
 {
 	fprintf(stderr, "OOPS!!! Signal %d catched on thread %p (%ld)\n",
 		sig, MARCEL_SELF, THREAD_GETMEM(MARCEL_SELF,number));

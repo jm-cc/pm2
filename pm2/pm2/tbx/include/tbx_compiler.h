@@ -108,10 +108,10 @@
  * Allow us to mark functions as 'deprecated' and have gcc emit a nice
  * warning for each use, in hopes of speeding the functions removal.
  * Usage is:
- * 		int __tbx_deprecated foo(void)
+ * 		int __tbx_deprecated__ foo(void)
  */
-#ifndef __tbx_deprecated
-# define __tbx_deprecated		/* unimplemented */
+#ifndef __tbx_deprecated__
+# define __tbx_deprecated__		/* unimplemented */
 #endif
 
 /*

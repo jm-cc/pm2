@@ -41,10 +41,11 @@
 #include "sisci_error.h"
 
 #ifdef PM2
-#include <marcel.h>
+#include "marcel.h"
 #endif
 
-#include <sys/netinterf.h>
+#include "sys/netinterf.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -64,9 +65,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include <sys/debug.h>
-#include <mad_types.h>
-#include <safe_malloc.h>
+#include "sys/debug.h"
+#include "mad_types.h"
+#include "safe_malloc.h"
 
 
 #define NO_FLAGS            0

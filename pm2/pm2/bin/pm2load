@@ -133,11 +133,17 @@ fi
 
 [ -x $_PM2WHICH_LOADER ] || error "Fatal Error: \"$_PM2WHICH_LOADER\" exec file not found!"
 
-# Récupération du chemin d'accès au fichier de config des machines
+case $_PM2WHICH_LOADER in
+    *conf_not_needed)
+	# No need to try to access the pm2 conf file
+	;;
+    *)
+	# Récupération du chemin d'accès au fichier de config des machines
+	set --  --source-mode
+	. ${PM2_ROOT}/bin/pm2-conf-file
 
-set --  --source-mode
-. ${PM2_ROOT}/bin/pm2-conf-file
-
-[ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
+	[ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
+	;;
+esac
 
 exec $_PM2WHICH_LOADER $_PM2WHICH_RESULT $prog_args

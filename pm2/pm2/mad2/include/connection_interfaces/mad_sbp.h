@@ -95,6 +95,21 @@ mad_sbp_disconnect(p_mad_connection_t);
 void
 mad_sbp_after_close_channel(p_mad_channel_t);
 
+void
+mad_sbp_link_exit(p_mad_link_t);
+void
+mad_sbp_connection_exit(p_mad_connection_t,
+			p_mad_connection_t);
+
+void
+mad_sbp_channel_exit(p_mad_channel_t);
+
+void
+mad_sbp_adapter_exit(p_mad_adapter_t);
+
+void
+mad_sbp_driver_exit(p_mad_driver_t);
+
 p_mad_link_t
 mad_sbp_choice(p_mad_connection_t,
 	       size_t,

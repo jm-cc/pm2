@@ -39,9 +39,7 @@ int __marcel_check_polling(unsigned polling_point)
     do {
       if(ps->polling_points & polling_point) {
 	register poll_cell_t *cell;
-#ifdef SMP
-	__lwp_t *cur_lwp = marcel_self()->lwp;
-#endif
+        DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
 
 	if(ps->nb_cells == 1 && ps->fastfunc) {
 	  ps->cur_cell = ps->first_cell;

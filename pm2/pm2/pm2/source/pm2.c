@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.24  2000/09/22 08:45:13  rnamyst
+PM2 startup funcs now use argc+argv. Modified the programs accordingly + fixed a bug in the TSP example.
+
 Revision 1.23  2000/09/15 17:37:13  rnamyst
 Tracefiles are now generated correctly with PM2 applications using multiple processes
 
@@ -260,7 +263,7 @@ void pm2_init(int *argc, char **argv)
 #endif
 
   while(nb_startup_funcs)
-    (*(startup_funcs[--nb_startup_funcs]))();
+    (*(startup_funcs[--nb_startup_funcs]))(*argc, argv);
 
   if(!pm2_single_mode()) {
 #ifdef MAD2

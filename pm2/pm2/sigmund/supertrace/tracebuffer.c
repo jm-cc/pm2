@@ -13,9 +13,14 @@
 
 #include "fut_code.h"
 
+#define TRUE 1
+#define FALSE 0
+
 #define NB_MAX_CPU  16
 
 static trace_buffer buf;
+
+short int smp;
 
 int abs_num;
 
@@ -27,7 +32,7 @@ static u_64 min_fkt;
 
 static FILE *f_fut;
 static FILE *f_fkt;
-static int thread;
+static int thread = -1;
 static int pid;
 
 static int fut_eof;
@@ -36,7 +41,19 @@ static trace fut_buf;
 static trace fkt_buf;
 
 static long int pid_table[NB_MAX_CPU];
-static long int cpu = 0;
+
+#define zone_flou 0x01000000
+
+int le(u_64 clock1, u_64 clock2)
+{
+  unsigned a;
+  unsigned b;
+  a = (unsigned) clock1;
+  b = (unsigned) clock2;
+  if (a < b) return TRUE;
+  if ((b < zone_flou) && (a > 0xFFFFFFFF - zone_flou)) return TRUE;
+  return FALSE;
+}
 
 // Returns 0 if OK 1 if EOF
 static int read_user_trace(trace *tr)
@@ -46,15 +63,18 @@ static int read_user_trace(trace *tr)
   if (fread(&(tr->clock), sizeof(u_64), 1, f_fut) == 0) {
     fut_eof = 1;
     return 1;
-  }
-  tr->pid = pid;
-  tr->type = USER;
+  }  
   if (fread(&(tr->code), sizeof(int), 1, f_fut) == 0) {
     fprintf(stderr,"Corrupted user trace file\n");
     exit(1);
-  }
-  tr->cpu = cpu;
-  tr->thread = thread;
+  } 
+  if (smp) {
+
+  } else tr->thread = thread;
+  tr->pid = lwp_of_thread(tr->thread);
+  if (tr->pid == -1) tr->pid = pid;
+  tr->type = USER;
+
   j = 0;
   i = ((tr->code & 0xff) - 12) / 4;
   if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {
@@ -66,10 +86,12 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
+    set_switch(tr->args[0], tr->args[1]);
     i-=2;
     j+=2;
-    thread = tr->args[0];
+    if (!smp) thread = tr->args[1];
   } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
+    int n;
     if (fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0) {
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
@@ -78,8 +100,16 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
-    i-=2;
-    j+=2;
+    if (fread(&(tr->args[2]), sizeof(int), 1, f_fut) == 0) {
+      fprintf(stderr,"Corrupted user trace file\n");
+      exit(1);
+    }
+    add_lwp(tr->args[0], tr->args[2], tr->args[1]);
+    for(n = 0; n < NB_MAX_CPU; n++)
+      if (pid_table[n] == tr->args[0]) {set_cpu(tr->args[0], n); break;}
+    if (!smp) thread = tr->args[2]; // Is this true, I have no clue
+    i-=3;
+    j+=3;
   }
   while (i != 0) {
     if (fread(&(tr->args[j]), sizeof(int), 1, f_fut) == 0) {
@@ -89,6 +119,8 @@ static int read_user_trace(trace *tr)
     i--;
     j++;
   }
+  tr->cpu = cpu_of_lwp(tr->pid);
+  tr->relevant = 1;
   return 0;
 }
 
@@ -96,6 +128,7 @@ static int read_kernel_trace(trace *tr)
 {
   int i;
   int j;
+  tr->relevant = 0;
   if (fread(&j, sizeof(unsigned int), 1, f_fkt) == 0) {
     fkt_eof = 1;
     return 1;
@@ -123,12 +156,21 @@ static int read_kernel_trace(trace *tr)
       i--;
       j++;
     }
-    if (tr->code == FKT_SWITCH_TO_CODE) {
+    if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
+      tr->relevant = 1;
       assert(tr->args[1] < NB_MAX_CPU);
       pid_table[tr->args[1]] = tr->args[0];
-      if (tr->args[0] == pid) cpu = tr->args[1];
+      if (is_lwp(tr->args[0])) {
+	set_cpu(tr->args[0], tr->args[1]);
+	if (!smp) thread = thread_of_lwp(tr->args[0]);
+      }
+      //      if (tr->args[0] == pid) cpu = tr->args[1]; // Modifier bazar
     }
   }
+  if (is_lwp(tr->pid)) {
+    tr->relevant = 1;
+    tr->thread = thread_of_lwp(tr->pid);
+  } else tr->thread = -1;
   return 0;
 }
 
@@ -234,13 +276,17 @@ static void add_buffer(trace tr)
   tr_item->tr.pid = tr.pid;
   tr_item->tr.cpu = tr.cpu;
   tr_item->tr.type = tr.type;
+  tr_item->tr.relevant = tr.relevant;
   for(i = 0; i < MAX_NB_ARGS; i++)
     tr_item->tr.args[i] = tr.args[i];
   tmp = buf.last;
   while (tmp != EMPTY_LIST) {
     // Beware pb of 0
-    if ((unsigned) tmp->tr.clock < (unsigned) tr_item->tr.clock) break;
-    printf("One up %d (%u - %x - %u) (%u - %x - %u)\n",tmp->tr.type, tmp->tr.cpu, tmp->tr.code, (unsigned) tmp->tr.clock, tr_item->tr.cpu, tr_item->tr.code, (unsigned)tr_item->tr.clock);
+    if (le(tmp->tr.clock,tr_item->tr.clock)) break;
+    printf("One up %d(%u - %x - %u) / %d(%u - %x - %u)\n",tmp->tr.type, \
+	   tmp->tr.cpu, tmp->tr.code, (unsigned) tmp->tr.clock, \
+	   tr_item->tr.type, tr_item->tr.cpu, tr_item->tr.code, \
+	   (unsigned)tr_item->tr.clock);
     tmp = tmp->prev;
   }
   tr_item->prev = tmp;
@@ -303,7 +349,7 @@ static int load_trace()
     }
     else {
       // Attention au pb du 0 clock
-      if ((unsigned) fkt_buf.clock > (unsigned) fut_buf.clock) {
+      if (le(fut_buf.clock, fkt_buf.clock)) {
 	add_buffer(fut_buf);
 	read_user_trace(&fut_buf);
       }
@@ -329,6 +375,9 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
   fkt_eof = 1;
   fut_eof = 1;
   abs_num = 0;
+  for(n = 0; n < NB_MAX_CPU; n++)
+    pid_table[n] = 0;
+  n = 0;
   assert((fut_name != NULL) || (fkt_name != NULL));
   if (fut_name != NULL) {
     if ((f_fut = fopen(fut_name,"r")) == NULL) {
@@ -344,7 +393,8 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
     } 
     fkt_eof = 0;
   }
-  thread = 0; // Et oh, c'est de la bidouille
+  thread = 0; // Et oh, c'est de la bidouille, 
+              // mais bon corrigée par FUT_NEW_LWP
   buf.first = EMPTY_LIST;
   buf.last = EMPTY_LIST;
   read_fut_header();

@@ -1110,7 +1110,7 @@ void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, 
   fprintf(stderr,"Enabling table entry for page %ld, owner = %d , prot = %d, addr = %p, size = %d (I am %p)\n", index, owner, protocol, addr, size, marcel_self());
 #endif
   dsm_page_table[index] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));
-  fprintf(stderr,"Allocated entry, @=%p\n", dsm_page_table[index]);
+ // fprintf(stderr,"Allocated entry, @=%p\n", dsm_page_table[index]);
 
   dsm_page_table[index]->next_owner = (dsm_node_t)-1;
   fifo_init(&dsm_page_table[index]->pending_req, 2 * dsm_nb_nodes - 1);

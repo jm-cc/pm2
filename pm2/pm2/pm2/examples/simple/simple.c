@@ -49,7 +49,7 @@ int pm2_main(int argc, char **argv)
   }
 
 #ifdef PROFILE
-  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
+  profile_activate(FUT_ENABLE, FUT_KEYMASKALL, 0);
 #endif
 
   if(pm2_self() == 0) {

@@ -101,6 +101,9 @@
 #ifdef DRV_BIP
 #include "connection_interfaces/mad_bip.h"
 #endif /* DRV_BIP */
+#ifdef DRV_GM
+#include "connection_interfaces/mad_gm.h"
+#endif /* DRV_GM */
 
 #include "mad_main.h"
 #include "mad_exit.h"

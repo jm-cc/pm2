@@ -1,0 +1,110 @@
+
+  Ce module est utilisé pour facilité le débuggage par l'intermédiaire
+de traces ou messages sur la sortie d'erreur.
+
+  On peut déclarer plusieurs 'type' de messages dont l'affichage sera
+validé ou non par des fonctions dans le programme ou par des options
+sur la ligne de commande.
+
+
+                        +-------------------------------+
+                        |  Explications par l'exemple:  |
+                        +-------------------------------+
+
+
+  Si l'on veut créer une série de messages de trace pour des calculs,
+on peut mettre dans calcul_debug.h :
+/****************************************************************/
+#include "pm2debug.h"
+extern debug_type_t debug_calcul_trace;
+#define CALCUL_TRACE(fmt, args...) \
+    debug_printf(&debug_calcul_trace, fmt, ##args)
+/****************************************************************/
+
+et dans calcul_debug.c
+
+/****************************************************************/
+#include "pm2debug.h"
+debug_type_t debug_calcul_trace=NEW_DEBUG_TYPE(0, "CALCUL: ", "cal-trace");
+void calcul_debug_init(int* argc, char** argv, int debug_flags)
+{
+	pm2debug_register(&debug_calcul_trace);
+	pm2debug_init_ext(argc, argv, debug_flags);
+}
+/****************************************************************/
+
+  Ensuite, on peut utiliser CALCUL_TRACE() de la même façon que
+printf(). 
+  Remarque: l'initialisation (appel à pm2debug_init_ext) est déjà
+faite par les modules marcel, mad1, mad2, pm2. Il est inutile de la
+refaire pour un programme inclu dans pm2. Il suffit d'enregistrer la
+variable avec pm2debug_register()
+
+  Rq2: NEW_DEBUG_TYPE(show, prefix, name)
+show vaut 1 ou 0 suivant si le message doit être afficher par défaut
+prefix est une chaine pouvant être affichée devant chacun des messages
+name est le nom utilisé sur la ligne de commande
+
+                            +----------------------+
+                            |  Macros déjà prêtes  |
+                            +----------------------+
+
+  En faisant '#include "pm2debug"', on dispose des macros DISP..,
+LOG.. et TRACE.. qui étaient présentes dans tbx auparavant. DEBUG doit
+être défini pour que LOG.. et TRACE.. soient pris en compte.
+
+  Ces macros utilisent les variables 'mod'-disp, 'mod'-log et
+'mod'-trace. Par défaut, mod vaut marcel, mad1, mad2, pm2, dsm, tbx,
+ntbx ou app suivant si l'on est en train de compiler le module
+correspondant ou l'application (pour app).
+
+  On peut choisir un autre nom. Il suffit de définir DEBUG_NAME pour
+que son contenu remplace 'mod'. DEBUG_NAME peut-être redéfini
+plusieurs fois dans un fichier. Les macros DISP.., LOG.. et
+TRACE.. utiliseront la dernière définition.
+  Dans le cas où on utilise un nouveau nom (pour avoir des LOG
+spécifiques à un fichier et non pas à un module entier par exemple),
+il faut alors déclarer les variables correspondantes dans un fichier C
+avec la macro :
+
+#include "pm2debug.h"
+DEBUG_DECLARE(mod)
+
+et dans une fonction d'initialisation, enregistrer ces variables :
+
+#include "pm2debug.h"
+init() { DEBUG_INIT(mod); }
+
+On peut alors faire, dans un fichier C :
+
+#include "pm2debug.h"
+#define DEBUG_NAME mod
+..
+  LOG("Je suis ici");
+..
+
+
+  Remarque: Ça ne pose aucun problème de déclarer et enregistrer des
+variables que l'on utilisera pas.
+
+                    +--------------------------------------+
+                    |  Paramètres de la ligne de commande  |
+                    +--------------------------------------+
+
+  Tous les paramètres sont de la forme --debug:...
+
+  --debug:register fait afficher au programme toutes les variables de
+debug qui se sont enregistrées.
+
+  Les autres options sont de la forme :
+--debug:variable[:action[:valeur]]
+avec
+  variable : le nom d'une variable (liste avec --debug:register)
+  valeur : par défaut 'on'
+	peut être 'on' ou 'off'
+  action : par défaut 'show'
+	peut être :
+	- show : affiche ou pas les messages correspondant
+	- prefix : affiche ou pas le préfix du message
+	- file : affiche ou non la ligne et le fichier du message
+

@@ -34,7 +34,9 @@
 #  define __attribute_deprecated__
 #  define __builtin_expect(x, y) (x)
 #endif
-#include "marcel_pmarcel.h"
+#ifdef MA__POSIX_FUNCTIONS_NAMES
+#  include "marcel_pmarcel.h"
+#endif 
 #include "marcel_alias.h"
 
 #define _PRIVATE_

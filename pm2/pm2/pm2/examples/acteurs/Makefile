@@ -11,8 +11,8 @@
 #                 Ecole Normale Superieure de Lyon
 #
 #                      External Contributors:
-#                 Yves Denneulin (PM2_LMC - Grenoble),
-#                 Benoit Planquelle (PM2_LIFL - Lille)
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
 #
 #                    1998 All Rights Reserved
 #
@@ -25,7 +25,7 @@
 # that both the copyright notice and this permission notice appear in
 # supporting documentation.
 #
-# Neither the institutions (PM2_Ecole Normale Superieure de Lyon,
+# Neither the institutions (Ecole Normale Superieure de Lyon,
 # Laboratoire de L'informatique du Parallelisme, Universite des
 # Sciences et Technologies de Lille, Laboratoire d'Informatique
 # Fondamentale de Lille), nor the Authors make any representations
@@ -33,43 +33,14 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+CONFIG_MODULES=marcel pm2 mad1
 
-.PHONY: default all
-default: all
+ifndef FLAVOR
+export FLAVOR:=pm2-mad1
+endif
 
-INSTALL :=  ./
-SRC_DIR	:=  ./
+PROGS := 
 
-include ../../make/common.mak
-
-APP_CFLAGS  :=
-APP_LDFLAGS :=
-APP_LLIBS   :=
-
-all: $(GEN_BIN)/acteurs
-
-
-# mailbox :
-
-$(PM2_OBJ)/mailbox.o: mailbox.c mailbox.h $(PM2_HEADERS)
-	$(PM2_CC2)
-
-
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h mailbox.h $(PM2_HEADERS)
-	$(PM2_CC2)
-
-
-# executables :
-
-
-# acteurs :
-
-$(PM2_OBJ)/acteurs.o: acteurs.c $(PM2_HEADERS) rpc_defs.h mailbox.h
-	$(PM2_CC2)
-
-acteurs: $(PM2_OBJ)/acteurs.o $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/mailbox.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/mailbox.o $(PM2_LLIBS)
-	$(PM2_MOVE)
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/apps.mak
 

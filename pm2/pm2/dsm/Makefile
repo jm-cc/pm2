@@ -59,7 +59,12 @@ include $(PM2_ROOT)/make/libs-rules.mak
 $(LIB_GEN_INC)/dsm_page_size.h:	
 	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}
 	$(COMMON_HIDE) echo "#define DSM_PAGE_SIZE `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`" > $(LIB_GEN_INC)/dsm_page_size.h
+	$(COMMON_HIDE) echo "#ifndef IRIX_SYS" >> $(LIB_GEN_INC)/dsm_page_size.h
 	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`\"" >> $(LIB_GEN_INC)/dsm_page_size.h
+	$(COMMON_HIDE) echo "#else" >> $(LIB_GEN_INC)/dsm_page_size.h
+	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align 16\"" >> $(LIB_GEN_INC)/dsm_page_size.h
+	$(COMMON_HIDE) echo "#endif" >> $(LIB_GEN_INC)/dsm_page_size.h
+
 
 clean-bin:
 	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT) $(LIB_GEN_INC)/dsm_page_size.h

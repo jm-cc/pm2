@@ -324,11 +324,17 @@ do_options() {
     list)
 	if [ -d "${PM2_ROOT}/modules/$module/config/options" ]; then
 	    list=`( cd "${PM2_ROOT}/modules/$module/config/options"; \
-		ls -d *.sh *.help ) 2>/dev/null `
+		ls -d *.sh) 2>/dev/null `
 	    new_list=
 	    for opt in `echo $list` " "; do
-		optname=`basename "$opt" .sh`
-		optname=`basename "$optname" .help`
+		case "$opt" in
+		[0-9][0-9]*.sh)
+		    optname=`echo $opt | sed -e 's/^..\(.*\)\.sh$/\1/'`
+		    ;;
+		*)
+		    optname=`echo $opt | cut -d. -f1`
+		    ;;
+		esac
 		case " $new_list " in
 		*\ $optname\ *)
 		    ;;
@@ -365,7 +371,12 @@ do_option() { # option ...
 	shift
     done
     directory="${PM2_ROOT}/modules/$module/config/options"
-    filename="$option"
+    if [ -d "${PM2_ROOT}/modules/$module/config/options" ]; then
+	filename=`( cd "${PM2_ROOT}/modules/$module/config/options" ; ls -1 ) \
+	    | grep "$option\\." | head -n 1 | cut -d. -f1`
+    else
+	filename="$option"
+    fi
     do_action $module $option
 }
 

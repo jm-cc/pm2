@@ -292,7 +292,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
   return readv(fildes, iov, iovcnt);
 }
 
-int marcel_write(int fildes, void *buf, size_t nbytes)
+int marcel_write(int fildes, const void *buf, size_t nbytes)
 {
 #ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
@@ -361,7 +361,7 @@ int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt)
   return marcel_readv(fildes, iov, iovcnt);
 }
 
-int marcel_write_exactly(int fildes, void *buf, size_t nbytes)
+int marcel_write_exactly(int fildes, const void *buf, size_t nbytes)
 {
   size_t to_write = nbytes, n;
 

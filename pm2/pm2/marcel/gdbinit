@@ -1,47 +1,29 @@
 set $marcel_saved=0
 
-define save-ctx-fp-x86
-  set $marcel_saved_bp=$ebp
-end
 define save-ctx
-  set $marcel_saved_th=marcel_self()
-  printf "saving marcel context ($marcel_saved_th=%p)\n",$marcel_saved_th
-  set $marcel_saved_pc=$pc
-  set $marcel_saved_sp=$sp
-  save-ctx-fp-x86
-  set $marcel_saved=1
+  if $marcel_saved==1
+    printf "already saved ctx\n"
+  else
+    __save-ctx
+    set $marcel_saved=1
+  end
 end
 document save-ctx
 Saves the current marcel context
 Use rest-ctx to restore it
 end
 
-define set-ctx-x86
-  set $esp=((marcel_t)$arg0)->ctx_yield[0].jbuf[4]
-  set $ebp=((marcel_t)$arg0)->ctx_yield[0].jbuf[3]
-  set $eip=((marcel_t)$arg0)->ctx_yield[0].jbuf[5]
-end
 define set-ctx
   if $marcel_saved==0
     save-ctx
   end
   printf "switching to $arg0(%p)\n", $arg0
-  set-ctx-x86 $arg0
+  __set-ctx $arg0
 end
 document set-ctx
 Switch to another marcel thread's context
 end
 
-define rest-ctx-fp-x86
-  set $ebp=$marcel_saved_bp
-end
-define __rest-ctx
-  echo "restoring marcel context (%p)",$marcel_saved_th
-  set $pc=$marcel_saved_pc
-  set $sp=$marcel_saved_sp
-  rest-ctx-fp-x86
-  set $marcel_saved=0
-end
 define rest-ctx
   if $marcel_saved==0
     echo no context saved !\n

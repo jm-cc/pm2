@@ -400,10 +400,10 @@ mad_gm_extract_info(p_mad_adapter_info_t ai,
 
 #if defined (GM_API_VERSION_2_0) && GM_API_VERSION >= GM_API_VERSION_2_0
                 {
+                        int i = 0;
+
                         pa = ptr3;
                         pb = ptr3;
-
-                        int i = 0;
 
                         for (i = 0; i < 6; i++) {
                                 int val = 0;

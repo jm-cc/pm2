@@ -37,6 +37,8 @@
  * Mad_tcp.c
  * =========
  */
+
+#define USE_MARCEL_POLL
 /* #define DEBUG */
 #include <madeleine.h>
 

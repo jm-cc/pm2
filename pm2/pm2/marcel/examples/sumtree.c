@@ -29,7 +29,8 @@ typedef struct {
 #endif
 } job;
 
-int do_pipe(int *array)
+#ifdef USE_PIPES
+static int do_pipe(int *array)
 {
   int r = pipe(array);
 
@@ -40,8 +41,9 @@ int do_pipe(int *array)
 
   return r;
 }
+#endif
 
-any_t sum(any_t arg)
+static any_t sum(any_t arg)
 {
   job *j = (job *)arg;
 

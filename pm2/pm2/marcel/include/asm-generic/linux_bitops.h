@@ -98,7 +98,7 @@ static __inline__ int ma_constant_test_bit(int nr, const volatile unsigned long 
 }
 static __inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
 {
-	int	mask;
+	unsigned long	mask;
 
 	addr += nr / MA_BITS_PER_LONG;
 	mask = 1UL << (nr % MA_BITS_PER_LONG);

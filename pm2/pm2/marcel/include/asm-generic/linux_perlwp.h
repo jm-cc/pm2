@@ -41,7 +41,7 @@
     __attribute__((__section__(__MA_PERLWP_SECTION ".main" subsec))) \
        __typeof__(type) ma_per_lwp__##name
 
-extern int __ma_main_lwp_start;
+extern unsigned long __ma_main_lwp_start;
 /* var is in discarded region: offset to particular copy we want */
 #define ma_per_lwp(var, lwp) (*TBX_RELOC_HIDE(&ma_per_lwp__##var, \
    ((unsigned long)(ma_lwp_t)(lwp) - (unsigned long)&__main_lwp)))
@@ -49,7 +49,7 @@ extern int __ma_main_lwp_start;
 #define __ma_get_lwp_var(var) ma_per_lwp(var, LWP_SELF)
 
 ///* Défini dans le script du linker */
-//extern int __ma_per_lwp_end;
+//extern unsigned long __ma_per_lwp_end;
 //#define __ma_per_lwp_size ((size_t)&__ma_per_lwp_end-(size_t)&__ma_per_lwp_start)
 
 #else /* ! MA__LWPS */
@@ -64,8 +64,8 @@ extern int __ma_main_lwp_start;
 #endif	/* MA__LWPS */
 
 /* Définis dans le script du linker */
-extern int __ma_main_lwp_start;
-extern int __ma_main_lwp_end;
+extern unsigned long __ma_main_lwp_start;
+extern unsigned long __ma_main_lwp_end;
 #define __ma_per_lwp_size ((size_t)((unsigned long)&__ma_main_lwp_end \
                                     -(unsigned long)&__ma_main_lwp_start))
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.11  2000/02/28 11:43:59  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.10  2000/02/08 17:47:26  oaumage
 - prise en compte des types de la net toolbox
 
@@ -85,7 +88,7 @@ ______________________________________________________________________________
  * -------
  */
 #ifdef PM2
-#include <marcel.h>
+#include "marcel.h"
 #endif /* PM2 */
 #include <stdlib.h>
 #include <stddef.h>
@@ -95,48 +98,48 @@ ______________________________________________________________________________
 #include <ntbx.h>
 
 /* Protocol registration */
-#include <mad_registration.h>
+#include "mad_registration.h"
 
 /* Structure pointers */
-#include <mad_pointers.h>
+#include "mad_pointers.h"
 
 /* Fundamental data types */
-#include <mad_types.h>
-#include <mad_modes.h>
-#include <mad_buffers.h>
-#include <mad_link.h>
-#include <mad_connection.h>
-#include <mad_channel.h>
-#include <mad_adapter.h>
-#include <mad_driver_interface.h>
-#include <mad_driver.h>
-#include <mad_adapter_description.h>
-#include <mad_configuration.h>
+#include "mad_types.h"
+#include "mad_modes.h"
+#include "mad_buffers.h"
+#include "mad_link.h"
+#include "mad_connection.h"
+#include "mad_channel.h"
+#include "mad_adapter.h"
+#include "mad_driver_interface.h"
+#include "mad_driver.h"
+#include "mad_adapter_description.h"
+#include "mad_configuration.h"
 
 /* Function prototypes */
-#include <mad_memory_interface.h>
-#include <mad_buffer_interface.h>
-#include <mad_communication_interface.h>
-#include <mad_channel_interface.h>
+#include "mad_memory_interface.h"
+#include "mad_buffer_interface.h"
+#include "mad_communication_interface.h"
+#include "mad_channel_interface.h"
 
 /* connection interfaces */
 
 #ifdef DRV_TCP
-#include <connection_interfaces/mad_tcp.h>
+#include "connection_interfaces/mad_tcp.h"
 #endif /* DRV_TCP */
 #ifdef DRV_VIA
-#include <connection_interfaces/mad_via.h>
+#include "connection_interfaces/mad_via.h"
 #endif /* DRV_VIA */
 #ifdef DRV_SISCI
-#include <connection_interfaces/mad_sisci.h>
+#include "connection_interfaces/mad_sisci.h"
 #endif /* DRV_SISCI */
 #ifdef DRV_SBP
-#include <connection_interfaces/mad_sbp.h>
+#include "connection_interfaces/mad_sbp.h"
 #endif /* DRV_SISCI */
 #ifdef DRV_MPI
-#include <connection_interfaces/mad_mpi.h>
+#include "connection_interfaces/mad_mpi.h"
 #endif /* DRV_MPI */
 
-#include <mad_main.h>
+#include "mad_main.h"
 
 #endif /* MAD_H */

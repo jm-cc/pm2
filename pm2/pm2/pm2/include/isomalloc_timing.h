@@ -33,6 +33,9 @@
 
 ______________________________________________________________________________
 $Log: isomalloc_timing.h,v $
+Revision 1.4  2000/11/15 21:32:37  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.3  2000/02/28 11:17:57  rnamyst
 Changed #include <> into #include "".
 
@@ -48,11 +51,13 @@ ______________________________________________________________________________
 
 #ifdef ISOMALLOC_TIMING
 
-#include "timing.h"
+#include "tbx.h"
+
+#define TIMING_EVENT(name)  TIME(name)
 
 #else
 
-#define TIMING_EVENT(name)   /* nothing */
+#define TIMING_EVENT(name)  /* nothing */
 
 #endif
 

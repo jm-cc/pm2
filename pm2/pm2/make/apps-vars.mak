@@ -33,11 +33,13 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-ifndef FLAVOR
-FLAVOR := default
+ifndef FLAVOR_DEFAULT
+FLAVOR_DEFAULT := default
 endif
 
 include $(PM2_ROOT)/make/common-vars.mak
+
+CONFIG_MODULES=$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --modules)
 
 all:
 

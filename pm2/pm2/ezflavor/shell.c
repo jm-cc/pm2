@@ -58,12 +58,9 @@ pid_t exec_single_cmd(int *output_fd, char *argv[])
       close(fd[1]);
 
     } else {
-      int fdout = open("/dev/null", O_WRONLY);
       int fderr = open("/tmp/ezflavor.errlog", O_WRONLY | O_CREAT, 0600);
 
-      dup2(fdout, STDOUT_FILENO);
-      close(fdout);
-
+      dup2(fderr, STDOUT_FILENO);
       dup2(fderr, STDERR_FILENO);
       close(fderr);
     }

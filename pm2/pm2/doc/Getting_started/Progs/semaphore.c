@@ -6,7 +6,7 @@
 pm2_completion_t c;
 volatile int counter = 0;
 marcel_mutex_t mutex;
-marcel_sem_t sem;		// Here!
+marcel_sem_t sem;		/* Here! */
 
 static void
 f (void *arg)
@@ -31,7 +31,7 @@ f (void *arg)
       marcel_mutex_unlock (&mutex);
     }
 
-  marcel_sem_V (&sem);		// Here!
+  marcel_sem_V (&sem);		/* Here! */
 }
 
 /************ Cut here ****************/
@@ -44,7 +44,7 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
   if ((pm2_self ()) == 0)
     {
-      marcel_sem_init (&sem, 0);	// Here!
+      marcel_sem_init (&sem, 0);	/* Here! */
 
       tprintf ("Initial value: %d\n", counter);
       marcel_mutex_init (&mutex, NULL);
@@ -56,7 +56,7 @@ pm2_main (int argc, char *argv[])
 	}
 
       for (i = 0; i < NB_THREADS; i++)
-	marcel_sem_P (&sem);	// Here!
+	marcel_sem_P (&sem);	/* Here! */
 
       tprintf ("Final value: %d\n", counter);
       pm2_halt ();

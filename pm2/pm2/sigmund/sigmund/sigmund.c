@@ -32,7 +32,7 @@ enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME, IDLE_TIME,
 
 void print_help()
 {
-  printf("type date_tick pid cpu thr  code                       name           args\n");  // A faire
+  printf("type  date_tick  pid cpu thr  code                          name                  args\n");  // A faire
 }
 
 void print_trace(trace tr)

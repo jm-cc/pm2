@@ -162,6 +162,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
   p_mad_settings_t settings = madeleine->settings;
   tbx_flag_t       host_ok  = tbx_flag_clear;
   tbx_flag_t       port_ok  = tbx_flag_clear;
+  tbx_flag_t       dyn_set  = tbx_flag_clear;
 
   LOG_IN();
 
@@ -179,15 +180,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  if (!argc)
 	    FAILURE("mad_leonie argument not found");
 
-#ifndef LEO_IP
 	  settings->leonie_server_host_name = tbx_strdup(*argv);
-#else // LEO_IP
-	  {
-	    char *dummy;
-	    // Read server IP address in hexadecimal format
-	    settings->leonie_server_ip = strtoul(*argv, &dummy, 16);
-	  }
-#endif // LEO_IP
 	}
       else if (!strcmp(*argv, "--mad_link"))
 	{
@@ -199,6 +192,16 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	    FAILURE("mad_link argument not found");
 
 	  settings->leonie_server_port = tbx_strdup(*argv);
+	}
+      else if (!strcmp(*argv, "--mad_dyn_mode"))
+	{
+	  if (!tbx_flag_toggle(&dyn_set))
+	    FAILURE("Madeleine's dynamic mode specified twice");
+
+          settings->leonie_dynamic_mode	= tbx_true;
+#ifndef MARCEL
+          FAILURE("Madeleine's dynamic mode requires Marcel");
+#endif /* MARCEL */
 	}
 
       argc--; argv++;
@@ -230,7 +233,6 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   client   = session->leonie_link;
 
   strcpy(data.data, settings->leonie_server_port);
-#ifndef LEO_IP
   status =
     ntbx_tcp_client_connect(client, settings->leonie_server_host_name, &data);
   if (status == ntbx_failure)
@@ -239,48 +241,6 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   TRACE("Leonie link is up");
 
   mad_ntbx_send_string(client, client->local_host);
-#else // LEO_IP
-  status = ntbx_tcp_client_connect_ip(client,
-				      settings->leonie_server_ip, &data);
-  if (status == ntbx_failure)
-    FAILURE("could not setup the Leonie link");
-
-  TRACE("Leonie link is up");
-  {
-    p_tbx_slist_t alias = client->local_alias;
-    char ip[11];
-
-    sprintf(ip, "0x%lx", client->local_host_ip);
-    mad_ntbx_send_string(client, ip);
-    {
-      char *hostname = NULL;
-
-      hostname = TBX_MALLOC(128);
-      gethostname(hostname, 127);
-      /*DISP_STR("sending hostname", hostname);*/
-      mad_ntbx_send_string(client, hostname);
-      TBX_FREE(hostname);
-    }
-    if (!tbx_slist_is_nil(alias))
-      {
-	tbx_slist_ref_to_head(alias);
-	do
-	  {
-	    char *a = NULL;
-
-	    a = tbx_slist_ref_get(alias);
-
-	    if (tbx_streq(a, ""))
-	      break;
-
-	    /*DISP_STR("sending alias", a);*/
-	    mad_ntbx_send_string(client, a);
-	  }
-	while (tbx_slist_ref_forward(alias));
-      }
-    mad_ntbx_send_string(client, "-");
-  }
-#endif // LEO_IP
 
   session->process_rank = mad_ntbx_receive_int(client);
   TRACE_VAL("process rank", session->process_rank);
@@ -296,51 +256,6 @@ mad_directory_init(p_mad_madeleine_t   madeleine,
   mad_dir_directory_get(madeleine);
   LOG_OUT();
 }
-
-#if 0
-static
-void
-mad_output_redirection_init(p_mad_madeleine_t   madeleine,
-			    int                 argc TBX_UNUSED,
-			    char              **argv TBX_UNUSED)
-{
-  p_mad_session_t  session  = madeleine->session;
-  p_mad_settings_t settings = madeleine->settings;
-
-  LOG_IN();
-  if (!settings->debug_mode)
-    {
-      char *fmt  = "/tmp/%s-%s-%d";
-      char *user = NULL;
-      int   len  = 0;
-
-      user = getenv("USER");
-      if (!user)
-	FAILURE("USER environment variable not defined");
-
-      len = strlen(fmt) + strlen(user) + strlen(MAD3_LOGNAME);
-
-      {
-	char output[len];
-	int  f;
-
-	sprintf(output, "/tmp/%s-%s-%d",
-		user, MAD3_LOGNAME, (int)session->process_rank);
-
-	f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
-	if (f < 0)
-	  ERROR("open");
-
-	if (dup2(f, STDOUT_FILENO) < 0)
-	  ERROR("dup2");
-
-	if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0)
-	  ERROR("dup2");
-      }
-    }
-  LOG_OUT();
-}
-#endif // 0
 
 void
 mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
@@ -410,23 +325,6 @@ mad_init(int   *argc,
   common_pre_init(argc, argv, NULL);
   common_post_init(argc, argv, NULL);
   madeleine = mad_get_madeleine();
-
-#if 0
-  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);
-  tbx_init(*argc, argv);
-  ntbx_init(*argc, argv);
-  mad_memory_manager_init(*argc, argv);
-  madeleine = mad_object_init(*argc, argv);
-
-  mad_cmd_line_init(madeleine, *argc, argv);
-  mad_leonie_link_init(madeleine, *argc, argv);
-  mad_directory_init(madeleine, *argc, argv);
-
-  mad_purge_command_line(madeleine, argc, argv);
-  ntbx_purge_cmd_line(argc, argv);
-  tbx_purge_cmd_line(argc, argv);
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
-#endif // 0
   LOG_OUT();
 
   return madeleine;

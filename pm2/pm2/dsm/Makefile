@@ -42,7 +42,11 @@ LIBRARY=dsm
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
+ifdef OLD_MAKEFILE
 LIB_GEN_INC := $(shell $(PM2_CONFIG) --includedir $(LIBRARY))
+else
+-include $(PM2_MAK_DIR)/dsm-specific.mak
+endif
 
 LIB_REP_TO_BUILD += $(LIB_GEN_INC)
 
@@ -52,10 +56,15 @@ clean: clean-bin
 
 include $(PM2_ROOT)/make/libs-rules.mak
 
-$(LIB_GEN_INC)/dsm_page_size.h:
+CURDIR=.
+
+$(LIB_GEN_INC)/dsm_page_size.h:	
 	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}
 	$(COMMON_HIDE) echo "#define DSM_PAGE_SIZE `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`" > $(LIB_GEN_INC)/dsm_page_size.h
 	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`\"" >> $(LIB_GEN_INC)/dsm_page_size.h
 
 clean-bin:
 	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT) $(LIB_GEN_INC)/dsm_page_size.h
+
+$(PM2_MAK_DIR)/dsm-specific.mak: $(PM2_MAK_DIR)
+	@echo "LIB_GEN_INC:=`$(PM2_CONFIG) --includedir $(LIBRARY)`" >  $@

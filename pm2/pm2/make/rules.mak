@@ -33,6 +33,13 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+ifeq ($(COMMON_USE_EXTENSION),yes)
+COMMON_EXTRA_DEP	:=
+COMMON_EXT		:=	$(COMMON_TEMPO_EXT)
+else
+COMMON_EXT		:=
+endif
+
 include $(MARCEL_ROOT)/make/rules.mak
 
 ifeq ($(MAD2),yes)
@@ -82,20 +89,14 @@ endif
 endif
 endif
 
-
 .PHONY: pm2_default
-pm2_default: $(PM2_LIB) $(PM2_USER_MAK)
+pm2_default: $(PM2_LIB)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(PM2_DEPENDS)),$(PM2_DEPENDS))
 include $(PM2_DEPENDS)
 endif
 endif
-
-$(PM2_USER_MAK):
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user*.mak
-	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_USER_MAK)
-	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_USER_MAK)
 
 $(PM2_EXTRA_DEP_FILE):
 	$(PM2_HIDE) rm -f $(PM2_ROOT)/.opt*
@@ -108,11 +109,17 @@ $(PM2_LIB_A): $(PM2_OBJECTS)
 	$(PM2_HIDE) rm -f $(PM2_LIB_A)
 	$(PM2_HIDE) rm -f $(PM2_LIB_SO)
 	$(PM2_PREFIX) ar cr $(PM2_LIB_A) $(PM2_OBJECTS)
+	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user*.mak
+	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_USER_MAK)
+	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_USER_MAK)
 
 $(PM2_LIB_SO): $(PM2_OBJECTS)
 	$(PM2_HIDE) rm -f $(PM2_LIB_A)
 	$(PM2_HIDE) rm -f $(PM2_LIB_SO)
 	$(PM2_PREFIX) ld -Bdynamic -shared -o $(PM2_LIB_SO) $(PM2_OBJECTS)
+	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user*.mak
+	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_USER_MAK)
+	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_USER_MAK)
 
 $(PM2_C_OBJECTS): $(PM2_OBJ)/%$(COMMON_EXT).o: $(PM2_SRC)/%.c
 	$(PM2_PREFIX) $(PM2_CC) $(PM2_KCFLAGS) -c $< -o $@

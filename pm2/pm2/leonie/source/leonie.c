@@ -283,6 +283,9 @@ main(int    argc,
   init_drivers(leonie);
   TRACE("== Initializing channels");
   init_channels(leonie);
+  init_fchannels(leonie);
+  init_vchannels(leonie);
+  init_xchannels(leonie);
 
   TRACE("== Standing by");
   exit_session(leonie);

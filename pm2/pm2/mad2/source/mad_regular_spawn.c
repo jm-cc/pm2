@@ -42,8 +42,8 @@
  * Constantes
  * ----------
  */
-#define MAX_ARG_STR_LEN  1024
-#define MAX_ARG_LEN       256
+#define MAX_ARG_STR_LEN  2048
+#define MAX_ARG_LEN       512
 
 void
 mad_slave_spawn(p_mad_madeleine_t   madeleine,

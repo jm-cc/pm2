@@ -41,8 +41,8 @@
  * ----------
  */
 #define MAX_HOSTNAME_LEN  256
-#define MAX_ARG_STR_LEN  1024
-#define MAX_ARG_LEN       256
+#define MAX_ARG_STR_LEN  2048
+#define MAX_ARG_LEN       512
 
 /*
  * Generation de l'URL de connexion

@@ -867,7 +867,7 @@ mad_sisci_connect(p_mad_connection_t   out,
 
       remote_segment->size   = sizeof(mad_sisci_user_segment_data_t);
       remote_segment->offset = 0;
-  
+
       do
 	{
 	  SCIConnectSegment(out_specific->sd[segment],
@@ -880,11 +880,13 @@ mad_sisci_connect(p_mad_connection_t   out,
 	  if (sisci_error != SCI_ERR_OK)
 	    {
 	      mad_sisci_display_error(sisci_error);
+	      DISP("mad_sisci: could not connect, sleeping ...");
 #ifdef MARCEL
 	      marcel_delay(1000);
 #else // MARCEL
 	      sleep(1);
-#endif // MARCEL
+#endif // MARCEL	      
+	      DISP("mad_sisci: could not connect, waking up");
 	    }
 	}
       while (sisci_error != SCI_ERR_OK);
@@ -970,11 +972,13 @@ mad_sisci_accept(p_mad_connection_t   in,
 	  if (sisci_error != SCI_ERR_OK)
 	    {
 	      mad_sisci_display_error(sisci_error);
+	      DISP("mad_sisci: could not connect, sleeping ...");
 #ifdef MARCEL
 	      marcel_delay(1000);
 #else // MARCEL
 	      sleep(1);
-#endif // MARCEL
+#endif // MARCEL	      
+	      DISP("mad_sisci: could not connect, waking up");
 	    }
 	}
       while (sisci_error != SCI_ERR_OK);

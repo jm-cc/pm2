@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_list.h,v $
+Revision 1.3  2000/01/05 15:47:57  oaumage
+- mad_list.h: changement de `len' en `length'
+- mad_macros.h: ajout de la macros PM2_TRYLOCK_SHARED
+
 Revision 1.2  1999/12/15 17:31:22  oaumage
 Ajout de la commande de logging de CVS
 
@@ -59,7 +63,7 @@ typedef struct s_mad_list_element
 
 typedef struct s_mad_list
 {
-  mad_list_length_t        len ;
+  mad_list_length_t        length ;
   p_mad_list_element_t     first ;
   p_mad_list_element_t     last ;
   p_mad_list_element_t     mark;

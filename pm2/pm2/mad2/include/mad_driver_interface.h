@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_driver_interface.h,v $
+Revision 1.8  2000/06/07 11:26:16  oaumage
+- Ajout d'une fonction indiquant la fin d'un bloc en reception
+  (non active pour l'instant)
+
 Revision 1.7  2000/03/15 09:56:39  oaumage
 - renommage du polling Nexus
 
@@ -172,6 +176,9 @@ typedef struct s_mad_driver_interface
   (*receive_sub_buffer_group)(p_mad_link_t,
 			      tbx_bool_t,
 			      p_mad_buffer_group_t);
+
+  void
+  (*finalize_sub_buffer_group_reception)(p_mad_link_t);
 
   /* External spawn support */
   void

@@ -67,10 +67,10 @@ MOD_REP_TO_BUILD := \
 
 # Sources
 #---------------------------------------------------------------------
-MOD_C_SOURCES = $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
-MOD_S_SOURCES = $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
-MOD_L_SOURCES = $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
-MOD_Y_SOURCES = $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
+MOD_C_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
+MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
+MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
+MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
 
 # Bases : fichiers sans extension ni repertoire
 #---------------------------------------------------------------------

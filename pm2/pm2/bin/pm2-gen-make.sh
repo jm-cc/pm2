@@ -250,11 +250,12 @@ else
     target=all
 fi
 
+export PM2_CONFIG_SOURCEABLE
 if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
-    PM2_CONFIG="${PM2_ROOT}/bin/pm2-fast-config --flavor=$PM2_FLAVOR"
-    PM2_CONFIG_SOURCEABLE="${PM2_ROOT}/bin/pm2-fast-config --source-mode"
+    PM2_CONFIG_SOURCEABLE=yes
 
-    . $PM2_CONFIG_SOURCEABLE
+    set -- --source-mode
+    . ${PM2_ROOT}/bin/pm2-fast-config $*
 else
     PM2_CONFIG="${PM2_ROOT}/bin/pm2-config --flavor=$PM2_FLAVOR"
 fi

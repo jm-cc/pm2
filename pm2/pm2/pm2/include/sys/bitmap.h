@@ -69,6 +69,7 @@ int first_bits_to_1(unsigned int n, unsigned int *crt_bitmap);
     "first_bits_to_1()" will return the same rank.  
   */
 
+
 int get_first_bits_to_1(unsigned int n, unsigned int *crt_bitmap);
   /* 
      Returns the rank of the first bit in the first series of n contiguous bits
@@ -93,6 +94,11 @@ void display_bitmap(unsigned min, unsigned max, unsigned int *crt_bitmap );
   /*
     Displays the value of the bits ranging from min to max in the given bitmap.
   */
+int first_series_of_1_from_offset(unsigned int *crt_bitmap, int bitmap_size, int offset, int *length);
+  /*
+    Returns the starting position and the length of the first series of 1's
+    in the bitmap and resets these bits to 0.
+  */
 
 void OR_bitmaps_1(bitmap_t dest, bitmap_t src1, bitmap_t src2);
 
@@ -101,3 +107,5 @@ void OR_bitmaps_2(bitmap_t dest, bitmap_t src);
 void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned int period, int nb_cycles, bitmap_t crt_bitmap);
 
 #endif
+
+

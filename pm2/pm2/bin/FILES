@@ -1,6 +1,8 @@
 pm2-config : script to get info about flavors
+pm2-config-flavor : script to create flavors easily for user
+pm2-flavor : script to manage flavors
+pm2-module : script to manage module
 pm2_arch   : script to get the arch of the system
-pm2_create-flavor : script to create/delete flavors
 pm2_create-sample-flavors : script to create initial (sample) flavors
 pm2_mad1config : used by pm2-config
 pm2_mad2config : used by pm2-config

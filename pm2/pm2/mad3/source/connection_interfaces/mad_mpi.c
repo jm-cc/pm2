@@ -70,7 +70,7 @@
  * ----------------
  */
 #ifdef MARCEL
-typedef struct 
+typedef struct s_mad_mpi_poll_arg
 {
   marcel_pollinst_t pollinst;
   MPI_Request       request;
@@ -78,7 +78,7 @@ typedef struct
 } mad_mpi_poll_arg_t, *p_mad_mpi_poll_arg_t;
 #endif /* MARCEL */
 
-typedef struct
+typedef struct s_mad_mpi_driver_specific
 {
   TBX_SHARED;
   int nb_adapter;
@@ -90,21 +90,24 @@ typedef struct
 #endif /* MARCEL */
 } mad_mpi_driver_specific_t, *p_mad_mpi_driver_specific_t;
 
-typedef struct
+typedef struct s_mad_mpi_adapter_specific
 {
+  int dummy;
 } mad_mpi_adapter_specific_t, *p_mad_mpi_adapter_specific_t;
 
-typedef struct
+typedef struct s_mad_mpi_channel_specific
 {
   MPI_Comm communicator;
 } mad_mpi_channel_specific_t, *p_mad_mpi_channel_specific_t;
 
-typedef struct
+typedef struct s_mad_mpi_connection_specific
 {
+  int dummy;
 } mad_mpi_connection_specific_t, *p_mad_mpi_connection_specific_t;
 
-typedef struct
+typedef struct s_mad_mpi_link_specific
 {
+  int dummy;
 } mad_mpi_link_specific_t, *p_mad_mpi_link_specific_t;
 
 /*

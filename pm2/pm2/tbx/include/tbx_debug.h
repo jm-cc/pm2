@@ -23,6 +23,10 @@
 
 #ifndef PM2DEBUG_EST_DEF
 #define PM2DEBUG_EST_DEF
+#ifndef PM2DEBUG
+/* for fprintf & stderr */
+#include <stdio.h>
+#endif
 
 #include "pm2_profile.h"
 
@@ -257,7 +261,7 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 
 #else // else if not PM2DEBUG
 
-#define LOG(str, args...)
+#define LOG(str, args...)  (void)(0)
 #define LOG_IN()           PROF_IN()
 #define LOG_OUT()          PROF_OUT()
 #define LOG_RETURN(val)    do { PROF_OUT(); return (val); } while (0)

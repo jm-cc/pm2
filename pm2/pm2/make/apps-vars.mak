@@ -19,10 +19,6 @@ endif
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/apps-libs.mak
-endif
-
 all:
 
 SRC_DIR := $(CURDIR)
@@ -42,6 +38,7 @@ APP_BIN := $(APP_BUILDDIR)/bin
 APP_OBJ := $(APP_BUILDDIR)/obj
 APP_ASM := $(APP_BUILDDIR)/asm
 APP_DEP := $(APP_BUILDDIR)/dep
+APP_CPP := $(APP_BUILDDIR)/cpp
 
 # Sources, objets et dependances
 SOURCES :=  $(wildcard $(SRC_DIR)/*.c)

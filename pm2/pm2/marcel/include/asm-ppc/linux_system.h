@@ -54,10 +54,9 @@
  * sequential memory pages only.
  */
 
-#error "to write !"
-#define ma_mb()
-#define ma_rmb()	ma_mb()
-#define ma_wmb()	ma_mb()
+#define ma_mb()		__asm__ __volatile__ ("sync" : : : "memory")
+#define ma_rmb()	__asm__ __volatile__ ("sync" : : : "memory")
+#define ma_wmb()	__asm__ __volatile__ ("eieio" : : : "memory")
 #define ma_read_barrier_depends()	do { } while(0)
 
 #ifdef MA__LWPS

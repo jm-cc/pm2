@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.3  2000/03/01 11:03:49  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.2  2000/01/31 15:59:25  oaumage
 - ajout de aligned_malloc
 
@@ -48,7 +51,7 @@ ______________________________________________________________________________
  * ------------
  */
 #undef DEBUG
-#include <tbx.h>
+#include "tbx.h"
 #define DEFAULT_BLOCK_NUMBER 1024
 
 /* 

@@ -34,14 +34,16 @@
 #
 
 LIBRARY=pm2
+#LIBNAME=$(LIBRARY)
 
-.PHONY: default
-default:
+#$(LIBRARY)_CC=gcc
+#$(LIBRARY)_AS=gcc
 
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/dsm-specific.mak
+endif
 
 LIB_REP_TO_BUILD += $(LIB_GEN_INC)
 
@@ -50,9 +52,6 @@ COMMON_DEPS += $(LIB_GEN_INC)/dsm_page_size.h
 clean: clean-bin
 
 include $(PM2_ROOT)/make/libs-rules.mak
-
-default:
-	$(MAKE) -C $(PM2_ROOT)
 
 $(LIB_GEN_INC)/dsm_page_size.h:
 	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}

@@ -88,7 +88,11 @@ TBX_OBJECTS	:=	$(TBX_REG_OBJECTS)
 TBX_LIB		=	$(TBX_LIBD)/libtbx.a
 TBX_LLIB	=	$(ARCHDLIB)
 
+ifdef MAD_ALONE
+TBX_CC          =       $(MAD_STANDALONE_CC)
+else
 TBX_CC		=	gcc
+endif
 
 TBX_CFLAGS	=	$(TBX_OPTIONS) $(PM2_FLAGS) \
 			-I$(TBX_INC) -I$(MAD_ROOT)/include \

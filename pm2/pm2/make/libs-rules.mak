@@ -37,6 +37,11 @@
 #---------------------------------------------------------------------
 libs: $(LIBRARY)
 
+# if someone do 'make' in an module directory, ...
+#---------------------------------------------------------------------
+no_goal:
+	$(MAKE) -C $(PM2_ROOT)
+
 # Regles de preprocessing
 #---------------------------------------------------------------------
 .PHONY: preproc fut
@@ -47,6 +52,7 @@ fut: $(LIB_FUT)
 # La librairie
 #---------------------------------------------------------------------
 #    Note: utilite de cette regle ?
+# Pouvoir faire 'make marcel' dans le répertoire marcel...
 $(LIBRARY):
 
 # Regles communes
@@ -98,18 +104,15 @@ showflavor:
 # - Construction des repertoires destination
 # - inclusion des dependances
 #---------------------------------------------------------------------
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 
 # Target subdirectories
 DUMMY_BUILD :=  $(foreach REP, $(LIB_REP_TO_BUILD), $(shell mkdir -p $(REP)))
-
 ifneq ($(wildcard $(LIB_DEPENDS)),)
 include $(wildcard $(LIB_DEPENDS))
 endif # LIB_DEPENDS
 
-endif # !clean
-endif # !distclean
+endif # $(MAKECMDGOALS)
 
 # Dependances communes
 #---------------------------------------------------------------------
@@ -207,12 +210,12 @@ examplesclean:
 		$(MAKE) -C examples clean ; \
 	fi
 
-distclean:
-	$(COMMON_CLEAN)$(RM) -r build $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)*
-	@set -e; \
-	if [ -d examples ]; then \
-		$(MAKE) -C examples distclean ; \
-	fi
+#distclean:
+#	$(COMMON_CLEAN)$(RM) -r build $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)*
+#	@set -e; \
+#	if [ -d examples ]; then \
+#		$(MAKE) -C examples distclean ; \
+#	fi
 
 # Exemples
 #---------------------------------------------------------------------
@@ -244,6 +247,14 @@ endif
 	@echo "  examples: build the example of this module (if any)"
 	@echo "  help: this help"
 	@echo "  clean: clean module source tree for current flavor"
-	@echo "  distclean: clean module source tree for all flavors"
+#	@echo "  distclean: clean module source tree for all flavors"
+
+# Regle de construction du cache de configuration de la librairie
+#---------------------------------------------------------------------
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
+$(PM2_MAK_DIR)/$(LIBRARY)-config.mak: $(LIB_STAMP_FLAVOR)
+	@echo "Generating $@"
+	@$(PM2_CONFIG) --gen_mak $(LIBRARY)
+endif
 
 ######################################################################

@@ -1,6 +1,6 @@
 \chapter{Customizing and debugging PM2}
 
-\stamp $Id: customizing.tex,v 1.3 2001/04/17 13:22:11 bouge Exp $
+\stamp $Id: customizing.tex,v 1.4 2001/04/18 15:13:12 bouge Exp $
 
 \section{Introducing PM2 flavors}
 
@@ -106,7 +106,7 @@ feeling somehow unsatisfied with it, almost frustrated. No problem:
 PM2 has something for you: \|ezflavor|! (To be pronounced:
 \emph{ee-zee-flavor}.)
 
-The \|ezflavor| is a graphic interface to list, modify, check,
+The \|ezflavor| utility is a graphic interface to list, modify, check,
 regenerate flavors all in once. As it is highly dependent on the
 operating system you are running, you first have to compile it:
 \begin{shell}
@@ -124,7 +124,7 @@ from different platform without conflict.
 \begin{center}
 \includegraphics[width=0.7\linewidth]{Figures/ezflavor.eps}
 \end{center}
-\caption{The \|ezflavor| graphic interface to manage PM2 flavors}
+\caption{The \|ezflavor| graphic interface to manage PM2 flavors.}
 \label{fig:ezflavor}
 \end{figure}
 
@@ -149,7 +149,7 @@ Load in the current flavor \|pm2|.
   you can observe that the \|marcel_main| option is on, which
   specifies that the \|main| function of the C~program is provided by
   PM2 (actually, by Marcel). The user only specifies the auxiliary
-  \|pm2_main| function, which is called by the real main function
+  \|pm2_main| function, which is called by the real \|main| function
   after some initialization. See for instance
   program~\ref{prog:hello}.
   
@@ -159,8 +159,16 @@ Load in the current flavor \|pm2|.
 
 \end{itemize}
 
+\begin{figure}
+\begin{center}
+\includegraphics[height=0.4\textheight]{Figures/options.eps}
+\end{center}
+\caption{The \|Common options| window of the \|ezfalvor| utility.}
+\label{fig:options}
+\end{figure}
+
 Assume now that the real PM2 you are striving after is a PM2 with
-fully-fledged debugging facilities. That right: what you need is a
+fully-fledged debugging facilities. That's right: what you need is a
 \|pm2-debug| flavor, man! 
 
 Check in the \|debug| option in the \|pm2| module.  Do
@@ -218,11 +226,20 @@ Isoaddr exited
 \end{shell}
 
 \begin{warning}
-  be careful that the simple Makefile of Figure~\ref{prog:Makefile1}
+  Be careful that the simple Makefile of Figure~\ref{prog:Makefile1}
   is not able to spot that the flavor has been modified. You will have
   to explicitly delete the object file to create a fresh, consistent
   one. 
 \end{warning}
+
+It is often interesting to enable some options for \emph{all} modules
+at the same time, together with the application. This holds for the
+\|debug|, \|gdb|, \|opt| (optimization) and \|profile| options.
+\|ezflavor| provides such a facility: click on the \|View|/\|Common
+options| menu to open a specialized window. An example is displayed
+on~Figure~\ref{fig:options}.
+
+
 
 \paragraph{A note to the wizards.}
 
@@ -258,7 +275,7 @@ You can :
 
 \begin{note}
   LB to RN: How should the user could recover the setting of the
-  initial \|pm2| flavors?
+  initial \|pm2| flavors, in case of accidental corruption?
 \end{note}
 
 
@@ -293,9 +310,13 @@ ravel% setenv PM2_FLAVOR pm2-debug
 ravel% cd ${PM2_ROOT}
 ravel% make
 \end{shell}
-Then, recompile the programs of interest with this new flavor. (Make
-sure that they are \emph{actually} recompiled: better delete the
-objects files by hand!) 
+Then, recompile the programs of interest with this new flavor. 
+
+\begin{warning}
+  Make sure that they are \emph{actually} recompiled: better delete
+  the objects files by hand!
+\end{warning}
+
 
 A second step is to insert additional trace outputs within your source
 code. Your are strongly advised to print on the \|stderr| error
@@ -304,23 +325,23 @@ use the \emph{thread-safe} version of \|(f)printf|, called \|t(f)printf|.
 This will prevent multiple Marcel thread to print concurrently,
 leading to scrambled text. Use the \|pm2logs| utility to view the
 remote logs. It may be useful to force logging also on the main
-node~0.: use \|pm2load -l|. Then, \|pm2logs| will recover exactly one
+node~0: use \|pm2load -l|. Then, \|pm2logs| will recover exactly one
 log per (logical) node.
 
 You may also require ``immediate'' output from remote node by using
 the \|pm2_(f)printf| routine. Each time it is called, the output is
 packed into a buffer and sent to main node~0 to be immediately
-displayed there. The output is prefixed by \|[t<i>]|, where |<i>| is
-the logical number of the origin node.  This is quite convenient, but
+displayed there. The output is prefixed by \|[t<i>]|, where \|<i>| is
+the logical number of the originator node.  This is quite convenient, but
 the user has to be aware that the additional messages generated in
 this way \emph{do interfere} with the original communication scheme of
 the program under debugging. In particular, they may generate
-additional deadlocks! Also, these additional message have to be
+additional deadlocks! Also, these additional messages have to be
 considered when designing the termination scheme of the program. The
 \|pm2_halt| function should not be called by a node \emph{before} it
 is guaranteed that all communications, whatever their origin, have
 been handled by the daemon service threads. Deadlock may otherwise
-occurred.
+occur.
 
 The \|pm2load| utility honors a number of options.  The most useful
 one in a first place is \|pm2load -d|. It can be used with any flavor,
@@ -352,7 +373,7 @@ xterm*background: White
 \end{shell}
 Once it is done, reload your \|.Xdefaults| file by issuing:
 \begin{shell}
-xrdb -load < ${HOME}/.Xdefaults
+ravel% xrdb -merge < ${HOME}/.Xdefaults
 \end{shell}
 \end{warning}
 
@@ -366,3 +387,26 @@ contents of dynamic, local variables.
 \begin{note}
   LB to RN: Is the paragraph above correct?
 \end{note}
+
+The user should be aware that some of the names of PM2 routine are in
+fact on-line definitions in internal header files. Thus, one has to
+know the \emph{actual} name of the routine to set a breakpoint. The
+following table provides the some useful translations.
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+External name & Real name & Origin module \\
+\hline
+\|pm2_init|     & \|common_init|        & \|pm2| \\
+\|pm2_main|     & \|marcel_main|        & \|pm2| \\
+\hline
+\|tprintf|      & \|marcel_printf|      & \|tbx| \\
+\|tfprintf|     & \|marcel_fprintf|     & \|tbx| \\
+\hline
+\|lock_task|    & \|ma_lock_task|       & \|marcel| \\
+\|unlock_task|  & \|ma_unlock_task|     & \|marcel| \\
+\hline
+\end{tabular}
+\end{center}
+
+

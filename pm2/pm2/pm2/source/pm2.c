@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.30  2000/11/16 13:24:09  oaumage
+- mise a jour initialisation
+
 Revision 1.29  2000/11/15 21:32:40  rnamyst
 Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
 
@@ -436,7 +439,7 @@ void pm2_exit(void)
 
   mdebug("pm2_thread_exit completed\n");
 
-  mad_exit();
+  pm2_mad_exit();
 
   mdebug("mad_exit completed\n");
 

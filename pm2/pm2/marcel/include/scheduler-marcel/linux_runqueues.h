@@ -430,17 +430,21 @@ static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2
 {
 	ma_local_bh_disable();
 
-	if (rq1 == rq2)
-		ma_spin_lock(&rq1->lock);
-	else {
-		if (rq1 < rq2) {
-			ma_spin_lock(&rq1->lock);
-			_ma_raw_spin_lock(&rq2->lock);
-		} else {
-			ma_spin_lock(&rq2->lock);
-			_ma_raw_spin_lock(&rq1->lock);
-		}
-	}
+	double_rq_lock(rq1, rq2);
+}
+
+/*
+ * lock_second_rq: locks another runqueue. Of course, addresses must be in
+ * proper order
+ */
+#section marcel_functions
+static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+#section marcel_inline
+static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	MA_BUG_ON(rq1 > rq2);
+	if (rq1 < rq2)
+		_ma_raw_spin_lock(&rq2->lock);
 }
 
 /*
@@ -463,10 +467,7 @@ static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *r
 #section marcel_inline
 static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
-	ma_spin_unlock(&rq1->lock);
-	if (rq1 != rq2)
-		_ma_raw_spin_unlock(&rq2->lock);
-
+	double_rq_unlock(rq1, rq2);
 	ma_local_bh_enable();
 }
 

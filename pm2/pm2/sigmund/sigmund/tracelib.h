@@ -38,4 +38,12 @@ extern int get_idle_slices();
 
 extern int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end, u_64 *time);
 
+extern int is_a_valid_proc(int proc);
+
+extern int is_a_valid_cpu(int logic);
+
+extern int max_cpu();
+
+extern u_64 get_begin_lwp(int lwp);
+
 #endif

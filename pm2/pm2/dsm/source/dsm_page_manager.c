@@ -34,6 +34,8 @@
 #include "dsm_bitmap.h"
 #include "isoaddr.h"
 #include "tbx.h"
+#include "dsm_protocol_policy.h"
+
 
 #define DSM_PAGEALIGN(X) ((((int)(X))+(DSM_PAGE_SIZE-1)) & ~(DSM_PAGE_SIZE-1))
 #define USER_DATA_SIZE 8
@@ -59,13 +61,11 @@ typedef struct _dsm_page_table_entry
   dsm_access_t     access;
   dsm_access_t     pending_access;
   marcel_cond_t    cond;
-  marcel_cond_t    read_page_cond;
-  marcel_cond_t    write_page_cond;
   marcel_cond_t    cond2;
   marcel_sem_t     sem;
   unsigned long    size;
   void             *addr;
-  int              protocol;
+  dsm_proto_t      protocol;
   dsm_bitmap_t     bitmap;
   int user_data1[USER_DATA_SIZE];
   void *user_data2;
@@ -94,8 +94,6 @@ static int _dsm_page_protect_arg = 0;
 static dsm_user_data1_init_func_t _dsm_user_data1_init_func;
 static dsm_user_data2_init_func_t _dsm_user_data2_init_func;
 
-static int _default_dsm_protocol = -1;
-
 static int __inline__ _dsm_get_prot(dsm_access_t access) __attribute__ ((unused));
 static int __inline__ _dsm_get_prot(dsm_access_t access)
 {
@@ -109,13 +107,6 @@ static int __inline__ _dsm_get_prot(dsm_access_t access)
 
 /**********************************************************************/
 /* Functions needed by the hierarchical consistency protocol */
-
-/**********************************************************************/
-int
-dsm_get_default_protocol (void)
-{
-   return _default_dsm_protocol;
-}
 
 /**********************************************************************/
 dsm_node_t *
@@ -137,44 +128,6 @@ void
 dsm_set_twin_ptr (const dsm_page_index_t index, void * const ptr)
 {
    dsm_page_table[index]->twin = ptr;
-   return;
-}
-
-/**********************************************************************/
-/* wait for a given page to arrive in read mode (at least) */
-void
-dsm_wait_for_read_page (const dsm_page_index_t index)
-{
-   marcel_cond_wait(&(dsm_page_table[index]->read_page_cond),
-                    &(dsm_page_table[index]->mutex));
-   return;
-}
-
-/**********************************************************************/
-/* notify the page arrived in read mode */
-void
-dsm_signal_read_page (const dsm_page_index_t index)
-{
-   marcel_cond_broadcast(&(dsm_page_table[index]->read_page_cond));
-   return;
-}
-
-/**********************************************************************/
-/* wait for a given page to arrive in write mode */
-void
-dsm_wait_for_write_page (const dsm_page_index_t index)
-{
-   marcel_cond_wait(&(dsm_page_table[index]->write_page_cond),
-                    &(dsm_page_table[index]->mutex));
-   return;
-}
-
-/**********************************************************************/
-/* notify the page arrived in write mode */
-void
-dsm_signal_write_page (const dsm_page_index_t index)
-{
-   marcel_cond_broadcast(&(dsm_page_table[index]->write_page_cond));
    return;
 }
 
@@ -316,8 +269,6 @@ static __inline__ void _dsm_global_vars_init(int my_rank, int confsize)
 
   dsm_local_node_rank = (dsm_node_t)my_rank;
   dsm_nb_nodes = confsize;
-  if ( _default_dsm_protocol == -1 )
-     _default_dsm_protocol = LI_HUDAK;
 
   /* global vars for the static area: */ 
   static_dsm_base_addr = (char *) DSM_PAGEALIGN(&dsm_data_begin);
@@ -645,8 +596,6 @@ void dsm_page_table_init(int my_rank, int confsize)
       marcel_mutex_init(&dsm_page_table[i]->mutex, NULL);
       marcel_mutex_init(&dsm_page_table[i]->mutex2, NULL);
       marcel_cond_init(&dsm_page_table[i]->cond, NULL);
-      marcel_cond_init(&dsm_page_table[i]->read_page_cond, NULL);
-      marcel_cond_init(&dsm_page_table[i]->write_page_cond, NULL);
       marcel_cond_init(&dsm_page_table[i]->cond2, NULL);
       marcel_sem_init(&dsm_page_table[i]->sem, 0);
       dsm_page_table[i]->size = DSM_PAGE_SIZE;
@@ -660,7 +609,7 @@ void dsm_page_table_init(int my_rank, int confsize)
 	(*_dsm_user_data2_init_func)(&dsm_page_table[i]->user_data2);
       else
 	dsm_page_table[i]->user_data2 = NULL;
-      dsm_page_table[i]->protocol = _default_dsm_protocol;
+      dsm_page_table[i]->protocol = DSM_DEFAULT_PROTOCOL;
 
       /* pjh: to avoid repeated allocation */
       dsm_page_table[i]->bitmap = NULL;
@@ -1194,7 +1143,7 @@ void dsm_alloc_page_entry(dsm_page_index_t index)
 }
 
 
-void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map)
+void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, dsm_proto_t protocol, void *addr, size_t size, boolean map)
 {
 #ifdef DSM_TABLE_TRACE
   fprintf(stderr,"Enabling table entry for page %ld, owner = %d , prot = %d, addr = %p, size = %d (I am %p)\n", index, owner, protocol, addr, size, marcel_self());
@@ -1211,8 +1160,6 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
   marcel_mutex_init(&dsm_page_table[index]->mutex, NULL);
   marcel_mutex_init(&dsm_page_table[index]->mutex2, NULL);
   marcel_cond_init(&dsm_page_table[index]->cond, NULL);
-  marcel_cond_init(&dsm_page_table[index]->read_page_cond, NULL);
-  marcel_cond_init(&dsm_page_table[index]->write_page_cond, NULL);
   marcel_cond_init(&dsm_page_table[index]->cond2, NULL);
   marcel_sem_init(&dsm_page_table[index]->sem, 0);
   dsm_page_table[index]->size = size;//DSM_PAGE_SIZE;
@@ -1225,10 +1172,10 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
   else
     dsm_page_table[index]->user_data2 = NULL;
 
-  if (protocol != DEFAULT_DSM_PROTOCOL)
-    dsm_page_table[index]->protocol = protocol;
+  if ( protocol == DSM_NO_PROTOCOL )
+     dsm_page_table[index]->protocol = DSM_DEFAULT_PROTOCOL;
   else
-    dsm_page_table[index]->protocol = _default_dsm_protocol;
+     dsm_page_table[index]->protocol = protocol;
 
   switch (_dsm_page_protect_mode) {
   case DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS: dsm_enable_access(index, (owner == dsm_local_node_rank)?WRITE_ACCESS:NO_ACCESS, map);break;
@@ -1243,22 +1190,23 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
 }
 
 
-void dsm_set_default_protocol(int protocol)
-{
-  _default_dsm_protocol = protocol;
-}
 
-
-void dsm_set_page_protocol(dsm_page_index_t index, int protocol)
+void
+dsm_set_page_protocol (const dsm_page_index_t index, const dsm_proto_t protocol)
 {
-  dsm_page_table[index]->protocol = protocol;
+   assert ( protocol != DSM_NO_PROTOCOL );
+   assert ( index != NO_PAGE );
+   dsm_page_table[index]->protocol = protocol;
 }
 
 
 dsm_proto_t
 dsm_get_page_protocol (const dsm_page_index_t index)
 {
-   return dsm_page_table[index]->protocol;
+   if ( dsm_page_table[index]->protocol == DSM_DEFAULT_PROTOCOL )
+      return dsm_get_default_protocol();
+   else
+      return dsm_page_table[index]->protocol;
 }
 
 

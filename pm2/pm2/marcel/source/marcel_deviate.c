@@ -159,44 +159,25 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 { 
   LOG_IN();
 
-  RAISE(NOT_IMPLEMENTED);
-#if 0
-TODO: Vieux code, à réécrire
-
   lock_task();
-
-  if(pid == marcel_self()) {
-    // Premier cas : auto-déviation !
-
-    if(pid->not_deviatable) {
-
+  if (pid == marcel_self()) {
+    if (pid->not_deviatable) {
       marcel_lock_acquire(&deviate_lock);
-
       marcel_deviate_record(pid, h, arg);
-
       marcel_lock_release(&deviate_lock);
-
       unlock_task();
     } else {
       unlock_task();
-
       (*h)(arg);
     }
-
+    LOG_OUT();
     return;
   }
-
-#ifndef MA__ONE_QUEUE
-  // Pour l'instant, le SMP-multi files n'est pas supporté...
-  RAISE(NOT_IMPLEMENTED);
-#endif
-
   // On prend ce verrou très tôt pour s'assurer que la tâche cible ne
   // progresse pas au-delà d'un 'disable_deviation' pendant qu'on
   // l'inspecte...
   marcel_lock_acquire(&deviate_lock);
-
-  if(pid->not_deviatable) {
+  if (pid->not_deviatable) {
     // Le thread n'est pas "déviable" en ce moment...
 
     marcel_deviate_record(pid, h, arg);
@@ -207,6 +188,15 @@ TODO: Vieux code, à réécrire
     LOG_OUT();
     return;
   }
+  RAISE(NOT_IMPLEMENTED);
+
+#if 0
+TODO: Vieux code, à réécrire
+
+#ifndef MA__ONE_QUEUE
+  // Pour l'instant, le SMP-multi files n'est pas supporté...
+  RAISE(NOT_IMPLEMENTED);
+#endif
 
   // En premier lieu, il faut empêcher la tâche 'cible' de changer
   // d'état

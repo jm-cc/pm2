@@ -169,3 +169,16 @@ int get_idle_slices()
   return timing.idle_slices;
 }
 
+int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end, u_64 *time)
+{
+  int r;
+  struct function_time_list_st fct_time;
+  r = filter_get_function_time(&fct_time);
+  *code = fct_time.code;
+  *type = fct_time.type;
+  *thread = fct_time.thread;
+  *begin = fct_time.begin;
+  *end = fct_time.end;
+  *time = fct_time.time;
+  return r;
+}

@@ -398,7 +398,6 @@ mad_session_cons(void)
   object = TBX_CALLOC(1, sizeof(mad_session_t));
 
   object->process_rank = -1;
-
   LOG_OUT();
 
   return object;
@@ -412,8 +411,8 @@ mad_settings_cons(void)
 
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_settings_t));
-   LOG_OUT();
-
+  LOG_OUT();
+   
   return object;
 }
 

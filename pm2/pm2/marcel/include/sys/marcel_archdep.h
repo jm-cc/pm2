@@ -23,12 +23,14 @@
 #ifdef MA__LWPS
 
 #if defined(SOLARIS_SYS)
+
 #include <thread.h>
 static __inline__ void SCHED_YIELD(void)
 {
   thr_yield();
 }
 #elif defined(LINUX_SYS)
+
 #include <time.h>
 #include <unistd.h>
 #include <sched.h>
@@ -58,6 +60,10 @@ static __inline__ void SCHED_YIELD(void)
   sched_yield();
 }
 #endif
+
+#else // MA__LWP
+
+#define SCHED_YIELD()  do {} while(0)
 
 #endif // MA__LWP
 

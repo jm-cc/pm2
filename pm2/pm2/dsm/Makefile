@@ -34,10 +34,6 @@
 #
 
 LIBRARY=dsm
-#LIBNAME=dsm
-
-#marcel_CC=gcc
-#marcel_AS=gcc
 
 .PHONY: default
 default:

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.18  2000/07/04 14:01:12  gantoniu
+Added support for DSM located stacks.
+
 Revision 1.17  2000/06/16 09:29:03  cperez
 Add  marcel_set_stack_jump.
 
@@ -311,6 +314,15 @@ static __inline__ void marcel_set_stack_jump(marcel_t m)
   *(marcel_t *)((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *)) = m;
 }
 #endif
+
+#ifdef DSM_SHARED_STACK
+extern volatile marcel_t __next_thread;
+
+static __inline__ marcel_t marcel_get_cur_thread() {
+  return __next_thread;
+}
+#endif
+ 
 
 /*********************************************************************
  * thread_key 

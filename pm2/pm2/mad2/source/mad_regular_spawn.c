@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.12  2000/09/12 15:29:19  oaumage
+- correction -d
+
 Revision 1.11  2000/09/12 14:55:14  rnamyst
 Added support for generating .i files in Makefiles
 
@@ -369,7 +372,7 @@ mad_slave_spawn(int                *argc,
       if (!display)
 	FAILURE("DISPLAY variable undefined");
 
-      sprintf(prefix, "pm2_gdb_load", display);
+      sprintf(prefix, "env DISPLAY=%s pm2_gdb_load", display);
     }
   else
     {

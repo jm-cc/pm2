@@ -303,18 +303,6 @@ _PRIVATE_ void marcel_insert_task(marcel_t t);
 _PRIVATE_ marcel_t marcel_radical_next_task(void);
 _PRIVATE_ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, __lwp_t *lwp);
 
-#ifdef USE_VIRTUAL_TIMER
-
-#define MARCEL_TIMER_SIGNAL   SIGVTALRM
-#define MARCEL_ITIMER_TYPE    ITIMER_VIRTUAL
-
-#else
-
-#define MARCEL_TIMER_SIGNAL   SIGALRM
-#define MARCEL_ITIMER_TYPE    ITIMER_REAL
-
-#endif
-
-void marcel_update_time(marcel_t cur);
+_PRIVATE_ int marcel_check_sleeping(void);
 
 #endif

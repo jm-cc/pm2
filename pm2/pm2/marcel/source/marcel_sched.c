@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.25  2000/04/25 14:39:38  vdanjean
+remove debug stuff
+
 Revision 1.24  2000/04/21 11:19:28  vdanjean
 fixes for actsmp
 
@@ -733,7 +736,6 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
     *blocked = FALSE;
 }
 
-int flag=0;
 /* Remove from ready queue and insert into waiting queue
    (if it is BLOCKED) or delayed queue (if it is WAITING). */
 marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
@@ -742,9 +744,7 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
   DEFINE_CUR_LWP( , , );
   SET_CUR_LWP(GET_LWP(cur));
 
-  if (flag) mdebug("zone0\n");
   sched_lock(cur_lwp);
-  if (flag) mdebug("zone1\n");
 
   one_active_task_less(t, cur_lwp);
 #if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)

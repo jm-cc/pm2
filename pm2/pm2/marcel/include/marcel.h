@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.12  2000/04/28 18:33:34  vdanjean
+debug actsmp + marcel_key
+
 Revision 1.11  2000/04/28 10:40:49  rnamyst
 Added the marcel_cond_timedwait primitive
 
@@ -213,7 +216,8 @@ void marcel_run(marcel_t pid, any_t arg);
 
 typedef int marcel_key_t;
 
-int marcel_key_create(marcel_key_t *key, void (*func)(any_t));
+int marcel_key_create(marcel_key_t *key, marcel_key_destructor_t any_t);
+int marcel_key_delete(marcel_key_t key);
 
 _PRIVATE_ extern volatile unsigned _nb_keys;
 static __inline__ int marcel_setspecific(marcel_key_t key, any_t value) __attribute__ ((unused));
@@ -227,11 +231,13 @@ static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
    return 0;
 }
 
+extern volatile int marcel_key_present[MAX_KEY_SPECIFIC];
+
 static __inline__ any_t marcel_getspecific(marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t marcel_getspecific(marcel_key_t key)
 {
 #ifdef MA__DEBUG
-   if((key < 0) || (key >= _nb_keys))
+   if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
       RAISE(CONSTRAINT_ERROR);
 #endif
    return marcel_self()->key[key];
@@ -241,7 +247,7 @@ static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t 
 static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
 #ifdef MA__DEBUG
-   if((key < 0) || (key >= _nb_keys))
+   if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
       RAISE(CONSTRAINT_ERROR);
 #endif
    return &pid->key[key];

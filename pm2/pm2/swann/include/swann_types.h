@@ -19,8 +19,8 @@
  * -------------
  */
 
-#ifndef __SWANN_TYPES_H
-#define __SWANN_TYPES_H
+#ifndef SWANN_TYPES_H
+#define SWANN_TYPES_H
 
 typedef enum
 {
@@ -31,4 +31,4 @@ typedef enum
 typedef int swann_net_client_id_t, *p_swann_net_client_id_t;
 typedef int swann_net_server_id_t, *p_swann_net_server_id_t;
 
-#endif /* __SWANN_TYPES_H */
+#endif /* SWANN_TYPES_H */

@@ -19,8 +19,8 @@
  * -----------
  */
 
-#ifndef __SWANN_RUN_H
-#define __SWANN_RUN_H
+#ifndef SWANN_RUN_H
+#define SWANN_RUN_H
 
 typedef enum
 {
@@ -41,4 +41,4 @@ typedef struct s_swann_command
   p_swann_file_t         file_err;
 } swann_command_t;
 
-#endif /* __SWANN_RUN_H */
+#endif /* SWANN_RUN_H */

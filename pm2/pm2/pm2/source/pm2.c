@@ -34,12 +34,28 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.19  2000/07/14 16:17:13  gantoniu
+Merged with branch dsm3
+
+
 Revision 1.18  2000/07/06 14:47:19  rnamyst
 Added pm2_push_startup_func
 
 Revision 1.17  2000/07/04 08:14:20  rnamyst
 By default, netserver threads are *not* spawned when only a single
 process is running.
+
+Revision 1.16.6.3  2000/07/12 15:10:47  gantoniu
+*** empty log message ***
+
+Revision 1.16.6.2  2000/07/04 17:31:46  gantoniu
+I don't remember.
+
+Revision 1.16.6.1  2000/06/13 16:44:11  gantoniu
+New dsm branch.
+
+Revision 1.16.4.1  2000/06/07 09:19:39  gantoniu
+Merging new dsm with current PM2 : first try.
 
 Revision 1.16  2000/06/02 09:57:44  rnamyst
 Removed some LOG_IN/LOG_OUT calls
@@ -69,6 +85,8 @@ ______________________________________________________________________________
 #include "sys/netserver.h"
 #include "isomalloc.h"
 #include "block_alloc.h"
+#include "dsm_slot_alloc.h"
+#include "pm2_sync.h"
 
 #include <fcntl.h>
 #include <stdarg.h>
@@ -209,6 +227,7 @@ void pm2_init(int *argc, char **argv)
   pm2_thread_init();
   pm2_printf_init();
   pm2_migr_init();
+  pm2_sync_init(__pm2_self, __pm2_conf_size);
 
 #ifdef DSM
   dsm_pm2_init(__pm2_self, __pm2_conf_size);
@@ -433,5 +452,19 @@ void pm2_completion_signal_begin(pm2_completion_t *c)
 void pm2_completion_signal_end(void)
 {
   pm2_rawrpc_end();
+}
+
+
+/************** pm2_malloc **********************/
+
+void *pm2_malloc(size_t size, isoaddr_attr_t *attr)
+{
+  switch(attr->status){
+  case ISO_SHARED: return dsm_slot_alloc(size, NULL, NULL, attr); break;
+  case ISO_PRIVATE:
+  case ISO_DEFAULT:return block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size, attr); break;
+  default: RAISE(NOT_IMPLEMENTED);
+  }
+  return (void *)NULL;
 }
 

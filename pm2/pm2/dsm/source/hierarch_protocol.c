@@ -1,9 +1,9 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.7 2002/10/26 15:59:56 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.10 2002/10/27 17:11:37 slacour Exp $
  */
 
-/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+/* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
 
 /* Hierarchical protocol, taking into account the network topology in
  * the consistency operations.  This protocol implements the "partial
@@ -37,6 +37,9 @@
 /**********************************************************************/
 /* PRIVATE DATA STRUCTURES                                            */
 /**********************************************************************/
+
+/* a boolean type */
+typedef enum { SL_FALSE, SL_TRUE } bool_t;
 
 /* linked list of pages */
 typedef struct pg_elem_struct pg_elem_t;
@@ -206,18 +209,17 @@ insert_page_into_pg_list (const dsm_page_index_t index,
 
 /**********************************************************************/
 /* send the invalidations to the nodes in the copyset, except to the
- * diffing node; The page entry is already locked.  The locks
- * remote_inval_ack_lock, local_inval_ack_lock, diff_ack_lock are
- * assumed to be locked. */
+ * diffing node; The page entry is already locked. */
 static void
 invalidate_copyset (dsm_page_index_t index, dsm_node_t reply_node,
                     token_lock_id_t lck_id, int * const local_inv_ack,
-                    int * const remote_inv_ack)
+                    int * const remote_inv_ack, const cs_stay_t cs_stay)
 {
    int i;
    int copyset_sz = dsm_get_copyset_size(index);
    dsm_node_t * const copyset = dsm_get_copyset(index);
-   const unsigned int reply_node_clr = topology_get_cluster_color(reply_node);
+   const int reply_node_clr = topology_get_cluster_color(reply_node);
+   bool_t node_was_in_copyset = SL_FALSE;
 
    IN;
    assert ( index != NO_PAGE );
@@ -256,10 +258,15 @@ invalidate_copyset (dsm_page_index_t index, dsm_node_t reply_node,
             TRACE("sending inval to remote node %d", nd);
          }
       }
+      else
+         node_was_in_copyset = SL_TRUE;
    }
 
    /* empty the copyset */
    dsm_set_copyset_size(index, 0);
+   if ( node_was_in_copyset == SL_TRUE && cs_stay == STILL_IN_COPYSET )
+      dsm_add_to_copyset(index, reply_node);
+
 
    OUT;
    return;
@@ -360,6 +367,7 @@ apply_diffs (const dsm_page_index_t index)
    IN;
    assert ( index != NO_PAGE );
    assert ( page != NULL );
+   assert ( pg_access != NO_ACCESS );
 
    /* setting this page in WRITE access is not a problem: even another
     * thread in this process modifies some part of the page (on the
@@ -542,13 +550,9 @@ recv_diff_func (void * const unused)
    /* This code (invalidation of the copyset) could be moved before
     * the application of the diffs (to save a little time) */
    invalidate_copyset(index, reply_node, lck_id, &local_ack_num,
-                      &remote_ack_num);
+                      &remote_ack_num, cs_stay);
    TRACE("invalidated local copyset with %d nodes", local_ack_num);
    TRACE("invalidated remote copyset with %d nodes", remote_ack_num);
-
-   /* has the diffing node requested to stay in the copyset? */
-   if ( cs_stay == STILL_IN_COPYSET )
-      dsm_add_to_copyset(index, reply_node);
 
    dsm_unlock_page(index);
 
@@ -700,6 +704,7 @@ flush_pending_invalidations (const token_lock_id_t lck_id)
       TRACE("invalidating page %d (lock=%d)", index, lck_id);
       dsm_lock_page(index);
       pg_access = dsm_get_access(index);
+      /* a given page can occur at most once in the "pend_inval_list" */
       assert ( pg_access != NO_ACCESS );
       if ( pg_access == WRITE_ACCESS )
       {
@@ -794,6 +799,7 @@ invalidate_server_func (void * const unused)
    /* The pages are invalidated during synchronization operations
     * (acquire & release) */
    marcel_mutex_lock(&pend_inval_lock);
+   assert ( dsm_get_access(index) != NO_ACCESS );
    insert_page_into_pg_list(index, &pend_inval_list);
    marcel_mutex_unlock(&pend_inval_lock);
 
@@ -833,6 +839,8 @@ recv_inv_ack (void * const unused)
       /* local inv ack recv'd */
       marcel_mutex_lock(&(token_elem->local_inval_ack_lock));
       token_elem->expected_local_invalidations--;
+      /* the acquire and release consistency functions canNOT be
+       * waiting for this condition at the same time: just signal */
       marcel_cond_signal(&(token_elem->local_inval_ack_cond));
       marcel_mutex_unlock(&(token_elem->local_inval_ack_lock));
    }
@@ -842,7 +850,9 @@ recv_inv_ack (void * const unused)
       /* remote inv ack recv'd */
       marcel_mutex_lock(&(token_elem->remote_inval_ack_lock));
       token_elem->expected_remote_invalidations--;
-      marcel_cond_signal(&(token_elem->remote_inval_ack_cond));
+      /* both the acquired and release consistency functions may be
+       * waiting for this condition due to partial unlock: broadcast */
+      marcel_cond_broadcast(&(token_elem->remote_inval_ack_cond));
       marcel_mutex_unlock(&(token_elem->remote_inval_ack_lock));
    }
 
@@ -880,7 +890,7 @@ invalidate_writable_hosted_pages (token_elem_t * const token_elem)
                index, token_elem->lck_id);
          dsm_set_access(index, READ_ACCESS);
          invalidate_copyset(index, pm2_self(), token_elem->lck_id,
-                            &local_inv_ack, &remote_inv_ack);
+                            &local_inv_ack, &remote_inv_ack, OUT_OF_COPYSET);
       }
       assert ( dsm_get_access(index) == READ_ACCESS );
       dsm_unlock_page(index);
@@ -959,21 +969,21 @@ hierarch_proto_read_fault_handler (const dsm_page_index_t index)
       return;
    }
 
-   /* In case another thread has already sent such a page request,
-    * just wait for the page to arrive */
+   /* In case another thread has already sent a page request, just
+    * wait for the page to arrive */
    if ( dsm_get_pending_access(index) == NO_ACCESS )
    {
       TRACE("sending read page req to %d for page %d",
             dsm_get_prob_owner(index), index);
-      dsm_set_pending_access(index, READ_ACCESS);
       dsm_send_page_req(dsm_get_prob_owner(index), index,
                         pm2_self() /* reply to me */, READ_ACCESS, 0 /* tag */);
+      dsm_set_pending_access(index, READ_ACCESS);
    }
 
    /* Wait for the page to arrive */
-   dsm_wait_for_read_page(index);
+   dsm_wait_for_page(index);
    dsm_unlock_page(index);
-   TRACE("recv'd read page %d", index);
+   TRACE("has read access on page %d", index);
    OUT;
    return;
 }
@@ -986,6 +996,7 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
 {
    const dsm_node_t myself = pm2_self();
    const dsm_node_t home = dsm_get_prob_owner(index);
+   dsm_access_t pg_access;
 
    IN;
    assert ( index != NO_PAGE );
@@ -995,8 +1006,9 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
    {
       TRACE("home setting page %d in WRITE access", index);
       dsm_lock_page(index);
-      assert ( dsm_get_access(index) == READ_ACCESS );
-      dsm_set_access(index, WRITE_ACCESS);
+      assert ( dsm_get_access(index) >= READ_ACCESS );
+      if ( dsm_get_access(index) == READ_ACCESS )
+         dsm_set_access(index, WRITE_ACCESS);
       dsm_unlock_page(index);
       OUT;
       return;
@@ -1005,9 +1017,11 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
    marcel_mutex_lock(&modif_list_lock);
    dsm_lock_page(index);
 
+   pg_access = dsm_get_access(index);
+
    /* In case another thread has already requested the page and the
     * page had enough time to arrive */
-   if ( dsm_get_access(index) == WRITE_ACCESS )
+   if ( pg_access == WRITE_ACCESS )
    {
       dsm_unlock_page(index);
       marcel_mutex_unlock(&modif_list_lock);
@@ -1015,26 +1029,36 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
       return;
    }
 
-   /* In case another thread has already sent such a page request,
-    * just wait for the page to arrive */
-   if ( dsm_get_pending_access(index) < WRITE_ACCESS )
+   /* if i already has read access on the page, just make a twin and
+    * set the page in WRITE access mode */
+   if ( pg_access == READ_ACCESS )
    {
-      TRACE("sending write page req to %d for page %d", home, index);
-      dsm_send_page_req(home, index, pm2_self() /* reply to me */,
-                        WRITE_ACCESS, 0 /* tag */);
-      dsm_set_pending_access(index, WRITE_ACCESS);
-      TRACE("inserting page %d into list of modified pages", index);
-      /* insert the page into the list of pages modified by this node */
-      insert_page_into_pg_list(index, &modif_list);
-      /* allocate memory for the twin */
+      assert ( dsm_get_pending_access(index) == NO_ACCESS );
       allocate_twin(index);
+      make_twin(index);
+      dsm_set_access(index, WRITE_ACCESS);
+   }
+   else   /* I have no access to the page */
+   {
+      const dsm_access_t pending_access = dsm_get_pending_access(index);
+
+      assert ( pg_access == NO_ACCESS );
+      if ( pending_access == NO_ACCESS ) 
+         /* the page has not been requested yet */
+         dsm_send_page_req(home, index, pm2_self() /* reply to me */,
+                           WRITE_ACCESS, 0 /* tag */);
+      if ( pending_access != WRITE_ACCESS )
+      {
+         allocate_twin(index);
+         insert_page_into_pg_list(index, &modif_list);
+      }
+      dsm_set_pending_access(index, WRITE_ACCESS);
+      dsm_wait_for_page(index);
    }
 
-   /* wait for the page to arrive */
-   dsm_wait_for_write_page(index);
    dsm_unlock_page(index);
    marcel_mutex_unlock(&modif_list_lock);
-   TRACE("recv'd write page %d", index);
+   TRACE("has write access on page %d", index);
    OUT;
    return;
 }
@@ -1097,45 +1121,24 @@ hierarch_proto_receive_page_server (void * const addr,
    assert ( reply_node < pm2_config_size() );
 
    dsm_lock_page(index);
+   pending_access = dsm_get_pending_access(index);
 
+   TRACE("recv'd page %d from %d", index, reply_node);
+   assert ( dsm_get_access(index) == NO_ACCESS );
+   assert ( pending_access > NO_ACCESS );
    /* the home node is the only one that should reply! */
    assert ( reply_node == dsm_get_prob_owner(index) );
 
-   pending_access = dsm_get_pending_access(index);
-   if ( pending_access == NO_ACCESS )
+   if ( pending_access == READ_ACCESS )
+      dsm_set_access(index, READ_ACCESS);
+   else   /* pending_access == WRITE_ACCESS */
    {
-      /* the page was requested both in read and write modes; it has
-       * already arrived in write mode: nothing to do! */
-      assert ( access == READ_ACCESS );
-      dsm_unlock_page(index);
-      OUT;
-      return;
-   }
-
-   if ( access == READ_ACCESS )
-   {
-      TRACE("recv'd read page %d from %d", index, reply_node);
-      /* the page may have been requested in write mode too */
-      if ( pending_access == READ_ACCESS )
-         dsm_set_pending_access(index, NO_ACCESS);
-      /* the page may have already been received in write mode */
-      if ( dsm_get_access(index) == NO_ACCESS )
-         dsm_set_access(index, READ_ACCESS);
-      dsm_signal_read_page(index);
-   }
-   else   /* access == WRITE_ACCESS */
-   {
-      TRACE("recv'd write page %d from %d", index, reply_node);
-      assert ( pending_access == WRITE_ACCESS );
-      dsm_set_pending_access(index, NO_ACCESS);
-      /* there's only one write request */
-      assert ( dsm_get_access(index) < WRITE_ACCESS );
       dsm_set_access(index, READ_ACCESS);
       make_twin(index);
       dsm_set_access(index, WRITE_ACCESS);
-      dsm_signal_read_page(index);
-      dsm_signal_write_page(index);
    }
+   dsm_set_pending_access(index, NO_ACCESS);
+   dsm_signal_page_ready(index);  /* this is really a Broadcast! */
    dsm_unlock_page(index);
 
    OUT;
@@ -1172,11 +1175,18 @@ hierarch_proto_acquire_func (const token_lock_id_t lck_id)
    marcel_mutex_unlock(&pend_inval_lock);
    marcel_mutex_unlock(&modif_list_lock);
 
+   /* the token lock can't be acquired when local invalidations are
+    * expected; but it can be acquired while remote invalidations are
+    * expected due to partial unlock. */
    assert ( token_elem->expected_local_invalidations == 0 );
-   assert ( token_elem->expected_remote_invalidations == 0 );
 
    TRACE("waiting for %d diff acks, lck=%d", diff_number, lck_id);
 
+   /* the acquire function does not need to wait for the diff ACKs to
+    * arrive.  Warning: the recv_diff_ack function assumes that the
+    * locks local_inval_ack_lock & remote_inval_ack_lock are acquired
+    * when recving a diff ack... so the following wait code can't be
+    * simply removed */
    while ( diff_number > 0 )
    {
       marcel_cond_wait(&(token_elem->diff_ack_cond),
@@ -1186,20 +1196,11 @@ hierarch_proto_acquire_func (const token_lock_id_t lck_id)
    assert ( diff_number == 0 );
    marcel_mutex_unlock(&(token_elem->diff_ack_lock));
 
-   TRACE("wait for %d local inv acks, %d remote inv acks, lck=%d",
+   TRACE("have %d local inv acks, %d remote inv acks, lck=%d",
          token_elem->expected_local_invalidations,
          token_elem->expected_remote_invalidations, lck_id);
 
-   while ( token_elem->expected_local_invalidations > 0 )
-      marcel_cond_wait(&(token_elem->local_inval_ack_cond),
-                       &(token_elem->local_inval_ack_lock));
-   assert ( token_elem->expected_local_invalidations == 0 );
    marcel_mutex_unlock(&(token_elem->local_inval_ack_lock));
-
-   while ( token_elem->expected_remote_invalidations > 0 )
-      marcel_cond_wait(&(token_elem->remote_inval_ack_cond),
-                       &(token_elem->remote_inval_ack_lock));
-   assert ( token_elem->expected_remote_invalidations == 0 );
    marcel_mutex_unlock(&(token_elem->remote_inval_ack_lock));
 
    OUT;
@@ -1231,8 +1232,10 @@ hierarch_proto_release_func (const token_lock_id_t lck_id)
    marcel_mutex_lock(&(token_elem->local_inval_ack_lock));
    marcel_mutex_lock(&(token_elem->diff_ack_lock));
 
-   assert ( token_elem->expected_local_invalidations == 0 );
-   assert ( token_elem->expected_remote_invalidations == 0 );
+   /* the acquire consistency operation does not wait the for local /
+    * remote invalidation ACKs to arrive, so
+    * expected_local_invalidations or expected_remote_invalidations
+    * may not be null */
 
    /* send invalidations for the copysets of ALL the pages I host */
    invalidate_writable_hosted_pages(token_elem);

@@ -366,7 +366,7 @@ void dsm_send_diffs(unsigned long index, dsm_node_t dest_node)
   hyp_sendDiffs_out_cnt++;
 #endif
 
-  pm2_completion_init(&c);
+  pm2_completion_init(&c, NULL, NULL);
 
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_SEND_DIFFS, NULL);
 
@@ -385,7 +385,7 @@ void dsm_send_diffs(unsigned long index, dsm_node_t dest_node)
 #ifdef DEBUG_HYP
   tfprintf(stderr, "dsm_send_diffs: calling pm2_pack_completion: c.proc = %d, c.sem_ptr = %p\n", c.proc, c.sem_ptr);
 #endif
-  pm2_pack_completion(&c);
+  pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER,&c);
 #ifdef DEBUG_HYP
 tfprintf(stderr, "dsm_send_diffs: calling pm2_rawrpc_end\n");
 #endif
@@ -438,7 +438,7 @@ void DSM_LRPC_SEND_DIFFS_func(void)
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&addr, sizeof(void *));
   }
 
-  pm2_unpack_completion(&c);
+  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER,&c);
 
   pm2_rawrpc_waitdata();
 

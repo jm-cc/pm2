@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: leo_net.c,v $
+Revision 1.2  2000/05/18 11:34:18  oaumage
+- remplacement des types `tableau' par des types `structure de tableau'
+  par securite
+
 Revision 1.1  2000/05/15 13:51:55  oaumage
 - Reorganisation des sources de Leonie
 
@@ -88,7 +92,7 @@ leo_send_string(p_leo_swann_module_t  module,
   LOG_IN();
   len = strlen(data) + 1;
   ntbx_pack_int(len, &pack_buffer);
-  leo_send_block(module, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  leo_send_block(module, pack_buffer.buffer, sizeof(ntbx_pack_buffer_t));
   leo_send_block(module, data, len);
   LOG_OUT();
 }
@@ -101,7 +105,7 @@ leo_receive_string(p_leo_swann_module_t module)
   char               *buffer;
   
   LOG_IN();
-  leo_receive_block(module, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  leo_receive_block(module, pack_buffer.buffer, sizeof(ntbx_pack_buffer_t));
   len = ntbx_unpack_int(&pack_buffer);
 
   buffer = malloc(len);
@@ -120,7 +124,7 @@ leo_send_raw_int(p_leo_swann_module_t module,
 
   LOG_IN();
   ntbx_pack_int(data, &pack_buffer);
-  leo_send_block(module, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  leo_send_block(module, pack_buffer.buffer, sizeof(ntbx_pack_buffer_t));
   LOG_OUT();
 }
 
@@ -131,7 +135,7 @@ leo_receive_raw_int(p_leo_swann_module_t module)
   int                data;
   
   LOG_IN();
-  leo_receive_block(module, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  leo_receive_block(module, pack_buffer.buffer, sizeof(ntbx_pack_buffer_t));
   data = ntbx_unpack_int(&pack_buffer);
   LOG_OUT();
 
@@ -146,7 +150,7 @@ leo_send_raw_long(p_leo_swann_module_t module,
 
   LOG_IN();
   ntbx_pack_long(data, &pack_buffer);
-  leo_send_block(module, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  leo_send_block(module, pack_buffer.buffer, sizeof(ntbx_pack_buffer_t));
   LOG_OUT();
 }
 
@@ -157,7 +161,7 @@ leo_receive_raw_long(p_leo_swann_module_t module)
   long               data;
   
   LOG_IN();
-  leo_receive_block(module, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  leo_receive_block(module, pack_buffer.buffer, sizeof(ntbx_pack_buffer_t));
   data = ntbx_unpack_long(&pack_buffer);
   LOG_OUT();
 
@@ -245,7 +249,8 @@ leo_net_server_init(void)
   CTRL_ALLOC(net_server);
   net_server->state = ntbx_server_state_uninitialized;
   ntbx_tcp_server_init(net_server);
-  DISP("net server ready and listening at %s", net_server->connection_data);
+  DISP("net server ready and listening at %s",
+       net_server->connection_data.data);
 
   return net_server;
 }

@@ -69,6 +69,8 @@
 
 #include <marcel.h>
 
+#define NO_IO
+
 #endif
 
 /* ********************************************************* */
@@ -164,6 +166,7 @@ void send_to_server(job_t *j)
 
 void *compute(void *arg);
 
+#ifndef NO_IO
 void *server(void * arg)
 {
   job_t *j;
@@ -178,10 +181,11 @@ void *server(void * arg)
 
   return NULL;
 }
+#endif
 
 void create_new_thread(job_t *j)
 {
-#if 0
+#ifdef NO_IO
   marcel_t pid;
   marcel_create(&pid, &glob_attr, compute, (void *)j);
 #else
@@ -234,8 +238,10 @@ void *compute(void *arg)
 
 int marcel_main(int argc, char **argv)
 {
+#ifndef NO_IO
   marcel_t serv_pid;
   marcel_attr_t attr;
+#endif
   job_t j;
   Tick t1, t2;
   unsigned long temps;
@@ -250,12 +256,14 @@ int marcel_main(int argc, char **argv)
   marcel_trace_on();
 #endif
 
+#ifndef NO_IO
   marcel_attr_init(&attr);
 
 #ifdef SMP
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_FIXED(1));
 #endif
   marcel_create(&serv_pid, &attr, server, NULL);
+#endif /* NO_IO */
 
   marcel_attr_init(&glob_attr);
   marcel_attr_setdetachstate(&glob_attr, MARCEL_CREATE_DETACHED);
@@ -277,11 +285,13 @@ int marcel_main(int argc, char **argv)
   temps = timing_tick2usec(TICK_DIFF(t1, t2));
   printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
+#ifndef NO_IO
   /* terminaison du serveur */
   job_init(&j, 0, 0);
   send_to_server(&j);
 
   marcel_join(serv_pid, NULL);
+#endif
 
 #ifndef PTHREAD
   marcel_end();

@@ -234,19 +234,22 @@ create_flavor() {
     echo "${SETTINGS} --builddir=$builddir" >> ${OUT}
     echo "${SETTINGS} --ext=$ext" >> ${OUT}
     modules=
+    line=
     for mod in $lst_opt_modules " "; do
 	case $mod in
 	" "|common)
 	    ;;
 	*)
 	    modules="${modules:+$modules }$mod"
+	    line="${line} --modules=$mod"
 	    ;;
 	esac
     done
-    echo "${SETTINGS} --modules=\"$modules\"" >> ${OUT}
+    echo "${SETTINGS}$line" >> ${OUT}
     for mod in $lst_opt_modules common; do
 	[ "`eval echo \\$lst_opt_$mod`" ] && 
-	    echo "${SETTINGS} --$mod=\"`eval echo \\$lst_opt_$mod`\"" >> ${OUT}
+	    echo "${SETTINGS}`eval echo '\ '\\$lst_opt_$mod | \
+	    	sed -e 's, \([^ ]*\), --'$mod'=\1,g'`" >> ${OUT}
     done
     echo "PM2_BUILD=$builddir" >> ${OUT}
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.4  2000/03/13 09:48:18  oaumage
+- ajout de l'option TBX_SAFE_MALLOC
+- support de safe_malloc
+- extension des macros de logging
+
 Revision 1.3  2000/03/08 17:16:03  oaumage
 - support de Marcel sans PM2
 - support de tmalloc en mode `Marcel'
@@ -77,19 +82,111 @@ typedef enum
   tbx_true
 } tbx_bool_t, *p_tbx_bool_t;
 
-/* DISP: display a string on stderr */
-#define DISP(str) fprintf(stderr, str "\n")
+/*
+ * Display  macros  _________________________________________________
+ * ________________//////////////////////////////////////////////////
+ */
+#define DISP(str, args...)     fprintf(stderr, str "\n", ## args)
+#define DISP_IN()              fprintf(stderr, __FUNCTION__": -->\n")
+#define DISP_OUT()             fprintf(stderr, __FUNCTION__": <--\n")
+#define DISP_VAL(str, val)     fprintf(stderr, str " = %d\n", (int)(val))
+#define DISP_PTR(str, ptr)     fprintf(stderr, str " = %p\n", (void *)(ptr))
+#define DISP_STR(str, str2)    fprintf(stderr, str " : %s\n", (char *)(str2))
 
 
-/* CTRL: assertion verification macro. */
+/*
+ * Logging macros  __________________________________________________
+ * _______________///////////////////////////////////////////////////
+ */
+#ifdef DEBUG
+#define LOG(str, args...)     fprintf(stderr, str "\n", ## args)
+#define LOG_IN()              fprintf(stderr, __FUNCTION__": -->\n")
+#define LOG_OUT()             fprintf(stderr, __FUNCTION__": <--\n")
+#define LOG_VAL(str, val)     fprintf(stderr, str " = %d\n", (int)(val))
+#define LOG_PTR(str, ptr)     fprintf(stderr, str " = %p\n", (void *)(ptr))
+#define LOG_STR(str, str2)    fprintf(stderr, str " : %s\n", (char *)(str2))
+#else /* DEBUG */
+#define LOG(str, args...) 
+#define LOG_IN() 
+#define LOG_OUT() 
+#define LOG_VAL(str, val) 
+#define LOG_PTR(str, ptr) 
+#define LOG_STR(str, str2)
+#endif /* DEBUG */
+
+
+/*
+ * Tracing macros  __________________________________________________
+ * _______________///////////////////////////////////////////////////
+ */
+#ifdef TRACING
+#define TRACE(str, args...)   fprintf(stderr, str "\n", ## args)
+#define TRACE_IN()            fprintf(stderr, __FUNCTION__": -->\n")
+#define TRACE_OUT()           fprintf(stderr, __FUNCTION__": <--\n")
+#define TRACE_VAL(str, val)   fprintf(stderr, str " = %d\n", (int)(val))
+#define TRACE_PTR(str, ptr)   fprintf(stderr, str " = %p\n", (void *)(ptr))
+#define TRACE_STR(str, str2)  fprintf(stderr, str " : %s\n", (char *)(str2))
+#else /* TRACING */
+#define TRACE(str, args...) 
+#define TRACE_IN()
+#define TRACE_OUT()
+#define TRACE_VAL(str, val) 
+#define TRACE_PTR(str, ptr) 
+#define TRACE_STR(str, str2) 
+#endif /* TRACING */
+
+
+/*
+ * Timing macros  __________________________________________________
+ * ______________///////////////////////////////////////////////////
+ */
+#ifdef TIMING
+#define _TBXT_PRE  TBX_GET_TICK(tbx_new_event)
+#define _TBXT_DIFF tbx_tick2usec(TBX_TICK_DIFF(tbx_last_event, tbx_new_event)
+#define _TBXT_POST TBX_GET_TICK(tbx_last_event)
+
+#define TIME_INIT() _TBXT_POST
+#define TIME(str)
+    _TBXT_PRE; fprintf(stderr, str " [%4f usecs]\n", _TBXT_DIFF); _TBXT_POST
+#define TIME_VAL(str, val) \
+    _TBXT_PRE; \
+    fprintf(stderr, str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
+    _TBXT_POST
+#define TIME_PTR(str, ptr) \
+    _TBXT_PRE; \
+    fprintf(stderr, str " = %p [%4f usecs]\n", (void *)(ptr), _TBXT_DIFF); \
+    _TBXT_POST
+#define TIME_STR(str, str2) \
+    _TBXT_PRE; \
+    fprintf(stderr, str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
+    _TBXT_POST
+#else /* TIMING */
+#define TIME_INIT()
+#define TIME(str) 
+#define TIME_VAL(str, val) 
+#define TIME_PTR(str, ptr) 
+#define TIME_STR(str, str2) 
+#endif /* TIMING */
+
+
+/*
+ * Control macros  __________________________________________________
+ * _______________///////////////////////////////////////////////////
+ */
+
+/*
+ * CTRL: assertion verification macro
+ * ----------------------------------
+ */
 #define CTRL(op, val) \
   if((op) != (val))     \
     fprintf(stderr, "ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
             #op " != " #val, __FILE__, __LINE__),   exit(1)
 
-
-/* VERIFY: assertion verification macro.
-   activated by DEBUG flag. */
+/*
+ * VERIFY: assertion verification macro activated by DEBUG flag
+ * ------------------------------------------------------------
+ */
 #ifdef DEBUG
 #define VERIFY(op, val) \
   if((op) != (val))     \
@@ -99,92 +196,55 @@ typedef enum
 #define VERIFY(op, val) ((void)(op))
 #endif /* DEBUG */
 
-/* LOG */
-#ifdef DEBUG
-#define LOG(str) \
-    fprintf(stderr, str "\n")
-#else /* DEBUG */
-#define LOG(str) 
-#endif /* DEBUG */
-
-
-/* LOG_IN */
-#ifdef DEBUG
-#define LOG_IN() \
-    fprintf(stderr, __FUNCTION__": -->\n")
-#else /* DEBUG */
-#define LOG_IN() 
-#endif /* DEBUG */
-
-
-/* LOG_OUT */
-#ifdef DEBUG
-#define LOG_OUT() \
-    fprintf(stderr, __FUNCTION__": <--\n")
-#else /* DEBUG */
-#define LOG_OUT() 
-#endif /* DEBUG */
-
-
-/* LOG_VAL */
-#ifdef DEBUG
-#define LOG_VAL(str, val) \
-    fprintf(stderr, str " = %d\n", (int)(val))
-#else /* DEBUG */
-#define LOG_VAL(str, val) 
-#endif /* DEBUG */
-
-
-/* LOG_PTR */
-#ifdef DEBUG
-#define LOG_PTR(str, ptr) \
-    fprintf(stderr, str " = %p\n", (void *)(ptr))
-#else /* DEBUG */
-#define LOG_PTR(str, ptr) 
-#endif /* DEBUG */
-
-
-/* LOG_STR */
-#ifdef DEBUG
-#define LOG_STR(str, str2) \
-    fprintf(stderr, str " : %s\n", (char *)(str2))
-#else /* DEBUG */
-#define LOG_STR(str, str2) 
-#endif /* DEBUG */
-
-
-/* FAILURE: display an error message and abort the program */
+/*
+ * FAILURE: display an error message and abort the program
+ * -------------------------------------------------------
+ */
 #ifdef OOPS
 #define FAILURE(str) \
   fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
-            str, __FILE__, __LINE__),   *(int *)0 = 0,   exit(1)
+            (str), __FILE__, __LINE__),   *(int *)0 = 0,   exit(1)
 #else /* OOPS */
 #define FAILURE(str) \
   fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
-            str, __FILE__, __LINE__),   exit(1)
+            (str), __FILE__, __LINE__),   exit(1)
 #endif /* OOPS */
 
+/*
+ * CTRL_ALLOC
+ * ----------
+ */
 #define CTRL_ALLOC(ptr) \
   { \
-    if (ptr == NULL) \
+    if ((ptr) == NULL) \
       { \
 	FAILURE("not enough memory"); \
       } \
   }
 
-/* max: maximum of a & b */
-#define max(a, b) (((a) >= (b))?(a):(b))
 
-/* min: minimum of a & b */
+/*
+ * Min/Max macros  __________________________________________________
+ * _______________///////////////////////////////////////////////////
+ */
+#define max(a, b) (((a) >= (b))?(a):(b))
 #define min(a, b) (((a) <= (b))?(a):(b))
 
-/* flags */
+
+/*
+ * Flags control macros  ____________________________________________
+ * _____________________/////////////////////////////////////////////
+ */
 #define tbx_set(f)    ((f) = tbx_flag_set)
 #define tbx_clear(f)  ((f) = tbx_flag_clear)
 #define tbx_toggle(f) ((f) = 1 - (f))
 #define tbx_test(f)   (f)
 
-/* Threads specific macros */
+
+/*
+ * Threads specific macros  _________________________________________
+ * ________________________//////////////////////////////////////////
+ */
 #ifdef THREADS
 #ifdef MARCEL
 #define TBX_SHARED marcel_mutex_t __pm2_mutex
@@ -195,9 +255,6 @@ typedef enum
 #define TBX_LOCK() lock_task()
 #define TBX_UNLOCK() unlock_task()
 #define TBX_YIELD() marcel_givehandback()
-#define TBX_MALLOC(s) tmalloc((s))
-#define TBX_REALLOC(p,s) trealloc((p), (s))
-#define TBX_FREE(s) tfree((s))
 #else /* MARCEL */
 #error unsupported thread package
 #endif /* MARCEL */
@@ -210,63 +267,59 @@ typedef enum
 #define TBX_LOCK()
 #define TBX_UNLOCK()
 #define TBX_YIELD()
-#define TBX_MALLOC(s) malloc((s))
-#define TBX_REALLOC(p,s) realloc((p), (s))
-#define TBX_FREE(s) free((s))
 #endif
 
-/* Trace macros */
-#ifdef TRACING
-#define TRACE(str) \
-    fprintf(stderr, str "\n")
-#define TRACE_VAL(str, val) \
-    fprintf(stderr, str " = %d\n", (int)(val))
-#define TRACE_PTR(str, ptr) \
-    fprintf(stderr, str " = %p\n", (void *)(ptr))
-#define TRACE_STR(str, str2) \
-    fprintf(stderr, str " : %s\n", (char *)(str2))
-#else /* TRACING */
-#define TRACE(str) 
-#define TRACE_VAL(str, val) 
-#define TRACE_PTR(str, ptr) 
-#define TRACE_STR(str, str2) 
-#endif /* TRACING */
 
-/* Timing macros */
-#ifdef TIMING
-#define TIME_INIT() \
-    TBX_GET_TICK(tbx_last_event);
-#define TIME(str) \
-    TBX_GET_TICK(tbx_new_event); \
-    fprintf(stderr, str " [%4f usecs]\n", \
-            tbx_tick2usec(TBX_TICK_DIFF(tbx_last_event, tbx_new_event))); \
-    TBX_GET_TICK(tbx_last_event);
-#define TIME_VAL(str, val) \
-    TBX_GET_TICK(tbx_new_event); \
-    fprintf(stderr, str " = %d [%4f usecs]\n", (int)(val), \
-            tbx_tick2usec(TBX_TICK_DIFF(tbx_last_event, tbx_new_event))); \
-    TBX_GET_TICK(tbx_last_event);
-#define TIME_PTR(str, ptr) \
-    TBX_GET_TICK(tbx_new_event); \
-    fprintf(stderr, str " = %p [%4f usecs]\n", (void *)(ptr), \
-            tbx_tick2usec(TBX_TICK_DIFF(tbx_last_event, tbx_new_event))); \
-    TBX_GET_TICK(tbx_last_event);
-#define TIME_STR(str, str2) \
-    TBX_GET_TICK(tbx_new_event); \
-    fprintf(stderr, str " : %s [%4f usecs]\n", (char *)(str2, \
-            tbx_tick2usec(TBX_TICK_DIFF(tbx_last_event, tbx_new_event))); \
-    TBX_GET_TICK(tbx_last_event);
-#else /* TIMING */
-#define TIME_INIT()
-#define TIME(str) 
-#define TIME_VAL(str, val) 
-#define TIME_PTR(str, ptr) 
-#define TIME_STR(str, str2) 
-#endif /* TIMING */
+/*
+ * Memory allocation macros  ________________________________________
+ * _________________________/////////////////////////////////////////
+ */
+#ifdef MARCEL
+#define TBX_MALLOC(s)     tmalloc  ((s))
+#define TBX_CALLOC(n, s)  tcalloc  ((n), (s))
+#define TBX_REALLOC(p, s) trealloc ((p), (s))
+#define TBX_FREE(s)       tfree    ((s))
+#ifdef TBX_SAFE_MALLOC
+#define __TBX_MALLOC(s)     tbx_safe_malloc  ((s), __FILE__, __LINE__)
+#define __TBX_CALLOC(n, s)  tbx_safe_calloc  ((n), (s), __FILE__, __LINE__)
+#define __TBX_REALLOC(p, s) tbx_safe_realloc ((p), (s), __FILE__, __LINE__)
+#define __TBX_FREE(s)       tbx_safe_free    ((s), __FILE__, __LINE__)
+#else  /* TBX_SAFE_MALLOC */
+#define __TBX_MALLOC(s)     malloc  ((s))
+#define __TBX_CALLOC(n, s)  calloc  ((n), (s))
+#define __TBX_REALLOC(p, s) realloc ((p), (s))
+#define __TBX_FREE(s)       free    ((s))
+#endif /* TBX_SAFE_MALLOC */
+#else /* MARCEL */
+#ifdef TBX_SAFE_MALLOC
+#define TBX_MALLOC(s)     tbx_safe_malloc  ((s), __FILE__, __LINE__)
+#define TBX_CALLOC(n, s)  tbx_safe_calloc  ((n), (s), __FILE__, __LINE__)
+#define TBX_REALLOC(p, s) tbx_safe_realloc ((p), (s), __FILE__, __LINE__)
+#define TBX_FREE(s)       tbx_safe_free    ((s), __FILE__, __LINE__)
+#else /* TBX_SAFE_MALLOC */
+#define TBX_MALLOC(s)     malloc  ((s))
+#define TBX_CALLOC(n, s)  calloc  ((n), (s))
+#define TBX_REALLOC(p, s) realloc ((p), (s))
+#define TBX_FREE(s)       free    ((s))
+#endif /* TBX_SAFE_MALLOC */
+#endif /* MARCEL */
 
+/*
+ * Alignment macros  ________________________________________________
+ * _________________/////////////////////////////////////////////////
+ */
 #define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
 
-/* SYSCALL */
+
+/*
+ * System calls wrappers  ___________________________________________
+ * ______________________////////////////////////////////////////////
+ */
+
+/*
+ * SYSCALL
+ * -------
+ */
 #define SYSCALL(op) \
   while ((op) == -1) \
   { \
@@ -277,7 +330,10 @@ typedef enum
       } \
   }
 
-/* SYSTEST */
+/*
+ * SYSTEST
+ * -------
+ */
 #define SYSTEST(op) \
   if ((op) == -1) \
   { \

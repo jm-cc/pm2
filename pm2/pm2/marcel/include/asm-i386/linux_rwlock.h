@@ -34,6 +34,9 @@
  *	2 of the License, or (at your option) any later version.
  */
 
+#section macros
+#define MA_HAVE_RWLOCK 1
+
 #section marcel_macros
 #define MA_RW_LOCK_BIAS		 0x01000000
 #define MA_RW_LOCK_BIAS_STR	"0x01000000"

@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #ifndef MARCEL_SCHED_EST_DEF
 #define MARCEL_SCHED_EST_DEF
 
@@ -23,9 +38,8 @@ static __inline__ marcel_t marcel_self()
 static __inline__ unsigned marcel_current_vp() __attribute__ ((unused));
 static __inline__ unsigned marcel_current_vp()
 {
-#ifdef MA__LWPS
-  __lwp_t *cur_lwp = marcel_self()->lwp;
-#endif
+  DEFINE_CUR_LWP(,,);
+  SET_CUR_LWP(GET_LWP(marcel_self()));
 
   return cur_lwp->number;
 }
@@ -34,7 +48,7 @@ static __inline__ unsigned marcel_current_vp()
 /* ==== explicit preemtion ==== */
 
 void marcel_yield(void);
-void marcel_trueyield(void);
+//void marcel_trueyield(void);
 int marcel_explicityield(marcel_t pid);
 #ifdef MARCEL_KERNEL
 void ma__marcel_yield(void);
@@ -55,12 +69,6 @@ int ma__marcel_explicityield(marcel_t pid);
 typedef __lwp_t *(*marcel_schedpolicy_func_t)(marcel_t pid,
 					      __lwp_t *current_lwp);
 void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
-
-
-/* ==== priority management ==== */
-
-int marcel_setprio(marcel_t pid, unsigned prio);
-int marcel_getprio(marcel_t pid, unsigned *prio);
 
 
 /* ==== `sleep' functions ==== */
@@ -252,11 +260,6 @@ static __inline__ unsigned int preemption_enabled(void)
 #ifdef MA__DEBUG
 extern void breakpoint();
 #endif
-
-#ifndef DO_NOT_CHAIN_BLOCKED_THREADS
-_PRIVATE_ extern volatile marcel_t __waiting_tasks;
-#endif
-_PRIVATE_ extern volatile marcel_t __delayed_tasks;
 
 _PRIVATE_ void marcel_one_task_less(marcel_t pid);
 _PRIVATE_ void marcel_one_more_task(marcel_t pid);

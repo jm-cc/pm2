@@ -14,6 +14,7 @@
  */
 
 #section common
+#depend "asm-alpha/linux_compiler.h[]"
 /*
  * Similar to:
  * include/asm-alpha/atomic.h

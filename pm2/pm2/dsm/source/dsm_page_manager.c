@@ -94,7 +94,7 @@ static int _dsm_page_protect_arg = 0;
 static dsm_user_data1_init_func_t _dsm_user_data1_init_func;
 static dsm_user_data2_init_func_t _dsm_user_data2_init_func;
 
-static int _default_dsm_protocol;
+static int _default_dsm_protocol = -1;
 
 static int __inline__ _dsm_get_prot(dsm_access_t access) __attribute__ ((unused));
 static int __inline__ _dsm_get_prot(dsm_access_t access)
@@ -113,7 +113,6 @@ static int __inline__ _dsm_get_prot(dsm_access_t access)
 /**********************************************************************/
 int
 dsm_get_default_protocol (void)
-
 {
    return _default_dsm_protocol;
 }
@@ -317,7 +316,8 @@ static __inline__ void _dsm_global_vars_init(int my_rank, int confsize)
 
   dsm_local_node_rank = (dsm_node_t)my_rank;
   dsm_nb_nodes = confsize;
-  _default_dsm_protocol = LI_HUDAK;
+  if ( _default_dsm_protocol == -1 )
+     _default_dsm_protocol = LI_HUDAK;
 
   /* global vars for the static area: */ 
   static_dsm_base_addr = (char *) DSM_PAGEALIGN(&dsm_data_begin);
@@ -673,7 +673,7 @@ void dsm_page_table_init(int my_rank, int confsize)
     _dsm_pseudo_static_page_ownership_init();
 
   /* Perform protocol-specific initializations */
-  for (i = 0; i < dsm_registered_protocols(); i++)
+  for (i = 0; i < dsm_get_registered_protocols(); i++)
     {
     if (dsm_get_prot_init_func(i) != NULL)
       (*dsm_get_prot_init_func(i))(i);
@@ -1255,9 +1255,10 @@ void dsm_set_page_protocol(dsm_page_index_t index, int protocol)
 }
 
 
-int dsm_get_page_protocol(dsm_page_index_t index)
+dsm_proto_t
+dsm_get_page_protocol (const dsm_page_index_t index)
 {
-  return dsm_page_table[index]->protocol;
+   return dsm_page_table[index]->protocol;
 }
 
 

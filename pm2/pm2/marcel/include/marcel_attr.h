@@ -14,26 +14,53 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_ATTR_EST_DEF
-#define MARCEL_ATTR_EST_DEF
+#section types
+typedef struct __marcel_attr_s marcel_attr_t;
 
-#include "sys/marcel_privatedefs.h"
+#section structures
 
-/* in "bits/marcel_pthreadtypes.h now"
-_PRIVATE_ typedef struct __marcel_attr_s {
-  unsigned stack_size;
-  char *stack_base;
-  boolean detached;
+#ifdef LINUX_SYS
+#define __need_schedparam
+#include <bits/sched.h>
+#else // AD: fake Linux-like structures on other systems
+#include <sys/signal.h>
+struct __sched_param
+{
+  int __sched_priority;
+};
+typedef sigset_t __sigset_t;
+#endif
+
+#include <sys/types.h> /* pour size_t */
+#depend "marcel_sched_generic.h[types]"
+
+/* Attributes for threads.  */
+struct __marcel_attr_s
+{
+  int __detachstate;
+  int __schedpolicy;
+  struct __sched_param __schedparam;
+  int __inheritsched;
+  int __scope;
+  size_t __guardsize;
+  int __stackaddr_set;
+  void *__stackaddr;
+  size_t __stacksize;
+  /* marcel attributs */
+  //unsigned stack_size;
+  //char *stack_base;
+  //int /*boolean*/ detached;
   unsigned user_space;
-  boolean immediate_activation;
+  /*boolean*/int immediate_activation;
   unsigned not_migratable;
   unsigned not_deviatable;
-  int sched_policy;
-  boolean rt_thread;
+  //int sched_policy;
+  /*boolean*/int rt_thread;
   marcel_vpmask_t vpmask;
   int flags;
-} marcel_attr_t;
-*/
+};
+
+
 
 /* detachstate */
 /*#define MARCEL_CREATE_JOINABLE    FALSE
@@ -43,6 +70,9 @@ _PRIVATE_ typedef struct __marcel_attr_s {
 /* realtime */
 #define MARCEL_CLASS_REGULAR      FALSE
 #define MARCEL_CLASS_REALTIME     TRUE
+
+#section functions
+#depend "marcel_utils.h[types]"
 
 int marcel_attr_init(marcel_attr_t *attr) __THROW;
 #define marcel_attr_destroy(attr_ptr)	0
@@ -81,6 +111,6 @@ int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask);
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);
 int marcel_attr_getflags(__const marcel_attr_t *attr, int *flags);
 
-_PRIVATE_ extern marcel_attr_t marcel_attr_default;
+#section marcel_variables
+extern marcel_attr_t marcel_attr_default;
 
-#endif

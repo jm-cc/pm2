@@ -315,7 +315,7 @@ verify_option() { # module name
     # not yet implemented
     name=`echo $2 | tr -c -d '_\-a-zA-Z0-9'`
     if [ "$2" != "$name" ]; then
-	echo "Invalid characters in option --$2" 1>&2
+	echo "Invalid characters in option $2" 1>&2
 	exit 1
     fi
     return 0
@@ -640,6 +640,30 @@ do_help() {
     exit 0
 }
 
+add_option() { # Option(--"module"=opt) liste_to_ignore
+	optname=`echo $1 | sed -e 's/^--\([^=]*\)=.*$/\1/'`
+	optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	if [ "$1" != "--${optname}=${optarg}" ]; then
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	fi
+	case " $MODULES modules " in
+	    *\ $optname\ *)
+	    do_list_addsub $optname "$optarg"
+	    ;;
+	*)
+	    case \ "$2"\  in
+	        *\ "$optname"\ *)
+	            ;;
+	    	*)
+	    	    echo "Ignoring unknown module \`$optname' options" 1>&2
+	    	    exit 1
+		    ;;
+	    esac
+	    ;;
+	esac
+}
+
 do_check() {
     do_add
     while test $# -gt 0; do
@@ -647,12 +671,9 @@ do_check() {
 	--flavor=*)
 	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
 	    options=`do_get "$1"`
-	    if [ $? != 0 ]; then
-		exit 1
-	    fi
-	    options=`echo "$options" | sed -e 's, --, lst_opt_,g'`
-	    eval $options
-	    break
+	    for opt in $options; do
+	    	add_option "$opt" "flavor builddir ext"
+	    done
 	    ;;
 	--builddir=*|--ext=*)
 	    #set_option "$1" 1 '[\-_a-zA-Z0-9]' "ok"
@@ -680,21 +701,7 @@ do_check() {
 	    done
 	    ;;
 	--*=*)
-	    optname=`echo $1 | sed -e 's/^--\([^=]*\)=.*$/\1/'`
-	    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
-	    if [ "$1" != "--${optname}=${optarg}" ]; then
-		echo Unknown option \`$1\' 1>&2
-		usage 1
-	    fi
-	    case " $MODULES modules " in
-	    *\ $optname\ *)
-		do_list_addsub $optname "$optarg"
-		;;
-	    *)
-		echo "Ignoring unknown module \`$optname' options" 1>&2
-		exit 1
-		;;
-	    esac
+	    add_option "$1" ""
 	    ;;
 	*)
 	    echo Unknown option \`$1\' 1>&2

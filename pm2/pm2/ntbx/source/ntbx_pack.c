@@ -211,16 +211,19 @@ void
 ntbx_pack_double(double               data,
 		 p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer->buffer;
-  int   i;
+  void *ptr    = pack_buffer->buffer;
+  int   status = 0;
+  int   i      = 0;
   
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       *(char*)ptr++ = 'D';
     }
-  sprintf(ptr, "%*f",
-	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1, data);
+  status =
+    snprintf(ptr, NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN, "%*.*g",
+	     NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
+	     NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 3, data);
   LOG_OUT();
 }
 

@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_modes.h,v $
+Revision 1.3  2000/01/05 09:39:41  oaumage
+- ajout du champs group_mode :
+  * aggregate: .. en emission, les groupes sont de taille maximale
+  * split:....... en emission, les groupes sont coupes apres un Express
+
 Revision 1.2  1999/12/15 17:31:25  oaumage
 Ajout de la commande de logging de CVS
 
@@ -113,5 +118,11 @@ typedef enum
 			    layer and user data may be splitted onto one
 			    one more consecutive buffer */
 } mad_buffer_mode_t, *p_mad_buffer_mode_t;
+
+typedef enum
+{
+  mad_group_mode_aggregate,
+  mad_group_mode_split
+} mad_group_mode_t, *p_mad_group_mode_t;
 
 #endif /* MAD_MODES_H */

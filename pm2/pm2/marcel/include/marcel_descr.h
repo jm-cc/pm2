@@ -30,7 +30,7 @@ typedef p_marcel_task_t marcel_t;
 #define marcel_current (__marcel_self())
 
 #section marcel_structures
-#depend "asm/atomic.h"
+#depend "asm/linux_atomic.h[marcel_structures]"
 #depend "sys/marcel_work.h[marcel_structures]"
 #depend "marcel_sched_generic.h[marcel_structures]"
 #depend "marcel_attr.h[macros]"

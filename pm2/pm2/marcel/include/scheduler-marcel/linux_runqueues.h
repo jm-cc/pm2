@@ -62,7 +62,7 @@ struct prio_array {
 #depend "pm2_list.h"
 #depend "marcel_descr.h[types]"
 #depend "linux_spinlock.h[types]"
-#depend "asm/atomic.h"
+#depend "asm/linux_atomic.h[types]"
 typedef struct prio_array ma_prio_array_t;
 
 /*
@@ -89,7 +89,7 @@ struct ma_runqueue {
 	marcel_task_t *migration_thread;
 	struct list_head migration_queue;
 
-	atomic_t nr_iowait;
+	ma_atomic_t nr_iowait;
 
 #ifdef MA__LWPS
 	struct ma_runqueue *father;

@@ -55,6 +55,9 @@ ifdef SHOW_FLAGS
 $(LIBRARY): showflags
 endif
 
+
+COMMON_DEPS += $(PM2_MAK_DIR)/$(LIBRARY).mak
+
 $(LIBRARY): $(LIB_LIB)
 
 .PHONY: showflags
@@ -179,3 +182,6 @@ endif
 	@echo "  help: this help"
 	@echo "  clean: clean module source tree for current flavor"
 	@echo "  distclean: clean module source tree for all flavors"
+
+$(PM2_MAK_DIR)/$(LIBRARY).mak: $(LIB_STAMP_FLAVOR)
+	@$(PM2_CONFIG) --gen_mak $(LIBRARY)

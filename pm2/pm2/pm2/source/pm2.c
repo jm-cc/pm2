@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.14  2000/05/24 15:35:57  rnamyst
+Enhanced Marcel polling + various directories cleaning
+
 Revision 1.13  2000/02/28 11:17:07  rnamyst
 Changed #include <> into #include "".
 
@@ -226,14 +229,24 @@ void pm2_exit(void)
 {
   pm2_wait_end();
 
+  mdebug("pm2_wait_end completed\n");
+
   pm2_thread_exit();
+
+  mdebug("pm2_thread_exit completed\n");
 
   mad_exit();
 
+  mdebug("mad_exit completed\n");
+
   block_exit();
+
+  mdebug("block_exit completed\n");
 
 #ifdef DSM
   dsm_pm2_exit();
+
+  mdebug("dsm_pm2_exit completed\n");
 #endif
 }
 

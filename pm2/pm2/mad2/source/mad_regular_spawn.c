@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.19  2001/01/15 15:53:22  oaumage
+- PM2DEBUG flag
+
 Revision 1.18  2000/12/11 08:31:18  oaumage
 - support Leonie
 
@@ -255,7 +258,7 @@ mad_init(int                  *argc,
   
   LOG_IN();
 
-#ifdef PM2_DEBUG
+#ifdef PM2DEBUG
   pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);  
 #endif /* PM2_DEBUG */
 
@@ -279,9 +282,9 @@ mad_init(int                  *argc,
   ntbx_purge_cmd_line(argc, argv);
   tbx_purge_cmd_line(argc, argv);
 
-#ifdef PM2_DEBUG
+#ifdef PM2DEBUG
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);  
-#endif /* PM2_DEBUG */
+#endif /* PM2DEBUG */
 
   LOG_OUT();
 

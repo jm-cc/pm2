@@ -67,7 +67,9 @@ typedef struct s_mad_connection
   tbx_bool_t               new_msg;
   unsigned int             first_block_length;
   unsigned int             first_block_is_a_group;
-  
+#ifdef MAD_FORWARD_FLOW_CONTROL
+  marcel_sem_t             ack;
+#endif // MAD_FORWARD_FLOW_CONTROL 
 #endif // MARCEL
 
   /* Internal use fields */

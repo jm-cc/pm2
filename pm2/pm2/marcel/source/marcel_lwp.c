@@ -394,9 +394,6 @@ static int lwp_start(ma_lwp_t lwp)
 	LOG_IN();
 	PROF_NEW_LWP(LWP_NUMBER(lwp), ma_per_lwp(run_task,lwp)->number);
 
-	if (!IS_FIRST_LWP(lwp))
-		ma_wake_up_created_thread(ma_per_lwp(run_task, lwp));
-	
 #ifdef MA__SMP
 	bind_on_processor(lwp);
 #endif

@@ -61,7 +61,7 @@ static void BARRIER_LRPC_threaded_func(void)
 
 static void BARRIER_LRPC_func(void)
 {
-  pm2_thread_create((pm2_func_t)BARRIER_LRPC_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t)BARRIER_LRPC_threaded_func, NULL);
 }
 
 static int _received_from_all_other_nodes (pm2_barrier_t *bar)

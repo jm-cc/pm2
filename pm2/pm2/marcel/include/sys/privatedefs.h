@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.15  2000/04/28 18:33:36  vdanjean
+debug actsmp + marcel_key
+
 Revision 1.14  2000/04/17 16:09:39  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -293,5 +296,15 @@ static __inline__ void marcel_prepare_stack_jump(void *stack)
   *(marcel_t *)(stack + SLOT_SIZE - sizeof(void *)) = __marcel_self();
 }
 #endif
+
+/*********************************************************************
+ * thread_key 
+ * */
+
+typedef void (*marcel_key_destructor_t)(any_t);
+extern unsigned marcel_nb_keys;
+extern marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC];
+extern int marcel_key_present[MAX_KEY_SPECIFIC];
+extern marcel_lock_t marcel_key_lock;
 
 #endif

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.18  2000/07/06 14:47:19  rnamyst
+Added pm2_push_startup_func
+
 Revision 1.17  2000/07/04 08:14:20  rnamyst
 By default, netserver threads are *not* spawned when only a single
 process is running.
@@ -84,7 +87,8 @@ ______________________________________________________________________________
 
 static unsigned PM2_COMPLETION;
 
-static pm2_startup_func_t startup_func = NULL;
+static unsigned nb_startup_funcs = 0;
+static pm2_startup_func_t startup_funcs[MAX_STARTUP_FUNCS];
 
 static int spmd_conf[MAX_MODULES];
 
@@ -133,9 +137,12 @@ static int pm2_single_mode(void)
 #endif
 }
 
-void pm2_set_startup_func(pm2_startup_func_t f)
+void pm2_push_startup_func(pm2_startup_func_t f)
 {
-  startup_func = f;
+  if(nb_startup_funcs < MAX_STARTUP_FUNCS)
+    startup_funcs[nb_startup_funcs++] = f;
+  else
+    RAISE(CONSTRAINT_ERROR);
 }
 
 static void pm2_completion_service(void)
@@ -207,8 +214,8 @@ void pm2_init(int *argc, char **argv)
   dsm_pm2_init(__pm2_self, __pm2_conf_size);
 #endif
 
-  if(startup_func != NULL)
-    (*startup_func)();
+  while(nb_startup_funcs)
+    (*(startup_funcs[--nb_startup_funcs]))();
 
   if(!pm2_single_mode()) {
 #ifdef MAD2

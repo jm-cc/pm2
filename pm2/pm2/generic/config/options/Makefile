@@ -13,21 +13,49 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBS := pm2 marcel mad1 mad2 mad3 leoparse tbx ntbx common
+LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse
+# mad1 profile stackalign
+MODULES := $(LIBS) swann leonie
 
 all:
 
 duplique_global:
-	@for file in *.sh ; do \
-		name=`basename $$file .sh` ; \
-		echo "duplicating $$name" ; \
-		for lib in $(LIBS); do \
-			LIB=`echo $$lib | tr [a-z] [A-Z]`; \
-			cp $$name.help \
-				$$PM2_ROOT/modules/$$lib/config/options ; \
-			[ -f $$name.dep ] && cp $$name.dep \
-				$$PM2_ROOT/modules/$$lib/config/options ; \
-			sed -e "s,LIB_,$${LIB}_,g" < $$file \
-			   > $$PM2_ROOT/modules/$$lib/config/options/$$file ; \
+	@copie() { : FILE LIB DESTFILE ; \
+	    LIB=`echo $$2 | tr [a-z] [A-Z]`; \
+	    if [ -f $$1 ]; then \
+		sed -e "s,@LIB@,$${LIB},g;s,@lib@,$$2,g" \
+		    < $$1 > $$3.new ; \
+		cmp -s $$3.new $$3 || ( \
+		    echo "updating $$lib//$$1" ;\
+		    mv -f $$3.new $$3 ;\
+		    false ) && rm -f $$3.new ; \
+	    fi ;\
+	} ;\
+	send() { : FILES MODULES ; \
+	    for file in $$1 ; do \
+		name=`ls *$$file.sh` ; name=`basename $$name .sh` ; \
+		echo "duplicating '$$name' for $$2" ; \
+		for lib in $$2; do \
+		    DEST=$$PM2_ROOT/modules/$$lib/config/options ;\
+		    copie $$name.sh $$lib $$DEST/$$name.sh ;\
+		    copie $$name.help $$lib $$DEST/$$name.help ;\
+		    copie $$name.dep $$lib $$DEST/$$name.dep ;\
 		done ; \
-	done
+	    done; \
+	} ;\
+	append_ligne_dep() { : LIGNE LIBS ; \
+	    echo "adding dep '$$1' for $$2" ; \
+	    for lib in $$2; do \
+	    	LIB=`echo $$lib | tr [a-z] [A-Z]`; \
+		ligne=`echo "$$1"|sed -e "s,@LIB@,$${LIB},g;s,@lib@,$${lib},g"`;\
+		DESTFILE=$$PM2_ROOT/modules/$$lib/config/$$lib.dep ;\
+		if ! grep -sq "$$ligne" "$$DESTFILE" ; then \
+		    echo "updating $$lib with $$ligne" ;\
+		    echo $$ligne >> $$DESTFILE ; \
+		fi ; \
+	    done ; \
+	} ; \
+	send "debug gdb opt profile" "$(MODULES)" ; \
+	send "debug gdb opt" "stackalign" ; \
+	send "build_static build_dynamic build_both" "$(LIBS)" ; \
+	append_ligne_dep "`cat linkmode.dep | head -1`" "$(LIBS)"

@@ -80,7 +80,7 @@ ifeq ($(MAD_USE_EXTENSION),yes)
 COMMON_EXT		:=	$(COMMON_EXT)$(MAD_EXT)
 else
 COMMON_EXTRA_DEP	:=	$(COMMON_EXTRA_DEP)$(MAD_EXT)
-MAD_EXTRA_DEP_FILE	:=	$(MAD1_ROOT)/.opt$(COMMON_EXTRA_DEP)
+MAD_EXTRA_DEP_FILE	=	$(MAD1_ROOT)/.opt$(COMMON_EXTRA_DEP)
 COMMON_MAKEFILES	+=	$(MAD_EXTRA_DEP_FILE)
 endif
 
@@ -129,8 +129,11 @@ DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_LIBD))
 endif
 endif
 
-# Obligatoire et inamovible ;-)
-MAD_CC		:=	gcc
+# CC & AS
+ifndef COMMON_CC
+COMMON_CC	:=	gcc
+endif
+MAD_CC		:=	$(COMMON_CC)
 
 # CFLAGS et LDFLAGS: attention a ne pas utiliser ':=' !
 MAD_CFLAGS	=	$(COMMON_GEN_CFLAGS) $(COMMON_CFLAGS)

@@ -113,7 +113,7 @@ ifeq ($(PM2_USE_EXTENSION),yes)
 COMMON_EXT		:=	$(COMMON_EXT)$(PM2_EXT)
 else
 COMMON_EXTRA_DEP	:=	$(COMMON_EXTRA_DEP)$(PM2_EXT)
-PM2_EXTRA_DEP_FILE	:=	$(PM2_ROOT)/.opt$(COMMON_EXTRA_DEP)
+PM2_EXTRA_DEP_FILE	=	$(PM2_ROOT)/.opt$(COMMON_EXTRA_DEP)
 COMMON_MAKEFILES	+=	$(PM2_EXTRA_DEP_FILE)
 endif
 
@@ -153,8 +153,11 @@ DUMMY_BUILD	:=	$(shell mkdir -p $(PM2_LIBD))
 endif
 endif
 
-# Obligatoire et inamovible ;-)
-PM2_CC		:=	gcc
+# CC & AS
+ifndef COMMON_CC
+COMMON_CC	:=	gcc
+endif
+PM2_CC		:=	$(COMMON_CC)
 PM2_AS		:=	$(PM2_CC)
 
 # CFLAGS et LDFLAGS: attention a ne pas utiliser ':=' !
@@ -175,7 +178,7 @@ endif
 
 COMMON_LIBS	+=	$(PM2_LIB)
 
-PM2_USER_MAK		=	$(PM2_ROOT)/make/user$(COMMON_EXT).mak
+PM2_USER_MAK	=	$(PM2_ROOT)/make/user$(COMMON_EXT).mak
 
 
 COMMON_DEFAULT_TARGET	+=	pm2_default

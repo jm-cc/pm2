@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.18  2000/03/01 16:43:04  oaumage
+- suppression des warnings en compilation  -g
+
 Revision 1.17  2000/02/28 11:17:58  rnamyst
 Changed #include <> into #include "".
 
@@ -90,11 +93,13 @@ void pm2_exit(void);
 
 _PRIVATE_ extern unsigned __pm2_self, __conf_size;
 
+static __inline__ unsigned pm2_self(void) __attribute__ ((unused));
 static __inline__ unsigned pm2_self(void)
 {
   return __pm2_self;
 }
 
+static __inline__ unsigned pm2_config_size(void) __attribute__ ((unused));
 static __inline__ unsigned pm2_config_size(void)
 {
   return __conf_size;
@@ -152,6 +157,7 @@ static __inline__ void pm2_freeze(void)
   lock_task();
 }
 
+static __inline__ void pm2_unfreeze(void) __attribute__ ((unused));
 static __inline__ void pm2_unfreeze(void)
 {
   unlock_task();
@@ -166,6 +172,7 @@ void pm2_threads_list(int max, marcel_t *pids, int *nb, int which);
 void pm2_migrate_group(marcel_t *pids, int nb, int module);
 void pm2_migrate(marcel_t pid, int module);
 
+static __inline__ void pm2_migrate_self(int module) __attribute__ ((unused));
 static __inline__ void pm2_migrate_self(int module)
 {
   marcel_t self = marcel_self();

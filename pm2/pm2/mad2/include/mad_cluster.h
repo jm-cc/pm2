@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_cluster.h,v $
+Revision 1.2  2000/03/08 17:18:50  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+
 Revision 1.1  2000/03/07 10:38:54  oaumage
 - pre-support multi-cluster
 
@@ -68,7 +72,7 @@ typedef struct s_mad_channel_description
 
 typedef struct s_mad_cluster
 {
-  PM2_SHARED;
+  TBX_SHARED;
   mad_cluster_id_t            id;
   mad_configuration_t         configuration;
   p_mad_channel_description_t channel_description_array;

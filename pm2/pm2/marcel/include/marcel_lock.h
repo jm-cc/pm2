@@ -91,7 +91,6 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
  * Generic Part.
  */
 
-
 typedef unsigned marcel_lock_t;
 
 #define MARCEL_LOCK_INIT_UNLOCKED   0
@@ -114,8 +113,10 @@ static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 #endif
 }
 
-static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock) __attribute__ ((unused));
-static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
+static __inline__ 
+unsigned marcel_lock_tryacquire(marcel_lock_t *lock) __attribute__ ((unused));
+static __inline__ 
+unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 {
 #ifdef MA__LWPS
   return !pm2_spinlock_testandset(lock);
@@ -128,6 +129,11 @@ static __inline__ void marcel_lock_release(marcel_lock_t *lock)
 #ifdef MA__LWPS
   pm2_spinlock_release(lock);
 #endif
+}
+
+static __inline__ unsigned marcel_lock_locked(marcel_lock_t *lock)
+{
+  return *lock;
 }
 
 #endif

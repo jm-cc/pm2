@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.3  2000/03/08 17:16:03  oaumage
+- support de Marcel sans PM2
+- support de tmalloc en mode `Marcel'
+
 Revision 1.2  2000/01/31 15:59:11  oaumage
 - detection de l'absence de GCC
 - ajout de aligned_malloc
@@ -180,25 +184,35 @@ typedef enum
 #define tbx_toggle(f) ((f) = 1 - (f))
 #define tbx_test(f)   (f)
 
-/* PM2 specific macros */
-#ifdef PM2
-#define PM2_SHARED marcel_mutex_t __pm2_mutex
-#define PM2_INIT_SHARED(st) marcel_mutex_init((&((st)->__pm2_mutex)), NULL)
-#define PM2_LOCK_SHARED(st) marcel_mutex_lock((&((st)->__pm2_mutex)))
-#define PM2_TRYLOCK_SHARED(st) marcel_mutex_trylock((&((st)->__pm2_mutex)))
-#define PM2_UNLOCK_SHARED(st) marcel_mutex_unlock((&((st)->__pm2_mutex)))
-#define PM2_LOCK() lock_task()
-#define PM2_UNLOCK() unlock_task()
-#define PM2_YIELD() marcel_givehandback()
-#else /* PM2 */
-#define PM2_SHARED 
-#define PM2_INIT_SHARED(st) 
-#define PM2_LOCK_SHARED(st) 
-#define PM2_TRYLOCK_SHARED(st) 
-#define PM2_UNLOCK_SHARED(st) 
-#define PM2_LOCK()
-#define PM2_UNLOCK()
-#define PM2_YIELD()
+/* Threads specific macros */
+#ifdef THREADS
+#ifdef MARCEL
+#define TBX_SHARED marcel_mutex_t __pm2_mutex
+#define TBX_INIT_SHARED(st) marcel_mutex_init((&((st)->__pm2_mutex)), NULL)
+#define TBX_LOCK_SHARED(st) marcel_mutex_lock((&((st)->__pm2_mutex)))
+#define TBX_TRYLOCK_SHARED(st) marcel_mutex_trylock((&((st)->__pm2_mutex)))
+#define TBX_UNLOCK_SHARED(st) marcel_mutex_unlock((&((st)->__pm2_mutex)))
+#define TBX_LOCK() lock_task()
+#define TBX_UNLOCK() unlock_task()
+#define TBX_YIELD() marcel_givehandback()
+#define TBX_MALLOC(s) tmalloc((s))
+#define TBX_REALLOC(p,s) trealloc((p), (s))
+#define TBX_FREE(s) tfree((s))
+#else /* MARCEL */
+#error unsupported thread package
+#endif /* MARCEL */
+#else /* THREADS */
+#define TBX_SHARED 
+#define TBX_INIT_SHARED(st) 
+#define TBX_LOCK_SHARED(st) 
+#define TBX_TRYLOCK_SHARED(st) 
+#define TBX_UNLOCK_SHARED(st) 
+#define TBX_LOCK()
+#define TBX_UNLOCK()
+#define TBX_YIELD()
+#define TBX_MALLOC(s) malloc((s))
+#define TBX_REALLOC(p,s) realloc((p), (s))
+#define TBX_FREE(s) free((s))
 #endif
 
 /* Trace macros */

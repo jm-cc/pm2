@@ -90,6 +90,22 @@ do
 		rm ${PM2_ROOT}/toolbox/obj/$i/$f
 	    fi
 	done
+	# librairies (Net TOOLBOX)
+	for f in `ls ${PM2_ROOT}/toolbox/net/lib/$i`
+	do
+	    if [ ! -d ${PM2_ROOT}/toolbox/net/lib/$i/$f ] ; then
+		echo "	deleting ${PM2_ROOT}/toolbox/net/lib/$i/$f"
+		rm ${PM2_ROOT}/toolbox/net/lib/$i/$f
+	    fi
+	done
+	# objets "source" (Net TOOLBOX)
+	for f in `ls ${PM2_ROOT}/toolbox/net/obj/$i`
+	do
+	    if [ ! -d ${PM2_ROOT}/toolbox/net/obj/$i/$f ] ; then
+		echo "	deleting ${PM2_ROOT}/toolbox/net/obj/$i/$f"
+		rm ${PM2_ROOT}/toolbox/net/obj/$i/$f
+	    fi
+	done
 	# console
 	for f in `ls ${PM2_ROOT}/console/obj/$i`
 	do

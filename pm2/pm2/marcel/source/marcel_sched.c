@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.43  2000/12/19 22:31:11  rnamyst
+bug fixed in marcel_trueyield
+
 Revision 1.42  2000/11/15 21:32:23  rnamyst
 Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
 
@@ -374,7 +377,7 @@ unsigned marcel_nbvps(void)
 
 static __inline__ void display_sched_queue(marcel_t pid)
 {
-#ifdef MA__DEBUG
+#ifdef MARCEL_DEBUG
   marcel_t t = pid;
 
   mdebug("\t\t\t<Task queue on LWP %d:\n", pid->lwp->number);
@@ -615,9 +618,9 @@ marcel_t marcel_radical_next_task(void)
 #ifdef USE_PRIORITY
   RAISE(NOT_IMPLEMENTED);
 #endif
-  
+
   t = radical_next_task(cur, cur_lwp);
-  
+
 #else
   if(cur->quantums-- == 1) {
     cur->quantums = cur->prio;
@@ -1099,7 +1102,8 @@ void marcel_trueyield(void)
   lock_task();
   marcel_check_polling(MARCEL_POLL_AT_YIELD);
   unlock_task();  
-  ma__marcel_trueyield();
+  //ma__marcel_trueyield();
+  ma__marcel_yield();
 
   LOG_OUT();
 }
@@ -1278,7 +1282,6 @@ static int marcel_check_sleeping(void)
 
   LOG_IN();
 
-  mdebug("marcel_check_sleeping start\n");
   if(marcel_lock_tryacquire(&__delayed_lock)) {
 
     next = __delayed_tasks;
@@ -1298,8 +1301,6 @@ static int marcel_check_sleeping(void)
   } else
     mdebug("LWP(%d) failed to acquire __delayed_lock\n",
 	   marcel_self()->lwp->number);
-
-  mdebug("marcel_check_sleeping end\n");
 
   LOG_OUT();
 
@@ -2007,11 +2008,11 @@ inline void marcel_update_time(marcel_t cur)
 static void timer_interrupt(int sig)
 {
   marcel_t cur = marcel_self();
-#ifdef MA__DEBUG
+#ifdef MARCEL_DEBUG
   static unsigned long tick = 0;
 #endif
 
-#ifdef MA__DEBUG
+#ifdef MARCEL_DEBUG
   if (++tick == TICK_RATE) {
     try_mdebug("\t\t\t<<tick>>\n");
     tick = 0;

@@ -27,7 +27,7 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
 	--all=\"opt\" --common=\"static\" $_output_redirect
 
-cat > /tmp/pm2test_expected <<EOF
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
 [n1] Hello world!
 [n1] argc = 4
 [n1] argv[0] = <`pm2-config --builddir --flavor=$flavor`/examples/simple/bin/remote_hello>

@@ -33,6 +33,9 @@ void
 tbx_purge_cmd_line(int   *argc,
 		   char **argv);
 
+void
+tbx_exit(void);
+
 /*
  * Destructors
  * -----------
@@ -434,6 +437,11 @@ tbx_htable_add(p_tbx_htable_t  htable,
 void *
 tbx_htable_get(const p_tbx_htable_t  htable,
 	       const char           *key);
+
+void *
+tbx_htable_replace(p_tbx_htable_t  htable,
+		   const char     *key,
+		   void           *object);
 
 void *
 tbx_htable_extract(p_tbx_htable_t  htable,

@@ -42,16 +42,16 @@
 #include "dsm_protocol_lib.h"
 #include "marcel.h" /* tfprintf */
 #include "dsm_pm2.h"
-#include "dsm_const.h"
 
 static dsm_protocol_t _dsm_protocol;
 static int _dsm_protocol_set = 0;
+
 //#define DEBUG
 
   //
   // dsm_pagefault - signal handling routine for page fault access (BUS/SEGV)
   //
-static void dsm_pagefault_handler(int sig, void *addr)
+static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
 {
   unsigned long index = dsm_page_index(addr);
   sigset_t signals;
@@ -70,23 +70,31 @@ static void dsm_pagefault_handler(int sig, void *addr)
   dsm_lock_page(index);
 
   //call the apropriate handler 
-  if (dsm_get_access(index) == NO_ACCESS) // read fault
-    {
+ if (access == UNKNOWN_ACCESS)
+   {
+     if (dsm_get_access(index) == NO_ACCESS) // read fault
+       {
 #ifdef DEBUG1
-      tfprintf(stderr, "read fault: (I am %p)\n", marcel_self());
+	 tfprintf(stderr, "read fault: (I am %p)\n", marcel_self());
 #endif
-      (*dsm_get_read_fault_action(index))(index);
-    }
-  else if (dsm_get_access(index) == READ_ACCESS)// write fault
-    {
+	 (*dsm_get_read_fault_action(index))(index);
+       }
+     else if (dsm_get_access(index) == READ_ACCESS)// write fault
+       {
 #ifdef DEBUG1
-      tfprintf(stderr, "write fault: (I am %p)\n", marcel_self());
+	 tfprintf(stderr, "write fault: (I am %p)\n", marcel_self());
 #endif
-
-      (*dsm_get_write_fault_action(index))(index);
-    }
-  //else nothing to do; pagefault processed in the meantime
-
+	 
+	 (*dsm_get_write_fault_action(index))(index);
+       }
+     // else nothing to do; pagefault processed in the meantime
+   }
+  else
+    switch(access){
+    case READ_ACCESS: (*dsm_get_read_fault_action(index))(index);break;
+    case WRITE_ACCESS:  (*dsm_get_write_fault_action(index))(index);break;
+    default: RAISE(PROGRAM_ERROR); break;
+				     }
   dsm_unlock_page(index);
 }
 
@@ -96,7 +104,7 @@ void dsm_pm2_init(int my_rank, int confsize)
 {
   dsm_page_table_init(my_rank, confsize);
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
-  if ( _dsm_protocol_set == 0 ) // no protocol specified; use the default protocol
+  if (_dsm_protocol_set == 0) // no protocol specified; use the default protocol
     {
       dsm_protocol_t protocol;
 

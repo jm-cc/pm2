@@ -34,7 +34,7 @@
 #
 
 # Uncomment this line to have to old makefile behavior -- deprecated.
-# OLD_MAKEFILE=
+# OLD_MAKEFILE=DEF
 
 ifndef FLAVOR
 ifdef PM2_FLAVOR
@@ -85,7 +85,18 @@ endif
 
 ifndef OLD_MAKEFILE
 # Set variable if not set
+ifneq ($(MAKECMDGOALS),init)
+ifneq ($(MAKECMDGOALS),help)
+ifneq ($(MAKECMDGOALS),textconfig)
+ifneq ($(MAKECMDGOALS),menuconfig)
+ifneq ($(MAKECMDGOALS),xconfig)
 ifeq ($(PM2_MAK_DIR),)
 export PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
 endif
+endif
+endif
+endif
+endif
+endif
+
 endif # OLD_MAKEFILE

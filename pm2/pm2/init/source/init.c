@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.4  2000/11/13 20:41:33  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.3  2000/11/10 14:17:52  oaumage
 - nouvelle procedure d'initialisation
 
@@ -50,6 +53,10 @@ ______________________________________________________________________________
 #include "pm2.h"
 #endif /* PM2 */
 
+#ifdef MARCEL
+#include "marcel.h"
+#endif /* MARCEL */
+
 #ifdef MAD2
 #include "madeleine.h"
 #endif /* MAD2 */
@@ -64,8 +71,8 @@ ______________________________________________________________________________
 
 void common_init(int *argc, char *argv[])
 {
-  /* Objet Madeleine (II) */
 #ifdef MAD2
+  /* Objet Madeleine (II) */
   p_mad_madeleine_t madeleine = NULL;
 #endif /* MAD2 */
 
@@ -82,7 +89,7 @@ void common_init(int *argc, char *argv[])
 #endif
 
 #ifdef MARCEL
-  //marcel_init(argc, argv);
+  marcel_init_data(argc, argv);
 #endif
 
 #ifdef TBX
@@ -134,10 +141,6 @@ void common_init(int *argc, char *argv[])
   mad_memory_manager_init(*argc, argv);
 #endif /* MAD2 */
 
-#ifdef MAD1
-  mad_init_thread_related(argc, argv);
-#endif
-
 #ifdef MAD2
   /*
    * Mad2 core initialization 
@@ -161,7 +164,10 @@ void common_init(int *argc, char *argv[])
     
     madeleine = mad_object_init(*argc, argv, configuration_file, adapter_set);
   }
-  
+#endif
+
+#if defined(PM2) && defined(MAD2)
+  pm2_mad_init(madeleine);
 #endif
 
 #ifdef MAD2
@@ -215,7 +221,7 @@ void common_init(int *argc, char *argv[])
   mad_configuration_init(madeleine, *argc, argv);
   
 #ifdef PM2
-  pm2_conf_size = mad->configuration->size;
+  pm2_conf_size = madeleine->configuration->size;
 #endif
 #endif
 
@@ -235,15 +241,6 @@ void common_init(int *argc, char *argv[])
   mad_network_components_init(madeleine, *argc, argv);
 #endif /* MAD2 */
 
-#ifdef MAD1
-  mad_init(argc, argv);
-
-#ifdef PM2
-  pm2_self = mad_who_am_i();
-  pm2_conf_size = mad_config_size();
-#endif
-#endif /* MAD1 */
-
 #ifdef MAD2
   /*
    * Mad2 command line clean-up
@@ -256,10 +253,6 @@ void common_init(int *argc, char *argv[])
    * - Mad2 initialization from command line arguments
    */
   mad_purge_command_line(madeleine, argc, argv);
-#endif
-
-#ifdef PM2
-  pm2_init_purge_cmdline(argc, argv);
 #endif
 
 #ifdef MAD2
@@ -298,8 +291,15 @@ void common_init(int *argc, char *argv[])
   pm2_init_open_channels(argc, argv, pm2_self, pm2_conf_size);
 #endif
 
+#ifdef MARCEL
+  marcel_start_sched(argc, argv);
+#endif
+
 #ifdef PM2
   pm2_init_thread_related(argc, argv);
+#ifdef MAD2
+  mad_init_thread_related(argc, argv);
+#endif
 #endif
 
 #ifdef DSM
@@ -308,5 +308,13 @@ void common_init(int *argc, char *argv[])
 
 #ifdef PM2
   pm2_init_listen_network(argc, argv);
+#endif
+
+#ifdef PM2
+  pm2_init_purge_cmdline(argc, argv);
+#endif
+
+#ifdef MARCEL
+  marcel_purge_cmdline(argc, argv);
 #endif
 }

@@ -44,4 +44,17 @@
 /* Leoparse: interface */
 #include "leoparse_interface.h"
 
+#ifndef YYLTYPE_IS_DECLARED
+#define YYLTYPE struct yylloc
+
+struct yylloc {
+       int first_line;
+       int first_column;
+       int last_line;
+       int last_column;
+};
+
+extern YYLTYPE yylloc;
+#endif /* YYLTYPE */
+
 #endif /* LEOPARSE_H */

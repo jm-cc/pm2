@@ -157,7 +157,7 @@ if [ -n "$pref_file" -a -n "$*" ] ; then
 	mkdir -p ${PREF_DIR}
     fi
     echo "Storing string \"$*\""
-    echo " $@" > ${PREF_DIR}/"$pref_file"
+    echo " " ${@:+"$@"} > ${PREF_DIR}/"$pref_file"
     echo "Parameters stored in file \"${PREF_DIR}/$pref_file\""
 fi
 

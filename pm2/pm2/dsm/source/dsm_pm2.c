@@ -35,6 +35,7 @@
 
 /* Options: SIGSEGV_TRACE */
 
+//#define SIGSEGV_TRACE
 
 #include <stdio.h>
 #include <signal.h>

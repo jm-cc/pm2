@@ -17,6 +17,8 @@
 #include "pm2.h"
 
 #include "token_lock.h"
+#include "hierarch_protocol.h"
+
 
 extern void DSM_LRPC_READ_PAGE_REQ_func(void);
 extern void DSM_LRPC_WRITE_PAGE_REQ_func(void);
@@ -53,6 +55,10 @@ void dsm_pm2_init_rpc()
   pm2_rawrpc_register(&TOKEN_LOCK_RECV, token_lock_recv_server);
   pm2_rawrpc_register(&TOKEN_LOCK_MANAGER_SERVER, token_lock_manager_server);
   pm2_rawrpc_register(&TOKEN_LOCK_RELEASE_NOTIFICATION, token_lock_recv_release_notification_server);
+  pm2_rawrpc_register(&HIERARCH_INVALIDATE, hierarch_invalidate_server);
+  pm2_rawrpc_register(&HIERARCH_DIFF_ACK, hierarch_diff_ack_server);
+  pm2_rawrpc_register(&HIERARCH_DIFF, hierarch_recv_diff_server);
+  pm2_rawrpc_register(&HIERARCH_INV_ACK, hierarch_inv_ack_server);
 }
 
 

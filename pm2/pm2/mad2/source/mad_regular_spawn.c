@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.13  2000/10/26 13:54:33  oaumage
+- support de ssh
+
 Revision 1.12  2000/09/12 15:29:19  oaumage
 - correction -d
 
@@ -113,6 +116,12 @@ ______________________________________________________________________________
  * ---------------
  */
 static mad_madeleine_t main_madeleine;
+
+/*
+ * Variables Statiques
+ * -------------------
+ */
+static char *pm2_rsh = NULL;
 
 /*
  * Initialisation des drivers
@@ -268,14 +277,16 @@ mad_master_spawn(int                    *argc,
       if (!conf_spec)
 	{ 
 	  sprintf(cmd,
-		  "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
+		  "%s %s %s/%s -master -cwd %s -rank %d -conf %s %s",
+		  pm2_rsh,
 		  configuration->host_name[0],
 		  cwd, argv[0], cwd, 0, configuration_file, arg_str);
 	}
       else
 	{ 
 	  sprintf(cmd,
-		  "rsh %s %s/%s -master -cwd %s -rank %d %s",
+		  "%s %s %s/%s -master -cwd %s -rank %d %s",
+		  pm2_rsh,
 		  configuration->host_name[0],
 		  cwd, argv[0], cwd, 0, arg_str);
 	}
@@ -285,14 +296,16 @@ mad_master_spawn(int                    *argc,
       if (!conf_spec)
 	{
 	  sprintf(cmd,
-		  "rsh %s %s -master -rank %d -conf %s %s",
+		  "%s %s %s -master -rank %d -conf %s %s",
+		  pm2_rsh,
 		  configuration->host_name[0],
 		  argv[0], 0, configuration_file, arg_str);
 	}
       else
 	{ 
 	  sprintf(cmd,
-		  "rsh %s %s -master -rank %d %s",
+		  "%s %s %s -master -rank %d %s",
+		  pm2_rsh,
 		  configuration->host_name[0], argv[0], 0, arg_str);
 	}
     }
@@ -390,7 +403,8 @@ mad_slave_spawn(int                *argc,
 	  if (!conf_spec)
 	    {
 	      sprintf(cmd,
-		      "rsh %s %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
+		      "%s %s %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
+		      pm2_rsh,
 		      configuration->host_name[i],
 		      prefix,
 		      cwd,
@@ -403,7 +417,8 @@ mad_slave_spawn(int                *argc,
 	  else
 	    {
 	      sprintf(cmd,
-		      "rsh %s %s %s/%s -slave -cwd %s -rank %d %s &",
+		      "%s %s %s %s/%s -slave -cwd %s -rank %d %s &",
+		      pm2_rsh,
 		      configuration->host_name[i],
 		      prefix,
 		      cwd,
@@ -418,7 +433,8 @@ mad_slave_spawn(int                *argc,
 	  if (!conf_spec)
 	    {
 	      sprintf(cmd,
-		      "rsh %s %s %s -slave -cwd %s -rank %d -conf %s %s &",
+		      "%s %s %s %s -slave -cwd %s -rank %d -conf %s %s &",
+		      pm2_rsh,
 		      configuration->host_name[i],
 		      prefix,
 		      argv[0],
@@ -431,7 +447,8 @@ mad_slave_spawn(int                *argc,
 	    {
 	      
 	      sprintf(cmd,
-		      "rsh %s %s %s -slave -cwd %s -rank %d %s &",
+		      "%s %s %s %s -slave -cwd %s -rank %d %s &",
+		      pm2_rsh,
 		      configuration->host_name[i],
 		      prefix,
 		      argv[0],
@@ -552,6 +569,14 @@ mad_init(
   mad_managers_init(argc, argv);
 
   LOG_IN(); /* After pm2debug_init ... */
+
+  pm2_rsh = getenv("PM2_RSH");
+
+  if (!pm2_rsh)
+    {
+      pm2_rsh = "rsh";
+      fprintf(stderr, "no PM2_RSH defined, defaulting to `rsh'\n");
+    }  
   
   if (!conf_spec)
     {

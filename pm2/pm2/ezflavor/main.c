@@ -154,6 +154,8 @@ int main(int argc, char *argv[])
 
   intro_exit();
 
+  flavor_modified = FALSE;
+
   gtk_widget_show(main_window);
 
   gtk_main();

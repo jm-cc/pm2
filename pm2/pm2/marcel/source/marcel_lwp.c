@@ -450,6 +450,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE(lwp, MA_INIT_LWP);
 void __marcel_init marcel_lwp_finished(void)
 {
 	ma_per_lwp(online,(ma_lwp_t)LWP_SELF)=1;
+	LWP_SELF->pid=getpid();
 }
 
 __ma_initfunc_prio(marcel_lwp_finished, MA_INIT_LWP_FINISHED,

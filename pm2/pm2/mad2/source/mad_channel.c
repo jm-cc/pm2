@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.6  2000/01/10 10:23:02  oaumage
+*** empty log message ***
+
 Revision 1.5  2000/01/05 15:51:25  oaumage
 - mad_list_management.c: changement de `len' en `length'
 - mad_channel.c: correction au niveau de l'appel a mad_link_exit
@@ -53,6 +56,7 @@ ______________________________________________________________________________
  * =============
  */
 /* #define DEBUG */
+/* #define TRACING */
 #include <madeleine.h>
 
 p_mad_channel_t
@@ -68,7 +72,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   mad_host_id_t              host;
 
   LOG_IN();
-  
+  TRACE("channel allocation");
   PM2_LOCK_SHARED(madeleine);
   PM2_LOCK_SHARED(adapter);
   channel = malloc(sizeof(mad_channel_t));
@@ -237,6 +241,7 @@ mad_foreach_close_channel(void *object)
 
   LOG_IN();
 
+  TRACE("channel deallocation");
   PM2_LOCK_SHARED(adapter);
   PM2_LOCK_SHARED(channel);
 

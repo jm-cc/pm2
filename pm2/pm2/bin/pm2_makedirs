@@ -34,23 +34,17 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-mkdir AIX
-mkdir AIX/RS6K
-
-mkdir FREEBSD
-mkdir FREEBSD/X86
-
-mkdir IRIX
-mkdir IRIX/MIPS
-
-mkdir LINUX
-mkdir LINUX/ALPHA LINUX/PPC LINUX/X86
-
-mkdir OSF
-mkdir OSF/ALPHA
-
-mkdir SOLARIS
-mkdir SOLARIS/SPARC SOLARIS/X86
-
-mkdir UNICOS
-mkdir UNICOS/ALPHA
+echo -n .
+mkdir -p AIX/RS6K
+echo -n .
+mkdir -p FREEBSD/X86
+echo -n .
+mkdir -p IRIX/MIPS
+echo -n .
+mkdir -p LINUX/ALPHA LINUX/PPC LINUX/X86
+echo -n .
+mkdir -p OSF/ALPHA
+echo -n .
+mkdir -p SOLARIS/SPARC SOLARIS/X86
+echo -n .
+mkdir -p UNICOS/ALPHA

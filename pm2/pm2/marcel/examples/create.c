@@ -61,7 +61,7 @@ any_t f(any_t arg)
 
 extern void stop_timer(void);
 
-Tick t1, t2;
+tbx_tick_t t1, t2;
 
 any_t main_thread()
 {
@@ -96,7 +96,7 @@ any_t main_thread()
 #endif
 
       if(nb == 0) {
-	GET_TICK(t1);
+	TBX_TBX_GET_TICK(t1);
 #ifdef PROFILE
 	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
 #endif
@@ -104,7 +104,7 @@ any_t main_thread()
 #ifdef PROFILE
 	profile_stop();
 #endif
-	GET_TICK(t2);
+	TBX_TBX_GET_TICK(t2);
       } else
 	marcel_create(NULL, &attr, f, (any_t)&sem);
 
@@ -113,7 +113,7 @@ any_t main_thread()
 #endif
       marcel_sem_P(&sem);
     }
-    printf("time =  %fus\n", timing_tick2usec(TICK_DIFF(t1, t2)));
+    printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
   }
 
   finished = TRUE;

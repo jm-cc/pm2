@@ -100,3 +100,4 @@ pager:
 # Business Hours when we can contact you if you left a phone number.
 # 
 hours: 
+checkout: get

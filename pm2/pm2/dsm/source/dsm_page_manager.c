@@ -51,6 +51,8 @@
 
 #define DSM_PAGEALIGN(X) ((((int)(X))+(DSM_PAGE_SIZE-1)) & ~(DSM_PAGE_SIZE-1))
 #define USER_DATA_SIZE 8
+#define DEBUG_PS
+
 
 typedef struct _dsm_page_table_entry
 {
@@ -178,6 +180,17 @@ unsigned long dsm_get_nb_pseudo_static_pages()
 void dsm_set_pseudo_static_area_size(unsigned size)
 {
   pseudo_static_dsm_area_size = DSM_PAGEALIGN(size);
+
+  /* global vars for the pseudo static area: */ 
+  if (pseudo_static_dsm_area_size != 0) {
+    nb_pseudo_static_dsm_pages = pseudo_static_dsm_area_size/DSM_PAGE_SIZE; // pseudo_static_dsm_area_size is a multiple of DSM_PAGE_SIZE
+    pseudo_static_dsm_base_addr = (char *) DSM_PAGEALIGN(malloc(pseudo_static_dsm_area_size + DSM_PAGE_SIZE - 1));
+    pseudo_static_dsm_end_addr = pseudo_static_dsm_base_addr + pseudo_static_dsm_area_size;
+#ifdef DEBUG_PS
+    fprintf(stderr,"static area starts at : %p\tends at %p, size = %d pages\n", pseudo_static_dsm_base_addr, pseudo_static_dsm_end_addr, nb_pseudo_static_dsm_pages);
+  /* Here I should check if the pseudo static area corresponds to the same range on all nodes. */
+#endif
+  }
 }
 
 
@@ -201,16 +214,6 @@ static void _dsm_global_vars_init(int my_rank, int confsize)
   for (page = static_dsm_base_addr; page < (char *) &dsm_data_end; page += DSM_PAGE_SIZE)
     nb_static_dsm_pages++;
 
-  /* global vars for the pseudo static area: */ 
-  if (pseudo_static_dsm_area_size != 0) {
-    nb_pseudo_static_dsm_pages = pseudo_static_dsm_area_size/DSM_PAGE_SIZE; // pseudo_static_dsm_area_size is a multiple of DSM_PAGE_SIZE
-    pseudo_static_dsm_base_addr = (char *) DSM_PAGEALIGN(malloc(pseudo_static_dsm_area_size + DSM_PAGE_SIZE - 1));
-    pseudo_static_dsm_end_addr = pseudo_static_dsm_base_addr + pseudo_static_dsm_area_size;
-#ifdef DEBUG_PS
-    fprintf(stderr,"static area starts at : %p\tends at %p, size = %d pages\n", pseudo_static_dsm_base_addr, pseudo_static_dsm_end_addr, nb_pseudo_static_dsm_pages);
-  /* Here I should check if the pseudo static area corresponds to the same range on all nodes. */
-#endif
-  }
 }
 
 

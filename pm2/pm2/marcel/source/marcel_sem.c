@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sem.c,v $
+Revision 1.4  2000/02/28 10:25:10  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/01/31 15:57:22  oaumage
 - ajout du Log CVS
 
@@ -41,7 +44,7 @@ Revision 1.3  2000/01/31 15:57:22  oaumage
 ______________________________________________________________________________
 */
 
-#include <marcel.h>
+#include "marcel.h"
 
 void marcel_sem_init(marcel_sem_t *s, int initial)
 {

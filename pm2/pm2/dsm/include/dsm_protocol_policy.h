@@ -36,56 +36,77 @@
 #ifndef DSM_PROT_POL_IS_DEF
 #define DSM_PROT_POL_IS_DEF
 
-#include "dsm_protocol_lib.h" /* dsm_rf_action_t, etc */
+#include "dsm_const.h"
 
-typedef struct _dsm_protocol_t
-{
-  dsm_rf_action_t read_fault;
-  dsm_wf_action_t write_fault;
-  dsm_rs_action_t read_server;
-  dsm_ws_action_t write_server;
-  dsm_is_action_t invalidate_server;
-  dsm_rp_action_t receive_page_server;
-  dsm_erp_action_t expert_receive_page_server;
-} dsm_protocol_t;
+#define LI_HUDAK 0
+#define MIGRATE_THREAD 1
+#define DEFAULT_DSM_PROTOCOL -1
 
-extern dsm_protocol_t dsmlib_hyp_java_prot;
-extern dsm_protocol_t dsmlib_ddm_li_hudak_prot;
-extern dsm_protocol_t dsmlib_migrate_thread_prot;
+void dsm_init_protocol_table();
 
-void dsm_init_protocol_table(dsm_protocol_t *protocol);
+int dsm_create_protocol( dsm_rf_action_t read_fault_handler,
+			 dsm_wf_action_t write_fault_handler,
+			 dsm_rs_action_t read_server,
+			 dsm_ws_action_t write_server,
+			 dsm_is_action_t invalidate_server,
+			 dsm_rp_action_t receive_page_server,
+			 dsm_erp_action_t expert_receive_page_server,
+			 dsm_acq_action_t acquire_func,
+			 dsm_rel_action_t release_func,
+			 dsm_pi_action_t prot_init_func,
+			 dsm_pa_action_t page_add_func);
 
-void dsm_set_page_protocol(unsigned long index, dsm_protocol_t *protocol);
+int dsm_registered_protocols();
 
-dsm_protocol_t *dsm_get_page_protocol(unsigned long index);
+void dsm_set_read_fault_action(int key, dsm_rf_action_t action);
 
-void dsm_set_read_fault_action(unsigned long index, dsm_rf_action_t action);
+dsm_rf_action_t dsm_get_read_fault_action(int key);
 
-dsm_rf_action_t dsm_get_read_fault_action(unsigned long index);
+void dsm_set_write_fault_action(int key, dsm_wf_action_t action);
 
-void dsm_set_write_fault_action(unsigned long index, dsm_wf_action_t action);
+dsm_wf_action_t dsm_get_write_fault_action(int key);
 
-dsm_wf_action_t dsm_get_write_fault_action(unsigned long index);
+void dsm_set_read_server(int key, dsm_rs_action_t action);
 
-void dsm_set_read_server(unsigned long index, dsm_rs_action_t action);
+dsm_rs_action_t dsm_get_read_server(int key);
 
-dsm_rs_action_t dsm_get_read_server(unsigned long index);
+void dsm_set_write_server(int key, dsm_ws_action_t action);
 
-void dsm_set_write_server(unsigned long index, dsm_ws_action_t action);
+dsm_ws_action_t dsm_get_write_server(int key);
 
-dsm_ws_action_t dsm_get_write_server(unsigned long index);
+void dsm_set_invalidate_server(int key, dsm_is_action_t action);
 
-void dsm_set_invalidate_server(unsigned long index, dsm_is_action_t action);
+dsm_is_action_t dsm_get_invalidate_server(int key);
 
-dsm_is_action_t dsm_get_invalidate_server(unsigned long index);
+void dsm_set_receive_page_server(int key, dsm_rp_action_t action);
 
-void dsm_set_receive_page_server(unsigned long index, dsm_rp_action_t action);
+dsm_rp_action_t dsm_get_receive_page_server(int key);
 
-dsm_rp_action_t dsm_get_receive_page_server(unsigned long index);
+void dsm_set_expert_receive_page_server(int key, dsm_erp_action_t action);
 
-void dsm_set_expert_receive_page_server(unsigned long index, dsm_erp_action_t action);
+dsm_erp_action_t dsm_get_expert_receive_page_server(int key);
 
-dsm_erp_action_t dsm_get_expert_receive_page_server(unsigned long index);
+dsm_acq_action_t dsm_get_acquire_func(int key);
+
+void dsm_set_acquire_func(int key, dsm_acq_action_t action);
+
+dsm_rel_action_t dsm_get_release_func(int key);
+
+void dsm_set_release_func(int key, dsm_rel_action_t action);
+
+void dsm_set_prot_init_func(int key, dsm_pi_action_t action);
+
+dsm_pi_action_t dsm_get_prot_init_func(int key);
+
+void dsm_set_page_add_func(int key, dsm_pa_action_t action);
+
+dsm_pa_action_t dsm_get_page_add_func(int key);
 
 #endif
+
+
+
+
+
+
 

@@ -36,21 +36,7 @@
 #ifndef DSM_PROT_LIB_IS_DEF
 #define DSM_PROT_LIB_IS_DEF
 
-#include "dsm_const.h" // dsm_node_t
-
-typedef void (*dsm_rf_action_t)(unsigned long index); // read fault handler
-
-typedef void (*dsm_wf_action_t)(unsigned long index); // write fault handler
-
-typedef void (*dsm_rs_action_t)(unsigned long index, dsm_node_t req_node); // read server
-
-typedef void (*dsm_ws_action_t)(unsigned long index, dsm_node_t req_node); // write server
-
-typedef void (*dsm_is_action_t)(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner); // invalidate server
-
-typedef void (*dsm_rp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node); // receive page server
-
-typedef void (*dsm_erp_action_t)(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size); // expert receive page server
+#include "dsm_const.h" 
 
 void dsmlib_rf_ask_for_read_copy(unsigned long index);
 
@@ -58,12 +44,13 @@ void dsmlib_migrate_thread(unsigned long index);
 
 void dsmlib_wf_ask_for_write_access(unsigned long index);
 
-void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node);
+void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int tag);
 
-void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_node);
+void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_node, int tag);
 
 void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner);
-void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node);
+
+void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node, int tag);
 
 #endif
 

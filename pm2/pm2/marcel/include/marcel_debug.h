@@ -16,6 +16,9 @@
 
 #section marcel_macros
 
+#define MA_DEBUG_VAR_ATTRIBUTE \
+    __attribute__((section(".ma.debug.var"),aligned))
+
 #ifdef PM2DEBUG
 #define MA_DEBUG_VAR_NAME(name)   MA_DEBUG_VAR_NAME_S(name)
 #define MA_DEBUG_VAR_NAME_S(name) ma_debug_##name
@@ -30,7 +33,7 @@
   MA_DEFINE_DEBUG_NAME_S(name, &marcel_debug)
 #define MA_DEFINE_DEBUG_NAME_S(name, dep) \
   debug_type_t MA_DEBUG_VAR_NAME(name) \
-    __attribute__((section(".ma.debug.var"))) \
+    MA_DEBUG_VAR_ATTRIBUTE \
   = NEW_DEBUG_TYPE_DEPEND("MA-"#name": ", "marcel-"#name, dep)
 
 #define ma_debug(name, fmt, args...) \
@@ -53,15 +56,15 @@ extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
 #  define DEBUG_NAME_TRACE_MODULE DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
 #  define MA_DEBUG_DECLARE_STANDARD(DEBUG_VAR_NAME, DEBUG_STR_NAME) \
 debug_type_t DEBUG_NAME_DISP(DEBUG_VAR_NAME) \
-    __attribute__((section(".ma.debug.var"))) \
+    MA_DEBUG_VAR_ATTRIBUTE \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-disp: ", \
 		          DEBUG_STR_NAME "-disp", &DEBUG_NAME_DISP_MODULE); \
 debug_type_t DEBUG_NAME_LOG(DEBUG_VAR_NAME) \
-    __attribute__((section(".ma.debug.var"))) \
+    MA_DEBUG_VAR_ATTRIBUTE \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-log: ", \
 		          DEBUG_STR_NAME "-log", &DEBUG_NAME_LOG_MODULE); \
 debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
-    __attribute__((section(".ma.debug.var"))) \
+    MA_DEBUG_VAR_ATTRIBUTE \
   = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-trace: ", \
 		          DEBUG_STR_NAME "-trace", &DEBUG_NAME_TRACE_MODULE)
 

@@ -83,28 +83,31 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	pm2debug_init_ext(argc, argv, debug_flags);
 }
 
-debug_type_t ma_dummy1 __attribute__((section(".ma.debug.size.0"))) =  NEW_DEBUG_TYPE("dummy", "dummy");
-debug_type_t ma_dummy2 __attribute__((section(".ma.debug.size.1"))) =  NEW_DEBUG_TYPE("dummy", "dummy");
-extern debug_type_t __ma_debug_pre_start[];
-extern debug_type_t __ma_debug_start[];
-extern debug_type_t __ma_debug_end[];
+typedef struct { debug_type_t d;} __attribute__((aligned)) debug_type_aligned_t;
+
+debug_type_t ma_dummy1 __attribute__((section(".ma.debug.size.0"),aligned)) =  NEW_DEBUG_TYPE("dummy", "dummy");
+debug_type_t ma_dummy2 __attribute__((section(".ma.debug.size.1"),aligned)) =  NEW_DEBUG_TYPE("dummy", "dummy");
+extern debug_type_aligned_t __ma_debug_pre_start[];
+extern debug_type_aligned_t __ma_debug_start[];
+extern debug_type_aligned_t __ma_debug_end[];
 
 void __init marcel_debug_init_auto(void)
 {
-	debug_type_t *var;
+	debug_type_aligned_t *var;
 	unsigned long __ma_debug_size_entry=(void*)&ma_dummy2-(void*)&ma_dummy1;
+	unsigned long __ma_debug_size=(void*)&(__ma_debug_start[1])-(void*)__ma_debug_start;
 
-	if (__ma_debug_size_entry != sizeof(debug_type_t)) {
-		pm2debug("Warning : entry_size %li differ from sizeof %i\n"
+	if (__ma_debug_size_entry != __ma_debug_size) {
+		pm2debug("Warning : entry_size %li differ from %li (sizeof %i)\n"
 			 "Someone to correct the linker script (that does extra alignments) ?\n",
-			 __ma_debug_size_entry, sizeof(debug_type_t));
+			 __ma_debug_size_entry, __ma_debug_size, sizeof(debug_type_t));
 		for(var=__ma_debug_start; var < __ma_debug_end; 
-		    var=(debug_type_t *)((void*)(var)+__ma_debug_size_entry)) {
-			pm2debug_register(var);
+		    var=(debug_type_aligned_t *)((void*)(var)+__ma_debug_size_entry)) {
+			pm2debug_register(&var->d);
 		}
 	} else {
 		for(var=__ma_debug_start; var < __ma_debug_end; var++) {
-			pm2debug_register(var);
+			pm2debug_register(&var->d);
 		}
 	}
 }

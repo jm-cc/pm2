@@ -255,14 +255,27 @@ typedef struct {
 	__ma_init_info_t *infos;
 	int prio;
 	char* debug;
-} __ma_init_index_t;
+} __attribute__((aligned)) __ma_init_index_t;
+
+typedef struct {
+	struct {
+		int section_number;
+	} __attribute__((aligned));
+	struct {
+		__ma_init_info_t infos[2];
+	} __attribute__((aligned));
+} __attribute__((aligned)) __ma_init_section_index_t;
+	
 
 #define _ADD_INIT_SECTION(number, text) \
   int __ma_init_info_##number \
-    __attribute__((section(__MA_INIT_SECTION "info." #number)))=number; \
+    __attribute__((aligned, \
+		section(__MA_INIT_SECTION "info." #number)))=number; \
   const __ma_init_index_t __ma_init_index_##number \
     __attribute__((section(__MA_INIT_SECTION "index." #number))) \
-    = { .infos=(__ma_init_info_t *)((&__ma_init_info_##number)+1), \
+    = { .infos=(struct_up(&__ma_init_info_##number, \
+			    __ma_init_section_index_t, section_number) \
+    		->infos), \
         .prio=number, .debug=text }
 
 #define ADD_INIT_SECTION(number, text) _ADD_INIT_SECTION(number, text)

@@ -59,14 +59,15 @@ typedef struct __ma_init_info {
 	char prio;
 	char *debug;
 	char *file;
-} __ma_init_info_t;
+} __attribute__((aligned)) __ma_init_info_t;
 
 #section marcel_macros
 #define __MA_INIT_SECTION ".ma.init."
 
 #define __ma_initfunc_prio__(_func, _section, _prio, _debug) \
   const __ma_init_info_t ma_init_info_##_func \
-    __attribute__((section (__MA_INIT_SECTION "info." #_section "." #_prio))) \
+    __attribute__((aligned, \
+		section (__MA_INIT_SECTION "info." #_section "." #_prio))) \
     = {.func=&_func, .section=_section, .prio=_prio, .debug=_debug, .file=__FILE__};
 #define __ma_initfunc_prio(_func, _section, _prio, _debug) \
   __ma_initfunc_prio__(_func, _section, _prio, _debug)

@@ -401,6 +401,10 @@ static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
  *
  * Note this does not disable interrupts like task_rq_lock,
  * you need to do so manually before calling.
+ *
+ * Note: runqueues order is 
+ * main_runqueue < node_runqueue < core_runqueue < lwp_runqueue
+ * so that once main_runqueue locked, one can lock lwp runqueues for instance.
  */
 #section marcel_functions
 static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);

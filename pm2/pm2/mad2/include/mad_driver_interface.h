@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_driver_interface.h,v $
+Revision 1.7  2000/03/15 09:56:39  oaumage
+- renommage du polling Nexus
+
 Revision 1.6  2000/03/02 15:45:27  oaumage
 - support du polling Nexus
 
@@ -146,10 +149,10 @@ typedef struct s_mad_driver_interface
   p_mad_connection_t
   (*receive_message)(p_mad_channel_t);
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
   p_mad_connection_t
   (*poll_message)(p_mad_channel_t);
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
   
   /* Buffer transfer */
   void

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -21,6 +20,7 @@
 
 static char *well_known_options[] = {
   "debug",
+  "warning",
   "gdb",
   "opt",
   "profile",

@@ -38,6 +38,9 @@ if [ "$1" = "1" ] ; then
     cd ${PM2_ROOT}
     rm -f madeleine
     ln -fs mad1 madeleine
+    if [ ! -d ${PM2_ROOT}/make ] ; then
+        mkdir ${PM2_ROOT}/make
+    fi
     rm -f ${PM2_ROOT}/make/mad.mak
     echo "MAD2 = no" > ${PM2_ROOT}/make/mad.mak
     echo "Madeleine I selected"
@@ -45,6 +48,9 @@ elif [ "$1" = "2" ] ; then
     cd ${PM2_ROOT}
     rm -f madeleine
     ln -fs mad2 madeleine
+    if [ ! -d ${PM2_ROOT}/make ] ; then
+        mkdir ${PM2_ROOT}/make
+    fi
     rm -f ${PM2_ROOT}/make/mad.mak
     echo "MAD2 = yes" > ${PM2_ROOT}/make/mad.mak
     echo "Madeleine II selected"

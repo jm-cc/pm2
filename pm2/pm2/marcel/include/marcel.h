@@ -30,10 +30,14 @@
 #endif
 
 #include "marcel_pthread.h"
-#if (__GNUC__ >= 3)
-#  define __attribute_deprecated__ __attribute__((deprecated))
-#else
-#  define __attribute_deprecated__
+#ifndef __attribute_deprecated__
+#  if (__GNUC__ >= 3)
+#    define __attribute_deprecated__ __attribute__((deprecated))
+#  else
+#    define __attribute_deprecated__
+#  endif
+#endif
+#if (__GNUC__ < 3)
 #  define __builtin_expect(x, y) (x)
 #endif
 #ifdef MA__POSIX_FUNCTIONS_NAMES

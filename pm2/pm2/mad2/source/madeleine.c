@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.13  2000/02/10 11:18:01  rnamyst
+Modified to use default values for environment variables...
+
 Revision 1.12  2000/02/08 17:49:07  oaumage
 - support de la net toolbox
 
@@ -352,6 +355,19 @@ mad_parse_command_line(int                *argc,
   LOG_OUT();
 }
 
+static char *get_mad_root(void)
+{
+  static char buf[1024];
+  char *ptr;
+
+  if((ptr = getenv("MAD2_ROOT")) != NULL)
+    return ptr;
+  else {
+    sprintf(buf, "%s/mad2", getenv("PM2_ROOT"));
+    return buf;
+  }
+}
+
 #ifndef EXTERNAL_SPAWN
 static void
 mad_master_spawn(int                    *argc,
@@ -404,7 +420,7 @@ mad_master_spawn(int                    *argc,
       sprintf(cmd,
 	      "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
 	      configuration->host_name[0],
-	      cwd, argv[0], cwd, 0, getenv("MAD2_ROOT"), arg_str);
+	      cwd, argv[0], cwd, 0, get_mad_root(), arg_str);
 #else /* PM2 */
       sprintf(cmd,
 	      "rsh %s %s/%s -master -cwd %s -rank %d %s",
@@ -418,7 +434,7 @@ mad_master_spawn(int                    *argc,
       sprintf(cmd,
 	      "rsh %s %s -master -rank %d -conf %s %s",
 	      configuration->host_name[0],
-	      argv[0], 0, getenv("MAD2_ROOT"), arg_str);
+	      argv[0], 0, get_mad_root(), arg_str);
 #else /* PM2 */
       sprintf(cmd,
 	      "rsh %s %s -master -rank %d %s",
@@ -499,7 +515,7 @@ mad_slave_spawn(int                *argc,
 		  argv[0],
 		  cwd,
 		  i,  /* rank */
-		  getenv("MAD2_ROOT"),
+		  get_mad_root(),
 		  arg_str);
 #else /* PM2 */
 	  sprintf(cmd,
@@ -521,7 +537,7 @@ mad_slave_spawn(int                *argc,
 		  argv[0],
 		  cwd,
 		  i,  /* rank */
-		  getenv("MAD2_ROOT"),
+		  get_mad_root(),
 		  arg_str);
 #else /* PM2 */
 	  sprintf(cmd,
@@ -775,7 +791,7 @@ mad_init(int                   *argc,
   char                       conf_file[128];
   
   configuration_file = conf_file;
-  sprintf(conf_file, "%s/.mad2_conf", getenv("MAD2_ROOT"));
+  sprintf(conf_file, "%s/.mad2_conf", get_mad_root());
 #endif /* PM2 */
 
   LOG_IN(); 

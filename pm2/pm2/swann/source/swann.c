@@ -34,8 +34,11 @@
 
 ______________________________________________________________________________
 $Log: swann.c,v $
+Revision 1.5  2000/05/17 12:43:50  oaumage
+- correction d'une faute d'orthographe
+
 Revision 1.4  2000/04/21 15:40:20  oaumage
-- fusion de la barnche pm2_mad2_multicluster
+- fusion de la branche pm2_mad2_multicluster
 
 Revision 1.3.2.4  2000/04/15 15:23:15  oaumage
 - progression du transfert de fichiers distants

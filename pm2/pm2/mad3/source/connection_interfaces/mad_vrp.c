@@ -69,16 +69,21 @@ typedef struct s_mad_vrp_channel_specific
 
 typedef struct s_mad_vrp_in_connection_specific
 {
-  int            socket;
-  int            port;
-  vrp_incoming_t vrp_in;
-  marcel_t       thread;
-  marcel_sem_t   sem_put;
-  marcel_sem_t   sem_get;
-  p_mad_buffer_t buffer;
-  unsigned char  first_packet_data[MAD_VRP_MAX_FIRST_PACKET_LENGTH];
-  size_t         first_packet_length;
-  tbx_bool_t     active;
+  int             socket;
+  int             port;
+  vrp_incoming_t  vrp_in;
+  marcel_t        thread;
+  marcel_sem_t    sem_put;
+  marcel_sem_t    sem_get;
+  p_mad_buffer_t  buffer;
+  unsigned char   first_packet_data[MAD_VRP_MAX_FIRST_PACKET_LENGTH];
+  size_t          first_packet_length;
+  tbx_bool_t      active;
+
+  size_t         *lost;             /**< loss description array (size of array=loss_num) */
+  int             loss_num;         /**< number of lost fragments */
+  size_t          loss_granularity; /**< granularity of loss, in bytes */
+
 } mad_vrp_in_connection_specific_t, *p_mad_vrp_in_connection_specific_t;
 
 typedef struct s_mad_vrp_out_connection_specific
@@ -97,8 +102,8 @@ typedef struct s_mad_vrp_link_specific
 
 typedef struct s_mad_vrp_poll_req
 {
-        p_mad_channel_t    ch;
-        p_mad_connection_t c;
+  p_mad_channel_t    ch;
+  p_mad_connection_t c;
 } mad_vrp_poll_req_t, *p_mad_vrp_poll_req_t;
 
 /*
@@ -134,6 +139,27 @@ mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
           memcpy(is->first_packet_data, vrp_b->data, vrp_b->size);
           is->first_packet_length = vrp_b->size;
         }
+    }
+
+  is->loss_num		= vrp_b->loss_num;
+  is->loss_granularity	= vrp_b->loss_granularity;
+
+  if (is->loss_num)
+    {
+      is->lost = TBX_MALLOC(vrp_b->loss_num * sizeof(size_t));
+      {
+        int i = 0;
+
+        for (i = 0; i < is->loss_num; i++)
+          {
+            is->lost[i] = vrp_b->lost[i] - vrp_b->data;
+          }
+      }
+
+    }
+  else
+    {
+      is->lost = NULL;
     }
 
   marcel_sem_V(&(is->sem_get));
@@ -330,7 +356,7 @@ mad_vrp_marcel_poll(marcel_pollid_t id,
  */
 
 void
-mad_vrp_register(p_mad_driver_t driver) 
+mad_vrp_register(p_mad_driver_t driver)
 {
   p_mad_driver_interface_t interface = NULL;
 
@@ -655,10 +681,11 @@ void
 mad_vrp_send_buffer(p_mad_link_t   lnk,
 		    p_mad_buffer_t b)
 {
-  p_mad_vrp_out_connection_specific_t  os  = NULL;
-  int                                  s   =    0;
-  void                                *ptr = NULL;
-  size_t                               len = 0;
+  p_mad_vrp_out_connection_specific_t  os        = NULL;
+  int                                  s         =    0;
+  void                                *ptr       = NULL;
+  size_t                               len       =    0;
+  int                                  loss_rate =    0;
   vrp_buffer_t                         vrp_b;
 
   LOG_IN();
@@ -681,9 +708,31 @@ mad_vrp_send_buffer(p_mad_link_t   lnk,
 
       os->first = tbx_false;
     }
+  else
+    {
+      if (b->parameter_slist && !tbx_slist_is_nil(b->parameter_slist))
+        {
+          tbx_slist_ref_to_head(b->parameter_slist);
+          do
+            {
+              p_mad_buffer_slice_parameter_t param = NULL;
+
+              param = tbx_slist_ref_get(b->parameter_slist);
+              if (param->opcode == mad_vrp_op_optional_block)
+                {
+                  // note: offset and length are ignored for now
+                  // the whole block is either mandatory or optional
+                  loss_rate = 100;
+                }
+              else
+                FAILURE("invalid vrp parameter opcode");
+            }
+          while(tbx_slist_ref_forward(b->parameter_slist));
+        }
+    }
 
   vrp_b = vrp_buffer_construct(ptr, len);
-  vrp_buffer_set_loss_rate(vrp_b, 0, 0);
+  vrp_buffer_set_loss_rate(vrp_b, 0, loss_rate);
   s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
   vrp_buffer_destroy(vrp_b);
   b->bytes_read += len;
@@ -728,11 +777,44 @@ mad_vrp_receive_buffer(p_mad_link_t    lnk,
         }
       else
         {
+          TBX_CFREE2(is->lost);
+          is->loss_num =    0;
           marcel_sem_V(&(is->sem_put));
           marcel_sem_P(&(is->sem_get));
         }
     }
 
+  if (is->loss_num)
+    {
+      p_tbx_slist_t                  slist = NULL;
+      p_mad_buffer_slice_parameter_t bsp   = NULL;
+      int                            i     =    0;
+
+      slist = tbx_slist_nil();
+
+      for (i = 0; i < is->loss_num; i++)
+        {
+          if (i > 0 && is->lost[i] == (bsp->offset + bsp->length))
+            {
+              bsp->length += is->loss_granularity;
+              continue;
+            }
+
+          bsp = mad_alloc_slice_parameter();
+          bsp->base   = b->buffer;
+          bsp->offset = is->lost[i];
+          bsp->length = is->loss_granularity;
+          bsp->opcode = mad_vrp_os_lost_block;
+          bsp->value  = 0; // unused
+
+          tbx_slist_append(b->parameter_slist, bsp);
+        }
+
+      b->parameter_slist = slist;
+    }
+
+  TBX_CFREE2(is->lost);
+  is->loss_num = 0;
   LOG_OUT();
 }
 

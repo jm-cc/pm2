@@ -29,4 +29,4 @@ $(ASFILES): %.s: %.c
 	@$(CC) -S $(CFLAGS) $<
 
 indent:
-	indent -i2 $(CFILES)
+	indent --indent-level2 --line-length65 $(CFILES)

@@ -30,8 +30,8 @@ f (void *arg)
   final = shvar;
 
   tprintf ("Thread %d from node %d finished on node %d: "
-	    "from %d to %d!\n",
-	    my_name, my_node, pm2_self (), initial, final);
+	   "from %d to %d!\n",
+	   my_name, my_node, pm2_self (), initial, final);
   pm2_completion_signal (&my_c);
 }
 
@@ -65,7 +65,8 @@ pm2_main (int argc, char **argv)
 	{
 	  thread_id++;
 	  pm2_rawrpc_begin (i, service_id, NULL);
-	  pm2_pack_int (SEND_CHEAPER, RECV_CHEAPER, &thread_id, 1);
+	  pm2_pack_int (SEND_CHEAPER, RECV_CHEAPER,
+			&thread_id, 1);
 	  pm2_pack_completion (SEND_CHEAPER, RECV_CHEAPER, &c);
 	  pm2_rawrpc_end ();
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: slot_alloc.h,v $
+Revision 1.3  2000/09/12 15:45:50  gantoniu
+Made all necessary modifications to allow flavors without dsm be created and compiled.
+
 Revision 1.2  2000/07/14 16:17:08  gantoniu
 Merged with branch dsm3
 
@@ -133,7 +136,9 @@ void slot_print_list(slot_descr_t *descr);
 
 void slot_print_header(slot_header_t *ptr);
 
+#ifdef DSM
 void slot_set_shared(void *addr);
+#endif
 
 #define ALIGN_UNIT 32
 

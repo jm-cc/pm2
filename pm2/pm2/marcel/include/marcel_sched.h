@@ -130,13 +130,16 @@ static __inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
   *mask = ~(1U << vp);
 }
 
-static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
+static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
 						unsigned vp) __attribute__ ((unused));
-static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
+static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
 						unsigned vp)
 {
-  return 1 & ((*mask) >> vp);
+  return 1 & (mask >> vp);
 }
+
+
+void marcel_change_vpmask(marcel_vpmask_t mask);
 
 
 /* ==== `sleep' functions ==== */

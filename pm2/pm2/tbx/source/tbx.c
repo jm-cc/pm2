@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.2  2000/03/01 11:03:45  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.1  2000/01/13 14:51:33  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -45,7 +48,7 @@ ______________________________________________________________________________
  * =====
  */
 
-#include <tbx.h>
+#include "tbx.h"
 
 void tbx_init()
 {

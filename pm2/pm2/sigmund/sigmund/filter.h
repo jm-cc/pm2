@@ -76,9 +76,14 @@ typedef struct {
   cpu_list cpu;
   event_list event;
   time_slice_list time;
+  int active_time;
   evnum_slice_list evnum_slice;
+  int active_evnum_slice;
+  general_slice_list function;
+  thread_list thread_fun;
   general_slice_list gen_slice;
-  int active;               
+  int active_gen_slice;
+  int active;  // Inutile ??     
 } filter;
 
 extern void init_filter();
@@ -98,6 +103,11 @@ extern void filter_add_time_slice(u_64 begin, u_64 end);
 extern void filter_add_evnum_slice(unsigned int begin, unsigned int end);
 
 extern void filter_add_gen_slice(mode begin_type, int begin, 
+				 char begin_param_active, int begin_param, 
+				 mode end_type, int end, 
+				 char end_param_active, int end_param);
+
+extern void filter_add_function(mode begin_type, int begin, 
 				 char begin_param_active, int begin_param, 
 				 mode end_type, int end, 
 				 char end_param_active, int end_param);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.10  2000/12/11 08:31:13  oaumage
+- support Leonie
+
 Revision 1.9  2000/11/20 10:26:39  oaumage
 - initialisation, nouvelle version
 
@@ -427,6 +430,14 @@ void common_init(int *argc, char *argv[])
 #ifdef MARCEL
   marcel_purge_cmdline(argc, argv);
 #endif /* PM2 */
+
+#ifdef NTBX
+  ntbx_purge_cmd_line(argc, argv);
+#endif /* NTBX */
+
+#ifdef TBX
+  tbx_purge_cmd_line(argc, argv);
+#endif /* TBX */
 
 #ifdef PM2DEBUG  
 /*

@@ -316,8 +316,6 @@ mad_mux_read_block_header(p_mad_channel_t    mad_xchannel,
     tbx_expand_field(data, mad_xblock_fis_a_group);
   xbh->is_a_new_msg  =
     tbx_expand_field(data, mad_xblock_fis_a_new_msg);
-  xbh->is_an_eof_msg =
-    tbx_expand_field(data, mad_xblock_fis_an_eof_msg);
   xbh->closing       =
     tbx_expand_field(data, mad_xblock_fclosing);
 #ifdef MAD_MUX_FLOW_CONTROL
@@ -339,7 +337,6 @@ mad_mux_read_block_header(p_mad_channel_t    mad_xchannel,
 
   no_data =
     xbh->is_a_group
-    || xbh->is_an_eof_msg
 #ifdef MAD_MUX_FLOW_CONTROL
     || xbh->is_an_ack
     || xbh->is_a_new_msg
@@ -846,7 +843,6 @@ mad_mux_fill_xbh_data(unsigned char *data,
 		      unsigned int   sub,
 		      tbx_bool_t     is_a_group,
 		      tbx_bool_t     is_a_new_msg,
-		      tbx_bool_t     is_an_eof_msg,
 		      tbx_bool_t     closing
 #ifdef MAD_MUX_FLOW_CONTROL
 		      , tbx_bool_t     is_an_ack
@@ -855,7 +851,6 @@ mad_mux_fill_xbh_data(unsigned char *data,
 {
   unsigned int uint_is_a_group    = 0;
   unsigned int uint_is_a_new_msg  = 0;
-  unsigned int uint_is_an_eof_msg = 0;
   unsigned int uint_closing       = 0;
 #ifdef MAD_MUX_FLOW_CONTROL
   unsigned int uint_is_an_ack     = 0;
@@ -864,7 +859,6 @@ mad_mux_fill_xbh_data(unsigned char *data,
   LOG_IN();
   uint_is_a_group    =    (is_a_group)?1:0;
   uint_is_a_new_msg  =  (is_a_new_msg)?1:0;
-  uint_is_an_eof_msg = (is_an_eof_msg)?1:0;
   uint_closing       =       (closing)?1:0;
 #ifdef MAD_MUX_FLOW_CONTROL
   uint_is_an_ack     =     (is_an_ack)?1:0;
@@ -890,7 +884,6 @@ mad_mux_fill_xbh_data(unsigned char *data,
 
   tbx_contract_field(data, uint_is_a_group,    mad_xblock_fis_a_group);
   tbx_contract_field(data, uint_is_a_new_msg,  mad_xblock_fis_a_new_msg);
-  tbx_contract_field(data, uint_is_an_eof_msg, mad_xblock_fis_an_eof_msg);
   tbx_contract_field(data, uint_closing,       mad_xblock_fclosing);
 
 #ifdef MAD_MUX_FLOW_CONTROL
@@ -902,12 +895,12 @@ mad_mux_fill_xbh_data(unsigned char *data,
 #ifdef MAD_MUX_FLOW_CONTROL
 #define FILL_XBH_DATA() \
     mad_mux_fill_xbh_data(_data, _src, _dst, _length, _mux, _sub,\
-			  _is_a_group, _is_a_new_msg, _is_an_eof_msg, \
+			  _is_a_group, _is_a_new_msg, \
 			  _closing, _is_an_ack)
 #else
 #define FILL_XBH_DATA() \
     mad_mux_fill_xbh_data(_data, _src, _dst, _length, _mux, _sub,\
-			  _is_a_group, _is_a_new_msg, _is_an_eof_msg, \
+			  _is_a_group, _is_a_new_msg, \
 			  _closing)
 #endif /* MAD_MUX_FLOW_CONTROL */
 
@@ -1230,7 +1223,6 @@ mad_mux_new_message(p_mad_connection_t xout)
       unsigned int   _sub           = sub;
       tbx_bool_t     _is_a_group    = tbx_false;
       tbx_bool_t     _is_a_new_msg  = tbx_true;
-      tbx_bool_t     _is_an_eof_msg = tbx_false;
       tbx_bool_t     _closing       = tbx_false;
       tbx_bool_t     _is_an_ack     = tbx_false;
 
@@ -1258,6 +1250,7 @@ mad_mux_new_message(p_mad_connection_t xout)
 void
 mad_mux_finalize_message(p_mad_connection_t xout)
 {
+#if 0
   p_mad_channel_t          channel   = NULL;
   unsigned int             mux       =    0;
   unsigned int             sub       =    0;
@@ -1285,7 +1278,6 @@ mad_mux_finalize_message(p_mad_connection_t xout)
     unsigned int   _sub           = sub;
     tbx_bool_t     _is_a_group    = tbx_false;
     tbx_bool_t     _is_a_new_msg  = tbx_false;
-    tbx_bool_t     _is_an_eof_msg = tbx_true;
     tbx_bool_t     _closing       = tbx_false;
 #ifdef MAD_MUX_FLOW_CONTROL
     tbx_bool_t     _is_an_ack     = tbx_false;
@@ -1305,6 +1297,7 @@ mad_mux_finalize_message(p_mad_connection_t xout)
 
   marcel_mutex_unlock(&(out->lock_mutex));
   LOG_OUT();
+#endif // 0
 }
 
 #ifdef MAD_MESSAGE_POLLING
@@ -1360,7 +1353,6 @@ mad_mux_poll_message(p_mad_channel_t channel)
 	unsigned int   _sub           = sub;
 	tbx_bool_t     _is_a_group    = tbx_false;
 	tbx_bool_t     _is_a_new_msg  = tbx_false;
-	tbx_bool_t     _is_an_eof_msg = tbx_false;
 	tbx_bool_t     _closing       = tbx_false;
 	tbx_bool_t     _is_an_ack     = tbx_true;
 
@@ -1462,7 +1454,6 @@ mad_mux_receive_message(p_mad_channel_t channel)
 	unsigned int   _sub           = sub;
 	tbx_bool_t     _is_a_group    = tbx_false;
 	tbx_bool_t     _is_a_new_msg  = tbx_false;
-	tbx_bool_t     _is_an_eof_msg = tbx_false;
 	tbx_bool_t     _closing       = tbx_false;
 	tbx_bool_t     _is_an_ack     = tbx_true;
 
@@ -1486,50 +1477,8 @@ mad_mux_receive_message(p_mad_channel_t channel)
 void
 mad_mux_message_received(p_mad_connection_t xin)
 {
-  p_mad_channel_t          channel = NULL;
-  ntbx_process_grank_t     source  =   -1;
-  unsigned int             mux     =    0;
-  unsigned int             sub     =    0;
-  p_mad_mux_darray_lane_t  lane    = NULL;
-  p_tbx_darray_t           darray  = NULL;
-
   LOG_IN();
-  source  = xin->remote_rank;
-  channel = xin->channel;
-  mux     = channel->mux;
-  sub     = channel->sub;
-  darray  = channel->sub_list_darray;
-
-  TBX_LOCK_SHARED(darray);
-  lane = tbx_darray_get(darray, sub);
-  TBX_UNLOCK_SHARED(darray);
-
-  {
-    p_mad_mux_block_queue_t  block_queue      = NULL;
-    p_tbx_slist_t            block_slist      = NULL;
-    marcel_sem_t            *block_to_forward = NULL;
-
-    block_queue      = tbx_darray_get(lane->block_queues, source);
-    block_to_forward = &(block_queue->block_to_forward);
-    block_slist      = block_queue->queue;
-
-    {
-      p_mad_xblock_header_t xbh = NULL;
-
-      marcel_sem_P(block_to_forward);
-      TBX_LOCK_SHARED(block_slist);
-      xbh = tbx_slist_extract(block_slist);
-      TBX_UNLOCK_SHARED(block_slist);
-
-      if (xbh->is_an_eof_msg)
-	{
-	  tbx_free(mad_xbheader_memory, xbh);
-	}
-      else
-	FAILURE("unexpected block");
-    }
-  }
-
+  /* unimplemented */
   LOG_OUT();
 }
 
@@ -1675,7 +1624,6 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
 	  unsigned int   _sub           = sub;
 	  tbx_bool_t     _is_a_group    = tbx_true;
 	  tbx_bool_t     _is_a_new_msg  = is_a_new_msg;
-	  tbx_bool_t     _is_an_eof_msg = tbx_false;
 	  tbx_bool_t     _closing       = tbx_false;
 #ifdef MAD_MUX_FLOW_CONTROL
 	  tbx_bool_t     _is_an_ack     = tbx_false;
@@ -1697,7 +1645,6 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
 	      unsigned int   _sub           = sub;
 	      tbx_bool_t     _is_a_group    = tbx_false;
 	      tbx_bool_t     _is_a_new_msg  = tbx_false;
-	      tbx_bool_t     _is_an_eof_msg = tbx_false;
 	      tbx_bool_t     _closing       = tbx_false;
 #ifdef MAD_MUX_FLOW_CONTROL
 	      tbx_bool_t     _is_an_ack     = tbx_false;
@@ -1724,7 +1671,6 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
       unsigned int   _sub           = sub;
       tbx_bool_t     _is_a_group    = tbx_false;
       tbx_bool_t     _is_a_new_msg  = is_a_new_msg;
-      tbx_bool_t     _is_an_eof_msg = tbx_false;
       tbx_bool_t     _closing       = tbx_false;
 #ifdef MAD_MUX_FLOW_CONTROL
       tbx_bool_t     _is_an_ack     = tbx_false;
@@ -2088,7 +2034,6 @@ mad_mux_stop_reception(p_mad_channel_t      xchannel,
 	  unsigned int   _sub           = 0;
 	  tbx_bool_t     _is_a_group    = tbx_false;
 	  tbx_bool_t     _is_a_new_msg  = tbx_false;
-	  tbx_bool_t     _is_an_eof_msg = tbx_false;
 	  tbx_bool_t     _closing       = tbx_true;
 #ifdef MAD_MUX_FLOW_CONTROL
 	  tbx_bool_t     _is_an_ack     = tbx_false;

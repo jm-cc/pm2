@@ -239,12 +239,27 @@ tbx_slist_is_nil(p_tbx_slist_t slist)
   return test;
 }
 
+
 /*
  * Duplicate a list
  * ----------------
  */
+static 
+void *
+__tbx_slist_default_dup(void *object)
+{
+  void *result = NULL;
+
+  LOG_IN();
+  result = object;
+  LOG_OUT();
+
+  return object;
+}
+
 p_tbx_slist_t
-tbx_slist_dup(p_tbx_slist_t source)
+tbx_slist_dup_ext(const p_tbx_slist_t    source,
+		  p_tbx_slist_dup_func_t dfunc)
 {
   p_tbx_slist_t destination = NULL;
 
@@ -253,26 +268,45 @@ tbx_slist_dup(p_tbx_slist_t source)
 
   if (!tbx_slist_is_nil(source))
     {
-      p_tbx_slist_element_t ptr;
+      p_tbx_slist_element_t  ptr    = NULL;
+      void                  *object = NULL;
+
+      if (!dfunc)
+	{
+	  dfunc = __tbx_slist_default_dup;
+	}
 
       ptr = source->head;
       
-      destination->head = tbx_slist_alloc_element(ptr->object);
+      object            = dfunc(ptr->object);
+      destination->head = tbx_slist_alloc_element(object);
       destination->tail = destination->head;
 
       ptr = ptr->next;
 
       while (ptr)
 	{
-	  destination->tail->next = tbx_slist_alloc_element(ptr->object);
+	  object                            = dfunc(ptr->object);
+	  destination->tail->next           = tbx_slist_alloc_element(object);
 	  destination->tail->next->previous = destination->tail;	  
-	  destination->tail = destination->tail->next;
+	  destination->tail                 = destination->tail->next;
 	  ptr = ptr->next;
 	}
 
       destination->length = source->length;
     }  
 
+  LOG_OUT();
+  return destination;
+}
+
+p_tbx_slist_t
+tbx_slist_dup(const p_tbx_slist_t source)
+{
+  p_tbx_slist_t destination = NULL;
+
+  LOG_IN();
+  destination = tbx_slist_dup_ext(source, NULL);
   LOG_OUT();
   return destination;
 }
@@ -465,6 +499,12 @@ __tbx_slist_merge_before_and_free(p_tbx_slist_t destination,
 				p_tbx_slist_t source)
 {
   LOG_IN();
+  if (tbx_slist_is_nil(destination))
+    {
+      *destination = *source;
+      goto end;
+    }
+  
   if (destination->head)
     {
       destination->head->previous = source->tail;
@@ -478,6 +518,7 @@ __tbx_slist_merge_before_and_free(p_tbx_slist_t destination,
   destination->head = source->head;
   destination->length += source->length;
 
+ end:
   __tbx_slist_free_struct(source);
   LOG_OUT();
 }
@@ -488,6 +529,12 @@ __tbx_slist_merge_after_and_free(p_tbx_slist_t destination,
 			       p_tbx_slist_t source)
 {
   LOG_IN();
+  if (tbx_slist_is_nil(destination))
+    {
+      *destination = *source;
+      goto end;
+    }
+  
   if (source->head)
     {
       source->head->previous = destination->tail;
@@ -501,8 +548,54 @@ __tbx_slist_merge_after_and_free(p_tbx_slist_t destination,
   destination->tail = source->tail;
   destination->length += source->length;
 
+ end:
   __tbx_slist_free_struct(source);
   LOG_OUT();
+}
+
+void
+tbx_slist_merge_before_ext(p_tbx_slist_t          destination,
+			   p_tbx_slist_t          source,
+			   p_tbx_slist_dup_func_t dfunc)
+{
+  LOG_IN();
+  if (tbx_slist_is_nil(source))
+    goto end;
+  
+  source = tbx_slist_dup_ext(source, dfunc);
+  __tbx_slist_merge_before_and_free(destination, source);
+
+ end:
+  LOG_OUT();
+}
+
+void
+tbx_slist_merge_after_ext(p_tbx_slist_t          destination,
+			  p_tbx_slist_t          source,
+			  p_tbx_slist_dup_func_t dfunc)
+{
+  LOG_IN();
+  if (tbx_slist_is_nil(source))
+    goto end;
+  
+  source = tbx_slist_dup_ext(source, dfunc);
+  __tbx_slist_merge_after_and_free(destination, source);
+
+ end:
+  LOG_OUT();
+}
+
+p_tbx_slist_t
+tbx_slist_merge_ext(p_tbx_slist_t          destination,
+		    p_tbx_slist_t          source,
+		    p_tbx_slist_dup_func_t dfunc)
+{
+  LOG_IN();
+  destination = tbx_slist_dup_ext(destination, dfunc);
+  tbx_slist_merge_after(destination, source);
+  LOG_OUT();
+
+  return destination;
 }
 
 void
@@ -510,8 +603,13 @@ tbx_slist_merge_before(p_tbx_slist_t destination,
 		       p_tbx_slist_t source)
 {
   LOG_IN();
+  if (tbx_slist_is_nil(source))
+    goto end;
+  
   source = tbx_slist_dup(source);
   __tbx_slist_merge_before_and_free(destination, source);
+
+ end:
   LOG_OUT();
 }
 
@@ -520,8 +618,13 @@ tbx_slist_merge_after(p_tbx_slist_t destination,
 		      p_tbx_slist_t source)
 {
   LOG_IN();
+  if (tbx_slist_is_nil(source))
+    goto end;
+  
   source = tbx_slist_dup(source);
   __tbx_slist_merge_after_and_free(destination, source);
+
+ end:
   LOG_OUT();
 }
 
@@ -742,6 +845,20 @@ tbx_slist_index_set_nref(p_tbx_slist_nref_t nref,
  * Search access functions
  * -----------------------
  */
+static
+tbx_bool_t
+__tbx_slist_default_search(void *ref_obj,
+			   void *obj)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  result = (ref_obj == obj)?tbx_true:tbx_false;
+  LOG_OUT();
+
+  return result;
+}
+
 tbx_slist_index_t
 tbx_slist_search_get_index(p_tbx_slist_t              slist,
 			   p_tbx_slist_search_func_t  sfunc,
@@ -754,44 +871,27 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
     {
       p_tbx_slist_element_t ptr = NULL;
       
-      ptr = slist->head;
+      sfunc = (sfunc)?:__tbx_slist_default_search;
+      ptr   = slist->head;
       
-      if (sfunc)
+      while (ptr)
 	{
-	  while (ptr)
-	    {
-	      if (sfunc(object, ptr->object))
-		{
-		  LOG_OUT();
-
-		  return idx;
-		}
-
-	      idx++;
-	      ptr = ptr->next;
-	    } 
-	}
-      else
-	{
-	  while (ptr)
-	    {
-	      if (ptr->object == object)
-		{
-		  LOG_OUT();
-
-		  return idx;		  
-		}
-
-	      idx++;
-	      ptr = ptr->next;
-	    } 
-	}
+	  if (sfunc(object, ptr->object))
+	    goto end;
+	  
+	  idx++;
+	  ptr = ptr->next;
+	} 
     }
   else
     FAILURE("empty list");
+
+  idx = -1;
+
+ end:
   LOG_OUT();
 
-  return -1;
+  return idx;
 }
 
 void *
@@ -806,44 +906,27 @@ tbx_slist_search_and_extract(p_tbx_slist_t              slist,
     {
       p_tbx_slist_element_t element = NULL;
       
+      sfunc   = (sfunc)?:__tbx_slist_default_search;      
       element = slist->head;
       
-      if (sfunc)
+      while (element)
 	{
-	  while (element)
+	  if (sfunc(object, element->object))
 	    {
-	      if (sfunc(object, element->object))
-		{
-		  result = __tbx_slist_free_element(slist, element);
-		  LOG_OUT();
+	      result = __tbx_slist_free_element(slist, element);
+	      goto end;
+	    }
 
-		  return result;
-		}
-
-	      element = element->next;
-	    } 
-	}
-      else
-	{
-	  while (element)
-	    {
-	      if (element->object == object)
-		{
-		  result = __tbx_slist_free_element(slist, element);
-		  LOG_OUT();
-
-		  return result;
-		}
-
-	      element = element->next;
-	    } 
-	}
+	  element = element->next;
+	} 
     }
   else
     FAILURE("empty list");
+
+ end:
   LOG_OUT();
 
-  return NULL;
+  return result;
 }
 
 tbx_bool_t
@@ -851,45 +934,32 @@ tbx_slist_search_forward_set_ref(p_tbx_slist_t              slist,
 				 p_tbx_slist_search_func_t  sfunc,
 				 void                      *object)
 {
+  tbx_bool_t result = tbx_false;
+
   LOG_IN();
   if (!tbx_slist_is_nil(slist))
     {
+      sfunc      = (sfunc)?:__tbx_slist_default_search;      
       slist->ref = slist->head;
       
-      if (sfunc)
+      while (slist->ref)
 	{
-	  while (slist->ref)
+	  if (sfunc(object, slist->ref->object))
 	    {
-	      if (sfunc(object, slist->ref->object))
-		{
-		  LOG_OUT();
+	      result = tbx_true;
+	      goto end;
+	    }
 
-		  return tbx_true;
-		}
-
-	      slist->ref = slist->ref->next;
-	    } 
-	}
-      else
-	{
-	  while (slist->ref)
-	    {
-	      if (slist->ref->object == object)
-		{
-		  LOG_OUT();
-
-		  return tbx_true;  
-		}
-
-	      slist->ref = slist->ref->next;
-	    } 
-	}
+	  slist->ref = slist->ref->next;
+	} 
     }
   else
     FAILURE("empty list");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 
@@ -898,45 +968,32 @@ tbx_slist_search_backward_set_ref(p_tbx_slist_t              slist,
 				  p_tbx_slist_search_func_t  sfunc,
 				  void                      *object)
 {
+  tbx_bool_t result = tbx_false;
+
   LOG_IN();
   if (!tbx_slist_is_nil(slist))
     {
+      sfunc      = (sfunc)?:__tbx_slist_default_search;
       slist->ref = slist->tail;
       
-      if (sfunc)
+      while (slist->ref)
 	{
-	  while (slist->ref)
+	  if (sfunc(object, slist->ref->object))
 	    {
-	      if (sfunc(object, slist->ref->object))
-		{
-		  LOG_OUT();
+	      result = tbx_true;
+	      goto end;
+	    }
 
-		  return tbx_true;
-		}
-
-	      slist->ref = slist->ref->previous;
-	    } 
-	}
-      else
-	{
-	  while (slist->ref)
-	    {
-	      if (slist->ref->object == object)
-		{
-		  LOG_OUT();
-
-		  return tbx_true;  
-		}
-
-	      slist->ref = slist->ref->previous;
-	    } 
-	}
+	  slist->ref = slist->ref->previous;
+	} 
     }
   else
     FAILURE("empty list");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 tbx_bool_t
@@ -944,48 +1001,36 @@ tbx_slist_search_next_set_ref(p_tbx_slist_t              slist,
 			      p_tbx_slist_search_func_t  sfunc,
 			      void                      *object)
 {
+  tbx_bool_t result = tbx_false;
+
   LOG_IN();
   if (slist->ref)
     {
       if (!tbx_slist_is_nil(slist))
 	{
-	  if (sfunc)
+	  sfunc = (sfunc)?:__tbx_slist_default_search;
+	  
+	  while (slist->ref)
 	    {
-	      while (slist->ref)
+	      if (sfunc(object, slist->ref->object))
 		{
-		  if (sfunc(object, slist->ref->object))
-		    {
-		      LOG_OUT();
+		  result = tbx_true;
+		  goto end;
+		}
 
-		      return tbx_true;
-		    }
-
-		  slist->ref = slist->ref->next;
-		} 
-	    }
-	  else
-	    {
-	      while (slist->ref)
-		{
-		  if (slist->ref->object == object)
-		    {
-		      LOG_OUT();
-
-		      return tbx_true;  
-		    }
-
-		  slist->ref = slist->ref->next;
-		} 
-	    }
+	      slist->ref = slist->ref->next;
+	    } 
 	}
       else
 	FAILURE("empty list");
     }
   else
     FAILURE("uninitialized reference");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 
@@ -994,48 +1039,36 @@ tbx_slist_search_previous_set_ref(p_tbx_slist_t              slist,
 				  p_tbx_slist_search_func_t  sfunc,
 				  void                      *object)
 {
+  tbx_bool_t result = tbx_false;
+
   LOG_IN();
   if (slist->ref)
     {
       if (!tbx_slist_is_nil(slist))
-	{
-	  if (sfunc)
+	{      
+	  sfunc = (sfunc)?:__tbx_slist_default_search;
+      
+	  while (slist->ref)
 	    {
-	      while (slist->ref)
+	      if (sfunc(object, slist->ref->object))
 		{
-		  if (sfunc(object, slist->ref->object))
-		    {
-		      LOG_OUT();
+		  result = tbx_true;
+		  goto end;
+		}
 
-		      return tbx_true;
-		    }
-
-		  slist->ref = slist->ref->previous;
-		} 
-	    }
-	  else
-	    {
-	      while (slist->ref)
-		{
-		  if (slist->ref->object == object)
-		    {
-		      LOG_OUT();
-
-		      return tbx_true;  
-		    }
-
-		  slist->ref = slist->ref->previous;
-		} 
-	    }
+	      slist->ref = slist->ref->previous;
+	    } 
 	}
       else
 	FAILURE("empty list");
     }
   else
     FAILURE("uninitialized reference");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 tbx_bool_t
@@ -1043,52 +1076,38 @@ tbx_slist_search_forward_set_nref(p_tbx_slist_nref_t         nref,
 				  p_tbx_slist_search_func_t  sfunc,
 				  void                      *object)
 {
-  p_tbx_slist_t         slist        = NULL;
-  p_tbx_slist_element_t nref_element = NULL;
+  p_tbx_slist_t slist  = NULL;
+  tbx_bool_t    result = tbx_false;
 
   LOG_IN();
   slist = nref->slist;
   
   if (!tbx_slist_is_nil(slist))
     {
+      p_tbx_slist_element_t nref_element = NULL;
+
+      sfunc        = (sfunc)?:__tbx_slist_default_search;
       nref_element = slist->head;
       
-      if (sfunc)
+      while (nref_element)
 	{
-	  while (nref_element)
+	  if (sfunc(object, nref_element->object))
 	    {
-	      if (sfunc(object, nref_element->object))
-		{
-		  nref->element = nref_element;
-		  LOG_OUT();
+	      nref->element = nref_element;
+	      result        = tbx_true;
+	      goto end;
+	    }
 
-		  return tbx_true;
-		}
-
-	      nref_element = nref_element->next;
-	    } 
-	}
-      else
-	{
-	  while (slist->ref)
-	    {
-	      if (slist->ref->object == object)
-		{
-		  nref->element = nref_element;
-		  LOG_OUT();
-
-		  return tbx_true;  
-		}
-
-	      nref_element = nref_element->next;
-	    } 
-	}
+	  nref_element = nref_element->next;
+	} 
     }
   else
     FAILURE("empty list");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 
@@ -1097,52 +1116,38 @@ tbx_slist_search_backward_set_nref(p_tbx_slist_nref_t         nref,
 				   p_tbx_slist_search_func_t  sfunc,
 				   void                      *object)
 {
-  p_tbx_slist_t         slist        = NULL;
-  p_tbx_slist_element_t nref_element = NULL;
+  p_tbx_slist_t slist  = NULL;
+  tbx_bool_t    result = tbx_false;
 
   LOG_IN();
   slist = nref->slist;
   
   if (!tbx_slist_is_nil(slist))
     {
+      p_tbx_slist_element_t nref_element = NULL;
+
+      sfunc        = (sfunc)?:__tbx_slist_default_search;
       nref_element = slist->tail;
       
-      if (sfunc)
+      while (nref_element)
 	{
-	  while (nref_element)
+	  if (sfunc(object, nref_element->object))
 	    {
-	      if (sfunc(object, nref_element->object))
-		{
-		  nref->element = nref_element;
-		  LOG_OUT();
+	      nref->element = nref_element;
+	      result        = tbx_true;
+	      goto end;
+	    }
 
-		  return tbx_true;
-		}
-
-	      nref_element = nref_element->previous;
-	    } 
-	}
-      else
-	{
-	  while (nref_element)
-	    {
-	      if (nref_element->object == object)
-		{
-		  nref->element = nref_element;
-		  LOG_OUT();
-
-		  return tbx_true;  
-		}
-
-	      nref_element = nref_element->previous;
-	    } 
-	}
+	  nref_element = nref_element->previous;
+	} 
     }
   else
     FAILURE("empty list");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 tbx_bool_t
@@ -1152,6 +1157,7 @@ tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
 {
   p_tbx_slist_t         slist        = NULL;
   p_tbx_slist_element_t nref_element = NULL;
+  tbx_bool_t            result       = tbx_false;
 
   LOG_IN();
   slist        = nref->slist;
@@ -1161,45 +1167,30 @@ tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
     {
       if (!tbx_slist_is_nil(slist))
 	{
-	  if (sfunc)
+	  sfunc = (sfunc)?:__tbx_slist_default_search;
+
+	  while (nref_element)
 	    {
-	      while (nref_element)
+	      if (sfunc(object, nref_element->object))
 		{
-		  if (sfunc(object, nref_element->object))
-		    {
-		      nref->element = nref_element;
-		      LOG_OUT();
+		  nref->element = nref_element;
+		  result        = tbx_true;
+		  goto end;
+		}
 
-		      return tbx_true;
-		    }
-
-		  nref_element = nref_element->next;
-		} 
-	    }
-	  else
-	    {
-	      while (nref_element)
-		{
-		  if (nref_element->object == object)
-		    {
-		      nref->element = nref_element;
-		      LOG_OUT();
-
-		      return tbx_true;  
-		    }
-
-		  nref_element = nref_element->next;
-		} 
-	    }
+	      nref_element = nref_element->next;
+	    } 
 	}
       else
 	FAILURE("empty list");
     }
   else
     FAILURE("uninitialized reference");
+
+ end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 
@@ -1210,6 +1201,7 @@ tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
 {
   p_tbx_slist_t         slist        = NULL;
   p_tbx_slist_element_t nref_element = NULL;
+  tbx_bool_t            result       = tbx_false;
 
   LOG_IN();
   slist        = nref->slist;
@@ -1219,42 +1211,27 @@ tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
     {
       if (!tbx_slist_is_nil(slist))
 	{
-	  if (sfunc)
+	  sfunc = (sfunc)?:__tbx_slist_default_search;
+
+	  while (nref_element)
 	    {
-	      while (nref_element)
+	      if (sfunc(object, nref_element->object))
 		{
-		  if (sfunc(object, nref_element->object))
-		    {
-		      nref->element = nref_element;
-		      LOG_OUT();
+		  nref->element = nref_element;
+		  result        = tbx_true;
+		  goto end;
+		}
 
-		      return tbx_true;
-		    }
-
-		  nref_element = nref_element->previous;
-		} 
-	    }
-	  else
-	    {
-	      while (nref_element)
-		{
-		  if (nref_element->object == object)
-		    {
-		      nref->element = nref_element;
-		      LOG_OUT();
-
-		      return tbx_true;  
-		    }
-
-		  nref_element = nref_element->previous;
-		} 
-	    }
+	      nref_element = nref_element->previous;
+	    } 
 	}
       else
 	FAILURE("empty list");
     }
   else
     FAILURE("uninitialized reference");
+
+ end:
   LOG_OUT();
 
   return tbx_false;

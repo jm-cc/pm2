@@ -2016,10 +2016,6 @@ static void timer_interrupt(int sig)
 
   marcel_update_time(cur);
 
-  if(cur->lwp == NULL) {
-    fprintf(stderr, "WARNING!!! %p->lwp == NULL!\n", cur);
-  }
-
   if(!locked() && preemption_enabled()) {
 
     LOG_IN();

@@ -25,6 +25,7 @@
 #include "intro.h"
 #include "trace.h"
 #include "shell.h"
+#include <string.h>
 
 static GtkWidget *win = NULL;
 static GtkWidget *label1 = NULL;

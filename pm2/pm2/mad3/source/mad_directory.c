@@ -263,20 +263,23 @@ static
 void
 mad_dir_channel_get(p_mad_madeleine_t madeleine)
 {
-  p_mad_session_t    session        = NULL;
-  p_mad_directory_t  dir            = NULL;
-  p_ntbx_client_t    client         = NULL;
-  p_tbx_darray_t     process_darray = NULL;
-  p_tbx_htable_t     driver_htable  = NULL;
-  p_tbx_htable_t     channel_htable = NULL;
-  p_tbx_slist_t      channel_slist  = NULL;
-  char              *command_string = NULL;
-  int                number         =    0;
+  p_mad_session_t    session                  = NULL;
+  p_mad_directory_t  dir                      = NULL;
+  p_ntbx_client_t    client                   = NULL;
+  p_tbx_slist_t      mad_public_channel_slist = NULL;
+  p_tbx_darray_t     process_darray           = NULL;
+  p_tbx_htable_t     driver_htable            = NULL;
+  p_tbx_htable_t     channel_htable           = NULL;
+  p_tbx_slist_t      channel_slist            = NULL;
+  char              *command_string           = NULL;
+  int                number                   =    0;
 
   LOG_IN();
   session = madeleine->session;
   dir     = madeleine->dir;
   client  = session->leonie_link;
+
+  mad_public_channel_slist = madeleine->public_channel_slist;
   
   process_darray = dir->process_darray;
   driver_htable  = dir->driver_htable;
@@ -310,6 +313,10 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
       sprintf(channel_reference_name, "%s:%s", "channel", dir_channel->name);
 
       dir_channel->public = mad_ntbx_receive_unsigned_int(client);
+      if (dir_channel->public)
+	{
+	  tbx_slist_append(mad_public_channel_slist, dir_channel->name);
+	}	  
 
       driver_name = mad_ntbx_receive_string(client);      
       dir_channel->driver = tbx_htable_get(driver_htable, driver_name);
@@ -461,22 +468,25 @@ static
 void
 mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
 {
-  p_mad_session_t    session         = NULL;
-  p_mad_directory_t  dir             = NULL;
-  p_ntbx_client_t    client          = NULL;
-  p_tbx_darray_t     process_darray  = NULL;
-  p_tbx_htable_t     driver_htable   = NULL;
-  p_tbx_htable_t     channel_htable  = NULL;
-  p_tbx_htable_t     fchannel_htable = NULL;
-  p_tbx_htable_t     vchannel_htable = NULL;
-  p_tbx_slist_t      vchannel_slist  = NULL;
-  char              *command_string  = NULL;
-  int                number          =    0;
+  p_mad_session_t    session                  = NULL;
+  p_mad_directory_t  dir                      = NULL;
+  p_ntbx_client_t    client                   = NULL;
+  p_tbx_slist_t      mad_public_channel_slist = NULL;
+  p_tbx_darray_t     process_darray           = NULL;
+  p_tbx_htable_t     driver_htable            = NULL;
+  p_tbx_htable_t     channel_htable           = NULL;
+  p_tbx_htable_t     fchannel_htable          = NULL;
+  p_tbx_htable_t     vchannel_htable          = NULL;
+  p_tbx_slist_t      vchannel_slist           = NULL;
+  char              *command_string           = NULL;
+  int                number                   =    0;
 
   LOG_IN();
   session = madeleine->session;
   dir     = madeleine->dir;
   client  = session->leonie_link;
+  
+  mad_public_channel_slist = madeleine->public_channel_slist;
   
   process_darray  = dir->process_darray;
   driver_htable   = dir->driver_htable;
@@ -504,7 +514,9 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
       dir_vchannel = mad_dir_vchannel_cons();
       dir_vchannel->name = mad_ntbx_receive_string(client);
       TRACE_STR("Virtual channel name", dir_vchannel->name);
-      
+
+      tbx_slist_append(mad_public_channel_slist, dir_vchannel->name);
+
       vchannel_reference_name =
 	TBX_MALLOC(strlen("vchannel") + strlen(dir_vchannel->name) + 2);
       CTRL_ALLOC(vchannel_reference_name);
@@ -951,7 +963,6 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
   p_ntbx_client_t      client                   = NULL;
   p_tbx_htable_t       mad_driver_htable        = NULL;
   p_tbx_htable_t       mad_channel_htable       = NULL;
-  p_tbx_slist_t        mad_public_channel_slist = NULL;
   p_tbx_htable_t       dir_driver_htable        = NULL;
   p_tbx_htable_t       dir_channel_htable       = NULL;
   p_tbx_htable_t       dir_fchannel_htable      = NULL;
@@ -968,7 +979,6 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
   dir                      = madeleine->dir;
   mad_driver_htable        = madeleine->driver_htable;
   mad_channel_htable       = madeleine->channel_htable;
-  mad_public_channel_slist = madeleine->public_channel_slist;
   client                   = session->leonie_link;
   process_rank             = session->process_rank;
   dir_driver_htable        = dir->driver_htable;
@@ -1549,11 +1559,6 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       tbx_htable_add(madeleine->channel_htable,
 		     dir_channel->name, mad_channel);      
 
-      if (mad_channel->public)
-	{
-	  tbx_slist_append(mad_public_channel_slist, mad_channel->name);
-	}
-	  
       mad_ntbx_send_int(client, -1);
     }
   
@@ -2467,8 +2472,6 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 
       tbx_htable_add(madeleine->channel_htable,
 		     dir_vchannel->name, mad_channel);
-
-      tbx_slist_append(mad_public_channel_slist, mad_channel->name);
 #endif // MARCEL
 
       // Virtual channel ready

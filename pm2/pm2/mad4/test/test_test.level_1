@@ -23,8 +23,8 @@ compile_leonie()
 compile_leonie
 
 # Configuration
-flavor="test_mad3"
-appdir="${PM2_ROOT}/mad3/examples"
+flavor="test_mad4"
+appdir="${PM2_ROOT}/mad4/examples"
 prog="mad_test"
 args="--x --p --l"
 hosts=${TESTCONFIG:-"localhost localhost"}
@@ -38,9 +38,9 @@ done
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ext=\"\" \
- --modules=\"init mad3 ntbx tbx\" \
+ --modules=\"init mad4 ntbx tbx\" \
  --init=\"debug gdb\" \
- --mad3=\"debug gdb ${net}\" \
+ --mad4=\"debug gdb ${net}\" \
  --ntbx=\"debug gdb\" \
  --tbx=\"debug gdb\" \
  --common=\"debug gdb\" \

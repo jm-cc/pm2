@@ -55,6 +55,8 @@
 #undef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
 
+static unsigned PM2_COMPLETION;
+
 static pm2_startup_func_t startup_func = NULL;
 
 static int spmd_conf[MAX_MODULES];
@@ -100,6 +102,17 @@ void pm2_set_startup_func(pm2_startup_func_t f)
   startup_func = f;
 }
 
+static void pm2_completion_service(void)
+{
+  marcel_sem_t *sem_ptr;
+
+  mad_unpack_byte(MAD_IN_HEADER, (char *)&sem_ptr, sizeof(sem_ptr));
+
+  pm2_rawrpc_waitdata();
+
+  marcel_sem_V(sem_ptr);
+}
+
 void pm2_init(int *argc, char **argv)
 {
   timing_init();
@@ -136,6 +149,8 @@ void pm2_init(int *argc, char **argv)
 
   marcel_setspecific(_pm2_block_key, (any_t)(&_pm2_main_block_descr));
   block_init_list(&_pm2_main_block_descr);
+
+  pm2_rawrpc_register(&PM2_COMPLETION, pm2_completion_service);
 
   pm2_thread_init();
   pm2_printf_init();
@@ -256,5 +271,40 @@ void pm2_rawrpc_end(void)
 {
   mad_sendbuf_send();
   pm2_enable_migration();
+}
+
+void pm2_completion_init(pm2_completion_t *c)
+{
+  marcel_sem_init(&c->sem, 0);
+  c->proc = pm2_self();
+  c->sem_ptr = &c->sem;
+}
+
+void pm2_completion_pack(pm2_completion_t *c)
+{
+  mad_pack_int(MAD_IN_HEADER, &c->proc, 1);
+  mad_pack_byte(MAD_IN_HEADER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+}
+
+void pm2_completion_unpack(pm2_completion_t *c)
+{
+  mad_unpack_int(MAD_IN_HEADER, &c->proc, 1);
+  mad_unpack_byte(MAD_IN_HEADER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+}
+
+void pm2_completion_wait(pm2_completion_t *c)
+{
+  marcel_sem_P(&c->sem);
+}
+
+void pm2_completion_signal(pm2_completion_t *c)
+{
+  if(c->proc == pm2_self())
+    marcel_sem_V(&c->sem);
+  else {
+    pm2_rawrpc_begin(c->proc, PM2_COMPLETION, NULL);
+    mad_pack_byte(MAD_IN_HEADER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+    pm2_rawrpc_end();
+  }
 }
 

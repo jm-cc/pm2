@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.h,v $
+Revision 1.3  2000/03/06 15:30:11  rnamyst
+Added the macro MARCEL_MUTEX_INITIALIZER.
+
 Revision 1.2  2000/01/31 15:56:24  oaumage
 - ajout du Log CVS
 
@@ -43,6 +46,8 @@ ______________________________________________________________________________
 
 #ifndef MARCEL_MUTEX_EST_DEF
 #define MARCEL_MUTEX_EST_DEF
+
+#define MARCEL_MUTEX_INITIALIZER { 0 }
 
 _PRIVATE_ typedef struct {
 	int dummy;

@@ -1236,7 +1236,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 	ntbx_pc_global_to_local(dir_channel->pc, process_rank);
       mad_channel->type          = mad_channel_type_regular;
       mad_channel->id            = channel_id++;
-      mad_channel->name          = dir_channel->name;
+      mad_channel->name          = tbx_strdup(dir_channel->name);
       mad_channel->pc            = dir_channel->pc;
       mad_channel->public        = dir_channel->public;
       mad_channel->dir_channel   = dir_channel;
@@ -1821,7 +1821,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 	ntbx_pc_global_to_local(dir_channel->pc, process_rank);
       mad_channel->type          = mad_channel_type_forwarding;
       mad_channel->id            = channel_id++;
-      mad_channel->name          = dir_fchannel->name;
+      mad_channel->name          = tbx_strdup(dir_fchannel->name);
       mad_channel->pc            = dir_channel->pc;
       mad_channel->public        = tbx_false;
       mad_channel->dir_channel   = dir_channel;
@@ -2379,7 +2379,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 	ntbx_pc_global_to_local(vchannel_pc, process_rank);
       mad_channel->type           = mad_channel_type_virtual;
       mad_channel->id             = channel_id++;
-      mad_channel->name           = dir_vchannel->name;
+      mad_channel->name           = tbx_strdup(dir_vchannel->name);
       mad_channel->pc             = dir_vchannel->pc;
       mad_channel->public         = tbx_true;
       mad_channel->dir_vchannel   = dir_vchannel;

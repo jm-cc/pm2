@@ -50,20 +50,20 @@
 
 #define TIME_INIT() _TBXT_POST
 #define TIME(str)
-    _TBXT_PRE; fprintf(stderr, str " [%4f usecs]\n", _TBXT_DIFF); _TBXT_POST
+    _TBXT_PRE; pm2fulldebug(str " [%4f usecs]\n", _TBXT_DIFF); _TBXT_POST
 #define TIME_IN()  TIME_INIT()
 #define TIME_OUT() TIME(__FUNCTION__)
 #define TIME_VAL(str, val) \
     _TBXT_PRE; \
-    fprintf(stderr, str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
+    pm2fulldebug(str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
     _TBXT_POST
 #define TIME_PTR(str, ptr) \
     _TBXT_PRE; \
-    fprintf(stderr, str " = %p [%4f usecs]\n", (void *)(ptr), _TBXT_DIFF); \
+    pm2fulldebug(str " = %p [%4f usecs]\n", (void *)(ptr), _TBXT_DIFF); \
     _TBXT_POST
 #define TIME_STR(str, str2) \
     _TBXT_PRE; \
-    fprintf(stderr, str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
+    pm2fulldebug(str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
     _TBXT_POST
 #else /* TIMING */
 #define TIME_INIT()
@@ -86,8 +86,8 @@
  */
 #define TBX_CTRL(op, val) \
   if((op) != (val))     \
-    fprintf(stderr, "ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
-            #op " != " #val, __FILE__, __LINE__),   exit(1)
+    pm2fulldebug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
+            #op " != " #val, __FILE__, __LINE__),   abort()
 
 /*
  * VERIFY: assertion verification macro activated by DEBUG flag
@@ -96,8 +96,8 @@
 #ifdef DEBUG
 #define TBX_VERIFY(op, val) \
   if((op) != (val))     \
-    fprintf(stderr, "ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
-            #op " != " #val, __FILE__, __LINE__),   exit(1)
+    pm2fulldebug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
+            #op " != " #val, __FILE__, __LINE__),   abort()
 #else /* DEBUG */
 #define TBX_VERIFY(op, val) ((void)(op))
 #endif /* DEBUG */
@@ -107,19 +107,27 @@
  * -------------------------------------------------------
  */
 #ifdef OOPS
-#define FAILURE(str) \
-  pm2debug_flush(), fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
-            (str), __FILE__, __LINE__),   abort()
-#define ERROR(str) \
-  pm2debug_flush(), fprintf(stderr, "FAILURE: %s: %s\nFILE: %s\nLINE: %d\n", \
-            (str), strerror(errno), __FILE__, __LINE__),   abort()
+#define FAILURE(str) do { \
+  pm2debug_flush(); \
+  pm2fulldebug("FAILURE: %s\n", (str)); \
+  abort(); \
+} while(0)
+#define ERROR(str) do { \
+  pm2debug_flush(); \
+  pm2fulldebug("FAILURE: %s: %s\n\n", (str), strerror(errno)); \
+  abort(); \
+} while(0)
 #else /* OOPS */
-#define FAILURE(str) \
-  pm2debug_flush(), fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
-            (str), __FILE__, __LINE__),   exit(1)
-#define ERROR(str) \
-  pm2debug_flush(), fprintf(stderr, "FAILURE: %s: %s\nFILE: %s\nLINE: %d\n", \
-            (str), strerror(errno), __FILE__, __LINE__),   exit(1)
+#define FAILURE(str) do { \
+  pm2debug_flush(); \
+  pm2fulldebug("FAILURE: %s\n", (str)); \
+  exit(1); \
+} while(0)
+#define ERROR(str) do { \
+  pm2debug_flush(); \
+  pm2fulldebug("FAILURE: %s: %s\n\n", (str), strerror(errno)); \
+  exit(1); \
+} while(0)
 #endif /* OOPS */
 
 /*

@@ -90,10 +90,8 @@ static void __inline__ pm2_unpack_int(mad_send_mode_t sm,
 /* Madeleine II */
 
 /* Interfacage de compatibilite ascendante avec Mad1 */
-#define MAD_ALIGNMENT         32
-
 #ifdef __GNUC__
-#define __MAD_ALIGNED__       __attribute__ ((aligned (MAD_ALIGNMENT)))
+#define __MAD_ALIGNED__      MAD_ALIGNED 
 #else
 #define __MAD_ALIGNED__
 #endif

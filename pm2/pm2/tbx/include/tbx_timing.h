@@ -61,7 +61,7 @@ typedef union u_tbx_tick
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    (((t2).tick & 0xFFFFFFFF) - ((t1).tick & 0xFFFFFFFF))
 
-#elif defined(ALPHA_ARCH)
+#elif defined(IA64_ARCH)
 
 #define TBX_GET_TICK(t) \
    __asm__ volatile("mov %0=ar%1" : "=r" ((t).tick) : "i"(44))

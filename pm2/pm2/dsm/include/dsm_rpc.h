@@ -48,38 +48,39 @@ BEGIN_LRPC_LIST
   DSM_LRPC_INVALIDATE_ACK,//15
   DSM_LRPC_SEND_DIFFS,//16
   DSM_LRPC_LOCK,//17
-  DSM_LRPC_UNLOCK//18
+  DSM_LRPC_UNLOCK,//18
+  DSM_LRPC_MUTEX_ACK//19
 END_LRPC_LIST
 
 /*******************************************************/
  
-LRPC_DECL_REQ(DSM_LRPC_READ_PAGE_REQ, unsigned long index; dsm_node_t req_node;);
-LRPC_DECL_RES(DSM_LRPC_READ_PAGE_REQ,);
+//LRPC_DECL_REQ(DSM_LRPC_READ_PAGE_REQ, unsigned long index; dsm_node_t req_node;);
+//LRPC_DECL_RES(DSM_LRPC_READ_PAGE_REQ,);
  
 /*******************************************************/
 
-LRPC_DECL_REQ(DSM_LRPC_WRITE_PAGE_REQ, unsigned long index; dsm_node_t req_node;);
-LRPC_DECL_RES(DSM_LRPC_WRITE_PAGE_REQ,);
+//LRPC_DECL_REQ(DSM_LRPC_WRITE_PAGE_REQ, unsigned long index; dsm_node_t req_node;);
+//LRPC_DECL_RES(DSM_LRPC_WRITE_PAGE_REQ,);
  
 /*******************************************************/
 
-LRPC_DECL_REQ(DSM_LRPC_SEND_PAGE, void *addr; unsigned long page_size; dsm_node_t reply_node; dsm_access_t access;);
-LRPC_DECL_RES(DSM_LRPC_SEND_PAGE,);
+//LRPC_DECL_REQ(DSM_LRPC_SEND_PAGE, void *addr; unsigned long page_size; dsm_node_t reply_node; dsm_access_t access;);
+//LRPC_DECL_RES(DSM_LRPC_SEND_PAGE,);
   
 /*******************************************************/
 
-LRPC_DECL_REQ(DSM_LRPC_INVALIDATE_REQ, unsigned long index; dsm_node_t req_node; dsm_node_t new_owner;);
-LRPC_DECL_RES(DSM_LRPC_INVALIDATE_REQ,);
+//LRPC_DECL_REQ(DSM_LRPC_INVALIDATE_REQ, unsigned long index; dsm_node_t req_node; dsm_node_t new_owner;);
+//LRPC_DECL_RES(DSM_LRPC_INVALIDATE_REQ,);
   
 /*******************************************************/
 
-LRPC_DECL_REQ(DSM_LRPC_INVALIDATE_ACK, unsigned long index;);
-LRPC_DECL_RES(DSM_LRPC_INVALIDATE_ACK,);
+//LRPC_DECL_REQ(DSM_LRPC_INVALIDATE_ACK, unsigned long index;);
+//LRPC_DECL_RES(DSM_LRPC_INVALIDATE_ACK,);
   
 /*******************************************************/
 
-LRPC_DECL_REQ(DSM_LRPC_SEND_DIFFS, unsigned long index;);
-LRPC_DECL_RES(DSM_LRPC_SEND_DIFFS,);
+//LRPC_DECL_REQ(DSM_LRPC_SEND_DIFFS, unsigned long index;);
+//LRPC_DECL_RES(DSM_LRPC_SEND_DIFFS,);
   
 /*******************************************************/
 

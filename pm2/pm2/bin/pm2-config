@@ -72,7 +72,8 @@ Compilation support options
   --kernel      print flags to compile the libs themselves
 
 Directories pm2-libs was configured to
-  --bindir --srcdir --libdir --objdir --depdir --asmdir --stampdir --builddir --includedir
+  --bindir --srcdir --libdir --objdir --depdir --asmdir 
+  --stampdir --builddir --includedir --scriptdir
 
 Other options
   --ext       : extension used
@@ -95,9 +96,6 @@ EOF
 
 ##########################################################################
 # fonctions annexes
-
-#. ${PM2_ROOT}/bin/pm2_mad2config
-#. ${PM2_ROOT}/bin/pm2_mad1config
 
 get_lib_dir() # library
 {
@@ -282,15 +280,15 @@ if [ -n "${dirtoshow}" ]; then
 	exit 0
 	;;
     --loader)
-        if [ ! -z "${PM2_LOADER}" ]; then
+        if [ -n "${PM2_LOADER}" ]; then
 	    echo ${PM2_LOADER}
 	    exit 0
 	fi
-        if [ ! -z "${PM2_DEFAULT_LOADER}" ]; then
+        if [ -n "${PM2_DEFAULT_LOADER}" ]; then
 	    echo ${PM2_DEFAULT_LOADER}
 	    exit 0
 	fi
-        echo ${PM2_ROOT}/bin/pm2load
+        # if no loader, simply exit...
 	exit 0
 	;;
     --stampfile)

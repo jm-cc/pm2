@@ -60,21 +60,37 @@ enum {
         PM2DEBUG_DO_OPT=2,
 };
 
-#define NEW_DEBUG_TYPE(show, prefix, name) \
-   {show, prefix, name, 0, 0, 0, 0, 0, 0, NULL, NULL}
+#define NEW_DEBUG_TYPE(_show, _prefix, _name) \
+   {  .show=_show, \
+      .prefix=_prefix, \
+      .option_name=_name, \
+      .show_prefix=0, \
+      .show_file=0, \
+      .critical=0, \
+      .do_not_show_thread=0, \
+      .do_not_show_lwp=0, \
+      .try_only=0, \
+      .setup=NULL, \
+      .data=NULL, \
+   }
 
 extern debug_type_t debug_pm2debug;
 extern debug_type_t debug_pm2fulldebug;
 
 void debug_setup_default(debug_type_t*, debug_action_t, int);
 
+enum {
+	PM2DEBUG_PRINTF_UNPROTECT_ALLOWED,
+	PM2DEBUG_PRINTF_DENY,
+	PM2DEBUG_PRINTF_ALLOWED
+};
+
+void pm2debug_printf_state(int state);
+
 #ifdef PM2DEBUG
 
-#ifdef MARCEL
-extern volatile int pm2debug_marcel_launched;
-#endif
-
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
+#define PM2DEBUG_MAXLINELEN 256
 int pm2debug_printf(debug_type_t *type, int line, const char* file,
 		     const char *format, ...)
 		__attribute__ ((format (printf, 4, 5)));
@@ -83,7 +99,7 @@ void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 void pm2debug_flush(void);
 #define debug_printf(type, fmt, args...) \
    ((type) && ((type)->show) ? \
-    pm2debug_printf(type, __LINE__, __BASE_FILE__, fmt, ##args) \
+    pm2debug_printf(type, __LINE__, __FILE__, fmt, ##args) \
     : (void)0 )
 #define pm2debug(fmt, args...) \
    debug_printf(&debug_pm2debug, fmt, ##args)
@@ -198,10 +214,16 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
                                            str "\n" , ## args)
 #define LOG_IN()              do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   "%s: -->\n", __TBX_FUNCTION__); \
-                              PROF_IN(); } while(0)
+                                   PROF_IN(); \
+                              } while(0)
 #define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   "%s: <--\n", __TBX_FUNCTION__); \
-                              PROF_OUT(); } while(0)
+                                   PROF_OUT(); \
+                              } while(0)
+#define LOG_RETURN(val)       do { __typeof__(val) _ret=(val) ; \
+                                   LOG_OUT() ;\
+                                   return _ret; \
+                              } while (0)
 #define LOG_CHAR(val)         debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   "%c" , (char)(val))
 #define LOG_VAL(str, val)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
@@ -214,8 +236,9 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else // else if not PM2DEBUG
 
 #define LOG(str, args...)
-#define LOG_IN()           PROF_IN()  ; (void)(0)
-#define LOG_OUT()          PROF_OUT() ; (void)(0)
+#define LOG_IN()           PROF_IN()
+#define LOG_OUT()          PROF_OUT()
+#define LOG_RETURN(val)    do { PROF_OUT(); return (val); } while (0)
 #define LOG_CHAR(val)      (void)(0)
 #define LOG_VAL(str, val)  (void)(0)
 #define LOG_PTR(str, ptr)  (void)(0)

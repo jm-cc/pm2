@@ -33,11 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-CONFIG_MODULES=mad1
-
-ifndef FLAVOR
-export FLAVOR:=mad1
-endif
+export FLAVOR_DEFAULT:=mad1
 
 PROGS := simple	token ping multiping
 

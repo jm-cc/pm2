@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_list_management.c,v $
+Revision 1.2  2000/03/01 11:03:46  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.1  2000/01/13 14:51:33  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -47,7 +50,7 @@ ______________________________________________________________________________
  * ---------------------
  */
 
-#include <tbx.h>
+#include "tbx.h"
 
 /* MACROS */
 #define INITIAL_LIST_ELEMENT 256

@@ -21,15 +21,5 @@ done
 
 bipconf $chaine
 
-dbgopt=""
-if [ ${PM2_DEBUG} = "on" ]; then
-    confsize=`cat ${PM2_CONF_FILE} | wc -w`
-    n=0
-    while [ $n -le $confsize ]; do
-	dbgopt="$dbgopt -d $n"
-	n=`expr $n + 1`
-    done
-fi
-
-bipload $dbgopt -mget "$@"
+bipload -mget "$@"
 

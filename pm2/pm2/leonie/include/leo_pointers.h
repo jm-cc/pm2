@@ -38,16 +38,11 @@ typedef struct s_leo_dir_channel_process_specific
 typedef struct s_leo_dir_channel_common  *p_leo_dir_channel_common_t;
 typedef struct s_leo_dir_channel         *p_leo_dir_channel_t;
 typedef struct s_leo_dir_fchannel        *p_leo_dir_fchannel_t;
-typedef struct s_leo_dir_vchannel_process_routing_table
-                                  *p_leo_dir_vchannel_process_routing_table_t;
-typedef struct s_leo_dir_vchannel_process_specific
-                                  *p_leo_dir_vchannel_process_specific_t;
-typedef struct s_leo_dir_vchannel         *p_leo_dir_vchannel_t;
-typedef struct s_leo_dir_xchannel_process_routing_table
-                                  *p_leo_dir_xchannel_process_routing_table_t;
-typedef struct s_leo_dir_xchannel_process_specific
-                                  *p_leo_dir_xchannel_process_specific_t;
-typedef struct s_leo_dir_xchannel         *p_leo_dir_xchannel_t;
+typedef struct s_leo_dir_vxchannel_process_routing_table
+                                  *p_leo_dir_vxchannel_process_routing_table_t;
+typedef struct s_leo_dir_vxchannel_process_specific
+                                  *p_leo_dir_vxchannel_process_specific_t;
+typedef struct s_leo_dir_vxchannel        *p_leo_dir_vxchannel_t;
 typedef struct s_leo_directory            *p_leo_directory_t;
 typedef struct s_leo_networks             *p_leo_networks_t;
 typedef struct s_leo_spawn_group          *p_leo_spawn_group_t;

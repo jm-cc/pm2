@@ -103,45 +103,26 @@ typedef struct s_leo_dir_fchannel
   p_leo_dir_channel_common_t  common;
 } leo_dir_fchannel_t;
 
-typedef struct s_leo_dir_vchannel_process_routing_table
+typedef struct s_leo_dir_vxchannel_process_routing_table
 {
   char                 *channel_name;
   ntbx_process_grank_t  destination_rank;
-} leo_dir_vchannel_process_routing_table_t;
+} leo_dir_vxchannel_process_routing_table_t;
 
-typedef struct s_leo_dir_vchannel_process_specific
+typedef struct s_leo_dir_vxchannel_process_specific
 {
   p_ntbx_process_container_t  pc;
-} leo_dir_vchannel_process_specific_t;
+} leo_dir_vxchannel_process_specific_t;
 
-typedef struct s_leo_dir_vchannel
+typedef struct s_leo_dir_vxchannel
 {
   char                       *name;
   p_tbx_slist_t               dir_channel_slist;
   p_tbx_slist_t               dir_fchannel_slist;
-  p_ntbx_process_container_t  pc;
-  p_leo_dir_channel_common_t  common;
-} leo_dir_vchannel_t;
-
-typedef struct s_leo_dir_xchannel_process_routing_table
-{
-  char                 *channel_name;
-  ntbx_process_grank_t  destination_rank;
-} leo_dir_xchannel_process_routing_table_t;
-
-typedef struct s_leo_dir_xchannel_process_specific
-{
-  p_ntbx_process_container_t  pc;
-} leo_dir_xchannel_process_specific_t;
-
-typedef struct s_leo_dir_xchannel
-{
-  char                       *name;
-  p_tbx_slist_t               dir_channel_slist;
-  p_ntbx_process_container_t  pc;
   p_tbx_slist_t               sub_channel_name_slist;
+  p_ntbx_process_container_t  pc;
   p_leo_dir_channel_common_t  common;
-} leo_dir_xchannel_t;
+} leo_dir_vxchannel_t;
 
 typedef struct s_leo_directory
 {

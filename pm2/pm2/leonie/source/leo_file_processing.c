@@ -649,7 +649,7 @@ process_vchannel(p_leonie_t     leonie,
 {
   char                       *vchannel_name           = NULL;
   p_tbx_slist_t               vchannel_channel_slist  = NULL;
-  p_leo_dir_vchannel_t        dir_vchannel            = NULL;
+  p_leo_dir_vxchannel_t       dir_vchannel            = NULL;
   p_ntbx_process_container_t  dir_vchannel_pc         = NULL;
   p_tbx_slist_t               dir_channel_slist       = NULL;
   p_tbx_slist_t               dir_fchannel_slist      = NULL;
@@ -663,7 +663,7 @@ process_vchannel(p_leonie_t     leonie,
   TRACE_STR("====== Processing vchannel", vchannel_name);
 
   vchannel_channel_slist = leoparse_read_as_slist(vchannel, "channels");
-  dir_vchannel           = leo_dir_vchannel_init();
+  dir_vchannel           = leo_dir_vxchannel_init();
   dir_vchannel->name     = tbx_strdup(vchannel_name);
   dir_vchannel_pc        = dir_vchannel->pc;
   dir_channel_slist      = dir_vchannel->dir_channel_slist;
@@ -734,11 +734,11 @@ process_vchannel(p_leonie_t     leonie,
 	    }
 	  else
 	    {
-	      p_leo_dir_vchannel_process_specific_t dvps = NULL;
+	      p_leo_dir_vxchannel_process_specific_t dvps = NULL;
 
 	      TRACE("process is new for this vchannel");
 
-	      dvps = leo_dir_vchannel_process_specific_init();
+	      dvps = leo_dir_vxchannel_process_specific_init();
 
 	      ntbx_pc_add(dir_vchannel_pc, process, -1,
 			  dir_vchannel, vchannel_reference_name, dvps);
@@ -979,12 +979,12 @@ process_vchannel(p_leonie_t     leonie,
     ntbx_pc_first_global_rank(dir_vchannel_pc, &g_rank_src);
     do
       {
-	ntbx_process_grank_t                  g_rank_dst  =    0;
-	ntbx_process_lrank_t                  l_rank_src  =   -1;
-	p_ntbx_process_info_t                 pi          = NULL;
-	p_leo_dir_vchannel_process_specific_t pi_specific = NULL;
-	p_ntbx_process_container_t            pc          = NULL;
-	p_ntbx_process_t                      process_src = NULL;
+	ntbx_process_grank_t                   g_rank_dst  =    0;
+	ntbx_process_lrank_t                   l_rank_src  =   -1;
+	p_ntbx_process_info_t                  pi          = NULL;
+	p_leo_dir_vxchannel_process_specific_t pi_specific = NULL;
+	p_ntbx_process_container_t             pc          = NULL;
+	p_ntbx_process_t                       process_src = NULL;
 
 	l_rank_src  = ntbx_pc_global_to_local(dir_vchannel_pc, g_rank_src);
 	TRACE_VAL("======== source", l_rank_src);
@@ -996,7 +996,7 @@ process_vchannel(p_leonie_t     leonie,
 	ntbx_pc_first_global_rank(dir_vchannel_pc, &g_rank_dst);
 	do
 	  {
-	    p_leo_dir_vchannel_process_routing_table_t  rtable      = NULL;
+	    p_leo_dir_vxchannel_process_routing_table_t rtable      = NULL;
 	    ntbx_process_lrank_t                        l_rank_dst  =   -1;
 	    p_ntbx_process_t                            process_dst = NULL;
 	    char                                       *ref_name    = NULL;
@@ -1010,7 +1010,7 @@ process_vchannel(p_leonie_t     leonie,
 		l_rank_src * table_size + l_rank_dst;
 
 	      path   = routing_table_current[location];
-	      rtable = leo_dir_vchannel_process_routing_table_init();
+	      rtable = leo_dir_vxchannel_process_routing_table_init();
 
 	      if (path->last)
 		{
@@ -1060,7 +1060,7 @@ process_xchannel(p_leonie_t     leonie,
 {
   char                       *xchannel_name           = NULL;
   p_tbx_slist_t               xchannel_channel_slist  = NULL;
-  p_leo_dir_xchannel_t        dir_xchannel            = NULL;
+  p_leo_dir_vxchannel_t       dir_xchannel            = NULL;
   p_ntbx_process_container_t  dir_xchannel_pc         = NULL;
   p_tbx_slist_t               dir_channel_slist       = NULL;
   p_tbx_slist_t               xchannel_sub_slist      = NULL;
@@ -1075,7 +1075,7 @@ process_xchannel(p_leonie_t     leonie,
   TRACE_STR("====== Processing xchannel", xchannel_name);
 
   xchannel_channel_slist = leoparse_read_as_slist(xchannel, "channels");
-  dir_xchannel           = leo_dir_xchannel_init();
+  dir_xchannel           = leo_dir_vxchannel_init();
   dir_xchannel->name     = tbx_strdup(xchannel_name);
   dir_xchannel_pc        = dir_xchannel->pc;
   dir_channel_slist      = dir_xchannel->dir_channel_slist;
@@ -1161,11 +1161,11 @@ process_xchannel(p_leonie_t     leonie,
 	    }
 	  else
 	    {
-	      p_leo_dir_xchannel_process_specific_t dvps = NULL;
+	      p_leo_dir_vxchannel_process_specific_t dvps = NULL;
 
 	      TRACE("process is new for this xchannel");
 
-	      dvps = leo_dir_xchannel_process_specific_init();
+	      dvps = leo_dir_vxchannel_process_specific_init();
 
 	      ntbx_pc_add(dir_xchannel_pc, process, -1,
 			  dir_xchannel, xchannel_reference_name, dvps);
@@ -1399,12 +1399,12 @@ process_xchannel(p_leonie_t     leonie,
     ntbx_pc_first_global_rank(dir_xchannel_pc, &g_rank_src);
     do
       {
-	ntbx_process_grank_t                  g_rank_dst  =    0;
-	ntbx_process_lrank_t                  l_rank_src  =   -1;
-	p_ntbx_process_info_t                 pi          = NULL;
-	p_leo_dir_xchannel_process_specific_t pi_specific = NULL;
-	p_ntbx_process_container_t            pc          = NULL;
-	p_ntbx_process_t                      process_src = NULL;
+	ntbx_process_grank_t                   g_rank_dst  =    0;
+	ntbx_process_lrank_t                   l_rank_src  =   -1;
+	p_ntbx_process_info_t                  pi          = NULL;
+	p_leo_dir_vxchannel_process_specific_t pi_specific = NULL;
+	p_ntbx_process_container_t             pc          = NULL;
+	p_ntbx_process_t                       process_src = NULL;
 
 	l_rank_src  = ntbx_pc_global_to_local(dir_xchannel_pc, g_rank_src);
 	TRACE_VAL("======== source", l_rank_src);
@@ -1416,10 +1416,10 @@ process_xchannel(p_leonie_t     leonie,
 	ntbx_pc_first_global_rank(dir_xchannel_pc, &g_rank_dst);
 	do
 	  {
-	    p_leo_dir_xchannel_process_routing_table_t  rtable      = NULL;
-	    ntbx_process_lrank_t                        l_rank_dst  =   -1;
-	    p_ntbx_process_t                            process_dst = NULL;
-	    char                                       *ref_name    = NULL;
+	    p_leo_dir_vxchannel_process_routing_table_t  rtable      = NULL;
+	    ntbx_process_lrank_t                         l_rank_dst  =   -1;
+	    p_ntbx_process_t                             process_dst = NULL;
+	    char                                        *ref_name    = NULL;
 
 	    l_rank_dst = ntbx_pc_global_to_local(dir_xchannel_pc, g_rank_dst);
 	    TRACE_VAL("======== destination", l_rank_dst);
@@ -1430,7 +1430,7 @@ process_xchannel(p_leonie_t     leonie,
 		l_rank_src * table_size + l_rank_dst;
 
 	      path   = routing_table_current[location];
-	      rtable = leo_dir_xchannel_process_routing_table_init();
+	      rtable = leo_dir_vxchannel_process_routing_table_init();
 
 	      rtable->channel_name = strdup(path->dir_channel->name);
 	      rtable->destination_rank = path->dest_rank;

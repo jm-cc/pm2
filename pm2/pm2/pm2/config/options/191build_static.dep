@@ -1,0 +1,3 @@
+Provide: pm2_linkmode
+Provide: static_libs
+Conflict: pm2_linkmode

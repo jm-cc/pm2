@@ -235,7 +235,7 @@ PM2_PROG_NAME=$1
 export PM2_PROG_NAME
 shift
 
-prog_args="$@"
+prog_args=${@:+"$@"}
 
 if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.29  2000/11/13 20:41:35  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.28  2000/11/08 08:16:14  oaumage
 *** empty log message ***
 
@@ -154,6 +157,8 @@ ______________________________________________________________________________
 #include "safe_malloc.h"
 #include "marcel_alloc.h"
 #include "sys/marcel_work.h"
+
+#include "common.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1186,8 +1191,78 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
 void marcel_strip_cmdline(int *argc, char *argv[])
 {
   marcel_parse_cmdline(argc, argv, FALSE);
+
+  marcel_debug_init(argc, argv, PM2DEBUG_CLEAROPT);
 }
 
+// May start some internal threads or activations.
+// When completed, fork calls are prohibited.
+void marcel_init_data(int *argc, char *argv[])
+{
+  static volatile boolean already_called = FALSE;
+
+  // Only execute this function once
+  if(already_called)
+    return;
+  already_called = TRUE;
+
+  // Initialize debug facilities
+  marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
+
+  // Parse command line
+  marcel_parse_cmdline(argc, argv, TRUE);
+
+  // Get size of pages
+#ifdef SOLARIS_SYS
+  page_size = sysconf(_SC_PAGESIZE);
+#else
+#ifdef UNICOS_SYS
+  page_size = 1024;
+#else
+  page_size = getpagesize();
+#endif
+#endif
+
+  // Initialize the stack memory allocator
+  // This is unuseful if PM2 is used, but it is not harmful anyway ;-)
+  marcel_slot_init();
+
+  // Initialize scheduler
+  marcel_sched_init(__nb_lwp);
+
+  // Initialize mechanism for handling Unix I/O through the scheduler
+  marcel_io_init();
+}
+
+// When completed, some threads/activations may be started
+// Fork calls are now prohibited
+void marcel_start_sched(int *argc, char *argv[])
+{
+  static volatile boolean already_called = FALSE;
+
+  // Only execute this function once
+  if(already_called)
+    return;
+  already_called = TRUE;
+
+  // Start scheduler (i.e. run LWP/activations, start timer)
+  marcel_sched_start();
+}
+
+void marcel_purge_cmdline(int *argc, char *argv[])
+{
+  static volatile boolean already_called = FALSE;
+
+  // Only execute this function once
+  if(already_called)
+    return;
+  already_called = TRUE;
+
+  // Remove marcel-specific arguments from command line
+  marcel_strip_cmdline(argc, argv);
+}
+
+#if 0 // Just kept for documentation purposes (!?!)
 void marcel_init_ext(int *argc, char *argv[], int debug_flags)
 {
   static volatile boolean already_called = FALSE;
@@ -1201,7 +1276,7 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
 #ifdef TBX
     tbx_init(*argc, argv);
 #endif
-    marcel_debug_init(argc, argv, debug_flags);
+    marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
     mdebug("\t\t\t<marcel_init>\n");
 
@@ -1236,6 +1311,9 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
     marcel_sched_init(__nb_lwp);
     mdebug("\t\t\t<marcel_init: sched_init done>\n");
 
+    marcel_sched_start();
+    mdebug("\t\t\t<marcel_init: sched_start done>\n");
+
     marcel_io_init();
     mdebug("\t\t\t<marcel_init: io_init done>\n");
 
@@ -1244,6 +1322,7 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
     already_called = TRUE;
   }
 }
+#endif // #if 0
 
 void marcel_end(void)
 {

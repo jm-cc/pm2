@@ -50,6 +50,7 @@ int LI_HUDAK;
 int MIGRATE_THREAD;
 int ERC;
 int HBRC;
+int HIERARCH;
 
 /* Public functions */
 
@@ -111,6 +112,8 @@ void dsm_init_protocol_table()
 			     dsmlib_hbrc_add_page  // page_add_func 
 			     );
   
+  /* Hierarchical consistency protocol: HIERARCH */
+  /* HIERARCH = dsm_create_protocol(); */
 }
 
 

@@ -25,6 +25,7 @@
 
 #define __need_sigset_t
 #include <signal.h>
+#undef __need_sigset_t
 #include <bits/pmarceltypes.h>
 
 

@@ -768,8 +768,8 @@ do_regenerate() {
     else
 	flag="--admin"
     fi
-    for f in ${flavor:-`"$PM2_FLAVOR" ${flag} list`} ; do
-	"$PM2_FLAVOR" ${flag} set `"$PM2_FLAVOR" ${flag} get --flavor=$f`
+    for f in ${flavor:-`"$PROGNAME" ${flag} list`} ; do
+	"$PROGNAME" ${flag} set `"$PROGNAME" ${flag} get --flavor=$f`
     done
 
     exit 0

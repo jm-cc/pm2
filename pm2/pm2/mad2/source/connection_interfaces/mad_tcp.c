@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.12  2000/02/28 11:06:37  rnamyst
+Changed #include "" into #include <>.
+
 Revision 1.11  2000/02/08 17:49:55  oaumage
 - support de la net toolbox
 - mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
@@ -80,7 +83,7 @@ ______________________________________________________________________________
 
 #define USE_MARCEL_POLL
 /* #define DEBUG */
-#include <madeleine.h>
+#include "madeleine.h"
 
 #include <stdlib.h>
 #include <stdio.h>

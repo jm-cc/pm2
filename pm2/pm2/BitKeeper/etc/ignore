@@ -8,5 +8,8 @@ BitKeeper/*/*
 BitKeeper/etc/*
 BitKeeper/tmp/*
 PENDING/*
+core
+leo.tab
+leony/*.pyc
 marcel/autogen-include/*
 tags

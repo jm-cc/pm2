@@ -30,6 +30,7 @@ typedef struct s_mad_dir_node
 {
   int                         id;
   char                       *name;
+  unsigned long               ip; // network form !
   p_ntbx_process_container_t  pc;
 } mad_dir_node_t;
 

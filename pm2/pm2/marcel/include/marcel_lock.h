@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.11  2000/05/25 00:23:49  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.10  2000/05/09 11:18:04  vdanjean
 pm2debug module : minor fixes
 
@@ -130,8 +133,9 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 
 typedef unsigned marcel_lock_t;
 
-#define MARCEL_LOCK_INIT   0
 #define MARCEL_LOCK_INIT_UNLOCKED   0
+#define MARCEL_LOCK_INIT_LOCKED   1
+#define MARCEL_LOCK_INIT   MARCEL_LOCK_INIT_UNLOCKED
 
 void marcel_lock_init(marcel_lock_t *lock);
 

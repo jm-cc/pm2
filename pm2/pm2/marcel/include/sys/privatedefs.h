@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.11  2000/03/09 11:07:43  rnamyst
+Modified to use the sched_data() macro.
+
 Revision 1.10  2000/03/06 14:56:06  rnamyst
 Modified to include "marcel_flags.h".
 
@@ -158,22 +161,23 @@ _PRIVATE_ typedef struct {
   marcel_mutex_t mutex;
 } marcel_once_t;
 
-_PRIVATE_ typedef struct __lwp_struct {
-  unsigned number;                         /* Serial number */
+_PRIVATE_ typedef struct __sched_struct {
+  volatile marcel_t new_task;              /* Used by marcel_create */
   volatile marcel_t __first[MAX_PRIO+1];   /* Scheduler queue */
   volatile unsigned running_tasks;         /* Nb of user running tasks */
   marcel_lock_t sched_queue_lock;          /* Lock for scheduler queue */
+} __sched_t;
+
+_PRIVATE_ typedef struct __lwp_struct {
+  unsigned number;                         /* Serial number */
 #ifdef X86_ARCH
-#ifndef __ACT__
   volatile atomic_t _locked;               /* Lock for (un)lock_task() */
-#endif
 #else
   volatile unsigned _locked;               /* Lock for (un)lock_task() */
 #endif
   marcel_t sched_task;                     /* "Idle" task */
   volatile boolean has_to_stop;            /* To force pthread_exit() */
   volatile boolean has_new_tasks;          /* Somebody gave us some work */
-  volatile marcel_t new_task;              /* Used by marcel_create */
   struct __lwp_struct *prev, *next;        /* Double linking */
   char __security_stack[2 * SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
@@ -181,8 +185,19 @@ _PRIVATE_ typedef struct __lwp_struct {
 #ifdef SMP
   jmp_buf home_jb;
   pthread_t pid;
+  __sched_t __sched_data;
 #endif
 } __lwp_t;
+
+#ifndef SMP
+_PRIVATE_ extern __sched_t __sched_data;
+#endif
+
+#ifdef SMP
+#define sched_data(lwp) ((lwp)->__sched_data)
+#else
+#define sched_data(lwp) (__sched_data)
+#endif
 
 _PRIVATE_ extern __lwp_t __main_lwp;
 _PRIVATE_ extern task_desc __main_thread_struct;

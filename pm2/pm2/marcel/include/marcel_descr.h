@@ -111,6 +111,8 @@ struct marcel_task {
 	unsigned not_migratable, not_deviatable;
 	marcel_sem_t suspend_sem;
 	
+	ma_atomic_t top_utime/*, top_stime*/;
+
 	/* Pour le code provenant de la libpthread */
 	int __errno;
 	int __h_errno;

@@ -34,6 +34,10 @@
  * ========================================================================
  */
 
+#ifdef MARCEL
+#error MARCEL support not implemented for UDP driver
+#endif // MARCEL
+
 #ifdef SOLARIS_SYS
 #define socklen_t int
 #endif // SOLARIS_SYS
@@ -45,7 +49,6 @@
  * Functions
  * ========================================================================
  */
-
 
 /*
  * Setup functions
@@ -101,10 +104,10 @@ ntbx_udp_socket_create(p_ntbx_udp_address_t address)
   
   temp.sin_family      = AF_INET;
   temp.sin_addr.s_addr = htonl(INADDR_ANY);
-  temp.sin_port        = 0;
+  temp.sin_port        = htons(0);
   
   SYSCALL(bind(desc, (struct sockaddr *)&temp, lg));
-
+  
   if (address)
     SYSCALL(getsockname(desc, (struct sockaddr *)address, &lg));
 

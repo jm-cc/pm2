@@ -672,8 +672,10 @@ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, __lwp_t *lwp)
   mdebug("\tupcall_new next=%p (state %i)\n", next, next->ext_state);
 
   /* On ne veut pas être mis en non_running */
+  // RAY to VINCE: y a-t-il un risque que marcel_self() soit différent
+  // de cur ici ? Autrement dit pourquoi ne pas utiliser cur ?
   GET_LWP(marcel_self())->prev_running=NULL;
-  MA_THR_LONGJMP(next, NORMAL_RETURN);
+  MA_THR_LONGJMP(cur->number, next, NORMAL_RETURN);
 
   LOG_OUT();
   return next;
@@ -982,7 +984,7 @@ inline static void act_goto_next_task(marcel_t pid, int from)
   mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
 
   if (pid) {
-    MA_THR_LONGJMP((pid), NORMAL_RETURN);
+    MA_THR_LONGJMP(marcel_self()->number, (pid), NORMAL_RETURN);
   }
 }
 #else
@@ -1006,7 +1008,7 @@ inline static int goto_next_task(marcel_t pid)
   if (act_to_restart()) {
     act_goto_next_task(pid, ACT_RESTART_FROM_SCHED);
   } else {
-    MA_THR_LONGJMP((pid), NORMAL_RETURN);
+    MA_THR_LONGJMP(marcel_self()->number, (pid), NORMAL_RETURN);
   }
   return 0;
 }
@@ -1019,7 +1021,7 @@ inline static int can_goto_next_task(marcel_t current, marcel_t pid)
   }
     
   if (pid != current) {
-    MA_THR_LONGJMP((pid), NORMAL_RETURN);
+    MA_THR_LONGJMP(current->number, (pid), NORMAL_RETURN);
   }
   return 0;
 }
@@ -1758,14 +1760,11 @@ static void *lwp_startup_func(void *arg)
 {
   __lwp_t *lwp = (__lwp_t *)arg;
 
-  LOG_IN();
-
   if(setjmp(lwp->home_jb)) {
 #ifdef MARCEL_DEBUG
   if(marcel_mdebug.show)
     fprintf(stderr, "sched %d Exiting\n", lwp->number);
 #endif
-    LOG_OUT();
     marcel_kthread_exit(NULL);
   }
 
@@ -1785,7 +1784,10 @@ static void *lwp_startup_func(void *arg)
   sched_unlock(lwp);
 #endif
 
-  MA_THR_LONGJMP(lwp->idle_task, NORMAL_RETURN);
+  PROF_NEW_LWP(getpid(), lwp->number, lwp->idle_task->number);
+
+  call_ST_FLUSH_WINDOWS();
+  longjmp(lwp->idle_task->jbuf, NORMAL_RETURN);
   
   return NULL;
 }
@@ -1844,6 +1846,8 @@ void marcel_sched_init(void)
   // 'main' doit toujours rester sur le LWP 0
   __main_thread->vpmask = MARCEL_VPMASK_ALL_BUT_VP(0);
 #endif
+
+  PROF_NEW_LWP(getpid(), 0, 0);
 
   // Initialization of "main LWP" is _required_ even when SMP not set.
   // 'init_sched' is called indirectly

@@ -38,6 +38,7 @@ Z              [zZ]
 STRING         \"[^"]*\"
 WD             [_a-zA-Z][_a-zA-Z0-9\-]*
 ID             {WD}("."{WD})*
+INTEGER        {DIGIT}+
 %%
 {ID}                               { 
   yylval.str = malloc(yyleng + 1);
@@ -51,6 +52,20 @@ ID             {WD}("."{WD})*
   yylval.str[yyleng - 1] = '\0';
   LOG_STR("STRING", yylval.str);
   return LEOP_STRING; 
+}
+{INTEGER}                            { 
+  char *tmp = malloc(yyleng+1);
+  strncpy(tmp, yytext, yyleng);
+  tmp[yyleng + 1] = '\0';
+  yylval.val = atoi(tmp);
+  LOG_VAL("INTEGER", yylval.val);
+  free(tmp);
+  return LEOP_INTEGER; 
+}
+
+".."                                 {
+  LOG("<..>");
+  return LEOP_RANGE; 
 }
 "{"                                 {
   LOG("<{>");
@@ -75,6 +90,22 @@ ID             {WD}("."{WD})*
 ","                                 { 
   LOG("<,>");
   return ','; 
+}
+"["                                 { 
+  LOG("<[>");
+  return '['; 
+}
+"]"                                 { 
+  LOG("<]>");
+  return ']'; 
+}
+"("                                 { 
+  LOG("<(>");
+  return '('; 
+}
+")"                                 { 
+  LOG("<)>");
+  return ')'; 
 }
 \/\/.*                              ;
 "#".*                               ;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.18  2000/09/14 02:08:29  rnamyst
+Put profile.h into common/include and added few FUT_SWITCH_TO calls
+
 Revision 1.17  2000/05/29 10:11:56  oaumage
 - Mise-a-jour du support de la machine IBM/SP2
 
@@ -104,11 +107,6 @@ ______________________________________________________________________________
 #ifndef MARCEL_EST_DEF
 #define MARCEL_EST_DEF
 
-/*
- * The definition of USE_MACROS will improve performances of some
- * commonly used functions. However, some debugging facilities
- * (contraints checking) will be lost (use at your own risk !).
- */
 
 #define _PRIVATE_
 
@@ -139,7 +137,7 @@ struct timespec
 
 /* ========== customization =========== */
 
-#define MAX_KEY_SPECIFIC	10
+#define MAX_KEY_SPECIFIC	20
 
 #define MAX_STACK_CACHE		1024
 
@@ -197,6 +195,9 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "marcel_attr.h"
 #include "mar_timing.h"
 #include "marcel_stdio.h"
+
+#include "profile.h"
+#include "pm2debug.h"
 
 /* = initialization & termination == */
 

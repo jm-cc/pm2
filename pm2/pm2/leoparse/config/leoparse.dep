@@ -1,2 +1,2 @@
-Depend: tbx ntbx
+Depend: tbx ntbx init
 Provide: module

@@ -33,8 +33,8 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
-//#include <dsm_rpc.h>
+#include "pm2.h"
+//#include "dsm_rpc.h"
 //#include "dsm_page_manager.h"
 
 

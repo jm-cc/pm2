@@ -653,7 +653,7 @@ marcel_pollid_create_X(marcel_pollgroup_func_t g,
 // par : "FOREACH_POLL(id) { GET_ARG(id, _arg); ..."
 // Ou mieux: utiliser FOREACH_EV_POLL[_BASE]
 #define FOREACH_POLL(id) \
-  FOREACH_EV_POLL((id)->cur_cell, &(id)->inst.server, inst)
+  FOREACH_REQ_POLL((id)->cur_cell, &(id)->server, inst)
 #define GET_ARG(id, _arg) \
 	_arg = (typeof(_arg))((id)->cur_cell->arg)
 

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.h,v $
+Revision 1.2  2000/03/08 17:16:05  oaumage
+- support de Marcel sans PM2
+- support de tmalloc en mode `Marcel'
+
 Revision 1.1  2000/01/13 14:51:30  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -50,7 +54,7 @@ ______________________________________________________________________________
 
 typedef struct s_tbx_memory
 {
-  PM2_SHARED; 
+  TBX_SHARED; 
   void    *first_mem;
   void    *current_mem;
   size_t   block_len;

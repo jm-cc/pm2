@@ -51,7 +51,8 @@
 
 /* TBX_MALLOC_CTRL: causes TBX to perform additional memory allocation
    verification */
-#define TBX_MALLOC_CTRL
+/* 0 allocation/désallocation is correct */
+/*#define TBX_MALLOC_CTRL*/
 
 /*
  * Constant definition  _____________________________________________

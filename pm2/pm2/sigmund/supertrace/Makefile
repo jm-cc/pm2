@@ -20,4 +20,6 @@ CFLAGS		+=	-fnative-struct
 LDFLAGS		+=	-e _mainCRTStartup
 endif
 
+LDFLAGS	+= -lfkt -lbfd
+
 include $(PM2_ROOT)/make/progs.mak

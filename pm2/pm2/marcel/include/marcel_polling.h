@@ -671,6 +671,9 @@ marcel_pollid_setspecific(marcel_pollid_t id, void *specific)
 	id->specific = specific;
 }
 
+void marcel_poll_lock(void);
+void marcel_poll_unlock(void);
+
 static __inline__ void * __tbx_deprecated__ 
 marcel_pollid_getspecific(marcel_pollid_t id)
 {

@@ -314,7 +314,7 @@ static void ma_main_loop(void)
   }
 }
 
-static void startup_func(int argc, char *argv[])
+static void startup_func(int argc, char *argv[], void *arg)
 {
   module_suivant = (pm2_self() + 1) % pm2_config_size();
   module_precedent = (pm2_self() == 0) ? pm2_config_size() - 1 : pm2_self() - 1;
@@ -474,7 +474,7 @@ int pm2_main(int argc, char **argv)
   pm2_rpc_init();
   regul_rpc_init();
 
-  pm2_set_startup_func(startup_func);
+  pm2_set_startup_func(startup_func, NULL);
   pm2_set_user_func(user_func);
   pm2_set_pre_migration_func(pre_migr);
 

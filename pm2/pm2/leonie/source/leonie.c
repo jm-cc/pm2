@@ -314,6 +314,9 @@ main(int    argc,
   TRACE("== Disconnecting virtual channels");
   dir_vchannel_disconnect(leonie);
 
+  TRACE("== Disconnecting multiplexing channels");
+  dir_xchannel_disconnect(leonie);
+
   TRACE("== Freeing data structures");
   directory_exit(leonie);
 

@@ -36,6 +36,7 @@
 #include "pm2.h"
 
 #define ESSAIS 5
+#define N      1000
 
 static unsigned SAMPLE, SAMPLE_THR;
 static unsigned autre;
@@ -44,37 +45,30 @@ static marcel_sem_t sem;
 
 static Tick t1, t2;
 
+static int glob_n;
+
 void SAMPLE_service(void)
 {
-  int n;
-
-  old_mad_unpack_int(MAD_IN_HEADER, &n, 1);
-
   pm2_rawrpc_waitdata();
 
-  if(--n) {
-    pm2_rawrpc_begin(autre, SAMPLE, NULL);
-    old_mad_pack_int(MAD_IN_HEADER, &n, 1);
-    pm2_rawrpc_end();
-  } else {
-    marcel_sem_V(&sem);
-  }
+  marcel_sem_V(&sem);
 }
 
 static void threaded_rpc(void *arg)
 {
-  int n;
-
-  old_mad_unpack_int(MAD_IN_HEADER, &n, 1);
   pm2_rawrpc_waitdata();
 
-  if(--n) {
+  if(pm2_self() == 1) {
      pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
-     old_mad_pack_int(MAD_IN_HEADER, &n, 1);
      pm2_rawrpc_end();
-   } else {
-     marcel_sem_V(&sem);
-   }
+  } else {
+    if(glob_n) {
+      glob_n--;
+      pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
+      pm2_rawrpc_end();
+    } else
+      marcel_sem_V(&sem);
+  }
 }
 
 void SAMPLE_THR_service(void)
@@ -82,9 +76,9 @@ void SAMPLE_THR_service(void)
   pm2_thread_create(threaded_rpc, NULL);
 }
 
-void f(int n)
+void f(void)
 {
-  int i;
+  int i, j;
   unsigned long temps;
 
   fprintf(stderr, "Non-threaded RPC:\n");
@@ -92,11 +86,12 @@ void f(int n)
 
     GET_TICK(t1);
 
-    pm2_rawrpc_begin(autre, SAMPLE, NULL);
-    old_mad_pack_int(MAD_IN_HEADER, &n, 1);
-    pm2_rawrpc_end();
+    for(j=N/2; j; j--) {
+      pm2_rawrpc_begin(autre, SAMPLE, NULL);
+      pm2_rawrpc_end();
 
-    marcel_sem_P(&sem);
+      marcel_sem_P(&sem);
+    }
 
     GET_TICK(t2);
 
@@ -109,8 +104,8 @@ void f(int n)
 
     GET_TICK(t1);
 
+    glob_n = N/2-1;
     pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
-    old_mad_pack_int(MAD_IN_HEADER, &n, 1);
     pm2_rawrpc_end();
 
     marcel_sem_P(&sem);
@@ -119,6 +114,20 @@ void f(int n)
 
     temps = timing_tick2usec(TICK_DIFF(t1, t2));
     fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
+  }
+}
+
+void g(void)
+{
+  int i, j;
+
+  for(i=0; i<ESSAIS; i++) {
+    for(j=N/2; j; j--) {
+      marcel_sem_P(&sem);
+
+      pm2_rawrpc_begin(autre, SAMPLE, NULL);
+      pm2_rawrpc_end();
+    }
   }
 }
 
@@ -147,11 +156,12 @@ int pm2_main(int argc, char **argv)
 
     marcel_sem_init(&sem, 0);
 
-    f(1000);
+    f();
 
     pm2_halt();
 
-  }
+  } else
+    g();
 
   pm2_exit();
 

@@ -246,6 +246,9 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #else
   if(setjmp(cur->jb) == NORMAL_RETURN) {
 #endif
+#ifdef __ACT__
+    marcel_self()->state_ext=MARCEL_RUNNING;
+#endif
     ACTDEBUG(printf("marcel_create ending\n")); 
 #ifdef DEBUG
     breakpoint();
@@ -254,7 +257,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     if(cur->child)
       marcel_insert_task(cur->child);
     unlock_task();
-    ACTDEBUG(printf("marcel_create ended\n")); 
+    ACTDEBUG(printf("marcel_create ended (%p, %i)\n", marcel_self(), marcel_self()->state_ext)); 
     return 0;
   } else {
 #ifdef __ACT__

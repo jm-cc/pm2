@@ -383,7 +383,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 	//unlock_task();
 	LOG_OUT();
 	marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
-	return 0;
 }
 
 #section marcel_variables

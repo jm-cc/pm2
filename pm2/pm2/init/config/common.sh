@@ -6,6 +6,11 @@ if [ "${PM2_ARCH}" = RS6K_ARCH ]; then
   PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -mno-powerpc"
 fi
 
-if [ "$PM2_SYS" = WIN32_ARCH -o "$PM2_SYS" = WINNT_SYS -o "$PM2_SYS" = WIN2K_SYS ]; then
-  PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -DWIN_SYS"
-fi
+case "$PM2_SYS" in
+    WIN*_SYS)
+	PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -DWIN_SYS"
+	;;
+    *)
+	;;
+esac
+

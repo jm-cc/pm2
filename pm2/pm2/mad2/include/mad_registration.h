@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_registration.h,v $
+Revision 1.5  2000/03/02 14:23:25  oaumage
+- ajout d'un nom de protocole par defaut
+
 Revision 1.4  2000/03/02 09:52:11  jfmehaut
 pilote Madeleine II/BIP
 
@@ -79,5 +82,7 @@ typedef enum
 #endif /* DRV_BIP */,
   mad_driver_number /* Must be the last element of the enum declaration */
 } mad_driver_id_t, *p_mad_driver_id_t;
+
+#define mad_DRIVER_DEFAULT 0
 
 #endif /* MAD_REGISTRATION_H */

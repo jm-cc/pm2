@@ -27,9 +27,6 @@ ntbx_client_dest_ext(p_ntbx_client_t            object,
 		     p_tbx_specific_dest_func_t dest_func)
 {
   LOG_IN();
-  if (object->state)
-    FAILURE("invalid client state");
-  
   if (object->local_host)
     {
       TBX_FREE(object->local_host);
@@ -47,7 +44,7 @@ ntbx_client_dest_ext(p_ntbx_client_t            object,
       TBX_FREE(object->remote_host);
       object->remote_host = NULL;
     }
-  
+
   if (object->remote_alias)
     {
       tbx_slist_free(object->remote_alias);
@@ -62,7 +59,7 @@ ntbx_client_dest_ext(p_ntbx_client_t            object,
 	}
       else
 	FAILURE("don't know how to destroy specific field");
-      
+
       object->specific = NULL;
     }
 
@@ -83,15 +80,12 @@ ntbx_server_dest_ext(p_ntbx_server_t            object,
 		     p_tbx_specific_dest_func_t dest_func)
 {
   LOG_IN();
-  if (object->state)
-    FAILURE("invalid server state");
-  
   if (object->local_host)
     {
       TBX_FREE(object->local_host);
       object->local_host = NULL;
     }
-  
+
   if (object->local_alias)
     {
       tbx_slist_free(object->local_alias);
@@ -108,7 +102,7 @@ ntbx_server_dest_ext(p_ntbx_server_t            object,
 	}
       else
 	FAILURE("don't know how to destroy specific field");
-      
+
       object->specific = NULL;
     }
 
@@ -141,7 +135,7 @@ ntbx_process_info_dest(p_ntbx_process_info_t      object,
 	}
       else
 	FAILURE("don't know how to destroy specific field");
-      
+
       object->specific = NULL;
     }
 
@@ -164,21 +158,21 @@ ntbx_pc_dest(p_ntbx_process_container_t object,
 	  object->local_index[object->local_array_size] = NULL;
 	}
     }
-  
+
   if (object->local_index)
     {
       TBX_FREE(object->local_index);
       object->local_index = NULL;
-    }  
-  
+    }
+
   if (object->global_index)
     {
       memset(object->global_index, 0, (size_t)object->global_array_size);
-      
+
       TBX_FREE(object->global_index);
       object->global_index = NULL;
     }
-  
+
   object->global_array_size = 0;
   object->count             = 0;
 
@@ -203,7 +197,7 @@ ntbx_process_dest(p_ntbx_process_t           object,
 	}
       else
 	FAILURE("don't know how to destroy specific field");
-      
+
       object->specific = NULL;
     }
 
@@ -224,11 +218,11 @@ ntbx_topology_element_dest(p_ntbx_topology_element_t  object,
 	}
       else
 	FAILURE("don't know how to destroy specific field");
-      
+
       object->specific = NULL;
     }
 
-  TBX_FREE(object);  
+  TBX_FREE(object);
   LOG_OUT();
 }
 
@@ -242,7 +236,7 @@ ntbx_topology_table_dest(p_ntbx_topology_table_t    object,
       TBX_FREE(object->table);
       object->table = NULL;
     }
-  
+
   object->size = 0;
 
   TBX_FREE(object);

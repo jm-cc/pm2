@@ -31,7 +31,6 @@ ntbx_client_cons(void)
 
   TBX_INIT_SHARED(object);
 
-  object->state        = ntbx_client_state_uninitialized;
   object->local_host   = NULL;
   object->local_alias  = tbx_slist_nil();
   object->remote_host  = NULL;
@@ -50,7 +49,6 @@ ntbx_server_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_server_t));
 
-  object->state                   = ntbx_server_state_uninitialized;
   object->local_host              = NULL;
   object->local_alias             = tbx_slist_nil();
   object->connection_data.data[0] = '\0';

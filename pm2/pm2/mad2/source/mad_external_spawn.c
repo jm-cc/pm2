@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.3  2000/06/15 08:45:03  rnamyst
+pm2load/pm2conf/pm2logs are now handled by pm2.
+
 Revision 1.2  2000/05/25 00:23:38  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -324,7 +327,7 @@ mad_init(
       char   output[MAX_ARG_LEN];
       int    f;
 
-      sprintf(output, "/tmp/%s-mad2log-%d", getenv("USER"), (int)rank);
+      sprintf(output, "/tmp/%s-%s-%d", getenv("USER"), MAD2_LOGNAME, (int)rank);
       f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
       dup2(f, STDOUT_FILENO);
       dup2(STDOUT_FILENO, STDERR_FILENO);

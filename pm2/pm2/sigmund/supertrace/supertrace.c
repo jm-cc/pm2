@@ -19,6 +19,9 @@
 #include "tracebuffer.h"
 #include "fkt.h"
 
+static int dec;
+static int relative;
+
 void print_trace(trace tr, FILE *supertrace)
 {
   int i;
@@ -36,16 +39,58 @@ void print_trace(trace tr, FILE *supertrace)
   }
 }
 
-int main(int args, char *argv[])
+void error_usage()
+{
+  fprintf(stderr,"Usage: supertrace [options]\n");
+  fprintf(stderr,"Traite et fusionne les traces utilisateur et noyau.\n");
+  fprintf(stderr,"-u, --user-trace    fut_nom\n");
+  fprintf(stderr,"-k, --kernel-trace  fkt_nom\n");
+  fprintf(stderr,"-o supertrace_nom   par défault prof_file\n");
+  fprintf(stderr,"--no-rel-time       Empêche la renormalisation des dates\n");
+  fprintf(stderr,"--dec-time          Prend en considération le temps mis par l'écriture d'une trace\n");
+  exit(1);
+}
+
+int main(int argc, char **argv)
 {
   trace tr;
   int i = 0;
+  char *supertrace_name = NULL;
+  char *fut_name = NULL;
+  char *fkt_name = NULL;
+  int argCount;
   FILE *supertrace;
-  if ((supertrace = fopen("prof_file","w")) == NULL) {
-    fprintf(stderr,"Unable to open prof_file");
+  dec = 0;
+  relative = 1;
+  for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
+    argCount = 1;
+    if ((!strcmp(*argv, "--user-trace")) || (!strcmp(*argv, "-u"))) {
+      if (argc <= 1) error_usage();
+      if (fut_name != NULL) error_usage();
+      argCount = 2;
+      fut_name = *(argv + 1);
+    } else if ((!strcmp(*argv, "--kernel-trace")) || (!strcmp(*argv, "-k"))) {
+      if (argc <= 1) error_usage();
+      if (fkt_name != NULL) error_usage();
+      argCount = 2;
+      fkt_name = *(argv + 1);
+    } else if (!strcmp(*argv, "-o")) {
+      if (argc <= 1) error_usage();
+      if (supertrace_name != NULL) error_usage();
+      argCount = 2;
+      supertrace_name = *(argv + 1);
+    } else if (!strcmp(*argv, "--no-relative-time")) {
+      relative = 0;
+    } else if (!strcmp(*argv, "--dec-time")) {
+      dec = 1;
+    } else error_usage();
+  }
+  if (supertrace_name == NULL) supertrace_name = "prof_file";
+  if ((supertrace = fopen(supertrace_name, "w")) == NULL) {
+    fprintf(stderr,"Unable to open %s", supertrace_name);
     exit(1);
   }
-  init_trace_buffer("prof_file_single", "trace_file");
+  init_trace_buffer(fut_name, fkt_name, relative, dec);
   while(i == 0) {
     i = get_next_trace(&tr);
     print_trace(tr, supertrace);

@@ -40,6 +40,7 @@ typedef struct s_mad_channel
   char                       *name;
   p_ntbx_process_container_t  pc;
   tbx_bool_t                  not_private;
+  tbx_bool_t                  mergeable; 
   p_mad_dir_channel_t         dir_channel;
   p_mad_dir_channel_t         cloned_dir_channel;
   p_mad_adapter_t             adapter;

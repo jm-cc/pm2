@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_printf.c,v $
+Revision 1.5  2000/06/09 10:07:43  rnamyst
+minor changes
+
 Revision 1.4  2000/02/28 11:17:14  rnamyst
 Changed #include <> into #include "".
 
@@ -56,6 +59,8 @@ static char _pm2_print_buf[1024] __MAD_ALIGNED__;
 
 extern int pm2_main_module(void);
 
+#define MAD_ROUNDED(X)  (((X)+(MAD_ALIGNMENT-1)) & ~(MAD_ALIGNMENT-1))
+
 void pm2_printf(char *format, ...)
 { 
   va_list args;
@@ -75,7 +80,7 @@ void pm2_printf(char *format, ...)
     vsprintf(ptr, format, args);
     va_end(args);
     {
-      unsigned len = strlen(_pm2_print_buf)+1;
+      unsigned len = MAD_ROUNDED(strlen(_pm2_print_buf)+1);
 
       pm2_rawrpc_begin(pm2_main_module(), PM2_PRINTF, NULL);
       pm2_pack_int(SEND_CHEAPER, RECV_EXPRESS, &len, 1);

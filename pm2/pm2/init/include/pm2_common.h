@@ -22,13 +22,13 @@ struct _struct_common_attr_t;
 typedef struct _struct_common_attr_t common_attr_t;
 
 #if !defined(MARCEL_KERNEL) && \
-    !defined(MAD3_KERNEL) && \
-    !defined(MAD2_KERNEL) && \
-    !defined(PM2_KERNEL) && \
-    !defined(TBX_KERNEL) && \
-    !defined(NTBX_KERNEL) && \
-    !defined(DSM_KERNEL) && \
-    !defined(MAD1_KERNEL) && \
+    !defined(MAD3_KERNEL)   && \
+    !defined(MAD2_KERNEL)   && \
+    !defined(PM2_KERNEL)    && \
+    !defined(TBX_KERNEL)    && \
+    !defined(NTBX_KERNEL)   && \
+    !defined(DSM_KERNEL)    && \
+    !defined(MAD1_KERNEL)   && \
     !defined(PROFILE_KERNEL)
 
 #ifdef TBX
@@ -43,34 +43,31 @@ typedef struct _struct_common_attr_t common_attr_t;
 #include "marcel.h"
 #endif /* MARCEL */
 
-#ifdef MAD1
+#ifdef MAD
 #include "madeleine.h"
-#endif /* MAD1 */
-
-#ifdef MAD2
-#include "madeleine.h"
-#endif /* MAD2 */
-
-#ifdef MAD3
-#include "madeleine.h"
-#endif /* MAD3 */
+#endif /* MAD */
 
 #ifdef PM2
 #include "pm2.h"
+#include "pm2_attr.h"
+#include "sys/netserver.h"
 #endif /* PM2 */
 
 struct _struct_common_attr_t {
-#ifdef MAD3
-  p_mad_madeleine_t madeleine; // OUT
-#endif // MAD3
+
+#ifdef MAD
+  p_mad_madeleine_t    madeleine;   // OUT
+#endif // MAD
+
 #ifdef MAD2
-  p_mad_madeleine_t madeleine; // OUT
-  int rank; // OUT
-  p_mad_adapter_set_t adapter_set; // IN
+  int                  rank;        // OUT
+  p_mad_adapter_set_t  adapter_set; // IN
+
 #ifdef APPLICATION_SPAWN
-  char *url; // IN/OUT
+  char                *url;         // IN/OUT
 #endif // APPLICATION_SPAWN
 #endif // MAD2
+
 };
 
 #endif // *_KERNEL

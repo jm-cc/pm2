@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.15  2000/03/08 17:19:47  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.14  2000/03/02 15:46:04  oaumage
 - support du polling Nexus
 
@@ -243,9 +248,9 @@ mad_tcp_write(int              sock,
 			     buffer->bytes_written - buffer->bytes_read));
 
       if (result > 0) buffer->bytes_read += result;
-#ifdef PM2
-      if (mad_more_data(buffer)) PM2_YIELD();
-#endif /* PM2 */
+#ifdef MARCEL
+      if (mad_more_data(buffer)) TBX_YIELD();
+#endif /* MARCEL */
     }
   LOG_OUT();
 }
@@ -265,12 +270,12 @@ mad_tcp_read(int              sock,
 			    buffer->length - buffer->bytes_written));
 
       if (result > 0) buffer->bytes_written += result;
-#ifdef PM2
+#ifdef MARCEL
       if (!mad_buffer_full(buffer))
 	{
-	  PM2_YIELD();
+	  TBX_YIELD();
 	}
-#endif /* PM2 */
+#endif /* MARCEL */
     }
   LOG_OUT();
 }
@@ -332,12 +337,12 @@ mad_tcp_driver_init(p_mad_driver_t driver)
   p_mad_tcp_driver_specific_t driver_specific;
 
   LOG_IN();
-  driver_specific = malloc(sizeof(mad_tcp_driver_specific_t));
+  driver_specific = TBX_MALLOC(sizeof(mad_tcp_driver_specific_t));
   CTRL_ALLOC(driver_specific);
   driver->specific = driver_specific;
   driver_specific->nb_adapter = 0;
   
-  driver->name = malloc(4);
+  driver->name = TBX_MALLOC(4);
   CTRL_ALLOC(driver->name);
   strcpy(driver->name, "tcp");
   LOG_OUT();
@@ -355,7 +360,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   driver          = adapter->driver;
   driver_specific = driver->specific;
 
-  adapter_specific  = malloc(sizeof(mad_tcp_adapter_specific_t));
+  adapter_specific  = TBX_MALLOC(sizeof(mad_tcp_adapter_specific_t));
   CTRL_ALLOC(adapter_specific);
   adapter->specific = adapter_specific;
 
@@ -364,7 +369,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
 
   if (adapter->name == NULL)
     {
-      adapter->name     = malloc(10);
+      adapter->name     = TBX_MALLOC(10);
       CTRL_ALLOC(adapter->name);
       sprintf(adapter->name, "TCP%d", driver_specific->nb_adapter);
     }
@@ -374,7 +379,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   driver_specific->nb_adapter++;  
 
   adapter_specific->remote_connection_port =
-    malloc(driver->madeleine->configuration.size * sizeof(int));
+    TBX_MALLOC(driver->madeleine->configuration.size * sizeof(int));
   CTRL_ALLOC(adapter_specific->remote_connection_port);
 
   adapter_specific->connection_socket = ntbx_tcp_socket_create(&address, 0);
@@ -385,7 +390,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->connection_port =
     (ntbx_tcp_port_t)ntohs(address.sin_port);
 
-  adapter->parameter = malloc(10);
+  adapter->parameter = TBX_MALLOC(10);
   CTRL_ALLOC(adapter->parameter);
   sprintf(adapter->parameter, "%d", adapter_specific->connection_port);
   LOG_OUT();
@@ -481,7 +486,7 @@ mad_tcp_channel_init(p_mad_channel_t channel)
   p_mad_tcp_channel_specific_t channel_specific;
   
   LOG_IN();
-  channel_specific = malloc(sizeof(mad_tcp_channel_specific_t));
+  channel_specific = TBX_MALLOC(sizeof(mad_tcp_channel_specific_t));
   CTRL_ALLOC(channel_specific);
   channel->specific = channel_specific;
   LOG_OUT();
@@ -493,7 +498,7 @@ mad_tcp_connection_init(p_mad_connection_t in, p_mad_connection_t out)
   p_mad_tcp_connection_specific_t specific;
   
   LOG_IN();
-  specific = malloc(sizeof(mad_tcp_connection_specific_t));
+  specific = TBX_MALLOC(sizeof(mad_tcp_connection_specific_t));
   CTRL_ALLOC(specific);
   in->specific = out->specific = specific;
   in->nb_link = 1;
@@ -648,16 +653,16 @@ mad_tcp_adapter_exit(p_mad_adapter_t adapter)
   
   LOG_IN();
   SYSCALL(close(adapter_specific->connection_socket));
-  free(adapter_specific->remote_connection_port);
-  free(adapter_specific);
+  TBX_FREE(adapter_specific->remote_connection_port);
+  TBX_FREE(adapter_specific);
   adapter->specific = NULL;
-  free(adapter->parameter);
+  TBX_FREE(adapter->parameter);
   if (adapter->master_parameter)
     {
-      free(adapter->master_parameter);
+      TBX_FREE(adapter->master_parameter);
       adapter->master_parameter = NULL;
     }
-  free(adapter->name);
+  TBX_FREE(adapter->name);
   LOG_OUT();
 }
 
@@ -676,7 +681,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
     {
       struct timeval timeout;
       rfds = channel_specific->read_fds;
-#ifdef PM2
+#ifdef MARCEL
 #ifdef USE_MARCEL_POLL
       n = marcel_select(channel_specific->max_fds + 1, &rfds, NULL);
 	      
@@ -688,10 +693,10 @@ mad_tcp_poll_message(p_mad_channel_t channel)
 	}
       else if (n < 0)
 	{
-	  PM2_YIELD();
+	  TBX_YIELD();
 	}
 #endif /* USE_MARCEL_POLL */  
-#else /* PM2 */
+#else /* MARCEL */
       timeout.tv_sec  = 0;
       timeout.tv_usec = 0;
 		
@@ -705,7 +710,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
 	  LOG_OUT();
 	  return NULL;
 	}
-#endif /* PM2 */
+#endif /* MARCEL */
     }
   while(n < 0);
 
@@ -738,7 +743,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
   p_mad_configuration_t configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
 
-#if !defined(PM2) && !defined(MAD_NEXUS)
+#if !defined(MARCEL) && !defined(MAD_NEXUS)
   LOG_IN();
   if (configuration->size == 2)
     {
@@ -747,7 +752,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	       input_connection[1 - configuration->local_host_id]);
     }
   else
-#endif /* PM2/MAD_NEXUS */
+#endif /* MARCEL/MAD_NEXUS */
     {
       p_mad_tcp_channel_specific_t channel_specific = channel->specific;
       fd_set rfds;
@@ -759,7 +764,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	  do
 	    {
 	      rfds = channel_specific->read_fds;
-#ifdef PM2
+#ifdef MARCEL
 #ifdef USE_MARCEL_POLL
 	      n = marcel_select(channel_specific->max_fds + 1, &rfds, NULL);
 	      
@@ -767,16 +772,16 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	      n = tselect(channel_specific->max_fds + 1, &rfds, NULL, NULL);
 	      if(n <= 0)
 		{
-		  PM2_YIELD();
+		  TBX_YIELD();
 		}
 #endif /* USE_MARCEL_POLL */  
-#else /* PM2 */
+#else /* MARCEL */
 	      n = select(channel_specific->max_fds + 1,
 			 &rfds,
 			 NULL,
 			 NULL,
 			 NULL);
-#endif /* PM2 */
+#endif /* MARCEL */
 	    }
 	  while(n <= 0);
 

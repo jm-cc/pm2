@@ -56,9 +56,9 @@ static const int param_control_receive   = 0;
 static const int param_send_mode         = mad_send_CHEAPER;
 static const int param_receive_mode      = mad_receive_CHEAPER;
 static const int param_nb_samples        = 1000;
-static const int param_min_size          = 0;
-static const int param_max_size          = 256;
-static const int param_step              = 4; /* 0 = progression log. */
+static const int param_min_size          = 1;
+static const int param_max_size          = 2*1024*1024;
+static const int param_step              = 0; /* 0 = progression log. */
 static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;

@@ -80,9 +80,6 @@ void
 mad_dir_channel_init(p_mad_madeleine_t   madeleine);
 
 void
-mad_dir_vchannel_exit(p_mad_madeleine_t madeleine);
-
-void
 mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 		       int                *_argc,
 		       char              **_argv);

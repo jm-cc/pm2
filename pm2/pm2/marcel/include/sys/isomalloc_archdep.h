@@ -45,6 +45,14 @@ extern int __zero_fd;
 #define FILE_TO_MAP            -1
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
+#elif defined(LINUX_SYS) && defined(IA64_ARCH)
+
+#define ISOADDR_AREA_TOP       0x7fff0000
+#define MAIN_STACK_BOT         0x6000000000000000
+#define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#define FILE_TO_MAP            -1
+#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+
 #elif defined(LINUX_SYS) && defined(PPC_ARCH)
 
 #define ISOADDR_AREA_TOP       0x30000000

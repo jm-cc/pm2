@@ -46,9 +46,7 @@ extern debug_type_t marcel_sched_lock_debug;
 
 extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
-#endif
 
-#ifdef MARCEL_DEBUG
 #define mdebug(fmt, args...) \
     debug_printf(&marcel_mdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #define try_mdebug(fmt, args...) \
@@ -59,7 +57,9 @@ extern debug_type_t marcel_mtrace_timer;
     debug_printf(&marcel_debug_work, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #define mdebug_deviate(fmt, args...) \
     debug_printf(&marcel_debug_deviate, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
-#else
+
+#else // PM2DEBUG
+
 #define mdebug(fmt, args...)     (void)0
 #define try_mdebug(fmt, args...)     (void)0
 #define mdebug_state(fmt, args...)     (void)0

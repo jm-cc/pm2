@@ -699,7 +699,7 @@ static void flavor_build_selector(GtkWidget *vbox)
   GtkWidget *frame;
   GtkWidget *int_vbox;
 
-  frame = gtk_frame_new("Flavors");
+  frame = gtk_frame_new(" Flavors ");
   gtk_container_set_border_width (GTK_CONTAINER(frame), 10);
   gtk_box_pack_start(GTK_BOX(vbox), frame, FALSE, TRUE, 0);
   gtk_widget_show(frame);

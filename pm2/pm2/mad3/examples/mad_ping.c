@@ -35,7 +35,6 @@
 // Macros
 //......................
 
-#define MAX 16
 
 // Types
 //......................
@@ -56,7 +55,7 @@ static const int param_control_receive   = 0;
 static const int param_send_mode         = mad_send_CHEAPER;
 static const int param_receive_mode      = mad_receive_CHEAPER;
 static const int param_nb_samples        = 1000;
-static const int param_min_size          = 1;
+static const int param_min_size          = MAD_LENGTH_ALIGNMENT;
 static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
 static const int param_nb_tests          = 5;

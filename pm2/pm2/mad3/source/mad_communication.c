@@ -588,7 +588,7 @@ mad_pack(p_mad_connection_t   connection,
   p_tbx_list_t               buffer_group_list = connection->buffer_group_list;
 
   LOG_IN();
-  if (user_buffer_length == 0) return;
+  if (!user_buffer_length) return;
 
   if (interface->choice)
     {

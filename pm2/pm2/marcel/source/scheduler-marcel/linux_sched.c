@@ -1464,12 +1464,18 @@ restart:
 		next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
 	}
 
-	if (next) /* either prev or idle */
+	if (next && next!=prev)
+		/* idle */
 		goto switch_tasks;
+
+	if (next && !ma_test_thread_flag(TIF_NEED_RESCHED))
+		/* prev, but don't need resched */
+		goto switch_tasks;
+
+	ma_clear_tsk_need_resched(prev);
 
 #ifdef MA__LWPS
 	if (tbx_unlikely(!(rq->active->nr_active+rq->expired->nr_active))) {
-		/* too bad: someone stole the task we saw */
 		sched_debug("someone stole the task we saw, restart\n");
 		double_rq_unlock(prevrq,rq);
 		goto restart;
@@ -1518,7 +1524,6 @@ switch_tasks:
 	}
 
 	prefetch(next);
-	ma_clear_tsk_need_resched(prev);
 //Pour quand on voudra ce mécanisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
 

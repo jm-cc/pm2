@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.3  2000/04/14 11:41:47  vdanjean
+move SCHED_DATA(lwp).sched_task to lwp->idle_task
+
 Revision 1.2  2000/04/11 09:07:17  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -142,6 +145,13 @@ ______________________________________________________________________________
 #undef MA__MULTIPLE_RUNNING
 #endif
 
+/* MA__ACTIVATION : indique qu'on utilise les activations (mono ou
+ * smp). On peut donc utiliser les constantes de act.h
+ * */
+#ifdef MA__ACTIVATION
+#undef MA__ACTIVATION
+#endif
+
 #ifdef MARCEL_SMP /* Marcel SMP */
 #define SMP
 #define MA__SMP /* Utilisation des pthreads pour les lwp */
@@ -153,6 +163,7 @@ ______________________________________________________________________________
 #define MA__ACT
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING
+#define MA__ACTIVATION
 #undef CONFIG_SMP
 #endif /* Fin Marcel Activation Mono */
 
@@ -161,6 +172,7 @@ ______________________________________________________________________________
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING
 #define CONFIG_SMP
+#define MA__ACTIVATION
 #define __SMP__
 #define MA__LWPS
 #endif /* Fin Marcel Activation SMP */

@@ -75,7 +75,7 @@ autofix: yes
 # discovers a problem which requires local intervention.  Please make the
 # contact information accurate so we can support you.
 # 
-contact: vdanjean@ens-lyon.fr
+contact: Vincent Danjean
 # 
 # It is very important that this email address is filled out and accurate.
 # If someone converts your repository to open logging (which you may not
@@ -84,7 +84,7 @@ contact: vdanjean@ens-lyon.fr
 # response from anyone else at your location after 90 days, then open logging
 # will be implicitly approved.
 # 
-email: vdanjean@ens-lyon.fr
+email: Vincent.Danjean@labri.fr
 # 
 # Add your street address if you like, it is optional.
 # 

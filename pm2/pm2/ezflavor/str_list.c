@@ -15,7 +15,7 @@
  */
 
 #include <stdio.h>
-
+#include <string.h>
 #include "parser.h"
 #include "trace.h"
 #include "str_list.h"

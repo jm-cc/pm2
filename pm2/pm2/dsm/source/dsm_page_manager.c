@@ -165,9 +165,9 @@ unsigned int dsm_page_offset(void *addr)
 }
 
 
-unsigned long dsm_page_index(void *addr)
+dsm_page_index_t dsm_page_index(void *addr)
 {
-    unsigned long index;
+    dsm_page_index_t index;
 
     if(dsm_true_static_addr(addr))
       index = ((char *)addr - static_dsm_base_addr)/DSM_PAGE_SIZE;
@@ -182,7 +182,7 @@ unsigned long dsm_page_index(void *addr)
 }
 
 
-unsigned long dsm_isoaddr_page_index(int index)
+dsm_page_index_t dsm_isoaddr_page_index(int index)
 {
   return isoaddr_page_get_master(index) + nb_static_dsm_pages + nb_pseudo_static_dsm_pages;
 }
@@ -703,7 +703,7 @@ void dsm_map_page(void *addr, dsm_access_t access)
 }
 
 
-void dsm_set_prob_owner(unsigned long index, dsm_node_t owner)
+void dsm_set_prob_owner(dsm_page_index_t index, dsm_node_t owner)
 {
   dsm_page_table[index]->prob_owner = owner;
 #ifdef DSM_TABLE_TRACE
@@ -712,13 +712,13 @@ void dsm_set_prob_owner(unsigned long index, dsm_node_t owner)
 }
 
 
-dsm_node_t dsm_get_prob_owner(unsigned long index)
+dsm_node_t dsm_get_prob_owner(dsm_page_index_t index)
 {
   return dsm_page_table[index]->prob_owner;
 }
 
 
-void dsm_set_next_owner(unsigned long index, dsm_node_t next)
+void dsm_set_next_owner(dsm_page_index_t index, dsm_node_t next)
 {
   dsm_page_table[index]->next_owner = next;
 #ifdef DSM_TABLE_TRACE
@@ -727,7 +727,7 @@ void dsm_set_next_owner(unsigned long index, dsm_node_t next)
 }
 
 
-void dsm_clear_next_owner(unsigned long index)
+void dsm_clear_next_owner(dsm_page_index_t index)
 {
   dsm_page_table[index]->next_owner = NO_NODE;
 #ifdef DSM_TABLE_TRACE
@@ -736,7 +736,7 @@ void dsm_clear_next_owner(unsigned long index)
 }
 
 
-dsm_node_t dsm_get_next_owner(unsigned long index)
+dsm_node_t dsm_get_next_owner(dsm_page_index_t index)
 {
 #ifdef DSM_TABLE_TRACE
   fprintf(stderr, "get next owner (%ld): %d\n", index, dsm_page_table[index]->next_owner);
@@ -745,7 +745,7 @@ dsm_node_t dsm_get_next_owner(unsigned long index)
 }
 
 
-void dsm_store_pending_request(unsigned long index, dsm_node_t node)
+void dsm_store_pending_request(dsm_page_index_t index, dsm_node_t node)
      // Used to store remote read requests on a node 
      // where there is a read access pending
 {
@@ -753,19 +753,19 @@ void dsm_store_pending_request(unsigned long index, dsm_node_t node)
 }
 
 
-dsm_node_t dsm_get_next_pending_request(unsigned long index)
+dsm_node_t dsm_get_next_pending_request(dsm_page_index_t index)
 {
   return fifo_get_next(&dsm_page_table[index]->pending_req);
 }
 
 
-boolean dsm_next_owner_is_set(unsigned long index)
+boolean dsm_next_owner_is_set(dsm_page_index_t index)
 {
   return (dsm_page_table[index]->next_owner != NO_NODE);
 }
 
 
-void dsm_set_access(unsigned long index, dsm_access_t access)
+void dsm_set_access(dsm_page_index_t index, dsm_access_t access)
 {
   dsm_protect_page(dsm_page_table[index]->addr, access);
   dsm_page_table[index]->access = access;
@@ -775,7 +775,7 @@ void dsm_set_access(unsigned long index, dsm_access_t access)
 }
 
 
-static void dsm_enable_access(unsigned long index, dsm_access_t access, boolean map)
+static void dsm_enable_access(dsm_page_index_t index, dsm_access_t access, boolean map)
 {
   if (map)
     dsm_map_page(dsm_page_table[index]->addr, access);
@@ -786,79 +786,79 @@ static void dsm_enable_access(unsigned long index, dsm_access_t access, boolean 
 }
 
 
-void dsm_set_access_without_protect(unsigned long index, dsm_access_t access)
+void dsm_set_access_without_protect(dsm_page_index_t index, dsm_access_t access)
 {
   dsm_page_table[index]->access = access;
 }
 
 
-dsm_access_t dsm_get_access(unsigned long index)
+dsm_access_t dsm_get_access(dsm_page_index_t index)
 {
   return dsm_page_table[index]->access;
 }
 
 
-boolean dsm_pending_invalidation(unsigned long index)
+boolean dsm_pending_invalidation(dsm_page_index_t index)
 {
   return dsm_page_table[index]->pending_inv;
 }
 
-void dsm_set_pending_invalidation(unsigned long index)
+void dsm_set_pending_invalidation(dsm_page_index_t index)
 {
   dsm_page_table[index]->pending_inv = 1;
 }
 
-void dsm_clear_pending_invalidation(unsigned long index)
+void dsm_clear_pending_invalidation(dsm_page_index_t index)
 {
   dsm_page_table[index]->pending_inv = 0;
 }
 
 
-void dsm_set_pending_access(unsigned long index, dsm_access_t access)
+void dsm_set_pending_access(dsm_page_index_t index, dsm_access_t access)
 {
   dsm_page_table[index]->pending_access = access;
 //  fprintf(stderr, "set pending(%ld) = %d\n", index,  dsm_page_table[index]->pending_access);
 }
 
 
-dsm_access_t dsm_get_pending_access(unsigned long index)
+dsm_access_t dsm_get_pending_access(dsm_page_index_t index)
 {
 //  fprintf(stderr, "pending(%ld) = %d\n", index,  dsm_page_table[index]->pending_access);
   return dsm_page_table[index]->pending_access;
 }
 
 
-void dsm_set_page_size(unsigned long index, unsigned long size)
+void dsm_set_page_size(dsm_page_index_t index, unsigned long size)
 {
   dsm_page_table[index]->size = size;
 }
 
 
-unsigned long dsm_get_page_size(unsigned long index)
+unsigned long dsm_get_page_size(dsm_page_index_t index)
 {
   return dsm_page_table[index]->size;
 }
 
 
-void dsm_set_page_addr(unsigned long index, void *addr)
+void dsm_set_page_addr(dsm_page_index_t index, void *addr)
 {
   dsm_page_table[index]->addr = addr;
 }
 
 
-void *dsm_get_page_addr(unsigned long index)
+void *dsm_get_page_addr(dsm_page_index_t index)
 {
   return dsm_page_table[index]->addr;
 }
 
 
-void dsm_wait_for_page(unsigned long index)
+void dsm_wait_for_page(dsm_page_index_t index)
 {
   marcel_cond_wait(&dsm_page_table[index]->cond, &dsm_page_table[index]->mutex);
 }
 
 
-void dsm_signal_page_ready(unsigned long index)
+void dsm_signal_page_ready(dsm_page_index_t index)
 {
 //  dsm_lock_page(index);
   marcel_cond_broadcast(&dsm_page_table[index]->cond);
@@ -866,13 +866,13 @@ void dsm_signal_page_ready(unsigned long index)
 }
 
 
-void dsm_wait_for_inv(unsigned long index)
+void dsm_wait_for_inv(dsm_page_index_t index)
 {
   marcel_cond_wait(&dsm_page_table[index]->cond2, &dsm_page_table[index]->mutex2);
 }
 
 
-void dsm_signal_inv_done(unsigned long index)
+void dsm_signal_inv_done(dsm_page_index_t index)
 {
 //  dsm_lock_inv(index);
   marcel_cond_broadcast(&dsm_page_table[index]->cond2);
@@ -880,7 +880,7 @@ void dsm_signal_inv_done(unsigned long index)
 }
 
 
-void dsm_lock_page(unsigned long index)
+void dsm_lock_page(dsm_page_index_t index)
 {
 #ifdef DSM_TABLE_TRACE
   tfprintf(stderr,"  Before lock page(%ld):(I am %p)\n", index, marcel_self());
@@ -892,7 +892,7 @@ void dsm_lock_page(unsigned long index)
 #endif
 }
 
-void dsm_unlock_page(unsigned long index)
+void dsm_unlock_page(dsm_page_index_t index)
 {
   marcel_mutex_unlock(&dsm_page_table[index]->mutex);
 #ifdef DSM_TABLE_TRACE
@@ -901,7 +901,7 @@ void dsm_unlock_page(unsigned long index)
 }
 
 
-void dsm_lock_inv(unsigned long index)
+void dsm_lock_inv(dsm_page_index_t index)
 {
 #ifdef DSM_TABLE_TRACE
   tfprintf(stderr,"  Before lock inv(%ld):(I am %p)\n", index, marcel_self());
@@ -913,7 +913,7 @@ void dsm_lock_inv(unsigned long index)
 }
 
 
-void dsm_unlock_inv(unsigned long index)
+void dsm_unlock_inv(dsm_page_index_t index)
 {
   marcel_mutex_unlock(&dsm_page_table[index]->mutex2);
 #ifdef DSM_TABLE_TRACE
@@ -922,7 +922,7 @@ void dsm_unlock_inv(unsigned long index)
 }
 
 
-void dsm_wait_ack(unsigned long index, int value)
+void dsm_wait_ack(dsm_page_index_t index, int value)
 {
   int i;
 #ifdef DSM_TABLE_TRACE
@@ -933,7 +933,7 @@ void dsm_wait_ack(unsigned long index, int value)
 }
 
 
-void dsm_signal_ack(unsigned long index, int value)
+void dsm_signal_ack(dsm_page_index_t index, int value)
 {
   int i;
   
@@ -942,13 +942,13 @@ void dsm_signal_ack(unsigned long index, int value)
 }
 
 
-int dsm_get_copyset_size(unsigned long index)
+int dsm_get_copyset_size(dsm_page_index_t index)
 {
   return dsm_page_table[index]->copyset_size;
 }
 
 
-void dsm_add_to_copyset(unsigned long index, dsm_node_t node)
+void dsm_add_to_copyset(dsm_page_index_t index, dsm_node_t node)
 {
   int *copyset_size = &dsm_page_table[index]->copyset_size;
 
@@ -956,7 +956,7 @@ void dsm_add_to_copyset(unsigned long index, dsm_node_t node)
 }
 
 
-dsm_node_t dsm_get_next_from_copyset(unsigned long index)
+dsm_node_t dsm_get_next_from_copyset(dsm_page_index_t index)
 {
   int *copyset_size = &dsm_page_table[index]->copyset_size;
 
@@ -970,7 +970,7 @@ dsm_node_t dsm_get_next_from_copyset(unsigned long index)
 }
 
 
-void dsm_remove_from_copyset(unsigned long index, dsm_node_t node)
+void dsm_remove_from_copyset(dsm_page_index_t index, dsm_node_t node)
 /* 
    Do nothing if node not found. 
 */
@@ -990,7 +990,7 @@ void dsm_remove_from_copyset(unsigned long index, dsm_node_t node)
 }
 
 
-int dsm_get_user_data1(unsigned long index, int rank)
+int dsm_get_user_data1(dsm_page_index_t index, int rank)
 {
   if (rank >= USER_DATA_SIZE)
     RAISE(CONSTRAINT_ERROR);
@@ -999,7 +999,7 @@ int dsm_get_user_data1(unsigned long index, int rank)
 }
 
 
-void dsm_set_user_data1(unsigned long index, int rank, int value)
+void dsm_set_user_data1(dsm_page_index_t index, int rank, int value)
 {
   if (rank >= USER_DATA_SIZE)
     RAISE(CONSTRAINT_ERROR);
@@ -1008,7 +1008,7 @@ void dsm_set_user_data1(unsigned long index, int rank, int value)
 }
 
 
-void dsm_increment_user_data1(unsigned long index, int rank)
+void dsm_increment_user_data1(dsm_page_index_t index, int rank)
 {
   if (rank >= USER_DATA_SIZE)
     RAISE(CONSTRAINT_ERROR);
@@ -1017,7 +1017,7 @@ void dsm_increment_user_data1(unsigned long index, int rank)
 }
 
 
-void dsm_decrement_user_data1(unsigned long index, int rank)
+void dsm_decrement_user_data1(dsm_page_index_t index, int rank)
 {
   if (rank >= USER_DATA_SIZE)
     RAISE(CONSTRAINT_ERROR);
@@ -1026,24 +1026,24 @@ void dsm_decrement_user_data1(unsigned long index, int rank)
 }
 
 
-void dsm_alloc_user_data2(unsigned long index, int size)
+void dsm_alloc_user_data2(dsm_page_index_t index, int size)
 {
   dsm_page_table[index]->user_data2 = malloc(size);
 }
 
 
-void dsm_free_user_data2(unsigned long index)
+void dsm_free_user_data2(dsm_page_index_t index)
 {
   free(dsm_page_table[index]->user_data2);
 }
 
-void *dsm_get_user_data2(unsigned long index)
+void *dsm_get_user_data2(dsm_page_index_t index)
 {
   return dsm_page_table[index]->user_data2;
 }
 
 
-void dsm_set_user_data2(unsigned long index, void *addr)
+void dsm_set_user_data2(dsm_page_index_t index, void *addr)
 {
   dsm_page_table[index]->user_data2 = addr;
 }
@@ -1052,7 +1052,7 @@ void dsm_set_user_data2(unsigned long index, void *addr)
 /********************* To handle with care **************************/
 /********************************************************************/
 
-void dsm_alloc_twin(unsigned long index)
+void dsm_alloc_twin(dsm_page_index_t index)
 {
 #ifdef DEBUG
   assert(dsm_page_table[index]->twin == NULL);
@@ -1066,7 +1066,7 @@ void dsm_alloc_twin(unsigned long index)
 }
 
 
-void dsm_free_twin(unsigned long index)
+void dsm_free_twin(dsm_page_index_t index)
 {
   free(dsm_page_table[index]->twin);
   dsm_page_table[index]->twin = NULL;
@@ -1075,37 +1075,37 @@ void dsm_free_twin(unsigned long index)
 #endif
 }
 
-void *dsm_get_twin(unsigned long index)
+void *dsm_get_twin(dsm_page_index_t index)
 {
   return dsm_page_table[index]->twin;
 }
 
-void dsm_set_twin(unsigned long index, void *addr)
+void dsm_set_twin(dsm_page_index_t index, void *addr)
 {
   dsm_page_table[index]->twin = addr;
 }
 /********************************************************************/
 
-boolean dsm_empty_page_entry(unsigned long index)
+boolean dsm_empty_page_entry(dsm_page_index_t index)
 {
   return !dsm_page_table[index];
 }
 
 
-void dsm_validate_page_entry(unsigned long index)
+void dsm_validate_page_entry(dsm_page_index_t index)
 {
   if (!dsm_page_table[index])
     dsm_page_table[index] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));
 }
 
 
-void dsm_alloc_page_entry(unsigned long index)
+void dsm_alloc_page_entry(dsm_page_index_t index)
 {
   dsm_page_table[index] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));
 }
 
 
-void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map)
+void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map)
 {
 #ifdef DSM_TABLE_TRACE
   fprintf(stderr,"Enabling table entry for page %ld, owner = %d , prot = %d, addr = %p, size = %d (I am %p)\n", index, owner, protocol, addr, size, marcel_self());
@@ -1158,13 +1158,13 @@ void dsm_set_default_protocol(int protocol)
 }
 
 
-void dsm_set_page_protocol(unsigned long index, int protocol)
+void dsm_set_page_protocol(dsm_page_index_t index, int protocol)
 {
   dsm_page_table[index]->protocol = protocol;
 }
 
 
-int dsm_get_page_protocol(unsigned long index)
+int dsm_get_page_protocol(dsm_page_index_t index)
 {
   return dsm_page_table[index]->protocol;
 }
@@ -1181,7 +1181,7 @@ int dsm_get_page_protocol(unsigned long index)
  */
 void dsm_invalidate_not_owned_pages()
 {
-  unsigned long i;
+  dsm_page_index_t i;
 
   for (i = 0; i < nb_static_dsm_pages; i++)
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
@@ -1193,7 +1193,7 @@ void dsm_invalidate_not_owned_pages()
 
 void dsm_invalidate_not_owned_pages_without_protect()
 {
-  unsigned long i;
+  dsm_page_index_t i;
 
   for (i = 0; i < nb_static_dsm_pages; i++)
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
@@ -1206,7 +1206,7 @@ void dsm_invalidate_not_owned_pages_without_protect()
 
 void dsm_pseudo_static_invalidate_not_owned_pages()
 {
-  unsigned long i;
+  dsm_page_index_t i;
 
   for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
@@ -1220,7 +1220,7 @@ void dsm_pseudo_static_invalidate_not_owned_pages()
 
 void dsm_pseudo_static_invalidate_not_owned_pages_without_protect()
 {
-  unsigned long i;
+  dsm_page_index_t i;
 
   for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
@@ -1236,13 +1236,13 @@ void dsm_pseudo_static_invalidate_not_owned_pages_without_protect()
  * of the page table, so the field 'size' is supposed to have been
  * previously initialized.
  */
-void dsm_alloc_page_bitmap(unsigned long index)
+void dsm_alloc_page_bitmap(dsm_page_index_t index)
 {
   dsm_page_table[index]->bitmap = dsm_bitmap_alloc(dsm_page_table[index]->size);
 }
 
 
-void dsm_free_page_bitmap(unsigned long index)
+void dsm_free_page_bitmap(dsm_page_index_t index)
 {
   dsm_bitmap_free(dsm_page_table[index]->bitmap);
 
@@ -1253,7 +1253,7 @@ void dsm_free_page_bitmap(unsigned long index)
 
 void dsm_mark_dirty(void *addr, int length)
 {
-  unsigned long index = dsm_page_index(addr);
+  dsm_page_index_t index = dsm_page_index(addr);
 
 #ifdef DSM_TABLE_TRACE
   tfprintf(stderr,"dsm_mark_dirty: addr = %p, index = %ld, length=%d\n",
@@ -1274,7 +1274,7 @@ void dsm_mark_dirty(void *addr, int length)
 
 
 
-void *dsm_get_next_modified_data(unsigned long index, int *size)
+void *dsm_get_next_modified_data(dsm_page_index_t index, int *size)
 {
   static int _offset = 0;
   int start;
@@ -1299,7 +1299,7 @@ void *dsm_get_next_modified_data(unsigned long index, int *size)
 }
 
 
-boolean dsm_page_bitmap_is_empty(unsigned long index) 
+boolean dsm_page_bitmap_is_empty(dsm_page_index_t index) 
 {
 #ifdef DSM_TABLE_TRACE
 tfprintf(stderr, "dsm_bitmap_is_empty(%ld)\n", index);
@@ -1308,7 +1308,7 @@ tfprintf(stderr, "dsm_bitmap_is_empty(%ld)\n", index);
 }
 
 
-void dsm_page_bitmap_clear(unsigned long index) 
+void dsm_page_bitmap_clear(dsm_page_index_t index) 
 {
 #ifdef DSM_TABLE_TRACE
 tfprintf(stderr, "dsm_page_bitmap_clear(%ld) called\n", index);
@@ -1317,7 +1317,7 @@ tfprintf(stderr, "dsm_page_bitmap_clear(%ld) called\n", index);
 }
 
 /* pjh: to avoid repeated allocation */
-boolean dsm_page_bitmap_is_allocated(unsigned long index)
+boolean dsm_page_bitmap_is_allocated(dsm_page_index_t index)
 {
   return (dsm_page_table[index]->bitmap != NULL);
 }
@@ -1330,7 +1330,7 @@ void dsm_set_page_ownership(void *addr, dsm_node_t owner)
         make sure shared data is not accessed while the function is
         being executed. */
 {
-  unsigned long index;
+  dsm_page_index_t index;
 
   /* checking status implicitly enables page entry if necessary */
   if (isoaddr_page_get_status(isoaddr_page_index(addr)) != ISO_SHARED)

@@ -43,7 +43,7 @@
 /* Here, it's possible to define USE_DYN_ARRAYS */
 #define USE_DYN_ARRAYS
 
-marcel_t _recv_pid; /* utilise dans pm2.h */
+static marcel_t _recv_pid;
 
 static boolean finished = FALSE;
 
@@ -421,4 +421,9 @@ void netserver_start(unsigned priority)
 void netserver_wait_end(void)
 {
   marcel_join(_recv_pid, NULL);
+}
+
+void netserver_stop(void)
+{
+  marcel_cancel(_recv_pid);
 }

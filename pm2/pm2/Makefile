@@ -327,7 +327,7 @@ DEPENDS	:=	$(patsubst %.c,%.d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
 DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
 
 ifneq ($(MAKECMDGOALS),clean)
-ifeq ($(wildcard $(DEPENDS)),)
+ifneq ($(wildcard $(DEPENDS)),)
 include $(wildcard $(DEPENDS))
 endif
 endif

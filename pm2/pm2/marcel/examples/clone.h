@@ -36,7 +36,7 @@
 #ifndef CLONE_IS_DEF
 #define CLONE_IS_DEF
 
-#include <marcel.h>
+#include "marcel.h"
 
 typedef struct {
   marcel_mutex_t mutex;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.11  2000/06/09 17:36:53  vdanjean
+integrating MARCEL_POLL_AT_YIELD
+
 Revision 1.10  2000/05/29 08:59:25  vdanjean
 work added (mainly for SMP and ACT), minor modif in polling
 
@@ -331,6 +334,7 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #endif
 
+  LOG("IO reading fd %i", fildes);
   return read(fildes, buf, nbytes);
 }
 
@@ -344,6 +348,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #endif
 
+  LOG("IO readving fd %i", fildes);
   return readv(fildes, iov, iovcnt);
 }
 
@@ -357,6 +362,7 @@ int marcel_write(int fildes, void *buf, size_t nbytes)
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #endif
 
+  LOG("IO writting fd %i", fildes);
   return write(fildes, buf, nbytes);
 }
 
@@ -370,6 +376,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #endif
 
+  LOG("IO writtving fd %i", fildes);
   return writev(fildes, iov, iovcnt);
 }
 
@@ -385,6 +392,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 
   marcel_poll(unix_io_pollid, (any_t)&myarg);
 #else
+  LOG("IO selecting");
   select(nfds, rfds, wfds, NULL, NULL);
 #endif
 

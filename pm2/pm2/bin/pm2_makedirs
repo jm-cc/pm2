@@ -43,16 +43,43 @@ else
 fi
 
 $ECHO
-mkdir -p AIX/RS6K
+if [ ! -d AIX/RS6K ]; then
+    mkdir -p AIX/RS6K
+fi
 $ECHO
-mkdir -p FREEBSD/X86
+if [ ! -d FREEBSD/X86 ]; then
+    mkdir -p FREEBSD/X86
+fi
 $ECHO
-mkdir -p IRIX/MIPS
+if [ ! -d IRIX/MIPS ]; then
+    mkdir -p IRIX/MIPS
+fi
 $ECHO
-mkdir -p LINUX/ALPHA LINUX/PPC LINUX/X86
+if [ ! -d LINUX/ALPHA ]; then
+    mkdir -p LINUX/ALPHA
+fi
 $ECHO
-mkdir -p OSF/ALPHA
+if [ ! -d LINUX/X86 ]; then
+    mkdir -p LINUX/X86
+fi
 $ECHO
-mkdir -p SOLARIS/SPARC SOLARIS/X86
+if [ ! -d LINUX/PPC ]; then
+    mkdir -p LINUX/PPX
+fi
 $ECHO
-mkdir -p UNICOS/ALPHA
+if [ ! -d OSF/ALPHA ]; then
+    mkdir -p OSF/ALPHA
+fi
+$ECHO
+if [ ! -d SOLARIS/SPARC ]; then
+    mkdir -p SOLARIS/SPARC
+fi
+$ECHO
+if [ ! -d SOLARIS/X86 ]; then
+    mkdir -p SOLARIS/X86
+fi
+$ECHO
+if [ ! -d UNICOS/ALPHA ]; then
+    mkdir -p UNICOS/ALPHA
+fi
+

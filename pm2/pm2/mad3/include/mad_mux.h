@@ -61,7 +61,6 @@ typedef enum e_mad_xblock_header_field
 
   mad_xblock_fsub           = 13,
 
-  mad_xblock_fis_an_eof_msg = 14,
   mad_xblock_fis_a_group    = 14,
   mad_xblock_fis_a_new_msg  = 14,
 #ifdef MAD_MUX_FLOW_CONTROL
@@ -91,7 +90,6 @@ typedef enum e_mad_xblock_header_field_mask
 
   mad_xblock_fsub_mask           = 0xFF,
 
-  mad_xblock_fis_an_eof_msg_mask = 0x01,
   mad_xblock_fis_a_group_mask    = 0x02,
   mad_xblock_fis_a_new_msg_mask  = 0x04,
 #ifdef MAD_MUX_FLOW_CONTROL
@@ -120,7 +118,6 @@ typedef enum e_mad_xblock_header_field_shift
 
   mad_xblock_fsub_shift           =  0,
 
-  mad_xblock_fis_an_eof_msg_shift =  0,
   mad_xblock_fis_a_group_shift    = -1,
   mad_xblock_fis_a_new_msg_shift  = -2,
 #ifdef MAD_MUX_FLOW_CONTROL
@@ -149,7 +146,6 @@ typedef struct s_mad_xblock_header
   unsigned int             destination;
   tbx_bool_t               is_a_group;
   tbx_bool_t               is_a_new_msg;
-  tbx_bool_t               is_an_eof_msg;
   tbx_bool_t               closing;
   tbx_bool_t               data_available;
   unsigned int             mux;

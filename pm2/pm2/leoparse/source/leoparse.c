@@ -40,6 +40,14 @@ extern FILE           *yyout;
 extern int             yydebug;
 
 /*
+ * Lex/Yacc and related global objects
+ * -------------------------------------
+ */
+const char *parser_filename   = NULL;
+int         parser_line_num   =    1;
+int         parser_column_num =    0;
+
+/*
  * Parser file static variables
  * ----------------------------
  */
@@ -182,6 +190,9 @@ leoparse_open_local_parser_file(const char *file_name)
 	}
     }
   while(!parser_file_ptr);
+  parser_filename   = file_name;
+  parser_line_num   = 1;
+  parser_column_num = 0;
   LOG_OUT();
 }
 
@@ -208,6 +219,7 @@ leoparse_close_local_parser_file(void)
 	}
     }
   while(status);
+  parser_filename = NULL;
   parser_file_ptr = NULL;
   LOG_OUT();
 }
@@ -295,8 +307,9 @@ leoparse_init(int    argc TBX_UNUSED,
   LOG_IN();
   if (!initialized)
     {
-      initialized = tbx_true;
-      yyin = NULL;
+      initialized        = tbx_true;
+      yyin               = NULL;
+      parser_filename  = NULL;
 
       /*
 	#ifdef PM2DEBUG

@@ -93,8 +93,6 @@ static void dsm_pagefault_handler(int sig, void *addr)
 void dsm_pm2_init(int my_rank, int confsize)
 
 {
-  dsm_protocol_t protocol;
-
   dsm_page_table_init(my_rank, confsize);
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
   if (_dsm_protocol.receive_page_server == NULL) // no protocol specified; use the default protocol

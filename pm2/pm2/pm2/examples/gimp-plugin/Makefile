@@ -11,8 +11,8 @@
 #                 Ecole Normale Superieure de Lyon
 #
 #                      External Contributors:
-#                 Yves Denneulin (PM2_LMC - Grenoble),
-#                 Benoit Planquelle (PM2_LIFL - Lille)
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
 #
 #                    1998 All Rights Reserved
 #
@@ -25,7 +25,7 @@
 # that both the copyright notice and this permission notice appear in
 # supporting documentation.
 #
-# Neither the institutions (PM2_Ecole Normale Superieure de Lyon,
+# Neither the institutions (Ecole Normale Superieure de Lyon,
 # Laboratoire de L'informatique du Parallelisme, Universite des
 # Sciences et Technologies de Lille, Laboratoire d'Informatique
 # Fondamentale de Lille), nor the Authors make any representations
@@ -33,40 +33,14 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+CONFIG_MODULES=marcel pm2 mad1
 
-default: all
+ifndef FLAVOR
+export FLAVOR:=pm2-mad1
+endif
 
-include $(PM2_PM2_ROOT)/make/common.mak
+PROGS := 
 
-# PM2_GIMP_CFLAG = -I/net/cuervo/export/home/rnamyst/usr/include
-# PM2_GIMP_LFLAG = -L/net/cuervo/export/home/rnamyst/usr/lib
-
-PM2_GIMP_LFLAG	=	-L/usr/X11/lib
-
-all: pm2-pix
-
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2) $(PM2_GIMP_CFLAG)
-
-# regul :
-
-$(PM2_OBJ)/regul.o: regul.c regul.h rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)  $(PM2_GIMP_CFLAG)
-
-
-# executables :
-
-
-# simple :
-
-$(PM2_OBJ)/pm2-pix.o: pm2-pix.c $(PM2_HEADERS) rpc_defs.h regul.h
-	$(PM2_CC2) $(PM2_GIMP_CFLAG)
-
-pm2-pix: $(PM2_OBJ)/pm2-pix.o $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/regul.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_GIMP_LFLAG) $(PM2_OBJ)/rpc_defs.o $(PM2_OBJ)/regul.o $(PM2_LLIBS) -lgtk -lgdk -lgimp -lglib -lX11 -lm -lXmu
-	$(PM2_MOVE)
-	cp $(PM2_BIN)/pm2-pix $(HOME)/.gimp/plug-ins
-
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/apps.mak
 

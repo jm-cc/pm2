@@ -20,12 +20,12 @@
  */
 #include "tbx.h"
 
-static const char tbx_no_safe_malloc_stats[]="--tbx-no-safe-malloc-stats";
+static const    char tbx_no_safe_malloc_stats[]="--tbx-no-safe-malloc-stats";
 static volatile tbx_bool_t initialized = tbx_false;
 
 void
-tbx_init(int    argc,
-	 char **argv)
+tbx_init(int    argc TBX_UNUSED,
+	 char **argv TBX_UNUSED)
 {
   if (!initialized)
     {
@@ -47,9 +47,9 @@ tbx_init(int    argc,
       initialized = tbx_true;
 
       /* Safe malloc */
-      //#ifdef TBX_SAFE_MALLOC
+#ifdef TBX_SAFE_MALLOC
       tbx_safe_malloc_init();
-      //#endif /* TBX_SAFE_MALLOC */
+#endif /* TBX_SAFE_MALLOC */
 
       /* Timer */
       tbx_timing_init();
@@ -63,14 +63,20 @@ tbx_init(int    argc,
       /* Hash table manager */
       tbx_htable_manager_init();
 
+      /* String manager */
+      tbx_string_manager_init();
+
+      /* Dynamic array manager */
+      tbx_darray_manager_init();
+
       LOG_OUT();
     }
   
 }
 
 void
-tbx_purge_cmd_line(int   *_argc,
-		   char **_argv)
+tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
+		   char **_argv TBX_UNUSED)
 {
   int     argc = *_argc;
   char ** argv =  _argv;

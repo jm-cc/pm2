@@ -249,7 +249,7 @@ do_modules() {
     list)
 	if [ -d "${PM2_ROOT}/modules" ]; then
 	    if [ "$with_common" = true ]; then
-		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v -E $HIDDEN_MODULES`
+		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v generic`
 	    else
 		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
 		    grep -v -E $HIDDEN_MODULES | grep -v common`

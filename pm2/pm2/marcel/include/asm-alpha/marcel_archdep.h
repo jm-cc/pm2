@@ -35,6 +35,13 @@
 #  define FP_FIELD(buf)           ((buf)[3])
 #endif
 
+/* Linux */
+#if defined(LINUX_SYS)
+#  define TOP_STACK_FREE_AREA   256 /* XXX: how much ?? */
+#  define SP_FIELD(buf)         ((buf)->__jmpbuf[JB_SP])
+#  define FP_FIELD(buf)         ((buf)->__jmpbuf[JB_FP])
+#endif
+
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
 static __inline__ long get_sp(void)

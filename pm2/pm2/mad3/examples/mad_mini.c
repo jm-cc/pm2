@@ -27,11 +27,6 @@
 
 // #include "madeleine.h"
 
-// Setup
-//......................
-
-// #define STARTUP_ONLY
-
 // Macros
 //......................
 
@@ -47,7 +42,6 @@ static ntbx_process_grank_t process_rank = -1;
 // Functions
 //......................
 
-#ifndef STARTUP_ONLY
 static
 void
 play_with_channel(p_mad_madeleine_t  madeleine,
@@ -64,7 +58,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   if (!channel)
     {
       DISP("I don't belong to this channel");
-
       return;
     }
 
@@ -251,36 +244,27 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       dyn_buf = NULL;
     }
 }  
-#endif // STARTUP_ONLY
 
 int
 tbx_main(int argc, char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
-#ifndef STARTUP_ONLY
   p_tbx_slist_t     slist     = NULL;
-#endif // STARTUP_ONLY
-
-#ifdef USE_MAD_INIT
-  madeleine = mad_init(&argc, argv);
-  TRACE("Returned from mad_init");
-#else // USE_MAD_INIT
 
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);
   TRACE("Returned from common_init");
-  madeleine = mad_get_madeleine();
-#endif // USE_MAD_INIT
 
+  madeleine    = mad_get_madeleine();
   session      = madeleine->session;
   process_rank = session->process_rank;
   DISP_VAL("My global rank is", process_rank);
   DISP_VAL("The configuration size is",
 	   tbx_slist_get_length(madeleine->dir->process_slist));
 
-#ifndef STARTUP_ONLY
   slist = madeleine->public_channel_slist;
+
   if (!tbx_slist_is_nil(slist))
     {
       tbx_slist_ref_to_head(slist);
@@ -297,7 +281,6 @@ tbx_main(int argc, char **argv)
     {
       DISP("No channels");
     }
-#endif // STARTUP_ONLY
 
   DISP("Exiting");  
   

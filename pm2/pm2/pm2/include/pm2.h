@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.25  2000/11/06 15:02:19  rnamyst
+pm2_init() has now a modular structure (in fact, common_init).
+
 Revision 1.24  2000/11/03 14:12:29  gantoniu
 Added support for profiling (LOG_IN/LOG_OUT).
 
@@ -111,7 +114,6 @@ ______________________________________________________________________________
 
 void pm2_push_startup_func(pm2_startup_func_t f, void *args);
 
-
 /* 
  * Init the system and spawns `nb_proc-1' additional processes (or one
  * per node if specified). Upon completion, task identifiers are
@@ -120,6 +122,19 @@ void pm2_push_startup_func(pm2_startup_func_t f, void *args);
  */
 
 void pm2_init(int *argc, char **argv);
+
+// Needs to be called after profile_init()
+_PRIVATE_ void pm2_init_data(int *argc, char **argv);
+// Needs to be called after mad_init()
+_PRIVATE_ void pm2_init_open_channels(int *argc, char *argv[],
+				      unsigned pm2_self,
+				      unsigned pm2_config_size);
+// Needs to be called after marcel_init()
+_PRIVATE_ void pm2_init_thread_related(int *argc, char *argv[]);
+// Starts netserver threads => begins answering the network
+_PRIVATE_ void pm2_init_listen_network(int *argc, char *argv[]);
+// Removes pm2 arguments from cmdline...
+_PRIVATE_ void pm2_init_purge_cmdline(int *argc, char *argv[]);
 
 void pm2_halt(void);
 

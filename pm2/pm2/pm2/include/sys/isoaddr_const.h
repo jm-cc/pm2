@@ -17,14 +17,21 @@
 #ifndef ISOADDR_CONST_IS_DEF
 #define ISOADDR_CONST_IS_DEF
 
+#ifdef DSM
+#include "dsm_protocol_policy.h"   /* for the type "dsm_proto_t" */
+#endif   /* DSM */
+
+
 typedef int node_t;
 
 typedef struct _isoaddr_attr_t {
   int status;
-  int protocol;
+#ifdef DSM
+  dsm_proto_t protocol;
+#endif   /* DSM */
   int atomic;
   int align;
   int special;
-}isoaddr_attr_t;
+} isoaddr_attr_t;
 
 #endif

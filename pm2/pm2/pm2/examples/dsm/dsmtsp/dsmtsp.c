@@ -389,7 +389,8 @@ void spawn_workers(void)
 
 int pm2_main(int argc, char **argv)
 {
-  int i, prot, prot_erc, prot_hbrc, tot_jobs = 0;
+  int i, tot_jobs = 0;
+  dsm_proto_t prot, prot_erc, prot_hbrc;
 
   tbx_tick_t t1, t2;
   dsm_lock_attr_t attr;

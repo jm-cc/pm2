@@ -32,6 +32,11 @@ DEBUG_DECLARE(gm)
 #define DEBUG_NAME gm
 */
 
+#if defined(MARCEL) && defined (USE_MARCEL_POLL)
+#define MAD_GM_MARCEL_POLL
+#endif
+
+
 /*
  *  Macros
  */
@@ -74,6 +79,10 @@ DEBUG_DECLARE(gm)
 #define MAD_GM_CACHE_GRANULARITY	 0x1000
 #define MAD_GM_CACHE_SIZE		 0x1000
 
+#define MAD_GM_POLLING_MODE \
+    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
+
+
 typedef struct s_mad_gm_cache *p_mad_gm_cache_t;
 typedef struct s_mad_gm_cache {
         void               *ptr;
@@ -97,6 +106,33 @@ typedef struct s_mad_gm_port {
         int                 packet_length;
 } mad_gm_port_t, *p_mad_gm_port_t;
 
+#ifdef MAD_GM_MARCEL_POLL
+typedef struct s_mad_gm_poll_channel_data {
+        p_mad_channel_t    ch;
+        p_mad_connection_t c;
+} mad_gm_poll_channel_data_t, *p_mad_gm_poll_channel_data;
+
+typedef struct s_mad_gm_poll_mutex_data {
+        marcel_mutex_t *mutex;
+} mad_gm_poll_mutex_data_t;
+
+typedef union u_mad_gm_poll_data {
+        mad_gm_poll_channel_data_t channel_op;
+        mad_gm_poll_mutex_data_t   mutex_op;
+} mad_gm_poll_data_t, *p_mad_gm_poll_data_t;
+
+typedef enum e_mad_gm_poll_op {
+        mad_gm_poll_channel_op,
+        mad_gm_poll_mutex_op,
+} mad_gm_poll_op_t, *p_mad_gm_poll_op_t;
+
+typedef struct s_mad_gm_poll_req {
+        mad_gm_poll_op_t   op;
+        mad_gm_poll_data_t data;
+        p_mad_gm_port_t    port;
+} mad_gm_poll_req_t, *p_mad_gm_poll_req_t;
+#endif
+
 typedef struct s_mad_gm_request {
         p_mad_gm_port_t     port;
         p_mad_connection_t  in;
@@ -106,6 +142,7 @@ typedef struct s_mad_gm_request {
 
 typedef struct s_mad_gm_driver_specific {
         int                 dummy;
+        marcel_pollid_t     gm_pollid;
 } mad_gm_driver_specific_t, *p_mad_gm_driver_specific_t;
 
 typedef struct s_mad_gm_adapter_specific {
@@ -114,12 +151,11 @@ typedef struct s_mad_gm_adapter_specific {
 } mad_gm_adapter_specific_t, *p_mad_gm_adapter_specific_t;
 
 typedef struct s_mad_gm_channel_specific {
+        int                 size;
         int                 next;
 } mad_gm_channel_specific_t, *p_mad_gm_channel_specific_t;
 
 typedef struct s_mad_gm_connection_specific {
-        volatile int        send_lock;
-        volatile int        receive_lock;
         p_mad_buffer_t      buffer;
         int                 length;
         int                 local_id;
@@ -134,6 +170,13 @@ typedef struct s_mad_gm_connection_specific {
         int                 packet_size;
         int                 packet_length;
         volatile int        state;
+
+#ifdef MAD_GM_MARCEL_POLL
+        marcel_mutex_t      lock;
+#else
+        volatile int        send_lock;
+        volatile int        receive_lock;
+#endif
 } mad_gm_connection_specific_t, *p_mad_gm_connection_specific_t;
 
 typedef struct s_mad_gm_link_specific {
@@ -153,6 +196,9 @@ const int mad_gm_pub_port_array[] = {
         7,
         -1
 };
+
+static TBX_CRITICAL_SECTION(mad_gm_access);
+
 
 /*
  *  Functions
@@ -536,14 +582,23 @@ mad_gm_callback(struct gm_port *p_gm_port,
                         goto error;
                 }
 
+#ifdef MAD_GM_MARCEL_POLL
+                marcel_mutex_unlock(&os->lock);
+#else
                 os->send_lock  = 0;
+#endif
         } else if (rq->in) {
                 p_mad_connection_t in = NULL;
                 p_mad_gm_connection_specific_t is  = NULL;
 
                 in = rq->in;
                 is = in->specific;
+
+#ifdef MAD_GM_MARCEL_POLL
+                marcel_mutex_unlock(&is->lock);
+#else
                 is->send_lock = 0;
+#endif
         } else {
                 __error__("invalid request");
                 goto error;
@@ -607,7 +662,11 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                                 in = tbx_darray_get(port->in_darray, cnx_id);
                                 is = in->specific;
 
+#ifdef MAD_GM_MARCEL_POLL
+                                marcel_mutex_unlock(&is->lock);
+#else
                                 is->receive_lock = 0;
+#endif
                         } else if (code == 1) {
                                 p_mad_connection_t             out = NULL;
                                 p_mad_gm_connection_specific_t os  = NULL;
@@ -615,7 +674,11 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                                 out = tbx_darray_get(port->out_darray, cnx_id);
                                 os = out->specific;
 
+#ifdef MAD_GM_MARCEL_POLL
+                                marcel_mutex_unlock(&os->lock);
+#else
                                 os->receive_lock = 0;
+#endif
                         } else {
                                 __error__("invalid code");
                                 goto error;
@@ -633,7 +696,11 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                         in = port->active_input;
                         id = gm_ntohs(p_event->recv.sender_node_id);
 			is = in->specific;
+#ifdef MAD_GM_MARCEL_POLL
+                        marcel_mutex_unlock(&is->lock);
+#else
                         is->receive_lock = 0;
+#endif
                 }
                 break;
                         
@@ -652,7 +719,135 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
         LOG_OUT();
 }
 
+#ifdef MAD_GM_MARCEL_POLL
+static void
+mad_gm_marcel_group(marcel_pollid_t id)
+{
+  return;
+}
 
+static
+int
+mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
+        p_mad_gm_port_t port = NULL;
+
+        LOG_IN();
+        if (!TBX_CRITICAL_SECTION_TRY_ENTERING(mad_gm_access)) {
+                goto end;
+        }
+        
+        port = rq->port;
+        mad_gm_port_poll(port);
+
+        if (rq->op == mad_gm_poll_channel_op) {
+                p_mad_channel_t                ch        = rq->data.channel_op.ch;
+                p_mad_gm_channel_specific_t    chs       = ch->specific;
+                p_mad_connection_t             in        = NULL;
+                p_tbx_darray_t                 in_darray = NULL;
+                int                            r         =    0;
+                int                            max       =    0;
+                int                            i         =    0;
+                int                            next      =    0;
+                
+                in_darray = ch->in_connection_darray;
+                next = chs->next;
+                max  = chs->size;
+                i    = max;
+                
+                while (i--) {
+                        next = (next + 1) % max;
+                        in   = tbx_darray_get(in_darray, next);
+
+                        if (in) {
+                                p_mad_gm_connection_specific_t is = NULL;
+
+                                is = in->specific;
+                                r = marcel_mutex_trylock(&is->lock);
+                                if (r) {
+                                        rq->data.channel_op.c = in;
+                                        break;
+                                }
+                        }
+                }
+
+                chs->next = next;
+
+                TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+
+                return r;
+        } else if (rq->op == mad_gm_poll_mutex_op) {
+                marcel_mutex_t *m = rq->data.mutex_op.mutex;
+                int             r = 0;
+                
+                r = marcel_mutex_trylock(m);
+                TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+
+                return r;
+        } else
+                FAILURE("invalid operation");
+        
+end:
+        LOG_OUT();
+
+        return 0;
+}
+
+static void *
+mad_gm_marcel_fast_poll(marcel_pollid_t id,
+                        any_t           req,
+                        boolean         first_call) {
+        void *status = MARCEL_POLL_FAILED;
+
+        LOG_IN();
+        if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
+                status = MARCEL_POLL_SUCCESS_FOR(id);
+        }
+        LOG_OUT();
+
+        return status;
+}
+
+static void *
+mad_gm_marcel_poll(marcel_pollid_t id,
+                   unsigned        active,
+                   unsigned        sleeping,
+                   unsigned        blocked) {
+        p_mad_gm_poll_req_t  req = NULL;
+        void                *status = MARCEL_POLL_FAILED;
+
+        LOG_IN();
+        FOREACH_POLL(id, req) {
+                if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
+                        status = MARCEL_POLL_SUCCESS(id);
+                        goto found;
+                }
+        }
+
+ found:
+        LOG_OUT();
+
+        return status;
+}
+
+static
+void
+mad_gm_wait_for_mutex(marcel_pollid_t  pollid,
+                      p_mad_gm_port_t  port,
+                      marcel_mutex_t  *m) {
+        LOG_IN();
+        if (!marcel_mutex_trylock(m)) {
+                mad_gm_poll_req_t req;
+                
+                req.op       = mad_gm_poll_mutex_op;
+                req.port     = port;
+                req.data.mutex_op.mutex = m;
+
+                marcel_poll(pollid, &req);
+        }
+        LOG_OUT();
+}
+
+#endif
 
 static
 p_mad_gm_port_t
@@ -783,6 +978,15 @@ mad_gm_driver_init(p_mad_driver_t d) {
         LOG_IN();
         TRACE("Initializing GM driver");
         ds          = TBX_MALLOC(sizeof(mad_gm_driver_specific_t));
+
+#ifdef MAD_GM_MARCEL_POLL
+        ds->gm_pollid =
+                marcel_pollid_create(mad_gm_marcel_group,
+                                     mad_gm_marcel_poll,
+                                     mad_gm_marcel_fast_poll,
+                                     MAD_GM_POLLING_MODE);
+#endif
+
         d->specific = ds;
         gms = gm_init();
         if (gms) {
@@ -812,7 +1016,9 @@ mad_gm_adapter_init(p_mad_adapter_t a) {
                 device_id = strtol(a->dir_adapter->name, NULL, 0);
         }
 
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
         port = mad_gm_port_open(device_id);
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
         if (!port) {
                 __error__("mad_gm_open_port failed");
                 goto error;
@@ -847,9 +1053,12 @@ mad_gm_adapter_init(p_mad_adapter_t a) {
 void
 mad_gm_channel_init(p_mad_channel_t ch) {
         p_mad_gm_channel_specific_t chs = NULL;
+        p_mad_dir_channel_t         dch = NULL;
 
         LOG_IN();
+        dch          = ch->dir_channel;
         chs          = TBX_MALLOC(sizeof(mad_gm_channel_specific_t));
+        chs->size    = 1 + ntbx_pc_local_max(dch->pc);
         chs->next    = 0;
         ch->specific = chs;
         LOG_OUT();
@@ -878,8 +1087,6 @@ mad_gm_connection_init(p_mad_connection_t in,
                 in->specific = is;
                 in->nb_link  = nb_link;
 
-                is->send_lock       =          1;
-                is->receive_lock    =          1;
                 is->buffer          =       NULL;
                 is->length          =          0;
                 is->local_id        =         -1;
@@ -896,8 +1103,10 @@ mad_gm_connection_init(p_mad_connection_t in,
                 is->request->status = GM_SUCCESS;
                 is->request->port   = port;
                 is->state           = 0;
+                TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
                 is->packet          = gm_dma_malloc(port->p_gm_port,
                                            sizeof(MAD_GM_PACKET_LEN));
+                TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
                 if (!is->packet) {
                         __error__("could not allocate a dma buffer");
@@ -907,6 +1116,14 @@ mad_gm_connection_init(p_mad_connection_t in,
                 is->packet_length = MAD_GM_PACKET_LEN;
                 is->packet_size   = gm_min_size_for_length(is->packet_length);
                 
+#ifdef MAD_GM_MARCEL_POLL
+                marcel_mutex_init(&is->lock, NULL);
+                marcel_mutex_lock(&is->lock);
+#else
+                is->send_lock    = 1;
+                is->receive_lock = 1;
+#endif
+
                 {
                         p_tbx_darray_t darray    = port->in_darray;
                         p_tbx_string_t param_str = NULL;
@@ -930,8 +1147,6 @@ mad_gm_connection_init(p_mad_connection_t in,
                 out->specific = os;
                 out->nb_link  = nb_link;
 
-                os->send_lock       =          1;
-                os->receive_lock    =          1;
                 os->buffer          =       NULL;
                 os->length          =          0;
                 os->local_id        =         -1;
@@ -948,8 +1163,10 @@ mad_gm_connection_init(p_mad_connection_t in,
                 os->request->status = GM_SUCCESS;
                 os->request->port   = port;
                 os->state           = 0;
+                TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
                 os->packet = gm_dma_malloc(port->p_gm_port,
                                            sizeof(MAD_GM_PACKET_LEN));
+                TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
                 if (!os->packet) {
                         __error__("could not allocate a dma buffer");
@@ -958,6 +1175,14 @@ mad_gm_connection_init(p_mad_connection_t in,
 
                 os->packet_length = MAD_GM_PACKET_LEN;
                 os->packet_size   = gm_min_size_for_length(os->packet_length);
+
+#ifdef MAD_GM_MARCEL_POLL
+                marcel_mutex_init(&os->lock, NULL);
+                marcel_mutex_lock(&os->lock);
+#else
+                os->send_lock    = 1;
+                os->receive_lock = 1;                
+#endif
 
                 {
                         p_tbx_darray_t darray    = port->out_darray;
@@ -997,7 +1222,7 @@ mad_gm_link_init(p_mad_link_t l) {
 void
 mad_gm_accept(p_mad_connection_t   in,
 	      p_mad_adapter_info_t ai) {
-        p_mad_gm_connection_specific_t is = NULL;
+        p_mad_gm_connection_specific_t is  = NULL;
 
         LOG_IN();
 	is = in->specific;
@@ -1060,15 +1285,36 @@ mad_gm_receive_message(p_mad_channel_t ch) {
         p_mad_connection_t          in     = NULL;
         p_mad_adapter_t             a      = NULL;
         p_mad_gm_adapter_specific_t as     = NULL;
+        p_mad_driver_t              d      = NULL;
+        p_mad_gm_driver_specific_t  ds     = NULL;
         p_mad_gm_port_t             port   = NULL;
 
         LOG_IN();
         chs    = ch->specific;
         a      = ch->adapter;
         as     = a->specific;
+        d      = a->driver;
+        ds     = d->specific;
         port   = as->port;
         darray = ch->in_connection_darray;
 
+#ifdef MAD_GM_MARCEL_POLL
+        {
+	        p_mad_gm_connection_specific_t is = NULL;
+                mad_gm_poll_req_t req;
+                
+                req.op                 = mad_gm_poll_channel_op;
+                req.port               = port;
+                req.data.channel_op.ch = ch;
+                req.data.channel_op.c  = NULL;
+
+                marcel_poll(ds->gm_pollid, &req);
+
+                in = req.data.channel_op.c;
+		is = in->specific;
+		is->first = 1;
+        }
+#else
         while (1) {
                 p_mad_connection_t _in = NULL;
 
@@ -1091,6 +1337,7 @@ mad_gm_receive_message(p_mad_channel_t ch) {
                         }
                 }
         }
+#endif
         LOG_OUT();
 
         return in;
@@ -1117,6 +1364,8 @@ mad_gm_send_buffer(p_mad_link_t   l,
         p_mad_gm_connection_specific_t os   = NULL;
         p_mad_adapter_t                a    = NULL;
         p_mad_gm_adapter_specific_t    as   = NULL;
+        p_mad_driver_t                 d    = NULL;
+        p_mad_gm_driver_specific_t     ds   = NULL;
         p_mad_gm_port_t                port = NULL;
 
         LOG_IN();
@@ -1124,11 +1373,15 @@ mad_gm_send_buffer(p_mad_link_t   l,
         os   = out->specific;
         a    = out->channel->adapter;
         as   = a->specific;
+        d    = a->driver;
+        ds   = d->specific;
+        
         port = as->port;
 
         os->state = 1;
         os->request->status = GM_SUCCESS;
 
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
         gm_send_with_callback(port->p_gm_port, os->packet,
                               os->packet_size, os->packet_length,
                               GM_HIGH_PRIORITY,
@@ -1136,17 +1389,35 @@ mad_gm_send_buffer(p_mad_link_t   l,
                               mad_gm_callback, os->request);
 
         mad_gm_register_block(port, b->buffer, b->length, &os->cache);
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
+
+#ifdef MAD_GM_MARCEL_POLL
+	//DISP("s1-->");
+        mad_gm_wait_for_mutex(ds->gm_pollid, port, &os->lock);
+	//DISP("s1<--");
+#else
         while (os->receive_lock) {
                 mad_gm_port_poll(port);
         }
         
         os->receive_lock = 1;
+#endif
+
+
+#ifdef MAD_GM_MARCEL_POLL
+	//DISP("s2-->");
+        mad_gm_wait_for_mutex(ds->gm_pollid, port, &os->lock);
+	//DISP("s2<--");
+#else
         while (os->send_lock) {
                 mad_gm_port_poll(port);
         }
         
         os->send_lock = 1;
+#endif
+
+
         os->buffer = b;
 
         while (mad_more_data(b)) {
@@ -1157,22 +1428,35 @@ mad_gm_send_buffer(p_mad_link_t   l,
                 os->request->status = GM_SUCCESS;
                 os->state           = 3;
         
+                TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
                 gm_send_with_callback(port->p_gm_port,
                                       b->buffer + b->bytes_read,
                                       gm_min_size_for_length(MAD_GM_MAX_BLOCK_LEN),
                                       os->length, GM_LOW_PRIORITY,
                                       os->remote_node_id, os->remote_port_id,
                                       mad_gm_callback, os->request);
+                TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
+
+#ifdef MAD_GM_MARCEL_POLL
+		//DISP("s3-->");
+                mad_gm_wait_for_mutex(ds->gm_pollid, port, &os->lock);
+		//DISP("s3<--");
+#else
                 while (os->send_lock) {
                         mad_gm_port_poll(port);
                 }
         
                 os->send_lock = 1;
+#endif
                 b->bytes_read += len;
+
+
         }
 
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
         mad_gm_deregister_block(port, os->cache);
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
         os->cache = NULL;
         os->buffer  = NULL;
         os->length  = 0;
@@ -1187,6 +1471,8 @@ mad_gm_receive_buffer(p_mad_link_t     l,
         p_mad_gm_connection_specific_t is   = NULL;
         p_mad_adapter_t                a    = NULL;
         p_mad_gm_adapter_specific_t    as   = NULL;
+        p_mad_driver_t                 d    = NULL;
+        p_mad_gm_driver_specific_t     ds   = NULL;
         p_mad_gm_port_t                port = NULL;
 
         LOG_IN();
@@ -1196,19 +1482,28 @@ mad_gm_receive_buffer(p_mad_link_t     l,
         is   = in->specific;
         a    = in->channel->adapter;
         as   = a->specific;
+        d    = a->driver;
+        ds   = d->specific;
         port = as->port;
 
         if (is->first) {
                 is->first = 0;
         } else {
+#ifdef MAD_GM_MARCEL_POLL
+	  //DISP("r1-->");
+                mad_gm_wait_for_mutex(ds->gm_pollid, port, &is->lock);
+		//DISP("r1<--");
+#else
                 while (is->receive_lock) {
                         mad_gm_port_poll(port);
                 }
 
                 is->receive_lock = 1;
+#endif
         }
 
         is->request->status = GM_SUCCESS;
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
         gm_send_with_callback(port->p_gm_port, is->packet,
                               is->packet_size, is->packet_length,
                               GM_HIGH_PRIORITY,
@@ -1216,11 +1511,22 @@ mad_gm_receive_buffer(p_mad_link_t     l,
                               mad_gm_callback, is->request);
 
         mad_gm_register_block(port, b->buffer, b->length, &is->cache);
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+
+
+#ifdef MAD_GM_MARCEL_POLL
+	//DISP("r2-->");
+        mad_gm_wait_for_mutex(ds->gm_pollid, port, &is->lock);
+	//DISP("r2<--");
+#else
         while (is->send_lock) {
                 mad_gm_port_poll(port);
         }
         
         is->send_lock = 1;
+#endif
+
+
         is->buffer = b;
         port->active_input = in;
 
@@ -1228,19 +1534,31 @@ mad_gm_receive_buffer(p_mad_link_t     l,
                 int len = min(MAD_GM_MAX_BLOCK_LEN,
                               b->length - b->bytes_written);
                 is->length = len;
+                TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
                 gm_provide_receive_buffer_with_tag(port->p_gm_port,
                                                    b->buffer+b->bytes_written,
                                                    gm_min_size_for_length(MAD_GM_MAX_BLOCK_LEN),
                                                    GM_LOW_PRIORITY, 0);
+                TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+
+
+#ifdef MAD_GM_MARCEL_POLL
+		//DISP("r3-->");
+                mad_gm_wait_for_mutex(ds->gm_pollid, port, &is->lock);
+		//DISP("r3<--");
+#else
                 while (is->receive_lock) {
                         mad_gm_port_poll(port);
                 }
                 
                 is->receive_lock = 1;
+#endif
                 b->bytes_written += len;
         }
         
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
         mad_gm_deregister_block(port, is->cache);
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
         is->cache = NULL;
         LOG_OUT();
 }

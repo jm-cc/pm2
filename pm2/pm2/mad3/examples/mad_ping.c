@@ -16,7 +16,7 @@
 /*
  * mad_ping.c
  * ==========
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,7 +45,7 @@ typedef struct s_mad_ping_result
   int                  size;
   double               latency;
   double               bandwidth_mbit;
-  double               bandwidth_mbyte;  
+  double               bandwidth_mbyte;
 } mad_ping_result_t, *p_mad_ping_result_t;
 
 // Static variables
@@ -77,7 +77,7 @@ static unsigned char *main_buffer = NULL;
 
 #ifndef STARTUP_ONLY
 static void
-mark_buffer(int len) TBX_UNUSED; 
+mark_buffer(int len) TBX_UNUSED;
 
 static void
 mark_buffer(int len)
@@ -92,12 +92,12 @@ mark_buffer(int len)
       n += 7;
       c = (unsigned char)(n % 256);
 
-      main_buffer[i] = c;      
+      main_buffer[i] = c;
     }
 }
 
 static void
-clear_buffer(void) TBX_UNUSED; 
+clear_buffer(void) TBX_UNUSED;
 
 static void
 clear_buffer(void)
@@ -112,7 +112,7 @@ fill_buffer(void)
 }
 
 static void
-control_buffer(int len) TBX_UNUSED; 
+control_buffer(int len) TBX_UNUSED;
 
 static void
 control_buffer(int len)
@@ -188,7 +188,7 @@ process_results(p_mad_channel_t     channel,
 	  tmp_results.bandwidth_mbyte = ntbx_unpack_double(&buffer);
 
 	  mad_end_unpacking(in);
-	  
+
 	  results = &tmp_results;
 	}
 
@@ -206,7 +206,7 @@ process_results(p_mad_channel_t     channel,
       ntbx_pack_buffer_t buffer;
 
       out = mad_begin_packing(channel, master_lrank);
-      
+
       ntbx_pack_int(results->lrank_src, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
 	       mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -233,7 +233,7 @@ process_results(p_mad_channel_t     channel,
 
       mad_end_packing(out);
     }
-  
+
   LOG_OUT();
 }
 
@@ -264,7 +264,7 @@ ping(p_mad_channel_t      channel,
       tbx_tick_t        t2;
 
       sum = 0;
-      
+
       if (param_one_way)
 	{
 	  p_mad_connection_t connection = NULL;
@@ -283,14 +283,14 @@ ping(p_mad_channel_t      channel,
 	  mad_unpack(connection, &dummy, sizeof(dummy),
 		     param_send_mode, param_receive_mode);
 	  mad_end_unpacking(connection);
-	  TBX_GET_TICK(t2);       
-	  
-	  sum += TBX_TIMING_DELAY(t1, t2);	  
+	  TBX_GET_TICK(t2);
+
+	  sum += TBX_TIMING_DELAY(t1, t2);
 	}
       else
 	{
 	  int nb_tests = param_nb_tests;
-	  
+
 	  while (nb_tests--)
 	    {
 	      int nb_samples = param_nb_samples;
@@ -334,11 +334,11 @@ ping(p_mad_channel_t      channel,
 
 static
 void
-pong(p_mad_channel_t      channel, 
+pong(p_mad_channel_t      channel,
      ntbx_process_lrank_t lrank_dst)
 {
   int size = 0;
-  
+
   LOG_IN();
   DISP_VAL("pong with", lrank_dst);
 
@@ -347,7 +347,7 @@ pong(p_mad_channel_t      channel,
        size = param_step?size + param_step:size * 2)
     {
       const int _size = (!size && param_no_zero)?1:size;
-      
+
       if (param_one_way)
 	{
 	  p_mad_connection_t connection = NULL;
@@ -359,9 +359,9 @@ pong(p_mad_channel_t      channel,
 	    {
 	      connection = mad_begin_unpacking(channel);
 	      mad_unpack(connection, main_buffer, _size,
-			 param_send_mode, param_receive_mode);	      
+			 param_send_mode, param_receive_mode);
 	      mad_end_unpacking(connection);
-	    }	  
+	    }
 
 	  connection = mad_begin_packing(channel, lrank_dst);
 	  mad_pack(connection, &dummy, sizeof(dummy),
@@ -390,11 +390,11 @@ pong(p_mad_channel_t      channel,
 			   param_send_mode, param_receive_mode);
 		  mad_end_packing(connection);
 		}
-	    }	  
+	    }
 	}
 
       process_results(channel, NULL);
-    }  
+    }
   LOG_OUT();
 }
 
@@ -423,7 +423,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   p_ntbx_process_container_t pc      = NULL;
   tbx_bool_t                 status  = tbx_false;
   ntbx_pack_buffer_t         buffer;
-  
+
   DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
@@ -437,16 +437,16 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
   status = ntbx_pc_first_local_rank(pc, &master_lrank);
   if (!status)
-    return;  
+    return;
 
   process_lrank = ntbx_pc_global_to_local(pc, process_grank);
   DISP_VAL("My local channel rank is", process_lrank);
-  
+
   if (process_lrank == master_lrank)
     {
       // Master
 	   ntbx_process_lrank_t lrank_src = -1;
-      
+
       LDISP_STR("Channel", name);
       LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");
 
@@ -454,7 +454,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       do
 	{
 	  ntbx_process_lrank_t lrank_dst = -1;
-      
+
 	  if (param_one_way)
 	    {
 	      ntbx_pc_first_local_rank(pc, &lrank_dst);
@@ -466,7 +466,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	      if (!ntbx_pc_next_local_rank(pc, &lrank_dst))
 		break;
 	    }
-	  
+
 	  do
 	    {
 	      if (lrank_dst == lrank_src)
@@ -476,7 +476,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		{
 		  p_mad_connection_t out = NULL;
 		  p_mad_connection_t in  = NULL;
-		  
+
 		  out = mad_begin_packing(channel, lrank_dst);
 		  ntbx_pack_int(lrank_src, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
@@ -496,7 +496,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	      else if (lrank_dst == master_lrank)
 		{
 		  p_mad_connection_t out = NULL;
-		  p_mad_connection_t in  = NULL;		  
+		  p_mad_connection_t in  = NULL;
 
 		  out = mad_begin_packing(channel, lrank_src);
 		  ntbx_pack_int(lrank_dst, &buffer);
@@ -518,7 +518,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		{
 		  p_mad_connection_t out = NULL;
 		  p_mad_connection_t in  = NULL;
-		  
+
 		  out = mad_begin_packing(channel, lrank_dst);
 		  ntbx_pack_int(lrank_src, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
@@ -560,7 +560,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       while (ntbx_pc_next_local_rank(pc, &lrank_src))
 	{
 	  p_mad_connection_t out = NULL;
-		  
+
 	  out = mad_begin_packing(channel, lrank_src);
 	  ntbx_pack_int(lrank_src, &buffer);
 	  mad_pack(out, &buffer, sizeof(buffer),
@@ -575,7 +575,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
     {
       /* Slaves */
       while (1)
-	{	       
+	{
 	  p_mad_connection_t   out            = NULL;
 	  p_mad_connection_t   in             = NULL;
 	  ntbx_process_lrank_t its_local_rank =   -1;
@@ -592,7 +592,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 	  if (its_local_rank == process_lrank)
 	    return;
-      
+
 	  out = mad_begin_packing(channel, 0);
 	  mad_pack(out, &buffer, sizeof(buffer),
 		   mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -606,15 +606,20 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  else
 	    {
 	      /* Pong */
-	      pong(channel, its_local_rank);	  
+	      pong(channel, its_local_rank);
 	    }
-	}      
+	}
     }
-}  
+}
 #endif // STARTUP_ONLY
 
+/*
+ * Warning: this function is automatically renamed to marcel_main when
+ * appropriate
+ */
 int
-tbx_main(int argc, char **argv)
+main(int    argc,
+     char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
@@ -627,10 +632,6 @@ tbx_main(int argc, char **argv)
   TRACE("Returned from mad_init");
 #else // USE_MAD_INIT
 
-  common_pre_init(&argc, argv, NULL);
-  common_post_init(&argc, argv, NULL);
-  TRACE("Returned from common_init");
-  madeleine = mad_get_madeleine();
 #endif // USE_MAD_INIT
 
   session       = madeleine->session;
@@ -664,8 +665,8 @@ tbx_main(int argc, char **argv)
     }
 #endif // STARTUP_ONLY
 
-  DISP("Exiting");  
-  
+  DISP("Exiting");
+
   // mad_exit(madeleine);
   common_exit(NULL);
 

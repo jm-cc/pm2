@@ -69,9 +69,7 @@
 #include "mad_directory.h"
 #include "mad_driver_interface.h"
 #include "mad_driver.h"
-#ifdef MARCEL
 #include "mad_forward.h"
-#endif // MARCEL
 
 /* Function prototypes */
 #include "mad_memory_interface.h"

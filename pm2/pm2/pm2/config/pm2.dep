@@ -1,0 +1,3 @@
+Provide: module
+Depend: marcel
+Depend: madeleine

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.42  2000/11/15 21:32:23  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.41  2000/11/13 20:41:36  rnamyst
 common_init now performs calls to all libraries
 
@@ -226,7 +229,6 @@ ______________________________________________________________________________
 
 #include "marcel.h"
 #include "sys/marcel_debug.h"
-#include "safe_malloc.h"
 
 #ifdef SMP
 #include <errno.h>
@@ -1642,7 +1644,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   marcel_attr_setdetachstate(&attr, TRUE);
 #ifdef PM2
   {
-    char *stack = MALLOC(2*SLOT_SIZE);
+    char *stack = __TBX_MALLOC(2*SLOT_SIZE, __FILE__, __LINE__);
 
     unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) & 
 			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
@@ -1693,7 +1695,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   marcel_attr_setdetachstate(&attr, TRUE);
 #ifdef PM2
   {
-    char *stack = MALLOC(2*SLOT_SIZE);
+    char *stack = __TBX_MALLOC(2*SLOT_SIZE, __FILE__, __LINE__);
 
     unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) & 
 			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
@@ -1738,7 +1740,7 @@ static unsigned __nb_processors = 1;
 
 static void create_new_lwp(void)
 {
-  __lwp_t *lwp = (__lwp_t *)MALLOC(sizeof(__lwp_t)),
+  __lwp_t *lwp = (__lwp_t *)__TBX_MALLOC(sizeof(__lwp_t), __FILE__, __LINE__),
           *cur_lwp = marcel_self()->lwp;
 
   LOG_IN();
@@ -1970,7 +1972,7 @@ void marcel_sched_shutdown()
   while(lwp != &__main_lwp) {
     stop_lwp(lwp);
     lwp = lwp->next;
-    FREE(lwp->prev);
+    __TBX_FREE(lwp->prev, __FILE__, __LINE__);
   }
 #elif defined(MA__ACTIVATION)
   // TODO : arrêter les autres activations...
@@ -1981,7 +1983,7 @@ void marcel_sched_shutdown()
   marcel_cancel(__main_lwp.idle_task);
 #ifdef PM2
   /* __sched_task is detached, so we can free its stack now */
-  FREE(marcel_stackbase(__main_lwp.idle_task));
+  __TBX_FREE(marcel_stackbase(__main_lwp.idle_task), __FILE__, __LINE__);
 #endif
 #endif
 

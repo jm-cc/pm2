@@ -355,7 +355,7 @@ void common_init(int *argc, char *argv[])
 #endif /* MAD1 */
 
 #ifdef PM2
-  pm2_init_open_channels(argc, argv, pm2_self, pm2_conf_size);
+  pm2_init_set_rank(argc, argv, pm2_self, pm2_conf_size);
 #endif /* PM2 */
 
 #ifdef MARCEL
@@ -369,6 +369,14 @@ void common_init(int *argc, char *argv[])
 #ifdef DSM
   dsm_pm2_init(pm2_self, pm2_conf_size);
 #endif /* DSM */
+
+#ifdef PM2
+  pm2_init_exec_startup_funcs(argc, argv);
+#endif
+
+#ifdef PM2
+  pm2_init_open_channels(argc, argv);
+#endif /* PM2 */
 
 #ifdef PM2
   pm2_init_listen_network(argc, argv);

@@ -1,4 +1,4 @@
-
+# -*- mode: makefile;-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -23,10 +23,8 @@ MAKEFILE_FILE := Makefile
 AS := gcc # needed for some gcc specific flags
 LD := gcc # needed for some gcc specific flags
 
-# Controle du contenu de l'affichage
-#---------------------------------------------------------------------
-#SHOW_FLAGS=true
-SHOW_FLAVOR=true
+LEX  :=  flex
+YACC :=  bison -y -d
 
 # Controle du niveau d'affichage
 #---------------------------------------------------------------------
@@ -38,4 +36,10 @@ else
 MAK_VERB :=  quiet
 #MAK_VERB :=  silent
 endif
+
+# Controle de la génération des dépendances
+#---------------------------------------------------------------------
+# gcc-2.95 est incapable de générer les dépendances à la volée :
+# il faut décommenter la ligne suivante
+#DEP_ON_FLY=false
 

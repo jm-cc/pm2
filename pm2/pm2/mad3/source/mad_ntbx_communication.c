@@ -14,10 +14,11 @@
  */
 
 /*
- * mad_ntbx_communication.c
+ * Mad_ntbx_communication.c
  * ========================
  */ 
-// #define _GNU_SOURCE
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -116,16 +117,16 @@ mad_ntbx_receive_unsigned_int(p_ntbx_client_t client)
 
 void
 mad_ntbx_send_string(p_ntbx_client_t  client,
-		const char      *string)
+		     const char      *string)
 {
   int status = ntbx_failure;
 
   LOG_IN();
   status = ntbx_btcp_write_string(client, string);
-  
+
   if (status == ntbx_failure)
     FAILURE("control link failure");
-  
+
   LOG_OUT();
 }
 

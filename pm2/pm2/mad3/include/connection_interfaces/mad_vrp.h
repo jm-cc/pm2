@@ -21,6 +21,20 @@
 #define MAD_VRP_H
 
 /*
+ * Constants
+ * ---------
+ */
+typedef enum e_mad_vrp_parameter_opcode
+  {
+    mad_vrp_op_optional_block,
+  } mad_vrp_parameter_opcode_t, *p_mad_vrp_parameter_opcode_t;
+
+typedef enum e_mad_vrp_status_opcode
+  {
+    mad_vrp_os_lost_block,
+  } mad_vrp_status_opcode_t, *p_mad_vrp_status_opcode_t;
+
+/*
  * Structures
  * ----------
  */

@@ -132,7 +132,10 @@ static void spawn_procs(char *argv[], int port)
 	  my_name, confsize, port, cons_image);
   i=0;
   while(argv[i]) {
-    sprintf(arg, " %s ", argv[i]);
+    if(i == 0)
+      sprintf(arg, " %s ", argv[i]);
+    else
+      sprintf(arg, " '%s' ", argv[i]);
     strcat(cmd, arg);
     i++;
   }
@@ -358,7 +361,7 @@ void mad_tcp_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
     dup2(STDERR_FILENO, STDOUT_FILENO);
 
     {
-      int ret = system("exit `cat ${MAD1_ROOT-${PM2_ROOT}/mad1}/.madconf | wc -w`");
+      int ret = system("exit `cat ${PM2_CONF_FILE} | wc -w`");
 
       confsize = WEXITSTATUS(ret);
     }
@@ -366,11 +369,11 @@ void mad_tcp_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
     {
       FILE *f;
 
-      sprintf(output, "%s/.madconf", get_mad_root());
+      sprintf(output, "%s", getenv("PM2_CONF_FILE"));
 
       f = fopen(output, "r");
       if(f == NULL) {
-	perror("$MAD1_ROOT/.madconf");
+	perror(output);
 	exit(1);
       }
 

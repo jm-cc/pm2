@@ -1,4 +1,5 @@
 PM2_MAD2_LIBNAME=mad
+PM2_MAD2_LIBS="${PM2_MAD2_LIBS} -ltbx -lntbx"
 #PM2_MAD2_POST_CONF=true
 PM2_MAD2_POST_CONF_FUNC() {
 for prot in $PM2_PROTOCOLS; do

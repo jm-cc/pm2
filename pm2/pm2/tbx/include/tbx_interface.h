@@ -101,7 +101,9 @@ tbx_safe_calloc(const size_t    nmemb,
 		const unsigned  line);
 
 void
-tbx_safe_free(void *ptr);
+tbx_safe_free(void           *ptr,
+              const char     *file,
+              const unsigned  line);
 
 void
 tbx_safe_malloc_check(const tbx_safe_malloc_mode_t mode);

@@ -2040,6 +2040,7 @@ mad_forward_stop_reception(p_mad_channel_t      vchannel,
 			   ntbx_process_lrank_t lrank)
 {
   LOG_IN();
+  
   if (lrank == -1)
     {
       // Receiver
@@ -2060,8 +2061,9 @@ mad_forward_stop_reception(p_mad_channel_t      vchannel,
   else
     {
       // Sender
-      p_mad_connection_t out = NULL;
-      unsigned char  data[mad_fblock_fsize];
+      p_mad_connection_t       out       = NULL;
+      p_mad_driver_interface_t interface = NULL;
+      unsigned char            data[mad_fblock_fsize];
 	  
       out = tbx_darray_get(channel->out_connection_darray, lrank);
 	  
@@ -2071,8 +2073,14 @@ mad_forward_stop_reception(p_mad_channel_t      vchannel,
 				, tbx_false
 #endif // MAD_FORWARD_FLOW_CONTROL
 				);
-	  
+      interface = out->channel->adapter->driver->interface;
+      if (interface->new_message)
+	interface->new_message(out);
+
       mad_forward_send_bytes(out, data, mad_fblock_fsize);
+
+      if (interface->finalize_message)
+	interface->finalize_message(out);      
     }
   LOG_OUT();
 }

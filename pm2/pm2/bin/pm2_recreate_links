@@ -129,10 +129,10 @@ fi
 make_ln ${MAD1_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
 make_ln ${MAD1_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
 make_ln ${MAD1_ROOT}/include/ ../../include/timing.h timing.h
-make_ln ${MAD1_ROOT}/source/ mpi mpi-bip
-make_ln ${MAD1_ROOT}/source/ mpi mpi-lam
-make_ln ${MAD1_ROOT}/source/ mpi mpi-sgi
-make_ln ${MAD1_ROOT}/source/ mpi mpi-sp2
+make_ln ${MAD1_ROOT}/source/ mpi mpi_bip
+make_ln ${MAD1_ROOT}/source/ mpi mpi_lam
+make_ln ${MAD1_ROOT}/source/ mpi mpi_sgi
+make_ln ${MAD1_ROOT}/source/ mpi mpi_sp2
 make_ln ${MAD1_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
 make_ln ${MAD1_ROOT}/source/ ../../source/timing.c timing.c
 make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
@@ -153,7 +153,6 @@ make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 # Madeleine default selection
 
 echo .
-# Olivier: changement de 1->2 pour etre coherent avec le parfum `default'
 ${PM2_ROOT}/bin/pm2madselect 2
 
 

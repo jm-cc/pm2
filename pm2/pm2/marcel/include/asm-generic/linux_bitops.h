@@ -41,7 +41,7 @@
 	int	mask, old, new, ret; \
 	\
 	addr += nr / MA_BITS_PER_LONG; \
-	mask = 1 << (nr & 0x1f); \
+	mask = 1 << (nr % MA_BITS_PER_LONG); \
 	old = *addr; \
 	while (1) { \
 		new = old op mask; \
@@ -55,8 +55,8 @@
 { \
 	int	mask, old; \
 	\
-	addr += nr >> 5; \
-	mask = 1 << (nr & 0x1f); \
+	addr += nr / MA_BITS_PER_LONG; \
+	mask = 1 << (nr % MA_BITS_PER_LONG); \
 	old = *addr; \
 	*addr = old op mask; \
 	return retexpr; \
@@ -98,14 +98,14 @@ static __inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
 
 static __inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
 {
-        return ((1UL << (nr & 31)) & (addr[nr >> 5])) != 0;
+        return ((1UL << (nr % MA_BITS_PER_LONG)) & (addr[nr / MA_BITS_PER_LONG])) != 0;
 }
 static __inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
 {
 	int	mask;
 
 	addr += nr / MA_BITS_PER_LONG;
-	mask = 1 << (nr & 0x1f);
+	mask = 1 << (nr % MA_BITS_PER_LONG);
 	return ((mask & *addr) != 0);
 }
 	
@@ -185,13 +185,12 @@ static inline int ma_sched_find_first_bit(const unsigned long *b);
 #section marcel_inline
 static inline int ma_sched_find_first_bit(const unsigned long *b)
 {
-	if (tbx_unlikely(b[0]))
-		return ma_ffs(b[0]);
-	if (tbx_unlikely(b[1]))
-		return ma_ffs(b[1]) + 32;
-	if (tbx_unlikely(b[2]))
-		return ma_ffs(b[2]) + 64;
-	if (b[3])
-		return ma_ffs(b[3]) + 96;
-	return ma_ffs(b[4]) + 128;
+	int i;
+	for (i=0;i<140/MA_BITS_PER_LONG;i++) {
+		if (tbx_unlikely(b[i]))
+			return ma_ffs(b[i]) + MA_BITS_PER_LONG*i;
+	}
+	if (i*MA_BITS_PER_LONG==140)
+		MA_BUG();
+	return ma_ffs(b[i]) + MA_BITS_PER_LONG*i;
 }

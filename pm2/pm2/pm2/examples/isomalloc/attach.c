@@ -42,7 +42,7 @@
 
 #include "rpc_defs.h"
 #include "timing.h"
-/* #define DEBUG */
+#define DEBUG 
 
 #define MAX_THREADS 10
 #define NB_SLOTS 5
@@ -80,7 +80,6 @@ int j,i = 0, k;
 item *lists[NB_SLOTS];      
 isomalloc_dataset_t descr;
 
-
      pm2_isomalloc_dataset_init(&descr);
      /* allocate a few pages and write some data into them... */
      for (j = 0 ; j < NB_SLOTS/3 ; j++)
@@ -104,7 +103,7 @@ isomalloc_dataset_t descr;
 #endif
      for (j = NB_SLOTS/3 ; j < 2*NB_SLOTS/3 ; j++)
      {
-      ptr = lists[j] = (item *)pm2_isomalloc(1000);
+      ptr = lists[j] = (item *)pm2_isomalloc(66000);
       if (ptr == NULL) 
 	return;
       pm2_printf("pm2_isomalloc returned %p\n", ptr);
@@ -149,31 +148,31 @@ int pm2_main(int argc, char **argv)
    unsigned nb;
    marcel_t pids[MAX_THREADS];
 
-   pm2_init_rpc();
+   //   pm2_init_rpc();
 
    DECLARE_LRPC(PROCESSING);
 
-   pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+   pm2_init(&argc, argv);
 
-   if(pm2_self() == les_modules[0]) { /* master process */
+   if(pm2_self() == 0) { /* master process */
 
       pm2_printf("launching processing...\n");
-      ASYNC_LRPC(les_modules[0], PROCESSING, STD_PRIO,DEFAULT_STACK, NULL);
+      ASYNC_LRPC(0, PROCESSING, STD_PRIO,DEFAULT_STACK, NULL);
       marcel_delay(2000);
 
       /* start  migration */
       pm2_printf("the module 0 will freeze!\n");
       pm2_freeze();
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
-      pm2_printf("migratable threads on module 0 : %d\n",nb);
-      pm2_migrate(pids[0], les_modules[1]);
+      pm2_printf("migratable threads on module 0 : %d\n", nb);
+      pm2_migrate(pids[0], 1);
       pm2_printf("migration ended\n");
 
       /* count remaining migratable threads */
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
       pm2_printf("migratable threads on module 0 : %d\n",nb);
       marcel_delay(3000);
-      pm2_kill_modules(les_modules, nb_modules);
+      pm2_halt();
       }
      else
      {
@@ -190,7 +189,7 @@ int pm2_main(int argc, char **argv)
       pm2_freeze();
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
       pm2_printf("migratable threads on module 1 : %d\n",nb);
-      pm2_migrate(pids[0], les_modules[0]);
+      pm2_migrate(pids[0], 0);
       pm2_printf("migration ended\n");
 
       /* count remaining migratable threads */
@@ -200,8 +199,7 @@ int pm2_main(int argc, char **argv)
      }
    pm2_exit();
    tfprintf(stderr, "Main is ending\n");
-   return 0;
-}
+ }
 
 
 

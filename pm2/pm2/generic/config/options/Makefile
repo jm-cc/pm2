@@ -14,8 +14,9 @@
 # General Public License for more details.
 
 LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse profile
-# mad1 stackalign
-MODULES := swann leonie stackalign
+# mad1
+MODULES := leonie stackalign
+# swann
 
 # Directement dans les sources:
 # stackalign
@@ -58,7 +59,7 @@ duplique_global:
 		fi ; \
 	    done ; \
 	} ; \
-	send "debug gdb opt profile" "$(LIBS)" ; \
+	send "debug gdb opt profile gcc_instrument" "$(LIBS)" ; \
 	send "debug gdb opt" "$(MODULES)" ; \
 	send "build_static build_dynamic build_both" "$(LIBS)" ; \
 	append_ligne_dep "`cat linkmode.dep | head -1`" "$(LIBS)"

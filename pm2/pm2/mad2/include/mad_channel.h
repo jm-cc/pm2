@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.h,v $
+Revision 1.4  2000/03/08 17:18:48  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+
 Revision 1.3  2000/01/13 14:44:31  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -54,7 +58,7 @@ ______________________________________________________________________________
 
 typedef struct s_mad_channel
 {
-  PM2_SHARED;
+  TBX_SHARED;
   mad_channel_id_t          id ;
   p_mad_adapter_t           adapter;
   volatile tbx_bool_t       reception_lock;

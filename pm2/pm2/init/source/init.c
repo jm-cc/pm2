@@ -34,12 +34,65 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.2  2000/11/06 15:02:18  rnamyst
+pm2_init() has now a modular structure (in fact, common_init).
+
 Revision 1.1  2000/11/05 20:50:20  rnamyst
 The 'common' module now (almost) behaves like a classical one : there is a libcommon.a file, etc.
 
 ______________________________________________________________________________
 */
 
+#include "pm2.h"
+
 void common_init(int *argc, char *argv[])
 {
+#ifdef PM2
+  unsigned pm2_self, pm2_conf_size;
+#endif
+
+#ifdef PROFILE
+  profile_init();
+#endif
+
+#ifdef PM2
+  pm2_init_data(argc, argv);
+#endif
+
+#ifdef MARCEL
+  //marcel_init(argc, argv);
+#endif
+
+#if defined(MAD1) || defined(MAD2)
+  mad_init_thread_related(argc, argv);
+#endif
+
+#if defined(MAD1) || defined(MAD2)
+  mad_init(argc, argv);
+
+#ifdef PM2
+  pm2_self = mad_who_am_i();
+  pm2_conf_size = mad_config_size();
+#endif
+#endif
+
+#ifdef PM2
+  pm2_init_open_channels(argc, argv, pm2_self, pm2_conf_size);
+#endif
+
+#ifdef PM2
+  pm2_init_thread_related(argc, argv);
+#endif
+
+#ifdef DSM
+  dsm_pm2_init(pm2_self, pm2_conf_size);
+#endif
+
+#ifdef PM2
+  pm2_init_listen_network(argc, argv);
+#endif
+
+#ifdef PM2
+  pm2_init_purge_cmdline(argc, argv);
+#endif
 }

@@ -54,13 +54,13 @@ DEBUG_DECLARE(bip)
 #define MAXHOSTNAMELEN 256
 #endif
 
-#define MAD_BIP_SERVICE_TAG      0
-#define MAD_BIP_REPLY_TAG        1
-#define MAD_BIP_TRANSFER_TAG     2
-#define MAD_BIP_FLOW_CONTROL_TAG 3
+enum {
+  MAD_BIP_SERVICE_TAG,
+  MAD_BIP_TRANSFER_TAG,
+  MAD_BIP_CTRL_TAG,
+  _MAD_BIP_NB_OF_TAGS
+};
 
-/* The following macro should always return the number of tags */
-#define MAD_BIP_NB_OF_TAGS       4
 
 #define MAD_BIP_FIRST_CHANNEL    0
 static  int new_channel = MAD_BIP_FIRST_CHANNEL;
@@ -69,6 +69,7 @@ static  int new_channel = MAD_BIP_FIRST_CHANNEL;
 
 #define BIP_SMALL_MESSAGE        BIPSMALLSIZE
 #define MAD_BIP_SMALL_SIZE       (BIP_SMALL_MESSAGE*sizeof(int))
+#define MAD_BIP_MAX_SIZE         (128 * 1024)
 
 #define MAD_NB_INTS(bytes)    ((bytes) % sizeof(int) ? \
 			       (bytes)/sizeof(int)+1 : \
@@ -79,15 +80,13 @@ typedef struct
   int credits;
 } new_message_t, *p_new_message_t;
 
-typedef struct 
-{
-  int credits;
-} cred_message_t, *p_cred_message_t;
+typedef enum { ACK_TYPE, CRED_TYPE } ctrl_type_t;
 
 typedef struct 
 {
+  ctrl_type_t type;
   int credits;
-} ack_message_t, *p_ack_message_t;
+} ctrl_message_t, *p_ctrl_message_t;
 
 typedef struct 
 {
@@ -110,7 +109,7 @@ typedef struct
   int               *credits_a_rendre;
   int               *credits_disponibles;
   
-  int                which;
+  int                request; // identificateur BIP
 
   p_tbx_memory_t     bip_buffer_key;
   tbx_bool_t         first_time;
@@ -121,16 +120,15 @@ typedef struct
   marcel_mutex_t     cred_mutex;
   marcel_mutex_t     ack_mutex; // Pour éviter plusieurs 'bip_recv(REPLY_TAG)'
                                 // en même temps
-  marcel_cond_t     *cond_cred;     // tableau
   marcel_sem_t      *sem_ack;       // tableau
-  int                cred_request;  // identificateur BIP
-  cred_message_t     cred_msg;
-  int                ack_request;   // identificateur BIP
-  ack_message_t      ack_msg;
+  marcel_mutex_t    *send_mutex;
+  int                ctrl_request;  // identificateur BIP
+  ctrl_message_t     ctrl_msg;
 
 #ifdef USE_MARCEL_POLL
-  marcel_pollid_t    ack_pollid, cred_pollid, reg_pollid;
+  marcel_pollid_t    ack_pollid, send_pollid, reg_pollid;
   marcel_pollinst_t *ack_poller;
+  ctrl_type_t       *expected_type;
 #endif // USE_MARCEL_POLL
 #endif // MARCEL
 } mad_bip_channel_specific_t, *p_mad_bip_channel_specific_t;
@@ -177,38 +175,139 @@ credits_received(p_mad_bip_channel_specific_t p,
 		 int                          credits);
 
 #ifdef USE_MARCEL_POLL
-typedef struct 
-{
-  int host;
-} ack_poll_arg_t, *p_ack_poll_arg_t;
 
-static
-void
-ack_poll_wait(p_mad_bip_channel_specific_t p,
-	      int                          host)
+/* Async sends */
+typedef struct {
+  int request;
+} send_poll_arg_t, *p_send_poll_arg_t;
+
+static void send_poll_wait(p_mad_bip_channel_specific_t p,
+			   int  host,
+			   int  tag,
+			   int *message,
+			   int  size)
 {
-  ack_poll_arg_t arg;
+  send_poll_arg_t arg;
 
   LOG_IN();
-  arg.host = host;
-  marcel_poll(p->ack_pollid, &arg);
+
+  bip_lock();
+  arg.request = bip_tisend(host, tag, message, size);
+  bip_unlock();
+
+  marcel_poll(p->send_pollid, &arg);
+
   LOG_OUT();
 }
 
-static
-void
-ack_group_func(marcel_pollid_t id)
+static void send_group_func(marcel_pollid_t id)
 {
   LOG_IN();
   /* Nothing */
   LOG_OUT();
 }
 
-static
-void *
-ack_fastpoll_func(marcel_pollid_t id,
-		  any_t           arg,
-		  tbx_bool_t         first_call)
+static void *send_fastpoll_func(marcel_pollid_t id,
+				any_t           arg,
+				tbx_bool_t      first_call)
+{
+  p_send_poll_arg_t              parg    = NULL;
+  int                           request =    0;
+  int                           status  =    0;
+  void                         *result  = MARCEL_POLL_FAILED;
+
+  LOG_IN();
+
+  parg = arg;
+  request = parg->request;
+
+  if (bip_trylock()) 
+    {
+      status  = bip_stest(request);
+
+      if (status != -1)
+	{
+	  result = MARCEL_POLL_OK;
+	}
+
+      bip_unlock();
+    }
+
+  LOG_OUT();
+
+  return result;
+}
+
+static void *send_poll_func(marcel_pollid_t id,
+			    unsigned        active,
+			    unsigned        sleeping,
+			    unsigned        blocked)
+{
+  p_send_poll_arg_t arg;
+  int status;
+
+  FOREACH_POLL(id, arg)
+    {
+
+    if (bip_trylock()) 
+      {
+	status = bip_stest(arg->request);
+	bip_unlock();
+
+	if (status != -1) {
+	  return MARCEL_POLL_SUCCESS(id);
+	}
+      }
+    }
+
+  return MARCEL_POLL_FAILED;
+}
+
+/* Acks & credits */
+typedef struct 
+{
+  int host;
+  ctrl_type_t msg_type;
+} ack_poll_arg_t, *p_ack_poll_arg_t;
+
+static void ack_poll_wait(p_mad_bip_channel_specific_t p,
+			  int                          host)
+{
+  ack_poll_arg_t arg;
+
+  LOG_IN();
+
+  arg.host = host;
+  arg.msg_type = ACK_TYPE;
+  marcel_poll(p->ack_pollid, &arg);
+
+  LOG_OUT();
+}
+
+static void cred_poll_wait(p_mad_bip_channel_specific_t p,
+			   int                          host)
+{
+  ack_poll_arg_t arg;
+
+  LOG_IN();
+
+  arg.host = host;
+  arg.msg_type = CRED_TYPE;
+  marcel_poll(p->ack_pollid, &arg);
+
+  LOG_OUT();
+}
+
+static void ctrl_msg_group_func(marcel_pollid_t id)
+{
+  LOG_IN();
+  /* Nothing */
+  LOG_OUT();
+}
+
+static void *ctrl_msg_fastpoll_func(marcel_pollid_t id,
+				    any_t           arg,
+				    tbx_bool_t      first_call)
 {
   p_ack_poll_arg_t              parg    = NULL;
   unsigned                      host    =    0;
@@ -225,35 +324,45 @@ ack_fastpoll_func(marcel_pollid_t id,
 
   if (first_call) 
     {
-      if (p->ack_was_received[host]) 
+      if (parg->msg_type == ACK_TYPE && p->ack_was_received[host]) 
 	{
 	  p->ack_was_received[host] = tbx_false;
 	  result                    = MARCEL_POLL_OK;
 	  goto end;
 	}
+      else if (parg->msg_type == CRED_TYPE && p->credits_disponibles[host])
+	{
+	  result = MARCEL_POLL_OK;
+	  goto end;
+	}
 
-      p->ack_poller[host] = GET_CURRENT_POLLINST(id);
+      // On repart bredouille !
+      p->ack_poller[host]    = GET_CURRENT_POLLINST(id);
+      p->expected_type[host] = parg->msg_type;
     }
   else
-    { // else if !first_call...
+    {
       if (bip_trylock()) 
 	{
-	  status = bip_rtestx(p->ack_request, &tmphost);
+	  status = bip_rtestx(p->ctrl_request, &tmphost);
 
-	  if (status != -1) 
+	  if (status != -1)
 	    {
-	      credits_received(p, tmphost, p->ack_msg.credits);
+	      credits_received(p, tmphost, p->ctrl_msg.credits);
 
-	      p->ack_request =
-		bip_tirecv(p->communicator + MAD_BIP_REPLY_TAG,
-			   (int *)&p->ack_msg,
-			   sizeof(ack_message_t)/sizeof(int));
+	      p->ctrl_request =
+		bip_tirecv(p->communicator + MAD_BIP_CTRL_TAG,
+			   (int *)&p->ctrl_msg,
+			   sizeof(ctrl_message_t)/sizeof(int));
 	      bip_unlock();
 
 	      if (tmphost == host)
 		{
-		  p->ack_poller[host] = NULL;
-		  result              = MARCEL_POLL_OK;
+		  if (p->ctrl_msg.type == parg->msg_type)
+		    {
+		      p->ack_poller[host] = NULL;
+		      result              = MARCEL_POLL_OK;
+		    }
 		  goto end;
 		}
 	      else 
@@ -262,13 +371,17 @@ ack_fastpoll_func(marcel_pollid_t id,
 
 		  if (!poller)
 		    {
-		      p->ack_was_received[tmphost] = tbx_true;
+		      if(p->ctrl_msg.type == ACK_TYPE)
+			p->ack_was_received[tmphost] = tbx_true;
 		    }
 		  else
 		    {
-		      p->ack_poller[tmphost] = NULL;
-		      result                 = MARCEL_POLL_SUCCESS_FOR(poller);
-		      goto end;
+		      if (p->ctrl_msg.type == p->expected_type[host])
+			{
+			  p->ack_poller[tmphost] = NULL;
+			  result                 = MARCEL_POLL_SUCCESS_FOR(poller);
+			  goto end;
+			}
 		    }
 		}
 	    }
@@ -283,12 +396,10 @@ ack_fastpoll_func(marcel_pollid_t id,
   return result;
 }
 
-static
-void *
-ack_poll_func(marcel_pollid_t id,
-	      unsigned        active,
-	      unsigned        sleeping,
-	      unsigned        blocked)
+static void *ctrl_msg_poll_func(marcel_pollid_t id,
+				unsigned        active,
+				unsigned        sleeping,
+				unsigned        blocked)
 {
   unsigned                      host   =    0;
   p_mad_bip_channel_specific_t  p      = NULL;
@@ -301,27 +412,32 @@ ack_poll_func(marcel_pollid_t id,
 
   if (bip_trylock())
     {
-      status = bip_rtestx(p->ack_request, &host);
+      status = bip_rtestx(p->ctrl_request, &host);
 
       if (status != -1)
 	{
-	  credits_received(p, host, p->ack_msg.credits);
+	  credits_received(p, host, p->ctrl_msg.credits);
 
-	  p->ack_request = bip_tirecv(p->communicator + MAD_BIP_REPLY_TAG,
-				      (int *)&p->ack_msg,
-				      sizeof(ack_message_t)/sizeof(int));
+	  p->ctrl_request = bip_tirecv(p->communicator + MAD_BIP_CTRL_TAG,
+				      (int *)&p->ctrl_msg,
+				      sizeof(ctrl_message_t)/sizeof(int));
 	  bip_unlock();
+
 	  poller = p->ack_poller[host];
 
 	  if (!poller)
 	    {
-	      p->ack_was_received[host] = tbx_true;
+	      if(p->ctrl_msg.type == ACK_TYPE)
+		p->ack_was_received[host] = tbx_true;
 	    }
 	  else
 	    {
-	      p->ack_poller[host] = NULL;
-	      result              = MARCEL_POLL_SUCCESS_FOR(poller);
-	      goto end;
+	      if (p->ctrl_msg.type == p->expected_type[host])
+		{
+		  p->ack_poller[host] = NULL;
+		  result              = MARCEL_POLL_SUCCESS_FOR(poller);
+		  goto end;
+		}
 	    }
 	}
       else
@@ -343,7 +459,8 @@ ack_poll_func(marcel_pollid_t id,
 
 static
 void
-bip_sync_send(int  host,
+bip_sync_send(p_mad_bip_channel_specific_t  p,
+	      int  host,
 	      int  tag,
 	      int *message,
 	      int  size)
@@ -353,9 +470,18 @@ bip_sync_send(int  host,
   int status  = 0;
 
   LOG_IN();
-  TRACE("bip_tisend(host=%d, tag=%d, size=%d)", host, tag, size);
+
+  // Un seul send à la fois vers une même destination (sur un canal)
+  marcel_mutex_lock(&p->send_mutex[host]);
+
+#ifdef USE_MARCEL_POLL
+  send_poll_wait(p, host, tag, message, size);
+  marcel_mutex_unlock(&p->send_mutex[host]);
+  goto end;
+#endif
 
   bip_lock();
+  TRACE("bip_tisend(host=%d, tag=%d, size=%d)", host, tag, size);
   request = bip_tisend(host, tag, message, size);
   status  = bip_stest(request);
   bip_unlock();
@@ -370,12 +496,17 @@ bip_sync_send(int  host,
       bip_unlock();
     }
 
-  LOG_OUT();
+  marcel_mutex_unlock(&p->send_mutex[host]);
+
 #else // else ifndef MARCEL
+
   LOG_IN();
   bip_tsend(host, tag, message, size);
-  LOG_OUT();
+
 #endif // end else ifndef MARCEL
+
+end:
+  LOG_OUT();
 }
 
 static
@@ -387,9 +518,12 @@ bip_recv_post(int  tag,
   int request = 0;
 
   LOG_IN();
+
   bip_lock();
+  TRACE("bip_tirecv(tag=%d, size=%d)", tag, size);
   request = bip_tirecv(tag, message, size);
   bip_unlock();
+
   LOG_OUT();
 
   return request;
@@ -401,68 +535,17 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
 	      int                           request,
 	      int                          *host)
 {
-#if defined(MARCEL)
-  int tmphost = 0;
-  int status  = 0;
-
-  LOG_IN();
-  switch (p->which)
-    {
-    case 0 : 
-      { /* SERVICE ou TRANSFERT */
-	bip_lock();
-	status = bip_rtestx(request, host);
-	bip_unlock();
-	
-	if (status != -1)
-	  {
-	    LOG_OUT();
-	    return status;
-	  }
-	break;
-      }
-
-    case 1 :
-      { /* CREDITS (FLOW_CONTROL) */
-	bip_lock();
-	status = bip_rtestx(p->cred_request, &tmphost);
-	bip_unlock();
-	
-	if (status != -1)
-	  {
-	    credits_received(p, tmphost, p->cred_msg.credits);
-	    
-	    bip_lock();
-	    p->cred_request =
-	      bip_tirecv(p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
-			 (int *)&p->cred_msg,
-			 sizeof(cred_message_t)/sizeof(int));
-	    bip_unlock();
-	  }
-
-	break;
-      }
-
-    default:
-      FAILURE("invalid message");
-  }
-
-  p->which = (p->which + 1) % 2;
-
-  LOG_OUT();
-  return -1;
-
-#else // MARCEL
   int status = -1;
-  
+
   LOG_IN();
+
   bip_lock();
   status = bip_rtestx(request, host);
   bip_unlock();
+
   LOG_OUT();
 
   return status;
-#endif // else MARCEL
 }
 
 static
@@ -474,6 +557,7 @@ bip_recv_wait(p_mad_bip_channel_specific_t  p,
   int status = -1;
 
   LOG_IN();
+
 #ifdef MARCEL
   for (;;)
     {
@@ -487,6 +571,7 @@ bip_recv_wait(p_mad_bip_channel_specific_t  p,
 #else // MARCEL
   status =  bip_rwaitx(request, host);
 #endif // else MARCEL
+
   LOG_OUT();
 
   return status;
@@ -503,6 +588,7 @@ bip_sync_recv (p_mad_bip_channel_specific_t  p,
   int result = 0;
 
   LOG_IN();
+
 #ifdef MARCEL
   {
     int request = 0;
@@ -513,6 +599,7 @@ bip_sync_recv (p_mad_bip_channel_specific_t  p,
 #else // MARCEL
   result = bip_trecvx(tag, message, size, host);
 #endif // MARCEL
+
   LOG_OUT();
 
   return result;
@@ -526,21 +613,22 @@ bip_probe_recv(p_mad_bip_channel_specific_t  p,
 	       int                           size,
 	       int                          *host)
 {
-  static int request = -1;
   int        status  =  0;
 
   LOG_IN();
-  if (request == -1)
+
+  if (p->request == -1)
     {
-      request = bip_recv_post(tag, message, size);
+      p->request = bip_recv_post(tag, message, size);
     }
   
-  status = bip_recv_poll(p, request, host);
+  status = bip_recv_poll(p, p->request, host);
 
   if (status != -1)
     {
-      request = -1; /* pour la prochaine fois */
+      p->request = -1; /* pour la prochaine fois */
     }
+
   LOG_OUT();
 
   return status;
@@ -551,14 +639,17 @@ void
 send_ack(p_mad_bip_channel_specific_t p,
 	 int                          host_id)
 {
-  ack_message_t msg;
+  ctrl_message_t msg;
 
   LOG_IN();
+
+  msg.type                     = ACK_TYPE;
   msg.credits                  = p->credits_a_rendre[host_id];
   p->credits_a_rendre[host_id] = 0;
 
-  bip_sync_send(host_id, p->communicator + MAD_BIP_REPLY_TAG,
+  bip_sync_send(p, host_id, p->communicator + MAD_BIP_CTRL_TAG,
 		(int*)&msg, sizeof(msg)/sizeof(int));
+
   LOG_OUT();
 }
 
@@ -568,50 +659,40 @@ wait_ack(p_mad_bip_channel_specific_t p,
 	 int                          host_id)
 {
   LOG_IN();
+
   TRACE("Waiting for ack\n");
 
-#if defined(MARCEL)
+#ifdef MARCEL
 
 #ifdef USE_MARCEL_POLL
   ack_poll_wait(p, host_id);
-#else // USE_MARCEL_POLL
+  goto end;
+#endif
 
   marcel_mutex_lock(&p->ack_mutex);
+#endif // MARCEL
 
   while (!p->ack_was_received[host_id])
     {
-      ack_message_t msg;
+      ctrl_message_t msg;
       int           remote;
 
-      bip_sync_recv(p, p->communicator+MAD_BIP_REPLY_TAG,
+      bip_sync_recv(p, p->communicator + MAD_BIP_CTRL_TAG,
 		    (int*)&msg, sizeof(msg)/sizeof(int), &remote);
 
-      p->ack_was_received[remote] = tbx_true;
       credits_received(p, remote, msg.credits);
+
+      if(msg.type == ACK_TYPE)
+	p->ack_was_received[remote] = tbx_true;
     }
 
   p->ack_was_received[host_id] = tbx_false;
 
+#ifdef MARCEL
   marcel_mutex_unlock(&p->ack_mutex);
-
-#endif // USE_MARCEL_POLL
-
-#else // MARCEL
-
-  while (!p->ack_was_received[host_id])
-  {
-    ack_message_t msg;
-    int           remote;
-
-    bip_sync_recv(p, p->communicator+MAD_BIP_REPLY_TAG,
-		  (int*)&msg, sizeof(msg)/sizeof(int), &remote);
-
-    p->ack_was_received[remote] = tbx_true;
-    p->credits_disponibles[remote] += msg.credits;
-  }
-
-  p->ack_was_received[host_id] = tbx_false;
 #endif // MARCEL
+
+end:
   LOG_OUT();
 }
 
@@ -626,7 +707,7 @@ send_new(p_mad_bip_channel_specific_t p,
   msg.credits                  = p->credits_a_rendre[host_id];
   p->credits_a_rendre[host_id] = 0;
 
-  bip_sync_send(host_id, p->communicator + MAD_BIP_SERVICE_TAG,
+  bip_sync_send(p, host_id, p->communicator + MAD_BIP_SERVICE_TAG,
 		(int*)&msg, sizeof(msg)/sizeof(int));
   LOG_OUT();
 }
@@ -640,35 +721,36 @@ wait_credits(p_mad_bip_channel_specific_t p,
   TRACE("Checking credits\n");
 
 #ifdef MARCEL
+
+#ifdef USE_MARCEL_POLL
+  cred_poll_wait(p, host_id);
+  goto end;
+#endif
+
   marcel_mutex_lock(&p->cred_mutex);
+#endif
 
-  while (!p->credits_disponibles[host_id])
-    {
-      TRACE("Thread %p is waiting for credits from host %d\n",
-	    marcel_self(), host_id);
-      marcel_cond_wait(&p->cond_cred[host_id], &p->cred_mutex);
-    }
-
-  TRACE("Thread %p has %d credits to talk to host %d\n",
-	marcel_self(), p->credits_disponibles[host_id], host_id);
-  p->credits_disponibles[host_id]--;
-
-  marcel_mutex_unlock(&p->cred_mutex);
-#else // MARCEL
   while (!p->credits_disponibles[host_id]) 
     {
       int            remote;
-      cred_message_t msg;
+      ctrl_message_t msg;
       
-      bip_sync_recv(p, p->communicator + MAD_BIP_FLOW_CONTROL_TAG, (int *)&msg,
+      bip_sync_recv(p, p->communicator + MAD_BIP_CTRL_TAG, (int *)&msg,
 		    sizeof(msg)/sizeof(int), &remote);
-      
-      p->credits_disponibles [remote] += msg.credits;
+
+      credits_received(p, remote, msg.credits);
+
+      if(msg.type == ACK_TYPE)
+	p->ack_was_received[remote] = tbx_true;
     }
 
   p->credits_disponibles[host_id]--;
-#endif // else MARCEL
 
+#ifdef MARCEL
+  marcel_mutex_unlock(&p->cred_mutex);
+#endif
+
+end:
  LOG_OUT();
 }
 
@@ -680,20 +762,17 @@ credits_received(p_mad_bip_channel_specific_t p,
 {
   LOG_IN();
 
-#ifdef MARCEL
   if (credits) 
     {
+#ifdef MARCEL
       marcel_mutex_lock(&p->cred_mutex);
-
-      TRACE("Credits received from host %d\n", host_id);
-
+#endif
       p->credits_disponibles[host_id] += credits;
-      marcel_cond_signal(&p->cond_cred[host_id]);
+
+#ifdef MARCEL
       marcel_mutex_unlock(&p->cred_mutex);
+#endif
     }
-#else // MARCEL
-  p->credits_disponibles[host_id] += credits;
-#endif // else MARCEL
 
   LOG_OUT();
 }
@@ -703,7 +782,7 @@ void
 give_back_credits (p_mad_bip_channel_specific_t p,
 		   int                          host_id)
 {
-  cred_message_t msg;
+  ctrl_message_t msg;
 
   LOG_IN();
 
@@ -714,13 +793,14 @@ give_back_credits (p_mad_bip_channel_specific_t p,
 
   if ((p->credits_a_rendre[host_id]) == (BIP_MAX_CREDITS-1))
     {
+      msg.type                     = CRED_TYPE;
       msg.credits                  = p->credits_a_rendre[host_id];
       p->credits_a_rendre[host_id] = 0;
 
       marcel_mutex_unlock(&p->cred_mutex);
 
-      bip_sync_send(host_id, p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
-		    (int *)&msg, sizeof(cred_message_t)/sizeof(int));
+      bip_sync_send(p, host_id, p->communicator + MAD_BIP_CTRL_TAG,
+		    (int *)&msg, sizeof(msg)/sizeof(int));
     }
   else
     {
@@ -730,12 +810,13 @@ give_back_credits (p_mad_bip_channel_specific_t p,
     }
 #else // MARCEL
   p->credits_a_rendre [host_id] ++;
-  if ((p->credits_a_rendre [host_id]) == (BIP_MAX_CREDITS-1)) 
+  if ((p->credits_a_rendre [host_id]) == (BIP_MAX_CREDITS-1))
     {
+      msg.type                      = CRED_TYPE;
       msg.credits                   = p->credits_a_rendre [host_id];
       p->credits_a_rendre [host_id] = 0;
 
-      bip_sync_send(host_id, p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
+      bip_sync_send(p, host_id, p->communicator + MAD_BIP_CTRL_TAG,
 		    (int *)&msg, sizeof(msg)/sizeof(int));
     }
 #endif // else MARCEL
@@ -869,23 +950,31 @@ mad_bip_channel_init(p_mad_channel_t channel)
   channel_specific->credits_a_rendre    = TBX_MALLOC (size * sizeof (int));
   channel_specific->first_time          = 1;
   channel_specific->ack_was_received    = TBX_MALLOC(size * sizeof(tbx_bool_t));
-  channel_specific->which               = 0;
+  channel_specific->request             = -1;
 
 #ifdef MARCEL
-  channel_specific->cond_cred = TBX_MALLOC(size*sizeof(marcel_cond_t));
-  channel_specific->sem_ack   = TBX_MALLOC(size*sizeof(marcel_sem_t));
+  channel_specific->sem_ack     = TBX_MALLOC(size*sizeof(marcel_sem_t));
+  channel_specific->send_mutex  = TBX_MALLOC(size*sizeof(marcel_mutex_t));
   marcel_mutex_init(&channel_specific->cred_mutex, NULL);
   marcel_mutex_init(&channel_specific->ack_mutex, NULL);
 
 #ifdef USE_MARCEL_POLL
   channel_specific->ack_pollid =
-    marcel_pollid_create(ack_group_func, ack_poll_func, ack_fastpoll_func,
-			 MARCEL_POLL_AT_TIMER_SIG |MARCEL_POLL_AT_YIELD);
+    marcel_pollid_create(ctrl_msg_group_func, ctrl_msg_poll_func,
+			 ctrl_msg_fastpoll_func,
+			 MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD);
+  channel_specific->send_pollid =
+    marcel_pollid_create(send_group_func, send_poll_func,
+			 send_fastpoll_func,
+			 MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD);
 
   marcel_pollid_setspecific(channel_specific->ack_pollid, channel_specific);
+  marcel_pollid_setspecific(channel_specific->send_pollid, channel_specific);
 
   channel_specific->ack_poller       =
     TBX_MALLOC(size * sizeof(marcel_pollinst_t));
+  channel_specific->expected_type     =
+    TBX_MALLOC(size * sizeof(ctrl_type_t));
 #endif // USE_MARCEL_POLL
 #endif // MARCEL
 
@@ -896,8 +985,8 @@ mad_bip_channel_init(p_mad_channel_t channel)
       channel_specific->ack_was_received[i]    = tbx_false;
 
 #ifdef MARCEL
-      marcel_cond_init(&channel_specific->cond_cred[i], NULL);
       marcel_sem_init(&channel_specific->sem_ack[i], 0);
+      marcel_mutex_init(&channel_specific->send_mutex[i], NULL);
 
 #ifdef USE_MARCEL_POLL
       channel_specific->ack_poller[i]       = NULL;
@@ -916,23 +1005,18 @@ mad_bip_channel_init(p_mad_channel_t channel)
    */
   TBX_LOCK_SHARED(driver_specific);
   channel_specific->communicator  = new_channel;
-  new_channel                    += MAD_BIP_NB_OF_TAGS;
+  new_channel                    += _MAD_BIP_NB_OF_TAGS;
   channel_specific->message_size  = 0;
   TBX_UNLOCK_SHARED(driver_specific);
  
   channel->specific = channel_specific;
 
-#ifdef MARCEL
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
   bip_lock();
-  channel_specific->cred_request =
-    bip_tirecv(channel_specific->communicator + MAD_BIP_FLOW_CONTROL_TAG,
-	       (int *)&channel_specific->cred_msg,
-	       sizeof(cred_message_t)/sizeof(int));
-
-  channel_specific->ack_request =
-    bip_tirecv(channel_specific->communicator + MAD_BIP_REPLY_TAG,
-	       (int *)&channel_specific->ack_msg,
-	       sizeof(ack_message_t)/sizeof(int));
+  channel_specific->ctrl_request =
+    bip_tirecv(channel_specific->communicator + MAD_BIP_CTRL_TAG,
+	       (int *)&channel_specific->ctrl_msg,
+	       sizeof(ctrl_message_t)/sizeof(int));
   bip_unlock();
 #endif // MARCEL
   LOG_OUT();
@@ -1191,7 +1275,7 @@ mad_bip_send_short_buffer(p_mad_link_t   lnk,
       TRACE("Sending short buffer. Size = %d. First int = %d\n",
 	    (buffer->bytes_written), ((int*)buffer->buffer)[0]);
 
-      bip_sync_send (out->remote_rank,
+      bip_sync_send (channel_specific, out->remote_rank,
 		     channel_specific->communicator + MAD_BIP_SERVICE_TAG,
 		     buffer->buffer, MAD_NB_INTS(buffer->bytes_written));
 
@@ -1213,7 +1297,7 @@ mad_bip_send_short_buffer(p_mad_link_t   lnk,
 
       wait_credits(channel_specific, out->remote_rank);
 
-      bip_sync_send(out->remote_rank,
+      bip_sync_send(channel_specific, out->remote_rank,
 		    channel_specific->communicator + MAD_BIP_TRANSFER_TAG,
 		    buffer->buffer, MAD_NB_INTS(buffer->bytes_written));
 
@@ -1321,12 +1405,12 @@ mad_bip_send_long_buffer(p_mad_link_t   lnk,
     {
       size_t length = 0;
 
-      length = min(524288, (buffer->bytes_written - buffer->bytes_read));
+      length = min(MAD_BIP_MAX_SIZE, (buffer->bytes_written - buffer->bytes_read));
 
       wait_ack(channel_specific, out->remote_rank);
       out_specific->ack = tbx_true;
 
-      bip_sync_send(out->remote_rank,
+      bip_sync_send(channel_specific, out->remote_rank,
 		    channel_specific->communicator + MAD_BIP_TRANSFER_TAG,
 		    buffer->buffer + buffer->bytes_read,
 		    MAD_NB_INTS(length));
@@ -1372,7 +1456,7 @@ mad_bip_receive_long_buffer(p_mad_link_t   lnk,
     {
       size_t length = 0;
  
-      length = min(524288, (buffer->length - buffer->bytes_written));
+      length = min(MAD_BIP_MAX_SIZE, (buffer->length - buffer->bytes_written));
 
       request =
 	bip_recv_post(channel_specific->communicator + MAD_BIP_TRANSFER_TAG,

@@ -613,8 +613,10 @@ static __inline__ marcel_t next_task(marcel_t t, __lwp_t *lwp)
 #ifdef __ACT__
   res=t;
   do {
+    {if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
     res = res->next;
   } while ((res->state_ext == MARCEL_RUNNING) && (res != t));
+  {if (res!=t) ACTDEBUG(printf("next_task : find %p\n", res));}
   //ACTDEBUG(printf("next_task(%p) : next=%p\n", t, res));  
 #else
   res = t->next;

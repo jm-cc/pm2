@@ -139,7 +139,7 @@ done
 prog=$1
 shift
 
-prog_args="$@"
+prog_args=${@:+"$@"}
 
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
 set --  --source-mode $prog

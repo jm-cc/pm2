@@ -190,12 +190,25 @@ static void debug_memory ()
 
 ******************************************************************/
 
+static char *get_mad_root(void)
+{
+  static char buf[1024];
+  char *ptr;
+
+  if((ptr = getenv("MADELEINE_ROOT")) != NULL)
+    return ptr;
+  else {
+    sprintf(buf, "%s/mad1", getenv("PM2_ROOT"));
+    return buf;
+  }
+}
+
 static void spawn_procs(char *argv[])
 { 
   char cmd[1024], arg[128];
   int i;
 
-  sprintf(cmd, "%s/bin/shm/madspawn %d", getenv("MADELEINE_ROOT"), 
+  sprintf(cmd, "%s/bin/shm/madspawn %d", get_mad_root(), 
                confsize);
 
   i=0;
@@ -292,14 +305,14 @@ void mad_shm_network_init (int *argc, char **argv, int nb_proc, int *tids, int *
     setbuf(stdout, NULL);
     dup2(STDERR_FILENO, STDOUT_FILENO);
 
-    status = system("exit `cat ${MADELEINE_ROOT}/.madconf | wc -w`") ;
+    status = system("exit `cat ${MADELEINE_ROOT-${PM2_ROOT}/mad1}/.madconf | wc -w`") ;
     confsize = WEXITSTATUS(status); 
 
 
     {
       FILE *f;
 
-      sprintf(output, "%s/.madconf", getenv("MADELEINE_ROOT"));
+      sprintf(output, "%s/.madconf", get_mad_root());
       f = fopen(output, "r");
       if(f == NULL) {
 	perror("fichier madconf");

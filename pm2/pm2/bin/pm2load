@@ -57,38 +57,33 @@ _pm2load_ambiguity() # prog
 
 log()
 {
-    if [ ! -z "$PM2_SCRIPT_DEBUG" ]; then
+    if [ -n "$PM2_SCRIPT_DEBUG" ]; then
 	echo "$*" 1>&2
     fi
 }
 
 mad3()
 {
-    PM2_PROG_NAME=$1
-    export PM2_PROG_NAME
-    shift
-    prog_args="$@"
-    echo "Args: $prog_args"
+    log "Args: $prog_args"
 
-    set -- --protocols
-    protocol=`. ${PM2_ROOT}/bin/pm2-config`
-    echo "Protocol: $protocol"
+    protocol=$_PM2CONFIG_PROTOCOLS
+    log "Protocol: $protocol"
 
     # Récupération du chemin d'accès au fichier de config des machines
     set --  --source-mode
     . ${PM2_ROOT}/bin/pm2-conf-file
 
     [ -f $PM2_CONF_FILE ] || _pm2load_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
-    echo "PM2 config file: ${PM2_CONF_FILE}"
+    log "PM2 config file: ${PM2_CONF_FILE}"
 
     PM2_LEONIE_FILE="${PM2_CONF_FILE}.cfg"
-    echo "Leonie config file: ${PM2_LEONIE_FILE}"
+    log "Leonie config file: ${PM2_LEONIE_FILE}"
 
     PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
 
     host_list=`cat ${PM2_CONF_FILE}`
     set ${PM2_LEONIE_NETWORK_FILE} $protocol $host_list
-    network_name=`. leo-network`
+    network_name=`. ${PM2_ROOT}/bin/leo-network`
 
     new_list=""
 
@@ -106,7 +101,7 @@ mad3()
     done
 
     tmp_list=`echo $new_list|tr ' ' ','`
-    echo "Host list: " $tmp_list
+    log "Host list: " $tmp_list
 
     [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
     echo "application: {"                      >  $PM2_LEONIE_FILE
@@ -189,20 +184,6 @@ done
 
 [ -n "$*" ] || _pm2load_usage 1
 
-# Mad3 special case
-args="$@"
-echo "Testing communication library"
-set -- --modules
-case `. ${PM2_ROOT}/bin/pm2-config` in
-    *mad3*)
-	# Mad III mode
-	echo "Mad III selected"
-	mad3 $args
-	exit $?
-	;;
-    *)  set $args
-	;;
-esac
 
 # Initialisation des arguments passés à pm2-pre-script.sh
 _prescript_args=""
@@ -236,6 +217,19 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 
     PM2_CMD_NAME="$_PM2WHICH_RESULT"
     export PM2_CMD_NAME
+
+    # Mad3 special case
+    case " $_PM2CONFIG_MODULES " in
+    *\ mad3\ *)
+	# Mad III mode
+	log "Mad III selected"
+	mad3 $prog_args
+	exit $?
+	;;
+    *)
+	;;
+esac
+
 
     # Librairies dynamiques (LD_PRELOAD)
     if [ -n "$_PM2CONFIG_PRELOAD" ]; then

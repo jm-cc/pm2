@@ -76,12 +76,12 @@ static int unix_io_group(marcel_ev_server_t server,
 		switch(ev->op) {
 		case POLL_READ : {
 			FD_SET(ev->fd, &uid->rfds);
-			uid->nb = max(uid->nb, ev->fd+1);
+			uid->nb = tbx_max(uid->nb, ev->fd+1);
 			break;
 		}
 		case POLL_WRITE : {
 			FD_SET(ev->fd, &uid->wfds);
-			uid->nb = max(uid->nb, ev->fd+1);
+			uid->nb = tbx_max(uid->nb, ev->fd+1);
 			break;
 		}
 		case POLL_SELECT : {
@@ -96,7 +96,7 @@ static int unix_io_group(marcel_ev_server_t server,
 					if(FD_ISSET(i, ev->wfds))
 						FD_SET(i, &uid->wfds);
 			}
-			uid->nb = max(uid->nb, ev->nfds);
+			uid->nb = tbx_max(uid->nb, ev->nfds);
 			break;
 		}
 		default :

@@ -89,8 +89,8 @@ int pm2_main(int argc, char **argv)
 
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
-  //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
-  pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
+  //dsm_set_default_protocol(MIGRATE_THREAD);
+  dsm_set_default_protocol(LI_HUDAK);
 
   pm2_set_dsm_page_distribution(DSM_BLOCK);
 

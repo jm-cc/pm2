@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.h,v $
+Revision 1.3  2000/04/27 09:01:30  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
+Revision 1.2.2.1  2000/04/15 15:20:12  oaumage
+- correction de l'entete du fichier
+
 Revision 1.2  2000/02/17 09:14:27  oaumage
 - ajout du support de TCP a la net toolbox
 - ajout de fonctions d'empaquetage de donnees numeriques
@@ -46,7 +52,7 @@ ______________________________________________________________________________
 */
 
 /*
- * NTbx_tcp.h
+ * Ntbx_tcp.h
  * ==========
  */
 

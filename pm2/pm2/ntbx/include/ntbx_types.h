@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: ntbx_types.h,v $
+Revision 1.3  2000/04/27 09:01:30  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
+Revision 1.2.2.1  2000/03/30 14:14:26  oaumage
+- modification du type des champs local/remote_host
+
 Revision 1.2  2000/02/17 09:14:28  oaumage
 - ajout du support de TCP a la net toolbox
 - ajout de fonctions d'empaquetage de donnees numeriques
@@ -46,7 +52,7 @@ ______________________________________________________________________________
 */
 
 /*
- * NTbx_types.h
+ * ntbx_types.h
  * ============
  */
 
@@ -133,15 +139,15 @@ typedef enum
 typedef struct s_ntbx_client
 {
   ntbx_client_state_t  state;
-  void                *local_host;
-  void                *remote_host;
+  char                *local_host;
+  char                *remote_host;
   void                *specific;
 } ntbx_client_t;
 
 typedef struct s_ntbx_server
 {
   ntbx_server_state_t     state;
-  void                   *local_host;
+  char                   *local_host;
   ntbx_connection_data_t  connection_data;
   void                   *specific;
 } ntbx_server_t;

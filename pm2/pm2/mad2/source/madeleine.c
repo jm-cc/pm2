@@ -616,7 +616,7 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
       fclose(f);
     }
 #ifdef EXTERNAL_SPAWN
-	  mad_exchange_configuration_info(madeleine);
+  mad_exchange_configuration_info(madeleine);
 #else EXTERNAL_SPAWN
   else
     {

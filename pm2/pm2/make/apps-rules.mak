@@ -22,7 +22,7 @@ all: $(APPS_LIST)
 examples: all
 
 .PHONY: flavor
-flavor:
+flavor $(MOD_STAMP_FILES):
 	$(COMMON_HIDE) echo ">>> Generating libraries..."
 	$(COMMON_MAIN) $(MAKE) -C $(PM2_ROOT)
 	$(COMMON_HIDE) echo "<<< Generating libraries: done"
@@ -59,13 +59,27 @@ $(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)
 #---------------------------------------------------------------------
 MOD_LINKED_OBJECTS=$(APPS_LIST)
 
+# Dépendance faible ( '|' ) sur flavor juste pour s'assurer qu'elle est
+# bien construite avant (surtout avec make -j), en particulier pour les
+# headers. 
+# Il y a déjà d'autres dépendances pour forcer la reconstruction du .o et/ou du
+# programme si les bibliothèques de la flavors ont été modifiées
+#
+# Pb:
+# Si $(MOD_STAMP_FILES) est modifié pendant la recompilation de flavor,
+# make ne s'en apperçoit pas (avec -j) et ne reconstruit pas la cible.
+# Solutions possibles
+# - double run pour que make regarde à nouveau les dépendances
+# - dépendances complètes pour la flavor (trop complexe a priori)
 define PROGRAM_template
  $(MOD_GEN_BIN)/$(1)$(MOD_EXT): $$(patsubst %.o, %$(MOD_EXT).o, \
 			$$(if $$($(1)-objs), $$($(1)-objs), $(1).o))
  $(MOD_GEN_BIN)/$(1)$(MOD_EXT): LDFLAGS += $$($(1)-ldflags)
+ $(MOD_GEN_BIN)/$(1)$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
 endef
 define OBJECT_template
  $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CFLAGS += $$($(1)-cflags)
+ $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
 endef
 
 #$(foreach prog, $(APPS_LIST),$(warning $(call PROGRAM_template,$(prog))))

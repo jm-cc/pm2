@@ -353,16 +353,19 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 					 new_task->initial_sp -
 					 (MAL(base_stack-get_sp())));
 		/* départ du fils, en mode interruption */
+		{
+			ma_runqueue_t *rq;
 
-		/* ré-enqueuer le père */
-		rq = ma_prev_rq();
-		_ma_raw_spin_lock(&rq->lock);
-		enqueue_task(marcel_self()->father, rq->active);
-		ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
-		
-		MTRACE("Preemption", marcel_self());
-		
-		PROF_OUT_EXT(newborn_thread);
+			/* ré-enqueuer le père */
+			rq = ma_prev_rq();
+			_ma_raw_spin_lock(&rq->lock);
+			enqueue_task(marcel_self()->father, rq->active);
+			ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
+			
+			MTRACE("Preemption", marcel_self());
+			
+			PROF_OUT_EXT(newborn_thread);
+		}
 	}
 	
 	/* pas de unlock_task ici : le preempt a déjà été mangé dans ma_schedule_tail */

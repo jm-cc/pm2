@@ -62,27 +62,30 @@ _PRIVATE_ struct __lwp_struct;
 #endif
 
 #ifdef MA__MULTIPLE_RUNNING
+/* A value of 0 is needed for MARCEL_READY in act_resume (upcall.c /
+   upcall_unblock()) */
 _PRIVATE_ typedef enum {
-  MARCEL_READY=0, /* value 0 needed in act_resume (upcall.c /
-                     upcall_unblock()) */
+  MARCEL_READY=0, 
   MARCEL_RUNNING=1,
 } marcel_state_t;
 #endif
+
+// VP mask: useful for selecting the set of "allowed" LWP for a given thread
+typedef unsigned long marcel_vpmask_t;
 
 _PRIVATE_ typedef struct task_desc_struct {
 #ifdef MA__MULTIPLE_RUNNING
   volatile marcel_state_t ext_state;
 #endif
   jmp_buf jbuf;
-/*    struct task_desc_struct *next,*prev; */
   struct list_head task_list;
   struct __lwp_struct *lwp;
-#if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
+#if defined(MA__LWPS)
   struct __lwp_struct *previous_lwp;
 #endif
   int sched_policy;
-  /* utilisé pour marquer les task idle, upcall, idle, ... */
-  int special_flags; 
+  marcel_vpmask_t vpmask; // Contraintes sur le placement sur les LWP
+  int special_flags; // utilisé pour marquer les task idle, upcall, idle, ...
   task_state state;
   jmp_buf migr_jb;
   marcel_t child, father;
@@ -127,6 +130,7 @@ _PRIVATE_ typedef struct __sched_struct {
   volatile unsigned running_tasks;         /* Nb of user running tasks */
   marcel_lock_t sched_queue_lock;          /* Lock for scheduler queue */
   volatile head_running_list_t rt_first;   /* Real time threads queue */
+  volatile boolean has_new_tasks;          /* Somebody gave us some work */
 } __sched_t;
 
 _PRIVATE_ typedef struct __lwp_struct {
@@ -137,15 +141,8 @@ _PRIVATE_ typedef struct __lwp_struct {
 #ifdef MA__ACTIVATION
   marcel_t upcall_new_task;                /* Task used in upcall_new */
 #endif
-#ifdef X86_ARCH
   volatile atomic_t _locked;               /* Lock for (un)lock_task() */
-#else
-  volatile unsigned _locked;               /* Lock for (un)lock_task() */
-#endif
-#ifndef MA__ONE_QUEUE
   volatile boolean has_to_stop;            /* To force pthread_exit() */
-  volatile boolean has_new_tasks;          /* Somebody gave us some work */
-#endif
   struct list_head lwp_list;
   char __security_stack[2 * SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
@@ -165,9 +162,19 @@ inline static __lwp_t* next_lwp(__lwp_t* lwp)
   return list_entry(lwp->lwp_list.next, __lwp_t, lwp_list);
 }
 
+inline static __lwp_t* prev_lwp(__lwp_t* lwp)
+{
+  return list_entry(lwp->lwp_list.prev, __lwp_t, lwp_list);
+}
+
 inline static marcel_t next_task(marcel_t task)
 {
   return list_entry(task->task_list.next, task_desc, task_list);
+}
+
+inline static marcel_t prev_task(marcel_t task)
+{
+  return list_entry(task->task_list.prev, task_desc, task_list);
 }
 
 #ifdef MA__LWPS
@@ -228,6 +235,7 @@ static __inline__ void marcel_prepare_stack_jump(void *stack)
 {
   *(marcel_t *)(stack + SLOT_SIZE - sizeof(void *)) = __marcel_self();
 }
+
 static __inline__ void marcel_set_stack_jump(marcel_t m)
 {
   register unsigned long sp = get_sp();

@@ -328,7 +328,7 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index)
 #endif
 
 #ifdef DSM_COMM_TRACE
-  tfprintf(stderr, "[%s]: sending inv ack to node %d for page %ld!\n", __FUNCTION__, dest_node, index);
+  fprintf(stderr, "[%s]: sending inv ack to node %d for page %ld!\n", __FUNCTION__, dest_node, index);
 #endif
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_INVALIDATE_ACK, NULL);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
@@ -741,7 +741,7 @@ void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node,
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
   while ((header.addr = dsm_get_next_modified_data(index, &header.size)) != NULL)
     {
-#if DSM_COMM_TRACE
+#ifdef DSM_COMM_TRACE
       tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %p %d\n", header.addr, header.size);
 #endif
       pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&header, sizeof(header));
@@ -828,7 +828,7 @@ void DSM_LRPC_SEND_DIFFS_threaded_func(void)
 #ifdef MINIMIZE_PACKS_ON_DIFF_TRANSFER
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&header, sizeof(header));
 //#ifdef DSM_COMM_TRACE
-#if DSM_COMM_TRACE
+#ifdef DSM_COMM_TRACE
       tfprintf(stderr,"DSM_LRPC_SEND_DIFFS_func: %p %d\n", header.addr, header.size);
 #endif
   while (header.addr != NULL)

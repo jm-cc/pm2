@@ -105,12 +105,4 @@ done
 echo >> $deffile
 echo "#endif" >> $deffile
 
-# Now we must build the fut_print tool...
-
-# Ugly again! We should rather use --bindir...
-if [ ! -d ${BUILDDIR}/profile/bin ]; then
-    mkdir -p ${BUILDDIR}/profile/bin
-fi
-gcc -o ${BUILDDIR}/profile/bin/fut_print -I${PM2_ROOT}/profile/include -I${GENDIR} ${PM2_ROOT}/profile/bin/src/fut_print.c
-
 exit 0

@@ -70,7 +70,5 @@ thankshelp:
 
 tailhelp:
 
-ifndef OLD_MAKEFILE
 $(PM2_MAK_DIR):
-	@make -p $@
-endif
+	@mkdir -p $@

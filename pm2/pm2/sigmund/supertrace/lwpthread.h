@@ -15,18 +15,22 @@ typedef struct lwpthread_list_st * lwpthread_list;
 
 extern lwpthread_list lwpthread;
 
-void add_lwp(int lwp, int thread, int logic);
+extern void add_lwp(int lwp, int thread, int logic);
 
-int is_lwp(int pid);
+extern int is_lwp(int pid);
 
-int lwp_of_thread(int thread);
+extern int lwp_of_thread(int thread);
 
-int thread_of_lwp(int lwp);
+extern int thread_of_lwp(int lwp);
 
-void set_switch(int oldthread, int newthread);
+extern void set_switch(int oldthread, int newthread);
 
-void set_cpu(int lwp, short int cpu);
+extern void set_cpu(int lwp, short int cpu);
 
-short int cpu_of_lwp(int lwp);
+extern short int cpu_of_lwp(int lwp);
+
+extern int number_lwp();
+
+extern int get_next_lwp();
 
 #endif

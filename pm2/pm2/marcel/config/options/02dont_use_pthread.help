@@ -1,0 +1,1 @@
+Do not use pthread to implement kernel threads (SMP mode only).

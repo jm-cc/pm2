@@ -140,15 +140,23 @@ static void fut_trace_calc(trace *tr)
       tr->thread = 0;  // For now on
     } else if (tr->code >> 8 == FUT_KEYCHANGE_CODE) {
       tr->thread = 0;  // For now on
-    } else tr->thread = tr->args[0];
-  } else tr->thread = thread;
+    } else
+      tr->thread = tr->args[0];
+  } else
+    tr->thread = thread;
+
   tr->pid = lwp_of_thread(tr->thread);              // Pid of this thread
-  if (tr->pid == -1) tr->pid = pid;
+  if (tr->pid == -1)
+    tr->pid = pid;
+
   if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {      /* If switch_to, sets the 
 						      new thread to lwp */
     set_switch(tr->args[0], tr->args[1]);
-    if (!smp) thread = tr->args[1];                 // If !smp, updates thread
+
+    if (!smp)
+      thread = tr->args[1];                 // If !smp, updates thread
   } 
+
   //  else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) { // IN case of FUT_NEW_LWP
   //    int n;
   //    add_lwp(tr->args[0], tr->args[2], tr->args[1]); /* adds this new lwp to
@@ -161,7 +169,11 @@ static void fut_trace_calc(trace *tr)
   //      }
   //    if (!smp) thread = tr->args[2];                 // This is false!!!!!!!
   //  }
-  tr->cpu = cpu_of_lwp(tr->pid);                    // gets the cpu of this event
+
+  if(smp)
+    tr->cpu = cpu_of_lwp(tr->pid);                    // gets the cpu of this event
+  else
+    tr->cpu = 0;
   if ((tr->cpu >= NB_MAX_CPU) || (tr->cpu < 0)) {   /* Bad luck, no way of 
 						       finding the cpu number */
     printf("Oups %d %d %d\n",tr->cpu, tr->pid, tr->thread);
@@ -199,15 +211,20 @@ static void fkt_trace_calc(trace *tr)
   if (is_lwp(tr->pid)) {               // If this event is an event from PM2
     tr->relevant = 1;
     tr->thread = thread_of_lwp(tr->pid);
-  } else tr->thread = -1;
+  } else
+    tr->thread = -1;
 }
 
 /* aiguillage vers fut_trace_calc ou fkt_trace_calc */
 static void trace_calc(trace *tr)
 {
-  if (tr->type == USER) fut_trace_calc(tr);
-  else fkt_trace_calc(tr);
-  if (tr->thread > highest_thr) highest_thr = tr->thread;
+  if (tr->type == USER)
+    fut_trace_calc(tr);
+  else
+    fkt_trace_calc(tr);
+
+  if (tr->thread > highest_thr)
+    highest_thr = tr->thread;
 }
 
 
@@ -229,8 +246,10 @@ static void read_fut_header()
     last = fut_buf.clock;
     for(n = 0; n < 9; n++) {
       CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
-      if (min_fut == 0) min_fut = fut_buf.clock - last;
-      else if (fut_buf.clock - last < min_fut) min_fut = fut_buf.clock - last;
+      if (min_fut == 0)
+	min_fut = fut_buf.clock - last;
+      else if (fut_buf.clock - last < min_fut)
+	min_fut = fut_buf.clock - last;
     }
   }
 }

@@ -592,8 +592,8 @@ int is_valid(trace *tr)
   //    /* FUT_NEW_LWP: adds to lwpthread with activity corresponding to its
   //       being traced or not
   //     */
-  //    if ((is_in_proc_list(tr->args[0]) == TRUE) && \
-//	(is_in_cpu_list(tr->cpu) == TRUE) && \
+  //    if ((is_in_proc_list(tr->args[0]) == TRUE) &&
+//	(is_in_cpu_list(tr->cpu) == TRUE) &&
 //	(is_in_logic_list(tr->args[1])))
   //      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
   //  else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);

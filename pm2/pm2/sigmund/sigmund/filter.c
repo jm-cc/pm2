@@ -485,16 +485,16 @@ lwp_thread_list tmp;
 
 int is_valid(trace *tr)
 {
-  if (table[tr->proc] == FALSE) {
-    if (is_in_cpu_list(tr->proc) == TRUE)
+  if (table[tr->cpu] == FALSE) {
+    if (is_in_cpu_list(tr->cpu) == TRUE)
       if (is_in_proc_list(tr->pid) == TRUE)
 	options.active_proc++;
-    table[tr->proc] = TRUE;
+    table[tr->cpu] = TRUE;
   }
   if (tr->type == KERNEL) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
       if ((is_in_proc_list(tr->pid) == TRUE) && \
-	  (is_in_cpu_list(tr->proc) == TRUE)) {
+	  (is_in_cpu_list(tr->cpu) == TRUE)) {
 	options.active_proc--;
 	if (is_lwp(tr->pid) == TRUE) {
 	  set_active_lwp(tr->pid, FALSE);
@@ -534,12 +534,12 @@ int is_valid(trace *tr)
     change_lwp_thread(tr->thread, tr->args[0]);
   } else if (tr->code >> 8 == FUT_KEYCHANGE_CODE) {
     if ((is_in_proc_list(tr->pid) == TRUE) && \
-	(is_in_cpu_list(tr->proc) == TRUE))
-      filter_add_lwp(tr->proc, tr->thread, TRUE);
-    else filter_add_lwp(tr->proc, tr->thread, FALSE);
+	(is_in_cpu_list(tr->cpu) == TRUE))
+      filter_add_lwp(tr->cpu, tr->thread, TRUE);
+    else filter_add_lwp(tr->cpu, tr->thread, FALSE);
   }
 
-  if (is_in_cpu_list(tr->proc) == TRUE) {
+  if (is_in_cpu_list(tr->cpu) == TRUE) {
     if (is_in_proc_list(tr->pid) == TRUE) {
       if (is_in_thread_list(tr->thread) == TRUE) {
 	if (is_in_evnum_list(tr) == TRUE) {

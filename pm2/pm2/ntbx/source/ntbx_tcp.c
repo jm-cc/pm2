@@ -34,8 +34,24 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.7  2000/04/27 08:59:19  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
+
 Revision 1.6  2000/04/25 14:33:55  vdanjean
 Nouveaux Makefiles :-)
+
+Revision 1.5.2.4  2000/04/15 15:23:29  oaumage
+- corrections diverses
+
+Revision 1.5.2.3  2000/03/30 14:31:51  oaumage
+- correction d'une faute de frappe
+
+Revision 1.5.2.2  2000/03/30 14:29:53  oaumage
+- retablissement de l'etat `connecte' en sortie des fonctions de transmission
+
+Revision 1.5.2.1  2000/03/30 14:14:56  oaumage
+- initialisation des champs local/remote_host
 
 Revision 1.5  2000/03/08 17:17:00  oaumage
 - utilisation de TBX_MALLOC
@@ -60,11 +76,32 @@ ______________________________________________________________________________
  * tbx_tcp.c
  * ---------
  */
+/* #define DEBUG */
 #include "tbx.h"
 #include "ntbx.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/uio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <errno.h>
+
+/*
+ * Macro and constant definition
+ * ========================================================================
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 256
+#endif /* MAXHOSTNAMELEN */
 
 /*
  * Data Structures
@@ -251,6 +288,10 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
   if (server->state)
     FAILURE("server already initialized");
 
+  server->local_host = malloc(MAXHOSTNAMELEN + 1);
+  CTRL_ALLOC(server->local_host);
+  gethostname(server->local_host, MAXHOSTNAMELEN);
+
   server_specific = TBX_MALLOC(sizeof(ntbx_tcp_server_specific_t));
   CTRL_ALLOC(server_specific);
   server->specific = server_specific;
@@ -278,6 +319,11 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
   if (client->state)
     FAILURE("client already initialized");
 
+  client->local_host = malloc(MAXHOSTNAMELEN + 1);
+  CTRL_ALLOC(client->local_host);
+  gethostname(client->local_host, MAXHOSTNAMELEN);
+  client->remote_host = NULL;
+
   client_specific = TBX_MALLOC(sizeof(ntbx_tcp_client_specific_t));
   CTRL_ALLOC(client_specific);
   client->specific = client_specific;  
@@ -296,7 +342,7 @@ void
 ntbx_tcp_client_reset(p_ntbx_client_t client)
 {
   LOG_IN();
-  if (client->state != ntbx_client_state_uninitialized)
+  if (client->state)
     {
       if (client->specific == NULL)
 	FAILURE("invalid client data");
@@ -305,6 +351,8 @@ ntbx_tcp_client_reset(p_ntbx_client_t client)
       TBX_FREE(client->specific);
       client->specific = NULL;
       client->state    = ntbx_client_state_uninitialized;
+      free(client->remote_host);
+      client->remote_host = NULL;
     }
   else
     FAILURE("invalid client state");
@@ -317,7 +365,7 @@ void
 ntbx_tcp_server_reset(p_ntbx_server_t server)
 {
   LOG_IN();
-  if (server->state != ntbx_server_state_uninitialized)
+  if (server->state)
     {
       if (server->specific == NULL)
 	FAILURE("invalid server data");
@@ -406,6 +454,9 @@ ntbx_tcp_client_connect(p_ntbx_client_t           client,
     }
 
   client->state = ntbx_client_state_connected;
+  client->remote_host = malloc(strlen(server_host_name) + 1);
+  CTRL_ALLOC(client->remote_host);
+  strcpy(client->remote_host, server_host_name);
   LOG_OUT();
   return ntbx_success;
 }
@@ -421,8 +472,8 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
   ntbx_tcp_retry_t             retry;
 
   LOG_IN();
-  if (client->state)
-    FAILURE("client already initialized");
+  if (client->state != ntbx_client_state_initialized)
+    FAILURE("invalid client state");
 
   ntbx_tcp_retry_struct_init(&retry);
 
@@ -505,6 +556,8 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
   TBX_FREE(client->specific);
   client_specific  = client->specific = NULL;
   client->state    = ntbx_client_state_uninitialized;
+  free(client->remote_host);
+  client->remote_host = NULL;
 
   LOG_OUT();
 }
@@ -795,6 +848,7 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
 	  bytes_read += status;
 	} 
     }
+  client->state = ntbx_client_state_connected;
   LOG_OUT();
   return ntbx_success;
 }
@@ -863,6 +917,7 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
 	  bytes_written += status;
 	} 
     }
+  client->state = ntbx_client_state_connected;
   LOG_OUT();
   return ntbx_success;
 }

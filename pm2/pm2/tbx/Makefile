@@ -13,10 +13,4 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBRARY=tbx
-#LIBNAME=$(LIBRARY)
-
-#$(LIBRARY)_CC=gcc
-#$(LIBRARY)_AS=gcc
-
 include $(PM2_ROOT)/make/libs.mak

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.17  2000/04/21 11:19:28  vdanjean
+fixes for actsmp
+
 Revision 1.16  2000/04/17 16:09:39  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -299,7 +302,7 @@ static __inline__ void init_task_desc(marcel_t t)
 {
   t->cur_excep_blk = NULL;
   t->deviation_func = NULL;
-#ifdef MA__LWPS
+#if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
   t->previous_lwp = NULL;
 #endif
   t->next_cleanup_func = 0;
@@ -650,6 +653,7 @@ int marcel_cancel(marcel_t pid)
     marcel_exit(NULL);
   } else {
     pid->ret_val = NULL;
+    mdebug("marcel %i kill %i\n", marcel_self()->number, pid->number);
     marcel_deviate(pid, (handler_func_t)marcel_exit, NULL);
   }
   return 0;
@@ -991,7 +995,7 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
   i = j = 1;
 
   while(i < *argc) {
-#ifdef SMP
+#ifdef MA__LWPS
     if(!strcmp(argv[i], "-nvp")) {
       if(i == *argc-1) {
 	fprintf(stderr,
@@ -1215,10 +1219,7 @@ int _raise(exception ex)
 int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 {
 #ifdef MA__ACTIVATION
-  RAISE("Not implemented yet (easy to do)");
-  //return select(width, readfds, writefds, exceptfds); // il manque
-  // un/des params...
-  return 0;
+  return select(width, readfds, writefds, exceptfds, NULL);
 #else
   int res = 0;
   struct timeval timeout;

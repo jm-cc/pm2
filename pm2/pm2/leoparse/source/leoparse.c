@@ -18,7 +18,7 @@
  * Leoparse.c
  * ==========
  */ 
-/* #define DEBUG */
+
 /* #define TRACING */
 #include <stdlib.h>
 #include <stdio.h>
@@ -298,9 +298,9 @@ leoparse_init(int    argc TBX_UNUSED,
       yyin = NULL;
 
       /*
-	#ifdef DEBUG
+	#ifdef PM2DEBUG
 	yydebug = 1;
-	#endif  DEBUG
+	#endif  PM2DEBUG
 	*/
 
       parser_file_ptr    = NULL;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_link.h,v $
+Revision 1.6  2000/06/06 12:54:38  oaumage
+- Ajout du calcul de la taille des groupes de buffers dynamiques
+
 Revision 1.5  2000/03/27 08:49:11  oaumage
 - pre-support pour decoupage des groupes
 
@@ -75,9 +78,8 @@ typedef struct s_mad_link
   mad_buffer_mode_t         buffer_mode;
   mad_group_mode_t          group_mode;
   tbx_list_t                buffer_list;
+  size_t                    cumulated_length;
   tbx_list_t                user_buffer_list;
-  size_t                    prefered_group_length;
-  size_t                    group_length;
 
   /* Driver specific data */
   p_mad_driver_specific_t   specific;

@@ -35,7 +35,7 @@ int pm2_main(int argc, char **argv)
   int i, j, nodes;
   pm2_barrier_t b;
 
-  dsm_set_default_protocol(LI_HUDAK);
+  dsm_set_default_protocol(HBRC);
 
   pm2_set_dsm_page_distribution(DSM_CYCLIC, 16);
 
@@ -70,10 +70,16 @@ int pm2_main(int argc, char **argv)
 	  pm2_barrier(&b);
 	}
     }
-  
+  tfprintf(stderr, ">>>>Avant toto final\n");
+  tfprintf(stderr, ">>>>toto final =%d\n", toto);
+  tfprintf(stderr, ">>>>Apres toto final\n");
+  //  pm2_barrier(&b);
+  marcel_delay(1000);
   if(pm2_self() == 0) 
+    {
+tfprintf(stderr, ">>>>Avant kill\n");
     pm2_halt();
-  
+    }
   pm2_exit();
   
   tfprintf(stderr, "Main is ending\n");

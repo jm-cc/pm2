@@ -15,6 +15,7 @@
  */
 
 #include "sys/marcel_flags.h"
+
 #ifdef MA__ACTIVATION
 
 #ifdef ACT_TIMER
@@ -114,11 +115,11 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 			SET_STATE_READY(marcel_next[GET_LWP_NUMBER(current)]);
 			break;
 		case ACT_RESTART_FROM_IDLE:
-			/* we comme from the idle task */
+			/* we come from the idle task */
 			MTRACE("Restarting from idle", current);
 			mdebug("\t\tunchaining idle %p\n",
 			       GET_LWP(current)->idle_task);
-			SET_FROZEN(GET_LWP(current)->idle_task);
+			marcel_set_frozen(GET_LWP(current)->idle_task);
 			UNCHAIN_TASK(GET_LWP(current)->idle_task);
 			break;
 		case ACT_RESTART_FROM_UPCALL_NEW:
@@ -132,7 +133,7 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 		if (u_param == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
 		}
-		SET_FROZEN(GET_LWP(current)->prev_running);
+		marcel_set_frozen(GET_LWP(current)->prev_running);
 		UNCHAIN_TASK(GET_LWP(current)->prev_running);
 		MTRACE("Restarting from KERNEL IDLE", current);
 		unlock_task();

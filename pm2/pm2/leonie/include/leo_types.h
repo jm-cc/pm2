@@ -169,6 +169,7 @@ typedef struct s_leo_settings
   char              *flavor;
   p_tbx_arguments_t  args;
   char              *config_file;
+  char              *env; //GM 
   p_tbx_slist_t      network_file_slist;
   tbx_bool_t         gdb_mode;
   tbx_bool_t         xterm_mode;
@@ -177,6 +178,7 @@ typedef struct s_leo_settings
   tbx_bool_t         smp_mode;
   tbx_bool_t         export_mode;
   tbx_bool_t         wait_mode;
+  tbx_bool_t         env_mode; //GM
 } leo_settings_t;
 
 typedef struct s_leonie

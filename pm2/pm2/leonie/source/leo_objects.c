@@ -43,6 +43,7 @@ leo_settings_init(void)
   object->smp_mode    = tbx_false;
   object->export_mode = tbx_false;
   object->wait_mode   = tbx_false;
+  object->env_mode    = tbx_false; //GM
   LOG_OUT();
 
   return object;

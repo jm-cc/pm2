@@ -58,7 +58,17 @@ process_command_line(int    argc,
 
       do
 	{
-	  if (tbx_argit_vopt_equals("--appli"))
+	  if (tbx_argit_vopt_equals("--env")) //GM
+	    {		
+	      if (!settings->env)
+		{
+		  settings->env_mode = tbx_true;
+		  settings->env = tbx_argit_vopt_value_cstr();
+		}		
+	      else
+		leo_terminate("duplicate environment");
+	    }
+	   else if (tbx_argit_vopt_equals("--appli"))
 	    {
 	      if (!settings->name)
 		{

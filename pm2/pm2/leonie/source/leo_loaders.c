@@ -181,6 +181,11 @@ leo_default_loader(p_leo_settings_t settings,
 	env_command = tbx_command_init_to_cstring("env");
 	args = env_command->arguments;
 
+	if(settings->env_mode) //GM
+	   {	      
+	      tbx_arguments_append_cstring(args, settings->env);
+	   }
+
 	tbx_arguments_append_string(args, relay_command_string);
 	tbx_string_free(relay_command_string);
 	relay_command_string = NULL;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.36  2000/07/04 14:01:12  gantoniu
+Added support for DSM located stacks.
+
 Revision 1.35  2000/06/09 17:36:54  vdanjean
 integrating MARCEL_POLL_AT_YIELD
 
@@ -236,6 +239,11 @@ static volatile unsigned __active_threads = 0,
   __sleeping_threads = 0,
   __blocked_threads = 0,
   __frozen_threads = 0;
+
+
+#ifdef DSM_SHARED_STACK
+volatile marcel_t __next_thread;
+#endif
 
 #ifdef MA__ONE_QUEUE
 __sched_t __sched_data;

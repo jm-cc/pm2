@@ -92,7 +92,6 @@ int marcel_main(int argc, char **argv)
   } else {
     // Execution interactive
     LOOP(bcle)
-	mdebug("sched task= %p\n", GET_LWP_BY_NUM(0)->idle_task); 
       printf("Enter a rather small integer (0 to quit) : ");
       scanf("%d", &j.sup);
       if(j.sup == 0)

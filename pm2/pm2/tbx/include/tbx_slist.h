@@ -1,9 +1,9 @@
 /*! \file tbx_slist.h
  *  \brief TBX double-linked search list data structures.
  *
- *  This file contains the TBX double-linked multi-purpose search list 
+ *  This file contains the TBX double-linked multi-purpose search list
  *  data structures.
- * 
+ *
  */
 
 /*
@@ -30,10 +30,10 @@
 #define TBX_SLIST_H
 
 /*
- * Data structures 
+ * Data structures
  * ---------------
  */
-typedef struct s_tbx_slist_nref 
+typedef struct s_tbx_slist_nref
 {
   p_tbx_slist_element_t element;
   p_tbx_slist_nref_t    previous;

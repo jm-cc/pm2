@@ -42,7 +42,7 @@ BEGIN_DSM_DATA
 int toto = 0;
 END_DSM_DATA
 
-pm2_barrier_t b;
+
 
 static void startup_func(int argc, char *argv[], void *arg)
 {
@@ -52,6 +52,7 @@ static void startup_func(int argc, char *argv[], void *arg)
 int pm2_main(int argc, char **argv)
 {
   int i, j, nodes;
+  pm2_barrier_t b;
 
   dsm_set_default_protocol(LI_HUDAK);
 

@@ -61,7 +61,7 @@ void user_func(int argc, char **argv)
          marcel_sem_t sem;
 
          marcel_sem_init(&sem, 0);
-         lock_task();
+	 marcel_freeze_sched();
 
          if(argc == 1) {
             pm2_threads_list(64, pids, &nb, MIGRATABLE_ONLY);
@@ -81,14 +81,14 @@ void user_func(int argc, char **argv)
 	   old_mad_pack_str(MAD_IN_HEADER, buf);
 	 }
 
-         unlock_task();
+	 marcel_unfreeze_sched();
 
          return;
       } else if(!strcmp(argv[0], "-kill")) {
          marcel_t pids[64];
          int i, nb;
 
-         lock_task();
+         marcel_freeze_sched();
 
          if(argc == 1) {
             pm2_threads_list(64, pids, &nb, MIGRATABLE_ONLY);
@@ -109,7 +109,7 @@ void user_func(int argc, char **argv)
 	 
 	 redessiner();
 
-         unlock_task();
+         marcel_unfreeze_sched();
 
          return;
       }

@@ -33,54 +33,72 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# PM2_ROOT -> racine des sources de PM2
+#---------------------------------------------------------------------
 ifndef PM2_ROOT
 export PM2_ROOT := $(CURDIR)
 endif
 
+# Variables communes
+#---------------------------------------------------------------------
 include $(PM2_ROOT)/make/common-vars.mak
 
-ifneq ($(MAKECMDGOALS),init)
-ifneq ($(MAKECMDGOALS),help)
-ifneq ($(MAKECMDGOALS),textconfig)
-ifneq ($(MAKECMDGOALS),menuconfig)
-ifneq ($(MAKECMDGOALS),xconfig)
-ifneq ($(MAKECMDGOALS),config)
+# Cache - partie principale des librairies
+#---------------------------------------------------------------------
+ifeq ($(SIMPLE_TARGET),true)
 -include $(PM2_MAK_DIR)/main-libs.mak
 endif
-endif
-endif
-endif
-endif
-endif
 
+# Regles
+#/////////////////////////////////////////////////////////////////////
+
+# Regle par defaut : construction des librairies
+#---------------------------------------------------------------------
 libs:
 
+# Regles communes
+#---------------------------------------------------------------------
 include $(PM2_ROOT)/make/common-rules.mak
 
+# all : construction de la distribution PM2 et des exemples
+#---------------------------------------------------------------------
+#       Note: s'agit-il de tous les exemples ou de ceux de PM2 ?
 all: pm2 examples
 .PHONY: pm2 examples all libs preproc fut
 
+# pm2: construction des librairies
+#---------------------------------------------------------------------
 pm2: libs
 
-
+# libs: descente recursive dans chaque module pour construction des
+#       librairies
+#---------------------------------------------------------------------
 libs: flavors ARCHITECTURES
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@; \
 	done
 
+# examples: descente recursive dans chaque module pour construction
+#           des exemples 
+#---------------------------------------------------------------------
 examples: flavors
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@ ; \
 	done
 
+# preproc: descente recursive dans chaque module pour preprocessing
+#---------------------------------------------------------------------
+#          Note: utilise dans quel cadre ???
 preproc: flavors
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@ ; \
 	done
 
+# fut: descente recursive dans chaque module pour action `fut'
+#---------------------------------------------------------------------
 fut: flavors
 	$(COMMON_HIDE) set -e; \
 	if [ -n "$(PROF_LIBS)" ] ; then \
@@ -89,6 +107,9 @@ fut: flavors
 	done \
 	fi
 
+# Nettoyage
+#---------------------------------------------------------------------
+#         Note: quel est le status actuel des commandes de nettoyage ?
 .PHONY: clean cleanlibs
 clean: cleanlibs
 
@@ -118,6 +139,8 @@ distcleanflavors:
 distcleandoc:
 	$(MAKE) -C doc distclean
 
+# Initialisation de la distriubtion PM2
+#---------------------------------------------------------------------
 .PHONY: init cvsinit flavorinit
 init: checkmake cvsinit flavorinit
 
@@ -142,13 +165,21 @@ flavorinit: ARCHITECTURES # remove _flavors_ before :
 		$(PM2_ROOT)/bin/pm2_create-sample-flavors ;\
 	fi
 
+# Documentation
+#---------------------------------------------------------------------
 .PHONY: doc
 doc:
 	$(MAKE) -C doc
 
+# ???
+#---------------------------------------------------------------------
+#      Note: quel est l'objet de ces deux lignes ?
 flavors:
 ARCHITECTURES:
 
+
+# Aide
+#---------------------------------------------------------------------
 .PHONY: help
 help: globalhelp
 
@@ -170,6 +201,8 @@ targethelp:
 	@echo "  distcleanall: clean all source tree for all flavors and the"
 	@echo "     flavors themselves"
 
+# Configuration
+#---------------------------------------------------------------------
 .PHONY: config textconfig menuconfig xconfig
 config: textconfig
 
@@ -182,9 +215,13 @@ menuconfig: flavors
 xconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :
 
-
+# Generation du cache principal des librairies
+#---------------------------------------------------------------------
+#         Note: pourquoi pas dans libs-rules.mak ?
 $(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
 	@echo "Generating $@"
 	@$(PM2_CONFIG) --gen_mak main-libs
 
 
+# Fin du Makefile
+######################################################################

@@ -417,8 +417,8 @@ inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t 
 	if (cur != next) {
 		MA_BUG_ON(!ma_in_atomic());
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			MA_BUG_ON(!ma_in_atomic());
 			MA_THR_RESTARTED(cur, "Preemption");
+			MA_BUG_ON(!ma_in_atomic());
 			return __ma_get_lwp_var(previous_thread);
 		}
 		debug_printf(&MA_DEBUG_VAR_NAME(default),

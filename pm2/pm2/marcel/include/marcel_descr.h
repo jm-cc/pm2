@@ -26,6 +26,9 @@ typedef p_marcel_task_t marcel_t;
 
 #define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
 #define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
+#define SELF_GETMEM(field)	THREAD_GETMEM(MARCEL_SELF, field)
+#define SELF_SETMEM(field, value) THREAD_SETMEM(MARCEL_SELF, field, value)
+
 #define MARCEL_SELF (__marcel_self())
 #define marcel_current (__marcel_self())
 
@@ -54,7 +57,7 @@ typedef struct _marcel_rwlock_info {
 } marcel_readlock_info;
 
 struct marcel_task {
-	/* 0 => preemption allowed, <0: BUG */
+	/* =0 : preemption allowed, <0 : BUG */
 	int preempt_count;
 	/* Données relatives au scheduler */
 	struct marcel_sched_task sched;

@@ -48,7 +48,7 @@ COMMON_DEFAULT_TARGET :=  pm2_default
 endif
 
 # Ce makefile
-COMMON_MAKEFILES +=  $(MAD2_ROOT)/Makefile
+COMMON_MAKEFILES +=  $(PM2_ROOT)/Makefile
 
 # Inclusion des variables
 ifneq ($(LIGHT),yes)

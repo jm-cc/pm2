@@ -3,13 +3,16 @@ import logging.config
 import os
 import sys
 
-def log_init(s):
-    if s is None:
+def log_init(filename, compat_p):
+    if filename is None:
         pm2_path	= os.getenv('PM2_ROOT')
 
         if pm2_path is None:
             return
 
-        s = pm2_path + '/leony/leony_log.cfg'
+        if compat_p:
+            filename = pm2_path + '/leony/leonie_log.cfg'
+        else:
+            filename = pm2_path + '/leony/leony_log.cfg'
 
-    logging.config.fileConfig(s)
+    logging.config.fileConfig(filename)

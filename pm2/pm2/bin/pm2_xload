@@ -1,0 +1,20 @@
+#!/bin/sh
+###########
+#
+# Xwindow mode loader
+
+# $1... = command and arguments
+
+prog=$1
+shift
+
+DISPLAY=${DISPLAY:-':0'}
+export DISPLAY
+
+LEO_XTERM=${LEO_XTERM:-'xterm'}
+
+title="$prog.$HOST"
+
+${LEO_XTERM} -title $title -e pm2_wrapper $prog "$@"
+
+

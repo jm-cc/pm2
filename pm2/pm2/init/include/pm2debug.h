@@ -34,6 +34,14 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.13  2000/12/19 16:57:44  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.12  2000/09/18 14:22:43  rnamyst
 Few re-arrangements in .h files
 
@@ -215,12 +223,12 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define DISP_STR(str, str2)  debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
 					   str " : %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
-#define DISP(str, args...)
-#define DISP_IN()
-#define DISP_OUT()
-#define DISP_VAL(str, val)
-#define DISP_PTR(str, ptr)
-#define DISP_STR(str, str2)
+#define DISP(str, args...)  fprintf(stderr, str "\n" , ## args)
+#define DISP_IN()           fprintf(stderr, __FUNCTION__": -->\n")
+#define DISP_OUT()          fprintf(stderr, __FUNCTION__": <--\n")
+#define DISP_VAL(str, val)  fprintf(stderr, str " = %d\n" , (int)(val))
+#define DISP_PTR(str, ptr)  fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define DISP_STR(str, str2) fprintf(stderr, str " : %s\n" , (char *)(str2))
 #endif /* DEBUG */
 
 
@@ -258,13 +266,24 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 
 #else // else if not PM2DEBUG
 
+#ifdef DEBUG
+#define LOG(str, args...)  fprintf(stderr, str "\n" , ## args)
+#define LOG_IN()           fprintf(stderr, __FUNCTION__": -->\n"); PROF_IN()
+
+#define LOG_OUT()          PROF_OUT(); fprintf(stderr, __FUNCTION__": <--\n")
+
+#define LOG_VAL(str, val)  fprintf(stderr, str " = %d\n" , (int)(val))
+#define LOG_PTR(str, ptr)  fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define LOG_STR(str, str2) fprintf(stderr, str " : %s\n" , (char *)(str2))
+#else // if not DEBUG
+
 #define LOG(str, args...) 
-#define LOG_IN()              PROF_IN()
-#define LOG_OUT()             PROF_OUT()
+#define LOG_IN()           
+#define LOG_OUT()          
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)
-
+#endif // DEBUG
 #endif // PM2DEBUG
 
 
@@ -286,12 +305,21 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define TRACE_STR(str, str2)  debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
 					   str " : %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
+#ifdef TRACING
+#define TRACE(str, args...)  fprintf(stderr, str "\n" , ## args)
+#define TRACE_IN()           fprintf(stderr, __FUNCTION__": -->\n");
+#define TRACE_OUT()          fprintf(stderr, __FUNCTION__": <--\n");
+#define TRACE_VAL(str, val)  fprintf(stderr, str " = %d\n" , (int)(val))
+#define TRACE_PTR(str, ptr)  fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define TRACE_STR(str, str2) fprintf(stderr, str " : %s\n" , (char *)(str2))
+#else // TRACING
 #define TRACE(str, args...) 
 #define TRACE_IN()
 #define TRACE_OUT()
 #define TRACE_VAL(str, val) 
 #define TRACE_PTR(str, ptr) 
 #define TRACE_STR(str, str2) 
+#endif // TRACING
 #endif /* PM2DEBUG */
 
 

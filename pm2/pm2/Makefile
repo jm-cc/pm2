@@ -151,8 +151,12 @@ PM2_LLIB	=
 
 .PHONY: default
 ifeq ($(TOOLBOX),yes)
+CLEAN_DEP       =       marclean madclean dsmclean tbxclean ntbxclean
+DISTCLEAN_DEP   =       mardistclean maddistclean dsmdistclean tbxdistclean ntbxdistclean
 default: pm2_default mad_default mar_default dsm_default tbx_default ntbx_default
 else
+CLEAN_DEP       =       marclean madclean dsmclean
+DISTCLEAN_DEP   =       mardistclean maddistclean dsmdistclean
 default: pm2_default mad_default mar_default dsm_default
 endif
 
@@ -169,11 +173,11 @@ include $(DSM_ROOT)/Makefile
 endif
 
 ifeq ($(TOOLBOX),yes)
-include $(PM2_ROOT)/toolbox/make/common.mak
+include $(PM2_ROOT)/toolbox/Makefile
 endif
 
 ifeq ($(NETTOOLBOX),yes)
-include $(PM2_ROOT)/toolbox/net/make/common.mak
+include $(PM2_ROOT)/toolbox/net/Makefile
 endif
 
 PM2_MAKEFILE	=	$(PM2_ROOT)/Makefile \
@@ -261,7 +265,7 @@ $(PM2_S_DEPENDS): $(PM2_DEP)/%.d: $(PM2_SRC)/%.S
 
 
 .PHONY: clean distclean
-clean: marclean madclean dsmclean
+clean: $(CLEAN_DEP)
 	rm -f $(wildcard $(PM2_LIBD)/*.a $(PM2_OBJ)/*.o $(PM2_DEP)/*.d \
 		$(PM2_ROOT)/examples/*/depend/*.d \
 		$(PM2_ROOT)/examples/*/obj/$(PM2_ARCH_SYS)/*.o \
@@ -270,7 +274,7 @@ clean: marclean madclean dsmclean
 		$(PM2_ROOT)/console/text/obj/$(PM2_ARCH_SYS)/*.o \
 		$(PM2_ROOT)/console/graphic/obj/$(PM2_ARCH_SYS)/*.o)
 
-distclean: mardistclean maddistclean dsmdistclean
+distclean: $(DISTCLEAN_DEP)
 	rm -rf $(wildcard $(PM2_ROOT)/lib \
 		$(PM2_ROOT)/source/obj \
 		$(PM2_ROOT)/source/depend \

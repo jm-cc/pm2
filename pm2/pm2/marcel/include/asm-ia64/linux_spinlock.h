@@ -132,8 +132,7 @@ typedef struct {
 #define ma_rwlock_is_locked(x)	(*(volatile int *) (x) != 0)
 
 /* From processor.h */
-//#define ma_cpu_relax()    ma_ia64_hint(ma_ia64_hint_pause)
-#define ma_cpu_relax()    
+#define ma_cpu_relax()    ma_ia64_hint(ma_ia64_hint_pause)
 
 #define _ma_raw_read_lock(rw)								\
 do {											\

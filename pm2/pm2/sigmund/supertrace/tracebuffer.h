@@ -43,10 +43,12 @@ typedef struct {
   trace_list last;
 } trace_buffer;
 
-void init_trace_buffer(char *futin, char *fktin, int relative, int dec);
+extern void init_trace_buffer(char *futin, char *fktin, int relative, int dec);
 
-int get_next_trace(trace *tr);
+extern int get_next_trace(trace *tr);
 
-void close_trace_buffer(void);
+extern void close_trace_buffer(void);
+
+extern void supertrace_end(FILE *f);
 
 #endif

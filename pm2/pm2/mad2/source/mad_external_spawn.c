@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.7  2000/07/12 07:55:14  oaumage
+- Correction de la logique de localisation du fichier de configuration
+
 Revision 1.6  2000/07/10 14:25:45  oaumage
 - Correction de l'initialisation des objets connection
 
@@ -72,9 +75,7 @@ ______________________________________________________________________________
 #include <malloc.h>
 #include <errno.h>
 #include <netdb.h>
-#ifdef PM2
 #include <sys/wait.h>
-#endif /* PM2 */
 
 /* #define DEBUG */
 /* #define TIMING */
@@ -193,12 +194,7 @@ mad_init(
   p_mad_driver_interface_t   spawn_interface = NULL;
   p_mad_adapter_t            spawn_adapter   = NULL;
 
-#ifdef MARCEL  
-  marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
-#endif /* MARCEL */
-  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
-
+  mad_managers_init(argc, argv);
   LOG_IN();  /* After pm2debug_init ... */
   
   madeleine->nb_channel = 0;

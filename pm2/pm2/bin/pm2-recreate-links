@@ -57,22 +57,12 @@ echo Modules
 if [ ! -d ${PM2_ROOT}/modules ] ; then
     mkdir ${PM2_ROOT}/modules
 fi
-make_ln ${PM2_ROOT}/modules ../appli appli
-make_ln ${PM2_ROOT}/modules ../common common
-make_ln ${PM2_ROOT}/modules ../dsm dsm
-make_ln ${PM2_ROOT}/modules ../generic generic
-make_ln ${PM2_ROOT}/modules ../init init
-make_ln ${PM2_ROOT}/modules ../leonie leonie
-make_ln ${PM2_ROOT}/modules ../leoparse leoparse
-#make_ln ${PM2_ROOT}/modules ../mad1 mad1
-make_ln ${PM2_ROOT}/modules ../mad2 mad2
-make_ln ${PM2_ROOT}/modules ../mad3 mad3
-make_ln ${PM2_ROOT}/modules ../marcel marcel
-make_ln ${PM2_ROOT}/modules ../ntbx ntbx
-make_ln ${PM2_ROOT}/modules ../pm2 pm2
-make_ln ${PM2_ROOT}/modules ../profile profile
-make_ln ${PM2_ROOT}/modules ../tbx tbx
-make_ln ${PM2_ROOT}/modules ../swann swann
+for module in appli common dsm ezflavor generic init leonie leoparse \
+	mad2 mad3 marcel ntbx pm2 profile stackalign swann tbx
+        #mad1 \
+	do
+   make_ln ${PM2_ROOT}/modules ../$module $module
+done
 
 # examples links
 rm -f ${PM2_ROOT}/mad3/examples/cfgs ${PM2_ROOT}/mad3/examples/networks.cfg

@@ -81,6 +81,7 @@ Other options
   --ext       : extension used
   --protocols : communication libraries used
   --modules   : modules included in the flavor
+  --profmods  : modules which have the 'profile' functionality enabled
   --cc        : C compiler used
   --stampfile : stampfile generated
   --loader    : loader used
@@ -180,7 +181,7 @@ while test $# -gt 0; do
 	eval ${dirname}dir=true
 	dirtoshow="$dirname1"
 	;;
-    --ext|--protocols|--modules|--cc|--stampfile|--loader)
+    --ext|--protocols|--modules|--profmods|--cc|--stampfile|--loader)
 	other=$1
 	;;
     --help)
@@ -300,6 +301,24 @@ if [ -n "${dirtoshow}" ]; then
 	echo $ordered_list
 	exit 0
 	;;
+    --profmods)
+	ordered_list=
+	for l in $DIRTY_ORDERED_MODULES ; do
+	    L=`echo $l | tr a-z A-Z`
+	    CFK=`eval echo '$'PM2_${L}_CFLAGS_KERNEL`
+	    case " $CFK " in
+		*\ -DDO_PROFILE\ *)
+		    case " $PM2_LIBS " in
+			*\ $l\ *)
+			    ordered_list="$ordered_list $l"
+			    ;;
+		    esac
+		    ;;
+	    esac
+	done
+	echo $ordered_list
+	exit 0
+	;;
     --cc)
 	echo ${PM2_CC:-gcc}
 	exit 0
@@ -322,7 +341,9 @@ if [ -n "${dirtoshow}" ]; then
 	else
 	    list=
 	    for lib in $libs; do
-		list="${list:+$list }${PM2_BUILD}/stamp/libstamp-${lib}${PM2_EXT}"
+		LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
+		libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
+		list="${list:+$list }${PM2_BUILD}/${lib}/lib/lib${libname}${PM2_EXT}.a"
 	    done
 	    echo $list
 	fi

@@ -1,40 +1,51 @@
+# -*- encoding: iso-8859-1 -*-
+
+import logging
 import sys
 import sets
 
 import leo_pp
 
-def vchannels_process(s):
+logger = logging.getLogger('vchannels')
 
-    # on initialise la table des canaux virtuels de la session
-    s.vchannel_dict = {}
+def vchannels_process(s, mux_p):
 
-    # on initialise la table des canaux de forwarding
-    s.fchannel_dict = {}
+    if mux_p:
+        cfg_key = 'xchannels'
+        vxchannel_dict = s.xchannel_dict
+    else:
+        cfg_key = 'vchannels'
+        fchannel_dict   = s.fchannel_dict
+        vxchannel_dict	= s.vchannel_dict
 
     # s'il n'y a pas de canaux virtuels dans le fichier de configuration
-    if not s.appnetdata.has_key('vchannels'):
+    if not s.appnetdata.has_key(cfg_key):
 
         # on ne va pas plus loin
         return
 
     # sinon, on récupère la liste des canaux virtuels configurés
-    vchannel_list = s.appnetdata['vchannels']
+    vxchannel_list = s.appnetdata[cfg_key]
 
     # on normalize la liste si l'utilisateur à fait une simplification
     # dans le fichier de configuration (suppression des parenthèses
     # pour une liste à un unique élément)
-    if type(vchannel_list) is not list:
-        vchannel_list = [vchannel_list]
+    if type(vxchannel_list) is not list:
+        vxchannel_list = [vxchannel_list]
 
     # on traite chaque canal virtuel en séquence
-    for vchannel in vchannel_list:
-
+    for vxchannel in vxchannel_list:
+        
+        logger.info('processing vxchannel %s', vxchannel['name'])
+        
         # liste de noms, telle que dans le fichier de configuration
-        old_channel_list	= vchannel['channels']
+        old_channel_list	= vxchannel['channels']
 
         # liste de canaux réguliers et de forwarding
         channel_list	= []
-        fchannel_list	= []
+
+        if not mux_p:
+            fchannel_list	= []
 
         ps_dict = {}
         
@@ -52,23 +63,28 @@ def vchannels_process(s):
             # changement du status du canal
             channel['public']	= False
 
-            # initialisation du canal de forwarding
-            fchannel	= {}
-
-            # nom du fcanal
-            fchannel['name']	= 'f_' + channel_name
-
-            # canal maître du fcanal
-            fchannel['channel']	= channel
-
-            # ajout aux listes de canaux/fcanaux
+            # ajout à la liste de canaux
             channel_list.append(channel)
-            fchannel_list.append(fchannel)
 
-            # ajout du canal de forwarding dans la table de la session
-            # (note: le canal régulier est déja répertorié au niveau de
-            #  la session)
-            s.fchannel_dict[fchannel['name']] = fchannel
+            if mux_p:
+                fchannel	= None
+            else:
+                # initialisation du canal de forwarding
+                fchannel	= {}
+
+                # nom du fcanal
+                fchannel['name']	= 'f_' + channel_name
+
+                # canal maître du fcanal
+                fchannel['channel']	= channel
+
+                # ajout à la liste de fcanaux
+                fchannel_list.append(fchannel)
+
+                # ajout du canal de forwarding dans la table de la session
+                # (note: le canal régulier est déja répertorié au niveau de
+                #  la session)
+                fchannel_dict[fchannel['name']] = fchannel
 
             # récupération de la liste des processus du canal régulier
             ps_l	= channel['processes']
@@ -92,7 +108,7 @@ def vchannels_process(s):
                     # la table de routage est indexée par
                     # un tuple (rang global source, rang global destination)
                     key	= (g_src, g_dst)
-                    print key
+                    logger.info('direct route %s', str(key))
 
                     # s'il n'y a pas déja une route entre src et dst
                     if not rt.has_key(key):
@@ -107,18 +123,20 @@ def vchannels_process(s):
                         # - booleen indiquant si la route est directe ou non
                         rt[key] = (channel, fchannel, g_dst, True)
 
-            print channel_name, channel_g_set
+            logger.info('channel %s: globals %s', str(channel_name), str(channel_g_set))
             
             # rajout des rangs globaux du canal régulier aux rangs
             # globaux du canal virtuel par union des deux ensembles
             g_set = g_set.union(channel_g_set)
-            print g_set
+            logger.info('vchannel: globals %s', str(g_set))
 
         # affectation des listes de canaux/fcanaux au canal virtuel
-        vchannel['channels']	= channel_list
-        vchannel['fchannels']	= fchannel_list
-        vchannel['g_set']	= g_set
-        vchannel['processes']   = ps_dict.values()
+        vxchannel['channels']	= channel_list
+        if not mux_p:
+            vxchannel['fchannels']	= fchannel_list
+            
+        vxchannel['g_set']	= g_set
+        vxchannel['processes']   = ps_dict.values()
 
         # boucle de generation de la table de routage du canal virtuel
         while True:
@@ -142,7 +160,7 @@ def vchannels_process(s):
                     # construction de la clé de la connexion virtuelle
                     # considérée
                     key	= (g_src, g_dst)
-                    print key
+                    logger.info('routing %s', str(key))
 
                     # si une route existe pour cette connexion virtuelle
                     if rt.has_key(key):
@@ -174,7 +192,7 @@ def vchannels_process(s):
 
                         # si on arrive ici, c'est qu'on a trouvé un med
                         # accessible depuis src et capable d'atteindre dst
-                        print 'new path:', g_src, g_dst, ' by', g_med
+                        logger.info('new path: %s, %s by %s', str(g_src), str(g_dst), str(g_med))
 
                         # le premier saut de la route indirecte est le même
                         # que src->med, mais avec le flag 'route directe' à
@@ -210,7 +228,7 @@ def vchannels_process(s):
 
                 # on ne vas pas plus loin: le canal virtuel a des
                 # composantes non connexes
-                print 'routing table generation is not converging'
+                logger.critical('routing table generation is not converging')
                 sys.exit(1)
 
             # la nouvelle table devient la table de référence
@@ -221,8 +239,10 @@ def vchannels_process(s):
                 break
 
         # on sauve la table dans le canal virtuel
-        vchannel['rt'] = rt
+        vxchannel['rt'] = rt
 
         # on sauve le canal virtuel dans la table des canaux virtuels
-        s.vchannel_dict[vchannel['name']] = vchannel
+        vxchannel_dict[vxchannel['name']] = vxchannel
 
+
+    

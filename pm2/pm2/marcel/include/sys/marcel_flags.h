@@ -136,6 +136,7 @@
 #ifdef MARCEL_MONO /* Marcel Mono */
 #  define MA__MONO
 #  define MA__TIMER
+#  define MA__WORK
 #endif /* Fin Marcel Mono */
 
 #ifdef MARCEL_SMP /* Marcel SMP */
@@ -187,3 +188,4 @@
 #define MA__FUT_RECORD_TID
 
 #endif /* MARCEL_FLAGS_EST_DEF */
+

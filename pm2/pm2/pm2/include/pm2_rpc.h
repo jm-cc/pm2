@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_rpc.h,v $
+Revision 1.4  2000/03/01 16:43:05  oaumage
+- suppression des warnings en compilation  -g
+
 Revision 1.3  2000/02/28 11:18:02  rnamyst
 Changed #include <> into #include "".
 
@@ -188,6 +191,8 @@ void pm2_rpc_wait(pm2_rpc_wait_t *att);
  */
 
 static __inline__ void pm2_rpc(int module, int num, pm2_attr_t *pm2_attr,
+			       any_t args, any_t results) __attribute__ ((unused)); 
+static __inline__ void pm2_rpc(int module, int num, pm2_attr_t *pm2_attr,
 			       any_t args, any_t results)
 {
   pm2_rpc_wait_t att;
@@ -196,6 +201,8 @@ static __inline__ void pm2_rpc(int module, int num, pm2_attr_t *pm2_attr,
   pm2_rpc_wait(&att);
 }
 
+static __inline__ void pm2_quick_rpc(int module, int num, pm2_attr_t *pm2_attr,
+				     any_t args, any_t results) __attribute__ ((unused)); 
 static __inline__ void pm2_quick_rpc(int module, int num, pm2_attr_t *pm2_attr,
 				     any_t args, any_t results)
 {

@@ -58,10 +58,6 @@ static void SAMPLE_thread(void *arg)
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, str, STRING_SIZE);
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
 
-#ifdef PROFILE
-  profile_activate(FUT_DISABLE, FUT_KEYMASKALL);
-#endif
-
   pm2_rawrpc_waitdata();
 
   for(i=0; i<10; i++) {
@@ -75,9 +71,6 @@ static void SAMPLE_thread(void *arg)
 
 static void SAMPLE_service(void)
 {
-#ifdef PROFILE
-  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
-#endif
   pm2_thread_create(SAMPLE_thread, NULL);
 }
 
@@ -117,10 +110,6 @@ int pm2_main(int argc, char **argv)
   }
 
   pm2_exit();
-
-#ifdef PROFILE
-  profile_stop();
-#endif
 
   tfprintf(stderr, "Main is ending\n");
   return 0;

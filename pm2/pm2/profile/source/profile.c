@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: profile.c,v $
+Revision 1.7  2000/09/26 09:50:59  rnamyst
+removed -x in shell script mad2bip_load
+
 Revision 1.6  2000/09/23 16:54:46  rnamyst
 profile_activate can now be called before init
 
@@ -83,7 +86,7 @@ ______________________________________________________________________________
 
 #endif
 
-#define PROF_BUFFER_SIZE  (1024*1024)
+#define PROF_BUFFER_SIZE  (2*1024*1024)
 
 static char PROF_FILE[1024];
 
@@ -97,8 +100,6 @@ static struct {
 
 void profile_init(void)
 {
-  static unsigned already_called = 0;
-
   if(!profile_initialized) {
 
     strcpy(PROF_FILE, "/tmp/prof_file_single");

@@ -33,6 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
+//#define DEBUG_PS
 
 #include <stdio.h>
 #include <sys/mman.h>
@@ -77,6 +78,11 @@ static dsm_page_table_t dsm_page_table;
 static int nb_static_dsm_pages;
 static char *static_dsm_base_addr;
 extern char dsm_data_begin, dsm_data_end;
+
+static int nb_pseudo_static_dsm_pages;
+static char *pseudo_static_dsm_base_addr, *pseudo_static_dsm_end_addr;
+static int pseudo_static_dsm_area_size = 0;
+
 static dsm_node_t dsm_local_node_rank = 0, dsm_nb_nodes = 1;
 static int _dsm_page_distrib_mode;
 static int _dsm_page_distrib_arg;
@@ -120,31 +126,66 @@ dsm_node_t dsm_self()
   return dsm_local_node_rank;
 }
 
+#define dsm_static_addr(addr) (&dsm_data_begin <= (char *)(addr) && (char *)(addr) < &dsm_data_end)
+
+#define dsm_pseudo_static_addr(addr) (pseudo_static_dsm_base_addr <= (char *)(addr) && (char *)(addr) < pseudo_static_dsm_end_addr)
 
 boolean dsm_addr(void *addr)
 {
-  return (&dsm_data_begin <= (char *)addr && (char *)addr < &dsm_data_end);
+//  return (&dsm_data_begin <= (char *)addr && (char *)addr < &dsm_data_end);
+    return (dsm_static_addr(addr) || dsm_pseudo_static_addr(addr));
 }
+
 
 void *dsm_page_base(void *addr)
 {
   return (void *)(DSM_PAGEALIGN((char*)addr - DSM_PAGE_SIZE + 1));
 } 
 
+
 unsigned int dsm_page_offset(void *addr)
 {
   return ((unsigned int)addr & (unsigned int)(DSM_PAGE_SIZE - 1));
 }
 
+
 unsigned long dsm_page_index(void *addr)
 {
-  return (unsigned long)(((char *)addr - static_dsm_base_addr)/DSM_PAGE_SIZE);
+    unsigned long index;
+    if(dsm_static_addr(addr))
+      index = ((char *)addr - static_dsm_base_addr)/DSM_PAGE_SIZE;
+    else
+      index = ((char *)addr - pseudo_static_dsm_base_addr)/DSM_PAGE_SIZE + nb_static_dsm_pages;
+#ifdef DEBUG_PS
+  fprintf(stderr,"addr = %p => index = %ld, %s\n",addr,index, dsm_static_addr(addr)?"static":"pseudo-static");
+#endif
+  return index;
 }
+
 
 unsigned long dsm_get_nb_static_pages()
 {
   return nb_static_dsm_pages;
 }
+
+
+unsigned long dsm_get_nb_pseudo_static_pages()
+{
+  return nb_pseudo_static_dsm_pages;
+}
+
+
+void dsm_set_pseudo_static_area_size(unsigned size)
+{
+  pseudo_static_dsm_area_size = DSM_PAGEALIGN(size);
+}
+
+
+void *dsm_get_pseudo_static_dsm_start_addr()
+{
+  return (void *)pseudo_static_dsm_base_addr;
+}
+
 
 
 static void _dsm_global_vars_init(int my_rank, int confsize)
@@ -154,16 +195,28 @@ static void _dsm_global_vars_init(int my_rank, int confsize)
   dsm_local_node_rank = (dsm_node_t)my_rank;
   dsm_nb_nodes = confsize;
 
+  /* global vars for the static area: */ 
   static_dsm_base_addr = (char *) DSM_PAGEALIGN(&dsm_data_begin);
 
   for (page = static_dsm_base_addr; page < (char *) &dsm_data_end; page += DSM_PAGE_SIZE)
     nb_static_dsm_pages++;
+
+  /* global vars for the pseudo static area: */ 
+  if (pseudo_static_dsm_area_size != 0) {
+    nb_pseudo_static_dsm_pages = pseudo_static_dsm_area_size/DSM_PAGE_SIZE; // pseudo_static_dsm_area_size is a multiple of DSM_PAGE_SIZE
+    pseudo_static_dsm_base_addr = (char *) DSM_PAGEALIGN(malloc(pseudo_static_dsm_area_size + DSM_PAGE_SIZE - 1));
+    pseudo_static_dsm_end_addr = pseudo_static_dsm_base_addr + pseudo_static_dsm_area_size;
+#ifdef DEBUG_PS
+    fprintf(stderr,"static area starts at : %p\tends at %p, size = %d pages\n", pseudo_static_dsm_base_addr, pseudo_static_dsm_end_addr, nb_pseudo_static_dsm_pages);
+  /* Here I should check if the pseudo static area corresponds to the same range on all nodes. */
+#endif
+  }
 }
 
 
 #define min(a,b) ((a) < (b))?(a):(b)
 
-void dsm_page_ownership_init()
+static void _dsm_page_ownership_init()
 {
   int i;
 
@@ -260,7 +313,7 @@ void dsm_page_ownership_init()
 	}
       if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)     
 	mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
-		 (high - low + 1) * DSM_PAGE_SIZE,
+		 (high - low) * DSM_PAGE_SIZE,
 		 PROT_READ|PROT_WRITE);
       break;
     }
@@ -288,9 +341,143 @@ void dsm_page_ownership_init()
 }
 
 
+static void _dsm_pseudo_static_page_ownership_init()
+{
+  int i;
+
+  switch(_dsm_page_distrib_mode){
+  case DSM_CENTRALIZED :
+    {
+      dsm_access_t access = (dsm_local_node_rank == (dsm_node_t)_dsm_page_distrib_arg)?WRITE_ACCESS:NO_ACCESS;
+      for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
+	{
+	  dsm_page_table[i].prob_owner = (dsm_node_t)_dsm_page_distrib_arg;
+	  dsm_page_table[i].access = access;
+	}
+   if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)
+     mprotect(pseudo_static_dsm_base_addr, pseudo_static_dsm_area_size, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
+      break;    
+    }
+  
+  case DSM_CYCLIC :
+    {
+      /* Here, _dsm_page_distrib_arg stores the chunk size: the number of
+	 contiguous pages to assign to the same node */
+      int bound, j, k, curOwner = 0;
+      dsm_access_t access;
+      
+      i = nb_static_dsm_pages;
+      k = nb_static_dsm_pages + nb_pseudo_static_dsm_pages;
+      while(i < k)
+	{
+	  access = (curOwner == dsm_local_node_rank)?WRITE_ACCESS:NO_ACCESS;
+	  bound = min(_dsm_page_distrib_arg, k - i);
+	  for (j = 0; j < bound; j++)
+	    {
+	      dsm_page_table[i].prob_owner = curOwner;
+	      dsm_page_table[i].access = access;    
+	      i++;
+	    }
+	  if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)
+	    mprotect(dsm_page_table[i - bound].addr, bound * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
+	  curOwner = (curOwner + 1) % dsm_nb_nodes;
+	}
+      break;
+    }
+  case DSM_BLOCK :
+    {
+      int chunk = nb_pseudo_static_dsm_pages / dsm_nb_nodes;
+      int split = nb_pseudo_static_dsm_pages % dsm_nb_nodes;
+      int curOwner = 0;
+      int curCount = 0;
+      int low;
+      int high;
+
+      if (split == 0)
+	{
+	  split = dsm_nb_nodes;
+	  chunk -= 1;
+	}
+      for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
+	{
+	  dsm_page_table[i].prob_owner = (dsm_node_t)curOwner;
+	  if (curOwner == dsm_local_node_rank)
+	    dsm_page_table[i].access = WRITE_ACCESS;
+	  else
+	    dsm_page_table[i].access = NO_ACCESS;
+	  
+	  curCount++;
+	  if (curOwner < split)
+	    {
+	      if (curCount == chunk+1)
+		{
+		  curOwner++;
+		  curCount = 0;
+		}
+	    }
+	  else
+	    {
+	      if (curCount == chunk)
+		{
+		  curOwner++;
+		  curCount = 0;
+		}
+	    }
+	}
+      dsm_pseudo_static_set_no_access();
+      
+      /* what are the bounds on my chunk? */
+      if (dsm_local_node_rank < split)
+	{
+	  low = (dsm_local_node_rank * (chunk + 1));
+	  high = low + (chunk + 1);
+	}
+      else
+	{
+	  low = (split * (chunk + 1)) + ((dsm_local_node_rank - split) * chunk);
+	  high = low + chunk;
+	}
+      if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)     
+	mprotect(pseudo_static_dsm_base_addr + (low * DSM_PAGE_SIZE),
+		 (high - low + 1) * DSM_PAGE_SIZE,
+		 PROT_READ|PROT_WRITE);
+      break;
+    }
+  case DSM_CUSTOM :
+    {
+      int k, *array = (int *)_dsm_page_distrib_arg;
+      k = nb_static_dsm_pages;
+      for (i = 0; i < nb_pseudo_static_dsm_pages; i++)
+	{
+	  dsm_page_table[i + nb_static_dsm_pages].prob_owner = array[i];
+	  if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)
+	    dsm_set_access(i + nb_static_dsm_pages, (dsm_local_node_rank == array[i])?WRITE_ACCESS:NO_ACCESS);
+	  else
+	    dsm_set_access_without_protect(i + nb_static_dsm_pages, (dsm_local_node_rank == array[i])?WRITE_ACCESS:NO_ACCESS);
+	}
+      break;
+    }
+  }
+   if (_dsm_page_protect_mode != DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS) 
+     switch(_dsm_page_protect_mode){
+     case DSM_UNIFORM_PROTECT:
+       dsm_set_uniform_access((dsm_access_t)_dsm_page_protect_arg);break;
+     case DSM_CUSTOM_PROTECT:
+       RAISE(NOT_IMPLEMENTED);break;
+     }
+}
+
+
+
 void dsm_set_user_data1_init_func(dsm_user_data1_init_func_t func)
 {
   _dsm_user_data1_init_func = func;
+}
+
+
+void dsm_set_user_data2_init_func(dsm_user_data2_init_func_t func)
+{
+  _dsm_user_data2_init_func = func;
 }
 
 
@@ -300,13 +487,13 @@ void dsm_page_table_init(int my_rank, int confsize)
 
   _dsm_global_vars_init(my_rank, confsize);
 
-  dsm_page_table = (dsm_page_table_t)tmalloc(nb_static_dsm_pages * sizeof(dsm_page_table_entry_t));
+  dsm_page_table = (dsm_page_table_t)tmalloc((nb_static_dsm_pages + nb_pseudo_static_dsm_pages) * sizeof(dsm_page_table_entry_t));
   if (dsm_page_table == NULL)
     RAISE(STORAGE_ERROR);
 
   /* Common initializations for all nodes */
 
-  for (i = 0; i < nb_static_dsm_pages; i++)
+  for (i = 0; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
     {
       dsm_page_table[i].next_owner = (dsm_node_t)-1;
       fifo_init(&dsm_page_table[i].pending_req, 2 * dsm_nb_nodes - 1);
@@ -318,7 +505,10 @@ void dsm_page_table_init(int my_rank, int confsize)
       marcel_cond_init(&dsm_page_table[i].cond, NULL);
       marcel_sem_init(&dsm_page_table[i].sem, 0);
       dsm_page_table[i].size = DSM_PAGE_SIZE;
-      dsm_page_table[i].addr = static_dsm_base_addr + DSM_PAGE_SIZE * i;
+      if (i < nb_static_dsm_pages )
+	dsm_page_table[i].addr = static_dsm_base_addr + DSM_PAGE_SIZE * i;
+      else
+	dsm_page_table[i].addr = pseudo_static_dsm_base_addr + DSM_PAGE_SIZE * (i - nb_static_dsm_pages);
 //      dsm_page_table[i].waiter_count = 0;        /* pjh */
 //      dsm_page_table[i].page_arrival_count = -1; /* pjh */
       if (_dsm_user_data1_init_func)
@@ -328,7 +518,9 @@ void dsm_page_table_init(int my_rank, int confsize)
       else
 	dsm_page_table[i].user_data2 = NULL;
     }
-  dsm_page_ownership_init();
+  _dsm_page_ownership_init();
+  if (pseudo_static_dsm_area_size != 0)
+    _dsm_pseudo_static_page_ownership_init();
 }
 
 
@@ -336,8 +528,16 @@ void dsm_display_page_ownership()
 {
   int i;
 
+  fprintf(stderr,"static pages:\n");
   for (i = 0; i < nb_static_dsm_pages; i++)
-    tfprintf(stderr,"page %d: owner = %d, access = %d\n", i, dsm_page_table[i].prob_owner, dsm_page_table[i].access);
+    tfprintf(stderr,"page %d: owner = %d, access = %d, addr = %p\n", i, dsm_page_table[i].prob_owner, dsm_page_table[i].access, dsm_page_table[i].addr);
+
+  if (pseudo_static_dsm_area_size != 0){
+  fprintf(stderr,"pseudo-static pages:\n");
+  for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
+    tfprintf(stderr,"page %d: owner = %d, access = %d, addr = %p\n", i, dsm_page_table[i].prob_owner, dsm_page_table[i].access, dsm_page_table[i].addr);
+  }
+    
 }
 
 
@@ -351,9 +551,25 @@ void dsm_set_no_access()
 }
 
 
+void dsm_pseudo_static_set_no_access()
+{  
+  if (mprotect(pseudo_static_dsm_base_addr, pseudo_static_dsm_area_size, PROT_NONE) != 0) 
+    {
+      perror("dsm_pseudo_static_set_no_access could not set protection rights");
+      exit(1);
+    }
+}
+
+
 void dsm_set_write_access()
 {  
   mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, PROT_READ|PROT_WRITE);
+}
+
+
+void dsm_pseudo_static_set_write_access()
+{  
+  mprotect(pseudo_static_dsm_base_addr, pseudo_static_dsm_area_size, PROT_READ|PROT_WRITE);
 }
 
 
@@ -367,6 +583,19 @@ void dsm_set_uniform_access(dsm_access_t access)
   default: prot = PROT_READ|PROT_WRITE; /* WRITE_ACCESS */
   }
   mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, prot);
+}
+
+
+void dsm_pseudo_static_set_uniform_access(dsm_access_t access)
+{
+  int prot;
+
+  switch(access){
+  case NO_ACCESS: prot = PROT_NONE; break;
+  case READ_ACCESS: prot = PROT_READ; break;
+  default: prot = PROT_READ|PROT_WRITE; /* WRITE_ACCESS */
+  }
+  mprotect(pseudo_static_dsm_base_addr, pseudo_static_dsm_area_size, prot);
 }
 
 
@@ -675,10 +904,8 @@ void dsm_invalidate_not_owned_pages()
   for (i = 0; i < nb_static_dsm_pages; i++)
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
       {
-	dsm_lock_page(i);
 	dsm_set_access(i, NO_ACCESS);
 	dsm_free_page_bitmap(i);
-	dsm_unlock_page(i);
       }
 }
 
@@ -687,6 +914,33 @@ void dsm_invalidate_not_owned_pages_without_protect()
   unsigned long i;
 
   for (i = 0; i < nb_static_dsm_pages; i++)
+    if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
+      {
+	dsm_set_access_without_protect(i, NO_ACCESS);
+	dsm_free_page_bitmap(i);
+      }
+}
+
+
+void dsm_pseudo_static_invalidate_not_owned_pages()
+{
+  unsigned long i;
+
+  for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
+    if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
+      {
+	dsm_lock_page(i);
+	dsm_set_access(i, NO_ACCESS);
+	dsm_free_page_bitmap(i);
+	dsm_unlock_page(i);
+      }
+}
+
+void dsm_pseudo_static_invalidate_not_owned_pages_without_protect()
+{
+  unsigned long i;
+
+  for (i = nb_static_dsm_pages; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
       {
 	dsm_lock_page(i);

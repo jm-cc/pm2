@@ -33,6 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 #define HYP_SEND_PAGE_CHEAPER
+//#define DEBUG1
 
 #include <stdio.h>
 
@@ -260,6 +261,7 @@ void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t n
 #endif
 }
 
+
 void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node)
 {
      unsigned long index = dsm_page_index(addr);
@@ -299,7 +301,7 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 	 else
 	   dsm_set_access(index, WRITE_ACCESS);
        }
-     dsm_signal_page_ready(dsm_page_index(addr));
+     dsm_signal_page_ready(index);
 #ifdef DEBUG3
      tfprintf(stderr, "I signalled page ready, a = %d (I am %p)\n", ((atomic_t *)dsm_get_page_addr(index))->counter, marcel_self());
 #endif
@@ -323,145 +325,4 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 	(*dsm_get_write_server(index))(index, node);
 	dsm_clear_next_owner(index); // these last 2 calls should be atomic...
       }
-}
-/*************  Hyperion protocols *************************/
-/* obsolete now: */
-
-void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t req_node)
-{
-  dsm_lock_page(index);
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "entering the write server(%d), req_node = %d\n", index, req_node);
-#endif
-  if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
-    {
-#ifdef DEBUG_HYP
-      tfprintf(stderr,"WS before send page...\n");
-#endif
-      dsm_send_page(req_node, index, WRITE_ACCESS);
-    }
-  else // no access? then forward req to prob owner!
-    {
-#ifdef DEBUG_HYP
-      tfprintf(stderr, "WS: forwarding req(%d) from node %d to node %d\n", index, req_node, dsm_get_prob_owner(index));
-#endif
-      dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, WRITE_ACCESS);
-    }
-  dsm_unlock_page(index);
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "exiting the write server(%d), req_node = %d\n", index, req_node);
-#endif
-}
-
-
-void dsmlib_erp_hyp_receive_page(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size)
-{
-  unsigned long index;
-  /* pjh */
-  int wc;
-  int ac;
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "dsmlib_erp_hyp_receive_page called\n");
-#endif
-  index = dsm_page_index(addr);
-
-  /* is there a later request whose answer I should wait for? */
-  /* (for non-Hyperion protocols: keep wc == 0 and ac == -1) */
-   dsm_lock_page(index); 
-
-   wc = dsm_get_waiter_count(index);
-   ac = dsm_get_page_arrival_count(index);
-
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "unpack page %ld: %d %d\n", index, wc, ac);
-#endif
-
-  if (wc == (ac +1))  /* keep the page */
-  {
-    //dsm_access_t old_access = dsm_get_access(index);
-
-#ifdef DSM_SEND_PAGE_CHEAPER
-    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
-#else
-    pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
-#endif
-    pm2_rawrpc_waitdata(); 
-
-#ifdef DEBUG_HYP
-    tfprintf(stderr, "unpack page %ld: calling page server\n", index);
-#endif
-
-#ifdef DEBUG_HYP
-    tfprintf(stderr, "Received page %ld <- %d for %s (I am %p)\n", index,
-                 reply_node, (access == 1)?"read":"write", marcel_self());
-#endif
-
-    dsm_alloc_page_bitmap(index);
-
-    dsm_set_access_without_protect(index, WRITE_ACCESS);
-    dsm_set_pending_access(index, NO_ACCESS);
-    
-    dsm_clear_waiter_count(index);
-    dsm_signal_page_ready(dsm_page_index(addr)); /* wakes all waiters */
-
-#ifdef DEBUG_HYP
-    tfprintf(stderr, "I signalled page ready, (I am %p)\n", marcel_self());
-#endif
-
-    dsm_unlock_page(index); 
-  }
-  else /* discard the page */
-  {
-     static char discard[DSM_PAGE_SIZE];
-#ifdef DEBUG_HYP
-     tfprintf(stderr, "unpack page %ld: discarding page (%d, %d)!\n", index,
-       wc, ac+1);
-#endif
-#ifdef DSM_SEND_PAGE_CHEAPER
-     pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, discard, page_size); 
-#else
-     pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, discard, page_size); 
-#endif
-     pm2_rawrpc_waitdata(); 
-
-    /* page discarded, but count it */
-     dsm_increment_page_arrival_count(index);
-
-     dsm_unlock_page(index); 
-  }
-}
-
-
-
-void dsmlib_rp_hyp_validate_page(void *addr, dsm_access_t access,
-dsm_node_t reply_node)
-{
-  unsigned long index = dsm_page_index(addr);
-//  int wc = dsm_get_waiter_count(index);
-//  int ac = dsm_get_page_arrival_count(index);
-
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "dsmlib_rp_hyp_validate_page called\n");
-#endif
-
-  dsm_lock_page(index); 
-
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "Received page %ld <- %d for %s (I am %p)\n", index,
-                 reply_node, (access == 1)?"read":"write", marcel_self());
-#endif
-
-  dsm_alloc_page_bitmap(index);
-
-  dsm_set_access_without_protect(index, WRITE_ACCESS);
-  dsm_set_pending_access(index, NO_ACCESS);
-
-  dsm_clear_waiter_count(index);
-  dsm_signal_page_ready(dsm_page_index(addr)); /* wakes all waiters */
-
-#ifdef DEBUG_HYP
-  tfprintf(stderr, "I signalled page ready, (I am %p)\n", marcel_self());
-#endif
-
-  dsm_unlock_page(index);
 }

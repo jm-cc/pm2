@@ -32,7 +32,7 @@ MA_DECLARE_PER_LWP(act_proc_info_t, act_info);
 
 #section marcel_macros
 #ifdef MA__DEBUG
-#define MA_ACT_SET_THREAD_DEBUG(lwp, thread) \
+#define MA_ACT_SET_THREAD_DEBUG(thread) \
   do { \
 	MA_BUG_ON(!((marcel_task_t*) \
 		    (ma_per_lwp(act_info, (lwp)).current_act_id)) \
@@ -40,20 +40,20 @@ MA_DECLARE_PER_LWP(act_proc_info_t, act_info);
         MA_BUG_ON(!thread->preempt_count); \
   } while (0)
 #else
-#define MA_ACT_SET_THREAD_DEBUG(lwp, thread)
+#define MA_ACT_SET_THREAD_DEBUG(thread)
 #endif
 
 //        MA_ACT_SET_THREAD_DEBUG(lwp, thread);
 
 #ifdef MA__ACTIVATION
-#define MA_ACT_SET_THREAD(lwp, thread) \
+#define MA_ACT_SET_THREAD(thread) \
   do { \
-        ma_per_lwp(act_info, (lwp)).current_act_id=(unsigned long)(thread); \
-        ma_per_lwp(act_info, (lwp)).critical_section=&(thread)->preempt_count;\
+        __ma_get_lwp_var(act_info).current_act_id=(unsigned long)(thread); \
+        __ma_get_lwp_var(act_info).critical_section=&(thread)->preempt_count;\
 	ma_mb(); \
   } while (0)
 #else
-#define MA_ACT_SET_THREAD(lwp, thread) ((void)0)
+#define MA_ACT_SET_THREAD(thread) ((void)0)
 #endif
 
 #section marcel_functions

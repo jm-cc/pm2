@@ -292,4 +292,13 @@ void fkt_stop(void) {
   waitpid(kpid,NULL,0);
 }
 
+int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num) {
+	unsigned long entries [] = { FKT_USER_FORK_CODE, thread_num, lwp_logical_num };
+	if (__pm2_profile_active) {
+		return ioctl(fkt, FKT_PROBE2, entries);
+	}
+	return 0;
+}
+
+
 #endif // USE_FKT

@@ -50,18 +50,11 @@ static unsigned nb_of_channels = 1;
 #define TRANSMIT_NETSERVER_SEM(pid) \
   *(marcel_specificdatalocation((pid), _pm2_mad_key)) = marcel_getspecific(_pm2_mad_key)
 
-/* *** Mad II *** */
 
-#ifdef MAD2
-extern marcel_key_t mad2_recv_key;
-#define MAD2_TRANSMIT_RECV_CONNECTION(pid) \
-  *(marcel_specificdatalocation((pid), mad2_recv_key)) = marcel_getspecific(mad2_recv_key)
-#else
-#define MAD2_TRANSMIT_RECV_CONNECTION(pid) (void)0
-#endif
+extern marcel_key_t pm2_mad_recv_key;
+#define TRANSMIT_RECV_CONNECTION(pid) \
+  *(marcel_specificdatalocation((pid), pm2_mad_recv_key)) = marcel_getspecific(pm2_mad_recv_key)
 
-
-#ifdef MAD2
 
 static pm2_rpc_channel_t pm2_rpc_main_channel = 0;
 
@@ -83,7 +76,6 @@ static __inline__ pm2_channel_t channel(pm2_rpc_channel_t c,
   }
 }
 
-#endif
 
 void pm2_rpc_channel_alloc(pm2_rpc_channel_t *channel)
 {
@@ -125,7 +117,6 @@ void _end_service(rpc_args *args, any_t res, int local)
     memcpy(ptr_att->result, res, _pm2_res_sizes[args->num]);
     marcel_sem_V(&ptr_att->sem);
   } else {
-#ifdef MAD2
     pm2_attr_t attr;
 
     pm2_attr_init(&attr);
@@ -134,9 +125,6 @@ void _end_service(rpc_args *args, any_t res, int local)
     pm2_attr_setchannel(&attr, channel(pm2_rpc_main_channel, args->tid, RESULT));
 
     pm2_rawrpc_begin(args->tid, PM2_LRPC_DONE, &attr);
-#else
-    pm2_rawrpc_begin(args->tid, PM2_LRPC_DONE, NULL);
-#endif
 
     old_mad_pack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
     (*_pm2_pack_res_funcs[args->num])(res);
@@ -243,14 +231,13 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
     to_pointer((any_t)att, &p);
 
-#ifdef MAD2
     {
       unsigned c;
 
       pm2_attr_getchannel(pm2_attr, &c);
       pm2_attr_setchannel(pm2_attr, channel(c, module, REQUEST));
     }
-#endif
+
     pm2_rawrpc_begin(module, PM2_LRPC, pm2_attr);
 
     old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
@@ -298,7 +285,7 @@ static void netserver_lrpc(void)
   marcel_sem_init(&sem, 0);
 
   TRANSMIT_NETSERVER_SEM(pid);
-  MAD2_TRANSMIT_RECV_CONNECTION(pid);
+  TRANSMIT_RECV_CONNECTION(pid);
 
   marcel_run(pid, args);
 
@@ -347,14 +334,13 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     to_pointer((any_t)att, &p);
     att->unpack = _pm2_unpack_res_funcs[num];
 
-#ifdef MAD2
     {
       unsigned c;
 
       pm2_attr_getchannel(pm2_attr, &c);
       pm2_attr_setchannel(pm2_attr, channel(c, module, REQUEST));
     }
-#endif
+
     pm2_rawrpc_begin(module, PM2_QUICK_LRPC, pm2_attr);
 
     old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
@@ -438,14 +424,13 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
       RAISE(NOT_IMPLEMENTED);
 #endif
 
-#ifdef MAD2
     {
       unsigned c;
 
       pm2_attr_getchannel(pm2_attr, &c);
       pm2_attr_setchannel(pm2_attr, channel(c, module, REQUEST));
     }
-#endif
+
     pm2_rawrpc_begin(module, PM2_ASYNC_LRPC, pm2_attr);
 
     old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
@@ -491,7 +476,7 @@ static void netserver_async_lrpc(void)
   marcel_sem_init(&sem, 0);
 
   TRANSMIT_NETSERVER_SEM(pid);
-  MAD2_TRANSMIT_RECV_CONNECTION(pid);
+  TRANSMIT_RECV_CONNECTION(pid);
 
   marcel_run(pid, args);
 
@@ -553,14 +538,13 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	  RAISE(NOT_IMPLEMENTED);
 #endif
 
-#ifdef MAD2
 	{
 	  unsigned c;
 
 	  pm2_attr_getchannel(pm2_attr, &c);
 	  pm2_attr_setchannel(pm2_attr, channel(c, modules[i], REQUEST));
 	}
-#endif
+
 	pm2_rawrpc_begin(modules[i], PM2_ASYNC_LRPC, pm2_attr);
 
 	old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
@@ -609,14 +593,13 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
       RAISE(NOT_IMPLEMENTED);
 #endif
 
-#ifdef MAD2
     {
       unsigned c;
 
       pm2_attr_getchannel(pm2_attr, &c);
       pm2_attr_setchannel(pm2_attr, channel(c, module, REQUEST));
     }
-#endif
+
     pm2_rawrpc_begin(module, PM2_QUICK_ASYNC_LRPC, pm2_attr);
 
     old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
@@ -684,14 +667,13 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
 	  RAISE(NOT_IMPLEMENTED);
 #endif
 
-#ifdef MAD2
 	{
 	  unsigned c;
 
 	  pm2_attr_getchannel(pm2_attr, &c);
 	  pm2_attr_setchannel(pm2_attr, channel(c, modules[i], REQUEST));
 	}
-#endif
+
 	pm2_rawrpc_begin(modules[i], PM2_QUICK_ASYNC_LRPC, pm2_attr);
 
 	old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);

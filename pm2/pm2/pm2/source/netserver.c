@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: netserver.c,v $
+Revision 1.9  2000/02/28 11:17:05  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.8  2000/01/31 15:58:24  oaumage
 - ajout du Log CVS
 
@@ -41,12 +44,11 @@ Revision 1.8  2000/01/31 15:58:24  oaumage
 ______________________________________________________________________________
 */
 /* #define DEBUG */
-#include <pm2.h>
-#include <madeleine.h>
-#include <sys/netserver.h>
-#include <isomalloc.h>
-
-#include <pm2_timing.h>
+#include "pm2.h"
+#include "madeleine.h"
+#include "sys/netserver.h"
+#include "isomalloc.h"
+#include "pm2_timing.h"
 
 #define MAX_NETSERVERS   128
 

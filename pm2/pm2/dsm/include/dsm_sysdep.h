@@ -33,14 +33,13 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include "dsm_page_size.h" /* generated file */
-
 #ifndef DSM_SYSDEP_IS_DEF
 #define DSM_SYSDEP_IS_DEF
 
-/*  #include <dsm_const.h> */
+#include "dsm_page_size.h" /* generated file */
+#include <dsm_const.h> 
 
-typedef void ( *dsm_pagefault_handler_t)(int sig, void *addr);
+typedef void ( *dsm_pagefault_handler_t)(int sig, void *addr, dsm_access_t access);
 
 void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler);
 

@@ -100,7 +100,6 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
-	FUT_PROBE0(-1, FUT_MAIN_ENTRY_CODE);
 
 	return nints;
 	}
@@ -230,7 +229,6 @@ int fut_endup( char *filename )
 	unsigned int	*copy;
 
 
-	FUT_PROBE0(-1, FUT_MAIN_EXIT_CODE);
 
 	/* stop all futher tracing */
 	fut_active = 0;

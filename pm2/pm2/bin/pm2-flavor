@@ -79,6 +79,7 @@ Commands
   help      : this help
   check     : check correctness
   regenerate: regenerate the flavor
+  find      : return the full path of the flavor
 
   => use "$PROGNAME help cmd" to get help on command 'cmd'
 
@@ -173,6 +174,13 @@ Options for '$2' command
 
 EOF
 	;;
+    find)
+	cat <<EOF
+Options for '$2' command 
+  --flavor=""      name of the flavor to find (default : flavor "default")
+
+EOF
+	;;
     *)
 	cat <<EOF
 Command '$2' unknown
@@ -200,7 +208,7 @@ output_flavor_dir() {
 }
 
 find_flavor() {
-    if [ ${EDIT_MODE} = "normal" -a -f "$USER_FLAVOR_DIR" ]; then
+    if [ ${EDIT_MODE} = "normal" -a -f "$USER_FLAVOR_DIR/$flavor" ]; then
 	echo "$USER_FLAVOR_DIR/$flavor"
     else
 	echo "${PM2_CONFIG}/$flavor"
@@ -762,6 +770,25 @@ do_regenerate() {
     exit 0
 }
 
+do_find() {
+    file=
+    while test $# -gt 0; do
+	case "$1" in
+	--flavor=*)
+	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+
+    flavor=${flavor:-default}
+    echo `find_flavor`
+}
+
 if test $# -eq 0; then
     usage 1
 fi
@@ -772,7 +799,7 @@ EDIT_MODE="normal"
 while test $# -gt 0; do
     CMD="$1"
     case "$CMD" in
-    version|set|delete|list|get|help|check|regenerate)
+    version|set|delete|list|get|help|check|regenerate|find)
 	shift
 	$DEBUG "Executing $CMD"
 	eval do_$CMD '"$@"'

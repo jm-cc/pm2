@@ -74,8 +74,8 @@ void pre_migration(marcel_t pid)
 
    loc = *((char **)(*marcel_specificdatalocation(pid, user_key)));
    size = strlen(loc)+1;
-   mad_pack_int(MAD_IN_HEADER, &size, 1);
-   mad_pack_str(MAD_IN_HEADER, loc);
+   old_mad_pack_int(MAD_IN_HEADER, &size, 1);
+   old_mad_pack_str(MAD_IN_HEADER, loc);
    tfree(loc);
 }
 
@@ -88,9 +88,9 @@ any_t post_migration(marcel_t pid)
   char *msg;
   int size;
 
-  mad_unpack_int(MAD_IN_HEADER, &size, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &size, 1);
   msg = tmalloc(size);
-  mad_unpack_str(MAD_IN_HEADER, msg);
+  old_mad_unpack_str(MAD_IN_HEADER, msg);
 
   return msg;
 }

@@ -34,6 +34,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
+
 case $1 in
     /*) command=$* ;;
     *) command=`pwd`/$*

@@ -53,24 +53,66 @@ typedef struct s_mad_ping_result
 // Static variables
 //......................
 
+/** Check that data are actually transfered. */
 static const int param_control_receive   =  0;
+
+/** Pack send mode. */
 static const int param_send_mode         =  mad_send_CHEAPER;
+
+/** Pack receive mode. */
 static const int param_receive_mode      =  mad_receive_CHEAPER;
-static const int param_nb_samples        =  10;
+
+/** Number of ping pong per tests. */
+static const int param_nb_samples        =  100;
+
+/** Minimum message size. */
 static const int param_min_size          =  MAD_LENGTH_ALIGNMENT;
+
+/** Maximum message size. */
 static const int param_max_size          =  1024*1024*16;
+
+/** Message size increment step.
+ *
+ * If set to 0, the message size is doubled at each iteration.
+ * Otherwise, the message size is incremented by this step value.
+ */
 static const int param_step              =    0; /* 0 = progression log. */
+
+/** Minimum number of packs. */
 static const int param_min_pack_number   =    1;
+
+/** Maximum number of packs. */
 static const int param_max_pack_number   =  256;
+
+/** Minimum number of messages. */
 static const int param_min_msg_number    =    1;
+
+/** Maximum number of messages. */
 static const int param_max_msg_number    =  256;
+
+/** ???. */
 static const int param_cross             =    1;
+
+/** Number of tests. */
 static const int param_nb_tests          =    5;
+
+/** Force null messages to be replaced by 1 byte messages. */
 static const int param_no_zero           =    1;
+
+/** Fill the buffer before sending. */
 static const int param_fill_buffer       =    1;
+
+/** Value to be fill the buffer with. */
 static const int param_fill_buffer_value =    1;
-static const int param_one_way           =    1;
-static const int param_unreliable        =    1;
+
+/** Select the test algorithm.
+ * If set to 0, the program uses a half-roundtrip two-way test.
+ * If set to 1, the program uses a one-way test.
+ */
+static const int param_one_way           =    0;
+
+/** Allows some packets to be lost. */
+static const int param_unreliable        =    0;
 
 static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;

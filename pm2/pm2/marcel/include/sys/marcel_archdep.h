@@ -134,7 +134,7 @@ extern void call_ST_FLUSH_WINDOWS(void);
 /* ******************* Intel ******************* */
 
 #if defined(X86_ARCH)
-static __inline__ long get_sp()
+static __inline__ long get_sp(void)
 {
   register long sp;
 

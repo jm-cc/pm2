@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.20  2000/06/06 12:13:19  oaumage
+- suppression du sync terminal
+
 Revision 1.19  2000/05/29 17:12:22  vdanjean
 End of mad2 corrected
 
@@ -405,7 +408,8 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->accept                     = mad_tcp_accept;
   interface->connect                    = mad_tcp_connect;
   interface->after_open_channel         = mad_tcp_after_open_channel;
-  interface->before_close_channel       = mad_tcp_before_close_channel;
+  interface->before_close_channel       = NULL;
+  /* interface->before_close_channel    = mad_tcp_before_close_channel; */
   interface->disconnect                 = mad_tcp_disconnect;
   interface->after_close_channel        = NULL;
   interface->link_exit                  = NULL;
@@ -418,7 +422,7 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->return_static_buffer       = NULL;
   interface->new_message                = NULL;
 #ifdef MAD_MESSAGE_POLLING
-  interface->poll_message            = mad_tcp_poll_message;
+  interface->poll_message               = mad_tcp_poll_message;
 #endif /* MAD_MESSAGE_POLLING */
   interface->receive_message            = mad_tcp_receive_message;
   interface->send_buffer                = mad_tcp_send_buffer;
@@ -748,7 +752,7 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
   
   LOG_OUT();
 }
-
+/*
 void
 mad_tcp_before_close_channel(p_mad_channel_t channel)
 {
@@ -756,7 +760,7 @@ mad_tcp_before_close_channel(p_mad_channel_t channel)
   mad_tcp_sync_out_channel(channel);
   LOG_OUT();
 }
-
+*/
 void 
 mad_tcp_disconnect(p_mad_connection_t connection)
 {

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx.h,v $
+Revision 1.2  2000/01/31 15:59:07  oaumage
+- detection de l'absence de GCC
+- ajout de aligned_malloc
+
 Revision 1.1  2000/01/13 14:51:29  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -48,6 +52,18 @@ ______________________________________________________________________________
 #ifndef TBX_H
 #define TBX_H
 
+/*
+ * Checks
+ * ------
+ */
+#ifndef __GNUC__
+#error The GNU C Compiler is required to build the library
+#endif __GNUC__
+
+/*
+ * Headers
+ * -------
+ */
 #ifdef PM2
 #include <marcel.h>
 #endif /* PM2 */

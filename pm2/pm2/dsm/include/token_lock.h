@@ -1,9 +1,15 @@
 
 /*
- * CVS Id: $Id: token_lock.h,v 1.4 2002/10/19 15:13:31 slacour Exp $
+ * CVS Id: $Id: token_lock.h,v 1.6 2002/10/23 13:26:52 slacour Exp $
  */
 
-/* distributed management of the locks (tokens) for DSM-PM2 */
+/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+
+/* Distributed management of the locks.  Each lock has a (central)
+ * fixed manager and an owner (token owner).  The lock manager can be
+ * determined using the ID of the lock.  The manager always knows who
+ * currently holds the token (lock). */
+
 
 #ifndef TOKEN_LOCK_H
 #define TOKEN_LOCK_H
@@ -107,11 +113,6 @@ token_lock_request_server (void);
 /* the lock server of the manager */
 extern void
 token_lock_manager_server (void);
-
-/* register the number of diff and inv ack expected for a given lock */
-extern void
-token_lock_register_acks (const token_lock_id_t, const int, const int,
-                          const int);
 
 #endif   /* TOKEN_LOCK_H */
 

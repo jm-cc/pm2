@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.6  2000/06/13 12:32:50  vdanjean
+debug_flush
+
 Revision 1.5  2000/06/05 15:31:54  vdanjean
 adaptation of debug messages
 
@@ -115,7 +118,7 @@ void pm2debug_flush();
 #define pm2debug_printf(type, line, file, format...)
 #define pm2debug_register(type)
 #define pm2debug_setup(type, action, value)
-#define pm2debug_flush()
+#define pm2debug_flush() ((void)0)
 #endif
 
 #define pm2debug_init(argc, argv) \

@@ -283,7 +283,6 @@ int _marcel_raise(marcel_exception_t ex)
       call_ST_FLUSH_WINDOWS();
       marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
    }
-   return 0;
 }
 
 #ifndef MA__PTHREAD_FUNCTIONS

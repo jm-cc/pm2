@@ -16,7 +16,7 @@
 /*
  * leo_file_processing.c
  * =====================
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -42,15 +42,15 @@ build_network_host_htable(p_tbx_slist_t network_host_slist)
     {
       p_leoparse_object_t  object    = NULL;
       char                *host_name = NULL;
-      
+
       object = tbx_slist_ref_get(network_host_slist);
 
       {
 	char *temp_name = NULL;
-	
+
 	temp_name = leoparse_get_id(object);
 	TRACE_STR("expected name", temp_name);
-	
+
 	host_name = ntbx_true_name(temp_name);
 	TRACE_STR("true name", host_name);
       }
@@ -61,7 +61,7 @@ build_network_host_htable(p_tbx_slist_t network_host_slist)
 	}
     }
   while (tbx_slist_ref_forward(network_host_slist));
-  
+
   LOG_OUT();
 
   return host_htable;
@@ -74,28 +74,59 @@ p_leo_dir_fchannel_t
 make_fchannel(p_leo_directory_t   dir,
 	      p_leo_dir_channel_t dir_channel)
 {
-  p_leo_dir_fchannel_t dir_fchannel = NULL;
+  p_leo_dir_fchannel_t  dir_fchannel            = NULL;
+  char                 *fchannel_reference_name = NULL;
 
   LOG_IN();
   dir_fchannel = leo_dir_fchannel_init();
-  
+
   {
     size_t len = 0;
-    
+
     len = strlen(dir_channel->name);
     dir_fchannel->name = TBX_MALLOC(len + 2);
     CTRL_ALLOC(dir_fchannel->name);
-    
+
     sprintf(dir_fchannel->name, "f%s", dir_channel->name);
   }
 
   dir_fchannel->channel_name = strdup(dir_channel->name);
 
+  fchannel_reference_name =
+    TBX_MALLOC(strlen("channel") + strlen(dir_fchannel->channel_name) + 2);
+  sprintf(fchannel_reference_name, "%s:%s", "channel",
+	  dir_fchannel->channel_name);
+
+  {
+    p_ntbx_process_container_t                  pc     = NULL;
+    ntbx_process_lrank_t                        l_rank =   -1;
+    p_leo_dir_channel_common_process_specific_t ccps   = NULL;
+    char common_name[strlen("common_") + strlen(fchannel_reference_name) + 1];
+
+    ccps = leo_dir_channel_common_process_specific_init();
+
+    strcpy(common_name, "common_");
+    strcat(common_name, fchannel_reference_name);
+
+    pc = dir_channel->pc;
+
+    ntbx_pc_first_local_rank(pc, &l_rank);
+    do
+      {
+	p_ntbx_process_t process = NULL;
+
+	process = ntbx_pc_get_local_process(pc, l_rank);
+	ntbx_pc_add(dir_fchannel->common->pc, process, l_rank,
+		    dir_fchannel, common_name, ccps);
+      }
+    while (ntbx_pc_next_local_rank(pc, &l_rank));
+  }
+
   tbx_htable_add(dir->fchannel_htable,
 		 dir_fchannel->name, dir_fchannel);
   tbx_slist_append(dir->fchannel_slist, dir_fchannel);
   LOG_OUT();
-  
+
   return dir_fchannel;
 }
 
@@ -113,9 +144,9 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
 
   LOG_IN();
   slist = tbx_slist_nil();
-  
+
   if (modifier && modifier->type == leoparse_m_sbracket)
-    {      
+    {
       ranges = modifier->sbracket;
 
       if (ranges && !tbx_slist_is_nil(ranges))
@@ -134,7 +165,7 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
 
 		  p_val = TBX_MALLOC(sizeof(int));
 		  CTRL_ALLOC(p_val);
-	      
+
 		  *p_val = leoparse_get_val(o);
 		  tbx_slist_append(slist, p_val);
 		}
@@ -148,10 +179,10 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
 		  for (val = range->begin; val < range->end; val++)
 		    {
 		      int *p_val   = NULL;
-	      
+
 		      p_val = TBX_MALLOC(sizeof(int));
 		      CTRL_ALLOC(p_val);
-	      
+
 		      *p_val = val;
 		      tbx_slist_append(slist, p_val);
 		    }
@@ -171,9 +202,9 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
       p_val  = TBX_MALLOC(sizeof(int));
       *p_val = default_value;
       tbx_slist_append(slist, p_val);
-    }  
+    }
   LOG_OUT();
-  
+
   return slist;
 }
 
@@ -217,7 +248,7 @@ process_channel(p_leonie_t     leonie,
   TRACE_STR("====== Channel network is", channel_network);
 
   channel_host_slist = leoparse_read_as_slist(channel, "hosts");
-  
+
   network_htable = tbx_htable_get(networks->htable, channel_network);
   if (!network_htable)
     FAILURE("unknown network");
@@ -239,13 +270,13 @@ process_channel(p_leonie_t     leonie,
       network_loader_priority = leo_loader_priority_low;
       network_loader = strdup("default");
     }
-  
+
   network_host_htable = tbx_htable_get(network_htable, "host_htable");
 
   if (!network_host_htable)
     {
       p_tbx_slist_t network_host_slist = NULL;
-      
+
       network_host_slist  = leoparse_read_as_slist(network_htable, "hosts");
       network_host_htable = build_network_host_htable(network_host_slist);
       tbx_htable_add(network_htable, "host_htable", network_host_htable);
@@ -271,7 +302,7 @@ process_channel(p_leonie_t     leonie,
       tbx_htable_add(dir->driver_htable, dir_driver->name, dir_driver);
       tbx_slist_append(dir->driver_slist, dir_driver);
     }
-  
+
   dir_channel->driver = dir_driver;
 
   driver_reference_name =
@@ -279,7 +310,7 @@ process_channel(p_leonie_t     leonie,
   sprintf(driver_reference_name, "%s:%s", "driver", dir_driver->name);
 
   spawn_group = tbx_htable_get(spawn_groups->htable, network_name);
-  
+
   if (!spawn_group)
     {
       spawn_group = leo_spawn_group_init();
@@ -302,24 +333,34 @@ process_channel(p_leonie_t     leonie,
 
       {
 	char *temp_name = NULL;
-	
+
 	temp_name = leoparse_get_id(object);
 	TRACE_STR("expected name", temp_name);
-	
+
 	host_name = ntbx_true_name(temp_name);
 	TRACE_STR("true name", host_name);
       }
-      
+
       if (!tbx_htable_get(network_host_htable, host_name))
 	FAILURE("unknown hostname");
 
       TRACE_STR("====== node hostname", host_name);
 
       dir_node = tbx_htable_get(dir->node_htable, host_name);
+
+#ifndef LEO_IP
+      if (!dir_node)
+	{
+	  dir_node = leo_dir_node_init();
+	  dir_node->name = strdup(host_name);
+	  tbx_htable_add(dir->node_htable, host_name, dir_node);
+	  tbx_slist_append(dir->node_slist, dir_node);
+	}
+#else // LEO_IP
       if (!dir_node)
 	{
 	  struct hostent *h;
-	  
+
 	  dir_node = leo_dir_node_init();
 	  dir_node->name = strdup(host_name);
 	  h = gethostbyname(host_name);
@@ -327,6 +368,7 @@ process_channel(p_leonie_t     leonie,
 	  tbx_htable_add(dir->node_htable, host_name, dir_node);
 	  tbx_slist_append(dir->node_slist, dir_node);
 	}
+#endif // LEO_IP
 
       process_slist = expand_sbracket_modifier(object->modifier, 0);
 
@@ -335,7 +377,7 @@ process_channel(p_leonie_t     leonie,
 	{
 	  p_ntbx_process_t     process         = NULL;
 	  ntbx_process_lrank_t node_local_rank =   -1;
-	  
+
 	  {
 	    int *p_val = NULL;
 
@@ -344,17 +386,17 @@ process_channel(p_leonie_t     leonie,
 
 	    TRACE_VAL("======== Process number", node_local_rank);
 	  }
-	  
+
 	  {
 	    p_ntbx_process_info_t node_process_info = NULL;
 
 	    node_process_info = ntbx_pc_get_local(dir_node->pc,
 						  node_local_rank);
-	  
+
 	    if (!node_process_info)
 	      {
 		p_leo_process_specific_t process_specific = NULL;
-	      
+
 		process_specific = leo_process_specific_init();
 		ntbx_tcp_client_init(process_specific->client);
 
@@ -368,7 +410,7 @@ process_channel(p_leonie_t     leonie,
 		process->specific    = process_specific;
 		process->global_rank =
 		  tbx_slist_get_length(dir->process_slist);
-	      
+
 		tbx_slist_append(dir->process_slist, process);
 
 		ntbx_pc_add(dir_node->pc, process, node_local_rank,
@@ -379,25 +421,25 @@ process_channel(p_leonie_t     leonie,
 	    else
 	      {
 		p_leo_process_specific_t process_specific = NULL;
-	      
+
 		process          = node_process_info->process;
 		process_specific = process->specific;
-		
+
 		if (process_specific->
 		    current_loader_priority < network_loader_priority)
 		  {
 		    p_leo_spawn_group_t previous_spawn_group = NULL;
-	    
-		    previous_spawn_group = 
+
+		    previous_spawn_group =
 		      tbx_htable_get(spawn_groups->htable,
 				     process_specific->
 				     current_spawn_group_name);
-		    
+
 		    tbx_slist_search_and_extract(previous_spawn_group
 						 ->process_slist, NULL,
 						 process);
 
-		    
+
 
 		    process_specific->current_loader_name      =
 		      network_loader;
@@ -420,18 +462,26 @@ process_channel(p_leonie_t     leonie,
 
 	    channel_process_info = ntbx_pc_get_global(dir_channel->pc,
 						      process->global_rank);
-	  
+
 	    if (!channel_process_info)
 	      {
-		p_leo_dir_channel_process_specific_t cp_specific = NULL;
+		p_leo_dir_channel_process_specific_t        cp_specific = NULL;
+		p_leo_dir_channel_common_process_specific_t ccps        = NULL;
+		char common_name[strlen("common_") +
+				 strlen(channel_reference_name) + 1];
 
 		cp_specific = leo_dir_channel_process_specific_init();
 		cp_specific->adapter_name = strdup(adapter_name);
-		
-		ntbx_pc_add(dir_channel->pc, process,
-			    channel_local_rank, dir_channel,
-			    channel_reference_name,
-			    cp_specific);
+
+		ntbx_pc_add(dir_channel->pc, process, channel_local_rank,
+			    dir_channel, channel_reference_name, cp_specific);
+
+		ccps = leo_dir_channel_common_process_specific_init();
+
+		strcpy(common_name, "common_");
+		strcat(common_name, channel_reference_name);
+		ntbx_pc_add(dir_channel->common->pc, process, channel_local_rank,
+			    dir_channel, common_name, ccps);
 	      }
 	    else
 	      {
@@ -460,7 +510,7 @@ process_channel(p_leonie_t     leonie,
 		tbx_htable_add(dp_specific->adapter_htable,
 			       dir_adapter->name, dir_adapter);
 		tbx_slist_append(dp_specific->adapter_slist, dir_adapter);
-		
+
 		ntbx_pc_add(dir_driver->pc, process, -1,
 			    dir_driver, driver_reference_name,
 			    dp_specific);
@@ -473,7 +523,7 @@ process_channel(p_leonie_t     leonie,
 		dp_specific = driver_process_info->specific;
 		dir_adapter = tbx_htable_get(dp_specific->adapter_htable,
 					 adapter_name);
-		
+
 		if (!dir_adapter)
 		  {
 		    dir_adapter = leo_dir_adapter_init();
@@ -496,7 +546,7 @@ process_channel(p_leonie_t     leonie,
       TBX_FREE(host_name);
     }
   while (tbx_slist_ref_forward(channel_host_slist));
-  
+
   dir_channel->ttable =
     ntbx_topology_table_init(dir_channel->pc,
 			     ntbx_topology_regular,
@@ -507,7 +557,7 @@ process_channel(p_leonie_t     leonie,
   LOG_OUT();
 }
 
-// process_vchannel: analyses a virtual channel description returned by 
+// process_vchannel: analyses a virtual channel description returned by
 // Leoparse from the application configuration file parsing and builds
 // the corresponding directory data structures.
 void
@@ -539,17 +589,17 @@ process_vchannel(p_leonie_t     leonie,
   vchannel_reference_name =
     TBX_MALLOC(strlen("vchannel") + strlen(vchannel_name) + 2);
   sprintf(vchannel_reference_name, "%s:%s", "vchannel", vchannel_name);
-  
+
   if (tbx_slist_is_nil(vchannel_channel_slist))
     {
       leo_terminate("vchannel has empty real channel list");
     }
-  
+
   TRACE("====== Process list construction");
   tbx_slist_ref_to_head(vchannel_channel_slist);
   do
     {
-      p_leoparse_object_t        object         = NULL;      
+      p_leoparse_object_t        object         = NULL;
       char                      *channel_name   = NULL;
       p_leo_dir_channel_t        dir_channel    = NULL;
       p_leo_dir_fchannel_t       dir_fchannel   = NULL;
@@ -563,7 +613,7 @@ process_vchannel(p_leonie_t     leonie,
       dir_channel = tbx_htable_get(dir->channel_htable, channel_name);
       if (!dir_channel)
 	FAILURE("real channel not found");
-      
+
       TRACE("real channel found");
 
       if (!dir_channel->public)
@@ -579,22 +629,22 @@ process_vchannel(p_leonie_t     leonie,
       tbx_slist_append(dir_channel_slist, dir_channel);
       dir_fchannel = make_fchannel(dir, dir_channel);
       tbx_slist_append(dir_fchannel_slist, dir_fchannel);
-      
+
       do
 	{
 	  p_ntbx_process_info_t process_info = NULL;
 	  p_ntbx_process_t      process      = NULL;
 	  ntbx_process_grank_t  global_rank  =    0;
 	  p_ntbx_process_info_t tmp_pi       = NULL;
-		
+
 	  process_info = ntbx_pc_get_local(dir_channel_pc, rank);
-		
+
 	  process     = process_info->process;
 	  global_rank = process->global_rank;
 	  TRACE_VAL("======== adding process", global_rank);
-		
+
 	  tmp_pi = ntbx_pc_get_global(dir_vchannel_pc, global_rank);
-		  
+
 	  if (tmp_pi)
 	    {
 	      TRACE("process already added");
@@ -602,14 +652,14 @@ process_vchannel(p_leonie_t     leonie,
 	  else
 	    {
 	      p_leo_dir_vchannel_process_specific_t dvps = NULL;
-		      
+
 	      TRACE("process is new for this vchannel");
-		      
+
 	      dvps = leo_dir_vchannel_process_specific_init();
-		  
+
 	      ntbx_pc_add(dir_vchannel_pc, process, -1,
 			  dir_vchannel, vchannel_reference_name, dvps);
-	    } 
+	    }
 	}
       while (ntbx_pc_next_local_rank(dir_channel_pc, &rank));
     }
@@ -617,11 +667,11 @@ process_vchannel(p_leonie_t     leonie,
 
   if (tbx_slist_is_nil(dir_channel_slist))
     {
-      TRACE("vchannel is empty");      
+      TRACE("vchannel is empty");
       goto end;
     }
 
-  TRACE("====== Routing table generation");  
+  TRACE("====== Routing table generation");
   {
     typedef struct s_leo_path
     {
@@ -638,7 +688,7 @@ process_vchannel(p_leonie_t     leonie,
     int                   pass                  =        0;
     int                   pass_number           =        0;
 
-    TRACE("====== Table initialization");  
+    TRACE("====== Table initialization");
     table_size = dir_vchannel_pc->count;
 
     routing_table_current =
@@ -657,7 +707,7 @@ process_vchannel(p_leonie_t     leonie,
 	p_leo_dir_fchannel_t       dir_fchannel        = NULL;
 
 	dir_channel  = tbx_slist_ref_get(dir_channel_slist);
-	TRACE_STR("======== channel", dir_channel->name);  
+	TRACE_STR("======== channel", dir_channel->name);
 	dir_channel_pc     = dir_channel->pc;
 	dir_channel_ttable = dir_channel->ttable;
 
@@ -673,10 +723,10 @@ process_vchannel(p_leonie_t     leonie,
 	    c_rank_src = ntbx_pc_global_to_local(dir_channel_pc, g_rank_src);
 	    if (c_rank_src < 0)
 	      continue;
-	    
+
 	    l_rank_src = ntbx_pc_global_to_local(dir_vchannel_pc, g_rank_src);
 
-	    TRACE_VAL("======== source", l_rank_src);  
+	    TRACE_VAL("======== source", l_rank_src);
 
 	    ntbx_pc_first_global_rank(dir_vchannel_pc, &g_rank_dst);
 	    do
@@ -693,27 +743,27 @@ process_vchannel(p_leonie_t     leonie,
 		if (!ntbx_topology_table_get(dir_channel_ttable,
 					     c_rank_src, c_rank_dst))
 		  continue;
-		
+
 		l_rank_dst = ntbx_pc_global_to_local(dir_vchannel_pc,
 						     g_rank_dst);
 		TRACE_VAL("======== destination", l_rank_dst);
-		
-		{ 
-		  const ntbx_process_lrank_t location = 
+
+		{
+		  const ntbx_process_lrank_t location =
 		    l_rank_src * table_size + l_rank_dst;
 
 		  path = routing_table_current[location];
 
 		  if (path)
 		    continue;
-		
+
 		  path = TBX_MALLOC(sizeof(leo_path_t));
-		
+
 		  path->dest_rank    = g_rank_dst;
 		  path->dir_channel  = dir_channel;
 		  path->dir_fchannel = dir_fchannel;
 		  path->last         = tbx_true;
-		
+
 		  routing_table_current[location] = path;
 		}
 	      }
@@ -743,7 +793,7 @@ process_vchannel(p_leonie_t     leonie,
 	    l_rank_src =
 	      ntbx_pc_global_to_local(dir_vchannel_pc, g_rank_src);
 
-	    TRACE_VAL("======== source", l_rank_src);  
+	    TRACE_VAL("======== source", l_rank_src);
 
 	    ntbx_pc_first_global_rank(dir_vchannel_pc, &g_rank_dst);
 
@@ -751,14 +801,14 @@ process_vchannel(p_leonie_t     leonie,
 	      {
 		ntbx_process_lrank_t l_rank_dst =   -1;
 		ntbx_process_grank_t g_rank_med =   -1;
-	    
+
 		l_rank_dst = ntbx_pc_global_to_local(dir_vchannel_pc,
 						     g_rank_dst);
 		TRACE_VAL("======== destination", l_rank_dst);
-		
-		{ 
+
+		{
 		  p_leo_path_t               path     = NULL;
-		  const ntbx_process_lrank_t location = 
+		  const ntbx_process_lrank_t location =
 		    l_rank_src * table_size + l_rank_dst;
 
 		  path = routing_table_current[location];
@@ -768,14 +818,14 @@ process_vchannel(p_leonie_t     leonie,
 		      routing_table_next[location] = path;
 		      continue;
 		    }
-		  
+
 		  ntbx_pc_first_global_rank(dir_vchannel_pc, &g_rank_med);
 		  do
 		    {
 		      ntbx_process_lrank_t l_rank_med = -1;
 		      p_leo_path_t         path_src   = NULL;
 		      p_leo_path_t         path_dst   = NULL;
-	      
+
 		      l_rank_med = ntbx_pc_global_to_local(dir_vchannel_pc,
 							   g_rank_med);
 
@@ -785,21 +835,21 @@ process_vchannel(p_leonie_t     leonie,
 
 		      if (!path_src)
 			continue;
-		      
+
 		      path_dst =
 			routing_table_current[l_rank_med * table_size +
 					     l_rank_dst];
 
 		      if (!path_dst)
 			continue;
-		      
+
 		      TRACE_VAL("found path through", l_rank_med);
 
 		      path = TBX_MALLOC(sizeof(leo_path_t));
 
 		      *path = *path_src;
 		      path->last = tbx_false;
-		      
+
 		      break;
 		    }
 		  while
@@ -820,7 +870,7 @@ process_vchannel(p_leonie_t     leonie,
 	    while (ntbx_pc_next_global_rank(dir_vchannel_pc, &g_rank_dst));
 	  }
 	while (ntbx_pc_next_global_rank(dir_vchannel_pc, &g_rank_src));
-	
+
 	if (!process_is_converging)
 	  {
 	    leo_terminate("routing table generation process "
@@ -829,7 +879,7 @@ process_vchannel(p_leonie_t     leonie,
 
 	{
 	  p_leo_path_t *temp = NULL;
-	  
+
 	  temp                  = routing_table_current;
 	  routing_table_current = routing_table_next;
 	  routing_table_next    = temp;
@@ -852,14 +902,14 @@ process_vchannel(p_leonie_t     leonie,
 	p_leo_dir_vchannel_process_specific_t pi_specific = NULL;
 	p_ntbx_process_container_t            pc          = NULL;
 	p_ntbx_process_t                      process_src = NULL;
-	
+
 	l_rank_src  = ntbx_pc_global_to_local(dir_vchannel_pc, g_rank_src);
-	TRACE_VAL("======== source", l_rank_src);  
+	TRACE_VAL("======== source", l_rank_src);
 	pi          = ntbx_pc_get_global(dir_vchannel_pc, g_rank_src);
 	process_src = pi->process;
 	pi_specific = pi->specific;
 	pc          = pi_specific->pc;
-	
+
 	ntbx_pc_first_global_rank(dir_vchannel_pc, &g_rank_dst);
 	do
 	  {
@@ -870,12 +920,12 @@ process_vchannel(p_leonie_t     leonie,
 
 	    l_rank_dst = ntbx_pc_global_to_local(dir_vchannel_pc, g_rank_dst);
 	    TRACE_VAL("======== destination", l_rank_dst);
-		
-	    { 
+
+	    {
 	      p_leo_path_t               path     = NULL;
-	      const ntbx_process_lrank_t location = 
+	      const ntbx_process_lrank_t location =
 		l_rank_src * table_size + l_rank_dst;
-	      
+
 	      path   = routing_table_current[location];
 	      rtable = leo_dir_vchannel_process_routing_table_init();
 
@@ -894,13 +944,13 @@ process_vchannel(p_leonie_t     leonie,
 						    l_rank_dst);
 	    {
 	      size_t len = 0;
-	      
+
 	      len = strlen(dir_vchannel->name) + 8;
 	      ref_name = TBX_MALLOC(len);
-	      
+
 	      sprintf(ref_name, "%s:%d", dir_vchannel->name, l_rank_src);
 	    }
-	    
+
 	    ntbx_pc_add(pc, process_dst, l_rank_dst,
 			process_src, ref_name, rtable);
 	    free(ref_name);
@@ -912,7 +962,7 @@ process_vchannel(p_leonie_t     leonie,
 
     TRACE("====== Transfer complete");
   }
-  
+
   tbx_htable_add(dir->vchannel_htable, dir_vchannel->name, dir_vchannel);
   tbx_slist_append(dir->vchannel_slist, dir_vchannel);
   TRACE("====== Processing done");
@@ -921,7 +971,7 @@ process_vchannel(p_leonie_t     leonie,
   LOG_OUT();
 }
 
-// process_application: analyses an application description table returned by 
+// process_application: analyses an application description table returned by
 // Leoparse from the application configuration file parsing and builds
 // the corresponding directory data structures.
 void
@@ -933,26 +983,28 @@ process_application(p_leonie_t leonie)
   p_tbx_slist_t    channel_slist  = NULL;
   p_tbx_slist_t    vchannel_slist = NULL;
   p_leo_networks_t networks       = NULL;
-  
+
   LOG_IN();
   networks    = leonie->networks;
   settings    = leonie->settings;
   application = leonie->application_htable;
-  
+
   if (!settings->name)
     {
-      settings->name = leoparse_read_id(application, "name");  
+      settings->name = leoparse_try_read_id(application, "name")?:
+	leoparse_read_string(application, "name");
     }
-  
+
   TRACE_STR("==== Application name", settings->name);
 
   if (!settings->flavor)
     {
-      settings->flavor = leoparse_read_id(application, "flavor");
+      settings->flavor = leoparse_try_read_id(application, "flavor")?:
+	leoparse_read_string(application, "flavor");
     }
-  
+
   TRACE_STR("==== Application flavor", settings->flavor);
-  
+
   leonie->application_networks = leoparse_read_htable(application, "networks");
   include_slist        =
     leoparse_read_as_slist(leonie->application_networks, "include");
@@ -966,15 +1018,15 @@ process_application(p_leonie_t leonie)
 
       tbx_slist_merge_after(include_slist, settings->network_file_slist);
     }
-  
+
   if (!include_slist || tbx_slist_is_nil(include_slist))
     {
-      leo_terminate("parse error : no network include list");      
+      leo_terminate("parse error : no network include list");
     }
 
   TRACE("==== Including Network configuration files");
   include_network_files(networks, include_slist);
-  
+
   channel_slist =
     leoparse_read_as_slist(leonie->application_networks, "channels");
 
@@ -984,22 +1036,22 @@ process_application(p_leonie_t leonie)
     }
 
   tbx_slist_ref_to_head(channel_slist);
-      
+
   do
     {
       p_leoparse_object_t object  = NULL;
       p_tbx_htable_t      channel = NULL;
-      
+
       object  = tbx_slist_ref_get(channel_slist);
       channel = leoparse_get_htable(object);
-      
+
       process_channel(leonie, channel);
     }
   while (tbx_slist_ref_forward(channel_slist));
 
   vchannel_slist =
     leoparse_read_as_slist(leonie->application_networks, "vchannels");
-  
+
   if (vchannel_slist)
     {
       if (tbx_slist_is_nil(vchannel_slist))
@@ -1008,18 +1060,18 @@ process_application(p_leonie_t leonie)
 	}
 
       tbx_slist_ref_to_head(vchannel_slist);
-      
+
       do
 	{
 	  p_leoparse_object_t object   = NULL;
 	  p_tbx_htable_t      vchannel = NULL;
-	  
+
 	  object   = tbx_slist_ref_get(vchannel_slist);
 	  vchannel = leoparse_get_htable(object);
-	  
+
 	  process_vchannel(leonie, vchannel);
 	}
-      while (tbx_slist_ref_forward(vchannel_slist));      
+      while (tbx_slist_ref_forward(vchannel_slist));
     }
   else
     {

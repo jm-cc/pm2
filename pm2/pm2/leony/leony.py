@@ -13,10 +13,11 @@ import sys
 
 class Leony:
     def __init__(self, compat_p):
-        self.session_dict	= {}
-	self.session_number     = 0
-        self.next_global_rank	= 0
-        self.compatibility_mode	= compat_p
+        self.session_dict	 = {}
+	self.merged_session_dict = {}
+	self.session_number      = 0
+        self.next_global_rank	 = 0
+        self.compatibility_mode	 = compat_p
         leo_comm.server_init(self)
 #__________
 
@@ -28,7 +29,8 @@ else:
     leo = Leony(False)
 
 if leo.compatibility_mode:
-    s	= leo_session.Session(leo, 'main', sys.argv[1:], 'compat')
+    s	= leo_session.Session(leo, 'main')
+    leo_args.cmdline_parse(s, sys.argv[1:], 'compat' )
     leo_log.log_init(s.options.trace, leo.compatibility_mode)
     logger.info("opening session 'main'")
     s.init()

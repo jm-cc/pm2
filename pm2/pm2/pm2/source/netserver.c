@@ -43,7 +43,10 @@
 /* Here, it's possible to define USE_DYN_ARRAYS */
 #define USE_DYN_ARRAYS
 
-static marcel_t _recv_pid;
+#define MAX_NETSERVERS   128
+
+static marcel_t _recv_pid[MAX_NETSERVERS];
+static unsigned nb_netservers = 0;
 
 static boolean finished = FALSE;
 
@@ -62,6 +65,8 @@ extern pm2_post_post_migration_hook _pm2_post_post_migr_func;
 
 extern volatile unsigned _pm2_imported_threads;
 
+extern marcel_key_t mad2_send_key, mad2_recv_key;
+
 static void netserver_printf()
 { 
   static char buf[2048] __MAD_ALIGNED__;
@@ -72,7 +77,7 @@ static void netserver_printf()
 
   mad_recvbuf_receive();
 
-  tprintf("%s", buf);
+  tfprintf(stderr, "%s", buf);
 }
 
 #ifdef MIGRATE_IN_HEADER
@@ -80,6 +85,14 @@ static void netserver_printf()
 #else
 #define MIGR_MODE  MAD_IN_PLACE
 #endif
+
+#ifdef MAD2
+#define MAD2_TRANSMIT_RECV_CONNECTION(pid) \
+  *(marcel_specificdatalocation((pid), mad2_recv_key)) = marcel_getspecific(mad2_recv_key)
+#else
+#define MAD2_TRANSMIT_RECV_CONNECTION(pid) (void)0
+#endif
+
 
 static void netserver_migration()
 {
@@ -204,6 +217,8 @@ static void netserver_lrpc()
   args->initiator = marcel_self();
 #endif
 
+  MAD2_TRANSMIT_RECV_CONNECTION(pid);
+
   marcel_run(pid, args);
 
 #ifdef MINIMAL_PREEMPTION
@@ -262,6 +277,9 @@ static void netserver_async_lrpc()
 #else
   args->initiator = marcel_self();
 #endif
+
+  MAD2_TRANSMIT_RECV_CONNECTION(pid);
+
   marcel_run(pid, args);
 
 #ifdef MINIMAL_PREEMPTION
@@ -339,30 +357,13 @@ static any_t netserver(any_t arg)
   marcel_cleanup_push(_netserver_term_func, marcel_self());
 
   while(!finished) {
+#ifdef MAD2
+    mad_receive((p_mad_channel_t)arg);
+#else
     mad_receive();
+#endif
     mad_unpack_int(MAD_IN_HEADER, &tag, 1);
     switch(tag) {
-    case NETSERVER_END : {
-      finished = TRUE;
-      break;
-    }
-    case NETSERVER_CRITICAL_SECTION : {
-      marcel_sem_V(&_pm2_critical[0]);
-      marcel_sem_P(&_pm2_critical[1]);
-      break;
-    }
-    case NETSERVER_MIGRATION : {
-      netserver_migration();
-      break;
-    }
-    case NETSERVER_CLONING : {
-      netserver_cloning();
-      break;
-    }
-    case NETSERVER_PRINTF : {
-      netserver_printf();
-      break;
-    }
     case NETSERVER_LRPC : {
       netserver_lrpc();
       break;
@@ -383,6 +384,27 @@ static any_t netserver(any_t arg)
       netserver_quick_async_lrpc();
       break;
     }
+    case NETSERVER_MIGRATION : {
+      netserver_migration();
+      break;
+    }
+    case NETSERVER_END : {
+      finished = TRUE;
+      break;
+    }
+    case NETSERVER_CRITICAL_SECTION : {
+      marcel_sem_V(&_pm2_critical[0]);
+      marcel_sem_P(&_pm2_critical[1]);
+      break;
+    }
+    case NETSERVER_CLONING : {
+      netserver_cloning();
+      break;
+    }
+    case NETSERVER_PRINTF : {
+      netserver_printf();
+      break;
+    }
     case NETSERVER_MERGE : {
       netserver_merge();
       break;
@@ -400,10 +422,17 @@ static any_t netserver(any_t arg)
   return NULL;
 }
 
+#ifdef MAD2
+void netserver_start(p_mad_channel_t channel, unsigned priority)
+#else
 void netserver_start(unsigned priority)
+#endif
 {
   marcel_attr_t attr;
   unsigned granted;
+#ifndef MAD2
+  void *channel = NULL;
+#endif
 
   marcel_attr_init(&attr);
   marcel_attr_setprio(&attr, priority);
@@ -411,19 +440,27 @@ void netserver_start(unsigned priority)
 			   slot_general_alloc(NULL, 0, &granted, NULL));
   marcel_attr_setstacksize(&attr, granted);
 
-  marcel_create(&_recv_pid, &attr, netserver, NULL);
+  marcel_create(&_recv_pid[nb_netservers], &attr,
+		netserver, (any_t)channel);
+  nb_netservers++;
 
 #ifdef MINIMAL_PREEMPTION
-  marcel_setspecialthread(_recv_pid);
+  marcel_setspecialthread(_recv_pid[0]);
 #endif
 }
 
 void netserver_wait_end(void)
 {
-  marcel_join(_recv_pid, NULL);
+  int i;
+
+  for(i=0; i<nb_netservers; i++)
+    marcel_join(_recv_pid[i], NULL);
 }
 
 void netserver_stop(void)
 {
-  marcel_cancel(_recv_pid);
+  int i;
+
+  for(i=0; i<nb_netservers; i++)
+    marcel_cancel(_recv_pid[i]);
 }

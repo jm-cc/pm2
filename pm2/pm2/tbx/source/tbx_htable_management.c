@@ -2,7 +2,7 @@
  *  \brief TBX hash-table management routines
  *
  *  This file implements hash-table TBX associative arrays.
- * 
+ *
  */
 
 /*
@@ -27,7 +27,7 @@
 
 #include "tbx.h"
 
-/* 
+/*
  * Macros
  * ------
  */
@@ -68,7 +68,7 @@ tbx_htable_init(p_tbx_htable_t            htable,
     {
       buckets = DEFAULT_BUCKET_COUNT;
     }
-  
+
   htable->nb_bucket    = buckets;
   htable->bucket_array = TBX_MALLOC(buckets * sizeof(tbx_htable_element_t));
   htable->nb_element   = 0;
@@ -84,14 +84,14 @@ p_tbx_htable_t
 tbx_htable_empty_table(void)
 {
   p_tbx_htable_t table = NULL;
-  
+
   LOG_IN();
   table = TBX_CALLOC(1, sizeof(tbx_htable_t));
   CTRL_ALLOC(table);
-  
+
   tbx_htable_init(table, 0);
   LOG_OUT();
-  
+
   return table;
 }
 
@@ -99,10 +99,10 @@ tbx_bool_t
 tbx_htable_empty(p_tbx_htable_t htable)
 {
   tbx_bool_t test = tbx_false;
-  
+
   LOG_IN();
   test = (htable->nb_element == 0);
-  LOG_OUT();  
+  LOG_OUT();
 
   return test;
 }
@@ -111,11 +111,11 @@ tbx_htable_element_count_t
 tbx_htable_get_size(p_tbx_htable_t htable)
 {
   tbx_htable_element_count_t count = -1;
-  
+
   LOG_IN();
   count = htable->nb_element;
   LOG_OUT();
-  
+
   return count;
 }
 
@@ -148,14 +148,14 @@ tbx_htable_add(p_tbx_htable_t  htable,
 {
   tbx_htable_bucket_count_t bucket  = -1;
   p_tbx_htable_element_t    element = NULL;
-  
+
   LOG_IN();
   bucket  = __tbx_htable_get_bucket(htable, key);
-  element = tbx_malloc(tbx_htable_manager_memory);  
+  element = tbx_malloc(tbx_htable_manager_memory);
   element->key = tbx_strdup(key);
   element->object = object;
   element->next   = htable->bucket_array[bucket];
-  
+
   htable->bucket_array[bucket] = element;
   htable->nb_element++;
   LOG_OUT();
@@ -168,18 +168,18 @@ __tbx_htable_get_element(p_tbx_htable_t  htable,
 {
   tbx_htable_bucket_count_t bucket  = -1;
   p_tbx_htable_element_t    element = NULL;
-  
+
   LOG_IN();
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = htable->bucket_array[bucket];
-  
+
   while (element)
     {
       if (!strcmp(key, element->key))
 	goto end;
-      
+
       element = element->next;
-    }  
+    }
 
  end:
   LOG_OUT();
@@ -193,17 +193,17 @@ tbx_htable_get(p_tbx_htable_t  htable,
 {
   p_tbx_htable_element_t  element = NULL;
   void                   *result  = NULL;
-  
+
   LOG_IN();
 
   LOG("tbx_htable_get: key = <%s>", key);
 
   element = __tbx_htable_get_element(htable, key);
-  
+
   if (element)
     {
       result = element->object;
-    }  
+    }
   LOG_OUT();
 
   return result;
@@ -216,10 +216,10 @@ tbx_htable_replace(p_tbx_htable_t  htable,
 {
   p_tbx_htable_element_t  element = NULL;
   void                   *result  = NULL;
-  
+
   LOG_IN();
   element = __tbx_htable_get_element(htable, key);
-  
+
   if (element)
     {
       result = element->object;
@@ -229,7 +229,7 @@ tbx_htable_replace(p_tbx_htable_t  htable,
     {
       tbx_htable_add(htable, key, object);
     }
-  
+
   LOG_OUT();
 
   return result;
@@ -241,11 +241,11 @@ tbx_htable_extract(p_tbx_htable_t  htable,
 {
   tbx_htable_bucket_count_t  bucket  = -1;
   p_tbx_htable_element_t    *element = NULL;
-  
+
   LOG_IN();
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = &(htable->bucket_array[bucket]);
-  
+
   while (*element)
     {
       if (strcmp(key, (*element)->key))
@@ -276,7 +276,7 @@ tbx_htable_extract(p_tbx_htable_t  htable,
 	  return object;
 	}
     }
-  
+
   LOG_OUT();
   return NULL;
 }
@@ -298,19 +298,19 @@ tbx_htable_free(p_tbx_htable_t htable)
 	      p_tbx_htable_element_t temp = NULL;
 
 	      temp = element->next;
-	      
+
 	      TBX_FREE(element->key);
 	      element->key    = NULL;
 	      element->object = NULL;
 	      element->next   = NULL;
 
 	      tbx_free(tbx_htable_manager_memory, element);
-	      
+
 	      element = temp;
 	    }
 
 	  htable->bucket_array[htable->nb_bucket] = NULL;
-	}  
+	}
     }
 
   htable->nb_element = 0;
@@ -349,13 +349,13 @@ tbx_htable_get_key_slist(p_tbx_htable_t htable)
 	  while (element)
 	    {
 	      char *key_copy = NULL;
-	      
+
 	      key_copy = tbx_strdup(element->key);
 	      tbx_slist_append(slist, key_copy);
 
 	      element = element->next;
 	    }
-	}  
+	}
     }
   LOG_OUT();
 

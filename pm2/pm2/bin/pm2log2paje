@@ -38,335 +38,867 @@ my(%LWPs)=();
 
 my(%userThreads);
 
-################################################################
-# Pour être sur que les entités existent (sinon, on les crée)
-sub ensure_ut {
-    my($date)=shift;
-    my($proc)=shift;
-    my($lwp)=shift;
-    my($cur_utid)=shift;
-    my($utid)=shift;
+##########################################################################
+# SuperTrace
+#
+package Event;
 
-    if (defined($userThreads{$utid})) {
-	return 1;
-    }
-    #print STDERR "Creating Thread $utid on lwp $lwp\n";
-    my(%infos);
-    $infos{"lwp"}=lwp_get_id($lwp);
-    $userThreads{$utid}=\%infos;
+use constant CREATE_PROC   => 0;
+use constant DESTROY_PROC  => 1;
+use constant CREATE_LWP    => 2;
+use constant DESTROY_LWP   => 3;
+use constant CREATE_UT     => 4;
+use constant DESTROY_UT    => 5;
+use constant UT_GIVE_HAND  => 6;
+use constant UT_GET_HAND   => 7;
+use constant LWP_GIVE_HAND => 8;
+use constant LWP_GET_HAND  => 9;
+use constant FUT           => 10;
+use constant FKT           => 11;
 
-    emit_EV($date, $proc, lwp_get_act($lwp), lwp_get_id($lwp),
-	    $cur_utid, "CREATE_UT", $utid);
-    return 0;
+no strict;
+@Name = ("Create Proc", "Destroy Proc", "Create LWP", "Destroy LWP",
+	"Create UT", "Destroy UT", "UT Give Hand", "UT Get Hand",
+	"LWP Give Hand", "LWP Get Hand", "FUT", "FKT");
+
+use strict;
+
+##########################################################################
+# Entities
+#
+package Entity;
+#Entity:
+# id
+# t_start
+# t_end
+# 
+# Ensure($id, $date)
+# Get($id)
+# 
+
+my($debug)=0;
+
+sub new { # [classe] id date
+    my $class=shift;
+    my $self={};
+    bless($self, $class);
+    $self->_init(@_);
+    return $self;
 }
 
-sub ensure_lwp {
+sub _init {
+    my $self=shift;
+    $self->{ID}=shift;
     my($date)=shift;
-    my($proc)=shift;
+    #$self->Debug("Creating...");
+    $self->DateStart($date);
+    $self->DateEnd($date);
+    $self->AddCollection();
+    if (@_) {
+	my %extra = @_;
+	@$self{keys %extra} = values %extra;
+    }
+}
+
+sub AddCollection {
+    my $self=shift;
+    $self->GetCollection()->{$self->Id}=$self;
+}
+
+sub RemoveCollection {
+    my $self=shift;
+    delete($self->GetCollection()->{$self->Id});
+}
+
+sub DESTROY {
+    my($self)=shift;
+    $self->RemoveCollection();
+}
+
+sub Id {
+    my $self=shift;
+    return $self->{ID};
+}
+
+sub Ensure {
+    my($class)=shift;
     my($id)=shift;
-    my($cur_utid)=shift;
-    my($first_utid)=shift;
+    my($date)=shift;
 
-    if (defined($LWPs{$id})) {
-	return 1;
+    my($entity)=$class->Get($id);
+    if (defined($entity)) {
+	$entity->UpdateTime($date);
+    } else {
+	return $class->new($id, $date);
     }
-    #print STDERR "Creating LWP $id\n";
-
-    my(%infos);
-    $infos{"id"}=$id;
-    $infos{"act"}=0;
-    $infos{"utid"}=$first_utid;
-    
-    $LWPs{$id}=\%infos;
-
-    my($lwp)=\%infos;
-    emit_EV($date, $proc, lwp_get_act($lwp), lwp_get_id($lwp),
-	    $cur_utid, "CREATE_LWP", lwp_get_id($lwp));
-    return 0;
+    return $entity;
 }
 
-sub ensure_proc {
-    my($date)=shift;
+sub UpdateTime {
+    my $self=shift;
+    my $date=shift;
+    if ($date < $self->DateStart) {
+	$self->DateStart($date);
+    }
+    if ($date > $self->DateEnd) {
+	$self->DateEnd($date);
+    }
+}
+
+sub DateStart {
+    my $self=shift;
+    if (@_) {
+	$self->{DATE_START} = shift;
+        #$self->Debug("Setting dateStart to $self->{DATE_START}");
+    }
+    #$self->Debug("Looking dateStart to $self->{DATE_START}");
+    return $self->{DATE_START};
+}
+
+sub DateEnd {
+    my $self=shift;
+    if (@_) {
+	$self->{DATE_END} = shift;
+        #$self->Debug("Setting dateEnd to $self->{DATE_END}");
+    }
+    return $self->{DATE_END};
+}
+
+sub Get {
+    my($class)=shift;
     my($id)=shift;
-    my($lwp)=shift;
-    
-    if (defined($procs{$id})) {
-	return 1;
+    my($col)=$class->GetCollection();
+    if (defined($col->{$id})) {
+	return $col->{$id};
     }
-    emit_EV($date, $id, 0, 0, 0, "CREATE_PROC", $id);
-    my(%infos);
-    $infos{"id"}=$id;
-    $infos{"lwp"}= -1;
-    $procs{$id}=\%infos;
-    
-    return 0;
+    return undef;
 }
 
-################################################################
-# Gestion de la structure LWP
-# lwp:
-# "utid" -> utid ordonnancé dessus
-# "act"  -> act dans laquelle le LWP est ordonnancé
-# "USW_proc"? -> proc du prochain UT
-# "new_utid"? -> utid du prochain UT
-# "USW_Date"? -> Date du USW enregistré
-
-sub lwp_set_utid {
-    my($lwp)=shift;
-    my($utid)=shift;
-    $lwp->{"utid"}=$utid;
-}
-
-sub lwp_get_utid {
-    my($lwp)=shift;
-    return $lwp->{"utid"};
-}
-
-sub lwp_get_act {
-    my($lwp)=shift;
-    return $lwp->{"act"};
-}
-
-sub lwp_record_USW {
-    my($lwp)=shift;
-    my($date)=shift;
-    my($new_utid)=shift;
-    my($USW_proc)=shift;
-
-    $lwp->{"new_utid"} = $new_utid;
-    $lwp->{"USW_proc"} = $USW_proc;
-    $lwp->{"USW_Date"} = $date;
-}
-
-sub lwp_delay_USW {
-    my($lwp)=shift;
-    my($date)=shift;
-    my($utid)=shift;
-    
-    if (defined($lwp->{"new_utid"})) {
-	print STDERR "USW delayed to $date by $utid\n";
-	$lwp->{"USW_Date"}=$date;
+sub Name {
+    my $proto=shift;
+    my $class = ref($proto) || $proto;
+    my $self= ref($proto) && $proto;
+    if (!$self) {
+	return $class->NameClass;
+    } else {
+	return $class->NameClass . "[" . $self->Id . "]"; 
     }
 }
 
-sub lwp_can_run {
-    my($lwp)=shift;
-    my($utid)=shift;
+#use overload '""' => \&ToString, "fallback" => 1;
 
-    if (defined ($lwp->{"new_utid"}) && ($lwp->{"new_utid"} eq $utid)) {
-	emit_EV($lwp->{"USW_Date"}, $lwp->{"USW_proc"}, lwp_get_act($lwp), 
-		lwp_get_id($lwp), lwp_get_utid($lwp),
-		"UEV_HAND_GIVE_LINKED", "");
-	$lwp->{"utid"}=$lwp->{"new_utid"};
-	delete($lwp->{"new_utid"});
-	emit_EV($lwp->{"USW_Date"}, $lwp->{"USW_proc"}, lwp_get_act($lwp), 
-		lwp_get_id($lwp), lwp_get_utid($lwp),
-		"UEV_HAND_GET_LINKED", "");
-	return 1;
+sub ToString {
+    my $self=shift;
+    my $ret=$self->Name."(";
+    my($key);
+    foreach $key (keys %{$self}) {
+	$ret .= $key . " => ";
+	if (defined($self->{$key})) {
+	    $ret .= "'" . $self->{$key} . "'";
+	} else {
+	    $ret .= "UNDEF";
+	}
+	$ret .= ", ";
     }
-    return 0;
+    return $ret;
 }
 
-sub lwp_get_id {
-    my($lwp)=shift;
-
-    return $lwp->{"id"};
+sub Dump {
+    my $proto=shift;
+    my $class = ref($proto) || $proto;
+    my $self= ref($proto) && $proto;
+    if (!$self) {
+	print "Dumping ", $class->NameClass, "\n";
+    	my $entity;
+    	foreach $entity (values %{$class->GetCollection()}) {
+	    $entity->Dump;
+	}
+    } else {
+	print $self->Name, "[", $self->Id, "]\n";
+	my($key);
+	foreach $key (keys %{$self}) {
+	    print "  ", $key, " => ";
+	    if (defined($self->{$key})) {
+		print "'", $self->{$key}, "'\n";
+	    } else {
+		print "UNDEF\n";
+	    }
+	}
+    }
 }
 
-################################################################
-# Gestion de la structure PROC
-# proc:
-# "lwp"  -> LWP ordonnancé (numéro)
-# "new_lwp"? -> numéro du prochain LWP
-# "KSW_Date"? -> Date du KSW enregistré
-
-################################################################
-
-sub proc_get_lwp {
-    my($proc)=shift;
-    return $procs{$proc}->{"lwp"};
+sub CreateEntities {
+    my $proto=shift;
+    my $class = ref($proto) || $proto;
+    my $self= ref($proto) && $proto;
+    if (!$self) {
+    	my $entity;
+    	foreach $entity (values %{$class->GetCollection()}) {
+	    $entity->CreateEntities;
+	}
+    } else {
+	SuperTrace::AddFirst($self->DateStart-1, undef, undef, undef, $self->EventEntityCreate, $self);
+	SuperTrace::Add($self->DateEnd+1, undef, undef, undef, $self->EventEntityCreate + 1, $self);
+    }
 }
 
-sub proc_get_act {
-    my($proc)=shift;
-    return 0;
+sub Debug {
+    my $self=shift;
+    if ($debug) {
+	print $self->Name, "[", $self->Id, "]: ", @_, "\n";
+    }
 }
 
-sub proc_record_KSW {
-    my($proc)=shift;
-    my($date)=shift;
-    my($new_lwp)=shift;
+1;
 
-    $procs{$proc}->{"new_lwp"} = $new_lwp;
-    $procs{$proc}->{"KSW_Date"} = $date;
-    emit_EV($procs{$proc}->{"KSW_Date"}, $proc, proc_get_act($proc), 
-	    proc_get_lwp($proc), 
-	    lwp_get_utid(get_lwp_by_num(proc_get_lwp($proc))),
-	    "KEV_HAND_GIVE_LINKED", "");
-    $procs{$proc}->{"lwp"}=$procs{$proc}->{"new_lwp"};
-    delete($procs{$proc}->{"new_lwp"});
-    emit_EV($procs{$proc}->{"KSW_Date"}, $proc, proc_get_act($proc), 
-	    proc_get_lwp($proc), 
-	    lwp_get_utid(get_lwp_by_num(proc_get_lwp($proc))),
-	    "KEV_HAND_GET_LINKED", "");
+
+##########################################################################
+# EntitySW
+#
+package EntitySW;
+our(@ISA);
+@ISA=("Entity");
+
+sub new {
+    my($class)=shift;
+
+    my $self=$class->SUPER::new(@_ , "CURSW"=>undef, "LASTSW"=>undef,
+	    			     "DATESW"=>undef, "INFOSW"=>undef);
+    return $self;
 }
 
-sub get_proc {
-    return 0;
+sub CurSW {
+    my $self=shift;
+    if (@_) {
+	$debug && print "SW: ", $self->Name, " take ", $_[0]->Name, "\n";
+	$self->{CURSW} = shift;
+    }
+    return $self->{CURSW};
 }
 
-sub get_lwp {
-    my($date)=shift;
-    my($utid)=shift;
+sub LastSW {
+    my $self=shift;
+    if (@_) {
+	my $next=shift;
+        if ($next) {
+	    $debug && print "SW: ", $self->Name, " keep ", $next->Name, "\n";
+	    $self->{LASTSW} = $next;
+	} else {
+	    $debug && print "SW: ", $self->Name, " flushing old\n";
+	    $self->{LASTSW} = undef;
+	}
+    }
+    return $self->{LASTSW};
+}
 
-    my($lwp);
+sub DateSW {
+    my $self=shift;
+    if (@_) {
+	$self->{DATESW} = shift;
+    }
+    return $self->{DATESW};
+}
 
-    for $lwp (values %LWPs) {
-	if (lwp_get_utid($lwp) eq $utid) {
-	    lwp_delay_USW($lwp, $date, $utid);
+sub InfoSW {
+    my $self=shift;
+    if (@_) {
+	$self->{INFOSW} = shift;
+    }
+    return $self->{INFOSW};
+}
+
+sub MoveSW {
+
+}
+
+sub EnsureSW {
+    my $self=shift;
+    my $date=shift;
+    my $SW=shift;
+    my $info=shift;
+    
+    if (!defined($self->CurSW)) {
+	$self->CurSW($SW);
+    } else {
+	if ($self->CurSW == $SW) {
+	    if (defined($self->LastSW)) {
+		$self->EmitSW;
+		$self->LastSW(0);
+	    }
+	} else {
+	    if ($self->LastSW == $SW) {
+		$self->DateSW($date);
+		$self->InfoSW($info);
+		$self->Debug("Sw reproted at $date\n");
+		$self->MoveSW($date);
+	    } else {
+		print STDERR "Arg, qu'est-ce qui se passe at $date!\n";
+	    }
+	}
+    }
+}
+
+sub ProposeSW {
+    my $self=shift;
+    my $date=shift;
+    my $oldSW=shift;
+    my $newSW=shift;
+    my $info=shift;
+
+    $self->Debug("SW Proposed at $date from ",
+    	$oldSW->Name, " to ", $newSW->Name, "");
+    $self->EnsureSW($date, $oldSW, $info);
+    $self->InvalidOldSW($newSW);
+    $self->LastSW($self->CurSW);
+    $self->CurSW($newSW);
+    $self->DateSW($date);
+    $self->InfoSW($info);
+}
+
+sub FlushSW {
+    my $proto=shift;
+    my $class = ref($proto) || $proto;
+    my $self= ref($proto) && $proto;
+    if (!$self) {
+    	my $entity;
+	my $arg=$_[0];
+	$debug && print "Flushing for $class ";
+	if (defined($arg)) {
+	    $debug && print "(",$arg->Name,")";
+	}
+	$debug && print "\n";
+    	foreach $entity (values %{$class->GetCollection()}) {
+	    $entity->FlushSW(@_);
+	}
+    } else {
+	my $SW=shift;
+	$debug && print "Flushing for ",$self->Name, " ";
+	if (defined($SW)) {
+	    $debug && print "(",$SW->Name,")";
+	}
+	if (defined($self->LastSW)) {
+	    $debug && print "[",$self->LastSW->Name,"]";
+	}
+	$debug && print "\n";
+        if (defined($self->LastSW) &&
+	         (!(defined($SW)) || ($SW == $self->LastSW))) {
+	    $debug && print "Yes, do flush\n";
+	    $self->EmitSW;
+	    $self->LastSW(0);
+        }
+    }
+}
+
+sub InvalidOldSW {
+    my $self=shift;
+    my $SW=shift;
+
+    ref($self)->FlushSW($SW);
+}
+
+##########################################################################
+# Processors
+#
+package Processor;
+#use Entity;
+our(@ISA);
+@ISA=("EntitySW");
+
+my(%Processor_Collection)=();
+
+
+sub GetCollection {
+    return \%Processor_Collection;
+}
+
+sub NameClass {
+    return "Processor";
+}
+
+sub EmitSW {
+    my $self=shift;
+
+    SuperTrace::Insert_KSW($self);
+}
+
+sub EventEntityCreate {
+    return Event::CREATE_PROC;
+}
+
+1;
+
+##########################################################################
+# LWPs
+#
+package LWP;
+#use Entity;
+our(@ISA);
+@ISA=("EntitySW");
+
+my(%LWP_Collection)=();
+
+sub GetCollection {
+    return \%LWP_Collection;
+}
+
+sub NameClass {
+    return "LWP";
+}
+
+sub Name {
+    my $self=shift;
+    if (@_) {
+	$self->{NAME} = shift;
+    }
+    if (defined($self->{NAME})) {
+	return $self->{NAME}.'['.$self->Id.']';
+    } else {
+        return $self->SUPER::Name;
+    }
+}
+
+sub JustAfterSW {
+    my $self=shift;
+
+    return defined($self->LastSW);
+}
+
+sub DelayedUEV {
+    my $self=shift;
+    if (@_) {
+	my $elem=shift;
+	if ($elem) {
+	    $debug && SuperTrace::DumpEv($elem, "Adding Delay... ");
+	    push @{$self->{DELAYED_UEV}}, $elem;
+	} else {
+	    $debug && print "purging\n";
+	    @{$self->{DELAYED_UEV}} = ();
+	}
+    }
+    return $self->{DELAYED_UEV};
+}
+
+sub Delay {
+    my $self=shift;
+    my $ev=shift;
+
+    $self->DelayedUEV($ev);
+}
+
+sub Utid {
+    my $self=shift;
+    return $self->CurSW;
+}
+
+sub EmitSW {
+    my $self=shift;
+    
+    SuperTrace::Insert_USW($self);
+}
+
+sub MoveSW {
+    my $self=shift;
+    my $utid=$self->LastSW;
+    my $ev;
+    
+    foreach $ev (@{$self->DelayedUEV}) {
+	    $debug && print "moving $ev to $utid: ";
+	    my $field;
+	    for $field (@{$ev}) {
+	        $debug && print $field, " ";
+	    }
+	    $debug && print "\n";
+       SuperTrace::Update_Utid($ev, $utid);
+    }
+    $self->DelayedUEV(0);
+}
+
+sub ScheduledUtid {
+    my $class=shift;
+    my $utid=shift;
+    
+    if (not defined($utid)) {
+	return undef;
+    }
+    
+    my $lwp;
+    
+    foreach $lwp (values %{$class->GetCollection}) {
+	if (defined($lwp->CurSW) && $utid == $lwp->CurSW) {
+	    return $lwp;
+	}
+	if (defined($lwp->LastSW) && $utid == $lwp->LastSW) {
 	    return $lwp;
 	}
     }
-    for $lwp (values %LWPs) {
-	if (lwp_can_run($lwp, $utid)) {
-	    return $lwp;
-	}
+    return undef;
+}
+
+sub Proc {
+    my $self=shift;
+    if (@_) {
+	$self->{PROC} = shift;
     }
-    printf STDERR "Unable to find LWP for tid $utid at $date\n";
+    return $self->{PROC};
 }
 
-sub get_lwp_by_num {
-    my($num)=shift;
-    return $LWPs{$num};
+sub EventEntityCreate {
+    return Event::CREATE_LWP;
 }
 
-sub insert_USW {
-    my($date)=shift;
-    my($old_utid)=shift;
-    my($new_utid)=shift;
-    my($proc)=shift;
-    my($lwp);
-    if ( $old_utid eq $new_utid ) {
-	printf STDERR "Ignoring USW $old_utid to $new_utid\n";
-	return;
-    }
-    $lwp=get_lwp($date, $old_utid);
-    ensure_ut($date, $proc, $lwp, $old_utid, $new_utid) or
-	print STDERR "Switching to new thread $new_utid\n";
-    lwp_record_USW($lwp, $date, $new_utid, $proc);
+1;
+
+##########################################################################
+# Threads
+#
+package Thread;
+#use Entity;
+our(@ISA);
+@ISA=("Entity");
+
+my(%Thread_Collection)=();
+
+sub GetCollection {
+    return \%Thread_Collection;
 }
 
-sub insert_KSW {
-    my($date)=shift;
-    my($old_lwp)=shift;
-    my($new_lwp)=shift;
-    my($proc)=shift;
-    if ( $old_lwp == $new_lwp ) {
-	printf STDERR "Ignoring KSW $old_lwp to $new_lwp\n";
-	return;
-    }
-    proc_record_KSW($proc, $date, $new_lwp);
+sub NameClass {
+    return "Thread";
 }
 
-sub insert_UEV {
-    my($date)=shift;
-    my($utid)=shift;
-    my($subtype)=shift;
-    my($event)=shift;
+sub EventEntityCreate {
+    return Event::CREATE_UT;
+}
 
-    my($lwp)=get_lwp($date, $utid);
-    my($proc)=get_proc($date, lwp_get_id($lwp));
+1;
+
+##########################################################################
+# SuperTrace
+#
+package SuperTrace;
+
+sub Insert_KSW {
+    my $proc=shift;
     
-    emit_EV($date, $proc, lwp_get_act($lwp), lwp_get_id($lwp),
-	    $utid, "UEV_".$subtype, $event);
+    my ($oldlwp)=$proc->LastSW;
+    my ($newlwp)=$proc->CurSW;
+    my ($date)=$proc->DateSW;
+
+    my $oldutid=$oldlwp->Utid;
+    my $newutid=$newlwp->Utid;
+    my ($oldev, $newev);
+    ($oldev,$newev)=SuperTrace::AddKSW($date, $proc, $oldlwp, $oldutid,
+				       $newlwp, $newutid);
+    if ($oldlwp->JustAfterSW) {
+	$newlwp->Delay($oldev);
+    }
+    if ($newlwp->JustAfterSW) {
+	$newlwp->Delay($newev);
+    }
 }
 
-################################################################
-# Enregistrement des événements
-my(@events)=();
-sub emit_EV {
-    my($date)=shift;
-    my($proc)=shift;
-    my($act)=shift;
-    my($lwp)=shift;
-    my($utid)=shift;
-    my($ev_type)=shift;
-    my($event)=shift;
+sub Update_Utid {
+    my $ev=shift;
+    my $utid=shift;
+    if (defined($ev)) {	
+	$ev->[3]=$utid;
+        $debug && DumpEv($ev, "** Correction of $ev to $utid");
+    }
+}
 
-    my(@event)=($date, $proc, $act, $lwp, $utid, $ev_type, $event);
+sub Insert_USW {
+    my $lwp=shift;
 
-    push @events, \@event;
+    my ($oldutid)=$lwp->LastSW;
+    my ($newutid)=$lwp->CurSW;
+    my ($date)=$lwp->DateSW;
+    my ($proc)=$lwp->InfoSW;
+
+    SuperTrace::AddUSW($date, $proc, $lwp, $oldutid, $newutid);
+}
+
+sub AddKSW {
+    my $date=shift;
+    my $proc=shift;
+    my $oldlwp=shift;
+    my $oldutid=shift;
+    my $newlwp=shift;
+    my $newutid=shift;
+
+    return (Add($date, $proc, $oldlwp, $oldutid, Event::LWP_GIVE_HAND, $newlwp), 
+	    Add($date, $proc, $newlwp, $newutid, Event::LWP_GET_HAND, $oldlwp));
+    #TODO
+}
+
+sub AddUSW {
+    my $date=shift;
+    my $proc=shift;
+    my $lwp=shift;
+    my $oldutid=shift;
+    my $newutid=shift;
+
+    return (Add($date, $proc, $lwp, $oldutid, Event::UT_GIVE_HAND, $newutid), 
+	    Add($date, $proc, $lwp, $newutid, Event::UT_GET_HAND, $oldutid));
+    #TODO
+}
+
+my (@SuperTrace_events);
+
+sub Add { 
+    my $date=shift;
+    my $proc=shift;
+    my $lwp=shift;
+    my $utid=shift;
+    my $ev_type=shift;
+    my $ev_info=shift;
+
+    my @ev=($date, $proc, $lwp, $utid, $ev_type, $ev_info);
+
+    $debug && DumpEv(\@ev, "Emitting: ");
+    push @SuperTrace_events, \@ev;
+    return \@ev;
+}
+
+sub AddFirst { 
+    my $date=shift;
+    my $proc=shift;
+    my $lwp=shift;
+    my $utid=shift;
+    my $ev_type=shift;
+    my $ev_info=shift;
+
+    my @ev=($date, $proc, $lwp, $utid, $ev_type, $ev_info);
+
+    unshift @SuperTrace_events, \@ev;
+    return \@ev;
+}
+
+sub Sort {
+    my @ev;
+
+    @ev=sort { $a->[0] <=> $b->[0] } @SuperTrace_events;
+    @SuperTrace_events=@ev;
 
 }
 
-################################################################
-# Affichage (printf) des événements
-sub __display_event {
-    my($date)=shift;
-    my($proc)=shift;
-    my($act)=shift;
-    my($lwp)=shift;
-    my($utid)=shift;
-    my($event)=shift;
-	#if ($print_time) {
-	    printf "%.4i ", $date;
-	#}
-	#if ($print_proc) {
-	    printf "%.2i ", $proc;
-	#}
-	#if ($print_lwp) {
-	    printf "%.2i ", $lwp;
-	#}
-	#if ($print_act) {
-	    printf "%.2i ", $act;
-	#}
-	#if ($print_thread) {
-	    printf "%.10s ", $utid;
-	#}
-	#if ($print_event) {
-	    printf "%s ", $event;
-	#}
-    print "\n";
+sub DateStart {
+    return $SuperTrace_events[1]->[0];
 }
 
-sub display_event {
+sub DateEnd {
+    return $SuperTrace_events[scalar(@SuperTrace_events)-1]->[0];
+}
+
+sub DumpEv {
+    my $ev=shift;
+    my $prefix=shift;
+    if (not defined($prefix)) {
+	$prefix="";
+    }
+
+        my $utid;
+	if (defined($ev->[3])) {
+	    $utid=$ev->[3]->Name;
+	} else {
+	    $utid="UNDEF   ";
+	}
+	print $prefix, $ev->[0], 
+	      "  ",defined($ev->[1]) && $ev->[1]->Name,
+	      "  ",defined($ev->[2]) && $ev->[2]->Name,
+	      "\t",defined($ev->[3]) && $ev->[3]->Name,,
+	      "\t{",($Event::Name[$ev->[4]]),"}";
+	if (ref($ev->[5]) eq "ARRAY") {
+	    my $i;
+	    for ($i=4; $i<scalar(@{$ev->[5]}); $i++) {
+		print "\t[", $ev->[5]->[$i], "]";
+	    }
+	} elsif (ref($ev->[5]) eq "LWP" or ref($ev->[5]) eq "Thread") {
+	    print "\t", $ev->[5]->Name;
+	}
+	print "\n";
+}
+
+sub Dump {
+    my $ev;
+    my $prefix=shift;
+    if (not defined($prefix)) {
+	$prefix="";
+    }
+
+    print $prefix, "Dump Events:\n";
+    foreach $ev (@SuperTrace_events) {
+	DumpEv($ev, $prefix);
+    }
+
+}
+   
+sub PajeEvents {
+    my $ev;
+
+    foreach $ev (@SuperTrace_events) {
+    	PajeEvent($ev);
+    }
+}
+
+sub PajeEvent {
     my($event)=shift;
     my($date, $proc, $act, $lwp, $utid, $ev_type, $event_infos);
     
-    ($date, $proc, $act, $lwp, $utid, $ev_type, $event_infos)=@{$event};
+    ($date, $proc, $lwp, $utid, $ev_type, $event_infos)=@{$event};
 
-    $_=$ev_type;
-    if (/UEV_HAND_GIVE/) {
-	__display_event($date, $proc, $act, $lwp, $utid, "give hand");
-    } elsif (/UEV_HAND_GET/) {
-	__display_event($date, $proc, $act, $lwp, $utid, "get hand");
-    } elsif (/UEV/) {
-	__display_event($date, $proc, $act, $lwp, $utid, $event_infos);
-    } elsif (/^UEV/) {
-	__display_event($date, $proc, $act, $lwp, $utid, $event_infos);
-    } elsif (/CREATE_LWP/) {
-	__display_event($date, $proc, $act, $lwp, $utid, "Create LWP ".$event_infos);
-    } elsif (/CREATE_UT/) {
-	__display_event($date, $proc, $act, $lwp, $utid, "Create Thread ".$event_infos);
+    if ($ev_type==Event::UT_GIVE_HAND) {
+	Paje::paje_ut_give_hand($date, $proc, undef, $lwp, $utid);
+    } elsif ($ev_type==Event::UT_GET_HAND) {
+	Paje::paje_ut_get_hand($date, $proc, undef, $lwp, $utid);
+    } elsif ($ev_type==Event::LWP_GIVE_HAND) {
+	Paje::paje_kt_give_hand($date, $proc, undef, $lwp, $utid);
+    } elsif ($ev_type==Event::LWP_GET_HAND) {
+	Paje::paje_kt_get_hand($date, $proc, undef, $lwp, $utid);
+    } elsif ($ev_type==Event::FUT || $ev_type==Event::FKT) {
+	my @ev=@{$event_infos};
+	if ($ev_type==Event::FUT) {
+	    splice(@ev,0,4);
+	} else {
+	    splice(@ev,0,5);
+	}
+	if ($ev[0] eq "gcc-traced") {
+	    if ($ev[2] eq "entry") {
+		Paje::paje_function_enter($date, $ev[3], $utid, \@ev);
+	    } else {
+		Paje::paje_function_exit($date, $ev[3], $utid, \@ev);
+	    }
+	} else {
+	    Paje::paje_event_gen($date, $utid, join(' ', @ev));
+	}
+    } elsif ($ev_type==Event::CREATE_PROC) {
+	Paje::paje_proc_register($date, $event_infos);
+    } elsif ($ev_type==Event::CREATE_LWP) {
+	Paje::paje_lwp_register($date, $event_infos);
+    } elsif ($ev_type==Event::CREATE_UT) {
+	Paje::paje_ut_register($date, $event_infos);
+#    } elsif (/UEV_FUNC_ENTER/) {
+#	my($function)=$event_infos->{"function"};
+#	paje_function_enter($date, $function, $utid, $event_infos);
+#    } elsif (/UEV_FUNC_EXIT/) {
+#	my($function)=$event_infos->{"function"};
+#	paje_function_exit($date, $function, $utid, $event_infos);
+	#my($fid)=paje_function_get_id($function, $date);
+	#paje_print(6,$date,"$fid UE \"$event_infos\"");
+	#paje_print(10,$date,"UE UTV_UT$utid $fid");
+	#paje_print(6,$date,"UE".++$nbev." UTV_UT_FUNC \"$event_infos\"");
+	#paje_print(10,$date,"UTV_UT_FUNC UTV_UT$utid UTV_UT_E".$nbev);
+	#__display_event($date, $proc, $act, $lwp, $utid, $event_infos);
     } else {
-	__display_event($date, $proc, $act, $lwp, $utid, 
-			"Unknown event type $ev_type");
+	print STDERR "Unknown event type $ev_type\n";
+	#__display_event($date, $proc, $act, $lwp, $utid, 
+	#		"Unknown event type $ev_type");
     }
 }
 
-sub display_events {
-    my($event);
+##########################################################################
+# FxT
+#
+package FxT;
 
-    for $event (@events) {
-	display_event($event);
+sub InsertFKT {
+    my $date=shift;
+    my $proc=shift;
+    my $lwp=shift;
+    my $event=shift;
+    $proc=Processor->Ensure($proc, $date, $lwp);
+    $lwp=LWP->Ensure($lwp, $date);
+    $proc->EnsureSW($date, $lwp, undef);
+    $lwp->Name($event->[4]);
+    
+    if (EventIsKSW($event)) {
+	my $next=LWP->Ensure(KFirst($event), $date);
+	$next->Proc($proc);
+	$proc->ProposeSW($date, $lwp, $next, undef);
+    } else {
+	my $utid;
+	if (EventIsUserFork($event)) {
+	    $utid=Thread->Ensure(KFirst($event), $date);
+	    $lwp->FlushSW;
+	    $lwp->CurSW($utid);
+        } else {
+    	    $utid=$lwp->Utid;
+	}
+    	my $ev=SuperTrace::Add($date, $proc, $lwp, $utid, Event::FKT, $event);
+	if ($lwp->JustAfterSW) {
+	    $lwp->Delay($ev);
+	}
     }
 }
+
+sub InsertFUT {
+    my $date=shift;
+    my $utid=shift;
+    my $event=shift;
+
+    $utid=Thread->Ensure($utid, $date);
+    my $lwp=LWP->ScheduledUtid($utid);
+    if (not defined($lwp)) {
+	print STDERR "Skipping User event at date $date (no LWP)\n";
+	return;
+    }
+    my $proc=$lwp->Proc;
+    if (not defined($proc)) {
+	print STDERR "Skipping User event at date $date (no Processor)\n";
+	return;
+    }
+    
+    $proc->EnsureSW($date,$lwp,undef);
+    $lwp->EnsureSW($date,$utid,$proc);
+    if (EventIsUSW($event)) {
+	my $next=Thread->Ensure(UFirst($event),$date);
+	$lwp->ProposeSW($date, $utid, $next, $proc);
+    } else {
+    	SuperTrace::Add($date, $proc, $lwp, $utid, Event::FUT, $event);
+    }
+}
+
+sub EventIsKSW {
+    my $event=shift;
+    my $type=$event->[5];
+
+    return $type =~ /switch_to/;    
+}
+
+sub EventIsUSW {
+    my $event=shift;
+    my $type=$event->[4];
+
+    return $type =~ /switch_to/;    
+}
+
+sub EventIsUserFork {
+    my $event=shift;
+    my $type=$event->[5];
+
+    return $type eq "user_fork";    
+}
+
+sub KFirst {
+    my $event=shift;
+
+    return $event->[6];
+}
+
+sub UFirst {
+    my $event=shift;
+
+    return $event->[5];
+}
+
+1;
+
+package Paje;
 
 ################################################################
 # Génération d'une trace paje
-sub paje_entete {
-    my($first_date)=$events[0]->[0];
-    my($end_date)=$events[$#events]->[0];
+sub Entete {
+    my($first_date)=SuperTrace::DateStart();
+    my($end_date)=SuperTrace::DateEnd();
     print
 	'%EventDef       SetLimits       0'."\n".
 	'%       Time    date'."\n".
@@ -480,78 +1012,78 @@ sub paje_entete {
 	'%       DestContainer   string'."\n".
 	'%       Key     string'."\n".
 	'%EndEventDef'."\n";
-    paje_print(0,$first_date,$first_date." ".($end_date+1));
-    paje_print(1,$first_date,"PRG\t0\tProgramme");
-    paje_print(1,$first_date,"UV\tPRG\t\"User Thread View\"");
-    paje_print(1,$first_date,"LV\tPRG\t\"LWP View\"");
-    paje_print(1,$first_date,"PV\tPRG\t\"Processor View\"");
+    Print(0,$first_date,$first_date." ".($end_date+1));
+    Print(1,$first_date,"PRG\t0\tProgramme");
+    Print(1,$first_date,"UV\tPRG\t\"User Thread View\"");
+    Print(1,$first_date,"LV\tPRG\t\"LWP View\"");
+    Print(1,$first_date,"PV\tPRG\t\"Processor View\"");
     #paje_print(1,$first_date," UTV_UT\t\tUTV\tUser_Thread");
-
-    paje_group_register("UT",
-			paje_event_def("U", 
-				       1, "UV\t\"user thread\"",
-				       7, \&paje_event_create_u,
-				       \&paje_event_distroy),
-			paje_event_def("LU",
-				       3, "L\t\"LUser Thread\"",
-				       6, \&paje_event_create_lu,
+    
+    GroupRegister("UT",
+		  EventDef("U", 
+			   1, "UV\t\"user thread\"",
+			   7, \&paje_event_create_u,
+			   \&paje_event_distroy),
+		  EventDef("LU",
+			   3, "L\t\"LUser Thread\"",
+			   6, \&paje_event_create_lu,
+			   \&paje_event_distroy, 
+			   "L"),
+		  EventDef("PU",
+			   3, "P\t\"PUser Thread\"",
+			   6, \&paje_event_create_pu,
+			   \&paje_event_distroy, 
+			   "P")
+		  );
+    GroupRegister("LWP",
+		  EventDef("L", 
+			   1, "LV\t\"LWP\"",
+			   7, \&paje_event_create_l,
+			   \&paje_event_distroy),
+		  EventDef("UL",
+			   3, "U\t\"ULWP\"",
+			   6, \&paje_event_create_ul,
+			   \&paje_event_distroy, 
+			   "U"),
+		  EventDef("PL",
+			   3, "P\t\"PLWP\"",
+			   6, \&paje_event_create_pl,
+			   \&paje_event_distroy, 
+			   "P")
+		  );
+    GroupRegister("PROC",
+		  EventDef("P", 
+			   1, "PV\t\"Processor\"",
+			   7, \&paje_event_create_p,
+			   \&paje_event_distroy),
+		  EventDef("UP",
+			   3, "U\t\"UProc \"",
+			   6, \&paje_event_create_up,
 				       \&paje_event_distroy, 
-				       "L"),
-			paje_event_def("PU",
-				       3, "P\t\"PUser Thread\"",
-				       6, \&paje_event_create_pu,
-				       \&paje_event_distroy, 
-				       "P")
+			   "U"),
+		  EventDef("LP",
+			   3, "L\t\"LProc \"",
+			   6, \&paje_event_create_lp,
+			   \&paje_event_distroy, 
+			   "L")
 			);
-    paje_group_register("LWP",
-			paje_event_def("L", 
-				       1, "LV\t\"LWP\"",
-				       7, \&paje_event_create_l,
-				       \&paje_event_distroy),
-			paje_event_def("UL",
-				       3, "U\t\"ULWP\"",
-				       6, \&paje_event_create_ul,
-				       \&paje_event_distroy, 
-				       "U"),
-			paje_event_def("PL",
-				       3, "P\t\"PLWP\"",
-				       6, \&paje_event_create_pl,
-				       \&paje_event_distroy, 
-				       "P")
-			);
-    paje_group_register("PROC",
-			paje_event_def("P", 
-				       1, "PV\t\"Processor\"",
-				       7, \&paje_event_create_p,
-				       \&paje_event_distroy),
-			paje_event_def("UP",
-				       3, "U\t\"UProc \"",
-				       6, \&paje_event_create_up,
-				       \&paje_event_distroy, 
-				       "U"),
-			paje_event_def("LP",
-				       3, "L\t\"LProc \"",
-				       6, \&paje_event_create_lp,
-				       \&paje_event_distroy, 
-				       "L")
-			);
-    paje_group_register("UF",
-			paje_event_def("UF",
-				       3, "U\tFunctions",
-				       6, \&paje_event_create_uf,
-				       \&paje_event_distroy));
-    paje_group_register("UE",
-			paje_event_def("UE",
-				       2, "U\t\"Alt_Events\"",
-				       6, \&paje_event_create_ue,
-				       \&paje_event_distroy));
-
-    paje_group_print($first_date);
+    GroupRegister("UF",
+		  EventDef("UF",
+			   3, "U\tFunctions",
+			   6, \&paje_event_create_uf,
+			   \&paje_event_distroy));
+    GroupRegister("UE",
+		  EventDef("UE",
+			   2, "U\t\"Alt_Events\"",
+			   6, \&paje_event_create_ue,
+			   \&paje_event_distroy));
+    
+    GroupPrint($first_date);
     #paje_print(3,$first_date,' UTV_UT_LWP   UTV_UT LWP');
-    paje_print(7,$first_date,"PRG1\tPRG\t0\tProgramme");
-    paje_print(7,$first_date,"UV1\tUV\tPRG1\t\"User Thread View\"");
-    paje_print(7,$first_date,"LV1\tLV\tPRG1\t\"LWP View\"");
-    paje_print(7,$first_date,"PV1\tPV\tPRG1\t\"Processor View\"");
+    Print(7,$first_date,"PRG1\tPRG\t0\tProgramme");
+    Print(7,$first_date,"UV1\tUV\tPRG1\t\"User Thread View\"");
+    Print(7,$first_date,"LV1\tLV\tPRG1\t\"LWP View\"");
+    Print(7,$first_date,"PV1\tPV\tPRG1\t\"Processor View\"");
 
     #paje_print(6,$first_date,"ULnone\tUL\t\"Lwp Dummy\"");
 #	'6  0.00220 R            S      Running'."\n".
@@ -594,7 +1126,7 @@ my(%paje_groups)=();
 #- id -> [paje_id]
 #- cle -> [cle]
 #- infos -> [infos]
-sub paje_event_def {
+sub EventDef {
     my($name)=shift;
     my($master_type)=shift;
     my($master_enddef)=shift;
@@ -613,7 +1145,7 @@ sub paje_event_def {
     return \%hash;
 }
 
-sub paje_group_register {
+sub GroupRegister {
     my($name)=shift;
     my($event);
     
@@ -638,7 +1170,7 @@ sub paje_group_register {
     $paje_groups{"groups"}{$name}{"count"}=0;    
 }
 
-sub paje_group_print {
+sub GroupPrint {
     my($date)=shift;
     my($paje_event_print_master);
     $paje_event_print_master=sub {
@@ -652,7 +1184,7 @@ sub paje_group_print {
 	for $dep_event (@{$event->{"depends"}}) {
 	    $paje_event_print_master->($paje_groups{"events"}{$dep_event});
 	}
-	paje_print($event->{"master_type"}, $date, $event->{"name"}."\t".$event->{"master_enddef"});
+	Print($event->{"master_type"}, $date, $event->{"name"}."\t".$event->{"master_enddef"});
     };
     my($event);
     for $event (values %{$paje_groups{"events"}}) {
@@ -781,7 +1313,7 @@ sub paje_event_create_ue {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
 	       $event->{"name"}.' "'.$elem->{"infos"}.'"');
 }
 
@@ -800,7 +1332,7 @@ sub paje_event_create_id {
     my($id)=shift;
     my($gr)=paje_group_find($group);
 
-    paje_print($gr->{"type"}, $date, $gr->{"prefix"}.$id.
+    Print($gr->{"type"}, $date, $gr->{"prefix"}.$id.
 	       " ".$gr->{"type_name"}.' "'.
 	       $gr->{"cles"}->{$cle}->{"infos"}.'"');
 }
@@ -810,10 +1342,12 @@ sub paje_event_gen {
     my($utid)= shift;
     my($event)= shift;
 
-    my($id)=paje_group_get_id("UE", "UE", "none", $date, $event);
-    my($tid)=paje_group_get_id("UT", "U", $utid, $date);
-    paje_print(10,$date,"UE $tid $id");
-    paje_group_distroy("UE", "none");
+    if (defined($utid)) {
+	my($id)=paje_group_get_id("UE", "UE", "none", $date, $event);
+	my($tid)=paje_group_get_id("UT", "U", $utid->Name, $date);
+	Print(10,$date,"UE $tid $id");
+	paje_group_distroy("UE", "none");
+    }
 }
 
 ################################################################
@@ -824,9 +1358,8 @@ sub paje_event_create_u {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' UV1 "0x'.
-	       sprintf("%.8x", $elem->{"cle"}).'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' UV1 "'.$elem->{"cle"}.'"');
 }
 
 sub paje_event_create_lu {
@@ -835,9 +1368,8 @@ sub paje_event_create_lu {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "Thread 0x'.
-	       sprintf("%.8x", $elem->{"cle"}).'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
 }
 
 sub paje_event_create_pu {
@@ -846,9 +1378,8 @@ sub paje_event_create_pu {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "Thread 0x'.
-	       sprintf("%.8x", $elem->{"cle"}).'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
 }
 
 sub paje_event_create_l {
@@ -857,7 +1388,7 @@ sub paje_event_create_l {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
 	       $event->{"name"}.' LV1 "'.$elem->{"cle"}.'"');
 }
 
@@ -867,8 +1398,8 @@ sub paje_event_create_ul {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "Lwp '.$elem->{"cle"}.'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
 }
 
 sub paje_event_create_pl {
@@ -877,8 +1408,8 @@ sub paje_event_create_pl {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "Lwp '.$elem->{"cle"}.'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
 }
 
 sub paje_event_create_p {
@@ -887,7 +1418,7 @@ sub paje_event_create_p {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
 	       $event->{"name"}.' PV1 "'.$elem->{"cle"}.'"');
 }
 
@@ -897,8 +1428,8 @@ sub paje_event_create_up {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "Proc '.$elem->{"cle"}.'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
 }
 
 sub paje_event_create_lp {
@@ -907,29 +1438,29 @@ sub paje_event_create_lp {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' "Proc '.$elem->{"cle"}.'"');
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' "'.$elem->{"cle"}.'"');
 }
 
 sub paje_ut_register {
     my($date)=shift;
     my($utid)=shift;
 
-    my($id)=paje_group_create("UT", $utid, $date);
+    my($id)=paje_group_create("UT", $utid->Name, $date);
 }
 
 sub paje_lwp_register {
     my($date)=shift;
     my($lwp)=shift;
 
-    my($id)=paje_group_create("LWP", $lwp, $date);
+    my($id)=paje_group_create("LWP", $lwp->Name, $date);
 }
 
 sub paje_proc_register {
     my($date)=shift;
     my($proc)=shift;
 
-    my($id)=paje_group_create("PROC", $proc, $date);
+    my($id)=paje_group_create("PROC", $proc->Name, $date);
 }
 
 my($actif)=-1;
@@ -941,19 +1472,19 @@ sub paje_ut_get_hand {
     my($lwp)=shift;
     my($utid)=shift;
     
-    my($cuid)=paje_group_get_id("UT", "U", $utid, $date);
-    my($clid)=paje_group_get_id("LWP", "L", $lwp, $date);
-    my($cpid)=paje_group_get_id("PROC", "P", $proc, $date);
+    my($cuid)=paje_group_get_id("UT", "U", $utid->Name, $date);
+    my($clid)=paje_group_get_id("LWP", "L", $lwp->Name, $date);
+    my($cpid)=paje_group_get_id("PROC", "P", $proc->Name, $date);
 
-    my($luid)=paje_group_get_id("UT", "LU", $utid, $date);
-    my($ulid)=paje_group_get_id("LWP", "UL", $lwp, $date);
-    my($puid)=paje_group_get_id("UT",  "PU", $utid, $date);
-    my($upid)=paje_group_get_id("PROC","UP", $proc, $date);
+    my($luid)=paje_group_get_id("UT", "LU", $utid->Name, $date);
+    my($ulid)=paje_group_get_id("LWP", "UL", $lwp->Name, $date);
+    my($puid)=paje_group_get_id("UT",  "PU", $utid->Name, $date);
+    my($upid)=paje_group_get_id("PROC","UP", $proc->Name, $date);
 
-    paje_print(11,$date,"UL $cuid $ulid");
-    paje_print(11,$date,"LU $clid $luid");
-    paje_print(11,$date,"PU $cpid $puid");
-    paje_print(11,$date,"UP $cuid $upid");
+    Print(11,$date,"UL $cuid $ulid");
+    Print(11,$date,"LU $clid $luid");
+    Print(11,$date,"PU $cpid $puid");
+    Print(11,$date,"UP $cuid $upid");
 }
 
 sub paje_ut_give_hand {
@@ -963,14 +1494,14 @@ sub paje_ut_give_hand {
     my($lwp)=shift;
     my($utid)=shift;
     
-    my($cuid)=paje_group_get_id("UT", "U", $utid, $date);
-    my($clid)=paje_group_get_id("LWP", "L", $lwp, $date);
-    my($cpid)=paje_group_get_id("PROC", "P", $proc, $date);
+    my($cuid)=paje_group_get_id("UT", "U", $utid->Name, $date);
+    my($clid)=paje_group_get_id("LWP", "L", $lwp->Name, $date);
+    my($cpid)=paje_group_get_id("PROC", "P", $proc->Name, $date);
 
-    paje_print(12,$date,"UL $cuid");
-    paje_print(12,$date,"LU $clid");
-    paje_print(12,$date,"PU $cpid");
-    paje_print(12,$date,"UP $cuid");
+    Print(12,$date,"UL $cuid");
+    Print(12,$date,"LU $clid");
+    Print(12,$date,"PU $cpid");
+    Print(12,$date,"UP $cuid");
 }
 
 sub paje_kt_get_hand {
@@ -980,19 +1511,27 @@ sub paje_kt_get_hand {
     my($lwp)=shift;
     my($utid)=shift;
     
-    my($cuid)=paje_group_get_id("UT", "U", $utid, $date);
-    my($clid)=paje_group_get_id("LWP", "L", $lwp, $date);
-    my($cpid)=paje_group_get_id("PROC", "P", $proc, $date);
+    my($cuid);
+    if (defined($utid)) {
+	$cuid=paje_group_get_id("UT", "U", $utid->Name, $date);
+    }
+    my($clid)=paje_group_get_id("LWP", "L", $lwp->Name, $date);
+    my($cpid)=paje_group_get_id("PROC", "P", $proc->Name, $date);
 
-    my($lpid)=paje_group_get_id("PROC", "LP", $proc, $date);
-    my($plid)=paje_group_get_id("LWP", "PL", $lwp, $date);
-    my($puid)=paje_group_get_id("UT",  "PU", $utid, $date);
-    my($upid)=paje_group_get_id("PROC","UP", $proc, $date);
+    my($lpid)=paje_group_get_id("PROC", "LP", $proc->Name, $date);
+    my($plid)=paje_group_get_id("LWP", "PL", $lwp->Name, $date);
+    my($puid);
+    if (defined($utid)) {
+	$puid=paje_group_get_id("UT",  "PU", $utid->Name, $date);
+    }
+    my($upid)=paje_group_get_id("PROC","UP", $proc->Name, $date);
 
-    paje_print(11,$date,"LP $clid $lpid");
-    paje_print(11,$date,"PL $cpid $plid");
-    paje_print(11,$date,"PU $cpid $puid");
-    paje_print(11,$date,"UP $cuid $upid");
+    Print(11,$date,"LP $clid $lpid");
+    Print(11,$date,"PL $cpid $plid");
+    if (defined($utid)) {
+	Print(11,$date,"PU $cpid $puid");
+	Print(11,$date,"UP $cuid $upid");
+    }
 }
 
 sub paje_kt_give_hand {
@@ -1001,15 +1540,20 @@ sub paje_kt_give_hand {
     my($act)=shift;
     my($lwp)=shift;
     my($utid)=shift;
-    
-    my($cuid)=paje_group_get_id("UT", "U", $utid, $date);
-    my($clid)=paje_group_get_id("LWP", "L", $lwp, $date);
-    my($cpid)=paje_group_get_id("PROC", "P", $proc, $date);
 
-    paje_print(12,$date,"LP $clid");
-    paje_print(12,$date,"PL $cpid");
-    paje_print(12,$date,"PU $cpid");
-    paje_print(12,$date,"UP $cuid");
+    my($cuid);
+    if (defined($utid)) {
+	$cuid=paje_group_get_id("UT", "U", $utid->Name, $date);
+    }
+    my($clid)=paje_group_get_id("LWP", "L", $lwp->Name, $date);
+    my($cpid)=paje_group_get_id("PROC", "P", $proc->Name, $date);
+
+    Print(12,$date,"LP $clid");
+    Print(12,$date,"PL $cpid");
+    Print(12,$date,"PU $cpid");
+    if (defined($utid)) {
+	Print(12,$date,"UP $cuid");
+    }
 }
 
 ################################################################
@@ -1020,8 +1564,8 @@ sub paje_event_create_uf {
     my($event)=shift;
     my($elem)=shift;
 
-    paje_print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
-	       $event->{"name"}.' '.$elem->{"infos"}->{"function"});
+    Print($event->{"sub_type"}, $date, $event->{"name"}.$elem->{"id"}." ".
+	       $event->{"name"}.' '.$elem->{"infos"}->[3]);
 }
 
 sub paje_function_enter {
@@ -1029,10 +1573,10 @@ sub paje_function_enter {
     my($function)= shift;
     my($utid)= shift;
     my($infos)= shift;
-    my($tid)=paje_group_get_id("UT", "U", $utid, $date);
+    my($tid)=paje_group_get_id("UT", "U", $utid->Name, $date);
     my($fid)=paje_group_get_id("UF", "UF", $function, $date, $infos);
    
-    paje_print(11,$date,"UF $tid $fid");
+    Print(11,$date,"UF $tid $fid");
 }
 
 sub paje_function_exit {
@@ -1040,225 +1584,330 @@ sub paje_function_exit {
     my($function)= shift;
     my($utid)= shift;
     my($infos)= shift;
-    my($tid)=paje_group_get_id("UT", "U", $utid, $date);
+    my($tid)=paje_group_get_id("UT", "U", $utid->Name, $date);
     my($fid)=paje_group_get_id("UF", "UF", $function, $date, $infos);
    
-    paje_print(12,$date,"UF $tid");
+    Print(12,$date,"UF $tid");
 }
 
 ################################################################
 my($last_date)=0;
 my($rand_delay)=0;
-sub paje_print {
+sub Print {
     my($type) = shift;
     my($date) = shift;
     my($infos) = shift;
     my($pdate);
 
-    if ($date < $last_date) {
-	$date = $last_date;
+    if ($date < SuperTrace::DateStart()) {
+	$pdate = SuperTrace::DateStart();
+    } else {
+	$pdate = $date;
     }
-    if ($date == $last_date) {
-	$date = $last_date+$paje_date_delay;
-    }
-    if ($date != $last_date) {
-	$rand_delay+=rand 3;
-    }
-    $pdate=$date+$rand_delay;
-    $last_date=$date;
+
+#    if ($date < $last_date) {
+#	$date = $last_date;
+#    }
+#    if ($date == $last_date) {
+#	$date = $last_date+$paje_date_delay;
+#    }
+#    if ($date != $last_date) {
+#	$rand_delay+=rand 3;
+#    }
+#    $pdate=$date+$rand_delay;
+#    $last_date=$date;
 
     printf("%i %3.3f %s\n", $type, $pdate, $infos);
 }
 
-sub paje_event {
-    my($event)=shift;
-    my($date, $proc, $act, $lwp, $utid, $ev_type, $event_infos);
-    
-    ($date, $proc, $act, $lwp, $utid, $ev_type, $event_infos)=@{$event};
-
-    $_=$ev_type;
-    if (/UEV_HAND/) {
-	#__display_event($date, $proc, $act, $lwp, $utid, "give hand");
-	#__display_event($date, $proc, $act, $lwp, $utid, "get hand");
-	if (/GET/) {
-	    paje_ut_get_hand($date, $proc, $act, $lwp, $utid);
-	} elsif (/GIVE/) {
-	    paje_ut_give_hand($date, $proc, $act, $lwp, $utid);
-	} else {
-	    print STDERR "Stange event type $ev_type\n";
-	}
-
-	if (/LINKED/) {
-	    #print "should link\n";
-	}
-    } elsif (/KEV_HAND/) {
-	#__display_event($date, $proc, $act, $lwp, $utid, "give hand");
-	#__display_event($date, $proc, $act, $lwp, $utid, "get hand");
-	if (/GET/) {
-	    paje_kt_get_hand($date, $proc, $act, $lwp, $utid);
-	} elsif (/GIVE/) {
-	    paje_kt_give_hand($date, $proc, $act, $lwp, $utid);
-	} else {
-	    print STDERR "Stange event type $ev_type\n";
-	}
-
-	if (/LINKED/) {
-	    #print "should link\n";
-	}
-    } elsif (/UEV_FUNC_ENTER/) {
-	my($function)=$event_infos->{"function"};
-	paje_function_enter($date, $function, $utid, $event_infos);
-    } elsif (/UEV_FUNC_EXIT/) {
-	my($function)=$event_infos->{"function"};
-	paje_function_exit($date, $function, $utid, $event_infos);
-	#my($fid)=paje_function_get_id($function, $date);
-	#paje_print(6,$date,"$fid UE \"$event_infos\"");
-	#paje_print(10,$date,"UE UTV_UT$utid $fid");
-	#paje_print(6,$date,"UE".++$nbev." UTV_UT_FUNC \"$event_infos\"");
-	#paje_print(10,$date,"UTV_UT_FUNC UTV_UT$utid UTV_UT_E".$nbev);
-	#__display_event($date, $proc, $act, $lwp, $utid, $event_infos);
-    } elsif (/UEV/) {
-	$event_infos =~ s/[""]/''/g;
-	paje_event_gen($date, $utid, $event_infos);
-    } elsif (/CREATE_LWP/) {
-	paje_lwp_register($date, $event_infos);
-	#__display_event($date, $proc, $act, $lwp, $utid, "Create LWP ".$event_infos);
-    } elsif (/CREATE_PROC/) {
-	paje_proc_register($date, $event_infos);
-    } elsif (/CREATE_UT/) {
-	paje_ut_register($date, $event_infos);
-	#paje_print(7,$date,"UTV_UT$event_infos UTV_UT UTV1 \"Thread $event_infos\"");
-    } else {
-	print STDERR "Unknown event type $ev_type";
-	#__display_event($date, $proc, $act, $lwp, $utid, 
-	#		"Unknown event type $ev_type");
-    }
+sub Events {
+    SuperTrace::PajeEvents;
 }
 
-sub paje_events {
-    my($event);
-
-    for $event (@events) {
-	paje_event($event);
-    }
-}
-
-sub paje_end {
+sub End {
 
 }
+
+
+package main;
 
 ################################################################
-# Insertion d'un événement provenant de marcel_debug
-my($master_clock)=1;
-sub insert_user_event {
-    my($date)=shift; # facultatif, date++ au cas où
-    my($lwp)=shift; # facultatif, même lwp que précédemment pour ce thread
-    my($utid)=shift;
-    my($event)=shift; # événement
+# FKT/FUT
 
-    my($orig_date)=$date;
+sub insert_fkt_event {
+    my($date)=shift;
+    my($proc)=shift;
+    my($lwp)=shift;
+    my($ev)=shift; # événement
 
-    if (!defined($orig_date)) {
-	$date=$master_clock++;
-    }
-    if (!defined($lwp)) {
-	$lwp=0;
-    }
-    my($proc)=0;
     ensure_proc($date, $proc, $lwp) or
 	print STDERR "Event on new proc $proc\n";
-    if (!ensure_lwp($date, $proc, $lwp, $utid, $utid)) {
-	print STDERR "Event in new LWP $lwp\n";
-	$procs{$proc}->{"lwp"}=$lwp;
-	ensure_ut($date, $proc, get_lwp_by_num($lwp), $utid, $utid);
-	emit_EV($date, $proc, proc_get_act($lwp), 
-		$lwp,
-		lwp_get_utid(get_lwp_by_num(proc_get_lwp($proc))),
-		"KEV_HAND_GET", "");
+    if ($lwp == 0) {
+	$lwp = -$proc #IDLE processes
     }
-    {
+    ensure_proc($date, $proc, $lwp) or
+	print STDERR "Event on new proc $proc\n";
+
+    if ($ev->[5] eq "switch_to") {
 	my($old_lwp)=proc_get_lwp($proc);
-	if ($old_lwp != $lwp) {
-	    insert_KSW($date, $old_lwp, $lwp, $proc);
-	    if (!defined($orig_date)) {
-		$date=$master_clock++;
-	    }
-	}
-    }
-    $lwp=get_lwp_by_num($lwp);
-    {
-	my($old_utid)=lwp_get_utid($lwp);
-	if ($old_utid ne $utid) {
-	    insert_USW($date, $old_utid, $utid, $proc);
-	    if (!defined($orig_date)) {
-		$date=$master_clock++;
-	    }
-	}
-    }
-    if (!ensure_ut($date, $proc, $lwp, $utid, $utid)) {
-	print STDERR "Event in new thread $utid\n";
-	emit_EV($date, $proc, lwp_get_act($lwp), 
-		lwp_get_id($lwp), lwp_get_utid($lwp),
-		"UEV_HAND_GET", "");
-    }
-    $_=$event;
-    if (/(.*): -->/) {
-	my(%infos)=("function" => $1);
-	insert_UEV($date, $utid, "FUNC_ENTER", \%infos);
-    } elsif (/(.*): <--/) {
-	my(%infos)=("function" => $1);
-	insert_UEV($date, $utid, "FUNC_EXIT", \%infos);
-    } else {	
-	insert_UEV($date, $utid, "", $event);	
+    	insert_KSW($date, $old_lwp, $lwp, $proc);
+    } elsif ($ev->[5] eq "user_fork") {
+	my($utid)=$ev->[6];
+	$utid =~ s/,$//;
+	ensure_lwp($date, $proc, $lwp, $utid, $utid);	
+	ensure_ut($date, $proc, get_lwp_by_num($lwp), $utid, $utid);	
+    } else {
+	print STDERR "Ignoring ev $ev->[5]\n";
     }
 }
 
-sub input_from_marcel_debug {
-    my($size_indent)=2;
+sub insert_fut_event {
+    my($date)=shift;
+    my($proc)=shift;
+    my($utid)=shift;
+    my($ev)=shift; # événement
 
-    my($thread)="0xbffefc40";
-    my($lwp)=0;
-
-    while(<>) {
-	my($start)="";
-	my($file)="";
-	chomp;
-	if (/(([(](0x[0-9a-f]+)[)]) (.*))$/) {
-	    my($info)=$4;
-	    $thread=$3;
-	    $start = substr($_, 0, $-[0]);
-	    $start =~ s/^\s*(.*[^\s])\s*$/$1/;
-	    $start =~ s/^\s*$//;
-	    if ($start =~ /([-\w.\/]+)[:]([\d]+)/) {
-		$start=substr($start, 0, $-[0]).substr($start, $+[0]);
-		$file=$1.":".$2;
-		$start =~ s/^\s*(.*[^\s])\s*$/$1/;
-		$start =~ s/^\s*$//;
-	    }
-	    if ($start =~ /\[P([0-9][0-9])\]/) {
-		$lwp=$1+0;
-	    }
-	    $_=$info;
-	} else {
-	    
-	}
+    if ($ev->[5] eq "fut_switch_to") {
+    	insert_USW($date, $utid, $ev->[6], $proc);
+    } elsif ($ev->[5] eq "user_fork") {
+	my($utid)=$ev->[6];
+	$utid =~ s/,$//;
+	my($lwp)=0;
+	ensure_lwp($date, $proc, $lwp, $utid, $utid);	
+	ensure_ut($date, $proc, get_lwp_by_num($lwp), $utid, $utid);	
+    } elsif ($ev->[5] eq "gcc-traced") {
 	
-	#print "$thread -> ", hex $thread, "\n";
-	insert_user_event(undef, $lwp, hex $thread, $_);
+    } else {
+	print STDERR "Ignoring ev $ev->[5]\n";
     }
+}
+
+
+my($max_prefetch)=5;
+my($global_offset)=10;
+use Math::BigInt  lib => 'GMP';
+use sort 'stable';
+my($fkt_print)="/home/vdanjean/travail/fkt/tools/fkt_print";
+my($fut_print)="/home/vdanjean/travail/fkt/tools/fut_print";
+sub input_from_fxt {
+    my($user_traces)=shift;
+    my($kernel_traces)=shift;
+    my($user_basetime);
+    my($kernel_basetime);
+    my($basetime);
+    my($user_offset);
+    my($kernel_offset);
+
+    open(FKT, "$fkt_print 2>/dev/null -f $kernel_traces |") 
+	or die "Unable to open $kernel_traces: $!\n";
+    open(FUT, "$fut_print 2>/dev/null -f $user_traces |") 
+	or die "Unable to open $user_traces: $!\n";
+    
+
+    while(<FUT>) {
+	chomp;
+	if (/^initial: basetime ([0-9]+)$/) {
+	    $user_basetime = Math::BigInt->new($1);
+	    disp("User basetime : ", $user_basetime,"\n");
+	    last;
+	}
+    }
+    while(<FKT>) {
+	chomp;
+	if (/^initial: basetime ([0-9]+)$/) {
+	    $kernel_basetime = Math::BigInt->new($1);
+	    disp("Kernel basetime : ", $kernel_basetime, "\n");
+	    last;
+	}
+    }
+    while(<FKT>) {
+	chomp;
+	if (/^ *[0-9]+ +([0-9]+) +.* fkt_setup +[0-9a-fx]+,? +[0-9a-fx]+,? +[0-9a-fx]+,? +[0-9a-fx]+,? +([0-9a-fx]+)$/) {
+	    my($correction)=Math::BigInt->new($1);
+	    my($hi)=Math::BigInt->new(2**32 * $2);
+	    $kernel_basetime += $correction + $hi; # + $correction;
+	    disp("Kernel basetime corrected : ", $kernel_basetime, "\n");
+	    last;
+	}
+    }
+    if ($user_basetime < $kernel_basetime) {
+	$basetime=$user_basetime;
+	$user_offset=$global_offset;
+	$kernel_offset=$kernel_basetime-$user_basetime+$global_offset;
+    } else {
+	$basetime=$kernel_basetime;
+	$kernel_offset=$global_offset;
+	$user_offset=$user_basetime-$kernel_basetime+$global_offset;
+    }
+    disp("Basetime: ", $basetime, " User offset: ", $user_offset, 
+	    " Kernel offset: ", $kernel_offset, "\n");
+
+    my($read_user)=$max_prefetch;
+    my($read_kernel)=$max_prefetch;
+    my(@lines);
+    my($last_time)=0;
+    
+    while(1) {
+	while ($read_user>0 || $read_kernel>0) {
+	    my(@ligne);
+	    my($type);
+	    my($offset);
+	    if ($read_user>0) {
+		$_=<FUT>;
+		if ((not $_) || ($_ eq "\n")) {
+		    $read_user=-($max_prefetch*2+10);
+		    next;
+		}
+		$read_user--;
+		$type="FUT_EV";
+		$offset=$user_offset;
+	    } elsif ($read_kernel>0) {
+		$_=<FKT>;
+		if ((not $_) || ($_ eq "\n")) {
+		    $read_kernel=-($max_prefetch*2+10);
+		    next;
+		}
+		$read_kernel--;
+		$type="FKT_EV";
+		$offset=$kernel_offset;
+	    } else {
+		last;
+	    }
+	    chomp;
+	    @ligne=split;
+	    $ligne[0]=$type;
+	    $ligne[1]+=$offset;
+	    @lines=sort { $a->[1] <=> $b->[1] } @lines, \@ligne;
+	}
+	my($ev);
+	$ev=shift @lines;
+	if (!defined($ev)) {
+	    last;
+	}
+	my $field;
+	for $field (@{$ev}) {
+	    $field =~ s/,$//;
+	    $debug && print $field, " ";
+	}
+	$debug && print "\n";
+	if ($ev->[0] eq "FUT_EV") {
+	    FxT::InsertFUT($ev->[1], $ev->[3], $ev);
+	    $read_user++;
+	} elsif ($ev->[0] eq "FKT_EV") {
+	    FxT::InsertFKT($ev->[1], $ev->[2], $ev->[3], $ev);
+	    $read_kernel++;
+	} else {
+	    print "Arghhh\n";
+	}
+    }
+    
+    close(FUT);
+    close(FKT);
+
 }
 
 ################################################################
 # Programme principal
+use Getopt::Long qw(:config permute);
+use Pod::Usage;
 
-input_from_marcel_debug();
+sub usage {
+    print "Options\n", "  --log pm2logfile\n",
+    	"  --user trace_user --kernel trace_kernel\n";
+}
 
-#display_events();
+sub disp {
+    print STDERR @_;
+    return 0;
+    my($info)=shift;
+    while($info) {
+    	print STDERR $info;
+	$info=shift;
+    }
+}
 
-paje_entete();
+sub main {
+    our($pm2logs, $user_traces, $kernel_traces);
+    GetOptions ("log=s"	=> \$pm2logs,
+	    	"user=s" => \$user_traces,
+		"kernel=s" => \$kernel_traces);
 
-paje_events();
+    if ($user_traces || $kernel_traces) {
+	disp("Using FKT/FUT Traces\n");
+	input_from_fxt($user_traces, $kernel_traces);
+    } elsif ($pm2logs) {
+	disp("Using pm2logs\n");
+	input_from_marcel_debug($pm2logs);
+    } else {
+	usage();
+	return 1;
+    }
 
-paje_end();
+    Processor->FlushSW;
+    LWP->FlushSW;
+    Processor->CreateEntities;
+    LWP->CreateEntities;
+    Thread->CreateEntities;
+    SuperTrace::Sort;
 
-#display_events();
+    #SuperTrace::Dump;
+    #return;
+    #display_events();
+
+    Paje::Entete();
+
+    Paje::Events();
+
+    Paje::End();
+
+    #display_events();
+
+}
+ 
+sub insert {
+    $_=shift;
+    chomp;
+    $debug && print "--------------------------------------------------\n";
+    $debug && print "Insert: ",$_,"\n";
+    my @l=split;
+    if ($l[0] eq "K") {
+	FxT::InsertFKT($l[1], $l[2], $l[3], \@l);
+    } else {
+	FxT::InsertFUT($l[1], $l[3], \@l);
+    }
+}
+
+if (0) {
+insert("U 00	0 T01		fut_setup	0x7fffffff, 0, 2097152");
+insert("K 10	2 1181	unknown	switch_to	_K1_");
+insert("K 20	0 0	idle	switch_to	457");
+insert("K 30	1 460	klogd	switch_to	-1");
+insert("K 40	2 _K1_	traces	fkt_keychange	0x100000 0x24169980");
+insert("U 50	0 T01		fut_new_lwp	T01 0");
+insert("K 60	0 457	syslogd	switch_to	0");
+insert("K 70	2 _K1_	traces	user_fork	T01 0");
+insert("U 80	2 T01		fut_thread_birth T02");
+insert("U 85	2 T01		fut_thread_birth T11");
+insert("U 85	2 T01		fut_thread_birth T12");
+insert("U 90	2 T01		fut_thread_birth T03");
+insert("U 95	2 T01		fut_thread_birth T13");
+insert("K 97    1 -1    traces  switch_to       _K2_");
+insert("K 99    1 _K2_	traces  user_fork       T13");
+insert("U 100   2 T01		fut_switch_to	T02");
+insert("U 110   2 T02		fut_switch_to	T03");
+insert("U 115   1 T13		fut_switch_to	T12");
+insert("U 120   2 T03		fut_switch_to	T01");
+insert("K 125   1 _K2_	traces  switch_to       TOTO");
+insert("U 130   2 T01		fut_switch_to	T02");
+insert("U 140   2 T02		fut_switch_to	T03");
+insert("U 150   2 T03		fut_switch_to	T01");
+insert("K 155   0 0     traces  switch_to       _K2_");
+insert("U 160   2 T01		fut_switch_to	T02");
+insert("U 170   2 T02		fut_switch_to	T03");
+insert("U 172   0 T13		event 		T13_a_encore_la_main");
+insert("U 175   0 T12		fut_switch_to	T11");
+insert("U 180   2 T03		fut_switch_to	T01");
+
+}
+
+main();

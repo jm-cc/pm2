@@ -46,6 +46,8 @@ all:
 SRC_DIR := $(CURDIR)
 
 ifneq ($(MAKECMDGOALS),config)
+
+ifdef OLD_MAKEFILE
 APP_STAMP := $(shell $(PM2_CONFIG) --stampdir)
 APP_EXT := $(shell $(PM2_CONFIG) --ext)
 APP_LOADER := $(shell $(PM2_CONFIG) --loader)
@@ -71,6 +73,9 @@ APP_BIN := $(APP_BUILDDIR)/bin
 APP_OBJ := $(APP_BUILDDIR)/obj
 APP_ASM := $(APP_BUILDDIR)/asm
 APP_DEP := $(APP_BUILDDIR)/dep
+else
+-include $(PM2_MAK_DIR)/app.mak
+endif # OLD_MAKEFILE
 endif
 
 # Sources, objets et dependances
@@ -84,3 +89,5 @@ DEP_TO_OBJ =  $(APP_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
 COMMON_DEPS += $(APP_STAMP_FILES) $(MAKEFILE_FILE)
 
+$(PM2_MAK_DIR)/app.mak:
+	$(PM2_CONFIG) --gen_mak app

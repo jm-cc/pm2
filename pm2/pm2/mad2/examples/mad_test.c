@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.8  2000/11/10 14:17:54  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.7  2000/10/31 16:21:14  oaumage
 - support de communications entre architectures heterogenes avec Mad2/TCP
 - correction de testandset pour Alpha
@@ -190,16 +193,16 @@ int main(int argc, char **argv)
 
       fprintf(stderr, "adapter: %s\n", channel[k]->adapter->name);
 
-      for (j = 0 ; j < madeleine->configuration.size ; j++)
+      for (j = 0 ; j < madeleine->configuration->size ; j++)
 	{
       
-	  if (madeleine->configuration.local_host_id == j)
+	  if (madeleine->configuration->local_host_id == j)
 	    {
 	      /* Receiver */
 	      int i ;
 	  
 	      for (i = 1 ;
-		   i < madeleine->configuration.size ;
+		   i < madeleine->configuration->size ;
 		   i++)
 		{
 		  char test_1 = 0;
@@ -295,7 +298,7 @@ int main(int argc, char **argv)
 
 	      sprintf(str_buffer,
 		      "The sender node of this message is %d\n",
-		      (int)madeleine->configuration.local_host_id);
+		      (int)madeleine->configuration->local_host_id);
 
 	      len = strlen(str_buffer) + 1 ;
 	      

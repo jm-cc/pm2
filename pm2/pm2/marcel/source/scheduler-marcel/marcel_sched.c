@@ -58,6 +58,8 @@ static LIST_HEAD(__waiting_tasks);
 #endif
 static LIST_HEAD(__delayed_tasks);
 
+MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
+
 /* These two locks must be acquired before accessing the corresponding
    global queue.  They should only encapsulate *non-blocking* code
    sections. */
@@ -827,9 +829,7 @@ extern int FASTCALL(marcel_wake_up_thread(marcel_task_t * tsk))
 static void marcel_sched_lwp_init(ma_lwp_t lwp)
 {
 	LOG_IN();
-#ifdef MA__ACTIVATION
-	lwp->sched.internal.upcall_new_task = NULL;
-#endif
+
 
 	LOG_OUT();
 }

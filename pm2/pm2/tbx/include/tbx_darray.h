@@ -34,6 +34,7 @@
  */
 typedef struct s_tbx_darray
 {
+  TBX_SHARED;
   tbx_darray_index_t   length;
   tbx_darray_index_t   allocated_length;
   void               **data;

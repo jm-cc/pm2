@@ -54,6 +54,12 @@ tbx_bool_t
     mad_expand_channel(p_mad_madeleine_t madeleine, char *name);
 
 void
+    mad_channel_split_done(p_mad_madeleine_t madeleine);
+
+tbx_bool_t
+    mad_shrink_channel(p_mad_madeleine_t madeleine, char *name);
+
+void
     common_channel_exit2(p_mad_channel_t mad_channel);
 
 tbx_bool_t

@@ -46,10 +46,10 @@ extern marcel_exception_t
                                       __cur->cur_exception == ex2 || \
                                       __cur->cur_exception == ex3) {
 #define WHEN_OTHERS    } else if(!always_false) {
-#define END            } else _raise(NULL); }}
+#define END            } else _marcel_raise(NULL); }}
 
-#define RAISE(ex)      (marcel_self()->exfile=__FILE__,marcel_self()->exline=__LINE__,_raise(ex))
-#define RRAISE         (marcel_self()->exfile=__FILE__,marcel_self()->exline=__LINE__,_raise(NULL))
+#define RAISE(ex)      (marcel_self()->exfile=__FILE__,marcel_self()->exline=__LINE__,_marcel_raise(ex))
+#define RRAISE         (marcel_self()->exfile=__FILE__,marcel_self()->exline=__LINE__,_marcel_raise(NULL))
 
 /* =================== Quelques definitions utiles ==================== */
 
@@ -64,10 +64,10 @@ extern marcel_exception_t
 
 #define END_LOOP(name) } } \
 	marcel_self()->cur_excep_blk=_##name##_excep_blk.old_blk; \
-	if(_##name##_val == 1) _raise(NULL); }
+	if(_##name##_val == 1) _marcel_raise(NULL); }
 
 
 _PRIVATE_ extern volatile boolean always_false;
-_PRIVATE_ int _raise(marcel_exception_t ex);
+_PRIVATE_ int _marcel_raise(marcel_exception_t ex);
 
 #endif

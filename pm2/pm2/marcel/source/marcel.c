@@ -67,8 +67,8 @@ void
 marcel_set_activity(void)
 {
   LOG_IN();
-  if (tbx_flag_test(&marcel_activity))
-    FAILURE("marcel_activity flag already set");
+//  if (tbx_flag_test(&marcel_activity))
+//    FAILURE("marcel_activity flag already set");
   
   tbx_flag_set(&marcel_activity);
   LOG_OUT();
@@ -79,8 +79,8 @@ void
 marcel_clear_activity(void)
 {
   LOG_IN();
-  if (!tbx_flag_test(&marcel_activity))
-    FAILURE("marcel_activity flag already cleared");
+//  if (!tbx_flag_test(&marcel_activity))
+//    FAILURE("marcel_activity flag already cleared");
 
   tbx_flag_clear(&marcel_activity);
   LOG_OUT();

@@ -2920,6 +2920,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	MA_CPU_SET(LWP_NUMBER(lwp),&(ma_lwp_rq(lwp)->cpuset));
 	MA_CPU_ZERO(&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
 	MA_CPU_SET(LWP_NUMBER(lwp),&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
+	MA_CPU_SET(LWP_NUMBER(lwp),&ma_main_runqueue.cpuset);
+	MA_CPU_SET(LWP_NUMBER(lwp),&ma_dontsched_runqueue.cpuset);
 #endif
 #endif
 	LOG_OUT();
@@ -2948,8 +2950,8 @@ void __marcel_init sched_init(void)
 	init_rq(&ma_main_runqueue, MA_MACHINE_RQ);
 	init_rq(&ma_dontsched_runqueue, MA_DONTSCHED_RQ);
 #ifdef MA__LWPS
-	MA_CPU_FILL(&ma_main_runqueue.cpuset);
-	MA_CPU_FILL(&ma_dontsched_runqueue.cpuset);
+	MA_CPU_ZERO(&ma_main_runqueue.cpuset);
+	MA_CPU_ZERO(&ma_dontsched_runqueue.cpuset);
 #endif
 
 	/*

@@ -21,15 +21,13 @@
 #include <stdlib.h>
 #include "tracelib.h"
 #include <string.h>
+#include <fkt/names.h>
 
-#include "fut_code.h"
+#include "fut.h"
 
 /* deals with the main function,
    creates the filters with the selected parameters
    runs the action */
-
-extern char *traps[];
-extern char *sys_calls[];
 
 enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME,
 	     IDLE_TIME, TIME, NB_CALLS, ACTIVE_SLICES, IDLE_SLICES,
@@ -38,47 +36,42 @@ enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME,
 // Prints the header when printing events
 void print_help()
 {
-  printf("type  date_tick  pid cpu thr  code                          name                  args\n");  
+  printf("type  date_tick  pid cpu  thr   code                          name                  args\n");  
 }
 
 
 // Prints an event tr accordingly to the format given above
 void print_trace(trace tr)
 {
-  int i, j = 0;
-  i = tr.code & 0xff;
-  i = (i - 12) / 4;
+  unsigned j;
   printf("%s",(tr.type == USER)? "USER: " : "KERN: ");
   printf("%9u ",(unsigned) tr.clock);
-  printf("%5u  %1u  %1u ", tr.pid, tr.cpu, tr.thread);
+  printf("%5u  %2u  %2u ", tr.pid, tr.cpu, tr.thread);
   printf("%6x",tr.code);
   if (tr.type == USER) {
-    printf("%40s", fut_code2name(tr.code >> 8));
+    printf("%40s", fut_code2name(tr.code));
   } else {
     if (tr.code >= FKT_UNSHIFTED_LIMIT_CODE)
-      printf("%40s", fkt_code2name(tr.code >> 8));
+      printf("%40s", fkt_code2name(tr.code));
     else {
       if (tr.code < FKT_TRAP_BASE) {
 	printf("\t\t\t       system call   %3u", tr.code);
-	printf("   %s", sys_calls[tr.code]);
+	printf("   %s", fkt_syscalls[tr.code]);
       }
       else if (tr.code < FKT_TRAP_LIMIT_CODE) {
-	i = tr.code - FKT_TRAP_BASE;
-	printf("\t\t\t\t      trap   %3u", i);
-	printf("   %s", traps[i]);
+	j = tr.code - FKT_TRAP_BASE;
+	printf("\t\t\t\t      trap   %3u", j);
+	printf("   %s", fkt_traps[j]);
       }
       else {
-	i = tr.code -  FKT_IRQ_TIMER;
-	printf("\t\t\t\t       IRQ   %3u", i);
+	j = tr.code -  FKT_IRQ_TIMER;
+	printf("\t\t\t\t       IRQ   %3u", j);
+	printf("   %s", fkt_find_irq(j));
       }
-      i = 0;
     }
   }
-  while(i != 0) {
+  for (j = 0; j<tr.nbargs; j++)
     printf("%14u  ",tr.args[j]);
-    i--;
-    j++;
-  }
   printf("\n");
 }
 
@@ -207,7 +200,7 @@ void avg_active_slice()
 // Gives the time spent in each function
 void function_time()
 {
-  int code;
+  unsigned code;
   mode type;
   int thread;
   char *name;
@@ -220,8 +213,8 @@ void function_time()
     if (get_function_time(&code, &type, &thread, &begin, &end, &time) == -1) 
       break;
     if (type == USER)
-      name = fut_code2name(code >> 8);
-    else name = fkt_code2name(code >> 8);
+      name = fut_code2name(code);
+    else name = fkt_code2name(code);
     printf("%s sur thread %d de %u à %u en %u\n", name, thread,
 	   (unsigned) begin, (unsigned) end, (unsigned) time);
   }

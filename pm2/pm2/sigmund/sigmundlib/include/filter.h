@@ -38,7 +38,7 @@ typedef struct cpu_list_st {
 
 typedef struct event_list_st {
   mode type;
-  int code;
+  unsigned code;
   struct event_list_st *next;
 } * event_list;
 
@@ -56,7 +56,7 @@ typedef struct evnum_slice_list_st {
 
 typedef struct function_time_list_st {
   mode type;
-  int code;
+  unsigned code;
   int thread;
   u_64 begin;
   u_64 end;
@@ -136,7 +136,7 @@ extern int is_in_logic_list(int logic);
 
 extern void filter_add_cpu(short int cpu);
 
-extern void filter_add_event(mode type, int code);
+extern void filter_add_event(mode type, unsigned code);
 
 extern void filter_add_time_slice(u_64 begin, u_64 end);
 

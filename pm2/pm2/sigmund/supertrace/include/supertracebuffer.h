@@ -13,13 +13,14 @@ typedef enum {KERNEL, USER} mode;
 /* A trace */
 struct trace_st{
   u_64 clock;                      // time
-  int thread;                      // thread n°
-  int code;                        // code
-  int pid;                         // pid
+  unsigned thread;                 // thread n°
+  unsigned code;                   // code
+  pid_t pid;                       // pid
   mode type;                       // KERNEL or USER
-  short int cpu;                  // n°proc if KERNEL
-  unsigned int number;                      // Absolute number
-  int args[MAX_NB_ARGS];           // Table of arguments
+  short int cpu;                   // n°proc if KERNEL
+  unsigned number;                 // Absolute number
+  unsigned nbargs;
+  unsigned args[MAX_NB_ARGS];      // Table of arguments
   short int relevant;
 };
 

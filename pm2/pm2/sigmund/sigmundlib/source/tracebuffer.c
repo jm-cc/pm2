@@ -13,24 +13,25 @@
 #include <sys/wait.h>
 
 #include "fkt.h"
-#include "fut_code.h"
+#include "fut.h"
+#include <fkt/names.h>
 
 
 /* reads the supertrace */
 
 #define NB_MAX_PROC  16
 
-struct code_name code_table[1000];
-int nb_code;
+struct fkt_code_name code_table[1000];
+unsigned nb_code;
 
-int nb_cpu;
+unsigned nb_cpu;
 u_64 begin_str;
 u_64 end_str;
 double cpu_cycles;
 
 static FILE *f_str;
 
-static void code_copy(int code, char *name)
+static void code_copy(unsigned code, char *name)
 {
   code_table[nb_code].code = code;
   code_table[nb_code].name = name;
@@ -107,7 +108,7 @@ void init()
 
 void read_str_header()
 {
-  fread(&nb_cpu, sizeof(short int), 1, f_str);
+  fread(&nb_cpu, sizeof(short unsigned), 1, f_str);
   fread(&begin_str, sizeof(u_64), 1, f_str);
   fread(&end_str, sizeof(u_64), 1, f_str);
   fread(&cpu_cycles, sizeof(double), 1, f_str);
@@ -120,15 +121,15 @@ int get_next_trace(trace *tr)
   int i;
   if (fread(&(tr->clock), sizeof(u_64), 1, f_str) == 0)
     return 1;
-  if (fread(&(tr->thread), sizeof(int), 1, f_str) == 0) {
+  if (fread(&(tr->thread), sizeof(unsigned), 1, f_str) == 0) {
     fprintf(stderr, "Corrupted trace file\n");
     exit(1);
   }
-  if (fread(&(tr->pid), sizeof(int), 1, f_str) == 0) {
+  if (fread(&(tr->pid), sizeof(unsigned), 1, f_str) == 0) {
     fprintf(stderr, "Corrupted trace file\n");
     exit(1);
   }
-  if (fread(&(tr->cpu), sizeof(short int), 1, f_str) == 0) {
+  if (fread(&(tr->cpu), sizeof(short unsigned), 1, f_str) == 0) {
     fprintf(stderr, "Corrupted trace file\n");
     exit(1);
   }
@@ -136,22 +137,36 @@ int get_next_trace(trace *tr)
     fprintf(stderr, "Corrupted trace file\n");
     exit(1);
   }
-  if (fread(&(tr->number), sizeof(unsigned int), 1, f_str) == 0) {
+  if (fread(&(tr->number), sizeof(unsigned), 1, f_str) == 0) {
     fprintf(stderr, "Corrupted trace file\n");
     exit(1);
   }
-  if (fread(&(tr->code), sizeof(int), 1, f_str) == 0) {
+  if (fread(&(tr->code), sizeof(unsigned), 1, f_str) == 0) {
     fprintf(stderr, "Corrupted trace file\n");
     exit(1);
   }
   if ((tr->type == USER) || (tr->code > FKT_UNSHIFTED_LIMIT_CODE)) {
-    for (i = 0; i < ((tr->code & 0xff) - 12) / 4; i++) {
+    tr->nbargs = ((tr->code & 0xff) - 12) / 4;
+    for (i = 0; i < tr->nbargs; i++) {
       if (fread(&(tr->args[i]), sizeof(int), 1, f_str) == 0) {
 	fprintf(stderr, "Corrupted trace file\n");
 	exit(1);
       }
     }
+    tr->code = tr->code>>8;
+    if (tr->type == USER) {
+      if (tr->code == FUT_GCC_INSTRUMENT_ENTRY_CODE)
+        tr->code = tr->args[0];
+      else if (tr->code == FUT_GCC_INSTRUMENT_EXIT_CODE)
+        tr->code = tr->args[0]+FUT_GCC_TRACED_FUNCTION_EXIT;
+    } else {
+      if (tr->code == FKT_GCC_INSTRUMENT_ENTRY_CODE)
+        tr->code = tr->args[0]-FKT_GCC_TRACED_FUNCTION_EXIT;
+      else if (tr->code == FKT_GCC_INSTRUMENT_EXIT_CODE)
+        tr->code = tr->args[0];
+    }
   }
+	
   return 0;
 }
 

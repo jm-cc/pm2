@@ -3,7 +3,7 @@
 #include "assert.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "fut_code.h"
+#include "fut.h"
 #include "lwpthread.h"
 #include "graphlib.h"
 
@@ -16,10 +16,10 @@ static int codecmp(mode type1, int code1, mode type2, int code2)
 {
   if (type1 != type2) return FALSE;
   if (type1 == USER) {
-    return (code1 >> 8 == code2 >> 8);
+    return (code1 == code2 );
   }
   if (code2 >= FKT_UNSHIFTED_LIMIT_CODE)
-    return (code1 >> 8 == code2 >> 8);
+    return (code1 == code2 );
   else return (code1 == code2);
 }
 
@@ -153,7 +153,7 @@ static int is_in_cpu_list(short int cpu)
   return TRUE;
 }
 
-void filter_add_event(mode type, int code)
+void filter_add_event(mode type, unsigned code)
 {
   event_list tmp;
   tmp = (event_list) malloc(sizeof(struct event_list_st));
@@ -273,7 +273,7 @@ static void begin_function(trace *tr)
   options.function_begin = tmp;
 }
 
-static void add_function_time(int code, mode type, int thread, u_64 time, u_64 begin, u_64 end)
+static void add_function_time(unsigned code, mode type, int thread, u_64 time, u_64 begin, u_64 end)
 {
   function_time_list tmp;
   tmp = (function_time_list) malloc(sizeof(struct function_time_list_st));
@@ -288,7 +288,7 @@ static void add_function_time(int code, mode type, int thread, u_64 time, u_64 b
   options.function_time = tmp;
 }
 
-static void end_function(int begin_code, mode begin_type, trace *tr)
+static void end_function(unsigned begin_code, mode begin_type, trace *tr)
 {
   function_time_list tmp;
   function_time_list prev;
@@ -523,7 +523,7 @@ int is_valid(trace *tr)
     table[tr->cpu] = tr->pid;
   }
   if (tr->type == KERNEL) {
-    if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
+    if (tr->code == FKT_SWITCH_TO_CODE) {
       /* FKT_SWITCH_TO: We must update the information about cpu and last_up
 	 If the old process was traced, active_proc--
 	    If the thread associated was traced, active_thread--
@@ -562,7 +562,7 @@ int is_valid(trace *tr)
 	  }
 	}
       }
-    } else if (tr->code >> 8 == FKT_USER_FORK_CODE) {
+    } else if (tr->code == FKT_USER_FORK_CODE) {
       if ((is_in_proc_list(tr->pid) == TRUE) && \
 	  (is_in_cpu_list(tr->cpu) == TRUE) && \
 	  (is_in_logic_list(tr->args[1])))
@@ -570,7 +570,7 @@ int is_valid(trace *tr)
       else filter_add_lwp(tr->pid, tr->args[1], tr->args[0], FALSE, tr->cpu);
     }
   }
-  else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) {
+  else if (tr->code == FUT_SWITCH_TO_CODE) {
     /* FUT_SWITCH_TO: update active_thread and active_thread_fun
      */
     if (is_active_lwp_of_thread(tr->thread) == TRUE) {
@@ -588,7 +588,7 @@ int is_valid(trace *tr)
     }
     change_lwp_thread(tr->thread, tr->args[1]);
   } 
-  //else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
+  //else if (tr->code == FUT_NEW_LWP_CODE) {
   //    /* FUT_NEW_LWP: adds to lwpthread with activity corresponding to its
   //       being traced or not
   //     */
@@ -597,16 +597,16 @@ int is_valid(trace *tr)
 //	(is_in_logic_list(tr->args[1])))
   //      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
   //  else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);
-  /* { */ else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
+  /* { */ else if (tr->code == FUT_THREAD_BIRTH_CODE) {
     /* THREAD_BIRTH: adds this thread in graphlib and disactivate it*/
     set_thread_disactivated(tr->args[0], TRUE);
   }
 
   // Updates the graphical decalage for this thread
   if (tr->type == USER) {
-    if (((tr->code >> 8) < 0x8000) && (tr->code > 0x40000)) {
-      if (((tr->code >> 8) & 0x100) == 0) add_thread_dec(tr->thread, 1);
-      if (((tr->code >> 8) & 0x100) == 0x100) add_thread_dec(tr->thread, -1);
+    if (((tr->code) < 0x8000) && (tr->code > 0x40000)) {
+      if (((tr->code) & 0x100) == 0) add_thread_dec(tr->thread, 1);
+      if (((tr->code) & 0x100) == 0x100) add_thread_dec(tr->thread, -1);
     }
   }
 

@@ -25,13 +25,10 @@
 #include "graphlib.h"
 #include "lwpthread.h"
 
-#include "fut_code.h"
+#include "fut.h"
 
 #define HSIZE 1000
 #define VSIZE 1000
-
-extern char *traps[];
-extern char *sys_calls[];
 
 char *ps_output_name = NULL;
 
@@ -106,7 +103,7 @@ void print_process()
   trace tr;
   int eof = 0;
   float last_trace[NB_PROC];
-  printf("%d\n", max_cpu());
+  printf("%d cpu\n", max_cpu());
   for(i = 0; i < max_cpu(); i++) 
     last_trace[i] = (float) VSIZE;
   F_proc = (FILE **) malloc (max_cpu() * sizeof(FILE *));
@@ -244,6 +241,7 @@ void print_thread()
 void error_usage()
 {
   fprintf(stderr,"Usage: sigmund [options] [filters] action\n");
+  fprintf(stderr,"  action: --print-process or --print-thread\n");
 
   exit(1);
 }
@@ -376,7 +374,7 @@ int main(int argc, char **argv)
     begin_global = get_begin_str();
     end_global = get_end_str();
   }
-  if (ps_output_name == NULL) ps_output_name = "/tmp/sigmundps_output.eps";
+  if (ps_output_name == NULL) ps_output_name = "sigmundps_output.eps";
   switch(ac) {
   case NONE : {
     error_usage();

@@ -2,11 +2,11 @@
 #include "tracebuffer.h"
 #include "filter.h"
 #include "tracelib.h"
-#include "temp.h"
 #include "fkt.h"
-#include "fut_code.h"
+#include "fut.h"
 #include "lwpthread.h"
 #include "graphlib.h"
+#include <fkt/names.h>
 
 extern filter options;
 
@@ -25,23 +25,25 @@ struct time_st timing;                     // For the profiling option
 // gives the name of an event given its code (unshifted)
 char *fut_code2name(int code)
 {
-  int i = 0;
+  return fkt_find_name(code, 1, 20, code_table);
+  /*int i = 0;
   while(1) {
     if (code_table[i].code == 0) return NULL;
     if (code_table[i].code == code) return code_table[i].name;
     i++;
-  }
+  }*/
 }
 
 // gives the name of an event given its code (unshifted)
 char *fkt_code2name(int code)
 {
-  int i = 0;
+  return fkt_find_name(code, 1, 20, fkt_code_table);
+  /*int i = 0;
   while(1) {
-    if (fkt_code_table[i].code == 0) return NULL;
+    if (fkt_code_table[i].code == 0) return fkt_lookup_symbol(code)
     if (fkt_code_table[i].code == code) return fkt_code_table[i].name;
     i++;
-  }
+  }*/
 }
 
 /* gives the code and type given its name
@@ -76,9 +78,9 @@ int name2code(char *name, mode *type, int *a)
 int sys2code(char *name, int *code)
 {
   int i;
-  for(i = 0; i < NSYS_CALLS; i++)
-    if (!strcmp(sys_calls[i], name)) break;
-  if (i == NSYS_CALLS) return -1;
+  for(i = 0; i < FKT_NSYSCALLS; i++)
+    if (!strcmp(fkt_syscalls[i], name)) break;
+  if (i == FKT_NSYSCALLS) return -1;
   *code = i;
   return 0;
 }
@@ -88,9 +90,9 @@ int sys2code(char *name, int *code)
 int trap2code(char *name, int *code)
 {
   int i;
-  for(i = 0; i < NTRAPS; i++)
-    if (!strcmp(traps[i], name)) break;
-  if (i == NTRAPS) return -1;
+  for(i = 0; i < FKT_NTRAPS; i++)
+    if (!strcmp(fkt_traps[i], name)) break;
+  if (i == FKT_NTRAPS) return -1;
   *code = i + FKT_TRAP_BASE;
   return 0;
 }
@@ -155,9 +157,9 @@ int get_next_loose_filtered_trace(trace *tr)
     if (is_valid_calc(tr, eof) == TRUE) {
       if (eof != 0) eof = 2;
       break;
-    } else if ((tr->type == KERNEL) && (tr->code >> 8 == FKT_SWITCH_TO_CODE))
+    } else if ((tr->type == KERNEL) && (tr->code == FKT_SWITCH_TO_CODE))
       break;
-    else if ((tr->type == USER) && (tr->code >> 8 == FUT_SWITCH_TO_CODE)) break;
+    else if ((tr->type == USER) && (tr->code == FUT_SWITCH_TO_CODE)) break;
   }
   return eof;
 }

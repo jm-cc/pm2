@@ -11,7 +11,7 @@ int get_next_trace(trace *tr);
 
 void close_trace_file(void);
 
-extern int nb_cpu;
+extern unsigned nb_cpu;
 extern u_64 begin_str;
 extern u_64 end_str;
 extern double cpu_cycles;

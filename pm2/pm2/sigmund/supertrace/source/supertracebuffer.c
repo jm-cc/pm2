@@ -16,7 +16,7 @@
 #include <fkt/sysmap.h>
 #include <fkt/pids.h>
 
-#include "fut_code.h"
+#include "fut.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -39,8 +39,14 @@ static u_64 min_fkt;              // Minimum time for calibration for fkt
 
 static int fd_fut;
 static FILE *f_fut;               // file where to read fut events
+static size_t n_fut;		  // position in file
+static size_t pos_fut;		  // size to read in a page
+static size_t fut_page_size;	  // size of a page
 static int fd_fkt;
 static FILE *f_fkt;               // file where to read fkt events
+static size_t n_fkt;		  // size to read in a page
+static size_t pos_fkt;		  // position in file
+static size_t fkt_page_size;	  // size of a page
 static int thread = -1;           /* Number of thread "currently running" 
 				     in non SMP mode */
 static int pid;                   // pid given by fut trace file
@@ -83,18 +89,29 @@ int le(u_64 clock1, u_64 clock2)  /* Returns TRUE if clock1 <= clock2,
 */
 static int read_user_trace(trace *tr)
 {
-  int i;
-  int j;
-  if (fread(&(tr->clock), sizeof(u_64), 1, f_fut) == 0) {
-    fut_eof = 1;
-    return 1;
-  }  
-  CORRUPTED_FUT(fread(&(tr->code), sizeof(int), 1, f_fut) == 0);
+  unsigned i;
+  unsigned j;
+  if (pos_fut>=n_fut) {
+    fseek(f_fut,fut_page_size-pos_fut,SEEK_CUR);
+    if (fread(&n_fut, sizeof(unsigned), 1, f_fut) < 1) {
+      fut_eof=1;
+      return -1;
+    }
+    pos_fut=sizeof(unsigned);
+  }
+
+  CORRUPTED_FUT(fread(&(tr->clock), sizeof(u_64), 1, f_fut) <= 0);
+  pos_fut+=sizeof(u_64);
+
+  CORRUPTED_FUT(fread(&(tr->code), sizeof(unsigned), 1, f_fut) <= 0);
+  pos_fut+=sizeof(unsigned);
   tr->type = USER;
+
   j = 0;
-  i = ((tr->code & 0xff) - 12) / 4;
+  i = tr->nbargs;
   while (i != 0) {                                 // reads arguments
-    CORRUPTED_FUT(fread(&(tr->args[j]), sizeof(int), 1, f_fut) == 0);
+    CORRUPTED_FUT(fread(&(tr->args[j]), sizeof(unsigned), 1, f_fut) <= 0);
+    pos_fut+=sizeof(unsigned);
     i--;
     j++;
   }
@@ -107,26 +124,39 @@ static int read_user_trace(trace *tr)
 */
 static int read_kernel_trace(trace *tr)
 {
-  int i;
-  int j;
-  if (fread(&j, sizeof(unsigned int), 1, f_fkt) == 0) {
-    fkt_eof = 1;
-    return 1;
+  unsigned i;
+  unsigned j;
+  if (pos_fkt>=n_fkt) {
+    fseek(f_fkt,fkt_page_size-pos_fkt,SEEK_CUR);
+    if (fread(&n_fkt, sizeof(unsigned), 1, f_fkt) < 1 || n_fkt == FKT_EOF) {
+      fkt_eof=1;
+      return -1;
+    }
+    pos_fkt=sizeof(unsigned);
   }
+
+  CORRUPTED_FKT(fread(&j, sizeof(unsigned), 1, f_fkt) < 1);
+  pos_fkt+=sizeof(unsigned);
   tr->clock = j;
   tr->type = KERNEL;
-  CORRUPTED_FKT(fread(&j, sizeof(unsigned int), 1, f_fkt) == 0);
+
+  CORRUPTED_FKT(fread(&j, sizeof(unsigned), 1, f_fkt) < 1);
+  pos_fkt+=sizeof(unsigned);
   tr->cpu = j >> 16;
   tr->pid = j & 0xffff;
+
   if (pid_table[tr->cpu] == -1) {
     pid_table[tr->cpu] = tr->pid;
   }
-  CORRUPTED_FKT(fread(&(tr->code), sizeof(int), 1, f_fkt) == 0);
+
+  CORRUPTED_FKT(fread(&(tr->code), sizeof(unsigned), 1, f_fkt) < 1);
+  pos_fkt+=sizeof(unsigned);
   if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
     j = 0;
-    i = ((tr->code & 0xff) - 12) / 4;
+    i = tr->nbargs = ((tr->code & 0xff) - 12) / 4;
     while (i != 0) {
-      CORRUPTED_FKT(fread(&(tr->args[j]), sizeof(int), 1, f_fkt) == 0);
+      CORRUPTED_FKT(fread(&(tr->args[j]), sizeof(unsigned), 1, f_fkt) < 1);
+      pos_fkt+=sizeof(unsigned);
       i--;
       j++;
     }
@@ -243,14 +273,14 @@ static void read_fkt_header(int fkt)
   time_t t1, t2;
   clock_t start_jiffies, stop_jiffies;
   int n;
-  size_t size;
+  size_t size,page_size;
   struct stat st;
   int fd=fkt?fd_fkt:fd_fut;
 
   if (fd >= 0) {
     ENTER_BLOCK(fd); /* main block */
     ENTER_BLOCK(fd);
-    CORRUPTED_FKT(read(fd, &ncpus, sizeof(ncpus)) == 0);
+    CORRUPTED_FKT(read(fd, &ncpus, sizeof(ncpus)) < sizeof(ncpus));
     nb_cpu = (short int) ncpus;
     printf("nb_cpu = %d\n",nb_cpu);
     mhz = (double *) malloc(sizeof(double)*ncpus);
@@ -263,6 +293,7 @@ static void read_fkt_header(int fkt)
     CORRUPTED_FKT(read(fd,&t2, sizeof(t2)) < sizeof(t2));
     CORRUPTED_FKT(read(fd,&start_jiffies, sizeof(start_jiffies)) < sizeof(start_jiffies));
     CORRUPTED_FKT(read(fd,&stop_jiffies, sizeof(stop_jiffies)) < sizeof(stop_jiffies));
+    CORRUPTED_FKT(read(fd,&page_size, sizeof(page_size)) < sizeof(page_size));
     LEAVE_BLOCK(fd);
 
     ENTER_BLOCK(fd);
@@ -311,31 +342,46 @@ static void read_fkt_header(int fkt)
         fprintf(stderr,"Error in fdopening file\n");
         exit(1);
       } 
-      fread(&n, sizeof(n), 1, f_fkt); /* size of page */
-      CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
-      CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
-      last = fkt_buf.clock;
-      for(n = 0; n < 9; n++) {
-        CORRUPTED_FKT(read_kernel_trace(&fkt_buf) != 0);
+      pos_fkt=n_fkt=fkt_page_size=page_size;
+      for(n = 0; n < 3; n++) {
+	/* get calibration minimum */
+        do {
+          last = fkt_buf.clock;
+          CORRUPTED_FKT(read_kernel_trace(&fkt_buf) < 0);
+	} while ((fkt_buf.code>>8) != FKT_CALIBRATE0_CODE);
         if (min_fkt == 0) min_fkt = fkt_buf.clock - last;
         else if (fkt_buf.clock - last < min_fkt) min_fkt = fkt_buf.clock - last;
       }
+      do {
+	CORRUPTED_FKT(read_kernel_trace(&fkt_buf) < 0);
+      /* this is the real beginning */
+      } while ((fkt_buf.code>>8) != FKT_KEYCHANGE_CODE);
+      CORRUPTED_FKT(read_kernel_trace(&fkt_buf) < 0);
     } else {
       if ((f_fut = fdopen(fd,"r")) == NULL) {
         fprintf(stderr,"Error in fdopening file\n");
         exit(1);
       } 
-      fread(&n, sizeof(n), 1, f_fut); /* size of page */
-      CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
-      CORRUPTED_FUT(read_user_trace(&fut_buf) != 0);
+      pos_fut=n_fut=fut_page_size=page_size;
+      CORRUPTED_FUT(read_user_trace(&fut_buf) < 0);
       last = fut_buf.clock;
-      for(n = 0; n < 9; n++) {
-        CORRUPTED_FKT(read_user_trace(&fut_buf) != 0);
-        if (min_fut == 0)
-          min_fut = fut_buf.clock - last;
-        else if (fut_buf.clock - last < min_fut)
-	  min_fut = fut_buf.clock - last;
+      CORRUPTED_FUT((fut_buf.code>>8) != FUT_SETUP_CODE);
+      for(n = 0; n < 3; n++) {
+	/* get calibration minimum */
+        CORRUPTED_FUT(read_user_trace(&fut_buf) < 0);
+        CORRUPTED_FUT((fut_buf.code>>8) != FUT_CALIBRATE0_CODE);
+        if (min_fut == 0) min_fut = fut_buf.clock - last;
+        else if (fut_buf.clock - last < min_fut) min_fut = fut_buf.clock - last;
       }
+      for(n = 0; n < 3; n++) {
+        CORRUPTED_FUT(read_user_trace(&fut_buf) < 0);
+        CORRUPTED_FUT((fut_buf.code>>8) != FUT_CALIBRATE1_CODE);
+      }
+      for(n = 0; n < 3; n++) {
+        CORRUPTED_FUT(read_user_trace(&fut_buf) < 0);
+        CORRUPTED_FUT((fut_buf.code>>8) != FUT_CALIBRATE2_CODE);
+      }
+      CORRUPTED_FUT(read_user_trace(&fut_buf) < 0);
     }
   }
 }

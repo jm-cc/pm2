@@ -5,10 +5,11 @@
 #include <stdlib.h>
 #include "options.h"
 #include "init.h"
-#include "temp.h"
 #include <string.h>
 #include "statusbar.h"
+#include "sigmund.h"
 #include <ctype.h>
+#include <fkt/names.h>
 
 static char supertrace[1000];
 
@@ -1113,10 +1114,10 @@ static void function_events_list_init()
     } else if (strcmp(fkt_code_table[i].name + (s-5), "_exit") != 0)
       combo_events_items = g_list_append(combo_events_items, fkt_code_table[i].name);
   }
-  for(i = 0; i < NTRAPS; i++) 
-    combo_events_items = g_list_append(combo_events_items, traps[i]);
-  for(i = 0; i < NSYS_CALLS; i++) 
-    combo_events_items = g_list_append(combo_events_items, sys_calls[i]);
+  for(i = 0; i < FKT_NTRAPS; i++) 
+    combo_events_items = g_list_append(combo_events_items, fkt_traps[i]);
+  for(i = 0; i < FKT_NSYSCALLS; i++) 
+    combo_events_items = g_list_append(combo_events_items, fkt_syscalls[i]);
 
   gtk_combo_set_popdown_strings(GTK_COMBO(combo_events), combo_events_items);
   gtk_combo_set_popdown_strings(GTK_COMBO(combo_function), combo_function_items);

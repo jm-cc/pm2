@@ -45,7 +45,7 @@ void print_trace(trace tr, FILE *supertrace)
   fwrite(&(tr.number), sizeof(unsigned int), 1, supertrace);
   fwrite(&(tr.code), sizeof(int), 1, supertrace);
   if ((tr.type == USER) || (tr.code > FKT_UNSHIFTED_LIMIT_CODE)) {
-    for(i = 0; i < ((tr.code & 0xff) - 12) / 4; i++) {
+    for(i = 0; i < tr.nbargs; i++) {
       fwrite(&(tr.args[i]), sizeof(int), 1, supertrace);
     }
   }

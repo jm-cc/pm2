@@ -59,6 +59,14 @@ TBX_DEP		:=	$(TBX_SRC)/depend
 TBX_INC		:=	$(TBX_ROOT)/include
 TBX_LIBD	=	$(TBX_ROOT)/lib/$(PM2_ARCH_SYS)
 
+ifndef PM2_FLAGS
+ifdef MAD_ALONE
+TBX_OPTIONS    += $(MAD_OPTIONS)
+else
+TBX_OPTIONS    += $(TBX_STANDALONE_OPTIONS) -DTBX
+TBX_ALONE       :=  true
+endif
+endif
 
 ifneq ($(wildcard $(TBX_DEP)),$(TBX_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(TBX_DEP))
@@ -100,7 +108,15 @@ endif
 endif
 
 $(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d
+ifdef $(TBX_ALONE)
+$(TBX_DEPENDS): $(TBX_MAKEFILE)
+else
+ifdef $(MAD_ALONE)
+$(TBX_DEPENDS): $(MAD_MAKEFILE)
+else
 $(TBX_DEPENDS): $(PM2_MAKEFILE)
+endif
+endif
 
 .PHONY: tbx_default
 tbx_default: $(TBX_LIB) 
@@ -120,7 +136,7 @@ $(TBX_REG_DEPENDS): $(TBX_DEP)/%.d: $(TBX_SRC)/%.c
 		| sed '\''s/.*:/$(subst /,\/,$(TBX_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
-ifdef PM2_FLAGS
+ifndef TBX_ALONE
 .PHONY: tbxclean
 tbxclean:
 	@ echo "Cleaning toolbox"
@@ -130,7 +146,7 @@ tbxdistclean:
 	rm -rf $(wildcard $(TBX_ROOT)/lib \
 		$(TBX_ROOT)/obj \
 		$(TBX_ROOT)/source/depend)
-else
+else 
 .PHONY: clean distclean
 clean:
 	@ echo "Cleaning toolbox"
@@ -141,4 +157,3 @@ distclean:
 		$(TBX_ROOT)/obj \
 		$(TBX_ROOT)/source/depend)
 endif
-

@@ -29,6 +29,7 @@
 #define __NR_sched_setaffinity 241
 #elif defined(IA64_ARCH)
 #define __NR_sched_setaffinity 1231
+#define __ia64_syscall(arg1,arg2,arg3,arg4,arg5,nr) syscall(nr,arg1,arg2,arg3,arg4,arg5)
 #else
 #error "don't know the syscall number for sched_setaffinity on this architecture"
 #endif

@@ -267,7 +267,7 @@ static void read_fkt_header()
   char name[400];
   if (f_fkt != NULL) {
     CORRUPTED_FKT(fread(&ncpus, sizeof(ncpus), 1, f_fkt) == 0);
-    nb_cpu = (short int) nb_cpu;
+    nb_cpu = (short int) ncpus;
     printf("nb_cpu = %d\n",nb_cpu);
     mhz = (double *) malloc(sizeof(double)*ncpus);
     assert(mhz != NULL);

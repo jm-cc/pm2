@@ -136,6 +136,7 @@ int pm2_main(int argc, char **argv)
       pm2_rawrpc_begin(1, SAMPLE, NULL);
       pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
       pm2_rawrpc_end();
+      fprintf(stderr, "ping %d in progress...\n", i);
 
       pm2_completion_wait(&c);
       TBX_GET_TICK(t2);

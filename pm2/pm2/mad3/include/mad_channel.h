@@ -27,6 +27,8 @@ typedef enum e_mad_channel_type
   mad_channel_type_regular,
   mad_channel_type_forwarding,
   mad_channel_type_virtual,
+  mad_channel_type_mux_main,
+  mad_channel_type_mux_sub,
 } mad_channel_type_t, *p_mad_channel_type_t;
 
 
@@ -42,6 +44,7 @@ typedef struct s_mad_channel
   p_mad_dir_channel_t         dir_channel;
   p_mad_dir_fchannel_t        dir_fchannel;
   p_mad_dir_vchannel_t        dir_vchannel;
+  p_mad_dir_xchannel_t        dir_xchannel;
   p_mad_adapter_t             adapter;
   p_tbx_darray_t              in_connection_darray;
   p_tbx_darray_t              out_connection_darray;
@@ -52,10 +55,14 @@ typedef struct s_mad_channel
   volatile tbx_bool_t         reception_lock;
 #endif // MARCEL
 
-  /* Forwarding only */
+  /* Forwarding/Mux only */
 #ifdef MARCEL
+  unsigned int                mux;
+  p_tbx_darray_t              mux_list_darray;
+  p_tbx_darray_t              mux_channel_darray;
   p_tbx_slist_t               channel_slist;
   p_tbx_slist_t               fchannel_slist;
+
   marcel_sem_t                ready_to_receive;
   marcel_sem_t                message_ready;
   marcel_sem_t                message_received;

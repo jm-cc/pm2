@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.13  2000/03/02 14:51:56  oaumage
+- support de detection des protocoles au niveau runtime
+
 Revision 1.12  2000/03/02 09:52:12  jfmehaut
 pilote Madeleine II/BIP
 
@@ -97,8 +100,8 @@ ______________________________________________________________________________
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <tbx.h>
-#include <ntbx.h>
+#include "tbx.h"
+#include "ntbx.h"
 
 /* Protocol registration */
 #include "mad_registration.h"

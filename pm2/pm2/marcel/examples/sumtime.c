@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "marcel.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +74,10 @@ int marcel_main(int argc, char **argv)
   marcel_sem_init(&j.sem, 0);
   j.inf = 1;
   if(argc > 1) {
+    // Execution unique en utilisant l'argument en ligne de commande
+#ifdef PROFILE
+   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
+#endif
     j.sup = atoi(argv[1]);
     TBX_GET_TICK(t1);
     marcel_create(NULL, &attr, sum, (any_t)&j);
@@ -67,15 +86,11 @@ int marcel_main(int argc, char **argv)
     printf("Sum from 1 to %d = %d\n", j.sup, j.res);
     temps = TBX_TIMING_DELAY(t1, t2);
     printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
-    j.sup = atoi(argv[1]);
-    TBX_GET_TICK(t1);
-    marcel_create(NULL, &attr, sum, (any_t)&j);
-    marcel_sem_P(&j.sem);
-    TBX_GET_TICK(t2);
-    printf("Sum from 1 to %d = %d\n", j.sup, j.res);
-    temps = TBX_TIMING_DELAY(t1, t2);
-    printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+#ifdef PROFILE
+   profile_stop();
+#endif
   } else {
+    // Execution interactive
     LOOP(bcle)
 	mdebug("sched task= %p\n", GET_LWP_BY_NUM(0)->idle_task); 
       printf("Enter a rather small integer (0 to quit) : ");

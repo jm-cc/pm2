@@ -15,13 +15,13 @@
  */
 
 #include "marcel.h"
-#include "mar_timing.h"
+#include "marcel_timing.h"
 #include "marcel_alloc.h"
 #include "sys/marcel_work.h"
 
-#include "common.h"
+#include "pm2_common.h"
 #include "tbx.h"
-#include "profile.h"
+#include "pm2_profile.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +35,7 @@
 #include <signal.h>
 
 #ifdef MA__ACTIVATION
-#include "sys/upcalls.h"
+#include "sys/marcel_upcalls.h"
 #endif
 
 #ifdef UNICOS_SYS
@@ -80,7 +80,7 @@ static long page_size;
 
 volatile boolean always_false = FALSE;
 
-exception
+marcel_exception_t
    TASKING_ERROR = "TASKING_ERROR : A non-handled exception occurred in a task",
    DEADLOCK_ERROR = "DEADLOCK_ERROR : Global Blocking Situation Detected",
    STORAGE_ERROR = "STORAGE_ERROR : No space left on the heap",
@@ -1327,7 +1327,7 @@ int marcel_key_delete(marcel_key_t key)
 
 /* ================== Gestion des exceptions : ================== */
 
-int _raise(exception ex)
+int _raise(marcel_exception_t ex)
 {
   marcel_t cur = marcel_self();
 

@@ -93,9 +93,9 @@ void f(int bytes)
 #endif
 
   if(bytes % 1024 == 0)
-    tprintf("%d Koctets transférés :\n", bytes/1024);
+    tfprintf(stderr, "%d Koctets transférés :\n", bytes/1024);
   else
-    tprintf("%d octets transférés :\n", bytes);
+    tfprintf(stderr, "%d octets transférés :\n", bytes);
 
 #ifndef ONLY_ASYNC
 

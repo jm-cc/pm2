@@ -57,6 +57,8 @@ void restart_thread(marcel_t next)
 {
   act_update(next);
 
+  next->state_ext=MARCEL_RUNNING;
+
   if (next->sched_by == SCHED_BY_MARCEL) {
     //ACTDEBUG(printf("restart_thread(%p) (normal)\n", next)); 
     longjmp(next->jb.migr_jb, NORMAL_RETURN);

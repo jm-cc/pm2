@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.27  2000/10/18 12:41:19  rnamyst
+Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
+
 Revision 1.26  2000/09/15 02:04:52  rnamyst
 fut_print is now built by the makefile, rather than by pm2-build-fut-entries
 
@@ -442,6 +445,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
     PROF_SWITCH_TO(new_task);
 
+    PROF_IN_EXT(newborn_thread);
+
 #ifndef MINIMAL_PREEMPTION
     if((locked() > 1) /* lock_task has been called */
        || (new_task->user_space_ptr && !attr->immediate_activation)
@@ -461,11 +466,14 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
       MTRACE("Preemption", marcel_self());
 
+      PROF_OUT_EXT(newborn_thread);
+
       if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
 	MA_THR_LONGJMP(marcel_self()->father, NORMAL_RETURN);
       }
       MA_THR_RESTARTED(marcel_self(), "Preemption");
       unlock_task();
+
 #ifndef MINIMAL_PREEMPTION
     } else {
 
@@ -481,6 +489,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       MTRACE("Preemption", marcel_self());
 
       unlock_task();
+
+      PROF_OUT_EXT(newborn_thread);
     }
 #endif
 

@@ -231,6 +231,10 @@ Used for patterns like:
  (append
 ;;; LB:  '(("\\(^\\|[^\\]\\)\\(%.*\\)$" 2 comment)) ; comments
 
+;;; LB: \|name|
+  '(("\\(\\\\|\\)\\([^|][^|]*\\)\\(|\\)" 2 label)) 
+;;; End of addition
+
   (cond 
    (hilit-AmSLaTeX-commands
     '(("\\\\\\(\\(no\\)?pagebreak\\|\\(new\\|clear\\(double\\)?\\)page\\|enlargethispage\\|\\(no\\)?linebreak\\|newline\\|-\\|displaybreak\\|allowdisplaybreaks\\)"
@@ -260,16 +264,12 @@ Used for patterns like:
   '(("``" "''" string))
   (and hilit-multilingual-strings
        '(("\"<" "\">" string)
-;;; LB: Addition
-	 ("\\\\|" "|" keyword)
-;;; End of addition
          ("\"`" "\"'" string)
          ("<<" ">>" string)
          ("«" "»" string)))
     
   '(("\\\\\\(item\\(\\[.*\\]\\)?\\|\\\\\\(\*\\)?\\)" nil label) ;label, \\
     ("\\(^\\|[^\\\\]\\)\\(&+\\)" 2 label)     ; & within tables and such
-
     ;; "wysiwyg" emphasis
     (hilit-bracket-wysiwyg 
      "{\\\\\\(text\\)?\\(em\\|it\\|sl\\)\\(shape\\|family\\|series\\)?\\b" italic)

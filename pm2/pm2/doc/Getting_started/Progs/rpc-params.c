@@ -24,6 +24,7 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
   if (pm2_self () == 0)
     {
+      /* Warning: this may not work on BIP and SCI */
       char s[] = "A la recherche du temps perdu.";
       int len;
 

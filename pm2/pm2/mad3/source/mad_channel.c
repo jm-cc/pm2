@@ -93,7 +93,7 @@ tbx_bool_t
 {   
    ntbx_process_grank_t        g =   -1;
    p_mad_dir_channel_t         dir_channel  = NULL;
-   p_mad_dir_channel_t         old_channel  = NULL;
+   p_mad_channel_t             old_channel  = NULL;
    p_mad_channel_t             mad_channel  = NULL;
    p_mad_adapter_t             mad_adapter  = NULL;
    p_mad_driver_t              mad_driver   = NULL;
@@ -119,8 +119,8 @@ tbx_bool_t
    if (!dir_channel)
      FAILURE("channel not found");
    
-   old_channel = tbx_htable_get(madeleine->old_dir->channel_htable, channel_name);
-     if (!dir_channel)
+   old_channel = tbx_htable_extract(madeleine->channel_htable, channel_name);
+     if (!old_channel)
        FAILURE("Old channel not found");
    
    mad_driver =
@@ -176,9 +176,11 @@ tbx_bool_t
    if (interface->after_open_channel)
      interface->after_open_channel(mad_channel);
    
+   tbx_htable_extract(mad_adapter->channel_htable, channel_name);   
    tbx_htable_add(mad_adapter->channel_htable, dir_channel->name, mad_channel);
-   tbx_htable_add(madeleine->channel_htable,   dir_channel->name, mad_channel);
    
+   tbx_htable_add(madeleine->channel_htable,   dir_channel->name, mad_channel);
+
    TRACE("Pass 3 - sending -1 sync");
    mad_leonie_send_int(-1);
    TBX_FREE(channel_name);
@@ -191,7 +193,7 @@ void
   mad_channel_merge_done(p_mad_madeleine_t madeleine)
 {   
    LOG_IN();
-   madeleine->merge_done = tbx_true ;
+   madeleine->dynamic->merge_done = tbx_true ;
    LOG_OUT();
 }
 
@@ -201,10 +203,10 @@ volatile tbx_bool_t
    tbx_bool_t res = tbx_false;
    
    LOG_IN();
-   if ( madeleine->merge_done == tbx_true )
+   if ( madeleine->dynamic->merge_done == tbx_true )
      {	
-	madeleine->merge_done = tbx_false;
-	res                   = tbx_true;
+	madeleine->dynamic->merge_done =  tbx_false;
+	res                            =  tbx_true;
      }
    
    LOG_OUT();
@@ -217,7 +219,7 @@ tbx_bool_t
 {   
    tbx_bool_t res  = tbx_false;
    
-   if (madeleine->mergeable == tbx_true)
+   if (madeleine->dynamic->mergeable == tbx_true)
      {	
 	do 
 	  {	
@@ -230,12 +232,59 @@ tbx_bool_t
 	
 	while(! mad_channel_is_merged( madeleine ))
 	  marcel_yield();
-	
-	madeleine->mergeable = tbx_true;
+
+	madeleine->dynamic->mergeable = tbx_true;
 	res = tbx_true ; 
      }
    return res;
 }
+
+void
+  mad_channel_split_done(p_mad_madeleine_t madeleine)
+{   
+   LOG_IN();
+   madeleine->dynamic->split_done = tbx_true ;
+   LOG_OUT();
+}
+
+volatile tbx_bool_t
+  mad_channel_is_split(p_mad_madeleine_t madeleine)
+{  
+   tbx_bool_t res = tbx_false;
+   
+   LOG_IN();
+   if ( madeleine->dynamic->split_done == tbx_true )
+     {	
+	madeleine->dynamic->split_done =  tbx_false;
+	res                            =  tbx_true;
+     }
+   
+   LOG_OUT();
+   return res;
+}
+
+tbx_bool_t
+  mad_shrink_channel(p_mad_madeleine_t madeleine,
+		     char *name)
+{   
+   tbx_bool_t          res          = tbx_false;
+   
+   if (madeleine->dynamic->mergeable == tbx_true)
+     {	
+	mad_directory_rollback( madeleine );
+	
+	mad_leonie_send_int(mad_leo_command_split_channel);
+	mad_leonie_send_string(name);
+	
+	while(! mad_channel_is_split( madeleine ))
+	  marcel_yield();
+     
+	madeleine->dynamic->mergeable = tbx_true;
+	res = tbx_true ; 
+     }
+   return res;
+}
+
 
 
 

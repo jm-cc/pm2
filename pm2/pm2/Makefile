@@ -45,7 +45,7 @@ endif
 # Regle par defaut : construction des librairies
 # ATTENTION: l'ordre des dépendances est TRES IMPORTANT !
 #---------------------------------------------------------------------
-libs: ARCHITECTURES dot_h fut
+link_libs: ARCHITECTURES dot_h fut libs
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -59,13 +59,20 @@ all: pm2 examples
 
 # pm2: construction des librairies
 #---------------------------------------------------------------------
-pm2: libs
+pm2: link_libs
 
 # libs: descente recursive dans chaque module pour construction des
 #       librairies
 #---------------------------------------------------------------------
-libs: flavors
+libs: fut
 	$(COMMON_HIDE) echo ">>> Making libs"
+	$(COMMON_HIDE) set -e; \
+	for i in $(LIBS) ; do \
+		$(MAKE) -C modules/$$i $@; \
+	done
+
+link_libs: libs
+	$(COMMON_HIDE) echo ">>> Linking libs"
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@; \
@@ -90,7 +97,7 @@ preproc: flavors
 
 # fut: descente recursive dans chaque module pour action `fut'
 #---------------------------------------------------------------------
-fut: flavors
+fut: dot_h
 	$(COMMON_HIDE) echo ">>> Making fut files"
 	$(COMMON_HIDE) set -e; EMPTY=""; \
 	for i in $(PROF_LIBS) $$EMPTY; do \
@@ -128,7 +135,7 @@ clean: cleantools
 
 cleantools:
 	$(COMMON_HIDE) set -e; \
-	for i in ezflavor sigmund; do \
+	for i in sigmund; do \
 		$(MAKE) -s -C $$i clean ; \
 	done
 
@@ -138,7 +145,7 @@ cleanall: cleantoolsall
 
 cleantoolsall:
 	$(COMMON_HIDE) set -e; \
-	for i in ezflavor sigmund; do \
+	for i in sigmund; do \
 		$(MAKE) -s -C $$i cleanall ; \
 	done
 
@@ -155,7 +162,7 @@ distcleanflavors:
 #	$(RM) -r stamp
 
 distcleandoc:
-	$(MAKE) -C doc distclean
+	$(MAKE) -C doc/Getting_started distclean
 
 # Initialisation de la distribution PM2
 #---------------------------------------------------------------------
@@ -223,7 +230,7 @@ xdialogconfig: flavors
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --xdialog || :
 
 xconfig: flavors
-	$(COMMON_HIDE) $(MAKE) -C ezflavor NO_REBUILD=1
+	$(COMMON_HIDE) $(MAKE) -C ezflavor FLAVOR=ezflavor
 	$(ROOT)/bin/ezflavor
 
 

@@ -1,3 +1,3 @@
-Depend: tbx ntbx
+Depend: tbx ntbx leoparse
 Provide: module
 Conflict: pm2 madeleine dsm marcel swann

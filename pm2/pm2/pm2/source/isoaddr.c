@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.8  2000/11/20 10:29:24  gantoniu
+Minor correction.
+
 Revision 1.7  2000/11/18 19:45:10  rnamyst
 Makefiles now use 'recursive waves' to generate .h files, .fut files, etc.
 
@@ -643,9 +646,7 @@ void ISOADDR_INFO_func(void)
 
 int isoaddr_page_get_status(int index)
 {
-#ifdef ISOADDR_INFO_TRACE
   int master = _info_table[index].master;
-#endif
 
   LOG_IN();
 

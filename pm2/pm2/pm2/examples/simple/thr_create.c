@@ -39,8 +39,6 @@
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
-static int *les_modules, nb_modules;
-
 static Tick t1, t2;
 
 static void term_func(void *arg)
@@ -139,11 +137,11 @@ static void eval_thread_creation(void)
 
 int pm2_main(int argc, char **argv)
 {
-  pm2_init(&argc, argv, 1, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
   eval_thread_creation();
 
-  pm2_kill_modules(les_modules, nb_modules);
+  pm2_halt();
 
   pm2_exit();
 

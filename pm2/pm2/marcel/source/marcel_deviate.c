@@ -209,6 +209,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   marcel_lock_release(&deviate_lock);
   unlock_task();
 
+  ma_wake_up_thread(pid);
 #ifdef MA__SMP
   // Heuristique: on va essayer d'accélérer les choses...
   marcel_kthread_kill(GET_LWP(pid)->pid, MARCEL_TIMER_SIGNAL);

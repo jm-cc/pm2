@@ -124,14 +124,15 @@ extern debug_type_t marcel_mtrace_timer;
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \
-		RAISE(PROGRAM_ERROR); \
+		mdebug("BUG at %s:%u", __FILE__, __LINE__); \
+		raise(SIGABRT); \
 	} \
   } while (0);
 
 #define MA_WARN_ON(cond) \
   do { \
 	if (cond) { \
-		mdebug("%s:%l:Warning on '" #cond "'", __FILE__, __LINE__); \
+		mdebug("%s:%u:Warning on '" #cond "'", __FILE__, __LINE__); \
 	} \
   } while (0);
 

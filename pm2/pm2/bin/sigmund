@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+PM2_ARCH=`$PM2_ROOT/bin/pm2_arch`
+PM2_SYS=`$PM2_ROOT/bin/pm2_sys`
+
+case "$PM2_SYS" in
+    WIN*_SYS)
+	ext=".exe"
+	;;
+    *)
+	ext=""
+	;;
+esac
+
+prog=${PM2_HOME:-${HOME}}/.pm2/bin/sigmund_${PM2_ARCH}_${PM2_SYS}${ext}
+
+if [ ! -x $prog ]; then
+    echo "ERROR: sigmund was not compiled for $PM2_ARCH/$PM2_SYS" >&2
+    exit 1
+fi
+
+exec ${PM2_HOME:-${HOME}}/.pm2/bin/sigmund_${PM2_ARCH}_${PM2_SYS}${ext} "$@"

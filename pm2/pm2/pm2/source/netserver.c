@@ -82,7 +82,7 @@ static any_t netserver(any_t arg)
 #else
     mad_receive();
 #endif
-    mad_unpack_int(MAD_IN_HEADER, &tag, 1);
+    pm2_unpack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
     if(tag >= NETSERVER_RAW_RPC)
       netserver_raw_rpc(tag - NETSERVER_RAW_RPC);
     else {

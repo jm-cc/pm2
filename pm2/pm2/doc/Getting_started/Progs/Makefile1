@@ -1,0 +1,21 @@
+## This Makefile should be run with GNU make
+
+FLAVOR		:= $(shell echo $$PM2_FLAVOR")
+CFLAGS		:= $(shell pm2-config --cflags)
+LDFLAGS		:= $(shell pm2-config --libs)
+CC		:= $(shell pm2-config --cc)
+
+.PHONY: clean indent
+
+CFILES		:= $(wildcard *.c)
+OFILES		:= $(CFILES:%.c=%.o)
+EXEFILES	:= $(CFILES:%.c=%)
+
+all: $(EXEFILES)
+
+$(EXEFILES): %: %.c
+	@echo "Compiling $<... for flavor '$(FLAVOR)'"
+	@$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
+
+clean:
+	-rm $(EXEFILES) $(OFILES)

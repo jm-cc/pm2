@@ -681,8 +681,7 @@ ntbx_true_name(char *host_name)
 
       if (!host_entry)
 	{
-	  pm2debug_flush();
-	  pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", "gethostbyname", hstrerror(h_errno));
+          FAILUREF("%s: %s\n", "gethostbyname", hstrerror(h_errno));
 	  __TBX_PRINT_TRACE();
 	  _TBX_EXIT_FAILURE();
 	}
@@ -696,8 +695,7 @@ ntbx_true_name(char *host_name)
 
       if (!host_entry)
 	{
-	  pm2debug_flush();
-	  pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", "gethostbyname", hstrerror(h_errno));
+          FAILUREF("%s: %s\n", "gethostbyname", hstrerror(h_errno));
 	  __TBX_PRINT_TRACE();
 	  _TBX_EXIT_FAILURE();
 	}

@@ -54,52 +54,18 @@
 #define TBX_MALLOC_CTRL
 
 /*
- * Extension usage control  _____________________________________________
- * ________________________//////////////////////////////////////////
- */
-
-// Extensions for safe macro writing
-#if       (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 8)
-#  define TBX_USE_SAFE_MACROS
-static const int __tbx_using_safe_macros = 1;
-#else  // (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 8)
-static const int __tbx_using_safe_macros = 0;
-#endif // (__GNUC__ > 2) || (__GNUC__ == 2 && __GNUC_MINOR__ > 8)
-
-// Ternary operator extension
-#if       (__GNUC__ >= 2)
-#  define TBX_USE_EXTENDED_TERNARY_OP
-static const int __tbx_using_extended_ternary_operand = 1;
-#else  // (__GNUC__ >= 2)
-static const int __tbx_using_extended_ternary_operand = 0;
-#endif // (__GNUC__ >= 2)
-
-// GCC ATTRIBUTES
-#if       (__GNUC__ >= 2)
-#  define TBX_USE_GCC2_ATTRIBUTES
-static const int __tbx_using_gcc2_attributes = 1;
-#  if       (__GNUC__ >= 3)
-#    define TBX_USE_GCC3_ATTRIBUTES
-static const int __tbx_using_gcc3_attributes = 1;
-#  else  // (__GNUC__ >= 3)
-static const int __tbx_using_gcc3_attributes = 0;
-#  endif // (__GNUC__ >= 3)
-#else  // (__GNUC__ >= 2)
-static const int __tbx_using_gcc2_attributes = 0;
-#endif // (__GNUC__ >= 2)
-
-// __FUNCTION__ compatibility
-#if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
-#  define __TBX_FUNCTION__ __func__
-#else // (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
-#  define __TBX_FUNCTION__ __FUNCTION__
-#endif // (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
-
-/*
  * Constant definition  _____________________________________________
  * ____________________//////////////////////////////////////////////
  */
 #define TBX_FILE_TRANSFER_BLOCK_SIZE 1024
+
+#ifndef NULL
+# ifdef __cplusplus
+#  define NULL  0
+# else
+#  define NULL  ((void*) 0)
+# endif
+#endif
 
 /*
  * Timing macros  __________________________________________________
@@ -191,8 +157,7 @@ static const int __tbx_using_gcc2_attributes = 0;
 #    define TBX_BACKTRACE_DEPTH 10
 #  endif // TBX_BACKTRACE_DEPTH
 
-#  ifdef TBX_USE_SAFE_MACROS
-#    define __TBX_PRINT_TRACE()\
+#  define __TBX_PRINT_TRACE()\
      ({\
        void    *array[TBX_BACKTRACE_DEPTH];\
        size_t   size;\
@@ -209,28 +174,6 @@ static const int __tbx_using_gcc2_attributes = 0;
 \
        free (strings);\
      })
-#  else  // TBX_USE_SAFE_MACROS
-static
-void
-__tbx_backtrace(void)
-{
-  void *array[TBX_BACKTRACE_DEPTH];
-  size_t size;
-  char **strings;
-  size_t i;
-
-  size = backtrace(array, TBX_BACKTRACE_DEPTH);
-  strings = backtrace_symbols(array, size);
-
-  fprintf(stderr, "Obtained %zd stack frames.\n", size);
-
-  for (i = 0; i < size; i++)
-    fprintf(stderr, "%s\n", strings[i]);
-
-  free (strings);
-}
-#    define __TBX_PRINT_TRACE() __tbx_backtrace();
-#  endif // TBX_USE_SAFE_MACROS
 #else  // TBX_BACKTRACE_ON_FAILURE
 #  define __TBX_PRINT_TRACE() (void)(0)
 #endif // TBX_BACKTRACE_ON_FAILURE
@@ -267,40 +210,29 @@ __tbx_backtrace(void)
  * Min/Max macros  __________________________________________________
  * _______________///////////////////////////////////////////////////
  */
-#ifdef TBX_USE_SAFE_MACROS
-#  define max(a, b) \
+#define max(a, b) \
        ({__typeof__ ((a)) _a = (a); \
 	 __typeof__ ((b)) _b = (b); \
          _a > _b ? _a : _b; })
-#  define min(a, b) \
+#define min(a, b) \
        ({__typeof__ ((a)) _a = (a); \
 	 __typeof__ ((b)) _b = (b); \
          _a < _b ? _a : _b; })
-#else // TBX_USE_SAFE_MACROS
-#  define max(a, b) (((a) > (b))?(a):(b))
-#  define min(a, b) (((a) < (b))?(a):(b))
-#endif // TBX_USE_SAFE_MACROS
 
 /*
  * Flags control macros  ____________________________________________
  * _____________________/////////////////////////////////////////////
  */
 
-#ifdef TBX_USE_SAFE_MACROS
-#  define tbx_flag_set(f) \
+#define tbx_flag_set(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = tbx_flag_set;})
-#  define tbx_flag_clear(f) \
+#define tbx_flag_clear(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = tbx_flag_clear;})
-#  define tbx_flag_toggle(f) \
+#define tbx_flag_toggle(f) \
         ({p_tbx_flag_t _pf = (f); \
           *_pf = 1 - !!*_pf;})
-#else // TBX_USE_SAFE_MACROS
-#  define tbx_flag_set(f)    ((*(f)) = tbx_flag_set)
-#  define tbx_flag_clear(f)  ((*(f)) = tbx_flag_clear)
-#  define tbx_flag_toggle(f) ((*(f)) = 1 - (!!*(f)))
-#endif // TBX_USE_SAFE_MACROS
 
 #define tbx_flag_test(f)   (!!*(f))
 #define tbx_flag_is_set(f)   (!!*(f))
@@ -408,11 +340,6 @@ __tbx_backtrace(void)
 #endif /* MARCEL */
 
     /* Regular allocation macro */
-#if (defined TBX_MALLOC_CTRL) && (!defined TBX_USE_EXTENDED_TERNARY_OP)
-#  warning TBX_MALLOC_CTRL requires the GNU Compiler Collection
-#  undef TBX_MALLOC_CTRL
-#endif /* TBX_MALLOC_CTRL && !TBX_USE_EXTENDED_TERNARY_OP */
-
 #ifdef TBX_MALLOC_CTRL
 #  define TBX_MALLOC(s)     ((__TBX_MALLOC_OP  ((s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
 #  define TBX_CALLOC(n, s)  ((__TBX_CALLOC_OP  ((n)?:(FAILURE("attempt to alloc 0 bytes"), 0), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
@@ -435,20 +362,12 @@ __tbx_backtrace(void)
  * Alignment macros  ________________________________________________
  * _________________/////////////////////////////////////////////////
  */
-#ifdef TBX_USE_GCC2_ATTRIBUTES
-#  define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
-#else // TBX_USE_GCC2_ATTRIBUTES
-#  define TBX_ALIGN(a)
-#endif // TBX_USE_GCC2_ATTRIBUTES
+#define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
 
-#ifdef TBX_USE_SAFE_MACROS
-#  define tbx_aligned(v, a) \
+#define tbx_aligned(v, a) \
         ({__typeof__ ((v)) _v = (v); \
 	 __typeof__ ((a)) _a = (a); \
          (_v + _a - 1) & ~(_a - 1);})
-#else // TBX_USE_SAFE_MACROS
-#  define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
-#endif // TBX_USE_SAFE_MACROS
 
 
 /*
@@ -456,21 +375,16 @@ __tbx_backtrace(void)
  * __________________////////////////////////////////////////////////
  */
     // Bi-directional shifts
-#ifdef TBX_USE_SAFE_MACROS
-#  define tbx_lshift(x, n) ({     \
+#define tbx_lshift(x, n) ({     \
 	__typeof__ ((n)) _n = (n); \
 	__typeof__ ((x)) _x = (x); \
         _n > 0?_x << _n:_x >> -_n;\
 })
-#  define tbx_rshift(x, n) ({     \
+#define tbx_rshift(x, n) ({     \
 	__typeof__ ((n)) _n = (n); \
 	__typeof__ ((x)) _x = (x); \
         _n > 0?_x >> _n:_x << -_n;\
 })
-#else // TBX_USE_SAFE_MACROS
-#  define tbx_lshift(x, n) (((_n) > 0)?((_x) << (_n)):((_x) >> (-(_n))))
-#  define tbx_rshift(x, n) (((_n) > 0)?((_x) >> (_n)):((_x) << (-(_n))))
-#endif // TBX_USE_SAFE_MACROS
 
 
 /*
@@ -482,42 +396,6 @@ __tbx_backtrace(void)
 #define tbx_clear_field(h, f) ((h)[f] &= ~(f ## _mask))
 
 #define tbx_contract_field(h, v, f) (tbx_clear_field((h), f), (h)[f] |= (unsigned char)((tbx_rshift((v), f ## _shift)) & f ## _mask))
-
-
-/*
- * Attribute macros  ________________________________________________
- * _________________/////////////////////////////////////////////////
- */
-#ifdef TBX_USE_GCC2_ATTRIBUTES
-#  define TBX_BYTE        __attribute__ ((__mode__ (__byte__)))
-#  define TBX_WORD        __attribute__ ((__mode__ (__word__)))
-#  define TBX_POINTER     __attribute__ ((__mode__ (__pointer__)))
-#  define TBX_ALIGNED     __attribute__ ((__aligned__))
-#  define TBX_PACKED      __attribute__ ((__packed__))
-#  define TBX_UNUSED      __attribute__ ((__unused__))
-#  define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
-#  define TBX_CONST       __attribute__ ((__const__))
-#  define TBX_NOINST      __attribute__ ((__no_instrument_function__))
-#else // TBX_USE_GCC2_ATTRIBUTES
-#  define TBX_BYTE
-#  define TBX_WORD
-#  define TBX_POINTER
-#  define TBX_ALIGNED
-#  define TBX_PACKED
-#  define TBX_UNUSED
-#  define TBX_NORETURN
-#  define TBX_CONST
-#  define TBX_NOINST
-#endif // TBX_USE_GCC2_ATTRIBUTES
-
-#ifdef TBX_USE_GCC3_ATTRIBUTES
-#  define TBX_PURE        __attribute__ ((__pure__))
-#  define TBX_FMALLOC     __attribute__ ((__malloc__))
-#else // TBX_USE_GCC3_ATTRIBUTES
-#  define TBX_PURE
-#  define TBX_FMALLOC
-#endif // TBX_USE_GCC3_ATTRIBUTES
-
 
 /*
  * System calls wrappers  ___________________________________________

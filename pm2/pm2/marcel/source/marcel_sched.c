@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.28  2000/05/03 18:34:47  vdanjean
+few bugs fixes in key managment
+
 Revision 1.27  2000/04/28 18:33:37  vdanjean
 debug actsmp + marcel_key
 
@@ -452,13 +455,17 @@ static void wait_all_tasks_end(void)
 {
   lock_task();
 
+  //printf("wait_all_tasks_end\n");
   marcel_lock_acquire(&__wait_lock);
 
   if(_main_struct.nb_tasks) {
+    //printf("yet %i task\n", _main_struct.nb_tasks);
     _main_struct.main_is_waiting = TRUE;
     _main_struct.blocked = TRUE;
     marcel_give_hand(&_main_struct.blocked, &__wait_lock);
+    //printf("OK, no more task\n");
   } else {
+    //printf("OK, no task\n");
     marcel_lock_release(&__wait_lock);
     unlock_task();
   }

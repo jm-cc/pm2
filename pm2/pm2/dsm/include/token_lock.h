@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.h,v 1.8 2002/10/27 15:37:04 slacour Exp $
+ * CVS Id: $Id: token_lock.h,v 1.9 2002/10/28 16:48:33 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -35,6 +35,7 @@ extern const token_lock_id_t TOKEN_LOCK_NONE;
  * cluster */
 extern const unsigned long int INFINITE_PRIORITY;
 extern const unsigned long int NO_PRIORITY;
+extern const unsigned long int ANTI_PRIORITY;
 
 
 /**********************************************************************/

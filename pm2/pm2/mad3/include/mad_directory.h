@@ -92,16 +92,16 @@ typedef struct s_mad_dir_fchannel
   p_mad_dir_channel_common_t  common;
 } mad_dir_fchannel_t;
 
-typedef struct s_mad_dir_vchannel_process_routing_table
+typedef struct s_mad_dir_vxchannel_process_routing_table
 {
   char                 *channel_name;
   ntbx_process_grank_t  destination_rank;
-} mad_dir_vchannel_process_routing_table_t;
+} mad_dir_vxchannel_process_routing_table_t;
 
-typedef struct s_mad_dir_vchannel_process_specific
+typedef struct s_mad_dir_vxchannel_process_specific
 {
   p_ntbx_process_container_t pc;
-} mad_dir_vchannel_process_specific_t;
+} mad_dir_vxchannel_process_specific_t;
 
 typedef struct s_mad_dir_vchannel
 {
@@ -112,17 +112,6 @@ typedef struct s_mad_dir_vchannel
   p_ntbx_process_container_t  pc;
   p_mad_dir_channel_common_t  common;
 } mad_dir_vchannel_t;
-
-typedef struct s_mad_dir_xchannel_process_routing_table
-{
-  char                 *channel_name;
-  ntbx_process_grank_t  destination_rank;
-} mad_dir_xchannel_process_routing_table_t;
-
-typedef struct s_mad_dir_xchannel_process_specific
-{
-  p_ntbx_process_container_t pc;
-} mad_dir_xchannel_process_specific_t;
 
 typedef struct s_mad_dir_xchannel
 {

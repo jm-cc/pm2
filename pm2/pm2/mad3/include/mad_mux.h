@@ -53,14 +53,19 @@ typedef enum e_mad_xblock_header_field
   mad_xblock_fdestination_1 = 9,
   mad_xblock_fdestination_2 = 10,
   mad_xblock_fdestination_3 = 11,
+
   mad_xblock_fmux           = 12,
-  mad_xblock_fis_a_group    = 13,
-  mad_xblock_fis_a_new_msg  = 13,
+
+  mad_xblock_fsub           = 13,
+
   mad_xblock_fis_an_eof_msg = 14,
-  mad_xblock_fclosing       = 15,
+  mad_xblock_fis_a_group    = 14,
+  mad_xblock_fis_a_new_msg  = 14,
 #ifdef MAD_MUX_FLOW_CONTROL
   mad_xblock_fis_an_ack     = 14,
 #endif // MAD_MUX_FLOW_CONTROL
+
+  mad_xblock_fclosing       = 15,
   mad_xblock_fsize          = 16,
 } mad_xblock_header_field_t;
 
@@ -78,14 +83,19 @@ typedef enum e_mad_xblock_header_field_mask
   mad_xblock_fdestination_1_mask = 0xFF,
   mad_xblock_fdestination_2_mask = 0xFF,
   mad_xblock_fdestination_3_mask = 0xFF,
+
   mad_xblock_fmux_mask           = 0xFF,
-  mad_xblock_fis_a_group_mask    = 0x02,
-  mad_xblock_fis_a_new_msg_mask  = 0x01,
+
+  mad_xblock_fsub_mask           = 0xFF,
+
   mad_xblock_fis_an_eof_msg_mask = 0x01,
-  mad_xblock_fclosing_mask       = 0x02,
+  mad_xblock_fis_a_group_mask    = 0x02,
+  mad_xblock_fis_a_new_msg_mask  = 0x04,
 #ifdef MAD_MUX_FLOW_CONTROL
-  mad_xblock_fis_an_ack_mask     = 0x04,
+  mad_xblock_fis_an_ack_mask     = 0x08,
 #endif // MAD_MUX_FLOW_CONTROL
+
+  mad_xblock_fclosing_mask       = 0x01,
 } mad_xblock_header_field_mask_t;
 
 typedef enum e_mad_xblock_header_field_shift
@@ -102,14 +112,19 @@ typedef enum e_mad_xblock_header_field_shift
   mad_xblock_fdestination_1_shift =  8,
   mad_xblock_fdestination_2_shift = 16,
   mad_xblock_fdestination_3_shift = 24,
+
   mad_xblock_fmux_shift           =  0,
-  mad_xblock_fis_a_group_shift    = -1,
-  mad_xblock_fis_a_new_msg_shift  =  0,
+
+  mad_xblock_fsub_shift           =  0,
+
   mad_xblock_fis_an_eof_msg_shift =  0,
-  mad_xblock_fclosing_shift       = -1,
+  mad_xblock_fis_a_group_shift    = -1,
+  mad_xblock_fis_a_new_msg_shift  = -2,
 #ifdef MAD_MUX_FLOW_CONTROL
-  mad_xblock_fis_an_ack_shift     = -2,
+  mad_xblock_fis_an_ack_shift     = -3,
 #endif // MAD_MUX_FLOW_CONTROL
+
+  mad_xblock_fclosing_shift       =  0,
 } mad_xblock_header_field_shift_t;
 
 
@@ -134,6 +149,7 @@ typedef struct s_mad_xblock_header
   tbx_bool_t               is_an_eof_msg;
   tbx_bool_t               closing;
   unsigned int             mux;
+  unsigned int             sub;
 #ifdef MAD_MUX_FLOW_CONTROL
   tbx_bool_t               is_an_ack;
 #endif // MAD_MUX_FLOW_CONTROL
@@ -167,7 +183,7 @@ typedef struct s_mad_mux_darray_lane
   TBX_SHARED;
   p_tbx_darray_t block_queues;
   p_tbx_slist_t  message_queue;
-  marcel_sem_t   something_to_forward;  
+  marcel_sem_t   something_to_forward;
 } mad_mux_darray_lane_t;
 
 #endif // MARCEL

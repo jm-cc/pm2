@@ -73,13 +73,9 @@ int pm2_main(int argc, char **argv)
   tfprintf(stderr, ">>>>Avant toto final\n");
   tfprintf(stderr, ">>>>toto final =%d\n", toto);
   tfprintf(stderr, ">>>>Apres toto final\n");
-  //  pm2_barrier(&b);
-  marcel_delay(1000);
+  pm2_barrier(&b);
   if(pm2_self() == 0) 
-    {
-tfprintf(stderr, ">>>>Avant kill\n");
     pm2_halt();
-    }
   pm2_exit();
   
   tfprintf(stderr, "Main is ending\n");

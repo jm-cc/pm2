@@ -87,9 +87,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	}
 	if (attr->rt_thread)
 		t->sched.internal.prio=RT_PRIO;
-#ifdef MA__LWPS
 	t->sched.internal.cur_rq=NULL;
-#endif
 	t->sched.internal.sched_policy = attr->__schedpolicy;
 	t->sched.internal.array=NULL;
 	LOG_OUT();

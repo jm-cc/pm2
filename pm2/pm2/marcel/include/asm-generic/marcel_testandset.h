@@ -20,13 +20,18 @@
 #define MA_HAVE_TESTANDSET 1
 #define pm2_spinlock_testandset(spinlock) ma_cmpxchg(spinlock, 0, 1)
 #define pm2_spinlock_release(spinlock) ma_cmpxchg(spinlock, 1, 0)
-#else
+#endif
 #section marcel_variables
+#ifndef MA_HAVE_COMPAREEXCHANGE
 extern ma_spinlock_t testandset_spinlock;
+#endif
 #section marcel_functions
+#ifndef MA_HAVE_COMPAREEXCHANGE
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
 static __inline__ unsigned pm2_spinlock_release(volatile unsigned *spinlock) __tbx_deprecated__;
+#endif
 #section marcel_inline
+#ifndef MA_HAVE_COMPAREEXCHANGE
 #depend "linux_spinlock.h"
 #depend "asm/linux_types.h"
 static __inline__ unsigned __tbx_deprecated__ pm2_spinlock_testandset(volatile unsigned *spinlock)
@@ -38,5 +43,8 @@ static __inline__ unsigned __tbx_deprecated__ pm2_spinlock_testandset(volatile u
   ma_spin_unlock_softirq(&testandset_spinlock);
   return ret;
 }
+#endif
+#section marcel_macros
+#ifndef MA_HAVE_COMPAREEXCHANGE
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
 #endif

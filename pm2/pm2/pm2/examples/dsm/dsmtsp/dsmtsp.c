@@ -449,7 +449,7 @@ int pm2_main(int argc, char **argv)
 			     dsmlib_erc_add_page  // page_add_func 
 			     );
 
-  prot = MIGRATE_THREAD;  
+  prot = prot_hbrc;  
 			     
   //  dsm_lock_attr_register_protocol(&attr, MIGRATE_THREAD);
   dsm_lock_attr_register_protocol(&attr, prot);

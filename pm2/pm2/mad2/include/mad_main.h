@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.4  2000/01/13 14:44:32  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.3  1999/12/15 17:31:23  oaumage
 Ajout de la commande de logging de CVS
 
@@ -67,7 +71,7 @@ typedef struct s_mad_madeleine
   p_mad_adapter_t             adapter;
   mad_configuration_t         configuration;
   mad_channel_id_t            nb_channel;
-  mad_list_t                  channel;
+  tbx_list_t                  channel;
 } mad_madeleine_t;
 
 /*

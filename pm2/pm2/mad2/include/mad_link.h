@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_link.h,v $
+Revision 1.4  2000/01/13 14:44:32  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.3  2000/01/05 09:39:40  oaumage
 - ajout du champs group_mode :
   * aggregate: .. en emission, les groupes sont de taille maximale
@@ -67,8 +71,8 @@ typedef struct s_mad_link
   mad_link_mode_t           link_mode;
   mad_buffer_mode_t         buffer_mode;
   mad_group_mode_t          group_mode;
-  mad_list_t                buffer_list;
-  mad_list_t                user_buffer_list;
+  tbx_list_t                buffer_list;
+  tbx_list_t                user_buffer_list;
 
   /* Driver specific data */
   p_mad_driver_specific_t   specific;

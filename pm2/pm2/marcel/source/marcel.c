@@ -398,9 +398,10 @@ int marcel_exit(any_t val)
 #endif
   }
 
+  lock_task();
   SET_CUR_LWP(GET_LWP(cur));
 
-#ifdef MA__SMP
+#ifdef MA__LWPS
   /* Durant cette fonction, il ne faut pas que le thread soit
      "déplacé" intempestivement (e.g. après avoir acquis stack_mutex)
      sur un autre LWP. */
@@ -412,6 +413,7 @@ int marcel_exit(any_t val)
 #endif
 
   cur->ret_val = val;
+  unlock_task();
   if(!cur->detached) {
     marcel_sem_V(&cur->client);
     marcel_sem_P(&cur->thread);
@@ -447,6 +449,8 @@ int marcel_exit(any_t val)
     // On insere le nouveau thread _avant_ de retirer l'ancien (pour
     // eviter le deadlock)
     SET_STATE_RUNNING(NULL, cur_lwp->sec_desc, cur_lwp);
+    // TODO : DANGEROUS : marcel_insert_task modifie cur_lwp->sec_desc->lwp !
+    // A priori, pas de conséquence : c'est la même valeur.
     marcel_insert_task(cur_lwp->sec_desc);
 
     // On retire l'ancien
@@ -505,7 +509,7 @@ int marcel_exit(any_t val)
 
     LOG_OUT();
 
-    goto_next_task(cur);
+    MA_THR_LONGJMP((cur), NORMAL_RETURN);
 
   } else { // Ici, la pile a été allouée par le noyau Marcel
 
@@ -572,7 +576,7 @@ int marcel_exit(any_t val)
     LOG_OUT();
 
     // Enfin, on effectue un changement de contexte vers le thread suivant.
-    goto_next_task(cur_lwp->sec_desc->child);
+    MA_THR_LONGJMP((cur_lwp->sec_desc->child), NORMAL_RETURN);
   }
 
   return 0; /* Silly, isn't it ? */
@@ -839,7 +843,7 @@ static void insertion_relai(handler_func_t f, void *arg)
   // TODO: Si locked() != 1, on peut optimiser en autorisant le fils a
   // s'executer immediatement...
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
-    goto_next_task(cur->father);
+    MA_THR_LONGJMP((cur->father), NORMAL_RETURN);
   } else {
 #ifdef MA__DEBUG
     breakpoint();

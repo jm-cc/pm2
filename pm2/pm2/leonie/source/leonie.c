@@ -160,34 +160,42 @@ process_command_line(int    argc,
 	    }
 	  else if (tbx_argit_arg_equals("-p"))
 	    {
-	      settings->pause_mode = tbx_true;
+	      settings->pause_mode  = tbx_true;
 
-	      settings->gdb_mode   = tbx_false;
-	      settings->log_mode   = tbx_false;
+	      settings->gdb_mode    = tbx_false;
+	      settings->log_mode    = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("--p"))
 	    {
-	      settings->pause_mode = tbx_false;
+	      settings->pause_mode  = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("-d"))
 	    {
-	      settings->gdb_mode   = tbx_true;
+	      settings->gdb_mode    = tbx_true;
 	      
-	      settings->xterm_mode = tbx_true;
-	      settings->log_mode   = tbx_false;
-	      settings->pause_mode = tbx_false;
+	      settings->xterm_mode  = tbx_true;
+	      settings->log_mode    = tbx_false;
+	      settings->pause_mode  = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("--d"))
 	    {
-	      settings->gdb_mode = tbx_false;
+	      settings->gdb_mode    = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("-smp"))
 	    {
-	      settings->smp_mode   = tbx_true;
+	      settings->smp_mode    = tbx_true;
 	    }
 	  else if (tbx_argit_arg_equals("--smp"))
 	    {
-	      settings->smp_mode = tbx_false;
+	      settings->smp_mode    = tbx_false;
+	    }
+	  else if (tbx_argit_arg_equals("-e"))
+	    {
+	      settings->export_mode = tbx_true;
+	    }
+	  else if (tbx_argit_arg_equals("--e"))
+	    {
+	      settings->export_mode = tbx_false;
 	    }
 	  else
 	    tbx_argit_invalid_arg();

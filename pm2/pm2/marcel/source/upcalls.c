@@ -166,13 +166,13 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
   	if (param & ACT_UNBLK_RESTART_UNBLOCKED) {
 		switch (param & 0xFF) {
 		case ACT_RESTART_FROM_SCHED:
-			MTRACE("Restarting", current);
+			MTRACE("Restarting from sched", current);
 			MA_THR_RESTARTED(current, "Syscall");
 			SET_STATE_READY(marcel_next[GET_LWP_NUMBER(current)]);
 			break;
 		case ACT_RESTART_FROM_IDLE:
 			/* we comme from the idle task */
-			MTRACE("Restarting", current);
+			MTRACE("Restarting from idle", current);
 			mdebug("\t\tunchaining idle %p\n",
 			       GET_LWP(current)->prev_running);
 			SET_FROZEN(GET_LWP(current)->prev_running);
@@ -191,7 +191,7 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 		}
 		SET_FROZEN(GET_LWP(current)->prev_running);
 		UNCHAIN_TASK(GET_LWP(current)->prev_running);
-		MTRACE("Restarting", current);
+		MTRACE("Restarting from KERNEL IDLE", current);
 		unlock_task();
 	} else if (param & ACT_RESCHEDULE) {
 		if(!locked() && preemption_enabled()) {

@@ -8,9 +8,11 @@ DEC_MARCEL_POSIX(int,
 
 DEC_MARCEL_POSIX(int,
 		 rwlock_rdlock, (marcel_rwlock_t *rwlock) __THROW)
+#ifdef __USE_XOPEN2K
 DEC_MARCEL_POSIX(int,
 		 rwlock_timedrdlock, (marcel_rwlock_t *rwlock,
 				      const struct timespec *abstime) __THROW)
+#endif
 DEC_MARCEL_POSIX(int,
 		 rwlock_tryrdlock, (marcel_rwlock_t *rwlock) __THROW)
 DEC_MARCEL_POSIX(int,

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: isomalloc.c,v $
+Revision 1.5  2000/02/28 11:17:02  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.4  2000/01/31 15:58:21  oaumage
 - ajout du Log CVS
 
@@ -51,18 +54,16 @@ ______________________________________________________________________________
 #include <sys/mman.h>
 #include <assert.h>
 
-#include <marcel.h>
-#include <sys/archdep.h>
-#include <madeleine.h>
-
-#include <pm2.h>
-#include <sys/isomalloc_archdep.h>
-#include <sys/isomalloc_rpc.h>
-#include <isomalloc.h>
-#include <sys/bitmap.h>
-#include <magic.h>
-
-#include <isomalloc_timing.h>
+#include "marcel.h"
+#include "sys/archdep.h"
+#include "madeleine.h"
+#include "pm2.h"
+#include "sys/isomalloc_archdep.h"
+#include "sys/isomalloc_rpc.h"
+#include "isomalloc.h"
+#include "sys/bitmap.h"
+#include "magic.h"
+#include "isomalloc_timing.h"
 
 #define ALIGN_TO_SLOT(x) (ALIGN(x, SLOT_SIZE))
 

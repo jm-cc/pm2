@@ -433,7 +433,7 @@ void __init marcel_lwp_finished(void)
 }
 
 __ma_initfunc_prio(marcel_lwp_finished, MA_INIT_LWP_FINISHED,
-		   MA_INIT_LWP_FINISHED_PRIO, "Declare (and bind) lwp");
+		   MA_INIT_LWP_FINISHED_PRIO, "Tell __main_lwp is online");
 
 void __init marcel_lwp_decl_bind(void)
 {

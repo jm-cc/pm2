@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_printf.c,v $
+Revision 1.4  2000/02/28 11:17:14  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/01/31 15:58:29  oaumage
 - ajout du Log CVS
 
@@ -41,8 +44,9 @@ Revision 1.3  2000/01/31 15:58:29  oaumage
 ______________________________________________________________________________
 */
 
-#include <pm2.h>
-#include <sys/pm2_printf.h>
+#include "pm2.h"
+#include "sys/pm2_printf.h"
+
 #include <stdarg.h>
 
 static unsigned PM2_PRINTF;

@@ -68,10 +68,24 @@ _PRIVATE_ typedef enum {
 } marcel_state_t;
 #endif
 
-// VP mask: useful for selecting the set of "forbiden" LWP for a given thread
-typedef unsigned long marcel_vpmask_t;
+/* Context info for read write locks. The marcel_rwlock_info structure
+   is information about a lock that has been read-locked by the thread
+   in whose list this structure appears. The marcel_rwlock_context
+   is embedded in the thread context and contains a pointer to the
+   head of the list of lock info structures, as well as a count of
+   read locks that are untracked, because no info structure could be
+   allocated for them. */
+struct _marcel_rwlock_t;
+typedef struct _marcel_rwlock_info {
+  struct _marcel_rwlock_info *pr_next;
+  struct _marcel_rwlock_t *pr_lock;
+  int pr_lock_count;
+} marcel_readlock_info;
 
-_PRIVATE_ typedef struct task_desc_struct {
+#define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
+#define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
+
+_PRIVATE_ typedef struct _marcel_desc_struct {
 #ifdef MA__MULTIPLE_RUNNING
   volatile marcel_state_t ext_state;
 #endif
@@ -109,15 +123,17 @@ _PRIVATE_ typedef struct task_desc_struct {
     not_deviatable, next_cleanup_func;
   boolean detached, static_stack;
   marcel_sem_t suspend_sem;
+  marcel_readlock_info *p_readlock_list;  /* List of readlock info structs */
+  marcel_readlock_info *p_readlock_free;  /* Free list of structs */
+  int p_untracked_readlock_count;       /* Readlocks not tracked by list */
+  marcel_t p_nextwaiting;  /* Next element in the queue holding the thr */
+  marcel_sem_t pthread_sync;
 #ifdef ENABLE_STACK_JUMPING
   void *dummy; // Doit rester le _dernier_ champ
 #endif
 } task_desc;
 
-_PRIVATE_ typedef struct {
-  boolean executed;
-  marcel_mutex_t mutex;
-} marcel_once_t;
+typedef marcel_t marcel_descr;
 
 #ifdef MA__REMOVE_RUNNING_TASK
 typedef struct list_head head_running_list_t;
@@ -200,6 +216,9 @@ _PRIVATE_ extern char __security_stack[];
 
 static __inline__ marcel_t __marcel_self(void)
 {
+#ifdef MARCEL_SELF_IN_REG
+  return (marcel_t)get_gs();
+#else
   register unsigned long sp = get_sp();
 
 #ifdef STANDARD_MAIN
@@ -212,6 +231,7 @@ static __inline__ marcel_t __marcel_self(void)
 #else
     return (marcel_t)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE) -
 		      MAL(sizeof(task_desc)));
+#endif
 #endif
 }
 

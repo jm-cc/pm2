@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.22 2002/10/28 20:55:59 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.23 2002/10/29 13:14:44 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -38,7 +38,6 @@
 /**********************************************************************/
 
 /* who to grant a token lock to */
-
 typedef enum
 {
    NOWHERE,
@@ -441,12 +440,8 @@ update_expected_release (lock_list_elem * const lck_elem, const update_t type)
       send_release_notification(lck_elem);
    }
    assert ( lck_elem->notif_list == lck_elem->end_of_notif_list );
-   if ( lck_elem->notif_list == NULL )
-   {
-      assert ( lck_elem->end_of_notif_list == NULL );
-      OUT;
-      return;
-   }
+   assert ( lck_elem->notif_list != NULL );
+   assert ( lck_elem->end_of_notif_list != NULL );
 
    if ( type == JUST_RECVD_TOKEN || type == JUST_ACQUIRED )
    {
@@ -525,6 +520,15 @@ decide_who_to_grant_to (lock_list_elem * const lck_elem,
       return;
    }
 
+   TRACE("lck %d: reserv=%d, lcl_nxt=%d, rmt_nxt=%d, lcl_rel=%d, rmt_rel=%d",
+         lck_elem->lock_id, lck_elem->reservation, lck_elem->local_next_owner,
+         lck_elem->remote_next_owner, lck_elem->expected_local_release,
+         lck_elem->expected_remote_release);
+   TRACE("lck %d: thrd_prio=%d, max_thrd=%d, cluster_prio=%d, max_cluster=%d",
+         lck_elem->lock_id, lck_elem->thread_priority,
+         max_local_thread_acquire, lck_elem->cluster_priority,
+         max_local_cluster_acquire);
+
    /* granting the lock to a local thread is prefered to granting it
     * to another node; granting the lock to a node in the local
     * cluster is prefered to granting it to a node in a remote cluster */
@@ -574,12 +578,13 @@ grant_lock_if_possible (lock_list_elem * const lck_elem,
 
    IN;
    assert ( lck_elem != NULL );
-   if ( lck_elem->status != LOCALLY_PRESENT || lck_elem->owner_thread != NULL ||
-        destination == NOWHERE )
+   if ( destination == NOWHERE )
    {
       OUT;
       return;
    }
+   assert ( lck_elem->status == LOCALLY_PRESENT );
+   assert ( lck_elem->owner_thread == NULL );
 
    TRACE("try to grant lock %d; rmt_nxt=%d, lcl_nxt=%d, rmt_rel=%d, lcl_rel=%d",
          lck_elem->lock_id, lck_elem->remote_next_owner,
@@ -627,8 +632,7 @@ grant_lock_if_possible (lock_list_elem * const lck_elem,
       assert ( lck_elem->local_next_owner == NOBODY );
       assert ( lck_elem->remote_next_owner == NOBODY );
 
-      if ( lck_elem->just_granted == SL_TRUE &&
-           initial_destination == LOCAL_THREAD )
+      if ( lck_elem->just_granted == SL_TRUE )
       {
          assert ( lck_elem->status == UNKNOWN );
          lck_elem->just_granted = SL_FALSE;
@@ -1245,16 +1249,15 @@ token_lock (const token_lock_id_t lck_id)
    assert ( lck_elem->status != UNKNOWN );
    assert ( lck_elem->owner_thread == NULL );
 
+   assert ( lck_elem->reservation > 0 );
    if ( lck_elem->status != NON_EXISTENT )
-   {
       /* The lock is free: acquire it! */
-      assert ( lck_elem->reservation > 0 );
       update_expected_release(lck_elem, JUST_ACQUIRED);
-   }
    else
       ret_val = DSM_ERR_NOT_INIT;
 
    call_acquire_func = lck_elem->call_acquire_func;
+   lck_elem->call_acquire_func = SL_TRUE;
    lck_elem->reservation--;
 
    marcel_mutex_unlock(&(lck_elem->mutex));
@@ -1268,8 +1271,6 @@ token_lock (const token_lock_id_t lck_id)
       /* protocol specific action at acquire time */
       if ( acquire_func != NULL ) (*acquire_func)(lck_id);
    }
-   else
-      lck_elem->call_acquire_func = SL_TRUE;
 
    OUT;
    return ret_val;
@@ -1306,7 +1307,7 @@ token_partial_unlock (const token_lock_id_t lck_id)
 
    marcel_mutex_lock(&(lck_elem->mutex));
 
-   if ( lck_elem->owner_thread == NULL )
+   if ( lck_elem->owner_thread != marcel_self() )
    {
       TRACE("trying to release partially lock %d while not acquired", lck_id);
       ret_val = DSM_ERR_ILLEGAL;
@@ -1370,11 +1371,41 @@ token_unlock (const token_lock_id_t lck_id)
 
    assert ( lck_elem->status != NON_EXISTENT );
 
-   decide_who_to_grant_to(lck_elem, &initial_dest, &destination);
+   {
+      const marcel_t save_owner_thread = lck_elem->owner_thread;
 
-#if 0
-   if ( lck_elem->reservation > 0 &&
-        lck_elem->thread_priority < max_local_thread_acquire )
+      lck_elem->expected_local_release--;
+      if ( lck_elem->owner_thread == marcel_self() )
+         lck_elem->owner_thread = NULL;
+      decide_who_to_grant_to(lck_elem, &initial_dest, &destination);
+      lck_elem->expected_local_release++;
+      lck_elem->owner_thread = save_owner_thread;
+   }
+
+   {
+      char *dest, *init_dest;
+
+      switch ( destination )
+      {
+         case NOWHERE: dest = "NOWHERE"; break;
+         case LOCAL_THREAD: dest = "LOCAL_THREAD"; break;
+         case LOCAL_CLUSTER: dest = "LOCAL_CLUSTER"; break;
+         case REMOTE_CLUSTER: dest = "REMOTE_CLUSTER"; break;
+         default: dest = "???";
+      }
+      switch ( initial_dest )
+      {
+         case NOWHERE: init_dest = "NOWHERE"; break;
+         case LOCAL_THREAD: init_dest = "LOCAL_THREAD"; break;
+         case LOCAL_CLUSTER: init_dest = "LOCAL_CLUSTER"; break;
+         case REMOTE_CLUSTER: init_dest = "REMOTE_CLUSTER"; break;
+         default: init_dest = "???";
+      }
+      TRACE("lck %d has destination = '%s' and initial_dest = '%s'", lck_id,
+            dest, init_dest);
+   }
+
+   if ( destination == LOCAL_THREAD )
       lck_elem->call_acquire_func = SL_FALSE;
    else
    {
@@ -1387,9 +1418,9 @@ token_unlock (const token_lock_id_t lck_id)
       marcel_mutex_lock(&(lck_elem->mutex));
       lck_elem->call_acquire_func = SL_TRUE;
    }
-#endif
 
    update_expected_release(lck_elem, JUST_RELEASED);
+   decide_who_to_grant_to(lck_elem, &initial_dest, &destination);
    grant_lock_if_possible(lck_elem, initial_dest, destination);
 
    marcel_mutex_unlock(&(lck_elem->mutex));

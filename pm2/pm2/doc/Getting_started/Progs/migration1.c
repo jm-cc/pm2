@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <unistd.h>
+#include "pm2.h"
+
+char hostname[MAXHOSTNAMELEN];
+pm2_completion_t c;
+
+void
+thread_function (void *arg)
+{
+  int i, proc;
+  pm2_completion_t my_c;
+
+  pm2_completion_copy (&my_c, &c);
+
+  pm2_enable_migration ();
+
+  proc = pm2_self ();
+  for (i = 0; i < (2 * pm2_config_size () + 1); i++)
+    {
+
+      tprintf ("Hop %d: I am on node %d, host %s...\n",
+	       i, pm2_self (), hostname);
+
+      proc = (proc + 1) % pm2_config_size ();
+      tprintf ("Hop %d: Leaving to node %d\n", i, proc);
+
+      pm2_migrate_self (proc);
+    }
+  pm2_completion_signal (&my_c);
+}
+
+
+int
+pm2_main (int argc, char *argv[])
+{
+  gethostname (hostname, MAXHOSTNAMELEN);
+
+  pm2_init (&argc, argv);
+
+  if (pm2_self () == 0)
+    {				/* master process */
+      pm2_completion_init (&c, NULL, NULL);
+
+      pm2_thread_create (thread_function, NULL);
+
+      pm2_completion_wait (&c);
+      pm2_halt ();
+    }
+
+  pm2_exit ();
+  return 0;
+}

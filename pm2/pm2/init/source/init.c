@@ -16,9 +16,11 @@
 #include "pm2_common.h"
 
 static common_attr_t default_static_attr;
-#if defined(PM2) || defined(MAD2)
-static unsigned pm2self, pm2_conf_size;
-#endif /* PM2 || MAD2 */
+
+#ifdef PM2
+static unsigned int pm2self       = 0;
+static unsigned int pm2_conf_size = 0;
+#endif // PM2
 
 
 
@@ -27,20 +29,21 @@ void common_attr_init(common_attr_t *attr)
 #ifdef MAD3
   attr->madeleine = NULL;
 #endif // MAD 3
+
 #ifdef MAD2
   attr->madeleine = NULL;
   attr->rank = 0;
   attr->adapter_set = NULL;
 #ifdef APPLICATION_SPAWN
   attr->url = NULL;
-#endif
-#endif
+#endif // APPLICATION_SPAWN
+#endif // MAD2
 }
 
 void common_pre_init(int *argc, char *argv[],
 		     common_attr_t *attr)
 {
-  if(!attr) {
+  if (!attr) {
     common_attr_init(&default_static_attr);
     attr = &default_static_attr;
   }
@@ -125,10 +128,6 @@ void common_pre_init(int *argc, char *argv[],
    */
   tbx_init(*argc, argv);
 #endif /* TBX */
-
-#ifdef MAD1
-  mad_buffers_init();
-#endif /* MAD1 */
 
 #ifdef NTBX
   /*
@@ -222,9 +221,9 @@ void common_pre_init(int *argc, char *argv[],
     attr->madeleine = mad_object_init(*argc, argv);
 #endif /* MAD3 */
 
-#if defined(PM2) && defined(MAD2)
+#if defined(PM2)
   /*
-   * PM2 mad2/mad1 compatibility layer initialization
+   * PM2 mad2/3 interface layer initialization
    * ------------------------------------------------
    *
    * Provides:
@@ -232,11 +231,11 @@ void common_pre_init(int *argc, char *argv[],
    * - Initializes some internal mutexes
    *
    * Requires:
-   * - Mad2 core initialization
+   * - Mad2/3 core initialization
    * - Marcel Data Initialization
    */
   pm2_mad_init(attr->madeleine);
-#endif /* PM2 && MAD2 */
+#endif /* PM2 */
 
 #if defined(MAD2) && defined(EXTERNAL_SPAWN)
   /*
@@ -275,10 +274,11 @@ void common_pre_init(int *argc, char *argv[],
   mad_leonie_link_init(attr->madeleine, *argc, argv);
   mad_directory_init(attr->madeleine, *argc, argv);
   mad_dir_driver_init(attr->madeleine);
+
 #ifdef PM2
-  pm2_self      = attr->madeleine->session->process_rank;
+  pm2self      = attr->madeleine->session->process_rank;
   pm2_conf_size =
-    tbx_slist_get_length(attr->madeleine->dir->process_slist));
+    tbx_slist_get_length(attr->madeleine->dir->process_slist);
 // Warning:
 // The number of processes and the global rank maximum may be different !!!
 // number of processes = tbx_slist_get_length(madeleine->dir->process_slist));
@@ -303,7 +303,7 @@ void common_pre_init(int *argc, char *argv[],
 
   pm2self = attr->madeleine->configuration->local_host_id;
 
-  if(attr)
+  if (attr)
     attr->rank = attr->madeleine->configuration->local_host_id;
 #endif /* MAD2 */ 
 
@@ -358,16 +358,21 @@ void common_pre_init(int *argc, char *argv[],
 #endif /* MAD2 */
 
 #if defined(MAD2) && defined(APPLICATION_SPAWN)
-  if(attr && attr->rank == 0) {
-    // url: shall we store it or display it?
-    if(attr->url) {
-      strcpy(attr->url, mad_generate_url(attr->madeleine));
-    } else {
-      DISP("Run slave processes this way:");
-      DISP("   pm2load %s --mad-slave --mad-url '%s' --mad-rank <r> <arg0>...",
-	   getenv("PM2_PROG_NAME"), mad_generate_url(attr->madeleine));
+  if (attr && !attr->rank) 
+    {
+      // url: shall we store it or display it?
+      if (attr->url) 
+	{
+	  strcpy(attr->url, mad_generate_url(attr->madeleine));
+	}
+      else
+	{
+	  DISP("Run slave processes this way:");
+	  DISP("   pm2load %s --mad-slave --mad-url '%s' "
+	       "--mad-rank <r> <arg0>...", getenv("PM2_PROG_NAME"),
+	       mad_generate_url(attr->madeleine));
+	}
     }
-  }
 #endif /* MAD2 && APPLICATION_SPAWN */
 }
 
@@ -375,11 +380,11 @@ void common_post_init(int *argc, char *argv[],
 		      common_attr_t *attr)
 {
 
-  if(!attr)
+  if (!attr)
     attr = &default_static_attr;
 
 #if defined(MAD2) && defined(APPLICATION_SPAWN)
-  if(attr->rank != 0)
+  if (attr->rank)
     mad_parse_url(attr->madeleine);
 #endif /* MAD2 && APPLICATION_SPAWN */
 
@@ -433,10 +438,6 @@ void common_post_init(int *argc, char *argv[],
   mad_connect(attr->madeleine, *argc, argv);
 #endif /* MAD2 */
 
-#ifdef MAD1
-  mad_init(argc, argv, 0, NULL, &pm2_conf_size, &pm2self);
-#endif /* MAD1 */
-
 #ifdef PM2
   pm2_init_set_rank(argc, argv, pm2self, pm2_conf_size);
 #endif /* PM2 */
@@ -447,6 +448,7 @@ void common_post_init(int *argc, char *argv[],
 
 #ifdef MARCEL
   marcel_start_sched(argc, argv);
+  marcel_set_activity();
 #endif /* MARCEL */
 
 #ifdef MAD3
@@ -467,11 +469,11 @@ void common_post_init(int *argc, char *argv[],
 #endif
 
 #ifdef PM2
-  pm2_init_open_channels(argc, argv);
+  pm2_net_init_channels(argc, argv);
 #endif /* PM2 */
 
 #ifdef PM2
-  pm2_init_listen_network(argc, argv);
+  pm2_net_servers_start(argc, argv);
 #endif /* PM2 */
 
 #ifdef PM2
@@ -513,7 +515,12 @@ common_exit(common_attr_t *attr)
     { 
       attr = &default_static_attr;
     }
-  
+
+#ifdef PM2
+  pm2_net_request_end();
+  pm2_net_wait_end();
+#endif // PM2
+
 #ifdef MAD3
   // 
   // Leonie termination synchronisation
@@ -536,19 +543,35 @@ common_exit(common_attr_t *attr)
   // Marcel shutdown
   // --------------------------------
   marcel_end();
+  marcel_clear_activity();
 #endif // MARCEL
 
+#ifdef PM2
+  pm2_thread_exit();
+  block_exit();
+
+#ifdef DSM
+  dsm_pm2_exit();
+#endif // DSM
+#endif // PM2
+  
 #ifdef MAD3
   mad_dir_driver_exit(attr->madeleine);
   mad_directory_exit(attr->madeleine);
   mad_leonie_link_exit(attr->madeleine);
   mad_object_exit(attr->madeleine);
+  attr->madeleine = NULL;
 #ifdef MARCEL
   mad_forward_memory_manager_exit();
 #endif // MARCEL
 
   mad_memory_manager_exit();
 #endif // MAD3
+
+#ifdef MAD2
+  mad_exit(attr->madeleine);
+  attr->madeleine = NULL;
+#endif // MAD2
 
 #ifdef NTBX
   // 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_thread.c,v $
+Revision 1.3  2000/02/28 11:17:18  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:58:33  oaumage
 - ajout du Log CVS
 
@@ -43,8 +46,8 @@ ______________________________________________________________________________
 
 /* #define DEBUG */
 
-#include <pm2.h>
-#include <madeleine.h>
+#include "pm2.h"
+#include "madeleine.h"
 
 #define MAX_PARAMS   128
 
@@ -54,7 +57,6 @@ extern marcel_key_t mad2_send_key, mad2_recv_key;
 
 struct pm2_thread_arg {
   marcel_attr_t attr;
-  marcel_t pid;
   pm2_func_t func;
   void *arg;
   struct pm2_thread_arg *next;
@@ -153,9 +155,10 @@ static any_t pm2_thread_starter(any_t arg)
   return NULL;
 }
 
-void pm2_thread_create(pm2_func_t func, void *arg)
+marcel_t pm2_thread_create(pm2_func_t func, void *arg)
 {
   struct pm2_thread_arg *ta;
+  marcel_t pid;
 
   ta = pm2_thread_alloc();
   ta->func = func;
@@ -165,7 +168,9 @@ void pm2_thread_create(pm2_func_t func, void *arg)
 #endif
   ta->mad_sem = marcel_getspecific(_pm2_mad_key);
 
-  marcel_create(&ta->pid, &ta->attr, (marcel_func_t)pm2_thread_starter, ta);
+  marcel_create(&pid, &ta->attr, (marcel_func_t)pm2_thread_starter, ta);
+
+  return pid;
 }
 
 void pm2_thread_init(void)

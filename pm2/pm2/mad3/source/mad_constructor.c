@@ -147,14 +147,14 @@ mad_dir_fchannel_cons(void)
   return object;
 }
 
-p_mad_dir_vchannel_process_routing_table_t
-mad_dir_vchannel_process_routing_table_cons(void)
+p_mad_dir_vxchannel_process_routing_table_t
+mad_dir_vxchannel_process_routing_table_cons(void)
 {
-  p_mad_dir_vchannel_process_routing_table_t object = NULL;
+  p_mad_dir_vxchannel_process_routing_table_t object = NULL;
 
   LOG_IN();
   object =
-    TBX_CALLOC(1, sizeof(mad_dir_vchannel_process_routing_table_t));
+    TBX_CALLOC(1, sizeof(mad_dir_vxchannel_process_routing_table_t));
 
   object->destination_rank = -1;
   LOG_OUT();
@@ -162,14 +162,14 @@ mad_dir_vchannel_process_routing_table_cons(void)
   return object;
 }
 
-p_mad_dir_vchannel_process_specific_t
-mad_dir_vchannel_process_specific_cons(void)
+p_mad_dir_vxchannel_process_specific_t
+mad_dir_vxchannel_process_specific_cons(void)
 {
-  p_mad_dir_vchannel_process_specific_t object = NULL;
+  p_mad_dir_vxchannel_process_specific_t object = NULL;
 
   LOG_IN();
   object =
-    TBX_CALLOC(1, sizeof(mad_dir_vchannel_process_specific_t));
+    TBX_CALLOC(1, sizeof(mad_dir_vxchannel_process_specific_t));
 
   object->pc = ntbx_pc_cons();
   LOG_OUT();
@@ -188,36 +188,6 @@ mad_dir_vchannel_cons(void)
   object->dir_channel_slist  = tbx_slist_nil();
   object->dir_fchannel_slist = tbx_slist_nil();
   object->pc                 = ntbx_pc_cons();
-  LOG_OUT();
-
-  return object;
-}
-
-p_mad_dir_xchannel_process_routing_table_t
-mad_dir_xchannel_process_routing_table_cons(void)
-{
-  p_mad_dir_xchannel_process_routing_table_t object = NULL;
-
-  LOG_IN();
-  object =
-    TBX_CALLOC(1, sizeof(mad_dir_xchannel_process_routing_table_t));
-
-  object->destination_rank = -1;
-  LOG_OUT();
-
-  return object;
-}
-
-p_mad_dir_xchannel_process_specific_t
-mad_dir_xchannel_process_specific_cons(void)
-{
-  p_mad_dir_xchannel_process_specific_t object = NULL;
-
-  LOG_IN();
-  object =
-    TBX_CALLOC(1, sizeof(mad_dir_xchannel_process_specific_t));
-
-  object->pc = ntbx_pc_cons();
   LOG_OUT();
 
   return object;
@@ -247,20 +217,20 @@ mad_directory_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_directory_t));
 
-  object->process_darray    = tbx_darray_init();
-  object->process_slist     = tbx_slist_nil();
-  object->node_htable       = tbx_htable_empty_table();
-  object->node_slist        = tbx_slist_nil();
-  object->driver_htable     = tbx_htable_empty_table();
-  object->driver_slist      = tbx_slist_nil();
-  object->channel_htable    = tbx_htable_empty_table();
-  object->channel_slist     = tbx_slist_nil();
-  object->fchannel_htable   = tbx_htable_empty_table();
-  object->fchannel_slist    = tbx_slist_nil();
-  object->vchannel_htable   = tbx_htable_empty_table();
-  object->vchannel_slist    = tbx_slist_nil();
-  object->xchannel_htable   = tbx_htable_empty_table();
-  object->xchannel_slist    = tbx_slist_nil();
+  object->process_darray  = tbx_darray_init();
+  object->process_slist   = tbx_slist_nil();
+  object->node_htable     = tbx_htable_empty_table();
+  object->node_slist      = tbx_slist_nil();
+  object->driver_htable   = tbx_htable_empty_table();
+  object->driver_slist    = tbx_slist_nil();
+  object->channel_htable  = tbx_htable_empty_table();
+  object->channel_slist   = tbx_slist_nil();
+  object->fchannel_htable = tbx_htable_empty_table();
+  object->fchannel_slist  = tbx_slist_nil();
+  object->vchannel_htable = tbx_htable_empty_table();
+  object->vchannel_slist  = tbx_slist_nil();
+  object->xchannel_htable = tbx_htable_empty_table();
+  object->xchannel_slist  = tbx_slist_nil();
   LOG_OUT();
 
   return object;

@@ -49,20 +49,14 @@ mad_dir_channel_cons(void);
 p_mad_dir_fchannel_t
 mad_dir_fchannel_cons(void);
 
-p_mad_dir_vchannel_process_routing_table_t
-mad_dir_vchannel_process_routing_table_cons(void);
+p_mad_dir_vxchannel_process_routing_table_t
+mad_dir_vxchannel_process_routing_table_cons(void);
 
-p_mad_dir_vchannel_process_specific_t
-mad_dir_vchannel_process_specific_cons(void);
+p_mad_dir_vxchannel_process_specific_t
+mad_dir_vxchannel_process_specific_cons(void);
 
 p_mad_dir_vchannel_t
 mad_dir_vchannel_cons(void);
-
-p_mad_dir_xchannel_process_routing_table_t
-mad_dir_xchannel_process_routing_table_cons(void);
-
-p_mad_dir_xchannel_process_specific_t
-mad_dir_xchannel_process_specific_cons(void);
 
 p_mad_dir_xchannel_t
 mad_dir_xchannel_cons(void);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.h,v $
+Revision 1.3  2000/11/20 10:26:45  oaumage
+- initialisation, nouvelle version
+
 Revision 1.2  2000/11/16 14:21:50  oaumage
 - correction external spawn
 
@@ -75,5 +78,8 @@ void
 mad_spawn_driver_init(p_mad_madeleine_t   madeleine,
 		      int                *argc,
 		      char              **argv);
+
+void
+mad_exchange_connection_info(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_EXTERNAL_SPAWN_H */

@@ -45,9 +45,9 @@
 #define MAXHOSTNAMELEN 256
 #endif /* MAXHOSTNAMELEN */
 
-#ifdef SOLARIS_SYS
+#if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(DARWIN_SYS)
 #define socklen_t int
-#endif // SOLARIS_SYS
+#endif // SOLARIS_SYS || IRIX_SYS || DARWIN_SYS
 
 /*
  * Data Structures

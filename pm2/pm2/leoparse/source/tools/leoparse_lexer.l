@@ -8,6 +8,7 @@
 #define YY_INPUT(buf, result, max_size) \
    {result = leoparse_yy_input(buf, max_size);}
 
+extern YYLTYPE yylloc;
 extern int parser_line_num  ;
 extern int parser_column_num;
 extern const char *parser_filename;
@@ -40,8 +41,8 @@ X              [xX]
 Y              [yY]
 Z              [zZ]
 STRING         \"[^"]*\"
-WD             [_a-zA-Z][_a-zA-Z0-9\-]*
-ID             {WD}("."{WD})*
+WD             [_a-zA-Z/][_a-zA-Z0-9/\-]*
+ID             "."?{WD}("."{WD})*
 INTEGER        {DIGIT}+
 %%
 {ID}                               {

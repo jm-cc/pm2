@@ -176,6 +176,8 @@ LEOP_INTEGER LEOP_RANGE LEOP_INTEGER
 #include <stdio.h>
 #define DEBUG_YACC
 
+extern YYLTYPE yylloc;
+
 void yyerror(char *s)
 {
   fflush(stdout);

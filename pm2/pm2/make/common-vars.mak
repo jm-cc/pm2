@@ -33,9 +33,6 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Uncomment this line to have to old makefile behavior -- deprecated.
-# OLD_MAKEFILE=DEF
-
 ifndef FLAVOR
 ifdef PM2_FLAVOR
 export FLAVOR:=$(PM2_FLAVOR)
@@ -83,7 +80,6 @@ ifdef FLAVOR
 override PM2_CONFIG := $(PM2_CONFIG) --flavor=$(FLAVOR)
 endif
 
-ifndef OLD_MAKEFILE
 # Set variable if not set
 ifneq ($(MAKECMDGOALS),init)
 ifneq ($(MAKECMDGOALS),help)
@@ -98,5 +94,3 @@ endif
 endif
 endif
 endif
-
-endif # OLD_MAKEFILE

@@ -262,12 +262,12 @@ static void draw(void)
 
 static void migr(void)
 {
-  pm2_thread_create(migrer, NULL);
+  pm2_service_thread_create(migrer, NULL);
 }
 
 static void toggle_regulate(Panel_item item, int value)
 {
-  pm2_thread_create(positionner_regul, (void *)value);
+  pm2_service_thread_create(positionner_regul, (void *)value);
 }
 
 static void color_notify(Panel_item p, int choice)

@@ -1,4 +1,4 @@
-## $Id: Makefile,v 1.8 2001/04/18 16:13:48 bouge Exp $
+## $Id: Makefile,v 1.9 2001/04/19 05:09:29 bouge Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -22,11 +22,11 @@ STYFILES	:= start.sty
 TO_SPLIT	:= rpc-threads1 migration3 migrate-group \
 		dsm dsm1 dsm2 freeze mutex semaphore condition
 
-CFILES		:= $(wildcard Progs/*.c Progs/Makefile1)
+CFILES		:= $(wildcard Progs/*.c)
 EMPHCFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c-emph)
 
 
-EMPHCFILES	:= $(CFILES:%=%-emph) 
+EMPHCFILES	:= $(CFILES:%=%-emph) Progs/Makefile1-emph
 EMPHCFILES_SPLIT_0	:= $(EMPHCFILES_TO_SPLIT:%=%-0) 
 EMPHCFILES_SPLIT_1	:= $(EMPHCFILES_TO_SPLIT:%=%-1)
 

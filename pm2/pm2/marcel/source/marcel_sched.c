@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.22  2000/04/17 08:31:54  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.21  2000/04/14 14:01:48  rnamyst
 Minor modifs.
 
@@ -156,7 +159,7 @@ Revision 1.12  2000/01/31 15:57:21  oaumage
 ______________________________________________________________________________
 */
 
-//#define DEBUG
+//#define MA__DEBUG
 //#define TICK
 #define BIND_LWP_ON_PROCESSORS
 //#define DO_PAUSE_INSTEAD_OF_SCHED_YIELD
@@ -308,7 +311,7 @@ unsigned marcel_nbvps(void)
 
 static __inline__ void display_sched_queue(marcel_t pid)
 {
-#ifdef DEBUG
+#ifdef MA__DEBUG
   marcel_t t = pid;
 
   mdebug("\t\t\t<Task queue on LWP %d:\n", pid->lwp->number);
@@ -488,7 +491,7 @@ static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
   next = cur;
   do {
     next = next->next;
-#ifdef DEBUG
+#ifdef MA__DEBUG
     if (!next)
       mdebug("NULL pointer !!\n");
     if ((CANNOT_RUN(next)) && (next != marcel_self()))
@@ -753,7 +756,7 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
 	return r;
       }
       SET_STATE_RUNNING(t, r, cur_lwp);
-#ifdef DEBUG
+#ifdef MA__DEBUG
     } else if (find_next == DO_NOT_REMOVE_MYSELF){
       RAISE("Removing ourself without new task\n");
 #endif
@@ -1207,7 +1210,7 @@ any_t idle_func(any_t arg)
 
 	/* Do I have new jobs? */
 	if(cur_lwp->has_new_tasks) {
-#ifdef DEBUG
+#ifdef MA__DEBUG
 	  mdebug("\tLWP %d has new tasks\n", cur_lwp->number);
 	  sched_lock(cur_lwp);
 	  display_sched_queue(marcel_self());
@@ -1660,8 +1663,8 @@ void marcel_sched_init(unsigned nb_lwp)
      un signal (par ex. SIGALRM). */
   start_timer();
 #endif
-  mdebug("marcel_sched_init done : sched task= %p\n",
-	 SCHED_DATA(GET_LWP(0)).sched_task);
+  mdebug("marcel_sched_init done : idle task= %p\n",
+	 GET_LWP(0)->idle_task);
 }
 
 #ifdef MA__SMP
@@ -1724,11 +1727,11 @@ void marcel_sched_shutdown()
 static void timer_interrupt(int sig)
 {
   marcel_t cur = marcel_self();
-#ifdef DEBUG
+#ifdef MA__DEBUG
   static unsigned long tick = 0;
 #endif
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
   if (++tick == TICK_RATE) {
     try_mdebug("\t\t\t<<tick>>\n");
     tick = 0;

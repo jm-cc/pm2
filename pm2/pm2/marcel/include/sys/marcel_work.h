@@ -25,6 +25,7 @@ void marcel_enable_deviation(void);
 void marcel_disable_deviation(void);
 
 void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg);
+void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg);
 
 #section marcel_functions
 

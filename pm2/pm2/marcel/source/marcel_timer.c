@@ -177,15 +177,6 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER,
  */
 #ifdef MA__TIMER
 
-// Signal utilisé pour la préemption automatique
-#ifdef USE_VIRTUAL_TIMER
-#  define MARCEL_TIMER_SIGNAL   SIGVTALRM
-#  define MARCEL_ITIMER_TYPE    ITIMER_VIRTUAL
-#else
-#  define MARCEL_TIMER_SIGNAL   SIGALRM
-#  define MARCEL_ITIMER_TYPE    ITIMER_REAL
-#endif
-
 static boolean __marcel_sig_initialized = FALSE;
 
 static sigset_t sigalrmset, sigeptset;

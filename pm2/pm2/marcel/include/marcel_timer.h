@@ -22,11 +22,24 @@ typedef int marcel_time_t;
 
 #section macros
 #ifdef MA__TIMER
+#include <signal.h>
+
 #define JIFFIES_FROM_US(microsecs) \
   ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
+// Signal utilis pour la premption automatique
+#ifdef USE_VIRTUAL_TIMER
+#  define MARCEL_TIMER_SIGNAL   SIGVTALRM
+#  define MARCEL_ITIMER_TYPE    ITIMER_VIRTUAL
 #else
+#  define MARCEL_TIMER_SIGNAL   SIGALRM
+#  define MARCEL_ITIMER_TYPE    ITIMER_REAL
+#endif
+
+#else
+
 #define JIFFIES_FROM_US(microsecs) \
   ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/10000)
+
 #endif
 
 #section functions

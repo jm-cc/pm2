@@ -168,9 +168,7 @@ checkmake:
 	fi
 
 cvsinit ARCHITECTURES modules:
-	$(COMMON_HIDE) if [ -d CVS ]; then \
-		$(ROOT)/bin/pm2-recreate-links ; \
-	fi
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-recreate-links
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors

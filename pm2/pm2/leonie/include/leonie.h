@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.h,v $
+Revision 1.6  2000/05/17 12:40:50  oaumage
+- reorganisation du code de demarrage de Leonie
+
 Revision 1.5  2000/05/15 13:51:05  oaumage
 - Reorganisation des sources de Leonie
 
@@ -61,6 +64,9 @@ ______________________________________________________________________________
 
 #include "ntbx.h"
 #include "tbx.h"
+
+/* Leonie: data structures */
+#include "leo_pointers.h"
 #include "leo_types.h"
 #include "leo_parser_types.h"
 #ifndef LEO_IN_YACC

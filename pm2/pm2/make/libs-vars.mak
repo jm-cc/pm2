@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-# if someone do 'make' in an module directory, ...
+# if someone do 'make' in a module directory, ...
 default: no_goal
 
 # Variables communes

@@ -28,7 +28,12 @@
 #endif
 
 #include "marcel_pthread.h"
-#define __attribute_deprecated__ __attribute__((deprecated))
+#if (__GNUC__ >= 3)
+#  define __attribute_deprecated__ __attribute__((deprecated))
+#else
+#  define __attribute_deprecated__
+#  define __builtin_expect(x, y) (x)
+#endif
 #include "marcel_pmarcel.h"
 #include "marcel_alias.h"
 
@@ -138,17 +143,17 @@ void marcel_strip_cmdline(int *argc, char *argv[]);
 
 /* ============ threads ============ */
 
-int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func, any_t arg);
+int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func, any_t arg) __THROW;
 
-DEC_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status));
+DEC_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status) __THROW);
 
-DEC_MARCEL_POSIX(void, exit, (any_t val));
+DEC_MARCEL_POSIX(void, exit, (any_t val) __THROW);
 
-DEC_MARCEL_POSIX(int, detach, (marcel_t pid));
+DEC_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW);
 
-DEC_MARCEL_POSIX(int, cancel, (marcel_t pid));
+DEC_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW);
 
-extern MARCEL_INLINE int marcel_equal(marcel_t pid1, marcel_t pid2)
+extern MARCEL_INLINE int marcel_equal(marcel_t pid1, marcel_t pid2) __THROW
 {
   return (pid1 == pid2);
 }
@@ -169,8 +174,8 @@ void marcel_run(marcel_t pid, any_t arg);
 /*typedef int marcel_key_t;*/
 
 DEC_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
-				   marcel_key_destructor_t any_t));
-DEC_MARCEL_POSIX(int, key_delete, (marcel_key_t key));
+				   marcel_key_destructor_t any_t) __THROW);
+DEC_MARCEL_POSIX(int, key_delete, (marcel_key_t key) __THROW);
 
 _PRIVATE_ extern volatile unsigned _nb_keys;
 #ifdef MA__DEBUG
@@ -190,12 +195,12 @@ DECINLINE_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key),
 })
 #else
 DECINLINE_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
-					  __const void* value),
+					  __const void* value) __THROW,
 {
    marcel_self()->key[key] = (any_t)value;
    return 0;
 })
-DECINLINE_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key),
+DECINLINE_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key) __THROW,
 {
    return marcel_self()->key[key];
 })
@@ -223,9 +228,9 @@ static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t 
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
-				     cleanup_func_t func, any_t arg))
+				     cleanup_func_t func, any_t arg) __THROW)
 DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
-				    boolean execute))
+				    boolean execute) __THROW)
 #undef NAME_PREFIX
 #define NAME_PREFIX
 

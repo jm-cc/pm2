@@ -31,7 +31,7 @@ unsigned marcel_sched_add_vp(void);
 
 /* ==== get current thread or LWP id ==== */
 
-extern MARCEL_INLINE marcel_t marcel_self(void)
+extern MARCEL_INLINE marcel_t marcel_self(void) __THROW
 {
   return __marcel_self();
 }
@@ -47,7 +47,7 @@ static __inline__ unsigned marcel_current_vp(void)
 
 /* ==== explicit preemption ==== */
 
-DEC_MARCEL_POSIX(int, yield, (void))
+DEC_MARCEL_POSIX(int, yield, (void) __THROW)
 
 #ifdef MARCEL_KERNEL
 void ma__marcel_yield(void);

@@ -1,9 +1,9 @@
 
 #include <stdio.h>
 
-#include "str_list.h"
 #include "parser.h"
 #include "trace.h"
+#include "str_list.h"
 
 char *string_new(char *str)
 {

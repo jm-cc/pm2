@@ -1508,9 +1508,14 @@ restart:
 switch_tasks:
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
-	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE))
-		/* yes, deactivate */
-		deactivate_running_task(prev,prevrq);
+	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+		if (prev->sched.state & MA_TASK_MOVING)
+			/* moving, make it running elsewhere */
+			ma_set_current_state(MA_TASK_RUNNING);
+		else
+			/* yes, deactivate */
+			deactivate_running_task(prev,prevrq);
+	}
 
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
@@ -1607,7 +1612,14 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 {
 	LOG_IN();
 #ifdef MA__LWPS
-	RAISE(NOT_IMPLEMENTED);
+	/* empêcher ma_schedule() */
+	ma_preempt_disable();
+	/* TODO: gérer le cas où on revient sur la même runqueue -> rien à faire en fait */
+	deactivate_running_task(MARCEL_SELF,ma_this_rq());
+	activate_running_task(MARCEL_SELF,marcel_sched_vpmask_init_rq(0,mask));
+	ma_set_current_state(MA_TASK_MOVING);
+	ma_preempt_enable();
+	ma_schedule();
 #endif
 	LOG_OUT();
 }

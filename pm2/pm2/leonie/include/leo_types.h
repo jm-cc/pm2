@@ -155,4 +155,16 @@ typedef struct s_leo_loader
   p_leo_loader_func_t  loader_func;
 } leo_loader_t;
 
+typedef struct s_leo_application_settings
+{
+  char              *name;
+  char              *flavor;
+  p_tbx_arguments_t  args;
+  char              *config_file;
+  p_tbx_slist_t      network_file_slist;
+  tbx_bool_t         gdb_mode;
+  tbx_bool_t         xterm_mode;
+  tbx_bool_t         smp_mode;
+} leo_application_settings_t;
+
 #endif /* LEO_TYPES_H */

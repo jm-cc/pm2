@@ -290,16 +290,20 @@ repeat_lock_task:
 	//local_irq_save(*flags);
 	ma_local_bh_disable();
 	rq = task_rq(p);
+	mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_locking(%p)\n",rq);
 	ma_spin_lock(&rq->lock);
 	if (tbx_unlikely(rq != task_rq(p))) {
+		mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_unlocking(%p)\n",rq);
 		ma_spin_unlock_softirq(&rq->lock);
 		goto repeat_lock_task;
 	}
+	mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_locked(%p)\n",rq);
 	return rq;
 }
 
 static inline void task_rq_unlock(runqueue_t *rq)
 {
+	mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_unlock(%p)\n",rq);
 	ma_spin_unlock_softirq(&rq->lock);
 }
 
@@ -1598,6 +1602,7 @@ asmlinkage void ma_schedule(void)
 //	unsigned long long now;
 //	unsigned long run_time;
 	int idx;
+	LOG_IN();
 
 	/*
 	 * Test if we are atomic.  Since do_exit() needs to call into
@@ -1649,6 +1654,7 @@ need_resched:
 			deactivate_task(prev, rq);
 	}
 
+	LOG_STR("schedule","rebalance");
 	if (tbx_unlikely(!rq->nr_running)) {
 #ifdef MA__LWPS
 #warning TODO: demander à l application de rebalancer
@@ -1673,6 +1679,7 @@ need_resched:
 //		rq->best_expired_prio = MAX_PRIO;
 	}
 
+	LOG_STR("schedule","find empty");
 	idx = ma_sched_find_first_bit(array->bitmap);
 	queue = array->queue + idx;
 	next = list_entry(queue->next, marcel_task_t, sched.internal.run_list);
@@ -1690,6 +1697,7 @@ need_resched:
 //	}
 //	next->activated = 0;
 switch_tasks:
+	LOG_STR("schedule","switch_tasks");
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
 //Pour quand on voudra ce mécanisme...
@@ -1704,6 +1712,7 @@ switch_tasks:
 //	prev->timestamp = now;
 
 	if (tbx_likely(prev != next)) {
+	LOG_STR("schedule","doit");
 //		next->timestamp = now;
 //		rq->nr_switches++;
 		rq->curr = next;
@@ -1721,6 +1730,7 @@ switch_tasks:
 	ma_preempt_enable_no_resched();
 	if (ma_test_thread_flag(TIF_NEED_RESCHED))
 		goto need_resched;
+	LOG_OUT();
 }
 
 MARCEL_INT(ma_schedule);
@@ -2932,6 +2942,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	runqueue_t *rq;
 	int j, k;
 
+	LOG_IN();
+
 	ma_prio_array_t *array;
 
 	rq = lwp_rq(lwp);
@@ -2953,10 +2965,14 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		// delimiter for bitsearch
 		__ma_set_bit(MAX_PRIO, array->bitmap);
 	}
+
+	LOG_OUT();
 }
 
 static void linux_sched_lwp_start(ma_lwp_t lwp)
 {
+	/* Il faut insérer la tâche courante (RunTask) */
+	ma_wake_up_created_thread(ma_per_lwp(run_task,lwp));
 }
 
 static int linux_sched_lwp_notify(struct ma_notifier_block *self,
@@ -2989,6 +3005,7 @@ void __init sched_init(void)
 	linux_sched_lwp_notify(&linux_sched_nb,
 				(unsigned long)MA_LWP_UP_PREPARE,
 				(void *)(ma_lwp_t)LWP_SELF);
+	ma_register_lwp_notifier(&linux_sched_nb);
 
 	/*
 	 * We have to do a little magic to get the first

@@ -827,14 +827,16 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 #ifdef MARCEL
 #ifdef USE_MARCEL_POLL
 	      n = marcel_select(channel_specific->max_fds + 1, &rfds, NULL);
-	      
-#else /* USE_MARCEL_POLL */
+#elif USE_BLOCKING_CALLS
+	      n = select(channel_specific->max_fds + 1,
+			 &rfds, NULL, NULL, NULL);
+#else /* no USE_MARCEL_POLL nor USE_BLOCKING_CALLS */
 	      n = tselect(channel_specific->max_fds + 1, &rfds, NULL, NULL);
 	      if(n <= 0)
 		{
 		  TBX_YIELD();
 		}
-#endif /* USE_MARCEL_POLL */  
+#endif /* USE_MARCEL_POLL */
 #else /* MARCEL */
 	      n = select(channel_specific->max_fds + 1,
 			 &rfds, NULL, NULL, NULL);

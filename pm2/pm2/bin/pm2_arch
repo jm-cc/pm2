@@ -27,7 +27,7 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	SunOS,sun*)        PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
 	*,sparc*)          PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
 	*,i86pc)           PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
-	*,i[3456]86)       PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*,i[3456]86*)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
 	BSD/OS,i[3456]86)  PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
 	FreeBSD,i386)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
 	*,ia64)            PM2_ARCH=IA64_ARCH ; PM2_ASM=ia64 ;;
@@ -37,7 +37,8 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	*,IP*)             PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
 	*,ppc)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
         *,Power*)          PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
-        *)                 PM2_ARCH=UNKNOWN_ARCH ; PM2_ASM=unknown ;;
+        *)                 echo "unknown arch $_os,$_ht, please set in bin/pm2_arch";
+	                   M2_ARCH=UNKNOWN_ARCH ; PM2_ASM=unknown ;;
 	esac
 fi
 

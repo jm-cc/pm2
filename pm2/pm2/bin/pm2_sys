@@ -35,6 +35,8 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	CYGWIN_NT-5*)    PM2_SYS=WIN2K_SYS ;;
 	CYGWIN_NT*)      PM2_SYS=WINNT_SYS ;;
         Darwin*)         PM2_SYS=DARWIN_SYS ;;
+	GNU)             PM2_SYS=GNU_SYS ;;
+	*)               echo "Unknown system, please set in bin/pm2_sys"; exit 1;;
 	esac
 fi
 

@@ -83,10 +83,8 @@ static void record_time( int ncpus, double mhz[] )
     if( write(fd, (void *)&mhz[i], sizeof(mhz[i])) < 0 )
       perror("write mhz");
   }
-  pid = getpid();
   if( write(fd, (void *)&pid, sizeof(pid)) < 0 )
     perror("write pid");
-  kpid = 0;
   if( write(fd, (void *)&kpid, sizeof(kpid)) < 0 )
     perror("write kpid");
   if( write(fd, (void *)&start_time, sizeof(start_time)) < 0 )
@@ -103,13 +101,21 @@ static void record_time( int ncpus, double mhz[] )
 }
 
 void fkt_keychange(int how, unsigned int keymask) {
-  if (ioctl(fkt, how, keymask))
-    perror("set fkt mask");
+  int res;
+  if (fkt<0) {
+    fprintf(stderr,"keychange: fkt file not opened\n");
+    return;
+  }
+  switch (how) {
+  case FKT_DISABLE: keymask&=~FKT_KEYMASK28; break;
+  case FKT_ENABLE: case FKT_SETMASK: keymask|=FKT_KEYMASK28; break;
+  }
+  if ((res=ioctl(fkt, how, keymask))<0)
+    fprintf(stderr,"fkt_keychange(%x,%x):%d:%s\n",how,keymask,res,strerror(errno));
 }
 
 int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
 {
-  unsigned long pid, kpid;
   double mhz[MAXCPUS];
   int ncpus;
   struct statfs statfs;
@@ -128,11 +134,9 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
     }
   }
 
-  fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
-
   ncpus = fkt_get_cpu_info(MAXCPUS, mhz);
   page_size = getpagesize();
-  pid = (unsigned long) getpid();
+  kpid = (unsigned long) getpid();
 
   if ((fd = open(file, O_RDWR|O_CREAT|O_TRUNC, 0666)) < 0) {
     perror(file);
@@ -168,7 +172,7 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
     printf("%uM\n",size>>20);
   }
 
-  if (ioctl(fkt, FKT_SETINITMASK, initmask) < 0) {
+  if (ioctl(fkt, FKT_SETINITMASK, initmask|FKT_KEYMASK28) < 0) {
     perror("setting initial mask");
     exit(EXIT_FAILURE);
   }
@@ -216,7 +220,7 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   /* merge of System.map and /proc/ksyms */
   if( !stat("/proc/kallsyms",&st) )
     {/* on >=2.5 kernels, kallsyms gives everything we may want */
-    fkt_get_sysmap("/proc/kallsyms",SYSMAP_MODLIST,0);
+    //fkt_get_sysmap("/proc/kallsyms",SYSMAP_MODLIST,0);
     fkt_get_sysmap("/proc/kallsyms",SYSMAP_PROC,0);
     }
   else
@@ -256,8 +260,9 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   END_BLOCK(fd);
 
   /* ok, can now fork */
-  if (!(kpid=fork())) {
+  if (!(pid=fork())) {
   /* for blocking in sendfile() */
+    pid=getpid();
     if ((ret=sendfile(fd, fkt, &dummyoff, size))<0) {
       perror("sendfile");
       fprintf(stderr,"hoping the trace wasn't lost\n");
@@ -281,16 +286,14 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   /* wait for sendfile to be ready */
   if (ioctl(fkt, FKT_WAITREADY)<0)
     perror("FKT_WAITREADY");
-  EPRINTF("fkt ready\n");
 
   close(fd);
   return 0;
 }
 
 void fkt_stop(void) {
-  EPRINTF("waiting son\n");
-  kill(SIGTERM,kpid);
-  waitpid(kpid,NULL,0);
+  kill(pid,SIGTERM);
+  waitpid(pid,NULL,0);
 }
 
 int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num) {

@@ -106,7 +106,8 @@ void profile_init(void)
 		      activate_params.kernel_keymask);
       } else
         fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
-    }
+    } else
+      fprintf(stderr,"fkt failed\n");
 #endif
 
   }
@@ -159,14 +160,14 @@ void profile_stop(void)
   __pm2_profile_active = FALSE;
 
   fut_endup(PROF_FILE_USER);
-
-#ifdef USE_FKT
-  if (fkt_ok)
-    fkt_stop();
-#endif
 }
 
 void profile_exit(void)
 {
+#ifdef USE_FKT
+  if (fkt_ok)
+    fkt_stop();
+#endif
+
   fut_done();
 }

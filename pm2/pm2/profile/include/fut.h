@@ -105,10 +105,10 @@
 #endif	/* CONFIG_FUT_TIME_ONLY */
 
 
-/*	"how" parameter values, analagous to "how" parameters to sigprocmask */
-#define FUT_DISABLE		0		/* for disabling probes with 1's in keymask */
-#define FUT_ENABLE		1		/* for enabling probes with 1's in keymask */
-#define FUT_SETMASK		2		/* for enabling 1's, disabling 0's in keymask */
+/*	"how" parameter values, analagous to "how" parameters to FKT */
+#define FUT_ENABLE		0xCE03		/* for enabling probes with 1's in keymask */
+#define FUT_DISABLE		0xCE04		/* for disabling probes with 1's in keymask */
+#define FUT_SETMASK		0xCE05		/* for enabling 1's, disabling 0's in keymask */
 
 /*	Simple keymasks */
 #define FUT_KEYMASK0				0x00000001
@@ -173,12 +173,6 @@
 /* -finstrument-functions code */
 #define FUT_GCC_INSTRUMENT_ENTRY_CODE	0x320
 #define FUT_GCC_INSTRUMENT_EXIT_CODE	0x420
-
-/*	Codes for use with fut items (ifdefs for Raymond) */
-#if !defined(PREPROC) && !defined(DEPEND)
-#include "fut_defines.h"
-#endif
-
 
 #ifndef __ASSEMBLY__
 extern volatile unsigned int fut_active;

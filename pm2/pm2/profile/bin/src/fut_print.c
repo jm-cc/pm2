@@ -1337,7 +1337,11 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		EPRINTF("thiscpu = %u, limit is %u\n", thiscpu, ncpus);
 	else if( !already_saw[thiscpu] )
 		{/* this is first time we have seen this cpu */
+#ifndef FUT
 		lasttime[thiscpu] = basetime[thiscpu] = (u_64)bufptr[0];
+#else
+		lasttime[thiscpu] = basetime[thiscpu] = *(u_64*)bufptr;
+#endif
 		fprintf(stdout, "initial: basetime[%u] %llu\n",
 			thiscpu, basetime[thiscpu]);
 		already_saw[thiscpu] = 1;	/* mark that we have seen this cpu*/

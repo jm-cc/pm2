@@ -75,6 +75,13 @@ _PRIVATE_ struct __lwp_struct;
 
 #ifdef __ACT__
 
+#ifdef ACT_TIMER
+#ifdef CONFIG_ACT_TIMER
+#undef CONFIG_ACT_TIMER
+#endif
+#define CONFIG_ACT_TIMER
+#endif
+
 #include <asm/act.h>
 
 _PRIVATE_ typedef enum {

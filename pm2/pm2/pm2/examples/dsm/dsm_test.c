@@ -20,8 +20,12 @@
 
 #define COUNTER 
 
+BEGIN_DSM_DATA
+dsm_lock_t L;
+END_DSM_DATA
+
 int DSM_SERVICE;
-dsm_mutex_t L;
+//dsm_mutex_t L;
 pm2_completion_t c;
 int *ptr, *start;
 int private_data_size;
@@ -29,13 +33,13 @@ int private_data_size;
 void f()
 {
   int i, n = 20;
-//  char *p = (char*)pm2_isomalloc(private_data_size);
+  //  char *p = (char*)pm2_isomalloc(private_data_size);
 
-  dsm_mutex_lock(&L);
+  dsm_lock(L);
   for (i = 0; i < n; i++) {
     (*ptr)++;
   }
-  dsm_mutex_unlock(&L);
+  dsm_unlock(L);
   pm2_completion_signal(&c); 
 }
 
@@ -51,12 +55,11 @@ void threaded_f()
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&my_ptr, sizeof(int *));
   pm2_rawrpc_waitdata(); 
 
-  dsm_mutex_lock(&L);
+  dsm_lock(L);
   for (i = 0; i < n; i++) {
     (*my_ptr)++;
   }  
-
-  dsm_mutex_unlock(&L);
+  dsm_unlock(L);
   pm2_completion_signal(&my_c); 
 }
 
@@ -64,6 +67,22 @@ void threaded_f()
 static void DSM_func(void)
 {
   pm2_thread_create(threaded_f, NULL);
+}
+
+
+static void startup_func(int argc, char *argv[], void *arg)
+{
+  dsm_lock_attr_t attr;
+  int prot = atoi(argv[3]);
+
+  //dsm_set_default_protocol(MIGRATE_THREAD);
+  dsm_set_default_protocol(LI_HUDAK);
+
+  isoaddr_page_set_distribution(DSM_BLOCK);
+
+  dsm_lock_attr_init(&attr);
+  dsm_lock_attr_register_protocol(&attr, prot);
+  dsm_lock_init(&L, &attr);
 }
 
 
@@ -77,12 +96,7 @@ int pm2_main(int argc, char **argv)
  
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
-  //dsm_set_default_protocol(MIGRATE_THREAD);
-  dsm_set_default_protocol(LI_HUDAK);
-
-  isoaddr_page_set_distribution(DSM_BLOCK);
-
-  dsm_mutex_init(&L, NULL);
+  pm2_push_startup_func(startup_func, NULL);
 
   pm2_init(&argc, argv);
 

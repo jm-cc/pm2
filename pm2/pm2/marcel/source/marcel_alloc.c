@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_alloc.c,v $
+Revision 1.6  2000/11/15 21:32:21  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.5  2000/05/29 10:11:59  oaumage
 - Mise-a-jour du support de la machine IBM/SP2
 
@@ -63,7 +66,6 @@ ______________________________________________________________________________
 
 #include "marcel.h"
 #include "marcel_alloc.h"
-#include "safe_malloc.h"
 
 static void *next_slot = (void *)SLOT_AREA_TOP;
 

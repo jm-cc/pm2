@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #ifndef MARCEL_MACROS_IS_DEF
 #define MARCEL_MACROS_IS_DEF
 
@@ -183,31 +198,41 @@
 /* Manipulation des champs de task->special_flags */
 
 // NORMAL : Thread marcel "tout bete"
-#define MA_SF_NORMAL 0
+#define MA_SF_NORMAL       0
 // UPCALL_NEW : no comment
-#define MA_SF_UPCALL_NEW 1
+#define MA_SF_UPCALL_NEW   1
 // POLL : le thread "sched_task" qui fait plein de choses
-#define MA_SF_POLL 2
+#define MA_SF_POLL         2
 // IDLE : le thread "wait_and_yield" ne consomme pas de CPU...
-#define MA_SF_IDLE 4
+#define MA_SF_IDLE         4
+// NORUN : ne pas prendre en compte ce thread dans le calcul des
+// taches actives
+#define MA_SF_NORUN        8
+// NOSCHEDLOCK : ne pas appeler "sched_lock" dans insert_task...
+#define MA_SF_NOSCHEDLOCK  16
+// RT_THREAD : ce thread doit être ordonnancé en tant que thread "Real Time"
+#define MA_SF_RT_THREAD    32
 
 #define MA_TASK_TYPE_NORMAL     MA_SF_NORMAL
 #define MA_TASK_TYPE_UPCALL_NEW MA_SF_UPCALL_NEW
 #define MA_TASK_TYPE_POLL       MA_SF_POLL
 #define MA_TASK_TYPE_IDLE       MA_SF_IDLE
+
 #define MA_GET_TASK_TYPE(task)  (((task)->special_flags) & 0x7)
+
 #define IS_TASK_TYPE_UPCALL_NEW(task) \
    (((task)->special_flags) & MA_SF_UPCALL_NEW)
+
 #define IS_TASK_TYPE_IDLE(task) \
    (((task)->special_flags) & (MA_SF_POLL|MA_SF_IDLE))
-// NORUN : ne pas prendre en compte ce thread dans le calcul des
-// taches actives
-#define MA_SF_NORUN 0x8
+
 #define MA_TASK_NOT_COUNTED_IN_RUNNING(task) \
    (((task)->special_flags) & MA_SF_NORUN)
-// NOSCHEDLOCK : ne pas appeler "sched_lock" dans insert_task...
-#define MA_SF_NOSCHEDLOCK 0x10
+
 #define MA_TASK_NO_USE_SCHEDLOCK(task) \
    (((task)->special_flags) & MA_SF_NOSCHEDLOCK)
+
+#define MA_TASK_REAL_TIME(task) \
+   (((task)->special_flags) & MA_SF_RT_THREAD)
 
 #endif

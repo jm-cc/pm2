@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: ntbx.h,v $
+Revision 1.2  2000/02/17 09:14:25  oaumage
+- ajout du support de TCP a la net toolbox
+- ajout de fonctions d'empaquetage de donnees numeriques
+
 Revision 1.1  2000/02/08 15:25:20  oaumage
 - ajout du sous-repertoire `net' a la toolbox
 
@@ -69,6 +73,7 @@ ______________________________________________________________________________
 #include <stddef.h>
 #include <string.h>
 
+#include <tbx.h>
 #include <ntbx_types.h>
 
 #ifdef NTBX_TCP

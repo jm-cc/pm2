@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_types.h,v $
+Revision 1.4  2000/02/28 11:18:05  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/02/14 10:00:37  rnamyst
 Modified to propose a new interface to the "pm2_completion" facilities.
 
@@ -47,7 +50,7 @@ ______________________________________________________________________________
 #ifndef PM2_TYPES_EST_DEF
 #define PM2_TYPES_EST_DEF
 
-#include <marcel.h>
+#include "marcel.h"
 
 typedef void (*pm2_startup_func_t)(void);
 

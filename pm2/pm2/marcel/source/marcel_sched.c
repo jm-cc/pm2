@@ -142,6 +142,11 @@ static __inline__ unsigned get_nb_lwps()
 #endif
 }
 
+unsigned marcel_get_nb_lwps_np()
+{
+   return get_nb_lwps();
+}
+
 static __inline__ void set_nb_lwps(unsigned value)
 {
 #ifdef MA__LWPS

@@ -275,7 +275,9 @@ void marcel_free(void *ptr, char *file, unsigned line);
 #ifdef MARCEL_MAIN_AS_FUNC
 int go_marcel_main(int argc, char *argv[]);
 #endif
+#ifdef MARCEL_KERNEL
 extern int marcel_main(int argc, char *argv[]);
+#endif // MARCEL_KERNEL
 #endif
 
 #endif // MARCEL_EST_DEF

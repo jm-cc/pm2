@@ -14,45 +14,30 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_KERNEL_THREADS_IS_DEF
-#define MARCEL_KERNEL_THREADS_IS_DEF
-
-#include <signal.h>
-
-#include "sys/marcel_flags.h"
-
+#section marcel_types
 #ifdef MA__SMP
-
 typedef void * (*marcel_kthread_func_t)(void *arg);
 
-#ifdef MARCEL_DONT_USE_POSIX_THREADS
-
-#ifdef SOLARIS_SYS
-
-#include <thread.h>
-typedef thread_t marcel_kthread_t;
-
-#elif LINUX_SYS
-
-#include <sys/types.h>
-#include <unistd.h>
-typedef pid_t marcel_kthread_t;
-
-#else
-
-#error CANNOT AVOID USING PTHREADS ON THIS ARCHITECTURE. SORRY.
-
-#endif
-
-#else // MARCEL_DONT_USE_POSIX_THREADS
-
-#include <pthread.h>
-
+# ifndef MARCEL_DONT_USE_POSIX_THREADS
+#   include <pthread.h>
 typedef pthread_t marcel_kthread_t;
+# else
+#   ifdef SOLARIS_SYS
+#     include <thread.h>
+typedef thread_t marcel_kthread_t;
+#   elif LINUX_SYS
+#     include <sys/types.h>
+#     include <unistd.h>
+typedef pid_t marcel_kthread_t;
+#   else
+#     error CANNOT AVOID USING PTHREADS ON THIS ARCHITECTURE. SORRY.
+#   endif
+# endif
+#endif // MA__SMP
 
-#endif
-
-void marcel_kthread_create(marcel_kthread_t *pid,
+#section marcel_functions
+#ifdef MA__SMP
+void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   marcel_kthread_func_t func, void *arg);
 
 void marcel_kthread_join(marcel_kthread_t pid);
@@ -64,8 +49,6 @@ marcel_kthread_t marcel_kthread_self(void);
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask);
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig);
-
 #endif // MA__SMP
 
-#endif
 

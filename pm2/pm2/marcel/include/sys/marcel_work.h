@@ -14,8 +14,44 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_WORK_EST_DEF
-#define MARCEL_WORK_EST_DEF
+#section functions
+#section marcel_macros [no-depend-previous]
+#section marcel_types
+#section marcel_structures
+#section marcel_functions
+
+#section functions
+void marcel_enable_deviation(void);
+void marcel_disable_deviation(void);
+
+void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg);
+
+#section marcel_functions
+
+void marcel_execute_deviate_work(void);
+
+#section marcel_types
+typedef struct deviate_record_struct_t deviate_record_t;
+typedef struct marcel_work marcel_work_t;
+
+#section marcel_structures
+struct deviate_record_struct_t {
+  handler_func_t func;
+  any_t arg;
+  struct deviate_record_struct_t *next;
+};
+
+struct marcel_work {
+  //#ifdef MA__WORK
+  volatile unsigned has_work;
+  //#endif
+  deviate_record_t *deviate_work;  
+};
+
+#section marcel_macros
+#define MARCEL_WORK_INIT ((marcel_work_t) { \
+        .deviate_work=NULL \
+})
 
 #ifdef MA__WORK
 
@@ -27,15 +63,14 @@ enum {
 #define HAS_WORK(pid)          ((pid)->has_work)
 
 #define HAS_DEVIATE_WORK(pid) \
-  ((pid)->has_work & MARCEL_WORK_DEVIATE)
+  ((pid)->work.has_work & MARCEL_WORK_DEVIATE)
 #define SET_DEVIATE_WORK(pid) \
-  do { (pid)->has_work |= MARCEL_WORK_DEVIATE; } while(0)
+  do { (pid)->work.has_work |= MARCEL_WORK_DEVIATE; } while(0)
 #define CLR_DEVIATE_WORK(pid) \
-  do { (pid)->has_work &= ~MARCEL_WORK_DEVIATE; } while(0)
+  do { (pid)->work.has_work &= ~MARCEL_WORK_DEVIATE; } while(0)
 
 void do_work(marcel_t self);
 
 #endif /* MA__WORK */
 
-#endif /* MARCEL_WORK_EST_DEF */
 

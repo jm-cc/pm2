@@ -14,11 +14,8 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_ALIAS_EST_DEF
-#define MARCEL_ALIAS_EST_DEF
-
-#define marcel_xstr(s) marcel_str(s)
-#define marcel_str(s) #s
+#section macros
+#depend "marcel_utils.h[stringification]"
 
 #define NAME_PREFIX
 #define PTHREAD_PREFIX pthread_
@@ -187,6 +184,11 @@
 #define DEF_PTHREAD(name) DEF_PTHREAD_STRONG(name)
 #define DEF___PTHREAD(name) DEF___PTHREAD_STRONG(name)
 
+/****************************************************************/
+/* Fonctions internes à marcel
+ */
+#define MARCEL_INT(func) 
+
 
 #ifdef MA__PTHREAD_FUNCTIONS
 /* start libpthread */
@@ -228,4 +230,3 @@
 
 #endif /* MA__PTHREAD_FUNCTIONS */
 
-#endif

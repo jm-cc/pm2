@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_trace.c,v $
+Revision 1.3  2000/02/28 10:25:12  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:57:23  oaumage
 - ajout du Log CVS
 
@@ -41,7 +44,7 @@ Revision 1.2  2000/01/31 15:57:23  oaumage
 ______________________________________________________________________________
 */
 
-#include <sys/marcel_trace.h>
+#include "sys/marcel_trace.h"
 
 unsigned __mar_trace = 0;
 

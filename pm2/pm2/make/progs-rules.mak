@@ -56,9 +56,11 @@ endif
 $(PRG_DEPENDS): $(COMMON_DEPS) $(PRG_GEN_C_SOURCES) $(PRG_GEN_C_INC)
 $(PRG_OBJECTS): $(PRG_GEN_OBJ)/%.o: $(PRG_GEN_DEP)/%.d $(COMMON_DEPS)
 
+ifneq ($(NOLINK_RULES),true)
 $(PRG_PRG): $(PRG_OBJECTS)
 	@ echo "Linking program"
 	$(PRG_PREFIX) $(CC) $(PRG_OBJECTS) $(LDFLAGS) -o $(PRG_PRG)
+endif
 
 # C
 $(PRG_C_OBJECTS): $(PRG_GEN_OBJ)/%$(PRG_EXT).o: $(PRG_SRC)/%.c
@@ -100,7 +102,7 @@ $(PRG_GEN_C_Y_INC): $(PRG_GEN_INC)/%$(PRG_EXT).h: $(PRG_SRC)/%.y
 else # !PROG_RECURSIF: premier appel
 MAKE_LIBS = +set -e ; for modules in $(CONFIG_MODULES); do \
                 if [ $$modules != $(PROGRAM) ] ; then \
-		    $(MAKE) -C $(PM2_ROOT)/modules/$$modules ; \
+		    $(MAKE) -C $(PM2_ROOT)/modules/$$modules libs; \
                 fi ;\
 	    done 
 
@@ -148,6 +150,6 @@ $(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
 
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 $(PM2_MAK_DIR)/progs-libs.mak: $(PRG_STAMP_FLAVOR)
-	@mkdir -p `dirname $@`
+	$(COMMON_HIDE)mkdir -p `dirname $@`
 	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@
 endif

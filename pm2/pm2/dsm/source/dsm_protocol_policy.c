@@ -19,6 +19,8 @@
 #include <malloc.h>
 #include "dsm_protocol_lib.h"
 #include "dsm_protocol_policy.h" 
+#include "dsmlib_erc_sw_inv_protocol.h"
+#include "dsmlib_hbrc_mw_update_protocol.h"
 
 //#define TRACE_PROT
 
@@ -63,6 +65,35 @@ void dsm_init_protocol_table()
   /* 1: MIGRATE_THREAD */
   dsm_protocol_table[1].read_fault_handler = dsmlib_migrate_thread;
   dsm_protocol_table[1].write_fault_handler = dsmlib_migrate_thread;
+
+  /*2: ERC */
+  dsm_create_protocol(dsmlib_erc_sw_inv_rfh, // read_fault_handler 
+		      dsmlib_erc_sw_inv_wfh, // write_fault_handler 
+		      dsmlib_erc_sw_inv_rs, // read_server
+		      dsmlib_erc_sw_inv_ws, // write_server 
+		      dsmlib_erc_sw_inv_is, // invalidate_server 
+		      dsmlib_erc_sw_inv_rps, // receive_page_server 
+		      NULL, // expert_receive_page_server
+		      NULL, // acquire_func 
+		      dsmlib_erc_release, // release_func 
+		      dsmlib_erc_sw_inv_init, // prot_init_func 
+		      dsmlib_erc_add_page  // page_add_func 
+		      );
+
+  /* 3: HBRC */
+  dsm_create_protocol(dsmlib_hbrc_mw_update_rfh, // read_fault_handler 
+			     dsmlib_hbrc_mw_update_wfh, // write_fault_handler 
+			     dsmlib_hbrc_mw_update_rs, // read_server
+			     dsmlib_hbrc_mw_update_ws, // write_server 
+			     dsmlib_hbrc_mw_update_is, // invalidate_server 
+			     dsmlib_hbrc_mw_update_rps, // receive_page_server 
+			     NULL, // expert_receive_page_server
+			     NULL, // acquire_func 
+			     dsmlib_hbrc_release, // release_func 
+			     dsmlib_hbrc_mw_update_prot_init, // prot_init_func 
+			     dsmlib_hbrc_add_page  // page_add_func 
+			     );
+  
 }
 
 

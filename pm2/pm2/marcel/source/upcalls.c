@@ -29,7 +29,7 @@
 
 #include <sched.h>
 #include <stdlib.h>
-#include "sys/upcalls.h"
+#include "sys/marcel_upcalls.h"
 
 #ifdef MA__DEBUG
 #include <stdio.h>
@@ -40,35 +40,20 @@
 #define STACK_SIZE 100000
 #define ACT_NEW_WITH_LOCK 1
 
-static marcel_t marcel_next[ACT_NB_MAX_CPU];
+marcel_t marcel_next[ACT_NB_MAX_CPU];
 
 //volatile boolean has_new_tasks=0;
 volatile int act_nb_unblocked=0;
 
-void act_goto_next_task(marcel_t pid, int from)
-{
-	marcel_next[GET_LWP_NUMBER(marcel_self())]=pid;
-	
-	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED\n");
-	act_cntl(ACT_CNTL_RESTART_UNBLOCKED, (void*)from);
-	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
-
-	if (pid) {
-		MA_THR_LONGJMP((pid), NORMAL_RETURN);
-	}
-}
-
 void locked_start() {}
+void locked_end(); /* Déclaration simplement */
 
 extern int real_restart_func (act_proc_t new_proc, int return_value, 
-		  int k_param, long eip, long esp, int u_param) 
+		  int k_param, long eip, volatile long esp, int u_param) 
      asm ("real_restart_func");
 extern void restart_func (act_proc_t new_proc, int return_value, 
 		  int k_param, long eip, long esp, int u_param) 
      asm ("restart_func");
-/*  void restart_func(act_proc_t new_proc, int return_value,  */
-/*  		  int k_param, long eip, long esp, int u_param); */
-
 
 __asm__ (".align 16 \n\
 .globl restart_func \n\
@@ -116,13 +101,13 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 /*  #endif */
 	//mysleep();
 	if (IS_TASK_TYPE_IDLE(current)) {
-		if (param != ACT_RESCHEDULE) {
+		if (k_param != ACT_EVENT_RESCHED) {
 			mdebug("\trestart_func in idle task %p !! \n",
 				      current);
 		}
 	}
-  	if (param & ACT_UNBLK_RESTART_UNBLOCKED) {
-		switch (param & 0xFF) {
+  	if (k_param & ACT_EVENT_UNBLK_RESTART_UNBLOCKED) {
+		switch (u_param) {
 		case ACT_RESTART_FROM_SCHED:
 			MTRACE("Restarting from sched", current);
 			MA_THR_RESTARTED(current, "Syscall");
@@ -132,9 +117,9 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 			/* we comme from the idle task */
 			MTRACE("Restarting from idle", current);
 			mdebug("\t\tunchaining idle %p\n",
-			       GET_LWP(current)->prev_running);
-			SET_FROZEN(GET_LWP(current)->prev_running);
-			UNCHAIN_TASK(GET_LWP(current)->prev_running);
+			       GET_LWP(current)->idle_task);
+			SET_FROZEN(GET_LWP(current)->idle_task);
+			UNCHAIN_TASK(GET_LWP(current)->idle_task);
 			break;
 		case ACT_RESTART_FROM_UPCALL_NEW:
 			MTRACE("Restarting from upcall_new", current);
@@ -143,16 +128,17 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 			RAISE("invalid parameter");
 		}
 		unlock_task();
-  	} else if (param & ACT_UNBLK_IDLE) {
-		if ((param & 0xFF) == ACT_NEW_WITH_LOCK) {
+  	} else if (k_param & ACT_EVENT_UNBLK_IDLE) {
+		if (u_param == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
 		}
 		SET_FROZEN(GET_LWP(current)->prev_running);
 		UNCHAIN_TASK(GET_LWP(current)->prev_running);
 		MTRACE("Restarting from KERNEL IDLE", current);
 		unlock_task();
-	} else if (param & ACT_RESCHEDULE) {
-		if(!locked() && preemption_enabled()) {
+	} else if (k_param & ACT_EVENT_RESCHED) {
+		if(!locked() && preemption_enabled() &&
+		   (eip<=(long)locked_start || (long)locked_end<=eip)) {
 			MTRACE("ActSched", current);
 			marcel_update_time(current);
 			lock_task();
@@ -183,32 +169,10 @@ void act_unlock(marcel_t self)
 	//act_spin_unlock(&act_spinlock);
 }
 
-// A revoir...
-inline static marcel_t marcel_radical_next_task(void)
-{
-  marcel_t cur = marcel_self(), t;
-
-  DEFINE_CUR_LWP( , ,);
-
-  SET_CUR_LWP(GET_LWP(cur));
-
-  LOG_IN();
-
-  sched_lock(cur_lwp);
-
-  mdebug("upcall...%p on %p\n", cur, cur_lwp);
-  t = radical_next_task(NULL, cur_lwp);
-  SET_STATE_RUNNING(NULL, t, cur_lwp);
-  sched_unlock(cur_lwp);
-  
-  LOG_OUT();
-  return t;
-}
-
 void upcall_new(act_proc_t proc)
 {
- 	marcel_t next;
-	//marcel_t new_task=GET_LWP_BY_NUM(proc)->upcall_new_task;
+	register __lwp_t *lwp;
+	register marcel_t new_task;
 
 	/* le lock_task n'est pas pris : il n'y a pas d'appels
 	 * bloquant DANS marcel.
@@ -216,15 +180,17 @@ void upcall_new(act_proc_t proc)
 	 * Il faut prendre le lock_task sans que le pc sorte de
 	 * lock_start/lock_end
 	 * */
+	lwp=GET_LWP_BY_NUM(proc);
+	new_task=lwp->upcall_new_task;
 
-	atomic_inc(&GET_LWP(marcel_self())->_locked);
-	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
-	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
-	       GET_LWP_BY_NUM(proc)->number );
+	atomic_inc(&GET_LWP(new_task)->_locked);
+ 	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
+	       proc, new_task,lwp, 
+	       lwp->number );
 
-	MTRACE("UpcallNew", marcel_self());
+	MTRACE("UpcallNew", new_task);
 	//LOG_PTR("*(0x40083756)", *((int**)0x40083756));
-	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
+	SET_STATE_RUNNING(NULL, new_task, lwp);
 
 	if (locked()>1) {
 	        unlock_task();
@@ -239,7 +205,7 @@ void upcall_new(act_proc_t proc)
 		}
 	}
 
-	marcel_give_hand_from_upcall_new();
+	marcel_give_hand_from_upcall_new(new_task, lwp);
 
 	/** Never there normally */	
 	RAISE("Aie, aie aie !\n");
@@ -253,7 +219,7 @@ static void init_act(int proc, act_param_t *param)
 
 	stack=(void*)GET_LWP_BY_NUM(proc)->upcall_new_task->initial_sp;
 	param->upcall_new_sp[proc]=stack;
-	param->locked[proc]=(unsigned long)(&(GET_LWP_BY_NUM(proc)->_locked));
+	//param->locked[proc]=(unsigned long)(&(GET_LWP_BY_NUM(proc)->_locked));
 	mdebug("upcall_new on proc %i use stack %p\n", proc, stack);
 
 }
@@ -285,11 +251,11 @@ void init_upcalls(int nb_act)
 	//param.reset_count=-1; /* No preemption */
 	/* param->upcall_new_sp[proc] */
 	param.upcall_new=upcall_new;
-	param.restart_func=restart_func;
+	//param.restart_func=restart_func;
 	param.resched_func=restart_func;
 	param.nb_act_unblocked=(int*)&act_nb_unblocked;
-	param.locked_start=(unsigned long)&locked_start;
-	param.locked_end=(unsigned long)&locked_end;
+	//param.locked_start=(unsigned long)&locked_start;
+	//param.locked_end=(unsigned long)&locked_end;
 	/* param->locked[proc] */
 
 //	param.upcall_unblock=upcall_unblock;

@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 
       fprintf(stderr, "adapter: %s\n", channel[k]->adapter->name);
 
-      for (j = 0 ; j < madeleine->configuration->size ; j++)
+      for (j = madeleine->configuration->size - 1; j >= 0; j--)
 	{
       
 	  if (madeleine->configuration->local_host_id == j)

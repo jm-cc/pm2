@@ -46,6 +46,7 @@ typedef struct _dsm_protocol_t
   dsm_ws_action_t write_server;
   dsm_is_action_t invalidate_server;
   dsm_rp_action_t receive_page_server;
+  dsm_erp_action_t expert_receive_page_server;
 } dsm_protocol_t;
 
 extern dsm_protocol_t dsmlib_hyp_java_prot;
@@ -81,6 +82,10 @@ dsm_is_action_t dsm_get_invalidate_server(unsigned long index);
 void dsm_set_receive_page_server(unsigned long index, dsm_rp_action_t action);
 
 dsm_rp_action_t dsm_get_receive_page_server(unsigned long index);
+
+void dsm_set_expert_receive_page_server(unsigned long index, dsm_erp_action_t action);
+
+dsm_erp_action_t dsm_get_expert_receive_page_server(unsigned long index);
 
 #endif
 

@@ -17,8 +17,6 @@
 #include "marcel.h"
 #include <stdio.h>
 
-static unsigned long temps;
-
 any_t f(any_t arg)
 {
   register int n = (int)arg;
@@ -29,7 +27,7 @@ any_t f(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  temps = TBX_TIMING_DELAY(t1, t2);
+  printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
   return NULL;
 }
 
@@ -39,16 +37,18 @@ int marcel_main(int argc, char *argv[])
 { 
   marcel_t pid;
   any_t status;
-  int nb;
+  int nb, essais = 3;
   register int n;
+
+  if(argc != 2) {
+    fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+    exit(1);
+  }
 
   marcel_init(&argc, argv);
 
-  stop_timer();
-
-  while(1) {
-    printf("How many context switches ? ");
-    scanf("%d", &nb);
+  while(essais--) {
+    nb = atoi(argv[1]);
     n = nb;
     if(n==0)
       break;
@@ -63,8 +63,6 @@ int marcel_main(int argc, char *argv[])
       marcel_yield();
 
     marcel_join(pid, &status);
-
-    printf("time =  %ld.%03ldms\n", temps/1000, temps%1000);
   }
   return 0;
 }

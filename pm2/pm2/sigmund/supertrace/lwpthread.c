@@ -1,5 +1,6 @@
 #include "lwpthread.h"
-#include "assert.h"
+#include <assert.h>
+#include <stdlib.h>
 
 lwpthread_list lwpthread;
 
@@ -37,6 +38,17 @@ int lwp_of_thread(int thread)
   return -1;
 }
 
+int thread_of_lwp(int lwp)
+{
+  lwpthread_list tmp;
+  tmp = lwpthread;
+  while(tmp != LWPTHREAD_LIST_NULL) {
+    if (tmp->lwp == lwp) return tmp->thread;
+    tmp = tmp->next;
+  }
+  return -1;
+}
+
 void set_switch(int oldthread, int newthread)
 {
   lwpthread_list tmp;
@@ -46,4 +58,26 @@ void set_switch(int oldthread, int newthread)
     tmp = tmp->next;
   }
   // Erreur
+}
+
+void set_cpu(int lwp, short int cpu)
+{
+  lwpthread_list tmp;
+  tmp = lwpthread;
+  while(tmp != LWPTHREAD_LIST_NULL) {
+    if (tmp->lwp == lwp) {tmp->cpu = cpu; return;}
+    tmp = tmp->next;
+  }
+  return ; //Erreur
+}
+
+short int cpu_of_lwp(int lwp)
+{
+  lwpthread_list tmp;
+  tmp = lwpthread;
+  while(tmp != LWPTHREAD_LIST_NULL) {
+    if (tmp->lwp == lwp) return tmp->cpu;
+    tmp = tmp->next;
+  }
+  return -1;
 }

@@ -22,9 +22,8 @@
 #ifndef SWANN_POINTERS_H
 #define SWANN_POINTERS_H
 
-typedef struct s_swann_net_client *p_swann_net_client_t;
-typedef struct s_swann_net_server *p_swann_net_server_t;
-typedef struct s_swann_file       *p_swann_file_t;
-typedef struct s_swann_command    *p_swann_command_t;
+typedef struct s_swann_settings *p_swann_settings_t;
+typedef struct s_swann_session  *p_swann_session_t;
+typedef struct s_swann          *p_swann_t;
 
 #endif /* SWANN_POINTERS_H */

@@ -1,0 +1,84 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+DIRS="${MADELEINE_ROOT}/make ${MADELEINE_ROOT}/source ${MADELEINE_ROOT}/bin"
+
+for d in $DIRS ; do
+    if [ ! -h $d/custom ] ; then
+	echo "ATTENTION: Verifiez votre installation."
+	echo "$d/custom doit etre un lien symbolique !"
+	exit 1
+    fi
+done
+
+if test $# -ge 1
+then
+
+    if test $# -ne 1
+    then
+	echo "Usage: $0 custom <packagename>"
+	echo "          where packagename can be pvm, tcp, mpi-lam, bip, etc."
+	echo "          to build the specified implementation"
+	exit 1
+    fi
+
+    rm -f ${MADELEINE_ROOT}/.net_interf
+
+    for d in $DIRS
+    do
+	cd $d
+	if test -d $1
+	then
+	    rm -f custom
+	    ln -fs $1 custom
+	else
+	    echo "Error: $d/$1 is not a directory"
+	    exit 1
+	fi
+    done
+    echo $1 > ${MADELEINE_ROOT}/.net_interf
+
+    touch ${MADELEINE_ROOT}/source/*.c ${MADELEINE_ROOT}/source/custom/*.c
+fi
+
+if test -f ${MADELEINE_ROOT}/.net_interf
+then
+    echo "The current network interface is set to:" `cat ${MADELEINE_ROOT}/.net_interf`
+else
+    echo "No current network interface"
+fi
+
+exit 0

@@ -1,0 +1,165 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+usage()
+{
+    echo "Usage: `basename $0` [ options ] <host> { <host> }"
+    echo " options can be"
+    echo "   -f <file> : Use <file> as an input for host names"
+    echo "   -e <host> <i>-<j> : Expands to <hosti> <hosti+1> ... <hostj>"
+    echo "   -s <suffix> : Adds <suffix> to the following expression"
+    exit 1
+}
+
+add_suffix()
+{
+    if [ ! $# -ge 2 ] ; then
+	usage
+    fi
+    local SUFFIX=$1
+    shift
+    case "$1" in
+	-f) local LIST=`load_file $2`
+	    for f in `evaluate $LIST` ; do
+		echo ${f}$SUFFIX
+	    done
+	    shift 2 ;;
+	-e) for f in `expand $2 $3` ; do
+		echo ${f}$SUFFIX
+	    done
+	    shift 3 ;;
+	-s) echo "Error: cannot apply suffix to a suffix command"
+	    exit 1 ;;
+	*) echo $1$SUFFIX ;;
+    esac
+    evaluate $*
+}
+
+load_file()
+{
+    if [ ! $# -ge 1 ] ; then
+	usage
+    fi
+    if [ ! -f "$1" ]; then
+	case "$1" in
+	    /*)	echo "File not found: $1"
+		usage ;;
+	    *) if [ ! -f ${MADELEINE_ROOT}/preferences/conf/$1 ] ; then
+		    echo "File not found: $1"
+		    usage
+		else
+		    file=${MADELEINE_ROOT}/preferences/conf/$1
+		fi
+	esac
+    else
+	file=$1
+    fi
+    cat $file
+    shift
+    echo $*
+}
+
+expand()
+{
+    if [ ! $# -ge 2 ] ; then
+	usage
+    fi
+    BASE=$1; shift
+    INF=`IFS='-'; set $1; echo $1`
+    SUP=`IFS='-'; set $1; echo $2`
+    shift
+    if [ "$INF" -le "$SUP" ] ; then
+	while [ $INF -le $SUP ] ; do
+	    echo ${BASE}${INF}
+	    INF=`expr $INF + 1`
+	done
+	evaluate $*
+    else
+	usage
+    fi
+}
+
+evaluate()
+{
+    if [ $# -ge 1 ] ; then
+	case "$1" in
+	    -f) shift; evaluate `load_file $*`;;
+	    -e) shift; expand $* ;;
+	    -s) shift; add_suffix $* ;;
+	    *) echo $1; shift; evaluate $* ;;
+	esac
+    fi
+}
+
+# Modification éventuelle de la configuration courante
+if [ $# -gt 0 ] ; then
+    LINE=''
+    nomore=0
+    while [ $# -ge 1 -a $nomore = 0 ]; do
+	case "$1" in
+	    -f) LINE="$LINE $1"; shift;;
+	    -e) LINE="$LINE $1"; shift;;
+	    -s) LINE="$LINE $1"; shift;;
+	    --) nomore=1; shift;;
+	    *) LINE="$LINE $1"; shift;;
+	esac
+    done
+    if [ "$LINE" != "" ] ; then
+	rm -f ${MADELEINE_ROOT}/.madconf
+	cp /dev/null ${MADELEINE_ROOT}/.madconf
+	for m in `evaluate $LINE`
+	do
+	    echo $m >> ${MADELEINE_ROOT}/.madconf
+	done
+    fi
+fi
+
+# Affichage de la configuration courante
+if [ -f ${MADELEINE_ROOT}/.madconf ] ; then
+    set `cat ${MADELEINE_ROOT}/.madconf`
+    nb=$#
+    echo "The current MADELEINE configuration contains $nb host(s) :"
+    i=0
+    for m in $*
+    do
+	echo "$i : $m"
+	i=`expr $i + 1`
+    done
+else
+    echo "MADELEINE is not yet configured."
+    echo "Please run \`madconf' with at least one host name."
+    echo "Usage: madconf { host_name }"
+fi

@@ -1,5 +1,4 @@
 /*
-/*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
  *
@@ -14,16 +13,20 @@
  * General Public License for more details.
  */
 
+/*
  * leoparse_pointers.h
  * -------------------
  */
 
-#ifndef __LEOPARSE_POINTERS_H
-#define __LEOPARSE_POINTERS_H
+#ifndef LEOPARSE_POINTERS_H
+#define LEOPARSE_POINTERS_H
 
 typedef struct s_leoparse_htable_entry   *p_leoparse_htable_entry_t;
+typedef struct s_leoparse_range          *p_leoparse_range_t;
 typedef enum   e_leoparse_object_type    *p_leoparse_object_type_t;
 typedef enum   e_leoparse_entry_type     *p_leoparse_entry_type_t;
 typedef struct s_leoparse_object         *p_leoparse_object_t;
+typedef enum   e_leoparse_modifier_type  *p_leoparse_modifier_type_t;
+typedef struct s_leoparse_modifier       *p_leoparse_modifier_t;
 
-#endif /* __LEOPARSE_POINTERS_H */
+#endif /* LEOPARSE_POINTERS_H */

@@ -41,6 +41,7 @@ _PRIVATE_ typedef struct {
   char *stack_base;
   boolean detached;
   unsigned user_space;
+  boolean immediate_activation;
   unsigned priority;
   unsigned not_migratable;
   unsigned not_deviatable;
@@ -61,6 +62,9 @@ int marcel_attr_getdetachstate(marcel_attr_t *attr, boolean *detached);
 
 int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space);
 int marcel_attr_getuserspace(marcel_attr_t *attr, unsigned *space);
+
+int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate);
+int marcel_attr_getactivation(marcel_attr_t *attr, boolean *immediate);
 
 int marcel_attr_setprio(marcel_attr_t *attr, unsigned prio);
 int marcel_attr_getprio(marcel_attr_t *attr, unsigned *prio);

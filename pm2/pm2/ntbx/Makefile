@@ -59,6 +59,15 @@ NTBX_DEP	:=	$(NTBX_SRC)/depend
 NTBX_INC	:=	$(NTBX_ROOT)/include
 NTBX_LIBD	=	$(NTBX_ROOT)/lib/$(PM2_ARCH_SYS)
 
+ifndef PM2_FLAGS
+ifdef MAD_ALONE
+NTBX_OPTIONS    += $(MAD_OPTIONS)
+else
+NTBX_OPTIONS    += $(NTBX_STANDALONE_OPTIONS) -DNTBX -DNTBX_TCP
+NTBX_ALONE       :=  true
+endif
+endif
+
 
 ifneq ($(wildcard $(NTBX_DEP)),$(NTBX_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(NTBX_DEP))
@@ -100,7 +109,15 @@ endif
 endif
 
 $(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d
+ifdef $(NTBX_ALONE)
+$(NTBX_DEPENDS): $(NTBX_MAKEFILE)
+else
+ifdef $(MAD_ALONE)
+$(NTBX_DEPENDS): $(MAD_MAKEFILE)
+else
 $(NTBX_DEPENDS): $(PM2_MAKEFILE)
+endif
+endif
 
 .PHONY: ntbx_default
 ntbx_default: tbx_default $(NTBX_LIB)
@@ -120,7 +137,7 @@ $(NTBX_REG_DEPENDS): $(NTBX_DEP)/%.d: $(NTBX_SRC)/%.c
 		| sed '\''s/.*:/$(subst /,\/,$(NTBX_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
-ifdef PM2_FLAGS
+ifndef NTBX_ALONE
 .PHONY: ntbxclean
 ntbxclean:
 	@echo "Cleaning net toolbox"

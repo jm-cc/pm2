@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.23  2000/03/15 16:59:16  oaumage
+- support APPLICATION_SPAWN
+
 Revision 1.22  2000/03/08 17:19:17  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -112,11 +115,14 @@ ______________________________________________________________________________
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stddef.h>
+#include <limits.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <errno.h>
+#include <netdb.h>
 #ifdef PM2
 #include <sys/wait.h>
 #endif /* PM2 */
@@ -361,6 +367,219 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
 }
 
 static void
+mad_adapter_init(p_mad_madeleine_t madeleine)
+{
+  mad_adapter_id_t ad;
+
+  LOG_IN();
+  for (ad = 0;
+       ad < madeleine->nb_adapter;
+       ad++)
+    {
+      p_mad_adapter_t adapter;
+      
+      adapter = &(madeleine->adapter[ad]);
+      adapter->specific = NULL;
+      if (adapter->driver->interface.adapter_init)
+	adapter->driver->interface.adapter_init(adapter);
+    }
+  LOG_OUT();
+}
+
+static void
+mad_adapter_configuration_init(p_mad_madeleine_t madeleine)
+{
+  mad_adapter_id_t ad;
+
+  LOG_IN();
+  for (ad = 0;
+       ad < madeleine->nb_adapter;
+       ad++)
+    {
+      p_mad_adapter_t adapter;
+      
+      adapter = &(madeleine->adapter[ad]);
+      if (adapter->driver->interface.adapter_configuration_init)
+	adapter->driver->interface.adapter_configuration_init(adapter);
+    }
+  LOG_OUT();
+}
+
+#ifdef APPLICATION_SPAWN
+
+char *
+mad_generate_url(p_mad_madeleine_t madeleine)
+{
+  char             *url          = NULL;
+  char             *cgi_string   = NULL;
+  char             *arg          = NULL;
+  char             *host_name    = NULL;
+  char             *cwd          = NULL;
+  char             *program_name = NULL;
+  char             *realp        = NULL;
+  const char       *exec_name     = NULL;
+  mad_adapter_id_t  ad;
+  int               l;
+  
+  LOG_IN();
+  realp = TBX_MALLOC(PATH_MAX);
+  CTRL_ALLOC(realp);  
+  host_name = TBX_MALLOC(MAXHOSTNAMELEN);
+  CTRL_ALLOC(host_name);  
+  url = TBX_MALLOC(MAX_ARG_STR_LEN);
+  CTRL_ALLOC(url);
+  cgi_string = TBX_MALLOC(MAX_ARG_STR_LEN);
+  CTRL_ALLOC(cgi_string);
+  arg = TBX_MALLOC(MAX_ARG_LEN);
+  CTRL_ALLOC(arg);
+
+  SYSCALL(gethostname(host_name, MAXHOSTNAMELEN));
+
+  while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
+    {    
+      if(errno != EINTR)
+	{
+	  perror("getcwd");
+	  FAILURE("syscall failed");
+	}
+    }
+
+  for (ad = 0;
+       ad < madeleine->nb_adapter;
+       ad++)
+    {
+      p_mad_adapter_t adapter = &(madeleine->adapter[ad]);
+
+      sprintf(arg,
+	      "device=%s&",
+	      adapter->parameter);
+      strcat (cgi_string, arg);
+    }
+  l = strlen(cgi_string);
+  l--;
+  cgi_string[l] = 0;
+
+  exec_name = getexecname();
+  if (exec_name[0] != '/')
+    {
+      strcat(cwd, "/");
+      strcat(cwd, exec_name);
+      realpath(cwd, realp);
+      exec_name = realp;
+    }
+
+  program_name = strrchr(exec_name, '/');
+  *program_name = '\0';
+  program_name++;
+  
+  sprintf(url, "x-nexus://%s:mad2%s/%s?%s",
+	  host_name,
+	  exec_name,
+	  program_name,
+	  cgi_string);
+
+  TBX_FREE(host_name);
+  TBX_FREE(cgi_string);
+  TBX_FREE(arg);
+  TBX_FREE(realp);
+  LOG_OUT();
+  return url;
+}
+
+char *
+mad_pre_init(p_mad_adapter_set_t adapter_set)
+{
+  p_mad_madeleine_t madeleine = &main_madeleine;
+
+  LOG_IN();
+#ifdef PM2  
+  marcel_init(argc, argv);
+#endif /* PM2 */
+  tbx_init();
+  
+  madeleine->nb_channel = 0;
+  TBX_INIT_SHARED(madeleine);
+  mad_managers_init();
+  mad_driver_fill(madeleine);
+  mad_adapter_fill(madeleine, adapter_set);  
+
+  mad_driver_init(madeleine);
+  mad_adapter_init(madeleine);
+  LOG_OUT();
+  return mad_generate_url(madeleine);
+}
+
+void
+mad_parse_url(p_mad_madeleine_t  madeleine,
+	      char              *url,
+	      p_tbx_bool_t       master)
+{
+  mad_adapter_id_t  ad = 0;
+  char             *tag;
+  char             *param;
+  char             *c;
+  
+  LOG_IN();
+  if (!url)
+    {
+      *master = tbx_true;
+      LOG_OUT();
+      return;
+    }
+  *master = tbx_false;
+
+  c = strchr(url, '?');
+  if (!c)
+    {
+      LOG_OUT();
+      return;
+    }
+  c++;
+
+  do
+    {
+      p_mad_adapter_t current_adapter = NULL;
+      
+      if (ad >= madeleine->nb_adapter)
+	FAILURE("too much parameters");
+
+      current_adapter = &madeleine->adapter[ad];
+
+      tag = c;
+      c = strchr(tag, '=');
+      
+      if (!c)
+	FAILURE("invalid cgi string");
+
+      *c = '\0';
+      c++;
+      param = c;
+      c = strchr(param, '&');
+      
+      if (c)
+	{
+	  *c='\0';
+	  c++;
+	}
+
+      if (strcmp(tag, "device"))
+	FAILURE("invalid parameter tag");
+
+      current_adapter->master_parameter = TBX_MALLOC(strlen(param) + 1);
+      CTRL_ALLOC(current_adapter->master_parameter);
+      strcpy(current_adapter->master_parameter, param);
+      ad++;      
+    }
+  while(c);
+  
+  if (ad != madeleine->nb_adapter)
+    FAILURE("not enough parameters");
+  LOG_OUT();
+}
+#endif /* APPLICATION_SPAWN */
+
+#ifndef APPLICATION_SPAWN
+static void
 mad_parse_command_line(int                *argc,
 		       char              **argv,
 		       p_mad_madeleine_t   madeleine,
@@ -443,6 +662,7 @@ mad_parse_command_line(int                *argc,
   *argc = j;
   LOG_OUT();
 }
+#endif /* APPLICATION_SPAWN */
 
 static char *mad_get_mad_root(void)
 {
@@ -457,7 +677,7 @@ static char *mad_get_mad_root(void)
   }
 }
 
-#ifndef EXTERNAL_SPAWN
+#if (!defined EXTERNAL_SPAWN) && (!defined APPLICATION_SPAWN)
 static void
 mad_master_spawn(int                    *argc,
 		 char                  **argv,
@@ -570,7 +790,7 @@ mad_slave_spawn(int                *argc,
       if(errno != EINTR)
 	{
 	  perror("getcwd");
-	  exit(1);
+	  FAILURE("syscall failed");
 	}
     }
 
@@ -618,7 +838,6 @@ mad_slave_spawn(int                *argc,
 	    }
 	  else
 	    {
-	      
 	      sprintf(cmd,
 		      "rsh %s %s/%s -slave -cwd %s -rank %d %s &",
 		      configuration->host_name[i],
@@ -664,7 +883,7 @@ mad_slave_spawn(int                *argc,
   TBX_FREE(arg);  
   LOG_OUT();
 }
-#endif /* !EXTERNAL_SPAWN */
+#endif /* !EXTERNAL_SPAWN && !APPLICATION_SPAWN */
 
 #ifdef EXTERNAL_SPAWN
 static void
@@ -716,48 +935,24 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine)
   LOG_OUT();
 }
 #else /* EXTERNAL SPAWN */
+#ifndef APPLICATION_SPAWN
 static void
 mad_connect_hosts(p_mad_madeleine_t   madeleine,
 		  tbx_bool_t          conf_spec,
 		  int                *argc,
 		  char              **argv)
 {
-  mad_adapter_id_t ad;
-  ntbx_host_id_t rank;
-
   LOG_IN();
-  rank = madeleine->configuration.local_host_id;
-
-  for (ad = 0;
-       ad < madeleine->nb_adapter;
-       ad++)
-    {
-      p_mad_adapter_t adapter;
-      
-      adapter = &(madeleine->adapter[ad]);
-      adapter->specific = NULL;
-      if (adapter->driver->interface.adapter_init)
-	adapter->driver->interface.adapter_init(adapter);
-    }
-
-  if (rank == 0)
+  mad_adapter_init(madeleine);
+  if (madeleine->configuration.local_host_id == 0)
     {
       mad_slave_spawn(argc, argv, conf_spec, madeleine);
     }
- 
-  for (ad = 0;
-       ad < madeleine->nb_adapter;
-       ad++)
-    {
-      p_mad_adapter_t adapter;
-      
-      adapter = &(madeleine->adapter[ad]);
-      if (adapter->driver->interface.adapter_configuration_init)
-	adapter->driver->interface.adapter_configuration_init(adapter);
-    }  
+  mad_adapter_configuration_init(madeleine);
   LOG_OUT();
 }
-#endif /* EXTERNAL SPAWN*/
+#endif /* APPLICATION_SPAWN */
+#endif /* EXTERNAL SPAWN */
 
 /* ---- */
 #ifndef EXTERNAL_SPAWN
@@ -773,7 +968,6 @@ mad_read_conf(p_mad_configuration_t   configuration,
   f = fopen(configuration_file, "r");
   if(f == NULL)
     {
-      LOG_STR("mad_init: configuration file", configuration_file);
       perror("configuration file");
       exit(1);
     }
@@ -864,16 +1058,28 @@ mad2_init(int                  *argc,
 	  p_mad_adapter_set_t   adapter_set)
 #else /* PM2 */
 p_mad_madeleine_t
-mad_init(int                   *argc,
+mad_init(
+#ifndef APPLICATION_SPAWN
+	 int                   *argc,
 	 char                 **argv,
+#else /* APPLICATION SPAWN */
+	 ntbx_host_id_t         rank,
+#endif /* APPLICATION_SPAWN */
 	 char                  *configuration_file __attribute__ ((unused)),
-	 p_mad_adapter_set_t    adapter_set)
+#ifdef APPLICATION_SPAWN
+	 char                  *url
+#else /* APPLICATION_SPAWN */
+	 p_mad_adapter_set_t    adapter_set
+#endif /* APPLICATION_SPAWN */
+	 )
 #endif /* PM2 */
 {
   p_mad_madeleine_t          madeleine       = &(main_madeleine);
   p_mad_configuration_t      configuration   =
     &(madeleine->configuration);
+#ifndef APPLICATION_SPAWN
   ntbx_host_id_t             rank            = -1;
+#endif /* APPLICATION_SPAWN */
   tbx_bool_t                 master          = tbx_false;
   tbx_bool_t                 slave           = tbx_false;
 #ifdef EXTERNAL_SPAWN
@@ -892,6 +1098,7 @@ mad_init(int                   *argc,
       conf_spec = tbx_true;
     }  
 
+#ifndef APPLICATION_SPAWN
 #ifdef PM2  
   marcel_init(argc, argv);
 #endif /* PM2 */
@@ -902,6 +1109,7 @@ mad_init(int                   *argc,
   mad_managers_init();
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
+#endif /* APPLICATION_SPAWN */
 
 #ifdef EXTERNAL_SPAWN
   spawn_driver = &(madeleine->driver[EXTERNAL_SPAWN]);
@@ -922,7 +1130,7 @@ mad_init(int                   *argc,
   if (spawn_interface->external_spawn_init)
     spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
 #endif /* EXTERNAL_SPAWN */
-  
+#ifndef APPLICATION_SPAWN  
   if (conf_spec)
     {      
       mad_parse_command_line(argc,
@@ -941,6 +1149,7 @@ mad_init(int                   *argc,
 			     &master,
 			     &slave);
     }
+#endif /* MAD_APPLICATION_SPAWN */
   
 #ifdef EXTERNAL_SPAWN
   spawn_interface->configuration_init(spawn_adapter, configuration);
@@ -958,10 +1167,55 @@ mad_init(int                   *argc,
       master = tbx_false;
       slave  = tbx_true;
     }
-#else /* EXTERNAL_SPAWN */
+#else
   mad_read_conf(configuration, configuration_file);
+#ifdef APPLICATION_SPAWN
+  mad_parse_url(madeleine, url, &master);
+  slave = !master;
+  if (master)
+    {
+      if (rank == -1)
+	{
+	  rank = 0;
+	}
+      else if (rank != 0)
+	FAILURE("invalid rank specified for master node");
+    }
+  else
+    {
+      if (rank == -1)
+	{
+	  int   i = 1;
+	  char *host_name    = NULL;
+	  
+	  host_name = TBX_MALLOC(MAXHOSTNAMELEN);
+	  CTRL_ALLOC(host_name);  
+
+	  SYSCALL(gethostname(host_name, MAXHOSTNAMELEN));
+	  
+	  while(i < configuration->size)
+	    {
+	      if (!strcmp(configuration->host_name[i],
+			  host_name))
+		break;
+	      i++;
+	    }
+
+	  if (i >= configuration->size)
+	    FAILURE("unable to determine rank from host name");
+
+	  rank = i;
+	}
+      else if (rank <= 0)
+	FAILURE("invalid rank specified for slave node");
+    }
+
+  configuration->local_host_id = rank;
+  
+#else /* APPLICATION_SPAWN */
   rank = configuration->local_host_id;  
 
+  /* Disable the first `rsh' step */
   master = !slave;
   
   if (!master && !slave)
@@ -971,9 +1225,11 @@ mad_init(int                   *argc,
 		       configuration,
 		       conf_spec);
     }
+#endif /* APPLICATION_SPAWN */
 #endif /* EXTERNAL SPAWN */
 
   /* output redirection */
+#ifndef APPLICATION_SPAWN
   if (rank > 0)
     {
       char   output[MAX_ARG_LEN];
@@ -984,13 +1240,18 @@ mad_init(int                   *argc,
       dup2(f, STDOUT_FILENO);
       dup2(STDOUT_FILENO, STDERR_FILENO);
     }
-  
+#endif /* APPLICATION_SPAWN  */
+
+#ifdef APPLICATION_SPAWN 
+  mad_adapter_configuration_init(madeleine);
+#else /* APPLICATION_SPAWN */
   mad_driver_init(madeleine);
 #ifdef EXTERNAL_SPAWN
   mad_connect_hosts(madeleine);
 #else /* EXTERNAL_SPAWN */
   mad_connect_hosts(madeleine, conf_spec, argc, argv);
 #endif /* EXTERNAL_SPAWN */
+#endif /* APPLICATION_SPAWN */
   tbx_list_init(&(madeleine->channel));
 
   LOG_OUT();

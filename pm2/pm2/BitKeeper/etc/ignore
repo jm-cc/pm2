@@ -1,6 +1,12 @@
-BitKeeper/*/*
-PENDING/*
-*.incl/*
 *.excl/*
-tags
+*.incl/*
+*.orig
+*.rej
 *.swp
+*~
+BitKeeper/*/*
+BitKeeper/etc/*
+BitKeeper/tmp/*
+PENDING/*
+marcel/autogen-include/*
+tags

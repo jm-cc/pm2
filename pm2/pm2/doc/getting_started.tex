@@ -9,7 +9,7 @@
 \usepackage{psboxit}
 \usepackage{xspace}
 \usepackage{oldgerm}
-\usepackage{shadow}
+\usepackage{afterpage}
 % \usepackage{color}
 
 % settings
@@ -49,7 +49,7 @@
 %        \color{bleu} Raymond Namyst}
 \title{{\txty G}\gothfamily\Huge etting Started with PM2}
 \author{\aut {\txty G}abriel Antoniu \and%
-        \aut  {\txty O}livier Aumage \and%
+        \aut {\txty O}livier Aumage \and%
         \aut {\txty L}uc Boug\'e \and%
         \aut {\txty J}ean-Fran\c{c}ois M\'ehaut \and%
         \aut {\txty R}aymond Namyst}
@@ -57,7 +57,47 @@
 
 %%%%%%%%%%%%%%%%
 \begin{document}
-\maketitle
+\makeatletter
+\begin{titlepage}
+  \let\footnotesize\small
+  \let\footnoterule\relax
+  \let \footnote \thanks
+  \null\vfil
+  \vskip 60\p@
+  \begin{center}%
+    {\setlength{\unitlength}{5mm}%
+    \begin{picture}(24, 1)(0, 0)%
+      \linethickness{2pt}%
+      \qbezier(24.01,0.99)(22.00,-16.00)(12.00,-24.00)%
+      \qbezier(21.99,1.00)(24.00,1.50)(24.80,2.00)%
+      \put(7.00,0.99){\line(1,0){15}}
+      \linethickness{0.4pt}%
+      \qbezier(24.00,1.00)(12.00,-3.00)(0.00,1.00)%
+      \qbezier(24.00,1.00)(22.00,-16.00)(12.00,-24.00)%
+      \qbezier(0.00,1.00)(2.00,-16.00)(12.00,-24.00)%
+      \put(12.00,-1.00){\line(0,-1){23}}
+      \put(7.00,3.00){\line(1,0){15}}
+      \put(7.00,2.00){\line(1,0){18}}
+      \put(7.00,1.00){\line(1,0){15}}
+      \qbezier(22.00,3.00)(24.00,2.50)(25.00,2.00)%
+      \qbezier(22.00,1.00)(24.00,1.50)(25.00,2.00)%
+    \end{picture}%
+    \vskip -22mm
+    \LARGE \@title \par}%
+    \vskip 3em%
+    {\large
+     \lineskip .75em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+      \vskip 5em%<
+    {\large \@date \par}%       % Set date in \large size.
+  \end{center}\par
+  \@thanks
+  \vfil\null
+\end{titlepage}
+\makeatother
+%\maketitle
 {\txtcmfr
 \tableofcontents
 }
@@ -67,9 +107,9 @@
 % Introduction
 %______________
 \section{Introduction : What is \pm2?}
-The PM2 environment is a joint project between the \textsc{LIP}
-(\emph{École Normale Supérieure de Lyon}, France) and the \textsc{LIFL}
-(\emph{Université des Sciences et Technologies de Lille}, France). 
+The \pm2 environment is a joint project between the \textsc{LIP}
+(\emph{\'Ecole Normale Sup\'erieure de Lyon}, France) and the \textsc{LIFL}
+(\emph{Universit\'e des Sciences et Technologies de Lille}, France). 
 
 %===========
 \subsection{Multithreaded Programming Environment}
@@ -105,22 +145,22 @@ client service requests.
 software is yet available on a wide range of architectures. The
 implementation is built on top of two separate software components:
 \mar and \madii. 
-\paragraph{Multithreading}
+\subsubsection{Multithreading}
 \mar is a POSIX-compliant thread package that
 provides extra-features such as thread migration that are needed by
 the \pm2 runtime. \mar is currently available on \textsc{Pentium},
-\textsc{MIPS}, \textsc{ALPHA}, \textsc{Sparc} and \textsc{PowerPC}
+\textsc{MIPS}, \textsc{Alpha}, \textsc{Sparc} and \textsc{PowerPC}
 processors. The Table~\ref{tbl:platforms} sums up the currently
 supported platforms. 
-\paragraph{Communications}
+\subsubsection{Communications}
 \madii is a generic communication interface which is able to fully
 exploit the low latency and the high bandwidth of high-speed networks
 such as Myrinet or SCI. This \pm2 network subsystem currently supports
 the protocols TCP, MPI (LAM-MPI, MPI-BIP), VIA, SISCI and SBP.
 \begin{table}
-\caption{Supported Platform\label{tbl:platforms}}
+\caption{Supported Platforms\label{tbl:platforms}}
 \begin{center}
-\begin{tabular}[h]{|l|l|}                                        \hline
+\begin{tabular}[p]{|l|l|}                                        \hline
 Operating System & Architecture                               \\ \hline
 \textsc{Linux}   & \textsc{x86}, \textsc{PPC}, \textsc{Alpha} \\
 \textsc{Solaris} & \textsc{Sparc}, \textsc{x86}               \\
@@ -132,7 +172,7 @@ Operating System & Architecture                               \\ \hline
 \end{tabular}
 \end{center}
 \end{table}
-\paragraph{Required development tools}
+\subsubsection{Required development tools}
 As previously mentionned, \pm2 as been designed to be easily portable
 and only relies on the availability of the two following development tools:
 \begin{itemize}
@@ -142,28 +182,33 @@ versions have been successfully tested).
 \item GNU Make (versions 3.7x.x or more).
 \end{itemize}
  
-%===========
-\subsection{Getting the \pm2 software and help}
-The \pm2 archive is available from the \pm2 web site at
-\url{http://www.ens-lyon.fr/~rnamyst/pm2.html} 
-(Contact guru:~\url{bouge@ens-lyon.fr}).
 
 %===========
-\subsection{Unpacking the \pm2 distribution}
+\subsection{Installing \pm2}
+
+\subsubsection{Getting the \pm2 software and help}
+The \pm2 archive is available from the \pm2 web site at:%
+\begin{quote}
+\url{http://www.ens-lyon.fr/~rnamyst/pm2.html} 
+
+(contact guru:~\url{bouge@ens-lyon.fr}).
+\end{quote}
+
+\subsubsection{Unpacking the \pm2 distribution}
 \marginpar{\mp $\rightarrow$ making a personal installation}
 The \pm2 archive can be extracted with one of the following commands
 entered at the shell prompt:
 \begin{small}
 \begin{verbatim}
-        > tar zxvf pm2.tar.gz              # with the GNU tar
+        > tar zxvf pm2.tar.gz                # with the GNU tar
 
-        > gunzip -c pm2.tar.gz | tar xvf - # with otherwise
+        > gunzip -c pm2.tar.gz | tar xvf -   # with otherwise
 \end{verbatim}
 \end{small}
 Once extracted, the \pm2 distribution should be available under the
 \texttt{./pm2/} directory. This \pm2 distribution is organized as
 shown on Figure~\ref{fig:pm2-tree}.
-\begin{figure}
+\begin{figure}[p]
 \begin{center}
 \begin{boxedminipage}{0.9\textwidth}
 \footnotesize
@@ -206,8 +251,10 @@ variable \texttt{PM2\_ROOT} should contain the path to the \pm2
 distribution root directory. The variables \texttt{MARCEL\_ROOT} and
 \texttt{MAD2\_ROOT} should also be set to the root directory of \mar
 and \madii respectively. The following should be appended to your
-\texttt{PATH} environment variable:
+\texttt{PATH} environment variable: 
+\begin{quote}
 \texttt{\$\{PM2\_ROOT\}/bin; \$\{MARCEL\_ROOT\}/bin; \$\{MAD2\_ROOT\}/bin;}.
+\end{quote}
 
 %===========
 \subsection{Configuring\label{subsec:configuring}}
@@ -217,22 +264,23 @@ automatically detected. Hence, there is no need to specify the
 operating sytem/processor pair.
 
 \marginpar{\mp\texttt{pm2custom}} The only major setting
-left to the user is the underlying network selection, which is
+left to the user is the network protocol selection, which is
 currently not desirable to be auto-detected by the \madii
 communication library of \pm2. The network protocol choice is made
 using the \texttt{pm2custom} command at the shell prompt. Example:
 \begin{small}
 \begin{verbatim}
-        > pm2custom TCP
+        > pm2custom tcp
+        The current network interface is set to: tcp
 \end{verbatim}
 \end{small}
 Each time the network protocol setting is changed using
 \texttt{pm2custom}, the \pm2 environment should be recompiled
 (see~\ref{subsec:compiling}, \emph{Compiling}).
 
-\paragraph{Advanced configuration}
+\subsubsection{Advanced configuration}
 Advanced configuration options are of course available for the more
-demanding users. These options should be used with care. They can be
+demanding users. These options should be used with great care. They can be
 found at the top of the main \pm2 makefile, in the file
 \texttt{\$\{PM2\_ROOT\}/make/common.mak}.
 
@@ -248,7 +296,7 @@ see~\ref{subsec:configuring}, \emph{configuring}). Yet, it can be done
 as a standalone step by typing \texttt{make} at the shell prompt into
 the root directory of the \pm2 distribution.
 
-\paragraph{Cleanning the directory tree}
+\subsubsection{Cleanning the directory tree}
 \marginpar{\mp pm2clean} The directory tree of the \pm2 distribution
 may be cleaned at any time from compiled objects and libraries using
 the command \texttt{pm2clean}. This may be needed to free some disk
@@ -265,7 +313,7 @@ to be completely remade by a subsequent \texttt{make} call.
 
 %===========
 \subsection{The minimal PM2 program}
-\begin{figure}
+\begin{figure}[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -291,13 +339,16 @@ to be completely remade by a subsequent \texttt{make} call.
 \end{center}
 \caption{Minimal \pm2 program\label{fig:ex1}}
 \end{figure}
+\afterpage{\clearpage}
 Let us start our \pm2 tour by writting the minimal \pm2 program. The
-Figure~\ref{fig:ex1} shows an example of such a minimalist \pm2
-code. As we can see, a \pm2 program must first include the \texttt{pm2.h}
-header file along with other standards header files. 
+Figure~\ref{fig:ex1} (on page~\pageref{fig:ex1}) shows an example of
+such a minimalist \pm2 code. As we can see, a \pm2 program must first
+include the \texttt{pm2.h} header file along with other standard
+header files.
 
-We now write the program body. The line~7 illustrates that the main
-function should be called \texttt{pm2\_main} instead of the classical
+\subsubsection{Program body}
+We now write the program body. The Line~7 illustrates that the start
+function name should be \texttt{pm2\_main} instead of the classical
 \texttt{main} when using \pm2. Yet, the arguments remain the regular
 \texttt{argc}/\texttt{argv} pair. A call to \texttt{pm2\_init}
 effectively initializes the \pm2 runtime system. Once the
@@ -307,26 +358,71 @@ a call to the \texttt{printf} function of the standard library. This
 call will be concurrently performed on any process constituting the
 session configuration during the program execution.
 
+\subsubsection{Session termination}
 Finally, the termination phasis concludes our minimal \pm2 program. It
-is splitted into two steps. One (and only one) of the nodes should
-first perform a call to \texttt{pm2\_halt}. This step ensures that no
+is splitted into two steps. One (and only one) of the nodes must first
+perform a call to \texttt{pm2\_halt}. This step ensures that no
 further incoming service request will be accepted by any of the
 session processes. The \texttt{pm2\_self} function is used to retrieve
-the local process rank. So, the \texttt{pm2\_halt} call is executed by
-the process \texttt{0} (sometimes called the \emph{master} process).
-Once each process reaches the \texttt{pm2\_exit} second termination
-step, the \pm2 session ends.
+the local process rank. Hence, in the example the \texttt{pm2\_halt}
+call is executed by the process \texttt{0} (sometimes called the
+\emph{master} process). Once each process reaches the
+\texttt{pm2\_exit} second termination step, the \pm2 session ends.
 
 %===========
 \subsection{Running a \pm2 program}
-        $\rightarrow$ pm2conf, pm2load, pm2logs
+\subsubsection{Session topology definition}
+We now learn how to run our \pm2 program. The first required step is
+to specify the list of hostnames on which the \pm2 session is going to
+span. For this we use the \texttt{pm2conf} command. Example for a
+session using 3 nodes on a cluster called \texttt{POPC}:
+\begin{verbatim}
+    > pm2conf popc1 popc2 popc3
+    The current MADELEINE configuration contains 4 host(s) :
+    0 : popc1
+    1 : popc2
+    2 : popc3
+\end{verbatim}
+The node \texttt{popc1} is the master of the session: it owns the
+rank~0. The other nodes are the slaves. 
+
+\subsubsection{Launching the program}
+Although not a requirement in general, some protocols may expect the
+use of proprietary startup scripts. They may also expect other
+prerequities like the session to be launched from the master node. The
+\pm2 script \texttt{pm2load} takes care about all the details of
+setting up the \pm2 session, whatever the underlying network protocol
+used. This script takes the application program name as the only
+parameter.
+
+If the compiled executable of our sample \pm2 program is
+\texttt{example1}, then it can be launched by typing the following
+command at the prompt:
+\begin{verbatim}
+    > pm2load ./example1
+    Hello World !
+    [Threads : 4 created, 0 imported (0 cached)]
+\end{verbatim}
+We can see that our program generates two messages. The first one is the
+expected \emph{Hello world !} message coming from the master node
+\texttt{printf}. The second one is the multithreads manager stats for
+the session.
+
+\subsubsection{Results from other nodes}
+One can remark that the previous example only printed the message
+generated by the master node process. Indeed, the standard output of
+the other processes is redirected to log files located into the /tmp
+directory of each node. The logs are easily accessible using the
+command \texttt{pm2logs} which is charged to retrieve and display logs
+from each slave node of the session configuration.
 
 %===========
 \subsection{Common pitfalls}
 
+
 %===========
 \subsection{Getting the output in the console}
-\begin{figure}
+\begin{figure}[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -353,7 +449,8 @@ step, the \pm2 session ends.
 \end{center}
 \caption{Output redirection, example 1\label{fig:ex2-1}}
 \end{figure}
-\begin{figure}
+
+\begin{figure}[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -381,11 +478,12 @@ step, the \pm2 session ends.
 \caption{Output redirection, example 2\label{fig:ex2-2}}
 \end{figure}
 
+\afterpage{\clearpage}
+
 %===========
 \subsection{Invoking a remote service}
 
-\subsubsection{Example}
-\begin{figure}
+\begin{figure}[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -423,11 +521,12 @@ step, the \pm2 session ends.
 \caption{Sample service\label{fig:ex3}}
 \end{figure}
 
+\afterpage{\clearpage}
+
 %===========
 \subsection{Passing parameters}
 
-\subsubsection{Example}
-\begin{figure}
+\begin{figure}[p]
 \begin{center}
 \begin{boxedminipage}{0.9\textwidth}
 \begin{footnotesize}
@@ -476,6 +575,8 @@ int pm2_main(int argc, char **argv)
 \end{center}
 \caption{Service with a string parameter\label{fig:ex4}}
 \end{figure}
+
+\afterpage{\clearpage}
 
 \subsubsection{Packing/unpacking API}
         pack\_int/pack\_byte
@@ -550,6 +651,13 @@ int pm2_main(int argc, char **argv)
 \end{document}
 _______________________________________________________________________________
 $Log: getting_started.tex,v $
+Revision 1.13  2000/01/26 17:38:32  oaumage
+- quelques modifs ...
+
+Revision 1.12  2000/01/26 11:30:53  oaumage
+- exemple 1 complete
+- diverses corrections et modifications
+
 Revision 1.11  2000/01/25 17:11:31  oaumage
 - diverses modifications et corrections
 

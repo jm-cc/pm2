@@ -19,96 +19,170 @@
  */
 #include "leoparse.h"
 
-p_leoparse_object_t
-leoparse_get_object(p_leoparse_htable_entry_t entry)
+p_tbx_slist_t
+leoparse_get_slist(p_leoparse_object_t object)
 {
-  if (entry->type == leoparse_e_object)
+  p_tbx_slist_t result = NULL;
+  
+  LOG_IN();
+  if (object->type == leoparse_o_slist)
     {
-      return entry->object;
+      result = object->slist;
     }
   else
-    FAILURE("parse error : object expected");
+    FAILURE("parse error: list expected");
+
+  LOG_OUT();
+
+  return result;
 }
 
 p_tbx_slist_t
-leoparse_get_slist(p_leoparse_htable_entry_t entry)
+leoparse_get_as_slist(p_leoparse_object_t object)
 {
-  if (entry->type == leoparse_e_slist)
+  p_tbx_slist_t result = NULL;
+
+  LOG_IN();
+  if (object->type == leoparse_o_slist)
     {
-      return entry->slist;
+      result = object->slist;
     }
   else
-    FAILURE("parse error : list expected");
+    {
+      result = tbx_slist_nil();
+      tbx_slist_append(result, object);
+    }
+  LOG_OUT();
+  
+  return result;
 }
 
 p_tbx_htable_t
 leoparse_get_htable(p_leoparse_object_t object)
 {
+  p_tbx_htable_t result = NULL;
+  
+  LOG_IN();
   if (object->type == leoparse_o_htable)
     {
-      return object->htable;
+      result = object->htable;
     }
   else
-    FAILURE("parse error : table expected");
+    FAILURE("parse error: table expected");
+
+  LOG_OUT();
+  
+  return result;
 }
 
 char *
 leoparse_get_string(p_leoparse_object_t object)
 {
+  char *result = NULL;
+  
+  LOG_IN();
   if (object->type == leoparse_o_string)
     {
-      return object->string;
+      result = object->string;
     }
   else
-    FAILURE("parse error : string expected");
+    FAILURE("parse error: string expected");
+
+  LOG_OUT();
+  
+  return result;
 }
 
 char *
 leoparse_get_id(p_leoparse_object_t object)
 {
+  char *result = NULL;
+
+  LOG_IN();
   if (object->type == leoparse_o_id)
     {
-      return object->id;
+      result = object->id;
     }
   else
-    FAILURE("parse error : id expected");
+    FAILURE("parse error: id expected");
+
+  LOG_OUT();
+
+  return result;
 }
 
 int
 leoparse_get_val(p_leoparse_object_t object)
 {
+  int result = 0;
+
+  LOG_IN();
   if (object->type == leoparse_o_integer)
     {
-      return object->val;
+      result = object->val;
     }
   else
-    FAILURE("parse error : integer expected");
+    FAILURE("parse error: integer expected");
+
+  LOG_OUT();
+
+  return result;
 }
 
 p_leoparse_range_t
 leoparse_get_range(p_leoparse_object_t object)
 {
+  p_leoparse_range_t result = NULL;
+  
+  LOG_IN();
   if (object->type == leoparse_o_range)
     {
-      return object->range;
+      result = object->range;
     }
   else
-    FAILURE("parse error : range expected");
+    FAILURE("parse error: range expected");
+
+  LOG_OUT();
+
+  return result;
 }
 
 p_tbx_slist_t
 leoparse_read_slist(p_tbx_htable_t  htable,
 		    const char     *key)
 {
-  p_leoparse_htable_entry_t entry  = NULL;
-  p_tbx_slist_t             result = NULL;
+  p_leoparse_object_t object = NULL;
+  p_tbx_slist_t       result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      result = leoparse_get_slist(entry);
+      result = leoparse_get_slist(object);
+    }  
+  LOG_OUT();
+  
+  return result;
+}
+
+p_tbx_slist_t
+leoparse_read_as_slist(p_tbx_htable_t  htable,
+		       const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  p_tbx_slist_t       result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_as_slist(object);
     }
+  LOG_OUT();
   
   return result;
 }
@@ -117,17 +191,18 @@ char *
 leoparse_read_id(p_tbx_htable_t  htable,
 		 const char     *key)
 {
-  p_leoparse_htable_entry_t  entry  = NULL;
-  p_leoparse_object_t        object = NULL;
-  char                      *result = NULL;
+  p_leoparse_object_t  object = NULL;
+  char                *result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_get_object(entry);
       result = leoparse_get_id(object);
     }
+  LOG_OUT();
 
   return result;
 }
@@ -136,17 +211,18 @@ char *
 leoparse_read_string(p_tbx_htable_t  htable,
 		     const char     *key)
 {
-  p_leoparse_htable_entry_t  entry  = NULL;
-  p_leoparse_object_t        object = NULL;
-  char                      *result = NULL;
+  p_leoparse_object_t  object = NULL;
+  char                *result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_get_object(entry);
       result = leoparse_get_string(object);
     }
+  LOG_OUT();
 
   return result;
 }
@@ -155,18 +231,19 @@ p_tbx_htable_t
 leoparse_read_htable(p_tbx_htable_t  htable,
 		     const char     *key)
 {
-  p_leoparse_htable_entry_t entry  = NULL;
-  p_leoparse_object_t       object = NULL;
-  p_tbx_htable_t            result = NULL;
+  p_leoparse_object_t object = NULL;
+  p_tbx_htable_t      result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_get_object(entry);
       result = leoparse_get_htable(object);
     }
-
+  LOG_OUT();
+  
   return result;
 }
 
@@ -174,18 +251,19 @@ int
 leoparse_read_val(p_tbx_htable_t  htable,
 		  const char     *key)
 {
-  p_leoparse_htable_entry_t entry  = NULL;
-  p_leoparse_object_t       object = NULL;
-  int                       result = 0;
+  p_leoparse_object_t object = NULL;
+  int                 result =    0;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_get_object(entry);
       result = leoparse_get_val(object);
     }
-
+  LOG_OUT();
+  
   return result;
 }
 
@@ -193,127 +271,161 @@ p_leoparse_range_t
 leoparse_read_range(p_tbx_htable_t  htable,
 		    const char     *key)
 {
-  p_leoparse_htable_entry_t  entry  = NULL;
-  p_leoparse_object_t        object = NULL;
-  p_leoparse_range_t         result = NULL;
+  p_leoparse_object_t object = NULL;
+  p_leoparse_range_t  result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_get_object(entry);
       result = leoparse_get_range(object);
     }
+  LOG_OUT();
 
   return result;
 }
 
-
-p_leoparse_object_t
-leoparse_try_get_object(p_leoparse_htable_entry_t entry)
+p_tbx_slist_t
+leoparse_try_get_slist(p_leoparse_object_t object)
 {
-  if (entry->type == leoparse_e_object)
+  p_tbx_slist_t result = NULL;
+
+  LOG_IN();
+  if (object->type == leoparse_o_slist)
     {
-      return entry->object;
+      result = object->slist;
     }
-  else
-    {
-      return NULL;
-    }
+  LOG_OUT();
+  
+  return result;
 }
 
 p_tbx_slist_t
-leoparse_try_get_slist(p_leoparse_htable_entry_t entry)
+leoparse_try_get_as_slist(p_leoparse_object_t object)
 {
-  if (entry->type == leoparse_e_slist)
-    {
-      return entry->slist;
-    }
-  else
-    {
-      return NULL;
-    }
+  p_tbx_slist_t result = NULL;
+
+  LOG_IN();
+  result = leoparse_get_as_slist(object);
+  LOG_OUT();
+
+  return result;
 }
 
 p_tbx_htable_t
 leoparse_try_get_htable(p_leoparse_object_t object)
 {
+  p_tbx_htable_t result = NULL;
+
+  LOG_IN();
   if (object->type == leoparse_o_htable)
     {
-      return object->htable;
+      result = object->htable;
     }
-  else
-    {
-      return NULL;
-    }
+  LOG_OUT();
+
+  return result;
 }
 
 char *
 leoparse_try_get_string(p_leoparse_object_t object)
 {
+  char *result = NULL;
+
+  LOG_IN();
   if (object->type == leoparse_o_string)
     {
-      return object->string;
+      result = object->string;
     }
-  else
-    {
-      return NULL;
-    }
+  LOG_OUT();
+  
+  return result;
 }
 
 char *
 leoparse_try_get_id(p_leoparse_object_t object)
 {
+  char *result = NULL;
+  
+  LOG_IN();
   if (object->type == leoparse_o_id)
     {
-      return object->id;
+      result = object->id;
     }
-  else
-    {
-      return NULL;
-    }
+  LOG_OUT();
+
+  return result;
 }
 
 int
 leoparse_try_get_val(p_leoparse_object_t object,
 		     int                 default_value)
 {
+  int result = 0;
+
+  LOG_IN();
   if (object->type == leoparse_o_integer)
     {
-      return object->val;
+      result = object->val;
     }
-  else
-    {
-      return default_value;
-    }
+  LOG_OUT();
+
+  return result;
 }
 
 p_leoparse_range_t
 leoparse_try_get_range(p_leoparse_object_t object)
 {
+  p_leoparse_range_t result = NULL;
+  
+  LOG_IN();
   if (object->type == leoparse_o_range)
     {
-      return object->range;
+      result = object->range;
     }
-  else
-    {
-      return NULL;
-    }
+  LOG_OUT();
+
+  return result;
 }
 
 p_tbx_slist_t
 leoparse_try_read_slist(p_tbx_htable_t  htable,
 			const char     *key)
 {
-  p_leoparse_htable_entry_t entry  = NULL;
-  p_tbx_slist_t             result = NULL;
+  p_leoparse_object_t object = NULL;
+  p_tbx_slist_t       result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      result = leoparse_try_get_slist(entry);
+      result = leoparse_try_get_slist(object);
     }
+  LOG_OUT();
+  
+  return result;
+}
+
+p_tbx_slist_t
+leoparse_try_read_as_slist(p_tbx_htable_t  htable,
+			const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  p_tbx_slist_t       result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (object)
+    {
+      result = leoparse_try_get_as_slist(object);
+    }
+  LOG_OUT();
   
   return result;
 }
@@ -322,18 +434,19 @@ char *
 leoparse_try_read_id(p_tbx_htable_t  htable,
 		     const char     *key)
 {
-  p_leoparse_htable_entry_t  entry  = NULL;
-  p_leoparse_object_t        object = NULL;
-  char                      *result = NULL;
+  p_leoparse_object_t  object = NULL;
+  char                *result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_try_get_object(entry);
       result = leoparse_try_get_id(object);
     }
-
+  LOG_OUT();
+  
   return result;
 }
 
@@ -341,17 +454,18 @@ char *
 leoparse_try_read_string(p_tbx_htable_t  htable,
 			 const char     *key)
 {
-  p_leoparse_htable_entry_t  entry  = NULL;
-  p_leoparse_object_t        object = NULL;
-  char                      *result = NULL;
+  p_leoparse_object_t  object = NULL;
+  char                *result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_try_get_object(entry);
       result = leoparse_try_get_string(object);
     }
+  LOG_OUT();
 
   return result;
 }
@@ -360,17 +474,18 @@ p_tbx_htable_t
 leoparse_try_read_htable(p_tbx_htable_t  htable,
 			 const char     *key)
 {
-  p_leoparse_htable_entry_t entry  = NULL;
-  p_leoparse_object_t       object = NULL;
-  p_tbx_htable_t            result = NULL;
+  p_leoparse_object_t object = NULL;
+  p_tbx_htable_t      result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_try_get_object(entry);
       result = leoparse_try_get_htable(object);
     }
+  LOG_OUT();
 
   return result;
 }
@@ -380,18 +495,19 @@ leoparse_try_read_val(p_tbx_htable_t  htable,
 		      const char     *key,
 		      int             default_value)
 {
-  p_leoparse_htable_entry_t entry  = NULL;
-  p_leoparse_object_t       object = NULL;
-  int                       result = default_value;
+  p_leoparse_object_t object = NULL;
+  int                 result = default_value;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_try_get_object(entry);
       result = leoparse_try_get_val(object, result);
     }
-
+  LOG_OUT();
+  
   return result;
 }
 
@@ -399,17 +515,18 @@ p_leoparse_range_t
 leoparse_try_read_range(p_tbx_htable_t  htable,
 			const char     *key)
 {
-  p_leoparse_htable_entry_t  entry  = NULL;
-  p_leoparse_object_t        object = NULL;
-  p_leoparse_range_t         result = NULL;
+  p_leoparse_object_t object = NULL;
+  p_leoparse_range_t  result = NULL;
 
-  entry = tbx_htable_get(htable, key);
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
 
-  if (entry)
+  if (object)
     {
-      object = leoparse_try_get_object(entry);
       result = leoparse_try_get_range(object);
     }
-
+  LOG_OUT();
+  
   return result;
 }

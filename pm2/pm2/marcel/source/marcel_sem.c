@@ -30,7 +30,7 @@ void marcel_sem_P(marcel_sem_t *s)
   LOG_IN();
   LOG_PTR("semaphore",s);
 
-  marcel_lock_acquire(&s->lock);
+  ma_spin_lock_bh(&s->lock);
 
   if(--(s->value) < 0) {
     c.next = NULL;
@@ -45,10 +45,10 @@ void marcel_sem_P(marcel_sem_t *s)
     
     INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 	    c.blocked, 
-	    marcel_lock_release(&s->lock),
-	    marcel_lock_acquire(&s->lock));
+	    ma_spin_unlock_bh(&s->lock),
+	    ma_spin_lock_bh(&s->lock));
   }
-  marcel_lock_release(&s->lock);
+  ma_spin_unlock_bh(&s->lock);
 
   LOG_OUT();
 }
@@ -60,15 +60,15 @@ int marcel_sem_try_P(marcel_sem_t *s)
   LOG_IN();
   LOG_PTR("semaphore",s);
 
-  marcel_lock_acquire(&s->lock);
+  ma_spin_lock_bh(&s->lock);
 
   result = ((s->value - 1) < 0);
 
   if(result) {
-    marcel_lock_release(&s->lock);
+    ma_spin_unlock_bh(&s->lock);
   } else {
     s->value--;
-    marcel_lock_release(&s->lock);
+    ma_spin_unlock_bh(&s->lock);
   }
 
   LOG_OUT();
@@ -82,12 +82,12 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
   LOG_IN();
   LOG_PTR("semaphore",s);
 
-  marcel_lock_acquire(&s->lock);
+  ma_spin_lock_bh(&s->lock);
 
   if(--(s->value) < 0) {
     if(timeout == 0) {
       s->value++;
-      marcel_lock_release(&s->lock);
+      ma_spin_unlock_bh(&s->lock);
       LOG_OUT();
       RAISE(TIME_OUT);
     }
@@ -100,12 +100,12 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last->next = &c;
       s->last = &c;
     }
-    marcel_lock_release(&s->lock);
+    ma_spin_unlock_bh(&s->lock);
 #warning timeout to manage
     RAISE(NOT_IMPLEMENTED);
     //__marcel_tempo_give_hand(timeout, &c.blocked, s);
   } else {
-    marcel_lock_release(&s->lock);
+    ma_spin_unlock_bh(&s->lock);
   }
 
   LOG_OUT();
@@ -118,18 +118,19 @@ void marcel_sem_V(marcel_sem_t *s)
   LOG_IN();
   LOG_PTR("semaphore",s);
 
-  marcel_lock_acquire(&s->lock);
+  ma_spin_lock_bh(&s->lock);
 
   if(++(s->value) <= 0) {
     c = s->first;
     s->first = c->next;
+    ma_spin_unlock_bh(&s->lock);
     c->blocked = 0;
     ma_wmb();
     ma_wake_up_thread(c->task);
+  } else {
+    ma_spin_unlock_bh(&s->lock);
   }
-
-  marcel_lock_release(&s->lock);
-
+    
   LOG_OUT();
 }
 

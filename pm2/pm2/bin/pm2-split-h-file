@@ -4,24 +4,42 @@ use strict;
 use warnings;
 use diagnostics;
 
-use Getopt::Long;
+use Getopt::Long qw(:config permute);
+use Pod::Usage;
 
-my(%sections)=("common" => 1);
-my(@source_names)=();
-my($header)=1;
-my($master)=0;
-my($file)=1;
-my($footer)=1;
-
+my($prognamefull)=$0;
 my($progname);
 ($progname = $0) =~ s|^.*/([^/]*)$|$1|;
 
-my($filename);
-my($SYMB)="";
-my($SYMB_SUFFIX)="";
-my($symbole_nosuffix);
+my($diese)="#";
+
+my(@genfiles);
+
+my($s)='-\w_'; # section name
+my($f)='-\w/._'; # file name
+my($sep_files)='\s*,\s*';
+my($sep_sections)='\s*,\s*';
+my($sep_opt)='\s*,\s*';
+my($fs)="(([$f]*)(\\s*\\[(($sep_sections)*[$s]*)*\\])?)";
+my($c_in)='(\s*((//)|(/[*]))?\s*)';
+my($c_out)='\s*([*]/)?\s*';
+my($opt)='((no[-_]?)?((common)|(include-in-main)|(write-section)))';
+my($opt_list)="\\[\\s*($opt($sep_opt$opt)*)\\]";
+#my($section_ligne)="^$c_in$diese\\s*section\\s+([$s]+)$c_out\$";
+my($depend_ligne) ="^$c_in$diese\\s*depend\\s+($fs($sep_files$fs)*)$c_out\$";
+my($section_ligne)="^$c_in$diese\\s*section\\s+([$s]+)\\s*($opt_list)?$c_out\$";
+
+my($local_ligne)="^$c_in$diese\\s*((section)|(depend))\\s+.*\$";
+
+sub symbole {
+    my($s)=shift;
+    $s =~ tr /a-z./A-Z_/;
+    $s =~ tr /[A-Z_]//cd;
+    return $s;
+}
 
 sub symbole_from_suffix {
+    my($filename)=shift;
     my($suffix)=shift;
     my($symb);
     my($FILE);
@@ -33,156 +51,857 @@ sub symbole_from_suffix {
     $FILE =~ s,^(.*)(_H)$,$1,;
     $EXT = $2;
     $symb=$FILE.$suffix.$EXT;
-    $symb =~ tr /./_/;
-    $symb =~ tr /[A-Za-z_]//cd;
-    return $symb;
+    return symbole($symb);
 }
 
-sub filename_with_suffix {
+sub filename_add_suffix {
+    my($filename)=shift;
     my($suffix)=shift;
     my($symb);
     my($FILE);
-    my($EXT);
+    my($EXT)="";
 
     $FILE = $filename;
-    $FILE =~ s,^(.*)(.h)$,$1,;
-    $EXT = $2;
+    $FILE =~ s,^(.*)(.h)$,$1, and $EXT = $2;
     $symb=$FILE.$suffix.$EXT;
     return $symb;
 }
 
-sub manage_options {
-    GetOptions ("section=s"         => \%sections,
-                "source=s"          => \$filename,
-		"header!"           => \$header,
-		"master!"           => \$master,
-		"file!"             => \$file,
-		"footer!"           => \$footer,
-		"symbole=s"         => \$SYMB,
-		"symbole-suffix=s"  => \$SYMB_SUFFIX,
-		"symbole-nosuffix"  => \$symbole_nosuffix,
-		'only-header'       => sub { $header=1; $master=0; $file=0; $footer=0; },
-		'only-master'       => sub { $header=0; $master=1; $file=0; $footer=0; },
-		'only-file'         => sub { $header=0; $master=0; $file=1; $footer=0; },
-		'only-footer'       => sub { $header=0; $master=0; $file=0; $footer=1; },
-		'no-common-section' => sub { delete $sections{"common"}; },
-		) or die "Options error\n";
-    if (scalar @ARGV != 1) {
-	die "need one input file\n";
-    }
-    if (!$filename) {
-	$filename=$ARGV[0];
-    }
-    if (!$SYMB) {
-	if ($SYMB_SUFFIX || $symbole_nosuffix) {
-	    $SYMB=symbole_from_suffix($SYMB_SUFFIX);
-	} else {
-	    my($key);
-	    my($suffix)="";
-	    for $key (keys %sections) {
-		$suffix.="_".uc($key);
+my(%specialfiles_keys);
+my(@list_input_files_keys)=();
+
+my(%list_files)=();
+# key (gendir.file ou srcdir.file pour les types src) 
+#   -> srcdir
+#   -> gendir
+#   -> file
+#   -> type (file|makefile|masterfile|src)
+# F -> list_sections (*tableau['section_name'])
+# F -> sections (*hash{'section_name'} -> opt_section_file)
+# S -> section (*opt_section_file)
+# S -> filesrc
+#
+# opt_section_file
+#   -> name
+#   -> masterkey (*key mainfile[M])
+#   -> filekey (*key section_file [S])
+sub add_file {
+    my($options)=shift;
+    my($key)=$options->{"gendir"}.$options->{"file"};
+
+    if ((defined $options->{"type"}) and ($options->{"type"} eq "file")) {
+	my($src)=srcfilename($options);
+	if (defined $list_files{$src}) {
+	    if ((not defined $list_files{$src}{"type"})
+		or ($list_files{$src}{"type"} ne "src")) {
+		die "Error: source '$src' would be overwriten\n";
 	    }
-	    $SYMB=symbole_from_suffix($suffix);
+	    print "      Reading $src\n";
+	}
+	$list_files{$src}{"type"}="src";
+    }
+
+    if (defined $list_files{$key}) {
+	if (defined $list_files{$key}{"type"}
+	    and ($list_files{$key}{"type"} eq "src")) {
+		die "Error: file '$key' would overwrite source file\n";	    
+	}
+	die "Error: duplicate file '$key' to create\n";
+	return 0;
+    }
+    $list_files{$key}=$options;
+    
+    return $options;
+}
+
+my(%list_sections)=();
+# section
+#    -> "section_name"
+#        -> files
+#        -> filekey
+sub add_section {
+    my($section)=shift;
+    my($keyfile)=shift;
+
+    push @{$list_sections{"sections"}{$section}{"files"}}, $keyfile;
+}
+
+sub get_sections {
+    my(@list)=keys %{$list_sections{"sections"}};
+    return \@list;
+}
+
+sub get_files_in_section {
+    my($section)=shift;
+    return $list_sections{"sections"}{$section}{"files"};
+}
+
+sub get_section_filekey {
+    my($section)=shift;
+    if (defined($section)) {
+	return $list_sections{"sections"}{$section}{"filekey"};
+    } else {
+	return $list_sections{"filekey"};
+    }
+}
+
+sub set_section_filekey {
+    my($key)=shift;
+    my($section)=shift;
+    if (defined($section)) {
+	$list_sections{"sections"}{$section}{"filekey"}=$key;
+    } else {
+	$list_sections{"filekey"}=$key;
+    }
+}
+
+sub manage_options {
+    my(%curfileoptions)= ("srcdir"          => ""    ,
+			  "gendir"          => ""    ,
+			  "default-section" => "null",
+			  "type"            => "file",
+			  );
+			  
+    my($srcdir)="";
+    my($gendir)="";
+    my($get_fileoption) = sub {
+	my($opt)=shift;
+	my($value)=shift;
+	$curfileoptions{$opt}=$value;
+    };
+    my($get_fileoption_dir) = sub {
+	my($opt)=shift;
+	my($value)=shift;
+	if ($value) {
+	    $value=join('/', split('/+', $value))."/";
+	}
+	$get_fileoption->($opt, $value);
+    };
+    my($process_file) = sub {
+	my($file)=shift;
+	my(%options)=%curfileoptions;
+	$options{"file"}=$file;
+	my($gendir)=$options{"gendir"};
+	push @list_input_files_keys, add_file(\%options);
+    };
+    my($process_file2) = sub {
+	shift;
+	my($file)=shift;
+	$process_file->($file);
+    };
+    my($get_specialfile) = sub {
+	my($type)=shift;
+	$type=lc($type);
+	my($file)=shift;
+	my(%options)=("gendir" => $curfileoptions{"gendir"},
+		      "file"   => $file,
+		      "type"   => $type);
+	my($gendir)=$options{"gendir"};
+	$specialfiles_keys{$type}=add_file(\%options);
+    };
+
+    my $man = 0;
+    my $help = 0;
+
+    GetOptions ("srcdir=s"          => \&{$get_fileoption_dir},
+		"gendir=s"          => \&{$get_fileoption_dir},
+		"default-section=s" => \&{$get_fileoption},
+		"makefile=s"        => \&{$get_specialfile},
+		"masterfile=s"      => \&{$get_specialfile},
+		"file=s"            => \&{$process_file2},
+		'<>'                => \&{$process_file},
+		'help|?'            => \$help,
+		'man'               => \$man,
+		) or pod2usage(2);
+    pod2usage(1) if $help;
+    pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+
+    my($file);
+    for $file (@ARGV) {
+	$process_file->($file);
+    }
+}
+
+sub hasSpecial {
+    my($type)=shift;
+    return defined $specialfiles_keys{$type};
+}
+
+sub hasMakefile {
+    return hasSpecial("makefile");
+}
+
+sub file_from_key {
+    my($key)=shift;
+    return $list_files{$key};
+}
+
+sub specialfile {
+    my($type)=shift;
+    return $specialfiles_keys{$type};
+}
+
+sub filename {
+    my($keyhash)=shift;
+    return $keyhash->{"file"};
+}
+
+sub genfilename {
+    my($keyhash)=shift;
+    return $keyhash->{"gendir"}.$keyhash->{"file"};
+}
+
+sub srcfilename {
+    my($keyhash)=shift;
+    if (defined $keyhash->{"filesrc"}) {
+	return $keyhash->{"srcdir"}.$keyhash->{"filesrc"};
+    } else {
+	return $keyhash->{"srcdir"}.$keyhash->{"file"};
+    }
+}
+
+sub test_option {
+    my($hsections)=shift;
+    my($section)=shift;
+    my($option)=shift;
+    my($value)=shift;
+    my($ret);
+
+    if (not defined $hsections->{$section}{$option}) {
+	if (not defined $hsections->{"default"}{$option}) {
+	    return 0;
+	}
+	return ($hsections->{"default"}{$option} == $value);
+    }
+    return ($hsections->{$section}{$option} == $value);
+}
+
+sub gen_header {
+    my($source)=shift;
+    my($section)=shift;
+    my($symb);
+    my($names);
+    print OUT "/***************/\n";
+    print OUT "/* DO NOT EDIT */\n";
+    print OUT "/***************/\n";
+    print OUT "/* This file has been autogenerate with $progname\n";
+    if ($source) {
+	print OUT " * Source file is $source\n";
+	$symb=symbole_from_suffix($source, "");
+    }
+    if ($section) {
+	print OUT " * Section included is $section\n";
+	$symb=symbole_from_suffix($source, "_".$section);
+    }
+    print OUT " */\n\n\n";
+ 
+    if ($source) {
+	print OUT "#ifndef $symb\n";
+	print OUT "#define $symb\n\n";
+	if ($section) {
+	    print OUT "#ifdef __SPLIT_SECTION_NOT_YET_INCLUDED__\n";
+	    #print OUT "#warning section $section in file $source not yet included\n";
+	    print OUT "#warning \"[1;33m<<<",
+	    " [1;31m$source[1;37m",
+	    " [[1;31m$section[1;37m]",
+	    " not yet included[1;33m >>>",
+	    " [1;37m([1;32m$symb[1;37m not defined)[0m\"\n";
+	    print OUT "#else\n";
 	}
     }
-    $SYMB =~ tr /./_/;
-    $SYMB =~ tr /[A-Za-z_]//cd;
 }
 
-sub print_header {
-    my($key);
-    my($names);
-    print "/***************/\n";
-    print "/* DO NOT EDIT */\n";
-    print "/***************/\n";
-    print "/* This file has been autogenerate with $progname\n";
-    print " * Source file is $filename\n";
-    print " * Sections included are :";
-    for $key (keys %sections) {
-	print " $key";
+sub gen_footer {
+    my($source)=shift;
+    my($section)=shift;
+    my($symb);
+    if ($source) {
+	$symb=symbole_from_suffix($source, "");
     }
-    print "\n */\n\n\n";
-    print "#ifndef $SYMB\n";
-    print "#define $SYMB\n\n";
-}
+    if ($section) {
+	$symb=symbole_from_suffix($source, "_".$section);
+    }
 
-sub print_master {
-    my($key);
-    my($names);
-    for $key (keys %sections) {
-	print "#include \"", filename_with_suffix("_".$key),"\"\n";
+    if ($source) {
+	if ($section) {
+	    print OUT "\n#endif /* __SPLIT_SECTION_NOT_YET_INCLUDED__ */\n";
+	}
+	print OUT "\n#endif /* $symb */\n";
     }
 }
 
-sub print_file {
-    my($cursection)="common";
+sub scan_sections {
+    my($key)=shift;
+    my($texte)=shift;
+    my(@sections)=();
+    my(%sections)=();
+    $sections{"default"}{"juste to define"}=0;
+    $sections{"null"}{"write-section"}=0;
+    $sections{"common"}{"include-in-main"}=0;
+
+    my($source)=srcfilename($key);
+
+    open(IN, $source) or die "Unable to read $source: $!\n";
+    @{$texte}=<IN>;
+    close(IN);
+    
+    for $_ (@{$texte}) {
+	if (/$section_ligne/) {
+	    my($section)=$5;
+	    if (!defined($sections{$section})) {
+		my(%options);
+
+		push @sections, $section;
+		$sections{$section}{"name"}=$section;
+		$sections{$section}{"masterkey"}=$key;
+
+		$options{"section"}=$sections{$section};
+		$options{"srcdir"}=$key->{"srcdir"};
+		$options{"gendir"}=$key->{"gendir"};
+		$options{"filesrc"}=$key->{"file"};
+		$options{"file"}=filename_add_suffix(filename($key), "_".$section);
+		
+		$sections{$section}{"filekey"}=add_file(\%options);
+	    }
+	    if ($6) {
+		my(@opts)=split($sep_opt, $7);
+		my($option);
+		if ($sections{$section}{"options"}) {
+		    print "Options for section $section duplicated in file $source\n";
+		}
+		$sections{$section}{"options"}.=$7;
+		for $option (@opts) {
+		    $option =~ /$opt/;
+		    if ($2) {
+			$sections{$section}{$3}=0;
+		    } else {
+			$sections{$section}{$3}=1;
+		    }
+		}
+	    }
+	} elsif (/$depend_ligne/) {
+
+	} elsif (/$local_ligne/) {
+	    print "Strange ligne in $source:\n$_\n";
+	}
+    }
+    $key->{"list_sections"}=\@sections;
+    $key->{"sections"}=\%sections;
+}
+
+sub gen_section {
+    my($info_section)=shift;
+    my($texte)=shift;
+    my($mainsection)=$info_section->{"name"};
+    my($key)=$info_section->{"masterkey"};
+
+    my(%listsections)=($mainsection => 1);
+    
+    if (test_option($key->{"sections"}, $mainsection, "write-section", 0)) { 
+	return;
+    }
+    add_section($mainsection, $info_section->{"filekey"});
+
+    if (test_option($key->{"sections"}, $mainsection, "common", 1) 
+	|| !test_option($key->{"sections"}, "common", "write-section", 0)) {
+	$listsections{"common"}=1;
+    }
+
     my($line)=1;
-    my($diese)="#";
+    my($cursection)=$key->{"default-section"};
     my($print)=1;
 
-    print "#line $line \"$filename\"\n";
-    while(<>) {
+    openfile($info_section->{"filekey"});
+
+    gen_header(srcfilename($key), $mainsection);
+
+    my($start_print)=sub {
+	my($section)=shift;
+	
+	if (defined $listsections{$section}) {
+	    print OUT "#undef __SPLIT_SECTION__\n";
+	    print OUT "#define __SPLIT_SECTION__ ",symbole($section),"\n";
+	    print OUT "#undef __SPLIT_SECTION_NAME__\n";
+	    print OUT "#define __SPLIT_SECTION_NAME__ ",$section,"\n";
+	    print OUT "#line $line\n";
+	    print OUT "// INCLUDE SECTION $section\n";
+	    $print=1;
+	} else {
+	    print OUT "// section $section not selected at line $line\n";
+	    $print=0;
+	}
+    };
+
+    print OUT "#line $line \"", filename($key), "\"\n";
+    $start_print->($cursection);
+
+    for $_ (@{$texte}) {
 	chomp;
 	if (m,^(\s*((//)|(/[*]))?\s*$diese\s*)endsection(\s*([*]/)?\s*)$,) {
 	    $_="$1#section common$5";
 	}
-	if (m,^(\s*((//)|(/[*]))?)\s*$diese\s*section\s+([\w]([\s\w]*[\w])?)\s*([*]/)?\s*$,) {
-	    my($newsections)=$5;
-	    $_=$newsections;
-	    my(@newsections)=split;
-	    my($select)=0;
-	    my($newsection, $section, $ligne);
-	    loop:for $newsection (@newsections) {
-		for $section (keys %sections) {
-		    if ( $newsection =~ /^$section$/ ) {
-			if ( $newsection eq $newsections ) {
-			    $_="// INCLUDE SECTION $newsection";
-			} else {
-			    $_="// INCLUDE $newsection FROM SECTIONS LIST $newsections";
-			} 
-			if ($section ne $newsection) {
-			    $_.=" (SECTIONS $section REQUESTED)";
+	if (/$section_ligne/) {
+	    my($newsection)=$5;
+	    $cursection=$newsection;
+	    $start_print->($newsection);
+	} elsif ($print) {
+#	    if (/$defsection_ligne/) {
+#		print OUT "\n";
+#	    } els
+		if (/$depend_ligne/) {
+		my($includes)=$5;
+		my($include, %sections, $sec);
+		while ($includes =~ m/\s*($fs)($sep_files($fs($sep_files$fs)*))?\s*$/ ) {
+		    if ($8) {
+			$includes=$8;
+		    } else {
+			$includes="";
+		    }
+		    $include = $1;
+		    last if not $include;
+		    if ($include =~ /^([$f]*)\s*\[\s*(.*)\s*\]$/) {
+			$include = $1;
+			if (!$include) {
+			    $include = filename($key);
 			}
-			$select=1;
-			last loop;
+			if ($2 eq "") {
+			    %sections=($cursection => 1);
+			    delete $sections{"common"};
+			} else {
+			    %sections=map { $_ => 1 } (split (/$sep_sections/, $2));
+			}
+			for $sec (keys %sections) {
+			    print OUT "#line $line\n";
+			    print OUT "#include \"",
+			    filename_add_suffix($include, "_".$sec),"\"\n";
+			}	    
+		    } else {
+			print OUT "#line $line\n";
+			print OUT "#include \"$include\"\n";
 		    }
 		}
-	    }
-	    if ($select) {
-		if (!$print) {
-		    print "#line $line\n";
-		}
-		print "$_\n";
 	    } else {
-		print "// section $newsections not selected\n";
+		print OUT $_, "\n";
 	    }
-	    $print=$select;
-	} else {
-	    $print && print $_, "\n";
 	}
 	$line++;
+    }    
+    gen_footer(srcfilename($key), $mainsection);
+    closefile($info_section->{"filekey"});
+}
+
+my($last_gen_dir)="";
+sub openfile {
+    my($hashkey)=shift;
+    my($file_name)=$hashkey->{"file"};
+    my($gendir)=$hashkey->{"gendir"};
+    my($mfile)=shift;
+    my($file)=genfilename($hashkey);
+
+    my(@rep, $rep);
+    @rep=split('/', $file);
+    pop @rep;
+    $rep=join('/', @rep);
+
+    if ($rep && ! -d $rep) {
+	system("mkdir -p $rep")==0 or die "Unable to create dir $rep: $!\n";
+    }
+    if ($mfile) {
+	print "      Creating Makefile $file\n";
+	open(MAKEFILE, ">", $file) or die "Unable to write file $file: $!\n";
+    } else {
+	if ($gendir) {
+	    if ($last_gen_dir ne $gendir) {
+		print "      Generating files in $gendir\n";
+		$last_gen_dir = $gendir;
+	    }
+	    print "        $file_name...";
+	} else {
+	    print "      Generating $file\n";
+	    $last_gen_dir = "";
+	}
+	open(OUT, ">", $file) or die "Unable to write file $file: $!\n";
+	push @genfiles, $file;
+	if (hasMakefile()) {
+	    print MAKEFILE genfilename($hashkey), ": \\\n";
+	    if (defined $hashkey->{"srcdir"}) {
+		print MAKEFILE "\t", srcfilename($hashkey), " \\\n";
+	    }
+	    print MAKEFILE "\t", genfilename(specialfile("makefile")), "\n";
+	}
     }
 }
 
-sub print_footer {
-    print "\n#endif /* $SYMB */\n";
+sub closefile {
+    my($hashkey)=shift;
+    my($gendir)=$hashkey->{"gendir"};
+    my($mfile)=shift;
+
+    if ($mfile) {
+	close(MAKEFILE);
+    } else {
+	if ($gendir) {
+	    print "done\n";
+	}
+	close(OUT);
+    }
+}
+
+sub gen_master {
+    my($key)=shift;
+
+    my($sections)=$key->{"sections"};
+    my($section);
+    
+    openfile($key);
+    gen_header(srcfilename($key));
+    for $section (@{$key->{"list_sections"}}) {
+	my($secname)=filename($sections->{$section}{"filekey"});
+	if (test_option($sections, $section, "write-section", 0)) {
+	    print OUT "// \"$secname\" not generated as requested\n";
+	} else {
+	    if (test_option($sections, $section, "include-in-main", 0)) {
+		print OUT "// not including \"$secname\" as requested\n";
+	    } else {
+		print OUT "#include \"$secname\"\n";	
+	    }
+	}
+    }
+    gen_footer(srcfilename($key));
+    closefile($key);
+}
+
+sub gen_master_section {
+    my($masterkey)=shift;
+    my($section)=shift;
+    my($filekey);
+
+    my(%options)=("gendir" => $masterkey->{"gendir"},
+		  "file"   => filename_add_suffix(filename($masterkey),
+						  "_".$section),
+		  );
+    set_section_filekey(add_file(\%options), $section);
+    openfile(get_section_filekey($section));
+    gen_header();
+    
+    for $filekey (@{get_files_in_section($section)}) {
+	print OUT "#include \"", filename($filekey),"\"\n";
+    }
+
+    gen_footer();
+    closefile(get_section_filekey($section));
 }
 
 sub main {
+    my(%gen_sections);
+
     manage_options();
 
-    if ($header) {
-	print_header();
+    if (hasMakefile()) {
+	openfile(specialfile("makefile"), 1);
     }
-    if ($master) {
-	print_master();
+
+    my($key);
+    for $key (@list_input_files_keys) {
+	my($section);
+	my($srcdir)=srcfilename($key);
+	my($gendir)=genfilename($key);
+
+	my(@texte)=();
+	
+	scan_sections($key, \@texte);
+	for $section (@{$key->{"list_sections"}}) {
+	    gen_section($key->{"sections"}{$section}, \@texte);
+	}
+    
+	gen_master($key);
     }
-    if ($file) {
-	print_file();
+    if (hasSpecial("masterfile")) {
+	my($section);
+	my(%options);
+	my(%filekey);
+
+	openfile(specialfile("masterfile"));
+	gen_header();
+	for $key (@list_input_files_keys) {
+	    print OUT "#include \"", filename($key), "\"\n";
+	}
+	gen_footer();
+	closefile(specialfile("masterfile"));
+
+	for $section (@{get_sections()}) {
+	    gen_master_section(specialfile("masterfile"), $section);
+	}
+
+	%options=("gendir" => specialfile("masterfile")->{"gendir"},
+		  "file"   => 
+		  filename_add_suffix(filename(specialfile("masterfile")),
+				      "_all-sections"),
+		  );
+	set_section_filekey(add_file(\%options));
+	openfile(get_section_filekey());
+	gen_header();
+	for $section (@{get_sections()}) {
+	    print OUT "#include \"", filename(get_section_filekey($section)), "\"\n";
+	}
+	gen_footer();
+	closefile(get_section_filekey());
+
     }
-    if ($footer) {
-	print_footer();
+    if (hasMakefile()) {
+	my($key);
+	print MAKEFILE "\n", genfilename(specialfile("makefile")), ": \\\n";
+	for $key (@list_input_files_keys) {
+	    print MAKEFILE "\t", srcfilename($key), " \\\n";
+	}
+
+	print MAKEFILE "\n\n";
+	for $key (@list_input_files_keys) {
+	    print MAKEFILE srcfilename($key), ":\n";
+	}
+
+	print MAKEFILE filename(specialfile("makefile")), ": $prognamefull\n";
+	closefile(specialfile("makefile"), 1);
     }
 }
 
 main();
+
+__END__
+
+=head1 NAME
+
+pm2-split-h-file - Spliting header files
+    
+=head1 SYNOPSIS
+
+pm2-split-h-file [options] [[modifier] [[typefile] file] ...]
+
+ Options:
+   --help                 brief help message
+   --man                  full documentation
+ Modifiers:
+   --srcdir DIR           directory of next source files
+   --gendir DIR           directory of next generated files
+   --default-section SEC  default section for next source files
+ Type of files:
+   --file                 regular header file to split
+   --masterfile           generated header file including all others
+   --makefile             generated Makefile with dependancies
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exits.
+
+=item B<--man>
+
+Prints the manual page and exits.
+    
+=item B<--srcdir DIR>
+
+Set the directory where reading the next source files (default: "").
+
+=item B<--gendir DIR>
+
+Set the directory where writing the next generated files (default:
+"").
+
+=item B<--default-section SEC>
+
+Set the default section (the one at the start of the file) for the
+next source files (default: "null").
+
+=item B<--file>
+
+Give the name of a header file to read in the B<s>ouB<rc>e
+B<dir>ectory and to split into several sections in the B<gen>erate
+B<dir>ectory.
+
+The file name can contains subdirectories that will be preserved for
+the generated files.
+
+This is the default type if no type is specified.
+
+=item B<--masterfile>
+
+Give the name of an header file (writen into the B<gen>erate
+B<dir>ectory) that include all of the generated header files.
+
+=item B<--makefile>
+
+Give the name of an Makefile (writen into the B<gen>erate
+B<dir>ectory) that has the depedencies of the generated files.
+
+=back
+
+=head1 DESCRIPTION
+
+B<This program> splits header files into several ones, each one
+containing a B<section> of the original.
+
+A header file containing the section B<section-name> will have
+B<_section-name> added to its base name.
+
+A header file of the same name as the source file is generated. Its
+includes all the sections generated in the order of they apparition in
+the source file.
+
+=head1 DIRECTIVES
+
+Two kinds of directives can be used in a header file to instruct this
+program. These directives can be include or not within a C or C++
+comments. They are introduced by the 'B<#>' caracter. Spaces does not
+mean.
+
+Examples:
+
+=over 8
+
+=item B<#DIRECTIVE ... >
+
+=item B<  //  #DIRECTIVE ... >
+
+=item B</* #  DIRECTIVE ... */ >
+
+=back
+
+=head1 SECTION DIRECTIVE
+
+These directives are used to split the source file or to set options.
+
+B<#section section-name [option, option...]>
+
+Options can only be set one time for each section in a file. They are
+not mandatory. There are:
+
+=over 8
+
+=item B<common>
+
+The section will include the B<common> special section too.
+
+=item B<include-in-main>
+
+The section will be included in the main file (the one with the same
+name as the source).
+
+=item B<write-section>
+
+The section will be generated.
+
+=back
+
+All these options can be reversed with the prefix B<no->. By default,
+they are all enabled.
+
+=head1 SPECIAL SECTIONS
+
+Special section can not be generated. However, they can be usefull
+sometimes.
+
+=over 8
+
+=item B<common>
+
+Text in this section will be included in all section (but ones that
+have the B<no-common> option set).
+
+=item B<default>
+
+Text in this section will be ignored. However, options set for this
+section will be used as default for the others sections if they do not
+have specifically set or unset the corresponding option.
+
+=item B<null>
+
+Text in this section will be ignored. This is the default section at
+the start of an input file if not specified otherwise within the
+command line.
+
+=back
+
+=head1 DEPEND DIRECTIVE
+
+This directive is used to require that another header file (full or
+just a section) is already read before continuing. This is done by
+generating the correct B<#include "..."> in the generated file.
+
+B<#depend  file[section, ...], file[], file...>
+
+If B<file> is not here, the current file is supposed.
+
+If B<sections> are wrote, only the corresponding sections will be
+included. Its generally means that the header file should have been
+generated with this program.
+
+If B<[]> is used (ie section marks with no section into them), then
+the current section is used.
+
+=head1 EXAMPLE
+
+Example of an header file "complexe.h".
+
+=over 4
+
+#include_next "complexe.h" /* If gcc read the source file, il will
+search for the generated file */
+
+#if 0
+
+/****************************************************************/
+/* Section list
+ */
+
+#section types
+
+#section declares
+
+#depend [types]
+
+#section inline [no-include-in-main]
+
+#depend [declares]
+
+/****************************************************************/
+/* Header file splited
+ */
+
+#section types
+
+#depend base[]
+
+typedef struct {
+    base_type a;
+} type_complexe;
+
+#section declares
+
+inline int read_typecomples(type_complexe* foo);
+
+#section inline
+
+inline int read_typecomples(type_complexe* foo)
+{
+    secondtype temp;
+    foo->...
+    ...
+}
+
+#section types
+
+typedef struct {
+    ...;
+} secondtype;
+
+#section null
+
+#endif
+
+=back
+
+=cut
+

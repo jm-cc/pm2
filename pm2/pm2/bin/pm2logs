@@ -36,4 +36,4 @@
 
 . ${PM2_ROOT}/bin/pm2_vars
 
-exec ${MADELEINE_ROOT}/bin/madlogs -pm2
+exec ${MAD1_ROOT}/bin/madlogs -pm2

@@ -42,7 +42,7 @@ typedef enum {
 } poll_op_t;
 
 typedef struct tcp_ev {
-	struct marcel_ev inst;
+	struct marcel_ev_req inst;
 	poll_op_t op;
 	int ret_val;
 	union {
@@ -59,12 +59,12 @@ struct unix_io_server unix_io_server = {
     .server=MARCEL_EV_SERVER_INIT(unix_io_server.server, "Unix TCP I/O"),
 };
 
-static int unix_io_group(marcel_ev_serverid_t id, 
+static int unix_io_group(marcel_ev_server_t server, 
 			  marcel_ev_op_t _op,
-			  marcel_ev_inst_t _ev, 
+			  marcel_ev_req_t req, 
 			  int nb_ev, int option)
 {
-	unix_io_serverid_t uid=struct_up(id, struct unix_io_server, server);
+	unix_io_serverid_t uid=struct_up(server, struct unix_io_server, server);
 	tcp_ev_t ev;
 
 	mdebug("Grouping IO poll\n");
@@ -72,7 +72,7 @@ static int unix_io_group(marcel_ev_serverid_t id,
 	FD_ZERO(&uid->rfds);
 	FD_ZERO(&uid->wfds);
 	
-	FOREACH_EV_POLL(ev, id, inst) {
+	FOREACH_REQ_POLL(ev, server, inst) {
 		switch(ev->op) {
 		case POLL_READ : {
 			FD_SET(ev->fd, &uid->rfds);
@@ -113,11 +113,11 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 	switch(ev->op) {
 	case POLL_READ :
 		if(FD_ISSET(ev->fd, rfds))
-			MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+			MARCEL_EV_REQ_SUCCESS(&ev->inst);
 		break;
 	case POLL_WRITE :
 		if(FD_ISSET(ev->fd, wfds))
-			MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+			MARCEL_EV_REQ_SUCCESS(&ev->inst);
 		break;
 	case POLL_SELECT : {
 		unsigned i;
@@ -149,7 +149,7 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 				}
 		}
 		if (ev->ret_val) {
-			MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+			MARCEL_EV_REQ_SUCCESS(&ev->inst);
 		}
 		break;
 	}
@@ -158,12 +158,12 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 	}
 }
 
-static int unix_io_poll(marcel_ev_serverid_t id, 
-			 marcel_ev_op_t _op,
-			 marcel_ev_inst_t _ev, 
-			 int nb_ev, int option)
+static int unix_io_poll(marcel_ev_server_t server, 
+			marcel_ev_op_t _op,
+			marcel_ev_req_t req, 
+			int nb_ev, int option)
 {
-	unix_io_serverid_t uid=struct_up(id, struct unix_io_server, server);
+	unix_io_serverid_t uid=struct_up(server, struct unix_io_server, server);
 	tcp_ev_t ev;
 	int r;
 	fd_set rfds, wfds;
@@ -187,7 +187,7 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 	if (tbx_unlikely(r==EBADF)) {
 		int found=0;
 		/* L'un des fd est invalide */
-		FOREACH_EV_POLL(ev, id, inst) {
+		FOREACH_REQ_POLL(ev, server, inst) {
 			mdebug("Checking select for IO poll (with badFD)\n");
 			switch(ev->op) {
 			case POLL_READ :
@@ -197,7 +197,7 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 				ev->ret_val=select(ev->nfds, ev->rfds,
 						   ev->wfds, NULL, NULL);
 				if (ev->ret_val) {
-					MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+					MARCEL_EV_REQ_SUCCESS(&ev->inst);
 					found=1;
 				}
 				break;
@@ -215,19 +215,19 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 	if (r <= 0)
 		return 0;
 
-	FOREACH_EV_POLL(ev, id, inst) {
+	FOREACH_REQ_POLL(ev, server, inst) {
 		unix_io_check_select(uid, ev, &rfds, &wfds);
 	}
 	return 0;
 }
 
-static int unix_io_fast_poll(marcel_ev_serverid_t id, 
+static int unix_io_fast_poll(marcel_ev_server_t server, 
 			      marcel_ev_op_t _op,
-			      marcel_ev_inst_t _ev, 
+			      marcel_ev_req_t req, 
 			      int nb_ev, int option)
 {
-	unix_io_serverid_t uid=struct_up(id, struct unix_io_server, server);
-	tcp_ev_t ev=struct_up(_ev, struct tcp_ev, inst);
+	unix_io_serverid_t uid=struct_up(server, struct unix_io_server, server);
+	tcp_ev_t ev=struct_up(req, struct tcp_ev, inst);
 
 	fd_set rfds, wfds;
 	unsigned nb = 0;
@@ -283,35 +283,39 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 	int n;
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
+	struct marcel_ev_event event;
 #endif	
-
+	LOG_IN();
 	do {
 #ifndef MA__ACTIVATION
 		ev.op = POLL_READ;
 		ev.fd = fildes;
 		mdebug("Reading in fd %i\n", fildes);
-		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
+		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
 #endif
 		LOG("IO reading fd %i", fildes);
 		n = read(fildes, buf, nbytes);
 	} while( n == -1 && errno == EINTR);
 
-	return n;
+	LOG_RETURN(n);
 }
 
 int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-
+	struct marcel_ev_event event;
+#endif
+	LOG_IN();
+#ifndef MA__ACTIVATION
 	ev.op = POLL_READ;
 	ev.fd = fildes;
 	mdebug("Reading in fd %i\n", fildes);
-	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
+	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
 #endif
 
 	LOG("IO readving fd %i", fildes);
-	return readv(fildes, iov, iovcnt);
+	LOG_RETURN(readv(fildes, iov, iovcnt));
 }
 
 int marcel_write(int fildes, const void *buf, size_t nbytes)
@@ -319,35 +323,40 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 	int n;
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
+	struct marcel_ev_event event;
 #endif
+	LOG_IN();
 	do {
 #ifndef MA__ACTIVATION
 		ev.op = POLL_WRITE;
 		ev.fd = fildes;
 		mdebug("Writing in fd %i\n", fildes);
-		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
+		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
 #endif
 
 		LOG("IO writing fd %i", fildes);
 		n = write(fildes, buf, nbytes);
 	} while( n == -1 && errno == EINTR);
 	
-	return n;
+	LOG_RETURN(n);
 }
 
 int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-
+	struct marcel_ev_event event;
+#endif
+	LOG_IN();
+#ifndef MA__ACTIVATION
 	ev.op = POLL_WRITE;
 	ev.fd = fildes;
 	mdebug("Writing in fd %i\n", fildes);
-	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
+	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
 #endif
 
 	LOG("IO writving fd %i", fildes);
-	return writev(fildes, iov, iovcnt);
+	LOG_RETURN(writev(fildes, iov, iovcnt));
 }
 
 int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
@@ -356,14 +365,16 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	return select(nfds, rfds, wfds, NULL, NULL);
 #else
 	struct tcp_ev ev;
-
+	struct marcel_ev_event event;
+	
+	LOG_IN();
 	ev.op = POLL_SELECT;
 	ev.rfds = rfds;
 	ev.wfds = wfds;
 	ev.nfds = nfds;
 	mdebug("Selecting within %i fds\n", nfds);
-	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, 0);
-	return ev.ret_val;
+	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
+	LOG_RETURN(ev.ret_val);
 #endif
 }
 
@@ -373,6 +384,7 @@ int marcel_read_exactly(int fildes, void *buf, size_t nbytes)
 {
 	size_t to_read = nbytes, n;
 
+	LOG_IN();
 	do {
 		n = marcel_read(fildes, buf, to_read);
 		if(n < 0)
@@ -381,7 +393,7 @@ int marcel_read_exactly(int fildes, void *buf, size_t nbytes)
 		to_read -= n;
 	} while(to_read);
 	
-	return nbytes;
+	LOG_RETURN(nbytes);
 }
 
 int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt)
@@ -393,6 +405,7 @@ int marcel_write_exactly(int fildes, const void *buf, size_t nbytes)
 {
 	size_t to_write = nbytes, n;
 
+	LOG_IN();
 	do {
 		n = marcel_write(fildes, buf, to_write);
 		if(n < 0)
@@ -401,7 +414,7 @@ int marcel_write_exactly(int fildes, const void *buf, size_t nbytes)
 		to_write -= n;
 	} while(to_write);
 	
-	return nbytes;
+	LOG_RETURN(nbytes);
 }
 
 int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
@@ -445,6 +458,7 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 
 void __init marcel_io_init(void)
 {
+	LOG_IN();
 	marcel_ev_server_set_poll_settings(&unix_io_server.server, 
 					   MARCEL_POLL_AT_TIMER_SIG 
 					   | MARCEL_POLL_AT_YIELD
@@ -455,13 +469,14 @@ void __init marcel_io_init(void)
 				      MARCEL_EV_FUNCTYPE_POLL_GROUP,
 				      &unix_io_group);
 	marcel_ev_server_add_callback(&unix_io_server.server,
-				      MARCEL_EV_FUNCTYPE_POLL_ALL,
+				      MARCEL_EV_FUNCTYPE_POLL_POLLANY,
 				      &unix_io_poll);
 #endif
 	marcel_ev_server_add_callback(&unix_io_server.server,
-				      MARCEL_EV_FUNCTYPE_POLL_ONE,
+				      MARCEL_EV_FUNCTYPE_POLL_POLLONE,
 				      &unix_io_fast_poll);
 	marcel_ev_server_start(&unix_io_server.server);
+	LOG_OUT();
 }
 
 __ma_initfunc(marcel_io_init, MA_INIT_IO,

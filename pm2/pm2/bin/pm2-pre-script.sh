@@ -13,9 +13,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+log()
+{
+    if [ ! -z "$PM2_SCRIPT_DEBUG" ]; then
+        echo "`uname -n`[$$]: $*" 1>&2
+    fi
+}
 
 export PM2_CMD_PREFIX
-PM2_CMD_PREFIX="pm2-pre-script.sh"
+PM2_CMD_PREFIX="${PM2_ROOT}/bin/pm2-pre-script.sh"
 
 #echo "[ pm2-pre-script.sh $@ ]"
 
@@ -23,11 +29,20 @@ debug_file=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
+	--script-debug)
+	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
+	    PM2_SCRIPT_DEBUG=on
+	    export PM2_SCRIPT_DEBUG
+	    log "Using script debug mode"
+	    log "Running: $*"
+	    shift
+	    ;;
         --use-local-flavor)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
 	    shift
 	    PM2_USE_LOCAL_FLAVOR=on
 	    export PM2_USE_LOCAL_FLAVOR
+	    log "Using local flavor"
 	    ;;
 	--preload)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1 $2"
@@ -38,6 +53,7 @@ while [ $# -gt 0 ]; do
 	    if [ -n "$debug_file" ]; then
 		echo "set environment LD_PRELOAD $LD_PRELOAD" >> $debug_file
 	    fi
+	    log "Using ld preload [${LD_PRELOAD}]"
 	    ;;
 	--export)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1 $2 $3"
@@ -52,6 +68,7 @@ while [ $# -gt 0 ]; do
 	    if [ -n "$debug_file" ]; then
 		echo "set environment $var $value" >> $debug_file
 	    fi
+	    log "Exporting [$var] set to [$value]"
 	    ;;
 	--debug)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
@@ -63,6 +80,7 @@ while [ $# -gt 0 ]; do
 	    done
 	    debug_file=/tmp/maddebug.$num
 	    cp /dev/null $debug_file
+	    log "Using debug mode"
 	    ;;
 	--)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
@@ -101,6 +119,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 	if [ -n "$debug_file" ]; then
 	    echo "set environment LD_PRELOAD $LD_PRELOAD" >> $debug_file
 	fi
+	log "set environment LD_PRELOAD $LD_PRELOAD"
     fi
 
     # LD library path
@@ -109,6 +128,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
 	LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 	export LD_LIBRARY_PATH
+	log "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH"
     fi
 
     # Chemin d'accès au chargeur
@@ -131,6 +151,13 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 
 else
 
+    if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
+        LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+        export LD_LIBRARY_PATH
+	log "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH"
+    fi
+
+
     prog=$PM2_CMD_NAME
 
 fi
@@ -141,12 +168,14 @@ if [ -n "$debug_file" ]; then
     echo "set args $@" >> $debug_file
 
     title="$prog.$HOST"
+    log "Executing: xterm -title $title -e gdb -x $debug_file $prog"
     xterm -title $title -e gdb -x $debug_file $prog
 
     rm -f $debug_file
 
 else # debug
 
+    log "Executing: exec $prog $*"
     exec $prog "$@"
 
 fi

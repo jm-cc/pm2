@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.29  2000/11/15 21:32:40  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.28  2000/11/13 20:41:38  rnamyst
 common_init now performs calls to all libraries
 
@@ -223,12 +226,6 @@ void pm2_init_data(int *argc, char *argv[])
 {
   if(!__pm2_rpc_init_called)
     pm2_rpc_init();
-
-  timing_init();
-
-#ifdef USE_SAFE_MALLOC
-  safe_malloc_init();
-#endif   
 }
 
 void pm2_init_open_channels(int *argc, char *argv[],
@@ -302,15 +299,9 @@ void pm2_init(int *argc, char **argv)
   if(!__pm2_rpc_init_called)
     pm2_rpc_init();
 
-  timing_init();
-
 #ifdef PROFILE
   profile_init();
 #endif
-
-#ifdef USE_SAFE_MALLOC
-  safe_malloc_init();
-#endif   
 
 #ifndef MAD2
   marcel_init(argc, argv);

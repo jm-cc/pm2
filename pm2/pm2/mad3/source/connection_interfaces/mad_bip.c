@@ -1471,7 +1471,7 @@ mad_bip_receive_long_buffer(p_mad_link_t   lnk,
 
       request =
 	bip_recv_post(channel_specific->communicator + MAD_BIP_TRANSFER_TAG,
-		      buffer->buffer, MAD_NB_INTS(length));
+		      buffer->buffer + buffer->bytes_written, MAD_NB_INTS(length));
       
       buffer->bytes_written += length;
 

@@ -76,7 +76,7 @@ int marcel_main(int argc, char **argv)
   if(argc > 1) {
     // Execution unique en utilisant l'argument en ligne de commande
 #ifdef PROFILE
-   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
+   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
     j.sup = atoi(argv[1]);
     TBX_GET_TICK(t1);

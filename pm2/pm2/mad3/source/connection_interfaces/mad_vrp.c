@@ -38,7 +38,9 @@
 #include <errno.h>
 #include <VRP.h>
 
-#define MAD_VRP_POLLING_MODE \
+#define MAD_VRP_LEVEL1_POLLING_MODE \
+    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
+#define MAD_VRP_LEVEL2_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 #define MAD_VRP_MAX_FIRST_PACKET_LENGTH 65536
 
@@ -54,7 +56,8 @@ int vrp_log_fd = 1;
  */
 typedef struct s_mad_vrp_driver_specific
 {
-  marcel_pollid_t pollid;
+  marcel_pollid_t level1_pollid;
+  marcel_pollid_t level2_pollid;
 } mad_vrp_driver_specific_t, *p_mad_vrp_driver_specific_t;
 
 typedef struct s_mad_vrp_adapter_specific
@@ -108,10 +111,8 @@ typedef struct s_mad_vrp_poll_req
 
 typedef struct s_mad_vrp_select_req
 {
-  vrp_incoming_t vrp_in;
-  vrp_outgoing_t vrp_out;
-  int            fd;
-  int            status;
+  int fd;
+  int status;
 } mad_vrp_select_req_t, *p_mad_vrp_select_req_t;
 
 /*
@@ -178,43 +179,30 @@ static
 void *
 mad_vrp_incoming_thread(void *arg)
 {
-  vrp_incoming_t vrp_in = NULL;
-  int            fd     = -1;
-  fd_set         fds;
+  p_mad_connection_t                 in     = NULL;
+  p_mad_vrp_in_connection_specific_t is     = NULL;
+  p_mad_driver_t                     d      = NULL;
+  p_mad_vrp_driver_specific_t        ds     = NULL;
+  vrp_incoming_t                     vrp_in = NULL;
+  mad_vrp_select_req_t               req;
 
   LOG_IN();
-  vrp_in = arg;
-  fd     = vrp_incoming_fd(vrp_in);
+  in     = arg;
+  d      = in->channel->adapter->driver;
+  ds     = d->specific;
+  is     = in->specific;
+  vrp_in = is->vrp_in;
+  req.fd     = vrp_incoming_fd(vrp_in);
 
   while (1)
     {
-      int status = -1;
+      req.status = 0;
+      marcel_poll(ds->level1_pollid, &req);
 
-      FD_ZERO(&fds);
-      FD_SET(fd, &fds);
+      if (req.status == -1)
+        break;
 
-      status = tselect(fd+1, &fds, NULL, NULL);
-
-      if ((status == -1) && (errno != EINTR))
-        {
-          if (errno == EBADF)
-            break;
-
-          perror("select");
-          FAILURE("system call failed");
-        }
-
-      if (status > 0)
-        {
-          if (!FD_ISSET(fd, &fds))
-            FAILURE("invalid state");
-
-          vrp_incoming_read_callback(fd, vrp_in);
-        }
-      else
-        {
-          marcel_yield();
-        }
+      vrp_incoming_read_callback(req.fd, vrp_in);
     }
 
   LOG_OUT();
@@ -226,42 +214,30 @@ static
 void *
 mad_vrp_outgoing_thread(void *arg)
 {
-  vrp_outgoing_t vrp_out = NULL;
-  int            fd     = -1;
-  fd_set         fds;
+  p_mad_connection_t                  out     = NULL;
+  p_mad_vrp_out_connection_specific_t os      = NULL;
+  p_mad_driver_t                      d       = NULL;
+  p_mad_vrp_driver_specific_t         ds      = NULL;
+  vrp_outgoing_t                      vrp_out = NULL;
+  mad_vrp_select_req_t                req;
 
   LOG_IN();
-  vrp_out = arg;
-  fd      = vrp_outgoing_fd(vrp_out);
+  out     = arg;
+  d       = out->channel->adapter->driver;
+  ds      = d->specific;
+  os      = out->specific;
+  vrp_out = os->vrp_out;
+  req.fd      = vrp_outgoing_fd(vrp_out);
 
   while (1)
     {
-      int status = -1;
+      req.status = 0;
+      marcel_poll(ds->level1_pollid, &req);
 
-      FD_ZERO(&fds);
-      FD_SET(fd, &fds);
-      status = tselect(fd+1, &fds, NULL, NULL);
+      if (req.status == -1)
+        break;
 
-      if ((status == -1) && (errno != EINTR))
-        {
-          if (errno == EBADF)
-            break;
-
-          perror("select");
-          FAILURE("system call failed");
-        }
-
-      if (status > 0)
-        {
-          if (!FD_ISSET(fd, &fds))
-            FAILURE("invalid state");
-
-          vrp_outgoing_read_callback(fd, vrp_out);
-        }
-      else
-        {
-          marcel_yield();
-        }
+      vrp_outgoing_read_callback(req.fd, vrp_out);
     }
 
   LOG_OUT();
@@ -269,16 +245,17 @@ mad_vrp_outgoing_thread(void *arg)
   return NULL;
 }
 
+/* Level 2 Marcel polling */
 static
 void
-mad_vrp_marcel_group(marcel_pollid_t id)
+mad_vrp_level2_marcel_group(marcel_pollid_t id)
 {
   return;
 }
 
 static
 int
-mad_vrp_do_poll(p_mad_vrp_poll_req_t rq)
+mad_vrp_level2_do_poll(p_mad_vrp_poll_req_t req)
 {
   p_mad_channel_t              ch     = NULL;
   p_mad_vrp_channel_specific_t chs    = NULL;
@@ -288,7 +265,7 @@ mad_vrp_do_poll(p_mad_vrp_poll_req_t rq)
   int                          i      =    0;
 
   LOG_IN();
-  ch     = rq->ch;
+  ch     = req->ch;
   chs    = ch->specific;
   darray = ch->in_connection_darray;
 
@@ -310,7 +287,7 @@ mad_vrp_do_poll(p_mad_vrp_poll_req_t rq)
           if (_is->active)
             {
               _is->active =  tbx_false;
-              rq->c       = _in;
+              req->c      = _in;
               r           =  1;
 
               break;
@@ -324,14 +301,14 @@ mad_vrp_do_poll(p_mad_vrp_poll_req_t rq)
 
 static
 void *
-mad_vrp_marcel_fast_poll(marcel_pollid_t id,
+mad_vrp_level2_marcel_fast_poll(marcel_pollid_t id,
                          any_t           req,
                          boolean         first_call)
 {
   void *status = MARCEL_POLL_FAILED;
 
   LOG_IN();
-  if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
+  if (mad_vrp_level2_do_poll((p_mad_vrp_poll_req_t) req)) {
     status = MARCEL_POLL_SUCCESS_FOR(id);
   }
   LOG_OUT();
@@ -341,7 +318,7 @@ mad_vrp_marcel_fast_poll(marcel_pollid_t id,
 
 static
 void *
-mad_vrp_marcel_poll(marcel_pollid_t id,
+mad_vrp_level2_marcel_poll(marcel_pollid_t id,
                     unsigned        active,
                     unsigned        sleeping,
                     unsigned        blocked)
@@ -351,7 +328,108 @@ mad_vrp_marcel_poll(marcel_pollid_t id,
 
   LOG_IN();
   FOREACH_POLL(id, req) {
-    if (mad_vrp_do_poll((p_mad_vrp_poll_req_t) req)) {
+    if (mad_vrp_level2_do_poll((p_mad_vrp_poll_req_t) req)) {
+      status = MARCEL_POLL_SUCCESS(id);
+      goto found;
+    }
+  }
+
+ found:
+  LOG_OUT();
+
+  return status;
+}
+
+
+/* Level 1 Marcel polling */
+static
+void
+mad_vrp_level1_marcel_group(marcel_pollid_t id)
+{
+  return;
+}
+
+static
+int
+mad_vrp_level1_do_poll(p_mad_vrp_select_req_t req)
+{
+  int fd     = -1;
+  int r      =  0;
+  int status = -1;
+  struct timeval timeout;
+  fd_set fds;
+
+  LOG_IN();
+  fd = req->fd;
+
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 0;
+
+  FD_ZERO(&fds);
+  FD_SET(fd, &fds);
+  status = select(fd+1, &fds, NULL, NULL, &timeout);
+
+  if ((status == -1) && (errno != EINTR))
+    {
+      if (errno == EINTR)
+        {
+          goto end;
+        }
+      else if (errno == EBADF)
+        {
+          r = 1;
+          goto end;
+        }
+
+      perror("select");
+      FAILURE("system call failed");
+    }
+
+  if (status > 0)
+    {
+      if (!FD_ISSET(fd, &fds))
+        FAILURE("invalid state");
+
+      r = 1;
+    }
+
+ end:
+  req->status = status;
+  LOG_OUT();
+
+  return r;
+}
+
+static
+void *
+mad_vrp_level1_marcel_fast_poll(marcel_pollid_t id,
+                                any_t           req,
+                                boolean         first_call)
+{
+  void *status = MARCEL_POLL_FAILED;
+
+  LOG_IN();
+  if (mad_vrp_level1_do_poll((p_mad_vrp_select_req_t) req)) {
+    status = MARCEL_POLL_SUCCESS_FOR(id);
+  }
+  LOG_OUT();
+
+  return status;
+}
+
+static
+void *
+mad_vrp_level1_marcel_poll(marcel_pollid_t id,
+                    unsigned        active,
+                    unsigned        sleeping,
+                    unsigned        blocked)
+{
+  p_mad_vrp_poll_req_t  req    = NULL;
+  void                 *status = MARCEL_POLL_FAILED;
+
+  LOG_IN();
+  FOREACH_POLL(id, req) {
+    if (mad_vrp_level1_do_poll((p_mad_vrp_select_req_t) req)) {
       status = MARCEL_POLL_SUCCESS(id);
       goto found;
     }
@@ -428,10 +506,15 @@ mad_vrp_driver_init(p_mad_driver_t d)
   TRACE("Initializing VRP driver");
   ds          = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
 
-  ds->pollid = marcel_pollid_create(mad_vrp_marcel_group,
-                                    mad_vrp_marcel_poll,
-                                    mad_vrp_marcel_fast_poll,
-                                    MAD_VRP_POLLING_MODE);
+  ds->level1_pollid = marcel_pollid_create(mad_vrp_level1_marcel_group,
+                                    mad_vrp_level1_marcel_poll,
+                                    mad_vrp_level1_marcel_fast_poll,
+                                    MAD_VRP_LEVEL1_POLLING_MODE);
+
+  ds->level2_pollid = marcel_pollid_create(mad_vrp_level2_marcel_group,
+                                    mad_vrp_level2_marcel_poll,
+                                    mad_vrp_level2_marcel_fast_poll,
+                                    MAD_VRP_LEVEL2_POLLING_MODE);
 
   d->specific = ds;
 
@@ -551,7 +634,7 @@ mad_vrp_accept(p_mad_connection_t   in,
   is->vrp_in = vrp_incoming_construct(&vrp_port, mad_vrp_frame_handler);
   vrp_incoming_set_source(is->vrp_in, is);
   mad_ntbx_send_int(net_client, vrp_port);
-  marcel_create(&(is->thread), NULL, mad_vrp_incoming_thread, is->vrp_in);
+  marcel_create(&(is->thread), NULL, mad_vrp_incoming_thread, in);
   ntbx_tcp_client_disconnect(net_client);
   ntbx_client_dest(net_client);
   LOG_OUT();
@@ -584,7 +667,7 @@ mad_vrp_connect(p_mad_connection_t   out,
   vrp_port = mad_ntbx_receive_int(net_client);
 
   os->vrp_out = vrp_outgoing_construct(r_node->name, vrp_port, 0, 0);
-  marcel_create(&(os->thread), NULL, mad_vrp_outgoing_thread, os->vrp_out);
+  marcel_create(&(os->thread), NULL, mad_vrp_outgoing_thread, out);
   ntbx_tcp_client_disconnect(net_client);
   ntbx_client_dest(net_client);
   vrp_outgoing_connect(os->vrp_out);
@@ -671,7 +754,7 @@ mad_vrp_receive_message(p_mad_channel_t ch)
   req.ch = ch;
   req.c  = NULL;
 
-  marcel_poll(ds->pollid, &req);
+  marcel_poll(ds->level2_pollid, &req);
 
   in = req.c;
   LOG_OUT();

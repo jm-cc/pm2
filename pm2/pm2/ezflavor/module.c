@@ -46,7 +46,15 @@ typedef struct {
 } module_t;
 
 static GList *the_modules = NULL;
-static module_t *common_module;
+static GList *the_static_modules = NULL;
+
+
+char *known_static_modules[] =
+{
+  "common",
+  "appli",
+  NULL
+};
 
 static gint mod_cmp(gconstpointer a, gconstpointer b)
 {
@@ -327,7 +335,7 @@ static GtkWidget *add_options(char *module, GList **list)
   sprintf(title, " %s options ", module);
   frame = gtk_frame_new(title);
   gtk_container_set_border_width (GTK_CONTAINER(frame), 10);
-  gtk_widget_set_usize(frame, 300, 300);
+  //gtk_widget_set_usize(frame, 300, 300);
   gtk_widget_show(frame);
 
   scrolled_window = gtk_scrolled_window_new(NULL, NULL);
@@ -363,29 +371,42 @@ static void set_module_info(GtkWidget *widget, char *module)
   gtk_object_set_user_data(GTK_OBJECT(widget), (gpointer)str);
 }
 
-static void add_common_options(GtkWidget *box)
+static void add_misc_options(GtkWidget *box)
 {
-  GtkWidget *frame;
-  GtkWidget *vbox;
+  GtkWidget *nbook;
+  int i;
 
-  frame = gtk_frame_new(" Application options ");
-  gtk_box_pack_start(GTK_BOX(box), frame, TRUE, TRUE, 0);
-  gtk_widget_show(frame);
+  nbook = gtk_notebook_new();
+  gtk_container_set_border_width (GTK_CONTAINER(nbook), 10);
+  gtk_notebook_set_tab_pos (GTK_NOTEBOOK(nbook), GTK_POS_TOP);
+  gtk_box_pack_start(GTK_BOX(box), nbook, TRUE, TRUE, 0);
+  gtk_widget_show(nbook);
 
-  vbox = gtk_vbox_new(FALSE, 10);
-  gtk_container_set_border_width (GTK_CONTAINER(vbox), 5);
-  gtk_container_add(GTK_CONTAINER(frame), vbox);
-  gtk_widget_show(vbox);
+  for(i = 0;
+      known_static_modules[i] != NULL;
+      i++) {
+    char *module = known_static_modules[i];
+    module_t *cur_mod;
+    GtkWidget *label;
   
-  common_module = (module_t *)g_malloc(sizeof(module_t));
+    cur_mod = (module_t *)g_malloc(sizeof(module_t));
 
-  common_module->name = string_new("common");
-  common_module->options = NULL;
-  common_module->page = frame;
+    the_static_modules = g_list_append(the_static_modules, (gpointer)cur_mod);
 
-  set_module_info(common_module->page, common_module->name);
+    cur_mod->name = module;
+    cur_mod->options = NULL;
 
-  add_inclusive_options(common_module->name, vbox, &common_module->options);
+    cur_mod->page = add_options(module, &cur_mod->options);
+
+    set_module_info(cur_mod->page, module);
+
+    label = gtk_label_new(module);
+
+    gtk_notebook_append_page(GTK_NOTEBOOK(nbook), cur_mod->page, label);
+
+    if(tips_enabled)
+      module_set_tooltip_msg(label, module);
+  }
 }
 
 static void set_page_select_state(GtkWidget *page, gint selected)
@@ -584,7 +605,7 @@ static void module_build_general_options(GtkWidget *box)
   gtk_container_add(GTK_CONTAINER(vbox), subvbox);
   gtk_widget_show(subvbox);
 
-  add_common_options(subvbox);
+  add_misc_options(subvbox);
 }
 
 static void module_update_module_options(module_t *m)
@@ -611,8 +632,6 @@ static void module_update_general_settings(void)
   gtk_entry_set_text(GTK_ENTRY(builddir_entry), flavor_builddir());
 
   gtk_entry_set_text(GTK_ENTRY(extension_entry), flavor_extension());
-
-  module_update_module_options(common_module);
 }
 
 void module_update_with_current_flavor(void)
@@ -627,6 +646,17 @@ void module_update_with_current_flavor(void)
 
   module_update_general_settings();
 
+  // Modules implicites
+  for(mod = g_list_first(the_static_modules);
+      mod != NULL;
+      mod = g_list_next(mod)) {
+
+    module_t *m = (module_t *)mod->data;
+
+    module_update_module_options(m);
+  }
+
+  // Modules sélectionnés
   for(mod = g_list_first(the_modules);
       mod != NULL;
       mod = g_list_next(mod)) {
@@ -645,9 +675,6 @@ void module_update_with_current_flavor(void)
 
     }
   }
-
-  //  gtk_widget_set_sensitive(module_frame, TRUE);
-  //  gtk_widget_set_sensitive(general_frame, TRUE);
 
   update_select_buttons(gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook)));
 }
@@ -672,8 +699,6 @@ static void module_save_general_settings(void)
 {
   flavor_set_builddir(gtk_entry_get_text(GTK_ENTRY(builddir_entry)));
   flavor_set_extension(gtk_entry_get_text(GTK_ENTRY(extension_entry)));
-
-  module_save_module_options(common_module);
 }
 
 void module_save_to_flavor(void)
@@ -684,6 +709,17 @@ void module_save_to_flavor(void)
 
   module_save_general_settings();
 
+  // Modules implicites
+  for(mod = g_list_first(the_static_modules);
+      mod != NULL;
+      mod = g_list_next(mod)) {
+
+    module_t *m = (module_t *)mod->data;
+
+    module_save_module_options(m);
+  }
+
+  // Modules sélectionnés
   for(mod = g_list_first(the_modules);
       mod != NULL;
       mod = g_list_next(mod)) {
@@ -695,7 +731,6 @@ void module_save_to_flavor(void)
       module_save_module_options(m);
 
       flavor_add_module((char *)gtk_object_get_user_data(GTK_OBJECT(m->page)));
-
     }
   }
 }

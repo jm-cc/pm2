@@ -34,6 +34,13 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.6  2000/06/16 14:03:51  oaumage
+- Mise a jour par rapport au nouveau fonctionnement de pm2conf
+
+Revision 1.5  2000/06/16 13:47:49  oaumage
+- Mise a jour des routines d'initialisation de Madeleine II
+- Progression du code de mad_leonie_spawn.c
+
 Revision 1.4  2000/06/15 08:45:03  rnamyst
 pm2load/pm2conf/pm2logs are now handled by pm2.
 
@@ -193,6 +200,7 @@ mad_parse_command_line(int                *argc,
       i++;
     }
   *argc = j;
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
   LOG_OUT();
 }
 
@@ -472,7 +480,7 @@ p_mad_madeleine_t
 mad_init(
 	 int                   *argc,
 	 char                 **argv,
-	 char                  *configuration_file __attribute__ ((unused)),
+	 char                  *configuration_file,
 	 p_mad_adapter_set_t    adapter_set
 	 )
 #endif /* PM2 */
@@ -486,6 +494,9 @@ mad_init(
   char                       conf_file[128];
   tbx_bool_t                 conf_spec = tbx_false;
 
+  mad_managers_init();
+  LOG_IN(); /* After pm2debug_init ... */
+
   if (!configuration_file)
     {    
       if (getenv("PM2_CONF_FILE"))
@@ -496,15 +507,8 @@ mad_init(
 	}
     }  
 
-#ifdef MARCEL  
-  marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
-#endif /* MARCEL */
-  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
-  LOG_IN(); /* After pm2debug_init ... */
-  
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
-  mad_managers_init();
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
 

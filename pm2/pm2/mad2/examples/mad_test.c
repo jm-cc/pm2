@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 #ifndef LEONIE_SPAWN
   p_mad_adapter_set_t adapter_set;
 #endif /* LEONIE_SPAWN */
-  char str_buffer[STR_BUFFER_LEN];
+  char str_buffer[STR_BUFFER_LEN] TBX_ALIGN(8);
   int k ;
   p_mad_channel_t channel[NB_CHANNELS];
 
@@ -136,13 +136,13 @@ int main(int argc, char **argv)
 		   i < madeleine->configuration->size ;
 		   i++)
 		{
-		  char test_1 = 0;
-		  char test_2 = 0;
-		  char test_3 = 0;
-		  char test_4 = 0;
-		  char test_5 = 0;
-		  char test_6 = 0;
-		  char len = 0;
+		  int test_1 = 0;
+		  int test_2 = 0;
+		  int test_3 = 0;
+		  int test_4 = 0;
+		  int test_5 = 0;
+		  int test_6 = 0;
+		  int len = 0;
 		  p_mad_connection_t connection;
 
 		  /* mark the buffer */
@@ -152,46 +152,46 @@ int main(int argc, char **argv)
 	      
 		  mad_unpack(connection,
 			     &test_1,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_SAFER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data 1 : %d\n", test_1);
 		  
 		  mad_unpack(connection,
 			     &test_2,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_CHEAPER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data 2 : %d\n", test_2);
 
 		  mad_unpack(connection,
 			     &test_3,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_SAFER,
 			     mad_receive_CHEAPER);
 
 		  mad_unpack(connection,
 			     &test_4,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_CHEAPER,
 			     mad_receive_CHEAPER);
 
 		  mad_unpack(connection,
 			     &test_5,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_LATER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data 5 : %d\n", test_5);
 
 		  mad_unpack(connection,
 			     &test_6,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_LATER,
 			     mad_receive_CHEAPER);
 
 		  mad_unpack(connection,
 			     &len,
-			     sizeof(char),
+			     sizeof(int),
 			     mad_send_CHEAPER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data (len) : %d\n", len);
@@ -218,13 +218,13 @@ int main(int argc, char **argv)
 	  else
 	    {
 	      /* Sender(s) */
-	      char test_1 = 1;
-	      char test_2 = 2;
-	      char test_3 = 3;
-	      char test_4 = 4;
-	      char test_5 = 5;
-	      char test_6 = 6;
-	      char len = 0 ;
+	      int test_1 = 1;
+	      int test_2 = 2;
+	      int test_3 = 3;
+	      int test_4 = 4;
+	      int test_5 = 5;
+	      int test_6 = 6;
+	      int len = 0 ;
 	      p_mad_connection_t connection;
 
 	      sprintf(str_buffer,
@@ -237,37 +237,37 @@ int main(int argc, char **argv)
 	  
 	      mad_pack(connection,
 		       &test_1,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_SAFER,
 		       mad_receive_EXPRESS);
 	      mad_pack(connection,
 		       &test_2,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_CHEAPER,
 		       mad_receive_EXPRESS);			     
 	      mad_pack(connection,
 		       &test_3,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_SAFER,
 		       mad_receive_CHEAPER);
 	      mad_pack(connection,
 		       &test_4,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_CHEAPER,
 		       mad_receive_CHEAPER);
 	      mad_pack(connection,
 		       &test_5,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_LATER,
 		       mad_receive_EXPRESS);
 	      mad_pack(connection,
 		       &test_6,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_LATER,
 		       mad_receive_CHEAPER);
 	      mad_pack(connection,
 		       &len,
-		       sizeof(char),
+		       sizeof(int),
 		       mad_send_CHEAPER,
 		       mad_receive_EXPRESS);
 	      mad_pack(connection,

@@ -34,11 +34,11 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
-DIRS="${MADELEINE_ROOT}/make ${MADELEINE_ROOT}/source ${MADELEINE_ROOT}/bin"
+DIRS="${MAD1_ROOT}/make ${MAD1_ROOT}/source ${MAD1_ROOT}/bin"
 
 for d in $DIRS ; do
     if [ ! -h $d/custom -a -d $d/custom ] ; then
@@ -59,7 +59,7 @@ then
 	exit 1
     fi
 
-    rm -f ${MADELEINE_ROOT}/.net_interf
+    rm -f ${MAD1_ROOT}/.net_interf
 
     for d in $DIRS
     do
@@ -73,9 +73,9 @@ then
 	    exit 1
 	fi
     done
-    echo $1 > ${MADELEINE_ROOT}/.net_interf
+    echo $1 > ${MAD1_ROOT}/.net_interf
 
-    touch ${MADELEINE_ROOT}/source/*.c ${MADELEINE_ROOT}/source/custom/*.c
+    touch ${MAD1_ROOT}/source/*.c ${MAD1_ROOT}/source/custom/*.c
 fi
 
 for d in $DIRS ; do
@@ -86,9 +86,9 @@ for d in $DIRS ; do
     fi
 done
 
-if test -f ${MADELEINE_ROOT}/.net_interf
+if test -f ${MAD1_ROOT}/.net_interf
 then
-    echo "The current network interface is set to:" `cat ${MADELEINE_ROOT}/.net_interf`
+    echo "The current network interface is set to:" `cat ${MAD1_ROOT}/.net_interf`
 else
     echo "No current network interface"
 fi

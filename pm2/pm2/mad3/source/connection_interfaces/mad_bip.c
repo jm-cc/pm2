@@ -1648,7 +1648,7 @@ mad_bip_get_static_buffer(p_mad_link_t lnk)
   LOG_IN();
   channel_specific      = lnk->connection->channel->specific;
   buffer                = mad_alloc_buffer_struct();
-  buffer->buffer        = tbx_malloc(channel_specific->bip_buffer_key);
+  buffer->buffer        = tbx_malloc(bip_buffer_key);
   buffer->length        = MAD_BIP_SMALL_SIZE;
   buffer->bytes_written = 0;
   buffer->bytes_read    = 0;
@@ -1667,7 +1667,7 @@ mad_bip_return_static_buffer(p_mad_link_t   lnk,
   
   LOG_IN();
   channel_specific = lnk->connection->channel->specific;
-  tbx_free(channel_specific->bip_buffer_key, buffer->buffer);
+  tbx_free(bip_buffer_key, buffer->buffer);
   buffer->buffer   = NULL;
   LOG_OUT();
 }
@@ -1697,7 +1697,7 @@ mad_bip_send_buffer(p_mad_link_t   lnk,
 
       channel_specific = lnk->connection->channel->specific;
       mad_bip_send_short_buffer(lnk, buffer);
-      tbx_free(channel_specific->bip_buffer_key, buffer->buffer);
+      tbx_free(bip_buffer_key, buffer->buffer);
       buffer->buffer = NULL;
     }
 #endif // GROUP_SMALL_PACKS
@@ -1733,22 +1733,11 @@ mad_bip_receive_buffer(p_mad_link_t   lnk,
       buf->length     = MAD_BIP_SMALL_SIZE;
       buf->bytes_read = 0;
       buf->type       = mad_static_buffer;
+      buf->buffer     = tbx_malloc(bip_buffer_key);
+
+      mad_bip_receive_short_buffer(lnk, buf);
 
       *buffer = buf;
-  
-      if (connection_specific->msg)
-	{
-	  buf->buffer        = channel_specific->small_buffer;
-	  buf->bytes_written = channel_specific->message_size*sizeof(int);
-
-	  connection_specific->msg = tbx_false;      
-	  connection_specific->ack = tbx_false;
-	}
-      else
-	{
-	  buf->buffer = tbx_malloc(channel_specific->bip_buffer_key);
-	  mad_bip_receive_short_buffer(lnk, *buffer);
-	}
     }
 #endif // GROUP_SMALL_PACKS
   else

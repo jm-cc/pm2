@@ -450,8 +450,8 @@ do_check_confict() {
 	for name in `"$PM2_MODULE" module=$mod --conflict`; do
 	    value="`eval echo \\$provide_${name}`"
 	    if [ \( ! -z "$value" \) -a \( "$value" != "$mod" \) ]; then
-		echo "$name in module $mod conflict with `echo $value\
-		    | sed -e 's,_,/,g'`"
+		echo "$name in module $mod conflict with `echo $value' '\
+		    | sed -e 's,_,/,g' -e s,$mod' ',,`"
 		check_result=1
 	    fi
 	done
@@ -461,8 +461,9 @@ do_check_confict() {
 	    for name in `"$PM2_MODULE" option=$opt --module=$mod --conflict`; do
 		value="`eval echo \\$provide_${name}`"
 		if [ \( ! -z "$value" \) -a \( "$value" != "${mod}_$opt" \) ]; then
-		    echo "$name in option $mod/$opt conflict with `echo $value\
-			| sed -e 's,_,/,g'`"
+		    echo "$name in option $mod/$opt conflict with `  \
+			echo $value' '  | sed -e 's,_,/,g' \
+			    -e s,$mod/$opt' ',,`"
 		    check_result=1
 		fi
 	    done

@@ -35,6 +35,6 @@
 
 export FLAVOR_DEFAULT:=leoparse
 
-PROGS := leoparse_test leoparse_loader
+PROGS := leoparse_test leoparse_loader leoparse_advanced_loader
 
 include $(PM2_ROOT)/make/apps.mak

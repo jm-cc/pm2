@@ -181,7 +181,7 @@ static void mad_mpi_send(void *buf, int cnt, MPI_Datatype type, int dest,
 
   while(flag == 0) {
 #ifdef PM2
-    marcel_givehandback();
+    marcel_yield();
 #endif
     mpi_lock();
     MPI_Test(&request, &flag, status);
@@ -225,7 +225,7 @@ static void mad_mpi_recv(void *buf, int cnt, MPI_Datatype type, int src,
 
   while(flag == 0) {
 #ifdef PM2
-    marcel_givehandback();
+    marcel_yield();
 #endif
     mpi_lock();
     MPI_Test(&request, &flag, status);

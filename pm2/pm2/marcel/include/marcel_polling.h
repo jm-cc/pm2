@@ -95,8 +95,6 @@ _PRIVATE_ typedef struct _poll_cell_struct {
 _PRIVATE_ extern poll_struct_t *__polling_tasks;
 _PRIVATE_ int __marcel_check_polling(unsigned polling_point);
 
-// TODO: use polling_point to evaluate more precisely if polling is
-// necessary at this point.
 _PRIVATE_ static __inline__ int marcel_polling_is_required(unsigned polling_point)
 __attribute__ ((unused));
 _PRIVATE_ static __inline__ int marcel_polling_is_required(unsigned polling_point)

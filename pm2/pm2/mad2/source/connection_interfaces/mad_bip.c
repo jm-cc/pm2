@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_bip.c,v $
+Revision 1.7  2000/07/11 09:46:27  rnamyst
+Bug fixed in standalone mode
+
 Revision 1.6  2000/06/15 08:45:04  rnamyst
 pm2load/pm2conf/pm2logs are now handled by pm2.
 
@@ -192,7 +195,7 @@ static __inline__ void ack_received(p_mad_bip_channel_specific_t p,
 #endif
 
 
-static int bip_sync_send(int host, int tag, int *message, int size)
+static void bip_sync_send(int host, int tag, int *message, int size)
 {
 #ifdef MARCEL
   int request ;
@@ -216,10 +219,8 @@ static int bip_sync_send(int host, int tag, int *message, int size)
   }
 
   LOG_OUT();
-
-  return status;
 #else
-  return bip_tsend(host, tag, message, size);
+  bip_tsend(host, tag, message, size);
 #endif
 }
 
@@ -357,7 +358,7 @@ static __inline__ void wait_ack(p_mad_bip_channel_specific_t p, int host_id)
   {
     ack_message_t msg;
 
-    bip_trecv(p->communicator+MAD_BIP_REPLY_TAG, &msg, sizeof(msg)/sizeof(int));
+    bip_trecv(p->communicator+MAD_BIP_REPLY_TAG, (int*)&msg, sizeof(msg)/sizeof(int));
     p->credits_disponibles[host_id] += msg.credits;
   }
 #endif

@@ -38,7 +38,7 @@
 
 be_list erc_sw_inv_list;
 
-void dsmlib_erc_sw_inv_init(int protocol_number)
+void dsmlib_erc_sw_inv_init(dsm_proto_t protocol_number)
 {
 
   ENTER();

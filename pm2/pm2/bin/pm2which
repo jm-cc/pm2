@@ -57,9 +57,15 @@ pm2which_prettyprint() # path path...
 pm2which_handle_colon() # dir:name
 {
     _old_ifs="$IFS"
+    _ifs_not_set=${IFS-yes}
     IFS=":"
     set $*
-    IFS=$_old_ifs
+    IFS=" "
+    if [ "$_ifs_not_set" = yes ]; then
+        unset IFS
+    else
+        IFS="$_old_ifs"
+    fi
 
     _dir=$1
     _name=$2

@@ -34,9 +34,9 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
 nomore=0
 MAD_DEBUG=off
@@ -63,7 +63,7 @@ then
 	exit 1
 fi
 
-if test ! -f ${MADELEINE_ROOT}/.madconf
+if test ! -f ${MAD1_ROOT}/.madconf
 then
 	echo "ERROR: madconf should be runned before $0..."
 	exit 1
@@ -80,6 +80,6 @@ case _$DISPLAY in
     *) ;;
 esac
 
-set `cat ${MADELEINE_ROOT}/.madconf`
+set `cat ${MAD1_ROOT}/.madconf`
 
-exec rsh $1 ${MADELEINE_ROOT}/bin/pvm/madinit $MAD_DEBUG $MAD_CONSOLE "$DISPLAY" $command
+exec rsh $1 ${MAD1_ROOT}/bin/pvm/madinit $MAD_DEBUG $MAD_CONSOLE "$DISPLAY" $command

@@ -250,10 +250,10 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       }
 #endif
       new_task = (marcel_t)(top - MAL(sizeof(task_desc)));
-      init_task_desc(new_task);
 #ifdef STACK_CHECKING_ALLOWED
       memset(attr->stack_base, 0, attr->stack_size);
 #endif
+      init_task_desc(new_task);
       new_task->stack_base = attr->stack_base;
 
 #ifdef STACK_OVERFLOW_DETECT
@@ -287,6 +287,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       marcel_sem_init(&new_task->client, 0);
       marcel_sem_init(&new_task->thread, 0);
     }
+
+    /* memcpy(new_task->key, cur->key, sizeof(new_task->key)); */
 
     if(attr->user_space)
       new_task->user_space_ptr = (char *)new_task - MAL(attr->user_space);

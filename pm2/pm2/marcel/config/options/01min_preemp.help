@@ -1,3 +1,0 @@
-disable automatic preemption between threads
-Only a special (user-defined) thread may be allowed to be preempted
-at regular intervals.

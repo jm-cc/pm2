@@ -1,6 +1,6 @@
 #!/bin/sh
 
-usage() # exit_code
+pm2conffile_usage() # exit_code
 {
     cat <<EOF
 Usage: `basename $0` { option }
@@ -11,37 +11,48 @@ EOF
     exit $1
 }
 
-error() # msg
+pm2conffile_error() # msg
 {
     echo $*
     exit 1
 }
 
+pm2conffile_parse_cmdline()
+{
+    while [ $# -gt 0 ]; do
+	case $1 in
+	    -f)
+		shift; PM2_FLAVOR="$1"; shift
+		;;
+	    -h)
+		pm2conffile_usage 0
+		;;
+	    --)
+		shift; break
+		;;
+	    *)
+		break
+		;;
+	esac
+    done
+
+    PM2_CONF_FILE=${HOME}/.pm2/conf/${PM2_FLAVOR:-default}/.pm2conf
+    export PM2_CONF_FILE
+
+    [ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: \"${PM2_FLAVOR}\" may not be a valid flavor or PM2 is not yet configured this flavor (please run pm2conf in this case)."
+}
+
+# Programme principal
+
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
-while [ $# -gt 0 ]; do
-    case $1 in
-	-f)
-	    shift; PM2_FLAVOR="$1"; shift
-	    ;;
-	-h)
-	    usage 0
-	    ;;
-	--)
-	    shift; break
-	    ;;
-	*)
-	    break
-	    ;;
-    esac
-done
-
-#PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
-
-PM2_CONF_DIR=${HOME}/.pm2/conf/${PM2_FLAVOR:-default}
-
-[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
-
-echo ${PM2_CONF_DIR}/.pm2conf
+if [ "$1" = --source-mode ]; then
+    shift
+    pm2conffile_parse_cmdline $*
+else
+    pm2conffile_parse_cmdline $*
+    echo $PM2_CONF_FILE
+    exit 0
+fi
 

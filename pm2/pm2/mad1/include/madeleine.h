@@ -37,14 +37,15 @@
 #define MADELEINE_EST_DEF
 
 #include <sys/types.h>
-#include <pointers.h>
-#include <mad_types.h>
-#include <mad_timing.h>
-#include <sys/debug.h>
+
+#include "pointers.h"
+#include "mad_types.h"
+#include "mad_timing.h"
+#include "sys/debug.h"
 
 #ifdef PM2
 
-#include <marcel.h>
+#include "marcel.h"
 extern exception ALIGN_ERROR;
 
 #else

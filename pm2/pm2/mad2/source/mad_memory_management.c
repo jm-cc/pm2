@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_memory_management.c,v $
+Revision 1.4  2000/02/28 11:06:15  rnamyst
+Changed #include "" into #include <>.
+
 Revision 1.3  2000/01/13 14:45:58  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -51,7 +54,8 @@ ______________________________________________________________________________
  * -----------------------
  */
 
-#include <madeleine.h>
+#include "madeleine.h"
+
 /* MACROS */
 #define INITIAL_BUFFER_NUM 1024
 #define INITIAL_BUFFER_GROUP_NUM 64

@@ -1,0 +1,143 @@
+
+                      PM2 HIGH-PERF/ISOMALLOC
+           High Performance Parallel Multithreaded Machine
+                           version 3.0
+
+     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+
+            Laboratoire de l'Informatique du Parallelisme
+                        UMR 5668 CNRS-INRIA
+                 Ecole Normale Superieure de Lyon
+
+                      External Contributors:
+                 Yves Denneulin (LMC - Grenoble),
+                 Benoit Planquelle (LIFL - Lille)
+
+                    1998 All Rights Reserved
+
+
+                             NOTICE
+
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby granted
+ provided that the above copyright notice appear in all copies and
+ that both the copyright notice and this permission notice appear in
+ supporting documentation.
+
+ Neither the institutions (Ecole Normale Superieure de Lyon,
+ Laboratoire de L'informatique du Parallelisme, Universite des
+ Sciences et Technologies de Lille, Laboratoire d'Informatique
+ Fondamentale de Lille), nor the Authors make any representations
+ about the suitability of this software for any purpose. This
+ software is provided ``as is'' without express or implied warranty.
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+I . Configuring PM2 +++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Before starting to build PM2, set the PM2_ROOT environment variable.
+IMPORTANT: this definition, as weel as the ones introduced later,
+should be visible even under a remote shell (i.e. in shell scripts
+executed by rsh), so you should put them in an initialization file
+such as .cshrc, .bashrc, etc.  For example (under csh), if you have
+installed PM2 in your home directory, put the following definitions in
+your .cshrc file:
+
+		setenv PM2_ROOT $HOME/pm2
+
+You must also put the ${PM2_ROOT}/bin directory in your path:
+
+		setenv PATH $PM2_ROOT/bin:$PATH
+
+Make sure you have also correctly configured both the MARCEL and the
+MADELEINE packages (see specific README files in the marcel/ and
+madeleine/ directories). For instance, if you choosed to keep this
+directories under $PM2_ROOT, you may set :
+
+		setenv MARCEL_ROOT $PM2_ROOT/marcel
+		setenv MADELEINE_ROOT $PM2_ROOT/madeleine
+
+		setenv PATH $MARCEL_ROOT/bin:$MADELEINE_ROOT/bin:$PATH
+
+
+II . Compiling a PM2 application +++++++++++++++++++++++++++++++++++++
+
+To build the PM2 library, first choose the underlying communication
+package you want to use. For instance, if you want to build a
+TCP-sockets based implementation, just type:
+
+		pm2custom tcp
+
+If you want to use PVM library (in this case, make sure you have set
+the PVM_ROOT variable), type:
+
+		pm2custom pvm
+
+Please have a look into the $MADELEINE_ROOT/make/ directory to see
+which communication packages are currently supported.
+
+Once you made your choice, go into a subdirectory of
+$PM2_ROOT/examples (for instance $PM2_ROOT/examples/simple) and type:
+
+		make
+
+This will build some executable files and place them into the
+./bin/`pvmgetarch` architecture.
+
+Note that the GCC compiler is needed for compiling PM2.
+
+
+III . Running a PM2 application ++++++++++++++++++++++++++++++++++++++
+
+To run a PM2 application, you first have give the list of machines
+that will belong to your "configuration". For instance, if you want to
+use three machines named riri, fifi and loulou, just type:
+
+		pm2conf riri fifi loulou
+
+Note that some machines may have multiple network interfaces (for
+instance both an Ethernet and a Myrinet interface). In that case, it
+could be important to precise the name corresponding to the interface
+you want to use. For instance, you can type:
+
+		pm2conf riri-t fifi-t loulou-t
+
+to use the Myrinet network if <host>-t describe the Myrinet interface
+of the <host> machine.
+
+Once your configuration registered, you're able to run a PM2
+application (say ./bin/LINUX/simple) by using the pm2load
+loader:
+
+		pm2load bin/LINUX/simple
+
+You can run all processes under the gdb debugger by simply typing:
+
+		pm2load -debug bin/LINUX/simple
+
+You can also spawn a (graphical-)console by typing:
+
+		pm2load -c pm2 bin/LINUX/simple
+
+		or
+
+		pm2load -c xpm2 bin/LINUX/simple
+
+Please note that the PM2 console is currently only supported with the TCP
+and PVM network protocols.
+
+IV . Building the PM2 example programs and graphical consoles +++++++++++
+
+Both a text and a graphical console are available to monitor PM2
+applications.
+
+To build the PM2 consoles, go into the $PM2_ROOT/console directory and
+type make.
+
+
+V . Miscellaneous ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Contact Raymond.Namyst@ens-lyon.fr for any problem.

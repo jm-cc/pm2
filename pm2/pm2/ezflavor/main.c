@@ -98,7 +98,10 @@ int main(int argc, char *argv[])
 
   main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
-  gtk_window_set_title (GTK_WINDOW (main_window), "EZFLAVOR v0.9");
+  gtk_window_set_title (GTK_WINDOW (main_window), "ezflavor");
+
+  gtk_window_set_wmclass (GTK_WINDOW (main_window),
+			  "ezflavor", "ezflavor");
 
   gtk_signal_connect(GTK_OBJECT(main_window), "delete_event",
 		     GTK_SIGNAL_FUNC(delete_event), NULL);

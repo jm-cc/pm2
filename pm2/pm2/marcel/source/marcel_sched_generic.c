@@ -241,7 +241,6 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 #endif
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)),
 			      &attr, idle_func, (void*)(ma_lwp_t)lwp);
-	SET_LWP(ma_per_lwp(idle_task, lwp), lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
 
 #ifdef MA__ACTIVATION
@@ -273,7 +272,6 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_create_special(&lwp->sched.upcall_new_task, &attr, (void*)void_func, NULL);
 	
 	MTRACE("Upcall_Task", lwp->sched.upcall_new_task);
-	SET_LWP(lwp->sched.upcall_new_task, lwp);
 	
 	/****************************************************/
 #endif

@@ -208,8 +208,6 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	}
 	
 	new_task->father = cur;
-	SET_LWP(new_task, GET_LWP(cur)); /* In case timer_interrupt is
-					    called before insert_task ! */
 	if (new_task->user_space_ptr && !attr->immediate_activation) {
 		/* Le thread devra attendre marcel_run */
 		new_task->f_to_call = &wait_marcel_run;
@@ -871,7 +869,7 @@ TODO: vieux code
 	marcel_attr_setvpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
 #endif
 #endif
-	SET_LWP(__main_thread,&__main_lwp);
+	ma_set_task_lwp(__main_thread,&__main_lwp);
 	marcel_create_init_marcel_thread(__main_thread, &attr);
 	__main_thread->initial_sp = get_sp();
 	

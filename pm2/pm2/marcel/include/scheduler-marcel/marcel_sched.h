@@ -249,7 +249,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 			return 0;
 		}
 
-		ma_set_task_lwp(new_task, LWP_SELF);
 		/* Ne pas oublier de laisser de la place pour les
 		 * variables locales/empilement de fonctions On prend
 		 * la taille entre le plus haut argument de cette
@@ -297,7 +296,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		new_task->father->child = NULL;
 		
 		//TODO:SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
-		//SET_LWP(new_task, GET_LWP(cur));
 		ma_wake_up_thread(new_task);
 		
 		marcel_ctx_set_new_stack(new_task, new_task->initial_sp -

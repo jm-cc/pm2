@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
+Revision 1.12  2000/06/09 12:40:37  oaumage
+- Progression du code
+
 Revision 1.11  2000/06/09 08:45:59  oaumage
 - Progression du code
 
@@ -374,21 +377,24 @@ leo_build_application_cluster_list(p_leo_app_application_t  application,
 	tbx_get_list_reference_object(&ref);
       p_leo_application_cluster_t cluster     = NULL;
 
-      cluster = malloc(sizeof(cluster));
+      cluster = malloc(sizeof(leo_application_cluster_t));
       CTRL_ALLOC(cluster);
 
       cluster->id = malloc(strlen(app_cluster->id) + 1);
       CTRL_ALLOC(cluster->id);
       strcpy(cluster->id, app_cluster->id);
       LOG_STR("app_clu id", app_cluster->id);
+      LOG_STR("cluster id", cluster->id);
 
       cluster->executable = malloc(strlen(app_cluster->executable) + 1);
       CTRL_ALLOC(cluster->executable);
       strcpy(cluster->executable, app_cluster->executable);
+      LOG_STR("cluster exec", cluster->executable);
 
       cluster->path = malloc(strlen(app_cluster->path) + 1);
       CTRL_ALLOC(cluster->path);
       strcpy(cluster->path, app_cluster->path);
+      LOG_STR("cluster path", cluster->path);
 
       cluster->host_list = malloc(sizeof(tbx_slist_t));
       CTRL_ALLOC(cluster->host_list);
@@ -493,10 +499,6 @@ main (int argc, char *argv[])
   CTRL_ALLOC(application_cluster_list);
   tbx_slist_init(application_cluster_list);
 
-  cluster_definition_list = malloc(sizeof(tbx_slist_t));
-  CTRL_ALLOC(cluster_definition_list);
-  tbx_slist_init(cluster_definition_list);
-
   if (argc < 2)
     FAILURE("no application description file specified");
 
@@ -504,6 +506,11 @@ main (int argc, char *argv[])
   DISP("Starting application %s", application->id);
   
   leo_build_application_cluster_list(application, application_cluster_list);
+
+  cluster_definition_list = malloc(sizeof(tbx_slist_t));
+  CTRL_ALLOC(cluster_definition_list);
+  tbx_slist_init(cluster_definition_list);
+
 
   main_leonie->net_server = leo_net_server_init();
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication_interface.h,v $
+Revision 1.6  2001/01/03 11:05:26  oaumage
+- integration des headers du module de forwarding
+
 Revision 1.5  2000/03/15 09:56:32  oaumage
 - renommage du polling Nexus
 
@@ -67,12 +70,21 @@ p_mad_connection_t
 mad_message_ready(p_mad_channel_t channel);
 #endif /* MAD_MESSAGE_POLLING */
 
+#ifdef MAD_FORWARDING
+p_mad_connection_t
+mad_begin_packing(p_mad_user_channel_t   user_channel,
+                  ntbx_host_id_t    remote_host_id);
+
+p_mad_connection_t
+mad_begin_unpacking(p_mad_user_channel_t user_channel);
+#else /* MAD_FORWARDING */
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,
 		  ntbx_host_id_t    remote_host_id);
 
 p_mad_connection_t
 mad_begin_unpacking(p_mad_channel_t channel);
+#endif /* MAD_FORWARDING */
 
 void
 mad_end_packing(p_mad_connection_t connection);

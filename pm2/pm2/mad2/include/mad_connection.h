@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_connection.h,v $
+Revision 1.6  2001/01/03 11:05:26  oaumage
+- integration des headers du module de forwarding
+
 Revision 1.5  2000/06/06 12:54:38  oaumage
 - Ajout du calcul de la taille des groupes de buffers dynamiques
 
@@ -72,6 +75,10 @@ typedef struct s_mad_connection
 {
   /* Common use fields */
            ntbx_host_id_t          remote_host_id;
+#ifdef MAD_FORWARDING
+           ntbx_host_id_t          actual_destination_id;
+           tbx_bool_t              active;
+#endif /* MAD_FORWARDING */
            p_mad_channel_t         channel;
            p_mad_connection_t      reverse;
            mad_connection_way_t    way;
@@ -79,6 +86,9 @@ typedef struct s_mad_connection
   /* Internal use fields */
            int                     nb_link; 
            p_mad_link_t            link;
+#ifdef MAD_FORWARDING
+           p_mad_link_t            fwd_link;
+#endif /* MAD_FORWARDING */
            tbx_list_t              user_buffer_list; 
            tbx_list_reference_t    user_buffer_list_reference; 
            tbx_list_t              buffer_list;
@@ -96,6 +106,9 @@ typedef struct s_mad_connection
            tbx_bool_t              pair_list_used;
            tbx_bool_t              first_sub_buffer_group;
            tbx_bool_t              more_data;
+#ifdef MAD_FORWARDING
+           tbx_bool_t              is_being_forwarded;
+#endif /* MAD_FORWARDING */
 
   /* Driver specific data */
   p_mad_driver_specific_t          specific;

@@ -49,12 +49,6 @@
 #define MAD_VRP_MAX_FIRST_PACKET_LENGTH 65536
 
 /*
- * global variables
- * ----------------
- */
-int vrp_log_fd = 1;
-
-/*
  * local structures
  * ----------------
  */

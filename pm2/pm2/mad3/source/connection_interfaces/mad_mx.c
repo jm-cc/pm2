@@ -33,7 +33,7 @@
  */
 #ifdef MARCEL
 #define MAD_MX_POLLING_MODE \
-    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
+    (MARCEL_EV_POLL_AT_TIMER_SIG | MARCEL_EV_POLL_AT_YIELD | MARCEL_EV_POLL_AT_IDLE)
 #endif /* MARCEL */
 
 /*
@@ -43,9 +43,6 @@
 typedef struct s_mad_mx_driver_specific
 {
         int dummy;
-#ifdef MARCEL
-        marcel_pollid_t     mx_pollid;
-#endif /* MARCEL */
 } mad_mx_driver_specific_t, *p_mad_mx_driver_specific_t;
 
 typedef struct s_mad_mx_adapter_specific
@@ -77,13 +74,23 @@ typedef struct s_mad_mx_link_specific
 } mad_mx_link_specific_t, *p_mad_mx_link_specific_t;
 
 #ifdef MARCEL
-typedef struct s_mad_mx_poll_req {
-        mx_endpoint_t 	endpoint;
-        mx_request_t	*p_request;
-        mx_return_t     *p_rc;
-        mx_status_t	*p_status;
-        uint32_t	*p_result;
-} mad_mx_poll_req_t, *p_mad_mx_poll_req_t;
+typedef struct s_mad_mx_ev {
+	struct marcel_ev_req	 inst;
+        mx_endpoint_t		 endpoint;
+        mx_request_t		*p_request;
+        mx_return_t     	*p_rc;
+        mx_status_t		*p_status;
+        uint32_t		*p_result;
+} mad_mx_ev_t, *p_mad_mx_ev_t;
+#endif /* MARCEL */
+
+#ifdef MARCEL
+/* With Marcel/Newsched, the locking is now done on the event server.
+ * Since locking may occur outside Madeleine's context in malloc
+ * handlers, the server pointer must be global
+ */
+static struct marcel_ev_server mad_mx_ev_server = MARCEL_EV_SERVER_INIT(mad_mx_ev_server, "Mad/MX I/O");
+
 #endif /* MARCEL */
 
 #define GATHER_SCATTER_THRESHOLD	32768
@@ -162,9 +169,8 @@ inline
 void
 __mad_mx_hook_lock(void) {
 #ifdef MARCEL
-        marcel_poll_lock();
+        marcel_ev_lock(&mad_mx_ev_server);
         //DISP("<mx hook LOCK>");
-        //DISP(".");
 #endif /* MARCEL */
 }
 
@@ -174,8 +180,7 @@ void
 __mad_mx_hook_unlock(void) {
 #ifdef MARCEL
         //DISP("<mx hook UNLOCK>");
-        //DISP(".");
-        marcel_poll_unlock();
+        marcel_ev_unlock(&mad_mx_ev_server);
 #endif /* MARCEL */
 }
 
@@ -309,10 +314,9 @@ inline
 void
 mad_mx_lock(void) {
 #ifdef MARCEL
-        marcel_poll_lock();
+       __mad_mx_hook_lock();
         mad_mx_remove_hooks();
         //DISP("<mx LOCK>");
-        //DISP(".");
 #endif /* MARCEL */
 }
 
@@ -322,9 +326,8 @@ void
 mad_mx_unlock(void) {
 #ifdef MARCEL
         //DISP("<mx UNLOCK>");
-        //DISP(".");
         mad_mx_install_hooks();
-        marcel_poll_unlock();
+        __mad_mx_hook_unlock();
 #endif /* MARCEL */
 }
 
@@ -592,62 +595,27 @@ mad_mx_startup_info(void) {
 }
 
 #ifdef MARCEL
-static void
-mad_mx_marcel_group(marcel_pollid_t id)
-{
-        return;
-}
-
 static
 int
-mad_mx_do_poll(p_mad_mx_poll_req_t rq) {
-        int success = 0;
+mad_mx_do_poll(marcel_ev_server_t	server,
+               marcel_ev_op_t		_op,
+               marcel_ev_req_t		req,
+               int			nb_ev,
+               int			option) {
+        p_mad_mx_ev_t	p_ev	= NULL;
 
         LOG_IN();
+	p_ev = struct_up(req, mad_mx_ev_t, inst);
+
         mad_mx_remove_hooks();
-        *(rq->p_rc)	= mx_test(rq->endpoint, rq->p_request, rq->p_status, rq->p_result);
-        success		= !(*(rq->p_rc) == MX_SUCCESS && !*(rq->p_result));
+        *(p_ev->p_rc)	= mx_test(p_ev->endpoint, p_ev->p_request, p_ev->p_status, p_ev->p_result);
+        if (!(*(p_ev->p_rc) == MX_SUCCESS && !*(p_ev->p_result))) {
+                MARCEL_EV_REQ_SUCCESS(&(p_ev->inst));
+        }
         mad_mx_install_hooks();
         LOG_OUT();
 
-        return success;
-}
-
-static void *
-mad_mx_marcel_fast_poll(marcel_pollid_t id,
-                        any_t           req,
-                        boolean         first_call) {
-        void *status = MARCEL_POLL_FAILED;
-
-        LOG_IN();
-        if (mad_mx_do_poll((p_mad_mx_poll_req_t) req)) {
-                status = MARCEL_POLL_SUCCESS_FOR(id);
-        }
-        LOG_OUT();
-
-        return status;
-}
-
-static void *
-mad_mx_marcel_poll(marcel_pollid_t id,
-                   unsigned        active,
-                   unsigned        sleeping,
-                   unsigned        blocked) {
-        p_mad_mx_poll_req_t  req = NULL;
-        void                *status = MARCEL_POLL_FAILED;
-
-        LOG_IN();
-        FOREACH_POLL(id, req) {
-                if (mad_mx_do_poll((p_mad_mx_poll_req_t) req)) {
-                        status = MARCEL_POLL_SUCCESS(id);
-                        goto found;
-                }
-        }
-
- found:
-        LOG_OUT();
-
-        return status;
+        return 0;
 }
 #endif /* MARCEL */
 
@@ -671,9 +639,8 @@ mad_mx_blocking_test(p_mad_channel_t	 ch,
 
 #ifdef MARCEL
  {
-         p_mad_mx_driver_specific_t	ds	= NULL;
-         marcel_pollid_t     		pollid	= 0;
-         mad_mx_poll_req_t 		req	=
+         struct marcel_ev_wait		 ev_w;
+         mad_mx_ev_t 			 ev	=
                  {
                          .endpoint 	=  ep,
                          .p_request	=  p_request,
@@ -682,10 +649,7 @@ mad_mx_blocking_test(p_mad_channel_t	 ch,
                          .p_result	= &result
                  };
 
-         ds	= ch->adapter->driver->specific;
-         pollid	= ds->mx_pollid;
-
-         marcel_poll(pollid, &req);
+         marcel_ev_wait(&mad_mx_ev_server, &(ev.inst), &ev_w, 0);
  }
 #else /* MARCEL */
         do {
@@ -844,8 +808,8 @@ mad_mx_register(p_mad_driver_t driver) {
 
 void
 mad_mx_driver_init(p_mad_driver_t d) {
-        p_mad_mx_driver_specific_t	ds		= NULL;
-        mx_return_t			return_code	= MX_SUCCESS;
+        p_mad_mx_driver_specific_t	 ds		= NULL;
+        mx_return_t			 return_code	= MX_SUCCESS;
 
         LOG_IN();
         TRACE("Initializing MX driver");
@@ -856,11 +820,8 @@ mad_mx_driver_init(p_mad_driver_t d) {
 #endif /* MARCEL */
         ds  		= TBX_MALLOC(sizeof(mad_mx_driver_specific_t));
 #ifdef MARCEL
-        ds->mx_pollid =
-                marcel_pollid_create(mad_mx_marcel_group,
-                                     mad_mx_marcel_poll,
-                                     mad_mx_marcel_fast_poll,
-                                     MAD_MX_POLLING_MODE);
+        marcel_ev_server_set_poll_settings(&mad_mx_ev_server, MAD_MX_POLLING_MODE, 1);
+        marcel_ev_server_add_callback(&mad_mx_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_mx_do_poll);
 #endif /* MARCEL */
         d->specific	= ds;
 
@@ -876,6 +837,9 @@ mad_mx_driver_init(p_mad_driver_t d) {
         /* debug only */
         mad_mx_startup_info();
 
+#ifdef MARCEL
+	marcel_ev_server_start(&mad_mx_ev_server);
+#endif /* MARCEL */
         LOG_OUT();
 }
 

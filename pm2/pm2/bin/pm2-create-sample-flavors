@@ -60,6 +60,10 @@ registering_flavors() {
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--mad3=tcp
 
+    register_flavor mad4 \
+	--modules="mad4 marcel tbx ntbx init" $COMMON_OPTIONS \
+	--mad4=tcp --marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
+
     register_flavor ezflavor \
 	--modules="ezflavor" $COMMON_OPTIONS \
 	--ezflavor=gtk2

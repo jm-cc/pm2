@@ -269,12 +269,12 @@ __tbx_backtrace(void)
  */
 #ifdef TBX_USE_SAFE_MACROS
 #  define max(a, b) \
-       ({typedef _ta = (a), _tb = (b);  \
-         _ta _a = (a); _tb _b = (b);     \
+       ({__typeof__ ((a)) _a = (a); \
+	 __typeof__ ((b)) _b = (b); \
          _a > _b ? _a : _b; })
 #  define min(a, b) \
-       ({typedef _ta = (a), _tb = (b);  \
-         _ta _a = (a); _tb _b = (b);     \
+       ({__typeof__ ((a)) _a = (a); \
+	 __typeof__ ((b)) _b = (b); \
          _a < _b ? _a : _b; })
 #else // TBX_USE_SAFE_MACROS
 #  define max(a, b) (((a) > (b))?(a):(b))
@@ -437,8 +437,8 @@ __tbx_backtrace(void)
 
 #ifdef TBX_USE_SAFE_MACROS
 #  define tbx_aligned(v, a) \
-        ({typedef _tv = (v), _ta = (a); \
-         _tv _v = (v); _ta _a = (a); \
+        ({__typeof__ ((v)) _v = (v); \
+	 __typeof__ ((a)) _a = (a); \
          (_v + _a - 1) & ~(_a - 1);})
 #else // TBX_USE_SAFE_MACROS
 #  define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
@@ -452,17 +452,13 @@ __tbx_backtrace(void)
     // Bi-directional shifts
 #ifdef TBX_USE_SAFE_MACROS
 #  define tbx_lshift(x, n) ({     \
-        typedef _tn = (n);        \
-        typedef _tx = (x);        \
-        _tn _n = (n);             \
-        _tx _x = (x);             \
+	__typeof__ ((n)) _n = (n); \
+	__typeof__ ((x)) _x = (x); \
         _n > 0?_x << _n:_x >> -_n;\
 })
 #  define tbx_rshift(x, n) ({     \
-        typedef _tn = (n);        \
-        typedef _tx = (x);        \
-        _tn _n = (n);             \
-        _tx _x = (x);             \
+	__typeof__ ((n)) _n = (n); \
+	__typeof__ ((x)) _x = (x); \
         _n > 0?_x >> _n:_x << -_n;\
 })
 #else // TBX_USE_SAFE_MACROS

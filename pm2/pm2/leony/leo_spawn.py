@@ -43,4 +43,8 @@ def session_spawn(s):
 
             logger.debug('process no %d connected' %  ps.global_rank)
             leo_comm.send_int(client, ps.global_rank)
-            s.process_list.append(ps)
+	    
+	    logger.debug('Session id  is %d ' %  ps.session.session_id)
+	    leo_comm.send_int(client, ps.session.session_id)
+	    
+	    s.process_list.append(ps)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: asm.S,v $
+Revision 1.4  2001/01/03 14:12:22  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.3  2000/04/11 09:07:19  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -52,7 +55,7 @@ ______________________________________________________________________________
 	.text
 	.align 4
 	
-#ifdef FREEBSD_SYS
+#if defined(FREEBSD_SYS) || defined(WIN_SYS)
 	.globl _my_setjmp
 _my_setjmp:
 #else

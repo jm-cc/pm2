@@ -1,12 +1,12 @@
-\section{Wizarding PM2: adavanced features}
+\chapter{Wizarding PM2: advanced features}
 
-\stamp $Id: wizarding.tex,v 1.2 2001/04/12 16:01:00 bouge Exp $
+\stamp $Id: wizarding.tex,v 1.5 2001/04/17 14:15:15 bouge Exp $
 
 We have gathered in this section some advanced material as a reference
 for the advanced user. Beginners should probably skip this section on
 a first reading. 
 
-\subsection{Thread synchronization}
+\section{Thread synchronization}
 
 PM2 provides a number of POSIX-like synchronization facilities to
 synchronize the threads within a node and among remote nodes: locks,
@@ -14,10 +14,10 @@ mutexes, semaphores, conditions, barriers. The facilities which are
 local to a node are provided by the Marcel thread scheduler. Remote
 synchronization facilities are provided by PM2.
 
-\paragraph{Locks}
+\subsection{Locks}
 
-The lowest level of synchonization is to disable the scheduler
-temporarily at the local node. This garantees that the successive
+The lowest level of synchronization is to disable the scheduler
+temporarily at the local node. This guarantees that the successive
 instructions will be issued atomically. This is done using the
 \|pm2_freeze|/\|pm2_unfreeze| routines. These are simply wrappers for
 two essential Marcel routines respectively called \|lock_task| and
@@ -25,7 +25,7 @@ two essential Marcel routines respectively called \|lock_task| and
 the scheduler, disabling any external interrupt. No other thread
 whatsoever can be scheduled until the \|unlock_task| has been called.
 These routines may be nested. It is up to the user to guarantee proper
-nesting. One has te be uttermost careful that PM2/Marcel provides no
+nesting. One has to be uttermost careful that PM2/Marcel provides no
 protection against deadlock. Also, locking a tasked within a node
 disable any progress of the daemon service threads: no message can be
 received, etc. It is up to the user to guarantee that no harm may
@@ -39,7 +39,7 @@ number of threads on the local node. Each even thread increases the
 shared variable \|counter| for \|N| times, and each odd thread decreases
 it for \|N| times, too. To emphasize that increasing and decreasing a
 variable is \emph{not} an atomic operation at the level of machine
-code, we have written it explicitely as a Load/Add/Store series of
+code, we have written it explicitly as a Load/Add/Store series of
 operation. (Observe that variable \|tmp| has be registered as
 \|volatile| to prevent the wise compiler to optimize our
 trick!). The expected final value for \|counter| is~0.  Running the
@@ -60,7 +60,7 @@ is a relatively frequent event, which should definitely not be
 overlooked by the PM2 programmer! Activated the two calls yields
 result~0, as expected.
 
-\paragraph{Mutexes}
+\subsection{Mutexes}
 
 \figurelistingdouble {mutex.c} {Using mutexes in PM2}
 {prog:mutex}
@@ -82,11 +82,10 @@ iterations. A mutex has to be first initialized using the
 acquired and released, respectively with the \|marcel_mutex_lock| and
 \|marcel_mutex_unlock| routines.
 
-\paragraph{Semaphores}
+\subsection{Semaphores}
 
 \figurelistingdouble {semaphore.c} {Using semaphores in PM2}
 {prog:semaphore}
-
 
 Marcel also provides semaphores. A semaphore can be initialized with
 the \|marcel_sem_init| routine with an initial integer value. It can
@@ -96,34 +95,80 @@ probably expected.
 In fact, completion are just a simple wrapping for semaphores. On
 initializing a completion, a semaphore is initialized, and its address
 and native node are stored into a structure. Waiting for a completion
-is just issuing a \|marcel_sem_P| on the semaphore.  Signalling
+is just issuing a \|marcel_sem_P| on the semaphore.  Signaling
 completion includes the following action: if the local node is the
 same as the native node, then a call to \|marcel_sem_V| is issued for
 the semaphore; otherwise, a RPC request is issued to the native node,
-with the the signalling routine as its service and the completion as
+with the the signaling routine as its service and the completion as
 its argument. Program~\ref{prog:semaphore} is the same as
 Program~\ref{prog:mutex}, but completions have been replaced by
 explicit semaphores.
 
-\paragraph{Conditions}
+\subsection{Conditions}
 
-% \figurelistingdouble {condition.c} {Using condition variables in PM2}
-% {prog:condition}
+\figurelistingdouble {condition.c} {Using condition variables in PM2}
+ {prog:condition}
+
+Marcel finally provides conditions variables associated to mutexes,
+with a Mesa-style semantics. A thread which signals a condition keep
+on running. One of the threads blocked waiting for this condition is
+selected and appended to the queue of the threads ready to run. As a
+consequence, \emph{user cannot be guaranteed that a thread which exits
+  a wait is immediately executed}. Actually, no hypothesis may be made
+about the state of the program at the time it is eventually
+scheduled. This is the reason why it is necessary to encapsulate
+waiting commands within \|while| loop: the first action of a thread
+which has been signaled is then to retest the condition which
+commanded its waiting; if it does not hold, then it goes back to
+sleep, waiting again to be signaled.
+
+In Program~\ref{prog:condition}, we have further constrained the
+shared counter to take values only between \|MIN_COUNTER| and
+\|MAX_COUNTER|. This is done using two condition variables
+to control increment and decrement, similarly to a classical
+producer-consumer scheme. (We have reverted to direct operations on
+the \|counter| variable to enhance readability.) 
+
+A condition is declared using the \|marcel_cond_init| routine. It
+takes as arguments the condition and an attribute. As usual, \|NULL|
+is a sensible default for the attribute. Waiting on a condition makes
+sense \emph{only} within a critical section controlled by some mutex.
+The mutex is passed to the routine \|marcel_cond_wait| as an
+additional parameter. The very first job of this routine is to acquire
+the mutex. In the regular use of condition variable, the waiting
+routine is called within the critical section controlled by this very
+mutex, so that is it necessarily free. But it is not mandatory that it
+is so, though the writer cannot see any sensible example of such a
+situation at this time... The condition is signaled using the
+\|marcel_cond_signal| routine. Observe this does not require any
+reference to the controlling mutex. This routine wakes up exactly one
+waiting thread, if any exists. Alternatively, the
+\|marcel_cond_broadcast| routine wakes up \emph{all} threads waiting
+on the given condition. It is also possible to specify a limit on the
+time a thread should wait for a condition, using the
+\|marcel_cond_timedwait| routine. In this case, the routine returns a
+\|ETIMEDOUT| value if the thread has not been signaled within the
+specify delay. 
 
 \begin{note}
-  Yet to be finished... after holidays!
+  LB to RN: Please check carefully!
 \end{note}
 
-
-
-
-\subsection{Profiling PM2 programs}
+\section{Profiling PM2 programs}
 \label{sec:profiling}
+
+\begin{note}
+  LB: Yet to do. 
+\end{note}
 
 \section{Miscellaneous}
 
 \subsection{Application initialization with PM2}
 \label{sec:startupfunc}
 
-\|pm2_set_startup_func|
+\begin{note}
+  LB: Yet to do. Describe \|pm2_set_startup_func|?
+\end{note}
+
+
 

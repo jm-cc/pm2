@@ -297,6 +297,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  TBX_FREE(dyn_buf);
 	  dyn_buf = NULL;
 
+	  TBX_FREE(msg);
+	  msg = NULL;
+
           /* receive */
 	  memset(buf, 0, BUFFER_SIZE);
           receive_token(channel, buf, &dyn_buf);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: bitmap.c,v $
+Revision 1.7  2000/09/04 07:42:46  rnamyst
+Minor modifs (removed some debug messages)
+
 Revision 1.6  2000/07/14 16:17:09  gantoniu
 Merged with branch dsm3
 
@@ -767,12 +770,10 @@ void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned i
 
   for (j = 0 ; j < nb_cycles; j++, start += period)
     set_bits_to_1(start, bits_to_1, crt_bitmap);
-  //#ifdef DEBUG
+#ifdef DEBUG
   fprintf(stderr, "last local slot: %d\n", start + bits_to_1 - 1);
-  //#endif
-
+#endif
 }
-
 
 int bitmap_is_empty(unsigned int *crt_bitmap, int size)
 {

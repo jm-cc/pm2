@@ -107,18 +107,24 @@ static void dicho(void)
   pm2_thread_create(thr_dicho, NULL);
 }
 
-static void f(void)
+static void f(int argc, char *argv[])
 {
   Tick t1, t2;
   unsigned long temps;
   unsigned inf, sup, res;
   pm2_completion_t c;
+  unsigned one_time_run = 0;
 
-  while(1) {
+  while(!one_time_run) {
 
-    tfprintf(stderr, "Entrez un entier raisonnable "
-	     "(0 pour terminer) : ");
-    scanf("%d", &sup);
+    if(argc > 1) {
+      sup = atoi(argv[1]);
+      one_time_run = 1;
+    } else {
+      tfprintf(stderr, "Entrez un entier raisonnable "
+	       "(0 pour terminer) : ");
+      scanf("%d", &sup);
+    }
 
     if(!sup)
       break;
@@ -161,7 +167,7 @@ int pm2_main(int argc, char **argv)
       exit(1);
     }
 
-    f();
+    f(argc, argv);
 
     pm2_halt();
   }

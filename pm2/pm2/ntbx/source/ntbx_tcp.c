@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.5  2000/03/08 17:17:00  oaumage
+- utilisation de TBX_MALLOC
+
 Revision 1.4  2000/03/07 15:43:48  oaumage
 - suppression de l'usage de socketlen_t au profit de int (probleme sur info)
 
@@ -245,7 +248,7 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
   if (server->state)
     FAILURE("server already initialized");
 
-  server_specific = malloc(sizeof(ntbx_tcp_server_specific_t));
+  server_specific = TBX_MALLOC(sizeof(ntbx_tcp_server_specific_t));
   CTRL_ALLOC(server_specific);
   server->specific = server_specific;
   
@@ -272,7 +275,7 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
   if (client->state)
     FAILURE("client already initialized");
 
-  client_specific = malloc(sizeof(ntbx_tcp_client_specific_t));
+  client_specific = TBX_MALLOC(sizeof(ntbx_tcp_client_specific_t));
   CTRL_ALLOC(client_specific);
   client->specific = client_specific;  
   
@@ -296,7 +299,7 @@ ntbx_tcp_client_reset(p_ntbx_client_t client)
 	FAILURE("invalid client data");
       
       SYSCALL(close(((p_ntbx_tcp_client_specific_t)client->specific)->descriptor));
-      free(client->specific);
+      TBX_FREE(client->specific);
       client->specific = NULL;
       client->state    = ntbx_client_state_uninitialized;
     }
@@ -318,7 +321,7 @@ ntbx_tcp_server_reset(p_ntbx_server_t server)
       
       SYSCALL(close(((p_ntbx_tcp_server_specific_t)server->specific)
 		    ->descriptor));
-      free(server->specific);
+      TBX_FREE(server->specific);
       server->specific = NULL;
       server->state    = ntbx_server_state_uninitialized;
     }
@@ -447,7 +450,7 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
 	}
     }
 
-  client_specific = malloc(sizeof(ntbx_tcp_client_specific_t));
+  client_specific = TBX_MALLOC(sizeof(ntbx_tcp_client_specific_t));
   CTRL_ALLOC(client_specific);
   client->specific = client_specific;  
   
@@ -496,7 +499,7 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
   else
     FAILURE("invalid client state");
 
-  free(client->specific);
+  TBX_FREE(client->specific);
   client_specific  = client->specific = NULL;
   client->state    = ntbx_client_state_uninitialized;
 
@@ -532,7 +535,7 @@ ntbx_tcp_server_disconnect(p_ntbx_server_t server)
   else
     FAILURE("invalid server state");
 
-  free(server->specific);
+  TBX_FREE(server->specific);
   server_specific  = server->specific = NULL;
   server->state    = ntbx_server_state_uninitialized;
 

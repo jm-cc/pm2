@@ -202,9 +202,10 @@ static __inline__ long get_sp(void)
 }
 #  define set_sp(val) \
   do { \
-    SET_MARCEL_SELF_FROM_SP(val); \
+    typeof(val) value=(val); \
+    SET_MARCEL_SELF_FROM_SP(value); \
     __asm__ __volatile__("movl %0, %%esp" \
-                       : : "m" (val) : "memory" ); \
+                       : : "m" (value) : "memory" ); \
   } while (0)
 #endif
 

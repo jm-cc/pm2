@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.18  2000/12/11 08:31:18  oaumage
+- support Leonie
+
 Revision 1.17  2000/11/16 13:24:07  oaumage
 - mise a jour initialisation
 
@@ -251,7 +254,11 @@ mad_init(int                  *argc,
   p_mad_madeleine_t madeleine = NULL;
   
   LOG_IN();
-  
+
+#ifdef PM2_DEBUG
+  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);  
+#endif /* PM2_DEBUG */
+
   tbx_init(*argc, argv);
   ntbx_init(*argc, argv);
   
@@ -268,6 +275,13 @@ mad_init(int                  *argc,
 
   mad_slave_spawn(madeleine, *argc, argv);
   mad_connect(madeleine, *argc, argv);
+
+  ntbx_purge_cmd_line(argc, argv);
+  tbx_purge_cmd_line(argc, argv);
+
+#ifdef PM2_DEBUG
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);  
+#endif /* PM2_DEBUG */
 
   LOG_OUT();
 

@@ -39,7 +39,7 @@ COMMON_DEFAULT_TARGET :=  marcel_default
 include $(PM2_ROOT)/make/master_vars.mak
 
 # Ce makefile
-COMMON_MAKEFILES +=  $(MAD2_ROOT)/Makefile
+COMMON_MAKEFILES +=  $(MARCEL_ROOT)/Makefile
 
 # Inclusion des variables
 include $(MARCEL_MAKE)/vars.mak

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.9  2000/04/17 08:31:05  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.8  2000/04/11 09:07:12  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -297,7 +300,7 @@ static __inline__ unsigned int preemption_enabled(void)
 
 /* ==== miscelaneous private defs ==== */
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
 extern void breakpoint();
 #endif
 

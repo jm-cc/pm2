@@ -93,8 +93,8 @@ set `cat ${MAD1_ROOT}/.madconf`
 
 if test $MAD_DEBUG = on
 then
-    exec rsh $1 ${MAD1_ROOT}/bin/tcp/maddebug "$DISPLAY" $command
+    exec ${PM2_RSH:-rsh} $1 ${MAD1_ROOT}/bin/tcp/maddebug "$DISPLAY" $command
 else
-    exec rsh $1 "setenv DISPLAY $DISPLAY ; $command"
+    exec ${PM2_RSH:-rsh} $1 "setenv DISSPLAY $DISPLAY ; $command"
 fi
 

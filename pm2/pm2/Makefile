@@ -27,7 +27,7 @@ endif
 # Par securite, il vaut mieux considerer ROOT que PM2_ROOT, pour ne
 # pas inclure de Makefiles provenant d'une distribution obsolete par
 # exemple...
-ROOT	:=	.
+ROOT	:=	$(CURDIR)
 
 # Variables communes
 #---------------------------------------------------------------------
@@ -168,16 +168,33 @@ distcleandoc:
 
 # Initialisation de la distribution PM2
 #---------------------------------------------------------------------
-.PHONY: init checkmake cvsinit flavorinit
-init: checkmake cvsinit flavorinit
+.PHONY: init checkmake bkco optionsinit bkinit \
+	cvsinit linksinit flavorinit bkclean
+init: checkmake linksinit optionsinit flavorinit
 
 checkmake:
 	@if ( expr $(MAKE_VERSION) \< 3.76 >> /dev/null ) then \
 	echo "Wrong make version. Upgrade to version 3.77"; exit 1;\
 	fi
 
-cvsinit ARCHITECTURES modules:
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-recreate-links
+bkco:
+ifeq ($(wildcard BitKeeper),BitKeeper)
+	bk -r co || true
+endif
+	$(MAKE) bkinit
+
+README:
+	$(MAKE) bkco
+
+optionsinit: README modules
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-make-option-sets
+
+linksinit modules ARCHITECTURES: $(if $(wildcard README),,README)
+	$(COMMON_HIDE) $(ROOT)/bin/pm2-recreate-links --nooptionsets
+
+bkinit: optionsinit
+
+cvsinit: linksinit optionsinit
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors

@@ -250,6 +250,7 @@ static __inline__ char *marcel_stackbase(marcel_t pid)
 /* ============= miscellaneous ============ */
 
 unsigned long marcel_cachedthreads(void);
+unsigned marcel_get_nb_lwps_np(void);
 
 
 /* ======= MT-Safe functions from standard library ======= */

@@ -731,7 +731,6 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       mdebug("blk = %lu\n", blk);
 
       (*transf)(cur, depl, blk, arg);
-      unlock_task();
 
       if(!fork)
 	marcel_exit(NULL);
@@ -739,8 +738,8 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
 #ifdef MA__DEBUG
       breakpoint();
 #endif
-      unlock_task();
     }
+    unlock_task();
   } else {
     memcpy(t->ctx_migr, t->ctx_yield, sizeof(marcel_ctx_t));
 
@@ -777,7 +776,7 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
   lock_task();
 
   marcel_sched_init_marcel_thread(t, &marcel_attr_default);
-  t->preempt_count=MA_PREEMPT_OFFSET; /* one for use, one for the scheduler */
+  t->preempt_count=MA_PREEMPT_OFFSET;
   marcel_one_more_task(t);
   ma_wake_up_created_thread(t);
 

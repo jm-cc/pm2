@@ -73,7 +73,7 @@ Compilation support options
 
 Directories pm2-libs was configured to
   --bindir --srcdir --libdir --objdir --depdir --asmdir --makdir
-  --stampdir --builddir --includedir --scriptdir
+  --stampdir --builddir --includedir --scriptdir --cppdir
 
 Other options
   --ext       : extension used
@@ -141,6 +141,7 @@ includedir=false
 bindir=false
 srcdir=false
 objdir=false
+cppdir=false
 depdir=false
 asmdir=false
 stampdir=false

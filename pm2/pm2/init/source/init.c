@@ -62,7 +62,7 @@ void common_pre_init(int *argc, char *argv[],
   profile_init();
 #endif /* PROFILE */
 
-#ifdef PM2DEBUG  
+#ifdef PM2DEBUG
 /*
    * Logging services
    * ------------------
@@ -73,7 +73,7 @@ void common_pre_init(int *argc, char *argv[],
    * Requires:
    * - ??? <to be completed>
    */
-  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT); 
+  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #endif /* PM2DEBUG */
 
 #ifdef PM2
@@ -146,7 +146,7 @@ void common_pre_init(int *argc, char *argv[],
 
 #ifdef MAD2
   /*
-   * Mad2 memory manager 
+   * Mad2 memory manager
    * -------------------
    *
    * Provides:
@@ -177,7 +177,7 @@ void common_pre_init(int *argc, char *argv[],
 
 #ifdef MAD2
   /*
-   * Mad2 core initialization 
+   * Mad2 core initialization
    * ------------------------
    *
    * Provides:
@@ -192,7 +192,7 @@ void common_pre_init(int *argc, char *argv[],
    * - argument "configuration file"
    * - argument "adapter_set"
    */
-  
+
   {
     void *configuration_file = NULL;
     void *adapter_set        =
@@ -205,7 +205,7 @@ void common_pre_init(int *argc, char *argv[],
 
 #ifdef MAD3
   /*
-   * Mad3 core initialization 
+   * Mad3 core initialization
    * ------------------------
    *
    * Provides:
@@ -269,16 +269,15 @@ void common_pre_init(int *argc, char *argv[],
    * Requires:
    * - the `madeleine' object
    */
-
   mad_cmd_line_init(attr->madeleine, *argc, argv);
   mad_leonie_link_init(attr->madeleine, *argc, argv);
+  mad_leonie_command_init(attr->madeleine, *argc, argv);
   mad_directory_init(attr->madeleine, *argc, argv);
   mad_dir_driver_init(attr->madeleine);
 
 #ifdef PM2
-  pm2self      = attr->madeleine->session->process_rank;
-  pm2_conf_size =
-    tbx_slist_get_length(attr->madeleine->dir->process_slist);
+  pm2self       = attr->madeleine->session->process_rank;
+  pm2_conf_size = tbx_slist_get_length(attr->madeleine->dir->process_slist);
 // Warning:
 // The number of processes and the global rank maximum may be different !!!
 // number of processes = tbx_slist_get_length(madeleine->dir->process_slist));
@@ -307,7 +306,7 @@ void common_pre_init(int *argc, char *argv[],
 
   if (attr)
     attr->rank = attr->madeleine->configuration->local_host_id;
-#endif /* MAD2 */ 
+#endif /* MAD2 */
 
 #ifdef MAD2
   /*
@@ -315,7 +314,7 @@ void common_pre_init(int *argc, char *argv[],
    * -------------------------
    *
    * Provides:
-   * - Output redirection to log files 
+   * - Output redirection to log files
    *
    * Requires:
    * - the `madeleine' object
@@ -338,7 +337,7 @@ void common_pre_init(int *argc, char *argv[],
    * - the `madeleine' object
    */
   mad_configuration_init(attr->madeleine, *argc, argv);
-  
+
 #ifdef PM2
   pm2_conf_size = attr->madeleine->configuration->size;
 #endif
@@ -362,10 +361,10 @@ void common_pre_init(int *argc, char *argv[],
 #endif /* MAD2 */
 
 #if defined(MAD2) && defined(APPLICATION_SPAWN)
-  if (attr && !attr->rank) 
+  if (attr && !attr->rank)
     {
       // url: shall we store it or display it?
-      if (attr->url) 
+      if (attr->url)
 	{
 	  strcpy(attr->url, mad_generate_url(attr->madeleine));
 	}
@@ -457,7 +456,6 @@ void common_post_init(int *argc, char *argv[],
 
 #ifdef MAD3
   mad_dir_channel_init(attr->madeleine);
-  mad_leonie_command_init(attr->madeleine, *argc, argv);
 #endif /* MAD3 */
 
 #ifdef PM2
@@ -496,7 +494,7 @@ void common_post_init(int *argc, char *argv[],
   tbx_purge_cmd_line(argc, argv);
 #endif /* TBX */
 
-#ifdef PM2DEBUG  
+#ifdef PM2DEBUG
 /*
    * Logging services - args clean-up
    * --------------------------------
@@ -507,7 +505,7 @@ void common_post_init(int *argc, char *argv[],
    * Requires:
    * - ??? <to be completed>
    */
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT); 
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
 #endif /* PM2DEBUG */
 }
 
@@ -516,7 +514,7 @@ common_exit(common_attr_t *attr)
 {
   LOG_IN();
   if (!attr)
-    { 
+    {
       attr = &default_static_attr;
     }
 
@@ -526,7 +524,7 @@ common_exit(common_attr_t *attr)
 #endif // PM2
 
 #ifdef MAD3
-  // 
+  //
   // Leonie termination synchronisation
   // ----------------------------------
   //
@@ -558,7 +556,7 @@ common_exit(common_attr_t *attr)
   dsm_pm2_exit();
 #endif // DSM
 #endif // PM2
-  
+
 #ifdef MAD3
   mad_dir_driver_exit(attr->madeleine);
   mad_directory_exit(attr->madeleine);
@@ -578,7 +576,7 @@ common_exit(common_attr_t *attr)
 #endif // MAD2
 
 #ifdef NTBX
-  // 
+  //
   // NTBX clean-up
   // -------------
   //
@@ -591,10 +589,10 @@ common_exit(common_attr_t *attr)
   //
 
   ntbx_exit();
-#endif // NTBX  
+#endif // NTBX
 
 #ifdef TBX
-  // 
+  //
   // TBX clean-up
   // -------------
   //
@@ -606,7 +604,7 @@ common_exit(common_attr_t *attr)
   //
 
   tbx_exit();
-#endif // TBX  
-  
+#endif // TBX
+
   LOG_OUT();
 }

@@ -43,8 +43,7 @@ case $1 in
     *) command=`pwd`/$*
 esac
 
-set `cat ${MAD2_ROOT}/.mad2_conf`
-shift
+set ${PM2_CONF_FILE}
 chaine=""
 for i in $*
 do

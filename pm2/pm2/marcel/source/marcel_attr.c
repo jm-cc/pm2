@@ -36,6 +36,7 @@ marcel_attr_t marcel_attr_default = {
   .vpmask= MARCEL_VPMASK_EMPTY,
   .flags= 0,
   .name= "user_task",
+  .sched= MARCEL_SCHED_ATTR_DEFAULT,
 };
 
 /* Déclaré dans marcel.c : */

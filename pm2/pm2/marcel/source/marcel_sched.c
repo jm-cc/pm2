@@ -774,14 +774,12 @@ void marcel_insert_task(marcel_t t)
 // cas lorsque la tâche a été dévié alors qu'elle était bloquée par
 // exemple), "insert_task" n'est pas appelée et la fonction a juste
 // pour effet de positionner *blocked à FALSE.
-void marcel_wake_task(marcel_t t, boolean *blocked)
+void ma_wake_task(marcel_t t, boolean *blocked)
 {
   LOG_IN();
 
   mdebug("\t\t\t<Waking thread %p (num %d)>\n",
 	 t, t->number);
-
-  state_lock(t);
 
   if(IS_SLEEPING(t)) {
 
@@ -821,8 +819,6 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
 
   if(blocked != NULL)
     *blocked = FALSE;
-
-  state_unlock(t);
 
   LOG_OUT();
 }
@@ -978,15 +974,15 @@ marcel_t marcel_next[ACT_NB_MAX_CPU];
 
 inline static void act_goto_next_task(marcel_t pid, int from)
 {
-	marcel_next[GET_LWP_NUMBER(marcel_self())]=pid;
+  marcel_next[GET_LWP_NUMBER(marcel_self())]=pid;
 	
-	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED\n");
-	act_cntl(ACT_CNTL_RESTART_UNBLOCKED, (void*)from);
-	mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
+  mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED\n");
+  act_cntl(ACT_CNTL_RESTART_UNBLOCKED, (void*)from);
+  mdebug("\t\tcall to ACT_CNTL_RESTART_UNBLOCKED aborted\n");
 
-	if (pid) {
-		MA_THR_LONGJMP((pid), NORMAL_RETURN);
-	}
+  if (pid) {
+    MA_THR_LONGJMP((pid), NORMAL_RETURN);
+  }
 }
 #else
 #define act_goto_next_task(pid,from) ((void)0)

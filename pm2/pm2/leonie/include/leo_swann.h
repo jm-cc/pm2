@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_swann.h,v $
+Revision 1.2  2000/06/09 08:45:45  oaumage
+- Progression du code
+
 Revision 1.1  2000/05/15 13:51:05  oaumage
 - Reorganisation des sources de Leonie
 
@@ -50,8 +53,11 @@ ______________________________________________________________________________
 #define __LEO_SWANN_H
 
 p_leo_swann_module_t
-leo_launch_swann_module(p_leonie_t             leonie,
-			char                  *cluster_id,
-			p_leo_clu_host_name_t  host_description);
+leo_launch_swann_module(p_leonie_t                  leonie,
+			p_leo_application_cluster_t cluster);
+
+p_leo_mad_module_t
+leo_launch_mad_module(p_leonie_t                  leonie,
+		      p_leo_application_cluster_t cluster);
 
 #endif /* __LEO_SWANN_H */

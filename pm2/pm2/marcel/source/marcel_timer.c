@@ -86,7 +86,8 @@ static void timer_action(struct ma_softirq_action *a)
 		
 	//marcel_check_sleeping();
 	//marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
-	ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
+	if (LWP_NUMBER(LWP_SELF) == 0)
+		ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
 	ma_update_process_times(1);
 		
 	LOG_OUT();

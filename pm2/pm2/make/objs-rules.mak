@@ -57,6 +57,7 @@ $(PM2_MAK_DIR)/$(MODULE)-config.mak: $(MOD_STAMP_FLAVOR)
 .PHONY: showflags showflags-obj showflags-ld
 showflags: showflags-obj showflags-ld
 
+showflags-obj: CFLAGS+=$(MOD_CFLAGS)
 showflags-obj:
 	@echo "  Compiling $(MODULE) using CFLAGS=$(CFLAGS)"
 
@@ -92,26 +93,32 @@ $(MOD_DEPENDS): $(MOD_GEN_DEP)/%.d: $(COMMON_DEPS)
 $(MOD_OBJECTS) $(MOD_PICS): $(MOD_GEN_OBJ)/%: $(MOD_GEN_DEP)/%.d
 $(MOD_PREPROC): $(MOD_GEN_CPP)/%: $(MOD_GEN_DEP)/%.d
 
+$(filter %.o.d, $(MOD_C_DEPENDS)): CFLAGS+=$(MOD_CFLAGS)
 $(filter %.o.d, $(MOD_C_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).o.d: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.pic.d, $(MOD_C_DEPENDS)): CFLAGS+=$(MOD_CFLAGS)
 $(filter %.pic.d, $(MOD_C_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).pic.d: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.o.d, $(MOD_S_DEPENDS)): CFLAGS+=$(MOD_CFLAGS)
 $(filter %.o.d, $(MOD_S_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).o.d: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.pic.d, $(MOD_S_DEPENDS)): CFLAGS+=$(MOD_CFLAGS)
 $(filter %.pic.d, $(MOD_S_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).pic.d: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(MOD_I_DEPENDS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_I_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.i
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS)  -DPREPROC $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d $$(MOD_GEN_CPP)/\1:|' > $@
+$(MOD_SI_DEPENDS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_SI_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.si
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS)  -DPREPROC $(CFLAGS) $< | \
@@ -120,16 +127,19 @@ endif
 
 # Dependances vers *.c
 #---------------------------------------------------------------------
+$(MOD_C_OBJECTS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: $(MOD_GEN_C_INC)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+$(MOD_C_PICS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: $(MOD_GEN_C_INC)
 $(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
+$(MOD_C_PREPROC): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: $(MOD_GEN_C_INC)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 	$(COMMON_BUILD)
@@ -137,14 +147,17 @@ $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 
 # Dependances vers *.S
 #---------------------------------------------------------------------
+$(MOD_S_OBJECTS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_S_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -x assembler-with-cpp -c $< -o $@
 
+$(MOD_S_PICS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_S_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -x assembler-with-cpp -c $< -o $@
 
+$(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_S_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).si: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -P -DPREPROC $(CFLAGS) $< > $@
@@ -162,24 +175,30 @@ $(MOD_FUT): $(MOD_GEN_CPP)/%.fut: $(MOD_GEN_CPP)/%.i
 
 # Fichiers *.h découpés
 #---------------------------------------------------------------------
-ifneq ($(strip $(MOD_HSPLITS_SOURCES)),)
-dot_h: $(MOD_HSPLITS_MAKEFILE)
-endif
+#ifneq ($(strip $(MOD_HSPLITS_PARTS)),)
+dot_h: $(MOD_HSPLITS_MAKEFILES)
+#endif
 
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
-ifneq ($(wildcard $(MOD_HSPLITS_MAKEFILE)),)
-include $(MOD_HSPLITS_MAKEFILE)
-endif # MOD_HSPLITS_MAKEFILE
+ifneq ($(wildcard $(MOD_HSPLITS_MAKEFILES)),)
+include $(MOD_HSPLITS_MAKEFILES)
+endif # MOD_HSPLITS_MAKEFILES
 endif # $(MAKECMDGOALS)
 
-$(MOD_HSPLITS_MAKEFILE): $(add-prefix $(MOD_HSPLITS_DIR),$(MOD_HSPLITS_SOURCES))
-	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
-		--makefile $@ \
-		--srcdir $(MOD_HSPLITS_DIR) \
-		--gendir $(MOD_GEN_INC) \
-		--masterfile $(MODULE)-master.h \
-		$(MOD_HSPLITS_SOURCES)
+#$(MOD_HSPLITS_MAKEFILE): $(MOD_HSPLITS_COMMON_DEP) \
+#		$(foreach PART, $(MOD_HSPLITS_PARTS), \
+#			$(addprefix $($(PART)_SRCDIR)/,$($(PART)_SOURCES)))
+#	$(COMMON_BUILD)
+#	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
+#		--makefile $@ \
+#		--gendir $(MOD_GEN_INC) \
+#		--masterfile $(MODULE)-master.h \
+#		$(foreach PART, $(MOD_HSPLITS_PARTS), \
+#			$(addprefix --srcdir "" --start-file ,$($(PART)_COMMON)) \
+#			$(addprefix --srcdir ,$($(PART)_SRCDIR)) \
+#			$(addprefix --gensubdir ,$($(PART)_GENSUBDIR)) \
+#			$(addprefix --default-section ,$($(PART)_DEFAULT_SECTION)) \
+#			$($(PART)_SOURCES) )
 
 # Lex
 #---------------------------------------------------------------------

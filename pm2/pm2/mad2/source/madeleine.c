@@ -182,7 +182,12 @@ mad_driver_init(p_mad_madeleine_t madeleine)
        drv++)
     {
       p_mad_driver_t driver;
-     
+      
+#ifdef EXTERNAL_SPAWN
+      if (drv == madeleine->settings->external_spawn_driver)
+	continue;
+#endif /* EXTERNAL_SPAWN */
+
       driver = &(madeleine->driver[drv]);      
       driver->interface.driver_init(driver);
     }

@@ -33,7 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# needed at least by PM2_CONFIG --gen_mak progs
+# needed at least by PM2_GEN_MAK progs
 export PROGRAM
 
 include $(PM2_ROOT)/make/common-vars.mak
@@ -106,7 +106,7 @@ COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(MAKEFILE_FILE)
 
 $(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
 	@echo "Generating $@"
-	@$(PM2_CONFIG) --gen_mak progs
+	@$(PM2_GEN_MAK) progs
 
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 $(PM2_MAK_DIR)/progs-libs.mak: $(PRG_STAMP_FLAVOR)

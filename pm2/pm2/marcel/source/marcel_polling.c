@@ -26,7 +26,6 @@ poll_struct_t *__polling_tasks = NULL;
 // Checks to see if some polling jobs should be done. NOTE: The
 // function assumes that:
 //   1) "lock_task()" was called previously ;
-//   2) __polling_tasks != NULL
 int __marcel_check_polling(unsigned polling_point)
 {
   int waked_some_task = 0;
@@ -35,7 +34,11 @@ int __marcel_check_polling(unsigned polling_point)
   mdebug("marcel_check_polling start\n");
   if(marcel_lock_tryacquire(&__polling_lock)) {
 
-    ps = __polling_tasks;
+    if((ps = __polling_tasks) == NULL) {
+      marcel_lock_release(&__polling_lock);
+      return 0;
+    }
+
     do {
       if(ps->polling_points & polling_point) {
 	register poll_cell_t *cell;
@@ -104,7 +107,8 @@ marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
 {
   marcel_pollid_t id;
 
-  //LOG_IN();
+  LOG_IN();
+
   lock_task();
 
   if(nb_poll_structs == MAX_POLL_IDS) {
@@ -126,7 +130,8 @@ marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,
   mdebug("registering pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
 	 id, g, f, h, id->polling_points);
 
-  //LOG_OUT();
+  LOG_OUT();
+
   return id;
 }
 
@@ -134,7 +139,7 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
 {
   poll_cell_t cell;
 
-  //LOG_IN();
+  LOG_IN();
   mdebug("Marcel_poll (thread %p)...\n", marcel_self());
   mdebug("using pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
 	 id, id->gfunc, id->func, id->fastfunc, id->polling_points);
@@ -185,10 +190,6 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
     }
   }
 
-  //LOG("marcel_poll give hand");
   marcel_give_hand(&cell.blocked, &__polling_lock);
-  //LOG_OUT();
+  LOG_OUT();
 }
-
-
-

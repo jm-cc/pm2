@@ -15,31 +15,35 @@
 
 export FLAVOR_DEFAULT:=marcel
 
-PROGS := active	blocking cleanup	contsw create daube delay derout eclone force_raise \
-	heavyalloc kbd keys matrix mutex nojoin once poll raise realtime sample \
-	schedpolicy smptest smpheavy stack_jump sumtime sumtree suspend timed \
-	timeout tsp tube usersched userspace vpmask toto
+# Fichiers C à ne pas considérer comme but
+#----------------------------------------------------------------------
+APPS_EXCLUDE = $(basename $(wildcard *-posix.c))
+
+# Programmes multi-objects et flags spécifics
+#----------------------------------------------------------------------
+eclone-objs := clone.o eclone.o
+eclone-cflags := -O0
+
+tsp-objs := tsp-main.o tsp-job.o tsp.o
+tsp-cflags := -DMT
+tsp-main-cflags := -DMT
+tsp-job-cflags := -DMT
+tsp-ldflags := -lm
+
+# Applications dont le nom n'a pas de .c correspondant
+#----------------------------------------------------------------------
+APPS :=
+
+#----------------------------------------------------------------------
+# Les applications compilées sont :
+# $(PROGS)
+# Ou, si $(PROGS) n'est pas défini :
+# (%.c -> %)
+# - $(APPS_EXCLUDE)
+# - (%.c -> % qui apparaissent dans un %-objs)
+# + $(APPS)
+# + (%.c -> % qui ont un %-objs)
+#----------------------------------------------------------------------
 
 include $(PM2_ROOT)/make/apps.mak
-
-
-ifdef APP_RECURSIF
-
-$(APP_BIN)/eclone$(APP_EXT): $(APP_OBJ)/clone$(APP_EXT).o
-
-$(APP_OBJ)/eclone$(APP_EXT).o: $(SRC_DIR)/eclone.c
-	$(COMMON_PREFIX) $(CC) $(CFLAGS) -O0 -c $< -o $@
-
-$(APP_BIN)/tsp$(APP_EXT): $(APP_OBJ)/tsp-main$(APP_EXT).o $(APP_OBJ)/tsp-job$(APP_EXT).o -lm
-
-$(APP_OBJ)/tsp$(APP_EXT).o: $(SRC_DIR)/tsp.c
-	$(COMMON_PREFIX) $(CC) $(CFLAGS) -DMT -c $< -o $@
-
-$(APP_OBJ)/tsp-main$(APP_EXT).o: $(SRC_DIR)/tsp-main.c
-	$(COMMON_PREFIX) $(CC) $(CFLAGS) -DMT -c $< -o $@
-
-$(APP_OBJ)/tsp-job$(APP_EXT).o: $(SRC_DIR)/tsp-job.c
-	$(COMMON_PREFIX) $(CC) $(CFLAGS) -DMT -c $< -o $@
-
-endif
 

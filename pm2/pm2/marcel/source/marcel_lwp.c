@@ -454,4 +454,3 @@ void __init marcel_lwp_init(void)
 __ma_initfunc_prio(marcel_lwp_init, MA_INIT_LWP_MAIN_STRUCT,
 		   MA_INIT_LWP_MAIN_STRUCT_PRIO, "Initialise __main_lwp");
 
-int marcel_lwp_force_link;

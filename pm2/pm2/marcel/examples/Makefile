@@ -129,6 +129,9 @@ $(MAR_OBJ)/matrice.o: $(MAR_SRC)/matrice.c $(MAR_HEADERS)
 $(MAR_OBJ)/daube.o: $(MAR_SRC)/daube.c $(MAR_HEADERS)
 	$(MAR_CC2)
 
+$(MAR_OBJ)/tube.o: $(MAR_SRC)/tube.c $(MAR_HEADERS)
+	$(MAR_CC2)
+
 # tsp
 $(MAR_OBJ)/tsp-job.o: $(MAR_SRC)/tsp-job.c $(MAR_HEADERS)
 	$(MAR_CC2) -DMT -DMARCEL
@@ -259,6 +262,10 @@ matrice: $(MAR_OBJ)/matrice.o $(MAR_LIB)
 	$(MAR_MOVE)
 
 daube: $(MAR_OBJ)/daube.o $(MAR_LIB)
+	$(MAR_LINK)
+	$(MAR_MOVE)
+
+tube: $(MAR_OBJ)/tube.o $(MAR_LIB)
 	$(MAR_LINK)
 	$(MAR_MOVE)
 

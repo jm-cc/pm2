@@ -4,7 +4,7 @@
 cfgfile=$1
 dev=$2
 shift 2
-list="$@"
+list=${@:+"$@"}
 
 nets=`cat $cfgfile | tr -d ' \n\t' | cut -d ':' -f '2-' | sed -e 's/},{/ /g' | sed -e 's/({//g' | sed -e 's/});//g'`
 
@@ -16,14 +16,14 @@ do
     set $nets
     net=$1
     shift
-    nets="$@"
+    nets=${@:+"$@"}
     # echo $net
 
     IFS=';'
     set $net
     IFS=$oldifs
 
-    fields="$@"
+    fields=${@:+"$@"}
 
     while 
 	[ -n "$fields" ]
@@ -32,7 +32,7 @@ do
 
 	field=$1
 	shift
-	fields="$@"
+	fields=${@:+"$@"}
 
 	IFS=':'
 	set $field
@@ -61,7 +61,7 @@ do
     IFS=','
     set $net_hosts
     IFS=$oldifs
-    net_hosts="$@"
+    net_hosts=${@:+"$@"}
 
     while
 	[ -n "$tmp_list" ]
@@ -69,7 +69,7 @@ do
 	set $tmp_list
 	host=$1
 	shift
-	tmp_list="$@"
+	tmp_list=${@:+"$@"}
 
 	for net_host in $net_hosts
 	do

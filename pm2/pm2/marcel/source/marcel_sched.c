@@ -1045,8 +1045,10 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
 
   LOG_IN();
 
-  if(locked() != 1)
+  if(locked() != 1) {
+    fprintf(stderr, "self : %p, lock : %d\n", cur, locked());
     RAISE(LOCK_TASK_ERROR);
+  }
   do {
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
       MA_THR_RESTARTED(cur, "Preemption");

@@ -1285,7 +1285,10 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 #endif
 
 	/* Task might have expired already, but not scheduled off yet */
-	if (p->sched.internal.array != rq->active) {
+	//if (p->sched.internal.array != rq->active) {
+	if (p->sched.internal.array != NULL) {
+		pm2debug("Strange, report or look at it (%s:%i)\n",
+				__FILE__, __LINE__);
 		ma_set_tsk_need_resched(p);
 		goto out;
 	}
@@ -1351,7 +1354,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			(p->time_slice >= TIMESLICE_GRANULARITY(p)) &&
 			(p->array == rq->active)) {
 #endif
-			if (preemption_enabled()) {
+			if (preemption_enabled() && ma_thread_preemptible()) {
 				//dequeue_task(p, rq->active);
 				ma_set_tsk_need_resched(p);
 //				p->prio = effective_prio(p);

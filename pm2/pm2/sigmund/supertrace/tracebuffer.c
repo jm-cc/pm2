@@ -87,12 +87,9 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
-    //    set_switch(tr->args[0], tr->args[1]);
     i-=2;
     j+=2;
-    //    if (!smp) thread = tr->args[1];
   } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
-    //    int n;
     if (fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0) {
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
@@ -105,12 +102,6 @@ static int read_user_trace(trace *tr)
       fprintf(stderr,"Corrupted user trace file\n");
       exit(1);
     }
-    /*    add_lwp(tr->args[0], tr->args[2], tr->args[1]);
-	  for(n = 0; n < NB_MAX_CPU; n++)
-	  if (pid_table[n] == tr->args[0]) {
-	  set_cpu(tr->args[0], n); 
-	  break;}
-	  if (!smp) thread = tr->args[2]; */
     i-=3;
     j+=3;
   }
@@ -122,16 +113,14 @@ static int read_user_trace(trace *tr)
     i--;
     j++;
   }
-  //  tr->cpu = cpu_of_lwp(tr->pid);
-  //  tr->relevant = 1;
   return 0;
 }
 
+/* idem */
 static int read_kernel_trace(trace *tr)
 {
   int i;
   int j;
-  //  tr->relevant = 0;
   if (fread(&j, sizeof(unsigned int), 1, f_fkt) == 0) {
     fkt_eof = 1;
     return 1;
@@ -146,7 +135,6 @@ static int read_kernel_trace(trace *tr)
   tr->pid = j & 0xffff;
   if (pid_table[tr->cpu] == -1) {
     pid_table[tr->cpu] = tr->pid;
-    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);
   }
   if (fread(&(tr->code), sizeof(int), 1, f_fkt) == 0) {
     fprintf(stderr,"Corrupted kernel trace file\n");
@@ -164,23 +152,16 @@ static int read_kernel_trace(trace *tr)
       j++;
     }
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
-      //      tr->relevant = 1;
-      /*      assert(tr->args[1] < NB_MAX_CPU);
-	      pid_table[tr->args[1]] = tr->args[0];
-	      if (is_lwp(tr->args[0])) {
-	      set_cpu(tr->args[0], tr->args[1]);
-	      if (!smp) thread = thread_of_lwp(tr->args[0]);
-	      }*/
-      //      if (tr->args[0] == pid) cpu = tr->args[1]; // Modifier bazar
+      if (pid_table[tr->args[1]] == -1) {
+	pid_table[tr->args[1]] = tr->args[0];
+      }
     }
   }
-  /*  if (is_lwp(tr->pid)) {
-      tr->relevant = 1;
-      tr->thread = thread_of_lwp(tr->pid);
-      } else tr->thread = -1;*/
   return 0;
 }
 
+
+/* calculate all the informations (cpu number...)  */
 static void fut_trace_calc(trace *tr)
 {
   if (smp) {
@@ -189,7 +170,9 @@ static void fut_trace_calc(trace *tr)
     } else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
       tr->thread = tr->args[2];
     } else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
-      tr->thread = tr->args[0];
+      tr->thread = 0;  // For now on
+    } else if (tr->code >> 8 == FUT_KEYCHANGE_CODE) {
+      tr->thread = 0;  // For now on
     } else tr->thread = tr->args[0];
   } else tr->thread = thread;
   tr->pid = lwp_of_thread(tr->thread);
@@ -208,9 +191,14 @@ static void fut_trace_calc(trace *tr)
     if (!smp) thread = tr->args[2];
   }
   tr->cpu = cpu_of_lwp(tr->pid);
+  if ((tr->cpu >= NB_MAX_CPU) || (tr->cpu < 0)) {
+    printf("OUps %d %d %d\n",tr->cpu, tr->pid, tr->thread);
+  }
   tr->relevant = 1;
 }
 
+
+/* calculates all the informations (thread number, pid)...*/
 static void fkt_trace_calc(trace *tr)
 {
   tr->relevant = 0;
@@ -235,6 +223,7 @@ static void fkt_trace_calc(trace *tr)
   } else tr->thread = -1;
 }
 
+/* aiguillage vers fut_trace_calc ou fkt_trace_calc */
 static void trace_calc(trace *tr)
 {
   if (tr->type == USER) fut_trace_calc(tr);
@@ -242,13 +231,15 @@ static void trace_calc(trace *tr)
   if (tr->thread > highest_thr) highest_thr = tr->thread;
 }
 
+
+/* read the fut header */
 static void read_fut_header()
 {  
   u_64 last;
   int n;
   char header[200];
   if (f_fut != NULL) {
-    // Lecture du header de fut : Attention non gestion de la corruption de fichier
+    // Reading  of teh fut header : Corrupted files not dealed with */
     fread(&smp, sizeof(int), 1, f_fut);
     fread(&pid, sizeof(unsigned long), 1, f_fut);
     fread(&cpu_cycles, sizeof(double), 1, f_fut);
@@ -273,6 +264,8 @@ static void read_fut_header()
   }
 }
 
+
+/* read the fkt header */
 static void read_fkt_header()
 {
   unsigned int ncpus;
@@ -291,6 +284,7 @@ static void read_fkt_header()
   if (f_fkt != NULL) {
     fread(&ncpus, sizeof(ncpus), 1, f_fkt);
     nb_cpu = (short int) nb_cpu;
+    printf("nb_cpu = %d\n",nb_cpu);
     mhz = (double *) malloc(sizeof(double)*ncpus);
     assert(mhz != NULL);
     fread(mhz, sizeof(double), ncpus, f_fkt);
@@ -333,7 +327,7 @@ static void read_fkt_header()
 }
 
 
-
+/* add an event in the buffer */
 static void add_buffer(trace tr)
 {
   int i;
@@ -354,10 +348,6 @@ static void add_buffer(trace tr)
   while (tmp != EMPTY_LIST) {
     // Beware pb of 0
     if (le(tmp->tr.clock,tr_item->tr.clock)) break;
-    /*    printf("One up %d(%u - %x - %u) / %d(%u - %x - %u)\n",tmp->tr.type, \
-	   tmp->tr.cpu, tmp->tr.code, (unsigned) tmp->tr.clock, \
-	   tr_item->tr.type, tr_item->tr.cpu, tr_item->tr.code, \
-	   (unsigned)tr_item->tr.clock); */
     tmp = tmp->prev;
   }
   tr_item->prev = tmp;
@@ -419,7 +409,7 @@ static int load_trace()
       read_kernel_trace(&fkt_buf);
     }
     else {
-      // Attention au pb du 0 clock
+      // Take care of the problem with the 0 clock
       if (le(fut_buf.clock, fkt_buf.clock)) {
 	add_buffer(fut_buf);
 	read_user_trace(&fut_buf);
@@ -433,6 +423,7 @@ static int load_trace()
   return 0;
 }
 
+/* initialise the buffer and open the trace*/
 void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt)
 {
   int n = 0;
@@ -452,20 +443,19 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
   assert((fut_name != NULL) || (fkt_name != NULL));
   if (fut_name != NULL) {
     if ((f_fut = fopen(fut_name,"r")) == NULL) {
-      fprintf(stderr,"Erreur dans l'ouverture du fichier %s\n", fut_name);
+      fprintf(stderr,"Error in opening file  %s\n", fut_name);
       exit(1);
     } 
     fut_eof = 0;
   }
   if (fkt_name != NULL) {
     if ((f_fkt = fopen(fkt_name,"r")) == NULL) {
-      fprintf(stderr,"Erreur dans l'ouverture du fichier %s\n", fkt_name);
+      fprintf(stderr,"Error in opening file  %s\n", fkt_name);
       exit(1);
     } 
     fkt_eof = 0;
   }
-  thread = 0; // Et oh, c'est de la bidouille, 
-              // mais bon corrigée par FUT_NEW_LWP
+  thread = 0; 
   buf.first = EMPTY_LIST;
   buf.last = EMPTY_LIST;
   read_fut_header();
@@ -476,12 +466,14 @@ void init_trace_buffer(char *fut_name, char *fkt_name, int relative, int dec_opt
   }
 }
 
+/* close the 2 traces */
 void close_trace_buffer()
 {
   fclose(f_fut);
   fclose(f_fkt);
 }
 
+/* give the next event to write in the supertrace */
 int get_next_trace(trace *tr)
 {
   int r;
@@ -494,9 +486,16 @@ int get_next_trace(trace *tr)
   if (r != 0)
     end_total = tr->clock;
   trace_calc(tr);
+  if ((tr->cpu >= NB_MAX_CPU) || (tr->cpu < 0)) {
+    fprintf(stderr, "Trouble in computing. Maybe due to non corresponding\n");
+    fprintf(stderr, "user and kernel traces\n");
+    exit(1);
+  }
   return r;
 }
 
+
+/* generate the supertrace header */
 void supertrace_end(FILE *f)
 {
   int i,n,a;
@@ -508,7 +507,6 @@ void supertrace_end(FILE *f)
   n = number_lwp();
   assert(n < 116);
   fwrite(&n, sizeof(int), 1, f);
-  //  printf("%d\n",sizeof(short int)+2*sizeof(u_64)+sizeof(double)+2*sizeof(int));
   for(i = 0; i < n; i++) {
     a = get_next_lwp();
     if (a == -1) {

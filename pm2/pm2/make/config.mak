@@ -39,8 +39,6 @@ MAKEFILE_FILE := Makefile
 AS := gcc # needed for some gcc specific flags
 LD := gcc # needed for some gcc specific flags
 
-CFLAGS += -Wall
-
 BUILD_STATIC_LIBS := true
 #BUILD_DYNAMIC_LIBS := true
 

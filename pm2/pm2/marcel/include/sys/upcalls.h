@@ -1,11 +1,21 @@
 #ifndef _UPCALLS_H
 #define _UPCALLS_H
 
+#ifdef ACT_TIMER
+#ifdef CONFIG_ACT_TIMER
+#undef CONFIG_ACT_TIMER
+#endif
+#define CONFIG_ACT_TIMER
+#endif
+
 #include <asm/act.h>
 #include <asm/atomic.h>
 
+#ifdef ACT_VERBOSE
 #define ACTDEBUG(todo) (todo)
-//#define ACTDEBUG(todo)
+#else
+#define ACTDEBUG(todo)
+#endif
 
 #include <marcel.h>
 

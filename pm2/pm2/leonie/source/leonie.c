@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
+Revision 1.11  2000/06/09 08:45:59  oaumage
+- Progression du code
+
 Revision 1.10  2000/06/05 11:37:11  oaumage
 - Progression du code
 
@@ -91,7 +94,6 @@ static p_leonie_t main_leonie = NULL;
 /*
  * Madeleine interfacing
  * ---------------------
- */
 static p_leo_mad_module_t
 leo_launch_mad_module(p_leo_swann_module_t  swann_module,
 		      p_leo_app_cluster_t   app_cluster)
@@ -133,7 +135,7 @@ leo_launch_mad_module(p_leo_swann_module_t  swann_module,
   LOG_OUT();
   return mad_module;
 }
-
+*/
 /* ---  */
 p_leonie_t leo_init()
 {
@@ -298,6 +300,9 @@ leo_build_cluster_definition(p_leo_clu_cluster_file_t cluster_file)
   leo_build_cluster_host_model_list(cluster, cluster_file);
   leo_build_cluster_host_list(cluster, cluster_file);
 
+  cluster->mad_module   = NULL;
+  cluster->swann_module = NULL;
+
   LOG_OUT();
   return cluster;
 }
@@ -375,6 +380,15 @@ leo_build_application_cluster_list(p_leo_app_application_t  application,
       cluster->id = malloc(strlen(app_cluster->id) + 1);
       CTRL_ALLOC(cluster->id);
       strcpy(cluster->id, app_cluster->id);
+      LOG_STR("app_clu id", app_cluster->id);
+
+      cluster->executable = malloc(strlen(app_cluster->executable) + 1);
+      CTRL_ALLOC(cluster->executable);
+      strcpy(cluster->executable, app_cluster->executable);
+
+      cluster->path = malloc(strlen(app_cluster->path) + 1);
+      CTRL_ALLOC(cluster->path);
+      strcpy(cluster->path, app_cluster->path);
 
       cluster->host_list = malloc(sizeof(tbx_slist_t));
       CTRL_ALLOC(cluster->host_list);
@@ -387,6 +401,7 @@ leo_build_application_cluster_list(p_leo_app_application_t  application,
       leo_build_host_list(app_cluster, cluster->host_list);
       leo_build_channel_list(app_cluster, cluster->channel_list);
       
+      LOG_STR("cluster id", cluster->id);
       tbx_slist_append_tail(application_cluster_list, cluster);
     }
   while (tbx_forward_list_reference(&ref));
@@ -406,10 +421,11 @@ leo_search_for_host_name(void *ref_obj, void *obj)
   
   LOG_IN();
   tbx_list_reference_init(&ref, host->name_list);
-
+  LOG_STR("ref_name", ref_name);
+  
   do
     {
-      char *name =  tbx_get_list_reference_object(&ref);
+      char *name = tbx_get_list_reference_object(&ref);
 
       if (!strcmp(ref_name, name))
 	{
@@ -427,12 +443,14 @@ leo_search_for_host_name(void *ref_obj, void *obj)
 tbx_bool_t
 leo_search_for_cluster_entry_point(void *ref_obj, void *obj)
 {
-  p_leo_cluster_definition_t  clu_def = ref_obj;
-  p_leo_application_cluster_t app_clu = obj;
+  p_leo_application_cluster_t app_clu = ref_obj;
+  p_leo_cluster_definition_t  clu_def = obj;
   tbx_slist_reference_t       ref;
 
   LOG_IN();
-  tbx_slist_ref_init(clu_def->host_list, &ref);
+  LOG_STR("clu_def", clu_def->id);
+  LOG_STR("app_clu", app_clu->id);
+  tbx_slist_ref_init_head(clu_def->host_list, &ref);
   LOG_OUT();
   return tbx_slist_search(leo_search_for_host_name, app_clu->id, &ref);
 }
@@ -444,6 +462,8 @@ leo_search_for_cluster(void *ref_obj, void *obj)
   p_leo_application_cluster_t app_clu = obj;
 
   LOG_IN();
+  LOG_STR("clu_def id", clu_def->id);
+  LOG_STR("app_clu id", app_clu->id);
   LOG_OUT();
   return strcmp(clu_def->id, app_clu->id) == 0;
 }
@@ -455,14 +475,16 @@ leo_search_for_cluster(void *ref_obj, void *obj)
 int
 main (int argc, char *argv[])
 {
-  p_leo_app_application_t  application       = NULL;
-  p_leo_clu_cluster_file_t local_cluster_def = NULL;
-  char                    *filename          = NULL;
-  p_tbx_slist_t            application_cluster_list = NULL;
-  p_tbx_slist_t            cluster_definition_list  = NULL;
+  p_leo_app_application_t    application              = NULL;
+  p_leo_clu_cluster_file_t   local_cluster_def        = NULL;
+  char                      *filename                 = NULL;
+  p_tbx_slist_t              application_cluster_list = NULL;
+  p_tbx_slist_t              cluster_definition_list  = NULL;
+  p_leo_cluster_definition_t local                    = NULL;
+    
 
   LOG_IN();
-  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
+  tbx_init(&argc, argv, PM2DEBUG_DO_OPT);
   ntbx_init();
   main_leonie = leo_init();
   leo_parser_init();
@@ -471,7 +493,7 @@ main (int argc, char *argv[])
   CTRL_ALLOC(application_cluster_list);
   tbx_slist_init(application_cluster_list);
 
-  cluster_definition_cluster_list = malloc(sizeof(tbx_slist_t));
+  cluster_definition_list = malloc(sizeof(tbx_slist_t));
   CTRL_ALLOC(cluster_definition_list);
   tbx_slist_init(cluster_definition_list);
 
@@ -496,8 +518,6 @@ main (int argc, char *argv[])
   
   {
     /* Cluster list construction */
-    p_leo_cluster_definition_t local = NULL;
-
     /* Local Cluster */
     local = leo_build_cluster_definition(local_cluster_def);
     tbx_slist_append_tail(cluster_definition_list, local);
@@ -512,54 +532,111 @@ main (int argc, char *argv[])
 	tbx_slist_init(&temp_list);
 	tbx_slist_dup(&temp_list, application_cluster_list);
       
-	tbx_slist_init_ref(cluster_definition_list, &clu_ref);
+	tbx_slist_ref_init_head(cluster_definition_list, &clu_ref);
 
-	tbx_slist_init_ref(temp_list, &app_ref);
-	tbx_slist_search(leo_search_for_cluster, local, &app_ref);
-	tbx_slist_remove(&app_ref);
+	tbx_slist_ref_init_head(&temp_list, &app_ref);
+	if (tbx_slist_search(leo_search_for_cluster, local, &app_ref))
+	  {
+	    tbx_slist_remove(&app_ref);	
+	  }
+	else
+	  {
+	    DISP("Local cluster is not among application requested clusters");
+	  }
 	
-
-	while (temp_list->length)
+	while (temp_list.length)
 	  {
 	    tbx_bool_t iteration_status = tbx_false;
-	    int        length           = temp_list->length;
+	    int        length           = temp_list.length;
 	    
 	    while (length--)
 	      {
-		p_leo_application_cluster_t remote = NULL;
+		p_leo_application_cluster_t app_clu = NULL;
 
-		remote = tbx_slist_extract_head(&temp_list);
+		app_clu = tbx_slist_extract_head(&temp_list);
+		LOG_STR("App_clu", app_clu->id);
 
 		if (tbx_slist_search(leo_search_for_cluster_entry_point,
-				     remote,
+				     app_clu,
 				     &clu_ref))
 		  {
-		    p_cluster_definition_t clu_def =
+		    p_leo_cluster_definition_t clu_def =
 		      tbx_slist_get(&clu_ref);
 
 		    DISP("Found %s cluster entry point on %% cluster",
-			 remote->id,
+			 app_clu->id,
 			 clu_def->id);
 		    
 		    iteration_status = tbx_true;
 		    /* Remote cluster connection */
-		    DISP("Cluster not connected");
+
+		    if (clu_def == local)
+		      {
+			/* Ajouter le module a la liste des modules */
+			p_leo_swann_module_t module = NULL;
+			
+			module =
+			  leo_launch_swann_module(main_leonie, app_clu);
+			tbx_slist_append_tail(cluster_definition_list,
+					      module->clu_def);
+			
+			tbx_append_list(&main_leonie->swann_modules, module);
+		      }
+		    else
+		      {
+			DISP("Cluster not connected");
+		      }
 		  }
 		else
 		  {
-		    tbx_slist_append_tail(&temp_list, remote);
+		    tbx_slist_append_tail(&temp_list, app_clu);
 		  }
 	      }
-
 	    if (!iteration_status)
 	      FAILURE("Some clusters are unreachable");
 	  }
-      
-      }
+      } 
+  }
+
+  DISP("All clusters found");
+
+  /*
+   * Madeleine sessions start
+   * ------------------------
+   */
+  {
+    tbx_slist_t           temp_list;
+    tbx_slist_reference_t app_ref;
     
+    tbx_slist_init(&temp_list);
+    tbx_slist_dup(&temp_list, application_cluster_list);    
+    tbx_slist_ref_init_head(&temp_list, &app_ref);
+    
+    while (temp_list.length)
+      {
+	p_leo_application_cluster_t app_clu = NULL;
+
+	app_clu = tbx_slist_extract_head(&temp_list);
+	LOG_STR("Launching Madeleine II on ", app_clu->id);
+	
+	if (!strcmp(app_clu->id, local->id))
+	  {
+	    p_leo_mad_module_t module = NULL;
+	    
+	    DISP("Cluster is local");
+	    module = leo_launch_mad_module(main_leonie, app_clu);
+	    tbx_append_list(&main_leonie->mad_modules, module);
+	    LOG_STR("MadII session started on ", app_clu->id);
+	  }
+	else
+	  {
+	    DISP("Cluster is remote");
+	  }
+	
+      }
+	
   }
   
-
 
   /*
    * Cluster initialization

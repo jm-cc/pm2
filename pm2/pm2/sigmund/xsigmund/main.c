@@ -34,6 +34,7 @@ static gint show_help = FALSE;
 GtkWidget *main_window;
 GtkTooltips *the_tooltip = NULL;
 
+
 static gint delete_event(GtkWidget *widget,
 			 GdkEvent  *event,
 			 gpointer   data )
@@ -41,12 +42,14 @@ static gint delete_event(GtkWidget *widget,
   return FALSE;
 }
 
+/* quit XSigmund */
 static void destroy(GtkWidget *widget,
 		    gpointer   data )
 {
   gtk_main_quit();
 }
 
+/* parse the options */
 static void parse_options(int *argc, char *argv[])
 {
   int i, j;
@@ -86,6 +89,8 @@ static void do_show_help(char *cmd)
   g_print("\t--help | -h        : shows this help screen\n");
 }
 
+
+/* THE main...*/
 int main(int argc, char *argv[])
 {
   GtkWidget *main_vbox;

@@ -131,8 +131,13 @@ leo_default_loader(p_leo_settings_t settings,
 
 	   tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
 	*/
-	tbx_arguments_append_cstring_ext(args, "--mad_leonie", '=',
-						 net_server->local_host);
+
+	{
+	  char ip[11];
+
+	  sprintf(ip, "0x%lx", htonl(net_server->local_host_ip));
+	  tbx_arguments_append_cstring_ext(args, "--mad_leonie", '=', ip);
+	}
 
 	tbx_arguments_append_cstring_ext(args, "--mad_link", '=',
 					      net_server->
@@ -175,7 +180,7 @@ leo_default_loader(p_leo_settings_t settings,
 	rsh_command = tbx_command_init_to_cstring(leo_rsh);
 	args = rsh_command->arguments;
 
-	if (strstr(leo_rsh, "ssh"))
+	if (strstr(leo_rsh, "ssh") || strstr(leo_rsh, "ssf"))
 	  {
 	    // tbx_arguments_append_cstring(args, "-f");
 	    tbx_arguments_append_cstring(args, "-n");
@@ -277,8 +282,12 @@ leo_default_loader(p_leo_settings_t settings,
 	    tbx_arguments_append_arguments(args, settings->args);
 	  }
 	
-	tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
-						 net_server->local_host);
+	{
+	  char ip[11];
+
+	  sprintf(ip, "0x%lx", (unsigned long) net_server->local_host_ip);
+	  tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ', ip);
+	}
 
 	tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
 					      net_server->
@@ -347,7 +356,7 @@ leo_default_loader(p_leo_settings_t settings,
 	  {
 	    tbx_arguments_append_cstring(args, "-x");
 	  }
-	
+
 	tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
 
 	tbx_arguments_append_string(args, main_command_string);
@@ -384,7 +393,7 @@ leo_default_loader(p_leo_settings_t settings,
 	rsh_command = tbx_command_init_to_cstring(leo_rsh);
 	args = rsh_command->arguments;
 
-	if (strstr(leo_rsh, "ssh"))
+	if (strstr(leo_rsh, "ssh") || strstr(leo_rsh, "ssf"))
 	  {
 	    // tbx_arguments_append_cstring(args, "-f");
 	    tbx_arguments_append_cstring(args, "-n");
@@ -562,7 +571,7 @@ leo_bipload_loader(p_leo_settings_t settings,
       rsh_command = tbx_command_init_to_cstring(leo_rsh);
       args = rsh_command->arguments;
 
-      if (strstr(leo_rsh, "ssh"))
+      if (strstr(leo_rsh, "ssh") || strstr(leo_rsh, "ssf"))
 	{
 	  // tbx_arguments_append_cstring(args, "-f");
 	  tbx_arguments_append_cstring(args, "-n");
@@ -644,18 +653,27 @@ leo_bipload_loader(p_leo_settings_t settings,
     {
       p_tbx_command_t   main_command = NULL;
       p_tbx_arguments_t args         = NULL;
-	    
+
       main_command = tbx_command_init_to_cstring(settings->name);
 
-      args = main_command->arguments;	    
+      args = main_command->arguments;
 
       if (settings->args)
 	{
 	  tbx_arguments_append_arguments(args, settings->args);
 	}
 
-      tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
-				       net_server->local_host);
+      {
+	char ip[11];
+
+	//sprintf(ip, "%d.%d.%d.%d",
+	//	(unsigned char)(net_server->local_host_ip >> 24),
+	//	(unsigned char)(net_server->local_host_ip >> 16),
+	//	(unsigned char)(net_server->local_host_ip >> 8),
+	//	(unsigned char)(net_server->local_host_ip));
+	sprintf(ip, "0x%lx", (unsigned long)net_server->local_host_ip);
+	tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ', ip);
+      }
 
       tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
 				       net_server->
@@ -766,7 +784,7 @@ leo_bipload_loader(p_leo_settings_t settings,
       rsh_command = tbx_command_init_to_cstring(leo_rsh);
       args = rsh_command->arguments;
 
-      if (strstr(leo_rsh, "ssh"))
+      if (strstr(leo_rsh, "ssh") || strstr(leo_rsh, "ssf"))
 	{
 	  // tbx_arguments_append_cstring(args, "-f");
 	  tbx_arguments_append_cstring(args, "-n");
@@ -858,7 +876,7 @@ leo_loaders_register(void)
       leo_rsh = "rsh";
     }
 
-  if (strstr(leo_rsh, "ssh"))
+  if (strstr(leo_rsh, "ssh") || strstr(leo_rsh, "ssf"))
     {
       auto_display = tbx_true;
     }

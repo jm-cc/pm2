@@ -41,26 +41,26 @@
 
 static
 p_ntbx_process_t
-find_process(p_tbx_htable_t   node_htable,
-             p_ntbx_client_t  client,
-             char            *host_name)
+find_process(p_tbx_htable_t    node_htable,
+             p_ntbx_client_t   client,
+             char            **p_host_name)
 {
   p_ntbx_process_t  process   = NULL;
   p_tbx_slist_t     slist     = NULL;
   char             *true_name = NULL;
 
   LOG_IN();
-  slist = tbx_htable_get(node_htable, host_name);
+  slist = tbx_htable_get(node_htable, *p_host_name);
   if (slist)
     goto found;
 
-  true_name = ntbx_true_name(host_name);
+  true_name = ntbx_true_name(*p_host_name);
   TRACE_STR("trying", true_name);
   slist     = tbx_htable_get(node_htable, true_name);
   if (slist)
     {
-      TBX_FREE(host_name);
-      host_name = true_name;
+      TBX_FREE(*p_host_name);
+      *p_host_name = true_name;
       true_name = NULL;
       goto found;
     }
@@ -80,8 +80,8 @@ find_process(p_tbx_htable_t   node_htable,
       slist = tbx_htable_get(node_htable, alias);
       if (slist)
         {
-          TBX_FREE(host_name);
-          host_name = tbx_strdup(alias);
+          TBX_FREE(*p_host_name);
+          *p_host_name = tbx_strdup(alias);
           goto found;
         }
 
@@ -90,8 +90,8 @@ find_process(p_tbx_htable_t   node_htable,
       slist = tbx_htable_get(node_htable, true_name);
       if (slist)
         {
-          TBX_FREE(host_name);
-          host_name = true_name;
+          TBX_FREE(*p_host_name);
+          *p_host_name = true_name;
           true_name = NULL;
           goto found;
         }
@@ -103,12 +103,12 @@ find_process(p_tbx_htable_t   node_htable,
   FAILURE("client hostname not found");
 
  found:
-  TRACE_STR("retained host name", host_name);
+  TRACE_STR("retained host name", *p_host_name);
   process = tbx_slist_extract(slist);
 
   if (tbx_slist_is_nil(slist))
     {
-      slist = tbx_htable_extract(node_htable, host_name);
+      slist = tbx_htable_extract(node_htable, *p_host_name);
       tbx_slist_free(slist);
       slist = NULL;
     }
@@ -173,7 +173,7 @@ connect_processes(p_leonie_t    leonie,
       TRACE_STR("process location", host_name);
       TRACE_STR("client remote host", client->remote_host);
 
-      process = find_process(node_htable, client, host_name);
+      process = find_process(node_htable, client, &host_name);
 
       process_specific = process->specific;
       process_specific->client = client;

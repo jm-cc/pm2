@@ -106,6 +106,14 @@ typedef struct s_mad_dir_driver
 typedef struct s_mad_dir_channel_process_specific
 *p_mad_dir_channel_process_specific_t;
 
+/* ... Directory: process specific common channel data ............... */
+typedef struct s_mad_dir_channel_common_process_specific
+*p_mad_dir_channel_common_process_specific_t;
+
+/* ... Directory: common channel data ................................ */
+typedef struct s_mad_dir_channel_common
+*p_mad_dir_channel_common_t;
+
 /* ... Directory: channel data ....................................... */
 typedef struct s_mad_dir_channel
 *p_mad_dir_channel_t;

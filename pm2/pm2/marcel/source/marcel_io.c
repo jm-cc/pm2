@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.4  2000/02/28 10:25:03  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/02/01 14:31:21  rnamyst
 Minor modifications.
 
@@ -46,7 +49,8 @@ ______________________________________________________________________________
 
 /* #define DEBUG */
 
-#include <marcel.h>
+#include "marcel.h"
+
 #include <unistd.h>
 
 #define max(a, b)  ((a) > (b) ? (a) : (b))

@@ -123,7 +123,7 @@ init: checkmake cvsinit flavorinit
 
 
 checkmake:
-	@if ( expr $(MAKE_VERSION) \< 3.77 >> /dev/null ) then \
+	@if ( expr $(MAKE_VERSION) \< 3.76 >> /dev/null ) then \
 	echo "Wrong make version. Upgrade to version 3.77"; exit 1;\
 	fi
 

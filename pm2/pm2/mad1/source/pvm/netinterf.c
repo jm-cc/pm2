@@ -280,7 +280,7 @@ void mad_pvm_network_receive(char **head)
     if(bufid > 0)
       break;
 
-    marcel_givehandback();
+    marcel_yield();
   }
 #else
   bufid = pvm_recv(-1, NETWORK_MSG);

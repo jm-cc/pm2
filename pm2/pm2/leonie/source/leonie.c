@@ -317,9 +317,9 @@ launch(char *name,
   leo_args_append(args, pm2_load_flavor_option);
   leo_args_append(args, flavor);
   leo_args_append(args, name);
-  leo_args_append(args, "-leonie");
+  leo_args_append(args, "--leonie");
   leo_args_append(args, net_server->local_host);
-  leo_args_append(args, "-link");
+  leo_args_append(args, "--mad-link");
   leo_args_append(args, net_server->connection_data.data);
 
   node = malloc(sizeof(node_t));

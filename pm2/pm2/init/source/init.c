@@ -17,7 +17,7 @@
 
 static common_attr_t default_static_attr;
 
-#if defined(MAD2) || defined(MAD3)
+#if defined(MAD2) || defined(PM2)
 static unsigned int pm2self       = 0;
 static unsigned int pm2_conf_size = 0;
 #endif

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_swann.c,v $
+Revision 1.4  2000/06/09 08:45:58  oaumage
+- Progression du code
+
 Revision 1.3  2000/05/18 11:34:18  oaumage
 - remplacement des types `tableau' par des types `structure de tableau'
   par securite
@@ -70,9 +73,8 @@ ______________________________________________________________________________
  * -----------------
  */
 p_leo_swann_module_t
-leo_launch_swann_module(p_leonie_t             leonie,
-			char                  *cluster_id,
-			p_leo_clu_host_name_t  host_description)
+leo_launch_swann_module(p_leonie_t                  leonie,
+			p_leo_application_cluster_t cluster)
 {
   p_leo_clu_cluster_file_t  remote_cluster_def = NULL;
   p_leo_swann_module_t      module             = NULL;
@@ -87,11 +89,10 @@ leo_launch_swann_module(p_leonie_t             leonie,
   module = malloc(sizeof(leo_swann_module_t));
   CTRL_ALLOC(module);
 
-  module->id         = ++leonie->cluster_counter;
-  module->relay      = NULL;
-  module->cluster_id = malloc(strlen(cluster_id) + 1);
-  CTRL_ALLOC(module->cluster_id);
-  strcpy(module->cluster_id, cluster_id);
+  module->id          = ++leonie->cluster_counter;
+  module->relay       = NULL;
+  module->app_cluster = cluster;
+  module->clu_def     = NULL;
   
   module->net_client = malloc(sizeof(ntbx_client_t));
   CTRL_ALLOC(module->net_client);
@@ -100,7 +101,7 @@ leo_launch_swann_module(p_leonie_t             leonie,
 
   sprintf(cmd,
 	  "rsh %s swann -id %d -cnx %s -master %s &",
-	  cluster_id,
+	  module->app_cluster->id,
 	  module->id,
 	  leonie->net_server->connection_data.data,
 	  module->net_client->local_host);
@@ -113,6 +114,51 @@ leo_launch_swann_module(p_leonie_t             leonie,
   remote_cluster_def = leo_parse_cluster_file(module, "~/.pm2/leo_cluster");
   DISP("Remote cluster id is %s", remote_cluster_def->cluster->id);
  
+  module->clu_def = leo_build_cluster_definition(remote_cluster_def);
+  module->clu_def->mad_module   = NULL;
+  module->clu_def->swann_module = module;
+  LOG_OUT();
+  return module;
+}
+
+p_leo_mad_module_t
+leo_launch_mad_module(p_leonie_t                  leonie,
+		      p_leo_application_cluster_t cluster)
+{
+  p_leo_mad_module_t        module             = NULL;
+  char                     *cmd                = NULL;
+  ntbx_status_t             status;  
+  
+  LOG_IN();
+  cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
+  CTRL_ALLOC(cmd);
+
+  module = malloc(sizeof(leo_swann_module_t));
+  CTRL_ALLOC(module);
+
+  module->id          = ++leonie->cluster_counter;
+  module->relay       = NULL;
+  module->app_cluster = cluster;
+  module->clu_def     = NULL;
+  
+  module->net_client = malloc(sizeof(ntbx_client_t));
+  CTRL_ALLOC(module->net_client);
+  module->net_client->state = ntbx_client_state_uninitialized;
+  ntbx_tcp_client_init(module->net_client);
+
+  sprintf(cmd,
+	  "cd%s;/pm2load %s -id %d -cnx %s -master %s &",
+	  cluster->path,
+	  cluster->executable,
+	  module->id,
+	  leonie->net_server->connection_data.data,
+	  module->net_client->local_host);
+  DISP("Launching mad module: %s", cmd);
+  system(cmd);
+  status = ntbx_tcp_server_accept(leonie->net_server, module->net_client);
+  if (status != ntbx_success)
+    FAILURE("could not establish a connection with the mad module");
+
   LOG_OUT();
   return module;
 }

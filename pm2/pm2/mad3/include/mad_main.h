@@ -120,12 +120,15 @@ mad_ntbx_receive_string(p_ntbx_client_t client);
 
 
 void
-mad_leonie_print_init(p_mad_madeleine_t   madeleine,
-		      int                 argc,
-		      char              **argv);
+mad_leonie_command_init(p_mad_madeleine_t   madeleine,
+			int                 argc,
+			char              **argv);
 
 void
 mad_leonie_print(char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
+
+void
+mad_leonie_barrier(void);
 
 #define LDISP(str, args...)  mad_leonie_print(str , ## args)
 #define LDISP_IN()           mad_leonie_print(__FUNCTION__": -->")

@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+// THESE: INTERFACE START
 /****************************************************************
  * Certain commentaires sont étiquetés par U/S/C/I signifiant
  * User       : utile aux threads applicatifs pour exploiter ces mécanismes
@@ -33,10 +34,7 @@
  * - le nom du champ interne dans la structure englobante
  */
 #define struct_up(ptr, type, member) \
-        ((type *)((char *)(typeof (&((type *)0)->member))(ptr)- \
-		  (unsigned long)(&((type *)0)->member)))
-
-
+	tbx_container_of(ptr, type, member)
 
 #section types
 
@@ -56,7 +54,7 @@ typedef struct marcel_ev_server *marcel_ev_server_t;
  */
 typedef struct marcel_ev_req *marcel_ev_req_t;
 
-/* Un thread peu attendre l'arrivé effective d'un événement
+/* Un thread peut attendre l'arrivée effective d'un événement
  * correspondant à une requête. Le thread est déschedulé tant que la
  * requête n'est pas prête (que l'événement n'est pas reçu).
  */
@@ -101,6 +99,7 @@ int marcel_ev_server_start(marcel_ev_server_t server);
  */
 int marcel_ev_server_stop(marcel_ev_server_t server);
 
+// THESE: PROTO_EV_WAIT START
 /*[U]****************************************************************
  * Fonctions à l'usage des threads applicatifs
  */
@@ -108,29 +107,30 @@ int marcel_ev_server_stop(marcel_ev_server_t server);
 #section types
 /* Attribut pouvant être attaché aux événements */
 enum {
-	/* Désenregistre la requête lorsque l'événement de la
-	 * prochaine occurrence de l'événement */
+	/* Désactive la requête lorsque survient l'occurrence
+	 * suivante de l'événement */
 	MARCEL_EV_ATTR_ONE_SHOT=1,
 	/* Ne réveille pas les threads en attente d'événements du
-	 * serveur */
+	 * serveur (ie marcel_ev_server_wait())*/
 	MARCEL_EV_ATTR_NO_WAKE_SERVER=2,
 };
 
 #section functions
-/* Initialisation, soumission, attente d'un
+/* Un raccourci pratique des fonctions suivantes utile si on ne
+ * soumet la requête qu'une seule fois. Les opérations suivantes sont
+ * effectuée : initialisation, soumission, et attente d'un
  * événement avec ONE_SHOT positionné */
 int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
 		   marcel_ev_wait_t wait, marcel_time_t timeout);
 
 /* Initialisation d'un événement
- * (à appeler en premier si on utilise autre chose que wait_one) 
- */
+ * (à appeler en premier si on utilise autre chose que marcel_ev_wait) */
 int marcel_ev_req_init(marcel_ev_req_t req);
 
 /* Ajout d'un attribut spécifique à une requête */
 int marcel_ev_req_attr_set(marcel_ev_req_t req, int attr);
 
-/* Soumission d'une requête (le serveur PEUT commancer à scruter si ça
+/* Soumission d'une requête (le serveur PEUT commencer à scruter si cela
  * lui convient) */
 int marcel_ev_req_submit(marcel_ev_server_t server, marcel_ev_req_t req);
 
@@ -145,12 +145,13 @@ int marcel_ev_req_wait(marcel_ev_req_t req, marcel_ev_wait_t wait,
 /* Attente bloquante d'un événement sur une quelconque requête du serveur */
 int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout);
 
-/* Renvoie une requête survenue (utile au retour de wait_server)
-   À l'abandon d'une requête (wait_one, cancel ou ONE_SHOT)
-   la requête est également retirée de cette file (donc n'est plus consultable)
-*/
+/* Renvoie une requête survenue n'ayant pas l'attribut NO_WAKE_SERVER
+ * (utile au retour de server_wait())
+ * À l'abandon d'une requête (wait, req_cancel ou ONE_SHOT) la requête
+ * est également retirée de cette file (donc n'est plus consultable) */
 marcel_ev_req_t marcel_ev_get_success_req(marcel_ev_server_t server);
 
+// THESE: PROTO_EV_WAIT STOP
 /* Exclusion mutuelle pour un serveur d'événements
  *
  * - les call-backs sont TOUJOURS appelés à l'intérieur de cette
@@ -381,7 +382,7 @@ enum {
         (wait)->ret_code=(code); \
   } while(0)
  
-
+// THESE: INTERFACE STOP
 
 
 // =============== PRIVATE ===============

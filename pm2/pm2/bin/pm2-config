@@ -295,7 +295,7 @@ if [ -n "${dirtoshow}" ]; then
 	;;
     --stampfile)
 	if [ -z "$libs" ]; then
-	    echo "${PM2_ROOT}/flavors/${flavor}"
+	    echo "$FLAVOR_FILE"
 	else
 	    list=
 	    for lib in $libs; do

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: dsm_slot_alloc.c,v $
+Revision 1.4  2000/11/03 14:11:28  gantoniu
+- Added extra options in dsm_comm, alowing to minimize or not the number of packs on page transfers and on diff transfers.
+- Added support for profiling in dsm functions (LOG_IN/LOG_OUT).
+
 Revision 1.3  2000/09/25 12:05:08  gantoniu
 Added double mapping after tests.
 
@@ -65,13 +69,15 @@ ______________________________________________________________________________
 #include "dsm_page_manager.h"
 #include "dsm_page_size.h"
 
-//#define DEBUG_SLOT
+#define DEBUG_SLOT
 
 void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr_t *attr)
 {
   int i, base;
   size_t gsize;
   void *ptr;
+
+  LOG_IN();
 
 #ifdef DEBUG_SLOT
   fprintf(stderr, "-----> dsm_slot_alloc called: size = %d\n", size);
@@ -96,10 +102,14 @@ void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
   
   if (granted_size != NULL)
     *granted_size = gsize;
+
+  LOG_OUT();
   
   return ptr;
 }
 
 void dsm_slot_free(void *addr)
 {
+  LOG_IN();
+  LOG_OUT();
 }

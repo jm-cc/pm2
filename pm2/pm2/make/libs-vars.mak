@@ -45,10 +45,6 @@ LIB_SRC := source
 
 -include $(PM2_MAK_DIR)/$(LIBRARY)-config.mak
 
-ifeq ($(MAKECMDGOALS),preproc)
-CFLAGS	+=	-DPREPROC
-endif
-
 ifneq ($($(LIBRARY)_CC),)
 CC := $($(LIBRARY)_CC)
 endif
@@ -87,6 +83,10 @@ LIB_PICS   :=  $(LIB_C_PICS) $(LIB_S_PICS)
 LIB_C_PREPROC :=  $(patsubst %.c,%$(LIB_EXT).i,$(subst $(LIB_SRC),$(LIB_GEN_CPP),$(LIB_C_SOURCES)))
 LIB_S_PREPROC :=  $(patsubst %.S,%$(LIB_EXT).si,$(subst $(LIB_SRC),$(LIB_GEN_CPP),$(LIB_S_SOURCES)))
 LIB_PREPROC   :=  $(LIB_C_PREPROC) $(LIB_S_PREPROC)
+
+# FUT entries
+LIB_C_FUT :=  $(patsubst %.i,%.fut,$(LIB_C_PREPROC))
+LIB_FUT   :=  $(LIB_C_FUT)
 
 # Dependances
 LIB_C_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(LIB_GEN_OBJ),$(LIB_GEN_DEP),$(LIB_C_OBJECTS)))

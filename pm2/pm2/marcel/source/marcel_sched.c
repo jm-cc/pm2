@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.16  2000/03/06 12:57:36  vdanjean
+*** empty log message ***
+
+Revision 1.15  2000/03/06 09:24:03  vdanjean
+Nouvelle version des activations
+
 Revision 1.14  2000/03/01 16:48:14  oaumage
 - suppression des warnings CVS
 - ajout d'une compilation conditionnelle des  `find_lwp_*'  par rapport a SMP
@@ -658,12 +664,7 @@ void marcel_yield(void)
 
   lock_task();
 
-#ifdef __ACT__
-  cur->sched_by = SCHED_BY_MARCEL;
-  if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
-#else
   if(setjmp(cur->jb) == NORMAL_RETURN) {
-#endif
 #ifdef DEBUG
     breakpoint();
 #endif
@@ -735,12 +736,7 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
   if(locked() != 1)
     RAISE(LOCK_TASK_ERROR);
   do {
-#ifdef __ACT__
-    cur->sched_by = SCHED_BY_MARCEL;
-    if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
-#else
     if(setjmp(cur->jb) == NORMAL_RETURN) {
-#endif
 #ifdef DEBUG
       breakpoint();
 #endif
@@ -872,12 +868,7 @@ void marcel_delay(unsigned long millisecs)
   mdebug("\t\t\t<Thread %p goes sleeping>\n", cur);
 
   do {
-#ifdef __ACT__
-    cur->sched_by = SCHED_BY_MARCEL;
-    if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
-#else
     if(setjmp(cur->jb) == NORMAL_RETURN) {
-#endif
 #ifdef DEBUG
       breakpoint();
 #endif
@@ -1067,7 +1058,7 @@ any_t wait_and_yield(any_t arg)
 
       if (next == cur) {
 	//if (! (nb % 10)) 
-	//  printf("sleeping %i\n", nb);
+	printf("sleeping %i\n", nb);
 	act_cntl(ACT_CNTL_READY_TO_WAIT,NULL);
 	nb_idle_sleeping++;
 	unlock_task();
@@ -1082,8 +1073,8 @@ any_t wait_and_yield(any_t arg)
       } 
     }
     
-    cur->sched_by = SCHED_BY_MARCEL;
-    if(setjmp(cur->jb.migr_jb) == FIRST_RETURN) {
+    //cur->sched_by = SCHED_BY_MARCEL;
+    if(setjmp(cur->jb) == FIRST_RETURN) {
       call_ST_FLUSH_WINDOWS();
       cur->state_ext=MARCEL_READY;
       GET_TICK(t2);
@@ -1192,12 +1183,7 @@ any_t sched_func(any_t arg)
 
     mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d)\n", cur_lwp->number);
 
-#ifdef __ACT__
-    cur->sched_by = SCHED_BY_MARCEL;
-    if(setjmp(cur->jb.migr_jb) == FIRST_RETURN) {
-#else
     if(setjmp(cur->jb) == FIRST_RETURN) {
-#endif
       call_ST_FLUSH_WINDOWS();
 #ifdef __ACT__
       cur->state_ext=MARCEL_READY;

@@ -28,6 +28,10 @@
  * Macros and constants
  */
 
+#ifdef MARCEL
+#error MARCEL support not implemented for UDP driver
+#endif // MARCEL
+
 DEBUG_DECLARE(udp)
 
 #undef  DEBUG_NAME
@@ -353,7 +357,7 @@ mad_udp_recv_request(p_mad_channel_t channel)
   iov[0].iov_base = buf;
   iov[0].iov_len  = MAD_UDP_REQ_HD_SIZE;
   iov[1].iov_base = (caddr_t)specific->request_buffer;
-  iov[1].iov_len  = MAD_UDP_REQ_SIZE - MAD_UDP_RED_HD_SIZE;
+  iov[1].iov_len  = MAD_UDP_REQ_SIZE - MAD_UDP_REQ_HD_SIZE;
 #endif // MAD_UDP_USE_IOVEC  
 
   do {
@@ -717,9 +721,9 @@ mad_udp_connect(p_mad_connection_t   out,
   
   // Connect a TCP client socket
   tcp_socket = ntbx_tcp_socket_create(NULL, 0);
-  ntbx_tcp_address_fill(&remote_address,
-			atoi(adapter_info->dir_adapter->parameter),
-			adapter_info->dir_node->name);
+  ntbx_tcp_address_fill_ip(&remote_address,
+			   atoi(adapter_info->dir_adapter->parameter),
+			   &adapter_info->dir_node->ip);
   ntbx_tcp_socket_setup(tcp_socket);
   SYSCALL(connect(tcp_socket, (struct sockaddr *)&remote_address, 
 		  sizeof(ntbx_tcp_address_t)));
@@ -881,6 +885,11 @@ mad_udp_message_received(p_mad_connection_t in)
 #endif // MAD_UDP_STATS
   LOG_OUT();
 }
+
+
+/**
+ * Send / Receive buffer
+ */
 
 
 void
@@ -1244,9 +1253,9 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
 	ntbx_udp_sendto(so_rcv,
 			rrm_buf, MAD_UDP_RRM_HD_SIZE + last_packet + 1,
 			&remote_address);
-#ifdef DEBUG
+#if MAD_UDP_STATS
 	channel_specific->rrm_nb++;
-#endif // DEBUG
+#endif // MAD_UDP_STATS
       }
     }
     
@@ -1300,55 +1309,38 @@ mad_udp_receive_buffer(p_mad_link_t    lnk,
   LOG_OUT();
 }
 
+/**
+ * Send / Receive buffer group
+ */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* XXXXXXXXXXXXXXXXXXXXXXXX
-   Not valid !!!! 
-   Missing send request
-*/
 
 void
 mad_udp_send_buffer_group(p_mad_link_t         lnk TBX_UNUSED,
 			  p_mad_buffer_group_t buffer_group TBX_UNUSED)
 {
-#if 0
-  //p_mad_udp_link_specific_t       specific;
-  p_mad_connection_t              connection;
-  p_mad_udp_connection_specific_t connection_specific;
-  p_mad_udp_channel_specific_t    channel_specific;
-  ntbx_udp_address_t              remote_address;
-#endif // 0
+  /*p_mad_connection_t              connection;
+    p_mad_udp_connection_specific_t connection_specific;
+    p_mad_udp_channel_specific_t    channel_specific;
+    ntbx_udp_address_t              remote_address;*/
+
   LOG_IN();
+
 #if 0
   //specific            = lnk->specific;
   connection          = lnk->connection;
   connection_specific = connection->specific;
   channel_specific    = connection->channel->specific;
-  
+
   remote_address.sin_family = AF_INET;
   remote_address.sin_port   = htons(connection_specific->remote_data_port);
   remote_address.sin_addr   = connection_specific->remote_in_addr;
   memset(remote_address.sin_zero, '\0', 8);
 #endif // 0
-  
+
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
       tbx_list_reference_t ref;
-      
+
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
@@ -1356,9 +1348,10 @@ mad_udp_send_buffer_group(p_mad_link_t         lnk TBX_UNUSED,
 	}
       while (tbx_forward_list_reference(&ref));
     }
-  
+
   LOG_OUT();
 }
+
 
 void
 mad_udp_receive_sub_buffer_group(p_mad_link_t         lnk,
@@ -1366,13 +1359,11 @@ mad_udp_receive_sub_buffer_group(p_mad_link_t         lnk,
 				     __attribute__ ((unused)),
 				 p_mad_buffer_group_t buffer_group)
 {
-#if 0
-  //p_mad_udp_link_specific_t       specific;
-  p_mad_connection_t              connection;
-  p_mad_udp_connection_specific_t connection_specific;
-  p_mad_udp_channel_specific_t    channel_specific;
-  ntbx_udp_address_t              remote_address;
-#endif // 0
+  /*p_mad_connection_t              connection;
+    p_mad_udp_connection_specific_t connection_specific;
+    p_mad_udp_channel_specific_t    channel_specific;
+    ntbx_udp_address_t              remote_address;*/
+
   LOG_IN();
 #if 0
   //specific            = lnk->specific;
@@ -1382,8 +1373,8 @@ mad_udp_receive_sub_buffer_group(p_mad_link_t         lnk,
 #endif //0
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
-      tbx_list_reference_t            ref;
-      
+      tbx_list_reference_t ref;
+
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
@@ -1391,9 +1382,6 @@ mad_udp_receive_sub_buffer_group(p_mad_link_t         lnk,
 	}
       while (tbx_forward_list_reference(&ref));
     }
-  
+
   LOG_OUT();
 }
-
-
-

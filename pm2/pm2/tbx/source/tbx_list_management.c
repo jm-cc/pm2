@@ -3,7 +3,7 @@
  *
  *  This file contains the TBX management functions for the
  *  Madeleine-specialized linked list.
- * 
+ *
  */
 
 /*
@@ -73,13 +73,13 @@ tbx_destroy_list(p_tbx_list_t list)
   if (list->length)
     {
       p_tbx_list_element_t list_element ;
-      
+
       list_element = list->first ;
 
       while (list_element != list->last)
 	{
 	  p_tbx_list_element_t temp_list_element = list_element->next;
-	  
+
 	  tbx_free(tbx_list_manager_memory, list_element);
 	  list_element = temp_list_element;
 	}
@@ -97,7 +97,7 @@ tbx_foreach_destroy_list(p_tbx_list_t                list,
   if (list->length)
     {
       p_tbx_list_element_t list_element ;
-      
+
       list_element = list->first ;
 
       while (list_element != list->last)
@@ -128,12 +128,12 @@ tbx_append_list(p_tbx_list_t   list,
 
   if (list->read_only)
     FAILURE("attempted to modify a read only list");
-  
+
   list_element = tbx_malloc(tbx_list_manager_memory);
 
   list_element->object = object;
   list_element->next = NULL ;
-  
+
   if (list->length)
     {
       list_element->previous = list->last ;
@@ -208,7 +208,7 @@ tbx_duplicate_list(p_tbx_list_t   source,
 {
   *destination = *source ;
   destination->mark          = destination->first ;
-  destination->mark_position = 0;  
+  destination->mark_position = 0;
   destination->read_only     = tbx_true;
 }
 
@@ -283,7 +283,7 @@ tbx_get_list_reference_object(p_tbx_list_reference_t ref)
 		}
 	    }
 	  else
-	    { 
+	    {
 	      return ref->reference->object;
 	    }
 	}
@@ -291,7 +291,7 @@ tbx_get_list_reference_object(p_tbx_list_reference_t ref)
 	{
 	  /* the referenced list was empty when
 	     the reference was initialized */
-	  
+
 	  ref->reference = ref->list->first;
 	  ref->after_end = tbx_false;
 
@@ -299,7 +299,7 @@ tbx_get_list_reference_object(p_tbx_list_reference_t ref)
 	}
     }
   else
-    FAILURE("empty list");      
+    FAILURE("empty list");
 }
 
 /*
@@ -343,7 +343,7 @@ tbx_forward_list_reference(p_tbx_list_reference_t ref)
 	  else
 	    {
 	      ref->after_end = tbx_true ;
-	      
+
 	      return tbx_false ;
 	    }
 	}
@@ -363,7 +363,7 @@ tbx_reset_list_reference(p_tbx_list_reference_t ref)
   else
     {
       ref->reference = NULL;
-      ref->after_end = tbx_true;      
+      ref->after_end = tbx_true;
     }
 }
 

@@ -9,10 +9,10 @@ static int codecmp(mode type1, int code1, mode type2, int code2)
 {
   if (type1 != type2) return FALSE;
   if (type1 == USER) {
-    return (code1 == code2 >> 8);
+    return (code1 >> 8 == code2 >> 8);
   }
   if (code2 >= FKT_UNSHIFTED_LIMIT_CODE)
-    return (code1 == code2 >> 8);
+    return (code1 >> 8 == code2 >> 8);
   else return (code1 == code2);
 }
 

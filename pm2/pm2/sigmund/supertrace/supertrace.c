@@ -22,6 +22,7 @@
 static int dec;
 static int relative;
 
+/* write one event into the supertrace */
 void print_trace(trace tr, FILE *supertrace)
 {
   int i;
@@ -39,6 +40,7 @@ void print_trace(trace tr, FILE *supertrace)
   }
 }
 
+/* message if a wrong command is given */
 void error_usage()
 {
   fprintf(stderr,"Usage: supertrace [options]\n");
@@ -51,6 +53,7 @@ void error_usage()
   exit(1);
 }
 
+/* initialisation, generation of the supertrace */
 int main(int argc, char **argv)
 {
   trace tr;
@@ -95,7 +98,9 @@ int main(int argc, char **argv)
   init_trace_buffer(fut_name, fkt_name, relative, dec);
   while(i == 0) {
     i = get_next_trace(&tr);
-     if (tr.relevant != 0)
+    /*    printf("%s: %u %d %d %d %x\n",(tr.type == USER)? "USER": "KERN",
+	  (unsigned) tr.clock, tr.cpu, tr.pid, tr.thread, tr.code); */
+    if (tr.relevant != 0)
       print_trace(tr, supertrace);
   }
   rewind(supertrace);

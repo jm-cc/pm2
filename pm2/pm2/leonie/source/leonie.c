@@ -2480,9 +2480,11 @@ static
 void
 exit_session(void)
 {
-  p_ntbx_client_t  *client_array = NULL;
-  int               nb_clients   =    0;
-  int               i            =    0;
+  p_ntbx_client_t  *client_array  = NULL;
+  int               nb_clients    =    0;
+  int               i             =    0;
+  tbx_bool_t        finishing     = tbx_false;
+  int               barrier_count =    0;
   
   LOG_IN();
   nb_clients    = tbx_slist_get_length(directory->process_slist);
@@ -2544,8 +2546,10 @@ exit_session(void)
 		    nb_clients--;
 		    memmove(client_array + j, client_array + j + 1,
 			    (nb_clients - j) * sizeof(p_ntbx_client_t));
+		    finishing = tbx_true;
 		  }
 		  break;
+
 		case leo_command_print:
 		  {
 		    char *string = NULL;
@@ -2557,8 +2561,45 @@ exit_session(void)
 		    string = NULL;
 		  }
 		  break;
+
+		case leo_command_barrier:
+		  {
+		    if (finishing)
+		      FAILURE("barrier request during session clean-up");
+
+		    barrier_count++;
+
+		    if (barrier_count >= nb_clients)
+		      {
+			if (barrier_count > nb_clients)
+			  FAILURE("incoherent behaviour");
+			
+			tbx_slist_ref_to_head(directory->process_slist);
+			do
+			  {
+			    p_ntbx_process_t          process          = NULL;
+			    p_leo_process_specific_t  process_specific = NULL;
+			    p_ntbx_client_t           tmp_client       = NULL;
+      
+			    process           =
+			      tbx_slist_ref_get(directory->process_slist);
+			    process_specific  = process->specific;
+			    tmp_client        = process_specific->client;
+			    leo_send_int(tmp_client,
+					 leo_command_barrier_passed);
+			  }
+			while (tbx_slist_ref_forward(directory->
+						     process_slist));
+
+			barrier_count = 0;
+		      }
+
+		    status --;
+		  }
+		  break;
+
 		default:
-		  FAILURE("synchronization error");
+		  FAILURE("unknown command or synchronization error");
 		}
 	      
 	    }

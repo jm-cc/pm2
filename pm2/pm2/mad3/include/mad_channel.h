@@ -39,7 +39,7 @@ typedef struct s_mad_channel
   mad_channel_id_t            id;
   char                       *name;
   p_ntbx_process_container_t  pc;
-  tbx_bool_t                  public;
+  tbx_bool_t                  not_private;
   p_mad_dir_channel_t         dir_channel;
   p_mad_dir_fchannel_t        dir_fchannel;
   p_mad_dir_vchannel_t        dir_vchannel;

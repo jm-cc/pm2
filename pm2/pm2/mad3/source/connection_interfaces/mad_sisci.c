@@ -1444,8 +1444,11 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
   if ((buffer->bytes_written - buffer->bytes_read) < (segment_size << C0))
     {
       segment_size = (buffer->bytes_written - buffer->bytes_read) >> C0;
-      if (segment_size < MAD_SISCI_MIN_SEG_SIZE)
-	segment_size = MAD_SISCI_MIN_SEG_SIZE;
+      if (segment_size < MAD_SISCI_MIN_SEG_SIZE) {
+        segment_size = MAD_SISCI_MIN_SEG_SIZE;
+      } else {
+        segment_size = tbx_aligned(segment_size, MAD_SISCI_SCIMEMCOPY_ALIGNMENT);
+      }
     }
 
   if (mad_more_data(buffer))
@@ -1567,8 +1570,11 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
   if ((buffer->length - buffer->bytes_written) < (segment_size << C0))
     {
       segment_size = (buffer->length - buffer->bytes_written) >> C0;
-      if (segment_size < MAD_SISCI_MIN_SEG_SIZE)
+      if (segment_size < MAD_SISCI_MIN_SEG_SIZE) {
 	segment_size = MAD_SISCI_MIN_SEG_SIZE;
+      } else {
+        segment_size = tbx_aligned(segment_size, MAD_SISCI_SCIMEMCOPY_ALIGNMENT);
+      }
     }
 
 
@@ -1695,8 +1701,11 @@ mad_sisci_send_sci_buffer_group_2(p_mad_link_t         link,
     while (tbx_forward_list_reference(&ref));
 
     ds = gl >> C0;
-    if (ds < MAD_SISCI_MIN_SEG_SIZE)
+    if (ds < MAD_SISCI_MIN_SEG_SIZE) {
       ds = MAD_SISCI_MIN_SEG_SIZE;
+    } else {
+      ds = tbx_aligned(ds, MAD_SISCI_SCIMEMCOPY_ALIGNMENT);
+    }
   }
 
 
@@ -1826,8 +1835,11 @@ mad_sisci_receive_sci_buffer_group_2(p_mad_link_t         link,
     while (tbx_forward_list_reference(&ref));
 
     ss = gl >> C0;
-    if (ss < MAD_SISCI_MIN_SEG_SIZE)
+    if (ss < MAD_SISCI_MIN_SEG_SIZE) {
       ss = MAD_SISCI_MIN_SEG_SIZE;
+    } else {
+      ss = tbx_aligned(ss, MAD_SISCI_SCIMEMCOPY_ALIGNMENT);
+    }
   }
 
 transmission:

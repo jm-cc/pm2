@@ -20,13 +20,12 @@
 
 #include "marcel.h"
 
-#include <errno.h>
-
 #ifdef LINUX_SYS
 #include <linux/unistd.h>
 #endif
 #ifdef MA__LWPS
 #ifdef __NR_gettid
+#include <errno.h>
 #  ifdef _syscall0
 _syscall0(pid_t,gettid)
 #  else

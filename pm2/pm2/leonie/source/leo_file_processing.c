@@ -29,6 +29,7 @@
 // build_network_host_table: builds a table of "normalized" host names from
 // a list of 'unnormalized' host names. The normalization is performed using
 // the 'ntbx_true_name' function.
+#if 0
 p_tbx_htable_t
 build_network_host_htable(p_tbx_slist_t network_host_slist)
 {
@@ -65,6 +66,60 @@ build_network_host_htable(p_tbx_slist_t network_host_slist)
   LOG_OUT();
 
   return host_htable;
+}
+#endif
+
+void
+build_network_host_htable(char           *network_device_name,
+                          p_tbx_slist_t   host_slist,
+                          p_tbx_htable_t *p_host_htable,
+                          p_tbx_htable_t *p_device_hosts_htable)
+{
+  p_tbx_htable_t host_htable         = NULL;
+  p_tbx_htable_t device_hosts_htable = NULL;
+
+  LOG_IN();
+  host_htable          = leo_htable_init();
+  device_hosts_htable = leo_htable_init();
+
+  tbx_slist_ref_to_head(host_slist);
+  do
+    {
+      p_leoparse_object_t  object             = NULL;
+      char                *host_name          = NULL;
+      char                *device_host_name   = NULL;
+      p_tbx_htable_t       device_host_htable = NULL;
+
+      object = tbx_slist_ref_get(host_slist);
+
+      device_host_name = leoparse_get_id(object);
+      TRACE_STR("expected name", device_host_name);
+
+      host_name = ntbx_true_name(device_host_name);
+      TRACE_STR("true name", host_name);
+
+      if (!tbx_htable_get(host_htable, host_name))
+	{
+	  tbx_htable_add(host_htable, host_name, host_name);
+          device_host_htable = leo_htable_init();
+          tbx_htable_add(device_hosts_htable, host_name, device_host_htable);
+	}
+      else
+        {
+          device_host_htable =
+                  tbx_htable_get(device_hosts_htable, host_name);
+        }
+      
+      if (!tbx_htable_get(device_host_htable, network_device_name)) 
+        {
+          tbx_htable_add(device_host_htable, network_device_name, device_host_name); 
+        }
+    }
+  while (tbx_slist_ref_forward(host_slist));
+
+  *p_host_htable         = host_htable;
+  *p_device_hosts_htable = device_hosts_htable;
+  LOG_OUT();
 }
 
 // make_fchannel: generates a 'dir_fchannel' forwarding channel data structure
@@ -221,7 +276,8 @@ process_channel(p_leonie_t     leonie,
   p_tbx_slist_t          channel_host_slist      = NULL;
   p_tbx_htable_t         network_htable          = NULL;
   char                  *network_name            = NULL;
-  p_tbx_htable_t         network_host_htable     = NULL;
+  p_tbx_htable_t         host_htable             = NULL;
+  p_tbx_htable_t         device_hosts_htable    = NULL;
   char                  *network_device_name     = NULL;
   char                  *network_loader          = NULL;
   leo_loader_priority_t  network_loader_priority =
@@ -271,15 +327,21 @@ process_channel(p_leonie_t     leonie,
       network_loader = strdup("default");
     }
 
-  network_host_htable = tbx_htable_get(network_htable, "host_htable");
+  host_htable = tbx_htable_get(network_htable, "host_htable");
+  device_hosts_htable =
+          tbx_htable_get(network_htable, "device_hosts_htable");
 
-  if (!network_host_htable)
+  if (!host_htable)
     {
       p_tbx_slist_t network_host_slist = NULL;
 
       network_host_slist  = leoparse_read_as_slist(network_htable, "hosts");
-      network_host_htable = build_network_host_htable(network_host_slist);
-      tbx_htable_add(network_htable, "host_htable", network_host_htable);
+      build_network_host_htable(network_device_name,
+                                network_host_slist, &host_htable,
+                                &device_hosts_htable);
+      tbx_htable_add(network_htable, "host_htable", host_htable);
+      tbx_htable_add(network_htable, "device_hosts_htable",
+                     device_hosts_htable);
     }
 
   TRACE_STR("====== effective network name", network_name);
@@ -324,6 +386,7 @@ process_channel(p_leonie_t     leonie,
     {
       p_leoparse_object_t  object            = NULL;
       char                *host_name         = NULL;
+      char                *channel_host_name = NULL;
       p_leo_dir_node_t     dir_node          = NULL;
       p_tbx_slist_t        process_slist     = NULL;
       const char          *adapter_name      = "default";
@@ -331,17 +394,13 @@ process_channel(p_leonie_t     leonie,
 
       object = tbx_slist_ref_get(channel_host_slist);
 
-      {
-	char *temp_name = NULL;
+      channel_host_name = tbx_strdup(leoparse_get_id(object));
+      TRACE_STR("expected name", channel_host_name);
 
-	temp_name = leoparse_get_id(object);
-	TRACE_STR("expected name", temp_name);
+      host_name = ntbx_true_name(channel_host_name);
+      TRACE_STR("true name", host_name);
 
-	host_name = ntbx_true_name(temp_name);
-	TRACE_STR("true name", host_name);
-      }
-
-      if (!tbx_htable_get(network_host_htable, host_name))
+      if (!tbx_htable_get(host_htable, host_name))
 	FAILURE("unknown hostname");
 
       TRACE_STR("====== node hostname", host_name);
@@ -353,6 +412,14 @@ process_channel(p_leonie_t     leonie,
 	{
 	  dir_node = leo_dir_node_init();
 	  dir_node->name = strdup(host_name);
+
+          if (!(dir_node->device_host_names = 
+                tbx_htable_get(device_hosts_htable, host_name)))
+                  FAILURE("invalid state");
+
+          dir_node->channel_host_names = leo_htable_init();
+          tbx_htable_add(dir_node->channel_host_names,
+                         channel_name, channel_host_name);
 	  tbx_htable_add(dir->node_htable, host_name, dir_node);
 	  tbx_slist_append(dir->node_slist, dir_node);
 	}
@@ -363,6 +430,14 @@ process_channel(p_leonie_t     leonie,
 
 	  dir_node = leo_dir_node_init();
 	  dir_node->name = strdup(host_name);
+
+          if (!(dir_node->device_host_names = 
+                tbx_htable_get(device_hosts_htable, host_name)))
+                  FAILURE("invalid state");
+
+          dir_node->channel_host_names = leo_htable_init();
+          tbx_htable_add(dir_node->channel_host_names,
+                         channel_name, channel_host_name);
 	  h = gethostbyname(host_name);
 	  dir_node->ip   = (unsigned long) *((unsigned long *) h->h_addr);
 	  tbx_htable_add(dir->node_htable, host_name, dir_node);

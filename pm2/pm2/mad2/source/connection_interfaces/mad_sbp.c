@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.4  2000/01/04 16:50:48  oaumage
+- mad_mpi.c: premiere version fonctionnelle du driver
+- mad_sbp.c: nouvelle correction de la transmission des noms d'hote a
+  l'initialisation
+- mad_tcp.c: remplacement des appels `exit' par des macros FAILURES
+
 Revision 1.3  2000/01/04 09:18:51  oaumage
 - ajout de la commande de log de CVS
 - phase d'initialisation `external-spawn' terminee pour mad_mpi.c
@@ -1070,7 +1076,85 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
     {
       configuration->host_name[host_id] = malloc(MAXHOSTNAMELEN + 1);
       CTRL_ALLOC(configuration->host_name[host_id]);
-      gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
+
+      if (host_id == rank)
+	{
+	  mad_host_id_t remote_host_id;
+	  
+	  gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
+	  
+	  for (remote_host_id = 0;
+	       remote_host_id < configuration->size;
+	       remote_host_id++)
+	    {
+	      p_mad_sbp_adapter_specific_t spawn_adapter_specific =
+		spawn_adapter->specific;  
+	      int len;
+	      
+	      len = strlen(configuration->host_name[host_id]) + 1;
+	      
+	      if (remote_host_id != rank)
+		{
+		  p_mad_sbp_frame_t sbp_frame =
+		    mad_sbp_get_empty_frame(spawn_adapter_specific->
+					    output_key);
+		  sbp_frame->sbp_header.cookie.destn_node   = remote_host_id;
+		  sbp_frame->sbp_header.cookie.origin       = rank;
+		  sbp_frame->sbp_header.cookie.len          =
+		    MAD_SBP_HEADER_SIZE + length;
+		  sbp_frame->mad_header.channel_id   = 0xFF;
+		  sbp_frame->mad_header.message_type = mad_sbp_INTERNAL;
+		  memcpy(sbp_frame->payload,
+			 configuration->host_name[host_id],
+			 length);
+  
+		  mad_sbp_put_full_frame(sbp_frame,
+					 spawn_adapter_specific->output_key);
+		}
+	    }
+	}
+      else
+	{
+	  p_mad_sbp_adapter_specific_t spawn_adapter_specific =
+	    spawn_adapter->specific;
+	  p_mad_sbp_driver_specific_t  spawn_driver_specific  =
+	    spawn_adapter->driver->specific;
+	  p_mad_sbp_frame_t            sbp_frame              = NULL;  
+	  int len;
+
+	  while (mad_true)
+	    {
+	      p_mad_sbp_list_element_t element;
+      
+	      sbp_frame =
+		mad_sbp_get_full_frame(spawn_adapter_specific->input_key);
+	      if (sbp_frame->mad_header.channel_id == 0XFF)
+		break;
+
+	      element =
+		mad_malloc(spawn_driver_specific->list_element_memory);
+	      element->frame = sbp_frame;
+	      element->next  = NULL;
+
+	      if (spawn_adapter_specific->unknown_frames_tail)
+		{
+		  spawn_adapter_specific->unknown_frames_tail->next = element;
+		}
+	      else
+		{
+		  spawn_adapter_specific->unknown_frames_head = element;
+		}
+
+	      spawn_adapter_specific->unknown_frames_tail = element;	  
+	    }
+  
+	  length = sbp_frame->sbp_header.cookie.len - MAD_SBP_HEADER_SIZE;
+	  memcpy(configuration->
+		 host_name[sbp_frame->sbp_header.cookie.origin],
+		 sbp_frame->payload, length);
+	  mad_sbp_put_empty_frame(sbp_frame,
+				  spawn_adapter_specific->input_key);
+	}      
     }
   LOG_OUT();
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.13  2000/05/29 08:59:23  vdanjean
+work added (mainly for SMP and ACT), minor modif in polling
+
 Revision 1.12  2000/05/25 00:23:50  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -236,6 +239,9 @@ static __inline__ void ma_unlock_task(void)
   }
 #endif
   atomic_dec(locked);
+#if defined(PM2DEBUG) && defined(MA__ACTIVATION)
+  pm2debug_flush();
+#endif
 }
 
 static __inline__ void unlock_task_for_debug(void) __attribute__ ((unused));

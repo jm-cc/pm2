@@ -22,6 +22,9 @@
 #include "menu.h"
 #include "init.h"
 #include "options.h"
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 gint destroy_phase = FALSE;
 
@@ -109,6 +112,7 @@ int main(int argc, char *argv[])
   intro_init();
   
   init_names();
+  sleep (0);
 
   main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 

@@ -2,10 +2,11 @@
 #include <gtk/gtk.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "options.h"
 #include "init.h"
 #include "temp.h"
-#include "string.h"
+#include <string.h>
 #include "statusbar.h"
 #include <ctype.h>
 
@@ -258,8 +259,6 @@ void options_to_string(char *s)
     add_evnum(s);
   add_begin(s);
   
-  printf("%s\n",s);
-
 }
 
 

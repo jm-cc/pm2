@@ -20,6 +20,9 @@
 #include "menu.h"
 #include "options.h"
 #include "shell.h"
+#include "print.h"
+#include <string.h>
+#include <stdio.h>
 
 static GtkItemFactory *item_factory;
 
@@ -32,18 +35,22 @@ static void quit_callback(GtkWidget *w, gpointer data)
 static void open_file_callback(GtkWidget *w, gpointer data)
 {
   create_fileselection();
+  pause();
 }
 
-static void close_file_callback(GtkWidget *w, gpointer data)
+static void option_show_callback(GtkWidget *w, gpointer data)
 {
   /* has to be connected */
   char s[1000];
   options_to_string(s);
+  printf("options string: %s\n", s);
 }
 
 static void print_callback(GtkWidget *w, gpointer data)
 {
   /* has to be connected */
+  show_print();
+
 }
 
 
@@ -54,7 +61,7 @@ static void cpu_view_callback(GtkWidget *w, gpointer data)
   char s[1010];
   strcpy(s, "sigmundps ");
   options_to_string(s + 10);
-  strcat(s, " --print_process");
+  strcat(s, " --print-process");
   pid = exec_single_cmd_fmt(NULL,s);
   exec_wait(pid);
   pid = exec_single_cmd_fmt(NULL, "viewsig");
@@ -67,7 +74,7 @@ static void thread_view_callback(GtkWidget *w, gpointer data)
   char s[1010];
   strcpy(s, "sigmundps ");
   options_to_string(s + 10);
-  strcat(s, " --print_thread");
+  strcat(s, " --print-thread");
   pid = exec_single_cmd_fmt(NULL,s);
   exec_wait(pid); 
   pid = exec_single_cmd_fmt(NULL, "viewsig");
@@ -181,7 +188,7 @@ static void function_time_callback(GtkWidget *w, gpointer data)
 static GtkItemFactoryEntry menu_items[] = {
   { "/_File",         NULL,          NULL, 0, "<Branch>" },
   { "/File/Open",     NULL,          open_file_callback, 0, NULL },
-  { "/File/Close",    NULL,          close_file_callback, 0, NULL },
+  { "/File/Options string",    NULL,    option_show_callback, 0, NULL },
   { "/File/sep1",     NULL,          NULL, 0, "<Separator>" },
   { "/File/Print",    "<control>P",  print_callback, 0, NULL },
   { "/File/sep1",     NULL,          NULL, 0, "<Separator>" },

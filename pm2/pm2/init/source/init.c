@@ -456,6 +456,12 @@ void common_post_init(int *argc, char *argv[],
   mad_dir_channel_init(attr->madeleine);
 #endif /* MAD3 */
 
+#if defined (MAD3) && defined (MARCEL)
+  if (attr->madeleine->settings->leonie_dynamic_mode) {
+    mad_command_thread_init(attr->madeleine);
+  }
+#endif /* MAD3 && MARCEL */
+
 #ifdef PM2
   pm2_init_thread_related(argc, argv);
 #endif /* PM2 */

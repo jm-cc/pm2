@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.13  2000/02/28 10:25:09  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.12  2000/01/31 15:57:21  oaumage
 - ajout du Log CVS
 
@@ -52,8 +55,8 @@ ______________________________________________________________________________
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <marcel.h>
-#include <safe_malloc.h>
+#include "marcel.h"
+#include "safe_malloc.h"
 
 #ifdef SMP
 #include <errno.h>
@@ -67,7 +70,7 @@ ______________________________________________________________________________
 #endif
 
 #ifdef __ACT__
-#include <sys/upcalls.h>
+#include "sys/upcalls.h"
 int nb_idle_sleeping=0;
 #endif
 

@@ -63,7 +63,8 @@ int marcel_mutex_lock(marcel_mutex_t *mutex)
       mutex->last->next = &c;
       mutex->last = &c;
     }
-    marcel_give_hand(&c.blocked, &mutex->lock);
+    marcel_lock_release(&mutex->lock);
+    marcel_give_hand(&c.blocked);
   } else {
     mutex->value = 0;
 
@@ -194,7 +195,8 @@ int marcel_cond_wait(marcel_cond_t *cond, marcel_mutex_t *mutex)
       cond->last->next = &c;
       cond->last = &c;
     }
-    marcel_give_hand(&c.blocked, &cond->lock);
+    marcel_lock_release(&cond->lock);
+    marcel_give_hand(&c.blocked);
   } else {
    marcel_lock_release(&cond->lock);
    unlock_task();
@@ -214,7 +216,8 @@ int marcel_cond_wait(marcel_cond_t *cond, marcel_mutex_t *mutex)
       mutex->last->next = &c;
       mutex->last = &c;
     }
-    marcel_give_hand(&c.blocked, &mutex->lock);
+    marcel_lock_release(&mutex->lock);
+    marcel_give_hand(&c.blocked);
   } else {
     mutex->value = 0;
 
@@ -269,6 +272,7 @@ int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
       cond->last = &c;
     }
     BEGIN
+      marcel_lock_release(&cond->lock);
       marcel_tempo_give_hand(timeout, &c.blocked, cond);
     EXCEPTION
       WHEN(TIME_OUT)
@@ -293,7 +297,8 @@ int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
       mutex->last->next = &c;
       mutex->last = &c;
     }
-    marcel_give_hand(&c.blocked, &mutex->lock);
+    marcel_lock_release(&mutex->lock);
+    marcel_give_hand(&c.blocked);
   } else {
     mutex->value = 0;
 

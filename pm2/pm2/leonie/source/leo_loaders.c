@@ -26,6 +26,7 @@
 #include <sys/wait.h>
 #include "leonie.h"
 
+
 /*
  * Leonie loaders general modes
  * ============================
@@ -36,7 +37,7 @@
 // #define LEO_TBX_DEBUG_MODE
 // #define LEO_TRACE_MODE
 // #define LEO_MARCEL_DEBUG_MODE
-#define LEO_MARCEL_SMP
+// #define LEO_MARCEL_SMP
 #define LEO_XMODE
 
 

@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_slist_management.c,v $
+Revision 1.3  2000/05/31 14:24:50  oaumage
+- Ajout au niveau des slists
+
 Revision 1.2  2000/05/22 13:45:55  oaumage
 - correction de bugs divers
 
@@ -704,3 +707,24 @@ tbx_slist_sort(p_tbx_slist_t          slist,
       slist->tail = slist2.tail;
     }
 }
+
+void
+tbx_slist_dup(p_tbx_slist_t dest,
+	      p_tbx_slist_t source)
+{
+  tbx_slist_init(dest);
+
+  if (!tbx_slist_empty(source))
+    {
+      tbx_slist_reference_t ref;      
+
+      tbx_slist_ref_init_head(source, &ref);
+
+      do
+	{
+	  tbx_slist_append_tail(dest, tbx_slist_get(&ref));
+	}
+      while(tbx_slist_ref_fwd(&ref));
+    }
+}
+

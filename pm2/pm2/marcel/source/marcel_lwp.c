@@ -353,6 +353,8 @@ static void lwp_init(ma_lwp_t lwp)
 	marcel_attr_setdetachstate(&attr, TRUE);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);
+	/* Elle doit prendre la main sur toute autre tâche de ce LWP */
+	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 #ifdef PM2
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);

@@ -48,7 +48,7 @@ MAD_INC	    :=  $(MAD1_ROOT)/include
 MAD_GEN_OBJ :=  $(GEN_OBJ)/mad
 MAD_GEN_DEP :=  $(GEN_DEP)/mad
 
-MAD_OPT :=
+MAD_OPT := $(NET_INIT) -DNET_ARCH=\"$(NET_INTERF)\"
 MAD_GEN :=
 
 ifndef MAD_OPTIONS

@@ -34,6 +34,10 @@ static size_t           mad_print_buffer_size =    0;
 static char            *mad_print_buffer      = NULL;
 static p_ntbx_client_t  mad_leo_client        = NULL;
 
+static TBX_CRITICAL_SECTION(mad_ntbx_cs_print);
+static TBX_CRITICAL_SECTION(mad_ntbx_cs_barrier);
+
+
 /*
  * Functions
  * ---------
@@ -143,9 +147,9 @@ mad_ntbx_receive_string(p_ntbx_client_t client)
 }
 
 void
-mad_leonie_print_init(p_mad_madeleine_t madeleine,
-		   int                 argc TBX_UNUSED,
-		   char              **argv TBX_UNUSED)
+mad_leonie_command_init(p_mad_madeleine_t madeleine,
+			int                 argc TBX_UNUSED,
+			char              **argv TBX_UNUSED)
 {
   p_mad_session_t session = NULL;
   p_ntbx_client_t client  = NULL;
@@ -168,10 +172,10 @@ mad_leonie_print(char *fmt, ...)
   int     len = 0;
 
   LOG_IN();
+  TBX_CRITICAL_SECTION_ENTER(mad_ntbx_cs_print);
   if (!mad_leo_client)
-    FAILURE("leonie print module uninitialized");
+    FAILURE("leonie command module uninitialized");
   
-  TBX_LOCK_SHARED(mad_leo_client);
   len = strlen(fmt);
 
   if (mad_print_buffer_size < len)
@@ -197,9 +201,36 @@ mad_leonie_print(char *fmt, ...)
 	TBX_REALLOC(mad_print_buffer, mad_print_buffer_size);
     }
 
+  TBX_LOCK_SHARED(mad_leo_client);
   mad_ntbx_send_int(mad_leo_client, mad_leo_command_print);
   mad_ntbx_send_string(mad_leo_client, mad_print_buffer);
-
   TBX_UNLOCK_SHARED(mad_leo_client);
+  TBX_CRITICAL_SECTION_LEAVE(mad_ntbx_cs_print);
   LOG_OUT();
 }
+
+void
+mad_leonie_barrier(void)
+{
+  int result = 0;
+
+  LOG_IN();
+  TBX_CRITICAL_SECTION_ENTER(mad_ntbx_cs_barrier);
+  if (!mad_leo_client)
+    FAILURE("leonie command module uninitialized");
+  
+  TBX_LOCK_SHARED(mad_leo_client);
+  mad_ntbx_send_int(mad_leo_client, mad_leo_command_barrier);
+  TBX_UNLOCK_SHARED(mad_leo_client);  
+
+  TBX_LOCK_SHARED(mad_leo_client);
+  result = mad_ntbx_receive_int(mad_leo_client);
+  if (result != mad_leo_command_barrier_passed)
+    FAILURE("synchronization error");
+
+  TBX_UNLOCK_SHARED(mad_leo_client);  
+  TBX_CRITICAL_SECTION_LEAVE(mad_ntbx_cs_barrier);
+  LOG_OUT();
+}
+
+  

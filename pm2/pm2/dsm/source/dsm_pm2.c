@@ -52,14 +52,15 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
   sigaddset(&signals, SIGSEGV);
   sigprocmask(SIG_UNBLOCK, &signals, NULL);
 
-  dsm_lock_page(index);
 
   //call the apropriate handler 
  if (access == UNKNOWN_ACCESS)
    {
       dsm_access_t pg_access;
 
+      dsm_lock_page(index);
       pg_access = dsm_get_access(index);
+      dsm_unlock_page(index);
 
      if (pg_access == NO_ACCESS) // read fault
        {
@@ -84,7 +85,6 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
     case WRITE_ACCESS:  (*dsm_get_write_fault_action(dsm_get_page_protocol(index)))(index);break;
     default: RAISE(PROGRAM_ERROR); break;
 				     }
-  dsm_unlock_page(index);
 
  LOG_OUT();
 }

@@ -2,7 +2,7 @@
  *  \brief TBX setup/cleanup routines
  *
  *  This file contains the TBX general management functions.
- * 
+ *
  */
 
 /*
@@ -41,7 +41,7 @@ tbx_init(int    argc TBX_UNUSED,
       argc--; argv++;
 
       while (argc)
-	{ 
+	{
 	  if (!strcmp(*argv, tbx_no_safe_malloc_stats))
 	    {
 	      tbx_set_print_stats_mode(tbx_false); // tbx_true by default
@@ -77,8 +77,37 @@ tbx_init(int    argc TBX_UNUSED,
 
       LOG_OUT();
     }
-  
+
 }
+
+void
+tbx_exit(void)
+{
+  LOG_IN();
+  /* Dynamic array manager */
+  tbx_darray_manager_exit();
+
+  /* String manager */
+  tbx_string_manager_exit();
+
+  /* Hash table manager */
+  tbx_htable_manager_exit();
+
+  /* Slist manager */
+  tbx_slist_manager_exit();
+
+  /* List manager */
+  tbx_list_manager_exit();
+
+  /* Timer */
+  tbx_timing_exit();
+
+#ifdef TBX_SAFE_MALLOC
+  tbx_safe_malloc_exit();
+#endif /* TBX_SAFE_MALLOC */
+  LOG_OUT();
+}
+
 
 void
 tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
@@ -89,7 +118,7 @@ tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
   LOG_IN();
 
   argv++; _argv++; argc--;
-  
+
   while (argc)
     {
       if (!strcmp(*_argv, tbx_no_safe_malloc_stats))
@@ -103,13 +132,7 @@ tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
 
       argc--;
     }
-  
+
   LOG_OUT();
 }
 
-void
-tbx_exit(void)
-{
-  LOG_IN();
-  LOG_OUT();
-}

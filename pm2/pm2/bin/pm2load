@@ -46,6 +46,7 @@ case $1 in
 	    command=`pwd`/$*
        else
 	    case $1 in
+		-*) command=$* ;;
 		*/*) file_not_found $1 ;;
 		*) sys=`pm2_sys`
 		   arch=`pm2_arch`

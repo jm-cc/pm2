@@ -21,6 +21,8 @@
 
 #include "dsm_mutex.h"
 #include "dsm_protocol_policy.h"
+/* the following is useful for "HIERARCH_NO_LOCK" */
+#include "hierarch_lock.h"
 
 #define _MAX_PROT_PER_LOCK 10
 
@@ -64,7 +66,7 @@ static __inline__ void dsm_lock(dsm_lock_t lock)
     dsm_mutex_lock(&(lock->dsm_mutex)); 
     for (i = 0; i < lock->nb_prot; i++) 
       if (dsm_get_acquire_func(lock->prot[i]) != NULL)
-	(*dsm_get_acquire_func(lock->prot[i]))(); 
+	(*dsm_get_acquire_func(lock->prot[i]))(HIERARCH_NO_LOCK); 
 #ifdef TRACE_LOCK
   fprintf(stderr,"[%s]: Exiting...\n", __FUNCTION__);
 #endif
@@ -82,7 +84,7 @@ static __inline__ void dsm_unlock(dsm_lock_t lock)
 
     for (i = 0; i < lock->nb_prot; i++) 
       if (dsm_get_release_func(lock->prot[i]) != NULL)
-	(*dsm_get_release_func(lock->prot[i]))(); 
+	(*dsm_get_release_func(lock->prot[i]))(HIERARCH_NO_LOCK); 
     dsm_mutex_unlock(&(lock->dsm_mutex)); 
 #ifdef TRACE_LOCK
   fprintf(stderr,"[%s]: Exiting...\n", __FUNCTION__);

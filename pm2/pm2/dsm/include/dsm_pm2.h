@@ -42,10 +42,10 @@
 #define BEGIN_DSM_DATA \
   asm (".data"); \
   asm (DSM_ASM_PAGEALIGN); \
-  char dsm_data_begin = {}; 
+  char dsm_data_begin = {0,}; 
 
 #define END_DSM_DATA \
-  char dsm_data_end = {}; \
+  char dsm_data_end = {0,}; \
   asm (DSM_ASM_PAGEALIGN);
 
 #define DSM_NEWPAGE \

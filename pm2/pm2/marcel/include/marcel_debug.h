@@ -93,7 +93,7 @@ extern debug_type_t marcel_mdebug_sched_q;
 
 extern debug_type_t marcel_lock_task_debug;
 
-extern debug_type_t marcel_sched_lock_debug;
+extern debug_type_t marcel_sched_debug;
 
 extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
@@ -136,9 +136,11 @@ extern debug_type_t marcel_mtrace_timer;
 #  define lock_task_debug(fmt, args...) debug_printf(&marcel_lock_task_debug, \
         fmt, ##args)
 #endif
-#ifdef DEBUG_SCHED_LOCK
-#  define sched_lock_debug(fmt, args...) debug_printf(&marcel_sched_lock_debug, \
+#ifdef DEBUG_SCHED
+#  define sched_debug(fmt, args...) debug_printf(&marcel_sched_debug, \
         fmt, ##args)
+#else
+#  define sched_debug(fmt, args...) (void)0
 #endif
 
 #ifndef MARCEL_TRACE

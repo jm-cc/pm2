@@ -39,9 +39,9 @@ debug_type_t marcel_lock_task_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-locktask", &marcel_debug);
 #endif
 
-#ifdef DEBUG_SCHED_LOCK
-debug_type_t marcel_sched_lock_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-schedlock", &marcel_debug);
+#ifdef DEBUG_SCHED
+debug_type_t marcel_sched_debug=
+  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);
 #endif
 
 #ifdef MARCEL_TRACE
@@ -71,9 +71,9 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	pm2debug_setup(&marcel_lock_task_debug, PM2DEBUG_SHOW_FILE, 1);
 #endif
 
-#ifdef DEBUG_SCHED_LOCK
-	pm2debug_register(&marcel_sched_lock_debug);
-	pm2debug_setup(&marcel_sched_lock_debug, PM2DEBUG_SHOW_FILE, 1);
+#ifdef DEBUG_SCHED
+	pm2debug_register(&marcel_sched_debug);
+	pm2debug_setup(&marcel_sched_debug, PM2DEBUG_SHOW_FILE, 1);
 #endif
 
 #ifdef MARCEL_TRACE

@@ -2,10 +2,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
-lwpthread_list lwpthread;
+lwpthread_list lwpthread;      // List of lwpthread (correspondance between threads and lwps)
 
 
-/* add another thread in the lwpthread list */
+/* add another lwp in the lwpthread list */
 void add_lwp(int lwp, int thread, int logic)
 {
   lwpthread_list tmp;
@@ -20,7 +20,7 @@ void add_lwp(int lwp, int thread, int logic)
   lwpthread = tmp;
 }
 
-/* return 1 if a pid is associated to a  lwp
+/* return 1 if a pid is associated to a lwp
    contained in the lwpthread list */
 int is_lwp(int pid)
 {

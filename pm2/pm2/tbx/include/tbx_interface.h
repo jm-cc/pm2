@@ -1,3 +1,10 @@
+/*! \file tbx_interface.h
+ *  \brief TBX functional interface file
+ *
+ *  This file declares the prototype of any TBX exported function
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

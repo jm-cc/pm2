@@ -259,10 +259,17 @@ create_flavor() {
 
     for mod in $modules common; do
 	options="`eval echo \\$lst_opt_$mod`"
+
+	echo "# Pre-configuring $mod" >> ${OUT}
+	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod-pre.sh" ]; then
+	    cat "${PM2_ROOT}/modules/$mod/config/$mod-pre.sh" >> ${OUT}
+	fi
+
 	echo "# Configuring $mod" >> ${OUT}
 	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod.sh" ]; then
 	    cat "${PM2_ROOT}/modules/$mod/config/$mod.sh" >> ${OUT}
 	fi
+
 	if [ -z "$options" ]; then
 	    echo "# No option for $mod" >> ${OUT}
 	else
@@ -271,6 +278,12 @@ create_flavor() {
 		"$PM2_MODULE" option=$opt --module=$mod --config >> ${OUT}
 	    done
 	fi
+
+	echo "# Post-configuring $mod" >> ${OUT}
+	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod-post.sh" ]; then
+	    cat "${PM2_ROOT}/modules/$mod/config/$mod-post.sh" >> ${OUT}
+	fi
+
     done
 
     if diff "${OUTOLD}" "${OUT}" >/dev/null 2>&1; then

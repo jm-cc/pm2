@@ -22,6 +22,8 @@
 #ifndef MAD_FORWARD_H
 #define MAD_FORWARD_H
 
+#define MAD_FORWARD_MAX_MTU 0xFFFFFFFFUL
+
 #ifdef MARCEL
 typedef struct s_mad_fmessage_queue_entry
 {

@@ -27,6 +27,9 @@
 #include "sys/isomalloc_archdep.h"
 #include "magic.h"
 #include "slot_alloc.h"
+#ifdef DSM
+#include "dsm_protocol_policy.h"   /* for DSM_DEFAULT_PROTOCOL */
+#endif   /* DSM */
 
 
 
@@ -113,9 +116,9 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
   slot_header_t *header_ptr;
 
 #ifdef DSM
-  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, DEFAULT_DSM_PROTOCOL, 1, 32, 0};
+  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, DSM_DEFAULT_PROTOCOL, 1, 32, 0};
 #else
-  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 0, 1, 32, 0};
+  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 1, 32, 0};
 #endif
 
   LOG_IN();
@@ -140,7 +143,9 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
 #ifdef ASSERT
   header_ptr->magic_number = SLOT_MAGIC_NUM;
 #endif
+#ifdef DSM
   header_ptr->prot = attr->protocol;
+#endif   /* DSM */
   header_ptr->atomic = attr->atomic;
   header_ptr->special = attr->special; 
   /* 

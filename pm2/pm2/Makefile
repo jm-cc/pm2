@@ -39,11 +39,25 @@ endif
 
 include $(PM2_ROOT)/make/common-vars.mak
 
+ifdef OLD_MAKEFILE
 MODULES := $(shell $(PM2_ROOT)/bin/pm2-module modules)
+else
+-include $(PM2_ROOT)/make/main-modules.mak
+endif
 
 ifneq ($(MAKECMDGOALS),init)
 ifneq ($(MAKECMDGOALS),help)
+ifneq ($(MAKECMDGOALS),textconfig)
+ifneq ($(MAKECMDGOALS),menuconfig)
+ifneq ($(MAKECMDGOALS),xconfig)
+ifdef OLD_MAKEFILE
 LIBS = $(shell $(PM2_CONFIG) --modules)
+else
+-include $(PM2_MAK_DIR)/main-libs.mak
+endif
+endif
+endif
+endif
 endif
 endif
 
@@ -56,10 +70,11 @@ all: pm2 examples
 
 pm2: libs
 
+
 libs: flavors ARCHITECTURES
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i ; \
+		$(MAKE) -C modules/$$i PM2_MAK_DIR=$(PM2_MAK_DIR); \
 	done
 
 examples: flavors
@@ -151,3 +166,13 @@ menuconfig: flavors
 
 xconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :
+
+
+$(PM2_MAK_DIR)/main-libs.mak:
+	@echo "Generating $@"
+	@$(PM2_CONFIG) --gen_mak main-libs
+
+$(PM2_ROOT)/make/main-modules.mak:
+	@echo "Generating $@"
+	@echo "MODULES := " $(PM2_ROOT)/bin/pm2-module modules > $@
+

@@ -10,3 +10,7 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS ; then
 	fi
     fi
 fi
+
+# can be set by 'pthread' option
+PM2_MARCEL_LIBNAME=${PM2_MARCEL_LIBNAME:-marcel}
+

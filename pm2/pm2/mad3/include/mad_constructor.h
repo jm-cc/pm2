@@ -34,32 +34,14 @@ mad_dir_driver_process_specific_cons(void);
 p_mad_dir_driver_t
 mad_dir_driver_cons(void);
 
-p_mad_dir_channel_process_specific_t
-mad_dir_channel_process_specific_cons(void);
-
-p_mad_dir_channel_common_process_specific_t
-mad_dir_channel_common_process_specific_cons(void);
-
-p_mad_dir_channel_common_t
-mad_dir_channel_common_cons(void);
+p_mad_dir_connection_data_t
+mad_dir_connection_data_cons(void);
 
 p_mad_dir_channel_t
 mad_dir_channel_cons(void);
 
-p_mad_dir_fchannel_t
-mad_dir_fchannel_cons(void);
-
-p_mad_dir_vxchannel_process_routing_table_t
-mad_dir_vxchannel_process_routing_table_cons(void);
-
-p_mad_dir_vxchannel_process_specific_t
-mad_dir_vxchannel_process_specific_cons(void);
-
-p_mad_dir_vchannel_t
-mad_dir_vchannel_cons(void);
-
-p_mad_dir_xchannel_t
-mad_dir_xchannel_cons(void);
+p_mad_dir_connection_t
+mad_dir_connection_cons(void);
 
 p_mad_directory_t
 mad_directory_cons(void);

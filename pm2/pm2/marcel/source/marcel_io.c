@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.9  2000/05/24 15:15:21  rnamyst
+Enhanced the polling capabilities of the Marcel scheduler.
+
 Revision 1.8  2000/05/16 09:05:22  rnamyst
 Fast Polling added into Marcel + make xconfig
 
@@ -309,12 +312,10 @@ static void *unix_io_fast_poll(marcel_pollid_t id, any_t arg)
 
 void marcel_io_init()
 {
-  const unsigned divisor = 1;
-
   unix_io_pollid = marcel_pollid_create(unix_io_group,
 					unix_io_poll,
 					unix_io_fast_poll,
-					divisor);
+					MARCEL_POLL_AT_TIMER_SIG);
 }
 
 int marcel_read(int fildes, void *buf, size_t nbytes)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_printf.c,v $
+Revision 1.7  2001/01/03 14:12:28  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.6  2000/07/14 16:17:13  gantoniu
 Merged with branch dsm3
 
@@ -63,7 +66,7 @@ static char _pm2_print_buf[1024] __MAD_ALIGNED__;
 extern int pm2_main_module(void);
 
 void pm2_printf(char *format, ...)
-{ 
+{
   va_list args;
   char *ptr;
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.7  2000/06/09 08:59:49  oaumage
+- Correction de l'initialisation de la toolbox avec Marcel
+
 Revision 1.6  2000/06/08 13:57:23  oaumage
 - Corrections diverses
 
@@ -60,24 +63,30 @@ ______________________________________________________________________________
  * Tbx.c
  * =====
  */
-
 #include "tbx.h"
+
+static volatile tbx_bool_t initialized = tbx_false;
 
 void tbx_init(int *argc, char **argv, int debug_flags)
 {
-  pm2debug_init_ext(argc, argv, debug_flags);
+  if (!initialized)
+    {
+      initialized = tbx_true;
+      pm2debug_init_ext(argc, argv, debug_flags);
 
-  /* Safe malloc */
+      /* Safe malloc */
 #ifdef TBX_SAFE_MALLOC
-  tbx_safe_malloc_init();
+      tbx_safe_malloc_init();
 #endif /* TBX_SAFE_MALLOC */
 
-  /* Timer */
-  tbx_timing_init();
+      /* Timer */
+      tbx_timing_init();
 
-  /* List manager */
-  tbx_list_manager_init();
+      /* List manager */
+      tbx_list_manager_init();
 
-  /* Slist manager */
-  tbx_slist_manager_init();
+      /* Slist manager */
+      tbx_slist_manager_init();
+    }
+  
 }

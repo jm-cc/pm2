@@ -379,7 +379,7 @@ inline static void marcel_lwp_bind_on_processor(marcel_lwp_t *lwp) {
 static int lwp_start(ma_lwp_t lwp)
 {
 	LOG_IN();
-	PROF_NEW_LWP(lwp->number, lwp->sched.run_task->number);
+	PROF_NEW_LWP(LWP_NUMBER(lwp), ma_per_lwp(run_task,lwp)->number);
 	
 #ifdef MA__SMP
 	bind_on_processor(lwp);

@@ -55,7 +55,9 @@
 
 #else
 
+#ifndef __ACT__
 /* #define NON_BLOCKING_IO */
+#endif
 
 #include <marcel.h>
 
@@ -67,6 +69,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
+
+#define ITERATIONS    50
 
 typedef struct {
   int tub [2] ;
@@ -124,6 +128,7 @@ int receive_message (tube *t, char *message, int len)
   }
 #else
   //printf("Before read %p\n", marcel_self());
+  marcel_yield();
   n = read (t->tub[0], message, len) ;
   //printf("After read %p\n", marcel_self());
 #endif
@@ -135,13 +140,17 @@ void * producteur (void * arg)
 {
   int i, n;
 
-  for (i=0; i < 50 ; i++) {
+  for (i=0; i < ITERATIONS ; i++) {
     send_message (&tube_1, (char *)&i, sizeof(int)) ;
     receive_message (&tube_2, (char *)&n, sizeof(int)) ; 
   }
   return NULL;
 }
 
+#ifdef __ACT__
+extern int nb;
+extern unsigned long temps_act;
+#endif
 void * consommateur (void * arg)
 {
   int i, n ;
@@ -149,7 +158,7 @@ void * consommateur (void * arg)
   unsigned long temps;
 
   GET_TICK(t1);
-  for (i=0; i < 50 ; i++) {
+  for (i=0; i < ITERATIONS ; i++) {
     receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
     send_message (&tube_2, (char *)&i, sizeof(int)) ;
   }
@@ -157,6 +166,10 @@ void * consommateur (void * arg)
 
   temps = timing_tick2usec(TICK_DIFF(t1, t2));
   printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+#ifdef __ACT__
+  printf("nb=%i\n",nb);
+  printf("dont time idle = %ld.%03ldms\n", temps_act/1000, temps_act%1000);
+#endif
 
   return NULL;
 }
@@ -181,11 +194,11 @@ int marcel_main(int argc, char **argv)
 #ifdef SMP
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_FIXED(0));
 #endif
-  marcel_create (&pid[0], &attr, producteur, (void *) 0) ;
+  marcel_create (&pid[0], &attr, consommateur, (void *) 0) ;
 #ifdef SMP
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_FIXED(1));
 #endif
-  marcel_create (&pid[1], &attr, consommateur, (void *) 0) ;
+  marcel_create (&pid[1], &attr, producteur, (void *) 0) ;
 
   marcel_join(pid[0], NULL); marcel_join(pid[1], NULL);
 

@@ -145,7 +145,7 @@ int pm2_main(int argc, char **argv)
 	   pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);      
 	   marcel_delay(200);
 	 }
-       marcel_delay(1000);
+       marcel_delay(2000);
 
       /* start  migration */
       pm2_printf("the module 1 will freeze!\n");

@@ -39,12 +39,12 @@
 #include <string.h>
 #include <unistd.h> 
 #include <netdb.h>
-/*
+
 DEBUG_DECLARE(bip)
 
 #undef DEBUG_NAME
 #define DEBUG_NAME bip
-*/
+
 
 /*
  * macros and constants definition
@@ -133,7 +133,7 @@ typedef struct s_mad_bip_channel_specific
 #endif // MARCEL
 } mad_bip_channel_specific_t, *p_mad_bip_channel_specific_t;
 
-typedef struct s_ mad_bip_connection_specific
+typedef struct s_mad_bip_connection_specific
 {
   tbx_bool_t msg;
   tbx_bool_t ack;
@@ -478,7 +478,7 @@ bip_sync_send(p_mad_bip_channel_specific_t  p,
   send_poll_wait(p, host, tag, message, size);
   marcel_mutex_unlock(&p->send_mutex[host]);
   goto end;
-#endif
+#endif // USE_MARCEL_POLL
 
   bip_lock();
   TRACE("bip_tisend(host=%d, tag=%d, size=%d)", host, tag, size);
@@ -505,7 +505,9 @@ bip_sync_send(p_mad_bip_channel_specific_t  p,
 
 #endif // end else ifndef MARCEL
 
+#ifdef USE_MARCEL_POLL
 end:
+#endif // USE_MARCEL_POLL
   LOG_OUT();
 }
 
@@ -667,7 +669,7 @@ wait_ack(p_mad_bip_channel_specific_t p,
 #ifdef USE_MARCEL_POLL
   ack_poll_wait(p, host_id);
   goto end;
-#endif
+#endif // USE_MARCEL_POLL
 
   marcel_mutex_lock(&p->ack_mutex);
 #endif // MARCEL
@@ -692,7 +694,9 @@ wait_ack(p_mad_bip_channel_specific_t p,
   marcel_mutex_unlock(&p->ack_mutex);
 #endif // MARCEL
 
+#ifdef USE_MARCEL_POLL
 end:
+#endif // USE_MARCEL_POLL
   LOG_OUT();
 }
 
@@ -725,7 +729,7 @@ wait_credits(p_mad_bip_channel_specific_t p,
 #ifdef USE_MARCEL_POLL
   cred_poll_wait(p, host_id);
   goto end;
-#endif
+#endif // USE_MARCEL_POLL
 
   marcel_mutex_lock(&p->cred_mutex);
 #endif
@@ -750,7 +754,9 @@ wait_credits(p_mad_bip_channel_specific_t p,
   marcel_mutex_unlock(&p->cred_mutex);
 #endif
 
+#ifdef USE_MARCEL_POLL
 end:
+#endif // USE_MARCEL_POLL
  LOG_OUT();
 }
 
@@ -823,6 +829,9 @@ give_back_credits (p_mad_bip_channel_specific_t p,
 
   LOG_OUT();
 }
+
+#undef DEBUG_NAME
+#define DEBUG_NAME mad3
 
 void
 mad_bip_register(p_mad_driver_t driver)

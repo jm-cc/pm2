@@ -68,7 +68,9 @@ void printrq(ma_runqueue_t *rq) {
 }
 
 void marcel_top_tick(unsigned long foo) {
+#ifdef MA__LWPS
 	marcel_lwp_t *lwp;
+#endif
 	unsigned long now;
 
 	lastms = marcel_clock();

@@ -23,9 +23,11 @@ typedef struct {
 } evnum_slice;
 
 typedef struct {
+  mode begin_type;
   int begin;
   int begin_param_active;
   char begin_param;
+  mode end_type;
   int end;
   char end_param_active;
   int end_param;
@@ -48,6 +50,7 @@ typedef struct cpu_list_st {
 } * cpu_list;
 
 typedef struct event_list_st {
+  mode type;
   int code;
   struct event_list_st *next;
 } * event_list;
@@ -88,13 +91,17 @@ extern void filter_add_proc(int proc);
 
 extern void filter_add_cpu(short int cpu);
 
-extern void filter_add_event(int code);
+extern void filter_add_event(mode type, int code);
 
 extern void filter_add_time_slice(u_64 begin, u_64 end);
 
 extern void filter_add_evnum_slice(unsigned int begin, unsigned int end);
 
-extern void filter_add_gen_slice(int begin, char begin_param_active, 
-				 int begin_param, int end, 
+extern void filter_add_gen_slice(mode begin_type, int begin, 
+				 char begin_param_active, int begin_param, 
+				 mode end_type, int end, 
 				 char end_param_active, int end_param);
+
+int is_valid(trace *tr);
+
 #endif

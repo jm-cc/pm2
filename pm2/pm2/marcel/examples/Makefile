@@ -126,6 +126,9 @@ $(MAR_OBJ)/poll.o: $(MAR_SRC)/poll.c $(MAR_HEADERS)
 $(MAR_OBJ)/matrice.o: $(MAR_SRC)/matrice.c $(MAR_HEADERS)
 	$(MAR_CC2)
 
+$(MAR_OBJ)/daube.o: $(MAR_SRC)/daube.c $(MAR_HEADERS)
+	$(MAR_CC2)
+
 # tsp
 $(MAR_OBJ)/tsp-job.o: $(MAR_SRC)/tsp-job.c $(MAR_HEADERS)
 	$(MAR_CC2) -DMT -DMARCEL
@@ -252,6 +255,10 @@ poll: $(MAR_OBJ)/poll.o $(MAR_LIB)
 	$(MAR_MOVE)
 
 matrice: $(MAR_OBJ)/matrice.o $(MAR_LIB)
+	$(MAR_LINK)
+	$(MAR_MOVE)
+
+daube: $(MAR_OBJ)/daube.o $(MAR_LIB)
 	$(MAR_LINK)
 	$(MAR_MOVE)
 

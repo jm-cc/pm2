@@ -15,9 +15,6 @@
 
 export FLAVOR_DEFAULT:=libpthread
 
-LIBRARY=stackalign
-LIBNAME=stackalign
-
 include $(PM2_ROOT)/make/libs-vars.mak
 LDFLAGS+= -ldl
 include $(PM2_ROOT)/make/libs-rules.mak

@@ -856,6 +856,7 @@ TODO: vieux code
 #ifdef PM2DEBUG
 	pm2debug_printf_state(PM2DEBUG_MARCEL_PRINTF_ALLOWED);
 #endif
+	PROF_SET_THREAD_NAME();
 	LOG_OUT();
 }
 

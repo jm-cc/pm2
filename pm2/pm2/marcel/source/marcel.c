@@ -171,13 +171,9 @@ void print_thread(marcel_t pid)
   long sp;
 
    if(pid == marcel_self()) {
-#if defined(ALPHA_ARCH)
-      get_sp(&sp);
-#else
-      sp = (long)get_sp();
-#endif
+     sp = (long)get_sp();
    } else {
-      sp = (long)SP_FIELD(pid->jbuf);
+     sp = (long)SP_FIELD(pid->jbuf);
    }
 
   mdebug("thread %p :\n"
@@ -685,7 +681,7 @@ void marcel_run(marcel_t pid, any_t arg)
 
 static void suspend_handler(any_t arg)
 {
-  if((int)arg) {
+  if((long int)arg) {
     // Suspend
     marcel_sem_P(&(marcel_self()->suspend_sem));
   } else {
@@ -1039,14 +1035,7 @@ unsigned long marcel_cachedthreads(void)
 
 unsigned long marcel_usablestack(void)
 {
-  long sp;
-
-#ifdef ALPHA_ARCH
-   get_sp(&sp);
-#else
-   sp = (long)get_sp();
-#endif
-   return sp - (long)marcel_self()->stack_base;
+  return (long)get_sp() - (long)marcel_self()->stack_base;
 }
 
 unsigned long marcel_unusedstack(void)

@@ -327,6 +327,7 @@ for lib in $PM2_LIBS; do
 done
 
 vide=
+libs_non_pm2=
 # LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
 for lib in $libs; do
     LIB=`echo $lib | tr [a-z] [A-Z]`
@@ -349,12 +350,14 @@ for lib in $libs; do
 	done
 	;;
     esac
-    the_libs="$the_libs `eval echo '$'PM2_${LIB}_LIBS`"
+    lib_non_pm2="$lib_non_pm2 `eval echo '$'PM2_${LIB}_LIBS`"
     # CFLAGS spécifique à la compilation d'une lib
     if [ "$kernel" = true ]; then
 	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL -DMODULE=${LIB}"
     fi
 done
+
+the_libs="$the_libs $lib_non_pm2"
 
 if $cflags; then
     all_flags="$the_flags"

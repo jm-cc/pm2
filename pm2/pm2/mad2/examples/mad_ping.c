@@ -43,6 +43,7 @@ static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
 static const int param_one_way           = 1;
+static const int param_display_millions  = 0;
 
 
 /* static variables */
@@ -199,14 +200,19 @@ static void master(p_mad_madeleine_t madeleine)
 
 	  mean = (_size * (double)param_nb_tests * (double)param_nb_samples)
 		   / (sum / f);
-	  fprintf(stderr, "%8d %8.3f %8.3f\n",
-		  _size, mean, mean / 1.048576);
+
+	  if(param_display_millions)
+	    fprintf(stderr, "%8d %8.3f %8.3f\n",
+		    _size, mean, mean / 1.048576);
+	  else
+	    fprintf(stderr, "%8d %8.3f\n", _size, mean / 1.048576);
 	}
       else
 	{
 	  double f = 2 - param_one_way;
 
 	  mean = sum / param_nb_tests / param_nb_samples / f;
+
 	  fprintf(stderr, "%8d %5.3f\n", _size, mean);
 	}
     }

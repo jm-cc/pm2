@@ -562,7 +562,7 @@ void fastcall marcel_freeze_sched(void)
 	{
 		ma_lwp_t lwp;
 		for_all_lwp(lwp)
-			_ma_raw_spin_lock(&ma_lwp_rq(lwp).lock);
+			_ma_raw_spin_lock(&ma_lwp_rq(lwp)->lock);
 	}
 #endif
 	_ma_raw_spin_lock(&ma_main_runqueue.lock);
@@ -575,7 +575,7 @@ void fastcall marcel_unfreeze_sched(void)
 	{
 		ma_lwp_t lwp;
 		for_all_lwp(lwp)
-			_ma_raw_spin_unlock(&ma_lwp_rq(lwp).lock);
+			_ma_raw_spin_unlock(&ma_lwp_rq(lwp)->lock);
 	}
 #endif
 	ma_preempt_disable();

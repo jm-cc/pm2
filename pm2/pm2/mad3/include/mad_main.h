@@ -34,7 +34,11 @@ typedef struct s_mad_session
 
 typedef struct s_mad_settings
 {
+#ifndef LEO_IP
+  char *leonie_server_host_name;
+#else
   unsigned long leonie_server_ip;
+#endif // LEO_IP
   char         *leonie_server_port;
 } mad_settings_t;
 

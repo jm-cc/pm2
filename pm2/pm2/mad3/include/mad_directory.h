@@ -49,6 +49,7 @@ typedef struct s_mad_dir_driver_process_specific
 
 typedef struct s_mad_dir_driver
 {
+  mad_driver_id_t         id;
   char                       *name;
   p_ntbx_process_container_t  pc;
 } mad_dir_driver_t;
@@ -70,6 +71,7 @@ typedef struct s_mad_dir_connection
 
 typedef struct s_mad_dir_channel
 {
+  mad_channel_id_t            id;
   char                       *name;
   p_ntbx_process_container_t  pc;
   p_mad_dir_driver_t          driver;

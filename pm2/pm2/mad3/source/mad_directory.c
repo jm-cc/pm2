@@ -409,6 +409,8 @@ mad_dir_channel_get_channel(p_mad_madeleine_t madeleine)
   TRACE_STR("Channel driver", dir_channel->driver->name);
   TBX_FREE(driver_name);
 
+  dir_channel->id = tbx_htable_get_size(dir->channel_htable);
+
   tbx_htable_add(dir->channel_htable, dir_channel->name, dir_channel);
   tbx_slist_append(dir->channel_slist, dir_channel);
 
@@ -470,6 +472,7 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
     {
       p_mad_dir_channel_t  dir_fchannel            = NULL;
 
+      dir_fchannel->id           = tbx_htable_get_size(dir->channel_htable);
       dir_fchannel               = mad_dir_channel_cons();
       dir_fchannel->name         = mad_leonie_receive_string();
       dir_fchannel->cloned_channel_name = mad_leonie_receive_string();
@@ -645,8 +648,9 @@ mad_dir_vchannel_get_data(p_mad_madeleine_t madeleine)
 
   LOG_IN();
   dir = madeleine->dir;
-  dir_vchannel = mad_dir_channel_cons();
+  dir_vchannel       = mad_dir_channel_cons();
   dir_vchannel->name = mad_leonie_receive_string();
+  dir_vchannel->id   = tbx_htable_get_size(dir->channel_htable);
   TRACE_STR("Virtual channel name", dir_vchannel->name);
 
   tbx_slist_append(madeleine->public_channel_slist, dir_vchannel->name);
@@ -787,6 +791,7 @@ mad_dir_xchannel_get_data(p_mad_madeleine_t madeleine)
 
   dir_xchannel = mad_dir_channel_cons();
   dir_xchannel->name = mad_leonie_receive_string();
+  dir_xchannel->id   = tbx_htable_get_size(dir->channel_htable);
   TRACE_STR("Virtual channel name", dir_xchannel->name);
 
   tbx_slist_append(madeleine->public_channel_slist, dir_xchannel->name);

@@ -65,7 +65,7 @@ adapter_init(p_mad_driver_t mad_driver,
 
   TRACE_STR("Initializing adapter", adapter_name);
   mad_adapter = mad_adapter_cons();
-
+  mad_adapter->id             = tbx_htable_get_size(mad_adapter_htable);
   mad_adapter->driver         = mad_driver;
   mad_adapter->selector       = tbx_strdup(dir_adapter->selector);
   mad_adapter->channel_htable = tbx_htable_empty_table();

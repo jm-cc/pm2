@@ -24,49 +24,27 @@ include $(PM2_ROOT)/make/libs-vars.mak
 # Inclusion du cache specifique a madeleine
 #---------------------------------------------------------------------
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/mad3-specific.mak
+-include $(PM2_MAK_DIR)/mad4-specific.mak
 endif
-
-
-# Gestion du reste : prise en compte des fichiers sources supplémentaires
-#---------------------------------------------------------------------
-MOD_C_SOURCES += $(wildcard $(MOD_SRC)/core/*.c)
-
-vpath %.c $(MOD_SRC)/core
 
 # Gestion des drivers : prise en compte des fichiers sources supplémentaires
 #---------------------------------------------------------------------
-MOD_SRC2=$(MOD_SRC)/network
-MOD_C_SOURCES += $(foreach PROT, $(MAD3_PROTOCOLS), $(MOD_SRC2)/mad_$(PROT).c)
+MOD_SRC2=$(MOD_SRC)/connection_interfaces
+MOD_C_SOURCES += $(foreach PROT, $(MAD4_PROTOCOLS), $(MOD_SRC2)/mad_$(PROT).c)
 
 # Le vpath supplémentaire
 #---------------------------------------------------------------------
 vpath %.c $(MOD_SRC2)
 
-
-# Gestion des factory : prise en compte des fichiers sources supplémentaires
-#---------------------------------------------------------------------
-MOD_C_SOURCES += $(wildcard $(MOD_SRC)/mad3/*.c)
-
-vpath %.c $(MOD_SRC)/mad3
-
-# Gestion des services : prise en compte des fichiers sources supplémentaires
-#---------------------------------------------------------------------
-MOD_C_SOURCES += $(wildcard $(MOD_SRC)/services/*.c)
-
-vpath %.c $(MOD_SRC)/services
-
-
-
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
 
-# Construction du cache specifique a Madeleine III
+# Construction du cache specifique a Madeleine IV
 #---------------------------------------------------------------------
-$(PM2_MAK_DIR)/mad3-specific.mak: $(MOD_STAMP_FLAVOR)
+$(PM2_MAK_DIR)/mad4-specific.mak: $(MOD_STAMP_FLAVOR)
 	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(MODULE)`;\
 	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "MAD3_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
+	echo "MAD4_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
 	fi;
 

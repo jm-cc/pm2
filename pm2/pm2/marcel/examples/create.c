@@ -117,7 +117,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_attr_init(&attr);
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_FIXED(0));
-  marcel_create(NULL, NULL, main_thread, NULL);
+  marcel_create(NULL, &attr, main_thread, NULL);
 
   marcel_end();
   return 0;

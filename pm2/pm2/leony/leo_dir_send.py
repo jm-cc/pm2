@@ -63,8 +63,14 @@ def send_channels(s, cl):
             leo_comm.send_uint(cl, 1)
         else:
             leo_comm.send_uint(cl, 0)
-        leo_comm.send_string(cl, s.net_name_to_dev_name(channel.net_name))
 
+	if channel.mergeable == True:
+	    leo_comm.send_uint(cl, 1)
+	else:
+	    leo_comm.send_uint(cl, 0)
+        
+	leo_comm.send_string(cl, s.net_name_to_dev_name(channel.net_name))
+	    
         # processes
         ps_l = channel.processes
         for id, ps in enumerate(ps_l):

@@ -10,7 +10,7 @@
   Vincent Danjean \and Raymond Namyst}
 
 \date{\footnotesize%
-\url{$Id: start.tex,v 1.7 2001/04/10 16:45:17 bouge Exp $}%
+\url{$Id: start.tex,v 1.8 2001/04/11 17:14:43 bouge Exp $}%
 }
 
 \maketitle
@@ -440,7 +440,7 @@ you may insert the following lines in your \|.cshrc| file (if your
 default shell is \|csh|):
 \begin{shell}
 ravel% setenv PM2_ROOT          ${HOME}/pm2
-ravel% setenv PATH              "${PATH}:${PM2_ROOT}/bin"
+ravel% setenv PATH              ${PATH}:${PM2_ROOT}/bin
 ravel% setenv PM2_BUILD_DIR     ${HOME}/build  
 \end{shell}
   
@@ -474,7 +474,7 @@ In the following, we will advise you to use the \|pm2| standard
 flavor. Just have a look at it to get a feeling of your current
 flavor. You'll probably never dare do it again!
 \begin{shell}
-ravel% pm2-flavor get --flavor="pm2"
+ravel% pm2-flavor get --flavor=pm2
 \end{shell}
 There are many more way of using the \|pm2-flavor| command. See
 \|pm2-flavor -h| for the extensive on-line help.
@@ -677,10 +677,10 @@ Congratulations, you've run your first PM2 program! \|;-)|
 You can see that our program generates two messages. The first one is
 the expected \emph{Hello World!} message coming from the master
 process with a call to the \|tprintf| PM2 routine, which is a simple
-wrapper of the regular \|printf| Unix~routine to be used in
+wrapper of the regular \|printf| Unix routine to be used in
 multithreaded context. The second one is some PM2 running statistics
 related to the master process. Note that the output of the nodes
-different from node~0 does not appear in the terminal. We will see
+different from node~0 does not show up at the terminal. We will see
 later how to get them.
 
 \subsection{If everything else fails...}

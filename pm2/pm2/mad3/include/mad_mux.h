@@ -32,14 +32,15 @@ typedef struct s_mad_xmessage_queue_entry
   ntbx_process_grank_t source;
 } mad_xmessage_queue_entry_t;
 
-typedef enum e_mad_xblock_type
+typedef enum e_mad_xblock_buffer_type
 {
-  mad_xblock_type_unknown = 0,
-  mad_xblock_type_empty,
-  mad_xblock_type_dynamic,
-  mad_xblock_type_static_src,
-  mad_xblock_type_static_dst,
-} mad_xblock_type_t;
+  mad_xblock_buffer_type_unknown = 0,
+  mad_xblock_buffer_type_none,
+  mad_xblock_buffer_type_dynamic,
+  mad_xblock_buffer_type_static_src,
+  mad_xblock_buffer_type_static_dst,
+  mad_xblock_buffer_type_dest,
+} mad_xblock_buffer_type_t;
 
 typedef enum e_mad_xblock_header_field
 {
@@ -150,13 +151,14 @@ typedef struct s_mad_xblock_header
   tbx_bool_t               is_a_new_msg;
   tbx_bool_t               is_an_eof_msg;
   tbx_bool_t               closing;
+  tbx_bool_t               data_available;
   unsigned int             mux;
   unsigned int             sub;
 #ifdef MAD_MUX_FLOW_CONTROL
   tbx_bool_t               is_an_ack;
 #endif // MAD_MUX_FLOW_CONTROL
   p_mad_buffer_t           block;
-  mad_xblock_type_t        type;
+  mad_xblock_buffer_type_t buffer_type;
   p_mad_connection_t       xout;
   p_mad_link_t             src_link;
   p_mad_driver_interface_t src_interface;
@@ -178,6 +180,7 @@ typedef struct s_mad_mux_block_queue
 {
   marcel_sem_t  block_to_forward;
   p_tbx_slist_t queue;
+  p_tbx_slist_t buffer_slist;
 } mad_mux_block_queue_t;
 
 typedef struct s_mad_mux_darray_lane

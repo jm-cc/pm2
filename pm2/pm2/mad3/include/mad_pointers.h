@@ -193,7 +193,7 @@ typedef struct s_mad_forward_poll_channel_arg
 
 typedef struct s_mad_xmessage_queue_entry *p_mad_xmessage_queue_entry_t;
 
-typedef enum e_mad_xblock_type *p_mad_xblock_type_t;
+typedef enum e_mad_xblock_buffer_type *p_mad_xblock_buffer_type_t;
 
 typedef enum e_mad_xblock_header_field *p_mad_xblock_header_field_t;
 

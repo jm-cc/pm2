@@ -30,6 +30,8 @@ ntbx_client_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_client_t));
 
+  TBX_INIT_SHARED(object);
+  
   object->state        = ntbx_client_state_uninitialized;
   object->local_host   = NULL;
   object->local_alias  = tbx_slist_nil();

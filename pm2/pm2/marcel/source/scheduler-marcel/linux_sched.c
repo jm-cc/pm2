@@ -502,13 +502,12 @@ repeat_lock_task:
 					resched_task(MARCEL_SELF);
 			} else {
 				marcel_lwp_t *lwp;
-				for_each_lwp_begin(lwp)
-					/* TODO: ça va toujours charger LWP0 en premier, c'est bof... */
+				for_each_lwp_from_begin(lwp, LWP_SELF)
 					if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
 						resched_task(ma_per_lwp(current_thread, lwp));
 						break;
 					}
-				for_each_lwp_end();
+				for_each_lwp_from_end();
 			}
 			success = 1;
 		}

@@ -57,9 +57,9 @@
 
 static pm2_startup_func_t startup_func = NULL;
 
-static int spmd_conf[MAX_MODULES], spmd_conf_size;
+static int spmd_conf[MAX_MODULES];
 
-int __pm2_self;
+unsigned __pm2_self, __conf_size;
 
 marcel_key_t _pm2_lrpc_num_key,
   _pm2_mad_key,
@@ -100,16 +100,7 @@ void pm2_set_startup_func(pm2_startup_func_t f)
   startup_func = f;
 }
 
-static int module_rank(int tid)
-{
-  int rank;
-
-  for(rank=0; spmd_conf[rank] != tid; rank++) ;
-  return rank;
-}
-
-/* Initialise spmd_conf, spmd_conf_size ET __pm2_self */
-void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb)
+void pm2_init(int *argc, char **argv)
 {
   timing_init();
 
@@ -119,11 +110,7 @@ void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb)
 
   marcel_init(argc, argv);
 
-  mad_init(argc, argv, nb_proc, spmd_conf, &spmd_conf_size, &__pm2_self);
-  if(nb)
-    *nb = spmd_conf_size;
-  if(tids)
-    *tids = spmd_conf;
+  mad_init(argc, argv, 0, spmd_conf, &__conf_size, &__pm2_self);
 
 #if MAD2
   {
@@ -140,7 +127,7 @@ void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb)
 
   mad_buffers_init();
 
-  block_init(module_rank(__pm2_self), spmd_conf_size);
+  block_init(__pm2_self, __conf_size);
 
   marcel_key_create(&_pm2_lrpc_num_key, NULL);
   marcel_key_create(&_pm2_mad_key, NULL);
@@ -155,11 +142,11 @@ void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb)
   pm2_migr_init();
 
 #ifdef DSM
-  dsm_pm2_init(module_rank(__pm2_self), spmd_conf_size);
+  dsm_pm2_init(__pm2_self, __conf_size);
 #endif
 
   if(startup_func != NULL)
-    (*startup_func)(spmd_conf, spmd_conf_size);
+    (*startup_func)();
 
 #ifdef MAD2
   {
@@ -210,25 +197,25 @@ void pm2_exit(void)
 #endif
 }
 
-void pm2_kill_modules(int *modules, int nb)
+void pm2_halt()
 {
   int i;
   unsigned tag = NETSERVER_END;
 
-  for(i=0; i<nb; i++) {
-    if(modules[i] == __pm2_self && !mad_can_send_to_self()) {
+  for(i=0; i<__conf_size; i++) {
+    if(i == __pm2_self && !mad_can_send_to_self()) {
       netserver_stop();
     } else {
 #ifdef MAD2
       int c;
 
       for(c=0; c<nb_of_channels; c++) {
-	mad_sendbuf_init(channel(c), modules[i]);
+	mad_sendbuf_init(channel(c), i);
 	mad_pack_int(MAD_IN_HEADER, &tag, 1);
 	mad_sendbuf_send();
       }
 #else
-      mad_sendbuf_init(modules[i]);
+      mad_sendbuf_init(i);
       mad_pack_int(MAD_IN_HEADER, &tag, 1);
       mad_sendbuf_send();
 #endif

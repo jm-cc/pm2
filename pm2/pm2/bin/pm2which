@@ -57,7 +57,8 @@ EOF
 
 pretty_print() # path path...
 {
-    for p ; do
+    for p 
+    do
 	if [ $SHOW_PREFIX = yes ]; then
 	    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|'
 	else

@@ -203,13 +203,6 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 
 #  define for_all_lwp(lwp) \
      list_for_each_entry(lwp, &list_lwp_head, lwp_list)
-#  define for_each_lwp_begin(lwp) \
-     list_for_each_entry(lwp, &list_lwp_head, lwp_list) {\
-        if (ma_lwp_online(lwp)) {
-#  define for_each_lwp_end() \
-        } \
-     }
-
 #  define lwp_isset(num, map) ma_test_bit(num, &map)
 #  define lwp_is_offline(lwp) 0
 #else
@@ -226,13 +219,17 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
      int __cur_lwp_unused__ __attribute__ ((unused))
 #  define IS_FIRST_LWP(lwp)                   (1)
 
-#  define for_all_lwp(lwp) lwp=cur_lwp;
-#  define for_each_lwp_begin(lwp) for_all_lwp(lwp) {
-#  define for_each_lwp_end() }
-
+#  define for_all_lwp(lwp) for (lwp=cur_lwp;0;)
 #  define lwp_isset(num, map) 1
 #  define lwp_is_offline(lwp) 0
 #endif
+
+#  define for_each_lwp_begin(lwp) \
+     for_all_lwp(lwp) {\
+        if (ma_lwp_online(lwp)) {
+#  define for_each_lwp_end() \
+        } \
+     }
 
 #define LWP_GETMEM(lwp, member) ((lwp)->member)
 #define LWP_SELF                (GET_LWP(MARCEL_SELF))

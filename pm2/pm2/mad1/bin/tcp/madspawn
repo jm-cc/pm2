@@ -43,6 +43,10 @@
 # $5 à ... : executable a lancer et arguments
 #
 
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
+
 serverhost=$1
 shift
 confsize=$1

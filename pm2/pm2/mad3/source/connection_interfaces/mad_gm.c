@@ -74,8 +74,8 @@
 #define MAD_GM_CACHE_SIZE		 0x1000
 #define MAD_GM_PACKET_CACHE_SIZE	 0x10
 
-#define MAD_GM_POLLING_MODE \
-    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
+#define MAD_MX_POLLING_MODE \
+    (MARCEL_EV_POLL_AT_TIMER_SIG | MARCEL_EV_POLL_AT_YIELD | MARCEL_EV_POLL_AT_IDLE)
 
 #define MAD_GM_LINK_CPY 0
 #define MAD_GM_LINK_RDV 1
@@ -112,30 +112,31 @@ typedef struct s_mad_gm_port {
 } mad_gm_port_t, *p_mad_gm_port_t;
 
 #ifdef MARCEL
-typedef struct s_mad_gm_poll_channel_data {
+typedef struct s_mad_gm_ev_channel_data {
         p_mad_channel_t    ch;
         p_mad_connection_t c;
-} mad_gm_poll_channel_data_t, *p_mad_gm_poll_channel_data;
+} mad_gm_ev_channel_data_t, *p_mad_gm_ev_channel_data;
 
-typedef struct s_mad_gm_poll_poll_data {
+typedef struct s_mad_gm_ev_poll_data {
         int dummy;
-} mad_gm_poll_poll_data_t;
+} mad_gm_ev_poll_data_t;
 
-typedef union u_mad_gm_poll_data {
-        mad_gm_poll_channel_data_t channel_op;
-        mad_gm_poll_poll_data_t poll_op;
-} mad_gm_poll_data_t, *p_mad_gm_poll_data_t;
+typedef union u_mad_gm_ev_data {
+        mad_gm_ev_channel_data_t channel_op;
+        mad_gm_ev_poll_data_t poll_op;
+} mad_gm_ev_data_t, *p_mad_gm_ev_data_t;
 
-typedef enum e_mad_gm_poll_op {
-        mad_gm_poll_channel_op,
-        mad_gm_poll_poll_op,
-} mad_gm_poll_op_t, *p_mad_gm_poll_op_t;
+typedef enum e_mad_gm_ev_op {
+        mad_gm_ev_channel_op,
+        mad_gm_ev_poll_op,
+} mad_gm_ev_op_t, *p_mad_gm_ev_op_t;
 
-typedef struct s_mad_gm_poll_req {
-        mad_gm_poll_op_t   op;
-        mad_gm_poll_data_t data;
+typedef struct s_mad_gm_ev {
+	struct marcel_ev_req	 inst;
+        mad_gm_ev_op_t   op;
+        mad_gm_ev_data_t data;
         p_mad_gm_port_t    port;
-} mad_gm_poll_req_t, *p_mad_gm_poll_req_t;
+} mad_gm_ev_t, *p_mad_gm_ev_t;
 #endif
 
 typedef struct s_mad_gm_request {
@@ -147,9 +148,6 @@ typedef struct s_mad_gm_request {
 
 typedef struct s_mad_gm_driver_specific {
         int                 dummy;
-#ifdef MARCEL
-        marcel_pollid_t     gm_pollid;
-#endif
 } mad_gm_driver_specific_t, *p_mad_gm_driver_specific_t;
 
 typedef struct s_mad_gm_adapter_specific {
@@ -264,6 +262,11 @@ void (*__malloc_initialize_hook) (void) = mad_gm_malloc_initialize_hook;
 static
 int mad_gm_malloc_hooked = 0;
 
+#ifdef MARCEL
+static struct marcel_ev_server mad_gm_ev_server = MARCEL_EV_SERVER_INIT(mad_gm_ev_server, "Mad/GM I/O");
+
+#endif /* MARCEL */
+
 /* static TBX_CRITICAL_SECTION(mad_gm_access); */
 static TBX_CRITICAL_SECTION(mad_gm_reception);
 
@@ -278,7 +281,7 @@ inline
 void
 mad_gm_lock(void) {
 #ifdef MARCEL
-        marcel_poll_lock();
+        marcel_ev_lock(&mad_gm_ev_server);
 #endif /* MARCEL */
 }
 
@@ -287,7 +290,7 @@ inline
 void
 mad_gm_unlock(void) {
 #ifdef MARCEL
-        marcel_poll_unlock();
+        marcel_ev_unlock(&mad_gm_ev_server);
 #endif /* MARCEL */
 }
 
@@ -1184,23 +1187,24 @@ mad_gm_event_processing_thread(void *_a) {
         p_mad_gm_driver_specific_t ds = NULL;
         p_mad_gm_port_t  port      = NULL;
         int              active	= 0;
-	marcel_pollid_t pollid = 0;
 
         LOG_IN();
         as	= a->specific;
         d	= a->driver;
         ds	= d->specific;
         port	= as->port;
-        pollid	= ds->gm_pollid;
 
         while (!port->no_more_event) {
                 if (!active) {
-                        mad_gm_poll_req_t req;
+                        struct marcel_ev_wait		 ev_w;
+                        mad_gm_ev_t 			 ev	=
+                                {
+                                        .op       = mad_gm_ev_poll_op,
+                                        .port     = port
+                                };
 
-                        req.op       = mad_gm_poll_poll_op;
-                        req.port     = port;
+                        marcel_ev_wait(&mad_gm_ev_server, &(ev.inst), &ev_w, 0);
 
-                        marcel_poll(pollid, &req);
                         mad_gm_lock();
                 } else {
                         mad_gm_lock();
@@ -1468,21 +1472,20 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
 #endif /* MARCEL */
 
 #ifdef MARCEL
-static void
-mad_gm_marcel_group(marcel_pollid_t id)
-{
-  return;
-}
-
 static
 int
-mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
-        p_mad_gm_port_t port = NULL;
+mad_gm_do_poll(marcel_ev_server_t	server,
+               marcel_ev_op_t		_op,
+               marcel_ev_req_t		req,
+               int			nb_ev,
+               int			option) {
+        p_mad_gm_ev_t	p_ev	= NULL;
+        p_mad_gm_port_t port	= NULL;
         int r = 0;
 
-
         LOG_IN();
-        port = rq->port;
+	p_ev = struct_up(req, mad_gm_ev_t, inst);
+        port = p_ev->port;
 
         do {
                 if (port->no_more_event || port->pending) {
@@ -1494,10 +1497,12 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
                 r = mad_gm_process_event(port, 0);
         } while (r == 2);
 
-        if (rq->op == mad_gm_poll_poll_op) {
-                return r;
-        } else if (rq->op == mad_gm_poll_channel_op) {
-                p_mad_channel_t                ch        = rq->data.channel_op.ch;
+        if (p_ev->op == mad_gm_ev_poll_op) {
+                if (r) {
+                        MARCEL_EV_REQ_SUCCESS(&(p_ev->inst));
+                }
+        } else if (p_ev->op == mad_gm_ev_channel_op) {
+                p_mad_channel_t                ch        = p_ev->data.channel_op.ch;
                 p_mad_gm_channel_specific_t    chs       = ch->specific;
                 p_mad_connection_t             in        = NULL;
                 p_tbx_darray_t                 in_darray = NULL;
@@ -1520,7 +1525,7 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
                                 is = in->specific;
                                 r = marcel_sem_try_P(&is->sem);
                                 if (r) {
-                                        rq->data.channel_op.c = in;
+                                        p_ev->data.channel_op.c = in;
                                         break;
                                 }
                         }
@@ -1528,7 +1533,9 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
 
                 chs->next = next;
 
-                return r;
+                if (r) {
+                        MARCEL_EV_REQ_SUCCESS(&(p_ev->inst));
+                }
         } else
                 FAILURE("invalid operation");
 
@@ -1536,45 +1543,6 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
 
         return 0;
 }
-
-static void *
-mad_gm_marcel_fast_poll(marcel_pollid_t id,
-                        any_t           req,
-                        boolean         first_call) {
-        void *status = MARCEL_POLL_FAILED;
-
-        LOG_IN();
-        if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
-                status = MARCEL_POLL_SUCCESS(id);
-        }
-        LOG_OUT();
-
-        return status;
-}
-
-static void *
-mad_gm_marcel_poll(marcel_pollid_t id,
-                   unsigned        active,
-                   unsigned        sleeping,
-                   unsigned        blocked) {
-        p_mad_gm_poll_req_t  req = NULL;
-        void                *status = MARCEL_POLL_FAILED;
-
-        LOG_IN();
-        FOREACH_POLL(id) { 
-		GET_ARG(id, req);
-                if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
-                        status = MARCEL_POLL_SUCCESS(id);
-                        goto found;
-                }
-        }
-
- found:
-        LOG_OUT();
-
-        return status;
-}
-
 #endif /* MARCEL */
 
 static
@@ -1738,12 +1706,9 @@ mad_gm_driver_init(p_mad_driver_t d) {
         ds          = TBX_MALLOC(sizeof(mad_gm_driver_specific_t));
 
 #ifdef MARCEL
-        ds->gm_pollid =
-                marcel_pollid_create(mad_gm_marcel_group,
-                                     mad_gm_marcel_poll,
-                                     mad_gm_marcel_fast_poll,
-                                     MAD_GM_POLLING_MODE);
-#endif
+        marcel_ev_server_set_poll_settings(&mad_gm_ev_server, MAD_MX_POLLING_MODE, 1);
+        marcel_ev_server_add_callback(&mad_gm_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_gm_do_poll);
+#endif /* MARCEL */
 
         d->specific = ds;
         gms = gm_init();
@@ -1752,6 +1717,10 @@ mad_gm_driver_init(p_mad_driver_t d) {
                 __gmerror__(gms);
                 goto error;
         }
+
+#ifdef MARCEL
+	marcel_ev_server_start(&mad_gm_ev_server);
+#endif /* MARCEL */
 
         LOG_OUT();
         return;
@@ -2198,18 +2167,20 @@ mad_gm_receive_message(p_mad_channel_t ch) {
 
 #ifdef MARCEL
         {
-	        p_mad_gm_connection_specific_t is = NULL;
-                mad_gm_poll_req_t req;
+	        p_mad_gm_connection_specific_t	is = NULL;
+                struct marcel_ev_wait		ev_w;
+                mad_gm_ev_t			ev =
+                        {
+                                .op                 = mad_gm_ev_channel_op,
+                                .port               = port,
+                                .data.channel_op.ch = ch,
+                                .data.channel_op.c  = NULL
+                        };
 
-                req.op                 = mad_gm_poll_channel_op;
-                req.port               = port;
-                req.data.channel_op.ch = ch;
-                req.data.channel_op.c  = NULL;
-
-                marcel_poll(ds->gm_pollid, &req);
+                marcel_ev_wait(&mad_gm_ev_server, &(ev.inst), &ev_w, 0);
                 mad_gm_lock_poll(port);
 
-                in = req.data.channel_op.c;
+                in = ev.data.channel_op.c;
 		is = in->specific;
 		is->first = 1;
         }

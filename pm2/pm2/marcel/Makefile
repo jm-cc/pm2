@@ -40,6 +40,7 @@ MOD_HSPLITS_GENDIR = $(CURDIR)/autogen-include
 
 MOD_SRC += source/scheduler-$(SCHED_NAME)
 MOD_SRC += source/arch-$(MOD_ARCH)
+MOD_SRC += source/arch-generic
 
 $(eval $(call MOD_HSPLITS_ADD_MASTER,,,))
 #$(warning $(call MOD_HSPLITS_ADD_MASTER,,,))

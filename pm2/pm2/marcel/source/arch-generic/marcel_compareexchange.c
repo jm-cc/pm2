@@ -20,5 +20,5 @@
  * generic compare and exchange spinlock
  */
 #ifdef MA__LWPS
-ma_spinlock_t compareexchange_spinlock = MA_SPIN_LOCK_UNLOCKED;
+ma_spinlock_t ma_compareexchange_spinlock = MA_SPIN_LOCK_UNLOCKED;
 #endif

@@ -18,8 +18,13 @@
 #define MA_JIFFIES_PER_TIMER_TICK 1
 
 #section macros
+#ifdef MA__TIMER
 #define JIFFIES_FROM_US(microsecs) \
-  ((microsecs)*marcel_gettimeslice()/MA_JIFFIES_PER_TIMER_TICK)
+  ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
+#else
+#define JIFFIES_FROM_US(microsecs) \
+  ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/10000)
+#endif
 
 #section functions
 void marcel_settimeslice(unsigned long microsecs);

@@ -38,7 +38,7 @@ static void module_rescan(void)
 
   string_list_destroy(&mod_names);
 
-  parser_start_cmd("pm2-module modules");
+  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
 
   mod_names = string_list_from_parser();
 
@@ -61,8 +61,8 @@ static void option_set_tooltip_msg(GtkWidget *widget, char *module, char *option
   char arg[1024];
   int pid, fd;
 
-  sprintf(arg, "echo \\\"`pm2-module option=%s --module=%s --help`\\\"",
-	  option, module);
+  sprintf(arg, "echo \\\"`%s/bin/pm2-module option=%s --module=%s --help`\\\"",
+	  pm2_root(), option, module);
 
   pid = exec_single_cmd_args(&fd, "sh", "-c", arg, NULL);
 
@@ -86,8 +86,8 @@ static void module_set_tooltip_msg(GtkWidget *widget, char *module)
   char arg[1024];
   int pid, fd;
 
-  sprintf(arg, "echo \\\"`pm2-module module=%s --help`\\\"",
-	  module);
+  sprintf(arg, "echo \\\"`%s/bin/pm2-module module=%s --help`\\\"",
+	  pm2_root(), module);
 
   pid = exec_single_cmd_args(&fd, "sh", "-c", arg, NULL);
 
@@ -160,7 +160,8 @@ static void add_exclusive_option_set(char *module,
   GList *options, *ptr;
   GtkWidget *button = NULL;
 
-  parser_start_cmd("pm2-module options --module=%s --get-excl=%s", module, set);
+  parser_start_cmd("%s/bin/pm2-module options --module=%s --get-excl=%s",
+                   pm2_root(), module, set);
 
   options = string_list_from_parser();
 
@@ -197,7 +198,8 @@ static void add_inclusive_option_set(char *module,
   GList *options, *ptr;
   GtkWidget *button = NULL;
 
-  parser_start_cmd("pm2-module options --module=%s --get-incl=%s", module, set);
+  parser_start_cmd("%s/bin/pm2-module options --module=%s --get-incl=%s",
+                   pm2_root(), module, set);
 
   options = string_list_from_parser();
 
@@ -227,7 +229,8 @@ static void add_exclusive_options(char *module,
   GtkWidget *sep;
   GList *sets, *ptr;
 
-  parser_start_cmd("pm2-module options --module=%s --get-excl-sets", module);
+  parser_start_cmd("%s/bin/pm2-module options --module=%s --get-excl-sets",
+                   pm2_root(), module);
 
   sets = string_list_from_parser();
 
@@ -254,7 +257,8 @@ static void add_inclusive_options(char *module,
   GtkWidget *sep;
   GList *sets, *ptr;
 
-  parser_start_cmd("pm2-module options --module=%s --get-incl-sets", module);
+  parser_start_cmd("%s/bin/pm2-module options --module=%s --get-incl-sets",
+                   pm2_root(), module);
 
   sets = string_list_from_parser();
 

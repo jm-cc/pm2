@@ -57,7 +57,7 @@ static const int param_send_mode         = mad_send_CHEAPER;
 static const int param_receive_mode      = mad_receive_CHEAPER;
 static const int param_nb_samples        = 1000;
 static const int param_min_size          = 1;
-static const int param_max_size          = 2*1024*1024;
+static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
 static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
@@ -246,6 +246,8 @@ ping(p_mad_channel_t      channel,
   int size = 0;
 
   LOG_IN();
+  DISP_VAL("ping with", lrank_dst);
+
   if (param_fill_buffer)
     {
       fill_buffer();
@@ -339,6 +341,8 @@ pong(p_mad_channel_t      channel,
   int size = 0;
   
   LOG_IN();
+  DISP_VAL("pong with", lrank_dst);
+
   for (size = param_min_size;
        size <= param_max_size;
        size = param_step?size + param_step:size * 2)
@@ -445,7 +449,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	   ntbx_process_lrank_t lrank_src = -1;
       
       LDISP_STR("Channel", name);
-      LDISP("src|dst|size        |latency     |Mb/s    |MB/s    |");
+      LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");
 
       ntbx_pc_first_local_rank(pc, &lrank_src);
       do

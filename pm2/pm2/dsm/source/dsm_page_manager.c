@@ -42,6 +42,9 @@
 /* no page */
 const dsm_page_index_t NO_PAGE = ((dsm_page_index_t)(-1));
 
+/* no node */
+const dsm_node_t NOBODY = ((dsm_node_t)(-1));
+
 
 
 typedef struct _dsm_page_table_entry

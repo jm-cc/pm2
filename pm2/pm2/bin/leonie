@@ -19,4 +19,6 @@ LEONIE_DIR=`${PM2_CONFIG} --flavor=leonie --bindir leonie`
 LEONIE="${LEONIE_DIR}/leonie"
 [ -x "${LEONIE}"      ] || error "cannot execute ${LEONIE}"
 
-$LEONIE "$@"
+exec ${LEONIE} "$@"
+
+# End

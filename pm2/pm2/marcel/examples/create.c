@@ -79,7 +79,7 @@ any_t main_thread()
       if(nb == 0) {
 	TBX_GET_TICK(t1);
 #ifdef PROFILE
-	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
+	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 	marcel_create(NULL, &attr, f, (any_t)&sem);
 #ifdef PROFILE

@@ -28,6 +28,8 @@ echo "set args $args" > $file
 title="$prog.$HOST"
 echo "set environment DISPLAY $DISPLAY" >> $file
 
+[ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
+
 ${LEO_XTERM} -title $title -e gdb -x $file $prog
 
 rm -f $file

@@ -40,18 +40,18 @@
  * local structures
  * ----------------
  */
-typedef struct
+typedef struct s_mad_tcp_driver_specific
 {
   int dummy;
 } mad_tcp_driver_specific_t, *p_mad_tcp_driver_specific_t;
 
-typedef struct
+typedef struct s_mad_tcp_adapter_specific
 {
   int  connection_socket;
   int  connection_port;
 } mad_tcp_adapter_specific_t, *p_mad_tcp_adapter_specific_t;
 
-typedef struct
+typedef struct s_mad_tcp_channel_specific
 {
   int                max_fds;
   fd_set             read_fds;
@@ -60,12 +60,12 @@ typedef struct
   tbx_darray_index_t last_idx;
 } mad_tcp_channel_specific_t, *p_mad_tcp_channel_specific_t;
 
-typedef struct
+typedef struct s_mad_tcp_connection_specific
 {
   int socket;
 } mad_tcp_connection_specific_t, *p_mad_tcp_connection_specific_t;
 
-typedef struct
+typedef struct s_mad_tcp_link_specific
 {
   int dummy;
 } mad_tcp_link_specific_t, *p_mad_tcp_link_specific_t;

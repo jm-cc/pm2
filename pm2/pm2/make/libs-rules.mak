@@ -73,7 +73,7 @@ ifneq ($(MAKECMDGOALS),distclean)
 # Target subdirectories
 DUMMY_BUILD :=  $(foreach REP, $(LIB_REP_TO_BUILD), $(shell mkdir -p $(REP)))
 
-ifeq ($(wildcard $(LIB_DEPENDS)),$(LIB_DEPENDS))
+ifneq ($(wildcard $(LIB_DEPENDS)),)
 include $(LIB_DEPENDS)
 endif
 endif

@@ -30,14 +30,14 @@
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
+#define FAILURE_CLEANUP() swann_failure_cleanup()
+
 #include "tbx.h"
 #include "ntbx.h"
+#include "leoparse.h"
 
 #include "swann_pointers.h"
 #include "swann_types.h"
-#include "swann_file.h"
-#include "swann_net.h"
-#include "swann_run.h"
 #include "swann_interface.h"
 
 #endif /* SWANN_H */

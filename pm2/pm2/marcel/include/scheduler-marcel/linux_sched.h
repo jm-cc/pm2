@@ -75,7 +75,6 @@ struct ma_runqueue {
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_idle_runqueue)
-#define ma_task_cur_rq(p)	(&ma_main_runqueue)
 #define ma_this_rq()		(&ma_main_runqueue)
 #define ma_prev_rq()		(&ma_main_runqueue)
 #endif

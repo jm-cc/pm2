@@ -1,0 +1,60 @@
+
+                      PM2 HIGH-PERF/ISOMALLOC
+           High Performance Parallel Multithreaded Machine
+                           version 3.0
+
+     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+
+            Laboratoire de l'Informatique du Parallelisme
+                        UMR 5668 CNRS-INRIA
+                 Ecole Normale Superieure de Lyon
+
+                      External Contributors:
+                 Yves Denneulin (LMC - Grenoble),
+                 Benoit Planquelle (LIFL - Lille)
+
+                    1998 All Rights Reserved
+
+
+                             NOTICE
+
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby granted
+ provided that the above copyright notice appear in all copies and
+ that both the copyright notice and this permission notice appear in
+ supporting documentation.
+
+ Neither the institutions (Ecole Normale Superieure de Lyon,
+ Laboratoire de L'informatique du Parallelisme, Universite des
+ Sciences et Technologies de Lille, Laboratoire d'Informatique
+ Fondamentale de Lille), nor the Authors make any representations
+ about the suitability of this software for any purpose. This
+ software is provided ``as is'' without express or implied warranty.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Before starting building MARCEL, set the MARCEL_ROOT environment
+variable.  For example, if you have installed MARCEL in your home
+directory, out the following definitions (if under csh) in your .cshrc
+file:
+
+		setenv MARCEL_ROOT ${HOME}/marcel
+
+Then, add the ${MARCEL_ROOT}/bin entry in your PATH environment
+variable.
+
+for example (under csh):
+
+		setenv PATH ${PATH}:${MARCEL_ROOT}/bin
+
+To build example programs, type aimk <file_name>. The file
+<file_name>.c will be compiled and the exec file <file_name> will be
+put in the directory corresponding to the underlying architecture
+(e.g: ALPHA, LINUX, SUN4SOL2, etc.).
+
+The file marcel/ARCHITECTURES contains the list of supported architectures.
+
+Note that the GCC compiler is required for compiling MARCEL.
+
+Contact Raymond.Namyst@ens-lyon.fr for any problem.

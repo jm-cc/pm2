@@ -332,7 +332,7 @@ mad_forward_indirect_reemit_block(void *arg)
 	      TBX_UNLOCK_SHARED(block_slist);
 	      
 	      mad_forward_write_block_header(out, fbh);
-		  fbh = NULL;
+	      fbh = NULL;
 	    }
 	}
       else
@@ -378,7 +378,6 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
     {
       lnk = in->link_array[0];
     }
-
   if (lnk->buffer_mode == mad_buffer_mode_static)
     {
       p_mad_buffer_t static_buffer = NULL;
@@ -493,6 +492,7 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
 	    {
 	      fbh->block =
 		next_interface->get_static_buffer(next_data_lnk);
+
 	      fbh->type  = mad_fblock_type_static_dst;
 	    }
 	  else if (next_data_lnk->buffer_mode ==
@@ -504,6 +504,11 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
 	  else
 	    FAILURE("invalid link mode");
 
+	  if (fbh->block->length > fbh->length)
+	    {
+	      fbh->block->length = fbh->length;
+	    }
+	  
 	  interface->receive_buffer(data_lnk, &(fbh->block));
 	}
       else
@@ -1738,7 +1743,7 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
 
       if (interface->new_message)
 	interface->new_message(out);
-
+      
       if (nb_block)
 	{
 	  mad_forward_fill_fbh_data(data, src, dst, nb_block + 1,

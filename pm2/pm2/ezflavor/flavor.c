@@ -179,7 +179,8 @@ static flavor_t *load_flavor(char *name)
   ptr = (flavor_t *)g_malloc(sizeof(flavor_t));
   ptr->modules = ptr->options = NULL;
 
-  parser_start_cmd("pm2-flavor get --flavor=%s", name);
+  parser_start_cmd("%s/bin/pm2-flavor get --flavor=%s",
+    pm2_root(), name);
 
   while(tok = parser_next_token(), tok != END_OF_INPUT) {
 
@@ -356,8 +357,8 @@ void flavor_delete(void)
     int ret;
 
     ret = exec_wait(exec_single_cmd_fmt(NULL,
-					"pm2-flavor delete --flavor=%s",
-					selected));
+					"%s/bin/pm2-flavor delete --flavor=%s",
+					pm2_root(), selected));
 
     if(ret != 0) {
       fprintf(stderr, "Error: Delete operation failed\n");
@@ -429,7 +430,8 @@ static int flavor_save_on_disk(void)
   GList *ptr;
   static char cmd[4096];
 
-  sprintf(cmd, "pm2-flavor set --flavor=%s --builddir=%s --ext=%s",
+  sprintf(cmd, "%s/bin/pm2-flavor set --flavor=%s --builddir=%s --ext=%s",
+          pm2_root(),
 	  cur_flavor->name,
 	  cur_flavor->builddir,
 	  cur_flavor->extension);
@@ -467,7 +469,8 @@ static int flavor_do_check(void)
 
   module_save_to_flavor();
 
-  sprintf(cmd, "pm2-flavor check --builddir=%s --ext=%s",
+  sprintf(cmd, "%s/bin/pm2-flavor check --builddir=%s --ext=%s",
+          pm2_root(),
 	  cur_flavor->builddir,
 	  cur_flavor->extension);
 
@@ -638,7 +641,7 @@ void flavor_rescan(void)
 
   string_list_destroy(&fla_names);
 
-  parser_start_cmd("pm2-flavor list");
+  parser_start_cmd("%s/bin/pm2-flavor list", pm2_root());
 
   fla_names = string_list_from_parser();
 
@@ -781,6 +784,7 @@ void flavor_init(GtkWidget *vbox)
 
   if(!fla_names) {
     fprintf(stderr, "Error: no flavor found!\n");
+    fprintf(stderr, "Try 'make init' in $PM2_ROOT to create basic initial flavors\n");
     exit(1);
   }
 

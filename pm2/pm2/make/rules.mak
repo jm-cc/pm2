@@ -42,9 +42,6 @@ PM2_LDFLAGS :=  $(COMMON_LDFLAGS)
 PM2_ASFLAGS :=  $(COMMON_ASFLAGS)
 
 # Target subdirectories
-PM2_GEN_OBJ :=  $(GEN_OBJ)/pm2
-PM2_GEN_ASM :=  $(GEN_ASM)/pm2
-PM2_GEN_DEP :=  $(GEN_DEP)/pm2
 ifneq ($(MAKECMDGOALS),distclean)
 DUMMY_BUILD :=  $(shell mkdir -p $(PM2_GEN_DEP))
 DUMMY_BUILD :=  $(shell mkdir -p $(PM2_GEN_ASM))

@@ -28,11 +28,12 @@
 /* On a besoin de partie de marcel non exportées */
 #define MARCEL_INTERNAL_INCLUDE
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include "tbx_debug.h"
+#include "tbx.h"
 
 #ifdef MARCEL
 #include "marcel.h"

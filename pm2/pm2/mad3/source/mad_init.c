@@ -432,7 +432,7 @@ links_init(p_mad_driver_interface_t interface,
   LOG_OUT();
 }
 
-static
+//static
 void
 regular_connection_init(p_mad_driver_interface_t  interface,
                                 p_mad_channel_t           channel,
@@ -539,7 +539,7 @@ regular_connection_init(p_mad_driver_interface_t  interface,
   LOG_OUT();
 }
 
-static
+//static
 tbx_bool_t
 connection_init(p_mad_channel_t mad_channel)
 {
@@ -705,7 +705,7 @@ get_adapter_info(p_mad_channel_t      ch,
   return ai;
 }
 
-static
+//static
 tbx_bool_t
 connection_open(p_mad_channel_t mad_channel)
 {
@@ -817,7 +817,7 @@ connection_open(p_mad_channel_t mad_channel)
 static
 tbx_bool_t
 channel_open(p_mad_madeleine_t  madeleine,
-                     p_mad_channel_id_t p_channel_id)
+	     p_mad_channel_id_t p_channel_id)
 {
   ntbx_process_grank_t        g =   -1;
   p_mad_dir_channel_t         dir_channel  = NULL;
@@ -871,6 +871,15 @@ channel_open(p_mad_madeleine_t  madeleine,
   mad_channel->name          = tbx_strdup(dir_channel->name);
   mad_channel->pc            = dir_channel->pc;
   mad_channel->not_private   = dir_channel->not_private;
+  mad_channel->mergeable     = dir_channel->mergeable;
+   
+  if ((madeleine->settings->leonie_dynamic_mode) && 
+      (madeleine->session->session_id > 0) && 
+      (mad_channel->mergeable))
+     {	
+	madeleine->mergeable = tbx_true;
+     }
+   
   mad_channel->dir_channel   = dir_channel;
   mad_channel->adapter       = mad_adapter;
 

@@ -30,6 +30,7 @@ Usage: $PROGNAME { option } command
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d      : Run command in debug mode (not supported by all implementations)
+    -t      : Run command through strace
     -s      : Run scripts in debug mode
     -c name : Use console named "name"
     -l      : Also generate a log file on first node
@@ -156,6 +157,10 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_DEBUG=on
 	    ;;
+	-t|--trace)
+	    shift
+	    PM2_STRACE=on
+	    ;;
 	-s|--debug)
 	    shift
 	    PM2_SCRIPT_DEBUG=on
@@ -181,6 +186,10 @@ while [ $# -gt 0 ]; do
 	--d) # Debug off
 	    shift
 	    PM2_DEBUG=off
+	    ;;
+	--t) # Strace off
+	    shift
+	    PM2_STRACE=off
 	    ;;
 	-x) # XTerm mode on
 	    shift
@@ -317,6 +326,10 @@ esac
 # Debug
 if [ "$PM2_DEBUG" = on ]; then
     _prescript_args="$_prescript_args --debug"
+fi
+
+if [ "$PM2_STRACE" = on ]; then
+    _prescript_args="$_prescript_args --strace"
 fi
 
 _old_ifs="$IFS"

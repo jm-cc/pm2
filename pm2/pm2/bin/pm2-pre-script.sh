@@ -88,6 +88,18 @@ while [ $# -gt 0 ]; do
 	    cp /dev/null $debug_file
 	    log "Using debug mode"
 	    ;;
+	--strace)
+	    PM2_CMD_PREFIX="PM2_CMD_PREFIX $1"
+	    shift
+	    # tempo file
+	    num=0
+	    while [ -f /tmp/madstrace.$num ] ; do
+		num=`expr $num + 1`
+	    done
+	    strace_file=/tmp/madstrace.$num
+	    cp /dev/null $strace_file
+	    log "Using strace mode"
+	    ;;
 	--)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
 	    shift
@@ -182,6 +194,11 @@ if [ -n "$debug_file" ]; then
     xterm -title $title -e gdb -x $debug_file $prog
 
     rm -f $debug_file
+
+elif [ -n "$strace_file" ]; then
+
+    log "Executing: exec strace -o $strace_file $prog $*"
+    exec strace -f -o $strace_file $prog ${@:+"$@"}
 
 else # debug
 

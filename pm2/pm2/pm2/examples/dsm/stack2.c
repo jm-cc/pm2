@@ -40,7 +40,7 @@ int **other; // a page in process 1
 pm2_completion_t c;
 
 
-#define MY_ALIGN(X) ((((unsigned long) X)+(SLOT_SIZE-1)) & ~(SLOT_SIZE-1))
+#define MY_ALIGN(X) ((((unsigned long) X)+(THREAD_SLOT_SIZE-1)) & ~(THREAD_SLOT_SIZE-1))
 
 void f() {
 
@@ -86,14 +86,14 @@ void local() {
   /* first, jump to the other stack */
   marcel_prepare_stack_jump(start);
 
-  *((void**) (((void*) (get_sp()  & ~(SLOT_SIZE-1)) )+(4096*6-16)))=0;
+  *((void**) (((void*) (get_sp()  & ~(THREAD_SLOT_SIZE-1)) )+(4096*6-16)))=0;
 
 
   tfprintf(stderr,"[%p, %p] In local, with start=%p\n", marcel_self(), (void*) get_sp());
 
   if (setjmp(buf)==0) {
     marcel_setspecific(bufkey, (any_t) &buf);
-    set_sp(((void*)start)+SLOT_SIZE-4096-16);
+    set_sp(((void*)start)+THREAD_SLOT_SIZE-4096-16);
     f();
     tfprintf(stderr,"[%p, %p] Back in local, sp= %p\n", marcel_self(), (void*) get_sp(),get_sp());
     longjmp( *(jmp_buf*) marcel_getspecific(bufkey) ,1);
@@ -115,7 +115,7 @@ void remote() {
   pm2_rawrpc_waitdata(); 
 
   other = (int**)
-    (((unsigned long) dsm_get_pseudo_static_dsm_start_addr())+4*SLOT_SIZE
+    (((unsigned long) dsm_get_pseudo_static_dsm_start_addr())+4*THREAD_SLOT_SIZE
      -sizeof(int*));
 
   tfprintf(stderr,"[%p, %p] writing at %p\n", marcel_self(), (void*) get_sp(),other);
@@ -145,7 +145,7 @@ int pm2_main(int argc, char **argv) {
   
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
   
-  dsm_set_pseudo_static_area_size(4*SLOT_SIZE);
+  dsm_set_pseudo_static_area_size(4*THREAD_SLOT_SIZE);
   dsm_set_default_protocol(LI_HUDAK);
 
   pm2_set_dsm_page_distribution(DSM_BLOCK); /* half on each process */
@@ -168,7 +168,7 @@ int pm2_main(int argc, char **argv) {
   /*  dsm_display_page_ownership(); */
   start = (int*) MY_ALIGN(dsm_get_pseudo_static_dsm_start_addr());
   other = (int**)
-    (((unsigned long) dsm_get_pseudo_static_dsm_start_addr())+4*SLOT_SIZE-sizeof(int*));
+    (((unsigned long) dsm_get_pseudo_static_dsm_start_addr())+4*THREAD_SLOT_SIZE-sizeof(int*));
   
   if(pm2_self() == 0) { /* master process */
     pm2_completion_init(&c, NULL, NULL);

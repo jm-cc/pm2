@@ -84,7 +84,7 @@ EOF
     set)
 	cat <<EOF
 Options for '$2' command 
-  --flavor=""      name of the flavor (default: "default")
+  --flavor=""      name of the flavor (default: "\$PM2_FLAVOR or default")
   --builddir=""    directory used for building (default: if ${Q}flavor${Q}=default,
                      set to "", else set to ${Q}flavor${Q})
   --ext=""         extension to use (default: none)
@@ -425,7 +425,7 @@ do_check_depend() {
 	for name in `"$PM2_MODULE" module=$mod --provide`; do
 	    case " $depend_list " in
 	    *\ $name\ *)
-		echo "Module '$mod' provide \"$name\""
+		echo "Module '$mod' provides \"$name\""
 		;;
 	    *)
 		;;
@@ -437,7 +437,7 @@ do_check_depend() {
 	    for name in `"$PM2_MODULE" option=$opt --module=$mod --provide`; do
 		case " $depend_list " in
 		*\ $name\ *)
-		    echo "Option '$opt' from module '$mod' provide \"$name\""
+		    echo "Option '$opt' from modules '$mod' provides \"$name\""
 		    ;;
 		*)
 		    ;;
@@ -453,7 +453,7 @@ do_check_confict() {
 	for name in `"$PM2_MODULE" module=$mod --conflict`; do
 	    value="`eval echo \\$provide_${name}`"
 	    if [ \( ! -z "$value" \) -a \( "$value" != "$mod" \) ]; then
-		echo "$name in module $mod conflict with `echo $value' '\
+		echo "$name in module $mod conflicts with `echo $value' '\
 		    | sed -e 's,_,/,g' -e s,$mod' ',,`"
 		check_result=1
 	    fi
@@ -464,7 +464,7 @@ do_check_confict() {
 	    for name in `"$PM2_MODULE" option=$opt --module=$mod --conflict`; do
 		value="`eval echo \\$provide_${name}`"
 		if [ \( ! -z "$value" \) -a \( "$value" != "${mod}_$opt" \) ]; then
-		    echo "$name in option $mod/$opt conflict with `  \
+		    echo "$name in option $mod/$opt conflicts with `  \
 			echo $value' '  | sed -e 's,_,/,g' \
 			    -e s,$mod/$opt' ',,`"
 		    check_result=1
@@ -538,7 +538,7 @@ do_set() {
 	shift
     done
     if [ -z "$flavor" ]; then
-	flavor=default
+	flavor=${PM2_FLAVOR:-default}
     fi
     if [ -z "$builddir" -a "$flavor" != default ]; then
 	builddir="$flavor"
@@ -704,7 +704,7 @@ do_check() {
 	shift
     done
     if [ -z "$flavor" ]; then
-	flavor=default
+	flavor=${PM2_FLAVOR:-default}
     fi
     modules=
     for mod in $lst_opt_modules " "; do

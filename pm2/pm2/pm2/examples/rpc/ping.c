@@ -85,7 +85,7 @@ void informer(unsigned size, unsigned nbping)
 
 void f(int bytes)
 {
-  Tick t1, t2;
+  tbx_tick_t t1, t2;
   unsigned long temps;
   unsigned n;
 #ifndef ONLY_ASYNC
@@ -104,12 +104,12 @@ void f(int bytes)
     temps = ~0L;
     for(n=0; n<ESSAIS; n++) {
       informer(bytes, nb/2);
-      GET_TICK(t1);
+      TBX_GET_TICK(t1);
       for(i=0; i<nb/2; i++)
 	LRPC(autre, LRPC_PING, STD_PRIO, DEFAULT_STACK,
 	     NULL, NULL);
-      GET_TICK(t2);
-      temps = min(timing_tick2usec(TICK_DIFF(t1, t2)), temps);
+      TBX_GET_TICK(t2);
+      temps = min(TBX_TIMING_DELAY(t1, t2), temps);
     }
 
     tfprintf(stderr, "temps LRPC = %d.%03dms\n",
@@ -121,11 +121,11 @@ void f(int bytes)
     temps = ~0L;
     for(n=0; n<ESSAIS; n++) {
       informer(bytes, nb/2);
-      GET_TICK(t1);
+      TBX_GET_TICK(t1);
       for(i=0; i<nb/2; i++)
 	QUICK_LRPC(autre, LRPC_PING, NULL, NULL);
-      GET_TICK(t2);
-      temps = min(timing_tick2usec(TICK_DIFF(t1, t2)), temps);
+      TBX_GET_TICK(t2);
+      temps = min(TBX_TIMING_DELAY(t1, t2), temps);
     }
 
     tfprintf(stderr, "temps QUICK_LRPC = %d.%03dms\n",
@@ -141,12 +141,12 @@ void f(int bytes)
     for(n=0; n<ESSAIS; n++) {
       informer(bytes, nb/2);
       NB_PING--;
-      GET_TICK(t1);
+      TBX_GET_TICK(t1);
       ASYNC_LRPC(autre, LRPC_PING_ASYNC, STD_PRIO, DEFAULT_STACK, NULL);
       marcel_sem_P(&fin_async_lrpc);
-      GET_TICK(t2);
+      TBX_GET_TICK(t2);
 
-      temps = min(timing_tick2usec(TICK_DIFF(t1, t2)), temps);
+      temps = min(TBX_TIMING_DELAY(t1, t2), temps);
     }
 
     tfprintf(stderr, "temps ASYNC_LRPC = %ld.%03ldms\n",

@@ -1474,6 +1474,10 @@ restart:
 
 	ma_clear_tsk_need_resched(prev);
 
+	if (next && !(rq->active->nr_active+rq->expired->nr_active))
+		/* prev, but nobody to take turn */
+		goto switch_tasks;
+
 #ifdef MA__LWPS
 	if (tbx_unlikely(!(rq->active->nr_active+rq->expired->nr_active))) {
 		sched_debug("someone stole the task we saw, restart\n");

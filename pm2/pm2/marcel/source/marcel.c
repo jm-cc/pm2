@@ -1196,7 +1196,7 @@ DEF___PTHREAD(getspecific)
 
 /* ================== Gestion des exceptions : ================== */
 
-int _raise(marcel_exception_t ex)
+int _marcel_raise(marcel_exception_t ex)
 {
   marcel_t cur = marcel_self();
 
@@ -1245,6 +1245,7 @@ int main(int argc, char *argv[])
 {
   static int __argc;
   static char **__argv;
+  static unsigned long valsp;
 
 #ifdef MAD2
   marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT);
@@ -1253,7 +1254,8 @@ int main(int argc, char *argv[])
 #endif
   if(!marcel_ctx_setjmp(__initial_main_ctx)) {
 
-    __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
+    valsp = (unsigned long) get_sp();
+    __main_thread = (marcel_t)(((valsp - 128) &
 				~(THREAD_SLOT_SIZE-1)) -
 			       MAL(sizeof(task_desc)));
 

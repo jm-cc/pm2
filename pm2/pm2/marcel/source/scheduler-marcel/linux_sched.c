@@ -604,6 +604,23 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	LOG_OUT();
 }
 
+int ma_sched_change_prio(marcel_t t, int prio) {
+	ma_runqueue_t *rq;
+	ma_prio_array_t *array;
+	LOG_IN();
+	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
+	rq = task_rq_lock(t);
+	array = t->sched.internal.array;
+	if (array)
+		dequeue_task(t,array);
+	t->sched.internal.prio=prio;
+	if (array)
+		enqueue_task(t,array);
+	task_rq_unlock(rq);
+	LOG_OUT();
+	return 0;
+}
+
 #if 0
 /*
  * Potentially available exiting-child timeslices are
@@ -1466,9 +1483,6 @@ restart:
 #endif
 		if (!currq->nr_running)
 			sched_debug("apparently nobody in %p\n",currq);
-#ifdef MA__DEBUG
-#warning : !! mar_sched_find_first_bit exige au moins un bit cleared ?
-#endif
 		idx = ma_sched_find_first_bit(currq->active->bitmap);
 		if (idx < max_prio) {
 			sched_debug("found better prio %d in rq %p\n",idx,currq);

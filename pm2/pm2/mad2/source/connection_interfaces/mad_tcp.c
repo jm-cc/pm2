@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.8  2000/01/13 14:46:14  oaumage
+- adaptation pour la prise en compte de la toolbox
+
 Revision 1.7  2000/01/10 10:23:16  oaumage
 *** empty log message ***
 
@@ -420,16 +423,16 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->after_open_channel         = mad_tcp_after_open_channel;
   interface->before_close_channel       = mad_tcp_before_close_channel;
   interface->disconnect                 = mad_tcp_disconnect;
-  interface->after_close_channel        = mad_tcp_after_close_channel;
-  interface->link_exit                  = mad_tcp_link_exit;
-  interface->connection_exit            = mad_tcp_connection_exit;
-  interface->channel_exit               = mad_tcp_channel_exit;
+  interface->after_close_channel        = NULL;
+  interface->link_exit                  = NULL;
+  interface->connection_exit            = NULL;
+  interface->channel_exit               = NULL;
   interface->adapter_exit               = mad_tcp_adapter_exit;
-  interface->driver_exit                = mad_tcp_driver_exit;
-  interface->choice                     = mad_tcp_choice;
+  interface->driver_exit                = NULL;
+  interface->choice                     = NULL;
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
-  interface->new_message                = mad_tcp_new_message;
+  interface->new_message                = NULL;
   interface->receive_message            = mad_tcp_receive_message;
   interface->send_buffer                = mad_tcp_send_buffer;
   interface->receive_buffer             = mad_tcp_receive_buffer;
@@ -838,41 +841,6 @@ mad_tcp_disconnect(p_mad_connection_t connection)
 }
 
 void
-mad_tcp_after_close_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* nothing */
-  LOG_OUT();
-}
-
-void
-mad_tcp_link_exit(p_mad_link_t link)
-{
-  LOG_IN();
-  /* nothing */
-  LOG_OUT();
-}
-
-void
-mad_tcp_connection_exit(p_mad_connection_t in,
-			p_mad_connection_t out)
-{
-  LOG_IN();
-  free(in->specific);
-  in->specific = out->specific = NULL;
-  LOG_OUT();
-}
-
-void
-mad_tcp_channel_exit(p_mad_channel_t channel)
-{
-  LOG_IN();
-  free(channel->specific);
-  channel->specific = NULL;
-  LOG_OUT();
-}
-
-void
 mad_tcp_adapter_exit(p_mad_adapter_t adapter)
 {
   p_mad_tcp_adapter_specific_t adapter_specific = adapter->specific;
@@ -889,33 +857,6 @@ mad_tcp_adapter_exit(p_mad_adapter_t adapter)
       adapter->master_parameter = NULL;
     }
   free(adapter->name);
-  LOG_OUT();
-}
-
-void
-mad_tcp_driver_exit(p_mad_driver_t driver)
-{
-  LOG_IN();
-  free(driver->specific);
-  LOG_OUT();
-}
-
-p_mad_link_t
-mad_tcp_choice(p_mad_connection_t   connection,
-	       size_t               size,
-	       mad_send_mode_t      send_mode,
-	       mad_receive_mode_t   receive_mode)
-{
-  LOG_IN();
-  LOG_OUT();
-  return &(connection->link[0]);
-}
-
-void
-mad_tcp_new_message(p_mad_connection_t connection)
-{
-  LOG_IN();
-  /* nothing */
   LOG_OUT();
 }
 
@@ -1019,42 +960,43 @@ mad_tcp_send_buffer_group(p_mad_link_t           lnk,
 			  p_mad_buffer_group_t   buffer_group)
 {
   LOG_IN();
-  if (!mad_empty_list(&(buffer_group->buffer_list)))
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
       p_mad_tcp_connection_specific_t   connection_specific =
 	lnk->connection->specific;
-      mad_list_reference_t              ref;
+      tbx_list_reference_t              ref;
 
-      mad_list_reference_init(&ref, &(buffer_group->buffer_list));
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
 	  mad_tcp_write(connection_specific->socket,
-			mad_get_list_reference_object(&ref));
+			tbx_get_list_reference_object(&ref));
 	}
-      while(mad_forward_list_reference(&ref));
+      while(tbx_forward_list_reference(&ref));
     }
   LOG_OUT();
 }
 
 void
 mad_tcp_receive_sub_buffer_group(p_mad_link_t           lnk,
-				 mad_bool_t             first_sub_group,
+				 tbx_bool_t             first_sub_group
+				   __attribute__ ((unused)),
 				 p_mad_buffer_group_t   buffer_group)
 {
   LOG_IN();
-  if (!mad_empty_list(&(buffer_group->buffer_list)))
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
       p_mad_tcp_connection_specific_t   connection_specific =
 	lnk->connection->specific;
-      mad_list_reference_t              ref;
+      tbx_list_reference_t              ref;
 
-      mad_list_reference_init(&ref, &(buffer_group->buffer_list));
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
 	  mad_tcp_read(connection_specific->socket,
-		       mad_get_list_reference_object(&ref));
+		       tbx_get_list_reference_object(&ref));
 	}
-      while(mad_forward_list_reference(&ref));
+      while(tbx_forward_list_reference(&ref));
     }
   LOG_OUT();
 }

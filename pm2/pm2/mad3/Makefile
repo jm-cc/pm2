@@ -13,10 +13,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-# LIBRARY -> nom du module
-#---------------------------------------------------------------------
-LIBRARY=mad3
-
 # LIBNAME -> nom de la librairie
 #---------------------------------------------------------------------
 LIBNAME=mad
@@ -33,12 +29,12 @@ endif
 
 # Gestion des drivers : prise en compte des fichiers sources supplémentaires
 #---------------------------------------------------------------------
-LIB_SRC2=$(LIB_SRC)/connection_interfaces
-LIB_C_SOURCES += $(foreach PROT, $(MAD3_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
+MOD_SRC2=$(MOD_SRC)/connection_interfaces
+MOD_C_SOURCES += $(foreach PROT, $(MAD3_PROTOCOLS), $(MOD_SRC2)/mad_$(PROT).c)
 
 # Le vpath supplémentaire
 #---------------------------------------------------------------------
-vpath %.c $(LIB_SRC2)
+vpath %.c $(MOD_SRC2)
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
@@ -46,8 +42,8 @@ include $(PM2_ROOT)/make/libs-rules.mak
 
 # Construction du cache specifique a Madeleine III
 #---------------------------------------------------------------------
-$(PM2_MAK_DIR)/mad3-specific.mak: $(LIB_STAMP_FLAVOR)
-	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\
+$(PM2_MAK_DIR)/mad3-specific.mak: $(MOD_STAMP_FLAVOR)
+	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(MODULE)`;\
 	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
 	echo "MAD3_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
 	fi;

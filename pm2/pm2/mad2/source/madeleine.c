@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.29  2000/05/16 14:17:26  oaumage
+- correction de marcel_init dans mad_pre_init
+
 Revision 1.28  2000/05/16 09:50:44  oaumage
 - suppression du DEBUG
 
@@ -513,10 +516,6 @@ mad_pre_init(p_mad_adapter_set_t adapter_set)
   p_mad_madeleine_t madeleine = &main_madeleine;
 
   LOG_IN();
-#ifdef MARCEL  
-  marcel_init(argc, argv);
-#endif /* MARCEL */
-    
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
   mad_managers_init();
@@ -1111,9 +1110,9 @@ mad_init(
     }  
 
 #ifndef APPLICATION_SPAWN
-#ifdef PM2  
+#ifdef MARCEL  
   marcel_init(argc, argv);
-#endif /* PM2 */
+#endif /* MARCEL */
   tbx_init();
   
   madeleine->nb_channel = 0;

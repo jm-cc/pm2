@@ -166,9 +166,6 @@ static __inline__ char *marcel_stackbase(marcel_t pid)
 unsigned long marcel_cachedthreads(void);
 
 int  marcel_test_activity(void);
-void marcel_set_activity(void);
-void marcel_clear_activity(void);
-
 
 /* ======= MT-Safe functions from standard library ======= */
 
@@ -181,8 +178,5 @@ void *marcel_malloc(unsigned size, char *file, unsigned line);
 void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
 void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
 void marcel_free(void *ptr, char *file, unsigned line);
-
-
-void marcel_restart_main_task(void);
 
 #endif // MARCEL_EST_DEF

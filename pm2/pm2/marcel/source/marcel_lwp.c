@@ -61,7 +61,7 @@ marcel_lwp_t* addr_lwp[MA_NR_LWPS]={&__main_lwp,};
 
 //#endif
 
-inline unsigned marcel_nbvps(void)
+unsigned marcel_nbvps(void)
 {
   return get_nb_lwps();
 }
@@ -207,7 +207,8 @@ unsigned marcel_lwp_add_vp(void)
   // correct.
   marcel_sig_disable_interrupts();
   marcel_kthread_create(&lwp->pid, 
-			ma_per_lwp(run_task,lwp)?(void*)(ma_per_lwp(run_task,lwp))->initial_sp:NULL,
+			ma_per_lwp(run_task,lwp)?(void*)THREAD_GETMEM(ma_per_lwp(run_task,lwp), initial_sp):NULL,
+			ma_per_lwp(run_task,lwp)?THREAD_GETMEM(ma_per_lwp(run_task,lwp), stack_base):0,
 			lwp_kthread_start_func, (void *)lwp);
   marcel_sig_enable_interrupts();
 #endif
@@ -355,8 +356,8 @@ static void lwp_init(ma_lwp_t lwp)
 
 inline static void bind_on_processor(marcel_lwp_t *lwp)
 {
+#if defined(MA__BIND_LWP_ON_PROCESSORS)
 	unsigned long target = LWP_NUMBER(lwp) % __nb_processors;
-#if defined(BIND_LWP_ON_PROCESSORS)
 #if defined(SOLARIS_SYS)
 	if(processor_bind(P_LWPID, P_MYID,
 			  (processorid_t)(target),

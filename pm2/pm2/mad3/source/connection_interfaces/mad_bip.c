@@ -1571,7 +1571,7 @@ mad_bip_send_long_buffer(p_mad_link_t   lnk,
     {
       size_t length = 0;
 
-      length = min(MAD_BIP_MAX_SIZE, (buffer->bytes_written - buffer->bytes_read));
+      length = tbx_min(MAD_BIP_MAX_SIZE, (buffer->bytes_written - buffer->bytes_read));
 
       ack_poll(channel_specific, out->remote_rank);
       out_specific->ack = tbx_true;
@@ -1615,7 +1615,7 @@ mad_bip_receive_long_buffer(p_mad_link_t   lnk,
     {
       size_t length = 0;
  
-      length = min(MAD_BIP_MAX_SIZE, (buffer->length - buffer->bytes_written));
+      length = tbx_min(MAD_BIP_MAX_SIZE, (buffer->length - buffer->bytes_written));
 
       request =
 	bip_recv_post(channel_specific->base_tag + MAD_BIP_TRANSFER_TAG,

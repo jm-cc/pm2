@@ -136,4 +136,4 @@ targethelp:
 
 .PHONY: config
 config: flavors
-	@$(PM2_ROOT)/bin/pm2-config-flavor
+	@$(PM2_ROOT)/bin/pm2-config-flavor || :

@@ -282,7 +282,17 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
   server->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
   CTRL_ALLOC(server->local_host);
   gethostname(server->local_host, MAXHOSTNAMELEN);
+  /*
+  {
+    int l = strlen(server->local_host);
 
+    if (l < MAXHOSTNAMELEN-1){
+      server->local_host[l++] = '.';
+      getdomainname(server->local_host+l, MAXHOSTNAMELEN-l);
+    }
+  }
+  DISP("hostname = [%s]", server->local_host);
+  */
   local_host_entry = gethostbyname(server->local_host);
   server->local_host_ip =
     (unsigned long) *(unsigned long *)(local_host_entry->h_addr);
@@ -300,6 +310,10 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
 	ptr++;
       }
   }
+
+  tbx_slist_append(server->local_alias, server->local_host);
+  server->local_host = tbx_strdup(local_host_entry->h_name);
+
   server_specific = TBX_MALLOC(sizeof(ntbx_tcp_server_specific_t));
   CTRL_ALLOC(server_specific);
   server->specific = server_specific;
@@ -355,6 +369,9 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
 	ptr++;
       }
   }
+
+  tbx_slist_append(client->local_alias, client->local_host);
+  client->local_host = tbx_strdup(local_host_entry->h_name);
 
   client->remote_host = NULL;
 

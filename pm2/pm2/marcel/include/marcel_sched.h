@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.11  2000/05/09 10:52:42  vdanjean
+pm2debug module
+
 Revision 1.10  2000/04/21 11:19:26  vdanjean
 fixes for actsmp
 
@@ -292,9 +295,9 @@ static __inline__ unsigned int preemption_enabled(void)
 #ifdef DEBUG_LOCK_TASK
 #define unlock_task() \
    (ma_unlock_task(), \
-   mdebug("\t=> unlock --%i (" __FILE__ ":%i)\n", locked(), __LINE__))
+   lock_task_debug("\t=> unlock --%i\n", locked()))
 #define lock_task() \
-   (mdebug("\t=> lock %i++ (" __FILE__ ":%i)\n", locked(), __LINE__), \
+   (lock_task_debug("\t=> lock %i++\n", locked()), \
    ma_lock_task())
 #else
 #define unlock_task() ma_unlock_task()
@@ -303,10 +306,10 @@ static __inline__ unsigned int preemption_enabled(void)
 
 #ifdef DEBUG_SCHED_LOCK
 #define sched_lock(lwp) \
-   (mdebug("\t=> sched_lock (" __FILE__ ":%i)\n", __LINE__), \
+   (sched_lock_debug("sched_lock\n"), \
    ma_sched_lock(lwp))
 #define sched_unlock(lwp) \
-   (mdebug("\t=> sched_unlock (" __FILE__ ":%i)\n", __LINE__), \
+   (sched_lock_debug("sched_unlock\n"), \
    ma_sched_unlock(lwp))
 #else
 #define sched_lock(lwp) ma_sched_lock(lwp)

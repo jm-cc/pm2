@@ -14,6 +14,7 @@
 #include "intro.h"
 #include "dialog.h"
 #include "statusbar.h"
+#include "menu.h"
 
 static GtkWidget *the_load_button;
 static GtkWidget *the_create_button;
@@ -33,14 +34,13 @@ static GList *the_flavors = NULL;
 static flavor_t *cur_flavor = NULL;
 
 gint flavor_modified = FALSE;
+static gint flavor_never_saved = FALSE;
 
-static void flavor_save_as(void);
 static void flavor_save(void);
 
 #ifdef DEBUG
 static void flavor_print(void)
-{
-  GList *ptr;
+{  GList *ptr;
 
   if(cur_flavor != NULL) {
     g_print("name      : [%s]\n", (cur_flavor->name ? : ""));
@@ -68,10 +68,11 @@ static gint flavor_exists(char *name);
 static void update_the_buttons(void)
 {
   char *selected = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
-  gint load_enabled, create_enabled, save_enabled;
+  gint load_enabled, create_enabled, save_enabled, delete_enabled;
   gint save_as = FALSE;
 
   if(flavor_exists(selected)) {
+    delete_enabled = TRUE;
     create_enabled = FALSE;
     if(cur_flavor == NULL) {
       // Initial state
@@ -90,9 +91,10 @@ static void update_the_buttons(void)
     }
   } else if(!strcmp(selected, "")) {
     // No selected flavor
-    load_enabled = save_enabled = create_enabled = FALSE;
+    load_enabled = save_enabled = create_enabled = delete_enabled = FALSE;
   } else {
     // Selected flavor does not exist yet
+    delete_enabled = FALSE;
     load_enabled = FALSE;
     create_enabled = TRUE;
     if(cur_flavor == NULL) {
@@ -110,6 +112,9 @@ static void update_the_buttons(void)
   gtk_widget_set_sensitive(the_load_button, load_enabled);
   gtk_widget_set_sensitive(the_create_button, create_enabled);
   gtk_widget_set_sensitive(the_save_button, save_enabled);
+
+  menu_update_flavor(load_enabled, create_enabled, save_enabled, save_as,
+		     delete_enabled);
 }
 
 void flavor_mark_modified(void)
@@ -237,7 +242,7 @@ static flavor_t *create_new_flavor(char *name)
 				   (GCompareFunc)strcmp);
   gtk_combo_set_popdown_strings(GTK_COMBO(combo),
 				fla_names);
-  gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry), buf);
+  //gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry), buf);
 
   ptr = (flavor_t *)g_malloc(sizeof(flavor_t));
 
@@ -249,6 +254,7 @@ static flavor_t *create_new_flavor(char *name)
   the_flavors = g_list_append(the_flavors, (gpointer)ptr);
 
   flavor_modified = TRUE;
+  flavor_never_saved = TRUE;
 
   statusbar_concat_message("Done.");
 
@@ -267,16 +273,91 @@ static void update_current(void)
   flavor_modified = was_modified;
 
   update_the_buttons();
+
+  gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry),
+		     (cur_flavor ? cur_flavor->name : ""));
+}
+
+static void flavor_destroy(char *name)
+{
+  flavor_t *ptr;
+  gpointer data;
+
+  // Remove from the flavor list (if applicable)
+  ptr = find_flavor(name);
+  if(ptr != NULL) {
+    the_flavors = g_list_remove(the_flavors, (gpointer)ptr);
+    g_free(ptr->name);
+    g_free(ptr->builddir);
+    g_free(ptr->extension);
+    string_list_destroy(&ptr->modules);
+    string_list_destroy(&ptr->options);
+    g_free(ptr);
+
+    if(cur_flavor == ptr) {
+      cur_flavor = NULL;
+      flavor_modified = FALSE;
+      flavor_never_saved = FALSE;
+    }
+  }
+
+  // Remove from the flavor name list
+  data = g_list_find_custom(flavor_list(), name, (GCompareFunc)strcmp)->data;
+  fla_names = g_list_remove(fla_names, data);
+
+  gtk_combo_set_popdown_strings(GTK_COMBO(combo),
+				fla_names);
+}
+
+static void flavor_destroy_current(void)
+{
+  char buf[1024];
+
+  strcpy(buf, cur_flavor->name);
+
+  flavor_destroy(buf);
+}
+
+void flavor_delete(void)
+{
+  char selected[1024];
+
+  strcpy(selected, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
+
+  statusbar_set_message("Deleting flavor %s...", selected);
+
+  if(!flavor_never_saved) {
+    // We must remove the file on disk
+    int ret;
+
+    ret = exec_wait(exec_single_cmd_fmt(NULL,
+					"pm2-flavor delete --flavor=%s",
+					selected));
+
+    if(ret != 0) {
+      fprintf(stderr, "Error: Delete operation failed\n");
+      exit(1);
+    }
+  }
+
+  flavor_destroy(selected);
+
+  update_current();
+
+  statusbar_concat_message("Done.");
 }
 
 static void save_and_proceed(gpointer data)
 {
-  char *name;
+  char name[1024];
+
+  strcpy(name, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
 
   if((gint)data == TRUE)
     flavor_save();
 
-  name = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+  if(flavor_never_saved)
+    flavor_destroy_current();
 
   flavor_modified = FALSE;
 
@@ -343,6 +424,7 @@ static void flavor_save(void)
 
   if(ret == 0) {
     flavor_modified = FALSE;
+    flavor_never_saved = FALSE;
     statusbar_concat_message("Done.");
   } else {
     statusbar_concat_message("Oops!");
@@ -358,9 +440,14 @@ static void flavor_save(void)
 
 static void save_and_load(gpointer data)
 {
-  char *new_fla = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+  char new_fla[1024];
+
+  strcpy(new_fla, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
 
   if((gint)data == TRUE) { // Override
+    if(flavor_never_saved)
+      flavor_destroy_current();
+
     cur_flavor = find_flavor(new_fla);
     flavor_save();
   } else {
@@ -372,11 +459,13 @@ static void save_and_load(gpointer data)
   statusbar_set_current_flavor(cur_flavor->name);
 }
 
-static void flavor_save_as(void)
+void flavor_save_as(void)
 {
-  char *new_fla = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+  char new_fla[1024];
   flavor_t *ptr;
   static char str1[1024], str2[1024];
+
+  strcpy(new_fla, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
 
   if(strcmp(new_fla,cur_flavor->name)) { // Really a "save _AS_"!
 
@@ -390,8 +479,14 @@ static void flavor_save_as(void)
 		str2, save_and_load, (gpointer)FALSE,
 		"Cancel", NULL, NULL);
     } else { // We must first create new_fla, and then save
+
+      if(flavor_never_saved)
+	flavor_destroy_current();
+
       cur_flavor = create_new_flavor(new_fla);
       flavor_save();
+
+      update_current();
       statusbar_set_current_flavor(cur_flavor->name);
     }
   } else {
@@ -399,10 +494,22 @@ static void flavor_save_as(void)
   }
 }
 
+void flavor_load(void)
+{
+  set_current_flavor(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
+}
+
+void flavor_create(void)
+{
+  set_current_flavor(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
+}
+
 static void save_and_quit(gpointer data)
 {
   if((int)data == TRUE)
     flavor_save();
+
+  destroy_phase = TRUE;
 
   gtk_main_quit();
 }
@@ -465,7 +572,7 @@ static void flavor_load_pressed(GtkWidget *widget,
 				gpointer data)
 {
   if(!destroy_phase) {
-    set_current_flavor(gtk_entry_get_text(GTK_ENTRY(data)));
+    flavor_load();
   }
 }
 
@@ -473,7 +580,7 @@ static void flavor_create_pressed(GtkWidget *widget,
 				  gpointer data)
 {
   if(!destroy_phase) {
-    set_current_flavor(gtk_entry_get_text(GTK_ENTRY(data)));
+    flavor_create();
   }
 }
 

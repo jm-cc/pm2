@@ -34,12 +34,9 @@
 #
 
 LIBRARY=dsm
+#LIBNAME=$(LIBRARY)
 
-.PHONY: default
-default:
+#$(LIBRARY)_CC=gcc
+#$(LIBRARY)_AS=gcc
 
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs.mak
-
-default:
-	$(MAKE) -C $(PM2_ROOT)

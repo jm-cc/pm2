@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.4 2002/10/19 15:13:32 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.5 2002/10/20 15:17:21 slacour Exp $
  */
 
 /* Distributed management of the locks.  Each lock has a (central)
@@ -19,11 +19,11 @@
 /* TRACING AND DEBUGGING SYSTEM                                       */
 /**********************************************************************/
 
-#define TRCSL
-#define DBGSL
+#undef TRCSL
+#undef DBGSL
 
 /* remove all assertions "assert" */
-#undef NDEBUG
+#define NDEBUG
 #include <assert.h>
 
 #undef PROFIN

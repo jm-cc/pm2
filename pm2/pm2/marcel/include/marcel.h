@@ -34,6 +34,30 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.7  2000/04/11 09:07:10  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.6.2.7  2000/04/10 09:56:06  rnamyst
+Moved the polling stuff into marcel_polling....
+
+Revision 1.6.2.6  2000/04/08 15:09:10  vdanjean
+few bugs fixed
+
+Revision 1.6.2.5  2000/03/31 18:38:36  vdanjean
+Activation mono OK
+
+Revision 1.6.2.4  2000/03/31 08:06:59  rnamyst
+Added disable_preemption() and enable_preemption().
+
+Revision 1.6.2.3  2000/03/29 16:25:35  rnamyst
+I do not remember... ;-)
+
+Revision 1.6.2.2  2000/03/29 14:23:44  rnamyst
+Added the marcel_stdio.h that provides the marcel_printf functions...
+
+Revision 1.6.2.1  2000/03/15 15:54:41  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.6  2000/03/01 16:45:21  oaumage
 - suppression des warnings en compilation  -g
 
@@ -112,10 +136,11 @@ typedef void (*handler_func_t)(any_t);
 _PRIVATE_ struct task_desc_struct;
 _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
+#include "sys/marcel_flags.h"
 #include "sys/archdep.h"
 #include "sys/archsetjmp.h"
 #include "sys/marcel_trace.h"
-#include "sys/debug.h"
+#include "sys/marcel_debug.h"
 #include "exception.h"
 #include "marcel_lock.h"
 #include "marcel_sem.h"
@@ -123,8 +148,10 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "marcel_io.h"
 #include "sys/privatedefs.h"
 #include "marcel_sched.h"
+#include "marcel_polling.h"
 #include "marcel_attr.h"
 #include "mar_timing.h"
+#include "marcel_stdio.h"
 
 
 /* = initialization & termination == */
@@ -279,19 +306,13 @@ void *trealloc(void *ptr, unsigned size);
 void *tcalloc(unsigned nelem, unsigned elsize);
 void tfree(void *ptr);
 
-#define tprintf  marcel_printf
-#define tfprintf marcel_fprintf
-
-int tprintf(char *format, ...);
-int tfprintf(FILE *stream, char *format, ...);
-
-int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
-
 #ifdef STANDARD_MAIN
 #define marcel_main main
 #endif
 
-#ifndef ACTDEBUG
+#if defined(MA__ACT) && defined(ACT_VERBOSE)
+#define ACTDEBUG(todo) (todo)
+#else
 #define ACTDEBUG(todo)
 #endif
 

@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: marcel_io.c,v $
+Revision 1.2  2000/01/31 15:57:15  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 /* #define DEBUG */
@@ -122,15 +130,17 @@ static void *unix_io_poll(marcel_pollid_t id,
   } else if(sleeping) {
     mdebug("E/S a duree limitee\n");
 
-    tv.tv_sec = 0;
+    timerclear(&tv);
+    /*tv.tv_sec = 0;
     tv.tv_usec = 5000;
-    ptv = &tv;
+    ptv = &tv;*/
   } else {
     mdebug("E/S bloquante\n");
 
-    tv.tv_sec = 0;
+    timerclear(&tv);
+    /* tv.tv_sec = 0;
     tv.tv_usec = 5000;
-    ptv = &tv;
+    ptv = &tv;*/
     /* ptv = NULL; */
   }
 

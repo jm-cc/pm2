@@ -25,7 +25,11 @@
 MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue);
 #endif
 ma_runqueue_t ma_main_runqueue;
-ma_runqueue_t ma_idle_runqueue;
+
+#ifdef MA__LWPS
+MA_DEFINE_PER_LWP(ma_runqueue_t, norun_runqueue);
+#endif
+ma_runqueue_t ma_norun_runqueue;
 
 #ifdef CONFIG_NUMA
 /*
@@ -63,7 +67,7 @@ void init_rq(ma_runqueue_t *rq)
 
 	rq->active = rq->arrays;
 	rq->expired = rq->arrays + 1;
-//	rq->best_expired_prio = MAX_PRIO;
+//	rq->best_expired_prio = MA_MAX_PRIO;
 
 	ma_spin_lock_init(&rq->lock);
 	INIT_LIST_HEAD(&rq->migration_queue);
@@ -72,12 +76,12 @@ void init_rq(ma_runqueue_t *rq)
 
 	for (j = 0; j < 2; j++) {
 		array = rq->arrays + j;
-		for (k = 0; k < MAX_PRIO; k++) {
+		for (k = 0; k < MA_MAX_PRIO; k++) {
 			INIT_LIST_HEAD(array->queue + k);
 			__ma_clear_bit(k, array->bitmap);
 		}
 		// delimiter for bitsearch
-		__ma_set_bit(MAX_PRIO, array->bitmap);
+		__ma_set_bit(MA_MAX_PRIO, array->bitmap);
 	}
 
 #ifdef MA__LWPS

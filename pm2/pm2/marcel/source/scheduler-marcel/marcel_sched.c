@@ -23,6 +23,41 @@
 
 #warning "[1;33m<<< [1;37mScheduler [1;32mmarcel[1;37m selected[1;33m >>>[0m"
 
+marcel_sched_attr_t marcel_sched_attr_default = {
+  .init_rq = &ma_main_runqueue,
+  .prio = MA_DEF_PRIO,
+};
+
+int marcel_sched_attr_init(marcel_sched_attr_t *attr)
+{
+  *attr = marcel_sched_attr_default;
+  return 0;
+}
+
+int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq)
+{
+  attr->init_rq = rq;
+  return 0;
+}
+
+int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq)
+{
+  *rq = attr->init_rq;
+  return 0;
+}
+
+int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio)
+{
+  attr->prio = prio;
+  return 0;
+}
+
+int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio)
+{
+  *prio = attr->prio;
+  return 0;
+}
+
 #define work_pending(thread) (0)
 
 // Restriction d'affichage de debug lorsque l'on est la tâche idle

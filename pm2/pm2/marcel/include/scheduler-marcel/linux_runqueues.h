@@ -32,30 +32,30 @@
  * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
  */
 
-//#define MAX_USER_RT_PRIO	100
-//#define MAX_RT_PRIO		MAX_USER_RT_PRIO
+//#define MA_MAX_USER_RT_PRIO	100
+//#define MA_MAX_RT_PRIO	MA_MAX_USER_RT_PRIO
 
-//#define MAX_PRIO		(MAX_RT_PRIO + 40)
-#define MAX_PRIO                4
-#if (MAX_PRIO<4)
-#error MAX_PRIO must be at least 4 to get real time and batch tasks working
+//#define MA_MAX_PRIO		(MA_MAX_RT_PRIO + 40)
+#define MA_MAX_PRIO                4
+#if (MA_MAX_PRIO<4)
+#error MA_MAX_PRIO must be at least 4 to get real time and batch tasks working
 #endif
-#define IDLE_PRIO		(MAX_PRIO-1)
-#define BATCH_PRIO		(IDLE_PRIO-1)
-#define DEF_PRIO		1
-#define RT_PRIO			0
+#define MA_IDLE_PRIO		(MA_MAX_PRIO-1)
+#define MA_BATCH_PRIO		(MA_IDLE_PRIO-1)
+#define MA_DEF_PRIO		1
+#define MA_RT_PRIO		0
 
-//#define rt_task(p)		((p)->prio < MAX_RT_PRIO)
+//#define rt_task(p)		((p)->prio < MA_MAX_RT_PRIO)
 
-#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
+#define MA_BITMAP_SIZE ((((MA_MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
 
 #section marcel_structures
 #depend "pm2_list.h"
 
 struct prio_array {
 	int nr_active;
-	unsigned long bitmap[BITMAP_SIZE];
-	struct list_head queue[MAX_PRIO];
+	unsigned long bitmap[MA_BITMAP_SIZE];
+	struct list_head queue[MA_MAX_PRIO];
 };
 
 #section marcel_types
@@ -104,9 +104,12 @@ typedef struct ma_runqueue ma_runqueue_t;
 #ifdef MA__LWPS
 MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
 #endif
-
 ma_runqueue_t ma_main_runqueue;
-ma_runqueue_t ma_idle_runqueue;
+
+#ifdef MA__LWPS
+MA_DECLARE_PER_LWP(ma_runqueue_t, norun_runqueue);
+#endif
+ma_runqueue_t ma_norun_runqueue;
 
 #section marcel_macros
 // ceci n'a plus de sens:
@@ -117,11 +120,13 @@ ma_runqueue_t ma_idle_runqueue;
 #define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
 #define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
 #define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
+#define ma_norun_rq(lwp)	(ma_per_lwp(norun_runqueue, (lwp)))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
-#define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_idle_runqueue)
+#define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_norun_runqueue)
 #define ma_this_rq()		(&ma_main_runqueue)
 #define ma_prev_rq()		(&ma_main_runqueue)
+#define ma_norun_rq(lwp)	(&ma_norun_runqueue)
 #endif
 #define ma_lwp_curr(lwp)	(ma_lwp_rq(lwp)->curr) //ma_per_lwp(current_thread, lwp))
 
@@ -443,7 +448,7 @@ static inline void rq_arrays_switch(ma_runqueue_t *rq)
 	rq->expired = array;
 	array = rq->active;
 	rq->expired_timestamp = 0;
-//	rq->best_expired_prio = MAX_PRIO;
+//	rq->best_expired_prio = MA_MAX_PRIO;
 }
 
 /*

@@ -230,10 +230,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
-	// Il vaut mieux généraliser l'utilisation des 'vpmask'
-	marcel_attr_setvpmask(&attr, 
-		MARCEL_VPMASK_FULL);
-	     //MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_POLL | /*MA_SF_NOSCHEDLOCK |*/
 			     MA_SF_NORUN);
 #ifdef PM2
@@ -247,6 +244,8 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 		marcel_attr_setstacksize(&attr, stsize);
 	}
 #endif
+	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
+	marcel_attr_setinitrq(&attr, ma_norun_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)),
 			      &attr, idle_func, (void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
@@ -259,8 +258,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_FULL
-			/*MARCEL_VPMASK_ALL_BUT_VP(lwp->number)*/);
+	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(lwp->number));
 	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
 #ifdef PM2
 	{
@@ -276,6 +274,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 
 	// la fonction ne sera jamais exécutée, c'est juste pour avoir une
 	// structure de thread marcel dans upcall_new
+	marcel_attr_setinitrq(&attr, ma_norun_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(upcall_new_task, lwp)),
 			      &attr, (void*)idle_func, NULL);
 	

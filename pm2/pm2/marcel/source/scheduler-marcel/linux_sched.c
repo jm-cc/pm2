@@ -47,8 +47,8 @@
  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
  * and back.
  */
-#define NICE_TO_PRIO(nice)	(MAX_RT_PRIO + (nice) + 20)
-#define PRIO_TO_NICE(prio)	((prio) - MAX_RT_PRIO - 20)
+#define NICE_TO_PRIO(nice)	(MA_MAX_RT_PRIO + (nice) + 20)
+#define PRIO_TO_NICE(prio)	((prio) - MA_MAX_RT_PRIO - 20)
 #define TASK_NICE(p)		PRIO_TO_NICE((p)->static_prio)
 
 /*
@@ -56,11 +56,11 @@
  * can work with better when scaling various scheduler parameters,
  * it's a [ 0 ... 39 ] range.
  */
-#define USER_PRIO(p)		((p)-MAX_RT_PRIO)
+#define USER_PRIO(p)		((p)-MA_MAX_RT_PRIO)
 #define TASK_USER_PRIO(p)	USER_PRIO((p)->static_prio)
-#define MAX_USER_PRIO		(USER_PRIO(MAX_PRIO))
+#define MAX_USER_PRIO		(USER_PRIO(MA_MAX_PRIO))
 #define AVG_TIMESLICE	(MIN_TIMESLICE + ((MAX_TIMESLICE - MIN_TIMESLICE) *\
-			(MAX_PRIO-1-NICE_TO_PRIO(0))/(MAX_USER_PRIO - 1)))
+			(MA_MAX_PRIO-1-NICE_TO_PRIO(0))/(MAX_USER_PRIO - 1)))
 
 /*
  * Some helpers for converting nanosecond timing to jiffy resolution
@@ -167,7 +167,7 @@
 
 #define BASE_TIMESLICE(p) (MIN_TIMESLICE + \
 	((MAX_TIMESLICE - MIN_TIMESLICE) * \
-	 (MAX_PRIO-1 - (p)->static_prio)/(MAX_USER_PRIO - 1)))
+	 (MA_MAX_PRIO-1 - (p)->static_prio)/(MAX_USER_PRIO - 1)))
 
 //static inline unsigned int task_timeslice(task_t *p)
 //{
@@ -213,10 +213,10 @@ static int effective_prio(marcel_task_t *p)
 	bonus = CURRENT_BONUS(p) - MAX_BONUS / 2;
 
 	prio = p->static_prio - bonus;
-	if (prio < MAX_RT_PRIO)
-		prio = MAX_RT_PRIO;
-	if (prio > MAX_PRIO-1)
-		prio = MAX_PRIO-1;
+	if (prio < MA_MAX_RT_PRIO)
+		prio = MA_MAX_RT_PRIO;
+	if (prio > MA_MAX_PRIO-1)
+		prio = MA_MAX_PRIO-1;
 	return prio;
 }
 #endif
@@ -1021,7 +1021,7 @@ static inline void pull_task(ma_runqueue_t *src_rq, ma_prio_array_t *src_array, 
 	p->timestamp = sched_clock() -
 				(src_rq->timestamp_last_tick - p->timestamp);
 	/*
-	 * Note that idle threads have a prio of MAX_PRIO, for this test
+	 * Note that idle threads have a prio of MA_MAX_PRIO, for this test
 	 * to be always true for them.
 	 */
 	if (TASK_PREEMPTS_CURR(p, this_rq))
@@ -1100,8 +1100,8 @@ skip_bitmap:
 	if (!idx)
 		idx = sched_find_first_bit(array->bitmap);
 	else
-		idx = find_next_bit(array->bitmap, MAX_PRIO, idx);
-	if (idx >= MAX_PRIO) {
+		idx = find_next_bit(array->bitmap, MA_MAX_PRIO, idx);
+	if (idx >= MA_MAX_PRIO) {
 		if (array == busiest->expired) {
 			array = busiest->active;
 			goto new_array;
@@ -1421,8 +1421,8 @@ need_resched:
 		else {
 			sched_debug("schedule: go to sleep\n");
 			prev_as_next = NULL;
-			prev_as_rq = &ma_idle_runqueue;
-			prev_as_prio = IDLE_PRIO;
+			prev_as_rq = ma_norun_rq(LWP_SELF);
+			prev_as_prio = MA_IDLE_PRIO;
 		}
 	}
 
@@ -1462,7 +1462,7 @@ restart:
 	double_rq_lock(prevrq,rq);
 	sched_debug("locked\n");
 
-	if (tbx_unlikely(rq == &ma_idle_runqueue)) {
+	if (tbx_unlikely(rq == ma_norun_rq(LWP_SELF))) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		sched_debug("rebalance\n");
@@ -1932,7 +1932,7 @@ asmlinkage long sys_nice(int increment)
 int task_prio(marcel_task_t *p)
 {
 	return p->sched.internal.prio;
-//	return p->prio - MAX_RT_PRIO;
+//	return p->prio - MA_MAX_RT_PRIO;
 }
 
 #if 0
@@ -1976,7 +1976,7 @@ static void __setscheduler(struct task_struct *p, int policy, int prio)
 	p->policy = policy;
 	p->rt_priority = prio;
 	if (policy != SCHED_NORMAL)
-		p->prio = MAX_USER_RT_PRIO-1 - p->rt_priority;
+		p->prio = MA_MAX_USER_RT_PRIO-1 - p->rt_priority;
 	else
 		p->prio = p->static_prio;
 }
@@ -2029,10 +2029,10 @@ static int setscheduler(pid_t pid, int policy, struct sched_param __user *param)
 
 	/*
 	 * Valid priorities for SCHED_FIFO and SCHED_RR are
-	 * 1..MAX_USER_RT_PRIO-1, valid priority for SCHED_NORMAL is 0.
+	 * 1..MA_MAX_USER_RT_PRIO-1, valid priority for SCHED_NORMAL is 0.
 	 */
 	retval = -EINVAL;
-	if (lp.sched_priority < 0 || lp.sched_priority > MAX_USER_RT_PRIO-1)
+	if (lp.sched_priority < 0 || lp.sched_priority > MA_MAX_USER_RT_PRIO-1)
 		goto out_unlock;
 	if ((policy == SCHED_NORMAL) != (lp.sched_priority == 0))
 		goto out_unlock;
@@ -2358,7 +2358,7 @@ asmlinkage long sys_sched_get_priority_max(int policy)
 	switch (policy) {
 	case SCHED_FIFO:
 	case SCHED_RR:
-		ret = MAX_USER_RT_PRIO-1;
+		ret = MA_MAX_USER_RT_PRIO-1;
 		break;
 	case SCHED_NORMAL:
 		ret = 0;
@@ -2533,7 +2533,7 @@ void __init init_idle(task_t *idle, int cpu)
 	idle_rq->curr = idle_rq->idle = idle;
 	deactivate_task(idle, rq);
 	idle->array = NULL;
-	idle->prio = MAX_PRIO;
+	idle->prio = MA_MAX_PRIO;
 	idle->state = TASK_RUNNING;
 	set_task_cpu(idle, cpu);
 	double_rq_unlock(idle_rq, rq);
@@ -2744,7 +2744,7 @@ static int migration_call(struct notifier_block *nfb,
 		kthread_bind(p, cpu);
 		/* Must be high prio: stop_machine expects to yield to it. */
 		rq = task_rq_lock(p, &flags);
-		__setscheduler(p, SCHED_FIFO, MAX_RT_PRIO-1);
+		__setscheduler(p, SCHED_FIFO, MA_MAX_RT_PRIO-1);
 		task_rq_unlock(rq, &flags);
 		cpu_rq(cpu)->migration_thread = p;
 		break;
@@ -2803,6 +2803,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 #ifdef MA__LWPS
 	init_rq(ma_lwp_rq(lwp));
+	init_rq(&ma_per_lwp(norun_runqueue,lwp));
 	ma_lwp_rq(lwp)->curr = ma_per_lwp(run_task,lwp);
 #endif
 	LOG_OUT();
@@ -2850,7 +2851,7 @@ void __init sched_init(void)
 				(void *)(ma_lwp_t)LWP_SELF);
 	ma_register_lwp_notifier(&linux_sched_nb);
 	init_rq(&ma_main_runqueue);
-	init_rq(&ma_idle_runqueue);
+	init_rq(&ma_norun_runqueue);
 
 	/*
 	 * We have to do a little magic to get the first

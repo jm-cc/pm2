@@ -28,8 +28,39 @@
 #error This file should not be directely included. Use "marcel_sched.h" instead
 #endif
 /****************************************************************/
+/* Attributs
+ */
 
-#section marcel_macros
+#section types
+typedef struct marcel_sched_attr marcel_sched_attr_t;
+
+#section structures
+#depend "scheduler/linux_runqueues.h[marcel_types]"
+struct marcel_sched_attr {
+	ma_runqueue_t *init_rq;
+	int prio;
+};
+
+#section functions
+int marcel_sched_attr_init(marcel_sched_attr_t *attr);
+#define marcel_sched_attr_destroy(attr_ptr)	0
+
+int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
+int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
+
+int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio) __THROW;
+int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio) __THROW;
+
+#section macros
+#define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
+#define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
+
+#define marcel_attr_setprio(attr,prio) marcel_sched_attr_setprio(&(attr)->sched,prio)
+#define marcel_attr_getprio(attr,prio) marcel_sched_attr_getprio(&(attr)->sched,prio)
+
+/****************************************************************/
+/* Structure interne pour une tâche
+ */
 
 #section marcel_types
 typedef struct marcel_sched_internal_task marcel_sched_internal_task_t;
@@ -66,27 +97,31 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	LOG_IN();
 	INIT_LIST_HEAD(&t->sched.internal.run_list);
 	//t->sched.internal.lwps_runnable=~0UL;
-	t->sched.internal.prio=DEF_PRIO;
-	if (attr->vpmask==MARCEL_VPMASK_EMPTY) {
+	t->sched.internal.prio=attr->sched.prio;
 #ifdef MA__LWPS
-		t->sched.internal.init_rq=&ma_main_runqueue;
-#endif
-	} else if (attr->vpmask==MARCEL_VPMASK_FULL) {
-#ifdef MA__LWPS
-		t->sched.internal.init_rq=&ma_idle_runqueue;
-#endif
-		t->sched.internal.prio=IDLE_PRIO;
-	} else {
-#ifdef MA__LWPS
-		int first_vp;
-		first_vp=ma_ffz(attr->vpmask);
-		MA_BUG_ON(attr->vpmask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
-		MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
-		t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
-#endif
+	if (attr->sched.init_rq)
+		t->sched.internal.init_rq=attr->sched.init_rq;
+	else {
+		if (tbx_unlikely(attr->vpmask==MARCEL_VPMASK_EMPTY)) {
+			MA_BUG_ON(attr->flags & MA_SF_NORUN);
+			t->sched.internal.init_rq=&ma_main_runqueue;
+		} else if (tbx_unlikely(attr->vpmask==MARCEL_VPMASK_FULL)) {
+			t->sched.internal.init_rq=&ma_norun_runqueue;
+		} else {
+			int first_vp;
+			first_vp=ma_ffz(attr->vpmask);
+			MA_BUG_ON(attr->vpmask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
+			MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
+			if (tbx_unlikely(attr->flags & MA_SF_NORUN)) {
+				t->sched.internal.init_rq=&ma_per_lwp(norun_runqueue,GET_LWP_BY_NUM(first_vp));
+			} else {
+				t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
+			}
+		}
 	}
+#endif
 	if (attr->rt_thread)
-		t->sched.internal.prio=RT_PRIO;
+		t->sched.internal.prio=MA_RT_PRIO;
 	t->sched.internal.cur_rq=NULL;
 	t->sched.internal.sched_policy = attr->__schedpolicy;
 	t->sched.internal.array=NULL;

@@ -45,7 +45,9 @@ dsmlib_hyp_java_prot = {NULL,
 			NULL, 
 			dsmlib_ws_hyp_send_page_for_write_access, 
 			NULL,
-			dsmlib_rp_hyp_validate_page};
+			NULL,
+			dsmlib_erp_hyp_receive_page
+};
 
 dsm_protocol_t 
 dsmlib_ddm_li_hudak_prot = {dsmlib_rf_ask_for_read_copy,
@@ -53,7 +55,9 @@ dsmlib_ddm_li_hudak_prot = {dsmlib_rf_ask_for_read_copy,
 			    dsmlib_rs_send_read_copy,
 			    dsmlib_ws_send_page_for_write_access, 
 			    dsmlib_is_invalidate,
-			    dsmlib_rp_validate_page};
+			    dsmlib_rp_validate_page,
+			    NULL
+};
 
 dsm_protocol_t 
 dsmlib_migrate_thread_prot = {dsmlib_migrate_thread,
@@ -61,7 +65,9 @@ dsmlib_migrate_thread_prot = {dsmlib_migrate_thread,
 			      NULL,
 			      NULL, 
 			      NULL,
-			      NULL};
+			      NULL,
+			      NULL
+};
 
 /* Global data structures for the protocol policy module */
 
@@ -169,6 +175,18 @@ void dsm_set_receive_page_server(unsigned long index, dsm_rp_action_t action)
 dsm_rp_action_t dsm_get_receive_page_server(unsigned long index)
 {
   return dsm_protocol_info.protocol_table[index].receive_page_server;
+}
+
+
+void dsm_set_expert_receive_page_server(unsigned long index, dsm_erp_action_t action)
+{
+  dsm_protocol_info.protocol_table[index].expert_receive_page_server = action;
+}
+
+
+dsm_erp_action_t dsm_get_expert_receive_page_server(unsigned long index)
+{
+  return dsm_protocol_info.protocol_table[index].expert_receive_page_server;
 }
 
 

@@ -2863,6 +2863,10 @@ void __init sched_init(void)
 	dequeue_task(MARCEL_SELF, MARCEL_SELF->sched.internal.array);
 	ma_spin_unlock(&ma_main_runqueue.lock);
 
+#ifdef MA__NUMA
+	/* initialiser des runqueues par noeud / core / ht */
+#endif
+
 //	init_timers();
 
 	/*

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_debug.h,v $
+Revision 1.3  2000/04/17 08:31:12  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.2  2000/04/11 09:07:17  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -49,7 +52,7 @@ ______________________________________________________________________________
 #include "marcel_stdio.h"
 
 #undef mdebug
-#ifdef DEBUG
+#ifdef MA__DEBUG
 #define mdebug(fmt, args...)  marcel_fprintf(stderr, fmt, ##args)
 #define try_mdebug(fmt, args...) \
    (void)(preemption_enabled() ? marcel_fprintf(stderr, fmt, ##args) : 0)

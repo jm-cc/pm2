@@ -90,6 +90,9 @@ leoparse_init_val_object(int value);
 p_leoparse_object_t
 leoparse_init_range_object(p_leoparse_range_t range);
 
+void
+leoparse_release_object(p_leoparse_object_t object);
+
 p_tbx_slist_t
 leoparse_get_slist(p_leoparse_object_t object);
 
@@ -139,6 +142,33 @@ p_leoparse_range_t
 leoparse_read_range(p_tbx_htable_t  htable,
 		    const char     *key);
 
+p_tbx_slist_t
+leoparse_extract_slist(p_tbx_htable_t  htable,
+		       const char     *key);
+
+p_tbx_slist_t
+leoparse_extract_as_slist(p_tbx_htable_t  htable,
+			  const char     *key);
+
+char *
+leoparse_extract_id(p_tbx_htable_t  htable,
+		    const char     *key);
+
+char *
+leoparse_extract_string(p_tbx_htable_t  htable,
+			const char     *key);
+
+p_tbx_htable_t
+leoparse_extract_htable(p_tbx_htable_t  htable,
+			const char     *key);
+
+int
+leoparse_extract_val(p_tbx_htable_t  htable,
+		     const char     *key);
+
+p_leoparse_range_t
+leoparse_extract_range(p_tbx_htable_t  htable,
+		       const char     *key);
 
 p_tbx_slist_t
 leoparse_try_get_slist(p_leoparse_object_t object);

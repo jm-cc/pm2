@@ -164,6 +164,8 @@ typedef struct s_leo_application_settings
   p_tbx_slist_t      network_file_slist;
   tbx_bool_t         gdb_mode;
   tbx_bool_t         xterm_mode;
+  tbx_bool_t         log_mode;
+  tbx_bool_t         pause_mode;
   tbx_bool_t         smp_mode;
 } leo_application_settings_t;
 

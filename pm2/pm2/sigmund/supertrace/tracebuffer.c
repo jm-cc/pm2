@@ -12,7 +12,7 @@
 
 #include "fut_code.h"
 
-#define NB_MAX_PROC  16
+#define NB_MAX_CPU  16
 
 static trace_buffer buf;
 
@@ -34,8 +34,8 @@ static int fkt_eof;
 static trace fut_buf;
 static trace fkt_buf;
 
-static long int pid_table[NB_MAX_PROC];
-static long int proc = 0;
+static long int pid_table[NB_MAX_CPU];
+static long int cpu = 0;
 
 // Returns 0 if OK 1 if EOF
 static int read_user_trace(trace *tr)
@@ -52,7 +52,7 @@ static int read_user_trace(trace *tr)
     fprintf(stderr,"Corrupted user trace file\n");
     exit(1);
   }
-  tr->proc = proc;
+  tr->cpu = cpu;
   tr->thread = thread;
   j = 0;
   i = ((tr->code & 0xff) - 12) / 4;
@@ -90,7 +90,7 @@ static int read_kernel_trace(trace *tr)
     fprintf(stderr,"Corrupted kernel trace file\n");
     exit(1);
   }
-  tr->proc = j >> 16;
+  tr->cpu = j >> 16;
   tr->pid = j & 0xffff;
   if (fread(&(tr->code), sizeof(int), 1, f_fkt) == 0) {
     fprintf(stderr,"Corrupted kernel trace file\n");
@@ -108,9 +108,9 @@ static int read_kernel_trace(trace *tr)
       j++;
     }
     if (tr->code == FKT_SWITCH_TO_CODE) {
-      assert(tr->args[1] < NB_MAX_PROC);
+      assert(tr->args[1] < NB_MAX_CPU);
       pid_table[tr->args[1]] = tr->args[0];
-      if (tr->args[0] == pid) proc = tr->args[1];
+      if (tr->args[0] == pid) cpu = tr->args[1];
     }
   }
   return 0;
@@ -216,7 +216,7 @@ static void add_buffer(trace tr)
   tr_item->tr.code = tr.code;
   tr_item->tr.thread = tr.thread;
   tr_item->tr.pid = tr.pid;
-  tr_item->tr.proc = tr.proc;
+  tr_item->tr.cpu = tr.cpu;
   tr_item->tr.type = tr.type;
   for(i = 0; i < MAX_NB_ARGS; i++)
     tr_item->tr.args[i] = tr.args[i];

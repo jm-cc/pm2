@@ -48,7 +48,6 @@ void error_usage()
   fprintf(stderr,"-o supertrace_nom   par défault prof_file\n");
   fprintf(stderr,"--no-rel-time       empêche la renormalisation des dates\n");
   fprintf(stderr,"--dec-time          prend en considération le temps mis par l'écriture d'une trace\n");
-  fprintf(stderr,"--smp               indique le caractère multi-processeur de la trace\n");
   exit(1);
 }
 
@@ -63,7 +62,6 @@ int main(int argc, char **argv)
   FILE *supertrace;
   dec = 0;
   relative = 1;
-  smp = 0;
   for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
     argCount = 1;
     if ((!strcmp(*argv, "--user-trace")) || (!strcmp(*argv, "-u"))) {
@@ -85,8 +83,6 @@ int main(int argc, char **argv)
       relative = 0;
     } else if (!strcmp(*argv, "--dec-time")) {
       dec = 1;
-    } else if (!strcmp(*argv, "--smp")) {
-      smp = 1;
     } else error_usage();
   }
   if (supertrace_name == NULL) supertrace_name = "prof_file";

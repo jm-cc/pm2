@@ -17,6 +17,12 @@
 #include "pm2.h"
 #include "pm2_sync.h"
 
+/* the following is needed for HIERARCH_NO_LOCK */
+#ifdef DSM
+#include "hierarch_lock.h"
+#endif
+
+
 //#define BARRIER_TRACE
 
 //#define TRACE_SYNC
@@ -203,7 +209,7 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
     for (i = 0; i < bar->nb_prot; i++) 
       {
 	if (dsm_get_release_func(bar->prot[i]) != NULL)
-	  (*dsm_get_release_func(bar->prot[i]))();   
+	  (*dsm_get_release_func(bar->prot[i]))(HIERARCH_NO_LOCK);
       }
 #endif
     pm2_barrier(&bar->node_barrier);
@@ -212,7 +218,7 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
     for (i = 0; i < bar->nb_prot; i++) 
       {
 	if (dsm_get_acquire_func(bar->prot[i]) != NULL)
-	  (*dsm_get_acquire_func(bar->prot[i]))();  
+	  (*dsm_get_acquire_func(bar->prot[i]))(HIERARCH_NO_LOCK);
       }
 #endif
     marcel_sem_unlock_all(&bar->wait);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.17  2000/03/09 11:07:53  rnamyst
+Modified to use the sched_data() macro.
+
 Revision 1.16  2000/03/06 12:57:36  vdanjean
 *** empty log message ***
 
@@ -99,6 +102,9 @@ static volatile unsigned __active_threads = 0,
   __blocked_threads = 0,
   __frozen_threads = 0;
 
+#ifndef SMP
+__sched_t __sched_data;
+#endif
 __lwp_t __main_lwp;
 
 #ifdef STANDARD_MAIN
@@ -147,9 +153,9 @@ static struct {
 
 /* TODO: Use atomic_inc and atomic_dec when accessing running_tasks! */
 #define INC_STATS(t, lwp) \
-  (((t) != (lwp)->sched_task) ? (lwp)->running_tasks++ : 0)
+  (((t) != (lwp)->sched_task) ? sched_data(lwp).running_tasks++ : 0)
 #define DEC_STATS(t, lwp) \
-  (((t) != (lwp)->sched_task) ? (lwp)->running_tasks-- : 0)
+  (((t) != (lwp)->sched_task) ? sched_data(lwp).running_tasks-- : 0)
 
 #ifdef __ACT__
 #define one_more_active_task(t, lwp) \
@@ -238,7 +244,7 @@ static __inline__ __lwp_t *find_good_lwp(__lwp_t *suggested)
   __lwp_t *lwp = suggested;
 
   for(;;) {
-    if(lwp->running_tasks < THREAD_THRESHOLD_LOW)
+    if(sched_data(lwp).running_tasks < THREAD_THRESHOLD_LOW)
       return lwp;
     lwp = lwp->next;
     if(lwp == suggested)
@@ -252,14 +258,14 @@ static __inline__ __lwp_t *find_best_lwp(void)
 {
   __lwp_t *lwp = &__main_lwp;
   __lwp_t *best = lwp;
-  unsigned nb = lwp->running_tasks;
+  unsigned nb = sched_data(lwp).running_tasks;
 
   for(;;) {
     lwp = lwp->next;
     if(lwp == &__main_lwp)
       return best;
-    if(lwp->running_tasks < nb) {
-      nb = lwp->running_tasks;
+    if(sched_data(lwp).running_tasks < nb) {
+      nb = sched_data(lwp).running_tasks;
       best = lwp;
     }
   }
@@ -349,10 +355,10 @@ marcel_t marcel_radical_next_task(void)
     t = cur->next;
   } else {
     if(cur->next->quantums <= cur->quantums) {
-      if(cur_lwp->__first[0] == cur)
+      if(sched_data(cur_lwp).__first[0] == cur)
 	t = cur->next;
       else
-	t = cur_lwp->__first[0];
+	t = sched_data(cur_lwp).__first[0];
     } else
       t = cur->next;
   }
@@ -421,21 +427,21 @@ void marcel_insert_task(marcel_t t)
 #endif
 
 #ifdef USE_PRIORITIES
-  for(i=t->prio; cur_lwp->__first[i] == NULL; i--) ;
-  p = cur_lwp->__first[i];
+  for(i=t->prio; sched_data(cur_lwp).__first[i] == NULL; i--) ;
+  p = sched_data(cur_lwp).__first[i];
 #else
-  p = cur_lwp->__first[0];
+  p = sched_data(cur_lwp).__first[0];
 #endif
   t->prev = p->prev;
   t->next = p;
   p->prev = t;
   t->prev->next = t;
 #ifdef USE_PRIORITIES
-  cur_lwp->__first[t->prio] = t;
-  if(i != 0 && p == cur_lwp->__first[0])
-    cur_lwp->__first[0] = t;
+  sched_data(cur_lwp).__first[t->prio] = t;
+  if(i != 0 && p == sched_data(cur_lwp).__first[0])
+    sched_data(cur_lwp).__first[0] = t;
 #else
-  cur_lwp->__first[0] = t;
+  sched_data(cur_lwp).__first[0] = t;
 #endif
 
   SET_RUNNING(t);
@@ -548,13 +554,13 @@ marcel_t marcel_unchain_task(marcel_t t)
   t->next->prev = t->prev;
   t->prev->next = t->next;
 #ifdef USE_PRIORITIES
-  if(cur_lwp->__first[t->prio] == t) {
-    cur_lwp->__first[t->prio] = ((r->prio == t->prio) ? r : NULL);
-    if(cur_lwp->__first[0] == t)
-      cur_lwp->__first[0] = r;
+  if(sched_data(cur_lwp).__first[t->prio] == t) {
+    sched_data(cur_lwp).__first[t->prio] = ((r->prio == t->prio) ? r : NULL);
+    if(sched_data(cur_lwp).__first[0] == t)
+      sched_data(cur_lwp).__first[0] = r;
   }
 #else
-  cur_lwp->__first[0] = r;
+  sched_data(cur_lwp).__first[0] = r;
 #endif
 
   sched_unlock(cur_lwp);
@@ -632,7 +638,7 @@ static __inline__ marcel_t next_task(marcel_t t, __lwp_t *lwp)
     res = t->next;
   } else {
     if(t->next->quantums <= t->quantums)
-      res = lwp->__first[0];
+      res = sched_data(lwp).__first[0];
     else
       res = t->next;
   }
@@ -936,7 +942,7 @@ int marcel_check_delayed_tasks(boolean from_sched)
 
 	  ps->count = 0;
 	  cell = (poll_cell_t *)(*ps->func)(ps,
-					    cur_lwp->running_tasks,
+					    sched_data(cur_lwp).running_tasks,
 					    __sleeping_threads,
 					    __blocked_threads);
 	  if(cell != MARCEL_POLL_FAILED) {
@@ -992,8 +998,8 @@ int marcel_setprio(marcel_t pid, unsigned prio)
    if(!IS_RUNNING(pid))
       pid->prio = pid->quantums = prio;
    else if(pid->next == pid) { /* pid == seule tache active */
-      cur_lwp->__first[old] = NULL;
-      cur_lwp->__first[prio] = pid;
+      sched_data(cur_lwp).__first[old] = NULL;
+      sched_data(cur_lwp).__first[prio] = pid;
       pid->prio = pid->quantums = prio;
    } else {
      SET_FROZEN(pid);
@@ -1210,7 +1216,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   lwp->number = __nb_lwp++;
   lwp->has_to_stop = FALSE;
   lwp->has_new_tasks = FALSE;
-  lwp->sched_queue_lock = MARCEL_LOCK_INIT;
+  sched_data(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
 #ifdef X86_ARCH
 #ifdef __ACT__
   initial_task->aid=1; //TODO : Hack because I know the first aid is 1 but...
@@ -1222,13 +1228,13 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 #endif
   lwp->sec_desc = SECUR_TASK_DESC(lwp);
   marcel_mutex_init(&lwp->stack_mutex, NULL);
-  lwp->running_tasks = 0;
+  sched_data(lwp).running_tasks = 0;
 
   for(i = 1; i <= MAX_PRIO; i++)
-    lwp->__first[i] = NULL;
+    sched_data(lwp).__first[i] = NULL;
 
   if(initial_task) {
-    lwp->__first[0] = lwp->__first[initial_task->prio] = initial_task;
+    sched_data(lwp).__first[0] = sched_data(lwp).__first[initial_task->prio] = initial_task;
     initial_task->lwp = lwp;
     initial_task->prev = initial_task->next = initial_task;
   }
@@ -1292,7 +1298,7 @@ static void *lwp_startup_func(void *arg)
 	   lwp->number, (lwp->number % __nb_processors));
 #endif
 
-  lwp->__first[0] = lwp->__first[lwp->sched_task->prio] = lwp->sched_task;
+  sched_data(lwp).__first[0] = sched_data(lwp).__first[lwp->sched_task->prio] = lwp->sched_task;
   lwp->sched_task->lwp = lwp;
   lwp->sched_task->previous_lwp = NULL;
   lwp->sched_task->sched_policy = MARCEL_SCHED_FIXED(lwp->number);
@@ -1609,11 +1615,11 @@ void marcel_snapshot(snapshot_func_t f)
 
   lock_task();
 
-  t = cur_lwp->__first[0];
+  t = sched_data(cur_lwp).__first[0];
   do {
     (*f)(t);
     t = t->next;
-  } while(t != cur_lwp->__first[0]);
+  } while(t != sched_data(cur_lwp).__first[0]);
 
   if(__delayed_tasks != NULL) {
     t = __delayed_tasks;
@@ -1654,7 +1660,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 
   lock_task();
 
-  t = cur_lwp->__first[0];
+  t = sched_data(cur_lwp).__first[0];
   do {
 
     if(t->detached) {
@@ -1686,7 +1692,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
     else
       nb_pids++;
 
-  } while(t = t->next, t != cur_lwp->__first[0]);
+  } while(t = t->next, t != sched_data(cur_lwp).__first[0]);
 
   if(__delayed_tasks != NULL) {
     t = __delayed_tasks;

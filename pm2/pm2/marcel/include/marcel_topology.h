@@ -15,14 +15,14 @@
  * General Public License for more details.
  */
 
-#section marcel_types
+#section types
 #ifdef MA__LWPS
 typedef unsigned long ma_cpu_set_t;
 #else
 typedef unsigned ma_cpu_set_t;
 #endif
 
-#section marcel_macros
+#section macros
 #depend "linux_bitops.h[]"
 #define MA_CPU_EMPTY			(0UL)
 #define MA_CPU_FULL			(~0UL)

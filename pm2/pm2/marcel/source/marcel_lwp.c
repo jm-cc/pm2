@@ -389,7 +389,7 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 	/* no libc support, use direct system call */
 	unsigned long mask = 1UL<<target;
 
-	if (sched_setaffinity(0,sizeof(target),&target)<0) {
+	if (sched_setaffinity(0,sizeof(mask),&mask)<0) {
 		perror("sched_setaffinity");
 		exit(1);
 	}

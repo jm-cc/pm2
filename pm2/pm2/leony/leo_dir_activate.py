@@ -13,14 +13,9 @@ def driver_init(s):
             for adapter_name, adapter in (ps.driver_dict[driver_name].iteritems()):
 
                 leo_comm.send_string(ps.client, adapter_name) # adapter_name
-                print adapter_name
-            
                 param = leo_comm.receive_string(ps.client) # param
-                print 'adapter param', param
-                adapter['parameter'] = param
-            
+                adapter['parameter'] = param            
                 mtu   = leo_comm.receive_uint(ps.client)   # mtu
-                print 'mtu', mtu
                 adapter['mtu'] = mtu
 
             leo_comm.send_string(ps.client, '-')
@@ -54,8 +49,6 @@ def channel_init(s, channel_name, channel):
         leo_comm.send_string(ps.client, channel_name)
         channel_parameter	= leo_comm.receive_string(ps.client)
         channel_parameter_dict[l]	= channel_parameter
-        print 'channel parameter', channel_parameter
-            
 
     # connexion, passe 1
     for sl, ps_src in enumerate(ps_l):
@@ -73,9 +66,7 @@ def channel_init(s, channel_name, channel):
             leo_comm.send_int(ps_dst.client, sl)
             
             param_src = leo_comm.receive_string(ps_src.client)
-            print param_src
             param_dst = leo_comm.receive_string(ps_dst.client)
-            print param_dst
 
             leo_comm.send_string(ps_src.client, channel_param_dst)
             leo_comm.send_string(ps_src.client, param_dst)
@@ -145,5 +136,8 @@ def vchannels_init(s):
         leo_comm.send_string(ps.client, '-')
 
 def xchannels_init(s):
+    for xchannel_name, xchannel in s.xchannel_dict.iteritems():
+        vxchannel_init(s, xchannel_name, xchannel)
+
     for ps in s.process_list:
         leo_comm.send_string(ps.client, '-')

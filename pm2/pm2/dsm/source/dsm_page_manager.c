@@ -576,8 +576,6 @@ void dsm_page_table_init(int my_rank, int confsize)
 	dsm_page_table[i]->addr = static_dsm_base_addr + DSM_PAGE_SIZE * i;
       else
 	dsm_page_table[i]->addr = pseudo_static_dsm_base_addr + DSM_PAGE_SIZE * (i - nb_static_dsm_pages);
-//      dsm_page_table[i]->waiter_count = 0;        /* pjh */
-//      dsm_page_table[i]->page_arrival_count = -1; /* pjh */
       if (_dsm_user_data1_init_func)
 	(*_dsm_user_data1_init_func)(dsm_page_table[i]->user_data1);
       if (_dsm_user_data2_init_func)
@@ -585,6 +583,9 @@ void dsm_page_table_init(int my_rank, int confsize)
       else
 	dsm_page_table[i]->user_data2 = NULL;
       dsm_page_table[i]->protocol = _default_dsm_protocol;
+
+      /* pjh: to avoid repeated allocation */
+      dsm_page_table[i]->bitmap = NULL;
     }
 
   _dsm_page_ownership_init();
@@ -1180,6 +1181,9 @@ void dsm_alloc_page_bitmap(unsigned long index)
 void dsm_free_page_bitmap(unsigned long index)
 {
   dsm_bitmap_free(dsm_page_table[index]->bitmap);
+
+  /* pjh: to avoid repeated allocation */
+  dsm_page_table[index]->bitmap = NULL;
 }
 
 
@@ -1248,4 +1252,9 @@ tfprintf(stderr, "dsm_page_bitmap_clear(%ld) called\n", index);
   dsm_bitmap_clear(dsm_page_table[index]->bitmap, dsm_page_table[index]->size);
 }
 
+/* pjh: to avoid repeated allocation */
+boolean dsm_page_bitmap_is_allocated(unsigned long index)
+{
+  return (dsm_page_table[index]->bitmap != NULL);
+}
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.h,v $
+Revision 1.4  2001/01/29 17:01:09  oaumage
+- ajout de versions pseudo-bloquantes des fonctions de transmission TCP
+
 Revision 1.3  2000/04/27 09:01:30  oaumage
 - fusion de la branche pm2_mad2_multicluster
 
@@ -82,11 +85,11 @@ ______________________________________________________________________________
  */
 
 #define NTBX_TCP_MAX_RETRY_BEFORE_SLEEP 10
-#define NTBX_TCP_MAX_SLEEP_RETRY         5
-#define NTBX_TCP_SLEEP_DELAY             1
-#define NTBX_TCP_MAX_TIMEOUT_RETRY       5
+#define NTBX_TCP_MAX_SLEEP_RETRY        12
+#define NTBX_TCP_SLEEP_DELAY             5
+#define NTBX_TCP_MAX_TIMEOUT_RETRY      10
 
-#define NTBX_TCP_SELECT_TIMEOUT         30
+#define NTBX_TCP_SELECT_TIMEOUT         60
 
 /*
  * public types

@@ -19,6 +19,7 @@
  * Similar to:
  * include/linux/bitops.h
  */
+#depend "asm/linux_types.h[]"
 #depend "asm/linux_bitops.h[]"
 
 /*
@@ -28,15 +29,21 @@
  */
 
 #section marcel_functions
-static __inline__ int ma_generic_ffs(int x);
+static __inline__ long ma_generic_ffs(long x);
 #section marcel_inline
-static __inline__ int ma_generic_ffs(int x)
+static __inline__ long ma_generic_ffs(long x)
 {
 	int r = 1;
 
 	if (!x)
 		return 0;
-	if (!(x & 0xffff)) {
+#if MA_BITS_PER_LONG >= 64
+	if (!(x & 0xffffffffUL)) {
+		x >>= 32;
+		r += 32;
+	}
+#endif
+	if (!(x & 0xffffUL)) {
 		x >>= 16;
 		r += 16;
 	}
@@ -64,31 +71,37 @@ static __inline__ int ma_generic_ffs(int x)
  */
 
 #section marcel_functions
-extern __inline__ int ma_generic_fls(int x);
+extern __inline__ unsigned long ma_generic_fls(unsigned long x);
 #section marcel_inline
-extern __inline__ int ma_generic_fls(int x)
+extern __inline__ unsigned long ma_generic_fls(unsigned long x)
 {
-	int r = 32;
+	int r = MA_BITS_PER_LONG;
 
 	if (!x)
 		return 0;
-	if (!(x & 0xffff0000u)) {
+#if MA_BITS_PER_LONG >= 64
+	if (!(x & 0xffffffffffff0000UL)) {
+		x <<= 32;
+		r -= 32;
+	}
+#endif
+	if (!(x & 0xffff0000UL)) {
 		x <<= 16;
 		r -= 16;
 	}
-	if (!(x & 0xff000000u)) {
+	if (!(x & 0xff000000UL)) {
 		x <<= 8;
 		r -= 8;
 	}
-	if (!(x & 0xf0000000u)) {
+	if (!(x & 0xf0000000UL)) {
 		x <<= 4;
 		r -= 4;
 	}
-	if (!(x & 0xc0000000u)) {
+	if (!(x & 0xc0000000UL)) {
 		x <<= 2;
 		r -= 2;
 	}
-	if (!(x & 0x80000000u)) {
+	if (!(x & 0x80000000UL)) {
 		x <<= 1;
 		r -= 1;
 	}
@@ -149,7 +162,7 @@ static inline unsigned long ma_generic_hweight64(unsigned long long w);
 #section marcel_inline
 static inline unsigned long ma_generic_hweight64(unsigned long long w)
 {
-#if BITS_PER_LONG < 64
+#if MA_BITS_PER_LONG < 64
 	return ma_generic_hweight32((unsigned int)(w >> 32)) +
 				ma_generic_hweight32((unsigned int)w);
 #else

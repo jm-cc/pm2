@@ -38,7 +38,7 @@
 
 #define ATOMIC_BITOPT_RETURN(op,retexpr) \
 { \
-	int	mask, old, new, ret; \
+	unsigned long	mask, old, new, ret; \
 	\
 	addr += nr / MA_BITS_PER_LONG; \
 	mask = 1 << (nr % MA_BITS_PER_LONG); \
@@ -53,7 +53,7 @@
 }
 #define BITOPT_RETURN(op,retexpr) \
 { \
-	int	mask, old; \
+	unsigned long	mask, old; \
 	\
 	addr += nr / MA_BITS_PER_LONG; \
 	mask = 1 << (nr % MA_BITS_PER_LONG); \

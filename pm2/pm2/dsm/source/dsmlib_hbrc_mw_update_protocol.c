@@ -17,6 +17,8 @@
 #include "dsmlib_hbrc_mw_update_protocol.h" 
 /* the following is useful for "token_lock_id_t" */
 #include "token_lock.h"
+#include "dsm_protocol_policy.h"
+
 
 //#define DSM_PROT_TRACE
 #ifdef INSTRUMENT

@@ -16,16 +16,18 @@
 ifndef PM2_HOME
 PM2_HOME	:=	$(HOME)
 endif
-PM2_ARCH	:=	$(shell pm2_arch)
-PM2_SYS		:=	$(shell pm2_sys)
+PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
+PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
 
 BIN_DIR		:=	$(PM2_HOME)/.pm2/bin
-TMP_DIR		:=	/tmp/sigmund_$(PM2_ARCH)_$(PM2_SYS)
+TMP_DIR		:=	/tmp/sigmund_$(PM2_ARCH)_$(PM2_SYS)_$(USER)
+
+PROGRAM		:=	$(BIN_DIR)/sigmund_$(PM2_ARCH)_$(PM2_SYS)
+
+ifeq (,$(findstring _$(MAKECMDGOALS)_,"_clean_ _cleanall_"))
 
 DUMMY_BUILD	:=	$(shell if [ ! -d $(BIN_DIR) ]; then mkdir -p $(BIN_DIR); fi)
 DUMMY_BUILD	:=	$(shell if [ ! -d $(TMP_DIR) ]; then mkdir -p $(TMP_DIR); fi)
-
-PROGRAM		:=	$(BIN_DIR)/sigmund_$(PM2_ARCH)_$(PM2_SYS)
 
 OPTIONS		:=	-g
 
@@ -94,6 +96,8 @@ $(EXTRA_DEPENDS): $(TMP_DIR)/%.d: $(TMP_DIR)/%.c Makefile
 # Generated sources
 $(TMP_DIR)/parser.c: parser.l
 	$(LEX) -t $< > $@
+
+endif # clean, cleanall
 
 .PHONY: clean cleanall
 clean:

@@ -1,0 +1,8 @@
+#!/bin/csh -f
+###########
+
+# LAM MPI
+#---------
+wipe -v ${MAD2_ROOT}/.mad2_conf
+
+###########

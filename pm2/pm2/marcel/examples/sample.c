@@ -53,7 +53,7 @@ any_t writer(any_t arg)
     tfprintf(stderr, "Hi %s! (I'm %p on vp %d)\n",
 	     (char*)arg, marcel_self(), marcel_current_vp());
     //tfprintf(stderr, "LWP(%d): Locked = %d\n", marcel_current_vp(), locked());
-    j = 1900000; while(j--);
+    j = 19000000; while(j--);
   }
 
   return ALL_IS_OK;

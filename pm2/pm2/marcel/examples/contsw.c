@@ -17,6 +17,8 @@
 #include "marcel.h"
 #include <stdio.h>
 
+volatile int a=0;
+
 any_t f(any_t arg)
 {
   register int n = (int)arg;
@@ -25,6 +27,24 @@ any_t f(any_t arg)
   TBX_GET_TICK(t1);
   while(--n)
     marcel_yield();
+  TBX_GET_TICK(t2);
+
+  printf("contsw'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  return NULL;
+}
+
+any_t f2(any_t arg)
+{
+  register int n = (int)arg;
+  tbx_tick_t t1, t2;
+
+  TBX_GET_TICK(t1);
+  while(--n) {
+    if (a) {
+	    printf("ok\n");
+    }
+    marcel_yield();
+  }
   TBX_GET_TICK(t2);
 
   printf("contsw'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
@@ -89,6 +109,31 @@ void bench_contsw(unsigned nb)
   marcel_join(pid, &status);
 }
 
+void bench_contsw2(unsigned nb)
+{
+  marcel_t pid;
+  any_t status;
+  register int n;
+
+  if(!nb)
+    return;
+
+  n = nb >> 1;
+  n++;
+
+  marcel_create(&pid, NULL, f2, (any_t)n);
+  marcel_yield();
+
+  while(--n) {
+    if (a) {
+	    printf("ok\n");
+    }
+    marcel_yield();
+  }
+
+  marcel_join(pid, &status);
+}
+
 int marcel_main(int argc, char *argv[])
 { 
   int essais = 3;
@@ -104,6 +149,7 @@ int marcel_main(int argc, char *argv[])
     bench_setjmp(atoi(argv[1]));
     bench_longjmp(atoi(argv[1]));
     bench_contsw(atoi(argv[1]));
+    bench_contsw2(atoi(argv[1]));
   }
 
   return 0;

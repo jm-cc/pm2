@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "dsm_page_manager.h"
+#include "dsm_comm.h"
 #include "dsm_sysdep.h"
 #include "dsm_protocol_policy.h"
 #include "dsm_protocol_lib.h"
@@ -92,6 +93,7 @@ void dsm_pm2_init(int my_rank, int confsize)
 
   dsm_init_protocol_table();
   dsm_page_table_init(my_rank, confsize);
+  dsm_comm_init();
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
 
   LOG_OUT();

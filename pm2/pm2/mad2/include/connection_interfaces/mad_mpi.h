@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.h,v $
+Revision 1.4  2000/01/13 14:44:43  oaumage
+- adaptation pour la prise en compte de la toolbox
+
 Revision 1.3  2000/01/04 16:47:48  oaumage
 - ajout des fonctions `exit'
 
@@ -141,7 +144,7 @@ mad_mpi_send_buffer_group(p_mad_link_t,
 
 void
 mad_mpi_receive_sub_buffer_group(p_mad_link_t,
-				 mad_bool_t,
+				 tbx_bool_t,
 				 p_mad_buffer_group_t);
 
 /*

@@ -732,7 +732,7 @@ void mad_via_network_send(int dest_node, struct iovec *vector, size_t count)
     r = VipSendDone(viSendHand[dest_node], &descp);
     if(r != VIP_SUCCESS) {
       unlock_task();
-      marcel_givehandback();
+      marcel_yield();
       lock_task();
     }
   } while(r != VIP_SUCCESS);
@@ -754,7 +754,7 @@ void mad_via_network_send(int dest_node, struct iovec *vector, size_t count)
     r = VipRecvDone(viSendHand[dest_node], &descp);
     if(r != VIP_SUCCESS) {
       unlock_task();
-      marcel_givehandback();
+      marcel_yield();
       lock_task();
     }
   } while(r != VIP_SUCCESS);
@@ -797,7 +797,7 @@ void mad_via_network_send(int dest_node, struct iovec *vector, size_t count)
       r = VipSendDone(viSendHand[dest_node], &descp);
       if(r != VIP_SUCCESS) {
 	unlock_task();
-	marcel_givehandback();
+	marcel_yield();
 	lock_task();
       }
     } while(r != VIP_SUCCESS);
@@ -857,7 +857,7 @@ void mad_via_network_receive(network_handler func)
       r = VipCQDone(cqHand, &vih, &isRecv);
       if(r != VIP_SUCCESS) {
 	unlock_task();
-	marcel_givehandback();
+	marcel_yield();
 	lock_task();
       }
     } while(r != VIP_SUCCESS);
@@ -921,7 +921,7 @@ void mad_via_network_receive(network_handler func)
       r = VipSendDone(viRecvHand[current_expeditor], &descp);
       if(r != VIP_SUCCESS) {
 	unlock_task();
-	marcel_givehandback();
+	marcel_yield();
 	lock_task();
       }
     } while(r != VIP_SUCCESS);
@@ -1003,7 +1003,7 @@ void mad_via_network_receive_data(struct iovec *vector, size_t count)
     r = VipSendDone(viRecvHand[current_expeditor], &descp);
     if(r != VIP_SUCCESS) {
       unlock_task();
-      marcel_givehandback();
+      marcel_yield();
       lock_task();
     }
   } while(r != VIP_SUCCESS);
@@ -1025,7 +1025,7 @@ void mad_via_network_receive_data(struct iovec *vector, size_t count)
       r = VipCQDone(cqHand, &vih, &isRecv);
       if(r != VIP_SUCCESS) {
 	unlock_task();
-	marcel_givehandback();
+	marcel_yield();
 	lock_task();
       }
     } while(r != VIP_SUCCESS);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.14  2000/10/30 10:29:41  oaumage
+*** empty log message ***
+
 Revision 1.13  2000/10/26 13:54:33  oaumage
 - support de ssh
 
@@ -575,7 +578,6 @@ mad_init(
   if (!pm2_rsh)
     {
       pm2_rsh = "rsh";
-      fprintf(stderr, "no PM2_RSH defined, defaulting to `rsh'\n");
     }  
   
   if (!conf_spec)

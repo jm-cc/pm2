@@ -29,10 +29,6 @@
  * disable interrupts while they operate.  (You have to provide inline
  * routines to cli() and sti().)
  *
- * Also note, these routines assume that you have 32 bit longs.
- * You will have to change this if you are trying to port Linux to the
- * Alpha architecture or to a Cray.  :-)
- * 
  * C language equivalents written by Theodore Ts'o, 9/26/92
  */
 
@@ -41,7 +37,7 @@
 	unsigned long	mask, old, new, ret; \
 	\
 	addr += nr / MA_BITS_PER_LONG; \
-	mask = 1 << (nr % MA_BITS_PER_LONG); \
+	mask = 1UL << (nr % MA_BITS_PER_LONG); \
 	old = *addr; \
 	while (1) { \
 		new = old op mask; \
@@ -56,7 +52,7 @@
 	unsigned long	mask, old; \
 	\
 	addr += nr / MA_BITS_PER_LONG; \
-	mask = 1 << (nr % MA_BITS_PER_LONG); \
+	mask = 1UL << (nr % MA_BITS_PER_LONG); \
 	old = *addr; \
 	*addr = old op mask; \
 	return retexpr; \
@@ -105,7 +101,7 @@ static __inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
 	int	mask;
 
 	addr += nr / MA_BITS_PER_LONG;
-	mask = 1 << (nr % MA_BITS_PER_LONG);
+	mask = 1UL << (nr % MA_BITS_PER_LONG);
 	return ((mask & *addr) != 0);
 }
 	

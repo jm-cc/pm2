@@ -35,7 +35,7 @@ $(APP_OBJ)/%$(APP_EXT).o: $(SRC_DIR)/%.c
 	$(COMMON_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 
 $(DEPENDS): $(APP_DEP)/%$(APP_EXT).d: $(SRC_DIR)/%.c
-	$(COMMON_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+	$(COMMON_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -w $< \
 		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
@@ -61,7 +61,7 @@ $(APP_CPP)/%.fut: $(APP_CPP)/%.i
 
 else # APP_RECURSIF
 
-MAKE_LIBS = $(MAKE) -C $(PM2_ROOT) libs
+MAKE_LIBS = +$(MAKE) -C $(PM2_ROOT) libs
 
 .PHONY: all
 all: $(PROGS)

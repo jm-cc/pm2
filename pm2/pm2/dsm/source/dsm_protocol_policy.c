@@ -26,8 +26,6 @@
 
 /* Global data structures for the protocol policy module */
 
-#define NB_BUILT_IN_PROTOCOLS 2
-
 typedef struct _dsm_protocol_t
 {
   dsm_rf_action_t read_fault_handler;
@@ -45,29 +43,48 @@ typedef struct _dsm_protocol_t
 
 #define MAX_DSM_PROTOCOLS 15
 
-static int _nb_protocols = NB_BUILT_IN_PROTOCOLS;
+static int _nb_protocols = 0;
 static dsm_protocol_t dsm_protocol_table[MAX_DSM_PROTOCOLS]; /* the protocol table */
 
+int LI_HUDAK;
+int MIGRATE_THREAD;
+int ERC;
+int HBRC;
 
 /* Public functions */
 
 void dsm_init_protocol_table()
 {
+  /* LI_HUDAK */
+  LI_HUDAK = dsm_create_protocol(dsmlib_rf_ask_for_read_copy, // read_fault_handler 
+		      dsmlib_wf_ask_for_write_access, // write_fault_handler 
+		      dsmlib_rs_send_read_copy, // read_server
+		      dsmlib_ws_send_page_for_write_access, // write_server 
+		      dsmlib_is_invalidate, // invalidate_server 
+		      dsmlib_rp_validate_page, // receive_page_server 
+		      NULL, // expert_receive_page_server
+		      NULL, // acquire_func 
+		      NULL, // release_func 
+		      NULL, // prot_init_func 
+		      NULL  // page_add_func 
+		      );
 
-  /* 0: LI_HUDAK */
-  dsm_protocol_table[0].read_fault_handler = dsmlib_rf_ask_for_read_copy;
-  dsm_protocol_table[0].write_fault_handler = dsmlib_wf_ask_for_write_access;
-  dsm_protocol_table[0].read_server = dsmlib_rs_send_read_copy;
-  dsm_protocol_table[0].write_server = dsmlib_ws_send_page_for_write_access;
-  dsm_protocol_table[0].invalidate_server = dsmlib_is_invalidate;
-  dsm_protocol_table[0].receive_page_server = dsmlib_rp_validate_page;
+  /* MIGRATE_THREAD */
+  MIGRATE_THREAD = dsm_create_protocol(dsmlib_migrate_thread, // read_fault_handler 
+		      dsmlib_migrate_thread, // write_fault_handler
+		      NULL,// read_server
+		      NULL,// write_server 
+		      NULL, // invalidate_server 
+		      NULL, // receive_page_server 
+		      NULL, // expert_receive_page_server
+		      NULL, // acquire_func 
+		      NULL, // release_func 
+		      NULL, // prot_init_func 
+		      NULL  // page_add_func 
+		      );
 
-  /* 1: MIGRATE_THREAD */
-  dsm_protocol_table[1].read_fault_handler = dsmlib_migrate_thread;
-  dsm_protocol_table[1].write_fault_handler = dsmlib_migrate_thread;
-
-  /*2: ERC */
-  dsm_create_protocol(dsmlib_erc_sw_inv_rfh, // read_fault_handler 
+  /* ERC */
+  ERC = dsm_create_protocol(dsmlib_erc_sw_inv_rfh, // read_fault_handler 
 		      dsmlib_erc_sw_inv_wfh, // write_fault_handler 
 		      dsmlib_erc_sw_inv_rs, // read_server
 		      dsmlib_erc_sw_inv_ws, // write_server 
@@ -80,8 +97,8 @@ void dsm_init_protocol_table()
 		      dsmlib_erc_add_page  // page_add_func 
 		      );
 
-  /* 3: HBRC */
-  dsm_create_protocol(dsmlib_hbrc_mw_update_rfh, // read_fault_handler 
+  /* HBRC */
+  HBRC = dsm_create_protocol(dsmlib_hbrc_mw_update_rfh, // read_fault_handler 
 			     dsmlib_hbrc_mw_update_wfh, // write_fault_handler 
 			     dsmlib_hbrc_mw_update_rs, // read_server
 			     dsmlib_hbrc_mw_update_ws, // write_server 

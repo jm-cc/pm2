@@ -15,8 +15,6 @@
 
 LIBRARY=profile
 
-FUT_OBJS=$(MOD_GEN_OBJ)/names.o $(MOD_GEN_OBJ)/pids.o $(MOD_GEN_OBJ)/sysmap.o
-
 include $(PM2_ROOT)/make/libs-vars.mak
 
 # The profile.c file includes fut_entries.h, but it cannot be actually
@@ -36,9 +34,9 @@ $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp
 
 $(MOD_GEN_BIN)/fut_print: $(MOD_GEN_INC)/fut_entries.h
 
-$(MOD_GEN_BIN)/fut_print: ./bin/src/fut_print.c $(FUT_OBJS)
+$(MOD_GEN_BIN)/fut_print: ./bin/src/fut_print.c
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< $(FUT_OBJS) -lbfd
+	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lbfd -lfkt
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)

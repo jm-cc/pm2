@@ -35,6 +35,7 @@
 #endif
 
 void marcel_sig_init(void);
+void marcel_sig_exit(void);
 
 void marcel_sig_pause(void);
 

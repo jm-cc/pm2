@@ -86,8 +86,13 @@ static marcel_lock_t __delayed_lock = MARCEL_LOCK_INIT;
 static marcel_lock_t __blocking_lock = MARCEL_LOCK_INIT;
 
 #ifdef MA__LWPS
+
+// Verrou protégeant la liste chaînée des LWPs
+static marcel_lock_t __lwp_list_lock = MARCEL_LOCK_INIT;
+
 static unsigned  ma__nb_lwp;
 __lwp_t* addr_lwp[MA__MAX_LWPS];
+
 #endif
 
 #ifdef MA__LWPS
@@ -100,7 +105,21 @@ __lwp_t* addr_lwp[MA__MAX_LWPS];
 #define PAUSE()
 #endif
 
-inline static unsigned get_nb_lwps()
+static __inline__ void lwp_list_lock(void)
+{
+#ifdef MA__LWPS
+  marcel_lock_acquire(&__lwp_list_lock);
+#endif
+}
+
+static __inline__ void lwp_list_unlock(void)
+{
+#ifdef MA__LWPS
+  marcel_lock_release(&__lwp_list_lock);
+#endif
+}
+
+static __inline__ unsigned get_nb_lwps()
 {
 #ifdef MA__LWPS
   return ma__nb_lwp;
@@ -109,7 +128,7 @@ inline static unsigned get_nb_lwps()
 #endif
 }
 
-inline static void set_nb_lwps(unsigned value)
+static __inline__ void set_nb_lwps(unsigned value)
 {
 #ifdef MA__LWPS
   ma__nb_lwp=value;
@@ -214,7 +233,7 @@ static __inline__ int CANNOT_RUN(__lwp_t *lwp, marcel_t pid)
 
 // On cherche le premier LWP compatible avec le 'vpmask' de la tâche
 // en commençant par 'first'.
-static __inline__ __lwp_t *find_first_lwp(marcel_t pid, __lwp_t *first)
+static __inline__ __lwp_t *__find_first_lwp(marcel_t pid, __lwp_t *first)
 {
   __lwp_t *lwp = first;
 
@@ -227,6 +246,32 @@ static __inline__ __lwp_t *find_first_lwp(marcel_t pid, __lwp_t *first)
   // Si on arrive ici, c'est une erreur de l'application
   RAISE(CONSTRAINT_ERROR);
   return NULL;
+}
+
+static __inline__ __lwp_t *find_first_lwp(marcel_t pid, __lwp_t *first)
+{
+  __lwp_t *lwp;
+
+  lwp_list_lock();
+
+  lwp = __find_first_lwp(pid, first);
+
+  lwp_list_unlock();
+
+  return lwp;
+}
+
+static __inline__ __lwp_t *find_next_lwp(marcel_t pid, __lwp_t *first)
+{
+  __lwp_t *lwp;
+
+  lwp_list_lock();
+
+  lwp = __find_first_lwp(pid, next_lwp(first));
+
+  lwp_list_unlock();
+
+  return lwp;
 }
 
 // Le cas echeant, retourne un LWP fortement sous-charge (nb de
@@ -242,7 +287,7 @@ static __inline__ __lwp_t *find_good_lwp(marcel_t pid, __lwp_t *suggested)
       return lwp;
 
     // On avance au prochain possible
-    lwp = find_first_lwp(pid, next_lwp(lwp));
+    lwp = find_next_lwp(pid, lwp);
 
     // Si on a fait le tour de la liste sans succès, on prend le
     // premier...
@@ -262,7 +307,7 @@ static __inline__ __lwp_t *find_best_lwp(marcel_t pid)
   lwp = best = first;
   for(;;) {
     // On avance au prochain possible
-    lwp = find_first_lwp(pid, next_lwp(lwp));
+    lwp = find_next_lwp(pid, lwp);
 
     if(lwp == first)
       return best;
@@ -1436,11 +1481,15 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
   LOG_IN();
 
-  if (__nb_lwp >= MA__MAX_LWPS) 
-	  RAISE("Too many lwp\n");
+  lwp_list_lock();
+  {
+    if (__nb_lwp >= MA__MAX_LWPS) 
+      RAISE("Too many lwp\n");
 
-  SET_LWP_NB(__nb_lwp, lwp);
-  lwp->number = __nb_lwp++;
+    SET_LWP_NB(__nb_lwp, lwp);
+    lwp->number = __nb_lwp++;
+  }
+  lwp_list_unlock();
 
 #ifdef MA__MULTIPLE_RUNNING
   lwp->prev_running=NULL;
@@ -1497,6 +1546,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
   marcel_create(&(lwp->idle_task), &attr, idle_func, NULL);
 
+  marcel_one_task_less(lwp->idle_task);
   lwp->idle_task->special_flags |= MA_SF_POLL | MA_SF_NOSCHEDLOCK;
 
   MTRACE("IdleTask", lwp->idle_task);
@@ -1569,7 +1619,9 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   UNCHAIN_TASK(lwp->upcall_new_task);
   lwp->upcall_new_task->lwp = lwp;
   lwp->upcall_new_task->special_flags |= MA_SF_UPCALL_NEW | MA_SF_NORUN;
-  _main_struct.nb_tasks--;
+
+  marcel_one_task_less(lwp->upcall_new_task);
+
   MTRACE("U_T OK", lwp->upcall_new_task);
   /****************************************************/
 
@@ -1593,26 +1645,52 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 }
 
 #if defined(MA__LWPS)
+
 static unsigned __nb_processors = 1;
 
-static void create_new_lwp(void)
+static void marcel_fix_nb_vps(unsigned nb_lwp)
 {
-  __lwp_t *lwp = (__lwp_t *)__TBX_MALLOC(sizeof(__lwp_t), __FILE__, __LINE__),
-          *cur_lwp = marcel_self()->lwp;
-
-  LOG_IN();
-
-  init_lwp(lwp, NULL);
-
-  /* Add to global linked list */
-  list_add(&lwp->lwp_list, &cur_lwp->lwp_list);
-
-  LOG_OUT();
-}
+  // Détermination du nombre de processeurs disponibles
+#ifdef SOLARIS_SYS
+  __nb_processors = sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(LINUX_SYS)
+  __nb_processors = WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"
+				       " | wc -l`"));
+#elif defined(IRIX_SYS)
+  __nb_processors = sysconf(_SC_NPROC_CONF);
+#else
+  __nb_processors = 1;
 #endif
+
+  mdebug("%d processors available\n", __nb_processors);
+
+  // Choix du nombre de LWP
+#ifdef MA__ACTSMP
+  set_nb_lwps(nb_lwp ? nb_lwp : ACT_NB_MAX_CPU);
+#else
+  set_nb_lwps(nb_lwp ? nb_lwp : __nb_processors);
+#endif
+}
 
 #ifdef MA__SMP
 
+static void marcel_bind_on_processor(__lwp_t *lwp)
+{
+#if defined(BIND_LWP_ON_PROCESSORS) && defined(SOLARIS_SYS)
+  if(processor_bind(P_LWPID, P_MYID,
+		    (processorid_t)(lwp->number % __nb_processors),
+		    NULL) != 0) {
+    perror("processor_bind");
+    exit(1);
+  } else
+    if(marcel_mdebug.show)
+      fprintf(stderr, "LWP %d bound to processor %d\n",
+	      lwp->number, (lwp->number % __nb_processors));
+#endif
+}
+
+// Attention : pas de mdebug dans cette fonction ! Il faut se
+// contenter de fprintf...
 static void *lwp_startup_func(void *arg)
 {
   __lwp_t *lwp = (__lwp_t *)arg;
@@ -1621,7 +1699,6 @@ static void *lwp_startup_func(void *arg)
 
   if(setjmp(lwp->home_jb)) {
 #ifdef MARCEL_DEBUG
-    // Attention : pas de mdebug ici !
   if(marcel_mdebug.show)
     fprintf(stderr, "sched %d Exiting\n", lwp->number);
 #endif
@@ -1635,23 +1712,13 @@ static void *lwp_startup_func(void *arg)
 	    lwp->number, (unsigned long)marcel_kthread_self());
 #endif
 
-#if defined(BIND_LWP_ON_PROCESSORS) && defined(SOLARIS_SYS)
-  if(processor_bind(P_LWPID, P_MYID,
-		    (processorid_t)(lwp->number % __nb_processors),
-		    NULL) != 0) {
-    perror("processor_bind");
-    exit(1);
-  } else
-  if(marcel_mdebug.show)
-    fprintf(stderr, "LWP %d bound to processor %d\n",
-	   lwp->number, (lwp->number % __nb_processors));
-#endif
+  marcel_bind_on_processor(lwp);
 
   /* Can't use lock_task() because marcel_self() is not yet usable ! */
   atomic_inc(&lwp->_locked);
 
 #ifndef MA__ONE_QUEUE
-  /* pris dans  init_sched() */
+  /* pris dans  init_lwp() */
   sched_unlock(lwp);
 #endif
 
@@ -1660,14 +1727,37 @@ static void *lwp_startup_func(void *arg)
   return NULL;
 }
 
-static __inline__ void start_lwp(__lwp_t *lwp)
+#endif // MA__SMP
+
+unsigned marcel_sched_add_vp(void)
 {
+  __lwp_t *lwp = (__lwp_t *)__TBX_MALLOC(sizeof(__lwp_t), __FILE__, __LINE__),
+          *cur_lwp = marcel_self()->lwp;
+
+  LOG_IN();
+
+  // Initialisation de la structure __lwp_t
+  init_lwp(lwp, NULL);
+
+  lwp_list_lock();
+  {
+    // Ajout dans la liste globale des LWP
+    list_add(&lwp->lwp_list, &cur_lwp->lwp_list);
+  }
+  lwp_list_unlock();
+
+#ifdef MA__SMP
+  // Lancement du thread noyau "propulseur"
   marcel_kthread_create(&lwp->pid, lwp_startup_func, (void *)lwp);
+#endif
+  return lwp->number;
+
+  LOG_OUT();
 }
 
-#endif
+#endif // MA__LWPS
 
-void marcel_sched_init(unsigned nb_lwp)
+void marcel_sched_init(void)
 {
   marcel_initialized = TRUE;
 
@@ -1677,44 +1767,7 @@ void marcel_sched_init(unsigned nb_lwp)
   sigemptyset(&sigalrmset);
   sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
 
-#ifdef MA__LWPS
-
-#ifdef SOLARIS_SYS
-  __nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-
-#if defined(BIND_LWP_ON_PROCESSORS)
-  if(processor_bind(P_LWPID, P_MYID, (processorid_t)0, NULL) != 0) {
-    perror("processor_bind");
-    exit(1);
-  } else
-    mdebug("LWP %d bound to processor %d\n", 0, 0);
-#endif
-
-#elif defined(LINUX_SYS)
-
-  __nb_processors = WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"
-				       " | wc -l`"));
-
-#elif defined(IRIX_SYS)
-
-  __nb_processors = sysconf(_SC_NPROC_CONF);
-
-#else
-  __nb_processors = 1;
-#endif
-
-  mdebug("%d processors available\n", __nb_processors);
-
-#ifdef MA__ACTSMP
-  set_nb_lwps(nb_lwp ? nb_lwp : ACT_NB_MAX_CPU);
-#else
-  set_nb_lwps(nb_lwp ? nb_lwp : __nb_processors);
-#endif
-  _main_struct.nb_tasks = -get_nb_lwps();
-
-#else /* MA__LWPS */
-  _main_struct.nb_tasks = -1;
-#endif /* MA__LWPS */
+  _main_struct.nb_tasks = 0;
 
   memset(__main_thread, 0, sizeof(task_desc));
   __main_thread->detached = FALSE;
@@ -1733,8 +1786,6 @@ void marcel_sched_init(unsigned nb_lwp)
   // 'init_sched' is called indirectly
   init_lwp(&__main_lwp, __main_thread);
 
-  mdebug("marcel_sched_init: init_lwp done\n");
-
   INIT_LIST_HEAD(&__main_lwp.lwp_list);
 
   SET_STATE_RUNNING(NULL, __main_thread, (&__main_lwp));
@@ -1745,31 +1796,22 @@ void marcel_sched_init(unsigned nb_lwp)
   sched_unlock(&__main_lwp);
 }
 
-void marcel_sched_start(void)
+void marcel_sched_start(unsigned nb_lwp)
 {
 #ifdef MA__LWPS
+  int i;
 
-  /* Creation en deux phases en prevision du work stealing qui peut
-     demarrer tres vite sur certains LWP... */
-  {
-    int i;
 #ifdef MA__SMP
-    struct list_head *lwp=NULL;
+    marcel_bind_on_processor(&__main_lwp);
 #endif
 
-    for(i=1; i<get_nb_lwps(); i++)
-      create_new_lwp();
+  marcel_fix_nb_vps(nb_lwp);
+
+  for(i=1; i<get_nb_lwps(); i++)
+    marcel_sched_add_vp();
  
-    mdebug("marcel_sched_init  : %i lwps created\n",
-	   get_nb_lwps());
-
-#ifdef MA__SMP
-    list_for_each(lwp, &__main_lwp.lwp_list) {
-      start_lwp(list_entry(lwp, __lwp_t, lwp_list));
-    }
-#endif
-
-  }
+  mdebug("marcel_sched_init  : %i lwps created\n",
+	 get_nb_lwps());
 #endif /* MA__LWPS */
 
 #ifdef MA__ACTIVATION

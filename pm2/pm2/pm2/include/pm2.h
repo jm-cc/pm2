@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.26  2000/11/13 20:41:37  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.25  2000/11/06 15:02:19  rnamyst
 pm2_init() has now a modular structure (in fact, common_init).
 
@@ -106,6 +109,8 @@ ______________________________________________________________________________
 #include "dsm_pm2.h"
 #endif
 
+#include "common.h"
+
 #define MAX_STARTUP_FUNCS   32
 
 /* A startup function may be specified. If so, it will be called after
@@ -121,7 +126,7 @@ void pm2_push_startup_func(pm2_startup_func_t f, void *args);
  * for the initial process.
  */
 
-void pm2_init(int *argc, char **argv);
+#define pm2_init(argc, argv) common_init(argc, argv)
 
 // Needs to be called after profile_init()
 _PRIVATE_ void pm2_init_data(int *argc, char **argv);

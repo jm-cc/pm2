@@ -10,6 +10,7 @@ void common_opt_display_panel(void);
 
 void common_opt_hide_panel(void);
 
-void common_opt_register_option(char *name, GtkWidget *button);
+void common_opt_register_option(char *name,
+				GtkWidget *button);
 
 #endif

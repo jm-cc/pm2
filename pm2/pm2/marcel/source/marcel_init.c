@@ -241,7 +241,7 @@ typedef struct {
 		section(__MA_INIT_SECTION "info." #number)))=number; \
   const __ma_init_index_t __ma_init_index_##number \
     __attribute__((section(__MA_INIT_SECTION "index." #number))) \
-    = { .infos=(struct_up(&__ma_init_info_##number, \
+    = { .infos=(tbx_container_of(&__ma_init_info_##number, \
 			    __ma_init_section_index_t, section_number) \
     		->infos), \
         .prio=number, .debug=text }

@@ -186,7 +186,9 @@ fi
 # Variables à exporter
 for v in $*; do
     eval _val=\"\$$v\"
-    _prescript_args="$_prescript_args --export $v \"$_val\""
+    if [ -n "$_val" ]; then
+	_prescript_args="$_prescript_args --export $v \"$_val\""
+    fi
 done
 
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then

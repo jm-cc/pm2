@@ -39,7 +39,7 @@
 #include "dsm_protocol_lib.h"
 #include "dsm_protocol_policy.h" 
 
-#define TRACE_PROT
+//#define TRACE_PROT
 
 /* Global data structures for the protocol policy module */
 

@@ -96,6 +96,20 @@ void dsm_lock_page(unsigned long index);
 
 void dsm_unlock_page(unsigned long index);
 
+void dsm_wait_for_inv(unsigned long index);
+
+void dsm_signal_inv_done(unsigned long index);
+
+void dsm_lock_inv(unsigned long index);
+
+void dsm_unlock_inv(unsigned long index);
+
+boolean dsm_pending_invalidation(unsigned long index);
+
+void dsm_set_pending_invalidation(unsigned long index);
+
+void dsm_clear_pending_invalidation(unsigned long index);
+
 void dsm_wait_ack(unsigned long index, int value);
 
 void dsm_signal_ack(unsigned long index, int value);
@@ -171,6 +185,8 @@ void dsm_set_default_protocol(int protocol);
 void dsm_set_page_protocol(unsigned long index, int protocol);
 
 int dsm_get_page_protocol(unsigned long index);
+
+void dsm_set_page_ownership(void *addr, dsm_node_t owner);
 
 /*********************** Hyperion stuff: ****************************/
 

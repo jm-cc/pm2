@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.11  2000/06/16 14:03:31  oaumage
+- Modification du format de la fonction mad_managers_init
+
 Revision 1.10  2000/05/17 14:32:44  oaumage
 - reorganisation des sources au niveau de mad_init
 
@@ -109,7 +112,8 @@ mad_adapter_set_init(int nb_adapter, ...);
  * --------------...............................................
  */
 void 
-mad_managers_init(void);
+mad_managers_init(int   *argc,
+		  char **argv);
 
 void 
 mad_driver_fill(p_mad_madeleine_t madeleine);

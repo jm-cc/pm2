@@ -90,8 +90,8 @@ static void fault_catcher(int sig)
 {
   marcel_t cur = marcel_self();
 
-  fprintf(stderr, "OOPS!!! Signal %d catched on thread %p\n",
-	  sig, cur);
+  fprintf(stderr, "OOPS!!! Signal %d catched on thread %p (%ld)\n",
+	  sig, cur, cur->number);
   if(GET_LWP(cur) != NULL)
     fprintf(stderr, "OOPS!!! current lwp is %d\n", GET_LWP(cur)->number);
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.h,v $
+Revision 1.2  2000/11/16 14:21:50  oaumage
+- correction external spawn
+
 Revision 1.1  2000/05/17 14:32:44  oaumage
 - reorganisation des sources au niveau de mad_init
 
@@ -61,18 +64,16 @@ ______________________________________________________________________________
  * Fonctions exportees
  * -------------------
  */
-#ifdef PM2
+
 p_mad_madeleine_t
-mad2_init(int                  *argc,
-	  char                **argv,
-	  char                 *configuration_file,
-	  p_mad_adapter_set_t   adapter_set);
-#else /* PM2 */
-p_mad_madeleine_t
-mad_init(int                   *argc,
-	 char                 **argv,
-	 char                  *configuration_file __attribute__ ((unused)),
-	 p_mad_adapter_set_t    adapter_set);
-#endif /* PM2 */
+mad_init(int                  *argc,
+	 char                **argv,
+	 char                 *configuration_file,
+	 p_mad_adapter_set_t   adapter_set);
+
+void
+mad_spawn_driver_init(p_mad_madeleine_t   madeleine,
+		      int                *argc,
+		      char              **argv);
 
 #endif /* MAD_EXTERNAL_SPAWN_H */

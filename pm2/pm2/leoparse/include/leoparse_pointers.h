@@ -21,10 +21,8 @@
 #ifndef LEOPARSE_POINTERS_H
 #define LEOPARSE_POINTERS_H
 
-typedef struct s_leoparse_htable_entry   *p_leoparse_htable_entry_t;
 typedef struct s_leoparse_range          *p_leoparse_range_t;
 typedef enum   e_leoparse_object_type    *p_leoparse_object_type_t;
-typedef enum   e_leoparse_entry_type     *p_leoparse_entry_type_t;
 typedef struct s_leoparse_object         *p_leoparse_object_t;
 typedef enum   e_leoparse_modifier_type  *p_leoparse_modifier_type_t;
 typedef struct s_leoparse_modifier       *p_leoparse_modifier_t;

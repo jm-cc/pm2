@@ -148,6 +148,13 @@ leo_help(void)
   __leo_option_help("-x", "", "Open an Xterm for each session process");
   __leo_option_help("--x", "", "Do not open Xterms for session processes");
   
+  __leo_option_help("-l", "", "Log session processes output to files");
+  __leo_option_help("--l", "", "Do not log session processes output");
+  
+  __leo_option_help("-p", "", "Pause after session processes           termination");
+  __leo_option_help("--p", "",
+		    "Do not pause after session processes    termination");
+  
   __leo_option_help("-d", "", "Open session processes in gdb (implies  -x)");
   __leo_option_help("--d", "", "Do not open session processes in gdb");
   

@@ -40,7 +40,6 @@ DUMMY_BUILD :=  $(shell mkdir -p $(APP_BIN))
 DUMMY_BUILD :=  $(shell mkdir -p $(APP_OBJ))
 DUMMY_BUILD :=  $(shell mkdir -p $(APP_ASM))
 DUMMY_BUILD :=  $(shell mkdir -p $(APP_DEP))
-DUMMY_BUILD :=  $(shell mkdir -p $(APP_STAMP))
 ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
 include $(DEPENDS)
 endif
@@ -52,9 +51,6 @@ examples: $(APPS)
 include $(PM2_ROOT)/make/common-rules.mak
 
 all: examples
-
-$(APP_STAMP)/stamp$(APP_EXT):
-	$(COMMON_HIDE) touch $@
 
 $(DEPENDS): $(COMMON_DEPS)
 $(OBJECTS): $(APP_OBJ)/%.o: $(APP_DEP)/%.d $(COMMON_DEPS)
@@ -104,7 +100,7 @@ appclean:
 
 repclean:
 	$(COMMON_HIDE) for rep in $(APP_OBJ) $(APP_ASM) $(APP_BIN) \
-		$(APP_DEP) $(APP_STAMP); do \
+		$(APP_DEP) ; do \
 		if rmdir $$rep 2> /dev/null; then \
 			echo "empty repertory $$rep removed" ; \
 		fi ; \

@@ -71,7 +71,7 @@ void init_rq(ma_runqueue_t *rq)
 
 	ma_spin_lock_init(&rq->lock);
 	INIT_LIST_HEAD(&rq->migration_queue);
-	atomic_set(&rq->nr_iowait, 0);
+	ma_atomic_set(&rq->nr_iowait, 0);
 	nr_running_init(rq);
 
 	for (j = 0; j < 2; j++) {

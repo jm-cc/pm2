@@ -18,6 +18,8 @@ make          : shared makefiles
 marcel        : Marcel module (threads library)
 modules       : Each link or repertory in this one is a PM2 module
 pm2           : PM2 module (main library): lots of symlinks to root directory
+pm2debug      : Debugging management routines
+profile       : Profiling management routines
 source        : PM2 module sources
 stamp         : used to verify up-to-date library/prog when compiling
 swann         : ??? module
@@ -27,10 +29,8 @@ most modules have
 Makefile      : Makefile
 include       : include files of the module
 source        : sources of the module
-build         : repertory with the results of compilation (obj/lib/...)
 config        : used for the configuration and module options
 examples      : examples that use this module (not in each module)
 
 most examples have
 Makefile      : Makefile
-build         : repertory with the results of compilation (obj/bin/...)

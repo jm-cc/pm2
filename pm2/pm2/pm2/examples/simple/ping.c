@@ -48,13 +48,13 @@ void SAMPLE_service(void)
 {
   int n;
 
-  mad_unpack_int(MAD_IN_HEADER, &n, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &n, 1);
 
   pm2_rawrpc_waitdata();
 
   if(--n) {
     pm2_rawrpc_begin(autre, SAMPLE, NULL);
-    mad_pack_int(MAD_IN_HEADER, &n, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &n, 1);
     pm2_rawrpc_end();
   } else {
     marcel_sem_V(&sem);
@@ -65,12 +65,12 @@ static void threaded_rpc(void *arg)
 {
   int n;
 
-  mad_unpack_int(MAD_IN_HEADER, &n, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &n, 1);
   pm2_rawrpc_waitdata();
 
   if(--n) {
      pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
-     mad_pack_int(MAD_IN_HEADER, &n, 1);
+     old_mad_pack_int(MAD_IN_HEADER, &n, 1);
      pm2_rawrpc_end();
    } else {
      marcel_sem_V(&sem);
@@ -93,7 +93,7 @@ void f(int n)
     GET_TICK(t1);
 
     pm2_rawrpc_begin(autre, SAMPLE, NULL);
-    mad_pack_int(MAD_IN_HEADER, &n, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &n, 1);
     pm2_rawrpc_end();
 
     marcel_sem_P(&sem);
@@ -110,7 +110,7 @@ void f(int n)
     GET_TICK(t1);
 
     pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
-    mad_pack_int(MAD_IN_HEADER, &n, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &n, 1);
     pm2_rawrpc_end();
 
     marcel_sem_P(&sem);

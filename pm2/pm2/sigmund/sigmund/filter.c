@@ -7,11 +7,21 @@
 
 filter options;
 
+struct time_st {
+  u_64 active_time;
+  u_64 idle_time;
+  u_64 last_time;
+  int old_active;
+  int first;
+};
+
+struct 
+
 #define NB_PROC 16
 
 int table[NB_PROC];
 
-int codecmp(mode type1, int code1, mode type2, int code2)
+static int codecmp(mode type1, int code1, mode type2, int code2)
 {
   if (type1 != type2) return FALSE;
   if (type1 == USER) {
@@ -59,7 +69,7 @@ void filter_add_thread(int thread)
   options.active_thread = 0;
 }
 
-int is_in_thread_list(int thread)
+static int is_in_thread_list(int thread)
 {
   if (options.thread != THREAD_LIST_NULL) {
     thread_list temp;
@@ -83,7 +93,7 @@ void filter_add_proc(int proc)
   options.proc = tmp;
 }
 
-int is_in_proc_list(int proc)
+static int is_in_proc_list(int proc)
 {
   if (options.proc != PROC_LIST_NULL) {
     proc_list temp;
@@ -107,7 +117,7 @@ void filter_add_cpu(short int cpu)
   options.cpu = tmp;
 }
 
-int is_in_cpu_list(short int cpu)
+static int is_in_cpu_list(short int cpu)
 {
   if (options.cpu != CPU_LIST_NULL) {
     cpu_list temp;
@@ -132,7 +142,7 @@ void filter_add_event(mode type, int code)
   options.event = tmp;
 }
 
-int is_in_event_list(trace *tr)
+static int is_in_event_list(trace *tr)
 {
   if (options.event != EVENT_LIST_NULL) {
     event_list temp;
@@ -159,7 +169,7 @@ void filter_add_time_slice(u_64 begin, u_64 end)
   // options.active = 0;
 }
 
-int is_in_time_list(trace *tr)
+static int is_in_time_list(trace *tr)
 {
   if (options.time != TIME_SLICE_LIST_NULL) {
     time_slice_list temp;
@@ -191,7 +201,7 @@ void filter_add_evnum_slice(unsigned int begin, unsigned int end)
   //  options.active = 0;
 }
 
-int is_in_evnum_list(trace *tr)
+static int is_in_evnum_list(trace *tr)
 {
   if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
     evnum_slice_list temp;
@@ -210,31 +220,33 @@ int is_in_evnum_list(trace *tr)
   return TRUE;
 }
 
-void search_begin_evnum_slice_list(trace *tr)
-{
+/*
+  void search_begin_evnum_slice_list(trace *tr)
+  {
   if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
-    evnum_slice_list temp;
-    temp = options.evnum_slice;
-    while (temp != EVNUM_SLICE_LIST_NULL) {
-      if (temp->begin == tr->number)
-	options.active_evnum_slice++;
-      temp = temp->next;
-    }
+  evnum_slice_list temp;
+  temp = options.evnum_slice;
+  while (temp != EVNUM_SLICE_LIST_NULL) {
+  if (temp->begin == tr->number)
+  options.active_evnum_slice++;
+  temp = temp->next;
   }
-}
-
-void search_end_evnum_slice_list(trace *tr)
-{
-if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
-    evnum_slice_list temp;
-    temp = options.evnum_slice;
-    while (temp != EVNUM_SLICE_LIST_NULL) {
-      if (temp->end == tr->number)
-	if (options.active_evnum_slice > 0) options.active_evnum_slice--;
-      temp = temp->next;
-    }
+  }
+  }
+  
+  void search_end_evnum_slice_list(trace *tr)
+  {
+  if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
+  evnum_slice_list temp;
+  temp = options.evnum_slice;
+  while (temp != EVNUM_SLICE_LIST_NULL) {
+  if (temp->end == tr->number)
+  if (options.active_evnum_slice > 0) options.active_evnum_slice--;
+  temp = temp->next;
+  }
   } 
-}
+  }
+*/
 
 void filter_add_function(mode begin_type, int begin, char begin_param_active, 
 			  int begin_param, mode end_type, int end, 
@@ -256,7 +268,7 @@ void filter_add_function(mode begin_type, int begin, char begin_param_active,
   options.active_thread_fun = 0;
 }
 
-void filter_add_thread_fun(int thread)
+static void filter_add_thread_fun(int thread)
 {
   thread_fun_list tmp;
   tmp = options.thread_fun;
@@ -275,7 +287,7 @@ void filter_add_thread_fun(int thread)
   } else tmp->number++;
 }
 
-void filter_del_thread_fun(int thread)
+static void filter_del_thread_fun(int thread)
 {
   thread_fun_list tmp;
   thread_fun_list prev;
@@ -304,7 +316,7 @@ void filter_del_thread_fun(int thread)
   return; // Erreur
 }
 
-int is_in_thread_fun_list(int thread)
+static int is_in_thread_fun_list(int thread)
 {
   thread_fun_list temp;
   temp = options.thread_fun;
@@ -339,7 +351,7 @@ void filter_add_gen_slice(mode begin_type, int begin, char begin_param_active,
   //  options.active = 0;
 }
 
-void search_begin_gen_slice_list(trace *tr)
+static void search_begin_gen_slice_list(trace *tr)
 {
   if (options.gen_slice != GENERAL_SLICE_LIST_NULL) {
     general_slice_list temp;
@@ -357,7 +369,7 @@ void search_begin_gen_slice_list(trace *tr)
   }
 }
 
-void search_end_gen_slice_list(trace *tr)
+static void search_end_gen_slice_list(trace *tr)
 {
   if (options.gen_slice != GENERAL_SLICE_LIST_NULL) {
     general_slice_list temp;
@@ -378,7 +390,7 @@ void search_end_gen_slice_list(trace *tr)
 }
 
 
-void search_begin_function(trace *tr)
+static void search_begin_function(trace *tr)
 {
   if (options.function != GENERAL_SLICE_LIST_NULL) {
     general_slice_list temp;
@@ -396,7 +408,7 @@ void search_begin_function(trace *tr)
   } 
 }
 
-void search_end_function(trace *tr)
+static void search_end_function(trace *tr)
 {
   if (options.function != GENERAL_SLICE_LIST_NULL) {
     general_slice_list temp;
@@ -416,12 +428,9 @@ void search_end_function(trace *tr)
   }
 }
 
-
-// Attention le end mange une trace la dernière...
-
-
-int is_valid(trace *tr)
-{ 
+/*
+  int is_valid(trace *tr)
+  { 
   if (is_in_cpu_list(tr->proc) == FALSE) return FALSE;
   if (is_in_proc_list(tr->pid) == FALSE) return FALSE;
   if (is_in_thread_list(tr->thread) == FALSE) return FALSE;
@@ -434,19 +443,20 @@ int is_valid(trace *tr)
   //options.active = options.active_time && options.active_evnum_slice && options.active_gen_slice;
   
   if (options.active_time && options.active_evnum_slice && options.active_gen_slice == 0) return FALSE;
-
+  
   search_end_evnum_slice_list(tr);
   search_end_gen_slice_list(tr);
   
-
+  
   if (is_in_thread_fun_list(tr->thread) == FALSE) return FALSE;
   
-  search_end_function(tr);
-
+  search_end_function(tr);  
+  
   return TRUE;
-}
+  }
+*/
 
-void filter_add_lwp(int lwp, int thread, int active)
+static void filter_add_lwp(int lwp, int thread, int active)
 {
   lwp_thread_list tmp;
   tmp = (lwp_thread_list) malloc(sizeof(struct lwp_thread_list_st));
@@ -458,7 +468,7 @@ void filter_add_lwp(int lwp, int thread, int active)
   options.lwp_thread = tmp;
 }
 
-int is_active_lwp_of_thread(int thread)
+static int is_active_lwp_of_thread(int thread)
 {
   lwp_thread_list tmp;
   tmp = options.lwp_thread;
@@ -469,7 +479,7 @@ int is_active_lwp_of_thread(int thread)
   return -1;  // Erreur
 }
 
-int is_active_lwp(int lwp)
+static int is_active_lwp(int lwp)
 {
   lwp_thread_list tmp;
   tmp = options.lwp_thread;
@@ -480,7 +490,7 @@ int is_active_lwp(int lwp)
   return -1; // Erreur
 }
 
-int lwp_of_thread(int thread)
+static int lwp_of_thread(int thread)
 {
   lwp_thread_list tmp;
   tmp = options.lwp_thread;
@@ -492,7 +502,7 @@ int lwp_of_thread(int thread)
   return tmp->lwp;
 }
 
-void change_lwp_thread(int oldthread, int newthread)
+static void change_lwp_thread(int oldthread, int newthread)
 {
   lwp_thread_list tmp;
   tmp = options.lwp_thread;

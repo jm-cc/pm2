@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: isomalloc_archdep.h,v $
+Revision 1.2  2000/01/31 15:50:19  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF

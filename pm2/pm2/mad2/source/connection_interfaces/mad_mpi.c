@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.13  2000/05/16 09:05:18  rnamyst
+Fast Polling added into Marcel + make xconfig
+
 Revision 1.12  2000/03/08 17:19:28  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -354,7 +357,7 @@ mad_mpi_driver_init(p_mad_driver_t driver)
 #ifdef MARCEL
   mad_mpi_driver_specific = driver_specific;
   mad_mpi_driver_specific->poll_id =
-    marcel_pollid_create(mpi_io_group, mpi_io_poll, 1);
+    marcel_pollid_create(mpi_io_group, mpi_io_poll, NULL, 1);
 #endif /* MARCEL */
   driver->name = TBX_MALLOC(4);
   CTRL_ALLOC(driver->name);

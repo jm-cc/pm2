@@ -19,6 +19,7 @@
  */
 //#define USE_MARCEL_POLL
 //#define OLD_SISCI
+#define MPICH_SMP
 #define MAD_SISCI_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
@@ -1033,7 +1034,10 @@ mad_sisci_connect(p_mad_connection_t   out,
   int                               channel_id         =    0;
   int                               segment            =    0;
   int                               remote_node_sci_id =    0;
-
+#ifdef MPICH_SMP
+  int                               local_node_sci_id  =    0;
+#endif //MPICH_SMP
+   
   LOG_IN();
   channel            = out->channel;
   adapter            = channel->adapter;
@@ -1042,7 +1046,10 @@ mad_sisci_connect(p_mad_connection_t   out,
   channel_id         = channel->dir_channel->id;
   dir_remote_adapter = ai->dir_adapter;
   remote_node_sci_id = atoi(dir_remote_adapter->parameter);
-
+#ifdef MPICH_SMP
+  local_node_sci_id  = atoi(adapter->parameter); 
+#endif //MPICH_SMP
+   
   if (channel->type == mad_channel_type_forwarding)
     {
       channel_id |= 0x80;
@@ -1066,7 +1073,10 @@ mad_sisci_connect(p_mad_connection_t   out,
 
       remote_segment->size   = sizeof(mad_sisci_user_segment_data_t);
       remote_segment->offset = 0;
-
+#ifdef MPICH_SMP
+      if(local_node_sci_id != remote_node_sci_id)
+	 {
+#endif //MPICH_SMP
       do
 	{
 	  SCIConnectSegment(out_specific->sd[segment],
@@ -1081,9 +1091,9 @@ mad_sisci_connect(p_mad_connection_t   out,
 	      mad_sisci_display_error(sisci_error);
 	      LOG("mad_sisci: could not connect, sleeping ...");
 #ifdef MARCEL
-	      marcel_delay(1000);
+	    //  marcel_delay(1000);
 #else // MARCEL
-	      sleep(1);
+	    //  sleep(1);
 #endif // MARCEL
 	      LOG("mad_sisci: could not connect, waking up");
 	    }
@@ -1106,6 +1116,15 @@ mad_sisci_connect(p_mad_connection_t   out,
       mad_sisci_set(&remote_data->status.write);
       mad_sisci_flush(remote_segment);
       out_specific->write_flag_flushed = tbx_true;
+#ifdef MPICH_SMP
+	 }       
+       else
+	 {
+	    remote_segment->map_addr = NULL;
+	    remote_data = remote_segment->map_addr;
+	    out_specific->write_flag_flushed = tbx_true;
+	 }
+#endif //MPICH_SMP
     }
   LOG_OUT();
 }
@@ -1125,7 +1144,10 @@ mad_sisci_accept(p_mad_connection_t   in,
   int                               channel_id         =    0;
   int                               segment            =    0;
   int                               remote_node_sci_id =    0;
-
+#ifdef MPICH_SMP
+   int                               local_node_sci_id  =    0;
+#endif //MPICH_SMP
+   
   LOG_IN();
   channel            = in->channel;
   adapter            = channel->adapter;
@@ -1134,7 +1156,9 @@ mad_sisci_accept(p_mad_connection_t   in,
   channel_id         = channel->dir_channel->id;
   dir_remote_adapter = ai->dir_adapter;
   remote_node_sci_id = atoi(dir_remote_adapter->parameter);
-
+#ifdef MPICH_SMP
+   local_node_sci_id  = atoi(adapter->parameter);
+#endif //MPICH_SMP
   if (channel->type == mad_channel_type_forwarding)
     {
       channel_id |= 0x80;
@@ -1158,8 +1182,11 @@ mad_sisci_accept(p_mad_connection_t   in,
 
       remote_segment->size   = sizeof(mad_sisci_user_segment_data_t);
       remote_segment->offset = 0;
-
-      do
+#ifdef MPICH_SMP
+       if(local_node_sci_id != remote_node_sci_id)
+	 {
+#endif //MPICH_SMP
+        do
 	{
 	  SCIConnectSegment(in_specific->sd[segment],
 			    &remote_segment->segment,
@@ -1173,9 +1200,9 @@ mad_sisci_accept(p_mad_connection_t   in,
 	      mad_sisci_display_error(sisci_error);
 	      LOG("mad_sisci: could not connect, sleeping ...");
 #ifdef MARCEL
-	      marcel_delay(1000);
+	     // marcel_delay(1000);
 #else // MARCEL
-	      sleep(1);
+	     // sleep(1);
 #endif // MARCEL
 	      LOG("mad_sisci: could not connect, waking up");
 	    }
@@ -1198,7 +1225,16 @@ mad_sisci_accept(p_mad_connection_t   in,
       mad_sisci_set(&remote_data->status.write);
       mad_sisci_flush(remote_segment);
       in_specific->write_flag_flushed = tbx_true;
-    }
+#ifdef MPICH_SMP
+	 }
+       else
+	 {
+	    remote_segment->map_addr = NULL;
+	    remote_data = remote_segment->map_addr;
+	    in_specific->write_flag_flushed = tbx_true;
+	 }
+#endif //MPICH_SMP
+    }   
   LOG_OUT();
 }
 
@@ -1230,6 +1266,10 @@ mad_sisci_disconnect(p_mad_connection_t connection)
       p_mad_sisci_remote_segment_t remote_segment =
 	&(connection_specific->remote_segment[k]);
 
+#ifdef MPICH_SMP       
+       if(remote_segment->map_addr != NULL)
+	 {
+#endif //MPICH_SMP
       SCIUnmapSegment(remote_segment->map, 0, &sisci_error);
       mad_sisci_control();
 
@@ -1238,7 +1278,11 @@ mad_sisci_disconnect(p_mad_connection_t connection)
 
       SCIRemoveSequence(remote_segment->sequence, 0, &sisci_error);
       mad_sisci_control();
-
+#ifdef MPICH_SMP
+	 }
+       if(local_segment->map_addr != NULL)
+	 {
+#endif //MPICH_SMP	    
       SCISetSegmentUnavailable(local_segment->segment,
 			       adapter_specific->local_adapter_id,
 			       0, &sisci_error);
@@ -1252,7 +1296,10 @@ mad_sisci_disconnect(p_mad_connection_t connection)
 
       SCIClose(connection_specific->sd[k], 0, &sisci_error);
       mad_sisci_control();
-    }
+#ifdef MPICH_SMP
+	 }
+#endif //MPICH_SMP
+    }   
   LOG_OUT();
 }
 

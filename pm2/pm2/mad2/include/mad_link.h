@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_link.h,v $
+Revision 1.3  2000/01/05 09:39:40  oaumage
+- ajout du champs group_mode :
+  * aggregate: .. en emission, les groupes sont de taille maximale
+  * split:....... en emission, les groupes sont coupes apres un Express
+
 Revision 1.2  1999/12/15 17:31:21  oaumage
 Ajout de la commande de logging de CVS
 
@@ -61,6 +66,7 @@ typedef struct s_mad_link
   /* Internal use fields */
   mad_link_mode_t           link_mode;
   mad_buffer_mode_t         buffer_mode;
+  mad_group_mode_t          group_mode;
   mad_list_t                buffer_list;
   mad_list_t                user_buffer_list;
 

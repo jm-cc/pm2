@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -28,7 +27,7 @@
  */
 #ifndef __GNUC__
 #error The GNU C Compiler is required to build the library
-#endif __GNUC__
+#endif // __GNUC__
 
 /*
  * Headers

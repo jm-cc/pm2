@@ -221,7 +221,7 @@ void
 ntbx_pack_double(double               data,
 		 p_ntbx_pack_buffer_t pack_buffer);
 
-int
+double
 ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer);
 
 

@@ -42,6 +42,9 @@
  * ---------
  */
 
+/* Minimum alignment in bytes for using SCIMemCopy */
+#define MAD_SISCI_SCIMEMCOPY_ALIGNMENT 4
+
 /* Optimized SHMem */
      /*#define MAD_SISCI_OPT_MAX  112*/
 #define MAD_SISCI_OPT_MAX  192
@@ -360,7 +363,8 @@ cpy4(void *src,
     "    andl %%eax, %%ecx \n\t"
     "    cld \n\t"
     "    rep movsb \n\t"
-    : : "m" (src), "m" (dest), "m" (nbytes), "m" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
+    : : "m" (src), "m" (dest), "m" (nbytes), "p" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
+  //: : "m" (src), "m" (dest), "m" (nbytes), "m" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
 }
 
 static void
@@ -570,21 +574,21 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
 #else
    sci_query_adapter_t      query_adapter;
 #endif
-   
+
    LOG_IN();
 
 #ifndef OLD_SISCI
    SCIInitialize( 0 , &sisci_error);
    mad_sisci_control();
 #endif
-   
+
    SCIOpen(&descriptor, 0, &sisci_error);
    mad_sisci_control();
-   
+
    query_adapter.subcommand     = SCI_Q_ADAPTER_NODEID;
    query_adapter.localAdapterNo = adapter_id;
    query_adapter.data           = &node_id;
-   
+
   SCIQuery(SCI_Q_ADAPTER, &query_adapter, 0, &sisci_error);
   mad_sisci_control();
 
@@ -1306,7 +1310,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   p_tbx_darray_t                 in_darray        = NULL;
   int                            next             =    0;
   int                            max              =    0;
-  
+
   LOG_IN();
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
@@ -1334,8 +1338,8 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   while (tbx_true)
     {
       int i = 0;
-      
-      
+
+
       i = max;
 
 
@@ -1424,33 +1428,40 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 
 	  mad_sisci_wait_for(link, write);
 
-	  SCIMemCopy(source,
-		     remote_segment->map,
-		     sizeof(mad_sisci_connection_status_t),
-		     size - mod_4,
-		     0,
-		     &sisci_error);
-	  mad_sisci_control();
+          if (((unsigned int) source) & (MAD_SISCI_SCIMEMCOPY_ALIGNMENT-1))
+            {
+              memcpy(remote_segment->map, source, size);
+              source += size;
+            }
+          else
+            {
+              SCIMemCopy(source,
+                         remote_segment->map,
+                         sizeof(mad_sisci_connection_status_t),
+                         size - mod_4,
+                         0,
+                         &sisci_error);
+              mad_sisci_control();
 
-	  if (mod_4)
-	    {
-	      volatile char    *destination =
-		remote_data->buffer + (size - mod_4);
-	      source += size - mod_4;
-	      size += 4 - mod_4;
+              if (mod_4)
+                {
+                  volatile char    *destination =
+                    remote_data->buffer + (size - mod_4);
+                  source += size - mod_4;
+                  size += 4 - mod_4;
 
-	      *(unsigned int *)destination = 0;
+                  *(unsigned int *)destination = 0;
 
-	      while (mod_4--)
-		{
-		  *destination++ = *source++;
-		}
-	    }
-	  else
-	    {
-	      source += size;
-	    }
-
+                  while (mod_4--)
+                    {
+                      *destination++ = *source++;
+                    }
+                }
+              else
+                {
+                  source += size;
+                }
+            }
 
 /* 	  if (size & 60) */
 /* 	    { */
@@ -1624,7 +1635,7 @@ mad_sisci_send_sci_buffer_group_2(p_mad_link_t         link,
       {
 	p_mad_buffer_t  buffer = tbx_get_list_reference_object(&ref);
 	gl += buffer->bytes_written - buffer->bytes_read;
-	
+
 	if (gl > (ds << C0))
 	  goto transmission;
       }
@@ -1635,7 +1646,7 @@ mad_sisci_send_sci_buffer_group_2(p_mad_link_t         link,
       ds = MAD_SISCI_MIN_SEG_SIZE;
   }
 
-  
+
 transmission:
   tbx_list_reference_init(&ref, &buffer_group->buffer_list);
 
@@ -1665,14 +1676,24 @@ transmission:
 	      need_wait = 0;
 	    }
 
-	  SCIMemCopy(source, rs->map, sizeof(mad_sisci_connection_status_t) + offset,
-		     aligned_size, 0, &sisci_error);
-	  mad_sisci_control();
+          if (((unsigned int) source) & (MAD_SISCI_SCIMEMCOPY_ALIGNMENT-1))
+            {
+              memcpy(rs->map, source, size);
+              source += size;
+              offset += size;
+            }
+          else
+            {
+              SCIMemCopy(source, rs->map, sizeof(mad_sisci_connection_status_t) + offset,
+                         aligned_size, 0, &sisci_error);
+              mad_sisci_control();
 
-	  offset += aligned_size;
-	  source += aligned_size;
+              offset += aligned_size;
+              source += aligned_size;
 
-	  while (mod_4--)        *(destination+(offset++)) = *source++;
+              while (mod_4--)        *(destination+(offset++)) = *source++;
+            }
+
 	  while (offset & 0x03)  *(destination+(offset++)) = 0;
 
 	  if (tbx_aligned(offset, C1) >= ds)
@@ -1745,7 +1766,7 @@ mad_sisci_receive_sci_buffer_group_2(p_mad_link_t         link,
       {
 	p_mad_buffer_t  buffer = tbx_get_list_reference_object(&ref);
 	gl += buffer->length - buffer->bytes_written;
-	
+
 	if (gl > (ss << C0))
 	  goto transmission;
       }
@@ -1875,21 +1896,30 @@ mad_sisci_send_sci_buffer_group_1(p_mad_link_t         link,
 
 	  buffer->bytes_read += size;
 
-	  SCIMemCopy(source,
-		     remote_segment->map,
-		     sizeof(mad_sisci_connection_status_t) + offset,
-		     aligned_size,
-		     0,
-		     &sisci_error);
-	  mad_sisci_control();
+          if (((unsigned int) source) & (MAD_SISCI_SCIMEMCOPY_ALIGNMENT-1))
+            {
+              memcpy(remote_segment->map, source, size);
+              source += size;
+              offset += size;
+            }
+          else
+            {
+              SCIMemCopy(source,
+                         remote_segment->map,
+                         sizeof(mad_sisci_connection_status_t) + offset,
+                         aligned_size,
+                         0,
+                         &sisci_error);
+              mad_sisci_control();
 
-	  offset += aligned_size;
-	  source += aligned_size;
+              offset += aligned_size;
+              source += aligned_size;
 
-	  while (mod_4--)
-	    {
-	      *(destination+(offset++)) = *source++;
-	    }
+              while (mod_4--)
+                {
+                  *(destination+(offset++)) = *source++;
+                }
+            }
 
 	  while (offset & 0x03)
 	    {
@@ -2111,7 +2141,7 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
     "    prefetchnta  96(%0) \n\t"
     "    prefetchnta 128(%0) \n\t"
     "    prefetchnta 160(%0) \n\t"
-    : : "r" (source) 
+    : : "r" (source)
   );
 
   __asm__(
@@ -2120,7 +2150,7 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
     "    prefetcht1  96(%0) \n\t"
     "    prefetcht1 128(%0) \n\t"
     "    prefetcht1 160(%0) \n\t"
-    : : "r" (source) 
+    : : "r" (source)
   );
 #endif
 

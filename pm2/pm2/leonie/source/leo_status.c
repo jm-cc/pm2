@@ -36,13 +36,125 @@
  * Usage
  * -----
  */
-static const char *usage_str = "leonie <app_conf_file>";
+static const char *usage_str = "leonie [OPTION]... CONFIG_FILE [APP_OPTION]...";
 
 void
 leo_usage(void)
 {
-  fprintf(stderr, "Usage: %s\n", usage_str);
+  DISP("Usage: %s", usage_str);
   exit(EXIT_FAILURE);
+}
+
+static
+void
+__leo_option_help(char *s_opt, char *l_opt, char *txt)
+{
+  if (strlen(l_opt) > 20)
+    {
+      char *comma = NULL;
+      char buf_txt[41];
+      char buf_opt[61];
+      
+      strncpy(buf_opt, l_opt, 60);
+      buf_opt[60] = '\0';
+
+      if (*s_opt && *l_opt)
+	{
+	  comma = ",";
+	}
+      else
+	{
+	  comma = " ";
+	}
+      
+      DISP("%4s%s %s", s_opt, comma, buf_opt);
+      
+      if (strlen(l_opt) > 60)
+	{
+	  l_opt += 60;
+	  
+	  while (strlen(l_opt) > 60)
+	    {
+	      strncpy(buf_opt, l_opt, 60);
+	      buf_opt[60] = '\0';
+	      DISP("      %s", buf_opt);
+	      l_opt += 60;
+	    }
+
+	  DISP("      %s", buf_opt);	  
+	}
+
+      while (strlen(txt) > 40)
+	{
+	  strncpy(buf_txt, txt, 40);
+	  buf_txt[40] = '\0';
+	  DISP("                            %s", buf_txt);
+	  txt += 40;
+	}
+
+      DISP("                            %s", txt);
+    }
+  else
+    {
+      char *comma = NULL;
+      char buf_txt[41];
+      
+      strncpy(buf_txt, txt, 40);
+      buf_txt[40] = '\0';
+      if (*s_opt && *l_opt)
+	{
+	  comma = ",";
+	}
+      else
+	{
+	  comma = " ";
+	}
+      
+      DISP("%4s%s %-20s  %s", s_opt, comma, l_opt, buf_txt);
+
+      if (strlen(txt) > 40)
+	{
+	  txt += 40;
+	  
+	  while (strlen(txt) > 40)
+	    {
+	      strncpy(buf_txt, txt, 40);
+	      buf_txt[40] = '\0';
+	      DISP("                            %s", buf_txt);
+	      txt += 40;
+	    }
+
+	  DISP("                            %s", txt);
+	}
+    }
+}
+
+void
+leo_help(void)
+{
+  DISP("Usage: %s", usage_str);
+  DISP("Launch the PM2 session described in CONFIG_FILE");
+  DISP("");
+
+  __leo_option_help("", "--appli=APPLICATION",
+		    "Select APPLICATION as executable");
+
+  __leo_option_help("", "--flavor=FLAVOR",
+		    "Select FLAVOR as the application flavor");
+  
+  __leo_option_help("", "--net=NETWORK_FILE[,NETWORK_FILE]...",
+		    "Use NETWORK_FILE for network definitions");
+
+  __leo_option_help("-x", "", "Open an Xterm for each session process");
+  __leo_option_help("--x", "", "Do not open Xterms for session processes");
+  
+  __leo_option_help("-d", "", "Open session processes in gdb (implies  -x)");
+  __leo_option_help("--d", "", "Do not open session processes in gdb");
+  
+  __leo_option_help("", "-smp", "Preload required libraries for Marcel   SMP support");
+  __leo_option_help("", "--smp", "Do not preload Marcel SMP support       libraries");
+  
+  exit(EXIT_SUCCESS);
 }
 
 void
@@ -61,7 +173,7 @@ leonie_failure_cleanup(void)
 void
 leo_terminate(const char *msg)
 {
-  fprintf(stderr, "error: %s\n", msg);
+  DISP("error: %s", msg);
   leonie_failure_cleanup();
   exit(EXIT_FAILURE);
 }

@@ -34,18 +34,18 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-PROGNAME=pm2which
+_PM2WHICH_PROGNAME=pm2which
 
-error() # msg
+pm2which_error() # msg
 {
     echo $* >&2
     exit 1
 }
 
-usage() # exit_code
+pm2which_usage() # exit_code
 {
     cat <<EOF
-Usage: $PROGNAME { option } command
+Usage: $_PM2WHICH_PROGNAME { option } command
 
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
@@ -55,11 +55,11 @@ EOF
     exit $1
 }
 
-pretty_print() # path path...
+pm2which_prettyprint() # path path...
 {
-    for p 
+    for p
     do
-	if [ $SHOW_PREFIX = yes ]; then
+	if [ $_PM2WHICH_SHOW_PREFIX = yes ]; then
 	    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|'
 	else
 	    echo $p
@@ -67,75 +67,157 @@ pretty_print() # path path...
     done
 }
 
-ambiguity() # prog ex_dir find_result
+pm2which_handle_colon() # dir:name
 {
-    pretty_print $*
-    exit 1
+    _old_ifs="$IFS"
+    IFS=":"
+    set $*
+    IFS=$_old_ifs
+
+    _dir=$1
+    _name=$2
+    [ -x ${_PM2WHICH_EXDIR}/${_dir}/bin/${_name} ] || pm2which_error "Error: \"${_PM2WHICH_EXDIR}/${_dir}/bin/${_name}\" exec file not found."
+    _PM2WHICH_RESULT="${_PM2WHICH_EXDIR}/${_dir}/bin/${_name} "
 }
+
+pm2which_find_exec() # file
+{
+    _file=$1
+    _fifo=$_PM2WHICH_EXDIR
+    _PM2WHICH_RESULT=""
+
+    while [ -n "$_fifo" ] ; do
+	set $_fifo
+	_rep=$1
+	shift
+	_fifo=$*
+
+	for _f in $_rep/* ; do
+	    if [ -d $_f ] ; then
+		_fifo="$_fifo $_f"
+	    elif [ $_rep/$_file = $_f -a -x $_f ] ; then
+		_PM2WHICH_RESULT=${_PM2WHICH_RESULT:+$_PM2WHICH_RESULT }$_f
+	    #else : ni un sous-répertoire, ni le fichier que l'on cherche
+	    fi
+	done
+    done
+
+    export _PM2WHICH_NB_FOUND
+    if [ -n "$_PM2WHICH_RESULT" ] ; then
+	set $_PM2WHICH_RESULT
+	_PM2WHICH_NB_FOUND=$#
+    else
+	_PM2WHICH_NB_FOUND=0
+    fi
+}
+
+pm2which_do_search() # file
+{
+    pm2which_find_exec $1
+
+    [ $_PM2WHICH_NB_FOUND -eq 0 ] && pm2which_error "Error: no \"$1\" exec file found under \"${_PM2WHICH_EXDIR}\""
+}
+
+pm2which_calc()
+{
+    export _PM2WHICH_EXDIR
+    if [ -n "$PM2_CONFIG_SOURCEABLE" ] ; then
+	_PM2WHICH_EXDIR=$_PM2CONFIG_BUILD/examples
+    else
+	_PM2WHICH_EXDIR=`pm2-config --flavor="${PM2_FLAVOR}" --builddir 2> /dev/null`/examples
+
+	[ $? -eq 0 ] || pm2which_error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
+    fi
+
+    export _PM2WHICH_RESULT
+    # On regarde si le nom de la commande est relatif/absolu
+    case "$1" in
+	/*)
+	    [ -x $1 ] || pm2which_error "Error: \"$1\" exec file not found."
+	    _PM2WHICH_RESULT=$1
+	    ;;
+	*:*)
+	    pm2which_handle_colon $1
+	    ;;
+	*)
+	    if [ -f "$1" -a -x "$1" ]; then
+		_PM2WHICH_RESULT="$PWD/$1"
+	    else
+		pm2which_do_search $1
+	    fi
+	    ;;
+    esac
+}
+
+pm2which_parse_cmdline() # args
+{
+    while [ $# -gt 0 ]; do
+	case $1 in
+	    -f)
+		shift
+		_PM2WHICH_FLAVOR="$1"
+		shift
+		;;
+	    -p)
+		shift
+		_PM2WHICH_SHOW_PREFIX=yes
+		;;
+	    -h)
+		pm2which_usage 0
+		;;
+	    --)
+		shift
+		break
+		;;
+	    *)
+		break
+		;;
+	esac
+    done
+
+    [ $# -eq 1 ] || pm2which_usage 1
+
+    pm2which_calc $*
+}
+
+# Programme principal
 
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
-SHOW_PREFIX=no
+_PM2WHICH_SHOW_PREFIX=no
+export _PM2WHICH_SHOW_PREFIX
 
-while [ $# -gt 0 ]; do
-    case $1 in
-	-f)
-	    shift
-	    PM2_FLAVOR="$1"
-	    shift
-	    ;;
-	-p)
-	    shift
-	    SHOW_PREFIX=yes
-	    ;;
-	-h)
-	    usage 0
-	    ;;
-	--)
-	    shift
-	    break
-	    ;;
-	*)
-	    break
-	    ;;
-    esac
-done
+_PM2WHICH_ARGS="$*"
 
-[ $# -eq 1 ] || usage 1
+if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
+    PM2_CONFIG_SOURCEABLE="${PM2_ROOT}/bin/pm2-fast-config --source-mode"
+    export PM2_CONFIG_SOURCEABLE
 
-ex_dir=`pm2-config --flavor="${PM2_FLAVOR}" --builddir 2> /dev/null`/examples
+    . $PM2_CONFIG_SOURCEABLE
 
-[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
+    _PM2WHICH_LOADER=$_PM2CONFIG_LOADER
+    export _PM2WHICH_LOADER
+else
+    _PM2WHICH_LOADER=`pm2-config --flavor="${PM2_FLAVOR}" --loader 2> /dev/null`
+    export _PM2WHICH_LOADER
+fi
 
-# On regarde si le nom de la commande est relatif/absolu
-case "$1" in
-    /*)
-	[ -x $1 ] || error "Error: \"$1\" exec file not found."
-	cmd_prefix=$1
-	shift
-	;;
-    *:*)
-	f_dir=`echo $1 | cut -d: -f1`
-	f_name=`echo $1 | cut -d: -f2`
-	[ -x ${ex_dir}/${f_dir}/bin/${f_name} ] || error "Error: \"${ex_dir}/${f_dir}/bin/${f_name}\" exec file not found."
-	cmd_prefix="${ex_dir}/${f_dir}/bin/${f_name} "
-	shift
-	;;
-    *)
-	if [ -f "$1" -a -x "$1" ]; then
-	    cmd_prefix="`pwd`/$1"
-        else
-	    files=`find ${ex_dir} -name "$1" -type f -print`
-	    [ -n "$files" ] || error "Error: no \"$1\" exec file found under \"${ex_dir}\""
-	    nb_found=`echo $files | wc -w`
-	    [ $nb_found -eq 1 ] || ambiguity "$files"
-	    cmd_prefix="`dirname $files`/$1"
-        fi
-	shift
-	;;
-esac
+set -- $_PM2WHICH_ARGS
 
-pretty_print ${cmd_prefix}
-
+export _PM2WHICH_SOURCE_MODE
+if [ "$1" = --source-mode ] ; then
+    _PM2WHICH_SOURCE_MODE=yes
+    shift
+    pm2which_parse_cmdline $*
+else
+    _PM2WHICH_SOURCE_MODE=no
+    pm2which_parse_cmdline $*
+    pm2which_prettyprint $_PM2WHICH_RESULT
+    if [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then
+	exit 0
+    else
+	exit 1
+    fi
+fi
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.h,v $
+Revision 1.5  2000/02/08 17:47:46  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.4  2000/01/13 14:44:43  oaumage
 - adaptation pour la prise en compte de la toolbox
 
@@ -167,7 +170,7 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
 
 void
 mad_sbp_send_adapter_parameter(p_mad_adapter_t  spawn_adapter,
-			       mad_host_id_t    remote_host_id,
+			       ntbx_host_id_t   remote_host_id,
 			       char            *parameter);
 
 void

@@ -34,6 +34,14 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.7  2000/01/05 09:42:58  oaumage
+- mad_communication.c: support du nouveau `group_mode' (a surveiller !)
+- madeleine.c: external_spawn_init n'est plus indispensable
+- mad_list_management: rien de particulier, mais l'ajout d'une fonction
+  d'acces a la longueur de la liste est a l'etude, pour permettre aux drivers
+  de faire une optimisation simple au niveau des groupes de buffers de
+  taille 1
+
 Revision 1.6  2000/01/04 16:49:10  oaumage
 - madeleine: corrections au niveau du support `external spawn'
 - support des fonctions non definies dans les drivers
@@ -780,7 +788,8 @@ mad_init(int                   *argc,
   spawn_adapter = &(madeleine->adapter[0]);
   if (spawn_interface->adapter_init)
     spawn_interface->adapter_init(spawn_adapter);
-  spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
+  if (spawn_interface->external_spawn_init)
+    spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
 #endif /* EXTERNAL_SPAWN */
   
   mad_parse_command_line(argc,

@@ -23,9 +23,9 @@ examples: all
 
 .PHONY: flavor
 flavor:
-	$(COMMON_HIDE) echo "Generating libraries..."
+	$(COMMON_HIDE) echo ">>> Generating libraries..."
 	$(COMMON_MAIN) $(MAKE) -C $(PM2_ROOT)
-	$(COMMON_HIDE) echo "Generating libraries: done"
+	$(COMMON_HIDE) echo "<<< Generating libraries: done"
 
 $(MOD_GEN_BIN)/%$(MOD_EXT): $(MOD_STAMP_FILES)
 	$(COMMON_LINK)

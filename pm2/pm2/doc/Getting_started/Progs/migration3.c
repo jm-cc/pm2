@@ -10,7 +10,7 @@ f (void *arg)
   int i, proc;
   pm2_completion_t my_c;
 
-  pm2_unpack_completion (SEND_CHEAPER, RECV_CHEAPER, &my_c);
+  pm2_unpack_completion (SEND_CHEAPER, RECV_CHEAPER, &my_c);	/* Here! */
   pm2_rawrpc_waitdata ();
 
   pm2_enable_migration ();
@@ -48,12 +48,12 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       pm2_completion_t c;
       pm2_completion_init (&c, NULL, NULL);
 
       pm2_rawrpc_begin (1, service_id, NULL);
-      pm2_pack_completion (SEND_CHEAPER, RECV_CHEAPER, &c);
+      pm2_pack_completion (SEND_CHEAPER, RECV_CHEAPER, &c);	/* Here! */
       pm2_rawrpc_end ();
 
       pm2_completion_wait (&c);

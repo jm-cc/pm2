@@ -27,6 +27,9 @@
 #include "marcel.h" /* tfprintf */
 #include "dsm_pm2.h"
 #include "hierarch_topology.h"
+#include "token_lock.h"
+#include "hierarch_protocol.h"
+
 
   //
   // dsm_pagefault - signal handling routine for page fault access (BUS/SEGV)
@@ -109,6 +112,10 @@ void dsm_pm2_exit()
 {
   LOG_IN();
 
+  /* the following function should be registered by
+   * dsm_create_protocol() and dsm_pm2_exit() should call all the
+   * registered protocol finalization functions */
+  hierarch_proto_finalization();
   topology_finalization();
   token_lock_finalization();
   dsm_uninstall_pagefault_handler();

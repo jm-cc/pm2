@@ -169,4 +169,38 @@ p_leoparse_range_t
 leoparse_try_read_range(p_tbx_htable_t  htable,
 			const char     *key);
 
-#endif /*LEOPARSE_INTERFACE_H */
+void
+leoparse_convert_to_slist(p_tbx_htable_t  htable,
+			  const char     *key);
+
+void
+leoparse_write_slist(p_tbx_htable_t  htable,
+		     const char     *key,
+		     p_tbx_slist_t   slist);
+
+void
+leoparse_write_id(p_tbx_htable_t  htable,
+		  const char     *key,
+		  char           *id);
+
+void
+leoparse_write_string(p_tbx_htable_t  htable,
+		      const char     *key,
+		      char           *string);
+
+void
+leoparse_write_htable(p_tbx_htable_t  htable,
+		      const char     *key,
+		      p_tbx_htable_t  table);
+
+void
+leoparse_write_val(p_tbx_htable_t  htable,
+		   const char     *key,
+		   int             val);
+
+void
+leoparse_write_range(p_tbx_htable_t      htable,
+		     const char         *key,
+		     p_leoparse_range_t  range);
+
+#endif /* LEOPARSE_INTERFACE_H */

@@ -1031,8 +1031,6 @@ static __inline__ void marcel_switch_to(marcel_t cur, marcel_t next)
   if (cur != next) {
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
       MA_THR_RESTARTED(cur, "Preemption");
-
-      LOG_OUT();
       return;
     }
     mdebug("switchto(%p, %p) on LWP(%d)\n",
@@ -1861,12 +1859,19 @@ void marcel_sched_init(void)
 
   /* Pris dans  init_sched() */
   sched_unlock(&__main_lwp);
+
+  LOG_OUT();
 }
 
 void marcel_sched_start(unsigned nb_lwp)
 {
 #ifdef MA__LWPS
   int i;
+#endif
+
+  LOG_IN();
+
+#ifdef MA__LWPS
 
 #ifdef MA__SMP
     marcel_bind_on_processor(&__main_lwp);

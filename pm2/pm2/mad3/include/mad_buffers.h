@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -22,6 +21,10 @@
 #ifndef MAD_BUFFERS_H
 #define MAD_BUFFERS_H
 
+/* Default buffer alignment */
+#define MAD_ALIGNMENT 64
+#define MAD_ALIGNED   TBX_ALIGN(MAD_ALIGNMENT)
+
 /* mad_buffer_type: indicates the category of the buffer */
 typedef enum
 {
@@ -31,24 +34,15 @@ typedef enum
   mad_internal_buffer /* buffer to be used by the internal routines only */
 } mad_buffer_type_t, *p_mad_buffer_type_t;
 
-#ifdef MAD_FORWARDING
-typedef struct s_mad_buffer_info
-{
-  mad_send_mode_t    send_mode;
-  mad_receive_mode_t recv_mode;
-  
-} mad_buffer_info_t;
-#endif //MAD_FORWARDING
-
 /* mad_buffer: generic buffer object */
 typedef struct s_mad_buffer
 {
-  void                     *buffer;
-  size_t                    length;
-  size_t                    bytes_written;
-  size_t                    bytes_read;
-  mad_buffer_type_t         type;
-  p_mad_driver_specific_t   specific; /* may be used by connection
+  void                    *buffer;
+  size_t                   length;
+  size_t                   bytes_written;
+  size_t                   bytes_read;
+  mad_buffer_type_t        type;
+  p_mad_driver_specific_t  specific; /* may be used by connection
 				         layer to store data
 				         related to static buffers */
 } mad_buffer_t;
@@ -63,9 +57,9 @@ typedef struct s_mad_buffer_pair
 
 typedef struct s_mad_buffer_group
 {
-  tbx_list_t      buffer_list;
-  p_mad_link_t    link; /* associated link */
-  size_t          length;
+  tbx_list_t   buffer_list;
+  p_mad_link_t link; /* associated link */
+  size_t       length;
 } mad_buffer_group_t;
 
 #endif /* MAD_BUFFERS_H */

@@ -278,7 +278,10 @@ mad_mux_stop_reception(p_mad_channel_t      xchannel,
 
 p_mad_channel_t
 mad_mux_get_sub_channel(p_mad_channel_t xchannel,
-			unsigned int    mux);
+			unsigned int    sub);
+
+void
+mad_mux_add_named_sub_channels(p_mad_channel_t xchannel);
 
 #endif // MARCEL
 

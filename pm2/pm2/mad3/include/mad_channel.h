@@ -27,8 +27,7 @@ typedef enum e_mad_channel_type
   mad_channel_type_regular,
   mad_channel_type_forwarding,
   mad_channel_type_virtual,
-  mad_channel_type_mux_main,
-  mad_channel_type_mux_sub,
+  mad_channel_type_mux,
 } mad_channel_type_t, *p_mad_channel_type_t;
 
 
@@ -60,6 +59,9 @@ typedef struct s_mad_channel
   unsigned int                mux;
   p_tbx_darray_t              mux_list_darray;
   p_tbx_darray_t              mux_channel_darray;
+  unsigned int                sub;
+  p_tbx_darray_t              sub_list_darray;
+  p_tbx_darray_t              sub_channel_darray;
   p_tbx_slist_t               channel_slist;
   p_tbx_slist_t               fchannel_slist;
 

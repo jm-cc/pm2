@@ -231,8 +231,9 @@ mad_dir_xchannel_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_dir_xchannel_t));
 
-  object->dir_channel_slist  = tbx_slist_nil();
-  object->pc                 = ntbx_pc_cons();
+  object->dir_channel_slist      = tbx_slist_nil();
+  object->pc                     = ntbx_pc_cons();
+  object->sub_channel_name_slist = tbx_slist_nil();
   LOG_OUT();
 
   return object;

@@ -93,20 +93,23 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
  LOG_OUT();
 }
 
+/*   GA 28/10/2002: Major change : dsm_pm2_init has been split into two */
+/*   init functions: dsm_pm2_init_before_startup_funcs() and */
+/*   dsm_pm2_init_after_startup_funcs()  */
 
-void dsm_pm2_init(int my_rank, int confsize)
-{  
-  LOG_IN();
+/*  void dsm_pm2_init(int my_rank, int confsize) */
+/*  {   */
+/*    LOG_IN(); */
 
-  dsm_init_protocol_table();
-  dsm_page_table_init(my_rank, confsize);
-  dsm_comm_init();
-  dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
-  token_lock_initialization();
-  topology_initialization();
+/*    dsm_init_protocol_table(); */
+/*    dsm_page_table_init(my_rank, confsize); */
+/*    dsm_comm_init(); */
+/*    dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler); */
+/*    token_lock_initialization(); */
+/*    topology_initialization(); */
 
-  LOG_OUT();
-}
+/*    LOG_OUT(); */
+/*  } */
 
 void dsm_pm2_exit()
 {
@@ -116,9 +119,32 @@ void dsm_pm2_exit()
    * dsm_create_protocol() and dsm_pm2_exit() should call all the
    * registered protocol finalization functions */
   hierarch_proto_finalization();
+
   topology_finalization();
   token_lock_finalization();
   dsm_uninstall_pagefault_handler();
+
+  LOG_OUT();
+}
+
+void dsm_pm2_init_before_startup_funcs(int my_rank, int confsize)
+{
+  LOG_IN();
+  
+  dsm_init_protocol_table();
+  
+  LOG_OUT();
+}
+
+void dsm_pm2_init_after_startup_funcs(int my_rank, int confsize)
+{
+  LOG_IN();
+  
+  dsm_page_table_init(my_rank, confsize);
+  dsm_comm_init();
+  dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
+  token_lock_initialization();
+  topology_initialization();
 
   LOG_OUT();
 }

@@ -38,13 +38,7 @@ default: all
 
 include ../../make/common.mak
 
-all: simple rpcping
-
-
-# rpc_defs :
-
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)
+all: simple ping thr_create
 
 
 # executables :
@@ -52,20 +46,30 @@ $(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
 
 # simple :
 
-$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS) rpc_defs.h
+$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
-simple: $(PM2_OBJ)/simple.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
+simple: $(PM2_OBJ)/simple.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
+
 
 # ping :
 
-$(PM2_OBJ)/rpcping.o: rpcping.c $(PM2_HEADERS) rpc_defs.h
+$(PM2_OBJ)/ping.o: ping.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
-rpcping: $(PM2_OBJ)/rpcping.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
+ping: $(PM2_OBJ)/ping.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
 
+
+# thr_create :
+
+$(PM2_OBJ)/thr_create.o: thr_create.c $(PM2_HEADERS)
+	$(PM2_CC2)
+
+thr_create: $(PM2_OBJ)/thr_create.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
+	$(PM2_MOVE)
 

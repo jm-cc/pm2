@@ -129,11 +129,6 @@ int marcel_attr_getdeviationstate(marcel_attr_t *attr, boolean *deviatable)
 int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy)
 {
   attr->sched_policy = policy;
-#if defined(MA__LWPS) && !defined(MA__ONE_QUEUE)
-  // Mode SMP multi-files
-  if(policy >= 0) // SCHED_FIXED
-    attr->vpmask = MARCEL_VPMASK_ALL_BUT_VP((unsigned)policy);
-#endif
   return 0;
 }
 

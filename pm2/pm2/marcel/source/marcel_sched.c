@@ -695,16 +695,16 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
   LOG_OUT();
 }
 
-static __inline__ void do_unchain_from_queue(marcel_t pid)
+static __inline__ void do_unchain_from_queue(marcel_t pid, __lwp_t *lwp)
 {
   volatile head_running_list_t *queue;
 
 #ifdef MARCEL_RT
   if(MA_TASK_REAL_TIME(pid))
-    queue = &SCHED_DATA(cur_lwp).rt_first;
+    queue = &SCHED_DATA(lwp).rt_first;
   else
 #endif
-    queue = &SCHED_DATA(cur_lwp).first;
+    queue = &SCHED_DATA(lwp).first;
 
   MTRACE("UNCHAIN", pid);
 
@@ -759,7 +759,7 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
     }
   }
 
-  do_unchain_from_queue(t);
+  do_unchain_from_queue(t, cur_lwp);
 
 #ifdef MARCEL_DEBUG
   display_sched_queue(cur_lwp);

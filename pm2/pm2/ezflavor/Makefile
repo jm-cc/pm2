@@ -1,11 +1,24 @@
 
-PROGRAM		:=	$(PM2_ROOT)/bin/ezflavor
+ifndef PM2_HOME
+PM2_HOME	:=	$(HOME)
+endif
+
+BIN_DIR		:=	$(PM2_HOME)/.pm2/bin
+
+PROGRAM		:=	$(BIN_DIR)/ezflavor_`pm2_arch`_`pm2_sys`
 
 OPTIONS		:=	-DUSE_TRACE -g
+
+SYS		:=	$(shell pm2_sys)
 
 CC		:=	gcc
 CFLAGS		:=	-O6 -Wall $(shell gtk-config --cflags) $(OPTIONS)
 LDFLAGS		:=	$(shell gtk-config --libs) -lfl
+
+ifneq (,$(findstring $(SYS),"WIN98_SYS_WINNT_SYS_WIN2K_SYS"))
+CFLAGS		+=	-fnative-struct
+LDFLAGS		+=	-e _mainCRTStartup
+endif
 
 SOURCES		:=	$(wildcard *.c)
 
@@ -28,6 +41,7 @@ endif
 $(OBJECTS): %.o: %.d Makefile
 
 $(PROGRAM): $(OBJECTS)
+	@mkdir -p $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJECTS): %.o: %.c

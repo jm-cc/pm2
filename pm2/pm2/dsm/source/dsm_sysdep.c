@@ -35,7 +35,7 @@
 
 /* Options: SIGSEGV_TRACE */
 
-// #define SIGSEGV_TRACE
+//#define SIGSEGV_TRACE
 
 #undef DSM_ALTSTACK
 
@@ -68,9 +68,9 @@
 
 #define DSM_HANDLER_OFFSET (DSM_PAGE_SIZE * 6-16)
 
-#undef DEBUG0
-#undef DEBUG1
-#undef DEBUG2
+//#define DEBUG0
+//#define DEBUG1
+//#define DEBUG2
 
 
 dsm_pagefault_handler_t pagefault_handler;
@@ -99,6 +99,8 @@ _dsm_sig_handler(int sig, char *addr, dsm_access_t access) {
 
     void *base0;
     void **base;
+
+    LOG_IN();
 
     TIMING_EVENT("In 2nd handler");
 
@@ -154,12 +156,17 @@ _dsm_sig_handler(int sig, char *addr, dsm_access_t access) {
    fprintf(stderr, "[%p] trying to return...\n",marcel_self());
 #endif
    TIMING_EVENT("In 2nd handler: returing");
+   
+   LOG_OUT();
+
    return (void*) base[3];
 #endif
 }
 
 
 static void pagefault_handler_helper(int sig, char *addr, dsm_access_t access) { 
+
+   LOG_IN();
 
 #ifndef DSM_SHARED_STACK
     _dsm_sig_handler(sig, addr, access);
@@ -168,6 +175,7 @@ static void pagefault_handler_helper(int sig, char *addr, dsm_access_t access) {
     void *sp_addr;
     void *base0;
     void *base;
+
 
     TIMING_EVENT("In handler helper");
 #ifdef DEBUG1
@@ -213,6 +221,8 @@ static void pagefault_handler_helper(int sig, char *addr, dsm_access_t access) {
 #endif
 
 #endif
+
+LOG_OUT();
 }
 
 #ifdef DSM_SHARED_STACK
@@ -234,6 +244,10 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #else
 #error DSM-PM2 is not yet implemented on that system! Sorry.
 #endif
+
+
+  LOG_IN();
+
 #ifdef SIGSEGV_TRACE
   fprintf(stderr, "entering handler, sig = %d addr = %p (I am %p)\n", sig, addr, marcel_self());
 #endif
@@ -255,6 +269,9 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #ifdef DSM_SHARED_STACK
 	_dsm_handler_oqp--;
 #endif
+
+      LOG_OUT();
+
       return;
     }
 
@@ -271,6 +288,9 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #ifdef DSM_SHARED_STACK
 	_dsm_handler_oqp--;
 #endif
+ 
+        LOG_OUT();
+
 	return;
       }
    { // regular seg fault
@@ -325,6 +345,8 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #ifdef DSM_SHARED_STACK
 	_dsm_handler_oqp--;
 #endif
+
+LOG_OUT();
 }
 
 
@@ -336,6 +358,8 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
 {
   struct sigaction act;
+
+  LOG_IN();
 
 #ifdef DSM_SHARED_STACK
   dsm_as_init();
@@ -367,6 +391,8 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
     }
 
   pagefault_handler = handler;
+
+  LOG_OUT();
 }
 
 
@@ -376,17 +402,24 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
  */
 void dsm_uninstall_pagefault_handler()
 {
+  LOG_IN();
+
   sigaction(SIGBUS, &bus_sigact, NULL);
   sigaction(SIGSEGV, &segv_sigact, NULL);
 #ifdef DSM_SHARED_STACK
   dsm_as_clean();
 #endif
 
+  LOG_OUT();
 }
 
 void dsm_setup_secondary_SIGSEGV_handler(dsm_std_handler_t handler_func)
 {
+  LOG_IN();
+
   dsm_secondary_SIGSEGV_handler = handler_func;
+
+  LOG_OUT();
 }
 
 void dsm_safe_ss(dsm_safe_ss_t h) {

@@ -158,25 +158,26 @@
 #define FUT_CALIBRATE0_CODE			0x220
 #define FUT_CALIBRATE1_CODE			0x221
 #define FUT_CALIBRATE2_CODE			0x222
+#define FUT_SWITCH_TO_CODE			0x230
+#define FUT_MAIN_ENTRY_CODE			0x240
+#define FUT_MAIN_EXIT_CODE			0x340
 
 /*	Codes for use with fut items */
-#define FUT_MAIN_ENTRY_CODE			0x1000
-#define FUT_MAIN_EXIT_CODE			0x1100
-#define FUT_TEST_ENTRY_CODE			0x1001
-#define FUT_TEST_EXIT_CODE			0x1101
-#define FUT_TEST2_ENTRY_CODE		0x1002
-#define FUT_TEST2_EXIT_CODE			0x1102
-
+#if !defined(PREPROC) && !defined(DEPEND) // for PM2
+#include "fut_defines.h"
+#endif
 
 extern volatile unsigned int fut_active;
 extern volatile unsigned int *fut_next_slot;
 extern volatile unsigned int *fut_last_slot;
 
-extern int fut_setup( unsigned int nints, unsigned int keymask );
+extern int fut_setup( unsigned int nints, unsigned int keymask,
+													unsigned int threadid );
 extern int fut_endup( char *filename );
 extern int fut_done(void );
-extern int fut_keychange( int how, unsigned int keymask );
-extern int fut_reset( unsigned int keymask );
+extern int fut_keychange( int how, unsigned int keymask,
+													unsigned int threadid );
+extern int fut_reset( unsigned int keymask, unsigned int threadid );
 extern int fut_getbuffer( int *nints, unsigned int **buffer );
 
 extern void fut_header( unsigned int head, ... );

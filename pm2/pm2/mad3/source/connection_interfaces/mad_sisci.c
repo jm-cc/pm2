@@ -703,8 +703,7 @@ mad_sisci_marcel_poll(marcel_pollid_t id,
   void                               *status = MARCEL_POLL_FAILED;
 
   LOG_IN();
-  FOREACH_POLL(id, my_arg)
-    {
+  FOREACH_POLL(id) { GET_ARG(id, my_arg);
       if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) my_arg))
 	{
 	  status = MARCEL_POLL_SUCCESS(id);

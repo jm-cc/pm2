@@ -84,7 +84,7 @@ static void mpi_io_group(marcel_pollid_t id)
 
   nb_mpi_req = 0;
 
-  FOREACH_POLL(id, myarg) {
+  FOREACH_POLL(id) { GET_ARG(id, myarg);
     myarg->pollinst = GET_CURRENT_POLLINST(id);
     mpi_req_array[nb_mpi_req] = myarg->req;
     mpi_arg_array[nb_mpi_req] = myarg;

@@ -120,8 +120,7 @@ static void mpi_io_group(marcel_pollid_t id)
   unsigned             count = 0;
   
   LOG_IN();
-  FOREACH_POLL(id, arg) 
-    {
+  FOREACH_POLL(id) { GET_ARG(id, arg);
       arg->pollinst = GET_CURRENT_POLLINST(id);
       mad_mpi_driver_specific->poll_req[count] = arg->request;
       mad_mpi_driver_specific->poll_arg[count] = arg;

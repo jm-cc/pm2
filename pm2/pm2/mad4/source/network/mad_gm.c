@@ -825,7 +825,7 @@ mad_gm_marcel_poll(marcel_pollid_t id,
         void                *status = MARCEL_POLL_FAILED;
 
         LOG_IN();
-        FOREACH_POLL(id, req) {
+        FOREACH_POLL(id) { GET_ARG(id, req);
                 if (mad_gm_do_poll((p_mad_gm_poll_req_t) req)) {
                         status = MARCEL_POLL_SUCCESS(id);
                         goto found;

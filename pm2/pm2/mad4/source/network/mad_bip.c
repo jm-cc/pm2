@@ -418,7 +418,7 @@ static void *recv_msg_poll_func(marcel_pollid_t id,
 
   LOG_IN();
 
-  FOREACH_POLL(id, parg) {
+  FOREACH_POLL(id) { GET_ARG(id, parg);
 
     p = parg->channel_specific;
     expected_type = parg->msg_type;
@@ -706,8 +706,7 @@ static void *send_poll_func(marcel_pollid_t id,
   p_send_poll_arg_t arg;
   int status;
 
-  FOREACH_POLL(id, arg)
-    {
+  FOREACH_POLL(id) { GET_ARG(id, arg);
 
     if (bip_trylock()) 
       {

@@ -327,7 +327,7 @@ mad_vrp_level2_marcel_poll(marcel_pollid_t id,
   void                 *status = MARCEL_POLL_FAILED;
 
   LOG_IN();
-  FOREACH_POLL(id, req) {
+  FOREACH_POLL(id) { GET_ARG(id, req);
     if (mad_vrp_level2_do_poll((p_mad_vrp_poll_req_t) req)) {
       status = MARCEL_POLL_SUCCESS(id);
       goto found;
@@ -428,7 +428,7 @@ mad_vrp_level1_marcel_poll(marcel_pollid_t id,
   void                 *status = MARCEL_POLL_FAILED;
 
   LOG_IN();
-  FOREACH_POLL(id, req) {
+  FOREACH_POLL(id) { GET_ARG(id, req);
     if (mad_vrp_level1_do_poll((p_mad_vrp_select_req_t) req)) {
       status = MARCEL_POLL_SUCCESS(id);
       goto found;

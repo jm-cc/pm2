@@ -882,7 +882,7 @@ mad_udp_marcel_group(marcel_pollid_t id)
     ch_sp = arg->channel->specific;
     FD_ZERO(&(ch_sp->rfds));
     FD_ZERO(&(ch_sp->wfds));
-    FOREACH_POLL(id, arg) {
+    FOREACH_POLL(id) { GET_ARG(id, arg);
       for (st = REQUEST; st < NB_SOCKET; st++) {
 	if (arg->poll_on_socket[st]) {
 	  int desc = (ch_sp->socket[st]).desc;
@@ -958,7 +958,7 @@ mad_udp_marcel_poll(marcel_pollid_t id,
       mad_udp_port_t    rm_port = 0;
       unsigned long     now     = marcel_clock();
 
-      FOREACH_POLL(id, arg) {
+      FOREACH_POLL(id) { GET_ARG(id, arg);
 	p_mad_udp_connection_specific_t con_sp;
 	p_mad_udp_socket_t              p_socket;
 
@@ -1084,7 +1084,7 @@ mad_udp_marcel_poll(marcel_pollid_t id,
 	   or RRM which has been read on SND_DATA.
 	   Give it to the first POLL_READ mode pollinst (which exists, since
 	   recvfrom function was called) ... */
-	FOREACH_POLL(id, arg) {
+	FOREACH_POLL(id) { GET_ARG(id, arg);
 	  if (arg->mode == POLL_READ) {
 	    p_mad_udp_connection_specific_t con_sp = arg->connection->specific;
 	    arg->active_socket[SND_DATA] = tbx_true;

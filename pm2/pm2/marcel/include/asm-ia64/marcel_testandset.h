@@ -24,6 +24,7 @@ pm2_spinlock_testandset(volatile unsigned *spinlock) ;
 
 #section marcel_inline
 
+#ifndef __INTEL_COMPILER
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
         register long result;
@@ -35,6 +36,7 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
                 : "=r"(result) : "r"(1), "r"(spinlock) : "ar.ccv", "memory");
         return result;
 }
+#endif
 
 #section marcel_macros
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)

@@ -23,15 +23,26 @@
 
 /* Optimization barrier */
 /* The "volatile" is due to gcc bugs */
+#ifndef __INTEL_COMPILER
 #define tbx_barrier() __asm__ __volatile__("": : :"memory")
+#else
+void __memory_barrier(void);
+#define tbx_barrier() __memory_barrier();
+#endif
 
 /* This macro obfuscates arithmetic on a variable address so that gcc
    shouldn't recognize the original var, and make assumptions about it */
+#ifndef __INTEL_COMPILER
 #define TBX_RELOC_HIDE(ptr, off)					\
   ({ unsigned long __ptr;					\
     __asm__ ("" : "=g"(__ptr) : "0"(ptr));		\
     (typeof(ptr)) (__ptr + (off)); })
-
+#else
+#define TBX_RELOC_HIDE(ptr, off)                                   \
+  ({ unsigned long __ptr;                                       \
+     __ptr = (unsigned long) (ptr);                             \
+    (typeof(ptr)) (__ptr + (off)); })
+#endif
 /*
  * Attribute macros  ________________________________________________
  * _________________/////////////////////////////////////////////////

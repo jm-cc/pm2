@@ -152,6 +152,27 @@ do {								\
 	ma_ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);	\
 } while (0)
 
+#ifdef __INTEL_COMPILER
+
+#define _ma_raw_write_lock(l)								\
+({											\
+	__u64 ia64_val, ia64_set_val = ia64_dep_mi(-1, 0, 31, 1);			\
+	__u32 *ia64_write_lock_ptr = (__u32 *) (l);					\
+	do {										\
+		while (*ia64_write_lock_ptr)						\
+			ia64_barrier();							\
+		ia64_val = ia64_cmpxchg4_acq(ia64_write_lock_ptr, ia64_set_val, 0);	\
+	} while (ia64_val);								\
+})
+
+#define _ma_raw_write_trylock(rw)						\
+({									\
+	__u64 ia64_val;							\
+	__u64 ia64_set_val = ia64_dep_mi(-1, 0, 31,1);			\
+	ia64_val = ia64_cmpxchg4_acq((__u32 *)(rw), ia64_set_val, 0);	\
+	(ia64_val == 0);						\
+})
+#else
 #define _ma_raw_write_lock(rw)							\
 do {										\
  	__asm__ __volatile__ (							\
@@ -178,7 +199,7 @@ do {										\
 		: "=r"(result) : "r"(rw) : "ar.ccv", "r29", "memory");		\
 	(result == 0);								\
 })
-
+#endif
 
 #define _ma_raw_write_unlock(x)								\
 ({											\

@@ -28,6 +28,7 @@
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
 #define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
+#ifndef __INTEL_COMPILER
 static __inline__ long get_sp(void)
 {
   register long sp;
@@ -89,7 +90,21 @@ static __inline__ long get_bsp(void)
 		    ";; \n\t" \
                        : : "r" (0), "r"(0), "r" (val), "r" (bsp) : "memory", "sp" ); \
   } while (0)
+#else
+#define _MA_IA64_REG_SP		1036	/* R12 */
+__u64 __getReg(const int whichReg);
+static __inline__ long get_sp(void)
+{
+  register long sp;
 
-
+/*   __asm__ __volatile__( */
+/* 		  ";; \n\t" \ */
+/* 		  "mov %0 = sp ;; \n\t" */
+/* 		  ";; \n\t" \ */
+/* 		  : "=r" (sp)); */
+  sp = __getReg(_MA_IA64_REG_SP);
+  return sp;
+}
+#endif
 
 #endif

@@ -403,8 +403,11 @@ ma_ia64_fls (unsigned long x)
 {
 	long double d = x;
 	long exp;
-
+#ifdef __INTEL_COMPILER
+	exp = ia64_getf_exp(d);
+#else
 	__asm__ ("getf.exp %0=%1" : "=r"(exp) : "f"(d));
+#endif
 	//	exp = ma_ia64_getf_exp(d);
 	return exp - 0xffff;
 }
@@ -440,7 +443,11 @@ static __inline__ unsigned long
 ma_hweight64 (unsigned long x)
 {
 	unsigned long result;
+#ifdef __INTEL_COMPILER
+	result = ia64_popcnt(x);
+#else
 	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x));
+#endif
      //	result = ma_ia64_popcnt(x);
 	return result;
 }

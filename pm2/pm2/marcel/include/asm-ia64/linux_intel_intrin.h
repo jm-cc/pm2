@@ -25,7 +25,9 @@
  *
  */
 #ifdef __INTEL_COMPILER
-#error File not yet adapted
+#  ifdef MARCEL_KERNEL
+#    error File not yet adapted
+#  endif
 
 #section marcel_functions
 

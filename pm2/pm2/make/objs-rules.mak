@@ -181,7 +181,7 @@ dot_h: $(MOD_HSPLITS_MAKEFILES)
 
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 ifneq ($(wildcard $(MOD_HSPLITS_MAKEFILES)),)
-include $(MOD_HSPLITS_MAKEFILES)
+-include $(MOD_HSPLITS_MAKEFILES)
 endif # MOD_HSPLITS_MAKEFILES
 endif # $(MAKECMDGOALS)
 

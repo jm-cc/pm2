@@ -61,7 +61,7 @@ do_the_test()
 
     # Compilation
     echo "Compiling program $prog..."
-    (cd $appdir; make $prog FLAVOR=$flavor)
+    (cd $appdir; ${PM2_MAKE:-make} $prog FLAVOR=$flavor)
     [ $? -eq 0 ] || pm2test_error "Compilation failed"
 
     # Execution
@@ -129,7 +129,7 @@ if [ $# -eq 0 -o "$1" = all ] ; then
     _to_test="$_ALL_MODULES"
 else
     _to_test=""
-    for m in "$@"; do
+    for m in ${@:+"$@"}; do
 	case " $_ALL_MODULES " in
 	    *\ $m\ *)
 		_to_test="${_to_test:+$_to_test }$m"

@@ -29,7 +29,7 @@ _pm2load_error() # msg
 export PM2_CMD_PREFIX
 PM2_CMD_PREFIX="pm2-pre-script.sh"
 
-#echo "[ pm2-pre-script.sh $@ ]"
+#echo "[ pm2-pre-script.sh " ${@:+"$@"} " ]"
 
 debug_file=""
 
@@ -110,7 +110,7 @@ shift
 
 if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 
-    prog_args="$@"
+    prog_args=${@:+"$@"}
 
     # Récupération de (des) chemin(s) d'accès au fichier exécutable
     set --  --source-mode $PM2_CMD_NAME
@@ -175,7 +175,7 @@ fi
 # Debug ?
 if [ -n "$debug_file" ]; then
 
-    echo "set args $@" >> $debug_file
+    echo "set args " ${@:+"$@"} >> $debug_file
 
     title="$prog.$HOST"
     log "Executing: xterm -title $title -e gdb -x $debug_file $prog"
@@ -186,6 +186,6 @@ if [ -n "$debug_file" ]; then
 else # debug
 
     log "Executing: exec $prog $*"
-    exec $prog "$@"
+    exec $prog ${@:+"$@"}
 
 fi

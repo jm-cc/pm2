@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.h,v 1.5 2002/10/27 14:09:15 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.h,v 1.6 2002/11/02 17:14:49 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -37,10 +37,7 @@ extern void
 hierarch_proto_write_fault_handler (const dsm_page_index_t);
 
 extern void
-hierarch_proto_read_server (const dsm_page_index_t, const dsm_node_t, const int);
-
-extern void
-hierarch_proto_write_server (const dsm_page_index_t, const dsm_node_t, const int);
+hierarch_page_provider (void);
 
 /* This is not the usual mechanism for the invalidate server; bypass
  * the DSM-PM2 RPC server; this function is an RPC server. */

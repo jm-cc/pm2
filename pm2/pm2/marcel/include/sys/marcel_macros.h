@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.9  2000/09/14 02:08:29  rnamyst
+Put profile.h into common/include and added few FUT_SWITCH_TO calls
+
 Revision 1.8  2000/07/04 14:01:11  gantoniu
 Added support for DSM located stacks.
 
@@ -72,6 +75,11 @@ Modified a lot of macros so that they can be used as "single" instructions.
 
 ______________________________________________________________________________
 */
+
+#ifndef MARCEL_MACROS_IS_DEF
+#define MARCEL_MACROS_IS_DEF
+
+#include "profile.h"
 
 #ifdef MA__ONE_QUEUE
 #define SCHED_DATA(lwp) (__sched_data)
@@ -209,11 +217,13 @@ ______________________________________________________________________________
   (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
    __next_thread = next,  \
    call_ST_FLUSH_WINDOWS(), \
+   PROF_SWITCH_TO(next), \
    longjmp(next->jbuf, ret))
 #else
 #define MA_THR_LONGJMP(next, ret) \
   (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
    call_ST_FLUSH_WINDOWS(), \
+   PROF_SWITCH_TO(next), \
    longjmp(next->jbuf, ret))
 #endif
 
@@ -277,3 +287,4 @@ ______________________________________________________________________________
 #define MA_TASK_NO_USE_SCHEDLOCK(task) \
    (((task)->special_flags) & MA_SF_NOSCHEDLOCK)
 
+#endif

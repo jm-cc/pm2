@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.44  2001/01/29 17:01:59  oaumage
+- progression de l'interaction avec Leonie
+
 Revision 1.43  2001/01/16 09:55:22  oaumage
 - integration du mecanisme de forwarding
 - modification de l'usage des flags
@@ -391,7 +394,8 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
     }
   else
     {
-      madeleine->adapter = TBX_MALLOC(adapter_set->size * sizeof(mad_adapter_t));
+      madeleine->adapter =
+	TBX_MALLOC(adapter_set->size * sizeof(mad_adapter_t));
       CTRL_ALLOC(madeleine->adapter);
 
       madeleine->nb_adapter = adapter_set->size;
@@ -506,6 +510,7 @@ mad_object_init(int                   argc,
   p_mad_madeleine_t     madeleine     = &(main_madeleine);
   p_mad_settings_t      settings      = NULL;
   p_mad_configuration_t configuration = NULL;
+  p_ntbx_client_t       client        = NULL;
 
   LOG_IN();
  
@@ -519,6 +524,9 @@ mad_object_init(int                   argc,
   tbx_list_init(&(madeleine->channel));
   madeleine->settings      = NULL;
   madeleine->configuration = NULL;
+#ifdef MAD_LEONIE_SPAWN
+  madeleine->master_link   = NULL;
+#endif /* MAD_LEONIE_SPAWN */
 
   settings = TBX_MALLOC(sizeof(mad_settings_t));
   CTRL_ALLOC(settings);
@@ -536,7 +544,8 @@ mad_object_init(int                   argc,
 
   if (configuration_file)
     {
-      settings->configuration_file = TBX_MALLOC(1 + strlen(configuration_file));
+      settings->configuration_file =
+	TBX_MALLOC(1 + strlen(configuration_file));
       CTRL_ALLOC(settings->configuration_file);
       strcpy(settings->configuration_file, configuration_file);
     }
@@ -575,10 +584,19 @@ mad_object_init(int                   argc,
   
   madeleine->configuration = configuration;
 
+#ifdef LEONIE_SPAWN
+  client = TBX_MALLOC(sizeof(ntbx_client_t));
+  CTRL_ALLOC(client);
+  client->state = ntbx_client_state_uninitialized;
+  ntbx_tcp_client_init(client);
+  madeleine->master_link = client;
+#endif /* LEONIE_SPAWN */
+
   /* Network components pre-initialization */
   mad_driver_fill(madeleine);
+#ifndef LEONIE_SPAWN
   mad_adapter_fill(madeleine, adapter_set);
-
+#endif /* LEONIE_SPAWN */
   LOG_OUT();
   
   return madeleine;
@@ -655,8 +673,10 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
       argc--; argv++;
     }
 
+#ifndef LEONIE_SPAWN
   if (configuration->local_host_id == -1)
     FAILURE("could not determine the node rank");
+#endif /* LEONIE_SPAWN */
 
   LOG_OUT();
 }
@@ -881,12 +901,30 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 	  
 	  _argv++; (*_argc)--;
 	}
+      else if (!strcmp(*_argv, "-leonie"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("leonie argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*_argv, "-link"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("link argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
       else if (!strcmp(*_argv, "-cwd"))
 	{
 	  _argv++; (*_argc)--; argc--;
 
 	  if (!argc)
-	    FAILURE("device argument disappeared");
+	    FAILURE("cwd argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}

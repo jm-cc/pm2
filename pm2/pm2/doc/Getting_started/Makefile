@@ -1,5 +1,5 @@
 
-## $Id: Makefile,v 1.4 2001/04/12 16:00:57 bouge Exp $
+## $Id: Makefile,v 1.5 2001/04/13 07:57:51 bouge Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -108,7 +108,7 @@ clean: open
 	-rm *.bbl *.aux *.log *.cb *.ps *.blg *~ *.dvi *.toc 
 	-rm $(OFILES) $(EXEFILES)
 	-rm $(CFILES_SPLIT_0) $(CFILES_SPLIT_1)
-	-rm $(AUXEPSFILES)
+##	-rm $(AUXEPSFILES)
 
 open:
 	-chmod -R a+rX . ./*
@@ -132,7 +132,8 @@ Figures/ezflavor.eps: Figures/ezflavor.xwd
 ## Using the Solaris convert utility looks best. See
 ## http://www.lbl.gov/ICSD/CIS/faq/xwd-color-PS.html for comments
 ## about this method
-	convert $< $@
+	-convert $< $@
+	touch $@
 
 Figures/ezflavor.xwd: 
 	@echo 'Capturing the current ezflavor window: wait for the rings!'

@@ -36,6 +36,10 @@
 
 ______________________________________________________________________________
 $Log: mad_list_management.c,v $
+Revision 1.4  2000/01/05 15:51:26  oaumage
+- mad_list_management.c: changement de `len' en `length'
+- mad_channel.c: correction au niveau de l'appel a mad_link_exit
+
 Revision 1.3  2000/01/05 09:42:58  oaumage
 - mad_communication.c: support du nouveau `group_mode' (a surveiller !)
 - madeleine.c: external_spawn_init n'est plus indispensable
@@ -79,7 +83,7 @@ void mad_list_manager_init()
 
 void mad_list_init(p_mad_list_t list)
 {
-  list->len = 0;
+  list->length = 0;
   list->read_only = mad_false;
   list->mark_next = mad_true; /* mark is always set
 				 on the first element */
@@ -96,7 +100,7 @@ void mad_list_manager_exit()
 
 void mad_destroy_list(p_mad_list_t list)
 {
-  if (list->len)
+  if (list->length)
     {
       p_mad_list_element_t list_element ;
       
@@ -112,14 +116,14 @@ void mad_destroy_list(p_mad_list_t list)
 
       mad_free(mad_list_manager_memory, list->last);
 
-      list->len = 0 ;
+      list->length = 0 ;
     }
 }
 
 void mad_foreach_destroy_list(p_mad_list_t                list,
 			      p_mad_list_foreach_func_t   func)
 {
-  if (list->len)
+  if (list->length)
     {
       p_mad_list_element_t list_element ;
       
@@ -137,7 +141,7 @@ void mad_foreach_destroy_list(p_mad_list_t                list,
       func(list_element->object);
       mad_free(mad_list_manager_memory, list->last);
 
-      list->len = 0 ;
+      list->length = 0 ;
     }
 }
 
@@ -160,7 +164,7 @@ void mad_append_list(p_mad_list_t   list,
   list_element->object = object;
   list_element->next = NULL ;
   
-  if (list->len)
+  if (list->length)
     {
       list_element->previous = list->last ;
       list_element->previous->next = list_element ;
@@ -174,19 +178,19 @@ void mad_append_list(p_mad_list_t   list,
     }
 
   list->last = list_element ;
-  list->len++;
+  list->length++;
 
   if (list->mark_next)
     {
       list->mark = list_element ;
-      list->mark_position = list->len - 1;
+      list->mark_position = list->length - 1;
       list->mark_next = mad_false ;
     }
 }
 
 void *mad_get_list_object(p_mad_list_t list)
 {
-  if (list->len)
+  if (list->length)
     {
       return list->last->object;
     }
@@ -212,7 +216,7 @@ void mad_mark_list(p_mad_list_t list)
 
 mad_bool_t mad_empty_list(p_mad_list_t list)
 {
-  if (list->len)
+  if (list->length)
     {
       return mad_false ;
     }
@@ -239,12 +243,12 @@ void mad_duplicate_list(p_mad_list_t   source,
 void mad_extract_sub_list(p_mad_list_t   source,
 			  p_mad_list_t   destination)
 {
-  if (source->len)
+  if (source->length)
     {
       destination->first = source->mark ;
       destination->last = source->last ;
 
-      destination->len = source->len - source->mark_position;
+      destination->length = source->length - source->mark_position;
 
       destination->mark = destination->first ;
       destination->mark_position = 0;
@@ -266,7 +270,7 @@ void mad_list_reference_init(p_mad_list_reference_t   ref,
 {
   ref->list = list;
 
-  if (list->len)
+  if (list->length)
     {
       ref->reference = ref->list->first;
       ref->after_end = mad_false;
@@ -282,14 +286,14 @@ void *mad_get_list_reference_object(p_mad_list_reference_t ref)
 {
   if (ref->reference == NULL)
     {
-      if (ref->list->len)
+      if (ref->list->length)
 	{
 	  ref->reference = ref->list->first;
 	  ref->after_end = mad_false;
 	}
     }
 
-  if (ref->list->len)
+  if (ref->list->length)
     {
       if (ref->reference)
 	{
@@ -337,14 +341,14 @@ mad_bool_t mad_forward_list_reference(p_mad_list_reference_t ref)
 {
   if (ref->reference == NULL)
     {
-      if (ref->list->len)
+      if (ref->list->length)
 	{
 	  ref->reference = ref->list->first;
 	  ref->after_end = mad_false;
 	}
     }
 
-  if (ref->list->len)
+  if (ref->list->length)
     {
       if (ref->after_end)
 	{
@@ -382,7 +386,7 @@ mad_bool_t mad_forward_list_reference(p_mad_list_reference_t ref)
 
 void mad_reset_list_reference(p_mad_list_reference_t ref)
 {
-  if (ref->list->len)
+  if (ref->list->length)
     {
       ref->reference = ref->list->first;
       ref->after_end = mad_false ;
@@ -400,7 +404,7 @@ mad_bool_t mad_reference_after_end_of_list(p_mad_list_reference_t ref)
   if (ref->reference == NULL)
     {
       LOG("mad_reference_after_end_of_list: list still empty ?");
-      if (ref->list->len)
+      if (ref->list->length)
 	{
 	  LOG("mad_reference_after_end_of_list: list still empty - yes");
 	  ref->reference = ref->list->first;
@@ -408,7 +412,7 @@ mad_bool_t mad_reference_after_end_of_list(p_mad_list_reference_t ref)
 	}
     }
 
-  if (ref->list->len)
+  if (ref->list->length)
     {
       if (ref->after_end)
 	{

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.15  2000/11/07 17:34:51  oaumage
+- modification des macros
+
 Revision 1.14  2000/09/05 13:58:54  oaumage
 - quelques corrections et reorganisations dans le support des types
   structures
@@ -188,10 +191,16 @@ ______________________________________________________________________________
 #define FAILURE(str) \
   pm2debug_flush(), fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
             (str), __FILE__, __LINE__),   abort()
+#define ERROR(str) \
+  pm2debug_flush(), fprintf(stderr, "FAILURE: %s: %s\nFILE: %s\nLINE: %d\n", \
+            (str), sys_errlist[errno], __FILE__, __LINE__),   abort()
 #else /* OOPS */
 #define FAILURE(str) \
   pm2debug_flush(), fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
             (str), __FILE__, __LINE__),   exit(1)
+#define ERROR(str) \
+  pm2debug_flush(), fprintf(stderr, "FAILURE: %s: %s\nFILE: %s\nLINE: %d\n", \
+            (str), sys_errlist[errno], __FILE__, __LINE__),   exit(1)
 #endif /* OOPS */
 
 /*

@@ -89,7 +89,7 @@ static DediMsgBuffer_t *get_sbpfullbuffer ()
  while (in_buffer == 0)
     {
 #ifdef PM2
-     marcel_givehandback_np () ;
+     marcel_yield_np () ;
 #endif
 
 #ifdef PM2
@@ -124,7 +124,7 @@ static DediMsgBuffer_t *get_sbpemptybuffer ()
  while (out_buffer == 0)
   {      
 #ifdef PM2
-   marcel_givehandback_np () ;
+   marcel_yield_np () ;
 #endif
 
 #ifdef PM2

@@ -49,24 +49,32 @@ do
 	# librairies 
 	for f in `ls ${MADELEINE_ROOT}/lib/$i`
 	do
+	    if [ ! -d ${MADELEINE_ROOT}/lib/$i/$f ] ; then
 		echo "	deleting ${MADELEINE_ROOT}/lib/$i/$f"
 		rm ${MADELEINE_ROOT}/lib/$i/$f
+	    fi
 	done
 	# objets "source"
 	for f in `ls ${MADELEINE_ROOT}/source/obj/$i`
 	do
+	    if [ ! -d ${MADELEINE_ROOT}/source/obj/$i/$f ] ; then
 		echo "	deleting ${MADELEINE_ROOT}/source/obj/$i/$f"
 		rm ${MADELEINE_ROOT}/source/obj/$i/$f
+	    fi
 	done
 	# exemples
 	for f in `ls ${MADELEINE_ROOT}/examples/obj/$i`
 	do
+	    if [ ! -d ${MADELEINE_ROOT}/examples/obj/$i/$f ] ; then
 		echo "	deleting ${MADELEINE_ROOT}/examples/obj/$i/$f"
 		rm ${MADELEINE_ROOT}/examples/obj/$i/$f
+	    fi
 	done
 	for f in `ls ${MADELEINE_ROOT}/examples/bin/$i`
 	do
+	    if [ ! -d ${MADELEINE_ROOT}/examples/bin/$i/$f ] ; then
 		echo "	deleting ${MADELEINE_ROOT}/examples/bin/$i/$f"
 		rm ${MADELEINE_ROOT}/examples/bin/$i/$f
+	    fi
 	done
 done

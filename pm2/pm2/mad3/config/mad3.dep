@@ -1,0 +1,4 @@
+Provide: madeleine
+Depend: mad3_proto tbx ntbx
+Provide: module
+Conflict: madeleine

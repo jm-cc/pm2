@@ -30,4 +30,4 @@ typedef uint32_t __ma_u32, ma_u32;
 typedef int64_t __ma_s64, ma_s64;
 typedef uint64_t __ma_u64, ma_u64;
 
-// Il mangque MA_BITS_PER_LONG;
+#define MA_BITS_PER_LONG ((sizeof(unsigned long))*8)

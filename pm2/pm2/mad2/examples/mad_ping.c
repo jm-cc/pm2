@@ -34,6 +34,15 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.13  2001/01/15 16:32:55  oaumage
+- taille du message de retour en one-way
+
+Revision 1.12  2001/01/15 16:11:15  oaumage
+- correction du calcul de la somme des timings
+
+Revision 1.11  2001/01/15 09:32:39  oaumage
+- support des mesures one-way
+
 Revision 1.10  2000/11/10 14:17:54  oaumage
 - nouvelle procedure d'initialisation
 
@@ -106,26 +115,21 @@ ______________________________________________________________________________
 
 /* parameters */
 #define PENTIUM_TIMING
-/*#define MGS_MODE_1 mad_send_SAFER*/
-#define MGS_MODE_1 mad_send_CHEAPER
-#define MGS_MODE_2 mad_send_CHEAPER
-#define MGR_MODE_1 mad_receive_CHEAPER
-#define MGR_MODE_2 mad_receive_CHEAPER
 
 /* parameter values */
-static int param_control_receive = 0;
-static int param_send_mode       = mad_send_CHEAPER;
-static int param_receive_mode    = mad_receive_CHEAPER;
-static int param_nb_echantillons = 100;
-static int param_min_size        = 1;
-static int param_max_size        = 2*1024*1024;
-static int param_step            = 0; /* 0 = progression log. */
-static int param_nb_tests        = 5;
-static int param_bandwidth       = 1;
-static int param_no_zero         = 1;
-static int param_simul_migr      = 0;
-static int param_fill_buffer     = 1;
-static int param_fill_buffer_value = 1;
+static const int param_control_receive   = 0;
+static const int param_send_mode         = mad_send_CHEAPER;
+static const int param_receive_mode      = mad_receive_CHEAPER;
+static const int param_nb_samples        = 1000;
+static const int param_min_size          = 1;
+static const int param_max_size          = 2*1024*1024;
+static const int param_step              = 0; /* 0 = progression log. */
+static const int param_nb_tests          = 5;
+static const int param_bandwidth         = 1;
+static const int param_no_zero           = 1;
+static const int param_fill_buffer       = 1;
+static const int param_fill_buffer_value = 1;
+static const int param_one_way           = 1;
 
 
 /* static variables */
@@ -142,19 +146,19 @@ static void master_ctrl(p_mad_madeleine_t madeleine);
 /* Functions */
 static void fill_buffer(int len)
 {
-  int i ;
-  unsigned int n ;
+  int i;
+  unsigned int n;
   
-  for (n = 0, i = 0 ;
-       i < len ;
+  for (n = 0, i = 0;
+       i < len;
        i++)
     {
-      unsigned char c ;
+      unsigned char c;
 
-      n += 7 ;
+      n += 7;
       c = (unsigned char)(n % 256);
 
-      buffer[i] = c ;
+      buffer[i] = c;
     }
 }
 
@@ -165,24 +169,24 @@ static void clear_buffer(int len)
 
 static void control_buffer(int len)
 {
-  int i ;
-  unsigned int n ;
-  int ok = 1 ;
+  int i;
+  unsigned int n;
+  int ok = 1;
   
-  for (n = 0, i = 0 ;
-       i < len ;
+  for (n = 0, i = 0;
+       i < len;
        i++)
     {
-      unsigned char c ;
+      unsigned char c;
 
-      n += 7 ;
+      n += 7;
       c = (unsigned char)(n % 256);
 
       if (buffer[i] != c)
 	{
-	  int v1, v2 ;
+	  int v1, v2;
 
-	  v1 = c ;
+	  v1 = c;
 	  v2 = buffer[i];
 	  fprintf(stderr, "Bad data at byte %d: expected %d, received %d\n",
 		  i, v1, v2);
@@ -202,102 +206,63 @@ static void control_buffer(int len)
 
 static void master(p_mad_madeleine_t madeleine)
 {
-  double            tst_somme ;
-  double            tst_moyenne ;
-  int               tst_taille_courante ;
-  int               tst_test_courant ;
-  tbx_tick_t        tst_t1 ;
-  tbx_tick_t        tst_t2 ;
-  p_mad_channel_t   channel;
+  p_mad_channel_t channel = NULL;
+  double          sum;
+  double          mean;
+  int             size;
+  int             test;
+  tbx_tick_t      t1;
+  tbx_tick_t      t2;
   
   channel = mad_open_channel(madeleine, 0);
 
-  if (param_simul_migr)
+  for (size = param_min_size;
+       size <= param_max_size;
+       size = param_step?size + param_step:size * 2)
     {
-      tst_somme = 0 ;
-      tst_moyenne = 0 ;      
-      
-      for (tst_test_courant = 0 ;
-	   tst_test_courant < param_nb_tests ;
-	   tst_test_courant++)
-	{
-	  int i ;
-	  
-	  TBX_GET_TICK(tst_t1);
-	  for(i = 0 ; i < param_nb_echantillons ; i++) 
-	    {
-	      static char b1[4];
-	      static char b2[4];
-	      static char b3[16];
-	      static char b4[608];
-	      static char b5[4];
-	      p_mad_connection_t connection;
-
-	      connection = mad_begin_packing(channel, 1);
-	      mad_pack(connection, b1, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_pack(connection, b2, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_pack(connection, b3, 16,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_pack(connection, b4, 608,
-		       MGS_MODE_2, MGR_MODE_2);
-	      mad_pack(connection, b5, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_end_packing(connection);
-
-	      connection = mad_begin_unpacking(channel);
-	      mad_unpack(connection, b1, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_unpack(connection, b2, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_unpack(connection, b3, 16,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_unpack(connection, b4, 608,
-		       MGS_MODE_2, MGR_MODE_2);
-	      mad_unpack(connection, b5, 4,
-			 MGS_MODE_1, MGR_MODE_1);
-	      mad_end_unpacking(connection);
-	    }
-	  TBX_GET_TICK(tst_t2);       
-
-	  tst_somme += TBX_TIMING_DELAY(tst_t1, tst_t2);
-	}
-
-      tst_moyenne = tst_somme
-	/ param_nb_tests
-	/ param_nb_echantillons
-	/ 2;
-      fprintf(stderr, "migration: %5.3f\n", tst_moyenne);
-    }
-  else
-    {
-      for (tst_taille_courante = param_min_size ;
-	   tst_taille_courante <= param_max_size;
-	   tst_taille_courante = param_step?tst_taille_courante + param_step:
-	     tst_taille_courante * 2)
-	{
-	  int taille_courante = ((tst_taille_courante == 0)
-				 && (param_no_zero))?1:tst_taille_courante;
+      const int _size = (!size && param_no_zero)?1:size;
+      int dummy = 0;
      
-	  tst_somme = 0 ;
-	  tst_moyenne = 0 ;      
+      sum = mean = 0;      
       
-	  for (tst_test_courant = 0 ;
-	       tst_test_courant < param_nb_tests ;
-	       tst_test_courant++)
+      if (param_one_way)
+	{
+	  p_mad_connection_t connection = NULL;
+	  const int          nb_tests   =
+	    param_nb_tests * param_nb_samples;
+
+	  TBX_GET_TICK(t1);
+	  for (test = 0; test < nb_tests; test++)
 	    {
-	      int i ;
+	      connection = mad_begin_packing(channel, 1);
+	      mad_pack(connection, buffer, _size,
+		       param_send_mode, param_receive_mode);
+	      mad_end_packing(connection);
+	    }
+
+	  connection = mad_begin_unpacking(channel);
+	  mad_unpack(connection, &dummy, sizeof(dummy),
+		     param_send_mode, param_receive_mode);
+	  mad_end_unpacking(connection);
+	  TBX_GET_TICK(t2);       
 	  
-	      TBX_GET_TICK(tst_t1);
-	      for(i = 0 ; i < param_nb_echantillons ; i++) 
+	  sum += TBX_TIMING_DELAY(t1, t2);	  
+	}
+      else
+	{
+	  for (test = 0; test < param_nb_tests; test++)
+	    {
+	      int i;
+
+	      TBX_GET_TICK(t1);
+	      for(i = 0; i < param_nb_samples; i++) 
 		{
 		  p_mad_connection_t connection;
 
 		  connection = mad_begin_packing(channel, 1);
 		  mad_pack(connection,
 			   buffer,
-			   taille_courante,
+			   _size,
 			   param_send_mode,
 			   param_receive_mode);
 		  mad_end_packing(connection);
@@ -305,115 +270,82 @@ static void master(p_mad_madeleine_t madeleine)
 		  connection = mad_begin_unpacking(channel);
 		  mad_unpack(connection,
 			     buffer,
-			     taille_courante,
+			     _size,
 			     param_send_mode,
 			     param_receive_mode);
 		  mad_end_unpacking(connection);
 		}
-	      TBX_GET_TICK(tst_t2);       
+	      TBX_GET_TICK(t2);       
+	      sum += TBX_TIMING_DELAY(t1, t2);
+	    }
+	}
 
-	      tst_somme += TBX_TIMING_DELAY(tst_t1, tst_t2);
-	    }
+      if (param_bandwidth)
+	{
+	  double f = 2 - param_one_way;
 
-	  if (param_bandwidth)
-	    {
-	      tst_moyenne = (((double)taille_courante)
-			     * param_nb_tests
-			     * param_nb_echantillons)
-		/ (tst_somme / 2);
-	      fprintf(stderr, "%8d %8.3f %8.3f\n",
-		      taille_courante,
-		      tst_moyenne,
-		      tst_moyenne / 1.048576);
-	    }
-	  else
-	    {
-	      tst_moyenne = tst_somme
-		/ param_nb_tests
-		/ param_nb_echantillons
-		/ 2 ;
-	      fprintf(stderr, "%8d %5.3f\n", taille_courante, tst_moyenne);
-	    }
+	  mean = (_size * (double)param_nb_tests * (double)param_nb_samples)
+		   / (sum / f);
+	  fprintf(stderr, "%8d %8.3f %8.3f\n",
+		  _size, mean, mean / 1.048576);
+	}
+      else
+	{
+	  double f = 2 - param_one_way;
+
+	  mean = sum / param_nb_tests / param_nb_samples / f;
+	  fprintf(stderr, "%8d %5.3f\n", _size, mean);
 	}
     }
 }
 
 static void slave(p_mad_madeleine_t madeleine)
 {
-  p_mad_channel_t   channel;
-  int               tst_taille_courante ;
-  int               tst_test_courant ;
+  p_mad_channel_t channel = NULL;
+  int             size;
+  int             test;
 
   channel = mad_open_channel(madeleine, 0);
-  if (param_simul_migr)
+  for (size = param_min_size;
+       size <= param_max_size;
+       size = param_step?size + param_step:size * 2)
     {
-      for (tst_test_courant = 0 ;
-	   tst_test_courant < param_nb_tests ;
-	   tst_test_courant++)
-	{
-	  int i ;
-	  
-	  for(i = 0; i < param_nb_echantillons ; i++) 
-	    {
-	      static char b1[4];
-	      static char b2[4];
-	      static char b3[16];
-	      static char b4[608];
-	      static char b5[4];
-	      p_mad_connection_t connection;
-
-	      connection = mad_begin_unpacking(channel);
-	      mad_unpack(connection, b1, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_unpack(connection, b2, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_unpack(connection, b3, 16,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_unpack(connection, b4, 608,
-		       MGS_MODE_2, MGR_MODE_2);
-	      mad_unpack(connection, b5, 4,
-			 MGS_MODE_1, MGR_MODE_1);
-	      mad_end_unpacking(connection);
-
-	      connection = mad_begin_packing(channel, 0);
-	      mad_pack(connection, b1, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_pack(connection, b2, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_pack(connection, b3, 16,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_pack(connection, b4, 608,
-		       MGS_MODE_2, MGR_MODE_2);
-	      mad_pack(connection, b5, 4,
-		       MGS_MODE_1, MGR_MODE_1);
-	      mad_end_packing(connection);
-	    }
-	}
-    }
-  else
-    {      
-      for (tst_taille_courante = param_min_size;
-	   tst_taille_courante <= param_max_size;
-	   tst_taille_courante = param_step?tst_taille_courante + param_step:
-	     tst_taille_courante * 2)
-	{
-	  int taille_courante = ((tst_taille_courante == 0)
-				 && (param_no_zero))?1:tst_taille_courante;
+      const int _size = (!size && param_no_zero)?1:size;
       
-	  for (tst_test_courant = 0 ;
-	       tst_test_courant < param_nb_tests ;
-	       tst_test_courant++)
+      if (param_one_way)
+	{
+	  p_mad_connection_t connection = NULL;
+	  const int          nb_tests   =
+	    param_nb_tests * param_nb_samples;
+          int dummy = 0;
+
+	  for (test = 0; test < nb_tests; test++)
 	    {
-	      int i ;
+	      connection = mad_begin_unpacking(channel);
+	      mad_unpack(connection, buffer, _size,
+			 param_send_mode, param_receive_mode);	      
+	      mad_end_unpacking(connection);
+	    }	  
+
+	  connection = mad_begin_packing(channel, 0);
+	  mad_pack(connection, &dummy, sizeof(dummy),
+		   param_send_mode, param_receive_mode);
+	  mad_end_packing(connection);
+	}
+      else
+	{
+	  for (test = 0; test < param_nb_tests; test++)
+	    {
+	      int i;
 	  
-	      for(i = 0; i < param_nb_echantillons ; i++) 
+	      for(i = 0; i < param_nb_samples; i++) 
 		{
 		  p_mad_connection_t connection;
 
 		  connection = mad_begin_unpacking(channel);
 		  mad_unpack(connection,
 			     buffer,
-			     taille_courante,
+			     _size,
 			     param_send_mode,
 			     param_receive_mode);	      
 		  mad_end_unpacking(connection);
@@ -421,88 +353,83 @@ static void slave(p_mad_madeleine_t madeleine)
 		  connection = mad_begin_packing(channel, 0);
 		  mad_pack(connection,
 			   buffer,
-			   taille_courante,
+			   _size,
 			   param_send_mode,
 			   param_receive_mode);
 		  mad_end_packing(connection);
 		}
-	    }
+	    }	  
 	}
     }
 }
 
 static void master_ctrl(p_mad_madeleine_t madeleine)
 {
-  double            tst_somme ;
-  double            tst_moyenne ;
-  int               tst_taille_courante ;
-  int               tst_test_courant ;
-  tbx_tick_t        tst_t1 ;
-  tbx_tick_t        tst_t2 ;
+  double            sum;
+  double            mean;
+  int               size;
+  int               test;
+  tbx_tick_t        t1;
+  tbx_tick_t        t2;
   p_mad_channel_t   channel;
 
   channel = mad_open_channel(madeleine, 0);
 
-  for (tst_taille_courante = param_min_size;
-       tst_taille_courante <= param_max_size;
-       tst_taille_courante = param_step?tst_taille_courante + param_step:
-	 tst_taille_courante * 2)
+  for (size = param_min_size;
+       size <= param_max_size;
+       size = param_step?size + param_step:
+	 size * 2)
     {
-      int taille_courante = (   (tst_taille_courante == 0)
-			     && (param_no_zero))?1:tst_taille_courante;
-      tst_somme = 0;
+      int _size = (   (size == 0)
+			     && (param_no_zero))?1:size;
+      sum = 0;
       
-      for (tst_test_courant = 0 ;
-	   tst_test_courant < param_nb_tests ;
-	   tst_test_courant++)
+      for (test = 0;
+	   test < param_nb_tests;
+	   test++)
 	{
-	  int i ;
+	  int i;
 	  
-	  TBX_GET_TICK(tst_t1);
-	  for(i = 0; i < param_nb_echantillons ; i++) 
+	  TBX_GET_TICK(t1);
+	  for(i = 0; i < param_nb_samples; i++) 
 	    {
 	      p_mad_connection_t connection;
 	      
-	      fill_buffer(taille_courante);	      
+	      fill_buffer(_size);	      
 	      connection = mad_begin_packing(channel, 1);
 	      mad_pack(connection,
 		       buffer,
-		       taille_courante,
+		       _size,
 		       param_send_mode,
 		       param_receive_mode);
 	      mad_end_packing(connection);
 
-	      clear_buffer(taille_courante);
+	      clear_buffer(_size);
 
 	      connection = mad_begin_unpacking(channel);
 	      mad_unpack(connection,
 			 buffer,
-			 taille_courante,
+			 _size,
 			 param_send_mode,
 			 param_receive_mode);
 	      mad_end_unpacking(connection);
-	      control_buffer(taille_courante);
+	      control_buffer(_size);
 	    }
-	  TBX_GET_TICK(tst_t2);       
-	  tst_somme += TBX_TIMING_DELAY(tst_t1, tst_t2);
+	  TBX_GET_TICK(t2);       
+	  sum += TBX_TIMING_DELAY(t1, t2);
 	}
 
       if (param_bandwidth)
 	{
-	  tst_moyenne = (taille_courante
-			 * param_nb_tests
-			 * param_nb_echantillons)
-	    / (tst_somme / 2);
+	  mean = (_size * (double)param_nb_tests * (double)param_nb_samples
+		  * (double)2) / sum;
 	}
       else
 	{
-	  tst_moyenne = tst_somme
-	    / param_nb_tests
-	    / param_nb_echantillons
-	    / 2 ;
+	  mean = sum / param_nb_tests / param_nb_samples / 2;
 	}
       
-      fprintf(stderr, "%5d %5.3f\n", taille_courante, tst_moyenne);
+      fprintf(stderr, "%5d %5.3f\n", _size, mean);
     }
 }
 
@@ -562,143 +489,16 @@ int main(int argc, char **argv)
 #endif /* APPLICATION_SPAWN */
 #endif /* LEONIE_SPAWN */  
 
-  /* command line args analysis */
-  {
-    int i = 1 ;
-
-    while (i < argc)
-      {
-	if (!strcmp(argv[i], "-control_receive_on"))
-	  {
-	    param_control_receive = 1;
-	  }
-	else if (!strcmp(argv[i], "-control_receive_off"))
-	  {
-	    param_control_receive = 0;
-	  }
-	else if (!strcmp(argv[i], "-no_zero_on"))
-	  {
-	    param_no_zero = 1;
-	  }
-	else if (!strcmp(argv[i], "-no_zero_off"))
-	  {
-	    param_no_zero = 0;
-	  }
-	else if (!strcmp(argv[i], "-bandwidth_on"))
-	  {
-	    param_bandwidth = 1;
-	  }
-	else if (!strcmp(argv[i], "-bandwidth_off"))
-	  {
-	    param_bandwidth = 0;
-	  }
-	else if (!strcmp(argv[i], "-send_safer"))
-	  {
-	    param_send_mode = mad_send_SAFER;
-	  }
-	else if (!strcmp(argv[i], "-send_later"))
-	  {
-	    param_send_mode = mad_send_LATER;
-	  }
-	else if (!strcmp(argv[i], "-send_cheaper"))
-	  {
-	    param_send_mode = mad_send_CHEAPER;
-	  }
-	else if (!strcmp(argv[i], "-receive_express"))
-	  {
-	    param_receive_mode = mad_receive_EXPRESS;
-	  }
-	else if (!strcmp(argv[i], "-receive_cheaper"))
-	  {
-	    param_receive_mode = mad_receive_CHEAPER;
-	  }
-	else if (!strcmp(argv[i], "-nb_echantillons"))
-	  {
-	    i++ ;
-
-	    if (i < argc)
-	      {
-		param_nb_echantillons = atoi(argv[i]);
-	      }
-	    else
-	      {
-		FAILURE("not enough args");
-	      }
-	  }
-	else if (!strcmp(argv[i], "-max_size"))
-	  {
-	    i++ ;
-
-	    if (i < argc)
-	      {
-		param_max_size = atoi(argv[i]);
-	      }
-	    else
-	      {
-		FAILURE("not enough args");
-	      }
-	  }
-	else if (!strcmp(argv[i], "-min_size"))
-	  {
-	    i++ ;
-
-	    if (i < argc)
-	      {
-		param_min_size = atoi(argv[i]);
-	      }
-	    else
-	      {
-		FAILURE("not enough args");
-	      }
-	  }
-	else if (!strcmp(argv[i], "-step"))
-	  {
-	    i++ ;
-
-	    if (i < argc)
-	      {
-		param_step = atoi(argv[i]);
-	      }
-	    else
-	      {
-		FAILURE("not enough args");
-	      }
-	  }
-	else if (!strcmp(argv[i], "-nb_tests"))
-	  {
-	    i++ ;
-
-	    if (i < argc)
-	      {
-		param_nb_tests = atoi(argv[i]);
-	      }
-	    else
-	      {
-		FAILURE("not enough args");
-	      }
-	  }
-	else
-	  {
-	    FAILURE("unexpected arg");
-	  }
-
-	i++;
-      }
-  }
-
-  if (!param_simul_migr)
+  buffer = tbx_aligned_malloc(param_max_size, 64);
+  if (param_fill_buffer)
     {
-      buffer = tbx_aligned_malloc(param_max_size, 64);
-      if (param_fill_buffer)
-	{
-	  memset(buffer, param_fill_buffer_value, param_max_size);
-	}
+      memset(buffer, param_fill_buffer_value, param_max_size);
     }
   
-  if (madeleine->configuration->local_host_id == 0)
+  if (!madeleine->configuration->local_host_id)
     {
       /* Master */
-      if ((!param_simul_migr) && param_control_receive)
+      if (param_control_receive)
 	{
 	  master_ctrl(madeleine);
 	}
@@ -714,10 +514,7 @@ int main(int argc, char **argv)
     }
 
   mad_exit(madeleine);
-  if (!param_simul_migr)
-    {
-      tbx_aligned_free(buffer, 64);
-    }
-  
+  tbx_aligned_free(buffer, 64);
+    
   return 0;
 }

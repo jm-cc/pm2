@@ -35,7 +35,7 @@
 #endif
 
 #section marcel_compiler
-#define ma_barrier() __asm__ __volatile__("": : :"memory")
+#define ma_barrier() tbx_barrier()
 
 #section marcel_macros
 #define __ma_cacheline_aligned

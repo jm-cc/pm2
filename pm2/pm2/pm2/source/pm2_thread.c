@@ -26,7 +26,8 @@
 // Also used in netserver.h
 marcel_vpmask_t __pm2_global_vpmask = MARCEL_VPMASK_EMPTY;
 
-extern marcel_key_t mad2_send_key, mad2_recv_key;
+extern marcel_key_t pm2_mad_send_key;
+extern marcel_key_t pm2_mad_recv_key;
 
 typedef enum {
   PM2_THREAD_REGULAR,
@@ -39,9 +40,7 @@ struct pm2_thread_arg {
   pm2_func_t func;
   void *arg;
   struct pm2_thread_arg *next;
-#ifdef MAD2
-  void *mad2_specific;
-#endif
+  void *mad_specific;
   void *mad_sem;
 } thread_param[MAX_PARAMS];
 
@@ -143,9 +142,7 @@ static any_t pm2_thread_starter(any_t arg)
   if(1 || ta->class == PM2_THREAD_SERVICE) {
     // On hérite des capacités d'accès au réseau que si l'on est un
     // 'thread de service'.
-#ifdef MAD2
-    marcel_setspecific(mad2_recv_key, ta->mad2_specific);
-#endif
+    marcel_setspecific(pm2_mad_recv_key, ta->mad_specific);
     marcel_setspecific(_pm2_mad_key, ta->mad_sem);
   }
 
@@ -175,9 +172,7 @@ static __inline__ marcel_t __pm2_thread_create(pm2_func_t func, void *arg,
   // TO BE FIXED: pour des raisons de compatibilité des codes
   // existants, le test suivant est biaisé pour l'instant...
   if(1 || class == PM2_THREAD_SERVICE) {
-#ifdef MAD2
-    ta->mad2_specific = marcel_getspecific(mad2_recv_key);
-#endif
+    ta->mad_specific = marcel_getspecific(pm2_mad_recv_key);
     ta->mad_sem = marcel_getspecific(_pm2_mad_key);
   }
 

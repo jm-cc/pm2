@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.21  2000/04/14 14:01:48  rnamyst
+Minor modifs.
+
 Revision 1.20  2000/04/14 11:41:46  vdanjean
 move SCHED_DATA(lwp).sched_task to lwp->idle_task
 
@@ -1323,10 +1326,12 @@ any_t idle_func(any_t arg)
   } while(1);
 }
 
+#ifdef MA__ACTIVATION
 static void void_func(void* param)
 {
   RAISE("Quoi, on est là ???\n");
 }
+#endif
 
 static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 {

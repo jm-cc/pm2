@@ -29,7 +29,7 @@ EOF
 
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--builddir=\"/tmp/$flavor\" --ext=\"\" \
+	--ext=\"\" \
 	--modules=\"marcel mad2 ntbx tbx pm2 init\" \
 	--marcel=\"mono\" --marcel=\"marcel_main\" \
 	--mad2=\"auto_spawn\" --mad2=\"tcp\" \

@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_htable_management.c,v $
+Revision 1.3  2000/09/05 13:59:39  oaumage
+- reecriture des slists et corrections diverses au niveau des htables
+
 Revision 1.2  2000/07/10 14:25:58  oaumage
 - Corrections diverses
 
@@ -59,13 +62,13 @@ ______________________________________________________________________________
  * ------
  */
 #define INITIAL_HTABLE_ELEMENT 256
-#define DEFAULT_BUCKET_COUNT 17
+#define DEFAULT_BUCKET_COUNT    17
 
 /*
  * Data structures
  * ---------------
  */
-static p_tbx_memory_t tbx_htable_manager_memory;
+static p_tbx_memory_t tbx_htable_manager_memory = NULL;
 
 /*
  * Functions
@@ -77,7 +80,7 @@ static p_tbx_memory_t tbx_htable_manager_memory;
  * --------------
  */
 void
-tbx_htable_manager_init()
+tbx_htable_manager_init(void)
 {
   LOG_IN();
   tbx_malloc_init(&tbx_htable_manager_memory,
@@ -100,7 +103,7 @@ tbx_htable_init(p_tbx_htable_t            htable,
   htable->bucket_array = TBX_MALLOC(buckets * sizeof(tbx_htable_element_t));
   htable->nb_element   = 0;
 
-  while(buckets--)
+  while (buckets--)
     {
       htable->bucket_array[buckets] = NULL;
     }
@@ -110,35 +113,46 @@ tbx_htable_init(p_tbx_htable_t            htable,
 tbx_bool_t
 tbx_htable_empty(p_tbx_htable_t htable)
 {
+  tbx_bool_t test = tbx_false;
+  
   LOG_IN();
+  test = (htable->nb_element == 0);
   LOG_OUT();  
-  return (htable->nb_element == 0);
+
+  return test;
 }
 
 tbx_htable_element_count_t
 tbx_htable_get_size(p_tbx_htable_t htable)
 {
+  tbx_htable_element_count_t count = -1;
+  
   LOG_IN();
-  LOG_OUT();  
-  return htable->nb_element;
+  count = htable->nb_element;
+  LOG_OUT();
+  
+  return count;
 }
 
-static tbx_htable_bucket_count_t
-tbx_htable_get_bucket(p_tbx_htable_t   htable,
-		      tbx_htable_key_t key)
+static
+tbx_htable_bucket_count_t
+__tbx_htable_get_bucket(p_tbx_htable_t   htable,
+			tbx_htable_key_t key)
 {
   tbx_htable_bucket_count_t bucket  = 0;
-  size_t                    key_len = strlen(key);
+  size_t                    key_len = 0;
 
   LOG_IN();
+  key_len = strlen(key);
+
   while(key_len--)
     {
       bucket += key[key_len];
     }
 
   bucket %= htable->nb_bucket;
-
   LOG_OUT();
+
   return bucket;
 }
 
@@ -151,14 +165,16 @@ tbx_htable_add(p_tbx_htable_t    htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
-  bucket  = tbx_htable_get_bucket(htable, key);
-  element = tbx_malloc(tbx_htable_manager_memory);
-  CTRL_ALLOC(element);
-  
+  bucket  = __tbx_htable_get_bucket(htable, key);
+
+  element = tbx_malloc(tbx_htable_manager_memory);  
   element->key = TBX_MALLOC(strlen(key) + 1);
+  CTRL_ALLOC(element->key);
+
   strcpy(element->key, key);
   element->object = object;
-  element->next = htable->bucket_array[bucket];
+  element->next   = htable->bucket_array[bucket];
+  
   htable->bucket_array[bucket] = element;
   htable->nb_element++;
   LOG_OUT();
@@ -172,23 +188,25 @@ tbx_htable_get(p_tbx_htable_t   htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
-  bucket  = tbx_htable_get_bucket(htable, key);
+  bucket  = __tbx_htable_get_bucket(htable, key);
   element = htable->bucket_array[bucket];
   
   while(element)
     {
-      if (strcmp(key, element->key))
+      if (!strcmp(key, element->key))
 	{
-	  element = element->next;
-	}
-      else
-	{
+	  void *object = NULL;
+	  
+	  object = element->object;
 	  LOG_OUT();
-	  return element->object;
+
+	  return object;
 	}
-    }
-  
+
+      element = element->next;
+    }  
   LOG_OUT();
+
   return NULL;
 }
 
@@ -200,10 +218,10 @@ tbx_htable_extract(p_tbx_htable_t   htable,
   p_tbx_htable_element_t    *element = NULL;
   
   LOG_IN();
-  bucket  = tbx_htable_get_bucket(htable, key);
+  bucket  = __tbx_htable_get_bucket(htable, key);
   element = &(htable->bucket_array[bucket]);
   
-  while(*element)
+  while (*element)
     {
       if (strcmp(key, (*element)->key))
 	{
@@ -211,10 +229,22 @@ tbx_htable_extract(p_tbx_htable_t   htable,
 	}
       else
 	{
-	  void *object = (*element)->object;
-	  
-	  tbx_free(tbx_htable_manager_memory, *element);
-	  *element = NULL;
+	  p_tbx_htable_element_t  tmp_element = NULL;
+	  void                   *object      = NULL;
+
+	  tmp_element = *element;
+
+	  object   = tmp_element->object;
+	  tmp_element->object = NULL;
+
+	  *element = tmp_element->next;
+	  tmp_element->next = NULL;
+
+	  TBX_FREE(tmp_element->key);
+	  tmp_element->key = NULL;
+
+	  tbx_free(tbx_htable_manager_memory, tmp_element);
+
 	  LOG_OUT();
 	  return object;
 	}
@@ -227,36 +257,43 @@ tbx_htable_extract(p_tbx_htable_t   htable,
 void
 tbx_htable_free(p_tbx_htable_t htable)
 {
-  tbx_htable_bucket_count_t bucket  = -1;
- 
   LOG_IN();
   if (htable->nb_element)
     {
-      for (bucket = 0; bucket < htable->nb_bucket; bucket++)
+      while (htable->nb_bucket--)
 	{
-	  p_tbx_htable_element_t element = htable->bucket_array[bucket];
+	  p_tbx_htable_element_t element = NULL;
 
-	  while(element)
+	  element = htable->bucket_array[htable->nb_bucket];
+
+	  while (element)
 	    {
-	      p_tbx_htable_element_t temp = element->next;
+	      p_tbx_htable_element_t temp = NULL;
+
+	      temp = element->next;
 	      
+	      TBX_FREE(element->key);
+	      element->key    = NULL;
+	      element->object = NULL;
+	      element->next   = NULL;
+
 	      tbx_free(tbx_htable_manager_memory, element);
+	      
 	      element = temp;
 	    }
 
-	  htable->bucket_array[bucket] = NULL;
+	  htable->bucket_array[htable->nb_bucket] = NULL;
 	}  
     }
 
-  htable->nb_element   = 0;
+  htable->nb_element = 0;
   TBX_FREE(htable->bucket_array);
   htable->bucket_array = NULL;
-  htable->nb_bucket    = 0;
   LOG_OUT();
 }
 
 void
-tbx_htable_manager_exit()
+tbx_htable_manager_exit(void)
 {
   LOG_IN();
   tbx_malloc_clean(tbx_htable_manager_memory);

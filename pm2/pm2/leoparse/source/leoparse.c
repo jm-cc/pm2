@@ -176,6 +176,7 @@ leoparse_open_local_parser_file(const char *file_name)
 
       if ((!parser_file_ptr) && (errno != EINTR))
 	{
+	  fprintf(stderr, "Unable to open file : %s\n", file_name);
 	  perror("fopen");
 	  FAILURE("could not open a file for parsing");
 	}

@@ -30,7 +30,9 @@ args="$args --mad-rank 0"
 
 # Append the command name
 if [ -n "$PM2_CMD_NAME" ]; then
-    args="$args --mad-app-cmd $PM2_CMD_NAME"
+    if [ "$PM2_USE_LOCAL_FLAVOR" != on ]; then
+	args="$args --mad-app-cmd $PM2_CMD_NAME"
+    fi
 else
     args="$args --mad-app-cmd $prog"
 fi

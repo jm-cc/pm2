@@ -92,7 +92,7 @@ include $(DSM_DEPENDS)
 endif
 endif
 
-$(DSM_OBJECTS): $(DSM_OBJ)/%.o: $(DSM_DEP)/%.d
+$(DSM_OBJECTS): $(DSM_OBJ)/%.o: $(DSM_DEP)/%.d $(PM2_MAKEFILE)
 $(DSM_DEPENDS): $(PM2_MAKEFILE)
 
 $(DSM_LIB): $(DSM_OBJECTS)

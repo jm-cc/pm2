@@ -2,12 +2,12 @@
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -36,17 +36,17 @@ endif # FLAVOR
 ifeq ($(MAK_VERB),verbose)
 COMMON_PREFIX  =#
 COMMON_HIDE   :=#
-COMMON_CLEAN  :=#	
+COMMON_CLEAN  :=#
 else
 ifeq ($(MAK_VERB),normal)
 COMMON_PREFIX  =#
 COMMON_HIDE   :=  @
-COMMON_CLEAN  :=#	
+COMMON_CLEAN  :=#
 else
 ifeq ($(MAK_VERB),quiet)
 COMMON_PREFIX  =  @ echo "building " $(@F) ;
 COMMON_HIDE   :=  @
-COMMON_CLEAN  :=#	
+COMMON_CLEAN  :=#
 else  # silent
 COMMON_PREFIX  =  @
 COMMON_HIDE   :=  @
@@ -71,7 +71,7 @@ ifndef PM2_CONFIG
 PM2_CONFIG := PM2_ROOT=$(PM2_ROOT) $(PM2_ROOT)/bin/pm2-config
 endif
 
-# Utilite de cette commande ? 
+# Utilite de cette commande ?
 # Dans quel cas, FLAVOR n'est pas definie ?
 #---------------------------------------------------------------------
 ifdef FLAVOR
@@ -85,7 +85,7 @@ PM2_GEN_MAK := $(PM2_ROOT)/bin/pm2-gen-make.sh $(FLAVOR)
 # GOALS pour lesquels on ne générera ni n'incluera les .mak
 #---------------------------------------------------------------------
 ifndef DO_NOT_GENERATE_MAK_FILES
-DO_NOT_GENERATE_MAK_FILES := 
+DO_NOT_GENERATE_MAK_FILES :=
 endif
 DO_NOT_GENERATE_MAK_FILES += _sos_
 DO_NOT_GENERATE_MAK_FILES += _checkflavor_

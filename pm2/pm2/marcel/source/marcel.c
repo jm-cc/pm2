@@ -253,7 +253,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 					   attr->stack_size);
 #ifdef MA__DEBUG
       mdebug("top=%p, stack_base=%p\n", top, attr->stack_base);
-      if(top & (SLOT_SIZE-1)) { /* Not slot-aligned */
+      if(top & (THREAD_SLOT_SIZE-1)) { /* Not slot-aligned */
 	unlock_task();
 	RAISE(CONSTRAINT_ERROR);
       }
@@ -270,14 +270,14 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       char *bottom;
 
 #ifdef MA__DEBUG
-      if(attr->stack_size > SLOT_SIZE)
+      if(attr->stack_size > THREAD_SLOT_SIZE)
 	RAISE(NOT_IMPLEMENTED);
 #endif
       bottom = marcel_slot_alloc();
 
       PROF_EVENT(thread_stack_allocated);
 
-      new_task = (marcel_t)(MAL_BOT((long)bottom + SLOT_SIZE) -
+      new_task = (marcel_t)(MAL_BOT((long)bottom + THREAD_SLOT_SIZE) -
 			    MAL(sizeof(task_desc)));
       init_task_desc(new_task);
       new_task->stack_base = bottom;
@@ -1223,7 +1223,7 @@ int main(int argc, char *argv[])
   if(!setjmp(__initial_main_jb)) {
 
     __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
-				~(SLOT_SIZE-1)) -
+				~(THREAD_SLOT_SIZE-1)) -
 			       MAL(sizeof(task_desc)));
 
     mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
@@ -1231,7 +1231,7 @@ int main(int argc, char *argv[])
     __argc = argc; __argv = argv;
 
 #ifdef WIN_SYS
-      win_stack_allocate(SLOT_SIZE);
+      win_stack_allocate(THREAD_SLOT_SIZE);
 #endif
 
     set_sp((unsigned long)__main_thread - TOP_STACK_FREE_AREA);

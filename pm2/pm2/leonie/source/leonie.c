@@ -39,13 +39,13 @@
  * ====================
  */
 #ifdef LEO_NO_SPAWN
-#warning [1;33m<<< [1;37mLeonie spawn: [1;31mnot activated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie spawn:     [1;31mnot activated [1;33m>>>[0m
 #else
-#warning [1;33m<<< [1;37mLeonie spawn: [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie spawn:     [1;32mactivated [1;33m    >>>[0m
 #endif // LEO_NO_SPAWN
 
 #ifdef LEO_VCHANNELS
-#warning [1;33m<<< [1;37mLeonie vchannels: [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie vchannels: [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie vchannels: [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_VCHANNELS
@@ -465,7 +465,7 @@ process_channel(p_tbx_htable_t channel)
 
 		cp_specific = leo_dir_channel_process_specific_init();
 		cp_specific->adapter_name = strdup(adapter_name);
-
+		
 		ntbx_pc_add(dir_channel->pc, process,
 			    channel_local_rank, dir_channel,
 			    channel_reference_name,
@@ -1614,9 +1614,13 @@ init_drivers(void)
 	  pc         = dir_driver->pc;
 	  
 	  TRACE_STR("Driver", dir_driver->name);
-	  leo_send_string(client, dir_driver->name);
 
-	  process_info  = ntbx_pc_get_global(pc, global_rank);
+	  process_info = ntbx_pc_get_global(pc, global_rank);
+
+	  if (!process_info)
+	    continue;
+	  
+	  leo_send_string(client, dir_driver->name);
 	  pi_specific   = process_info->specific;
 	  adapter_slist = pi_specific->adapter_slist;
 	    

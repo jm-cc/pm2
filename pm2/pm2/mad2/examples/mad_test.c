@@ -44,7 +44,7 @@ int main(int argc, char **argv)
   int k ;
   p_mad_channel_t channel[NB_CHANNELS];
 
-  fprintf(stderr, "main -->\n");
+  /* fprintf(stderr, "main -->\n"); */
 
 #ifdef LEONIE_SPAWN
   mad_init(&argc, argv);
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
     }
   mad_exit(madeleine);
 
-  fprintf(stderr, "main <--\n");
+  /* fprintf(stderr, "main <--\n"); */
 
   return 0;
 }

@@ -1,0 +1,2 @@
+Provide: blocking_calls
+Conflict: marcel_poll

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: archdep.h,v $
+Revision 1.5  2000/05/09 10:52:43  vdanjean
+pm2debug module
+
 Revision 1.4  2000/04/11 09:07:14  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -75,6 +78,14 @@ static __inline__ void SCHED_YIELD(void)
 #elif defined(LINUX_SYS)
 #include <time.h>
 #include <unistd.h>
+
+#ifdef MA__ACTIVATIONS
+static __inline__ void SCHED_YIELD(void)
+{
+  sched_yield();
+}
+
+#else
 /* The Linux 'sched_yield' syscall does not relinquish the processor
    immediately, so we user nanosleep(0) instead... */
 static __inline__ void SCHED_YIELD(void)
@@ -83,6 +94,7 @@ static __inline__ void SCHED_YIELD(void)
 
   nice(20); nanosleep(&t, NULL); nice(0);
 }
+#endif
 #else
 #include <sched.h>
 static __inline__ void SCHED_YIELD(void)

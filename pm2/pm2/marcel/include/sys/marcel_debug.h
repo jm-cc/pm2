@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_debug.h,v $
+Revision 1.5  2000/05/09 10:52:43  vdanjean
+pm2debug module
+
 Revision 1.4  2000/04/28 18:33:36  vdanjean
 debug actsmp + marcel_key
 
@@ -49,20 +52,76 @@ ______________________________________________________________________________
 #ifndef MARCEL_DEBUG_EST_DEF
 #define MARCEL_DEBUG_EST_DEF
 
-#include "marcel_stdio.h"
+#include "pm2debug.h"
 
 #undef mdebug
-#ifdef DEBUG
-#define mdebug(fmt, args...)  marcel_fprintf(stderr, fmt, ##args)
-#define try_mdebug(fmt, args...) \
-   (void)(preemption_enabled() ? marcel_fprintf(stderr, fmt, ##args) : 0)
+
+#ifdef MARCEL_DEBUG
+extern debug_type_t marcel_mdebug;
+extern debug_type_t marcel_trymdebug;
+extern debug_type_t marcel_mdebug_state;
+#define mdebug(fmt, args...) debug_printf(&marcel_mdebug, fmt, ##args)
+#define try_mdebug(fmt, args...) debug_printf(&marcel_trymdebug, fmt, ##args)
+#define mdebug_state(fmt, args...) debug_printf(&marcel_mdebug_state, fmt, ##args)
 #else
 #define mdebug(fmt, args...)     (void)0
-#define try_mdebug(fmt, args...) (void)0
+#define try_mdebug(fmt, args...)     (void)0
+#define mdebug_state(fmt, args...)     (void)0
 #endif
 
+#ifdef DEBUG_LOCK_TASK
+extern debug_type_t marcel_lock_task_debug;
+#define lock_task_debug(fmt, args...) \
+    debug_printf(&marcel_lock_task_debug, fmt, ##args)
+#endif
+#ifdef DEBUG_SCHED_LOCK
+extern debug_type_t marcel_sched_lock_debug;
+#define sched_lock_debug(fmt, args...) \
+    debug_printf(&marcel_sched_lock_debug, fmt, ##args)
+#endif
+
+#ifdef MARCEL_TRACE
+
+extern debug_type_t marcel_mtrace;
+extern debug_type_t marcel_mtrace_timer;
+
+#define MTRACE(msg, pid) \
+    (msg[0] ? debug_printf(&marcel_mtrace, \
+            "[P%02d][%-11s:%3ld (pid=%p:%X)." \
+            " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
+            ((pid)->lwp ? (pid)->lwp->number : -1), \
+            msg, (pid)->number, (pid), (pid)->special_flags, \
+            marcel_activethreads(), \
+            marcel_sleepingthreads(), \
+            marcel_blockedthreads(), \
+            marcel_frozenthreads(), \
+            marcel_nbthreads() + 1) : (void)0)
+#define MTRACE_TIMER(msg, pid) \
+    debug_printf(&marcel_mtrace_timer, \
+            "[P%02d][%-11s:%3ld (pid=%p:%X)." \
+            " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
+            ((pid)->lwp ? (pid)->lwp->number : -1), \
+            msg, (pid)->number, (pid), (pid)->special_flags, \
+            marcel_activethreads(), \
+            marcel_sleepingthreads(), \
+            marcel_blockedthreads(), \
+            marcel_frozenthreads(), \
+            marcel_nbthreads() + 1)
+#define marcel_trace_on() pm2debug_setup(&marcel_mtrace, DEBUG_SHOW, 1)
+#define marcel_trace_off() pm2debug_setup(&marcel_mtrace, DEBUG_SHOW, 0)
+
+#else
+
+#define MTRACE(msg, pid) (void)0
+#define marcel_trace_on() (void)0
+#define marcel_trace_off() (void)0
 
 #endif
+
+void marcel_debug_init(int* argc, char** argv);
+
+#endif
+
 
 
 

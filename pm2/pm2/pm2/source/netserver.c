@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: netserver.c,v $
+Revision 1.11  2000/06/02 09:57:43  rnamyst
+Removed some LOG_IN/LOG_OUT calls
+
 Revision 1.10  2000/05/29 17:13:08  vdanjean
 End of mad2 corrected
 
@@ -109,11 +112,11 @@ static any_t netserver(any_t arg)
 #ifdef MAD2
 	mad_recvbuf_receive();
 	if ((__pm2_self==0) && !pm2_zero_halt) {
-	  LOG("Netserver handling NETSERVER_END node 0 first...");
+	  mdebug("Netserver handling NETSERVER_END node 0 first...");
 	  pm2_send_stop_server(1);  
 	  pm2_zero_halt=TRUE;
 	} else {
-	  LOG("Netserver handling NETSERVER_END\n");
+	  mdebug("Netserver handling NETSERVER_END\n");
 	  finished = TRUE;
 	}
 #else

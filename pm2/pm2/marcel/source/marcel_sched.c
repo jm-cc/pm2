@@ -60,6 +60,7 @@
 
 #ifdef __ACT__
 #include <sys/upcalls.h>
+int nb_idle_sleeping=0;
 #endif
 
 
@@ -129,10 +130,18 @@ static struct {
 #define DEC_STATS(t, lwp) \
   (((t) != (lwp)->sched_task) ? (lwp)->running_tasks-- : 0)
 
+#ifdef __ACT__
+#define one_more_active_task(t, lwp) \
+  __active_threads++, \
+  nb_idle_sleeping?act_cntl(ACT_CNTL_WAKE_UP,NULL):0, \
+  INC_STATS((t), (lwp)), \
+  MTRACE("Activation", (t))
+#else
 #define one_more_active_task(t, lwp) \
   __active_threads++, \
   INC_STATS((t), (lwp)), \
   MTRACE("Activation", (t))
+#endif
 
 #define one_active_task_less(t, lwp) \
   __active_threads--, \
@@ -613,10 +622,10 @@ static __inline__ marcel_t next_task(marcel_t t, __lwp_t *lwp)
 #ifdef __ACT__
   res=t;
   do {
-    {if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
+    //{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
     res = res->next;
   } while ((res->state_ext == MARCEL_RUNNING) && (res != t));
-  {if (res!=t) ACTDEBUG(printf("next_task : find %p\n", res));}
+  //{if (res!=t) ACTDEBUG(printf("next_task : find %p\n", res));}
   //ACTDEBUG(printf("next_task(%p) : next=%p\n", t, res));  
 #else
   res = t->next;
@@ -1013,16 +1022,57 @@ static void set_timer(void);
 void stop_timer(void);
 
 #ifdef __ACT__
+#include <sched.h>
 /* Each processor must be able to run something */
 any_t wait_and_yield(any_t arg)
 {
-  int nb=0;
+  marcel_t next, cur = marcel_self();
+  int nb=1;
 
+  lock_task();
   for(;;) {
-    if(!((nb++) % 1000000))
-      ACTDEBUG(printf("wait_and_yield %p yielding\n", marcel_self()));
-    marcel_yield();
+    
+    next=cur;
+    do {
+      //{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
+      next = next->next;
+    } while ((next->state_ext == MARCEL_RUNNING) && (next != cur));
+
+    if (next == cur) {
+      next=cur;
+      do {
+	//{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
+	next = next->next;
+      } while ((next->state_ext == MARCEL_RUNNING) && (next != cur));
+
+      if (next == cur) {
+	//printf("sleeping %i\n", nb++);
+	//printf("sleeping %i\n", nb++);
+	act_cntl(ACT_CNTL_READY_TO_WAIT,NULL);
+	nb_idle_sleeping++;
+	unlock_task();
+	
+	act_cntl(ACT_CNTL_DO_WAIT,NULL);
+	//printf("wakeup\n");
+	lock_task();
+	nb_idle_sleeping--;
+	continue;
+      } 
+    }
+    
+    cur->sched_by = SCHED_BY_MARCEL;
+    if(setjmp(cur->jb.migr_jb) == FIRST_RETURN) {
+      call_ST_FLUSH_WINDOWS();
+      cur->state_ext=MARCEL_READY;
+      restart_thread(next);
+    }
+    cur->state_ext=MARCEL_RUNNING;
+    
   }
+  //  if(!((nb++) % 1000000))
+  //    ACTDEBUG(printf("wait_and_yield %p yielding\n", marcel_self()));
+  //  marcel_yield();
+  //}
 }
 #endif
 

@@ -1197,7 +1197,7 @@ mad_bip_poll_message(p_mad_channel_t channel)
  end:
   LOG_OUT();
 
-  return connection;
+  return in;
 }
 #endif // MAD_MESSAGE_POLLING
 

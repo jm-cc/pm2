@@ -197,7 +197,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 	LOG_IN();
 
 	/* On est encore dans le père. On doit démarrer le fils */
-#warning No auto start...
 	if(
 		// On ne peut pas céder la main maintenant
 		(ma_in_atomic())
@@ -206,7 +205,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 #ifdef MA__LWPS
 		// On ne peut pas placer ce thread sur le LWP courant
 		|| (!lwp_isset(LWP_NUMBER(LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
-/* TODO: vieux code */
+#warning TODO: MARCEL_SCHED_OTHER
 #if 0
 #ifndef MA__ONE_QUEUE
 		// Si la politique est du type 'placer sur le LWP le moins
@@ -228,8 +227,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		PROF_IN_EXT(newborn_thread);
 
 
-		// Si on doit appeler marcel_run, le thread se
-		// bloquera sur un sémaphore
+		/* on ne doit pas démarrer nous-même les processus spéciaux */
 		new_task->father->child = (special_mode?
 					   NULL: /* On ne fait rien */
 					   new_task); /* insert asap */
@@ -239,6 +237,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		 * tout de suite 
 		 */
 		if(marcel_ctx_setjmp(cur->ctx_yield) == NORMAL_RETURN) {
+			/* retour dans le père*/
 			ma_preempt_enable();
 			MTRACE("Father Restart", cur);
 			LOG_OUT();
@@ -254,6 +253,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		marcel_ctx_set_new_stack(new_task, 
 					 new_task->initial_sp-
 					 (base_stack-get_sp()));
+		/* départ du fils, en mode interruption */
 
 		LOG_IN();
 		MTRACE("On new stack", marcel_self());
@@ -279,41 +279,40 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// ne change rien ici...
 
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			ma_preempt_enable(); // par rapport à celui ci-dessous
 			ma_schedule_tail(MARCEL_SELF);
 			MA_THR_RESTARTED(cur, "Father Preemption");
 			LOG_OUT();
 			return 0;
 		}
 
-		PROF_SWITCH_TO(cur->number, new_task->number);
-		
-		PROF_IN_EXT(newborn_thread);
-		
+		/* le fils sera déjà démarré */
 		new_task->father->child = NULL;
 
-		//TODO:SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
-		ma_preempt_disable();
-
-		//ma_wake_up_thread(new_task);
+		PROF_SWITCH_TO(cur->number, new_task->number);
+		PROF_IN_EXT(newborn_thread);
+		
+		/* activer le fils */
 		rq = ma_task_init_rq(new_task);
-		MA_BUG_ON(!rq);
-		ma_spin_lock_softirq(&rq->lock);
+		ma_spin_lock_softirq(&rq->lock); // passage en mode interruption
 		ma_set_task_lwp(new_task, LWP_SELF);
 		activate_running_task(new_task,rq);
-		ma_spin_unlock_softirq(&rq->lock);
+		_ma_raw_spin_unlock(&rq->lock);
 
-		rq = task_rq_lock(MARCEL_SELF);
-		enqueue_task(MARCEL_SELF, rq->active);
 #ifdef MA__LWPS
-		__ma_get_lwp_var(prev_rq)=rq;
+		/* passage de rq de la pile du père au fils */
+		__ma_get_lwp_var(prev_rq)=task_rq(MARCEL_SELF);
 #endif
+
 		marcel_ctx_set_new_stack(new_task,
 					 new_task->initial_sp -
 					 (base_stack-get_sp()));
+		/* départ du fils, en mode interruption */
+
+		/* ré-enqueuer le père */
 		rq = ma_prev_rq();
-		task_rq_unlock(rq);
-		//SET_STATE_READY(marcel_self()->father);
+		_ma_raw_spin_lock(&rq->lock);
+		enqueue_task(marcel_self()->father, rq->active);
+		ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
 		
 		MTRACE("Preemption", marcel_self());
 		

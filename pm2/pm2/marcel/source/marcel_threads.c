@@ -241,10 +241,10 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	/* Seul le père revient... */
 	marcel_sched_create(cur, new_task, attr, special_mode, base_stack);
 
-	if(cur->child) {
-		// On insére le fils un peu tardivement si nécessaire
+	if(cur->child)
+		/* pour les processus normaux, on réveille le fils nous-même */
 		ma_wake_up_created_thread(cur->child);
-	}
+
 	LOG_OUT();
 	return 0;
 	

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -74,6 +73,21 @@ tbx_htable_init(p_tbx_htable_t            htable,
   LOG_OUT();
 }
 
+p_tbx_htable_t
+tbx_htable_empty_table(void)
+{
+  p_tbx_htable_t table = NULL;
+  
+  LOG_IN();
+  table = TBX_CALLOC(1, sizeof(tbx_htable_t));
+  CTRL_ALLOC(table);
+  
+  tbx_htable_init(table, 0);
+  LOG_OUT();
+  
+  return table;
+}
+
 tbx_bool_t
 tbx_htable_empty(p_tbx_htable_t htable)
 {
@@ -100,8 +114,8 @@ tbx_htable_get_size(p_tbx_htable_t htable)
 
 static
 tbx_htable_bucket_count_t
-__tbx_htable_get_bucket(p_tbx_htable_t   htable,
-			tbx_htable_key_t key)
+__tbx_htable_get_bucket(p_tbx_htable_t  htable,
+			const char     *key)
 {
   tbx_htable_bucket_count_t bucket  = 0;
   size_t                    key_len = 0;
@@ -121,9 +135,9 @@ __tbx_htable_get_bucket(p_tbx_htable_t   htable,
 }
 
 void
-tbx_htable_add(p_tbx_htable_t    htable,
-	       tbx_htable_key_t  key,
-	       void             *object)
+tbx_htable_add(p_tbx_htable_t  htable,
+	       const char     *key,
+	       void           *object)
 {
   tbx_htable_bucket_count_t bucket  = -1;
   p_tbx_htable_element_t    element = NULL;
@@ -134,10 +148,7 @@ tbx_htable_add(p_tbx_htable_t    htable,
 
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = tbx_malloc(tbx_htable_manager_memory);  
-  element->key = TBX_MALLOC(strlen(key) + 1);
-  CTRL_ALLOC(element->key);
-
-  strcpy(element->key, key);
+  element->key = tbx_strdup(key);
   element->object = object;
   element->next   = htable->bucket_array[bucket];
   
@@ -147,8 +158,8 @@ tbx_htable_add(p_tbx_htable_t    htable,
 }
 
 void *
-tbx_htable_get(p_tbx_htable_t   htable,
-	       tbx_htable_key_t key)
+tbx_htable_get(p_tbx_htable_t  htable,
+	       const char     *key)
 {
   tbx_htable_bucket_count_t bucket  = -1;
   p_tbx_htable_element_t    element = NULL;
@@ -180,8 +191,8 @@ tbx_htable_get(p_tbx_htable_t   htable,
 }
 
 void *
-tbx_htable_extract(p_tbx_htable_t   htable,
-		   tbx_htable_key_t key)
+tbx_htable_extract(p_tbx_htable_t  htable,
+		   const char     *key)
 {
   tbx_htable_bucket_count_t  bucket  = -1;
   p_tbx_htable_element_t    *element = NULL;
@@ -293,9 +304,7 @@ tbx_htable_get_key_slist(p_tbx_htable_t htable)
 	    {
 	      char *key_copy = NULL;
 	      
-	      key_copy = TBX_MALLOC(strlen(element->key) + 1);
-	      strcpy(key_copy, element->key);
-
+	      key_copy = tbx_strdup(element->key);
 	      tbx_slist_append(slist, key_copy);
 
 	      element = element->next;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.7  2000/01/13 14:46:11  oaumage
+- adaptation pour la prise en compte de la toolbox
+
 Revision 1.6  2000/01/10 10:23:16  oaumage
 *** empty log message ***
 
@@ -433,6 +436,11 @@ mad_mpi_driver_exit(p_mad_driver_t driver)
     }
 #endif /* PM2 */  
   MPI_Finalize();
+  free (driver->specific);
+#ifdef PM2
+  mad_mpi_driver_specific = NULL;
+#endif /* PM2 */
+  driver->specific = NULL;
   LOG_OUT();
 }
 
@@ -587,16 +595,16 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 {
   LOG_IN();
   /* Code to send a group of buffers */
-  if (!mad_empty_list(&(buffer_group->buffer_list)))
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
-      mad_list_reference_t ref;
+      tbx_list_reference_t ref;
       int                  buffer_count = buffer_group->buffer_list.length;
 
-      mad_list_reference_init(&ref, &(buffer_group->buffer_list));
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       
       if (buffer_count == 1)
 	{
-	  mad_mpi_send_buffer(lnk, mad_get_list_reference_object(&ref));
+	  mad_mpi_send_buffer(lnk, tbx_get_list_reference_object(&ref));
 	}
       else
 	{
@@ -615,13 +623,13 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 	  PM2_LOCK_SHARED(mad_mpi_driver_specific);
 	  do
 	    {
-	      buffer = mad_get_list_reference_object(&ref);
+	      buffer = tbx_get_list_reference_object(&ref);
 
 	      MPI_Address(buffer->buffer, displacement + count);	      
 	      length[count] = buffer->length;
 	      count ++;
 	    }
-	  while(mad_forward_list_reference(&ref));
+	  while(tbx_forward_list_reference(&ref));
 
 	  MPI_Type_hindexed(buffer_count,
 			    length,
@@ -656,27 +664,25 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 
 void
 mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
-				 mad_bool_t             first_sub_group,
+				 tbx_bool_t             first_sub_group,
 				 p_mad_buffer_group_t   buffer_group)
 {
   /* Code to receive a group of buffers */
   LOG_IN();
 
-  /* The selected group mode is `split', hence the groups should be
-     splitted correctly*/
   if (!first_sub_group)
     FAILURE("group split error");
 
-  if (!mad_empty_list(&(buffer_group->buffer_list)))
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
-      mad_list_reference_t ref;
+      tbx_list_reference_t ref;
       int                  buffer_count = buffer_group->buffer_list.length;
 
-      mad_list_reference_init(&ref, &(buffer_group->buffer_list));
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       
       if (buffer_count == 1)
 	{
-	  p_mad_buffer_t buffer = mad_get_list_reference_object(&ref);
+	  p_mad_buffer_t buffer = tbx_get_list_reference_object(&ref);
 
 	  mad_mpi_receive_buffer(lnk, &buffer);
 	}
@@ -695,13 +701,13 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 	  PM2_LOCK_SHARED(mad_mpi_driver_specific);
 	  do
 	    {
-	      buffer = mad_get_list_reference_object(&ref);
+	      buffer = tbx_get_list_reference_object(&ref);
 
 	      MPI_Address(buffer->buffer, displacement + count);	      
 	      length[count] = buffer->length;
 	      count ++;
 	    }
-	  while(mad_forward_list_reference(&ref));
+	  while(tbx_forward_list_reference(&ref));
 
 	  MPI_Type_hindexed(buffer_count,
 			    length,
@@ -738,8 +744,10 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 /* External spawn support functions */
 
 void
-mad_mpi_external_spawn_init(p_mad_adapter_t spawn_adapter,
-			    int *argc, char **argv)
+mad_mpi_external_spawn_init(p_mad_adapter_t   spawn_adapter
+			    __attribute__ ((unused)),
+			    int              *argc,
+			    char            **argv)
 {
   LOG_IN();
   /* External spawn initialization */
@@ -748,7 +756,8 @@ mad_mpi_external_spawn_init(p_mad_adapter_t spawn_adapter,
 }
 
 void
-mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter,
+mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter
+			   __attribute__ ((unused)),
 			   p_mad_configuration_t configuration)
 {
   mad_host_id_t                host_id;
@@ -830,7 +839,8 @@ mad_mpi_configuration_init(p_mad_adapter_t       spawn_adapter,
 }
 
 void
-mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter,
+mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter
+			       __attribute__ ((unused)),
 			       mad_host_id_t     remote_host_id,
 			       char             *parameter)
 {  
@@ -854,7 +864,8 @@ mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter,
 }
 
 void
-mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter,
+mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter
+				  __attribute__ ((unused)),
 				  char            **parameter)
 {
   MPI_Status status;

@@ -19,6 +19,24 @@
 #ifdef MA__SMP
 #ifdef LINUX_SYS
 #include <sched.h>
+#ifndef CPU_SET
+	/* libc doesn't have support for sched_setaffinity,
+	 * build system call ourselves: */
+#include <linux/unistd.h>
+#ifndef __NR_sched_setaffinity
+	/* not even syscall number... */
+#if defined(X86_ARCH)
+#define __NR_sched_setaffinity 241
+#elif defined(IA64_ARCH)
+#define __NR_sched_setaffinity 1231
+#else
+#error "don't know the syscall number for sched_setaffinity on this architecture"
+#endif
+	/* declare system call */
+_syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
+		unsigned long *, mask);
+#endif
+#endif
 #endif
 #endif
 
@@ -366,6 +384,16 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 		exit(1);
 	}
 #elif defined(LINUX_SYS)
+
+#ifndef CPU_SET
+	/* no libc support, use direct system call */
+	unsigned long mask = 1UL<<target;
+
+	if (sched_setaffinity(0,sizeof(target),&target)<0) {
+		perror("sched_setaffinity");
+		exit(1);
+	}
+#else
 	cpu_set_t mask;
 
 	CPU_ZERO(&mask);
@@ -374,6 +402,7 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 		perror("sched_setaffinity");
 		exit(1);
 	}
+#endif
 #else
 #error "don't know how to bind on processors on this system"
 #endif

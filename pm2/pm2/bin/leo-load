@@ -34,7 +34,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-PROGNAME=pm2load
+PROGNAME=leo-load
 
 error() # msg
 {
@@ -86,6 +86,12 @@ export PM2_DEBUG
 PM2_XMODE=off
 export PM2_XMODE
 
+PM2_PMODE=off
+export PM2_PMODE
+
+PM2_LOGMODE=off
+export PM2_LOGMODE
+
 while [ $# -gt 0 ]; do
     case $1 in
 	-f)
@@ -100,6 +106,14 @@ while [ $# -gt 0 ]; do
 	-x)
 	    shift
 	    PM2_XMODE=on
+	    ;;
+	-l)
+	    shift
+	    PM2_LOGMODE=on
+	    ;;
+	-p)
+	    shift
+	    PM2_PMODE=on
 	    ;;
 	-c)
 	    shift
@@ -128,7 +142,6 @@ shift
 prog_args="$@"
 
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
-
 set --  --source-mode $prog
 . ${PM2_ROOT}/bin/pm2which
 
@@ -141,8 +154,10 @@ if [ "${PM2_DEBUG}" = on ]; then
     prefix='pm2_gdb_load'
 elif [ "${PM2_XMODE}" = on ]; then
     prefix='pm2_xload'
+elif [ "${PM2_LOGMODE}" = on ]; then
+    prefix='pm2_logload'
 else
-    prefix=""
+    prefix="pm2_wrapper"
 fi
 
 # echo "### Leonie loader ###"

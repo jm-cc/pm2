@@ -42,9 +42,10 @@
 #include "dsm_protocol_lib.h"
 #include "marcel.h" /* tfprintf */
 #include "dsm_pm2.h"
+#include "dsm_const.h"
 
 static dsm_protocol_t _dsm_protocol;
-
+static int _dsm_protocol_set = 0;
 //#define DEBUG
 
   //
@@ -95,7 +96,7 @@ void dsm_pm2_init(int my_rank, int confsize)
 {
   dsm_page_table_init(my_rank, confsize);
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
-  if (_dsm_protocol.receive_page_server == NULL) // no protocol specified; use the default protocol
+  if ( _dsm_protocol_set == 0 ) // no protocol specified; use the default protocol
     {
       dsm_protocol_t protocol;
 
@@ -120,4 +121,5 @@ void dsm_pm2_exit()
 void pm2_set_dsm_protocol(dsm_protocol_t *protocol)
 {
   _dsm_protocol = *protocol;
+  _dsm_protocol_set = 1;
 }

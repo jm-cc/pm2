@@ -1,4 +1,12 @@
 
+#ifdef ACT_TIMER
+#ifdef CONFIG_ACT_TIMER
+#undef CONFIG_ACT_TIMER
+#endif
+#define CONFIG_ACT_TIMER
+#include <timing.h>
+#endif
+
 #include <marcel.h>
 #include <marcel_alloc.h>
 #include <sched.h>
@@ -253,6 +261,17 @@ void act_preempt(act_id_t cur_aid, act_id_t stopped_aid, int fast_restart)
   act_id_t aid=-1;
   marcel_t cur_thread, stopped_thread;
   int cur_crit, stopped_crit;
+
+#ifdef ACT_TIMER
+  unsigned long temps;
+  Tick t;
+
+  GET_TICK(t);
+  temps = timing_tick2usec(TICK_DIFF(act_buf[1].tick, t));
+  printf("time upcall = %ld.%03ldms\n", temps/1000, temps%1000);
+  
+#endif
+
   ACTDEBUG(printf("act_preempt(%i, %i, %i)\n", cur_aid, stopped_aid,
 		  fast_restart));
 

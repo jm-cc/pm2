@@ -24,7 +24,7 @@ fi
 ##########################################################################
 
 HIDDEN_MODULES="generic|appli"
-EXPERT_MODULES="generic|appli|leonie|mad2|leoparse|swann|ezflavor"
+EXPERT_MODULES="generic|appli|leonie|mad2|leoparse|ezflavor"
 
 # aide
 usage() # exit_code section

@@ -40,9 +40,6 @@ registering_flavors() {
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--marcel=profile
 
-    register_flavor swann \
-	--modules="swann leoparse tbx ntbx init" $COMMON_OPTIONS
-
     register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" $COMMON_OPTIONS
 

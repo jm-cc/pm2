@@ -66,6 +66,16 @@ else
 NTBX_OPTIONS    += $(NTBX_STANDALONE_OPTIONS) -DNTBX -DNTBX_TCP
 NTBX_ALONE       :=  true
 endif
+
+ifdef MARCEL_FLAGS
+NTBX_OPTIONS    += -DMARCEL -DTHREADS
+else 
+  ifdef MAD_THREAD_SUPPORT
+  NTBX_OPTIONS    += -DTHREADS
+  endif
+endif
+else
+NTBX_OPTIONS    += -DMARCEL -DTHREADS
 endif
 
 

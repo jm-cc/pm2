@@ -524,7 +524,7 @@ int is_valid(trace *tr)
   }
   if (tr->type == KERNEL) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
-      /* FKT_SITCH_TO: We must update the information about cpu and last_up
+      /* FKT_SWITCH_TO: We must update the information about cpu and last_up
 	 If the old process was traced, active_proc--
 	    If the thread associated was traced, active_thread--
                If it was traced in a function active_thread_fun--
@@ -532,7 +532,7 @@ int is_valid(trace *tr)
 	    If the thread associated is to be traced, active_thread++
 	       If it is to be traced in a function active_thread_fun++
        */
-      table[tr->args[1]]= tr->args[0];
+      table[tr->cpu]= tr->args[0];
       set_pid_last_up(tr->args[0], tr->clock);
       if ((is_in_proc_list(tr->pid) == TRUE) && \
 	  (is_in_cpu_list(tr->cpu) == TRUE) && \
@@ -549,7 +549,7 @@ int is_valid(trace *tr)
 	}
       }
       if ((is_in_proc_list(tr->args[0]) == TRUE) && \
-	  (is_in_cpu_list(tr->args[1]) == TRUE) && \
+	  (is_in_cpu_list(tr->cpu) == TRUE) && \
 	  (is_in_logic_list(logic_of_lwp(tr->args[0])) == TRUE)) {
 	options.active_proc++;
 	if (is_lwp(tr->args[0]) == TRUE) {
@@ -562,7 +562,7 @@ int is_valid(trace *tr)
 	  }
 	}
       }
-    } else if (tr->code >> 8 == FKT_NEW_LWP_CODE) {
+    } else if (tr->code >> 8 == FKT_USER_FORK_CODE) {
       if ((is_in_proc_list(tr->pid) == TRUE) && \
 	  (is_in_cpu_list(tr->cpu) == TRUE) && \
 	  (is_in_logic_list(tr->args[1])))

@@ -157,7 +157,7 @@ static void fut_trace_calc(trace *tr)
       thread = tr->args[1];                 // If !smp, updates thread
   } 
 
-  //  else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) { // IN case of FUT_NEW_LWP
+  //  else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) { // IN case of FUT_NEW_LWP_CODE
   //    int n;
   //    add_lwp(tr->args[0], tr->args[2], tr->args[1]); /* adds this new lwp to
   //						       the lwp list */
@@ -194,15 +194,12 @@ static void fkt_trace_calc(trace *tr)
   if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
       tr->relevant = 1;
-      assert(tr->args[1] < NB_MAX_CPU);
-      if (tr->args[1] != tr->cpu)
-	fprintf(stderr, "Strange kernel switch_to: might cause problems to sigmund\n");
-      pid_table[tr->args[1]] = tr->args[0];
+      pid_table[tr->cpu] = tr->args[0];
       if (is_lwp(tr->args[0])) {
-	set_cpu(tr->args[0], tr->args[1]);
+	set_cpu(tr->args[0], tr->cpu);
 	if (!smp) thread = thread_of_lwp(tr->args[0]);
       }
-    } else if (tr->code >> 8 == FKT_NEW_LWP_CODE) {
+    } else if (tr->code >> 8 == FKT_USER_FORK_CODE) {
       tr->relevant = 1;
       add_lwp(tr->pid, tr->args[0], tr->args[1]);
       set_cpu(tr->pid, tr->cpu);

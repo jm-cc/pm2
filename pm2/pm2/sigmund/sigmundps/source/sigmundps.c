@@ -138,16 +138,13 @@ void print_process()
 	  fprintf(F_proc[tr.cpu], "0 %f rlineto\n", v_coord(tr.clock) - last_trace[tr.cpu]);
 	}
       }
-      fprintf(F_proc[tr.args[1]], "stroke %% %d %d\n", tr.pid, tr.args[0]);
-      if (tr.args[1] != tr.cpu) {
-	printf("Merde\n");
-      }
+      fprintf(F_proc[tr.cpu], "stroke %% %d %d\n", tr.pid, tr.args[0]);
       new_thread = thread_of_lwp(tr.args[0]);
       if (new_thread != -1) {
-	fprintf(F_proc[tr.args[1]], "%d %f moveto\n", 
-		h_coord_cpu(tr.args[1]) + 10 + get_thread_dec(new_thread),
+	fprintf(F_proc[tr.cpu], "%d %f moveto\n", 
+		h_coord_cpu(tr.cpu) + 10 + get_thread_dec(new_thread),
 		v_coord(tr.clock));
-	fprintf(F_proc[tr.args[1]], "%s\n", (get_last_type_thread(new_thread) == USER)? "black" : "red");
+	fprintf(F_proc[tr.cpu], "%s\n", (get_last_type_thread(new_thread) == USER)? "black" : "red");
       }
       last_trace[tr.cpu] = v_coord(tr.clock);
       continue;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.9  2000/09/05 13:59:40  oaumage
+- reecriture des slists et corrections diverses au niveau des htables
+
 Revision 1.8  2000/05/29 16:56:23  oaumage
 - Correction de safe malloc
 
@@ -99,8 +102,8 @@ tbx_aligned_malloc(size_t   size,
 }
 
 void
-tbx_aligned_free (void  *ptr,
-		  int    align)
+tbx_aligned_free (void *ptr,
+		  int   align)
 {
   TBX_FREE (*(char **) ((char *) ptr - align));
 }
@@ -140,8 +143,9 @@ static p_tbx_safe_malloc_header_t last = NULL;
 static size_t                     allocated = 0;
 static size_t                     freed     = 0;
 
-static void
-tbx_safe_malloc_mem_check()
+static 
+void
+tbx_safe_malloc_mem_check(void)
 {
   fprintf(stderr, "*** SafeMalloc Stats ***\n");
   fprintf(stderr, "Allocated: %u, Freed: %u, Lost: %u\n",
@@ -157,7 +161,7 @@ tbx_safe_malloc_mem_check()
 }
 
 void
-tbx_safe_malloc_init()
+tbx_safe_malloc_init(void)
 {
   atexit(tbx_safe_malloc_mem_check);
 }
@@ -225,7 +229,8 @@ tbx_safe_calloc(size_t    nmemb,
   return p;
 }
 
-static void
+static
+void
 tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
 {
   void *base = p;
@@ -246,9 +251,12 @@ tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
 	    data);  
 }
 
-void tbx_safe_free(void *ptr, char *file, unsigned line)
+void
+tbx_safe_free(void     *ptr,
+	      char     *file,
+	      unsigned  line)
 {
-  p_tbx_safe_malloc_header_t  p   =
+  p_tbx_safe_malloc_header_t  p    =
     ptr - TBX_SAFE_MALLOC_HEADER_SIZE;
   void                       *base = p;
 
@@ -330,12 +338,10 @@ tbx_malloc_init(p_tbx_memory_t *mem,
 		size_t          block_len,
 		long            initial_block_number)
 {
-  p_tbx_memory_t temp_mem = TBX_MALLOC(sizeof(tbx_memory_t));
+  p_tbx_memory_t temp_mem = NULL;
 
-  if (temp_mem == NULL)
-    {
-      FAILURE("not enough memory");
-    }
+  temp_mem = TBX_MALLOC(sizeof(tbx_memory_t));
+  CTRL_ALLOC(temp_mem);
 
   TBX_INIT_SHARED(temp_mem);
 
@@ -349,22 +355,21 @@ tbx_malloc_init(p_tbx_memory_t *mem,
       block_len = sizeof(void *);
     }
 
-
-  temp_mem->current_mem =
-    temp_mem->first_mem =
+  temp_mem->first_mem =
     TBX_MALLOC(initial_block_number * block_len + sizeof(void *));
+  CTRL_ALLOC(temp_mem->first_mem);
 
   if (temp_mem->first_mem == NULL)
-    {
-      FAILURE("not enough memory");
-    }
+    FAILURE("not enough memory");
+
+  temp_mem->current_mem = temp_mem->first_mem;
   
   *(void **)(temp_mem->current_mem + initial_block_number * block_len) = NULL;
 
-  temp_mem->block_len = block_len;
-  temp_mem->mem_len = initial_block_number;
+  temp_mem->block_len  = block_len;
+  temp_mem->mem_len    = initial_block_number;
   temp_mem->first_free = NULL; 
-  temp_mem->first_new = 0;
+  temp_mem->first_new  = 0;
 
   *mem = temp_mem;
 }
@@ -387,11 +392,7 @@ tbx_malloc(p_tbx_memory_t mem)
 	{
 	  void *new_mem =
 	    TBX_MALLOC(mem->mem_len * mem->block_len + sizeof(void *));
-
-	  if (new_mem == NULL)
-	    {
-	      FAILURE("not enough memory");
-	    }
+	  CTRL_ALLOC(new_mem);
 
 	  *(void **)(new_mem + mem->mem_len * mem->block_len) = NULL;
 	  *(void **)(mem->current_mem
@@ -403,7 +404,6 @@ tbx_malloc(p_tbx_memory_t mem)
       ptr = mem->current_mem + (mem->block_len * mem->first_new);
       mem->first_new++;
     }
-
   TBX_UNLOCK_SHARED(mem);
 
   return ptr ;
@@ -424,7 +424,7 @@ tbx_free(p_tbx_memory_t  mem,
 void
 tbx_malloc_clean(p_tbx_memory_t mem)
 {
-  void *block_mem;
+  void *block_mem = NULL;
   
   TBX_LOCK_SHARED(mem);
   block_mem = mem->first_mem;

@@ -480,7 +480,8 @@ DEF___PTHREAD(once)
 #ifdef MA__POSIX_BEHAVIOUR
 #define __DEF___PTHREAD(name) \
   DEF_STRONG_T(__PTHREAD_NAME(name), \
-               POSIX_NAME(name), __PTHREAD_NAME(name))
+               LOCAL_POSIX_NAME(name), __PTHREAD_NAME(name))
+
 
 void __pmarcel_once_fork_prepare(void)
 {

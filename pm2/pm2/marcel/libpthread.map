@@ -6,6 +6,8 @@ MARCEL {
     marcel_*;
     pmarcel_*;
     marcel_pthread_initialize;
+    ma_lock_task;
+    tselect;
 };
 GLIBC_2.0 {
   global:

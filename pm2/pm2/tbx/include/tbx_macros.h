@@ -311,7 +311,7 @@ __tbx_backtrace(void)
  * ________________________//////////////////////////////////////////
  */
 #if defined (MARCEL)       //# Thread sync : Marcel mode
-#  ifdef STANDARD_MAIN
+#  if defined(STANDARD_MAIN) || defined(MARCEL_MAIN_AS_FUNC)
 #    define tbx_main main
 #  else  // STANDARD_MAIN
 #    define tbx_main marcel_main

@@ -79,7 +79,7 @@ static void eval_thread_creation(void)
 
     GET_TICK(t1);
 
-    stack = slot_general_alloc(NULL, 0, &granted, NULL);
+    stack = slot_general_alloc(NULL, 0, &granted, NULL, NULL);
     marcel_attr_setstackaddr(&attr, stack);
     marcel_attr_setstacksize(&attr, granted);
 

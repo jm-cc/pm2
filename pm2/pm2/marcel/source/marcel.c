@@ -572,9 +572,9 @@ int marcel_exit(any_t val)
 
   } else { // Ici, la pile a été allouée par le noyau Marcel
 
-#ifdef PM2
-    RAISE(PROGRAM_ERROR);
-#endif
+    //#ifdef PM2
+    //    RAISE(PROGRAM_ERROR);
+    //#endif
 
     // On appelle marcel_terminate sur la pile courante puisque
     // celle-ci ne sera jamais détruite par l'une des fonction "cleanup"...

@@ -16,7 +16,17 @@
 LIBRARY=marcel
 #LIBNAME=$(LIBRARY)
 
+LIB_SO_MAJ=0
+
 #$(LIBRARY)_CC=gcc
 #$(LIBRARY)_AS=gcc
+include $(PM2_ROOT)/make/libs-vars.mak
 
-include $(PM2_ROOT)/make/libs.mak
+ifeq ($(LIBPTHREAD),true)
+LIBNAME=pthread
+LIB_LIB_SO_OPTIONS=-L$(LIB_GEN_LIB) -ltbx
+$(LIB_LIB_SO): $(LIB_LIB_SO).0 libpthread.map
+
+endif
+
+include $(PM2_ROOT)/make/libs-rules.mak

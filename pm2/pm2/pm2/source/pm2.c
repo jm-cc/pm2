@@ -189,8 +189,12 @@ void pm2_rawrpc_begin(int module, int num,
 		      pm2_attr_t *pm2_attr)
 {
 #ifdef PM2DEBUG
-  if(module == __pm2_self && !mad_can_send_to_self())
-    RAISE(NOT_IMPLEMENTED);
+  if(module == __pm2_self 
+#ifdef MAD2
+     && !mad_can_send_to_self()
+#endif
+	  )
+	  RAISE(NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
   if(pm2_attr == NULL)

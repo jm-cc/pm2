@@ -37,11 +37,12 @@ typedef sigset_t __sigset_t;
 #endif
 
 #include <sys/types.h> /* pour size_t */
-#depend "marcel_sched_generic.h[types]"
+#depend "marcel_sched_generic.h[]"
 
 /* Attributes for threads.  */
 struct __marcel_attr_s
 {
+  /* begin of pthread */
   int __detachstate;
   int __schedpolicy;
   struct __sched_param __schedparam;
@@ -51,7 +52,9 @@ struct __marcel_attr_s
   int __stackaddr_set;
   void *__stackaddr;
   size_t __stacksize;
-  /* marcel attributs */
+  /* end of pthread */
+
+  /* marcel attributes */
   //unsigned stack_size;
   //char *stack_base;
   //int /*boolean*/ detached;
@@ -64,6 +67,7 @@ struct __marcel_attr_s
   marcel_vpmask_t vpmask;
   int flags;
   char name[MARCEL_MAXNAMESIZE];
+  marcel_sched_attr_t sched;
 };
 
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sisci.h,v $
+Revision 1.4  2000/01/13 14:44:44  oaumage
+- adaptation pour la prise en compte de la toolbox
+
 Revision 1.3  2000/01/04 09:17:05  oaumage
 - ajout de la commande de log de CVS
 
@@ -92,7 +95,7 @@ void mad_sisci_receive_buffer(p_mad_link_t,
 void mad_sisci_send_buffer_group(p_mad_link_t,
 				 p_mad_buffer_group_t);
 void mad_sisci_receive_sub_buffer_group(p_mad_link_t,
-					mad_bool_t,
+					tbx_bool_t,
 					p_mad_buffer_group_t);
 p_mad_buffer_t mad_sisci_get_static_buffer(p_mad_link_t);
 void mad_sisci_return_static_buffer(p_mad_link_t,

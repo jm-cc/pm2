@@ -495,7 +495,7 @@ void real_flush(int profondeur_lock)
 
 void pm2debug_flush()
 {
-	pm2debug_printf(&debug_type_flush,0,"","");
+	pm2debug_printf(&debug_type_flush,0,__FILE__, "%s", "");
 }
 
 #ifdef ACTIVATION

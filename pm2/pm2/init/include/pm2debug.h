@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.7  2000/09/12 14:55:13  rnamyst
+Added support for generating .i files in Makefiles
+
 Revision 1.6  2000/06/13 12:32:50  vdanjean
 debug_flush
 
@@ -208,27 +211,52 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
  * Logging macros  __________________________________________________
  * _______________///////////////////////////////////////////////////
  */
-#if defined(PM2DEBUG) && defined(DEBUG)
+#ifdef PREPROC
+#define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_FUT_" \
+                                                   __FUNCTION__ "_" #inout \
+                                                   "_CODE"); \
+                               foo=1; }
+#else
+#define GEN_PREPROC(inout)   (void)0
+#endif
+
+#if defined(PM2DEBUG)
+#ifdef DEBUG
 #define LOG(str, args...)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            str "\n" , ## args)
-#define LOG_IN()              debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
-					   __FUNCTION__": -->\n")
-#define LOG_OUT()             debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
-					   __FUNCTION__": <--\n")
+#define LOG_IN()              do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+					   __FUNCTION__": -->\n"); \
+                              GEN_PREPROC(ENTRY) } while(0)
+#define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+					   __FUNCTION__": <--\n"); \
+                              GEN_PREPROC(EXIT) } while(0)
 #define LOG_VAL(str, val)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
 #define LOG_PTR(str, ptr)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   str " = %p\n" , (void *)(ptr))
 #define LOG_STR(str, str2)    debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   str " : %s\n" , (char *)(str2))
-#else /* PM2DEBUG */
+#else // if not DEBUG
+
 #define LOG(str, args...) 
-#define LOG_IN() 
-#define LOG_OUT() 
+#define LOG_IN()              GEN_PREPROC(in)
+#define LOG_OUT()             GEN_PREPROC(out)
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)
-#endif /* DEBUG */
+
+#endif
+
+#else // else if not PM2DEBUG
+
+#define LOG(str, args...) 
+#define LOG_IN()              GEN_PREPROC(in)
+#define LOG_OUT()             GEN_PREPROC(out)
+#define LOG_VAL(str, val) 
+#define LOG_PTR(str, ptr) 
+#define LOG_STR(str, str2)
+
+#endif // PM2DEBUG
 
 
 /*

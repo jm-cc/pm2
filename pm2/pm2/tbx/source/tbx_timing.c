@@ -1,3 +1,10 @@
+/*! \file tbx_timing.c
+ *  \brief TBX timing support routines
+ *
+ *  This file contains the support functions for the
+ *  TBX timing facilities.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine
@@ -25,12 +32,13 @@
 #include <unistd.h>
 #include "tbx.h"
 
-static double   scale = 0.0;
-unsigned long long       tbx_residual;
-tbx_tick_t      tbx_new_event ;
-tbx_tick_t      tbx_last_event;
+static double      scale        = 0.0;
+unsigned long long tbx_residual = 0;
+tbx_tick_t         tbx_new_event ;
+tbx_tick_t         tbx_last_event;
 
-void tbx_timing_init()
+void
+tbx_timing_init()
 {
   static tbx_tick_t t1, t2;
   int i;
@@ -62,7 +70,8 @@ void tbx_timing_init()
   TBX_GET_TICK(tbx_last_event);
 }
 
-double tbx_tick2usec(long long t)
+double
+tbx_tick2usec(long long t)
 {
   return (double)(t)*scale;
 }

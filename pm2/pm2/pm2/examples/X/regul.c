@@ -63,7 +63,7 @@ static unsigned charge_locale(void)
 static void informer(void)
 {
   pm2_rawrpc_begin(module_precedent, LOAD, NULL);
-  mad_pack_int(MAD_IN_HEADER, &local_load, 1);
+  old_mad_pack_int(MAD_IN_HEADER, &local_load, 1);
   pm2_rawrpc_end();
 }
 
@@ -102,7 +102,7 @@ static void reguler(void)
 
 void load_service(void)
 {
-  mad_unpack_int(MAD_IN_HEADER, &other_load, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &other_load, 1);
   pm2_rawrpc_waitdata();
 }
 

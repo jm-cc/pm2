@@ -227,3 +227,22 @@ call_ST_FLUSH_WINDOWS:
 
 #endif
 
+#if defined(ALPHA_ARCH) && defined(OSF_SYS)
+        .align 2
+        .globl dummy
+        .ent dummy
+dummy:
+        .frame $15,16,$26,0
+        .mask 0x4008000,-16
+        lda $30,-16($30)
+        stq $26,0($30)
+        stq $15,8($30)
+        mov $30,$15
+        .prologue 0
+        mov $15,$30
+        ldq $26,0($30)
+        ldq $15,8($30)
+        lda $30,16($30)
+        ret $31,($26),1
+        .end dummy
+#endif

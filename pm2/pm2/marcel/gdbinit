@@ -1,0 +1,107 @@
+set $marcel_saved=0
+
+define save-ctx-fp-x86
+  set $marcel_saved_bp=$ebp
+end
+define save-ctx
+  set $marcel_saved_th=marcel_self()
+  printf "saving marcel context ($marcel_saved_th=%p)\n",$marcel_saved_th
+  set $marcel_saved_pc=$pc
+  set $marcel_saved_sp=$sp
+  save-ctx-fp-x86
+  set $marcel_saved=1
+end
+document save-ctx
+Saves the current marcel context
+Use rest-ctx to restore it
+end
+
+define set-ctx-x86
+  set $esp=((marcel_t)$arg0)->ctx_yield[0].jbuf[4]
+  set $ebp=((marcel_t)$arg0)->ctx_yield[0].jbuf[3]
+  set $eip=((marcel_t)$arg0)->ctx_yield[0].jbuf[5]
+end
+define set-ctx
+  if $marcel_saved==0
+    save-ctx
+  end
+  printf "switching to $arg0(%p)\n", $arg0
+  set-ctx-x86 $arg0
+end
+document set-ctx
+Switch to another marcel thread's context
+end
+
+define rest-ctx-fp-x86
+  set $ebp=$marcel_saved_bp
+end
+define __rest-ctx
+  echo "restoring marcel context (%p)",$marcel_saved_th
+  set $pc=$marcel_saved_pc
+  set $sp=$marcel_saved_sp
+  rest-ctx-fp-x86
+  set $marcel_saved=0
+end
+define rest-ctx
+  if $marcel_saved==0
+    echo no context saved !\n
+  else
+    __rest-ctx
+  end
+end
+document rest-ctx
+Restores a previously-saved marcel context,
+so as to be able to continue execution
+end
+
+define marcel-continue
+  handle SIGALRM pass
+  handle SIGVTALRM pass
+  if $marcel_saved==1
+    __rest-ctx
+    echo go\n
+  end
+end
+
+define marcel-step
+  handle SIGALRM nopass
+  handle SIGVTALRM nopass
+  if $marcel_saved==1
+    __rest-ctx
+    echo go\n
+  end
+end
+
+define hook-stop
+  marcel-step
+end
+
+define hook-run
+  marcel-continue
+end
+define hook-continue
+  marcel-continue
+end
+
+define hook-step
+  marcel-step
+end
+define hook-stepi
+  marcel-step
+end
+define hook-next
+  marcel-step
+end
+define hook-nexti
+  marcel-step
+end
+
+define hook-finish
+  marcel-continue
+end
+define hook-until
+  marcel-continue
+end
+define hook-advance
+  marcel-continue
+end

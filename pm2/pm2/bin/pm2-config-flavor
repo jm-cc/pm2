@@ -596,7 +596,7 @@ do_edite() {
 
 list_flavors=`"$PM2_FLAVOR" list`
 get_flavor_ok() { # flavor need_existing can_be_empty first
-    f=`echo "$1" | tr -c -d '[\-_a-zA-Z0-9]'`
+    f=`echo "$1" | tr -c -d '_\-a-zA-Z0-9'`
     if [ "$1" != "$f" ]; then
 	return 1
     fi

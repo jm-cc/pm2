@@ -1,15 +1,15 @@
 #include "pm2.h"
 
 char hostname[128];
-pm2_completion_t c;
+pm2_completion_t c;		/* Here! */
 
 void
-thread_function (void *arg)
+f (void *arg)
 {
   int i, proc;
   pm2_completion_t my_c;
 
-  pm2_completion_copy (&my_c, &c);
+  pm2_completion_copy (&my_c, &c);	/* Here! */
 
   pm2_enable_migration ();
 
@@ -25,7 +25,7 @@ thread_function (void *arg)
 
       pm2_migrate_self (proc);
     }
-  pm2_completion_signal (&my_c);
+  pm2_completion_signal (&my_c);	/* Here! */
 }
 
 
@@ -37,12 +37,12 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
-      pm2_completion_init (&c, NULL, NULL);
+    {				/* Master process */
+      pm2_completion_init (&c, NULL, NULL);	/* Here! */
 
-      pm2_thread_create (thread_function, NULL);
+      pm2_thread_create (f, NULL);
 
-      pm2_completion_wait (&c);
+      pm2_completion_wait (&c);	/* Here! */
       pm2_halt ();
     }
 

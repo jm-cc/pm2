@@ -1,3 +1,10 @@
+/*! \file tbx_slist.h
+ *  \brief TBX double-linked search list data structures.
+ *
+ *  This file contains the TBX double-linked multi-purpose search list 
+ *  data structures.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

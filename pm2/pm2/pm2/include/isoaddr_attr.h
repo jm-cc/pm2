@@ -27,6 +27,8 @@
 
 #define isoaddr_attr_set_non_atomic(attr) (attr)->atomic = 0;
 
+#define isoaddr_attr_set_special(attr) (attr)->special = 1
+
 #define isoaddr_attr_get_status(attr) ((attr)->status)
 
 #define isoaddr_attr_get_protocol(attr) ((attr)->protocol)
@@ -34,6 +36,8 @@
 #define isoaddr_attr_get_alignment(attr) ((attr)->align)
 
 #define isoaddr_attr_atomic(attr) ((attr)->atomic)
+
+#define isoaddr_attr_special(attr) ((attr)->special)
 
 #endif
 

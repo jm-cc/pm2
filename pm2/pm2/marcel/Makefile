@@ -32,7 +32,7 @@ endif
 SCHED_NAME=marcel
 
 MOD_HSPLITS_COMMON:=splitall_section_def.h
-MOD_HSPLITS_SOURCES:=$(shell echo `pwd` > /dev/stderr ; cd include ; \
+MOD_HSPLITS_SOURCES:=$(shell echo `pwd` 1>&2 ; cd include ; \
 	grep -l '^\#section' *.h sys/*.h)
 
 #MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)

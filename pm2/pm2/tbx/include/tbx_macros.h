@@ -140,13 +140,13 @@
 #  else /* OOPS */
 #    define _TBX_EXIT_FAILURE() FAILURE_CLEANUP(),exit(1)
 #  endif /* OOPS */
-#else // FAILURE_CLEANUP
+#else /* FAILURE_CLEANUP */
 #  ifdef OOPS
 #    define _TBX_EXIT_FAILURE() abort()
 #  else /* OOPS */
 #    define _TBX_EXIT_FAILURE() exit(1)
 #  endif /* OOPS */
-#endif // FAILURE_CLEANUP
+#endif /* FAILURE_CLEANUP */
 
 #ifdef TBX_BACKTRACE_ON_FAILURE
 #  include <execinfo.h>
@@ -155,7 +155,7 @@
 
 #  ifndef TBX_BACKTRACE_DEPTH
 #    define TBX_BACKTRACE_DEPTH 10
-#  endif // TBX_BACKTRACE_DEPTH
+#  endif /* TBX_BACKTRACE_DEPTH */
 
 #  define __TBX_PRINT_TRACE()\
      ({\
@@ -174,13 +174,13 @@
 \
        free (strings);\
      })
-#else  // TBX_BACKTRACE_ON_FAILURE
+#else  /* TBX_BACKTRACE_ON_FAILURE */
 #  define __TBX_PRINT_TRACE() (void)(0)
-#endif // TBX_BACKTRACE_ON_FAILURE
+#endif /* TBX_BACKTRACE_ON_FAILURE */
 
 #ifndef FAILURE_CONTEXT
 #  define FAILURE_CONTEXT
-#endif // FAILURE_CONTEXT
+#endif /* FAILURE_CONTEXT */
 
 #define FAILURE(str) \
      (pm2debug("FAILURE: " FAILURE_CONTEXT "%s\n", (str)), \
@@ -240,12 +240,12 @@
  * Threads specific macros  _________________________________________
  * ________________________//////////////////////////////////////////
  */
-#if defined (MARCEL)       //# Thread sync : Marcel mode
+#if defined (MARCEL)       /*# Thread sync : Marcel mode */
 #  if defined(STANDARD_MAIN) || defined(MARCEL_MAIN_AS_FUNC)
 #    define tbx_main main
-#  else  // STANDARD_MAIN
+#  else  /* STANDARD_MAIN */
 #    define tbx_main marcel_main
-#  endif // STANDARD_MAIN
+#  endif /* STANDARD_MAIN */
 #  define TBX_CRITICAL_SECTION(name)              marcel_mutex_t __tbx_section_ ## name = MARCEL_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        marcel_mutex_lock(&(__tbx_section_ ## name))
 #  define TBX_CRITICAL_SECTION_TRY_ENTERING(name) marcel_mutex_trylock(&(__tbx_section_ ## name))
@@ -259,7 +259,7 @@
 #  define TBX_LOCK()             lock_task()
 #  define TBX_UNLOCK()           unlock_task()
 #  define TBX_YIELD()            marcel_yield()
-#elif defined (_REENTRANT) //# Thread sync : Pthread mode
+#elif defined (_REENTRANT) /*# Thread sync : Pthread mode */
 #  define tbx_main main
 #  define TBX_CRITICAL_SECTION(name)              pthread_mutex_t __tbx_section_ ## name = PTHREAD_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        pthread_mutex_lock(&(__tbx_section_ ## name))
@@ -273,12 +273,12 @@
 #  define TBX_UNLOCK_SHARED(st)  pthread_mutex_unlock((&((st)->__tbx_mutex)))
 #  define TBX_LOCK()
 #  define TBX_UNLOCK()
-#  if defined (SOLARIS_SYS)     //# pthread yield : 'not available' case
+#  if defined (SOLARIS_SYS)     /*# pthread yield : 'not available' case */
 #    define TBX_YIELD()
-#  else                         //# pthread yield : 'available' case
+#  else                         /*# pthread yield : 'available' case */
 #    define TBX_YIELD()           pthread_yield()
-#  endif                        //# pthread yield : end
-#else                         //# Threads sync : no thread mode
+#  endif                        /*# pthread yield : end */
+#else                         /*# Threads sync : no thread mode */
 #  define tbx_main main
 
 #  define TBX_CRITICAL_SECTION(name) const int __tbx_section_ ## name = 0
@@ -294,7 +294,7 @@
 #  define TBX_LOCK()             (void)(0)
 #  define TBX_UNLOCK()           (void)(0)
 #  define TBX_YIELD()            (void)(0)
-#endif                      //# Threads sync : end
+#endif                      /*# Threads sync : end */
 
 
 /*
@@ -372,7 +372,7 @@
  * Arithmetic macros  _______________________________________________
  * __________________////////////////////////////////////////////////
  */
-    // Bi-directional shifts
+    /* Bi-directional shifts */
 #define tbx_lshift(x, n) ({     \
 	__typeof__ ((n)) _n = (n); \
 	__typeof__ ((x)) _x = (x); \

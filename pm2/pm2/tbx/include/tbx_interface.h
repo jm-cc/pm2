@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.3  2000/03/13 09:48:17  oaumage
+- ajout de l'option TBX_SAFE_MALLOC
+- support de safe_malloc
+- extension des macros de logging
+
 Revision 1.2  2000/01/31 15:59:09  oaumage
 - detection de l'absence de GCC
 - ajout de aligned_malloc
@@ -81,22 +86,53 @@ void
 tbx_aligned_free (void *ptr,
 		  int   align);
 
+/*
+ * Safe malloc
+ * -----------
+ */
+void
+tbx_safe_malloc_init();
+
+void *
+tbx_safe_malloc(size_t    size,
+		char     *file,
+		unsigned  line);
+
+void *
+tbx_safe_calloc(size_t    nmemb,
+		size_t    size,
+		char     *file,
+		unsigned  line);
+
+void tbx_safe_free(void     *ptr,
+		   char     *file,
+		   unsigned  line);
+
+void 
+tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode);
+
+void *
+tbx_safe_realloc(void     *ptr,
+		 size_t    size,
+		 char     *file,
+		 unsigned  line);
+
 
 /*
  * Fast malloc
  * -----------
  */
 void
-tbx_malloc_init(p_tbx_memory_t  *mem,
-		size_t           block_len,
-		long             initial_block_number);
+tbx_malloc_init(p_tbx_memory_t *mem,
+		size_t          block_len,
+		long            initial_block_number);
 
 void *
 tbx_malloc(p_tbx_memory_t mem);
 
 void
-tbx_free(p_tbx_memory_t   mem, 
-         void            *ptr);
+tbx_free(p_tbx_memory_t  mem, 
+         void           *ptr);
 
 void
 tbx_malloc_clean(p_tbx_memory_t memory);

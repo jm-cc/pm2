@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.8  2000/01/13 14:45:58  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+- mad_channel.c, madeleine.c: amelioration des fonctions `par defaut' au niveau
+  du support des drivers
+
 Revision 1.7  2000/01/05 09:42:58  oaumage
 - mad_communication.c: support du nouveau `group_mode' (a surveiller !)
 - madeleine.c: external_spawn_init n'est plus indispensable
@@ -179,11 +185,11 @@ mad_adapter_set_init(int nb_adapter, ...)
 }
 
 static void 
-mad_manager_init(p_mad_madeleine_t madeleine)
+mad_managers_init(void)
 {
   LOG_IN();
+  tbx_init();
   mad_memory_manager_init();
-  mad_list_manager_init();
   LOG_OUT();
 }
 
@@ -210,7 +216,7 @@ mad_driver_fill(p_mad_madeleine_t madeleine)
       driver->id        = drv;
       driver->specific  = NULL;
 
-      mad_list_init(&(driver->adapter_list));
+      tbx_list_init(&(driver->adapter_list));
       mad_driver_registration[drv](driver);
     }
   
@@ -234,6 +240,7 @@ mad_driver_init(p_mad_madeleine_t madeleine)
 	continue;
 #endif /* EXTERNAL_SPAWN */
       driver = &(madeleine->driver[drv]);      
+      driver->specific = NULL;
       driver->interface.driver_init(driver);
     }
   LOG_OUT();
@@ -267,7 +274,7 @@ mad_adapter_fill(p_mad_madeleine_t     madeleine,
       adapter     = &(madeleine->adapter[ad]);
 
       PM2_INIT_SHARED(adapter);
-      mad_append_list(&(driver->adapter_list), adapter);
+      tbx_append_list(&(driver->adapter_list), adapter);
       
       adapter->driver                  = driver;
       adapter->id                      = description->driver_id;
@@ -288,8 +295,8 @@ mad_parse_command_line(int                *argc,
 #ifdef MAD2_MAD1
 		       char               *conf_file,
 #endif /* MAD2_MAD1 */
-		       p_mad_bool_t        master,
-		       p_mad_bool_t        slave)
+		       p_tbx_bool_t        master,
+		       p_tbx_bool_t        slave)
 {
 #ifndef EXTERNAL_SPAWN
   p_mad_adapter_t  current_adapter = madeleine->adapter;
@@ -304,11 +311,11 @@ mad_parse_command_line(int                *argc,
     {
       if(!strcmp(argv[i], "-master"))
 	{
-	  *master = mad_true;
+	  *master = tbx_true;
 	}
       else if(!strcmp(argv[i], "-slave"))
 	{
-	  *slave = mad_true;
+	  *slave = tbx_true;
 	}
       else if(!strcmp(argv[i], "-rank"))
 	{
@@ -557,9 +564,7 @@ mad_slave_spawn(int                *argc,
 
 #ifdef EXTERNAL_SPAWN
 static void
-mad_connect_hosts(p_mad_madeleine_t   madeleine,
-		  int                *argc,
-		  char              **argv)
+mad_connect_hosts(p_mad_madeleine_t   madeleine)
 {
   p_mad_driver_interface_t spawn_interface;
   p_mad_adapter_t          spawn_adapter;
@@ -578,6 +583,8 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
+      adapter->specific = NULL;      
+
       if (adapter->driver->interface.adapter_init)
 	adapter->driver->interface.adapter_init(adapter);
       if (!rank)
@@ -623,6 +630,7 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
       p_mad_adapter_t adapter;
       
       adapter = &(madeleine->adapter[ad]);
+      adapter->specific = NULL;
       if (adapter->driver->interface.adapter_init)
 	adapter->driver->interface.adapter_init(adapter);
     }
@@ -702,7 +710,17 @@ mad_foreach_adapter_exit(void *object)
   p_mad_driver_interface_t   interface = &(driver->interface);
   
   LOG_IN();
-  interface->adapter_exit(adapter);
+  if (interface->adapter_exit)
+    {
+      interface->adapter_exit(adapter);
+    }
+  else
+    {
+      if (adapter->specific)
+	{
+	  free(adapter->specific);
+	}
+    }
   LOG_OUT();
 }
 
@@ -722,9 +740,19 @@ mad_driver_exit(p_mad_madeleine_t madeleine)
       driver    = &(madeleine->driver[drv]);      
       interface = &(driver->interface);
 
-      mad_foreach_destroy_list(&(madeleine->channel),
+      tbx_foreach_destroy_list(&(madeleine->channel),
 			       mad_foreach_adapter_exit);
-      interface->driver_exit(driver);
+      if (interface->driver_exit)
+	{
+	  interface->driver_exit(driver);
+	}
+      else
+	{
+	  if (driver->specific)
+	    {
+	      free(driver->specific);
+	    }
+	}
     }
 
   free(madeleine->adapter);
@@ -744,7 +772,7 @@ mad2_init(int                  *argc,
 p_mad_madeleine_t
 mad_init(int                   *argc,
 	 char                 **argv,
-	 char                  *configuration_file,
+	 char                  *configuration_file __attribute__ ((unused)),
 	 p_mad_adapter_set_t    adapter_set)
 #endif /* MAD2_MAD1 */
 {
@@ -752,8 +780,8 @@ mad_init(int                   *argc,
   p_mad_configuration_t      configuration   =
     &(madeleine->configuration);
   mad_host_id_t              rank            = -1;
-  mad_bool_t                 master          = mad_false;
-  mad_bool_t                 slave           = mad_false;
+  tbx_bool_t                 master          = tbx_false;
+  tbx_bool_t                 slave           = tbx_false;
 #ifdef EXTERNAL_SPAWN
   p_mad_driver_t             spawn_driver    = NULL;
   p_mad_driver_interface_t   spawn_interface = NULL;
@@ -767,25 +795,25 @@ mad_init(int                   *argc,
 #endif /* MAD2_MAD1 */
 
   LOG_IN(); 
-#ifdef TIMING
-  mad_timing_init();
-#endif /* TIMING */
 
 #ifdef PM2  
   marcel_init(argc, argv);
 #endif /* PM2 */
-
+  tbx_init();
+  
   madeleine->nb_channel = 0;
   PM2_INIT_SHARED(madeleine);
-  mad_manager_init(madeleine);
+  mad_managers_init();
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
 
 #ifdef EXTERNAL_SPAWN
   spawn_driver = &(madeleine->driver[EXTERNAL_SPAWN]);
   spawn_interface = &(madeleine->driver[EXTERNAL_SPAWN].interface);
+  spawn_driver->specific = NULL;
   spawn_interface->driver_init(spawn_driver);
   spawn_adapter = &(madeleine->adapter[0]);
+  spawn_adapter->specific = NULL;
   if (spawn_interface->adapter_init)
     spawn_interface->adapter_init(spawn_adapter);
   if (spawn_interface->external_spawn_init)
@@ -809,13 +837,13 @@ mad_init(int                   *argc,
 
   if (rank == 0)
     {
-      master = mad_true;
-      slave  = mad_false;
+      master = tbx_true;
+      slave  = tbx_false;
     }
   else
     {
-      master = mad_false;
-      slave  = mad_true;
+      master = tbx_false;
+      slave  = tbx_true;
     }
 #else /* EXTERNAL_SPAWN */
   mad_read_conf(configuration, configuration_file);
@@ -844,8 +872,12 @@ mad_init(int                   *argc,
     }
   
   mad_driver_init(madeleine);
+#ifdef EXTERNAL_SPAWN
+  mad_connect_hosts(madeleine);
+#else /* EXTERNAL_SPAWN */
   mad_connect_hosts(madeleine, argc, argv);
-  mad_list_init(&(madeleine->channel));
+#endif /* EXTERNAL_SPAWN */
+  tbx_list_init(&(madeleine->channel));
 
   LOG_OUT();
   return madeleine;
@@ -863,7 +895,7 @@ mad_exit(p_mad_madeleine_t madeleine)
   PM2_LOCK_SHARED(madeleine);
   mad_close_channels(madeleine);
   mad_driver_exit(madeleine);
-  mad_list_manager_exit();
+  tbx_list_manager_exit();
   PM2_UNLOCK_SHARED(madeleine);
   LOG_OUT();
 }
@@ -871,23 +903,23 @@ mad_exit(p_mad_madeleine_t madeleine)
 p_mad_channel_t
 mad_get_channel(mad_channel_id_t id)
 {
-  mad_list_reference_t ref;
+  tbx_list_reference_t ref;
   
-  if (mad_empty_list(&(main_madeleine.channel)))
+  if (tbx_empty_list(&(main_madeleine.channel)))
     return NULL;
   
-  mad_list_reference_init(&ref, &(main_madeleine.channel));
+  tbx_list_reference_init(&ref, &(main_madeleine.channel));
 
   do
     {
-      p_mad_channel_t tmp_channel = mad_get_list_reference_object(&ref);
+      p_mad_channel_t tmp_channel = tbx_get_list_reference_object(&ref);
       
       if (tmp_channel->id == id)
 	{
 	  return tmp_channel;
 	}    
     }
-  while(mad_forward_list_reference(&ref));
+  while(tbx_forward_list_reference(&ref));
 
   return NULL;
 }

@@ -336,7 +336,9 @@ mad_object_init(int                   argc,
   p_mad_madeleine_t     madeleine     = &(main_madeleine);
   p_mad_settings_t      settings      = NULL;
   p_mad_configuration_t configuration = NULL;
+#ifdef LEONIE_SPAWN
   p_ntbx_client_t       client        = NULL;
+#endif // LEONIE_SPAWN
 
   LOG_IN();
  
@@ -350,13 +352,14 @@ mad_object_init(int                   argc,
   tbx_list_init(&(madeleine->channel));
   madeleine->settings      = NULL;
   madeleine->configuration = NULL;
-#ifdef MAD_LEONIE_SPAWN
+#ifdef LEONIE_SPAWN
   madeleine->master_link   = NULL;
-#endif /* MAD_LEONIE_SPAWN */
+#endif // LEONIE_SPAWN
 
   settings = TBX_MALLOC(sizeof(mad_settings_t));
   CTRL_ALLOC(settings);
 
+  settings->app_cmd               =      NULL;
   settings->rsh_cmd               =      NULL;
   settings->configuration_file    =      NULL;
   settings->debug_mode            = tbx_false;
@@ -416,13 +419,13 @@ mad_object_init(int                   argc,
   client->state = ntbx_client_state_uninitialized;
   ntbx_tcp_client_init(client);
   madeleine->master_link = client;
-#endif /* LEONIE_SPAWN */
+#endif // LEONIE_SPAWN
 
   /* Network components pre-initialization */
   mad_driver_fill(madeleine);
 #ifndef LEONIE_SPAWN
   mad_adapter_fill(madeleine, adapter_set);
-#endif /* LEONIE_SPAWN */
+#endif // LEONIE_SPAWN
   LOG_OUT();
   
   return madeleine;
@@ -473,6 +476,21 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	      
 	  strcpy(settings->configuration_file, *argv);
 	}
+      else if (!strcmp(*argv, "-mad_app_cmd"))
+	{
+	  argc--; argv++;
+
+	  if (!argc)
+	    FAILURE("mad_app_cmd argument not found");
+
+	  if (settings->app_cmd)
+	    FAILURE("application command specified more than once");
+
+	  settings->app_cmd = TBX_MALLOC(strlen(*argv) + 1);
+	  CTRL_ALLOC(settings->app_cmd);
+	      
+	  strcpy(settings->app_cmd, *argv);
+	}
       else if (!strcmp(*argv, "-device"))
 	{
 	  argc--; argv++;
@@ -502,7 +520,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 #ifndef LEONIE_SPAWN
   if (configuration->local_host_id == -1)
     FAILURE("could not determine the node rank");
-#endif /* LEONIE_SPAWN */
+#endif // LEONIE_SPAWN
 
   LOG_OUT();
 }
@@ -715,6 +733,15 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine,
 
 	  if (!argc)
 	    FAILURE("conf argument disappeared");
+	  
+	  _argv++; (*_argc)--;
+	}
+      else if (!strcmp(*_argv, "-mad_app_cmd"))
+	{
+	  _argv++; (*_argc)--; argc--;
+
+	  if (!argc)
+	    FAILURE("mad_app_cmd argument disappeared");
 	  
 	  _argv++; (*_argc)--;
 	}

@@ -33,24 +33,11 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MASTER_MODULE =  NTBX
-COMMON_DEFAULT_TARGET :=  mad_default
+LIBRARY=ntbx
+#LIBNAME=marcel
 
-include $(PM2_ROOT)/make/master_vars.mak
+#marcel_CC=gcc
+#marcel_AS=gcc
 
-# Ce makefile
-COMMON_MAKEFILES +=  $(NTBX_ROOT)/Makefile
-
-# Inclusion des variables
-include $(NTBX_MAKE)/vars.mak
-include $(TBX_MAKE)/vars.mak
-
-# Regles principales
-include $(PM2_ROOT)/make/master_rules.mak
-
-# Inclusion des regles de compilation
-include $(NTBX_MAKE)/rules.mak
-include $(TBX_MAKE)/rules.mak
-
-
-##############################################################################
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/libs.mak

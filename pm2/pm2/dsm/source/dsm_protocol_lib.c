@@ -142,7 +142,7 @@ void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node)
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
       dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
-      dsm_send_page(req_node, index, dsm_self(), READ_ACCESS);
+      dsm_send_page(req_node, index, READ_ACCESS);
       //      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
       //      unlock_task();
 #ifdef DEBUG3
@@ -186,7 +186,7 @@ void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_no
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
       dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
-      dsm_send_page(req_node, index, dsm_self(), WRITE_ACCESS);
+      dsm_send_page(req_node, index, WRITE_ACCESS);
       dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
       //      unlock_task();
     }
@@ -337,7 +337,7 @@ void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t re
 #ifdef DEBUG_HYP
       tfprintf(stderr,"WS before send page...\n");
 #endif
-      dsm_send_page(req_node, index, dsm_self(), WRITE_ACCESS);
+      dsm_send_page(req_node, index, WRITE_ACCESS);
     }
   else // no access? then forward req to prob owner!
     {

@@ -28,7 +28,6 @@
 #include "magic.h"
 #include "slot_alloc.h"
 
-#define ASSERT 
 
 
 void slot_slot_busy(void *addr)
@@ -70,8 +69,10 @@ void slot_print_header(slot_header_t *ptr)
 {
   if (ptr == NULL)return;
   fprintf(stderr,"\nslot header:\n");
+#ifdef ASSERT
   assert(ptr->magic_number == SLOT_MAGIC_NUM);
   fprintf(stderr, "  start address = %p  available size = %d  magic number = %x\n  previous slot address = %p  next slot address = %p\n", ptr, ptr->size, ptr->magic_number, ptr->prev, ptr->next);
+#endif
 }
 
 void slot_print_list(slot_descr_t *descr)
@@ -112,9 +113,9 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
   slot_header_t *header_ptr;
 
 #ifdef DSM
-  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, DEFAULT_DSM_PROTOCOL, 1, 32};
+  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, DEFAULT_DSM_PROTOCOL, 1, 32, 0};
 #else
-  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 0, 1, 32};
+  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 0, 1, 32, 0};
 #endif
 
   LOG_IN();
@@ -136,9 +137,12 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
   */
   header_ptr->size = overall_size - SLOT_HEADER_SIZE;
   if (granted_size != NULL) *granted_size = header_ptr->size;
+#ifdef ASSERT
   header_ptr->magic_number = SLOT_MAGIC_NUM;
+#endif
   header_ptr->prot = attr->protocol;
   header_ptr->atomic = attr->atomic;
+  header_ptr->special = attr->special; 
   /* 
      chain the slot if requested 
   */
@@ -493,5 +497,94 @@ void slot_set_shared(void *addr)
 
 }
 #endif //DSM
+
+slot_header_t *slot_detach(void *addr)
+{
+  int master = isoaddr_page_get_master(isoaddr_page_index(addr));
+  slot_header_t *header_ptr = (slot_header_t *)isoaddr_page_addr(master);
+
+#ifdef ISOADDR_INFO_TRACE
+   fprintf(stderr,"slot_detach: unchaining... descr = %p\n",header_ptr->thread_slot_descr);
+   slot_print_list(header_ptr->thread_slot_descr);
+#endif
+  /* 
+     get the slot out of the thread list if linked 
+  */
+  if(header_ptr->thread_slot_descr != NULL){
+    
+    if (header_ptr->prev != NULL)
+      header_ptr->prev->next = header_ptr->next;
+    else 
+      /* 
+	 the slot to suppress is the head of the list 
+      */
+      header_ptr->thread_slot_descr->slots = header_ptr->next;
+    if (header_ptr->next != NULL)
+      header_ptr->next->prev = header_ptr->prev;
+    else
+      { 
+      /*
+	the slot to suppress is the tail of the list 
+      */
+	if (header_ptr->prev != NULL)
+	/* 
+	   the slot to suppress is not the only one in the list 
+	   */
+	  header_ptr->prev->next = NULL;
+	
+	/*
+	  update the address of the last slot in the list
+	  */
+	header_ptr->thread_slot_descr->last_slot = header_ptr->prev;
+      }
+  }
+#ifdef ISOADDR_INFO_TRACE
+   fprintf(stderr,"Slot_set_shared: unchained... descr = %p\n", 
+	   header_ptr->thread_slot_descr);
+   slot_print_list(header_ptr->thread_slot_descr);
+#endif
+   return header_ptr;
+}
+
+
+void slot_attach(slot_descr_t *descr, slot_header_t *header_ptr)
+{
+  /* 
+     fill in the header 
+  */
+#ifdef ASSERT
+  header_ptr->magic_number = SLOT_MAGIC_NUM;
+#endif
+  /* 
+     chain the slot if requested 
+  */
+  if(descr != NULL) {
+#ifdef ASSERT
+    assert(descr->magic_number == SLOT_LIST_MAGIC_NUM);
+#endif
+    header_ptr->next = descr->slots; 
+    if(descr->slots != NULL)
+      descr->slots->prev = header_ptr;
+    else{
+#ifdef ISOADDR_SLOT_ALLOC_TRACE
+      fprintf(stderr,"First slot chained\n");
+#endif
+      descr->last_slot = header_ptr;
+    }
+
+    /*
+      update the list head 
+    */
+    descr->slots = header_ptr;
+    /*
+      record a ptr to the thread slot descr
+    */
+    header_ptr->thread_slot_descr = descr;
+
+  }
+  else
+    RAISE(PROGRAM_ERROR);
+  header_ptr->prev = NULL;
+}
 
 

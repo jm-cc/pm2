@@ -121,7 +121,7 @@ static void pm2_completion_service(void)
   marcel_sem_V(&c_ptr->sem);
 }
 
-/* BEURK!!! This should *go away* very soon!!! */
+/* BEURK!!! This should *go away* ASAP!!! */
 extern unsigned __pm2_rpc_init_called;
 extern void pm2_rpc_init(void);
 /* EOB */

@@ -45,6 +45,8 @@ unsigned long marcel_createdthreads(void);
 #section marcel_functions
 asmlinkage void marcel_sched_do_work(void);
 
+void marcel_gensched_shutdown(void);
+
 //extern int FASTCALL(marcel_wake_up_state(marcel_task_t * tsk, unsigned int state));
 //extern int FASTCALL(marcel_wake_up_thread(marcel_task_t * tsk));
 //extern int FASTCALL(marcel_wake_up_thread_kick(task_t * tsk));

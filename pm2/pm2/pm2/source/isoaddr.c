@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.5  2000/09/12 15:45:52  gantoniu
+Made all necessary modifications to allow flavors without dsm be created and compiled.
+
 Revision 1.4  2000/09/04 07:42:47  rnamyst
 Minor modifs (removed some debug messages)
 
@@ -431,6 +434,7 @@ void isoaddr_page_display_info()
     tfprintf(stderr,"Page %d: owner = %d, status = %d, pending = %d\n", i, _info_table[i].owner, _info_table[i].status, _info_table[i].pending);
 }
 
+#ifdef DSM
 /******* a few comm functionalities for page info ********/
 
 
@@ -455,7 +459,7 @@ static __inline__ void _isoaddr_send_info_req(node_t dest_node, int index, node_
 static __inline__ void _isoaddr_send_info(node_t dest_node, int index)
 {
   int prot = 0, master = isoaddr_page_get_master(index), nb_pages = 1, k, shared;
-  dsm_node_t dsm_owner;
+  node_t dsm_owner;
 
   //  if (_info_table[index].status == ISO_PRIVATE)
   if (_info_table[master].status == ISO_DEFAULT)
@@ -599,14 +603,17 @@ void ISOADDR_INFO_func(void)
 {
   pm2_thread_create((pm2_func_t) _ISOADDR_INFO_threaded_func, NULL);
 }
- 
+#endif //DSM 
+
 
 int isoaddr_page_get_status(int index)
 {
   int master = _info_table[index].master;
 #ifdef ISOADDR_INFO_TRACE
-       fprintf(stderr, "Entering get_status (%d), master = %d, status = %d, owner = %d\n", index, master, _info_table[master].status, _info_table[master].owner );
+  fprintf(stderr, "Entering get_status (%d), master = %d, status = %d, owner = %d\n", index, master, _info_table[master].status, _info_table[master].owner );
 #endif
+
+#ifdef DSM 
   if (_info_table[master].owner != _local_node_rank &&  _info_table[master].status != ISO_SHARED)
      {
        isoaddr_page_info_lock(index);
@@ -628,6 +635,7 @@ int isoaddr_page_get_status(int index)
 #ifdef ISOADDR_INFO_TRACE
        fprintf(stderr, "get_status (%d) returns %d\n", index, _info_table[master].status);
 #endif
+#endif// DSM
   return _info_table[master].status;
 }
 
@@ -1615,9 +1623,10 @@ void LRPC_ISOMALLOC_LOCAL_UNLOCK_func(void)
 #endif
 	 isoaddr_page_info_unlock(start_index + i);
        }
-
+#ifdef DSM
      if(status == ISO_SHARED)
        dsm_enable_page_entry(dsm_isoaddr_page_index(start_index), sender, prot, isoaddr_page_addr(start_index + nb_slots - 1), DSM_PAGE_SIZE * nb_slots, TRUE);
+#endif
    }
  else
    {
@@ -1634,8 +1643,10 @@ void LRPC_ISOMALLOC_LOCAL_UNLOCK_func(void)
 	 _info_table[start_index + i].status = status; 
 #endif
 	 isoaddr_page_info_unlock(start_index + i);
-
-	 dsm_enable_page_entry(dsm_isoaddr_page_index(start_index + i), sender, prot, isoaddr_page_addr(start_index + i), DSM_PAGE_SIZE, TRUE);
+#ifdef DSM
+	 if(status == ISO_SHARED)
+	   dsm_enable_page_entry(dsm_isoaddr_page_index(start_index + i), sender, prot, isoaddr_page_addr(start_index + i), DSM_PAGE_SIZE, TRUE);
+#endif
        }
    }
     
@@ -1663,7 +1674,10 @@ void LRPC_ISOMALLOC_SEND_SLOT_STATUS_func(void)
 
 void LRPC_ISOMALLOC_SYNC_func(void)
 {
-  int i, sender;
+  int sender;
+#ifdef ISOADDR_NEGOCIATION_TRACE
+  int i;
+#endif
 
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&sender, sizeof(unsigned int));
   pm2_rawrpc_waitdata();
@@ -1735,8 +1749,10 @@ static void _isomalloc_global_sync()
 
 void isoaddr_init_rpc()
 {
+#ifdef DSM
   pm2_rawrpc_register(&ISOADDR_LRPC_INFO_REQ, ISOADDR_INFO_REQ_func);
   pm2_rawrpc_register(&ISOADDR_LRPC_INFO, ISOADDR_INFO_func);
+#endif
   pm2_rawrpc_register(&LRPC_ISOMALLOC_GLOBAL_LOCK, LRPC_ISOMALLOC_GLOBAL_LOCK_func);
   pm2_rawrpc_register(&LRPC_ISOMALLOC_GLOBAL_UNLOCK, LRPC_ISOMALLOC_GLOBAL_UNLOCK_func);
   pm2_rawrpc_register(&LRPC_ISOMALLOC_LOCAL_LOCK, LRPC_ISOMALLOC_LOCAL_LOCK_func);

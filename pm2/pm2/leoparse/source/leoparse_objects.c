@@ -19,6 +19,10 @@
  */
 #include "leoparse.h"
 
+/*
+ * Read
+ * ----
+ */
 p_tbx_slist_t
 leoparse_get_slist(p_leoparse_object_t object)
 {
@@ -530,3 +534,180 @@ leoparse_try_read_range(p_tbx_htable_t  htable,
   
   return result;
 }
+
+
+/*
+ * Write
+ * -----
+ */
+void
+leoparse_convert_to_slist(p_tbx_htable_t  htable,
+			  const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      if (object->type != leoparse_o_slist)
+	{
+	  p_tbx_slist_t slist = NULL;
+	  
+	  slist = tbx_slist_nil();
+	  tbx_slist_append(slist, object);
+
+	  object = TBX_CALLOC(1, sizeof(leoparse_object_t));
+	  object->type  = leoparse_o_slist;
+	  object->slist = slist;
+	}
+
+      tbx_htable_add(htable, key, object);
+    }
+  else
+    FAILURE("nothing to convert");
+
+  LOG_OUT();
+}
+
+void
+leoparse_write_slist(p_tbx_htable_t  htable,
+		     const char     *key,
+		     p_tbx_slist_t   slist)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (!object)
+    {
+      object        = TBX_CALLOC(1, sizeof(leoparse_object_t));
+      object->type  = leoparse_o_slist;
+      object->slist = slist;
+    }  
+  else
+    FAILURE("trying to overwrite an object");
+
+  LOG_OUT();
+}
+
+void
+leoparse_write_id(p_tbx_htable_t  htable,
+		  const char     *key,
+		  char           *id)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (!object)
+    {
+      object       = TBX_CALLOC(1, sizeof(leoparse_object_t));
+      object->type = leoparse_o_id;
+      object->id   = id;
+    }  
+  else
+    FAILURE("trying to overwrite an object");
+
+  LOG_OUT();
+}
+
+void
+leoparse_write_string(p_tbx_htable_t  htable,
+		      const char     *key,
+		      char           *string)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (!object)
+    {
+      object         = TBX_CALLOC(1, sizeof(leoparse_object_t));
+      object->type   = leoparse_o_string;
+      object->string = string;
+    }  
+  else
+    FAILURE("trying to overwrite an object");
+
+  LOG_OUT();
+}
+
+void
+leoparse_write_htable(p_tbx_htable_t  htable,
+		      const char     *key,
+		      p_tbx_htable_t  table)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (!object)
+    {
+      object         = TBX_CALLOC(1, sizeof(leoparse_object_t));
+      object->type   = leoparse_o_htable;
+      object->htable = table;
+    }  
+  else
+    FAILURE("trying to overwrite an object");
+
+  LOG_OUT();
+}
+
+void
+leoparse_write_val(p_tbx_htable_t  htable,
+		   const char     *key,
+		   int             val)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (!object)
+    {
+      object       = TBX_CALLOC(1, sizeof(leoparse_object_t));
+      object->type = leoparse_o_integer;
+      object->val  = val;
+    }  
+  else
+    FAILURE("trying to overwrite an object");
+
+  LOG_OUT();
+}
+
+void
+leoparse_write_range(p_tbx_htable_t      htable,
+		     const char         *key,
+		     p_leoparse_range_t  range)
+{
+  p_leoparse_object_t object = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_get(htable, key);
+
+  if (!object)
+    {
+      object        = TBX_CALLOC(1, sizeof(leoparse_object_t));
+      object->type  = leoparse_o_range;
+      object->range = range;
+    }  
+  else
+    FAILURE("trying to overwrite an object");
+
+  LOG_OUT();
+}
+
+

@@ -33,10 +33,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+include $(PM2_ROOT)/make/common-rules.mak
+
 ifdef PROG_RECURSIF
 $(PROGRAM):
-
-include $(PM2_ROOT)/make/common-rules.mak
 
 ifneq ($(PROGRAM),$(PROGNAME))
 $(PROGNAME): $(PROGRAM)
@@ -65,15 +65,11 @@ showflags:
 showflavor:
 	@echo Compiling for flavor: $(FLAVOR)
 
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
-
+ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
 # Target subdirectories
 DUMMY_BUILD :=  $(foreach REP, $(PRG_REP_TO_BUILD), $(shell mkdir -p $(REP)))
-
 ifeq ($(wildcard $(PRG_DEPENDS)),$(PRG_DEPENDS))
 include $(PRG_DEPENDS)
-endif
 endif
 endif
 
@@ -150,9 +146,9 @@ repclean:
 		fi ; \
 	done
 
-distclean:
-	$(COMMON_CLEAN)$(RM) -r build
-	@set -e; 
+#distclean:
+#	$(COMMON_CLEAN)$(RM) -r build
+#	@set -e; 
 
 .PHONY: help bannerhelpprg targethelpprg
 help: globalhelp
@@ -173,6 +169,6 @@ endif
 	@echo "  examples: build the examples of this program (if any)"
 	@echo "  help: this help"
 	@echo "  clean: clean program source tree for current flavor"
-	@echo "  distclean: clean program source tree for all flavors"
+#	@echo "  distclean: clean program source tree for all flavors"
 
 endif # !PROG_RECURSIF

@@ -266,6 +266,7 @@ void marcel_io_init()
 
 int marcel_read(int fildes, void *buf, size_t nbytes)
 {
+  int n;
 #ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
@@ -275,7 +276,11 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 #endif
 
   LOG("IO reading fd %i", fildes);
-  return read(fildes, buf, nbytes);
+  do {
+    n = read(fildes, buf, nbytes);
+  } while( n == -1 && errno == EINTR);
+
+  return n;
 }
 
 int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
@@ -294,6 +299,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 
 int marcel_write(int fildes, const void *buf, size_t nbytes)
 {
+  int n;
 #ifndef MA__ACTIVATION
   unix_io_arg_t myarg;
 
@@ -303,7 +309,11 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 #endif
 
   LOG("IO writing fd %i", fildes);
-  return write(fildes, buf, nbytes);
+  do {
+    n = write(fildes, buf, nbytes);
+  } while( n == -1 && errno == EINTR);
+
+  return n;
 }
 
 int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)

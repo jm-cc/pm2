@@ -31,31 +31,35 @@ static __inline__ void SCHED_YIELD(void)
 #elif defined(LINUX_SYS)
 #include <time.h>
 #include <unistd.h>
+#include <sched.h>
 
-#ifdef MA__ACTIVATIONS
+#if 1
 static __inline__ void SCHED_YIELD(void)
 {
   sched_yield();
 }
 
-#else
+#else // 1
 /* The Linux 'sched_yield' syscall does not relinquish the processor
-   immediately, so we user nanosleep(0) instead... */
+   immediately, so we use nanosleep(0) instead... */
 static __inline__ void SCHED_YIELD(void)
 {
   struct timespec t = { 0, 0 };
 
   nice(20); nanosleep(&t, NULL); nice(0);
 }
-#endif
-#else
+#endif // 1
+
+#else // ni SOLARIS ni LINUX
+
 #include <sched.h>
 static __inline__ void SCHED_YIELD(void)
 {
   sched_yield();
 }
 #endif
-#endif
+
+#endif // MA__LWP
 
 
 /* Solaris sparc */

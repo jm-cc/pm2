@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.c,v $
+Revision 1.4  2000/04/11 09:07:22  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.3.2.1  2000/03/15 15:55:10  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.3  2000/02/28 10:25:04  rnamyst
 Changed #include <> into #include "".
 

@@ -1,9 +1,25 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #ifndef PRIVATEDEFS_EST_DEF
 #define PRIVATEDEFS_EST_DEF
 
 #include "sys/marcel_flags.h"
 #include "sys/isomalloc_archdep.h"
+#include "list.h"
 
 #ifdef MA__SMP
 #include <pthread.h>
@@ -57,7 +73,8 @@ _PRIVATE_ typedef struct task_desc_struct {
   volatile marcel_state_t ext_state;
 #endif
   jmp_buf jbuf;
-  struct task_desc_struct *next,*prev;
+/*    struct task_desc_struct *next,*prev; */
+  struct list_head task_list;
   struct __lwp_struct *lwp;
 #if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
   struct __lwp_struct *previous_lwp;
@@ -70,7 +87,6 @@ _PRIVATE_ typedef struct task_desc_struct {
   marcel_t child, father;
   _exception_block *cur_excep_blk;
   marcel_sem_t client, thread;
-  unsigned prio, quantums;
   cleanup_func_t cleanup_funcs[MAX_CLEANUP_FUNCS];
   handler_func_t deviation_func;
   marcel_func_t f_to_call;
@@ -97,11 +113,18 @@ _PRIVATE_ typedef struct {
   marcel_mutex_t mutex;
 } marcel_once_t;
 
+#ifdef MA__REMOVE_RUNNING_TASK
+typedef struct list_head head_running_list_t;
+#else
+typedef marcel_t head_running_list_t;
+#endif
+
 _PRIVATE_ typedef struct __sched_struct {
-  /*  volatile marcel_t new_task; */              /* Used by marcel_create */
-  volatile marcel_t __first[MAX_PRIO+1];   /* Scheduler queue */
+  /*  volatile marcel_t new_task; */       /* Used by marcel_create */
+  volatile head_running_list_t first;      /* Scheduler queue */
   volatile unsigned running_tasks;         /* Nb of user running tasks */
   marcel_lock_t sched_queue_lock;          /* Lock for scheduler queue */
+  volatile head_running_list_t rt_first;   /* Real time threads queue */
 } __sched_t;
 
 _PRIVATE_ typedef struct __lwp_struct {
@@ -121,7 +144,7 @@ _PRIVATE_ typedef struct __lwp_struct {
   volatile boolean has_to_stop;            /* To force pthread_exit() */
   volatile boolean has_new_tasks;          /* Somebody gave us some work */
 #endif
-  struct __lwp_struct *prev, *next;        /* Double linking */
+  struct list_head lwp_list;
   char __security_stack[2 * SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
   volatile marcel_t sec_desc;              /* Task descriptor for security stack */
@@ -134,6 +157,16 @@ _PRIVATE_ typedef struct __lwp_struct {
 #endif
   marcel_t idle_task;                     /* "Idle" task */
 } __lwp_t;
+
+inline static __lwp_t* next_lwp(__lwp_t* lwp)
+{
+  return list_entry(lwp->lwp_list.next, __lwp_t, lwp_list);
+}
+
+inline static marcel_t next_task(marcel_t task)
+{
+  return list_entry(task->task_list.next, task_desc, task_list);
+}
 
 #ifdef MA__LWPS
 #ifdef MA__ACTIVATION

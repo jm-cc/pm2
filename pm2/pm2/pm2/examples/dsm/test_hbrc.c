@@ -36,7 +36,7 @@
 #include <stdio.h>
 
 #include "pm2.h"
-#include "timing.h"
+
 #include "dsmlib_hbrc_mw_update_protocol.h"
 
 #define COUNTER 

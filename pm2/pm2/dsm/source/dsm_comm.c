@@ -42,6 +42,7 @@
 
 /* tie in to the Hyperion instrumentation */
 #define HYP_INSTRUMENT 1
+
 #ifdef HYP_INSTRUMENT
 int dsm_pf_handler_calls = 0;
 int hyp_readPage_in_cnt = 0;
@@ -65,6 +66,8 @@ int hyp_lrpcLock_out_cnt = 0;
 int hyp_lrpcLock_in_cnt = 0;
 int hyp_lrpcUnlock_out_cnt = 0;
 int hyp_lrpcUnlock_in_cnt = 0;
+int hbrc_diffs_out_cnt = 0;
+int hbrc_diffs_in_cnt = 0;
 
 void dsm_rpc_clear_instrumentation(void)
 {
@@ -90,35 +93,41 @@ void dsm_rpc_clear_instrumentation(void)
   hyp_lrpcLock_in_cnt = 0;
   hyp_lrpcUnlock_out_cnt = 0;
   hyp_lrpcUnlock_in_cnt = 0;
+  hbrc_diffs_out_cnt = 0;
+  hbrc_diffs_in_cnt = 0;
 }
+
 
 void dsm_rpc_dump_instrumentation(void)
 {
   tfprintf(stderr, "%d pf_handler_calls\n",
     dsm_pf_handler_calls);
-#if 0
-  tfprintf(stderr, "%d readPage_in\n",
+  tfprintf(stderr, "%d readPageReq_in\n",
     hyp_readPage_in_cnt);
+#if 0
   tfprintf(stderr, "%d readMPage_in\n",
     hyp_readMPage_in_cnt);
-  tfprintf(stderr, "%d readPage_out\n",
-    hyp_readPage_out_cnt);
 #endif
-  tfprintf(stderr, "%d writePage_in\n",
+  tfprintf(stderr, "%d readPageReq_out\n",
+    hyp_readPage_out_cnt);
+  tfprintf(stderr, "%d writePageReq_in\n",
     hyp_writePage_in_cnt);
+#if 0
   tfprintf(stderr, "%d writeMPage_in\n",
     hyp_writeMPage_in_cnt);
-  tfprintf(stderr, "%d writePage_out\n",
+#endif
+  tfprintf(stderr, "%d writePageReq_out\n",
     hyp_writePage_out_cnt);
-  tfprintf(stderr, "%d sendPage_in\n",
+  tfprintf(stderr, "%d Page_in\n",
     hyp_sendPage_in_cnt);
+#if 0
   tfprintf(stderr, "%d sendMRPage_in\n",
     hyp_sendMRPage_in_cnt);
   tfprintf(stderr, "%d sendMWPage_in\n",
     hyp_sendMWPage_in_cnt);
-  tfprintf(stderr, "%d sendPage_out\n",
+#endif
+  tfprintf(stderr, "%d Page_out\n",
     hyp_sendPage_out_cnt);
-#if 0
   tfprintf(stderr, "%d invalidate_in\n",
     hyp_invalidate_in_cnt);
   tfprintf(stderr, "%d invalidate_out\n",
@@ -127,14 +136,13 @@ void dsm_rpc_dump_instrumentation(void)
     hyp_invalidateAck_in_cnt);
   tfprintf(stderr, "%d invalidateAck_out\n",
     hyp_invalidateAck_out_cnt);
-#endif
+#if 0
   tfprintf(stderr, "%d sendDiffs_in\n",
     hyp_sendDiffs_in_cnt);
   tfprintf(stderr, "%d sendMDiffs_in\n",
     hyp_sendMDiffs_in_cnt);
   tfprintf(stderr, "%d sendDiffs_out\n",
     hyp_sendDiffs_out_cnt);
-#if 0
   tfprintf(stderr, "%d lrpcLock_out\n",
     hyp_lrpcLock_out_cnt);
   tfprintf(stderr, "%d lrpcLock_in\n",
@@ -144,6 +152,11 @@ void dsm_rpc_dump_instrumentation(void)
   tfprintf(stderr, "%d lrpcUnlock_in\n",
     hyp_lrpcUnlock_in_cnt);
 #endif
+  tfprintf(stderr, "%d hbrc_diffs_out\n",
+    hbrc_diffs_out_cnt);
+  tfprintf(stderr, "%d hbrc_diffs_in\n",
+    hbrc_diffs_in_cnt);
+
 }
 #endif
 
@@ -152,7 +165,10 @@ void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req
  LOG_IN();
 
 #ifdef HYP_INSTRUMENT
-  hyp_sendPage_out_cnt++;
+ if (req_access == READ_ACCESS)
+   hyp_readPage_out_cnt++;
+else
+   hyp_writePage_out_cnt++;
 #endif
 #ifdef ASSERT
   assert(dest_node != dsm_self());
@@ -220,6 +236,10 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
 
 #ifdef HYP_INSTRUMENT
   hyp_sendPage_out_cnt++;
+#endif
+
+#ifdef ASSERT
+  assert(dest_node != dsm_self());
 #endif
 
 #ifdef DSM_COMM_TRACE
@@ -368,8 +388,11 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&index, sizeof(unsigned long));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&node, sizeof(dsm_node_t));
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&tag, sizeof(int));
-  pm2_rawrpc_waitdata(); 
+  pm2_rawrpc_waitdata();
+  
+  dsm_lock_page(index);
   (*dsm_get_read_server(dsm_get_page_protocol(index)))(index, node, tag);
+  dsm_unlock_page(index);
 
   LOG_OUT();
 }
@@ -377,7 +400,7 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_READ_PAGE_REQ_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_READ_PAGE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_READ_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -404,7 +427,9 @@ tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func called\n");
 tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func waitdata done"
                  " for node %ld\n", node);
 #endif
+  dsm_lock_page(index);
   (*dsm_get_write_server(dsm_get_page_protocol(index)))(index, node, tag);
+  dsm_unlock_page(index);
 
   LOG_OUT();
 }
@@ -412,10 +437,10 @@ tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func waitdata done"
 
 void DSM_LRPC_WRITE_PAGE_REQ_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
 }
 
-//#define USE_DOUBLE_MAPPING 1
+#define USE_DOUBLE_MAPPING 1
 
 static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 {
@@ -444,6 +469,12 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&to_receive, sizeof(to_receive));
   index = dsm_page_index(to_receive.addr);
+
+#ifdef DSM_COMM_TRACE
+  tfprintf(stderr, "addr = %p; page_size is %ld; reply_node is %d; access is %d;"
+	   " tag is %d; index is %ld;\n", to_receive.addr, to_receive.page_size, to_receive.reply_node, to_receive.access, to_receive.tag,
+	   index);
+#endif
 #else
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&addr, sizeof(void *));
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&page_size, sizeof(unsigned long));
@@ -477,7 +508,12 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
   }
   else
     {
-       dsm_access_t old_access = dsm_get_access(index);
+    //  tbx_tick_t t_start, t_end;
+   //   double total;
+
+      dsm_access_t old_access = dsm_get_access(index);
+
+  //    TBX_GET_TICK(t_start);
 
 #ifdef MINIMIZE_PACKS_ON_PAGE_TRANSFER
 
@@ -504,6 +540,9 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 #ifdef DSM_COMM_TRACE
 	tfprintf(stderr, "calling receive page server\n", index);
 #endif
+//	TBX_GET_TICK(t_end);
+//	total = TBX_TIMING_DELAY(t_start, t_end);
+       // fprintf(stderr,"unpack time = %f\n", total);
 	(*dsm_get_receive_page_server(dsm_get_page_protocol(index)))(to_receive.addr, to_receive.access, to_receive.reply_node, to_receive.tag);
     }
 
@@ -535,13 +574,12 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 #ifdef DSM_COMM_TRACE
 	tfprintf(stderr, "calling receive page server\n", index);
 #endif
+	TBX_GET_TICK(t_end);
+	total = TBX_TIMING_DELAY(t_start, t_end);
+	fprintf(stderr,"unpack time = %f\n", total);
 	(*dsm_get_receive_page_server(dsm_get_page_protocol(index)))(addr, access, reply_node, tag);
     }
 #endif //MINIMIZE_PACKS_ON_PAGE_TRANSFER
-
-#ifdef USE_DOUBLE_MAPPING
-      unlink(RECEIVE_PAGE_FILE);
-#endif
 
   LOG_OUT();
 }
@@ -549,7 +587,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 
 void DSM_LRPC_SEND_PAGE_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_PAGE_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_PAGE_threaded_func, NULL);
 }
  
 
@@ -578,7 +616,7 @@ static void DSM_LRPC_INVALIDATE_REQ_threaded_func(void)
 
 void DSM_LRPC_INVALIDATE_REQ_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_INVALIDATE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_INVALIDATE_REQ_threaded_func, NULL);
 }
 
 
@@ -602,12 +640,14 @@ void DSM_LRPC_INVALIDATE_ACK_func(void)
   LOG_OUT();
 }
 
-
+#define ISOADDR_TEMP_AREA_SIZE 0x4000000
+#define ISOADDR_AREA_NEW_TOP (ISOADDR_AREA_TOP - ISOADDR_TEMP_AREA_SIZE)
+  static char buf[67108864];
 void dsm_unpack_page(void *addr, unsigned long size)
 {
       /* Modification: use double mapping */
       int fd;
-      static char buf[4096];
+    
       void *system_view;
   
      LOG_IN();
@@ -615,31 +655,35 @@ void dsm_unpack_page(void *addr, unsigned long size)
 #if 1
       /* associate page to a true file */
       fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
-      write(fd, buf, 4096);
-      addr = mmap(addr, 4096, PROT_NONE, MAP_PRIVATE | MAP_FIXED,
-	    fd, 0);
+      write(fd, buf, size);
+      addr = mmap(addr, size, PROT_NONE, MAP_PRIVATE | MAP_FIXED, fd, 0);
       if(addr == (void *)-1) 
 	RAISE(STORAGE_ERROR);
       
       /* associate the file to a system view */
-      system_view = mmap((void*)ISOADDR_AREA_TOP, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
+      system_view = mmap((void*)ISOADDR_AREA_NEW_TOP, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
 	    fd, 0);   
       if(system_view == (void *)-1) 
 	RAISE(STORAGE_ERROR);
       
-//      fprintf(stderr, "system view = %p, user view = %p\n",system_view, addr);
+//      fprintf(stderr, "system view = %p, user view = %p, size = %ld\n", system_view, addr, size);
 
-      dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
+//      dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
       /*unpack page using the system view*/
       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)system_view, size); 
 
       /*close file */
       close(fd);
+//tfprintf(stderr, "before unlink\n", index);
+#ifdef USE_DOUBLE_MAPPING
+      unlink(RECEIVE_PAGE_FILE);
+#endif
+//tfprintf(stderr, "after unlink\n", index);
 #else
       /* associate page to a true file */
       fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
-      write(fd, buf, 4096);
-      addr = mmap(addr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, 0);
+      write(fd, buf, size);
+      addr = mmap(addr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, 0);
       if(addr == (void *)-1) 
 	RAISE(STORAGE_ERROR);
 
@@ -885,7 +929,7 @@ void DSM_LRPC_SEND_DIFFS_threaded_func(void)
 
 void DSM_LRPC_SEND_DIFFS_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_DIFFS_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_DIFFS_threaded_func, NULL);
 }
 
 /* Using message aggregation to improve performance: */
@@ -948,7 +992,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
 
 void DSM_LRPC_SEND_MULTIPLE_DIFFS_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func, NULL);
 }
 
 
@@ -971,7 +1015,9 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 
   while (index != -1)
     {
+      dsm_lock_page(index);
       (*dsm_get_read_server(index))(index, req_node, tag);
+      dsm_unlock_page(index);
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
     }
   pm2_rawrpc_waitdata(); 
@@ -984,7 +1030,7 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -1007,7 +1053,9 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 
   while (index != -1)
     {
+      dsm_lock_page(index);
       (*dsm_get_write_server(index))(index, req_node, tag);
+      dsm_unlock_page(index);
       pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&index, sizeof(unsigned long));
     }
   pm2_rawrpc_waitdata(); 
@@ -1020,7 +1068,7 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -1081,7 +1129,7 @@ void DSM_LRPC_SEND_MULTIPLE_PAGES_READ_func(void)
 #ifdef DEBUG_HYP
   tfprintf(stderr, "DSM_LRPC_SEND_MULTIPLE_PAGES_READ_func called\n");
 #endif
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func, NULL);
 }
  
 
@@ -1142,6 +1190,6 @@ void DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_func(void)
 #ifdef DEBUG_HYP
   tfprintf(stderr, "DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_func called\n");
 #endif
-  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func, NULL);
 }
  

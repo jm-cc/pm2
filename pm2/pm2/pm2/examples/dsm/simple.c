@@ -76,7 +76,6 @@ void f()
 
   for (i = 0; i < n; i++) {
     //    atomic_inc(&a);
-    //marcel_delay(20);
     dsm_mutex_lock(&L);
     toto1++;
     dsm_mutex_unlock(&L);
@@ -84,7 +83,6 @@ void f()
 }
 
 BEGIN_SERVICE(TEST_DSM)
-     tfprintf(stderr,"I am %p created on node %d\n",marcel_self(),dsm_self()); 
      f();
      pm2_quick_async_rpc(les_modules[0],DSM_V,NULL,NULL);
 END_SERVICE(TEST_DSM)
@@ -96,12 +94,9 @@ END_SERVICE(DSM_V)
      
 
 
-     //#define N 20
-
 int pm2_main(int argc, char **argv)
 {
   int i, j;
-  dsm_protocol_t protocol;
 
   if (argc != 3)
     {
@@ -118,7 +113,7 @@ int pm2_main(int argc, char **argv)
   //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
   pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
 
-  pm2_set_dsm_page_distribution(DSM_BLOCK, 0);
+  pm2_set_dsm_page_distribution(DSM_CENTRALIZED, 0);
 
   dsm_mutex_init(&L, NULL);
 
@@ -136,15 +131,7 @@ int pm2_main(int argc, char **argv)
       marcel_sem_P(&main_sem);
 
     tfprintf(stderr, "toto1=%d\n", toto1);
-    //    tfprintf(stderr, "a=%d\n", a.counter);
-    /*    unsigned int t[10];
-    display_bitmap(0,80,t);
-    set_bits_to_1(31, 10, t);
-    display_bitmap(0,80,t);
-    clear_bitmap(t+1,8);
-    display_bitmap(0,80,t);
-    fprintf(stderr, "The bitmap %s\n", bitmap_is_empty(t,320)?"is empty":"is not empty");
-    */
+
     pm2_kill_modules(les_modules, nb_modules);
   }
 

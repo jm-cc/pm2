@@ -72,53 +72,9 @@ caller_code	= 8
 
 /* 	Offsets into probe record */
 probe_lo_cycles		= 0
-probe_marcel_pid	= 4
-probe_kernel_pid	= 6
+probe_hi_cycles		= 4
 probe_code			= 8
 probe_param1		= 12
-
-#ifdef MA_SMP
-#ifdef MA__MULTIPLE_RUNNING
-marcel_lwp = 12
-#else
-marcel_lwp = 8
-#endif
-marcel_pid = 4
-#endif
-
-/* printf("%d",&(((marcel_t)0)->number)); */
-marcel_number = 276
-
-THREAD_SLOT_SIZE = 0x10000	/* 64 Ko */
-
-#ifdef ENABLE_STACK_JUMPING
-#define GET_CURRENT_STACK(reg)	\
-	movl	%esp,reg;	\
-	andl	$(~(THREAD_SLOT_SIZE-1)),reg;	\
-	addl	$(THREAD_SLOT_SIZE-4),reg;	\
-	movl	(reg),reg
-#else
-#define SIZEOF_MAL_TASK_DESC	14*64
-#define GET_CURRENT_STACK(reg)	\
-	movl	%esp,reg;	\
-	andl	$(~(THREAD_SLOT_SIZE-1)),reg;	\
-	addl	$(THREAD_SLOT_SIZE-SIZEOF_MAL_TASK_DESC),reg
-#endif
-
-#ifdef MARCEL_SELF_IN_REG
-#define GET_CURRENT(reg) movl	%egs,reg
-#elif defined(STANDARD_MAIN)
-#define GET_CURRENT(reg)										\
-	cmpl	$(SLOT_AREA_TOP),%esp;	/* IS_ON_MAIN_STACK(esp) */	\
-	jbe		0f;													\
-	movl	$(__main_thread_struct),reg;						\
-	jmp		1f;													\
-0:																\
-	GET_CURRENT_STACK(reg)										\
-1:
-#else
-#define GET_CURRENT(reg) GET_CURRENT_STACK(reg)
-#endif
 
 	.text
 	.align	4
@@ -141,17 +97,7 @@ fut_header:							/*  normal entry point to take a probe */
 	movl	%eax,%ecx				/*  point ecx at first slot of this record */
 	rdtsc							/*  get 64-bit cpu cycle counter in edx-eax */
 	movl	%eax,probe_lo_cycles(%ecx)	/*  low-order 32 bits from eax to 1st slot */
-										/*  ignore hi-order 32 bits in edx */
-	GET_CURRENT(%eax)					/*  point eax at marcel_self() */
-	movl	marcel_number(%eax),%edx	/*  get marcel thread number */
-	movw	%dx,probe_marcel_pid(%ecx)	/*  write it */
-#ifdef MA_SMP
-	movl	marcel_lwp(%eax),%eax		/*  get lwp */
-	movl	marcel_pid(%eax),%edx		/*  get lwp pid */
-	movw	%dx,probe_kernel_pid(%ecx)	/*  write it */
-#else
-	movw	$0,probe_kernel_pid(%ecx)
-#endif
+	movl	%edx,probe_lo_cycles(%ecx)	/*  hi-order 32 bits from edx to 2nd slot */
 	leal	caller_code(%esp),%edx	/*  point edx at header value in call */
 	leal	probe_code(%ecx),%ecx	/*  point ecx at header slot in record */
 9:

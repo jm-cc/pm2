@@ -17,7 +17,7 @@
 #ifndef PM2DEBUG_EST_DEF
 #define PM2DEBUG_EST_DEF
 
-#include "profile.h"
+#include "pm2_profile.h"
 
 typedef enum {
 	DEBUG_SHOW,

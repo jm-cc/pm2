@@ -28,16 +28,19 @@ typedef enum   e_leo_loader_priority     *p_leo_loader_priority_t;
 typedef struct s_leo_process_specific    *p_leo_process_specific_t;
 typedef struct s_leo_dir_node            *p_leo_dir_node_t;
 typedef struct s_leo_dir_adapter         *p_leo_dir_adapter_t;
-typedef struct s_leo_dir_driver_process_specific 
-                                         *p_leo_dir_driver_process_specific_t;
+typedef struct s_leo_dir_driver_process_specific
+                                  *p_leo_dir_driver_process_specific_t;
 typedef struct s_leo_dir_driver          *p_leo_dir_driver_t;
+typedef struct s_leo_dir_channel_common_process_specific
+                                  *p_leo_dir_channel_common_process_specific_t;
 typedef struct s_leo_dir_channel_process_specific
-                                         *p_leo_dir_channel_process_specific_t;
+                                  *p_leo_dir_channel_process_specific_t;
+typedef struct s_leo_dir_channel_common  *p_leo_dir_channel_common_t;
 typedef struct s_leo_dir_channel         *p_leo_dir_channel_t;
 typedef struct s_leo_dir_fchannel        *p_leo_dir_fchannel_t;
 typedef struct s_leo_dir_vchannel_process_routing_table
                                   *p_leo_dir_vchannel_process_routing_table_t;
-typedef struct s_leo_dir_vchannel_process_specific 
+typedef struct s_leo_dir_vchannel_process_specific
                                   *p_leo_dir_vchannel_process_specific_t;
 typedef struct s_leo_dir_vchannel         *p_leo_dir_vchannel_t;
 typedef struct s_leo_directory            *p_leo_directory_t;

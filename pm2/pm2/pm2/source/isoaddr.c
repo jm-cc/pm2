@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 /* Options: ISOADDR_ALOC_TRACE, ISOADDR_NEGOCIATION_TRACE, ISOADDR_INFO_TRACE, ASSERT */
 
 //#define ISOADDR_ALOC_TRACE
@@ -1203,7 +1218,7 @@ void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
 #ifdef ISOADDR_ALOC_TRACE
       fprintf(stderr, "slot is busy\n");
 #endif
-      marcel_trueyield();
+      marcel_yield();
     }
 #ifdef ISOADDR_ALOC_TRACE
     fprintf(stderr, "slot is available !\n");
@@ -1655,7 +1670,7 @@ static void _isomalloc_global_sync()
  fprintf(stderr,"Starting sync...\n");
 #endif
  while (!received_from_all_other_nodes())
-   marcel_trueyield();
+   marcel_yield();
 #ifdef ISOADDR_NEGOCIATION_TRACE
  for (i=0 ; i < _nb_nodes ; i++)
    fprintf(stderr,"Sync ok: t[%d] = %d\n", i, tab_sync[i]);

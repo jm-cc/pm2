@@ -51,6 +51,7 @@ static char* options[MAX_DEBUG_CMDLINE_OPTIONS];
 debug_type_t debug_type_default=NEW_DEBUG_TYPE(1, "debug: ", "debug");
 debug_type_t debug_type_register=NEW_DEBUG_TYPE(0, "register: ", "register");
 static debug_type_t debug_type_flush=NEW_DEBUG_TYPE(0, "unused", "unused");
+DEBUG_DECLARE(common)
 #ifdef MARCEL
 DEBUG_DECLARE(marcel)
 #endif
@@ -287,6 +288,7 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	  pm2debug_register(&debug_type_default);
 	  debug_type_register.setup=register_setup;
 	  pm2debug_register(&debug_type_register);
+	  DEBUG_INIT(common);
 #ifdef MARCEL
 	  DEBUG_INIT(marcel);
 #endif

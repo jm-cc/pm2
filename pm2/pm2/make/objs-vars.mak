@@ -26,7 +26,7 @@ MOD_SRC ?= source
 
 # Inclusion du cache de configuration du module
 #---------------------------------------------------------------------
-DO_NOT_GENERATE_MAK_FILES+=__ _default_ _no_goal_
+DO_NOT_GENERATE_MAK_FILES+=_default_ _no_goal_
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/$(MODULE)-config.mak
 endif
@@ -71,9 +71,30 @@ MOD_C_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
 MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
 MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
 MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
-MOD_HSPLITS_DIR ?= include
+MOD_HSPLITS_SRCDIR ?= include
 #MOD_HSPLITS_SOURCES ?= 
-MOD_HSPLITS_MAKEFILE = $(PM2_MAK_DIR)/$(MODULE)-hfiles.mak
+MOD_HSPLITS_PARTS=$(if $(MOD_HSPLITS_SOURCES),MOD_HSPLITS)
+MOD_HSPLITS_MAKEFILES = 
+MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)
+
+define MOD_HSPLITS_ADD_MASTER # master-suffix VAR_SUFFIX subgendir
+ MOD_HSPLITS_MAKEFILES += $$(MOD_HSPLITS_GENDIR)/$$(MODULE)$(1)-hfiles.mak
+ $$(MOD_HSPLITS_GENDIR)/$$(MODULE)$(1)-hfiles.mak: $$(MOD_HSPLITS_COMMON_DEP) \
+		$$(foreach PART, $$(MOD_HSPLITS_PARTS$(2)), \
+			$$(addprefix $$($$(PART)_SRCDIR)/,$$($$(PART)_SOURCES)))
+	$$(COMMON_BUILD)
+	$$(COMMON_MAIN) $$(PM2_ROOT)/bin/pm2-split-h-file \
+		--makefile $$@ \
+		--gendir $$(MOD_HSPLITS_GENDIR) \
+		$(addprefix --gensubdir ,$(3)) \
+		--masterfile $$(MODULE)-master.h \
+		$$(foreach PART, $$(MOD_HSPLITS_PARTS$(2)), \
+			$$(addprefix --srcdir "" --start-file ,$$($$(PART)_COMMON)) \
+			$$(addprefix --srcdir ,$$($$(PART)_SRCDIR)) \
+			$$(addprefix --gensubdir ,$$($$(PART)_GENSUBDIR)) \
+			$$(addprefix --default-section ,$$($$(PART)_DEFAULT_SECTION)) \
+			$$($$(PART)_SOURCES) )
+endef
 
 # Bases : fichiers sans extension ni repertoire
 #---------------------------------------------------------------------

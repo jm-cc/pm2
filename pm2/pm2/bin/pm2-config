@@ -354,12 +354,14 @@ pm2config_set_vars()
     for _lib in appli common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"
-	if [ -d "${PM2_ROOT}/modules/$_lib/include" ]; then
-	    _flags="$_flags -I${PM2_ROOT}/modules/$_lib/include"
-	fi
+	# répertoire de génération AVANT
 	eval _geninc='$'PM2_${_LIB}_GENERATE_INCLUDE
 	if [ "$_geninc" = true ]; then
 	    eval _flags=\"$_flags -I\$_PM2CONFIG_${_lib}_INCLUDE_DIR\"
+	fi
+	# répertoire standard APRES (permet de générer des fichiers existants)
+	if [ -d "${PM2_ROOT}/modules/$_lib/include" ]; then
+	    _flags="$_flags -I${PM2_ROOT}/modules/$_lib/include"
 	fi
 	_PM2CONFIG_CFLAGS="$_PM2CONFIG_CFLAGS $_flags"
     done
@@ -389,6 +391,7 @@ pm2config_set_vars()
 	eval _requested=\"\$_requested \$PM2_${_LIB}_LIBNAME\"
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
+	eval _scripts=\"\$_scripts \$PM2_${_LIB}_LIBS_SCRIPTS\"
     done
     export _PM2CONFIG_LD_PATH
     pm2config_remove_dupplicates_keep_first _PM2CONFIG_LD_PATH
@@ -403,9 +406,9 @@ pm2config_set_vars()
 	esac
     done
     if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" -o $PM2_SYS = "DARWIN_SYS" ] ; then
-    	_PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_extra"
+    	_PM2CONFIG_LD_LIBS="$_scripts $_PM2CONFIG_LD_LIBS $_extra"
     else
-    	_PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
+    	_PM2CONFIG_LD_LIBS="$_scripts -Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
     fi
 
     export _PM2CONFIG_LD_LIBS

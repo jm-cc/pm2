@@ -76,6 +76,14 @@ extern int __zero_fd;
 #  else
 #    error Sorry. This architecture is not yet supported.
 #  endif
+#elif defined(GNU_SYS) && defined(X86_ARCH)
+#    define ISOADDR_AREA_TOP       0xc0000000
+#    define SLOT_AREA_BOTTOM       0x10000000
+#    define MAIN_STACK_BOT         0x00000000
+#    define MAIN_STACK_TOP         0x01020000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) < MAIN_STACK_TOP)
+#    define FILE_TO_MAP            -1
+#    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 #elif defined(OSF_SYS) && defined(ALPHA_ARCH)
 #    define ISOADDR_AREA_TOP       0x30000000000
 #    define MAIN_STACK_TOP         0x130000000

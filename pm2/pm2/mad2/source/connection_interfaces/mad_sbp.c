@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.11  2000/05/18 14:05:55  oaumage
+- Suppression des TBX_LOCK
+
 Revision 1.10  2000/03/08 17:19:31  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -215,9 +218,7 @@ mad_sbp_put_full_frame(p_mad_sbp_frame_t frame,
 		       mad_sbp_key_t     key)
 {
   LOG_IN();
-  TBX_LOCK();
   returnfullbuffer(key, (unsigned long)frame);
-  TBX_UNLOCK();
   LOG_OUT();
 }
 
@@ -226,9 +227,7 @@ mad_sbp_put_empty_frame(p_mad_sbp_frame_t frame,
 			mad_sbp_key_t     key)
 {
   LOG_IN();
-  TBX_LOCK();
   returnemptybuffer(key, (unsigned long)frame);
-  TBX_UNLOCK();
   LOG_OUT();
 }
 
@@ -956,7 +955,6 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
   int sbp_local_host_id;
   
   LOG_IN();
-  TBX_LOCK();
 #ifdef MARCEL  
   stop_timer();
 #endif /* MARCEL */
@@ -975,7 +973,6 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
 #ifdef MARCEL
   marcel_settimeslice(20000);
 #endif /* MARCEL */
-  TBX_UNLOCK();
 
   configuration->size          = sbp_configuration_size;
   configuration->local_host_id = sbp_local_host_id;

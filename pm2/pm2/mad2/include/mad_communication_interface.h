@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication_interface.h,v $
+Revision 1.3  2000/02/08 17:47:19  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.2  1999/12/15 17:31:20  oaumage
 Ajout de la commande de logging de CVS
 
@@ -54,7 +57,7 @@ ______________________________________________________________________________
  */
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,
-		  mad_host_id_t     remote_host_id);
+		  ntbx_host_id_t    remote_host_id);
 
 p_mad_connection_t
 mad_begin_unpacking(p_mad_channel_t channel);

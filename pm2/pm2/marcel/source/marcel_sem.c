@@ -20,7 +20,7 @@ void marcel_sem_init(marcel_sem_t *s, int initial)
 {
   s->value = initial;
   s->first = NULL;
-  s->lock = MARCEL_LOCK_INIT;
+  ma_spin_lock_init(&s->lock);
 }
 
 void marcel_sem_P(marcel_sem_t *s)
@@ -28,8 +28,6 @@ void marcel_sem_P(marcel_sem_t *s)
   semcell c;
 
   LOG_IN();
-
-  lock_task();
 
   marcel_lock_acquire(&s->lock);
 
@@ -43,12 +41,13 @@ void marcel_sem_P(marcel_sem_t *s)
       s->last->next = &c;
       s->last = &c;
     }
-    marcel_lock_release(&s->lock);
-    marcel_give_hand(&c.blocked);
-  } else {
-    marcel_lock_release(&s->lock);
-    unlock_task();
+    
+    INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
+	    c.blocked, 
+	    marcel_lock_release(&s->lock),
+	    marcel_lock_acquire(&s->lock));
   }
+  marcel_lock_release(&s->lock);
 
   LOG_OUT();
 }
@@ -59,19 +58,15 @@ int marcel_sem_try_P(marcel_sem_t *s)
 
   LOG_IN();
 
-  lock_task();
-
   marcel_lock_acquire(&s->lock);
 
   result = ((s->value - 1) < 0);
 
   if(result) {
     marcel_lock_release(&s->lock);
-    unlock_task();
   } else {
     s->value--;
     marcel_lock_release(&s->lock);
-    unlock_task();
   }
 
   LOG_OUT();
@@ -84,15 +79,12 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 
   LOG_IN();
 
-  lock_task();
-
   marcel_lock_acquire(&s->lock);
 
   if(--(s->value) < 0) {
     if(timeout == 0) {
       s->value++;
       marcel_lock_release(&s->lock);
-      unlock_task();
       LOG_OUT();
       RAISE(TIME_OUT);
     }
@@ -106,10 +98,11 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last = &c;
     }
     marcel_lock_release(&s->lock);
-    __marcel_tempo_give_hand(timeout, &c.blocked, s);
+#warning timeout to manage
+    RAISE(NOT_IMPLEMENTED);
+    //__marcel_tempo_give_hand(timeout, &c.blocked, s);
   } else {
     marcel_lock_release(&s->lock);
-    unlock_task();
   }
 
   LOG_OUT();
@@ -121,91 +114,32 @@ void marcel_sem_V(marcel_sem_t *s)
 
   LOG_IN();
 
-  lock_task();
-
   marcel_lock_acquire(&s->lock);
 
   if(++(s->value) <= 0) {
     c = s->first;
     s->first = c->next;
-    marcel_wake_task(c->task, &c->blocked);
+    c->blocked = 0;
+    ma_wmb();
+    ma_wake_up_thread(c->task);
   }
 
   marcel_lock_release(&s->lock);
-  unlock_task();
 
   LOG_OUT();
 }
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {
-  semcell c, *ce;
-
-/* 
-   V(s1)  suivi de
-   P(s2)  en ne perdant pas la main entre les 2
-*/
-
-  LOG_IN();
-
-  lock_task();
-
-  marcel_lock_acquire(&s1->lock);
-
-  if(++(s1->value) <= 0) {
-    ce = s1->first;
-    s1->first = ce->next;
-    marcel_wake_task(ce->task, &ce->blocked);
-  }
-
-  marcel_lock_acquire(&s2->lock);
-  marcel_lock_release(&s1->lock);
-
-  if(--(s2->value) < 0) {
-    c.next = NULL;
-    c.blocked = TRUE;
-    c.task = marcel_self();
-    if(s2->first == NULL)
-      s2->first = s2->last = &c;
-    else {
-      s2->last->next = &c;
-      s2->last = &c;
-    }
-    marcel_lock_release(&s2->lock);
-    marcel_give_hand(&c.blocked);
-  } else {
-
-    marcel_lock_release(&s2->lock);
-    unlock_task();
-  }
-
-  LOG_OUT();
+	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
+		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
+	RAISE(NOT_IMPLEMENTED);
 }
 
 void marcel_sem_unlock_all(marcel_sem_t *s)
 {
-  semcell *cur;
-
-  LOG_IN();
-
-  lock_task();
-
-  marcel_lock_acquire(&s->lock);
-
-  if((cur = s->first) == NULL) {
-    marcel_lock_release(&s->lock);
-    unlock_task();
-    return;
-  }
-  do {
-    marcel_wake_task(cur->task, &cur->blocked);
-    (s->value)++;
-    cur = cur->next;
-  } while (cur != NULL);
-  s->first = NULL;
-  marcel_lock_release(&s->lock);
-  unlock_task();
-
-  LOG_OUT();
+	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
+		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
+	RAISE(NOT_IMPLEMENTED);
 }
 

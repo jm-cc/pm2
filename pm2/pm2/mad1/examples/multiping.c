@@ -69,12 +69,12 @@ void f(int bytes)
     for(i=nb/2; i; i--) {
       mad_sendbuf_init(autre);
       for(j=0; j<nb_vecs; j++)
-	mad_pack_byte(MODE, static_buffer[j], bytes / nb_vecs);
+	old_mad_pack_byte(MODE, static_buffer[j], bytes / nb_vecs);
       mad_sendbuf_send();
       
       mad_receive();
       for(j=0; j<nb_vecs; j++)
-	mad_unpack_byte(MODE, static_buffer[j], bytes / nb_vecs);
+	old_mad_unpack_byte(MODE, static_buffer[j], bytes / nb_vecs);
       mad_recvbuf_receive();
     }
     GET_TICK(t2);
@@ -93,12 +93,12 @@ void g(int bytes)
     for(i=nb/2; i; i--) {
       mad_receive();
       for(j=0; j<nb_vecs; j++)
-	mad_unpack_byte(MODE, static_buffer[j], bytes / nb_vecs);
+	old_mad_unpack_byte(MODE, static_buffer[j], bytes / nb_vecs);
       mad_recvbuf_receive();
 
       mad_sendbuf_init(autre);
       for(j=0; j<nb_vecs; j++)
-	mad_pack_byte(MODE, (char *)static_buffer[j], bytes / nb_vecs);
+	old_mad_pack_byte(MODE, (char *)static_buffer[j], bytes / nb_vecs);
       mad_sendbuf_send();
     }
   }
@@ -147,8 +147,8 @@ int main(int argc, char **argv)
     file = fopen(name, "w");
 
     mad_sendbuf_init(autre);
-    mad_pack_int(MAD_IN_HEADER, &nb, 1);
-    mad_pack_int(MAD_IN_HEADER, &nb_vecs, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &nb, 1);
+    old_mad_pack_int(MAD_IN_HEADER, &nb_vecs, 1);
     mad_sendbuf_send();
 
     for(i=0; i<30; i++)
@@ -164,8 +164,8 @@ int main(int argc, char **argv)
     autre = les_modules[0];
 
     mad_receive();
-    mad_unpack_int(MAD_IN_HEADER, &nb, 1);
-    mad_unpack_int(MAD_IN_HEADER, &nb_vecs, 1);
+    old_mad_unpack_int(MAD_IN_HEADER, &nb, 1);
+    old_mad_unpack_int(MAD_IN_HEADER, &nb_vecs, 1);
     mad_recvbuf_receive();
 
     mdebug("nb de messages = %d\n", nb);

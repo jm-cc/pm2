@@ -28,12 +28,14 @@
 
 typedef struct s_mad_dir_node
 {
+  int                         id;
   char                       *name;
   p_ntbx_process_container_t  pc;
 } mad_dir_node_t;
 
 typedef struct s_mad_dir_adapter
 {
+  int           id;
   char         *name;
   char         *selector;
   char         *parameter;
@@ -48,6 +50,7 @@ typedef struct s_mad_dir_driver_process_specific
 
 typedef struct s_mad_dir_driver
 {
+  int                         id;
   char                       *name;
   p_ntbx_process_container_t  pc;
 } mad_dir_driver_t;
@@ -59,6 +62,7 @@ typedef struct s_mad_dir_channel_process_specific
 
 typedef struct s_mad_dir_channel
 {
+  int                         id;
   char                       *name;
   p_ntbx_process_container_t  pc;
   p_mad_dir_driver_t          driver;
@@ -79,6 +83,7 @@ typedef struct s_mad_dir_vchannel_process_specific
 
 typedef struct s_mad_dir_fchannel
 {
+  int   id;
   char *name;
   char *channel_name;
 } mad_dir_fchannel_t;
@@ -86,6 +91,7 @@ typedef struct s_mad_dir_fchannel
 
 typedef struct s_mad_dir_vchannel
 {
+  int                         id;
   char                       *name;
   p_tbx_slist_t               dir_channel_slist;
   p_tbx_slist_t               dir_fchannel_slist;

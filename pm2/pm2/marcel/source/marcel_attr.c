@@ -29,7 +29,8 @@ marcel_attr_t marcel_attr_default = {
   0,                       /* not_deviatable */
   MARCEL_SCHED_OTHER,      /* scheduling policy */
   MARCEL_CLASS_REGULAR,    /* scheduling class */
-  MARCEL_VPMASK_EMPTY      /* vp mask */
+  MARCEL_VPMASK_EMPTY,     /* vp mask */
+  0                        /* special flags */
 };
 
 /* Déclaré dans marcel.c : */
@@ -159,5 +160,17 @@ int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask)
 int marcel_attr_getvpmask(marcel_attr_t *attr, marcel_vpmask_t *mask)
 {
   *mask = attr->vpmask;
+  return 0;
+}
+
+int marcel_attr_setflags(marcel_attr_t *attr, int flags)
+{
+  attr->flags = flags;
+  return 0;
+}
+
+int marcel_attr_getflags(marcel_attr_t *attr, int *flags)
+{
+  *flags = attr->flags;
   return 0;
 }

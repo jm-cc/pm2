@@ -72,7 +72,10 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
       driver_name = mad_leonie_receive_string();
       if (tbx_streq(driver_name, "-"))
-	break;
+        {
+          TBX_FREE(driver_name);
+          break;
+        }
 
       dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
       if (!dir_driver)
@@ -107,7 +110,10 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
 	  adapter_name = mad_leonie_receive_string();
 	  if (tbx_streq(adapter_name, "-"))
-	    break;
+            {
+              TBX_FREE(adapter_name);
+              break;
+            }
 
 	  dir_adapter = tbx_htable_get(dir_adapter_htable, adapter_name);
 	  if (!dir_adapter)
@@ -134,7 +140,10 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 	      mad_adapter->mtu = 0xFFFFFFFFUL;
 	    }
 	  mad_leonie_send_unsigned_int(mad_adapter->mtu);
+          TBX_FREE(adapter_name);
 	}
+
+      TBX_FREE(driver_name);
     }
 
   TRACE("Driver initialization: second pass");
@@ -146,7 +155,10 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
       driver_name = mad_leonie_receive_string();
       if (tbx_streq(driver_name, "-"))
-	break;
+        {
+          TBX_FREE(driver_name);
+          break;
+        }
 
       dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
       if (!dir_driver)
@@ -178,10 +190,12 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
 	      adapter_name = mad_leonie_receive_string();
 	      if (tbx_streq(adapter_name, "-"))
-		break;
+                {
+                  TBX_FREE(adapter_name);
+                  break;
+                }
 
-	      dir_adapter = tbx_htable_get(adapter_htable,
-					   adapter_name);
+	      dir_adapter = tbx_htable_get(adapter_htable, adapter_name);
 	      if (!dir_adapter)
 		FAILURE("adapter not found");
 
@@ -192,8 +206,11 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 	      TRACE_VAL("- mtu", dir_adapter->mtu);
 	      if (!dir_adapter->mtu)
 		FAILURE("invalid mtu");
+              TBX_FREE(adapter_name);
 	    }
 	}
+
+      TBX_FREE(driver_name);
     }
 
 #ifdef MARCEL
@@ -847,6 +864,7 @@ channel_open(p_mad_madeleine_t  madeleine,
 
   if (tbx_streq(channel_name, "-"))
     {
+      TBX_FREE(channel_name);
       LOG_OUT();
 
       return tbx_false;
@@ -914,6 +932,7 @@ channel_open(p_mad_madeleine_t  madeleine,
   tbx_htable_add(madeleine->channel_htable,   dir_channel->name, mad_channel);
   TRACE("Pass 3 - sending -1 sync");
   mad_leonie_send_int(-1);
+  TBX_FREE(channel_name);
   LOG_OUT();
 
   return tbx_true;
@@ -938,6 +957,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   TRACE_STR("Pass 1 - channel", channel_name);
   if (tbx_streq(channel_name, "-"))
     {
+      TBX_FREE(channel_name);
       return tbx_false;
     }
 
@@ -1007,6 +1027,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   tbx_htable_add(mad_adapter->channel_htable, dir_fchannel->name, mad_channel);
   tbx_htable_add(madeleine->channel_htable,   dir_fchannel->name, mad_channel);
   mad_leonie_send_int(-1);
+  TBX_FREE(channel_name);
 
   return tbx_true;
 }
@@ -1151,6 +1172,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   vchannel_name = mad_leonie_receive_string();
   if (tbx_streq(vchannel_name, "-"))
     {
+      TBX_FREE(vchannel_name);
       return tbx_false;
     }
 
@@ -1255,6 +1277,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 #endif // MARCEL
 
   // Virtual channel ready
+  TBX_FREE(vchannel_name);
   mad_leonie_send_string("ok");
 
   return tbx_true;
@@ -1394,6 +1417,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   xchannel_name = mad_leonie_receive_string();
   if (tbx_streq(xchannel_name, "-"))
     {
+      TBX_FREE(xchannel_name);
       return tbx_false;
     }
 
@@ -1490,6 +1514,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
 
   // Mux channel ready
   mad_leonie_send_string("ok");
+  TBX_FREE(xchannel_name);
   LOG_OUT();
 
   return tbx_true;

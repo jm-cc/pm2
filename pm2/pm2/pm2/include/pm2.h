@@ -155,6 +155,10 @@ void pm2_register_service(int *num, rpc_func_t func,
 _PRIVATE_ int pm2_lrpc_runned_by(marcel_t pid);
 _PRIVATE_ char *pm2_lrpc_name(int num);
 
+#ifdef MAD2
+_PRIVATE_ struct pm2_channel_struct_t;
+_PRIVATE_ typedef struct pm2_channel_struct_t *pm2_channel_t;
+#endif
 
 /************* LRPC avec attente differee : **************/
 

@@ -26,9 +26,6 @@
  * Data types 
  * ----------
  */
-typedef char             *tbx_htable_key_t;
-typedef tbx_htable_key_t *p_tbx_htable_key_t;
-
 typedef int                        tbx_htable_bucket_count_t;
 typedef tbx_htable_bucket_count_t *p_tbx_htable_bucket_count_t;
 
@@ -41,7 +38,7 @@ typedef tbx_htable_element_count_t *p_tbx_htable_element_count_t;
  */
 typedef struct s_tbx_htable_element
 {
-  tbx_htable_key_t        key;
+  char                   *key;
   void                   *object;
   p_tbx_htable_element_t  next;
 } tbx_htable_element_t;

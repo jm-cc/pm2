@@ -39,6 +39,9 @@ LIBNAME=mad
 #marcel_CC=gcc
 #marcel_AS=gcc
 
+.PHONY: default
+default:
+
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
@@ -64,6 +67,9 @@ ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
 endif
 endif
 endif
+
+default:
+	$(MAKE) -C $(PM2_ROOT)
 
 $(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@

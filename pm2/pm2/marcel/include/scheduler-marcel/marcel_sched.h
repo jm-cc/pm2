@@ -85,29 +85,24 @@ int ma_wake_up_task(marcel_task_t * p);
 #section marcel_functions
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 inline static ma_runqueue_t *
-marcel_sched_vpmask_init_rq(int norun, marcel_vpmask_t mask);
+marcel_sched_vpmask_init_rq(marcel_vpmask_t mask);
 
 #section marcel_inline
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 inline static ma_runqueue_t *
-marcel_sched_vpmask_init_rq(int norun, marcel_vpmask_t mask)
+marcel_sched_vpmask_init_rq(marcel_vpmask_t mask)
 {
-	if (tbx_unlikely(mask==MARCEL_VPMASK_EMPTY)) {
-		if (norun)
-			return &ma_norun_runqueue;
+	if (tbx_unlikely(mask==MARCEL_VPMASK_EMPTY))
 		return &ma_main_runqueue;
-	} else if (tbx_unlikely(mask==MARCEL_VPMASK_FULL)) {
-		return &ma_norun_runqueue;
-	} else {
+	else if (tbx_unlikely(mask==MARCEL_VPMASK_FULL))
+		return &ma_dontsched_runqueue;
+	else {
 		int first_vp;
 		first_vp=ma_ffz(mask);
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
 		MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
-		if (tbx_unlikely(norun))
-			return ma_norun_rq(GET_LWP_BY_NUM(first_vp));
-		else
-			return ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
+		return ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
 	}
 }
 
@@ -128,7 +123,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	if (attr->sched.init_rq)
 		t->sched.internal.init_rq=attr->sched.init_rq;
 	else
-		t->sched.internal.init_rq=marcel_sched_vpmask_init_rq(attr->flags & MA_SF_NORUN,attr->vpmask);
+		t->sched.internal.init_rq=marcel_sched_vpmask_init_rq(attr->vpmask);
+	sched_debug("%p's init_rq is %p\n",t, t->sched.internal.init_rq);
 	if (attr->rt_thread)
 		t->sched.internal.prio=MA_RT_PRIO;
 	t->sched.internal.cur_rq=NULL;

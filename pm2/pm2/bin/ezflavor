@@ -46,4 +46,11 @@ case "$PM2_SYS" in
 	;;
 esac
 
+prog=${PM2_HOME:-${HOME}}/.pm2/bin/ezflavor_${PM2_ARCH}_${PM2_SYS}${ext}
+
+if [ ! -x $prog ]; then
+    echo "ERROR: ezflavor was not compiled for $PM2_ARCH/$PM2_SYS" >&2
+    exit 1
+fi
+
 exec ${PM2_HOME:-${HOME}}/.pm2/bin/ezflavor_${PM2_ARCH}_${PM2_SYS}${ext} "$@"

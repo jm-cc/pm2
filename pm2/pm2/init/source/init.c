@@ -316,7 +316,7 @@ void common_init(int *argc, char *argv[])
 
 #ifdef MAD2
 
-#if (!defined EXTERNAL_SPAWN) && (!defined LEONIE_SPAWN)
+#if (!defined EXTERNAL_SPAWN) && (!defined LEONIE_SPAWN) && (!defined APPLICATION_SPAWN)
   /*
    * Mad2 slave nodes spawn
    * ----------------------
@@ -330,7 +330,7 @@ void common_init(int *argc, char *argv[])
    * - connection data
    */
   mad_slave_spawn(madeleine, *argc, argv);
-#endif /* EXTERNAL_SPAWN && LEONIE_SPAWN */
+#endif /* EXTERNAL_SPAWN && LEONIE_SPAWN && APPLICATION_SPAWN */
   
 #endif /* MAD 2 */
 

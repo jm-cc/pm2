@@ -34,6 +34,15 @@
 
 ______________________________________________________________________________
 $Log: pm2_thread.c,v $
+Revision 1.4  2000/07/14 16:17:15  gantoniu
+Merged with branch dsm3
+
+Revision 1.3.10.1  2000/06/13 16:44:14  gantoniu
+New dsm branch.
+
+Revision 1.3.8.1  2000/06/07 09:19:40  gantoniu
+Merging new dsm with current PM2 : first try.
+
 Revision 1.3  2000/02/28 11:17:18  rnamyst
 Changed #include <> into #include "".
 
@@ -73,7 +82,7 @@ static unsigned the_granted_size;
 
 static __inline__ void *pm2_thread_stack_alloc(void)
 {
-  return slot_general_alloc(NULL, 0, &the_granted_size, NULL);
+  return slot_general_alloc(NULL, 0, &the_granted_size, NULL, NULL);
 }
 
 static __inline__ void pm2_thread_stack_free(void *stack)

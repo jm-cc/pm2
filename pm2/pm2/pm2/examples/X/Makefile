@@ -33,10 +33,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-CONFIG_MODULES=marcel pm2 mad1
+CONFIG_MODULES=marcel pm2 mad2 tbx ntbx
 
 ifndef FLAVOR
-export FLAVOR:=pm2-mad1
+export FLAVOR:=default
 endif
 
 CFLAGS += -I/usr/X11R6/include -I$$OPENWINHOME/include

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_debug.h,v $
+Revision 1.8  2000/05/25 00:23:50  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.7  2000/05/16 09:05:21  rnamyst
 Fast Polling added into Marcel + make xconfig
 
@@ -74,37 +77,50 @@ ______________________________________________________________________________
 #define LWPS_VAL
 #endif
 
-#ifdef MARCEL_DEBUG
+#ifdef PM2DEBUG
 extern debug_type_t marcel_mdebug;
 extern debug_type_t marcel_trymdebug;
-extern debug_type_t marcel_mdebug_state;
+extern debug_type_t marcel_debug_state;
+extern debug_type_t marcel_debug_work;
+extern debug_type_t marcel_debug_deviate;
+
+extern debug_type_t marcel_lock_task_debug;
+
+extern debug_type_t marcel_sched_lock_debug;
+
+extern debug_type_t marcel_mtrace;
+extern debug_type_t marcel_mtrace_timer;
+#endif
+
+#ifdef MARCEL_DEBUG
 #define mdebug(fmt, args...) \
     debug_printf(&marcel_mdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #define try_mdebug(fmt, args...) \
     debug_printf(&marcel_trymdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #define mdebug_state(fmt, args...) \
-    debug_printf(&marcel_mdebug_state, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+    debug_printf(&marcel_debug_state, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+#define mdebug_work(fmt, args...) \
+    debug_printf(&marcel_debug_work, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+#define mdebug_deviate(fmt, args...) \
+    debug_printf(&marcel_debug_deviate, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #else
 #define mdebug(fmt, args...)     (void)0
 #define try_mdebug(fmt, args...)     (void)0
 #define mdebug_state(fmt, args...)     (void)0
+#define mdebug_work(fmt, args...)     (void)0
+#define mdebug_deviate(fmt, args...)     (void)0
 #endif
 
 #ifdef DEBUG_LOCK_TASK
-extern debug_type_t marcel_lock_task_debug;
 #define lock_task_debug(fmt, args...) debug_printf(&marcel_lock_task_debug, \
         LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #endif
 #ifdef DEBUG_SCHED_LOCK
-extern debug_type_t marcel_sched_lock_debug;
 #define sched_lock_debug(fmt, args...) debug_printf(&marcel_sched_lock_debug, \
         LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #endif
 
 #ifdef MARCEL_TRACE
-
-extern debug_type_t marcel_mtrace;
-extern debug_type_t marcel_mtrace_timer;
 
 #define MTRACE(msg, pid) \
     (msg[0] ? debug_printf(&marcel_mtrace, \
@@ -140,7 +156,7 @@ extern debug_type_t marcel_mtrace_timer;
 
 #endif
 
-void marcel_debug_init(int* argc, char** argv);
+void marcel_debug_init(int* argc, char** argv, int debug_flags);
 
 #endif
 

@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-/* sample.c */
+/* vpmask.c */
 
 #include "marcel.h"
 

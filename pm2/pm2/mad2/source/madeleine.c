@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.11  2000/02/01 17:26:33  rnamyst
+PM2 compatibility functions have moved to pm2_mad.
+
 Revision 1.10  2000/01/31 15:53:37  oaumage
 - mad_channel.c : verrouillage au niveau des canaux au lieu des drivers
 - madeleine.c : deplacement de aligned_malloc vers la toolbox
@@ -78,9 +81,9 @@ ______________________________________________________________________________
 #include <fcntl.h>
 #include <malloc.h>
 #include <errno.h>
-#ifdef MAD2_MAD1
+#ifdef PM2
 #include <sys/wait.h>
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 
 /* #define DEBUG */
 /* #define TIMING */
@@ -119,14 +122,6 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 /* ---- */
 
 static mad_madeleine_t      main_madeleine;
-
-#ifdef MAD2_MAD1
-marcel_key_t         mad2_send_key, mad2_recv_key;
-#define ALIGNMASK        (MAD_ALIGNMENT-1)
-/* semaphore used to block sends during slot negociations: */
-_PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
-                 marcel_sem_t         sem_nego;
-#endif /* MAD2_MAD1 */
 
 /* ---- */
 
@@ -272,9 +267,9 @@ static void
 mad_parse_command_line(int                *argc,
 		       char              **argv,
 		       p_mad_madeleine_t   madeleine,
-#ifdef MAD2_MAD1
+#ifdef PM2
 		       char               *conf_file,
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 		       p_tbx_bool_t        master,
 		       p_tbx_bool_t        slave)
 {
@@ -306,7 +301,7 @@ mad_parse_command_line(int                *argc,
 	  madeleine->configuration.local_host_id = atoi(argv[i + 1]);
 	  i++;
 	}
-#ifdef MAD2_MAD1
+#ifdef PM2
       else if (!strcmp(argv[i], "-conf"))
 	{
 	  if (i == ((*argc) - 1))
@@ -316,7 +311,7 @@ mad_parse_command_line(int                *argc,
 	  sprintf(conf_file, "%s/.mad2_conf", argv[i + 1]);
 	  i++;
 	}
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 #ifndef EXTERNAL_SPAWN
       else if (!strcmp(argv[i], "-device"))
 	{
@@ -401,30 +396,30 @@ mad_master_spawn(int                    *argc,
   
   if (argv[0][0] != '/')
     {
-#ifdef MAD2_MAD1
+#ifdef PM2
       sprintf(cmd,
 	      "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
 	      configuration->host_name[0],
 	      cwd, argv[0], cwd, 0, getenv("MAD2_ROOT"), arg_str);
-#else /* MAD2_MAD1 */
+#else /* PM2 */
       sprintf(cmd,
 	      "rsh %s %s/%s -master -cwd %s -rank %d %s",
 	      configuration->host_name[0],
 	      cwd, argv[0], cwd, 0, arg_str);
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
     }
   else
     {
-#ifdef MAD2_MAD1
+#ifdef PM2
       sprintf(cmd,
 	      "rsh %s %s -master -rank %d -conf %s %s",
 	      configuration->host_name[0],
 	      argv[0], 0, getenv("MAD2_ROOT"), arg_str);
-#else /* MAD2_MAD1 */
+#else /* PM2 */
       sprintf(cmd,
 	      "rsh %s %s -master -rank %d %s",
 	      configuration->host_name[0], argv[0], 0, arg_str);
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
     }
   LOG_STR("Loader cmd", cmd);
   system(cmd);
@@ -492,7 +487,7 @@ mad_slave_spawn(int                *argc,
     {
       if (argv[0][0] != '/')
 	{
-#ifdef MAD2_MAD1
+#ifdef PM2
 	  sprintf(cmd,
 		  "rsh %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
 		  configuration->host_name[i],
@@ -502,7 +497,7 @@ mad_slave_spawn(int                *argc,
 		  i,  /* rank */
 		  getenv("MAD2_ROOT"),
 		  arg_str);
-#else /* MAD2_MAD1 */
+#else /* PM2 */
 	  sprintf(cmd,
 		  "rsh %s %s/%s -slave -cwd %s -rank %d %s &",
 		  configuration->host_name[i],
@@ -511,11 +506,11 @@ mad_slave_spawn(int                *argc,
 		  cwd,
 		  i,  /* rank */
 		  arg_str);
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 	}
       else
 	{
-#ifdef MAD2_MAD1
+#ifdef PM2
 	  sprintf(cmd,
 		  "rsh %s %s -slave -cwd %s -rank %d -conf %s %s &",
 		  configuration->host_name[i],
@@ -524,7 +519,7 @@ mad_slave_spawn(int                *argc,
 		  i,  /* rank */
 		  getenv("MAD2_ROOT"),
 		  arg_str);
-#else /* MAD2_MAD1 */
+#else /* PM2 */
 	  sprintf(cmd,
 		  "rsh %s %s -slave -cwd %s -rank %d %s &",
 		  configuration->host_name[i],
@@ -532,7 +527,7 @@ mad_slave_spawn(int                *argc,
 		  cwd,
 		  i,  /* rank */
 		  arg_str);
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 	}
 	    
       LOG_STR("mad_init: Spawn", cmd);
@@ -658,7 +653,7 @@ mad_read_conf(p_mad_configuration_t   configuration,
       exit(1);
     }
 
-#ifdef MAD2_MAD1
+#ifdef PM2
   {
     int ret; 
     char command[128];
@@ -667,9 +662,9 @@ mad_read_conf(p_mad_configuration_t   configuration,
     ret = system(command);
     configuration->size = WEXITSTATUS(ret);
   }
-#else /* MAD2_MAD1 */
+#else /* PM2 */
   fscanf(f, "%d", &(configuration->size));
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
   configuration->host_name = malloc(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
 
@@ -747,19 +742,19 @@ mad_driver_exit(p_mad_madeleine_t madeleine)
 
 /* ---- */
 
-#ifdef MAD2_MAD1
+#ifdef PM2
 p_mad_madeleine_t
 mad2_init(int                  *argc,
 	  char                **argv,
 	  char                 *configuration_file,
 	  p_mad_adapter_set_t   adapter_set)
-#else /* MAD2_MAD1 */
+#else /* PM2 */
 p_mad_madeleine_t
 mad_init(int                   *argc,
 	 char                 **argv,
 	 char                  *configuration_file __attribute__ ((unused)),
 	 p_mad_adapter_set_t    adapter_set)
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 {
   p_mad_madeleine_t          madeleine       = &(main_madeleine);
   p_mad_configuration_t      configuration   =
@@ -772,12 +767,12 @@ mad_init(int                   *argc,
   p_mad_driver_interface_t   spawn_interface = NULL;
   p_mad_adapter_t            spawn_adapter   = NULL;
 #endif /* EXTERNAL_SPAWN */
-#ifdef MAD2_MAD1
+#ifdef PM2
   char                       conf_file[128];
   
   configuration_file = conf_file;
   sprintf(conf_file, "%s/.mad2_conf", getenv("MAD2_ROOT"));
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 
   LOG_IN(); 
 
@@ -808,9 +803,9 @@ mad_init(int                   *argc,
   mad_parse_command_line(argc,
 			 argv,
 			 madeleine,
-#ifdef MAD2_MAD1
+#ifdef PM2
 			 conf_file,
-#endif /* MAD2_MAD1 */
+#endif /* PM2 */
 			 &master,
 			 &slave);
   
@@ -868,7 +863,7 @@ mad_init(int                   *argc,
   return madeleine;
 }
 
-#ifdef MAD2_MAD1
+#ifdef PM2
 void
 mad2_exit(p_mad_madeleine_t madeleine)
 #else
@@ -911,550 +906,3 @@ mad_get_channel(mad_channel_id_t id)
 }
 */
 
-/* ========================================================================
- *
- * Interface de compatibilite ascendante Mad2/Mad1
- *
- * ========================================================================
- */
-#ifdef MAD2_MAD1
-void
-mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
-{
-  /* Note:
-   *  - l'objet global madeleine est utilise
-   *    directement par la suite, il n'est donc
-   *    pas utile de renvoyer un pointeur sur cet objet
-   */
-  p_mad_madeleine_t     madeleine;
-  p_mad_adapter_set_t   adapter_set;
-  
-  LOG_IN();
-
-  adapter_set =
-    mad_adapter_set_init(1, MAD2_MAD1_MAIN_PROTO, MAD2_MAD1_MAIN_PROTO_PARAM);
-
-  madeleine    = mad2_init(argc, argv, NULL, adapter_set);
-
-  *nb = madeleine->configuration.size;
-  *whoami = (int)madeleine->configuration.local_host_id;
-
-  LOG_VAL("Who am I:", *whoami);
-  {
-    int i;
-
-    for (i = 0; i < *nb; i++)
-      tids[i] = i;
-  }
-
-  LOG_OUT();
-}
-
-void
-mad_buffers_init(void)
-{
-  marcel_key_create(&mad2_send_key, NULL);
-  marcel_key_create(&mad2_recv_key, NULL);
-  marcel_sem_init(&sem_nego, 1);
-}
-
-void
-mad_exit(void)
-{
-  p_mad_madeleine_t madeleine = &main_madeleine;
-  
-  LOG_IN();
-  mad2_exit(madeleine);
-  LOG_OUT();
-}
-
-char *
-mad_arch_name(void)
-{
-  LOG_IN();
-  LOG_OUT();
-  return NET_ARCH;
-}
-
-boolean
-mad_can_send_to_self(void)
-{
-  LOG_IN();
-  LOG_OUT();
-  return 0;
-}
-
-void
-mad_sendbuf_init(p_mad_channel_t channel, int dest_node)
-{
-  LOG_IN();
-  marcel_setspecific(mad2_send_key, mad_begin_packing(channel, dest_node));
-  LOG_OUT();
-}
-
-void
-mad_sendbuf_send(void)
-{
-  LOG_IN();
-  mad_end_packing(marcel_getspecific(mad2_send_key));
-  LOG_OUT();
-}
-
-void
-mad_sendbuf_free(void)
-{
-  /* rien a priori */
-}
-
-void
-mad_receive(p_mad_channel_t channel)
-{
-  LOG_IN();
-  marcel_setspecific(mad2_recv_key, mad_begin_unpacking(channel));
-  LOG_OUT();
-}
-
-void
-mad_recvbuf_receive(void)
-{
-  LOG_IN();
-  mad_end_unpacking(marcel_getspecific(mad2_recv_key));
-  LOG_OUT();
-}
-
-void
-pm2_pack_byte(mad_send_mode_t     sm,
-	      mad_receive_mode_t  rm,
-	      char               *data,
-	      size_t              nb)
-{
-  LOG_IN();  
-  mad_pack(marcel_getspecific(mad2_send_key), data, nb, sm, rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_byte(mad_send_mode_t     sm,
-		mad_receive_mode_t  rm,
-		char               *data,
-		size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key), data, nb, sm, rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_short(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
-	       short              *data,
-	       size_t              nb)
-{
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(short),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_short(mad_send_mode_t     sm,
-		 mad_receive_mode_t  rm,
-		 short              *data,
-		 size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	     data,
-	     nb*sizeof(short),
-	     sm,
-	     rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_int(mad_send_mode_t     sm,
-	     mad_receive_mode_t  rm,
-	     int                *data,
-	     size_t              nb)
-{
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(int),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_int(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
-	       int                *data,
-	       size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(int),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_long(mad_send_mode_t     sm,
-	      mad_receive_mode_t  rm,
-	      long               *data,
-	      size_t              nb)
-{
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(long),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_long(mad_send_mode_t     sm,
-		mad_receive_mode_t  rm,
-		long               *data,
-		size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(long),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_float(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
-	       float              *data,
-	       size_t              nb)
-{
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(float),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_float(mad_send_mode_t     sm,
-		 mad_receive_mode_t  rm,
-		 float              *data,
-		 size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(float),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_double(mad_send_mode_t     sm,
-		mad_receive_mode_t  rm,
-		double             *data,
-		size_t              nb)
-{
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(double),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_double(mad_send_mode_t     sm,
-		  mad_receive_mode_t  rm,
-		  double             *data,
-		  size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(double),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_pointer(mad_send_mode_t     sm,
-		 mad_receive_mode_t  rm,
-		 pointer            *data,
-		 size_t              nb)
-{
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   nb*sizeof(pointer),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_pointer(mad_send_mode_t     sm,
-		   mad_receive_mode_t  rm,
-		   pointer            *data,
-		   size_t              nb)
-{
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	   data,
-	   nb*sizeof(pointer),
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_pack_str(mad_send_mode_t     sm,
-	     mad_receive_mode_t  rm,
-	     char               *data)
-{
-  int len = strlen(data);
-  
-  LOG_IN();
-  if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))
-    FAILURE("unimplemented feature");
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   &len,
-	   sizeof(int),
-	   sm,
-	   mad_receive_EXPRESS);
-  mad_pack(marcel_getspecific(mad2_send_key),
-	   data,
-	   len + 1,
-	   sm,
-	   rm);
-  LOG_OUT();
-}
-
-void
-pm2_unpack_str(mad_send_mode_t     sm,
-	       mad_receive_mode_t  rm,
-	       char               *data)
-{
-  int len;
-
-  LOG_IN();
-  if ((sm != mad_send_SAFER) && (sm != mad_send_CHEAPER))
-    FAILURE("unimplemented feature");
-  
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	     &len,
-	     sizeof(int),
-	     sm,
-	     mad_receive_EXPRESS);
-  mad_unpack(marcel_getspecific(mad2_recv_key),
-	     data,
-	     len + 1,
-	     sm,
-	     rm);
-  LOG_OUT();
-}
-
-void
-old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
-{
-  LOG_IN();
-  
-   switch(where)
-    {
-       case MAD_IN_HEADER :
-	 {
-	   mad_pack(marcel_getspecific(mad2_send_key), data, nb,
-		    mad_send_SAFER, mad_receive_EXPRESS);
-	   break;
-	 }
-       case MAD_IN_PLACE :
-	 {
-	   mad_pack(marcel_getspecific(mad2_send_key), data, nb,
-		    mad_send_CHEAPER, mad_receive_CHEAPER);
-	   break;
-	 }
-       case MAD_BY_COPY :
-	 {
-	   mad_pack(marcel_getspecific(mad2_send_key), data, nb,
-		    mad_send_SAFER, mad_receive_CHEAPER);
-	   break;
-	 }
-    default: FAILURE("Unknown pack mode");
-    }
-
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_byte(madeleine_part where, char *data, size_t nb)
-{
-  LOG_IN();
-  
-  switch(where)
-    {
-       case MAD_IN_HEADER :
-	 {
-	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
-		      mad_send_SAFER, mad_receive_EXPRESS);
-	   break;
-	 }
-       case MAD_IN_PLACE :
-	 {
-	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
-		      mad_send_CHEAPER, mad_receive_CHEAPER);
-	   break;
-	 }
-       case MAD_BY_COPY :
-	 {
-	   mad_unpack(marcel_getspecific(mad2_recv_key), data, nb,
-		      mad_send_SAFER, mad_receive_CHEAPER);
-	   break;
-	 }
-    default: FAILURE("Unknown pack mode");
-    }
-
-  LOG_OUT();
-}
-
-void
-old_mad_pack_short(madeleine_part where, short *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(short));
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_short(madeleine_part where, short *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(short));
-  LOG_OUT();
-}
-
-void
-old_mad_pack_int(madeleine_part where, int *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(int));
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_int(madeleine_part where, int *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(int));
-  LOG_OUT();
-}
-
-void
-old_mad_pack_long(madeleine_part where, long *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(long));
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_long(madeleine_part where, long *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(long));
-  LOG_OUT();
-}
-
-void
-old_mad_pack_float(madeleine_part where, float *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(float));
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_float(madeleine_part where, float *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(float));
-  LOG_OUT();
-}
-
-void
-old_mad_pack_double(madeleine_part where, double *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(double));
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_double(madeleine_part where, double *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(double));
-  LOG_OUT();
-}
-
-void
-old_mad_pack_pointer(madeleine_part where, pointer *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_pack_byte(where, (char *)data, nb*sizeof(pointer));
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb)
-{
-  LOG_IN();
-  old_mad_unpack_byte(where, (char *)data, nb*sizeof(pointer));
-  LOG_OUT();
-}
-
-void
-old_mad_pack_str(madeleine_part where, char *data)
-{
-  int len = strlen(data);
-  LOG_IN();
-  mad_pack(marcel_getspecific(mad2_send_key), (char *)&len, sizeof(int),
-	   mad_send_SAFER, mad_receive_EXPRESS);
-  old_mad_pack_byte(where, data, len + 1);
-  LOG_OUT();
-}
-
-void
-old_mad_unpack_str(madeleine_part where, char *data)
-{
-  int len;
-  LOG_IN();
-  mad_unpack(marcel_getspecific(mad2_recv_key), (char *)&len, sizeof(int),
-	     mad_send_SAFER, mad_receive_EXPRESS);
-  old_mad_unpack_byte(where, data, len + 1);
-  LOG_OUT();
-}
-
-/* This function is supposed to be called after pm2_init/mad_init. */
-p_mad_madeleine_t mad_get_madeleine()
-{
-  return &main_madeleine;
-}
-
-#endif /* MAD2_MAD1 */

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.5  2000/01/05 15:51:25  oaumage
+- mad_list_management.c: changement de `len' en `length'
+- mad_channel.c: correction au niveau de l'appel a mad_link_exit
+
 Revision 1.4  2000/01/04 16:49:09  oaumage
 - madeleine: corrections au niveau du support `external spawn'
 - support des fonctions non definies dans les drivers
@@ -304,8 +308,8 @@ mad_foreach_close_channel(void *object)
 	      p_mad_link_t   in_link  = &(in->link[link_id]);
 	      p_mad_link_t   out_link = &(out->link[link_id]);
 	      
-	      interface->link_exit(out->link);
-	      interface->link_exit(in->link);
+	      interface->link_exit(out_link);
+	      interface->link_exit(in_link);
 	    }
 	}
       else

@@ -95,26 +95,29 @@ typedef struct lwp_thread_list_st {
 } * lwp_thread_list;
 
 typedef struct {
-  thread_list thread;
-  int active_thread;
-  proc_list proc;
-  logic_list logic;
-  int active_proc;
-  cpu_list cpu;
-  //  lwp_thread_list lwp_thread;
-  event_list event;
-  time_slice_list time;
-  int active_time;
-  evnum_slice_list evnum_slice;
-  int active_evnum_slice;
-  general_slice_list function;
-  thread_fun_list thread_fun;
-  function_time_list function_begin;
-  function_time_list function_time;
-  int active_thread_fun;
-  general_slice_list gen_slice;
-  int active_gen_slice;
-  int active;
+  thread_list thread;             // List of wanted threads
+  int active_thread;              // Number of thread active at a certain time
+  proc_list proc;                 // List of wanted processus
+  logic_list logic;               // List of wanted logic lwp
+  int active_proc;                // Number of active process at a certain time
+  cpu_list cpu;                   // List of wanted cpu
+  event_list event;               // List of wanted events
+  time_slice_list time;           // List of wanted time slices
+  int active_time;                // Indicates if we are in an active time zone
+  evnum_slice_list evnum_slice;   // List of wanted evnum slices
+  int active_evnum_slice;         // Indicates if we are in an active evnum zone
+  general_slice_list function;    // List of wanted function
+  thread_fun_list thread_fun;     /* List of thread activated by the option
+				     function */
+  function_time_list function_begin;   /* List to record the beginning time of
+					  each function call */
+  function_time_list function_time;    /* List to record the timing of each
+					  function */
+  int active_thread_fun;          /* Number of active thread activated by
+				     function */
+  general_slice_list gen_slice;   // List of wanted general zone
+  int active_gen_slice;           // Number of active zones at a certain time
+  int active;                     // Indicates if we are in active zone or not
 } filter;
 
 extern void init_filter();
@@ -151,6 +154,8 @@ extern void filter_add_function(mode begin_type, int begin,
 
 extern int filter_get_function_time(struct function_time_list_st *fct_time);
 
-int is_valid(trace *tr);
+extern int is_valid(trace *tr);
+
+extern int filter_pid_of_cpu(int i);
 
 #endif

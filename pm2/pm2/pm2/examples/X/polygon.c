@@ -314,7 +314,7 @@ static void ma_main_loop(void)
   }
 }
 
-static void startup_func()
+static void startup_func(int argc, char *argv[])
 {
   module_suivant = (pm2_self() + 1) % pm2_config_size();
   module_precedent = (pm2_self() == 0) ? pm2_config_size() - 1 : pm2_self() - 1;

@@ -68,7 +68,7 @@ Usage: $PROGNAME [GLOBAL_OPTION]... COMMAND [OPTION]...
 
 Global Options
   --verbose,-v : add outputs
-  --admin,-a   : admin mode (only considers directory pm2/flavors)
+  --admin,-a   : admin mode (only considers directory pm2/flavors) -- obsolete
 
 Commands
   version   : output pm2 version information.
@@ -818,7 +818,9 @@ while test $# -gt 0; do
 	fi
 	;;
     --admin|-a)
-	EDIT_MODE="admin"
+	echo "*admin* flag is obsolete; do not use any more."
+	exit
+        # EDIT_MODE="admin"
 	;;
     -h|--help)
 	do_help

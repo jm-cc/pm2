@@ -66,17 +66,21 @@ make_ln ${PM2_ROOT}/console graphic/icons icons
 # module links
 echo
 echo Modules
+if [ ! -d ${PM2_ROOT}/modules ] ; then
+    mkdir ${PM2_ROOT}/modules
+fi
+make_ln ${PM2_ROOT}/modules ../common common
 make_ln ${PM2_ROOT}/modules ../dsm dsm
+make_ln ${PM2_ROOT}/modules ../generic generic
 make_ln ${PM2_ROOT}/modules ../leonie leonie
 make_ln ${PM2_ROOT}/modules ../mad1 mad1
 make_ln ${PM2_ROOT}/modules ../mad2 mad2
 make_ln ${PM2_ROOT}/modules ../marcel marcel
 make_ln ${PM2_ROOT}/modules ../ntbx ntbx
+make_ln ${PM2_ROOT}/modules ../pm2 pm2
+make_ln ${PM2_ROOT}/modules ../pm2debug pm2debug
 make_ln ${PM2_ROOT}/modules ../tbx tbx
 make_ln ${PM2_ROOT}/modules ../swann swann
-make_ln ${PM2_ROOT}/modules/pm2 ../../example example
-make_ln ${PM2_ROOT}/modules/pm2 ../../include include
-make_ln ${PM2_ROOT}/modules/pm2 ../../source source
 
 # architecture-specific directories for the storage of binaries, etc.
 
@@ -87,12 +91,11 @@ echo
 echo Marcel
 make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_arch pm2_arch
 make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_sys pm2_sys
-make_ln ${MARCEL_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
-#make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
-make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
-make_ln ${MARCEL_ROOT}/include/ ../../include/timing.h timing.h
-make_ln ${MARCEL_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
-make_ln ${MARCEL_ROOT}/source/ ../../source/timing.c timing.c
+make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
+make_ln ${MARCEL_ROOT}/include/sys/ ../../../pm2/include/sys/isomalloc_archdep.h isomalloc_archdep.h
+make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/timing.h timing.h
+make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/safe_malloc.c safe_malloc.c
+make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/timing.c timing.c
 
 # Marcel / options de configuration (cf pm2-config-flavor) exclusives
 $ECHO
@@ -135,15 +138,15 @@ else
     make_ln ${MAD1_ROOT}/bin ./tcp shm
 fi
 
-make_ln ${MAD1_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
-make_ln ${MAD1_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
-make_ln ${MAD1_ROOT}/include/ ../../include/timing.h timing.h
+make_ln ${MAD1_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
+make_ln ${MAD1_ROOT}/include/sys/ ../../../pm2/include/sys/debug.h debug.h
+make_ln ${MAD1_ROOT}/include/ ../../pm2/include/timing.h timing.h
 make_ln ${MAD1_ROOT}/source/ mpi mpi_bip
 make_ln ${MAD1_ROOT}/source/ mpi mpi_lam
 make_ln ${MAD1_ROOT}/source/ mpi mpi_sgi
 make_ln ${MAD1_ROOT}/source/ mpi mpi_sp2
-make_ln ${MAD1_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
-make_ln ${MAD1_ROOT}/source/ ../../source/timing.c timing.c
+make_ln ${MAD1_ROOT}/source/ ../../pm2/source/safe_malloc.c safe_malloc.c
+make_ln ${MAD1_ROOT}/source/ ../../pm2/source/timing.c timing.c
 make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 
 # Mad I / options de configuration (cf pm2-config-flavor) exclusives
@@ -163,8 +166,8 @@ make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 # DSM
 echo
 echo DSM
-make_ln ${DSM_ROOT}/include/ ../../include/timing.h timing.h
-make_ln ${DSM_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
+make_ln ${DSM_ROOT}/include/ ../../pm2/include/timing.h timing.h
+make_ln ${DSM_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 # Madeleine default selection

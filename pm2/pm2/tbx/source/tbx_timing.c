@@ -3,7 +3,7 @@
  *
  *  This file contains the support functions for the
  *  TBX timing facilities.
- * 
+ *
  */
 
 /*
@@ -42,7 +42,8 @@ tbx_timing_init()
 {
   static tbx_tick_t t1, t2;
   int i;
-  
+
+  LOG_IN();
   tbx_residual = (unsigned long long)1 << 32;
   for(i=0; i<5; i++) {
     TBX_GET_TICK(t1);
@@ -60,7 +61,7 @@ tbx_timing_init()
     TBX_GET_TICK(t2);
     gettimeofday(&tv2,0);
     scale = ((tv2.tv_sec*1e6 + tv2.tv_usec) -
-	     (tv1.tv_sec*1e6 + tv1.tv_usec)) / 
+	     (tv1.tv_sec*1e6 + tv1.tv_usec)) /
              (double)(TBX_TICK_DIFF(t1, t2));
   }
 #else
@@ -68,6 +69,15 @@ tbx_timing_init()
 #endif
 
   TBX_GET_TICK(tbx_last_event);
+  LOG_OUT();
+}
+
+void
+tbx_timing_exit()
+{
+  LOG_IN();
+  /* nothing */
+  LOG_OUT();
 }
 
 double

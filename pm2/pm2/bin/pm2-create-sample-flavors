@@ -64,8 +64,8 @@ if [ $FORCE = yes -o ! -d $PM2_USER_FLAVOR_DIR ]; then
 	--mad2=auto_spawn --mad2=tcp
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad3 \
-	--modules="mad3 tbx ntbx" $COMMON_OPTIONS \
-	--mad3=tcp
+	--modules="mad3 marcel tbx ntbx" $COMMON_OPTIONS \
+	--mad3=tcp --marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2 \
 	--modules="pm2 dsm marcel mad2 tbx ntbx" $COMMON_OPTIONS \

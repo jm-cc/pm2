@@ -33,7 +33,7 @@ $(PROGRAM): $(OBJECTS)
 $(OBJECTS): %.o: %.c
 	$(CC) $(CFLAGS) -c $<
 
-$(DEPENDS): %.d: %.c
+$(DEPENDS): %.d: %.c Makefile
 	$(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 

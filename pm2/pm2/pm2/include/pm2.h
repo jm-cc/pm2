@@ -375,14 +375,22 @@ _PRIVATE_ typedef struct {
 
 typedef block_descr_t isomalloc_dataset_t;
 
-#define pm2_isomalloc(size) block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size)
-#define pm2_isofree(addr) block_free((block_descr_t *)marcel_getspecific(_pm2_block_key), addr)
-#define pm2_isomalloc_dataset_init(descr) block_init_list(descr)
-#define pm2_isomalloc_dataset(descr, size) block_alloc(descr, size)
-#define pm2_isofree_dataset(descr, addr) block_free(descr, addr)
-#define pm2_dataset_attach(descr) block_merge_lists(descr, (block_descr_t *)marcel_getspecific(_pm2_block_key))
+#define pm2_isomalloc(size) \
+   block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size)
+#define pm2_isofree(addr) \
+   block_free((block_descr_t *)marcel_getspecific(_pm2_block_key), addr)
+#define pm2_isomalloc_dataset_init(descr) \
+   block_init_list(descr)
+#define pm2_isomalloc_dataset(descr, size) \
+   block_alloc(descr, size)
+#define pm2_isofree_dataset(descr, addr) \
+   block_free(descr, addr)
+#define pm2_dataset_attach(descr) \
+   block_merge_lists(descr, \
+                     (block_descr_t *)marcel_getspecific(_pm2_block_key))
 
-#define pm2_dataset_attach_other(task,descr) block_merge_lists(descr, (block_descr_t *) task->key[_pm2_block_key])
+#define pm2_dataset_attach_other(task,descr) \
+   block_merge_lists(descr, (block_descr_t *) task->key[_pm2_block_key])
 
 /*********************************************************/
 
@@ -411,9 +419,9 @@ _PRIVATE_ typedef struct {
 	void _##name##_func(rpc_args *arg)
 
 #ifdef MINIMAL_PREEMPTION
-#define RELEASE_CALLER if(!_quick) marcel_explicityield(_arg->initiator)
+#define RELEASE_CALLER(arg) if(!_quick) marcel_explicityield((arg)->initiator)
 #else
-#define RELEASE_CALLER marcel_sem_V(_arg->sem)
+#define RELEASE_CALLER(arg) marcel_sem_V((arg)->sem)
 #endif
 
 _PRIVATE_ extern int _pm2_optimize[];
@@ -446,8 +454,32 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 		name##_unpack_req(&req); \
 		mad_recvbuf_receive(); \
 	} \
-        RELEASE_CALLER; \
+        RELEASE_CALLER(_arg); \
 	{
+
+#define BEGIN_STUBLESS_SERVICE(name) \
+	void _##name##_func(rpc_args *_arg) { \
+	boolean _sync, _quick, _local = FALSE; \
+	LRPC_RES(name) res; \
+        _sync = _arg->sync; \
+	_quick = _arg->quick; \
+	if(!_quick) { \
+		marcel_setspecific(_pm2_lrpc_num_key, (any_t)((long)_arg->num)); \
+		marcel_setspecific(_pm2_block_key, (any_t)&_arg->sd); \
+		marcel_setspecific(_pm2_isomalloc_nego_key, (any_t) 0);\
+		block_init_list(&_arg->sd); \
+		marcel_cleanup_push(_pm2_term_func, marcel_self()); \
+	} \
+	if(_arg->tid == pm2_self() && _pm2_optimize[name]) { \
+		RAISE(NOT_IMPLEMENTED); \
+	} \
+	{
+
+#define pm2_wait_for_data() \
+ { \
+   mad_recvbuf_receive(); \
+   RELEASE_CALLER((rpc_args *)(marcel_self()->user_space_ptr)); \
+ }
 
 _PRIVATE_ void _end_service(rpc_args *args, any_t res, int local);
 

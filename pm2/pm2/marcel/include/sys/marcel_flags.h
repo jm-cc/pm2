@@ -110,21 +110,27 @@
 /* MA__POSIX_FUNCTIONS_NAMES : définit les fonctions pthread_...
  * */
 #ifdef MA__POSIX_FUNCTIONS_NAMES
-#  define MA__POSIX_FUNCTIONS_NAMES
+#  undef MA__POSIX_FUNCTIONS_NAMES
 #endif
 
 /* MA__POSIX_BEHAVIOUR : définit les fonctions pmarcel_ compatibles avec
  * les propriétées (et structures de données) de la libpthread
  * */
 #ifdef MA__POSIX_BEHAVIOUR
-#  define MA__POSIX_BEHAVIOUR
+#  undef MA__POSIX_BEHAVIOUR
 #endif
 
 /* MA__PTHREAD_FUNCTIONS : definit les fonctions nécessaires pour construire
  * une libpthread (ABI)
  * */
 #ifdef MA__PTHREAD_FUNCTIONS
-#  define MA__PTHREAD_FUNCTIONS
+#  undef MA__PTHREAD_FUNCTIONS
+#endif
+
+/* MA__FUT_RECORD_TID : definit si on enregistre ou pas les tid dans les traces
+ * */
+#ifdef MA__FUT_RECORD_TID
+#  undef MA__FUT_RECORD_TID
 #endif
 
 #ifdef MARCEL_MONO /* Marcel Mono */
@@ -173,5 +179,11 @@
 #if defined(MA__LWPS) && !defined(MA__PTHREAD_FUNCTIONS)
 #  define MA__INTERRUPTS_USE_SIGINFO
 #endif
+
+/* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter
+ * les interruptions entre l'enregistrement du switch_to et le switch_to
+ * effectif 
+ * */
+#define MA__FUT_RECORD_TID
 
 #endif /* MARCEL_FLAGS_EST_DEF */

@@ -57,18 +57,22 @@ typedef struct __ma_init_info {
 	__ma_initfunc_t func;
         int section;
 	char prio;
-	char *debug;
+	const char **debug;
 	char *file;
 } __attribute__((aligned)) __ma_init_info_t;
 
 #section marcel_macros
 #define __MA_INIT_SECTION ".ma.init."
 
-#define __ma_initfunc_prio__(_func, _section, _prio, _debug) \
+#define __ma_initfunc_prio_internal(_func, _section, _prio, _pdebug) \
   const __ma_init_info_t ma_init_info_##_func \
     __attribute__((aligned, \
 		section (__MA_INIT_SECTION "info." #_section "." #_prio))) \
-    = {.func=&_func, .section=_section, .prio=_prio, .debug=_debug, .file=__FILE__};
+    = {.func=&_func, .section=_section, .prio=_prio, .debug=_pdebug, .file=__FILE__};
+#define __ma_initfunc_prio__(_func, _section, _prio, _debug) \
+  static const char *ma_init_info_##_func##_help=_debug; \
+  __ma_initfunc_prio_internal(_func, _section, _prio, \
+                              &ma_init_info_##_func##_help)
 #define __ma_initfunc_prio(_func, _section, _prio, _debug) \
   __ma_initfunc_prio__(_func, _section, _prio, _debug)
 #define __ma_initfunc(_func, _section, _debug) \
@@ -139,11 +143,13 @@ typedef struct __ma_init_info {
 #define MA_INIT_MARCEL_SCHED          MA_INIT_MAIN_LWP
 #define MA_INIT_LWP                   MA_INIT_MAIN_LWP
 #define MA_INIT_IO                    MA_INIT_MAIN_LWP
-#define MA_INIT_LINUX_SCHED           MA_INIT_MAIN_LWP
 #define MA_INIT_GENSCHED_IDLE         MA_INIT_MAIN_LWP
+#define MA_INIT_LINUX_SCHED           MA_INIT_MAIN_LWP
 #define MA_INIT_TIMER_SIG_DATA        MA_INIT_MAIN_LWP
 #define MA_INIT_TIMER                 MA_INIT_MAIN_LWP
 #define MA_INIT_LINUX_TIMER           MA_INIT_MAIN_LWP
+#define MA_INIT_REGISTER_LWP_NOTIFIER MA_INIT_MAIN_LWP
+#define MA_INIT_REGISTER_LWP_NOTIFIER_PRIO          'R'
 #define MA_INIT_LWP_FINISHED          MA_INIT_MAIN_LWP
 #define MA_INIT_LWP_FINISHED_PRIO                   'Z'
 #define MA_INIT_GENSCHED_PREEMPT      MA_INIT_SCHEDULER
@@ -151,6 +157,6 @@ typedef struct __ma_init_info {
 #define MA_INIT_THREADS_THREAD        MA_INIT_SCHEDULER
 #define MA_INIT_TIMER_SIG             MA_INIT_SCHEDULER
 #define MA_INIT_SOFTIRQ_KSOFTIRQD     MA_INIT_SCHEDULER
+#define MA_INIT_UPCALL_TASK_NEW       MA_INIT_SCHEDULER
 #define MA_INIT_GENSCHED_START_LWPS   MA_INIT_START_LWPS
-
 

@@ -30,7 +30,7 @@
  * not some alias that contains the same information.
  */
 #ifdef MA_HAVE_COMPAREEXCHANGE
-typedef struct { volatile long counter; } ma_atomic_t;
+typedef struct { volatile int counter; } ma_atomic_t;
 #else
 typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #endif
@@ -63,7 +63,7 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_ATOMIC_ADD_RETURN(test) \
-	long old, new, ret; \
+	int old, new, ret; \
 	old = ma_atomic_read(v); \
 	while (1) { \
 		new = old + i; \
@@ -74,7 +74,7 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 	}
 #else
 #define MA_ATOMIC_ADD_RETURN(test) \
-	long old, new; \
+	int old, new; \
 	ma_spin_lock_softirq(&v->lock); \
 	old = ma_atomic_read(v); \
 	new = old + i; \
@@ -92,9 +92,9 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
  * Atomically adds @i to @v.  Note that the guaranteed useful range
  * of an ma_atomic_t is only 24 bits.
  */
-static __inline__ void ma_atomic_add(long i, ma_atomic_t *v);
+static __inline__ void ma_atomic_add(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ void ma_atomic_add(long i, ma_atomic_t *v)
+static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 {
 	MA_ATOMIC_ADD_RETURN();
 }
@@ -121,9 +121,9 @@ static __inline__ void ma_atomic_add(long i, ma_atomic_t *v)
  * other cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */
-static __inline__ long ma_atomic_add_and_test(long i, ma_atomic_t *v);
+static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ long ma_atomic_add_and_test(long i, ma_atomic_t *v)
+static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
 {
 	MA_ATOMIC_ADD_RETURN(new == 0);
 }
@@ -193,9 +193,9 @@ static __inline__ long ma_atomic_add_and_test(long i, ma_atomic_t *v)
  * result is greater than or equal to zero.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ long ma_atomic_add_negative(long i, ma_atomic_t *v);
+static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ long ma_atomic_add_negative(long i, ma_atomic_t *v)
+static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 {
 	MA_ATOMIC_ADD_RETURN(new < 0);
 }

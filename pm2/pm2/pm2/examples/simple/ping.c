@@ -37,9 +37,8 @@
 
 #define ESSAIS 5
 
-unsigned SAMPLE, SAMPLE_THR;
-
-static int *les_modules, nb_modules, autre;
+static unsigned SAMPLE, SAMPLE_THR;
+static unsigned autre;
 
 static marcel_sem_t sem;
 
@@ -123,12 +122,9 @@ void f(int n)
   }
 }
 
-static void startup_func(int *modules, int nb)
+static void startup_func()
 {
-  if(pm2_self() == modules[0])
-    autre = modules[1];
-  else
-    autre = modules[0];
+  autre = (pm2_self() == 0) ? 1 : 0;
 }
 
 int pm2_main(int argc, char **argv)
@@ -138,17 +134,24 @@ int pm2_main(int argc, char **argv)
 
   pm2_set_startup_func(startup_func);
 
-  pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  if(pm2_self() == les_modules[0]) { /* master process */
+  if(pm2_config_size() < 2) {
+    fprintf(stderr,
+	    "This program requires at least two processes.\n"
+	    "Please rerun pm2conf.\n");
+    exit(1);
+  }
+
+  if(pm2_self() == 0) { /* master process */
 
     marcel_sem_init(&sem, 0);
 
     f(1000);
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
 
-  } else
+  }
 
   pm2_exit();
 

@@ -16,5 +16,7 @@
 
 #section common
 #depend "asm/linux_intrinsics.h[]"
+#section macros
+#define MA_HAVE_COMPAREEXCHANGE 1
 #section marcel_macros
 #define pm2_compareexchange(p,o,n,s) ma_ia64_cmpxchg(acq,(p),(o),(n),(s))

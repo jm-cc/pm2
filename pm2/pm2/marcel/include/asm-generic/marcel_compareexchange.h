@@ -14,8 +14,10 @@
  * General Public License for more details.
  */
 
+#depend "asm/marcel_testandset.h"
+
 #section marcel_variables
-extern ma_spinlock_t compareexchange_spinlock;
+extern ma_spinlock_t ma_compareexchange_spinlock;
 
 #section marcel_functions
 static __inline__ unsigned long
@@ -29,7 +31,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 		unsigned long new, int size)
 {
 	unsigned long prev;
-	ma_spin_lock_softirq(&compareexchange_spinlock);
+	ma_spin_lock_softirq(&ma_compareexchange_spinlock);
 	switch (size) {
 	case 1: {
 			volatile ma_u8 *p = ptr;
@@ -51,7 +53,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 			break;
 		}
 	}
-	ma_spin_unlock_softirq(&compareexchange_spinlock);
+	ma_spin_unlock_softirq(&ma_compareexchange_spinlock);
 	return prev;
 }
 

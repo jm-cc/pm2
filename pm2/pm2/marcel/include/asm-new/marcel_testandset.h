@@ -14,26 +14,5 @@
  * General Public License for more details.
  */
 
-#section marcel_functions
-#if 0
-static __inline__ unsigned 
-pm2_spinlock_testandset(volatile unsigned *spinlock) ;//__tbx_deprecated__;
-#endif
-#section marcel_inline
-#if 0
-static __inline__ unsigned __tbx_deprecated__
-pm2_spinlock_testandset(volatile unsigned *spinlock)
-{
-#error "to write !"
-}
-#endif
-
-//#warning "Bad implementation of test and set !"
-
-#section marcel_macros
-#define pm2_spinlock_testandset(spinlock) \
-  (*(spinlock) ? 1 : (*(spinlock)=1,0))
-
-#section marcel_macros
-#define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
-
+#section common
+#depend "asm-generic/marcel_testandset.h[]"

@@ -14,7 +14,8 @@
  * General Public License for more details.
  */
 
-
+#section macros
+#define MA_HAVE_TESTANDSET 1
 
 #section marcel_functions
 

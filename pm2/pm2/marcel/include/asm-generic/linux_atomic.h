@@ -52,6 +52,7 @@ typedef struct { volatile int counter; } ma_atomic_t;
  */ 
 #define ma_atomic_set(v,i)		(((v)->counter) = (i))
 
+#depend "asm/marcel_compareexchange.h[]"
 #define MA_ATOMIC_ADD_RETURN(test) \
 	int old, new, ret; \
 	old = ma_atomic_read(v); \

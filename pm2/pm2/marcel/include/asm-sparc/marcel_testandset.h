@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section macros
+#define MA_HAVE_TESTANDSET 1
+
 #section marcel_functions
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
 #section marcel_inline

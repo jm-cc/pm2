@@ -27,14 +27,27 @@
  */
 
 #ifdef MA__LWPS
+#depend "asm/marcel_testandset.h[macros]"
+#ifdef MA_HAVE_TESTANDSET
 typedef volatile unsigned ma_spinlock_t;
+#else
+#include <pthread.h>
+typedef pthread_mutex_t mutex;
+#endif
 #endif
 
 #section macros
 #ifdef MA__LWPS
+#depend "asm/marcel_testandset.h[macros]"
+#ifdef MA_HAVE_TESTANDSET
 #define MA_SPIN_LOCK_UNLOCKED 0
 
 #define ma_spin_lock_init(x)	do { *(x) = (ma_spinlock_t) MA_SPIN_LOCK_UNLOCKED; } while(0)
+#else
+#include <pthread.h>
+#define MA_SPIN_LOCK_UNLOCKED PTHREAD_MUTEX_INITIALIZER
+#define ma_spin_lock_init(x) pthread_mutex_init(&x,NULL);
+#endif
 #endif
 
 #section marcel_macros
@@ -47,11 +60,27 @@ typedef volatile unsigned ma_spinlock_t;
 
 #ifdef MA__LWPS
 
+#depend "asm/marcel_testandset.h[macros]"
+#ifdef MA_HAVE_TESTANDSET
 #define ma_spin_is_locked(x)	(*(x) == 1)
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while(ma_spin_is_locked(x))
 
 #define _ma_raw_spin_unlock(x) pm2_spinlock_release(x)
 #define _ma_raw_spin_trylock(x) (!pm2_spinlock_testandset(x))
 #define _ma_raw_spin_lock(x) do { } while (!(_ma_raw_spin_trylock(x)))
+#else
+#define ma_spin_is_locked(x)	({ int ___ret; \
+				pthread_mutex_t *___px = &(x); \
+				if (!(___ret = pthread_mutex_trylock(___px))) \
+				  pthread_mutex_unlock(___px); \
+				___ret != 0; })
+#define ma_spin_unlock_wait(x)	do { } while(ma_spin_is_locked(x))
+
+#define _ma_raw_spin_unlock(x) pthread_mutex_lock(&(x))
+#define _ma_raw_spin_trylock(x) (!(pthread_mutex_trylock(&(x))))
+#define _ma_raw_spin_lock(x) do { if (!(ma_raw_spin_lock(&(x)))) \
+				MA_BUG("deadlock !") } \
+				while (0)
+#endif
 
 #endif /* MA__LWPS */

@@ -1,8 +1,11 @@
+import logging
 import socket
 import sys
 
-import leo_loaders
 import leo_comm
+import leo_loaders
+
+logger	= logging.getLogger()
 
 def hostname_receive(client):
     hostname = leo_comm.receive_string(client)
@@ -38,5 +41,6 @@ def session_spawn(s):
             ps	= node_process_dict[key]
             ps.client	= client
 
+            logger.debug('process no %d connected' %  ps.global_rank)
             leo_comm.send_int(client, ps.global_rank)
             s.process_list.append(ps)

@@ -139,6 +139,20 @@ tbx_slist_clear(p_tbx_slist_t slist)
   LOG_IN();
 }
 
+void
+tbx_slist_clear_and_free(p_tbx_slist_t slist)
+{
+  LOG_IN();
+  while (!tbx_slist_is_nil(slist))
+    {
+      tbx_slist_extract(slist);
+    }
+  if (slist->nref_head)
+    FAILURE("nrefs still exist");
+  __tbx_slist_free_struct(slist);
+  LOG_IN();
+}
+
 /*
  * Return a new list element
  * -------------------------

@@ -211,6 +211,9 @@ tbx_slist_free(p_tbx_slist_t slist);
 void
 tbx_slist_clear(p_tbx_slist_t slist);
 
+void
+tbx_slist_clear_and_free(p_tbx_slist_t slist);
+
 p_tbx_slist_element_t
 tbx_slist_alloc_element(void *object);
 

@@ -98,6 +98,7 @@ any_t main_thread(void *arg)
       }
     }
   }
+
   finished = TRUE;
   return NULL;
 }

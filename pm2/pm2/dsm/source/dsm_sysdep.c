@@ -147,16 +147,19 @@ _dsm_sig_handler(int sig, char *addr, dsm_access_t access) {
 
 static void pagefault_handler_helper(int sig, char *addr, dsm_access_t access) { 
 
-   LOG_IN();
-
 #ifndef DSM_SHARED_STACK
+
+    LOG_IN();
+
     _dsm_sig_handler(sig, addr, access);
+
 #else
     jmp_buf buf;
     void *sp_addr;
     void *base0;
     void *base;
 
+    LOG_IN();
 
     TIMING_EVENT("In handler helper");
 #ifdef DEBUG1

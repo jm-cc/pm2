@@ -19,12 +19,12 @@ prog="remote_hello"
 args="a b c"
 hosts="`uname -n` `uname -n`"
 cat > /tmp/pm2test_expected <<EOF
-[t1] Hello world!
-[t1] argc = 4
-[t1] argv[0] = </tmp/test_pm2/examples/simple/bin/remote_hello>
-[t1] argv[1] = <a>
-[t1] argv[2] = <b>
-[t1] argv[3] = <c>
+[n1] Hello world!
+[n1] argc = 4
+[n1] argv[0] = </tmp/test_pm2/examples/simple/bin/remote_hello>
+[n1] argv[1] = <a>
+[n1] argv[2] = <b>
+[n1] argv[3] = <c>
 EOF
 
 # Creation de la flavor

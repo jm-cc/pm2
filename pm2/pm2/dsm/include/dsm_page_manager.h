@@ -46,81 +46,81 @@ void dsm_protect_page (void *addr, dsm_access_t access);
 
 unsigned int dsm_page_offset(void *addr);
 
-unsigned long dsm_page_index(void *addr);
+dsm_page_index_t dsm_page_index(void *addr);
 
-unsigned long dsm_isoaddr_page_index(int index);
+dsm_page_index_t dsm_isoaddr_page_index(int index);
 
 unsigned long dsm_get_nb_static_pages();
 
 unsigned long dsm_get_nb_pseudo_static_pages();
 
-void dsm_set_prob_owner(unsigned long index, dsm_node_t owner);
+void dsm_set_prob_owner(dsm_page_index_t index, dsm_node_t owner);
 
-dsm_node_t dsm_get_prob_owner(unsigned long index);
+dsm_node_t dsm_get_prob_owner(dsm_page_index_t index);
 
-void dsm_set_next_owner(unsigned long index, dsm_node_t next_owner);
+void dsm_set_next_owner(dsm_page_index_t index, dsm_node_t next_owner);
  
-void dsm_clear_next_owner(unsigned long index);
+void dsm_clear_next_owner(dsm_page_index_t index);
 
-dsm_node_t dsm_get_next_owner(unsigned long index);
+dsm_node_t dsm_get_next_owner(dsm_page_index_t index);
 
-void dsm_store_pending_request(unsigned long index, dsm_node_t owner);
+void dsm_store_pending_request(dsm_page_index_t index, dsm_node_t owner);
 
-dsm_node_t dsm_get_next_pending_request(unsigned long index);
+dsm_node_t dsm_get_next_pending_request(dsm_page_index_t index);
 
-boolean dsm_next_owner_is_set(unsigned long index);
+boolean dsm_next_owner_is_set(dsm_page_index_t index);
 
-void dsm_set_access(unsigned long index, dsm_access_t access);
+void dsm_set_access(dsm_page_index_t index, dsm_access_t access);
 
-void dsm_set_access_without_protect(unsigned long index, dsm_access_t access);
+void dsm_set_access_without_protect(dsm_page_index_t index, dsm_access_t access);
 
-dsm_access_t dsm_get_access(unsigned long index);
+dsm_access_t dsm_get_access(dsm_page_index_t index);
 
-void dsm_set_pending_access(unsigned long index, dsm_access_t access);
+void dsm_set_pending_access(dsm_page_index_t index, dsm_access_t access);
 
-dsm_access_t dsm_get_pending_access(unsigned long index);
+dsm_access_t dsm_get_pending_access(dsm_page_index_t index);
 
-void dsm_set_page_size(unsigned long index, unsigned long size);
+void dsm_set_page_size(dsm_page_index_t index, unsigned long size);
 
-unsigned long dsm_get_page_size(unsigned long index);
+unsigned long dsm_get_page_size(dsm_page_index_t index);
 
-void dsm_set_page_addr(unsigned long index, void *addr);
+void dsm_set_page_addr(dsm_page_index_t index, void *addr);
 
-void *dsm_get_page_addr(unsigned long index);
+void *dsm_get_page_addr(dsm_page_index_t index);
 
-void dsm_wait_for_page(unsigned long index);
+void dsm_wait_for_page(dsm_page_index_t index);
 
-void dsm_signal_page_ready(unsigned long index);
+void dsm_signal_page_ready(dsm_page_index_t index);
 
-void dsm_lock_page(unsigned long index);
+void dsm_lock_page(dsm_page_index_t index);
 
-void dsm_unlock_page(unsigned long index);
+void dsm_unlock_page(dsm_page_index_t index);
 
-void dsm_wait_for_inv(unsigned long index);
+void dsm_wait_for_inv(dsm_page_index_t index);
 
-void dsm_signal_inv_done(unsigned long index);
+void dsm_signal_inv_done(dsm_page_index_t index);
 
-void dsm_lock_inv(unsigned long index);
+void dsm_lock_inv(dsm_page_index_t index);
 
-void dsm_unlock_inv(unsigned long index);
+void dsm_unlock_inv(dsm_page_index_t index);
 
-boolean dsm_pending_invalidation(unsigned long index);
+boolean dsm_pending_invalidation(dsm_page_index_t index);
 
-void dsm_set_pending_invalidation(unsigned long index);
+void dsm_set_pending_invalidation(dsm_page_index_t index);
 
-void dsm_clear_pending_invalidation(unsigned long index);
+void dsm_clear_pending_invalidation(dsm_page_index_t index);
 
-void dsm_wait_ack(unsigned long index, int value);
+void dsm_wait_ack(dsm_page_index_t index, int value);
 
-void dsm_signal_ack(unsigned long index, int value);
+void dsm_signal_ack(dsm_page_index_t index, int value);
 
-int dsm_get_copyset_size(unsigned long index);
+int dsm_get_copyset_size(dsm_page_index_t index);
 
-void dsm_add_to_copyset(unsigned long index, dsm_node_t node);
+void dsm_add_to_copyset(dsm_page_index_t index, dsm_node_t node);
 
-dsm_node_t dsm_get_next_from_copyset(unsigned long index);
+dsm_node_t dsm_get_next_from_copyset(dsm_page_index_t index);
 
-void dsm_remove_from_copyset(unsigned long index, dsm_node_t node);
+void dsm_remove_from_copyset(dsm_page_index_t index, dsm_node_t node);
 
 void pm2_set_dsm_page_distribution(int mode, ...);
 
@@ -138,29 +138,29 @@ void dsm_display_page_ownership();
 
 void pm2_set_dsm_page_protection(int mode, ...);
 
-int dsm_get_user_data1(unsigned long index, int rank);
+int dsm_get_user_data1(dsm_page_index_t index, int rank);
 
-void dsm_set_user_data1(unsigned long index, int rank, int value);
+void dsm_set_user_data1(dsm_page_index_t index, int rank, int value);
 
-void dsm_increment_user_data1(unsigned long index, int rank);
+void dsm_increment_user_data1(dsm_page_index_t index, int rank);
 
-void dsm_decrement_user_data1(unsigned long index, int rank);
+void dsm_decrement_user_data1(dsm_page_index_t index, int rank);
 
-void dsm_alloc_user_data2(unsigned long index, int size);
+void dsm_alloc_user_data2(dsm_page_index_t index, int size);
 
-void dsm_free_user_data2(unsigned long index);
+void dsm_free_user_data2(dsm_page_index_t index);
 
-void *dsm_get_user_data2(unsigned long index);
+void *dsm_get_user_data2(dsm_page_index_t index);
 
-void dsm_set_user_data2(unsigned long index, void *addr);
+void dsm_set_user_data2(dsm_page_index_t index, void *addr);
 
-void dsm_alloc_twin(unsigned long index);
+void dsm_alloc_twin(dsm_page_index_t index);
 
-void dsm_free_twin(unsigned long index);
+void dsm_free_twin(dsm_page_index_t index);
 
-void *dsm_get_twin(unsigned long index);
+void *dsm_get_twin(dsm_page_index_t index);
 
-void dsm_set_twin(unsigned long index, void *addr);
+void dsm_set_twin(dsm_page_index_t index, void *addr);
 
 typedef void (*dsm_user_data1_init_func_t)(int *userdata); /* init func for userdata1 */
 
@@ -172,19 +172,19 @@ void dsm_set_user_data2_init_func(dsm_user_data2_init_func_t func);
 
 void dsm_set_pseudo_static_area_size(unsigned size);
 
-boolean dsm_empty_page_entry(unsigned long index);
+boolean dsm_empty_page_entry(dsm_page_index_t index);
 
-void dsm_alloc_page_entry(unsigned long index);
+void dsm_alloc_page_entry(dsm_page_index_t index);
 
-void dsm_validate_page_entry(unsigned long index);
+void dsm_validate_page_entry(dsm_page_index_t index);
 
-void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map);
+void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map);
 
 void dsm_set_default_protocol(int protocol);
 
-void dsm_set_page_protocol(unsigned long index, int protocol);
+void dsm_set_page_protocol(dsm_page_index_t index, int protocol);
 
-int dsm_get_page_protocol(unsigned long index);
+int dsm_get_page_protocol(dsm_page_index_t index);
 
 void dsm_set_page_ownership(void *addr, dsm_node_t owner);
 
@@ -198,19 +198,19 @@ void dsm_invalidate_not_owned_pages_without_protect();
 
 void dsm_pseudo_static_invalidate_not_owned_pages_without_protect();
 
-void dsm_alloc_page_bitmap(unsigned long index); 
+void dsm_alloc_page_bitmap(dsm_page_index_t index); 
 
-void dsm_free_page_bitmap(unsigned long index);
+void dsm_free_page_bitmap(dsm_page_index_t index);
 
 void dsm_mark_dirty(void *addr, int length);
 
-void *dsm_get_next_modified_data(unsigned long index, int *size);
+void *dsm_get_next_modified_data(dsm_page_index_t index, int *size);
 
-boolean dsm_page_bitmap_is_empty(unsigned long index);
+boolean dsm_page_bitmap_is_empty(dsm_page_index_t index);
 
-void dsm_page_bitmap_clear(unsigned long index) ;
+void dsm_page_bitmap_clear(dsm_page_index_t index) ;
 
-boolean dsm_page_bitmap_is_allocated(unsigned long index);
+boolean dsm_page_bitmap_is_allocated(dsm_page_index_t index);
 
 /* user code to migrate to hyperion files: */
 

@@ -95,7 +95,7 @@ void init()
   strcat(fut_print, "/profile/include/fut_print.h");
   fd = open(fut_print, O_RDONLY);
   if (fd == -1) {
-    fprintf(stderr, "%s could not be opened\n", fut_print);
+    fprintf(stderr, "%s could not be opened, do you have launched pm2-build-fut-table ?\n", fut_print);
     exit(1);
   }
   parser_start(fd);

@@ -81,7 +81,7 @@ typedef pthread_mutex_t ma_spinlock_t;
 
 #define _ma_raw_spin_unlock(x) pthread_mutex_unlock((x))
 #define _ma_raw_spin_trylock(x) (!(pthread_mutex_trylock((x))))
-#define _ma_raw_spin_lock(x) do { if (!(pthread_mutex_lock((x)))) \
+#define _ma_raw_spin_lock(x) do { if (pthread_mutex_lock((x))) \
 				MA_BUG() } \
 				while (0)
 #endif

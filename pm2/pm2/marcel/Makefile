@@ -34,10 +34,6 @@
 #
 
 LIBRARY=marcel
-#LIBNAME=marcel
-
-#marcel_CC=gcc
-#marcel_AS=gcc
 
 .PHONY: default
 default:

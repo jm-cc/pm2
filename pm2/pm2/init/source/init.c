@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.7  2000/11/16 14:21:48  oaumage
+- correction external spawn
+
+Revision 1.6  2000/11/16 13:24:02  oaumage
+- mise a jour initialisation
+
 Revision 1.5  2000/11/16 11:11:48  rnamyst
 Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
 
@@ -81,7 +87,7 @@ void common_init(int *argc, char *argv[])
 
 #ifdef PM2
   unsigned pm2_self, pm2_conf_size;
-#endif
+#endif /* PM2 */
 
 #ifdef PROFILE
   /*
@@ -95,7 +101,7 @@ void common_init(int *argc, char *argv[])
    * - nothing
    */
   profile_init();
-#endif
+#endif /* PROFILE */
 
 #ifdef PM2
   /*
@@ -113,7 +119,7 @@ void common_init(int *argc, char *argv[])
    * - Further calls to pm2_register are not allowed
    */
   pm2_init_data(argc, argv);
-#endif
+#endif /* PM2 */
 
 #ifdef MARCEL
   /*
@@ -129,7 +135,7 @@ void common_init(int *argc, char *argv[])
    * - Nothing
    */
   marcel_init_data(argc, argv);
-#endif
+#endif /* MARCEL */
 
 #ifdef TBX
   /*
@@ -151,7 +157,7 @@ void common_init(int *argc, char *argv[])
 #endif /* TBX */
 
 #ifdef NTBX
-   /*
+  /*
    * Net-Toolbox services
    * --------------------
    *
@@ -163,7 +169,6 @@ void common_init(int *argc, char *argv[])
    * - TBX services
    */
   ntbx_init(*argc, argv);
- 
 #endif /* NTBX */
 
 #ifdef MAD2
@@ -203,7 +208,7 @@ void common_init(int *argc, char *argv[])
     
     madeleine = mad_object_init(*argc, argv, configuration_file, adapter_set);
   }
-#endif
+#endif /* MAD2 */
 
 #if defined(PM2) && defined(MAD2)
   /*
@@ -219,7 +224,7 @@ void common_init(int *argc, char *argv[])
    * - Marcel Data Initialization
    */
   pm2_mad_init(madeleine);
-#endif
+#endif /* PM2 && MAD2 */
 
 #ifdef MAD2
   /*
@@ -238,8 +243,9 @@ void common_init(int *argc, char *argv[])
 
 #ifdef PM2
   pm2_self = madeleine->configuration->local_host_id;
-#endif
-#endif
+#endif /* PM2 */
+
+#endif /* MAD2 */ 
 
 #ifdef MAD2
   /*
@@ -255,7 +261,7 @@ void common_init(int *argc, char *argv[])
    * - high priority
    */
   mad_output_redirection_init(madeleine, *argc, argv);
-#endif
+#endif /* MAD2 */
 
 #ifdef MAD2
   /*
@@ -274,7 +280,8 @@ void common_init(int *argc, char *argv[])
 #ifdef PM2
   pm2_conf_size = madeleine->configuration->size;
 #endif
-#endif
+
+#endif /* MAD2 */
 
 #ifdef MAD2
   /*
@@ -304,9 +311,11 @@ void common_init(int *argc, char *argv[])
    * - Mad2 initialization from command line arguments
    */
   mad_purge_command_line(madeleine, argc, argv);
-#endif
+#endif /* MAD2 */
 
 #ifdef MAD2
+
+#ifndef EXTERNAL_SPAWN
   /*
    * Mad2 slave nodes spawn
    * ----------------------
@@ -320,7 +329,9 @@ void common_init(int *argc, char *argv[])
    * - connection data
    */
   mad_slave_spawn(madeleine, *argc, argv);
-#endif
+#endif /* EXTERNAL_SPAWN */
+  
+#endif /* MAD 2 */
 
 #ifdef MAD2
   /*
@@ -340,29 +351,29 @@ void common_init(int *argc, char *argv[])
 
 #ifdef PM2
   pm2_init_open_channels(argc, argv, pm2_self, pm2_conf_size);
-#endif
+#endif /* PM2 */
 
 #ifdef MARCEL
   marcel_start_sched(argc, argv);
-#endif
+#endif /* MARCEL */
 
 #ifdef PM2
   pm2_init_thread_related(argc, argv);
-#endif
+#endif /* PM2 */
 
 #ifdef DSM
   dsm_pm2_init(pm2_self, pm2_conf_size);
-#endif
+#endif /* DSM */
 
 #ifdef PM2
   pm2_init_listen_network(argc, argv);
-#endif
+#endif /* PM2 */
 
 #ifdef PM2
   pm2_init_purge_cmdline(argc, argv);
-#endif
+#endif /* PM2 */
 
 #ifdef MARCEL
   marcel_purge_cmdline(argc, argv);
-#endif
+#endif /* PM2 */
 }

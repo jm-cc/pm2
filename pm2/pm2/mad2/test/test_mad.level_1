@@ -19,7 +19,7 @@ appdir="${PM2_ROOT}/mad2/examples"
 prog="mad_test"
 args=""
 hosts="`uname -n` `uname -n`"
-cat > /tmp/pm2test_expected <<EOF
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
 adapter: TCP0
 Express data 1 : 1
 Express data 2 : 2

@@ -37,7 +37,13 @@
 
 //#define MAX_PRIO		(MAX_RT_PRIO + 40)
 #define MAX_PRIO                4
-#define DEF_PRIO		(MAX_PRIO/2)
+#if (MAX_PRIO<4)
+#error MAX_PRIO must be at least 4 to get real time and batch tasks working
+#endif
+#define IDLE_PRIO		(MAX_PRIO-1)
+#define BATCH_PRIO		(IDLE_PRIO-1)
+#define DEF_PRIO		1
+#define RT_PRIO			0
 
 //#define rt_task(p)		((p)->prio < MAX_RT_PRIO)
 

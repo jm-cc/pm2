@@ -144,6 +144,7 @@ pm2which_calc()
 	*)
 	    if [ -f "$1" -a -x "$1" ]; then
 		_PM2WHICH_RESULT="$PWD/$1"
+		_PM2WHICH_NB_FOUND=1
 	    else
 		pm2which_do_search $1
 	    fi
@@ -197,7 +198,7 @@ if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
     PM2_CONFIG_SOURCEABLE=yes
 
     set -- --source-mode
-    . ${PM2_ROOT}/bin/pm2-fast-config $*
+    . ${PM2_ROOT}/bin/pm2-fast-config
 
     _PM2WHICH_LOADER=$_PM2CONFIG_LOADER
     export _PM2WHICH_LOADER

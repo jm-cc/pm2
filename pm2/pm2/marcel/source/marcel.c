@@ -42,6 +42,56 @@
 #include <sys/mman.h>
 #endif
 
+
+/*
+ * Begin: added by O.A.
+ * --------------------
+ */
+static tbx_flag_t marcel_activity = tbx_flag_clear;
+
+_PRIVATE_
+int
+marcel_test_activity(void)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  result = tbx_test(&marcel_activity);
+  LOG_OUT();
+
+  return result;
+}
+
+_PRIVATE_
+void
+marcel_set_activity(void)
+{
+  LOG_IN();
+  if (tbx_test(&marcel_activity))
+    FAILURE("marcel_activity flag already set");
+  
+  tbx_set(&marcel_activity);
+  LOG_OUT();
+}
+
+_PRIVATE_
+void
+marcel_clear_activity(void)
+{
+  LOG_IN();
+  if (!tbx_test(&marcel_activity))
+    FAILURE("marcel_activity flag already cleared");
+
+  tbx_clear(&marcel_activity);
+  LOG_OUT();
+}
+
+/*
+ * End: added by O.A.
+ * ------------------
+ */
+
+
 #ifdef RS6K_ARCH
 int _jmg(int r)
 {

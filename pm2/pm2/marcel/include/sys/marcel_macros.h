@@ -17,7 +17,7 @@
 #ifndef MARCEL_MACROS_IS_DEF
 #define MARCEL_MACROS_IS_DEF
 
-#include "profile.h"
+#include "pm2_profile.h"
 
 #ifdef MA__ONE_QUEUE
 #define SCHED_DATA(lwp) (__sched_data)

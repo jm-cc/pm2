@@ -234,7 +234,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #ifdef DEBUG
     breakpoint();
 #endif
-    MTRACE("Yield", cur);
+    MTRACE("Preemption", cur);
     if(cur->child)
       marcel_insert_task(cur->child);
     unlock_task();
@@ -306,22 +306,24 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       *pid = new_task;
 
     marcel_one_more_task(new_task);
-    MTRACE("Created", new_task);
+    MTRACE("Creation", new_task);
 
 #ifndef MINIMAL_PREEMPTION
     if((locked() > 1) /* lock_task has been called */
-       || (new_task->user_space_ptr)
+       || (new_task->user_space_ptr && !attr->immediate_activation)
 #ifdef SMP
        || (new_task->sched_policy != MARCEL_SCHED_OTHER)
 #endif
        ) {
 #endif
-      new_task->father->child = (new_task->user_space_ptr ? NULL : new_task);
+      new_task->father->child = ((new_task->user_space_ptr && !attr->immediate_activation)
+				 ? NULL /* do not insert now */
+				 : new_task); /* insert asap */
 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
 
-      MTRACE("Yield", marcel_self());
+      MTRACE("Preemption", marcel_self());
 
       if(setjmp(marcel_self()->jb) == FIRST_RETURN) {
 	call_ST_FLUSH_WINDOWS();
@@ -330,7 +332,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #ifdef DEBUG
       breakpoint();
 #endif
-      MTRACE("Yield", marcel_self());
+      MTRACE("Preemption", marcel_self());
       unlock_task();
 #ifndef MINIMAL_PREEMPTION
     } else {
@@ -341,7 +343,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
 
-      MTRACE("Yield", marcel_self());
+      MTRACE("Preemption", marcel_self());
 
       unlock_task();
     }
@@ -396,9 +398,13 @@ int marcel_exit(any_t val)
 
     lock_task();
 
-    *cur_lwp->sec_desc = *cur; /* On fabrique un "faux" thread dans
-				  la pile de secours et ce thread 
-				  devient le thread courant */
+    /* *cur_lwp->sec_desc = *cur; */
+    init_task_desc(cur_lwp->sec_desc); /* On fabrique un "faux" thread dans
+					  la pile de secours et ce thread 
+					  devient le thread courant */
+    cur_lwp->sec_desc->number = cur->number;
+
+    MTRACE("Mutation", cur_lwp->sec_desc);
 
     marcel_insert_task(cur_lwp->sec_desc); /* On insere le nouveau thread
 					    *avant* de retirer l'ancien 
@@ -441,7 +447,7 @@ int marcel_exit(any_t val)
 						     de retirer le "faux"
 						     thread ! */
 
-    MTRACE("Exited", cur_lwp->sec_desc);
+    MTRACE("Exit", cur_lwp->sec_desc);
 
     call_ST_FLUSH_WINDOWS();
     longjmp(cur->jb, NORMAL_RETURN);
@@ -468,7 +474,7 @@ int marcel_exit(any_t val)
        laquelle on donnera la "main" avant de
        mourir. */
 
-    MTRACE("Exited", cur);
+    MTRACE("Exit", cur);
 
     cur_lwp->sec_desc->father = cur;
     cur_lwp->sec_desc->lwp = cur_lwp;

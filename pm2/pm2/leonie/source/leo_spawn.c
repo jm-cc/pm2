@@ -443,15 +443,16 @@ void
 send_table(p_leo_dir_vxchannel_t dir_vxchannel,
            p_ntbx_client_t       client)
 {
-  void _cnx_src(ntbx_process_grank_t sg, void *_cnx) {
+  void _cnx_src(ntbx_process_grank_t sg, ntbx_process_lrank_t sl, void *_cnx) {
     p_leo_dir_connection_t cnx  = _cnx;
 
-    void _cnx_dst(ntbx_process_grank_t dg, void *_cdata) {
+    void _cnx_dst(ntbx_process_grank_t dg, ntbx_process_lrank_t dl, void *_cdata) {
       p_leo_dir_connection_data_t cdata =
         _cdata;
 
       LOG_IN();
       leo_send_int   (client, dg);
+      leo_send_int   (client, dl);
       leo_send_string(client, cdata->channel_name);
       leo_send_int   (client, cdata->destination_rank);
       LOG_OUT();
@@ -459,13 +460,14 @@ send_table(p_leo_dir_vxchannel_t dir_vxchannel,
 
     LOG_IN();
     leo_send_int(client, sg);
-    do_pc_global_s(cnx->pc, _cnx_dst);
+    leo_send_int(client, sl);
+    do_pc_global_local_s(cnx->pc, _cnx_dst);
     leo_send_int(client, -1);
     LOG_OUT();
   }
 
   LOG_IN();
-  do_pc_global_s(dir_vxchannel->pc, _cnx_src);
+  do_pc_global_local_s(dir_vxchannel->pc, _cnx_src);
   LOG_OUT();
 }
 

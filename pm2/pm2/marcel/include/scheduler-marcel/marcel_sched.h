@@ -73,6 +73,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		int first_vp;
 		first_vp=ma_ffz(attr->vpmask);
 		MA_BUG_ON(attr->vpmask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
+		MA_BUG_ON(first_vp>=marcel_nbvps());
 		t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
 	}
 	t->sched.internal.cur_rq=NULL;

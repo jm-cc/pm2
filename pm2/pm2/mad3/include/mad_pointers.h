@@ -118,6 +118,10 @@ typedef struct s_mad_dir_channel_common
 typedef struct s_mad_dir_channel
 *p_mad_dir_channel_t;
 
+/* ... Directory: forwarding channel data ............................ */
+typedef struct s_mad_dir_fchannel
+*p_mad_dir_fchannel_t;
+
 /* ... Directory: virtual channel routing table element .............. */
 typedef struct s_mad_dir_vchannel_process_routing_table
 *p_mad_dir_vchannel_process_routing_table_t;
@@ -126,13 +130,21 @@ typedef struct s_mad_dir_vchannel_process_routing_table
 typedef struct s_mad_dir_vchannel_process_specific
 *p_mad_dir_vchannel_process_specific_t;
 
-/* ... Directory: forwarding channel data ............................ */
-typedef struct s_mad_dir_fchannel
-*p_mad_dir_fchannel_t;
-
-/* ... Directory: virtual channel data ............................... */
+/* ... Directory: mux channel data ................................... */
 typedef struct s_mad_dir_vchannel
 *p_mad_dir_vchannel_t;
+
+/* ... Directory: mux channel routing table element .................. */
+typedef struct s_mad_dir_xchannel_process_routing_table
+*p_mad_dir_xchannel_process_routing_table_t;
+
+/* ... Directory: per process mux channel specific data .............. */
+typedef struct s_mad_dir_xchannel_process_specific
+*p_mad_dir_xchannel_process_specific_t;
+
+/* ... Directory: virtual channel data ............................... */
+typedef struct s_mad_dir_xchannel
+*p_mad_dir_xchannel_t;
 
 /* ... Directory ..................................................... */
 typedef struct s_mad_directory
@@ -177,6 +189,27 @@ typedef struct s_mad_forward_block_queue
 /* ... Forwarding polling function args .............................. */
 typedef struct s_mad_forward_poll_channel_arg
 *p_mad_forward_poll_channel_arg_t;
+
+
+typedef struct s_mad_xmessage_queue_entry *p_mad_xmessage_queue_entry_t;
+
+typedef enum e_mad_xblock_type *p_mad_xblock_type_t;
+
+typedef enum e_mad_xblock_header_field *p_mad_xblock_header_field_t;
+
+typedef enum e_mad_xblock_header_field_mask *p_mad_xblock_header_field_mask_t;
+
+typedef enum e_mad_xblock_header_field_shift *p_mad_xblock_header_field_shift_t;
+
+typedef struct s_mad_xblock_header *p_mad_xblock_header_t;
+
+typedef struct s_mad_mux_receive_block_arg *p_mad_mux_receive_block_arg_t;
+
+typedef struct s_mad_mux_reemit_block_arg *p_mad_mux_reemit_block_arg_t;
+
+typedef struct s_mad_mux_block_queue *p_mad_mux_block_queue_t;
+
+typedef struct s_mad_mux_darray_lane *p_mad_mux_darray_lane_t;
 
 #endif /* MAD_POINTERS_H */
 

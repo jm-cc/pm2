@@ -60,8 +60,8 @@ channel_disconnect(p_leo_dir_vxchannel_t vxchannel,
 {
   LOG_IN();
   {
-    void _s(ntbx_process_lrank_t sl, p_ntbx_client_t src) {
-      tbx_bool_t _d(ntbx_process_lrank_t dl, p_ntbx_client_t dst) {
+    void _d(ntbx_process_lrank_t dl, p_ntbx_client_t dst) {
+      tbx_bool_t _s(ntbx_process_lrank_t sl, p_ntbx_client_t src) {
         if (sl == dl)
           return tbx_true;
 
@@ -82,10 +82,10 @@ channel_disconnect(p_leo_dir_vxchannel_t vxchannel,
         return tbx_false;
       }
 
-      do_pc_cond_send_local(channel->pc, _d);
+      do_pc_cond_send_local(channel->pc, _s);
     }
 
-    do_pc_send_local(channel->pc, _s);
+    do_pc_send_local(channel->pc, _d);
   }
   LOG_OUT();
 }
@@ -98,8 +98,8 @@ fchannel_disconnect(p_leo_dir_vxchannel_t vchannel,
 {
   LOG_IN();
   {
-    void _s(ntbx_process_lrank_t sl, p_ntbx_client_t src) {
-      tbx_bool_t _d(ntbx_process_lrank_t dl, p_ntbx_client_t dst) {
+    void _d(ntbx_process_lrank_t dl, p_ntbx_client_t dst) {
+      tbx_bool_t _s(ntbx_process_lrank_t sl, p_ntbx_client_t src) {
         if (sl == dl)
           return tbx_true;
 
@@ -120,10 +120,10 @@ fchannel_disconnect(p_leo_dir_vxchannel_t vchannel,
         return tbx_false;
       }
 
-      do_pc_cond_send_local(channel->pc, _d);
+      do_pc_cond_send_local(channel->pc, _s);
     }
 
-    do_pc_send_local(channel->pc, _s);
+    do_pc_send_local(channel->pc, _d);
   }
   LOG_OUT();
 }

@@ -14,12 +14,12 @@
  * General Public License for more details.
  */
 
+#include "marcel.h"
+#include "marcel_alloc.h"
+
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-
-#include "marcel.h"
-#include "marcel_alloc.h"
 
 static void *next_slot;
 

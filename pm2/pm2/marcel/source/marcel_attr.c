@@ -14,68 +14,82 @@
  * General Public License for more details.
  */
 
-#include <string.h>
-
 #include "marcel.h"
+
+#include <string.h>
 
 /* Déclaré non statique car utilisé dans marcel.c : */
 marcel_attr_t marcel_attr_default = {
-  DEFAULT_STACK,           /* stack size */
-  NULL,                    /* stack base */
-  MARCEL_CREATE_JOINABLE,  /* detached */
-  0,                       /* user space */
-  FALSE,                   /* immediate activation */
-  1,                       /* not_migratable */
-  0,                       /* not_deviatable */
-  MARCEL_SCHED_OTHER,      /* scheduling policy */
-  MARCEL_CLASS_REGULAR,    /* scheduling class */
-  MARCEL_VPMASK_EMPTY,     /* vp mask */
-  0                        /* special flags */
+  __detachstate: MARCEL_CREATE_JOINABLE,
+  __schedpolicy: MARCEL_SCHED_OTHER,
+  __schedparam: {0,},
+  __inheritsched: 0,
+  __scope: 0,
+  __guardsize: 0,
+  __stackaddr_set: 0,
+  __stackaddr: NULL,
+  user_space: 0,
+  immediate_activation: FALSE,
+  not_migratable: 1,
+  not_deviatable: 0,
+  rt_thread: MARCEL_CLASS_REGULAR,
+  vpmask: MARCEL_VPMASK_EMPTY,
+  flags: 0
 };
 
 /* Déclaré dans marcel.c : */
 extern volatile unsigned default_stack;
 
+#ifdef MA__POSIX_BEHAVIOUR
+#include <sys/shm.h>
+#endif
 
 int marcel_attr_init(marcel_attr_t *attr)
 {
-   *attr = marcel_attr_default;
+#ifdef MA__POSIX_BEHAVIOUR
+    size_t ps = __getpagesize ();
+#endif
+    *attr = marcel_attr_default;
+#ifdef MA__POSIX_BEHAVIOUR
+    attr->__guardsize = ps;
+#endif
    return 0;
 }
 
 int marcel_attr_setstacksize(marcel_attr_t *attr, size_t stack)
 {
-   attr->stack_size = stack;
+   attr->__stacksize = stack;
    return 0;
 }
 
-int marcel_attr_getstacksize(marcel_attr_t *attr, size_t *stack)
+int marcel_attr_getstacksize(__const marcel_attr_t *attr, size_t *stack)
 {
-  *stack = attr->stack_size;
+  *stack = attr->__stacksize;
   return 0;
 }
 
 int marcel_attr_setstackaddr(marcel_attr_t *attr, void *addr)
 {
-   attr->stack_base = addr;
+   attr->__stackaddr_set = 1;
+   attr->__stackaddr = addr;
    return 0;
 }
 
-int marcel_attr_getstackaddr(marcel_attr_t *attr, void **addr)
+int marcel_attr_getstackaddr(__const marcel_attr_t *attr, void **addr)
 {
-   *addr = attr->stack_base;
+   *addr = attr->__stackaddr;
    return 0;
 }
 
 int marcel_attr_setdetachstate(marcel_attr_t *attr, boolean detached)
 {
-   attr->detached = detached;
+   attr->__detachstate = detached;
    return 0;
 }
 
-int marcel_attr_getdetachstate(marcel_attr_t *attr, boolean *detached)
+int marcel_attr_getdetachstate(__const marcel_attr_t *attr, boolean *detached)
 {
-   *detached = attr->detached;
+   *detached = attr->__detachstate;
    return 0;
 }
 
@@ -85,7 +99,7 @@ int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space)
    return 0;
 }
 
-int marcel_attr_getuserspace(marcel_attr_t *attr, unsigned *space)
+int marcel_attr_getuserspace(__const marcel_attr_t *attr, unsigned *space)
 {
    *space = attr->user_space;
    return 0;
@@ -97,7 +111,7 @@ int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate)
   return 0;
 }
 
-int marcel_attr_getactivation(marcel_attr_t *attr, boolean *immediate)
+int marcel_attr_getactivation(__const marcel_attr_t *attr, boolean *immediate)
 {
   *immediate = attr->immediate_activation;
   return 0;
@@ -109,7 +123,7 @@ int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable)
    return 0;
 }
 
-int marcel_attr_getmigrationstate(marcel_attr_t *attr, boolean *migratable)
+int marcel_attr_getmigrationstate(__const marcel_attr_t *attr, boolean *migratable)
 {
    *migratable = (attr->not_migratable ? FALSE : TRUE);
    return 0;
@@ -121,7 +135,7 @@ int marcel_attr_setdeviationstate(marcel_attr_t *attr, boolean deviatable)
    return 0;
 }
 
-int marcel_attr_getdeviationstate(marcel_attr_t *attr, boolean *deviatable)
+int marcel_attr_getdeviationstate(__const marcel_attr_t *attr, boolean *deviatable)
 {
    *deviatable = (attr->not_deviatable ? FALSE : TRUE);
    return 0;
@@ -129,13 +143,13 @@ int marcel_attr_getdeviationstate(marcel_attr_t *attr, boolean *deviatable)
 
 int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy)
 {
-  attr->sched_policy = policy;
+  attr->__schedpolicy = policy;
   return 0;
 }
 
-int marcel_attr_getschedpolicy(marcel_attr_t *attr, int *policy)
+int marcel_attr_getschedpolicy(__const marcel_attr_t *attr, int *policy)
 {
-  *policy = attr->sched_policy;
+  *policy = attr->__schedpolicy;
   return 0;
 }
 
@@ -147,7 +161,7 @@ int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
   return 0;
 }
 
-int marcel_attr_getrealtime(marcel_attr_t *attr, boolean *realtime)
+int marcel_attr_getrealtime(__const marcel_attr_t *attr, boolean *realtime)
 {
   *realtime = attr->rt_thread;
   return 0;
@@ -159,7 +173,7 @@ int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask)
   return 0;
 }
 
-int marcel_attr_getvpmask(marcel_attr_t *attr, marcel_vpmask_t *mask)
+int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask)
 {
   *mask = attr->vpmask;
   return 0;
@@ -171,7 +185,7 @@ int marcel_attr_setflags(marcel_attr_t *attr, int flags)
   return 0;
 }
 
-int marcel_attr_getflags(marcel_attr_t *attr, int *flags)
+int marcel_attr_getflags(__const marcel_attr_t *attr, int *flags)
 {
   *flags = attr->flags;
   return 0;

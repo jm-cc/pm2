@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
+#include "pm2.h"
 #include "regul.h"
 
 #define MAX_THREADS	  1024

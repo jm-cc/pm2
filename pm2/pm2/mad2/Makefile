@@ -35,9 +35,12 @@
 
 ###################### CUSTOMIZATION SECTION #####################
 
-MAD_OPTIONS		=  # -DDEBUG
+MAD_OPTIONS		= # -DMAD_NEXUS  # -DDEBUG
 
-MAD_STANDALONE_OPTIONS	=	-g -Wall # -Werror -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
+MAD_STANDALONE_CC       = gcc #egcc
+
+# MAD_STANDALONE_OPTIONS	= -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
+MAD_STANDALONE_OPTIONS	=	-g -Wall -Werror # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 
 ################### END OF CUSTOMIZATION SECTION #################
 
@@ -80,7 +83,8 @@ DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_LIBD))
 endif
 endif
 
-MAD_NET_CFLAGS	=
+MAD_NET_CFLAGS	:=
+MAD_NET_SOURCES :=
 
 ifdef PM2_FLAGS
 MAD2_SUB_MAKEFILES := $(MAD2_ROOT)/make/custom/options.mak
@@ -118,8 +122,11 @@ MAD_LLIB	=	$(NET_LLIBS) $(ARCHDLIB)
 MAD_LIBS	:=	$(MAD_LIB) $(TBX_LIB) $(NTBX_LIB)
 MAD_LLIBS	:=	$(MAD_LLIB) $(TBX_LLIB) $(NTBX_LLIB) 
 
-
+ifdef MAD_ALONE
+MAD_CC          =       $(MAD_STANDALONE_CC)
+else
 MAD_CC		=	gcc
+endif
 
 MAD_CFLAGS	=	$(MAD_OPTIONS) $(MAD_NET_CFLAGS) $(PM2_FLAGS) \
 			-I$(MAD_INC) -I$(TBX_ROOT)/include \

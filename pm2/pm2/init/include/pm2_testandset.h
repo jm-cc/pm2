@@ -23,10 +23,10 @@
  */
 
 #ifdef X86_ARCH
-static __inline__ int pm2_spinlock_testandset(volatile int *spinlock) __attribute__ ((unused));
-static __inline__ int pm2_spinlock_testandset(volatile int *spinlock)
+static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __attribute__ ((unused));
+static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-  int ret;
+  unsigned ret;
 
   __asm__ __volatile__(
        "xchgl %0, %1"
@@ -42,7 +42,7 @@ static __inline__ int pm2_spinlock_testandset(volatile int *spinlock)
 
 
 #ifdef SPARC_ARCH
-static __inline__ int pm2_spinlock_testandset(volatile int *spinlock)
+static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   char ret = 0;
 
@@ -50,7 +50,7 @@ static __inline__ int pm2_spinlock_testandset(volatile int *spinlock)
 	: "=r"(spinlock), "=r"(ret)
 	: "0"(spinlock), "1" (ret) : "memory");
 
-  return (int)ret;
+  return (unsigned)ret;
 }
 
 #define pm2_spinlock_release(spinlock) \
@@ -58,9 +58,9 @@ static __inline__ int pm2_spinlock_testandset(volatile int *spinlock)
 #endif /* SPARC_ARCH */
 
 #ifdef ALPHA_ARCH
-static __inline__ long int pm2_spinlock_testandset(volatile int *spinlock)
+static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-  long int ret, temp;
+  long unsigned ret, temp;
 
   __asm__ __volatile__(
 	"/* Inline spinlock test & set */\n"
@@ -85,16 +85,16 @@ static __inline__ long int pm2_spinlock_testandset(volatile int *spinlock)
 #endif /* ALPHA_ARCH */
 
 #ifdef RS6K_ARCH
-#define pm2_spinlock_testandset(volatile int *spinlock) \
+#define pm2_spinlock_testandset(volatile unsigned *spinlock) \
   (*(spinlock) ? 1 : (*(spinlock)=1,0))
 
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
 #endif /* RS6K_ARCH */
 
 #ifdef MIPS_ARCH
-static __inline__ long int pm2_spinlock_testandset(volatile int *spinlock)
+static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-  long int ret, temp;
+  long unsigned ret, temp;
 
   __asm__ __volatile__(
         ".set\tmips2\n"
@@ -119,9 +119,9 @@ static __inline__ long int pm2_spinlock_testandset(volatile int *spinlock)
 #ifdef PPC_ARCH
 #define sync() __asm__ __volatile__ ("sync")
 
-static __inline__ int __compare_and_swap (long int *p, long int oldval, long int newval)
+static __inline__ unsigned __compare_and_swap (long unsigned *p, long unsigned oldval, long unsigned newval)
 {
-  int ret;
+  unsigned ret;
 
   sync();
   __asm__ __volatile__(

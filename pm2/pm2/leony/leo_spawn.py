@@ -12,7 +12,6 @@ def session_spawn(s):
     """Spawn the session loader by loader."""
 
     s.process_list	= []
-    global_rank		= 0
     temp_process_dict	= {}
 
     for loader in s.loader_dict.keys():
@@ -35,12 +34,10 @@ def session_spawn(s):
                 keys.sort()
                 temp_process_dict[hostname] = keys
 
-            key = temp_process_dict[hostname].pop(0)
+            key	= temp_process_dict[hostname].pop(0)
 
-            process		= node_process_dict[key]
-            process.client	= client
-            process.global_rank	= global_rank
-            global_rank		= global_rank + 1
+            ps	= node_process_dict[key]
+            ps.client	= client
 
-            leo_comm.send_int(client, global_rank)
-            s.process_list.append(process)
+            leo_comm.send_int(client, ps.global_rank)
+            s.process_list.append(ps)

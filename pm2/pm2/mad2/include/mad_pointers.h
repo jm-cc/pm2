@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_pointers.h,v $
+Revision 1.3  2000/03/07 10:38:56  oaumage
+- pre-support multi-cluster
+
 Revision 1.2  1999/12/15 17:31:25  oaumage
 Ajout de la commande de logging de CVS
 
@@ -48,23 +51,50 @@ ______________________________________________________________________________
 #ifndef MAD_POINTERS_H
 #define MAD_POINTERS_H
 
+/* ... Point-to-point connection ..................................... */
 typedef struct s_mad_connection           *p_mad_connection_t;
+
+/* ... Protocol generic interface .................................... */
 typedef struct s_mad_driver_interface     *p_mad_driver_interface_t;
+
+/* ... Transfer method ............................................... */
 typedef struct s_mad_link                 *p_mad_link_t;
+
+/* ... Protocol module ............................................... */
 typedef struct s_mad_driver               *p_mad_driver_t;
+
+/* ... Carte d'interface ............................................. */
 typedef struct s_mad_adapter              *p_mad_adapter_t;
+
+/* ... Cluster members ............................................... */
 typedef struct s_mad_configuration        *p_mad_configuration_t;
+
+/* ... Virtual buffers ............................................... */
 typedef struct s_mad_buffer               *p_mad_buffer_t;
+
+/* ... Virtual buffer pair ........................................... */
 typedef struct s_mad_buffer_pair          *p_mad_buffer_pair_t;
+
+/* ... Group of virtual buffers ...................................... */
 typedef struct s_mad_buffer_group         *p_mad_buffer_group_t;
+
+/* ... Communication channel ......................................... */
 typedef struct s_mad_channel              *p_mad_channel_t;
-typedef struct s_mad_list_element         *p_mad_list_element_t;
-typedef struct s_mad_list                 *p_mad_list_t;
-typedef struct s_mad_list_reference       *p_mad_list_reference_t;
+
+/* ... Main madeleine object ......................................... */
 typedef struct s_mad_madeleine            *p_mad_madeleine_t;
-typedef struct s_mad_memory               *p_mad_memory_t;
+
+/* ... Adapter identification ........................................ */
 typedef struct s_mad_adapter_description  *p_mad_adapter_description_t;
+
+/* ... Set of adapter identifications ................................ */
 typedef struct s_mad_adapter_set          *p_mad_adapter_set_t;
+
+/* ... Channel supporting hosts ...................................... */
+typedef struct s_mad_cluster              *p_mad_cluster_t;
+
+/* ... Virtual channel characteristics ............................... */
+typedef struct s_mad_channel_description  *p_mad_channel_description_t;
 
 #endif /* MAD_POINTERS_H */
 

@@ -1,11 +1,15 @@
 #! /usr/bin/env python
+# -*- coding: iso-8859-1 -*-
 
 import sys, string
 
 import leo_channel
 import leo_vchannel
 
+import yappy.parser
 from yappy.parser import *
+
+yappy.parser._DEBUG = 0
 
 class LeoCfg(Yappy):
     """Define a Leoparse-compatible Yappy parser."""

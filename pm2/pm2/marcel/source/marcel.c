@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.30  2000/11/15 21:32:20  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.29  2000/11/13 20:41:35  rnamyst
 common_init now performs calls to all libraries
 
@@ -154,11 +157,12 @@ ______________________________________________________________________________
 
 #include "marcel.h"
 #include "mar_timing.h"
-#include "safe_malloc.h"
 #include "marcel_alloc.h"
 #include "sys/marcel_work.h"
 
 #include "common.h"
+#include "tbx.h"
+#include "profile.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -181,14 +185,6 @@ ______________________________________________________________________________
 
 #ifdef SOLARIS_SYS
 #include <sys/stack.h>
-#endif
-
-#ifdef TBX
-#include "tbx.h"
-#endif
-
-#ifdef PROFILE
-#include "profile.h"
 #endif
 
 #ifdef RS6K_ARCH
@@ -1288,14 +1284,6 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
     marcel_strip_cmdline(argc, argv);
 #endif
 
-#ifndef PM2
-    timing_init();
-#endif
-
-#if !defined(PM2) && defined(USE_SAFE_MALLOC)
-    safe_malloc_init();
-#endif
-
 #ifdef SOLARIS_SYS
     page_size = sysconf(_SC_PAGESIZE);
 #else
@@ -1363,13 +1351,13 @@ unsigned long marcel_unusedstack(void)
 #endif
 }
 
-void *tmalloc(unsigned size)
+void *marcel_malloc(unsigned size, char *file, unsigned line)
 {
   void *p;
 
    if(size) {
       lock_task();
-      if((p = MALLOC(size)) == NULL)
+      if((p = __TBX_MALLOC(size, file, line)) == NULL)
          RAISE(STORAGE_ERROR);
       else {
          unlock_task();
@@ -1379,24 +1367,24 @@ void *tmalloc(unsigned size)
    return NULL;
 }
 
-void *trealloc(void *ptr, unsigned size)
+void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line)
 {
   void *p;
 
    lock_task();
-   if((p = REALLOC(ptr, size)) == NULL)
+   if((p = __TBX_REALLOC(ptr, size, file, line)) == NULL)
       RAISE(STORAGE_ERROR);
    unlock_task();
    return p;
 }
 
-void *tcalloc(unsigned nelem, unsigned elsize)
+void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
 {
   void *p;
 
    if(nelem && elsize) {
       lock_task();
-      if((p = CALLOC(nelem, elsize)) == NULL)
+      if((p = __TBX_CALLOC(nelem, elsize, file, line)) == NULL)
          RAISE(STORAGE_ERROR);
       else {
          unlock_task();
@@ -1406,11 +1394,11 @@ void *tcalloc(unsigned nelem, unsigned elsize)
    return NULL;
 }
 
-void tfree(void *ptr)
+void marcel_free(void *ptr, char *file, unsigned line)
 {
    if(ptr) {
       lock_task();
-      FREE((char *)ptr);
+      __TBX_FREE((char *)ptr, file, line);
       unlock_task();
    }
 }

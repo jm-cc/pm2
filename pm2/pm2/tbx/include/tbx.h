@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx.h,v $
+Revision 1.4  2000/03/08 17:16:00  oaumage
+- support de Marcel sans PM2
+- support de tmalloc en mode `Marcel'
+
 Revision 1.3  2000/03/01 11:02:49  oaumage
 - mise a jour des commandes #include ("")
 
@@ -67,9 +71,9 @@ ______________________________________________________________________________
  * Headers
  * -------
  */
-#ifdef PM2
-#include <marcel.h>
-#endif /* PM2 */
+#ifdef MARCEL
+#include "marcel.h"
+#endif /* MARCEL */
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: bitmap.c,v $
+Revision 1.8  2000/09/12 13:23:28  rnamyst
+Minor bug fixes
+
 Revision 1.7  2000/09/04 07:42:46  rnamyst
 Minor modifs (removed some debug messages)
 
@@ -89,7 +92,7 @@ ______________________________________________________________________________
 #include "sys/bitmap.h"
 #include "marcel.h"
 
-/* #define DEBUG */
+/* #define DSM_DEBUG */
 
 #define SET_BIT_IN_WORD(word, bit_rel_index) \
         word |= 1 << bit_rel_index
@@ -260,7 +263,7 @@ void set_bits_to_1(unsigned int start, unsigned int n,  unsigned int *crt_bitmap
               last_word = (end - 1) >> 5;
  if (n <= 0)
    return;
-#ifdef DEBUG 
+#ifdef DSM_DEBUG 
  fprintf(stderr,"set_bits_to_1: %d from %d; touched from %p to %p\n",n,start, &crt_bitmap[first_word], &crt_bitmap[last_word]);
 #endif
 
@@ -295,7 +298,7 @@ void reset_bits_to_0(unsigned int start, unsigned int n, unsigned int *crt_bitma
  unsigned int end = start + n, 
               first_word = start >> 5,
               last_word = (end - 1 ) >> 5;
-#ifdef DEBUG 
+#ifdef DSM_DEBUG 
  fprintf(stderr,"reset to 0: touches from %p to %p\n", &crt_bitmap[first_word], &crt_bitmap[last_word]);
 #endif 
  if (first_word == last_word)
@@ -511,7 +514,7 @@ int first_bits_to_1_aligned(unsigned int n, unsigned int *crt_bitmap, unsigned i
  int remainder, k = 0, k1;
  int i;
 
-#ifdef DEBUG 
+#ifdef DSM_DEBUG 
  fprintf(stderr,"aligned: n = %d, align = %d\n", n, align);
 #endif
 
@@ -770,7 +773,7 @@ void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned i
 
   for (j = 0 ; j < nb_cycles; j++, start += period)
     set_bits_to_1(start, bits_to_1, crt_bitmap);
-#ifdef DEBUG
+#ifdef DSM_DEBUG
   fprintf(stderr, "last local slot: %d\n", start + bits_to_1 - 1);
 #endif
 }

@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+cd ${PM2_ROOT}; 		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+cd ${MADELEINE_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+cd ${MADELEINE_ROOT}/bin/;	ln -s custom/madload madload
+cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
+cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
+cd ${MADELEINE_ROOT}/bin/via/;	ln -s ../tcp/madload madload
+cd ${MADELEINE_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
+cd ${MADELEINE_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+cd ${MADELEINE_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
+cd ${MADELEINE_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-bip
+cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-lam
+cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-sgi
+cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-sp2
+cd ${MADELEINE_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
+cd ${MADELEINE_ROOT}/source/;	ln -s ../../source/timing.c timing.c
+cd ${MADELEINE_ROOT}/source/via/;	ln -s via2.c netinterf.c
+cd ${MAD2_ROOT}/;	ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
+cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
+cd ${MARCEL_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
+cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
+cd ${MARCEL_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+cd ${MARCEL_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
+cd ${MARCEL_ROOT}/source/;	ln -s ../../source/timing.c timing.c
+cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+
+

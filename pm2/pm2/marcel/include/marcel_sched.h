@@ -60,11 +60,10 @@ void ma__marcel_find_and_yield_to_rt_task(void);
 
 #define MARCEL_MAX_USER_SCHED    16
 
-#define MARCEL_SCHED_FIXED(vp)   (vp)
-#define MARCEL_SCHED_OTHER       (-1)
-#define MARCEL_SCHED_AFFINITY    (-2)
-#define MARCEL_SCHED_BALANCE     (-3)
-#define __MARCEL_SCHED_AVAILABLE (-4)
+#define MARCEL_SCHED_OTHER       0
+#define MARCEL_SCHED_AFFINITY    1
+#define MARCEL_SCHED_BALANCE     2
+#define __MARCEL_SCHED_AVAILABLE 3
 
 typedef __lwp_t *(*marcel_schedpolicy_func_t)(marcel_t pid,
 					      __lwp_t *current_lwp);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.7  2000/04/21 11:19:26  vdanjean
+fixes for actsmp
+
 Revision 1.6  2000/04/17 16:09:38  vdanjean
 clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
 
@@ -165,6 +168,13 @@ ______________________________________________________________________________
 #undef MA__ACTIVATION
 #endif
 
+/* MA__TIMER : indique qu'il faut utiliser le timer unix (signaux)
+ * pour la préemption.
+ * */
+#ifdef MA__TIMER
+#undef MA__TIMER
+#endif
+
 #ifdef MARCEL_SMP /* Marcel SMP */
 #define SMP
 #define MA__SMP /* Utilisation des pthreads pour les lwp */
@@ -181,7 +191,7 @@ ______________________________________________________________________________
 #endif /* Fin Marcel Activation Mono */
 
 #ifdef MARCEL_ACTSMP /* Marcel Activation SMP */
-#define MA__ACT
+#define MA__ACTSMP
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING
 #define CONFIG_SMP

@@ -141,17 +141,6 @@ mad_dir_node_get_node(p_mad_madeleine_t madeleine)
   dir_node->name = mad_leonie_receive_string();
   TRACE_STR("Node name", dir_node->name);
 
-#ifdef LEO_IP
-  {
-    char *ip_str, *dummy;
-
-    ip_str = mad_ntbx_receive_string(client);
-    dir_node->ip = strtoul(ip_str, &dummy, 16);
-    TRACE_STR("Node IP", ip_str);
-    TBX_FREE(ip_str);
-  }
-#endif // LEO_IP
-
   tbx_htable_add(dir->node_htable, dir_node->name, dir_node);
   tbx_slist_append(dir->node_slist, dir_node);
 

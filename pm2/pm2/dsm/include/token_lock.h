@@ -1,9 +1,9 @@
 
 /*
- * CVS Id: $Id: token_lock.h,v 1.6 2002/10/23 13:26:52 slacour Exp $
+ * CVS Id: $Id: token_lock.h,v 1.8 2002/10/27 15:37:04 slacour Exp $
  */
 
-/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+/* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
 
 /* Distributed management of the locks.  Each lock has a (central)
  * fixed manager and an owner (token owner).  The lock manager can be
@@ -33,7 +33,8 @@ extern const token_lock_id_t TOKEN_LOCK_NONE;
 /* thread / cluster priority levels, to limit the number of
  * consecutive lock acquisition always within the same process or
  * cluster */
-enum { INFINITE_PRIORITY = -1, NO_PRIORITY = 0 };
+extern const unsigned long int INFINITE_PRIORITY;
+extern const unsigned long int NO_PRIORITY;
 
 
 /**********************************************************************/
@@ -76,13 +77,13 @@ token_partial_unlock (const token_lock_id_t);
  * a process; this function must be called after pm2_init(); legal
  * values are: INFINITE_PRIORITY, NO_PRIORITY, and positive integers. */
 extern int
-set_thread_priority_level (const int);
+set_thread_priority_level (const unsigned long int);
 
 /* set the maximum number of consecutive acquisitions of a lock within
  * a cluster; this function must be called after pm2_init(); legal
  * values are: INFINITE_PRIORITY, NO_PRIORITY, and positive integers. */
 extern int
-set_cluster_priority_level (const int);
+set_cluster_priority_level (const unsigned long int);
 
 
 /**********************************************************************/

@@ -77,10 +77,10 @@ symlinks: $(MOD_GEN_INC)/asm $(MOD_GEN_INC)/scheduler
 
 $(MOD_GEN_INC)/asm:
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/asm-$(MOD_ARCH) $@
+	-$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/asm-$(MOD_ARCH) $@
 $(MOD_GEN_INC)/scheduler:
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/scheduler-$(SCHED_NAME) $@
+	-$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/scheduler-$(SCHED_NAME) $@
 
 .PHONY: clean_autogen
 clean: clean_autogen

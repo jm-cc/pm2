@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.22  2001/01/16 09:55:21  oaumage
+- integration du mecanisme de forwarding
+- modification de l'usage des flags
+
 Revision 1.21  2000/06/07 11:26:52  oaumage
 - Fin du retablissement de la version de mardi matin
 
@@ -111,21 +115,48 @@ ______________________________________________________________________________
 /* #define TRACING */
 #include "madeleine.h"
 
+
+
+#ifdef MAD_FORWARDING
+p_mad_connection_t
+mad_begin_packing(p_mad_user_channel_t   user_channel,
+		  ntbx_host_id_t         remote_host_id)
+#else // MAD_FORWARDING
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,
 		  ntbx_host_id_t    remote_host_id)
+#endif //MAD_FORWARDING
+
 {
-  p_mad_driver_interface_t   interface =
-    &(channel->adapter->driver->interface);
+  p_mad_driver_interface_t   interface;
   p_mad_connection_t         connection;
   mad_link_id_t              link_id;
+#ifdef MAD_FORWARDING
+  p_mad_channel_t            channel;
+  ntbx_host_id_t             real_remote_host_id;
+#endif //MAD_FORWARDING
+
   
   LOG_IN();
   TRACE("New emission request");
-  
+
+#ifdef MAD_FORWARDING
+  channel = mad_find_channel(remote_host_id,
+			     user_channel,
+			     &real_remote_host_id);
+
+#endif //MAD_FORWARDING
+
+  interface = &(channel->adapter->driver->interface);
+
   TBX_LOCK_SHARED(channel);
+#ifdef MAD_FORWARDING
+  connection =
+    &(channel->output_connection[real_remote_host_id]);
+#else //MAD_FORWARDING
   connection =
     &(channel->output_connection[remote_host_id]);
+#endif //MAD_FORWARDING
   
 #ifdef MARCEL
   while (connection->lock == tbx_true)
@@ -143,8 +174,44 @@ mad_begin_packing(p_mad_channel_t   channel,
   connection->send = tbx_true;
   TBX_UNLOCK_SHARED(channel) ;
 
+#ifdef MAD_FORWARDING
+  if(channel->is_forward)
+    {
+      interface = fwd_interface;
+      connection->is_being_forwarded = tbx_true;
+      connection->actual_destination_id = remote_host_id;
+    }
+#endif //MAD_FORWARDING
+
   if (interface->new_message)
     interface->new_message(connection);
+
+#ifdef MAD_FORWARDING
+  if(!channel->is_forward)
+    {
+      p_mad_link_t link;
+      tbx_bool_t has_been_forwarded = tbx_false;
+      p_mad_buffer_t buffer = mad_get_user_send_buffer(&has_been_forwarded, 
+						       sizeof(tbx_bool_t));
+      if(interface->choice)
+	link = interface->choice(connection, sizeof(tbx_bool_t),
+				 mad_send_CHEAPER, mad_receive_EXPRESS);
+      else
+	link = &(connection->link[0]);
+
+          
+     if(link->buffer_mode == mad_buffer_mode_static)
+       {
+	 p_mad_buffer_t static_buffer = interface->get_static_buffer(link);
+	 mad_copy_buffer(buffer, static_buffer);
+
+	 interface->send_buffer(link, static_buffer);
+       }
+     else
+       interface->send_buffer(link, buffer);
+     connection->is_being_forwarded = tbx_false;
+    }
+#endif //MAD_FORWARDING
   
   /* structure initialisation */
   tbx_list_init(&(connection->buffer_list));
@@ -232,17 +299,50 @@ mad_message_ready(p_mad_channel_t channel)
 }
 #endif /* MAD_MESSAGE_POLLING */
 
+#ifdef MAD_FORWARDING
+p_mad_connection_t
+mad_begin_unpacking(p_mad_user_channel_t user_channel)
+#else // MAD_FORWARDING
 p_mad_connection_t
 mad_begin_unpacking(p_mad_channel_t channel)
+#endif //MAD_FORWARDING
 {
-  p_mad_driver_interface_t   interface =
-    &(channel->adapter->driver->interface);
-  p_mad_connection_t         connection;
+#ifdef MAD_FORWARDING
+  p_mad_channel_t            channel;
+#endif //MAD_FORWARDING
+  p_mad_driver_interface_t   interface;
+  p_mad_connection_t         connection = NULL;
   mad_link_id_t              link_id;
   
   LOG_IN();
   TRACE("New reception request");
+
+#ifdef MAD_FORWARDING
+  if(user_channel->nb_active_channels > 1)
+    {
+      TRACE("Waiting for a thread to have received something");
+      marcel_sem_P(&(user_channel->sem_message_ready));
+      /*      channel = user_channel->channels[user_channel->msg_adapter_id];
+	      TRACE("Ah ! I found a message on adapter %d (= %d)", 
+	      user_channel->msg_adapter_id, channel->adapter->id);*/
+      connection = user_channel->msg_connection;
+      TRACE("Ah ! I found a message on adapter %d", 
+	      connection->channel->adapter->id); 
+      channel = connection->channel;
+    }
+  else
+    {
+      int i;
+      for(i = 0;;i++)
+	if(user_channel->adapter_ids[i] != -1)
+	  break;
+      TRACE("Using adapter %d", i);
+      channel = user_channel->channels[user_channel->adapter_ids[i]];
+    }
+#endif //MAD_FORWARDING
   
+  interface = &(channel->adapter->driver->interface);
+
   TBX_LOCK_SHARED(channel);
 #ifdef MARCEL
   while (channel->reception_lock == tbx_true)
@@ -258,7 +358,44 @@ mad_begin_unpacking(p_mad_channel_t channel)
   channel->reception_lock = tbx_true;
   TBX_UNLOCK_SHARED(channel);
 
-  connection = interface->receive_message(channel);
+#ifdef MAD_FORWARDING
+  if(user_channel->nb_active_channels == 1)
+#endif
+  {
+    TRACE("Receiving message");
+    connection = interface->receive_message(channel);
+    TRACE("Message received");
+  }
+#ifdef MAD_FORWARDING
+  {
+    tbx_bool_t has_been_forwarded;
+    p_mad_buffer_t buffer = mad_get_user_receive_buffer(&has_been_forwarded, 
+							sizeof(tbx_bool_t));
+    p_mad_link_t link;
+    if(interface->choice)
+      link = interface->choice(connection, sizeof(tbx_bool_t),
+			       mad_send_CHEAPER, mad_receive_EXPRESS);
+    else
+      link = &(connection->link[0]);
+    
+    if(link->buffer_mode == mad_buffer_mode_static)
+      {
+	p_mad_buffer_t static_buffer;
+	interface->receive_buffer(link, &static_buffer);
+	mad_copy_buffer(static_buffer, buffer);
+      }
+    else
+      interface->receive_buffer(link, &buffer);
+    
+    connection->is_being_forwarded = has_been_forwarded;
+#ifdef DEBUG
+    if(has_been_forwarded)
+      TRACE("Incoming Connection has been forwarded");
+    else
+      TRACE("Receiving normal connection");
+#endif 
+  }
+#endif //MAD_FORWARDING
 
   if (connection->lock == tbx_true)
     FAILURE("connection dead lock");
@@ -297,7 +434,12 @@ mad_end_packing(p_mad_connection_t connection)
   mad_link_id_t              link_id;
   p_mad_driver_interface_t   interface =
     &(connection->channel->adapter->driver->interface);
-  
+
+#ifdef MAD_FORWARDING
+  if(connection->is_being_forwarded)
+    interface = fwd_interface;
+#endif //MAD_FORWARDING
+
   LOG_IN();
   if (connection->flushed == tbx_false)
     {
@@ -443,7 +585,14 @@ mad_end_packing(p_mad_connection_t connection)
 	tbx_foreach_destroy_list(&(connection->link[link_id].buffer_list),
 				 mad_foreach_free_buffer);
     }
-  
+
+#ifdef MAD_FORWARDING
+  if(connection->is_being_forwarded)
+    {
+      p_mad_buffer_t empty_buffer = mad_get_user_send_buffer(NULL, 0);
+      interface->send_buffer(connection->fwd_link, empty_buffer);
+    }
+#endif //MAD_FORWARDING
   connection->lock = tbx_false; 
   TRACE("Emission request completed");
   LOG_OUT();
@@ -652,6 +801,18 @@ mad_end_unpacking(p_mad_connection_t connection)
 
   connection->lock = tbx_false;
   connection->channel->reception_lock = tbx_false;
+
+#ifdef MAD_FORWARDING
+  {
+    p_mad_user_channel_t user_channel = connection->channel->user_channel;
+    if(user_channel->nb_active_channels > 1)
+      {
+	TRACE("Releasing Semaphore to wake polling thread");
+	marcel_sem_V(&(user_channel->sem_msg_handled));
+      }
+  }
+#endif //MAD_FORWARDING
+
   TRACE("Reception request completed");
   LOG_OUT();
 }
@@ -687,16 +848,28 @@ mad_pack(p_mad_connection_t   connection,
 
   if (user_buffer_length == 0) return;
 
-  if (interface->choice)
+#ifdef MAD_FORWARDING
+  if(connection->is_being_forwarded)
     {
-      link = interface->choice(connection,
-			       user_buffer_length,
-			       send_mode,
-			       receive_mode);
+      interface = fwd_interface;
+      link = connection->fwd_link;
+      TRACE("Fwd link chosen");
     }
   else
+#endif //MAD_FORWARDING
     {
-      link = &(connection->link[0]);
+      if (interface->choice)
+	{
+	  link = interface->choice(connection,
+				   user_buffer_length,
+				   send_mode,
+				   receive_mode);
+	}
+      else
+	{
+	  link = &(connection->link[0]);
+	}
+      TRACE("Link chosen : %d", link->id);
     }
   
   link_id               = link->id;
@@ -796,7 +969,10 @@ mad_pack(p_mad_connection_t   connection,
     }
 
   source = mad_get_user_send_buffer(user_buffer, user_buffer_length);
-
+#ifdef MAD_FORWARDING
+  source->informations.send_mode = send_mode;
+  source->informations.recv_mode = receive_mode;
+#endif //MAD_FORWARDING
   if (link_mode == mad_link_mode_buffer)
     {
       /* B U F F E R   mode
@@ -1113,16 +1289,26 @@ mad_unpack(p_mad_connection_t   connection,
 
   if (user_buffer_length == 0) return;
 
-  if (interface->choice)
+#ifdef MAD_FORWARDING
+  if(connection->is_being_forwarded)
     {
-      link = interface->choice(connection,
-			       user_buffer_length,
-			       send_mode,
-			       receive_mode);
+      interface = fwd_interface;
+      link = connection->fwd_link;
     }
   else
+#endif //MAD_FORWARDING
     {
-      link = &(connection->link[0]);
+      if (interface->choice)
+	{
+	  link = interface->choice(connection,
+				   user_buffer_length,
+				   send_mode,
+				   receive_mode);
+	}
+      else
+	{
+	  link = &(connection->link[0]);
+	}
     }
   
   link_id               = link->id;

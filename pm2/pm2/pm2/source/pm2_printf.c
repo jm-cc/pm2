@@ -39,7 +39,7 @@ void pm2_printf(char *format, ...)
     unlock_task();
   } else {
     marcel_sem_P(&print_mutex);
-    sprintf(_pm2_print_buf, "[t%x] ", __pm2_self);
+    sprintf(_pm2_print_buf, "[n%x] ", __pm2_self);
     ptr = _pm2_print_buf + strlen(_pm2_print_buf);
     va_start(args, format);
     vsprintf(ptr, format, args);

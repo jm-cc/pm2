@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_attr.c,v $
+Revision 1.5  2000/02/28 10:25:01  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.4  2000/01/31 15:57:12  oaumage
 - ajout du Log CVS
 
@@ -41,7 +44,7 @@ Revision 1.4  2000/01/31 15:57:12  oaumage
 ______________________________________________________________________________
 */
 
-#include <marcel.h>
+#include "marcel.h"
 
 	/* Déclaré non statique car utilisé dans marcel.c : */
 marcel_attr_t marcel_attr_default = {

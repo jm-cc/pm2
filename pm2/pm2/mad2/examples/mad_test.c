@@ -79,23 +79,14 @@ int main(int argc, char **argv)
 
 #ifdef APPLICATION_SPAWN
   {
-    char *url;
-    
-    url = mad_pre_init(adapter_set);
-    if (argc > 1)
-      {
-	madeleine = mad_init(-1, /* rank, -1 = default */
-			     NULL, /* Configuration file */
-			     argv[1] /* URL */
-			     );
-      }
-    else
-      {
-	DISP("Master: url = %s\n", url);
-	madeleine = mad_init(-1, NULL, NULL);
-      }
-    
-    // exit(EXIT_SUCCESS);
+    common_attr_t attr;
+
+    common_attr_init(&attr);
+    attr.adapter_set = adapter_set;
+
+    common_init(&argc, argv, &attr);
+
+    madeleine = attr.madeleine;
   }
 #else /* APPLICATION_SPAWN */
   madeleine = mad_init(&argc, argv, NULL, adapter_set);

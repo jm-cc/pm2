@@ -235,7 +235,7 @@ unsigned long marcel_unusedstack(void);
 static __inline__ char *marcel_stackbase(marcel_t pid) __attribute__ ((unused));
 static __inline__ char *marcel_stackbase(marcel_t pid)
 {
-  return pid->stack_base;
+  return (char *)pid->stack_base;
 }
 
 /* ========== time slicing ========= */
@@ -262,6 +262,8 @@ void marcel_free(void *ptr, char *file, unsigned line);
 
 #ifdef STANDARD_MAIN
 #define marcel_main main
+#else
+extern int marcel_main(int argc, char *argv[]);
 #endif
 
 #endif

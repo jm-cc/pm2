@@ -104,8 +104,8 @@ inline static int __marcel_lock_spinlocked(struct _marcel_fastlock * lock,
 		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			c.blocked, 
-			marcel_lock_release(&lock->__spinlock),
-			marcel_lock_acquire(&lock->__spinlock));
+			marcel_lock_release(&lock->__spinlock); unlock_task(),
+			lock_task(); marcel_lock_acquire(&lock->__spinlock));
 		marcel_lock_release(&lock->__spinlock);
 		unlock_task();
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);

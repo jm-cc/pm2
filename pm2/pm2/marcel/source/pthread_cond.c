@@ -79,11 +79,9 @@ DEF_PTHREAD(cond_signal)
 DEF_MARCEL_POSIX(int, cond_broadcast, (marcel_cond_t *cond))
 {
   LOG_IN();
-  lock_task();
   marcel_lock_acquire(&cond->__c_lock.__spinlock);
   do {} while (__marcel_unlock_spinlocked(&cond->__c_lock));
   marcel_lock_release(&cond->__c_lock.__spinlock);
-  unlock_task();
   LOG_OUT();
   return 0;
 }
@@ -93,7 +91,6 @@ DEF_MARCEL_POSIX(int, cond_wait, (marcel_cond_t *cond,
 				  marcel_mutex_t *mutex))
 {
   LOG_IN();
-  lock_task();
 
   marcel_lock_acquire(&mutex->__m_lock.__spinlock);
   marcel_lock_acquire(&cond->__c_lock.__spinlock);
@@ -111,7 +108,6 @@ DEF_MARCEL_POSIX(int, cond_wait, (marcel_cond_t *cond,
 		  marcel_lock_release(&cond->__c_lock.__spinlock),
 		  marcel_lock_acquire(&cond->__c_lock.__spinlock));
 	  marcel_lock_release(&cond->__c_lock.__spinlock);
-	  unlock_task();
 	  mdebug("unblocking %p (cell %p) in cond_wait %p\n", marcel_self(), &c,
 		 cond);
   }

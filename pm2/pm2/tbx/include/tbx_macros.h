@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.14  2000/09/05 13:58:54  oaumage
+- quelques corrections et reorganisations dans le support des types
+  structures
+
 Revision 1.13  2000/07/11 09:01:26  oaumage
 - Suppression de la collision sur la macro CTRL
 - Suppression de la collision potentielle sur la macro VERIFY
@@ -108,17 +112,6 @@ ______________________________________________________________________________
 #define OOPS
 
 #include "pm2debug.h"
-
-/*
- * Classical boolean type
- * ----------------------
- */
-typedef enum
-{
-  tbx_false = 0,
-  tbx_true
-} tbx_bool_t, *p_tbx_bool_t;
-
 
 /*
  * Constant definition  _____________________________________________

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_rpc.c,v $
+Revision 1.6  2000/02/28 11:17:16  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.5  2000/01/31 15:58:31  oaumage
 - ajout du Log CVS
 
@@ -41,8 +44,8 @@ Revision 1.5  2000/01/31 15:58:31  oaumage
 ______________________________________________________________________________
 */
 
-#include <pm2.h>
-#include <sys/netserver.h>
+#include "pm2.h"
+#include "sys/netserver.h"
 
 #define MAX_LRPC_FUNCS	50
 
@@ -801,10 +804,17 @@ void pm2_rpc_init(void)
   dsm_pm2_init_rpc();
 #endif
 
+#if 0
   for(i=0; i<nb_of_channels; i++) {
     pm2_channel_alloc(&pm2_rpc_channel[i].channel[0]);
     pm2_channel_alloc(&pm2_rpc_channel[i].channel[1]);
   }
+#else
+  for(i=0; i<nb_of_channels; i++) {
+    pm2_rpc_channel[i].channel[0] = 0;
+    pm2_rpc_channel[i].channel[1] = 0;
+  }
+#endif
 
   pm2_rawrpc_register(&PM2_LRPC, netserver_lrpc);
   pm2_rawrpc_register(&PM2_LRPC_DONE, netserver_lrpc_done);

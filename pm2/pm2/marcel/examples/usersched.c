@@ -42,7 +42,7 @@ static __lwp_t *my_sched_func(marcel_t pid, __lwp_t *current_lwp)
 
   mdebug("User scheduler called for thread %p\n", pid);
 
-  lwp = lwp->prev;
+  lwp = prev_lwp(lwp);
   return lwp;
 }
 

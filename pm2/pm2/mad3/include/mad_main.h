@@ -51,7 +51,7 @@ typedef struct s_mad_madeleine
 } mad_madeleine_t;
 
 /*
- * Functions 
+ * Functions
  * ---------
  */
 p_mad_madeleine_t
@@ -118,6 +118,24 @@ mad_ntbx_send_string(p_ntbx_client_t  client,
 char *
 mad_ntbx_receive_string(p_ntbx_client_t client);
 
+
+void
+mad_leonie_send_int(const int data);
+
+int
+mad_leonie_receive_int(void);
+
+void
+mad_leonie_send_unsigned_int(const unsigned int data);
+
+unsigned int
+mad_leonie_receive_unsigned_int(void);
+
+void
+mad_leonie_send_string(const char *string);
+
+char *
+mad_leonie_receive_string(void);
 
 void
 mad_leonie_command_init(p_mad_madeleine_t   madeleine,

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.6  2000/01/10 10:23:16  oaumage
+*** empty log message ***
+
 Revision 1.5  2000/01/05 15:52:43  oaumage
 - ajout du support PM2 avec polling optimise
 
@@ -159,7 +162,7 @@ static void mpi_io_group(marcel_pollid_t id)
   LOG_IN();
   FOREACH_POLL(id, arg) 
     {
-      arg->pollinst           = GET_CURRENT_POLLINST(id);
+      arg->pollinst = GET_CURRENT_POLLINST(id);
       mad_mpi_driver_specific->poll_req[count] = arg->request;
       mad_mpi_driver_specific->poll_arg[count] = arg;
       count++;

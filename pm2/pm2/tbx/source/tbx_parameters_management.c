@@ -430,6 +430,21 @@ tbx_environment_variable_to_variable(const char *name)
 }
 
 void
+tbx_environment_variable_append_c_string(p_tbx_environment_variable_t  var,
+					 const char                    sep,
+					 const char                   *data)
+{
+  LOG_IN();
+  if (sep && tbx_string_length(var->value))
+    {
+      tbx_string_append_char(var->value, sep);
+    }
+  
+  tbx_string_append_c_string(var->value, data);
+  LOG_OUT();
+}
+
+void
 tbx_environment_variable_free(p_tbx_environment_variable_t variable)
 {
   LOG_IN();

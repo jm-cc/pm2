@@ -23,12 +23,12 @@
 /* the following is useful for "token_lock_id_t" */
 #include "token_lock.h"
 
-//#define TRACE_ERC
+//#define DSM_PROT_TRACE
 //#define DSM_QUEUE_TRACE
 
 
 //#ifdef DSM_PROT_TRACE
-#ifdef TRACE_ERC
+#ifdef DSM_PROT_TRACE
 #define ENTER() fprintf(stderr, "[%p] -> %s\n", marcel_self(), __FUNCTION__)
 #define EXIT() fprintf(stderr, "[%p] <- %s\n", marcel_self(), __FUNCTION__)
 #else
@@ -38,36 +38,26 @@
 
 be_list erc_sw_inv_list;
 
-void dsmlib_erc_sw_inv_init(int protocol_number){
+void dsmlib_erc_sw_inv_init(int protocol_number)
+{
 
   ENTER();
 
   erc_sw_inv_list = init_be_list(10);
-#ifdef TRACE_ERC
-  fprintf(stderr,"Initial  printing\n");
+#ifdef DSM_PROT_TRACE
+  fprintf(stderr,"ERC: Initial  printing\n");
   fprintf_be_list(erc_sw_inv_list);
   fprintf(stderr,"Done printing\n");
-  fprintf(stderr,"Nb total pages: %lu\n", dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages());
+  fprintf(stderr,"Total ststic pages: %lu\n", dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages());
 #endif
-  /*  for(i = 0; i < dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages(); i++)
-    if(dsm_get_page_protocol(i) == protocol_number){
-      count++;
-      if(dsm_get_prob_owner(i) == dsm_self())
-	dsm_set_access(i, READ_ACCESS);
-      else
-	dsm_set_access(i, NO_ACCESS);
-    }
-  fprintf(stderr,"Nb erc pages: %d\n", count);*/
  
   EXIT();
 
   return;
 }
 
-void dsmlib_erc_sw_inv_rfh(dsm_page_index_t index){
-#ifdef TRACE_ERC
-  fprintf(stderr, "Read Fault Handler called\n");
-#endif
+void dsmlib_erc_sw_inv_rfh(dsm_page_index_t index)
+{
   return dsmlib_rf_ask_for_read_copy(index);
 }
 
@@ -86,7 +76,7 @@ void dsmlib_erc_sw_inv_wfh(dsm_page_index_t index)
 
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
     {
-#ifdef TRACE_ERC
+#ifdef DSM_PROT_TRACE
       fprintf(stderr, "Adding to belist: %lu\n", index);
 #endif
       add_to_be_list(&erc_sw_inv_list, index);
@@ -107,36 +97,15 @@ void dsmlib_erc_sw_inv_wfh(dsm_page_index_t index)
   EXIT();
 }
 
-void dsmlib_erc_sw_inv_rs(dsm_page_index_t index, dsm_node_t req_node, int arg){
+static void _internal_dsmlib_erc_sw_inv_rs(dsm_page_index_t index, dsm_node_t req_node, int arg)
+{
   dsm_access_t access;
-
+  
   ENTER();
-  dsm_lock_page(index);
-
- if (!dsm_next_owner_is_set(index))
-   {
-     if ((access = dsm_get_access(index)) >= READ_ACCESS) // there is a local copy of the page
-       {
-	 dsm_add_to_copyset(index, req_node);
-      //      dsm_set_access(index,WRITE_ACCESS);
-	 dsm_set_access(index, READ_ACCESS);
-	 dsm_send_page(req_node, index, READ_ACCESS, arg);
-	 //      if (access < WRITE_ACCESS) 
-	 //	dsm_set_access(index, READ_ACCESS);
-    }
-     else // no access; maybe a pending access ?
-       if (dsm_get_pending_access(index) != NO_ACCESS)
-	 {
-	   dsm_store_pending_request(index, req_node);
-	 }
-       else // no access nor pending access? then forward req to prob owner!
-	 {
-	   dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, arg);
-	 }
-   }
- else
-   {
-     if (req_node == dsm_get_next_owner(index))
+  
+  if (!dsm_next_owner_is_set(index))
+    {
+      if ((access = dsm_get_access(index)) >= READ_ACCESS) // there is a local copy of the page
        {
 	 dsm_add_to_copyset(index, req_node);
 	 //      dsm_set_access(index,WRITE_ACCESS);
@@ -145,23 +114,51 @@ void dsmlib_erc_sw_inv_rs(dsm_page_index_t index, dsm_node_t req_node, int arg){
 	 //      if (access < WRITE_ACCESS) 
 	 //	dsm_set_access(index, READ_ACCESS);
        }
-     else
-       dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, arg);
-   }
- 
- dsm_unlock_page(index);
- EXIT();
- 
+      else // no access; maybe a pending access ?
+	if (dsm_get_pending_access(index) != NO_ACCESS)
+	  {
+	    dsm_store_pending_request(index, req_node);
+	  }
+	else // no access nor pending access? then forward req to prob owner!
+	  {
+	    dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, arg);
+	  }
+    }
+  else
+    {
+      if (req_node == dsm_get_next_owner(index))
+	{
+	  dsm_add_to_copyset(index, req_node);
+	  //      dsm_set_access(index,WRITE_ACCESS);
+	  dsm_set_access(index, READ_ACCESS);
+	  dsm_send_page(req_node, index, READ_ACCESS, arg);
+	  //      if (access < WRITE_ACCESS) 
+	  //	dsm_set_access(index, READ_ACCESS);
+	}
+      else
+	dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, arg);
+    }
+  
+  EXIT();
+  
 }
 
-void dsmlib_erc_sw_inv_ws(dsm_page_index_t index, dsm_node_t req_node, int arg){
-#ifdef TRACE_ERC
-  fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
-#endif
-
+void dsmlib_erc_sw_inv_rs(dsm_page_index_t index, dsm_node_t req_node, int arg)
+{
   ENTER();
+  
   dsm_lock_page(index);
+  _internal_dsmlib_erc_sw_inv_rs(index,req_node, arg);
+  dsm_unlock_page(index);
+  
+  EXIT();
+}
 
+static void _internal_dsmlib_erc_sw_inv_ws(dsm_page_index_t index, dsm_node_t req_node, int arg)
+{
+  
+  ENTER();
+  
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
     {
       if (remove_if_noted(&erc_sw_inv_list, index))
@@ -185,19 +182,32 @@ void dsmlib_erc_sw_inv_ws(dsm_page_index_t index, dsm_node_t req_node, int arg){
 	dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, WRITE_ACCESS, arg);
       }
   dsm_set_prob_owner(index,req_node); // req_node will soon be owner
-
-  dsm_unlock_page(index);
+  
   EXIT();
 }
 
+
+void dsmlib_erc_sw_inv_ws(dsm_page_index_t index, dsm_node_t req_node, int arg)
+{
+  ENTER();
+
+  dsm_lock_page(index);
+  _internal_dsmlib_erc_sw_inv_ws(index,req_node, arg);
+  dsm_unlock_page(index);
+
+  EXIT();
+
+}
+
 void dsmlib_erc_sw_inv_is(dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner){
-#ifdef TRACE_ERC
+#ifdef DSM_PROT_TRACE
   fprintf(stderr,"[%s] Entering...\n", __FUNCTION__);
 #endif
   return dsmlib_is_invalidate(index, req_node, new_owner);
 }
 
-void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_node, int arg){
+void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_node, int arg)
+{
   dsm_page_index_t index = dsm_page_index(addr);
   dsm_node_t node;
 
@@ -238,7 +248,7 @@ void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_nod
 #ifdef DSM_QUEUE_TRACE
 	tfprintf(stderr, "Processing R-req(%d) from node %d (I am %p)\n", index, node, marcel_self());
 #endif
-      (*dsm_get_read_server(dsm_get_page_protocol(index)))(index, node, arg);
+      _internal_dsmlib_erc_sw_inv_rs(index, node, arg);
     }
   if(access == WRITE_ACCESS && dsm_next_owner_is_set(index))
     {
@@ -247,7 +257,7 @@ void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_nod
 #ifdef DSM_QUEUE_TRACE
 	tfprintf(stderr, "Processing W-req (%d)from next owner: node %d (I am %p) \n", index, node, marcel_self());
 #endif
-      (*dsm_get_write_server(dsm_get_page_protocol(index)))(index, node, arg);
+      _internal_dsmlib_erc_sw_inv_ws(index, node, arg);
       dsm_clear_next_owner(index); // these last 2 calls should be atomic...
     }
   dsm_unlock_page(index);
@@ -266,13 +276,13 @@ void dsmlib_erc_release(const token_lock_id_t unused)
 
   ENTER();
 
-#ifdef TRACE_ERC
+#ifdef DSM_PROT_TRACE
   fprintf(stderr,"Start of release\n");
   fprintf_be_list(erc_sw_inv_list);
   fprintf(stderr,"Done printing\n");
 #endif
   index = remove_first_from_be_list(&erc_sw_inv_list);
-#ifdef TRACE_ERC
+#ifdef DSM_PROT_TRACE
   fprintf(stderr,"First One removed: %lu\n", index);
 #endif
   while(index != (dsm_page_index_t)-1)
@@ -287,7 +297,7 @@ void dsmlib_erc_release(const token_lock_id_t unused)
       index = remove_first_from_be_list(&erc_sw_inv_list);
 //      fprintf(stderr,"Removed: %ld\n", index);
     }
-#ifdef TRACE_ERC
+#ifdef DSM_PROT_TRACE
   fprintf(stderr,"End of release\n");
 #endif
   EXIT();

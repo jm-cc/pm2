@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.8  2000/02/08 17:49:06  oaumage
+- support de la net toolbox
+
 Revision 1.7  2000/01/13 14:45:57  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -71,7 +74,7 @@ ______________________________________________________________________________
 
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,
-		  mad_host_id_t     remote_host_id)
+		  ntbx_host_id_t    remote_host_id)
 {
   p_mad_driver_interface_t   interface =
     &(channel->adapter->driver->interface);

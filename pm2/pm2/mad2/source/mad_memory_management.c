@@ -77,7 +77,7 @@ mad_free_buffer(p_mad_buffer_t buffer)
     {
       if (buffer->buffer)
 	{
-	  free(buffer->buffer);
+	  tbx_aligned_free(buffer->buffer, MAD_ALIGNMENT);
 	}
     }
   tbx_free(mad_buffer_memory, buffer);
@@ -108,7 +108,7 @@ mad_foreach_free_buffer(void *object)
   
   if (buffer->type == mad_dynamic_buffer)
     {
-      free(buffer->buffer);
+      tbx_aligned_free(buffer->buffer, MAD_ALIGNMENT);
     }
 
   tbx_free(mad_buffer_memory, object);

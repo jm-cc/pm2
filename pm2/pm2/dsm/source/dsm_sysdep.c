@@ -295,9 +295,9 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 	act.sa_handler = SIG_DFL;
 	sigemptyset(&act.sa_mask);
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS)
-	act.sa_flags = SA_SIGINFO;
+	act.sa_flags = SA_SIGINFO | SA_RESTART;
 #else
-	act.sa_flags = 0;
+	act.sa_flags = SA_RESTART;
 #endif
 	sigaction(sig, &act, (struct sigaction *)NULL);
 	kill(getpid(), sig);
@@ -345,9 +345,9 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
   sigemptyset(&act.sa_mask);
   sigaddset(&act.sa_mask, MARCEL_TIMER_SIGNAL);
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS)
-  act.sa_flags = SA_SIGINFO;
+  act.sa_flags = SA_SIGINFO | SA_RESTART;
 #else
-  act.sa_flags = 0;
+  act.sa_flags = SA_RESTART;
 #endif
 
 #ifdef DSM_SHARED_STACK

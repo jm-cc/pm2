@@ -93,6 +93,12 @@ NTBX_DEPENDS	:=	($strip $(NTBX_REG_DEPENDS))
 
 NTBX_DEP_TO_OBJ	=	$(NTBX_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(wildcard $(NTBX_DEPENDS)),$(NTBX_DEPENDS))
+include $(NTBX_DEPENDS)
+endif
+endif
+
 $(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d
 $(NTBX_DEPENDS): $(PM2_MAKEFILE)
 

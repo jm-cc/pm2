@@ -527,7 +527,7 @@ do_set() {
 	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
 	    ;;
 	--builddir=*|--ext=*)
-	    set_option "$1" 1 '[/\$\-_a-zA-Z0-9]' "ok"
+	    set_option "$1" 1 '[/\.\$\-_a-zA-Z0-9]' "ok"
 	    ;;	
 	--clear|--clear-modules|--clear-all|--add|--sub)
 	    optname=`echo $1 | sed -e 's/^--//' -e 's/-/_/g'`

@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#include "tbx.h"
 #include "pm2.h"
 #include "sys/pm2_printf.h"
 #include "sys/pm2_migr.h"
@@ -38,18 +39,11 @@
 #include "pm2_profile.h"
 #endif
 
-#undef min
-#define min(a, b)	((a) < (b) ? (a) : (b))
-#undef max
-#define max(a, b)	((a) > (b) ? (a) : (b))
-
 static unsigned PM2_COMPLETION;
 
 static unsigned nb_startup_funcs = 0;
 static pm2_startup_func_t startup_funcs[MAX_STARTUP_FUNCS];
 static void *startup_args[MAX_STARTUP_FUNCS];
-
-static int spmd_conf[MAX_MODULES];
 
 unsigned __pm2_self, __pm2_conf_size;
 
@@ -63,38 +57,6 @@ static block_descr_t _pm2_main_block_descr;
 #define MAX_RAWRPC     50
 
 pm2_rawrpc_func_t pm2_rawrpc_func[MAX_RAWRPC];
-
-#define MAX_CHANNELS    16
-
-#ifdef MAD2
-static p_mad_channel_t pm2_channel[MAX_CHANNELS];
-
-static __inline__ p_mad_channel_t channel(pm2_channel_t c)
-{
-  return pm2_channel[c];
-}
-#endif
-
-static unsigned nb_of_channels = 1;
-
-void pm2_channel_alloc(pm2_channel_t *channel)
-{
-  *channel = nb_of_channels++;
-}
-
-int pm2_main_module(void)
-{
-  return spmd_conf[0];
-}
-
-static int pm2_single_mode(void)
-{
-#ifdef FORCE_NET_THREADS
-  return 0;
-#else
-  return pm2_config_size() == 1;
-#endif
-}
 
 void pm2_push_startup_func(pm2_startup_func_t f, void *args)
 {
@@ -161,20 +123,6 @@ void pm2_init_thread_related(int *argc, char *argv[])
   pm2_sync_init(__pm2_self, __pm2_conf_size);
 }
 
-void pm2_init_open_channels(int *argc, char *argv[])
-{
-#ifdef MAD2
-  if(!pm2_single_mode()) {
-    int i;
-
-    for(i=0; i<nb_of_channels; i++) {
-      pm2_channel[i] = mad_open_channel(mad_get_madeleine(), 0);
-      mdebug("Channel %d created.\n", i);
-    }
-  }
-#endif
-}
-
 void pm2_init_exec_startup_funcs(int *argc, char *argv[])
 {
   while(nb_startup_funcs--)
@@ -182,81 +130,11 @@ void pm2_init_exec_startup_funcs(int *argc, char *argv[])
 					 startup_args[nb_startup_funcs]);
 }
 
-void pm2_init_listen_network(int *argc, char *argv[])
-{
-  if(!pm2_single_mode()) {
-#ifdef MAD2
-    int i;
-
-    for(i=0; i<nb_of_channels; i++)
-      netserver_start(channel(i));
-#else
-    netserver_start();
-#endif
-  }
-}
-
 void pm2_init_purge_cmdline(int *argc, char *argv[])
 {}
 
-#ifdef MAD2
-static void pm2_send_stop_server(void)
-{
-  unsigned tag = NETSERVER_END;
-  int c;
-  int node;
-
-  LOG_IN();
-  for(c=0; c<nb_of_channels; c++) {
-    for(node=1; node<__pm2_conf_size; node++) {
-      LOG("pm2 halting %i on channel %i\n", node, c);
-      mad_sendbuf_init(channel(c), node);
-      pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-      mad_sendbuf_send();
-    }
-  }
-  LOG_OUT();
-}
-
-static marcel_mutex_t halt_lock=MARCEL_MUTEX_INITIALIZER;
-static int pm2_zero_halt=0;
-
-inline void pm2_halt_requested(void)
-{
-  if (__pm2_self != 0) {
-    fprintf(stderr, "NETSERVER ERROR: NETSERVER_REQUEST_HALT"
-	    " tag on node %i\n", __pm2_self);
-    return;
-  }
-  marcel_mutex_lock(&halt_lock);
-  pm2_zero_halt++;
-  if (pm2_zero_halt == (__pm2_conf_size+1)*nb_of_channels) {
-    /* +1 car tous les pm2_exit() en envoient un + pm2_halt() */
-    pm2_thread_create((pm2_func_t)pm2_send_stop_server, (void*)(NULL));
-  }
-  marcel_mutex_unlock(&halt_lock);
-}
-
-inline static void pm2_request_halt_or_exit(void)
-{
-  unsigned tag = NETSERVER_REQUEST_HALT;
-  int c;
-
-  LOG_IN();
-  for(c=0; c<nb_of_channels; c++) {
-    LOG("pm2 request halt or exit on channel %i\n", c);
-    if (__pm2_self == 0) {
-      pm2_halt_requested();
-    } else {
-      mad_sendbuf_init(channel(c), 0);
-      pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-      mad_sendbuf_send();
-    }
-  }
-  LOG_OUT();
-}
-#endif
-
+#if 0
+// removed by O. A. for common_exit support
 static void pm2_wait_end(void)
 {
   char mess[128];
@@ -265,12 +143,9 @@ static void pm2_wait_end(void)
   if(!already_called) {
 
     LOG_IN();
-
-    if(!pm2_single_mode()) {
-      pm2_request_halt_or_exit();
-      netserver_wait_end();
-      mdebug("pm2_wait_end netserver_wait_end completed\n");
-    }
+    pm2_net_request_end();
+    pm2_net_wait_end();
+    mdebug("pm2_wait_end netserver_wait_end completed\n");
 
     marcel_end();
 
@@ -280,70 +155,25 @@ static void pm2_wait_end(void)
 	    marcel_cachedthreads());
 
     fprintf(stderr, mess);
-
     already_called = TRUE;
 
     LOG_OUT();
   }
 }
+#endif // 0
 
 void pm2_exit(void)
 {
   LOG_IN();
-
-  pm2_wait_end();
-
-  mdebug("pm2_wait_end completed\n");
-
-  pm2_thread_exit();
-
-  mdebug("pm2_thread_exit completed\n");
-
-#ifdef MAD2
-  pm2_mad_exit();
-#else
-  mad_exit();
-#endif
-
-  mdebug("mad_exit completed\n");
-
-  block_exit();
-
-  mdebug("block_exit completed\n");
-
-#ifdef DSM
-  dsm_pm2_exit();
-
-  mdebug("dsm_pm2_exit completed\n");
-#endif
-
+  // pm2_wait_end();
+  common_exit(NULL);
   LOG_OUT();
 }
 
 void pm2_halt()
 {
   LOG_IN();
-
-  if(!pm2_single_mode()) {
-#ifndef MAD2
-    int i;
-    unsigned tag = NETSERVER_END;
-
-    if(!mad_can_send_to_self()) {
-      netserver_stop();
-    }
-  
-    for(i=0; i<__pm2_conf_size; i++) {
-      if(!(i == __pm2_self && !mad_can_send_to_self())) {
-	mad_sendbuf_init(i);
-	pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-	mad_sendbuf_send();
-      }
-    }
-#else
-    pm2_request_halt_or_exit();
-#endif
-  }
+  pm2_net_request_end();
   LOG_OUT();
 }
 
@@ -368,17 +198,13 @@ void pm2_rawrpc_begin(int module, int num,
 
   pm2_disable_migration();
 
-#ifdef MAD2
-  mad_sendbuf_init(channel(pm2_attr->channel), module);
-#else
-  mad_sendbuf_init(module);
-#endif
+  pm2_begin_packing(pm2_net_get_channel(pm2_attr->channel), module);
   pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &num, 1);
 }
 
 void pm2_rawrpc_end(void)
 {
-  mad_sendbuf_send();
+  pm2_end_packing();
   pm2_enable_migration();
 }
 

@@ -1,13 +1,13 @@
 /*
                       PM2 HIGH-PERF/ISOMALLOC
            High Performance Parallel Multithreaded Machine
-                           version 2.0
+                           version 3.0
 
-             Gabriel Antoniu, Luc Bouge, Christian Perez,
-                Jean-Francois Mehaut, Raymond Namyst
+     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
 
             Laboratoire de l'Informatique du Parallelisme
-                        UMR 8512 CNRS-INRIA
+                        UMR 5668 CNRS-INRIA
                  Ecole Normale Superieure de Lyon
 
                       External Contributors:

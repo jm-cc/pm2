@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.13  2000/02/28 11:17:07  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.12  2000/02/14 10:04:54  rnamyst
 Modified to propose a new interface to "pm2_completion" facilities...
 
@@ -44,18 +47,18 @@ Revision 1.11  2000/01/31 15:58:26  oaumage
 ______________________________________________________________________________
 */
 
-#include <pm2.h>
-#include <sys/pm2_printf.h>
-#include <sys/pm2_migr.h>
-#include <sys/netserver.h>
-#include <isomalloc.h>
-#include <block_alloc.h>
+#include "pm2.h"
+#include "sys/pm2_printf.h"
+#include "sys/pm2_migr.h"
+#include "sys/netserver.h"
+#include "isomalloc.h"
+#include "block_alloc.h"
 
 #include <fcntl.h>
 #include <stdarg.h>
 #include <unistd.h>
 
-#include <pm2_timing.h>
+#include "pm2_timing.h"
 
 #ifdef DSM
 #include "dsm_pm2.h"

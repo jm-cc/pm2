@@ -1,8 +1,14 @@
+ifndef PM2_FLAVOR
+$(error PM2_FLAVOR is not defined!)
+endif
 
-FLAVOR		:= $(shell echo $$PM2_FLAVOR")
 CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
+
+ifeq ($(OSTYPE),linux-gnu)
+CFLAGS		+= -DMAXHOSTNAMELEN=64
+endif
 
 .PHONY: clean indent
 
@@ -18,8 +24,8 @@ clean:
 	-rm $(EXEFILES) $(OFILES) $(CPPFILES) *~ 
 	-./cleanlogs
 
-$(EXEFILES): %: %.c
-	@echo "Compiling $< for flavor '$(FLAVOR)'..."
+$(EXEFILES): %: %.c Makefile
+	@echo "Compiling $< for flavor '$(PM2_FLAVOR)'..."
 	@$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
 
 $(CPPFILES): %.C: %.c

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_buffer_interface.h,v $
+Revision 1.4  2000/06/06 12:54:37  oaumage
+- Ajout du calcul de la taille des groupes de buffers dynamiques
+
 Revision 1.3  2000/01/13 14:44:30  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -64,7 +67,8 @@ size_t mad_copy_buffer(p_mad_buffer_t   source,
 p_mad_buffer_t mad_duplicate_buffer(p_mad_buffer_t source);
 void mad_make_buffer_group(p_mad_buffer_group_t   buffer_group,
 			   p_tbx_list_t           buffer_list, 
-			   p_mad_link_t           lnk);
+			   p_mad_link_t           lnk,
+			   size_t                 cumulated_length);
 size_t mad_copy_length(p_mad_buffer_t   source, 
 		       p_mad_buffer_t   destination);
 size_t mad_pseudo_copy_buffer(p_mad_buffer_t   source, 

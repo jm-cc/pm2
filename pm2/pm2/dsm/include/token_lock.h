@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.h,v 1.2 2002/10/14 15:42:06 slacour Exp $
+ * CVS Id: $Id: token_lock.h,v 1.3 2002/10/16 15:53:45 slacour Exp $
  */
 
 /* distributed management of the locks (tokens) for DSM-PM2 */
@@ -23,6 +23,11 @@ typedef unsigned int token_lock_id_t;
 
 /* no lock */
 extern const token_lock_id_t TOKEN_LOCK_NONE;
+
+/* thread / cluster priority levels, to limit the number of
+ * consecutive lock acquisition always within the same process or
+ * cluster */
+enum { INFINITE_PRIORITY = -1, NO_PRIORITY = 0 };
 
 
 /**********************************************************************/
@@ -55,6 +60,10 @@ token_lock_init (token_lock_id_t * const);
 extern int
 token_lock (const token_lock_id_t);
 
+/* partial release of a DSM lock */
+extern int
+token_partial_unlock (const token_lock_id_t);
+   
 /* release a DSM lock */
 extern int
 token_unlock (const token_lock_id_t);
@@ -71,6 +80,16 @@ token_lock_manager_server (void);
 extern void
 token_lock_register_acks (const token_lock_id_t, const int, const int,
                           const int);
+
+/* set the maximum number of consecutive acquisitions of a lock within
+ * a process */
+extern int
+set_thread_priority_level (const int);
+
+/* set the maximum number of consecutive acquisitions of a lock within
+ * a cluster */
+extern int
+set_cluster_priority_level (const int);
 
 #endif   /* TOKEN_LOCK_H */
 

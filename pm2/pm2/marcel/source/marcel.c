@@ -434,7 +434,7 @@ int marcel_exit(any_t val)
   /* Durant cette fonction, il ne faut pas que le thread soit
      "déplacé" intempestivement (e.g. après avoir acquis stack_mutex)
      sur un autre LWP. */
-  cur->sched_policy = MARCEL_SCHED_FIXED(cur_lwp->number);
+  cur->vpmask = MARCEL_VPMASK_ALL_BUT_VP(cur_lwp->number);
   /* Ne pas oublier de mettre "ancien LWP a NULL", sinon la tache sera
      replacee dessus dans insert_task(). Cette optimisation est source
      de confusion et il vaudrait peut-etre mieux la supprimer... */
@@ -470,7 +470,7 @@ int marcel_exit(any_t val)
 
     // Attention : il est nécessaire de s'assurer que le thread "de
     // secours" ne sera pas inséré sur un autre LWP...
-    cur_lwp->sec_desc->sched_policy = MARCEL_SCHED_FIXED(cur_lwp->number);
+    cur_lwp->sec_desc->vpmask = MARCEL_VPMASK_ALL_BUT_VP(cur_lwp->number);
 
     MTRACE("Mutation", cur);
 

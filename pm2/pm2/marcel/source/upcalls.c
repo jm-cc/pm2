@@ -130,12 +130,13 @@ inline static int try_lock_act_lock(marcel_t self) \
      "movl $0,%0 ;\n" \
      "0:" \
      : "=g" (res) \
-     : "r" (self), "m" (lock_act_thread) \
+     : "r" (self), "m" (lock_act_thread), "g" (res) \
      : "memory", "%eax", "cc" ); return res; }
 
 void act_lock(marcel_t self)
 {
   int i = 0;
+  volatile marcel_t old;
 
   //ACTDEBUG(printf("act_lock(%p)\n", self)); 
 
@@ -147,11 +148,14 @@ void act_lock(marcel_t self)
     ACTDEBUG(printf("act_lock(%p) already have the lock before\n", 
 		    self));
   }
+  old=lock_act_thread;
   while(!try_lock_act_lock(self)) {
     if (self==lock_act_thread) {
-      ACTDEBUG(printf("act_lock(%p) already have the lock\n", 
-		      self));
-      return;
+      //ACTDEBUG(printf("act_lock(%p) already have the lock\n", 
+	//	      self));
+      printf("ARGH!! act_lock(%p) already have the lock. Previous was %p\n", 
+		      self, old);
+      break;
     } 
       
     /* just to do domething, to be sure to handle upcalls, be not

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.13  2001/01/16 10:03:23  oaumage
+- flags
+- modification de l'interface de tbx pour les listes
+
 Revision 1.12  2000/12/19 16:57:50  oaumage
 - finalisation de leoparse
 - exemples pour leoparse
@@ -465,7 +469,7 @@ tbx_slist_ref_get(p_tbx_slist_t slist);
 void
 tbx_htable_manager_init();
 
-void
+void 
 tbx_htable_init(p_tbx_htable_t            htable,
 		tbx_htable_bucket_count_t buckets);
 

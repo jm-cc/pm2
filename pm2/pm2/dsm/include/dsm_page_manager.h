@@ -41,7 +41,9 @@
 
 dsm_node_t dsm_self();
 
-boolean dsm_addr(void *addr);
+boolean dsm_static_addr(void *addr);
+
+void *dsm_page_base(void *addr);
 
 void dsm_page_table_init(int my_rank, int confsize);
 
@@ -61,11 +63,11 @@ void *dsm_get_pseudo_static_dsm_start_addr();
 
 void dsm_protect_page (void *addr, dsm_access_t access);
 
-void *dsm_page_base(void *addr);
-
 unsigned int dsm_page_offset(void *addr);
 
 unsigned long dsm_page_index(void *addr);
+
+unsigned long dsm_isoaddr_page_index(int index);
 
 unsigned long dsm_get_nb_static_pages();
 
@@ -76,7 +78,7 @@ void dsm_set_prob_owner(unsigned long index, dsm_node_t owner);
 dsm_node_t dsm_get_prob_owner(unsigned long index);
 
 void dsm_set_next_owner(unsigned long index, dsm_node_t next_owner);
-
+ 
 void dsm_clear_next_owner(unsigned long index);
 
 dsm_node_t dsm_get_next_owner(unsigned long index);
@@ -125,10 +127,6 @@ dsm_node_t dsm_get_next_from_copyset(unsigned long index);
 
 void dsm_remove_from_copyset(unsigned long index, dsm_node_t node);
 
-void dsm_set_page_state(unsigned long index, dsm_state_t state);
-
-dsm_state_t dsm_get_page_state(unsigned long index);
-
 void pm2_set_dsm_page_distribution(int mode, ...);
 
 void dsm_display_page_ownership();
@@ -139,8 +137,9 @@ void dsm_display_page_ownership();
 #define DSM_CUSTOM      3
 
 #define DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS 0
-#define DSM_UNIFORM_PROTECT 1
-#define DSM_CUSTOM_PROTECT 2
+#define DSM_OWNER_READ_ACCESS_OTHER_NO_ACCESS 1
+#define DSM_UNIFORM_PROTECT 2
+#define DSM_CUSTOM_PROTECT 3
 
 void pm2_set_dsm_page_protection(int mode, ...);
 
@@ -160,6 +159,14 @@ void *dsm_get_user_data2(unsigned long index);
 
 void dsm_set_user_data2(unsigned long index, void *addr);
 
+void dsm_alloc_twin(unsigned long index);
+
+void dsm_free_twin(unsigned long index);
+
+void *dsm_get_twin(unsigned long index);
+
+void dsm_set_twin(unsigned long index, void *addr);
+
 typedef void (*dsm_user_data1_init_func_t)(int *userdata); /* init func for userdata1 */
 
 typedef void (*dsm_user_data2_init_func_t)(void **userdata); /* init func for userdata2 */
@@ -169,6 +176,20 @@ void dsm_set_user_data1_init_func(dsm_user_data1_init_func_t func);
 void dsm_set_user_data2_init_func(dsm_user_data2_init_func_t func);
 
 void dsm_set_pseudo_static_area_size(unsigned size);
+
+boolean dsm_empty_page_entry(unsigned long index);
+
+void dsm_alloc_page_entry(unsigned long index);
+
+void dsm_validate_page_entry(unsigned long index);
+
+void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map);
+
+void dsm_set_default_protocol(int protocol);
+
+void dsm_set_page_protocol(unsigned long index, int protocol);
+
+int dsm_get_page_protocol(unsigned long index);
 
 /*********************** Hyperion stuff: ****************************/
 

@@ -38,202 +38,212 @@
  *  Functions
  * ____________
  */
-void
-mad_dir_driver_init(p_mad_madeleine_t madeleine)
+
+static
+tbx_bool_t
+adapter_init(p_mad_driver_t mad_driver,
+             p_tbx_htable_t mad_adapter_htable,
+             p_tbx_htable_t dir_adapter_htable)
 {
-  p_mad_session_t      session           = NULL;
-  p_mad_directory_t    dir               = NULL;
-  p_tbx_htable_t       mad_driver_htable = NULL;
-  p_tbx_htable_t       dir_driver_htable = NULL;
-  ntbx_process_grank_t g      =   -1;
-  mad_driver_id_t      mad_driver_id     =    0;
+  p_mad_dir_adapter_t  dir_adapter  = NULL;
+  p_mad_adapter_t      mad_adapter  = NULL;
+  char                *adapter_name = NULL;
 
   LOG_IN();
-  session           = madeleine->session;
-  dir               = madeleine->dir;
-  mad_driver_htable = madeleine->driver_htable;
-  g      = session->process_rank;
-  dir_driver_htable = dir->driver_htable;
+  adapter_name = mad_leonie_receive_string();
+  if (tbx_streq(adapter_name, "-"))
+    {
+      TBX_FREE(adapter_name);
+      LOG_OUT();
 
+      return tbx_false;
+    }
 
-  TRACE("Driver initialization: first pass");
+  dir_adapter = tbx_htable_get(dir_adapter_htable, adapter_name);
+  if (!dir_adapter)
+    FAILURE("adapter not found");
+
+  TRACE_STR("Initializing adapter", adapter_name);
+  mad_adapter = mad_adapter_cons();
+
+  mad_adapter->driver         = mad_driver;
+  mad_adapter->selector       = tbx_strdup(dir_adapter->selector);
+  mad_adapter->channel_htable = tbx_htable_empty_table();
+  mad_adapter->dir_adapter    = dir_adapter;
+
+  tbx_htable_add(mad_adapter_htable, dir_adapter->name, mad_adapter);
+
+  TRACE_STR("Adapter selector", mad_adapter->selector);
+  mad_driver->interface->adapter_init(mad_adapter);
+  TRACE_STR("Adapter connection parameter", mad_adapter->parameter);
+  mad_leonie_send_string(mad_adapter->parameter);
+  if (!mad_adapter->mtu)
+    {
+      mad_adapter->mtu = 0xFFFFFFFFUL;
+    }
+  mad_leonie_send_unsigned_int(mad_adapter->mtu);
+  TBX_FREE(adapter_name);
+  LOG_OUT();
+
+  return tbx_true;
+}
+
+static
+tbx_bool_t
+driver_init_1(p_tbx_htable_t       mad_driver_htable,
+              p_tbx_htable_t       dir_driver_htable,
+              ntbx_process_grank_t g)
+{
+  p_mad_driver_t                       mad_driver         = NULL;
+  p_mad_driver_interface_t             interface          = NULL;
+  p_tbx_htable_t                       mad_adapter_htable = NULL;
+  p_mad_dir_driver_t                   dir_driver         = NULL;
+  p_mad_dir_driver_process_specific_t  pi_specific        = NULL;
+  p_tbx_htable_t                       dir_adapter_htable = NULL;
+  char                                *driver_name        = NULL;
+
+  driver_name = mad_leonie_receive_string();
+  if (tbx_streq(driver_name, "-"))
+    {
+      TBX_FREE(driver_name);
+      LOG_OUT();
+
+      return tbx_false;
+    }
+
+  dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
+  if (!dir_driver)
+    FAILURE("driver not found");
+
+  mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
+  if (!mad_driver)
+    FAILURE("driver not available");
+
+  TRACE_STR("Initializing driver", driver_name);
+  mad_driver->dir_driver = dir_driver;
+
+  interface = mad_driver->interface;
+  interface->driver_init(mad_driver);
+
+  mad_leonie_send_int(-1);
+
+  mad_adapter_htable = mad_driver->adapter_htable;
+
+  pi_specific        = ntbx_pc_get_global_specific(dir_driver->pc, g);
+  dir_adapter_htable = pi_specific->adapter_htable;
+
+  TRACE("Adapter initialization");
+  while (adapter_init(mad_driver, mad_adapter_htable, dir_adapter_htable))
+    ;
+
+  TBX_FREE(driver_name);
+  LOG_OUT();
+
+  return tbx_true;
+}
+
+static
+tbx_bool_t
+driver_init_2(p_tbx_htable_t dir_driver_htable)
+{
+  p_mad_dir_driver_t  dir_driver  = NULL;
+  char               *driver_name = NULL;
+
+  LOG_IN();
+  driver_name = mad_leonie_receive_string();
+  if (tbx_streq(driver_name, "-"))
+    {
+      TBX_FREE(driver_name);
+      LOG_OUT();
+
+      return tbx_false;
+    }
+
+  dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
+  if (!dir_driver)
+    FAILURE("driver not found");
+
+  TRACE_STR("Initializing driver", driver_name);
   while (1)
     {
-      p_mad_driver_t                       mad_driver         = NULL;
-      p_mad_driver_interface_t             interface          = NULL;
-      p_tbx_htable_t                       mad_adapter_htable = NULL;
-      p_mad_dir_driver_t                   dir_driver         = NULL;
-      p_ntbx_process_container_t           pc                 = NULL;
-      p_ntbx_process_info_t                process_info       = NULL;
-      p_mad_dir_driver_process_specific_t  pi_specific        = NULL;
-      p_tbx_htable_t                       dir_adapter_htable = NULL;
-      char                                *driver_name        = NULL;
-      mad_adapter_id_t                     mad_adapter_id     =    0;
+      p_mad_dir_driver_process_specific_t pi_specific    = NULL;
+      ntbx_process_grank_t                global_rank    =   -1;
+      p_tbx_htable_t                      adapter_htable = NULL;
 
-      driver_name = mad_leonie_receive_string();
-      if (tbx_streq(driver_name, "-"))
-        {
-          TBX_FREE(driver_name);
-          break;
-        }
+      global_rank = mad_leonie_receive_int();
+      if (global_rank == -1)
+        break;
 
-      dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
-      if (!dir_driver)
-	FAILURE("driver not found");
+      TRACE_VAL("Process", global_rank);
 
-      mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
-      if (!mad_driver)
-	FAILURE("driver not available");
+      pi_specific    = ntbx_pc_get_global_specific(dir_driver->pc, global_rank);
+      adapter_htable = pi_specific->adapter_htable;
 
-      TRACE_STR("Initializing driver", driver_name);
-      mad_driver->id         = mad_driver_id++;
-      mad_driver->dir_driver = dir_driver;
-
-      interface = mad_driver->interface;
-      interface->driver_init(mad_driver);
-
-      mad_leonie_send_int(1);
-
-      mad_adapter_htable = mad_driver->adapter_htable;
-
-      pc                 = dir_driver->pc;
-      process_info       = ntbx_pc_get_global(pc, g);
-      pi_specific        = process_info->specific;
-      dir_adapter_htable = pi_specific->adapter_htable;
-
-      TRACE("Adapter initialization");
       while (1)
-	{
-	  p_mad_dir_adapter_t  dir_adapter  = NULL;
-	  p_mad_adapter_t      mad_adapter  = NULL;
-	  char                *adapter_name = NULL;
+        {
+          p_mad_dir_adapter_t  dir_adapter  = NULL;
+          char                *adapter_name = NULL;
 
-	  adapter_name = mad_leonie_receive_string();
-	  if (tbx_streq(adapter_name, "-"))
+          adapter_name = mad_leonie_receive_string();
+          if (tbx_streq(adapter_name, "-"))
             {
               TBX_FREE(adapter_name);
               break;
             }
 
-	  dir_adapter = tbx_htable_get(dir_adapter_htable, adapter_name);
-	  if (!dir_adapter)
-	    FAILURE("adapter not found");
+          dir_adapter = tbx_htable_get(adapter_htable, adapter_name);
+          if (!dir_adapter)
+            FAILURE("adapter not found");
 
-	  TRACE_STR("Initializing adapter", adapter_name);
-	  mad_adapter = mad_adapter_cons();
-
-	  mad_adapter->driver         = mad_driver;
-	  mad_adapter->id             = mad_adapter_id++;
-	  mad_adapter->selector       = tbx_strdup(dir_adapter->selector);
-	  mad_adapter->channel_htable = tbx_htable_empty_table();
-	  mad_adapter->dir_adapter    = dir_adapter;
-
-	  tbx_htable_add(mad_adapter_htable, dir_adapter->name, mad_adapter);
-
-	  TRACE_STR("Adapter selector", mad_adapter->selector);
-	  interface->adapter_init(mad_adapter);
-	  TRACE_STR("Adapter connection parameter",
-		   mad_adapter->parameter);
-	  mad_leonie_send_string(mad_adapter->parameter);
-	  if (!mad_adapter->mtu)
-	    {
-	      mad_adapter->mtu = 0xFFFFFFFFUL;
-	    }
-	  mad_leonie_send_unsigned_int(mad_adapter->mtu);
+          TRACE_STR("Adapter", adapter_name);
+          dir_adapter->parameter = mad_leonie_receive_string();
+          TRACE_STR("- parameter", dir_adapter->parameter);
+          dir_adapter->mtu = mad_leonie_receive_unsigned_int();
+          TRACE_VAL("- mtu", dir_adapter->mtu);
+          if (!dir_adapter->mtu)
+            FAILURE("invalid mtu");
           TBX_FREE(adapter_name);
-	}
-
-      TBX_FREE(driver_name);
+        }
     }
+
+  TBX_FREE(driver_name);
+  LOG_OUT();
+
+  return tbx_true;
+}
+
+void
+mad_dir_driver_init(p_mad_madeleine_t madeleine)
+{
+  p_tbx_htable_t mad_driver_htable = NULL;
+  p_tbx_htable_t dir_driver_htable = NULL;
+
+  LOG_IN();
+  mad_driver_htable = madeleine->driver_htable;
+  dir_driver_htable = madeleine->dir->driver_htable;
+
+  TRACE("Driver initialization: first pass");
+  while (driver_init_1(mad_driver_htable, dir_driver_htable,
+                       madeleine->session->process_rank))
+    ;
 
   TRACE("Driver initialization: second pass");
-  while (1)
-    {
-      p_mad_dir_driver_t          dir_driver  = NULL;
-      p_ntbx_process_container_t  pc          = NULL;
-      char                       *driver_name = NULL;
-
-      driver_name = mad_leonie_receive_string();
-      if (tbx_streq(driver_name, "-"))
-        {
-          TBX_FREE(driver_name);
-          break;
-        }
-
-      dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
-      if (!dir_driver)
-	FAILURE("driver not found");
-      pc = dir_driver->pc;
-
-      TRACE_STR("Initializing driver", driver_name);
-      while (1)
-	{
-	  p_ntbx_process_info_t                process_info       = NULL;
-	  p_mad_dir_driver_process_specific_t  pi_specific        = NULL;
-	  ntbx_process_grank_t                 global_rank        =   -1;
-	  p_tbx_htable_t                       adapter_htable     = NULL;
-
-	  global_rank = mad_leonie_receive_int();
-	  if (global_rank == -1)
-	    break;
-
-	  TRACE_VAL("Process", global_rank);
-
-	  process_info   = ntbx_pc_get_global(pc, global_rank);
-	  pi_specific    = process_info->specific;
-	  adapter_htable = pi_specific->adapter_htable;
-
-	  while (1)
-	    {
-	      p_mad_dir_adapter_t  dir_adapter  = NULL;
-	      char                *adapter_name = NULL;
-
-	      adapter_name = mad_leonie_receive_string();
-	      if (tbx_streq(adapter_name, "-"))
-                {
-                  TBX_FREE(adapter_name);
-                  break;
-                }
-
-	      dir_adapter = tbx_htable_get(adapter_htable, adapter_name);
-	      if (!dir_adapter)
-		FAILURE("adapter not found");
-
-	      TRACE_STR("Adapter", adapter_name);
-	      dir_adapter->parameter = mad_leonie_receive_string();
-	      TRACE_STR("- parameter", dir_adapter->parameter);
-	      dir_adapter->mtu = mad_leonie_receive_unsigned_int();
-	      TRACE_VAL("- mtu", dir_adapter->mtu);
-	      if (!dir_adapter->mtu)
-		FAILURE("invalid mtu");
-              TBX_FREE(adapter_name);
-	    }
-	}
-
-      TBX_FREE(driver_name);
-    }
+  while (driver_init_2(dir_driver_htable))
+    ;
 
 #ifdef MARCEL
   {
-    p_mad_driver_t           forwarding_driver = NULL;
-    p_mad_driver_interface_t interface         = NULL;
+    p_mad_driver_t fwd_driver = NULL;
 
-    forwarding_driver  =
-      tbx_htable_get(madeleine->driver_htable, "forward");
-
-    interface = forwarding_driver->interface;
-    interface->driver_init(forwarding_driver);
+    fwd_driver = tbx_htable_get(mad_driver_htable, "forward");
+    fwd_driver->interface->driver_init(fwd_driver);
   }
 
   {
-    p_mad_driver_t           mux_driver = NULL;
-    p_mad_driver_interface_t interface  = NULL;
+    p_mad_driver_t mux_driver = NULL;
 
-    mux_driver  =
-      tbx_htable_get(madeleine->driver_htable, "mux");
-
-    interface = mux_driver->interface;
-    interface->driver_init(mux_driver);
+    mux_driver = tbx_htable_get(mad_driver_htable, "mux");
+    mux_driver->interface->driver_init(mux_driver);
   }
 #endif // MARCEL
   LOG_OUT();
@@ -256,12 +266,12 @@ connection_mtu(p_mad_dir_channel_t  channel,
 
   {
     p_mad_dir_driver_process_specific_t  dps     = NULL;
-    p_mad_dir_channel_process_specific_t cps     = NULL;
+    p_mad_dir_connection_t dir_connection     = NULL;
     p_mad_dir_adapter_t                  adapter = NULL;
 
     dps     = ntbx_pc_get_global_specific(driver->pc, src);
-    cps     = ntbx_pc_get_global_specific(channel->pc, src);
-    adapter = tbx_htable_get(dps->adapter_htable, cps->adapter_name);
+    dir_connection     = ntbx_pc_get_global_specific(channel->pc, src);
+    adapter = tbx_htable_get(dps->adapter_htable, dir_connection->adapter_name);
 
     src_mtu = adapter->mtu;
     if (!src_mtu)
@@ -270,12 +280,12 @@ connection_mtu(p_mad_dir_channel_t  channel,
 
   {
     p_mad_dir_driver_process_specific_t  dps     = NULL;
-    p_mad_dir_channel_process_specific_t cps     = NULL;
+    p_mad_dir_connection_t dir_connection     = NULL;
     p_mad_dir_adapter_t                  adapter = NULL;
 
     dps     = ntbx_pc_get_global_specific(driver->pc, dst);
-    cps     = ntbx_pc_get_global_specific(channel->pc, dst);
-    adapter = tbx_htable_get(dps->adapter_htable, cps->adapter_name);
+    dir_connection     = ntbx_pc_get_global_specific(channel->pc, dst);
+    adapter = tbx_htable_get(dps->adapter_htable, dir_connection->adapter_name);
 
     dst_mtu = adapter->mtu;
     if (!dst_mtu)
@@ -291,49 +301,49 @@ connection_mtu(p_mad_dir_channel_t  channel,
 static
 unsigned int
 compute_mtu(p_mad_directory_t          dir,
-                              p_ntbx_process_container_t src_pc,
-                              ntbx_process_grank_t       src,
-                              ntbx_process_grank_t       dst,
-                              const tbx_bool_t           dedicated_fchannel)
+            p_ntbx_process_container_t src_pc,
+            ntbx_process_grank_t       src,
+            ntbx_process_grank_t       dst,
+            const tbx_bool_t           dedicated_fchannel)
 {
-  p_mad_dir_vxchannel_process_specific_t      vps    = NULL;
-  p_ntbx_process_container_t                  dst_pc = NULL;
-  p_mad_dir_vxchannel_process_routing_table_t rtable = NULL;
-  ntbx_process_grank_t                        med    =   -1;
-  unsigned int                                mtu    =    0;
+  p_mad_dir_connection_t dir_connection    = NULL;
+  p_ntbx_process_container_t           dst_pc = NULL;
+  p_mad_dir_connection_data_t          cdata  = NULL;
+  ntbx_process_grank_t                 med    =   -1;
+  unsigned int                         mtu    =    0;
 
   LOG_IN();
-  vps    = ntbx_pc_get_global_specific(src_pc, src);
-  dst_pc = vps->pc;
-  rtable = ntbx_pc_get_global_specific(dst_pc, dst);
-  med    = rtable->destination_rank;
+  dir_connection    = ntbx_pc_get_global_specific(src_pc, src);
+  dst_pc = dir_connection->pc;
+  cdata    = ntbx_pc_get_global_specific(dst_pc, dst);
+  med    = cdata->destination_rank;
 
   if (med == dst)
     {
       p_mad_dir_channel_t channel = NULL;
 
-      channel = tbx_htable_get(dir->channel_htable, rtable->channel_name);
+      channel = tbx_htable_get(dir->channel_htable, cdata->channel_name);
 
       mtu = connection_mtu(channel, src, dst);
     }
   else
     {
-      p_mad_dir_channel_t  channel  = NULL;
-      unsigned int         mtu1     =    0;
-      unsigned int         mtu2     =    0;
+      p_mad_dir_channel_t channel  = NULL;
+      unsigned int        mtu1     =    0;
+      unsigned int        mtu2     =    0;
 
       if (dedicated_fchannel)
         {
-          p_mad_dir_fchannel_t fchannel = NULL;
+          p_mad_dir_channel_t fchannel = NULL;
 
           fchannel =
-            tbx_htable_get(dir->fchannel_htable, rtable->channel_name);
+            tbx_htable_get(dir->channel_htable, cdata->channel_name);
           channel  =
-            tbx_htable_get(dir->channel_htable, fchannel->channel_name);
+            tbx_htable_get(dir->channel_htable, fchannel->cloned_channel_name);
         }
       else
         {
-          channel = tbx_htable_get(dir->channel_htable,  rtable->channel_name);
+          channel = tbx_htable_get(dir->channel_htable, cdata->channel_name);
         }
 
       mtu1 = connection_mtu(channel, src, med);
@@ -346,49 +356,49 @@ compute_mtu(p_mad_directory_t          dir,
 }
 
 static
-p_mad_dir_vxchannel_process_routing_table_t
-rtable_get(p_ntbx_process_container_t pc,
-           ntbx_process_grank_t       src,
-           ntbx_process_grank_t       dst)
+p_mad_dir_connection_data_t
+connection_data_get(p_ntbx_process_container_t pc,
+                    ntbx_process_grank_t       src,
+                    ntbx_process_grank_t       dst)
 {
-  p_mad_dir_vxchannel_process_routing_table_t rtable = NULL;
-  p_mad_dir_vxchannel_process_specific_t      ps     = NULL;
-  p_ntbx_process_container_t                 ppc    = NULL;
+  p_mad_dir_connection_t dir_connection   = NULL;
+  p_ntbx_process_container_t           ppc   = NULL;
+  p_mad_dir_connection_data_t          cdata = NULL;
 
   LOG_IN();
-  ps     = ntbx_pc_get_global_specific(pc, src);
-  ppc    = ps->pc;
-  rtable = ntbx_pc_get_global_specific(ppc, dst);
+  dir_connection = ntbx_pc_get_global_specific(pc, src);
+  ppc = dir_connection->pc;
+  cdata = ntbx_pc_get_global_specific(ppc, dst);
   LOG_OUT();
 
-  return rtable;
+  return cdata;
 }
 
 static
-p_mad_dir_vxchannel_process_routing_table_t
+p_mad_dir_connection_data_t
 reverse_routing(p_ntbx_process_container_t  pc,
                 ntbx_process_grank_t       *src,
                 ntbx_process_grank_t        dst)
 {
-  p_mad_dir_vxchannel_process_routing_table_t rtable = NULL;
+  p_mad_dir_connection_data_t cdata = NULL;
 
   LOG_IN();
-  rtable = rtable_get(pc, *src, dst);
+  cdata = connection_data_get(pc, *src, dst);
 
-  if (rtable->destination_rank != dst)
+  if (cdata->destination_rank != dst)
     {
-      *src   = rtable->destination_rank;
-      rtable = reverse_routing(pc, src, dst);
+      *src   = cdata->destination_rank;
+      cdata = reverse_routing(pc, src, dst);
     }
   LOG_OUT();
 
-  return rtable;
+  return cdata;
 }
 
 static
 void
 links_init(p_mad_driver_interface_t interface,
-                   p_mad_connection_t       cnx)
+           p_mad_connection_t       cnx)
 {
   mad_link_id_t link_id = -1;
 
@@ -530,40 +540,6 @@ regular_connection_init(p_mad_driver_interface_t  interface,
 }
 
 static
-p_mad_dir_channel_common_process_specific_t
-mad_dir_get_ccps(p_mad_dir_channel_t  dir_channel,
-                 ntbx_process_lrank_t remote_rank)
-{
-  p_ntbx_process_container_t                  cpc  = NULL;
-  p_mad_dir_channel_common_process_specific_t ccps = NULL;
-
-  LOG_IN();
-  cpc  = dir_channel->common->pc;
-
-  ccps = ntbx_pc_get_local_specific(cpc, remote_rank);
-
-  if (!ccps)
-    {
-      p_ntbx_process_t remote_process = NULL;
-      char             common_name[strlen("common_") +
-                                   strlen(dir_channel->name) + 1];
-
-      remote_process =
-        ntbx_pc_get_local_process(dir_channel->pc, remote_rank);
-
-      strcpy(common_name, "common_");
-      strcat(common_name, dir_channel->name);
-
-      ccps = mad_dir_channel_common_process_specific_cons();
-      ntbx_pc_add(cpc, remote_process, remote_rank,
-                  dir_channel, common_name, ccps);
-    }
-  LOG_OUT();
-
-  return ccps;
-}
-
-static
 tbx_bool_t
 connection_init(p_mad_channel_t mad_channel)
 {
@@ -655,17 +631,17 @@ connection_init(p_mad_channel_t mad_channel)
     }
 
   {
-    char                                        *tmp  = NULL;
-    p_mad_dir_channel_common_process_specific_t  ccps = NULL;
+    char                                 *tmp = NULL;
+    p_mad_dir_connection_t  dir_connection = NULL;
 
-    ccps = mad_dir_get_ccps(mad_channel->dir_channel, remote_rank);
+    dir_connection = ntbx_pc_get_local_specific(mad_channel->pc, remote_rank);
 
     tmp = mad_leonie_receive_string();
     TRACE_STR("remote channel parameter", tmp);
 
-    if (!ccps->parameter)
+    if (!dir_connection->channel_parameter)
       {
-        ccps->parameter = tmp;
+        dir_connection->channel_parameter = tmp;
       }
     else
       {
@@ -677,20 +653,16 @@ connection_init(p_mad_channel_t mad_channel)
     if (command)
       {
         TRACE_STR("remote in connection parameter", tmp);
-
-        tbx_darray_expand_and_set(ccps->in_connection_parameter_darray,
-                                  mad_channel->process_lrank, tmp);
+        dir_connection->in_parameter = tmp;
       }
     else
       {
 
         TRACE_STR("remote out connection parameter", tmp);
-
-        tbx_darray_expand_and_set(ccps->out_connection_parameter_darray,
-                                  mad_channel->process_lrank, tmp);
+        dir_connection->out_parameter = tmp;
       }
-
   }
+
   TRACE("Pass 1 - sending ack");
   mad_leonie_send_int(-1);
 
@@ -707,7 +679,7 @@ get_adapter_info(p_mad_channel_t      ch,
   p_mad_driver_t                       d   = NULL;
   p_ntbx_process_info_t                rpi = NULL;
   p_ntbx_process_t                     rp  = NULL;
-  p_mad_dir_channel_process_specific_t cps = NULL;
+  p_mad_dir_connection_t dir_connection = NULL;
   p_mad_dir_driver_process_specific_t  dps = NULL;
   p_mad_adapter_info_t                 ai  = NULL;
 
@@ -716,14 +688,14 @@ get_adapter_info(p_mad_channel_t      ch,
 
   rpi = ntbx_pc_get_local(ch->dir_channel->pc, remote_rank);
   rp  = rpi->process;
-  cps = rpi->specific;
+  dir_connection = rpi->specific;
   dps =
     ntbx_pc_get_global_specific(d->dir_driver->pc, rp->global_rank);
 
   ai = TBX_MALLOC(sizeof(mad_adapter_info_t));
   ai->dir_node    = tbx_htable_get(rp->ref, "node");
   ai->dir_adapter = tbx_htable_get(dps->adapter_htable,
-                                   cps->adapter_name);
+                                   dir_connection->adapter_name);
 
   if (!ai->dir_adapter)
     FAILURE("adapter not found");
@@ -737,15 +709,15 @@ static
 tbx_bool_t
 connection_open(p_mad_channel_t mad_channel)
 {
-  p_mad_driver_t                              mad_driver  = NULL;
-  p_mad_driver_interface_t                    interface   = NULL;
-  p_tbx_darray_t                              in_darray   = NULL;
-  p_tbx_darray_t                              out_darray  = NULL;
-  int                                         command     =   -1;
-  ntbx_process_lrank_t                        remote_rank =   -1;
-  p_mad_adapter_info_t                        rai         = NULL;
-  p_ntbx_process_container_t                  cpc         = NULL;
-  p_mad_dir_channel_common_process_specific_t ccps        = NULL;
+  p_mad_driver_t                       mad_driver  = NULL;
+  p_mad_driver_interface_t             interface   = NULL;
+  p_tbx_darray_t                       in_darray   = NULL;
+  p_tbx_darray_t                       out_darray  = NULL;
+  int                                  command     =   -1;
+  ntbx_process_lrank_t                 remote_rank =   -1;
+  p_mad_adapter_info_t                 rai         = NULL;
+  p_ntbx_process_container_t           pc          = NULL;
+  p_mad_dir_connection_t dir_connection         = NULL;
 
   LOG_IN();
   command = mad_leonie_receive_int();
@@ -764,7 +736,7 @@ connection_open(p_mad_channel_t mad_channel)
   interface  = mad_driver->interface;
   in_darray  = mad_channel->in_connection_darray;
   out_darray = mad_channel->out_connection_darray;
-  cpc        = mad_channel->dir_channel->common->pc;
+  pc         = mad_channel->pc;
 
   remote_rank = mad_leonie_receive_int();
   TRACE_VAL("Pass 2 - remote_rank", remote_rank);
@@ -774,11 +746,11 @@ connection_open(p_mad_channel_t mad_channel)
 
   rai = get_adapter_info(mad_channel, remote_rank);
 
-  ccps = ntbx_pc_get_local_specific(cpc, remote_rank);
-  if (!ccps)
+  dir_connection = ntbx_pc_get_local_specific(pc, remote_rank);
+  if (!dir_connection)
     FAILURE("unknown connection");
 
-  rai->channel_parameter = ccps->parameter;
+  rai->channel_parameter = dir_connection->channel_parameter;
 
   if (command)
     {
@@ -788,8 +760,7 @@ connection_open(p_mad_channel_t mad_channel)
       TRACE_VAL("Connection to", remote_rank);
       out = tbx_darray_get(out_darray, remote_rank);
 
-      rai->connection_parameter =
-        tbx_darray_get(ccps->in_connection_parameter_darray, mad_channel->process_lrank);
+      rai->connection_parameter = dir_connection->in_parameter;
 
       if (mad_driver->connection_type == mad_bidirectional_connection)
         {
@@ -814,8 +785,7 @@ connection_open(p_mad_channel_t mad_channel)
       TRACE_VAL("Accepting connection from", remote_rank);
       in = tbx_darray_expand_and_get(in_darray, remote_rank);
 
-      rai->connection_parameter =
-        tbx_darray_get(ccps->out_connection_parameter_darray, mad_channel->process_lrank);
+      rai->connection_parameter = dir_connection->out_parameter;
 
       if (mad_driver->connection_type == mad_bidirectional_connection)
         {
@@ -885,10 +855,10 @@ channel_open(p_mad_madeleine_t  madeleine,
   interface  = mad_driver->interface;
 
   {
-    p_mad_dir_channel_process_specific_t cps = NULL;
+    p_mad_dir_connection_t dir_connection = NULL;
 
-    cps = ntbx_pc_get_global_specific(dir_channel->pc, g);
-    mad_adapter = tbx_htable_get(mad_driver->adapter_htable, cps->adapter_name);
+    dir_connection = ntbx_pc_get_global_specific(dir_channel->pc, g);
+    mad_adapter = tbx_htable_get(mad_driver->adapter_htable, dir_connection->adapter_name);
     if (!mad_adapter)
       FAILURE("adapter not found");
   }
@@ -944,7 +914,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
               p_mad_channel_id_t p_channel_id)
 {
   ntbx_process_grank_t        g =   -1;
-  p_mad_dir_fchannel_t        dir_fchannel = NULL;
+  p_mad_dir_channel_t         dir_fchannel = NULL;
   p_mad_dir_channel_t         dir_channel  = NULL;
   p_mad_channel_t             mad_channel  = NULL;
   p_mad_adapter_t             mad_adapter  = NULL;
@@ -963,12 +933,12 @@ fchannel_open(p_mad_madeleine_t  madeleine,
 
   g = madeleine->session->process_rank;
 
-  dir_fchannel = tbx_htable_get(madeleine->dir->fchannel_htable, channel_name);
+  dir_fchannel = tbx_htable_get(madeleine->dir->channel_htable, channel_name);
   if (!dir_fchannel)
     FAILURE("channel not found");
 
   dir_channel =
-    tbx_htable_get(madeleine->dir->channel_htable, dir_fchannel->channel_name);
+    tbx_htable_get(madeleine->dir->channel_htable, dir_fchannel->cloned_channel_name);
 
   mad_driver  = tbx_htable_get(madeleine->driver_htable,
                                dir_channel->driver->name);
@@ -979,10 +949,10 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   interface  = mad_driver->interface;
 
   {
-    p_mad_dir_channel_process_specific_t cps = NULL;
+    p_mad_dir_connection_t dir_connection = NULL;
 
-    cps = ntbx_pc_get_global_specific(dir_channel->pc, g);
-    mad_adapter = tbx_htable_get(mad_driver->adapter_htable, cps->adapter_name);
+    dir_connection = ntbx_pc_get_global_specific(dir_channel->pc, g);
+    mad_adapter = tbx_htable_get(mad_driver->adapter_htable, dir_connection->adapter_name);
 
     if (!mad_adapter)
       FAILURE("adapter not found");
@@ -997,7 +967,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   mad_channel->pc            = dir_channel->pc;
   mad_channel->not_private   = tbx_false;
   mad_channel->dir_channel   = dir_channel;
-  mad_channel->dir_fchannel  = dir_fchannel;
+  mad_channel->cloned_dir_channel  = dir_fchannel;
   mad_channel->adapter       = mad_adapter;
 
   if (interface->channel_init)
@@ -1037,22 +1007,22 @@ static
 void
 vchannel_connection_open(p_mad_madeleine_t          madeleine,
                          p_mad_channel_t            mad_channel,
-                         p_ntbx_process_container_t vchannel_pc,
-                         p_ntbx_process_container_t vchannel_ppc,
+                         p_ntbx_process_container_t pc,
+                         p_ntbx_process_container_t ppc,
                          ntbx_process_grank_t       g_dst)
 {
-  p_mad_driver_interface_t                    interface = NULL;
-  p_mad_dir_vxchannel_process_routing_table_t rt        = NULL;
-  p_mad_connection_t                          in        = NULL;
-  p_mad_connection_t                          out       = NULL;
-  ntbx_process_lrank_t                        l_dst     =   -1;
-  ntbx_process_grank_t                        g         =   -1;
+  p_mad_driver_interface_t    interface = NULL;
+  p_mad_dir_connection_data_t cdata     = NULL;
+  p_mad_connection_t          in        = NULL;
+  p_mad_connection_t          out       = NULL;
+  ntbx_process_lrank_t        l_dst     =   -1;
+  ntbx_process_grank_t        g         =   -1;
 
   interface = mad_channel->adapter->driver->interface;
 
   g = madeleine->session->process_rank;
 
-  l_dst = ntbx_pc_global_to_local(vchannel_ppc, g_dst);
+  l_dst = ntbx_pc_global_to_local(ppc, g_dst);
 
   in  = mad_connection_cons();
   out = mad_connection_cons();
@@ -1070,17 +1040,17 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
   out->way = mad_outgoing_connection;
 
   // in->regular
-  rt = rtable_get(vchannel_pc, g_dst, g);
+  cdata = connection_data_get(pc, g_dst, g);
 
   {
     ntbx_process_lrank_t l_rt =   -1;
     p_mad_channel_t      ch   = NULL;
 
-    if (rt->destination_rank == g)
+    if (cdata->destination_rank == g)
       {
         // direct
         in->nature  = mad_connection_nature_direct_virtual;
-        ch   = tbx_htable_get(madeleine->channel_htable, rt->channel_name);
+        ch   = tbx_htable_get(madeleine->channel_htable, cdata->channel_name);
         l_rt = ntbx_pc_global_to_local(ch->pc, g_dst);
       }
     else
@@ -1089,10 +1059,10 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
         ntbx_process_grank_t g_rt =   -1;
 
         in->nature = mad_connection_nature_indirect_virtual;
-        g_rt       = rt->destination_rank;
-        rt         = reverse_routing(vchannel_pc, &g_rt, g);
+        g_rt       = cdata->destination_rank;
+        cdata         = reverse_routing(pc, &g_rt, g);
 
-        ch   = tbx_htable_get(madeleine->channel_htable, rt->channel_name);
+        ch   = tbx_htable_get(madeleine->channel_htable, cdata->channel_name);
         l_rt = ntbx_pc_global_to_local(ch->pc, g_rt);
       }
 
@@ -1103,13 +1073,13 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
   }
 
   // out->regular
-  out->mtu = compute_mtu(madeleine->dir, vchannel_pc, g, g_dst, tbx_true);
+  out->mtu = compute_mtu(madeleine->dir, pc, g, g_dst, tbx_true);
   if (!out->mtu)
     FAILURE("invalid MTU");
 
-  rt = ntbx_pc_get_global_specific(vchannel_ppc, g_dst);
+  cdata = ntbx_pc_get_global_specific(ppc, g_dst);
 
-  if (rt->destination_rank == g_dst)
+  if (cdata->destination_rank == g_dst)
     {
       // direct
       out->nature = mad_connection_nature_direct_virtual;
@@ -1124,8 +1094,8 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
       p_mad_channel_t      ch   = NULL;
       ntbx_process_lrank_t l_rt =   -1;
 
-      ch = tbx_htable_get(madeleine->channel_htable, rt->channel_name);
-      l_rt = ntbx_pc_global_to_local(ch->pc, rt->destination_rank);
+      ch = tbx_htable_get(madeleine->channel_htable, cdata->channel_name);
+      l_rt = ntbx_pc_global_to_local(ch->pc, cdata->destination_rank);
       out->regular = tbx_darray_get(ch->out_connection_darray, l_rt);
     }
 
@@ -1155,18 +1125,19 @@ tbx_bool_t
 vchannel_open(p_mad_madeleine_t  madeleine,
               p_mad_channel_id_t p_channel_id)
 {
-  char                                  *vchannel_name = NULL;
+  char  *vchannel_name = NULL;
+
 #ifdef MARCEL
-  p_mad_adapter_t                        mad_adapter   = NULL;
-  p_mad_driver_t                         mad_driver    = NULL;
-  p_mad_dir_vchannel_t                   dir_vchannel  = NULL;
-  p_ntbx_process_container_t             vchannel_pc   = NULL;
-  p_mad_dir_vxchannel_process_specific_t vchannel_ps   = NULL;
-  p_ntbx_process_container_t             vchannel_ppc  = NULL;
-  p_mad_channel_t                        mad_channel   = NULL;
-  ntbx_process_grank_t                   g_rank_dst    =   -1;
-  p_mad_driver_interface_t               interface     = NULL;
-  ntbx_process_grank_t                   g  =   -1;
+  p_mad_adapter_t             mad_adapter    = NULL;
+  p_mad_driver_t              mad_driver     = NULL;
+  p_mad_dir_channel_t         dir_vchannel   = NULL;
+  p_ntbx_process_container_t  pc             = NULL;
+  p_mad_dir_connection_t      dir_connection = NULL;
+  p_ntbx_process_container_t  ppc            = NULL;
+  p_mad_channel_t             mad_channel    = NULL;
+  ntbx_process_grank_t        g_rank_dst     =   -1;
+  p_mad_driver_interface_t    interface      = NULL;
+  ntbx_process_grank_t        g  =   -1;
 #endif // MARCEL
 
   vchannel_name = mad_leonie_receive_string();
@@ -1181,8 +1152,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 
   g = madeleine->session->process_rank;
 
-  dir_vchannel =
-    tbx_htable_get(madeleine->dir->vchannel_htable, vchannel_name);
+  dir_vchannel = tbx_htable_get(madeleine->dir->channel_htable, vchannel_name);
   if (!dir_vchannel)
     FAILURE("virtual channel not found");
 
@@ -1194,16 +1164,15 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   if (!mad_adapter)
     FAILURE("forwarding adapter not found");
 
-  vchannel_pc                 = dir_vchannel->pc;
+  pc                          = dir_vchannel->pc;
   mad_channel                 = mad_channel_cons();
-  mad_channel->process_lrank  =
-    ntbx_pc_global_to_local(vchannel_pc, g);
+  mad_channel->process_lrank  = ntbx_pc_global_to_local(pc, g);
   mad_channel->type           = mad_channel_type_virtual;
   mad_channel->id             = (*p_channel_id)++;
   mad_channel->name           = tbx_strdup(dir_vchannel->name);
-  mad_channel->pc             = dir_vchannel->pc;
+  mad_channel->pc             = pc;
   mad_channel->not_private    = tbx_true;
-  mad_channel->dir_vchannel   = dir_vchannel;
+  mad_channel->dir_channel    = dir_vchannel;
   mad_channel->adapter        = mad_adapter;
 
   mad_channel->channel_slist  = tbx_slist_nil();
@@ -1230,8 +1199,8 @@ vchannel_open(p_mad_madeleine_t  madeleine,
     tbx_slist_ref_to_head(dir_vchannel->dir_fchannel_slist);
     do
       {
-        p_mad_dir_fchannel_t dir_fchannel     = NULL;
-        p_mad_channel_t      regular_channel = NULL;
+        p_mad_dir_channel_t dir_fchannel    = NULL;
+        p_mad_channel_t     regular_channel = NULL;
 
         dir_fchannel = tbx_slist_ref_get(dir_vchannel->dir_fchannel_slist);
         regular_channel = tbx_htable_get(madeleine->channel_htable,
@@ -1252,19 +1221,15 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   mad_channel->out_connection_darray = tbx_darray_init();
 
   // virtual connections construction
-  vchannel_ps  = ntbx_pc_get_global_specific(vchannel_pc, g);
-  vchannel_ppc = vchannel_ps->pc;
+  dir_connection = ntbx_pc_get_global_specific(pc, g);
+  ppc = dir_connection->pc;
 
-  ntbx_pc_first_global_rank(vchannel_ppc, &g_rank_dst);
+  ntbx_pc_first_global_rank(ppc, &g_rank_dst);
   do
     {
-      vchannel_connection_open(madeleine,
-                               mad_channel,
-                               vchannel_pc,
-                               vchannel_ppc,
-                               g_rank_dst);
+      vchannel_connection_open(madeleine, mad_channel, pc, ppc, g_rank_dst);
     }
-  while (ntbx_pc_next_global_rank(vchannel_ppc, &g_rank_dst));
+  while (ntbx_pc_next_global_rank(ppc, &g_rank_dst));
 
   if (interface->before_open_channel)
     interface->before_open_channel(mad_channel);
@@ -1278,7 +1243,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 
   // Virtual channel ready
   TBX_FREE(vchannel_name);
-  mad_leonie_send_string("ok");
+  mad_leonie_send_int(-1);
 
   return tbx_true;
 }
@@ -1288,22 +1253,22 @@ static
 void
 xchannel_connection_open(p_mad_madeleine_t          madeleine,
                          p_mad_channel_t            mad_channel,
-                         p_ntbx_process_container_t xchannel_pc,
-                         p_ntbx_process_container_t xchannel_ppc,
+                         p_ntbx_process_container_t pc,
+                         p_ntbx_process_container_t ppc,
                          ntbx_process_grank_t       g_dst)
 {
-  p_mad_driver_interface_t                    interface = NULL;
-  p_mad_dir_vxchannel_process_routing_table_t rt        = NULL;
-  p_mad_connection_t                          in        = NULL;
-  p_mad_connection_t                          out       = NULL;
-  ntbx_process_lrank_t                        l_dst     =   -1;
-  ntbx_process_grank_t                        g         =   -1;
+  p_mad_driver_interface_t    interface = NULL;
+  p_mad_dir_connection_data_t cdata     = NULL;
+  p_mad_connection_t          in        = NULL;
+  p_mad_connection_t          out       = NULL;
+  ntbx_process_lrank_t        l_dst     =   -1;
+  ntbx_process_grank_t        g         =   -1;
 
   interface = mad_channel->adapter->driver->interface;
 
   g = madeleine->session->process_rank;
 
-  l_dst = ntbx_pc_global_to_local(xchannel_ppc, g_dst);
+  l_dst = ntbx_pc_global_to_local(ppc, g_dst);
 
   in  = mad_connection_cons();
   out = mad_connection_cons();
@@ -1321,18 +1286,18 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
   out->way = mad_outgoing_connection;
 
   // in->regular
-  rt = rtable_get(xchannel_pc, g_dst, g);
+  cdata = connection_data_get(pc, g_dst, g);
 
   {
     p_mad_channel_t      ch   = NULL;
     ntbx_process_lrank_t l_rt =   -1;
 
-    if (rt->destination_rank == g)
+    if (cdata->destination_rank == g)
       {
         // no routing required
 
         in->nature  = mad_connection_nature_mux;
-        ch   = tbx_htable_get(madeleine->channel_htable, rt->channel_name);
+        ch   = tbx_htable_get(madeleine->channel_htable, cdata->channel_name);
         l_rt = ntbx_pc_global_to_local(ch->pc, g_dst);
       }
     else
@@ -1340,12 +1305,12 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
         // routing required
         ntbx_process_grank_t g_rt =   -1;
 
-        in->nature  = mad_connection_nature_mux;
-        g_rt        = rt->destination_rank;
-        rt          = reverse_routing(xchannel_pc, &g_rt, g);
-        ch          =
-          tbx_htable_get(madeleine->channel_htable, rt->channel_name);
-        l_rt        = ntbx_pc_global_to_local(ch->pc, g_rt);
+        in->nature = mad_connection_nature_mux;
+        g_rt       = cdata->destination_rank;
+        cdata        = reverse_routing(pc, &g_rt, g);
+        ch         =
+          tbx_htable_get(madeleine->channel_htable, cdata->channel_name);
+        l_rt       = ntbx_pc_global_to_local(ch->pc, g_rt);
       }
 
     in->regular = tbx_darray_get(ch->in_connection_darray, l_rt);
@@ -1355,21 +1320,20 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
   }
 
   // out->regular
-  out->mtu =
-    compute_mtu(madeleine->dir, xchannel_pc, g, g_dst, tbx_false);
+  out->mtu = compute_mtu(madeleine->dir, pc, g, g_dst, tbx_false);
 
   if (!out->mtu)
     FAILURE("invalid MTU");
 
-  rt = ntbx_pc_get_global_specific(xchannel_ppc, g_dst);
+  cdata = ntbx_pc_get_global_specific(ppc, g_dst);
 
   {
     p_mad_channel_t      ch   = NULL;
     ntbx_process_lrank_t l_rt =   -1;
 
     out->nature = mad_connection_nature_mux;
-    ch   = tbx_htable_get(madeleine->channel_htable, rt->channel_name);
-    l_rt = ntbx_pc_global_to_local(ch->pc, rt->destination_rank);
+    ch   = tbx_htable_get(madeleine->channel_htable, cdata->channel_name);
+    l_rt = ntbx_pc_global_to_local(ch->pc, cdata->destination_rank);
     out->regular = tbx_darray_get(ch->out_connection_darray, l_rt);
   }
 
@@ -1399,18 +1363,18 @@ tbx_bool_t
 xchannel_open(p_mad_madeleine_t  madeleine,
               p_mad_channel_id_t p_channel_id)
 {
-  char                                  *xchannel_name = NULL;
+  char                                 *xchannel_name = NULL;
 #ifdef MARCEL
-  p_mad_adapter_t                        mad_adapter   = NULL;
-  p_mad_driver_t                         mad_driver    = NULL;
-  p_mad_dir_xchannel_t                   dir_xchannel  = NULL;
-  p_ntbx_process_container_t             xchannel_pc   = NULL;
-  p_mad_dir_vxchannel_process_specific_t xchannel_ps   = NULL;
-  p_ntbx_process_container_t             xchannel_ppc  = NULL;
-  p_mad_channel_t                        mad_channel   = NULL;
-  ntbx_process_grank_t                   g_dst         =   -1;
-  p_mad_driver_interface_t               interface     = NULL;
-  ntbx_process_grank_t                   g             =   -1;
+  p_mad_adapter_t            mad_adapter    = NULL;
+  p_mad_driver_t             mad_driver     = NULL;
+  p_mad_dir_channel_t        dir_xchannel   = NULL;
+  p_ntbx_process_container_t pc             = NULL;
+  p_mad_dir_connection_t     dir_connection = NULL;
+  p_ntbx_process_container_t ppc            = NULL;
+  p_mad_channel_t            mad_channel    = NULL;
+  ntbx_process_grank_t       g_dst          =   -1;
+  p_mad_driver_interface_t   interface      = NULL;
+  ntbx_process_grank_t       g              =   -1;
 #endif // MARCEL
 
   LOG_IN();
@@ -1426,8 +1390,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
 
   g = madeleine->session->process_rank;
 
-  dir_xchannel =
-    tbx_htable_get(madeleine->dir->xchannel_htable, xchannel_name);
+  dir_xchannel = tbx_htable_get(madeleine->dir->channel_htable, xchannel_name);
   if (!dir_xchannel)
     FAILURE("mux channel not found");
 
@@ -1439,19 +1402,18 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   if (!mad_adapter)
     FAILURE("mux adapter not found");
 
-  xchannel_pc                     = dir_xchannel->pc;
+  pc                              = dir_xchannel->pc;
   mad_channel                     = mad_channel_cons();
   mad_channel->mux_list_darray    = tbx_darray_init();
   mad_channel->mux_channel_darray = tbx_darray_init();
   mad_channel->sub_list_darray    = tbx_darray_init();
-  mad_channel->process_lrank      =
-    ntbx_pc_global_to_local(xchannel_pc, g);
+  mad_channel->process_lrank      = ntbx_pc_global_to_local(pc, g);
   mad_channel->type               = mad_channel_type_mux;
   mad_channel->id                 = (*p_channel_id)++;
   mad_channel->name               = dir_xchannel->name;
-  mad_channel->pc                 = dir_xchannel->pc;
+  mad_channel->pc                 = pc;
   mad_channel->not_private        = tbx_true;
-  mad_channel->dir_xchannel       = dir_xchannel;
+  mad_channel->dir_channel        = dir_xchannel;
   mad_channel->adapter            = mad_adapter;
 
   tbx_darray_expand_and_set(mad_channel->mux_channel_darray, 0, mad_channel);
@@ -1486,19 +1448,15 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   mad_channel->out_connection_darray = tbx_darray_init();
 
   // mux connections construction
-  xchannel_ps  = ntbx_pc_get_global_specific(xchannel_pc, g);
-  xchannel_ppc = xchannel_ps->pc;
+  dir_connection = ntbx_pc_get_global_specific(pc, g);
+  ppc = dir_connection->pc;
 
-  ntbx_pc_first_global_rank(xchannel_ppc, &g_dst);
+  ntbx_pc_first_global_rank(ppc, &g_dst);
   do
     {
-      xchannel_connection_open(madeleine,
-                               mad_channel,
-                               xchannel_pc,
-                               xchannel_ppc,
-                               g_dst);
+      xchannel_connection_open(madeleine, mad_channel, pc, ppc, g_dst);
     }
-  while (ntbx_pc_next_global_rank(xchannel_ppc, &g_dst));
+  while (ntbx_pc_next_global_rank(ppc, &g_dst));
 
   if (interface->before_open_channel)
     interface->before_open_channel(mad_channel);
@@ -1513,7 +1471,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
 #endif // MARCEL
 
   // Mux channel ready
-  mad_leonie_send_string("ok");
+  mad_leonie_send_int(-1);
   TBX_FREE(xchannel_name);
   LOG_OUT();
 

@@ -1,4 +1,5 @@
 
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -15,7 +16,7 @@
  */
 
 #define BIND_LWP_ON_PROCESSORS
-//#define DO_PAUSE_INSTEAD_OF_SCHED_YIELD
+
 #ifdef PM2DEBUG
 #define DO_NOT_DISPLAY_IN_IDLE
 #endif
@@ -27,6 +28,7 @@
 
 #include "marcel.h"
 #include "sys/marcel_debug.h"
+#include "sys/marcel_sig.h"
 #include "pm2_list.h"
 
 #ifdef MA__SMP
@@ -44,7 +46,7 @@
 int nb_idle_sleeping = 0;
 #endif
 
-
+// Restriction d'affichage de debug lorsque l'on est la tâche idle
 #ifdef DO_NOT_DISPLAY_IN_IDLE
 
 #define IDLE_LOG_IN() \
@@ -68,8 +70,6 @@ int nb_idle_sleeping = 0;
 
 static int next_schedpolicy_available = __MARCEL_SCHED_AVAILABLE;
 static marcel_schedpolicy_func_t user_policy[MARCEL_MAX_USER_SCHED];
-
-static boolean marcel_initialized = FALSE;
 
 static volatile unsigned __active_threads = 0,
   __sleeping_threads = 0,
@@ -119,16 +119,6 @@ __lwp_t* addr_lwp[MA__MAX_LWPS];
 
 #endif
 
-#ifdef MA__LWPS
-#ifdef DO_PAUSE_INSTEAD_OF_SCHED_YIELD
-#define PAUSE()	  sigsuspend(&sigeptset)
-#else
-#define PAUSE()	  SCHED_YIELD()
-#endif
-#else // MA__LWPS
-#define PAUSE()
-#endif
-
 static __inline__ void lwp_list_lock(void)
 {
 #ifdef MA__LWPS
@@ -159,13 +149,7 @@ static __inline__ void set_nb_lwps(unsigned value)
 #endif
 }
 
-#define MIN_TIME_SLICE		10000
-#define DEFAULT_TIME_SLICE	20000
-
 volatile atomic_t __preemption_disabled = ATOMIC_INIT(0);
-
-static volatile unsigned long time_slice = DEFAULT_TIME_SLICE;
-static volatile unsigned long __milliseconds = 0;
 
 static struct {
        unsigned nb_tasks;
@@ -1160,7 +1144,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
 			    boolean *blocked, marcel_sem_t *s)
 {
   marcel_t next, cur = marcel_self();
-  unsigned long ttw = __milliseconds + timeout;
+  unsigned long ttw = marcel_clock() + timeout;
   volatile boolean first_time = TRUE;
 
 #if defined(MA__ACTIVATION)
@@ -1176,7 +1160,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
       MA_THR_RESTARTED(cur, "Preemption");
 
-      if((*blocked) && __milliseconds >= ttw) {
+      if((*blocked) && marcel_clock() >= ttw) {
 	/* Expiration timer ou retour d'une deviation : */
 	/* le thread n'a pas ete reveille par un sem_V ! */
 	cell *pc = NULL,
@@ -1228,7 +1212,7 @@ void marcel_delay(unsigned long millisecs)
   usleep(millisecs*1000);
 #else
   marcel_t p, cur = marcel_self();
-  unsigned long ttw = __milliseconds + millisecs;
+  unsigned long ttw = marcel_clock() + millisecs;
 
   LOG_IN();
 
@@ -1248,7 +1232,7 @@ void marcel_delay(unsigned long millisecs)
       goto_next_task(p);
     }
 
-  } while(__milliseconds < ttw);
+  } while(marcel_clock() < ttw);
 
   unlock_task();
 
@@ -1270,6 +1254,8 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 
   cur->vpmask = mask;
 
+#ifndef MA__MONO
+  // Si on est en mode 'mono' il n'y a rien à faire.
   if(marcel_vpmask_vp_ismember(mask, cur_lwp->number)) {
 #ifdef MA__ONE_QUEUE
     // Le LWP courant n'est plus autorisé : il faut s'extraire de la
@@ -1293,6 +1279,7 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
     RAISE(NOT_IMPLEMENTED);
 #endif
   }
+#endif // MA__MONO
 
   unlock_task();
 
@@ -1301,9 +1288,9 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 
 // Checks to see if some tasks should be waked. NOTE: The function
 // assumes that "lock_task()" was called previously.
-static int marcel_check_sleeping(void)
+int marcel_check_sleeping(void)
 {
-  unsigned long present = __milliseconds;
+  unsigned long now = marcel_clock();
   int waked_some_task = 0;
   register struct list_head *pos;
 
@@ -1314,7 +1301,7 @@ static int marcel_check_sleeping(void)
     pos=__delayed_tasks.next;
     while(pos != &__delayed_tasks) {
       register marcel_t t = list_entry(pos, task_desc, task_list);
-      if (t->time_to_wake > present)
+      if (t->time_to_wake > now)
 	break;
       
       mdebug("\t\t\t<Check delayed: waking thread %p (%ld)>\n",
@@ -1362,19 +1349,12 @@ static __inline__ marcel_t do_work_stealing(void)
 }
 #endif
 
-static sigset_t sigalrmset, sigeptset;
-static void start_timer(void);
-static void set_timer(void);
-void stop_timer(void);
-
 static __inline__ void idle_check_end(__lwp_t *lwp)
 {
 #ifdef MA__SMP
   IDLE_LOG_IN();
   if(lwp->has_to_stop) {
-#ifdef MA__TIMER
-    stop_timer();
-#endif
+    marcel_sig_stop_timer();
     if(lwp == &__main_lwp) {
       IDLE_LOG_OUT();
       RAISE(PROGRAM_ERROR);
@@ -1400,7 +1380,7 @@ static __inline__ void idle_check_tasks_to_wake(__lwp_t *lwp)
     marcel_check_delayed_tasks();
   } else {
     if(!marcel_check_delayed_tasks()) {
-      pause();
+      marcel_sig_pause();
     }
   }
 #endif /* MA__MONO */
@@ -1470,7 +1450,8 @@ static marcel_t idle_body(void)
     }
 
     /* If nothing successful */
-    PAUSE();
+    SCHED_YIELD();
+
   }
   LOG_OUT();
   return next;
@@ -1486,9 +1467,7 @@ any_t idle_func(any_t arg)
 
   LOG_IN();
 
-#ifdef MA__TIMER
-  start_timer(); /* May be redundant for main LWP */
-#endif
+  marcel_sig_start_timer(); /* May be redundant for main LWP */
 
   /* Except at the beginning, lock_task() is supposed to be permanently
      handled */
@@ -1807,10 +1786,12 @@ unsigned marcel_sched_add_vp(void)
   lwp_list_unlock();
 
 #ifdef MA__SMP
-  // Lancement du thread noyau "propulseur"
-  marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
+  // Lancement du thread noyau "propulseur". Il faut désactiver les
+  // signaux 'SIGALRM' pour que le kthread 'fils' hérite d'un masque
+  // correct.
+  marcel_sig_disable_interrupts();
   marcel_kthread_create(&lwp->pid, lwp_startup_func, (void *)lwp);
-  marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
+  marcel_sig_enable_interrupts();
 #endif
   return lwp->number;
 
@@ -1821,13 +1802,9 @@ unsigned marcel_sched_add_vp(void)
 
 void marcel_sched_init(void)
 {
-  marcel_initialized = TRUE;
-
   LOG_IN();
 
-  sigemptyset(&sigeptset);
-  sigemptyset(&sigalrmset);
-  sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
+  marcel_sig_init();
 
   _main_struct.nb_tasks = 0;
 
@@ -1884,11 +1861,9 @@ void marcel_sched_start(unsigned nb_lwp)
   pm2debug_marcel_launched=1;
 #endif
 
-#ifdef MA__TIMER
-  /* Démarrage d'un timer Unix pour récupérer périodiquement 
-     un signal (par ex. SIGALRM). */
-  start_timer();
-#endif
+  // Démarrage d'un timer Unix pour récupérer périodiquement un signal
+  // (par ex. SIGALRM).
+  marcel_sig_start_timer();
 
   mdebug("marcel_sched_init done\n");
 
@@ -1942,14 +1917,10 @@ void marcel_sched_shutdown()
 
   wait_all_tasks_end();
 
-#ifdef MA__TIMER
-  stop_timer();
-#endif
+  marcel_sig_stop_timer();
 
-#if defined(MA__ONE_QUEUE) && defined(MA__MULTIPLE_RUNNING)
   // Si nécessaire, on bascule sur le LWP(0)
   marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
-#endif
 
 #ifdef MA__SMP
   if(GET_LWP(marcel_self()) != &__main_lwp)
@@ -1977,190 +1948,6 @@ void marcel_sched_shutdown()
 #endif
 
   LOG_OUT();
-}
-
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-/*         Gestion du timer                                               */
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-
-#ifndef TICK_RATE
-#define TICK_RATE 1
-#endif
-
-inline void marcel_update_time(marcel_t cur)
-{
-  if(GET_LWP(cur) == &__main_lwp)
-    __milliseconds += time_slice/1000;
-}
-
-/* TODO: Call lock_task() before re-enabling the signals to avoid stack
-   overflow by recursive interrupts handlers. This needs a modified version
-   of marcel_yield() that do not lock_task()... */
-static void timer_interrupt(int sig)
-{
-  marcel_t cur = marcel_self();
-#ifdef MARCEL_DEBUG
-  static unsigned long tick = 0;
-#endif
-
-#ifdef MARCEL_DEBUG
-  if (++tick == TICK_RATE) {
-    try_mdebug("\t\t\t<<tick>>\n");
-    tick = 0;
-  }
-#endif
-
-  marcel_update_time(cur);
-
-#ifdef PM2DEBUG
-  if(GET_LWP(cur) == NULL) {
-    fprintf(stderr, "WARNING!!! GET_LWP(%p) == NULL!\n", cur);
-  }
-#endif
-
-  if(!locked() && preemption_enabled()) {
-
-    LOG_IN();
-
-    MTRACE_TIMER("TimerSig", cur);
-
-    lock_task();
-    marcel_check_sleeping();
-    marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
-    unlock_task();
-
-#ifdef MA__SMP
-    marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#else
-#if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-    sigrelse(MARCEL_TIMER_SIGNAL);
-#else
-    sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#endif
-#endif
-
-    lock_task();
-    ma__marcel_yield();
-    unlock_task();
-
-    LOG_OUT();
-  }
-}
-
-static void set_timer(void)
-{
-  struct itimerval value;
-
-  LOG_IN();
-
-#ifdef MA__SMP
-  marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#endif
-
-  if(marcel_initialized) {
-    value.it_interval.tv_sec = 0;
-    value.it_interval.tv_usec = time_slice;
-    value.it_value = value.it_interval;
-    setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
-  }
-
-  LOG_OUT();
-}
-
-static void fault_catcher(int sig)
-{
-  marcel_t cur = marcel_self();
-
-  fprintf(stderr, "OOPS!!! Signal %d catched on thread %p\n",
-	  sig, cur);
-  if(GET_LWP(cur) != NULL)
-    fprintf(stderr, "OOPS!!! current lwp is %d\n", GET_LWP(cur)->number);
-
-#ifdef LINUX_SYS
-  fprintf(stderr, "OOPS!!! Entering endless loop (pid = %d)\n",
-	  getpid());
-  for(;;) ;
-#endif
-
-  abort();
-}
-
-static void start_timer(void)
-{
-  static struct sigaction sa;
-
-  LOG_IN();
-
-  // On va essayer de rattraper SIGSEGV, etc.
-  sigemptyset(&sa.sa_mask);
-  sa.sa_handler = fault_catcher;
-  sa.sa_flags = 0;
-  sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
-
-  sigemptyset(&sa.sa_mask);
-  sa.sa_handler = timer_interrupt;
-#ifndef WIN_SYS
-  sa.sa_flags = SA_RESTART;
-#else
-  sa.sa_flags = 0;
-#endif
-
-  sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
-
-  set_timer();
-
-  LOG_OUT();
-}
-
-void stop_timer(void)
-{
-  LOG_IN();
-
-  time_slice = 0;
-  set_timer();
-
-#ifdef MA__SMP
-  marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
-#else
-  sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
-#endif
-
-  LOG_OUT();
-}
-
-void marcel_settimeslice(unsigned long microsecs)
-{
-  LOG_IN();
-
-  lock_task();
-  if(microsecs == 0) {
-    disable_preemption();
-    if(time_slice != DEFAULT_TIME_SLICE) {
-      time_slice = DEFAULT_TIME_SLICE;
-      set_timer();
-    }
-  } else {
-    enable_preemption();
-    if(microsecs < MIN_TIME_SLICE) {
-      time_slice = MIN_TIME_SLICE;
-      set_timer();
-    } else if(microsecs != time_slice) {
-      time_slice = microsecs;
-      set_timer();
-    }
-  }
-  unlock_task();
-
-  LOG_OUT();
-}
-
-unsigned long marcel_clock(void)
-{
-   return __milliseconds;
 }
 
 /**************************************************************************/

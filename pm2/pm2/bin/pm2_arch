@@ -25,11 +25,12 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 
 	case "$_os,$_ht" in
 	SunOS,sun*)        PM2_ARCH=SPARC_ARCH ;;
-	*,sparc*)        PM2_ARCH=SPARC_ARCH ;;
+	*,sparc*)          PM2_ARCH=SPARC_ARCH ;;
 	*,i86pc)           PM2_ARCH=X86_ARCH ;;
 	*,i[3456]86)       PM2_ARCH=X86_ARCH ;;
 	BSD/OS,i[3456]86)  PM2_ARCH=X86_ARCH ;;
 	FreeBSD,i386)      PM2_ARCH=X86_ARCH ;;
+	*,ia64)            PM2_ARCH=IA64_ARCH ;;
 	AIX*,*)            PM2_ARCH=RS6K_ARCH ;;
 	*,alpha)           PM2_ARCH=ALPHA_ARCH ;;
 	*,mips)            PM2_ARCH=MIPS_ARCH ;;

@@ -711,20 +711,20 @@ void block_special_pack(void *addr, int dest_node, unpack_isomalloc_func_t f, vo
       /*
 	pack the remaining slot data 
 	*/
-      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)block_ptr, sizeof(block_header_t));
+      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&block_ptr, sizeof(block_header_t));
       next_block_ptr = block_get_next(block_ptr);
       /* pack the extra data size*/
-      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)size, sizeof(size_t));
+      pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&size, sizeof(size_t));
       
       /* pack the data */
       if ((next_block_ptr != NULL) && (block_get_usable_size(block_ptr) == 0))
-	pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, addr, (char *)next_block_ptr - (char*)addr);
+	pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, addr, (char *)&next_block_ptr - (char*)addr);
       
       /* pack the extra data */
       pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)extra, size);
 
       /* pack the handler */
-      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)f, sizeof(unpack_isomalloc_func_t));
+      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&f, sizeof(unpack_isomalloc_func_t));
       pm2_rawrpc_end();
 
       /* Migrating slots change owner */
@@ -786,25 +786,25 @@ void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func()
 	  unpack the remaining slot data
        */
        block_ptr = (block_header_t *)slot_get_usable_address(slot_ptr);
-       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)block_ptr, sizeof(block_header_t));
+       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&block_ptr, sizeof(block_header_t));
        /* unpack the extra data size*/
-       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)size, sizeof(size_t));
+       pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&size, sizeof(size_t));
        next_block_ptr = block_get_next(block_ptr);
        /* unpack the data */
        if ((next_block_ptr != NULL) && (block_get_usable_size(block_ptr) == 0))
 	 {
 	   addr = (char *)block_get_usable_address(block_ptr);
-	   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, addr, (char *)next_block_ptr - addr);
+	   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&addr, (char *)next_block_ptr - addr);
 	 }
 
        extra = malloc(size);
        if (!extra)
 	 RAISE(STORAGE_ERROR);
        /* unpack the extra data */
-       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)extra, size);
+       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&extra, size);
        
        /* unpack the handler */
-       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)f, sizeof(unpack_isomalloc_func_t));
+       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&f, sizeof(unpack_isomalloc_func_t));
        pm2_rawrpc_waitdata(); 
        (*f)(addr, extra, size);
      }

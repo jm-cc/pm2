@@ -83,17 +83,22 @@ $(LIB_DEPENDS): $(COMMON_DEPS)
 $(LIB_OBJECTS): $(LIB_GEN_OBJ)/%.o: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
 $(LIB_PICS): $(LIB_GEN_OBJ)/%.pic: $(LIB_GEN_DEP)/%.d $(COMMON_DEPS)
 
+ifeq ($(LIB_GEN_OBJ),)
+$(LIB_LIB_A):
+	@echo "The flavor $(FLAVOR) do not need this library"
+$(LIB_LIB_SO):
+	@echo "The flavor $(FLAVOR) do not need this library"
+else
 $(LIB_LIB_A): $(LIB_OBJECTS)
 	$(COMMON_HIDE) rm -f $(LIB_LIB_A)
 	$(LIB_PREFIX) ar cr $(LIB_LIB_A) $(LIB_OBJECTS)
-	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/libstamp-$(LIBNAME)$(LIB_EXT)
-	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)$(LIB_EXT)
+	$(COMMON_HIDE) touch $(LIB_STAMP_FILE)
 
 $(LIB_LIB_SO): $(LIB_PICS)
 	$(COMMON_HIDE) rm -f $(LIB_LIB_SO)
 	$(LIB_PREFIX) $(LD) -shared -o $(LIB_LIB_SO) $(LIB_PICS)
-	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/libstamp-$(LIBNAME)$(LIB_EXT)
-	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)$(LIB_EXT)
+	$(COMMON_HIDE) touch $(LIB_STAMP_FILE)
+endif
 
 $(LIB_C_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
@@ -125,8 +130,7 @@ libclean:
 	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/*$(LIB_EXT).{o,pic} \
 		$(LIB_GEN_DEP)/*$(LIB_EXT).d $(LIB_GEN_ASM)/*$(LIB_EXT).s \
 		$(LIB_LIB) \
-		$(LIB_GEN_STAMP)/libstamp-$(LIBRARY)$(LIB_EXT) \
-		$(LIB_GEN_STAMP)/libstamp-$(LIBNAME)$(LIB_EXT)
+		$(LIB_STAMP_FILE)
 
 repclean:
 	@for rep in $(LIB_REP_TO_BUILD); do \
@@ -142,8 +146,7 @@ examplesclean:
 	fi
 
 distclean:
-	$(COMMON_CLEAN)$(RM) -r build $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)* \
-		$(LIB_GEN_STAMP)/libstamp-$(LIBNAME)*
+	$(COMMON_CLEAN)$(RM) -r build $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)*
 	@set -e; \
 	if [ -d examples ]; then \
 		$(MAKE) -C examples distclean ; \

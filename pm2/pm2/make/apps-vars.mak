@@ -53,10 +53,14 @@ APP_EXT := $(shell $(PM2_CONFIG) --ext)
 
 CC := $(shell $(PM2_CONFIG) --cc $(LIBRARY))
 
-CFLAGS += $(shell $(PM2_CONFIG) --cflags)
-LDFLAGS += $(shell $(PM2_CONFIG) --libs)
+APP_CFLAGS += $(shell $(PM2_CONFIG) --cflags)
+APP_LDFLAGS += $(shell $(PM2_CONFIG) --libs)
+CFLAGS += $(APP_CFLAGS)
+LDFLAGS += $(APP_LDFLAGS)
 APP_LLIBS += $(shell $(PM2_CONFIG) --libs-only-l)
 PM2_MODULES += $(shell $(PM2_CONFIG) --modules)
+APP_STAMP_FILES := $(shell $(PM2_CONFIG) --stampfile)
+APP_STAMP_FILES += $(shell $(PM2_CONFIG) --stampfile all)
 endif
 
 # Sources, objets et dependances
@@ -68,6 +72,5 @@ APPS = $(foreach PROG,$(PROGS),$(APP_BIN)/$(PROG)$(APP_EXT))
 # Convertisseurs utiles
 DEP_TO_OBJ =  $(APP_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
-LIB_STAMP := $(foreach MOD,$(PM2_MODULES),$(APP_STAMP)/libstamp-$(MOD)$(APP_EXT))
-COMMON_DEPS += $(APP_STAMP)/stamp$(APP_EXT) $(MAKEFILE_FILE) $(LIB_STAMP)
+COMMON_DEPS += $(APP_STAMP_FILES) $(MAKEFILE_FILE)
 

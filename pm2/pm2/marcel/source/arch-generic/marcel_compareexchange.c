@@ -19,7 +19,7 @@
 /*
  * generic compare and exchange spinlock
  */
-#ifndef MA_HAVE_COMPAREEXCHANGE
+#ifndef MA_HAVE_FULLCOMPAREEXCHANGE
 #ifdef MA__LWPS
 ma_spinlock_t ma_compareexchange_spinlock = MA_SPIN_LOCK_UNLOCKED;
 #endif

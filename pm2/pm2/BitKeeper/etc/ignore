@@ -2,3 +2,5 @@ BitKeeper/*/*
 PENDING/*
 *.incl/*
 *.excl/*
+tags
+modules/mad4

@@ -107,7 +107,7 @@ pm2_net_send_server_end_request(void)
   for (c = 0; c < pm2_net_server_nb; c++)
     {
       p_mad_channel_t channel = NULL;
-      
+
       channel = pm2_net_channel_array[c];
 
       for (node = 1; node < __pm2_conf_size; node++)
@@ -125,7 +125,7 @@ void
 pm2_net_halt_request(void)
 {
   LOG_IN();
-  if (__pm2_self) 
+  if (__pm2_self)
     {
       DISP("NETSERVER ERROR: NETSERVER_REQUEST_HALT tag on node %i",
 	   __pm2_self);
@@ -135,7 +135,7 @@ pm2_net_halt_request(void)
   marcel_mutex_lock(&pm2_net_halt_lock);
   pm2_net_zero_halt++;
 
-  if (pm2_net_zero_halt == (__pm2_conf_size + 1) * pm2_net_server_nb) 
+  if (pm2_net_zero_halt == (__pm2_conf_size + 1) * pm2_net_server_nb)
     {
       /* +1 car tous les pm2_exit() en envoient un + pm2_halt() */
       pm2_thread_create((pm2_func_t)pm2_net_send_server_end_request, NULL);
@@ -155,7 +155,7 @@ pm2_net_server(any_t arg)
 
   marcel_cleanup_push(pm2_net_server_term_func, marcel_self());
 
-  while (!pm2_net_finished) 
+  while (!pm2_net_finished)
     {
       pm2_begin_unpacking((p_mad_channel_t)arg);
 
@@ -192,7 +192,7 @@ pm2_net_server(any_t arg)
 		pm2_net_finished = tbx_true;
 	      }
 	      break;
-	      
+
 	    default:
 	      {
 		pm2_end_unpacking();
@@ -233,16 +233,16 @@ pm2_net_server_start(p_mad_channel_t channel)
 #ifdef REALTIME_NET_THREADS
   marcel_attr_setrealtime(&attr, MARCEL_CLASS_REALTIME);
 #endif // REALTIME_NET_THREADS
-  
+
   {
     size_t  granted = 0;
     void         *slot    = NULL;
-    
+
     slot = slot_general_alloc(NULL, 0, &granted, NULL, NULL);
     marcel_attr_setstackaddr(&attr, slot);
     marcel_attr_setstacksize(&attr, granted);
   }
-  
+
   marcel_create(&pid, &attr, pm2_net_server, (any_t)channel);
   LOG_OUT();
 
@@ -256,17 +256,17 @@ pm2_net_halt_or_exit_request(void)
   int c = 0;
 
   LOG_IN();
-  for (c = 0; c < pm2_net_server_nb; c++) 
+  for (c = 0; c < pm2_net_server_nb; c++)
     {
-      if (!__pm2_self) 
+      if (!__pm2_self)
 	{
 	  pm2_net_halt_request();
 	}
-      else 
+      else
 	{
 	  unsigned        tag     = NETSERVER_REQUEST_HALT;
 	  p_mad_channel_t channel = NULL;
-      
+
 	  channel = pm2_net_channel_array[c];
 
 	  pm2_begin_packing(channel, 0);
@@ -292,7 +292,7 @@ pm2_net_init_channels(int   *argc,
 
   pm2_net_channel_array =
     TBX_CALLOC(pm2_net_server_nb, sizeof(p_mad_channel_t));
-  
+
 #ifdef MAD3
   {
     char *name = NULL;
@@ -302,7 +302,7 @@ pm2_net_init_channels(int   *argc,
 	pm2_net_channel_slist  = tbx_slist_nil();
 	pm2_net_channel_htable = tbx_htable_empty_table();
       }
-    
+
     name = tbx_strdup(pm2_net_pm2_channel_name);
     tbx_slist_enqueue(pm2_net_channel_slist, name);
     tbx_htable_add(pm2_net_channel_htable, name, name);
@@ -313,7 +313,7 @@ pm2_net_init_channels(int   *argc,
     p_tbx_slist_t     slist     = NULL;
     p_tbx_htable_t    htable    = NULL;
     int               i         =    0;
-    
+
     madeleine = mad_get_madeleine();
     slist     = pm2_net_channel_slist;
     htable    = pm2_net_channel_htable;
@@ -322,7 +322,7 @@ pm2_net_init_channels(int   *argc,
       {
 	p_mad_channel_t  channel = NULL;
 	char            *name    = NULL;
-	  
+
 	name                     = tbx_slist_extract(slist);
 	printf("channel %d = %s\n", i, name);
 	channel                  = mad_get_channel(madeleine, name);
@@ -335,7 +335,7 @@ pm2_net_init_channels(int   *argc,
   {
     p_mad_madeleine_t madeleine = NULL;
     int               i         =    0;
-    
+
     madeleine = mad_get_madeleine();
 
     for (i = 0; i < pm2_net_server_nb; i++)
@@ -355,10 +355,10 @@ pm2_net_servers_start(int   *argc,
 		      char **argv)
 {
   LOG_IN();
-  if (!pm2_net_single_mode())  
+  if (!pm2_net_single_mode())
     {
       int i;
-      
+
       pm2_net_server_pid_array =
 	TBX_CALLOC(pm2_net_server_nb, sizeof(marcel_t));
 
@@ -366,7 +366,7 @@ pm2_net_servers_start(int   *argc,
 	{
 	  p_mad_channel_t channel = NULL;
 	  marcel_t        pid     = NULL;
-	  
+
 	  channel                     = pm2_net_channel_array[i];
 	  pid                         = pm2_net_server_start(channel);
 	  pm2_net_server_pid_array[i] = pid;
@@ -390,14 +390,14 @@ void
 pm2_net_wait_end(void)
 {
   LOG_IN();
-  if (!pm2_net_single_mode())  
+  if (!pm2_net_single_mode())
     {
       int i = 0;
-      
+
       for (i = 0; i < pm2_net_server_nb; i++)
 	{
 	  marcel_t pid = NULL;
-	  
+
 	  pid = pm2_net_server_pid_array[i];
 	  marcel_join(pid, NULL);
 	  pm2_net_server_pid_array[i] = NULL;
@@ -414,7 +414,7 @@ pm2_net_get_channel(pm2_channel_t c)
   LOG_IN();
   channel = pm2_net_channel_array[c];
   LOG_OUT();
-  
+
   return channel;
 }
 
@@ -451,6 +451,6 @@ pm2_channel_alloc(pm2_channel_t *channel,
   }
 #endif // MAD2
 
-  *channel = pm2_net_server_nb++;  
+  *channel = pm2_net_server_nb++;
   LOG_OUT();
 }

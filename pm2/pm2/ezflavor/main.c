@@ -7,6 +7,7 @@
 #include "intro.h"
 #include "statusbar.h"
 #include "menu.h"
+#include "common_opt.h"
 
 gint destroy_phase = FALSE;
 
@@ -93,6 +94,8 @@ int main(int argc, char *argv[])
     do_show_help(argv[0]);
     exit(0);
   }
+
+  common_opt_init();
 
   intro_init();
 

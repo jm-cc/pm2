@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.4  2000/04/17 08:31:14  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.3  2000/04/14 08:47:55  vdanjean
 new kernel activation version : adaptation of marcel
 
@@ -64,7 +67,7 @@ ______________________________________________________________________________
 #define SCHED_DATA(lwp) ((lwp)->__sched_data)
 #endif
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
 #define SET_STATE_RUNNING_HOOK(next) \
   mdebug("\t\t\t<State set to running %p>\n", next)
 #define SET_STATE_READY_HOOK(next) \
@@ -141,7 +144,7 @@ ______________________________________________________________________________
 
 
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
 #ifdef MA__MULTIPLE_RUNNING
 #define MA_THR_DEBUG__MULTIPLE_RUNNING(current) \
   ((current->ext_state != MARCEL_RUNNING) ? \

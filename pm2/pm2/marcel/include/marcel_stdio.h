@@ -27,7 +27,4 @@
 int marcel_printf(char *format, ...);
 int marcel_fprintf(FILE *stream, char *format, ...);
 
-// Still here, but do not use it!
-int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
-
 #endif

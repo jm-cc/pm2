@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.41  2000/11/13 20:41:36  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.40  2000/09/16 17:23:45  rnamyst
 Added many LOG_IN/LOG_OUT in marcel
 
@@ -1882,7 +1885,9 @@ void marcel_sched_init(unsigned nb_lwp)
 
   /* pris dans  init_sched() */
   sched_unlock(&__main_lwp);
-
+}
+void marcel_sched_start(void)
+{
 #ifdef MA__LWPS
 
   /* Creation en deux phases en prevision du work stealing qui peut

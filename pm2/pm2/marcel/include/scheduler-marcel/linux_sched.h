@@ -44,6 +44,7 @@ extern unsigned long ma_nr_running(void);
 #define MA_TASK_DEAD		16
 #define MA_TASK_GHOST		32
 #define MA_TASK_MOVING		64
+#define MA_TASK_FROZEN		128
 
 #define __ma_set_task_state(tsk, state_value)		\
 	do { (tsk)->sched.state = (state_value); } while (0)
@@ -58,6 +59,7 @@ extern unsigned long ma_nr_running(void);
 #define MA_TASK_IS_RUNNING(tsk) ((tsk)->sched.internal.cur_rq && !(tsk)->sched.internal.array)
 #define MA_TASK_IS_BLOCKED(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
 #define MA_TASK_IS_SLEEPING(tsk) (!(tsk)->sched.internal.cur_rq)
+#define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
 
 /*
  * Scheduling policies

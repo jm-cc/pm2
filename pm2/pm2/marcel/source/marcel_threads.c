@@ -683,15 +683,16 @@ DEF_PTHREAD(cleanup_pop)
 static void __inline__ freeze(marcel_t t)
 {
   RAISE(NOT_IMPLEMENTED);
+#if 0
 #ifndef MA__MONO
   RAISE(NOT_IMPLEMENTED);
 #endif
    if(t != marcel_self()) {
       lock_task();
-      if(IS_BLOCKED(t) || IS_FROZEN(t)) {
+      if(MA_TASK_IS_BLOCKED(t) || MA_TASK_IS_FROZEN(t)) {
          unlock_task();
          RAISE(PROGRAM_ERROR);
-      } else if(IS_SLEEPING(t)) {
+      } else if(MA_TASK_IS_SLEEPING(t)) {
 #warning marcel_wake_up_thread instead of marcel_wake_task
          marcel_wake_up_thread(t);
          //marcel_wake_task(t, NULL);
@@ -699,9 +700,10 @@ static void __inline__ freeze(marcel_t t)
       state_lock(t);
 #warning to reimplement
       //marcel_set_frozen(t);
-      UNCHAIN_TASK(t);
+      //UNCHAIN_TASK(t);
       unlock_task();
    }
+#endif
 }
 
 static void __inline__ unfreeze(marcel_t t)

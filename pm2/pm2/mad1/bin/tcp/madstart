@@ -35,6 +35,10 @@
 #
 
 
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
+
 DISPLAY=$1
 shift
 MAD_DEBUG=$1

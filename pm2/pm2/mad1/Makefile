@@ -127,8 +127,10 @@ MAD_DEP_TO_OBJ	=	$(MAD_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 .PHONY: mad_default
 mad_default: $(MAD_LIB)
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(MAD_DEPENDS)),$(MAD_DEPENDS))
 include $(MAD_DEPENDS)
+endif
 endif
 
 ifdef PM2_FLAGS
@@ -237,8 +239,10 @@ DEPENDS	:=	$(patsubst %.c,%.d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
 
 DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
 include $(DEPENDS)
+endif
 endif
 
 $(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d

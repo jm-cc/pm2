@@ -37,7 +37,7 @@ extern "C" {
 #include "dsm_pm2.h"
 #endif
 
-#include "common.h"
+#include "pm2_common.h"
 
 #define MAX_STARTUP_FUNCS   32
 

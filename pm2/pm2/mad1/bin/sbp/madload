@@ -34,11 +34,9 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# SBP
-#
-# You have to be in the directory of executable file
-# to run a PM2-Madeleine-SBP program
-# 
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
 
 command=$*
 

@@ -75,10 +75,18 @@ static __inline__ void SCHED_YIELD(void)
 #define SP_FIELD(buf)           ((buf)[1])
 #endif
 
-/* Alpha */
-#if defined(ALPHA_ARCH)
+/* Alpha Linux */
+#if defined(ALPHA_ARCH) && defined(LINUX_SYS)
 #define TOP_STACK_FREE_AREA     128
 #define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
+#endif
+
+/* Alpha Tru64 */
+#if defined(ALPHA_ARCH) && defined(OSF_SYS)
+#define TOP_STACK_FREE_AREA     128
+#define JB_REGS         4               /* registers */
+#define JB_SP           (JB_REGS+30)    /* stack pointer */
+#define SP_FIELD(buf)           ((buf)[JB_SP])
 #endif
 
 /* Cray T3E */

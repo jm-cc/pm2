@@ -117,6 +117,15 @@ retry:
 			next_slot -= THREAD_SLOT_SIZE;
 #ifdef SLOT_AREA_BOTTOM
 			if ((unsigned long)next_slot < SLOT_AREA_BOTTOM) {
+				marcel_lock_release(&alloc_lock);
+				if (!ma_in_atomic() && nb_try_left--) {
+					/* On tente de faire avancer les autres
+					 * threads */
+					mdebugl(PM2DEBUG_DISPLEVEL,
+						"Trying to for slot\n");
+					marcel_yield();
+					goto retry;
+				}
 				RAISE(STORAGE_ERROR);
 			}
 #endif

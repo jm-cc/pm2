@@ -41,13 +41,13 @@
 
 PACK_REQ_STUB(LRPC_ISOMALLOC_GLOBAL_LOCK)
 #ifdef DEBUG_NEGOCIATION
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
 #endif
 END_STUB
 
 UNPACK_REQ_STUB(LRPC_ISOMALLOC_GLOBAL_LOCK)
 #ifdef DEBUG_NEGOCIATION
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
 #endif
 END_STUB
 
@@ -61,11 +61,11 @@ END_STUB
 /* LOCAL_LOCK */
 
 PACK_REQ_STUB(LRPC_ISOMALLOC_LOCAL_LOCK)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
 END_STUB
 
 UNPACK_REQ_STUB(LRPC_ISOMALLOC_LOCAL_LOCK)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->master, sizeof(unsigned int));
 END_STUB
 
 PACK_RES_STUB(LRPC_ISOMALLOC_LOCAL_LOCK)
@@ -93,11 +93,11 @@ END_STUB
 /* LOCAL_UNLOCK */
 
 PACK_REQ_STUB(LRPC_ISOMALLOC_LOCAL_UNLOCK)
-     mad_pack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
+     old_mad_pack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
 END_STUB
 
 UNPACK_REQ_STUB(LRPC_ISOMALLOC_LOCAL_UNLOCK)
-     mad_unpack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
+     old_mad_unpack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
 END_STUB
 
 PACK_RES_STUB(LRPC_ISOMALLOC_LOCAL_UNLOCK)
@@ -109,11 +109,11 @@ END_STUB
 /* SYNC */
 
 PACK_REQ_STUB(LRPC_ISOMALLOC_SYNC)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
 END_STUB
 
 UNPACK_REQ_STUB(LRPC_ISOMALLOC_SYNC)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
 END_STUB
 
 PACK_RES_STUB(LRPC_ISOMALLOC_SYNC)
@@ -125,13 +125,13 @@ END_STUB
 /* SEND SLOT STATUS*/
 
 PACK_REQ_STUB(LRPC_ISOMALLOC_SEND_SLOT_STATUS)
-     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
-     mad_pack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
+     old_mad_pack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
+     old_mad_pack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
 END_STUB
 
 UNPACK_REQ_STUB(LRPC_ISOMALLOC_SEND_SLOT_STATUS)
-     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
-     mad_unpack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
+     old_mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->sender, sizeof(unsigned int));
+     old_mad_unpack_byte(MAD_IN_PLACE, (char *)&arg->slot_map, sizeof(bitmap_t));
 END_STUB
 
 PACK_RES_STUB(LRPC_ISOMALLOC_SEND_SLOT_STATUS)

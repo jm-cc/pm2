@@ -58,8 +58,8 @@ static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
   ptr->func = h;
   ptr->arg = arg;
 
-  ptr->next = pid->deviate_work;
-  pid->deviate_work = ptr;
+  ptr->next = pid->work.deviate_work;
+  pid->work.deviate_work = ptr;
 
 #ifdef MA__WORK
   SET_DEVIATE_WORK(pid);
@@ -72,11 +72,11 @@ static void do_execute_deviate_work(void)
   marcel_t cur = marcel_self();
   deviate_record_t *ptr;
 
-  while((ptr = cur->deviate_work) != NULL) {
+  while((ptr = cur->work.deviate_work) != NULL) {
     handler_func_t h = ptr->func;
     any_t arg = ptr->arg;
 
-    cur->deviate_work = ptr->next;
+    cur->work.deviate_work = ptr->next;
     deviate_record_free(ptr);
 
     marcel_lock_release(&deviate_lock);
@@ -156,6 +156,8 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 { 
   LOG_IN();
 
+  RAISE(NOT_IMPLEMENTED);
+#if 0
   lock_task();
 
   if(pid == marcel_self()) {
@@ -215,13 +217,14 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 	   GET_LWP(marcel_self())->number, GET_LWP(pid)->number);
 
 #ifdef MA__MULTIPLE_RUNNING
-    if(pid->ext_state == MARCEL_RUNNING)
+#warning task->sched should be delegated to scheduler
+    if(pid->sched.internal.ext_state == MARCEL_RUNNING)
       {
 	// La tâche est actuellement en cours d'exécution sur un autre
 	// LWP...
 #ifdef MA__WORK
 	// On est sauvé (?)
-	__lwp_t *lwp = GET_LWP(pid);
+	marcel_lwp_t *lwp = GET_LWP(pid);
 
 	sched_unlock(lwp);
 	state_unlock(pid);
@@ -261,7 +264,8 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     // de la dévier _avant_ sa réinsertion...
     do_deviate(pid, h, arg);
 
-    ma_wake_task(pid, NULL);
+#warning ma_wake_task(pid,NULL) -> marcel_wake_up_thread(pid)
+    marcel_wake_up_thread(pid);
   }
 
   state_unlock(pid);
@@ -269,7 +273,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   marcel_lock_release(&deviate_lock);
 
   unlock_task();
-
+#endif
   LOG_OUT();
 }
 

@@ -49,7 +49,7 @@ extern int marcel_main(int argc, char *argv[]);
 #endif
 
 #section marcel_macros
-#define __init __attribute__((section(".ma.initfunc")))
+#define __marcel_init __attribute__((section(".ma.initfunc")))
 
 #section marcel_types
 typedef void (*__ma_initfunc_t)(void);

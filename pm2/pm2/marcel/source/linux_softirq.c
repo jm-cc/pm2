@@ -391,7 +391,7 @@ void ma_tasklet_kill(struct ma_tasklet_struct *t)
 
 MARCEL_INT(ma_tasklet_kill);
 
-void __init softirq_init(void)
+void __marcel_init softirq_init(void)
 {
 	ma_open_softirq(MA_TASKLET_SOFTIRQ, tasklet_action, NULL);
 	ma_open_softirq(MA_HI_SOFTIRQ, tasklet_hi_action, NULL);

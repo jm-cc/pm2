@@ -76,7 +76,7 @@ extern debug_type_aligned_t __ma_debug_pre_start[];
 extern debug_type_aligned_t __ma_debug_start[];
 extern debug_type_aligned_t __ma_debug_end[];
 
-void __init marcel_debug_init_auto(void)
+void __marcel_init marcel_debug_init_auto(void)
 {
 	debug_type_aligned_t *var;
 	unsigned long __ma_debug_size_entry=(void*)&ma_dummy2-(void*)&ma_dummy1;

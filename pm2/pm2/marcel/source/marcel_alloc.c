@@ -40,7 +40,7 @@ static struct cache_head *stack_cache_unmapped = NULL;
 
 static unsigned stack_in_use=0;
 
-static void __init marcel_slot_init(void)
+static void __marcel_init marcel_slot_init(void)
 {
 	LOG_IN();
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)

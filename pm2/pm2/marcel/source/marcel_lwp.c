@@ -445,7 +445,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(lwp, MA_INIT_LWP_MAIN_STRUCT,
 				     MA_INIT_LWP_MAIN_STRUCT_PRIO);
 MA_LWP_NOTIFIER_CALL_ONLINE(lwp, MA_INIT_LWP);
 
-void __init marcel_lwp_finished(void)
+void __marcel_init marcel_lwp_finished(void)
 {
 	ma_per_lwp(online,(ma_lwp_t)LWP_SELF)=1;
 }

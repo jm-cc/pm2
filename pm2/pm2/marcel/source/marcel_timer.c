@@ -97,7 +97,7 @@ static void timer_action(struct ma_softirq_action *a)
 	LOG_OUT();
 }
 
-void __init timer_start(void)
+void __marcel_init timer_start(void)
 {
 	ma_open_softirq(MA_TIMER_HARDIRQ, timer_action, NULL);
 }
@@ -369,7 +369,7 @@ MA_DEFINE_LWP_NOTIFIER_ONOFF(sig_timer, "Signal timer",
 
 MA_LWP_NOTIFIER_CALL_ONLINE(sig_timer, MA_INIT_TIMER_SIG);
 
-void __init sig_init(void)
+void __marcel_init sig_init(void)
 {
 	sigemptyset(&sigeptset);
 	sigemptyset(&sigalrmset);

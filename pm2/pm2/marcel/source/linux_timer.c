@@ -1238,7 +1238,7 @@ asmlinkage long sys_sysinfo(struct sysinfo __user *info)
 }
 #endif /* 0 */
 
-static void __init init_timers_lwp(ma_lwp_t lwp)
+static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 {
 	int j;
 	tvec_base_t *base;
@@ -1332,7 +1332,7 @@ MA_DEFINE_LWP_NOTIFIER_START(timers, "Timers Linux 2.6",
 			     (void), "[none]");
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(timers, MA_INIT_LINUX_TIMER);
 #if 0
-static int __init timer_lwp_notify(struct ma_notifier_block *self, 
+static int __marcel_init timer_lwp_notify(struct ma_notifier_block *self, 
 				   unsigned long action, void *hlwp)
 {
 	ma_lwp_t lwp = (ma_lwp_t)hlwp;

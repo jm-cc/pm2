@@ -44,7 +44,7 @@ static inline void nr_running_init(ma_runqueue_t *rq)
         rq->node_nr_running = &node_nr_running[0]; // corriger le numro de noeud
 }
 
-__init void node_nr_running_init(void)
+__marcel_init void node_nr_running_init(void)
 {
 	int i;
 

@@ -333,7 +333,7 @@ static void init_act(int proc, act_param_t *param)
 	DISP_INFO(&ma_per_lwp(act_info, GET_LWP_BY_NUM(proc)));
 }
 
-void __init init_upcalls(void)
+void __marcel_init init_upcalls(void)
 {
 	act_param_t param;
 	int nb_act=get_nb_lwps();

@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.34  2000/06/09 18:12:00  vdanjean
+cleaning debug messages
+
 Revision 1.33  2000/06/07 08:12:06  oaumage
 - Retour a des bases saines
 
@@ -123,7 +126,7 @@ ______________________________________________________________________________
  * ===========
  */
 //#define DEBUG
-#define USE_MARCEL_POLL
+//#define USE_MARCEL_POLL
 #define MAD_SISCI_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD)
 
@@ -1086,6 +1089,7 @@ void
 mad_sisci_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
+  pm2debug_flush();
   lnk->link_mode   = mad_link_mode_buffer_group;
   /* lnk->link_mode   = mad_link_mode_buffer; */
   lnk->buffer_mode = mad_buffer_mode_dynamic;

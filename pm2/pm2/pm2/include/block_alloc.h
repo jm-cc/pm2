@@ -34,6 +34,49 @@
 
 ______________________________________________________________________________
 $Log: block_alloc.h,v $
+Revision 1.4  2000/07/14 16:17:03  gantoniu
+Merged with branch dsm3
+
+Revision 1.3.10.1  2000/06/13 16:44:04  gantoniu
+New dsm branch.
+
+Revision 1.3.8.1  2000/06/07 09:19:34  gantoniu
+Merging new dsm with current PM2 : first try.
+
+Revision 1.3.4.3  2000/05/10 19:38:01  gantoniu
+- Implemented pm2_malloc option "ISO_DEFAULT" (= private which may become
+shared); ISO_PRIVATE data can no longare be shared;
+
+- Added an attribute to all allocation functions, to pass status, protocol
+and atomic info;
+
+- Attributes are stores in the slot header (exception: status);
+
+- Allocation of non shared data is always atomic; when it becomes shared,
+  atomicity is set according to the init attribute;
+
+- Added TRACE options.
+
+- Modified block_merge_lists to update the ptr to the thread slot descr.
+
+Revision 1.3.4.2  2000/05/07 17:26:17  gantoniu
+Fixed some bugs in the new code for PRIVATE to SHARED transform.
+Atomicity and protocol can be specified for private allocated
+data that may become shared. Tests with and without negociation ok.
+
+Revision 1.3.4.1  2000/05/05 14:06:21  gantoniu
+Added support for status change (PRIVATE -> SHARED) and for the option
+ATOMIC_SLOT:
+- added a 'master' field in the page info table, set when allocating
+  pages (including on negociation);
+- new attribute 'atomic' for pm2_malloc; always true for private data;
+  for shared data it is user-specified; multi-page objects are processed as
+  as single page in consistency actions when this option is used;
+- when changing a private slot to shared, all pages in the possibly
+  multi-page slot change their status;
+- on migration, slots change owner;
+- tests without migration, with single-slot allocation data ok;
+
 Revision 1.3  2000/02/28 11:17:55  rnamyst
 Changed #include <> into #include "".
 
@@ -71,7 +114,7 @@ void block_init(unsigned myrank, unsigned confsize);
 
 void block_init_list(block_descr_t *descr);
 
-void *block_alloc(block_descr_t *descr, size_t size);
+void *block_alloc(block_descr_t *descr, size_t size, isoaddr_attr_t *attr);
 
 void block_free(block_descr_t *descr, void * addr);
 
@@ -81,7 +124,7 @@ void block_exit();
 
 void block_print_list(block_descr_t *descr);
 
-void block_pack_all(block_descr_t *descr);
+void block_pack_all(block_descr_t *descr, int dest);
 
 void block_unpack_all();
 

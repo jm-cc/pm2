@@ -134,6 +134,19 @@ mad_dir_channel_cons(void)
   return object;
 }
 
+p_mad_dir_fchannel_t
+mad_dir_fchannel_cons(void)
+{
+  p_mad_dir_fchannel_t object = NULL;
+
+  LOG_IN();
+  object = TBX_CALLOC(1, sizeof(mad_dir_fchannel_t));
+  object->common = mad_dir_channel_common_cons();
+  LOG_OUT();
+
+  return object;
+}
+
 p_mad_dir_vchannel_process_routing_table_t
 mad_dir_vchannel_process_routing_table_cons(void)
 {
@@ -164,19 +177,6 @@ mad_dir_vchannel_process_specific_cons(void)
   return object;
 }
 
-p_mad_dir_fchannel_t
-mad_dir_fchannel_cons(void)
-{
-  p_mad_dir_fchannel_t object = NULL;
-
-  LOG_IN();
-  object = TBX_CALLOC(1, sizeof(mad_dir_fchannel_t));
-  object->common = mad_dir_channel_common_cons();
-  LOG_OUT();
-
-  return object;
-}
-
 p_mad_dir_vchannel_t
 mad_dir_vchannel_cons(void)
 {
@@ -187,6 +187,51 @@ mad_dir_vchannel_cons(void)
 
   object->dir_channel_slist  = tbx_slist_nil();
   object->dir_fchannel_slist = tbx_slist_nil();
+  object->pc                 = ntbx_pc_cons();
+  LOG_OUT();
+
+  return object;
+}
+
+p_mad_dir_xchannel_process_routing_table_t
+mad_dir_xchannel_process_routing_table_cons(void)
+{
+  p_mad_dir_xchannel_process_routing_table_t object = NULL;
+
+  LOG_IN();
+  object =
+    TBX_CALLOC(1, sizeof(mad_dir_xchannel_process_routing_table_t));
+
+  object->destination_rank = -1;
+  LOG_OUT();
+
+  return object;
+}
+
+p_mad_dir_xchannel_process_specific_t
+mad_dir_xchannel_process_specific_cons(void)
+{
+  p_mad_dir_xchannel_process_specific_t object = NULL;
+
+  LOG_IN();
+  object =
+    TBX_CALLOC(1, sizeof(mad_dir_xchannel_process_specific_t));
+
+  object->pc = ntbx_pc_cons();
+  LOG_OUT();
+
+  return object;
+}
+
+p_mad_dir_xchannel_t
+mad_dir_xchannel_cons(void)
+{
+  p_mad_dir_xchannel_t object = NULL;
+
+  LOG_IN();
+  object = TBX_CALLOC(1, sizeof(mad_dir_xchannel_t));
+
+  object->dir_channel_slist  = tbx_slist_nil();
   object->pc                 = ntbx_pc_cons();
   LOG_OUT();
 
@@ -213,6 +258,8 @@ mad_directory_cons(void)
   object->fchannel_slist    = tbx_slist_nil();
   object->vchannel_htable   = tbx_htable_empty_table();
   object->vchannel_slist    = tbx_slist_nil();
+  object->xchannel_htable   = tbx_htable_empty_table();
+  object->xchannel_slist    = tbx_slist_nil();
   LOG_OUT();
 
   return object;

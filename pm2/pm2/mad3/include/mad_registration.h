@@ -59,6 +59,10 @@ typedef enum
   mad_FORWARD,
 #endif // MARCEL
 
+#ifdef MARCEL
+  mad_MUX,
+#endif // MARCEL
+
   mad_driver_number // Must be the last element of the enum declaration
 } mad_driver_id_t, *p_mad_driver_id_t;
 

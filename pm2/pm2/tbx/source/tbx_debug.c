@@ -59,7 +59,7 @@ debug_type_t debug_pm2debug=NEW_DEBUG_TYPE(1, "pm2debug: ", "pm2debug");
 debug_type_t debug_pm2fulldebug=NEW_DEBUG_TYPE(1, "pm2fulldebug: ", "pm2fulldebug");
 debug_type_t debug_type_register=NEW_DEBUG_TYPE(0, "register: ", "register");
 static debug_type_t debug_type_flush=NEW_DEBUG_TYPE(0, "unused", "unused");
-DEBUG_DECLARE(common)
+DEBUG_DECLARE(init)
 #ifdef MARCEL
 DEBUG_DECLARE(marcel)
 #endif
@@ -331,7 +331,7 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 	  pm2debug_setup(&debug_pm2fulldebug, PM2DEBUG_CRITICAL, 1);
 	  debug_type_register.setup=register_setup;
 	  pm2debug_register(&debug_type_register);
-	  DEBUG_INIT(common);
+	  DEBUG_INIT(init);
 #ifdef MARCEL
 	  DEBUG_INIT(marcel);
 #endif

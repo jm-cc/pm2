@@ -43,4 +43,7 @@ int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
 
 int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 
+// Still here, but do not use it!
+int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
+
 #endif

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.h,v $
+Revision 1.6  2000/11/16 11:11:50  rnamyst
+Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
+
 Revision 1.5  2000/11/13 20:41:37  rnamyst
 common_init now performs calls to all libraries
 
@@ -157,8 +160,6 @@ typedef union {
 #define to_any_t(p_addr) (*((void **)p_addr))
 
 void pm2_mad_init(p_mad_madeleine_t madeleine);
-
-void mad_init_thread_related(int *argc, char *argv[]);
 
 void mad_exit(void);
 

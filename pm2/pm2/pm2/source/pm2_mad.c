@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.c,v $
+Revision 1.6  2000/11/16 11:11:50  rnamyst
+Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
+
 Revision 1.5  2000/11/13 20:41:39  rnamyst
 common_init now performs calls to all libraries
 
@@ -268,10 +271,7 @@ void mad_init(int *argc, char *argv[])
 void pm2_mad_init(p_mad_madeleine_t madeleine)
 {
   main_madeleine = madeleine;
-}
 
-void mad_init_thread_related(int *argc, char *argv[])
-{
   marcel_key_create(&mad2_send_key, NULL);
   marcel_key_create(&mad2_recv_key, NULL);
   marcel_sem_init(&sem_nego, 1);

@@ -112,22 +112,22 @@ typedef struct
   p_tbx_memory_t     bip_buffer_key;
   tbx_bool_t         first_time;
 
-#ifdef MARCEL
-  int                request_credits;
-  int                credits_rendus;
+  tbx_bool_t        *ack_was_received;
 
-  marcel_mutex_t     mutex;
+#ifdef MARCEL
+  marcel_mutex_t     cred_mutex;
+  marcel_mutex_t     ack_mutex; // Pour éviter plusieurs 'bip_recv(REPLY_TAG)'
+                                // en même temps
   marcel_cond_t     *cond_cred;     // tableau
   marcel_sem_t      *sem_ack;       // tableau
-  int                cred_request;
+  int                cred_request;  // identificateur BIP
   cred_message_t     cred_msg;
-  int                ack_request;
+  int                ack_request;   // identificateur BIP
   ack_message_t      ack_msg;
 
 #ifdef USE_MARCEL_POLL
   marcel_pollid_t    ack_pollid, cred_pollid, reg_pollid;
   marcel_pollinst_t *ack_poller;
-  boolean           *ack_was_received;
 #endif // USE_MARCEL_POLL
 #endif // MARCEL
 } mad_bip_channel_specific_t, *p_mad_bip_channel_specific_t;
@@ -205,7 +205,7 @@ static
 void *
 ack_fastpoll_func(marcel_pollid_t id,
 		  any_t           arg,
-		  boolean         first_call)
+		  tbx_bool_t         first_call)
 {
   p_ack_poll_arg_t              parg    = NULL;
   unsigned                      host    =    0;
@@ -224,7 +224,7 @@ ack_fastpoll_func(marcel_pollid_t id,
     {
       if (p->ack_was_received[host]) 
 	{
-	  p->ack_was_received[host] = FALSE;
+	  p->ack_was_received[host] = tbx_false;
 	  result                    = MARCEL_POLL_OK;
 	  goto end;
 	}
@@ -259,7 +259,7 @@ ack_fastpoll_func(marcel_pollid_t id,
 
 		  if (!poller)
 		    {
-		      p->ack_was_received[tmphost] = TRUE;
+		      p->ack_was_received[tmphost] = tbx_true;
 		    }
 		  else
 		    {
@@ -275,8 +275,8 @@ ack_fastpoll_func(marcel_pollid_t id,
     }
 
  end:
-  LOT_OUT();
-  
+  LOG_OUT();
+
   return result;
 }
 
@@ -312,7 +312,7 @@ ack_poll_func(marcel_pollid_t id,
 
 	  if (!poller)
 	    {
-	      p->ack_was_received[host] = TRUE;
+	      p->ack_was_received[host] = tbx_true;
 	    }
 	  else
 	    {
@@ -331,18 +331,6 @@ ack_poll_func(marcel_pollid_t id,
 }
 #endif // end ifdef USE_MARCEL_POLL
 
-static __inline__
-void
-ack_received(p_mad_bip_channel_specific_t p,
-	     int                          host_id,
-	     int                          credits)
-{
-  LOG_IN();
-  credits_received(p, host_id, credits);
-  marcel_sem_V(&p->sem_ack[host_id]);
-  LOG_OUT();
-}
-
 #else // else ifdef MARCEL
 #define bip_lock()
 #define bip_trylock()
@@ -357,7 +345,7 @@ bip_sync_send(int  host,
 	      int *message,
 	      int  size)
 {
-#ifdef MARCEL // ok if BASIC_POLL is defined
+#ifdef MARCEL
   int request = 0;
   int status  = 0;
 
@@ -410,7 +398,7 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
 	      int                           request,
 	      int                          *host)
 {
-#if defined(MARCEL) && !defined(BASIC_POLL)
+#if defined(MARCEL)
   static unsigned which   = 0;
   int             tmphost = 0;
   int             status  = 0;
@@ -432,34 +420,7 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
 	break;
       }
 
-#ifndef USE_MARCEL_POLL
     case 1 :
-      { /* ACKNOWLEDGEMENT */
-	bip_lock();
-	status = bip_rtestx(p->ack_request, &tmphost);
-	bip_unlock();
-
-	if (status != -1)
-	  {
-	    ack_received(p, tmphost, p->ack_msg.credits);
-	  
-	    bip_lock();
-	    p->ack_request = bip_tirecv(p->communicator + MAD_BIP_REPLY_TAG,
-					(int *)&p->ack_msg,
-					sizeof(ack_message_t)/sizeof(int));
-	    bip_unlock();
-	  }
-
-	break;
-      }
-#else // else ifdef USE_MARCEL_POLL
-    case 1 :
-      {
-	break;
-      }
-#endif // end else ifdef USE_MARCEL_POLL
-
-    case 2 :
       { /* CREDITS (FLOW_CONTROL) */
 	bip_lock();
 	status = bip_rtestx(p->cred_request, &tmphost);
@@ -484,12 +445,12 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
       FAILURE("invalid message");
   }
 
-  which = (which + 1) % 3;
+  which = (which + 1) % 2;
 
   LOG_OUT();
   return -1;
 
-#else // MARCEL & !BASIC_POLL
+#else // MARCEL
   int status = -1;
   
   LOG_IN();
@@ -499,7 +460,7 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
   LOG_OUT();
 
   return status;
-#endif // else MARCEL & !BASIC_POLL
+#endif // else MARCEL
 }
 
 static
@@ -607,15 +568,35 @@ wait_ack(p_mad_bip_channel_specific_t p,
   LOG_IN();
   TRACE("Waiting for ack\n");
 
-#if defined(MARCEL) && !defined(BASIC_POLL)
+#if defined(MARCEL)
 
 #ifdef USE_MARCEL_POLL
   ack_poll_wait(p, host_id);
 #else // USE_MARCEL_POLL
-  marcel_sem_P(&p->sem_ack[host_id]);
+
+  marcel_mutex_lock(&p->ack_mutex);
+
+  while (!p->ack_was_received[host_id])
+    {
+      ack_message_t msg;
+      int           remote;
+
+      bip_sync_recv(p, p->communicator+MAD_BIP_REPLY_TAG,
+		    (int*)&msg, sizeof(msg)/sizeof(int), &remote);
+
+      p->ack_was_received[remote] = tbx_true;
+      credits_received(p, remote, msg.credits);
+    }
+
+  p->ack_was_received[host_id] = tbx_false;
+
+  marcel_mutex_unlock(&p->ack_mutex);
+
 #endif // USE_MARCEL_POLL
 
-#else // MARCEL && !BASIC_POLL
+#else // MARCEL
+
+  while (!p->ack_was_received[host_id])
   {
     ack_message_t msg;
     int           remote;
@@ -623,9 +604,12 @@ wait_ack(p_mad_bip_channel_specific_t p,
     bip_sync_recv(p, p->communicator+MAD_BIP_REPLY_TAG,
 		  (int*)&msg, sizeof(msg)/sizeof(int), &remote);
 
-    p->credits_disponibles[host_id] += msg.credits;
+    p->ack_was_received[remote] = tbx_true;
+    p->credits_disponibles[remote] += msg.credits;
   }
-#endif // else MARCEL && !BASIC_POLL
+
+  p->ack_was_received[host_id] = tbx_false;
+#endif // MARCEL
   LOG_OUT();
 }
 
@@ -654,20 +638,20 @@ wait_credits(p_mad_bip_channel_specific_t p,
   TRACE("Checking credits\n");
 
 #ifdef MARCEL
-  marcel_mutex_lock(&p->mutex);
+  marcel_mutex_lock(&p->cred_mutex);
 
   while (!p->credits_disponibles[host_id])
     {
       TRACE("Thread %p is waiting for credits from host %d\n",
 	    marcel_self(), host_id);
-      marcel_cond_wait(&p->cond_cred[host_id], &p->mutex);
+      marcel_cond_wait(&p->cond_cred[host_id], &p->cred_mutex);
     }
 
   TRACE("Thread %p has %d credits to talk to host %d\n",
 	marcel_self(), p->credits_disponibles[host_id], host_id);
   p->credits_disponibles[host_id]--;
 
-  marcel_mutex_unlock(&p->mutex);
+  marcel_mutex_unlock(&p->cred_mutex);
 #else // MARCEL
   while (!p->credits_disponibles[host_id]) 
     {
@@ -697,13 +681,13 @@ credits_received(p_mad_bip_channel_specific_t p,
 #ifdef MARCEL
   if (credits) 
     {
-      marcel_mutex_lock(&p->mutex);
+      marcel_mutex_lock(&p->cred_mutex);
 
       TRACE("Credits received from host %d\n", host_id);
-    
+
       p->credits_disponibles[host_id] += credits;
       marcel_cond_signal(&p->cond_cred[host_id]);
-      marcel_mutex_unlock(&p->mutex);
+      marcel_mutex_unlock(&p->cred_mutex);
     }
 #else // MARCEL
   p->credits_disponibles[host_id] += credits;
@@ -722,7 +706,7 @@ give_back_credits (p_mad_bip_channel_specific_t p,
   LOG_IN();
 
 #ifdef MARCEL
-  marcel_mutex_lock(&p->mutex);
+  marcel_mutex_lock(&p->cred_mutex);
 
   p->credits_a_rendre[host_id]++;
 
@@ -731,14 +715,14 @@ give_back_credits (p_mad_bip_channel_specific_t p,
       msg.credits                  = p->credits_a_rendre[host_id];
       p->credits_a_rendre[host_id] = 0;
 
-      marcel_mutex_unlock(&p->mutex);
+      marcel_mutex_unlock(&p->cred_mutex);
 
       bip_sync_send(host_id, p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
 		    (int *)&msg, sizeof(cred_message_t)/sizeof(int));
     }
   else
     {
-      marcel_mutex_unlock(&p->mutex);
+      marcel_mutex_unlock(&p->cred_mutex);
       TRACE("Give_back_credits : %d credits to give, so forget it...",
 	    p->credits_a_rendre[host_id]);
     }
@@ -854,7 +838,7 @@ mad_bip_adapter_init(p_mad_adapter_t adapter)
 
   parameter_string   =
     tbx_string_init_to_int(adapter_specific->bip_rank);
-  adapter->parameter = tbx_string_to_c_string(parameter_string);
+  adapter->parameter = tbx_string_to_cstring(parameter_string);
   tbx_string_free(parameter_string);
   parameter_string   = NULL;
   LOG_OUT();
@@ -882,11 +866,13 @@ mad_bip_channel_init(p_mad_channel_t channel)
   channel_specific->credits_disponibles = TBX_MALLOC (size * sizeof (int));
   channel_specific->credits_a_rendre    = TBX_MALLOC (size * sizeof (int));
   channel_specific->first_time          = 1;
+  channel_specific->ack_was_received    = TBX_MALLOC(size * sizeof(tbx_bool_t));
 
 #ifdef MARCEL
   channel_specific->cond_cred = TBX_MALLOC(size*sizeof(marcel_cond_t));
   channel_specific->sem_ack   = TBX_MALLOC(size*sizeof(marcel_sem_t));
-  marcel_mutex_init(&channel_specific->mutex, NULL);
+  marcel_mutex_init(&channel_specific->cred_mutex, NULL);
+  marcel_mutex_init(&channel_specific->ack_mutex, NULL);
 
 #ifdef USE_MARCEL_POLL
   channel_specific->ack_pollid =
@@ -895,7 +881,6 @@ mad_bip_channel_init(p_mad_channel_t channel)
 
   marcel_pollid_setspecific(channel_specific->ack_pollid, channel_specific);
 
-  channel_specific->ack_was_received = TBX_MALLOC(size * sizeof(boolean));
   channel_specific->ack_poller       =
     TBX_MALLOC(size * sizeof(marcel_pollinst_t));
 #endif // USE_MARCEL_POLL
@@ -903,15 +888,15 @@ mad_bip_channel_init(p_mad_channel_t channel)
 
   for (i = 0; i < size; i++)
     {
-      channel_specific->credits_a_rendre[i   ] = 0;
+      channel_specific->credits_a_rendre[i]    = 0;
       channel_specific->credits_disponibles[i] = BIP_MAX_CREDITS; 
+      channel_specific->ack_was_received[i]    = tbx_false;
 
 #ifdef MARCEL
       marcel_cond_init(&channel_specific->cond_cred[i], NULL);
       marcel_sem_init(&channel_specific->sem_ack[i], 0);
 
 #ifdef USE_MARCEL_POLL
-      channel_specific->ack_was_received[i] = FALSE;
       channel_specific->ack_poller[i]       = NULL;
 #endif // USE_MARCEL_POLL
 #endif // MARCEL
@@ -1042,7 +1027,10 @@ mad_bip_adapter_exit(p_mad_adapter_t adapter)
   LOG_IN();
   /* Code to execute to clean up an adapter */
   TBX_FREE(adapter->parameter);
+  adapter->parameter = NULL;
+
   TBX_FREE(adapter->specific);
+  adapter->specific = NULL;
   LOG_OUT();
 }
 

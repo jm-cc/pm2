@@ -40,19 +40,20 @@
 if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	if [ -f /bin/uname ]; then
 		_os="`/bin/uname -s`"
-		_ht="`/bin/uname -m`"
 	else
 		_os="`/usr/bin/uname -s`"
-		_ht="`/usr/bin/uname -m`"
 	fi
 
-	case "$_os,$_ht" in
-	SunOS,*)           PM2_SYS=SOLARIS_SYS ;;
-	AIX*,*)            PM2_SYS=AIX_SYS ;;
-	IRIX*,*)           PM2_SYS=IRIX_SYS ;;
-	OSF*,*)            PM2_SYS=OSF_SYS ;;
-	Linux,*)           PM2_SYS=LINUX_SYS ;;
-	FreeBSD,*)         PM2_SYS=FREEBSD_SYS ;;
+	case "$_os" in
+	SunOS)           PM2_SYS=SOLARIS_SYS ;;
+	AIX*)            PM2_SYS=AIX_SYS ;;
+	IRIX*)           PM2_SYS=IRIX_SYS ;;
+	OSF*)            PM2_SYS=OSF_SYS ;;
+	Linux)           PM2_SYS=LINUX_SYS ;;
+	FreeBSD)         PM2_SYS=FREEBSD_SYS ;;
+	CYGWIN_98*)      PM2_SYS=WIN32_SYS ;;
+	CYGWIN_NT-5*)    PM2_SYS=WIN2K_SYS ;;
+	CYGWIN_NT*)      PM2_SYS=WINNT_SYS ;;
 	esac
 fi
 

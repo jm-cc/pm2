@@ -107,7 +107,16 @@ done
 base=4096 # 0x1000
 value=0
 other=32768 # 0x8000
-for mod in $_PM2CONFIG_PROF_MODULES examples ; do
+
+THE_MODULES="$_PM2CONFIG_PROF_MODULES"
+case " $_PM2CONFIG_CFLAGS " in
+    *\ -DAPPLI_PROFILE\ *)
+	THE_MODULES="${THE_MODULES} examples"
+	;;
+esac
+
+for mod in $THE_MODULES ; do
+
     # Ugly!!! We should use --cppdir <mod> instead of --buildir!
     FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
     if [ -z "$FUT_FILES" ] ; then

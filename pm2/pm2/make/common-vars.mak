@@ -103,7 +103,7 @@ endif
 ifndef DO_NOT_GENERATE_MAK_FILES
 DO_NOT_GENERATE_MAK_FILES := 
 endif
-DO_NOT_GENERATE_MAK_FILES := _distclean_ _distcleanlibs_ _distcleanflavors_
+DO_NOT_GENERATE_MAK_FILES += _distclean_ _distcleanlibs_ _distcleanflavors_
 DO_NOT_GENERATE_MAK_FILES += _distcleandoc_ _distcleanall_
 DO_NOT_GENERATE_MAK_FILES += _init_ _checkmake_ _cvsinit_ _flavorinit_
 DO_NOT_GENERATE_MAK_FILES += _doc_

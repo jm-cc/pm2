@@ -73,7 +73,7 @@ enum ma_rq_type {
 	MA_DONTSCHED_RQ,
 	MA_MACHINE_RQ,
 #ifdef MA__LWPS
-#ifdef CONFIG_NUMA
+#ifdef MA__NUMA
 	MA_NODE_RQ,
 	MA_CORE_RQ,
 	MA_HT_RQ,

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.8  2000/11/16 16:16:37  rnamyst
+mad1 is up-to-date again + various bug fixes (Malefiles)
+
 Revision 1.7  2000/11/16 14:21:48  oaumage
 - correction external spawn
 
@@ -65,6 +68,10 @@ ______________________________________________________________________________
 #ifdef MARCEL
 #include "marcel.h"
 #endif /* MARCEL */
+
+#ifdef MAD1
+#include "madeleine.h"
+#endif /* MAD1 */
 
 #ifdef MAD2
 #include "madeleine.h"
@@ -155,6 +162,10 @@ void common_init(int *argc, char *argv[])
    */
   tbx_init(*argc, argv);
 #endif /* TBX */
+
+#ifdef MAD1
+  mad_buffers_init();
+#endif /* MAD1 */
 
 #ifdef NTBX
   /*
@@ -348,6 +359,10 @@ void common_init(int *argc, char *argv[])
    */
   mad_connect(madeleine, *argc, argv);
 #endif /* MAD2 */
+
+#ifdef MAD1
+  mad_init(argc, argv, 0, NULL, &pm2_conf_size, &pm2_self);
+#endif /* MAD1 */
 
 #ifdef PM2
   pm2_init_open_channels(argc, argv, pm2_self, pm2_conf_size);

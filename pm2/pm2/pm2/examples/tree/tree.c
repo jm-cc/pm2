@@ -38,21 +38,18 @@
 
 static unsigned WAKE, DICHO;
 
-static int *les_modules, nb_modules, module_courant = 0;
+static unsigned cur_proc = 0;
 
-static __inline__ int next_module(void)
+static __inline__ int next_proc(void)
 {
-  int res;
-
   lock_task();
 
   do {
-    module_courant = (module_courant+1) % (nb_modules);
-  } while(les_modules[module_courant] == pm2_self());
+    cur_proc = (cur_proc+1) % pm2_config_size();
+  } while(cur_proc == pm2_self());
 
-  res = les_modules[module_courant];
   unlock_task();
-  return res;
+  return cur_proc;
 }
 
 static void wake(void)
@@ -93,7 +90,7 @@ static void thr_dicho(void *arg)
 
       marcel_sem_init(&sem, 0);
 
-      pm2_rawrpc_begin(next_module(), DICHO, NULL);
+      pm2_rawrpc_begin(next_proc(), DICHO, NULL);
       mad_pack_int(MAD_IN_HEADER, &inf, 1);
       mad_pack_int(MAD_IN_HEADER, &mid, 1);
       mad_pack_int(MAD_IN_HEADER, &self, 1);
@@ -103,7 +100,7 @@ static void thr_dicho(void *arg)
 
       mid++;
 
-      pm2_rawrpc_begin(next_module(), DICHO, NULL);
+      pm2_rawrpc_begin(next_proc(), DICHO, NULL);
       mad_pack_int(MAD_IN_HEADER, &mid, 1);
       mad_pack_int(MAD_IN_HEADER, &sup, 1);
       mad_pack_int(MAD_IN_HEADER, &self, 1);
@@ -151,7 +148,7 @@ static void f(void)
 
     GET_TICK(t1);
 
-    pm2_rawrpc_begin(next_module(), DICHO, NULL);
+    pm2_rawrpc_begin(next_proc(), DICHO, NULL);
     mad_pack_int(MAD_IN_HEADER, &inf, 1);
     mad_pack_int(MAD_IN_HEADER, &sup, 1);
     mad_pack_int(MAD_IN_HEADER, &self, 1);
@@ -175,17 +172,20 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&WAKE, wake);
   pm2_rawrpc_register(&DICHO, dicho);
 
-  pm2_init(&argc, argv, ASK_USER, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  if(pm2_self() == les_modules[0]) { /* master process */
+  if(pm2_self() == 0) { /* master process */
 
-    if(nb_modules < 2) {
-      fprintf(stderr, "This program requires at least two PM2 nodes...\n");
-    } else {
-      f();
+    if(pm2_config_size() < 2) {
+      fprintf(stderr,
+	      "This program requires at least two processes.\n"
+	      "Please rerun pm2conf.\n");
+      exit(1);
     }
 
-    pm2_kill_modules(les_modules, nb_modules);
+    f();
+
+    pm2_halt();
   }
 
   pm2_exit();

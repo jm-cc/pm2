@@ -24,13 +24,14 @@
 #include <stdarg.h>
 
 #include "pm2_profile.h"
+#include "sysmap.h"
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"
 #endif
 
 #ifdef USE_FKT
-#include <linux/fkt.h>
+#include "fkt.h"
 #include "fkt_pm2.h"
 #endif
 
@@ -74,6 +75,8 @@ void profile_init(void)
 
     // Initialisation de FUT
 
+    get_mysymbols();
+
     strcpy(PROF_FILE_USER, "/tmp/prof_file_user_");
     strcat(PROF_FILE_USER, getenv("USER"));
 
@@ -95,10 +98,9 @@ void profile_init(void)
     strcpy(PROF_FILE_KERNEL, "/tmp/prof_file_kernel_");
     strcat(PROF_FILE_KERNEL, getenv("USER"));
 
-    fkt_setup(FKT_KEYMASKALL);
+    fkt_record(PROF_FILE_KERNEL,0,0,0);
 
     if(activate_called_before_init) {
-      fkt_start_time();
       fkt_keychange(activate_params.how,
 		    activate_params.kernel_keymask);
     } else
@@ -115,7 +117,6 @@ void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask)
     fut_keychange(how, user_keymask, PROF_THREAD_ID());
 
 #ifdef USE_FKT
-    fkt_start_time();
     fkt_keychange(how, kernel_keymask);
 #endif
 
@@ -157,11 +158,15 @@ void profile_stop(void)
   fut_endup(PROF_FILE_USER);
 
 #ifdef USE_FKT
-  fkt_record(PROF_FILE_KERNEL);
+  fkt_stop();
 #endif
 }
 
 void profile_exit(void)
 {
   fut_done();
+}
+
+int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num) {
+	return 0;
 }

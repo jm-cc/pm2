@@ -79,7 +79,7 @@
  * Linus just yet.  Grrr...
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
-#define ma_set_wmb(var, value)	do { (var) = (value); ma_mb(); } while (0)
+#define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
 //#define safe_halt()         ia64_pal_halt_light()    /* PAL_HALT_LIGHT */
 

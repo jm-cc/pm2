@@ -55,10 +55,10 @@
  */
 
 #error "to write !"
-#define ma_mb()
+#define ma_mb()		__asm__ __volatile__("mb": : :"memory")
 #define ma_rmb()	ma_mb()
-#define ma_wmb()	ma_mb()
-#define ma_read_barrier_depends()	do { } while(0)
+#define ma_wmb()	__asm__ __volatile__("wmb": : :"memory")
+#define ma_read_barrier_depends()	ma_mb()
 
 #ifdef MA__LWPS
 # define ma_smp_mb()	ma_mb()
@@ -69,7 +69,7 @@
 # define ma_smp_mb()	ma_barrier()
 # define ma_smp_rmb()	ma_barrier()
 # define ma_smp_wmb()	ma_barrier()
-# define ma_smp_read_barrier_depends()	do { } while(0)
+# define ma_smp_read_barrier_depends()	barrier()
 #endif
 
 /*
@@ -78,5 +78,5 @@
  * Linus just yet.  Grrr...
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
-#define ma_set_wmb(var, value)	do { (var) = (value); ma_mb(); } while (0)
+#define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 

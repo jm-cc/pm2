@@ -41,6 +41,10 @@ mad_get_channel(p_mad_madeleine_t  madeleine,
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
     FAILURE("channel not found");
+
+  if (!channel->public)
+    FAILURE("invalid channel");
+
   LOG_OUT();
   
   return channel;

@@ -16,6 +16,7 @@
 
 /* timed.c */
 
+#include <errno.h>
 #include "marcel.h"
 
 marcel_mutex_t mutex;

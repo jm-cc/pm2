@@ -33,174 +33,48 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MAD1	:=	yes
-
-COMMON_MAKEFILES	+=	$(MAD1_ROOT)/make/vars.mak \
-				$(MAD1_ROOT)/make/rules.mak
-
-ifndef PM2_ARCH_SYS
-PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
-PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
-PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
-COMMON_CFLAGS	+=	-D$(PM2_SYS) -D$(PM2_ARCH)
-endif
-
-# Deux macros déclarées d'intérêt public :
-EMPTY		:=
-SPACE		:=	$(EMPTY) $(EMPTY)
-
-# L'utilisation de _MAD_OPTIONS (en lieu et place de MAD_OPTIONS)
-# force l'adjonction d'un suffixe aux fichiers créés (binaires,
-# objets, bibliothèques)
-ifdef _MAD_OPTIONS
-MAD_OPTIONS		:=	$(_MAD_OPTIONS)
-COMMON_USE_EXTENSION	:=	yes
-endif
-
-# Inclusion des options
-MAD_OPT_FILES		:=	$(MAD1_ROOT)/make/options.mak \
-	$(foreach OPTION,$(MAD_OPTIONS),$(MAD1_ROOT)/make/options-$(OPTION).mak)
-
-include $(MAD_OPT_FILES)
-
-COMMON_MAKEFILES	+=	$(MAD_OPT_FILES)
-
-# Calcul du suffixe
-ifdef MAD_OPTIONS
-MAD_EXT		:=	-mad_$(subst $(SPACE),_,$(sort $(MAD_OPTIONS)))
-else
-MAD_EXT		:=	-mad_none
-endif
-
-# Si on étend les noms de fichiers, il faut mettre à jour COMMON_EXT
-COMMON_TEMPO_EXT	:=	$(COMMON_TEMPO_EXT)$(MAD_EXT)
-# Attention : ici, il faut utiliser COMMON_TEMPO_EXT et non COMMON_EXT
-# car cette dernière sera peut-être remise à zéro dans rules.mak
-MAD_EXTRA_DEP_FILE	=	$(MAD1_ROOT)/.opt$(COMMON_TEMPO_EXT)
-
-# Cette variable accumule systématiquement les fichiers de
-# dépendance. Elle sera peut-être remise à zéro in-extremis dans
-# rules.mak...
-COMMON_EXTRA_DEP	+=	$(MAD_EXTRA_DEP_FILE)
-
-# Il faut ajouter COMMON_EXTRA_DEP une seule fois. Je sais, ce n'est
-# pas très beau...
-ifneq ($(__EXTRA_DEP_SET),yes)
-COMMON_MAKEFILES	+=	$(COMMON_EXTRA_DEP)
-__EXTRA_DEP_SET		:=	yes
-endif
+MAD1 :=  yes
+COMMON_MAKEFILES +=  $(MAD_MAKE)/vars.mak
+COMMON_MAKEFILES +=  $(MAD_MAKE)/rules.mak
 
 # Inclusion des options specifiques au protocole reseau
-include $(MAD1_ROOT)/make/custom/options.mak
+include $(MAD_MAKE)/custom/options.mak
 
-COMMON_MAKEFILES	+=	$(MAD1_ROOT)/make/custom/options.mak
+COMMON_MAKEFILES	+=	$(MAD_MAKE)/custom/options.mak
 
-# Inclusion des options specifiques a l'architecture
-include $(MAD1_ROOT)/make/archdep/$(shell basename $(PM2_SYS) _SYS).inc
-
-MAD_GEN_OPT	:=	$(MAD_GEN_1) $(MAD_GEN_2) $(MAD_GEN_3) \
-			$(MAD_GEN_4) $(MAD_GEN_5) $(MAD_GEN_6)
-
-MAD_OPT		:=	$(strip $(MAD_OPT_0) $(MAD_OPT_1) $(MAD_OPT_2) \
-			$(MAD_OPT_3) $(MAD_OPT_4) $(MAD_OPT_5) \
-			$(MAD_OPT_6) $(MAD_OPT_7) $(MAD_OPT_8))
-
-# Les options "generiques" (-g, etc.) sont dans MAD_GEN_OPT, et les
-# autres sont dans MAD_OPT...
-ifeq ($(COMMON_GEN_CFLAGS),)
-COMMON_GEN_CFLAGS	:=	$(strip $(MAD_GEN_OPT))
-endif
-
-COMMON_CFLAGS		+=	-DMAD1 $(MAD_OPT) -I$(MAD_INC)
-
-# Repertoires principaux de Madeleine
 MAD_SRC		:=	$(MAD1_ROOT)/source
-MAD_DEP		:=	$(MAD_SRC)/depend
-MAD_OBJ		:=	$(MAD_SRC)/obj/$(PM2_ARCH_SYS)
+MAD_NET_SRC	:=	$(MAD_SRC)/$(NET_INTERF)
 MAD_INC		:=	$(MAD1_ROOT)/include
-MAD_LIBD	:=	$(MAD1_ROOT)/lib/$(PM2_ARCH_SYS)
 
-# Creation des repertoires necessaires "a la demande"
-ifneq ($(MAKECMDGOALS),distclean) # avoid auto-building of directories
-ifneq ($(wildcard $(MAD_DEP)),$(MAD_DEP))
-DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_DEP))
+MAD_OPT :=
+MAD_GEN :=
+
+ifndef MAD_OPTIONS
+MAD_OPTIONS :=  default
 endif
 
-ifneq ($(wildcard $(MAD_OBJ)),$(MAD_OBJ))
-DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_OBJ))
-endif
+MAD_OPT_FILES :=  \
+   $(foreach OPTION,$(MAD_OPTIONS),$(MAD_MAKE)/options/$(OPTION).mak)
+COMMON_MAKEFILES +=  $(MAD_OPT_FILES)
+include $(MAD_OPT_FILES)
 
-ifneq ($(wildcard $(MAD_LIBD)),$(MAD_LIBD))
-DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_LIBD))
-endif
-endif
+COMMON_OPTIONS += MAD1 $(MAD_OPTIONS)
 
-# CC & AS
-ifndef COMMON_CC
-COMMON_CC	:=	gcc
+MAD_LIB_A  :=  $(GEN_LIB)/libmad.a
+MAD_LIB_SO :=  $(GEN_LIB)/libmad.so
+
+ifndef MAD_LINK
+MAD_LINK :=  $(COMMON_LINK)
 endif
-MAD_CC		:=	$(COMMON_CC)
-
-# CFLAGS et LDFLAGS: attention a ne pas utiliser ':=' !
-MAD_CFLAGS	=	$(COMMON_GEN_CFLAGS) $(COMMON_CFLAGS)
-MAD_KCFLAGS	=	$(MAD_CFLAGS) -DMAD_KERNEL \
-			-DNET_ARCH=\"$(NET_INTERF)\" $(NET_INIT) \
-			$(NET_CFLAGS)
-MAD_LDFLAGS	=	$(COMMON_LDFLAGS)
-
-# Bibliotheques
-MAD_LIB_A	=	$(MAD_LIBD)/libmad$(COMMON_EXT).a
-MAD_LIB_SO	=	$(MAD_LIBD)/libmad$(COMMON_EXT).so
 
 ifeq ($(MAD_LINK),dyn)
-MAD_LIB		=	$(MAD_LIB_SO)
+MAD_LIB :=  $(MAD_LIB_SO)
 else 
-MAD_LIB		=	$(MAD_LIB_A)
+MAD_LIB :=  $(MAD_LIB_A)
 endif
 
+COMMON_CFLAGS  +=  -DMAD1 $(MAD_OPT) -I$(MAD_INC) $(NET_CFLAGS)
+COMMON_LDFLAGS +=  $(NET_LFLAGS) 
+COMMON_LLIBS   +=  $(MAD_LIB) $(NET_LLIBS)
 
-COMMON_LIBS	+=	$(MAD_LIB)
-
-COMMON_LDFLAGS	+=	$(NET_LFLAGS) $(NET_LLIBS) $(ARCHDLIB)
-
-MAD_USER_MAK		=	$(MAD1_ROOT)/make/user$(COMMON_EXT).mak
-
-
-COMMON_DEFAULT_TARGET	+=	mad_default
-COMMON_CLEAN_TARGET	+=	madclean
-COMMON_DISTCLEAN_TARGET	+=	maddistclean
-
-######################## Applications Madeleine ########################
-
-ifdef MAD_EX_DIR
-
-ifeq ($(MAD_EX_DIR),.)
-SRC_DIR		:=	./
-else
-SRC_DIR		:=	$(MAD_EX_DIR)
-endif
-
-COMMON_MAKEFILES	+=	$(SRC_DIR)/Makefile
-
-# Repertoires applicatifs
-DEP_DIR		:=	$(SRC_DIR)/depend
-OBJ_DIR		:=	$(SRC_DIR)/obj/$(PM2_ARCH_SYS)
-BIN_DIR		:=	$(SRC_DIR)/bin/$(PM2_ARCH_SYS)
-
-# Creation des repertoires necessaires "a la demande"
-ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(wildcard $(DEP_DIR)),$(DEP_DIR))
-DUMMY_BUILD	:=	$(shell mkdir -p $(DEP_DIR))
-endif
-
-ifneq ($(wildcard $(OBJ_DIR)),$(OBJ_DIR))
-DUMMY_BUILD	:=	$(shell mkdir -p $(OBJ_DIR))
-endif
-
-ifneq ($(wildcard $(BIN_DIR)),$(BIN_DIR))
-DUMMY_BUILD	:=	$(shell mkdir -p $(BIN_DIR))
-endif
-endif
-
-endif
 

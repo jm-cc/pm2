@@ -129,11 +129,11 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 void marcel_poll(marcel_pollid_t id, any_t arg)
 {
 	poll_cell_t cell;
-	struct marcel_ev_event event;
+	struct marcel_ev_wait wait;
 
 	cell.arg=arg;
 
-	marcel_ev_wait_one(&id->server, &cell.inst, &event, 0);
+	marcel_ev_wait(&id->server, &cell.inst, &wait, 0);
 }
 
 void marcel_force_check_polling(marcel_pollid_t id)
@@ -279,8 +279,8 @@ marcel_ev_req_t marcel_ev_get_success(marcel_ev_server_t server)
 	LOG_RETURN(req);
 }
 
-inline static int remove_success_req(marcel_ev_server_t server, 
-				     marcel_ev_req_t req)
+inline static int __del_success_req(marcel_ev_server_t server, 
+				    marcel_ev_req_t req)
 {
 	LOG_IN();
 	if (list_empty(&req->chain_req_success)) {
@@ -295,8 +295,8 @@ inline static int remove_success_req(marcel_ev_server_t server,
 	LOG_RETURN(0);
 }
 
-inline static int add_success_req(marcel_ev_server_t server,
-				  marcel_ev_req_t req)
+inline static int __add_success_req(marcel_ev_server_t server,
+				     marcel_ev_req_t req)
 {
 	LOG_IN();
 	if (!list_empty(&req->chain_req_success)) {
@@ -311,12 +311,12 @@ inline static int add_success_req(marcel_ev_server_t server,
 }
 
 /* Réveils pour l'événement */
-inline static int wake_req_waiters(marcel_ev_server_t server,
-				   marcel_ev_req_t req, int code)
+inline static int __wake_req_waiters(marcel_ev_server_t server,
+				     marcel_ev_req_t req, int code)
 {
-	marcel_ev_event_t wait, tmp;
+	marcel_ev_wait_t wait, tmp;
 	LOG_IN();
-	FOREACH_EVENT_BASE_SAFE(wait, tmp, req) {
+	FOREACH_WAIT_BASE_SAFE(wait, tmp, req) {
 #ifdef MA__DEBUG
 		switch (code) {
 		case 0:
@@ -327,18 +327,18 @@ inline static int wake_req_waiters(marcel_ev_server_t server,
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_event);
+		list_del_init(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
 	LOG_RETURN(0);
 }
 
 /* Réveils du serveur */
-inline static int wake_id_waiters(marcel_ev_server_t server, int code)
+inline static int __wake_id_waiters(marcel_ev_server_t server, int code)
 {
-	marcel_ev_event_t wait, tmp;
+	marcel_ev_wait_t wait, tmp;
 	LOG_IN();
-	list_for_each_entry_safe(wait, tmp, &server->list_id_waiters, chain_event) {
+	list_for_each_entry_safe(wait, tmp, &server->list_id_waiters, chain_wait) {
 #ifdef MA__DEBUG
 		switch (code) {
 		case 0:
@@ -349,12 +349,16 @@ inline static int wake_id_waiters(marcel_ev_server_t server, int code)
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_event);
+		list_del_init(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
 	LOG_RETURN(0);
 }
 
+inline static int __unregister_poll(marcel_ev_server_t server,
+				    marcel_ev_req_t req);
+inline static int __unregister(marcel_ev_server_t server,
+			       marcel_ev_req_t req);
 /* On gère les événements signalés OK par les call-backs
  * - retrait événtuel de la liste des ev groupés (que l'on compte)
  * - réveil des waiters sur les événements et le serveur
@@ -371,32 +375,30 @@ inline static int __manage_ready(marcel_ev_server_t server)
 		return 0;
 	}
 
-	list_for_each_entry_safe(req, tmp, &server->list_req_ready, chain_req_ready) {
+	list_for_each_entry_safe(req, tmp, &server->list_req_ready,
+				 chain_req_ready) {
 		mdebug("Poll succeed with req %p\n", req);
 		req->state |= MARCEL_EV_STATE_OCCURED;
-		if ((req->state & MARCEL_EV_STATE_GROUPED) &&
-		    (req->state & MARCEL_EV_STATE_ONE_SHOT)) {
-			list_del_init(&req->chain_req);
-			mdebug("Ungrouping Poll request %p for [%s]\n", req, server->name);
-			nb_grouped_req_removed++;
-			req->state &= ~MARCEL_EV_STATE_GROUPED;
-		}
-		mdebug("Poll succeed with req %p\n", req);
-		wake_req_waiters(server, req, 0);
+
+		__wake_req_waiters(server, req, 0);
 		if (! (req->state & MARCEL_EV_STATE_NO_WAKE_SERVER)) {
-			add_success_req(server, req);
+			__add_success_req(server, req);
 			nb_req_ask_wake_server++;
 		}
+
 		list_del_init(&req->chain_req_ready);
+		if (req->state & MARCEL_EV_STATE_ONE_SHOT) {
+			nb_grouped_req_removed+=__unregister_poll(server, req);
+			__unregister(server, req);
+		}
 	}
-	server->req_poll_nb -= nb_grouped_req_removed;
 	if (nb_grouped_req_removed) {
 		mdebug("Nb grouped task set to %i\n", 
-		       server->req_poll_nb);
+		       server->req_poll_grouped_nb);
 	}
 	
 	if (nb_req_ask_wake_server) {
-		wake_id_waiters(server, nb_req_ask_wake_server);
+		__wake_id_waiters(server, nb_req_ask_wake_server);
 	}
 
 #ifdef MA__DEBUG
@@ -415,21 +417,26 @@ inline static int __manage_ready(marcel_ev_server_t server)
 inline static int __poll_group(marcel_ev_server_t server, marcel_ev_req_t req)
 {
 #ifdef MA__DEBUG
-	MA_BUG_ON(!server->req_poll_nb);
+	MA_BUG_ON(!server->req_poll_grouped_nb);
 #endif
 	if (server->funcs[MARCEL_EV_FUNCTYPE_POLL_GROUP] &&
-	    ( server->req_poll_nb > 1 
+	    ( server->req_poll_grouped_nb > 1 
 	      || ! server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE])) {
 		mdebug("Factorizing %i polling(s) with POLL_GROUP for [%s]\n",
-		       server->req_poll_nb, server->name);
+		       server->req_poll_grouped_nb, server->name);
 		(*server->funcs[MARCEL_EV_FUNCTYPE_POLL_GROUP])
 			(server, MARCEL_EV_FUNCTYPE_POLL_POLLONE,
-			 req, server->req_poll_nb, 0);
+			 req, server->req_poll_grouped_nb, 0);
 		return 1;
 	}
 	mdebug("No need to group %i polling(s) for [%s]\n",
-	       server->req_poll_nb, server->name);
+	       server->req_poll_grouped_nb, server->name);
 	return 0;
+}
+
+inline static int __need_poll(marcel_ev_server_t server)
+{
+	return server->req_poll_grouped_nb;
 }
 
 /* On démarre un polling (et éventuellement le timer) en l'ajoutant
@@ -493,7 +500,7 @@ inline static void __update_timer(marcel_ev_server_t server)
 // Checks to see if some polling jobs should be done.
 static void check_polling_for(marcel_ev_server_t server)
 {
-	int nb=server->req_poll_nb;
+	int nb=__need_poll(server);
 #ifdef MA__DEBUG
 	static int count=0;
 
@@ -512,8 +519,8 @@ static void check_polling_for(marcel_ev_server_t server)
 	if(nb == 1 && server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE]) {
 		(*server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE])
 			(server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, 
-			 list_entry(server->list_req_poll.next,
-				    struct marcel_ev_req, chain_req),
+			 list_entry(server->list_req_poll_grouped.next,
+				    struct marcel_ev_req, chain_req_grouped),
 			 nb, MARCEL_EV_OPT_REQ_IS_GROUPED);
 
 	} else if (server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLANY]) {
@@ -535,9 +542,10 @@ static void check_polling_for(marcel_ev_server_t server)
 		RAISE(PROGRAM_ERROR);
 	}
 
-	if (__manage_ready(server)) {
+	__manage_ready(server);
+	if (nb != __need_poll(server)) {
 		/* Le nombre de tache en cours de polling a varié */
-		if(!server->req_poll_nb) {
+		if(!__need_poll(server)) {
 			__poll_stop(server);
 			return;
 		} else {
@@ -593,7 +601,7 @@ void marcel_ev_poll_force(marcel_ev_server_t server)
 	/* Pas très important si on loupe quelque chose ici (genre
 	 * liste modifiée au même instant)
 	 */
-	if (!list_empty(&server->list_req_poll)) {
+	if (!__need_poll(server)) {
 		ma_tasklet_schedule(&server->poll_tasklet);
 	}
 	LOG_OUT();
@@ -634,13 +642,74 @@ inline static void verify_server_state(marcel_ev_server_t server) {
 inline static void __init_req(marcel_ev_req_t req)
 {
 	mdebug("Clearing Grouping request %p\n", req);
-	INIT_LIST_HEAD(&req->chain_req);
+	INIT_LIST_HEAD(&req->chain_req_registered);
+	INIT_LIST_HEAD(&req->chain_req_grouped);
 	INIT_LIST_HEAD(&req->chain_req_ready);
 	INIT_LIST_HEAD(&req->chain_req_success);
 	req->state=0;
 	req->server=NULL;
-	INIT_LIST_HEAD(&req->list_event);
+	INIT_LIST_HEAD(&req->list_wait);
 }
+
+inline static int __register(marcel_ev_server_t server, marcel_ev_req_t req)
+{
+
+	LOG_IN();
+	/* On doit ajouter la requête à celles en attente */
+	mdebug("Register req %p for [%s]\n", req, server->name);
+	MA_BUG_ON(req->server);
+	list_add(&req->chain_req_registered, &server->list_req_registered);
+	req->state |= MARCEL_EV_STATE_REGISTERED;
+	req->server=server;
+	LOG_RETURN(0);
+}
+
+inline static int __unregister(marcel_ev_server_t server, marcel_ev_req_t req)
+{
+	LOG_IN();
+
+
+	mdebug("Unregister request %p for [%s]\n", req, server->name);
+	__del_success_req(server, req);
+
+	list_del_init(&req->chain_req_registered);
+	req->state &= ~MARCEL_EV_STATE_REGISTERED;
+	LOG_RETURN(0);
+}
+
+inline static int __register_poll(marcel_ev_server_t server,
+				  marcel_ev_req_t req)
+{
+
+	LOG_IN();
+	/* On doit ajouter la requête à celles en attente */
+	mdebug("Grouping Poll request %p for [%s]\n", req, server->name);
+	list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
+	server->req_poll_grouped_nb++;
+	req->state |= MARCEL_EV_STATE_GROUPED;
+
+	__poll_group(server, req);
+	
+	if (server->req_poll_grouped_nb == 1) {
+		__poll_start(server);
+	}
+	LOG_RETURN(0);
+}
+
+inline static int __unregister_poll(marcel_ev_server_t server,
+				    marcel_ev_req_t req)
+{
+	LOG_IN();
+	if (req->state & MARCEL_EV_STATE_GROUPED) {
+		mdebug("Ungrouping Poll request %p for [%s]\n", req, server->name);
+		list_del_init(&req->chain_req_grouped);
+		server->req_poll_grouped_nb--;
+		req->state &= ~MARCEL_EV_STATE_GROUPED;
+		LOG_RETURN(1);
+	}
+	LOG_RETURN(0);
+}
+
 
 int marcel_req_init(marcel_ev_req_t req)
 {
@@ -650,7 +719,7 @@ int marcel_req_init(marcel_ev_req_t req)
 }
 
 /* Ajout d'un attribut spécifique à un événement */
-int marcel_ev_attr_set(marcel_ev_req_t req, int attr)
+int marcel_req_attr_set(marcel_ev_req_t req, int attr)
 {
 	LOG_IN();
 	if (attr & MARCEL_EV_ATTR_ONE_SHOT) {
@@ -661,25 +730,6 @@ int marcel_ev_attr_set(marcel_ev_req_t req, int attr)
 	}
 	if (attr & (~(MARCEL_EV_ATTR_ONE_SHOT|MARCEL_EV_ATTR_NO_WAKE_SERVER))) {
 		RAISE(CONSTRAINT_ERROR);
-	}
-	LOG_RETURN(0);
-}
-
-inline static int __register(marcel_ev_server_t server, marcel_ev_req_t req)
-{
-
-	LOG_IN();
-	/* On doit ajouter la requête à celles en attente */
-	mdebug("Register event for [%s]\n", server->name);
-	mdebug("Grouping Poll event %p for [%s]\n", req, server->name);
-	list_add(&req->chain_req, &server->list_req_poll);
-	server->req_poll_nb++;
-	req->state |= (MARCEL_EV_STATE_GROUPED|MARCEL_EV_STATE_REGISTERED);
-	req->server=server;
-	__poll_group(server, req);
-	
-	if (server->req_poll_nb == 1) {
-		__poll_start(server);
 	}
 	LOG_RETURN(0);
 }
@@ -698,6 +748,7 @@ int marcel_req_register(marcel_ev_server_t server, marcel_ev_req_t req)
 	server->registered_req_not_yet_polled++;
 
 	__register(server, req);
+	__register_poll(server, req);
 	
 	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
 	restore_lock_server_locked(server, lock);
@@ -705,31 +756,8 @@ int marcel_req_register(marcel_ev_server_t server, marcel_ev_req_t req)
 	LOG_RETURN(0);
 }
 
-inline static int __unregister(marcel_ev_server_t server, marcel_ev_req_t req)
-{
-	LOG_IN();
-
-	mdebug("Unregister event for [%s]\n", server->name);
-	wake_req_waiters(server, req, -ECANCELED);
-	remove_success_req(server, req);
-
-	if (req->state & MARCEL_EV_STATE_GROUPED) {
-		mdebug("Ungrouping Poll request %p for [%s]\n", req, server->name);
-		list_del_init(&req->chain_req);
-		server->req_poll_nb--;
-		if (server->req_poll_nb) {
-			__poll_group(server, NULL);
-		} else {
-			__poll_stop(server);
-		}
-	}
-
-	req->state &= ~MARCEL_EV_STATE_REGISTERED;
-	LOG_RETURN(0);
-}
-
 /* Abandon d'un événement et retour des threads en attente sur cet événement */
-int marcel_ev_unregister(marcel_ev_server_t server, marcel_ev_req_t req)
+int marcel_req_unregister(marcel_ev_server_t server, marcel_ev_req_t req)
 {
 	marcel_task_t *lock;
 	LOG_IN();
@@ -739,6 +767,15 @@ int marcel_ev_unregister(marcel_ev_server_t server, marcel_ev_req_t req)
 	verify_server_state(server);
 	MA_BUG_ON(!(req->state & MARCEL_EV_STATE_REGISTERED));
 
+	__wake_req_waiters(server, req, -ECANCELED);
+
+	if (__unregister_poll(server, req)) {
+		if (__need_poll(server)) {
+			__poll_group(server, NULL);
+		} else {
+			__poll_stop(server);
+		}
+	}
 	__unregister(server, req);
 
 	restore_lock_server_locked(server, lock);
@@ -747,32 +784,29 @@ int marcel_ev_unregister(marcel_ev_server_t server, marcel_ev_req_t req)
 }
 
 inline static int __wait_req(marcel_ev_server_t server, marcel_ev_req_t req, 
-			    marcel_time_t timeout)
+			     marcel_ev_wait_t wait, marcel_time_t timeout)
 {
-	struct marcel_ev_event wait;
 	LOG_IN();
 
 	if (timeout) {
 		RAISE(NOT_IMPLEMENTED);
 	}
 
-	list_add(&wait.chain_event, &req->list_event);
-	marcel_sem_init(&wait.sem, 0);
-	wait.ret=0;
-#ifdef MA__DEBUG
-	wait.task=MARCEL_SELF;
-#endif
+	list_add(&wait->chain_wait, &req->list_wait);
+	marcel_sem_init(&wait->sem, 0);
+	wait->ret=0;
+	wait->task=MARCEL_SELF;
 
 	__unlock_server(server);
 
-	marcel_sem_P(&wait.sem);
+	marcel_sem_P(&wait->sem);
 
-	LOG_RETURN(wait.ret);
+	LOG_RETURN(wait->ret);
 }
 
 /* Attente d'un thread sur un événement déjà enregistré */
-int marcel_ev_wait_req(marcel_ev_server_t server, marcel_ev_req_t req, 
-		      marcel_time_t timeout)
+int marcel_ev_wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
+		       marcel_ev_wait_t wait, marcel_time_t timeout)
 {
 	marcel_task_t *lock;
 	int ret=0;
@@ -791,10 +825,11 @@ int marcel_ev_wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 	check_polling_for(server);
 	
 	if (!(req->state & MARCEL_EV_STATE_OCCURED)) {
-		ret=__wait_req(server, req, timeout);
+		ret=__wait_req(server, req, wait, timeout);
+		restore_lock_server_unlocked(server, lock);
+	} else {
+		restore_lock_server_locked(server, lock);
 	}
-
-	restore_lock_server_unlocked(server, lock);
 
 	LOG_RETURN(ret);
 }
@@ -803,7 +838,7 @@ int marcel_ev_wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 int marcel_ev_wait_server(marcel_ev_server_t server, marcel_time_t timeout)
 {
 	marcel_task_t *lock;
-	struct marcel_ev_event wait;
+	struct marcel_ev_wait wait;
 	LOG_IN();
 
 	lock=ensure_lock_server(server);
@@ -813,7 +848,7 @@ int marcel_ev_wait_server(marcel_ev_server_t server, marcel_time_t timeout)
 		RAISE(NOT_IMPLEMENTED);
 	}
 	
-	list_add(&wait.chain_event, &server->list_id_waiters);
+	list_add(&wait.chain_wait, &server->list_id_waiters);
 	marcel_sem_init(&wait.sem, 0);
 	wait.ret=0;
 #ifdef MA__DEBUG
@@ -832,8 +867,8 @@ int marcel_ev_wait_server(marcel_ev_server_t server, marcel_time_t timeout)
 }
 
 /* Enregistrement, attente et désenregistrement d'un événement */
-int marcel_ev_wait_one(marcel_ev_server_t server, marcel_ev_req_t req, 
-		       marcel_ev_event_t event, marcel_time_t timeout)
+int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req, 
+		   marcel_ev_wait_t wait, marcel_time_t timeout)
 {
 	marcel_task_t *lock;
 	int checked=0;
@@ -845,7 +880,7 @@ int marcel_ev_wait_one(marcel_ev_server_t server, marcel_ev_req_t req,
 	verify_server_state(server);
 
 	__init_req(req);
-	req->server=server;
+	__register(server, req);
 
 	mdebug("Marcel_poll (thread %p)...\n", marcel_self());
 	mdebug("using pollid [%s]\n", server->name);
@@ -856,19 +891,20 @@ int marcel_ev_wait_one(marcel_ev_server_t server, marcel_ev_req_t req,
 		mdebug("Using Immediate POLL_ONE\n");
 		(*server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE])
 			(server, MARCEL_EV_FUNCTYPE_POLL_POLLONE,
-			 req, server->req_poll_nb, 0);
-		waken_up=__manage_ready(server);
+			 req, server->req_poll_grouped_nb, 0);
+		waken_up=__need_poll(server);
+		__manage_ready(server);
+		waken_up -= __need_poll(server);
 		checked=1;
 	}
 	
 	if (req->state & MARCEL_EV_STATE_OCCURED) {
 		if (waken_up) {
 			/* Le nombre de tache en cours de polling a varié */
-			if(!server->req_poll_nb) {
-				__poll_stop(server);
-				//LOG_RETURN(0);
-			} else {
+			if (__need_poll(server)) {
 				__poll_group(server, NULL);
+			} else {
+				__poll_stop(server);
 			}
 		}
 		/* Pas update_timer(id) car on a fait un poll_one et
@@ -877,22 +913,22 @@ int marcel_ev_wait_one(marcel_ev_server_t server, marcel_ev_req_t req,
 		LOG_RETURN(0);
 	}
 
-	__register(server, req);
+	__register_poll(server, req);
 
 	if (!checked) {
 		check_polling_for(server);
 	}
 
 	if (!(req->state & MARCEL_EV_STATE_OCCURED)) {
-		__wait_req(server, req, timeout);
+		__wait_req(server, req, wait, timeout);
 		lock_server_owner(server, lock);
 	}
-	
+
 	__unregister(server, req);
 
 	restore_lock_server_locked(server, lock);
 	
-	LOG_RETURN(0);
+	LOG_RETURN(wait->ret);
 }
 
 /****************************************************************
@@ -941,10 +977,14 @@ int marcel_ev_server_stop(marcel_ev_server_t server)
 
 	server->state=MA_EV_SERVER_STATE_HALTED;
 
-	FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server) {
+	list_for_each_entry_safe(req, tmp, 
+				 &server->list_req_registered, 
+				 chain_req_registered) {
+		__wake_req_waiters(server, req, -ECANCELED);
+		__unregister_poll(server, req);
 		__unregister(server, req);
 	}
-	wake_id_waiters(server, -ECANCELED);
+	__wake_id_waiters(server, -ECANCELED);
 
 	restore_lock_server_unlocked(server, lock);
 

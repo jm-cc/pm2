@@ -145,7 +145,7 @@ _PRIVATE_ typedef struct __lwp_struct {
   volatile atomic_t _locked;               /* Lock for (un)lock_task() */
   volatile boolean has_to_stop;            /* To force pthread_exit() */
   struct list_head lwp_list;
-  char __security_stack[2 * SLOT_SIZE];    /* Used when own stack destruction is required */
+  char __security_stack[2 * THREAD_SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
   volatile marcel_t sec_desc;              /* Task descriptor for security stack */
 #ifdef MA__SMP
@@ -208,16 +208,16 @@ static __inline__ marcel_t __marcel_self(void)
   else
 #endif
 #ifdef ENABLE_STACK_JUMPING
-    return *((marcel_t *)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *))));
+    return *((marcel_t *)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *))));
 #else
-    return (marcel_t)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE) -
+    return (marcel_t)(((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE) -
 		      MAL(sizeof(task_desc)));
 #endif
 }
 
 #define SECUR_TASK_DESC(lwp) \
-   ((marcel_t)((((unsigned long)(lwp)->__security_stack + 2 * SLOT_SIZE) \
-	        & ~(SLOT_SIZE-1)) - MAL(sizeof(task_desc))))
+   ((marcel_t)((((unsigned long)(lwp)->__security_stack + 2 * THREAD_SLOT_SIZE) \
+	        & ~(THREAD_SLOT_SIZE-1)) - MAL(sizeof(task_desc))))
 #define SECUR_STACK_TOP(lwp) \
    ((unsigned long)SECUR_TASK_DESC(lwp) - MAL(1) - TOP_STACK_FREE_AREA)
 
@@ -234,14 +234,14 @@ _PRIVATE_ extern int nb_idle_sleeping; //TODO
 #ifdef ENABLE_STACK_JUMPING
 static __inline__ void marcel_prepare_stack_jump(void *stack)
 {
-  *(marcel_t *)(stack + SLOT_SIZE - sizeof(void *)) = __marcel_self();
+  *(marcel_t *)(stack + THREAD_SLOT_SIZE - sizeof(void *)) = __marcel_self();
 }
 
 static __inline__ void marcel_set_stack_jump(marcel_t m)
 {
   register unsigned long sp = get_sp();
 
-  *(marcel_t *)((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *)) = m;
+  *(marcel_t *)((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *)) = m;
 }
 #endif
 

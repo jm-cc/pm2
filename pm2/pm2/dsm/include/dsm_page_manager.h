@@ -127,5 +127,9 @@ void dsm_mark_dirty(void *addr, int length);
 
 void *dsm_get_next_modified_data(unsigned long index, int *size);
 
+boolean dsm_page_bitmap_is_empty(unsigned long index);
+
+void dsm_page_bitmap_clear(unsigned long index) ;
+
 #endif
 

@@ -55,12 +55,12 @@ pm2_main (int argc, char **argv)
   pm2_rawrpc_register (&service_id, service);
   pm2_completion_init (&c, NULL, NULL);
 
-  dsm_set_default_protocol (MIGRATE_THREAD);
+  dsm_set_default_protocol (MIGRATE_THREAD);	/* Here! */
 
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       for (i = 1; i < NB_NODES; i++)
 	{
 	  thread_id++;

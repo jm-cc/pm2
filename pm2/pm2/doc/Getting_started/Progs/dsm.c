@@ -26,7 +26,7 @@ f (void *arg)
 
   initial = shvar;
   for (i = 0; i < NB_ITERATIONS; i++)
-    shvar++;
+    shvar++;			/* Here! */
   final = shvar;
 
   tprintf ("Thread %d from node %d finished on node %d: "
@@ -55,12 +55,12 @@ pm2_main (int argc, char **argv)
   pm2_rawrpc_register (&service_id, service);
   pm2_completion_init (&c, NULL, NULL);
 
-  dsm_set_default_protocol (LI_HUDAK);
+  dsm_set_default_protocol (LI_HUDAK);	/* Here! */
 
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       for (i = 1; i < NB_NODES; i++)
 	{
 	  thread_id++;

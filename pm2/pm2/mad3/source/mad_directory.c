@@ -882,6 +882,83 @@ mad_dir_directory_get(p_mad_madeleine_t madeleine)
 
 static
 void
+channel_common_cleanup(p_mad_dir_channel_common_t cc)
+{
+  ntbx_process_grank_t g = 0;
+  p_ntbx_process_container_t pc = NULL;
+
+  LOG_IN();
+  pc = cc->pc;
+  if (ntbx_pc_first_global_rank(pc, &g))
+    {
+      do
+        {
+          p_mad_dir_channel_common_process_specific_t ccps = NULL;
+
+          ccps = ntbx_pc_get_global_specific(pc, g);
+          if (ccps)
+            {
+              int   i   =    0;
+              char *ptr = NULL;
+
+              if (ccps->parameter)
+                {
+                  TBX_FREE(ccps->parameter);
+                  ccps->parameter = NULL;
+                }
+
+              if ((ptr = tbx_darray_first_idx(ccps->out_connection_parameter_darray, &i)))
+                {
+                  do
+                    {
+                      if (ptr)
+                        {
+                          char *ptr2 = NULL;
+
+                          ptr2 = tbx_darray_expand_and_get(ccps->in_connection_parameter_darray, i);
+                          if (ptr2 == ptr) 
+                            {
+                              tbx_darray_set(ccps->in_connection_parameter_darray, i, NULL);
+                            }
+
+                          TBX_FREE(ptr);
+                          tbx_darray_set(ccps->out_connection_parameter_darray, i, NULL);
+                        }
+                    }
+                  while ((ptr = tbx_darray_next_idx(ccps->out_connection_parameter_darray, &i)));
+                }
+
+              if ((ptr = tbx_darray_first_idx(ccps->in_connection_parameter_darray, &i)))
+                {
+                  do
+                    {
+                      if (ptr)
+                        {
+                          TBX_FREE(ptr);
+                          tbx_darray_set(ccps->in_connection_parameter_darray, i, NULL);
+                        }
+                    }
+                  while ((ptr = tbx_darray_next_idx(ccps->in_connection_parameter_darray, &i)));
+                }
+
+              tbx_darray_free(ccps->in_connection_parameter_darray);
+              ccps->in_connection_parameter_darray = NULL;
+
+              tbx_darray_free(ccps->out_connection_parameter_darray);
+              ccps->out_connection_parameter_darray = NULL;
+            }
+        }
+      while (ntbx_pc_next_global_rank(pc, &g));
+    }
+
+  ntbx_pc_dest(pc, tbx_default_specific_dest);
+  cc->pc = NULL;
+  TBX_FREE(cc);
+  LOG_OUT();
+}
+
+static
+void
 mad_dir_vchannel_cleanup(p_mad_madeleine_t madeleine)
 {
   p_mad_directory_t  dir             = NULL;
@@ -962,6 +1039,8 @@ mad_dir_vchannel_cleanup(p_mad_madeleine_t madeleine)
 
       dir_vchannel->id = 0;
 
+      channel_common_cleanup(dir_vchannel->common);
+      dir_vchannel->common = NULL;
       TBX_FREE(dir_vchannel);
     }
 
@@ -1045,6 +1124,8 @@ mad_dir_xchannel_cleanup(p_mad_madeleine_t madeleine)
 
       dir_xchannel->id = 0;
 
+      channel_common_cleanup(dir_xchannel->common);
+      dir_xchannel->common = NULL;
       TBX_FREE(dir_xchannel);
     }
 
@@ -1083,6 +1164,9 @@ mad_dir_fchannel_cleanup(p_mad_madeleine_t madeleine)
       dir_fchannel->channel_name = NULL;
 
       dir_fchannel->id = 0;
+
+      channel_common_cleanup(dir_fchannel->common);
+      dir_fchannel->common = NULL;
       TBX_FREE(dir_fchannel);
     }
 
@@ -1148,6 +1232,8 @@ mad_dir_channel_cleanup(p_mad_madeleine_t madeleine)
       dir_channel->driver      = NULL;
       dir_channel->not_private = tbx_false;
 
+      channel_common_cleanup(dir_channel->common);
+      dir_channel->common = NULL;
       TBX_FREE(dir_channel);
     }
 
@@ -1328,6 +1414,8 @@ mad_dir_process_cleanup(p_mad_madeleine_t madeleine)
 
       tbx_slist_free(keys);
       tbx_htable_free(ref);
+
+      TBX_FREE(process);
     }
 
   tbx_slist_free(dir->process_slist);

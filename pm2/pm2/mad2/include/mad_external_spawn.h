@@ -47,6 +47,9 @@ mad_spawn_driver_init(p_mad_madeleine_t   madeleine,
 		      char              **argv);
 
 void
+mad_exchange_connection_info(p_mad_madeleine_t madeleine);
+
+void
 mad_exchange_configuration_info(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_EXTERNAL_SPAWN_H */

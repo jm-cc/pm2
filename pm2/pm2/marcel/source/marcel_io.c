@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.12  2000/06/09 18:08:17  vdanjean
+integrating MARCEL_POLL_AT_YIELD
+
 Revision 1.11  2000/06/09 17:36:53  vdanjean
 integrating MARCEL_POLL_AT_YIELD
 
@@ -321,7 +324,8 @@ void marcel_io_init()
   unix_io_pollid = marcel_pollid_create(unix_io_group,
 					unix_io_poll,
 					unix_io_fast_poll,
-					MARCEL_POLL_AT_TIMER_SIG);
+					MARCEL_POLL_AT_TIMER_SIG 
+					| MARCEL_POLL_AT_YIELD );
 }
 
 int marcel_read(int fildes, void *buf, size_t nbytes)

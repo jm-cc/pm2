@@ -46,12 +46,12 @@ include $(DEPENDS)
 endif
 #include $(wildcard $(DEPENDS))
 
-examples: $(APPS) loader
-.PHONY: examples loader
+examples: $(APPS)
+.PHONY: examples
 
 include $(PM2_ROOT)/make/common-rules.mak
 
-all: examples loader
+all: examples
 
 $(APP_STAMP)/stamp$(APP_EXT):
 	$(COMMON_HIDE) touch $@
@@ -72,9 +72,6 @@ $(APP_BIN)/%: $(APP_OBJ)/%.o
 
 %: $(APP_BIN)/% ;
 
-loader:
-	$(COMMON_HIDE) cp -f $(APP_LOADER) $(APP_BIN)/pm2load
-
 else 
 
 MAKE_LIBS = set -e ; for module in $(PM2_MODULES); do \
@@ -91,9 +88,6 @@ all: examples
 examples:
 	$(COMMON_HIDE) $(MAKE_LIBS)
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
-
-#loader:
-#	$(COMMON_HIDE) cp -f $(APP_LOADER) $(APP_BIN)/pm2load
 
 .PHONY: clean appclean repclean libclean
 clean: appclean repclean

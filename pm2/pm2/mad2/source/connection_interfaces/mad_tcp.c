@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.25  2000/06/13 16:57:58  vdanjean
+Adding marcel_poll option
+
 Revision 1.24  2000/06/09 18:12:01  vdanjean
 cleaning debug messages
 
@@ -122,8 +125,8 @@ ______________________________________________________________________________
  * =========
  */
 
-#define USE_MARCEL_POLL
-#define DEBUG
+//#define USE_MARCEL_POLL
+//#define DEBUG
 #include "madeleine.h"
 
 #include <stdlib.h>

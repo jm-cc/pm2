@@ -184,6 +184,10 @@ mad_alloc_slice_parameter(void)
   p_mad_buffer_slice_parameter_t slice_parameter = NULL;
 
   slice_parameter = tbx_malloc(mad_buffer_slice_parameter_memory);
+  slice_parameter->length = 0;
+  slice_parameter->offset = 0;
+  slice_parameter->opcode = 0;
+  slice_parameter->value  = 0;
 
   return slice_parameter;
 }

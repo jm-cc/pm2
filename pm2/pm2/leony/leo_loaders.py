@@ -13,7 +13,7 @@ def default_loader(s, loader_host_list):
     app_args.extend(['--mad_leonie', s.leo.server.hostname])
     app_args.extend(['--mad_link', str(s.leo.server.port)])
 
-    if s.options.dyn_mode:
+    if not s.leo.compatibility_mode and s.options.dyn_mode:
         app_args.append('--mad_dyn_mode')
 
     if s.args is not None:
@@ -60,4 +60,4 @@ def default_loader(s, loader_host_list):
         command.extend(ssh_args)
         logger.debug(command)
         pid	= os.spawnvp(os.P_NOWAIT, ssh_command, command)        
-        #time.sleep(1)
+        time.sleep(1)

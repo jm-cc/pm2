@@ -40,11 +40,13 @@ COMMON_MAKEFILES +=  $(MAD_MAKE)/rules.mak
 # Inclusion des options specifiques au protocole reseau
 include $(MAD_MAKE)/custom/options.mak
 
-COMMON_MAKEFILES	+=	$(MAD_MAKE)/custom/options.mak
+COMMON_MAKEFILES +=  $(MAD_MAKE)/custom/options.mak
 
-MAD_SRC		:=	$(MAD1_ROOT)/source
-MAD_NET_SRC	:=	$(MAD_SRC)/$(NET_INTERF)
-MAD_INC		:=	$(MAD1_ROOT)/include
+MAD_SRC	    :=  $(MAD1_ROOT)/source
+MAD_NET_SRC :=  $(MAD_SRC)/$(NET_INTERF)
+MAD_INC	    :=  $(MAD1_ROOT)/include
+MAD_GEN_OBJ :=  $(GEN_OBJ)/mad
+MAD_GEN_DEP :=  $(GEN_DEP)/mad
 
 MAD_OPT :=
 MAD_GEN :=

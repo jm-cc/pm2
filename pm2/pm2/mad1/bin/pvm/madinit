@@ -34,9 +34,9 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
 MAD_DEBUG=$1
 shift
@@ -56,7 +56,7 @@ else
     command="$prog -pm2cons $MAD_CONSOLE $args"
 fi
 
-set `cat ${MADELEINE_ROOT}/.madconf`
+set `cat ${MAD1_ROOT}/.madconf`
 first=$1
 shift
 
@@ -64,7 +64,7 @@ echo "add $*" | ${PVM_ROOT}/lib/pvm -n$first > /dev/null
 
 if test $MAD_DEBUG = "on"
 then
-    ${MADELEINE_ROOT}/bin/pvm/maddebug $DISPLAY $command
+    ${MAD1_ROOT}/bin/pvm/maddebug $DISPLAY $command
 else
     PVM_EXPORT="DISPLAY"
     export PVM_EXPORT

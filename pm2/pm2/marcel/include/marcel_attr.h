@@ -17,6 +17,8 @@
 #ifndef MARCEL_ATTR_EST_DEF
 #define MARCEL_ATTR_EST_DEF
 
+#include "sys/marcel_privatedefs.h"
+
 _PRIVATE_ typedef struct {
   unsigned stack_size;
   char *stack_base;
@@ -27,6 +29,7 @@ _PRIVATE_ typedef struct {
   unsigned not_deviatable;
   int sched_policy;
   boolean rt_thread;
+  marcel_vpmask_t vpmask;
 } marcel_attr_t;
 
 /* detachstate */
@@ -66,6 +69,9 @@ int marcel_attr_getschedpolicy(marcel_attr_t *attr, int *policy);
 
 int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime);
 int marcel_attr_getrealtime(marcel_attr_t *attr, boolean *realtime);
+
+int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
+int marcel_attr_getvpmask(marcel_attr_t *attr, marcel_vpmask_t *mask);
 
 _PRIVATE_ extern marcel_attr_t marcel_attr_default;
 

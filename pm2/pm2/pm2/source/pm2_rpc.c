@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: pm2_rpc.c,v $
+Revision 1.5  2000/01/31 15:58:31  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #include <pm2.h>

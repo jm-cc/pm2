@@ -33,7 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-export FLAVOR_DEFAULT:=pm2
+export FLAVOR_DEFAULT:=pm2-mad2
 
 CFLAGS += -I/usr/X11R6/include -I$$OPENWINHOME/include
 LDFLAGS += -L/usr/X11R6/lib -L$$OPENWINHOME/lib -lxview -lolgx -lX11

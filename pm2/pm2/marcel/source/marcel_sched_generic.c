@@ -196,7 +196,7 @@ void marcel_sched_shutdown()
 	LOG_OUT();
 }
 
-static any_t __attribute__((noreturn)) idle_func(any_t hlwp)
+static any_t TBX_NORETURN idle_func(any_t hlwp)
 {
 	if (hlwp == NULL) {
 		/* upcall_new_task est venue ici ? */

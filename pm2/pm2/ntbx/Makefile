@@ -33,146 +33,24 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-###################### CUSTOMIZATION SECTION #####################
+MASTER_MODULE =  NTBX
+COMMON_DEFAULT_TARGET :=  mad_default
 
-NTBX_OPTIONS		= -O6 -g -fomit-frame-pointer  # -DDEBUG
+include $(PM2_ROOT)/make/master_vars.mak
 
-NTBX_STANDALONE_OPTIONS	= -g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
+# Ce makefile
+COMMON_MAKEFILES +=  $(NTBX_ROOT)/Makefile
 
-################### END OF CUSTOMIZATION SECTION #################
+# Inclusion des variables
+include $(NTBX_MAKE)/vars.mak
+include $(TBX_MAKE)/vars.mak
 
-ifndef NTBX_ROOT
-NTBX_ROOT	=	$(PM2_ROOT)/toolbox/net
-endif
+# Regles principales
+include $(PM2_ROOT)/make/master_rules.mak
 
-ifndef PM2_ARCH_SYS
-PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
-PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
-PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
-endif
-
-NTBX_MAKEFILE	=	$(NTBX_ROOT)/Makefile
-
-NTBX_OBJ        :=      $(NTBX_ROOT)/obj
-NTBX_SRC	:=	$(NTBX_ROOT)/src
-NTBX_DEP	:=	$(NTBX_SRC)/depend
-NTBX_INC	:=	$(NTBX_ROOT)/include
-NTBX_LIBD	=	$(NTBX_ROOT)/lib/$(PM2_ARCH_SYS)
-
-ifndef PM2_FLAGS
-ifdef MAD_ALONE
-NTBX_OPTIONS    += $(MAD_OPTIONS)
-else
-NTBX_OPTIONS    += $(NTBX_STANDALONE_OPTIONS) -DNTBX -DNTBX_TCP
-NTBX_ALONE       :=  true
-endif
-
-ifdef MARCEL_FLAGS
-NTBX_OPTIONS    += -DMARCEL -DTHREADS
-else 
-  ifdef MAD_THREAD_SUPPORT
-  NTBX_OPTIONS    += -DTHREADS
-  endif
-endif
-else
-NTBX_OPTIONS    += -DMARCEL -DTHREADS
-endif
+# Inclusion des regles de compilation
+include $(NTBX_MAKE)/rules.mak
+include $(TBX_MAKE)/rules.mak
 
 
-ifneq ($(wildcard $(NTBX_DEP)),$(NTBX_DEP))
-DUMMY_BUILD	:=	$(shell mkdir -p $(NTBX_DEP))
-endif
-
-ifneq ($(wildcard $(NTBX_OBJ)),$(NTBX_OBJ))
-DUMMY_BUILD	:=	$(shell mkdir -p $(NTBX_OBJ))
-endif
-
-ifneq ($(wildcard $(NTBX_LIBD)),$(NTBX_LIBD))
-DUMMY_BUILD	:=	$(shell mkdir -p $(NTBX_LIBD))
-endif
-
-NTBX_REG_SOURCES	:=	$(wildcard $(NTBX_SRC)/*.c)
-
-NTBX_REG_OBJECTS	:=	$(patsubst %.c,%.o,$(subst $(NTBX_SRC),$(NTBX_OBJ),$(NTBX_REG_SOURCES)))
-NTBX_OBJECTS	:=	$(NTBX_REG_OBJECTS) 
-
-NTBX_LIB	=	$(NTBX_LIBD)/libntbx.a
-NTBX_LLIB	=	$(ARCHDLIB)
-
-ifdef MAD_ALONE
-NTBX_CC         =       $(MAD_STANDALONE_CC)
-else
-NTBX_CC		=	gcc
-endif
-
-
-NTBX_CFLAGS	=	$(NTBX_OPTIONS) $(PM2_FLAGS) \
-			-I$(NTBX_INC) -I$(TBX_ROOT)/include -I$(MAD_ROOT)/include \
-			-I$(MAR_INC) -I$(PM2_ROOT)/include
-
-NTBX_LDFLAGS	=	
-
-NTBX_REG_DEPENDS:=	$(patsubst %.o,%.d,$(subst $(NTBX_OBJ),$(NTBX_DEP),$(NTBX_REG_OBJECTS)))
-NTBX_DEPENDS	:=	($strip $(NTBX_REG_DEPENDS))
-
-NTBX_DEP_TO_OBJ	=	$(NTBX_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
-
-ifneq ($(MAKECMDGOALS),clean)
-ifeq ($(wildcard $(NTBX_DEPENDS)),$(NTBX_DEPENDS))
-include $(NTBX_DEPENDS)
-endif
-endif
-
-ifdef $(NTBX_ALONE)
-$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d $(NTBX_MAKEFILE)
-$(NTBX_DEPENDS): $(NTBX_MAKEFILE)
-else
-ifdef $(MAD_ALONE)
-$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d $(MAD_MAKEFILE)
-$(NTBX_DEPENDS): $(MAD_MAKEFILE)
-else
-$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d $(PM2_MAKEFILE)
-$(NTBX_DEPENDS): $(PM2_MAKEFILE)
-endif
-endif
-
-.PHONY: ntbx_default
-ntbx_default: tbx_default $(NTBX_LIB)
-
-$(NTBX_LIB): $(NTBX_OBJECTS)
-	rm -f $(NTBX_LIB)
-	@ echo "  -  $(@F)"
-	ar cr $(NTBX_LIB) $(NTBX_OBJECTS)
-
-$(NTBX_REG_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_SRC)/%.c
-	@ echo "  -  $(@F)"
-	$(NTBX_CC) $(NTBX_CFLAGS) $(NTBX_FLAGS) -c $< -o $@
-
-$(NTBX_REG_DEPENDS): $(NTBX_DEP)/%.d: $(NTBX_SRC)/%.c
-	@ echo "  -  $(@F)"
-	$(SHELL) -ec '$(NTBX_CC) -MM $(NTBX_CFLAGS) $(NTBX_FLAGS) $< \
-		| sed '\''s/.*:/$(subst /,\/,$(NTBX_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
-
-
-ifndef NTBX_ALONE
-.PHONY: ntbxclean
-ntbxclean:
-	@echo "Cleaning net toolbox"
-	rm -f $(wildcard $(NTBX_LIBD)/*.a $(NTBX_OBJ)/*.o $(NTBX_DEP)/*.d)
-
-ntbxdistclean:
-	rm -rf $(wildcard $(NTBX_ROOT)/lib \
-		$(NTBX_ROOT)/obj \
-		$(NTBX_ROOT)/source/depend)
-else
-.PHONY: clean distclean
-clean:
-	@echo "Cleaning net toolbox"
-	rm -f $(wildcard $(NTBX_LIBD)/*.a $(NTBX_OBJ)/*.o $(NTBX_DEP)/*.d) \
-
-distclean:
-	rm -rf $(wildcard $(NTBX_ROOT)/lib \
-		$(NTBX_ROOT)/obj \
-		$(NTBX_ROOT)/source/depend)
-endif
-
+##############################################################################

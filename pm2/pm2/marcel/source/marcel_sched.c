@@ -58,6 +58,10 @@
 #endif
 #endif
 
+#ifdef __ACT__
+#include <sys/upcalls.h>
+#endif
+
 
 #ifdef DEBUG
 extern void breakpoint();
@@ -320,6 +324,25 @@ marcel_t marcel_radical_next_task(void)
       t = cur->next;
   }
 
+#ifdef __ACT__
+  ACTDEBUG(printf("Warning : marcel_radical_next_task used\n"));
+  while (t->state_ext==RUNNING) {
+    cur=t;
+    if(cur->quantums == 0) {
+      cur->quantums = cur->prio;
+      t = cur->next;
+    } else {
+      if(cur->next->quantums <= cur->quantums) {
+	if(cur_lwp->__first[0] == cur)
+	  t = cur->next;
+	else
+	  t = cur_lwp->__first[0];
+      } else
+	t = cur->next;
+    }
+  }
+#endif
+
   sched_unlock(cur_lwp);
 
   return t;
@@ -458,6 +481,10 @@ marcel_t marcel_unchain_task(marcel_t t)
   __lwp_t *cur_lwp = marcel_self()->lwp;
 #endif
 
+  ACTDEBUG(printf("marcel_unchain_task(%p->%p->%p->%p->%p\n", t,
+		  t->next, t->next->next, t->next->next->next, 
+		  t->next->next->next->next));
+
   sched_lock(cur_lwp);
 
   one_active_task_less(t, cur_lwp);
@@ -466,7 +493,23 @@ marcel_t marcel_unchain_task(marcel_t t)
   t->previous_lwp = cur_lwp;
 #endif
 
+#ifdef __ACT__
+  r = t;
+  do {
+    r=r->next;
+    if ((r->state_ext == MARCEL_RUNNING) && (r!=marcel_self()))
+      ACTDEBUG(printf("marcel_unchain_task(%p) : %p yet running\n", t, r));
+  } while ((r->state_ext == MARCEL_RUNNING) && (r!=t) && (r!=marcel_self()));
+  /* Pas très sur de moi ici. Apparemment, il faut renvoyer la
+     prochaine task à ordonnancer. Avec les activation, il ne faut pas
+     en prendre une tournant sur une aute activation, mais on peut
+     prendre nous-même. Mais est-ce que marcel_self() est valide
+     chaque fois que l'on appelle cette fonction (on a pu faire des
+     changements de pile...) */
+#else
   r = t->next;
+#endif
+  ACTDEBUG(printf("marcel_unchain_task(%p) : next=%p\n", t, r));
   if(r == t) {
     r = cur_lwp->sched_task;
     marcel_wake_task(r, NULL);
@@ -550,6 +593,9 @@ static __inline__ marcel_t next_task(marcel_t t, __lwp_t *lwp)
   sched_lock(lwp);
 
 #ifdef USE_PRIORITIES
+#ifdef __ACT__
+#error not yet implemented.
+#endif
   if(t->quantums-- == 1) {
     t->quantums = t->prio;
     res = t->next;
@@ -560,7 +606,15 @@ static __inline__ marcel_t next_task(marcel_t t, __lwp_t *lwp)
       res = t->next;
   }
 #else
+#ifdef __ACT__
+  res=t;
+  do {
+    res = res->next;
+  } while ((res->state_ext == MARCEL_RUNNING) && (res != t));
+  //ACTDEBUG(printf("next_task(%p) : next=%p\n", t, res));  
+#else
   res = t->next;
+#endif
 #endif
 
   sched_unlock(lwp);
@@ -577,19 +631,33 @@ void marcel_yield(void)
 
   lock_task();
 
+#ifdef __ACT__
+  cur->sched_by = SCHED_BY_MARCEL;
+  if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
+#else
   if(setjmp(cur->jb) == NORMAL_RETURN) {
+#endif
 #ifdef DEBUG
     breakpoint();
 #endif
     MTRACE("Preemption", cur);
+#ifdef __ACT__
+    cur->state_ext=MARCEL_RUNNING;
+#endif
     unlock_task();
     return;
   }
   call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+  cur->state_ext=MARCEL_READY;
+  restart_thread(next_task(cur, cur_lwp));
+#else
   longjmp(next_task(cur, cur_lwp)->jb, NORMAL_RETURN);
+#endif
 }
 
 
+#ifndef __ACT__
 void marcel_explicityield(marcel_t t)
 {
   register marcel_t cur = marcel_self();
@@ -627,6 +695,7 @@ void marcel_trueyield(void)
     longjmp(next->jb, NORMAL_RETURN);
   }
 }
+#endif /* __ACT__ */
 
 void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
 {
@@ -639,15 +708,25 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
   if(locked() != 1)
     RAISE(LOCK_TASK_ERROR);
   do {
+#ifdef __ACT__
+    cur->sched_by = SCHED_BY_MARCEL;
+    if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
+#else
     if(setjmp(cur->jb) == NORMAL_RETURN) {
+#endif
 #ifdef DEBUG
       breakpoint();
+#endif
+
+#ifdef __ACT__
+      cur->state_ext=MARCEL_RUNNING;
 #endif
 
       MTRACE("Preemption", cur);
     } else {
       SET_BLOCKED(cur);
       next = marcel_unchain_task(cur);
+      ACTDEBUG(printf("marcel_give_hand next=%p\n", next)); 
 
 #ifdef SMP
       if(first_time) {
@@ -658,12 +737,18 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
 #endif
 
       call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+      cur->state_ext=MARCEL_READY;
+      restart_thread(next);
+#else
       longjmp(next->jb, NORMAL_RETURN);
+#endif
     }
   } while(*blocked);
   unlock_task();
 }
 
+#ifndef __ACT__
 void marcel_tempo_give_hand(unsigned long timeout,
 			    boolean *blocked, marcel_sem_t *s)
 {
@@ -722,6 +807,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
   marcel_enablemigration(cur);
   unlock_task();
 }
+#endif /* __ACT__ */
 
 void marcel_setspecialthread(marcel_t pid)
 {
@@ -732,6 +818,7 @@ void marcel_setspecialthread(marcel_t pid)
 #endif
 }
 
+#ifndef __ACT__
 void marcel_givehandback(void)
 {
 #ifdef MINIMAL_PREEMPTION
@@ -746,6 +833,7 @@ void marcel_givehandback(void)
   marcel_trueyield();
 #endif
 }
+#endif /* __ACT__ */
 
 void marcel_delay(unsigned long millisecs)
 {
@@ -757,10 +845,18 @@ void marcel_delay(unsigned long millisecs)
   mdebug("\t\t\t<Thread %p goes sleeping>\n", cur);
 
   do {
+#ifdef __ACT__
+    cur->sched_by = SCHED_BY_MARCEL;
+    if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
+#else
     if(setjmp(cur->jb) == NORMAL_RETURN) {
+#endif
 #ifdef DEBUG
       breakpoint();
 #endif
+#ifdef __ACT__
+      cur->state_ext=MARCEL_RUNNING;
+#endif      
       MTRACE("Preemption", cur);
     } else {
 
@@ -769,7 +865,12 @@ void marcel_delay(unsigned long millisecs)
       p = marcel_unchain_task(cur);
 
       call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+      cur->state_ext=MARCEL_READY;
+      restart_thread(p);
+#else
       longjmp(p->jb, NORMAL_RETURN);
+#endif
     }
 
   } while(__milliseconds < ttw);
@@ -905,6 +1006,20 @@ static void start_timer(void);
 static void set_timer(void);
 void stop_timer(void);
 
+#ifdef __ACT__
+/* Each processor must be able to run something */
+any_t wait_and_yield(any_t arg)
+{
+  int nb=0;
+
+  for(;;) {
+    if(!((nb++) % 1000000))
+      ACTDEBUG(printf("wait_and_yield %p yielding\n", marcel_self()));
+    marcel_yield();
+  }
+}
+#endif
+
 /* Except at the beginning, lock_task() is supposed to be permanently
    handled */
 any_t sched_func(any_t arg)
@@ -914,13 +1029,19 @@ any_t sched_func(any_t arg)
   __lwp_t *cur_lwp = cur->lwp;
 #endif
 
+#ifndef __ACT__
   start_timer(); /* May be redundant for main LWP */
+#endif
 
   lock_task();
+
+  ACTDEBUG(printf("sched_func starting with lock_task\n")); 
 
   do {
 
     mdebug("\t\t\t<Scheduler scheduled> (LWP = %d)\n", cur_lwp->number);
+    ACTDEBUG(printf("\t\t\t<Scheduler scheduled> (LWP = %d)\n",
+		    cur_lwp->number));
 
 #ifdef SMP
     /* Note that the current implementation does not detect DEADLOCKS
@@ -990,10 +1111,24 @@ any_t sched_func(any_t arg)
 
     mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d)\n", cur_lwp->number);
 
+#ifdef __ACT__
+    cur->sched_by = SCHED_BY_MARCEL;
+    if(setjmp(cur->jb.migr_jb) == FIRST_RETURN) {
+#else
     if(setjmp(cur->jb) == FIRST_RETURN) {
+#endif
       call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+      cur->state_ext=MARCEL_READY;
+      restart_thread(next);
+#else
       longjmp(next->jb, NORMAL_RETURN);
+#endif
     }
+
+#ifdef __ACT__
+    cur->state_ext=MARCEL_RUNNING;
+#endif
 
     MTRACE("Preemption", cur);
 
@@ -1010,7 +1145,11 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   lwp->has_new_tasks = FALSE;
   lwp->sched_queue_lock = MARCEL_LOCK_INIT;
 #ifdef X86_ARCH
+#ifdef __ACT__
+  initial_task->aid=1; //TODO : Hack because I know the first aid is 1 but...
+#else
   atomic_set(&lwp->_locked, 0);
+#endif
 #else
   lwp->_locked = 0;
 #endif
@@ -1057,9 +1196,11 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   unlock_task();
 }
 
-#ifdef SMP
-
+#if defined(SMP) || defined(__ACT__)
 static unsigned __nb_processors = 1;
+#endif
+
+#ifdef SMP
 
 static void *lwp_startup_func(void *arg)
 {
@@ -1139,7 +1280,8 @@ void marcel_sched_init(unsigned nb_lwp)
   sigemptyset(&sigalrmset);
   sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
 
-#ifdef SMP
+  ACTDEBUG(printf("marcel_sched_init(%i)\n", nb_lwp)); 
+#if defined(SMP) || defined(__ACT__)
 
 #ifdef SOLARIS_SYS
   __nb_processors = sysconf(_SC_NPROCESSORS_CONF);
@@ -1167,8 +1309,12 @@ void marcel_sched_init(unsigned nb_lwp)
 
   mdebug("%d processors available\n", __nb_processors);
 
+#ifdef __ACT__
+  _main_struct.nb_tasks = -1-__nb_processors;
+#else
   NB_LWPS = (nb_lwp ? nb_lwp : __nb_processors);
   _main_struct.nb_tasks = -NB_LWPS;
+#endif
 #else
   _main_struct.nb_tasks = -1;
 #endif
@@ -1181,8 +1327,12 @@ void marcel_sched_init(unsigned nb_lwp)
      LWP != main_LWP execute on the main stack, so: */
   __main_thread->sched_policy = MARCEL_SCHED_FIXED(0);
 
+  ACTDEBUG(printf("marcel_sched_init memset done\n")); 
+
   /* Initialization of "main LWP" (required even when SMP not set). */
   init_lwp(&__main_lwp, __main_thread);
+  ACTDEBUG(printf("marcel_sched_init init_lwp done\n")); 
+
   __main_lwp.next = __main_lwp.prev = &__main_lwp;
   __main_lwp.sched_task->sched_policy = MARCEL_SCHED_FIXED(0);
   __main_lwp.sched_task->previous_lwp = NULL;
@@ -1191,7 +1341,11 @@ void marcel_sched_init(unsigned nb_lwp)
   one_more_active_task(__main_thread, &__main_lwp);
   MTRACE("MainTask", __main_thread);
 
+  ACTDEBUG(printf("marcel_sched_init one task done\n")); 
+
   sched_unlock(&__main_lwp);
+
+  ACTDEBUG(printf("marcel_sched_init sched_unlock done\n")); 
 
 #ifdef SMP
 
@@ -1209,9 +1363,19 @@ void marcel_sched_init(unsigned nb_lwp)
   }
 #endif
 
+#ifdef __ACT__
+  {
+    int i;
+    for(i=0; i<__nb_processors; i++) { /* TODO : autant que de processeurs */
+      marcel_create(NULL, NULL, wait_and_yield, NULL);
+    }
+  }
+#else
   /* Démarrage d'un timer Unix pour récupérer périodiquement 
      un signal (par ex. SIGALRM). */
   start_timer();
+#endif
+  ACTDEBUG(printf("marcel_sched_init done\n")); 
 }
 
 #ifdef SMP

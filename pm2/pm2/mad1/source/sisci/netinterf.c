@@ -290,7 +290,7 @@ void mad_sisci_network_send(int dest_node,
 
 	while((max_w = MAX_WRITABLE(box)) == 0) {
 #ifdef PM2
-	  marcel_givehandback();
+	  marcel_yield();
 #else
 	  _FLUSH_WRITES(box);
 #endif
@@ -348,7 +348,7 @@ void mad_sisci_network_receive(char **head)
   do {
     i = (i+1) % confsize;
 #ifdef PM2
-    marcel_givehandback();
+    marcel_yield();
 #endif
   } while((i == pm2self) || ((max_r = MAX_READABLE(&SCI_box_tab[i])) == 0));
 
@@ -391,7 +391,7 @@ void mad_sisci_network_receive(char **head)
 
 	while((max_r = MAX_READABLE(current_expeditor)) == 0) {
 #ifdef PM2
-	  marcel_givehandback();
+	  marcel_yield();
 #else
 	  _FLUSH_WRITES(current_expeditor);
 #endif
@@ -408,7 +408,7 @@ void mad_sisci_network_receive(char **head)
     /* Il suffit d'attendre que toutes les données soient disponibles */
     while(max_r < header_len) {
 #ifdef PM2
-      marcel_givehandback();
+      marcel_yield();
 #else
       _FLUSH_WRITES(current_expeditor);
 #endif
@@ -437,7 +437,7 @@ void mad_sisci_network_receive_data(struct iovec *vector, size_t count)
 
     while((max_r = MAX_READABLE(current_expeditor)) == 0) {
 #ifdef PM2
-      marcel_givehandback();
+      marcel_yield();
 #else
 	SCIFlushReadBuffers(current_expeditor->sequence);
 	_FLUSH_WRITES(current_expeditor);
@@ -498,7 +498,7 @@ void mad_sisci_network_send(int dest_node,
 	// S'aranger pour que la boucle ne soit pas trop rapide
 	// sinon il n'y a pas mise a jour des buffer.
 #ifdef PM2
-	marcel_givehandback();
+	marcel_yield();
 #else
 	SCIFlushReadBuffers(box->sequence);
 #endif
@@ -562,7 +562,7 @@ void mad_sisci_network_receive(char **head)
   do {
     i = (i+1)%confsize;
 #ifdef PM2
-    marcel_givehandback();
+    marcel_yield();
 #endif
   } while((i == pm2self) || _READ_IMPOSSIBLE(&SCI_box_tab[i]));
 

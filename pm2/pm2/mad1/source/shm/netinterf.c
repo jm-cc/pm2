@@ -392,7 +392,7 @@ void mad_shm_network_send (int dest_node, struct iovec *vector, size_t count)
    while (*pack == 0) 
      {
        if (nb_procs > 1)
-          marcel_givehandback () ;
+          marcel_yield () ;
        else
 	 {
 	   lock_task () ;
@@ -404,7 +404,7 @@ void mad_shm_network_send (int dest_node, struct iovec *vector, size_t count)
 	   else
 	     {
 	       unlock_task () ;
-	       marcel_givehandback();
+	       marcel_yield();
 	     }
 	 }
      }
@@ -468,7 +468,7 @@ void mad_shm_network_send (int dest_node, struct iovec *vector, size_t count)
                while (*prec == 0) 
 		 {
 		   if (nb_procs > 1)
-		     marcel_givehandback () ;
+		     marcel_yield () ;
 		   else
 		     {
 		       lock_task () ;
@@ -480,7 +480,7 @@ void mad_shm_network_send (int dest_node, struct iovec *vector, size_t count)
 		       else
 			 {
 			   unlock_task () ;
-			   marcel_givehandback();
+			   marcel_yield();
 			 }
 		     }
 		 }
@@ -567,7 +567,7 @@ void mad_shm_network_receive_data (struct iovec *vector, size_t count)
                while (*pcomp == 0) 
 		 {
 		   if (nb_procs>1)
-		     marcel_givehandback () ;
+		     marcel_yield () ;
 		   else
 		     {
 		       lock_task () ;
@@ -579,7 +579,7 @@ void mad_shm_network_receive_data (struct iovec *vector, size_t count)
 		       else
 			 {
 			   unlock_task () ;
-			   marcel_givehandback();
+			   marcel_yield();
 			 }
 		     }
 		 }
@@ -632,7 +632,7 @@ void mad_shm_network_receive (char **head)
      else 
        {
 	 if (nb_procs > 1)
-	   marcel_givehandback () ;
+	   marcel_yield () ;
 	 else
 	   {
 	     lock_task () ;
@@ -644,7 +644,7 @@ void mad_shm_network_receive (char **head)
 	     else
 	       {
 		 unlock_task () ;
-		 marcel_givehandback();
+		 marcel_yield();
 	       }
 	   }
        }
@@ -658,7 +658,7 @@ void mad_shm_network_receive (char **head)
  while (*pcomp == 0) 
    {
      if (nb_procs > 1)
-       marcel_givehandback () ;
+       marcel_yield () ;
      else 
        {
 	 lock_task () ;
@@ -670,7 +670,7 @@ void mad_shm_network_receive (char **head)
          else
 	   {
 	     unlock_task () ;
-	     marcel_givehandback();
+	     marcel_yield();
 	   }
        }
    }

@@ -17,8 +17,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <gtk/gtk.h>
+#include <string.h>
 
 #include "statusbar.h"
+
 
 static char supertracename[1024];
 static char msg[1024];

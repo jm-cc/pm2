@@ -239,36 +239,8 @@ void upcall_new(act_proc_t proc)
 		}
 	}
 
-	{
-		marcel_t cur = marcel_self();
-		
-		DEFINE_CUR_LWP( , ,);
-		
-		SET_CUR_LWP(GET_LWP(cur));
+	marcel_give_hand_from_upcall_new();
 
-		LOG_IN();
-
-		sched_lock(cur_lwp);
-
-		
-		mdebug("upcall...%p on %p\n", cur, cur_lwp);
-		next = radical_next_task(NULL, cur_lwp);
-		SET_STATE_RUNNING(NULL, t, cur_lwp);
-		sched_unlock(cur_lwp);
-		
-		return t;
-		
-	}
-
-	//next=marcel_radical_next_task();
-	mdebug("\tupcall_new next=%p (state %i)\n", next, next->ext_state);
-	
-	//ACTDEBUG(printf("upcall_new launch %p\n", next));  
-
-	/* On ne veut pas être mis en non_running */
-	GET_LWP(marcel_self())->prev_running=NULL;
-	MA_THR_LONGJMP(next, NORMAL_RETURN);
-	
 	/** Never there normally */	
 	RAISE("Aie, aie aie !\n");
 }

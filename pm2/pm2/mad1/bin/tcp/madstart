@@ -39,6 +39,8 @@
 MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
 export MAD1_ROOT
 
+PM2_CONF_FILE=$1
+shift
 DISPLAY=$1
 shift
 MAD_DEBUG=$1
@@ -54,6 +56,7 @@ shift
 MAD_SERVER_HOST=$1
 shift
 
+export PM2_CONF_FILE
 export DISPLAY
 export MAD_DEBUG
 export MAD_NUM_NODES
@@ -64,8 +67,8 @@ export MAD_SERVER_HOST
 
 if test "$MAD_DEBUG" = on
 then
-    ${MAD1_ROOT}/bin/tcp/maddebug $DISPLAY $* &
+    ${MAD1_ROOT}/bin/tcp/maddebug "$@" &
 else
-    $* &
+    "$@" &
 fi
 

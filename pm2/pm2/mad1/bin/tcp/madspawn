@@ -47,6 +47,8 @@
 MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
 export MAD1_ROOT
 
+# Note: PM2_CONF_FILE is inherited
+
 serverhost=$1
 shift
 confsize=$1
@@ -56,38 +58,39 @@ shift
 MAD_CONSOLE=$1
 shift
 
-command=$*
+prog="$1"
+shift
+args=""
+while [ $# -gt 0 ]; do
+    args="$args '$1'"
+    shift
+done
 
 mynumber=1
-nbmachines=`cat ${MAD1_ROOT}/.madconf | wc -w`
+nbmachines=`cat ${PM2_CONF_FILE} | wc -w`
 
-if test -z "$MAD_DEBUG"
-then
+if [ -z "$MAD_DEBUG" ]; then
     MAD_DEBUG=off
 fi
 
-if test -z "$DISPLAY"
-then
+if [ -z "$DISPLAY" ]; then
     DISPLAY=:0
 fi
 
-if test $MAD_CONSOLE = "no"
-then
+if [ "$MAD_CONSOLE" = "no" ]; then
     trueconfsize=$confsize
 else
     trueconfsize=`expr $confsize - 1`
 fi
 
-while test $mynumber -lt $trueconfsize
-do
+while [ $mynumber -lt $trueconfsize ]; do
     plusun=`expr $mynumber % $nbmachines + 1`
-    host=`head -$plusun ${MAD1_ROOT}/.madconf | tail -1`
-    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstart $DISPLAY $MAD_DEBUG $confsize $mynumber $host $port $serverhost $command &
+    host=`head -$plusun ${PM2_CONF_FILE} | tail -1`
+    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstart "$PM2_CONF_FILE" "$DISPLAY" "$MAD_DEBUG" $confsize $mynumber $host $port $serverhost $prog $args &
     mynumber=`expr $mynumber + 1`
 done
 
-if test ! $MAD_CONSOLE = "no"
-then
-    host=`head -1 ${MAD1_ROOT}/.madconf`
-    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstartcons $DISPLAY $MAD_CONSOLE $confsize $mynumber $host $port $serverhost &
+if [ ! $MAD_CONSOLE = "no" ]; then
+    host=`head -1 ${PM2_CONF_SIZE}`
+    rsh -n $host ${MAD1_ROOT}/bin/tcp/madstartcons "$PM2_CONF_FILE" "$DISPLAY" "$MAD_CONSOLE" $confsize $mynumber $host $port $serverhost &
 fi

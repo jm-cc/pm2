@@ -217,7 +217,7 @@ find_flavor() {
 
 get_liste_flavor() {
     if [ -d "$PM2_ROOT/flavors" ]; then
-	if [ -d "$USER_FLAVOR_DIR" ]; then
+	if [ ${EDIT_MODE} = "normal" -a -d "$USER_FLAVOR_DIR" ]; then
 	    liste_flavor_tmp=`( cd $PM2_ROOT/flavors; ls; cd $USER_FLAVOR_DIR; ls) | sort | uniq`
 	else
 	    liste_flavor_tmp=`( cd $PM2_ROOT/flavors; ls)`
@@ -763,8 +763,13 @@ do_regenerate() {
 	esac
 	shift
     done
-    for f in ${flavor:-`"$PM2_FLAVOR" list`} ; do
-	"$PM2_FLAVOR" set `"$PM2_FLAVOR" get --flavor=$f`
+    if [ ${EDIT_MODE} = "normal" ]; then
+	flag=""
+    else
+	flag="--admin"
+    fi
+    for f in ${flavor:-`"$PM2_FLAVOR" ${flag} list`} ; do
+	"$PM2_FLAVOR" ${flag} set `"$PM2_FLAVOR" ${flag} get --flavor=$f`
     done
 
     exit 0

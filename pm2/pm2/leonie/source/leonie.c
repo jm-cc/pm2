@@ -16,7 +16,7 @@
 /*
  * leonie.c
  * ========
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -65,7 +65,7 @@ process_command_line(int    argc,
   p_leo_settings_t settings = NULL;
 
   tbx_arg_iterator(argc, argv, leo_usage);
-  
+
   LOG_IN();
   if (!tbx_argit_init())
     leo_usage();
@@ -78,7 +78,7 @@ process_command_line(int    argc,
 	{
 	  leo_help();
 	}
-      
+
       do
 	{
 	  if (tbx_argit_vopt_equals("--appli"))
@@ -89,7 +89,7 @@ process_command_line(int    argc,
 		}
 	      else
 		leo_terminate("duplicate application name definition");
-	      
+
 	    }
 	  else if (tbx_argit_vopt_equals("--flavor"))
 	    {
@@ -110,15 +110,15 @@ process_command_line(int    argc,
 		{
 		  settings->network_file_slist = tbx_slist_nil();
 		}
-	      
+
 	      {
 		p_leoparse_object_t  object = NULL;
 		char                *base   = NULL;
 		char                *ptr    = NULL;
 		char                *file   = NULL;
-		
+
 		base = network_file;
-		
+
 		while ((ptr = strchr(network_file, ',')))
 		  {
 		    *ptr   = '\0';
@@ -126,9 +126,9 @@ process_command_line(int    argc,
 		    object = leoparse_init_id_object(file, NULL);
 		    file = NULL;
 		    tbx_slist_append(settings->network_file_slist, object);
-		    base = ptr + 1; 
+		    base = ptr + 1;
 		  }
-		
+
 		file   = tbx_strdup(base);
 		object = leoparse_init_id_object(file, NULL);
 		file   = NULL;
@@ -171,11 +171,10 @@ process_command_line(int    argc,
 	    }
 	  else if (tbx_argit_arg_equals("-d"))
 	    {
-	      settings->gdb_mode    = tbx_true;
-	      
-	      settings->xterm_mode  = tbx_true;
-	      settings->log_mode    = tbx_false;
-	      settings->pause_mode  = tbx_false;
+	      settings->gdb_mode   = tbx_true;
+	      settings->xterm_mode = tbx_true;
+	      settings->log_mode   = tbx_false;
+	      settings->pause_mode = tbx_false;
 	    }
 	  else if (tbx_argit_arg_equals("--d"))
 	    {
@@ -189,6 +188,7 @@ process_command_line(int    argc,
 	    {
 	      settings->smp_mode    = tbx_false;
 	    }
+#ifdef LEO_EXPORT_MODE
 	  else if (tbx_argit_arg_equals("-e"))
 	    {
 	      settings->export_mode = tbx_true;
@@ -197,25 +197,26 @@ process_command_line(int    argc,
 	    {
 	      settings->export_mode = tbx_false;
 	    }
+#endif // LEO_EXPORT_MODE
 	  else
 	    tbx_argit_invalid_arg();
-	  
+
 	}
       while (tbx_argit_next_opt());
     }
-  
+
   settings->config_file = tbx_argit_arg_cstr();
 
   if (tbx_argit_next_arg())
     {
       p_tbx_arguments_t args = NULL;
-      
+
       args = tbx_arguments_init();
-      
+
       do
 	{
 	  char *arg = NULL;
-	  
+
 	  arg = tbx_argit_arg_cstr();
 	  tbx_arguments_append_cstring(args, arg);
 	}
@@ -223,7 +224,7 @@ process_command_line(int    argc,
 
       settings->args = args;
     }
-  
+
   LOG_OUT();
 
   return settings;
@@ -241,7 +242,7 @@ init_leonie_object(int    argc,
 
   TRACE("== Registering loaders");
   leonie->loaders = leo_loaders_register();
-  
+
   TRACE("== Processing command line");
   leonie->settings = process_command_line(argc, argv);
 
@@ -267,7 +268,7 @@ parse_application_file(p_leonie_t leonie)
     leoparse_parse_local_file(settings->config_file);
   leonie->application_htable =
     leoparse_extract_htable(application_file_htable, "application");
-  
+
   if (!tbx_htable_empty(application_file_htable))
     FAILURE("unexpected datas in application configuration file");
 
@@ -285,7 +286,7 @@ main(int    argc,
   LOG_IN();
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);
-  
+
   TRACE("== Initializing parser");
   leoparse_init(argc, argv);
   leoparse_purge_cmd_line(&argc, argv);

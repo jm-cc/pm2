@@ -14,7 +14,7 @@
   extern int yylex(void);
 
   /* Global variables */
-  p_tbx_htable_t leo_parser_result = NULL;
+  p_tbx_htable_t leoparse_result = NULL;
 
   /* Prototypes */
   void yyerror(char *s); 
@@ -44,6 +44,7 @@ entree:
   leop_file
 {
   $$ = $1;
+  leoparse_result = $$;
 }
 ;
 

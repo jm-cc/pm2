@@ -54,9 +54,7 @@ SPACE		:=	$(EMPTY) $(EMPTY)
 # objets, bibliothèques)
 ifdef _MAD_OPTIONS
 MAD_OPTIONS		:=	$(_MAD_OPTIONS)
-MAD_USE_EXTENSION	:=	yes
-else
-MAD_USE_EXTENSION	:=	no
+COMMON_USE_EXTENSION	:=	yes
 endif
 
 # Inclusion des options
@@ -74,14 +72,22 @@ else
 MAD_EXT		:=	-mad_none
 endif
 
-# Si on étend les noms de fichiers, il faut mettre a jour COMMON_EXT,
-# sinon il faut mettre a jour COMMON_EXTRA_DEP...
-ifeq ($(MAD_USE_EXTENSION),yes)
-COMMON_EXT		:=	$(COMMON_EXT)$(MAD_EXT)
-else
-COMMON_EXTRA_DEP	:=	$(COMMON_EXTRA_DEP)$(MAD_EXT)
-MAD_EXTRA_DEP_FILE	=	$(MAD1_ROOT)/.opt$(COMMON_EXTRA_DEP)
-COMMON_MAKEFILES	+=	$(MAD_EXTRA_DEP_FILE)
+# Si on étend les noms de fichiers, il faut mettre à jour COMMON_EXT
+COMMON_TEMPO_EXT	:=	$(COMMON_TEMPO_EXT)$(MAD_EXT)
+# Attention : ici, il faut utiliser COMMON_TEMPO_EXT et non COMMON_EXT
+# car cette dernière sera peut-être remise à zéro dans rules.mak
+MAD_EXTRA_DEP_FILE	=	$(MAD1_ROOT)/.opt$(COMMON_TEMPO_EXT)
+
+# Cette variable accumule systématiquement les fichiers de
+# dépendance. Elle sera peut-être remise à zéro in-extremis dans
+# rules.mak...
+COMMON_EXTRA_DEP	+=	$(MAD_EXTRA_DEP_FILE)
+
+# Il faut ajouter COMMON_EXTRA_DEP une seule fois. Je sais, ce n'est
+# pas très beau...
+ifneq ($(__EXTRA_DEP_SET),yes)
+COMMON_MAKEFILES	+=	$(COMMON_EXTRA_DEP)
+__EXTRA_DEP_SET		:=	yes
 endif
 
 # Inclusion des options specifiques au protocole reseau

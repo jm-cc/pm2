@@ -16,9 +16,9 @@
 
 /* Options: ISOADDR_ALOC_TRACE, ISOADDR_NEGOCIATION_TRACE, ISOADDR_INFO_TRACE, ASSERT */
 
-#define ISOADDR_ALOC_TRACE
-#define ISOADDR_NEGOCIATION_TRACE
-#define ISOADDR_INFO_TRACE
+//#define ISOADDR_ALOC_TRACE
+//#define ISOADDR_NEGOCIATION_TRACE
+//#define ISOADDR_INFO_TRACE
 //#define ASSERT
 
 #include <stdio.h>
@@ -105,7 +105,7 @@ typedef page_info_entry_t *page_info_table_t;
 
 static page_info_table_t _info_table;
 static int _page_distrib_mode = CYCLIC;
-static long _page_distrib_arg = 16;
+static long _page_distrib_arg = (THREAD_SLOT_SIZE/DSM_PAGE_SIZE);
 
 #ifdef min
 #undef min
@@ -603,7 +603,7 @@ if (node == _local_node_rank)
 
 #define begin_slot_distribution() cycle_start = 0
 
-#define end_slot_distribution() _pm2_set_uniform_slot_distribution(16, -1)
+#define end_slot_distribution() _pm2_set_uniform_slot_distribution((THREAD_SLOT_SIZE/DSM_PAGE_SIZE), -1)
 
 
 static void _internal_isoaddr_config_slot_map()

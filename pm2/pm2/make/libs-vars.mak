@@ -33,18 +33,17 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# if someone do 'make' in an module directory, ...
+default: no_goal
+
 # Variables communes
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/common-vars.mak
 
-# Regle par defaut: libairies
-#---------------------------------------------------------------------
-# Note: cette regle est utilisee dans quel cas ?
-libs:
-
 # Nom de la librairie
 #---------------------------------------------------------------------
 # Note dans quel cas est-ce necessaire ?
+# Tous sauf mad1 et mad2
 ifndef LIBNAME
 LIBNAME := $(LIBRARY)
 endif
@@ -55,7 +54,9 @@ LIB_SRC := source
 
 # Inclusion du cache de configuration de la librairie
 #---------------------------------------------------------------------
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/$(LIBRARY)-config.mak
+endif
 
 # Commandes de compilation et d'assemblage
 #---------------------------------------------------------------------
@@ -150,7 +151,10 @@ COMMON_DEPS += $(LIB_STAMP_FLAVOR) $(MAKEFILE_FILE)
 # Regle de construction du cache de configuration de la librairie
 #---------------------------------------------------------------------
 #     Note: pourquoi ici plutot que dans libs-rules.mak ?
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 $(PM2_MAK_DIR)/$(LIBRARY)-config.mak: $(LIB_STAMP_FLAVOR)
+	@echo "Generating $@"
 	@$(PM2_CONFIG) --gen_mak $(LIBRARY)
+endif
 
 ######################################################################

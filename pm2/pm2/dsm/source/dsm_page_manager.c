@@ -984,9 +984,9 @@ void dsm_set_user_data2(unsigned long index, void *addr)
 
 void dsm_alloc_twin(unsigned long index)
 {
-#ifdef DEBUG
+#ifdef PM2DEBUG
   assert(dsm_page_table[index]->twin == NULL);
-#endif //DEBUG
+#endif // PM2DEBUG
 
   dsm_page_table[index]->twin = TBX_MALLOC(DSM_PAGE_SIZE);
   CTRL_ALLOC(dsm_page_table[index]->twin);

@@ -2479,7 +2479,36 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 }
 
 void
-mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
+mad_dir_directory_get(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t    session           = NULL;
+  p_ntbx_client_t    client            = NULL;
+  char              *command_string    = NULL;
+
+  LOG_IN();
+  TRACE("Receiving directory");  
+  mad_dir_process_get(madeleine);
+  mad_dir_node_get(madeleine);
+  mad_dir_driver_get(madeleine);
+  mad_dir_channel_get(madeleine);
+  mad_dir_fchannel_get(madeleine);
+  mad_dir_vchannel_get(madeleine);  
+
+  session        = madeleine->session;
+  client         = session->leonie_link;
+  command_string = mad_ntbx_receive_string(client);
+  
+  if (strcmp(command_string, "end{directory}"))
+    FAILURE("synchronisation error");
+
+  TBX_FREE(command_string);
+  command_string = NULL;
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 {
   p_mad_session_t   session            = NULL;
   p_ntbx_client_t   client             = NULL;
@@ -2576,28 +2605,1659 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 #endif // MARCEL
       mad_ntbx_send_int(client, -1);
     }
+
+  // Vchannel closing
+
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t   session            = NULL;
+  p_mad_directory_t dir                = NULL;
+  p_ntbx_client_t   client             = NULL;
+  p_tbx_htable_t    mad_channel_htable = NULL;
+
+  LOG_IN();
+  
+  TRACE("Closing vchannels");
+  session            = madeleine->session;
+  client             = session->leonie_link;
+  dir                = madeleine->dir;
+  mad_channel_htable = madeleine->channel_htable;
+
+  while (1)
+    {
+#ifdef MARCEL
+      p_mad_channel_t           mad_channel  = NULL;
+      p_mad_adapter_t           mad_adapter  = NULL;
+      p_mad_driver_t            mad_driver   = NULL;
+      p_mad_driver_interface_t  interface    = NULL;
+      p_tbx_darray_t            in_darray    = NULL;
+      p_tbx_darray_t            out_darray   = NULL;
+#endif // MARCEL
+      char                     *channel_name = NULL;
+
+      channel_name = mad_ntbx_receive_string(client);
+      if (!strcmp(channel_name, "-"))
+	break;
+      
+#ifdef MARCEL
+      mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
+
+      if (!mad_channel)
+	FAILURE("vchannel not found");
+
+      TRACE_STR("Vchannel", channel_name);
+
+      mad_adapter = mad_channel->adapter;
+      mad_driver  = mad_adapter->driver;
+      interface   = mad_driver->interface;
+
+      if (interface->before_close_channel)
+	interface->before_close_channel(mad_channel);
+      
+      in_darray  = mad_channel->in_connection_darray;
+      out_darray = mad_channel->out_connection_darray;
+      
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+	  
+	  command = mad_ntbx_receive_int(client);
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_ntbx_receive_int(client);	  
+
+	  if (!interface->disconnect)
+	    goto channel_connection_closed;  
+
+	  if (command)
+	    {
+	      // Output connection
+	      p_mad_connection_t out = NULL;
+
+	      TRACE_VAL("Closing connection to", remote_rank);
+
+	      out = tbx_darray_get(out_darray, remote_rank);
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  if (!out->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(out);
+		  out->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(out);
+		}
+	    }
+	  else
+	    {
+	      // Input connection
+	      p_mad_connection_t in = NULL;
+
+	      TRACE_VAL("Closing connection from", remote_rank);
+
+	      in = tbx_darray_get(in_darray, remote_rank);
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  if (!in->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(in);
+		  in->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(in);
+		}
+	      
+	    }
+
+	channel_connection_closed:
+	  mad_ntbx_send_int(client, -1);
+	}
+      
+      mad_ntbx_send_int(client, -1);
+
+      if (interface->after_close_channel)
+	interface->after_close_channel(mad_channel);
+
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+	  
+	  command = mad_ntbx_receive_int(client);
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_ntbx_receive_int(client);
+
+	  if (command)
+	    {
+	      TRACE_VAL("Freeing connection to", remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");		  
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+	      
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			  
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+
+			  if (out->specific == in->specific)
+			    {
+			      out->specific = NULL;
+			    }
+
+			  in->specific  = NULL;
+			}
+		      
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  out = tbx_darray_get(out_darray, remote_rank);
+		  if (!out)
+		    FAILURE("invalid connection");
+		  
+		  for (link_id = 0; link_id < out->nb_link; link_id++)
+		    {
+		      p_mad_link_t out_link = NULL;
+	      
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  out_link->specific = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			}
+
+		      memset(out_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(NULL, out);
+		    }
+		  else
+		    {
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(out, 0, sizeof(mad_connection_t));
+		  TBX_FREE(out);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	    }
+	  else
+	    {
+	      TRACE_VAL("Freeing connection from", remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+	      
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			  
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+
+			  if (out->specific == in->specific)
+			    {
+			      out->specific = NULL;
+			    }
+
+			  in->specific  = NULL;
+			}
+		      
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t in  = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+
+		  if (!in)
+		    FAILURE("invalid connection");
+		  
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+	      
+		      in_link = in->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(in_link);
+			  in_link->specific = NULL;
+			}
+		      else
+			{
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, NULL);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+			  in->specific = NULL;
+			}
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  TBX_FREE(in);
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		}
+	    }
+
+	connection_freed:
+	  mad_ntbx_send_int(client, -1);
+	}
+      
+      tbx_darray_free(in_darray);
+      tbx_darray_free(out_darray);
+      
+      mad_channel->in_connection_darray  = NULL;
+      mad_channel->out_connection_darray = NULL;
+
+      if (interface->channel_exit)
+	interface->channel_exit(mad_channel);
+
+      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
+
+      TBX_FREE(mad_channel->name);
+      mad_channel->name = NULL;
+
+      {
+	p_tbx_slist_t slist = NULL;
+	
+	slist = mad_channel->channel_slist;
+	while (!tbx_slist_is_nil(slist))
+	  {
+	    tbx_slist_extract(slist);
+	  }
+
+	tbx_slist_free(slist);
+	mad_channel->channel_slist = NULL;
+
+	slist = mad_channel->fchannel_slist;
+	while (!tbx_slist_is_nil(slist))
+	  {
+	    tbx_slist_extract(slist);
+	  }
+
+	tbx_slist_free(slist);
+	mad_channel->fchannel_slist = NULL;
+      }
+
+      memset(mad_channel, 0, sizeof(mad_channel_t));
+      TBX_FREE(mad_channel);
+      mad_channel = NULL;
+#endif // MARCEL
+
+      mad_ntbx_send_int(client, -1);
+    }  
+  LOG_OUT();  
+}
+
+static
+void
+mad_dir_fchannel_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t   session            = NULL;
+  p_mad_directory_t dir                = NULL;
+  p_ntbx_client_t   client             = NULL;
+  p_tbx_htable_t    mad_channel_htable = NULL;
+
+  LOG_IN();
+  
+  TRACE("Closing fchannels");
+  session            = madeleine->session;
+  client             = session->leonie_link;
+  dir                = madeleine->dir;
+  mad_channel_htable = madeleine->channel_htable;
+
+  while (1)
+    {
+      p_mad_channel_t           mad_channel  = NULL;
+      p_mad_adapter_t           mad_adapter  = NULL;
+      p_mad_driver_t            mad_driver   = NULL;
+      p_mad_driver_interface_t  interface    = NULL;
+      p_tbx_darray_t            in_darray    = NULL;
+      p_tbx_darray_t            out_darray   = NULL;
+      char                     *channel_name = NULL;
+
+      channel_name = mad_ntbx_receive_string(client);
+      if (!strcmp(channel_name, "-"))
+	break;
+      
+      mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
+
+      if (!mad_channel)
+	FAILURE("fchannel not found");
+
+      TRACE_STR("Fchannel", channel_name);
+
+      mad_adapter = mad_channel->adapter;
+      mad_driver  = mad_adapter->driver;
+      interface   = mad_driver->interface;
+
+      if (interface->before_close_channel)
+	interface->before_close_channel(mad_channel);
+      
+      in_darray  = mad_channel->in_connection_darray;
+      out_darray = mad_channel->out_connection_darray;
+      
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+	  
+	  command = mad_ntbx_receive_int(client);
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_ntbx_receive_int(client);	  
+
+	  if (!interface->disconnect)
+	    goto channel_connection_closed;  
+
+	  if (command)
+	    {
+	      // Output connection
+	      p_mad_connection_t out = NULL;
+
+	      TRACE_VAL("Closing connection to", remote_rank);
+
+	      out = tbx_darray_get(out_darray, remote_rank);
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  if (!out->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(out);
+		  out->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(out);
+		}
+	    }
+	  else
+	    {
+	      // Input connection
+	      p_mad_connection_t in = NULL;
+
+	      TRACE_VAL("Closing connection from", remote_rank);
+
+	      in = tbx_darray_get(in_darray, remote_rank);
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  if (!in->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(in);
+		  in->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(in);
+		}
+	      
+	    }
+
+	channel_connection_closed:
+	  mad_ntbx_send_int(client, -1);
+	}
+      
+      mad_ntbx_send_int(client, -1);
+
+      if (interface->after_close_channel)
+	interface->after_close_channel(mad_channel);
+
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+	  
+	  command = mad_ntbx_receive_int(client);
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_ntbx_receive_int(client);
+
+	  if (command)
+	    {
+	      TRACE_VAL("Freeing connection to", remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");		  
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+	      
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			  
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+			  in->specific  = NULL;
+			  out->specific = NULL;
+			}
+		      
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  out = tbx_darray_get(out_darray, remote_rank);
+		  if (!out)
+		    FAILURE("invalid connection");
+		  
+		  for (link_id = 0; link_id < out->nb_link; link_id++)
+		    {
+		      p_mad_link_t out_link = NULL;
+	      
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  out_link->specific = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			}
+
+		      memset(out_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(NULL, out);
+		    }
+		  else
+		    {
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(out, 0, sizeof(mad_connection_t));
+		  TBX_FREE(out);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	    }
+	  else
+	    {
+	      TRACE_VAL("Freeing connection from", remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+	      
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			  
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+			  in->specific  = NULL;
+			  out->specific = NULL;
+			}
+		      
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t in  = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+
+		  if (!in)
+		    FAILURE("invalid connection");
+		  
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+	      
+		      in_link = in->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(in_link);
+			  in_link->specific = NULL;
+			}
+		      else
+			{
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, NULL);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+			  in->specific = NULL;
+			}
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  TBX_FREE(in);
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		}
+	    }
+
+	connection_freed:
+	  mad_ntbx_send_int(client, -1);
+	}
+      
+      tbx_darray_free(in_darray);
+      tbx_darray_free(out_darray);
+      
+      mad_channel->in_connection_darray  = NULL;
+      mad_channel->out_connection_darray = NULL;
+
+      if (interface->channel_exit)
+	interface->channel_exit(mad_channel);
+
+      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
+
+      TBX_FREE(mad_channel->name);
+      mad_channel->name = NULL;
+
+      memset(mad_channel, 0, sizeof(mad_channel_t));
+      TBX_FREE(mad_channel);
+      mad_channel = NULL;
+
+      mad_ntbx_send_int(client, -1);
+    }  
+  LOG_OUT();  
+}
+
+static
+void
+mad_dir_channel_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_session_t   session            = NULL;
+  p_mad_directory_t dir                = NULL;
+  p_ntbx_client_t   client             = NULL;
+  p_tbx_htable_t    mad_channel_htable = NULL;
+
+  LOG_IN();
+  
+  TRACE("Closing channels");
+  session            = madeleine->session;
+  client             = session->leonie_link;
+  dir                = madeleine->dir;
+  mad_channel_htable = madeleine->channel_htable;
+
+  while (1)
+    {
+      p_mad_channel_t           mad_channel  = NULL;
+      p_mad_adapter_t           mad_adapter  = NULL;
+      p_mad_driver_t            mad_driver   = NULL;
+      p_mad_driver_interface_t  interface    = NULL;
+      p_tbx_darray_t            in_darray    = NULL;
+      p_tbx_darray_t            out_darray   = NULL;
+      char                     *channel_name = NULL;
+
+      channel_name = mad_ntbx_receive_string(client);
+      if (!strcmp(channel_name, "-"))
+	break;
+      
+      TRACE_STR("Channel", channel_name);
+
+      mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
+
+      if (!mad_channel)
+	FAILURE("channel not found");
+
+      mad_adapter = mad_channel->adapter;
+      mad_driver  = mad_adapter->driver;
+      interface   = mad_driver->interface;
+
+      if (interface->before_close_channel)
+	interface->before_close_channel(mad_channel);
+      
+      in_darray  = mad_channel->in_connection_darray;
+      out_darray = mad_channel->out_connection_darray;
+      
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+	  
+	  command = mad_ntbx_receive_int(client);
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_ntbx_receive_int(client);	  
+
+	  if (!interface->disconnect)
+	    goto channel_connection_closed;  
+
+	  if (command)
+	    {
+	      // Output connection
+	      p_mad_connection_t out = NULL;
+
+	      TRACE_VAL("Closing connection to", remote_rank);
+	      out = tbx_darray_get(out_darray, remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  if (!out->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(out);
+		  out->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(out);
+		}
+	    }
+	  else
+	    {
+	      // Input connection
+	      p_mad_connection_t in = NULL;
+
+	      TRACE_VAL("Closing connection from", remote_rank);
+	      in = tbx_darray_get(in_darray, remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  if (!in->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(in);
+		  in->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(in);
+		}
+	      
+	    }
+
+	channel_connection_closed:
+	  mad_ntbx_send_int(client, -1);
+	}
+      
+      mad_ntbx_send_int(client, -1);
+
+      if (interface->after_close_channel)
+	interface->after_close_channel(mad_channel);
+
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+	  
+	  command = mad_ntbx_receive_int(client);
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_ntbx_receive_int(client);
+
+	  if (command)
+	    {
+	      TRACE_VAL("Freeing connection to", remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");		  
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+	      
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			  
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+
+			  if (out->specific == in->specific)
+			    {
+			      out->specific = NULL;
+			    }
+
+			  in->specific  = NULL;
+			}
+		      
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  out = tbx_darray_get(out_darray, remote_rank);
+		  if (!out)
+		    FAILURE("invalid connection");
+		  
+		  for (link_id = 0; link_id < out->nb_link; link_id++)
+		    {
+		      p_mad_link_t out_link = NULL;
+	      
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  out_link->specific = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			}
+
+		      memset(out_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(NULL, out);
+		    }
+		  else
+		    {
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(out, 0, sizeof(mad_connection_t));
+		  TBX_FREE(out);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	    }
+	  else
+	    {
+	      TRACE_VAL("Freeing connection from", remote_rank);
+
+	      if (mad_driver->connection_type ==
+		  mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+	      
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			  
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+
+			  if (out->specific == in->specific)
+			    {
+			      out->specific = NULL;
+			    }
+
+			  in->specific  = NULL;
+			}
+		      
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}		      
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t in  = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+
+		  if (!in)
+		    FAILURE("invalid connection");
+		  
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+	      
+		      in_link = in->link_array[link_id];
+	      
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(in_link);
+			  in_link->specific = NULL;
+			}
+		      else
+			{
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		    }
+      
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+		  
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, NULL);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+			  in->specific = NULL;
+			}
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  TBX_FREE(in);
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		}
+	    }
+
+	connection_freed:
+	  mad_ntbx_send_int(client, -1);
+	}
+      
+      tbx_darray_free(in_darray);
+      tbx_darray_free(out_darray);
+      
+      mad_channel->in_connection_darray  = NULL;
+      mad_channel->out_connection_darray = NULL;
+
+      if (interface->channel_exit)
+	interface->channel_exit(mad_channel);
+
+      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
+
+      TBX_FREE(mad_channel->name);
+      mad_channel->name = NULL;
+
+      memset(mad_channel, 0, sizeof(mad_channel_t));
+      TBX_FREE(mad_channel);
+      mad_channel = NULL;
+
+      mad_ntbx_send_int(client, -1);
+    }  
+  LOG_OUT();  
+}
+
+void
+mad_dir_channels_exit(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+  // Virtual channels
+  mad_dir_vchannel_disconnect(madeleine);
+  mad_dir_vchannel_exit(madeleine);
+
+  // Forwarding channels
+  mad_dir_fchannel_exit(madeleine);
+
+  // Regular channels
+  mad_dir_channel_exit(madeleine);
   LOG_OUT();
 }
 
 void
-mad_dir_directory_get(p_mad_madeleine_t madeleine)
+mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 {
-  p_mad_session_t    session           = NULL;
-  p_ntbx_client_t    client            = NULL;
-  char              *command_string    = NULL;
+  p_mad_session_t      session             = NULL;
+  p_mad_directory_t    dir                 = NULL;
+  p_ntbx_client_t      client              = NULL;
+  p_tbx_htable_t       mad_driver_htable   = NULL;
+  ntbx_process_grank_t global_process_rank =   -1;
 
   LOG_IN();
-  TRACE("Receiving directory");  
-  session = madeleine->session;
-  client  = session->leonie_link;
+  session           = madeleine->session;
+  dir               = madeleine->dir;
+  mad_driver_htable = madeleine->driver_htable;
 
-  mad_dir_process_get(madeleine);
-  mad_dir_node_get(madeleine);
-  mad_dir_driver_get(madeleine);
-  mad_dir_channel_get(madeleine);
-  mad_dir_fchannel_get(madeleine);
-  mad_dir_vchannel_get(madeleine);  
+  client              = session->leonie_link;
+  global_process_rank = session->process_rank;
 
+  // Adapters
+  while (1)
+    {
+      p_mad_driver_t            mad_driver         = NULL;
+      p_mad_driver_interface_t  interface          = NULL;
+      p_tbx_htable_t            mad_adapter_htable = NULL;
+      char                     *driver_name        = NULL;
+
+      driver_name = mad_ntbx_receive_string(client);
+      if (!strcmp(driver_name, "-"))
+	break;
+
+      mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
+      if (!mad_driver)
+	FAILURE("driver not available");      
+
+      TRACE_STR("Shutting down adapters of driver", driver_name);
+      interface = mad_driver->interface;
+      mad_ntbx_send_int(client, 1);
+
+      mad_adapter_htable = mad_driver->adapter_htable;
+
+      while (1)
+	{
+	  p_mad_adapter_t  mad_adapter  = NULL;
+	  char            *adapter_name = NULL;
+
+	  adapter_name = mad_ntbx_receive_string(client);
+	  if (!strcmp(adapter_name, "-"))
+	    break;
+
+	  mad_adapter =
+	    tbx_htable_extract(mad_adapter_htable, adapter_name);
+	  if (!mad_adapter)
+	    FAILURE("adapter not found");
+
+	  TRACE_STR("Shutting down adapter", adapter_name);
+	  
+	  if (interface->adapter_exit)
+	    interface->adapter_exit(mad_adapter);
+
+	  if (mad_adapter->selector)
+	    {
+	      TBX_FREE(mad_adapter->selector);
+	      mad_adapter->selector = NULL;
+	    }
+	  
+	  if (mad_adapter->parameter)
+	    {
+	      TBX_FREE(mad_adapter->parameter);
+	      mad_adapter->parameter = NULL;
+	    }
+	  
+	  if (mad_adapter->specific)
+	    {
+	      TBX_FREE(mad_adapter->specific);
+	      mad_adapter->specific = NULL;
+	    }
+	  
+	  tbx_htable_free(mad_adapter->channel_htable);
+	  mad_adapter->channel_htable = NULL;
+	  
+	  TBX_FREE(mad_adapter);
+	  mad_adapter = NULL;
+
+	  mad_ntbx_send_int(client, 1);
+	}
+
+      tbx_htable_free(mad_adapter_htable);
+      mad_adapter_htable         = NULL;
+      mad_driver->adapter_htable = NULL;
+    }
+
+  // Drivers
+  while (1)
+    {
+      p_mad_driver_t            mad_driver  = NULL;
+      p_mad_driver_interface_t  interface   = NULL;
+      char                     *driver_name = NULL;
+
+      driver_name = mad_ntbx_receive_string(client);
+      if (!strcmp(driver_name, "-"))
+	break;
+
+      mad_driver =
+	tbx_htable_extract(mad_driver_htable, driver_name);
+      if (!mad_driver)
+	FAILURE("driver not available");      
+
+      TRACE_STR("Shutting down driver", driver_name);
+      interface = mad_driver->interface;
+      if (interface->driver_exit)
+	interface->driver_exit(mad_driver);
+
+      if (mad_driver->specific)
+	{
+	  TBX_FREE(mad_driver->specific);
+	  mad_driver->specific = NULL;
+	}
+
+      TBX_FREE(interface);
+      interface             = NULL;
+      mad_driver->interface = NULL;
+
+      TBX_FREE(mad_driver->name);
+      mad_driver->name = NULL;
+      
+      TBX_FREE(mad_driver);
+      mad_driver = NULL;
+      
+      mad_ntbx_send_int(client, 1);
+    }
+
+  LOG_OUT();
+}
+
+#if 0
+static
+void
+mad_dir_vchannel_cleanup(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_fchannel_cleanup(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_channel_cleanup(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_node_cleanup(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_process_cleanup(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+#warning unimplemented
+  LOG_OUT();
+}
+#endif // 0
+
+void
+mad_directory_exit(p_mad_madeleine_t madeleine)
+{
+#if 0
+  p_mad_session_t  session        = NULL;
+  p_ntbx_client_t  client         = NULL;
+  char            *command_string = NULL;
+#endif // 0
+
+  LOG_IN();
+  TRACE("Cleaning directory");
+#warning *** directory cleaning code inactive ***
+#if 0
+  mad_dir_vchannel_cleanup(madeleine);  
+  mad_dir_fchannel_cleanup(madeleine);
+  mad_dir_channel_cleanup(madeleine);
+  mad_dir_driver_cleanup(madeleine);
+  mad_dir_node_cleanup(madeleine);
+  mad_dir_process_cleanup(madeleine);
+
+  session        = madeleine->session;
+  client         = session->leonie_link;
   command_string = mad_ntbx_receive_string(client);
   
   if (strcmp(command_string, "end{directory}"))
@@ -2605,5 +4265,7 @@ mad_dir_directory_get(p_mad_madeleine_t madeleine)
 
   TBX_FREE(command_string);
   command_string = NULL;
+#endif // 0
   LOG_OUT();
 }
+

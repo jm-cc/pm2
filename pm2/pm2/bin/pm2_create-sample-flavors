@@ -60,6 +60,6 @@ $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leonie --modules="leonie tbx ntb
 $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leoparse --modules="leoparse tbx ntbx" --all=opt
 $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad2 --modules="mad2 tbx ntbx" --all=opt --mad2=auto_spawn --mad2=tcp
 
-$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2-mad2 --modules="pm2 dsm marcel mad2 tbx ntbx" \
+$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2 --modules="pm2 dsm marcel mad2 tbx ntbx" \
     --all=opt --marcel=mono --mad2=auto_spawn --mad2=tcp
 

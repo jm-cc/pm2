@@ -97,8 +97,9 @@ def netcfg_process(s):
         net_list = [net_list]
 
     s.net_dict	= {}
-    for net in net_list:
-        s.net_dict[net['name']] = net
+    for net_cfg_dict in net_list:
+        net	= leo_channel.Net(s, net_cfg_dict)
+        s.net_dict[net.name]	= net
 
 def appcfg_process(s):
     """Process an application configuration file."""

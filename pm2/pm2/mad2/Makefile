@@ -21,9 +21,9 @@ LIBRARY=mad2
 #---------------------------------------------------------------------
 LIBNAME=mad
 
-# Inclusion des makefiles generiques
+# Variables communes (nécessaire pour avoir $(PM2_MAK_DIR))
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_ROOT)/make/common-vars.mak
 
 # Inclusion du cache specifique a madeleine
 #---------------------------------------------------------------------
@@ -31,31 +31,22 @@ ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/mad2-specific.mak
 endif
 
-# Gestion des drivers : prise en compte des fichiers
+# Gestion des drivers : prise en compte des fichiers sources supplémentaires
+# Attention : utilisation de '=' (et pas ':=') car $(LIB_SRC) n'est
+# pas encore fixé
 #---------------------------------------------------------------------
 LIB_SRC2=$(LIB_SRC)/connection_interfaces
+LIB_C_SOURCES += $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
 
-LIB_C_SOURCES_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
-LIB_C_PREPROC_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_CPP)/mad_$(PROT)$(LIB_EXT).i)
-LIB_C_FUT_ADDED     := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_CPP)/mad_$(PROT)$(LIB_EXT).fut)
-LIB_C_DEPENDS_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_DEP)/mad_$(PROT)$(LIB_EXT).d)
-LIB_C_OBJECTS_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).o)
-LIB_C_PICS_ADDED    := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).pic)
-
-LIB_OBJECTS   += $(LIB_C_OBJECTS_ADDED)
-LIB_PICS      += $(LIB_C_PICS_ADDED)
-LIB_PREPROC   += $(LIB_C_PREPROC_ADDED)
-LIB_FUT       += $(LIB_C_FUT_ADDED)
-
+# Inclusion des makefiles generiques
 # Regles communes aux librairies
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_ROOT)/make/libs.mak
 
-# Dependances vers *.d
+# Le vpath supplémentaire maintenant que $(LIB_SRC) (et donc $(LIB_SRC2))
+# a la bonne valeur
 #---------------------------------------------------------------------
-$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
-$(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
-$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_GEN_DEP)/%$(LIB_EXT).d $(COMMON_DEPS)
+vpath %.c $(LIB_SRC2)
 
 # Inclusion du makefile de dependance des drivers
 #---------------------------------------------------------------------
@@ -64,23 +55,6 @@ ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
 -include $(LIB_C_DEPENDS_ADDED)
 endif
 endif
-
-# Construction des drivers
-#---------------------------------------------------------------------
-$(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
-
-$(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
-
-# -> le separateur du sed est `|'
-# Note: interet de l'ajout de $@ comme dependance ?
-$(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
-		| sed '\''s|.*:|$(LIB_DEP_TO_OBJ) $@ :|g'\'' > $@'
-
-$(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
 # Construction du cache specifique a Madeleine II
 #---------------------------------------------------------------------

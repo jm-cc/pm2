@@ -165,7 +165,7 @@ pm2config_set_vars()
     flavor=$_PM2CONFIG_FLAVOR
 
     # Optimizations
-    pm2config_build_uppercase common $_PM2CONFIG_DIRTY_ORDERED_MODULES leonie swann
+    pm2config_build_uppercase appli common init $_PM2CONFIG_DIRTY_ORDERED_MODULES leonie swann
 
     # Build directory
     if [ -z "$PM2_BUILD" ] ; then
@@ -205,7 +205,7 @@ pm2config_set_vars()
 
     _PM2CONFIG_LIB_STAMP_FILES=""
     export _PM2CONFIG_LIB_STAMP_FILES
-    for _lib in common $PM2_LIBS ; do
+    for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _libname='$'PM2_${_LIB}_LIBNAME
 
@@ -326,7 +326,7 @@ pm2config_set_vars()
     export _PM2CONFIG_CC
 
     # CFLAGS
-    _PM2CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS} ${PM2_COMMON_CFLAGS_KERNEL}"
+    _PM2CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS}"
     for _lib in appli common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"
@@ -343,9 +343,15 @@ pm2config_set_vars()
     pm2config_remove_dupplicates_keep_first _PM2CONFIG_CFLAGS
 
     # CFLAGS "kernel"
-    for _lib in appli common $PM2_LIBS ; do
+    for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2CONFIG_${_lib}_KERNEL_CFLAGS=\"\$_PM2CONFIG_CFLAGS '$'PM2_${_LIB}_CFLAGS_KERNEL -D${_LIB}_KERNEL -DMODULE=${_lib}\"
+	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS
+	eval pm2config_remove_dupplicates_keep_first _PM2CONFIG_${_lib}_KERNEL_CFLAGS
+    done
+    for _lib in appli common ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _PM2CONFIG_${_lib}_KERNEL_CFLAGS=\"\$_PM2CONFIG_CFLAGS '$'PM2_${_LIB}_CFLAGS_KERNEL\"
 	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS
 	eval pm2config_remove_dupplicates_keep_first _PM2CONFIG_${_lib}_KERNEL_CFLAGS
     done
@@ -354,13 +360,14 @@ pm2config_set_vars()
     _requested=""
     _extra=""
     _PM2CONFIG_LD_PATH=""
-    for _lib in common $PM2_LIBS ; do
+    for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _requested=\"\$_requested \$PM2_${_LIB}_LIBNAME\"
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
     done
     export _PM2CONFIG_LD_PATH
+    pm2config_remove_dupplicates_keep_first _PM2CONFIG_LD_PATH
 
     _PM2CONFIG_LD_LIBS=""
     for _lib in $_PM2CONFIG_DIRTY_ORDERED_LIBS ; do
@@ -468,7 +475,7 @@ pm2config_parse_cmdline() # args
 	_libs_add_all=true
 	;;
     *)
-	_PM2CONFIG_ALL_MODULES=`${PM2_ROOT}/bin/pm2-module modules`
+	_PM2CONFIG_ALL_MODULES=`${PM2_ROOT}/bin/pm2-module modules --with-common`
 
 	if [ -z "$_PM2CONFIG_ALL_MODULES" ]; then
 	    echo "No PM2 module detected." 1>&2
@@ -476,7 +483,7 @@ pm2config_parse_cmdline() # args
 	    exit 1
 	fi
 
-	case " $_PM2CONFIG_ALL_MODULES common " in
+	case " $_PM2CONFIG_ALL_MODULES " in
 	*\ $1\ *)
 	    pm2config_add_list _libs "$1"
 	    ;;
@@ -496,7 +503,7 @@ pm2config_parse_cmdline() # args
     ##########################################################################
 
     if [ "$_libs_add_all" = true ]; then
-	pm2config_add_list _libs "common $PM2_LIBS"
+	pm2config_add_list _libs "common appli $PM2_LIBS"
     fi
 
     if [ "$_other" != false ]; then
@@ -573,7 +580,7 @@ pm2config_parse_cmdline() # args
 	    echo "This option needs exactly ONE lib" 1>&2
 	    exit 1
 	fi
-	case " $PM2_LIBS common " in
+	case " $PM2_LIBS " in
 	    *\ $_libs\ *)
 		_d=`echo $_dirtoshow | tr a-z A-Z`
 		eval echo \$_PM2CONFIG_${_libs}_${_d}_DIR
@@ -585,7 +592,7 @@ pm2config_parse_cmdline() # args
     fi
 
     if [ -z "$_libs" ]; then
-	_libs="common $PM2_LIBS"
+	_libs="common appli $PM2_LIBS"
     fi
 
     # On a demandé les CFLAGS
@@ -618,9 +625,9 @@ pm2config_parse_cmdline() # args
 # Programme principal
 ######################
 
-_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 marcel tbx ntbx pm2debug"
+_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 marcel tbx ntbx init"
 
-_PM2CONFIG_DIRTY_ORDERED_LIBS="common leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
+_PM2CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
 
 if [ $# -eq 1 -a "$1" = --source-mode ] ; then
     pm2config_set_vars

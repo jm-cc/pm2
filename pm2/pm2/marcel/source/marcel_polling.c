@@ -290,7 +290,7 @@ inline static int remove_success_req(marcel_ev_server_t server,
 	ma_spin_lock(&server->req_success_lock);
 	list_del_init(&req->chain_req_success);
 	mdebug("Removing success ev %p pour [%s]\n", ev, id->name);
-	ma_spin_unlock(&server->ev_success_lock);	
+	ma_spin_unlock(&server->req_success_lock);	
 	
 	LOG_RETURN(0);
 }
@@ -724,7 +724,7 @@ inline static int __unregister(marcel_ev_server_t server, marcel_ev_req_t req)
 		}
 	}
 
-	ev->state &= ~MARCEL_EV_STATE_REGISTERED;
+	req->state &= ~MARCEL_EV_STATE_REGISTERED;
 	LOG_RETURN(0);
 }
 

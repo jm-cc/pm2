@@ -389,7 +389,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	mdebug("Selecting within %i fds\n", nfds);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 	LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
-			errno = -ev.ret_val, -1);
+			(errno = -ev.ret_val, -1));
 #endif
 }
 

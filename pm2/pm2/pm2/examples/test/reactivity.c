@@ -34,7 +34,7 @@ void busy_thread(void *arg)
 
 static void START_BUSY_service(void)
 {
-  pm2_thread_create(busy_thread, NULL);
+  pm2_thread_create(busy_thread, NULL); // Pas pm2_service_thread_create !
 }
 
 static void STOP_BUSY_service(void)

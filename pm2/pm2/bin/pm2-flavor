@@ -219,7 +219,7 @@ set_option() { # option max_val filtre null_allowed
 	if [ ! -z "$3" ]; then
 	    optverif=`echo "$optarg" | tr -c -d "$3"`
 	    if [ "$optverif" != "$optarg" ]; then
-		echo "Invalid caracters in parameter --$optname" 1>&2
+		echo "Invalid caracters in parameter --$optname : $optarg" 1>&2
 		exit 1
 	    fi
 	fi
@@ -263,7 +263,7 @@ create_flavor() {
 	    echo "${SETTINGS}`eval echo '\ '\\$lst_opt_$mod | \
 	    	sed -e 's, \([^ ]*\), --'$mod'=\1,g'`" >> ${OUT}
     done
-    echo "PM2_BUILD=$builddir" >> ${OUT}
+    echo "PM2_BUILD='$builddir'" >> ${OUT}
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}
     echo "PM2_EXT=$ext" >> ${OUT}
 
@@ -287,33 +287,34 @@ create_flavor() {
 	echo "flavor '$flavor' unmodified"
     else
 	echo "$1"
-	mkdir -p "${PM2_ROOT}/stamp${builddir:+/$builddir}"
-	echo $flavor > "${PM2_ROOT}/stamp${builddir:+/$builddir}/stamp$ext"
+#	mkdir -p "${PM2_ROOT}/stamp/$flavor"
+#	echo $flavor > "${PM2_ROOT}/stamp/$flavor/stamp$ext"
     fi
     rm -f "${OUTOLD}" 2>/dev/null
-    if [ ! -d "${PM2_ROOT}/stamp${builddir:+/$builddir}" ]; then
-	mkdir -p "${PM2_ROOT}/stamp${builddir:+/$builddir}"
-	if [ ! -f "${PM2_ROOT}/stamp${builddir:+/$builddir}/stamp$ext" ]; then
-	    echo $flavor > "${PM2_ROOT}/stamp${builddir:+/$builddir}/stamp$ext"
-	fi
-    fi
+#    if [ ! -d "${PM2_ROOT}/stamp/$flavor" ]; then
+#	mkdir -p "${PM2_ROOT}/stamp/$flavor"
+#	if [ ! -f "${PM2_ROOT}/stamp/$flavor/stamp$ext" ]; then
+#	    echo $flavor > "${PM2_ROOT}/stamp/$flavor/stamp$ext"
+#	fi
+#    fi
 }
-    
+
 ##########################################################################
 # Deletion
 delete_flavor() {
     $ECHO "Deleting flavor '$flavor'"
     make -C ${PM2_ROOT} FLAVOR=$flavor clean
-    STAMP_FILE=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampfile`
-    STAMP_REP=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampdir`
-    BUILDDIR=`"${PM2_CONFIGPROG}" --flavor=$flavor --builddir`
-    PM2_EXT=`"${PM2_CONFIGPROG}" --flavor=$flavor --ext`
-    if [ -f "$STAMP_FILE" ]; then
-	rm -f "$STAMP_FILE"
-    fi
-    if [ "$BUILDDIR" -a -d "$STAMP_REP" ]; then
-	rmdir "$STAMP_REP"
-    fi
+#    STAMP_FILE=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampfile`
+#    STAMP_REP=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampdir`
+#    BUILDDIR=`"${PM2_CONFIGPROG}" --flavor=$flavor --builddir`
+#    PM2_EXT=`"${PM2_CONFIGPROG}" --flavor=$flavor --ext`
+
+#    if [ -f "$STAMP_FILE" ]; then
+#	rm -f "$STAMP_FILE"
+#    fi
+#    if [ "$BUILDDIR" -a -d "$STAMP_REP" ]; then
+#	rmdir "$STAMP_REP"
+#    fi
     if [ -f "$PM2_CONFIG/$flavor" ]; then
 	rm -f "$PM2_CONFIG/$flavor"
     fi
@@ -513,7 +514,7 @@ do_set() {
 	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
 	    ;;
 	--builddir=*|--ext=*)
-	    set_option "$1" 1 '[\-_a-zA-Z0-9]' "ok"
+	    set_option "$1" 1 '[/\$\-_a-zA-Z0-9]' "ok"
 	    ;;	
 	--clear|--clear-modules|--clear-all|--add|--sub)
 	    optname=`echo $1 | sed -e 's/^--//' -e 's/-/_/g'`
@@ -568,23 +569,13 @@ do_set() {
 	builddir="$flavor"
     fi
 
-    STAMPDIR="${PM2_ROOT}/stamp${builddir:+/$builddir}"
-    if [ -f "${STAMPDIR}/stamp$ext" ]; then
-	if [ "`cat ${STAMPDIR}/stamp$ext`" = "$flavor" ]; then
-	    msg="Modifying flavor '$flavor'"
-	else
-	    echo 'Flavor `'"`cat ${STAMPDIR}/stamp$ext`"'` already use this repertory/extention'
-	    echo "Aborting..."
-	    echo 'If you know that flavor `'"`cat ${STAMPDIR}/stamp$ext`"'` does not exist'
-	    echo "then remove ${STAMPDIR}/stamp$ext"
-	    echo 'else remove it with `pm2_create-flavor --delete --flavor='"`cat ${STAMPDIR}/stamp$ext`"'`'
-	    exit 1
-	fi
-    elif [ -f ${PM2_CONFIG}/$flavor ]; then
-	echo "Modifying $flavor and changing repertory/extention"
-	echo "removing the old one"
-	msg="Recreating flavor $flavor"
-	delete_flavor || ( echo "Error: aborting"; exit 1 )
+    if [ -f "${PM2_ROOT}/flavors/$flavor" ]; then
+	msg="Modifying flavor '$flavor'"
+#    elif [ -f ${PM2_CONFIG}/$flavor ]; then
+#	echo "Modifying $flavor and changing repertory/extention"
+#	echo "removing the old one"
+#	msg="Recreating flavor $flavor"
+#	delete_flavor || ( echo "Error: aborting"; exit 1 )
     else
 	msg="Creating flavor $flavor"
     fi

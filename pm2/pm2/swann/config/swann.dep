@@ -1,0 +1,3 @@
+Depend: tbx ntbx
+Provide: module
+Conflict: pm2 madeleine dsm marcel leonie

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.23  2000/10/10 13:31:16  gantoniu
+Modified the startup function mechanism to allow functions to get an argument.
+Updated the pm2_sync functions: global (= node-level) barriers are ready !
+
 Revision 1.22  2000/09/13 21:57:43  rnamyst
 Improvements to the profile stuff: .fut files are now only built for modules that have the -DDO_PROFILE option set.
 
@@ -101,7 +105,8 @@ ______________________________________________________________________________
 /* A startup function may be specified. If so, it will be called after
  * all modules will be spawned but before the current module will
  * listen (and respond to) incomming requests.  */
-void pm2_push_startup_func(pm2_startup_func_t f);
+
+void pm2_push_startup_func(pm2_startup_func_t f, void *args);
 
 
 /* 
@@ -250,10 +255,10 @@ _PRIVATE_ extern marcel_key_t _pm2_lrpc_num_key,
    function, which allows the registration of several startup
    functions... */
 
-static __inline__ void pm2_set_startup_func(pm2_startup_func_t f) __attribute__ ((unused));
-static __inline__ void pm2_set_startup_func(pm2_startup_func_t f)
+static __inline__ void pm2_set_startup_func(pm2_startup_func_t f, void *args) __attribute__ ((unused));
+static __inline__ void pm2_set_startup_func(pm2_startup_func_t f, void *args)
 {
-  pm2_push_startup_func(f);
+  pm2_push_startup_func(f, args);
 }
 
 #endif

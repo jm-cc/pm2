@@ -77,21 +77,23 @@ cleanlibs:
 		$(MAKE) -C modules/$$i clean ; \
 	done
 
-.PHONY: distclean distcleanlibs distcleanflavors distcleandoc
-distclean: distcleanlibs distcleanflavors distcleandoc
+.PHONY: distclean distcleanlibs distcleanflavors distcleandoc distcleanall
+distclean: distcleanlibs distcleandoc
+distcleanall: distclean distcleanflavors
 
 distcleanlibs:
 	$(COMMON_HIDE) set -e; \
 	for i in $(MODULES) ; do \
 		$(MAKE) -C modules/$$i distclean ; \
 	done
+	find stamp -iname "libstamp*" -exec rm {} \;
 
 distcleanflavors:
-	$(MAKE) -C doc distclean
+	$(RM) -r flavors
+	$(RM) -r stamp
 
 distcleandoc:
-	$(RM) -r stamp
-	$(RM) -r flavors
+	$(MAKE) -C doc distclean
 
 .PHONY: init cvsinit flavorinit
 init: cvsinit flavorinit
@@ -135,6 +137,8 @@ targethelp:
 	@echo "  help: this help"
 	@echo "  clean: clean source tree for current flavor"
 	@echo "  distclean: clean all source tree for all flavors"
+	@echo "  distcleanall: clean all source tree for all flavors and the"
+	@echo "     flavors themselves"
 
 .PHONY: config textconfig menuconfig xconfig
 config: textconfig

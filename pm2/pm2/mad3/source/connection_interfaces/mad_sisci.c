@@ -723,8 +723,11 @@ void
 mad_sisci_wait_for(p_mad_link_t         link,
 		   p_mad_sisci_status_t flag)
 {
+  DISP("waiting for event, channel is %s",
+       link->connection->channel->name);
   while (!mad_sisci_test(flag))
     TBX_YIELD();
+  DISP("got event, channel is %s", link->connection->channel->name);
 }
 
 #endif // MARCEL && USE_MARCEL_POLL
@@ -845,7 +848,7 @@ mad_sisci_channel_init(p_mad_channel_t channel)
   channel->specific = specific;
   dir_channel       = channel->dir_channel;
   size              = ntbx_pc_local_max(dir_channel->pc);
-  specific->read    = TBX_MALLOC(sizeof(p_mad_sisci_status_t) * size);
+  specific->read    = TBX_MALLOC(sizeof(p_mad_sisci_status_t) * (size + 1));
   specific->next    = 0;
   specific->max     = size + 1;
   LOG_OUT();
@@ -1312,7 +1315,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   p_tbx_darray_t                 in_darray        = NULL;
   int                            next             =    0;
   int                            max              =    0;
-
+  
   LOG_IN();
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
@@ -1338,8 +1341,10 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   while (tbx_true)
     {
       int i = 0;
-
+      
+      
       i = max;
+
 
       while (i--)
 	{

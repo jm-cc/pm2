@@ -49,8 +49,8 @@ if [ -z "$MODULES" ]; then
     exit 1
 fi
 
-DIRTY_ORDERED_MODULES="profile pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
-DIRTY_ORDERED_LIBS="pm2 dsm mad marcel tbx ntbx profile pm2debug"
+DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
+DIRTY_ORDERED_LIBS="leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
 
 ##########################################################################
 # aide
@@ -76,7 +76,7 @@ Compilation support options
 
 Directories pm2-libs was configured to
   --bindir --srcdir --libdir --objdir --depdir --asmdir --makdir
-  --stampdir --builddir --includedir --scriptdir --cppdir
+  --stampdir --builddir --includedir --scriptdir --cppdir --tmpdir
 
 Other options
   --ext       : extension used
@@ -148,6 +148,7 @@ objdir=false
 cppdir=false
 depdir=false
 asmdir=false
+tmpdir=false
 stampdir=false
 builddir=false
 dirtoshow=

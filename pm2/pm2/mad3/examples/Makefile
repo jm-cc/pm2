@@ -15,6 +15,6 @@
 
 export FLAVOR_DEFAULT:=mad3
 
-PROGS := mad_mini
+PROGS := mad_mini mad_ping
 
 include $(PM2_ROOT)/make/apps.mak

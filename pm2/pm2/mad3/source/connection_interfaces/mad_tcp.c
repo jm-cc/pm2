@@ -311,7 +311,7 @@ mad_tcp_accept(p_mad_connection_t   in,
   LOG_IN();
   connection_specific = in->specific;
   adapter_specific    = in->channel->adapter->specific;
-  
+
   SYSCALL(desc = accept(adapter_specific->connection_socket, NULL, NULL));
   ntbx_tcp_socket_setup(desc);
 
@@ -338,7 +338,11 @@ mad_tcp_connect(p_mad_connection_t   out,
   remote_port         = atoi(remote_adapter->parameter);
   sock                = ntbx_tcp_socket_create(NULL, 0);
 
+#ifndef LEO_IP
+  ntbx_tcp_address_fill(&remote_address, remote_port, remote_node->name);
+#else // LEO_IP
   ntbx_tcp_address_fill_ip(&remote_address, remote_port, &remote_node->ip);
+#endif // LEO_IP
 
   SYSCALL(connect(sock, (struct sockaddr *)&remote_address,
 		  sizeof(ntbx_tcp_address_t)));

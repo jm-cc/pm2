@@ -59,6 +59,7 @@ void dsm_pm2_init_rpc()
   pm2_rawrpc_register(&HIERARCH_DIFF_ACK, hierarch_diff_ack_server);
   pm2_rawrpc_register(&HIERARCH_DIFF, hierarch_recv_diff_server);
   pm2_rawrpc_register(&HIERARCH_INV_ACK, hierarch_inv_ack_server);
+  pm2_rawrpc_register(&HIERARCH_PAGE_PROVIDER, hierarch_page_provider);
 }
 
 

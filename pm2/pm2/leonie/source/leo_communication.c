@@ -38,7 +38,7 @@ leo_send_int(p_ntbx_client_t client,
 
   LOG_IN();
   ntbx_pack_int(data, &buffer);
-  status = ntbx_btcp_write_pack_buffer(client, &buffer);
+  status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
     FAILURE("control link failure");
@@ -54,7 +54,7 @@ leo_receive_int(p_ntbx_client_t client)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
-  status = ntbx_btcp_read_pack_buffer(client, &buffer);
+  status = ntbx_tcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
     FAILURE("control link failure");
@@ -74,7 +74,7 @@ leo_send_unsigned_int(p_ntbx_client_t    client,
 
   LOG_IN();
   ntbx_pack_unsigned_int(data, &buffer);
-  status = ntbx_btcp_write_pack_buffer(client, &buffer);
+  status = ntbx_tcp_write_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
     FAILURE("control link failure");
@@ -90,7 +90,7 @@ leo_receive_unsigned_int(p_ntbx_client_t client)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
-  status = ntbx_btcp_read_pack_buffer(client, &buffer);
+  status = ntbx_tcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
     FAILURE("control link failure");
@@ -108,7 +108,7 @@ leo_send_string(p_ntbx_client_t  client,
   int status = ntbx_failure;
 
   LOG_IN();
-  status = ntbx_btcp_write_string(client, string);
+  status = ntbx_tcp_write_string(client, string);
 
   if (status == ntbx_failure)
     FAILURE("control link failure");
@@ -123,7 +123,7 @@ leo_receive_string(p_ntbx_client_t client)
   char *result = NULL;
 
   LOG_IN();
-  status = ntbx_btcp_read_string(client, &result);
+  status = ntbx_tcp_read_string(client, &result);
 
   if (status == ntbx_failure)
     FAILURE("control link failure");

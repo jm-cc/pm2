@@ -1,9 +1,9 @@
 \chapter{Mastering PM2}
 
-\stamp $Id: mastering.tex,v 1.3 2001/04/17 14:15:13 bouge Exp $
+\stamp $Id: mastering.tex,v 1.4 2001/04/18 15:13:13 bouge Exp $
 
 Congratulation! You are now knowledgeable in PM2, ready to write your
-own programs.  Interested in getting to the \emph{Wizard} level? Just
+own programs.  Interested in getting to the \emph{Master} level? Just
 keep on reading!
 
 \section{Invoking services synchronously}
@@ -21,30 +21,25 @@ problem, at least in most cases. It is called \emph{completion}.
 Essentially, a \emph{completion} is a token which is passed along
 during the computation. The idea is that the creator of the token
 sends it along to its communication partner. It may eventually block and
-\|wait| for receiving the completion token. When the partner has
+\|wait| for receiving back the completion token. When the partner has
 completed its task, it can \|signal| it to the token creator by
 sending back the token to it. Observe that the completion token can
 travel across many partners before being used. 
 
 Consider a typical use of such a mechanism in
 Program~\ref{prog:rpc-completion}. It is a minimal variation of
-Program~\ref{prog:rpc-threads}. The only difference is that node~0 is now
-in charge of triggering the termination by calling the \|pm2_halt|
+Program~\ref{prog:rpc-threads}. The only difference is that node~0 is
+now in charge of triggering the termination by calling the \|pm2_halt|
 routine. As observed previously, it cannot do it safely in general.
 It has to make sure beforehand that all the communications have
 completed. This is precisely the role of the completion token. Node~0
 creates token \|c| with the \|pm2_completion_init| routine. Observe
 that only node~0 does it, and that it occurs in the concurrent phase
-of the program, after the call to \|pm2_init|. Several parameters can
-be specified on creating a completion token, and the extended profile of
-the creation function is
-\begin{program}
-void pm2_completion_init(pm2_completion_t *c,
-                         pm2_completion_handler_t handler,
-                         void *arg);
-\end{program}
-Yet, setting the last two parameters to the default \|NULL| value is
-sufficient in most usual cases. 
+of the program, after the call to \|pm2_init|. Two extra parameters
+can be specified on creating a completion token: a specific handler
+function and additional arguments.  Setting the last two
+parameters to the default \|NULL| value is sufficient in most usual
+cases.
 
 Then, the completion token is handled very much like an ordinary
 object. It can be packed together with other data into a messages
@@ -58,9 +53,9 @@ guaranteed that the \|pm2_halt| function is called on node~0
 \emph{after} the thread on node~1 has completed its job!
 
 Any number of tokens can be used within a PM2 program. Also, observe
-that the \|completion_signal| and \|completion_wait| routine involve
-RPC communications in the background. It is up to the user to
-guarantee that no deadlock may occur.
+that the \|completion_signal| involves RPC communications in the
+background. It is up to the user to guarantee that no deadlock may
+occur.
 
 \begin{note}
   LB to RN: Please, proofread and expand the last paragraph. I am not
@@ -77,7 +72,7 @@ guarantee that no deadlock may occur.
 
 We now turn to the most amazing feature of PM2: thread migration. The
 essential idea is quite simple. At some point, a thread can request
-the local scheduler to migrate a thread to another node. This
+the local scheduler to migrate some given thread to another node. This
 \emph{victim} thread may even be the calling thread itself. The victim
 is dynamically preempted in the scheduler queue. Its set of resources
 (descriptors, private stack, dynamically allocated memory area) are
@@ -97,7 +92,7 @@ Obviously, some circumstances require a thread to protect itself
 against migration. This occurs for instance on exchanging messages,
 doing I/O, etc. PM2 provides the programmer with a
 \|pm2_enable_migration| and \|pm2_disable_migration| routines to
-manage this aspect. By default, migration is disabled.
+manage this aspect. By default, migration is \emph{disabled}.
 
 Program~\ref{prog:migration} is a simple example of thread migration.
 Each of the nodes of the configuration stores into its global variable
@@ -189,7 +184,7 @@ Hop 5: Leaving to node 0
 The main problem in the previous program is to \emph{gracefully} terminate
 the computation. The easy solution implemented in
 Program~\ref{prog:migration} was to let the moving thread initiate the
-termination. However, this is obviously a very specific trick, which
+termination. However, this is obviously a rather specific trick, which
 does not generalize!
 
 The idea is to combine the migration facility together with the
@@ -212,25 +207,27 @@ how the completion is passed from its originator to the moving thread.
 The completion is created in a global variable on node~0. The first
 action of the created thread is to copy the completion into a local
 variable, so that is gets migrated together with the rest of the
-resources. This uses a special function: 
+resources. This uses a special routine called \|pm2_completion_copy|.
+
+\begin{warning}
+  You are strongly advised not to copy completion directly as in
+  \|new_c = old_c|, though it works in the current version of PM2.
+  Instead, you should say 
 \begin{program}
-void pm2_completion_copy(pm2_completion_t *to, 
-                         pm2_completion_t *from)
+pm2_completion_copy(&new_c, &old_c)
 \end{program}
-You are strongly advised not to copy completion directly as in
-\|my_c = c|, though it works in the current version of PM2.
-Instead, you should say \|pm2_completion_copy(&my_c, &c)| to
-guarantee that a \emph{physical} copy of the relevant information is
-properly stored into the completion. Unfortunately for the oblivious
-user, PM2 does very little verification about the proper use of such
-auxiliary routines. It also provide few facilities to debug them.
-Just believe me: You'd better write a correct code at the first
+to guarantee that a \emph{physical} copy of the relevant information
+is properly stored into the completion.  Unfortunately for the
+oblivious user, PM2 does very little verification about the proper use
+of such auxiliary routines. It also provide few facilities to debug
+them.  Just believe me: You'd better write a correct code at the first
 attempt!
+\end{warning}
 
 \figurelisting {migration2.c} {Passing completions as
   parameters} {prog:migration2}
 
-This technique used above, having the originator thread passing a
+The technique used above, having the originator thread passing a
 completion token to the moving thread, is rather contrived. A better
 approach is exemplified in Program~\ref{prog:migration2}. A pointer to
 the completion is passed as an argument to the thread creation
@@ -270,7 +267,7 @@ on getting migrated.
 \figurelistingdouble {migrate-group.c} {Migrating off a group of
   threads} {prog:migrate-group}
 
-Consider the program displayed on Figure~\ref{sec:self-migration}. It
+Consider the program displayed on Figure~\ref{prog:migrate-group}. It
 is a good opportunity to demonstrate advanced techniques for threads
 management. The idea is the following: Node~0 spawns 4~children
 threads, numbered from~0 to~3. (Remind that threads disregard
@@ -320,13 +317,17 @@ creation routine only accepts one argument of type \|void *|, an
 auxiliary structure has to be used: the two parameters have to be
 packed into a structure; a pointer to the structure is passed as the
 argument of the \|pm2_thread_create| routine; the structure is
-eventually unpacked by the thread. This scheme is correct \emph{only}
-because of the synchronization implemented by the completion token:
-the master thread cannot spawn another thread before the current
-thread has unpacked the structure.  Once one the completion token has
-been received from each children thread, then the master thread is
-guaranteed that all of them have been created, and have decided upon
-whether they enable their own migration or no.
+eventually unpacked by the thread. 
+
+\begin{warning}
+  This scheme is correct \emph{only} because of the synchronization
+  implemented by the completion token: the master thread cannot spawn
+  another thread before the current thread has unpacked the structure.
+  Once one the completion token has been received from each children
+  thread, then the master thread is guaranteed that all of them have
+  been created, and have decided upon whether they enable their own
+  migration or no.
+\end{warning}
 
 Consider now how the master thread can migrate the children threads.
 The first step is to store the children threads to be migrated into an
@@ -336,7 +337,7 @@ MIGRATABLE_ONLY)| takes as parameters an array of threads
 \|threads[N]| (a PM2 thread has type \|marcel_t|) and a selection
 condition. A number of condition are available, which can be or-ed and
 and-ed as usual for flags. Here, we use the \|MIGRATABLE_ONLY| flag,
-which does what you guess. Well, not exactly, as the flag is
+which does exactly what you guess. Well, not exactly, as the flag is
 (silently) and-ed with the \|NOT_BLOCKED_ONLY| flag: only the threads
 which have enabled migration \emph{and} are not currently blocked are
 stored into the array. At most \|N| such threads are stored, and the
@@ -345,7 +346,7 @@ the calling thread is listed, too, if it meets the condition. This is
 not the case in this example.
 
 You may object that this sampling operation may yield inconsistent
-result has the sampled threads are running asynchronously with the
+result as the sampled threads are running asynchronously with the
 sampling one, very much as in the \|ps| command of Unix. This is not
 the case, as the \|pm2_threads_list| routine internally disables
 Marcel, the thread scheduler of PM2 using the
@@ -353,7 +354,7 @@ Marcel, the thread scheduler of PM2 using the
 user has no control about the exact sampling time, but through the
 explicit synchronization which have been introduced into the program.
 Once the list of \emph{victim} threads to be migrated has been
-constructed, then PM2 can migrated all of them to a common node using
+constructed, then PM2 can migrate all of them to a common node using
 the \|pm2_migrate_group| routine. This node may well be the local
 node.  Of course, attempting to migrate a thread which has disabled
 migration to a remote node raises an error.
@@ -370,11 +371,11 @@ threads, so that no message can be handled. This is up to the user to
 guarantee that freezing the scheduling will not cause any deadlock in
 the system, for instance by overfilling communication buffers. Also, 
 calls to \|pm2_freeze|/\|pm2_unfreeze| may be nested. It is the
-responsibility of the user to ensure the proper nesting.
+responsibility of the user to ensure proper nesting.
 
 Well, well, well... Imagine the following scenario. Consider a thread
-which enables its own migration; it freezes the scheduling on the
-\emph{local} node, samples the migratable threads, and call the
+which enables \emph{its own migration}; it freezes the scheduling on the
+\emph{local} node, samples the migratable threads, and calls the
 \|pm2_migrate_group| routine to migrate them away to some
 \emph{remote} node. It is itself migrated! Calling the \|pm2_unfreeze|
 routine afterwards will most probably raise an error, as no call to
@@ -386,32 +387,23 @@ routine on the local node \emph{on behalf} of the migrated thread.
 This somewhat non standard call is actually included at the end of the
 \|pm2_migrate_group| routine.  This is why there is no \emph{explicit}
 call to \|pm2_unfreeze| in our program.  It is in
-fact hidden in the call to \|pm2_migrate_group|.
+fact hidden within the call to \|pm2_migrate_group|.
 
 Observe that the program on Figure~~\ref{prog:migrate-group} uses a
 variable \|barrier| which is asynchronously read by many threads and
 written by one thread. Strictly speaking, it is not correct to do so,
-as there is no reason why the writing operation should be
-atomic. Actually, the readers could in general read various
-intermediate values from the variable, depending for instance on the
-order in which the bits are written. One should guard all accesses to
-a shared variable with a \emph{mutual exclusion object} (a mutex, for
-short). In their simplest form, they are used as follows:
-\begin{program}
-marcel_mutex_t mutex;
-
-marcel_mutex_init(mutex, NULL);
-
-marcel_mutex_lock(mutex);
-// Mutual exclusion section
-marcel_mutex_unlock(mutex);
-
-marcel_mutex_destroy(mutex);
-\end{program}
-However, the behavior of this very program does not depend on
-concurrent reading and writing, as the variable is only asynchronously
-tested against~0. Spotting a bit set to~1 early or late does not
-matter. This is why we have left the shared variable unprotected.
+as there is no reason why the writing operation should be atomic.
+Actually, the readers could in general read various intermediate
+values from the variable, depending for instance on the order in which
+the bits are written. One should guard all accesses to a shared
+variable with a \emph{mutual exclusion object} (a mutex, for short).
+Mutexes are described in Section~\ref{sec:mutex}.  However, the
+behavior of this very program does not depend on concurrent reading
+and writing, as the variable is only asynchronously tested against~0.
+Spotting a bit set to~1 early or late does not matter: for each thread,
+once a non-null value has been read, then no null value will ever be
+read afterwards. Such a situation is well-known in the area of
+distributed algorithm: it is called a \emph{stable condition}. 
 
 \begin{note}
   LB to RN: Difficult section. Please, proofread!
@@ -429,7 +421,7 @@ allocated by PM2 so that the virtual addresses remains invariant upon
 migration. This allows to freely use pointers in the stack of a
 migrating thread. This is exemplified in
 Program~\ref{prog:iso-alloc}. Variable \|x| is allocated in the
-private of the thread on node~1. After migration to node~2, the value
+private stack of the thread on node~1. After migration to node~2, the value
 of \|x| \emph{and its address} are left unchanged.
 \begin{shell}
 ravel% pm2logs
@@ -457,18 +449,18 @@ lists within migrating threads without the smallest worrying...
   migrates together with the thread} {prog:isomalloc}
 
 All storage requests in PM2 are handled with this technique, including
-the storage allocated for the stack on creating a thread. However, it
-is also available for explicit, dynamic storage allocation by the
-programmer, as a substitute for the \|malloc|/\|free| functions. They
-are just called \|pm2_isomalloc| and \|pm2_isofree|, with the same
-profiles as the usual \|malloc| and \|free| functions. Dynamic memory
-storage allocated with these function are included in the private
-resources of the threads and are migrated together with the
-thread. Because of the iso-allocation technique, the storage is mapped
-at the \emph{same} virtual address in all nodes, so that pointers can
-be freely used. You can use them within a storage area. You can use
-them across areas. You can use them between the stack and a storage
-area. 
+the storage allocated for the private stack on creating a fresh
+thread.  However, it is also available for explicit, dynamic storage
+allocation by the programmer, as a substitute for the
+\|malloc|/\|free| functions. They are just called \|pm2_isomalloc| and
+\|pm2_isofree|, with the same profiles as the usual \|malloc| and
+\|free| functions.  Dynamic memory storage allocated with these
+functions are included in the private resources of the threads and are
+migrated together with the thread. Because of the iso-allocation
+technique, the storage is mapped at the \emph{same} virtual address in
+all nodes, so that pointers can be freely used: you can use them
+within a single storage area, but also across areas, and even between
+the private stack and the storage areas.
 
 \begin{note}
   LB to GA: Please, review this carefully!
@@ -484,7 +476,7 @@ the thread. When the thread is about migrating, the registered storage
 areas are packed together with its descriptors and its stack. They are
 unpacked on the destination node, and installed at the same virtual
 address as in the origin node. This is why \|**p| returns the same
-value \emph{after} the migration as before. 
+value \emph{after} the migration, as before. 
 \begin{shell}
 ravel% pm2load isomalloc
 First, I am on node 0, host ravel...
@@ -506,7 +498,7 @@ A thread may allocate as many such dynamic storage areas as
 needed. Observe that this allocation primitive is compatible with the
 usual \|malloc| primitives. A thread may well allocate storage with
 both functions within the same program. However, only areas allocated
-with \|pm2_isomalloc| will migrate together with the thread. The
+with \|pm2_isomalloc| shall migrate together with the thread. The
 result of accessing an address allocated with the ordinary \|malloc|
 function, after a migration is of course undefined as demonstrated by
 Program~\ref{prog:isomalloc1}: the value of \|*p| is \emph{not}
@@ -533,7 +525,7 @@ Up to now, we have only considered regular threads, which share data
 with their sibling threads within the same processing node, that is,
 their hosting Unix process. In regular PM2 programming, no action is
 made to manage such data and to preserve consistency on migration.
-For this purpose, PM2 includes a special library called DSM-PM2 (DSM
+For this purpose, PM2 includes a special module called DSM-PM2 (DSM
 stands for \emph{Distributed Shared Memory}) to provide such a
 functionality. Variables assigned within \emph{shared storage area}
 can be accessed from any thread, whatever its hosting node. The system
@@ -619,7 +611,7 @@ In the two examples above, each thread accessing shared variable
 \|shvar| is launched in turn, waiting for the previous one to signal
 completion. Then, no access conflict on the shared variable is to be
 threatened. What if the thread attempt to increment the variable
-concurrently as in Program~\ref{prog:dsm2}? Actually, the
+\emph{concurrently} as in Program~\ref{prog:dsm2}? Actually, the
 incrementing instruction \|shvar++| is compiled into an
 \emph{sequence} of elementary, atomic machine instructions, something
 like:

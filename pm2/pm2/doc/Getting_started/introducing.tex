@@ -1,12 +1,12 @@
 \chapter{Introducing PM2}
 
-\stamp $Id: introducing.tex,v 1.3 2001/04/17 14:15:12 bouge Exp $
+\stamp $Id: introducing.tex,v 1.4 2001/04/18 15:13:13 bouge Exp $
 
 PM2 is developed at LIP (\emph{Laboratoire de l'Informatique du
   Parall\'elisme}), a research laboratory located at the ENS Lyon
 (\emph{\'Ecole Normale Sup\'erieure de Lyon}) France, jointly
 supported by the INRIA and CNRS institutions. PM2 was originally
-developed at LIFL, University of Lille, France.
+designed at LIFL, University of Lille, France.
   
 PM2 (\emph{Parallel Multithreaded Machine}) is a distributed
 multithreaded programming environment designed to efficiently support
@@ -17,7 +17,7 @@ nothing in the design of PM2 prevents from using it on massively
 parallel MIMD machines at one end of the spectrum, or as a support for
 metacomputing over the Internet on the other end. Actually, a new
 version of PM2's communication library has been developed to support
-heterogeneous networking configurations, such as a set of
+heterogeneous networking configurations, such as sets of
 interconnected clusters.
 
 The thread management subsystem of PM2 is called Marcel. It is
@@ -25,20 +25,20 @@ designed to manage several hundreds of threads on each available
 physical processor. The PM2 programming interface provides
 functionalities for the management of this high degree of parallelism
 and for dynamic load balancing. Interesting features of PM2 include
-its priority driven scheduling policy, its thread migration mechanisms
+its priority driven scheduling policy, its thread migration mechanism
 and its ability to support various load balancing policies. PM2 has
 been design to provide threads as light as possible: the switching
 time is well under the micro-second. Yet, Marcel is completely written
 in portable C, but a dozen of lines of assembly code, which makes it
 portable across most processors and flavors of Unix systems, including
-Solaris and Linux. However, significant improvements could been made
+Solaris and Linux. However, significant improvements have been made
 for Linux by introducing specific support into the operating system.
 
 The communication subsystem of PM2 is called Madeleine. It is
 specifically designed to provide PM2 threads with efficient RPC
 facilities on modern high-performance networks. In particular,
 Madeleine strives at providing zero-copy communication in user-space
-so as to obtain a minimal latency and a maximal bandwidth: less than
+to obtain a minimal latency and a maximal bandwidth: less than
 10~\us latency and Gigabit/s bandwidth have been reported for
 Myrinet networks.  Yet, the design has been careful enough to keep
 Madeleine portable across a wide range of communication interfaces,
@@ -67,7 +67,7 @@ described below.
 
 
 On each node, the \|pm2_main| function of the program is activated.
-This function may then \emph{spawns} (i.e., create) an arbitrary
+This function may then \emph{spawn} (i.e., create) an arbitrary
 number of children threads.  PM2 adheres as much as possible to the
 POSIX Threads programming model. A PM2 thread is just declared as an
 ordinary function. The only difference is that it is called through a
@@ -78,7 +78,7 @@ with a fresh stack. This implies that there is no return for a
 function launched as a thread. On returning from the initial
 activation of its function, the thread merely dies.  Observe also that
 the caller and the callee functions run concurrently: once launched,
-there is no longer any notion of a \emph{father}, nor a \emph{son},
+there is no notion of a \emph{father} any longer, nor a \emph{son},
 and the set of threads is just flat: if one of the running threads
 spawns a new thread, then it is just added to the current, flat pool
 of running threads, whatever its creator.  Also, any thread may
@@ -102,8 +102,8 @@ alternative deserves some comments. In many thread package, the
 default behavior is that a fresh thread is spawn on the server node to
 execute the service function, so that the node is left available to
 handle further requests. However, such a behavior induces an
-additional cost which may be prohibitive with respect to the requested
-service.  The PM2, the server node is left to execute the service
+additional overhead which may be prohibitive with respect to the requested
+service. In PM2, the server node is left to execute the service
 function \emph{in person} so as to save this overhead. As a
 side-effect, this keeps the node busy and unable to serve any further
 request: it is up to the programmer to make sure that no deadlock may
@@ -114,7 +114,7 @@ Synchronization between threads is a crucial aspect of multithreaded
 programming. If the threads live on the same node (that is, within the
 same Unix process), then threads can synchronize through \emph{locks},
 according to the POSIX Threads model. If they lives on distinct nodes,
-then PM2 defines a special object called a \emph{completions}. In
+then PM2 defines special objects called \emph{completions}. In
 short, a completion is a special, self-described token which can be
 generated by a thread, and then forwarded to some other threads. The
 originating thread can then \|wait| for the completion to be sent back
@@ -127,7 +127,7 @@ originator.
 
 How does a PM2 SPMD distributed program start and stop? This is a
 difficult problem, which requires much attention from the programmer
-as it is the never-ending source of subtle failures (the writers have
+as it is the never-ending source of subtle failures (the writer has
 painfully experienced it!). The execution of a PM2 program can be
 divided in three phases.
 \begin{description}
@@ -177,7 +177,7 @@ nodes of the configuration, whose effect is to stop all the system
 service threads. Then, the \|pm2_exit| routine can finally return at each
 node, and the local copy of the program eventually exit. Again,
 issuing multiple calls to the \|pm2_halt| routine, or issuing it
-before all requests have been handled will most probably lead to a
+before all requests have been handled, will most probably lead to a
 deadlock.
 
 \begin{note}
@@ -193,7 +193,7 @@ living on the same node, pick up a thread (including itself!)  for
 migration to some remote processing node and trigger its effective
 migration.  On such a request, the system suspends the selected thread
 and removes it from the scheduler queue. The thread is marshaled
-(i.e., its memory image is copied) into a buffer and physically
+into a buffer (i.e., its memory image is copied), and physically
 deleted at the node. A RPC is then issued to the remote node which has
 been specified as destination for the migration. The service function
 takes the buffer as its argument. On the destination node, this
@@ -243,4 +243,4 @@ called \|dsm_set_default_protocol|. The user may thus switch from one
 protocol to another without recompiling the program! Also, additional
 protocols can be dynamically constructed by the user using the basic
 blocks provided by the library. A typical protocol may be specified at
-this level with a few hundreds of lines.
+this level within a few hundreds of lines.

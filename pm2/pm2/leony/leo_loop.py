@@ -12,104 +12,111 @@ logger	= logging.getLogger()
 prompt_string = 'leony$ '
 
 _LEO_COMMAND_END		= 0
-_LEO_COMMAND_PRINT		= 1
-_LEO_COMMAND_BARRIER		= 2
-_LEO_COMMAND_BARRIER_PASSED	= 3
+_LEO_COMMAND_END_ACK		= 1
+_LEO_COMMAND_PRINT		= 2
+_LEO_COMMAND_BARRIER		= 3
+_LEO_COMMAND_BARRIER_PASSED	= 4
+
+command_string_dict = {
+    _LEO_COMMAND_END: 'END',
+    _LEO_COMMAND_END_ACK: 'END_ACK',
+    _LEO_COMMAND_PRINT: 'PRINT',
+    _LEO_COMMAND_BARRIER: 'BARRIER',
+    _LEO_COMMAND_BARRIER_PASSED: 'BARRIER_PASSED'
+    }
 
 def prompt():
     sys.stdout.write(prompt_string)
     sys.stdout.flush()
 
-def poll(s):
-    ps_dict	= s.active_process_dict
+def process_user_command(leo):
+    command = sys.stdin.readline()
+    command = command.rstrip()
+    logger.info('user command: %s' % command)
+    command_tokens	= string.split(command)
+    if len(command_tokens) == 0:
+        return        
     
-    active_client_list	= leo_comm.client_select(ps_dict.keys())
-    if len(active_client_list) == 0:
-        return
+    command_word	= command_tokens.pop(0)
 
-    print
+    if command_word == 'quit':
+        logger.info('quit')
+        sys.exit(0)
+    elif command_word == 'add':
+        name	= command_tokens.pop(0)
+        logger.info("opening session '%s'" % name)
+        s	= leo_session.Session(leo, name, command_tokens)
+        s.init()
+    else:
+        logger.error('invalid command')
 
-    for active_client in active_client_list:
+def process_client_command(ps):
+    s = ps.session
+    
+    command = leo_comm.receive_int(ps)
 
-        command = leo_comm.receive_int(active_client)
-        print s.name, 'client command:', command
+    if command_string_dict.has_key(command):
+        logger.info('session %s - ps %d: client command = %s', s.name, ps.global_rank, command_string_dict[command])
 
-        if command == _LEO_COMMAND_END:
-            if not s.barrier_dict == None:
-                print
-                print '- inconsistent end of session request: a barrier is ongoing'
-                
-            del ps_dict[active_client]
+    if command == _LEO_COMMAND_END:
+        if not s.barrier_dict == None:
+            logger.warning('- inconsistent end of session request: a barrier is ongoing')
             
-        elif command == _LEO_COMMAND_PRINT:
-            if not s.barrier_dict == None:
-                print '- inconsistent print request: a barrier is ongoing'
+        del s.active_process_dict[ps]
+        
+    elif command == _LEO_COMMAND_PRINT:
+        if not s.barrier_dict == None:
+            logger.warning('- inconsistent print request: a barrier is ongoing')
 
-            string = leo_comm.receive_string(active_client)
-            print string
-            
-        elif command == _LEO_COMMAND_BARRIER:
-            if s.barrier_dict == None:
-                s.barrier_dict = {active_client: active_client}
-                if len(ps_dict) < s.size:
-                    print 'inconsistent barrier request: some processes have already leaved the session'
-            else:
-                if not s.barrier_dict.has_key(active_client):
-                    s.barrier_dict[active_client] = active_client
-                else:
-                    print 'inconsistent barrier request: duplicate barrier command'
-
-                if len(s.barrier_dict) == s.size:
-                    # barrier passed...
-                    for client in ps_dict.keys():
-                        leo_comm.send_int(client, _LEO_COMMAND_BARRIER_PASSED)
-                    s.barrier_dict = None
-            
-        elif command == _LEO_COMMAND_BARRIER_PASSED:
-            print 'invalid client command', command
-            
+        string = leo_comm.receive_string(ps)
+        logger.info(string)
+        
+    elif command == _LEO_COMMAND_BARRIER:
+        if s.barrier_dict == None:
+            s.barrier_dict = {ps: ps}
+            if len(s.active_process_dict) < s.size:
+                logger.warning('inconsistent barrier request: some processes have already leaved the session')
         else:
-            print 'invalid command', command
+            if not s.barrier_dict.has_key(ps):
+                s.barrier_dict[ps] = ps
+            else:
+                logger.warning('inconsistent barrier request: duplicate barrier command')
 
-        prompt()
+            if len(s.barrier_dict) == s.size:
+                # barrier passed...
+                for client in s.active_process_dict.keys():
+                    leo_comm.send_int(client, _LEO_COMMAND_BARRIER_PASSED)
+                s.barrier_dict = None
+        
+    elif command == _LEO_COMMAND_BARRIER_PASSED:
+        logger.error('invalid client command: %d' % command)
+        
+    else:
+        logger.error('invalid command %d' % command)
 
 def loop(leo):
+    dummy_stdin_client = (0, '<stdin>')
     prompt()
 
     while True:
-        # logger.info('<loop>')
-        for session_name in leo.session_dict.keys():
+        ps_list = [ dummy_stdin_client ]
+
+        for session_name, session in leo.session_dict.iteritems():
             session = leo.session_dict[session_name]
-            poll(session)
-            if len(session.active_process_dict) == 0:
-                logger.info("session '"+session.name+"' completed")
-                prompt()
-                session.exit()
-                del leo.session_dict[session_name]
+            ps_list = ps_list + session.active_process_dict.values()
 
-        fd_list = [ 0 ]
-        (ilist, olist, elist) = select.select(fd_list, [], [], 0.1)
-        if len(ilist) == 1:
-            command = sys.stdin.readline()
-            command_tokens	= string.split(command)
-            if len(command_tokens) == 0:
-                prompt()
-                continue
-            
-            command_word	= command_tokens.pop(0)
+        active_list	= leo_comm.client_select(ps_list)
 
-            if command_word == 'quit':
-                print 'quit'
-                break
-            elif command_word == 'add':
-                name	= command_tokens.pop(0)
-                print 'add', name
-                s	= leo_session.Session(leo, name, command_tokens)
-                s.init()
+        for active in active_list:
+            if active == dummy_stdin_client:
+                process_user_command(leo)
             else:
-                print 'invalid command'
-
+                process_client_command(active)
+                if len(active.session.active_process_dict) == 0:
+                    logger.info("closing session '%s'" % session.name)
+                    session.exit()
+                    del leo.session_dict[session_name]
+                    logger.info("session '%s' completed" % session.name)
+                
+        if len(active_list) > 0:
             prompt()
-
-        # if len(leo.session_dict) == 0:
-        #    break

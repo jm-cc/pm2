@@ -504,3 +504,82 @@ void common_post_init(int *argc, char *argv[],
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT); 
 #endif /* PM2DEBUG */
 }
+
+void
+common_exit(common_attr_t *attr)
+{
+  LOG_IN();
+  if (!attr)
+    { 
+      attr = &default_static_attr;
+    }
+  
+#ifdef MAD3
+  // 
+  // Leonie termination synchronisation
+  // ----------------------------------
+  //
+  // Provides:
+  // - 'leo_command_end' command transmission to Leonie
+  // - synchronized virtual channels shutdown steering by Leonie
+  // - regular channels clean-up
+  //
+  // Requires:
+  // - Marcel full activity
+  //
+
+  mad_leonie_sync(attr->madeleine);
+  mad_dir_channels_exit(attr->madeleine);
+#endif // MAD3
+
+#ifdef MARCEL
+  // Marcel shutdown
+  // --------------------------------
+  marcel_end();
+#endif // MARCEL
+
+#ifdef MAD3
+  mad_dir_driver_exit(attr->madeleine);
+  mad_directory_exit(attr->madeleine);
+  mad_leonie_link_exit(attr->madeleine);
+  mad_object_exit(attr->madeleine);
+#ifdef MARCEL
+  mad_forward_memory_manager_exit();
+#endif // MARCEL
+
+  mad_memory_manager_exit();
+#endif // MAD3
+
+#ifdef NTBX
+  // 
+  // NTBX clean-up
+  // -------------
+  //
+  // Provides:
+  // - ntbx structures clean-up
+  //
+  // Requires:
+  // - Marcel synchronization services
+  // - TBX full activity
+  //
+
+  ntbx_exit();
+#endif // NTBX  
+
+#ifdef TBX
+  // 
+  // TBX clean-up
+  // -------------
+  //
+  // Provides:
+  // - tbx structures clean-up
+  //
+  // Requires:
+  // - Marcel synchronization services
+  //
+
+  ntbx_exit();
+#endif // NTBX  
+  
+  LOG_OUT();
+}

@@ -486,7 +486,7 @@ static __inline__ unsigned long __ma_ffs(unsigned long word)
  * fls: find last bit set.
  */
 
-#define fls(x) generic_fls(x)
+#define ma_fls(x) ma_generic_fls(x)
 
 #section marcel_functions
 /*

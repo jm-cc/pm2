@@ -28,6 +28,15 @@
 #  define SP_FIELD(buf)           ((buf)[1])
 #endif
 
+/* Linux sparc */
+#if defined(LINUX_SYS)
+#  define STACK_INFO
+#  include <sys/ucontext.h>
+#warning XXX: est-ce vraiment ça ?
+#  define TOP_STACK_FREE_AREA     (SPARC_MAXREGWINDOW*8+128)
+#  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
+#endif
+
 extern void call_ST_FLUSH_WINDOWS(void);
 
 static __inline__ long get_sp()

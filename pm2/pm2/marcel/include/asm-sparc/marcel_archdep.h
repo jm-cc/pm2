@@ -31,7 +31,9 @@
 /* Linux sparc */
 #if defined(LINUX_SYS)
 #  define STACK_INFO
-#  define TOP_STACK_FREE_AREA     128
+#  include <sys/ucontext.h>
+#warning XXX: est-ce vraiment ça ?
+#  define TOP_STACK_FREE_AREA     (SPARC_MAXREGWINDOW*4+128)
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
 #endif
 

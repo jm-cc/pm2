@@ -35,32 +35,6 @@ extern unsigned long ma_nr_running(void);
 //extern unsigned long ma_nr_uninterruptible(void);
 //extern unsigned long nr_iowait(void);
 
-#section marcel_macros
-#define MA_TASK_RUNNING		0
-#define MA_TASK_INTERRUPTIBLE	1
-#define MA_TASK_UNINTERRUPTIBLE	2
-#define MA_TASK_STOPPED		4
-#define MA_TASK_ZOMBIE		8
-#define MA_TASK_DEAD		16
-#define MA_TASK_GHOST		32
-#define MA_TASK_MOVING		64
-#define MA_TASK_FROZEN		128
-
-#define __ma_set_task_state(tsk, state_value)		\
-	do { (tsk)->sched.state = (state_value); } while (0)
-#define ma_set_task_state(tsk, state_value)		\
-	ma_set_mb((tsk)->sched.state, (state_value))
-
-#define __ma_set_current_state(state_value)			\
-	do { MARCEL_SELF->sched.state = (state_value); } while (0)
-#define ma_set_current_state(state_value)		\
-	ma_set_mb(MARCEL_SELF->sched.state, (state_value))
-
-#define MA_TASK_IS_RUNNING(tsk) ((tsk)->sched.internal.cur_rq && !(tsk)->sched.internal.array)
-#define MA_TASK_IS_BLOCKED(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
-#define MA_TASK_IS_SLEEPING(tsk) (!(tsk)->sched.internal.cur_rq)
-#define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
-
 /*
  * Scheduling policies
  */
@@ -359,6 +333,8 @@ void ma_yield(void);
 
 extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
 extern int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
+extern void FASTCALL(ma_freeze_thread(marcel_task_t * tsk));
+extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
 #ifdef MA__LWPS
  extern void ma_kick_process(marcel_task_t * tsk);
 #else
@@ -630,4 +606,5 @@ static inline void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
 	SET_LWP(p, lwp);
 	//p->thread_info->cpu = cpu;
 }
+
 

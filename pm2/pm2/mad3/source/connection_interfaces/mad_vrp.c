@@ -67,6 +67,7 @@ typedef struct s_mad_vrp_in_connection_specific
   int            socket;
   int            port;
   vrp_incoming_t vrp_in;
+  marcel_t       thread;
 } mad_vrp_in_connection_specific_t, *p_mad_vrp_in_connection_specific_t;
 
 typedef struct s_mad_vrp_out_connection_specific
@@ -74,6 +75,7 @@ typedef struct s_mad_vrp_out_connection_specific
   int            socket;
   int            port;
   vrp_outgoing_t vrp_out;
+  marcel_t       thread;
 } mad_vrp_out_connection_specific_t, *p_mad_vrp_out_connection_specific_t;
 
 typedef struct s_mad_vrp_link_specific
@@ -93,6 +95,93 @@ mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
 {
   /**/
 }
+
+static
+void *
+mad_vrp_incoming_thread(void *arg)
+{
+  vrp_incoming_t vrp_in = NULL;
+  int            fd     = -1;
+  fd_set         fds;
+
+  LOG_IN();
+  vrp_in = arg;
+  fd     = vrp_incoming_fd(vrp_in);
+
+  while (1)
+    {
+      int status = -1;
+
+      FD_ZERO(&fds);
+      FD_SET(fd, &fds);
+      status = marcel_select(fd+1, &fds, NULL);
+
+      if (!status)
+        break;
+
+      if ((status == -1) && (errno != EINTR))
+        {
+          perror("select");
+          FAILURE("system call failed");
+        }
+
+      if (status > 0) 
+        {
+          if (!FD_ISSET(fd, &fds))
+            FAILURE("invalid state");
+
+          vrp_outgoing_read_callback(fd, vrp_in);
+        }
+    }
+
+  LOG_OUT();
+
+  return NULL;
+}
+
+static
+void *
+mad_vrp_outgoing_thread(void *arg)
+{
+  vrp_outgoing_t vrp_out = NULL;
+  int            fd     = -1;
+  fd_set         fds;
+
+  LOG_IN();
+  vrp_out = arg;
+  fd      = vrp_outgoing_fd(vrp_out);
+
+  while (1)
+    {
+      int status = -1;
+
+      FD_ZERO(&fds);
+      FD_SET(fd, &fds);
+      status = marcel_select(fd+1, &fds, NULL);
+
+      if (!status)
+        break;
+
+      if ((status == -1) && (errno != EINTR))
+        {
+          perror("select");
+          FAILURE("system call failed");
+        }
+
+      if (status > 0) 
+        {
+          if (!FD_ISSET(fd, &fds))
+            FAILURE("invalid state");
+
+          vrp_outgoing_read_callback(fd, vrp_out);
+        }
+    }
+
+  LOG_OUT();
+
+  return NULL;
+}
+
 
 #undef DEBUG_NAME
 #define DEBUG_NAME mad3
@@ -272,7 +361,9 @@ mad_vrp_accept(p_mad_connection_t   in,
 
   is->vrp_in = vrp_incoming_construct(&vrp_port, mad_vrp_frame_handler);
   mad_ntbx_send_int(net_client, vrp_port);
-  /* lancer le thread de traitement asynchrone */
+  marcel_create(&(is->thread), NULL, mad_vrp_incoming_thread, is->vrp_in);
+  ntbx_tcp_client_disconnect(net_client);
+  ntbx_client_dest(net_client);
   LOG_OUT();
 
 }
@@ -304,7 +395,9 @@ mad_vrp_connect(p_mad_connection_t   out,
   vrp_port = mad_ntbx_receive_int(net_client);
 
   os->vrp_out = vrp_outgoing_construct(r_node->name, vrp_port, 0, 0);
-  /* lancer le thread de traitement asynchrone */
+  marcel_create(&(os->thread), NULL, mad_vrp_outgoing_thread, os->vrp_out);
+  ntbx_tcp_client_disconnect(net_client);
+  ntbx_client_dest(net_client);
   vrp_outgoing_connect(os->vrp_out);
   LOG_OUT();
 }

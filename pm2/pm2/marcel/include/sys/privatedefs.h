@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.13  2000/04/14 11:41:47  vdanjean
+move SCHED_DATA(lwp).sched_task to lwp->idle_task
+
 Revision 1.12  2000/04/11 09:07:18  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -199,11 +202,10 @@ _PRIVATE_ typedef struct {
 } marcel_once_t;
 
 _PRIVATE_ typedef struct __sched_struct {
-  volatile marcel_t new_task;              /* Used by marcel_create */
+  /*  volatile marcel_t new_task; */              /* Used by marcel_create */
   volatile marcel_t __first[MAX_PRIO+1];   /* Scheduler queue */
   volatile unsigned running_tasks;         /* Nb of user running tasks */
   marcel_lock_t sched_queue_lock;          /* Lock for scheduler queue */
-  marcel_t sched_task;                     /* "Idle" task */
 } __sched_t;
 
 _PRIVATE_ typedef struct __lwp_struct {
@@ -233,13 +235,16 @@ _PRIVATE_ typedef struct __lwp_struct {
 #endif
 #ifndef MA__ONE_QUEUE
   __sched_t __sched_data;
-#elif defined(MA__LWPS)
-  marcel_t idle_task;
 #endif
+  marcel_t idle_task;                     /* "Idle" task */
 } __lwp_t;
 
 #ifdef MA__LWPS
+#ifdef MA__ACTIVATION
+#define MA__MAX_LWPS ACT_NB_MAX_CPU
+#else
 #define MA__MAX_LWPS 32
+#endif
 extern __lwp_t* addr_lwp[MA__MAX_LWPS];
 #else
 #define MA__MAX_LWPS 1

@@ -1,1 +1,1 @@
-select tcp.sh protocol
+select tcp protocol

@@ -56,9 +56,9 @@ int marcel_main(int argc, char *argv[])
 
   for(i=0; i<NB; i++) {
     // Uniquement pour les modes SMP/Activations : on demande le
-    // placement du thread sur le processeur (virtuel) i modulo
-    // NB_PROCS :
-    marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(i % marcel_nbvps()));
+    // placement du thread sur un processeur (virtuel) explicite
+    marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(marcel_nbvps() - 1 - 
+							  (i % marcel_nbvps())));
 
     marcel_create(&pid[i], &attr, writer, (any_t)mess[i]);
   }

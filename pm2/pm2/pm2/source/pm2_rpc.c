@@ -110,11 +110,7 @@ void pm2_rpc_channel_alloc(pm2_rpc_channel_t *channel)
 
 char *pm2_lrpc_name(int num)
 {
-  switch(num) {
-  case SYSTEM_SERVICE : return "_syst_";
-  case MAIN_SERVICE : return "_main_";
-  default : return rpc_names[num];
-  }
+  return "NotAvailable";
 }
 
 int pm2_lrpc_runned_by(marcel_t pid)

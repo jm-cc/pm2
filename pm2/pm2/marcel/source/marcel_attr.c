@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: marcel_attr.c,v $
+Revision 1.4  2000/01/31 15:57:12  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #include <marcel.h>

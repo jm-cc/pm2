@@ -1,2 +1,3 @@
 Provide: module
 Depend: init
+Depend: ntbx_linkmode

@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#include <string.h>
+
 #include "marcel.h"
 
 /* Déclaré non statique car utilisé dans marcel.c : */
@@ -26,7 +28,8 @@ marcel_attr_t marcel_attr_default = {
   1,                       /* not_migratable */
   0,                       /* not_deviatable */
   MARCEL_SCHED_OTHER,      /* scheduling policy */
-  MARCEL_CLASS_REGULAR     /* scheduling class */
+  MARCEL_CLASS_REGULAR,    /* scheduling class */
+  MARCEL_VPMASK_EMPTY      /* vp mask */
 };
 
 /* Déclaré dans marcel.c : */
@@ -101,7 +104,7 @@ int marcel_attr_getactivation(marcel_attr_t *attr, boolean *immediate)
 
 int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable)
 {
-   attr->not_migratable = (migratable ? 0 : 1 );
+   attr->not_migratable = (migratable ? 0 : 1);
    return 0;
 }
 
@@ -126,6 +129,11 @@ int marcel_attr_getdeviationstate(marcel_attr_t *attr, boolean *deviatable)
 int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy)
 {
   attr->sched_policy = policy;
+#if defined(MA__LWPS) && !defined(MA__ONE_QUEUE)
+  // Mode SMP multi-files
+  if(policy >= 0) // SCHED_FIXED
+    attr->vpmask = MARCEL_VPMASK_ALL_BUT_VP((unsigned)policy);
+#endif
   return 0;
 }
 
@@ -147,3 +155,14 @@ int marcel_attr_getrealtime(marcel_attr_t *attr, boolean *realtime)
   return 0;
 }
 
+int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask)
+{
+  attr->vpmask = mask;
+  return 0;
+}
+
+int marcel_attr_getvpmask(marcel_attr_t *attr, marcel_vpmask_t *mask)
+{
+  *mask = attr->vpmask;
+  return 0;
+}

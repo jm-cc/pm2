@@ -110,15 +110,20 @@
 #endif
 
 #ifdef MARCEL_MONO /* Marcel Mono */
+#define MA__MONO
 #define MA__ONE_QUEUE
 #define MA__TIMER
 #endif /* Fin Marcel Mono */
 
 #ifdef MARCEL_SMP /* Marcel SMP */
-#define SMP
 #define MA__SMP /* Utilisation des pthreads pour les lwp */
 #define MA__LWPS
 #define MA__TIMER
+#ifdef SMP_SHARED_QUEUE
+#define MA__ONE_QUEUE
+#define MA__MULTIPLE_RUNNING
+#endif
+
 #endif /* Fin Marcel SMP */
 
 #if defined(MARCEL_ACT) || defined(MARCEL_ACTSMP) /* Marcel Activation */

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_application_spawn.c,v $
+Revision 1.8  2000/12/11 08:31:17  oaumage
+- support Leonie
+
 Revision 1.7  2000/07/12 07:55:13  oaumage
 - Correction de la logique de localisation du fichier de configuration
 
@@ -388,6 +391,52 @@ mad_init(
 
   LOG_OUT();
   return madeleine;
+}
+
+
+char *
+new_mad_pre_init(p_mad_adapter_set_t adapter_set)
+{
+  p_mad_madeleine_t  madeleine     =    NULL;
+  int                dummy_argc    =       1;
+  char              *dummy_argv[0] = "<N/A>";
+
+  tbx_init(*dummy_argc, dummy_argv);
+  ntbx_init(*dummy_argc, dummy_argv);
+  mad_memory_manager_init(*dummy_argc, dummy_argv);
+
+  madeleine = mad_object_init(*dummy_argc, dummy_argv, NULL, adapter_set);
+  mad_network_components_init(madeleine, *dummy_argc, dummy_argv);
+
+  return mad_generate_url(madeleine);
+}
+
+p_mad_madeleine_t
+new_mad_init(
+	 ntbx_host_id_t  rank,
+	 char           *configuration_file,
+	 char           *url
+	 )
+{
+  int                dummy_argc    =        1;
+  char              *dummy_argv[0] = "<N/A>";
+
+  madeleine->configuration->local_host_id = rank;
+
+  madeleine->settings->configuration_file =
+    TBX_MALLOC(strlen(configuration_file) + 1);
+  CTRL_ALLOC(madeleine->settings->configuration_file);
+  strcpy(madeleine->settings->configuration_file, configuration_file);
+
+  madeleine->settings->url = TBX_MALLOC(strlen(url) + 1);
+  CTRL_ALLOC(madeleine->settings->url);
+  strcpy(madeleine->settings->url, url);
+
+  mad_output_redirection_init(madeleine, *dummy_argc, dummy_argv);
+  mad_configuration_init(madeleine, *dummy_argc, dummy_argv);
+  mad_parse_url(madeleine, *dummy_argc, dummy_argv);
+  mad_connect(madeleine, *dummy_argc, dummy_argv);
+  
 }
 
 

@@ -167,6 +167,7 @@ static __inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
  */
 
 #define ma_ffs(x) ma_generic_ffs(x)
+#define ma___ffs(x) (ma_generic_ffs(x)-1)
 
 /*
  * hweightN: returns the hamming weight (i.e. the number
@@ -188,9 +189,9 @@ static inline int ma_sched_find_first_bit(const unsigned long *b)
 	int i;
 	for (i=0;i<140/MA_BITS_PER_LONG;i++) {
 		if (tbx_unlikely(b[i]))
-			return ma_ffs(b[i]) + MA_BITS_PER_LONG*i;
+			return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
 	}
 	if (i*MA_BITS_PER_LONG==140)
 		MA_BUG();
-	return ma_ffs(b[i]) + MA_BITS_PER_LONG*i;
+	return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
 }

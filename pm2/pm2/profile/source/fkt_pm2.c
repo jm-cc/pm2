@@ -107,7 +107,7 @@ void fkt_keychange(int how, unsigned int keymask) {
     perror("set fkt mask");
 }
 
-void fkt_record(char *file, unsigned int initmask, int powpages, int dma)
+int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
 {
   unsigned long pid, kpid;
   double mhz[MAXCPUS];
@@ -124,7 +124,7 @@ void fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   if (fkt<0) {
     if ((fkt=open(FKT_DEV, O_RDONLY|O_NONBLOCK))<0) {
       perror("open(\"" FKT_DEV "\")");
-      exit(EXIT_FAILURE);
+      return -1;
     }
   }
 
@@ -284,6 +284,7 @@ void fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   EPRINTF("fkt ready\n");
 
   close(fd);
+  return 0;
 }
 
 void fkt_stop(void) {
@@ -295,7 +296,7 @@ void fkt_stop(void) {
 int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num) {
 	unsigned long entries [] = { FKT_USER_FORK_CODE, thread_num, lwp_logical_num };
 	if (__pm2_profile_active) {
-		return ioctl(fkt, FKT_PROBE2, entries);
+		return ioctl(fkt, FKT_USER_PROBE2, entries);
 	}
 	return 0;
 }

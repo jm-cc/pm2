@@ -22,7 +22,9 @@
  * Most are extracted from Linux kernel sources & LinuxThreads sources.
  */
 
+#ifdef MARCEL
 #include "sys/marcel_flags.h"
+#endif
 #ifdef X86_ARCH
 #  define SPINLOCK_DEFINED
 #  ifdef MA__LWPS

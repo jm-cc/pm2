@@ -35,7 +35,7 @@
 
 /* once.c */
 
-#include <marcel.h>
+#include "marcel.h"
 
 void f(void)
 {

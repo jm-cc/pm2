@@ -1,3 +1,10 @@
+/*! \file tbx_darray_management.c
+ *  \brief TBX dynamic array management routines.
+ *
+ *  This file implements TBX dynamic uni-dimentionnal arrays
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

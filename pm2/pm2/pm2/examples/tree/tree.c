@@ -36,7 +36,7 @@
 #include <pm2.h>
 #include <sys/time.h>
 
-static unsigned WAKE, DICHO;
+static unsigned DICHO;
 
 static unsigned cur_proc = 0;
 
@@ -52,72 +52,53 @@ static __inline__ int next_proc(void)
   return cur_proc;
 }
 
-static void wake(void)
+static void completion_handler(void *arg)
 {
-  marcel_sem_t *ptr_sem;
-  unsigned *ptr_res;
-
-  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-  old_mad_unpack_int(MAD_IN_HEADER, ptr_res, 1);
-  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
-
-  pm2_rawrpc_waitdata();
-
-  marcel_sem_V(ptr_sem);
+  pm2_unpack_int(SEND_CHEAPER, RECV_CHEAPER, (int *)arg, 1);
 }
 
 static void thr_dicho(void *arg)
 {
   unsigned inf, sup, res;
-  marcel_sem_t *ptr_sem;
-  unsigned *ptr_res;
-  int father, self = pm2_self();
+  pm2_completion_t c;
 
-  old_mad_unpack_int(MAD_IN_HEADER, &inf, 1);
-  old_mad_unpack_int(MAD_IN_HEADER, &sup, 1);
-  old_mad_unpack_int(MAD_IN_HEADER, &father, 1);
-  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-  old_mad_unpack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
-
+  pm2_unpack_int(SEND_CHEAPER, RECV_CHEAPER, &inf, 1);
+  pm2_unpack_int(SEND_CHEAPER, RECV_CHEAPER, &sup, 1);
+  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata();
 
    if(inf == sup) {
       res = inf;
    } else {
       int mid = (inf + sup)/2;
-      unsigned res1, *ptr_res1 = &res1, res2, *ptr_res2 = &res2;
-      marcel_sem_t sem, *ptr_sem = &sem;
+      unsigned res1, res2;
+      pm2_completion_t c1, c2;
 
-      marcel_sem_init(&sem, 0);
+      pm2_completion_init(&c1, completion_handler, &res1);
+      pm2_completion_init(&c2, completion_handler, &res2);
 
       pm2_rawrpc_begin(next_proc(), DICHO, NULL);
-      old_mad_pack_int(MAD_IN_HEADER, &inf, 1);
-      old_mad_pack_int(MAD_IN_HEADER, &mid, 1);
-      old_mad_pack_int(MAD_IN_HEADER, &self, 1);
-      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res1, sizeof(ptr_res1));
-      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &inf, 1);
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &mid, 1);
+      pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c1);
       pm2_rawrpc_end();
 
       mid++;
 
       pm2_rawrpc_begin(next_proc(), DICHO, NULL);
-      old_mad_pack_int(MAD_IN_HEADER, &mid, 1);
-      old_mad_pack_int(MAD_IN_HEADER, &sup, 1);
-      old_mad_pack_int(MAD_IN_HEADER, &self, 1);
-      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res2, sizeof(ptr_res2));
-      old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &mid, 1);
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &sup, 1);
+      pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c2);
       pm2_rawrpc_end();
 
-      marcel_sem_P(&sem); marcel_sem_P(&sem);
+      pm2_completion_wait(&c1); pm2_completion_wait(&c2);
 
       res = res1 + res2;
    }
 
-   pm2_rawrpc_begin(father, WAKE, NULL);
-   old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-   old_mad_pack_int(MAD_IN_HEADER, &res, 1);
-   old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
-   pm2_rawrpc_end();
+   pm2_completion_signal_begin(&c);
+   pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &res, 1);
+   pm2_completion_signal_end();
 }
 
 static void dicho(void)
@@ -129,13 +110,10 @@ static void f(void)
 {
   Tick t1, t2;
   unsigned long temps;
-  unsigned inf, sup, res, *ptr_res = &res;
-  marcel_sem_t sem, *ptr_sem = &sem;
-  int self = pm2_self();
+  unsigned inf, sup, res;
+  pm2_completion_t c;
 
   while(1) {
-
-    marcel_sem_init(&sem, 0);
 
     tfprintf(stderr, "Entrez un entier raisonnable "
 	     "(0 pour terminer) : ");
@@ -148,15 +126,15 @@ static void f(void)
 
     GET_TICK(t1);
 
+    pm2_completion_init(&c, completion_handler, &res);
+
     pm2_rawrpc_begin(next_proc(), DICHO, NULL);
-    old_mad_pack_int(MAD_IN_HEADER, &inf, 1);
-    old_mad_pack_int(MAD_IN_HEADER, &sup, 1);
-    old_mad_pack_int(MAD_IN_HEADER, &self, 1);
-    old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_res, sizeof(ptr_res));
-    old_mad_pack_byte(MAD_IN_HEADER, (char *)&ptr_sem, sizeof(ptr_sem));
+    pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &inf, 1);
+    pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &sup, 1);
+    pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
     pm2_rawrpc_end();
 
-    marcel_sem_P(ptr_sem);
+    pm2_completion_wait(&c);
 
     GET_TICK(t2);
 
@@ -169,7 +147,6 @@ static void f(void)
 
 int pm2_main(int argc, char **argv)
 {
-  pm2_rawrpc_register(&WAKE, wake);
   pm2_rawrpc_register(&DICHO, dicho);
 
   pm2_init(&argc, argv);

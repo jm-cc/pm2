@@ -43,8 +43,11 @@
 # $5 à ... : executable a lancer et arguments
 #
 
-MAD_CONSOLE=no
+# Just in case MADELEINE_ROOT is not defined
+MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
+export MADELEINE_ROOT
 
+MAD_CONSOLE=no
 
 confsize=$1
 shift

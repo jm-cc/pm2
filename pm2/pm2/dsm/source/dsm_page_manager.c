@@ -101,7 +101,7 @@ void pm2_set_dsm_page_distribution(int mode, ...)
   va_end(l);
 }
 
-void pm2_set_user_page_protection(int mode, ...)
+void pm2_set_dsm_page_protection(int mode, ...)
 {
   va_list l;
   
@@ -279,9 +279,9 @@ void dsm_page_ownership_init()
     }
   }
    if (_dsm_page_protect_mode != DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS) 
-     switch(_dsm_page_distrib_mode){
+     switch(_dsm_page_protect_mode){
      case DSM_UNIFORM_PROTECT:
-       dsm_set_uniform_access((dsm_access_t)_dsm_page_distrib_arg);break;
+       dsm_set_uniform_access((dsm_access_t)_dsm_page_protect_arg);break;
      case DSM_CUSTOM_PROTECT:
        RAISE(NOT_IMPLEMENTED);break;
      }
@@ -339,6 +339,7 @@ void dsm_display_page_ownership()
   for (i = 0; i < nb_static_dsm_pages; i++)
     tfprintf(stderr,"page %d: owner = %d, access = %d\n", i, dsm_page_table[i].prob_owner, dsm_page_table[i].access);
 }
+
 
 void dsm_set_no_access()
 {  

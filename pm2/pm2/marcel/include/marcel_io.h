@@ -14,14 +14,10 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_IO_EST_DEF
-#define MARCEL_IO_EST_DEF
-
+#section functions
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/uio.h>
-
-void marcel_io_init(void);
 
 int marcel_read(int fildes, void *buf, size_t nbytes);
 
@@ -44,6 +40,5 @@ int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
 int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 
 // Still here, but do not use it!
-int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
+int __tbx_deprecated__ tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
 
-#endif

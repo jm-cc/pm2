@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.14  2000/02/28 11:06:17  rnamyst
+Changed #include "" into #include <>.
+
 Revision 1.13  2000/02/10 11:18:01  rnamyst
 Modified to use default values for environment variables...
 
@@ -93,7 +96,7 @@ ______________________________________________________________________________
 
 /* #define DEBUG */
 /* #define TIMING */
-#include <madeleine.h>
+#include "madeleine.h"
 
 
 /*

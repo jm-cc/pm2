@@ -75,6 +75,7 @@ make_ln ${PM2_ROOT}/modules ../tbx tbx
 make_ln ${PM2_ROOT}/modules ../swann swann
 
 # examples links
+rm -f ${PM2_ROOT}/mad3/examples/cfgs ${PM2_ROOT}/mad3/examples/networks.cfg
 make_ln ${PM2_ROOT}/mad3/examples ${PM2_ROOT}/leonie/examples         cfgs
 make_ln ${PM2_ROOT}/mad3/examples ${PM2_ROOT}/leonie/examples/networks.cfg
 

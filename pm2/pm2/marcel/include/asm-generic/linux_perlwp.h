@@ -43,9 +43,9 @@
 
 extern int __ma_main_lwp_start;
 /* var is in discarded region: offset to particular copy we want */
-extern void *__per_lwp_data;
 #define ma_per_lwp(var, lwp) (*TBX_RELOC_HIDE(&ma_per_lwp__##var, \
-   (((ma_lwp_t)lwp)->per_lwp_offset)))
+   ((ma_lwp_t)(lwp))->per_lwp_offset))
+//   ((unsigned long)(ma_lwp_t)(lwp) - (unsigned long)&__main_lwp)))
 #define __ma_get_lwp_var(var) ma_per_lwp(var, LWP_SELF)
 
 ///* Défini dans le script du linker */

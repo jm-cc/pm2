@@ -13,10 +13,11 @@ SECTIONS {
     {
       . = ALIGN(4096) ;
       __ma_main_lwp_start = . ;
-      __ma_main_lwp = . ;
+      *(.ma.main.lwp)
       *( SORT(.ma.per.lwp.main.*))
       *(.ma.per.lwp.main)
       __ma_main_lwp_end = . ;
+   /* ne marche pas, vu que .data n'est pas à l'adresse 0 */
    /* __ma_main_lwp_size = __ma_main_lwp_end - __ma_main_lwp_start ; */
 
       . = ALIGN(4096) ;

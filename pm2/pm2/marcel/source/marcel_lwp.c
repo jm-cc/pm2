@@ -174,15 +174,19 @@ static void *lwp_kthread_start_func(void *arg)
 }
 #endif /* MA__SMP */
 
+static int lwp_notify(struct ma_notifier_block *self, unsigned long action, void *hlwp);
+static struct ma_notifier_block lwp_nb;
+
 unsigned marcel_lwp_add_vp(void)
 {
-  marcel_lwp_t *lwp = (marcel_lwp_t *)__TBX_MALLOC(sizeof(marcel_lwp_t), __FILE__, __LINE__),
+  marcel_lwp_t *lwp = (marcel_lwp_t *)__TBX_MALLOC(sizeof(marcel_lwp_t) + __ma_per_lwp_size, __FILE__, __LINE__),
           *cur_lwp = GET_LWP(marcel_self());
 
   LOG_IN();
 
   // Initialisation de la structure marcel_lwp_t
   //marcel_lwp_init(lwp);
+  lwp_notify(&lwp_nb, (unsigned long)MA_LWP_UP_PREPARE, (void *)lwp);
 #warning initialisation de la structure à faire...
 
   lwp_list_lock_write();
@@ -259,24 +263,18 @@ static void lwp_init(ma_lwp_t lwp)
 {
 	static unsigned __nb_lwp = 0;
 	marcel_attr_t attr;
-#ifdef MA__SMP
-	void *per_lwp_data;
-#endif
 
 	LOG_IN();
+
+	memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
+
+	lwp->per_lwp_offset = (unsigned long)lwp -
+			(unsigned long)&__ma_main_lwp_start;;
 
 #ifdef MA__SMP
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
 
-#ifdef MA__SMP
-	// ST: attention, per_lwp_data n'est pas initialisé sur le bon
-	// noeud ici !
-	per_lwp_data=__TBX_MALLOC(__ma_per_lwp_size, __FILE__, __LINE__);
-	memcpy(per_lwp_data,&__ma_main_lwp_start,__ma_per_lwp_size);
-	lwp->per_lwp_offset=(unsigned long)per_lwp_data-(unsigned long)&__ma_main_lwp_start;
-#endif
-	
 	// ATTENTION: la tentation est forte d'initialiser _locked à 2
 	// pour éviter le 'lock_task' juste après. Erreur: cela ne
 	// serait valable que pour la création du _premier_ lwp car

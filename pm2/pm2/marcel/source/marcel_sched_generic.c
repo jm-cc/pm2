@@ -30,7 +30,7 @@ void marcel_delay(unsigned long millisecs)
 #endif
 }
 
-marcel_lwp_t __main_lwp;
+__attribute__((__section__(".ma.main.lwp"))) marcel_lwp_t __main_lwp;
 
 /**************************************************************************/
 /**************************************************************************/

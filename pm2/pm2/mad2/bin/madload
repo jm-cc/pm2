@@ -1,22 +1,25 @@
 #!/bin/sh
 
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
 # Just in case MAD2_ROOT is not defined
 MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
 export MAD2_ROOT
 
-if [ -n "${PM2_CONSOLE}" ]; then
-    prog="$1 -pm2cons $PM2_CONSOLE"
-    shift
-else
-    prog="$1"
-    shift
-fi
-
-case "_${DISPLAY}" in
-    _) DISPLAY=`uname -n`:0.0 ;;
-    _:*) DISPLAY=`uname -n`${DISPLAY} ;;
-    *) ;;
-esac
+prog="$1"
+shift
 
 # Note: PM2_CONF_FILE is inherited
 host=`head -1 ${PM2_CONF_FILE}`
@@ -27,13 +30,6 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ "${PM2_DEBUG}" = on ]; then
-    prefix='pm2_gdb_load'
-    args="$args -d"
-else
-    prefix=""
-fi
-
 # The first node has rank 0
 args="$args -rank 0"
 
@@ -42,7 +38,9 @@ args="$args -mad_app_cmd $prog"
 
 PM2_RSH=${PM2_RSH:-rsh} 
 
-cmd="PM2_RSH='${PM2_RSH}';export PM2_RSH;DISPLAY=$DISPLAY;export DISPLAY;PM2_CONF_FILE=$PM2_CONF_FILE;export PM2_CONF_FILE;$prefix $prog $args"
+cmd="PM2_RSH='${PM2_RSH}';export PM2_RSH;\
+     PM2_CMDLINE='${PM2_CMDLINE}';export PM2_CMDLINE;\
+     $prog $args"
 
 case $host in
     localhost|`hostname`)

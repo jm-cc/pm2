@@ -124,6 +124,8 @@ mad_dir_node_get(p_mad_madeleine_t madeleine)
       dir_node = mad_dir_node_cons();
       dir_node->name = mad_leonie_receive_string();
       TRACE_STR("Node name", dir_node->name);
+
+#ifdef LEO_IP
       {
 	char *ip_str, *dummy;
 
@@ -132,7 +134,8 @@ mad_dir_node_get(p_mad_madeleine_t madeleine)
 	TRACE_STR("Node IP", ip_str);
 	TBX_FREE(ip_str);
       }
-      
+#endif // LEO_IP
+
       tbx_htable_add(node_htable, dir_node->name, dir_node);
       dir_node->id = tbx_slist_get_length(node_slist);
       tbx_slist_append(node_slist, dir_node);

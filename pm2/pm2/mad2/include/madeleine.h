@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.8  2000/01/31 15:52:03  oaumage
+- mad_main.h  : deplacement de aligned_malloc vers la toolbox
+- madeleine.h : detection de l'absence de GCC
+
 Revision 1.7  2000/01/21 17:26:56  oaumage
 - mise a jour de l'interface de compatibilite /mad1
 
@@ -63,10 +67,17 @@ ______________________________________________________________________________
 #define MAD_H
 
 /*
+ * Checks
+ * ------
+ */
+#ifndef __GNUC__
+#error The GNU C Compiler is required to build the library
+#endif __GNUC__
+
+/*
  * Headers
  * -------
  */
-
 #ifdef PM2
 #include <marcel.h>
 #endif /* PM2 */

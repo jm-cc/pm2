@@ -13,6 +13,7 @@ filter options;
 
 int table[NB_PROC];
 
+/* compare 2 codes of events. returns true if codes are equal */
 static int codecmp(mode type1, int code1, mode type2, int code2)
 {
   if (type1 != type2) return FALSE;
@@ -24,6 +25,8 @@ static int codecmp(mode type1, int code1, mode type2, int code2)
   else return (code1 == code2);
 }
 
+
+/* the names of the funcyion are explicit enough */
 void init_filter() 
 {
   int i;
@@ -293,9 +296,9 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
   function_time_list prev;
   prev = options.function_begin;
   if (prev == FUNCTION_TIME_LIST_NULL) {
-    // Erreur de parenthésage, bon la c'est la merde on fait quoi...
+    // Error with the bracketts(?), very bad problem, OUPS
     fprintf(stderr, "Erreur de parenthésage 1\n");
-    return;   // La c'est méchant mais bon: return; ??
+    return;   // Bad: return
   }
   if ((codecmp(prev->type, prev->code, begin_type, begin_code)) && \
       (tr->thread == prev->thread)) {
@@ -316,9 +319,9 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
     prev = tmp;
     tmp = tmp->next;
   }
-  // Erreur de parenthésage, bon la c'est la merde on fait quoi...
+   // Error with the bracketts(?), very bad problem, OUPS
   fprintf(stderr, "Erreur de parenthésage 2\n");
-  return;   // La c'est méchant mais bon (on peut supprimer => plus cool)
+  return;    // Bad: return
 }
 
 int filter_get_function_time(struct function_time_list_st *fct_time)
@@ -363,11 +366,12 @@ static void filter_del_thread_fun(int thread)
 {
   thread_fun_list tmp;
   thread_fun_list prev;
-  if (options.thread_fun == THREAD_FUN_LIST_NULL) return; // Erreur
+  if (options.thread_fun == THREAD_FUN_LIST_NULL) return; // Error
   tmp = options.thread_fun->next;
   if (options.thread_fun->thread == thread) {
     options.thread_fun->number--;
     if (options.thread_fun->number == 0){
+      set_thread_disactivated(thread, TRUE);
       options.active_thread_fun--;
       free(options.thread_fun);
       options.thread_fun = tmp;
@@ -379,13 +383,14 @@ static void filter_del_thread_fun(int thread)
     if (tmp->thread == thread) {
       tmp->number--;
       if (tmp->number == 0) {
+	set_thread_disactivated(thread, TRUE);
 	prev->next = tmp->next;
 	free(tmp);
       }
       return;
     }
   }
-  return; // Erreur
+  return; // Error
 }
 
 static int is_in_thread_fun_list(int thread)
@@ -420,7 +425,6 @@ void filter_add_gen_slice(mode begin_type, int begin, char begin_param_active,
   tmp->end_param = end_param;
   options.gen_slice = tmp;
   options.active_gen_slice = 0;
-  //  options.active = 0;
 }
 
 static void search_begin_gen_slice_list(trace *tr)
@@ -507,6 +511,8 @@ static void search_end_function(trace *tr)
   }
 }
 
+
+/* say if an event is valid for the filter given */
 int is_valid(trace *tr)
 {
   if (table[tr->cpu] == FALSE) {
@@ -568,6 +574,8 @@ int is_valid(trace *tr)
 	(is_in_logic_list(tr->args[1])))
       filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
     else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);
+  } else if (tr->code >> 8 == FUT_THREAD_BIRTH_CODE) {
+    set_thread_disactivated(tr->args[0], TRUE);
   }
 
   if (is_in_cpu_list(tr->cpu) == TRUE) {
@@ -578,7 +586,7 @@ int is_valid(trace *tr)
 	    if (is_in_time_list(tr) == TRUE) {
 	      search_begin_gen_slice_list(tr);
 	      search_begin_function(tr);
-	      
+	      if (options.active_gen_slice == 0) set_thread_disactivated(tr->thread, TRUE);
 	      
 	      options.active = options.active_proc && options.active_thread && \
 		options.active_gen_slice && options.active_thread_fun;
@@ -619,4 +627,9 @@ int is_valid(trace *tr)
     return FALSE;
   } 
   return TRUE;
+}
+
+int filter_pid_of_cpu(int i)
+{
+  return table[i];
 }

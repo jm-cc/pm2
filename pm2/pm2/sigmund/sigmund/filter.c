@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "fut_code.h"
+#include "lwpthread.h"
+#include "graphlib.h"
 
 filter options;
 
@@ -86,7 +88,7 @@ void filter_add_proc(int proc)
   options.proc = tmp;
 }
 
-static int is_in_proc_list(int proc)
+int is_in_proc_list(int proc)
 {
   if (options.proc != PROC_LIST_NULL) {
     proc_list temp;
@@ -110,7 +112,7 @@ void filter_add_logic(int logic)
   options.logic = tmp;
 }
 
-static int is_in_logic_list(int logic)
+int is_in_logic_list(int logic)
 {
   if (options.logic != LOGIC_LIST_NULL) {
     logic_list temp;
@@ -505,117 +507,10 @@ static void search_end_function(trace *tr)
   }
 }
 
-static void filter_add_lwp(int lwp, int logic, int thread, int active)
-{
-  lwp_thread_list tmp;
-  tmp = (lwp_thread_list) malloc(sizeof(struct lwp_thread_list_st));
-  assert(tmp != NULL);
-  tmp->next = options.lwp_thread;
-  tmp->lwp = lwp;
-  tmp->logic = logic;
-  tmp->thread = thread;
-  tmp->active = active;
-  options.lwp_thread = tmp;
-}
-
-static int is_active_lwp_of_thread(int thread)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->thread == thread) return tmp->active;
-    tmp = tmp->next;
-  }
-  return -1;  // Erreur
-}
-
-static int is_active_lwp(int lwp)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->lwp == lwp) return tmp->active;
-    tmp = tmp->next;
-  }
-  return -1; // Erreur
-}
-
-static int lwp_of_thread(int thread)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->thread == thread) break;
-    tmp = tmp->next;
-  }
-  if (tmp == LWP_THREAD_LIST_NULL) return -1;
-  return tmp->lwp;
-}
-
-static void change_lwp_thread(int oldthread, int newthread)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->thread == oldthread) break;
-    tmp = tmp->next;
-  }
-  if (tmp == LWP_THREAD_LIST_NULL) return;  //Erreur
-  tmp->thread = newthread;
-}
-
-static int is_lwp(int lwp)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->lwp == lwp) return TRUE;
-    tmp = tmp->next;
-  }
-  return TRUE;
-}
-
-static void set_active_lwp(int lwp, int active)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->lwp == lwp) {
-      tmp->active = active;
-      return;
-    }
-    tmp = tmp->next;
-  }
-  return; // Erreur
-}
-
-int thread_of_lwp(int lwp)
-{
-lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->lwp == lwp) return tmp->thread;
-    tmp = tmp->next;
-  }
-  return -1;
-}
-
-static int logic_of_lwp(int lwp)
-{
-  lwp_thread_list tmp;
-  tmp = options.lwp_thread;
-  while (tmp != LWP_THREAD_LIST_NULL) {
-    if (tmp->lwp == lwp) return tmp->logic;
-    tmp = tmp->next;
-  }
-  return -1;
-}
-
-
-
 int is_valid(trace *tr)
 {
   if (table[tr->cpu] == FALSE) {
+    set_lwp_last_up(tr->pid, tr->clock);
     if (is_in_cpu_list(tr->cpu) == TRUE)
       if (is_in_proc_list(tr->pid) == TRUE)
 	if (is_in_logic_list(logic_of_lwp(tr->pid)) == TRUE)
@@ -637,15 +532,17 @@ int is_valid(trace *tr)
 	  }
 	}
       }
-      if ((is_in_proc_list(tr->args[1]) == TRUE) && \
-	  (is_in_cpu_list(tr->args[0]) == TRUE) && \
+      if ((is_in_proc_list(tr->args[0]) == TRUE) && \
+	  (is_in_cpu_list(tr->args[1]) == TRUE) && \
 	  (is_in_logic_list(logic_of_lwp(tr->args[0])) == TRUE)) {
 	options.active_proc++;
-	if (is_lwp(tr->args[1]) == TRUE) {
-	  set_active_lwp(tr->args[1], TRUE);
-	  if (is_in_thread_list(thread_of_lwp(tr->args[1])) == TRUE) {
+	if (is_lwp(tr->args[0]) == TRUE) {
+	  set_active_lwp(tr->args[0], TRUE);
+	  set_lwp_last_up(tr->args[0], tr->clock);
+	  set_cpu_lwp(tr->args[0], tr->args[0]);
+	  if (is_in_thread_list(thread_of_lwp(tr->args[0])) == TRUE) {
 	    options.active_thread++;
-	    if (is_in_thread_fun_list(thread_of_lwp(tr->args[1])) == TRUE) 
+	    if (is_in_thread_fun_list(thread_of_lwp(tr->args[0])) == TRUE) 
 	      options.active_thread_fun++;
 	  }
 	}
@@ -669,8 +566,8 @@ int is_valid(trace *tr)
     if ((is_in_proc_list(tr->args[0]) == TRUE) && \
 	(is_in_cpu_list(tr->cpu) == TRUE) && \
 	(is_in_logic_list(tr->args[1])))
-      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE);
-    else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE);
+      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE, tr->cpu);
+    else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE, tr->cpu);
   }
 
   if (is_in_cpu_list(tr->cpu) == TRUE) {

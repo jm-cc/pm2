@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.7  2000/05/31 14:24:38  oaumage
+- Ajout au niveau des slists
+
 Revision 1.6  2000/05/25 00:23:57  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -275,5 +278,9 @@ tbx_slist_ref_defined(p_tbx_slist_reference_t ref);
 void
 tbx_slist_sort(p_tbx_slist_t          slist,
 	       p_tbx_slist_cmp_func_t cmp);
+
+void
+tbx_slist_dup(p_tbx_slist_t dest,
+	      p_tbx_slist_t source);
 
 #endif /* __TBX_INTERFACE_H */

@@ -578,8 +578,8 @@ common_exit(common_attr_t *attr)
   // - Marcel synchronization services
   //
 
-  ntbx_exit();
-#endif // NTBX  
+  tbx_exit();
+#endif // TBX  
   
   LOG_OUT();
 }

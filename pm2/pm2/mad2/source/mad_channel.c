@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.8  2000/01/31 15:53:34  oaumage
+- mad_channel.c : verrouillage au niveau des canaux au lieu des drivers
+- madeleine.c : deplacement de aligned_malloc vers la toolbox
+
 Revision 1.7  2000/01/13 14:45:55  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -78,6 +82,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   mad_host_id_t              host;
 
   LOG_IN();
+  PM2_LOCK();
   TRACE("channel allocation");
   PM2_LOCK_SHARED(madeleine);
   PM2_LOCK_SHARED(adapter);
@@ -229,6 +234,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   PM2_UNLOCK_SHARED(channel);
   PM2_UNLOCK_SHARED(adapter);
   PM2_UNLOCK_SHARED(madeleine);
+  PM2_UNLOCK();
   LOG_OUT();
   
   return channel;
@@ -248,6 +254,7 @@ mad_foreach_close_channel(void *object)
   LOG_IN();
 
   TRACE("channel deallocation");
+  PM2_LOCK();
   PM2_LOCK_SHARED(adapter);
   PM2_LOCK_SHARED(channel);
 
@@ -372,6 +379,7 @@ mad_foreach_close_channel(void *object)
   free(channel);
   /* Note: the channel is never unlocked since it is being destroyed */
   PM2_UNLOCK_SHARED(adapter);
+  PM2_UNLOCK();
   LOG_OUT();
 }
 

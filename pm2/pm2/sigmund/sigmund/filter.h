@@ -85,8 +85,10 @@ typedef struct thread_fun_list_st {
 
 typedef struct lwp_thread_list_st {
   int lwp;
+  u_64 last_up_lwp;
   int logic;
   int thread;
+  short int cpu;
   int active;
   int active_thread;
   struct lwp_thread_list_st *next;
@@ -99,7 +101,7 @@ typedef struct {
   logic_list logic;
   int active_proc;
   cpu_list cpu;
-  lwp_thread_list lwp_thread;
+  //  lwp_thread_list lwp_thread;
   event_list event;
   time_slice_list time;
   int active_time;
@@ -123,7 +125,11 @@ extern void filter_add_thread(int thread);
 
 extern void filter_add_proc(int proc);
 
+extern int is_in_proc_list(int proc);
+
 extern void filter_add_logic(int logic);
+
+extern int is_in_logic_list(int logic);
 
 extern void filter_add_cpu(short int cpu);
 

@@ -36,6 +36,7 @@ any_t writer(any_t arg)
       tfprintf(stderr, "Hi %s!\n", arg);
       marcel_delay(50);
    }
+   marcel_cleanup_pop(0);
    return (any_t)NULL;
 }
 

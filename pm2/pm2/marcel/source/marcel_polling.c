@@ -745,7 +745,8 @@ int marcel_ev_req_submit(marcel_ev_server_t server, marcel_ev_req_t req)
 	verify_server_state(server);
 	MA_BUG_ON(req->state & MARCEL_EV_STATE_REGISTERED);
 
-	req->server=server;
+/*Entre en conflit avec le test de la fonction __register*/
+//	req->server=server;
 
 	server->registered_req_not_yet_polled++;
 
@@ -999,5 +1000,15 @@ int marcel_ev_server_stop(marcel_ev_server_t server)
 	LOG_RETURN(0);
 	
 	return 0;
+}
+
+void marcel_poll_lock(void)
+{
+  marcel_lock_acquire(&__polling_lock);
+}
+
+void marcel_poll_unlock(void)
+{
+  marcel_lock_release(&__polling_lock);
 }
 

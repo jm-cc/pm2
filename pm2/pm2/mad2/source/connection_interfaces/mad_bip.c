@@ -41,7 +41,7 @@
 #include <unistd.h> 
 #include <netdb.h>
 
-#include "pm2debug.h"
+#include "tbx_debug.h"
 
 DEBUG_DECLARE(bip)
 

@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #ifndef MARCEL_EST_DEF
 #define MARCEL_EST_DEF
 
@@ -30,8 +45,6 @@
 
 #define MAX_STACK_CACHE		1024
 
-#define MAX_PRIO		100
-
 #define MAX_CLEANUP_FUNCS	5
 
 /* Only meaningful when the SMP or ACT flag is on */
@@ -46,10 +59,6 @@
 #define NO_TIME_SLICE		0
 
 #define DEFAULT_STACK		0
-
-#define MIN_PRIO		1
-
-#define STD_PRIO		MIN_PRIO
 
 
 /* ================= included files ================= */

@@ -33,10 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
+#include "pm2.h"
 
-static unsigned SAMPLE, COMPLETED;
-static marcel_sem_t sem;
+static unsigned SAMPLE;
 
 #define NB	3
 
@@ -50,8 +49,10 @@ static void SAMPLE_thread(void *arg)
 {
   int i;
   char str[64];
+  pm2_completion_t c;
 
-  old_mad_unpack_str(MAD_IN_HEADER, str);
+  pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, str);
+  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
 
   pm2_rawrpc_waitdata();
 
@@ -61,8 +62,7 @@ static void SAMPLE_thread(void *arg)
     marcel_delay(100);
   }
 
-  pm2_rawrpc_begin(0, COMPLETED, NULL);
-  pm2_rawrpc_end();
+  pm2_completion_signal(&c);
 }
 
 static void SAMPLE_service(void)
@@ -70,19 +70,11 @@ static void SAMPLE_service(void)
   pm2_thread_create(SAMPLE_thread, NULL);
 }
 
-static void COMPLETED_service(void)
-{
-  pm2_rawrpc_waitdata();
-
-  marcel_sem_V(&sem);
-}
-
 int pm2_main(int argc, char **argv)
 {
   int i;
 
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
-  pm2_rawrpc_register(&COMPLETED, COMPLETED_service);
 
   pm2_init(&argc, argv);
 
@@ -95,17 +87,19 @@ int pm2_main(int argc, char **argv)
 
 
   if(pm2_self() == 0) { /* master process */
+    pm2_completion_t c;
 
-    marcel_sem_init(&sem, 0);
+    pm2_completion_init(&c, NULL, NULL);
 
     for(i=0; i<NB; i++) {
       pm2_rawrpc_begin(1, SAMPLE, NULL);
-      old_mad_pack_str(MAD_IN_HEADER, mess[i]);
+      pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, mess[i]);
+      pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
       pm2_rawrpc_end();
     }
 
     for(i=0; i<NB; i++)
-      marcel_sem_P(&sem);
+      pm2_completion_wait(&c);
 
     pm2_halt();
   }

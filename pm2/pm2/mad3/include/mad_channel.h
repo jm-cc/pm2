@@ -54,14 +54,17 @@ typedef struct s_mad_channel
   volatile tbx_bool_t         reception_lock;
 #endif // MARCEL
 
+  unsigned int                max_sub;
+  unsigned int                sub;
+  p_tbx_darray_t              sub_channel_darray;
+
   /* Forwarding/Mux only */
 #ifdef MARCEL
+  p_tbx_darray_t              sub_list_darray;
+  unsigned int                max_mux;
   unsigned int                mux;
   p_tbx_darray_t              mux_list_darray;
   p_tbx_darray_t              mux_channel_darray;
-  unsigned int                sub;
-  p_tbx_darray_t              sub_list_darray;
-  p_tbx_darray_t              sub_channel_darray;
   p_tbx_slist_t               channel_slist;
   p_tbx_slist_t               fchannel_slist;
 

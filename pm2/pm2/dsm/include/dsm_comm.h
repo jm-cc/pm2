@@ -47,6 +47,8 @@ void dsm_invalidate_copyset(unsigned long index, dsm_node_t new_owner);
 
 void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t access);
 
+void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm_access_t access, void *user_addr, int user_length);
+
 void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_node_t new_owner);
 
 void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index);
@@ -56,6 +58,7 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index);
 void dsm_send_diffs(unsigned long index, dsm_node_t dest_node);
 
 #endif
+
 
 
 

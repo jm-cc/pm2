@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define MA_FILE_DEBUG timer
 #include "marcel.h"
 #include "tbx_compiler.h"
 #include <signal.h>
@@ -71,7 +72,7 @@ static void timer_action(struct ma_softirq_action *a)
 
 #ifdef MA__DEBUG
 	if (++tick == TICK_RATE) {
-		mdebug("\t\t\t<<tick>>\n");
+		mdebugl(7,"\t\t\t<<tick>>\n");
 		tick = 0;
 	}
 #endif

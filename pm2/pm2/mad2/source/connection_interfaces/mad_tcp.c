@@ -56,13 +56,10 @@
 #include <netinet/tcp.h>
 #include <errno.h>
 
-/* #define BOOST */
-
 /*
  * local structures
  * ----------------
  */
-
 typedef struct
 {
   int nb_adapter;
@@ -395,6 +392,11 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->before_close_channel       = mad_tcp_before_close_channel;
   interface->disconnect                 = mad_tcp_disconnect;
   interface->after_close_channel        = mad_tcp_after_close_channel;
+  interface->link_exit                  = mad_tcp_link_exit;
+  interface->connection_exit            = mad_tcp_connection_exit;
+  interface->channel_exit               = mad_tcp_channel_exit;
+  interface->adapter_exit               = mad_tcp_adapter_exit;
+  interface->driver_exit                = mad_tcp_driver_exit;
   interface->choice                     = mad_tcp_choice;
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
@@ -629,12 +631,8 @@ mad_tcp_connection_init(p_mad_connection_t in, p_mad_connection_t out)
 void 
 mad_tcp_link_init(p_mad_link_t lnk)
 {
-  p_mad_tcp_link_specific_t specific;
-  
   LOG_IN();
-  specific = malloc(sizeof(mad_tcp_link_specific_t));
-  CTRL_ALLOC(specific);
-  lnk->specific    = specific;
+  lnk->specific    = NULL;
   lnk->link_mode   = mad_link_mode_buffer;
   lnk->buffer_mode = mad_buffer_mode_dynamic;
   LOG_OUT();
@@ -809,6 +807,61 @@ mad_tcp_after_close_channel(p_mad_channel_t channel)
 {
   LOG_IN();
   /* nothing */
+  LOG_OUT();
+}
+
+void
+mad_tcp_link_exit(p_mad_link_t link)
+{
+  LOG_IN();
+  /* nothing */
+  LOG_OUT();
+}
+
+void
+mad_tcp_connection_exit(p_mad_connection_t in,
+			p_mad_connection_t out)
+{
+  LOG_IN();
+  free(in->specific);
+  in->specific = out->specific = NULL;
+  LOG_OUT();
+}
+
+void
+mad_tcp_channel_exit(p_mad_channel_t channel)
+{
+  LOG_IN();
+  free(channel->specific);
+  channel->specific = NULL;
+  LOG_OUT();
+}
+
+void
+mad_tcp_adapter_exit(p_mad_adapter_t adapter)
+{
+  p_mad_tcp_adapter_specific_t adapter_specific = adapter->specific;
+  
+  LOG_IN();
+  close(adapter_specific->connection_socket);
+  free(adapter_specific->remote_connection_port);
+  free(adapter_specific);
+  adapter->specific = NULL;
+  free(adapter->parameter);
+  if (adapter->master_parameter)
+    {
+      free(adapter->master_parameter);
+      adapter->master_parameter = NULL;
+    }
+  free(adapter->name);
+  LOG_OUT();
+}
+
+void
+mad_tcp_driver_exit(p_mad_driver_t driver)
+{
+  LOG_IN();
+  free(driver->specific);
   LOG_OUT();
 }
 

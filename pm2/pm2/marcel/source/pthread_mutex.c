@@ -20,9 +20,11 @@
 #include "marcel_fastlock.h"
 //#include "marcel_restart.h" // pour thread_self()
 
+#ifdef MA__POSIX_FUNCTIONS_NAMES
 static inline _pmarcel_descr thread_self() {
   return (_pmarcel_descr)marcel_self();
 }
+#endif
 
 /****************************************************************
  * MUTEX

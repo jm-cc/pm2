@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: mad_list_management.c,v $
+Revision 1.3  2000/01/05 09:42:58  oaumage
+- mad_communication.c: support du nouveau `group_mode' (a surveiller !)
+- madeleine.c: external_spawn_init n'est plus indispensable
+- mad_list_management: rien de particulier, mais l'ajout d'une fonction
+  d'acces a la longueur de la liste est a l'etude, pour permettre aux drivers
+  de faire une optimisation simple au niveau des groupes de buffers de
+  taille 1
+
 Revision 1.2  1999/12/15 17:31:27  oaumage
 Ajout de la commande de logging de CVS
 
@@ -187,6 +195,7 @@ void *mad_get_list_object(p_mad_list_t list)
       FAILURE("empty list");
     }
 }
+
 
 /*
  * list mark control function

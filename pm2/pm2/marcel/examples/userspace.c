@@ -35,7 +35,7 @@
 
 /* userspace.c */
 
-#include <marcel.h>
+#include "marcel.h"
 
 #define STACK_SIZE	10000
 

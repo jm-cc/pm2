@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.20  2000/04/14 11:41:46  vdanjean
+move SCHED_DATA(lwp).sched_task to lwp->idle_task
+
+Revision 1.19  2000/04/14 09:06:16  vdanjean
+new kernel activation version : adaptation of marcel
+
 Revision 1.18  2000/04/11 09:07:35  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -171,7 +177,7 @@ ______________________________________________________________________________
 #endif
 #endif
 
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 #include "sys/upcalls.h"
 int nb_idle_sleeping = 0;
 #endif
@@ -244,7 +250,7 @@ static struct {
 #define DEC_STATS(t, lwp) \
   ((! MA_TASK_NOT_COUNTED_IN_RUNNING(t)) ? SCHED_DATA(lwp).running_tasks-- : 0)
 
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 #define ONE_MORE_ACTIVE_TASK_HOOK() \
   (nb_idle_sleeping ? act_cntl(ACT_CNTL_WAKE_UP,NULL) : 0)
 #else
@@ -444,7 +450,7 @@ static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
 {
   marcel_t idle;
   /* TODO A completer pour les activations */
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   if (cur && IS_TASK_TYPE_IDLE(cur)) {
     /* c'est déjà idle qui regarde s'il y a autre chose. Apparemment,
      * ce n'est pas le cas */
@@ -452,7 +458,7 @@ static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
   }
 #endif
 
-  idle = SCHED_DATA(lwp).sched_task;
+  idle = lwp->idle_task;
   mdebug("marcel_unchain_task chooses idle %p, lwp=%p (%i), sched_data : %p\n",
 	 idle, lwp, lwp->number, &SCHED_DATA(lwp));
   marcel_wake_task(idle, NULL);
@@ -468,7 +474,7 @@ static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
 static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
 {
   marcel_t next;
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   marcel_t first = cur;
 
   if (first == NULL) {
@@ -492,7 +498,7 @@ static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
   next = cur->next;
 #endif
   if (next == cur) {
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 	next = insert_and_choose_idle_task(first, lwp);
 #else
 	next = insert_and_choose_idle_task(cur, lwp);
@@ -511,7 +517,7 @@ marcel_t marcel_radical_next_task(void)
 
   sched_lock(cur_lwp);
 
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   if (IS_TASK_TYPE_UPCALL_NEW(cur)) {
     mdebug("upcall...%p on %p\n", cur, cur_lwp);
     t = radical_next_task(NULL, cur_lwp);
@@ -959,7 +965,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
   marcel_t next, cur = marcel_self();
   unsigned long ttw = __milliseconds + timeout;
 
-#if defined(MA__SMP) || defined(MA__ACT)
+#if defined(MA__SMP) || defined(MA__ACTIVATION)
   RAISE(NOT_IMPLEMENTED);
 #endif
 
@@ -1036,7 +1042,7 @@ void marcel_givehandback(void)
 
 void marcel_delay(unsigned long millisecs)
 {
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   usleep(millisecs*1000);
 #else
   marcel_t p, cur = marcel_self();
@@ -1155,86 +1161,22 @@ void stop_timer(void);
 #define PAUSE()	  SCHED_YIELD()
 #endif
 
-#ifdef __ACT__
-#include <sched.h>
-/* Each processor must be able to run something */
-int nb=0;
-unsigned long temps_act=0;
-
-any_t wait_and_yield(any_t arg)
-{
-  marcel_t next, cur = marcel_self();
-  Tick t1,t2;
-
-  lock_task();
-  GET_TICK(t1);
-  for(;;) {
-    //printf("Idle activated\n");
-    
-    next=cur;
-    do {
-      //{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
-      next = next->next;
-    } while ((next->state_ext == MARCEL_RUNNING) && (next != cur));
-
-    if (next == cur) {
-
-      sched_yield();
-      //if (! (nb++ % 50)) printf("sleeping %i\n", nb);
-      next=cur;
-      do {
-	//{if (res!=t) ACTDEBUG(printf("next_task : skipping %p\n", res));}
-	next = next->next;
-      } while ((next->state_ext == MARCEL_RUNNING) && (next != cur));
-
-      if (next == cur) {
-	//if (! (nb % 10)) 
-	printf("sleeping %i\n", nb);
-	act_cntl(ACT_CNTL_READY_TO_WAIT,NULL);
-	nb_idle_sleeping++;
-	unlock_task();
-	
-	act_cntl(ACT_CNTL_DO_WAIT,NULL);
-	//printf("wakeup\n");
-	lock_task();
-	nb_idle_sleeping--;
-	nb++;
-	//sched_yield();
-	continue;
-      } 
-    }
-    
-    //cur->sched_by = SCHED_BY_MARCEL;
-    if(setjmp(cur->jb) == FIRST_RETURN) {
-      call_ST_FLUSH_WINDOWS();
-      cur->state_ext=MARCEL_READY;
-      GET_TICK(t2);
-      temps_act += timing_tick2usec(TICK_DIFF(t1, t2));
-      restart_thread(next);
-    }
-    cur->state_ext=MARCEL_RUNNING;
-    GET_TICK(t1);
-    
-  }
-}
-#endif
-
 /* Except at the beginning, lock_task() is supposed to be permanently
    handled */
-any_t sched_func(any_t arg)
+any_t idle_func(any_t arg)
 {
   marcel_t next, cur = marcel_self();
 #ifdef SMP
   __lwp_t *cur_lwp = cur->lwp;
 #endif
 
-#ifndef MA__ACT
+#ifndef MA__ACTIVATION
   start_timer(); /* May be redundant for main LWP */
 #endif
 
   lock_task();
 
-  ACTDEBUG(printf("sched_func starting with lock_task\n"));
+  ACTDEBUG(printf("idle_func starting with lock_task\n"));
 
   do {
 
@@ -1288,24 +1230,46 @@ any_t sched_func(any_t arg)
     }
 #else /* MA__SMP */
     /* Look if some delayed tasks can be waked */
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 //    if(__delayed_tasks == NULL && !marcel_polling_is_required()) {
       mdebug("attente active\n");
 
       //has_new_tasks=0;
 
-      act_cntl(ACT_CNTL_READY_TO_WAIT,0);
+      //act_cntl(ACT_CNTL_READY_TO_WAIT,0);
       SET_FROZEN(cur);
       marcel_check_delayed_tasks();
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
+      GET_LWP(cur)->prev_running=cur;
+
+#define ACT_USE_SYSCALL
 
       while (!(next || act_nb_unblocked)) {
+	      int i;
 	      MTRACE("active wait", cur);
 	      
-	      //act_cntl(ACT_CNTL_DO_WAIT,0);	      
-	      while(!act_nb_unblocked);
+//#ifdef ACT_USE_SYSCALL
+/*  	      i=0; */
+/*  	      while((i++<1000000) && !act_nb_unblocked) */
+/*  		      ; */
+/*  	      if (act_nb_unblocked) break; */
+	      act_cntl(ACT_CNTL_READY_TO_WAIT,0);
+	      if (act_nb_unblocked) break;
+	      //fprintf(stderr,"ready to wait\n");
+	      act_cntl(ACT_CNTL_DO_WAIT,0);	
+	      //fprintf(stderr,"neu\n");
+//#else      
+	      while(!act_nb_unblocked) {
+		      i=0;
+		      while((i++<100000000) && !act_nb_unblocked)
+			      ;
+		      if (!act_nb_unblocked)
+			      fprintf(stderr, "act_nb_unblocked=%i\n",
+				      act_nb_unblocked);
+	      }
+	      MTRACE("end active wait", cur);
 	      mdebug("fin attente active\n");
-	      //act_cntl(ACT_CNTL_READY_TO_WAIT,0);	      
+//#endif
 	      marcel_check_delayed_tasks();
 	      SET_FROZEN(cur);
 	      next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
@@ -1318,8 +1282,8 @@ any_t sched_func(any_t arg)
 	      if (next) {
 		      goto_next_task(next);
 	      } else {
-		      GET_LWP(cur)->prev_running=cur;
-		      act_goto_next_task(NULL);
+		      //GET_LWP(cur)->prev_running=cur;
+		      act_goto_next_task(NULL, ACT_RESTART_FROM_IDLE);
 	      }
       }
       
@@ -1337,8 +1301,8 @@ any_t sched_func(any_t arg)
 	/* True polling ! */ ;
     } else {
       while(!marcel_check_delayed_tasks()) {
-#ifdef MA__ACT
-        sched_yield();
+#ifdef MA__ACTIVATION
+        RAISE("on est la ?");
 #else
 	pause();
 #endif
@@ -1359,24 +1323,63 @@ any_t sched_func(any_t arg)
   } while(1);
 }
 
-static void init_sched(__lwp_t *lwp, marcel_t initial_task)
+static void void_func(void* param)
 {
-  int i;
+  RAISE("Quoi, on est là ???\n");
+}
+
+static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
+{
+  static unsigned __nb_lwp = 0;
   marcel_attr_t attr;
-  SCHED_DATA(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
-  SCHED_DATA(lwp).running_tasks = 0;
+  int i;
 
-  for(i = 1; i <= MAX_PRIO; i++)
-    SCHED_DATA(lwp).__first[i] = NULL;
+  if (__nb_lwp >= MA__MAX_LWPS) 
+	  RAISE("Too many lwp\n");
 
-  if(initial_task) {
-    SCHED_DATA(lwp).__first[0] = 
-	    SCHED_DATA(lwp).__first[initial_task->prio] = 
-	    initial_task;
-    initial_task->lwp = lwp;
-    initial_task->prev = initial_task->next = initial_task;
-    SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
-    /* Désormais, on s'exécute dans le lwp 0 */
+  SET_LWP_NB(__nb_lwp, lwp);
+  lwp->number = __nb_lwp++;
+
+#ifdef MA__MULTIPLE_RUNNING
+  lwp->prev_running=NULL;
+#endif
+#ifdef MA__ACTIVATION
+  lwp->upcall_new_task=NULL;
+#endif
+
+#ifdef X86_ARCH
+  atomic_set(&lwp->_locked, 0);
+#else
+  lwp->_locked = 0;
+#endif
+
+#ifndef MA__ONE_QUEUE
+  lwp->has_to_stop = FALSE;
+  lwp->has_new_tasks = FALSE;
+#endif
+  marcel_mutex_init(&lwp->stack_mutex, NULL);
+  lwp->sec_desc = SECUR_TASK_DESC(lwp);
+
+#ifdef MA__ONE_QUEUE
+  /* on initialise une seule fois la structure. */
+  if (initial_task) 
+#endif
+  {
+	  SCHED_DATA(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
+	  SCHED_DATA(lwp).running_tasks = 0;
+
+	  for(i = 1; i <= MAX_PRIO; i++)
+		  SCHED_DATA(lwp).__first[i] = NULL;
+
+	  if(initial_task) {
+		  SCHED_DATA(lwp).__first[0] = 
+			  SCHED_DATA(lwp).__first[initial_task->prio] = 
+			  initial_task;
+		  initial_task->lwp = lwp;
+		  initial_task->prev = initial_task->next = initial_task;
+		  SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
+		  /* Désormais, on s'exécute dans le lwp 0 */
+	  }
   }
 
   /***************************************************/
@@ -1398,81 +1401,39 @@ static void init_sched(__lwp_t *lwp, marcel_t initial_task)
   lock_task();
   //if(lwp->number == 0)
   //  sched_lock(lwp);
-  marcel_create(&(SCHED_DATA(lwp).sched_task), &attr, sched_func, NULL);
+  marcel_create(&(lwp->idle_task), &attr, idle_func, NULL);
   //if(lwp->number == 0)
   //  sched_unlock(lwp);
 
-  MTRACE("IdleTask", SCHED_DATA(lwp).sched_task);
-  SET_FROZEN(SCHED_DATA(lwp).sched_task);
-  UNCHAIN_TASK(SCHED_DATA(lwp).sched_task);
-
-  SCHED_DATA(lwp).sched_task->special_flags |= \
+  lwp->idle_task->special_flags |= \
 	  MA_SF_POLL | MA_SF_NORUN | MA_SF_NOSCHEDLOCK;
 
+  MTRACE("IdleTask", lwp->idle_task);
+  SET_FROZEN(lwp->idle_task);
+  UNCHAIN_TASK(lwp->idle_task);
+
+#ifndef MA__ONE_QUEUE
   if (!initial_task) {
     SCHED_DATA(lwp).__first[0] = 
-      SCHED_DATA(lwp).__first[SCHED_DATA(lwp).sched_task->prio] = 
-      SCHED_DATA(lwp).sched_task;
-    SCHED_DATA(lwp).sched_task->prev = 
-      SCHED_DATA(lwp).sched_task->next = 
-      SCHED_DATA(lwp).sched_task;
+      SCHED_DATA(lwp).__first[lwp->idle_task->prio] = 
+      lwp->idle_task;
+    lwp->idle_task->prev = 
+      lwp->idle_task->next = 
+      lwp->idle_task;
   }
-  SCHED_DATA(lwp).sched_task->lwp = lwp;
-#if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE) 
-  SCHED_DATA(lwp).sched_task->previous_lwp = NULL;
 #endif
-  SCHED_DATA(lwp).sched_task->sched_policy = MARCEL_SCHED_FIXED(lwp->number);
+
+  lwp->idle_task->lwp = lwp;
+#if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE) 
+  lwp->idle_task->previous_lwp = NULL;
+#endif
+  lwp->idle_task->sched_policy = MARCEL_SCHED_FIXED(lwp->number);
   /***************************************************/
 
   unlock_task();
-}
-
-static void void_func(void* param)
-{
-  RAISE("Quoi, on est là ???\n");
-}
-
-static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
-{
-  static unsigned __nb_lwp = 0;
-#ifdef MA__ACT
-  marcel_attr_t attr;
-#endif
-
-  if (__nb_lwp >= MA__MAX_LWPS) 
-	  RAISE("Too many lwp\n");
-
-  SET_LWP_NB(__nb_lwp, lwp);
-  lwp->number = __nb_lwp++;
-
-#ifdef MA__MULTIPLE_RUNNING
-  lwp->prev_running=NULL;
-#endif
-#ifdef MA__ACT
-  lwp->upcall_new_task=NULL;
-#endif
-
-#ifdef X86_ARCH
-  atomic_set(&lwp->_locked, 0);
-#else
-  lwp->_locked = 0;
-#endif
-
-#ifndef MA__ONE_QUEUE
-  lwp->has_to_stop = FALSE;
-  lwp->has_new_tasks = FALSE;
-#endif
-  marcel_mutex_init(&lwp->stack_mutex, NULL);
-  lwp->sec_desc = SECUR_TASK_DESC(lwp);
-
-#ifdef MA__ONE_QUEUE
-  /* on initialise une seule fois la structure. */
-  if (initial_task)
-#endif
-    init_sched(lwp, initial_task);
 
 
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   /****************************************************/
   /* Création de la tâche pour les upcalls upcall_new */
   /****************************************************/
@@ -1510,12 +1471,12 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   /* libéré dans marcel_init_sched */
   if (initial_task)
     sched_lock(lwp);
-#else /* MA__ACT */
+#else /* MA__ACTIVATION */
   /* libéré dans lwp_startup_func pour SMP ou marcel_init_sched pour
    * le pool de la main_task
    * */
   sched_lock(lwp);
-#endif /* MA__ACT */
+#endif /* MA__ACTIVATION */
 }
 
 #if defined(MA__LWPS)
@@ -1557,7 +1518,7 @@ static void *lwp_startup_func(void *arg)
   /* pris dans  init_sched() */
   sched_unlock(lwp);
 
-  MA_THR_LONGJMP(SCHED_DATA(lwp).sched_task, NORMAL_RETURN);
+  MA_THR_LONGJMP(lwp->idle_task, NORMAL_RETURN);
   
   return NULL;
 }
@@ -1625,7 +1586,7 @@ void marcel_sched_init(unsigned nb_lwp)
   mdebug("%d processors available\n", __nb_processors);
 
   //TODO
-  //#ifdef MA__ACT
+  //#ifdef MA__ACTIVATION
   //_main_struct.nb_tasks = -1-__nb_processors;
   //#else
   SET_NB_LWPS(nb_lwp ? nb_lwp : __nb_processors);
@@ -1685,7 +1646,7 @@ void marcel_sched_init(unsigned nb_lwp)
 
   }
 #endif /* MA__LWPS */
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   init_upcalls(GET_NB_LWPS);
 #endif
 
@@ -1722,7 +1683,7 @@ void marcel_sched_shutdown()
 
   wait_all_tasks_end();
 
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
   act_cntl(ACT_CNTL_UPCALLS, (void*)ACT_DISABLE_UPCALLS);
 #endif
 
@@ -1739,10 +1700,10 @@ void marcel_sched_shutdown()
   }
 #else
   /* Destroy master-sched's stack */
-  marcel_cancel(SCHED_DATA(&__main_lwp).sched_task);
+  marcel_cancel(__main_lwp.idle_task);
 #ifdef PM2
   /* __sched_task is detached, so we can free its stack now */
-  FREE(marcel_stackbase(SCHED_DATA(&__main_lwp).sched_task));
+  FREE(marcel_stackbase(__main_lwp.idle_task));
 #endif
 #endif  
 }

@@ -51,7 +51,7 @@ int marcel_main(int argc, char *argv[])
   marcel_attr_init(&attr);
 
 #ifdef PROFILE
-  profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
+  profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 
   for(i=0; i<NB; i++) {

@@ -17,7 +17,7 @@
 #define ACTDEBUG(todo)
 #endif
 
-#include <marcel.h>
+#include "marcel.h"
 
 #define RETURN_FROM_UPCALL 1
 

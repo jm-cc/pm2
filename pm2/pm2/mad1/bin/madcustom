@@ -75,7 +75,7 @@ then
     done
     echo $1 > ${MAD1_ROOT}/.net_interf
 
-    touch ${MAD1_ROOT}/source/*.c ${MAD1_ROOT}/source/custom/*.c
+#    touch ${MAD1_ROOT}/source/*.c ${MAD1_ROOT}/source/custom/*.c
 fi
 
 for d in $DIRS ; do

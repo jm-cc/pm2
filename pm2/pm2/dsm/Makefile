@@ -40,33 +40,5 @@ LIBRARY=dsm
 #marcel_AS=gcc
 
 include $(PM2_ROOT)/make/config.mak
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_ROOT)/make/libs.mak
 
--include $(PM2_MAK_DIR)/dsm-specific.mak
-
-LIB_REP_TO_BUILD += $(LIB_GEN_INC)
-
-COMMON_DEPS += $(LIB_GEN_INC)/dsm_page_size.h 
-
-clean: clean-bin
-
-include $(PM2_ROOT)/make/libs-rules.mak
-
-$(LIB_GEN_INC)/dsm_page_size.h:	
-	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}
-	$(COMMON_HIDE) echo "#define DSM_PAGE_SIZE `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`" > $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#ifndef IRIX_SYS" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`\"" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#else" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align 16\"" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#endif" >> $(LIB_GEN_INC)/dsm_page_size.h
-
-
-clean-bin:
-	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT) $(LIB_GEN_INC)/dsm_page_size.h
-
-$(PM2_MAK_DIR)/dsm-specific.mak: $(LIB_STAMP_FLAVOR)
-	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \
-	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
-	fi;

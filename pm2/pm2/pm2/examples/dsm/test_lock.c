@@ -37,7 +37,7 @@
 
 #include "pm2.h"
 
-#include "timing.h"
+
 
 #define COUNTER 
 

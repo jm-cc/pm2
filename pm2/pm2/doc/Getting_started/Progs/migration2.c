@@ -1,8 +1,6 @@
-#include <stdio.h>
-#include <unistd.h>
 #include "pm2.h"
 
-char hostname[MAXHOSTNAMELEN];
+char hostname[128];
 
 
 void
@@ -33,7 +31,7 @@ thread_function (void *arg)
 int
 pm2_main (int argc, char *argv[])
 {
-  gethostname (hostname, MAXHOSTNAMELEN);
+  gethostname (hostname, 128);
 
   pm2_init (&argc, argv);
 

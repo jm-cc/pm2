@@ -79,25 +79,25 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #endif
 
 #include "sys/marcel_flags.h"
-#include "sys/archdep.h"
-#include "sys/archsetjmp.h"
+#include "sys/marcel_archdep.h"
+#include "sys/marcel_archsetjmp.h"
 #include "sys/marcel_debug.h"
-#include "exception.h"
+#include "marcel_exception.h"
 #include "marcel_lock.h"
 #include "marcel_sem.h"
 #include "marcel_mutex.h"
 #include "marcel_io.h"
-#include "sys/privatedefs.h"
+#include "sys/marcel_privatedefs.h"
 #include "marcel_sched.h"
 #include "marcel_polling.h"
 #include "marcel_attr.h"
-#include "mar_timing.h"
+#include "marcel_timing.h"
 #include "marcel_stdio.h"
 
 #include "tbx.h"
-#include "profile.h"
+#include "pm2_profile.h"
 #include "pm2debug.h"
-#include "common.h"
+#include "pm2_common.h"
 
 /* = initialization & termination == */
 

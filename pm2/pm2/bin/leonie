@@ -1,0 +1,22 @@
+#!/bin/sh
+###########
+
+error()
+{
+  echo $*
+  exit 1
+}
+
+# Main part
+[ -n "${PM2_ROOT}"    ] || error 'PM2_ROOT variable is not set'
+
+PM2_CONFIG="${PM2_ROOT}/bin/pm2-config"
+[ -x "${PM2_CONFIG}" ] || error "cannot execute ${PM2_CONFIG}"
+
+LEONIE_DIR=`${PM2_CONFIG} --flavor=leonie --bindir leonie`
+[ -d "${LEONIE_DIR}"  ] || error "Leonie directory not found"
+
+LEONIE="${LEONIE_DIR}/leonie"
+[ -x "${LEONIE}"      ] || error "cannot execute ${LEONIE}"
+
+$LEONIE "$@"

@@ -30,7 +30,7 @@
 #include <time.h>
 #endif
 
-#include "pm2debug.h"
+#include "tbx_debug.h"
 
 #ifndef FALSE
 	typedef enum { FALSE, TRUE } boolean;
@@ -96,7 +96,7 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
 #include "tbx.h"
 #include "pm2_profile.h"
-#include "pm2debug.h"
+#include "tbx_debug.h"
 #include "pm2_common.h"
 
 /* = initialization & termination == */

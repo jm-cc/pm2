@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leo_interface.h,v $
+Revision 1.4  2001/01/29 16:59:30  oaumage
+- transmission des donnees de configuration
+
 Revision 1.3  2000/06/09 08:45:43  oaumage
 - Progression du code
 
@@ -52,12 +55,12 @@ ______________________________________________________________________________
 
 #ifndef __LEO_INTERFACE_H
 #define __LEO_INTERFACE_H
-
+/*
 int
 leo_yy_input(char *buffer,
 	     int   max_size);
 
 p_leo_cluster_definition_t
 leo_build_cluster_definition(p_leo_clu_cluster_file_t cluster_file);
-
+*/
 #endif /* __LEO_INTERFACE_H */

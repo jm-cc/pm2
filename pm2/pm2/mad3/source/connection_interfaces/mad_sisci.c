@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -18,12 +17,11 @@
  * Mad_sisci.c
  * ===========
  */
-//#define DEBUG
 //#define USE_MARCEL_POLL
 #define MAD_SISCI_POLLING_MODE \
-    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD)
+    (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
-
+#undef PM2DEBUG
 #ifdef MARCEL
 #include "marcel.h"
 #endif
@@ -481,8 +479,8 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
 
 		  remote_segment = &(in_specific->remote_segment[0]);
 
-		  in_specific->write_flag_flushed = tbx_true;
 		  mad_sisci_flush(remote_segment);
+		  in_specific->write_flag_flushed = tbx_true;
 		}
 
 	      if (mad_sisci_test(channel_specific->read[next]))
@@ -498,6 +496,7 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
     }
   else
     FAILURE("unknown polling operation");
+
   LOG_OUT();
   
   return status;
@@ -619,7 +618,7 @@ mad_sisci_register(p_mad_driver_t driver)
   interface->new_message                = NULL;
   interface->finalize_message           = NULL;
 #ifdef MAD_MESSAGE_POLLING
-  interface->poll_message            = mad_sisci_poll_message;
+  interface->poll_message               = mad_sisci_poll_message;
 #endif /* MAD_MESSAGE_POLLING */
   interface->receive_message            = mad_sisci_receive_message;
   interface->message_received           = NULL;
@@ -1204,8 +1203,8 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 
 		  remote_segment = &(in_specific->remote_segment[0]);
 
-		  in_specific->write_flag_flushed = tbx_true;
 		  mad_sisci_flush(remote_segment);
+		  in_specific->write_flag_flushed = tbx_true;
 		}
 
 	      if (mad_sisci_test(channel_specific->read[next]))

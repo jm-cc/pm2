@@ -102,14 +102,12 @@ EOF
 
 get_lib_dir() # library
 {
-    BASEDIR=`(cd "$PM2_ROOT/modules/$1"; pwd)`
-    echo "$BASEDIR/build/${PM2_BUILD:+$PM2_BUILD/}lib"
+    echo "${PM2_BUILD}/$1/lib"
 }
 
 get_include_dir() # library
 {
-    BASEDIR=`(cd "$PM2_ROOT/modules/$1"; pwd)`
-    echo "$BASEDIR/build/${PM2_BUILD:+$PM2_BUILD/}include${PM2_EXT}"
+    echo "${PM2_BUILD}/$1/include${PM2_EXT}"
 }
 
 add_list() { # var list_val
@@ -242,9 +240,22 @@ if [ "$other" != false ]; then
     dirtoshow=$other
 fi
 
+if [ -z "$PM2_BUILD" ] ; then
+    PM2_BUILD=$HOME/build/$flavor
+else
+    eval PM2_BUILD="$PM2_BUILD"
+fi
+
+case "$PM2_BUILD" in
+    /*)
+	;;
+    *)
+	eval PM2_BUILD="$HOME/build/$PM2_BUILD"
+esac
+
 ##########################################################################
 # on a demandé des repertoires/réglages...
-if [ ! -z "${dirtoshow}" ]; then
+if [ -n "${dirtoshow}" ]; then
     case $dirtoshow in
     --ext)
 	echo $PM2_EXT
@@ -283,11 +294,11 @@ if [ ! -z "${dirtoshow}" ]; then
 	;;
     --stampfile)
 	if [ -z "$libs" ]; then
-	    echo "$PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}/stamp${PM2_EXT}"
+	    echo "${PM2_ROOT}/flavors/${flavor}"
 	else
 	    list=
 	    for lib in $libs; do
-		list="${list:+$list }$PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}/libstamp-${lib}${PM2_EXT}"
+		list="${list:+$list }${PM2_BUILD}/stamp/libstamp-${lib}${PM2_EXT}"
 	    done
 	    echo $list
 	fi
@@ -298,25 +309,22 @@ if [ ! -z "${dirtoshow}" ]; then
 	exit 0
 	;;
     stamp)
-	echo "$PM2_ROOT/stamp${PM2_BUILD:+/$PM2_BUILD}"
+	echo "${PM2_BUILD}/stamp"
 	exit 0
 	;;
     esac
     if [ `echo "$libs" | wc -w` != 1 ]; then
-	echo "This option need ONE lib" 1>&2
+	echo "This option needs exactly ONE lib" 1>&2
 	exit 1
     fi
     case " $PM2_LIBS " in
     *\ $libs\ *)
 	case $dirtoshow in
-	stamp)
-	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow${PM2_EXT}
-	    ;;
 	include)
-	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow${PM2_EXT}
+	    echo ${PM2_BUILD}/${libs}/include${PM2_EXT}
 	    ;;
 	*)
-	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow
+	    echo ${PM2_BUILD}/${libs}/$dirtoshow
 	    ;;
 	esac
 	;;

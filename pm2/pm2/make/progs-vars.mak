@@ -1,4 +1,4 @@
-
+# -*- mode: makefile;-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -13,78 +13,22 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-# needed at least by PM2_GEN_MAK progs
-export PROGRAM
+# Variables communes pour produire du code
+#---------------------------------------------------------------------
+include $(PM2_ROOT)/make/objs-vars.mak
 
-include $(PM2_ROOT)/make/common-vars.mak
+# Type de cache à générer
+#---------------------------------------------------------------------
+PM2_GEN_MAK_OPTIONS += --type prog
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/progs-libs.mak
-endif
+# Nom du programme
+#---------------------------------------------------------------------
+PROGRAM ?= $(MODULE)
+PROGNAME ?= $(PROGRAM)
 
-$(PROGRAM):
+MOD_PRG := $(MOD_GEN_BIN)/$(PROGNAME)$(MOD_EXT)
 
-ifndef PROGNAME
-PROGNAME := $(PROGRAM)
-endif
+PRG_PRG := $(MOD_PRG)
 
-PRG_SRC := source
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/progs-config.mak
-endif
-
-ifneq ($($(PROGRAM)_CC),)
-CC := $($(PROGRAM)_CC)
-endif
-
-ifneq ($($(PROGRAM)_AS),)
-AS := $($(PROGRAM)_AS)
-endif
-
-PRG_REP_TO_BUILD := $(PRG_GEN_BIN) $(PRG_GEN_OBJ) $(PRG_GEN_ASM) \
-	$(PRG_GEN_DEP) $(PRG_GEN_SRC) $(PRG_GEN_INC) $(PRG_GEN_STAMP)
-
-# Program
-PRG_PRG := $(PRG_GEN_BIN)/$(PROGNAME)$(PRG_EXT)
-
-# Sources
-PRG_L_SOURCES :=  $(wildcard $(PRG_SRC)/*.l)
-PRG_Y_SOURCES :=  $(wildcard $(PRG_SRC)/*.y)
-PRG_C_SOURCES :=  $(wildcard $(PRG_SRC)/*.c)
-PRG_S_SOURCES :=  $(wildcard $(PRG_SRC)/*.S)
-
-# Generated sources
-PRG_GEN_C_L_SOURCES :=  $(patsubst %.l,%$(PRG_EXT).c,$(subst $(PRG_SRC),$(PRG_GEN_SRC),$(PRG_L_SOURCES)))
-PRG_GEN_C_Y_SOURCES :=  $(patsubst %.y,%$(PRG_EXT).c,$(subst $(PRG_SRC),$(PRG_GEN_SRC),$(PRG_Y_SOURCES)))
-PRG_GEN_C_SOURCES   :=  $(PRG_GEN_C_L_SOURCES) $(PRG_GEN_C_Y_SOURCES)
-
-# Generated includes
-PRG_GEN_C_Y_INC :=  $(patsubst %.y,%$(PRG_EXT).h,$(subst $(PRG_SRC),$(PRG_GEN_INC),$(PRG_Y_SOURCES)))
-PRG_GEN_C_INC :=  $(PRG_GEN_C_Y_INC)
-
-# Objets
-PRG_C_OBJECTS :=  $(patsubst %.c,%$(PRG_EXT).o,$(subst $(PRG_SRC),$(PRG_GEN_OBJ),$(PRG_C_SOURCES)))
-PRG_S_OBJECTS :=  $(patsubst %.S,%$(PRG_EXT).o,$(subst $(PRG_SRC),$(PRG_GEN_OBJ),$(PRG_S_SOURCES)))
-PRG_GEN_C_OBJECTS :=  $(patsubst %.c,%$(PRG_EXT).o,$(subst $(PRG_GEN_SRC),$(PRG_GEN_OBJ),$(PRG_GEN_C_SOURCES)))
-PRG_OBJECTS   :=  $(PRG_C_OBJECTS) $(PRG_S_OBJECTS) $(PRG_GEN_C_OBJECTS)
-
-# Dependances
-PRG_C_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(PRG_GEN_OBJ),$(PRG_GEN_DEP),$(PRG_C_OBJECTS)))
-PRG_S_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(PRG_GEN_OBJ),$(PRG_GEN_DEP),$(PRG_S_OBJECTS)))
-PRG_GEN_C_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(PRG_GEN_OBJ),$(PRG_GEN_DEP),$(PRG_GEN_C_OBJECTS)))
-PRG_DEPENDS   :=  $(strip $(PRG_C_DEPENDS) $(PRG_S_DEPENDS) $(PRG_GEN_C_DEPENDS))
-
-# "Convertisseurs" utiles
-PRG_DEP_TO_OBJ   =  $(PRG_GEN_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
-PRG_OBJ_TO_S     =  $(PRG_GEN_ASM)/$(patsubst %.o,%.s,$(notdir $@))
-PRG_PIC_TO_S     =  $(PRG_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
-PRG_GEN_C_TO_H   =  $(PRG_GEN_INC)/$(patsubst %.c,%.h,$(notdir $@))
-PRG_GEN_H_TO_C   =  $(PRG_GEN_INC)/$(patsubst %.h,%.c,$(notdir $@))
-
-COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(MAKEFILE_FILE) $(PRG_STAMP_FILES) 
-
-#$(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
-#	@echo "Generating $@"
-#	@$(PM2_GEN_MAK) progs
 

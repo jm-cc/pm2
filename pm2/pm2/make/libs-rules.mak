@@ -1,4 +1,18 @@
 
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
 # Regle par defaut: construction de la librairie
 #---------------------------------------------------------------------
 libs: $(LIBRARY)
@@ -74,7 +88,7 @@ showflavor:
 # - Construction des repertoires destination
 # - inclusion des dependances
 #---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 
 # Target subdirectories
 DUMMY_BUILD :=  $(foreach REP, $(LIB_REP_TO_BUILD), $(shell mkdir -p $(REP)))
@@ -155,37 +169,9 @@ $(LIB_FUT): $(LIB_GEN_CPP)/%.fut: $(LIB_GEN_CPP)/%.i
 
 # Regles de nettoyage
 #---------------------------------------------------------------------
-.PHONY: clean libclean repclean examplesclean distclean
-clean: libclean repclean examplesclean
-
-libclean:
-	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/*$(LIB_EXT).{o,pic} \
-		$(LIB_GEN_DEP)/*$(LIB_EXT).d $(LIB_GEN_ASM)/*$(LIB_EXT).s \
-		$(LIB_LIB) \
-		$(LIBRARY)-config.mak
-
-ifneq ($(strip $(LIB_REP_TO_BUILD)),)
-repclean:
-	@echo "cleaning directories :-$(LIB_REP_TO_BUILD)-"
-	@for rep in $(LIB_REP_TO_BUILD); do \
-		if rmdir $$rep 2> /dev/null; then \
-			echo "empty repertory $$rep removed" ; \
-		fi ; \
-	done
-endif
-
-examplesclean:
-	@set -e; \
-	if [ -d examples ]; then \
-		$(MAKE) -C examples clean ; \
-	fi
-
-#distclean:
-#	$(COMMON_CLEAN)$(RM) -r build $(LIB_GEN_STAMP)/libstamp-$(LIBRARY)*
-#	@set -e; \
-#	if [ -d examples ]; then \
-#		$(MAKE) -C examples distclean ; \
-#	fi
+.PHONY: clean cleanall refresh refreshall sos
+clean cleanall refresh refreshall sos:
+	$(COMMON_HIDE) make -s -C $(PM2_ROOT) $@
 
 # Exemples
 #---------------------------------------------------------------------

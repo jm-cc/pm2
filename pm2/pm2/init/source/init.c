@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: init.c,v $
+Revision 1.11  2001/01/03 14:12:19  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.10  2000/12/11 08:31:13  oaumage
 - support Leonie
 
@@ -101,6 +104,10 @@ void common_init(int *argc, char *argv[])
 #ifdef PM2
   unsigned pm2_self, pm2_conf_size;
 #endif /* PM2 */
+
+#ifdef WIN_SYS
+  marcel_for_win_init(argc, argv);
+#endif /* WIN_SYS */
 
 #ifdef PROFILE
   /*

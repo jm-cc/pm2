@@ -6,7 +6,7 @@ CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
 
-.PHONY: clean indent
+.PHONY: all clean indent
 
 CFILES		:= $(wildcard *.c)
 OFILES		:= $(CFILES:%.c=%.o)

@@ -25,31 +25,26 @@
  * in the range MAX_RT_PRIO..MAX_PRIO-1. Priority values
  * are inverted: lower p->prio value means higher priority.
  *
- * The MAX_RT_USER_PRIO value allows the actual maximum
+ * The MA_MAX_RT_USER_PRIO value allows the actual maximum
  * RT priority to be separate from the value exported to
  * user-space.  This allows kernel threads to set their
  * priority to a value higher than any user task. Note:
  * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
  */
 
-//#define MA_MAX_USER_RT_PRIO	100
-//#define MA_MAX_RT_PRIO	MA_MAX_USER_RT_PRIO
+#define MA_MAX_USER_RT_PRIO	32
+#define MA_MAX_SYS_RT_PRIO	9
+#define MA_MAX_NICE		0
 
-//#define MA_MAX_PRIO		(MA_MAX_RT_PRIO + 40)
-#define MA_MAX_PRIO                8
-#if (MA_MAX_PRIO<4)
-#error MA_MAX_PRIO must be at least 4 to get real time and batch tasks working
-#endif
-#define MA_IDLE_PRIO		(MA_MAX_PRIO-1)
-#define MA_BATCH_PRIO		(MA_IDLE_PRIO-1)
-#define MA_DEF_PRIO		(MA_BATCH_PRIO-1)
-#define MA_RT_PRIO		(MA_DEF_PRIO-1)
-#define MA_SYS_RT_PRIO		(MA_RT_PRIO-1)
-#if (MA_SYS_RT_PRIO<0)
-#error MA_MAX_PRIO is not large enought
-#endif
+#define MA_SYS_RT_PRIO		MA_MAX_SYS_RT_PRIO
+#define MA_MAX_RT_PRIO		(MA_SYS_RT_PRIO+1)
+#define MA_RT_PRIO		(MA_MAX_RT_PRIO+MA_MAX_USER_RT_PRIO)
+#define MA_DEF_PRIO		(MA_RT_PRIO+MA_MAX_NICE+1)
+#define MA_BATCH_PRIO		(MA_DEF_PRIO+1)
+#define MA_IDLE_PRIO		(MA_BATCH_PRIO+1)
+#define MA_MAX_PRIO		(MA_IDLE_PRIO+1)
 
-//#define rt_task(p)		((p)->prio < MA_MAX_RT_PRIO)
+#define ma_rt_task(p)		((p)->sched.internal.prio < MA_MAX_RT_PRIO)
 
 #define MA_BITMAP_SIZE ((((MA_MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
 

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -18,7 +17,7 @@
  * Mad_communication.c
  * ===================
  */
-/* #define DEBUG */
+
 /* #define TRACING */
 #include "madeleine.h"
 
@@ -295,12 +294,12 @@ mad_begin_unpacking(p_mad_channel_t channel)
       interface->receive_buffer(link, &buffer);
     
     connection->is_being_forwarded = has_been_forwarded;
-#ifdef DEBUG
+#ifdef PM2DEBUG
     if(has_been_forwarded)
       TRACE("Incoming Connection has been forwarded");
     else
       TRACE("Receiving normal connection");
-#endif 
+#endif // PM2DEBUG
   }
 #endif //MAD_FORWARDING
 

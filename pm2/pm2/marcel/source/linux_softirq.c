@@ -45,25 +45,24 @@
 
 static struct ma_softirq_action softirq_vec[32] /*__cacheline_aligned_in_smp*/;
 
-//static DEFINE_PER_CPU(struct task_struct *, ksoftirqd);
+static MA_DEFINE_PER_LWP(marcel_task_t *, ksoftirqd);
 MA_DEFINE_PER_LWP(unsigned long, softirq_pending)=0;
 
-#if 0
 /*
  * we cannot loop indefinitely here to avoid userspace starvation,
  * but we also don't want to introduce a worst case 1/HZ latency
  * to the pending events, so lets the scheduler to balance
  * the softirq load for us.
  */
-static inline void wakeup_softirqd(void)
+static inline void ma_wakeup_softirqd(void)
 {
 	/* Interrupts are disabled: no need to stop preemption */
-	struct task_struct *tsk = __get_cpu_var(ksoftirqd);
+	/* Avec marcel, seul la preemption est supprimée */
+	marcel_task_t *tsk = __ma_get_lwp_var(ksoftirqd);
 
-	if (tsk && tsk->state != TASK_RUNNING)
-		wake_up_process(tsk);
+	if (tsk && tsk->sched.state != MA_TASK_RUNNING)
+		ma_wake_up_thread(tsk);
 }
-#endif
 
 /*
  * We restart softirq processing MAX_SOFTIRQ_RESTART times,
@@ -81,18 +80,24 @@ inline static int local_softirq_pending_hardirq(void)
 {
 	int pending;
 	
+#if 0
 	THREAD_SETMEM(MARCEL_SELF, softirq_pending_in_hardirq, 0);
 	ma_set_thread_flag(TIF_BLOCK_HARDIRQ);
 	ma_smp_mb__after_clear_bit();
-	
-	pending=ma_local_softirq_pending();
+#endif
+	do {
+		pending=ma_local_softirq_pending();
+	} while (pending != 
+		ma_cmpxchg(&ma_local_softirq_pending(), pending, 0));
 	/* Reset the pending bitmask before enabling irqs */
+#if 0
 	ma_local_softirq_pending() = 0;
 	ma_smp_mb__before_clear_bit();
 	
 	ma_clear_thread_flag(TIF_BLOCK_HARDIRQ);
+	ma_smp_mb__after_clear_bit();
 	pending|= THREAD_GETMEM(MARCEL_SELF, softirq_pending_in_hardirq);
-
+#endif
 	return pending;
 }
 
@@ -135,26 +140,28 @@ restart:
 		pending = local_softirq_pending_hardirq();
 		if (pending && --max_restart)
 			goto restart;
+#if 0
 		if (pending) {
-			pm2debug("Arghhh loosing softirq! Please, correct me\n");
+			pm2debug("Arghhh loosing softirq %lx! Please, correct me\n", pending);
 			/* Il faudrait au moins remettre les pending
 			 * en appelant ma_raise_softirq...(nr)
 			 */
+			ma_local_softirq_pending() |= pending;
 			pending=0;
 		}
-		/*
-		  Pas encore de softirqd, mais on ne doit pas boucler
-		  indéfiniment. On continue donc. Ça sera traité un
-		  peu plus tard...
-
-		if (pending)
-			wakeup_softirqd();
-		*/
+#endif
+		if (pending) {
+			/* On remet les pending en place... */
+			ma_local_softirq_pending() |= pending;
+			ma_wmb();
+			ma_wakeup_softirqd();
+		}
 		//__ma_local_bh_enable();
 	}
 
 	//local_irq_restore(flags);
-	ma_local_bh_enable();
+	/* S'il reste des softirq, il ne FAUT PAS les traiter maintenant */
+	__ma_local_bh_enable();
 }
 
 MARCEL_INT(ma_do_softirq);
@@ -177,10 +184,14 @@ inline void __ma_raise_softirq_bhoff(unsigned int nr)
 }
 /*
  * This function must run with irqs disabled!
+ * En fait, avec la préemption désactivée
  */
 inline fastcall void ma_raise_softirq_bhoff(unsigned int nr)
 {
 	//__ma_raise_softirq_irqoff(nr);
+#ifdef MA__DEBUG
+	MA_BUG_ON(!ma_in_atomic());
+#endif
 	__ma_raise_softirq_bhoff(nr);
 
 	/*
@@ -192,8 +203,8 @@ inline fastcall void ma_raise_softirq_bhoff(unsigned int nr)
 	 * Otherwise we wake up ksoftirqd to make sure we
 	 * schedule the softirq soon.
 	 */
-	//if (!ma_in_interrupt())
-	//	wakeup_softirqd();
+	if (!ma_in_interrupt())
+		ma_wakeup_softirqd();
 }
 
 MARCEL_INT(ma_raise_softirq_irqoff);
@@ -203,10 +214,12 @@ void fastcall ma_raise_softirq(unsigned int nr)
 	//unsigned long flags;
 
 	//local_irq_save(flags);
-	ma_local_bh_disable();
+	//ma_local_bh_disable();
+	ma_preempt_disable();
 	ma_raise_softirq_bhoff(nr);
+	ma_preempt_enable();
 	//local_irq_restore(flags);
-	ma_local_bh_enable();
+	//ma_local_bh_enable();
 }
 
 MARCEL_INT(ma_raise_softirq);
@@ -214,12 +227,14 @@ MARCEL_INT(ma_raise_softirq);
 void fastcall ma_raise_softirq_from_hardirq(unsigned int nr)
 {
 	MA_BUG_ON(!ma_in_irq());
-
+	__ma_raise_softirq_bhoff(nr);
+#if 0
 	if (tbx_unlikely(ma_test_thread_flag(TIF_BLOCK_HARDIRQ))) {
 		ma_set_bit(nr, &THREAD_GETMEM(MARCEL_SELF, softirq_pending_in_hardirq));
 	} else {
 		ma_raise_softirq_bhoff(nr);
 	}
+#endif
 }
 
 MARCEL_INT(ma_raise_softirq_from_hardirq);
@@ -384,49 +399,54 @@ void __init softirq_init(void)
 
 __ma_initfunc(softirq_init, MA_INIT_SOFTIRQ, "Initialisation des SoftIrq");
 
-#if 0
+#define ma_kthread_should_stop() 0
+
 static int ksoftirqd(void * __bind_cpu)
 {
-	set_user_nice(current, 19);
-	current->flags |= PF_IOTHREAD;
+	//set_user_nice(current, 19);
+	//current->flags |= PF_IOTHREAD;
 
-	set_current_state(TASK_INTERRUPTIBLE);
+	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
  
-	while (!kthread_should_stop()) {
-		if (!local_softirq_pending())
-			schedule();
+	while (!ma_kthread_should_stop()) {
+		if (!ma_local_softirq_pending())
+			ma_schedule();
 
-		__set_current_state(TASK_RUNNING);
+		__ma_set_current_state(MA_TASK_RUNNING);
 
-		while (local_softirq_pending()) {
+		while (ma_local_softirq_pending()) {
 			/* Preempt disable stops cpu going offline.
 			   If already offline, we'll be on wrong CPU:
 			   don't process */
-			preempt_disable();
+			ma_preempt_disable();
+#if 0
 			if (cpu_is_offline((long)__bind_cpu))
 				goto wait_to_die;
-			do_softirq();
-			preempt_enable();
-			cond_resched();
+#endif
+			ma_do_softirq();
+			ma_preempt_enable();
+			ma_cond_resched();
 		}
 
-		__set_current_state(TASK_INTERRUPTIBLE);
+		__ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	}
-	__set_current_state(TASK_RUNNING);
+	__ma_set_current_state(MA_TASK_RUNNING);
 	return 0;
-
+#if 0
 wait_to_die:
-	preempt_enable();
+	ma_preempt_enable();
 	/* Wait for kthread_stop */
-	__set_current_state(TASK_INTERRUPTIBLE);
-	while (!kthread_should_stop()) {
-		schedule();
-		__set_current_state(TASK_INTERRUPTIBLE);
+	__ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+	while (!ma_kthread_should_stop()) {
+		ma_schedule();
+		__ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	}
-	__set_current_state(TASK_RUNNING);
+	__ma_set_current_state(MA_TASK_RUNNING);
 	return 0;
+#endif
 }
 
+#if 0
 #ifdef CONFIG_HOTPLUG_CPU
 /*
  * tasklet_kill_immediate is called to remove a tasklet which can already be
@@ -479,27 +499,66 @@ static void takeover_tasklets(unsigned int cpu)
 }
 #endif /* CONFIG_HOTPLUG_CPU */
 
-static int __devinit cpu_callback(struct notifier_block *nfb,
-				  unsigned long action,
-				  void *hcpu)
+#endif /* 0 */
+
+inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 {
-	int hotcpu = (unsigned long)hcpu;
-	struct task_struct *p;
+	marcel_attr_t attr;
+	marcel_t kthread;
+	char name[MARCEL_MAXNAMESIZE];
+
+	LOG_IN();
+	/* Démarrage du thread responsable des terminaisons */
+	marcel_attr_init(&attr);
+	snprintf(name,MARCEL_MAXNAMESIZE,"ksoftirqd/%u",LWP_NUMBER(lwp));
+	marcel_attr_setname(&attr,name);
+	marcel_attr_setdetachstate(&attr, TRUE);
+	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
+	marcel_attr_setflags(&attr, MA_SF_NORUN);
+	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
+#ifdef PM2
+	{
+		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
+
+		unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) &
+		 			~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
+
+		marcel_attr_setstackaddr(&attr, stack);
+		marcel_attr_setstacksize(&attr, stsize);
+	}
+#endif
+	marcel_create_special(&kthread, &attr, (void*)ksoftirqd, lwp);
+	LOG_RETURN(kthread);
+}
+
+
+static int __init lwp_callback(struct ma_notifier_block *nfb,
+				unsigned long action,
+				void *hlwp)
+{
+	ma_lwp_t lwp = (ma_lwp_t)hlwp;
+	marcel_task_t *p;
  
 	switch (action) {
-	case CPU_UP_PREPARE:
-		BUG_ON(per_cpu(tasklet_vec, hotcpu).list);
-		BUG_ON(per_cpu(tasklet_hi_vec, hotcpu).list);
-		p = kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
-		if (IS_ERR(p)) {
-			printk("ksoftirqd for %i failed\n", hotcpu);
+	case MA_LWP_UP_PREPARE:
+		MA_BUG_ON(ma_per_lwp(tasklet_vec, lwp).list);
+		MA_BUG_ON(ma_per_lwp(tasklet_hi_vec, lwp).list);
+#if 0
+		p = ma_kthread_create(ksoftirqd, hcpu, "ksoftirqd/%d", hotcpu);
+		if (MA_IS_ERR(p)) {
+			pm2debug("ksoftirqd for %i failed\n", hotcpu);
 			return NOTIFY_BAD;
-		kthread_bind(p, hotcpu);
-  		per_cpu(ksoftirqd, hotcpu) = p;
- 		break;
-	case CPU_ONLINE:
-		wake_up_process(per_cpu(ksoftirqd, hotcpu));
+		}
+		//ma_kthread_bind(p, hotcpu);
+  		ma_per_lwp(ksoftirqd, hotcpu) = p;
+#endif
 		break;
+	case MA_LWP_ONLINE:
+		p=ksofirqd_start(lwp);
+		ma_wake_up_created_thread(p);
+  		ma_per_lwp(ksoftirqd, lwp) = p;
+		break;
+#if 0
 #ifdef CONFIG_HOTPLUG_CPU
 	case CPU_UP_CANCELED:
 		/* Unbind so it can run.  Fall thru. */
@@ -511,21 +570,24 @@ static int __devinit cpu_callback(struct notifier_block *nfb,
 		takeover_tasklets(hotcpu);
 		break;
 #endif /* CONFIG_HOTPLUG_CPU */
-		}
+#endif
  	}
-	return NOTIFY_OK;
+	return MA_NOTIFY_OK;
 }
 
-static struct notifier_block __devinitdata cpu_nfb = {
-	.notifier_call = cpu_callback
+static struct ma_notifier_block lwp_nfb = {
+	.notifier_call = lwp_callback
 };
 
-__init int spawn_ksoftirqd(void)
+__init void linux_softirq_ksoftirqd(void)
 {
-	void *cpu = (void *)(long)smp_processor_id();
-	cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
-	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
-	register_cpu_notifier(&cpu_nfb);
-	return 0;
+	ma_lwp_t lwp=LWP_SELF;
+	lwp_callback(&lwp_nfb, MA_LWP_UP_PREPARE, lwp);
+	lwp_callback(&lwp_nfb, MA_LWP_ONLINE, lwp);
+	ma_register_lwp_notifier(&lwp_nfb);
+	return;
 }
-#endif /* 0 */
+
+__ma_initfunc(linux_softirq_ksoftirqd, MA_INIT_SOFTIRQ_KSOFTIRQD,
+		               "start ksoftirqd"); 
+

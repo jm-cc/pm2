@@ -36,14 +36,18 @@
 //#define MA_MAX_RT_PRIO	MA_MAX_USER_RT_PRIO
 
 //#define MA_MAX_PRIO		(MA_MAX_RT_PRIO + 40)
-#define MA_MAX_PRIO                4
+#define MA_MAX_PRIO                8
 #if (MA_MAX_PRIO<4)
 #error MA_MAX_PRIO must be at least 4 to get real time and batch tasks working
 #endif
 #define MA_IDLE_PRIO		(MA_MAX_PRIO-1)
 #define MA_BATCH_PRIO		(MA_IDLE_PRIO-1)
-#define MA_DEF_PRIO		1
-#define MA_RT_PRIO		0
+#define MA_DEF_PRIO		(MA_BATCH_PRIO-1)
+#define MA_RT_PRIO		(MA_DEF_PRIO-1)
+#define MA_SYS_RT_PRIO		(MA_RT_PRIO-1)
+#if (MA_SYS_RT_PRIO<0)
+#error MA_MAX_PRIO is not large enought
+#endif
 
 //#define rt_task(p)		((p)->prio < MA_MAX_RT_PRIO)
 
@@ -447,3 +451,4 @@ static inline void rq_arrays_switch(ma_runqueue_t *rq)
  */
 #section marcel_functions
 extern void init_rq(ma_runqueue_t *rq);
+

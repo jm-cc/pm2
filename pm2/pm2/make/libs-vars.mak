@@ -35,7 +35,7 @@
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-$(LIBRARY):
+libs:
 
 ifndef LIBNAME
 LIBNAME := $(LIBRARY)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: block_alloc.c,v $
+Revision 1.8  2000/11/03 14:12:29  gantoniu
+Added support for profiling (LOG_IN/LOG_OUT).
+
 Revision 1.7  2000/09/12 16:59:11  rnamyst
 Few bug fixes + support for .fut files
 
@@ -323,6 +326,9 @@ static void *block_alloc_in_new_slot(block_descr_t *descr, size_t req_size, isoa
 {
   size_t available_size;
   block_header_t *block_ptr, *last_block_ptr;
+  void *addr;
+
+  LOG_IN();
   
 #ifdef BLOCK_ALLOC_TRACE
   fprintf(stderr, "Allocating new slot...\n");
@@ -350,7 +356,12 @@ static void *block_alloc_in_new_slot(block_descr_t *descr, size_t req_size, isoa
   last_block_ptr->prev = block_ptr;
   descr->last_slot_used = slot_get_header_address((void *)block_ptr);
 TIMING_EVENT("block_alloc_in_new_slot:before block_create");  
-  return block_create(block_ptr, req_size);
+
+  addr = block_create(block_ptr, req_size);
+
+  LOG_OUT();
+
+  return addr;
 }
 
 
@@ -396,9 +407,14 @@ slot_header_t *slot_ptr;
 block_header_t *last_block_set_free;
 void * addr;
 
+ LOG_IN();
+
 TIMING_EVENT("block_alloc is starting");
   if (descr == NULL)
+    {
+    LOG_OUT();
     return (void *)NULL;
+    }
 
   /*  block_lock;*/
 
@@ -407,7 +423,13 @@ TIMING_EVENT("block_alloc is starting");
   */
   last_block_set_free = descr->last_block_set_free;
   if (last_block_set_free != NULL && block_get_usable_size(last_block_set_free) >= size)
-      return block_create(last_block_set_free, size);
+    {
+     addr = block_create(last_block_set_free, size);
+
+     LOG_OUT();
+
+     return addr;
+      }
 
   /*
     Look for a hole large enough in the slots already allocated.
@@ -420,7 +442,10 @@ TIMING_EVENT("block_alloc is starting");
        fprintf(stderr, "Starting search at %p... I got %p\n", descr->last_slot_used, addr);
 #endif
        if (addr != NULL)
+        {
+           LOG_OUT();
 	   return addr;
+         }
      }
    /*
      Search for a hole in the remaining slots, if not found.
@@ -432,22 +457,33 @@ TIMING_EVENT("block_alloc is starting");
 	 fprintf(stderr, "Searching from %p, got %p\n", slot_ptr, addr);
 #endif		
 	 if (addr != NULL)
-	     return addr;
+           {
+            LOG_OUT();
+	    return addr;
+            }
        }
   /*
     No suitable hole has been found, so a new slot gets allocated.
   */
-    return block_alloc_in_new_slot(descr, size, attr);
+    addr = block_alloc_in_new_slot(descr, size, attr);
+
+    LOG_OUT();
+
+    return addr;
 }
 
 
 void block_free(block_descr_t *descr, void * addr)
 {
   block_header_t *block_ptr1, *block_ptr2;
+ 
+  LOG_IN();
 
   if (descr == NULL)
-    return;
-  
+    {
+     LOG_OUT();
+     return;
+    } 
 #ifdef BLOCK_ALLOC_TRACE
   fprintf(stderr, "\nstart of block_free:\n");
 #endif
@@ -512,18 +548,28 @@ void block_free(block_descr_t *descr, void * addr)
   fprintf(stderr, "end of block_free:\n");
 /*  block_print_list(descr);*/
 #endif
+
+  LOG_OUT();
 }
 
 
 void block_flush_list(block_descr_t *descr)
 {
+  LOG_IN();
+
   slot_flush_list(&descr->slot_descr);
+
+  LOG_OUT();
 }
 
 
 void block_exit()
 {
+  LOG_IN();
+
   slot_exit();
+
+  LOG_OUT();
 }
 
 void block_pack_all(block_descr_t *descr, int dest)
@@ -531,6 +577,9 @@ void block_pack_all(block_descr_t *descr, int dest)
 
   slot_header_t *slot_ptr = slot_get_first(&descr->slot_descr);
   block_header_t *block_ptr, *next_block_ptr;
+
+  LOG_IN();
+
 #ifdef BLOCK_ALLOC_TRACE
   fprintf(stderr,"start pack_all:\n");
 #endif
@@ -574,7 +623,10 @@ void block_pack_all(block_descr_t *descr, int dest)
      }
 #ifdef BLOCK_ALLOC_TRACE
    fprintf(stderr, "pack_all ended\n");
+
 #endif
+
+  LOG_OUT();
 }
 
 
@@ -585,6 +637,8 @@ void block_unpack_all()
   void *usable_add;
   block_header_t *block_ptr, *next_block_ptr;
   isoaddr_attr_t attr;
+
+  LOG_IN();
 
    /* 
       unpack the address of the first slot 
@@ -638,6 +692,8 @@ void block_unpack_all()
 #ifdef BLOCK_ALLOC_TRACE
   fprintf(stderr,"Existing unpack_all:\n");
 #endif
+
+  LOG_OUT();
 }
 
 

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -17,14 +16,17 @@
 #include "pm2_common.h"
 
 static common_attr_t default_static_attr;
-
 #if defined(PM2) || defined(MAD2)
 static unsigned pm2self, pm2_conf_size;
-#endif
+#endif /* PM2 || MAD2 */
+
 
 
 void common_attr_init(common_attr_t *attr)
 {
+#ifdef MAD3
+  attr->madeleine = NULL;
+#endif // MAD 3
 #ifdef MAD2
   attr->madeleine = NULL;
   attr->rank = 0;
@@ -157,6 +159,23 @@ void common_pre_init(int *argc, char *argv[],
   mad_memory_manager_init(*argc, argv);
 #endif /* MAD2 */
 
+#ifdef MAD3
+  /*
+   * Mad3 memory managers
+   * --------------------
+   *
+   * Provides:
+   * - memory management for MadIII internal data structures
+   *
+   * Requires:
+   * - TBX services
+   */
+  mad_memory_manager_init(*argc, argv);
+#ifdef MARCEL
+  mad_forward_memory_manager_init(*argc, argv);
+#endif // MARCEL
+#endif /* MAD3 */
+
 #ifdef MAD2
   /*
    * Mad2 core initialization 
@@ -174,13 +193,34 @@ void common_pre_init(int *argc, char *argv[],
    * - argument "configuration file"
    * - argument "adapter_set"
    */
+  
   {
     void *configuration_file = NULL;
-    void *adapter_set = (attr && attr->adapter_set) ? attr->adapter_set : NULL;
+    void *adapter_set        =
+      (attr && attr->adapter_set) ? attr->adapter_set : NULL;
 
-    attr->madeleine = mad_object_init(*argc, argv, configuration_file, adapter_set);
+    attr->madeleine          =
+      mad_object_init(*argc, argv, configuration_file, adapter_set);
   }
 #endif /* MAD2 */
+
+#ifdef MAD3
+  /*
+   * Mad3 core initialization 
+   * ------------------------
+   *
+   * Provides:
+   * - Mad3 core objects initialization
+   * - the `madeleine' object
+   *
+   * Requires:
+   * - NTBX services
+   * - TBX services
+   * - Mad3 memory manager services
+   */
+
+    attr->madeleine = mad_object_init(*argc, argv);
+#endif /* MAD3 */
 
 #if defined(PM2) && defined(MAD2)
   /*
@@ -217,6 +257,35 @@ void common_pre_init(int *argc, char *argv[],
   mad_spawn_driver_init(attr->madeleine, argc, argv);
 #endif /* MAD2 && EXTERNAL_SPAWN */
 
+#ifdef MAD3
+  /*
+   * Mad3 structure initializations
+   * ------------------------------
+   *
+   * Provides:
+   * - Mad2 initialization from command line arguments
+   * - directory
+   * - drivers initialization
+   *
+   * Requires:
+   * - the `madeleine' object
+   */
+
+  mad_cmd_line_init(attr->madeleine, *argc, argv);
+  mad_leonie_link_init(attr->madeleine, *argc, argv);
+  mad_directory_init(attr->madeleine, *argc, argv);
+  mad_dir_driver_init(attr->madeleine);
+#ifdef PM2
+  pm2_self      = attr->madeleine->session->process_rank;
+  pm2_conf_size =
+    tbx_slist_get_length(attr->madeleine->dir->process_slist));
+// Warning:
+// The number of processes and the global rank maximum may be different !!!
+// number of processes = tbx_slist_get_length(madeleine->dir->process_slist));
+// global rank max     = tbx_darray_length(madeleine->dir->process_darray));
+#endif /* PM2 */
+#endif /* MAD3 */
+
 #ifdef MAD2
   /*
    * Mad2 command line parsing
@@ -236,7 +305,6 @@ void common_pre_init(int *argc, char *argv[],
 
   if(attr)
     attr->rank = attr->madeleine->configuration->local_host_id;
-
 #endif /* MAD2 */ 
 
 #ifdef MAD2
@@ -300,7 +368,7 @@ void common_pre_init(int *argc, char *argv[],
 	   getenv("PM2_PROG_NAME"), mad_generate_url(attr->madeleine));
     }
   }
-#endif
+#endif /* MAD2 && APPLICATION_SPAWN */
 }
 
 void common_post_init(int *argc, char *argv[],
@@ -313,7 +381,7 @@ void common_post_init(int *argc, char *argv[],
 #if defined(MAD2) && defined(APPLICATION_SPAWN)
   if(attr->rank != 0)
     mad_parse_url(attr->madeleine);
-#endif
+#endif /* MAD2 && APPLICATION_SPAWN */
 
 #ifdef MAD2
   /*
@@ -380,6 +448,10 @@ void common_post_init(int *argc, char *argv[],
 #ifdef MARCEL
   marcel_start_sched(argc, argv);
 #endif /* MARCEL */
+
+#ifdef MAD3
+  mad_dir_channel_init(attr->madeleine);
+#endif /* MAD3 */
 
 #ifdef PM2
   pm2_init_thread_related(argc, argv);

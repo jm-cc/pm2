@@ -339,7 +339,9 @@ void common_pre_init(int *argc, char *argv[],
    */
   mad_configuration_init(attr->madeleine, *argc, argv);
   
+#ifdef PM2
   pm2_conf_size = attr->madeleine->configuration->size;
+#endif
 
 #endif /* MAD2 */
 

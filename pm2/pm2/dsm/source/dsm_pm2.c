@@ -26,6 +26,7 @@
 #include "dsm_protocol_lib.h"
 #include "marcel.h" /* tfprintf */
 #include "dsm_pm2.h"
+#include "hierarch_topology.h"
 
   //
   // dsm_pagefault - signal handling routine for page fault access (BUS/SEGV)
@@ -99,6 +100,7 @@ void dsm_pm2_init(int my_rank, int confsize)
   dsm_comm_init();
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
   token_lock_initialization();
+  topology_initialization();
 
   LOG_OUT();
 }
@@ -107,6 +109,7 @@ void dsm_pm2_exit()
 {
   LOG_IN();
 
+  topology_finalization();
   token_lock_finalization();
   dsm_uninstall_pagefault_handler();
 

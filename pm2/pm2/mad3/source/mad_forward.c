@@ -595,7 +595,12 @@ mad_forward_receive_block(void *arg)
 		  tbx_darray_expand_and_set(out->block_queues,
 					    source, block_queue);
 		}
-
+	      else
+		{
+		  block_slist = block_queue->queue;
+		  block_to_forward = &(block_queue->block_to_forward);
+		}
+	      
 	      marcel_sem_V(&(out->something_to_forward));
 	    }
 	  else
@@ -1422,6 +1427,7 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
       if (!last_block_len) 
 	{
 	  nb_block --;
+	  last_block_len = mtu;
 	}
 
       marcel_mutex_lock(&(out->lock_mutex));
@@ -1448,6 +1454,9 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
 	    }
 	  while (--nb_block);
 	}
+
+      if (!last_block_len)
+	FAILURE("no data");
   
       mad_forward_fill_fbh_data(data, src, dst, last_block_len,
 				tbx_false, is_a_new_msg,

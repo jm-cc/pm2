@@ -1,7 +1,7 @@
 
 PROGRAM		:=	$(PM2_ROOT)/bin/ezflavor
 
-OPTIONS		:=	-DUSE_TRACE
+OPTIONS		:=	-DUSE_TRACE -g
 
 CC		:=	gcc
 CFLAGS		:=	-O6 -Wall $(shell gtk-config --cflags) $(OPTIONS)

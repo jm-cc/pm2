@@ -81,6 +81,22 @@ OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
 
 ################### END OF CUSTOMIZATION SECTION #################
 
+ifndef MARCEL_ROOT
+MARCEL_ROOT	:=	$(PM2_ROOT)/marcel
+endif
+
+ifndef MADELEINE_ROOT
+MADELEINE_ROOT	:=	$(PM2_ROOT)/mad1
+endif
+
+ifndef MAD2_ROOT
+MAD2_ROOT	:=	$(PM2_ROOT)/mad2
+endif
+
+ifndef DSM_ROOT
+DSM_ROOT	:=	$(PM2_ROOT)/dsm
+endif
+
 ifndef PM2_ARCH_SYS
 PM2_ARCH	:=	$(shell $(PM2_ROOT)/bin/pm2_arch)
 PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)

@@ -28,6 +28,7 @@ void marcel_sem_P(marcel_sem_t *s)
   semcell c;
 
   LOG_IN();
+  LOG_PTR("semaphore",s);
 
   marcel_lock_acquire(&s->lock);
 
@@ -57,6 +58,7 @@ int marcel_sem_try_P(marcel_sem_t *s)
   int result = 0;
 
   LOG_IN();
+  LOG_PTR("semaphore",s);
 
   marcel_lock_acquire(&s->lock);
 
@@ -78,6 +80,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
   semcell c;
 
   LOG_IN();
+  LOG_PTR("semaphore",s);
 
   marcel_lock_acquire(&s->lock);
 
@@ -113,6 +116,7 @@ void marcel_sem_V(marcel_sem_t *s)
   semcell *c;
 
   LOG_IN();
+  LOG_PTR("semaphore",s);
 
   marcel_lock_acquire(&s->lock);
 

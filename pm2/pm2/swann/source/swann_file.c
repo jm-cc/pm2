@@ -34,6 +34,19 @@
 
 ______________________________________________________________________________
 $Log: swann_file.c,v $
+Revision 1.3  2000/04/21 15:40:20  oaumage
+- fusion de la barnche pm2_mad2_multicluster
+
+Revision 1.2.2.3  2000/04/15 15:23:15  oaumage
+- progression du transfert de fichiers distants
+
+Revision 1.2.2.2  2000/04/03 13:45:25  oaumage
+- ajout de fonctions de transmission pour int, long, double et string
+- support du transfert de fichiers distants bloc a bloc
+
+Revision 1.2.2.1  2000/04/03 08:55:11  oaumage
+- support partiel du transfert de fichiers (par blocs)
+
 Revision 1.2  2000/03/27 12:54:06  oaumage
 - progression des fonctionnalites:
   * support reseau
@@ -80,14 +93,16 @@ swann_file_access(char *pathname,
   int status;
   
   LOG_IN();
+  DISP_STR("swann_file_access: file", pathname);
+  
   while((status = access(pathname, amode)) == -1)
     {
-      if (status == EACCES)
+      if (errno == EACCES)
 	{
 	  LOG_OUT();
 	  return tbx_false;
 	}
-      else if (status != EINTR)
+      else if (errno != EINTR)
 	{
 	  perror("access");
 	  FAILURE("swann_file_access");
@@ -120,19 +135,30 @@ swann_file_init(p_swann_file_t  file,
   if (file->state != swann_file_state_uninitialized)
     FAILURE("file already initialized");
 
-  file->pathname = malloc(strlen(pathname) + 1);
-  CTRL_ALLOC(file->pathname);
+  if (pathname[0] == '~')
+    {
+      file->pathname = malloc(strlen(pathname) + strlen(getenv("HOME")));
+      CTRL_ALLOC(file->pathname);
 
-  strcpy(file->pathname, pathname);
+      strcpy(file->pathname, getenv("HOME"));
+      strcat(file->pathname, pathname + 1);
+    }
+  else
+    {      
+      file->pathname = malloc(strlen(pathname) + 1);
+      CTRL_ALLOC(file->pathname);
 
+      strcpy(file->pathname, pathname);
+    }
+  
   file->descriptor = -1;
   file->mode       = swann_file_mode_uninitialized;
   
-  if ((file->exist = swann_file_access(pathname, F_OK)))
+  if ((file->exist = swann_file_access(file->pathname, F_OK)))
     {
-      file->readable   = swann_file_access(pathname, R_OK);
-      file->writeable  = swann_file_access(pathname, W_OK);
-      file->executable = swann_file_access(pathname, X_OK);      
+      file->readable   = swann_file_access(file->pathname, R_OK);
+      file->writeable  = swann_file_access(file->pathname, W_OK);
+      file->executable = swann_file_access(file->pathname, X_OK);      
     }
   else
     {
@@ -294,15 +320,15 @@ swann_file_destroy(p_swann_file_t file)
 
 
 /*
- * Read/Write  (block)
- * -------------------
+ * Read/Write (block level)
+ * ----------...............
  */
 size_t
 swann_file_read_block(p_swann_file_t  file,
 		      void           *ptr,
 		      size_t          length)
 {
-  int status;
+  size_t status;
 
   LOG_IN();
   if (file->state != swann_file_state_open)
@@ -330,7 +356,7 @@ swann_file_write_block(p_swann_file_t file,
 		      void           *ptr,
 		      size_t          length)
 {
-  int status;
+  size_t status;
 
   LOG_IN();
   if (file->state != swann_file_state_open)
@@ -353,6 +379,70 @@ swann_file_write_block(p_swann_file_t file,
   return status;
 }
 
+/*
+ * File transfer (block level)
+ * -------------...............
+ */
+swann_status_t
+swann_file_send_block(p_swann_net_client_t client,
+		      p_swann_file_t       file)
+{
+  char               buffer[TBX_FILE_TRANSFER_BLOCK_SIZE];
+  ntbx_pack_buffer_t pack_buffer;
+  size_t             block_size;
+  
+  LOG_IN();
+  block_size =
+    swann_file_read_block(file, buffer, TBX_FILE_TRANSFER_BLOCK_SIZE);
+  
+  ntbx_pack_int((int)block_size, &pack_buffer);
 
+  while (!ntbx_tcp_write_poll(1, &client->client));
+  ntbx_tcp_write_block(client->client,
+		       &pack_buffer,
+		       sizeof(ntbx_pack_buffer_t));
 
+  if (block_size)
+    {
+      while (!ntbx_tcp_write_poll(1, &client->client));
+      ntbx_tcp_write_block(client->client, buffer, block_size);
+
+      LOG_OUT();
+      return swann_success;
+    }
+  else
+    {
+      LOG_OUT();
+      return swann_failure;
+    }
+}
+
+swann_status_t
+swann_file_receive_block(p_swann_net_client_t client,
+			 p_swann_file_t       file)
+{
+  char               buffer[TBX_FILE_TRANSFER_BLOCK_SIZE];
+  ntbx_pack_buffer_t pack_buffer;
+  size_t             block_size;
+
+  LOG_IN();
+  while (!ntbx_tcp_read_poll(1, &client->client));
+  ntbx_tcp_read_block(client->client,
+		      &pack_buffer,
+		      sizeof(ntbx_pack_buffer_t));
+  block_size = (int)ntbx_unpack_int(&pack_buffer);
+
+  if (block_size)
+    {
+      while (!ntbx_tcp_write_poll(1, &client->client));
+      ntbx_tcp_write_block(client->client, buffer, block_size);
+      LOG_OUT();
+      return swann_success;
+    }
+  else
+    {
+      LOG_OUT();
+      return swann_failure;
+    }
+}
 

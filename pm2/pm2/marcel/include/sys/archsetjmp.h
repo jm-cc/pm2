@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: archsetjmp.h,v $
+Revision 1.3  2000/03/01 16:46:59  oaumage
+- suppression des warnings en compilation  -g
+
 Revision 1.2  2000/01/31 15:56:47  oaumage
 - ajout du Log CVS
 
@@ -88,7 +91,9 @@ typedef int my_jmp_buf[6];
 
 extern int my_setjmp(my_jmp_buf buf);
 
-static __inline__ void my_longjmp(my_jmp_buf buf, int val)
+static __inline__ void my_longjmp(my_jmp_buf buf, int val) __attribute__ ((unused));
+
+static __inline__ void my_longjmp(my_jmp_buf buf, int val) 
 {
   __asm__ __volatile__("movl %0, %%ecx\n\t"
 		       "movl 0(%%ecx), %%ebx\n\t"

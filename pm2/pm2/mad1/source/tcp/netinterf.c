@@ -64,7 +64,6 @@
 
 #include "mad_types.h"
 #include "mad_timing.h"
-#include "safe_malloc.h"
 #include "sys/debug.h"
 
 static long header[MAX_HEADER/sizeof(long)] __MAD_ALIGNED__;
@@ -80,8 +79,13 @@ static int nb_fds;
 
 static char my_name[128];
 
+#ifndef min
 #define min(a, b)  ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef max
 #define max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
 
 #define MAX_IOV    16
 
@@ -128,6 +132,8 @@ static void spawn_procs(char *argv[], int port)
   char cmd[1024], arg[128];
   int i;
 
+  LOG_IN();
+
   sprintf(cmd, "%s/bin/tcp/madspawn %s %d %d %s", get_mad_root(),
 	  my_name, confsize, port, cons_image);
   i=0;
@@ -140,6 +146,8 @@ static void spawn_procs(char *argv[], int port)
     i++;
   }
   system(cmd);
+
+  LOG_OUT();
 }
 
 static int creer_socket(int type, int port, struct sockaddr_in *adresse)
@@ -148,8 +156,11 @@ static int creer_socket(int type, int port, struct sockaddr_in *adresse)
   int desc;
   int length = sizeof(struct sockaddr_in);
 
+  LOG_IN();
+
   if((desc = socket(AF_INET, type, 0)) == -1) {
     perror("ERROR: Cannot create socket\n");
+    LOG_OUT();
     return -1;
   }
   
@@ -160,14 +171,18 @@ static int creer_socket(int type, int port, struct sockaddr_in *adresse)
   if(bind(desc, (struct sockaddr *)&tempo, sizeof(struct sockaddr_in)) == -1) {
     perror("ERROR: Cannot bind socket\n");
     close(desc);
+    LOG_OUT();
     return -1;
   }
 
   if(adresse != NULL)
     if(getsockname(desc, (struct sockaddr *)adresse, &length) == -1) {
       perror("ERROR: Cannot get socket name\n");
+      LOG_OUT();
       return -1;
     }
+
+  LOG_OUT();
 
   return desc;
 }
@@ -179,6 +194,7 @@ static void master(char *argv[])
   int port;
   char hostname[64], execname[1024];
 
+  LOG_IN();
 
   port = 0;
 
@@ -242,6 +258,8 @@ static void master(char *argv[])
     }
 
   }
+
+  LOG_OUT();
 }
 
 static void slave(int serverport, char *serverhost)
@@ -250,6 +268,8 @@ static void slave(int serverport, char *serverhost)
   struct hostent *host;
   char hostname[64];
   int i, j;
+
+  LOG_IN();
 
   if((host = gethostbyname(serverhost)) == NULL) {
     fprintf(stderr, "ERROR: Cannot find internet address of %s\n", serverhost);
@@ -343,6 +363,8 @@ static void slave(int serverport, char *serverhost)
   /* envoi de l'accusé de réception, et attente de confirmation */
   write(send_sock[0], &j, sizeof(int));
   read(send_sock[0], &j, sizeof(int));
+
+  LOG_OUT();
 }
 
 void mad_tcp_network_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
@@ -352,6 +374,8 @@ void mad_tcp_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
   int un = 1, packet = 0x8000;
   struct linger ling = { 1, 50 };
   char *_argv[128]; /* sauvegarde */
+
+  LOG_IN();
 
   if(getenv("MAD_MY_NUMBER") == NULL) { /* master process */
 
@@ -485,8 +509,12 @@ void mad_tcp_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
     *nb = confsize;
 
   *whoami = pm2self;
-  for(i=0; i<*nb; i++)
-    tids[i] = i;
+
+  if(tids != NULL)
+    for(i=0; i<*nb; i++)
+      tids[i] = i;
+
+  LOG_OUT();
 }
 
 
@@ -495,6 +523,8 @@ void mad_tcp_network_send(int dest_node, struct iovec *vector, size_t count)
   int fd;
   ssize_t len;
   struct iovec backup;
+
+  LOG_IN();
 
   TIMING_EVENT("network_send'begin");
 
@@ -559,6 +589,8 @@ void mad_tcp_network_send(int dest_node, struct iovec *vector, size_t count)
 #endif
 
   TIMING_EVENT("network_send'end");
+
+  LOG_OUT();
 }
 
 static int current_expeditor;
@@ -567,6 +599,8 @@ void mad_tcp_network_receive(char **head)
 { 
   int n, i;
   fd_set rfds;
+
+  LOG_IN();
 
   do {
     do {
@@ -646,14 +680,20 @@ void mad_tcp_network_receive(char **head)
   mdebug("One more iovec received\n");
 
   *head = (char *)header;
+
+  LOG_OUT();
 }
 
 void mad_tcp_network_receive_data(struct iovec *vector, size_t count)
 {
   register ssize_t len;
 
-  if(!count)
+  LOG_IN();
+
+  if(!count) {
+    LOG_OUT();
     return;
+  }
 
   do {
 
@@ -686,15 +726,22 @@ void mad_tcp_network_receive_data(struct iovec *vector, size_t count)
     }
 #endif
   } while(count != 0);
+
+  LOG_OUT();
 }
 
 void mad_tcp_network_exit()
 {
   int i;
 
+  LOG_IN();
+
   for(i=0; i<confsize; i++)
     close(send_sock[i]);
   close(private_pipe[1]);
+
+  LOG_OUT();
+
 }
 
 static netinterf_t mad_tcp_netinterf = {

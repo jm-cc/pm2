@@ -283,7 +283,7 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 	int n;
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-	struct marcel_ev_event event;
+	struct marcel_ev_wait wait;
 #endif	
 	LOG_IN();
 	do {
@@ -291,7 +291,7 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 		ev.op = POLL_READ;
 		ev.fd = fildes;
 		mdebug("Reading in fd %i\n", fildes);
-		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
+		marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
 		LOG("IO reading fd %i", fildes);
 		n = read(fildes, buf, nbytes);
@@ -304,14 +304,14 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-	struct marcel_ev_event event;
+	struct marcel_ev_wait wait;
 #endif
 	LOG_IN();
 #ifndef MA__ACTIVATION
 	ev.op = POLL_READ;
 	ev.fd = fildes;
 	mdebug("Reading in fd %i\n", fildes);
-	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
+	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
 
 	LOG("IO readving fd %i", fildes);
@@ -323,7 +323,7 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 	int n;
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-	struct marcel_ev_event event;
+	struct marcel_ev_wait wait;
 #endif
 	LOG_IN();
 	do {
@@ -331,7 +331,7 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 		ev.op = POLL_WRITE;
 		ev.fd = fildes;
 		mdebug("Writing in fd %i\n", fildes);
-		marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
+		marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
 
 		LOG("IO writing fd %i", fildes);
@@ -345,14 +345,14 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 #ifndef MA__ACTIVATION
 	struct tcp_ev ev;
-	struct marcel_ev_event event;
+	struct marcel_ev_wait wait;
 #endif
 	LOG_IN();
 #ifndef MA__ACTIVATION
 	ev.op = POLL_WRITE;
 	ev.fd = fildes;
 	mdebug("Writing in fd %i\n", fildes);
-	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
+	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
 
 	LOG("IO writving fd %i", fildes);
@@ -365,7 +365,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	return select(nfds, rfds, wfds, NULL, NULL);
 #else
 	struct tcp_ev ev;
-	struct marcel_ev_event event;
+	struct marcel_ev_wait wait;
 	
 	LOG_IN();
 	ev.op = POLL_SELECT;
@@ -373,7 +373,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	ev.wfds = wfds;
 	ev.nfds = nfds;
 	mdebug("Selecting within %i fds\n", nfds);
-	marcel_ev_wait_one(&unix_io_server.server, &ev.inst, &event, 0);
+	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 	LOG_RETURN(ev.ret_val);
 #endif
 }

@@ -60,7 +60,7 @@ typedef struct marcel_ev_req *marcel_ev_req_t;
  * correspondant à une requête. Le thread est déschedulé tant que la
  * requête n'est pas prête (que l'événement n'est pas reçu).
  */
-typedef struct marcel_ev_event *marcel_ev_event_t;
+typedef struct marcel_ev_wait *marcel_ev_wait_t;
 
 #section macros
 /*[S]****************************************************************
@@ -117,10 +117,10 @@ enum {
 };
 
 #section functions
-/* Initialisation, enregistrement, attente d'un
+/* Initialisation, soumission, attente d'un
  * événement avec ONE_SHOT positionné */
-int marcel_ev_wait_one(marcel_ev_server_t server, marcel_ev_req_t req,
-		       marcel_ev_event_t ev, marcel_time_t timeout);
+int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
+		   marcel_ev_wait_t wait, marcel_time_t timeout);
 
 /* Initialisation d'un événement
  * (à appeler en premier si on utilise autre chose que wait_one) 
@@ -130,21 +130,23 @@ int marcel_ev_req_init(marcel_ev_req_t req);
 /* Ajout d'un attribut spécifique à une requête */
 int marcel_ev_req_attr_set(marcel_ev_req_t req, int attr);
 
-/* Enregistrement d'une requête */
-int marcel_ev_req_register(marcel_ev_server_t server, marcel_ev_req_t req);
+/* Soumission d'une requête (le serveur PEUT commancer à scruter si ça
+ * lui convient) */
+int marcel_ev_req_submit(marcel_ev_server_t server, marcel_ev_req_t req);
 
-/* Abandon d'une requête et retour des threads en attente sur cette requête */
-int marcel_ev_req_unregister(marcel_ev_req_t req);
+/* Abandon d'une requête et retour des threads en attente sur cette
+ * requête (avec le code de retour fourni) */
+int marcel_ev_req_cancel(marcel_ev_req_t req, int ret_code);
 
 /* Attente bloquante d'un événement sur une requête déjà enregistrée */
-int marcel_ev_req_wait(marcel_ev_req_t req, marcel_ev_event_t ev, 
+int marcel_ev_req_wait(marcel_ev_req_t req, marcel_ev_wait_t wait, 
 		       marcel_time_t timeout);
 
 /* Attente bloquante d'un événement sur une quelconque requête du serveur */
 int marcel_ev_server_wait(marcel_ev_server_t server, marcel_time_t timeout);
 
 /* Renvoie une requête survenue (utile au retour de wait_server)
-   Au désenregistrement d'une requête (wait_one, unregister ou ONE_SHOT)
+   À l'abandon d'une requête (wait_one, cancel ou ONE_SHOT)
    la requête est également retirée de cette file (donc n'est plus consultable)
 */
 marcel_ev_req_t marcel_ev_get_success_req(marcel_ev_server_t server);
@@ -260,11 +262,11 @@ enum {
    marcel_ev_server_t server : serveur
 */
 #define FOREACH_REQ_REGISTERED_BASE(req, server) \
-  list_for_each_entry((req), &(server)->list_req_reg, chain_req_reg)
+  list_for_each_entry((req), &(server)->list_req_registered, chain_req_registered)
 
 /* Idem mais protégé (usage interne) */
 #define FOREACH_REQ_REGISTERED_BASE_SAFE(req, tmp, server) \
-  list_for_each_entry_safe((req), (tmp), &(server)->list_req_reg, chain_req_reg)
+  list_for_each_entry_safe((req), (tmp), &(server)->list_req_registered, chain_req_registered)
 
 /* Itérateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
@@ -273,7 +275,7 @@ enum {
    member : nom de struct marcel_ev dans la structure pointée par req
 */
 #define FOREACH_REQ_REGISTERED(req, server, member) \
-  list_for_each_entry((req), &(server)->list_req_reg, member.chain_req_reg)
+  list_for_each_entry((req), &(server)->list_req_registered, member.chain_req_registered)
 
 /****************************************************************
  * Itérateur pour les requêtes groupées de la scrutation (polling)
@@ -284,11 +286,11 @@ enum {
    marcel_ev_server_t server : serveur
 */
 #define FOREACH_REQ_POLL_BASE(req, server) \
-  list_for_each_entry((req), &(server)->list_req_poll, chain_req)
+  list_for_each_entry((req), &(server)->list_req_poll_grouped, chain_req_grouped)
 
 /* Idem mais protégé (usage interne) */
 #define FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server) \
-  list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll, chain_req)
+  list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll_grouped, chain_req_grouped)
 
 /* Itérateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
@@ -297,7 +299,7 @@ enum {
    member : nom de struct marcel_ev dans la structure pointée par req
 */
 #define FOREACH_REQ_POLL(req, server, member) \
-  list_for_each_entry((req), &(server)->list_req_poll, member.chain_req)
+  list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
 
 
 /****************************************************************
@@ -330,15 +332,15 @@ enum {
  */
 
 /* Itérateur avec le type de base
-   marcel_ev_event_t event : itérateur
+   marcel_ev_wait_t wait : itérateur
    marcel_ev_req_t req : requête
 */
-#define FOREACH_EVENT_BASE(event, req) \
-  list_for_each_entry((event), &(req)->list_event, chain_event)
+#define FOREACH_WAIT_BASE(wait, req) \
+  list_for_each_entry((wait), &(req)->list_wait, chain_wait)
 
 /* Idem mais protégé (usage interne) */
-#define FOREACH_EVENT_BASE_SAFE(event, tmp, req) \
-  list_for_each_entry_safe((event), (tmp), &(req)->list_event, chain_event)
+#define FOREACH_WAIT_BASE_SAFE(wait, tmp, req) \
+  list_for_each_entry_safe((wait), (tmp), &(req)->list_wait, chain_wait)
 
 /* Itérateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
@@ -346,8 +348,8 @@ enum {
    marcel_ev_server_t server : serveur
    member : nom de struct marcel_ev dans la structure pointée par req
 */
-#define FOREACH_EVENT(event, req, member) \
-  list_for_each_entry((event), &(req)->list_event, member.chain_event)
+#define FOREACH_WAIT(wait, req, member) \
+  list_for_each_entry((wait), &(req)->list_wait, member.chain_wait)
 
 
 
@@ -371,12 +373,12 @@ enum {
 
 /* Macros utilisable dans les call-backs pour réveiller un thread en attente
    en lui fournissant le code de retour
-   marcel_ev_event_t event : l'événement à reveiller
+   marcel_ev_wait_t wait : l'événement à reveiller
 */
-#define MARCEL_EV_EVENT_SUCCESS(event, code) \
+#define MARCEL_EV_WAIT_SUCCESS(wait, code) \
   do { \
-        list_del(&(event)->chain_event); \
-        (event)->ret_code=(code); \
+        list_del(&(wait)->chain_wait); \
+        (wait)->ret_code=(code); \
   } while(0)
  
 
@@ -451,6 +453,8 @@ struct marcel_ev_server {
 	ma_spinlock_t lock;
 	/* Thread propriétaire du lock (pour le locking applicatif) */
 	marcel_task_t *lock_owner;
+	/* Liste des requêtes soumises */
+	struct list_head list_req_registered;
 	/* Liste des requêtes signalées prêtes par les call-backs */
 	struct list_head list_req_ready;
 	/* Liste des requêtes pour ceux en attente dans la liste précédente */
@@ -463,9 +467,9 @@ struct marcel_ev_server {
 	int registered_req_not_yet_polled;
 
 	/* Liste des requêtes groupées pour le polling (ou en cours de groupage) */
-	struct list_head list_req_poll;
+	struct list_head list_req_poll_grouped;
 	/* Nombre de requêtes dans la liste précédente */
-	int req_poll_nb;
+	int req_poll_grouped_nb;
 
 	/* Call-backs */
 	marcel_ev_pcallback_t funcs[MA_EV_FUNCTYPE_SIZE];
@@ -491,13 +495,14 @@ struct marcel_ev_server {
   { \
     .lock=MA_SPIN_LOCK_UNLOCKED, \
     .lock_owner=NULL, \
+    .list_req_registered=LIST_HEAD_INIT((var).list_req_registered), \
     .list_req_ready=LIST_HEAD_INIT((var).list_req_ready), \
     .list_req_success=LIST_HEAD_INIT((var).list_req_success), \
     .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters), \
     .req_success_lock=MA_SPIN_LOCK_UNLOCKED, \
     .registered_req_not_yet_polled=0, \
-    .list_req_poll=LIST_HEAD_INIT((var).list_req_poll), \
-    .req_poll_nb=0, \
+    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
+    .req_poll_grouped_nb=0, \
     .funcs={NULL, }, \
     .poll_points=0, \
     .frequency=0, \
@@ -523,32 +528,32 @@ enum {
 
 #section marcel_structures
 struct marcel_ev_req {
-	/* Chaine des événements groupé en attente */
-	struct list_head chain_req;
-	/* Chaine des événements signalés OK par un call-back */
+	/* Chaine des requêtes soumises */
+	struct list_head chain_req_registered;
+	/* Chaine des requêtes groupées en attente */
+	struct list_head chain_req_grouped;
+	/* Chaine des requêtes signalées OK par un call-back */
 	struct list_head chain_req_ready;
-	/* Chaine des événements à signaler au serveur */
+	/* Chaine des requêtes à signaler au serveur */
 	struct list_head chain_req_success;
 	/* État */
 	int state;
 	/* Serveur attaché */
 	marcel_ev_server_t server;
-	/* Liste des attentes en cours sur cet événement */
-	struct list_head list_event;
+	/* Liste des attentes en cours sur cette requête */
+	struct list_head list_wait;
 };
 
-struct marcel_ev_event {
+struct marcel_ev_wait {
 	/* Chaine des événements groupé en attente */
-	struct list_head chain_event;
+	struct list_head chain_wait;
 
 	marcel_sem_t sem;
 	/* 0: event
 	   -ECANCELED: marcel_unregister called
 	*/
 	int ret;
-#ifdef MA__DEBUG
 	marcel_task_t *task;
-#endif	
 };
 
 

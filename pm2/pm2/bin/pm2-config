@@ -79,13 +79,14 @@ Directories pm2-libs was configured to
   --stampdir --builddir --includedir --scriptdir --cppdir --tmpdir
 
 Other options
-  --ext       : extension used
-  --protocols : communication libraries used
-  --modules   : modules included in the flavor
-  --profmods  : modules which have the 'profile' functionality enabled
-  --cc        : C compiler used
-  --stampfile : stampfile generated
-  --loader    : loader used
+  --ext         : extension used
+  --protocols   : communication libraries used
+  --modules     : modules included in the flavor
+  --profmods    : modules which have the 'profile' functionality enabled
+  --headgenmods : modules which generate some specific header files at compile time
+  --cc          : C compiler used
+  --stampfile   : stampfile generated
+  --loader      : loader used
 
   --gen_mak   : generate flavor specific makefiles
 
@@ -183,7 +184,7 @@ while test $# -gt 0; do
 	eval ${dirname}dir=true
 	dirtoshow="$dirname1"
 	;;
-    --ext|--protocols|--modules|--profmods|--cc|--stampfile|--loader)
+    --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader)
 	other=$1
 	;;
     --help)
@@ -319,6 +320,22 @@ if [ -n "${dirtoshow}" ]; then
 		    esac
 		    ;;
 	    esac
+	done
+	echo $ordered_list
+	exit 0
+	;;
+    --headgenmods)
+	ordered_list=
+	for l in $DIRTY_ORDERED_MODULES ; do
+	    L=`echo $l | tr a-z A-Z`
+	    GENINC=`eval echo '$'PM2_${L}_GENERATE_INCLUDE`
+	    if [ "$GENINC" = "true" ] ; then
+		case " $PM2_LIBS " in
+		    *\ $l\ *)
+			ordered_list="$ordered_list $l"
+			;;
+		esac
+	    fi
 	done
 	echo $ordered_list
 	exit 0

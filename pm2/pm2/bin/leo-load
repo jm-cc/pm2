@@ -145,6 +145,6 @@ else
     prefix=""
 fi
 
-echo "### Leonie loader ###"
-echo exec $prefix $_PM2WHICH_RESULT $prog_args
+# echo "### Leonie loader ###"
+# echo exec $prefix $_PM2WHICH_RESULT $prog_args
 exec $prefix $_PM2WHICH_RESULT $prog_args

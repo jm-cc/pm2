@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.5  2000/01/05 09:43:59  oaumage
+- initialisation du nouveau champs `group_mode' dans link_init
+- mad_sbp.c: suppression des fonctions vides
+
 Revision 1.4  2000/01/04 16:50:48  oaumage
 - mad_mpi.c: premiere version fonctionnelle du driver
 - mad_sbp.c: nouvelle correction de la transmission des noms d'hote a
@@ -361,23 +365,23 @@ mad_sbp_register(p_mad_driver_t driver)
   
   interface->driver_init                = mad_sbp_driver_init;
   interface->adapter_init               = mad_sbp_adapter_init;
-  interface->adapter_configuration_init = mad_sbp_adapter_configuration_init;
-  interface->channel_init               = mad_sbp_channel_init;
-  interface->before_open_channel        = mad_sbp_before_open_channel;
+  interface->adapter_configuration_init = NULL;
+  interface->channel_init               = NULL;
+  interface->before_open_channel        = NULL;
   interface->connection_init            = mad_sbp_connection_init;
   interface->link_init                  = mad_sbp_link_init;
-  interface->accept                     = mad_sbp_accept;
-  interface->connect                    = mad_sbp_connect;
+  interface->accept                     = NULL;
+  interface->connect                    = NULL;
   interface->after_open_channel         = mad_sbp_after_open_channel;
-  interface->before_close_channel       = mad_sbp_before_close_channel;
+  interface->before_close_channel       = NULL;
   interface->disconnect                 = mad_sbp_disconnect;
   interface->after_close_channel        = mad_sbp_after_close_channel;
-  interface->link_exit                  = mad_sbp_link_exit;
-  interface->connection_exit            = mad_sbp_connection_exit;
-  interface->channel_exit               = mad_sbp_channel_exit;
+  interface->link_exit                  = NULL;
+  interface->connection_exit            = NULL;
+  interface->channel_exit               = NULL;
   interface->adapter_exit               = mad_sbp_adapter_exit;
   interface->driver_exit                = mad_sbp_driver_exit;
-  interface->choice                     = mad_sbp_choice;
+  interface->choice                     = NULL;
   interface->get_static_buffer          = mad_sbp_get_static_buffer;
   interface->return_static_buffer       = mad_sbp_return_static_buffer;
   interface->new_message                = mad_sbp_new_message;
@@ -386,7 +390,7 @@ mad_sbp_register(p_mad_driver_t driver)
   interface->receive_buffer             = mad_sbp_receive_buffer;
   interface->send_buffer_group          = mad_sbp_send_buffer_group;
   interface->receive_sub_buffer_group   = mad_sbp_receive_sub_buffer_group;
-  interface->external_spawn_init        = mad_sbp_external_spawn_init;
+  interface->external_spawn_init        = NULL;
   interface->configuration_init         = mad_sbp_configuration_init;
   interface->send_adapter_parameter     = mad_sbp_send_adapter_parameter;
   interface->receive_adapter_parameter  = mad_sbp_receive_adapter_parameter;;
@@ -454,26 +458,6 @@ mad_sbp_adapter_init(p_mad_adapter_t adapter)
 }
 
 void
-mad_sbp_adapter_configuration_init(p_mad_adapter_t adapter)
-{
-  LOG_IN();
-  /* Adapter initialization code (part II)
-     Note: called once for each adapter,
-     after remote nodes connection information
-     has been transmitted (if needed) */
-  LOG_OUT();
-}
-
-void
-mad_sbp_channel_init(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Channel initialization code
-     Note: called once for each new channel */
-  LOG_OUT();
-}
-
-void
 mad_sbp_connection_init(p_mad_connection_t in, p_mad_connection_t out)
 {
   p_mad_sbp_connection_specific_t in_specific;
@@ -506,36 +490,7 @@ mad_sbp_link_init(p_mad_link_t lnk)
   /* Link initialization code */
   lnk->link_mode   = mad_link_mode_buffer;
   lnk->buffer_mode = mad_buffer_mode_static;
-  LOG_OUT();
-}
-
-void
-mad_sbp_before_open_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Code to execute before opening a new channel */
-
-  /* Nothing */
-  LOG_OUT();
-}
-
-void
-mad_sbp_accept(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Incoming connection acceptation */
-
-  /* Nothing */
-  LOG_OUT();
-}
-
-void
-mad_sbp_connect(p_mad_connection_t connection)
-{
-  LOG_IN();
-  /* Outgoing connection establishment */
-
-  /* Nothing */
+  lnk->group_mode  = mad_group_mode_aggregate;
   LOG_OUT();
 }
 
@@ -622,14 +577,6 @@ mad_sbp_after_open_channel(p_mad_channel_t channel)
   LOG_OUT();
 }
 
-void
-mad_sbp_before_close_channel(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Code to execute before closing a channel */
-  LOG_OUT();
-}
-
 void 
 mad_sbp_disconnect(p_mad_connection_t connection)
 {
@@ -684,34 +631,6 @@ mad_sbp_after_close_channel(p_mad_channel_t channel)
 }
 
 void
-mad_sbp_link_exit(p_mad_link_t link)
-{
-  LOG_IN();
-  /* nothing */
-  LOG_OUT();
-}
-
-void
-mad_sbp_connection_exit(p_mad_connection_t in,
-			p_mad_connection_t out)
-{
-  LOG_IN();
-  free(in->specific);
-  in->specific = NULL;
-  free(out->specific);
-  out->specific = NULL;
-  LOG_OUT();
-}
-
-void
-mad_sbp_channel_exit(p_mad_channel_t channel)
-{
-  LOG_IN();
-  /* Nothing */
-  LOG_OUT();
-}
-
-void
 mad_sbp_adapter_exit(p_mad_adapter_t adapter)
 {
   p_mad_sbp_adapter_specific_t adapter_specific = adapter->specific;
@@ -739,19 +658,6 @@ mad_sbp_driver_exit(p_mad_driver_t driver)
   mad_malloc_clean(driver_specific->buffer_pool_memory);
   free(driver->specific);
   LOG_OUT();
-}
-
-p_mad_link_t
-mad_sbp_choice(p_mad_connection_t   connection,
-	       size_t               size,
-	       mad_send_mode_t      send_mode,
-	       mad_receive_mode_t   receive_mode)
-{
-  LOG_IN();
-  /* Link selection function */
-
-  LOG_OUT();
-  return &(connection->link[0]);
 }
 
 void
@@ -1025,13 +931,6 @@ mad_sbp_return_static_buffer(p_mad_link_t     lnk,
 }
 
 /* External spawn support functions */
-
-void
-mad_sbp_external_spawn_init(p_mad_adapter_t spawn_adapter,
-			    int *argc, char **argv)
-{
-  /* Nothing */
-}
 
 void
 mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,

@@ -30,6 +30,10 @@
 #define MAXHOSTNAMELEN 256
 #endif /* MAXHOSTNAMELEN */
 
+#ifdef SOLARIS_SYS
+#define socklen_t int
+#endif // SOLARIS_SYS
+
 /*
  * Data Structures
  * ========================================================================

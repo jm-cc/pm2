@@ -150,7 +150,14 @@ case "_${DISPLAY}" in
 esac
 
 # Variables automatiquement exportées
-PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}DISPLAY:PM2_CONF_FILE
+PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}DISPLAY:PM2_CONF_FILE:PM2_LD_LIBRARY_PATH
+
+PM2_LD_LIBRARY_PATH="$_PM2CONFIG_LD_LIBRARY_PATH"
+
+if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
+    LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    export LD_LIBRARY_PATH
+fi
 
 # Arguments à passer à pm2-pre-script.sh
 _prescript_args=""
@@ -166,9 +173,15 @@ if [ -n "$_PM2CONFIG_PRELOAD" ]; then
 fi
 
 _old_ifs="$IFS"
+_ifs_not_set=${IFS-yes}
 IFS=":"
 set $PM2_EXPORT
-IFS=$_old_ifs
+IFS=" "
+if [ "$_ifs_not_set" = yes ]; then
+    unset IFS
+else
+    IFS="$_old_ifs"
+fi
 
 # Variables à exporter
 for v in $*; do

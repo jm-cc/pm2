@@ -196,7 +196,7 @@ _PRIVATE_ extern __lwp_t __main_lwp;
 _PRIVATE_ extern task_desc __main_thread_struct;
 _PRIVATE_ extern char __security_stack[];
 
-static __inline__ marcel_t __marcel_self()
+static __inline__ marcel_t __marcel_self(void)
 {
   register unsigned long sp = get_sp();
 

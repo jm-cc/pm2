@@ -180,3 +180,18 @@ static __inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
 #define ma_smp_mb__before_clear_bit()   ma_barrier()
 #define ma_smp_mb__after_clear_bit()    ma_barrier()
 
+#section marcel_functions
+static inline int ma_sched_find_first_bit(const unsigned long *b);
+#section marcel_inline
+static inline int ma_sched_find_first_bit(const unsigned long *b)
+{
+	if (tbx_unlikely(b[0]))
+		return ma_ffs(b[0]);
+	if (tbx_unlikely(b[1]))
+		return ma_ffs(b[1]) + 32;
+	if (tbx_unlikely(b[2]))
+		return ma_ffs(b[2]) + 64;
+	if (b[3])
+		return ma_ffs(b[3]) + 96;
+	return ma_ffs(b[4]) + 128;
+}

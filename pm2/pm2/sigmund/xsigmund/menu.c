@@ -62,9 +62,12 @@ static void cpu_view_callback(GtkWidget *w, gpointer data)
   strcpy(s, "sigmundps ");
   options_to_string(s + 10);
   strcat(s, " --print-process");
+  strcat(s, " -o /tmp/pipo.eps");
   pid = exec_single_cmd_fmt(NULL,s);
   exec_wait(pid);
-  pid = exec_single_cmd_fmt(NULL, "viewsig");
+  pid = exec_single_cmd_fmt(NULL, "gv /tmp/pipo.eps");
+  exec_wait(pid);
+  pid = exec_single_cmd_fmt(NULL, "rm -f /tmp/pipo.eps");
   exec_wait(pid); 
 }
 
@@ -75,9 +78,12 @@ static void thread_view_callback(GtkWidget *w, gpointer data)
   strcpy(s, "sigmundps ");
   options_to_string(s + 10);
   strcat(s, " --print-thread");
+  strcat(s, " -o /tmp/pipo.eps");
   pid = exec_single_cmd_fmt(NULL,s);
   exec_wait(pid); 
-  pid = exec_single_cmd_fmt(NULL, "viewsig");
+  pid = exec_single_cmd_fmt(NULL, "gv /tmp/pipo.eps");
+  exec_wait(pid);
+  pid = exec_single_cmd_fmt(NULL, "rm -f /tmp/pipo.eps");
   exec_wait(pid); 
 }
 

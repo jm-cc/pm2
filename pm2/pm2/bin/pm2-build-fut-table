@@ -73,7 +73,19 @@ echo "#define FUT_ENTRIES_IS_DEF" >> $deffile
 echo >> $deffile
 
 printfile=${GENDIR}/fut_print.h
-> $printfile
+#> $printfile
+cat > $printfile <<EOF
+{FUT_SETUP_CODE,	"fut_setup"},
+{FUT_KEYCHANGE_CODE,	"fut_keychange"},
+{FUT_RESET_CODE,	"fut_reset"},
+{FUT_CALIBRATE0_CODE,	"fut_calibrate0"},
+{FUT_CALIBRATE1_CODE,	"fut_calibrate1"},
+{FUT_CALIBRATE2_CODE,	"fut_calibrate2"},
+{FUT_SWITCH_TO_CODE,	"fut_switch_to"},
+{FUT_NEW_LWP_CODE,      "fut_new_lwp"},
+{FUT_MAIN_ENTRY_CODE,	"main_entry"},
+{FUT_MAIN_EXIT_CODE,	"main_exit"},
+EOF
 
 base=4096 # 0x1000
 value=0

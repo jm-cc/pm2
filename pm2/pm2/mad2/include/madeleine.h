@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.17  2000/06/05 15:37:41  vdanjean
+adaptation of debug messages
+
 Revision 1.16  2000/05/22 13:45:08  oaumage
 - ajout du support leonie_spawn
 
@@ -116,6 +119,7 @@ ______________________________________________________________________________
 #include <string.h>
 #include "tbx.h"
 #include "ntbx.h"
+#include "pm2debug.h"
 
 /* Protocol registration */
 #include "mad_registration.h"

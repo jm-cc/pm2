@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.8  2000/07/12 07:55:14  oaumage
+- Correction de la logique de localisation du fichier de configuration
+
 Revision 1.7  2000/06/18 13:23:33  oaumage
 - Correction de l'appel a mad_managers_init
 
@@ -75,9 +78,7 @@ ______________________________________________________________________________
 #include <malloc.h>
 #include <errno.h>
 #include <netdb.h>
-#ifdef PM2
 #include <sys/wait.h>
-#endif /* PM2 */
 
 /* #define DEBUG */
 /* #define TIMING */
@@ -248,7 +249,7 @@ mad_master_spawn(int                    *argc,
 
   if (argv[0][0] != '/')
     {
-      if (conf_spec)
+      if (!conf_spec)
 	{ 
 	  sprintf(cmd,
 		  "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
@@ -265,7 +266,7 @@ mad_master_spawn(int                    *argc,
     }
   else
     {
-      if (conf_spec)
+      if (!conf_spec)
 	{
 	  sprintf(cmd,
 		  "rsh %s %s -master -rank %d -conf %s %s",
@@ -347,7 +348,7 @@ mad_slave_spawn(int                *argc,
     {
       if (argv[0][0] != '/')
 	{
-	  if (conf_spec)
+	  if (!conf_spec)
 	    {
 	      sprintf(cmd,
 		      "rsh %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
@@ -373,7 +374,7 @@ mad_slave_spawn(int                *argc,
 	}
       else
 	{
-	  if (conf_spec)
+	  if (!conf_spec)
 	    {
 	      sprintf(cmd,
 		      "rsh %s %s -slave -cwd %s -rank %d -conf %s %s &",
@@ -495,27 +496,26 @@ mad_init(
   tbx_bool_t                 master          = tbx_false;
   tbx_bool_t                 slave           = tbx_false;
   char                       conf_file[128];
-  tbx_bool_t                 conf_spec = tbx_false;
+  tbx_bool_t                 conf_spec       = (configuration_file != NULL);
 
   mad_managers_init(argc, argv);
   LOG_IN(); /* After pm2debug_init ... */
-
-  if (!configuration_file)
-    {    
+  
+  if (!conf_spec)
+    {
       if (getenv("PM2_CONF_FILE"))
 	{
-	  configuration_file = conf_file;
-	  sprintf(conf_file, "%s", getenv("PM2_CONF_FILE"));
-	  conf_spec = tbx_true;
-	}
-    }  
-
+	 configuration_file = conf_file;
+	 sprintf(configuration_file, "%s", getenv("PM2_CONF_FILE"));
+       }  
+    }
+  
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
 
-  if (conf_spec)
+  if (configuration_file)
     {      
       mad_parse_command_line(argc,
 			     argv,
@@ -530,7 +530,7 @@ mad_init(
       mad_parse_command_line(argc,
 			     argv,
 			     madeleine,
-			     conf_file,
+			     configuration_file,
 			     &master,
 			     &slave);
     }

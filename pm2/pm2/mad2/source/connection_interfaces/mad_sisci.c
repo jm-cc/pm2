@@ -33,6 +33,12 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.22  2000/05/18 14:37:16  oaumage
+- changement du point de selection a 64
+
+Revision 1.21  2000/05/18 14:05:55  oaumage
+- Suppression des TBX_LOCK
+
 Revision 1.20  2000/03/27 11:26:41  oaumage
 - correction d'une faute de frappe
 
@@ -114,7 +120,7 @@ ______________________________________________________________________________
 /* #define MAD_SISCI_DMA */
 
 /* Optimized SHMem */
-#define MAD_SISCI_OPT_MAX  360
+#define MAD_SISCI_OPT_MAX  64
 /* #define MAD_SISCI_OPT_MAX  0 */
 /* #define MAD_SISCI_OPT_COPY */
 
@@ -1855,7 +1861,6 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
       while (!mad_sisci_test(write))
 	TBX_YIELD();
 
-      TBX_LOCK();
       SCIMemCopy(source,
 		 remote_segment->map,
 		 sizeof(mad_sisci_connection_status_t),
@@ -1863,7 +1868,6 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 		 0,
 		 &sisci_error);
       mad_sisci_control();
-      TBX_UNLOCK();
 
       if (mod_4)
 	{
@@ -1897,14 +1901,10 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 	  while (size & 63);
 	}
       
-      TBX_LOCK();
       mad_sisci_flush(remote_segment);
-      TBX_UNLOCK();
       mad_sisci_clear(write);
       mad_sisci_set(read);
-      TBX_LOCK();
       mad_sisci_flush(remote_segment);
-      TBX_UNLOCK();
 #ifndef MARCEL
       connection_specific->write_flag_flushed = tbx_true;
 #endif /* MARCEL */
@@ -1956,9 +1956,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
       mad_sisci_clear(read);
       mad_sisci_set(write);
 #ifdef MARCEL
-      TBX_LOCK();
       mad_sisci_flush(remote_segment);
-      TBX_UNLOCK();
 #else /* MARCEL */
       connection_specific->write_flag_flushed = tbx_false;
 #endif /* MARCEL */
@@ -2016,7 +2014,6 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 
 	  buffer->bytes_read += size;
 	  
-	  TBX_LOCK();
 	  SCIMemCopy(source,
 		     remote_segment->map,
 		     sizeof(mad_sisci_connection_status_t) + offset,
@@ -2024,7 +2021,6 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 		     0,
 		     &sisci_error);
 	  mad_sisci_control();
-	  TBX_UNLOCK();
 
 	  offset += aligned_size;
 	  source += aligned_size;
@@ -2047,16 +2043,11 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 		  offset += 4;
 		}	  
 
-	      TBX_LOCK();
 	      mad_sisci_flush(remote_segment);
-	      TBX_UNLOCK();
 
 	      mad_sisci_clear(write);
 	      mad_sisci_set(read);
-
-	      TBX_LOCK();
 	      mad_sisci_flush(remote_segment);
-	      TBX_UNLOCK();
 
 	      while (!mad_sisci_test(write))
 		TBX_YIELD();
@@ -2075,16 +2066,11 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 	  offset += 4;
 	}	  
 
-      TBX_LOCK();
       mad_sisci_flush(remote_segment);
-      TBX_UNLOCK();
 
       mad_sisci_clear(write);
       mad_sisci_set(read);
-
-      TBX_LOCK();
       mad_sisci_flush(remote_segment);
-      TBX_UNLOCK();
     }
 #ifndef MARCEL
   connection_specific->write_flag_flushed = tbx_true;
@@ -2166,9 +2152,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
 	    {
 	      mad_sisci_clear(read);
 	      mad_sisci_set(write);
-	      TBX_LOCK();
 	      mad_sisci_flush(remote_segment);
-	      TBX_UNLOCK();
 #ifndef MARCEL
 	      connection_specific->write_flag_flushed = tbx_true;
 #endif MARCEL
@@ -2185,9 +2169,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
       mad_sisci_clear(read);
       mad_sisci_set(write);
 #ifdef MARCEL
-      TBX_LOCK();
       mad_sisci_flush(remote_segment);
-      TBX_UNLOCK();
 #else
       connection_specific->write_flag_flushed = tbx_false;
 #endif /* MARCEL */
@@ -2508,14 +2490,12 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
     }
 
 #ifdef MAD_SISCI_OPT_COPY
-  TBX_LOCK();
   SCIMemCopy(base,
 	     remote_segment->map,
 	     0,
 	     (void *)data_remote_ptr - (void *)base,
 	     0,
 	     &sisci_error);
-  TBX_UNLOCK();
   mad_sisci_control();
 #endif /* MAD_SISCI_OPT_COPY */  
   

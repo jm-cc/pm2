@@ -324,7 +324,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		}
 		MA_THR_RESTARTED(MARCEL_SELF, "Start");
 		/* Drop preempt_count with ma_spin_unlock_softirq */
-		ma_schedule_tail();
+		ma_schedule_tail(MARCEL_SELF);
 		
 	} else {
 		ma_runqueue_t *rq;
@@ -335,7 +335,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// ne change rien ici...
 
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-			ma_schedule_tail();
+			ma_schedule_tail(MARCEL_SELF);
 			MA_THR_RESTARTED(cur, "Father Preemption");
 			LOG_OUT();
 			return 0;

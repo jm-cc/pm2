@@ -50,13 +50,11 @@ endif
 
 LIB_REP_TO_BUILD += $(LIB_GEN_INC)
 
-COMMON_DEPS += $(LIB_GEN_INC)/dsm_page_size.h
+COMMON_DEPS += $(LIB_GEN_INC)/dsm_page_size.h 
 
 clean: clean-bin
 
 include $(PM2_ROOT)/make/libs-rules.mak
-
-CURDIR=.
 
 $(LIB_GEN_INC)/dsm_page_size.h:	
 	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}
@@ -66,5 +64,8 @@ $(LIB_GEN_INC)/dsm_page_size.h:
 clean-bin:
 	$(COMMON_CLEAN) $(RM) $(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT) $(LIB_GEN_INC)/dsm_page_size.h
 
-$(PM2_MAK_DIR)/dsm-specific.mak: $(PM2_MAK_DIR)
-	@echo "LIB_GEN_INC:=`$(PM2_CONFIG) --includedir $(LIBRARY)`" >  $@
+$(PM2_MAK_DIR)/dsm-specific.mak: $(LIB_STAMP_FLAVOR)
+	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \
+	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
+	echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
+	fi;

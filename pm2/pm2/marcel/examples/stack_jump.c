@@ -27,15 +27,15 @@ any_t thread_func(any_t arg)
 
   printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
 
-  /* Allocation d'une pile annexe, *obligatoirement* de taille SLOT_SIZE.  */
+  /* Allocation d'une pile annexe, *obligatoirement* de taille THREAD_SLOT_SIZE.  */
   stack = marcel_slot_alloc();
-  printf("New stack goes from %p to %p\n", stack, stack + SLOT_SIZE - 1);
+  printf("New stack goes from %p to %p\n", stack, stack + THREAD_SLOT_SIZE - 1);
 
   /* Préparation de la nouvelle pile pour accueillir le thread */
   marcel_prepare_stack_jump(stack);
 
   /* basculement sur la pile annexe */
-  set_sp(stack + SLOT_SIZE - 1024);
+  set_sp(stack + THREAD_SLOT_SIZE - 1024);
 
   printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
 

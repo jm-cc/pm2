@@ -162,38 +162,25 @@ $(MOD_FUT): $(MOD_GEN_CPP)/%.fut: $(MOD_GEN_CPP)/%.i
 
 # Fichiers *.h découpés
 #---------------------------------------------------------------------
-gen_inline_h: $(MOD_HSPLITS_GEN)
-	$(error stop)
+ifneq ($(strip $(MOD_HSPLITS_SOURCES)),)
+dot_h: $(MOD_HSPLITS_MAKEFILE)
+endif
 
-vpath %.h $(MOD_HSPLITS_DIRS)
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
+ifneq ($(wildcard $(MOD_HSPLITS_MAKEFILE)),)
+include $(MOD_HSPLITS_MAKEFILE)
+endif # MOD_HSPLITS_MAKEFILE
+endif # $(MAKECMDGOALS)
 
-$(MOD_HSPLITS_DEFINES_GEN): $(MOD_GEN_INC)/%_defines.h: %.h
+$(MOD_HSPLITS_MAKEFILE): $(add-prefix $(MOD_HSPLITS_DIR),$(MOD_HSPLITS_SOURCES))
 	$(COMMON_BUILD)
-	$(COMMON_HIDE) mkdir -p `dirname $@`
 	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
-		--section 'def.*' --symbole-suffix '_DEFINES' $^ >$@
-$(MOD_HSPLITS_TYPES_GEN): $(MOD_GEN_INC)/%_types.h: %.h
-	$(COMMON_BUILD)
-	$(COMMON_HIDE) mkdir -p `dirname $@`
-	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
-		--section 'type.*' --symbole-suffix '_TYPES' $^ >$@
-$(MOD_HSPLITS_DECLS_GEN): $(MOD_GEN_INC)/%_decls.h: %.h
-	$(COMMON_BUILD)
-	$(COMMON_HIDE) mkdir -p `dirname $@`
-	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
-		--section 'decl.*' --symbole-suffix '_DECLS' $^ >$@
-$(MOD_HSPLITS_INLINES_GEN): $(MOD_GEN_INC)/%_inlines.h: %.h
-	$(COMMON_BUILD)
-	$(COMMON_HIDE) mkdir -p `dirname $@`
-	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
-		--section 'in.*' --symbole-suffix '_INLINES' $^ >$@
-$(MOD_HSPLITS_MAIN_GEN): $(MOD_GEN_INC)/%.h: %.h
-	$(COMMON_BUILD)
-	$(COMMON_HIDE) mkdir -p `dirname $@`
-	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file --master --nofile \
-		--no-common-section --source $*.h --symbole-nosuffix \
-		$(foreach s, defines types decls inlines, --section $(s)) \
-		$^ >$@
+		--makefile $@ \
+		--srcdir $(MOD_HSPLITS_DIR) \
+		--gendir $(MOD_GEN_INC) \
+		--masterfile $(MODULE)-master.h \
+		$(MOD_HSPLITS_SOURCES)
+
 # Lex
 #---------------------------------------------------------------------
 $(MOD_GEN_C_L_SOURCES): $(MOD_GEN_SRC)/%$(MOD_EXT).c: %.l

@@ -19,7 +19,7 @@ clean:
 	-./cleanlogs
 
 $(EXEFILES): %: %.c
-	@echo "Compiling $<... for flavor '$(FLAVOR)'"
+	@echo "Compiling $< for flavor '$(FLAVOR)'..."
 	@$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
 
 $(CPPFILES): %.C: %.c

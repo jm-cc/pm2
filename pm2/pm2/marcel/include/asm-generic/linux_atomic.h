@@ -15,6 +15,7 @@
  */
 
 #section common
+#depend "asm/marcel_compareexchange.h[]"
 #depend "asm/linux_spinlock.h[]"
 
 /*
@@ -28,10 +29,14 @@
  * on us. We need to use _exactly_ the address the user gave us,
  * not some alias that contains the same information.
  */
+#ifdef MA_HAVE_COMPAREEXCHANGE
 typedef struct { volatile int counter; } ma_atomic_t;
+#else
+typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
+#endif
 
 #section marcel_macros
-#define MA_ATOMIC_INIT(i)	{ (i) }
+#define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
 
 /**
  * ma_atomic_read - read atomic variable
@@ -52,7 +57,7 @@ typedef struct { volatile int counter; } ma_atomic_t;
  */ 
 #define ma_atomic_set(v,i)		(((v)->counter) = (i))
 
-#depend "asm/marcel_compareexchange.h[]"
+#ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_ATOMIC_ADD_RETURN(test) \
 	int old, new, ret; \
 	old = ma_atomic_read(v); \
@@ -62,7 +67,16 @@ typedef struct { volatile int counter; } ma_atomic_t;
 		if (tbx_likely(ret == old)) \
 			return test; \
 		old = ret; \
-	} \
+	}
+#else
+#define MA_ATOMIC_ADD_RETURN(test) \
+	int old, new, ret; \
+	ma_spin_lock_softirq(&v->lock); \
+	old = ma_atomic_read(v); \
+	ma_atomic_set(v, old + i); \
+	ma_spin_unlock_softirq(&v->lock); \
+	return test;
+#endif
 
 #section marcel_functions
 /**

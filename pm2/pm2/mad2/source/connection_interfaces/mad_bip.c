@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_bip.c,v $
+Revision 1.11  2000/08/31 12:16:10  rnamyst
+Obscure feature: added support for BASIC_POLL in the bip driver.
+
 Revision 1.10  2000/08/29 13:27:10  rnamyst
 Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
 
@@ -339,7 +342,7 @@ static __inline__ void ack_received(p_mad_bip_channel_specific_t p,
 
 static void bip_sync_send(int host, int tag, int *message, int size)
 {
-#ifdef MARCEL
+#ifdef MARCEL // ok if BASIC_POLL is defined
 
   int request ;
   int status ;
@@ -394,7 +397,7 @@ static int bip_recv_post(int tag, int *message, int size)
 
 static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
 {
-#ifdef MARCEL
+#if defined(MARCEL) && !defined(BASIC_POLL)
 
   int tmphost, status;
   static which = 0;
@@ -464,7 +467,17 @@ static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
   LOG_OUT();
   return -1;
 
-#else // else ifndef MARCEL
+#elif defined(BASIC_POLL)
+
+  int status;
+
+  bip_lock();
+  status = bip_rtestx(request, host);
+  bip_unlock();
+
+  return status;
+
+#else // else ifndef BASIC_POLL nor MARCEL
 
   LOG_IN();
   return bip_rtestx(request, host);
@@ -570,9 +583,11 @@ static __inline__ void wait_ack(p_mad_bip_channel_specific_t p, int host_id)
 #else
   {
     ack_message_t msg;
+    int remote;
 
-    bip_trecv(p->communicator+MAD_BIP_REPLY_TAG,
-	      (int*)&msg, sizeof(msg)/sizeof(int));
+    bip_sync_recv(p->communicator+MAD_BIP_REPLY_TAG,
+		  (int*)&msg, sizeof(msg)/sizeof(int), &remote);
+
     p->credits_disponibles[host_id] += msg.credits;
   }
 #endif
@@ -620,16 +635,16 @@ static void wait_credits(p_mad_bip_channel_specific_t p, int host_id)
   marcel_mutex_unlock(&p->mutex);
 
 #else
- while (p->credits_disponibles [host_id] == 0)
-   {
-     int remote ;
-     cred_message_t msg;
+  while (p->credits_disponibles [host_id] == 0) {
+    int remote ;
+    cred_message_t msg;
 
-     bip_trecvx(MAD_BIP_FLOW_CONTROL_TAG, (int *)&msg,
-		sizeof(msg)/sizeof(int), &remote) ;
-     p->credits_disponibles [remote] += msg.credits ;
-   }
- p->credits_disponibles [host_id] -- ;
+    bip_sync_recv(MAD_BIP_FLOW_CONTROL_TAG, (int *)&msg,
+		  sizeof(msg)/sizeof(int), &remote);
+
+    p->credits_disponibles [remote] += msg.credits;
+  }
+  p->credits_disponibles[host_id]--;
 #endif
 
  LOG_OUT();
@@ -669,7 +684,7 @@ static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
 
   p->credits_a_rendre[host_id]++;
 
-  if ((p->credits_a_rendre[host_id]) == (BIP_MAX_CREDITS-1)) {
+  if((p->credits_a_rendre[host_id]) == (BIP_MAX_CREDITS-1)) {
 
     msg.credits = p->credits_a_rendre[host_id];
     p->credits_a_rendre[host_id] = 0 ;
@@ -687,14 +702,13 @@ static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
 #else
 
   p->credits_a_rendre [host_id] ++ ;
-  if ((p->credits_a_rendre [host_id]) == (BIP_MAX_CREDITS-1))
-    {
+  if((p->credits_a_rendre [host_id]) == (BIP_MAX_CREDITS-1)) {
       msg.credits = p->credits_a_rendre [host_id];
       p->credits_a_rendre [host_id] = 0 ;
 
-      bip_tsend (host_id, MAD_BIP_FLOW_CONTROL_TAG,
-		 (int *) &msg, sizeof(msg)/sizeof(int)) ;
-    }
+      bip_sync_send(host_id, MAD_BIP_FLOW_CONTROL_TAG,
+		    (int *)&msg, sizeof(msg)/sizeof(int));
+  }
 
 #endif
 

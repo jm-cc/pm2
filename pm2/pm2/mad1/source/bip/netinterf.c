@@ -43,18 +43,11 @@
 
 #include <bip.h>
 #include "sys/netinterf.h"
-
 #include "mad_timing.h"
 
-#ifdef PM2
+#include "tbx.h"
 
-#include "marcel.h"
-
-#else
-
-#include "safe_malloc.h"
-#define tfree      FREE
-#define tmalloc    MALLOC
+#ifndef MARCEL
 #define lock_task()
 #define unlock_task()
 #endif
@@ -388,7 +381,7 @@ void mad_bip_network_receive (char **head)
                      ) ;
 
     first_vec_len = ((int *) small_iov_base) [BIPSMALLSIZE-1] ;
-    large_iov_base = tmalloc (first_vec_len*sizeof(int)) ;
+    large_iov_base = TBX_MALLOC (first_vec_len*sizeof(int)) ;
     memcpy (large_iov_base, small_iov_base, (BIPSMALLSIZE-1)*sizeof(int)) ;
 
     receive_from_network (
@@ -399,7 +392,7 @@ void mad_bip_network_receive (char **head)
                          ) ;
     /* TODO: Free large_iov_base at the beginning of receive_data
     (*func) (large_iov_base, first_vec_len*sizeof(int)) ;
-    tfree (large_iov_base) ;
+    TBX_FREE (large_iov_base) ;
     */
     *head = (char *)large_iov_base;
     }

@@ -40,13 +40,15 @@
 #define EXIT()
 #endif
 
-void dsmlib_rf_ask_for_read_copy(unsigned long index)
+void dsmlib_rf_ask_for_read_copy(dsm_page_index_t index)
 {
+   dsm_lock_page(index);
 
   ENTER();
 
   if (dsm_get_access(index) >= READ_ACCESS)
     {
+      dsm_unlock_page(index);
       return;
     }
 
@@ -65,15 +67,15 @@ void dsmlib_rf_ask_for_read_copy(unsigned long index)
 #ifdef DSM_COMM_TRACE
   tfprintf(stderr, "RF: I got page %d (I am %p) \n", index, marcel_self());
 #endif
+  dsm_unlock_page(index);
   EXIT();
 }
 
-void dsmlib_migrate_thread(unsigned long index)
+void dsmlib_migrate_thread(dsm_page_index_t index)
 {
 
   ENTER();
 
-  dsm_unlock_page(index); 
   pm2_enable_migration();
   pm2_freeze();
 #ifdef DSM_PROT_TRACE
@@ -84,14 +86,18 @@ void dsmlib_migrate_thread(unsigned long index)
   EXIT();
 }
 
-void dsmlib_wf_ask_for_write_access(unsigned long index)
+void dsmlib_wf_ask_for_write_access(dsm_page_index_t index)
 {
+   dsm_lock_page(index);
 #ifdef DSM_PROT_TRACE
   tfprintf(stderr, "call to dsm_ask_for_write(%d)\n", index);
 #endif
 
   if (dsm_get_access(index) == WRITE_ACCESS)
+  {
+      dsm_unlock_page(index);
       return;
+  }
   ENTER();
 
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
@@ -99,7 +105,7 @@ void dsmlib_wf_ask_for_write_access(unsigned long index)
 #ifdef DSM_PROT_TRACE
   tfprintf(stderr, "Write handler for page %d started : a = %d(I am %p)\n", index,((atomic_t *)dsm_get_page_addr(index))->counter, marcel_self());
 #endif
-      dsm_invalidate_copyset(index, dsm_self());
+      dsmlib_is_invalidate_internal(index, dsm_self(), dsm_self());
       dsm_set_access(index, WRITE_ACCESS);
 #ifdef DSM_PROT_TRACE
   tfprintf(stderr, "Write handler for page %d ended : a = %d(I am %p)\n", index,((atomic_t *)dsm_get_page_addr(index))->counter, marcel_self());
@@ -124,18 +130,18 @@ void dsmlib_wf_ask_for_write_access(unsigned long index)
       tfprintf(stderr, "WF: I got page %d (I am %p)\n", index, marcel_self());
 #endif
     }
+  dsm_unlock_page(index);
   EXIT();
 }
 
 
-void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int tag)
+void dsmlib_rs_send_read_copy(dsm_page_index_t index, dsm_node_t req_node, int tag)
 {
-
 #ifdef DSM_PROT_TRACE
   fprintf(stderr, "entering the read server(%ld), access = %d\n", index, dsm_get_access(index));
 #endif
 
-//  dsm_lock_page(index);
+  dsm_lock_page(index);
 
   if (!dsm_next_owner_is_set(index))
     {
@@ -183,26 +189,26 @@ else
       dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, tag);
     }
   
-//  dsm_unlock_page(index);
+  dsm_unlock_page(index);
 
   EXIT();
 }
 
 
-void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_node, int tag)
+void dsmlib_ws_send_page_for_write_access(dsm_page_index_t index, dsm_node_t req_node, int tag)
 {
 
 #ifdef DSM_PROT_TRACE
   fprintf(stderr, "entering the write server(%ld), req_node = %d\n", index, req_node);
 #endif
-//  dsm_lock_page(index);
+  dsm_lock_page(index);
 
      if (dsm_next_owner_is_set(index))
        {
 	 if(dsm_get_next_owner(index) == req_node)
 	   {
 	     if (dsm_get_access(index) == READ_ACCESS)//20/10/99
-	         dsm_invalidate_copyset(index, req_node);
+	         dsmlib_is_invalidate_internal(index, dsm_self(), req_node);
 //            if (dsm_get_access(index) != WRITE_ACCESS)
 //      	dsm_set_access(index, WRITE_ACCESS);
       dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
@@ -223,7 +229,7 @@ void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_no
        if (dsm_get_prob_owner(index) == dsm_self())
 	 {
 	     if (dsm_get_access(index) == READ_ACCESS)//20/10/99
-	         dsm_invalidate_copyset(index, req_node);
+	         dsmlib_is_invalidate_internal(index, dsm_self(), req_node);
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
       dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
@@ -250,12 +256,19 @@ void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_no
 	   dsm_set_prob_owner(index, req_node); // req_node will soon be owner
 	 }
 
-//  dsm_unlock_page(index);
+  dsm_unlock_page(index);
   EXIT();
 }
 
 
-void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner)
+void dsmlib_is_invalidate(dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner)
+{
+  dsm_lock_page(index);
+  dsmlib_is_invalidate_internal(index, req_node, new_owner);
+  dsm_unlock_page(index);
+}
+
+void dsmlib_is_invalidate_internal(dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner)
 {
   int i, copyset_size = dsm_get_copyset_size(index);
 
@@ -306,7 +319,7 @@ void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t n
 
 void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node, int tag)
 {
-     unsigned long index = dsm_page_index(addr);
+     dsm_page_index_t index = dsm_page_index(addr);
      dsm_node_t node;
 
      dsm_lock_page(index); 
@@ -330,7 +343,7 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 #ifdef DSM_PROT_TRACE
 	     tfprintf(stderr,"invalidating copyset\n");
 #endif
-	     dsm_invalidate_copyset(index, dsm_self());
+	     dsmlib_is_invalidate_internal(index, dsm_self(), dsm_self());
 #ifdef DSM_PROT_TRACE
 	     tfprintf(stderr,"invalidated copyset\n");
 #endif

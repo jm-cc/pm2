@@ -41,95 +41,44 @@
 #ifndef __MAD_VIA_H
 #define __MAD_VIA_H
 
-#include <vipl.h> /* for the M-VIA implementation only */
+void mad_via_register(p_mad_driver_t driver);
+void mad_via_driver_init(p_mad_driver_t driver);
+void mad_via_adapter_init(p_mad_adapter_t adapter);
+void mad_via_adapter_configuration_init(p_mad_adapter_t adapter);
+void mad_via_channel_init(p_mad_channel_t);
+void mad_via_before_open_channel(p_mad_channel_t);
+void mad_via_connection_init(p_mad_connection_t,
+			       p_mad_connection_t);
+void mad_via_link_init(p_mad_link_t);
+void mad_via_accept(p_mad_channel_t);
+void mad_via_connect(p_mad_connection_t);
+void mad_via_after_open_channel(p_mad_channel_t);
+void mad_via_before_close_channel(p_mad_channel_t);
+void mad_via_disconnect(p_mad_connection_t);
+void mad_via_after_close_channel(p_mad_channel_t);
+void mad_via_link_exit(p_mad_link_t);
+void mad_via_connection_exit(p_mad_connection_t,
+			     p_mad_connection_t);
+void mad_via_channel_exit(p_mad_channel_t);
+void mad_via_adapter_exit(p_mad_adapter_t);
+void mad_via_driver_exit(p_mad_driver_t);
+p_mad_link_t mad_via_choice(p_mad_connection_t,
+			      size_t,
+			      mad_send_mode_t,
+			      mad_receive_mode_t);
 
-/* Protocol module registering */
-p_mad_protocol_settings_t
-mad_via_register();
-
-/* Protocol module initialization */
-void
-mad_via_main_init(p_mad_madeleine_t madeleine);
-
-/* Adapter module initialization */
-void
-mad_via_master_init_local(p_mad_adapter_t adapter);
-
-void
-mad_via_master_init_remote(p_mad_adapter_t adapter);
-
-void
-mad_via_slave_init_local(p_mad_adapter_t adapter);
-
-void
-mad_via_slave_init_remote(p_mad_adapter_t adapter);
-/* Channel opening */
-void
-mad_via_begin_open_channel(p_mad_channel_t channel);
-
-p_mad_connection_t
-mad_via_open_input_connection(p_mad_channel_t   channel,
-			      p_mad_host_id_t   remote_host_id);
-
-p_mad_connection_t
-mad_via_open_output_connection(p_mad_channel_t   channel,
-			       mad_host_id_t     remote_host_id);
-
-void
-mad_via_init_communication(p_mad_communication_t communication);
-
-void
-mad_via_end_open_channel(p_mad_channel_t channel);
-
-/* Channel closing */
-void
-mad_via_begin_close_channel(p_mad_channel_t channel);
-
-void
-mad_via_close_input_connection(p_mad_connection_t connnection);
-
-void
-mad_via_close_output_connection(p_mad_connection_t connection);
-
-void
-mad_via_end_close_channel(p_mad_channel_t channel);
-
-/* Link selection */
-mad_link_id_t
-mad_via_choice(size_t               buffer_length,
-	       mad_send_mode_t      send_mode,
-	       mad_receive_mode_t   receive_mode);
-
-/* Communication initialization */
-void
-mad_via_init_send_communication(p_mad_connection_t connection);
-
-mad_host_id_t
-mad_via_accept_receive_communication(p_mad_channel_t channel);
-
-/* Static buffers (credits) */
-p_mad_buffer_t
-mad_via_get_static_buffer(p_mad_link_t link);
-
-void
-mad_via_return_static_buffer(p_mad_link_t     link,
-			     p_mad_buffer_t   buffer);
-
-/* Data transfer interface */
-void
-mad_via_send_buffer(p_mad_link_t     link,
-		    p_mad_buffer_t   buffer);
-  
-void
-mad_via_receive_buffer(p_mad_link_t     link,
-		       p_mad_buffer_t  *buffer);
-
-void
-mad_via_send_buffer_group(p_mad_link_t           link,
-			  p_mad_buffer_group_t   buffer_group);
-
-void
-mad_via_receive_sub_buffer_group(p_mad_link_t           link,
-				 mad_bool_t             first_sub_buffer_group,
-				 p_mad_buffer_group_t   buffer_group);
+void mad_via_new_message(p_mad_connection_t);
+p_mad_connection_t mad_via_receive_message(p_mad_channel_t);
+void mad_via_send_buffer(p_mad_link_t,
+			   p_mad_buffer_t);
+void mad_via_receive_buffer(p_mad_link_t,
+			      p_mad_buffer_t *);
+void mad_via_send_buffer_group(p_mad_link_t,
+				 p_mad_buffer_group_t);
+void mad_via_receive_sub_buffer_group(p_mad_link_t,
+					mad_bool_t,
+					p_mad_buffer_group_t);
+p_mad_buffer_t mad_via_get_static_buffer(p_mad_link_t);
+void mad_via_return_static_buffer(p_mad_link_t,
+				    p_mad_buffer_t);
 #endif /* __MAD_VIA_H */

@@ -11,28 +11,8 @@
 #define TIME_SLICE_LIST_NULL (time_slice_list) NULL
 #define EVNUM_SLICE_LIST_NULL (evnum_slice_list) NULL
 #define GENERAL_SLICE_LIST_NULL (general_slice_list) NULL
-
-typedef struct {
-  u_64 begin;
-  u_64 end;
-} time_slice;
-
-typedef struct {
-  unsigned int begin;
-  unsigned int end;
-} evnum_slice;
-
-typedef struct {
-  mode begin_type;
-  int begin;
-  int begin_param_active;
-  char begin_param;
-  mode end_type;
-  int end;
-  char end_param_active;
-  int end_param;
-} general_slice;
-
+#define LWP_THREAD_LIST_NULL (lwp_thread_list) NULL
+#define THREAD_FUN_LIST_NULL (thread_fun_list) NULL
 
 typedef struct thread_list_st {
   int thread;
@@ -56,34 +36,61 @@ typedef struct event_list_st {
 } * event_list;
 
 typedef struct time_slice_list_st {
-  time_slice t;
+  u_64 begin;
+  u_64 end;
   struct time_slice_list_st *next;
 } * time_slice_list;
 
 typedef struct evnum_slice_list_st {
-  evnum_slice t;
+  unsigned int begin;
+  unsigned int end;
   struct evnum_slice_list_st *next;
 } * evnum_slice_list;
 
 typedef struct general_slice_list_st {
-  general_slice t;
+  mode begin_type;
+  int begin;
+  int begin_param_active;
+  char begin_param;
+  mode end_type;
+  int end;
+  char end_param_active;
+  int end_param;
   struct general_slice_list_st *next;
 } * general_slice_list;
 
+typedef struct thread_fun_list_st {
+  int thread;
+  int number;
+  struct thread_fun_list_st *next;
+} * thread_fun_list;
+
+typedef struct lwp_thread_list_st {
+  int lwp;
+  int thread;
+  int active;
+  int active_thread;
+  struct lwp_thread_list_st *next;
+} * lwp_thread_list;
+
 typedef struct {
   thread_list thread;
+  int active_thread;
   proc_list proc;
+  int active_proc;
   cpu_list cpu;
+  lwp_thread_list lwp_thread;
   event_list event;
   time_slice_list time;
   int active_time;
   evnum_slice_list evnum_slice;
   int active_evnum_slice;
   general_slice_list function;
-  thread_list thread_fun;
+  thread_fun_list thread_fun;
+  int active_thread_fun;
   general_slice_list gen_slice;
   int active_gen_slice;
-  int active;  // Inutile ??     
+  int active;
 } filter;
 
 extern void init_filter();

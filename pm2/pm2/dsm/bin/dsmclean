@@ -49,14 +49,18 @@ do
 	# librairies 
 	for f in `ls ${DSM_ROOT}/lib/$i`
 	do
+	    if [ ! -d ${DSM_ROOT}/lib/$i/$f ] ; then
 		echo "	deleting ${DSM_ROOT}/lib/$i/$f"
 		rm ${DSM_ROOT}/lib/$i/$f
+	    fi
 	done
 	# objets "source"
 	for f in `ls ${DSM_ROOT}/source/obj/$i`
 	do
+	    if [ ! -d ${DSM_ROOT}/source/obj/$i/$f ] ; then
 		echo "	deleting ${DSM_ROOT}/source/obj/$i/$f"
 		rm ${DSM_ROOT}/source/obj/$i/$f
+	    fi
 	done
 done
 # special

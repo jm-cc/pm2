@@ -23,7 +23,7 @@
  its documentation for any purpose and without fee is hereby granted
  provided that the above copyright notice appear in all copies and
  that both the copyright notice and this permission notice appear in
- suppong documentation.
+ supporting documentation.
 
  Neither the institutions (Ecole Normale Superieure de Lyon,
  Laboratoire de L'informatique du Parallelisme, Universite des
@@ -34,521 +34,924 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
-Revision 1.13  2000/12/11 08:31:15  oaumage
-- support Leonie
-
-Revision 1.12  2000/06/09 12:40:37  oaumage
-- Progression du code
-
-Revision 1.11  2000/06/09 08:45:59  oaumage
-- Progression du code
-
-Revision 1.10  2000/06/05 11:37:11  oaumage
-- Progression du code
-
-Revision 1.9  2000/05/31 14:17:19  oaumage
-- Leonie
-
-Revision 1.8  2000/05/23 15:33:14  oaumage
-- extension de la partie analyse de la configuration
-
-Revision 1.7  2000/05/18 11:34:18  oaumage
-- remplacement des types `tableau' par des types `structure de tableau'
-  par securite
-
-Revision 1.6  2000/05/17 12:41:00  oaumage
-- reorganisation du code de demarrage de Leonie
-
-Revision 1.5  2000/05/15 13:51:56  oaumage
-- Reorganisation des sources de Leonie
+Revision 1.14  2001/01/29 16:59:33  oaumage
+- transmission des donnees de configuration
 
 
 ______________________________________________________________________________
 */
 
 /*
- * Leonie.c
+ * leonie.c
  * ========
  */ 
-/* #define DEBUG */
-/* #define TRACING */
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
-#include "leoparse.h"
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "leonie.h"
 
 /*
- * Constants and Macros
- * --------------------
+ * Data Structures
+ * ===============
  */
-#define MAX_FILENAME_SIZE 1024
-#define MAX_ARG_STR_LEN   1024
-#define MAX_ARG_LEN        256
+typedef struct s_args
+{
+  int    argc;
+  char **argv;
+} args_t, *p_args_t;
+
+typedef struct s_node
+{
+  pid_t            pid;
+  char            *host;
+  p_ntbx_client_t  client;
+  p_tbx_htable_t   networks;
+  p_tbx_slist_t    network_slist;
+  p_tbx_htable_t   channels;
+  p_tbx_slist_t    channel_slist;
+} node_t, *p_node_t;
+
+typedef struct s_device
+{
+  char          *name;
+  p_tbx_slist_t  nodes;
+} device_t, *p_device_t;
 
 /*
- * Static Variables
- * ----------------
+ * Static variables
+ * ================
  */
-static p_leonie_t main_leonie = NULL;
+
+/*
+ * PM2 scripts
+ * -----------
+ */
+static const char *pm2_env                = "env";
+static const char *leo_pm2load            = "leo-pm2load";
+static const char *pm2_load_flavor_option = "-f";
+static const char *pm2_rsh                = NULL;
+
+/*
+ * Usage
+ * -----
+ */
+static const char *usage_str = "leonie <net_conf_file> <app_conf_file>";
+
+/*
+ * Launched nodes
+ * --------------
+ */
+static p_tbx_htable_t nodes      = NULL;
+static p_tbx_slist_t  node_slist = NULL;
+
+/*
+ * Topology
+ * --------
+ */
+static p_tbx_htable_t networks      = NULL;
+static p_tbx_slist_t  network_slist = NULL;
+static p_tbx_htable_t devices       = NULL;
+static p_tbx_slist_t  device_slist  = NULL;
+static p_tbx_htable_t channels      = NULL;
+static p_tbx_slist_t  channel_slist = NULL;
+
+/*
+ * Net server
+ * ----------
+ */
+static p_ntbx_server_t net_server = NULL;
+
+/*
+ * Application information
+ * -----------------------
+ */
+static char           *application_name     = NULL;
+static char           *application_flavor   = NULL;
+static p_tbx_htable_t  application_networks = NULL;
+static p_tbx_slist_t   include_slist        = NULL;
+
 
 /*
  * Functions
- * ==========================================================================
+ * =========
  */
-/*
-p_leonie_t leo_init()
-{
-  p_leonie_t leonie = NULL;
-  
-  LOG_IN();
-  leonie = TBX_MALLOC(sizeof(leonie_t));
-  CTRL_ALLOC(leonie);
-
-  leonie->cluster_counter = 0;
-  
-  tbx_list_init(&leonie->swann_modules);
-
-  LOG_OUT();
-  return leonie;
-}
-*/
-/*
- * List building
- * -------------
- */
-/*
+static
 void
-leo_build_cluster_host_model_list(p_leo_cluster_definition_t cluster,
-				  p_leo_clu_cluster_file_t   cluster_file)
+usage(void)
 {
-  tbx_list_reference_t ref;
-
-  LOG_IN();
-  tbx_list_reference_init(&ref, cluster_file->host_model_list);
-
-  do
-    {
-      p_leo_clu_host_model_t n_host_model = NULL;
-      p_leo_clu_host_model_t host_model   =
-	tbx_get_list_reference_object(&ref);
-
-      n_host_model = malloc(sizeof(leo_clu_host_model_t));
-      CTRL_ALLOC(n_host_model);
-
-      *n_host_model = *host_model;
-
-      tbx_slist_append_tail(cluster->host_model_list, n_host_model);
-    }
-  while(tbx_forward_list_reference(&ref));
-  LOG_OUT();
+  fprintf(stderr, "Usage: %s\n", usage_str);
+  exit(EXIT_FAILURE);
 }
-*/
-/*
+
+static
 void
-leo_build_cluster_host_list(p_leo_cluster_definition_t cluster,
-			    p_leo_clu_cluster_file_t   cluster_file)
+terminate(char *msg)
 {
-  tbx_list_reference_t ref;
-
-  LOG_IN();
-  tbx_list_reference_init(&ref, cluster_file->cluster->hosts);
-
-  do
-    {
-      p_leo_clu_host_name_t n_host_name = NULL;
-      p_leo_clu_host_name_t host_name   =
-	tbx_get_list_reference_object(&ref);
-
-      n_host_name = malloc(sizeof(leo_clu_host_name_t));
-      CTRL_ALLOC(n_host_name);
-
-      *n_host_name = *host_name;
-
-      tbx_slist_append_tail(cluster->host_list, n_host_name);
-    }
-  while(tbx_forward_list_reference(&ref));
-  LOG_OUT();
+  fprintf(stderr, "error: %s\n", msg);
+  exit(EXIT_FAILURE);
 }
-*/
-/*
-p_leo_cluster_definition_t
-leo_build_cluster_definition(p_leo_clu_cluster_file_t cluster_file)
-{
 
-  p_leo_cluster_definition_t cluster = NULL;
-
-  LOG_IN();
-  cluster = malloc(sizeof(leo_cluster_definition_t));
-  CTRL_ALLOC(cluster);
-
-  cluster->id = malloc(strlen(cluster_file->cluster->id) + 1);
-  CTRL_ALLOC(cluster->id);
-  strcpy(cluster->id, cluster_file->cluster->id);
-
-  cluster->host_model_list = malloc(sizeof(tbx_slist_t));
-  CTRL_ALLOC(cluster->host_model_list);
-  tbx_slist_init(cluster->host_model_list);
-      
-  cluster->host_list = malloc(sizeof(tbx_slist_t));
-  CTRL_ALLOC(cluster->host_list);
-  tbx_slist_init(cluster->host_list);
-      
-  leo_build_cluster_host_model_list(cluster, cluster_file);
-  leo_build_cluster_host_list(cluster, cluster_file);
-
-  cluster->mad_module   = NULL;
-  cluster->swann_module = NULL;
-
-  LOG_OUT();
-  return cluster;
-}
-*/
-
-/*---*/
-/*
+static
 void
-leo_build_host_list(p_leo_app_cluster_t app_cluster,
-		    p_tbx_slist_t       host_list)
+error(char *command)
 {
-  tbx_list_reference_t h_ref;
-
-  LOG_IN();
-  tbx_list_reference_init(&h_ref, app_cluster->hosts);
-
-  do
-    {
-      char *host      = tbx_get_list_reference_object(&h_ref);
-      char *host_name = NULL;
-
-      host_name = malloc(strlen(host) + 1);
-      CTRL_ALLOC(host_name);
-      strcpy(host_name, host);
-
-      tbx_slist_append_tail(host_list, host_name);
-    }
-  while(tbx_forward_list_reference(&h_ref));
-  LOG_OUT();
+  perror(command);
+  exit(EXIT_FAILURE);
 }
-*/
-/*
+
+static
 void
-leo_build_channel_list(p_leo_app_cluster_t app_cluster,
-		       p_tbx_slist_t       channel_list)
+process_include_file(p_tbx_htable_t net_inc)
 {
-  tbx_list_reference_t c_ref;
+  p_tbx_slist_t inc_network_slist = NULL;
 
   LOG_IN();
-  tbx_list_reference_init(&c_ref, app_cluster->channels);
-
-  do
+  inc_network_slist = leoparse_read_slist(net_inc, "networks");
+  if (inc_network_slist && !tbx_slist_is_nil(inc_network_slist))
     {
-      p_leo_app_channel_t channel   =
-	tbx_get_list_reference_object(&c_ref);
-      p_leo_app_channel_t n_channel = NULL;
+      tbx_slist_merge_after(network_slist, inc_network_slist);
 
-      n_channel = malloc(sizeof(leo_app_channel_t));
-      CTRL_ALLOC(n_channel);
-      *n_channel = *channel;
-
-      tbx_slist_append_tail(channel_list, n_channel);
-    }
-  while(tbx_forward_list_reference(&c_ref));
-  LOG_OUT();
-}
-*/
-/*
-void
-leo_build_application_cluster_list(p_leo_app_application_t  application,
-				   p_tbx_slist_t application_cluster_list)
-{
-  tbx_list_reference_t ref;
-
-  LOG_IN();
-  tbx_list_reference_init(&ref, application->cluster_list);
-
-  do
-    {
-      p_leo_app_cluster_t         app_cluster =
-	tbx_get_list_reference_object(&ref);
-      p_leo_application_cluster_t cluster     = NULL;
-
-      cluster = malloc(sizeof(leo_application_cluster_t));
-      CTRL_ALLOC(cluster);
-
-      cluster->id = malloc(strlen(app_cluster->id) + 1);
-      CTRL_ALLOC(cluster->id);
-      strcpy(cluster->id, app_cluster->id);
-      LOG_STR("app_clu id", app_cluster->id);
-      LOG_STR("cluster id", cluster->id);
-
-      cluster->executable = malloc(strlen(app_cluster->executable) + 1);
-      CTRL_ALLOC(cluster->executable);
-      strcpy(cluster->executable, app_cluster->executable);
-      LOG_STR("cluster exec", cluster->executable);
-
-      cluster->path = malloc(strlen(app_cluster->path) + 1);
-      CTRL_ALLOC(cluster->path);
-      strcpy(cluster->path, app_cluster->path);
-      LOG_STR("cluster path", cluster->path);
-
-      cluster->host_list = malloc(sizeof(tbx_slist_t));
-      CTRL_ALLOC(cluster->host_list);
-      tbx_slist_init(cluster->host_list);
-
-      cluster->channel_list = malloc(sizeof(tbx_slist_t));
-      CTRL_ALLOC(cluster->channel_list);
-      tbx_slist_init(cluster->channel_list);
-	
-      leo_build_host_list(app_cluster, cluster->host_list);
-      leo_build_channel_list(app_cluster, cluster->channel_list);
-      
-      LOG_STR("cluster id", cluster->id);
-      tbx_slist_append_tail(application_cluster_list, cluster);
-    }
-  while (tbx_forward_list_reference(&ref));
-  LOG_OUT();
-}
-*/
-
-/*
- * Search functions
- * ----------------
- */
-/*
-tbx_bool_t
-leo_search_for_host_name(void *ref_obj, void *obj)
-{
-  tbx_list_reference_t   ref;
-  char                  *ref_name = ref_obj;
-  p_leo_clu_host_name_t  host     = obj;
-  
-  LOG_IN();
-  tbx_list_reference_init(&ref, host->name_list);
-  LOG_STR("ref_name", ref_name);
-  
-  do
-    {
-      char *name = tbx_get_list_reference_object(&ref);
-
-      if (!strcmp(ref_name, name))
+      do
 	{
-	  LOG_OUT();
-	  return tbx_true;
+	  p_leoparse_object_t  object        = NULL;
+	  p_tbx_htable_t       network_entry = NULL;
+	  char                *name          = NULL;
+	  
+	  object = tbx_slist_remove_from_head(inc_network_slist);
+	  network_entry = leoparse_get_htable(object);
+	  
+	  name = leoparse_read_id(network_entry, "name");
+	  tbx_htable_add(networks, name, network_entry);
 	}
+      while(!tbx_slist_is_nil(inc_network_slist));      
     }
-  while(tbx_forward_list_reference(&ref));
-
   LOG_OUT();
-  return tbx_false;
 }
-*/
-/*
-tbx_bool_t
-leo_search_for_cluster_entry_point(void *ref_obj, void *obj)
+
+static
+void
+include_network_files(p_tbx_slist_t include_slist)
 {
-  p_leo_application_cluster_t app_clu = ref_obj;
-  p_leo_cluster_definition_t  clu_def = obj;
-  tbx_slist_reference_t       ref;
-
   LOG_IN();
-  LOG_STR("clu_def", clu_def->id);
-  LOG_STR("app_clu", app_clu->id);
-  tbx_slist_ref_init_head(clu_def->host_list, &ref);
-  LOG_OUT();
-  return tbx_slist_search(leo_search_for_host_name, app_clu->id, &ref);
-}
-*/
-/*
-tbx_bool_t
-leo_search_for_cluster(void *ref_obj, void *obj)
-{
-  p_leo_cluster_definition_t  clu_def = ref_obj;
-  p_leo_application_cluster_t app_clu = obj;
-
-  LOG_IN();
-  LOG_STR("clu_def id", clu_def->id);
-  LOG_STR("app_clu id", app_clu->id);
-  LOG_OUT();
-  return strcmp(clu_def->id, app_clu->id) == 0;
-}
-*/
-/*
- * Initialization
- * --------------
- */
-/*
-int
-old_main (int argc, char *argv[])
-{
-  p_leo_app_application_t    application              = NULL;
-  p_leo_clu_cluster_file_t   local_cluster_def        = NULL;
-  char                      *filename                 = NULL;
-  p_tbx_slist_t              application_cluster_list = NULL;
-  p_tbx_slist_t              cluster_definition_list  = NULL;
-  p_leo_cluster_definition_t local                    = NULL;
-    
-
-  LOG_IN();
-  tbx_init(&argc, argv, PM2DEBUG_DO_OPT);
-  ntbx_init();
-  main_leonie = leo_init();
-  leo_parser_init();
-
-  application_cluster_list = malloc(sizeof(tbx_slist_t));
-  CTRL_ALLOC(application_cluster_list);
-  tbx_slist_init(application_cluster_list);
-
-  if (argc < 2)
-    FAILURE("no application description file specified");
-
-  application = leo_parse_application_file(argv[1]);
-  DISP("Starting application %s", application->id);
-  
-  leo_build_application_cluster_list(application, application_cluster_list);
-
-  cluster_definition_list = malloc(sizeof(tbx_slist_t));
-  CTRL_ALLOC(cluster_definition_list);
-  tbx_slist_init(cluster_definition_list);
-
-
-  main_leonie->net_server = leo_net_server_init();
-
-  filename = malloc(MAX_FILENAME_SIZE);
-  strcpy(filename, getenv("HOME"));
-  strcat(filename, "/.pm2/leo_cluster");
-  local_cluster_def = leo_parse_cluster_file(NULL, filename);
-  
-  {
-    // Cluster list construction
-    // Local Cluster
-    local = leo_build_cluster_definition(local_cluster_def);
-    tbx_slist_append_tail(cluster_definition_list, local);
-
-    if (application_cluster_list->length)
-      // Remote Clusters 
-      {
-	tbx_slist_t           temp_list;
-	tbx_slist_reference_t app_ref;
-	tbx_slist_reference_t clu_ref;
-
-	tbx_slist_init(&temp_list);
-	tbx_slist_dup(&temp_list, application_cluster_list);
+  tbx_slist_ref_to_head(include_slist);
       
-	tbx_slist_ref_init_head(cluster_definition_list, &clu_ref);
+  do
+    {
+      p_leoparse_object_t  object   = NULL;
+      p_tbx_htable_t       net_inc  = NULL;
+      char                *filename = NULL;
+      
+      object = tbx_slist_ref_get(include_slist);
+      filename = leoparse_get_id(object);
 
-	tbx_slist_ref_init_head(&temp_list, &app_ref);
-	if (tbx_slist_search(leo_search_for_cluster, local, &app_ref))
-	  {
-	    tbx_slist_remove(&app_ref);	
-	  }
-	else
-	  {
-	    DISP("Local cluster is not among application requested clusters");
-	  }
-	
-	while (temp_list.length)
-	  {
-	    tbx_bool_t iteration_status = tbx_false;
-	    int        length           = temp_list.length;
-	    
-	    while (length--)
-	      {
-		p_leo_application_cluster_t app_clu = NULL;
+      net_inc = leoparse_parse_local_file(filename);
+      process_include_file(net_inc);
+      free(net_inc);
+      net_inc = NULL;
+    }
+  while (tbx_slist_ref_forward(include_slist));
+  LOG_OUT();
+}
 
-		app_clu = tbx_slist_extract_head(&temp_list);
-		LOG_STR("App_clu", app_clu->id);
+static
+pid_t
+call_execvp(p_args_t args)
+{
+  pid_t pid = -1;
 
-		if (tbx_slist_search(leo_search_for_cluster_entry_point,
-				     app_clu,
-				     &clu_ref))
-		  {
-		    p_leo_cluster_definition_t clu_def =
-		      tbx_slist_get(&clu_ref);
+  LOG_IN();
 
-		    DISP("Found %s cluster entry point on %% cluster",
-			 app_clu->id,
-			 clu_def->id);
-		    
-		    iteration_status = tbx_true;
-		    // Remote cluster connection
+  LOG("Fork");
+  pid = fork();
 
-		    if (clu_def == local)
-		      {
-			// Ajouter le module a la liste des modules
-			p_leo_swann_module_t module = NULL;
-			
-			module =
-			  leo_launch_swann_module(main_leonie, app_clu);
-			tbx_slist_append_tail(cluster_definition_list,
-					      module->clu_def);
-			
-			tbx_append_list(&main_leonie->swann_modules, module);
-		      }
-		    else
-		      {
-			DISP("Cluster not connected");
-		      }
-		  }
-		else
-		  {
-		    tbx_slist_append_tail(&temp_list, app_clu);
-		  }
-	      }
-	    if (!iteration_status)
-	      FAILURE("Some clusters are unreachable");
-	  }
-      } 
-  }
+  if (pid == -1)
+    {
+      error("fork");
+    }
 
-  DISP("All clusters found");
+  if (!pid)
+    {
+      LOG_STR("execvp: ", args->argv[0]);
+#ifdef DEBUG
+      
+#endif /* DEBUG */
+      execvp(args->argv[0], args->argv);
+      error("execvp");
+    }
+  
+  LOG_OUT();
+  return pid;
+}
+
+static
+void
+leo_args_init(p_args_t    args,
+	      const char *command)
+{
+  const char *ptr = NULL;
+
+  LOG_IN();
+  args->argc = 1;
+  args->argv = malloc ((1 + args->argc) * sizeof(char *));
+  CTRL_ALLOC(args->argv);
+
+  while ((ptr = strchr(command, ' ')))
+    {
+      size_t len = ptr - command;
+
+      args->argv = realloc (args->argv, (2 + args->argc) * sizeof(char *));
+      CTRL_ALLOC(args->argv);
+      
+      args->argv[args->argc - 1] = malloc(len + 1);
+      CTRL_ALLOC(args->argv[args->argc - 1]);
+      
+      strncpy(args->argv[args->argc - 1], command, len);
+      args->argv[args->argc - 1][len] = 0;
+      
+      command = ptr + 1;
+      args->argc++;
+    }
+
+  args->argv[args->argc - 1] = malloc(strlen(command) + 1);
+  CTRL_ALLOC(args->argv[args->argc - 1]);
+  strcpy(args->argv[args->argc - 1], command);
+  
+  args->argv[args->argc] = NULL;
+  LOG_OUT();
+}
+
+static
+void
+leo_args_append(p_args_t    args,
+		const char *arg)
+{
+  LOG_IN();
+  args->argc++;
+  args->argv = realloc (args->argv, (1 + args->argc) * sizeof(char *));
+  CTRL_ALLOC(args->argv);
+
+  args->argv[args->argc - 1] = malloc(strlen(arg) + 1);
+  CTRL_ALLOC(args->argv[args->argc - 1]);
+  strcpy(args->argv[args->argc - 1], arg);
+  
+  args->argv[args->argc] = NULL;
+  LOG_OUT();
+}
+
+static
+void
+leo_args_append_environment(p_args_t  args,
+			    char     *variable_name)
+{
+  char *variable_content = NULL;
+
+  LOG_IN();
+  if ((variable_content = getenv(variable_name)))
+    {
+      char *arg = NULL;
+      
+      arg = malloc(strlen(variable_content) + strlen(variable_name) + 4);
+      CTRL_ALLOC(arg);
+      
+      sprintf(arg, "%s='%s'", variable_name, variable_content);
+      leo_args_append(args, arg);
+    }
+  LOG_OUT();
+}
+
+void
+launch(char *name,
+       char *flavor,
+       char *host)
+{
+  p_args_t args = NULL;
+  p_node_t node = NULL;
+
+  LOG_IN();
+  args = malloc(sizeof(args_t));
+  CTRL_ALLOC(args);
+  
+  leo_args_init(args, pm2_rsh);
+  leo_args_append(args, host);
+  leo_args_append(args, pm2_env);
+  leo_args_append_environment(args, "PATH");
+  leo_args_append_environment(args, "PM2_RSH");
+  leo_args_append_environment(args, "PM2_ROOT");
+  leo_args_append(args, leo_pm2load);
+  leo_args_append(args, pm2_load_flavor_option);
+  leo_args_append(args, flavor);
+  leo_args_append(args, name);
+  leo_args_append(args, "-leonie");
+  leo_args_append(args, net_server->local_host);
+  leo_args_append(args, "-link");
+  leo_args_append(args, net_server->connection_data.data);
+
+  node = malloc(sizeof(node_t));
+  CTRL_ALLOC(node);
+  
+  node->pid           =   -1;
+  node->host          = NULL;
+  node->client        = NULL;
+  node->networks      = NULL;
+  node->network_slist = NULL;
+  node->channels      = NULL;
+  node->channel_slist = NULL;
+
+  node->pid = call_execvp(args);
+  node->host = malloc(strlen(host) + 1);
+  CTRL_ALLOC(node->host);
+
+  strcpy(node->host, host);
+  
+  node->client = malloc(sizeof(ntbx_client_t));
+  CTRL_ALLOC(node->client);
+
+  node->client->state = ntbx_client_state_uninitialized;
+
+  node->networks = malloc(sizeof(tbx_htable_t));
+  CTRL_ALLOC(node->networks);
+  tbx_htable_init(node->networks, 0);
+  
+  node->network_slist = tbx_slist_nil();
+
+  node->channels = malloc(sizeof(tbx_htable_t));
+  CTRL_ALLOC(node->channels);
+  tbx_htable_init(node->channels, 0);
+  
+  node->channel_slist = tbx_slist_nil();
 
   {
-    tbx_slist_t           temp_list;
-    tbx_slist_reference_t app_ref;
+    int status = ntbx_failure;
     
-    tbx_slist_init(&temp_list);
-    tbx_slist_dup(&temp_list, application_cluster_list);    
-    tbx_slist_ref_init_head(&temp_list, &app_ref);
-    
-    while (temp_list.length)
-      {
-	p_leo_application_cluster_t app_clu = NULL;
-
-	app_clu = tbx_slist_extract_head(&temp_list);
-	LOG_STR("Launching Madeleine II on ", app_clu->id);
-	
-	if (!strcmp(app_clu->id, local->id))
-	  {
-	    p_leo_mad_module_t module = NULL;
-	    
-	    DISP("Cluster is local");
-	    module = leo_launch_mad_module(main_leonie, app_clu);
-	    tbx_append_list(&main_leonie->mad_modules, module);
-	    LOG_STR("MadII session started on ", app_clu->id);
-	  }
-	else
-	  {
-	    DISP("Cluster is remote");
-	  }
-	
-      }
-	
+    ntbx_tcp_client_init(node->client);
+    status = ntbx_tcp_server_accept(net_server, node->client);
+    if (status == ntbx_failure)
+      FAILURE("client node failed to connect");
   }
-  
+  DISP_STR("Received node connection from", node->host);
 
-
-  //leo_start(application, local_cluster_def);
-  
-  //leo_cluster_setup(main_leonie, application, local_cluster_def);
-
+  tbx_htable_add(nodes, host, node);
+  tbx_slist_append(node_slist, node);
   LOG_OUT();
+}
+
+void
+populate_channel(char           *name,
+		 char           *flavor,
+		 p_tbx_htable_t  channel)
+{
+  p_tbx_slist_t host_slist = NULL;
+
+  LOG_IN();
+  host_slist = leoparse_read_slist(channel, "hosts");
+
+  if (host_slist && !tbx_slist_is_nil(host_slist))
+    {
+      tbx_slist_ref_to_head(host_slist);
+
+      do
+	{
+	  p_leoparse_object_t  object = NULL;
+	  char                *host   = NULL;
+	    
+	  object = tbx_slist_ref_get(host_slist);
+	  host = leoparse_get_id(object);
+
+	  if (!tbx_htable_get(nodes, host))
+	    {
+	      launch(name, flavor, host);
+	    }
+	}
+      while (tbx_slist_ref_forward(host_slist));
+    }
+  else
+    {
+      terminate("parse error : no channel list\n");
+    }
+  LOG_OUT();
+}
+
+void
+spawn(p_tbx_slist_t channel_slist)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(channel_slist);
+      
+  do
+    {
+      p_leoparse_object_t  object  = NULL;
+      p_tbx_htable_t       channel = NULL;
+      char                *name    = NULL;
+      
+      object = tbx_slist_ref_get(channel_slist);
+      channel = leoparse_get_htable(object);
+      name = leoparse_read_id(channel, "name");
+      
+      tbx_htable_add(channels, name, channel);
+      populate_channel(application_name, application_flavor, channel);
+    }
+  while (tbx_slist_ref_forward(channel_slist));
+  LOG_OUT();
+}
+
+void
+process(p_tbx_htable_t application)
+{
+  LOG_IN();
+  application_name     = leoparse_read_id(application, "name");  
+  application_flavor   = leoparse_read_id(application, "flavor");
+  application_networks = leoparse_read_htable(application, "networks");
+
+  channel_slist = leoparse_read_slist(application_networks, "channels");
+  if (channel_slist && !tbx_slist_is_nil(channel_slist))
+    {
+      spawn(channel_slist);
+    }
+  else
+    {
+      terminate("parse error : no channel list");
+    }
+
+  include_slist = leoparse_read_slist(application_networks, "include");
+  if (include_slist && !tbx_slist_is_nil(include_slist))
+    {
+      include_network_files(include_slist);
+    }
+  else
+    {
+      terminate("parse error : no network include list");      
+    }
+  LOG_OUT();
+}
+
+void
+inform(void)
+{
+  int configuration_size = -1;
+  int rank               =  0;
+  
+  LOG_IN();
+  configuration_size = tbx_slist_get_length(node_slist);
+  tbx_slist_ref_to_head(node_slist);
+  
+  do
+    {
+      p_node_t           node = NULL;
+      int                status = ntbx_failure;
+      ntbx_pack_buffer_t buffer;
+
+      node = tbx_slist_ref_get(node_slist);
+
+      ntbx_pack_int(configuration_size, &buffer);
+      status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+      
+      ntbx_pack_int(rank, &buffer);
+      status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+      
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      rank++;
+    }
+  while (tbx_slist_ref_forward(node_slist));
+  LOG_OUT();
+}
+
+void
+analyse(void)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(channel_slist);
+
+  do
+    {
+      p_leoparse_object_t  object     = NULL;
+      p_tbx_htable_t       channel    = NULL;
+      p_tbx_slist_t        host_slist = NULL;
+      p_tbx_htable_t       network    = NULL;
+      char                *name       = NULL;
+      char                *net        = NULL;
+      
+      object     = tbx_slist_ref_get(channel_slist);
+      channel    = leoparse_get_htable(object);
+      name       = leoparse_read_id(channel, "name");
+      DISP_STR("name", name);
+      net        = leoparse_read_id(channel, "net");
+      DISP_STR("net", net);
+      host_slist = leoparse_read_slist(channel, "hosts");
+      DISP_PTR("hosts", host_slist);
+      network    = tbx_htable_get(networks, net);
+
+      if (!network)
+	{
+	  terminate("unknown network");
+	}
+      
+      tbx_slist_ref_to_head(host_slist);
+      
+      do
+	{
+	  p_leoparse_object_t  object2 = NULL;
+	  p_node_t             node    = NULL;
+	  char                *host    = NULL;	  
+	  
+	  object2 = tbx_slist_ref_get(host_slist);
+	  host = leoparse_get_id(object2);
+
+	  node = tbx_htable_get(nodes, host);
+	  if (!tbx_htable_get(node->channels, name))
+	    {
+	      tbx_htable_add(node->channels, name, channel);
+	      tbx_slist_append(node->channel_slist, channel);
+	    }
+	  
+	  if (!tbx_htable_get(node->networks, net))
+	    {
+	      tbx_htable_add(node->networks, net, network);
+	      tbx_slist_append(node->network_slist, network);
+	    }
+	}
+      while (tbx_slist_ref_forward(host_slist));
+    }
+  while (tbx_slist_ref_forward(channel_slist));
+  LOG_OUT();
+}
+
+void
+adapter_init(void)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(node_slist);
+  
+  do
+    {
+      p_node_t           node        = NULL;
+      int                status      = ntbx_failure;
+      int                nb_adapters = 0;
+      ntbx_pack_buffer_t buffer;
+
+      node = tbx_slist_ref_get(node_slist);
+
+      nb_adapters = tbx_slist_get_length(node->network_slist);
+
+      ntbx_pack_int(nb_adapters, &buffer);
+      status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      tbx_slist_ref_to_head(node->network_slist);
+      
+      do
+	{
+	  p_tbx_htable_t  network   = NULL;
+	  p_device_t      device    = NULL;
+	  char           *dev       = NULL;
+	  int             status    = ntbx_failure;
+	  
+	  network = tbx_slist_ref_get(node->network_slist);	  
+	  dev     = leoparse_read_id(network, "dev");
+	  
+	  status = ntbx_btcp_write_string(node->client, dev);
+	  if (status != ntbx_success)
+	    FAILURE("master link failure");
+
+	  device = tbx_htable_get(devices, dev);
+
+	  if (!device)
+	    {
+	      device = malloc(sizeof(device_t));
+	      CTRL_ALLOC(device);
+	      device->name  = NULL;
+	      device->nodes = NULL;
+	      
+	      device->name = malloc(strlen(dev) + 1);
+	      CTRL_ALLOC(device->name);
+	      strcpy(device->name, dev);
+	      
+	      device->nodes = tbx_slist_nil();
+	      tbx_htable_add(devices, dev, device);
+	      tbx_slist_append(device_slist, device);
+	    }
+	  
+	  tbx_slist_append(device->nodes, node);
+	}
+      while (tbx_slist_ref_forward(node->network_slist));
+    }
+  while (tbx_slist_ref_forward(node_slist));
+  LOG_OUT();
+}
+
+void
+adapter_configuration_init(void)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(device_slist);
+  do
+    {
+      p_device_t  device                    = NULL;
+      int         device_configuration_size =    0;
+      int         rank                      =    0;
+
+      device                    = tbx_slist_ref_get(device_slist);
+      device_configuration_size = tbx_slist_get_length(device->nodes);
+
+      tbx_slist_ref_to_head(device->nodes);
+      do
+	{
+	  p_node_t node   = NULL;
+	  int      status = ntbx_failure;
+	  ntbx_pack_buffer_t buffer;
+      
+	  node = tbx_slist_ref_get(device->nodes);
+
+	  status = ntbx_btcp_write_string(node->client, device->name);
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+
+	  ntbx_pack_int(device_configuration_size, &buffer);
+	  status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+	  
+	  ntbx_pack_int(rank, &buffer);
+	  status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+	  
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+	  
+	  rank++;
+	}
+      while (tbx_slist_ref_forward(device->nodes));
+
+      rank = 0;
+
+      tbx_slist_ref_to_head(device->nodes);
+      do
+	{
+	  p_node_t node   =         NULL;
+	  int      data   =           -1;
+	  int      status = ntbx_failure;
+	  ntbx_pack_buffer_t buffer;
+      
+	  node = tbx_slist_ref_get(device->nodes);
+	  status = ntbx_btcp_read_pack_buffer(node->client, &buffer);
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+
+	  data = ntbx_unpack_int(&buffer);
+	  if (data != rank)
+	    FAILURE("node synchronisation error");
+
+	  rank++;
+	}
+      while (tbx_slist_ref_forward(device->nodes));
+    }
+  while (tbx_slist_ref_forward(device_slist));
+  LOG_OUT();
+}
+
+void
+channel_init(void)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(node_slist);
+  
+  do
+    {
+      p_node_t           node        = NULL;
+      int                status      = ntbx_failure;
+      int                nb_channels = 0;
+      ntbx_pack_buffer_t buffer;
+
+      node = tbx_slist_ref_get(node_slist);
+
+      nb_channels = tbx_slist_get_length(node->channel_slist);
+
+      ntbx_pack_int(nb_channels, &buffer);
+      status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+
+      if (status == ntbx_failure)
+	FAILURE("master link failure");
+
+      tbx_slist_ref_to_head(node->channel_slist);
+
+      do
+	{
+	  p_tbx_htable_t  channel    =         NULL;
+	  p_tbx_slist_t   chan_nodes =         NULL;
+	  char           *name       =         NULL;
+	  int             status     = ntbx_failure;
+  
+	  channel = tbx_slist_ref_get(node->channel_slist);
+	  name    = leoparse_read_id(channel, "name");
+
+	  status = ntbx_btcp_write_string(node->client, name);
+	  if (status != ntbx_success)
+	    FAILURE("master link failure");
+
+	  chan_nodes = tbx_htable_get(channel, "nodes");
+	  
+	  if (!chan_nodes)
+	    {
+	      chan_nodes = tbx_slist_nil();
+	      tbx_htable_add(channel, "nodes", chan_nodes);
+	    }
+	  
+	  tbx_slist_append(chan_nodes, node);
+	}
+      while (tbx_slist_ref_forward(node->channel_slist));
+      
+    }
+  while (tbx_slist_ref_forward(node_slist));
+  LOG_OUT();
+}
+
+void
+channel_configuration_init(void)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(channel_slist);
+  do
+    {
+      p_leoparse_object_t  object                     = NULL;
+      p_tbx_htable_t       channel                    = NULL;
+      p_tbx_slist_t        chan_nodes                 = NULL;
+      p_tbx_htable_t       network                    = NULL;
+      int                  channel_configuration_size =    0;
+      int                  rank                       =    0;
+      char                *name                       = NULL;
+      char                *net                        = NULL;
+      char                *dev                        = NULL;
+      
+      object     = tbx_slist_ref_get(channel_slist);
+      channel    = leoparse_get_htable(object);
+      chan_nodes = tbx_htable_get(channel, "nodes");
+      channel_configuration_size = tbx_slist_get_length(chan_nodes);
+
+      name    = leoparse_read_id(channel, "name");
+      DISP_STR("name", name);
+      net     = leoparse_read_id(channel, "net");
+      DISP_STR("net", net);
+      network = tbx_htable_get(networks, net);
+      dev     = leoparse_read_id(network, "dev");
+      DISP_STR("dev", dev);
+
+      tbx_slist_ref_to_head(chan_nodes);
+      do
+	{
+	  p_node_t node    = NULL;
+	  int      status  = ntbx_failure;
+	  ntbx_pack_buffer_t buffer;
+	  
+	  node = tbx_slist_ref_get(chan_nodes);	  
+	  
+	  status = ntbx_btcp_write_string(node->client, name);
+	  if (status != ntbx_success)
+	    FAILURE("master link failure");
+
+	  ntbx_pack_int(channel_configuration_size, &buffer);
+	  status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+	  
+	  ntbx_pack_int(rank, &buffer);
+	  status = ntbx_btcp_write_pack_buffer(node->client, &buffer);
+	  
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+	  
+	  status = ntbx_btcp_write_string(node->client, dev);
+	  if (status != ntbx_success)
+	    FAILURE("master link failure");
+
+	  DISP_STR("Channel synchronized", name);
+
+	  rank++;
+	}
+      while (tbx_slist_ref_forward(chan_nodes));
+
+      rank = 0;
+
+      tbx_slist_ref_to_head(chan_nodes);
+      do
+	{
+	  p_node_t node   =         NULL;
+	  int      data   =           -1;
+	  int      status = ntbx_failure;
+	  ntbx_pack_buffer_t buffer;
+      
+	  node   = tbx_slist_ref_get(chan_nodes);
+	  status = ntbx_btcp_read_pack_buffer(node->client, &buffer);
+	  if (status == ntbx_failure)
+	    FAILURE("master link failure");
+
+	  data = ntbx_unpack_int(&buffer);
+	  if (data != rank)
+	    FAILURE("node synchronisation error");
+
+	  rank++;
+	}
+      while (tbx_slist_ref_forward(chan_nodes));
+      
+    }
+  while (tbx_slist_ref_forward(channel_slist));
+  LOG_OUT();
+}
+
+void
+close_links(void)
+{
+  LOG_IN();
+  tbx_slist_ref_to_head(node_slist);
+  
+  do
+    {
+      p_node_t node   = NULL;
+
+      node = tbx_slist_ref_get(node_slist);
+      ntbx_tcp_client_disconnect(node->client);
+    }
+  while (tbx_slist_ref_forward(node_slist));
+
+  ntbx_tcp_server_disconnect(net_server);
+  free(net_server);
+  net_server = NULL;
+  LOG_OUT();
+}
+
+int
+main(int    argc,
+     char **argv)
+{
+  p_tbx_htable_t            app_result = NULL;
+  p_leoparse_htable_entry_t app_entry  = NULL;
+
+  LOG_IN();
+  common_init(&argc, argv);
+  
+  tbx_init(argc, argv);
+  leoparse_init(argc, argv);
+
+  tbx_purge_cmd_line(&argc, argv);
+  leoparse_purge_cmd_line(&argc, argv);
+
+  argc--; argv++;
+  if (argc != 1)
+    usage();
+
+  if (!(pm2_rsh = getenv("PM2_RSH")))
+    {
+      pm2_rsh = "rsh";
+    }
+  
+  net_server = leo_net_server_init();
+
+  nodes = malloc(sizeof(tbx_htable_t));
+  CTRL_ALLOC(nodes);
+  tbx_htable_init(nodes, 0);
+
+  node_slist = tbx_slist_nil();
+
+  networks = malloc(sizeof(tbx_htable_t));
+  CTRL_ALLOC(networks);
+  tbx_htable_init(networks, 0);
+  
+  network_slist = tbx_slist_nil();
+
+  devices = malloc(sizeof(tbx_htable_t));
+  CTRL_ALLOC(devices);
+  tbx_htable_init(devices, 0);
+  
+  device_slist = tbx_slist_nil();
+
+  channels = malloc(sizeof(tbx_htable_t));
+  CTRL_ALLOC(channels);
+  tbx_htable_init(channels, 0);
+  
+  app_result = leoparse_parse_local_file(*argv);
+  app_entry  = tbx_htable_get(app_result, "application");
+  
+  process(leoparse_get_htable(leoparse_get_object(app_entry)));
+  inform();
+  analyse();
+  adapter_init();
+  adapter_configuration_init();
+  channel_init();
+  channel_configuration_init();
+  DISP("leonie server ready");
+  close_links();
+  LOG_OUT();
+
+  DISP("leonie server shutdown");
   return 0;
 }
-*/
 
-int
-main (int argc, char *argv[])
-{
-}

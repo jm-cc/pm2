@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.8  2000/09/12 16:59:09  rnamyst
+Few bug fixes + support for .fut files
+
 Revision 1.7  2000/09/12 14:55:13  rnamyst
 Added support for generating .i files in Makefiles
 
@@ -239,8 +242,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else // if not DEBUG
 
 #define LOG(str, args...) 
-#define LOG_IN()              GEN_PREPROC(in)
-#define LOG_OUT()             GEN_PREPROC(out)
+#define LOG_IN()              GEN_PREPROC(ENTRY)
+#define LOG_OUT()             GEN_PREPROC(EXIT)
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)
@@ -250,8 +253,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else // else if not PM2DEBUG
 
 #define LOG(str, args...) 
-#define LOG_IN()              GEN_PREPROC(in)
-#define LOG_OUT()             GEN_PREPROC(out)
+#define LOG_IN()              GEN_PREPROC(ENTRY)
+#define LOG_OUT()             GEN_PREPROC(EXIT)
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)

@@ -57,6 +57,7 @@ $(PRG_DEPENDS): $(COMMON_DEPS) $(PRG_GEN_C_SOURCES) $(PRG_GEN_C_INC)
 $(PRG_OBJECTS): $(PRG_GEN_OBJ)/%.o: $(PRG_GEN_DEP)/%.d $(COMMON_DEPS)
 
 $(PRG_PRG): $(PRG_OBJECTS)
+	@ echo "Linking program"
 	$(PRG_PREFIX) $(CC) $(PRG_OBJECTS) $(LDFLAGS) -o $(PRG_PRG)
 
 # C
@@ -104,52 +105,39 @@ MAKE_LIBS = +set -e ; for modules in $(CONFIG_MODULES); do \
 	    done 
 
 .PHONY: $(PROGRAM)
-$(PROGRAM): prgclean
+$(PROGRAM): # prgclean
 	@ echo "Making libs"
 	$(COMMON_HIDE) $(MAKE_LIBS)
 	@ echo "Making program"
 	$(COMMON_HIDE) $(MAKE) PROG_RECURSIF=true $@
 	@ echo "Program ready"
 
-.PHONY: clean prgclean repclean distclean
-clean: prgclean repclean
 
-prgclean:
-	$(COMMON_CLEAN) $(RM) $(PRG_GEN_OBJ)/*$(PRG_EXT).o \
-		$(PRG_GEN_DEP)/*$(PRG_EXT).d $(PRG_GEN_ASM)/*$(PRG_EXT).s \
-		$(PRG_GEN_SRC)/*$(PRG_EXT).c $(PRG_GEN_INC)/*$(PRG_EXT).h \
-		$(PRG_PRG)
 
-repclean:
-	@for rep in $(PRG_REP_TO_BUILD); do \
-		if rmdir $$rep 2> /dev/null; then \
-			echo "empty repertory $$rep removed" ; \
-		fi ; \
-	done
+# Regles de nettoyage
+#---------------------------------------------------------------------
+.PHONY: clean cleanall refresh refreshall sos
+clean cleanall refresh refreshall sos:
+	$(COMMON_HIDE) make -s -C $(PM2_ROOT) $@
 
-#distclean:
-#	$(COMMON_CLEAN)$(RM) -r build
-#	@set -e; 
-
-.PHONY: help bannerhelpprg targethelpprg
+.PHONY: help bannerhelpapps targethelpapps
 help: globalhelp
 
-bannerhelp: bannerhelpprg
+bannerhelp: bannerhelpapps
 
-bannerhelpprg:
-	@echo "This is PM2 Makefile for module $(LIBRARY)"
+bannerhelpapps:
+	@echo "This is PM2 Makefile for examples"
 
-targethelp: targethelpprg
+targethelp: targethelpapps
 
-targethelpprg:
-ifneq ($(PROGRAM),$(PROGNAME))
-	@echo "  prog|all|$(PROGRAM)|$(PROGNAME): build the program"
-else
-	@echo "  prog|all|$(PROGRAM): build the program"
-endif
-	@echo "  examples: build the examples of this program (if any)"
+PROGSLIST:=$(foreach PROG,$(PROGS),$(PROG))
+targethelpapps:
+	@echo "  all|examples: build the examples"
 	@echo "  help: this help"
-	@echo "  clean: clean program source tree for current flavor"
-#	@echo "  distclean: clean program source tree for all flavors"
+	@echo "  clean: clean examples source tree for current flavor"
+#	@echo "  distclean: clean examples source tree for all flavors"
+	@echo
+	@echo "Examples to build:"
+	@echo "  $(PROGSLIST)"
 
 endif # !PROG_RECURSIF

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.11  2000/06/08 13:57:09  oaumage
+- Macros d'attributs
+
 Revision 1.10  2000/06/05 15:41:58  vdanjean
 adaptation of debug messages
 
@@ -287,7 +290,20 @@ typedef enum
  * _________________/////////////////////////////////////////////////
  */
 #define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
+#define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
 
+/*
+ * Attribute macros  ________________________________________________
+ * _________________/////////////////////////////////////////////////
+ */
+#define TBX_BYTE        __attribute__ ((__mode__ (__byte__)))
+#define TBX_WORD        __attribute__ ((__mode__ (__word__)))
+#define TBX_POINTER     __attribute__ ((__mode__ (__pointer__)))
+#define TBX_ALIGNED     __attribute__ ((__aligned__))
+#define TBX_PACKED      __attribute__ ((__packed__))
+#define TBX_UNUSED      __attribute__ ((__unused__))
+#define TBX_NORETURN    __attribute__ ((__noreturn__))
+#define TBX_CONST       __attribute__ ((__const__))
 
 /*
  * System calls wrappers  ___________________________________________

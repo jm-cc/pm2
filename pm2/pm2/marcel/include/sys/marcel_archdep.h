@@ -137,6 +137,13 @@ static __inline__ void SCHED_YIELD(void)
 #  define SP_FIELD(buf)           ((buf)[JB_SP])
 #endif
 
+/* Darwin PPC (Mac OS X) */
+#if defined(DARWIN_SYS) && defined(PPC_ARCH)
+#  define STACK_INFO
+#  define TOP_STACK_FREE_AREA     256
+#  define SP_FIELD(buf)           ((buf)[0])
+#endif
+
 
 /* ******************* Sparc spécific ******************* */
 #if defined(SPARC_ARCH)

@@ -1,6 +1,14 @@
+import leo_channel
+
 import select
 import socket
 
+def client_wrapper(obj):
+    if type(obj) is not tuple:
+        return obj.client
+    else:
+        return obj
+    
 def pack_int(i):
     """Pack a NTBX int."""
     buf = 'iiii%*d-'%(11, i)
@@ -41,6 +49,7 @@ def unpack_ulong(b):
 
 def send(client, b):
     """Sent a string over a client socket."""
+    client = client_wrapper(client)
     (cs, addr) = client
     #print "sending:", b
     o = 0
@@ -52,6 +61,7 @@ def send(client, b):
 
 def receive(client, s):
     """Receive a string over a client socket."""
+    client = client_wrapper(client)
     (cs, addr) = client
     b = ''
     while s > 0:
@@ -148,12 +158,43 @@ def client_select(client_list):
     idx_dict = {}
     fd_list  = []
 
-    for num, (fd, addr) in enumerate(client_list):
-        idx_dict[fd] = num
+    for num, client in enumerate(client_list):
+        client	= client_wrapper(client)
+        (fd, addr)	= client
+        idx_dict[fd]	= num
         fd_list.append(fd)
 
-    (ilist, olist, elist) = select.select(fd_list, [], [], 0.9)
+    (ilist, olist, elist) = select.select(fd_list, [], [])
 
     result_list = [ client_list[idx_dict[x]] for x in ilist ]
 
     return result_list
+
+def wait_for_ack(client):
+    ack = receive_int(client)
+    if not ack == -1:
+        print 'invalid ack value'
+
+def mcast(ps_list, f, *a, **b):
+    for ps in ps_list:
+        f(ps.client, *a, **b)
+
+def bcast(s, f, *a, **b):
+    mcast(s.process_list, f, *a, **b)
+
+def mcast_string(ps_list, data):
+    mcast(ps_list, send_string, data)
+
+def bcast_string(s, data):
+    bcast(s, send_string, data)
+
+def mcast_int(ps_list, data):
+    mcast(ps_list, send_int, data)
+
+def bcast_int(s, data):
+    bcast(s, send_int, data)
+
+def barrier(ps_list):
+    mcast_int(ps_list, -1)
+    mcast(ps_list, wait_for_ack)
+

@@ -82,16 +82,12 @@ leo_default_loader(p_leo_settings_t settings,
 	relay_command = tbx_command_init_to_cstring("swann");
 	env  = relay_command->environment;
 	args = relay_command->arguments;
-	
-	var = tbx_environment_variable_to_variable("PM2_ROOT");
+
+	var = tbx_environment_variable_to_variable("PATH");
+	tbx_environment_variable_append_cstring(var, ':', "${PATH}");
 	tbx_environment_append_variable(env, var);
 	    
-	var = tbx_environment_variable_to_variable("PATH");
-	// This avoids PATH to become too long for command line
-	tbx_environment_variable_append_cstring(var, ':', "${PM2_ROOT}/bin");
-	tbx_environment_append_variable(env, var);
-	
-	var = tbx_environment_variable_to_variable("PM2_BUILD_DIR");
+	var = tbx_environment_variable_to_variable("PM2_ROOT");
 	tbx_environment_append_variable(env, var);
 	    
 	var = tbx_environment_variable_to_variable("LEO_XTERM");
@@ -214,7 +210,6 @@ leo_default_loader(p_leo_settings_t settings,
 	      while (arg_set->argv[i])
 		{
 		  TRACE_STR("execvp command", arg_set->argv[i]);
-
 		  i++;
 		}
 	    }
@@ -301,25 +296,24 @@ leo_default_loader(p_leo_settings_t settings,
 	p_tbx_environment_t          env           = NULL;
 	p_tbx_arguments_t            args          = NULL;
 	p_tbx_environment_variable_t var           = NULL;
-
+	
 	relay_command = tbx_command_init_to_cstring("leo-load");
 	env  = relay_command->environment;
 	args = relay_command->arguments;
-
-	var = tbx_environment_variable_to_variable("PM2_ROOT");
-	tbx_environment_append_variable(env, var);
-	    
-  	var = tbx_environment_variable_to_variable("PATH");
-	// This avoids PATH to become too long for command line
-	tbx_environment_variable_append_cstring(var, ':', "${PM2_ROOT}/bin");
-  	tbx_environment_append_variable(env, var);
 	
-	var = tbx_environment_variable_to_variable("PM2_BUILD_DIR");
-	tbx_environment_append_variable(env, var);
-	    
-	var = tbx_environment_variable_to_variable("LEO_XTERM");
-	tbx_environment_append_variable(env, var);
-
+	if (settings->export_mode)
+	  {
+	    var = tbx_environment_variable_to_variable("PATH");
+	    tbx_environment_variable_append_cstring(var, ':', "${PATH}");
+	    tbx_environment_append_variable(env, var);
+	  
+	    var = tbx_environment_variable_to_variable("PM2_ROOT");
+	    tbx_environment_append_variable(env, var);
+	  
+	    var = tbx_environment_variable_to_variable("LEO_XTERM");
+	    tbx_environment_append_variable(env, var);
+	  }
+	
 	if (settings->smp_mode)
 	  {
 	    var =
@@ -498,10 +492,12 @@ leo_bipload_loader(p_leo_settings_t settings,
       env  = relay_command->environment;
       args = relay_command->arguments;
 
-      var = tbx_environment_variable_to_variable("PATH");
-      // This avoids PATH to become too long for command line
-      tbx_environment_variable_append_cstring(var, ':', "${PM2_ROOT}/bin");
-      tbx_environment_append_variable(env, var);
+      if (settings->export_mode)
+	{
+	  var = tbx_environment_variable_to_variable("PATH");
+	  tbx_environment_variable_append_cstring(var, ':', "${PATH}");
+	  tbx_environment_append_variable(env, var);
+	}
 	    
       tbx_slist_ref_to_head(process_slist);
       do
@@ -681,20 +677,19 @@ leo_bipload_loader(p_leo_settings_t settings,
       relay_command = tbx_command_init_to_cstring("bipload");
       env  = relay_command->environment;
       args = relay_command->arguments;
-
-      var = tbx_environment_variable_to_variable("PM2_ROOT");
-      tbx_environment_append_variable(env, var);
       
-      var = tbx_environment_variable_to_variable("PATH");
-      // This avoids PATH to become too long for command line
-      tbx_environment_variable_append_cstring(var, ':', "${PM2_ROOT}/bin");
-      tbx_environment_append_variable(env, var);
-      
-      var = tbx_environment_variable_to_variable("PM2_BUILD_DIR");
-      tbx_environment_append_variable(env, var);
-	    
-      var = tbx_environment_variable_to_variable("LEO_XTERM");
-      tbx_environment_append_variable(env, var);
+      if (settings->export_mode)
+	{
+	  var = tbx_environment_variable_to_variable("PATH");
+	  tbx_environment_variable_append_cstring(var, ':', "${PATH}");
+	  tbx_environment_append_variable(env, var);
+	
+	  var = tbx_environment_variable_to_variable("PM2_ROOT");
+	  tbx_environment_append_variable(env, var);
+	
+	  var = tbx_environment_variable_to_variable("LEO_XTERM");
+	  tbx_environment_append_variable(env, var);
+	}
 	
       if (!auto_display)
 	{
@@ -709,18 +704,18 @@ leo_bipload_loader(p_leo_settings_t settings,
 						      "${HOME}/lib/libpthread.so");
 	  tbx_environment_append_variable(env, var);
 	}
-	
-	
+      
+      
       //	tbx_arguments_append_cstring(args, "-v");
       tbx_arguments_append_cstring(args, "-mget");
       tbx_arguments_append_cstring(args, "-hwflow");
       tbx_arguments_append_cstring(args, "leo-load");
-
+      
       if (settings->log_mode)
 	{
 	  tbx_arguments_append_cstring(args, "-l");
 	}
-
+      
       if (settings->pause_mode)
 	{
 	  tbx_arguments_append_cstring(args, "-p");

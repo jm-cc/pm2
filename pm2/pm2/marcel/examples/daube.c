@@ -260,7 +260,7 @@ int marcel_main(int argc, char **argv)
   marcel_attr_init(&glob_attr);
   marcel_attr_setdetachstate(&glob_attr, MARCEL_CREATE_DETACHED);
 #ifdef SMP
-  marcel_attr_setschedpolicy(&glob_attr, MARCEL_SCHED_FIXED(0));
+  marcel_attr_setschedpolicy(&glob_attr, MARCEL_SCHED_OTHER);
 #endif
 
   job_init(&j, 1, 50);

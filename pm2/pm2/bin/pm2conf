@@ -1,5 +1,3 @@
-#!/bin/sh
-
 usage() # exit_code
 {
     cat <<EOF

@@ -119,8 +119,31 @@ struct marcel_sched_task {
 };
 
 #section marcel_macros
-//#define MARCEL_SET_STATE(t, STATE) 
-//        t->sched.state=MARCEL_TASK_##STATE
+#define MA_TASK_RUNNING		0
+#define MA_TASK_INTERRUPTIBLE	1
+#define MA_TASK_UNINTERRUPTIBLE	2
+#define MA_TASK_STOPPED		4
+#define MA_TASK_ZOMBIE		8
+#define MA_TASK_DEAD		16
+#define MA_TASK_GHOST		32
+#define MA_TASK_MOVING		64
+#define MA_TASK_FROZEN		128
+
+#define __ma_set_task_state(tsk, state_value)		\
+	do { (tsk)->sched.state = (state_value); } while (0)
+#define ma_set_task_state(tsk, state_value)		\
+	ma_set_mb((tsk)->sched.state, (state_value))
+
+#define __ma_set_current_state(state_value)			\
+	do { MARCEL_SELF->sched.state = (state_value); } while (0)
+#define ma_set_current_state(state_value)		\
+	ma_set_mb(MARCEL_SELF->sched.state, (state_value))
+
+#define MA_TASK_IS_RUNNING(tsk) ((tsk)->sched.internal.cur_rq && !(tsk)->sched.internal.array)
+#define MA_TASK_IS_BLOCKED(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
+#define MA_TASK_IS_SLEEPING(tsk) (!(tsk)->sched.internal.cur_rq)
+#define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
+
 #section sched_marcel_functions
 inline static void 
 marcel_sched_init_marcel_thread(marcel_task_t* t,
@@ -335,3 +358,4 @@ static __inline__ unsigned marcel_current_vp(void)
 
 #define MA_TASK_REAL_TIME(task) \
    ma_test_ti_thread_flag(task, TIF_RT_THREAD)
+

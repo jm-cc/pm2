@@ -165,7 +165,6 @@ process_command_line(int    argc,
 	    {
 	      settings->smp_mode    = tbx_false;
 	    }
-#ifdef LEO_EXPORT_MODE
 	  else if (tbx_argit_arg_equals("-e"))
 	    {
 	      settings->export_mode = tbx_true;
@@ -174,7 +173,6 @@ process_command_line(int    argc,
 	    {
 	      settings->export_mode = tbx_false;
 	    }
-#endif // LEO_EXPORT_MODE
 	  else
 	    tbx_argit_invalid_arg();
 

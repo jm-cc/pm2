@@ -41,10 +41,7 @@ leo_settings_init(void)
   object->log_mode    = tbx_false;
   object->pause_mode  = tbx_true;
   object->smp_mode    = tbx_false;
-
-#ifdef LEO_EXPORT_MODE
   object->export_mode = tbx_false;
-#endif // LEO_EXPORT_MODE
   LOG_OUT();
 
   return object;

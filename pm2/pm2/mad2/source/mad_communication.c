@@ -34,11 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
-Revision 1.18  2000/06/06 13:41:57  oaumage
-- Bux fixes
+Revision 1.20  2000/06/07 08:12:04  oaumage
+- Retour a des bases saines
 
-Revision 1.17  2000/06/06 12:54:52  oaumage
-- Ajout du calcul de la taille des groupes de buffers dynamiques
+Revision 1.19  2000/06/07 07:57:14  oaumage
+- retour a la version 1.16
 
 Revision 1.16  2000/05/18 14:36:56  oaumage
 - nettoyage du code
@@ -145,7 +145,6 @@ mad_begin_packing(p_mad_channel_t   channel,
   
   /* structure initialisation */
   tbx_list_init(&(connection->buffer_list));
-  connection->cumulated_length = 0;
   tbx_list_init(&(connection->buffer_group_list));
   
   for(link_id = 0;
@@ -153,7 +152,6 @@ mad_begin_packing(p_mad_channel_t   channel,
       link_id++)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
-      connection->link[link_id].cumulated_length = 0;
     }
   
   connection->pair_list_used = tbx_false;
@@ -205,10 +203,8 @@ mad_message_ready(p_mad_channel_t channel)
     FAILURE("connection dead lock");
 
    tbx_list_init(&(connection->buffer_list));
-   connection->cumulated_length = 0;
    tbx_list_init(&(connection->buffer_group_list));
    tbx_list_init(&(connection->user_buffer_list));
-   connection->user_cumulated_length = 0;
    tbx_list_reference_init(&(connection->user_buffer_list_reference),
 			   &(connection->user_buffer_list));
    
@@ -217,9 +213,7 @@ mad_message_ready(p_mad_channel_t channel)
       link_id++)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
-      connection->link[link_id].cumulated_length = 0;
       tbx_list_init(&(connection->link[link_id].user_buffer_list));
-      connection->link[link_id].user_cumulated_length = 0;
     }
   
   connection->lock            = tbx_true;
@@ -277,7 +271,6 @@ mad_begin_unpacking(p_mad_channel_t channel)
       link_id++)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
-      connection->link[link_id].cumulated_length = 0;
       tbx_list_init(&(connection->link[link_id].user_buffer_list));
     }
   
@@ -323,8 +316,7 @@ mad_end_packing(p_mad_connection_t connection)
 	      
 	      mad_make_buffer_group(&buffer_group,
 				    buffer_list,
-				    last_link,
-				    connection->cumulated_length);
+				    last_link);
 	      if (last_link->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
 		{
@@ -349,8 +341,7 @@ mad_end_packing(p_mad_connection_t connection)
 	      buffer_group = mad_alloc_buffer_group_struct();
 	      mad_make_buffer_group(buffer_group,
 				    buffer_list,
-				    last_link,
-				    connection->cumulated_length);
+				    last_link);
 	      tbx_append_list(&(connection->buffer_group_list), buffer_group);
 	    }
 	  else
@@ -424,8 +415,7 @@ mad_end_packing(p_mad_connection_t connection)
 	  
 	  mad_make_buffer_group(&buffer_group,
 				&(link->buffer_list),
-				link,
-				link->cumulated_length);
+				link);
 	  if (   link->group_mode == mad_group_mode_split
 	      && buffer_group.buffer_list.length == 1)
 	    {
@@ -533,8 +523,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 	      
 	      mad_make_buffer_group(&buffer_group,
 				    src_list,
-				    last_link,
-				    connection->cumulated_length);
+				    last_link);
 	      if (last_link->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
 		{
@@ -562,7 +551,6 @@ mad_end_unpacking(p_mad_connection_t connection)
 	FAILURE("invalid link mode");
 
       tbx_mark_list(src_list);
-      connection->cumulated_length       = 0;
       connection->more_data              = tbx_false;
       connection->flushed                = tbx_true;
       connection->first_sub_buffer_group = tbx_false;
@@ -615,10 +603,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 	    {
 	      mad_buffer_group_t buffer_group;
 	      
-	      mad_make_buffer_group(&buffer_group,
-				    src_list,
-				    link,
-				    connection->cumulated_length);
+	      mad_make_buffer_group(&buffer_group, src_list, link);
 
 	      if (link->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
@@ -767,10 +752,7 @@ mad_pack(p_mad_connection_t   connection,
 	    {
 	      mad_buffer_group_t buffer_group;
 	      
-	      mad_make_buffer_group(&buffer_group,
-				    dest_list,
-				    last_link,
-				    connection->cumulated_length);
+	      mad_make_buffer_group(&buffer_group, dest_list, last_link);
 	      if (last_link->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
 		{
@@ -792,10 +774,7 @@ mad_pack(p_mad_connection_t   connection,
 	      p_mad_buffer_group_t buffer_group;
 
 	      buffer_group = mad_alloc_buffer_group_struct();
-	      mad_make_buffer_group(buffer_group,
-				    dest_list,
-				    last_link,
-				    connection->cumulated_length);
+	      mad_make_buffer_group(buffer_group, dest_list, last_link);
 	      tbx_append_list(buffer_group_list, buffer_group);
 	    }
 	  else
@@ -804,18 +783,10 @@ mad_pack(p_mad_connection_t   connection,
 
       connection->flushed = tbx_true;
       tbx_mark_list(dest_list);
-      connection->cumulated_length = 0;
     }
 
   source = mad_get_user_send_buffer(user_buffer, user_buffer_length);
-  
-  if ((connection->last_link != NULL)
-      && (link_mode != mad_link_mode_link_group)
-      && (link != connection->last_link))
-    {
-      connection->cumulated_length = 0;
-    }
-		
+
   if (link_mode == mad_link_mode_buffer)
     {
       /* B U F F E R   mode
@@ -872,7 +843,6 @@ mad_pack(p_mad_connection_t   connection,
 		    }
 
 		  tbx_mark_list(dest_list);
-		  connection->cumulated_length = 0;
 		}
 	      else
 		FAILURE("unknown buffer mode");
@@ -900,13 +870,11 @@ mad_pack(p_mad_connection_t   connection,
 	      if (send_mode == mad_send_SAFER)
 		{
 		  tbx_append_list(dest_list, mad_duplicate_buffer(source));
-		  connection->cumulated_length += source->length;
 		}
 	      else if (   (send_mode == mad_send_LATER)
 		       || (send_mode == mad_send_CHEAPER))
 		{
 		  tbx_append_list(dest_list, source);
-		  connection->cumulated_length += source->length;
 		}
 	      else	    
 		FAILURE("unknown send mode");
@@ -986,16 +954,11 @@ mad_pack(p_mad_connection_t   connection,
 	    {
 	      mad_buffer_group_t buffer_group;
 		  
-	      mad_make_buffer_group(&buffer_group,
-				    dest_list,
-				    link,
-				    connection->cumulated_length);
-	      
+	      mad_make_buffer_group(&buffer_group, dest_list, link);
 	      if (buffer_group.buffer_list.length == 1)
 		{
 		  interface->send_buffer(link,
-					 buffer_group.buffer_list.first->
-					 object);
+					 buffer_group.buffer_list.first->object);
 		}
 	      else
 		{
@@ -1007,10 +970,7 @@ mad_pack(p_mad_connection_t   connection,
 	      p_mad_buffer_group_t buffer_group;
 		  
 	      buffer_group = mad_alloc_buffer_group_struct();
-	      mad_make_buffer_group(buffer_group,
-				    dest_list,
-				    link,
-				    connection->cumulated_length);
+	      mad_make_buffer_group(buffer_group, dest_list, link);
 	      tbx_append_list(buffer_group_list, buffer_group);
 	    }
 
@@ -1089,7 +1049,6 @@ mad_pack(p_mad_connection_t   connection,
 	      if (send_mode == mad_send_SAFER)
 		{
 		  tbx_append_list(dest_list, mad_duplicate_buffer(source));
-		  link->cumulated_length += source->length;
 		}
 	      else if (   (send_mode == mad_send_LATER)
 		       || (send_mode == mad_send_CHEAPER))
@@ -1265,8 +1224,7 @@ mad_unpack(p_mad_connection_t   connection,
 		  
 		  mad_make_buffer_group(&buffer_group,
 					src_list,
-					last_link,
-					connection->cumulated_length);
+					last_link);
 
 		  if (last_link->group_mode == mad_group_mode_split
 		      && buffer_group.buffer_list.length == 1)
@@ -1295,7 +1253,6 @@ mad_unpack(p_mad_connection_t   connection,
 	  tbx_mark_list(src_list);
 	  connection->more_data = tbx_false;
 	  connection->flushed   = tbx_true ;
-	  connection->cumulated_length = 0;
 	}
 
       connection->first_sub_buffer_group = tbx_true;
@@ -1303,13 +1260,6 @@ mad_unpack(p_mad_connection_t   connection,
   
   destination = mad_get_user_receive_buffer(user_buffer, user_buffer_length);
 
-  if ((connection->last_link != NULL)
-      && (link_mode != mad_link_mode_link_group)
-      && (link != connection->last_link))
-    {
-      connection->cumulated_length = 0;
-    }
-		
   if (link_mode == mad_link_mode_buffer)
     {
       /* B U F F E R   mode
@@ -1398,10 +1348,7 @@ mad_unpack(p_mad_connection_t   connection,
 		  mad_buffer_group_t buffer_group;
 
 		  tbx_append_list(src_list, destination);
-		  mad_make_buffer_group(&buffer_group,
-					src_list,
-					link,
-					connection->cumulated_length);
+		  mad_make_buffer_group(&buffer_group, src_list, link);
 
 		  if (link->group_mode == mad_group_mode_split
 		      && buffer_group.buffer_list.length == 1)
@@ -1425,7 +1372,6 @@ mad_unpack(p_mad_connection_t   connection,
 		  if (group_mode == mad_group_mode_split)
 		    {
 		      connection->first_sub_buffer_group = tbx_true;
-		      connection->cumulated_length = 0;
 		    }
 		  else if (group_mode == mad_group_mode_aggregate)
 		    {
@@ -1502,7 +1448,6 @@ mad_unpack(p_mad_connection_t   connection,
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
 		  tbx_append_list(src_list, destination);
-		  connection->cumulated_length += destination->length++;
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
 		{
@@ -1532,7 +1477,6 @@ mad_unpack(p_mad_connection_t   connection,
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
 		  tbx_append_list(&(link->buffer_list), destination);
-		  link->cumulated_length += destination->length;
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
 		{

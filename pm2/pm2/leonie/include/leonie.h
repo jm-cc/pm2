@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.h,v $
+Revision 1.8  2000/12/11 08:31:14  oaumage
+- support Leonie
+
 Revision 1.7  2000/06/09 08:45:46  oaumage
 - Progression du code
 
@@ -73,9 +76,6 @@ ______________________________________________________________________________
 #include "leo_pointers.h"
 #include "leo_types.h"
 #include "leo_parser_types.h"
-#ifndef LEO_IN_YACC
-#include "leo_parser.h"
-#endif /* LEO_IN_YACC */
 #include "leo_main.h"
 
 /* Leonie: internal interface */

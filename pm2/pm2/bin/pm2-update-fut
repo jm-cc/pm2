@@ -1,21 +1,49 @@
-#!/bin/sh
+#!/bin/sh 
 
-FUTD=${HOME}/devel/fut
+PROGNAME=pm2-update-fut
+
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+
+usage() # exit_code
+{
+    echo "Usage: $PROGNAME <source directory>"
+    exit $1
+}
+
+
+[ $# -eq 1 ] || usage 1
+
+FUTD=$1
+
+[ -d $1 ] || error "Error: $1 is not a valid directory"
+
 PROFD=${PM2_ROOT}/profile
 
 copy()
 {
+ if [ -f $1 ]; then
     cp $1 $2
     chmod a+r $2/`basename $1`
     echo "File `basename $1` updated"
+ else
+    echo "Warning: $1 : file not found"
+ fi
 }
 
 # Include
 copy ${FUTD}/fut.h ${PROFD}/include
+copy ${FUTD}/get_cpu_mhz.h ${PROFD}/include
 
 # Source
 copy ${FUTD}/fut_header.S ${PROFD}/source
 copy ${FUTD}/fut_setup.c ${PROFD}/source
+copy ${FUTD}/get_cpu_mhz.c ${PROFD}/source
 
 # Bin/src
 copy ${FUTD}/fut_print.c ${PROFD}/bin/src

@@ -91,11 +91,14 @@ mad_tcp_write(int            sock,
   while (mad_more_data(buffer))
     {
       ssize_t result;
+      void	*ptr	= buffer->buffer        + buffer->bytes_read;
+      size_t	 len	= buffer->bytes_written - buffer->bytes_read;
 
-      SYSTEST(result = write(sock,
-			     (const void*)(buffer->buffer +
-					   buffer->bytes_read),
-			     buffer->bytes_written - buffer->bytes_read));
+#ifdef MARCEL
+      SYSTEST(result = marcel_write(sock, ptr, len));
+#else /* MARCEL */
+      SYSTEST(result = write(sock, ptr, len));
+#endif /* MARCEL */
 
       if (result > 0)
 	{
@@ -103,10 +106,6 @@ mad_tcp_write(int            sock,
 	}
       else
 	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (mad_more_data(buffer)) TBX_YIELD();
-#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -119,12 +118,15 @@ mad_tcp_read(int            sock,
   LOG_IN();
   while (!mad_buffer_full(buffer))
     {
-      ssize_t result;
+      ssize_t	 result	= 0;
+      void	*ptr	= buffer->buffer + buffer->bytes_written;
+      size_t	 len	= buffer->length - buffer->bytes_written;
 
-      SYSTEST(result = read(sock,
-			    (void*)(buffer->buffer +
-				    buffer->bytes_written),
-			    buffer->length - buffer->bytes_written));
+#ifdef MARCEL
+      SYSTEST(result = marcel_read(sock, ptr, len));
+#else /* MARCEL */
+      SYSTEST(result = read(sock, ptr, len));
+#endif /* MARCEL */
 
       if (result > 0)
 	{
@@ -132,10 +134,6 @@ mad_tcp_read(int            sock,
 	}
       else
 	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (!mad_buffer_full(buffer)) TBX_YIELD();
-#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -151,7 +149,11 @@ mad_tcp_writev(int           sock,
     {
       ssize_t result;
 
+#ifdef MARCEL
+      SYSTEST(result = marcel_writev(sock, array, count));
+#else /* MARCEL */
       SYSTEST(result = writev(sock, array, count));
+#endif /* MARCEL */
 
       if (result > 0)
 	{
@@ -174,10 +176,6 @@ mad_tcp_writev(int           sock,
 	}
       else
 	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (count) TBX_YIELD();
-#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -193,7 +191,11 @@ mad_tcp_readv(int           sock,
     {
       ssize_t result;
 
+#ifdef MARCEL
+      SYSTEST(result = marcel_readv(sock, array, count));
+#else /* MARCEL */
       SYSTEST(result = readv(sock, array, count));
+#endif /* MARCEL */
 
       if (result > 0)
 	{
@@ -216,10 +218,6 @@ mad_tcp_readv(int           sock,
 	}
       else
 	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (count) TBX_YIELD();
-#endif // MARCEL
     }
   LOG_OUT();
 }

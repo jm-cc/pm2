@@ -1,0 +1,41 @@
+                      PM2 HIGH-PERF/ISOMALLOC
+           High Performance Parallel Multithreaded Machine
+                           version 3.0
+
+     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+
+            Laboratoire de l'Informatique du Parallelisme
+                        UMR 5668 CNRS-INRIA
+                 Ecole Normale Superieure de Lyon
+
+                      External Contributors:
+                 Yves Denneulin (LMC - Grenoble),
+                 Benoit Planquelle (LIFL - Lille)
+		 
+		 GrEvAnRt demo: Vincent Bernardi
+
+                    1998 All Rights Reserved
+
+                             NOTICE
+
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby granted
+ provided that the above copyright notice appear in all copies and
+ that both the copyright notice and this permission notice appear in
+ supporting documentation.
+
+ Neither the institutions (Ecole Normale Superieure de Lyon,
+ Laboratoire de L'informatique du Parallelisme, Universite des
+ Sciences et Technologies de Lille, Laboratoire d'Informatique
+ Fondamentale de Lille), nor the Authors make any representations
+ about the suitability of this software for any purpose. This
+ software is provided ``as is'' without express or implied warranty.
+-----------------------------------------------------------------------
+
+ Ce programme se veut une démonstartion graphique de DSM-PM2. Il nécessite la présence d'un serveur X-Window et n'a été testé qu'avec X11R6.
+La compilation nécessite pour l'instant d'ajouter à la main le chemin des en-tete de la librairie X (par example en ajoutant -L/usr/X11R6/lib/ dans une ligne de compilation) et de lier à la main le fichier objet avec la librairie X (-lX11).Le programme nécessite également que l'utilisateur aille changer à la main la ligne '#define DISPLAY' du code source et lui assigne la valeur voulue, c'est à dire le chemin du serveur X.
+Commandes clavier:
+La touche 'c' devrait créer un nouveau thread, la touche 'b' fait passer la balle d'un noeud à un autre, et la touche 'r' tire au hasard la direction de la balle.
+
+Dernière mise à jour: 15/06/00.

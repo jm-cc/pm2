@@ -1,0 +1,40 @@
+                      PM2 HIGH-PERF/ISOMALLOC
+           High Performance Parallel Multithreaded Machine
+                           version 3.0
+
+     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+
+            Laboratoire de l'Informatique du Parallelisme
+                        UMR 5668 CNRS-INRIA
+                 Ecole Normale Superieure de Lyon
+
+                      External Contributors:
+                 Yves Denneulin (LMC - Grenoble),
+                 Benoit Planquelle (LIFL - Lille)
+		 
+		 GrEvAnRt demo: Vincent Bernardi
+
+                    1998 All Rights Reserved
+
+                             NOTICE
+
+ Permission to use, copy, modify, and distribute this software and
+ its documentation for any purpose and without fee is hereby granted
+ provided that the above copyright notice appear in all copies and
+ that both the copyright notice and this permission notice appear in
+ supporting documentation.
+
+ Neither the institutions (Ecole Normale Superieure de Lyon,
+ Laboratoire de L'informatique du Parallelisme, Universite des
+ Sciences et Technologies de Lille, Laboratoire d'Informatique
+ Fondamentale de Lille), nor the Authors make any representations
+ about the suitability of this software for any purpose. This
+ software is provided ``as is'' without express or implied warranty.
+-----------------------------------------------------------------------
+
+ This program is intended as a graphical demonstration of DSM-PM2. It requires a X-Window server and has currently only been tested with X11R6.
+The building process currently requires to manually add the headers path for Xlib (-L/usr/X11R6/lib/ , for example) and to manually link the object file with Xlib (-lX11),a way or another. The program also currently requires the user to manually change the '#define DISPLAY' string at the beginning of the source code to the requested value.
+Keyboard commands: The 'c' key should create a new thread, the 'b' key serves to move the ball from a node to another, the 'r' key randomize the direction of the ball.
+
+Last Updated: 06/15/00.

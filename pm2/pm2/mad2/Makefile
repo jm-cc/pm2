@@ -61,7 +61,7 @@ include $(PM2_ROOT)/make/libs-rules.mak
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifeq ($(wildcard $(LIB_C_DEPENDS_ADDED)),$(LIB_C_DEPENDS_ADDED))
-include $(LIB_C_DEPENDS_ADDED)
+-include $(LIB_C_DEPENDS_ADDED)
 endif
 endif
 endif
@@ -76,6 +76,9 @@ $(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
-$(PM2_MAK_DIR)/mad2-specific.mak: $(PM2_MAK_DIR)
-	echo "MAD2_PROTOCOLS := `$(PM2_CONFIG) --protocols $(LIBRARY)`" >  $@
+$(PM2_MAK_DIR)/mad2-specific.mak: $(LIB_STAMP_FLAVOR)
+	@_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\
+	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
+	echo "MAD2_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
+	fi;
 

@@ -19,7 +19,7 @@ appdir="${PM2_ROOT}/marcel/examples"
 prog="smptest"
 args="--marcel-nvp 5"
 hosts="localhost"
-cat > /tmp/pm2test_expected <<EOF
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Hi! I'm thread 0 on VP 0
 Hi! I'm thread 1 on VP 1
 Hi! I'm thread 2 on VP 2

@@ -1568,7 +1568,7 @@ restart:
 #endif
 
 	double_rq_lock(prevrq,rq);
-	sched_debug("locked\n");
+	sched_debug("locked(%p,%p)\n",prevrq,rq);
 
 	if (tbx_unlikely(rq == ma_dontsched_rq(LWP_SELF))) {
 		/* found no interesting queue, not even previous one */

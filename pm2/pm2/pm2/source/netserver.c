@@ -51,8 +51,7 @@ void _netserver_term_func(void *arg)
 }
 
 #ifdef MAD2
-void pm2_send_stop_server(int i);
-extern volatile int pm2_zero_halt;
+void pm2_halt_requested(void);
 #endif
 
 static any_t netserver(any_t arg)
@@ -72,25 +71,24 @@ static any_t netserver(any_t arg)
       netserver_raw_rpc(tag - NETSERVER_RAW_RPC);
     else {
       switch(tag) {
+#ifdef MAD2
+      case NETSERVER_REQUEST_HALT :
+	mad_recvbuf_receive();
+	pm2_halt_requested();
+	break;
+#endif
       case NETSERVER_END : {
 #ifdef MAD2
 	mad_recvbuf_receive();
 
-	if (__pm2_self == 0) {
-	  if(!pm2_zero_halt) {
-	    pm2_zero_halt=TRUE;
-	    pm2_send_stop_server(1);
-	  } else {
-	    finished = TRUE;
-	  }
-	} else {
-	  /* On fait suivre et on termine... */
-	  pm2_send_stop_server((__pm2_self+1) % __pm2_conf_size);
-	  finished = TRUE;
+	if (__pm2_self == 1) {
+	  /* On arrête le noeud 0... */
+	  mad_sendbuf_init(arg, 0);
+	  pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+	  mad_sendbuf_send();
 	}
-#else
-	finished = TRUE;
 #endif
+	finished = TRUE;
 	break;
       }
       default : {

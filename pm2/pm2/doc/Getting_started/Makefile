@@ -1,5 +1,5 @@
 
-## $Id: Makefile,v 1.2 2001/04/02 12:23:42 bouge Exp $
+## $Id: Makefile,v 1.4 2001/04/12 16:00:57 bouge Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -8,39 +8,48 @@ FIG2DEV= fig2dev
 
 .SUFFIXES: .eps .dvi .ps .tex .bbl .gp .eps .c
 
-.PHONY: all eps bbl dvi ps touch tar  clean open split
+.PHONY: all eps bbl dvi ps touch tar  clean open split ezflavor
 
-TEXFILES	:= start.tex
+TEXFILES	:= appendicing.tex discovering.tex \
+		installing.tex mastering.tex title.tex \
+		customizing.tex firstpage.tex introducing.tex \
+		start.tex wizarding.tex
+
+ROOTTEXFILES	:= start.tex
 STYFILES	:= start.sty
 
-TO_SPLIT	:= rpc-threads1 migration3 migrate-group dsm dsm1 dsm2
+TO_SPLIT	:= rpc-threads1 migration3 migrate-group \
+		dsm dsm1 dsm2 freeze mutex semaphore
 
 CFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c)
 CFILES_SPLIT_0	:= $(CFILES_TO_SPLIT:%=%-0) 
 CFILES_SPLIT_1	:= $(CFILES_TO_SPLIT:%=%-1)
 
-PLOTFILES	:= $(wildcard *.plot)
 BIBFILES	:= $(wildcard *.bib)
-FIGFILES	:= $(wildcard *.fig)
-GPFILES 	:= $(wildcard *.gp)
-EPSFILES	:= $(wildcard *.eps)
-PLOTFILES	:= $(wildcard *.plot)
+FIGFILES	:= $(wildcard Figures/*.fig)
+GPFILES 	:= $(wildcard Measures/*.gp)
+PLOTFILES	:= $(wildcard Measures/*.plot)
+XWDFILES	:= $(wildcard Figures/*.xwd)
 CFILES		:= $(wildcard Progs/*.c)
 
-BBLFILES	:= $(TEXFILES:%.tex=%.bbl)
-AUXFILES	:= $(TEXFILES:%.tex=%.aux)
-DVIFILES	:= $(TEXFILES:%.tex=%.dvi)
-PSFILES 	:= $(TEXFILES:%.tex=%.ps)
+BBLFILES	:= $(ROOTTEXFILES:%.tex=%.bbl)
+AUXFILES	:= $(ROOTTEXFILES:%.tex=%.aux)
+DVIFILES	:= $(ROOTTEXFILES:%.tex=%.dvi)
+PSFILES 	:= $(ROOTTEXFILES:%.tex=%.ps)
 FIGEPSFILES	:= $(FIGFILES:%.fig=%.eps)
 GPEPSFILES	:= $(GPFILES:%.gp=%.eps)
-ALLEPSFILES	:= $(FIGEPSFILES) $(GPEPSFILES) $(EPSFILES)
+XWDEPSFILES	:= $(XWDFILES:%.xwd=%.eps)
+PUREEPSFILES	:= $(wildcard *.eps)
+
+AUXEPSFILES	:= $(FIGEPSFILES) $(GPEPSFILES) $(XWDEPSFILES)
+EPSFILES	:= $(AUXEPSFILES) $(PUREEPSFILES)
 
 OFILES		:= $(CFILES:%.c=%.o)
 EXEFILES	:= $(CFILES:%.c=%)
 
 BBLFILES	:= 
 INCLUDEFILES	:= $(CFILES) $(CFILES_SPLIT_0) $(CFILES_SPLIT_1) \
-			$(ALLEPSFILES) $(BBLFILES) $(STYFILES)
+			$(EPSFILES) $(BBLFILES) $(STYFILES)
 
 all: eps dvi split
 
@@ -58,9 +67,9 @@ $(GPEPSFILES): %.eps: $(PLOTFILES) %.gp
 $(FIGEPSFILES): %.eps: %.fig
 	$(FIG2DEV) -L ps $*.fig > $*.eps
 
-eps: $(ALLEPSFILES)
+eps: $(AUXEPSFILES)
 
-$(AUXFILES): %.aux: %.tex 
+$(AUXFILES): %.aux: %.tex $(TEXFILES)
 	latex $*
 
 # The rule below creates a problem: $(MAKE) $*.aux create a dvi file,
@@ -75,14 +84,14 @@ $(AUXFILES): %.aux: %.tex
 # rule, or to delete the dvi file created as a byproduct within this
 # rule. I chose this latter solution, as it is safer.
 
-$(BBLFILES): %.bbl: %.tex $(BIBFILES) $(INCLUDEFILES)
+$(BBLFILES): %.bbl: %.tex $(BIBFILES) $(INCLUDEFILES) $(TEXFILES)
 	$(MAKE) $*.aux
 	-rm *.dvi	# Here!
 	bibtex $*
 
 bbl: $(BBLFILES)
 
-$(DVIFILES): %.dvi: %.tex $(INCLUDEFILES)
+$(DVIFILES): %.dvi: %.tex $(INCLUDEFILES) $(TEXFILES)
 	latex $*
 	@while grep --silent 'Rerun to ' $*.log; \
 		do latex $*; done
@@ -99,6 +108,7 @@ clean: open
 	-rm *.bbl *.aux *.log *.cb *.ps *.blg *~ *.dvi *.toc 
 	-rm $(OFILES) $(EXEFILES)
 	-rm $(CFILES_SPLIT_0) $(CFILES_SPLIT_1)
+	-rm $(AUXEPSFILES)
 
 open:
 	-chmod -R a+rX . ./*
@@ -114,3 +124,22 @@ tar:
 	cd ..; tar zcfv $(DIRNAME)_$(DATE).tgz $(DIRNAME); \
 	chmod a+rX *; \
 	ls -la $(DIRNAME)_$(DATE).tgz
+
+Figures/ezflavor.eps: Figures/ezflavor.xwd
+## xpr -device ps -portrait -gray 4 -psfig -compact $< > $@ See
+## Using xpr seems deprecated.
+## Using xv is quite painful, as there is no script mode.
+## Using the Solaris convert utility looks best. See
+## http://www.lbl.gov/ICSD/CIS/faq/xwd-color-PS.html for comments
+## about this method
+	convert $< $@
+
+Figures/ezflavor.xwd: 
+	@echo 'Capturing the current ezflavor window: wait for the rings!'
+	@echo 'Warning: You should first raise this window on top!'
+	@sleep 3
+	xwd -debug -nobdrs -name ezflavor -out $@
+
+ezflavor: 
+	-rm Figures/ezflavor.xwd
+	$(MAKE) Figures/ezflavor.xwd

@@ -11,6 +11,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include "fut.h"
+#include "get_cpu_mhz.h"
 
 
 #define DEFAULT_TRACE_FILE	"fut_trace_file"
@@ -44,6 +45,8 @@ static unsigned int	fut_pid = 0;
 /*	holds times of setup(), endup() */
 static time_t	fut_start_time = 0, fut_stop_time = 0;
 
+/*	holds cpu mhz as retrieved from /proc/cpuinfo */
+static double	fut_cpu_mhz;
 
 /*	called once to set up tracing.
 	includes mallocing the buffer to hold the trace.
@@ -59,6 +62,9 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 
 	/*	remember pid of process that called setup */
 	fut_pid = getpid();
+
+	/*	find out speed of this cpu in mhz */
+	fut_cpu_mhz = get_cpu_mhz();
 
 	if( bufptr != NULL )
 		{/* previous allocation region was not released, do it now */
@@ -248,6 +254,8 @@ int fut_endup( char *filename )
 
 	if( write(fd, (void *)&fut_pid, sizeof(fut_pid)) < 0 )
 		perror("write pid");
+	if( write(fd, (void *)&fut_cpu_mhz, sizeof(fut_cpu_mhz)) < 0 )
+		perror("write cpu_mhz");
 	if( write(fd, (void *)&fut_start_time, sizeof(fut_start_time)) < 0 )
 		perror("write start_time");
 	if( write(fd, (void *)&fut_stop_time, sizeof(fut_stop_time)) < 0 )

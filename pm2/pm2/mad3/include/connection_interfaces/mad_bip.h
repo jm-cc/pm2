@@ -40,8 +40,6 @@ mad_bip_driver_init(p_mad_driver_t);
 void
 mad_bip_adapter_init(p_mad_adapter_t);
 
-void
-mad_bip_adapter_configuration_init(p_mad_adapter_t);
 
 /*----*/
 
@@ -131,22 +129,5 @@ mad_bip_receive_sub_buffer_group(p_mad_link_t,
  * mad_bip_return_static_buffer(p_mad_link_t     lnk,
  *                             p_mad_buffer_t   buffer);
  */
-
-void
-mad_bip_external_spawn_init(p_mad_adapter_t spawn_adapter,
-			    int *argc, char **argv);
-
-void
-mad_bip_configuration_init(p_mad_adapter_t       spawn_adapter,
-			   p_mad_configuration_t configuration);
-
-void
-mad_bip_send_adapter_parameter(p_mad_adapter_t  spawn_adapter,
-			       ntbx_host_id_t   remote_host_id,
-			       char            *parameter);
-
-void
-mad_bip_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter,
-				  char            **parameter);
 
 #endif /* MAD_BIP_H */

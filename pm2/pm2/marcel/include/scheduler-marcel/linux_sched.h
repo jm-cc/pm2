@@ -55,6 +55,10 @@ extern unsigned long ma_nr_running(void);
 #define ma_set_current_state(state_value)		\
 	ma_set_mb(MARCEL_SELF->sched.state, (state_value))
 
+#define MA_TASK_IS_RUNNING(tsk) ((tsk)->sched.internal.cur_rq && !(tsk)->sched.internal.array)
+#define MA_TASK_IS_BLOCKED(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
+#define MA_TASK_IS_SLEEPING(tsk) (!(tsk)->sched.internal.cur_rq)
+
 /*
  * Scheduling policies
  */

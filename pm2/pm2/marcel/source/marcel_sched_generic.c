@@ -63,6 +63,8 @@ unsigned long marcel_createdthreads(void)
 // Utilise par les fonctions one_more_task, wait_all_tasks, etc.
 static ma_spinlock_t __wait_lock = MA_SPIN_LOCK_UNLOCKED;
 
+static LIST_HEAD(all_threads);
+
 // Appele a chaque fois qu'une tache est creee (y compris par le biais
 // de end_hibernation).
 void marcel_one_more_task(marcel_t pid)
@@ -71,6 +73,7 @@ void marcel_one_more_task(marcel_t pid)
 
 	pid->number = task_number++;
 	_main_struct.nb_tasks++;
+	list_add(&pid->all_threads,&all_threads);
 
 	ma_spin_unlock(&__wait_lock);
 }
@@ -80,10 +83,78 @@ void marcel_one_task_less(marcel_t pid)
 {
 	ma_spin_lock(&__wait_lock);
 
+	list_del(&pid->all_threads);
 	if(((--(_main_struct.nb_tasks)) == 0) && (_main_struct.main_is_waiting)) {
 		marcel_sem_V(&_main_struct.blocked);
 	}
 
+	ma_spin_unlock(&__wait_lock);
+}
+
+static __inline__ int want_to_see(marcel_t t, int which)
+{
+  if(t->detached) {
+    if(which & NOT_DETACHED_ONLY)
+      return 0;
+  } else if(which & DETACHED_ONLY)
+    return 0;
+
+  if(t->not_migratable) {
+    if(which & MIGRATABLE_ONLY)
+      return 0;
+  } else if(which & NOT_MIGRATABLE_ONLY)
+      return 0;
+
+  if(MA_TASK_IS_BLOCKED(t)) {
+    if(which & NOT_BLOCKED_ONLY)
+      return 0;
+  } else if(which & BLOCKED_ONLY)
+    return 0;
+
+  if(MA_TASK_IS_SLEEPING(t)) {
+    if(which & NOT_SLEEPING_ONLY)
+      return 0;
+  } else if(which & SLEEPING_ONLY)
+    return 0;
+
+  return 1;
+}
+
+void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
+{
+	marcel_t t;
+	int nb_pids = 0;
+	DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
+
+
+	if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
+		((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||
+		((which & BLOCKED_ONLY) && (which & NOT_BLOCKED_ONLY)) ||
+		((which & SLEEPING_ONLY) && (which & NOT_SLEEPING_ONLY)))
+		RAISE(CONSTRAINT_ERROR);
+
+	ma_spin_lock(&__wait_lock);
+	list_for_each_entry(t, &all_threads, all_threads) {
+		if (want_to_see(t, which)) {
+			if (nb_pids < max)
+				pids[nb_pids++] = t;
+			else
+				nb_pids++;
+		}
+	}
+	*nb = nb_pids;
+	ma_spin_unlock(&__wait_lock);
+}
+
+void marcel_snapshot(snapshot_func_t f)
+{
+	marcel_t t;
+	struct list_head *pod;
+	DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
+
+	ma_spin_lock(&__wait_lock);
+	list_for_each_entry(t, &all_threads, all_threads)
+		(*f)(t);
 	ma_spin_unlock(&__wait_lock);
 }
 

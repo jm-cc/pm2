@@ -177,6 +177,16 @@ void pm2_halt()
   LOG_OUT();
 }
 
+void pm2_freeze(void)
+{
+  lock_task();
+}
+
+void pm2_unfreeze(void)
+{
+  unlock_task();
+}
+
 void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func)
 {
   static unsigned rawrpc_service_number = NETSERVER_RAW_RPC;

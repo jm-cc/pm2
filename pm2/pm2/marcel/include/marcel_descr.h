@@ -127,6 +127,9 @@ struct marcel_task {
 	marcel_t p_nextwaiting;
 	marcel_sem_t pthread_sync;
 
+	/*         list of all threads */
+	struct list_head all_threads;
+
 #ifdef ENABLE_STACK_JUMPING
 	void *dummy; // Doit rester le _dernier_ champ
 #endif

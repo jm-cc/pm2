@@ -2930,7 +2930,6 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	init_rq(&ma_per_lwp(dontsched_runqueue,lwp), MA_DONTSCHED_RQ);
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
-	// TODO: activations
 	MA_CPU_ZERO(&(ma_lwp_rq(lwp)->cpuset));
 	MA_CPU_SET(LWP_NUMBER(lwp),&(ma_lwp_rq(lwp)->cpuset));
 	MA_CPU_ZERO(&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));

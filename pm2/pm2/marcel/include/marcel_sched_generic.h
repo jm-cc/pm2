@@ -55,6 +55,29 @@ void marcel_gensched_shutdown(void);
 
 void marcel_one_task_less(marcel_t pid);
 void marcel_one_more_task(marcel_t pid);
+void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
+
+#section structures
+/* ==== snapshot ==== */
+
+typedef void (*snapshot_func_t)(marcel_t pid);
+
+#section functions
+void marcel_snapshot(snapshot_func_t f);
+
+#section macros
+#define ALL_THREADS		 0
+#define MIGRATABLE_ONLY		 1
+#define NOT_MIGRATABLE_ONLY	 2
+#define DETACHED_ONLY		 4
+#define NOT_DETACHED_ONLY	 8
+#define BLOCKED_ONLY		16
+#define NOT_BLOCKED_ONLY	32
+#define SLEEPING_ONLY           64
+#define NOT_SLEEPING_ONLY      128
+
+#section functions
+void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 #section macros
 #define SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get) \

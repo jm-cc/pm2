@@ -150,16 +150,8 @@ void pm2_set_post_post_migration_func(pm2_post_post_migration_hook f);
 #define pm2_enable_migration()	marcel_enablemigration(marcel_self())
 #define pm2_disable_migration()	marcel_disablemigration(marcel_self())
 
-static __inline__ void pm2_freeze(void)
-{
-  lock_task();
-}
-
-static __inline__ void pm2_unfreeze(void) __attribute__ ((unused));
-static __inline__ void pm2_unfreeze(void)
-{
-  unlock_task();
-}
+void pm2_freeze(void);
+void pm2_unfreeze(void);
 
 /* Les valeurs possibles pour *which* sont :
 		ALL_THREADS

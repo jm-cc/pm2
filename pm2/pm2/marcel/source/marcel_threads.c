@@ -682,10 +682,10 @@ DEF_PTHREAD(cleanup_pop)
 
 static void __inline__ freeze(marcel_t t)
 {
-//#ifndef MA__MONO
   RAISE(NOT_IMPLEMENTED);
-//#endif
-#if 0
+#ifndef MA__MONO
+  RAISE(NOT_IMPLEMENTED);
+#endif
    if(t != marcel_self()) {
       lock_task();
       if(IS_BLOCKED(t) || IS_FROZEN(t)) {
@@ -702,7 +702,6 @@ static void __inline__ freeze(marcel_t t)
       UNCHAIN_TASK(t);
       unlock_task();
    }
-#endif
 }
 
 static void __inline__ unfreeze(marcel_t t)
@@ -802,7 +801,6 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
 }
 
 // TODO : Vérifier le code avec les activations
-#if 0
 void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 {
 #ifdef MA__ACTIVATION
@@ -815,15 +813,15 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 
   lock_task();
 
-  marcel_insert_task(t);
+  marcel_sched_init_marcel_thread(t, &marcel_attr_default);
   marcel_one_more_task(t);
+  ma_wake_up_created_thread(t);
 
   if(f != NULL)
     marcel_deviate(t, f, arg);
 
   unlock_task();
 }
-#endif /* 0 */
 
 void __marcel_init main_thread_init(void)
 {

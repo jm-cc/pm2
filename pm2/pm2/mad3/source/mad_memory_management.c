@@ -78,6 +78,7 @@ mad_alloc_buffer_struct(void)
   p_mad_buffer_t buffer = NULL;
 
   buffer = tbx_malloc(mad_buffer_memory);
+  memset(buffer, 0, sizeof(mad_buffer_t));
 
   return buffer;
 }

@@ -33,7 +33,6 @@ YACC :=  bison -y -d
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
 # Yacc

@@ -2,7 +2,7 @@
  *  \brief TBX functional interface file
  *
  *  This file declares the prototype of any TBX exported function
- * 
+ *
  */
 
 /*
@@ -28,7 +28,7 @@
 #ifndef TBX_INTERFACE_H
 #define TBX_INTERFACE_H
 
-/* 
+/*
  * Common
  * ------
  */
@@ -54,10 +54,10 @@ tbx_default_specific_dest(void *specific);
  * Timing
  * ------
  */
-void 
+void
 tbx_timing_init(void);
 
-double 
+double
 tbx_tick2usec(long long t);
 
 /*
@@ -100,7 +100,7 @@ tbx_safe_calloc(const size_t    nmemb,
 void
 tbx_safe_free(void *ptr);
 
-void 
+void
 tbx_safe_malloc_check(const tbx_safe_malloc_mode_t mode);
 
 void *
@@ -123,7 +123,7 @@ void *
 tbx_malloc(p_tbx_memory_t mem);
 
 void
-tbx_free(p_tbx_memory_t  mem, 
+tbx_free(p_tbx_memory_t  mem,
          void           *ptr);
 
 void
@@ -141,49 +141,49 @@ tbx_list_manager_init(void);
 void
 tbx_list_init(p_tbx_list_t list);
 
-void 
+void
 tbx_foreach_destroy_list(p_tbx_list_t                    list,
 			 const p_tbx_list_foreach_func_t func);
-void 
+void
 tbx_list_manager_exit(void);
 
 void
 tbx_destroy_list(p_tbx_list_t list);
 
-void 
+void
 tbx_append_list(p_tbx_list_t   list,
 		void*          object);
 void *
 tbx_get_list_object(const p_tbx_list_t list);
 
-void 
+void
 tbx_mark_list(p_tbx_list_t list);
 
-void 
+void
 tbx_duplicate_list(const p_tbx_list_t source,
 		   p_tbx_list_t destination);
 
-void 
+void
 tbx_extract_sub_list(const p_tbx_list_t source,
 		     p_tbx_list_t destination);
 
-tbx_bool_t 
+tbx_bool_t
 tbx_empty_list(const p_tbx_list_t list);
 
-void 
+void
 tbx_list_reference_init(p_tbx_list_reference_t ref,
 			const p_tbx_list_t     list);
 
 void *
 tbx_get_list_reference_object(const p_tbx_list_reference_t ref);
 
-tbx_bool_t 
+tbx_bool_t
 tbx_forward_list_reference(p_tbx_list_reference_t ref);
 
-void 
+void
 tbx_reset_list_reference(p_tbx_list_reference_t ref);
 
-tbx_bool_t 
+tbx_bool_t
 tbx_reference_after_end_of_list(const p_tbx_list_reference_t ref);
 
 /*
@@ -423,7 +423,7 @@ tbx_slist_nref_get(p_tbx_slist_nref_t nref);
 void
 tbx_htable_manager_init(void);
 
-void 
+void
 tbx_htable_init(p_tbx_htable_t            htable,
 		tbx_htable_bucket_count_t buckets);
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_alloc.c,v $
+Revision 1.7  2001/01/03 14:12:23  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.6  2000/11/15 21:32:21  rnamyst
 Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
 
@@ -67,7 +70,7 @@ ______________________________________________________________________________
 #include "marcel.h"
 #include "marcel_alloc.h"
 
-static void *next_slot = (void *)SLOT_AREA_TOP;
+static void *next_slot;
 
 static marcel_lock_t alloc_lock = MARCEL_LOCK_INIT;
 
@@ -86,6 +89,8 @@ void marcel_slot_init(void)
   __zero_fd = open("/dev/zero", O_RDWR);
 #endif
   stack_cache.last = 0;
+
+  next_slot = (void *)SLOT_AREA_TOP;
 }
 
 extern volatile unsigned long threads_created_in_cache;

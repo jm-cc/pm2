@@ -1,1 +1,2 @@
 Provide: mad2_proto
+Conflict: mad2_mpi

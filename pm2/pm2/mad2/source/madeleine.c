@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.32  2000/06/16 14:03:51  oaumage
+- Mise a jour par rapport au nouveau fonctionnement de pm2conf
+
 Revision 1.31  2000/05/25 00:23:39  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -243,10 +246,15 @@ mad_adapter_set_init(int nb_adapter, ...)
 }
 
 void 
-mad_managers_init(void)
+mad_managers_init(int   *argc,
+		  char **argv)
 {
+#ifdef MARCEL  
+  marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
+#endif /* MARCEL */
+  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
+
   LOG_IN();
-  tbx_init(NULL, NULL, 0);
   ntbx_init();
   mad_memory_manager_init();
   LOG_OUT();

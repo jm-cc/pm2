@@ -40,15 +40,13 @@ static unsigned SAMPLE;
 static void SAMPLE_service(void)
 {
   char msg[1024];
-  pm2_completion_t c;
 
-  mad_unpack_str(MAD_IN_HEADER, msg);
-  pm2_completion_unpack(&c);
+  pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, msg);
   pm2_rawrpc_waitdata();
 
   pm2_printf("%s\n", msg);
 
-  pm2_completion_signal(&c);
+  pm2_halt();
 }
 
 int pm2_main(int argc, char **argv)
@@ -65,22 +63,12 @@ int pm2_main(int argc, char **argv)
   }
 
   if(pm2_self() == 0) { /* first process */
-    pm2_completion_t c;
-
-    pm2_completion_init(&c);
-
     pm2_rawrpc_begin(1, SAMPLE, NULL);
-    mad_pack_str(MAD_IN_HEADER, "Hello world!");
-    pm2_completion_pack(&c);
+    pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, "Hello world!");
     pm2_rawrpc_end();
-
-    pm2_completion_wait(&c);
-
-    pm2_halt();
   }
 
   pm2_exit();
 
-  tfprintf(stderr, "Main is ending\n");
   return 0;
 }

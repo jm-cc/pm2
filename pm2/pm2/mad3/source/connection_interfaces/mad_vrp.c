@@ -816,7 +816,7 @@ mad_vrp_send_buffer(p_mad_link_t   lnk,
           p_mad_buffer_slice_parameter_t param = NULL;
 
           param = tbx_slist_ref_get(b->parameter_slist);
-          if (param->opcode == mad_vrp_op_optional_block)
+          if (param->opcode == mad_op_optional_block)
             {
               // note: offset and length are ignored for now
               // the whole block is either mandatory or optional
@@ -904,10 +904,10 @@ mad_vrp_receive_buffer(p_mad_link_t    lnk,
           bsp->base   = b->buffer;
           bsp->offset = is->lost[i];
           bsp->length = is->loss_granularity;
-          bsp->opcode = mad_vrp_os_lost_block;
+          bsp->opcode = mad_os_lost_block;
           bsp->value  = 0; // unused
 
-          tbx_slist_append(b->parameter_slist, bsp);
+          tbx_slist_append(slist, bsp);
         }
 
       b->parameter_slist = slist;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: profile.h,v $
+Revision 1.5  2000/10/18 12:41:15  rnamyst
+Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
+
 Revision 1.4  2000/09/18 14:22:43  rnamyst
 Few re-arrangements in .h files
 
@@ -85,20 +88,21 @@ ______________________________________________________________________________
 
 #ifdef PREPROC
 
-#define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_fut_" \
-                                                   __FUNCTION__ "_" #inout \
-                                                   "_code"); \
+#define GEN_PREPROC(name)   { extern int foo asm ("this_is_the_fut_" \
+                                                  name "_code"); \
                                foo=1; }
 
 #else // ifndef PREPROC
 
-#define GEN_PREPROC(inout)   { extern unsigned __code asm("fut_" __FUNCTION__ \
-                                                          "_" #inout "_code"); \
+#define GEN_PREPROC(name)   { extern unsigned __code asm("fut_" name "_code"); \
                                PROF_PROBE0(PROFILE_KEYMASK, __code); }
 #endif // PREPROC
 
-#define PROF_IN()            GEN_PREPROC(entry)
-#define PROF_OUT()           GEN_PREPROC(exit)
+#define PROF_IN()            GEN_PREPROC(__FUNCTION__ "_entry")
+#define PROF_OUT()           GEN_PREPROC(__FUNCTION__ "_exit")
+
+#define PROF_IN_EXT(name)    GEN_PREPROC(#name "_entry")
+#define PROF_OUT_EXT(name)   GEN_PREPROC(#name "_exit");
 
 #else // ifndef DO_PROFILE
 
@@ -107,12 +111,15 @@ ______________________________________________________________________________
 #define PROF_IN()                    (void)0
 #define PROF_OUT()                   (void)0
 
+#define PROF_IN_EXT(name)            (void)0
+#define PROF_OUT_EXT(name)           (void)0
+
 #endif // DO_PROFILE
 
 // The keymask of PROF_SWITCH_TO() is -1 because this
 // trace-instruction should be activated whenever one other
 // trace-instruction is active...
-#define PROF_SWITCH_TO(thr) ((fut_active) ? \
+#define PROF_SWITCH_TO(thr) ((fut_active && thr != marcel_self()) ? \
                 fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | 16, \
                            (unsigned int)((thr)->number)) : 0)
 
@@ -131,6 +138,9 @@ void profile_stop(void);
 
 #define PROF_IN()                    (void)0
 #define PROF_OUT()                   (void)0
+
+#define PROF_IN_EXT(name)            (void)0
+#define PROF_OUT_EXT(name)           (void)0
 
 #endif // PROFILE
 

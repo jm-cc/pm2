@@ -31,6 +31,8 @@
 extern char *traps[];
 extern char *sys_calls[];
 
+char *ps_output_name = NULL;
+
 enum action {NONE, PRINT_PROCESS, PRINT_THREAD};
 
 static u_64 begin_global = 0;
@@ -94,8 +96,8 @@ void close_lwp_ps(FILE *f)
 
 void print_process()
 {
-  FILE *F_lwp;
   FILE **F_proc;
+  FILE *F_out;
   int i;
   char s[200];
   char num[3];
@@ -106,8 +108,8 @@ void print_process()
   for(i = 0; i < max_cpu(); i++) 
     last_trace[i] = (float) VSIZE;
   F_proc = (FILE **) malloc (max_cpu() * sizeof(FILE *));
-  if ((F_lwp = fopen("/tmp/proc_lwp","w")) == NULL) {
-    fprintf(stderr,"Couldn't open file /tmp/proc_lwp\n");
+  if ((F_out = fopen(ps_output_name,"w")) == NULL) {
+    fprintf(stderr,"Couldn't open file %s\n", ps_output_name);
     exit(1);
   }
   for(i = 0; i < max_cpu(); i++) {
@@ -122,19 +124,19 @@ void print_process()
     fprintf(F_proc[i], "black\n");
     fprintf(F_proc[i], "%d %d moveto\n", h_coord_cpu(i) + 10, VSIZE);
   }
-  init_lwp_ps(F_lwp);
+  init_lwp_ps(F_out);
   while ((eof == 0) || (eof == 3)){
     eof = get_next_loose_filtered_trace(&tr);
     if ((tr.type == KERNEL) && (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
       int new_thread;
       u_64 begin = get_begin_pid(tr.pid);
-      draw_rectangle(begin, tr.clock, tr.pid, tr.cpu, F_lwp);
+      draw_rectangle(begin, tr.clock, tr.pid, tr.cpu, F_out);
       if (tr.thread != -1) {
 	if (get_thread_disactivated(tr.thread) == FALSE) {
 	  fprintf(F_proc[tr.cpu], "0 %f rlineto\n", v_coord(tr.clock) - last_trace[tr.cpu]);
 	}
       }
-      fprintf(F_proc[tr.args[1]], "stroke\n");
+      fprintf(F_proc[tr.args[1]], "stroke %% %d %d\n", tr.pid, tr.args[0]);
       if (tr.args[1] != tr.cpu) {
 	printf("Merde\n");
       }
@@ -221,11 +223,18 @@ void print_process()
   }
 
   for(i = 0; i < max_cpu(); i++) {
-    fprintf(F_proc[i], "stroke\n");
-    fclose(F_proc[i]);
+    char c;
+    rewind(F_proc[i]);
+    while (fread(&c, sizeof(char), 1, F_proc[i]) == 1)
+      fwrite(&c, sizeof(char), 1, F_out);
+    fprintf(F_out, "stroke\n");
+    strcpy(s, "/tmp/proc_proc");
+    sprintf(num,"%d",i);
+    strcat(s, num);
+    unlink(s);
   }
-  close_lwp_ps(F_lwp);
-  fclose(F_lwp);
+  close_lwp_ps(F_out);
+  fclose(F_out);
 }
 
 void print_thread()
@@ -258,6 +267,11 @@ int main(int argc, char **argv)
     } else if (!strcmp(*argv, "--thread")) {
       if (argc <= 1) error_usage();
       filter_add_thread(atoi(*(argv + 1)));
+      argCount = 2;
+    } else if (!strcmp(*argv, "-o")) {
+      if (argc <= 1) error_usage();
+      if (ps_output_name != NULL) error_usage();
+      ps_output_name = *(argv + 1);
       argCount = 2;
     } else if (!strcmp(*argv, "--process")) {
       if (argc <= 1) error_usage();
@@ -363,6 +377,7 @@ int main(int argc, char **argv)
     begin_global = get_begin_str();
     end_global = get_end_str();
   }
+  if (ps_output_name == NULL) ps_output_name = "/tmp/sigmundps_output.eps";
   switch(ac) {
   case NONE : {
     error_usage();

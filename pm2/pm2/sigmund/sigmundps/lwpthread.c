@@ -98,7 +98,7 @@ void set_active_lwp(int lwp, int active)
 
 int thread_of_lwp(int lwp)
 {
-lwp_thread_list tmp;
+  lwp_thread_list tmp;
   tmp = lwpthread;
   while (tmp != LWP_THREAD_LIST_NULL) {
     if (tmp->lwp == lwp) return tmp->thread;
@@ -139,3 +139,4 @@ short int get_cpu_of_thread(int thread)
   }
   return -1;  //Error
 }
+

@@ -64,3 +64,5 @@ MAD_GEN_5	:=	-fomit-frame-pointer
 MAD_MAK_VERB	:=	quiet
 #MAD_MAK_VERB	:=	silent
 
+MAD_LINK	:=	static
+#MAD_LINK	:=	dyn

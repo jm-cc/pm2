@@ -69,12 +69,12 @@
 # MADELEINE too.
 #
 
-GLOBAL_OPTIONS	=	-Wall -g #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
+GLOBAL_OPTIONS	=	-Wall -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
-MAD2            =       no
-TOOLBOX         =       no
-DSM		=	yes
+MAD2            =       yes
+TOOLBOX         =       yes # Note: implied by MAD2
+DSM		=	no
 
 OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
 

@@ -152,7 +152,10 @@ pm2config_init()
     _PM2CONFIG_FLAVOR=${PM2_FLAVOR:-default}
     export _PM2CONFIG_FLAVOR
 
-    _PM2CONFIG_FLAVOR_FILE=`${PM2_ROOT}/bin/pm2-flavor find --flavor=$_PM2CONFIG_FLAVOR`
+    # Get the flavor script file path
+    set --  --source-mode -f $_PM2CONFIG_FLAVOR
+    . ${PM2_ROOT}/bin/pm2-flavor-file $*
+    _PM2CONFIG_FLAVOR_FILE=$PM2_FLAVOR_FILE
     export _PM2CONFIG_FLAVOR_FILE
 
     if [ ! -f "$_PM2CONFIG_FLAVOR_FILE" ]; then
@@ -168,7 +171,12 @@ pm2config_set_vars()
     # Initialize flavor script file name
     pm2config_init
 
+    set -- --source-mode
+    . ${PM2_ROOT}/bin/pm2_sys $*
+    . ${PM2_ROOT}/bin/pm2_arch $*
+
     # Source the flavor script file
+    set --
     . $_PM2CONFIG_FLAVOR_FILE
 
     # Special variable (may be used within the build directory path for instance)
@@ -209,14 +217,16 @@ pm2config_set_vars()
     _PM2CONFIG_FLAVOR_STAMP_FILE=$_PM2CONFIG_FLAVOR_FILE
     export _PM2CONFIG_FLAVOR_STAMP_FILE
 
+    _PM2CONFIG_LIB_STAMP_FILES=""
+    export _PM2CONFIG_LIB_STAMP_FILES
     for _lib in common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
-	eval _libname=\$PM2_${_LIB}_LIBNAME
+	eval _libname='$'PM2_${_LIB}_LIBNAME
 
 	# Libs stamp files
 	eval _PM2CONFIG_${_libname}_STAMP_FILE=${_PM2CONFIG_BUILD}/${_lib}/lib/lib${_libname}${PM2_EXT}.a
 	eval export _PM2CONFIG_${_libname}_STAMP_FILE
-	eval _PM2CONFIG_LIB_STAMP_FILES=\${_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }\$_PM2CONFIG_${_libname}_STAMP_FILE
+	eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
 
 	# Directories
 	eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/${_lib}/lib
@@ -246,7 +256,6 @@ pm2config_set_vars()
 	eval _PM2CONFIG_${_lib}_INCLUDE_DIR=$_PM2CONFIG_BUILD/${_lib}/include${_PM2CONFIG_EXT}
 	eval export _PM2CONFIG_${_lib}_INCLUDE_DIR
     done
-    export _PM2CONFIG_LIB_STAMP_FILES
 
     # Make directory
     _PM2CONFIG_MAK_DIR=$_PM2CONFIG_BUILD/mak
@@ -586,9 +595,6 @@ pm2config_parse_cmdline() # args
 ######################
 # Programme principal
 ######################
-
-. ${PM2_ROOT}/bin/pm2_sys --source-mode
-. ${PM2_ROOT}/bin/pm2_arch --source-mode
 
 _PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
 

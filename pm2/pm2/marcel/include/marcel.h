@@ -23,6 +23,8 @@
 #include "tbx_macros.h"
 #include "sys/marcel_flags.h"
 
+__TBX_BEGIN_DECLS
+
 #include "asm/marcel-master___compiler.h"
 #include "marcel-master___compiler.h"
 #include "scheduler/marcel-master___compiler.h"
@@ -53,7 +55,10 @@
 #  define MARCEL_INLINE inline
 #endif
 
+#include "asm/marcel-master___inline.h"
 #include "marcel-master___inline.h"
+#include "scheduler/marcel-master___inline.h"
+
 #if defined(MARCEL_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
 #  include "asm/marcel-master___marcel_compiler.h"
 #  include "marcel-master___marcel_compiler.h"
@@ -88,6 +93,7 @@
 //#  include "scheduler/marcel-master___all.h"
 #endif
 
+__TBX_END_DECLS
 
 //#include "marcel_pthread.h"
 

@@ -84,6 +84,32 @@ static void timer_interrupt(int sig)
   }
 }
 
+#ifdef MA_PROTECT_LOCK_TASK_FROM_SIG
+#if defined(LINUX_SYS) && defined(X86_ARCH)
+#include <asm/sigcontext.h>
+static void timer_interrupt_protect(int sig, struct sigcontext context)
+//#elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
+//static void timer_interrupt_protect(int sig, siginfo_t *siginfo , void *p)
+//#elif defined(AIX_SYS) && defined(RS6K_ARCH)
+//static void timer_interrupt_protect(int sig, int Code, struct sigcontext *SCP)
+#else
+#error MA_PROTECT_LOCK_TASK_FROM_SIG is not yet implemented on that system! \
+  Sorry.
+#endif
+{
+  unsigned long pc;
+
+#if defined(LINUX_SYS) && defined(X86_ARCH)
+  pc = context.eip;
+#endif
+
+  if ((pc < (unsigned long)ma_sched_protect_start) || 
+      ((unsigned long)ma_sched_protect_end < pc)) {
+    timer_interrupt(sig);
+  }
+}
+#endif
+
 // Trappeur de SIGSEGV, de manière à obtenir des indications sur le
 // thread fautif (ça aide pour le debug !)
 static void fault_catcher(int sig)
@@ -180,7 +206,11 @@ void marcel_sig_start_timer(void)
   sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
 
   sigemptyset(&sa.sa_mask);
+#ifdef MA_PROTECT_LOCK_TASK_FROM_SIG
+  sa.sa_handler = (void *)timer_interrupt_protect;
+#else
   sa.sa_handler = timer_interrupt;
+#endif
 #ifndef WIN_SYS
   sa.sa_flags = SA_RESTART;
 #else

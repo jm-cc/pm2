@@ -163,8 +163,9 @@ $(LIB_S_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).si: %.S
 #---------------------------------------------------------------------
 $(LIB_FUT): $(LIB_GEN_CPP)/%.fut: $(LIB_GEN_CPP)/%.i
 	$(LIB_PREFIX) cp /dev/null $@
-	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo.o
-	$(COMMON_HIDE) nm /tmp/foo.o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
+	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo-$(USER).o
+	$(COMMON_HIDE) nm /tmp/foo-$(USER).o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
+	$(COMMON_HIDE) rm -f /tmp/foo-$(USER).o
 	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/fut_stamp
 
 # Regles de nettoyage

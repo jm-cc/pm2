@@ -166,7 +166,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	}
 
 	if(attr->__stackaddr_set) {
-		register unsigned long top = MAL_BOT((long)attr->__stackaddr +
+		register unsigned long top = MAL_BOT((unsigned long)attr->__stackaddr +
 						     attr->__stacksize);
 #ifdef MA__DEBUG
 		mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
@@ -192,7 +192,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 		
 		PROF_EVENT(thread_stack_allocated);
 		
-		new_task= (marcel_t)(MAL_BOT((long)bottom + THREAD_SLOT_SIZE) -
+		new_task= (marcel_t)(MAL_BOT((unsigned long)bottom + THREAD_SLOT_SIZE) -
 				      MAL(sizeof(marcel_task_t)));
 
 		stack_base = bottom;
@@ -219,7 +219,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	}
 	new_task->arg = arg;
 	
-	new_task->initial_sp = (long)new_task - MAL(attr->user_space) -
+	new_task->initial_sp = (unsigned long)new_task - MAL(attr->user_space) -
 		TOP_STACK_FREE_AREA;
 	
 	if(pid)
@@ -531,9 +531,9 @@ void print_thread(marcel_t pid)
   long sp;
 
    if(pid == marcel_self()) {
-     sp = (long)get_sp();
+     sp = (unsigned long)get_sp();
    } else {
-     sp = (long)marcel_ctx_get_sp(pid->ctx_yield);
+     sp = (unsigned long)marcel_ctx_get_sp(pid->ctx_yield);
    }
 
   mdebug("thread %p :\n"
@@ -545,7 +545,7 @@ void print_thread(marcel_t pid)
 	 ,
 	 pid,
 	 pid->stack_base,
-	 (long)pid + MAL(sizeof(marcel_task_t)),
+	 (unsigned long)pid + MAL(sizeof(marcel_task_t)),
 	 pid->user_space_ptr,
 	 pid->initial_sp,
 	 sp
@@ -631,7 +631,7 @@ DEF_PTHREAD(detach)
 
 static void suspend_handler(any_t arg)
 {
-  if((long int)arg) {
+  if((unsigned long)arg) {
     // Suspend
     marcel_sem_P(&(marcel_self()->suspend_sem));
   } else {
@@ -755,15 +755,15 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
     if(marcel_ctx_setjmp(cur->ctx_migr) == FIRST_RETURN) {
 
       call_ST_FLUSH_WINDOWS();
-      top = (long)cur + ALIGNED_32(sizeof(marcel_task_t));
-      bottom = ALIGNED_32((long)marcel_ctx_get_sp(cur->ctx_migr)) - ALIGNED_32(1);
+      top = (unsigned long)cur + ALIGNED_32(sizeof(marcel_task_t));
+      bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(cur->ctx_migr)) - ALIGNED_32(1);
       blk = top - bottom;
-      depl = bottom - (long)cur->stack_base;
+      depl = bottom - (unsigned long)cur->stack_base;
       unlock_task();
 
       mdebug("hibernation of thread %p", cur);
       mdebug("sp = %lu\n", get_sp());
-      mdebug("sp_field = %u\n", (int)marcel_ctx_get_sp(cur->ctx_migr));
+      mdebug("sp_field = %lu\n", (unsigned long)marcel_ctx_get_sp(cur->ctx_migr));
       mdebug("bottom = %lu\n", bottom);
       mdebug("top = %lu\n", top);
       mdebug("blk = %lu\n", blk);
@@ -781,13 +781,13 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
   } else {
     memcpy(t->ctx_migr, t->ctx_yield, sizeof(marcel_ctx_t));
 
-    top = (long)t + ALIGNED_32(sizeof(marcel_task_t));
-    bottom = ALIGNED_32((long)marcel_ctx_get_sp(t->ctx_yield)) - ALIGNED_32(1);
+    top = (unsigned long)t + ALIGNED_32(sizeof(marcel_task_t));
+    bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(t->ctx_yield)) - ALIGNED_32(1);
     blk = top - bottom;
-    depl = bottom - (long)t->stack_base;
+    depl = bottom - (unsigned long)t->stack_base;
 
     mdebug("hibernation of thread %p", t);
-    mdebug("sp_field = %u\n", (int)marcel_ctx_get_sp(cur->ctx_migr));
+    mdebug("sp_field = %lu\n", (unsigned long)marcel_ctx_get_sp(cur->ctx_migr));
     mdebug("bottom = %lu\n", bottom);
     mdebug("top = %lu\n", top);
     mdebug("blk = %lu\n", blk);

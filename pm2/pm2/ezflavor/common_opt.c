@@ -13,6 +13,7 @@
  * General Public License for more details.
  */
 
+#include <string.h>
 #include <gtk/gtk.h>
 
 #include "common_opt.h"

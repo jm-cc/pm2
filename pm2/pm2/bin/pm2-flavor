@@ -588,7 +588,7 @@ do_set() {
     else
 	msg="Creating flavor $flavor"
     fi
-    create_flavor $msg
+    create_flavor "$msg"
     exit 0
 }
 

@@ -14,24 +14,70 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_MUTEX_EST_DEF
-#define MARCEL_MUTEX_EST_DEF
+#section macros
+#define MARCEL_MUTEX_INITIALIZER \
+  {.__m_reserved=0, .__m_count=0, .__m_owner=0, .__m_kind=MARCEL_MUTEX_TIMED_NP, .__m_lock=MA_FASTLOCK_UNLOCKED}
+//#ifdef __USE_GNU
+# define MARCEL_RECURSIVE_MUTEX_INITIALIZER_NP \
+  {.__m_reserved=0, .__m_count=0, .__m_owner=0, .__m_kind=MARCEL_MUTEX_RECURSIVE_NP, .__m_lock=MA_FASTLOCK_UNLOCKED}
+# define MARCEL_ERRORCHECK_MUTEX_INITIALIZER_NP \
+  {.__m_reserved=0, .__m_count=0, .__m_owner=0, .__m_kind=MARCEL_MUTEX_ERRORCHECK_NP, .__m_lock=MA_FASTLOCK_UNLOCKED}
+# define MARCEL_ADAPTIVE_MUTEX_INITIALIZER_NP \
+  {.__m_reserved=0, .__m_count=0, .__m_owner=0, .__m_kind=MARCEL_MUTEX_ADAPTIVE_NP, .__m_lock=MA_FASTLOCK_UNLOCKED}
+//#endif
 
+
+#section types
+typedef struct marcel_mutex_s marcel_mutex_t;
+
+/* Once-only execution */
+typedef int marcel_once_t;
+
+typedef struct marcel_mutexattr_s marcel_mutexattr_t;
+
+enum
+{
+  MARCEL_MUTEX_TIMED_NP,
+  MARCEL_MUTEX_RECURSIVE_NP,
+  MARCEL_MUTEX_ERRORCHECK_NP,
+  MARCEL_MUTEX_ADAPTIVE_NP
+//#ifdef __USE_UNIX98
+  ,
+  MARCEL_MUTEX_NORMAL = MARCEL_MUTEX_TIMED_NP,
+  MARCEL_MUTEX_RECURSIVE = MARCEL_MUTEX_RECURSIVE_NP,
+  MARCEL_MUTEX_ERRORCHECK = MARCEL_MUTEX_ERRORCHECK_NP,
+  MARCEL_MUTEX_DEFAULT = MARCEL_MUTEX_NORMAL
+//#endif
+//#ifdef __USE_GNU
+  /* For compatibility.  */
+  , MARCEL_MUTEX_FAST_NP = MARCEL_MUTEX_ADAPTIVE_NP
+//#endif
+};
+
+#section structures
+#depend "marcel_threads.h[types]"
+/* Mutexes (not abstract because of MARCEL_MUTEX_INITIALIZER).  */
+/* (The layout is unnatural to maintain binary compatibility
+    with earlier releases of LinuxThreads.) */
+struct marcel_mutex_s
+{
+  int __m_reserved;               /* Reserved for future use */
+  int __m_count;                  /* Depth of recursive locking */
+  p_marcel_task_t __m_owner;       /* Owner thread (if recursive or errcheck) */
+  int __m_kind;                   /* Mutex kind: fast, recursive or errcheck */
+  struct _marcel_fastlock __m_lock; /* Underlying fast lock */
+};
+
+
+/* Attribute for mutex.  */
+struct marcel_mutexattr_s
+{
+  int __mutexkind;
+};
+
+
+#section functions
 #include <sys/time.h>
-
-//#define MARCEL_MUTEX_INITIALIZER { 1 }
-
-//_PRIVATE_ typedef struct {
-//	int dummy;
-//} marcel_mutexattr_struct;
-
-//_PRIVATE_ typedef marcel_sem_t marcel_mutex_t;
-
-//_PRIVATE_ typedef marcel_sem_t marcel_cond_t;
-
-//typedef marcel_mutexattr_struct marcel_mutexattr_t;
-
-//typedef marcel_condattr_struct marcel_condattr_t;
 
 DEC_MARCEL(int, mutex_init, (marcel_mutex_t *mutex,
 			     __const marcel_mutexattr_t *attr) __THROW)
@@ -76,5 +122,4 @@ extern void __pmarcel_once_fork_child (void);
 extern void __flockfilelist (void);
 extern void __funlockfilelist (void);
 extern void __fresetlockfiles (void);
-#endif
 #endif

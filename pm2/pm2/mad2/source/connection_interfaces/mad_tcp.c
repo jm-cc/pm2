@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.7  2000/01/10 10:23:16  oaumage
+*** empty log message ***
+
 Revision 1.6  2000/01/05 09:44:00  oaumage
 - initialisation du nouveau champs `group_mode' dans link_init
 - mad_sbp.c: suppression des fonctions vides
@@ -392,7 +395,6 @@ mad_tcp_read(int              sock,
   LOG_OUT();
 }
 
-
 /* Registration function */
 
 void
@@ -439,6 +441,7 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->receive_adapter_parameter  = NULL;
   LOG_OUT();
 }
+
 
 void
 mad_tcp_driver_init(p_mad_driver_t driver)
@@ -1055,3 +1058,4 @@ mad_tcp_receive_sub_buffer_group(p_mad_link_t           lnk,
     }
   LOG_OUT();
 }
+

@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: tbx_slist_management.c,v $
+Revision 1.8  2000/12/19 16:57:52  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.7  2000/09/05 13:59:40  oaumage
 - reecriture des slists et corrections diverses au niveau des htables
 
@@ -1114,4 +1122,27 @@ tbx_slist_ref_step_backward(p_tbx_slist_t        slist,
   LOG_OUT();
 
   return result;
+}
+
+void *
+tbx_slist_ref_get(p_tbx_slist_t slist)
+{
+  LOG_IN();
+
+  if (slist->ref)
+    {
+      if (!tbx_slist_is_nil(slist))
+	{
+	  void *object = NULL;
+
+	  object = slist->ref->object;
+	  LOG_OUT();
+
+	  return object;
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
 }

@@ -883,8 +883,10 @@ mad_leonie_sync(p_mad_madeleine_t madeleine)
 
   mad_ntbx_send_int(client, mad_leo_command_end);
   if (settings->leonie_dynamic_mode) {
+#ifdef MARCEL
     mad_command_thread_exit(madeleine);
-  } else {
+#endif // MARCEL
+    } else {
     data = mad_ntbx_receive_int(client);
     if (data != 1)
       FAILURE("synchronization error");

@@ -5,7 +5,7 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS ; then
 	# Yes, we should
 	PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_REENTRANT"
 	PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lpthread"
-	if [ "$PM2_SYS" = LINUX_SYS ]; then
+	if [ "$PM2_SYS" = LINUX_SYS -a "$PM2_ARCH" != IA64_ARCH ]; then
 	    PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$PM2_ROOT/lib/$PM2_SYS/$PM2_ARCH/libpthread.so"
 	fi
     fi

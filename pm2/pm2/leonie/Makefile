@@ -34,34 +34,18 @@
 
 
 #
-# Makefile : Madeleine 2
-##########################
+# Makefile : Leonie
+####################
 
-#..Settings..................................................................#
-
-# Debug
-# DEBUG = on
-
-# Trace
-# TRACE = on
-
-# Timing
-# TIMING = on
-
-#  OS 
-#----------
-OS_SOLARIS = on
-# OS_LINUX = on
-
-#..Private.part..............................................................#
+include $(MAD2_ROOT)/make/config.mak
 
 # directories
-LEO_ROOT = ${MAD2_ROOT}/../leonie
-OBJ = $(LEO_ROOT)/obj
-INC = $(LEO_ROOT)/include
-SRC = $(LEO_ROOT)/src
-BIN = $(LEO_ROOT)/bin
-LY  = ${LEO_ROOT}/lex_yacc
+ROOT = ${LEO_ROOT}
+OBJ = $(ROOT)/obj
+INC = $(ROOT)/include
+SRC = $(ROOT)/src
+BIN = $(ROOT)/bin
+LY  = ${ROOT}/lex_yacc
 
 # applications
 APPS = $(BIN)/leonie
@@ -80,75 +64,31 @@ SRCS = $(SRC)/leonie.c \
 HEADERS = $(INC)/leonie.h \
           $(INC)/leo_parser_types.h
 
-# compiler
-# CC = purify gcc
-CC = gcc
-# CC = egcc
 
-# preprocessor flags
-CPPFLAGS = -I$(INC) 
-
-# compiler flags
-# CFLAGS = -O6 -Wall 
-# CFLAGS = -g
-CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
-# CFLAGS = -pg -Wall
-# CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
-# CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
-
-# linker flags 
-# LDFLAGS = -pg -ll -ly
-#LDFLAGS = -ll -ly
-LDFLAGS = -lfl
-
+# lexical analyser generator
 # LEX = lex
 LEX = flex
 
+# compiler compiler
 # YACC = yacc
 YACC = bison -y
 
+# linker flags 
+# LDFLAGS = -pg -ll -ly
+# LDFLAGS = -ll -ly
+LDFLAGS   += -lfl
+
 # ToolBox
 # -------
-TBX_ROOT  = $(MAD2_ROOT)/../toolbox
-CPPFLAGS += -I$(TBX_ROOT)/include
 LDFLAGS += $(TBX_ROOT)/lib/libtbx.a
 
-# PM2
-# ---
-ifdef PM2
- CPPFLAGS += -DPM2 -D$(PM2_ARCH) -D$(PM2_SYS) 
-# CFLAGS  += 
-# LDFLAGS += 
-endif
-
-# Debug mode
-# ----------
-ifdef DEBUG
-  CPPFLAGS += -DDEBUG
-endif
-
-# Trace mode
-# ----------
-ifdef TRACE
-  CPPFLAGS += -DTRACE
-endif
-
-# Timing mode
-# ----------
-ifdef TIMING
-  CPPFLAGS += -DTIMING
-endif
+# Net ToolBox
+# -----------
+LDFLAGS += $(NTBX_ROOT)/lib/libntbx.a
 
 # dependencies
-DEP_DIRS = $(TBX_ROOT)
-DEP_LIBS = $(TBX_ROOT)/lib
+DEP_DIRS = $(TBX_ROOT) $(NTBX_ROOT)
 
-# goals transfer
-ifeq ($(MAKECMDGOALS), clean)
-DEP_GOAL = clean
-else
-DEP_GOAL = all
-endif
 
 # Rules
 # -----
@@ -157,13 +97,13 @@ endif
 all: dep_dirs $(APPS) conf
 
 ps: 
-	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(LEO_ROOT)/leonie.ps
+	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/leonie.ps
 
 html: 
-	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(LEO_ROOT)/leonie.html
+	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/leonie.html
 
 rtf: 
-	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(LEO_ROOT)/leonie.rtf
+	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/leonie.rtf
 
 $(BIN)/leonie: $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $@ 
@@ -173,7 +113,7 @@ clean: dep_dirs
 	rm -f $(LY)/y.tab.h $(LY)/y.tab.c $(LY)/lex.yy.c
 
 clean_src:
-	rm -f $(LEO_ROOT)/*~ $(SRC)/*~ $(INC)/*~ $(LY)/*~
+	rm -f $(ROOT)/*~ $(SRC)/*~ $(INC)/*~ $(LY)/*~
 
 lines:
 	wc -l $(SRC)/*.c $(LY)/*.y $(LY)/*.l $(INC)/*.h 

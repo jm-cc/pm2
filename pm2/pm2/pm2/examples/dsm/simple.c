@@ -75,8 +75,8 @@ void f()
   int i, n = 10;
 
   for (i = 0; i < n; i++) {
-    //    atomic_inc(&a);
-    dsm_mutex_lock(&L);
+    // atomic_inc(&a);
+       dsm_mutex_lock(&L);
     toto1++;
     dsm_mutex_unlock(&L);
   }
@@ -132,8 +132,8 @@ int pm2_main(int argc, char **argv)
     for (i = 0 ; i < atoi(argv[1]) * pm2_config_size(); i++)
       pm2_completion_wait(&c);
 
-    tfprintf(stderr, "toto1=%d\n", toto1);
-
+      tfprintf(stderr, "toto1=%d\n", toto1);
+    //tfprintf(stderr, "a=%d\n", a.counter);
     pm2_halt();
   }
 

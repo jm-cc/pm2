@@ -114,29 +114,12 @@ static void *unix_io_poll(marcel_pollid_t id,
   // Trop de messages avec les activations
   mdebug("Polling function called on LWP %d (%2d A, %2d S, %2d B)\n",
 	 marcel_current_vp(), active, sleeping, blocked);
-
-  if(active) {
-    mdebug("E/S non bloquante\n");
 #endif
 
-    timerclear(&tv);
-    ptv = &tv;
-#ifndef MA__ACTIVATION
-  } else if(sleeping) {
-    mdebug("E/S a duree limitee\n");
-
-    tv.tv_sec = 0;
-    tv.tv_usec = 5000;
-    ptv = &tv;
-  } else {
-    mdebug("E/S bloquante\n");
-
-    tv.tv_sec = 0;
-    tv.tv_usec = 5000;
-    ptv = &tv;
-    /* ptv = NULL; */
-  }
-#endif
+  timerclear(&tv);
+  tv.tv_sec = 0;
+  tv.tv_usec = 0;
+  ptv = &tv;
 
   rfds = unix_io_args.rfds;
   wfds = unix_io_args.wfds;

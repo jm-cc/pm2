@@ -14,14 +14,34 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_COND_EST_DEF
-#define MARCEL_COND_EST_DEF
+#section macros
 
+#define MARCEL_COND_INITIALIZER {.__c_lock=MA_SPIN_LOCK_UNLOCKED,.__c_waiting=0}
+
+#section types
+typedef struct __marcel_condattr_s marcel_condattr_t;
+typedef struct __marcel_cond_s marcel_cond_t;
+
+#section structures
+#depend "marcel_fastlock.h[structures]"
+#depend "marcel_threads.h[types]"
+/* Attribute for conditionally variables.  */
+struct __marcel_condattr_s
+{
+  int __dummy;
+};
+
+/* Conditions (not abstract because of MARCEL_COND_INITIALIZER */
+struct __marcel_cond_s
+{
+  struct _marcel_fastlock __c_lock; /* Protect against concurrent access */
+  p_marcel_task_t __c_waiting;      /* Threads waiting on this condition */
+};
+
+#section functions
 #include <sys/time.h>
-
-_PRIVATE_ typedef struct {
-	int dummy;
-} marcel_condattr_struct;
+#depend "marcel_alias.h[macros]"
+#depend "marcel_mutex.h[types]"
 
 DEC_MARCEL(int, condattr_init, (marcel_condattr_t *attr) __THROW)
 DEC_MARCEL(int, condattr_destroy, (marcel_condattr_t *attr) __THROW)
@@ -53,4 +73,3 @@ DEC_POSIX(int, cond_wait, (pmarcel_cond_t *cond,
 			   pmarcel_mutex_t *mutex))
 DEC_POSIX(int, cond_timedwait, (pmarcel_cond_t *cond, pmarcel_mutex_t *mutex,
 				const struct timespec *abstime))
-#endif

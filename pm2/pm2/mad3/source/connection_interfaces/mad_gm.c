@@ -35,6 +35,7 @@
 #  define TBX_UNLOCK() marcel_extlib_unprotect()
 #endif
 
+#define MAD_GM_MEMORY_CACHE 0
 
 /*
  *  Macros
@@ -501,7 +502,7 @@ mad_gm_register_block(p_mad_gm_port_t    port,
         p_cache   = &port->cache_head;
 
         mad_gm_round2page(&ptr, &len);
-
+#if MAD_GM_MEMORY_CACHE
         while ((cache = *p_cache)) {
                 if (ptr      >=  cache->ptr
                     &&
@@ -519,7 +520,7 @@ mad_gm_register_block(p_mad_gm_port_t    port,
 
                 p_cache = &(cache->next);
         }
-
+#endif /* MAD_GM_MEMORY_CACHE */
         cache = TBX_MALLOC(sizeof(mad_gm_cache_t));
 
         gms = gm_register_memory(p_gm_port, ptr, len);
@@ -538,7 +539,9 @@ mad_gm_register_block(p_mad_gm_port_t    port,
 
         port->cache_head = cache;
 
+#if MAD_GM_MEMORY_CACHE
  success:
+#endif /* MAD_GM_MEMORY_CACHE */
         *_p_cache = cache;
         LOG_OUT();
         return 0;
@@ -567,7 +570,10 @@ mad_gm_deregister_block(p_mad_gm_port_t  port,
                         i++;
                 }
 
-                if (i >= MAD_GM_CACHE_SIZE) {
+#if MAD_GM_MEMORY_CACHE
+                if (i >= MAD_GM_CACHE_SIZE) 
+#endif /* MAD_GM_MEMORY_CACHE */
+                        {
                         gm_status_t gms =  GM_SUCCESS;
 
                         gms = gm_deregister_memory(p_gm_port,
@@ -1864,7 +1870,10 @@ mad_gm_receive_sub_buffer_group_cpy_1(p_mad_link_t         l,
 
                 tbx_list_reference_init(&ref, &(bg->buffer_list));
                 do {
-                        mad_gm_receive_buffer(l, tbx_get_list_reference_object(&ref));
+                        p_mad_buffer_t buffer = NULL;
+
+                        buffer = tbx_get_list_reference_object(&ref);
+                        mad_gm_receive_buffer(l, &buffer);
                 } while (tbx_forward_list_reference(&ref));
         }
         LOG_OUT();
@@ -2197,7 +2206,10 @@ mad_gm_receive_sub_buffer_group_rdv_1(p_mad_link_t         l,
 
                 tbx_list_reference_init(&ref, &(bg->buffer_list));
                 do {
-                        mad_gm_receive_buffer(l, tbx_get_list_reference_object(&ref));
+                        p_mad_buffer_t buffer = NULL;
+
+                        buffer = tbx_get_list_reference_object(&ref);
+                        mad_gm_receive_buffer(l, &buffer);
                 } while (tbx_forward_list_reference(&ref));
         }
         LOG_OUT();

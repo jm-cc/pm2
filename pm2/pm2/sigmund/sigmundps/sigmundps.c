@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include "tracelib.h"
 #include "string.h"
+#include "graphlib.h"
 
 #include "fut_code.h"
 
@@ -85,8 +86,7 @@ void close_lwp_ps(FILE *f)
 {
   int i;
   for (i = 0; i < max_cpu(); i++) {
-    //  for (i = 0; i < 4; i++) {
-    u_64 begin = get_begin_lwp(pid_of_cpu(i));
+    u_64 begin = get_begin_pid(pid_of_cpu(i));
     if (begin != -1)
       draw_rectangle(begin,end_global,pid_of_cpu(i),i,f);
   }
@@ -97,7 +97,6 @@ void print_process()
   FILE *F_lwp;
   FILE **F_proc;
   int i;
-  int active;
   char s[200];
   char num[3];
   trace tr;
@@ -124,13 +123,29 @@ void print_process()
     fprintf(F_proc[i], "%d %d moveto\n", h_coord_cpu(i) + 10, VSIZE);
   }
   init_lwp_ps(F_lwp);
-  while (eof == 0) {
+  while ((eof == 0) || (eof == 3)){
     eof = get_next_loose_filtered_trace(&tr);
     if ((tr.type == KERNEL) && (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
-      u_64 begin = get_begin_lwp(tr.pid);
+      int new_thread;
+      u_64 begin = get_begin_pid(tr.pid);
       draw_rectangle(begin, tr.clock, tr.pid, tr.cpu, F_lwp);
+      if (tr.thread != -1) {
+	if (get_thread_disactivated(tr.thread) == FALSE) {
+	  fprintf(F_proc[tr.cpu], "0 %f rlineto\n", v_coord(tr.clock) - last_trace[tr.cpu]);
+	}
+      }
+      fprintf(F_proc[tr.args[1]], "stroke\n");
+      if (tr.args[1] != tr.cpu) {
+	printf("Merde\n");
+      }
+      new_thread = thread_of_lwp(tr.args[0]);
+      if (new_thread != -1) {
+	fprintf(F_proc[tr.args[1]], "%d %f moveto\n", 
+		h_coord_cpu(tr.args[1]) + 10 + get_thread_dec(new_thread),
+		v_coord(tr.clock));
+	fprintf(F_proc[tr.args[1]], "%s\n", (get_last_type_thread(new_thread) == USER)? "black" : "red");
+      }
       last_trace[tr.cpu] = v_coord(tr.clock);
-      // Traiter
       continue;
     }
     if ((tr.type == USER) && (tr.code >> 8 == FUT_SWITCH_TO_CODE)) {
@@ -140,49 +155,51 @@ void print_process()
       fprintf(F_proc[tr.cpu], "stroke\nblue\n%d %f moveto\n(%d) show\nstroke\n",
 	      h_coord_cpu(tr.cpu) - 20, v_coord(tr.clock), tr.args[1]);
       
-      //      set_thread_disactivated(tr.args[1], FALSE);
-      fprintf(F_proc[tr.cpu], "black\n%d %f moveto\n",
+      fprintf(F_proc[tr.cpu], "%d %f moveto\n",
 	      h_coord_cpu(tr.cpu) + 10 + get_thread_dec(tr.args[1]) * size_of_dec,
 	      v_coord(tr.clock));
+      fprintf(F_proc[tr.cpu], "%s\n", (get_last_type_thread(tr.thread) == USER)? "black" : "red");
       last_trace[tr.cpu] = v_coord(tr.clock);
       continue;
     }
     if ((tr.type == USER) && (tr.code >> 8 == FUT_NEW_LWP_CODE)) {
-      if (get_thread_disactivated(tr.thread) == FALSE) {
+      short int cpu_t;
+      /*      if (get_thread_disactivated(tr.thread) == FALSE) {
 	fprintf(F_proc[tr.cpu], "0 %f rlineto\n", v_coord(tr.clock) - last_trace[tr.cpu]);
-      }
-      set_thread_disactivated(tr.thread, FALSE);
-      last_trace[tr.cpu] = v_coord(tr.clock);
+	} */
+
+      /*      if (
+      cpu_t = 
+      fprintf(F_proc[tr.cpu], "%d %f moveto\n",
+	      h_coord_cpu(tr.cpu) + 10 + get_thread_dec(tr.args[1]) * size_of_dec,
+	      v_coord(tr.clock));
+      fprintf(F_proc[tr.cpu], "%s\n", (get_last_type_thread(tr.thread) == USER)? "black" : "red");
+      last_trace[tr.cpu] = v_coord(tr.clock);*/
       continue;
     }
     if ((tr.type == USER) && (tr.code >> 8 == FUT_THREAD_BIRTH_CODE)) {
-      if (get_thread_disactivated(tr.thread) == FALSE) {
-	fprintf(F_proc[tr.cpu], "0 %f rlineto\n", v_coord(tr.clock) - last_trace[tr.cpu]);
-      }
-      //      set_thread_disactivated(tr.args[0], FALSE);
-      last_trace[tr.cpu] = v_coord(tr.clock);
       continue;
     }
     if (get_thread_disactivated(tr.thread) != FALSE) {
       set_thread_disactivated(tr.thread, FALSE);
       last_trace[tr.cpu] = v_coord(tr.clock);
-      fprintf(F_proc[tr.cpu], "%d %f moveto\n",
+      fprintf(F_proc[tr.cpu], "stroke\n%d %f moveto\n",
 	      h_coord_cpu(tr.cpu) + 10 + get_thread_dec(tr.thread) * size_of_dec,
 	      last_trace[tr.cpu]);
-      // color ??
+      fprintf(F_proc[tr.cpu], "%s\n", (get_last_type_thread(tr.thread) == USER)? "black" : "red");
     } else fprintf(F_proc[tr.cpu], "0 %f rlineto\n", v_coord(tr.clock) - last_trace[tr.cpu]);
     if (tr.type == KERNEL) {
       if (get_last_type_thread(tr.thread) == USER) {
-	/*	fprintf(F_proc[tr.cpu], "stroke\nred\n");
+	fprintf(F_proc[tr.cpu], "stroke\nred\n");
 	fprintf(F_proc[tr.cpu], "%d %f moveto\n",h_coord_cpu(tr.cpu) + 10 +get_thread_dec(tr.thread) * size_of_dec,
-	v_coord(tr.clock)); */
+		v_coord(tr.clock));
 	set_last_type_thread(tr.thread, KERNEL);
       }
     } else {
       if (get_last_type_thread(tr.thread) == KERNEL) {
-	/*	fprintf(F_proc[tr.cpu], "stroke\nblack\n");
+	fprintf(F_proc[tr.cpu], "stroke\nblack\n");
 	fprintf(F_proc[tr.cpu], "%d %f moveto\n",h_coord_cpu(tr.cpu) + 10+get_thread_dec(tr.thread) * size_of_dec,
-	v_coord(tr.clock)); */
+		v_coord(tr.clock));
 	set_last_type_thread(tr.thread, USER);
       }
       if (tr.code < 0x40000) {
@@ -199,7 +216,6 @@ void print_process()
 	    fprintf(F_proc[tr.cpu], "%d 0 rlineto\n", -size_of_dec);
 	}
       }
-      
     }
     last_trace[tr.cpu] = v_coord(tr.clock);
   }
@@ -334,10 +350,10 @@ int main(int argc, char **argv)
       filter_add_gen_slice(begin_type, begin, begin_param_active, begin_param,
 			   end_type, end, end_param_active, end_param);
       argCount = 4;
-    } else if (!strcmp(*argv, "--print_process")) {
+    } else if (!strcmp(*argv, "--print-process")) {
       if (ac != NONE) error_usage();
       ac = PRINT_PROCESS;
-    } else if (!strcmp(*argv, "--print_thread")) {
+    } else if (!strcmp(*argv, "--print-thread")) {
       if (ac != NONE) error_usage();
       ac = PRINT_THREAD;
     } else error_usage();

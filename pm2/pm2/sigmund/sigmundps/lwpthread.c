@@ -7,6 +7,9 @@
 
 lwp_thread_list lwpthread;
 
+
+/* each lwp is associated to the threads that are running .*/
+
 void filter_add_lwp(int lwp, int logic, int thread, 
 		    int active, short int cpu)
 {
@@ -30,7 +33,7 @@ int is_active_lwp_of_thread(int thread)
     if (tmp->thread == thread) return tmp->active;
     tmp = tmp->next;
   }
-  return -1;  // Erreur
+  return -1;  // Error
 }
 
 int is_active_lwp(int lwp)
@@ -41,7 +44,7 @@ int is_active_lwp(int lwp)
     if (tmp->lwp == lwp) return tmp->active;
     tmp = tmp->next;
   }
-  return -1; // Erreur
+  return -1; // Error
 }
 
 int lwp_of_thread(int thread)
@@ -64,7 +67,7 @@ void change_lwp_thread(int oldthread, int newthread)
     if (tmp->thread == oldthread) break;
     tmp = tmp->next;
   }
-  if (tmp == LWP_THREAD_LIST_NULL) return;  //Erreur
+  if (tmp == LWP_THREAD_LIST_NULL) return;  //Error
   tmp->thread = newthread;
 }
 
@@ -90,7 +93,7 @@ void set_active_lwp(int lwp, int active)
     }
     tmp = tmp->next;
   }
-  return; // Erreur
+  return; // Error
 }
 
 int thread_of_lwp(int lwp)
@@ -123,7 +126,7 @@ void set_cpu_lwp(int lwp, short int cpu)
     if (tmp->lwp == lwp) {tmp->cpu = cpu; return;}
     tmp = tmp->next;
   }
-  return;  //Erreur
+  return;  //Error
 }
 
 short int get_cpu_of_thread(int thread)
@@ -134,6 +137,5 @@ short int get_cpu_of_thread(int thread)
     if (tmp->thread == thread) {return tmp->cpu;}
     tmp = tmp->next;
   }
-  return -1;  //Erreur
+  return -1;  //Error
 }
-

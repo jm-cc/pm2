@@ -39,11 +39,6 @@ int pm2_main(int argc, char **argv)
 {
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
 
-#ifdef PROFILE
-  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
-  //profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
-#endif
-
   pm2_init(&argc, argv);
 
   if(pm2_config_size() < 2) {
@@ -52,6 +47,10 @@ int pm2_main(int argc, char **argv)
 	      "Please rerun pm2conf.\n");
       exit(1);
   }
+
+#ifdef PROFILE
+  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
+#endif
 
   if(pm2_self() == 0) {
     strcpy(msg, "Hello world!   ");

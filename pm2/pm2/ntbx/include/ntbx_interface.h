@@ -319,16 +319,6 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
 		     const size_t     length);
 
 int
-ntbx_btcp_read_block(p_ntbx_client_t  client,
-		     void            *ptr,
-		     size_t           length);
-
-int
-ntbx_btcp_write_block(p_ntbx_client_t  client,
-		     const void       *ptr,
-		     const size_t      length);
-
-int
 ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
 			  p_ntbx_pack_buffer_t pack_buffer);
 
@@ -337,19 +327,11 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 			   p_ntbx_pack_buffer_t pack_buffer);
 
 int
-ntbx_btcp_read_pack_buffer(p_ntbx_client_t      client,
-			   p_ntbx_pack_buffer_t pack_buffer);
-
-int
-ntbx_btcp_write_pack_buffer(p_ntbx_client_t      client,
-			    p_ntbx_pack_buffer_t pack_buffer);
-
-int
-ntbx_btcp_read_string(p_ntbx_client_t   client,
+ntbx_tcp_read_string(p_ntbx_client_t   client,
 		      char            **string);
 
 int
-ntbx_btcp_write_string(p_ntbx_client_t  client,
+ntbx_tcp_write_string(p_ntbx_client_t  client,
 		       const char      *string);
 
 void

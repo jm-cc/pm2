@@ -39,12 +39,6 @@ dsm_proto_t ERC;
 dsm_proto_t HBRC;
 dsm_proto_t HIERARCH;
 
-/* illegal protocol identifier */
-const dsm_proto_t NO_PROTOCOL = -1;
-
-/* default protocol as set by dsm_set_default_protocol() */
-const dsm_proto_t DEFAULT_PROTOCOL = -2;
-
 
 /**********************************************************************/
 /* PRIVATE DATA STRUCTURES                                            */
@@ -73,6 +67,9 @@ typedef struct _dsm_protocol_t
 static int _nb_protocols = 0;
  /* the protocol table */
 static dsm_protocol_t dsm_protocol_table[MAX_DSM_PROTOCOLS];
+
+/* default DSM consistency protocol set by dsm_set_default_protocol() */
+static dsm_proto_t dsm_default_protocol;
 
 
 /**********************************************************************/
@@ -148,7 +145,28 @@ dsm_init_protocol_table (void)
                                  hierarch_proto_release_func,
                                  hierarch_proto_initialization,
                                  hierarch_proto_page_add_func);
+
+  /* By default, the default consistency protocol is
+   * "DSM_DEFAULT_DEFAULT_PROTOCOL"; this line must stay after all the
+   * pre-defined protocols have been defined. */
+  dsm_set_default_protocol(DSM_DEFAULT_DEFAULT_PROTOCOL);
+
   return;
+}
+
+/**********************************************************************/
+dsm_proto_t
+dsm_get_default_protocol (void)
+{
+   return dsm_default_protocol;
+}
+
+void
+dsm_set_default_protocol (const dsm_proto_t protocol)
+{
+   assert ( protocol != DSM_NO_PROTOCOL );
+   assert ( protocol != DSM_DEFAULT_PROTOCOL );
+   dsm_default_protocol = protocol;
 }
 
 

@@ -37,20 +37,23 @@
 #include <stdlib.h>
 #include "pm2.h"
 #include "dsm_comm.h"
+#include "tbx_timing.h"
 /*
 BEGIN_DSM_DATA
 int c = 0;
 END_DSM_DATA
 */
-int req_counter, page_counter, me, other;
+int it, req_counter, page_counter, me, other;
 marcel_sem_t sem;
+tbx_tick_t t1, t2, t3;
+double t_req, t_page;
 
 
 void startup_func(int argc, char *argv[], void *arg)
 {
   me = pm2_self();
   other = (me == 0) ? 1 : 0;
-  req_counter = page_counter = atoi(argv[1]);
+  it = req_counter = page_counter = atoi(argv[1]);
   dsm_set_access(0, WRITE_ACCESS);
 }
 
@@ -112,18 +115,25 @@ int pm2_main(int argc, char **argv)
 
   if(pm2_self() == 0) { /* master process */
 
-  pm2_empty();
+  TBX_GET_TICK(t1);
+
   read_server();
   marcel_sem_P(&sem);
 
-  pm2_empty();
+  TBX_GET_TICK(t2);
 
   receive_page_server();
   marcel_sem_P(&sem);
 
-  pm2_empty();
+  TBX_GET_TICK(t3);
 
   pm2_halt();
+
+  t_req = TBX_TIMING_DELAY(t1, t2);
+  t_page = TBX_TIMING_DELAY(t2, t3); 
+
+  printf("Sending page request: %5.3f usecs\n", t_req/it/2);
+  printf("Sending page: %5.3f usecs\n", t_page/it/2);
   }
 
   pm2_exit();

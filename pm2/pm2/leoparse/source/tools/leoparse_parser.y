@@ -30,7 +30,6 @@
   p_leoparse_modifier_t      modifier;
   p_tbx_slist_t              list;
   p_tbx_htable_t             htable;
-  p_leoparse_htable_entry_t  htable_entry;
   p_leoparse_object_t        object;
 }
 
@@ -42,7 +41,6 @@
 %type <modifier>           leop_modifier
 %type <object>             leop_object
 %type <list>               leop_list
-%type <htable_entry>       leop_htable_entry
 %type <htable>             leop_htable
 %type <htable>             leop_file
 %type <htable>             entree
@@ -68,40 +66,21 @@ leop_file:
 ;
 
 leop_htable:
-  leop_htable ';' leop_htable_entry
+  leop_htable LEOP_ID ':' leop_object ';'
 {
   LOG("leop_htable (1) -->");
-  tbx_htable_add($1, $3->id, $3);
+  tbx_htable_add($1, $2, $4);
   $$ = $1;
   
   LOG("leop_htable (1) <--");
 }
-| leop_htable_entry
+| LEOP_ID ':' leop_object ';'
 {
   LOG("leop_htable (2) -->");
   $$ = malloc(sizeof(tbx_htable_t));
   tbx_htable_init($$, 0);
-  tbx_htable_add($$, $1->id, $1);
+  tbx_htable_add($$, $1, $3);
   LOG("leop_htable (2) <--");
-}
-;
-
-leop_htable_entry:
-  LEOP_ID ':' leop_list
-{
-  $$ = malloc(sizeof(leoparse_htable_entry_t));
-  $$->id     = $1;
-  $$->type   = leoparse_e_slist;
-  $$->object = NULL;
-  $$->slist  = $3;
-}
-| LEOP_ID '=' leop_object
-{
-  $$ = malloc(sizeof(leoparse_htable_entry_t));
-  $$->id     = $1;
-  $$->type   = leoparse_e_object;
-  $$->object = $3;
-  $$->slist  = NULL;
 }
 ;
 
@@ -155,6 +134,12 @@ leop_object:
   $$ = calloc(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_range;
   $$->range = $1;
+}
+| '(' leop_list ')'
+{
+  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$->type   = leoparse_o_slist;
+  $$->slist = $2;
 }
 ;
 

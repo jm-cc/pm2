@@ -42,6 +42,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <malloc.h>
+#include <assert.h>
 #include "marcel.h"
 #include "fifo_credits.h"
 #include "dsm_page_manager.h"

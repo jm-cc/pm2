@@ -1068,9 +1068,11 @@ fastcall signed long ma_schedule_timeout(signed long timeout)
 	timer.data = (unsigned long) MARCEL_SELF;
 	timer.function = process_timeout;
 
+	MARCEL_SELF->timer = &timer;
 	ma_add_timer(&timer);
 	ma_schedule();
 	ma_del_timer_sync(&timer);
+	MARCEL_SELF->timer = NULL;
 
 	timeout = expire - ma_jiffies;
 

@@ -80,7 +80,7 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	//t->depl
 	marcel_attr_getname(attr,t->name,MARCEL_MAXNAMESIZE);
 	//t->number
-	//t->time_to_wake
+	t->timer = NULL;
 	t->not_migratable = attr->not_migratable;
 	t->not_deviatable = attr->not_deviatable;
 	marcel_sem_init(&t->suspend_sem, 0);
@@ -740,9 +740,14 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
 #endif
       MA_THR_RESTARTED(MARCEL_SELF,"End of hibernation");
       ma_schedule_tail(MARCEL_SELF);
+      unlock_task();
     }
   } else {
     memcpy(t->ctx_migr, t->ctx_yield, sizeof(marcel_ctx_t));
+    if (t->timer) {
+	    ma_del_timer_sync(t->timer);
+	    t->remaining_sleep_time = t->timer->expires - ma_jiffies;
+    }
 
     top = (unsigned long)t + ALIGNED_32(sizeof(marcel_task_t));
     bottom = ALIGNED_32((unsigned long)marcel_ctx_get_sp(t->ctx_yield)) - ALIGNED_32(1);
@@ -777,9 +782,15 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
   lock_task();
 
   marcel_sched_init_marcel_thread(t, &marcel_attr_default);
-  t->preempt_count=MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET; /* just like at creation */
+  t->preempt_count=(2*MA_PREEMPT_OFFSET)|MA_SOFTIRQ_OFFSET;
   marcel_one_more_task(t);
-  ma_wake_up_created_thread(t);
+  if (t->timer) {
+	t->timer->expires = ma_jiffies + t->remaining_sleep_time;
+	/* TODO: on a perdu cet état. Ça ne devrait pas être écrasé par freeze */
+	ma_set_task_state(t, MA_TASK_INTERRUPTIBLE);
+	ma_add_timer(t->timer);
+  } else
+  	ma_wake_up_thread(t);
 
   if(f != NULL)
     marcel_deviate(t, f, arg);

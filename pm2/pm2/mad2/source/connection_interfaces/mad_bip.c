@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_bip.c,v $
+Revision 1.12  2000/09/01 08:46:13  rnamyst
+Bug fixed in wait_ack (mad_bip.c): BASIC_POLL now supported
+
 Revision 1.11  2000/08/31 12:16:10  rnamyst
 Obscure feature: added support for BASIC_POLL in the bip driver.
 
@@ -572,7 +575,7 @@ static __inline__ void wait_ack(p_mad_bip_channel_specific_t p, int host_id)
 
   TRACE("Waiting for ack\n");
 
-#ifdef MARCEL
+#if defined(MARCEL) && !defined(BASIC_POLL)
 
 #ifdef USE_MARCEL_POLL
   ack_poll_wait(p, host_id);
@@ -585,7 +588,7 @@ static __inline__ void wait_ack(p_mad_bip_channel_specific_t p, int host_id)
     ack_message_t msg;
     int remote;
 
-    bip_sync_recv(p->communicator+MAD_BIP_REPLY_TAG,
+    bip_sync_recv(p, p->communicator+MAD_BIP_REPLY_TAG,
 		  (int*)&msg, sizeof(msg)/sizeof(int), &remote);
 
     p->credits_disponibles[host_id] += msg.credits;
@@ -639,7 +642,7 @@ static void wait_credits(p_mad_bip_channel_specific_t p, int host_id)
     int remote ;
     cred_message_t msg;
 
-    bip_sync_recv(MAD_BIP_FLOW_CONTROL_TAG, (int *)&msg,
+    bip_sync_recv(p, p->communicator + MAD_BIP_FLOW_CONTROL_TAG, (int *)&msg,
 		  sizeof(msg)/sizeof(int), &remote);
 
     p->credits_disponibles [remote] += msg.credits;
@@ -691,7 +694,7 @@ static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
 
     marcel_mutex_unlock(&p->mutex);
 
-    bip_sync_send(host_id, MAD_BIP_FLOW_CONTROL_TAG,
+    bip_sync_send(host_id, p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
 		  (int *)&msg, sizeof(cred_message_t)/sizeof(int));
   } else {
     marcel_mutex_unlock(&p->mutex);
@@ -706,7 +709,7 @@ static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
       msg.credits = p->credits_a_rendre [host_id];
       p->credits_a_rendre [host_id] = 0 ;
 
-      bip_sync_send(host_id, MAD_BIP_FLOW_CONTROL_TAG,
+      bip_sync_send(host_id, p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
 		    (int *)&msg, sizeof(msg)/sizeof(int));
   }
 

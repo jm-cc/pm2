@@ -49,18 +49,14 @@ MAX_NESTING is the depth of call nesting allowed.
 of times the "entry" to the function is seen), the code ( for the
 "entry" probes to the functions), and the total cycles for each function
 is maintained in the field total.
-cycles_array is used to store the cycles when the same function is called
-recursively.
 
 Exit codes for each function are 0x100 more than the entry probe codes.
 Therefore, the way that the time spent on executing a function is calculated
 is as follows.  When a function is entered for the first time, store
-it in the array "v", with its entry code, and cycles in the cycles_array.
+it in the array "v", with its entry code.
 when the exit code is seen for that function, index into the "v" array
 and subtract the entry cycles from the exit cycle.  The difference is stored
-in the field "total" cumulatively.  If before seeing an exit, another entry
-for the same function is seen, no problem, this can also be stored
-in the cycles_array..and popped out appropriately...
+in the field "total" cumulatively.
 */
 
 #define MAX_FUNS 200
@@ -69,19 +65,19 @@ in the cycles_array..and popped out appropriately...
 
 
 struct fun_cycles_item {
-		int counter; 
-        	int code ;    
-                unsigned int total;
-        	unsigned int cycles_array[MAX_EACH_FUN_RECUR]; 
-                unsigned int called_funs_cycles[MAX_FUNS];
-                int called_funs_ctr[MAX_FUNS] ;
+					int				counter; 
+					int				code ;    
+					unsigned int	total;
+					unsigned int	called_funs_cycles[MAX_FUNS];
+					int				called_funs_ctr[MAX_FUNS] ;
                        };
 
 struct prev_cycle {
-                int code;
-                unsigned int cycle_value;
-                int first_param;
+					int				code;
+					unsigned int	cycle_value;
+					int				first_param;
                   };
+
 /* This array is capable of storing information for 100 functions */
 
 struct fun_cycles_item v[MAX_FUNS];
@@ -99,9 +95,9 @@ struct v3_stack_item
 				{
 				int						v3_pos;
 				unsigned int			v3_pid;
-				unsigned int			v3_process_cycles;
 				unsigned int			v3_start_cycle[MAX_NESTING];
 				unsigned int			v3_code[MAX_NESTING];
+				unsigned int			v3_index[MAX_NESTING];
 				unsigned int			v3_switch_pid[MAX_NESTING];
 				struct v3_stack_item	*v3_next;
 				};
@@ -116,8 +112,6 @@ static unsigned int v3_function_count[MAX_FUNS] = {0};
 static unsigned int v3_function_code[MAX_FUNS] = {0};
 
 static int v_pos = 0;
-static int v_index_array[MAX_FUNS] ;
-static int v_index_arr_pos = 0;
     
 unsigned int start_time_glob=0, end_time_glob=0;
 int a, b;
@@ -282,7 +276,6 @@ struct v3_stack_item *create_stack( unsigned int thisid )
 		exit(EXIT_FAILURE);
 		}
 	v3_ptr->v3_pid = thisid;
-	v3_ptr->v3_process_cycles = 0;
 	v3_ptr->v3_pos = 0;
 	v3_ptr->v3_code[0] = 0;
 	if( v3_stack_first == NULL )
@@ -317,7 +310,7 @@ void update_stack( unsigned int delta )
 	}
 
 
-void update_function( unsigned int delta, int i )
+void update_function( unsigned int delta, int i, int index )
 	{
 	int				j, k;
 
@@ -349,6 +342,7 @@ void update_function( unsigned int delta, int i )
 			}
 		}
 
+	v[index].total += delta;
 	v3_function_cycles[k] += delta;
 	v3_function_count[k] += 1;
 
@@ -356,16 +350,57 @@ void update_function( unsigned int delta, int i )
 								find_name(i,1), delta, v3_function_cycles[k]);
 	}
 
+/*	returns index of code or corresponding entry code in v[] array,
+	creating new entry if needed */
+int get_code_index( unsigned int code )
+	{
+	int		k, i;
+
+    for( k = 0;  k < v_pos;  k++ )
+    	{
+        if( code == v[k].code  ||  code == v[k].code + FUT_GENERIC_EXIT_OFFSET )
+        	{/* yes, this code was seen before in slot k of v array */
+			return k;
+			}
+		}
+
+	/* if loop finishes we know this is the first time we have seen this code */
+	/* so we need to create a new entry in the v array for this code */
+	if( v_pos >= MAX_FUNS )
+		{/* too many unique functions being traced */
+		fprintf(stderr, "v_pos = %d hit MAX_FUNS limit %d\n", v_pos, MAX_FUNS );
+		printf( "v_pos = %d hit MAX_FUNS limit %d\n", v_pos, MAX_FUNS );
+		exit(EXIT_FAILURE);
+		}
+
+	fprintf(stdbug, "create v[%d] for code %04x with name %s\n",
+											v_pos, code, find_name(code, 1));
+
+	/* initialize new entry to all zeroes except counter = 1 */
+	v[v_pos].code = code; 
+	v[v_pos].total = 0;
+	v[v_pos].counter = 1;
+	for( i = 0; i < MAX_FUNS; i++ )
+		{
+		v[v_pos].called_funs_cycles[i] = 0;
+		v[v_pos].called_funs_ctr[i] = 0;
+		}
+
+	v_pos++;
+	return k;
+	}
 
 void my_print_fun( unsigned int code, unsigned int cyc_time,
 								unsigned int thisid, int param1, int param2 )
 	{
-    int					i, j, k;
-    unsigned int		cycdiff, delta, off_cyc_time;
+    int					i, j, index;
+    unsigned int		delta, off_cyc_time;
 
     
 	off_cyc_time = cyc_time;
 
+	/*	get index into v[] array for this code or its corresponding entry code*/
+	index = get_code_index(code);
 
 	if( v3_stack_ptr == NULL )
 		{/* first time through here, we need a stack */
@@ -398,7 +433,7 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 					v3_stack_ptr = v3_ptr;
 					delta = off_cyc_time -
 										v3_ptr->v3_start_cycle[v3_ptr->v3_pos];
-					update_function(delta, FUT_SWITCH_TO_CODE);
+					update_function(delta, FUT_SWITCH_TO_CODE, index);
 					/* move up start of all previous in nesting and pop stack */
 					update_stack(delta);
 					}
@@ -440,7 +475,15 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 		/* or a switch back to previously stacked switch from */
 		delta = cyc_time -
 						v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos];
-		update_function(delta, i);
+		update_function(delta, i, index);
+		if( code == i + FUT_GENERIC_EXIT_OFFSET )
+			{/* this code is the exit corresponding to code i */
+			if (v3_stack_ptr->v3_pos >= 1 )
+				{
+				j = v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos - 1]; 
+				v[j].called_funs_cycles[index] += delta;  
+				}
+			} 
 		/* move up start time of all previous in nesting and pop stack */
 		update_stack(delta);
 		}
@@ -465,154 +508,27 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 			v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos] = cyc_time;
 			v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos] = code;
 			v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos] = thisid;
+			v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos] = index;
+                
+            if ( v3_stack_ptr->v3_pos >= 2 )
+				{/* previous entry on this stack, update its calls to this fun*/
+				j = v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos - 1];
+				v[j].called_funs_ctr[index]++;
+				}
+			v[index].counter++;
+                
 			fprintf(stdbug,
 						"push on v3 stack for id %u, top %d, code %04x, "
-						"function\n",
-						thisid, v3_stack_ptr->v3_pos, code);
+						"index %d\n",
+						thisid, v3_stack_ptr->v3_pos, code, index);
 			}
 		}
 
 	previous.code = code;
 	previous.cycle_value = cyc_time;
 	previous.first_param = param1;
-
-	/* have we hit this code before? if so, use previous entry for stats */
-    for( k = 0;  k < v_pos;  k++ )
-    	{
-        if( code == v[k].code  ||  code == v[k].code + FUT_GENERIC_EXIT_OFFSET )
-        	{/* yes, this code was seen before in slot k of v array */
-            if ( code == v[k].code )
-            	{/* this is the entry code */
-				if( v_index_arr_pos >= MAX_FUNS )
-					{
-					fprintf(stderr,
-						"v_index_arr_pos = %d hit MAX_FUNS"
-						" limit %d\n", v_index_arr_pos, MAX_FUNS );
-					printf( "v_index_arr_pos = %d hit MAX_FUNS"
-						" limit %d\n", v_index_arr_pos, MAX_FUNS );
-					exit(EXIT_FAILURE);
-					}
-				fprintf(stdbug,
-						"push on index stack for id %u, top %d, code %04x, "
-						"index %d\n",
-						thisid, v_index_arr_pos, code, k);
-                v_index_array[v_index_arr_pos] = k;
-                
-                if ( v_index_arr_pos >= 1 )
-					{
-					j = v_index_array[v_index_arr_pos - 1];
-					v[j].called_funs_ctr[k]++;
-					}
-				v_index_arr_pos++;
-                
-				for ( i = 0; i < MAX_EACH_FUN_RECUR; i ++ )
-					{
-					if ( v[k].cycles_array[i] == 0 )
-						break;
-					}
-				v[k].cycles_array[i] = cyc_time;
-				v[k].counter++;
-				return;
-				}                
-			if( code == v[k].code + FUT_GENERIC_EXIT_OFFSET )
-				{/* this is the exit code */
-                /*****
-                if (k == v_index_array[v_index_arr_pos])
-                {
-                    j = v_index_array[v_index_arr_pos - 1] ; 
-                   v[j].called_funs_cycles[k] += cyc_time - 
-                                             v[k].cycles_array[i - 1];
-                    v_index_array[v_index_arr_pos] = -1;
-                    v_index_arr_pos--;
-                }
-                *****/
-                for ( i = 0; i < MAX_EACH_FUN_RECUR; i ++ )
-					{
-                    if ( v[k].cycles_array[i] == 0 )
-                        break;
-					}
-                cycdiff = cyc_time - v[k].cycles_array[i - 1];
-                v[k].total += cyc_time - v[k].cycles_array[i - 1];
-                    
-                if (k == v_index_array[v_index_arr_pos - 1])
-                	{
-                    if (v_index_arr_pos >= 2 )
-						{
-						j = v_index_array[v_index_arr_pos - 2] ; 
-						v[j].called_funs_cycles[k] += cycdiff;  
-						}
-                                             
-                    v_index_array[v_index_arr_pos-1] = -1;
-                    v_index_arr_pos--;
-					fprintf(stdbug,
-						"pop off index stack for id %u, top %d, code %04x, "
-						"index %d\n",
-						thisid, v_index_arr_pos-1, code, k);
-                	}
-				else
-					fprintf(stdbug,
-						"no match on index stack for id %u, top %d, code %04x, "
-						"index %d, stack val %d\n",
-						thisid, v_index_arr_pos-1, code, k,
-						v_index_array[v_index_arr_pos - 1]);
-                v[k].cycles_array[i - 1] = 0;
-                return;
-             	} 
-        	}     
-    	} 
-
-	/* if loop finishes we know this is the first time we have seen this code */
-	/* so we need to create a new entry in the v array for this code */
-	if( v_pos >= MAX_FUNS )
-		{/* too many unique functions being traced */
-		fprintf(stderr,
-			"v_pos = %d hit MAX_FUNS"
-			" limit %d\n", v_pos, MAX_FUNS );
-		printf( "v_pos = %d hit MAX_FUNS"
-			" limit %d\n", v_pos, MAX_FUNS );
-		exit(EXIT_FAILURE);
-		}
-
-	fprintf(stdbug, "create v[%d] for code %04x with name %s\n",
-											v_pos, code, find_name(code, 1));
-
-	/* initialize new entry to all zeroes except counter = 1 and cycles[0] */
-	v[v_pos].code = code; 
-	v[v_pos].total = 0;
-	v[v_pos].counter = 1;
-	v[v_pos].cycles_array[0] = cyc_time;
-	for( i = 1; i < MAX_EACH_FUN_RECUR; i++ )
-		v[v_pos].cycles_array[i] = 0;
-	for( a = 0; a < MAX_FUNS; a++ )
-		{
-		v[v_pos].called_funs_cycles[a] = 0;
-		v[v_pos].called_funs_ctr[a] = 0;
-		}
-
-	if( v_index_arr_pos >= MAX_FUNS )
-		{
-		fprintf(stderr,
-			"v_index_arr_pos = %d hit MAX_FUNS"
-			" limit %d\n", v_index_arr_pos, MAX_FUNS );
-		printf( "v_index_arr_pos = %d hit MAX_FUNS"
-			" limit %d\n", v_index_arr_pos, MAX_FUNS );
-		exit(EXIT_FAILURE);
-		}
-	fprintf(stdbug,
-			"push on index stack for id %u, top %d, code %04x, "
-			"index %d\n",
-			thisid, v_index_arr_pos, code, k);
-	v_index_array[v_index_arr_pos] = v_pos;
-	if ( v_index_arr_pos >= 1 )
-		{
-		j = v_index_array[v_index_arr_pos - 1];
-		if (v[j].called_funs_ctr[k] == 0 )
-			v[j].called_funs_ctr[k]++;
-		}
-	v_index_arr_pos++;
-	v_pos++;
-	return;
 	}
+
 
 /*	draw a horizontal line of 80 c characters onto stdout */
 void my_print_line( int c )
@@ -684,19 +600,6 @@ if( v_pos > 0 )
 			printf("%30s  %04x %12u %10d %12.1f\n", 
 				   find_name(v[i].code,0), v[i].code, v[i].total,
 				   v[i].counter, (double)v[i].total/v[i].counter);
-			for ( z = 0; z < MAX_EACH_FUN_RECUR; z++)
-				{
-				if (v[i].cycles_array[z] != 0)
-					{
-					if( v[i].code != FUT_SETUP_CODE  &&
-						v[i].code != FUT_KEYCHANGE_CODE &&
-						v[i].code != FUT_RESET_CODE &&
-						v[i].code != FUT_CALIBRATE0_CODE  &&
-						v[i].code != FUT_CALIBRATE1_CODE  &&
-						v[i].code != FUT_CALIBRATE2_CODE )
-					printf("panic, no match found!!!\n");
-					}
-				}
 			}
 		}
 
@@ -721,6 +624,42 @@ if( v_pos > 0 )
 				}
 			printf("\n");
 			}
+
+	/*	close up all open stacks */
+	/*	stacks are typically left open when a process is blocked in the kernel*/
+	for( v3_ptr = v3_stack_head;  v3_ptr != NULL;  v3_ptr = v3_ptr->v3_next )
+		{
+		if( v3_ptr->v3_pos > 1 )
+			{
+			fprintf(stderr, "=== final stack for id %u has pos %d\n",
+											v3_ptr->v3_pid, v3_ptr->v3_pos);
+			fprintf(stdout, "=== final stack for id %u has pos %d\n",
+											v3_ptr->v3_pid, v3_ptr->v3_pos);
+			}
+		if( v3_ptr->v3_pos > 0 )
+			{
+			if( v3_ptr->v3_code[v3_ptr->v3_pos] != FUT_SWITCH_TO_CODE )
+				{/* last thing thread did was not a block */
+				fprintf(stderr,
+				"=== top of final stack for id %u not switch_to\n",
+																v3_ptr->v3_pid);
+				fprintf(stdout,
+				"=== top of final stack for id %u not switch_to\n",
+																v3_ptr->v3_pid);
+				}
+			while( v3_ptr->v3_pos > 0 )
+				{/* close up all unterminated function calls */
+				unsigned int	code;
+
+				code = v3_ptr->v3_code[v3_ptr->v3_pos-1];
+				delta = v3_ptr->v3_start_cycle[v3_ptr->v3_pos] -
+						v3_ptr->v3_start_cycle[v3_ptr->v3_pos-1];
+				update_function(delta, code, get_code_index(code));
+				v3_ptr->v3_pos -= 1;
+				}
+			}
+		}
+
 	printf("\n\n");
 	printf("%50s\n\n", "NESTING SUMMARY");
 	my_print_line('*');
@@ -767,42 +706,6 @@ if( v_pos > 0 )
 			printf("\n");
 			}
 	}
-
-	/*	close up all open stacks */
-	/*	stacks are typically left open when a process is blocked in the kernel*/
-	for( v3_ptr = v3_stack_head;  v3_ptr != NULL;  v3_ptr = v3_ptr->v3_next )
-		{
-		if( v3_ptr->v3_pos > 1 )
-			{
-			fprintf(stdbug, "=== final stack for id %u has pos %d\n",
-											v3_ptr->v3_pid, v3_ptr->v3_pos);
-			}
-		if( v3_ptr->v3_pos > 0  &&
-						v3_ptr->v3_code[v3_ptr->v3_pos] != FUT_SWITCH_TO_CODE )
-			{/* last thing thread did was not a block */
-			fprintf(stderr, "=== top of final stack for id %u not switch_to\n",
-																v3_ptr->v3_pid);
-			fprintf(stdout, "=== top of final stack for id %u not switch_to\n",
-																v3_ptr->v3_pid);
-			}
-		else if( v3_ptr->v3_pos > 0 )
-			{
-			while( v3_ptr->v3_pos > 1 )
-				{/* close up all unterminated function calls */
-				unsigned int	code;
-
-				code = v3_ptr->v3_code[v3_ptr->v3_pos-1];
-				delta = v3_ptr->v3_start_cycle[v3_ptr->v3_pos] -
-						v3_ptr->v3_start_cycle[v3_ptr->v3_pos-1];
-				{/* this is a function entry */
-				update_function(delta, code);
-				}
-				v3_ptr->v3_pos -= 1;
-				}
-			v3_ptr->v3_process_cycles +=v3_ptr->v3_start_cycle[1] -
-										v3_ptr->v3_start_cycle[0];
-			}
-		}
 
 	/* now print out the precise accounting statistics from the v3 arrays */
 	sum = 0;
@@ -1140,7 +1043,6 @@ int main( int argc, char *argv[] )
 
 	for( i = 0;  i < MAX_FUNS;  i++ )
 		{
-		v_index_array[i] = -1;
 		v3_function_cycles[i] = 0;
 		v3_function_count[i] = 0;
 		v3_function_code[i] = 0;

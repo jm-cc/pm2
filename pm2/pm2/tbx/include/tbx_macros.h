@@ -34,6 +34,13 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.21  2001/01/16 10:58:21  oaumage
+- flags
+
+Revision 1.20  2001/01/16 10:03:23  oaumage
+- flags
+- modification de l'interface de tbx pour les listes
+
 Revision 1.19  2001/01/15 15:42:20  oaumage
 - correction d'un bug sur la gestion des flags
 
@@ -254,10 +261,29 @@ ______________________________________________________________________________
  * Flags control macros  ____________________________________________
  * _____________________/////////////////////////////////////////////
  */
-#define tbx_set(f)    ((f) = tbx_flag_set)
-#define tbx_clear(f)  ((f) = tbx_flag_clear)
-#define tbx_toggle(f) ((f) = 1 - (f))
-#define tbx_test(f)   (f)
+
+#ifdef __GNUC__
+#define tbx_set(f) \
+        ({p_tbx_flag_t _pf = (f); \
+          *_pf = tbx_flag_set;})
+#define tbx_clear(f) \
+        ({p_tbx_flag_t _pf = (f); \
+          *_pf = tbx_flag_clear;})
+#define tbx_toggle(f) \
+        ({p_tbx_flag_t _pf = (f); \
+          *_pf = 1 - *_pf;})
+#define tbx_test(f)   (*(f))
+/*
+#define tbx_test(f) \
+        ({p_tbx_flag_t _pf = (f); \
+          *_pf;})
+*/
+#else // __GNUC__ 
+#define tbx_set(f)    ((*(f)) = tbx_flag_set)
+#define tbx_clear(f)  ((*(f)) = tbx_flag_clear)
+#define tbx_toggle(f) ((*(f)) = 1 - (*(f)))
+#define tbx_test(f)   (*(f))
+#endif // __GNUC__
 
 /*
  * Threads specific macros  _________________________________________

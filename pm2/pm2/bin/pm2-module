@@ -99,8 +99,10 @@ Options for 'options' command
 Action for 'options' command
   --list           : list of all options name (default)
   --get-excl-sets  : list of exclusive sets of options
-  --get-excl=set   : list only the exclusive options in set <set>
-  --get-incl       : list only the inclusive options
+  --get-excl=set   : list of the exclusive options in set <set>
+  --get-all-incl   : list of all inclusive options
+  --get-incl-sets  : list of inclusive sets of options
+  --get-incl=set   : list of all inclusive options in set <set>
 
 EOF
 	;;
@@ -310,7 +312,7 @@ get_options_in_dir() {
 	    for opt in `echo $list` " "; do
 		case "$opt" in
 		[0-9][0-9]*.sh)
-		    optname=`echo $opt | sed -e 's/^..\(.*\)\.sh$/\1/'`
+		    optname=`echo $opt | sed -e 's/^[0-9]*\(.*\)\.sh$/\1/'`
 		    ;;
 		*)
 		    optname=`echo $opt | cut -d. -f1`
@@ -359,8 +361,36 @@ get_all_excl_options() {
     echo $all
 }
 
+########################
+# Donne la liste des ensembles d'options inclusives
+do_options_get_incl_sets() {
+	if [ -d "${PM2_ROOT}/modules/$module/config" ]; then
+	    for iset in `(cd "${PM2_ROOT}/modules/$module/config"; \
+			ls -d *.incl) 2>/dev/null`; do
+	       echo $iset | cut -d. -f1
+	    done
+	fi
+}
+
+# Donne les options faisant partie de l'ensemble "$1"
+do_options_get_incl() { # set
+    get_options_in_dir ${PM2_ROOT}/modules/$module/config/$1.incl
+}
+
+# Donne la liste exhaustive de toutes les options dans tous les
+# ensembles d'options inclusives
+#get_all_incl_options() {
+#    all=
+#    for s in `do_options_get_incl_sets`; do
+#	all="$all `do_options_get_incl $s`"
+#    done
+#    echo $all
+#}
+
+########################
+
 # Donne la liste des options non-exclusives
-do_options_get_incl() {
+do_options_get_all_incl() {
     all_excl=`get_all_excl_options`
     all_incl=
     for opt in `do_options_list`; do
@@ -380,12 +410,16 @@ do_options() {
     action=list
     while test $# -gt 0; do
 	case "$1" in
-	--list|--get-excl-sets|--get-incl)
+	--list|--get-excl-sets|--get-incl-sets|--get-all-incl)
 	    set_action $1
 	    ;;
 	--get-excl=*)
 	    arg=`echo "$1" | cut -d= -f2`
 	    set_action --get-excl
+	    ;;
+	--get-incl=*)
+	    arg=`echo "$1" | cut -d= -f2`
+	    set_action --get-incl
 	    ;;
 	--module=*)
 	    module=`echo "$1" | cut -d= -f2`

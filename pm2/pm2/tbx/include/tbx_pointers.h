@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_pointers.h,v $
+Revision 1.3  2000/07/07 14:49:42  oaumage
+- Ajout d'un support pour les tables de hachage
+
 Revision 1.2  2000/05/22 12:19:00  oaumage
 - listes de recherche
 
@@ -58,6 +61,8 @@ typedef struct s_tbx_slist_element   *p_tbx_slist_element_t;
 typedef struct s_tbx_slist           *p_tbx_slist_t;
 typedef struct s_tbx_slist_reference *p_tbx_slist_reference_t;
 typedef struct s_tbx_memory          *p_tbx_memory_t;
+typedef struct s_tbx_htable_element  *p_tbx_htable_element_t;
+typedef struct s_tbx_htable          *p_tbx_htable_t;
 
 #endif /* TBX_POINTERS_H */
 

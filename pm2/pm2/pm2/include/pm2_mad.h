@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.h,v $
+Revision 1.4  2000/11/06 15:02:20  rnamyst
+pm2_init() has now a modular structure (in fact, common_init).
+
 Revision 1.3  2000/07/14 16:17:07  gantoniu
 Merged with branch dsm3
 
@@ -150,11 +153,15 @@ typedef union {
 
 #define to_any_t(p_addr) (*((void **)p_addr))
 
-void mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami);
+void mad_init(int *argc, char *argv[]);
 
-void mad_buffers_init(void);
+void mad_init_thread_related(int *argc, char *argv[]);
 
 void mad_exit(void);
+
+unsigned mad_config_size(void);
+
+unsigned mad_who_am_i(void);
 
 char *mad_arch_name(void);
 

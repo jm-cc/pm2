@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.40  2000/09/16 17:23:45  rnamyst
+Added many LOG_IN/LOG_OUT in marcel
+
 Revision 1.39  2000/09/15 02:04:52  rnamyst
 fut_print is now built by the makefile, rather than by pm2-build-fut-entries
 
@@ -490,6 +493,8 @@ void marcel_one_task_less(marcel_t pid)
 // _doit_ etre appelee par la tache "main".
 static void wait_all_tasks_end(void)
 {
+  LOG_IN();
+
   lock_task();
 
   //printf("wait_all_tasks_end\n");
@@ -506,6 +511,8 @@ static void wait_all_tasks_end(void)
     marcel_lock_release(&__wait_lock);
     unlock_task();
   }
+
+  LOG_OUT();
 }
 
 // Insere la tache "idle" et retourne son identificateur. Cette
@@ -541,9 +548,13 @@ static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
 #ifdef MA__ACTIVATION
   marcel_t first = cur;
 
+  LOG_IN();
+
   if (first == NULL) {
     cur = SCHED_DATA(cur_lwp).__first[0];
   }
+#else
+  LOG_IN();
 #endif
 #ifdef MA__MULTIPLE_RUNNING
   next = cur;
@@ -566,6 +577,8 @@ static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
 	next = insert_and_choose_idle_task(cur, lwp);
 #endif
   }
+
+  LOG_OUT();
   return next;
 }
 
@@ -1224,6 +1237,8 @@ void marcel_delay(unsigned long millisecs)
   marcel_t p, cur = marcel_self();
   unsigned long ttw = __milliseconds + millisecs;
 
+  LOG_IN();
+
   mdebug("\t\t\t<Thread %p goes sleeping>\n", cur);
 
   lock_task();
@@ -1243,6 +1258,8 @@ void marcel_delay(unsigned long millisecs)
   } while(__milliseconds < ttw);
 
   unlock_task();
+
+  LOG_OUT();
 #endif
 }
 
@@ -1253,6 +1270,8 @@ static int marcel_check_sleeping(void)
   unsigned long present = __milliseconds;
   int waked_some_task = 0;
   register marcel_t next;
+
+  LOG_IN();
 
   mdebug("marcel_check_sleeping start\n");
   if(marcel_lock_tryacquire(&__delayed_lock)) {
@@ -1276,6 +1295,9 @@ static int marcel_check_sleeping(void)
 	   marcel_self()->lwp->number);
 
   mdebug("marcel_check_sleeping end\n");
+
+  LOG_OUT();
+
   return waked_some_task;
 }
 
@@ -1296,29 +1318,33 @@ int marcel_setprio(marcel_t pid, unsigned prio)
   __lwp_t *cur_lwp = marcel_self()->lwp;
 #endif
 
-   if(prio == 0 || prio > MAX_PRIO)
-      RAISE(CONSTRAINT_ERROR);
-   lock_task();
-   if(!IS_RUNNING(pid))
-      pid->prio = pid->quantums = prio;
-   else if(pid->next == pid) { /* pid == seule tache active */
-      SCHED_DATA(cur_lwp).__first[old] = NULL;
-      SCHED_DATA(cur_lwp).__first[prio] = pid;
-      pid->prio = pid->quantums = prio;
-   } else {
-     SET_FROZEN(pid);
-     UNCHAIN_TASK(pid);
-     pid->prio = pid->quantums = prio;
-     marcel_wake_task(pid, NULL);
-   }
-   unlock_task();
-   return 0;
+  LOG_IN();
+
+  if(prio == 0 || prio > MAX_PRIO)
+    RAISE(CONSTRAINT_ERROR);
+  lock_task();
+  if(!IS_RUNNING(pid))
+    pid->prio = pid->quantums = prio;
+  else if(pid->next == pid) { /* pid == seule tache active */
+    SCHED_DATA(cur_lwp).__first[old] = NULL;
+    SCHED_DATA(cur_lwp).__first[prio] = pid;
+    pid->prio = pid->quantums = prio;
+  } else {
+    SET_FROZEN(pid);
+    UNCHAIN_TASK(pid);
+    pid->prio = pid->quantums = prio;
+    marcel_wake_task(pid, NULL);
+  }
+  unlock_task();
+
+  LOG_OUT();
+  return 0;
 }
 
 int marcel_getprio(marcel_t pid, unsigned *prio)
 {
-   *prio = pid->prio;
-   return 0;
+  *prio = pid->prio;
+  return 0;
 }
 
 #ifdef SMP
@@ -1352,7 +1378,8 @@ any_t idle_func(any_t arg) // Pour les activations
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
 
-  MTRACE("coucou", cur);  
+  LOG_IN();
+
   lock_task();
   MA_THR_SETJMP(cur);
   if(!init) {
@@ -1435,6 +1462,9 @@ any_t idle_func(any_t arg) // Pour les activations
     }
     MA_THR_RESTARTED(cur, "Preemption");
   }
+
+  LOG_OUT();
+
   // Pour la terminaison...
   for (;;) {
 	  act_cntl(ACT_CNTL_READY_TO_WAIT,0);
@@ -1449,6 +1479,8 @@ any_t idle_func(any_t arg) // Sans activation (mono et smp)
   marcel_t next, cur = marcel_self();
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
+
+  LOG_IN();
 
 #ifdef MA__TIMER
   start_timer(); /* May be redundant for main LWP */
@@ -1530,7 +1562,8 @@ any_t idle_func(any_t arg) // Sans activation (mono et smp)
       goto_next_task(next);
 
     MA_THR_RESTARTED(cur, "Preemption");
-  };
+  }
+  LOG_OUT(); // Probably never executed
 }
 #endif
 
@@ -1546,6 +1579,8 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   static unsigned __nb_lwp = 0;
   marcel_attr_t attr;
   int i;
+
+  LOG_IN();
 
   if (__nb_lwp >= MA__MAX_LWPS) 
 	  RAISE("Too many lwp\n");
@@ -1578,23 +1613,23 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   if (initial_task) 
 #endif
   {
-	  SCHED_DATA(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
-	  SCHED_DATA(lwp).running_tasks = 0;
+    SCHED_DATA(lwp).sched_queue_lock = MARCEL_LOCK_INIT;
+    SCHED_DATA(lwp).running_tasks = 0;
 
-	  for(i = 1; i <= MAX_PRIO; i++)
-		  SCHED_DATA(lwp).__first[i] = NULL;
+    for(i = 1; i <= MAX_PRIO; i++)
+      SCHED_DATA(lwp).__first[i] = NULL;
 
-	  if(initial_task) {
-		  SCHED_DATA(lwp).__first[0] = 
-			  SCHED_DATA(lwp).__first[initial_task->prio] = 
-			  initial_task;
-		  initial_task->lwp = lwp;
-		  mdebug("marcel_self : %p, lwp : %i\n", marcel_self(),
-			 marcel_self()->lwp->number);
-		  initial_task->prev = initial_task->next = initial_task;
-		  SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
-		  /* Désormais, on s'exécute dans le lwp 0 */
-	  }
+    if(initial_task) {
+      SCHED_DATA(lwp).__first[0] = 
+	SCHED_DATA(lwp).__first[initial_task->prio] = 
+	initial_task;
+      initial_task->lwp = lwp;
+      mdebug("marcel_self : %p, lwp : %i\n", marcel_self(),
+	     marcel_self()->lwp->number);
+      initial_task->prev = initial_task->next = initial_task;
+      SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
+      /* Désormais, on s'exécute dans le lwp 0 */
+    }
   }
 
   /***************************************************/
@@ -1647,7 +1682,6 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
   unlock_task();
 
-
 #ifdef MA__ACTIVATION
   /****************************************************/
   /* Création de la tâche pour les upcalls upcall_new */
@@ -1692,6 +1726,8 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
    * */
   sched_lock(lwp);
 #endif /* MA__ACTIVATION */
+
+  LOG_OUT();
 }
 
 #if defined(MA__LWPS)
@@ -1702,6 +1738,8 @@ static void create_new_lwp(void)
   __lwp_t *lwp = (__lwp_t *)MALLOC(sizeof(__lwp_t)),
           *cur_lwp = marcel_self()->lwp;
 
+  LOG_IN();
+
   init_lwp(lwp, NULL);
 
   /* Add to global linked list */
@@ -1709,6 +1747,8 @@ static void create_new_lwp(void)
   lwp->prev = cur_lwp->prev;
   cur_lwp->prev->next = lwp;
   cur_lwp->prev = lwp;
+
+  LOG_OUT();
 }
 #endif
 
@@ -1718,8 +1758,11 @@ static void *lwp_startup_func(void *arg)
 {
   __lwp_t *lwp = (__lwp_t *)arg;
 
+  LOG_IN();
+
   if(setjmp(lwp->home_jb)) {
     mdebug("sched %d Exiting\n", lwp->number);
+    LOG_OUT();
     pthread_exit(0);
   }
 
@@ -1756,16 +1799,22 @@ static void start_lwp(__lwp_t *lwp)
 {
   pthread_attr_t attr;
 
+  LOG_IN();
+
   /* Start new Pthread */
   pthread_attr_init(&attr);
   pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
   pthread_create(&lwp->pid, &attr, lwp_startup_func, (void *)lwp);
+
+  LOG_OUT();
 }
 #endif
 
 void marcel_sched_init(unsigned nb_lwp)
 {
   marcel_initialized = TRUE;
+
+  LOG_IN();
 
   sigemptyset(&sigeptset);
   sigemptyset(&sigalrmset);
@@ -1826,11 +1875,6 @@ void marcel_sched_init(unsigned nb_lwp)
   mdebug("marcel_sched_init: init_lwp done\n");
 
   __main_lwp.next = __main_lwp.prev = &__main_lwp;
-// Already done in init_lwp...
-//  SCHED_DATA(& __main_lwp).sched_task->sched_policy = MARCEL_SCHED_FIXED(0);
-//#if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE) 
-//  SCHED_DATA(& __main_lwp).sched_task->previous_lwp = NULL;
-//#endif
 
   SET_STATE_RUNNING(NULL, __main_thread, (&__main_lwp));
   one_more_active_task(__main_thread, &__main_lwp);
@@ -1877,12 +1921,18 @@ void marcel_sched_init(unsigned nb_lwp)
 #endif
   mdebug("marcel_sched_init done : idle task= %p\n",
 	 GET_LWP_BY_NUM(0)->idle_task);
+
+  LOG_OUT();
 }
 
 #ifdef MA__SMP
+/* TODO: the stack of the lwp->sched_task is currently *NOT FREED*.
+   This should be fixed! */
 static void stop_lwp(__lwp_t *lwp)
 {
   int cc;
+
+  LOG_IN();
 
   lwp->has_to_stop = TRUE;
   /* Join corresponding Pthread */
@@ -1890,8 +1940,7 @@ static void stop_lwp(__lwp_t *lwp)
     cc = pthread_join(lwp->pid, NULL);
   } while(cc == -1 && errno == EINTR);
 
-  /* TODO: the stack of the lwp->sched_task is currently *NOT FREED*.
-     This should be fixed! */
+  LOG_OUT();
 }
 #endif
 
@@ -1900,6 +1949,8 @@ void marcel_sched_shutdown()
 #ifdef MA__SMP
   __lwp_t *lwp;
 #endif
+
+  LOG_IN();
 
   wait_all_tasks_end();
 
@@ -1927,7 +1978,9 @@ void marcel_sched_shutdown()
   /* __sched_task is detached, so we can free its stack now */
   FREE(marcel_stackbase(__main_lwp.idle_task));
 #endif
-#endif  
+#endif
+
+  LOG_OUT();
 }
 
 
@@ -1962,6 +2015,8 @@ static void timer_interrupt(int sig)
 
   if(!locked() && preemption_enabled()) {
 
+    LOG_IN();
+
     MTRACE_TIMER("TimerSig", cur);
 
     lock_task();
@@ -1987,12 +2042,15 @@ static void timer_interrupt(int sig)
 #else
     ma__marcel_yield();
 #endif
+    LOG_OUT();
   }
 }
 
 static void set_timer(void)
 {
   struct itimerval value;
+
+  LOG_IN();
 
 #ifdef SMP
     pthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
@@ -2004,11 +2062,15 @@ static void set_timer(void)
     value.it_value = value.it_interval;
     setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
   }
+
+  LOG_OUT();
 }
 
 static void start_timer(void)
 {
   static struct sigaction sa;
+
+  LOG_IN();
 
   sigemptyset(&sa.sa_mask);
   sa.sa_handler = timer_interrupt;
@@ -2017,16 +2079,24 @@ static void start_timer(void)
   sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 
   set_timer();
+
+  LOG_OUT();
 }
 
 void stop_timer(void)
 {
+  LOG_IN();
+
   time_slice = 0;
   set_timer();
+
+  LOG_OUT();
 }
 
 void marcel_settimeslice(unsigned long microsecs)
 {
+  LOG_IN();
+
   lock_task();
   if(microsecs == 0) {
     disable_preemption();
@@ -2045,6 +2115,8 @@ void marcel_settimeslice(unsigned long microsecs)
     }
   }
   unlock_task();
+
+  LOG_OUT();
 }
 
 unsigned long marcel_clock(void)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.35  2000/06/09 17:36:54  vdanjean
+integrating MARCEL_POLL_AT_YIELD
+
 Revision 1.34  2000/06/05 15:40:40  vdanjean
 activation bug fix in idle_func
 
@@ -921,7 +924,7 @@ static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
   return res;
 }
 
-void marcel_yield(void)
+void ma__marcel_yield(void)
 {
   register marcel_t cur = marcel_self();
   register marcel_t next;
@@ -941,8 +944,16 @@ void marcel_yield(void)
   unlock_task();
 }
 
+void marcel_yield(void)
+{
+  lock_task();
+  marcel_check_polling(MARCEL_POLL_AT_YIELD);
+  unlock_task();
+  ma__marcel_yield();
+}
+
 //TODO : is it correct for marcel-smp ?
-int marcel_explicityield(marcel_t t)
+int ma__marcel_explicityield(marcel_t t)
 {
   register marcel_t cur = marcel_self();
 
@@ -968,7 +979,15 @@ int marcel_explicityield(marcel_t t)
   return 1; /* for gcc */
 }
 
-void marcel_trueyield(void)
+int marcel_explicityield(marcel_t t)
+{
+  lock_task();
+  marcel_check_polling(MARCEL_POLL_AT_YIELD);
+  unlock_task();  
+  return ma__marcel_explicityield(t);
+}
+
+void ma__marcel_trueyield(void)
 {
   marcel_t next;
   register marcel_t cur = marcel_self();
@@ -983,6 +1002,14 @@ void marcel_trueyield(void)
 
   next = marcel_radical_next_task(); // est-ce ok avec les activations ?
   goto_next_task(next);
+}
+
+void marcel_trueyield(void)
+{
+  lock_task();
+  marcel_check_polling(MARCEL_POLL_AT_YIELD);
+  unlock_task();  
+  ma__marcel_trueyield();
 }
 
 void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
@@ -1236,15 +1263,15 @@ void stop_timer(void);
    handled */
 any_t idle_func(any_t arg) // Pour les activations
 {
-  marcel_t next, cur = marcel_self();
+  volatile marcel_t next, cur = marcel_self();
   static int counter=0;
   int lc;
-  int init=0;
+  volatile int init=0;
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
 
-  lock_task();
   MTRACE("coucou", cur);  
+  lock_task();
   MA_THR_SETJMP(cur);
   if(!init) {
     init=1;
@@ -1873,10 +1900,10 @@ static void timer_interrupt(int sig)
 #ifdef MINIMAL_PREEMPTION
     if(special_thread != NULL && special_thread != cur) {
       yielding_thread = cur;
-      marcel_explicityield(special_thread);
+      ma__marcel_explicityield(special_thread);
     }
 #else
-    marcel_yield();
+    ma__marcel_yield();
 #endif
   }
 }

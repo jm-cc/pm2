@@ -44,7 +44,7 @@ static clone_t clone;
 any_t master(any_t arg)
 {
   int b;
-  int i;
+  volatile int i;
 
   marcel_detach(marcel_self());
 
@@ -57,7 +57,7 @@ any_t master(any_t arg)
     CLONE_BEGIN(&clone);
 
     fprintf(stderr,
-	    "je suis le maitre en section parallele "
+	    "Je suis en section parallele "
 	    "(delta = %lx, i = %d)\n",
 	    clone_my_delta(),
 	    ++(*((int *)((char *)&i - clone_my_delta()))));

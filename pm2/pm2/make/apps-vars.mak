@@ -48,6 +48,7 @@ SRC_DIR := $(CURDIR)
 ifneq ($(MAKECMDGOALS),config)
 APP_STAMP := $(shell $(PM2_CONFIG) --stampdir)
 APP_EXT := $(shell $(PM2_CONFIG) --ext)
+APP_LOADER := $(shell $(PM2_CONFIG) --loader)
 
 CC := $(shell $(PM2_CONFIG) --cc $(LIBRARY))
 

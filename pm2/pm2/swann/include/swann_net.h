@@ -19,8 +19,8 @@
  * -----------
  */
 
-#ifndef __SWANN_NET_H
-#define __SWANN_NET_H
+#ifndef SWANN_NET_H
+#define SWANN_NET_H
 
 typedef struct s_swann_net_client
 {
@@ -36,4 +36,4 @@ typedef struct s_swann_net_server
   tbx_list_t            client_list;
 } swann_net_server_t;
 
-#endif /* __SWANN_NET_H */
+#endif /* SWANN_NET_H */

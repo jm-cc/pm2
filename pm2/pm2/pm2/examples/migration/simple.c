@@ -24,6 +24,7 @@ static marcel_sem_t sem;
 void thread_func(void *arg)
 {
   int i, proc;
+  tbx_tick_t tick1,tick2;
 
   pm2_enable_migration();
 
@@ -39,9 +40,11 @@ void thread_func(void *arg)
 
       pm2_printf("I'm now going on node [%d]\n", proc);
 
+      TBX_GET_TICK(tick1);
       pm2_migrate_self(proc);
+      TBX_GET_TICK(tick2);
 
-      pm2_printf("Here I am!\n");
+      pm2_printf("Here I am within %lu µsec!\n",TBX_TIMING_DELAY(tick1,tick2));
     }
   }
 

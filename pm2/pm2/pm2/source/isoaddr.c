@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.3  2000/07/20 09:04:16  oaumage
+- Corrections diverses
+
 Revision 1.2  2000/07/14 16:17:10  gantoniu
 Merged with branch dsm3
 
@@ -213,7 +216,10 @@ static page_info_table_t _info_table;
 static int _page_distrib_mode = CYCLIC;
 static int _page_distrib_arg = 16;
 
+#ifdef min
+#undef min
 #define min(a,b) ((a) < (b))?(a):(b)
+#endif /* min */
 
 static void _page_ownership_init()
 {

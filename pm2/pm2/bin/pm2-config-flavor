@@ -290,7 +290,7 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
 }
 
 get_options() { # mod help list_options_to_add option/module
-    opts=
+    curopts=
     case $4 in
     option)
 	case $1 in
@@ -299,43 +299,40 @@ get_options() { # mod help list_options_to_add option/module
 	    ;;
 	*)
 	    module="--module=$1"
-	    allowed=`"$PM2_MODULE" options $module --get-incl`
-	    curopts=`eval echo \\$fl_$1`
-	    for opt in $3 $curopts " "; do
+	    for opt in $3 `eval echo \\$fl_$1` " "; do
 		case $opt in
 		\ )
 		    ;;
 		*)
-		    case " $allowed " in
-		    *\ $opt\ *)
-			case " $opts " in
+		    case " $curopts " in
 			*\ $opt\ *)
 			    ;;
 			*)
-			    opts="${opts:+$opts }$opt"
+			    curopts="${curopts:+$curopts }$opt"
 			    ;;
-			esac
-			;;
-		    *)
-			;;
 		    esac
 		    ;;
 		esac
 	    done
-	    eval fl_$1='"$opts"'
+	    eval fl_$1=''
+	    helpcmd1="option="
+	    helpcmd2="$module"
 	    if [ "$interf" = "dialog" ] ; then
-		helpcmd1="option="
-		helpcmd2="$module"
 		for excl_set in `"$PM2_MODULE" options $module --get-excl-sets`; do
 		    listopt=`"$PM2_MODULE" options $module --get-excl=$excl_set`
-		    get_options_$interf "$@" excl
+		    if [ -n "$listopt" ]; then
+			get_options_$interf "$@" excl
+		    fi
 		done
 		listopt=`"$PM2_MODULE" options $module --get-incl`
-		get_options_$interf "$@"
+		if [ -n "$listopt" ]; then
+		    get_options_$interf "$@"
+		fi
 		return 0
 	    fi
 	    ;;
 	esac
+	# We go here if $interf != dialog *OR* if $option = all
 	listopt=`"$PM2_MODULE" options $module --list`
 	helpcmd1="option="
 	helpcmd2="$module"
@@ -356,17 +353,18 @@ get_options() { # mod help list_options_to_add option/module
 		;;
 	    esac
 	done	
+	eval fl_$1=''
 	listopt=`"$PM2_MODULE" modules`
 	helpcmd1="module="
 	helpcmd2=""
 	;;
     esac
 
-    if [ -z "$listopt" ]; then
-	return 0
+    if [ -n "$listopt" ]; then
+	get_options_$interf "$@"
     fi
 
-    eval "get_options_${interf}" '"$@"'
+    return 0
 }
 
 SEP="******************************************************"

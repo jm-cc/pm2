@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.3  2000/03/02 09:52:22  jfmehaut
+pilote Madeleine II/BIP
+
 Revision 1.2  2000/03/01 14:09:22  oaumage
 - suppression du fichier de configuration
 
@@ -105,14 +108,16 @@ int main(int argc, char **argv)
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_eth0"); */
-  /* TCP */
-  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
+  /* TCP 
+  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
   /* SISCI 
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
   /* MPI 
      adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); */
+  /* BIP */ 
+     adapter_set = mad_adapter_set_init(1, mad_BIP, NULL); 
 #endif /* BI_PROTO */
 
   madeleine = mad_init(&argc, argv, NULL, adapter_set);

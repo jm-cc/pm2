@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leoparse_pointers.h,v $
+Revision 1.2  2000/11/03 10:42:31  oaumage
+- integration de Leoparse
+
 Revision 1.1  2000/11/02 14:25:03  oaumage
 Leoparse
 
@@ -50,7 +53,7 @@ ______________________________________________________________________________
 #ifndef __LEOPARSE_POINTERS_H
 #define __LEOPARSE_POINTERS_H
 
-typedef struct s_leoparse_htable_entry_t *p_leoparse_htable_entry_t;
+typedef struct s_leoparse_htable_entry   *p_leoparse_htable_entry_t;
 typedef enum   e_leoparse_object_type    *p_leoparse_object_type_t;
 typedef struct s_leoparse_object         *p_leoparse_object_t;
 

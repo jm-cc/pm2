@@ -18,14 +18,13 @@
 #define _GNU_SOURCE
 #include "marcel.h"
 
-#ifdef MARCEL_TOP
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
 
 int marcel_top_file=-1;
-unsigned long marcel_top_lastms;
+static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 
 int top_printf (char *fmt, ...) __attribute__((__format__(printf, 1, 2)));
@@ -41,7 +40,10 @@ int top_printf (char *fmt, ...) {
 }
 
 void printtask(marcel_task_t *t) {
-	top_printf(" %s(%d)", t->name, t->sched.internal.prio);
+	unsigned long utime = ma_atomic_read(&t->top_utime);
+
+	top_printf(" %s(%d,%lu%%)", t->name, t->sched.internal.prio, (utime*100)/djiffies);
+	ma_atomic_sub(utime, &t->top_utime);
 }
 void printrq(ma_runqueue_t *rq) {
 	int prio;
@@ -67,9 +69,14 @@ void printrq(ma_runqueue_t *rq) {
 
 void marcel_top_tick(unsigned long foo) {
 	marcel_lwp_t *lwp;
-	marcel_top_lastms = marcel_clock();
+	unsigned long now;
+
+	lastms = marcel_clock();
+	now = ma_jiffies;
+	djiffies = now - lastjiffies;
+
 	top_printf("\e[H\e[J");
-	top_printf("top - up %02lu:%02lu:%02lu\r\n", marcel_top_lastms/1000/60/60, (marcel_top_lastms/1000/60)%60, (marcel_top_lastms/1000)%60);
+	top_printf("top - up %02lu:%02lu:%02lu\r\n", lastms/1000/60/60, (lastms/1000/60)%60, (lastms/1000)%60);
 	printrq(&ma_main_runqueue);
 #ifndef MA__LWPS
 	printtask(ma_per_lwp__current_thread);
@@ -87,12 +94,15 @@ void marcel_top_tick(unsigned long foo) {
 lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
+		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
 		printtask(ma_per_lwp(current_thread,lwp));
 		top_printf("\r\n");
 		printrq(&ma_per_lwp(runqueue,lwp));
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
 	}
 #endif
+	lastjiffies = now;
+
 	timer.expires += JIFFIES_FROM_US(1000000);
 	ma_add_timer(&timer);
 }
@@ -128,4 +138,3 @@ int marcel_init_top(char *outfile) {
 	ma_add_timer(&timer);
 	return 0;
 }
-#endif

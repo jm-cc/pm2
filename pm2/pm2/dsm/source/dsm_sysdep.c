@@ -45,11 +45,6 @@
 
 #include "dsm_const.h"
 
-#if !defined(SA_SIGINFO)
-#define SA_SIGINFO 0
-#endif
-
-
 //#define DEBUG
 
 dsm_pagefault_handler_t pagefault_handler;
@@ -67,11 +62,7 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #endif
 {
 #if defined(LINUX_SYS) && defined(X86_ARCH)
-#if __GLIBC__ == 2 && __GLIBC_MINOR__ == 1
-  char *addr = (char *)(((int *)&context)[18]);
-#else
   char *addr = (char *)(context.cr2);
-#endif
 #elif defined(SOLARIS_SYS)
   char *addr = siginfo->si_addr;
 #endif
@@ -96,7 +87,11 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 
 	act.sa_handler = SIG_DFL;
 	sigemptyset(&act.sa_mask);
+#ifdef SOLARIS_SYS
 	act.sa_flags = SA_SIGINFO;
+#else
+	act.sa_flags = 0;
+#endif
 	sigaction(sig, &act, (struct sigaction *)NULL);
 	kill(getpid(), sig);
       }
@@ -132,7 +127,11 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
   act.sa_handler = (void (*)(int))_internal_sig_handler;
   sigemptyset(&act.sa_mask);
   sigaddset(&act.sa_mask, MARCEL_TIMER_SIGNAL);
+#ifdef SOLARIS_SYS
+  act.sa_flags = 0;
+#else
   act.sa_flags = SA_SIGINFO;
+#endif
 
   if (sigaction(SIGBUS, &act, &bus_sigact) != 0)
     {

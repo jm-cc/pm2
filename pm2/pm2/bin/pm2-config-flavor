@@ -290,11 +290,11 @@ get_value() { # needed name help
 
 settings_ok() { # ok
     if [ $1 = 0 ]; then
-	echo "Do these settings are correct [Y/n] ?"
+	echo "Are these settings correct for you [Y/n] ?"
 	read i
 	[ -z "$i" ] && i=Y
     else
-	echo "Do these settings are correct [y/N] ?"
+	echo "Are these settings correct for you [y/N] ?"
 	read i
 	[ -z "$i" ] && i=N
     fi

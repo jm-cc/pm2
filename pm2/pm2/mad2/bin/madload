@@ -38,8 +38,6 @@
 MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
 export MAD2_ROOT
 
-echo Console
-
 if [ -n "${PM2_CONSOLE}" ]; then
     prog="$1 -pm2cons $PM2_CONSOLE"
     shift
@@ -47,8 +45,6 @@ else
     prog="$1"
     shift
 fi
-
-echo Display
 
 case "_${DISPLAY}" in
     _) DISPLAY=`uname -n`:0.0 ;;
@@ -58,7 +54,6 @@ esac
 
 # Note: PM2_CONF_FILE is inherited
 host=`head -1 ${PM2_CONF_FILE}`
-echo Master = $host
 
 args=""
 while [ $# -gt 0 ]; do

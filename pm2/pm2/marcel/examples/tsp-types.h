@@ -2,7 +2,7 @@
 
 #ifdef MT
 #ifdef MARCEL
-#include <marcel.h>
+#include "marcel.h"
 #else
 #include <pthread.h>
 #endif

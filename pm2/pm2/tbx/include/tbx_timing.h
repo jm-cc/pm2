@@ -1,3 +1,10 @@
+/*! \file tbx_timing.h
+ *  \brief TBX timing data structures and macros
+ *
+ *  This file contains the support data structures and macros for the
+ *  TBX timing facilities.
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine
@@ -25,19 +32,24 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-typedef union
+typedef union u_tbx_tick
 {
   unsigned long long tick;
+
   struct
   {
-    unsigned long low, high;
+    unsigned long low;
+    unsigned long high;
   } sub;
+
   struct timeval timev;
 } tbx_tick_t, *p_tbx_tick_t;
 
 /* Hum hum... Here we suppose that X86ARCH => Pentium! */
+
 #ifdef X86_ARCH
 #define TBX_GET_TICK(t) __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))
+
 #define TBX_TICK_RAW_DIFF(t1, t2) ((t2).tick - (t1).tick)
 #else /* X86_ARCH */
 #define TBX_GET_TICK(t) gettimeofday(&(t).timev, NULL)
@@ -50,6 +62,6 @@ typedef union
 #define TBX_TIMING_DELAY(t1, t2) tbx_tick2usec(TBX_TICK_DIFF(t1, t2))
 
 extern unsigned long long tbx_residual;
-extern tbx_tick_t         tbx_new_event, tbx_last_event;
-
+extern tbx_tick_t         tbx_new_event;
+extern tbx_tick_t         tbx_last_event;
 #endif /* TBX_TIMING_H */

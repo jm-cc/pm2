@@ -77,7 +77,7 @@ leop_htable:
 | LEOP_ID ':' leop_object ';'
 {
   LOG("leop_htable (2) -->");
-  $$ = malloc(sizeof(tbx_htable_t));
+  $$ = TBX_MALLOC(sizeof(tbx_htable_t));
   tbx_htable_init($$, 0);
   tbx_htable_add($$, $1, $3);
   LOG("leop_htable (2) <--");
@@ -100,44 +100,44 @@ leop_list:
 leop_object:
   '{' leop_htable '}'
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_htable;
   $$->htable = $2;
 }
 | LEOP_ID
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type = leoparse_o_id;
   $$->id   = $1;
 }
 | LEOP_ID leop_modifier
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type = leoparse_o_id;
   $$->id   = $1;
   $$->modifier = $2;
 }
 | LEOP_STRING
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_string;
   $$->string = $1;
 }
 | LEOP_INTEGER
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_integer;
   $$->val = $1;
 }
 | leop_range
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_range;
   $$->range = $1;
 }
 | '(' leop_list ')'
 {
-  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_slist;
   $$->slist = $2;
 }
@@ -146,13 +146,13 @@ leop_object:
 leop_modifier:
 '[' leop_list ']'
 {
-  $$ = calloc(1, sizeof(leoparse_modifier_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_modifier_t));
   $$->type = leoparse_m_sbracket;
   $$->sbracket = $2;  
 }
 |'(' leop_list ')'
 {
-  $$ = calloc(1, sizeof(leoparse_modifier_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_modifier_t));
   $$->type = leoparse_m_parenthesis;
   $$->sbracket = $2;
 }
@@ -161,7 +161,7 @@ leop_modifier:
 leop_range:
 LEOP_INTEGER LEOP_RANGE LEOP_INTEGER
 {
-  $$ = calloc(1, sizeof(leoparse_range_t));
+  $$ = TBX_CALLOC(1, sizeof(leoparse_range_t));
   $$->begin = $1;
   $$->end   = $3 + 1;
 }

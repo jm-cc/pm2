@@ -188,7 +188,7 @@ while [ $_l -le $_level ]; do
 		    echo "Level [$_l], module [$_m], Test [$_tst_name]"
 
 		    # Source
-		    . $_f
+		    . ./$_f
 
 		    # Compilation, execution et verification des resultats
 		    eval do_the_test $_output_redirect

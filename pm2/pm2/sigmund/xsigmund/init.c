@@ -10,12 +10,18 @@
 struct code_name code_table[1000];
 int nb_code;
 
+
+/* Initialize the event list... 
+   read fkt.h, fut.h ...
+ */
+
 static void code_copy(int code, char *name)
 {
   code_table[nb_code].code = code;
   code_table[nb_code].name = name;
   nb_code++;
 }
+
 
 static char *pm2_root(void)
 {
@@ -28,6 +34,7 @@ static char *pm2_root(void)
   
   return ptr;
 }
+
 
 static void get_builddir(char *builddir)
 {
@@ -64,6 +71,7 @@ static void get_builddir(char *builddir)
   }
 
 }
+
 
 void init_names()
 { 

@@ -18,6 +18,8 @@
 
 #include "dialog.h"
 
+
+/* strucure of a dailog box */
 typedef struct {
   GtkWidget *window;
   GtkWidget *button1, *button2, *button3;
@@ -26,6 +28,9 @@ typedef struct {
   gpointer data1, data2, data3;
 } dialog_param_t;
 
+
+
+/* callbacks for dialog box */
 static void callback1(GtkWidget *widget,
 		      gpointer data)
 {
@@ -65,6 +70,8 @@ static void callback3(GtkWidget *widget,
   g_free(ptr);
 }
 
+
+/* main function */
 void dialog_prompt(char *question,
 		   char *choice1, dialog_func_t func1, gpointer data1,
 		   char *choice2, dialog_func_t func2, gpointer data2,

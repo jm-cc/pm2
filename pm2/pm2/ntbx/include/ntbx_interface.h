@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: ntbx_interface.h,v $
+Revision 1.3  2000/04/27 09:01:29  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
+Revision 1.2.2.1  2000/04/03 13:46:00  oaumage
+- fichier de commandes `swann'
+
 Revision 1.2  2000/02/17 09:14:26  oaumage
 - ajout du support de TCP a la net toolbox
 - ajout de fonctions d'empaquetage de donnees numeriques
@@ -46,7 +52,7 @@ ______________________________________________________________________________
 */
 
 /*
- * NTbx_interface.h
+ * ntbx_interface.h
  * ================
  */
 
@@ -71,6 +77,13 @@ ntbx_pack_int(int                  data,
 
 int
 ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer);
+
+void
+ntbx_pack_long(long                 data,
+	       p_ntbx_pack_buffer_t pack_buffer);
+
+long
+ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer);
 
 void
 ntbx_pack_double(double               data,

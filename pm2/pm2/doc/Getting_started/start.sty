@@ -4,6 +4,7 @@
 \usepackage{boxedminipage}%
 \usepackage[dvips]{graphics}%
 \usepackage[obeyspaces]{url}%
+\usepackage{graphicx}%
 \usepackage{xspace}%
 \usepackage{palatino}%
 
@@ -51,6 +52,8 @@
 
 \setlength{\parskip} {0.3\baselineskip}%
 
+\setlength{\parindent} {0pt}%
+
 \newcommand{\pmm} {PM$^2$\xspace}%
 \newcommand{\mad} {\emph{Madeleine}\xspace}%
 \newcommand{\madii} {\emph{Madeleine~II}\xspace}%
@@ -64,3 +67,9 @@
 \newenvironment{warning} {\begin{quote} \begin{description} \item
       [\fbox{Warning}] \sl} {\end{description} \end{quote}}
 
+\def\stamp $#1${
+{\footnotesize
+\begin{center}
+\|#1|
+\end{center}
+}}

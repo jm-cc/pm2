@@ -37,9 +37,9 @@
 DIRS="${MAD2_ROOT}/make"
 
 for d in $DIRS ; do
-    if [ ! -h $d/custom ] ; then
+    if [ ! -h $d/custom -a -d $d/custom ] ; then
 	echo "ATTENTION: Verifiez votre installation."
-	echo "$d/custom doit etre un lien symbolique !"
+	echo "$d/custom ne doit pas etre un répertoire, mais un lien symbolique !"
 	exit 1
     fi
 done

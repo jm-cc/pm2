@@ -26,7 +26,904 @@
 #include <string.h>
 #include <gm.h>
 
+/*
+DEBUG_DECLARE(gm)
+#undef DEBUG_NAME
+#define DEBUG_NAME gm
+*/
 
+/*
+ *  Macros
+ */
+#if 0
+#define __RDTSC__ ({jlong time;__asm__ __volatile__ ("rdtsc" : "=A" (time));time;})
+#else
+#define __RDTSC__ 0LL
+#endif
+
+/* Debugging macros */
+#if 0
+#define __trace__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#else
+#define __trace__(s, p...)
+#endif
+
+#if 0
+#define __disp__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#define __in__()          fprintf(stderr, "[%Ld]:%s:%d: -->\n", __RDTSC__, __FUNCTION__, __LINE__)
+#define __out__()         fprintf(stderr, "[%Ld]:%s:%d: <--\n", __RDTSC__, __FUNCTION__, __LINE__)
+#define __err__()         fprintf(stderr, "[%Ld]:%s:%d: <!!\n", __RDTSC__, __FUNCTION__, __LINE__)
+#else
+#define __disp__(s, p...)
+#define __in__() 
+#define __out__()
+#define __err__()
+#endif
+
+/* Error message macros */
+#if 1
+#define __error__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: *error* "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#else
+#define __error__(s, p...)
+#endif
+
+#define __gmerror__(x) (mad_gm_error((x), __LINE__))
+
+#define MAD_GM_MAX_BLOCK_LEN	 	(2*1024*1024)
+#define MAD_GM_CACHE_GRANULARITY	 0x1000
+#define MAD_GM_CACHE_SIZE		 0x1000
+
+typedef struct s_mad_gm_cache *p_mad_gm_cache_t;
+typedef struct s_mad_gm_cache {
+        void             *ptr;
+        int               len;
+        int               ref_count;
+        p_mad_gm_cache_t  next;
+} mad_gm_cache_t;
+
+typedef struct s_mad_gm_port {
+        int dummy;
+
+	struct gm_port   *p_gm_port;
+        int               number;
+        int               local_port_id;
+        unsigned int      local_node_id;
+        p_mad_gm_cache_t  cache_head;
+        p_mad_adapter_t   adapter;
+        p_tbx_darray_t    out_darray;
+        p_tbx_darray_t    in_darray;
+} mad_gm_port_t, *p_mad_gm_port_t;
+
+typedef struct s_mad_gm_driver_specific {
+        int dummy;
+} mad_gm_driver_specific_t, *p_mad_gm_driver_specific_t;
+
+typedef struct s_mad_gm_adapter_specific {
+        int            dummy;
+        int            device_id;
+        p_tbx_darray_t port_darray;
+} mad_gm_adapter_specific_t, *p_mad_gm_adapter_specific_t;
+
+typedef struct s_mad_gm_channel_specific {
+        int dummy;
+        p_mad_gm_port_t in_port;
+} mad_gm_channel_specific_t, *p_mad_gm_channel_specific_t;
+
+typedef struct s_mad_gm_connection_specific {
+        int dummy;
+
+        volatile int    lock;
+        gm_status_t     request_status;
+        p_mad_buffer_t  buffer;
+        int             remote_port_id;
+        unsigned int    remote_node_id;
+        p_mad_gm_port_t port;
+
+} mad_gm_connection_specific_t, *p_mad_gm_connection_specific_t;
+
+typedef struct s_mad_gm_link_specific {
+        int dummy;
+} mad_gm_link_specific_t, *p_mad_gm_link_specific_t;
+
+/*
+ *  Global variables
+ * __________________
+ */
+
+const int mad_gm_pub_port_array[] = {
+        2,
+        4,
+        5,
+        6,
+        7,
+        -1
+};
+
+/*
+ *  Functions
+ * ___________
+ */
+
+/* GM error message display fonction. */
+static
+void
+mad_gm_error(gm_status_t gm_status, int line)
+{
+	char *msg = NULL;
+
+	switch (gm_status) {
+	case GM_SUCCESS:
+		break;
+
+        case GM_FAILURE:
+                msg = "GM failure";
+                break;
+                
+        case GM_INPUT_BUFFER_TOO_SMALL:
+                msg = "GM input buffer too small";
+                break;
+                        
+        case GM_OUTPUT_BUFFER_TOO_SMALL:
+                msg = "GM output buffer too small";
+                break;
+                
+        case GM_TRY_AGAIN:
+                msg = "GM try again";
+                break;
+
+        case GM_BUSY:
+                msg = "GM busy";
+                break;
+                
+        case GM_MEMORY_FAULT:
+                msg = "GM memory fault";
+                break;
+
+        case GM_INTERRUPTED:
+                msg = "GM interrupted";
+                break;
+                
+        case GM_INVALID_PARAMETER:
+                msg = "GM invalid parameter";
+                break;
+                
+        case GM_OUT_OF_MEMORY:
+                msg = "GM out of memory";
+                break;
+                
+        case GM_INVALID_COMMAND:
+                msg = "GM invalid command";
+                break;
+
+        case GM_PERMISSION_DENIED:
+                msg = "GM permission denied";
+                break;
+
+        case GM_INTERNAL_ERROR:
+                msg = "GM internal error";
+                break;
+
+        case GM_UNATTACHED:
+                msg = "GM unattached";
+                break;
+
+        case GM_UNSUPPORTED_DEVICE:
+                msg = "GM unsupported device";
+                break;
+
+        case GM_SEND_TIMED_OUT:
+		msg = "GM send timed out";
+                break;
+
+        case GM_SEND_REJECTED:
+		msg = "GM send rejected";
+                break;
+
+        case GM_SEND_TARGET_PORT_CLOSED:
+		msg = "GM send target port closed";
+                break;
+
+        case GM_SEND_TARGET_NODE_UNREACHABLE:
+		msg = "GM send target node unreachable";
+                break;
+
+        case GM_SEND_DROPPED:
+		msg = "GM send dropped";
+                break;
+
+        case GM_SEND_PORT_CLOSED:
+		msg = "GM send port closed";
+                break;
+
+        case GM_NODE_ID_NOT_YET_SET:
+                msg = "GM id not yet set";
+                break;
+
+        case GM_STILL_SHUTTING_DOWN:
+                msg = "GM still shutting down";
+                break;
+
+        case GM_CLONE_BUSY:
+                msg = "GM clone busy";
+                break;
+
+        case GM_NO_SUCH_DEVICE:
+                msg = "GM no such device";
+                break;
+
+        case GM_ABORTED:
+                msg = "GM aborted";
+                break;
+
+#if GM_API_VERSION >= GM_API_VERSION_1_5
+        case GM_INCOMPATIBLE_LIB_AND_DRIVER:
+                msg = "GM incompatible lib and driver";
+                break;
+
+        case GM_UNTRANSLATED_SYSTEM_ERROR:
+                msg = "GM untranslated system error";
+                break;
+
+        case GM_ACCESS_DENIED:
+                msg = "GM access denied";
+                break;
+#endif
+
+	default:
+		msg = "unknown GM error";
+		break;
+	}
+
+	if (msg) {
+		DISP("%d:%s\n", line, msg);
+                gm_perror ("gm_message", gm_status);
+	}
+}
+
+
+/* --- */
+
+static
+void
+mad_gm_round2page(void **p_ptr,
+                  int   *p_len) {
+        void *ptr = NULL;
+        int   len =    0;
+
+        LOG_IN();
+        ptr = *p_ptr;
+        len = *p_len;
+
+        {
+                unsigned long mask    = (MAD_GM_CACHE_GRANULARITY - 1);
+                unsigned long lng     = (long)ptr;
+                unsigned long tmp_lng = (lng & ~mask);
+                unsigned long offset  = lng - tmp_lng;
+
+                ptr -= offset;
+                len += offset;
+
+                if (len & mask) {
+                        len = (len & ~mask) + MAD_GM_CACHE_GRANULARITY;
+                }
+        }
+        
+        *p_ptr = ptr;
+        *p_len = len;
+        LOG_OUT();
+}
+
+static
+int
+mad_gm_register_block(p_mad_gm_port_t    port,
+                      void             * ptr,
+                      int                len,
+                      p_mad_gm_cache_t *_p_cache) {
+	struct gm_port    *p_gm_port = NULL;
+        gm_status_t        gms       = GM_SUCCESS;
+        p_mad_gm_cache_t   cache     = NULL;
+        p_mad_gm_cache_t  *p_cache   = NULL;
+
+        LOG_IN();
+	p_gm_port =  port->p_gm_port;
+        p_cache   = &port->cache_head;
+
+        mad_gm_round2page(&ptr, &len);        
+
+        while ((cache = *p_cache)) {
+                if (ptr      >=  cache->ptr
+                    &&
+                    ptr+len  <=  cache->ptr+cache->len) {
+                        cache->ref_count++;
+
+                        if (p_cache != &port->cache_head) {
+                                *p_cache = cache->next;
+                                cache->next = port->cache_head;
+                                port->cache_head = cache;
+                        }
+
+                        goto success;
+                }
+
+                p_cache = &(cache->next);
+        }
+
+        cache = TBX_MALLOC(sizeof(mad_gm_cache_t));
+
+        gms = gm_register_memory(p_gm_port, ptr, len);
+        if (gms) {
+                __error__("memory registration failed");
+                __gmerror__(gms);
+                TBX_FREE(cache);
+                cache = NULL;
+                goto error;
+        }
+
+        cache->ptr       = ptr;
+        cache->len       = len;
+        cache->ref_count = 1;
+        cache->next      = port->cache_head;
+
+        port->cache_head = cache;
+                
+ success:
+        *_p_cache = cache;
+        LOG_OUT();
+        return 0;
+
+ error:
+        FAILURE("mad_gm_register_block");
+}
+
+static
+int
+mad_gm_deregister_block(p_mad_gm_port_t  port, 
+                        p_mad_gm_cache_t cache) {
+	struct gm_port *p_gm_port = NULL;
+
+        LOG_IN();
+	p_gm_port = port->p_gm_port;
+
+        if (!--cache->ref_count) {
+                p_mad_gm_cache_t *p_cache = NULL;
+                int               i       =    0;
+
+                p_cache = &port->cache_head;
+
+                while (*p_cache != cache) {
+                        p_cache = &((*p_cache)->next);
+                        i++;
+                }
+                
+                if (i >= MAD_GM_CACHE_SIZE) {
+                        gm_status_t gms =  GM_SUCCESS;
+
+                        gms = gm_deregister_memory(p_gm_port,
+                                                   cache->ptr,
+                                                   cache->len);
+                        if (gms) {
+                                __error__("memory deregistration failed");
+                                __gmerror__(gms);
+                                goto error;
+                        }
+
+                        cache->ptr = NULL;
+                        cache->len =    0;
+
+                        *p_cache = cache->next;
+                        cache->next = NULL;
+
+                        TBX_FREE(cache);
+                }
+        }
+
+        LOG_OUT();
+        return 0;
+        
+ error:
+        FAILURE("mad_gm_deregister_block failed");
+}
+
+static
+p_mad_gm_port_t
+mad_gm_port_open(p_mad_adapter_t a,
+                 int             n) {
+        p_mad_gm_adapter_specific_t  as        = NULL;
+        p_mad_gm_port_t              port      = NULL;
+	struct gm_port              *p_gm_port = NULL;
+	gm_status_t                  gms       = GM_SUCCESS;
+	int                          port_id   =  0;
+	unsigned int                 node_id   =  0;
+
+        LOG_IN();
+        port_id = mad_gm_pub_port_array[n];
+
+	gms = gm_open(&p_gm_port, as->device_id, port_id,
+			  "mad_gm", GM_API_VERSION_1_1);
+	if (gms != GM_SUCCESS) {
+                __error__("gm_open failed");
+		__gmerror__(gms);
+                goto error;
+	}
+	
+	port = TBX_MALLOC(sizeof(mad_gm_port_t));
+
+	gms = gm_get_node_id(p_gm_port, &node_id);
+	if (gms != GM_SUCCESS) {
+                __error__("gm_get_node_id failed");
+		__gmerror__(gms);
+                goto error;
+	}
+        
+        port->p_gm_port = p_gm_port;
+        port->number    = n;
+        port->local_port_id = port_id;
+        port->local_node_id = node_id;
+        port->cache_head    = NULL;
+        port->adapter       = a;
+        port->out_darray    = tbx_darray_init();
+        port->in_darray     = tbx_darray_init();
+
+        LOG_OUT();
+        return port;
+        
+ error:
+        FAILURE("mad_gm_port_open failed");
+}
+
+
+
+void
+mad_gm_register(p_mad_driver_t driver)
+{
+        p_mad_driver_interface_t interface = NULL;
+
+#ifdef DEBUG
+        DEBUG_INIT(gm);
+#endif // DEBUG
+
+        LOG_IN();
+        TRACE("Registering GM driver");
+        interface = driver->interface;
+
+        driver->connection_type  = mad_unidirectional_connection;
+        driver->buffer_alignment = 1;
+        driver->name             = tbx_strdup("gm");
+
+        interface->driver_init                = mad_gm_driver_init;
+        interface->adapter_init               = mad_gm_adapter_init;
+        interface->channel_init               = mad_gm_channel_init;
+        interface->before_open_channel        = NULL;
+        interface->connection_init            = mad_gm_connection_init;
+        interface->link_init                  = mad_gm_link_init;
+        interface->accept                     = mad_gm_accept;
+        interface->connect                    = mad_gm_connect;
+        interface->after_open_channel         = NULL;
+        interface->before_close_channel       = NULL;
+        interface->disconnect                 = mad_gm_disconnect;
+        interface->after_close_channel        = NULL;
+        interface->link_exit                  = mad_gm_link_exit;
+        interface->connection_exit            = mad_gm_connection_exit;
+        interface->channel_exit               = mad_gm_channel_exit;
+        interface->adapter_exit               = mad_gm_adapter_exit;
+        interface->driver_exit                = mad_gm_driver_exit;
+        interface->choice                     = NULL;
+        interface->get_static_buffer          = NULL;
+        interface->return_static_buffer       = NULL;
+        interface->new_message                = mad_gm_new_message;
+        interface->finalize_message           = NULL;
+#ifdef MAD_MESSAGE_POLLING
+        interface->poll_message               = mad_gm_poll_message;
+#endif // MAD_MESSAGE_POLLING
+        interface->receive_message            = mad_gm_receive_message;
+        interface->message_received           = mad_gm_message_received;
+        interface->send_buffer                = mad_gm_send_buffer;
+        interface->receive_buffer             = mad_gm_receive_buffer;
+        interface->send_buffer_group          = mad_gm_send_buffer_group;
+        interface->receive_sub_buffer_group   = mad_gm_receive_sub_buffer_group;
+        LOG_OUT();
+}
+
+
+void
+mad_gm_driver_init(p_mad_driver_t d) {
+        p_mad_gm_driver_specific_t ds  = NULL;
+        gm_status_t                gms = GM_SUCCESS;
+
+        LOG_IN();
+        TRACE("Initializing GM driver");
+        ds          = TBX_MALLOC(sizeof(mad_gm_driver_specific_t));
+        d->specific = ds;
+        gms = gm_init();
+        if (gms) {
+                __error__("gm initialization failed");
+                __gmerror__(gms);
+                goto error;
+        }
+
+        LOG_OUT();
+        return;
+
+ error:
+        FAILURE("mad_gm_driver_init failed");
+}
+
+void
+mad_gm_adapter_init(p_mad_adapter_t a) {
+        p_mad_gm_adapter_specific_t as        = NULL;
+        p_tbx_string_t              param_str = NULL;
+        int                         device_id =    0;
+
+        LOG_IN();
+        if (tbx_streq(a->dir_adapter->name, "default")) {
+                device_id = 0;
+        } else {
+                device_id = strtol(a->dir_adapter->name, NULL, 0);
+        }
+
+        as            = TBX_MALLOC(sizeof(mad_gm_adapter_specific_t));
+        as->device_id = device_id;
+        a->specific   = as;
+
+        a->mtu = MAD_FORWARD_MAX_MTU;
+
+        param_str    = tbx_string_init_to_int(device_id);
+        a->parameter = tbx_string_to_cstring(param_str);
+        tbx_string_free(param_str);
+        param_str    = NULL;
+
+        {
+                struct gm_port *p_gm_port = NULL;
+                gm_status_t     gms       = GM_SUCCESS;
+
+                gms = gm_open(&p_gm_port, device_id, mad_gm_pub_port_array[0],
+                              "mad_gm", GM_API_VERSION_1_1);
+                if (gms != GM_SUCCESS) {
+                        __error__("gm_open failed");
+                        __gmerror__(gms);
+                        goto error;
+                }
+
+                gm_close(p_gm_port);
+                p_gm_port = NULL;
+        }
+
+        as->port_darray = tbx_darray_init();
+        LOG_OUT();
+
+ error:
+        FAILURE("mad_gm_adapter_init failed");
+}
+
+void
+mad_gm_channel_init(p_mad_channel_t ch) {
+        p_mad_gm_channel_specific_t chs = NULL;
+
+        LOG_IN();
+        chs          = TBX_MALLOC(sizeof(mad_gm_channel_specific_t));
+        ch->specific = chs;
+        LOG_OUT();
+}
+
+void
+mad_gm_connection_init(p_mad_connection_t in,
+		       p_mad_connection_t out) {
+        p_mad_channel_t             ch  = NULL;
+        p_mad_adapter_t             a   = NULL;
+        p_mad_gm_adapter_specific_t as  = NULL;
+        const int nb_link = 1;
+
+        LOG_IN();
+        ch = (in?:out)->channel;
+        a  =  ch->adapter;
+        as =  a->specific;
+
+        if (in) {
+                p_mad_gm_connection_specific_t is       = NULL;
+                ntbx_process_grank_t           gr       =    0;
+                int                            port_num =    0;
+                p_mad_gm_port_t                port     = NULL;
+
+                is           = TBX_CALLOC(1, sizeof(mad_gm_connection_specific_t));
+                in->specific = is;
+                in->nb_link  = nb_link;
+
+                gr = ntbx_pc_local_to_global(ch->pc, in->remote_rank);
+
+                while (1) {
+                        if (mad_gm_pub_port_array[port_num] < 0) {
+                                __error__("no GM port left");
+                                goto error;
+                        }
+
+                        port = tbx_darray_expand_and_get(as->port_darray, port_num);
+                        if (!port) {
+                                port = mad_gm_port_open(a, port_num);
+
+                                break;
+                        }
+                        
+                        if (!tbx_darray_expand_and_get(port->in_darray, gr)) {
+                                break;
+                        }
+
+                        port_num++;
+                }
+        }
+
+        if (out) {
+                p_mad_gm_connection_specific_t os = NULL;
+
+                os            = TBX_CALLOC(1, sizeof(mad_gm_connection_specific_t));
+                out->specific = os;
+                out->nb_link  = nb_link;
+        }
+        LOG_OUT();
+
+ error:
+        FAILURE("mad_gm_connection_init failed");
+}
+
+void
+mad_gm_link_init(p_mad_link_t l) {
+        p_mad_gm_link_specific_t ls = NULL;
+
+        LOG_IN();
+        ls 		 = TBX_CALLOC(1, sizeof(mad_gm_link_specific_t));
+        l->specific    = ls;
+        l->link_mode   = mad_link_mode_buffer;
+        l->buffer_mode = mad_buffer_mode_dynamic;
+        l->group_mode  = mad_group_mode_split;
+        LOG_OUT();
+}
+
+void
+mad_gm_accept(p_mad_connection_t   in,
+	      p_mad_adapter_info_t ai) {
+        p_mad_gm_connection_specific_t is  = NULL;
+        p_mad_channel_t                ch  = NULL;
+        p_mad_gm_channel_specific_t    chs = NULL;
+        p_mad_adapter_t                a   = NULL;
+        p_mad_gm_adapter_specific_t    as  = NULL;
+
+        LOG_IN();
+        is  = in->specific;
+        ch  = in->channel;
+        chs = ch->specific;
+        a   = ch->adapter;
+        as  = a->specific;
+
+        {
+                char *ptr1 = NULL;
+                char *ptr2 = NULL;
+
+                is->remote_port_id  = strtol(ai->channel_parameter, &ptr1, 0);
+                if ((!is->remote_port_id) && (ai->channel_parameter == ptr1))
+                        FAILURE("could not extract the remote port id");
+
+                is->remote_node_id  = strtoul(ptr1, &ptr2, 0);
+                if ((!is->remote_node_id) && (ptr1 == ptr2))
+                        FAILURE("could not extract the remote node id");
+        }
+        LOG_OUT();
+}
+
+void
+mad_gm_connect(p_mad_connection_t   out,
+	       p_mad_adapter_info_t ai) {
+        p_mad_gm_connection_specific_t os  = NULL;
+        p_mad_channel_t                ch  = NULL;
+        p_mad_gm_channel_specific_t    chs = NULL;
+        p_mad_adapter_t                a   = NULL;
+        p_mad_gm_adapter_specific_t    as  = NULL;
+
+        LOG_IN();
+        os  = out->specific;
+        ch  = out->channel;
+        chs = ch->specific;
+        a   = ch->adapter;
+        as  = a->specific;
+
+        {
+                char *ptr1 = NULL;
+                char *ptr2 = NULL;
+
+                os->remote_port_id  = strtol(ai->channel_parameter, &ptr1, 0);
+                if ((!os->remote_port_id) && (ai->channel_parameter == ptr1))
+                        FAILURE("could not extract the remote port id");
+
+                os->remote_node_id  = strtoul(ptr1, &ptr2, 0);
+                if ((!os->remote_node_id) && (ptr1 == ptr2))
+                        FAILURE("could not extract the remote node id");
+        }
+        LOG_OUT();
+}
+
+void
+mad_gm_disconnect(p_mad_connection_t cnx) {
+        LOG_IN();
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+void
+mad_gm_new_message(p_mad_connection_t out) {
+        p_mad_gm_connection_specific_t os = NULL;
+
+        LOG_IN();
+        os = out->specific;
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+#ifdef MAD_MESSAGE_POLLING
+p_mad_connection_t
+mad_gm_poll_message(p_mad_channel_t channel) {
+        LOG_IN();
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+#endif // MAD_MESSAGE_POLLING
+
+p_mad_connection_t
+mad_gm_receive_message(p_mad_channel_t ch) {
+        p_mad_gm_channel_specific_t  chs       = NULL;
+        p_tbx_darray_t               in_darray = NULL;
+
+        LOG_IN();
+        chs = ch->specific;
+        in_darray = ch->in_connection_darray;
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+void
+mad_gm_message_received(p_mad_connection_t in) {
+        p_mad_channel_t             ch  = NULL;
+        p_mad_gm_channel_specific_t chs = NULL;
+
+        LOG_IN();
+        ch  = in->channel;
+        chs = ch->specific;
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+void
+mad_gm_send_buffer(p_mad_link_t   l,
+		   p_mad_buffer_t b) {
+        LOG_IN();
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+void
+mad_gm_receive_buffer(p_mad_link_t    l,
+		      p_mad_buffer_t *b) {
+        LOG_IN();
+        FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+void
+mad_gm_send_buffer_group_1(p_mad_link_t         l,
+			   p_mad_buffer_group_t bg) {
+        LOG_IN();
+        if (!tbx_empty_list(&(bg->buffer_list))) {
+                tbx_list_reference_t ref;
+
+                tbx_list_reference_init(&ref, &(bg->buffer_list));
+                do {
+                        mad_gm_send_buffer(l, tbx_get_list_reference_object(&ref));
+                }
+                while (tbx_forward_list_reference(&ref));
+        }
+        LOG_OUT();
+}
+
+void
+mad_gm_receive_sub_buffer_group_1(p_mad_link_t         l,
+				  p_mad_buffer_group_t bg) {
+        LOG_IN();
+        if (!tbx_empty_list(&(bg->buffer_list))) {
+                tbx_list_reference_t ref;
+
+                tbx_list_reference_init(&ref, &(bg->buffer_list));
+                do {
+                        mad_gm_receive_buffer(l, tbx_get_list_reference_object(&ref));
+                } while (tbx_forward_list_reference(&ref));
+        }
+        LOG_OUT();
+}
+
+void
+mad_gm_send_buffer_group(p_mad_link_t         l,
+			 p_mad_buffer_group_t bg) {
+        LOG_IN();
+        mad_gm_send_buffer_group_1(l, bg);
+        LOG_OUT();
+}
+
+void
+mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
+				tbx_bool_t           first_sub_group
+				TBX_UNUSED,
+				p_mad_buffer_group_t bg) {
+        LOG_IN();
+        mad_gm_receive_sub_buffer_group_1(l, bg);
+        LOG_OUT();
+}
+
+void
+mad_gm_link_exit(p_mad_link_t l) {
+        p_mad_gm_link_specific_t ls = NULL;
+
+        LOG_IN();
+        ls = l->specific;
+        TBX_FREE(ls);
+        l->specific = ls = NULL;
+        LOG_OUT();
+}
+
+void
+mad_gm_connection_exit(p_mad_connection_t in,
+                       p_mad_connection_t out) {
+
+        LOG_IN();
+        if (in) {
+                p_mad_gm_connection_specific_t is = NULL;
+                is = in->specific;
+                TBX_FREE(is);
+                in->specific = is = NULL;
+        }
+
+        if (out) {
+                p_mad_gm_connection_specific_t os = NULL;
+                os = out->specific;
+                TBX_FREE(os);
+                out->specific = os = NULL;
+        }
+        LOG_OUT();
+}
+
+void
+mad_gm_channel_exit(p_mad_channel_t ch) {
+        p_mad_gm_channel_specific_t chs = NULL;
+
+        LOG_IN();
+        chs = ch->specific;
+        TBX_FREE(chs);
+        ch->specific = chs = NULL;
+        LOG_OUT();
+}
+
+void
+mad_gm_adapter_exit(p_mad_adapter_t a) {
+        p_mad_gm_adapter_specific_t as = NULL;
+
+        LOG_IN();
+        as = a->specific;
+        TBX_FREE(as);
+        a->specific = as = NULL;
+        LOG_OUT();
+}
+
+void
+mad_gm_driver_exit(p_mad_driver_t d) {
+        p_mad_gm_driver_specific_t ds = NULL;
+
+        LOG_IN();
+        gm_finalize();
+        ds = d->specific;
+        TBX_FREE(ds);
+        d->specific = ds = NULL;
+        LOG_OUT();
+}
+
+
+/*--------------------------------------------------------*/
+
+#if 0
 #undef  FAILURE_CONTEXT
 #define FAILURE_CONTEXT "Mad/GM: "
 
@@ -734,8 +1631,8 @@ reception:
 
 	is = in->specific;
 
-	if ((is->remote_node_id == gm_ntohl(e->recv.sender_node_id))
-	    && (is->remote_port_id == gm_ntohl(e->recv.sender_port_id)))
+	if ((is->remote_node_id == gm_ntohs(e->recv.sender_node_id))
+	    && (is->remote_port_id == gm_ntohs(e->recv.sender_port_id)))
 	  {
 	    LOG_OUT();
 
@@ -876,3 +1773,4 @@ mad_gm_driver_exit(p_mad_driver_t d)
   d->specific = ds = NULL;
   LOG_OUT();
 }
+#endif 

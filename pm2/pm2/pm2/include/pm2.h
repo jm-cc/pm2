@@ -204,6 +204,12 @@ void pm2_rpc_wait(pm2_rpc_wait_t *att);
 void pm2_cancel_wait(pm2_rpc_wait_t *att);
 
 
+_PRIVATE_ void pm2_rpc_call_begin(int module, int num,
+				  pm2_attr_t *pm2_attr,
+				  any_t args, any_t results,
+				  pm2_rpc_wait_t *att);
+_PRIVATE_ void pm2_rpc_call_end(void);
+
 /****************** LRPC synchrones : ********************/
 
 /*
@@ -246,6 +252,16 @@ static __inline__ void pm2_quick_rpc(int module, int num, pm2_attr_t *pm2_attr,
 	pm2_quick_rpc(module, name, NULL, args, results)
 
 
+#define pm2_rpc_begin(module, num, pm2_attr, args, results) \
+{ \
+  pm2_rpc_wait_t att; \
+  pm2_rpc_call_begin(module, num, pm2_attr, args, results, &att);
+
+#define pm2_rpc_end() \
+  pm2_rpc_call_end(); \
+  pm2_rpc_wait(&att); \
+}
+
 /****************** LRPC asynchrones : *******************/
 
 /*
@@ -272,6 +288,11 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
 #define QUICK_ASYNC_LRPC(module, name, args) \
 	pm2_quick_async_rpc(module, name, NULL, args)
 
+
+_PRIVATE_ void pm2_async_rpc_begin(int module, int num,
+				   pm2_attr_t *pm2_attr,
+				   any_t args);
+_PRIVATE_ void pm2_async_rpc_end(void);
 
 /************ LRPC asynchrones en multicast : ************/
 

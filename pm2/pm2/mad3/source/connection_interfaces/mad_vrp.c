@@ -44,6 +44,12 @@ DEBUG_DECLARE(vrp)
 #define DEBUG_NAME vrp
 
 /*
+ * global variables
+ * ----------------
+ */
+int vrp_log_fd = 1;
+
+/*
  * local structures
  * ----------------
  */
@@ -59,7 +65,7 @@ typedef struct s_mad_vrp_adapter_specific
 
 typedef struct s_mad_vrp_channel_specific
 {
-  int dummy;
+  int next;
 } mad_vrp_channel_specific_t, *p_mad_vrp_channel_specific_t;
 
 typedef struct s_mad_vrp_in_connection_specific
@@ -68,6 +74,10 @@ typedef struct s_mad_vrp_in_connection_specific
   int            port;
   vrp_incoming_t vrp_in;
   marcel_t       thread;
+  marcel_sem_t   sem_put;
+  marcel_sem_t   sem_get;
+  p_mad_buffer_t buffer;
+  tbx_bool_t     active;
 } mad_vrp_in_connection_specific_t, *p_mad_vrp_in_connection_specific_t;
 
 typedef struct s_mad_vrp_out_connection_specific
@@ -93,7 +103,28 @@ static
 void
 mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
 {
-  /**/
+  p_mad_vrp_in_connection_specific_t is = NULL;
+  p_mad_buffer_t                     b  = NULL;
+
+  LOG_IN();
+  is = vrp_b->source;
+  marcel_sem_P(&(is->sem_put));
+  b = is->buffer;
+
+  if (b)
+    {
+      size_t copy_len = min(vrp_b->size, b->length - b->bytes_written);
+
+      memcpy(b->buffer + b->bytes_written, vrp_b->data, copy_len);
+      b->bytes_written += copy_len;
+
+      marcel_sem_V(&(is->sem_get));
+    }
+  else
+    {
+      is->active = tbx_true;
+    }
+  LOG_OUT();
 }
 
 static
@@ -125,12 +156,12 @@ mad_vrp_incoming_thread(void *arg)
           FAILURE("system call failed");
         }
 
-      if (status > 0) 
+      if (status > 0)
         {
           if (!FD_ISSET(fd, &fds))
             FAILURE("invalid state");
 
-          vrp_outgoing_read_callback(fd, vrp_in);
+          vrp_incoming_read_callback(fd, vrp_in);
         }
     }
 
@@ -168,7 +199,7 @@ mad_vrp_outgoing_thread(void *arg)
           FAILURE("system call failed");
         }
 
-      if (status > 0) 
+      if (status > 0)
         {
           if (!FD_ISSET(fd, &fds))
             FAILURE("invalid state");
@@ -224,17 +255,17 @@ mad_vrp_register(p_mad_driver_t driver){
   interface->connection_exit            = NULL;
   interface->channel_exit               = NULL;
   interface->adapter_exit               = NULL;
-  interface->driver_exit                = NULL;
+  interface->driver_exit                = mad_vrp_driver_exit;
   interface->choice                     = NULL;
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
-  interface->new_message                = NULL;
+  interface->new_message                = mad_vrp_new_message;
   interface->finalize_message           = NULL;
 #ifdef MAD_MESSAGE_POLLING
   interface->poll_message               = mad_vrp_poll_message;
 #endif // MAD_MESSAGE_POLLING
   interface->receive_message            = mad_vrp_receive_message;
-  interface->message_received           = NULL;
+  interface->message_received           = mad_vrp_message_received;
   interface->send_buffer                = mad_vrp_send_buffer;
   interface->receive_buffer             = mad_vrp_receive_buffer;
   interface->send_buffer_group          = mad_vrp_send_buffer_group;
@@ -253,24 +284,25 @@ mad_vrp_driver_init(p_mad_driver_t d)
   ds          = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
   ds->dummy   = 0;
   d->specific = ds;
+
+  vrp_init();
   LOG_OUT();
 }
 
 void
 mad_vrp_adapter_init(p_mad_adapter_t a)
 {
-  p_mad_vrp_adapter_specific_t as         = NULL;
-  p_tbx_string_t               param      = NULL;
-  p_ntbx_server_t              net_server = NULL;
+  p_mad_vrp_adapter_specific_t as = NULL;
+  p_ntbx_server_t              ns = NULL;
 
   LOG_IN();
   if (strcmp(a->dir_adapter->name, "default"))
     FAILURE("unsupported adapter");
 
-  as  = TBX_MALLOC(sizeof(mad_vrp_adapter_specific_t));
-  net_server = ntbx_server_cons();
-  ntbx_tcp_server_init(net_server);
-  as->server = net_server;
+  as = TBX_MALLOC(sizeof(mad_vrp_adapter_specific_t));
+  ns = ntbx_server_cons();
+  ntbx_tcp_server_init(ns);
+  as->server = ns;
   a->specific = as;
 
 #ifdef SSIZE_MAX
@@ -279,9 +311,7 @@ mad_vrp_adapter_init(p_mad_adapter_t a)
   a->mtu = MAD_FORWARD_MAX_MTU;
 #endif // SSIZE_MAX
 
-  a->parameter = tbx_strdup(net_server->connection_data.data);
-  tbx_string_free(param);
-  param = NULL;
+  a->parameter = tbx_strdup(ns->connection_data.data);
   LOG_OUT();
 }
 
@@ -292,7 +322,7 @@ mad_vrp_channel_init(p_mad_channel_t c)
 
   LOG_IN();
   cs          = TBX_MALLOC(sizeof(mad_vrp_channel_specific_t));
-  cs->dummy   = 0;
+  cs->next   = 0;
   c->specific = cs;
   LOG_OUT();
 }
@@ -312,6 +342,11 @@ mad_vrp_connection_init(p_mad_connection_t in,
       is->socket =   -1;
       is->port   =   -1;
       is->vrp_in = NULL;
+      is->active = tbx_false;
+      is->buffer = NULL;
+
+      marcel_sem_init(&(is->sem_put), 1);
+      marcel_sem_init(&(is->sem_get), 0);
 
       in->specific = is;
       in->nb_link  =  1;
@@ -335,10 +370,9 @@ void
 mad_vrp_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
-  lnk->link_mode   = mad_link_mode_buffer_group;
-  /* lnk->link_mode   = mad_link_mode_buffer; */
+  lnk->link_mode   = mad_link_mode_buffer;
   lnk->buffer_mode = mad_buffer_mode_dynamic;
-  lnk->group_mode  = mad_group_mode_aggregate;
+  lnk->group_mode  = mad_group_mode_split;
   LOG_OUT();
 }
 
@@ -360,12 +394,12 @@ mad_vrp_accept(p_mad_connection_t   in,
   ntbx_tcp_server_accept(as->server, net_client);
 
   is->vrp_in = vrp_incoming_construct(&vrp_port, mad_vrp_frame_handler);
+  vrp_incoming_set_source(is->vrp_in, is);
   mad_ntbx_send_int(net_client, vrp_port);
   marcel_create(&(is->thread), NULL, mad_vrp_incoming_thread, is->vrp_in);
   ntbx_tcp_client_disconnect(net_client);
   ntbx_client_dest(net_client);
   LOG_OUT();
-
 }
 
 void
@@ -428,6 +462,33 @@ mad_vrp_disconnect(p_mad_connection_t c)
   LOG_OUT();
 }
 
+void
+mad_vrp_driver_exit(p_mad_driver_t d TBX_UNUSED)
+{
+  LOG_IN();
+  vrp_shutdown();
+  LOG_OUT();
+}
+
+void
+mad_vrp_new_message(p_mad_connection_t out)
+{
+  p_mad_vrp_out_connection_specific_t os = NULL;
+  int                                 s  =    0;
+  unsigned char                       c  =    1;
+  vrp_buffer_t                        vrp_b;
+
+  LOG_IN();
+  os = out->specific;
+
+  vrp_b = vrp_buffer_construct(&c, 1);
+  vrp_buffer_set_loss_rate(vrp_b, 0, 0);
+  s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
+  DISP_VAL("vrp_outgoing_send_frame status", s);
+  vrp_buffer_destroy(vrp_b);
+  LOG_OUT();
+}
+
 #ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_vrp_poll_message(p_mad_channel_t ch)
@@ -451,15 +512,39 @@ mad_vrp_poll_message(p_mad_channel_t ch)
 p_mad_connection_t
 mad_vrp_receive_message(p_mad_channel_t ch)
 {
-  p_mad_vrp_channel_specific_t chs       = NULL;
-  p_tbx_darray_t               in_darray = NULL;
-  p_mad_connection_t           in        = NULL;
+  p_mad_vrp_channel_specific_t chs    = NULL;
+  p_tbx_darray_t               darray = NULL;
+  p_mad_connection_t           in     = NULL;
 
   LOG_IN();
-  chs       = ch->specific;
-  in_darray = ch->in_connection_darray;
+  chs    = ch->specific;
+  darray = ch->in_connection_darray;
 
-  /* TODO */
+  /*
+   * WARNING: active polling for now
+   */
+  while (1)
+    {
+      p_mad_connection_t _in = NULL;
+
+      _in = tbx_darray_get(darray, chs->next);
+      chs->next = (chs->next + 1) % tbx_darray_length(darray);
+
+      if (_in)
+        {
+          p_mad_vrp_in_connection_specific_t _is = NULL;
+
+          _is = _in->specific;
+
+          if (_is->active)
+            {
+              _is->active = tbx_false;
+              in = _in;
+
+              break;
+            }
+        }
+    }
 
   LOG_OUT();
 
@@ -467,14 +552,34 @@ mad_vrp_receive_message(p_mad_channel_t ch)
 }
 
 void
+mad_vrp_message_received(p_mad_connection_t in)
+{
+  p_mad_vrp_in_connection_specific_t is = NULL;
+
+  LOG_IN();
+  is = in->specific;
+
+  is->buffer = NULL;
+  marcel_sem_V(&(is->sem_put));
+  LOG_OUT();
+}
+
+
+void
 mad_vrp_send_buffer(p_mad_link_t   lnk,
 		    p_mad_buffer_t b)
 {
   p_mad_vrp_out_connection_specific_t os = NULL;
+  int                                 s  =    0;
+  vrp_buffer_t                        vrp_b;
 
   LOG_IN();
   os = lnk->connection->specific;
-  FAILURE("unimplemented");
+  vrp_b = vrp_buffer_construct(b->buffer + b->bytes_read, b->bytes_written - b->bytes_read);
+  vrp_buffer_set_loss_rate(vrp_b, 0, 0);
+  s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
+  DISP_VAL("vrp_outgoing_send_frame status", s);
+  vrp_buffer_destroy(vrp_b);
   LOG_OUT();
 }
 
@@ -486,7 +591,9 @@ mad_vrp_receive_buffer(p_mad_link_t    lnk,
 
   LOG_IN();
   is = lnk->connection->specific;
-  FAILURE("unimplemented");
+  is->buffer = *p_b;
+  marcel_sem_V(&(is->sem_put));
+  marcel_sem_P(&(is->sem_get));
   LOG_OUT();
 }
 
@@ -505,7 +612,7 @@ mad_vrp_send_buffer_group(p_mad_link_t         lnk,
       tbx_list_reference_init(&ref, &(bg->buffer_list));
       do
 	{
-          FAILURE("unimplemented");
+          mad_vrp_send_buffer(lnk, tbx_get_list_reference_object(&ref));
 	}
       while(tbx_forward_list_reference(&ref));
     }
@@ -528,10 +635,18 @@ mad_vrp_receive_sub_buffer_group(p_mad_link_t         lnk,
       tbx_list_reference_init(&ref, &(bg->buffer_list));
       do
 	{
-          FAILURE("unimplemented");
+          p_mad_buffer_t b = NULL;
+
+          b = tbx_get_list_reference_object(&ref);
+          mad_vrp_receive_buffer(lnk, &b);
 	}
       while(tbx_forward_list_reference(&ref));
     }
   LOG_OUT();
 }
 
+/*
+ * Local variables:
+ *  c-basic-offset: 2
+ * End:
+ */

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.2  2000/01/31 15:59:09  oaumage
+- detection de l'absence de GCC
+- ajout de aligned_malloc
+
 Revision 1.1  2000/01/13 14:51:29  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -48,18 +52,40 @@ ______________________________________________________________________________
 #ifndef __TBX_INTERFACE_H
 #define __TBX_INTERFACE_H
 
-/* Common */
+/* 
+ * Common
+ * ------
+ */
 void
 tbx_init(void);
 
-/* Timing */
+/*
+ * Timing
+ * ------
+ */
 void 
 tbx_timing_init(void);
 
 double 
 tbx_tick2usec(long long t);
 
-/* Fast malloc */
+/*
+ * Aligned malloc
+ * --------------
+ */
+void *
+tbx_aligned_malloc(size_t size,
+		   int    align);
+
+void
+tbx_aligned_free (void *ptr,
+		  int   align);
+
+
+/*
+ * Fast malloc
+ * -----------
+ */
 void
 tbx_malloc_init(p_tbx_memory_t  *mem,
 		size_t           block_len,
@@ -77,7 +103,10 @@ tbx_malloc_clean(p_tbx_memory_t memory);
 
 
 
-/* List management */
+/*
+ * List management
+ * ---------------
+ */
 void
 tbx_list_manager_init(void);
 

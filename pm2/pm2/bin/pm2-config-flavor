@@ -218,7 +218,7 @@ get_options_text() { # mod help list_options_to_add option/module
     eval fl_$1='"$curopts"'
 }
 
-get_options_dialog() { # mod help list_options_to_add option/module
+get_options_dialog() { # mod help list_options_to_add option/module excl
     text_opt=
     nb_opt=0
     for opt in $listopt; do
@@ -246,7 +246,7 @@ get_options_dialog() { # mod help list_options_to_add option/module
 		echo "Options you choose there will be selected in next screens"
 		;;
 	    common)
-		echo "Options you choose there applied to programmes you compile,"
+		echo "Options you choose there applied to programs you compile,"
 		echo "not to the libraries themselves"
 		;;
 	    *)
@@ -268,22 +268,29 @@ get_options_dialog() { # mod help list_options_to_add option/module
     addtext="`cat /tmp/tmp-dialog.$$`"
     rm -f /tmp/tmp-dialog.$$ 2>/dev/null
 
-    eval $DIALOG --title '"$2"' --checklist '"$addtext"' $DELTA $DELTA $nb_opt "$text_opt"\
+    if [ "$5" = "excl" ]; then
+	DIALOGMODE=--radiolist
+    else
+	DIALOGMODE=--checklist
+    fi
+    eval $DIALOG --title '"$2"' $DIALOGMODE '"$addtext"' $DELTA $DELTA $nb_opt "$text_opt"\
 		    2> /tmp/tmp-dialog.$$
     retval=$?
     choice=`cat /tmp/tmp-dialog.$$`
     rm -f /tmp/tmp-dialog.$$ 2>/dev/null
     if [ $retval -eq 0 ]; then 
-	curopts=`echo $choice | sed -e 's/"//g'`; 
+	opts=`echo $choice | sed -e 's/"//g'`
     else
 	echo "Aborting..."
 	exit $retval
     fi
-    eval fl_$1='"$curopts"'
+    eval tmp=\"'$fl_'$1 '$opts'\"
+    eval fl_$1=\"`echo $tmp | tr ' ' '\n' | sort | uniq | tr '\n' ' '`\"
+#    eval echo fl_$1 = '$fl_'$1
 }
 
 get_options() { # mod help list_options_to_add option/module
-    curopts=
+    opts=
     case $4 in
     option)
 	case $1 in
@@ -292,24 +299,44 @@ get_options() { # mod help list_options_to_add option/module
 	    ;;
 	*)
 	    module="--module=$1"
-	    for opt in $3 `eval echo \\$fl_$1` " "; do
+	    allowed=`"$PM2_MODULE" options $module --get-incl`
+	    curopts=`eval echo \\$fl_$1`
+	    for opt in $3 $curopts " "; do
 		case $opt in
 		\ )
 		    ;;
 		*)
-		    case " $curopts " in
+		    case " $allowed " in
 		    *\ $opt\ *)
+			case " $opts " in
+			*\ $opt\ *)
+			    ;;
+			*)
+			    opts="${opts:+$opts }$opt"
+			    ;;
+			esac
 			;;
 		    *)
-			curopts="${curopts:+$curopts }$opt"
 			;;
 		    esac
 		    ;;
 		esac
 	    done
+	    eval fl_$1='"$opts"'
+	    if [ "$interf" = "dialog" ] ; then
+		helpcmd1="option="
+		helpcmd2="$module"
+		for excl_set in `"$PM2_MODULE" options $module --get-excl-sets`; do
+		    listopt=`"$PM2_MODULE" options $module --get-excl=$excl_set`
+		    get_options_$interf "$@" excl
+		done
+		listopt=`"$PM2_MODULE" options $module --get-incl`
+		get_options_$interf "$@"
+		return 0
+	    fi
 	    ;;
 	esac
-	listopt=`"$PM2_MODULE" options $module`
+	listopt=`"$PM2_MODULE" options $module --list`
 	helpcmd1="option="
 	helpcmd2="$module"
 	;;

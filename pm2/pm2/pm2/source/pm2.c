@@ -92,6 +92,20 @@ marcel_attr_t _pm2_lrpc_attr[MAX_LRPC_FUNCS];
 static char *rpc_names[MAX_LRPC_FUNCS];
 int _pm2_optimize[MAX_LRPC_FUNCS];  /* accessed by other modules */
 
+#ifdef MAD2
+
+#define MAX_CHANNELS    16
+
+struct pm2_channel_struct_t {
+  p_mad_channel_t channel[2];
+};
+
+static struct pm2_channel_struct_t pm2_channel[MAX_CHANNELS];
+static unsigned nb_of_channels = 1;
+static pm2_channel_t pm2_main_channel = &pm2_channel[0];
+
+#endif
+
 volatile pm2_pre_migration_hook	_pm2_pre_migr_func = NULL;
 volatile pm2_post_migration_hook _pm2_post_migr_func = NULL;
 volatile pm2_post_post_migration_hook _pm2_post_post_migr_func = NULL;
@@ -109,12 +123,35 @@ static marcel_sem_t print_mutex;
 
 #define executed_by_main_thread() ((boolean)(long)marcel_getspecific(_pm2_lrpc_mode_key))
 
+#ifdef MAD2
+typedef enum {
+  REQUEST,
+  RESULT
+} comm_direction_t;
+
+static __inline__ p_mad_channel_t channel(pm2_channel_t c,
+					  unsigned to,
+					  comm_direction_t dir)
+{
+  if(dir == REQUEST) {
+    return (to > __pm2_self) ? c->channel[0] : c->channel[1];
+  } else {
+    return (to > __pm2_self) ? c->channel[1] : c->channel[0];
+  }
+}
+#endif
+
 void pm2_enter_critical_section(void)
 {
   if(!executed_by_main_thread()) {
     unsigned tag = NETSERVER_CRITICAL_SECTION;
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, __pm2_self, REQUEST),
+		     __pm2_self);
+#else
     mad_sendbuf_init(__pm2_self);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_sendbuf_send();
 
@@ -181,7 +218,12 @@ void _end_service(rpc_args *args, any_t res, int local)
   } else {
     unsigned tag = NETSERVER_LRPC_DONE;
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, args->tid, RESULT),
+		     args->tid);
+#else    
     mad_sendbuf_init(args->tid);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_pointer(MAD_IN_HEADER, &args->ptr_att, 1);
     (*_pm2_pack_res_funcs[args->num])(res);
@@ -231,7 +273,12 @@ void pm2_printf(char *format, ...)
       unsigned tag = NETSERVER_PRINTF;
       unsigned len = strlen(_pm2_print_buf)+1;
 
+#ifdef MAD2
+      mad_sendbuf_init(channel(pm2_main_channel, pm2_main_module(), REQUEST),
+		       pm2_main_module());
+#else
       mad_sendbuf_init(pm2_main_module());
+#endif
       mad_pack_int(MAD_IN_HEADER, &tag, 1);
       mad_pack_int(MAD_IN_HEADER, &len, 1);
       mad_pack_byte(MAD_IN_HEADER, _pm2_print_buf, len);
@@ -262,6 +309,12 @@ void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb)
   marcel_init(argc, argv);
 
   mad_init(argc, argv, nb_proc, spmd_conf, &spmd_conf_size, &__pm2_self);
+#if MAD2
+  pm2_main_channel->channel[0] = 
+      mad_open_channel(mad_get_madeleine(), 0);
+  pm2_main_channel->channel[1] =
+      mad_open_channel(mad_get_madeleine(), 0);
+#endif
 
   marcel_strip_cmdline(argc, argv);
 
@@ -300,7 +353,12 @@ void pm2_init(int *argc, char **argv, int nb_proc, int **tids, int *nb)
   if(startup_func != NULL)
     (*startup_func)(spmd_conf, spmd_conf_size);
 
+#ifdef MAD2
+  netserver_start(pm2_main_channel->channel[0], MAX_PRIO);
+  netserver_start(pm2_main_channel->channel[1], MAX_PRIO);
+#else
   netserver_start(MAX_PRIO);
+#endif
 }
 
 static void pm2_wait_end(void)
@@ -314,7 +372,10 @@ static void pm2_wait_end(void)
 
       marcel_end();
 
-      sprintf(mess, "[Threads : %ld created, %d imported (%ld cached)]\n", marcel_createdthreads(), _pm2_imported_threads, marcel_cachedthreads());
+      sprintf(mess, "[Threads : %ld created, %d imported (%ld cached)]\n",
+	      marcel_createdthreads(),
+	      _pm2_imported_threads,
+	      marcel_cachedthreads());
 
       fprintf(stderr, mess);
 
@@ -344,9 +405,20 @@ void pm2_kill_modules(int *modules, int nb)
     if(modules[i] == __pm2_self && !mad_can_send_to_self()) {
       netserver_stop();
     } else {
+#ifdef MAD2
+      comm_direction_t c;
+
+      for(c=REQUEST; c<=RESULT; c++) {
+	mad_sendbuf_init(channel(pm2_main_channel, modules[i], c),
+			 modules[i]);
+	mad_pack_int(MAD_IN_HEADER, &tag, 1);
+	mad_sendbuf_send();
+      }
+#else
       mad_sendbuf_init(modules[i]);
       mad_pack_int(MAD_IN_HEADER, &tag, 1);
       mad_sendbuf_send();
+#endif
     }
   }
 }
@@ -436,7 +508,11 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
     to_pointer((any_t)att, &p);
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
     mad_sendbuf_init(module);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
     mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -475,7 +551,11 @@ void pm2_rpc_call_begin(int module, int num,
 
   to_pointer((any_t)att, &p);
 
+#ifdef MAD2
+  mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
   mad_sendbuf_init(module);
+#endif
   mad_pack_int(MAD_IN_HEADER, &tag, 1);
   mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
   mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -529,7 +609,11 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     to_pointer((any_t)att, &p);
     att->unpack = _pm2_unpack_res_funcs[num];
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
     mad_sendbuf_init(module);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
     mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -615,7 +699,11 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
       RAISE(NOT_IMPLEMENTED);
 #endif
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
     mad_sendbuf_init(module);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
     mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -646,7 +734,11 @@ _PRIVATE_ void pm2_async_rpc_begin(int module, int num,
 
   pm2_disable_migration();
 
+#ifdef MAD2
+  mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
   mad_sendbuf_init(module);
+#endif
   mad_pack_int(MAD_IN_HEADER, &tag, 1);
   mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
   mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -723,7 +815,12 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	  RAISE(NOT_IMPLEMENTED);
 #endif
 
+#ifdef MAD2
+	mad_sendbuf_init(channel(pm2_main_channel, modules[i], REQUEST),
+			 modules[i]);
+#else
 	mad_sendbuf_init(modules[i]);
+#endif
 	mad_pack_int(MAD_IN_HEADER, &tag, 1);
 	mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
 	mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -773,7 +870,11 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
 
     TIMING_EVENT("sendbuf_init'begin");
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
     mad_sendbuf_init(module);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
     mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -828,7 +929,12 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
 	  RAISE(NOT_IMPLEMENTED);
 #endif
 
+#ifdef MAD2
+	mad_sendbuf_init(channel(pm2_main_channel, modules[i], REQUEST),
+			 modules[i]);
+#else
 	mad_sendbuf_init(modules[i]);
+#endif
 	mad_pack_int(MAD_IN_HEADER, &tag, 1);
 	mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
 	mad_pack_int(MAD_IN_HEADER, &num, 1);
@@ -920,7 +1026,11 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
     arg.pids = pids;
     arg.nb = nb;
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, module, REQUEST), module);
+#else
     mad_sendbuf_init(module);
+#endif
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_int(MAD_IN_HEADER, &nb, 1);
 
@@ -976,7 +1086,13 @@ static void cloning_func(marcel_t task, unsigned long depl, unsigned long blk, v
 
    for(rank=1; rank<=args->nb; rank++) {
 
+#ifdef MAD2
+     mad_sendbuf_init(channel(pm2_main_channel,
+			      args->modules[rank-1], REQUEST),
+		      args->modules[rank-1]);
+#else
      mad_sendbuf_init(args->modules[rank-1]);
+#endif
 
      mad_pack_int(MAD_IN_HEADER, &tag, 1);
      mad_pack_int(MAD_IN_HEADER, &rank, 1);
@@ -1067,7 +1183,11 @@ void _pm2_merge(int module, marcel_sem_t *sem, char *dest, char *src, unsigned s
 
   } else {
 
+#ifdef MAD2
+    mad_sendbuf_init(channel(pm2_main_channel, module, RESULT), module);
+#else
     mad_sendbuf_init(module);
+#endif
 
     mad_pack_int(MAD_IN_HEADER, &tag, 1);
     mad_pack_byte(MAD_IN_HEADER, (char *)&sem, sizeof(marcel_sem_t *));

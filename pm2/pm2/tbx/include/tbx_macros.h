@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.2  2000/01/31 15:59:11  oaumage
+- detection de l'absence de GCC
+- ajout de aligned_malloc
+
 Revision 1.1  2000/01/13 14:51:30  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -90,7 +94,6 @@ typedef enum
 #else /* DEBUG */
 #define VERIFY(op, val) ((void)(op))
 #endif /* DEBUG */
-
 
 /* LOG */
 #ifdef DEBUG
@@ -248,5 +251,27 @@ typedef enum
 #endif /* TIMING */
 
 #define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
+
+/* SYSCALL */
+#define SYSCALL(op) \
+  while ((op) == -1) \
+  { \
+    if (errno != EINTR) \
+      { \
+	perror(#op); \
+	FAILURE("system call failed"); \
+      } \
+  }
+
+/* SYSTEST */
+#define SYSTEST(op) \
+  if ((op) == -1) \
+  { \
+    if (errno != EINTR) \
+      { \
+	perror(#op); \
+	FAILURE("system call failed"); \
+      } \
+  }
 
 #endif /* TBX_MACROS_H */

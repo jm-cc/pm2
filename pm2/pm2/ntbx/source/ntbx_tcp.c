@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.10  2001/01/29 17:01:10  oaumage
+- ajout de versions pseudo-bloquantes des fonctions de transmission TCP
+
 Revision 1.9  2000/11/08 08:16:16  oaumage
 *** empty log message ***
 
@@ -227,7 +230,7 @@ ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc)
   LOG_IN();      
   SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
   SYSCALL(setsockopt(desc, SOL_SOCKET, SO_LINGER, (char *)&ling,
-		     sizeof(struct linger)));
+  		     sizeof(struct linger)));
   SYSCALL(setsockopt(desc, SOL_SOCKET, SO_SNDBUF, (char *)&packet, len));
   SYSCALL(setsockopt(desc, SOL_SOCKET, SO_RCVBUF, (char *)&packet, len));
   LOG_OUT();
@@ -928,6 +931,55 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
   return ntbx_success;
 }
 
+/*...Read/Write...(blocking forms).......*/
+/* read a block */
+int
+ntbx_btcp_read_block(p_ntbx_client_t  client,
+		     void            *ptr,
+		     size_t           length)
+{
+  int status = ntbx_failure;
+
+  LOG_IN();
+  if (client->state != ntbx_client_state_connected)
+    FAILURE("invalid client state");
+  
+  while (!(status = ntbx_tcp_read_poll(1, &client)));
+  if (status == ntbx_failure)
+    {
+      return ntbx_failure;
+    }
+  
+  status = ntbx_tcp_read_block(client, ptr, length);
+
+  LOG_OUT();
+  return status;
+}
+
+
+/* write a block */
+int
+ntbx_btcp_write_block(p_ntbx_client_t  client,
+		      void            *ptr,
+		      size_t           length)
+{
+  int status = ntbx_failure;
+
+  LOG_IN();
+  if (client->state != ntbx_client_state_connected)
+    FAILURE("invalid client state");
+
+  while (!(status = ntbx_tcp_write_poll(1, &client)));
+  if (status == ntbx_failure)
+    {
+      return ntbx_failure;
+    }
+  
+  status = ntbx_tcp_write_block(client, ptr, length);
+
+  LOG_OUT();
+  return status;
+}
 
 /*...Read/Write...(pack.buffer).........*/
 
@@ -936,9 +988,14 @@ int
 ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
 			  p_ntbx_pack_buffer_t pack_buffer)
 {
+  int status = ntbx_failure;
+
   LOG_IN();
+  status =
+    ntbx_tcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
   LOG_OUT();
-  return ntbx_tcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+
+  return status;
 }
 
 
@@ -947,9 +1004,99 @@ int
 ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 			   p_ntbx_pack_buffer_t pack_buffer)
 {
+  int status = ntbx_failure;
+
   LOG_IN();
+  status =
+    ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
   LOG_OUT();
-  return ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  return status;
+}
+
+
+/*...Read/Write...(pack.buffer, blocking forms).*/
+
+/* read a pack buffer */
+int
+ntbx_btcp_read_pack_buffer(p_ntbx_client_t      client,
+			   p_ntbx_pack_buffer_t pack_buffer)
+{
+  int status = ntbx_failure;
+
+  LOG_IN();
+  status =
+    ntbx_btcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  LOG_OUT();
+  return status;
+}
+
+
+/* write a pack buffer */
+int
+ntbx_btcp_write_pack_buffer(p_ntbx_client_t      client,
+			    p_ntbx_pack_buffer_t pack_buffer)
+{
+  int status = ntbx_failure;
+
+  LOG_IN();
+  status =
+    ntbx_btcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
+  LOG_OUT();
+  return status;
+}
+
+/*...Read/Write...(string).........*/
+
+/* read a string buffer */
+int
+ntbx_btcp_read_string(p_ntbx_client_t   client,
+		      char            **string)
+{
+  int status = ntbx_failure;
+  int len    =           -1;
+  ntbx_pack_buffer_t pack_buffer;
+
+  LOG_IN();
+  *string = NULL;
+  
+  status = ntbx_btcp_read_pack_buffer(client, &pack_buffer);
+  if (status == ntbx_failure)
+    {
+      return ntbx_failure;
+    }
+  
+  len = ntbx_unpack_int(&pack_buffer);
+  *string = TBX_MALLOC(len);
+  CTRL_ALLOC(*string);
+  
+  status = ntbx_btcp_read_block(client, *string, len);
+
+  LOG_OUT();
+  return status;
+}
+
+
+/* write a string buffer */
+int
+ntbx_btcp_write_string(p_ntbx_client_t  client,
+		       char            *string)
+{
+  int status = ntbx_failure;
+  int len    =           -1;
+  ntbx_pack_buffer_t pack_buffer;
+
+  LOG_IN();
+  len = strlen(string) + 1;
+  ntbx_pack_int(len, &pack_buffer);
+  status = ntbx_btcp_write_pack_buffer(client, &pack_buffer);
+  if (status == ntbx_failure)
+    {
+      return ntbx_failure;
+    }
+
+  status = ntbx_btcp_write_block(client, string, len);
+  LOG_OUT();
+  return status;
 }
 
 /* ...Read/Write services ..............*/

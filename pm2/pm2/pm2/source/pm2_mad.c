@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.c,v $
+Revision 1.3  2000/04/05 16:09:06  oaumage
+- retour du nom de l'adaptateur dans mad_getarchname
+
 Revision 1.2  2000/02/28 11:17:11  rnamyst
 Changed #include <> into #include "".
 
@@ -287,7 +290,7 @@ mad_arch_name(void)
 {
   LOG_IN();
   LOG_OUT();
-  return "[ArchNameNotAvail]";
+  return main_madeleine->adapter->name;
 }
 
 boolean

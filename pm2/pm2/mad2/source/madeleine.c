@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.36  2000/11/10 14:17:57  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.35  2000/11/07 18:30:22  oaumage
 *** empty log message ***
 
@@ -255,22 +258,6 @@ mad_adapter_set_init(int nb_adapter, ...)
 }
 
 void 
-mad_managers_init(int   *argc,
-		  char **argv)
-{
-  pm2debug_init_ext(argc, argv, PM2DEBUG_DO_OPT);
-#ifdef MARCEL  
-  marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
-#endif /* MARCEL */
-  tbx_init(*argc, argv);
-
-  LOG_IN();
-  ntbx_init(*argc, argv);
-  mad_memory_manager_init();
-  LOG_OUT();
-}
-
-void 
 mad_driver_fill(p_mad_madeleine_t madeleine)
 {
   mad_driver_id_t drv;
@@ -428,4 +415,3 @@ mad_get_mad_root(void)
     return buf;
   }
 }
-

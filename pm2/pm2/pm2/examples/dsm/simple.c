@@ -72,7 +72,7 @@ END_DSM_DATA
 
 void f()
 {
-  int i, n = 10;
+  int i, n = 3;
 
   for (i = 0; i < n; i++) {
     // atomic_inc(&a);

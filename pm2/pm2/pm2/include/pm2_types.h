@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_types.h,v $
+Revision 1.5  2000/09/22 08:45:12  rnamyst
+PM2 startup funcs now use argc+argv. Modified the programs accordingly + fixed a bug in the TSP example.
+
 Revision 1.4  2000/02/28 11:18:05  rnamyst
 Changed #include <> into #include "".
 
@@ -52,7 +55,7 @@ ______________________________________________________________________________
 
 #include "marcel.h"
 
-typedef void (*pm2_startup_func_t)(void);
+typedef void (*pm2_startup_func_t)(int argc, char *argv[]);
 
 typedef void (*pm2_rawrpc_func_t)(void);
 

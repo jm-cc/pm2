@@ -13,6 +13,16 @@ char *fut_code2name(int code)
   }
 }
 
+char *fkt_code2name(int code)
+{
+  int i = 0;
+  while(1) {
+    if (fkt_code_table[i].code == 0) return NULL;
+    if (fkt_code_table[i].code == code) return fkt_code_table[i].name;
+    i++;
+  }
+}
+
 int name2code(char *name, mode *type, int *a)
 {
   int i = 0;
@@ -38,14 +48,24 @@ int name2code(char *name, mode *type, int *a)
   return -1;
 }
 
-char *fkt_code2name(int code)
+int sys2code(char *name, int *code)
 {
-  int i = 0;
-  while(1) {
-    if (fkt_code_table[i].code == 0) return NULL;
-    if (fkt_code_table[i].code == code) return fkt_code_table[i].name;
-    i++;
-  }
+  int i;
+  for(i = 0; i < NSYS_CALLS; i++)
+    if (!strcmp(sys_calls[i], name)) break;
+  if (i == NSYS_CALLS) return -1;
+  *code = i;
+  return 0;
+}
+
+int trap2code(char *name, int *code)
+{
+  int i;
+  for(i = 0; i < NTRAPS; i++)
+    if (!strcmp(traps[i], name)) break;
+  if (i == NTRAPS) return -1;
+  *code = i + FKT_SYS_CALL_LIMIT_CODE;
+  return 0;
 }
 
 void tracelib_init(char *supertrace)

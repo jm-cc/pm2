@@ -34,17 +34,25 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-echo -n .
+if [ "`echo -n`" != "-n" ] ; then
+	ECHO='echo -n .'
+elif [ -x /usr/bin/printf ] ; then
+	ECHO='printf .'
+else
+	ECHO='echo .'
+fi
+
+$ECHO
 mkdir -p AIX/RS6K
-echo -n .
+$ECHO
 mkdir -p FREEBSD/X86
-echo -n .
+$ECHO
 mkdir -p IRIX/MIPS
-echo -n .
+$ECHO
 mkdir -p LINUX/ALPHA LINUX/PPC LINUX/X86
-echo -n .
+$ECHO
 mkdir -p OSF/ALPHA
-echo -n .
+$ECHO
 mkdir -p SOLARIS/SPARC SOLARIS/X86
-echo -n .
+$ECHO
 mkdir -p UNICOS/ALPHA

@@ -53,6 +53,31 @@ void marcel_sem_P(marcel_sem_t *s)
   LOG_OUT();
 }
 
+int marcel_sem_try_P(marcel_sem_t *s)
+{
+  int result = 0;
+
+  LOG_IN();
+
+  lock_task();
+
+  marcel_lock_acquire(&s->lock);
+
+  result = ((s->value - 1) < 0);
+
+  if(result) {
+    marcel_lock_release(&s->lock);
+    unlock_task();
+  } else {
+    s->value--;
+    marcel_lock_release(&s->lock);
+    unlock_task();
+  }
+
+  LOG_OUT();
+  return !result;
+}
+
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
   cell c;

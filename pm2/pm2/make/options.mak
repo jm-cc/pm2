@@ -77,3 +77,5 @@ PM2_USE_DSM	:=	yes
 PM2_MAK_VERB	:=	quiet
 #PM2_MAK_VERB	:=	silent
 
+PM2_LINK    :=      static
+#PM2_LINK    :=      dyn

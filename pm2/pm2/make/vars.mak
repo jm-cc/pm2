@@ -166,13 +166,22 @@ PM2_LDFLAGS	=	$(COMMON_LDFLAGS)
 PM2_ASFLAGS	:=	-D$(PM2_ARCH) -D$(PM2_SYS)
 
 # Bibliotheques
-PM2_LIB		=	$(PM2_LIBD)/libpm2$(COMMON_EXT).a
-COMMON_LIBS	+=	$(PM2_LIB)
+PM2_LIB_A	=	$(PM2_LIBD)/libpm2$(COMMON_EXT).a
+PM2_LIB_SO	=	$(PM2_LIBD)/libpm2$(COMMON_EXT).so
+
+ifeq ($(PM2_LINK),dyn)
+PM2_LIB		:=	$(PM2_LIB_SO)
+else 
+PM2_LIB		:=	$(PM2_LIB_A)
+endif
+
+COMMON_LIBS	:=	$(PM2_LIB)
 
 
 COMMON_DEFAULT_TARGET	+=	pm2_default
 COMMON_CLEAN_TARGET	+=	pm2clean
 COMMON_DISTCLEAN_TARGET	+=	pm2distclean
+
 
 # Choix madeleine I/II
 include $(PM2_ROOT)/make/mad.mak

@@ -84,6 +84,9 @@ endif
 
 .PHONY: pm2_default
 pm2_default: $(PM2_LIB)
+	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user$(COMMON_EXT).mak
+	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_ROOT)/make/user$(COMMON_EXT).mak
+	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_ROOT)/make/user$(COMMON_EXT).mak
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(PM2_DEPENDS)),$(PM2_DEPENDS))
@@ -98,13 +101,15 @@ $(PM2_EXTRA_DEP_FILE):
 $(PM2_OBJECTS): $(PM2_OBJ)/%.o: $(PM2_DEP)/%.d $(COMMON_MAKEFILES)
 $(PM2_DEPENDS): $(COMMON_MAKEFILES)
 
-$(PM2_LIB): $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_LIB)
-	$(PM2_PREFIX) ar cr $(PM2_LIB) $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user$(COMMON_EXT).mak
-	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_ROOT)/make/user$(COMMON_EXT).mak
-	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_ROOT)/make/user$(COMMON_EXT).mak
+$(PM2_LIB_A): $(PM2_OBJECTS)
+	$(PM2_HIDE) rm -f $(PM2_LIB_A)
+	$(PM2_HIDE) rm -f $(PM2_LIB_SO)
+	$(PM2_PREFIX) ar cr $(PM2_LIB_A) $(PM2_OBJECTS)
 
+$(PM2_LIB_SO): $(PM2_OBJECTS)
+	$(PM2_HIDE) rm -f $(PM2_LIB_A)
+	$(PM2_HIDE) rm -f $(PM2_LIB_SO)
+	$(PM2_PREFIX) ld -Bdynamic -shared -o $(PM2_LIB_SO) $(PM2_OBJECTS)
 
 $(PM2_C_OBJECTS): $(PM2_OBJ)/%$(COMMON_EXT).o: $(PM2_SRC)/%.c
 	$(PM2_PREFIX) $(PM2_CC) $(PM2_KCFLAGS) -c $< -o $@

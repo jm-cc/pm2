@@ -60,6 +60,13 @@ tbx_aligned_free (void        *ptr,
  * Safe malloc
  * -----------
  */
+
+void
+tbx_set_print_stats_mode(tbx_bool_t);
+
+tbx_bool_t
+tbx_get_print_stats_mode(void);
+
 void
 tbx_safe_malloc_init(void);
 

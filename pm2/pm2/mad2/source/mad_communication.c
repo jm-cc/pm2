@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.6  2000/01/10 10:23:03  oaumage
+*** empty log message ***
+
 Revision 1.5  2000/01/05 09:42:58  oaumage
 - mad_communication.c: support du nouveau `group_mode' (a surveiller !)
 - madeleine.c: external_spawn_init n'est plus indispensable
@@ -57,6 +60,7 @@ ______________________________________________________________________________
  * ===================
  */
 /* #define DEBUG */
+/* #define TRACING */
 #include <madeleine.h>
 
 p_mad_connection_t
@@ -69,7 +73,7 @@ mad_begin_packing(p_mad_channel_t   channel,
   mad_link_id_t              link_id;
   
   LOG_IN();
-
+  TRACE("New emission request");
   TIME_INIT();
   
   PM2_LOCK_SHARED(channel);
@@ -114,6 +118,7 @@ mad_begin_packing(p_mad_channel_t   channel,
 
   LOG_PTR("mad_begin_packing: ", connection->specific);
   TIME("mad_begin_packing <--");
+  TRACE("Emission request initiated");
   LOG_OUT();
   return connection;
 }
@@ -127,6 +132,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
   mad_link_id_t              link_id;
   
   LOG_IN();
+  TRACE("New reception request");
   TIME_INIT();
   
   PM2_LOCK_SHARED(channel);
@@ -177,6 +183,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
   connection->more_data       = mad_false;
 
   TIME("mad_begin_unpacking <--");
+  TRACE("Reception request initiated");
   LOG_OUT();
   return connection;
 }
@@ -313,6 +320,7 @@ mad_end_packing(p_mad_connection_t connection)
   
   connection->lock = mad_false; 
   TIME("mad_end_packing <--");
+  TRACE("Emission request completed");
   LOG_OUT();
 }
 
@@ -486,6 +494,7 @@ mad_end_unpacking(p_mad_connection_t connection)
   connection->lock = mad_false;
   connection->channel->reception_lock = mad_false;
   TIME("mad_end_unpacking <--");
+  TRACE("Reception request completed");
   LOG_OUT();
 }
 

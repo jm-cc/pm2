@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <madeleine.h>
+#include "madeleine.h"
 
 #include <stdlib.h>
 #include <stdio.h>

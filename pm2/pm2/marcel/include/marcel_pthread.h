@@ -13,152 +13,10 @@
  * General Public License for more details.
  */
 
-#ifndef _MARCEL_H
-#define _MARCEL_H	1
+#ifndef _MARCEL_PTHREAD_H
+#define _MARCEL_PTHREAD_H	1
 
-#ifdef LINUX_SYS // AD:
-#include <features.h>
-#endif
-
-#include <sched.h>
-#include <time.h>
-
-#define __need_sigset_t
-#include <signal.h>
-#undef __need_sigset_t
-#include <bits/marceltypes.h>
-#include <bits/initspin.h>
-
-
-__BEGIN_DECLS
-
-/* Initializers.  */
-
-#define MARCEL_MUTEX_INITIALIZER \
-  {0, 0, 0, MARCEL_MUTEX_TIMED_NP, __LOCK_INITIALIZER}
-#ifdef __USE_GNU
-# define MARCEL_RECURSIVE_MUTEX_INITIALIZER_NP \
-  {0, 0, 0, MARCEL_MUTEX_RECURSIVE_NP, __LOCK_INITIALIZER}
-# define MARCEL_ERRORCHECK_MUTEX_INITIALIZER_NP \
-  {0, 0, 0, MARCEL_MUTEX_ERRORCHECK_NP, __LOCK_INITIALIZER}
-# define MARCEL_ADAPTIVE_MUTEX_INITIALIZER_NP \
-  {0, 0, 0, MARCEL_MUTEX_ADAPTIVE_NP, __LOCK_INITIALIZER}
-#endif
-
-#define MARCEL_COND_INITIALIZER {__LOCK_INITIALIZER, 0}
-
-#ifdef __USE_UNIX98
-# define MARCEL_RWLOCK_INITIALIZER \
-  { __LOCK_INITIALIZER, 0, NULL, NULL, NULL,				      \
-    MARCEL_RWLOCK_DEFAULT_NP, MARCEL_PROCESS_PRIVATE }
-#endif
-#ifdef __USE_GNU
-# define MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP \
-  { __LOCK_INITIALIZER, 0, NULL, NULL, NULL,				      \
-    MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, MARCEL_PROCESS_PRIVATE }
-#endif
-
-/* Values for attributes.  */
-
-enum
-{
-  MARCEL_CREATE_JOINABLE,
-#define MARCEL_CREATE_JOINABLE	MARCEL_CREATE_JOINABLE
-  MARCEL_CREATE_DETACHED
-#define MARCEL_CREATE_DETACHED	MARCEL_CREATE_DETACHED
-};
-
-enum
-{
-  MARCEL_INHERIT_SCHED,
-#define MARCEL_INHERIT_SCHED	MARCEL_INHERIT_SCHED
-  MARCEL_EXPLICIT_SCHED
-#define MARCEL_EXPLICIT_SCHED	MARCEL_EXPLICIT_SCHED
-};
-
-enum
-{
-  MARCEL_SCOPE_SYSTEM,
-#define MARCEL_SCOPE_SYSTEM	MARCEL_SCOPE_SYSTEM
-  MARCEL_SCOPE_PROCESS
-#define MARCEL_SCOPE_PROCESS	MARCEL_SCOPE_PROCESS
-};
-
-enum
-{
-  MARCEL_MUTEX_TIMED_NP,
-  MARCEL_MUTEX_RECURSIVE_NP,
-  MARCEL_MUTEX_ERRORCHECK_NP,
-  MARCEL_MUTEX_ADAPTIVE_NP
-#ifdef __USE_UNIX98
-  ,
-  MARCEL_MUTEX_NORMAL = MARCEL_MUTEX_TIMED_NP,
-  MARCEL_MUTEX_RECURSIVE = MARCEL_MUTEX_RECURSIVE_NP,
-  MARCEL_MUTEX_ERRORCHECK = MARCEL_MUTEX_ERRORCHECK_NP,
-  MARCEL_MUTEX_DEFAULT = MARCEL_MUTEX_NORMAL
-#endif
-#ifdef __USE_GNU
-  /* For compatibility.  */
-  , MARCEL_MUTEX_FAST_NP = MARCEL_MUTEX_ADAPTIVE_NP
-#endif
-};
-
-enum
-{
-  MARCEL_PROCESS_PRIVATE,
-#define MARCEL_PROCESS_PRIVATE	MARCEL_PROCESS_PRIVATE
-  MARCEL_PROCESS_SHARED
-#define MARCEL_PROCESS_SHARED	MARCEL_PROCESS_SHARED
-};
-
-#ifdef __USE_UNIX98
-enum
-{
-  MARCEL_RWLOCK_PREFER_READER_NP,
-  MARCEL_RWLOCK_PREFER_WRITER_NP,
-  MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP,
-  MARCEL_RWLOCK_DEFAULT_NP = MARCEL_RWLOCK_PREFER_WRITER_NP
-};
-#endif	/* Unix98 */
-
-#define MARCEL_ONCE_INIT 0
-
-/* Special constants */
-
-#ifdef __USE_XOPEN2K
-/* -1 is distinct from 0 and all errno constants */
-# define MARCEL_BARRIER_SERIAL_THREAD -1
-#endif
-
-/* Cleanup buffers */
-
-struct _marcel_cleanup_buffer
-{
-  void (*__routine) (void *);		  /* Function to call.  */
-  void *__arg;				  /* Its argument.  */
-  int __canceltype;			  /* Saved cancellation type. */
-  struct _marcel_cleanup_buffer *__prev; /* Chaining of cleanup functions.  */
-};
-
-/* Cancellation */
-
-enum
-{
-  MARCEL_CANCEL_ENABLE,
-#define MARCEL_CANCEL_ENABLE	MARCEL_CANCEL_ENABLE
-  MARCEL_CANCEL_DISABLE
-#define MARCEL_CANCEL_DISABLE	MARCEL_CANCEL_DISABLE
-};
-enum
-{
-  MARCEL_CANCEL_DEFERRED,
-#define MARCEL_CANCEL_DEFERRED	MARCEL_CANCEL_DEFERRED
-  MARCEL_CANCEL_ASYNCHRONOUS
-#define MARCEL_CANCEL_ASYNCHRONOUS	MARCEL_CANCEL_ASYNCHRONOUS
-};
-#define MARCEL_CANCELED ((void *) -1)
-
-
+#warning toto
 /* Function for handling threads.  */
 
 /* Create a thread with given attributes ATTR (or default attributes
@@ -573,13 +431,6 @@ extern void *marcel_getspecific (marcel_key_t __key) __THROW;
 
 /* Functions for handling initialization.  */
 
-/* Guarantee that the initialization function INIT_ROUTINE will be called
-   only once, even if marcel_once is executed several times with the
-   same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
-   extern variable initialized to MARCEL_ONCE_INIT.  */
-extern int marcel_once (marcel_once_t *__once_control,
-			 void (*__init_routine) (void)) __THROW;
-
 
 /* Functions for handling cancellation.  */
 
@@ -598,53 +449,6 @@ extern int marcel_cancel (marcel_t __cancelthread) __THROW;
    the thread as per marcel_exit(MARCEL_CANCELED) if it has been
    cancelled.  */
 extern void marcel_testcancel (void) __THROW;
-
-
-/* Install a cleanup handler: ROUTINE will be called with arguments ARG
-   when the thread is cancelled or calls marcel_exit.  ROUTINE will also
-   be called with arguments ARG when the matching marcel_cleanup_pop
-   is executed with non-zero EXECUTE argument.
-   marcel_cleanup_push and marcel_cleanup_pop are macros and must always
-   be used in matching pairs at the same nesting level of braces. */
-
-#define marcel_cleanup_push(routine,arg) \
-    _marcel_cleanup_push(NULL,routine,arg) 
-
-extern void _marcel_cleanup_push (struct _marcel_cleanup_buffer *__buffer,
-				   void (*__routine) (void *),
-				   void *__arg) __THROW;
-
-/* Remove a cleanup handler installed by the matching marcel_cleanup_push.
-   If EXECUTE is non-zero, the handler function is called. */
-
-#define marcel_cleanup_pop(execute) \
-    _marcel_cleanup_pop (NULL, (execute))
-
-extern void _marcel_cleanup_pop (struct _marcel_cleanup_buffer *__buffer,
-				  int __execute) __THROW;
-
-/* Install a cleanup handler as marcel_cleanup_push does, but also
-   saves the current cancellation type and set it to deferred cancellation.  */
-
-#ifdef __USE_GNU
-# define marcel_cleanup_push_defer_np(routine,arg) \
-  { struct _marcel_cleanup_buffer _buffer;				      \
-    _marcel_cleanup_push_defer (&_buffer, (routine), (arg));
-
-extern void _marcel_cleanup_push_defer (struct _marcel_cleanup_buffer *__buffer,
-					 void (*__routine) (void *),
-					 void *__arg) __THROW;
-
-/* Remove a cleanup handler as marcel_cleanup_pop does, but also
-   restores the cancellation type that was in effect when the matching
-   marcel_cleanup_push_defer was called.  */
-
-# define marcel_cleanup_pop_restore_np(execute) \
-  _marcel_cleanup_pop_restore (&_buffer, (execute)); }
-
-extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer,
-					  int __execute) __THROW;
-#endif
 
 
 #ifdef __USE_XOPEN2K
@@ -680,6 +484,5 @@ extern int marcel_atfork (void (*__prepare) (void),
 
 extern void marcel_kill_other_threads_np (void) __THROW;
 
-__END_DECLS
 
 #endif	/* marcel_pthread.h */

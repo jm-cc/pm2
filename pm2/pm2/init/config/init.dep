@@ -1,2 +1,2 @@
 Depend: module
-Depend: linkmode
+Depend: init_linkmode

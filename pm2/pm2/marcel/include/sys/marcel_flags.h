@@ -119,10 +119,7 @@
 #define MA__SMP /* Utilisation des pthreads pour les lwp */
 #define MA__LWPS
 #define MA__TIMER
-#if ((SMP_SHARED_QUEUE + SMP_MULTIPLE_QUEUES) > 1)
-#error You must define one (and only one) of SMP_SHARED_QUEUE and SMP_MULTIPLE_QUEUES in SMP version
-#endif
-#ifdef SMP_SHARED_QUEUE
+#ifndef SMP_MULTIPLE_QUEUES
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING
 #endif

@@ -26,6 +26,12 @@
 
 #include "shell.h"
 
+
+
+/* this file executes the commands sigmund [options] actions, 
+   with the parameters given. */
+
+
 pid_t exec_single_cmd(int *output_fd, char *argv[])
 {
   pid_t pid;

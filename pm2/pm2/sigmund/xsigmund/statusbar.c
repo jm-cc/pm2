@@ -26,6 +26,8 @@ static char msg[1024];
 static GtkWidget *bar1, *bar2;
 static guint id1, id2;
 
+
+/* update the statusbar */
 static void statusbar_update(void)
 {
   gtk_statusbar_pop(GTK_STATUSBAR(bar1), id1);
@@ -40,6 +42,7 @@ static void statusbar_update(void)
   gdk_flush();
 }
 
+/* initialize the statusbar */
 void statusbar_init(GtkWidget *hbox)
 {
   GtkWidget *label;
@@ -66,6 +69,7 @@ void statusbar_init(GtkWidget *hbox)
   statusbar_update();
 }
 
+/* puts the name of the supertrace used in the statusbar */
 void statusbar_set_current_supertrace(char *name)
 {
   strcpy(supertracename, name);
@@ -73,6 +77,7 @@ void statusbar_set_current_supertrace(char *name)
   statusbar_update();
 }
 
+/*messages in teh statusbar */
 void statusbar_set_message(char *fmt, ...)
 {
   va_list vl;

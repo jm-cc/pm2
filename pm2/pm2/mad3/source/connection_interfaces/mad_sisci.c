@@ -160,10 +160,33 @@ typedef struct
   int                   max;
 } mad_sisci_channel_specific_t, *p_mad_sisci_channel_specific_t;
 
+typedef enum
+{
+  mad_sisci_poll_channel,
+  mad_sisci_poll_flag,
+} mad_sisci_poll_op_t, *p_mad_sisci_poll_op_t;
+
 typedef struct
 {
-  p_mad_channel_t      channel;
-  p_mad_connection_t   connection;
+  p_mad_channel_t    channel;
+  p_mad_connection_t connection;  
+} mad_sisci_poll_channel_data_t, *p_mad_sisci_poll_channel_data_t;
+
+typedef struct
+{
+  p_mad_sisci_status_t flag;
+} mad_sisci_poll_flag_data_t, *p_mad_sisci_poll_flag_data_t;
+
+typedef union
+{
+  mad_sisci_poll_channel_data_t channel_op;
+  mad_sisci_poll_flag_data_t    flag_op;
+} mad_sisci_poll_data_t, *p_mad_sisci_poll_data_t;
+
+typedef struct
+{
+  mad_sisci_poll_op_t   op;
+  mad_sisci_poll_data_t data;
 } mad_sisci_marcel_poll_cell_arg_t, *p_mad_sisci_marcel_poll_cell_arg_t;
 
 typedef struct
@@ -416,55 +439,65 @@ mad_sisci_marcel_group(marcel_pollid_t id)
 inline static int
 mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
 {
-  p_mad_channel_t                channel          = NULL;
-  p_mad_sisci_channel_specific_t channel_specific = NULL;
-  p_mad_connection_t             in               = NULL;
-  p_tbx_darray_t                 in_darray        = NULL;
-  int                            next             =    0;
-  int                            max              =    0;
-  int                            i                =    0;
-  int                            status           =    0;
+  int status = 0;
  
   LOG_IN();
-  channel          = info->channel;
-  channel_specific = channel->specific;
-  in_darray        = channel->in_connection_darray;
-  max              = channel_specific->max;
-  next             = channel_specific->next;
-
-  i = max;
-      
-  while (i--)
+  if (info->op == mad_sisci_poll_flag)
     {
-      next = (next + 1) % max;
-      in   = tbx_darray_get(in_darray, next);
+      status = mad_sisci_test(info->data.flag_op.flag);
+    }
+  else if (info->op == mad_sisci_poll_channel)
+    {
+      p_mad_channel_t                channel          = NULL;
+      p_mad_sisci_channel_specific_t channel_specific = NULL;
+      p_mad_connection_t             in               = NULL;
+      p_tbx_darray_t                 in_darray        = NULL;
+      int                            next             =    0;
+      int                            max              =    0;
+      int                            i                =    0;
 
-      if (in)
+      channel          = info->data.channel_op.channel;
+      channel_specific = channel->specific;
+      in_darray        = channel->in_connection_darray;
+      max              = channel_specific->max;
+      next             = channel_specific->next;
+
+      i = max;
+      
+      while (i--)
 	{
-	  p_mad_sisci_connection_specific_t in_specific = NULL;
+	  next = (next + 1) % max;
+	  in   = tbx_darray_get(in_darray, next);
+
+	  if (in)
+	    {
+	      p_mad_sisci_connection_specific_t in_specific = NULL;
 	  
-	  in_specific = in->specific;
+	      in_specific = in->specific;
 
-	  if (!in_specific->write_flag_flushed)
-	    {
-	      p_mad_sisci_remote_segment_t remote_segment = NULL;
+	      if (!in_specific->write_flag_flushed)
+		{
+		  p_mad_sisci_remote_segment_t remote_segment = NULL;
 
-	      remote_segment = &(in_specific->remote_segment[0]);
+		  remote_segment = &(in_specific->remote_segment[0]);
 
-	      in_specific->write_flag_flushed = tbx_true;
-	      mad_sisci_flush(remote_segment);
-	    }
+		  in_specific->write_flag_flushed = tbx_true;
+		  mad_sisci_flush(remote_segment);
+		}
 
-	  if (mad_sisci_test(channel_specific->read[next]))
-	    {
-	      info->connection = in;
-	      status           =  1;
-	      break;
+	      if (mad_sisci_test(channel_specific->read[next]))
+		{
+		  info->data.channel_op.connection = in;
+		  status                           =  1;
+		  break;
+		}
 	    }
 	}
-    }
 
-  channel_specific->next = next;
+      channel_specific->next = next;
+    }
+  else
+    FAILURE("unknown polling operation");
   LOG_OUT();
   
   return status;
@@ -502,7 +535,7 @@ mad_sisci_marcel_poll(marcel_pollid_t id,
       if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) my_arg)) 
 	{
 	  status = MARCEL_POLL_SUCCESS(id);
-	  goto found:
+	  goto found;
 	}
     }
 
@@ -512,20 +545,21 @@ found:
   return status;
 }
 
-inline static void
+inline static
+void
 mad_sisci_wait_for(p_mad_link_t         link, 
-		   p_mad_sisci_status_t status)
+		   p_mad_sisci_status_t flag)
 {
   LOG_IN();
-  if (!mad_sisci_test(status))
+  if (!mad_sisci_test(flag))
     {
       p_mad_sisci_driver_specific_t    driver_specific = NULL;
       mad_sisci_marcel_poll_cell_arg_t arg;
 
       driver_specific = link->connection->channel->adapter->driver->specific;
-      
-      arg.size_array = 0;
-      arg.status     = status;
+
+      arg.op                = mad_sisci_poll_flag;
+      arg.data.flag_op.flag = flag;
 
       marcel_poll(driver_specific->mad_sisci_pollid, &arg);
     }
@@ -533,7 +567,8 @@ mad_sisci_wait_for(p_mad_link_t         link,
 }
 
 #else // MARCEL && USE_MARCEL_POLL
-inline static void
+inline static
+void
 mad_sisci_wait_for(p_mad_link_t         link,
 		   p_mad_sisci_status_t flag)
 {
@@ -697,7 +732,7 @@ mad_sisci_connection_init(p_mad_connection_t in,
     {
       ch_id |= 0x80;
     }
-
+  
   lrank_l = channel->process_lrank;
   lrank_r = in->remote_rank;
   
@@ -790,7 +825,6 @@ mad_sisci_connect(p_mad_connection_t   out,
 		  p_mad_adapter_info_t ai)
 {  
   p_mad_channel_t                   channel            = NULL;
-  p_mad_sisci_channel_specific_t    channel_specific   = NULL;
   p_mad_adapter_t                   adapter            = NULL;
   p_mad_dir_adapter_t               dir_remote_adapter = NULL;
   p_mad_sisci_adapter_specific_t    adapter_specific   = NULL;
@@ -804,7 +838,6 @@ mad_sisci_connect(p_mad_connection_t   out,
 
   LOG_IN();
   channel            = out->channel;
-  channel_specific   = channel->specific;
   adapter            = channel->adapter;
   adapter_specific   = adapter->specific;
   out_specific       = out->specific;
@@ -820,8 +853,7 @@ mad_sisci_connect(p_mad_connection_t   out,
   lrank_l = channel->process_lrank;
   lrank_r = out->remote_rank;
 
-  /* Preparation des segments de communication */
-  for (segment = 0; segment < 2; segment++)
+   for (segment = 0; segment < 2; segment++)
     {
       p_mad_sisci_remote_segment_t    remote_segment = NULL;
       p_mad_sisci_user_segment_data_t remote_data    = NULL;
@@ -845,6 +877,16 @@ mad_sisci_connect(p_mad_connection_t   out,
 			    remote_segment->id,
 			    adapter_specific->local_adapter_id,
 			    0, NULL, SCI_INFINITE_TIMEOUT, 0, &sisci_error);
+
+	  if (sisci_error != SCI_ERR_OK)
+	    {
+	      mad_sisci_display_error(sisci_error);
+#ifdef MARCEL
+	      marcel_delay(1000);
+#else // MARCEL
+	      sleep(1);
+#endif // MARCEL
+	    }
 	}
       while (sisci_error != SCI_ERR_OK);
 
@@ -889,6 +931,7 @@ mad_sisci_accept(p_mad_connection_t   in,
   adapter            = channel->adapter;
   adapter_specific   = adapter->specific;
   in_specific        = in->specific;
+  channel_id         = channel->dir_channel->id;
   dir_remote_adapter = ai->dir_adapter;
   remote_node_sci_id = atoi(dir_remote_adapter->parameter);
 
@@ -924,6 +967,16 @@ mad_sisci_accept(p_mad_connection_t   in,
 			    remote_segment->id,
 			    adapter_specific->local_adapter_id,
 			    0, NULL, SCI_INFINITE_TIMEOUT, 0, &sisci_error);
+
+	  if (sisci_error != SCI_ERR_OK)
+	    {
+	      mad_sisci_display_error(sisci_error);
+#ifdef MARCEL
+	      marcel_delay(1000);
+#else // MARCEL
+	      sleep(1);
+#endif // MARCEL
+	    }
 	}
       while (sisci_error != SCI_ERR_OK);
 
@@ -932,15 +985,11 @@ mad_sisci_accept(p_mad_connection_t   in,
 			    &remote_segment->map,
 			    remote_segment->offset,
 			    remote_segment->size,
-			    NULL,
-			    0,
-			    &sisci_error);
+			    NULL, 0, &sisci_error);
       mad_sisci_control();
   
-      SCICreateMapSequence(remote_segment->map,
-			   &remote_segment->sequence,
-			   0,
-			   &sisci_error);
+      SCICreateMapSequence(remote_segment->map, &remote_segment->sequence,
+			   0, &sisci_error);
       mad_sisci_control();
 
       remote_data = remote_segment->map_addr;
@@ -1109,7 +1158,6 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   p_tbx_darray_t                 in_darray        = NULL;
   int                            next             =    0;
   int                            max              =    0;
-  int                            i                =    0;
  
   LOG_IN();
   channel_specific = channel->specific;
@@ -1122,18 +1170,21 @@ mad_sisci_receive_message(p_mad_channel_t channel)
     p_mad_sisci_driver_specific_t    driver_specific = NULL;
     mad_sisci_marcel_poll_cell_arg_t arg;
 
-    driver_specific   = channel->adapter->driver->specific
-    arg.channel       = channel;
-    arg.connection    = NULL;
+    driver_specific = channel->adapter->driver->specific;
 
-    marcel_poll(driver->specific->mad_sisci_pollid, &arg);
-    LOG_OUT();
+    arg.op                          = mad_sisci_poll_channel;
+    arg.data.channel_op.channel     = channel;
+    arg.data.channel_op.connection  = NULL;
 
-    return arg.connection;
+    marcel_poll(driver_specific->mad_sisci_pollid, &arg);
+
+    in = arg.data.channel_op.connection;
   }
 #else // MARCEL && USE_MARCEL_POLL
   while (tbx_true)
     {     
+      int i = 0;
+
       i = max;
       
       while (i--)
@@ -1166,11 +1217,11 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 
 found:
   channel_specific->next = next;
+#endif // MARCEL && USE_MARCEL_POLL
   
   LOG_OUT();
 
   return in;
-#endif // MARCEL && USE_MARCEL_POLL
 }
 
 

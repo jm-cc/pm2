@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.10  2000/06/05 15:41:58  vdanjean
+adaptation of debug messages
+
 Revision 1.9  2000/05/25 00:23:58  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -95,10 +98,6 @@ ______________________________________________________________________________
 #define OOPS
 
 #include "pm2debug.h"
-#ifdef PM2DEBUG
-extern debug_type_t tbx_debug_log;
-extern debug_type_t tbx_debug_trace;
-#endif
 
 /*
  * Classical boolean type
@@ -116,71 +115,6 @@ typedef enum
  * ____________________//////////////////////////////////////////////
  */
 #define TBX_FILE_TRANSFER_BLOCK_SIZE 1024
-
-
-/*
- * Display  macros  _________________________________________________
- * ________________//////////////////////////////////////////////////
- */
-#define DISP(str, args...)     fprintf(stderr, str "\n" , ## args)
-#define DISP_IN()              fprintf(stderr, __FUNCTION__": -->\n")
-#define DISP_OUT()             fprintf(stderr, __FUNCTION__": <--\n")
-#define DISP_VAL(str, val)     fprintf(stderr, str " = %d\n" , (int)(val))
-#define DISP_PTR(str, ptr)     fprintf(stderr, str " = %p\n" , (void *)(ptr))
-#define DISP_STR(str, str2)    fprintf(stderr, str " : %s\n" , (char *)(str2))
-
-
-/*
- * Logging macros  __________________________________________________
- * _______________///////////////////////////////////////////////////
- */
-#ifdef DEBUG
-#define LOG(str, args...)     debug_printf(&tbx_debug_log, str "\n" , ## args)
-#define LOG_IN()              debug_printf(&tbx_debug_log, \
-					   __FUNCTION__": -->\n")
-#define LOG_OUT()             debug_printf(&tbx_debug_log, \
-					   __FUNCTION__": <--\n")
-#define LOG_VAL(str, val)     debug_printf(&tbx_debug_log, \
-					   str " = %d\n" , (int)(val))
-#define LOG_PTR(str, ptr)     debug_printf(&tbx_debug_log, \
-					   str " = %p\n" , (void *)(ptr))
-#define LOG_STR(str, str2)    debug_printf(&tbx_debug_log, \
-					   str " : %s\n" , (char *)(str2))
-#else /* DEBUG */
-#define LOG(str, args...) 
-#define LOG_IN() 
-#define LOG_OUT() 
-#define LOG_VAL(str, val) 
-#define LOG_PTR(str, ptr) 
-#define LOG_STR(str, str2)
-#endif /* DEBUG */
-
-
-/*
- * Tracing macros  __________________________________________________
- * _______________///////////////////////////////////////////////////
- */
-#ifdef TRACING
-#define TRACE(str, args...)   debug_printf(&tbx_debug_trace, \
-					   str "\n" , ## args)
-#define TRACE_IN()            debug_printf(&tbx_debug_trace, \
-					   __FUNCTION__": -->\n")
-#define TRACE_OUT()           debug_printf(&tbx_debug_trace, \
-					   __FUNCTION__": <--\n")
-#define TRACE_VAL(str, val)   debug_printf(&tbx_debug_trace, \
-					   str " = %d\n" , (int)(val))
-#define TRACE_PTR(str, ptr)   debug_printf(&tbx_debug_trace, \
-					   str " = %p\n" , (void *)(ptr))
-#define TRACE_STR(str, str2)  debug_printf(&tbx_debug_trace, \
-					   str " : %s\n" , (char *)(str2))
-#else /* TRACING */
-#define TRACE(str, args...) 
-#define TRACE_IN()
-#define TRACE_OUT()
-#define TRACE_VAL(str, val) 
-#define TRACE_PTR(str, ptr) 
-#define TRACE_STR(str, str2) 
-#endif /* TRACING */
 
 
 /*

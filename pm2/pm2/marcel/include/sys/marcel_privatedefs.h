@@ -74,16 +74,18 @@ _PRIVATE_ typedef struct task_desc_struct {
 #ifdef MA__MULTIPLE_RUNNING
   volatile marcel_state_t ext_state;
 #endif
-  jmp_buf jbuf;
   struct list_head task_list;
   struct __lwp_struct *lwp;
+  marcel_lock_t state_lock; // Protège les changements d'états
+                            // impliquant des changements de files.
+  marcel_vpmask_t vpmask; // Contraintes sur le placement sur les LWP
+  int special_flags; // utilisé pour marquer les task idle, upcall, idle, ...
+  task_state state;
+  jmp_buf jbuf;
 #if defined(MA__LWPS)
   struct __lwp_struct *previous_lwp;
 #endif
   int sched_policy;
-  marcel_vpmask_t vpmask; // Contraintes sur le placement sur les LWP
-  int special_flags; // utilisé pour marquer les task idle, upcall, idle, ...
-  task_state state;
   jmp_buf migr_jb;
   marcel_t child, father;
   _exception_block *cur_excep_blk;
@@ -106,7 +108,7 @@ _PRIVATE_ typedef struct task_desc_struct {
   volatile int has_work;
 #endif
 #ifdef ENABLE_STACK_JUMPING
-  void *dummy;
+  void *dummy; // Doit rester le _dernier_ champ
 #endif
 } task_desc;
 

@@ -151,9 +151,7 @@ marcel_kthread_t marcel_kthread_self(void)
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 {
-	LOG_IN();
 	pthread_sigmask(how, newmask, oldmask);
-	LOG_OUT();
 }
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)

@@ -83,7 +83,7 @@ export PM2_CONSOLE
 PM2_DEBUG=off
 export PM2_DEBUG
 
-PM2_XMODE=on
+PM2_XMODE=off
 export PM2_XMODE
 
 while [ $# -gt 0 ]; do

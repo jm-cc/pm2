@@ -166,7 +166,3 @@ void profile_exit(void)
 {
   fut_done();
 }
-
-int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num) {
-	return 0;
-}

@@ -1,7 +1,7 @@
 #include "pm2.h"
 
 static int service_id;
-char hostname[MAXHOSTNAMELEN];
+char hostname[128];
 
 #define N 4
 marcel_t threads[N];
@@ -62,7 +62,7 @@ pm2_main (int argc, char *argv[])
   int i;
   int n;
 
-  gethostname (hostname, MAXHOSTNAMELEN);
+  gethostname (hostname, 128);
   pm2_rawrpc_register (&service_id, service);
 
   pm2_init (&argc, argv);

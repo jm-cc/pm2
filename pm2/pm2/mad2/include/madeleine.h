@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.15  2000/05/17 14:32:45  oaumage
+- reorganisation des sources au niveau de mad_init
+
 Revision 1.14  2000/03/07 10:38:59  oaumage
 - pre-support multi-cluster
 
@@ -91,6 +94,14 @@ ______________________________________________________________________________
 #ifndef __GNUC__
 #error The GNU C Compiler is required to build the library
 #endif __GNUC__
+
+/*
+ * Compilation mode
+ * ----------------
+ */
+#if (!defined EXTERNAL_SPAWN) && (!defined APPLICATION_SPAWN)
+#define REGULAR_SPAWN
+#endif /* EXTERNAL_SPAWN && APPLICATION_SPAWN */
 
 /*
  * Headers
@@ -154,5 +165,19 @@ ______________________________________________________________________________
 #endif /* DRV_BIP */
 
 #include "mad_main.h"
+
+#ifdef REGULAR_SPAWN
+#include "mad_regular_spawn.h"
+#endif /* REGULAR_SPAWN */
+
+#ifdef APPLICATION_SPAWN
+#include "mad_application_spawn.h"
+#endif /* APPLICATION_SPAWN */
+
+#ifdef EXTERNAL_SPAWN
+#include "mad_external_spawn.h"
+#endif /* EXTERNAL_SPAWN */
+
+#include "mad_exit.h"
 
 #endif /* MAD_H */

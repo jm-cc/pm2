@@ -64,7 +64,7 @@ DRV_TCP = on
 # SBP
 # DRV_SBP = on
 # MPI
-# DRV_MPI = on
+DRV_MPI = on
 
 # PM2
 # PM2 = on
@@ -207,6 +207,7 @@ endif
 
 # MPI specific
 ifdef DRV_MPI
+  CC      = hcc
   OBJS    += $(OBJ)/mad_mpi.o 
   HEADERS += $(CI_INC)/mad_mpi.h
   SRCS    += $(CI_SRC)/mad_mpi.c

@@ -78,10 +78,14 @@ class Channel:
 
         self.name	= cfg_dict['name']
         self.net_name	= cfg_dict['net']
-        self.merge      = cfg_dict['merge']
 	
-	if self.merge == 'yes' :
-	    self.mergeable = True
+	if cfg_dict.has_key('merge'):
+	    self.merge      = cfg_dict['merge']
+	
+	    if self.merge == 'yes' :
+		self.mergeable = True
+	    else:
+		self.mergeable = False
 	else:
 	    self.mergeable = False
 			
@@ -93,40 +97,47 @@ class Channel:
 
         loader_ps_l	= session.loader_process_list_get(self.net_name)
         driver_ps_l	= session.driver_process_list_get(self.net_name)
-
         dev_name	= session.net_name_to_dev_name(self.net_name)
 
+	for k,v in enumerate(driver_ps_l):
+	    print 'Driver ps list:', k, v
+	
         for host in self.hosts:
-            (hostname, id_range_l)	= host
-            node_ps_dict	= session.node_process_dict_get(hostname)
+            (hostname, id_range_l) = host
+            node_ps_dict = session.node_process_dict_get(hostname)
     
+	    for k,v in node_ps_dict.iteritems():
+		print 'NODE ps list:', k, v
+	    
             for id_range in id_range_l:
                 for id in id_range:
+		    
+		    print 'ID', id
+		    
                     if node_ps_dict.has_key(id):
                         ps = node_ps_dict[id]
+			print 'PS :', ps
                     else:
                         ps = Process(session, hostname, id)
-                        
-                        node_ps_dict[id]	= ps
-                        session.process_list.append(ps)
-                        loader_ps_l.append(ps)
-                        driver_ps_l.append(ps)
-    
-                    adapter	= Adapter('default')
-    
+			node_ps_dict[id] = ps			
+			session.process_list.append(ps)		    		   		    			
+			loader_ps_l.append(ps) 				
+			driver_ps_l.append(ps)
+                    
+		    adapter	= Adapter('default')
                     adapter_dict 	= {}
                     adapter_dict[adapter.name] = adapter
                         
                     ps.driver_dict[dev_name] = adapter_dict
     
                     self.processes.append(ps)
-
-
+	
 def channels_process(s):
     """Channel list processing."""
 
     channel_l = leo_pp.channel_list_get(s)
-
-    for channel_cfg in channel_l:
+    
+    for channel_cfg in channel_l:	
         channel	= Channel(s, channel_cfg)
-        s.channel_dict[channel.name]	= channel
+        s.channel_dict[channel.name] = channel
+	

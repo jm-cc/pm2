@@ -45,6 +45,9 @@ mad_end_packing(p_mad_connection_t connection);
 void
 mad_end_unpacking(p_mad_connection_t connection);
 
+p_tbx_slist_t
+mad_end_unpacking_ext(p_mad_connection_t connection);
+
 void
 mad_pack(p_mad_connection_t   connection,
 	 void                *buffer,

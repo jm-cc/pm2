@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.h,v $
+Revision 1.5  2000/05/29 08:59:23  vdanjean
+work added (mainly for SMP and ACT), minor modif in polling
+
 Revision 1.4  2000/05/24 15:15:20  rnamyst
 Enhanced the polling capabilities of the Marcel scheduler.
 
@@ -118,10 +121,13 @@ _PRIVATE_ int __marcel_check_polling(unsigned polling_point);
 // TODO: use polling_point to evaluate more precisely if polling is
 // necessary at this point.
 _PRIVATE_ static __inline__ int marcel_polling_is_required(unsigned polling_point)
+__attribute__ ((unused));
+_PRIVATE_ static __inline__ int marcel_polling_is_required(unsigned polling_point)
 {
   return __polling_tasks != NULL;
 }
-
+_PRIVATE_ static __inline__ int marcel_check_polling(unsigned polling_point)
+__attribute__ ((unused));
 _PRIVATE_ static __inline__ int marcel_check_polling(unsigned polling_point)
 {
   if(marcel_polling_is_required(polling_point))

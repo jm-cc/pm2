@@ -60,6 +60,8 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   ntbx_pack_buffer_t         buffer MAD_ALIGNED;
   int                        sub            =    0;
 
+  memset(&buffer, 0, sizeof(buffer));
+
   DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
 

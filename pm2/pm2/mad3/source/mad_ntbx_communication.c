@@ -49,6 +49,7 @@ mad_ntbx_send_int(p_ntbx_client_t client,
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   ntbx_pack_int(data, &buffer);
   status = ntbx_btcp_write_pack_buffer(client, &buffer);
 
@@ -66,6 +67,7 @@ mad_ntbx_receive_int(p_ntbx_client_t client)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   status = ntbx_btcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
@@ -85,6 +87,7 @@ mad_ntbx_send_unsigned_int(p_ntbx_client_t    client,
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   ntbx_pack_unsigned_int(data, &buffer);
   status = ntbx_btcp_write_pack_buffer(client, &buffer);
 
@@ -102,6 +105,7 @@ mad_ntbx_receive_unsigned_int(p_ntbx_client_t client)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   status = ntbx_btcp_read_pack_buffer(client, &buffer);
 
   if (status == ntbx_failure)
@@ -156,6 +160,7 @@ mad_leonie_send_int(const int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -178,6 +183,7 @@ mad_leonie_receive_int(void)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -201,6 +207,7 @@ mad_leonie_send_unsigned_int(const unsigned int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -223,6 +230,7 @@ mad_leonie_receive_unsigned_int(void)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -289,6 +297,7 @@ mad_leonie_send_int_nolock(const int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -309,6 +318,7 @@ mad_leonie_receive_int_nolock(void)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -330,6 +340,7 @@ mad_leonie_send_unsigned_int_nolock(const unsigned int data)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 
@@ -350,6 +361,7 @@ mad_leonie_receive_unsigned_int_nolock(void)
   ntbx_pack_buffer_t buffer;
 
   LOG_IN();
+  memset(&buffer, 0, sizeof(ntbx_pack_buffer_t));
   if (!mad_leo_client)
     FAILURE("leonie command module uninitialized");
 

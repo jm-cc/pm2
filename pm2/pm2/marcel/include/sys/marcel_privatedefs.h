@@ -26,6 +26,8 @@
 
 #include "marcel_ctx.h"
 
+#include <resolv.h>
+
 #define MARCEL_ALIGN    64L
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
@@ -127,6 +129,9 @@ _PRIVATE_ typedef struct _marcel_desc_struct {
   marcel_sem_t suspend_sem;
 
   /* Pour le code provenant de la libpthread */
+  int __errno;
+  int __h_errno;
+  struct __res_state __res_state;
   marcel_readlock_info *p_readlock_list;  /* List of readlock info structs */
   marcel_readlock_info *p_readlock_free;  /* Free list of structs */
   int p_untracked_readlock_count;       /* Readlocks not tracked by list */

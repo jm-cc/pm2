@@ -30,7 +30,7 @@
 #include <stdarg.h>
 
 #include "marcel.h"
-#include "sys/archdep.h"
+#include "sys/marcel_archdep.h"
 #include "madeleine.h"
 #include "pm2.h"
 #include "sys/isomalloc_archdep.h"

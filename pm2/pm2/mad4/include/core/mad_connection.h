@@ -41,6 +41,18 @@ typedef enum e_mad_connection_way
   mad_outgoing_connection,
 } mad_connection_way_t, *p_mad_connection_way_t;
 
+
+typedef enum e_mad_connection_hierarchy
+{
+   mad_level_self = 0,
+   mad_level_smp,
+   mad_level_box,
+   mad_level_cluster,
+   mad_level_external,
+}
+mad_hierarchy_t, *p_mad_hierarchy_t;
+
+
 typedef struct s_mad_connection
 {
   TBX_SHARED;
@@ -51,6 +63,7 @@ typedef struct s_mad_connection
   p_mad_channel_t          channel;
   p_mad_connection_t       reverse;
   mad_connection_way_t     way;
+  mad_hierarchy_t          hierarchy; 
   tbx_bool_t               connected;
   p_mad_connection_t       regular;
   char                    *parameter;

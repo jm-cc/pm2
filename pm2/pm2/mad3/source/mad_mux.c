@@ -194,7 +194,7 @@ mad_mux_reemit_block(void *arg)
   for (;;)
     {
       p_mad_xblock_header_t xbh = NULL;
-    
+
       TRACE("mad_mux_reemit_block: waiting for something to forward");
       marcel_sem_P(something_to_forward);
       TRACE("mad_mux_reemit_block: got something to forward");
@@ -315,6 +315,8 @@ mad_mux_read_block_header(p_mad_channel_t    mad_xchannel,
     | tbx_expand_field(data, mad_xblock_fdestination_3);
   xbh->mux           =
     tbx_expand_field(data, mad_xblock_fmux);
+  xbh->sub           =
+    tbx_expand_field(data, mad_xblock_fsub);
   xbh->is_a_group    =
     tbx_expand_field(data, mad_xblock_fis_a_group);
   xbh->is_a_new_msg  =
@@ -383,11 +385,11 @@ mad_mux_read_block_header(p_mad_channel_t    mad_xchannel,
 	  xout = xbh->xout;
 
 	  if (xout)
-	    {    
+	    {
 	      p_mad_connection_t       out            = NULL;
 	      p_mad_driver_interface_t next_interface = NULL;
 	      p_mad_link_t             next_data_lnk  = NULL;
-	  
+
 	      out            = xout->regular;
 	      next_interface =
 		out->channel->adapter->driver->interface;
@@ -426,12 +428,12 @@ mad_mux_read_block_header(p_mad_channel_t    mad_xchannel,
 	      xbh->block = mad_alloc_buffer(xbh->length);
 	      xbh->type  = mad_xblock_type_dynamic;
 	    }
-	  
+
 	  if (xbh->block->length > xbh->length)
 	    {
 	      xbh->block->length = xbh->length;
 	    }
-	  
+
 	  interface->receive_buffer(data_lnk, &(xbh->block));
 	}
       else
@@ -607,21 +609,26 @@ mad_mux_receive_block(void *arg)
 	}
       else
 	{
-	  /* At destination */ 
+	  /* At destination */
 	  p_tbx_slist_t           message_slist = NULL;
 	  ntbx_process_grank_t    source        =   -1;
 	  p_tbx_darray_t          darray        = NULL;
 	  p_mad_mux_darray_lane_t lane          = NULL;
 	  unsigned int            mux           =    0;
+	  unsigned int            sub           =    0;
 
 	  TRACE("mad_mux_receive_block: block is for me");
-	  mux    = xbh->mux;
-	  darray = mad_xchannel->mux_list_darray;
-	  
+	  mux = xbh->mux;
+	  {
+	    darray = mad_xchannel->mux_list_darray;
+	    darray = tbx_darray_get(darray, mux);
+	  }
+	  sub = xbh->sub;
+
 	  TRACE("mad_mux_receive_block: locking mux_list_darray");
 	  TBX_LOCK_SHARED(darray);
-	  lane = tbx_darray_expand_and_get(darray, mux);
-  
+	  lane = tbx_darray_expand_and_get(darray, sub);
+
 	  if (!lane)
 	    {
 	      lane = TBX_CALLOC(1, sizeof(mad_mux_darray_lane_t));
@@ -632,11 +639,11 @@ mad_mux_receive_block(void *arg)
 
 	      TBX_INIT_SHARED(lane);
 
-	      tbx_darray_set(darray, mux, lane);
+	      tbx_darray_set(darray, sub, lane);
 	    }
-	  
+
 	  TRACE("mad_mux_receive_block: locking lane");
-	  TBX_LOCK_SHARED(lane);	  
+	  TBX_LOCK_SHARED(lane);
 	  TBX_UNLOCK_SHARED(darray);
 	  TRACE("mad_mux_receive_block: unlocking mux_list_darray");
 
@@ -741,6 +748,7 @@ mad_mux_fill_xbh_data(unsigned char *data,
 		      unsigned int   dst,
 		      unsigned int   length,
 		      unsigned int   mux,
+		      unsigned int   sub,
 		      tbx_bool_t     is_a_group,
 		      tbx_bool_t     is_a_new_msg,
 		      tbx_bool_t     is_an_eof_msg,
@@ -783,6 +791,7 @@ mad_mux_fill_xbh_data(unsigned char *data,
   tbx_contract_field(data, dst, mad_xblock_fdestination_3);
 
   tbx_contract_field(data, mux, mad_xblock_fmux);
+  tbx_contract_field(data, sub, mad_xblock_fsub);
 
   tbx_contract_field(data, uint_is_a_group,    mad_xblock_fis_a_group);
   tbx_contract_field(data, uint_is_a_new_msg,  mad_xblock_fis_a_new_msg);
@@ -797,12 +806,12 @@ mad_mux_fill_xbh_data(unsigned char *data,
 
 #ifdef MAD_MUX_FLOW_CONTROL
 #define FILL_XBH_DATA() \
-    mad_mux_fill_xbh_data(_data, _src, _dst, _length, _mux, \
+    mad_mux_fill_xbh_data(_data, _src, _dst, _length, _mux, _sub,\
 			  _is_a_group, _is_a_new_msg, _is_an_eof_msg, \
 			  _closing, _is_an_ack)
 #else
 #define FILL_XBH_DATA() \
-    mad_mux_fill_xbh_data(_data, _src, _dst, _length, _mux, \
+    mad_mux_fill_xbh_data(_data, _src, _dst, _length, _mux, _sub,\
 			  _is_a_group, _is_a_new_msg, _is_an_eof_msg, \
 			  _closing)
 #endif /* MAD_MUX_FLOW_CONTROL */
@@ -1097,10 +1106,12 @@ mad_mux_new_message(p_mad_connection_t xout)
 {
   p_mad_channel_t channel = NULL;
   unsigned int    mux     =    0;
+  unsigned int    sub     =    0;
 
   LOG_IN();
   channel = xout->channel;
   mux     = channel->mux;
+  sub     = channel->sub;
 
 #ifdef MAD_MUX_FLOW_CONTROL
   {
@@ -1114,13 +1125,14 @@ mad_mux_new_message(p_mad_connection_t xout)
     interface = out->channel->adapter->driver->interface;
     src = (unsigned int)xout->channel->process_lrank;
     dst = (unsigned int)xout->remote_rank;
-    
+
     {
       unsigned char *_data          = data;
       unsigned int   _src           = src;
       unsigned int   _dst           = dst;
       unsigned int   _length        = 0;
       unsigned int   _mux           = mux;
+      unsigned int   _sub           = sub;
       tbx_bool_t     _is_a_group    = tbx_false;
       tbx_bool_t     _is_a_new_msg  = tbx_true;
       tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1129,7 +1141,7 @@ mad_mux_new_message(p_mad_connection_t xout)
 
       FILL_XBH_DATA();
     }
-    
+
     marcel_mutex_lock(&(out->lock_mutex));
     if (interface->new_message)
       interface->new_message(out);
@@ -1153,6 +1165,7 @@ mad_mux_finalize_message(p_mad_connection_t xout)
 {
   p_mad_channel_t          channel   = NULL;
   unsigned int             mux       =    0;
+  unsigned int             sub       =    0;
   p_mad_connection_t       out       = NULL;
   unsigned int             src       =    0;
   unsigned int             dst       =    0;
@@ -1162,6 +1175,7 @@ mad_mux_finalize_message(p_mad_connection_t xout)
   LOG_IN();
   channel   = xout->channel;
   mux       = channel->mux;
+  sub       = channel->sub;
   out       = xout->regular;
   interface = out->channel->adapter->driver->interface;
   src       = (unsigned int)xout->channel->process_lrank;
@@ -1173,6 +1187,7 @@ mad_mux_finalize_message(p_mad_connection_t xout)
     unsigned int   _dst           = dst;
     unsigned int   _length        = 0;
     unsigned int   _mux           = mux;
+    unsigned int   _sub           = sub;
     tbx_bool_t     _is_a_group    = tbx_false;
     tbx_bool_t     _is_a_new_msg  = tbx_false;
     tbx_bool_t     _is_an_eof_msg = tbx_true;
@@ -1203,9 +1218,11 @@ mad_mux_poll_message(p_mad_channel_t channel)
 {
   p_mad_connection_t connection = NULL;
   unsigned int       mux        =    0;
+  unsigned int       sub        =    0;
 
   LOG_IN();
   mux = channel->mux;
+  sub = channel->sub;
 
 #error revoir
   if (!channel->can_receive)
@@ -1245,6 +1262,7 @@ mad_mux_poll_message(p_mad_channel_t channel)
 	unsigned int   _dst           = xout->remote_rank;
 	unsigned int   _length        = 0;
 	unsigned int   _mux           = mux;
+	unsigned int   _sub           = sub;
 	tbx_bool_t     _is_a_group    = tbx_false;
 	tbx_bool_t     _is_a_new_msg  = tbx_false;
 	tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1275,18 +1293,19 @@ mad_mux_receive_message(p_mad_channel_t channel)
   p_tbx_slist_t            message_slist      = NULL;
   marcel_sem_t            *message_to_forward = NULL;
   unsigned int             mux                =    0;
+  unsigned int             sub                =    0;
   p_mad_mux_darray_lane_t  lane               = NULL;
   p_tbx_darray_t           darray             = NULL;
   p_mad_connection_t       xin                = NULL;
 
   LOG_IN();
   mux    = channel->mux;
-  darray = channel->mux_list_darray;
+  sub    = channel->sub;
+  darray = channel->sub_list_darray;
 
-  TRACE_VAL("mad_mux_receive_message: locking mux_list_darray, mux", mux);
   TBX_LOCK_SHARED(darray);
-  lane = tbx_darray_expand_and_get(darray, mux);
-	  
+  lane = tbx_darray_expand_and_get(darray, sub);
+
   if (!lane)
     {
       lane = TBX_CALLOC(1, sizeof(mad_mux_darray_lane_t));
@@ -1297,39 +1316,30 @@ mad_mux_receive_message(p_mad_channel_t channel)
 
       TBX_INIT_SHARED(lane);
 
-      tbx_darray_set(darray, mux, lane);
+      tbx_darray_set(darray, sub, lane);
     }
-	  
   TBX_UNLOCK_SHARED(darray);
-  TRACE_VAL("mad_mux_receive_message: unlocking mux_list_darray, mux", mux);
 
   message_slist      =  lane->message_queue;
   message_to_forward = &(lane->something_to_forward);
 
-    {
-      p_mad_xmessage_queue_entry_t entry  = NULL;
-      ntbx_process_grank_t         source =   -1;
+  {
+    p_mad_xmessage_queue_entry_t entry  = NULL;
+    ntbx_process_grank_t         source =   -1;
 
-      TRACE_VAL("mad_mux_receive_message: waiting for something to forward, mux", mux);
-      marcel_sem_P(message_to_forward);
-      TRACE_VAL("mad_mux_receive_message: got something to forward, mux", mux);
+    marcel_sem_P(message_to_forward);
 
-      TRACE_VAL("mad_mux_receive_message: locking message queue, mux", mux);
-      TBX_LOCK_SHARED(message_slist);
+    TBX_LOCK_SHARED(message_slist);
+    entry = tbx_slist_extract(message_slist);
+    TBX_UNLOCK_SHARED(message_slist);
 
-      entry = tbx_slist_extract(message_slist);
+    source = entry->source;
 
-      TBX_UNLOCK_SHARED(message_slist);
-      TRACE_VAL("mad_mux_receive_message: locking message queue, mux", mux);
+    tbx_free(mad_mqentry_memory, entry);
+    entry = NULL;
 
-      source = entry->source;
-      TRACE("mad_mux_receive_message: the new message is from %d (mux = %d)", source, mux);
-
-      tbx_free(mad_mqentry_memory, entry);
-      entry = NULL;
-
-      xin = tbx_darray_get(channel->in_connection_darray, source);
-    }
+    xin = tbx_darray_get(channel->in_connection_darray, source);
+  }
 
 #ifdef MAD_MUX_FLOW_CONTROL
     {
@@ -1354,6 +1364,7 @@ mad_mux_receive_message(p_mad_channel_t channel)
 	unsigned int   _dst           = xout->remote_rank;
 	unsigned int   _length        = 0;
 	unsigned int   _mux           = mux;
+	unsigned int   _sub           = sub;
 	tbx_bool_t     _is_a_group    = tbx_false;
 	tbx_bool_t     _is_a_new_msg  = tbx_false;
 	tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1383,6 +1394,7 @@ mad_mux_message_received(p_mad_connection_t xin)
   p_mad_channel_t          channel = NULL;
   ntbx_process_grank_t     source  =   -1;
   unsigned int             mux     =    0;
+  unsigned int             sub     =    0;
   p_mad_mux_darray_lane_t  lane    = NULL;
   p_tbx_darray_t           darray  = NULL;
 
@@ -1390,10 +1402,11 @@ mad_mux_message_received(p_mad_connection_t xin)
   source  = xin->remote_rank;
   channel = xin->channel;
   mux     = channel->mux;
-  darray  = channel->mux_list_darray;
-	  
+  sub     = channel->sub;
+  darray  = channel->sub_list_darray;
+
   TBX_LOCK_SHARED(darray);
-  lane = tbx_darray_get(darray, mux);
+  lane = tbx_darray_get(darray, sub);
   TBX_UNLOCK_SHARED(darray);
 
   {
@@ -1509,6 +1522,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
 {
   p_mad_channel_t          channel   = NULL;
   unsigned int             mux       =    0;
+  unsigned int             sub       =    0;
   p_mad_connection_t       xout      = NULL;
   p_mad_connection_t       out       = NULL;
   p_mad_driver_interface_t interface = NULL;
@@ -1517,6 +1531,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
   xout      = lnk->connection;
   channel   = xout->channel;
   mux       = channel->mux;
+  sub       = channel->sub;
   out       = xout->regular;
   interface = out->channel->adapter->driver->interface;
 
@@ -1553,7 +1568,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
 
     if (interface->new_message)
       interface->new_message(out);
-      
+
     if (nb_block)
       {
 	{
@@ -1562,6 +1577,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
 	  unsigned int   _dst           = dst;
 	  unsigned int   _length        = nb_block + 1;
 	  unsigned int   _mux           = mux;
+	  unsigned int   _sub           = sub;
 	  tbx_bool_t     _is_a_group    = tbx_true;
 	  tbx_bool_t     _is_a_new_msg  = is_a_new_msg;
 	  tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1583,6 +1599,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
 	      unsigned int   _dst           = dst;
 	      unsigned int   _length        = mtu;
 	      unsigned int   _mux           = mux;
+	      unsigned int   _sub           = sub;
 	      tbx_bool_t     _is_a_group    = tbx_false;
 	      tbx_bool_t     _is_a_new_msg  = tbx_false;
 	      tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1609,6 +1626,7 @@ mad_mux_send_buffer(p_mad_link_t   lnk,
       unsigned int   _dst           = dst;
       unsigned int   _length        = last_block_len;
       unsigned int   _mux           = mux;
+      unsigned int   _sub           = sub;
       tbx_bool_t     _is_a_group    = tbx_false;
       tbx_bool_t     _is_a_new_msg  = is_a_new_msg;
       tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1640,6 +1658,7 @@ mad_mux_receive_buffer(p_mad_link_t    lnk,
   p_mad_xblock_header_t    xbh              = NULL;
   ntbx_process_grank_t     source           =   -1;
   unsigned int             mux              =    0;
+  unsigned int             sub              =    0;
   p_mad_mux_darray_lane_t  lane             = NULL;
   p_tbx_darray_t           darray           = NULL;
   p_mad_mux_block_queue_t  block_queue      = NULL;
@@ -1653,12 +1672,13 @@ mad_mux_receive_buffer(p_mad_link_t    lnk,
   xin     = lnk->connection;
   source  = xin->remote_rank;
   channel = xin->channel;
-  
+
   mux = channel->mux;
-  darray = channel->mux_list_darray;
-	  
+  sub = channel->sub;
+  darray = channel->sub_list_darray;
+
   TBX_LOCK_SHARED(darray);
-  lane = tbx_darray_get(darray, mux);
+  lane = tbx_darray_get(darray, sub);
   TBX_UNLOCK_SHARED(darray);
 
   block_queue      = tbx_darray_get(lane->block_queues, source);
@@ -1700,7 +1720,7 @@ mad_mux_receive_buffer(p_mad_link_t    lnk,
 	  TBX_UNLOCK_SHARED(block_slist);
 
 	  mad_copy_buffer(xbh->block, buf);
-  
+
 	  if (xbh->type == mad_xblock_type_static_src)
 	    {
 	      xbh->src_interface->
@@ -1751,12 +1771,12 @@ mad_mux_send_buffer_group(p_mad_link_t         lnk,
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
       tbx_list_reference_t ref;
-      
+
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
 	  p_mad_buffer_t buffer = NULL;
-	  
+
 	  buffer = tbx_get_list_reference_object(&ref);
 	  mad_mux_send_buffer(lnk, buffer);
 	}
@@ -1863,6 +1883,7 @@ mad_mux_stop_reception(p_mad_channel_t      xchannel,
 	  unsigned int   _dst           = 0;
 	  unsigned int   _length        = 0;
 	  unsigned int   _mux           = 0;
+	  unsigned int   _sub           = 0;
 	  tbx_bool_t     _is_a_group    = tbx_false;
 	  tbx_bool_t     _is_a_new_msg  = tbx_false;
 	  tbx_bool_t     _is_an_eof_msg = tbx_false;
@@ -1888,39 +1909,37 @@ mad_mux_stop_reception(p_mad_channel_t      xchannel,
 
 p_mad_channel_t
 mad_mux_get_sub_channel(p_mad_channel_t xchannel,
-			unsigned int    mux)
+			unsigned int    sub)
 {
   p_mad_channel_t channel = NULL;
   p_tbx_darray_t  darray  = NULL;
 
   LOG_IN();
-  darray = xchannel->mux_channel_darray;
+  darray = xchannel->sub_channel_darray;
 
   TBX_LOCK_SHARED(darray);
-  channel = tbx_darray_expand_and_get(darray, mux);
-  
+  channel = tbx_darray_expand_and_get(darray, sub);
+
   if (!channel)
     {
       channel = mad_channel_cons();
       channel->process_lrank = xchannel->process_lrank;
-      channel->type          = mad_channel_type_mux_sub;
+      channel->type          = mad_channel_type_mux;
       channel->id            = xchannel->id;
-      
+
       {
 	p_tbx_string_t s = NULL;
-	
+
 	s = tbx_string_init_to_cstring(xchannel->name);
-	tbx_string_append_int(s, mux);
+	tbx_string_append_int(s, sub);
 	channel->name = tbx_string_to_cstring_and_free(s);
       }
-      
+
       channel->pc           = xchannel->pc;
       channel->public       = xchannel->public;
       channel->dir_channel  = xchannel->dir_channel;
-      channel->dir_fchannel = xchannel->dir_fchannel;
-      channel->dir_vchannel = xchannel->dir_vchannel;
       channel->dir_xchannel = xchannel->dir_xchannel;
-      channel->adapter = xchannel->adapter;
+      channel->adapter      = xchannel->adapter;
 
       // in+out
       {
@@ -1930,8 +1949,8 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 	p_tbx_darray_t     out_darray   = NULL;
 	tbx_darray_index_t idx          =    0;
 	p_mad_connection_t src          = NULL;
-	
-	
+
+
 	s_in_darray  = xchannel->in_connection_darray;
 	s_out_darray = xchannel->out_connection_darray;
 
@@ -1949,7 +1968,7 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 	      }
 	    while ((src = tbx_darray_next_idx(s_in_darray, &idx)));
 	  }
-	
+
 	if ((src = tbx_darray_first_idx(s_out_darray, &idx)))
 	  {
 	    do
@@ -1978,10 +1997,6 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 		dst->connected             = src->connected;
 		dst->regular               = src->regular;
 		dst->parameter             = src->parameter;
-		dst->forwarding_thread     = src->forwarding_thread;
-		dst->forwarding_block_list = src->forwarding_block_list;
-		dst->block_queues          = src->block_queues;
-		dst->closing               = src->closing;
 		dst->mtu                   = src->mtu;
 		dst->nb_link               = src->nb_link;
 		dst->specific              = src->specific;
@@ -1990,23 +2005,29 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 
 		{
 		  mad_link_id_t link_id = -1;
-		  
+
 		  for (link_id = 0; link_id < dst->nb_link; link_id++)
 		    {
-		      p_mad_link_t lnk = NULL;
-		      
-		      lnk =  mad_link_cons();
-		      
-		      lnk->connection = dst;
-		      lnk->id         = link_id;
-		      
-		      dst->link_array[link_id]  = lnk;
+		      p_mad_link_t src_lnk = NULL;
+		      p_mad_link_t dst_lnk = NULL;
+
+		      src_lnk = src->link_array[link_id];
+		      dst_lnk = mad_link_cons();
+
+		      dst_lnk->connection  = dst;
+		      dst_lnk->id          = src_lnk->id;
+		      dst_lnk->link_mode   = src_lnk->link_mode;
+		      dst_lnk->buffer_mode = src_lnk->buffer_mode;
+		      dst_lnk->group_mode  = src_lnk->group_mode;
+		      dst_lnk->specific    = src_lnk->specific;
+
+		      dst->link_array[link_id] = dst_lnk;
 		    }
 		}
 	      }
 	    while ((src = tbx_darray_next_idx(s_in_darray, &idx)));
 	  }
-	
+
 	if ((src = tbx_darray_first_idx(s_out_darray, &idx)))
 	  {
 	    do
@@ -2023,10 +2044,6 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 		dst->connected             = src->connected;
 		dst->regular               = src->regular;
 		dst->parameter             = src->parameter;
-		dst->forwarding_thread     = src->forwarding_thread;
-		dst->forwarding_block_list = src->forwarding_block_list;
-		dst->block_queues          = src->block_queues;
-		dst->closing               = src->closing;
 		dst->mtu                   = src->mtu;
 		dst->nb_link               = src->nb_link;
 		dst->specific              = src->specific;
@@ -2035,37 +2052,46 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
 
 		{
 		  mad_link_id_t link_id = -1;
-		  
+
 		  for (link_id = 0; link_id < dst->nb_link; link_id++)
 		    {
-		      p_mad_link_t lnk = NULL;
-		      
-		      lnk =  mad_link_cons();
-		      
-		      lnk->connection = dst;
-		      lnk->id         = link_id;
-		      
-		      dst->link_array[link_id]  = lnk;
+		      p_mad_link_t src_lnk = NULL;
+		      p_mad_link_t dst_lnk = NULL;
+
+		      src_lnk = src->link_array[link_id];
+		      dst_lnk = mad_link_cons();
+
+		      dst_lnk->connection  = dst;
+		      dst_lnk->id          = src_lnk->id;
+		      dst_lnk->link_mode   = src_lnk->link_mode;
+		      dst_lnk->buffer_mode = src_lnk->buffer_mode;
+		      dst_lnk->group_mode  = src_lnk->group_mode;
+		      dst_lnk->specific    = src_lnk->specific;
+
+		      dst->link_array[link_id] = dst_lnk;
 		    }
 		}
 	      }
 	    while ((src = tbx_darray_next_idx(s_out_darray, &idx)));
 	  }
-	
+
 
 	channel->in_connection_darray  = in_darray;
 	channel->out_connection_darray = out_darray;
       }
 
       channel->parameter = xchannel->parameter;
-      channel->mux       = mux;
+      channel->mux       = xchannel->mux;
+      channel->sub       = sub;
 
       channel->mux_list_darray    = xchannel->mux_list_darray;
       channel->mux_channel_darray = xchannel->mux_channel_darray;
+      channel->sub_list_darray    = xchannel->sub_list_darray;
+      channel->sub_channel_darray = xchannel->sub_channel_darray;
       channel->channel_slist      = xchannel->channel_slist;
-      channel->fchannel_slist     = xchannel->fchannel_slist;
-      channel->polling_thread     = xchannel->polling_thread;
       channel->specific           = xchannel->specific;
+
+      tbx_darray_set(darray, sub, channel);
     }
   TBX_UNLOCK_SHARED(darray);
 
@@ -2074,5 +2100,216 @@ mad_mux_get_sub_channel(p_mad_channel_t xchannel,
   return channel;
 }
 
+void
+mad_mux_add_named_sub_channels(p_mad_channel_t xchannel)
+{
+  p_mad_madeleine_t    madeleine    = NULL;
+  p_mad_adapter_t      mux_adapter  = NULL;
+  p_mad_dir_xchannel_t dir_xchannel = NULL;
+  unsigned int         mux          =    0;
+  p_tbx_darray_t       darray       = NULL;
+  p_tbx_slist_t        slist        = NULL;
+
+  LOG_IN();
+  mux_adapter  = xchannel->adapter;
+  madeleine    = mux_adapter->driver->madeleine;
+  dir_xchannel = xchannel->dir_xchannel;
+  slist        = dir_xchannel->sub_channel_name_slist;
+  darray       = xchannel->mux_channel_darray;
+
+  if (!tbx_slist_is_nil(slist))
+    {
+      tbx_slist_ref_to_head(slist);
+
+      do
+	{
+	  p_mad_channel_t  channel = NULL;
+	  char            *name    = NULL;
+
+	  name = tbx_slist_ref_get(slist);
+	  mux++;
+
+	  channel = mad_channel_cons();
+	  channel->process_lrank = xchannel->process_lrank;
+	  channel->type          = mad_channel_type_mux;
+	  channel->id            = xchannel->id;
+
+	  channel->name          = tbx_strdup(name);
+
+	  channel->pc            = xchannel->pc;
+	  channel->public        = xchannel->public;
+	  channel->dir_channel   = xchannel->dir_channel;
+	  channel->dir_xchannel  = xchannel->dir_xchannel;
+	  channel->adapter       = xchannel->adapter;
+
+	  // in+out
+	  {
+	    p_tbx_darray_t     s_in_darray  = NULL;
+	    p_tbx_darray_t     s_out_darray = NULL;
+	    p_tbx_darray_t     in_darray    = NULL;
+	    p_tbx_darray_t     out_darray   = NULL;
+	    tbx_darray_index_t idx          =    0;
+	    p_mad_connection_t src          = NULL;
+
+
+	    s_in_darray  = xchannel->in_connection_darray;
+	    s_out_darray = xchannel->out_connection_darray;
+
+	    in_darray  = tbx_darray_init();
+	    out_darray = tbx_darray_init();
+
+	    if ((src = tbx_darray_first_idx(s_in_darray, &idx)))
+	      {
+		do
+		  {
+		    p_mad_connection_t dst = NULL;
+
+		    dst = mad_connection_cons();
+		    tbx_darray_expand_and_set(in_darray, idx, dst);
+		  }
+		while ((src = tbx_darray_next_idx(s_in_darray, &idx)));
+	      }
+
+	    if ((src = tbx_darray_first_idx(s_out_darray, &idx)))
+	      {
+		do
+		  {
+		    p_mad_connection_t dst = NULL;
+
+		    dst = mad_connection_cons();
+		    tbx_darray_expand_and_set(out_darray, idx, dst);
+		  }
+		while ((src = tbx_darray_next_idx(s_out_darray, &idx)));
+	      }
+
+	    if ((src = tbx_darray_first_idx(s_in_darray, &idx)))
+	      {
+		do
+		  {
+		    p_mad_connection_t dst = NULL;
+
+		    dst = tbx_darray_get(in_darray, idx);
+		    dst->nature                = src->nature;
+		    dst->remote_rank           = src->remote_rank;
+		    dst->channel               = channel;
+		    dst->reverse               =
+		      tbx_darray_expand_and_get(out_darray, idx);
+		    dst->way                   = src->way;
+		    dst->connected             = src->connected;
+		    dst->regular               = src->regular;
+		    dst->parameter             = src->parameter;
+		    dst->mtu                   = src->mtu;
+		    dst->nb_link               = src->nb_link;
+		    dst->specific              = src->specific;
+		    dst->link_array            =
+		      TBX_CALLOC(dst->nb_link, sizeof(p_mad_link_t));
+
+		    {
+		      mad_link_id_t link_id = -1;
+
+		      for (link_id = 0; link_id < dst->nb_link; link_id++)
+			{
+			  p_mad_link_t src_lnk = NULL;
+			  p_mad_link_t dst_lnk = NULL;
+
+			  src_lnk = src->link_array[link_id];
+			  dst_lnk = mad_link_cons();
+
+			  dst_lnk->connection  = dst;
+			  dst_lnk->id          = src_lnk->id;
+			  dst_lnk->link_mode   = src_lnk->link_mode;
+			  dst_lnk->buffer_mode = src_lnk->buffer_mode;
+			  dst_lnk->group_mode  = src_lnk->group_mode;
+			  dst_lnk->specific    = src_lnk->specific;
+
+			  dst->link_array[link_id] = dst_lnk;
+			}
+		    }
+		  }
+		while ((src = tbx_darray_next_idx(s_in_darray, &idx)));
+	      }
+
+	    if ((src = tbx_darray_first_idx(s_out_darray, &idx)))
+	      {
+		do
+		  {
+		    p_mad_connection_t dst = NULL;
+
+		    dst = tbx_darray_get(out_darray, idx);
+		    dst->nature                = src->nature;
+		    dst->remote_rank           = src->remote_rank;
+		    dst->channel               = channel;
+		    dst->reverse               =
+		      tbx_darray_expand_and_get(in_darray, idx);
+		    dst->way                   = src->way;
+		    dst->connected             = src->connected;
+		    dst->regular               = src->regular;
+		    dst->parameter             = src->parameter;
+		    dst->mtu                   = src->mtu;
+		    dst->nb_link               = src->nb_link;
+		    dst->specific              = src->specific;
+		    dst->link_array            =
+		      TBX_CALLOC(dst->nb_link, sizeof(p_mad_link_t));
+
+		    {
+		      mad_link_id_t link_id = -1;
+
+		      for (link_id = 0; link_id < dst->nb_link; link_id++)
+			{
+			  p_mad_link_t src_lnk = NULL;
+			  p_mad_link_t dst_lnk = NULL;
+
+			  src_lnk = src->link_array[link_id];
+			  dst_lnk = mad_link_cons();
+
+			  dst_lnk->connection  = dst;
+			  dst_lnk->id          = src_lnk->id;
+			  dst_lnk->link_mode   = src_lnk->link_mode;
+			  dst_lnk->buffer_mode = src_lnk->buffer_mode;
+			  dst_lnk->group_mode  = src_lnk->group_mode;
+			  dst_lnk->specific    = src_lnk->specific;
+
+			  dst->link_array[link_id] = dst_lnk;
+			}
+		    }
+		  }
+		while ((src = tbx_darray_next_idx(s_out_darray, &idx)));
+	      }
+
+
+	    channel->in_connection_darray  = in_darray;
+	    channel->out_connection_darray = out_darray;
+	  }
+
+	  channel->parameter = xchannel->parameter;
+	  channel->mux       = mux;
+	  channel->sub       =   0;
+
+	  channel->mux_list_darray    = xchannel->mux_list_darray;
+	  channel->mux_channel_darray = xchannel->mux_channel_darray;
+
+	  channel->sub_list_darray    = tbx_darray_init();
+	  tbx_darray_expand_and_set(xchannel->mux_list_darray, mux,
+				    channel->sub_list_darray);
+	  channel->sub_channel_darray = tbx_darray_init();
+	  tbx_darray_expand_and_set(channel->sub_channel_darray, 0, channel);
+
+	  channel->channel_slist = xchannel->channel_slist;
+	  channel->specific      = xchannel->specific;
+
+	  tbx_htable_add(mux_adapter->channel_htable, channel->name, channel);
+	  tbx_htable_add(madeleine->channel_htable,   channel->name, channel);
+
+	  if (channel->public)
+	    {
+	      tbx_slist_append(madeleine->public_channel_slist, channel->name);
+	    }
+
+	  tbx_darray_expand_and_set(darray, mux, channel);
+	}
+      while (tbx_slist_ref_forward(slist));
+    }
+  LOG_OUT();
+}
 
 #endif // MARCEL

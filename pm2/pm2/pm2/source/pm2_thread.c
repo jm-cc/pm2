@@ -23,7 +23,8 @@
 
 #define MAX_THREADS  512
 
-static marcel_vpmask_t global_vpmask = MARCEL_VPMASK_EMPTY;
+// Also used in netserver.h
+marcel_vpmask_t __pm2_global_vpmask = MARCEL_VPMASK_EMPTY;
 
 extern marcel_key_t mad2_send_key, mad2_recv_key;
 
@@ -99,7 +100,7 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t cla
   res->class = class;
 
   if(class == PM2_THREAD_REGULAR) {
-    marcel_attr_setvpmask(&res->attr, global_vpmask);
+    marcel_attr_setvpmask(&res->attr, __pm2_global_vpmask);
     marcel_attr_setrealtime(&res->attr, MARCEL_CLASS_REGULAR);
   } else {
     marcel_attr_setvpmask(&res->attr, marcel_self()->vpmask);
@@ -203,7 +204,3 @@ void pm2_thread_exit(void)
 {
 }
 
-void pm2_thread_vp_is_reserved(unsigned vp)
-{
-  marcel_vpmask_add_vp(&global_vpmask, vp);
-}

@@ -44,6 +44,7 @@ typedef enum {
 typedef struct tcp_ev {
 	struct marcel_ev inst;
 	poll_op_t op;
+	int ret_val;
 	union {
 		int fd;
 		struct {
@@ -121,6 +122,7 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 	case POLL_SELECT : {
 		unsigned i;
 		unsigned zeroed=0;
+		ev->ret_val=0;
 		if(ev->rfds != NULL) {
 			for(i=0; i<ev->nfds; i++)
 				if(FD_ISSET(i, ev->rfds) && FD_ISSET(i, rfds)) {
@@ -131,7 +133,7 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 						zeroed=1;
 					}
 					FD_SET(i, ev->rfds);
-					MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+					ev->ret_val++;
 				}
 		}
 		if(ev->wfds != NULL) {
@@ -143,8 +145,11 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 							FD_ZERO(ev->rfds);
 					}
 					FD_SET(i, ev->wfds);
-					MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+					ev->ret_val++;
 				}
+		}
+		if (ev->ret_val) {
+			MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
 		}
 		break;
 	}
@@ -179,7 +184,35 @@ static int unix_io_poll(marcel_ev_serverid_t id,
 	wfds = uid->wfds;
 	r = select(uid->nb, &rfds, &wfds, NULL, ptv);
 
-	if(r <= 0)
+	if (tbx_unlikely(r==EBADF)) {
+		int found=0;
+		/* L'un des fd est invalide */
+		FOREACH_EV_POLL(ev, tmp, id, inst) {
+			mdebug("Checking select for IO poll (with badFD)\n");
+			switch(ev->op) {
+			case POLL_READ :
+			case POLL_WRITE :
+				break;
+			case POLL_SELECT : {
+				ev->ret_val=select(ev->nfds, ev->rfds,
+						   ev->wfds, NULL, NULL);
+				if (ev->ret_val) {
+					MARCEL_EV_POLL_SUCCESS(&uid->server, &ev->inst);
+					found=1;
+				}
+				break;
+			}
+			default :
+				RAISE(PROGRAM_ERROR);
+			}
+			if (!found) {
+				pm2debug("IO poll with bad fd not detected.\n"
+						"Please, fix marcel code\n");
+			}
+		}
+	}
+		
+	if (r <= 0)
 		return 0;
 
 	FOREACH_EV_POLL(ev, tmp, id, inst) {
@@ -236,8 +269,10 @@ static int unix_io_fast_poll(marcel_ev_serverid_t id,
 	
 	r = select(nb, &rfds, &wfds, NULL, &tv);
 
-	if(r <= 0)
+	if(r <= 0) {
+		ev->ret_val=r;
 		return 0;
+	}
 
 	unix_io_check_select(uid, ev, &rfds, &wfds);
 	return 0;
@@ -328,7 +363,7 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
 #endif
 
-  return 1;
+  return ev.ret_val;
 }
 
 /* To force the reading/writing of an exact number of bytes */

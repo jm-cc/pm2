@@ -75,8 +75,15 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
     }
   else
     {
-      exec = argv[0];
+      char *s = getenv("PM2_CMD_NAME");
+
+      if(s)
+	exec = s;
+      else
+	exec = argv[0];
     }
+
+
   /////////////////////////////
 
   cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
@@ -125,6 +132,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 
   for (i = 1; i < configuration->size; i++)
     {
+#if 0
       if (exec[0] != '/')
 	{
 	  sprintf(cmd,
@@ -140,17 +148,32 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 		  arg_str);
 	}
       else
+#endif
 	{
-	  sprintf(cmd,
-		  "%s %s %s %s --mad-cwd %s --mad-rank %d --mad-conf %s %s &",
-		  settings->rsh_cmd,
-		  configuration->host_name[i],
-		  prefix,
-		  exec,
-		  cwd,
-		  i,  /* rank */
-		  settings->configuration_file,
-		  arg_str);
+	  char *s = getenv("PM2_USE_LOCAL_FLAVOR");
+
+	  if(s && !strcmp(s,"on")) {
+	    sprintf(cmd,
+		    "%s %s %s %s --mad-cwd %s --mad-rank %d %s &",
+		    settings->rsh_cmd,
+		    configuration->host_name[i],
+		    prefix,
+		    exec,
+		    cwd,
+		    i,  /* rank */
+		    arg_str);
+	  } else {
+	    sprintf(cmd,
+		    "%s %s %s %s --mad-cwd %s --mad-rank %d --mad-conf %s %s &",
+		    settings->rsh_cmd,
+		    configuration->host_name[i],
+		    prefix,
+		    exec,
+		    cwd,
+		    i,  /* rank */
+		    settings->configuration_file,
+		    arg_str);
+	  }
 	}
 
       LOG_STR("mad_init: Spawn", cmd);

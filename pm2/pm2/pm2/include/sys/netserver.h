@@ -41,35 +41,8 @@
 
 enum {
    NETSERVER_END,
-   NETSERVER_CRITICAL_SECTION,
-   NETSERVER_PRINTF,
-   NETSERVER_MIGRATION,
-   NETSERVER_LRPC,
-   NETSERVER_LRPC_DONE,
-   NETSERVER_ASYNC_LRPC,
-   NETSERVER_QUICK_LRPC,
-   NETSERVER_QUICK_ASYNC_LRPC,
-   NETSERVER_RAW_RPC,
-   NETSERVER_CLONING,
-   NETSERVER_MERGE
+   NETSERVER_RAW_RPC  /* Must be the last one */
 };
-
-typedef struct {
-  long piggyback_area[PIGGYBACK_AREA_LEN];
-} generic_h;
-
-typedef generic_h end_h;
-typedef generic_h critical_section_h;
-typedef generic_h print_h;
-typedef generic_h migration_h;
-typedef generic_h lrpc_h;
-typedef generic_h lrpc_done_h;
-typedef generic_h async_lrpc_h;
-typedef generic_h quick_lrpc_h;
-typedef generic_h quick_async_lrpc_h;
-typedef generic_h raw_rpc_h;
-typedef generic_h cloning_h;
-typedef generic_h merge_h;
 
 #ifdef MAD2
 void netserver_start(p_mad_channel_t channel, unsigned priority);

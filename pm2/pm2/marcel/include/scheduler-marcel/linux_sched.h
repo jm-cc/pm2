@@ -308,12 +308,14 @@ struct task_struct {
 };
 #endif
 
-#section marcel_functions
-extern void __ma_put_task_struct(marcel_task_t *tsk);
-#section marcel_macros
-#define ma_get_task_struct(tsk) do { ma_atomic_inc(&(tsk)->usage); } while(0)
+//#section marcel_functions
+//extern void __ma_put_task_struct(marcel_task_t *tsk);
+//#section marcel_macros
+//#define ma_get_task_struct(tsk) do { ma_atomic_inc(&(tsk)->usage); } while(0)
+#if 0
 #define ma_put_task_struct(tsk) \
 do { if (ma_atomic_dec_and_test(&(tsk)->usage)) __ma_put_task_struct(tsk); } while(0)
+#endif
 
 /*
  * Per process flags
@@ -372,8 +374,8 @@ extern int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
  static inline void ma_kick_process(marcel_task_t *tsk) { }
 #endif
 extern void FASTCALL(ma_wake_up_created_thread(marcel_task_t * tsk));
-extern void FASTCALL(ma_sched_fork(marcel_task_t * p));
-extern void FASTCALL(ma_sched_exit(marcel_task_t * p));
+//extern void FASTCALL(ma_sched_fork(marcel_task_t * p));
+//extern void FASTCALL(ma_sched_exit(marcel_task_t * p));
 
 #if 0
 extern void ma_proc_caches_init(void);

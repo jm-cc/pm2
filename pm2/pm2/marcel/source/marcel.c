@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.28  2000/11/08 08:16:14  oaumage
+*** empty log message ***
+
 Revision 1.27  2000/10/18 12:41:19  rnamyst
 Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
 
@@ -1196,7 +1199,7 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
 #endif
 
 #ifdef TBX
-    tbx_init(argc, argv, debug_flags);
+    tbx_init(*argc, argv);
 #endif
     marcel_debug_init(argc, argv, debug_flags);
 

@@ -325,7 +325,7 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
       }
 }
 /*************  Hyperion protocols *************************/
-//#define DEBUG_HYP
+/* obsolete now: */
 
 void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t req_node)
 {
@@ -433,7 +433,6 @@ void dsmlib_erp_hyp_receive_page(void *addr, dsm_access_t access, dsm_node_t rep
 
 
 
-/* obsolete now: */
 void dsmlib_rp_hyp_validate_page(void *addr, dsm_access_t access,
 dsm_node_t reply_node)
 {

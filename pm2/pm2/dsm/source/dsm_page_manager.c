@@ -676,6 +676,20 @@ void dsm_invalidate_not_owned_pages()
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
       {
 	dsm_lock_page(i);
+	dsm_set_access(i, NO_ACCESS);
+	dsm_free_page_bitmap(i);
+	dsm_unlock_page(i);
+      }
+}
+
+void dsm_invalidate_not_owned_pages_without_protect()
+{
+  unsigned long i;
+
+  for (i = 0; i < nb_static_dsm_pages; i++)
+    if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
+      {
+	dsm_lock_page(i);
 	dsm_set_access_without_protect(i, NO_ACCESS);
 	dsm_free_page_bitmap(i);
 	dsm_unlock_page(i);

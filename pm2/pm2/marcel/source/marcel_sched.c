@@ -496,7 +496,7 @@ static __inline__ void display_sched_queue(__lwp_t *lwp)
     mdebug_sched_q("\t\t\t<Queue of regular tasks on LWP %d:\n", lwp->number);
     do {
 #ifdef MA__MULTIPLE_RUNNING
-      mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, ext_state %p, sf %p)\n",
+      mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, ext_state %.8x, sf %.8x)\n",
 	     t, t->number, GET_LWP(t)->number, t->ext_state, t->special_flags);
 #else
       mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, sf %x)\n" ,
@@ -1041,39 +1041,16 @@ inline static void act_goto_next_task(marcel_t pid, int from)
 }
 #else
 #define act_goto_next_task(pid,from) ((void)0)
+#define act_to_restart() 0
 #endif
 
-inline static int act_to_restart()
-{
-#ifdef MA__ACTIVATION
-  return act_nb_unblocked;
-#else
-  return 0;
-#endif
-}
-
-// TODO: C'est dans ces fonctions qu'il faut tester si une activation
-// est debloquee...  NOTE: Le parametre "pid" peut etre NULL dans le
-// cas ou l'on sait deja qu'une activation est debloquee.
-inline static int goto_next_task(marcel_t pid)
+// force vaut 1 si on DOIT trouver un autre thread.
+inline static int goto_next_task(marcel_t pid, int force)
 {
   if (act_to_restart()) {
     act_goto_next_task(pid, ACT_RESTART_FROM_SCHED);
   } else {
     MA_THR_LONGJMP(marcel_self()->number, (pid), NORMAL_RETURN);
-  }
-  return 0;
-}
-
-inline static int can_goto_next_task(marcel_t current, marcel_t pid)
-{
-  if (act_to_restart()) {
-    act_goto_next_task(pid, ACT_RESTART_FROM_SCHED);
-    return 0;
-  }
-
-  if (pid != current) {
-    MA_THR_LONGJMP(current->number, (pid), NORMAL_RETURN);
   }
   return 0;
 }
@@ -1087,7 +1064,7 @@ static __inline__ void marcel_switch_to(marcel_t cur, marcel_t next)
     }
     mdebug("switchto(%p, %p) on LWP(%d)\n",
 	   cur, next, GET_LWP(cur)->number);
-    goto_next_task(next);
+    goto_next_task(next, 0);
   }
 }
 
@@ -1201,7 +1178,7 @@ void marcel_give_hand(boolean *blocked)
       SET_BLOCKED(cur);
       // NB : 'state_unlock' est effectué par 'unchain_task'
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
-      goto_next_task(next);
+      goto_next_task(next, 1);
     }
 
   } // for
@@ -1271,7 +1248,7 @@ int __marcel_tempo_give_hand(unsigned long timeout,
       marcel_set_sleeping(cur);
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
-      goto_next_task(next);
+      goto_next_task(next, 1);
     }
   } while(*blocked);
 
@@ -1307,7 +1284,7 @@ void marcel_delay(unsigned long millisecs)
       marcel_set_sleeping(cur);
       p = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
-      goto_next_task(p);
+      goto_next_task(p, 1);
     }
 
   } while(marcel_clock() < ttw);
@@ -1449,7 +1426,7 @@ static __inline__ void idle_check_end(__lwp_t *lwp)
       RAISE(PROGRAM_ERROR);
     } else {
       mdebug("\t\t\t<LWP %d exiting>\n", lwp->number);
-      longjmp(lwp->home_jb, 1);
+      marcel_ctx_longjmp(lwp->home_ctx, 1);
     }
   }
   IDLE_LOG_OUT();
@@ -1534,7 +1511,7 @@ static marcel_t idle_body(void)
     /* Can I find a ready task? */
     next = idle_find_runnable_task(cur_lwp);
 
-    if((next != NULL) || (act_to_restart())) {
+    if(next != NULL) {
       break;
     }
 
@@ -1576,20 +1553,12 @@ any_t idle_func(any_t arg)
     next = idle_body();
     mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d)\n", cur_lwp->number);
 
-    // 'next' peut être NULL avec les activations (une serait prête à
-    // être réveillée)
     if (next)
       marcel_switch_to(cur, next);
-#ifdef MA__ACTIVATION
-    else {
-      mdebug("idle can have job (LWP = %d)\n",
-	     cur_lwp->number);
-      act_goto_next_task(NULL, ACT_RESTART_FROM_IDLE);
-    }
-#endif
 
   }
   //LOG_OUT(); // Probably never executed
+  return NULL;
 }
 
 /**************************************************************************/
@@ -1827,7 +1796,7 @@ static void *lwp_startup_func(void *arg)
 {
   __lwp_t *lwp = (__lwp_t *)arg;
 
-  if(setjmp(lwp->home_jb)) {
+  if(marcel_ctx_setjmp(lwp->home_ctx)) {
 #ifdef MARCEL_DEBUG
   if(marcel_mdebug.show)
     fprintf(stderr, "sched %d Exiting\n", lwp->number);
@@ -1854,7 +1823,7 @@ static void *lwp_startup_func(void *arg)
   PROF_NEW_LWP(lwp->number, lwp->idle_task->number);
 
   call_ST_FLUSH_WINDOWS();
-  longjmp(lwp->idle_task->jbuf, NORMAL_RETURN);
+  marcel_ctx_longjmp(lwp->idle_task->ctx_yield, NORMAL_RETURN);
 
   return NULL;
 }

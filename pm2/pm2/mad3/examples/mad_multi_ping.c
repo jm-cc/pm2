@@ -56,9 +56,9 @@ typedef struct s_mad_ping_result
 static const int param_control_receive   =  0;
 static const int param_send_mode         =  mad_send_CHEAPER;
 static const int param_receive_mode      =  mad_receive_CHEAPER;
-static const int param_nb_samples        =  1000;
+static const int param_nb_samples        =  2;
 static const int param_min_size          =  MAD_LENGTH_ALIGNMENT;
-static const int param_max_size          =  1024*1024*2;
+static const int param_max_size          =  1024*1024*16;
 static const int param_step              =  0; /* 0 = progression log. */
 static const int param_min_pack_number   =  1;
 static const int param_max_pack_number   = 256;

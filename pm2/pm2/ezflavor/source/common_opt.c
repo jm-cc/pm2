@@ -39,6 +39,7 @@ static gint panel_displayed = 0;
 
 static GtkWidget *win = NULL;
 static GtkWidget *main_vbox;
+static GtkWidget *main_hbox;
 
 static GList *options;
 
@@ -176,11 +177,17 @@ static void create_subframe(GtkWidget *box, opt_t *opt)
 static void create_all_subframes(GtkWidget *vbox)
 {
   GList *ptr;
+  GtkWidget *main_hbox;
+  
+  main_hbox = gtk_hbox_new(FALSE, 1);
+  gtk_container_border_width(GTK_CONTAINER(main_hbox), 0);
+  gtk_box_pack_start(GTK_BOX(vbox), main_hbox, TRUE, TRUE, 0);
+  gtk_widget_show(main_hbox);
 
   for(ptr = g_list_first(options);
       ptr != NULL;
       ptr = g_list_next(ptr)) {
-    create_subframe(vbox, (opt_t *)ptr->data);
+    create_subframe(main_hbox, (opt_t *)ptr->data);
   }
 }
 

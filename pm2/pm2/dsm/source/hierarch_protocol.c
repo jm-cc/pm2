@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.6 2002/10/25 18:31:52 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.7 2002/10/26 15:59:56 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
@@ -22,7 +22,7 @@
 
 
 /**********************************************************************/
-/* TRACING AND DEBUGGING SYSTEM */
+/* TRACING AND DEBUGGING SYSTEM                                       */
 /**********************************************************************/
 
 /* don't print the tracing / debugging messages */
@@ -40,7 +40,6 @@
 
 /* linked list of pages */
 typedef struct pg_elem_struct pg_elem_t;
-typedef pg_elem_t * pg_list_t;
 struct pg_elem_struct
 {
    dsm_page_index_t index; /* index of a page */
@@ -87,19 +86,19 @@ struct token_elem_struct
 /**********************************************************************/
 
 /* list of the pages modified by this node */
-static pg_list_t modif_list;
+static pg_elem_t * modif_list;
 /* a mutex to access the list of modified pages */
 static marcel_mutex_t modif_list_lock;
 
 /* list of pending invalidations for this node: the invalidations are
  * stored by the invalidation_server, and they are applied during
  * synchronization operations */
-static pg_list_t pend_inval_list;
+static pg_elem_t * pend_inval_list;
 /* a mutex to handle the list of pending invalidations */
 static marcel_mutex_t pend_inval_lock;
 
 /* List of the pages I host */
-static pg_list_t hosted_list;
+static pg_elem_t * hosted_list;
 /* lock to handle the list of hosted pages */
 static marcel_mutex_t hosted_lock;
 
@@ -120,7 +119,7 @@ static marcel_mutex_t token_list_lock;
  * already protected by a mutex; return its index; return NO_PAGE if
  * the list is empty */
 static dsm_page_index_t
-extract_page_from_pg_list (pg_list_t * const pg_list)
+extract_page_from_pg_list (pg_elem_t ** const pg_list)
 {
    pg_elem_t * elem = *pg_list;
    dsm_page_index_t index;
@@ -145,7 +144,8 @@ extract_page_from_pg_list (pg_list_t * const pg_list)
 /* remove a specific page from a list of pages; the list is assumed to
  * be already protected by a mutex; do nothing if page is absent. */
 static void
-remove_page_from_pg_list (const dsm_page_index_t index, pg_list_t * const pg_list)
+remove_page_from_pg_list (const dsm_page_index_t index,
+                          pg_elem_t ** const pg_list)
 {
    pg_elem_t *elem = *pg_list;
    pg_elem_t *previous = NULL;
@@ -178,7 +178,8 @@ remove_page_from_pg_list (const dsm_page_index_t index, pg_list_t * const pg_lis
  * already protected by a mutex; the element should not already be
  * present in the list (this is not cheched/enforced here). */
 static void
-insert_page_into_pg_list (const dsm_page_index_t index, pg_list_t * const pg_list)
+insert_page_into_pg_list (const dsm_page_index_t index,
+                          pg_elem_t ** const pg_list)
 {
    pg_elem_t * new_elem;
 
@@ -465,10 +466,10 @@ send_ack_number_to_diffing_node(const dsm_node_t reply_node,
 
 
 /**********************************************************************/
-/* receive the number of expected ACKs after the home has applied a
- * diff, and wait for the completions and signal the diffing function */
+/* receive the number of expected invalidation ACKs after the home has
+ * applied a diff */
 static void
-recv_diff_ack (void * unused)
+recv_diff_ack (void * const unused)
 {
    token_elem_t * token_elem;
    token_lock_id_t lck_id;
@@ -503,7 +504,7 @@ recv_diff_ack (void * unused)
 /**********************************************************************/
 /* RPC service threaded function to receive a diff */
 static void
-recv_diff_func (void * unused)
+recv_diff_func (void * const unused)
 {
    dsm_page_index_t index;
    int local_ack_num = 0;
@@ -769,7 +770,7 @@ send_inv_ack (const dsm_node_t node, token_lock_id_t lck_id)
 /* Invalidate Server: this is the RPC service threaded function;
  * receive the index of the page to invalidate. */
 static void
-invalidate_server_func (void * unused)
+invalidate_server_func (void * const unused)
 {
    dsm_page_index_t index;
    token_lock_id_t lck_id;
@@ -806,7 +807,7 @@ invalidate_server_func (void * unused)
 /**********************************************************************/
 /* receive an ack for an invalidation message */
 static void
-recv_inv_ack (void * unused)
+recv_inv_ack (void * const unused)
 {
    token_elem_t * token_elem;
    dsm_node_t from_node;
@@ -818,6 +819,7 @@ recv_inv_ack (void * unused)
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &from_node, sizeof(dsm_node_t));
    pm2_rawrpc_waitdata();
 
+   assert ( from_node != pm2_self() );
    assert ( from_node != NOBODY );
    assert ( from_node < pm2_config_size() );
 
@@ -851,12 +853,11 @@ recv_inv_ack (void * unused)
 
 /**********************************************************************/
 /* send invalidation messages to all the nodes included in the
- * copysets of ALL the pages I host; the locks remote_inval_ack_lock,
- * local_inval_ack_lock, diff_ack_lock are assumed to be acquired. */
+ * copysets of the pages I host and which are accessible in WRITE mode */
 static void
 invalidate_writable_hosted_pages (token_elem_t * const token_elem)
 {
-   pg_list_t list;
+   pg_elem_t * list;
    int local_inv_ack = 0;
    int remote_inv_ack = 0;
 
@@ -915,7 +916,7 @@ provide_page (const dsm_page_index_t index, const dsm_node_t req_node,
     * and sending invalidations (except to the requesting node of
     * thread 0), thread 0 adding the requesting node into the copyset
     * ==> page p on the requesting node may not be invalidated early
-    * enough.  The page is locked on entry in this function. */
+    * enough. */
 
    /* I should be the home of the requested page */
    assert ( dsm_get_prob_owner(index) == pm2_self() );
@@ -994,6 +995,7 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
    {
       TRACE("home setting page %d in WRITE access", index);
       dsm_lock_page(index);
+      assert ( dsm_get_access(index) == READ_ACCESS );
       dsm_set_access(index, WRITE_ACCESS);
       dsm_unlock_page(index);
       OUT;
@@ -1045,9 +1047,7 @@ hierarch_proto_read_server (const dsm_page_index_t index,
                             const dsm_node_t req_node, const int tag)
 {
    IN;
-
    provide_page(index, req_node, READ_ACCESS, tag);
-
    OUT;
    return;
 }
@@ -1060,9 +1060,7 @@ hierarch_proto_write_server (const dsm_page_index_t index,
                              const dsm_node_t req_node, const int tag)
 {
    IN;
-
    provide_page(index, req_node, WRITE_ACCESS, tag);
-
    OUT;
    return;
 }
@@ -1273,6 +1271,10 @@ hierarch_proto_release_func (const token_lock_id_t lck_id)
                        &(token_elem->local_inval_ack_lock));
    assert ( token_elem->expected_local_invalidations == 0 );
    marcel_mutex_unlock(&(token_elem->local_inval_ack_lock));
+
+   /* partially release the lock if this is not a barrier */
+   if ( lck_id != TOKEN_LOCK_NONE )
+      token_partial_unlock(lck_id);
 
    while ( token_elem->expected_remote_invalidations > 0 )
       marcel_cond_wait(&(token_elem->remote_inval_ack_cond),

@@ -396,8 +396,8 @@ DEF___PTHREAD(mutexattr_setpshared)
       */
 #include <limits.h>
 
-static pmarcel_mutex_t once_masterlock = PMARCEL_MUTEX_INITIALIZER;
-static pmarcel_cond_t once_finished = PMARCEL_COND_INITIALIZER;
+static marcel_mutex_t once_masterlock = MARCEL_MUTEX_INITIALIZER;
+static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
 static int fork_generation = 0;	/* Child process increments this after fork. */
 
 enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
@@ -406,18 +406,18 @@ enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
    marcel once, this handler will reset the once_control variable
    to the NEVER state. */
 
-static void pmarcel_once_cancelhandler(void *arg)
+static void marcel_once_cancelhandler(void *arg)
 {
-    pmarcel_once_t *once_control = arg;
+    marcel_once_t *once_control = arg;
 
-    pmarcel_mutex_lock(&once_masterlock);
+    marcel_mutex_lock(&once_masterlock);
     *once_control = NEVER;
-    pmarcel_mutex_unlock(&once_masterlock);
-    pmarcel_cond_broadcast(&once_finished);
+    marcel_mutex_unlock(&once_masterlock);
+    marcel_cond_broadcast(&once_finished);
 }
 
-DEF_POSIX(int, once, (marcel_once_t * once_control, 
-		      void (*init_routine)(void)),
+DEF_MARCEL_POSIX(int, once, (marcel_once_t * once_control, 
+                             void (*init_routine)(void)))
 {
   /* flag for doing the condition broadcast outside of mutex */
   int state_changed;
@@ -431,7 +431,7 @@ DEF_POSIX(int, once, (marcel_once_t * once_control,
 
   state_changed = 0;
 
-  pmarcel_mutex_lock(&once_masterlock);
+  marcel_mutex_lock(&once_masterlock);
 
   /* If this object was left in an IN_PROGRESS state in a parent
      process (indicated by stale generation field), reset it to NEVER. */
@@ -441,27 +441,27 @@ DEF_POSIX(int, once, (marcel_once_t * once_control,
   /* If init_routine is being called from another routine, wait until
      it completes. */
   while ((*once_control & 3) == IN_PROGRESS) {
-    pmarcel_cond_wait(&once_finished, &once_masterlock);
+    marcel_cond_wait(&once_finished, &once_masterlock);
   }
   /* Here *once_control is stable and either NEVER or DONE. */
   if (*once_control == NEVER) {
     *once_control = IN_PROGRESS | fork_generation;
-    pmarcel_mutex_unlock(&once_masterlock);
-    pmarcel_cleanup_push(pmarcel_once_cancelhandler, once_control);
+    marcel_mutex_unlock(&once_masterlock);
+    marcel_cleanup_push(marcel_once_cancelhandler, once_control);
     init_routine();
-    pmarcel_cleanup_pop(0);
-    pmarcel_mutex_lock(&once_masterlock);
+    marcel_cleanup_pop(0);
+    marcel_mutex_lock(&once_masterlock);
     WRITE_MEMORY_BARRIER();
     *once_control = DONE;
     state_changed = 1;
   }
-  pmarcel_mutex_unlock(&once_masterlock);
+  marcel_mutex_unlock(&once_masterlock);
 
   if (state_changed)
-    pmarcel_cond_broadcast(&once_finished);
+    marcel_cond_broadcast(&once_finished);
 
   return 0;
-})
+}
 DEF_PTHREAD(once)
 DEF___PTHREAD(once)
 

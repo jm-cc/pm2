@@ -66,6 +66,12 @@
       fut_header(code, arg);                              \
   } while(0)
 
+#define PROF_PROBE2(keymask, code, arg1, arg2)            \
+  do {                                                    \
+    if((keymask) & fut_active)                            \
+      fut_header(code, arg1, arg2);                       \
+  } while(0)
+
 #define GEN_PREPROC(name) _GEN_PREPROC(name,__LINE__)
 #define _GEN_PREPROC(name,line) __GEN_PREPROC(name,line)
 
@@ -109,13 +115,13 @@
   do {							\
     extern void fun(void) asm(__FUNCTION__);		\
     /*__cyg_profile_func_enter(fun,NULL);	*/	\
-    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|16, fun);	\
+    PROF_PROBE2(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|16, fun, marcel_self()->number);	\
   } while(0)
 #define PROF_OUT()					\
   do {							\
     extern void fun(void) asm(__FUNCTION__);		\
     /*__cyg_profile_func_exit(fun,NULL);	*/	\
-    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|16, fun);	\
+    PROF_PROBE2(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|16, fun, marcel_self()->number);	\
   } while(0)
 #endif
 

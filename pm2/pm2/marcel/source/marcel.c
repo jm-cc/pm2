@@ -81,25 +81,18 @@ static long page_size;
 volatile boolean always_false = FALSE;
 
 marcel_exception_t
-   TASKING_ERROR = "TASKING_ERROR : A non-handled exception occurred in a task",
-   DEADLOCK_ERROR = "DEADLOCK_ERROR : Global Blocking Situation Detected",
-   STORAGE_ERROR = "STORAGE_ERROR : No space left on the heap",
+   TASKING_ERROR = "TASKING_ERROR: A non-handled exception occurred in a task",
+   DEADLOCK_ERROR = "DEADLOCK_ERROR: Global Blocking Situation Detected",
+   STORAGE_ERROR = "STORAGE_ERROR: No space left on the heap",
    CONSTRAINT_ERROR = "CONSTRAINT_ERROR",
    PROGRAM_ERROR = "PROGRAM_ERROR",
-   STACK_ERROR = "STACK_ERROR : Stack Overflow",
+   STACK_ERROR = "STACK_ERROR: Stack Overflow",
    TIME_OUT = "TIME OUT while being blocked on a semaphor",
    NOT_IMPLEMENTED = "NOT_IMPLEMENTED (sorry)",
-   USE_ERROR = "USE_ERROR : Marcel was not compiled to enable this functionality",
-   LOCK_TASK_ERROR = "LOCK_TASK_ERROR : All tasks blocked after bad use of lock_task()";
+   USE_ERROR = "USE_ERROR: Marcel was not compiled to enable this functionality",
+   LOCK_TASK_ERROR = "LOCK_TASK_ERROR: All tasks blocked after bad use of lock_task()";
 
 volatile unsigned long threads_created_in_cache = 0;
-
-#ifdef MINIMAL_PREEMPTION
-
-static marcel_t special_thread = NULL,
-                yielding_thread = NULL;
-
-#endif
 
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
@@ -154,7 +147,7 @@ static __inline__ void marcel_terminate(marcel_t t)
 
 #ifdef MA__DEBUG
 
-static void print_thread(marcel_t pid)
+void print_thread(marcel_t pid)
 {
   long sp;
 
@@ -229,8 +222,9 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
   lock_task();
 
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-    MA_THR_RESTARTED(cur, "Preemption");
+    MA_THR_RESTARTED(cur, "Father Preemption");
     if(cur->child) {
+      // On insére le fils un peu tardivement
       marcel_insert_task(cur->child);
     }
     unlock_task();
@@ -269,7 +263,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
       PROF_EVENT(thread_stack_allocated);
 
-      new_task = (marcel_t)(MAL_BOT((long)bottom + SLOT_SIZE) - MAL(sizeof(task_desc)));
+      new_task = (marcel_t)(MAL_BOT((long)bottom + SLOT_SIZE) -
+			    MAL(sizeof(task_desc)));
       init_task_desc(new_task);
       new_task->stack_base = bottom;
       new_task->static_stack = FALSE;
@@ -279,6 +274,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     new_task->not_migratable = attr->not_migratable;
     new_task->not_deviatable = attr->not_deviatable;
     new_task->detached = attr->detached;
+    new_task->vpmask = attr->vpmask;
 
     if(attr->rt_thread)
       new_task->special_flags = MA_SF_RT_THREAD;
@@ -287,8 +283,6 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       marcel_sem_init(&new_task->client, 0);
       marcel_sem_init(&new_task->thread, 0);
     }
-
-    /* memcpy(new_task->key, cur->key, sizeof(new_task->key)); */
 
     if(attr->user_space)
       new_task->user_space_ptr = (char *)new_task - MAL(attr->user_space);
@@ -313,19 +307,39 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
     PROF_IN_EXT(newborn_thread);
 
-#ifndef MINIMAL_PREEMPTION
-    if((locked() > 1) /* lock_task has been called */
+    if(
+          // On ne peut pas céder la main maintenant
+          (locked() > 1)
+	  // Le thread ne peut pas démarrer immédiatement
        || (new_task->user_space_ptr && !attr->immediate_activation)
-#ifdef SMP
+#ifdef MA__LWPS
+	  // On ne peut pas placer ce thread sur le LWP courant
+       || (marcel_vpmask_vp_ismember(&new_task->vpmask,
+				     GET_LWP(cur)->number))
+#ifndef MA__ONE_QUEUE
+	  // Si la politique est du type 'placer sur le LWP le moins
+	  // chargé', alors on ne peut pas placer ce thread sur le LWP
+	  // courant
        || (new_task->sched_policy != MARCEL_SCHED_OTHER)
 #endif
-       ) {
 #endif
+       ) {
+      // Ici, le père _ne_doit_pas_ donner la main au fils
+      // immédiatement : lock_task() a été appelé, ou alors le fils va
+      // être inséré sur un autre LWP, ou alors "immediate_activation"
+      // a été positionné à FALSE. La conséquence est que le thread
+      // fils est créé et initialisé, mais pas "inséré" dans aucune
+      // file pour l'instant.
 
-      new_task->father->child = ((new_task->user_space_ptr && !attr->immediate_activation)
+      // Il y a un cas où il ne faut même pas insérer le fils tout de
+      // suite : c'est celui ou "userspace" n'est pas 0, auquel cas le
+      // père appelera explicitement "marcel_run" plus tard...
+      new_task->father->child = ((new_task->user_space_ptr &&
+				  !attr->immediate_activation)
 				 ? NULL /* do not insert now */
 				 : new_task); /* insert asap */
-      SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
+
+      SET_STATE_READY(new_task);
 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
@@ -340,8 +354,11 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       MA_THR_RESTARTED(marcel_self(), "Preemption");
       unlock_task();
 
-#ifndef MINIMAL_PREEMPTION
     } else {
+      // Cas le plus favorable (sur le plan de l'efficacité) : le père
+      // sauve son contexte et on démarre le fils immédiatement. Note
+      // : si le thread est un 'real-time thread', cela ne change
+      // rien ici...
 
       new_task->father->child = NULL;
 
@@ -358,7 +375,6 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
       PROF_OUT_EXT(newborn_thread);
     }
-#endif
 
     marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
   }
@@ -414,7 +430,7 @@ int marcel_exit(any_t val)
 
   SET_CUR_LWP(GET_LWP(cur));
 
-#ifdef SMP
+#ifdef MA__SMP
   /* Durant cette fonction, il ne faut pas que le thread soit
      "déplacé" intempestivement (e.g. après avoir acquis stack_mutex)
      sur un autre LWP. */
@@ -949,7 +965,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 #ifdef MA__ACTIVATION
       RAISE(NOT_IMPLEMENTED);
 #endif
-#ifdef SMP
+#ifdef MA__SMP
       if(marcel_self()->lwp != pid->lwp)
 	RAISE(NOT_IMPLEMENTED);
 #endif
@@ -1017,10 +1033,10 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
 
   while(i < *argc) {
 #ifdef MA__LWPS
-    if(!strcmp(argv[i], "-nvp")) {
+    if(!strcmp(argv[i], "--marcel-nvp")) {
       if(i == *argc-1) {
 	fprintf(stderr,
-		"Fatal error: -nvp option must be followed "
+		"Fatal error: --marcel-nvp option must be followed "
 		"by <nb_of_virtual_processors>.\n");
 	exit(1);
       }
@@ -1368,14 +1384,8 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 
       timerclear(&timeout);
       res = select(width, &rfds, &wfds, &efds, &timeout);
-      if(res <= 0) {
-#ifdef MINIMAL_PREEMPTION
-	marcel_givehandback();
-#else
-	//marcel_trueyield();
+      if(res <= 0)
 	marcel_yield();
-#endif
-      }
    } while(res <= 0);
 
    if(readfds) *readfds = rfds;
@@ -1402,13 +1412,13 @@ void win_stack_allocate(unsigned n)
 
   tab[0] = 0;
 }
-#endif
+#endif // WIN_SYS
 
 #ifdef MARCEL_MAIN_AS_FUNC
 int go_marcel_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
-#endif
+#endif // MARCEL_MAIN_AS_FUNC
 {
   static int __argc;
   static char **__argv;
@@ -1447,119 +1457,4 @@ int main(int argc, char *argv[])
   return __main_ret;
 }
 
-#endif
-
-#ifdef CHRISTIAN_STUFF
-#ifndef MA__ACTIVATION
-/* *** Christian Perez Stuff ;-) *** */
-
-void marcel_special_init(marcel_t *liste)
-{
-   *liste = NULL;
-}
-
-/* ATTENTION : lock_task doit avoir ete appele au prealable ! */
-void marcel_special_P(marcel_t *liste)
-{
-  register marcel_t cur = marcel_self(), p;
-  marcel_t next;
-#ifdef SMP
-  __lwp_t *cur_lwp = cur->lwp;
-#endif
-  
-  next = marcel_radical_next_task();
-
-  p = cur->prev;
-  p->next = cur->next;
-  p->next->prev = p;
-  if(SCHED_DATA(cur_lwp).first == cur)
-    SCHED_DATA(cur_lwp).first = cur->next;
-
-  if(*liste == NULL) {
-    *liste = cur;
-    cur->next = cur->prev = cur;
-  } else {
-    cur->next = *liste;
-    cur->prev = (*liste)->prev;
-    cur->prev->next = cur->next->prev = cur;
-  }
-
-  SET_BLOCKED(cur);
-  if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-    MA_THR_RESTARTED(cur, "Preemption");
-    unlock_task();
-  } else {
-    goto_next_task(next);
-  }
-}
-
-void marcel_special_V(marcel_t *pliste)
-{
-  register marcel_t liste = *pliste;
-  marcel_t p, queue = liste->prev;
-#ifdef SMP
-  __lwp_t *cur_lwp = marcel_self()->lwp;
-#endif
-
-   lock_task();
-
-   p = SCHED_DATA(cur_lwp).first;
-   liste->prev = p->prev;
-   queue->next = p;
-   p->prev = queue;
-   liste->prev->next = liste;
-   if(p == SCHED_DATA(cur_lwp).first)
-      SCHED_DATA(cur_lwp).first = liste;
-
-   *pliste = 0;
-
-   unlock_task();
-}
-
-void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
-{
-  cell *c;
-  register marcel_t p, cur = marcel_self();
-  marcel_t next;
-
-  DEFINE_CUR_LWP( , ,);
-  SET_CUR_LWP(GET_LWP(cur));
-
-   lock_task();
-
-   if(++(s->value) <= 0) {
-     c = s->first;
-     s->first = c->next;
-     marcel_wake_task(c->task, &c->blocked);
-   }
-
-   next = marcel_radical_next_task();
-
-      p = cur->prev;
-      p->next = cur->next;
-      p->next->prev = p;
-      if(SCHED_DATA(cur_lwp).first == cur)
-	SCHED_DATA(cur_lwp).first = cur->next;
-
-      if(*liste == NULL) {
-         *liste = cur;
-         cur->next = cur->prev = cur;
-      } else {
-         cur->next = *liste;
-         cur->prev = (*liste)->prev;
-         cur->prev->next = (*liste)->prev = cur;
-      }
-
-      SET_BLOCKED(cur);
-      if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
-	MA_THR_RESTARTED(cur, "Preemption");
-         unlock_task();
-      } else {
-	 goto_next_task(next);
-      }
-}
-
-/* End of Christian Perez Stuff */
-
-#endif /* MA__ACTIVATION */
-#endif /* CHRISTIAN_STUFF */
+#endif // STANDARD_MAIN

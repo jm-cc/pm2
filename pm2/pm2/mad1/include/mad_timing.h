@@ -36,7 +36,7 @@
 #ifndef MAD_TIMING_EST_DEF
 #define MAD_TIMING_EST_DEF
 
-#include <timing.h>
+#include "timing.h"
 
 #ifndef MAD_TIMING
 #undef TIMING_EVENT

@@ -295,7 +295,14 @@ if [ ! -z "${dirtoshow}" ]; then
     fi
     case " $PM2_LIBS " in
     *\ $libs\ *)
-	echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow
+	case $dirtoshow in
+	include)
+	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow${PM2_EXT}
+	    ;;
+	*)
+	    echo build/${PM2_BUILD:+$PM2_BUILD/}$dirtoshow
+	    ;;
+	esac
 	;;
     *)
 	;;
@@ -327,7 +334,7 @@ for lib in $PM2_LIBS; do
 done
 
 vide=
-libs_non_pm2=
+libs_pm2=
 # LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
 for lib in $libs; do
     LIB=`echo $lib | tr [a-z] [A-Z]`
@@ -336,28 +343,48 @@ for lib in $libs; do
     $vide)
 	;;
     *)
-	the_libs="$the_libs -L`get_lib_dir $lib` -l${libname}$PM2_EXT"
-	for l in `eval echo \\$PM2_${LIB}_MODULE_DEPEND_LIB`; do
-	    case " $libs " in
-		*\ $l\ *)
-		    LIB2=`echo $l | tr [a-z] [A-Z]`
-		    libname2="`eval echo \\$PM2_${LIB2}_LIBNAME`"
-		    the_libs="$the_libs -l${libname2}$PM2_EXT"
-		    ;;
-		*)
-		    ;;
-	    esac
-	done
+	the_libs="$the_libs -L`get_lib_dir $lib`"
+	libs_pm2="$libs_pm2 ${libname}"
+#	for l in `eval echo \\$PM2_${LIB}_MODULE_DEPEND_LIB`; do
+#	    case " $libs " in
+#		*\ $l\ *)
+#		    LIB2=`echo $l | tr [a-z] [A-Z]`
+#		    libname2="`eval echo \\$PM2_${LIB2}_LIBNAME`"
+#		    the_libs="$the_libs -l${libname2}$PM2_EXT"
+#		    ;;
+#		*)
+#		    ;;
+#	    esac
+#	done
 	;;
     esac
-    lib_non_pm2="$lib_non_pm2 `eval echo '$'PM2_${LIB}_LIBS`"
+    the_libs="$the_libs `eval echo '$'PM2_${LIB}_LIBS`"
     # CFLAGS spécifique à la compilation d'une lib
     if [ "$kernel" = true ]; then
 	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL -DMODULE=${LIB}"
     fi
 done
 
-the_libs="$the_libs $lib_non_pm2"
+libs_pm2_ordered=
+#ordering pm2libs hardcoded :-(
+for l in pm2 dsm mad marcel tbx ntbx pm2debug; do
+    case " $libs_pm2 " in
+    *\ $l\ *)
+	libs_pm2_ordered="$libs_pm2_ordered -l${l}$PM2_EXT"
+	;;
+    esac
+done
+for l in $libs_pm2; do
+    case " $libs_pm2_ordered " in
+    *\ -l${l}$PM2_EXT\ *)
+	;;
+    *)
+	libs_pm2_ordered="$libs_pm2_ordered -l${l}$PM2_EXT"
+	;;
+    esac
+done
+
+the_libs="$libs_pm2_ordered $the_libs"
 
 if $cflags; then
     all_flags="$the_flags"

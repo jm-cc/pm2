@@ -217,15 +217,15 @@ find_flavor() {
 
 get_liste_flavor() {
     if [ -d "$PM2_ROOT/flavors" ]; then
-	if [ ${EDIT_MODE} = "normal" -a -d "$USER_FLAVOR_DIR" ]; then
-	    liste_flavor_tmp=`( cd $PM2_ROOT/flavors; ls; cd $USER_FLAVOR_DIR; ls) | sort | uniq`
-	else
-	    liste_flavor_tmp=`( cd $PM2_ROOT/flavors; ls)`
-	fi
-	liste_flavor="`echo $liste_flavor_tmp`"
-	return 0
+	liste_flavor_tmp=`(cd $PM2_ROOT/flavors; ls)`
+    else
+	liste_flavor_tmp=""
     fi
-    return 1
+    if [ ${EDIT_MODE} = "normal" -a -d "$USER_FLAVOR_DIR" ]; then
+	liste_flavor_tmp="$liste_flavor_tmp `(cd $USER_FLAVOR_DIR; ls) | sort | uniq`"
+    fi
+    liste_flavor="`echo $liste_flavor_tmp`"
+    return 0
 }
 
 #

@@ -1,0 +1,3 @@
+try to trap stack overflows
+using some protected areas of memory. Should not be
+defined when efficiency is needed.

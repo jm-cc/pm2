@@ -56,7 +56,7 @@ to_be_tested() # module
 
 do_the_test()
 {
-    nbl=`wc -l < /tmp/pm2test_expected`
+    nbl=`wc -l < /tmp/pm2test_${USER}_expected`
     nbl=`expr $nbl + 0`
 
     # Compilation
@@ -67,9 +67,9 @@ do_the_test()
     # Execution
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
-    (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_status) 2>&1 | tee /tmp/pm2test_result | grep '^####'
-#    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_result 2>&1
-    [ `cat /tmp/pm2test_status` -eq 0 ] || pm2test_error "Execution failed"
+    (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
+#    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
+    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2test_error "Execution failed"
 
     # Destruction de la flavor
     #echo "Cleaning flavor & files..."
@@ -78,15 +78,15 @@ do_the_test()
 
     # Le moment de verite
     echo "Checking results..."
-#    if head -$nbl /tmp/pm2test_result | diff - /tmp/pm2test_expected ; then
-    if grep -v '^####' /tmp/pm2test_result | head -$nbl - | diff - /tmp/pm2test_expected ; then
+#    if head -$nbl /tmp/pm2test_${USER}_result | diff - /tmp/pm2test_${USER}_expected ; then
+    if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl - | diff - /tmp/pm2test_${USER}_expected ; then
 	echo "Test ok!"
     else
-	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_result)"
+	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"
     fi
 
     # Destruction des fichiers residuels
-    rm -rf /tmp/pm2test_*
+    rm -rf /tmp/pm2test_${USER}_*
 }
 
 # Programme principal

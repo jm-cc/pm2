@@ -34,18 +34,15 @@
 #
 
 
+.PHONY: default all
 default: all
 
-include ../../make/common.mak
+SRC_DIR	:=	.
 
+include ../../Makefile
 
-all: tree
+PM2_APP_CFLAGS	=
+PM2_APP_LDFLAGS	=
+PM2_APP_LLIBS	=
 
-
-$(PM2_OBJ)/tree.o: tree.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-tree: $(PM2_OBJ)/tree.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
+all:	$(BIN_DIR)/tree

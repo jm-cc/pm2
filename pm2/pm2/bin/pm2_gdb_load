@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# $1... = command and arguments
+
+num=0
+while [ -f /tmp/maddebug.$num ] ; do
+    num=`expr $num + 1`
+done
+file=/tmp/maddebug.$num
+prog=$1
+shift
+
+args=""
+while [ $# -gt 0 ] ; do
+    args="$args '$1'"
+    shift
+done
+
+DISPLAY=${DISPLAY:-':0'}
+export DISPLAY
+
+LEO_XTERM=${LEO_XTERM:-'xterm'}
+
+echo "set args $args" > $file
+title="$prog.$HOST"
+echo "set environment DISPLAY $DISPLAY" >> $file
+
+${LEO_XTERM} -title $title -e gdb -x $file $prog
+
+rm -f $file
+

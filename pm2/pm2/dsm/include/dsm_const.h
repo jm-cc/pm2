@@ -27,7 +27,22 @@ typedef unsigned long int dsm_page_index_t;
 
 typedef unsigned int dsm_node_t;
 
-#define NO_NODE ((dsm_node_t)-1)
+#define NOBODY ((dsm_node_t)-1)
+
+
+/* error codes returned by some functions */
+enum
+{
+   /* this dummy value is to make sure the compiler will choose type
+   * "int" for this enumeration (instead of "unsigned int") */
+   DSM_ERR_DUMMY = -1,
+   DSM_SUCCESS = 0,
+   DSM_ERR_MEMORY,      /* memory exhausted */
+   DSM_ERR_ILLEGAL,     /* illegal call / operation */
+   DSM_ERR_NOT_INIT,    /* utilization of an object not initialized */
+   DSM_ERR_MISC,        /* miscellaneous errors */
+};
+
 
 typedef void (*dsm_rf_action_t)(dsm_page_index_t index); // read fault handler
 

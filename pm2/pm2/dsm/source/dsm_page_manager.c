@@ -364,6 +364,7 @@ static __inline__ void _dsm_page_ownership_init()
 	  low = (split * (chunk + 1)) + ((dsm_local_node_rank - split) * chunk);
 	  high = low + chunk;
 	}
+      fprintf(stderr, "low = %d, high = %d, split = %d, chunk = %d\n", low, high, split, chunk);
       if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS || _dsm_page_protect_mode == DSM_OWNER_READ_ACCESS_OTHER_NO_ACCESS)     
 	mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
 		 (high - low) * DSM_PAGE_SIZE, _dsm_get_prot(dsm_page_table[i]->access));

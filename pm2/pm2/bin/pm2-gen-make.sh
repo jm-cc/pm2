@@ -155,17 +155,8 @@ PM2_MODULES += `$PM2_CONFIG --modules`
 APP_STAMP_FLAVOR := `$PM2_CONFIG --stampfile`
 APP_STAMP_FILES := `$PM2_CONFIG --stampfile`
 APP_STAMP_FILES += `$PM2_CONFIG --stampfile all`
-THIS_DIR := \$(shell basename `pwd`)
-ifeq (\$(THIS_DIR),examples)
-APP_BUILDDIR := `$PM2_CONFIG --builddir`/examples
-else
-APP_BUILDDIR := `$PM2_CONFIG --builddir`/examples/\$(THIS_DIR)
-endif
+APP_BUILDD := `$PM2_CONFIG --builddir`
 
-APP_BIN := \$(APP_BUILDDIR)/bin
-APP_OBJ := \$(APP_BUILDDIR)/obj
-APP_ASM := \$(APP_BUILDDIR)/asm
-APP_DEP := \$(APP_BUILDDIR)/dep
 EOF
 
 }

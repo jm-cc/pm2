@@ -348,7 +348,7 @@ void DSM_HRBC_DIFFS_threaded_func(void)
 
 void DSM_LRPC_HBRC_DIFFS_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_HRBC_DIFFS_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_HRBC_DIFFS_threaded_func, NULL);
 }
 
 

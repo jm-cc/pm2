@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_macros.h,v $
+Revision 1.4  2000/01/05 15:47:57  oaumage
+- mad_list.h: changement de `len' en `length'
+- mad_macros.h: ajout de la macros PM2_TRYLOCK_SHARED
+
 Revision 1.3  2000/01/04 16:47:30  oaumage
 - ajout du flag OOPS et modification de la macro FAILURE:
   -> quand OOPS est defini, FAILURE genere un `segfault' pour arreter
@@ -178,6 +182,7 @@ typedef enum
 #define PM2_SHARED marcel_mutex_t __pm2_mutex
 #define PM2_INIT_SHARED(st) marcel_mutex_init((&((st)->__pm2_mutex)), NULL)
 #define PM2_LOCK_SHARED(st) marcel_mutex_lock((&((st)->__pm2_mutex)))
+#define PM2_TRYLOCK_SHARED(st) marcel_mutex_trylock((&((st)->__pm2_mutex)))
 #define PM2_UNLOCK_SHARED(st) marcel_mutex_unlock((&((st)->__pm2_mutex)))
 #define PM2_LOCK() lock_task()
 #define PM2_UNLOCK() unlock_task()
@@ -186,6 +191,7 @@ typedef enum
 #define PM2_SHARED 
 #define PM2_INIT_SHARED(st) 
 #define PM2_LOCK_SHARED(st) 
+#define PM2_TRYLOCK_SHARED(st) 
 #define PM2_UNLOCK_SHARED(st) 
 #define PM2_LOCK()
 #define PM2_UNLOCK()

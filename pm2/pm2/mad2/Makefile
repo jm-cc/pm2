@@ -110,6 +110,12 @@ MAD_DEPENDS	:=	($strip $(MAD_REG_DEPENDS) $(MAD_NET_DEPENDS))
 
 MAD_DEP_TO_OBJ	=	$(MAD_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(wildcard $(MAD_DEPENDS)),$(MAD_DEPENDS))
+include $(MAD_DEPENDS)
+endif
+endif
+
 $(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d
 $(MAD_DEPENDS): $(PM2_MAKEFILE)
 

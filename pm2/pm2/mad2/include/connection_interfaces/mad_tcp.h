@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.h,v $
+Revision 1.6  2000/03/15 09:57:15  oaumage
+- renommage du polling Nexus
+
 Revision 1.5  2000/03/02 15:45:39  oaumage
 - support du polling Nexus
 
@@ -131,10 +134,10 @@ mad_tcp_choice(p_mad_connection_t,
 void
 mad_tcp_new_message(p_mad_connection_t);
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_tcp_poll_message(p_mad_channel_t);
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t);

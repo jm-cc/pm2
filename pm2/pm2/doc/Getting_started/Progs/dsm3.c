@@ -26,12 +26,12 @@ f (void *arg)
 
   tprintf ("Thread %d started on node %d\n", my_name, my_node);
 
-  // dsm_mutex_lock (&mutex);
+  // dsm_mutex_lock (&mutex);           /* Here! */
   initial = shvar;
   for (i = 0; i < NB_ITERATIONS; i++)
     shvar++;
   final = shvar;
-  // dsm_mutex_unlock (&mutex);
+  // dsm_mutex_unlock (&mutex);         /* Here! */
 
   tprintf ("Thread %d from node %d finished on node %d: "
 	   "from %d to %d!\n",
@@ -65,7 +65,7 @@ pm2_main (int argc, char **argv)
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       for (i = 1; i < NB_NODES; i++)
 	{
 	  thread_id++;

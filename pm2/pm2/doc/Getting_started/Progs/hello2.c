@@ -7,7 +7,7 @@ pm2_main (int argc, char *argv[])
 
   if (pm2_self () == 1)
     {
-      pm2_printf ("Hello World !\n");
+      pm2_printf ("Hello World !\n");	/* Here! */
       pm2_halt ();
     }
 

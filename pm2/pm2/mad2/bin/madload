@@ -68,4 +68,5 @@ else
     prefix=""
 fi
 
-${PM2_RSH:-rsh} $host /bin/sh -c \"PM2_RSH=$PM2_RSH\;export PM2_RSH\;DISPLAY=$DISPLAY\;export DISPLAY\;PM2_CONF_FILE=$PM2_CONF_FILE\;export PM2_CONF_FILE\;$prefix $prog $args\"
+PM2_RSH=${PM2_RSH:-rsh} 
+${PM2_RSH} $host /bin/sh -c \"PM2_RSH=$PM2_RSH\;export PM2_RSH\;DISPLAY=$DISPLAY\;export DISPLAY\;PM2_CONF_FILE=$PM2_CONF_FILE\;export PM2_CONF_FILE\;$prefix $prog $args\"

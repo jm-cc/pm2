@@ -244,7 +244,7 @@ leo_default_loader(p_leo_settings_t settings,
 
 	process->pid = pid;
 
-        sleep(3);
+        //sleep(3);
       }
     }
   while (tbx_slist_ref_forward(process_slist));
@@ -629,7 +629,8 @@ leo_bipload_loader(p_leo_settings_t settings,
       if (settings->xterm_mode)
 	{
 	  // Necessary to avoid Xlib multiple connection overflow
-	  sleep(2);
+	  // sleep(2);
+	  // See pm2/doc/README.X
 	}
     }
   }

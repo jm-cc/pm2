@@ -57,4 +57,4 @@ def default_loader(s, loader_host_list):
         command.extend(ssh_args)
         logger.info(command)
         pid	= os.spawnvp(os.P_NOWAIT, ssh_command, command)        
-        time.sleep(1)
+        #time.sleep(1)

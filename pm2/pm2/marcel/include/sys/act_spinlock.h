@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: act_spinlock.h,v $
+Revision 1.3  2000/04/11 09:07:13  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.2.2.1  2000/03/15 15:54:50  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.2  2000/03/06 14:56:00  rnamyst
 Modified to include "marcel_flags.h".
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.12  2000/03/02 09:52:12  jfmehaut
+pilote Madeleine II/BIP
+
 Revision 1.11  2000/02/28 11:43:59  rnamyst
 Changed #include <> into #include "".
 
@@ -139,6 +142,9 @@ ______________________________________________________________________________
 #ifdef DRV_MPI
 #include "connection_interfaces/mad_mpi.h"
 #endif /* DRV_MPI */
+#ifdef DRV_BIP
+#include "connection_interfaces/mad_bip.h"
+#endif /* DRV_BIP */
 
 #include "mad_main.h"
 

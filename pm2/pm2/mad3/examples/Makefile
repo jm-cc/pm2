@@ -13,6 +13,6 @@
 
 export FLAVOR_DEFAULT:=mad3
 
-PROGS := mad_mini mad_ping mad_ping2 mad_multi_ping mad_multi_ping2 mad_test sumping mad_control mux_example mad_fault
+PROGS := mad_mini mad_ping mad_ping2 mad_multi_ping mad_multi_ping2 mad_test sumping mad_control mux_example mad_fault mad_micro
 
 include $(PM2_ROOT)/make/apps.mak

@@ -29,7 +29,7 @@ SECTIONS {
     }
   .rodata :
     {
-      . = ALIGN(8) ;
+      . = ALIGN(4096) ;
       __ma_init_start = . ;
       *( SORT(.ma.init.*))
       __ma_init_end = . ;

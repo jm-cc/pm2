@@ -52,7 +52,6 @@ int marcel_attr_init(marcel_attr_t *attr)
     size_t ps = __getpagesize ();
 #endif
     *attr = marcel_attr_default;
-    marcel_sched_attr_init(&attr->sched);
 #ifdef MA__POSIX_BEHAVIOUR
     attr->__guardsize = ps;
 #endif

@@ -82,6 +82,7 @@ typedef struct s_mad_connection
   p_tbx_list_t             buffer_list;
   p_tbx_list_t             buffer_group_list;
   p_tbx_list_t             pair_list;
+  p_tbx_slist_t            parameter_slist;
   p_mad_link_t             last_link;
   mad_link_mode_t          last_link_mode;
 

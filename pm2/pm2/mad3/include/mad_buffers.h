@@ -36,6 +36,15 @@ typedef enum
   mad_internal_buffer /* buffer to be used by the internal routines only */
 } mad_buffer_type_t, *p_mad_buffer_type_t;
 
+typedef struct s_mad_buffer_slice_parameter
+{
+  void   *base;
+  size_t  offset;
+  size_t  length;
+  int     opcode;
+  int     value;
+} mad_buffer_slice_parameter_t, *p_mad_buffer_slice_parameter_t;
+
 /* mad_buffer: generic buffer object */
 typedef struct s_mad_buffer
 {
@@ -44,9 +53,13 @@ typedef struct s_mad_buffer
   size_t                   bytes_written;
   size_t                   bytes_read;
   mad_buffer_type_t        type;
+  p_tbx_slist_t  	   parameter_slist; /* may be used by the
+                                               application to attach
+                                               driver-dependent settings
+                                               to buffer slices */
   p_mad_driver_specific_t  specific; /* may be used by connection
-				         layer to store data
-				         related to static buffers */
+                                        layer to store data
+                                        related to static buffers */
 } mad_buffer_t;
 
 /* pair of dynamic/static buffer for 'send_later' handling

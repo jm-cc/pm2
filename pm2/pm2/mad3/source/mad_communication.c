@@ -19,6 +19,25 @@
  */
 #include "madeleine.h"
 
+#include <stdarg.h>
+
+void
+mad_free_parameter_slist(p_tbx_slist_t parameter_slist)
+{
+  if (!parameter_slist)
+    return;
+
+  while (!tbx_slist_is_nil(parameter_slist))
+    {
+      p_mad_buffer_slice_parameter_t param = NULL;
+
+      param = tbx_slist_extract(parameter_slist);
+      mad_free_slice_parameter(param);
+    }
+
+  tbx_slist_free(parameter_slist);
+}
+
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t      channel,
 		  ntbx_process_lrank_t remote_rank)
@@ -190,6 +209,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
   connection->last_link       = NULL;
   connection->first_sub_buffer_group = tbx_true;
   connection->more_data       = tbx_false;
+  connection->parameter_slist = NULL;
 
   TRACE("Reception request initiated");
   LOG_OUT();
@@ -353,17 +373,18 @@ mad_end_packing(p_mad_connection_t connection)
   LOG_OUT();
 }
 
-void
-mad_end_unpacking(p_mad_connection_t connection)
+p_tbx_slist_t
+mad_end_unpacking_ext(p_mad_connection_t connection)
 {
-  p_mad_driver_interface_t interface =
+  p_mad_driver_interface_t interface       =
     connection->channel->adapter->driver->interface;
-  p_tbx_list_t             src_list    = NULL;
-  p_tbx_list_t             dest_list   = NULL;
-  p_tbx_list_reference_t   dest_ref    = NULL;
-  p_mad_buffer_t           source      = NULL;
-  p_mad_buffer_t           destination = NULL;
-  mad_link_id_t            link_id     =   -1;
+  p_tbx_list_t             src_list        = NULL;
+  p_tbx_list_t             dest_list       = NULL;
+  p_tbx_list_reference_t   dest_ref        = NULL;
+  p_mad_buffer_t           source          = NULL;
+  p_mad_buffer_t           destination     = NULL;
+  p_tbx_slist_t            parameter_slist = NULL;
+  mad_link_id_t            link_id         =   -1;
 
   LOG_IN();
   if (connection->flushed == tbx_false)
@@ -541,6 +562,93 @@ mad_end_unpacking(p_mad_connection_t connection)
 	}
     }
 
+  // final parameter processing
+  {
+    tbx_list_reference_t ref;
+
+    if (!tbx_empty_list(connection->buffer_list))
+      {
+        tbx_list_reference_init(&ref, connection->buffer_list);
+        do
+          {
+            p_mad_buffer_t buffer = NULL;
+
+            buffer = tbx_get_list_reference_object(&ref);
+            if (buffer->type == mad_user_buffer && buffer->parameter_slist)
+              {
+                tbx_slist_merge_after(connection->parameter_slist,
+                                      buffer->parameter_slist);
+                tbx_slist_clear_and_free(buffer->parameter_slist);
+                buffer->parameter_slist = NULL;
+              }
+          }
+        while (tbx_forward_list_reference(&ref));
+      }
+
+    if (!tbx_empty_list(connection->user_buffer_list))
+      {
+        tbx_list_reference_init(&ref, connection->user_buffer_list);
+        do
+          {
+            p_mad_buffer_t buffer = NULL;
+
+            buffer = tbx_get_list_reference_object(&ref);
+            if (buffer->type == mad_user_buffer && buffer->parameter_slist)
+              {
+                tbx_slist_merge_after(connection->parameter_slist,
+                                      buffer->parameter_slist);
+                tbx_slist_clear_and_free(buffer->parameter_slist);
+                buffer->parameter_slist = NULL;
+              }
+          }
+        while (tbx_forward_list_reference(&ref));
+      }
+
+    for (link_id = 0; link_id < connection->nb_link; link_id++)
+      {
+        if (!tbx_empty_list(connection->link_array[link_id]->buffer_list))
+          {
+            tbx_list_reference_init(&ref, connection->link_array[link_id]->buffer_list);
+            do
+              {
+                p_mad_buffer_t buffer = NULL;
+
+                buffer = tbx_get_list_reference_object(&ref);
+                if (buffer->type == mad_user_buffer && buffer->parameter_slist)
+                  {
+                    tbx_slist_merge_after(connection->parameter_slist,
+                                          buffer->parameter_slist);
+                    tbx_slist_clear_and_free(buffer->parameter_slist);
+                    buffer->parameter_slist = NULL;
+                  }
+              }
+            while (tbx_forward_list_reference(&ref));
+          }
+
+        if (!tbx_empty_list(connection->link_array[link_id]->user_buffer_list))
+          {
+            tbx_list_reference_init(&ref, connection->link_array[link_id]->user_buffer_list);
+            do
+              {
+                p_mad_buffer_t buffer = NULL;
+
+                buffer = tbx_get_list_reference_object(&ref);
+                if (buffer->type == mad_user_buffer && buffer->parameter_slist)
+                  {
+                    tbx_slist_merge_after(connection->parameter_slist,
+                                          buffer->parameter_slist);
+                    tbx_slist_clear_and_free(buffer->parameter_slist);
+                    buffer->parameter_slist = NULL;
+                  }
+              }
+            while (tbx_forward_list_reference(&ref));
+          }
+
+        tbx_foreach_destroy_list(connection->link_array[link_id]->user_buffer_list,
+                                 mad_foreach_free_buffer);
+      }
+  }
+
   tbx_foreach_destroy_list(connection->buffer_list, mad_foreach_free_buffer);
   tbx_foreach_destroy_list(connection->user_buffer_list,
 			   mad_foreach_free_buffer);
@@ -556,6 +664,9 @@ mad_end_unpacking(p_mad_connection_t connection)
   if (interface->message_received)
     interface->message_received(connection);
 
+  parameter_slist = connection->parameter_slist;
+  connection->parameter_slist = NULL;
+
 #ifdef MARCEL
   marcel_mutex_unlock(&(connection->channel->reception_lock_mutex));
 #else // MARCEL
@@ -564,18 +675,31 @@ mad_end_unpacking(p_mad_connection_t connection)
 
   TRACE("Reception request completed");
   LOG_OUT();
+
+  return parameter_slist;
 }
+
+
+void
+mad_end_unpacking(p_mad_connection_t connection)
+{
+  p_tbx_slist_t parameter_slist = NULL;
+
+  parameter_slist = mad_end_unpacking_ext(connection);
+  mad_free_parameter_slist(parameter_slist);
+}
+
 
 /*
  * mad_pack
  * --------
  */
 void
-mad_pack(p_mad_connection_t   connection,
-	 void                *user_buffer,
-	 size_t               user_buffer_length,
-	 mad_send_mode_t      send_mode,
-	 mad_receive_mode_t   receive_mode)
+mad_pack_ext(p_mad_connection_t   connection,
+             void                *user_buffer,
+             size_t               user_buffer_length,
+             mad_send_mode_t      send_mode,
+             mad_receive_mode_t   receive_mode, ...)
 {
   p_mad_driver_interface_t   interface         =
     connection->channel->adapter->driver->interface;
@@ -589,9 +713,14 @@ mad_pack(p_mad_connection_t   connection,
   p_mad_buffer_t             destination       = NULL;
   p_tbx_list_t               dest_list         = connection->buffer_list;
   p_tbx_list_t               buffer_group_list = connection->buffer_group_list;
+  va_list                    arg_list          = NULL;
 
   LOG_IN();
-  if (!user_buffer_length) return;
+  if (!user_buffer_length)
+    {
+      LOG_OUT();
+      return;
+    }
 
 #if 0
   if ((unsigned long)user_buffer & (MAD_ALIGNMENT - 1))
@@ -711,6 +840,38 @@ mad_pack(p_mad_connection_t   connection,
     }
 
   source = mad_get_user_send_buffer(user_buffer, user_buffer_length);
+
+  va_start(arg_list, receive_mode);
+  {
+    p_mad_buffer_slice_parameter_t param = NULL;
+    p_tbx_slist_t                  slist = NULL;
+
+    while ((param = va_arg(arg_list, void *)))
+      {
+        if (!slist)
+          {
+            slist = tbx_slist_nil();
+          }
+
+        if (!param->length)
+          {
+            param->offset = 0;
+            param->length = source->length;
+          }
+
+        if (param->offset >= source->length)
+          FAILURE("invalid buffer slice parameter offset");
+
+        if (param->length+param->offset >= source->length)
+          FAILURE("invalid buffer slice parameter length");
+
+        param->base = source->buffer;
+        tbx_slist_append(slist, param);
+      }
+
+    source->parameter_slist = slist;
+  }
+  va_end(arg_list);
 
   if (link_mode == mad_link_mode_buffer)
     {
@@ -992,19 +1153,35 @@ mad_pack(p_mad_connection_t   connection,
     }
   else
     FAILURE("unknown link mode");
+
   LOG_OUT();
 }
+
+void
+mad_pack(p_mad_connection_t   connection,
+	 void                *user_buffer,
+	 size_t               user_buffer_length,
+	 mad_send_mode_t      send_mode,
+	 mad_receive_mode_t   receive_mode)
+{
+  mad_pack_ext(connection,
+               user_buffer,
+               user_buffer_length,
+               send_mode,
+               receive_mode, NULL);
+}
+
 
 /*
  * mad_unpack
  * ----------
  */
-void
-mad_unpack(p_mad_connection_t   connection,
-	   void                *user_buffer,
-	   size_t               user_buffer_length,
-	   mad_send_mode_t      send_mode,
-	   mad_receive_mode_t   receive_mode)
+p_tbx_slist_t
+mad_unpack_ext(p_mad_connection_t   connection,
+               void                *user_buffer,
+               size_t               user_buffer_length,
+               mad_send_mode_t      send_mode,
+               mad_receive_mode_t   receive_mode)
 {
   p_mad_driver_interface_t   interface =
     connection->channel->adapter->driver->interface;
@@ -1020,9 +1197,15 @@ mad_unpack(p_mad_connection_t   connection,
   p_tbx_list_t               dest_list         = connection->user_buffer_list;
   p_tbx_list_reference_t     dest_ref  =
     connection->user_buffer_list_reference;
+  p_tbx_slist_t              parameter_slist   = NULL;
 
   LOG_IN();
-  if (!user_buffer_length) return;
+  if (!user_buffer_length)
+    {
+      LOG_OUT();
+
+      return NULL;
+    }
 
 #if 0
   if ((unsigned long)user_buffer & (MAD_ALIGNMENT - 1))
@@ -1197,14 +1380,38 @@ mad_unpack(p_mad_connection_t   connection,
 	FAILURE("cannot receive data in buffer mode when delayed send is on");
 
       if (   (receive_mode == mad_receive_EXPRESS)
-	  || (receive_mode == mad_receive_CHEAPER))
+          || (receive_mode == mad_receive_CHEAPER))
 	{
 	  if (   (send_mode == mad_send_SAFER)
-	      || (send_mode == mad_send_CHEAPER))
+              || (send_mode == mad_send_CHEAPER))
 	    {
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
 		  interface->receive_buffer(lnk, &destination);
+                  if (destination->parameter_slist)
+                    {
+                      if (receive_mode == mad_receive_EXPRESS)
+                        {
+                          parameter_slist = destination->parameter_slist;
+                        }
+                      else
+                        {
+                          if (!connection->parameter_slist)
+                            {
+                              connection->parameter_slist =
+                                destination->parameter_slist;
+                            }
+                          else
+                            {
+                              tbx_slist_merge_after(connection->parameter_slist, parameter_slist);
+                              tbx_slist_clear_and_free(parameter_slist);
+                            }
+                        }
+
+
+                      destination->parameter_slist = NULL;
+                    }
+
 		  mad_free_buffer_struct(destination);
 		  connection->flushed        = tbx_true;
 		}
@@ -1248,12 +1455,38 @@ mad_unpack(p_mad_connection_t   connection,
 
 		      tbx_mark_list(src_list);
 		    }
+
+                  if (destination->parameter_slist)
+                    {
+                      if (receive_mode == mad_receive_EXPRESS)
+                        {
+                          parameter_slist = destination->parameter_slist;
+                        }
+                      else
+                        {
+                          if (!connection->parameter_slist)
+                            {
+                              connection->parameter_slist =
+                                destination->parameter_slist;
+                            }
+                          else
+                            {
+                              tbx_slist_merge_after(connection->parameter_slist,
+                                                    parameter_slist);
+                              tbx_slist_clear_and_free(parameter_slist);
+                            }
+                        }
+
+                      destination->parameter_slist = NULL;
+                    }
+
+		  mad_free_buffer_struct(destination);
 		}
 	      else
 		FAILURE("unknown buffer mode");
 	    }
 	  else if (send_mode == mad_send_LATER)
-	    FAILURE("send_LATER data cannot be receive in buffer mode");
+	    FAILURE("send_LATER data cannot be received in buffer mode");
 	  else
 	    FAILURE("unknown send mode");
 	}
@@ -1346,7 +1579,7 @@ mad_unpack(p_mad_connection_t   connection,
 		  while (tbx_forward_list_reference(dest_ref));
 
 		  if (   mad_more_data(source)
-		      && (group_mode == mad_group_mode_aggregate))
+                         && (group_mode == mad_group_mode_aggregate))
 		    {
 		      connection->more_data = tbx_true;
 		      connection->flushed   = tbx_false;
@@ -1361,6 +1594,12 @@ mad_unpack(p_mad_connection_t   connection,
 		}
 	      else
 		FAILURE("unknown buffer mode");
+
+              if (destination->parameter_slist)
+                {
+                  parameter_slist = destination->parameter_slist;
+                  destination->parameter_slist = NULL;
+                }
 	    }
 	  else
 	    FAILURE("unknown send mode");
@@ -1425,5 +1664,26 @@ mad_unpack(p_mad_connection_t   connection,
     }
   else
     FAILURE("unknown link mode");
+
   LOG_OUT();
+
+  return parameter_slist;
 }
+
+void
+mad_unpack(p_mad_connection_t  connection,
+	   void               *user_buffer,
+	   size_t              user_buffer_length,
+	   mad_send_mode_t     send_mode,
+	   mad_receive_mode_t  receive_mode)
+{
+  p_tbx_slist_t parameter_slist = NULL;
+
+  parameter_slist = mad_unpack_ext(connection,
+                                   user_buffer,
+                                   user_buffer_length,
+                                   send_mode,
+                                   receive_mode);
+  mad_free_parameter_slist(parameter_slist);
+}
+

@@ -90,11 +90,74 @@ mad_copy_length(p_mad_buffer_t source,
 	     (destination->length - destination->bytes_written));
 }
 
+void
+mad_copy_buffer_parameters(p_mad_buffer_t source,
+                           p_mad_buffer_t destination)
+{
+  size_t        length          =    0;
+  p_tbx_slist_t param_slist_src = NULL;
+
+  length = mad_copy_length(source, destination);
+  param_slist_src = source->parameter_slist;
+
+  if (!param_slist_src || tbx_slist_is_nil(param_slist_src))
+    return;
+
+  tbx_slist_ref_to_head(param_slist_src);
+  do
+    {
+      p_mad_buffer_slice_parameter_t src_param    = NULL;
+      p_mad_buffer_slice_parameter_t dst_param    = NULL;
+      size_t                         param_offset =    0;
+      size_t                         param_length =    0;
+
+      src_param = tbx_slist_ref_get(param_slist_src);
+
+      if (src_param->offset >= source->bytes_read + length)
+        continue;
+
+      if (src_param->offset + src_param->length <= source->bytes_read)
+        continue;
+
+      if (src_param->offset > source->bytes_read)
+        {
+          param_offset = src_param->offset - source->bytes_read;
+          param_length = min(length-param_offset, src_param->length);
+        }
+      else
+        {
+          param_offset = 0;
+          param_length =
+            min(length,
+                src_param->length-(source->bytes_read-src_param->offset));
+        }
+
+      dst_param = mad_alloc_slice_parameter();
+
+      dst_param->base   = destination->buffer;
+      dst_param->offset = param_offset;
+      dst_param->length = param_length;
+      dst_param->opcode = src_param->opcode;
+      dst_param->value  = src_param->value;
+
+      if (!destination->parameter_slist)
+        {
+          destination->parameter_slist = tbx_slist_nil();
+        }
+
+      tbx_slist_append(destination->parameter_slist, dst_param);
+    }
+  while (tbx_slist_ref_forward(param_slist_src));
+}
+
+
 size_t
 mad_copy_buffer(p_mad_buffer_t source,
 		p_mad_buffer_t destination)
 {
   size_t length = 0;
+
+  mad_copy_buffer_parameters(source, destination);
 
   length = mad_copy_length(source, destination);
 
@@ -112,6 +175,8 @@ mad_pseudo_copy_buffer(p_mad_buffer_t source,
 		       p_mad_buffer_t destination)
 {
   size_t length = 0;
+
+  mad_copy_buffer_parameters(source, destination);
 
   length = mad_copy_length(source, destination);
 
@@ -156,10 +221,6 @@ mad_duplicate_buffer(p_mad_buffer_t source)
 
   destination = mad_alloc_buffer(source->length);
   mad_copy_buffer(source, destination);
-
-#ifdef MAD_FORWARDING
-  destination->informations = source->informations;
-#endif /* MAD_FORWARDING */
 
   return destination;
 }

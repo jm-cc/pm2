@@ -24,17 +24,19 @@
  * Macros
  * ------
  */
-#define INITIAL_BUFFER_NUM       1024
-#define INITIAL_BUFFER_GROUP_NUM   64
-#define INITIAL_BUFFER_PAIR_NUM    64
+#define INITIAL_BUFFER_NUM                 1024
+#define INITIAL_BUFFER_GROUP_NUM             64
+#define INITIAL_BUFFER_PAIR_NUM              64
+#define INITIAL_BUFFER_SLICE_PARAMETER_NUM   16
 
-/* 
+/*
  * Static variables
  * ----------------
  */
-static p_tbx_memory_t mad_buffer_memory       = NULL;
-static p_tbx_memory_t mad_buffer_group_memory = NULL;
-static p_tbx_memory_t mad_buffer_pair_memory  = NULL;
+static p_tbx_memory_t mad_buffer_memory                 = NULL;
+static p_tbx_memory_t mad_buffer_group_memory           = NULL;
+static p_tbx_memory_t mad_buffer_pair_memory            = NULL;
+static p_tbx_memory_t mad_buffer_slice_parameter_memory = NULL;
 
 /*
  * Functions
@@ -49,13 +51,16 @@ mad_memory_manager_init(int    argc TBX_UNUSED,
 {
   tbx_malloc_init(&mad_buffer_memory,
 		  sizeof(mad_buffer_t),
-		  INITIAL_BUFFER_NUM);  
+		  INITIAL_BUFFER_NUM);
   tbx_malloc_init(&mad_buffer_group_memory,
 		  sizeof(mad_buffer_group_t),
 		  INITIAL_BUFFER_GROUP_NUM);
   tbx_malloc_init(&mad_buffer_pair_memory,
 		  sizeof(mad_buffer_pair_t),
 		  INITIAL_BUFFER_PAIR_NUM);
+  tbx_malloc_init(&mad_buffer_slice_parameter_memory,
+		  sizeof(mad_buffer_slice_parameter_t),
+		  INITIAL_BUFFER_SLICE_PARAMETER_NUM);
 }
 
 void
@@ -64,13 +69,14 @@ mad_memory_manager_exit(void)
   tbx_malloc_clean(mad_buffer_memory);
   tbx_malloc_clean(mad_buffer_group_memory);
   tbx_malloc_clean(mad_buffer_pair_memory);
+  tbx_malloc_clean(mad_buffer_slice_parameter_memory);
 }
 
 p_mad_buffer_t
 mad_alloc_buffer_struct(void)
 {
   p_mad_buffer_t buffer = NULL;
-  
+
   buffer = tbx_malloc(mad_buffer_memory);
 
   return buffer;
@@ -79,6 +85,18 @@ mad_alloc_buffer_struct(void)
 void
 mad_free_buffer_struct(p_mad_buffer_t buffer)
 {
+  if (buffer->parameter_slist)
+    {
+      while (!tbx_slist_is_nil(buffer->parameter_slist))
+        {
+          p_mad_buffer_slice_parameter_t param = NULL;
+
+          param = tbx_slist_extract(buffer->parameter_slist);
+          mad_free_slice_parameter(param);
+        }
+
+      tbx_slist_clear_and_free(buffer->parameter_slist);
+    }
   tbx_free(mad_buffer_memory, buffer);
 }
 
@@ -90,13 +108,14 @@ mad_alloc_buffer(size_t length)
   buffer = mad_alloc_buffer_struct();
 
   buffer->buffer = tbx_aligned_malloc(length, MAD_ALIGNMENT);
-  
-  buffer->length        = length;
-  buffer->bytes_read    = 0;
-  buffer->bytes_written = 0;
-  buffer->type          = mad_dynamic_buffer;
-  buffer->specific      = NULL;      
-    
+
+  buffer->length          = length;
+  buffer->bytes_read      = 0;
+  buffer->bytes_written   = 0;
+  buffer->type            = mad_dynamic_buffer;
+  buffer->parameter_slist = NULL;
+  buffer->specific        = NULL;
+
   return buffer;
 }
 
@@ -135,7 +154,7 @@ void
 mad_foreach_free_buffer(void *object)
 {
   p_mad_buffer_t buffer = object;
-  
+
   mad_free_buffer(buffer);
 }
 
@@ -156,3 +175,20 @@ mad_foreach_free_buffer_pair_struct(void *object)
 {
   tbx_free(mad_buffer_pair_memory, object);
 }
+
+p_mad_buffer_slice_parameter_t
+mad_alloc_slice_parameter(void)
+{
+  p_mad_buffer_slice_parameter_t slice_parameter = NULL;
+
+  slice_parameter = tbx_malloc(mad_buffer_slice_parameter_memory);
+
+  return slice_parameter;
+}
+
+void
+mad_free_slice_parameter(p_mad_buffer_slice_parameter_t slice_parameter)
+{
+  tbx_free(mad_buffer_slice_parameter_memory, slice_parameter);
+}
+

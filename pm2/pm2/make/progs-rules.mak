@@ -141,3 +141,13 @@ targethelpapps:
 	@echo "  $(PROGSLIST)"
 
 endif # !PROG_RECURSIF
+
+
+$(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
+	$(COMMON_HIDE) $(PM2_GEN_MAK) progs
+
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
+$(PM2_MAK_DIR)/progs-libs.mak: $(PRG_STAMP_FLAVOR)
+	@mkdir -p `dirname $@`
+	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@
+endif

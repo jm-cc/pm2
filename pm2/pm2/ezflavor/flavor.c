@@ -36,7 +36,7 @@ static flavor_t *cur_flavor = NULL;
 gint flavor_modified = FALSE;
 static gint flavor_never_saved = FALSE;
 
-static void flavor_save(void);
+static int flavor_save(void);
 
 #ifdef DEBUG
 static void flavor_print(void)
@@ -70,6 +70,8 @@ static void update_the_buttons(void)
   char *selected = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
   gint load_enabled, create_enabled, save_enabled, delete_enabled;
   gint save_as = FALSE;
+  gint reload = FALSE;
+  gint check_enabled;
 
   if(flavor_exists(selected)) {
     delete_enabled = TRUE;
@@ -83,11 +85,13 @@ static void update_the_buttons(void)
       save_enabled = TRUE; save_as = TRUE; // Actually a "save as"
     } else {
       // Selected flavor is the current one
-      load_enabled = FALSE;
-      if(flavor_modified)
+      if(flavor_modified) {
+	load_enabled = TRUE; reload = TRUE; // Actually a "reload"
 	save_enabled = TRUE;
-      else
+      } else {
+	load_enabled = FALSE;
 	save_enabled = FALSE;
+      }
     }
   } else if(!strcmp(selected, "")) {
     // No selected flavor
@@ -104,17 +108,27 @@ static void update_the_buttons(void)
     }
   }
 
+  check_enabled = cur_flavor != NULL;
+
   if(save_as)
     gtk_label_set_text(GTK_LABEL(GTK_BIN(the_save_button)->child), "Save As");
   else
     gtk_label_set_text(GTK_LABEL(GTK_BIN(the_save_button)->child), "Save");
 
+  if(reload)
+    gtk_label_set_text(GTK_LABEL(GTK_BIN(the_load_button)->child), "Reload");
+  else
+    gtk_label_set_text(GTK_LABEL(GTK_BIN(the_load_button)->child), "Load");
+
   gtk_widget_set_sensitive(the_load_button, load_enabled);
   gtk_widget_set_sensitive(the_create_button, create_enabled);
   gtk_widget_set_sensitive(the_save_button, save_enabled);
 
-  menu_update_flavor(load_enabled, create_enabled, save_enabled, save_as,
-		     delete_enabled);
+  menu_update_flavor(load_enabled, reload,
+		     create_enabled,
+		     save_enabled, save_as,
+		     delete_enabled,
+		     check_enabled);
 }
 
 void flavor_mark_modified(void)
@@ -228,6 +242,23 @@ static flavor_t *load_flavor(char *name)
   return ptr;
 }
 
+static void alloc_flavor_fields(flavor_t *ptr, char *name)
+{
+  ptr->name = string_new(name);
+  ptr->builddir = string_new("");
+  ptr->extension = string_new("");
+  ptr->modules = ptr->options = NULL;
+}
+
+static void free_flavor_fields(flavor_t *ptr)
+{
+  g_free(ptr->name);
+  g_free(ptr->builddir);
+  g_free(ptr->extension);
+  string_list_destroy(&ptr->modules);
+  string_list_destroy(&ptr->options);
+}
+
 static flavor_t *create_new_flavor(char *name)
 {
   flavor_t *ptr;
@@ -246,10 +277,7 @@ static flavor_t *create_new_flavor(char *name)
 
   ptr = (flavor_t *)g_malloc(sizeof(flavor_t));
 
-  ptr->modules = ptr->options = NULL;
-  ptr->name = string_new(buf);
-  ptr->builddir = string_new("");
-  ptr->extension = string_new("");
+  alloc_flavor_fields(ptr, buf);
 
   the_flavors = g_list_append(the_flavors, (gpointer)ptr);
 
@@ -287,11 +315,8 @@ static void flavor_destroy(char *name)
   ptr = find_flavor(name);
   if(ptr != NULL) {
     the_flavors = g_list_remove(the_flavors, (gpointer)ptr);
-    g_free(ptr->name);
-    g_free(ptr->builddir);
-    g_free(ptr->extension);
-    string_list_destroy(&ptr->modules);
-    string_list_destroy(&ptr->options);
+
+    free_flavor_fields(ptr);
     g_free(ptr);
 
     if(cur_flavor == ptr) {
@@ -354,7 +379,8 @@ static void save_and_proceed(gpointer data)
   strcpy(name, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)));
 
   if((gint)data == TRUE)
-    flavor_save();
+    if(flavor_save() != 0)
+      return;
 
   if(flavor_never_saved)
     flavor_destroy_current();
@@ -369,9 +395,22 @@ static void save_and_proceed(gpointer data)
   statusbar_set_current_flavor(cur_flavor->name);
 }
 
+static void reload_flavor(gpointer data)
+{
+  save_and_proceed((gpointer)FALSE);
+}
+
 void set_current_flavor(char *name)
 {
   static char str[1024];
+
+  if(cur_flavor != NULL && !strcmp(name, cur_flavor->name)) { // => reload
+    dialog_prompt("Are you sure you want to abandon your modifications?",
+		  "Proceed", reload_flavor, NULL,
+		  "Cancel", NULL, NULL,
+		  NULL, NULL, NULL);
+    return;
+  }
 
   // First of all, we must check if the old flavor was saved
   if(flavor_modified) {
@@ -412,9 +451,66 @@ static int flavor_save_on_disk(void)
   return exec_wait(exec_single_cmd_fmt(NULL, cmd));
 }
 
-static void flavor_save(void)
+static int flavor_do_check(void)
+{
+  flavor_t tmp, *old_cur;
+  GList *ptr;
+  static char cmd[4096];
+  int ret;
+
+  statusbar_set_message("Checking correctness of current flavor...");
+
+  old_cur = cur_flavor;
+  cur_flavor = &tmp;
+
+  alloc_flavor_fields(cur_flavor, "foo");
+
+  module_save_to_flavor();
+
+  sprintf(cmd, "pm2-flavor check --builddir=%s --ext=%s",
+	  cur_flavor->builddir,
+	  cur_flavor->extension);
+
+  for(ptr = g_list_first(cur_flavor->modules);
+      ptr != NULL;
+      ptr = g_list_next(ptr)) {
+    strcat(cmd, " ");
+    strcat(cmd, (char *)ptr->data);
+  }
+
+  for(ptr = g_list_first(cur_flavor->options);
+      ptr != NULL;
+      ptr = g_list_next(ptr)) {
+    strcat(cmd, " ");
+    strcat(cmd, (char *)ptr->data);
+  }
+
+  ret = exec_wait(exec_single_cmd_fmt(NULL, cmd));
+
+  if(ret == 0) {
+    statusbar_concat_message("OK.");
+  } else {
+    statusbar_concat_message("FAILURE: see /tmp/ezflavor.errlog.");
+  }
+
+  free_flavor_fields(cur_flavor);
+
+  cur_flavor = old_cur;
+
+  return ret;
+}
+
+void flavor_check(void)
+{
+  flavor_do_check();
+}
+
+static int flavor_save(void)
 {
   int ret;
+
+  if(flavor_do_check() != 0)
+    return 1;
 
   statusbar_set_message("Saving flavor %s...", cur_flavor->name);
 
@@ -427,15 +523,13 @@ static void flavor_save(void)
     flavor_never_saved = FALSE;
     statusbar_concat_message("Done.");
   } else {
-    statusbar_concat_message("Oops!");
-    TRACE("Operation failed: see /tmp/ezflavor.errlog for details.\n");
+    statusbar_concat_message("FAILURE: see /tmp/ezflavor.errlog.");
+    return ret;
   }
 
   update_the_buttons();
 
-#ifdef DEBUG
-  flavor_print();
-#endif
+  return 0;
 }
 
 static void save_and_load(gpointer data)
@@ -449,9 +543,11 @@ static void save_and_load(gpointer data)
       flavor_destroy_current();
 
     cur_flavor = find_flavor(new_fla);
-    flavor_save();
+    if(flavor_save() != 0)
+      return;
   } else {
-    flavor_save();
+    if(flavor_save() != 0)
+      return;
     cur_flavor = find_flavor(new_fla);
     update_current();
   }
@@ -484,13 +580,15 @@ void flavor_save_as(void)
 	flavor_destroy_current();
 
       cur_flavor = create_new_flavor(new_fla);
-      flavor_save();
+      if(flavor_save() != 0)
+	return;
 
       update_current();
       statusbar_set_current_flavor(cur_flavor->name);
     }
   } else {
-    flavor_save();
+    if(flavor_save() != 0)
+      return;
   }
 }
 
@@ -507,7 +605,8 @@ void flavor_create(void)
 static void save_and_quit(gpointer data)
 {
   if((int)data == TRUE)
-    flavor_save();
+    if(flavor_save() != 0)
+      return;
 
   destroy_phase = TRUE;
 

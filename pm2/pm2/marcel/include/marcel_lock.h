@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.8  2000/04/28 18:33:35  vdanjean
+debug actsmp + marcel_key
+
 Revision 1.7  2000/04/11 09:07:11  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -255,6 +258,7 @@ static __inline__ int __compare_and_swap (long int *p, long int oldval, long int
 typedef unsigned marcel_lock_t;
 
 #define MARCEL_LOCK_INIT   0
+#define MARCEL_LOCK_INIT_UNLOCKED   0
 
 void marcel_lock_init(marcel_lock_t *lock);
 
@@ -264,8 +268,10 @@ static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
   unsigned counter = 0;
 
   while(testandset(lock)) {
-    if(++counter > MARCEL_SPIN_ITERATIONS)
+    if(++counter > MARCEL_SPIN_ITERATIONS) {
       SCHED_YIELD();
+      counter=0;
+    }
   }
 #endif
 }

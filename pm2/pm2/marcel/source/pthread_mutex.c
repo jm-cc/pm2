@@ -492,20 +492,20 @@ DEF___PTHREAD(once)
 
 void __pmarcel_once_fork_prepare(void)
 {
-  pmarcel_mutex_lock(&once_masterlock);
+  pmarcel_mutex_lock((pmarcel_mutex_t *)(void *)&once_masterlock);
 }
 __DEF___PTHREAD(once_fork_prepare)
 
 void __pmarcel_once_fork_parent(void)
 {
-  pmarcel_mutex_unlock(&once_masterlock);
+  pmarcel_mutex_unlock((pmarcel_mutex_t *)(void *)&once_masterlock);
 }
 __DEF___PTHREAD(once_fork_parent)
 
 void __pmarcel_once_fork_child(void)
 {
-  pmarcel_mutex_init(&once_masterlock, NULL);
-  pmarcel_cond_init(&once_finished, NULL);
+  pmarcel_mutex_init((pmarcel_mutex_t *)(void *)&once_masterlock, NULL);
+  pmarcel_cond_init((pmarcel_cond_t *)(void *)&once_finished, NULL);
   if (fork_generation <= INT_MAX - 4)
     fork_generation += 4;	/* leave least significant two bits zero */
   else

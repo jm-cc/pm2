@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.5  2000/06/05 15:42:13  vdanjean
+adaptation of debug messages
+
 Revision 1.4  2000/05/25 00:23:58  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -57,27 +60,8 @@ ______________________________________________________________________________
 
 #include "tbx.h"
 
-#include "pm2debug.h"
-
-#ifdef PM2DEBUG
-#ifdef TBX_DEBUG
-debug_type_t tbx_debug_log=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-log");
-#else
-debug_type_t tbx_debug_log=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-log");
-#endif
-#ifdef TBX_DEBUG
-debug_type_t tbx_debug_trace=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-trace");
-#else
-debug_type_t tbx_debug_trace=NEW_DEBUG_TYPE(0, "TBX: ", "tbx-trace");
-#endif
-#endif
-
 void tbx_init(int *argc, char **argv, int debug_flags)
 {
-  
-  pm2debug_register(&tbx_debug_log);
-  pm2debug_register(&tbx_debug_trace);
-
   pm2debug_init_ext(argc, argv, debug_flags);
 
   /* Safe malloc */

@@ -24,6 +24,11 @@
 
 #include "fut_code.h"
 
+
+
+/* deals with the main function,
+   creates the filters with the selected parameters
+   runs the action */
 extern char *traps[];
 extern char *sys_calls[];
 
@@ -32,7 +37,7 @@ enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME, IDLE_TIME,
 
 void print_help()
 {
-  printf("type  date_tick  pid cpu thr  code                          name                  args\n");  // A faire
+  printf("type  date_tick  pid cpu thr  code                          name                  args\n");  
 }
 
 void print_trace(trace tr)
@@ -75,7 +80,7 @@ void print_trace(trace tr)
 }
 
 
-// Mangeur de dernière trace vilain!
+/* the handlers */
 void list_events()
 {
   trace tr;
@@ -239,6 +244,7 @@ void error_usage()
   exit(1);
 }
 
+/* THE main */
 int main(int argc, char **argv)
 {
   int argCount;

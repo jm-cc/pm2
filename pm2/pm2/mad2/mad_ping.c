@@ -148,7 +148,7 @@ static void master(p_mad_madeleine_t madeleine)
   mad_tick_t        tst_t2 ;
   p_mad_channel_t   channel;
   
-  channel = mad_open_channel(madeleine, 0, 0);
+  channel = mad_open_channel(madeleine, 0);
 
   if (param_simul_migr)
     {
@@ -269,8 +269,6 @@ static void master(p_mad_madeleine_t madeleine)
 	  fprintf(stderr, "%5d %5.3f\n", taille_courante, tst_moyenne);
 	}
     }
-  
-  mad_close_channel(channel);
 }
 
 static void slave(p_mad_madeleine_t madeleine)
@@ -279,7 +277,7 @@ static void slave(p_mad_madeleine_t madeleine)
   int               tst_taille_courante ;
   int               tst_test_courant ;
 
-  channel = mad_open_channel(madeleine, 0, 0);
+  channel = mad_open_channel(madeleine, 0);
   if (param_simul_migr)
     {
       for (tst_test_courant = 0 ;
@@ -363,8 +361,6 @@ static void slave(p_mad_madeleine_t madeleine)
 	    }
 	}
     }
-  
-  mad_close_channel(channel);
 }
 
 static void master_ctrl(p_mad_madeleine_t madeleine)
@@ -377,7 +373,7 @@ static void master_ctrl(p_mad_madeleine_t madeleine)
   mad_tick_t        tst_t2 ;
   p_mad_channel_t   channel;
 
-  channel = mad_open_channel(madeleine, 0, 0);
+  channel = mad_open_channel(madeleine, 0);
 
   for (tst_taille_courante = param_min_size;
        tst_taille_courante <= param_max_size;
@@ -439,8 +435,6 @@ static void master_ctrl(p_mad_madeleine_t madeleine)
       
       fprintf(stderr, "%5d %5.3f\n", taille_courante, tst_moyenne);
     }
-
-  mad_close_channel(channel);
 }
 
 #ifdef PM2

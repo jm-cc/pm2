@@ -76,6 +76,7 @@ extern marcel_exception_t
   LOCK_TASK_ERROR;
 
 #section functions
-int _marcel_raise(marcel_exception_t ex);
+#include "tbx_compiler.h"
+int TBX_NORETURN _marcel_raise(marcel_exception_t ex);
 
 

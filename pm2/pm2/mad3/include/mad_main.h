@@ -42,6 +42,7 @@ typedef struct s_mad_session
 {
   p_ntbx_client_t      leonie_link;
   ntbx_process_grank_t process_rank;
+  ntbx_process_grank_t session_id;
 #ifdef MARCEL
   marcel_t             command_thread;
 #endif /* MARCEL */
@@ -58,12 +59,17 @@ typedef struct s_mad_settings
 typedef struct s_mad_madeleine
 {
   TBX_SHARED;
-  p_mad_settings_t  settings;
-  p_mad_session_t   session;
-  p_mad_directory_t dir;
-  p_tbx_htable_t    driver_htable;
-  p_tbx_htable_t    channel_htable;
-  p_tbx_slist_t     public_channel_slist;
+  volatile tbx_bool_t mergeable; 
+  volatile tbx_bool_t updated;
+  volatile tbx_bool_t merge_done;
+  p_mad_settings_t    settings;
+  p_mad_session_t     session;
+  p_mad_directory_t   dir;
+  p_mad_directory_t   old_dir;
+  p_mad_directory_t   new_dir;
+  p_tbx_htable_t      driver_htable;
+  p_tbx_htable_t      channel_htable;
+  p_tbx_slist_t       public_channel_slist;
 } mad_madeleine_t;
 
 /*
@@ -154,6 +160,12 @@ char *
 mad_leonie_receive_string(void);
 
 void
+mad_leonie_send_string_nolock(const char *string);
+
+char *
+mad_leonie_receive_string_nolock(void);
+
+void
 mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 			int                 argc,
 			char              **argv);
@@ -185,5 +197,17 @@ mad_command_thread_exit(p_mad_madeleine_t madeleine);
 // Directory transmission
 void
 mad_dir_directory_get(p_mad_madeleine_t madeleine);
+
+void
+  mad_new_directory_from_leony(p_mad_madeleine_t madeleine);
+
+void
+  mad_directory_update(p_mad_madeleine_t madeleine);
+
+void
+  mad_directory_rollback(p_mad_madeleine_t madeleine);
+
+volatile int
+  mad_directory_is_updated(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_MAIN_H */

@@ -43,10 +43,6 @@ void common_pre_init(int *argc, char *argv[],
     attr = &default_static_attr;
   }
 
-#ifdef WIN_SYS
-  marcel_for_win_init(argc, argv);
-#endif /* WIN_SYS */
-
 #ifdef PROFILE
   /*
    * Profiling services

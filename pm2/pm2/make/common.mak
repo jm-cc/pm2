@@ -118,6 +118,8 @@ PM2_SOBJ	=	$(PM2_SRC)/obj/$(PM2_ARCH_SYS)
 PM2_BIN		=	bin/$(PM2_ARCH_SYS)
 PM2_OBJ		=	obj/$(PM2_ARCH_SYS)
 
+default: pm2_default mad_default mar_default
+
 include $(MARCEL_ROOT)/make/common.mak
 
 ifeq ($(MAD2),yes)
@@ -180,12 +182,14 @@ PM2_OBJECTS	=	$(PM2_SOBJ)/pm2.o $(PM2_SOBJ)/pm2_attr.o $(PM2_SOBJ)/console.o \
 			$(PM2_SOBJ)/netserver.o $(PM2_SOBJ)/isomalloc.o \
 			$(PM2_SOBJ)/block_alloc.o $(PM2_SOBJ)/timing.o \
 			$(PM2_SOBJ)/isomalloc_rpc.o $(PM2_SOBJ)/safe_malloc.o \
-			$(PM2_SOBJ)/bitmap.o $(PM2_SOBJ)/slot_distrib.o
+			$(PM2_SOBJ)/bitmap.o $(PM2_SOBJ)/slot_distrib.o \
+			$(PM2_SOBJ)/pm2_thread.o $(PM2_SOBJ)/pm2_printf.o \
+			$(PM2_SOBJ)/pm2_migr.o $(PM2_SOBJ)/pm2_rpc.o
 
 PM2_HEADERS	=	$(PM2_INC)/pm2.h $(PM2_INC)/pm2_attr.h \
 			$(PM2_INC)/timing.h $(PM2_INC)/pm2_timing.h \
-			$(PM2_INC)/safe_malloc.h \
-			$(PM2_INC)/sys/console.h \
+			$(PM2_INC)/safe_malloc.h $(PM2_INC)/sys/console.h \
+			$(PM2_INC)/pm2_thread.h $(PM2_INC)/pm2_rpc.h \
 			$(MAD_HEADERS) \
 			$(MAR_HEADERS) \
 			$(DSM_HEADERS) \
@@ -206,7 +210,7 @@ PM2_FREEBSD_SYS_RANLIB	=	ranlib $(PM2_LIB)
 
 RANLIB		=	$(PM2_$(PM2_SYS)_RANLIB)
 
-pm2_default: mad_default marcel_default $(PM2_LIB)
+pm2_default: $(PM2_LIB)
 
 # librairie :
 
@@ -231,6 +235,15 @@ $(PM2_SOBJ)/pm2.o: $(PM2_SRC)/pm2.c $(PM2_INC)/pm2.h \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2.o $(PM2_SRC)/pm2.c
 
+# pm2_rpc :
+
+$(PM2_SOBJ)/pm2_rpc.o: $(PM2_SRC)/pm2_rpc.c $(PM2_INC)/pm2_rpc.h \
+			$(PM2_INC)/sys/console.h \
+			$(PM2_INC)/sys/netserver.h \
+			$(PM2_INC)/sys/isomalloc_rpc.h \
+	$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
+	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_rpc.o $(PM2_SRC)/pm2_rpc.c
 
 # pm2_attr :
 
@@ -238,6 +251,27 @@ $(PM2_SOBJ)/pm2_attr.o: $(PM2_SRC)/pm2_attr.c $(PM2_INC)/pm2_attr.h \
 		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
 		$(PM2_MAKEFILE)
 	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_attr.o $(PM2_SRC)/pm2_attr.c
+
+# pm2_thread :
+
+$(PM2_SOBJ)/pm2_thread.o: $(PM2_SRC)/pm2_thread.c $(PM2_INC)/pm2_thread.h \
+		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
+	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_thread.o $(PM2_SRC)/pm2_thread.c
+
+# pm2_printf :
+
+$(PM2_SOBJ)/pm2_printf.o: $(PM2_SRC)/pm2_printf.c $(PM2_INC)/sys/pm2_printf.h \
+		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
+	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_printf.o $(PM2_SRC)/pm2_printf.c
+
+# pm2_migr :
+
+$(PM2_SOBJ)/pm2_migr.o: $(PM2_SRC)/pm2_migr.c $(PM2_INC)/sys/pm2_migr.h \
+		$(MAD_HEADERS) $(MAR_HEADERS) $(DSM_HEADERS) \
+		$(PM2_MAKEFILE)
+	$(PM2_CC) $(OPTIONS) $(PM2_CFLAGS) $(PM2_AFLAGS) -c -o $(PM2_SOBJ)/pm2_migr.o $(PM2_SRC)/pm2_migr.c
 
 # console :
 

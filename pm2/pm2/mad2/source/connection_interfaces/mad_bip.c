@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -671,9 +670,9 @@ mad_bip_register(p_mad_driver_t driver)
 {
   p_mad_driver_interface_t interface;
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
   DEBUG_INIT(bip);
-#endif
+#endif // PM2DEBUG
 
   LOG_IN();
 

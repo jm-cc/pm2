@@ -67,6 +67,7 @@ void marcel_sem_P(marcel_sem_t *s)
   }
 }
 
+#ifndef __ACT__
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
   cell c;
@@ -97,6 +98,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
     unlock_task();
   }
 }
+#endif
 
 void marcel_sem_V(marcel_sem_t *s)
 {

@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include "pm2_common.h"
 
+#ifdef MARCEL
+
 #define DISP_LEVEL 0
 #define DATA_CHECK
 //#define UNIFORM_RANDOM_LENGTH
@@ -680,3 +682,19 @@ main(int    argc,
 
   return 0;
 }
+
+#else	/* MARCEL */
+
+int
+main(int    argc,
+     char **argv)
+{
+  common_pre_init(&argc, argv, NULL);
+  common_post_init(&argc, argv, NULL);
+  DISP("This program requires Marcel to be compiled in. Exiting.");
+  common_exit(NULL);
+
+  return 0;
+}
+
+#endif	/* MARCEL */

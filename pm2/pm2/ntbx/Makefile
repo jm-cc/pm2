@@ -89,7 +89,12 @@ NTBX_OBJECTS	:=	$(NTBX_REG_OBJECTS)
 NTBX_LIB	=	$(NTBX_LIBD)/libntbx.a
 NTBX_LLIB	=	$(ARCHDLIB)
 
+ifdef MAD_ALONE
+NTBX_CC         =       $(MAD_STANDALONE_CC)
+else
 NTBX_CC		=	gcc
+endif
+
 
 NTBX_CFLAGS	=	$(NTBX_OPTIONS) $(PM2_FLAGS) \
 			-I$(NTBX_INC) -I$(TBX_ROOT)/include -I$(MAD_ROOT)/include \

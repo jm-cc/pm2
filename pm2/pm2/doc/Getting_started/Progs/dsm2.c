@@ -3,7 +3,7 @@
 #define NB_NODES (pm2_config_size())
 #define NB_ITERATIONS 20
 
-int service_id;
+static int service_id;
 
 dsm_mutex_t L;
 

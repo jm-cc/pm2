@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: leoparse_pointers.h,v $
+Revision 1.3  2000/12/19 16:57:48  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.2  2000/11/03 10:42:31  oaumage
 - integration de Leoparse
 
@@ -55,6 +63,7 @@ ______________________________________________________________________________
 
 typedef struct s_leoparse_htable_entry   *p_leoparse_htable_entry_t;
 typedef enum   e_leoparse_object_type    *p_leoparse_object_type_t;
+typedef enum   e_leoparse_entry_type     *p_leoparse_entry_type_t;
 typedef struct s_leoparse_object         *p_leoparse_object_t;
 
 #endif /* __LEOPARSE_POINTERS_H */

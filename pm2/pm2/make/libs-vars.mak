@@ -43,6 +43,7 @@ endif
 
 LIB_SRC := source
 
+ifdef OLD_MAKEFILE
 LIB_GEN_LIB := $(shell $(PM2_CONFIG) --libdir $(LIBRARY))
 LIB_GEN_OBJ := $(shell $(PM2_CONFIG) --objdir $(LIBRARY))
 LIB_GEN_ASM := $(shell $(PM2_CONFIG) --asmdir $(LIBRARY))
@@ -56,6 +57,11 @@ LIB_CFLAGS := $(shell $(PM2_CONFIG) --kernel --cflags $(LIBRARY))
 CFLAGS += $(LIB_CFLAGS)
 
 CC := $(shell $(PM2_CONFIG) --cc $(LIBRARY))
+else
+
+-include $(PM2_MAK_DIR)/$(LIBRARY).mak
+
+endif # OLD_MAKEFILE
 
 ifneq ($($(LIBRARY)_CC),)
 CC := $($(LIBRARY)_CC)

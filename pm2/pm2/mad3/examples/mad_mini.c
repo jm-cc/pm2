@@ -65,7 +65,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
     }
 
 #ifdef MARCEL
-  if (channel->type == mad_channel_type_mux_main)
+  if (channel->type == mad_channel_type_mux)
     {
       sub_max = 10;
     }

@@ -17,15 +17,16 @@
 #ifndef MARCEL_SEM_EST_DEF
 #define MARCEL_SEM_EST_DEF
 
-_PRIVATE_ typedef struct cell_struct {
+_PRIVATE_ typedef struct semcell_struct {
   marcel_t task;
-  struct cell_struct *next;
+  struct semcell_struct *next;
+  struct semcell_struct *last; /* Valide uniquement dans la cellule de tête */
   boolean blocked;
-} cell;
+} semcell;
 
 _PRIVATE_ struct semaphor_struct {
   int value;
-  struct cell_struct *first,*last;
+  struct semcell_struct *first,*last;
   marcel_lock_t lock;  /* For preventing concurrent access from multiple LWPs */
 };
 

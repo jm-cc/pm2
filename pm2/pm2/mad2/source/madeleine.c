@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.35  2000/11/07 18:30:22  oaumage
+*** empty log message ***
+
 Revision 1.34  2000/09/12 09:39:40  oaumage
 - correction des problemes de log
 
@@ -259,10 +262,10 @@ mad_managers_init(int   *argc,
 #ifdef MARCEL  
   marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #endif /* MARCEL */
-  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
+  tbx_init(*argc, argv);
 
   LOG_IN();
-  ntbx_init();
+  ntbx_init(*argc, argv);
   mad_memory_manager_init();
   LOG_OUT();
 }

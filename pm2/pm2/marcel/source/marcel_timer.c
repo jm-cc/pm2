@@ -30,7 +30,11 @@
 #endif
 
 #ifdef __NR_gettid
+#  ifdef _syscall0
 _syscall0(pid_t,gettid)
+#  else
+#    define gettid() syscall(__NR_gettid)
+#  endif
 #endif
 
 ma_atomic_t __preemption_disabled=MA_ATOMIC_INIT(0);

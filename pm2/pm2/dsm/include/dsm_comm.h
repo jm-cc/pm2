@@ -52,6 +52,9 @@ void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node
 
 void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index);
 
+#define RECEIVE_PAGE_FILE "/tmp/dsm_pm2_dynamic_page"
+void dsm_unpack_page(void *addr, unsigned long size);
+
 /***********************  Hyperion stuff: ****************************/
 
 void dsm_send_diffs(unsigned long index, dsm_node_t dest_node);

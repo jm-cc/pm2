@@ -1,20 +1,50 @@
 #!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+_PM2CONFFILE_PROGNAME=pm2-conf-file
 
 pm2conffile_usage() # exit_code
 {
     cat <<EOF
-Usage: `basename $0` { option }
+Usage: $_PM2CONFFILE_PROGNAME { option }
   option:
     -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
     -h        : Display this help message
 EOF
     exit $1
-}
-
-pm2conffile_error() # msg
-{
-    echo $*
-    exit 1
 }
 
 pm2conffile_parse_cmdline()
@@ -36,10 +66,10 @@ pm2conffile_parse_cmdline()
 	esac
     done
 
+    [ $# -eq 0 ] || pm2conffile_usage 1
+
     PM2_CONF_FILE=${HOME}/.pm2/conf/${PM2_FLAVOR:-default}/.pm2conf
     export PM2_CONF_FILE
-
-    [ -f $PM2_CONF_FILE ] || pm2conffile_error "Error: \"${PM2_FLAVOR}\" may not be a valid flavor or PM2 is not yet configured this flavor (please run pm2conf in this case)."
 }
 
 # Programme principal

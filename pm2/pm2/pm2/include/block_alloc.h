@@ -57,5 +57,11 @@ void block_unpack_all();
 
 block_descr_t *block_merge_lists(block_descr_t *src, block_descr_t *dest);
 
+typedef void (*unpack_isomalloc_func_t)(void *isomalloc_data, void *extra, int size_extra);
+
+void block_special_pack(void *addr, int dest_node, unpack_isomalloc_func_t f, void *extra, size_t size);
+
+void block_init_rpc();
+
 #endif
 

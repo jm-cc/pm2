@@ -395,6 +395,21 @@
 
 #define tbx_contract_field(h, v, f) (tbx_clear_field((h), f), (h)[f] |= (unsigned char)((tbx_rshift((v), f ## _shift)) & f ## _mask))
 
+#define tbx_offset_of(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+							  
+/**
+ * tbx_container_of - cast a member of a structure out to the containing structure
+ *
+ * @ptr:        the pointer to the member.
+ * @type:       the type of the container struct this is embedded in.
+ * @member:     the name of the member within the struct.
+ *
+ */
+#define tbx_container_of(ptr, type, member) \
+	((type *)((char *)(typeof (&((type *)0)->member))(ptr)- \
+		  tbx_offset_of(type,member)))
+
+
 /*
  * System calls wrappers  ___________________________________________
  * ______________________////////////////////////////////////////////

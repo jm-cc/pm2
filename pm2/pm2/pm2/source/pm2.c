@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.17  2000/07/04 08:14:20  rnamyst
+By default, netserver threads are *not* spawned when only a single
+process is running.
+
 Revision 1.16  2000/06/02 09:57:44  rnamyst
 Removed some LOG_IN/LOG_OUT calls
 
@@ -84,7 +88,7 @@ static pm2_startup_func_t startup_func = NULL;
 
 static int spmd_conf[MAX_MODULES];
 
-unsigned __pm2_self, __conf_size;
+unsigned __pm2_self, __pm2_conf_size;
 
 marcel_key_t _pm2_lrpc_num_key,
   _pm2_mad_key,
@@ -118,6 +122,15 @@ void pm2_channel_alloc(pm2_channel_t *channel)
 int pm2_main_module(void)
 {
   return spmd_conf[0];
+}
+
+static int pm2_single_mode(void)
+{
+#ifdef FORCE_NET_THREADS
+  return 0;
+#else
+  return pm2_config_size() == 1;
+#endif
 }
 
 void pm2_set_startup_func(pm2_startup_func_t f)
@@ -157,10 +170,10 @@ void pm2_init(int *argc, char **argv)
 
   marcel_init(argc, argv);
 
-  mad_init(argc, argv, 0, spmd_conf, &__conf_size, &__pm2_self);
+  mad_init(argc, argv, 0, spmd_conf, &__pm2_conf_size, &__pm2_self);
 
 #if MAD2
-  {
+  if(!pm2_single_mode()) {
     int i;
 
     for(i=0; i<nb_of_channels; i++) {
@@ -174,7 +187,7 @@ void pm2_init(int *argc, char **argv)
 
   mad_buffers_init();
 
-  block_init(__pm2_self, __conf_size);
+  block_init(__pm2_self, __pm2_conf_size);
 
   marcel_key_create(&_pm2_lrpc_num_key, NULL);
   marcel_key_create(&_pm2_mad_key, NULL);
@@ -191,22 +204,22 @@ void pm2_init(int *argc, char **argv)
   pm2_migr_init();
 
 #ifdef DSM
-  dsm_pm2_init(__pm2_self, __conf_size);
+  dsm_pm2_init(__pm2_self, __pm2_conf_size);
 #endif
 
   if(startup_func != NULL)
     (*startup_func)();
 
+  if(!pm2_single_mode()) {
 #ifdef MAD2
-  {
     int i;
 
     for(i=0; i<nb_of_channels; i++)
       netserver_start(channel(i), MAX_PRIO);
-  }
 #else
-  netserver_start(MAX_PRIO);
+    netserver_start(MAX_PRIO);
 #endif
+  }
 }
 
 #ifdef MAD2
@@ -232,7 +245,7 @@ inline void pm2_send_stop_next_server()
   LOG_IN();
   if((__pm2_self != 0) && !already_called) {
     already_called = TRUE;
-    i= (__pm2_self+1) % __conf_size;
+    i= (__pm2_self+1) % __pm2_conf_size;
     pm2_send_stop_server(i);
   }
   LOG_OUT();
@@ -248,12 +261,14 @@ static void pm2_wait_end(void)
 
   if(!already_called) {
 
-    netserver_wait_end();
-    mdebug("pm2_wait_end netserver_wait_end completed\n");
+    if(!pm2_single_mode()) {
+      netserver_wait_end();
+      mdebug("pm2_wait_end netserver_wait_end completed\n");
 #ifdef MAD2
-    pm2_send_stop_next_server();
-    mdebug("pm2_wait_end pm2_send_stop_server completed\n");
+      pm2_send_stop_next_server();
+      mdebug("pm2_wait_end pm2_send_stop_server completed\n");
 #endif
+    }
 
     marcel_end();
 
@@ -295,32 +310,33 @@ void pm2_exit(void)
 
 void pm2_halt()
 {
+  if(!pm2_single_mode()) {
 #ifndef MAD2
-  int i;
-  unsigned tag = NETSERVER_END;
+    int i;
+    unsigned tag = NETSERVER_END;
 
-  if (!mad_can_send_to_self())
-    {
+    if(!mad_can_send_to_self()) {
       netserver_stop();
     }
   
-  for(i=0; i<__conf_size; i++) {
-    if (!(i == __pm2_self && !mad_can_send_to_self())) {
-      mad_sendbuf_init(i);
-      pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-      mad_sendbuf_send();
+    for(i=0; i<__pm2_conf_size; i++) {
+      if(!(i == __pm2_self && !mad_can_send_to_self())) {
+	mad_sendbuf_init(i);
+	pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+	mad_sendbuf_send();
+      }
     }
-  }
 #else
-  LOG_IN();
-  if(__pm2_self==0) {
-    pm2_send_stop_server(1);  
-    pm2_zero_halt=TRUE;
-  } else {
-    pm2_send_stop_server(0);  
-  }
-  LOG_OUT();
+    LOG_IN();
+    if(__pm2_self==0) {
+      pm2_send_stop_server(1);  
+      pm2_zero_halt=TRUE;
+    } else {
+      pm2_send_stop_server(0);  
+    }
+    LOG_OUT();
 #endif
+  }
 }
 
 void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func)

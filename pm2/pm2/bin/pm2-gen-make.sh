@@ -72,6 +72,7 @@ cat > $dst <<EOF
 
 LIB_GEN_LIB := `$PM2_CONFIG --libdir $LIBRARY`
 LIB_GEN_OBJ := `$PM2_CONFIG --objdir $LIBRARY`
+LIB_GEN_CPP := `$PM2_CONFIG --cppdir $LIBRARY`
 LIB_GEN_ASM := `$PM2_CONFIG --asmdir $LIBRARY`
 LIB_GEN_DEP := `$PM2_CONFIG --depdir $LIBRARY`
 LIB_GEN_STAMP := `$PM2_CONFIG --stampdir $LIBRARY`
@@ -104,6 +105,7 @@ cat > $dst <<EOF
 
 PRG_GEN_BIN := `$PM2_CONFIG --bindir $PROGRAM`
 PRG_GEN_OBJ := `$PM2_CONFIG --objdir $PROGRAM`
+PRG_GEN_CPP := `$PM2_CONFIG --cppdir $PROGRAM`
 PRG_GEN_ASM := `$PM2_CONFIG --asmdir $PROGRAM`
 PRG_GEN_DEP := `$PM2_CONFIG --depdir $PROGRAM`
 PRG_GEN_SRC := `$PM2_CONFIG --srcdir $PROGRAM`

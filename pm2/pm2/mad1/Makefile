@@ -62,3 +62,9 @@ $(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/$(LIB_PROT)/%.c
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
+libs: select
+
+.PHONY: select
+select:
+	$(COMMON_HIDE) pm2madselect 1
+	$(COMMON_HIDE) pm2custom $(LIB_PROT)

@@ -31,11 +31,12 @@
  * ============================
  */
 
-#define LEO_DEBUG_MODE
-#define LEO_MAD_DEBUG_MODE
+// #define LEO_DEBUG_MODE
+// #define LEO_MAD_DEBUG_MODE
 // #define LEO_TBX_DEBUG_MODE
 // #define LEO_TRACE_MODE
 // #define LEO_MARCEL_DEBUG_MODE
+#define LEO_MARCEL_SMP
 #define LEO_XMODE
 
 
@@ -73,6 +74,12 @@
 #else
 #warning [1;33m<<< [1;37mLeonie loaders trace mode:        [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_TRACE_MODE
+
+#ifdef LEO_MARCEL_SMP
+#warning [1;33m<<< [1;37mLeonie loaders marcel smp mode:   [1;32mactivated [1;33m    >>>[0m
+#else
+#warning [1;33m<<< [1;37mLeonie loaders marcel smmp mode:  [1;31mnot activated [1;33m>>>[0m
+#endif // LEO_MARCEL_SMP
 
 #ifdef LEO_XMODE
 #warning [1;33m<<< [1;37mLeonie loaders Xwindow mode:      [1;32mactivated [1;33m    >>>[0m
@@ -118,14 +125,15 @@ leo_default_loader(char              *application_name,
       dir_node  = tbx_htable_get(process->ref, "node");
       host_name = dir_node->name;
 
+      /* Main command */
       {
-	p_tbx_command_t   main_command = NULL;
-	p_tbx_arguments_t args         = NULL;
+	p_tbx_command_t     main_command = NULL;
+	p_tbx_arguments_t   args         = NULL;
+	p_tbx_environment_t env          = NULL;
 	    
 	main_command = tbx_command_init_to_c_string(application_name);
-
-
-	args = main_command->arguments;	    
+	env  = main_command->environment;
+	args = main_command->arguments;
 
 	tbx_arguments_append_c_strings_option(args, "--mad_leonie", ' ',
 					      net_server->local_host);
@@ -152,6 +160,10 @@ leo_default_loader(char              *application_name,
 #ifdef LEO_MARCEL_DEBUG_MODE
 	tbx_arguments_append_c_strings_option(args, "--debug", ':',
 					      "marcel-log");
+	tbx_arguments_append_c_strings_option(args, "--debug", ':',
+					      "mar-schedlock");
+	tbx_arguments_append_c_strings_option(args, "--debug", ':',
+					      "mar-trace");
 #endif // LEO_MARCEL_DEBUG_MODE
 	
 	main_command_string = tbx_command_to_string(main_command);
@@ -159,7 +171,8 @@ leo_default_loader(char              *application_name,
 	tbx_command_free(main_command);
 	main_command = NULL;
       }
-      
+
+      /* Relay command */
       {
 	p_tbx_command_t              relay_command = NULL;
 	p_tbx_environment_t          env           = NULL;
@@ -179,7 +192,14 @@ leo_default_loader(char              *application_name,
 	    
 	var = tbx_environment_variable_to_variable("LEO_XTERM");
 	tbx_environment_append_variable(env, var);
-	
+
+#ifdef LEO_MARCEL_SMP
+	var =
+	  tbx_environment_variable_init_to_c_strings("LEO_LD_PRELOAD",
+						     "${HOME}/lib/libpthread.so");
+	tbx_environment_append_variable(env, var);
+#endif // LEO_MARCEL_SMP
+
 	if (!auto_display)
 	  {
 	    var = tbx_environment_variable_to_variable("DISPLAY");
@@ -206,6 +226,7 @@ leo_default_loader(char              *application_name,
 	relay_command = NULL;
       }
 	  
+      /* Relay command environment */
       {
 	p_tbx_command_t   env_command = NULL;
 	p_tbx_arguments_t args        = NULL;
@@ -261,10 +282,20 @@ leo_default_loader(char              *application_name,
 
 	if (!pid)
 	  {
+	    {
+	      int i = 0;
+
+	      while (arg_set->argv[i])
+		{
+		  TRACE_STR("execvp command", arg_set->argv[i]);
+		  i++;
+		}
+	    }
+
 	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
 	    leo_error("execvp");
-	  }
+	  }	    
 	
 	process->pid = pid;
 #if defined (LEO_DEBUG_MODE) || defined (LEO_XMODE)

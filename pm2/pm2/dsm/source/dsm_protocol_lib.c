@@ -135,13 +135,11 @@ void dsmlib_wf_ask_for_write_access(dsm_page_index_t index)
 }
 
 
-void dsmlib_rs_send_read_copy(dsm_page_index_t index, dsm_node_t req_node, int tag)
+static void _internal_dsmlib_rs_send_read_copy(dsm_page_index_t index, dsm_node_t req_node, int tag)
 {
 #ifdef DSM_PROT_TRACE
-  fprintf(stderr, "entering the read server(%ld), access = %d\n", index, dsm_get_access(index));
+  fprintf(stderr, "entering the internal read server(%ld), access = %d, req_node = %d\n", index, dsm_get_access(index), req_node);
 #endif
-
-  dsm_lock_page(index);
 
   if (!dsm_next_owner_is_set(index))
     {
@@ -189,19 +187,31 @@ else
       dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, tag);
     }
   
+  EXIT();
+}
+
+
+void dsmlib_rs_send_read_copy(dsm_page_index_t index, dsm_node_t req_node, int tag)
+{
+#ifdef DSM_PROT_TRACE
+  fprintf(stderr, "entering the read server(%ld), access = %d, req_node = %d\n", index, dsm_get_access(index), req_node);
+#endif
+  ENTER();
+
+  dsm_lock_page(index);
+  _internal_dsmlib_rs_send_read_copy(index, req_node, tag);
   dsm_unlock_page(index);
 
   EXIT();
 }
 
 
-void dsmlib_ws_send_page_for_write_access(dsm_page_index_t index, dsm_node_t req_node, int tag)
+static void _internal_dsmlib_ws_send_page_for_write_access(dsm_page_index_t index, dsm_node_t req_node, int tag)
 {
 
 #ifdef DSM_PROT_TRACE
   fprintf(stderr, "entering the write server(%ld), req_node = %d\n", index, req_node);
 #endif
-  dsm_lock_page(index);
 
      if (dsm_next_owner_is_set(index))
        {
@@ -256,10 +266,23 @@ void dsmlib_ws_send_page_for_write_access(dsm_page_index_t index, dsm_node_t req
 	   dsm_set_prob_owner(index, req_node); // req_node will soon be owner
 	 }
 
-  dsm_unlock_page(index);
   EXIT();
 }
 
+
+void dsmlib_ws_send_page_for_write_access(dsm_page_index_t index, dsm_node_t req_node, int tag)
+{
+#ifdef DSM_PROT_TRACE
+  fprintf(stderr, "entering the write server(%ld), req_node = %d\n", index, req_node);
+#endif
+  ENTER();
+
+  dsm_lock_page(index);
+  _internal_dsmlib_ws_send_page_for_write_access(index, req_node, tag);
+  dsm_unlock_page(index);
+
+  EXIT();
+}
 
 void dsmlib_is_invalidate(dsm_page_index_t index, dsm_node_t req_node, dsm_node_t new_owner)
 {
@@ -372,7 +395,7 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 #ifdef DSM_QUEUE_TRACE
 	tfprintf(stderr, "Processing R-req(%d) from node %d (I am %p)\n", index, node, marcel_self());
 #endif
-	(*dsm_get_read_server(dsm_get_page_protocol(index)))(index, node, 0);
+	_internal_dsmlib_rs_send_read_copy(index, node, 0);
       }
      if(access == WRITE_ACCESS && dsm_next_owner_is_set(index))
       {
@@ -380,11 +403,9 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 #ifdef DSM_QUEUE_TRACE
 	tfprintf(stderr, "Processing W-req (%d)from next owner: node %d (I am %p) \n", index, node, marcel_self());
 #endif
-	(*dsm_get_write_server(dsm_get_page_protocol(index)))(index, node, 0);
+	_internal_dsmlib_ws_send_page_for_write_access(index, node, 0);
 	dsm_clear_next_owner(index); // these last 2 calls should be atomic...
       }
-
-//     dsm_lock_page(index);
 
      dsm_unlock_page(index);
      

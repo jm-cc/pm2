@@ -337,7 +337,7 @@ delete_flavor() {
 
 verify_option() { # module name
     # not yet implemented
-    name=`echo $2 | tr -c -d '[\-_a-zA-Z0-9]'`
+    name=`echo $2 | tr -c -d '_\-a-zA-Z0-9'`
     if [ "$2" != "$name" ]; then
 	echo "Invalid characters in option --$2" 1>&2
 	exit 1

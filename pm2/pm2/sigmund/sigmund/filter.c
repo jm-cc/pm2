@@ -263,20 +263,23 @@ static void begin_function(trace *tr)
   tmp = (function_time_list) malloc(sizeof(struct function_time_list_st));
   assert(tmp != NULL);
   tmp->next = options.function_begin;
-  tmp->time = tr->clock;
+  tmp->begin = tr->clock;
   tmp->code = tr->code;
   tmp->type = tr->type;
   tmp->thread = tr->thread;
   options.function_begin = tmp;
 }
 
-static void add_function_time(int code, mode type, u_64 time)
+static void add_function_time(int code, mode type, int thread, u_64 time, u_64 begin, u_64 end)
 {
   function_time_list tmp;
   tmp = (function_time_list) malloc(sizeof(struct function_time_list_st));
   assert(tmp != NULL);
   tmp->next = options.function_time;
   tmp->time = time;
+  tmp->thread = thread;
+  tmp->begin = begin;
+  tmp->end = end;
   tmp->code = code;
   tmp->type = type;
   options.function_time = tmp;
@@ -289,12 +292,13 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
   prev = options.function_begin;
   if (prev == FUNCTION_TIME_LIST_NULL) {
     // Erreur de parenthésage, bon la c'est la merde on fait quoi...
-    fprintf(stderr, "Erreur de parenthésage\n");
-    exit(1);   // La c'est méchant mais bon: return; ??
+    fprintf(stderr, "Erreur de parenthésage 1\n");
+    return;   // La c'est méchant mais bon: return; ??
   }
-  if ((prev->code == begin_code) && (prev->type == begin_type)) {
+  if ((codecmp(prev->type, prev->code, begin_type, begin_code)) && \
+      (tr->thread == prev->thread)) {
     options.function_begin = prev->next;
-    add_function_time(begin_code, begin_type, tr->clock - prev->time);
+    add_function_time(begin_code, begin_type, tr->thread, tr->clock - prev->begin, prev->begin, tr->clock);
     free(prev);
     return;
   }
@@ -303,7 +307,7 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
     if ((codecmp(begin_type, begin_code, tmp->type, tmp->code)) && \
 	(tr->thread == tmp->thread)){
       prev->next = tmp->next;
-      add_function_time(begin_code, begin_type, tr->clock - tmp->time);
+      add_function_time(begin_code, begin_type, tr->thread, tr->clock - tmp->begin, tmp->begin, tr->clock);
       free(tmp);
       return;
     }
@@ -311,8 +315,27 @@ static void end_function(int begin_code, mode begin_type, trace *tr)
     tmp = tmp->next;
   }
   // Erreur de parenthésage, bon la c'est la merde on fait quoi...
-  fprintf(stderr, "Erreur de parenthésage\n");
-  exit(1);   // La c'est méchant mais bon (on peut supprimer => plus cool)
+  fprintf(stderr, "Erreur de parenthésage 2\n");
+  return;   // La c'est méchant mais bon (on peut supprimer => plus cool)
+}
+
+int filter_get_function_time(struct function_time_list_st *fct_time)
+{
+  function_time_list tmp;
+  function_time_list prev;
+  tmp = options.function_time;
+  if (tmp == FUNCTION_TIME_LIST_NULL) return -1;
+  prev = tmp;
+  while (tmp->next != FUNCTION_TIME_LIST_NULL) {
+    prev = tmp;
+    tmp = tmp->next;
+  }
+  if(prev->next != FUNCTION_TIME_LIST_NULL)
+    prev->next = FUNCTION_TIME_LIST_NULL;
+  else options.function_time = FUNCTION_TIME_LIST_NULL;
+  *fct_time = *tmp;
+  free(tmp);
+  return 0;
 }
 
 static void filter_add_thread_fun(int thread)
@@ -468,12 +491,12 @@ static void search_end_function(trace *tr)
       if (codecmp(temp->end_type, temp->end, tr->type, tr->code)) {
 	if (temp->end_param_active == FALSE) {
 	  filter_del_thread_fun(tr->thread);
-	  end_function(temp->end, temp->end_type, tr);
+	  end_function(temp->begin, temp->begin_type, tr);
 	}
 	else {
 	  if (temp->end_param == tr->args[0]) {
 	    filter_del_thread_fun(tr->thread);
-	    end_function(temp->end, temp->end_type, tr);
+	    end_function(temp->begin, temp->begin_type, tr);
 	  }
 	}
       }

@@ -61,6 +61,7 @@ make_ln()
 # pm2 links
 echo PM2
 make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
+make_ln ${PM2_ROOT}/console graphic/icons icons
 
 
 # architecture-specific directories for the storage of binaries, etc.
@@ -73,7 +74,7 @@ echo Marcel
 make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_arch pm2_arch
 make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_sys pm2_sys
 make_ln ${MARCEL_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
-make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
+#make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
 make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
 make_ln ${MARCEL_ROOT}/include/ ../../include/timing.h timing.h
 make_ln ${MARCEL_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c

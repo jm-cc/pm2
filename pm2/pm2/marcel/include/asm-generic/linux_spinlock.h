@@ -32,7 +32,7 @@
 typedef volatile unsigned ma_spinlock_t;
 #else
 #include <pthread.h>
-typedef pthread_mutex_t mutex;
+typedef pthread_mutex_t ma_spinlock_t;
 #endif
 #endif
 
@@ -46,7 +46,7 @@ typedef pthread_mutex_t mutex;
 #else
 #include <pthread.h>
 #define MA_SPIN_LOCK_UNLOCKED PTHREAD_MUTEX_INITIALIZER
-#define ma_spin_lock_init(x) pthread_mutex_init(&x,NULL);
+#define ma_spin_lock_init(x) pthread_mutex_init(x,NULL);
 #endif
 #endif
 
@@ -73,15 +73,15 @@ typedef pthread_mutex_t mutex;
 #error "Can't avoid using Posix Threads library if neither cmpxchg nor testandset are implemented !"
 #endif
 #define ma_spin_is_locked(x)	({ int ___ret; \
-				pthread_mutex_t *___px = &(x); \
+				pthread_mutex_t *___px = (x); \
 				if (!(___ret = pthread_mutex_trylock(___px))) \
 				  pthread_mutex_unlock(___px); \
 				___ret != 0; })
 #define ma_spin_unlock_wait(x)	do { } while(ma_spin_is_locked(x))
 
-#define _ma_raw_spin_unlock(x) pthread_mutex_lock(&(x))
-#define _ma_raw_spin_trylock(x) (!(pthread_mutex_trylock(&(x))))
-#define _ma_raw_spin_lock(x) do { if (!(ma_raw_spin_lock(&(x)))) \
+#define _ma_raw_spin_unlock(x) pthread_mutex_unlock((x))
+#define _ma_raw_spin_trylock(x) (!(pthread_mutex_trylock((x))))
+#define _ma_raw_spin_lock(x) do { if (!(pthread_mutex_lock((x)))) \
 				MA_BUG() } \
 				while (0)
 #endif

@@ -70,10 +70,11 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 	}
 #else
 #define MA_ATOMIC_ADD_RETURN(test) \
-	int old, new, ret; \
+	int old, new; \
 	ma_spin_lock_softirq(&v->lock); \
 	old = ma_atomic_read(v); \
-	ma_atomic_set(v, old + i); \
+	new = old + i; \
+	ma_atomic_set(v, new); \
 	ma_spin_unlock_softirq(&v->lock); \
 	return test;
 #endif

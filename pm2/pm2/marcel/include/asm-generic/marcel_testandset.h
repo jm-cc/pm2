@@ -15,7 +15,7 @@
  */
 
 #section marcel_macros
-#depend "asm/marcel_compareexchange[macros]"
+#depend "asm/marcel_compareexchange.h[macros]"
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_HAVE_TESTANDSET 1
 #define pm2_spinlock_testandset(spinlock) ma_cmpxchg(spinlock, 0, 1)
@@ -28,7 +28,6 @@ extern ma_spinlock_t testandset_spinlock;
 #section marcel_functions
 #ifndef MA_HAVE_COMPAREEXCHANGE
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
-static __inline__ unsigned pm2_spinlock_release(volatile unsigned *spinlock) __tbx_deprecated__;
 #endif
 #section marcel_inline
 #ifndef MA_HAVE_COMPAREEXCHANGE

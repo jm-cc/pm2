@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_types.h,v $
+Revision 1.3  2000/01/13 14:44:33  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.2  1999/12/15 17:31:26  oaumage
 Ajout de la commande de logging de CVS
 
@@ -59,14 +63,6 @@ typedef long    mad_link_id_t,              *p_mad_link_id_t;
 typedef long    mad_channel_id_t,           *p_mad_channel_id_t;
 typedef int     mad_adapter_id_t,           *p_mad_adapter_id_t;
 typedef int     mad_configuration_size_t,   *p_mad_configuration_size_t;
-typedef int     mad_list_length_t,          *p_mad_list_length_t;
-typedef int     mad_list_mark_position_t,   *p_mad_list_mark_position_t;
 typedef int     mad_buffer_alignment_t,     *p_mad_buffer_alignment_t;
-
-typedef enum
-{
-  mad_flag_clear = 0,
-  mad_flag_set
-} mad_flag_t, *p_mad_flag_t;
 
 #endif /* MAD_TYPES_H */

@@ -316,7 +316,9 @@ static inline void resched_task(marcel_task_t *p)
 
 	if (!need_resched && !nrpolling && (ma_task_lwp(p) != LWP_SELF))
 		//smp_send_reschedule(task_cpu(p));
-		RAISE(NOT_IMPLEMENTED);
+		//RAISE(NOT_IMPLEMENTED);
+		; // TODO: essayer de trouver un LWP (éventuellement idle)
+		  // qui pourrait s'en occuper ?
 	ma_preempt_enable();
 #else
 	ma_set_tsk_need_resched(p);
@@ -474,6 +476,11 @@ repeat_lock_task:
 				 */
 //				p->activated = -1;
 			}
+			/* sens différent maintenant: une tâche n'est plus
+			 * "sur" un lwp, mais dans une liste dans laquelle un
+			 * lwp peut piocher. TODO: on pourrait cependant
+			 * vérifier si la runqueue de la tâche à exécuter est
+			 * atteignable par ce lwp */
 			if (sync && (ma_task_lwp(p) == LWP_SELF))
 				__activate_task(p, rq);
 			else {

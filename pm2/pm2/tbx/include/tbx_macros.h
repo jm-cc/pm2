@@ -232,7 +232,7 @@ __tbx_backtrace(void)
 #    define __TBX_PRINT_TRACE() __tbx_backtrace();
 #  endif // TBX_USE_SAFE_MACROS
 #else  // TBX_BACKTRACE_ON_FAILURE
-#  define __TBX_PRINT_TRACE() 0
+#  define __TBX_PRINT_TRACE() (void)(0)
 #endif // TBX_BACKTRACE_ON_FAILURE
 
 #ifndef FAILURE_CONTEXT

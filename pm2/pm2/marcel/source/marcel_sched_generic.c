@@ -150,8 +150,9 @@ void marcel_sched_shutdown()
 	// Si nécessaire, on bascule sur le LWP(0)
 	marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
 
+#ifdef MA__TIMER
 	marcel_sig_exit();
-
+#endif
 #ifdef MA__SMP
 
 
@@ -197,12 +198,19 @@ void marcel_sched_shutdown()
 
 static any_t __attribute__((noreturn)) idle_func(any_t hlwp)
 {
+	if (hlwp == NULL) {
+		/* upcall_new_task est venue ici ? */
+		RAISE(PROGRAM_ERROR);
+	}
 	for(;;) {
 		marcel_yield();
 	}
 }
 
 MA_DEFINE_PER_LWP(marcel_task_t *,idle_task)=NULL;
+#ifdef MA__ACTIVATION
+MA_DEFINE_PER_LWP(marcel_task_t *,upcall_new_task)=NULL;
+#endif
 
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {
@@ -251,7 +259,8 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
-	marcel_attr_setvpmask(MARCEL_VPMASK_ALL_BUT_VP(lwp->number));
+	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_FULL
+			/*MARCEL_VPMASK_ALL_BUT_VP(lwp->number)*/);
 	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
 #ifdef PM2
 	{
@@ -265,13 +274,12 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	}
 #endif
 
-	sched_unlock(lwp);
-
 	// la fonction ne sera jamais exécutée, c'est juste pour avoir une
 	// structure de thread marcel dans upcall_new
-	marcel_create_special(&lwp->sched.upcall_new_task, &attr, (void*)void_func, NULL);
+	marcel_create_special(&(ma_per_lwp(upcall_new_task, lwp)),
+			      &attr, (void*)idle_func, NULL);
 	
-	MTRACE("Upcall_Task", lwp->sched.upcall_new_task);
+	MTRACE("Upcall_Task", ma_per_lwp(upcall_new_task, lwp));
 	
 	/****************************************************/
 #endif

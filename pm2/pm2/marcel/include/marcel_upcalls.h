@@ -14,21 +14,23 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
-#ifndef MA__ACTIVATION
-#  define marcel_upcall_enable(lwp, upcall) ((void)0)
-#  define marcel_upcall_disable(lwp, upcall) ((void)0)
-#  define marcel_upcall_init(nb_act) ((void)0)
-#else
+#section macros
+#ifdef MA__ACTIVATION
 #  ifdef ACT_TIMER
 #    ifdef CONFIG_ACT_TIMER
 #      undef CONFIG_ACT_TIMER
 #    endif
 #    define CONFIG_ACT_TIMER
 #  endif
-#  include <asm/act.h>
+#  include "asm/act.h"
 #endif
 
+#section marcel_macros
+#ifndef MA__ACTIVATION
+#  define marcel_upcall_enable(lwp, upcall) ((void)0)
+#  define marcel_upcall_disable(lwp, upcall) ((void)0)
+#  define marcel_upcall_init(nb_act) ((void)0)
+#endif
 
 #section marcel_variables
 #ifdef MA__ACTIVATION

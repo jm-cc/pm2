@@ -34,10 +34,6 @@
 #include <fcntl.h>
 #include <signal.h>
 
-#ifdef MA__ACTIVATION
-#include "sys/marcel_upcalls.h"
-#endif
-
 #ifdef UNICOS_SYS
 #include <sys/mman.h>
 #endif

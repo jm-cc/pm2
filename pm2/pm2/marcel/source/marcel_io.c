@@ -351,7 +351,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 {
 #ifdef MA__ACTIVATION
-	select(nfds, rfds, wfds, NULL, NULL);
+	return select(nfds, rfds, wfds, NULL, NULL);
 #else
 	struct tcp_ev ev;
 
@@ -361,9 +361,8 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	ev.nfds = nfds;
 	mdebug("Selecting within %i fds\n", nfds);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst);
+	return ev.ret_val;
 #endif
-
-  return ev.ret_val;
 }
 
 /* To force the reading/writing of an exact number of bytes */

@@ -52,7 +52,7 @@ extern int __zero_fd;
 #elif defined(SOLARIS_SYS) && defined(X86_ARCH)
 
 extern int __zero_fd;
-extern void common_init(int *argc, char **argv);
+extern int main();
 #define ISOADDR_AREA_TOP       0xafff0000
 #define IS_ON_MAIN_STACK(sp)   ((sp) < (unsigned long)common_init)
 #define FILE_TO_MAP            __zero_fd

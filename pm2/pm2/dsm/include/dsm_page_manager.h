@@ -37,18 +37,6 @@ dsm_set_copyset_size (const dsm_page_index_t, const int);
 extern void
 dsm_set_twin_ptr (const dsm_page_index_t, void * const);
 
-extern void
-dsm_signal_write_page (const dsm_page_index_t);
-
-extern void
-dsm_wait_for_write_page (const dsm_page_index_t);
-
-extern void
-dsm_wait_for_read_page (const dsm_page_index_t);
-
-extern void
-dsm_signal_read_page (const dsm_page_index_t);
-
 /* End of functions added for the hierarchical consistency protocol */
 /**********************************************************************/
 
@@ -285,12 +273,6 @@ dsm_validate_page_entry (dsm_page_index_t index);
 
 extern void
 dsm_enable_page_entry (dsm_page_index_t index, dsm_node_t owner, dsm_proto_t protocol, void *addr, size_t size, boolean map);
-
-extern dsm_proto_t
-dsm_get_default_protocol (void);
-
-extern void
-dsm_set_default_protocol (dsm_proto_t protocol);
 
 extern void
 dsm_set_page_protocol (dsm_page_index_t index, dsm_proto_t protocol);

@@ -80,7 +80,7 @@ leop_htable:
 ;
 
 leop_htable_entry:
-  LEOP_ID '=' leop_list
+  LEOP_ID ':' leop_list
 {
   $$ = malloc(sizeof(leoparse_htable_entry_t));
   $$->id     = $1;
@@ -88,7 +88,7 @@ leop_htable_entry:
   $$->object = NULL;
   $$->slist  = $3;
 }
-| LEOP_ID ':' leop_object
+| LEOP_ID '=' leop_object
 {
   $$ = malloc(sizeof(leoparse_htable_entry_t));
   $$->id     = $1;

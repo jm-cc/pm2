@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sisci.h,v $
+Revision 1.6  2000/03/15 09:57:13  oaumage
+- renommage du polling Nexus
+
 Revision 1.5  2000/03/02 15:45:37  oaumage
 - support du polling Nexus
 
@@ -91,10 +94,10 @@ p_mad_link_t mad_sisci_choice(p_mad_connection_t,
 
 void mad_sisci_new_message(p_mad_connection_t);
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_sisci_poll_message(p_mad_channel_t);
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t mad_sisci_receive_message(p_mad_channel_t);
 void mad_sisci_send_buffer(p_mad_link_t,

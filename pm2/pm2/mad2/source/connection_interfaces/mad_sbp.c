@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.7  2000/02/08 17:49:48  oaumage
+- support de la net toolbox
+- mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
+              vers la net toolbox
+
 Revision 1.6  2000/01/13 14:46:12  oaumage
 - adaptation pour la prise en compte de la toolbox
 
@@ -520,7 +525,7 @@ mad_sbp_after_open_channel(p_mad_channel_t channel)
       if (frame->mad_header.channel_id == channel->id)
 	{
 	  p_mad_sbp_list_element_t        next_element = element->next;
-	  mad_host_id_t                   origin;
+	  ntbx_host_id_t                   origin;
 	  mad_sbp_message_type_t          message_type;
 	  p_mad_connection_t              tmp_connection;
 	  p_mad_sbp_connection_specific_t tmp_connection_specific;
@@ -696,7 +701,7 @@ mad_sbp_receive_message(p_mad_channel_t channel)
   else
 #endif /* PM2 */
     {
-      static mad_host_id_t host_id = 0;
+      static ntbx_host_id_t host_id = 0;
 
       /* Incoming communication detection code */      
       while (tbx_true)
@@ -973,7 +978,7 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
 
       if (host_id == rank)
 	{
-	  mad_host_id_t remote_host_id;
+	  ntbx_host_id_t remote_host_id;
 	  
 	  gethostname(configuration->host_name[host_id], MAXHOSTNAMELEN);
 	  
@@ -1055,7 +1060,7 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
 
 void
 mad_sbp_send_adapter_parameter(p_mad_adapter_t   spawn_adapter,
-			       mad_host_id_t     remote_host_id,
+			       ntbx_host_id_t     remote_host_id,
 			       char             *parameter)
 {
   p_mad_sbp_adapter_specific_t spawn_adapter_specific =

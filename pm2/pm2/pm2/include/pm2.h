@@ -98,6 +98,21 @@ void pm2_rawrpc_end(void);
     marcel_sem_V((marcel_sem_t *)marcel_getspecific(_pm2_mad_key)); \
   }
 
+_PRIVATE_ typedef struct {
+  marcel_sem_t sem;
+  unsigned proc;
+  marcel_sem_t *sem_ptr;
+} pm2_completion_t;
+
+void pm2_completion_init(pm2_completion_t *c);
+
+void pm2_completion_pack(pm2_completion_t *c);
+void pm2_completion_unpack(pm2_completion_t *c);
+
+void pm2_completion_wait(pm2_completion_t *c);
+void pm2_completion_signal(pm2_completion_t *c);
+
+
 void pm2_channel_alloc(pm2_channel_t *channel);
 
 

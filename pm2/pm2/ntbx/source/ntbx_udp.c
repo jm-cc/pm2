@@ -101,6 +101,7 @@ ntbx_udp_socket_create(p_ntbx_udp_address_t address)
   
   temp.sin_family      = AF_INET;
   temp.sin_addr.s_addr = htonl(INADDR_ANY);
+  temp.sin_port        = 0;
   
   SYSCALL(bind(desc, (struct sockaddr *)&temp, lg));
 

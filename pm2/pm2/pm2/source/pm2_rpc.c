@@ -34,6 +34,18 @@
 
 ______________________________________________________________________________
 $Log: pm2_rpc.c,v $
+Revision 1.7  2000/07/14 16:17:14  gantoniu
+Merged with branch dsm3
+
+Revision 1.6.10.2  2000/07/04 17:31:46  gantoniu
+I don't remember.
+
+Revision 1.6.10.1  2000/06/13 16:44:12  gantoniu
+New dsm branch.
+
+Revision 1.6.8.1  2000/06/07 09:19:40  gantoniu
+Merging new dsm with current PM2 : first try.
+
 Revision 1.6  2000/02/28 11:17:16  rnamyst
 Changed #include <> into #include "".
 
@@ -46,6 +58,7 @@ ______________________________________________________________________________
 
 #include "pm2.h"
 #include "sys/netserver.h"
+#include "pm2_sync.h"
 
 #define MAX_LRPC_FUNCS	50
 
@@ -242,7 +255,7 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     attr = _pm2_lrpc_attr[num];
     marcel_attr_setstackaddr(&attr,
 			     slot_general_alloc(NULL, 0,
-						&granted, NULL));
+						&granted, NULL, NULL));
     marcel_attr_setstacksize(&attr, granted);
     marcel_attr_setprio(&attr, pm2_attr->priority);
     marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
@@ -323,7 +336,7 @@ static void netserver_lrpc(void)
 
   attr = _pm2_lrpc_attr[num];
   marcel_attr_setstackaddr(&attr,
-			   slot_general_alloc(NULL, 0, &granted, NULL));
+			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);
   marcel_attr_setprio(&attr, priority);
   marcel_attr_setschedpolicy(&attr, sched_policy);
@@ -465,7 +478,7 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     attr = _pm2_lrpc_attr[num];
     marcel_attr_setstackaddr(&attr,
 			     slot_general_alloc(NULL, 0,
-						&granted, NULL));
+						&granted, NULL, NULL));
     marcel_attr_setstacksize(&attr, granted);
     marcel_attr_setprio(&attr, pm2_attr->priority);
     marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
@@ -542,7 +555,7 @@ static void netserver_async_lrpc(void)
 
   attr = _pm2_lrpc_attr[num];
   marcel_attr_setstackaddr(&attr,
-			   slot_general_alloc(NULL, 0, &granted, NULL));
+			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);
   marcel_attr_setprio(&attr, priority);
   marcel_attr_setschedpolicy(&attr, sched_policy);
@@ -604,7 +617,7 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	attr = _pm2_lrpc_attr[num];
 	marcel_attr_setstackaddr(&attr,
 				 slot_general_alloc(NULL, 0,
-						    &granted, NULL));
+						    &granted, NULL, NULL));
 	marcel_attr_setstacksize(&attr, granted);
 	marcel_attr_setprio(&attr, pm2_attr->priority);
 	marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
@@ -799,7 +812,9 @@ void pm2_rpc_init(void)
   int i;
 
   pm2_console_init_rpc();
-  pm2_isomalloc_init_rpc();
+  isoaddr_init_rpc();
+  pm2_barrier_init_rpc();
+
 #ifdef DSM
   dsm_pm2_init_rpc();
 #endif

@@ -91,17 +91,8 @@ leo_default_loader(p_leo_settings_t settings,
 	    tbx_arguments_append_arguments(args, settings->args);
 	  }
 
-#ifndef LEO_IP
 	tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
 						 net_server->local_host);
-#else // LEO_IP
-	{
-	  char ip[11];
-
-	  sprintf(ip, "0x%lx", (unsigned long) net_server->local_host_ip);
-	  tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ', ip);
-	}
-#endif // LEO_IP
 
 	tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
 					      net_server->
@@ -124,20 +115,6 @@ leo_default_loader(p_leo_settings_t settings,
 	env  = relay_command->environment;
 	args = relay_command->arguments;
 
-#ifndef LEO_EXPORT_MODE
-	var = tbx_environment_variable_to_variable("PATH");
-	tbx_environment_variable_append_cstring(var, ':', "${PATH}");
-	tbx_environment_append_variable(env, var);
-
-	var = tbx_environment_variable_to_variable("PM2_ROOT");
-	tbx_environment_append_variable(env, var);
-
-	var = tbx_environment_variable_to_variable("LEO_XTERM");
-	tbx_environment_append_variable(env, var);
-
-	var = tbx_environment_variable_to_variable("LEO_EXTERNAL_WRAPPER");
-	tbx_environment_append_variable(env, var);
-#else // LEO_EXPORT_MODE
 	if (settings->export_mode)
 	  {
 	    var = tbx_environment_variable_to_variable("PATH");
@@ -153,7 +130,6 @@ leo_default_loader(p_leo_settings_t settings,
 	    var = tbx_environment_variable_to_variable("LEO_EXTERNAL_WRAPPER");
 	    tbx_environment_append_variable(env, var);
 	  }
-#endif // LEO_EXPORT_MODE
 
 	if (settings->smp_mode)
 	  {
@@ -325,18 +301,12 @@ leo_bipload_loader(p_leo_settings_t settings,
       env  = relay_command->environment;
       args = relay_command->arguments;
 
-#ifndef LEO_EXPORT_MODE
-      var = tbx_environment_variable_to_variable("PATH");
-      tbx_environment_variable_append_cstring(var, ':', "${PATH}");
-      tbx_environment_append_variable(env, var);
-#else // LEO_EXPORT_MODE
       if (settings->export_mode)
 	{
 	  var = tbx_environment_variable_to_variable("PATH");
 	  tbx_environment_variable_append_cstring(var, ':', "${PATH}");
 	  tbx_environment_append_variable(env, var);
 	}
-#endif // LEO_EXPORT_MODE
 
       tbx_slist_ref_to_head(process_slist);
       do
@@ -494,24 +464,8 @@ leo_bipload_loader(p_leo_settings_t settings,
 	  tbx_arguments_append_arguments(args, settings->args);
 	}
 
-#ifndef LEO_IP
       tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
                                        net_server->local_host);
-
-
-#else // LEO_IP
-      {
-	char ip[11];
-
-	//sprintf(ip, "%d.%d.%d.%d",
-	//	(unsigned char)(net_server->local_host_ip >> 24),
-	//	(unsigned char)(net_server->local_host_ip >> 16),
-	//	(unsigned char)(net_server->local_host_ip >> 8),
-	//	(unsigned char)(net_server->local_host_ip));
-	sprintf(ip, "0x%lx", (unsigned long)net_server->local_host_ip);
-	tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ', ip);
-      }
-#endif // LEO_IP
 
       tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
 				       net_server->
@@ -534,17 +488,6 @@ leo_bipload_loader(p_leo_settings_t settings,
       env  = relay_command->environment;
       args = relay_command->arguments;
 
-#ifndef LEO_EXPORT_MODE
-      var = tbx_environment_variable_to_variable("PATH");
-      tbx_environment_variable_append_cstring(var, ':', "${PATH}");
-      tbx_environment_append_variable(env, var);
-
-      var = tbx_environment_variable_to_variable("PM2_ROOT");
-      tbx_environment_append_variable(env, var);
-
-      var = tbx_environment_variable_to_variable("LEO_XTERM");
-      tbx_environment_append_variable(env, var);
-#else // LEO_EXPORT_MODE
       if (settings->export_mode)
 	{
 	  var = tbx_environment_variable_to_variable("PATH");
@@ -557,7 +500,6 @@ leo_bipload_loader(p_leo_settings_t settings,
 	  var = tbx_environment_variable_to_variable("LEO_XTERM");
 	  tbx_environment_append_variable(env, var);
 	}
-#endif // LEO_EXPORT_MODE
 
       if (!auto_display)
 	{
@@ -571,7 +513,9 @@ leo_bipload_loader(p_leo_settings_t settings,
 	}
 
       //	tbx_arguments_append_cstring(args, "-v");
+#ifdef LYON
       tbx_arguments_append_cstring(args, "-mget");
+#endif /* LYON */
       tbx_arguments_append_cstring(args, "-hwflow");
       tbx_arguments_append_cstring(args, "leo-load");
 

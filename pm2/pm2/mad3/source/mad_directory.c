@@ -1222,6 +1222,13 @@ mad_directory_exit(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
+void
+mad_directory_update(p_mad_madeleine_t madeleine)
+{
+  LOG_IN();
+  LOG_OUT();
+}
+
 
 /*
  * Local variables:

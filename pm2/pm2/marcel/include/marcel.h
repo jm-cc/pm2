@@ -202,13 +202,10 @@ int marcel_cleanup_push(cleanup_func_t func, any_t arg);
 int marcel_cleanup_pop(boolean execute);
 
 
-/* ========= deviations ========== */
+/* ===== suspending & resuming ===== */
 
-void marcel_enabledeviation(void);
-void marcel_disabledeviation(void);
-
-void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg);
-
+void marcel_suspend(marcel_t pid);
+void marcel_resume(marcel_t pid);
 
 /* =========== migration =========== */
 

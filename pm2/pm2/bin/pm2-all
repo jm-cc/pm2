@@ -39,7 +39,7 @@ PM2_CONF_FILE=`pm2-conf-file`
 
 export PM2_CONF_FILE
 
-cmd="$@"
+cmd=${@:+"$@"}
 
 if [ -f ${PM2_CONF_FILE} ] ; then
     set -- `cat ${PM2_CONF_FILE}`

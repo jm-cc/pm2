@@ -241,7 +241,7 @@ static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 	array->nr_active--;
 	list_del(&p->sched.internal.run_list);
 	if (list_empty(array->queue + p->sched.internal.prio)) {
-		sched_debug("array %p empty\n",array);
+		sched_debug("array %p (prio %d) empty\n",array, p->sched.internal.prio);
 		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
 	}
 	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);

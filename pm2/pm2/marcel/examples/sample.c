@@ -75,19 +75,21 @@ int marcel_main(int argc, char *argv[])
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
 #endif
+
    for(i=0; i<NB; i++) {
      marcel_attr_setschedpolicy(&attr, SCHED_POLICY);
      marcel_create(&pid[i], &attr, writer, (any_t)mess[i]);
    }
-#ifdef PROFILE
-   profile_stop();
-#endif
 
    for(i=0; i<NB; i++) {
      marcel_join(pid[i], &status);
      if(status == ALL_IS_OK)
        tprintf("Thread %p completed ok.\n", pid[i]);
    }
+
+#ifdef PROFILE
+   profile_stop();
+#endif
 
    marcel_end();
    return 0;

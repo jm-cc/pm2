@@ -204,7 +204,8 @@ void pm2_init_purge_cmdline(int *argc, char *argv[])
 {}
 
 #ifdef MAD2
-inline void pm2_send_stop_server(int i){
+inline void pm2_send_stop_server(int i)
+{
   unsigned tag = NETSERVER_END;
   int c;
 
@@ -218,21 +219,7 @@ inline void pm2_send_stop_server(int i){
   LOG_OUT();
 }
 
-inline void pm2_send_stop_next_server()
-{
-  int i;
-  static boolean already_called = FALSE;
-
-  LOG_IN();
-  if((__pm2_self != 0) && !already_called) {
-    already_called = TRUE;
-    i= (__pm2_self+1) % __pm2_conf_size;
-    pm2_send_stop_server(i);
-  }
-  LOG_OUT();
-}
-
-int pm2_zero_halt=FALSE;
+volatile int pm2_zero_halt = FALSE;
 #endif
 
 static void pm2_wait_end(void)
@@ -242,13 +229,11 @@ static void pm2_wait_end(void)
 
   if(!already_called) {
 
+    LOG_IN();
+
     if(!pm2_single_mode()) {
       netserver_wait_end();
       mdebug("pm2_wait_end netserver_wait_end completed\n");
-#ifdef MAD2
-      pm2_send_stop_next_server();
-      mdebug("pm2_wait_end pm2_send_stop_server completed\n");
-#endif
     }
 
     marcel_end();
@@ -261,11 +246,15 @@ static void pm2_wait_end(void)
     fprintf(stderr, mess);
 
     already_called = TRUE;
+
+    LOG_OUT();
   }
 }
 
 void pm2_exit(void)
 {
+  LOG_IN();
+
   pm2_wait_end();
 
   mdebug("pm2_wait_end completed\n");
@@ -291,10 +280,14 @@ void pm2_exit(void)
 
   mdebug("dsm_pm2_exit completed\n");
 #endif
+
+  LOG_OUT();
 }
 
 void pm2_halt()
 {
+  LOG_IN();
+
   if(!pm2_single_mode()) {
 #ifndef MAD2
     int i;
@@ -312,16 +305,15 @@ void pm2_halt()
       }
     }
 #else
-    LOG_IN();
     if(__pm2_self==0) {
       pm2_zero_halt=TRUE;
       pm2_send_stop_server(1);  
     } else {
       pm2_send_stop_server(0);  
     }
-    LOG_OUT();
 #endif
   }
+  LOG_OUT();
 }
 
 void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func)

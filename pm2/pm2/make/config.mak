@@ -23,11 +23,6 @@ MAKEFILE_FILE := Makefile
 AS := gcc # needed for some gcc specific flags
 LD := gcc # needed for some gcc specific flags
 
-# Categorie(s) de librairies a construire
-#---------------------------------------------------------------------
-BUILD_STATIC_LIBS := true
-#BUILD_DYNAMIC_LIBS := true
-
 # Controle du contenu de l'affichage
 #---------------------------------------------------------------------
 #SHOW_FLAGS=true

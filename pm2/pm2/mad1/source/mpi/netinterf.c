@@ -35,7 +35,6 @@
 
 #define USE_MARCEL_POLL
 #define USE_DYN_ARRAYS
-/*#define DEBUG*/
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -115,6 +114,24 @@ static void mpi_io_group(marcel_pollid_t id)
     nb_mpi_req++;
   }
   mdebug("Nb of MPI polling requests = %d\n", nb_mpi_req);
+}
+
+static void *mpi_io_fast_poll(marcel_pollid_t id,
+			      any_t arg)
+{
+  mpi_io_arg_t *myarg = (mpi_io_arg_t *)arg;
+  int flag;
+
+  if(mpi_trylock()) {
+    MPI_Test(&myarg->req, &flag, &myarg->status);
+    mpi_unlock();
+
+    if(flag != 0) {
+      mdebug("Fast Poll Success !! (self = %p)\n", marcel_self());
+      return (void *)1;
+    }
+  }
+  return MARCEL_POLL_FAILED;
 }
 
 static void *mpi_io_poll(marcel_pollid_t id,
@@ -262,10 +279,12 @@ void mad_mpi_network_init(int *argc, char **argv, int nb_proc, int *tids, int *n
   for(i=0; i<*nb; i++)
     marcel_mutex_init(&mutex[i], NULL);
 #ifdef USE_MARCEL_POLL
-  mpi_io_pollid = marcel_pollid_create(mpi_io_group, mpi_io_poll, NULL, 1);
+  mpi_io_pollid = marcel_pollid_create(mpi_io_group,
+				       mpi_io_poll,
+				       mpi_io_fast_poll, /* Fast Poll */
+				       MARCEL_POLL_AT_TIMER_SIG);
 #endif
 #endif
-
 }
 
 void mad_mpi_network_send(int dest_node, struct iovec *vector, size_t count)

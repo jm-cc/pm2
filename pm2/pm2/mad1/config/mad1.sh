@@ -1,5 +1,5 @@
 PM2_MAD1_LIBNAME=mad
-PM2_MAD1_POST_CONF=true
+#PM2_MAD1_POST_CONF=true
 PM2_MAD1_POST_CONF_FUNC() {
     prot="$PM2_PROTOCOLS"
     PROT="`echo $prot | tr [a-z] [A-Z]`"
@@ -62,7 +62,7 @@ PM2_MAD1_POST_CONF_FUNC() {
 	PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -DNETINTERF_INIT=mad_${prot}_netinterf_init"
 	;;
     esac
-
+}
     case ${PM2_SYS} in
     AIX_SYS)
 	PM2_MAD1_LIBS="$PM2_MAD1_LIBS -lbsd"
@@ -82,4 +82,3 @@ PM2_MAD1_POST_CONF_FUNC() {
     UNICOS_SYS)
 	;;
     esac
-}

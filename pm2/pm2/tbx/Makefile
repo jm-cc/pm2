@@ -37,25 +37,14 @@
 # Makefile : Toolbox
 ######################
 
-#..Settings..................................................................#
-
-# Debug
-# DEBUG = on
-
-# Trace
-# TRACE = on
-
-# Timing
-# TIMING = on
-
-#..Private.part..............................................................#
+include $(MAD2_ROOT)/make/config.mak
 
 # directories
-TBX_ROOT = ${PM2_ROOT}/toolbox
-OBJ = $(TBX_ROOT)/obj
-INC = $(TBX_ROOT)/include
-SRC = $(TBX_ROOT)/src
-LIB = $(TBX_ROOT)/lib
+ROOT  = $(TBX_ROOT)
+OBJ   = $(ROOT)/obj
+INC   = $(ROOT)/include
+SRC   = $(ROOT)/src
+LIB   = $(ROOT)/lib
 
 # objects
 OBJS = $(OBJ)/tbx_list_management.o \
@@ -82,46 +71,6 @@ HEADERS = $(INC)/tbx_interface.h \
 # libs
 LIB_TBX = $(LIB)/libtbx.a
 
-# compiler
-# CC = purify gcc
-CC = gcc
-# CC = egcc
-
-# preprocessor flags
-CPPFLAGS = -I$(INC)
-
-# compiler flags
-# CFLAGS = -O6 -Wall 
-# CFLAGS = -g
-CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
-# CFLAGS = -pg -Wall
-# CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
-# CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
-
-# linker flags 
-# LDFLAGS = -pg 
-LDFLAGS =
-
-CONF = 
-
-# Debug mode
-# ----------
-ifdef DEBUG
-  CPPFLAGS += -DDEBUG
-endif
-
-# Trace mode
-# ----------
-ifdef TRACE
-  CPPFLAGS += -DTRACE
-endif
-
-# Timing mode
-# ----------
-ifdef TIMING
-  CPPFLAGS += -DTIMING
-endif
-
 # Rules
 # -----
 all: lib 
@@ -129,13 +78,13 @@ all: lib
 lib: $(LIB_TBX)
 
 ps: 
-	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(TBX_ROOT)/tbx_2.ps
+	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/tbx_2.ps
 
 html: 
-	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(TBX_ROOT)/tbx_2.html
+	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/tbx_2.html
 
 rtf: 
-	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(TBX_ROOT)/tbx_2.rtf
+	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/tbx_2.rtf
 
 $(LIB_TBX): $(OBJS)
 	ar -rc $(LIB_TBX) $(OBJS); \
@@ -145,7 +94,7 @@ clean:
 	rm -f $(OBJS) $(LIB_TBX)
 
 clean_src:
-	rm -f $(TBX_ROOT)/*~ $(SRC)/*~ $(INC)/*~ 
+	rm -f $(ROOT)/*~ $(SRC)/*~ $(INC)/*~ 
 
 lines:
 	wc -l $(SRC)/*.c $(INC)/*.h
@@ -161,7 +110,6 @@ $(OBJ)/tbx_malloc.o: $(SRC)/tbx_malloc.c $(HEADERS)
 
 $(OBJ)/tbx_timing.o: $(SRC)/tbx_timing.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
-
 
 #
 

@@ -162,10 +162,11 @@
 #define FUT_MAIN_ENTRY_CODE			0x240
 #define FUT_MAIN_EXIT_CODE			0x340
 
-/*	Codes for use with fut items */
-#if !defined(PREPROC) && !defined(DEPEND) // for PM2
+/*	Codes for use with fut items (ifdefs for Raymond) */
+#if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_defines.h"
 #endif
+
 
 extern volatile unsigned int fut_active;
 extern volatile unsigned int *fut_next_slot;

@@ -15,8 +15,8 @@
  */
 
 #include "dsmlib_hbrc_mw_update_protocol.h" 
-/* the following is useful for "hierarch_lock_id_t" */
-#include "hierarch_lock.h"
+/* the following is useful for "token_lock_id_t" */
+#include "token_lock.h"
 
 //#define DSM_PROT_TRACE
 #ifdef INSTRUMENT
@@ -203,7 +203,7 @@ void dsmlib_hbrc_acquire()
 }
 
 
-void dsmlib_hbrc_release(const hierarch_lock_id_t unused)
+void dsmlib_hbrc_release(const token_lock_id_t unused)
 {
   dsm_page_index_t index;
   pm2_completion_t c;

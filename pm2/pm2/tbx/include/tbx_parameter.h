@@ -1,3 +1,11 @@
+/*! \file tbx_parameter.h
+ *  \brief TBX command line management data structures
+ *
+ *  This file provides TBX command-string, argument, 
+ *  environment building data structures
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

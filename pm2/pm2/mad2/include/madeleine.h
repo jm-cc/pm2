@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.6  2000/01/21 11:47:37  oaumage
+- interface de compatibilite mad1: remplacement de mad_pack/unpack par
+  pm2_pack/unpack
+
 Revision 1.5  2000/01/13 14:44:34  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -168,29 +172,29 @@ typedef enum {
   MAD_BY_COPY
 } madeleine_part;
 
-void mad_pack_byte(madeleine_part where, char *data, size_t nb);
-void mad_unpack_byte(madeleine_part where, char *data, size_t nb);
+void pm2_pack_byte(madeleine_part where, char *data, size_t nb);
+void pm2_unpack_byte(madeleine_part where, char *data, size_t nb);
 
-void mad_pack_short(madeleine_part where, short *data, size_t nb);
-void mad_unpack_short(madeleine_part where, short *data, size_t nb);
+void pm2_pack_short(madeleine_part where, short *data, size_t nb);
+void pm2_unpack_short(madeleine_part where, short *data, size_t nb);
 
-void mad_pack_int(madeleine_part where, int *data, size_t nb);
-void mad_unpack_int(madeleine_part where, int *data, size_t nb);
+void pm2_pack_int(madeleine_part where, int *data, size_t nb);
+void pm2_unpack_int(madeleine_part where, int *data, size_t nb);
 
-void mad_pack_long(madeleine_part where, long *data, size_t nb);
-void mad_unpack_long(madeleine_part where, long *data, size_t nb);
+void pm2_pack_long(madeleine_part where, long *data, size_t nb);
+void pm2_unpack_long(madeleine_part where, long *data, size_t nb);
 
-void mad_pack_float(madeleine_part where, float *data, size_t nb);
-void mad_unpack_float(madeleine_part where, float *data, size_t nb);
+void pm2_pack_float(madeleine_part where, float *data, size_t nb);
+void pm2_unpack_float(madeleine_part where, float *data, size_t nb);
 
-void mad_pack_double(madeleine_part where, double *data, size_t nb);
-void mad_unpack_double(madeleine_part where, double *data, size_t nb);
+void pm2_pack_double(madeleine_part where, double *data, size_t nb);
+void pm2_unpack_double(madeleine_part where, double *data, size_t nb);
 
-void mad_pack_pointer(madeleine_part where, pointer *data, size_t nb);
-void mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb);
+void pm2_pack_pointer(madeleine_part where, pointer *data, size_t nb);
+void pm2_unpack_pointer(madeleine_part where, pointer *data, size_t nb);
 
-void mad_pack_str(madeleine_part where, char *data);
-void mad_unpack_str(madeleine_part where, char *data);
+void pm2_pack_str(madeleine_part where, char *data);
+void pm2_unpack_str(madeleine_part where, char *data);
 
 p_mad_madeleine_t mad_get_madeleine();
 

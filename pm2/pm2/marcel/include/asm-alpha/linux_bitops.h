@@ -392,10 +392,10 @@ static inline int ma_ffs(int word)
  * fls: find last bit set.
  */
 #section marcel_functions
-static inline int ma_fls(int word);
+static inline unsigned long ma_fls(unsigned long word);
 #section marcel_inline
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
-static inline int ma_fls(int word)
+static inline unsigned long ma_fls(unsigned long word)
 {
 	return 64 - __kernel_ctlz(word & 0xffffffff);
 }

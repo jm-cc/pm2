@@ -35,7 +35,7 @@
 #
 
 # Just in case MARCEL_ROOT is not defined
-MARCEL_ROOT=${MARCEL_ROOT-${PM2_ROOT}/mad1}
+MARCEL_ROOT=${MARCEL_ROOT-${PM2_ROOT}/marcel}
 export MARCEL_ROOT
 
 if test $# -gt 0

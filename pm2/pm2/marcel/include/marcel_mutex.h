@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.h,v $
+Revision 1.5  2000/04/28 10:40:49  rnamyst
+Added the marcel_cond_timedwait primitive
+
 Revision 1.4  2000/04/11 09:07:11  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -52,6 +55,8 @@ ______________________________________________________________________________
 
 #ifndef MARCEL_MUTEX_EST_DEF
 #define MARCEL_MUTEX_EST_DEF
+
+#include <sys/time.h>
 
 #define MARCEL_MUTEX_INITIALIZER { 0 }
 
@@ -91,5 +96,6 @@ int marcel_cond_signal(marcel_cond_t *cond);
 int marcel_cond_broadcast(marcel_cond_t *cond);
 
 int marcel_cond_wait(marcel_cond_t *cond, marcel_mutex_t *mutex);
-
+int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
+			  const struct timespec *abstime);
 #endif

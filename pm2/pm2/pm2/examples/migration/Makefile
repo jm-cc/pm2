@@ -34,40 +34,17 @@
 #
 
 
+.PHONY: default all
 default: all
 
-include $(PM2_ROOT)/make/common.mak
+SRC_DIR	:=	.
 
-all: simple ping migr_hook
+include ../../Makefile
 
+PM2_APP_CFLAGS	=
+PM2_APP_LDFLAGS	=
+PM2_APP_LLIBS	=
 
-# executables :
-
-
-# simple :
-
-$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-simple: $(PM2_OBJ)/simple.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-# ping :
-
-$(PM2_OBJ)/ping.o: ping.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-ping: $(PM2_OBJ)/ping.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-# migr_hook :
-
-$(PM2_OBJ)/migr_hook.o: migr_hook.c $(PM2_HEADERS)
-	$(PM2_CC2)
-
-migr_hook: $(PM2_OBJ)/migr_hook.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_LLIBS)
-	$(PM2_MOVE)
-
+all:	$(BIN_DIR)/simple	\
+	$(BIN_DIR)/ping		\
+	$(BIN_DIR)/migr_hook

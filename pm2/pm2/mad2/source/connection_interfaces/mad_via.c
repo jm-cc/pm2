@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_via.c,v $
+Revision 1.3  2000/02/28 11:46:11  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/04 09:18:52  oaumage
 - ajout de la commande de log de CVS
 - phase d'initialisation `external-spawn' terminee pour mad_mpi.c
@@ -49,7 +52,7 @@ ______________________________________________________________________________
  * =========
  */
 /* #define DEBUG */
-#include <madeleine.h>
+#include "madeleine.h"
 #include <vipl.h>
 #include <unistd.h>
 

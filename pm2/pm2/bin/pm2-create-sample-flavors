@@ -31,44 +31,44 @@ if [ $FORCE = yes -o ! -d $PM2_USER_FLAVOR_DIR ]; then
     PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=default \
-	--modules="pm2 dsm marcel mad2 tbx ntbx" $COMMON_OPTIONS \
+	--modules="pm2 dsm marcel mad2 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--mad2=auto_spawn --mad2=tcp
 
     for i in mono smp act actsmp; do
 	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-$i \
-	    --modules="marcel tbx" $COMMON_OPTIONS \
+	    --modules="marcel tbx init" $COMMON_OPTIONS \
 	    --marcel=$i --marcel=smp_shared_queue --marcel=marcel_main
     done
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel \
-	--modules="marcel tbx" $COMMON_OPTIONS \
+	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-prof \
-	--modules="marcel profile tbx" $COMMON_OPTIONS \
+	--modules="marcel profile tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--marcel=profile
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=swann \
-	--modules="swann tbx ntbx" $COMMON_OPTIONS
+	--modules="swann tbx ntbx init" $COMMON_OPTIONS
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leonie \
-	--modules="leonie leoparse tbx ntbx" $COMMON_OPTIONS
+	--modules="leonie leoparse tbx ntbx init" $COMMON_OPTIONS
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leoparse \
-	--modules="leoparse tbx ntbx" $COMMON_OPTIONS
+	--modules="leoparse tbx ntbx init" $COMMON_OPTIONS
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad2 \
-	--modules="mad2 tbx ntbx" $COMMON_OPTIONS \
+	--modules="mad2 tbx ntbx init" $COMMON_OPTIONS \
 	--mad2=auto_spawn --mad2=tcp
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad3 \
-	--modules="mad3 marcel tbx ntbx" $COMMON_OPTIONS \
+	--modules="mad3 marcel tbx ntbx init" $COMMON_OPTIONS \
 	--mad3=tcp --marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
 
     $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2 \
-	--modules="pm2 dsm marcel mad2 tbx ntbx" $COMMON_OPTIONS \
+	--modules="pm2 dsm marcel mad2 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--mad2=auto_spawn --mad2=tcp
 

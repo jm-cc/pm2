@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_alloc.c,v $
+Revision 1.3  2000/02/28 10:25:00  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:57:11  oaumage
 - ajout du Log CVS
 
@@ -45,9 +48,9 @@ ______________________________________________________________________________
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#include <marcel.h>
-#include <marcel_alloc.h>
-#include <safe_malloc.h>
+#include "marcel.h"
+#include "marcel_alloc.h"
+#include "safe_malloc.h"
 
 static void *next_slot = (void *)SLOT_AREA_TOP;
 

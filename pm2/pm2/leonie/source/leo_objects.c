@@ -35,6 +35,8 @@ leo_application_settings_init(void)
   
   object->gdb_mode   = tbx_false;
   object->xterm_mode = tbx_true;
+  object->log_mode   = tbx_false;
+  object->pause_mode = tbx_true;
   object->smp_mode   = tbx_false;
   LOG_OUT();
 

@@ -74,10 +74,15 @@ ifneq ($(LIB_GEN_BIN),)
 DUMMY_BUILD := $(shell mkdir -p $(LIB_GEN_BIN))
 endif
 
-.PHONY: default fut_files lib fut
-default: fut_files $(LIB_GEN_INC)/fut_entries.h $(LIB_GEN_BIN)/fut_print lib
+.PHONY: default libs fut_files proflib fut
 
-.PHONY: fut_files
+default:
+
+libs: fut_files $(LIB_GEN_INC)/fut_entries.h $(LIB_GEN_BIN)/fut_print proflib
+
+default:
+	$(MAKE) -C $(PM2_ROOT)
+
 fut_files:
 	$(COMMON_HIDE) $(MAKE) -C ${PM2_ROOT} fut
 
@@ -97,7 +102,7 @@ $(LIB_GEN_STAMP)/fut_stamp: $(LIB_STAMP_FLAVOR)
 	if [ ! -d $(LIB_GEN_STAMP) ] ; then mkdir -p $(LIB_GEN_STAMP) ; fi
 	$(COMMON_HIDE) touch $@
 
-lib:
+proflib:
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true
 
 fut:

@@ -33,6 +33,24 @@ typedef struct {
 static GList *the_modules = NULL;
 static module_t *common_module;
 
+static gint mod_cmp(gconstpointer a, gconstpointer b)
+{
+  return strcmp(((module_t *)a)->name, (char *)b);
+}
+
+static module_t *find_module(char *name)
+{
+  GList *ptr;
+
+  ptr = g_list_find_custom(the_modules, (gpointer)name, mod_cmp);
+
+  if(!ptr) {
+    return NULL;
+  } else {
+    return (module_t *)ptr->data;
+  }
+}
+
 static void module_rescan(void)
 {
   intro_begin_step("Getting list of modules...");
@@ -289,8 +307,10 @@ static GtkWidget *add_options(char *module, GList **list)
   GtkWidget *frame;
   GtkWidget *vbox;
   GtkWidget *scrolled_window;
+  char title[1024];
 
-  frame = gtk_frame_new("Module options");
+  sprintf(title, " %s options ", module);
+  frame = gtk_frame_new(title);
   gtk_container_set_border_width (GTK_CONTAINER(frame), 10);
   gtk_widget_set_usize(frame, 300, 300);
   gtk_widget_show(frame);
@@ -437,7 +457,7 @@ static void module_build_notebook(GtkWidget *box)
   module_t *cur_mod;
 
   module_frame = gtk_frame_new(" Modules ");
-  gtk_widget_set_sensitive(module_frame, FALSE);
+  //gtk_widget_set_sensitive(module_frame, FALSE);
   gtk_container_set_border_width (GTK_CONTAINER(module_frame), 10);
   gtk_box_pack_start(GTK_BOX(box), module_frame, TRUE, TRUE, 0);
   gtk_widget_show(module_frame);
@@ -505,7 +525,7 @@ static void module_build_general_options(GtkWidget *box)
   GtkWidget *label;
 
   general_frame = gtk_frame_new(" General settings ");
-  gtk_widget_set_sensitive(general_frame, FALSE);
+  //gtk_widget_set_sensitive(general_frame, FALSE);
   gtk_container_set_border_width (GTK_CONTAINER(general_frame), 10);
   gtk_box_pack_start(GTK_BOX(box), general_frame, FALSE, TRUE, 0);
   gtk_widget_show(general_frame);
@@ -584,11 +604,11 @@ void module_update_with_current_flavor(void)
 {
   GList *mod;
 
-  if(!strcmp(flavor_name(),"")) {
-    gtk_widget_set_sensitive(module_frame, FALSE);
-    gtk_widget_set_sensitive(general_frame, FALSE);
-    return;
-  }
+  //  if(!strcmp(flavor_name(),"")) {
+  //    gtk_widget_set_sensitive(module_frame, FALSE);
+  //    gtk_widget_set_sensitive(general_frame, FALSE);
+  //    return;
+  //  }
 
   module_update_general_settings();
 
@@ -611,8 +631,8 @@ void module_update_with_current_flavor(void)
     }
   }
 
-  gtk_widget_set_sensitive(module_frame, TRUE);
-  gtk_widget_set_sensitive(general_frame, TRUE);
+  //  gtk_widget_set_sensitive(module_frame, TRUE);
+  //  gtk_widget_set_sensitive(general_frame, TRUE);
 
   update_select_buttons(gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook)));
 }
@@ -670,5 +690,7 @@ void module_init(GtkWidget *leftbox, GtkWidget *rightbox)
   module_build_general_options(leftbox);
 
   module_build_notebook(rightbox);
+
+  module_update_with_current_flavor();
 }
 

@@ -177,7 +177,6 @@ static void create_subframe(GtkWidget *box, opt_t *opt)
 static void create_all_subframes(GtkWidget *vbox)
 {
   GList *ptr;
-  GtkWidget *main_hbox;
   
   main_hbox = gtk_hbox_new(FALSE, 1);
   gtk_container_border_width(GTK_CONTAINER(main_hbox), 0);

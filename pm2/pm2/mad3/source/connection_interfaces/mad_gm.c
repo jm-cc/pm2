@@ -248,7 +248,17 @@ static
 void * (*mad_gm_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
 
 #if MAD_GM_MEMORY_CACHE
+#if 0
+/*
+ * Malloc hooks installation is delayed to mad_gm_driver_init because
+ * __malloc_initialize_hook is also defined in the MX library.
+ *
+ * This is expected to be safe because Mad/GM's memory hooks only care about
+ * memory _de_allocation operations.
+ */
+
 void (*__malloc_initialize_hook) (void) = mad_gm_malloc_initialize_hook;
+#endif /* 0 */
 #endif // MAD_GM_MEMORY_CACHE
 
 static

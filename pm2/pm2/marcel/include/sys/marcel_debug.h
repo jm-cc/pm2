@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_debug.h,v $
+Revision 1.6  2000/05/10 13:08:01  vdanjean
+minor bugs fixes
+
 Revision 1.5  2000/05/09 10:52:43  vdanjean
 pm2debug module
 
@@ -53,16 +56,31 @@ ______________________________________________________________________________
 #define MARCEL_DEBUG_EST_DEF
 
 #include "pm2debug.h"
+#include "sys/marcel_flags.h"
+
+
 
 #undef mdebug
+
+#define LWPS_HACK
+#if defined(MA__LWPS) && (1)
+#define LWPS_FM "[P%02d]"
+#define LWPS_VAL ,((pm2debug_marcel_launched && (marcel_self())->lwp) ? (marcel_self())->lwp->number : -1)
+#else
+#define LWPS_FM
+#define LWPS_VAL
+#endif
 
 #ifdef MARCEL_DEBUG
 extern debug_type_t marcel_mdebug;
 extern debug_type_t marcel_trymdebug;
 extern debug_type_t marcel_mdebug_state;
-#define mdebug(fmt, args...) debug_printf(&marcel_mdebug, fmt, ##args)
-#define try_mdebug(fmt, args...) debug_printf(&marcel_trymdebug, fmt, ##args)
-#define mdebug_state(fmt, args...) debug_printf(&marcel_mdebug_state, fmt, ##args)
+#define mdebug(fmt, args...) \
+    debug_printf(&marcel_mdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+#define try_mdebug(fmt, args...) \
+    debug_printf(&marcel_trymdebug, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+#define mdebug_state(fmt, args...) \
+    debug_printf(&marcel_mdebug_state, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #else
 #define mdebug(fmt, args...)     (void)0
 #define try_mdebug(fmt, args...)     (void)0
@@ -71,13 +89,13 @@ extern debug_type_t marcel_mdebug_state;
 
 #ifdef DEBUG_LOCK_TASK
 extern debug_type_t marcel_lock_task_debug;
-#define lock_task_debug(fmt, args...) \
-    debug_printf(&marcel_lock_task_debug, fmt, ##args)
+#define lock_task_debug(fmt, args...) debug_printf(&marcel_lock_task_debug, \
+        LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #endif
 #ifdef DEBUG_SCHED_LOCK
 extern debug_type_t marcel_sched_lock_debug;
-#define sched_lock_debug(fmt, args...) \
-    debug_printf(&marcel_sched_lock_debug, fmt, ##args)
+#define sched_lock_debug(fmt, args...) debug_printf(&marcel_sched_lock_debug, \
+        LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #endif
 
 #ifdef MARCEL_TRACE

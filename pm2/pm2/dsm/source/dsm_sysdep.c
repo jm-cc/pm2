@@ -215,7 +215,7 @@ static volatile int _dsm_handler_oqp=0;
 
 #if defined(LINUX_SYS) && defined(X86_ARCH)
 static void _internal_sig_handler(int sig, struct sigcontext_struct context)
-#elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
+#elif defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(GNU_SYS)
 static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #elif defined(AIX_SYS) && defined(RS6K_ARCH)
 static void _internal_sig_handler(int sig, int Code, struct sigcontext *SCP)
@@ -225,7 +225,7 @@ static void _internal_sig_handler(int sig, int Code, struct sigcontext *SCP)
 #if defined(LINUX_SYS) && defined(X86_ARCH)
   char *addr = (char *)(context.cr2);
   access = context.err & 2 ? WRITE_ACCESS : READ_ACCESS;
-#elif defined(SOLARIS_SYS) || defined(IRIX_SYS)
+#elif defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(GNU_SYS)
   char *addr = siginfo->si_addr;
 #elif defined(AIX_SYS) && defined(RS6K_ARCH)
   char *addr = (char*)((int*)SCP)[20]; /* 20 ou 23 */
@@ -359,6 +359,9 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS)
   act.sa_flags = SA_SIGINFO | SA_RESTART;
 #else
+#if defined(GNU_SYS)
+#warning no SA_SIGINFO defined, uh...
+#endif
   act.sa_flags = SA_RESTART;
 #endif
 

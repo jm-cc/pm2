@@ -17,7 +17,8 @@
 #include "marcel.h"
 #include "marcel_sem.h"
 
-static marcel_sem_t sem;
+static marcel_sem_t sem1;
+static marcel_sem_t sem2;
 
 static volatile boolean stay_busy = TRUE;
 
@@ -46,7 +47,7 @@ void deviation3(void *arg)
 void deviation4(void *arg)
 {
   marcel_fprintf(stderr, "Deviation in order to wake one's self: ");
-  marcel_sem_V(&sem);
+  marcel_sem_V(&sem2);
 }
 
 any_t func(any_t arg)
@@ -64,10 +65,10 @@ any_t func(any_t arg)
 
   marcel_enable_deviation();
 
-  marcel_sem_V(&sem);
+  marcel_sem_V(&sem1);
 
   marcel_fprintf(stderr, "Will block...\n");
-  marcel_sem_P(&sem);
+  marcel_sem_P(&sem2);
   marcel_fprintf(stderr, "OK !\n");
 
   return NULL;
@@ -81,7 +82,8 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
-  marcel_sem_init(&sem, 0);
+  marcel_sem_init(&sem1, 0);
+  marcel_sem_init(&sem2, 0);
 
   marcel_attr_init(&attr);
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(marcel_nbvps()-1));
@@ -100,7 +102,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_deviate(pid, deviation2, "Only now!");
 
-  marcel_sem_P(&sem);
+  marcel_sem_P(&sem1);
 
   marcel_delay(500);
 

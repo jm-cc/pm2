@@ -591,6 +591,141 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
+static
+void
+mad_dir_xchannel_get(p_mad_madeleine_t madeleine)
+{
+  p_mad_directory_t dir                      = NULL;
+  p_tbx_slist_t     mad_public_channel_slist = NULL;
+  p_tbx_darray_t    process_darray           = NULL;
+  p_tbx_htable_t    driver_htable            = NULL;
+  p_tbx_htable_t    channel_htable           = NULL;
+  p_tbx_htable_t    xchannel_htable          = NULL;
+  p_tbx_slist_t     xchannel_slist           = NULL;
+  int               number                   =    0;
+
+  LOG_IN();
+  dir                      = madeleine->dir;
+  mad_public_channel_slist = madeleine->public_channel_slist;
+  process_darray           = dir->process_darray;
+  driver_htable            = dir->driver_htable;
+  channel_htable           = dir->channel_htable;
+  xchannel_htable          = dir->xchannel_htable;
+  xchannel_slist  = dir->xchannel_slist;
+
+  number = mad_leonie_receive_int();
+
+  if (number < 0)
+    FAILURE("invalid number of virtual channels");
+
+  TRACE_VAL("Number of virtual channels", number);
+
+  while (number--)
+    {
+      p_mad_dir_xchannel_t  dir_xchannel            = NULL;
+      char                 *xchannel_reference_name = NULL;
+      p_tbx_slist_t         dir_channel_slist       = NULL;
+      int                   dir_channel_slist_len   =    0;
+
+      dir_xchannel = mad_dir_xchannel_cons();
+      dir_xchannel->name = mad_leonie_receive_string();
+      TRACE_STR("Virtual channel name", dir_xchannel->name);
+
+      tbx_slist_append(mad_public_channel_slist, dir_xchannel->name);
+
+      xchannel_reference_name =
+	TBX_MALLOC(strlen("xchannel") + strlen(dir_xchannel->name) + 2);
+      sprintf(xchannel_reference_name, "%s:%s", "xchannel", dir_xchannel->name);
+
+      dir_channel_slist     = dir_xchannel->dir_channel_slist;
+      dir_channel_slist_len = mad_leonie_receive_int();
+
+      TRACE("Supporting channels:");
+      do
+	{
+	  p_mad_dir_channel_t  dir_channel      = NULL;
+	  char                *dir_channel_name = NULL;
+
+	  dir_channel_name = mad_leonie_receive_string();
+	  dir_channel = tbx_htable_get(channel_htable,
+				       dir_channel_name);
+	  if (!dir_channel)
+	    FAILURE("channel not found");
+
+	  TRACE_STR("- Channel", dir_channel->name);
+
+	  tbx_slist_append(dir_channel_slist, dir_channel);
+	  TBX_FREE(dir_channel_name);
+	}
+      while (--dir_channel_slist_len);
+
+      tbx_htable_add(xchannel_htable, dir_xchannel->name, dir_xchannel);
+      dir_xchannel->id = tbx_slist_get_length(xchannel_slist);
+      tbx_slist_append(xchannel_slist, dir_xchannel);
+
+      TRACE("Virtual channel routing table");
+      while (1)
+	{
+	  p_ntbx_process_t                      process     = NULL;
+	  ntbx_process_grank_t                  g_rank_src  =   -1;
+	  p_mad_dir_xchannel_process_specific_t pi_specific = NULL;
+	  p_ntbx_process_container_t            ppc         = NULL;
+
+	  g_rank_src = mad_leonie_receive_int();
+	  if (g_rank_src == -1)
+	    break;
+
+	  process = tbx_darray_get(process_darray, g_rank_src);
+
+	  pi_specific = mad_dir_xchannel_process_specific_cons();
+	  ppc = pi_specific->pc;
+
+	  while (1)
+	    {
+	      p_ntbx_process_t                            pprocess   = NULL;
+	      ntbx_process_grank_t                        g_rank_dst =   -1;
+	      p_mad_dir_xchannel_process_routing_table_t  rtable     = NULL;
+	      char                                       *ref_name   = NULL;
+
+	      g_rank_dst = mad_leonie_receive_int();
+	      if (g_rank_dst == -1)
+		break;
+
+	      pprocess = tbx_darray_get(process_darray, g_rank_dst);
+
+	      rtable = mad_dir_xchannel_process_routing_table_cons();
+
+	      rtable->channel_name     = mad_leonie_receive_string();
+	      rtable->destination_rank = mad_leonie_receive_int();
+	      TRACE("Process %d to %d: using channel %s through process %d",
+		   g_rank_src, g_rank_dst, rtable->channel_name,
+		   rtable->destination_rank);
+
+	      {
+		size_t len = 0;
+
+		len = strlen(dir_xchannel->name) + 8;
+		ref_name = malloc(len);
+
+		sprintf(ref_name, "%s:%d", dir_xchannel->name,
+			g_rank_src);
+	      }
+
+	      ntbx_pc_add(ppc, pprocess, g_rank_dst, process,
+			  ref_name, rtable);
+	    }
+
+	  ntbx_pc_add(dir_xchannel->pc, process, g_rank_src,
+		      dir_xchannel, dir_xchannel->name, pi_specific);
+	}
+
+      TBX_FREE(xchannel_reference_name);
+    }
+
+  mad_dir_sync("end{xchannels}");
+  LOG_OUT();
+}
+
 void
 mad_dir_driver_init(p_mad_madeleine_t madeleine)
 {
@@ -760,6 +895,17 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
     interface = forwarding_driver->interface;
     interface->driver_init(forwarding_driver);
   }
+
+  {
+    p_mad_driver_t           mux_driver = NULL;
+    p_mad_driver_interface_t interface  = NULL;
+
+    mux_driver  =
+      tbx_htable_get(madeleine->driver_htable, "mux");
+
+    interface = mux_driver->interface;
+    interface->driver_init(mux_driver);
+  }
 #endif // MARCEL
   LOG_OUT();
 }
@@ -814,10 +960,10 @@ mad_dir_point_to_point_mtu(p_mad_dir_channel_t  channel,
 
 static
 unsigned int
-mad_dir_mtu_calculation(p_mad_directory_t           dir,
-			p_ntbx_process_container_t  src_pc,
-			ntbx_process_grank_t        src,
-			ntbx_process_grank_t        dst)
+mad_dir_vchannel_mtu_calculation(p_mad_directory_t           dir,
+				 p_ntbx_process_container_t  src_pc,
+				 ntbx_process_grank_t        src,
+				 ntbx_process_grank_t        dst)
 {
   p_mad_dir_vchannel_process_specific_t      vps    = NULL;
   p_ntbx_process_container_t                 dst_pc = NULL;
@@ -850,7 +996,7 @@ mad_dir_mtu_calculation(p_mad_directory_t           dir,
       channel  = tbx_htable_get(dir->channel_htable, fchannel->channel_name);
 
       mtu1 = mad_dir_point_to_point_mtu(channel, src, med);
-      mtu2 = mad_dir_mtu_calculation(dir, src_pc, med, dst);
+      mtu2 = mad_dir_vchannel_mtu_calculation(dir, src_pc, med, dst);
       mtu  = min(mtu1, mtu2);
     }
   LOG_OUT();
@@ -860,9 +1006,9 @@ mad_dir_mtu_calculation(p_mad_directory_t           dir,
 
 static
 p_mad_dir_vchannel_process_routing_table_t
-mad_dir_rtable_get(p_ntbx_process_container_t pc,
-		   ntbx_process_grank_t       src,
-		   ntbx_process_grank_t       dst)
+mad_dir_vchannel_rtable_get(p_ntbx_process_container_t pc,
+			    ntbx_process_grank_t       src,
+			    ntbx_process_grank_t       dst)
 {
   p_mad_dir_vchannel_process_routing_table_t rtable = NULL;
   p_mad_dir_vchannel_process_specific_t      ps     = NULL;
@@ -879,19 +1025,103 @@ mad_dir_rtable_get(p_ntbx_process_container_t pc,
 
 static
 p_mad_dir_vchannel_process_routing_table_t
-mad_dir_reverse_routing(p_ntbx_process_container_t  pc,
-			ntbx_process_grank_t       *src,
-			ntbx_process_grank_t        dst)
+mad_dir_vchannel_reverse_routing(p_ntbx_process_container_t  pc,
+				 ntbx_process_grank_t       *src,
+				 ntbx_process_grank_t        dst)
 {
   p_mad_dir_vchannel_process_routing_table_t rtable = NULL;
 
   LOG_IN();
-  rtable = mad_dir_rtable_get(pc, *src, dst);
+  rtable = mad_dir_vchannel_rtable_get(pc, *src, dst);
 
   if (rtable->destination_rank != dst)
     {
       *src   = rtable->destination_rank;
-      rtable = mad_dir_reverse_routing(pc, src, dst);
+      rtable = mad_dir_vchannel_reverse_routing(pc, src, dst);
+    }
+  LOG_OUT();
+
+  return rtable;
+}
+
+static
+unsigned int
+mad_dir_xchannel_mtu_calculation(p_mad_directory_t           dir,
+			p_ntbx_process_container_t  src_pc,
+			ntbx_process_grank_t        src,
+			ntbx_process_grank_t        dst)
+{
+  p_mad_dir_xchannel_process_specific_t      vps    = NULL;
+  p_ntbx_process_container_t                 dst_pc = NULL;
+  p_mad_dir_xchannel_process_routing_table_t rtable = NULL;
+  ntbx_process_grank_t                       med    =   -1;
+  unsigned int                               mtu    =    0;
+
+  LOG_IN();
+  vps    = ntbx_pc_get_global_specific(src_pc, src);
+  dst_pc = vps->pc;
+  rtable = ntbx_pc_get_global_specific(dst_pc, dst);
+  med    = rtable->destination_rank;
+
+  if (med == dst)
+    {
+      p_mad_dir_channel_t channel = NULL;
+
+      channel = tbx_htable_get(dir->channel_htable, rtable->channel_name);
+
+      mtu = mad_dir_point_to_point_mtu(channel, src, dst);
+    }
+  else
+    {
+      p_mad_dir_channel_t  channel  = NULL;
+      unsigned int         mtu1     =    0;
+      unsigned int         mtu2     =    0;
+
+      channel = tbx_htable_get(dir->channel_htable,  rtable->channel_name);
+
+      mtu1 = mad_dir_point_to_point_mtu(channel, src, med);
+      mtu2 = mad_dir_xchannel_mtu_calculation(dir, src_pc, med, dst);
+      mtu  = min(mtu1, mtu2);
+    }
+  LOG_OUT();
+
+  return mtu;
+}
+
+static
+p_mad_dir_xchannel_process_routing_table_t
+mad_dir_xchannel_rtable_get(p_ntbx_process_container_t pc,
+		   ntbx_process_grank_t       src,
+		   ntbx_process_grank_t       dst)
+{
+  p_mad_dir_xchannel_process_routing_table_t rtable = NULL;
+  p_mad_dir_xchannel_process_specific_t      ps     = NULL;
+  p_ntbx_process_container_t                 ppc    = NULL;
+
+  LOG_IN();
+  ps     = ntbx_pc_get_global_specific(pc, src);
+  ppc    = ps->pc;
+  rtable = ntbx_pc_get_global_specific(ppc, dst);
+  LOG_OUT();
+
+  return rtable;
+}
+
+static
+p_mad_dir_xchannel_process_routing_table_t
+mad_dir_xchannel_reverse_routing(p_ntbx_process_container_t  pc,
+				 ntbx_process_grank_t       *src,
+				 ntbx_process_grank_t        dst)
+{
+  p_mad_dir_xchannel_process_routing_table_t rtable = NULL;
+
+  LOG_IN();
+  rtable = mad_dir_xchannel_rtable_get(pc, *src, dst);
+
+  if (rtable->destination_rank != dst)
+    {
+      *src   = rtable->destination_rank;
+      rtable = mad_dir_xchannel_reverse_routing(pc, src, dst);
     }
   LOG_OUT();
 
@@ -909,11 +1139,13 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
   p_tbx_htable_t       dir_channel_htable       = NULL;
   p_tbx_htable_t       dir_fchannel_htable      = NULL;
   p_tbx_htable_t       dir_vchannel_htable      = NULL;
+  p_tbx_htable_t       dir_xchannel_htable      = NULL;
   mad_channel_id_t     channel_id               =    0;
   ntbx_process_grank_t process_rank             =   -1;
   ntbx_process_grank_t process_rank_max         =   -1;
 #ifdef MARCEL
   p_mad_adapter_t      forwarding_adapter       = NULL;
+  p_mad_adapter_t      mux_adapter              = NULL;
 #endif // MARCEL
 
   LOG_IN();
@@ -926,6 +1158,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
   dir_channel_htable  = dir->channel_htable;
   dir_fchannel_htable = dir->fchannel_htable;
   dir_vchannel_htable = dir->vchannel_htable;
+  dir_xchannel_htable = dir->xchannel_htable;
   process_rank_max    = tbx_darray_length(dir->process_darray);
 
   // Channels
@@ -2213,7 +2446,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 	  out->way = mad_outgoing_connection;
 
 	  // in->regular
-	  rtable = mad_dir_rtable_get(vchannel_pc, g_rank_dst, process_rank);
+	  rtable = mad_dir_vchannel_rtable_get(vchannel_pc, g_rank_dst, process_rank);
 
 	  if (rtable->destination_rank == process_rank)
 	    {
@@ -2247,7 +2480,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 	      in->nature      = mad_connection_nature_indirect_virtual;
 	      g_rank_rt       = rtable->destination_rank;
 	      rtable          =
-		mad_dir_reverse_routing(vchannel_pc, &g_rank_rt, process_rank);
+		mad_dir_vchannel_reverse_routing(vchannel_pc, &g_rank_rt, process_rank);
 	      regular_channel =
 		tbx_htable_get(madeleine->channel_htable, rtable->channel_name);
 	      dir_channel     = regular_channel->dir_channel;
@@ -2263,7 +2496,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 
 	  // out->regular
 	  out->mtu =
-	    mad_dir_mtu_calculation(dir, vchannel_pc, process_rank, g_rank_dst);
+	    mad_dir_vchannel_mtu_calculation(dir, vchannel_pc, process_rank, g_rank_dst);
 
 	  if (!out->mtu)
 	    FAILURE("invalid MTU");
@@ -2376,7 +2609,275 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       // Virtual channel ready
       mad_leonie_send_string("ok");
     }
+  
+#ifdef MARCEL
+  {
+    forwarding_adapter = NULL;
+  }
+#endif // MARCEL
 
+  // Mux channels
+  TRACE("Opening mux channels");
+#ifdef MARCEL
+  {
+    p_mad_driver_t mux_driver = NULL;
+
+    mux_driver  = tbx_htable_get(madeleine->driver_htable, "mux");
+    mux_adapter =
+      tbx_htable_get(mux_driver->adapter_htable, "mux");
+  }
+#endif // MARCEL
+
+  while (1)
+    {
+      char                                  *xchannel_name = NULL;
+#ifdef MARCEL
+      p_mad_dir_xchannel_t                   dir_xchannel  = NULL;
+      p_ntbx_process_container_t             xchannel_pc   = NULL;
+      p_mad_dir_xchannel_process_specific_t  xchannel_ps   = NULL;
+      p_ntbx_process_container_t             xchannel_ppc  = NULL;
+      p_mad_channel_t                        mad_channel   = NULL;
+      ntbx_process_lrank_t                   process_lrank =   -1;
+      ntbx_process_grank_t                   g_rank_dst    =   -1;
+      p_tbx_darray_t                         in_darray     = NULL;
+      p_tbx_darray_t                         out_darray    = NULL;
+      p_mad_driver_interface_t               interface     = NULL;
+#endif // MARCEL
+
+      xchannel_name = mad_leonie_receive_string();
+      if (tbx_streq(xchannel_name, "-"))
+	break;
+
+#ifdef MARCEL
+      dir_xchannel =
+	tbx_htable_get(dir_xchannel_htable, xchannel_name);
+      TRACE_STR("Mux channel", xchannel_name);
+
+      if (!dir_xchannel)
+	FAILURE("mux channel not found");
+
+      xchannel_pc                     = dir_xchannel->pc;
+      mad_channel                     = mad_channel_cons();
+      mad_channel->mux_list_darray    = tbx_darray_init();
+      mad_channel->mux_channel_darray = tbx_darray_init();
+      mad_channel->process_lrank      =
+	ntbx_pc_global_to_local(xchannel_pc, process_rank);
+      mad_channel->type               = mad_channel_type_mux_main;
+      mad_channel->id                 = channel_id++;
+      mad_channel->name               = dir_xchannel->name;
+      mad_channel->pc                 = dir_xchannel->pc;
+      mad_channel->public             = tbx_true;
+      mad_channel->dir_xchannel       = dir_xchannel;
+      mad_channel->adapter            = mux_adapter;
+
+      tbx_darray_expand_and_set(mad_channel->mux_channel_darray, 0, mad_channel);
+
+      mad_channel->channel_slist      = tbx_slist_nil();
+      {
+	tbx_slist_ref_to_head(dir_xchannel->dir_channel_slist);
+	do
+	  {
+	    p_mad_dir_channel_t dir_channel     = NULL;
+	    p_mad_channel_t     regular_channel = NULL;
+
+	    dir_channel = tbx_slist_ref_get(dir_xchannel->dir_channel_slist);
+	    regular_channel = tbx_htable_get(madeleine->channel_htable,
+					     dir_channel->name);
+	    if (regular_channel)
+	      {
+		tbx_slist_append(mad_channel->channel_slist, regular_channel);
+	      }
+	  }
+	while (tbx_slist_ref_forward(dir_xchannel->dir_channel_slist));
+      }
+
+      interface = mux_adapter->driver->interface;
+
+      if (interface->channel_init)
+	interface->channel_init(mad_channel);
+
+      in_darray  = tbx_darray_init();
+      out_darray = tbx_darray_init();
+
+      process_lrank = ntbx_pc_global_to_local(xchannel_pc, process_rank);
+
+      // mux connections construction
+      xchannel_ps  = ntbx_pc_get_global_specific(xchannel_pc, process_rank);
+      xchannel_ppc = xchannel_ps->pc;
+
+      ntbx_pc_first_global_rank(xchannel_ppc, &g_rank_dst);
+      do
+	{
+	  p_mad_dir_xchannel_process_routing_table_t rtable = NULL;
+	  p_mad_connection_t   in         = NULL;
+	  p_mad_connection_t   out        = NULL;
+	  mad_link_id_t        link_id    =   -1;
+	  ntbx_process_lrank_t l_rank_dst =   -1;
+
+	  l_rank_dst = ntbx_pc_global_to_local(xchannel_ppc, g_rank_dst);
+
+	  in  = mad_connection_cons();
+	  out = mad_connection_cons();
+
+	  in->remote_rank  = l_rank_dst;
+	  out->remote_rank = l_rank_dst;
+	  
+	  in->channel  = mad_channel;
+	  out->channel = mad_channel;
+
+	  in->reverse  = out;
+	  out->reverse = in;
+
+	  in->way  = mad_incoming_connection;
+	  out->way = mad_outgoing_connection;
+
+	  // in->regular
+	  rtable = mad_dir_xchannel_rtable_get(xchannel_pc, g_rank_dst, process_rank);
+
+	  if (rtable->destination_rank == process_rank)
+	    {
+	      // no routing required
+	      p_mad_channel_t            regular_channel = NULL;
+	      p_mad_dir_channel_t        dir_channel     = NULL;
+	      p_ntbx_process_container_t rchannel_pc     = NULL;
+	      ntbx_process_lrank_t       l_rank_rt       =   -1;
+
+	      in->nature      = mad_connection_nature_mux;
+	      regular_channel =
+		tbx_htable_get(madeleine->channel_htable, rtable->channel_name);
+	      dir_channel = regular_channel->dir_channel;
+	      rchannel_pc = dir_channel->pc;
+	      l_rank_rt   = ntbx_pc_global_to_local(rchannel_pc, g_rank_dst);
+	      in->regular =
+		tbx_darray_get(regular_channel-> in_connection_darray, l_rank_rt);
+
+	      if (!in->regular)
+		FAILURE("invalid connection");
+	    }
+	  else
+	    {
+	      // routing required
+	      p_mad_channel_t            regular_channel = NULL;
+	      p_mad_dir_channel_t        dir_channel     = NULL;
+	      p_ntbx_process_container_t rchannel_pc     = NULL;
+	      ntbx_process_grank_t       g_rank_rt       =   -1;
+	      ntbx_process_lrank_t       l_rank_rt       =   -1;
+
+	      in->nature      = mad_connection_nature_mux;
+	      g_rank_rt       = rtable->destination_rank;
+	      rtable          =
+		mad_dir_xchannel_reverse_routing(xchannel_pc, &g_rank_rt, process_rank);
+	      regular_channel =
+		tbx_htable_get(madeleine->channel_htable, rtable->channel_name);
+	      dir_channel     = regular_channel->dir_channel;
+	      rchannel_pc     = dir_channel->pc;
+	      l_rank_rt       =
+		ntbx_pc_global_to_local(rchannel_pc, g_rank_rt);
+	      in->regular     =
+		tbx_darray_get(regular_channel-> in_connection_darray, l_rank_rt);
+
+	      if (!in->regular)
+		FAILURE("invalid connection");
+	    }
+
+	  // out->regular
+	  out->mtu =
+	    mad_dir_xchannel_mtu_calculation(dir, xchannel_pc, process_rank, g_rank_dst);
+
+	  if (!out->mtu)
+	    FAILURE("invalid MTU");
+
+	  rtable = ntbx_pc_get_global_specific(xchannel_ppc, g_rank_dst);
+
+	  {
+	    p_mad_channel_t            regular_channel = NULL;
+	    p_mad_dir_channel_t        dir_channel     = NULL;
+	    p_ntbx_process_container_t rchannel_pc     = NULL;
+	    ntbx_process_lrank_t       l_rank_rt       =   -1;
+
+	    out->nature = mad_connection_nature_mux;
+
+	    regular_channel =
+	      tbx_htable_get(madeleine->channel_htable, rtable->channel_name);
+	    dir_channel = regular_channel->dir_channel;
+	    rchannel_pc = dir_channel->pc;
+	    l_rank_rt   =
+	      ntbx_pc_global_to_local(rchannel_pc, rtable->destination_rank);
+
+	    out->regular =
+	      tbx_darray_get(regular_channel->out_connection_darray, l_rank_rt);
+	  }
+
+	  if (interface->connection_init)
+	    {
+	      interface->connection_init(in, out);
+
+	      if ((in->nb_link != out->nb_link)||(in->nb_link <= 0))
+		FAILURE("mad_open_channel: invalid link number");
+	    }
+	  else
+	    {
+	      in->nb_link  = 1;
+	      out->nb_link = 1;
+	    }
+
+	  in->link_array  = TBX_CALLOC(in->nb_link, sizeof(p_mad_link_t));
+	  out->link_array = TBX_CALLOC(out->nb_link, sizeof(p_mad_link_t));
+
+	  for (link_id = 0; link_id < in->nb_link; link_id++)
+	    {
+	      p_mad_link_t in_link  = NULL;
+	      p_mad_link_t out_link = NULL;
+
+	      in_link  = mad_link_cons();
+	      out_link = mad_link_cons();
+
+	      in_link->connection = in;
+	      in_link->id         = link_id;
+
+	      out_link->connection = out;
+	      out_link->id         = link_id;
+
+	      in->link_array[link_id]  = in_link;
+	      out->link_array[link_id] = out_link;
+
+	      if (interface->link_init)
+		{
+		  interface->link_init(in_link);
+		  interface->link_init(out_link);
+		}
+	    }
+
+	  tbx_darray_expand_and_set(in_darray, l_rank_dst, in);
+	  tbx_darray_expand_and_set(out_darray, l_rank_dst, out);
+	}
+      while (ntbx_pc_next_global_rank(xchannel_ppc, &g_rank_dst));
+
+      mad_channel->in_connection_darray  = in_darray;
+      mad_channel->out_connection_darray = out_darray;
+
+      if (interface->before_open_channel)
+	interface->before_open_channel(mad_channel);
+
+      if (interface->after_open_channel)
+	interface->after_open_channel(mad_channel);
+
+      tbx_htable_add(mux_adapter->channel_htable,
+		     dir_xchannel->name, mad_channel);
+
+      tbx_htable_add(madeleine->channel_htable,
+		     dir_xchannel->name, mad_channel);
+#endif // MARCEL
+
+      // Mux channel ready
+      mad_leonie_send_string("ok");
+    }
+
+#ifdef MARCEL
+  {
+    mux_adapter = NULL;
+  }
+#endif // MARCEL
   LOG_OUT();
 }
 
@@ -2391,6 +2892,7 @@ mad_dir_directory_get(p_mad_madeleine_t madeleine)
   mad_dir_channel_get(madeleine);
   mad_dir_fchannel_get(madeleine);
   mad_dir_vchannel_get(madeleine);
+  mad_dir_xchannel_get(madeleine);
   mad_dir_sync("end{directory}");
   LOG_OUT();
 }
@@ -2970,6 +3472,571 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 
 	tbx_slist_free(slist);
 	mad_channel->fchannel_slist = NULL;
+      }
+
+      memset(mad_channel, 0, sizeof(mad_channel_t));
+      TBX_FREE(mad_channel);
+      mad_channel = NULL;
+#endif // MARCEL
+
+      mad_leonie_send_int(-1);
+    }
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_xchannel_disconnect(p_mad_madeleine_t madeleine)
+{
+  p_mad_directory_t dir                = NULL;
+#ifdef MARCEL
+  p_tbx_slist_t     dir_xchannel_slist = NULL;
+#endif // MARCEL
+  p_tbx_htable_t    channel_htable     = NULL;
+
+  LOG_IN();
+  dir            = madeleine->dir;
+  channel_htable = madeleine->channel_htable;
+
+  // "Forward send" threads shutdown
+#ifdef MARCEL
+  dir_xchannel_slist = dir->xchannel_slist;
+
+  if (!tbx_slist_is_nil(dir_xchannel_slist))
+    {
+      tbx_slist_ref_to_head(dir_xchannel_slist);
+      do
+	{
+	  p_mad_dir_xchannel_t dir_xchannel = NULL;
+	  p_mad_channel_t      mad_xchannel = NULL;
+	  p_tbx_slist_t        slist        = NULL;
+
+	  dir_xchannel = tbx_slist_ref_get(dir_xchannel_slist);
+	  mad_xchannel = tbx_htable_get(channel_htable, dir_xchannel->name);
+
+	  // Regular channels
+	  slist = mad_xchannel->channel_slist;
+
+	  tbx_slist_ref_to_head(slist);
+	  do
+	    {
+	      p_mad_channel_t channel = NULL;
+
+	      channel = tbx_slist_ref_get(slist);
+	      mad_mux_stop_indirect_retransmit(channel);
+	    }
+	  while (tbx_slist_ref_forward(slist));
+
+	}
+      while (tbx_slist_ref_forward(dir_xchannel_slist));
+    }
+#endif // MARCEL
+
+  mad_leonie_send_int(-1);
+
+  // "Forward receive" threads shutdown
+  for (;;)
+    {
+      ntbx_process_lrank_t  lrank         = -1;
+#ifdef MARCEL
+      p_mad_channel_t       channel       = NULL;
+      p_mad_channel_t       xchannel      = NULL;
+#endif // MARCEL
+      char                 *channel_name  = NULL;
+      char                 *xchannel_name = NULL;
+
+
+      xchannel_name = mad_leonie_receive_string();
+      if (tbx_streq(xchannel_name, "-"))
+	break;
+
+      channel_name = mad_leonie_receive_string();
+      lrank = mad_leonie_receive_int();
+
+#ifdef MARCEL
+      xchannel = tbx_htable_get(channel_htable, xchannel_name);
+      if (!xchannel)
+	FAILURE("channel not found");
+
+      channel = tbx_htable_get(channel_htable, channel_name);
+      if (!channel)
+	FAILURE("channel not found");
+
+      mad_mux_stop_reception(xchannel, channel, lrank);
+#endif // MARCEL
+      mad_leonie_send_int(-1);
+    }
+
+  // Xchannel closing
+
+  LOG_OUT();
+}
+
+static
+void
+mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_directory_t dir                = NULL;
+  p_tbx_htable_t    mad_channel_htable = NULL;
+
+  LOG_IN();
+
+  TRACE("Closing xchannels");
+  dir                = madeleine->dir;
+  mad_channel_htable = madeleine->channel_htable;
+
+  while (1)
+    {
+#ifdef MARCEL
+      p_mad_channel_t           mad_channel  = NULL;
+      p_mad_adapter_t           mad_adapter  = NULL;
+      p_mad_driver_t            mad_driver   = NULL;
+      p_mad_driver_interface_t  interface    = NULL;
+      p_tbx_darray_t            in_darray    = NULL;
+      p_tbx_darray_t            out_darray   = NULL;
+#endif // MARCEL
+      char                     *channel_name = NULL;
+
+      channel_name = mad_leonie_receive_string();
+      if (tbx_streq(channel_name, "-"))
+	break;
+
+#ifdef MARCEL
+      mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
+
+      if (!mad_channel)
+	FAILURE("xchannel not found");
+
+      TRACE_STR("Xchannel", channel_name);
+
+      mad_adapter = mad_channel->adapter;
+      mad_driver  = mad_adapter->driver;
+      interface   = mad_driver->interface;
+
+      if (interface->before_close_channel)
+	interface->before_close_channel(mad_channel);
+
+      in_darray  = mad_channel->in_connection_darray;
+      out_darray = mad_channel->out_connection_darray;
+
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+
+	  command = mad_leonie_receive_int();
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_leonie_receive_int();
+
+	  if (!interface->disconnect)
+	    goto channel_connection_closed;
+
+	  if (command)
+	    {
+	      // Output connection
+	      p_mad_connection_t out = NULL;
+
+	      TRACE_VAL("Closing connection to", remote_rank);
+
+	      out = tbx_darray_get(out_darray, remote_rank);
+	      if (mad_driver->connection_type == mad_bidirectional_connection)
+		{
+		  if (!out->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(out);
+		  out->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(out);
+		}
+	    }
+	  else
+	    {
+	      // Input connection
+	      p_mad_connection_t in = NULL;
+
+	      TRACE_VAL("Closing connection from", remote_rank);
+
+	      in = tbx_darray_get(in_darray, remote_rank);
+	      if (mad_driver->connection_type == mad_bidirectional_connection)
+		{
+		  if (!in->connected)
+		    goto channel_connection_closed;
+
+		  interface->disconnect(in);
+		  in->reverse->connected = tbx_false;
+		}
+	      else
+		{
+		  interface->disconnect(in);
+		}
+
+	    }
+
+	channel_connection_closed:
+	  mad_leonie_send_int(-1);
+	}
+
+      mad_leonie_send_int(-1);
+
+      if (interface->after_close_channel)
+	interface->after_close_channel(mad_channel);
+
+      while (1)
+	{
+	  int                  command     = -1;
+	  ntbx_process_lrank_t remote_rank = -1;
+
+	  command = mad_leonie_receive_int();
+	  if (command == -1)
+	    break;
+
+	  remote_rank = mad_leonie_receive_int();
+
+	  if (command)
+	    {
+	      TRACE_VAL("Freeing connection to", remote_rank);
+
+	      if (mad_driver->connection_type == mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in      = NULL;
+		  p_mad_connection_t out     = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link,  0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+
+			  if (out->specific == in->specific)
+			    {
+			      out->specific = NULL;
+			    }
+
+			  in->specific  = NULL;
+			}
+
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}
+		    }
+
+		  memset(in,  0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray,  remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t out     = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  out = tbx_darray_get(out_darray, remote_rank);
+		  if (!out)
+		    FAILURE("invalid connection");
+
+		  for (link_id = 0; link_id < out->nb_link; link_id++)
+		    {
+		      p_mad_link_t out_link = NULL;
+
+		      out_link = out->link_array[link_id];
+
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  out_link->specific = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+			}
+
+		      memset(out_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(NULL, out);
+		    }
+		  else
+		    {
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}
+		    }
+
+		  memset(out, 0, sizeof(mad_connection_t));
+		  TBX_FREE(out);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	    }
+	  else
+	    {
+	      TRACE_VAL("Freeing connection from", remote_rank);
+
+	      if (mad_driver->connection_type == mad_bidirectional_connection)
+		{
+		  p_mad_connection_t in  = NULL;
+		  p_mad_connection_t out = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+		  out = tbx_darray_get(out_darray, remote_rank);
+
+		  if (!in && !out)
+		    goto connection_freed;
+
+		  if (!in || !out)
+		    FAILURE("incoherent behaviour");
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link  = NULL;
+		      p_mad_link_t out_link = NULL;
+
+		      in_link  = in->link_array[link_id];
+		      out_link = out->link_array[link_id];
+
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(out_link);
+			  interface->link_exit(in_link);
+
+			  out_link->specific = NULL;
+			  in_link->specific  = NULL;
+			}
+		      else
+			{
+			  if (out_link->specific)
+			    {
+			      TBX_FREE(out_link->specific);
+			      out_link->specific = NULL;
+			    }
+
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      memset(out_link, 0, sizeof(mad_link_t));
+
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		      TBX_FREE(out_link);
+		      out->link_array[link_id] = NULL;
+		    }
+
+		  TBX_FREE(out->link_array);
+		  out->link_array = NULL;
+
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, out);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+
+			  if (out->specific == in->specific)
+			    {
+			      out->specific = NULL;
+			    }
+
+			  in->specific  = NULL;
+			}
+
+		      if (out->specific)
+			{
+			  TBX_FREE(out->specific);
+			  out->specific = NULL;
+			}
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  memset(out, 0, sizeof(mad_connection_t));
+
+		  TBX_FREE(in);
+		  TBX_FREE(out);
+
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		  tbx_darray_set(out_darray, remote_rank, NULL);
+		}
+	      else
+		{
+		  p_mad_connection_t in      = NULL;
+		  mad_link_id_t      link_id =   -1;
+
+		  in  = tbx_darray_get(in_darray, remote_rank);
+
+		  if (!in)
+		    FAILURE("invalid connection");
+
+		  for (link_id = 0; link_id < in->nb_link; link_id++)
+		    {
+		      p_mad_link_t in_link = NULL;
+
+		      in_link = in->link_array[link_id];
+
+		      if (interface->link_exit)
+			{
+			  interface->link_exit(in_link);
+			  in_link->specific = NULL;
+			}
+		      else
+			{
+			  if (in_link->specific)
+			    {
+			      TBX_FREE(in_link->specific);
+			      in_link->specific = NULL;
+			    }
+			}
+
+		      memset(in_link, 0, sizeof(mad_link_t));
+		      TBX_FREE(in_link);
+		      in->link_array[link_id] = NULL;
+		    }
+
+		  TBX_FREE(in->link_array);
+		  in->link_array = NULL;
+
+		  if (interface->connection_exit)
+		    {
+		      interface->connection_exit(in, NULL);
+		    }
+		  else
+		    {
+		      if (in->specific)
+			{
+			  TBX_FREE(in->specific);
+			  in->specific = NULL;
+			}
+		    }
+
+		  memset(in, 0, sizeof(mad_connection_t));
+		  TBX_FREE(in);
+		  tbx_darray_set(in_darray, remote_rank, NULL);
+		}
+	    }
+
+	connection_freed:
+	  mad_leonie_send_int(-1);
+	}
+
+      tbx_darray_free(in_darray);
+      tbx_darray_free(out_darray);
+
+      mad_channel->in_connection_darray  = NULL;
+      mad_channel->out_connection_darray = NULL;
+
+      if (interface->channel_exit)
+	interface->channel_exit(mad_channel);
+
+      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
+
+      TBX_FREE(mad_channel->name);
+      mad_channel->name = NULL;
+
+      {
+	p_tbx_slist_t slist = NULL;
+
+	slist = mad_channel->channel_slist;
+	while (!tbx_slist_is_nil(slist))
+	  {
+	    tbx_slist_extract(slist);
+	  }
+
+	tbx_slist_free(slist);
+	mad_channel->channel_slist = NULL;
       }
 
       memset(mad_channel, 0, sizeof(mad_channel_t));
@@ -3898,9 +4965,15 @@ void
 mad_dir_channels_exit(p_mad_madeleine_t madeleine)
 {
   LOG_IN();
-  // Virtual channels
+  // Meta-channels disconnection
   mad_dir_vchannel_disconnect(madeleine);
+  mad_dir_xchannel_disconnect(madeleine);
+
+  // Virtual channels
   mad_dir_vchannel_exit(madeleine);
+
+  // Mux channels
+  mad_dir_xchannel_exit(madeleine);
 
   // Forwarding channels
   mad_dir_fchannel_exit(madeleine);
@@ -4128,6 +5201,89 @@ mad_dir_vchannel_cleanup(p_mad_madeleine_t madeleine)
 
   tbx_htable_free(dir->vchannel_htable);
   dir->vchannel_htable = NULL;
+  LOG_OUT();
+}
+
+
+static
+void
+mad_dir_xchannel_cleanup(p_mad_madeleine_t madeleine)
+{
+  p_mad_directory_t  dir             = NULL;
+  p_tbx_htable_t     xchannel_htable = NULL;
+  p_tbx_slist_t      xchannel_slist  = NULL;
+
+  LOG_IN();
+  dir             = madeleine->dir;
+  xchannel_htable = dir->xchannel_htable;
+  xchannel_slist  = dir->xchannel_slist;
+
+  while (!tbx_slist_is_nil(xchannel_slist))
+    {
+      p_mad_dir_xchannel_t       dir_xchannel   = NULL;
+      p_tbx_slist_t              channel_slist  = NULL;
+      p_ntbx_process_container_t pc             = NULL;
+      ntbx_process_grank_t       g_rank_src     =   -1;
+
+      dir_xchannel   = tbx_slist_extract(xchannel_slist);
+      tbx_htable_extract(xchannel_htable, dir_xchannel->name);
+
+      channel_slist  = dir_xchannel->dir_channel_slist;
+
+      while (!tbx_slist_is_nil(channel_slist))
+	{
+	  tbx_slist_extract(channel_slist);
+	}
+
+      tbx_slist_free(channel_slist);
+      channel_slist                   = NULL;
+      dir_xchannel->dir_channel_slist = NULL;
+
+      pc = dir_xchannel->pc;
+
+      if (ntbx_pc_first_global_rank(pc, &g_rank_src))
+	{
+	  do
+	    {
+	      p_mad_dir_xchannel_process_specific_t vps        = NULL;
+	      p_ntbx_process_container_t            ppc        = NULL;
+	      ntbx_process_grank_t                  g_rank_dst =   -1;
+
+	      vps = ntbx_pc_get_global_specific(pc, g_rank_src);
+	      ppc = vps->pc;
+
+	      ntbx_pc_first_global_rank(ppc, &g_rank_dst);
+	      do
+		{
+		  p_mad_dir_xchannel_process_routing_table_t rtable = NULL;
+
+		  rtable = ntbx_pc_get_global_specific(ppc, g_rank_dst);
+		  TBX_FREE(rtable->channel_name);
+		  rtable->channel_name = NULL;
+		}
+	      while (ntbx_pc_next_global_rank(ppc, &g_rank_dst));
+
+	      ntbx_pc_dest(ppc, tbx_default_specific_dest);
+	    }
+	  while (ntbx_pc_next_global_rank(pc, &g_rank_src));
+	}
+
+      ntbx_pc_dest(pc, tbx_default_specific_dest);
+      dir_xchannel->pc   = NULL;
+
+      TBX_FREE(dir_xchannel->name);
+      dir_xchannel->name = NULL;
+
+      dir_xchannel->id = 0;
+
+      TBX_FREE(dir_xchannel);
+    }
+
+  tbx_slist_free(dir->xchannel_slist);
+  dir->xchannel_slist = NULL;
+
+  tbx_htable_free(dir->xchannel_htable);
+  dir->xchannel_htable = NULL;
   LOG_OUT();
 }
 
@@ -4421,6 +5577,7 @@ mad_directory_exit(p_mad_madeleine_t madeleine)
   mad_dir_sync("clean{directory}");
 
   mad_dir_vchannel_cleanup(madeleine);
+  mad_dir_xchannel_cleanup(madeleine);
   mad_dir_fchannel_cleanup(madeleine);
   mad_dir_channel_cleanup(madeleine);
   mad_dir_driver_cleanup(madeleine);

@@ -90,7 +90,14 @@ ntbx_tcp_read(int     socket_fd,
                 int status;
 
 #ifdef MARCEL
-                status = marcel_read(socket_fd, ptr + bytes_read, length - bytes_read);
+                if (marcel_test_activity())
+                  {
+                    status = marcel_read(socket_fd, ptr + bytes_read, length - bytes_read);
+                  }
+                else
+                  {
+                    status = read(socket_fd, ptr + bytes_read, length - bytes_read);
+                  }
 #else /* MARCEL */
                 status = read(socket_fd, ptr + bytes_read, length - bytes_read);
 #endif /* MARCEL */
@@ -125,7 +132,14 @@ ntbx_tcp_write(int           socket_fd,
                 int status;
 
 #ifdef MARCEL
-                status = marcel_write(socket_fd, ptr + bytes_written, length - bytes_written);
+                if (marcel_test_activity())
+                  {
+                    status = marcel_write(socket_fd, ptr + bytes_written, length - bytes_written);
+                  }
+                else
+                  {
+                    status = write(socket_fd, ptr + bytes_written, length - bytes_written);
+                  }
 #else /* MARCEL */
                 status = write(socket_fd, ptr + bytes_written, length - bytes_written);
 #endif /* MARCEL */
@@ -629,7 +643,14 @@ ntbx_tcp_read_poll(int              nb_clients,
                 int    status         = 0;
 
 #ifdef MARCEL
-                status = tselect(max_fds + 1, &local_read_fds, NULL, NULL);
+                if (marcel_test_activity())
+                  {
+                    status = tselect(max_fds + 1, &local_read_fds, NULL, NULL);
+                  }
+                else
+                  {
+                    status = select(max_fds + 1, &local_read_fds, NULL, NULL, NULL);
+                  }
 #else // MARCEL
                 status = select(max_fds + 1, &local_read_fds, NULL, NULL, NULL);
 #endif // MARCEL
@@ -685,7 +706,14 @@ ntbx_tcp_write_poll(int              nb_clients,
                 int    status          = 0;
 
 #ifdef MARCEL
-                status = tselect(max_fds + 1, NULL, &local_write_fds, NULL);
+                if (marcel_test_activity())
+                  {
+                    status = tselect(max_fds + 1, NULL, &local_write_fds, NULL);
+                  }
+                else
+                  {
+                    status = select(max_fds + 1, NULL, &local_write_fds, NULL, NULL);
+                  }
 #else //  MARCEL
                 status = select(max_fds + 1, NULL, &local_write_fds, NULL, NULL);
 #endif // MARCEL
@@ -735,9 +763,19 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
                 int status;
 
 #ifdef MARCEL
-                status = marcel_read(client_specific->descriptor,
-                                     ptr + bytes_read,
-                                     length - bytes_read);
+                if (marcel_test_activity())
+                  {
+                    status = marcel_read(client_specific->descriptor,
+                                         ptr + bytes_read,
+                                         length - bytes_read);
+                  }
+                else
+                  {
+                    status = read(client_specific->descriptor,
+                                  ptr + bytes_read,
+                                  length - bytes_read);
+                  }
+
 #else /* MARCEL */
                 status = read(client_specific->descriptor,
                               ptr + bytes_read,
@@ -781,9 +819,18 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
                 int status;
 
 #ifdef MARCEL
-                status = marcel_write(client_specific->descriptor,
-                                      ptr + bytes_written,
-                                      length - bytes_written);
+                if (marcel_test_activity())
+                  {
+                    status = marcel_write(client_specific->descriptor,
+                                          ptr + bytes_written,
+                                          length - bytes_written);
+                  }
+                else
+                  {
+                    status = write(client_specific->descriptor,
+                                   ptr + bytes_written,
+                                   length - bytes_written);
+                  }
 #else /* MARCEL */
                 status = write(client_specific->descriptor,
                                ptr + bytes_written,
@@ -893,6 +940,12 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
         }
 
         len = ntbx_unpack_int(&pack_buffer);
+        if (rq_flag_toggled) {
+                TRACE("read string[%lu] len = '%d'", client->read_rq, len);
+        }
+        if (len < 0)
+                FAILURE("synchronization error");
+
         *string = TBX_MALLOC((size_t)len);
         CTRL_ALLOC(*string);
 

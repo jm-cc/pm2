@@ -43,14 +43,9 @@ typedef struct {
 #define dsm_lock_attr_set_owner(attr, owner) dsm_mutexattr_setowner(&attr->dsm_mutex, owner)
 #define dsm_lock_attr_get_owner(attr, owner) dsm_mutexattr_getowner(&attr->dsm_mutex, owner)
 
+void dsm_lock_attr_init(dsm_lock_attr_t *attr);
 
-static __inline__ void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, int prot) __attribute__ ((unused));
-static __inline__ void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, int prot)
-{
-  if (attr->nb_prot >= _MAX_PROT_PER_LOCK)
-    RAISE(CONSTRAINT_ERROR);
-  attr->prot[attr->nb_prot++] = prot;
-}
+void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, int prot);
 
 void dsm_lock_init(dsm_lock_t *lock, dsm_lock_attr_t *attr);
 

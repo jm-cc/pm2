@@ -51,7 +51,10 @@
 #define DSM_NEWPAGE \
   asm (DSM_ASM_PAGEALIGN);
 
-void dsm_pm2_init(int my_rank, int confsize);
+//void dsm_pm2_init(int my_rank, int confsize);
+
+void dsm_pm2_init_before_startup_funcs(int my_rank, int confsize);
+void dsm_pm2_init_after_startup_funcs(int my_rank, int confsize);
 
 void dsm_pm2_exit();
 

@@ -159,7 +159,7 @@ void g(void)
   }
 }
 
-static void startup_func(int argc, char *argv[])
+static void startup_func(int argc, char *argv[], void *args)
 {
   autre = (pm2_self() == 0) ? 1 : 0;
 }
@@ -169,7 +169,7 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
   pm2_rawrpc_register(&SAMPLE_THR, SAMPLE_THR_service);
 
-  pm2_push_startup_func(startup_func);
+  pm2_push_startup_func(startup_func, NULL);
 
   pm2_init(&argc, argv);
 

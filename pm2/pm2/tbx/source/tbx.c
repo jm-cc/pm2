@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.10  2000/11/07 17:40:31  oaumage
+- initialisation
+
 Revision 1.9  2000/09/12 14:55:15  rnamyst
 Added support for generating .i files in Makefiles
 
@@ -73,12 +76,14 @@ ______________________________________________________________________________
 
 static volatile tbx_bool_t initialized = tbx_false;
 
-void tbx_init(int *argc, char **argv, int debug_flags)
+void
+tbx_init(int    argc,
+	 char **argv)
 {
   if (!initialized)
     {
       initialized = tbx_true;
-      pm2debug_init_ext(argc, argv, debug_flags);
+
       /* Safe malloc */
 #ifdef TBX_SAFE_MALLOC
       tbx_safe_malloc_init();
@@ -97,4 +102,13 @@ void tbx_init(int *argc, char **argv, int debug_flags)
       tbx_htable_manager_init();
     }
   
+}
+
+void
+tbx_purge_cmd_line(int   *argc,
+		   char **argv)
+{
+  LOG_IN();
+  /* --- */
+  LOG_OUT();
 }

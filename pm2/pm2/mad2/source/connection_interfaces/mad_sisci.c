@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.20  2000/03/27 11:26:41  oaumage
+- correction d'une faute de frappe
+
 Revision 1.19  2000/03/15 09:59:39  oaumage
 - renommage du polling Nexus
 
@@ -2136,7 +2139,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
     }
   else
     {  
-      while (!mad_sisci_test(read))
+      while (!mad_sisci_test(read));
     }
 #endif /* MARCEL */
   

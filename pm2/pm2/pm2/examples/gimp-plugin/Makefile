@@ -33,11 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-CONFIG_MODULES=marcel pm2 mad2 tbx ntbx
-
-ifndef FLAVOR
-export FLAVOR:=default
-endif
+export FLAVOR_DEFAULT:=pm2
 
 PROGS := 
 

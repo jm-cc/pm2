@@ -39,7 +39,11 @@ endif
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-CONFIG_MODULES=$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --modules)
+ifdef OLD_MAKEFILE
+CONFIG_MODULES=$(shell $(PM2_CONFIG) --modules)
+else
+-include $(PM2_MAK_DIR)/apps-libs.mak
+endif
 
 all:
 
@@ -74,7 +78,7 @@ APP_OBJ := $(APP_BUILDDIR)/obj
 APP_ASM := $(APP_BUILDDIR)/asm
 APP_DEP := $(APP_BUILDDIR)/dep
 else
--include $(PM2_MAK_DIR)/app.mak
+-include $(PM2_MAK_DIR)/apps-config.mak
 endif # OLD_MAKEFILE
 endif
 
@@ -89,5 +93,9 @@ DEP_TO_OBJ =  $(APP_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
 COMMON_DEPS += $(APP_STAMP_FILES) $(MAKEFILE_FILE)
 
-$(PM2_MAK_DIR)/app.mak:
-	$(PM2_CONFIG) --gen_mak app
+$(PM2_MAK_DIR)/apps-config.mak: $(APP_STAMP_FLAVOR)
+	@$(PM2_CONFIG) --gen_mak apps
+
+$(PM2_MAK_DIR)/apps-libs.mak:  $(APP_STAMP_FLAVOR)
+	@mkdir -p `dirname $@`
+	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@

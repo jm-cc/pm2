@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.8  2000/07/07 14:49:49  oaumage
+- Ajout d'un support pour les tables de hachage
+
 Revision 1.7  2000/06/09 08:59:49  oaumage
 - Correction de l'initialisation de la toolbox avec Marcel
 
@@ -87,6 +90,9 @@ void tbx_init(int *argc, char **argv, int debug_flags)
 
       /* Slist manager */
       tbx_slist_manager_init();
+
+      /* Hash table manager */
+      tbx_htable_manager_init();
     }
   
 }

@@ -37,7 +37,7 @@
 #---------------------------------------------------------------------
 libs: $(LIBRARY)
 
-# if someone do 'make' in an module directory, ...
+# if someone does 'make' in an module directory, ...
 #---------------------------------------------------------------------
 no_goal:
 	$(MAKE) -C $(PM2_ROOT)
@@ -48,6 +48,10 @@ no_goal:
 preproc: $(LIB_PREPROC)
 
 fut: $(LIB_FUT)
+
+# Regles de génération des .h
+#---------------------------------------------------------------------
+.PHONY: dot_h
 
 # La librairie
 #---------------------------------------------------------------------
@@ -157,7 +161,7 @@ $(LIB_C_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.c
 $(LIB_C_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC)/%.c
 	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
-# Dependances vers *.h
+# Dependances vers *.S
 #---------------------------------------------------------------------
 $(LIB_S_OBJECTS): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC)/%.S
 	$(COMMON_HIDE) $(CC) -E -P $(CFLAGS) $< > $(LIB_OBJ_TO_S)

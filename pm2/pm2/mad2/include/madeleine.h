@@ -123,4 +123,7 @@
 
 #include "mad_exit.h"
 
+/* Module 'common' */
+#include "pm2_common.h"
+
 #endif /* MAD_H */

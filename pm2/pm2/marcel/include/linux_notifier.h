@@ -9,6 +9,7 @@
  
 #section types
 struct ma_notifier_block;
+struct ma_notifier_chain;
 
 #section marcel_structures
 struct ma_notifier_block
@@ -16,13 +17,41 @@ struct ma_notifier_block
 	int (*notifier_call)(struct ma_notifier_block *self, unsigned long, void *);
 	struct ma_notifier_block *next;
 	int priority;
+	char* name;
+	int nb_actions;
+	const char **actions_name;
 };
 
+struct ma_notifier_chain
+{
+	struct ma_notifier_block *chain;
+	char* name;
+};
+
+#section marcel_macros
+#define MA_DEFINE_NOTIFIER_BLOCK(var, func, help) MA_DEFINE_NOTIFIER_BLOCK_PRIO(var, func, 0, help)
+#define MA_DEFINE_NOTIFIER_BLOCK_PRIO(var, func, prio, help) \
+  MA_DEFINE_NOTIFIER_BLOCK_INTERNAL(var, func, prio, help, 0, NULL)
+#define MA_DEFINE_NOTIFIER_BLOCK_INTERNAL(var, func, prio, help, nb, helps) \
+  struct ma_notifier_block var = { \
+        .notifier_call = (func), \
+        .next           = NULL, \
+        .priority       = prio, \
+        .name           = help, \
+        .nb_actions     = nb, \
+        .actions_name   = helps, \
+  }
+
+#define MA_DEFINE_NOTIFIER_CHAIN(var, help) \
+  struct ma_notifier_chain var = { \
+        .chain = NULL, \
+        .name  = help, \
+  }
 
 #section marcel_functions
-extern int ma_notifier_chain_register(struct ma_notifier_block **list, struct ma_notifier_block *n);
-extern int ma_notifier_chain_unregister(struct ma_notifier_block **nl, struct ma_notifier_block *n);
-extern int ma_notifier_call_chain(struct ma_notifier_block **n, unsigned long val, void *v);
+extern int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n);
+extern int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n);
+extern int ma_notifier_call_chain(struct ma_notifier_chain *c, unsigned long val, void *v);
 
 #section marcel_macros
 #define MA_NOTIFY_DONE		0x0000		/* Don't care */

@@ -43,6 +43,7 @@
 #include "dsm_comm.h"
 #include "dsm_protocol_lib.h"
 #include "dsm_protocol_policy.h"
+#include "dsm_page_size.h"
 #include "assert.h"
 
 //#define DEBUG1
@@ -81,7 +82,7 @@ void dsmlib_migrate_thread(unsigned long index)
   dsm_unlock_page(index); 
   pm2_enable_migration();
   pm2_freeze();
-  pm2_migrate_self(dsm_get_prob_owner(index));
+  pm2_migrate(marcel_self(),dsm_get_prob_owner(index));
 }
 
 void dsmlib_wf_ask_for_write_access(unsigned long index)
@@ -140,10 +141,10 @@ void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node)
       dsm_add_to_copyset(index, req_node);
       //        lock_task();
       if (dsm_get_access(index) != WRITE_ACCESS)
-      	dsm_set_access(index, WRITE_ACCESS);
-      //dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+      //	dsm_set_access(index, WRITE_ACCESS); // BIP needs write access on sending!
+      dsm_set_access(index, READ_ACCESS); // normally, the local copy should be read_only
       dsm_send_page(req_node, index, READ_ACCESS);
-      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+     // dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
     //        unlock_task();
 #ifdef DEBUG3
       tfprintf(stderr,"RS after send page: a = %d\n",((atomic_t *)dsm_get_page_addr(index))->counter);
@@ -184,8 +185,8 @@ void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_no
 #endif
      // lock_task();
       if (dsm_get_access(index) != WRITE_ACCESS)
-     	dsm_set_access(index, WRITE_ACCESS);
-      //dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
+//     	dsm_set_access(index, WRITE_ACCESS); // BIP needs write access on sending!
+      dsm_set_access(index, READ_ACCESS); // normally, the local copy will become read-only
       dsm_send_page(req_node, index, WRITE_ACCESS);
       dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
      // unlock_task();
@@ -323,8 +324,28 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 	dsm_clear_next_owner(index); // these last 2 calls should be atomic...
       }
 }
-/*************  Hyperion protocols *************************/
 
+
+/*************  Hyperion protocols *************************/
+//#define DEBUG_HYP
+
+void  dsm_counters_init(int *userdata)
+{
+  userdata[0] = 0;
+  userdata[1] = -1;
+}
+
+#define dsm_get_waiter_count(index)  dsm_get_user_data1(index, 0)
+
+#define dsm_clear_waiter_count(index)  dsm_set_user_data1(index, 0, 0)
+
+#define dsm_increment_waiter_count(index) dsm_increment_user_data1(index, 0)
+
+#define dsm_get_page_arrival_count(index)  dsm_get_user_data1(index, 1)
+
+#define dsm_clear_page_arrival_count(index)  dsm_set_user_data1(index, 1, 0)
+
+#define dsm_increment_page_arrival_count(index) dsm_increment_user_data1(index, 1)
 
 void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t req_node)
 {
@@ -352,32 +373,70 @@ void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t re
 #endif
 }
 
-void dsmlib_rp_hyp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node)
+void dsmlib_erp_hyp_receive_page(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size)
 {
-     unsigned long index = dsm_page_index(addr);
+  dsm_access_t old_access;
+  /* pjh */
+  int wc;
+  int ac;
 
-     dsm_lock_page(index); 
+  unsigned long index = dsm_page_index(addr);
+  dsm_lock_page(index);
+  old_access = dsm_get_access(index);
+
+  /* is there a later request whose answer I should wait for? */
+  wc = dsm_get_waiter_count(index);
+  ac = dsm_get_page_arrival_count(index);
+
 #ifdef DEBUG_HYP
-     tfprintf(stderr, "Received page %ld <- %d for %s (I am %p)\n", index, reply_node, (access == 1)?"read":"write", marcel_self());
+  tfprintf(stderr, "unpack page %ld: %d %d\n", index, wc, ac);
 #endif
-     if (access == READ_ACCESS)
- 	 RAISE(PROGRAM_ERROR);
-      else // access = WRITE_ACCESS
-       {
-	 dsm_alloc_page_bitmap(index);
-	 if (dsm_get_pending_access(index) == WRITE_ACCESS)
-	   {
-    	     dsm_set_access(index, WRITE_ACCESS);
-	     dsm_set_pending_access(index, NO_ACCESS);
-	   }
-	 else
-	   dsm_set_access(index, WRITE_ACCESS);
-       }
-     dsm_signal_page_ready(dsm_page_index(addr));
+
+  if (wc == (ac +1))  /* keep the page */
+    {
+#ifdef SEND_PAGE_CHEAPER
+      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
+#else
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)addr, page_size); 
+#endif
+      pm2_rawrpc_waitdata(); 
+      
 #ifdef DEBUG_HYP
-     tfprintf(stderr, "I signalled page ready, (I am %p)\n", marcel_self());
+      tfprintf(stderr, "Received page %ld <- %d for %s (I am %p)\n", index,
+	       reply_node, (access == 1)?"read":"write", marcel_self());
 #endif
-     dsm_unlock_page(index);
+
+      dsm_alloc_page_bitmap(index);
+      
+      dsm_set_access_without_protect(index, WRITE_ACCESS);
+      dsm_set_pending_access(index, NO_ACCESS);
+      
+      dsm_clear_waiter_count(index);
+      dsm_signal_page_ready(dsm_page_index(addr)); /* wakes all waiters */
+  
+#ifdef DEBUG_HYP
+      tfprintf(stderr, "I signalled page ready, (I am %p)\n", marcel_self());
+#endif
+    }
+  else /* discard the page */
+    {
+      static char discard[DSM_PAGE_SIZE];
+      
+#ifdef DEBUG_HYP
+      tfprintf(stderr, "unpack page %ld: discarding page (%d, %d)!\n", index,
+	       wc, ac+1);
+#endif
+#ifdef SEND_PAGE_CHEAPER
+      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, discard, page_size); 
+#else
+      pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, discard, page_size); 
+#endif
+      pm2_rawrpc_waitdata(); 
+      
+      /* page discarded, but count it */
+      dsm_increment_page_arrival_count(index);  
+    }
+  dsm_unlock_page(index);
 }
 
 

@@ -114,6 +114,8 @@ mad3()
     echo "    };"                              >> $PM2_LEONIE_FILE
     echo "};"                                  >> $PM2_LEONIE_FILE
 
+    [ "$PM2_DEBUG" = "on" ] && PM2_XMODE="on"
+
     pm2load_args=""
     [ "$PM2_DEBUG" = "on" ]           && pm2load_args="${pm2load_args} -d"
     [ "$PM2_DEBUG" = "off" ]          && pm2load_args="${pm2load_args} --d"

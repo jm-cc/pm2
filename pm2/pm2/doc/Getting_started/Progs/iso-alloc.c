@@ -1,6 +1,6 @@
 #include "pm2.h"
 
-char hostname[MAXHOSTNAMELEN];
+char hostname[128];
 static int service_id;
 
 void
@@ -38,7 +38,7 @@ service (void)
 int
 pm2_main (int argc, char *argv[])
 {
-  gethostname (hostname, MAXHOSTNAMELEN);
+  gethostname (hostname, 128);
   pm2_rawrpc_register (&service_id, service);
   pm2_init (&argc, argv);
 

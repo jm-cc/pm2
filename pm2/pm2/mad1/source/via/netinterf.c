@@ -357,7 +357,7 @@ void mad_via_network_send(int dest_node, struct iovec *vector, size_t count)
 #ifdef PM2
     while(!credits[dest_node]) {
       unlock_task();
-      marcel_givehandback();
+      marcel_yield();
       lock_task();
     }
     credits[dest_node]--;
@@ -434,7 +434,7 @@ void mad_via_network_send(int dest_node, struct iovec *vector, size_t count)
 	r = VipSendDone(viHand[dest_node], &descp);
 	if(r != VIP_SUCCESS) {
 	  unlock_task();
-	  marcel_givehandback();
+	  marcel_yield();
 	  lock_task();
 	}
       } while(r != VIP_SUCCESS);
@@ -532,7 +532,7 @@ static void send_ack(int dest_node)
       r = VipSendDone(viHand[dest_node], &descp);
       if(r != VIP_SUCCESS) {
 	unlock_task();
-	marcel_givehandback();
+	marcel_yield();
 	lock_task();
       }
     } while(r != VIP_SUCCESS);
@@ -609,7 +609,7 @@ void mad_via_network_receive(char **head)
 	r = VipCQDone(cqHand, &vih, &isRecv);
 	if(r != VIP_SUCCESS) {
 	  unlock_task();
-	  marcel_givehandback();
+	  marcel_yield();
 	  lock_task();
 	}
       } while(r != VIP_SUCCESS);
@@ -728,7 +728,7 @@ void mad_via_network_receive(char **head)
 		r = VipCQDone(cqHand, &vih, &isRecv);
 		if(r != VIP_SUCCESS) {
 		  unlock_task();
-		  marcel_givehandback();
+		  marcel_yield();
 		  lock_task();
 		}
 	      } while(r != VIP_SUCCESS);
@@ -841,7 +841,7 @@ void mad_via_network_receive_data(struct iovec *vector, size_t count)
 	    r = VipCQDone(cqHand, &vih, &isRecv);
 	    if(r != VIP_SUCCESS) {
 	      unlock_task();
-	      marcel_givehandback();
+	      marcel_yield();
 	      lock_task();
 	    }
 	  } while(r != VIP_SUCCESS);

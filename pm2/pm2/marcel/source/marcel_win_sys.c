@@ -18,6 +18,8 @@
 
 #define __WIN_MMAP_KERNEL__
 
+#include <stdio.h>
+
 #include "sys/marcel_win_sys.h"
 #include "sys/isomalloc_archdep.h"
 

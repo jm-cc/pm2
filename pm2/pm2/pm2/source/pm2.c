@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.32  2000/12/14 13:41:54  bouge
+Added pm2_completion_copy
+
 Revision 1.31  2000/11/16 16:16:44  rnamyst
 mad1 is up-to-date again + various bug fixes (Malefiles)
 
@@ -537,6 +540,16 @@ void pm2_completion_init(pm2_completion_t *c,
   c->handler = handler;
   c->arg = arg;
 }
+
+/* Added by Luc Bouge. Dec. 14, 2000 */
+
+void pm2_completion_copy(pm2_completion_t *to, 
+			 pm2_completion_t *from)
+{
+ *to = *from;
+}
+
+/* End of addition */
 
 void pm2_pack_completion(mad_send_mode_t sm,
 			 mad_receive_mode_t rm,

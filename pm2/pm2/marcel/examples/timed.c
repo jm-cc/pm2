@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-/* timeout.c */
+/* timed.c */
 
 #include "marcel.h"
 

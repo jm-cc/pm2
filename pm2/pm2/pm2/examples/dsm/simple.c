@@ -72,7 +72,7 @@ END_DSM_DATA
 
 void f()
 {
-  int i, n = 3;
+  int i, n = 10;
 
   for (i = 0; i < n; i++) {
     // atomic_inc(&a);
@@ -85,7 +85,7 @@ void f()
 
 static void DSM_func(void)
 {
-  pm2_unpack_completion(&c);
+  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata(); 
   pm2_thread_create(f, NULL);
 }
@@ -115,7 +115,7 @@ int pm2_main(int argc, char **argv)
   dsm_display_page_ownership();
 
   if(pm2_self() == 0) { /* master process */
-    pm2_completion_init(&c);
+    pm2_completion_init(&c, NULL, NULL);
 
     /* create local threads */
     for (i=0; i< atoi(argv[1]) ; i++)
@@ -125,7 +125,7 @@ int pm2_main(int argc, char **argv)
     for (j=1; j < pm2_config_size(); j++)
       for (i=0; i< atoi(argv[1]) ; i++) {
 	pm2_rawrpc_begin(j, DSM_SERVICE, NULL);
-	pm2_pack_completion(&c);
+	pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER,&c);
 	pm2_rawrpc_end();
       }
 

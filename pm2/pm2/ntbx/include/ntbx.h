@@ -14,7 +14,7 @@
  */
 
 /*
- * NTbx.h
+ * Ntbx.h
  * ======
  */
 
@@ -49,6 +49,11 @@
 #include "ntbx_tcp.h"
 #endif /* NTBX_TCP */
 
+#ifdef NTBX_UDP
+#include "ntbx_udp.h"
+#endif /* NTBX_UDP */
+
 #include "ntbx_interface.h"
 
 #endif /* NTBX_H */
+

@@ -519,35 +519,6 @@ void common_post_init(int *argc, char *argv[],
    */
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
 #endif /* PM2DEBUG */
-
-#ifdef MAD4
-  /*
-   * Mad4 base services init
-   * ------------------------
-   *
-   * Provides:
-   *  - the initial Factory service
-   * 
-   * Requires:
-   * - NTBX services
-   * - TBX services
-   * - MARCEL 
-   */
-     {	
-	int index; 	
-	for(index = 0 ; index < SERVICE_NUMBER ; index++)
-	  {
-	     p_mad_service_t    service  = NULL;
-	     mad_service_args_t args;
-	     service = mad_find_service(attr->madeleine,service_names[index]);
-	     if(service)
-	       {
-		  args.service = service;
-		  (*service->interface->start_service)( &args );	  	    		      
-	       }  
-	  }	
-     }
-#endif   
 }
 
 void
@@ -559,34 +530,6 @@ common_exit(common_attr_t *attr)
       attr = &default_static_attr;
     }
 
-#ifdef MAD4
-     {	
-	int index; 	
-	for(index = (SERVICE_NUMBER - 1) ; index >= 0 ; index--)
-	  {
-	     p_mad_service_t    service  = NULL;
-	     mad_service_args_t args;
-	     service = mad_find_service(attr->madeleine, service_names[index]);
-	     if(service)
-	       {
-		  if(!mad_test_service_name(service,"mad3_service"))
-		    {
-		       args.service  = service;
-		       (*service->interface->exit_service)( &args );
-		    }
-		  else {
-		     (*service->interface->exit_service)( NULL );
-		  }
-		  if (mad_test_service_name(service,"initial_factory"))
-		    {
-		       mad_remove_service(attr->madeleine, service);
-		    }
-	       }  
-	  }	
-     }
-#endif      
-   
-   
 #ifdef PM2
   pm2_net_request_end();
   pm2_net_wait_end();

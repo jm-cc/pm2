@@ -38,14 +38,13 @@
  * Data Structures
  * ========================================================================
  */
-typedef struct
+typedef struct s_ntbx_tcp_client_specific
 {
   ntbx_tcp_socket_t descriptor;
-
 } ntbx_tcp_client_specific_t, *p_ntbx_tcp_client_specific_t;
 
 
-typedef struct
+typedef struct s_ntbx_tcp_server_specific
 {
   ntbx_tcp_socket_t descriptor;
   ntbx_tcp_port_t   port;
@@ -73,8 +72,14 @@ ntbx_tcp_retry_struct_init(p_ntbx_tcp_retry_t retry)
 ntbx_status_t
 ntbx_tcp_retry(p_ntbx_tcp_retry_t retry)
 {
+  ntbx_status_t status = ntbx_success;
+
   LOG_IN();
-#ifndef MARCEL
+#ifdef MARCEL
+  if (marcel_test_activity())
+    goto end;
+#endif // MARCEL
+  
   if (retry->count < NTBX_TCP_MAX_RETRY_BEFORE_SLEEP)
     {
       retry->count++;
@@ -89,21 +94,30 @@ ntbx_tcp_retry(p_ntbx_tcp_retry_t retry)
 	}
       else
 	{
-	  LOG_OUT();
-	  return ntbx_failure;
+	  status = ntbx_failure;
 	}
     }
+
+#ifdef MARCEL
+ end:
 #endif // MARCEL
-  
   LOG_OUT();
-  return ntbx_success;
+
+  return status;
 }
 
 ntbx_status_t
 ntbx_tcp_timeout(p_ntbx_tcp_retry_t retry)
 {
+  ntbx_status_t status = ntbx_success;
+
   LOG_IN();
-#ifndef MARCEL
+#ifdef MARCEL
+  if (marcel_test_activity())
+    goto end;
+  
+#endif // MARCEL
+
   if (retry->timeout_count < NTBX_TCP_MAX_TIMEOUT_RETRY)
     {
       retry->timeout_count ++;
@@ -113,12 +127,15 @@ ntbx_tcp_timeout(p_ntbx_tcp_retry_t retry)
     }
   else
     {
-      LOG_OUT();
-      return ntbx_failure;
-     }
+      status = ntbx_failure;
+    }
+
+#ifdef MARCEL
+ end:
 #endif // MARCEL
   LOG_OUT();
-  return ntbx_success;
+
+  return status;
 }
 
 
@@ -704,13 +721,17 @@ ntbx_tcp_read_poll(int              nb_clients,
       
   while(tbx_true)
     {
-      fd_set         local_read_fds = read_fds;
-      int            status;
+      fd_set local_read_fds = read_fds;
+      int    status         = 0;
+
 #ifdef MARCEL
-      {
-	status = tselect(max_fds + 1, &local_read_fds, NULL, NULL);
-      }
-#else // MARCEL
+      if (marcel_test_activity())
+	{
+	  status = tselect(max_fds + 1, &local_read_fds, NULL, NULL);
+	  goto marcel_active_path;
+	}
+#endif // MARCEL
+
       {
 	struct timeval timeout;
 
@@ -719,7 +740,11 @@ ntbx_tcp_read_poll(int              nb_clients,
 
 	status = select(max_fds + 1, &local_read_fds, NULL, NULL, &timeout);
       }
+
+#ifdef MARCEL
+    marcel_active_path:
 #endif // MARCEL
+
       if (status == -1)
 	{
 	  if (errno == EINTR)
@@ -796,14 +821,17 @@ ntbx_tcp_write_poll(int              nb_clients,
       
   while(tbx_true)
     {
-      fd_set         local_write_fds = write_fds;
-      int            status;
+      fd_set local_write_fds = write_fds;
+      int    status          = 0;
       
 #ifdef MARCEL
-      {
-	status = tselect(max_fds + 1, NULL, &local_write_fds, NULL);
-      }
-#else // MARCEL
+      if (marcel_test_activity())
+	{
+	  status = tselect(max_fds + 1, NULL, &local_write_fds, NULL);
+	  goto marcel_active_path;
+	}
+#endif // MARCEL
+
       {      
 	struct timeval timeout;
 
@@ -811,7 +839,11 @@ ntbx_tcp_write_poll(int              nb_clients,
 	timeout.tv_usec = 0;
 
 	status = select(max_fds + 1, NULL, &local_write_fds, NULL, &timeout);
+
       }
+
+#ifdef MARCEL
+    marcel_active_path:
 #endif // MARCEL
       
       if (status == -1)

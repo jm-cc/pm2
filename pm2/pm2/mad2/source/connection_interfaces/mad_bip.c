@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_bip.c,v $
+Revision 1.3  2000/06/08 07:45:09  rnamyst
+Premiere version qui marche ;-)
+
 Revision 1.2  2000/06/06 17:43:21  rnamyst
 small evolution of pm2/mad2/bip ;-)
 
@@ -65,6 +68,14 @@ ______________________________________________________________________________
 #include <string.h>
 #include <unistd.h> 
 #include <netdb.h>
+
+#include "pm2debug.h"
+
+DEBUG_DECLARE(bip)
+
+#undef DEBUG_NAME
+#define DEBUG_NAME bip
+
 
 /*
  * macros and constants definition
@@ -98,7 +109,6 @@ static  int new_channel = MAD_BIP_FIRST_CHANNEL ;
 #define MAX_BIP_REQ              64
 
 typedef struct {
-  int host_id;
   int credits;
 } new_message_t;
 
@@ -118,6 +128,7 @@ typedef struct
 
 typedef struct
 {
+  int dummy;
 } mad_bip_adapter_specific_t, *p_mad_bip_adapter_specific_t;
 
 typedef struct
@@ -145,8 +156,8 @@ typedef struct
 
 typedef struct
 {
-  int begin_receive ;
-  int begin_send ;
+  int begin_receive, ack_sent;
+  int begin_send, ack_received;
 } mad_bip_connection_specific_t, *p_mad_bip_connection_specific_t;
 
 typedef struct
@@ -167,11 +178,89 @@ static __inline__ void bip_unlock(void)
   marcel_mutex_unlock(&_bip_mutex);
 }
 
+static __inline__ void credits_received(p_mad_bip_channel_specific_t p,
+					int host_id, int credits)
+{
+  LOG_IN();
+
+  if(credits) {
+    marcel_mutex_lock(&p->mutex);
+
+    TRACE("Credits received from host %d\n", host_id);
+
+    p->credits_disponibles[host_id] += credits;
+    marcel_cond_signal(&p->cond_cred[host_id]);
+    marcel_mutex_unlock(&p->mutex);
+  }
+
+  LOG_OUT();
+}
+
+static __inline__ void ack_received(p_mad_bip_channel_specific_t p,
+				    int host_id, int credits)
+{
+  LOG_IN();
+
+  credits_received(p, host_id, credits);
+  marcel_sem_V(&p->sem_ack[host_id]);
+
+  LOG_OUT();
+}
+
+static __inline__ void wait_ack(p_mad_bip_channel_specific_t p, int host_id)
+{
+  LOG_IN();
+
+  TRACE("Waiting for ack\n");
+  marcel_sem_P(&p->sem_ack[host_id]);
+
+  LOG_OUT();
+}
+
+static int bip_asend (int host, int tag, int *message, int size);
+
+static __inline__ void send_ack(p_mad_bip_channel_specific_t p, int host_id)
+{
+  ack_message_t ack_msg;
+
+  LOG_IN();
+
+  ack_msg.credits = p->credits_a_rendre[host_id];
+  p->credits_a_rendre[host_id] = 0;
+
+  bip_asend(host_id,
+	    p->communicator + MAD_BIP_REPLY_TAG,
+	    (int*)&ack_msg,
+	    sizeof(ack_msg)/sizeof(int));
+
+  LOG_OUT();
+}
+
+static __inline__ void send_new(p_mad_bip_channel_specific_t p, int host_id)
+{
+  new_message_t new_msg;
+
+  LOG_IN();
+
+  new_msg.credits = p->credits_a_rendre[host_id];
+  p->credits_a_rendre[host_id] = 0;
+
+  bip_asend(host_id,
+	    p->communicator + MAD_BIP_SERVICE_TAG,
+	    (int*)&new_msg,
+	    sizeof(new_msg)/sizeof(int));
+
+  LOG_OUT();
+}
+
 static int bip_asend (int host, int tag, int *message, int size)
 {
   int request ;
   int status ;
 
+  LOG_IN();
+
+  TRACE("bip_tisend(host=%d, tag=%d, size=%d)", host, tag, size);
   bip_lock();
   request = bip_tisend(host, tag, message, size);
   status = bip_stest(request);
@@ -180,80 +269,129 @@ static int bip_asend (int host, int tag, int *message, int size)
   while(status == 0) {
     marcel_yield();
 
+    TRACE("bip_stest...");
     bip_lock();
     status = bip_stest (request);    
     bip_unlock();
   }
 
+  LOG_OUT();
+
   return status;
 }
 
-static int bip_arecv (int tag, int *message, int size, int *host)
+static int bip_recv_post(int tag, int *message, int size)
 {
   int request;
-  int status;
+
+  LOG_IN();
 
   bip_lock();
   request = bip_tirecv(tag, message, size);
-  status = bip_rtestx(request, host);
   bip_unlock();
 
-  while(status == -1) {
+  LOG_OUT();
+
+  return request;
+}
+
+static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
+{
+  int tmphost, which = 0, status = -1;
+
+  LOG_IN();
+
+  for(;;) {
+
+    switch(which) {
+    case 0 : { /* SERVICE ou TRANSFERT */
+      bip_lock();
+      status = bip_rtestx(request, host);
+      bip_unlock();
+
+      if(status != -1) {
+	LOG_OUT();
+	return status;
+      }
+
+      break;
+    }
+    case 1 : { /* ACKNOWLEDGEMENT */
+      bip_lock();
+      status = bip_rtestx(p->ack_request, &tmphost);
+      bip_unlock();
+
+      if(status != -1) {
+	ack_received(p, tmphost, p->ack_msg.credits);
+
+	bip_lock();
+	p->ack_request =
+	  bip_tirecv(p->communicator + MAD_BIP_REPLY_TAG,
+		     (int *)&p->ack_msg,
+		     sizeof(ack_message_t)/sizeof(int));
+	bip_unlock();
+      }
+      break;
+    }
+    case 2 : { /* CREDITS (FLOW_CONTROL) */
+      bip_lock();
+      status = bip_rtestx(p->cred_request, &tmphost);
+      bip_unlock();
+
+      if(status != -1) {
+	credits_received(p, tmphost, p->cred_msg.credits);
+
+	bip_lock();
+	p->cred_request =
+	  bip_tirecv(p->communicator + MAD_BIP_FLOW_CONTROL_TAG,
+		     (int *)&p->cred_msg,
+		     sizeof(cred_message_t)/sizeof(int));
+	bip_unlock();
+      }
+      break;
+    }
+    default:
+      fprintf(stderr, "Oh my God! We should never execute that code!\n");
+      break;
+    }
+
+    which = (which + 1) % 3;
     marcel_yield();
+  };
 
-    bip_lock();
-    status = bip_rtestx(request, host);
-    bip_unlock();
-  }
-  return status;
+  /* Never reached */
+  fprintf(stderr, "Oh my God! We should never execute that code!\n");
+  return -1;
 }
 
-static __inline__ void credits_received(p_mad_bip_channel_specific_t p,
-					int host_id, int credits)
+static __inline__ int bip_arecv (p_mad_bip_channel_specific_t p,
+				 int tag, int *message, int size, int *host)
 {
-  marcel_mutex_lock(&p->mutex);
-  fprintf(stderr, "Credits received from host %d\n", host_id);
-  p->credits_disponibles[host_id] += credits;
-  marcel_cond_signal(&p->cond_cred[host_id]);
-  marcel_mutex_unlock(&p->mutex);
-}
-
-static __inline__ void wait_ack(p_mad_bip_channel_specific_t p, int host_id)
-{
-  marcel_sem_P(&p->sem_ack[host_id]);
-}
-
-static __inline__ void send_ack(p_mad_bip_channel_specific_t p, int host_id)
-{
-  ack_message_t ack_msg;
-
-  marcel_mutex_lock(&p->mutex);
-  ack_msg.credits = p->credits_a_rendre[host_id];
-  p->credits_a_rendre[host_id] = 0;
-  marcel_mutex_unlock(&p->mutex);
-
-  bip_asend(host_id,
-	    p->communicator + MAD_BIP_REPLY_TAG,
-	    (int*)&ack_msg,
-	    sizeof(ack_msg)/sizeof(int));
+  LOG_IN();
+  return bip_recv_poll(p, bip_recv_post(tag, message, size), host);
+  LOG_OUT();
 }
 
 #endif
 
-static void wait_credits(p_mad_bip_channel_specific_t p, int host_id) 
+
+static void wait_credits(p_mad_bip_channel_specific_t p, int host_id)
 {
+  LOG_IN();
+
 #ifdef MARCEL
 
+  TRACE("Checking credits\n");
   marcel_mutex_lock(&p->mutex);
 
   while(p->credits_disponibles[host_id] == 0) {
-    fprintf(stderr, "Thread %p is waiting for credits from host %d\n",
-	    marcel_self(), host_id);
+    TRACE("Thread %p is waiting for credits from host %d\n",
+	 marcel_self(), host_id);
     marcel_cond_wait(&p->cond_cred[host_id], &p->mutex);
   }
 
-  fprintf(stderr, "Thread %p has sufficient credits to talk to host %d\n",
-	  marcel_self(), host_id);
+  TRACE("Thread %p has %d credits to talk to host %d\n",
+	marcel_self(), p->credits_disponibles[host_id], host_id);
   p->credits_disponibles[host_id]--;
 
   marcel_mutex_unlock(&p->mutex);
@@ -269,11 +407,15 @@ static void wait_credits(p_mad_bip_channel_specific_t p, int host_id)
    }
  p->credits_disponibles [host_id] -- ;
 #endif
+
+ LOG_OUT();
 }
 
 static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
 {
   cred_message_t msg;
+
+  LOG_IN();
 
 #ifdef MARCEL
 
@@ -290,8 +432,11 @@ static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
 
     bip_asend(host_id, MAD_BIP_FLOW_CONTROL_TAG,
 	      (int *)&msg, sizeof(cred_message_t)/sizeof(int));
-  } else
+  } else {
     marcel_mutex_unlock(&p->mutex);
+    TRACE("Give_back_credits : %d credits to give, so forget it...",
+	  p->credits_a_rendre[host_id]);
+  }
 
 #else
 
@@ -303,6 +448,8 @@ static void give_back_credits (p_mad_bip_channel_specific_t p, int host_id)
     }
 
 #endif
+
+  LOG_OUT();
 }
 
 void
@@ -310,7 +457,10 @@ mad_bip_register(p_mad_driver_t driver)
 {
   p_mad_driver_interface_t interface;
 
+  DEBUG_INIT(bip);
+
   LOG_IN();
+
   /* Driver module registration code */
   interface = &(driver->interface);
   
@@ -351,6 +501,7 @@ mad_bip_register(p_mad_driver_t driver)
   interface->configuration_init         = mad_bip_configuration_init;
   interface->send_adapter_parameter     = mad_bip_send_adapter_parameter;
   interface->receive_adapter_parameter  = mad_bip_receive_adapter_parameter;;
+
   LOG_OUT();
 }
 
@@ -360,6 +511,7 @@ mad_bip_driver_init(p_mad_driver_t driver)
   p_mad_bip_driver_specific_t driver_specific;
 
   LOG_IN();
+
   /* Driver module initialization code
      Note: called only once, just after
      module registration */
@@ -374,6 +526,7 @@ mad_bip_driver_init(p_mad_driver_t driver)
 
   marcel_mutex_init(&_bip_mutex, NULL);
 #endif
+
   LOG_OUT();
 }
 
@@ -410,6 +563,7 @@ mad_bip_adapter_init(p_mad_adapter_t adapter)
   adapter->parameter = TBX_MALLOC(10);
   CTRL_ALLOC(adapter->parameter);
   sprintf(adapter->parameter, "-"); 
+
   LOG_OUT();
 }
 
@@ -470,6 +624,7 @@ mad_bip_channel_init(p_mad_channel_t channel)
 	       MAD_BIP_REPLY_TAG,
 	       (int *)&channel_specific->ack_msg,
 	       sizeof(ack_message_t)/sizeof(int));
+  bip_unlock();
 #endif
 
   LOG_OUT() ;
@@ -538,8 +693,6 @@ mad_bip_driver_exit(p_mad_driver_t driver)
 {
   LOG_IN();
   /* Code to execute to clean up a driver */
-  /* PM2_LOCK_SHARED(mad_bip_driver_specific); */
-  /* MPI_Finalize(); */
   TBX_FREE (driver->specific);
 #ifdef MARCEL
   mad_bip_driver_specific = NULL;
@@ -553,16 +706,14 @@ void
 mad_bip_new_message(p_mad_connection_t connection)
 {
   p_mad_bip_connection_specific_t connection_specific = connection->specific ; 
-
+  TRACE("Threads %p begins a new message", marcel_self());
   LOG_IN();
-  /* Code to prepare a new message */
 
   connection_specific->begin_send = 1 ;
 
   LOG_OUT();
 
   return ;
-
 }
 
 p_mad_connection_t
@@ -577,27 +728,29 @@ mad_bip_receive_message(p_mad_channel_t channel)
 
 #ifdef MARCEL
 
-  channel_specific->message_size = bip_arecv (
+  channel_specific->message_size = bip_arecv(
+		 channel_specific,
 		 channel_specific->communicator+MAD_BIP_SERVICE_TAG, 
 		 (int *) channel_specific->small_buffer, 
 		 BIP_SMALL_MESSAGE,
 		 &host
 		 );
-      
 #else
-  channel_specific->message_size = bip_trecvx (
+  channel_specific->message_size = bip_trecvx(
 		 channel_specific->communicator+MAD_BIP_SERVICE_TAG, 
 		 (int *) channel_specific->small_buffer, 
 		 BIP_SMALL_MESSAGE,
 		 &host
 		 );
-#endif
+
   give_back_credits (channel_specific, host) ;
+
+#endif
 
   connection = &(channel->input_connection[host]);
   connection_specific = connection->specific ;      
   connection_specific->begin_receive = 1 ;
- 
+
   LOG_OUT();
 
   return connection;
@@ -660,7 +813,8 @@ mad_bip_configuration_init(p_mad_adapter_t       spawn_adapter
 	      if (remote_host_id != rank)
 		{
                   bip_tsend (remote_host_id, MAD_BIP_SERVICE_TAG, 
-			     (int *)configuration->host_name[host_id], MAXHOSTNAMELEN/sizeof(int)) ;     
+			     (int *)configuration->host_name[host_id],
+			     MAXHOSTNAMELEN/sizeof(int)) ;     
 		}
 	    }
 	}
@@ -679,12 +833,12 @@ mad_bip_send_adapter_parameter(p_mad_adapter_t   spawn_adapter
 			       ntbx_host_id_t    remote_host_id,
 			       char             *parameter)
 {  
+  LOG_IN();
+
   printf ("NOT YET IMPLEMENTED call a mad_bip_send_adapter_parameter\n") ;
   fflush (stdout) ;
 
   exit (-1) ;
-
-  LOG_IN();
 
   LOG_OUT();
 }
@@ -694,13 +848,12 @@ mad_bip_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter
 				  __attribute__ ((unused)),
 				  char            **parameter)
 {
+  LOG_IN();
 
   printf ("NOT YET IMPLEMENTED call a mad_bip_receive_adapter_parameter\n") ;
   fflush (stdout) ;
   exit (-1) ;
   
-  LOG_IN();
-
   LOG_OUT();
 }
 
@@ -734,15 +887,15 @@ mad_bip_send_short_buffer(p_mad_link_t     lnk,
 
   int status ;
 
+  TRACE("Thread %p sends a buffer", marcel_self());
   LOG_IN();
-  /* Code to send one buffer */
 
   if (connection_specific->begin_send == 1)
     {
-
-      wait_credits(channel_specific, connection->remote_host_id) ;
-
 #ifdef MARCEL
+
+      TRACE("Sending short buffer. Size = %d. First int = %d\n",
+	    (buffer->length), ((int*)buffer->buffer)[0]);
 
       status = bip_asend (
 			  connection->remote_host_id,
@@ -759,20 +912,31 @@ mad_bip_send_short_buffer(p_mad_link_t     lnk,
 		 ) ;
 #endif
       connection_specific->begin_send = 0 ;
+      connection_specific->ack_received = 0;
     }
   else
     {
 
 #ifdef MARCEL
 
-      wait_ack(channel_specific, connection->remote_host_id);
+      /* On n'envoie un ACK *que* pour le second paquet... */
+      if(!connection_specific->ack_received) {
+	wait_ack(channel_specific, connection->remote_host_id);
+	connection_specific->ack_received = 1;
+      } else {
+	TRACE("Skipping wait_ack");
+      }
 
-      wait_credits(channel_specific, connection->remote_host_id) ;
+      wait_credits(channel_specific, connection->remote_host_id);
 
       status = bip_asend(connection->remote_host_id,
 			 channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
 			 buffer->buffer,
 			 (buffer->length)/sizeof(int));
+
+      TRACE("Sending short buffer. Size = %d. First int = %d\n",
+	    (buffer->length), ((int*)buffer->buffer)[0]);
+
 #else
       bip_trecv (
 		 channel_specific->communicator+MAD_BIP_REPLY_TAG,
@@ -800,7 +964,7 @@ mad_bip_send_short_buffer(p_mad_link_t     lnk,
 
 static void
 mad_bip_receive_short_buffer(p_mad_link_t     lnk,
-		       p_mad_buffer_t  buffer)
+			     p_mad_buffer_t  buffer)
 {
   p_mad_connection_t                     connection       = lnk->connection;
   p_mad_bip_connection_specific_t       connection_specific = connection->specific ;
@@ -812,42 +976,45 @@ mad_bip_receive_short_buffer(p_mad_link_t     lnk,
 #endif
 
   int  status ;
-  int  cred 
 
   LOG_IN();
 
   if (connection_specific->begin_receive == 1)
     {
-      memcpy (buffer->buffer, channel_specific->small_buffer, (channel_specific->message_size)*sizeof(int)) ;
-      connection_specific->begin_receive = 0 ;
+      memcpy (buffer->buffer,
+	      channel_specific->small_buffer,
+	      channel_specific->message_size*sizeof(int)) ;
+
       status = channel_specific->message_size ;
+
+      TRACE("Receiving short buffer. Size = %d. First int = %d\n",
+	    channel_specific->message_size*sizeof(int),
+	    ((int*)channel_specific->small_buffer)[0]);
+
+      connection_specific->begin_receive = 0 ;      
+      connection_specific->ack_sent = 0;
     }
   else
     {
 #ifdef MARCEL
 
-#if 0
-      marcel_sem_P (&channel_specific->sem_credits) ;
+      /* On n'envoie un ACK *que* pour le second paquet... */
+      if(!connection_specific->ack_sent) {
+	send_ack(channel_specific, connection->remote_host_id);
+	connection_specific->ack_sent = 1;
+      } else {
+	TRACE("Skipping send_ack");
+      }
 
-        cred = channel_specific->credits_a_rendre [connection->remote_host_id] ;
-        channel_specific->credits_a_rendre [connection->remote_host_id] = 0 ;
+      bip_arecv(channel_specific,
+		channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
+		buffer->buffer,
+		(buffer->length)/sizeof(int),
+		&host);
 
-      marcel_sem_V (&channel_specific->sem_credits) ;
-
-      bip_asend (
-		 connection->remote_host_id,
-		 channel_specific->communicator+MAD_BIP_REPLY_TAG,
-		 &cred,
-		 1
-               ) ;  
-
-      status = bip_arecv (
-		          channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
-		          buffer->buffer,
-		          (buffer->length)/sizeof(int),
-		          &host
-	                 ) ;
-#endif
+      TRACE("Receiving short buffer. Size = %d. First int = %d\n",
+	    buffer->length,
+	    ((int*)buffer->buffer)[0]);
 
 #else
 
@@ -868,9 +1035,7 @@ mad_bip_receive_short_buffer(p_mad_link_t     lnk,
 		         ) ;
 #endif
 
-      give_back_credits (channel_specific, connection->remote_host_id) ;
-
-      connection_specific->begin_receive = 0 ;      
+      give_back_credits (channel_specific, connection->remote_host_id);
     }
 
   buffer->bytes_written = buffer->length;
@@ -923,77 +1088,65 @@ static void
 mad_bip_send_long_buffer(p_mad_link_t lnk,
 			 p_mad_buffer_t buffer)
 {
-#if 0
   p_mad_connection_t connection = lnk->connection;
   p_mad_bip_connection_specific_t connection_specific = connection->specific;
   p_mad_channel_t channel = connection->channel;
   p_mad_bip_channel_specific_t channel_specific = channel->specific;
-  p_mad_configuration_t configuration = 
-    &(channel->adapter->driver->madeleine->configuration);
 
-  int credits_rendus ;
-#ifdef MARCEL
-  int  status;
-  int  host ;
-#endif
-  
   LOG_IN();
   /* Code to send one buffer */
 
   if (connection_specific->begin_send == 1)
     {
-      new_message_t m ;
 
-      wait_credits (channel_specific, connection->remote_host_id) ;
-
-      m.host_id = configuration->local_host_id ;
-      m.credits = channel_specific->credits_a_rendre [connection->remote_host_id] ;
-      channel_specific->credits_a_rendre [connection->remote_host_id] = 0 ; 
+      wait_credits(channel_specific, connection->remote_host_id);
 
 #ifdef MARCEL
-      bip_asend (
-		 connection->remote_host_id, 
-		 channel_specific->communicator+MAD_BIP_SERVICE_TAG,
-		 (int *) &m,
-		 sizeof(new_message_t)/sizeof(int)
-		) ;
+
+      send_new(channel_specific, connection->remote_host_id);
 
 #else
-      bip_tsend (
-		 connection->remote_host_id, 
-		 channel_specific->communicator+MAD_BIP_SERVICE_TAG,
-		 (int *) &m,
-		 sizeof(new_message_t)/sizeof(int)
-		 ) ;
+      {
+	new_message_t m ;
+
+	m.credits = channel_specific->credits_a_rendre[connection->remote_host_id];
+	channel_specific->credits_a_rendre[connection->remote_host_id] = 0;
+
+	bip_tsend (
+		   connection->remote_host_id, 
+		   channel_specific->communicator+MAD_BIP_SERVICE_TAG,
+		   (int *) &m,
+		   sizeof(new_message_t)/sizeof(int)
+		   ) ;
+      }
 #endif
+
+      connection_specific->begin_send = 0;
+      connection_specific->ack_received = 0;
     }
 
 
 #ifdef MARCEL
-  bip_arecv (
-	     channel_specific->communicator+MAD_BIP_REPLY_TAG,
-	     &credits_rendus,
-	     1,
-	     &host
-	    ) ;
+
+  wait_ack(channel_specific, connection->remote_host_id);
+
 #else
-  bip_trecv (
+  bip_trecv(
 	     channel_specific->communicator+MAD_BIP_REPLY_TAG,
              &credits_rendus,
              1
-           ) ;
+           );
+  channel_specific->credits_disponibles [connection->remote_host_id] += credits_rendus ;
+
 #endif
 
-  channel_specific->credits_disponibles [connection->remote_host_id] += credits_rendus ;
-  give_back_credits (channel_specific, connection->remote_host_id) ;
+  connection_specific->ack_received = 1;
 
 #ifdef MARCEL
-  status = bip_asend (
-		      connection->remote_host_id,
-		      channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
-		      buffer->buffer,
-		      (buffer->length)/sizeof(int)
-		     ) ;
+  bip_asend(connection->remote_host_id,
+	    channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
+	    buffer->buffer,
+	    (buffer->length)/sizeof(int));
 #else
   bip_tsend (
 	     connection->remote_host_id,
@@ -1002,86 +1155,67 @@ mad_bip_send_long_buffer(p_mad_link_t lnk,
 	     (buffer->length)/sizeof(int)
 	    ) ;
 #endif
-  connection_specific->begin_send = 0 ;
 
   buffer->bytes_read = buffer->length;
 
   LOG_OUT();
-#endif
 }
 
 static void
 mad_bip_receive_long_buffer(p_mad_link_t     lnk,
 			    p_mad_buffer_t   buffer)
 {
-#if 0
-  p_mad_connection_t           connection                             = lnk->connection;
-  p_mad_bip_connection_specific_t           connection_specific       = connection->specific;
-  p_mad_channel_t              channel          = connection->channel;
+  p_mad_connection_t connection = lnk->connection;
+  p_mad_bip_connection_specific_t connection_specific = connection->specific;
+  p_mad_channel_t channel = connection->channel;
   p_mad_bip_channel_specific_t channel_specific = channel->specific;
-  int  cred  ;
   int  request ;
 
 #ifdef MARCEL
-  int  status;
+  int status;
 #endif
-  
+
   LOG_IN();
   /* Code to receive one buffer */
 
   if (connection_specific->begin_receive == 1)
     {
+#ifdef MARCEL
+      credits_received(channel_specific,
+		       connection->remote_host_id,
+		       ((new_message_t *)(channel_specific->small_buffer))->credits);
+#else
      new_message_t m ;
 
      memcpy (&m, channel_specific->small_buffer, sizeof (new_message_t)) ;
      channel_specific->credits_disponibles [connection->remote_host_id] += m.credits ;
+#endif
 
      connection_specific->begin_receive = 0 ;
+     connection_specific->ack_sent = 0;
     }
 
 #ifdef MARCEL
-  lock_task () ;
-     request = bip_tirecv (
-			  channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
+  request = bip_recv_post(channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
 			  buffer->buffer,
-			  (buffer->length)/sizeof(int)
-			 ) ;
-  unlock_task () ;
+			  (buffer->length)/sizeof(int));
 #else
-  request = bip_tirecv (
-	              channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
-	              buffer->buffer,
-	              (buffer->length)/sizeof(int)
-	             ) ;
+  request = bip_tirecv (channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
+			buffer->buffer,
+			(buffer->length)/sizeof(int));
 #endif
 
-  wait_credits (channel_specific, connection->remote_host_id) ;
 
+#ifdef MARCEL
+
+  send_ack(channel_specific, connection->remote_host_id);
+
+  bip_recv_poll(channel_specific, request, &status);
+
+#else 
   cred = channel_specific->credits_a_rendre [connection->remote_host_id] ;
   channel_specific->credits_a_rendre [connection->remote_host_id] = 0 ;
 
-
-#ifdef MARCEL
-  bip_asend (
-	     connection->remote_host_id,
-	     channel_specific->communicator+MAD_BIP_REPLY_TAG,
-	     &cred,
-	     1
-	    ) ;
-
-  lock_task () ;
-        status = bip_rtest (request) ;
-  unlock_task () ;
-
-  while (status == -1)
-    {
-     marcel_yield () ;
-
-     lock_task () ;
-        status = bip_rtest (request) ;
-     unlock_task () ;
-    }
-#else 
   bip_tsend (
              connection->remote_host_id,
              channel_specific->communicator+MAD_BIP_REPLY_TAG,
@@ -1092,12 +1226,12 @@ mad_bip_receive_long_buffer(p_mad_link_t     lnk,
   bip_rwait (request) ;
 #endif
 
+  connection_specific->ack_sent = 1;
   connection_specific->begin_receive = 0 ;
 
   buffer->bytes_written = buffer->length;
 
   LOG_OUT();
-#endif
 }
 
 static void

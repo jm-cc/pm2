@@ -35,7 +35,7 @@
 
 #include <stdio.h>
 #include "pm2.h"
-#include "timing.h"
+
 #include "pm2_sync.h"
 
 #define N 10

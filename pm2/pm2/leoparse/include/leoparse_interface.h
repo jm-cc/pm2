@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -19,18 +18,18 @@
  * ====================
  */ 
 
-#ifndef __LEOPARSE_INTERFACE_H
-#define __LEOPARSE_INTERFACE_H
+#ifndef LEOPARSE_INTERFACE_H
+#define LEOPARSE_INTERFACE_H
 
 /*
  * Parsing
  * -------
  */
 void
-leoparse_open_local_parser_file(char *file_name);
+leoparse_open_local_parser_file(const char *file_name);
 
 p_tbx_htable_t
-leoparse_parse_local_file(char* filename);
+leoparse_parse_local_file(const char *filename);
 
 void
 leoparse_close_local_parser_file(void);
@@ -38,16 +37,16 @@ leoparse_close_local_parser_file(void);
 #ifdef LEOPARSE_REMOTE
 void
 leoparse_open_remote_parser_file(p_leoparse_swann_module_t  module,
-			    char                 *file_name);
+				 const char               *file_name);
 
 void
 leoparse_close_remote_parser_file(void);
-#endif /* LEOPARSE_REMOTE */
+#endif /*LEOPARSE_REMOTE */
 
 
 /*
- * Initialization
- * --------------
+ *Initialization
+ *--------------
  */
 void
 leoparse_init(int    argc,
@@ -58,16 +57,16 @@ leoparse_purge_cmd_line(int   *argc,
 			char **argv);
 
 /*
- * Yacc interface
- * --------------
+ *Yacc interface
+ *--------------
  */
 int
-leoparse_yy_input(char *buffer,
-		  int   max_size);
+leoparse_yy_input(char         *buffer,
+		  unsigned int  max_size);
 
 /*
- * Objects
- * -------
+ *Objects
+ *-------
  */
 p_leoparse_object_t
 leoparse_get_object(p_leoparse_htable_entry_t entry);
@@ -84,20 +83,82 @@ leoparse_get_string(p_leoparse_object_t object);
 char *
 leoparse_get_id(p_leoparse_object_t object);
 
+int
+leoparse_get_val(p_leoparse_object_t object);
+
+p_leoparse_range_t
+leoparse_get_range(p_leoparse_object_t object);
+
 p_tbx_slist_t
 leoparse_read_slist(p_tbx_htable_t  htable,
-		    char           *key);
+		    const char     *key);
 
 char *
 leoparse_read_id(p_tbx_htable_t  htable,
-		 char           *key);
+		 const char     *key);
 
 char *
 leoparse_read_string(p_tbx_htable_t  htable,
-		     char           *key);
+		     const char     *key);
 
 p_tbx_htable_t
 leoparse_read_htable(p_tbx_htable_t  htable,
-		     char           *key);
+		     const char     *key);
 
-#endif /* __LEOPARSE_INTERFACE_H */
+int
+leoparse_read_val(p_tbx_htable_t  htable,
+		  const char     *key);
+
+p_leoparse_range_t
+leoparse_read_range(p_tbx_htable_t  htable,
+		    const char     *key);
+
+p_leoparse_object_t
+leoparse_try_get_object(p_leoparse_htable_entry_t entry);
+
+
+p_tbx_slist_t
+leoparse_try_get_slist(p_leoparse_htable_entry_t entry);
+
+p_tbx_htable_t
+leoparse_try_get_htable(p_leoparse_object_t object);
+
+char *
+leoparse_try_get_string(p_leoparse_object_t object);
+
+char *
+leoparse_try_get_id(p_leoparse_object_t object);
+
+int
+leoparse_try_get_val(p_leoparse_object_t object,
+		     const int           default_value);
+
+p_leoparse_range_t
+leoparse_try_get_range(p_leoparse_object_t object);
+
+p_tbx_slist_t
+leoparse_try_read_slist(p_tbx_htable_t  htable,
+			const char     *key);
+
+char *
+leoparse_try_read_id(p_tbx_htable_t  htable,
+		     const char     *key);
+
+char *
+leoparse_try_read_string(p_tbx_htable_t  htable,
+			 const char     *key);
+
+p_tbx_htable_t
+leoparse_try_read_htable(p_tbx_htable_t  htable,
+			 const char     *key);
+
+int
+leoparse_try_read_val(p_tbx_htable_t  htable,
+		      const char     *key,
+		      const int       default_value);
+
+p_leoparse_range_t
+leoparse_try_read_range(p_tbx_htable_t  htable,
+			const char     *key);
+
+#endif /*LEOPARSE_INTERFACE_H */

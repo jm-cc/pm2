@@ -21,23 +21,9 @@
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
-#define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
-#define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
-
 //typedef marcel_t marcel_descr;
 
 extern marcel_task_t __main_thread_struct;
-extern char __security_stack[];
-
-
-#define SECUR_TASK_DESC(lwp) \
-   ((marcel_t)((((unsigned long)(lwp)->__security_stack + 2 * THREAD_SLOT_SIZE) \
-	        & ~(THREAD_SLOT_SIZE-1)) - MAL(sizeof(marcel_task_t))))
-#define SECUR_STACK_TOP(lwp) \
-   ((unsigned long)SECUR_TASK_DESC(lwp) - MAL(1) - TOP_STACK_FREE_AREA)
-#define SECUR_STACK_BOTTOM(lwp) \
-   ((unsigned long)(lwp)->__security_stack) 
-
 
 #ifdef ENABLE_STACK_JUMPING
 static __inline__ void marcel_prepare_stack_jump(void *stack)
@@ -52,7 +38,5 @@ static __inline__ void marcel_set_stack_jump(marcel_t m)
   *(marcel_t *)((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *)) = m;
 }
 #endif
-
-
 
 #endif

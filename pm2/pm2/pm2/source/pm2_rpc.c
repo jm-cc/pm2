@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -96,9 +95,9 @@ void _pm2_term_func(void *arg)
 {
   block_descr_t *block_descr_ptr;
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
   fprintf(stderr, "Thread %p seems to have finished\n", arg);
-#endif
+#endif // PM2DEBUG
 
   block_descr_ptr = (block_descr_t *)(*marcel_specificdatalocation((marcel_t)arg, _pm2_block_key));
   block_flush_list(block_descr_ptr);
@@ -224,10 +223,10 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
   } else {
     pointer p;
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
     if(module == __pm2_self && !mad_can_send_to_self())
       RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
     to_pointer((any_t)att, &p);
 
@@ -326,10 +325,10 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
   } else {
     pointer p;
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
     if(module == __pm2_self && !mad_can_send_to_self())
       RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
     to_pointer((any_t)att, &p);
     att->unpack = _pm2_unpack_res_funcs[num];
@@ -419,10 +418,10 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
 
   } else {
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
     if(module == __pm2_self && !mad_can_send_to_self())
       RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
     {
       unsigned c;
@@ -533,10 +532,10 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 
       } else {
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
 	if(modules[i] == __pm2_self && !mad_can_send_to_self())
 	  RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
 	{
 	  unsigned c;
@@ -588,10 +587,10 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
 
   } else {
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
     if(module == __pm2_self && !mad_can_send_to_self())
       RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
     {
       unsigned c;
@@ -662,10 +661,10 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
 
       } else {
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
 	if(modules[i] == __pm2_self && !mad_can_send_to_self())
 	  RAISE(NOT_IMPLEMENTED);
-#endif
+#endif // PM2DEBUG
 
 	{
 	  unsigned c;

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_types.h,v $
+Revision 1.3  2000/09/05 13:58:54  oaumage
+- quelques corrections et reorganisations dans le support des types
+  structures
+
 Revision 1.2  2000/05/22 12:19:00  oaumage
 - listes de recherche
 
@@ -51,17 +55,60 @@ ______________________________________________________________________________
 #ifndef TBX_TYPES_H
 #define TBX_TYPES_H
 
-/* General purpose types */
+/*
+ * General purpose types
+ * :::::::::::::::::::::______________________________________________________
+ */
+
+/*
+ * Classical boolean type
+ * ----------------------
+ */
+typedef enum
+{
+  tbx_false = 0,
+  tbx_true
+} tbx_bool_t, *p_tbx_bool_t;
+
+/*
+ * Flag type
+ * ----------------------
+ */
 typedef enum
 {
   tbx_flag_clear = 0,
-  tbx_flag_set
+  tbx_flag_set   = 1
 } tbx_flag_t, *p_tbx_flag_t;
 
-/* List management related types */
-typedef int     tbx_list_length_t,          *p_tbx_list_length_t;
-typedef int     tbx_slist_length_t,         *p_tbx_slist_length_t;
-typedef int     tbx_list_mark_position_t,   *p_tbx_list_mark_position_t;
+/*
+ * Comparison type
+ * ----------------------
+ */
+typedef enum
+{
+  tbx_cmp_eq =  0,  /* == */
+  tbx_cmp_gt =  1,  /*  > */
+  tbx_cmp_lt = -1   /*  < */
+} tbx_cmp_t, *p_tbx_cmp_t;
+
+
+/*
+ * List management related types 
+ * :::::::::::::::::::::::::::::______________________________________________
+ */
+typedef int tbx_list_length_t,        *p_tbx_list_length_t;
+typedef int tbx_list_mark_position_t, *p_tbx_list_mark_position_t;
+
+
+/*
+ * SList management related types 
+ * ::::::::::::::::::::::::::::::_____________________________________________
+ */
+typedef int tbx_slist_index_t,  *p_tbx_slist_index_t;
+typedef int tbx_slist_length_t, *p_tbx_slist_length_t;
+typedef int tbx_slist_offset_t, *p_tbx_slist_offset_t;
+typedef tbx_bool_t (*p_tbx_slist_search_func_t)(void *ref_obj, void *obj);
+typedef tbx_cmp_t  (*p_tbx_slist_cmp_func_t)(void *ref_obj, void *obj);
 
 
 #endif /* TBX_TYPES_H */

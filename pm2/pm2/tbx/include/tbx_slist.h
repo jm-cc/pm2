@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_slist.h,v $
+Revision 1.3  2000/09/05 13:58:54  oaumage
+- quelques corrections et reorganisations dans le support des types
+  structures
+
 Revision 1.2  2000/05/22 13:45:46  oaumage
 - ajout d'une fonction de tri aux listes de recherche
 - correction de bugs divers
@@ -67,18 +71,10 @@ typedef struct s_tbx_slist_element
 typedef struct s_tbx_slist
 {
   TBX_SHARED;
-  tbx_slist_length_t    length;
-  p_tbx_slist_element_t head;
-  p_tbx_slist_element_t tail;
+  tbx_slist_length_t     length;
+  p_tbx_slist_element_t  head;
+  p_tbx_slist_element_t  tail;
+  p_tbx_slist_element_t  ref;
 } tbx_slist_t;
-
-typedef struct s_tbx_slist_reference
-{
-  p_tbx_slist_t slist;
-  p_tbx_slist_element_t reference;
-} tbx_slist_reference_t;
-
-typedef tbx_bool_t (*p_tbx_slist_search_func_t)(void *ref_obj, void *obj);
-typedef int (*p_tbx_slist_cmp_func_t)(void *ref_obj, void *obj);
 
 #endif /* TBX_SLIST_H */

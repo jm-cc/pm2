@@ -38,38 +38,15 @@ marcel_test_activity(void)
   return result;
 }
 
-void
-marcel_set_activity(void)
-{
-  LOG_IN();
-  if (tbx_flag_test(&marcel_activity))
-    FAILURE("marcel_activity flag already set");
-  
-  tbx_flag_set(&marcel_activity);
-  LOG_OUT();
-}
-
-void
-marcel_clear_activity(void)
-{
-  LOG_IN();
-  if (!tbx_flag_test(&marcel_activity))
-    FAILURE("marcel_activity flag already cleared");
-
-  tbx_flag_clear(&marcel_activity);
-  LOG_OUT();
-}
-
 /*
  * End: added by O.A.
  * ------------------
  */
 
-static unsigned __nb_lwp = 0;
-
 static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
 {
   int i, j;
+  unsigned __nb_lwp = 0;
 
   if (!argc)
     return;
@@ -105,8 +82,12 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
   *argc = j;
   argv[j] = NULL;
 
-  if(do_not_strip)
+  if(do_not_strip) {	
+#ifdef MA__LWPS
+    marcel_lwp_fix_nb_vps(__nb_lwp);
+#endif
     mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
+  }
 }
 
 void marcel_strip_cmdline(int *argc, char *argv[])
@@ -137,31 +118,15 @@ void marcel_init_data(int *argc, char *argv[])
   // Parse command line
   marcel_parse_cmdline(argc, argv, TRUE);
 
-  // Initialize the stack memory allocator
-  // This is unuseful if PM2 is used, but it is not harmful anyway ;-)
-  //marcel_slot_init();
-
-  // Initialize scheduler
-  //marcel_sched_init();
-
-  // Initialize mechanism for handling Unix I/O through the scheduler
-  //marcel_io_init();
 }
 
 // When completed, some threads/activations may be started
 // Fork calls are now prohibited in non libpthread versions
 void marcel_start_sched(int *argc, char *argv[])
 {
-  static volatile boolean already_called = FALSE;
-
-  // Only execute this function once
-  if(already_called)
-    return;
-  already_called = TRUE;
-
   // Start scheduler (i.e. run LWP/activations, start timer)
-  marcel_sched_start(__nb_lwp);
-  marcel_set_activity();
+  marcel_init_section(MA_INIT_START_LWPS);
+  marcel_activity = tbx_flag_set;
 }
 
 void marcel_purge_cmdline(int *argc, char *argv[])
@@ -181,7 +146,7 @@ void marcel_purge_cmdline(int *argc, char *argv[])
 
 void marcel_finish(void)
 {
-  marcel_sched_shutdown();
+  marcel_gensched_shutdown();
   marcel_slot_exit();
   mdebug("threads created in cache : %ld\n", marcel_cachedthreads());
 }

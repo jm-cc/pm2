@@ -17,27 +17,19 @@ LIBRARY=pm2
 
 include $(PM2_ROOT)/make/libs-vars.mak
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/pm2-specific.mak
-endif
+MOD_GEN_C_INC += $(MOD_GEN_INC)/dsm_page_size.h
 
-LIB_REP_TO_BUILD += $(LIB_GEN_INC)
-
-dot_h: $(LIB_GEN_INC)/dsm_page_size.h
+dot_h: $(MOD_GEN_INC)/dsm_page_size.h
 
 include $(PM2_ROOT)/make/libs-rules.mak
 
-$(LIB_GEN_INC)/dsm_page_size.h:
-	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}
-	$(COMMON_HIDE) echo "#define DSM_PAGE_SIZE `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`" > $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#ifndef IRIX_SYS" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align `$(LIB_GEN_OBJ)/dsm_page_size$(LIB_EXT)`\"" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#else" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align 16\"" >> $(LIB_GEN_INC)/dsm_page_size.h
-	$(COMMON_HIDE) echo "#endif" >> $(LIB_GEN_INC)/dsm_page_size.h
+$(MOD_GEN_INC)/dsm_page_size.h:
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(MOD_GEN_OBJ)/dsm_page_size${LIB_EXT}
+	$(COMMON_HIDE) echo "#define DSM_PAGE_SIZE `$(MOD_GEN_OBJ)/dsm_page_size$(LIB_EXT)`" > $@
+	$(COMMON_HIDE) echo "#ifndef IRIX_SYS" >> $@
+	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align `$(MOD_GEN_OBJ)/dsm_page_size$(LIB_EXT)`\"" >> $@
+	$(COMMON_HIDE) echo "#else" >> $@
+	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align 16\"" >> $@
+	$(COMMON_HIDE) echo "#endif" >> $@
 
-$(PM2_MAK_DIR)/pm2-specific.mak: $(LIB_STAMP_FLAVOR)
-	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \
-	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
-	fi;

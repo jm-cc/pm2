@@ -195,7 +195,7 @@ typedef struct s_ntbx_process
 {
   // Global internal id
   ntbx_process_grank_t  global_rank;
-  
+
   // Objects referencing that process
   p_tbx_htable_t        ref;
 
@@ -204,7 +204,7 @@ typedef struct s_ntbx_process
 
   // Module-specific data
   void                 *specific;
-  
+
 } ntbx_process_t;
 
 #endif /* NTBX_TYPES_H */

@@ -135,10 +135,12 @@ dsm_init_protocol_table (void)
    * conjunction with the token_locks */
   HIERARCH = dsm_create_protocol(hierarch_proto_read_fault_handler,
                                  hierarch_proto_write_fault_handler,
-                                 hierarch_proto_read_server,
-                                 hierarch_proto_write_server,
+                                 NULL /* bypass the read server
+                                         implemented in DSM-PM2 */,
+                                 NULL /* bypass the write server
+                                         implemented in DSM-PM2 */,
                                  NULL /* bypass the invalidate server
-                                       * implemented in DSM-PM2 */,
+                                         implemented in DSM-PM2 */,
                                  hierarch_proto_receive_page_server,
                                  NULL /* no expert_receive_page_server */,
                                  hierarch_proto_acquire_func,

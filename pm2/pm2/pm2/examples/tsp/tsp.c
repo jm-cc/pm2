@@ -387,19 +387,36 @@ void spawn_workers(void)
 
   marcel_sem_init(&sem, 0);
 
-  // créations locales
-  for(n=0; n<nb_threads; n++) {
-    pm2_thread_create(worker, (void*)n);
-  }
-
   // créations distantes
   for(target=1; target<pm2_config_size(); target++) {
     pm2_rawrpc_begin(target, WORKER, NULL);
     pm2_rawrpc_end();
   }
 
+  // créations locales
+  for(n=0; n<nb_threads; n++) {
+    pm2_thread_create(worker, (void*)n);
+  }
+
   for(n=0; n<nb_threads*pm2_config_size(); n++)
     marcel_sem_P(&sem);
+}
+
+static void startup_func(int argc, char *argv[])
+{
+  if(argc < 4) {
+    fprintf(stderr, "Usage: %s nbthreads nbcities seed [ ini_depth ]\n",
+	    argv[0]);
+    exit(1);
+  }
+
+  nb_threads = atoi(argv[1]);
+  nb_towns = atoi(argv[2]);
+  seed = atoi(argv[3]);
+  if(argc == 5)
+    prof_ini = atoi(argv[4]);
+  else
+    prof_ini = DEFAULT_INITIAL_DEPTH;
 }
 
 int pm2_main(int argc, char **argv)
@@ -414,21 +431,9 @@ int pm2_main(int argc, char **argv)
 
   init_queue(&TSPqueue);
 
+  pm2_push_startup_func(startup_func);
+
   pm2_init(&argc, argv);
-
-  if(argc < 4) {
-    fprintf(stderr, "Usage: %s nbthreads nbcities seed [ ini_depth ]\n",
-	    argv[0]);
-    exit(1);
-  }
-
-  nb_threads = atoi(argv[1]);
-  nb_towns = atoi(argv[2]);
-  seed = atoi(argv[3]);
-  if(argc == 5)
-    prof_ini = atoi(argv[4]);
-  else
-    prof_ini = DEFAULT_INITIAL_DEPTH;
 
   if(pm2_self() == 0) {
 

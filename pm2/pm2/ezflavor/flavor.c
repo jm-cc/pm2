@@ -273,7 +273,7 @@ static flavor_t *create_new_flavor(char *name)
 				   (GCompareFunc)strcmp);
   gtk_combo_set_popdown_strings(GTK_COMBO(combo),
 				fla_names);
-  //gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry), buf);
+  gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(combo)->entry), buf);
 
   ptr = (flavor_t *)g_malloc(sizeof(flavor_t));
 

@@ -18,16 +18,14 @@
 #include "sigmund.h"
 #include "parser.h"
 #include <stdlib.h>
-#include "time.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include "tracelib.h"
-#include "fkt.h"
+#include "string.h"
 
-extern char **traps;
-extern char **sys_calls;
+extern char *traps[];
+extern char *sys_calls[];
+
+enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME, IDLE_TIME,
+	     TIME, NB_CALLS, ACTIVE_SLICES, IDLE_SLICES, AVG_ACTIVE_SLICE};
 
 void print_trace(trace tr)
 {
@@ -37,7 +35,7 @@ void print_trace(trace tr)
   printf("%s",(tr.type == USER)? "USER: " : "KERN: ");
   printf("%9u ",(unsigned) tr.clock);
   if (tr.type != USER)
-    printf("%4u %1u ", tr.pid, tr.proc);
+    printf("%5u %1u ", tr.pid, tr.proc);
   else
     printf("%1u    %1u ", tr.proc, tr.thread);
   printf("%6x",tr.code);
@@ -45,20 +43,20 @@ void print_trace(trace tr)
     printf("%40s", fut_code2name(tr.code >> 8));
   } else {
     if (tr.code >= FKT_UNSHIFTED_LIMIT_CODE)
-      printf("%40s", fkt_code2name(tr.code >> 8));
+      printf("%30s", fkt_code2name(tr.code >> 8));
     else {
       if (tr.code < FKT_SYS_CALL_LIMIT_CODE) {
-	printf("\t\t\t\t\t  system call    %u", tr.code);
+	printf("\t\t\t\t    system call   %3u", tr.code);
 	printf("   %s", sys_calls[tr.code]);
       }
       else if (tr.code < FKT_TRAP_LIMIT_CODE) {
 	i = tr.code - FKT_SYS_CALL_LIMIT_CODE;
-	printf("\t\t\t\t\t  trap    %u", i);
+	printf("\t\t\t\t\t   trap   %3u", i);
 	printf("   %s", traps[i]);
       }
       else {
 	i = tr.code -  FKT_TRAP_LIMIT_CODE;
-	printf("\t\t\t\t\t  IRQ    %u", i);
+	printf("\t\t\t\t\t    IRQ   %3u", i);
       }
       i = 0;
     }
@@ -71,6 +69,76 @@ void print_trace(trace tr)
   printf("\n");
 }
 
+void list_events()
+{
+  trace tr;
+  for(;;) {
+    if (get_next_filtered_trace(&tr) == 1) break;
+    print_trace(tr);
+  }
+}
+
+void nb_events()
+{
+  int n;
+  trace tr;
+  for(n = 0; get_next_filtered_trace(&tr) != 1; n++);
+  printf("%d événements\n",n);
+}
+
+void nth_event(int nth)
+{
+  int n;
+  trace tr;
+  for(n = 1; ; n++) {
+    if (get_next_filtered_trace(&tr) == 1) break;
+    if (n == nth) {
+      print_trace(tr);
+      return;
+    }
+  }
+  printf("L'événement %d n'a pas pu être trouvé.\n", nth);
+}
+
+void active_time()
+{
+
+}
+
+void idle_time()
+{
+
+}
+
+void time()
+{
+
+}
+
+void nb_calls()
+{
+
+}
+
+void active_slices()
+{
+
+}
+
+void idle_slices()
+{
+
+}
+
+void avg_active_slice()
+{
+
+}
+
+
+
+
+
 void error_usage()
 {
   fprintf(stderr,"Usage: sigmund [options] [filters] action\n");
@@ -79,9 +147,12 @@ void error_usage()
 
 int main(int argc, char **argv)
 {
-  trace tr;
+
   int argCount;
   char *trace_file_name = NULL;
+  enum action ac;
+  int nth = 0;
+  ac = NONE;
   init();
   init_filter();
   for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
@@ -102,35 +173,170 @@ int main(int argc, char **argv)
       if (argc <= 1) error_usage();
       filter_add_cpu(atoi(*(argv + 1)));
       argCount = 2;
-    } else if (!strcmp(*argv, "--slice")) {
+    } else if (!strcmp(*argv, "--time-slice")) {
       if (argc <= 2) error_usage();
       filter_add_time_slice(atoi(*(argv + 1)), atoi(*(argv + 2)));
       argCount = 3;
     } else if (!strcmp(*argv, "--function")) {
-      fprintf(stderr, "--function: unsupported yet\n");
-      exit(1);
+      int begin;
+      mode begin_type;
+      int end;
+      mode end_type;
+      char s[400];
+      strcpy(s,*(argv+1));
+      strcat(s,"_entry");
+      if (name2code(s, &begin_type, &begin) != 0) error_usage();
+      strcpy(s,*(argv+1));
+      strcat(s,"_exit");
+      if (name2code(s, &end_type, &end) != 0) error_usage();
+      filter_add_gen_slice(begin_type, begin, FALSE, 0, end_type, end, FALSE, 0);
+      argCount = 2;
     } else if (!strcmp(*argv, "--event")) {
       int a;
       mode type;
       if (argc <= 1) error_usage();
-      name2code(*(argv+1), &type, &a);
+      if (name2code(*(argv+1), &type, &a) != 0) error_usage();
       filter_add_event(type, a);
+      argCount = 2;
+    } else if (!strcmp(*argv, "--sys-call")) {
+      int a;
+      if (argc <= 1) error_usage();
+      if (sys2code(*(argv+1), &a) != 0) error_usage();
+      filter_add_event(KERNEL, a);
+      argCount = 2;
+    } else if (!strcmp(*argv, "--event")) {
+      int a;
+      if (argc <= 1) error_usage();
+      if (trap2code(*(argv+1), &a) != 0) error_usage();
+      filter_add_event(KERNEL, a);
       argCount = 2;
     } else if (!strcmp(*argv, "--event-slice")) {
       if (argc <= 2) error_usage();
       filter_add_evnum_slice(atoi(*(argv + 1)), atoi(*(argv + 2)));
       argCount = 3;
     } else if (!strcmp(*argv, "--begin")) {
+      int begin_param_active = 0;
+      int end_param_active = 0;
+      mode begin_type = 0;
+      mode end_type = 0;
+      int begin_param = 0;
+      int end_param = 0;
+      int begin = 0;
+      int end = 0;
       if (argc <= 3) error_usage();
-      fprintf(stderr, "--begin --end: unsupported yet\n");
-      exit(1);
+      if (strcmp(*(argv+2),"--end")) error_usage();
+      if (strchr(*(argv+1),':') == NULL) {
+	begin_param_active = FALSE;
+	if (name2code(*(argv+1), &begin_type, &begin) != 0) error_usage();
+      }
+      else {
+	char *s;
+	begin_param_active = TRUE;
+	s = strtok(*(argv+1),":");
+	if (name2code(s, &begin_type, &begin) != 0) error_usage();
+	s = strtok(NULL,":");
+	begin_param = atoi(s);
+      }
+      if (strchr(*(argv+3),':') == NULL) {
+	end_param_active = FALSE;
+	if (name2code(*(argv+1), &end_type, &end) != 0) error_usage();
+      }
+      else {
+	char *s;
+	end_param_active = TRUE;
+	s = strtok(*(argv+3),":");
+	if (name2code(s, &end_type, &end) != 0) error_usage();
+	s = strtok(NULL, ":");
+	end_param = atoi(s);
+      }
+      filter_add_gen_slice(begin_type, begin, begin_param_active, begin_param,
+			   end_type, end, end_param_active, end_param);
       argCount = 4;
+    } else if (!strcmp(*argv, "--list-events")) {
+      if (ac != NONE) error_usage();
+      ac = LIST_EVENTS;
+    } else if (!strcmp(*argv, "--nb-events")) {
+      if (ac != NONE) error_usage();
+      ac = NB_EVENTS;
+    } else if (!strcmp(*argv, "--nth-event")) {
+      if (argc <= 1) error_usage();
+      if (ac != NONE) error_usage();
+      ac = NTH_EVENT;
+      nth = atoi(*(argv+1));
+      argCount = 2;
+    } else if (!strcmp(*argv, "--active-time")) {
+      if (ac != NONE) error_usage();
+      ac = ACTIVE_TIME;
+    } else if (!strcmp(*argv, "--idle-time")) {
+      if (ac != NONE) error_usage();
+      ac = IDLE_TIME;
+    } else if (!strcmp(*argv, "--time")) {
+      if (ac != NONE) error_usage();
+      ac = TIME;
+    } else if (!strcmp(*argv, "--nb-calls")) {
+      if (ac != NONE) error_usage();
+      ac = NB_CALLS;
+    } else if (!strcmp(*argv, "--active-slices")) {
+      if (ac != NONE) error_usage();
+      ac = ACTIVE_SLICES;
+    } else if (!strcmp(*argv, "--idle-slices")) {
+      if (ac != NONE) error_usage();
+      ac = IDLE_SLICES;
+    } else if (!strcmp(*argv, "--avg-active-slice")) {
+      if (ac != NONE) error_usage();
+      ac = AVG_ACTIVE_SLICE;
     } else error_usage();
   }
   tracelib_init(trace_file_name);
-  for(;;) {
-    if (get_next_filtered_trace(&tr) == 1) break;
-    print_trace(tr);
+  switch(ac) {
+  case NONE : {
+    list_events();
+    break;
+  }
+  case LIST_EVENTS : {
+    list_events();
+    break;
+  }
+  case NB_EVENTS : {
+    nb_events();
+    break;
+  }
+  case NTH_EVENT : {
+    nth_event(nth);
+    break;
+  }
+  case ACTIVE_TIME : {
+    active_time();
+    break;
+  }
+  case IDLE_TIME : {
+    idle_time();
+    break;
+  }
+  case TIME : {
+    time();
+    break;
+  }
+  case NB_CALLS : {
+    nb_calls();
+    break;
+  }
+  case ACTIVE_SLICES : {
+    active_slices();
+    break;
+  }
+  case IDLE_SLICES : {
+    idle_slices();
+    break;
+  }
+  case AVG_ACTIVE_SLICE : {
+    avg_active_slice();
+    break;
+  }
+  default: {
+    fprintf(stderr,"Please report bug to cmenier@ens-lyon.fr\n");
+    exit(1);
+  }
   }
   return 0;
 }

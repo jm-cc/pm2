@@ -62,14 +62,21 @@ make_ln()
 echo PM2
 make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
 make_ln ${PM2_ROOT}/console graphic/icons icons
-make_ln ${PM2_ROOT} toolbox tbx
 make_ln ${PM2_ROOT}/toolbox src source
-make_ln ${PM2_ROOT} toolbox/net ntbx
 make_ln ${PM2_ROOT}/toolbox/net src source
-make_ln ${PM2_ROOT}/pm2 ../examples examples
-make_ln ${PM2_ROOT}/pm2 ../include include
-make_ln ${PM2_ROOT}/pm2 ../source source
 
+# module links
+echo
+echo Modules
+make_ln ${PM2_ROOT}/modules ../dsm dsm
+make_ln ${PM2_ROOT}/modules ../mad1 mad1
+make_ln ${PM2_ROOT}/modules ../mad2 mad2
+make_ln ${PM2_ROOT}/modules ../marcel marcel
+make_ln ${PM2_ROOT}/modules ../toolbox/net ntbx
+make_ln ${PM2_ROOT}/modules ../toolbox tbx
+make_ln ${PM2_ROOT}/modules/pm2 ../../example example
+make_ln ${PM2_ROOT}/modules/pm2 ../../include include
+make_ln ${PM2_ROOT}/modules/pm2 ../../source source
 
 # architecture-specific directories for the storage of binaries, etc.
 

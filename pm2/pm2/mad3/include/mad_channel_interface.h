@@ -23,7 +23,7 @@
 #define MAD_CHANNEL_INTERFACE_H
 
 /*
- * Functions 
+ * Functions
  * ---------
  */
 

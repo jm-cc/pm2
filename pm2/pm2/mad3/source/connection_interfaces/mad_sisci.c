@@ -18,7 +18,7 @@
  * ===========
  */
 //#define USE_MARCEL_POLL
-#define OLD_SISCI
+//#define OLD_SISCI
 #define MAD_SISCI_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
@@ -1454,7 +1454,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 		     size - mod_4,
 		     0,
 		     &sisci_error);
-	  //mad_sisci_control();
+	  mad_sisci_control();
 
 	  if (mod_4)
 	    {

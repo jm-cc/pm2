@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_flags.h,v $
+Revision 1.8  2000/05/09 14:37:31  vdanjean
+minor bugs fixes
+
 Revision 1.7  2000/04/21 11:19:26  vdanjean
 fixes for actsmp
 
@@ -187,6 +190,7 @@ ______________________________________________________________________________
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING
 #define MA__ACTIVATION
+#define ACTIVATION
 #undef CONFIG_SMP
 #endif /* Fin Marcel Activation Mono */
 
@@ -196,6 +200,7 @@ ______________________________________________________________________________
 #define MA__MULTIPLE_RUNNING
 #define CONFIG_SMP
 #define MA__ACTIVATION
+#define ACTIVATION
 #define __SMP__
 #define MA__LWPS
 #endif /* Fin Marcel Activation SMP */

@@ -16,22 +16,16 @@
 
 
 #include "sys/marcel_debug.h"
+
 #define NULL ((void*)0)
 
 #ifdef PM2DEBUG
-#ifdef MARCEL_DEBUG
+
 debug_type_t marcel_mdebug=NEW_DEBUG_TYPE(0, "MAR: ", "mar-mdebug");
 debug_type_t marcel_trymdebug=NEW_DEBUG_TYPE(0, "MAR: ", "mar-tick");
 debug_type_t marcel_debug_state=NEW_DEBUG_TYPE(0, "MAR: ", "mar-state");
 debug_type_t marcel_debug_work=NEW_DEBUG_TYPE(0, "MAR: ", "mar-work");
 debug_type_t marcel_debug_deviate=NEW_DEBUG_TYPE(0, "MAR: ", "mar-deviate");
-#else
-debug_type_t marcel_mdebug=NEW_DEBUG_TYPE(1, "MAR: ", "mar-mdebug");
-debug_type_t marcel_trymdebug=NEW_DEBUG_TYPE(1, "MAR: ", "mar-tick");
-debug_type_t marcel_debug_state=NEW_DEBUG_TYPE(1, "MAR: ", "mar-state");
-debug_type_t marcel_debug_work=NEW_DEBUG_TYPE(1, "MAR: ", "mar-work");
-debug_type_t marcel_debug_deviate=NEW_DEBUG_TYPE(1, "MAR: ", "mar-deviate");
-#endif
 
 #ifdef DEBUG_LOCK_TASK
 debug_type_t marcel_lock_task_debug=NEW_DEBUG_TYPE(0, "MAR: ", "mar-locktask");
@@ -56,7 +50,8 @@ debug_type_t marcel_mtrace=NEW_DEBUG_TYPE(1, "MAR_TRACE: ", "mar-trace");
 debug_type_t marcel_mtrace_timer=NEW_DEBUG_TYPE(1, "MAR_TRACE: ", 
 						"mar-trace-timer");
 #endif
-#endif
+
+#endif //PM2DEBUG
 
 void marcel_debug_init(int* argc, char** argv, int debug_flags)
 {

@@ -29,6 +29,9 @@
  * This file is used for SMP configurations only.
  */
 
+#section macros
+#define MA_HAVE_RWLOCK 1
+
 #ifdef MA__LWPS
 
 #section marcel_types

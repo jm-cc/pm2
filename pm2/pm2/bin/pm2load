@@ -129,7 +129,7 @@ if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
     ambiguity $prog
 fi
 
-# On hérite du même coup de chemin d'accès au chargeur
+# On hérite du même coup du chemin d'accès au chargeur
 
 [ -x $_PM2WHICH_LOADER ] || error "Fatal Error: \"$_PM2WHICH_LOADER\" exec file not found!"
 

@@ -107,11 +107,8 @@ mad_rand_write(int            sock,
                 FAILURE("duplicate rand 'optional block' parameter");
 
               if (param->value > 100 || param->value < 0)
-                FAILURE("rand 'optional block' parameter value out of [1-100] range");
-
-              // note: offset and length are ignored
-              // the whole block is either mandatory or optional
-              rand_threshold = param->value?:100;
+                FAILURE("rand 'optional block' parameter value out of [0-100] range");
+              rand_threshold = param->value;
             }
           else
             FAILURE("invalid rand parameter opcode");

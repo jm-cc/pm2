@@ -8,7 +8,7 @@ f (void *arg)
 {
   int proc;
 
-  int x = 1234;
+  int x = 1234;			/* Here! */
 
   pm2_rawrpc_waitdata ();
 
@@ -20,7 +20,7 @@ f (void *arg)
      pm2_self (), hostname, &x, x);
 
   proc = (proc + 1) % pm2_config_size ();
-  pm2_migrate_self (proc);
+  pm2_migrate_self (proc);	/* Here! */
 
   tprintf
     ("Now, I am on node %d, host %s... &x = %p, x = %d\n",
@@ -43,7 +43,7 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       pm2_rawrpc_begin (1, service_id, NULL);
       pm2_rawrpc_end ();
     }

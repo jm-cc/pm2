@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.15  2000/12/11 08:31:17  oaumage
+- support Leonie
+
 Revision 1.14  2000/11/16 14:21:50  oaumage
 - correction external spawn
 
@@ -100,6 +103,9 @@ typedef struct s_mad_settings
   char            *configuration_file;
   tbx_bool_t       debug_mode;
   mad_driver_id_t  external_spawn_driver;
+#ifdef MAD_APPLICATION_SPAWN
+  char            *url;
+#endif /* MAD_APPLICATION_SPAWN */
 } mad_settings_t;
 
 

@@ -33,33 +33,50 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# LIBRARY -> nom du module
+#---------------------------------------------------------------------
 LIBRARY=mad2
+
+# LIBNAME -> nom de la librairie
+#---------------------------------------------------------------------
 LIBNAME=mad
 
-#marcel_CC=gcc
-#marcel_AS=gcc
-
+# Regle par defaut
+#---------------------------------------------------------------------
 .PHONY: default
 default:
 
+# Inclusion des makefiles generiques
+#---------------------------------------------------------------------
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
+# Inclusion du cache specifique a madeleine
+#---------------------------------------------------------------------
 -include $(PM2_MAK_DIR)/mad2-specific.mak
 
+# Gestion des drivers : prise en compte des fichiers
+#---------------------------------------------------------------------
 LIB_SRC2=$(LIB_SRC)/connection_interfaces
+
 LIB_C_SOURCES_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
-LIB_C_OBJECTS_ADDED := $(patsubst %.c,%$(LIB_EXT).o,$(subst $(LIB_SRC2),$(LIB_GEN_OBJ),$(LIB_C_SOURCES_ADDED)))
-LIB_C_PICS_ADDED := $(patsubst %.c,%$(LIB_EXT).pic,$(subst $(LIB_SRC2),$(LIB_GEN_OBJ),$(LIB_C_SOURCES_ADDED)))
-LIB_C_DEPENDS_ADDED := $(patsubst %.o,%.d,$(subst $(LIB_GEN_OBJ),$(LIB_GEN_DEP),$(LIB_C_OBJECTS_ADDED)))
-LIB_C_PREPROC_ADDED := $(patsubst %.c,%$(LIB_EXT).i,$(subst $(LIB_SRC2),$(LIB_GEN_CPP),$(LIB_C_SOURCES_ADDED)))
-LIB_C_FUT_ADDED :=  $(patsubst %.i,%.fut,$(LIB_C_PREPROC_ADDED))
+LIB_C_PREPROC_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_CPP)/mad_$(PROT)$(LIB_EXT).i)
+LIB_C_FUT_ADDED     := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_CPP)/mad_$(PROT)$(LIB_EXT).fut)
+LIB_C_DEPENDS_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_DEP)/mad_$(PROT)$(LIB_EXT).d)
+LIB_C_OBJECTS_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).o)
+LIB_C_PICS_ADDED    := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_GEN_OBJ)/mad_$(PROT)$(LIB_EXT).pic)
+
 LIB_OBJECTS += $(LIB_C_OBJECTS_ADDED)
-LIB_PICS += $(LIB_C_PICS_ADDED)
+LIB_PICS    += $(LIB_C_PICS_ADDED)
 LIB_PREPROC += $(LIB_C_PREPROC_ADDED)
-LIB_FUT += $(LIB_C_FUT_ADDED)
+LIB_FUT     += $(LIB_C_FUT_ADDED)
+
+# Regles communes aux librairies
+#---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
 
+# Inclusion du makefile de dependance des drivers
+#---------------------------------------------------------------------
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
@@ -68,22 +85,30 @@ endif
 endif
 endif
 
+# Regle par defaut: make dans le repertoire de PM2
+#---------------------------------------------------------------------
 default:
 	$(MAKE) -C $(PM2_ROOT)
 
+# Construction des drivers
+#---------------------------------------------------------------------
 $(LIB_C_OBJECTS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).o: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 
 $(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
 
+# -> le separateur du sed est `|'
+# Note: interet de l'ajout de $@ comme dependance ?
 $(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
-		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
+		| sed '\''s|.*:|$(LIB_DEP_TO_OBJ) $@ :|g'\'' > $@'
 
 $(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
+# Construction du cache specifique a Madeleine II
+#---------------------------------------------------------------------
 $(PM2_MAK_DIR)/mad2-specific.mak: $(LIB_STAMP_FLAVOR)
 	@_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\
 	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \

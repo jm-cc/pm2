@@ -93,10 +93,10 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 /*  		      " ip 0x%8x, sp 0x%8x)\n", */
 /*  		      new_proc, return_value, param, eip, esp); */
 /*  #else */
-	mdebug("\trestart_func (proc %i, ret %i, k_param %p,"
-	       " ip 0x%8x, sp 0x%8x, u_param %p) locked=%i\n",
-	       new_proc, return_value, (void*)k_param, eip, esp,
-	       (void*)u_param, locked());
+	mdebug_upcall("\trestart_func (proc %i, ret %i, k_param %p,"
+		     " ip 0x%8x, sp 0x%8x, u_param %p) locked=%i\n",
+		     new_proc, return_value, (void*)k_param, eip, esp,
+		     (void*)u_param, locked());
 	//mdebug("adr de desc = %i\n", *((int*)0xbffefdd8));
 /*  #endif */
 	//mysleep();
@@ -184,9 +184,9 @@ void upcall_new(act_proc_t proc)
 	new_task=lwp->upcall_new_task;
 
 	atomic_inc(&GET_LWP(new_task)->_locked);
- 	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
-	       proc, new_task,lwp, 
-	       lwp->number );
+ 	mdebug_upcall("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
+		     proc, new_task,lwp, 
+		     lwp->number);
 
 	MTRACE("UpcallNew", new_task);
 	//LOG_PTR("*(0x40083756)", *((int**)0x40083756));

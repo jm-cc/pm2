@@ -340,13 +340,14 @@ fi
 
 ##########################################################################
 # CFLAGS et LDFLAGS...
-the_flags="-D${PM2_ARCH} -D${PM2_SYS} $PM2_COMMON_CFLAGS_KERNEL $PM2_COMMON_LIBS"
-if [ -d "$PM2_ROOT/modules/common/include" ]; then
-    the_flags="$the_flags -I$PM2_ROOT/modules/common/include"
-fi
+the_flags="-D${PM2_ARCH} -D${PM2_SYS} $PM2_COMMON_CFLAGS_KERNEL"
+the_libs="$PM2_COMMON_LIBS"
+#if [ -d "$PM2_ROOT/modules/common/include" ]; then
+#    the_flags="$the_flags -I$PM2_ROOT/modules/common/include"
+#fi
 
 # CFLAGS : on prend tous les cflags
-for lib in $PM2_LIBS; do
+for lib in $PM2_LIBS common; do
     LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
     the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS` -D${LIB}"
     if [ -d "$PM2_ROOT/modules/$lib/include" ]; then

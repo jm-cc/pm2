@@ -34,6 +34,8 @@
 */
 
 /* Options: DSM_COMM_TRACE, ASSERT, HYP_INSTRUMENT */
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include "pm2.h"
 #include "dsm_const.h"
@@ -248,8 +250,8 @@ void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm
     sizeof(dsm_node_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&access,
     sizeof(dsm_access_t));
-  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)user_addr, user_length);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&tag, sizeof(int));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)user_addr, user_length);
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
   
   pm2_rawrpc_end();
@@ -344,6 +346,7 @@ void DSM_LRPC_WRITE_PAGE_REQ_func(void)
   pm2_thread_create((pm2_func_t) DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
 }
 
+#define USE_DOUBLE_MAPPING 1
 
 static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 {
@@ -357,6 +360,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 #ifdef HYP_INSTRUMENT
   hyp_sendPage_in_cnt++;
 #endif
+tfprintf(stderr, "DSM_LRPC_SEND_PAGE_threaded_func called\n");
 #ifdef DSM_COMM_TRACE
 tfprintf(stderr, "DSM_LRPC_SEND_PAGE_threaded_func called\n");
 #endif
@@ -388,24 +392,32 @@ tfprintf(stderr, "DSM_LRPC_SEND_PAGE_threaded_func called\n");
   }
   else
     {
-      dsm_access_t old_access = dsm_get_access(index);
-      
-//      if (old_access != WRITE_ACCESS)
+       dsm_access_t old_access = dsm_get_access(index);
+#ifdef USE_DOUBLE_MAPPING
+       dsm_unpack_page(addr, page_size);
+#else
+      /*  Old stuff  */
+
+//     if (old_access != WRITE_ACCESS)
 	dsm_protect_page(addr, WRITE_ACCESS); // to enable the page to be copied
-      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
-#ifdef DSM_COMM_TRACE
-      tfprintf(stderr, "unpacking page %d, addr = %p, size = %d, access = %d, reply = %d\n", index, addr, page_size, access, reply_node);
+       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 
 #endif
-      pm2_rawrpc_waitdata(); 
-      
+
 #ifdef DSM_COMM_TRACE
-      tfprintf(stderr, "calling receive page server\n", index);
+	tfprintf(stderr, "unpacking page %d, addr = %p, size = %d, access = %d, reply = %d\n", index, addr, page_size, access, reply_node);
 #endif
-      if (access != WRITE_ACCESS)
-	dsm_protect_page(addr, old_access);
+	pm2_rawrpc_waitdata(); 
+
+	if (access != WRITE_ACCESS)
+	  dsm_protect_page(addr, old_access);
       /* now call the protocol-specific server */
-      (*dsm_get_receive_page_server(dsm_get_page_protocol(index)))(addr, access, reply_node, tag);
+#ifdef DSM_COMM_TRACE
+	tfprintf(stderr, "calling receive page server\n", index);
+#endif
+	(*dsm_get_receive_page_server(dsm_get_page_protocol(index)))(addr, access, reply_node, tag);
     }
+
+      unlink(RECEIVE_PAGE_FILE);
 }
 
 
@@ -456,6 +468,34 @@ void DSM_LRPC_INVALIDATE_ACK_func(void)
   dsm_signal_ack(index, 1);
 }
 
+
+void dsm_unpack_page(void *addr, unsigned long size)
+{
+      /* Modification: use double mapping */
+      int fd;
+      static char buf[4096];
+      void *system_view;
+
+      /* associate page to a true file */
+      fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
+      write(fd, buf, 4096);
+      addr = mmap(addr, 4096, PROT_NONE, MAP_SHARED | MAP_FIXED,
+	    fd, 0);
+      if(addr == (void *)-1) 
+	RAISE(STORAGE_ERROR);
+      
+      /* associate the file to a system view */
+      system_view = mmap((void*)ISOADDR_AREA_TOP, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
+	    fd, 0);   
+      if(system_view == (void *)-1) 
+	RAISE(STORAGE_ERROR);
+      
+      /*unpack page using the system view*/
+      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)system_view, size); 
+
+      /*close file */
+      close(fd);
+  }
 
 /***********************  Hyperion stuff: ****************************/
 

@@ -886,7 +886,7 @@ static char *get_mad_root(void)
   static char buf[1024];
   char *ptr;
 
-  if((ptr = getenv("MADELEINE_ROOT")) != NULL)
+  if((ptr = getenv("MAD1_ROOT")) != NULL)
     return ptr;
   else {
     sprintf(buf, "%s/mad1", getenv("PM2_ROOT"));
@@ -1145,7 +1145,7 @@ void mad_sisci_network_init(int *argc, char **argv, int nb_proc, int *tids, int 
     dup2(STDERR_FILENO, STDOUT_FILENO);
 
     {
-      int ret = system("exit `cat ${MADELEINE_ROOT-${PM2_ROOT}/mad1}/.madconf | wc -w`");
+      int ret = system("exit `cat ${MAD1_ROOT-${PM2_ROOT}/mad1}/.madconf | wc -w`");
 
       confsize = WEXITSTATUS(ret);
     }

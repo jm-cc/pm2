@@ -122,49 +122,56 @@ DEF_MARCEL_POSIX(int, cond_timedwait,
 		 (marcel_cond_t *cond, marcel_mutex_t *mutex,
 		  const struct timespec *abstime))
 {
-  struct timeval now, tv;
-  unsigned long timeout;
-  int r = 0;
+	struct timeval now, tv;
+	unsigned long timeout;
+	int ret = 0;
 
-  RAISE(NOT_IMPLEMENTED);
-  LOG_IN();
-  tv.tv_sec = abstime->tv_sec;
-  tv.tv_usec = abstime->tv_nsec / 1000;
-
-  gettimeofday(&now, NULL);
-
-  if(timercmp(&tv, &now, <=)) {
-    LOG_OUT();
-    return ETIMEDOUT;
-  }
-
-  timeout = ((tv.tv_sec*1e6 + tv.tv_usec) -
-	     (now.tv_sec*1e6 + now.tv_usec)) / 1000;
-
-  lock_task();
-
-  marcel_lock_acquire(&mutex->__m_lock.__spinlock);
-  marcel_lock_acquire(&cond->__c_lock.__spinlock);
-
-  __marcel_unlock_spinlocked(&mutex->__m_lock);
-
-
-  {
-    blockcell c;
-    __marcel_register_spinlocked(&cond->__c_lock, marcel_self(), &c);
-    marcel_lock_release(&cond->__c_lock.__spinlock);
-    //if (__marcel_tempo_give_hand(timeout, &c.blocked, NULL)) {
-      if (__marcel_unregister_spinlocked(&cond->__c_lock, &c)) {
-	pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
-      }
-      r=ETIMEDOUT;
-      //}
-  }
-
-  marcel_mutex_lock(mutex);
-  LOG_OUT();
-
-  return r;
+	LOG_IN();
+	tv.tv_sec = abstime->tv_sec;
+	tv.tv_usec = abstime->tv_nsec / 1000;
+	
+	gettimeofday(&now, NULL);
+	
+	if(timercmp(&tv, &now, <=)) {
+		LOG_OUT();
+		return ETIMEDOUT;
+	}
+	
+	timeout = JIFFIES_FROM_US(((tv.tv_sec*1e6 + tv.tv_usec) -
+				   (now.tv_sec*1e6 + now.tv_usec)));
+	
+	marcel_lock_acquire(&mutex->__m_lock.__spinlock);
+	marcel_lock_acquire(&cond->__c_lock.__spinlock);
+	__marcel_unlock_spinlocked(&mutex->__m_lock);
+	marcel_lock_release(&mutex->__m_lock.__spinlock);
+	{
+		blockcell c;
+		
+		__marcel_register_spinlocked(&cond->__c_lock, marcel_self(), &c);
+		
+		mdebug("blocking %p (cell %p) in cond_wait %p\n", marcel_self(), &c,
+		       cond);
+#warning not managing work in cond_timedwait
+		while(c.blocked && timeout) {
+			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+			marcel_lock_release(&cond->__c_lock.__spinlock);
+			timeout=ma_schedule_timeout(timeout);
+			marcel_lock_acquire(&cond->__c_lock.__spinlock);
+		}
+		if (c.blocked) {
+			if (__marcel_unregister_spinlocked(&cond->__c_lock, &c)) {
+				pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
+			}
+			ret=ETIMEDOUT;
+		}
+		marcel_lock_release(&cond->__c_lock.__spinlock);
+		mdebug("unblocking %p (cell %p) in cond_wait %p\n", marcel_self(), &c,
+		       cond);
+	}
+	
+	marcel_mutex_lock(mutex);
+	LOG_OUT();
+	return ret;
 }
 DEF_PTHREAD(cond_timedwait)
 DEF___PTHREAD(cond_timedwait)

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.c,v $
+Revision 1.7  2000/11/16 13:24:09  oaumage
+- mise a jour initialisation
+
 Revision 1.6  2000/11/16 11:11:50  rnamyst
 Bug fixed in mad_purge_command_line + small changes in pm2-config (handling of 'common').
 
@@ -246,15 +249,9 @@ _PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
                  marcel_sem_t         sem_nego;
 
 static p_mad_madeleine_t main_madeleine;
-
 #if 0
 void mad_init(int *argc, char *argv[])
 {
-  /* Note:
-   *  - l'objet global madeleine est utilise
-   *    directement par la suite, il n'est donc
-   *    pas utile de renvoyer un pointeur sur cet objet
-   */
   p_mad_adapter_set_t   adapter_set;
   
   LOG_IN();
@@ -278,10 +275,10 @@ void pm2_mad_init(p_mad_madeleine_t madeleine)
 }
 
 void
-mad_exit(void)
+pm2_mad_exit(void)
 {
   LOG_IN();
-  mad2_exit(main_madeleine);
+  mad_exit(main_madeleine);
   LOG_OUT();
 }
 

@@ -253,74 +253,84 @@ static void __attribute__ ((noreturn))
 mad_via_error_callback (VIP_PVOID Context,
 			VIP_ERROR_DESCRIPTOR * ErrorDesc)
 {
-  fflush(stderr);
-  //sleep(1);
-  fflush(stderr);
-  fprintf (stderr, "Asynchronous error\nResource code : ");
 
-  switch (ErrorDesc->ResourceCode)
-    {
-    default:
-      fprintf (stderr, "Inconnu\n");
-      break;
-    case VIP_RESOURCE_NIC:
-      fprintf (stderr, "VIP_RESOURCE_NIC\n");
-      break;
-    case VIP_RESOURCE_VI:
-      fprintf (stderr, "VIP_RESOURCE_VI\n");
-      break;
-    case VIP_RESOURCE_CQ:
-      fprintf (stderr, "VIP_RESOURCE_CQ\n");
-      break;
-    case VIP_RESOURCE_DESCRIPTOR:
-      fprintf (stderr, "VIP_RESOURCE_DESCRIPTOR\n");
-      break;
-    }
+  if (ErrorDesc->ResourceCode == VIP_RESOURCE_VI &&
+      ErrorDesc->ErrorCode == VIP_ERROR_CONN_LOST) {
+    /* most of the time everything is ok */
+    /* we should test here if there are no lost messages */
+    //fprintf(stderr,"error callback\n");
+    exit(0);
 
-  fprintf (stderr, "Descriptor error code : ");
-  switch (ErrorDesc->ErrorCode)
-    {
-    default:
-      fprintf (stderr, "Inconnu\n");
-      break;
-    case VIP_ERROR_POST_DESC:
-      fprintf (stderr, "VIP_ERROR_POST_DESC\n");
-      break;
-    case VIP_ERROR_CONN_LOST:
-      fprintf (stderr, "VIP_ERROR_CONN_LOST\n");
-      break;
-    case VIP_ERROR_RECVQ_EMPTY:
-      fprintf (stderr, "VIP_ERROR_RECVQ_EMPTY\n");
-      break;
-    case VIP_ERROR_VI_OVERRUN:
-      fprintf (stderr, "VIP_ERROR_VI_OVERRUN\n");
-      break;
-    case VIP_ERROR_RDMAW_PROT:
-      fprintf (stderr, "VIP_ERROR_RDMAW_PROT\n");
-      break;
-    case VIP_ERROR_RDMAW_DATA:
-      fprintf (stderr, "VIP_ERROR_RDMAW_DATA\n");
-      break;
-    case VIP_ERROR_RDMAW_ABORT:
-      fprintf (stderr, "VIP_ERROR_RDMAW_ABORT\n");
-      break;
-    case VIP_ERROR_RDMAR_PROT:
-      fprintf (stderr, "VIP_ERROR_RDMAR_PROT\n");
-      break;
-    case VIP_ERROR_COMP_PROT:
-      fprintf (stderr, "VIP_ERROR_COMP_PROT\n");
-      break;
-    case VIP_ERROR_RDMA_TRANSPORT:
-      fprintf (stderr, "VIP_ERROR_RDMA_TRANSPORT\n");
-      break;
-    case VIP_ERROR_CATASTROPHIC:
-      fprintf (stderr, "VIP_ERROR_CATASTROPHIC\n");
-      break;
-    }
+  } else {
 
+    fflush(stderr);
+    //sleep(1);
+    fflush(stderr);
+    fprintf (stderr, "Asynchronous error\nResource code : ");
+    
+    switch (ErrorDesc->ResourceCode)
+      {
+      default:
+	fprintf (stderr, "Inconnu\n");
+	break;
+      case VIP_RESOURCE_NIC:
+	fprintf (stderr, "VIP_RESOURCE_NIC\n");
+	break;
+      case VIP_RESOURCE_VI:
+	fprintf (stderr, "VIP_RESOURCE_VI\n");
+	break;
+      case VIP_RESOURCE_CQ:
+	fprintf (stderr, "VIP_RESOURCE_CQ\n");
+	break;
+      case VIP_RESOURCE_DESCRIPTOR:
+	fprintf (stderr, "VIP_RESOURCE_DESCRIPTOR\n");
+	break;
+      }
+    
+    fprintf (stderr, "Descriptor error code : ");
+    switch (ErrorDesc->ErrorCode)
+      {
+      default:
+	fprintf (stderr, "Inconnu\n");
+	break;
+      case VIP_ERROR_POST_DESC:
+	fprintf (stderr, "VIP_ERROR_POST_DESC\n");
+	break;
+      case VIP_ERROR_CONN_LOST:
+	fprintf (stderr, "VIP_ERROR_CONN_LOST\n");
+	break;
+      case VIP_ERROR_RECVQ_EMPTY:
+	fprintf (stderr, "VIP_ERROR_RECVQ_EMPTY\n");
+	break;
+      case VIP_ERROR_VI_OVERRUN:
+	fprintf (stderr, "VIP_ERROR_VI_OVERRUN\n");
+	break;
+      case VIP_ERROR_RDMAW_PROT:
+	fprintf (stderr, "VIP_ERROR_RDMAW_PROT\n");
+	break;
+      case VIP_ERROR_RDMAW_DATA:
+	fprintf (stderr, "VIP_ERROR_RDMAW_DATA\n");
+	break;
+      case VIP_ERROR_RDMAW_ABORT:
+	fprintf (stderr, "VIP_ERROR_RDMAW_ABORT\n");
+	break;
+      case VIP_ERROR_RDMAR_PROT:
+	fprintf (stderr, "VIP_ERROR_RDMAR_PROT\n");
+	break;
+      case VIP_ERROR_COMP_PROT:
+	fprintf (stderr, "VIP_ERROR_COMP_PROT\n");
+	break;
+      case VIP_ERROR_RDMA_TRANSPORT:
+	fprintf (stderr, "VIP_ERROR_RDMA_TRANSPORT\n");
+	break;
+      case VIP_ERROR_CATASTROPHIC:
+	fprintf (stderr, "VIP_ERROR_CATASTROPHIC\n");
+	break;
+      }
 
-  fprintf (stderr, "Exiting ...\n");
-  exit (EXIT_FAILURE);
+    fprintf (stderr, "Exiting ...\n");
+    exit (EXIT_FAILURE);
+  }
 }
 
 /* -------------------------------------------------------------------------*/

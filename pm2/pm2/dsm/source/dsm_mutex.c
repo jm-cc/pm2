@@ -44,7 +44,7 @@ void DSM_LRPC_LOCK_threaded_func(void *arg)
 
 void DSM_LRPC_LOCK_func(void)
 {
-  pm2_thread_create(DSM_LRPC_LOCK_threaded_func, NULL);
+  pm2_service_thread_create(DSM_LRPC_LOCK_threaded_func, NULL);
 }
 
 
@@ -63,7 +63,7 @@ void DSM_LRPC_UNLOCK_threaded_func(void *arg)
 
 void DSM_LRPC_UNLOCK_func()
 {
-  pm2_thread_create(DSM_LRPC_UNLOCK_threaded_func, NULL);
+  pm2_service_thread_create(DSM_LRPC_UNLOCK_threaded_func, NULL);
 }
 
 int dsm_mutex_lock(dsm_mutex_t *mutex)

@@ -28,6 +28,7 @@ void init_filter()
   for(i=0; i < NB_PROC; i++) table[i] = FALSE;
   options.thread = THREAD_LIST_NULL;
   options.proc = PROC_LIST_NULL;
+  options.logic = LOGIC_LIST_NULL;
   options.cpu = CPU_LIST_NULL;
   options.event = EVENT_LIST_NULL;
   options.time = TIME_SLICE_LIST_NULL;
@@ -41,6 +42,8 @@ void init_filter()
   options.active_gen_slice = 1;
   options.active_thread_fun = 1;
   options.active = 1;
+  options.function_time = FUNCTION_TIME_LIST_NULL;
+  options.function_begin = FUNCTION_TIME_LIST_NULL;
 }
 
 void close_filter()
@@ -96,6 +99,32 @@ static int is_in_proc_list(int proc)
   }
   return TRUE;
 }
+
+void filter_add_logic(int logic)
+{
+  logic_list tmp;
+  tmp = (logic_list) malloc(sizeof(struct logic_list_st));
+  assert(tmp != NULL);
+  tmp->next = options.logic;
+  tmp->logic = logic;
+  options.logic = tmp;
+}
+
+static int is_in_logic_list(int logic)
+{
+  if (options.logic != LOGIC_LIST_NULL) {
+    logic_list temp;
+    temp = options.logic;
+    while (temp != LOGIC_LIST_NULL) {
+      if (temp->logic == logic) break;
+      temp = temp->next;
+    }
+    if (temp == LOGIC_LIST_NULL) return FALSE;
+  }
+  return TRUE;
+}
+
+
 
 void filter_add_cpu(short int cpu)
 {
@@ -228,13 +257,71 @@ void filter_add_function(mode begin_type, int begin, char begin_param_active,
   options.active_thread_fun = 0;
 }
 
+static void begin_function(trace *tr)
+{
+  function_time_list tmp;
+  tmp = (function_time_list) malloc(sizeof(struct function_time_list_st));
+  assert(tmp != NULL);
+  tmp->next = options.function_begin;
+  tmp->time = tr->clock;
+  tmp->code = tr->code;
+  tmp->type = tr->type;
+  tmp->thread = tr->thread;
+  options.function_begin = tmp;
+}
+
+static void add_function_time(int code, mode type, u_64 time)
+{
+  function_time_list tmp;
+  tmp = (function_time_list) malloc(sizeof(struct function_time_list_st));
+  assert(tmp != NULL);
+  tmp->next = options.function_time;
+  tmp->time = time;
+  tmp->code = code;
+  tmp->type = type;
+  options.function_time = tmp;
+}
+
+static void end_function(int begin_code, mode begin_type, trace *tr)
+{
+  function_time_list tmp;
+  function_time_list prev;
+  prev = options.function_begin;
+  if (prev == FUNCTION_TIME_LIST_NULL) {
+    // Erreur de parenthésage, bon la c'est la merde on fait quoi...
+    fprintf(stderr, "Erreur de parenthésage\n");
+    exit(1);   // La c'est méchant mais bon: return; ??
+  }
+  if ((prev->code == begin_code) && (prev->type == begin_type)) {
+    options.function_begin = prev->next;
+    add_function_time(begin_code, begin_type, tr->clock - prev->time);
+    free(prev);
+    return;
+  }
+  tmp = prev->next;
+  while (tmp != FUNCTION_TIME_LIST_NULL) {
+    if ((codecmp(begin_type, begin_code, tmp->type, tmp->code)) && \
+	(tr->thread == tmp->thread)){
+      prev->next = tmp->next;
+      add_function_time(begin_code, begin_type, tr->clock - tmp->time);
+      free(tmp);
+      return;
+    }
+    prev = tmp;
+    tmp = tmp->next;
+  }
+  // Erreur de parenthésage, bon la c'est la merde on fait quoi...
+  fprintf(stderr, "Erreur de parenthésage\n");
+  exit(1);   // La c'est méchant mais bon (on peut supprimer => plus cool)
+}
+
 static void filter_add_thread_fun(int thread)
 {
   thread_fun_list tmp;
   tmp = options.thread_fun;
   while (tmp != THREAD_FUN_LIST_NULL) {
     if (tmp->thread == thread) break;
-    tmp =tmp->next;
+    tmp = tmp->next;
   }
   if (tmp == THREAD_FUN_LIST_NULL) {
     options.active_thread_fun++;
@@ -251,7 +338,7 @@ static void filter_del_thread_fun(int thread)
 {
   thread_fun_list tmp;
   thread_fun_list prev;
-  if (options.thread_fun == NULL) return; // Erreur
+  if (options.thread_fun == THREAD_FUN_LIST_NULL) return; // Erreur
   tmp = options.thread_fun->next;
   if (options.thread_fun->thread == thread) {
     options.thread_fun->number--;
@@ -357,11 +444,15 @@ static void search_begin_function(trace *tr)
     temp = options.function;
     while (temp != GENERAL_SLICE_LIST_NULL) {
       if (codecmp(temp->begin_type, temp->begin, tr->type, tr->code)) {
-	if (temp->begin_param_active == FALSE)
+	if (temp->begin_param_active == FALSE) {
 	  filter_add_thread_fun(tr->thread);
+	  begin_function(tr);
+	}
 	else
-	  if (temp->begin_param == tr->args[0])
+	  if (temp->begin_param == tr->args[0]) {
 	    filter_add_thread_fun(tr->thread);
+	    begin_function(tr);
+	  }
       }
       temp = temp->next;
     }
@@ -377,10 +468,13 @@ static void search_end_function(trace *tr)
       if (codecmp(temp->end_type, temp->end, tr->type, tr->code)) {
 	if (temp->end_param_active == FALSE) {
 	  filter_del_thread_fun(tr->thread);
+	  end_function(temp->end, temp->end_type, tr);
 	}
 	else {
-	  if (temp->end_param == tr->args[0])
+	  if (temp->end_param == tr->args[0]) {
 	    filter_del_thread_fun(tr->thread);
+	    end_function(temp->end, temp->end_type, tr);
+	  }
 	}
       }
       temp = temp->next;
@@ -388,13 +482,14 @@ static void search_end_function(trace *tr)
   }
 }
 
-static void filter_add_lwp(int lwp, int thread, int active)
+static void filter_add_lwp(int lwp, int logic, int thread, int active)
 {
   lwp_thread_list tmp;
   tmp = (lwp_thread_list) malloc(sizeof(struct lwp_thread_list_st));
   assert(tmp != NULL);
   tmp->next = options.lwp_thread;
   tmp->lwp = lwp;
+  tmp->logic = logic;
   tmp->thread = thread;
   tmp->active = active;
   options.lwp_thread = tmp;
@@ -482,19 +577,33 @@ lwp_thread_list tmp;
   return -1;
 }
 
+static int logic_of_lwp(int lwp)
+{
+  lwp_thread_list tmp;
+  tmp = options.lwp_thread;
+  while (tmp != LWP_THREAD_LIST_NULL) {
+    if (tmp->lwp == lwp) return tmp->logic;
+    tmp = tmp->next;
+  }
+  return -1;
+}
+
+
 
 int is_valid(trace *tr)
 {
   if (table[tr->cpu] == FALSE) {
     if (is_in_cpu_list(tr->cpu) == TRUE)
       if (is_in_proc_list(tr->pid) == TRUE)
-	options.active_proc++;
+	if (is_in_logic_list(logic_of_lwp(tr->pid)) == TRUE)
+	  options.active_proc++;
     table[tr->cpu] = TRUE;
   }
   if (tr->type == KERNEL) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
       if ((is_in_proc_list(tr->pid) == TRUE) && \
-	  (is_in_cpu_list(tr->cpu) == TRUE)) {
+	  (is_in_cpu_list(tr->cpu) == TRUE) && \
+	  (is_in_logic_list(logic_of_lwp(tr->pid)) == TRUE)) {
 	options.active_proc--;
 	if (is_lwp(tr->pid) == TRUE) {
 	  set_active_lwp(tr->pid, FALSE);
@@ -506,7 +615,8 @@ int is_valid(trace *tr)
 	}
       }
       if ((is_in_proc_list(tr->args[1]) == TRUE) && \
-	  (is_in_cpu_list(tr->args[0]) == TRUE)) {
+	  (is_in_cpu_list(tr->args[0]) == TRUE) && \
+	  (is_in_logic_list(logic_of_lwp(tr->args[0])) == TRUE)) {
 	options.active_proc++;
 	if (is_lwp(tr->args[1]) == TRUE) {
 	  set_active_lwp(tr->args[1], TRUE);
@@ -525,43 +635,51 @@ int is_valid(trace *tr)
 	if (is_in_thread_fun_list(tr->thread) == TRUE)
 	  options.active_thread_fun--;
       }
-      if (is_in_thread_list(tr->args[0]) == TRUE) {
+      if (is_in_thread_list(tr->args[1]) == TRUE) {
 	options.active_thread++;
-	if (is_in_thread_fun_list(tr->args[0]) == TRUE) 
+	if (is_in_thread_fun_list(tr->args[1]) == TRUE) 
 	  options.active_thread_fun++;
       }
     }
-    change_lwp_thread(tr->thread, tr->args[0]);
-  } else if (tr->code >> 8 == FUT_KEYCHANGE_CODE) {
-    if ((is_in_proc_list(tr->pid) == TRUE) && \
-	(is_in_cpu_list(tr->cpu) == TRUE))
-      filter_add_lwp(tr->cpu, tr->thread, TRUE);
-    else filter_add_lwp(tr->cpu, tr->thread, FALSE);
+    change_lwp_thread(tr->thread, tr->args[1]);
+  } else if (tr->code >> 8 == FUT_NEW_LWP_CODE) {
+    if ((is_in_proc_list(tr->args[0]) == TRUE) && \
+	(is_in_cpu_list(tr->cpu) == TRUE) && \
+	(is_in_logic_list(tr->args[1])))
+      filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], TRUE);
+    else filter_add_lwp(tr->args[0], tr->args[1], tr->args[2], FALSE);
   }
 
   if (is_in_cpu_list(tr->cpu) == TRUE) {
     if (is_in_proc_list(tr->pid) == TRUE) {
-      if (is_in_thread_list(tr->thread) == TRUE) {
-	if (is_in_evnum_list(tr) == TRUE) {
-	  if (is_in_time_list(tr) == TRUE) {
-	    search_begin_gen_slice_list(tr);
-	    search_begin_function(tr);
-	    
-
-	    options.active = options.active_proc && options.active_thread && \
-	      options.active_gen_slice && options.active_thread_fun;
-
-	    if ((is_in_thread_fun_list(tr->thread) == FALSE) \
-		|| (options.active_gen_slice == 0)) return FALSE;
-
-	    search_end_function(tr);
-	    search_end_gen_slice_list(tr);
-	    
-	    if (is_in_event_list(tr) == FALSE) return FALSE;
-	  
-	    
+      if (is_in_logic_list(logic_of_lwp(tr->pid)) == TRUE) {
+	if (is_in_thread_list(tr->thread) == TRUE) {
+	  if (is_in_evnum_list(tr) == TRUE) {
+	    if (is_in_time_list(tr) == TRUE) {
+	      search_begin_gen_slice_list(tr);
+	      search_begin_function(tr);
+	      
+	      
+	      options.active = options.active_proc && options.active_thread && \
+		options.active_gen_slice && options.active_thread_fun;
+	      
+	      if (is_in_thread_fun_list(tr->thread) == FALSE) return FALSE;
+	      if (options.active_gen_slice == 0) return FALSE;
+	      
+	      search_end_function(tr);
+	      search_end_gen_slice_list(tr);
+	      
+	      if (is_in_event_list(tr) == FALSE) return FALSE;
+	      
+	      
+	    } else {options.active = FALSE; return FALSE;}
 	  } else {options.active = FALSE; return FALSE;}
-	} else {options.active = FALSE; return FALSE;}
+	} else {
+	  options.active = options.active_proc && options.active_thread && \
+	    options.active_gen_slice && options.active_thread_fun && \
+	    options.active_time && options.active_evnum_slice;
+	  return FALSE;
+	}
       } else {
 	options.active = options.active_proc && options.active_thread && \
 	  options.active_gen_slice && options.active_thread_fun && \
@@ -573,12 +691,12 @@ int is_valid(trace *tr)
 	options.active_gen_slice && options.active_thread_fun && \
 	options.active_time && options.active_evnum_slice;
       return FALSE;
-    }
+    } 
   } else {
     options.active = options.active_proc && options.active_thread && \
       options.active_gen_slice && options.active_thread_fun && \
       options.active_time && options.active_evnum_slice;
     return FALSE;
-  }
+  } 
   return TRUE;
 }

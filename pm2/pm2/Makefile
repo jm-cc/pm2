@@ -120,7 +120,7 @@ PM2_FLAGS += -DMAD1
 endif
 
 ifeq ($(TOOLBOX),yes)
-PM2_FLAGS += -DTBX
+PM2_FLAGS += -DTBX -DMARCEL -DTHREADS
 endif
 
 ifeq ($(NETTOOLBOX),yes)

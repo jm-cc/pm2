@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.13  2000/03/09 11:07:51  rnamyst
+Modified to use the sched_data() macro.
+
 Revision 1.12  2000/03/06 12:57:33  vdanjean
 *** empty log message ***
 
@@ -1331,10 +1334,10 @@ void marcel_special_P(marcel_t *liste)
    p = cur->prev;
    p->next = cur->next;
    p->next->prev = p;
-   if(cur_lwp->__first[cur->prio] == cur) {
-      cur_lwp->__first[cur->prio] = ((cur->next->prio == cur->prio) ? cur->next : NULL);
-      if(cur_lwp->__first[0] == cur)
-	 cur_lwp->__first[0] = cur->next;
+   if(sched_data(cur_lwp).__first[cur->prio] == cur) {
+      sched_data(cur_lwp).__first[cur->prio] = ((cur->next->prio == cur->prio) ? cur->next : NULL);
+      if(sched_data(cur_lwp).__first[0] == cur)
+	 sched_data(cur_lwp).__first[0] = cur->next;
    }
 
    if(*liste == NULL) {
@@ -1375,15 +1378,15 @@ void marcel_special_V(marcel_t *pliste)
    if(liste->prio == MAX_PRIO)
       i = 0;
    else
-      for(i=liste->prio; cur_lwp->__first[i] == NULL; i--) ;
-   p = cur_lwp->__first[i];
+      for(i=liste->prio; sched_data(cur_lwp).__first[i] == NULL; i--) ;
+   p = sched_data(cur_lwp).__first[i];
    liste->prev = p->prev;
    queue->next = p;
    p->prev = queue;
    liste->prev->next = liste;
-   cur_lwp->__first[liste->prio] = liste;
-   if(p == cur_lwp->__first[0])
-      cur_lwp->__first[0] = liste;
+   sched_data(cur_lwp).__first[liste->prio] = liste;
+   if(p == sched_data(cur_lwp).__first[0])
+      sched_data(cur_lwp).__first[0] = liste;
 
    *pliste = 0;
 
@@ -1412,10 +1415,10 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
       p = cur->prev;
       p->next = cur->next;
       p->next->prev = p;
-      if(cur_lwp->__first[cur->prio] == cur) {
-         cur_lwp->__first[cur->prio] = ((cur->next->prio == cur->prio) ? cur->next : NULL);
-         if(cur_lwp->__first[0] == cur)
-	    cur_lwp->__first[0] = cur->next;
+      if(sched_data(cur_lwp).__first[cur->prio] == cur) {
+         sched_data(cur_lwp).__first[cur->prio] = ((cur->next->prio == cur->prio) ? cur->next : NULL);
+         if(sched_data(cur_lwp).__first[0] == cur)
+	    sched_data(cur_lwp).__first[0] = cur->next;
       }
 
       if(*liste == NULL) {

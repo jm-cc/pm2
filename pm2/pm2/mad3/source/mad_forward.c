@@ -962,7 +962,7 @@ mad_forward_poll_channel(void *arg)
       p_mad_connection_t in        = NULL;
       unsigned int       is_direct =    0;
       unsigned int       closing   =    0;
-      unsigned char      data[mad_fblock_fsize];
+      unsigned char      data[mad_fblock_fsize] = {0};
 
       in = interface->receive_message(channel);
       mad_forward_receive_bytes(in, data, mad_fblock_fsize);
@@ -1284,7 +1284,7 @@ mad_forward_new_message(p_mad_connection_t connection)
       p_mad_driver_interface_t interface = NULL;
       unsigned int             src       =    0;
       unsigned int             dst       =    0;
-      unsigned char            data[mad_fblock_fsize];
+      unsigned char            data[mad_fblock_fsize] = {0};
 
       out = connection->regular;
       interface = out->channel->adapter->driver->interface;
@@ -1314,7 +1314,7 @@ mad_forward_new_message(p_mad_connection_t connection)
 	unsigned int       src            =    0;
 	unsigned int       dst            =    0;
 	p_mad_driver_interface_t interface = NULL;
-	unsigned char      data[mad_fblock_fsize];
+	unsigned char      data[mad_fblock_fsize] = {0};
 
 	out = connection->regular;
 	interface = out->channel->adapter->driver->interface;
@@ -1368,7 +1368,7 @@ mad_forward_finalize_message(p_mad_connection_t connection)
       unsigned int       src            =    0;
       unsigned int       dst            =    0;
       p_mad_driver_interface_t interface = NULL;
-      unsigned char      data[mad_fblock_fsize];
+      unsigned char      data[mad_fblock_fsize] = {0};
 
       out = connection->regular;
       interface = out->channel->adapter->driver->interface;
@@ -1422,7 +1422,7 @@ mad_forward_poll_message(p_mad_channel_t channel)
     {
       p_mad_connection_t vout = NULL;
       p_mad_connection_t out  = NULL;
-      unsigned char      data[mad_fblock_fsize];
+      unsigned char      data[mad_fblock_fsize] = {0};
       p_mad_driver_interface_t interface = NULL;
 
       vout = connection->reverse;
@@ -1499,7 +1499,7 @@ mad_forward_receive_message(p_mad_channel_t channel)
     {
       p_mad_connection_t vout = NULL;
       p_mad_connection_t out  = NULL;
-      unsigned char      data[mad_fblock_fsize];
+      unsigned char      data[mad_fblock_fsize] = {0};
       p_mad_driver_interface_t interface = NULL;
 
       vout = connection->reverse;
@@ -1741,7 +1741,7 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
       tbx_bool_t     is_a_new_msg   = tbx_false;
       unsigned char *ptr            = NULL;
       unsigned int   bytes_read     =    0;
-      unsigned char  data[mad_fblock_fsize];
+      unsigned char  data[mad_fblock_fsize] = {0};
 
       mtu            = vout->mtu;
       nb_block       =
@@ -1846,7 +1846,7 @@ mad_forward_receive_buffer(p_mad_link_t    lnk,
       unsigned int        block_len     =    0;
       unsigned char      *ptr           = NULL;
       unsigned int        bytes_written =    0;
-      unsigned char       data[mad_fblock_fsize];
+      unsigned char       data[mad_fblock_fsize] = {0};
 
       buf = *buffer;
       ptr = buf->buffer + buf->bytes_written;
@@ -2147,7 +2147,7 @@ mad_forward_stop_reception(p_mad_channel_t      vchannel,
       // Sender
       p_mad_connection_t       out       = NULL;
       p_mad_driver_interface_t interface = NULL;
-      unsigned char            data[mad_fblock_fsize];
+      unsigned char            data[mad_fblock_fsize] = {0};
 
       out = tbx_darray_get(channel->out_connection_darray, lrank);
 

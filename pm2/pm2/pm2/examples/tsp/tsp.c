@@ -402,7 +402,7 @@ void spawn_workers(void)
     marcel_sem_P(&sem);
 }
 
-static void startup_func(int argc, char *argv[])
+static void startup_func(int argc, char *argv[], void *arg)
 {
   if(argc < 4) {
     fprintf(stderr, "Usage: %s nbthreads nbcities seed [ ini_depth ]\n",
@@ -431,7 +431,7 @@ int pm2_main(int argc, char **argv)
 
   init_queue(&TSPqueue);
 
-  pm2_push_startup_func(startup_func);
+  pm2_push_startup_func(startup_func, NULL);
 
   pm2_init(&argc, argv);
 

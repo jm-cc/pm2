@@ -64,7 +64,9 @@ DRV_TCP = on
 # SBP
 # DRV_SBP = on
 # MPI
-DRV_MPI = on
+# DRV_MPI = on
+# MPI_IMPL = lam
+# MPI_IMPL = bip
 
 # PM2
 # PM2 = on
@@ -138,27 +140,32 @@ HEADERS = $(INC)/mad_adapter.h \
 LIB_MAD2 = $(LIB)/libmad2.a
 
 # compiler
-CC = gcc
+# CC = purify gcc
+# CC = gcc
 # CC = egcc
 
 # preprocessor flags
-CPPFLAGS = 
+CPPFLAGS = -I$(INC) -I$(CI_INC) 
 
 # compiler flags
-# CFLAGS = -O6 -I$(INC) -I$(CI_INC) -I$(LI_INC) -Wall $(VIA_CFLAGS)
-CFLAGS = -g -I$(INC) -I$(CI_INC) -I$(LI_INC) -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes $(VIA_CFLAGS)
-# CFLAGS = -pg -I$(INC) -I$(CI_INC) -I$(LI_INC) -Wall $(VIA_CFLAGS)
-# CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -I$(INC) -I$(CI_INC) -I$(LI_INC) -Wall $(VIA_CFLAGS)
-# CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -I$(INC) -I$(CI_INC) -I$(LI_INC) -Wall $(VIA_CFLAGS)
+# CFLAGS = -O6 -Wall 
+# CFLAGS = -g
+CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
+# CFLAGS = -pg -Wall
+# CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
+# CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
 
 # linker flags 
 # LDFLAGS = -pg 
 LDFLAGS =
 
+CONF = 
+
 # PM2
 # ---
 ifdef PM2
- CFLAGS += -DPM2 -D$(PM2_ARCH) -D$(PM2_SYS) -I$(MARCEL_ROOT)/include
+ CPPFLAGS += -DPM2 -D$(PM2_ARCH) -D$(PM2_SYS) -I$(MARCEL_ROOT)/include
+# CFLAGS += 
  LDFLAGS += $(MARCEL_ROOT)/lib/libmarcel.a
 endif
 
@@ -169,7 +176,8 @@ ifdef DRV_TCP
   OBJS    += $(OBJ)/mad_tcp.o 
   HEADERS += $(CI_INC)/mad_tcp.h
   SRCS    += $(CI_SRC)/mad_tcp.c
-  CFLAGS  += -DDRV_TCP=mad_TCP
+  CPPFLAGS  += -DDRV_TCP=mad_TCP
+# CFLAGS += 
   ifdef OS_SOLARIS
     LDFLAGS += -lnsl -lsocket
   endif
@@ -180,7 +188,8 @@ ifdef DRV_VIA
   OBJS    += $(OBJ)/mad_via.o 
   HEADERS += $(CI_INC)/mad_via.h
   SRCS    += $(CI_SRC)/mad_via.c
-  CFLAGS  += -DDRV_VIA=mad_VIA -D_REENTRANT
+  CPPFLAGS  += -DDRV_VIA=mad_VIA -D_REENTRANT
+# CFLAGS += 
   LDFLAGS += -lvipl -lpthread
 endif
 
@@ -190,9 +199,10 @@ ifdef DRV_SISCI
   OBJS    += $(OBJ)/mad_sisci.o 
   HEADERS += $(CI_INC)/mad_sisci.h
   SRCS    += $(CI_SRC)/mad_sisci.c
-  CFLAGS  += -DDRV_SISCI=mad_SISCI \
-             -I$(SISCI_PATH)/api/ \
-             -I$(SISCI_PATH)/src/
+  CPPFLAGS  += -DDRV_SISCI=mad_SISCI \
+               -I$(SISCI_PATH)/api/ \
+               -I$(SISCI_PATH)/src/
+# CFLAGS +=
   LDFLAGS += -L$(SISCI_PATH)/api/ -lsisci
 endif
 
@@ -201,41 +211,54 @@ ifdef DRV_SBP
   OBJS    += $(OBJ)/mad_sbp.o 
   HEADERS += $(CI_INC)/mad_sbp.h
   SRCS    += $(CI_SRC)/mad_sbp.c
-  CFLAGS  += -DDRV_SBP=mad_SBP -DEXTERNAL_SPAWN=DRV_SBP
+  CPPFLAGS  += -DDRV_SBP=mad_SBP -DEXTERNAL_SPAWN=DRV_SBP
+# CFLAGS +=
   LDFLAGS += -lded
 endif
 
-# MPI specific
 ifdef DRV_MPI
-  CC      = hcc
+# MPI specific
   OBJS    += $(OBJ)/mad_mpi.o 
   HEADERS += $(CI_INC)/mad_mpi.h
   SRCS    += $(CI_SRC)/mad_mpi.c
-  CFLAGS  += -DDRV_MPI=mad_MPI -DEXTERNAL_SPAWN=DRV_MPI
-#  LDFLAGS += 
+  CPPFLAGS  += -DDRV_MPI=mad_MPI -DEXTERNAL_SPAWN=DRV_MPI
+# CFLAGS +=
+# LDFLAGS += 
+  CONF += mad_mpi_impl
+# LAM/MPI specific
+ifeq ($(MPI_IMPL), lam)
+  CC      = hcc
+endif
+
+# MPI-BIP specific
+ifeq ($(MPI_IMPL), bip)
+  CPPFLAGS  += -I/usr/local/bip/include/mpi -I/usr/local/bip/include
+# CFLAGS +=
+  LDFLAGS += -L/usr/local/bip/lib/mpi_gnu -L/usr/local/bip/lib -lmpi -lbip
+endif
 endif
 
 # Debug mode
 # ----------
 ifdef DEBUG
-  CFLAGS += -DDEBUG
+  CPPFLAGS += -DDEBUG
 endif
 
 # Trace mode
 # ----------
 ifdef TRACE
-  CFLAGS += -DTRACE
+  CPPFLAGS += -DTRACE
 endif
 
 # Timing mode
 # ----------
 ifdef TIMING
-  CFLAGS += -DTIMING
+  CPPFLAGS += -DTIMING
 endif
 
 # Rules
 # -----
-all: lib $(APPS)
+all: lib $(APPS) conf
 
 lib: $(LIB_MAD2)
 
@@ -314,5 +337,9 @@ $(OBJ)/mad_sbp.o: $(CI_SRC)/mad_sbp.c $(HEADERS)
 $(OBJ)/mad_mpi.o: $(CI_SRC)/mad_mpi.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
+conf: $(CONF)
+
+mad_mpi_impl:
+	@echo "$(MPI_IMPL)" > $(MAD2_ROOT)/.mad2mpi_implementation
 #
 

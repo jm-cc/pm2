@@ -43,7 +43,7 @@ static void SAMPLE_service(void)
   pm2_completion_t c;
 
   pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, msg);
-  pm2_unpack_completion(&c);
+  pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata();
 
   pm2_printf("%s\n", msg);
@@ -67,11 +67,11 @@ int pm2_main(int argc, char **argv)
   if(pm2_self() == 0) { /* first process */
     pm2_completion_t c;
 
-    pm2_completion_init(&c);
+    pm2_completion_init(&c, NULL, NULL);
 
     pm2_rawrpc_begin(1, SAMPLE, NULL);
     pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, "Hello world!");
-    pm2_pack_completion(&c);
+    pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
     pm2_rawrpc_end();
 
     pm2_completion_wait(&c);

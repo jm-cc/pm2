@@ -41,7 +41,7 @@
 #include <unistd.h>
 
 #include "rpc_defs.h"
-#include "timing.h"
+
 #define DEBUG 
 
 #define MAX_THREADS 10

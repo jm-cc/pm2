@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.25  2000/04/05 16:08:14  oaumage
+- retablissement du rsh supplementaire
+
 Revision 1.24  2000/03/27 08:50:55  oaumage
 - pre-support decoupage de groupes
 - correction au niveau du support du demarrage manuel
@@ -1224,8 +1227,8 @@ mad_init(
 #else /* APPLICATION_SPAWN */
   rank = configuration->local_host_id;  
 
-  /* Disable the first `rsh' step */
-  master = !slave;
+  /* Uncomment to disable the first `rsh' step 
+     master = !slave; */
   
   if (!master && !slave)
     {

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.2  2000/05/10 13:08:03  vdanjean
+minor bugs fixes
+
 Revision 1.1  2000/05/09 10:49:36  vdanjean
 pm2debug module
 
@@ -84,6 +87,9 @@ extern debug_type_t debug_type_default;
 void debug_setup_default(debug_type_t*, debug_action_t, int);
 
 #ifdef PM2DEBUG
+#ifdef MARCEL
+extern int pm2debug_marcel_launched;
+#endif
 void pm2debug_init(int *argc, char **argv);
 int pm2debug_printf(debug_type_t *type, int line, char* file, 
 		     const char *format, ...);

@@ -451,7 +451,6 @@ void DSM_LRPC_WRITE_PAGE_REQ_func(void)
 }
 
 #define USE_DOUBLE_MAPPING 1
-#undef USE_DOUBLE_MAPPING
 
 static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 {
@@ -532,6 +531,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 
         dsm_protect_page(to_receive.addr, WRITE_ACCESS); // to enable the page to be copied
        pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)to_receive.addr, to_receive.page_size);
+	pm2_rawrpc_waitdata(); 
 
 #ifdef DSM_COMM_TRACE
 	tfprintf(stderr, "unpacking page %d, addr = %p, size = %d, access = %d, reply = %d\n", index, to_receive.addr, to_receive.page_size, to_receive.access, to_receive.reply_node);
@@ -539,7 +539,6 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 
 #endif // USE_DOUBLE_MAPPING
 
-	pm2_rawrpc_waitdata(); 
 
 	if (to_receive.access != WRITE_ACCESS)
 	  dsm_protect_page(to_receive.addr, old_access);

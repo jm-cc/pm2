@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_interface.h,v $
+Revision 1.5  2000/11/08 08:16:15  oaumage
+*** empty log message ***
+
 Revision 1.4  2000/11/07 17:56:47  oaumage
 - ajout de commandes de lecture/ecriture resistantes sur sockets
 
@@ -181,6 +184,17 @@ ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
 int
 ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 			   p_ntbx_pack_buffer_t pack_buffer);
+
+void
+ntbx_tcp_read(int     socket,
+	      void   *ptr,
+	      size_t  length);
+
+void
+ntbx_tcp_write(int     socket,
+	       void   *ptr,
+	       size_t  length);
+
 #endif /* NTBX_TCP */
 
 #endif /* NTBX_INTERFACE_H */

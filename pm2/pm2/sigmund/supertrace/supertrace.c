@@ -46,8 +46,9 @@ void error_usage()
   fprintf(stderr,"-u, --user-trace    fut_nom\n");
   fprintf(stderr,"-k, --kernel-trace  fkt_nom\n");
   fprintf(stderr,"-o supertrace_nom   par défault prof_file\n");
-  fprintf(stderr,"--no-rel-time       Empêche la renormalisation des dates\n");
-  fprintf(stderr,"--dec-time          Prend en considération le temps mis par l'écriture d'une trace\n");
+  fprintf(stderr,"--no-rel-time       empêche la renormalisation des dates\n");
+  fprintf(stderr,"--dec-time          prend en considération le temps mis par l'écriture d'une trace\n");
+  fprintf(stderr,"--smp               indique le caractère multi-processeur de la trace\n");
   exit(1);
 }
 
@@ -62,6 +63,7 @@ int main(int argc, char **argv)
   FILE *supertrace;
   dec = 0;
   relative = 1;
+  smp = 0;
   for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
     argCount = 1;
     if ((!strcmp(*argv, "--user-trace")) || (!strcmp(*argv, "-u"))) {
@@ -79,10 +81,12 @@ int main(int argc, char **argv)
       if (supertrace_name != NULL) error_usage();
       argCount = 2;
       supertrace_name = *(argv + 1);
-    } else if (!strcmp(*argv, "--no-relative-time")) {
+    } else if (!strcmp(*argv, "--no-rel-time")) {
       relative = 0;
     } else if (!strcmp(*argv, "--dec-time")) {
       dec = 1;
+    } else if (!strcmp(*argv, "--smp")) {
+      smp = 1;
     } else error_usage();
   }
   if (supertrace_name == NULL) supertrace_name = "prof_file";
@@ -93,7 +97,8 @@ int main(int argc, char **argv)
   init_trace_buffer(fut_name, fkt_name, relative, dec);
   while(i == 0) {
     i = get_next_trace(&tr);
-    print_trace(tr, supertrace);
+     if (tr.relevant != 0)
+      print_trace(tr, supertrace);
   }
   fclose(supertrace);
   return 0;

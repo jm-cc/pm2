@@ -205,9 +205,7 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     rpc_args *arg;
     marcel_t pid;
     marcel_attr_t attr;
-#ifndef MINIMAL_PREEMPTION
     marcel_sem_t sem; /* pour attendre l'initialisation du processus */
-#endif
     unsigned granted;
 
     attr = _pm2_lrpc_attr[num];
@@ -228,19 +226,12 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
     to_pointer(att, &arg->ptr_att);
 
-#ifndef MINIMAL_PREEMPTION
     arg->sem = &sem;
     marcel_sem_init(&sem, 0);
-#else
-    arg->initiator = marcel_self();
-#endif
+
     marcel_run(pid, arg);
 
-#ifdef MINIMAL_PREEMPTION
-    marcel_explicityield(pid);
-#else
     marcel_sem_P(&sem);
-#endif
 
   } else {
     pointer p;
@@ -280,9 +271,7 @@ static void netserver_lrpc(void)
   rpc_args *args;
   marcel_attr_t attr;
   marcel_t pid;
-#ifndef MINIMAL_PREEMPTION
   marcel_sem_t sem;
-#endif
   unsigned granted;
 
   old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
@@ -305,23 +294,15 @@ static void netserver_lrpc(void)
   args->quick = FALSE;
   args->sync = TRUE;
 
-#ifndef MINIMAL_PREEMPTION
   args->sem = &sem;
   marcel_sem_init(&sem, 0);
-#else
-  args->initiator = marcel_self();
-#endif
 
   TRANSMIT_NETSERVER_SEM(pid);
   MAD2_TRANSMIT_RECV_CONNECTION(pid);
 
   marcel_run(pid, args);
 
-#ifdef MINIMAL_PREEMPTION
-  marcel_explicityield(pid);
-#else
   marcel_sem_P(&sem);
-#endif
 }
 
 void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
@@ -424,9 +405,7 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     rpc_args *arg;
     marcel_t pid;
     marcel_attr_t attr;
-#ifndef MINIMAL_PREEMPTION
     marcel_sem_t sem;
-#endif
     unsigned granted;
 
     attr = _pm2_lrpc_attr[num];
@@ -445,20 +424,12 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     arg->sync = FALSE;
     arg->quick = FALSE;
 
-#ifndef MINIMAL_PREEMPTION
     arg->sem = &sem;
     marcel_sem_init(&sem, 0);
-#else
-    arg->initiator = marcel_self();
-#endif
 
     marcel_run(pid, arg);
 
-#ifdef MINIMAL_PREEMPTION
-    marcel_explicityield(pid);
-#else
     marcel_sem_P(&sem);
-#endif
 
   } else {
 
@@ -495,9 +466,7 @@ static void netserver_async_lrpc(void)
   rpc_args *args;
   marcel_attr_t attr;
   marcel_t pid;
-#ifndef MINIMAL_PREEMPTION
   marcel_sem_t sem;
-#endif
   unsigned granted;
 
   old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
@@ -518,23 +487,15 @@ static void netserver_async_lrpc(void)
   args->quick = FALSE;
   args->sync = FALSE;
 
-#ifndef MINIMAL_PREEMPTION
   args->sem = &sem;
   marcel_sem_init(&sem, 0);
-#else
-  args->initiator = marcel_self();
-#endif
 
   TRANSMIT_NETSERVER_SEM(pid);
   MAD2_TRANSMIT_RECV_CONNECTION(pid);
 
   marcel_run(pid, args);
 
-#ifdef MINIMAL_PREEMPTION
-  marcel_explicityield(pid);
-#else
   marcel_sem_P(&sem);
-#endif
 }
 
 void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
@@ -559,9 +520,7 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	rpc_args *arg;
 	marcel_t pid;
 	marcel_attr_t attr;
-#ifndef MINIMAL_PREEMPTION
 	marcel_sem_t sem;
-#endif
 	unsigned granted;
 
 	attr = _pm2_lrpc_attr[num];
@@ -580,19 +539,13 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 	arg->quick = FALSE;
 	arg->sync = FALSE;
 
-#ifndef MINIMAL_PREEMPTION
 	arg->sem = &sem;
 	marcel_sem_init(&sem, 0);
-#else
-	arg->initiator = marcel_self();
-#endif
+
 	marcel_run(pid, arg);
 
-#ifdef MINIMAL_PREEMPTION
-	marcel_explicityield(pid);
-#else
 	marcel_sem_P(&sem);
-#endif
+
       } else {
 
 #ifdef DEBUG

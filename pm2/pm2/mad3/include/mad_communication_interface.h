@@ -133,6 +133,14 @@ mad_forward_choice(p_mad_connection_t connection,
 		   mad_send_mode_t    send_mode,
 		   mad_receive_mode_t receive_mode);
 
+p_mad_buffer_t
+mad_forward_get_static_buffer(p_mad_link_t lnk);
+
+
+void
+mad_forward_return_static_buffer(p_mad_link_t   lnk,
+				 p_mad_buffer_t buffer);
+
 void
 mad_forward_send_buffer(p_mad_link_t   lnk,
 			p_mad_buffer_t buffer);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sem.h,v $
+Revision 1.5  2000/11/23 16:31:49  rnamyst
+Removed the regparm attributes
+
 Revision 1.4  2000/10/18 12:41:18  rnamyst
 Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
 
@@ -68,8 +71,8 @@ _PRIVATE_ struct semaphor_struct {
 typedef struct semaphor_struct marcel_sem_t;
 
 void marcel_sem_init(marcel_sem_t *s, int initial);
-void marcel_sem_P(marcel_sem_t *s) __attribute__((regparm(1)));
-void marcel_sem_V(marcel_sem_t *s) __attribute__((regparm(1)));
+void marcel_sem_P(marcel_sem_t *s);
+void marcel_sem_V(marcel_sem_t *s);
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
 _PRIVATE_ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2);
 _PRIVATE_ void marcel_sem_unlock_all(marcel_sem_t *s);

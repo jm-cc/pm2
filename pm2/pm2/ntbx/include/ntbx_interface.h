@@ -189,6 +189,9 @@ ntbx_topology_table_get(p_ntbx_topology_table_t ttable,
 			ntbx_process_lrank_t    src,
 			ntbx_process_lrank_t    dst);
 
+void
+ntbx_topology_table_exit(p_ntbx_topology_table_t ttable);
+
 char *
 ntbx_true_name(char *host_name);
 

@@ -43,16 +43,6 @@ int nb_idle_sleeping = 0;
 #endif
 
 
-// Paramètre optionnel 'avoid_self' à la fonction 'next_runnable_task'
-// dans le cas 'MARCEL_RT'.
-#ifdef MARCEL_RT
-#define __CALLED_FROM_YIELD__   , FALSE
-#define __CALLED_FROM_UNCHAIN__ , TRUE
-#else
-#define __CALLED_FROM_YIELD__
-#define __CALLED_FROM_UNCHAIN__
-#endif
-
 static int next_schedpolicy_available = __MARCEL_SCHED_AVAILABLE;
 static marcel_schedpolicy_func_t user_policy[MARCEL_MAX_USER_SCHED];
 
@@ -212,7 +202,7 @@ static __inline__ int CAN_RUN(__lwp_t *lwp, marcel_t pid)
       && (pid->ext_state != MARCEL_RUNNING)
 #endif
 #ifdef MA__LWPS
-      && (!marcel_vpmask_vp_ismember(&pid->vpmask, lwp->number))
+      && (!marcel_vpmask_vp_ismember(pid->vpmask, lwp->number))
 #endif
       );
 }
@@ -875,9 +865,52 @@ static __inline__ void marcel_switch_to(marcel_t cur, marcel_t next)
       LOG_OUT();
       return;
     }
-    can_goto_next_task(cur, next);
-    MA_THR_RESTARTED(cur, "");
+    goto_next_task(next);
   }
+}
+
+// Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
+// retirer le thread de la file et le replacer dans la file
+// adéquate...
+void marcel_change_vpmask(marcel_vpmask_t mask)
+{
+  marcel_t cur = marcel_self();
+  DEFINE_CUR_LWP(, =, GET_LWP(cur));
+
+  LOG_IN();
+
+  lock_task();
+
+  cur->vpmask = mask;
+
+  if(marcel_vpmask_vp_ismember(mask, cur_lwp->number)) {
+    // Le LWP courant n'est plus autorisé : il faut s'extraire de la
+    // file pour se ré-insérer dans la bonne (éventuellement dans la
+    // même !)
+    marcel_t next;
+
+#ifdef MA__ONE_QUEUE
+    // Il suffit d'effectuer un 'radical_next_task' en fait
+    sched_lock(cur_lwp);
+
+    next = radical_next_task(cur, cur_lwp);
+    SET_STATE_RUNNING(cur, next, cur_lwp);
+
+    sched_unlock(cur_lwp);
+
+    marcel_switch_to(cur, next);
+#else
+    // Files multiples : c'est plus délicat. Il faut s'insérer dans
+    // une file distante mais ATTENTION : dès que l'on aura relâché le
+    // verrou de la file, un LWP pourra nous exécuter, donc il ne faut
+    // pas rester sur cette pile...
+    RAISE(NOT_IMPLEMENTED);
+#endif
+  }
+
+  unlock_task();
+
+  LOG_OUT();
 }
 
 // Réalise effectivement un changement de contexte vers une autre
@@ -887,7 +920,7 @@ static __inline__ void marcel_switch_to(marcel_t cur, marcel_t next)
 void ma__marcel_yield(void)
 {
   register marcel_t cur = marcel_self();
-  DEFINE_CUR_LWP(,= ,GET_LWP(cur));
+  DEFINE_CUR_LWP(, =, GET_LWP(cur));
 
   LOG_IN();
 
@@ -1277,15 +1310,11 @@ any_t idle_func(any_t arg) // Sans activation (mono et smp)
   for(;;) {
 
     mdebug("\t\t\t<Scheduler scheduled> (LWP = %d)\n", cur_lwp->number);
-
     next = idle_body();
-
     mdebug("\t\t\t<Scheduler unscheduled> (LWP = %d)\n", cur_lwp->number);
 
-    if(MA_THR_SETJMP(cur) == FIRST_RETURN)
-      goto_next_task(next);
+    marcel_switch_to(cur, next);
 
-    MA_THR_RESTARTED(cur, "Preemption");
   }
   LOG_OUT(); // Probably never executed
 }
@@ -1702,17 +1731,12 @@ void marcel_sched_init(unsigned nb_lwp)
   memset(__main_thread, 0, sizeof(task_desc));
   __main_thread->detached = FALSE;
   __main_thread->not_migratable = 1;
-  /*
-   * Some Pthread packages do not support that a
-   * LWP != main_LWP execute on the main stack, so: 
-   */
-  __main_thread->sched_policy = MARCEL_SCHED_FIXED(0);
-  __main_thread->vpmask = MARCEL_VPMASK_ALL_BUT_VP(0);
 
-  /* 
-   * Initialization of "main LWP" (required even when SMP not set). 
-   * init_lwp calls init_sched 
-   */
+  __main_thread->sched_policy = MARCEL_SCHED_OTHER;
+  __main_thread->vpmask = MARCEL_VPMASK_EMPTY;
+
+  // Initialization of "main LWP" is _required_ even when SMP not set.
+  // 'init_sched' is called indirectly
   init_lwp(&__main_lwp, __main_thread);
 
   mdebug("marcel_sched_init: init_lwp done\n");
@@ -1828,9 +1852,13 @@ void marcel_sched_shutdown()
   stop_timer();
 #endif
 
+  // Si nécessaire, on bascule sur le LWP(0)
+  marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
+
 #ifdef MA__SMP
   if(marcel_self()->lwp != &__main_lwp)
     RAISE(PROGRAM_ERROR);
+
   lwp = next_lwp(&__main_lwp);
   while(lwp != &__main_lwp) {
     register __lwp_t *previous;
@@ -2027,7 +2055,7 @@ void marcel_snapshot(snapshot_func_t f)
   unlock_task();
 }
 
-inline static int want_to_see(marcel_t t, int which)
+static __inline__ int want_to_see(marcel_t t, int which)
 {
   if(t->detached) {
     if(which & NOT_DETACHED_ONLY)

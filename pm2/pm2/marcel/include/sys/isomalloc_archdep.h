@@ -18,8 +18,9 @@
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
 #define ISOADDR_PAGES                 (128*1024)
-#define THREAD_SLOT_SIZE              0x10000 /* 64 Ko */
-//#define THREAD_SLOT_SIZE              0x100000 /* 1 Mo */
+
+#define THREAD_SLOT_SIZE              ((long)0x10000) /* 64 Ko */
+
 #define SLOT_AREA_TOP                 (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM
@@ -85,7 +86,7 @@ extern int __zero_fd;
 
 extern void *ISOADDR_AREA_TOP;
 #define MAIN_STACK_BOT         (ISOADDR_AREA_TOP)
-#define ISOADDR_AREA_SIZE      (512 * SLOT_SIZE)
+#define ISOADDR_AREA_SIZE      (512 * THREAD_SLOT_SIZE)
 #define FILE_TO_MAP            -1
 #define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #define MMAP_MASK              (MAP_PRIVATE | MAP_ANONYMOUS)
@@ -111,8 +112,6 @@ extern void *ISOADDR_AREA_TOP;
 #error Sorry. This system/architecture is not yet supported.
 
 #endif
-
-#define SLOT_SIZE              THREAD_SLOT_SIZE //0x10000 /* 64 Ko */
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS)
 extern int _zerofd;

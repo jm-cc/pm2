@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.4  2000/01/05 09:43:58  oaumage
+- initialisation du nouveau champs `group_mode' dans link_init
+- mad_sbp.c: suppression des fonctions vides
+
 Revision 1.3  2000/01/04 16:50:48  oaumage
 - mad_mpi.c: premiere version fonctionnelle du driver
 - mad_sbp.c: nouvelle correction de la transmission des noms d'hote a
@@ -249,6 +253,7 @@ mad_mpi_link_init(p_mad_link_t lnk)
   /* Link initialization code */
   lnk->link_mode   = mad_link_mode_buffer;
   lnk->buffer_mode = mad_buffer_mode_dynamic;
+  lnk->group_mode  = mad_group_mode_split;
   LOG_OUT();
 }
 

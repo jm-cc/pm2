@@ -201,6 +201,18 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
    }                                                                \
  } while(0)
 
+#define PROF_SET_THREAD_NAME()                                      \
+ do {                                                               \
+   if(__pm2_profile_active) {                                       \
+      unsigned int *__name = (unsigned int *) &MARCEL_SELF->name;   \
+      fut_header((((unsigned int)(FUT_SET_THREAD_NAME_CODE))<<8) | FUT_SIZE(4), \
+                 __name[0],                                         \
+                 __name[1],                                         \
+                 __name[2],                                         \
+                 __name[3]);                                        \
+   }                                                                \
+ } while (0)
+
 
 void profile_init(void);
 
@@ -223,6 +235,7 @@ extern volatile unsigned __pm2_profile_active;
 #define PROF_NEW_LWP(num, thr)     (void)0
 #define PROF_THREAD_BIRTH(thr)          (void)0
 #define PROF_THREAD_DEATH(thr)          (void)0
+#define PROF_SET_THREAD_NAME()		(void)0
 
 #define PROF_IN()                       (void)0
 #define PROF_OUT()                      (void)0

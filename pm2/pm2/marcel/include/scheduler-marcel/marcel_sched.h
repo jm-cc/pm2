@@ -314,6 +314,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		MTRACE("On new stack", marcel_self());
 		
 		PROF_OUT_EXT(newborn_thread);
+		PROF_SET_THREAD_NAME();
 
 		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
 			// On rend la main au père
@@ -374,6 +375,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		MTRACE("Preemption", marcel_self());
 		
 		PROF_OUT_EXT(newborn_thread);
+		PROF_SET_THREAD_NAME();
 	}
 	
 	/* pas de unlock_task ici : le preempt a déjà été mangé dans ma_schedule_tail */

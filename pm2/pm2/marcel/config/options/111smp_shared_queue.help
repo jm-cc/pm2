@@ -1,0 +1,1 @@
+Uses one single shared ready-queue (SMP mode only).

@@ -17,7 +17,7 @@
 
 #include "clone.h"
 
-static clone_t clone;
+static clone_t clone_var;
 
 #define N       3
 #define BOUCLES 2
@@ -35,7 +35,7 @@ any_t master(any_t arg)
 
     i = 5;
 
-    CLONE_BEGIN(&clone);
+    CLONE_BEGIN(&clone_var);
 
     fprintf(stderr,
 	    "Je suis en section parallele "
@@ -45,12 +45,12 @@ any_t master(any_t arg)
 
     marcel_delay(1000);
 
-    CLONE_END(&clone);
+    CLONE_END(&clone_var);
 
     fprintf(stderr, "ouf, les esclaves ont termine\n");
   }
 
-  clone_terminate(&clone);
+  clone_terminate(&clone_var);
 
   return NULL;
 }
@@ -59,7 +59,7 @@ any_t slave(any_t arg)
 {
   marcel_detach(marcel_self());
 
-  CLONE_WAIT(&clone);
+  CLONE_WAIT(&clone_var);
 
   return NULL;
 }
@@ -70,7 +70,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
-  clone_init(&clone, N);
+  clone_init(&clone_var, N);
 
   marcel_create(NULL, NULL, master, NULL);
 

@@ -33,8 +33,10 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <marcel.h>
-#include <marcel_alloc.h>
+#include "marcel.h"
+#include "marcel_alloc.h"
+
+#ifdef ENABLE_STACK_JUMPING
 
 static void *stack;
 
@@ -64,13 +66,26 @@ any_t thread_func(any_t arg)
   return NULL;
 }
 
+#endif
+
 int marcel_main(int argc, char *argv[])
 {
+#ifndef ENABLE_STACK_JUMPING
+
+  fprintf(stderr,
+	  "Please compile this program (and the Marcel library)\n"
+	  "with the -DENABLE_STACK_JUMPING flag.\n");
+  exit(1);
+
+#else
+
   marcel_init(&argc, argv);
 
   marcel_create(NULL, NULL, thread_func, NULL);
 
   marcel_end();
+
+#endif
   return 0;
 }
 

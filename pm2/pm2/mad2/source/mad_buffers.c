@@ -108,8 +108,8 @@ size_t
 mad_copy_length(p_mad_buffer_t source,
 		p_mad_buffer_t destination)
 {
-  return min((source->bytes_written - source->bytes_read),
-	     (destination->length - destination->bytes_written));
+  return tbx_min((source->bytes_written - source->bytes_read),
+                 (destination->length - destination->bytes_written));
 }
 
 size_t

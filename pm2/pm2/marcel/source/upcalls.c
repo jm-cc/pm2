@@ -115,19 +115,19 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 	marcel_t current = marcel_self();
 	
 	SET_LWP(current, GET_LWP_BY_NUM(new_proc));
-#ifdef SHOW_UPCALL
-	marcel_printf("\trestart_func (proc %i, ret %i, param 0x%8x,"
-		      " ip 0x%8x, sp 0x%8x)\n",
-		      new_proc, return_value, param, eip, esp);
-#else
+/*  #ifdef SHOW_UPCALL */
+/*  	marcel_printf("\trestart_func (proc %i, ret %i, param 0x%8x," */
+/*  		      " ip 0x%8x, sp 0x%8x)\n", */
+/*  		      new_proc, return_value, param, eip, esp); */
+/*  #else */
 	mdebug("\trestart_func (proc %i, ret %i, param %p,"
 	       " ip 0x%8x, sp 0x%8x)\n",
 	       new_proc, return_value, (void*)param, eip, esp);
-#endif
+/*  #endif */
 	//mysleep();
 	if (IS_TASK_TYPE_IDLE(current)) {
 		if (param != ACT_RESCHEDULE) {
-			fprintf(stderr, "\trestart_func in idle task %p !! \n",
+			mdebug("\trestart_func in idle task %p !! \n",
 				      current);
 		}
 	}
@@ -195,15 +195,15 @@ void upcall_new(act_proc_t proc)
  	marcel_t next;
 	//marcel_t new_task=GET_LWP_BY_NUM(proc)->upcall_new_task;
 
-#ifdef SHOW_UPCALL
-	marcel_printf("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
-		      proc, marcel_self(),GET_LWP_BY_NUM(proc), 
-		      GET_LWP_BY_NUM(proc)->number );
-#else
+/*  #ifdef SHOW_UPCALL */
+/*  	marcel_printf("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n", */
+/*  		      proc, marcel_self(),GET_LWP_BY_NUM(proc),  */
+/*  		      GET_LWP_BY_NUM(proc)->number ); */
+/*  #else */
 	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
 	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
 	       GET_LWP_BY_NUM(proc)->number );
-#endif
+/*  #endif */
 	MTRACE("UpcallNew", marcel_self());
 	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
 
@@ -220,10 +220,10 @@ void upcall_new(act_proc_t proc)
 	}
 
 	if (act_nb_unblocked) {
-#ifdef SHOW_UPCALL
-		marcel_printf("\t\tupcall_new(%i) : restart unblocked(%i)\n",
-			      proc, act_nb_unblocked);
-#endif
+/*  #ifdef SHOW_UPCALL */
+/*  		marcel_printf("\t\tupcall_new(%i) : restart unblocked(%i)\n", */
+/*  			      proc, act_nb_unblocked); */
+/*  #endif */
 		act_cntl(ACT_CNTL_RESTART_UNBLOCKED, 
 			 (void*)ACT_RESTART_FROM_UPCALL_NEW);
 	}
@@ -302,6 +302,10 @@ void init_upcalls(int nb_act)
 	//		upcall_new, restart_func, &act_nb_unblocked));
 	
        
+#ifdef PM2DEBUG
+	fflush(stderr);
+	pm2debug_marcel_launched=1;
+#endif
 	if (act_cntl(ACT_CNTL_INIT, &param)) {
 		perror("Bad activations init");
 		exit(1);

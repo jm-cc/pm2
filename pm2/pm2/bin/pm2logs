@@ -1,5 +1,19 @@
 #!/bin/sh
 
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
@@ -40,7 +54,14 @@ export PM2_CONF_FILE
 
 [ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf)."
 
+n=0
+for host in `cat ${PM2_CONF_FILE}`; do
+    eval logs_on_host_$host=\"\$logs_on_host_$host /tmp/${USER}-${mod}log-$n\"
+    n=`expr $n + 1`
+done
+
 for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do
-	${PM2_RSH:-rsh} $host ${PM2_ROOT}/bin/pm2_vlocallogs $host $mod
+    eval logs=\"\$logs_on_host_$host\"
+    ${PM2_RSH:-rsh} $host ${PM2_ROOT}/bin/pm2-vlocallogs $host $logs
 done
 

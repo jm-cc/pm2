@@ -152,7 +152,7 @@ void PrintDistTab ()
 int marcel_main (int argc, char **argv)
 {
 #ifdef MT
-  int i ;
+  long i ;
   void *status ;
 
 #ifdef MARCEL

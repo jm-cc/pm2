@@ -23,7 +23,7 @@ volatile int finished;
 any_t sample(any_t arg)
 {
    int i;
-   int me = (int) arg;
+   long me = (long) arg;
    while (!finished) {
       for (i=0;i<10000000;i++);
       marcel_printf("I'm %d\n",me);

@@ -43,6 +43,7 @@ any_t ma_fonction(any_t arg)
       printf("%s ", (char *)arg); fflush(stdout);
       { int j = 500000; while(j--); } /* On passe son temps comme on peut... */
    }
+   return NULL;
 }
 
 int marcel_main(int argc, char *argv[])

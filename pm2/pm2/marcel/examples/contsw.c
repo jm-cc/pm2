@@ -21,7 +21,7 @@ volatile int a=0;
 
 any_t f(any_t arg)
 {
-  register int n = (int)arg;
+  register long n = (long)arg;
   tbx_tick_t t1, t2;
 
   TBX_GET_TICK(t1);
@@ -35,7 +35,7 @@ any_t f(any_t arg)
 
 any_t f2(any_t arg)
 {
-  register int n = (int)arg;
+  register long n = (long)arg;
   tbx_tick_t t1, t2;
 
   TBX_GET_TICK(t1);
@@ -88,11 +88,11 @@ void bench_longjmp(unsigned nb)
  
 }
 
-void bench_contsw(unsigned nb)
+void bench_contsw(unsigned long nb)
 {
   marcel_t pid;
   any_t status;
-  register int n;
+  register long n;
 
   if(!nb)
     return;
@@ -109,11 +109,11 @@ void bench_contsw(unsigned nb)
   marcel_join(pid, &status);
 }
 
-void bench_contsw2(unsigned nb)
+void bench_contsw2(unsigned long nb)
 {
   marcel_t pid;
   any_t status;
-  register int n;
+  register long n;
 
   if(!nb)
     return;
@@ -134,11 +134,11 @@ void bench_contsw2(unsigned nb)
   marcel_join(pid, &status);
 }
 
-void bench_contsw3(unsigned nb)
+void bench_contsw3(unsigned long nb)
 {
   marcel_t pid;
   any_t status;
-  register int n = nb;
+  register long n = nb;
 
   if(!nb)
     return;
@@ -159,11 +159,11 @@ int marcel_main(int argc, char *argv[])
   }
 
   while(essais--) {
-    bench_setjmp(atoi(argv[1]));
-    bench_longjmp(atoi(argv[1]));
-    bench_contsw(atoi(argv[1]));
-    bench_contsw2(atoi(argv[1]));
-    bench_contsw3(atoi(argv[1]));
+    bench_setjmp(atol(argv[1]));
+    bench_longjmp(atol(argv[1]));
+    bench_contsw(atol(argv[1]));
+    bench_contsw2(atol(argv[1]));
+    bench_contsw3(atol(argv[1]));
   }
 
   return 0;

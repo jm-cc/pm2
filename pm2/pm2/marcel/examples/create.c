@@ -48,7 +48,7 @@ any_t main_thread(void *arg)
 {
   marcel_attr_t attr;
   marcel_sem_t sem;
-  int nb;
+  long nb;
   int essais = 3;
 
   marcel_detach(marcel_self());
@@ -67,7 +67,7 @@ any_t main_thread(void *arg)
   marcel_sem_init(&sem, 0);
 
   while(essais--) {
-    nb = (int)arg;
+    nb = (long)arg;
 
     if(nb == 0)
       break;
@@ -116,7 +116,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_attr_init(&attr);
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
-  marcel_create(NULL, &attr, main_thread, (void *)atoi(argv[1]));
+  marcel_create(NULL, &attr, main_thread, (void *)atol(argv[1]));
 
   marcel_end();
   return 0;

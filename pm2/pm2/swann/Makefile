@@ -1,109 +1,140 @@
 #
-#                       PM2 HIGH-PERF/ISOMALLOC
-#            High Performance Parallel Multithreaded Machine
-#                            version 3.0
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
 #
-#      Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
-#        Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
 #
-#             Laboratoire de l'Informatique du Parallelisme
-#                         UMR 5668 CNRS-INRIA
-#                  Ecole Normale Superieure de Lyon
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
 #
-#                       External Contributors:
-#                  Yves Denneulin (LMC - Grenoble),
-#                  Benoit Planquelle (LIFL - Lille)
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
 #
-#                     1998 All Rights Reserved
+#                    1998 All Rights Reserved
 #
 #
-#                              NOTICE
+#                             NOTICE
 #
-#  Permission to use, copy, modify, and distribute this software and
-#  its documentation for any purpose and without fee is hereby granted
-#  provided that the above copyright notice appear in all copies and
-#  that both the copyright notice and this permission notice appear in
-#  supporting documentation.
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
 #
-#  Neither the institutions (Ecole Normale Superieure de Lyon,
-#  Laboratoire de L'informatique du Parallelisme, Universite des
-#  Sciences et Technologies de Lille, Laboratoire d'Informatique
-#  Fondamentale de Lille), nor the Authors make any representations
-#  about the suitability of this software for any purpose. This
-#  software is provided ``as is'' without express or implied warranty.
-
-
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
 #
-# Makefile : Swann
-###################
 
-include $(MAD2_ROOT)/make/config.mak
+###################### CUSTOMIZATION SECTION #####################
 
-# directories
-ROOT = ${SWN_ROOT}
-OBJ = $(ROOT)/obj
-INC = $(ROOT)/include
-SRC = $(ROOT)/src
-BIN = $(ROOT)/bin
+SWANN_OPTIONS		 = -g -Wall # -DDEBUG -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 
-# applications
-APPS = $(BIN)/swann
+################### END OF CUSTOMIZATION SECTION #################
 
-# objects
-OBJS = $(OBJ)/swann.o
+ifndef SWANN_ROOT
+SWANN_ROOT =  $(PM2_ROOT)/swann
+endif
 
-# srcs
-SRCS = $(SRC)/swann.c
+SWANN :=  yes
 
-# headers
-HEADERS = $(INC)/swann.h
+ifndef PM2_ARCH_SYS
+PM2_ARCH     :=  $(shell $(PM2_ROOT)/bin/pm2_arch)
+PM2_SYS	     :=  $(shell $(PM2_ROOT)/bin/pm2_sys)
+PM2_ARCH_SYS :=  $(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
+endif
 
-# ToolBox
-# -------
-LDFLAGS += $(TBX_ROOT)/lib/libtbx.a
+SWANN_MAKEFILE =  $(SWANN_ROOT)/Makefile
 
-# Net ToolBox
-# -----------
-LDFLAGS += $(NTBX_ROOT)/lib/libntbx.a
+SWANN_OBJ  :=  $(SWANN_ROOT)/obj
+SWANN_SRC  :=  $(SWANN_ROOT)/src
+SWANN_DEP  :=  $(SWANN_SRC)/depend
+SWANN_INC  :=  $(SWANN_ROOT)/include
+SWANN_BIND  =  $(SWANN_ROOT)/bin/$(PM2_ARCH_SYS)
 
-# dependencies
-DEP_DIRS = $(TBX_ROOT) $(NTBX_ROOT)
+ifneq ($(wildcard $(SWANN_DEP)),$(SWANN_DEP))
+DUMMY_BUILD :=  $(shell mkdir -p $(SWANN_DEP))
+endif
 
-# Rules
-# -----
-.PHONY: all ps html rtf clean clean_src lines dep_dirs $(DEP_DIRS) conf
+ifneq ($(wildcard $(SWANN_OBJ)),$(SWANN_OBJ))
+DUMMY_BUILD :=  $(shell mkdir -p $(SWANN_OBJ))
+endif
 
-all: dep_dirs $(APPS) conf
+ifneq ($(wildcard $(SWANN_BIND)),$(SWANN_BIND))
+DUMMY_BUILD :=  $(shell mkdir -p $(SWANN_BIND))
+endif
 
-ps: 
-	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/swann.ps
+ifndef TBX_ROOT
+TBX_ROOT :=  $(SWANN_ROOT)/../toolbox
+endif
 
-html: 
-	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/swann.html
+ifndef NTBX_ROOT
+NTBX_ROOT :=  $(TBX_ROOT)/net
+endif
 
-rtf: 
-	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/swann.rtf
+SWANN_SUB_MAKEFILES +=  $(TBX_ROOT)/Makefile $(NTBX_ROOT)/Makefile
+SWANN_REG_SOURCES   :=  $(wildcard $(SWANN_SRC)/*.c)
+SWANN_REG_OBJECTS   :=  $(patsubst %.c,%.o,$(subst $(SWANN_SRC),$(SWANN_OBJ),$(SWANN_REG_SOURCES)))
+SWANN_OBJECTS       :=  $(SWANN_REG_OBJECTS)
+SWANN_APP            =  $(SWANN_BIND)/swann
+SWANN_LLIBS          =  $(ARCHDLIB) -lfl  $(TBX_LIB) $(NTBX_LIB) $(TBX_LLIB) $(NTBX_LLIB)
 
-$(BIN)/swann: $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) -o $@ 
+SWANN_REG_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(SWANN_OBJ),$(SWANN_DEP),$(SWANN_REG_OBJECTS)))
+SWANN_DEPENDS     :=  ($strip $(SWANN_REG_DEPENDS))
+SWANN_DEP_TO_OBJ   =  $(SWANN_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
-clean: dep_dirs
-	rm -f $(APPS) $(APPS_OBJS) $(OBJS) $(LIB_SWA) 
+MASTER         :=  swann
+MASTER_CC      :=  gcc
+MASTER_OPTIONS :=  $(SWANN_OPTIONS)
+MASTER_DEP     :=  $(SWANN_MAKEFILE) $(SWANN_SUB_MAKEFILE)
 
-clean_src:
-	rm -f $(ROOT)/*~ $(SRC)/*~ $(INC)/*~ $(LY)/*~
+SWANN_CC      =  $(MASTER_CC)
+SWANN_CFLAGS  =  $(MASTER_OPTIONS) $(PM2_FLAGS) \
+		 -I$(SWANN_INC) -I$(TBX_ROOT)/include \
+		 -I$(SWANN_ROOT)/include -I$(NTBX_ROOT)/include
+SWANN_LDFLAGS =	
 
-lines:
-	wc -l $(SRC)/*.c $(INC)/*.h 
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(wildcard $(SWANN_DEPENDS)),$(SWANN_DEPENDS))
+include $(SWANN_DEPENDS)
+endif
+endif
 
-$(OBJ)/swann.o: $(SRC)/swann.c $(HEADERS)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+.PHONY: swann_default
+swann_default: $(SWANN_APP) 
 
-dep_dirs: $(DEP_DIRS)
+include $(SWANN_SUB_MAKEFILES)
 
-$(DEP_DIRS):
-	$(MAKE) -C $@ $(DEP_GOAL)
+$(SWANN_OBJECTS): $(SWANN_OBJ)/%.o: $(SWANN_DEP)/%.d
+$(SWANN_DEPENDS): $(MASTER_DEP) 
 
-conf: $(CONF)
+$(SWANN_APP): $(SWANN_OBJECTS) tbx_default ntbx_default
+	@ echo "  -  $(@F)"
+	$(SWANN_CC) -o $(SWANN_APP) $(SWANN_OBJECTS) $(SWANN_LLIBS)
 
-#---------------------------------------------------------------------
+$(SWANN_REG_OBJECTS): $(SWANN_OBJ)/%.o: $(SWANN_SRC)/%.c
+	@ echo "  -  $(@F)"
+	$(SWANN_CC) $(SWANN_CFLAGS) $(SWANN_FLAGS) -c $< -o $@
+
+$(SWANN_REG_DEPENDS): $(SWANN_DEP)/%.d: $(SWANN_SRC)/%.c
+	@ echo "  -  $(@F)"
+	$(SHELL) -ec '$(SWANN_CC) -MM $(SWANN_CFLAGS) $(SWANN_FLAGS) $< \
+		| sed '\''s/.*:/$(subst /,\/,$(SWANN_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
+
+.PHONY: clean distclean
+clean: tbxclean ntbxclean
+	@ echo "Cleaning swann"
+	rm -f $(wildcard $(SWANN_OBJ)/*.o $(SWANN_DEP)/*.d) 
+
+distclean: tbxdistclean ntbxdistclean
+	rm -rf $(wildcard $(SWANN_ROOT)/bin \
+		$(SWANN_ROOT)/obj \
+		$(SWANN_ROOT)/source/depend) 
+	rm -f $(wildcard $(SWANN_OBJ)/*.o $(SWANN_DEP)/*.d) 

@@ -26,6 +26,7 @@ _syscall0(pid_t,gettid)
 
 ma_atomic_t __preemption_disabled=MA_ATOMIC_INIT(0);
 
+/* Unité : microsecondes */
 #define MIN_TIME_SLICE		10000
 #define DEFAULT_TIME_SLICE	MIN_TIME_SLICE
 static volatile unsigned long time_slice = DEFAULT_TIME_SLICE;
@@ -146,6 +147,37 @@ static void fault_catcher_exit()
 	sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
 	LOG_OUT();
 }
+
+static int fault_catcher_notify(struct ma_notifier_block *self, 
+		     		unsigned long action, void *hlwp)
+{
+	switch(action) {
+	case MA_LWP_ONLINE:
+		fault_catcher_init();
+		break;
+	case MA_LWP_OFFLINE:
+		fault_catcher_exit();
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static struct ma_notifier_block fault_catcher_nb = {
+	.notifier_call	= fault_catcher_notify,
+	.next		= NULL,
+};
+
+void __init fault_cacher_start(void)
+{
+	fault_catcher_notify(&fault_catcher_nb, (unsigned long)MA_LWP_ONLINE,
+			     (void *)(ma_lwp_t)LWP_SELF);
+	ma_register_lwp_notifier(&fault_catcher_nb);
+}
+
+__ma_initfunc_prio(fault_cacher_start, MA_INIT_FAULT_CATCHER,
+		   MA_INIT_FAULT_CATCHER_PRIO, "Start SEGV catcher");
 
 /****************************************************************
  * Le signal TIMER

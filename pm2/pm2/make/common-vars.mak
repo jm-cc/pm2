@@ -160,3 +160,4 @@ export PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
 endif
 endif
 
+CTAGS ?= ctags

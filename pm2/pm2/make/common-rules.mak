@@ -79,7 +79,7 @@ $(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
 
 # Construction d'un fichier de tags pour les éditeurs de fichiers
 #---------------------------------------------------------------------
-CTAGS := ctags
-
 tags:
 	$(CTAGS) --recurse=yes --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include .
+
+

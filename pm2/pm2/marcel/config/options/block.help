@@ -1,5 +1,0 @@
-this may be defined to speed up execution
-but it will not allow the `marcel_threadslist_np' function
-to inspect the list of blocked threads. As a result,
-the `th' command of the PM2 console will not display
-the blocked threads. Should normaly be undefined.

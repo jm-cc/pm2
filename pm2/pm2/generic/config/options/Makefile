@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBS := pm2 marcel mad1 mad2 tbx ntbx common
+LIBS := pm2 marcel mad1 mad2 mad3 leoparse tbx ntbx common
 
 all:
 

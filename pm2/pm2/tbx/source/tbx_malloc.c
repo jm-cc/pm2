@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.12  2000/11/15 21:32:45  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.11  2000/10/30 16:03:32  oaumage
 - correction d'un probleme de type
 
@@ -155,17 +158,21 @@ static
 void
 tbx_safe_malloc_mem_check(void)
 {
-  fprintf(stderr, "*** SafeMalloc Stats ***\n");
-  fprintf(stderr, "Allocated: %lu, Freed: %lu, Lost: %lu\n",
-	  (long int)allocated,
-	  (long int)freed,
-	  ((long int)allocated) - ((long int)freed));
+  if(allocated) { // i.e. if Safe_Malloc was really used
+
+    fprintf(stderr, "*** SafeMalloc Stats ***\n");
+    fprintf(stderr, "Allocated: %lu, Freed: %lu, Lost: %lu\n",
+	    (long int)allocated,
+	    (long int)freed,
+	    ((long int)allocated) - ((long int)freed));
   
-  if (list)
-    {
-      fprintf(stderr, "SafeMalloc: Warning! All allocated memory has not been restitued :\n");
+    if (list) {
+      fprintf(stderr,
+	      "SafeMalloc: Warning! All allocated memory has not been restitued :\n");
       tbx_safe_malloc_check(tbx_safe_malloc_VERBOSE);
     }
+
+  }
 }
 
 void

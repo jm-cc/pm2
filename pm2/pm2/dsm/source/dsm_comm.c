@@ -945,7 +945,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
 #endif
 
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
-  while (index != -1)
+  while (index != NO_PAGE)
     {
 #ifdef DEBUG_HYP
       tfprintf(stderr,"DSM_LRPC_SEND_MULTIPLE_DIFFS_func: %ld\n", index);
@@ -1006,7 +1006,7 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 
   dsm_begin_send_multiple_pages(req_node, READ_ACCESS, tag);
 
-  while (index != -1)
+  while (index != NO_PAGE)
     {
       // dsm_lock_page(index);
       (*dsm_get_read_server(index))(index, req_node, tag);
@@ -1044,7 +1044,7 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 
   dsm_begin_send_multiple_pages(req_node, WRITE_ACCESS, tag);
 
-  while (index != -1)
+  while (index != NO_PAGE)
     {
       // dsm_lock_page(index);
       (*dsm_get_write_server(index))(index, req_node, tag);
@@ -1070,7 +1070,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func(void)
   dsm_node_t reply_node;
   unsigned long page_size;
   void * addr;
-  dsm_page_index_t index = (dsm_page_index_t)-1;
+  dsm_page_index_t index = NO_PAGE;
   int tag;
 
   LOG_IN();
@@ -1106,7 +1106,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func(void)
     }
 
   /* Terminate: */
-  if (index != -1)
+  if (index != NO_PAGE)
     (*dsm_get_expert_receive_page_server(index))((void *)-1, READ_ACCESS, reply_node, page_size, tag);
 
 #ifdef DEBUG_HYP
@@ -1131,7 +1131,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func()
   dsm_node_t reply_node;
   unsigned long page_size;
   void *addr;
-  dsm_page_index_t index = (dsm_page_index_t)-1;
+  dsm_page_index_t index = NO_PAGE;
   int tag;
 
   LOG_IN();
@@ -1167,7 +1167,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func()
     }
 
   /* Terminate: */
-  if (index != -1)
+  if (index != NO_PAGE)
     (*dsm_get_expert_receive_page_server(index))((void *)-1, READ_ACCESS, reply_node, page_size, tag);
   
 #ifdef DEBUG_HYP

@@ -23,14 +23,15 @@
  */
 
 #ifdef X86_ARCH
+#  define SPINLOCK_DEFINED
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __attribute__ ((unused));
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   unsigned ret;
 
   __asm__ __volatile__(
-       "xchgl %0, %1"
-       : "=r"(ret), "=m"(*spinlock)
+       "xchgl %b0, %1"
+       : "=q"(ret), "=m"(*spinlock)
        : "0"(1), "m"(*spinlock)
        : "memory");
 
@@ -41,7 +42,26 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 
 #endif /* X86_ARCH */
 
+#ifdef IA64_ARCH
+#  define SPINLOCK_DEFINED
+static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
+{
+        register long result;
+
+        __asm__ __volatile__ (
+                "mov ar.ccv=r0\n"
+                ";;\n"
+                "cmpxchg4.acq %0=[%2],%1,ar.ccv\n"
+                : "=r"(result) : "r"(1), "r"(spinlock) : "ar.ccv", "memory");
+        return result;
+}
+#  define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
+
+#endif
+
+#define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
 #ifdef SPARC_ARCH
+#  define SPINLOCK_DEFINED
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   char ret = 0;
@@ -58,6 +78,7 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 #endif /* SPARC_ARCH */
 
 #ifdef ALPHA_ARCH
+#  define SPINLOCK_DEFINED
 static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   long unsigned ret, temp;
@@ -84,6 +105,7 @@ static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinl
 #endif /* ALPHA_ARCH */
 
 #ifdef RS6K_ARCH
+#  define SPINLOCK_DEFINED
 #define pm2_spinlock_testandset(volatile unsigned *spinlock) \
   (*(spinlock) ? 1 : (*(spinlock)=1,0))
 
@@ -91,6 +113,7 @@ static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinl
 #endif /* RS6K_ARCH */
 
 #ifdef MIPS_ARCH
+#  define SPINLOCK_DEFINED
 static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   long unsigned ret, temp;
@@ -116,6 +139,7 @@ static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinl
 #endif /* MIPS_ARCH */
 
 #ifdef PPC_ARCH
+#  define SPINLOCK_DEFINED
 #define sync() __asm__ __volatile__ ("sync")
 
 static __inline__ unsigned __compare_and_swap (long unsigned *p, long unsigned oldval, long unsigned newval)
@@ -142,4 +166,7 @@ static __inline__ unsigned __compare_and_swap (long unsigned *p, long unsigned o
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
 #endif /* PPC_ARCH */
 
+#ifndef SPINLOCK_DEFINED
+#  error pm2_spinlock_{testandset,release} not defined for this ARCH
+#endif
 #endif /* TESTANDSET_EST_DEF */

@@ -19,7 +19,12 @@
 #ifdef PTHREAD
 
 #include <pthread.h>
-#include "timing.h"
+#define X86_ARCH
+#include "tbx_timing.h"
+
+//#define PROF_IN()
+//#define PROF_OUT()
+#include "tbx_timing.c"
 
 #define marcel_mutex_t             pthread_mutex_t
 #define marcel_mutex_init          pthread_mutex_init
@@ -230,7 +235,7 @@ int marcel_main(int argc, char **argv)
   create_tube (&tube_1) ;
 
 #ifdef PTHREAD
-  timing_init();
+  tbx_timing_init();
 #else
   marcel_init(&argc, argv);
 

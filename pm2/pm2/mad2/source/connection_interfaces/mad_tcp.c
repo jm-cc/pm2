@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.23  2000/06/07 08:12:08  oaumage
+- Retour a des bases saines
+
 Revision 1.22  2000/06/06 16:52:51  oaumage
 - Correction synchronisation
 
@@ -117,7 +120,7 @@ ______________________________________________________________________________
  */
 
 #define USE_MARCEL_POLL
-/* #define DEBUG */
+#define DEBUG
 #include "madeleine.h"
 
 #include <stdlib.h>

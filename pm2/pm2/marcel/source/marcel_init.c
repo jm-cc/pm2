@@ -46,7 +46,9 @@ marcel_test_activity(void)
 static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
 {
   int i, j;
+#ifdef MA__LWPS
   unsigned __nb_lwp = 0;
+#endif
 
   if (!argc)
     return;
@@ -228,10 +230,10 @@ typedef struct {
 typedef struct {
 	struct {
 		int section_number;
-	} __attribute__((aligned));
+	} a __attribute__((aligned));
 	struct {
 		__ma_init_info_t infos[2];
-	} __attribute__((aligned));
+	} b __attribute__((aligned));
 } __attribute__((aligned)) __ma_init_section_index_t;
 	
 
@@ -242,8 +244,8 @@ typedef struct {
   const __ma_init_index_t __ma_init_index_##number \
     __attribute__((section(__MA_INIT_SECTION "index." #number))) \
     = { .infos=(tbx_container_of(&__ma_init_info_##number, \
-			    __ma_init_section_index_t, section_number) \
-    		->infos), \
+			     __ma_init_section_index_t, a.section_number) \
+    		->b.infos), \
         .prio=number, .debug=text }
 
 #define ADD_INIT_SECTION(number, text) _ADD_INIT_SECTION(number, text)

@@ -377,7 +377,7 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_READ_PAGE_REQ_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_READ_PAGE_REQ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_READ_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -412,7 +412,7 @@ tfprintf(stderr, "DSM_LRPC_WRITE_PAGE_REQ_threaded_func waitdata done"
 
 void DSM_LRPC_WRITE_PAGE_REQ_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_WRITE_PAGE_REQ_threaded_func, NULL);
 }
 
 //#define USE_DOUBLE_MAPPING 1
@@ -549,7 +549,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 
 void DSM_LRPC_SEND_PAGE_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_PAGE_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_PAGE_threaded_func, NULL);
 }
  
 
@@ -578,7 +578,7 @@ static void DSM_LRPC_INVALIDATE_REQ_threaded_func(void)
 
 void DSM_LRPC_INVALIDATE_REQ_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_INVALIDATE_REQ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_INVALIDATE_REQ_threaded_func, NULL);
 }
 
 
@@ -885,7 +885,7 @@ void DSM_LRPC_SEND_DIFFS_threaded_func(void)
 
 void DSM_LRPC_SEND_DIFFS_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_DIFFS_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_DIFFS_threaded_func, NULL);
 }
 
 /* Using message aggregation to improve performance: */
@@ -948,7 +948,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
 
 void DSM_LRPC_SEND_MULTIPLE_DIFFS_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func, NULL);
 }
 
 
@@ -984,7 +984,7 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -1020,7 +1020,7 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 
 void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_func(void)
 {
-  pm2_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func, NULL);
 }
 
 
@@ -1081,7 +1081,7 @@ void DSM_LRPC_SEND_MULTIPLE_PAGES_READ_func(void)
 #ifdef DEBUG_HYP
   tfprintf(stderr, "DSM_LRPC_SEND_MULTIPLE_PAGES_READ_func called\n");
 #endif
-  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func, NULL);
 }
  
 
@@ -1142,6 +1142,6 @@ void DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_func(void)
 #ifdef DEBUG_HYP
   tfprintf(stderr, "DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_func called\n");
 #endif
-  pm2_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func, NULL);
+  pm2_service_thread_create((pm2_func_t) DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func, NULL);
 }
  

@@ -610,7 +610,7 @@ mad_pack(p_mad_connection_t   connection,
     {
       lnk = connection->link_array[0];
     }
-  TRACE("Link chosen : %d", lnk->id);
+  TRACE("Link chosen : %d", (int)lnk->id);
 
   link_id               = lnk->id;
   link_mode             = lnk->link_mode;

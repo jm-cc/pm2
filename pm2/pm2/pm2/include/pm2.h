@@ -37,6 +37,7 @@ extern "C" {
 #include "dsm_pm2.h"
 #endif
 
+// Initialisation
 #include "pm2_common.h"
 
 #define MAX_STARTUP_FUNCS   32
@@ -54,7 +55,7 @@ void pm2_push_startup_func(pm2_startup_func_t f, void *args);
  * for the initial process.
  */
 
-#define pm2_init(argc, argv) common_init(argc, argv)
+#define pm2_init(argc, argv) common_init(argc, argv, NULL)
 
 // Needs to be called after profile_init()
 _PRIVATE_ void pm2_init_data(int *argc, char **argv);

@@ -208,11 +208,18 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   ntbx_tcp_address_t           address;
 
   LOG_IN();
+  if (strcmp(adapter->dir_adapter->name, "default"))
+    FAILURE("unsupported adapter");
+  
   adapter_specific  = TBX_MALLOC(sizeof(mad_tcp_adapter_specific_t));
   adapter_specific->connection_port   = -1;
   adapter_specific->connection_socket = -1;
   adapter->specific                   = adapter_specific;
-  adapter->mtu                        = 1UL << (sizeof(size_t) - 1);
+#ifdef SSIZE_MAX
+  adapter->mtu                        = min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
+#else // SSIZE_MAX
+  adapter->mtu                        = MAD_FORWARD_MAX_MTU;
+#endif // SSIZE_MAX
 
   adapter_specific->connection_socket =
     ntbx_tcp_socket_create(&address, 0);

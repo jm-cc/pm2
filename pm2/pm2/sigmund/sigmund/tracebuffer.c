@@ -83,7 +83,7 @@ void init()
   int fd; 
   char fut_print[550];
   nb_code = 0;
-  code_copy(FUT_SETUP_CODE, "fut_setup");
+  /*  code_copy(FUT_SETUP_CODE, "fut_setup");
   code_copy(FUT_KEYCHANGE_CODE, "fut_keychange");
   code_copy(FUT_RESET_CODE, "fut_reset");
   code_copy(FUT_CALIBRATE0_CODE, "fut_calibrate0");
@@ -91,7 +91,7 @@ void init()
   code_copy(FUT_CALIBRATE2_CODE, "fut_calibrate2");
   code_copy(FUT_SWITCH_TO_CODE, "fut_switch_to");
   code_copy(FUT_MAIN_ENTRY_CODE, "main_entry");
-  code_copy(FUT_MAIN_EXIT_CODE, "main_exit");
+  code_copy(FUT_MAIN_EXIT_CODE, "main_exit");*/
   get_builddir(fut_print);
   strcat(fut_print, "/profile/include/fut_print.h");
   fd = open(fut_print, O_RDONLY);

@@ -53,10 +53,11 @@ void marcel_win_sys_init(int *argc, char *argv[])
 
   ISOADDR_AREA_TOP = ISOADDR_AREA_BOTTOM + ISOADDR_AREA_SIZE;
 
-  // Ajustements pour aligner sur une frontière de SLOT_SIZE
-  ISOADDR_AREA_BOTTOM = (void *)(((unsigned long)ISOADDR_AREA_BOTTOM + SLOT_SIZE-1)
-				 & ~(SLOT_SIZE-1));
-  ISOADDR_AREA_TOP = (void *)((unsigned long)ISOADDR_AREA_TOP & ~(SLOT_SIZE-1));
+  // Ajustements pour aligner sur une frontière de THREAD_SLOT_SIZE
+  ISOADDR_AREA_BOTTOM = (void *)(((unsigned long)ISOADDR_AREA_BOTTOM +
+                                  THREAD_SLOT_SIZE-1) & ~(THREAD_SLOT_SIZE-1));
+  ISOADDR_AREA_TOP = (void *)((unsigned long)ISOADDR_AREA_TOP & 
+                              ~(THREAD_SLOT_SIZE-1));
 #endif
 }
 

@@ -69,11 +69,6 @@ void LONGJMP(jmp_buf buf, int val)
 #define longjmp(buf, v)	LONGJMP(buf, v)
 #endif
 
-
-#ifdef STACK_OVERFLOW_DETECT
-#error "STACK_OVERFLOW_DETECT IS CURRENTLY NOT IMPLEMENTED"
-#endif
-
 static long page_size;
 
 #define PA(X) ((((long)X)+(page_size-1)) & ~(page_size-1))
@@ -103,28 +98,6 @@ void breakpoint()
 
 /* =========== specifs =========== */
 int marcel_cancel(marcel_t pid);
-
-#ifdef STACK_OVERFLOW_DETECT
-
-void stack_protect(marcel_t t)
-{
-  int r;
-
-   r = mprotect((char *)PA(t->stack_base), page_size, PROT_NONE);
-   if(r == -1)
-      RAISE(CONSTRAINT_ERROR);
-}
-
-void stack_unprotect(marcel_t t)
-{
-  int r;
-
-   r = mprotect((char *)PA(t->stack_base), page_size, PROT_READ | PROT_WRITE);
-   if(r == -1)
-      RAISE(CONSTRAINT_ERROR);
-}
-
-#endif
 
 #ifdef MA__DEBUG
 void _showsigmask(char *msg)
@@ -248,9 +221,6 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       init_task_desc(new_task);
       new_task->stack_base = attr->stack_base;
 
-#ifdef STACK_OVERFLOW_DETECT
-      stack_protect(new_task);
-#endif
       new_task->static_stack = TRUE;
     } else { /* (!attr->stack_base) */
       char *bottom;
@@ -488,10 +458,6 @@ int marcel_exit(any_t val)
     // courant de manière à pouvoir le détruire par la suite...
     cur_lwp->sec_desc->private_val = (any_t)cur;
 
-#ifdef STACK_OVERFLOW_DETECT
-    stack_unprotect(cur);
-#endif
-
     // On bascule maintenant sur la pile de secours : marcel_self()
     // devient donc égal à cur_lwp->sec_desc...
     call_ST_FLUSH_WINDOWS();
@@ -594,10 +560,6 @@ int marcel_exit(any_t val)
 #ifdef MA__LWPS
     // On recalcule "cur_lwp" car c'est une variable locale.
     cur_lwp = marcel_self()->lwp;
-#endif
-
-#ifdef STACK_OVERFLOW_DETECT
-    stack_unprotect(cur_lwp->sec_desc->father);
 #endif
 
     // On détruit l'ancien thread
@@ -809,9 +771,6 @@ marcel_t marcel_alloc_stack(unsigned size)
   init_task_desc(t);
   t->stack_base = st;
 
-#ifdef STACK_OVERFLOW_DETECT
-  stack_protect(t);
-#endif
 #ifdef STACK_CHECKING_ALLOWED
   memset(t->stack_base, 0, size);
 #endif

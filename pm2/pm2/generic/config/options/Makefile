@@ -15,7 +15,10 @@
 
 LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse
 # mad1 profile stackalign
-MODULES := $(LIBS) swann leonie
+MODULES := swann leonie stackalign
+
+# Directement dans les sources:
+# stackalign
 
 all:
 
@@ -55,7 +58,7 @@ duplique_global:
 		fi ; \
 	    done ; \
 	} ; \
-	send "debug gdb opt profile" "$(MODULES)" ; \
-	send "debug gdb opt" "stackalign" ; \
+	send "debug gdb opt profile" "$(LIBS)" ; \
+	send "debug gdb opt" "$(MODULES)" ; \
 	send "build_static build_dynamic build_both" "$(LIBS)" ; \
 	append_ligne_dep "`cat linkmode.dep | head -1`" "$(LIBS)"

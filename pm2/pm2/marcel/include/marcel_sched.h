@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.7  2000/03/09 11:07:34  rnamyst
+Modified to use the sched_data() macro.
+
 Revision 1.6  2000/03/06 14:55:44  rnamyst
 Modified to include "marcel_flags.h".
 
@@ -190,7 +193,7 @@ void marcel_poll(marcel_pollid_t id, any_t arg);
 static __inline__ void sched_lock(__lwp_t *lwp) __attribute__ ((unused));
 static __inline__ void sched_lock(__lwp_t *lwp)
 {
-  marcel_lock_acquire(&lwp->sched_queue_lock);
+  marcel_lock_acquire(&(sched_data(lwp).sched_queue_lock));
 }
 
 /* Must be called when a LWP is not modifying the local queue any
@@ -198,7 +201,7 @@ static __inline__ void sched_lock(__lwp_t *lwp)
 static __inline__ void sched_unlock(__lwp_t *lwp) __attribute__ ((unused));
 static __inline__ void sched_unlock(__lwp_t *lwp)
 {
-  marcel_lock_release(&lwp->sched_queue_lock);
+  marcel_lock_release(&(sched_data(lwp).sched_queue_lock));
 }
 
 #ifdef X86_ARCH
@@ -207,8 +210,8 @@ static __inline__ void sched_unlock(__lwp_t *lwp)
 #include "sys/upcalls.h"
 #endif
 
-static __inline__ void lock_task() __attribute__ ((unused));
-static __inline__ void lock_task()
+static __inline__ void lock_task(void) __attribute__ ((unused));
+static __inline__ void lock_task(void)
 {
 #ifdef SMP
   atomic_inc(&marcel_self()->lwp->_locked);
@@ -224,8 +227,8 @@ static __inline__ void lock_task()
 #endif
 }
 
-static __inline__ void unlock_task() __attribute__ ((unused));
-static __inline__ void unlock_task()
+static __inline__ void unlock_task(void) __attribute__ ((unused));
+static __inline__ void unlock_task(void)
 {
 #ifdef SMP
   atomic_dec(&marcel_self()->lwp->_locked);
@@ -241,8 +244,8 @@ static __inline__ void unlock_task()
 #endif
 }
 
-static __inline__ int locked() __attribute__ ((unused));
-static __inline__ int locked()
+static __inline__ int locked(void) __attribute__ ((unused));
+static __inline__ int locked(void)
 {
 #ifdef SMP
   return atomic_read(&marcel_self()->lwp->_locked);

@@ -65,10 +65,6 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	pm2debug_setup(&marcel_lock_task_debug, PM2DEBUG_SHOW_FILE, 1);
 #endif
 
-#ifdef DEBUG_SCHED
-	pm2debug_setup(&marcel_sched_debug, PM2DEBUG_SHOW_FILE, 1);
-#endif
-
 	pm2debug_init_ext(argc, argv, debug_flags);
 }
 

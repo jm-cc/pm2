@@ -33,6 +33,11 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.8  2000/02/08 17:49:52  oaumage
+- support de la net toolbox
+- mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
+              vers la net toolbox
+
 Revision 1.7  2000/02/04 16:35:38  oaumage
 - DMA optionnel
 - correction de la transmission des `node_id'
@@ -547,7 +552,7 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
   p_mad_sisci_adapter_specific_t    adapter_specific = adapter->specific;
   mad_sisci_connection_specific_t   connection[configuration->size];
   sci_error_t                       sisci_error      = SCI_ERR_OK;
-  mad_host_id_t                     i;
+  ntbx_host_id_t                     i;
   
   LOG_IN();
   adapter_specific->remote_node_id =
@@ -669,7 +674,7 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 	    &connection_specific->local_segment;
 	  p_mad_sisci_remote_segment_t        remote_segment      =
 	    &connection_specific->remote_segment;
-	  mad_host_id_t j;	  
+	  ntbx_host_id_t j;	  
 	  p_mad_sisci_internal_segment_data_t data                =
 	    remote_segment->map_addr;
 	  
@@ -897,7 +902,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
   p_mad_configuration_t               configuration    =
     &driver->madeleine->configuration;
   sci_error_t                         sisci_error      = SCI_ERR_OK;
-  mad_host_id_t host_id;
+  ntbx_host_id_t host_id;
 
   LOG_IN();
 
@@ -958,7 +963,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
       
       if (host_id == configuration->local_host_id)
 	{
-	  mad_host_id_t        remote_host_id;
+	  ntbx_host_id_t        remote_host_id;
 	  p_mad_sisci_status_t status = local_segment->map_addr;
 
 	  for (remote_host_id = 0;
@@ -1281,7 +1286,7 @@ mad_sisci_connect(p_mad_connection_t connection)
 void
 mad_sisci_accept(p_mad_channel_t channel)
 {
-  mad_host_id_t                       host_id                    = -1;
+  ntbx_host_id_t                       host_id                    = -1;
   p_mad_adapter_t                     adapter                    =
     channel->adapter;
   p_mad_sisci_adapter_specific_t      adapter_specific           =
@@ -1308,7 +1313,7 @@ mad_sisci_accept(p_mad_channel_t channel)
 
   do
     {
-      mad_host_id_t          remote_host_id;
+      ntbx_host_id_t          remote_host_id;
       p_mad_sisci_status_t   accept_local_data =
 	accept_local_segment->map_addr;
       
@@ -1421,9 +1426,9 @@ mad_sisci_after_open_channel(p_mad_channel_t channel)
   p_mad_driver_t                    driver           = adapter->driver;
   p_mad_configuration_t             configuration    =
     &driver->madeleine->configuration;
-  const mad_host_id_t               rank             =
+  const ntbx_host_id_t               rank             =
     configuration->local_host_id;
-  mad_host_id_t                     host_id;
+  ntbx_host_id_t                     host_id;
   sci_error_t                         sisci_error                 =
     SCI_ERR_OK;
   
@@ -1611,16 +1616,16 @@ mad_sisci_adapter_exit(p_mad_adapter_t adapter)
 p_mad_connection_t 
 mad_sisci_receive_message(p_mad_channel_t channel)
 {
-  static mad_host_id_t                     host_id          = 0;
+  static ntbx_host_id_t                     host_id          = 0;
          p_mad_adapter_t                   adapter          =
 	   channel->adapter;
 	 p_mad_driver_t                    driver           =
 	   adapter->driver;
 	 p_mad_configuration_t             configuration    =
 	   &driver->madeleine->configuration;
-	 const mad_host_id_t               rank             =
+	 const ntbx_host_id_t               rank             =
 	   configuration->local_host_id;
-	 mad_host_id_t                     remote_host_id;
+	 ntbx_host_id_t                     remote_host_id;
 	 
   LOG_IN();
 

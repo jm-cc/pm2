@@ -1,0 +1,1 @@
+PM2_PROTOCOLS=pvm

@@ -15,10 +15,11 @@
  */
 #include "marcel.h"
 
+#include "marcel_for_pthread.h"
+
 #include <errno.h>
 
 #include "marcel_fastlock.h"
-#include "marcel_restart.h" // pour thread_self()
 
      /****************************************************************
       * CONDITIONS
@@ -46,8 +47,7 @@ DEF_MARCEL_POSIX(int, cond_init,
   if(!attr) {
     attr = &marcel_condattr_default;
   }
-  cond->__c_lock.__status = 0; //, 0};
-  cond->__c_lock.__spinlock = 0; //, 0};
+  cond->__c_lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
   cond->__c_waiting = NULL;
   //LOG_OUT();
   return 0;
@@ -99,7 +99,22 @@ DEF_MARCEL_POSIX(int, cond_wait, (marcel_cond_t *cond,
   marcel_lock_acquire(&cond->__c_lock.__spinlock);
   __marcel_unlock_spinlocked(&mutex->__m_lock);
   marcel_lock_release(&mutex->__m_lock.__spinlock);
-  __marcel_block_spinlocked(&cond->__c_lock, marcel_self()); /* Fait le release et le unlock_task() */
+  {
+	  blockcell c;
+	  
+	  __marcel_register_spinlocked(&cond->__c_lock, marcel_self(), &c);
+
+	  mdebug("blocking %p (cell %p) in cond_wait %p\n", marcel_self(), &c,
+		 cond);
+	  INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
+		  c.blocked, 
+		  marcel_lock_release(&cond->__c_lock.__spinlock),
+		  marcel_lock_acquire(&cond->__c_lock.__spinlock));
+	  marcel_lock_release(&cond->__c_lock.__spinlock);
+	  unlock_task();
+	  mdebug("unblocking %p (cell %p) in cond_wait %p\n", marcel_self(), &c,
+		 cond);
+  }
 
   marcel_mutex_lock(mutex);
   LOG_OUT();
@@ -115,6 +130,7 @@ DEF_MARCEL_POSIX(int, cond_timedwait,
   unsigned long timeout;
   int r = 0;
 
+  RAISE(NOT_IMPLEMENTED);
   LOG_IN();
   tv.tv_sec = abstime->tv_sec;
   tv.tv_usec = abstime->tv_nsec / 1000;
@@ -141,12 +157,12 @@ DEF_MARCEL_POSIX(int, cond_timedwait,
     blockcell c;
     __marcel_register_spinlocked(&cond->__c_lock, marcel_self(), &c);
     marcel_lock_release(&cond->__c_lock.__spinlock);
-    if (__marcel_tempo_give_hand(timeout, &c.blocked, NULL)) {
+    //if (__marcel_tempo_give_hand(timeout, &c.blocked, NULL)) {
       if (__marcel_unregister_spinlocked(&cond->__c_lock, &c)) {
 	pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
       }
       r=ETIMEDOUT;
-    }
+      //}
   }
 
   marcel_mutex_lock(mutex);

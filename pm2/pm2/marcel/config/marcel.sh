@@ -1,4 +1,6 @@
 PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -fomit-frame-pointer"
+PM2_MARCEL_LIBS_SCRIPTS="$PM2_MARCEL_LIBS_SCRIPTS ${PM2_ROOT}/marcel/marcel.lds"
+PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -I${PM2_ROOT}/marcel/autogen-include"
 
 case " $PM2_LIBS " in
     *\ mad?\ *) ;;
@@ -12,3 +14,6 @@ if [ "$PM2_SYS" = SOLARIS_SYS ]; then
 	PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lposix4"
     fi
 fi
+
+PM2_MARCEL_GENERATE_INCLUDE=true
+

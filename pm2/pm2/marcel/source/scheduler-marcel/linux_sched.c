@@ -174,54 +174,12 @@
 //	return BASE_TIMESLICE(p);
 //}
 
-/*
- * These are the runqueue data structures:
- */
-
-#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
-
-typedef struct runqueue runqueue_t;
-
-struct prio_array {
-	int nr_active;
-	unsigned long bitmap[BITMAP_SIZE];
-	struct list_head queue[MAX_PRIO];
-};
-
-/*
- * This is the main, per-CPU runqueue data structure.
- *
- * Locking rule: those places that want to lock multiple runqueues
- * (such as the load balancing or the thread migration code), lock
- * acquire operations must be ordered by ascending &runqueue.
- */
-//MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
-//MA_DEFINE_PER_LWP(marcel_task_t *, idle_thread)=NULL;
-struct runqueue {
-	ma_spinlock_t lock;
-	unsigned long long nr_switches;
-	unsigned long nr_running, expired_timestamp, nr_uninterruptible,
-		timestamp_last_tick;
-	marcel_task_t *curr;//, *idle;
-	struct mm_struct *prev_mm;
-	ma_prio_array_t *active, *expired, arrays[2];
-//	int best_expired_prio, prev_cpu_load[NR_CPUS];
-#ifdef CONFIG_NUMA
-	atomic_t *node_nr_running;
-	int prev_node_load[MAX_NUMNODES];
+#ifdef MA__LWPS
+MA_DEFINE_PER_LWP(ma_runqueue_t, runqueues);
+MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
 #endif
-	marcel_task_t *migration_thread;
-	struct list_head migration_queue;
-
-	atomic_t nr_iowait;
-};
-
-static MA_DEFINE_PER_LWP(struct runqueue, runqueues);
-
-#define lwp_rq(lwp)		(&ma_per_lwp(runqueues, (lwp)))
-#define this_rq()		(&__ma_get_lwp_var(runqueues))
-#define task_rq(p)		lwp_rq(ma_task_lwp(p))
-#define lwp_curr(lwp)		(lwp_rq(lwp)->curr) //ma_per_lwp(current_thread, lwp))
+ma_runqueue_t ma_main_runqueue;
+ma_runqueue_t ma_idle_runqueue;
 
 /*
  * Default context-switch locking:
@@ -241,18 +199,18 @@ static MA_DEFINE_PER_LWP(struct runqueue, runqueues);
 static atomic_t node_nr_running[MAX_NUMNODES] ____cacheline_maxaligned_in_smp =
 	{[0 ...MAX_NUMNODES-1] = ATOMIC_INIT(0)};
 
-static inline void nr_running_init(struct runqueue *rq)
+static inline void nr_running_init(ma_runqueue_t *rq)
 {
 	rq->node_nr_running = &node_nr_running[0];
 }
 
-static inline void nr_running_inc(runqueue_t *rq)
+static inline void nr_running_inc(ma_runqueue_t *rq)
 {
 	atomic_inc(rq->node_nr_running);
 	rq->nr_running++;
 }
 
-static inline void nr_running_dec(runqueue_t *rq)
+static inline void nr_running_dec(ma_runqueue_t *rq)
 {
 	atomic_dec(rq->node_nr_running);
 	rq->nr_running--;
@@ -282,46 +240,61 @@ __init void node_nr_running_init(void)
  * interrupts.  Note the ordering: we can safely lookup the task_rq without
  * explicitly disabling preemption.
  */
-static inline runqueue_t *task_rq_lock(marcel_task_t *p)
+#ifdef MA__LWPS
+static inline ma_runqueue_t *task_rq(marcel_task_t *p)
 {
-	struct runqueue *rq;
+	ma_runqueue_t *rq;
+	if ((rq = p->sched.internal.cur_rq))
+		return rq;
+	sched_debug("using default queue for %s\n",p->name);
+	return p->sched.internal.init_rq;
+
+}
+#else
+#define task_rq(p) (&ma_main_runqueue)
+#endif
+static inline ma_runqueue_t *task_rq_lock(marcel_task_t *p)
+{
+	ma_runqueue_t *rq;
 
 repeat_lock_task:
 	//local_irq_save(*flags);
 	ma_local_bh_disable();
 	rq = task_rq(p);
-	mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_locking(%p)\n",rq);
+	sched_debug("task_rq_locking(%p)\n",rq);
+	if (rq==&ma_main_runqueue)
+	  sched_debug("main queue\n");
 	ma_spin_lock(&rq->lock);
 	if (tbx_unlikely(rq != task_rq(p))) {
-		mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_unlocking(%p)\n",rq);
+		sched_debug("task_rq_unlocking(%p)\n",rq);
 		ma_spin_unlock_softirq(&rq->lock);
 		goto repeat_lock_task;
 	}
-	mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_locked(%p)\n",rq);
+	sched_debug("task_rq_locked(%p)\n",rq);
 	return rq;
 }
 
-static inline void task_rq_unlock(runqueue_t *rq)
+static inline void task_rq_unlock(ma_runqueue_t *rq)
 {
-	mdebugl(PM2DEBUG_TRACELEVEL,"task_rq_unlock(%p)\n",rq);
+	sched_debug("task_rq_unlock(%p)\n",rq);
 	ma_spin_unlock_softirq(&rq->lock);
 }
 
 /*
  * rq_lock - lock a given runqueue and disable interrupts.
  */
-static inline runqueue_t *this_rq_lock(void)
+static inline ma_runqueue_t *this_rq_lock(void)
 {
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 
 	ma_local_bh_disable();
-	rq = this_rq();
+	rq = ma_this_rq();
 	ma_spin_lock(&rq->lock);
 
 	return rq;
 }
 
-static inline void rq_unlock(runqueue_t *rq)
+static inline void rq_unlock(ma_runqueue_t *rq)
 {
 	ma_spin_unlock_softirq(&rq->lock);
 }
@@ -333,8 +306,11 @@ static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
 	array->nr_active--;
 	list_del(&p->sched.internal.run_list);
-	if (list_empty(array->queue + p->sched.internal.prio))
+	if (list_empty(array->queue + p->sched.internal.prio)) {
+		sched_debug("array %p empty\n",array);
 		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
+	}
+	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
 }
 
 static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
@@ -343,6 +319,7 @@ static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 	__ma_set_bit(p->sched.internal.prio, array->bitmap);
 	array->nr_active++;
 	p->sched.internal.array = array;
+	sched_debug("enqueued %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
 }
 
 /*
@@ -381,9 +358,12 @@ static int effective_prio(marcel_task_t *p)
 /*
  * __activate_task - move a task to the runqueue.
  */
-static inline void __activate_task(marcel_task_t *p, runqueue_t *rq)
+static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	enqueue_task(p, rq->active);
+#ifdef MA__LWPS
+	p->sched.internal.cur_rq = rq;
+#endif
 	nr_running_inc(rq);
 }
 
@@ -471,7 +451,7 @@ static void recalc_task_prio(marcel_task_t *p, unsigned long long now)
  * Update all the scheduling statistics stuff. (sleep average
  * calculation, priority modifiers, etc.)
  */
-static inline void activate_task(marcel_task_t *p, runqueue_t *rq)
+static inline void activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 //	unsigned long long now = sched_clock();
 
@@ -506,13 +486,16 @@ static inline void activate_task(marcel_task_t *p, runqueue_t *rq)
 /*
  * deactivate_task - remove a task from the runqueue.
  */
-static inline void deactivate_task(marcel_task_t *p, runqueue_t *rq)
+static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	nr_running_dec(rq);
 	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
 		rq->nr_uninterruptible++;
 	dequeue_task(p, p->sched.internal.array);
 	p->sched.internal.array = NULL;
+#ifdef MA__LWPS
+	p->sched.internal.cur_rq = NULL;
+#endif
 }
 
 /*
@@ -548,7 +531,7 @@ static inline void resched_task(marcel_task_t *p)
  */
 inline int task_curr(marcel_task_t *p)
 {
-	return lwp_curr(ma_task_lwp(p)) == p;
+	return ma_lwp_curr(ma_task_lwp(p)) == p;
 }
 
 #if 0
@@ -566,7 +549,7 @@ typedef struct {
 static int __set_cpus_allowed(task_t *p, cpumask_t new_mask,
 				migration_req_t *req)
 {
-	runqueue_t *rq = task_rq(p);
+	ma_runqueue_t *rq = ma_task_rq(p);
 
 	p->cpus_allowed = new_mask;
 	/*
@@ -603,7 +586,7 @@ static int __set_cpus_allowed(task_t *p, cpumask_t new_mask,
 void wait_task_inactive(marcel_task_t * p)
 {
 	unsigned long flags;
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 	int preempted;
 
 repeat:
@@ -663,7 +646,7 @@ static int try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
 {
 	int success = 0;
 	long old_state;
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 
 repeat_lock_task:
 	rq = task_rq_lock(p);
@@ -745,7 +728,7 @@ void fastcall ma_sched_fork(marcel_task_t *p)
 #ifdef CONFIG_PREEMPT
 	/*
 	 * During context-switch we hold precisely one spinlock, which
-	 * schedule_tail drops. (in the common case it's this_rq()->lock,
+	 * schedule_tail drops. (in the common case it's ma_this_rq()->lock,
 	 * but it also can be p->switch_lock.) So we compensate with a count
 	 * of 1. Also, we want to start with kernel preemption disabled.
 	 */
@@ -762,7 +745,12 @@ void fastcall ma_sched_fork(marcel_task_t *p)
  */
 void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 {
-	runqueue_t *rq = task_rq_lock(MARCEL_SELF);
+	ma_runqueue_t *rq = ma_task_init_rq(p);
+	LOG_IN();
+
+	MA_BUG_ON(!rq);
+
+	ma_spin_lock_softirq(&rq->lock);
 
 	MA_BUG_ON(p->sched.state != MA_TASK_RUNNING);
 
@@ -782,17 +770,23 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 //	p->prio = effective_prio(p);
 	ma_set_task_lwp(p, LWP_SELF);
 
-	if (tbx_unlikely(!MARCEL_SELF->sched.internal.array))
+	/* il est possible de démarrer sur une autre rq que celle de SELF,
+	 * on ne peut donc pas profiter de ses valeurs */
+//	if (tbx_unlikely(!p->sched.internal.array))
 		__activate_task(p, rq);
-	else {
-		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
-		list_add_tail(&p->sched.internal.run_list,
-			      &MARCEL_SELF->sched.internal.run_list);
-		p->sched.internal.array = MARCEL_SELF->sched.internal.array;
-		p->sched.internal.array->nr_active++;
-		nr_running_inc(rq);
-	}
-	task_rq_unlock(rq);
+//	else {
+//		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
+//		list_add_tail(&p->sched.internal.run_list,
+//			      &MARCEL_SELF->sched.internal.run_list);
+//		p->sched.internal.array = MARCEL_SELF->sched.internal.array;
+//		p->sched.internal.array->nr_active++;
+//#ifdef MA__LWPS
+//		p->sched.internal.cur_rq = rq;
+//#endif
+//		nr_running_inc(rq);
+//	}
+	ma_spin_unlock_softirq(&rq->lock);
+	LOG_OUT();
 }
 
 #if 0
@@ -808,7 +802,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 void fastcall sched_exit(task_t * p)
 {
 	unsigned long flags;
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 
 	local_irq_save(flags);
 	if (p->first_time_slice) {
@@ -845,7 +839,10 @@ void fastcall sched_exit(task_t * p)
  */
 static inline void finish_task_switch(marcel_task_t *prev)
 {
-	runqueue_t *rq = this_rq();
+	ma_runqueue_t *prevrq = ma_prev_rq();
+#ifdef MA__LWPS
+	ma_runqueue_t *rq = ma_this_rq();
+#endif
 //	struct mm_struct *mm = rq->prev_mm;
 	unsigned long prev_task_flags;
 
@@ -863,7 +860,15 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	 * 		Manfred Spraul <manfred@colorfullife.com>
 	 */
 	prev_task_flags = prev->flags;
-	finish_arch_switch(rq, prev);
+
+	/* si le lwp change de runqueue, il faut libérer les deux.
+	 * finish_arch_switch s'occupe de la précédente (ou s'en est déjà occupé
+	 * dans prepare_arch_switch) */
+#ifdef MA__LWPS
+	if (rq && prevrq!=rq)
+		_ma_raw_spin_unlock(&rq->lock);
+#endif
+	finish_arch_switch(prevrq, prev);
 //	if (mm)
 //		mmdrop(mm);
 //	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
@@ -886,7 +891,7 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
  * context_switch - switch to the new MM and the new
  * thread's register state.
  */
-static inline marcel_task_t * context_switch(runqueue_t *rq, marcel_task_t *prev, marcel_task_t *next)
+static inline marcel_task_t * context_switch(ma_runqueue_t *rq, marcel_task_t *prev, marcel_task_t *next)
 {
 //	struct mm_struct *mm = next->mm;
 //	struct mm_struct *oldmm = prev->active_mm;
@@ -905,6 +910,9 @@ static inline marcel_task_t * context_switch(runqueue_t *rq, marcel_task_t *prev
 //	}
 
 	/* Here we just switch the register state and the stack. */
+#ifdef MA__LWPS
+	__ma_get_lwp_var(prev_rq)=rq;
+#endif
 	prev=marcel_switch_to(prev, next);//switch_to(prev, next, prev);
 
 	return prev;
@@ -922,7 +930,8 @@ unsigned long ma_nr_running(void)
 	unsigned long i, sum = 0;
 
 	for (i = 0; i < MA_NR_LWPS; i++)
-		sum += lwp_rq(GET_LWP_BY_NUMBER(i))->nr_running;
+		sum += ma_lwp_rq(GET_LWP_BY_NUMBER(i))->nr_running;
+	sum += ma_main_runqueue.nr_running;
 
 	return sum;
 }
@@ -963,17 +972,33 @@ unsigned long nr_iowait(void)
  * Note this does not disable interrupts like task_rq_lock,
  * you need to do so manually before calling.
  */
-static inline void double_rq_lock(runqueue_t *rq1, runqueue_t *rq2)
+static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	if (rq1 == rq2)
 		ma_spin_lock(&rq1->lock);
 	else {
 		if (rq1 < rq2) {
 			ma_spin_lock(&rq1->lock);
-			ma_spin_lock(&rq2->lock);
+			_ma_raw_spin_lock(&rq2->lock);
 		} else {
 			ma_spin_lock(&rq2->lock);
+			_ma_raw_spin_lock(&rq1->lock);
+		}
+	}
+}
+static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	ma_local_bh_disable();
+
+	if (rq1 == rq2)
+		ma_spin_lock(&rq1->lock);
+	else {
+		if (rq1 < rq2) {
 			ma_spin_lock(&rq1->lock);
+			_ma_raw_spin_lock(&rq2->lock);
+		} else {
+			ma_spin_lock(&rq2->lock);
+			_ma_raw_spin_lock(&rq1->lock);
 		}
 	}
 }
@@ -984,13 +1009,22 @@ static inline void double_rq_lock(runqueue_t *rq1, runqueue_t *rq2)
  * Note this does not restore interrupts like task_rq_unlock,
  * you need to do so manually after calling.
  */
-static inline void double_rq_unlock(runqueue_t *rq1, runqueue_t *rq2)
+static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	ma_spin_unlock(&rq1->lock);
 	if (rq1 != rq2)
-		ma_spin_unlock(&rq2->lock);
+		_ma_raw_spin_unlock(&rq2->lock);
+}
+static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	ma_spin_unlock(&rq1->lock);
+	if (rq1 != rq2)
+		_ma_raw_spin_unlock(&rq2->lock);
+
+	ma_local_bh_enable();
 }
 
+#if 0
 #ifdef CONFIG_NUMA
 /*
  * If dest_cpu is allowed for this process, migrate the task to it.
@@ -1000,7 +1034,7 @@ static inline void double_rq_unlock(runqueue_t *rq1, runqueue_t *rq2)
  */
 static void sched_migrate_task(task_t *p, int dest_cpu)
 {
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 	migration_req_t req;
 	unsigned long flags;
 	cpumask_t old_mask, new_mask = cpumask_of_cpu(dest_cpu);
@@ -1099,17 +1133,17 @@ static int find_busiest_node(int this_node)
 
 	if (!nr_cpus_node(this_node))
 		return node;
-	this_load = maxload = (this_rq()->prev_node_load[this_node] >> 1)
+	this_load = maxload = (ma_this_rq()->prev_node_load[this_node] >> 1)
 		+ (10 * atomic_read(&node_nr_running[this_node])
 		/ nr_cpus_node(this_node));
-	this_rq()->prev_node_load[this_node] = this_load;
+	ma_this_rq()->prev_node_load[this_node] = this_load;
 	for_each_node_with_cpus(i) {
 		if (i == this_node)
 			continue;
-		load = (this_rq()->prev_node_load[i] >> 1)
+		load = (ma_this_rq()->prev_node_load[i] >> 1)
 			+ (10 * atomic_read(&node_nr_running[i])
 			/ nr_cpus_node(i));
-		this_rq()->prev_node_load[i] = load;
+		ma_this_rq()->prev_node_load[i] = load;
 		if (load > maxload && (100*load > NODE_THRESHOLD*this_load)) {
 			maxload = load;
 			node = i;
@@ -1119,6 +1153,7 @@ static int find_busiest_node(int this_node)
 }
 
 #endif /* CONFIG_NUMA */
+#endif
 
 #ifdef MA__LWPS
 #warning A faire...
@@ -1127,11 +1162,11 @@ static int find_busiest_node(int this_node)
 /*
  * double_lock_balance - lock the busiest runqueue
  *
- * this_rq is locked already. Recalculate nr_running if we have to
+ * ma_this_rq is locked already. Recalculate nr_running if we have to
  * drop the runqueue lock.
  */
-static inline unsigned int double_lock_balance(runqueue_t *this_rq,
-	runqueue_t *busiest, int this_cpu, int idle, unsigned int nr_running)
+static inline unsigned int double_lock_balance(ma_runqueue_t *this_rq,
+	ma_runqueue_t *busiest, int this_cpu, int idle, unsigned int nr_running)
 {
 	if (unlikely(!spin_trylock(&busiest->lock))) {
 		if (busiest < this_rq) {
@@ -1152,10 +1187,10 @@ static inline unsigned int double_lock_balance(runqueue_t *this_rq,
 /*
  * find_busiest_queue - find the busiest runqueue among the cpus in cpumask.
  */
-static inline runqueue_t *find_busiest_queue(runqueue_t *this_rq, int this_cpu, int idle, int *imbalance, cpumask_t cpumask)
+static inline ma_runqueue_t *find_busiest_queue(ma_runqueue_t *this_rq, int this_cpu, int idle, int *imbalance, cpumask_t cpumask)
 {
 	int nr_running, load, max_load, i;
-	runqueue_t *busiest, *rq_src;
+	ma_runqueue_t *busiest, *rq_src;
 
 	/*
 	 * We search all runqueues to find the most busy one.
@@ -1232,7 +1267,7 @@ out:
  * pull_task - move a task from a remote runqueue to the local runqueue.
  * Both runqueues must be locked.
  */
-static inline void pull_task(runqueue_t *src_rq, ma_prio_array_t *src_array, task_t *p, runqueue_t *this_rq, int this_cpu)
+static inline void pull_task(ma_runqueue_t *src_rq, ma_prio_array_t *src_array, task_t *p, ma_runqueue_t *this_rq, int this_cpu)
 {
 	dequeue_task(p, src_array);
 	nr_running_dec(src_rq);
@@ -1254,7 +1289,7 @@ static inline void pull_task(runqueue_t *src_rq, ma_prio_array_t *src_array, tas
  */
 
 static inline int
-can_migrate_task(task_t *tsk, runqueue_t *rq, int this_cpu, int idle)
+can_migrate_task(task_t *tsk, ma_runqueue_t *rq, int this_cpu, int idle)
 {
 	unsigned long delta = rq->timestamp_last_tick - tsk->timestamp;
 
@@ -1281,10 +1316,10 @@ can_migrate_task(task_t *tsk, runqueue_t *rq, int this_cpu, int idle)
  * We call this with the current runqueue locked,
  * irqs disabled.
  */
-static void load_balance(runqueue_t *this_rq, int idle, cpumask_t cpumask)
+static void load_balance(ma_runqueue_t *this_rq, int idle, cpumask_t cpumask)
 {
 	int imbalance, idx, this_cpu = smp_processor_id();
-	runqueue_t *busiest;
+	ma_runqueue_t *busiest;
 	ma_prio_array_t *array;
 	struct list_head *head, *curr;
 	task_t *tmp;
@@ -1375,7 +1410,7 @@ out:
 #define BUSY_NODE_REBALANCE_TICK (BUSY_REBALANCE_TICK * 2)
 
 #ifdef CONFIG_NUMA
-static void balance_node(runqueue_t *this_rq, int idle, int this_cpu)
+static void balance_node(ma_runqueue_t *this_rq, int idle, int this_cpu)
 {
 	int node = find_busiest_node(cpu_to_node(this_cpu));
 
@@ -1389,7 +1424,7 @@ static void balance_node(runqueue_t *this_rq, int idle, int this_cpu)
 }
 #endif
 
-static void rebalance_tick(runqueue_t *this_rq, int idle)
+static void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 {
 #ifdef CONFIG_NUMA
 	int this_cpu = smp_processor_id();
@@ -1428,14 +1463,14 @@ static void rebalance_tick(runqueue_t *this_rq, int idle)
 }
 #endif /* 0 */
 /* a priori, c'est l'application qui rebalance les choses */
-static inline void rebalance_tick(runqueue_t *this_rq, int idle)
+static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 {
 }
 #else
 /*
  * on UP we do not need to balance between CPUs:
  */
-static inline void rebalance_tick(runqueue_t *this_rq, int idle)
+static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 {
 }
 #endif
@@ -1470,8 +1505,10 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	//int cpu = smp_processor_id();
 	//struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
-	runqueue_t *rq = this_rq();
+	ma_runqueue_t *rq = ma_this_rq();
 	marcel_task_t *p = MARCEL_SELF;
+
+	LOG_IN();
 
 	//rq->timestamp_last_tick = sched_clock();
 
@@ -1572,10 +1609,10 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			(p->array == rq->active)) {
 #endif
 			if (preemption_enabled()) {
-				dequeue_task(p, rq->active);
+				//dequeue_task(p, rq->active);
 				ma_set_tsk_need_resched(p);
 //				p->prio = effective_prio(p);
-				enqueue_task(p, rq->active);
+				//enqueue_task(p, rq->active);
 			}
 #if 0
 		}
@@ -1585,6 +1622,7 @@ out_unlock:
 	ma_spin_unlock(&rq->lock);
 out:
 	rebalance_tick(rq, 0);
+	LOG_OUT();
 }
 
 void ma_scheduling_functions_start_here(void) { }
@@ -1595,13 +1633,13 @@ void ma_scheduling_functions_start_here(void) { }
 asmlinkage void ma_schedule(void)
 {
 //	long *switch_count;
-	marcel_task_t *prev, *next;
-	runqueue_t *rq;
+	marcel_task_t *prev, *next = NULL;
+	ma_runqueue_t *rq,*prevrq,*currq;
 	ma_prio_array_t *array;
 	struct list_head *queue;
 //	unsigned long long now;
 //	unsigned long run_time;
-	int idx;
+	int idx,max_prio;
 	LOG_IN();
 
 	/*
@@ -1611,7 +1649,7 @@ asmlinkage void ma_schedule(void)
 	 */
 	if (tbx_likely(!(MARCEL_SELF->sched.state & (MA_TASK_DEAD | MA_TASK_ZOMBIE)))) {
 		if (tbx_unlikely(ma_in_atomic())) {
-			pm2debug("bad: scheduling while atomic!\n");
+			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
 			RAISE(PROGRAM_ERROR);
 			//printk(KERN_ERR "bad: scheduling while atomic!\n");
 			//dump_stack();
@@ -1619,56 +1657,91 @@ asmlinkage void ma_schedule(void)
 	}
 
 need_resched:
+	/* we need to disable bottom half to avoid running ma_schedule_tick() ! */
 	ma_preempt_disable();
-	prev = MARCEL_SELF;
-	rq = this_rq();
+	ma_local_bh_disable();
 
-	//release_kernel_lock(prev);
-	//now = sched_clock();
-	//if (likely(now - prev->timestamp < NS_MAX_SLEEP_AVG))
-	//	run_time = now - prev->timestamp;
-	//else
-	//	run_time = NS_MAX_SLEEP_AVG;
+#ifdef MA__LWPS
+restart:
+#endif
+	/* by default, reschedule this thread */
+	next = prev = MARCEL_SELF;
+	rq = prevrq = ma_this_rq();
+#ifdef MA__LWPS
+	max_prio = MARCEL_SELF->sched.internal.prio;
+#endif
 
-	/*
-	 * Tasks with interactive credits get charged less run_time
-	 * at high sleep_avg to delay them losing their interactive
-	 * status
-	 */
-	//if (HIGH_CREDIT(prev))
-	//	run_time /= (CURRENT_BONUS(prev) ? : 1);
-
-	ma_spin_lock_softirq(&rq->lock);
-
-	/*
-	 * if entering off of a kernel preemption go straight
-	 * to picking the next task.
-	 */
-	//switch_count = &prev->nivcsw;
 	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		//switch_count = &prev->nvcsw;
 		if (tbx_unlikely((prev->sched.state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))
 			prev->sched.state = MA_TASK_RUNNING;
-		else
-			deactivate_task(prev, rq);
-	}
-
-	LOG_STR("schedule","rebalance");
-	if (tbx_unlikely(!rq->nr_running)) {
-#ifdef MA__LWPS
-#warning TODO: demander à l application de rebalancer
-//		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
-#endif
-		if (!rq->nr_running) {
-			next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
-			rq->expired_timestamp = 0;
-			goto switch_tasks;
+		else {
+			sched_debug("schedule: go to sleep\n");
+			ma_spin_lock(&prevrq->lock);
+			next = NULL;
+			/* XXX: muff: */
+			enqueue_task(prev, prevrq->active);
+			deactivate_task(prev, prevrq);
+			ma_spin_unlock(&prevrq->lock);
+			rq = &ma_idle_runqueue;
+			max_prio = MAX_PRIO-1;
 		}
 	}
 
+#ifdef MA__LWPS
+	sched_debug("default prio: %d, rq: %p\n",max_prio,rq);
+	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
+		if (!currq->nr_running)
+			sched_debug("apparently nobody in %p\n",currq);
+#warning : !! mar_sched_find_first_bit exige au moins un bit cleared ?
+		idx = ma_sched_find_first_bit(currq->active->bitmap);
+		if (idx < max_prio) {
+			sched_debug("found better prio %d in rq %p\n",idx,currq);
+			next = NULL;
+			max_prio = idx;
+			rq = currq;
+		}
+		if (idx == max_prio && ma_need_resched()) {
+			sched_debug("found same prio %d in rq %p\n",idx,currq);
+			next = NULL;
+			max_prio = idx;
+			rq = currq;
+		}
+	}
+#endif
+
+	double_rq_lock(prevrq,rq);
+	sched_debug("locked\n");
+
+	if (tbx_unlikely(rq == &ma_idle_runqueue)) {
+		/* found no interesting queue, not even previous one */
+#ifdef MA__LWPS
+		sched_debug("rebalance");
+#warning TODO: demander à l application de rebalancer
+//		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
+#endif
+		next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
+	}
+
+#ifdef MA__LWPS
+	if (tbx_unlikely(!rq->nr_running)) {
+		/* too bad: someone stole the task we saw */
+		sched_debug("someone stole the task we saw, restart");
+		double_rq_unlock(prevrq,rq);
+		goto restart;
+	}
+#endif
+	MA_BUG_ON(!rq->nr_running);
+
+	if (next) /* either prev or idle */
+		goto switch_tasks;
+
+	/* now look for next *different* task */
 	array = rq->active;
 	if (tbx_unlikely(!array->nr_active)) {
+		sched_debug("arrays switch");
+		/* XXX: todo: handle all rqs... */
 		/*
 		 * Switch the active and expired arrays.
 		 */
@@ -1679,10 +1752,11 @@ need_resched:
 //		rq->best_expired_prio = MAX_PRIO;
 	}
 
-	LOG_STR("schedule","find empty");
 	idx = ma_sched_find_first_bit(array->bitmap);
 	queue = array->queue + idx;
 	next = list_entry(queue->next, marcel_task_t, sched.internal.run_list);
+	
+	sched_debug("prio %d in %p, next %p\n",idx,rq,next);
 
 //	if (next->activated > 0) {
 //		unsigned long long delta = now - next->timestamp;
@@ -1697,7 +1771,6 @@ need_resched:
 //	}
 //	next->activated = 0;
 switch_tasks:
-	LOG_STR("schedule","switch_tasks");
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
 //Pour quand on voudra ce mécanisme...
@@ -1712,14 +1785,17 @@ switch_tasks:
 //	prev->timestamp = now;
 
 	if (tbx_likely(prev != next)) {
-	LOG_STR("schedule","doit");
 //		next->timestamp = now;
 //		rq->nr_switches++;
 		rq->curr = next;
 //		++*switch_count;
 
+		dequeue_task(next, next->sched.internal.array);
+		if (prev->sched.internal.array)
+			enqueue_task(prev, prevrq->active);
+
 		prepare_arch_switch(rq, next);
-		prev = context_switch(rq, prev, next);
+		prev = context_switch(prevrq, prev, next);
 		ma_barrier();
 
 		finish_task_switch(prev);
@@ -1970,7 +2046,7 @@ void set_user_nice(task_t *p, long nice)
 {
 	unsigned long flags;
 	ma_prio_array_t *array;
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 	int old_prio, new_prio, delta;
 
 	if (TASK_NICE(p) == nice || nice < -20 || nice > 19)
@@ -2093,7 +2169,7 @@ MARCEL_INT(task_nice);
  */
 int idle_lwp(ma_lwp_t lwp)
 {
-	return lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);//lwp_rq(lwp)->idle;
+	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);//ma_lwp_rq(lwp)->idle;
 }
 
 MARCEL_INT(idle_lwp);
@@ -2130,7 +2206,7 @@ static int setscheduler(pid_t pid, int policy, struct sched_param __user *param)
 	int oldprio;
 	ma_prio_array_t *array;
 	unsigned long flags;
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 	task_t *p;
 
 	if (!param || pid < 0)
@@ -2401,7 +2477,7 @@ out_unlock:
  */
 asmlinkage long sys_sched_yield(void)
 {
-	runqueue_t *rq = this_rq_lock();
+	ma_runqueue_t *rq = this_rq_lock();
 	ma_prio_array_t *array = current->array;
 
 	/*
@@ -2463,7 +2539,7 @@ EXPORT_SYMBOL(yield);
  */
 void io_schedule(void)
 {
-	struct runqueue *rq = this_rq();
+	ma_runqueue_t *rq = ma_this_rq();
 
 	atomic_inc(&rq->nr_iowait);
 	schedule();
@@ -2474,7 +2550,7 @@ EXPORT_SYMBOL(io_schedule);
 
 long io_schedule_timeout(long timeout)
 {
-	struct runqueue *rq = this_rq();
+	ma_runqueue_t *rq = ma_this_rq();
 	long ret;
 
 	atomic_inc(&rq->nr_iowait);
@@ -2663,7 +2739,7 @@ void show_state(void)
 
 void __init init_idle(task_t *idle, int cpu)
 {
-	runqueue_t *idle_rq = cpu_rq(cpu), *rq = cpu_rq(task_cpu(idle));
+	ma_runqueue_t *idle_rq = cpu_rq(cpu), *rq = cpu_rq(task_cpu(idle));
 	unsigned long flags;
 
 	local_irq_save(flags);
@@ -2718,7 +2794,7 @@ int set_cpus_allowed(task_t *p, cpumask_t new_mask)
 	unsigned long flags;
 	int ret = 0;
 	migration_req_t req;
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 
 	rq = task_rq_lock(p, &flags);
 	if (any_online_cpu(new_mask) == NR_CPUS) {
@@ -2743,17 +2819,17 @@ EXPORT_SYMBOL_GPL(set_cpus_allowed);
 /* Move (not current) task off this cpu, onto dest cpu. */
 static void move_task_away(struct task_struct *p, int dest_cpu)
 {
-	runqueue_t *rq_dest;
+	ma_runqueue_t *rq_dest;
 
 	rq_dest = cpu_rq(dest_cpu);
 
-	double_rq_lock(this_rq(), rq_dest);
+	double_rq_lock(ma_this_rq(), rq_dest);
 	if (task_cpu(p) != smp_processor_id())
 		goto out; /* Already moved */
 
 	set_task_cpu(p, dest_cpu);
 	if (p->array) {
-		deactivate_task(p, this_rq());
+		deactivate_task(p, ma_this_rq());
 		activate_task(p, rq_dest);
 		if (p->prio < rq_dest->curr->prio)
 			resched_task(rq_dest->curr);
@@ -2761,7 +2837,7 @@ static void move_task_away(struct task_struct *p, int dest_cpu)
 	p->timestamp = rq_dest->timestamp_last_tick;
 
  out:
-	double_rq_unlock(this_rq(), rq_dest);
+	double_rq_unlock(ma_this_rq(), rq_dest);
 	local_irq_restore(flags);
 }
 
@@ -2772,7 +2848,7 @@ static void move_task_away(struct task_struct *p, int dest_cpu)
  */
 static int migration_thread(void * data)
 {
-	runqueue_t *rq;
+	ma_runqueue_t *rq;
 	int cpu = (long)data;
 
 	rq = cpu_rq(cpu);
@@ -2872,7 +2948,7 @@ static int migration_call(struct notifier_block *nfb,
 {
 	int cpu = (long) hcpu;
 	struct task_struct *p;
-	struct runqueue *rq;
+	ma_runqueue_t *rq;
 	unsigned long flags;
 
 	switch (action) {
@@ -2937,16 +3013,13 @@ EXPORT_SYMBOL(kernel_flag);
 
 #endif /* 0 */
 
-static void linux_sched_lwp_init(ma_lwp_t lwp)
+static void init_rq(ma_runqueue_t *rq)
 {
-	runqueue_t *rq;
 	int j, k;
+	ma_prio_array_t *array;
 
 	LOG_IN();
 
-	ma_prio_array_t *array;
-
-	rq = lwp_rq(lwp);
 	rq->active = rq->arrays;
 	rq->expired = rq->arrays + 1;
 //	rq->best_expired_prio = MAX_PRIO;
@@ -2966,6 +3039,22 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		__ma_set_bit(MAX_PRIO, array->bitmap);
 	}
 
+#ifdef MA__LWPS
+	if (tbx_likely(rq != &ma_main_runqueue))
+		rq->father = &ma_main_runqueue;
+	else
+		rq->father = NULL;
+#endif
+
+	LOG_OUT();
+}
+
+static void linux_sched_lwp_init(ma_lwp_t lwp)
+{
+	LOG_IN();
+#ifdef MA__LWPS
+	init_rq(ma_lwp_rq(lwp));
+#endif
 	LOG_OUT();
 }
 
@@ -3000,24 +3089,21 @@ static struct ma_notifier_block linux_sched_nb = {
 
 void __init sched_init(void)
 {
-	runqueue_t *rq;
-
 	linux_sched_lwp_notify(&linux_sched_nb,
 				(unsigned long)MA_LWP_UP_PREPARE,
 				(void *)(ma_lwp_t)LWP_SELF);
 	ma_register_lwp_notifier(&linux_sched_nb);
+	init_rq(&ma_main_runqueue);
+	init_rq(&ma_idle_runqueue);
 
 	/*
 	 * We have to do a little magic to get the first
 	 * thread right in SMP mode.
 	 */
-	rq = this_rq();
-	rq->curr = MARCEL_SELF;
-	//rq->idle = MARCEL_SELF;
-	//
-	//ST: déjà fait dans marcel_thread.c
-	//ma_set_task_lwp(MARCEL_SELF, &__main_lwp);
+	ma_main_runqueue.curr = MARCEL_SELF;
 	ma_wake_up_created_thread(MARCEL_SELF);
+	/* since it is actually already running */
+	dequeue_task(MARCEL_SELF, MARCEL_SELF->sched.internal.array);
 
 //	init_timers();
 

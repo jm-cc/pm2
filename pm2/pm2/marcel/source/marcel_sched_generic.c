@@ -224,7 +224,8 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_setdetachstate(&attr, TRUE);
 	// Il vaut mieux généraliser l'utilisation des 'vpmask'
 	marcel_attr_setvpmask(&attr, 
-	     MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
+		MARCEL_VPMASK_FULL);
+	     //MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_POLL | /*MA_SF_NOSCHEDLOCK |*/
 			     MA_SF_NORUN);
 #ifdef PM2
@@ -285,6 +286,8 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 	LOG_IN();
 
 	MA_BUG_ON(!ma_in_irq());
+
+	ma_wake_up_created_thread(ma_per_lwp(idle_task,lwp));
 
 	ma_irq_exit();
 	MA_BUG_ON(ma_in_atomic());

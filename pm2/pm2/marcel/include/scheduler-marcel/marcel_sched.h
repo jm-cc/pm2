@@ -38,9 +38,9 @@ typedef struct marcel_sched_internal_task marcel_sched_internal_task_t;
 #depend "scheduler/linux_sched.h[marcel_types]"
 struct marcel_sched_internal_task {
 	struct list_head run_list;              /* List chainée des threads prêts */
-	unsigned long lwps_runnable;             
+	//unsigned long lwps_runnable;             
 #ifdef MA__LWPS
-	struct __lwp_struct *previous_lwp;
+	ma_runqueue_t *init_rq,*cur_rq;
 #endif
 	int sched_policy;
 	int prio;
@@ -55,15 +55,27 @@ inline static void
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
 					 const marcel_attr_t *attr);
 #section sched_marcel_inline
+#include <asm/bitops.h>
 inline static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
 					 const marcel_attr_t *attr)
 {
 	LOG_IN();
 	INIT_LIST_HEAD(&t->sched.internal.run_list);
-	t->sched.internal.lwps_runnable=~0UL;
-#if defined(MA__LWPS)
-	t->sched.internal.previous_lwp = NULL;
+	//t->sched.internal.lwps_runnable=~0UL;
+#ifdef MA__LWPS
+	if (attr->vpmask==MARCEL_VPMASK_EMPTY)
+		t->sched.internal.init_rq=&ma_main_runqueue;
+	else if (attr->vpmask==MARCEL_VPMASK_FULL) {
+		t->sched.internal.init_rq=&ma_idle_runqueue;
+		t->sched.internal.prio=MAX_PRIO-1;
+	} else {
+		int first_vp;
+		first_vp=ma_ffz(attr->vpmask);
+		MA_BUG_ON(attr->vpmask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
+		t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
+	}
+	t->sched.internal.cur_rq=NULL;
 #endif
 	t->sched.internal.sched_policy = attr->__schedpolicy;
 #warning RT_TASK à ajuster
@@ -75,7 +87,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 
 
 #section marcel_functions
-unsigned marcel_sched_add_vp(void);
+//unsigned marcel_sched_add_vp(void);
 
 #section marcel_macros
 /* ==== SMP scheduling policies ==== */
@@ -259,7 +271,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 					   NORMAL_RETURN);
 		}
 		MA_THR_RESTARTED(MARCEL_SELF, "Preemption");
-		ma_local_bh_disable();
 		/* Drop preempt_count with ma_spin_unlock_softirq */
 		ma_schedule_tail(MARCEL_SELF);
 		

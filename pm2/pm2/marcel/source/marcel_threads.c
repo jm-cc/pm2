@@ -34,7 +34,7 @@ static __inline__ void init_marcel_thread(marcel_t t,
 					  __const marcel_attr_t *attr)
 {
 	/* Free within schedule_tail */
-	t->preempt_count=1;
+	t->preempt_count=MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET;
 	marcel_sched_init_marcel_thread(t, attr);
 	//t->ctx_yield
 	t->work = MARCEL_WORK_INIT;

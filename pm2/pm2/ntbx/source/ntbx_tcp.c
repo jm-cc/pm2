@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.3  2000/03/01 11:03:37  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.2  2000/02/17 09:14:40  oaumage
 - ajout du support de TCP a la net toolbox
 
@@ -48,8 +51,8 @@ ______________________________________________________________________________
  * tbx_tcp.c
  * ---------
  */
-#include <tbx.h>
-#include <ntbx.h>
+#include "tbx.h"
+#include "ntbx.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

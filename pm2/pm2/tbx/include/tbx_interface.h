@@ -688,6 +688,11 @@ p_tbx_environment_variable_t
 tbx_environment_variable_to_variable(const char *name);
 
 void
+tbx_environment_variable_append_c_string(p_tbx_environment_variable_t  var,
+					 const char                    sep,
+					 const char                   *data);
+
+void
 tbx_environment_variable_free(p_tbx_environment_variable_t variable);
 
 p_tbx_string_t

@@ -298,6 +298,10 @@ _PRIVATE_ void pm2_async_rpc_begin(int module, int num,
 				   any_t args);
 _PRIVATE_ void pm2_async_rpc_end(void);
 
+_PRIVATE_ void pm2_rawrpc_begin(int module, int num,
+				pm2_attr_t *pm2_attr);
+_PRIVATE_ void pm2_rawrpc_end(void);
+
 /************ LRPC asynchrones en multicast : ************/
 
 /*
@@ -479,13 +483,25 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 	} \
 	{
 
+#define BEGIN_RAWSERVICE(name) \
+  void _##name##_func(rpc_args *_arg) { \
+    marcel_setspecific(_pm2_lrpc_num_key, (any_t)((long)_arg->num)); \
+    marcel_setspecific(_pm2_block_key, (any_t)&_arg->sd); \
+    marcel_setspecific(_pm2_isomalloc_nego_key, (any_t) 0);\
+    block_init_list(&_arg->sd); \
+    marcel_cleanup_push(_pm2_term_func, marcel_self()); \
+    {
+
 #define pm2_wait_for_data() \
- { \
-   mad_recvbuf_receive(); \
-   RELEASE_CALLER((rpc_args *)(marcel_self()->user_space_ptr)); \
- }
+  { \
+    mad_recvbuf_receive(); \
+    RELEASE_CALLER((rpc_args *)(marcel_self()->user_space_ptr)); \
+  }
 
 _PRIVATE_ void _end_service(rpc_args *args, any_t res, int local);
+
+#define END_RAWSERVICE(name) \
+    }}
 
 #define END_SERVICE(name) \
 	} \

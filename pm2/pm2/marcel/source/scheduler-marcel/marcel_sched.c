@@ -838,8 +838,6 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 {
 	LOG_IN();
 
-	/* Il faut insérer la tâche courante (RunTask) */
-	ma_wake_up_thread(MARCEL_SELF);
 
 	LOG_OUT();
 }

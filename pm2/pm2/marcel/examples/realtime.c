@@ -55,12 +55,8 @@ int marcel_main(int argc, char *argv[])
 
   for(i=0; i<NB; i++) {
     marcel_attr_init(&attr);
-    if (i == 1) {
+    if (i == 1)
       marcel_attr_setrealtime(&attr, MARCEL_CLASS_REALTIME);
-      if (marcel_nbvps()>1) {
-	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ONLY_VP(0));
-      }
-    }
 
     marcel_create(&pid[i], &attr, writer, (any_t)mess[i]);
   }

@@ -115,7 +115,14 @@ mad3()
     echo "};"                                  >> $PM2_LEONIE_FILE
 
     pm2load_args=""
-    [ "$PM2_DEBUG" = "on" ] && pm2load_args="${pm2load_args} -d"
+    [ "$PM2_DEBUG" = "on" ]           && pm2load_args="${pm2load_args} -d"
+    [ "$PM2_DEBUG" = "off" ]          && pm2load_args="${pm2load_args} --d"
+    [ "$PM2_XMODE" = "on" ]           && pm2load_args="${pm2load_args} -x"
+    [ "$PM2_XMODE" = "off" ]          && pm2load_args="${pm2load_args} --x"
+    [ "$PM2_PMODE" = "on" ]           && pm2load_args="${pm2load_args} -p"
+    [ "$PM2_PMODE" = "off" ]          && pm2load_args="${pm2load_args} --p"
+    [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2load_args="${pm2load_args} -l"
+    [ "$PM2_LOGS_ON_NODE_0" = "off" ] && pm2load_args="${pm2load_args} --l"
 
     ${PM2_ROOT}/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE $prog_args
 
@@ -133,6 +140,8 @@ PM2_CONSOLE=""
 PM2_DEBUG=off
 PM2_LOGS_ON_NODE_0=off
 PM2_USE_LOCAL_FLAVOR=off
+PM2_XMODE=off
+PM2_PMODE=off
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -162,6 +171,32 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_LOGS_ON_NODE_0=only
 	    ;;
+# begin MadIII only
+	--l) # Logs off
+	    shift
+	    PM2_LOGS_ON_NODE_0=off
+	    ;;
+	--d) # Debug off
+	    shift
+	    PM2_DEBUG=off
+	    ;;
+	-x) # XTerm mode on
+	    shift
+	    PM2_XMODE=on
+	    ;;
+	--x) # XTerm mode off
+	    shift
+	    PM2_XMODE=off
+	    ;;
+	-p) # Pause mode on
+	    shift
+	    PM2_PMODE=on
+	    ;;
+	--p) # Pause mode off
+	    shift
+	    PM2_PMODE=off
+	    ;;
+# end MadIII only
 	-u|--use-local-flavor)
 	    shift
 	    PM2_USE_LOCAL_FLAVOR=on

@@ -34,39 +34,17 @@
 #
 
 
+.PHONY: default all
 default: all
 
-include ../../make/common.mak
+SRC_DIR	:=	.
 
-all: polygon
+include ../../Makefile
 
+PM2_APP_CFLAGS	=	-I/usr/X11R6/include -I$$OPENWINHOME/include
+PM2_APP_LDFLAGS	=	-L/usr/X11R6/lib -L$$OPENWINHOME/lib
+PM2_APP_LLIBS	=	-lxview -lolgx -lX11
 
-# custom :
+all:	$(BIN_DIR)/polygon
 
-$(PM2_OBJ)/custom.o: custom.c custom.h $(PM2_HEADERS)
-	$(PM2_CC2)
-
-# regul :
-
-$(PM2_OBJ)/regul.o: regul.c regul.h $(PM2_HEADERS)
-	$(PM2_CC2)
-
-# executables :
-
-# polygon :
-
-$(PM2_OBJ)/polygon.o: polygon.c $(PM2_HEADERS)
-	$(PM2_XCC)
-
-polygon: $(PM2_OBJ)/polygon.o $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_LIBS)
-	$(PM2_XLINK) $(PM2_OBJ)/custom.o $(PM2_OBJ)/regul.o $(PM2_XLLIBS)
-	$(PM2_MOVE)
-
-
-
-
-
-
-
-
-
+$(BIN_DIR)/polygon: $(OBJ_DIR)/regul.o $(OBJ_DIR)/custom.o

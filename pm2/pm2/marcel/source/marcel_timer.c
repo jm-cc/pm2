@@ -47,25 +47,25 @@ unsigned long marcel_clock(void)
 // Softirq appellée par le timer
 static void timer_action(struct ma_softirq_action *a)
 {
-#ifdef MARCEL_DEBUG
+#ifdef MA__DEBUG
 	static unsigned long tick = 0;
 #endif
 
 	LOG_IN();
 
-#ifdef MARCEL_DEBUG
+#ifdef MA__DEBUG
 	if (++tick == TICK_RATE) {
-		try_mdebug("\t\t\t<<tick>>\n");
+		mdebug("\t\t\t<<tick>>\n");
 		tick = 0;
 	}
 #endif
 
 	update_time();
 	
-#ifdef PM2DEBUG
+#ifdef MA__DEBUG
 	if(LWP_SELF == NULL) {
-		fprintf(stderr, "WARNING!!! LWP_SELF == NULL in thread %p!\n",
-			MARCEL_SELF);
+		pm2debug("WARNING!!! LWP_SELF == NULL in thread %p!\n",
+			 MARCEL_SELF);
 		RAISE(PROGRAM_ERROR);
 	}
 #endif

@@ -3,7 +3,7 @@
 char hostname[128];
 
 void
-thread_function (void *arg)
+f (void *arg)
 {
   int i, proc;
 
@@ -19,9 +19,9 @@ thread_function (void *arg)
       proc = (proc + 1) % pm2_config_size ();
       tprintf ("Hop %d: Leaving to node %d\n", i, proc);
 
-      pm2_migrate_self (proc);
+      pm2_migrate_self (proc);	/* Here! */
     }
-  pm2_halt ();
+  pm2_halt ();			/* Here! */
 }
 
 int
@@ -32,8 +32,8 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
-      pm2_thread_create (thread_function, NULL);
+    {				/* Master process */
+      pm2_thread_create (f, NULL);
     }
 
   pm2_exit ();

@@ -622,10 +622,12 @@ mad_dir_xchannel_get(p_mad_madeleine_t madeleine)
 
   while (number--)
     {
-      p_mad_dir_xchannel_t  dir_xchannel            = NULL;
-      char                 *xchannel_reference_name = NULL;
-      p_tbx_slist_t         dir_channel_slist       = NULL;
-      int                   dir_channel_slist_len   =    0;
+      p_mad_dir_xchannel_t  dir_xchannel               = NULL;
+      char                 *xchannel_reference_name    = NULL;
+      p_tbx_slist_t         dir_channel_slist          = NULL;
+      int                   dir_channel_slist_len      =    0;
+      p_tbx_slist_t         sub_channel_name_slist     = NULL;
+      int                   sub_channel_name_slist_len =    0;
 
       dir_xchannel = mad_dir_xchannel_cons();
       dir_xchannel->name = mad_leonie_receive_string();
@@ -658,6 +660,21 @@ mad_dir_xchannel_get(p_mad_madeleine_t madeleine)
 	  TBX_FREE(dir_channel_name);
 	}
       while (--dir_channel_slist_len);
+
+      sub_channel_name_slist     = dir_xchannel->sub_channel_name_slist;
+      sub_channel_name_slist_len = mad_leonie_receive_int();
+
+      if (sub_channel_name_slist_len)
+	{
+	  do
+	    {
+	      char *name = NULL;
+
+	      name = mad_leonie_receive_string();
+	      tbx_slist_append(sub_channel_name_slist, name);
+	    }
+	  while (--sub_channel_name_slist_len);
+	}
 
       tbx_htable_add(xchannel_htable, dir_xchannel->name, dir_xchannel);
       dir_xchannel->id = tbx_slist_get_length(xchannel_slist);
@@ -2609,7 +2626,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       // Virtual channel ready
       mad_leonie_send_string("ok");
     }
-  
+
 #ifdef MARCEL
   {
     forwarding_adapter = NULL;
@@ -2660,9 +2677,11 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel                     = mad_channel_cons();
       mad_channel->mux_list_darray    = tbx_darray_init();
       mad_channel->mux_channel_darray = tbx_darray_init();
+      mad_channel->sub_list_darray    = tbx_darray_init();
+      mad_channel->sub_channel_darray = tbx_darray_init();
       mad_channel->process_lrank      =
 	ntbx_pc_global_to_local(xchannel_pc, process_rank);
-      mad_channel->type               = mad_channel_type_mux_main;
+      mad_channel->type               = mad_channel_type_mux;
       mad_channel->id                 = channel_id++;
       mad_channel->name               = dir_xchannel->name;
       mad_channel->pc                 = dir_xchannel->pc;
@@ -2671,6 +2690,9 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->adapter            = mux_adapter;
 
       tbx_darray_expand_and_set(mad_channel->mux_channel_darray, 0, mad_channel);
+      tbx_darray_expand_and_set(mad_channel->sub_channel_darray, 0, mad_channel);
+      tbx_darray_expand_and_set(mad_channel->mux_list_darray, 0,
+				mad_channel->sub_list_darray);
 
       mad_channel->channel_slist      = tbx_slist_nil();
       {
@@ -2721,7 +2743,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 
 	  in->remote_rank  = l_rank_dst;
 	  out->remote_rank = l_rank_dst;
-	  
+
 	  in->channel  = mad_channel;
 	  out->channel = mad_channel;
 
@@ -2867,6 +2889,8 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
 
       tbx_htable_add(madeleine->channel_htable,
 		     dir_xchannel->name, mad_channel);
+
+      mad_mux_add_named_sub_channels(mad_channel);
 #endif // MARCEL
 
       // Mux channel ready

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.15  2000/11/15 21:32:22  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.14  2000/10/31 10:32:25  rnamyst
 Few minor changes
 
@@ -90,7 +93,9 @@ ______________________________________________________________________________
 
 #include <unistd.h>
 
+#ifndef max
 #define max(a, b)  ((a) > (b) ? (a) : (b))
+#endif
 
 static marcel_pollid_t unix_io_pollid;
 

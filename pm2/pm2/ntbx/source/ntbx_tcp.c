@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_tcp.c,v $
+Revision 1.8  2000/05/18 11:36:19  oaumage
+- Remplacement des types `tableau' par des types `structure de tableau'
+
 Revision 1.7  2000/04/27 08:59:19  oaumage
 - fusion de la branche pm2_mad2_multicluster
 
@@ -301,7 +304,7 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
   ntbx_tcp_nb_socket_setup(server_specific->descriptor);
   
   server_specific->port = (ntbx_tcp_port_t)ntohs(address.sin_port);
-  sprintf(server->connection_data, "%d", server_specific->port);
+  sprintf(server->connection_data.data, "%d", server_specific->port);
   
   server->state = ntbx_server_state_initialized;
   LOG_OUT();

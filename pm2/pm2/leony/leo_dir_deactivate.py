@@ -1,6 +1,8 @@
 import leo_comm
-
 import logging
+
+_LEO_OUT_CONNECTION = 0
+_LEO_IN_CONNECTION  = 1
 
 logger	= logging.getLogger()
 
@@ -117,10 +119,10 @@ def connection_exit(ps_list, loopback):
             
             dst = dst_ps.client
             
-            leo_comm.send_int(src, 0)
+            leo_comm.send_int(src, _LEO_OUT_CONNECTION)
             leo_comm.send_int(src, dl)
             
-            leo_comm.send_int(dst, 1)
+            leo_comm.send_int(dst, _LEO_IN_CONNECTION)
             leo_comm.send_int(dst, sl)
 
             leo_comm.wait_for_ack(src)

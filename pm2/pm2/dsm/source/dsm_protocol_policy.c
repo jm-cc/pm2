@@ -36,149 +36,232 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include "dsm_page_manager.h"
+#include "dsm_protocol_lib.h"
 #include "dsm_protocol_policy.h" 
 
-
-dsm_protocol_t 
-dsmlib_ddm_li_hudak_prot = {dsmlib_rf_ask_for_read_copy,
-			    dsmlib_wf_ask_for_write_access,
-			    dsmlib_rs_send_read_copy,
-			    dsmlib_ws_send_page_for_write_access, 
-			    dsmlib_is_invalidate,
-			    dsmlib_rp_validate_page,
-			    NULL
-};
-
-dsm_protocol_t 
-dsmlib_migrate_thread_prot = {dsmlib_migrate_thread,
-			      dsmlib_migrate_thread,
-			      NULL,
-			      NULL, 
-			      NULL,
-			      NULL,
-			      NULL
-};
+#define TRACE_PROT
 
 /* Global data structures for the protocol policy module */
 
-static struct _protocol
+#define NB_BUILT_IN_PROTOCOLS 2
+
+typedef struct _dsm_protocol_t
 {
-  dsm_protocol_t *protocol_table; /* the protocol table: 
-				     associates protocols to pages */
-  unsigned long size;             /* size of the protocol table */
-} dsm_protocol_info;
+  dsm_rf_action_t read_fault_handler;
+  dsm_wf_action_t write_fault_handler;
+  dsm_rs_action_t read_server;
+  dsm_ws_action_t write_server;
+  dsm_is_action_t invalidate_server;
+  dsm_rp_action_t receive_page_server;
+  dsm_erp_action_t expert_receive_page_server;
+  dsm_acq_action_t acquire_func;
+  dsm_rel_action_t release_func;
+  dsm_pi_action_t prot_init_func;
+  dsm_pa_action_t page_add_func;
+} dsm_protocol_t;
+
+#define MAX_DSM_PROTOCOLS 15
+
+static int _nb_protocols = NB_BUILT_IN_PROTOCOLS;
+static dsm_protocol_t dsm_protocol_table[MAX_DSM_PROTOCOLS]; /* the protocol table */
 
 
 /* Public functions */
 
-void dsm_init_protocol_table(dsm_protocol_t *protocol)
+void dsm_init_protocol_table()
 {
-  int i;
 
-  dsm_protocol_info.size = dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages();
-  dsm_protocol_info.protocol_table = (dsm_protocol_t *)malloc(dsm_protocol_info.size * sizeof(dsm_protocol_t));
+  /* 0: LI_HUDAK */
+  dsm_protocol_table[0].read_fault_handler = dsmlib_rf_ask_for_read_copy;
+  dsm_protocol_table[0].write_fault_handler = dsmlib_wf_ask_for_write_access;
+  dsm_protocol_table[0].read_server = dsmlib_rs_send_read_copy;
+  dsm_protocol_table[0].write_server = dsmlib_ws_send_page_for_write_access;
+  dsm_protocol_table[0].invalidate_server = dsmlib_is_invalidate;
+  dsm_protocol_table[0].receive_page_server = dsmlib_rp_validate_page;
 
-  for (i = 0; i < dsm_protocol_info.size; i++)
-    dsm_protocol_info.protocol_table[i] = *protocol;
+  /* 1: MIGRATE_THREAD */
+  dsm_protocol_table[1].read_fault_handler = dsmlib_migrate_thread;
+  dsm_protocol_table[1].write_fault_handler = dsmlib_migrate_thread;
 }
 
 
-void dsm_set_page_protocol(unsigned long index, dsm_protocol_t *protocol)
+int dsm_create_protocol(dsm_rf_action_t read_fault_handler,
+			dsm_wf_action_t write_fault_handler,
+			dsm_rs_action_t read_server,
+			dsm_ws_action_t write_server,
+			dsm_is_action_t invalidate_server,
+			dsm_rp_action_t receive_page_server,
+			dsm_erp_action_t expert_receive_page_server,
+			dsm_acq_action_t acquire_func,
+			dsm_rel_action_t release_func,
+			dsm_pi_action_t prot_init_func,
+			dsm_pa_action_t page_add_func
+			)
 {
-/*    dsm_protocol_info.protocol_table[index].read_fault = (*protocol).read_fault; */
-/*    dsm_protocol_info.protocol_table[index].write_fault = (*protocol).write_fault; */
-  dsm_protocol_info.protocol_table[index] = *protocol;
+ dsm_protocol_table[_nb_protocols].read_fault_handler = read_fault_handler;
+ dsm_protocol_table[_nb_protocols].write_fault_handler = write_fault_handler;
+ dsm_protocol_table[_nb_protocols].read_server = read_server;
+ dsm_protocol_table[_nb_protocols].write_server = write_server;
+ dsm_protocol_table[_nb_protocols].invalidate_server = invalidate_server;
+ dsm_protocol_table[_nb_protocols].receive_page_server = receive_page_server;
+ dsm_protocol_table[_nb_protocols].expert_receive_page_server = expert_receive_page_server;
+ dsm_protocol_table[_nb_protocols].acquire_func = acquire_func;
+ dsm_protocol_table[_nb_protocols].release_func = release_func;
+ dsm_protocol_table[_nb_protocols].prot_init_func = prot_init_func;
+ dsm_protocol_table[_nb_protocols].page_add_func = page_add_func;
+
+ _nb_protocols++;
+ 
+ return _nb_protocols - 1 ;
 }
 
 
-dsm_protocol_t *dsm_get_page_protocol(unsigned long index)
+int dsm_registered_protocols()
 {
-  return &dsm_protocol_info.protocol_table[index];
+  return _nb_protocols;
 }
 
 
-void dsm_set_read_fault_action(unsigned long index, dsm_rf_action_t action)
+void dsm_set_read_fault_action(int key, dsm_rf_action_t action)
 {
-  dsm_protocol_info.protocol_table[index].read_fault = action;
+  dsm_protocol_table[key].read_fault_handler = action;
 }
 
 
-dsm_rf_action_t dsm_get_read_fault_action(unsigned long index)
+dsm_rf_action_t dsm_get_read_fault_action(int key)
 {
-  return dsm_protocol_info.protocol_table[index].read_fault;
+  return dsm_protocol_table[key].read_fault_handler;
 }
 
 
-void dsm_set_write_fault_action(unsigned long index, dsm_wf_action_t action)
+void dsm_set_write_fault_action(int key, dsm_wf_action_t action)
 {
-  dsm_protocol_info.protocol_table[index].write_fault = action;
+  dsm_protocol_table[key].write_fault_handler = action;
 }
 
 
-dsm_wf_action_t dsm_get_write_fault_action(unsigned long index)
+dsm_wf_action_t dsm_get_write_fault_action(int key)
 {
-  return dsm_protocol_info.protocol_table[index].write_fault;
+  return dsm_protocol_table[key].write_fault_handler;
 }
 
 
-void dsm_set_read_server(unsigned long index, dsm_rs_action_t action)
+void dsm_set_read_server(int key, dsm_rs_action_t action)
 {
-  dsm_protocol_info.protocol_table[index].read_server = action;
+  dsm_protocol_table[key].read_server = action;
 }
 
 
-dsm_rs_action_t dsm_get_read_server(unsigned long index)
+dsm_rs_action_t dsm_get_read_server(int key)
 {
-  return dsm_protocol_info.protocol_table[index].read_server;
-}
-
-void dsm_set_write_server(unsigned long index, dsm_ws_action_t action)
-{
-  dsm_protocol_info.protocol_table[index].write_server = action;
+  return dsm_protocol_table[key].read_server;
 }
 
 
-dsm_ws_action_t dsm_get_write_server(unsigned long index)
+void dsm_set_write_server(int key, dsm_ws_action_t action)
 {
-  return dsm_protocol_info.protocol_table[index].write_server;
+  dsm_protocol_table[key].write_server = action;
 }
 
 
-void dsm_set_invalidate_server(unsigned long index, dsm_is_action_t action)
+dsm_ws_action_t dsm_get_write_server(int key)
 {
-  dsm_protocol_info.protocol_table[index].invalidate_server = action;
+  return dsm_protocol_table[key].write_server;
 }
 
 
-dsm_is_action_t dsm_get_invalidate_server(unsigned long index)
+void dsm_set_invalidate_server(int key, dsm_is_action_t action)
 {
-  return dsm_protocol_info.protocol_table[index].invalidate_server;
+  dsm_protocol_table[key].invalidate_server = action;
 }
 
 
-void dsm_set_receive_page_server(unsigned long index, dsm_rp_action_t action)
+dsm_is_action_t dsm_get_invalidate_server(int key)
 {
-  dsm_protocol_info.protocol_table[index].receive_page_server = action;
+  return dsm_protocol_table[key].invalidate_server;
 }
 
 
-dsm_rp_action_t dsm_get_receive_page_server(unsigned long index)
+void dsm_set_receive_page_server(int key, dsm_rp_action_t action)
 {
-  return dsm_protocol_info.protocol_table[index].receive_page_server;
+  dsm_protocol_table[key].receive_page_server = action;
 }
 
 
-void dsm_set_expert_receive_page_server(unsigned long index, dsm_erp_action_t action)
+dsm_rp_action_t dsm_get_receive_page_server(int key)
 {
-  dsm_protocol_info.protocol_table[index].expert_receive_page_server = action;
+  return dsm_protocol_table[key].receive_page_server;
 }
 
 
-dsm_erp_action_t dsm_get_expert_receive_page_server(unsigned long index)
+void dsm_set_expert_receive_page_server(int key, dsm_erp_action_t action)
 {
-  return dsm_protocol_info.protocol_table[index].expert_receive_page_server;
+  dsm_protocol_table[key].expert_receive_page_server = action;
 }
 
 
+dsm_erp_action_t dsm_get_expert_receive_page_server(int key)
+{
+  return dsm_protocol_table[key].expert_receive_page_server;
+}
+
+
+void dsm_set_acquire_func(int key, dsm_acq_action_t action)
+{
+  dsm_protocol_table[key].acquire_func = action;
+}
+
+
+dsm_acq_action_t dsm_get_acquire_func(int key)
+{
+#ifdef TRACE_PROT
+  fprintf(stderr,"Entering %s\n", __FUNCTION__);
+#endif
+  return dsm_protocol_table[key].acquire_func;
+}
+
+
+void dsm_set_release_func(int key, dsm_rel_action_t action)
+{
+  dsm_protocol_table[key].release_func = action;
+}
+
+
+dsm_rel_action_t dsm_get_release_func(int key)
+{
+#ifdef TRACE_PROT
+  fprintf(stderr,"[%s]: Entering...\n", __FUNCTION__);
+#endif
+  return dsm_protocol_table[key].release_func;
+}
+
+
+void dsm_set_prot_init_func(int key, dsm_pi_action_t action)
+{
+  dsm_protocol_table[key].prot_init_func = action;
+}
+
+
+dsm_pi_action_t dsm_get_prot_init_func(int key)
+{
+#ifdef TRACE_PROT
+  fprintf(stderr,"[%s]: Entering...\n", __FUNCTION__);
+#endif
+  return dsm_protocol_table[key].prot_init_func;
+}
+
+
+void dsm_set_page_add_func(int key, dsm_pa_action_t action)
+{
+  dsm_protocol_table[key].page_add_func = action;
+}
+
+
+dsm_pa_action_t dsm_get_page_add_func(int key)
+{
+#ifdef TRACE_PROT
+ fprintf(stderr,"[%s]: Entering...\n", __FUNCTION__);
+#endif
+  return dsm_protocol_table[key].page_add_func;
+}
 

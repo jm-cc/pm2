@@ -50,16 +50,16 @@ int private_data_size;
 void f()
 {
   int i, n = 20;
-  char *p = (char*)pm2_isomalloc(private_data_size);
+//  char *p = (char*)pm2_isomalloc(private_data_size);
 
-  dsm_mutex_lock(&L);
-  tfprintf(stderr,"user thread ! ptr = %p, *ptr = %d (I am %p)\n", ptr, *ptr, marcel_self());
+//  dsm_mutex_lock(&L);
+//  tfprintf(stderr,"user thread ! ptr = %p, *ptr = %d (I am %p)\n", ptr, *ptr, marcel_self());
   for (i = 0; i < n; i++) {
     (*ptr)++;
     //    fprintf(stderr,"ptr = %p, *ptr = %d\n",ptr, *ptr);
   }
-  tfprintf(stderr,"user thread finished! ptr = %p, *ptr = %d\n", ptr, *ptr);
-  dsm_mutex_unlock(&L);
+//  tfprintf(stderr,"user thread finished! ptr = %p, *ptr = %d\n", ptr, *ptr);
+//  dsm_mutex_unlock(&L);
   pm2_completion_signal(&c); 
 }
 
@@ -69,13 +69,13 @@ void threaded_f()
   int i, n = 20;
   pm2_completion_t my_c;
   int *my_ptr;
-  char *p = (char*)pm2_isomalloc(private_data_size);
+//  char *p = (char*)pm2_isomalloc(private_data_size);
 
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &my_c);
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char*)&my_ptr, sizeof(int *));
   pm2_rawrpc_waitdata(); 
 
-  dsm_mutex_lock(&L);
+//  dsm_mutex_lock(&L);
   tfprintf(stderr,"user thread ! ptr = %p, *ptr = %d (I am %p)\n", my_ptr, *my_ptr, marcel_self());
   for (i = 0; i < n; i++) {
     (*my_ptr)++;
@@ -83,7 +83,7 @@ void threaded_f()
   }  
   tfprintf(stderr,"user thread finished! ptr = %p, *ptr = %d\n", my_ptr, *my_ptr);
 
-  dsm_mutex_unlock(&L);
+//  dsm_mutex_unlock(&L);
   pm2_completion_signal(&my_c); 
 }
 

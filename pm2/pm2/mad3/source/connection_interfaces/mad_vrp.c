@@ -106,6 +106,14 @@ typedef struct s_mad_vrp_poll_req
   p_mad_connection_t c;
 } mad_vrp_poll_req_t, *p_mad_vrp_poll_req_t;
 
+typedef struct s_mad_vrp_select_req
+{
+  vrp_incoming_t vrp_in;
+  vrp_outgoing_t vrp_out;
+  int            fd;
+  int            status;
+} mad_vrp_select_req_t, *p_mad_vrp_select_req_t;
+
 /*
  * static functions
  * ----------------
@@ -203,6 +211,10 @@ mad_vrp_incoming_thread(void *arg)
 
           vrp_incoming_read_callback(fd, vrp_in);
         }
+      else
+        {
+          marcel_yield();
+        }
     }
 
   LOG_OUT();
@@ -245,6 +257,10 @@ mad_vrp_outgoing_thread(void *arg)
             FAILURE("invalid state");
 
           vrp_outgoing_read_callback(fd, vrp_out);
+        }
+      else
+        {
+          marcel_yield();
         }
     }
 
@@ -732,7 +748,7 @@ mad_vrp_send_buffer(p_mad_link_t   lnk,
     }
 
   vrp_b = vrp_buffer_construct(ptr, len);
-  vrp_buffer_set_loss_rate(vrp_b, 0, loss_rate);
+  vrp_buffer_set_loss_rate(vrp_b, loss_rate, len);
   s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
   vrp_buffer_destroy(vrp_b);
   b->bytes_read += len;

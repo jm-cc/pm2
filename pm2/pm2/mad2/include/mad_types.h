@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_types.h,v $
+Revision 1.4  2000/02/08 17:47:25  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.3  2000/01/13 14:44:33  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -58,7 +61,6 @@ typedef void *p_mad_driver_specific_t;
  * Data structure elements
  * -----------------------
  */
-typedef long    mad_host_id_t,              *p_mad_host_id_t;
 typedef long    mad_link_id_t,              *p_mad_link_id_t;
 typedef long    mad_channel_id_t,           *p_mad_channel_id_t;
 typedef int     mad_adapter_id_t,           *p_mad_adapter_id_t;

@@ -38,6 +38,7 @@ typedef pid_t marcel_kthread_t;
 #section marcel_functions
 #ifdef MA__SMP
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
+			   void *stack_base,
 			   marcel_kthread_func_t func, void *arg);
 
 void marcel_kthread_join(marcel_kthread_t pid);

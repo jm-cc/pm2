@@ -6,3 +6,4 @@ PM2_MAD2_LIBS="/usr/lpp/ppe.poe/lib/crt0.o $PM2_MAD2_LIBS -L/usr/lpp/\
 ppe.poe/lib -L/usr/lpp/ppe.poe/lib/ip -lmpi -lvtd -lc -L/opt/lib/gcc-lib/rs6000\-ibm-aix4.1.4.0/2.7.2.3 -lgcc -lc -lg -nostdlib"
 PM2_PM2_CFLAGS="$PM2_PM2_CFLAGS -DMAD2_MAD1_MAIN_PROTO=mad_MPI"
 PM2_PM2_CFLAGS="$PM2_PM2_CFLAGS -DMAD2_MAD1_MAIN_PROTO_PARAM=NULL"
+PM2_LOADER=$PM2_ROOT/mad2/bin/mad2mpl_load

@@ -2678,7 +2678,6 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->mux_list_darray    = tbx_darray_init();
       mad_channel->mux_channel_darray = tbx_darray_init();
       mad_channel->sub_list_darray    = tbx_darray_init();
-      mad_channel->sub_channel_darray = tbx_darray_init();
       mad_channel->process_lrank      =
 	ntbx_pc_global_to_local(xchannel_pc, process_rank);
       mad_channel->type               = mad_channel_type_mux;
@@ -2690,7 +2689,6 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
       mad_channel->adapter            = mux_adapter;
 
       tbx_darray_expand_and_set(mad_channel->mux_channel_darray, 0, mad_channel);
-      tbx_darray_expand_and_set(mad_channel->sub_channel_darray, 0, mad_channel);
       tbx_darray_expand_and_set(mad_channel->mux_list_darray, 0,
 				mad_channel->sub_list_darray);
 

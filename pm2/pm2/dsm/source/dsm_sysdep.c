@@ -65,6 +65,8 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
   char *addr = (char *)(context.cr2);
 #elif defined(SOLARIS_SYS)
   char *addr = siginfo->si_addr;
+#else
+#error DSM-PM2 is not yet implemented on that system! Sorry.
 #endif
 #ifdef DEBUG1
   fprintf(stderr, "entering handler, sig = %d addr = %p\n", sig, addr);
@@ -128,9 +130,9 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
   sigemptyset(&act.sa_mask);
   sigaddset(&act.sa_mask, MARCEL_TIMER_SIGNAL);
 #ifdef SOLARIS_SYS
-  act.sa_flags = 0;
-#else
   act.sa_flags = SA_SIGINFO;
+#else
+  act.sa_flags = 0;
 #endif
 
   if (sigaction(SIGBUS, &act, &bus_sigact) != 0)

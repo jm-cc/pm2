@@ -323,7 +323,7 @@ fi
 
 # CFLAGS : on prend tous les cflags
 for lib in $PM2_LIBS; do
-    LIB=`echo $lib | tr [a-z] [A-Z]`
+    LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
     the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS` -D${LIB}"
     if [ -d "$PM2_ROOT/modules/$lib/include" ]; then
 	the_flags="$the_flags -I$PM2_ROOT/modules/$lib/include"
@@ -337,7 +337,7 @@ vide=
 libs_pm2=
 # LDFLAGS : on ne prend que les lib demandées (toutes si aucune spécifiée)
 for lib in $libs; do
-    LIB=`echo $lib | tr [a-z] [A-Z]`
+    LIB=`echo $lib | tr '[a-z]' '[A-Z]'`
     libname="`eval echo \\$PM2_${LIB}_LIBNAME`"
     case "$libname" in
     $vide)

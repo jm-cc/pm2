@@ -74,6 +74,22 @@ do
 		rm ${PM2_ROOT}/source/obj/$i/$f
 	    fi
 	done
+	# librairies (TOOLBOX)
+	for f in `ls ${PM2_ROOT}/toolbox/lib/$i`
+	do
+	    if [ ! -d ${PM2_ROOT}/toolbox/lib/$i/$f ] ; then
+		echo "	deleting ${PM2_ROOT}/toolbox/lib/$i/$f"
+		rm ${PM2_ROOT}/toolbox/lib/$i/$f
+	    fi
+	done
+	# objets "source" (TOOLBOX)
+	for f in `ls ${PM2_ROOT}/toolbox/obj/$i`
+	do
+	    if [ ! -d ${PM2_ROOT}/toolbox/obj/$i/$f ] ; then
+		echo "	deleting ${PM2_ROOT}/toolbox/obj/$i/$f"
+		rm ${PM2_ROOT}/toolbox/obj/$i/$f
+	    fi
+	done
 	# console
 	for f in `ls ${PM2_ROOT}/console/obj/$i`
 	do

@@ -28,4 +28,12 @@ extern int get_next_filtered_trace(trace *tr);
 
 extern void tracelib_close();
 
+extern u_64 get_active_time();
+
+extern u_64 get_idle_time();
+
+extern int get_active_slices();
+
+extern int get_idle_slices();
+
 #endif

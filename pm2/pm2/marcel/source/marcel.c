@@ -314,8 +314,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
        || (new_task->user_space_ptr && !attr->immediate_activation)
 #ifdef MA__LWPS
 	  // On ne peut pas placer ce thread sur le LWP courant
-       || (marcel_vpmask_vp_ismember(&new_task->vpmask,
-				      GET_LWP(cur)->number))
+       || (marcel_vpmask_vp_ismember(new_task->vpmask,
+				     GET_LWP(cur)->number))
 #ifndef MA__ONE_QUEUE
 	  // Si la politique est du type 'placer sur le LWP le moins
 	  // chargé', alors on ne peut pas placer ce thread sur le LWP

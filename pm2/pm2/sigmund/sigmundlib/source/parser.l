@@ -13,8 +13,8 @@
      s = strtok(NULL, "\"");
      s = strtok(NULL, "\"");
      code_table[nb_code].name = (char *) calloc(sizeof(char), 200);
-     code_table[nb_code].name[199] = '\0';
      assert(code_table[nb_code].name != NULL);
+     code_table[nb_code].name[199] = '\0';
      sscanf(s, "%s", code_table[nb_code].name);
      code_table[nb_code].name[strlen(code_table[nb_code].name)] = '\0';
      nb_code++;

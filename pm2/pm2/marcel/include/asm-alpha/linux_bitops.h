@@ -340,9 +340,9 @@ static inline unsigned long ma_ffz(unsigned long word)
 	unsigned long bits, qofs, bofs;
 
 	bits = __kernel_cmpbge(word, ~0UL);
-	qofs = ffz_b(bits);
+	qofs = ma_ffz_b(bits);
 	bits = __kernel_extbl(word, qofs);
-	bofs = ffz_b(bits);
+	bofs = ma_ffz_b(bits);
 
 	return qofs*8 + bofs;
 #endif
@@ -363,9 +363,9 @@ static inline unsigned long __ma_ffs(unsigned long word)
 	unsigned long bits, qofs, bofs;
 
 	bits = __kernel_cmpbge(0, word);
-	qofs = ffz_b(bits);
+	qofs = ma_ffz_b(bits);
 	bits = __kernel_extbl(word, qofs);
-	bofs = ffz_b(~bits);
+	bofs = ma_ffz_b(~bits);
 
 	return qofs*8 + bofs;
 #endif
@@ -384,7 +384,7 @@ static inline int ma_ffs(int word);
 #section marcel_inline
 static inline int ma_ffs(int word)
 {
-	int result = __ffs(word) + 1;
+	int result = __ma_ffs(word) + 1;
 	return word ? result : 0;
 }
 

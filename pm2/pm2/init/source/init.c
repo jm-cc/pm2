@@ -172,6 +172,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_memory_manager_init(*argc, argv);
 #ifdef MARCEL
   mad_forward_memory_manager_init(*argc, argv);
+  mad_mux_memory_manager_init(*argc, argv);
 #endif // MARCEL
 #endif /* MAD3 */
 
@@ -564,6 +565,7 @@ common_exit(common_attr_t *attr)
   mad_object_exit(attr->madeleine);
   attr->madeleine = NULL;
 #ifdef MARCEL
+  mad_mux_memory_manager_exit();
   mad_forward_memory_manager_exit();
 #endif // MARCEL
 

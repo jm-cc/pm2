@@ -449,10 +449,7 @@ void common_post_init(int *argc, char *argv[],
 #endif /* PROFILE */
 
 #ifdef MARCEL
-  if (!marcel_test_activity())
-     {
-	marcel_start_sched(argc, argv);
-     }
+  marcel_start_sched(argc, argv);
 #endif /* MARCEL */
 
 #if defined (MAD3) || defined(MAD4)
@@ -670,7 +667,6 @@ common_exit(common_attr_t *attr)
   // Marcel shutdown
   // --------------------------------
   marcel_finish();
-  marcel_clear_activity();
 #endif // MARCEL
 
 #ifdef PROFILE

@@ -207,6 +207,8 @@ targethelp:
 	@echo "  distclean  : cleanall + destroy the flavors themselves"
 	@echo "  refresh    : regenerate the current flavor"
 	@echo "  refreshall : regenerate all flavors"
+	@echo "  checkflavor: check correctness of all flavors"
+	@echo "  sos        : make sanity checks"
 
 # Configuration
 #---------------------------------------------------------------------
@@ -227,10 +229,17 @@ xconfig: flavors
 	$(ROOT)/bin/ezflavor
 
 
-else #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
-
 # sos: verification des variables d'environnement PM2_*
 #---------------------------------------------------------------------
+
+checkflavor: flavors
+	$(COMMON_HIDE) \
+	for f in `$(ROOT)/bin/pm2-flavor list` ; do \
+		echo "Checking flavor $$f" ; \
+		$(ROOT)/bin/pm2-flavor check --flavor=$$f ; \
+	done
+
+else #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
 
 ifndef FLAVOR
   ifdef PM2_FLAVOR
@@ -267,6 +276,8 @@ sos:
 	echo "PM2_BUILD_DIR = $(PM2_BUILD_DIR)" ; \
 	echo "********* Refreshing files for current flavor *********" ; \
 	$(MAKE) -C . refresh ; \
+	echo "********* Checking correctness for current flavor *********" ; \
+	./bin/pm2-flavor check --flavor=$(FLAVOR) ; \
 	echo "Humm... Well, all should be ok now!"
 
 endif #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))

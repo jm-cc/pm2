@@ -23,7 +23,8 @@
     !defined(TBX_KERNEL) && \
     !defined(NTBX_KERNEL) && \
     !defined(DSM_KERNEL) && \
-    !defined(MAD1_KERNEL)
+    !defined(MAD1_KERNEL) && \
+    !defined(PROFILE_KERNEL)
 
 #ifdef TBX
 #include "tbx.h"

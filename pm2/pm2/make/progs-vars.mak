@@ -98,7 +98,7 @@ PRG_PIC_TO_S     =  $(PRG_GEN_ASM)/$(patsubst %.pic,%.s,$(notdir $@))
 PRG_GEN_C_TO_H   =  $(PRG_GEN_INC)/$(patsubst %.c,%.h,$(notdir $@))
 PRG_GEN_H_TO_C   =  $(PRG_GEN_INC)/$(patsubst %.h,%.c,$(notdir $@))
 
-COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(PRG_STAMP_FILES) $(MAKEFILE_FILE) 
+COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(MAKEFILE_FILE) 
 
 $(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
 	@$(PM2_CONFIG) --gen_mak progs

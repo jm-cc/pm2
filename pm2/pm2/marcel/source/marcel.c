@@ -45,6 +45,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/uio.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -83,6 +84,10 @@ void LONGJMP(jmp_buf buf, int val)
 
 #ifdef STACK_OVERFLOW_DETECT
 #error "STACK_OVERFLOW_DETECT IS CURRENTLY NOT IMPLEMENTED"
+#endif
+
+#ifdef __ACT__
+#include <sys/upcalls.h>
 #endif
 
 static long page_size;
@@ -218,19 +223,30 @@ static __inline__ void init_task_desc(marcel_t t)
   t->previous_lwp = NULL;
   t->next_cleanup_func = 0;
   t->in_sighandler = FALSE;
+#ifdef __ACT__
+  t->marcel_lock=1;
+#endif
 }
 
 int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t arg)
 {
   marcel_t cur = marcel_self(), new_task;
 
+  ACTDEBUG(printf("marcel_create\n")); 
   TIMING_EVENT("marcel_create");
 
   if(!attr)
     attr = &marcel_attr_default;
 
   lock_task();
+
+#ifdef __ACT__
+  cur->sched_by = SCHED_BY_MARCEL;
+  if(setjmp(cur->jb.migr_jb) == NORMAL_RETURN) {
+#else
   if(setjmp(cur->jb) == NORMAL_RETURN) {
+#endif
+    ACTDEBUG(printf("marcel_create ending\n")); 
 #ifdef DEBUG
     breakpoint();
 #endif
@@ -238,11 +254,16 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     if(cur->child)
       marcel_insert_task(cur->child);
     unlock_task();
+    ACTDEBUG(printf("marcel_create ended\n")); 
     return 0;
   } else {
+#ifdef __ACT__
+    cur->state_ext=MARCEL_READY;
+#endif
     if(attr->stack_base) {
       register unsigned long top = MAL_BOT((long)attr->stack_base +
 					   attr->stack_size);
+      ACTDEBUG(printf("marcel_create continue stack_base\n")); 
 #ifdef DEBUG
       if(top & (SLOT_SIZE-1)) { /* Not slot-aligned */
 	unlock_task();
@@ -262,6 +283,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       new_task->static_stack = TRUE;
     } else {
       char *bottom;
+      ACTDEBUG(printf("marcel_create continue not stack_base\n")); 
 #ifdef DEBUG
       if(attr->stack_size > SLOT_SIZE)
 	RAISE(NOT_IMPLEMENTED);
@@ -307,6 +329,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
     marcel_one_more_task(new_task);
     MTRACE("Creation", new_task);
+    ACTDEBUG(printf("marcel_create Created\n")); 
 
 #ifndef MINIMAL_PREEMPTION
     if((locked() > 1) /* lock_task has been called */
@@ -316,26 +339,46 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #endif
        ) {
 #endif
+      ACTDEBUG(printf("marcel_create continue part 1\n")); 
       new_task->father->child = ((new_task->user_space_ptr && !attr->immediate_activation)
 				 ? NULL /* do not insert now */
 				 : new_task); /* insert asap */
+
+#ifdef __ACT__
+      act_update(new_task);
+#endif
 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
 
       MTRACE("Preemption", marcel_self());
 
+#ifdef __ACT__
+      marcel_self()->sched_by = SCHED_BY_MARCEL;
+      if(setjmp(marcel_self()->jb.migr_jb) == FIRST_RETURN) {
+#else
       if(setjmp(marcel_self()->jb) == FIRST_RETURN) {
+#endif
 	call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+	marcel_self()->state_ext=MARCEL_READY;
+	ACTDEBUG(printf("restart_father\n")); 
+	restart_thread(marcel_self()->father);
+#else
 	longjmp(marcel_self()->father->jb, NORMAL_RETURN);
+#endif
       }
 #ifdef DEBUG
       breakpoint();
+#endif
+#ifdef __ACT__
+      marcel_self()->state_ext=MARCEL_RUNNING;
 #endif
       MTRACE("Preemption", marcel_self());
       unlock_task();
 #ifndef MINIMAL_PREEMPTION
     } else {
+      ACTDEBUG(printf("marcel_create continue part 2\n")); 
       new_task->father->child = NULL;
 
       marcel_insert_task(new_task);
@@ -344,6 +387,10 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       set_sp(new_task->initial_sp);
 
       MTRACE("Preemption", marcel_self());
+
+#ifdef __ACT__
+      act_update(marcel_self())->state_ext=MARCEL_RUNNING;
+#endif
 
       unlock_task();
     }
@@ -385,11 +432,15 @@ int marcel_exit(any_t val)
   cur->previous_lwp = NULL;
 #endif
 
+  ACTDEBUG(printf("marcel_exit(%p) %p\n", val, cur));
+
   cur->ret_val = val;
   if(!cur->detached) {
     marcel_sem_V(&cur->client);
+    ACTDEBUG(printf("client ?\n"));
     marcel_sem_P(&cur->thread);
   }
+  ACTDEBUG(printf("thread ?\n"));
 
   if(cur->static_stack) { /* Si la pile a ete allouee
 			     a l'exterieur de Marcel... */
@@ -425,6 +476,9 @@ int marcel_exit(any_t val)
 #ifdef SMP
     cur_lwp = marcel_self()->lwp;
 #endif
+#ifdef __ACT__
+    act_update(marcel_self());
+#endif
 
     unlock_task();
 
@@ -450,9 +504,13 @@ int marcel_exit(any_t val)
     MTRACE("Exit", cur_lwp->sec_desc);
 
     call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+    restart_thread(cur);
+#else
     longjmp(cur->jb, NORMAL_RETURN);
+#endif
 
-  } else { /* Ici, la pile a ete allouee par le noyau Marcel */
+  } else { /* Ici, la pile a ete allouée par le noyau Marcel */
 
 #ifdef PM2
     RAISE(PROGRAM_ERROR);
@@ -485,6 +543,9 @@ int marcel_exit(any_t val)
 #ifdef SMP
     cur_lwp = marcel_self()->lwp;
 #endif
+#ifdef __ACT__
+    act_update(marcel_self());
+#endif
 
 #ifdef STACK_OVERFLOW_DETECT
     stack_unprotect(cur_lwp->sec_desc->father);
@@ -493,7 +554,11 @@ int marcel_exit(any_t val)
     marcel_slot_free(marcel_stackbase(cur_lwp->sec_desc->father));
 
     call_ST_FLUSH_WINDOWS();
+#ifdef __ACT__
+    restart_thread(cur_lwp->sec_desc->child);
+#else
     longjmp(cur_lwp->sec_desc->child->jb, NORMAL_RETURN);
+#endif
   }
 
   return 0; /* Silly, isn't it ? */
@@ -506,7 +571,9 @@ int marcel_cancel(marcel_t pid)
   } else {
     pid->ret_val = NULL;
     if(!pid->detached) {
+#ifndef __ACT__
       marcel_deviate(pid, (handler_func_t)marcel_exit, NULL);
+#endif
       return 0;
     }
 
@@ -655,6 +722,7 @@ void marcel_unfreeze(marcel_t *pids, int nb)
 /* WARNING!!! MUST BE LESS CONSTRAINED THAN MARCEL_ALIGN (64) */
 #define ALIGNED_32(addr)(((unsigned long)(addr) + 31) & ~(31L))
 
+#ifndef __ACT__
 void marcel_begin_hibernation(marcel_t t, transfert_func_t transf, 
 			      void *arg, boolean fork)
 {
@@ -711,6 +779,7 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
     }
   }
 }
+#endif
 
 marcel_t marcel_alloc_stack(unsigned size)
 {
@@ -742,6 +811,7 @@ marcel_t marcel_alloc_stack(unsigned size)
   return t;
 }
 
+#ifndef __ACT__
 void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 {
   memcpy(t->jb, t->migr_jb, sizeof(jmp_buf));
@@ -758,6 +828,7 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 
   unlock_task();
 }
+#endif
 
 void marcel_enabledeviation(void)
 {
@@ -781,6 +852,7 @@ void marcel_disabledeviation(void)
   ++marcel_self()->not_deviatable;
 }
 
+#ifndef __ACT__
 static void insertion_relai(handler_func_t f, void *arg)
 { 
   jmp_buf back;
@@ -860,6 +932,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     }
   }
 }
+#endif /* __ACT__ */
 
 static unsigned __nb_lwp = 0;
 
@@ -912,8 +985,12 @@ void marcel_init(int *argc, char *argv[])
 
   if(!already_called) {
 
+    ACTDEBUG(printf("marcel_init\n")); 
+
     /* Analyse but do not strip */
     marcel_parse_cmdline(argc, argv, TRUE);
+
+    ACTDEBUG(printf("marcel_init parsed cmdline\n")); 
 
 #ifndef PM2
     /* Strip without analyse */
@@ -922,10 +999,12 @@ void marcel_init(int *argc, char *argv[])
 
 #ifndef PM2
     timing_init();
+    ACTDEBUG(printf("marcel_init timing_init done\n")); 
 #endif
 
 #if !defined(PM2) && defined(USE_SAFE_MALLOC)
     safe_malloc_init();
+    ACTDEBUG(printf("marcel_init safe_molloc_init\n")); 
 #endif
 
 #ifdef SOLARIS_SYS
@@ -939,8 +1018,24 @@ void marcel_init(int *argc, char *argv[])
 #endif
 
     marcel_slot_init();
+    ACTDEBUG(printf("marcel_init slot_init done\n")); 
+
+#ifdef __ACT__
+    init_upcalls(0);
+    ACTDEBUG(printf("marcel_init upcalls_init done\n")); 
+#endif
+
     marcel_sched_init(__nb_lwp);
+    ACTDEBUG(printf("marcel_init schedt_init done\n")); 
+
     marcel_io_init();
+    ACTDEBUG(printf("marcel_init io_init done\n")); 
+
+#ifdef __ACT__
+    launch_upcalls(WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"
+				       " | wc -l`")));
+    ACTDEBUG(printf("marcel now use upcalls\n")); 
+#endif
 
     already_called = TRUE;
   }
@@ -1134,7 +1229,7 @@ int _raise(exception ex)
 
 /* =============== Gestion des E/S non bloquantes =============== */
 
-
+#ifndef __ACT__
 int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 {
   int res = 0;
@@ -1164,7 +1259,7 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 
    return res;
 }
-
+#endif /* __ACT__ */
 
 #ifndef STANDARD_MAIN
 
@@ -1205,6 +1300,7 @@ int main(int argc, char *argv[])
 #endif
 
 
+#ifndef __ACT__
 /* *** Christian Perez Stuff ;-) *** */
 
 void marcel_special_init(marcel_t *liste)
@@ -1337,3 +1433,4 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
 
 /* End of Christian Perez Stuff */
 
+#endif /* __ACT__ */

@@ -26,7 +26,7 @@ typedef struct s_mad_driver_interface
   /* Driver initialization */
   void
   (*driver_init)(p_mad_driver_t);
-  
+
 
   /* Adapter initialization */
   void
@@ -43,15 +43,15 @@ typedef struct s_mad_driver_interface
   void
   (*connection_init)(p_mad_connection_t,
 		     p_mad_connection_t);
-  
+
   void
   (*link_init)(p_mad_link_t);
-  
+
   /* Point-to-point connection */
   void
   (*accept)(p_mad_connection_t,
 	    p_mad_adapter_info_t);
-  
+
   void
   (*connect)(p_mad_connection_t,
 	     p_mad_adapter_info_t);
@@ -60,30 +60,30 @@ typedef struct s_mad_driver_interface
   void
   (*after_open_channel)(p_mad_channel_t);
 
-  void 
+  void
   (*before_close_channel)(p_mad_channel_t);
 
   /* Connection clean-up function */
   void
   (*disconnect)(p_mad_connection_t);
-  
-  void 
+
+  void
   (*after_close_channel)(p_mad_channel_t);
 
   /* Deallocation functions */
   void
   (*link_exit)(p_mad_link_t);
-  
+
   void
   (*connection_exit)(p_mad_connection_t,
 		     p_mad_connection_t);
-  
+
   void
   (*channel_exit)(p_mad_channel_t);
 
   void
   (*adapter_exit)(p_mad_adapter_t);
-  
+
   void
   (*driver_exit)(p_mad_driver_t);
 
@@ -115,7 +115,7 @@ typedef struct s_mad_driver_interface
   p_mad_connection_t
   (*poll_message)(p_mad_channel_t);
 #endif /* MAD_MESSAGE_POLLING */
-  
+
   void
   (*message_received)(p_mad_connection_t);
 
@@ -123,16 +123,16 @@ typedef struct s_mad_driver_interface
   void
   (*send_buffer)(p_mad_link_t,
 		 p_mad_buffer_t);
-  
+
   void
   (*receive_buffer)(p_mad_link_t,
 		    p_mad_buffer_t *);
-  
+
   /* Buffer group transfer */
   void
   (*send_buffer_group)(p_mad_link_t,
 		       p_mad_buffer_group_t);
-  
+
   void
   (*receive_sub_buffer_group)(p_mad_link_t,
 			      tbx_bool_t,

@@ -38,7 +38,7 @@ typedef struct s_mad_driver
   mad_driver_id_t             id;
 
   p_mad_driver_interface_t    interface;
-  
+
   /* Settings */
   mad_buffer_alignment_t      buffer_alignment;
   mad_connection_type_t       connection_type;

@@ -1,3 +1,23 @@
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+/*
+ * Mad_constructor_.h
+ * ==================
+ */
+
 #ifndef MAD_CONSTRUCTOR_H
 #define MAD_CONSTRUCTOR_H
 
@@ -16,6 +36,12 @@ mad_dir_driver_cons(void);
 
 p_mad_dir_channel_process_specific_t
 mad_dir_channel_process_specific_cons(void);
+
+p_mad_dir_channel_common_process_specific_t
+mad_dir_channel_common_process_specific_cons(void);
+
+p_mad_dir_channel_common_t
+mad_dir_channel_common_cons(void);
 
 p_mad_dir_channel_t
 mad_dir_channel_cons(void);

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -65,7 +65,7 @@ log()
 
 mad3()
 {
-    log "Args: $prog_args"
+    log "Args: ${prog_args[@]}"
 
     protocol=$_PM2CONFIG_PROTOCOLS
     log "Protocol: $protocol"
@@ -127,7 +127,7 @@ mad3()
     [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2load_args="${pm2load_args} -l"
     [ "$PM2_LOGS_ON_NODE_0" = "off" ] && pm2load_args="${pm2load_args} --l"
 
-    ${PM2_ROOT}/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE $prog_args
+    ${PM2_ROOT}/bin/leonie "--appli=${PM2_PROG_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2load_args} $PM2_LEONIE_FILE "${prog_args[@]}"
 
     exit $?
 }
@@ -246,7 +246,7 @@ PM2_PROG_NAME=$1
 export PM2_PROG_NAME
 shift
 
-prog_args=${@:+"$@"}
+prog_args=(${@:+"$@"})
 
 if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 
@@ -269,7 +269,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
     *\ mad3\ *)
 	# Mad III mode
 	log "Mad III selected"
-	mad3 $prog_args
+	mad3 "${prog_args[@]}"
 	exit $?
 	;;
     *)
@@ -360,21 +360,21 @@ fi
 
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
     log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
-	$PM2_CMD_NAME $prog_args"
+	$PM2_CMD_NAME ${prog_args[@]}"
     $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
-	$PM2_CMD_NAME $prog_args 2>&1 | tee /tmp/${USER}-pm2log-0
+	$PM2_CMD_NAME "${prog_args[@]}" 2>&1 | tee /tmp/${USER}-pm2log-0
     exit 0
 elif [ "$PM2_LOGS_ON_NODE_0" = "only" ]; then
     log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
-        $PM2_CMD_NAME $prog_args"
+        $PM2_CMD_NAME ${prog_args[@]}"
     $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
-        $PM2_CMD_NAME $prog_args > /tmp/${USER}-pm2log-0 2>&1
+        $PM2_CMD_NAME "${prog_args[@]}" > /tmp/${USER}-pm2log-0 2>&1
     exit 0
 else
     log "Executing: set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
-        $PM2_CMD_NAME $prog_args"
+        $PM2_CMD_NAME ${prog_args[@]}"
     log "Executing: . $_PM2CONFIG_LOADER"
     set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
-	$PM2_CMD_NAME $prog_args
+	$PM2_CMD_NAME "${prog_args[@]}"
     . $_PM2CONFIG_LOADER
 fi

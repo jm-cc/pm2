@@ -36,6 +36,12 @@
 /* TRACING: main trace flag */
 /* #define TRACING */
 
+/* TBX_BACKTRACE_ON_FAILURE: controls usage of the backtracing features
+ * provided by the GNU C library
+ */
+#define TBX_BACKTRACE_ON_FAILURE
+#define TBX_BACKTRACE_DEPTH 15
+
 /* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
 #define OOPS
 
@@ -78,6 +84,13 @@ static const int __tbx_using_gcc3_attributes = 0;
 static const int __tbx_using_gcc2_attributes = 0;
 #endif // (__GNUC__ >= 2)
 
+// __FUNCTION__ compatibility
+#if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#  define __TBX_FUNCTION__ __func__
+#else // (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#  define __TBX_FUNCTION__ __FUNCTION__
+#endif // (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
+
 /*
  * Constant definition  _____________________________________________
  * ____________________//////////////////////////////////////////////
@@ -95,9 +108,9 @@ static const int __tbx_using_gcc2_attributes = 0;
 
 #  define TIME_INIT() _TBXT_POST
 #  define TIME(str)
-    _TBXT_PRE; pm2fulldebug(str " [%4f usecs]\n", _TBXT_DIFF); _TBXT_POST
+    _TBXT_PRE; pm2fulldebug("%s [%4f usecs]\n", str, _TBXT_DIFF); _TBXT_POST
 #  define TIME_IN()  TIME_INIT()
-#  define TIME_OUT() TIME(__FUNCTION__)
+#  define TIME_OUT() TIME(__TBX_FUNCTION__)
 #  define TIME_VAL(str, val) \
     _TBXT_PRE; \
     pm2fulldebug(str " = %d [%4f usecs]\n", (int)(val), _TBXT_DIFF); \
@@ -165,14 +178,73 @@ static const int __tbx_using_gcc2_attributes = 0;
 #  endif /* OOPS */
 #endif // FAILURE_CLEANUP
 
+#ifdef TBX_BACKTRACE_ON_FAILURE
+#  include <execinfo.h>
+#  include <stdio.h>
+#  include <stdlib.h>
+
+#  ifndef TBX_BACKTRACE_DEPTH
+#    define TBX_BACKTRACE_DEPTH 10
+#  endif // TBX_BACKTRACE_DEPTH
+
+#  ifdef TBX_USE_SAFE_MACROS
+#    define __TBX_PRINT_TRACE()\
+     ({\
+       void    *array[TBX_BACKTRACE_DEPTH];\
+       size_t   size;\
+       char   **strings;\
+       size_t   i;\
+\
+       size    = backtrace (array, TBX_BACKTRACE_DEPTH);\
+       strings = backtrace_symbols (array, size);\
+\
+       pm2fulldebug("Obtained %d stack frames.\n", size);\
+\
+       for (i = 0; i < size; i++)\
+          pm2fulldebug ("%s\n", strings[i]);\
+\
+       free (strings);\
+     })
+#  else  // TBX_USE_SAFE_MACROS
+static
+void
+__tbx_backtrace(void)
+{
+  void *array[TBX_BACKTRACE_DEPTH];
+  size_t size;
+  char **strings;
+  size_t i;
+
+  size = backtrace(array, TBX_BACKTRACE_DEPTH);
+  strings = backtrace_symbols(array, size);
+
+  fprintf(stderr, "Obtained %zd stack frames.\n", size);
+
+  for (i = 0; i < size; i++)
+    fprintf(stderr, "%s\n", strings[i]);
+
+  free (strings);
+}
+#    define __TBX_PRINT_TRACE() __tbx_backtrace();
+#  endif // TBX_USE_SAFE_MACROS
+#else  // TBX_BACKTRACE_ON_FAILURE
+#  define __TBX_PRINT_TRACE() 0
+#endif // TBX_BACKTRACE_ON_FAILURE
+
+#ifndef FAILURE_CONTEXT
+#  define FAILURE_CONTEXT
+#endif // FAILURE_CONTEXT
+
 #define FAILURE(str) \
      (pm2debug_flush(), \
-      pm2fulldebug("FAILURE: %s\n", (str)), \
+      pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s\n", (str)), \
+      __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
 #define ERROR(str) \
      (pm2debug_flush(), \
-      pm2fulldebug("FAILURE: %s: %s\n\n", (str), strerror(errno)), \
+      pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", (str), strerror(errno)), \
+      __TBX_PRINT_TRACE(), \
       _TBX_EXIT_FAILURE())
 
 /*

@@ -89,32 +89,32 @@ typedef volatile void *mad_sisci_map_addr_t,   *p_mad_sisci_map_addr_t;
 typedef char mad_sisci_64B_block_t[64];
 typedef char mad_sisci_1024B_block_t[1024];
 
-typedef volatile union
+typedef volatile union u_mad_sisci_status
 {
   tbx_flag_t            flag;
   mad_sisci_64B_block_t buffer;
 } mad_sisci_status_t, *p_mad_sisci_status_t;
 
-typedef struct
+typedef struct s_mad_sisci_connection_status
 {
   mad_sisci_status_t      read;
   mad_sisci_1024B_block_t padding;
   mad_sisci_status_t      write;
 } mad_sisci_connection_status_t, *p_mad_sisci_connection_status_t ;
 
-typedef volatile struct
+typedef volatile struct s_mad_sisci_internal_segment_data
 {
   mad_sisci_connection_status_t status;
   mad_sisci_node_id_t           node_id;  
 } mad_sisci_internal_segment_data_t, *p_mad_sisci_internal_segment_data_t;
 
-typedef volatile struct
+typedef volatile struct s_mad_sisci_user_segment_data
 {
   mad_sisci_connection_status_t status;
   char                          buffer[MAD_SISCI_BUFFER_SIZE];  
 } mad_sisci_user_segment_data_t, *p_mad_sisci_user_segment_data_t;
 
-typedef struct 
+typedef struct s_mad_sisci_local_segment
 {
   sci_local_segment_t        segment;  
   sci_map_t                  map;
@@ -124,7 +124,7 @@ typedef struct
   mad_sisci_segment_size_t   size;
 } mad_sisci_local_segment_t, *p_mad_sisci_local_segment_t;
 
-typedef struct 
+typedef struct s_mad_sisci_remote_segment
 {
   sci_remote_segment_t       segment;
   sci_map_t                  map;
@@ -135,7 +135,7 @@ typedef struct
   sci_sequence_t             sequence;
 } mad_sisci_remote_segment_t, *p_mad_sisci_remote_segment_t;
 
-typedef struct
+typedef struct s_mad_sisci_driver_specific
 {
   int nb_adapter;
 #if defined(MARCEL) && defined(USE_MARCEL_POLL)
@@ -143,14 +143,14 @@ typedef struct
 #endif
 } mad_sisci_driver_specific_t, *p_mad_sisci_driver_specific_t;
 
-typedef struct
+typedef struct s_mad_sisci_adapter_specific
 {
   mad_sisci_adapter_id_t local_adapter_id;  
   mad_sisci_node_id_t    local_node_id;
   p_mad_sisci_node_id_t  remote_node_id;
 } mad_sisci_adapter_specific_t, *p_mad_sisci_adapter_specific_t;
 
-typedef struct
+typedef struct s_mad_sisci_channel_specific
 {
   /* Array of size configuration->size with adresse of flag for read */
   p_mad_sisci_status_t *read;
@@ -158,36 +158,36 @@ typedef struct
   int                   max;
 } mad_sisci_channel_specific_t, *p_mad_sisci_channel_specific_t;
 
-typedef enum
+typedef enum e_mad_sisci_poll_op
 {
   mad_sisci_poll_channel,
   mad_sisci_poll_flag,
 } mad_sisci_poll_op_t, *p_mad_sisci_poll_op_t;
 
-typedef struct
+typedef struct s_mad_sisci_poll_channel_data
 {
   p_mad_channel_t    channel;
   p_mad_connection_t connection;  
 } mad_sisci_poll_channel_data_t, *p_mad_sisci_poll_channel_data_t;
 
-typedef struct
+typedef struct s_mad_sisci_poll_flag_data
 {
   p_mad_sisci_status_t flag;
 } mad_sisci_poll_flag_data_t, *p_mad_sisci_poll_flag_data_t;
 
-typedef union
+typedef union u_mad_sisci_poll_data
 {
   mad_sisci_poll_channel_data_t channel_op;
   mad_sisci_poll_flag_data_t    flag_op;
 } mad_sisci_poll_data_t, *p_mad_sisci_poll_data_t;
 
-typedef struct
+typedef struct s_mad_sisci_marcel_poll_cell_arg
 {
   mad_sisci_poll_op_t   op;
   mad_sisci_poll_data_t data;
 } mad_sisci_marcel_poll_cell_arg_t, *p_mad_sisci_marcel_poll_cell_arg_t;
 
-typedef struct
+typedef struct s_mad_sisci_connection_specific
 {
   sci_desc_t                 sd[2];
   mad_sisci_local_segment_t  local_segment[2];
@@ -196,7 +196,7 @@ typedef struct
   volatile tbx_bool_t        write_flag_flushed;
 } mad_sisci_connection_specific_t, *p_mad_sisci_connection_specific_t;
 
-typedef struct
+typedef struct s_mad_sisci_link_specific
 {
   int dummy;
 } mad_sisci_link_specific_t, *p_mad_sisci_link_specific_t;
@@ -656,7 +656,7 @@ mad_sisci_adapter_init(p_mad_adapter_t adapter)
   p_tbx_string_t                 parameter_string = NULL;
   
   LOG_IN();
-  adapter_specific  = TBX_MALLOC(sizeof(mad_sisci_adapter_specific_t));
+  adapter_specific  = TBX_CALLOC(1, sizeof(mad_sisci_adapter_specific_t));
   adapter->specific = adapter_specific;
 
   adapter->mtu      = 0xFFFFFFFFUL;
@@ -1073,19 +1073,6 @@ mad_sisci_choice(p_mad_connection_t connection,
     }
 }
 
-
-void
-mad_sisci_adapter_exit(p_mad_adapter_t adapter)
-{
-  p_mad_sisci_adapter_specific_t adapter_specific = adapter->specific;
-  
-  LOG_IN();
-  TBX_FREE(adapter_specific->remote_node_id);
-  TBX_FREE(adapter_specific);
-  adapter->specific = NULL;
-  LOG_OUT();
-}
-
 void
 mad_sisci_channel_exit(p_mad_channel_t channel)
 {
@@ -1095,6 +1082,17 @@ mad_sisci_channel_exit(p_mad_channel_t channel)
   TBX_FREE(channel_specific->read);
   TBX_FREE(channel_specific);
   channel->specific = NULL;
+  LOG_OUT();
+}
+
+void
+mad_sisci_adapter_exit(p_mad_adapter_t adapter)
+{
+  p_mad_sisci_adapter_specific_t adapter_specific = adapter->specific;
+  
+  LOG_IN();
+  TBX_FREE(adapter_specific);
+  adapter->specific = NULL;
   LOG_OUT();
 }
 

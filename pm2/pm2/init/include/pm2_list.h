@@ -260,6 +260,23 @@ static inline void list_splice_init(struct list_head *list,
                      prefetch(pos->member.next))
 
 /**
+ * list_for_each_entry_from  -  iterate over list of given type, starting at some point
+ *                              which won't be looked at
+ * @pos:        the type * to use as a loop counter.
+ * @head:       the head for your list.
+ * @start:      the type * to use as starting element.
+ * @member:     the name of the list_struct within the struct.
+ */
+#define list_for_each_entry_from_begin(pos, head, start, member)        \
+        for (pos = list_entry((start)->member.next, typeof(*pos), member),     \
+                     prefetch(pos->member.next);                        \
+             pos != (start);                                            \
+             pos = list_entry(pos->member.next, typeof(*pos), member),  \
+                     prefetch(pos->member.next))                        \
+		if (&pos->member != head) {
+#define list_for_each_entry_from_end() }
+
+/**
  * list_for_each_entry_reverse - iterate backwards over list of given type.
  * @pos:        the type * to use as a loop counter.
  * @head:       the head for your list.

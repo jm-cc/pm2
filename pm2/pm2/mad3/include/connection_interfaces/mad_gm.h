@@ -90,7 +90,7 @@ mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
 				TBX_UNUSED,
 				p_mad_buffer_group_t bg);
 void
-mad_channel_exit(p_mad_channel_t ch);
+mad_gm_channel_exit(p_mad_channel_t ch);
 
 void
 mad_gm_driver_exit(p_mad_driver_t d);

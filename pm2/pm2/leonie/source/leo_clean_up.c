@@ -628,7 +628,7 @@ dir_fchannel_cleanup(p_leo_directory_t dir)
     }
 
   LOG_IN();
-  do_slist(dir->fchannel_slist, _f);
+  do_extract_slist(dir->fchannel_slist, _f);
 
   tbx_slist_free(dir->fchannel_slist);
   dir->fchannel_slist = NULL;

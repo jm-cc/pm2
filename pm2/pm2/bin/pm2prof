@@ -57,6 +57,8 @@ EOF
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
+OPTIONS=""
+
 while [ $# -gt 0 ]; do
     case $1 in
 	-f)
@@ -70,6 +72,10 @@ while [ $# -gt 0 ]; do
 	--)
 	    shift
 	    break
+	    ;;
+	-*)
+	    OPTIONS="$OPTIONS $1"
+	    shift
 	    ;;
 	*)
 	    break
@@ -87,6 +93,6 @@ analyser=${bindir}/fut_print
 
 [ -x ${analyser} ] || error "Fatal Error: \"${analyser}\" exec file not found!"
 
-exec ${analyser} -f "$@"
+exec ${analyser} $OPTIONS -f "$@"
 
 

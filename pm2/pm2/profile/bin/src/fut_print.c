@@ -31,11 +31,16 @@
 #define DEFAULT_TRACE_FILE "fut_trace_file"
 
 #define HISTO_SIZE	128
-#define MAX_HISTO_BAR_LENGTH	29
+#define MAX_HISTO_BAR_LENGTH	19
 #define HISTO_CHAR	'*'
 
 static int print_delta_time = 1;	/* 1 to print delta, 0 for cummulative */
 static FILE *stdbug = NULL;			/* fd for debug file (/dev/null normally) */
+
+
+/*	use 64-bit arithmetic for all times */
+typedef unsigned long long int	u_64;
+
 
 /*
 Document regarding printing cycles for each function 
@@ -64,63 +69,61 @@ in the field "total" cumulatively.
 #define MAX_NESTING 100
 
 
-struct fun_cycles_item {
-					int				counter; 
-					int				code ;    
-					unsigned int	total;
-					unsigned int	called_funs_cycles[MAX_FUNS];
-					int				called_funs_ctr[MAX_FUNS] ;
-                       };
+/* one of these items in v[] array for each function called */
+struct fun_cycles_item
+	{
+	unsigned int	counter; 			/* number of times it was called */
+	unsigned int	code;    			/* code for this function */
+	u_64			total;				/* total cycles spent in this function*/
+	u_64			called_funs_cycles[MAX_FUNS];	/* ith item = no of cycles
+													   in function i when
+													   called from this funct */
+	unsigned int	called_funs_ctr[MAX_FUNS];	/* ith item = no of calls from
+												   this funct to function i */
+	};
 
-struct prev_cycle {
-					int				code;
-					unsigned int	cycle_value;
-					int				first_param;
-                  };
-
-/* This array is capable of storing information for 100 functions */
-
+/* This array is capable of storing information for MAX_FUNS unique functions */
 struct fun_cycles_item v[MAX_FUNS];
-struct prev_cycle previous;
-struct prev_cycle previous_switchto;
 
 
 /*	keep nesting statistics in these arrays */
 /*	every cycle is accounted for exactly once */
 
 /*	stacks to keep track of start cycle and code for each nesting */
-/*	one stack per pid, kept in linked-list headed by v3_stack_head */
+/*	one stack per id, kept in linked-list headed by v3_stack_head */
+/*	new items are added to front of list, sto v3_stack_first is the tail too */
 /*	current stack is pointed to by v3_stack_ptr */
 struct v3_stack_item
-				{
-				int						v3_pos;
-				unsigned int			v3_pid;
-				unsigned int			v3_start_cycle[MAX_NESTING];
-				unsigned int			v3_code[MAX_NESTING];
-				unsigned int			v3_index[MAX_NESTING];
-				unsigned int			v3_switch_pid[MAX_NESTING];
-				struct v3_stack_item	*v3_next;
-				};
+	{
+	unsigned int			v3_pid;						/* id for this item */
+	u_64					v3_empty_time;				/* empty stack time */
+	int						v3_pos;						/* top of nest stacks */
+	u_64					v3_start_cycle[MAX_NESTING];/* rel-time */
+	unsigned int			v3_code[MAX_NESTING];		/* code */
+	unsigned int			v3_index[MAX_NESTING];		/* index into v[] */
+	unsigned int			v3_switch_pid[MAX_NESTING];
+	struct v3_stack_item	*v3_next;					/* link for v3 list */
+	};
 
-static struct v3_stack_item	*v3_stack_head = NULL;
-static struct v3_stack_item	*v3_stack_first = NULL;
-static struct v3_stack_item	*v3_stack_ptr = NULL;
+static struct v3_stack_item	*v3_stack_head = NULL;	/* head of v3 list */
+static struct v3_stack_item	*v3_stack_first = NULL;	/* tail of v3 list */
+static struct v3_stack_item	*v3_stack_ptr = NULL;	/* active v3 item */
 
 /*	arrays to keep track of number of occurrences and time accumulated */
-static unsigned int v3_function_cycles[MAX_FUNS] = {0};
-static unsigned int v3_function_count[MAX_FUNS] = {0};
-static unsigned int v3_function_code[MAX_FUNS] = {0};
+static u_64			v3_function_cycles[MAX_FUNS] = {0};
+static unsigned int	v3_function_count[MAX_FUNS] = {0};
+static unsigned int	v3_function_code[MAX_FUNS] = {0};
 
 static int v_pos = 0;
     
-unsigned int start_time_glob=0, end_time_glob=0;
+u_64 start_time_glob=0, end_time_glob=0;
+unsigned int set_time_glob=0;
 int a, b;
 
 
 struct pid_cycles_item	{
 						unsigned int			pid;
-						unsigned int			hi_cycles;
-						unsigned int			lo_cycles;
+						u_64					total_cycles;
 						struct pid_cycles_item	*link;
 						};
 
@@ -159,7 +162,7 @@ struct code_name	code_table[] =
 
 
 /*	user area to hold copy of system trace buffer */
-static unsigned int	basetime = 0, lastreltime = 0;
+static u_64			basetime = 0, lastreltime = 0;
 static time_t		start_time = 0, stop_time = 0;
 static int fd;
 static unsigned long pid = 0;
@@ -178,6 +181,18 @@ static unsigned long current_id = 0;
 static int fun_time = 0;
 
 
+
+/*	returns	1 if code is "normal" entry/exit code or switch_to.
+			0 if code is "singleton" code */
+int is_entry_exit( unsigned int code )
+	{
+	return	code != FUT_SETUP_CODE  &&
+			code != FUT_KEYCHANGE_CODE &&
+			code != FUT_RESET_CODE &&
+			code != FUT_CALIBRATE0_CODE  &&
+			code != FUT_CALIBRATE1_CODE  &&
+			code != FUT_CALIBRATE2_CODE;
+	}
 
 char *find_name( unsigned int code, int keep_entry )
 	{
@@ -209,59 +224,93 @@ char *find_name( unsigned int code, int keep_entry )
 
 static struct pid_cycles_item	*pid_cycles_list = NULL;
 
-void update_cycles( unsigned int cycles, unsigned int pid )
+/* keeps track of the total number of cycles attributed to each id */
+void update_cycles( u_64 cycles, unsigned int pid )
 	{
 	struct pid_cycles_item	*ptr;
-	unsigned int			i;
 
 	for( ptr = pid_cycles_list;  ptr != NULL;  ptr = ptr->link )
 		{
 		if( ptr->pid == pid )
 			{/* found item for this pid, just increment its cycles */
-			i = ptr->lo_cycles + cycles;
-			if( i < ptr->lo_cycles )
-				ptr->hi_cycles++;
-			ptr->lo_cycles = i;
+			ptr->total_cycles += cycles;
 			return;
 			}
 		}
 	/* loop finishes when item for this pid not found, make a new one */
 	ptr = (struct pid_cycles_item *)malloc(sizeof(struct pid_cycles_item));
 	ptr->pid = pid;
-	ptr->hi_cycles = 0;
-	ptr->lo_cycles = cycles;
+	ptr->total_cycles = cycles;
 	ptr->link = pid_cycles_list;		/* add to front of list */
 	pid_cycles_list = ptr;
 	}
 
 
-void print_cycles( unsigned int ratio )
+/*	prints the elapsed cycles and the breakdown into per-thread cycles */
+/*	also breaks them into "accounted for" within traced functions and
+	"unaccounted for" (i.e., outside traced functions */
+double print_cycles( unsigned int ratio )
 	{
 	struct pid_cycles_item	*ptr;
-	double					t, total, ptot;
+	double					t, ptot, total, utotal;
+	u_64					TimeDiff;
+	struct v3_stack_item	*v3_ptr;
+
+	printf("\n\n");
+	printf("%32s %12llu\n", "cycle clock at start", start_time_glob);
+	printf("%32s %12llu\n", "cycle clock at end", end_time_glob);
+	TimeDiff = end_time_glob - start_time_glob;
+	printf("%32s %12llu\n", "total elapsed clock cycles", TimeDiff);
+
+	if( lastreltime != TimeDiff )
+		{
+		printf("\n");
+		printf("%32s %12llu\n", "total elapsed clock cycles", lastreltime);
+		}
+	printf("\n\n");
 
 	total = 0.0;
 	ptot = 0.0;
-	printf("%9s %12s %11s\n", "id", "cycles", "percent");
+	printf("%32s\n", "elapsed clock cycles by id");
+	printf("\n");
+	printf("%32s %12s %11s\n", "id", "cycles", "percent");
 	printf("\n");
 	for( ptr = pid_cycles_list;  ptr != NULL;  ptr = ptr->link )
-		{
-		t = ((double)ptr->hi_cycles) * (((double)UINT_MAX) + 1.0) +
-			((double)ptr->lo_cycles);
-		total += t;
-		}
+		total += (double)ptr->total_cycles;
 	for( ptr = pid_cycles_list;  ptr != NULL;  ptr = ptr->link )
 		{
-		t = ((double)ptr->hi_cycles) * (((double)UINT_MAX) + 1.0) +
-			((double)ptr->lo_cycles);
-		printf("%9u %12.0f %10.2f%%\n", ptr->pid, t, t*100.0/total);
+		t = (double)ptr->total_cycles;
+		printf("%32u %12.0f %10.2f%%\n", ptr->pid, t, t*100.0/total);
 		ptot += t*100.0/total;
 		}
-	printf("%9s %12.0f %10.2f%%\n", "TOTAL", total, ptot);
+	printf("%32s %12.0f %10.2f%%\n", "total elapsed clock cycles", total, ptot);
+	printf("\n\n");
+
+	/*	print all the stack base times */
+	printf("%32s\n", "cycles outside traced functions");
+	printf("\n");
+	printf("%32s %12s %11s\n", "id", "cycles", "percent");
+	printf("\n");
+	utotal = 0.0;
+	ptot = 0.0;
+	for( v3_ptr = v3_stack_head;  v3_ptr != NULL;  v3_ptr = v3_ptr->v3_next )
+		utotal += (double)v3_ptr->v3_empty_time;
+	for( v3_ptr = v3_stack_head;  v3_ptr != NULL;  v3_ptr = v3_ptr->v3_next )
+		{
+		t = (double)v3_ptr->v3_empty_time;
+		printf("%32u %12llu %10.2f%%\n", v3_ptr->v3_pid, v3_ptr->v3_empty_time,
+					t*100.0/utotal);
+		ptot += t*100.0/utotal;
+		}
+	printf("%32s %12.0f %10.2f%%\n", "total outside traced functions",
+															utotal, ptot);
+	printf("%32s %12.0f\n", "elapsed total", total);
+	printf("%32s %12.0f\n", "total inside traced functions", total - utotal);
+	return total - utotal;
 	}
 
 
-/* first probe for this pid, create a new stack */
+/* first probe for this id, create a new stack */
 struct v3_stack_item *create_stack( unsigned int thisid )
 	{
 	struct v3_stack_item	*v3_ptr;
@@ -276,8 +325,11 @@ struct v3_stack_item *create_stack( unsigned int thisid )
 		exit(EXIT_FAILURE);
 		}
 	v3_ptr->v3_pid = thisid;
+	v3_ptr->v3_empty_time = 0LL;
 	v3_ptr->v3_pos = 0;
 	v3_ptr->v3_code[0] = 0;
+	v3_ptr->v3_index[0] = 0;
+	v3_ptr->v3_switch_pid[0] = 0;
 	if( v3_stack_first == NULL )
 		{/* this is the first stack ever created */
 		v3_stack_first = v3_ptr;
@@ -295,7 +347,7 @@ struct v3_stack_item *create_stack( unsigned int thisid )
 	}
 
 
-void update_stack( unsigned int delta )
+void update_stack( u_64 delta )
 	{
 	unsigned int	i;
 
@@ -310,7 +362,7 @@ void update_stack( unsigned int delta )
 	}
 
 
-void update_function( unsigned int delta, int i, int index )
+void update_function( u_64 delta, int i, int index )
 	{
 	int				j, k;
 
@@ -346,8 +398,9 @@ void update_function( unsigned int delta, int i, int index )
 	v3_function_cycles[k] += delta;
 	v3_function_count[k] += 1;
 
-	fprintf(stdbug, "update function %s by %u, total now %u\n",
-								find_name(i,1), delta, v3_function_cycles[k]);
+	fprintf(stdbug,"%6s '%s' by %llu cycles, total %llu, count %u\n", "update",
+			find_name(i,1), delta, v3_function_cycles[k], v3_function_count[k]);
+	fprintf(stdbug, "%6s v[%d].total %llu\n", "", index, v[index].total);
 	}
 
 /*	returns index of code or corresponding entry code in v[] array,
@@ -378,11 +431,11 @@ int get_code_index( unsigned int code )
 
 	/* initialize new entry to all zeroes except counter = 1 */
 	v[v_pos].code = code; 
-	v[v_pos].total = 0;
+	v[v_pos].total = 0LL;
 	v[v_pos].counter = 1;
 	for( i = 0; i < MAX_FUNS; i++ )
 		{
-		v[v_pos].called_funs_cycles[i] = 0;
+		v[v_pos].called_funs_cycles[i] = 0LL;
 		v[v_pos].called_funs_ctr[i] = 0;
 		}
 
@@ -390,11 +443,12 @@ int get_code_index( unsigned int code )
 	return k;
 	}
 
-void my_print_fun( unsigned int code, unsigned int cyc_time,
+/* here to use 1 buffer record to update statistics */
+void my_print_fun( unsigned int code, u_64 cyc_time,
 								unsigned int thisid, int param1, int param2 )
 	{
-    int					i, j, index;
-    unsigned int		delta, off_cyc_time;
+    int			i, j, index;
+    u_64		delta, off_cyc_time;
 
     
 	off_cyc_time = cyc_time;
@@ -433,7 +487,9 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 					v3_stack_ptr = v3_ptr;
 					delta = off_cyc_time -
 										v3_ptr->v3_start_cycle[v3_ptr->v3_pos];
-					update_function(delta, FUT_SWITCH_TO_CODE, index);
+					/* do we need this next update_function?? */
+					update_function(delta, FUT_SWITCH_TO_CODE, 
+											get_code_index(FUT_SWITCH_TO_CODE));
 					/* move up start of all previous in nesting and pop stack */
 					update_stack(delta);
 					}
@@ -463,7 +519,7 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 		}
 
 
-	/*	now guaranteed that v3_stack_ptr points to stack for this pid */
+	/*	now guaranteed that v3_stack_ptr points to stack for this id */
 	/*	i gets code at top of this stack */
 	i = v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos];
 
@@ -471,6 +527,7 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 	if( (code == i + FUT_GENERIC_EXIT_OFFSET) ||
 		(code == FUT_SWITCH_TO_CODE  &&  i == FUT_SWITCH_TO_CODE
 		&&  param1 == v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos]) )
+
 		{/* this is the exit corresponding to a previously stacked entry */
 		/* or a switch back to previously stacked switch from */
 		delta = cyc_time -
@@ -478,8 +535,8 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 		update_function(delta, i, index);
 		if( code == i + FUT_GENERIC_EXIT_OFFSET )
 			{/* this code is the exit corresponding to code i */
-			if (v3_stack_ptr->v3_pos >= 1 )
-				{
+			if (v3_stack_ptr->v3_pos >= 2 )
+				{/* have prev entry on this stack, update its cycles */
 				j = v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos - 1]; 
 				v[j].called_funs_cycles[index] += delta;  
 				}
@@ -487,50 +544,51 @@ void my_print_fun( unsigned int code, unsigned int cyc_time,
 		/* move up start time of all previous in nesting and pop stack */
 		update_stack(delta);
 		}
-	else if( code != FUT_SETUP_CODE  &&
-			code != FUT_KEYCHANGE_CODE &&
-			code != FUT_RESET_CODE &&
-			code != FUT_CALIBRATE0_CODE  &&
-			code != FUT_CALIBRATE1_CODE  &&
-			code != FUT_CALIBRATE2_CODE )
-		{/* this must be an entry code, just stack it  */
-		if( v3_stack_ptr->v3_pos >= MAX_NESTING )
-			{
-			fprintf(stderr, "=== v3 stack overflow, max depth %d\n",
-													MAX_NESTING);
-			fprintf(stdout, "=== v3 stack overflow, max depth %d\n",
-													MAX_NESTING);
-			exit(EXIT_FAILURE);
+
+	/* this must be an entry code, just stack it  */
+	else if( v3_stack_ptr->v3_pos >= MAX_NESTING )
+		{
+		fprintf(stderr, "=== v3 stack overflow, max depth %d\n",
+												MAX_NESTING);
+		fprintf(stdout, "=== v3 stack overflow, max depth %d\n",
+												MAX_NESTING);
+		exit(EXIT_FAILURE);
+		}
+	else
+		{/* stack will not overflow, ok to push onto it */
+		if( v3_stack_ptr->v3_pos == 0 )
+			{/* stack was empty, attribute this time to the thread */
+			delta = cyc_time - lastreltime;
+			v3_stack_ptr->v3_empty_time += delta;
+			fprintf(stdbug, "add %llu to v3_empty_time for id %u, total %llu\n",
+								delta, thisid, v3_stack_ptr->v3_empty_time);
 			}
-		else
-			{/* stack will not overflow, ok to push onto it */
-			v3_stack_ptr->v3_pos++;
-			v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos] = cyc_time;
-			v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos] = code;
-			v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos] = thisid;
-			v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos] = index;
-                
-            if ( v3_stack_ptr->v3_pos >= 2 )
-				{/* previous entry on this stack, update its calls to this fun*/
-				j = v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos - 1];
-				v[j].called_funs_ctr[index]++;
-				}
-			v[index].counter++;
-                
-			fprintf(stdbug,
-						"push on v3 stack for id %u, top %d, code %04x, "
-						"index %d\n",
-						thisid, v3_stack_ptr->v3_pos, code, index);
+		v3_stack_ptr->v3_pos++;
+		v3_stack_ptr->v3_start_cycle[v3_stack_ptr->v3_pos] = cyc_time;
+		v3_stack_ptr->v3_code[v3_stack_ptr->v3_pos] = code;
+		v3_stack_ptr->v3_switch_pid[v3_stack_ptr->v3_pos] = thisid;
+		v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos] = index;
+			
+		if ( v3_stack_ptr->v3_pos >= 2 )
+			{/*have prev entry on this stack, update its calls to this fun*/
+			j = v3_stack_ptr->v3_index[v3_stack_ptr->v3_pos - 1];
+			v[j].called_funs_ctr[index]++;
 			}
+
+		/* count number of times this function was called */
+		v[index].counter++;
+			
+		fprintf(stdbug,
+					"push on v3 stack for id %u, top %d, code %04x, "
+					"index %d\n",
+					thisid, v3_stack_ptr->v3_pos, code, index);
 		}
 
-	previous.code = code;
-	previous.cycle_value = cyc_time;
-	previous.first_param = param1;
+	fprintf(stdbug, "\n");
 	}
 
 
-/*	draw a horizontal line of 80 c characters onto stdout */
+/*	draw a horizontal line of 80 instances of character c onto stdout */
 void my_print_line( int c )
 	{
 	int		i;
@@ -542,17 +600,17 @@ void my_print_line( int c )
 
 
 void draw_histogram( int n, double histo_max, char **histo_name,
-							unsigned int *histo_cycles, double *histo_percent)
+							u_64 *histo_cycles, double *histo_percent)
 	{
-	int				i, k, length;
-	unsigned int	sum;
+	int		i, k, length;
+	u_64	sum;
 
 	printf("\n");
-	printf("%22s  %4s %12s %8s\n\n", "Name", "Code", "Cycles", "Percent");
-	sum = 0;
+	printf("%33s %4s %12s %8s\n\n", "Name", "Code", "Cycles", "Percent");
+	sum = 0LL;
 	for( k = 0;  k < n;  k++ )
 		{
-		printf("%28s %12u %7.2f%% ",
+		printf("%38s %12llu %7.2f%% ",
 							histo_name[k], histo_cycles[k], histo_percent[k]);
 		length = (int)((histo_percent[k]*MAX_HISTO_BAR_LENGTH)/histo_max + 0.5);
 		for( i = 0;  i < length;  i++ )
@@ -560,73 +618,28 @@ void draw_histogram( int n, double histo_max, char **histo_name,
 		putchar('\n');
 		sum += histo_cycles[k];
 		}
-	printf("%22s  %4s %12u %7.2f%%\n\n", "Total cycles", "", sum, 100.0);
+	printf("%33s %4s %12llu %7.2f%%\n\n", "Total cycles in traced functions",
+															"", sum, 100.0);
 	}
 
 
-void my_print_fun_helper(unsigned int CycPerJiffy)
+void my_print_fun_helper( unsigned int CycPerJiffy )
 	{
 	int						i, z, k;
-	unsigned int			sum_other_cycles = 0, delta;
-	unsigned int			TimeDiff, sum;
+	u_64					sum_other_cycles = 0, delta;
+	u_64					sum;
 	double					Main_fun_sum, Main_fun_sum_percent;
-	double					called_fun_percent, only_fun_percent;
+	double					total_cycles, called_fun_percent, only_fun_percent;
 	struct v3_stack_item	*v3_ptr;
 	double					histo_max;
 	char					*name;
 	char					*histo_name[HISTO_SIZE];
-	unsigned int			histo_cycles[HISTO_SIZE];
+	u_64					histo_cycles[HISTO_SIZE];
 	double					histo_percent[HISTO_SIZE];
 
 
-	printf("\n");
-	printf ("%24s : %10u\n", "Cycle clock at start", start_time_glob);
-	printf ("%24s : %10u\n", "Cycle clock at end", end_time_glob);
-	TimeDiff = end_time_glob - start_time_glob;
-	printf ("%24s : %10u\n", "Number of cycles elapsed", TimeDiff);
-	printf("\n\n");
-
-/*	print table of all function names */
-if( v_pos > 0 )
-	{
-	printf("%30s  %4s %12s %10s %12s\n",
-			"Name", "Code", "Cycles", "Count", "Avg");
-	printf("%30s  %4s %12s %10s %12s\n",
-			"----", "----", "------", "-----", "---");
-	for ( i = 0 ; i < v_pos; i ++ )
-		{
-		if( v[i].code > 0  &&  v[i].code != FUT_SWITCH_TO_CODE )
-			{
-			printf("%30s  %04x %12u %10d %12.1f\n", 
-				   find_name(v[i].code,0), v[i].code, v[i].total,
-				   v[i].counter, (double)v[i].total/v[i].counter);
-			}
-		}
-
-	printf("\n\n");
-	printf("%4s %25s  %4s %12s %10s\n",
-			"From", "To", "Code", "Cycles", "Count");
-	printf("%4s %25s  %4s %12s %10s\n",
-			"----", "--", "----", "------", "-----");
-	for ( z = 0; z < v_pos; z++)
-		if( v[z].code != FUT_SWITCH_TO_CODE )
-			{
-			printf("%s\n", find_name(v[z].code,0));
-			for ( i = 0; i < v_pos; i++)
-				{
-				if(v[z].called_funs_ctr[i]!=0 && v[i].code!=FUT_SWITCH_TO_CODE) 
-					{
-					printf("%30s  %04x %12u %10d\n", 
-							find_name(v[i].code,0), v[i].code,
-							v[z].called_funs_cycles[i], 
-							 v[z].called_funs_ctr[i]);
-					}  
-				}
-			printf("\n");
-			}
-
 	/*	close up all open stacks */
-	/*	stacks are typically left open when a process is blocked in the kernel*/
+	/*	stacks are typically left open when a thread is blocked */
 	for( v3_ptr = v3_stack_head;  v3_ptr != NULL;  v3_ptr = v3_ptr->v3_next )
 		{
 		if( v3_ptr->v3_pos > 1 )
@@ -639,7 +652,7 @@ if( v_pos > 0 )
 		if( v3_ptr->v3_pos > 0 )
 			{
 			if( v3_ptr->v3_code[v3_ptr->v3_pos] != FUT_SWITCH_TO_CODE )
-				{/* last thing thread did was not a block */
+				{/* last thing thread did was not a switch_to */
 				fprintf(stderr,
 				"=== top of final stack for id %u not switch_to\n",
 																v3_ptr->v3_pid);
@@ -647,31 +660,76 @@ if( v_pos > 0 )
 				"=== top of final stack for id %u not switch_to\n",
 																v3_ptr->v3_pid);
 				}
-			while( v3_ptr->v3_pos > 0 )
-				{/* close up all unterminated function calls */
+			for( i = v3_ptr->v3_pos-1;  i > 0;  i-- )
+				{/* close up all unterminated function calls on this stack */
 				unsigned int	code;
 
-				code = v3_ptr->v3_code[v3_ptr->v3_pos-1];
-				delta = v3_ptr->v3_start_cycle[v3_ptr->v3_pos] -
-						v3_ptr->v3_start_cycle[v3_ptr->v3_pos-1];
+				code = v3_ptr->v3_code[i];
+				printf("%2d: %04x %s\n", i, code,  find_name(code, 1));
+				delta = v3_ptr->v3_start_cycle[i+1] -
+						v3_ptr->v3_start_cycle[i];
 				update_function(delta, code, get_code_index(code));
-				v3_ptr->v3_pos -= 1;
+				v3_ptr->v3_start_cycle[0] += delta;
 				}
 			}
 		}
 
+	total_cycles = print_cycles(0);
+
+/*	print table of all function names */
+if( v_pos > 0 )
+	{
+	printf("\n\n");
+	printf("%55s\n", "elapsed cycles in traced functions");
+	printf("%36s  %4s %12s %10s %12s\n",
+			"Name", "Code", "Cycles", "Count", "Avg");
+	printf("%36s  %4s %12s %10s %12s\n",
+			"----", "----", "------", "-----", "---");
+	for ( i = 0 ; i < v_pos; i ++ )
+		{
+		if( v[i].code > 0  &&  v[i].code != FUT_SWITCH_TO_CODE )
+			{
+			printf("%36s  %04x %12llu %10u %12.1f\n", 
+				   find_name(v[i].code,0), v[i].code, v[i].total,
+				   v[i].counter, (double)v[i].total/v[i].counter);
+			}
+		}
+	printf("\n");
+
+	printf("\n\n");
+	printf("%4s %31s  %4s %12s %10s\n",
+			"From", "To", "Code", "Cycles", "Count");
+	printf("%4s %31s  %4s %12s %10s\n",
+			"----", "--", "----", "------", "-----");
+	for ( z = 0; z < v_pos; z++)
+		if( v[z].code != FUT_SWITCH_TO_CODE )
+			{
+			printf("%s\n", find_name(v[z].code,0));
+			for ( i = 0; i < v_pos; i++)
+				{
+				if(v[z].called_funs_ctr[i]!=0 && v[i].code!=FUT_SWITCH_TO_CODE) 
+					{
+					printf("%36s  %04x %12llu %10u\n", 
+							find_name(v[i].code,0), v[i].code,
+							v[z].called_funs_cycles[i], 
+							 v[z].called_funs_ctr[i]);
+					}  
+				}
+			printf("\n");
+			}
+
 	printf("\n\n");
 	printf("%50s\n\n", "NESTING SUMMARY");
 	my_print_line('*');
-	printf("%32s  %4s %11s %7s %12s %8s\n",
+	printf("%33s %4s %11s %7s %12s %8s\n",
 			"Name", "Code", "Cycles", "Count", "Average", "Percent");
 	my_print_line('*');
 	for ( z = 0 ; z < v_pos; z ++ )
 		if( v[z].code != FUT_SWITCH_TO_CODE )
 			{
-			Main_fun_sum = v[z].total;
+			Main_fun_sum = (double)v[z].total;
 			Main_fun_sum_percent = 100.0;
-			printf("%32s  %04x %11u %7d %12.1f %7.2f%%\n", 
+			printf("%33s %04x %11llu %7u %12.1f %7.2f%%\n", 
 				   find_name(v[z].code,0), v[z].code, v[z].total,
 				   v[z].counter, (double)v[z].total/v[z].counter, 
 							   Main_fun_sum_percent);
@@ -683,7 +741,7 @@ if( v_pos > 0 )
 				{
 				   called_fun_percent = (double)v[z].called_funs_cycles[i]
 					   /Main_fun_sum * 100.0;
-				   printf("%32s  %04x %11u %7d %12.1f %7.2f%%\n", 
+				   printf("%33s %04x %11llu %7u %12.1f %7.2f%%\n", 
 							find_name(v[i].code,0), v[i].code,
 							v[z].called_funs_cycles[i], 
 							 v[z].called_funs_ctr[i], 
@@ -695,27 +753,28 @@ if( v_pos > 0 )
 			/* for fsync, account for actual disk waiting time */
 				only_fun_percent = (double)(v[z].total - sum_other_cycles)
 								 /Main_fun_sum * 100.0;
-			printf("%27s ONLY  %04x %11u %7d %12.1f %7.2f%%\n", 
+			printf("%28s ONLY %04x %11llu %7u %12.1f %7.2f%%\n", 
 					  find_name(v[z].code,0), v[z].code,
 					  v[z].total - sum_other_cycles,
 					  v[z].counter,
 					  (double)(v[z].total - sum_other_cycles)
 								/v[z].counter, only_fun_percent); 
-				sum_other_cycles = 0;
+				sum_other_cycles = 0LL;
 			my_print_line('-');
 			printf("\n");
 			}
 	}
 
 	/* now print out the precise accounting statistics from the v3 arrays */
-	sum = 0;
+	sum = 0LL;
 	k = 0;
 	histo_max = 0.0;
 	printf("\n\n\n");
-	printf("%60s\n\n", "Accounting for every cycle exactly once");
+	printf("%70s\n\n",
+			"Accounting for every cycle in a traced function exactly once");
 	my_print_line('*');
-	printf("%8s %23s  %4s %12s %7s %11s %8s\n",
-	"", "Name", "Code", "Cycles", "Count", "Average", "Percent");
+	printf("%33s %4s %12s %7s %11s %8s\n",
+					"Name", "Code", "Cycles", "Count", "Average", "Percent");
 	my_print_line('*');
 	for( i = 0;  i < MAX_FUNS; i++ )
 		{
@@ -729,15 +788,15 @@ if( v_pos > 0 )
 				fprintf(stderr, "no space to malloc histo_name\n");
 				exit(EXIT_FAILURE);
 				}
-			sprintf(histo_name[k], "%s  %04x", name, z);
+			sprintf(histo_name[k], "%s %04x", name, z);
 			histo_cycles[k] = v3_function_cycles[i];
 			sum += histo_cycles[k];
 			histo_percent[k] = 
-						100.0*((double)histo_cycles[k])/(double)TimeDiff;
+						100.0*((double)histo_cycles[k])/total_cycles;
 			if( histo_max < histo_percent[k] )
 				histo_max = histo_percent[k];
-			printf("%8s %23s", "function", name);
-			printf("  %04x %12u %7u %11.1f %7.2f%%\n",
+			printf("%33s", name);
+			printf(" %04x %12llu %7u %11.1f %7.2f%%\n",
 					z, histo_cycles[k], v3_function_count[i],
 					((double)histo_cycles[k])/((double)v3_function_count[i]),
 					histo_percent[k]);
@@ -746,60 +805,13 @@ if( v_pos > 0 )
 		}
 
 
-	printf("%8s %23s", "Total", "Total cycles");
-	printf("  %4s %12u %7s %11s %7.2f%%\n", "", sum, "", "",
-										100.0*((double)sum)/(double)TimeDiff);
+	printf("%33s", "Total cycles in traced functions");
+	printf(" %4s %12llu %7s %11s %7.2f%%\n", "", sum, "", "",
+										100.0*((double)sum)/total_cycles);
 
-	printf("\n\n%65s\n", "Histogram accounting for every cycle exactly once");
+	printf("\n\n%75s\n",
+	"Histogram accounting for every cycle in a traced function exactly once");
 	draw_histogram(k, histo_max, histo_name, histo_cycles, histo_percent);
-	}
-
-
-void start_taking_stats( unsigned int thispid, unsigned int reltime )
-	{
-	fprintf(stdbug, "start taking stats, pid %u, rel time %u\n",
-											thispid, reltime);
-	fun_time = 1;							/* start the statistics taking */
-	if( v3_stack_ptr != NULL )
-		{
-		fprintf(stderr, "=== starting v3_stack_ptr = %p\n",
-														v3_stack_ptr);
-		fprintf(stdout, "=== starting v3_stack_ptr = %p\n",
-														v3_stack_ptr);
-		exit(EXIT_FAILURE);
-		}
-	if( v3_stack_head != NULL )
-		{
-		fprintf(stderr, "=== starting v3_stack_head = %p\n",
-														v3_stack_head);
-		fprintf(stdout, "=== starting v3_stack_head = %p\n",
-														v3_stack_head);
-		exit(EXIT_FAILURE);
-		}
-	v3_stack_ptr = create_stack(thispid);
-	}
-
-
-void stop_taking_stats( unsigned int thispid, unsigned int reltime )
-	{/* this times() occurred while taking statistics */
-	fprintf(stdbug, "stop taking stats, pid %u, rel time %u\n",
-											thispid, reltime);
-	fun_time = -1;				/* stop the statistics taking */
-	end_time_glob = reltime;	/* remember the stopping time */
-	if( v3_stack_ptr == NULL )
-		{
-		fprintf(stderr,"=== stopping v3_stack_ptr = %p\n",v3_stack_ptr);
-		fprintf(stdout,"=== stopping v3_stack_ptr = %p\n",v3_stack_ptr);
-		exit(EXIT_FAILURE);
-		}
-	if( v3_stack_ptr->v3_pos != 0 )
-		{
-		fprintf(stderr, "=== stopping v3_pos = %u\n",
-												v3_stack_ptr->v3_pos);
-		fprintf(stdout, "=== stopping v3_pos = %u\n",
-												v3_stack_ptr->v3_pos);
-		}
-	v3_stack_ptr->v3_start_cycle[0] = reltime - v3_stack_ptr->v3_start_cycle[0];
 	}
 
 
@@ -814,17 +826,13 @@ bufptr[n] is P(n-2)
 */
 unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 	{
-	unsigned int	code, fullcode, params, i, reltime, r, ptime;
+	unsigned int	code, fullcode, params, i;
 	int				print_this = 0;
+	u_64			r, reltime, ptime, *longbufptr;
 
 
-	if( bufptr[0] < basetime )
-		{
-		reltime = bufptr[0] + 0xffffffff - basetime;
-		reltime++;
-		}
-	else
-		reltime = bufptr[0] - basetime;
+	longbufptr = (u_64 *)bufptr;
+	reltime =  *longbufptr - basetime;
 	r = reltime-lastreltime;
 	end_time_glob = reltime;
 	if( print_delta_time )
@@ -846,17 +854,17 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 		{
 		print_this = 1;
 		}
-	else if( start_time_glob == 0 )
+	if( !set_time_glob )
 		{
+		set_time_glob = 1;
 		start_time_glob = reltime;
 		fun_time = 1;				/* start the statistics taking */
 		}
-	lastreltime = reltime;
 	print_this = 1;
     
     if (print_this)
-		printf( "%10u%9lu", ptime, current_id);
-	update_cycles(r, pid);
+		printf( "%10llu%9lu", ptime, current_id);
+	update_cycles(r, current_id);
 
 	if (print_this)
 		printf(" %04x", code);
@@ -884,7 +892,7 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 		/***** fflush(stdout); *****/
 		}
 	*n += params;
-    if( fun_time > 0 )
+    if( fun_time > 0  &&  is_entry_exit(code) )
 		{
 		if( params <= 4 )
         	my_print_fun(code, reltime, current_id, bufptr[3], 0);
@@ -893,6 +901,8 @@ unsigned int *dumpslot( unsigned int *n,  unsigned int *bufptr )
 		}
 	if( code == FUT_SWITCH_TO_CODE )
 		current_id = bufptr[3];
+	lastreltime = reltime;
+
 	return &bufptr[params];
 	}
 
@@ -908,16 +918,12 @@ int dumpit( unsigned int *buffer, unsigned int nints )
 
 
 	buflimit = buffer + nints;
-	basetime = buffer[0];
-	lastreltime = 0;
+	basetime = *(u_64 *)buffer;
+	lastreltime = 0LL;
 	for( bufptr = buffer, n = 0;  n < nints && bufptr < buflimit; )
 		{
 		bufptr = dumpslot(&n, bufptr);
 		}
-	printf("\n");
-	printf("%10u clock cycles\n", lastreltime);
-	printf("\n");
-	print_cycles(0);
 	my_print_fun_helper(0);
 	return 0;
 	}
@@ -1043,7 +1049,7 @@ int main( int argc, char *argv[] )
 
 	for( i = 0;  i < MAX_FUNS;  i++ )
 		{
-		v3_function_cycles[i] = 0;
+		v3_function_cycles[i] = 0LL;
 		v3_function_count[i] = 0;
 		v3_function_code[i] = 0;
 		}

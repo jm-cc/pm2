@@ -47,14 +47,17 @@
 /* #define MAD_SISCI_OPT_MAX  0 */
 
 /* SHMem */
+#define MAD_SISCI_CHUNK_SIZE 65536
+
+#define MAD_SISCI_BUFFER_SIZE (MAD_SISCI_CHUNK_SIZE + sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (65536 - sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (16384 - sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (32768- sizeof(mad_sisci_connection_status_t))
-#define MAD_SISCI_BUFFER_SIZE (65536 + sizeof(mad_sisci_connection_status_t))
+//#define MAD_SISCI_BUFFER_SIZE (65536 + sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (131072 + sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (32768 + sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (16384 + sizeof(mad_sisci_connection_status_t))
-#define MAD_SISCI_MIN_SEG_SIZE 8192
+#define MAD_SISCI_MIN_SEG_SIZE (min(MAD_SISCI_CHUNK_SIZE, 8192))
 
 /* Links */
 #define MAD_SISCI_LINK_OPT      0
@@ -723,11 +726,8 @@ void
 mad_sisci_wait_for(p_mad_link_t         link,
 		   p_mad_sisci_status_t flag)
 {
-  DISP("waiting for event, channel is %s",
-       link->connection->channel->name);
   while (!mad_sisci_test(flag))
     TBX_YIELD();
-  DISP("got event, channel is %s", link->connection->channel->name);
 }
 
 #endif // MARCEL && USE_MARCEL_POLL
@@ -1036,13 +1036,13 @@ mad_sisci_connect(p_mad_connection_t   out,
 	  if (sisci_error != SCI_ERR_OK)
 	    {
 	      mad_sisci_display_error(sisci_error);
-	      DISP("mad_sisci: could not connect, sleeping ...");
+	      LOG("mad_sisci: could not connect, sleeping ...");
 #ifdef MARCEL
 	      marcel_delay(1000);
 #else // MARCEL
 	      sleep(1);
 #endif // MARCEL
-	      DISP("mad_sisci: could not connect, waking up");
+	      LOG("mad_sisci: could not connect, waking up");
 	    }
 	}
       while (sisci_error != SCI_ERR_OK);
@@ -1128,13 +1128,13 @@ mad_sisci_accept(p_mad_connection_t   in,
 	  if (sisci_error != SCI_ERR_OK)
 	    {
 	      mad_sisci_display_error(sisci_error);
-	      DISP("mad_sisci: could not connect, sleeping ...");
+	      LOG("mad_sisci: could not connect, sleeping ...");
 #ifdef MARCEL
 	      marcel_delay(1000);
 #else // MARCEL
 	      sleep(1);
 #endif // MARCEL
-	      DISP("mad_sisci: could not connect, waking up");
+	      LOG("mad_sisci: could not connect, waking up");
 	    }
 	}
       while (sisci_error != SCI_ERR_OK);
@@ -1770,6 +1770,8 @@ transmission:
     {
       rs   = &(is->remote_segment[0]);
       rd   = rs->map_addr;
+      ls     = &(is->local_segment[0]);
+      ld     = ls->map_addr;
       read = &ld->status.read;
 
       is->write_flag_flushed = tbx_true;

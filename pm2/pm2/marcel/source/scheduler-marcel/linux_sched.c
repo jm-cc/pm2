@@ -530,6 +530,30 @@ int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 	return try_to_wake_up(p, state, 0);
 }
 
+void fastcall ma_freeze_thread(marcel_task_t *p)
+{
+	ma_runqueue_t *rq;
+	rq = task_rq_lock(p);
+
+	if (MA_TASK_IS_FROZEN(p)) {
+		task_rq_unlock(rq);
+		RAISE(PROGRAM_ERROR);
+	}
+	if (MA_TASK_IS_RUNNING(p)) {
+		task_rq_unlock(rq);
+		RAISE(NOT_IMPLEMENTED);
+	}
+
+	deactivate_task(p,rq);
+	task_rq_unlock(rq);
+	p->sched.state = MA_TASK_FROZEN;
+}
+
+void fastcall ma_unfreeze_thread(marcel_task_t *p)
+{
+	try_to_wake_up(p, MA_TASK_FROZEN, 0);
+}
+
 /*
  * Perform scheduler related setup for a newly forked process p.
  * p is forked by current.

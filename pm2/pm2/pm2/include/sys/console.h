@@ -76,8 +76,6 @@ LRPC_DECL_REQ(LRPC_CONSOLE_THREADS,);
 
 /*******************************************************/
 
-typedef void (*pm2_user_func)(int argc, char **argv);
 
 void pm2_console_init_rpc(void);
 
-void pm2_set_user_func(pm2_user_func f);

@@ -237,10 +237,9 @@ xconfig: flavors
 #         Note: pourquoi pas dans libs-rules.mak ?
 $(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
 	@if [ ! -z "$(PM2_MAK_DIR)" ]; then \
-		echo "Generating $@" ;\
-		$(PM2_CONFIG) --gen_mak main-libs ;\
+		$(PM2_GEN_MAK) all ;\
 	else \
-		echo "Not generating $@" ;\
+		echo "Cannot generate $@" ;\
 		exit 1 ;\
 	fi
 

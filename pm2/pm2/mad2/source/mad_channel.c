@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.9  2000/02/03 17:37:37  oaumage
+- mad_channel.c : correction de la liberation des donnees specifiques aux
+                  connections
+- mad_sisci.c   : support DMA avec double buffering
+
 Revision 1.8  2000/01/31 15:53:34  oaumage
 - mad_channel.c : verrouillage au niveau des canaux au lieu des drivers
 - madeleine.c : deplacement de aligned_malloc vers la toolbox
@@ -335,6 +340,7 @@ mad_foreach_close_channel(void *object)
 	  if (out->link->specific)
 	    {
 	      free(out->link->specific);
+	      out->link->specific = NULL;
 	    }
 
 	  if (in->link->specific)
@@ -352,13 +358,20 @@ mad_foreach_close_channel(void *object)
       else
 	{
 	  if (out->specific)
-	    {
+	    {	      
 	      free(out->specific);
+
+	      if (in->specific == out->specific)
+		{
+		  in->specific = NULL;  
+		}
+	      out->specific = NULL;
 	    }
 
 	  if (in->specific)
 	    {
 	      free(in->specific);
+	      in->specific = NULL;
 	    }	  
 	}
     }

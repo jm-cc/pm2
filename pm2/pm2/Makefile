@@ -36,7 +36,7 @@ include $(ROOT)/make/common-vars.mak
 # Cache - partie principale des librairies
 #---------------------------------------------------------------------
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/main-libs.mak
+-include $(PM2_MAK_DIR)/main-config.mak
 endif
 
 # Regles
@@ -95,7 +95,10 @@ fut: flavors
 	$(COMMON_HIDE) set -e; EMPTY=""; \
 	for i in $(PROF_LIBS) $$EMPTY; do \
 		$(MAKE) -C modules/$$i $@ ; \
-	done
+	done ; \
+	if [ $(APP_PROFILE) = yes ] ; then \
+		$(MAKE) -C $(APP_DIR) APP_RECURSIF=true TARGET=$(APP_TARGET) fut ; \
+	fi
 
 # dot_h: descente recursive dans chaque module pour génération des `headers'
 #-------------------------------------------------------------------------
@@ -222,18 +225,6 @@ xdialogconfig: flavors
 xconfig: flavors
 	$(COMMON_HIDE) $(MAKE) -C ezflavor NO_REBUILD=1
 	$(ROOT)/bin/ezflavor
-
-# Generation du cache principal des librairies
-#---------------------------------------------------------------------
-#         Note: pourquoi pas dans libs-rules.mak ?
-$(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
-	@if [ ! -z "$(PM2_MAK_DIR)" ]; then \
-		$(PM2_GEN_MAK) all ;\
-	else \
-		echo "Cannot generate $@" ;\
-		exit 1 ;\
-	fi
-
 
 
 else #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))

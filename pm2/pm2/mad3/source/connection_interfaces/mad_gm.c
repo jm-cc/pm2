@@ -27,15 +27,6 @@
 #include <malloc.h>
 #include <gm.h>
 
-#if defined(MARCEL)
-#  define MAD_GM_MARCEL_POLL
-#  undef TBX_LOCK
-#  undef TBX_UNLOCK
-#  warning Code still using old lock_task/unlock_task
-#  define TBX_LOCK() marcel_extlib_protect()
-#  define TBX_UNLOCK() marcel_extlib_unprotect()
-#endif
-
 #define MAD_GM_MEMORY_CACHE 1
 
 /*
@@ -76,7 +67,8 @@
 #define __gmerror__(x) (mad_gm_error((x), __LINE__))
 
 #define MAD_GM_MAX_BLOCK_LEN	 	(2*1024*1024)
-#define MAD_GM_PACKET_LEN                4096
+//#define MAD_GM_PACKET_LEN                4096
+#define MAD_GM_PACKET_LEN                (128*1024)
 #define MAD_GM_PACKET_HDR		 8
 #define MAD_GM_CACHE_GRANULARITY	 0x1000
 #define MAD_GM_CACHE_SIZE		 0x1000
@@ -112,20 +104,21 @@ typedef struct s_mad_gm_port {
         unsigned int        packet_size;
         int                 packet_length;
         p_tbx_slist_t       packet_cache;
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
+        gm_recv_event_t    *p_event;
         int		    no_more_event;
+        int                 pending;
 #endif
 } mad_gm_port_t, *p_mad_gm_port_t;
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
 typedef struct s_mad_gm_poll_channel_data {
         p_mad_channel_t    ch;
         p_mad_connection_t c;
 } mad_gm_poll_channel_data_t, *p_mad_gm_poll_channel_data;
 
 typedef struct s_mad_gm_poll_poll_data {
-        gm_recv_event_t *p_event;
-        mad_adapter_t	 adapter;
+        int dummy;
 } mad_gm_poll_poll_data_t;
 
 typedef union u_mad_gm_poll_data {
@@ -154,7 +147,7 @@ typedef struct s_mad_gm_request {
 
 typedef struct s_mad_gm_driver_specific {
         int                 dummy;
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_pollid_t     gm_pollid;
 #endif
 } mad_gm_driver_specific_t, *p_mad_gm_driver_specific_t;
@@ -162,7 +155,7 @@ typedef struct s_mad_gm_driver_specific {
 typedef struct s_mad_gm_adapter_specific {
         int                 device_id;
         p_mad_gm_port_t     port;
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_t	    event_thread;
 #endif
 } mad_gm_adapter_specific_t, *p_mad_gm_adapter_specific_t;
@@ -190,7 +183,7 @@ typedef struct s_mad_gm_connection_specific {
         volatile int        state;
         p_tbx_slist_t	    cpy_buffer_slist;
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_sem_t        sem;
 #else
         volatile int        send_lock;
@@ -821,7 +814,7 @@ mad_gm_callback(struct gm_port *p_gm_port,
                         goto error;
                 }
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
                 marcel_sem_V(&os->sem);
 #else
                 os->send_lock  = 0;
@@ -833,7 +826,7 @@ mad_gm_callback(struct gm_port *p_gm_port,
                 in = rq->in;
                 is = in->specific;
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
                 marcel_sem_V(&is->sem);
 #else
                 is->send_lock = 0;
@@ -878,96 +871,78 @@ mad_gm_fill_header(void       *_hdr,
         LOG_OUT();
 }
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
+
+/* Mad/GM lock must be hold when calling this function */
 static
-void *
-mad_gm_event_processing_thread(void *_a) {
-        p_mad_adapter_t a = _a;
-        p_mad_gm_adapter_specific_t as = NULL;
-        p_mad_driver_t d = NULL;
-        p_mad_gm_driver_specific_t ds = NULL;
-        p_mad_gm_port_t  port      = NULL;
+int
+mad_gm_process_event(p_mad_gm_port_t port, int may_block) {
 	struct gm_port  *p_gm_port = NULL;
-        int              active	= 0;
-	marcel_pollid_t pollid = 0;
+        gm_recv_event_t *p_event   = NULL;
+        int active = 2;
 
-        LOG_IN();
-        as	= a->specific;
-        d	= a->driver;
-        ds	= d->specific;
-        port	= as->port;
-        pollid	= ds->gm_pollid;
-        p_gm_port	= port->p_gm_port;
-        //p_event = gm_receive(port->p_gm_port);
+        p_event = port->p_event;
+        if (!p_event)
+                return 0;
 
-        while (!port->no_more_event) {
-                gm_recv_event_t *p_event   = NULL;
+        p_gm_port = port->p_gm_port;
 
-                if (!active) {
-                        mad_gm_poll_req_t req;
+        switch (gm_ntohc(p_event->recv.type)) {
 
-                        active = 1;
+        case GM_FAST_HIGH_PEER_RECV_EVENT:
+        case GM_FAST_HIGH_RECV_EVENT:
+                {
+                        int            code           =    0;
+                        int            cnx_id         =    0;
+                        unsigned char *msg            = NULL;
+                        unsigned char *packet         = NULL;
+                        int            remote_node_id =    0;
 
-                        req.op       = mad_gm_poll_poll_op;
-                        req.port     = port;
-                        req.data.poll_op.p_event = NULL;
+                        TRACE("mad_gm_port_poll: got a packet");
 
+                        packet = gm_ntohp(p_event->recv.buffer);
+                        msg = gm_ntohp(p_event->recv.message);
 
-                        marcel_poll(pollid, &req);
-                        p_event = req.data.poll_op.p_event;
-                        mad_gm_lock();
-                } else {
-                        mad_gm_lock();
-                        p_event = gm_receive(port->p_gm_port);
-                }
+                        TRACE("mad_gm_port_poll: - packet is a control message");
 
-                switch (gm_ntohc(p_event->recv.type)) {
+                        code   |= (int)(((unsigned int)msg[0]) <<  0);
+                        code   |= (int)(((unsigned int)msg[1]) <<  8);
+                        code   |= (int)(((unsigned int)msg[2]) << 16);
+                        code   |= (int)(((unsigned int)msg[3]) << 24);
+                        cnx_id |= (int)(((unsigned int)msg[4]) <<  0);
+                        cnx_id |= (int)(((unsigned int)msg[5]) <<  8);
+                        cnx_id |= (int)(((unsigned int)msg[6]) << 16);
+                        cnx_id |= (int)(((unsigned int)msg[7]) << 24);
 
-                case GM_FAST_HIGH_PEER_RECV_EVENT:
-                case GM_FAST_HIGH_RECV_EVENT:
-                        {
-                                int            code           =    0;
-                                int            cnx_id         =    0;
-                                unsigned char *msg            = NULL;
-                                unsigned char *packet         = NULL;
-                                int            remote_node_id =    0;
+                        remote_node_id =
+                                gm_ntohs(p_event->recv.sender_node_id);
 
-                                TRACE("mad_gm_port_poll: got a packet");
+                        if ((code & 1) == 0) {
+                                p_mad_connection_t             in = NULL;
+                                p_mad_gm_connection_specific_t is = NULL;
 
-                                packet = gm_ntohp(p_event->recv.buffer);
-                                msg = gm_ntohp(p_event->recv.message);
+                                TRACE("mad_gm_port_poll: - packet is for an incoming connection");
+                                in = tbx_darray_get(port->in_darray, cnx_id);
+                                is = in->specific;
 
-                                TRACE("mad_gm_port_poll: - packet is a control message");
-
-                                code   |= (int)(((unsigned int)msg[0]) <<  0);
-                                code   |= (int)(((unsigned int)msg[1]) <<  8);
-                                code   |= (int)(((unsigned int)msg[2]) << 16);
-                                code   |= (int)(((unsigned int)msg[3]) << 24);
-                                cnx_id |= (int)(((unsigned int)msg[4]) <<  0);
-                                cnx_id |= (int)(((unsigned int)msg[5]) <<  8);
-                                cnx_id |= (int)(((unsigned int)msg[6]) << 16);
-                                cnx_id |= (int)(((unsigned int)msg[7]) << 24);
-
-                                remote_node_id =
-                                        gm_ntohs(p_event->recv.sender_node_id);
-
-                                if ((code & 1) == 0) {
-                                        p_mad_connection_t             in = NULL;
-                                        p_mad_gm_connection_specific_t is = NULL;
-
-                                        TRACE("mad_gm_port_poll: - packet is for an incoming connection");
-                                        in = tbx_darray_get(port->in_darray, cnx_id);
-                                        is = in->specific;
-
-                                        if ((code & 2) == 0) {
-                                                TRACE("mad_gm_port_poll: - packet is a request for rendez-vous");
-                                                gm_provide_receive_buffer_with_tag(port->p_gm_port,
-                                                                                   port->packet,
-                                                                                   port->packet_size,
-                                                                                   GM_HIGH_PRIORITY, 1);
+                                if ((code & 2) == 0) {
+                                        TRACE("mad_gm_port_poll: - packet is a request for rendez-vous");
+                                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                           port->packet,
+                                                                           port->packet_size,
+                                                                           GM_HIGH_PRIORITY, 1);
 
 
+                                        marcel_sem_V(&is->sem);
+                                } else {
+                                        if (!may_block) {
+                                                if (port->pending)
+                                                        FAILURE("invalid state");
+
+                                                port->pending = 1;
                                                 marcel_sem_V(&is->sem);
+                                                active = 1;
+
                                         } else {
                                                 void           *ptr = NULL;
                                                 size_t          len = 0;
@@ -1005,75 +980,90 @@ mad_gm_event_processing_thread(void *_a) {
                                                                                    port->packet,
                                                                                    port->packet_size,
                                                                                    GM_HIGH_PRIORITY, 1);
-                                                marcel_sem_V(&is->sem);
-                                        }
-                                } else if ((code & 1) == 1) {
-                                        p_mad_connection_t             out = NULL;
-                                        p_mad_gm_connection_specific_t os  = NULL;
 
-                                        TRACE("mad_gm_port_poll: - packet is for an outgoing connection");
-                                        TRACE("mad_gm_port_poll: - packet is an ack for rendez-vous");
+                                                if (port->pending) {
+                                                        port->pending = 0;
+                                                } else {
+                                                        marcel_sem_V(&is->sem);
+                                                }
+                                        }
+                                }
+                        } else if ((code & 1) == 1) {
+                                p_mad_connection_t             out = NULL;
+                                p_mad_gm_connection_specific_t os  = NULL;
+
+                                TRACE("mad_gm_port_poll: - packet is for an outgoing connection");
+                                TRACE("mad_gm_port_poll: - packet is an ack for rendez-vous");
+                                gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                   port->packet,
+                                                                   port->packet_size,
+                                                                   GM_HIGH_PRIORITY, 1);
+
+                                out = tbx_darray_get(port->out_darray, cnx_id);
+                                os = out->specific;
+
+                                marcel_sem_V(&os->sem);
+                        } else {
+                                __error__("invalid code");
+                                goto error;
+                        }
+                }
+                break;
+
+        case GM_HIGH_PEER_RECV_EVENT:
+        case GM_HIGH_RECV_EVENT:
+                {
+                        int            code           =    0;
+                        int            cnx_id         =    0;
+                        unsigned char *msg            = NULL;
+                        unsigned char *packet         = NULL;
+                        int            remote_node_id =    0;
+
+                        TRACE("mad_gm_port_poll: got a packet");
+
+                        packet = gm_ntohp(p_event->recv.buffer);
+                        msg = gm_ntohp(p_event->recv.message);
+
+                        TRACE("mad_gm_port_poll: - packet is a control message");
+
+                        code   |= (int)(((unsigned int)packet[0]) <<  0);
+                        code   |= (int)(((unsigned int)packet[1]) <<  8);
+                        code   |= (int)(((unsigned int)packet[2]) << 16);
+                        code   |= (int)(((unsigned int)packet[3]) << 24);
+                        cnx_id |= (int)(((unsigned int)packet[4]) <<  0);
+                        cnx_id |= (int)(((unsigned int)packet[5]) <<  8);
+                        cnx_id |= (int)(((unsigned int)packet[6]) << 16);
+                        cnx_id |= (int)(((unsigned int)packet[7]) << 24);
+
+                        remote_node_id =
+                                gm_ntohs(p_event->recv.sender_node_id);
+
+                        if ((code & 1) == 0) {
+                                p_mad_connection_t             in = NULL;
+                                p_mad_gm_connection_specific_t is = NULL;
+
+                                TRACE("mad_gm_port_poll: - packet is for an incoming connection");
+                                in = tbx_darray_get(port->in_darray, cnx_id);
+                                is = in->specific;
+
+                                if ((code & 2) == 0) {
+                                        TRACE("mad_gm_port_poll: - packet is a request for rendez-vous");
                                         gm_provide_receive_buffer_with_tag(port->p_gm_port,
                                                                            port->packet,
                                                                            port->packet_size,
                                                                            GM_HIGH_PRIORITY, 1);
 
-                                        out = tbx_darray_get(port->out_darray, cnx_id);
-                                        os = out->specific;
 
-                                        marcel_sem_V(&os->sem);
+                                        marcel_sem_V(&is->sem);
                                 } else {
-                                        __error__("invalid code");
-                                        goto error;
-                                }
-                        }
-                        break;
+                                        if (!may_block) {
+                                                if (port->pending)
+                                                        FAILURE("invalid state");
 
-                case GM_HIGH_PEER_RECV_EVENT:
-                case GM_HIGH_RECV_EVENT:
-                        {
-                                int            code           =    0;
-                                int            cnx_id         =    0;
-                                unsigned char *msg            = NULL;
-                                unsigned char *packet         = NULL;
-                                int            remote_node_id =    0;
-
-                                TRACE("mad_gm_port_poll: got a packet");
-
-                                packet = gm_ntohp(p_event->recv.buffer);
-                                msg = gm_ntohp(p_event->recv.message);
-
-                                TRACE("mad_gm_port_poll: - packet is a control message");
-
-                                code   |= (int)(((unsigned int)packet[0]) <<  0);
-                                code   |= (int)(((unsigned int)packet[1]) <<  8);
-                                code   |= (int)(((unsigned int)packet[2]) << 16);
-                                code   |= (int)(((unsigned int)packet[3]) << 24);
-                                cnx_id |= (int)(((unsigned int)packet[4]) <<  0);
-                                cnx_id |= (int)(((unsigned int)packet[5]) <<  8);
-                                cnx_id |= (int)(((unsigned int)packet[6]) << 16);
-                                cnx_id |= (int)(((unsigned int)packet[7]) << 24);
-
-                                remote_node_id =
-                                        gm_ntohs(p_event->recv.sender_node_id);
-
-                                if ((code & 1) == 0) {
-                                        p_mad_connection_t             in = NULL;
-                                        p_mad_gm_connection_specific_t is = NULL;
-
-                                        TRACE("mad_gm_port_poll: - packet is for an incoming connection");
-                                        in = tbx_darray_get(port->in_darray, cnx_id);
-                                        is = in->specific;
-
-                                        if ((code & 2) == 0) {
-                                                TRACE("mad_gm_port_poll: - packet is a request for rendez-vous");
-                                                gm_provide_receive_buffer_with_tag(port->p_gm_port,
-                                                                                   port->packet,
-                                                                                   port->packet_size,
-                                                                                   GM_HIGH_PRIORITY, 1);
-
-
+                                                port->pending = 1;
                                                 marcel_sem_V(&is->sem);
+                                                active = 1;
+
                                         } else {
                                                 void           *ptr = NULL;
                                                 size_t          len = 0;
@@ -1108,67 +1098,114 @@ mad_gm_event_processing_thread(void *_a) {
                                                                                    port->packet,
                                                                                    port->packet_size,
                                                                                    GM_HIGH_PRIORITY, 1);
-                                                marcel_sem_V(&is->sem);
+                                                if (port->pending) {
+                                                        port->pending = 0;
+                                                } else {
+                                                        marcel_sem_V(&is->sem);
+                                                }
                                         }
-                                } else if ((code & 1) == 1) {
-                                        p_mad_connection_t             out = NULL;
-                                        p_mad_gm_connection_specific_t os  = NULL;
-
-                                        TRACE("mad_gm_port_poll: - packet is for an outgoing connection");
-                                        TRACE("mad_gm_port_poll: - packet is an ack for rendez-vous");
-                                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
-                                                                           port->packet,
-                                                                           port->packet_size,
-                                                                           GM_HIGH_PRIORITY, 1);
-
-                                        out = tbx_darray_get(port->out_darray, cnx_id);
-                                        os = out->specific;
-
-                                        marcel_sem_V(&os->sem);
-                                } else {
-                                        __error__("invalid code");
-                                        goto error;
                                 }
+                        } else if ((code & 1) == 1) {
+                                p_mad_connection_t             out = NULL;
+                                p_mad_gm_connection_specific_t os  = NULL;
+
+                                TRACE("mad_gm_port_poll: - packet is for an outgoing connection");
+                                TRACE("mad_gm_port_poll: - packet is an ack for rendez-vous");
+                                gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                   port->packet,
+                                                                   port->packet_size,
+                                                                   GM_HIGH_PRIORITY, 1);
+
+                                out = tbx_darray_get(port->out_darray, cnx_id);
+                                os = out->specific;
+
+                                marcel_sem_V(&os->sem);
+                        } else {
+                                __error__("invalid code");
+                                goto error;
                         }
-                        break;
-
-                case GM_PEER_RECV_EVENT:
-                case GM_RECV_EVENT:
-                        {
-                                p_mad_connection_t             in = NULL;
-                                p_mad_gm_connection_specific_t is = NULL;
-
-                                TRACE("mad_gm_port_poll: got a packet");
-                                TRACE("mad_gm_port_poll: - packet is a rendez-vous data message");
-                                in = port->active_input;
-                                is = in->specific;
-
-                                marcel_sem_V(&is->sem);
-                        }
-                        break;
-
-                case GM_NO_RECV_EVENT:
-                        active = 0;
-                        break;
-
-                default:
-                        gm_unknown(port->p_gm_port, p_event);
-                        break;
                 }
+                break;
 
-                mad_gm_unlock();
+        case GM_PEER_RECV_EVENT:
+        case GM_RECV_EVENT:
+                {
+                        p_mad_connection_t             in = NULL;
+                        p_mad_gm_connection_specific_t is = NULL;
+
+                        TRACE("mad_gm_port_poll: got a packet");
+                        TRACE("mad_gm_port_poll: - packet is a rendez-vous data message");
+                        in = port->active_input;
+                        is = in->specific;
+
+                        marcel_sem_V(&is->sem);
+                }
+                break;
+
+        case GM_NO_RECV_EVENT:
+                active = 0;
+                break;
+
+        default:
+                gm_unknown(port->p_gm_port, p_event);
+                break;
         }
 
-        LOG_OUT();
-        return NULL;
+        if (!port->pending) {
+                port->p_event = NULL;
+        }
+
+        return active;
 
  error:
         FAILURE("mad_gm_event_processing failed");
         LOG_OUT();
 
+        return 0;
+}
+
+
+static
+void *
+mad_gm_event_processing_thread(void *_a) {
+        p_mad_adapter_t a = _a;
+        p_mad_gm_adapter_specific_t as = NULL;
+        p_mad_driver_t d = NULL;
+        p_mad_gm_driver_specific_t ds = NULL;
+        p_mad_gm_port_t  port      = NULL;
+        int              active	= 0;
+	marcel_pollid_t pollid = 0;
+
+        LOG_IN();
+        as	= a->specific;
+        d	= a->driver;
+        ds	= d->specific;
+        port	= as->port;
+        pollid	= ds->gm_pollid;
+
+        while (!port->no_more_event) {
+                if (!active) {
+                        mad_gm_poll_req_t req;
+
+                        req.op       = mad_gm_poll_poll_op;
+                        req.port     = port;
+
+                        marcel_poll(pollid, &req);
+                        mad_gm_lock();
+                } else {
+                        mad_gm_lock();
+                        port->p_event = gm_receive(port->p_gm_port);
+                }
+
+                active = mad_gm_process_event(port, 1);
+                mad_gm_unlock();
+        }
+
+        LOG_OUT();
         return NULL;
 }
-#else /* MAD_GM_MARCEL_POLL */
+
+#else /* MARCEL */
 static
 void
 mad_gm_port_poll(p_mad_gm_port_t port) {
@@ -1418,9 +1455,9 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
         FAILURE("mad_gm_port_poll failed");
         LOG_OUT();
 }
-#endif /* MAD_GM_MARCEL_POLL */
+#endif /* MARCEL */
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
 static void
 mad_gm_marcel_group(marcel_pollid_t id)
 {
@@ -1430,30 +1467,30 @@ mad_gm_marcel_group(marcel_pollid_t id)
 static
 int
 mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
+        p_mad_gm_port_t port = NULL;
+        int r = 0;
+
 
         LOG_IN();
+        port = rq->port;
+
+        do {
+                if (port->no_more_event || port->pending) {
+                        r = 1;
+                        break;
+                }
+
+                port->p_event = gm_receive(port->p_gm_port);
+                r = mad_gm_process_event(port, 0);
+        } while (r == 2);
+
         if (rq->op == mad_gm_poll_poll_op) {
-                p_mad_gm_port_t port = NULL;
-                struct gm_port  *p_gm_port = NULL;
-                gm_recv_event_t *p_event   = NULL;
-                int r = 0;
-
-                port = rq->port;
-                p_gm_port = port->p_gm_port;
-
-                p_event = gm_receive(port->p_gm_port);
-
-                rq->data.poll_op.p_event = p_event;
-
-                r = port->no_more_event || (gm_ntohc(p_event->recv.type) != GM_NO_RECV_EVENT);
-
                 return r;
         } else if (rq->op == mad_gm_poll_channel_op) {
                 p_mad_channel_t                ch        = rq->data.channel_op.ch;
                 p_mad_gm_channel_specific_t    chs       = ch->specific;
                 p_mad_connection_t             in        = NULL;
                 p_tbx_darray_t                 in_darray = NULL;
-                int                            r         =    0;
                 int                            max       =    0;
                 int                            i         =    0;
                 int                            next      =    0;
@@ -1485,7 +1522,6 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
         } else
                 FAILURE("invalid operation");
 
-end:
         LOG_OUT();
 
         return 0;
@@ -1529,7 +1565,7 @@ mad_gm_marcel_poll(marcel_pollid_t id,
         return status;
 }
 
-#endif /* MAD_GM_MARCEL_POLL */
+#endif /* MARCEL */
 
 static
 p_mad_gm_port_t
@@ -1609,7 +1645,24 @@ mad_gm_port_open(int device_id) {
         return NULL;
 }
 
+#ifdef MARCEL
+static
+void
+mad_gm_poll(p_mad_gm_port_t port)
+{
+        while (mad_gm_process_event(port, 1))
+                ;
+}
 
+static
+void
+mad_gm_lock_poll(p_mad_gm_port_t port)
+{
+        mad_gm_lock();
+        mad_gm_poll(port);
+        mad_gm_unlock();
+}
+#endif /* MARCEL */
 
 void
 mad_gm_register(p_mad_driver_t driver)
@@ -1674,7 +1727,7 @@ mad_gm_driver_init(p_mad_driver_t d) {
 
         ds          = TBX_MALLOC(sizeof(mad_gm_driver_specific_t));
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         ds->gm_pollid =
                 marcel_pollid_create(mad_gm_marcel_group,
                                      mad_gm_marcel_poll,
@@ -1745,9 +1798,18 @@ mad_gm_adapter_init(p_mad_adapter_t a) {
         a->mtu       = MAD_FORWARD_MAX_MTU;
         a->specific  = as;
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         port->no_more_event = 0;
-        marcel_create(&(as->event_thread), NULL, mad_gm_event_processing_thread, a);
+        port->pending = 0;
+        port->p_event = NULL;
+
+ {
+         marcel_attr_t attr;
+
+         marcel_attr_init(&attr);
+         //marcel_attr_setrealtime(&attr, 1);
+         marcel_create(&(as->event_thread), &attr, mad_gm_event_processing_thread, a);
+ }
 #endif
 
         tbx_string_free(param_str);
@@ -1827,7 +1889,7 @@ mad_gm_connection_init(p_mad_connection_t in,
                 is->packet_length = MAD_GM_PACKET_HDR;
                 is->packet_size   = gm_min_size_for_length(MAD_GM_PACKET_LEN);
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
                 marcel_sem_init(&is->sem, 0);
 #else
                 is->send_lock    = 1;
@@ -1886,7 +1948,7 @@ mad_gm_connection_init(p_mad_connection_t in,
                 os->packet_length = MAD_GM_PACKET_HDR;
                 os->packet_size   = gm_min_size_for_length(MAD_GM_PACKET_LEN);
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
                 marcel_sem_init(&os->sem, 0);
 #else
                 os->send_lock    = 1;
@@ -2031,12 +2093,17 @@ mad_gm_channel_exit(p_mad_channel_t ch) {
 void
 mad_gm_adapter_exit(p_mad_adapter_t a) {
         p_mad_gm_adapter_specific_t as = NULL;
-        any_t              status = NULL;
 
         LOG_IN();
         as = a->specific;
-        as->port->no_more_event = 1;
-        marcel_join(as->event_thread, &status);
+#ifdef MARCEL
+        {
+                any_t              status = NULL;
+
+                as->port->no_more_event = 1;
+                marcel_join(as->event_thread, &status);
+        }
+#endif
         TBX_FREE(as);
 
         a->specific = as = NULL;
@@ -2119,7 +2186,7 @@ mad_gm_receive_message(p_mad_channel_t ch) {
         port   = as->port;
         darray = ch->in_connection_darray;
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         {
 	        p_mad_gm_connection_specific_t is = NULL;
                 mad_gm_poll_req_t req;
@@ -2130,6 +2197,7 @@ mad_gm_receive_message(p_mad_channel_t ch) {
                 req.data.channel_op.c  = NULL;
 
                 marcel_poll(ds->gm_pollid, &req);
+                mad_gm_lock_poll(port);
 
                 in = req.data.channel_op.c;
 		is = in->specific;
@@ -2216,10 +2284,13 @@ mad_gm_send_buffer_cpy(p_mad_link_t   l,
                               os->remote_node_id, os->remote_port_id,
                               mad_gm_callback, os->request);
 
+#ifdef MARCEL
+        mad_gm_poll(port);
+#endif
         mad_gm_unlock();
         b->bytes_read = b->bytes_written;
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_sem_P(&os->sem);
 #else
         while (os->send_lock) {
@@ -2264,8 +2335,10 @@ mad_gm_receive_buffer_cpy(p_mad_link_t     l,
         if (is->first) {
                 is->first = 0;
         } else {
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
+                mad_gm_lock_poll(port);
                 marcel_sem_P(&is->sem);
+                mad_gm_lock_poll(port);
 #else
                 while (is->receive_lock) {
                         mad_gm_port_poll(port);
@@ -2438,10 +2511,13 @@ mad_gm_send_buffer_rdv(p_mad_link_t   l,
                               mad_gm_callback, os->request);
 
         mad_gm_register_block(port, b->buffer, b->length, &os->cache);
+#ifdef MARCEL
+        mad_gm_poll(port);
+#endif
         mad_gm_unlock();
 
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_sem_P(&os->sem);
 #else
         while (os->receive_lock) {
@@ -2452,7 +2528,7 @@ mad_gm_send_buffer_rdv(p_mad_link_t   l,
 #endif
 
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_sem_P(&os->sem);
 #else
         while (os->send_lock) {
@@ -2480,10 +2556,13 @@ mad_gm_send_buffer_rdv(p_mad_link_t   l,
                                       os->length, GM_LOW_PRIORITY,
                                       os->remote_node_id, os->remote_port_id,
                                       mad_gm_callback, os->request);
+#ifdef MARCEL
+                mad_gm_poll(port);
+#endif
                 mad_gm_unlock();
 
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
                 marcel_sem_P(&os->sem);
 #else
                 while (os->send_lock) {
@@ -2533,7 +2612,8 @@ mad_gm_receive_buffer_rdv(p_mad_link_t     l,
         if (is->first) {
                 is->first = 0;
         } else {
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
+                mad_gm_lock_poll(port);
                 marcel_sem_P(&is->sem);
 #else
                 while (is->receive_lock) {
@@ -2547,17 +2627,24 @@ mad_gm_receive_buffer_rdv(p_mad_link_t     l,
         TBX_CRITICAL_SECTION_ENTER(mad_gm_reception);
         is->request->status = GM_SUCCESS;
         mad_gm_lock();
+#ifdef MARCEL
+        mad_gm_poll(port);
+#endif
         gm_send_with_callback(port->p_gm_port, is->packet,
                               is->packet_size, is->packet_length,
                               GM_HIGH_PRIORITY,
                               is->remote_node_id, is->remote_port_id,
                               mad_gm_callback, is->request);
         mad_gm_register_block(port, b->buffer, b->length, &is->cache);
+#ifdef MARCEL
+        mad_gm_poll(port);
+#endif
         mad_gm_unlock();
 
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
         marcel_sem_P(&is->sem);
+        mad_gm_lock_poll(port);
 #else
         while (is->send_lock) {
                 mad_gm_port_poll(port);
@@ -2579,11 +2666,15 @@ mad_gm_receive_buffer_rdv(p_mad_link_t     l,
                                                    b->buffer+b->bytes_written,
                                                    gm_min_size_for_length(MAD_GM_MAX_BLOCK_LEN),
                                                    GM_LOW_PRIORITY, 0);
+#ifdef MARCEL
+                mad_gm_poll(port);
+#endif
                 mad_gm_unlock();
 
 
-#ifdef MAD_GM_MARCEL_POLL
+#ifdef MARCEL
                 marcel_sem_P(&is->sem);
+                mad_gm_lock_poll(port);
 #else
                 while (is->receive_lock) {
                         mad_gm_port_poll(port);

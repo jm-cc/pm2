@@ -656,6 +656,7 @@ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, __lwp_t *lwp)
 
   DEFINE_CUR_LWP( , ,);
 
+
   LOG_IN();
 
   SET_CUR_LWP(lwp);
@@ -1112,44 +1113,40 @@ void marcel_yield(void)
   LOG_OUT();
 }
 
-void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
+void marcel_give_hand(boolean *blocked)
 {
   marcel_t next;
   register marcel_t cur = marcel_self();
-  volatile boolean first_time = TRUE;
 
   LOG_IN();
 
-  if(locked() != 1) {
+  if(locked() != 1)
     RAISE(LOCK_TASK_ERROR);
-  }
-  do {
+
+  for(;;) {
+
+    state_lock(cur);
+
+    // L'exécution de 'wake_task' a positionné *blocked à FALSE
+    if(!(*blocked)) {
+      state_unlock(cur);
+      unlock_task();
+
+      LOG_OUT();
+      return;
+    }
+
+    // Il faut se bloquer
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
       MA_THR_RESTARTED(cur, "Preemption");
-#ifdef MA__WORK
-      if (*blocked) {
-	unlock_task();
-	lock_task();
-      }
-#endif
     } else {
-
-      if(first_time)
-	first_time = FALSE;
-      else
-	marcel_lock_acquire(lock);
-
-      marcel_set_blocked(cur);
+      SET_BLOCKED(cur);
+      // NB : 'state_unlock' est effectué par 'unchain_task'
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
-
-      marcel_lock_release(lock);
-
       goto_next_task(next);
     }
-  } while(*blocked);
-  unlock_task();
 
-  LOG_OUT();
+  } // for
 }
 
 void marcel_tempo_give_hand(unsigned long timeout,
@@ -1157,7 +1154,6 @@ void marcel_tempo_give_hand(unsigned long timeout,
 {
   marcel_t next, cur = marcel_self();
   unsigned long ttw = marcel_clock() + timeout;
-  volatile boolean first_time = TRUE;
 
 #if defined(MA__ACTIVATION)
   RAISE(NOT_IMPLEMENTED);
@@ -1167,7 +1163,9 @@ void marcel_tempo_give_hand(unsigned long timeout,
 
   if(locked() != 1)
     RAISE(LOCK_TASK_ERROR);
+
   marcel_disablemigration(cur);
+
   do {
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
       MA_THR_RESTARTED(cur, "Preemption");
@@ -1181,40 +1179,38 @@ void marcel_tempo_give_hand(unsigned long timeout,
 	marcel_lock_acquire(&s->lock);
 
 	cc = s->first;
-	while(cc->task != cur) {
+	while(cc && cc->task != cur) {
 	  pc = cc;
 	  cc = cc->next;
 	}
 	(s->value)++;
-	if(pc == NULL)
+	if(cc) {
+	  if(pc == NULL)
             s->first = cc->next;
-         else if((pc->next = cc->next) == NULL)
+	  else if((pc->next = cc->next) == NULL)
             s->last = pc;
+	}
 
 	marcel_lock_release(&s->lock);
 
 	marcel_enablemigration(cur);
+
 	unlock_task();
 	RAISE(TIME_OUT);
       }
     } else {
-
-      if(first_time)
-	first_time = FALSE;
-      else
-	marcel_lock_acquire(&s->lock);
 
       cur->time_to_wake = ttw;
 
       marcel_set_sleeping(cur);
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
-      marcel_lock_release(&s->lock);
-
       goto_next_task(next);
     }
   } while(*blocked);
+
   marcel_enablemigration(cur);
+
   unlock_task();
 
   LOG_OUT();
@@ -1926,7 +1922,8 @@ static void wait_all_tasks_end(void)
   if(_main_struct.nb_tasks) {
     _main_struct.main_is_waiting = TRUE;
     _main_struct.blocked = TRUE;
-    marcel_give_hand(&_main_struct.blocked, &__wait_lock);
+    marcel_lock_release(&__wait_lock);
+    marcel_give_hand(&_main_struct.blocked);
   } else {
     marcel_lock_release(&__wait_lock);
     unlock_task();

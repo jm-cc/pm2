@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_timing.h,v $
+Revision 1.3  2000/11/15 21:32:44  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.2  2000/03/13 09:48:20  oaumage
 - ajout de l'option TBX_SAFE_MALLOC
 - support de safe_malloc
@@ -78,7 +81,7 @@ typedef union
 #endif /* X86_ARCH */
 
 #define TBX_TICK_DIFF(t1, t2) (TBX_TICK_RAW_DIFF(t1, t2) - tbx_residual)
-#define TBX_TIMING_DELAY(t1, t2) tbx_tick2usec(TBX_TICK_DIFF(t1, t2));
+#define TBX_TIMING_DELAY(t1, t2) tbx_tick2usec(TBX_TICK_DIFF(t1, t2))
 
 extern long long     tbx_residual;
 extern tbx_tick_t    tbx_new_event, tbx_last_event;

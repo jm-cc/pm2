@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_list.h,v $
+Revision 1.2  2000/05/22 12:18:59  oaumage
+- listes de recherche
+
 Revision 1.1  2000/01/13 14:51:29  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -59,6 +62,7 @@ typedef struct s_tbx_list_element
 
 typedef struct s_tbx_list
 {
+  TBX_SHARED;
   tbx_list_length_t        length ;
   p_tbx_list_element_t     first ;
   p_tbx_list_element_t     last ;

@@ -13,6 +13,9 @@ def default_loader(s, loader_host_list):
     app_args.extend(['--mad_leonie', s.leo.server.hostname])
     app_args.extend(['--mad_link', str(s.leo.server.port)])
 
+    if s.options.dyn_mode:
+        app_args.append('--mad_dyn_mode')
+
     if s.args is not None:
         app_args.extend(s.args)
 
@@ -45,7 +48,7 @@ def default_loader(s, loader_host_list):
 
 
     # Remote shell command (ssh)
-    ssh_args		= [env_command]
+    ssh_args		= ['-n', env_command]
     ssh_args.extend(env_args)
     ssh_command         = 'ssh'
 
@@ -55,6 +58,6 @@ def default_loader(s, loader_host_list):
         (hostname, id)	= process.location
         command	= [ssh_command, hostname]
         command.extend(ssh_args)
-        logger.info(command)
+        logger.debug(command)
         pid	= os.spawnvp(os.P_NOWAIT, ssh_command, command)        
         #time.sleep(1)

@@ -1,3 +1,12 @@
+/*! \file tbx_malloc.h
+ *  \brief TBX memory allocators data structures.
+ *
+ *  This file provides TBX memory allocators data structures:
+ *  - The 'safe-malloc' allocator: a debug version of malloc.
+ *  - The fast memory allocator:   a fast specialized allocator dedicated
+ *    to allocation of memory blocks of identical size.
+ *
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

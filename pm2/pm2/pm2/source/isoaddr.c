@@ -634,8 +634,6 @@ static int *tab_sync ;
 
 static marcel_sem_t isomalloc_send_status_sem, isomalloc_receive_status_sem ;
 
-extern marcel_sem_t sem_nego;
-
 static unsigned int *aux_slot_map;
 
 static unsigned int **global_slot_map;
@@ -659,12 +657,6 @@ static unsigned int **global_slot_map;
 #define slot_unlock() /* fprintf(stderr, "SLOT_UNLOCK\n"); */ marcel_mutex_unlock(&isomalloc_slot_mutex)
 
 static void _isomalloc_global_sync();
-
-
-
-#define _forbid_sends() fprintf(stderr,"forbid sends\n"); marcel_sem_P(&sem_nego)
-
-#define _allow_sends() fprintf(stderr,"allow sends\n"); marcel_sem_V(&sem_nego)
 
 #define GLOBAL_LOCK_NODE 0
 
@@ -815,8 +807,6 @@ static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
  */
  _launch_negociation_on_all_nodes();
 
- _forbid_sends();
-
  _isomalloc_global_sync();
 
  // slot_lock() 6/04/00
@@ -835,8 +825,6 @@ static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
 
  _isomalloc_global_sync(); 
 
- // _allow_sends();
-
  /*
    Unregister as negociation thread
  */ 
@@ -844,7 +832,7 @@ static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
 #ifdef ISOADDR_NEGOCIATION_TRACE
      tfprintf(stderr,"!!!!!! I am no longer the negociation thread: %p\n",marcel_self() );
 #endif
-     _allow_sends();
+
  /*
   Global unlock
  */
@@ -1469,8 +1457,6 @@ void LRPC_ISOMALLOC_LOCAL_LOCK_threaded_func(void)
  */
      marcel_setspecific(_pm2_isomalloc_nego_key, (any_t) -1);
 
-     _forbid_sends();
-
      _isomalloc_global_sync(); 
 
      local_lock();
@@ -1495,8 +1481,6 @@ void LRPC_ISOMALLOC_LOCAL_LOCK_threaded_func(void)
      local_unlock(); 
 
      _isomalloc_global_sync();
-
-     _allow_sends();
 
 #ifdef ISOADDR_NEGOCIATION_TRACE
      fprintf(stderr,"----<<<<LOCAL_LOCK on module %d is ending.\n",_local_node_rank);

@@ -16,7 +16,7 @@
 /*
  * sumping.c
  * ==========
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,6 +24,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "pm2_common.h"
+
+#ifdef MARCEL
 
 // Types
 //......................
@@ -34,7 +36,7 @@ typedef struct s_mad_ping_result
   int                  size;
   double               latency;
   double               bandwidth_mbit;
-  double               bandwidth_mbyte;  
+  double               bandwidth_mbyte;
 } mad_ping_result_t, *p_mad_ping_result_t;
 
 typedef struct {
@@ -83,7 +85,7 @@ static unsigned char *main_buffer = NULL;
 //......................
 
 static void
-mark_buffer(int len) TBX_UNUSED; 
+mark_buffer(int len) TBX_UNUSED;
 
 static void
 mark_buffer(int len)
@@ -98,12 +100,12 @@ mark_buffer(int len)
       n += 7;
       c = (unsigned char)(n % 256);
 
-      main_buffer[i] = c;      
+      main_buffer[i] = c;
     }
 }
 
 static void
-clear_buffer(void) TBX_UNUSED; 
+clear_buffer(void) TBX_UNUSED;
 
 static void
 clear_buffer(void)
@@ -118,7 +120,7 @@ fill_buffer(void)
 }
 
 static void
-control_buffer(int len) TBX_UNUSED; 
+control_buffer(int len) TBX_UNUSED;
 
 static void
 control_buffer(int len)
@@ -194,7 +196,7 @@ process_results(p_mad_channel_t     channel,
 	  tmp_results.bandwidth_mbyte = ntbx_unpack_double(&buffer);
 
 	  mad_end_unpacking(in);
-	  
+
 	  results = &tmp_results;
 	}
 
@@ -212,7 +214,7 @@ process_results(p_mad_channel_t     channel,
       ntbx_pack_buffer_t buffer;
 
       out = mad_begin_packing(channel, master_lrank);
-      
+
       ntbx_pack_int(results->lrank_src, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
 	       mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -239,7 +241,7 @@ process_results(p_mad_channel_t     channel,
 
       mad_end_packing(out);
     }
-  
+
   LOG_OUT();
 }
 
@@ -272,34 +274,34 @@ ping(p_mad_channel_t      channel,
       tbx_tick_t        t1;
       tbx_tick_t        t2;
       int nb_tests = param_nb_tests;
-	  
+
       sum = 0;
-      
+
       while (nb_tests--)
 	{
 	  int nb_samples = param_nb_samples;
-	  
+
 	  TBX_GET_TICK(t1);
 	  while (nb_samples--)
 	    {
 	      p_mad_connection_t connection = NULL;
-	      
+
 	      connection = mad_begin_packing(channel, lrank_dst);
 	      mad_pack(connection, main_buffer, _size,
 		       param_send_mode, param_receive_mode);
 	      mad_end_packing(connection);
-	      
+
 	      connection = mad_begin_unpacking(channel);
 	      mad_unpack(connection, main_buffer, _size,
 			 param_send_mode, param_receive_mode);
 	      mad_end_unpacking(connection);
 	    }
 	  TBX_GET_TICK(t2);
-	  
+
 	  sum += TBX_TIMING_DELAY(t1, t2);
 	}
-    
-  
+
+
       results.lrank_src       = process_lrank;
       results.lrank_dst       = lrank_dst;
       results.size            = _size;
@@ -318,11 +320,11 @@ ping(p_mad_channel_t      channel,
 
 static
 void
-pong(p_mad_channel_t      channel, 
+pong(p_mad_channel_t      channel,
      ntbx_process_lrank_t lrank_dst)
 {
   int size = 0;
-  
+
   LOG_IN();
   DISP("pong (channel %s) with : %i", channel->name, lrank_dst);
 
@@ -330,28 +332,28 @@ pong(p_mad_channel_t      channel,
     {
       const int _size = (!size && param_no_zero)?1:size;
       int nb_tests = param_nb_tests;
-      
+
       while (nb_tests--)
 	{
 	  int nb_samples = param_nb_samples;
-	  
+
 	  while (nb_samples--)
 	    {
 	      p_mad_connection_t connection = NULL;
-	      
+
 	      connection = mad_begin_unpacking(channel);
 	      mad_unpack(connection, main_buffer, _size,
 			 param_send_mode, param_receive_mode);
 	      mad_end_unpacking(connection);
-	      
+
 	      connection = mad_begin_packing(channel, lrank_dst);
 	      mad_pack(connection, main_buffer, _size,
 		       param_send_mode, param_receive_mode);
 	      mad_end_packing(connection);
 	    }
-	}	  
+	}
       process_results(channel, NULL);
-    }  
+    }
   LOG_OUT();
 }
 
@@ -364,7 +366,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   p_ntbx_process_container_t pc      = NULL;
   tbx_bool_t                 status  = tbx_false;
   ntbx_pack_buffer_t         buffer;
-  
+
   //DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
@@ -378,11 +380,11 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
   status = ntbx_pc_first_local_rank(pc, &master_lrank);
   if (!status)
-    return;  
+    return;
 
   process_lrank = ntbx_pc_global_to_local(pc, process_grank);
   DISP("Client : My local channel (%s) rank is : %i", name, process_lrank);
-  
+
   if (process_lrank != master_lrank)
     {
       DISP("nothing to do");
@@ -392,17 +394,17 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       // Master
       ntbx_process_lrank_t lrank_dst = -1;
       int                  i         =  0;
-      
+
       LDISP_STR("Channel", name);
       LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");
 
       while(param_sum || (i++ < param_nb_iteration)) {
 	ntbx_pc_first_local_rank(pc, &lrank_dst);
 	while (ntbx_pc_next_local_rank(pc, &lrank_dst)) {
-	  
+
 	  p_mad_connection_t out = NULL;
 	  //p_mad_connection_t in  = NULL;
-	  
+
 	  out = mad_begin_packing(channel, lrank_dst);
 	  ntbx_pack_int(master_lrank, &buffer);
 	  mad_pack(out, &buffer, sizeof(buffer),
@@ -411,12 +413,12 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  mad_pack(out, &buffer, sizeof(buffer),
 		   mad_send_CHEAPER, mad_receive_EXPRESS);
 	  mad_end_packing(out);
-	  
+
 	  //in = mad_begin_unpacking(channel);
 	  //mad_unpack(in, &buffer, sizeof(buffer),
 	  //     mad_send_CHEAPER, mad_receive_EXPRESS);
 	  //mad_end_unpacking(in);
-	  
+
 	  ping(channel, lrank_dst);
 	  if (param_sum) {
 	    marcel_delay(200);
@@ -428,7 +430,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       while (ntbx_pc_next_local_rank(pc, &lrank_dst))
 	{
 	  p_mad_connection_t out = NULL;
-	  
+
 	  out = mad_begin_packing(channel, lrank_dst);
 	  ntbx_pack_int(master_lrank, &buffer);
 	  mad_pack(out, &buffer, sizeof(buffer),
@@ -439,7 +441,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  mad_end_packing(out);
 	}
     }
-}  
+}
 
 void* server_thread(thread_infos_t * info)
 {
@@ -449,7 +451,7 @@ void* server_thread(thread_infos_t * info)
   p_ntbx_process_container_t pc      = NULL;
   tbx_bool_t                 status  = tbx_false;
   ntbx_pack_buffer_t         buffer;
-  
+
   DISP_STR("Channel starting", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
@@ -463,11 +465,11 @@ void* server_thread(thread_infos_t * info)
 
   status = ntbx_pc_first_local_rank(pc, &master_lrank);
   if (!status)
-    return NULL;  
+    return NULL;
 
   process_lrank = ntbx_pc_global_to_local(pc, process_grank);
   DISP("Server : My local channel (%s) rank is : %i", name, process_lrank);
-  
+
   if (process_lrank == master_lrank)
     {
       DISP("Master server exciting");
@@ -476,11 +478,11 @@ void* server_thread(thread_infos_t * info)
 
   /* Slaves */
   while (1)
-    {	       
+    {
       p_mad_connection_t   in             = NULL;
       ntbx_process_lrank_t its_local_rank =   -1;
       int                  fin            =    0;
-      
+
       in = mad_begin_unpacking(channel);
       mad_unpack(in, &buffer, sizeof(buffer),
 		 mad_send_CHEAPER, mad_receive_EXPRESS);
@@ -489,12 +491,12 @@ void* server_thread(thread_infos_t * info)
 		 mad_send_CHEAPER, mad_receive_EXPRESS);
       fin = ntbx_unpack_int(&buffer);
       mad_end_unpacking(in);
-      
+
       if (its_local_rank == process_lrank) {
 	DISP("Ping with ourself !");
 	return NULL;
       }
-      
+
       if (fin)
 	{
 	  DISP_STR("Channel stoping", name);
@@ -503,7 +505,7 @@ void* server_thread(thread_infos_t * info)
       else
 	{
 	  /* Pong */
-	  pong(channel, its_local_rank);	  
+	  pong(channel, its_local_rank);
 	}
     }
   DISP_STR("Channel stopped", name);
@@ -582,7 +584,7 @@ void* calculus_thread(thread_infos_t * info)
 {
   DISP("Starting calculus thread %p", info->tid);
   while (!*(info->end)) ;
-  DISP("Ending calculus thread %p", info->tid);  
+  DISP("Ending calculus thread %p", info->tid);
   return NULL;
 }
 
@@ -603,10 +605,10 @@ void *main_thread(thread_infos_t * info)
 					  MAD_ALIGNMENT);
     for(i=0;i<info->nb_calculus_thread; i++) {
       calculus_threads[i].end=&end;
-      marcel_create(&calculus_threads[i].tid, NULL, (void*) calculus_thread, 
+      marcel_create(&calculus_threads[i].tid, NULL, (void*) calculus_thread,
 		    &calculus_threads[i]);
     }
-    
+
   }
 
   slist = madeleine->public_channel_slist;
@@ -620,12 +622,12 @@ void *main_thread(thread_infos_t * info)
     marcel_attr_t attr;
     marcel_attr_init(&attr);
     marcel_attr_setrealtime(&attr, TRUE);
-    
+
     main_buffer = tbx_aligned_malloc(param_size, MAD_ALIGNMENT);
     thread_params_tbl = tbx_aligned_malloc(nb_channel*2*
 					   sizeof(thread_infos_t),
 					   MAD_ALIGNMENT);
-    
+
     // Démarrage des threads "pong" (de réponse)
     thread_params=thread_params_tbl;
     slist = slist_head;
@@ -635,11 +637,11 @@ void *main_thread(thread_infos_t * info)
       if (! i--) break;
       thread_params->name = tbx_slist_ref_get(slist);
       thread_params->madeleine = madeleine;
-      marcel_create(&thread_params->tid, &attr, (void*) server_thread, 
+      marcel_create(&thread_params->tid, &attr, (void*) server_thread,
 		    thread_params);
       thread_params++;
     } while (tbx_slist_ref_forward(slist));
-    
+
     if (info->sum > 0) {
       param_sum=1;
     }
@@ -653,25 +655,25 @@ void *main_thread(thread_infos_t * info)
       thread_params->name = tbx_slist_ref_get(slist);
       thread_params->madeleine = madeleine;
       marcel_create(&thread_params->tid, &attr,
-		    (void*) thread_for_channel, 
+		    (void*) thread_for_channel,
 		    thread_params);
-      thread_params++;  
+      thread_params++;
     } while (tbx_slist_ref_forward(slist));
-    
+
     // Démarrage du calcul de la somme
     if (info->sum > 0) {
       sum_info.sum=info->sum;
       DISP("Starting sum thread (%i)", sum_info.sum);
-      marcel_create(&sum_info.tid, NULL, (void*) sum_thread, 
+      marcel_create(&sum_info.tid, NULL, (void*) sum_thread,
 		    &sum_info);
     }
 
     // Attente de la fin du thread de somme
     if (info->sum > 0) {
-      DISP("Stopping sum thread");  
+      DISP("Stopping sum thread");
       marcel_join(sum_info.tid, NULL);
       param_sum=0;
-      DISP("Sum thread stopped");  
+      DISP("Sum thread stopped");
     }
 
     // Attente de la fin des threads ping
@@ -694,13 +696,13 @@ void *main_thread(thread_infos_t * info)
       marcel_join(thread_params->tid, NULL);
       thread_params++;
     } while (tbx_slist_ref_forward(slist));
-    
+
     tbx_aligned_free(thread_params_tbl, MAD_ALIGNMENT);
     tbx_aligned_free(main_buffer, MAD_ALIGNMENT);
   }
-  
+
   if (info->nb_calculus_thread) {
-    DISP("Stopping calculus threads");  
+    DISP("Stopping calculus threads");
     end=1;
 
     for(i=0;i<info->nb_calculus_thread; i++) {
@@ -771,7 +773,7 @@ tbx_main(int argc, char *argv[])
   DISP_VAL("Number of channels to use", thread_params.nb_channel);
   DISP_VAL("Size of ping", param_size);
   DISP_VAL("Number of ping after the sum computed", param_nb_iteration);
-  
+
 
   // Démarrage du thread principal en RT (pour qu'il démarre
   // rapidement tous les threads).
@@ -783,16 +785,25 @@ tbx_main(int argc, char *argv[])
     marcel_attr_init(&attr);
     marcel_attr_setrealtime(&attr, TRUE);
 
-    marcel_create(&thread_params.tid, &attr, (void*) main_thread, 
+    marcel_create(&thread_params.tid, &attr, (void*) main_thread,
 		  &thread_params);
     marcel_join(thread_params.tid, NULL);
   }
 
  end:
-  DISP("Exiting");  
-  
+  DISP("Exiting");
+
   // mad_exit(madeleine);
   common_exit(NULL);
 
   return 0;
 }
+#else  /* MARCEL */
+#warning This program requires Marcel, activating dummy 'main' function
+
+int
+tbx_main(int argc, char *argv[])
+{
+  return 0;
+}
+#endif /* MARCEL */

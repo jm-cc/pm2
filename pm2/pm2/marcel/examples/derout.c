@@ -17,67 +17,90 @@
 #include "marcel.h"
 #include "marcel_sem.h"
 
-marcel_sem_t sem;
+static marcel_sem_t sem;
+
+static volatile boolean stay_busy = TRUE;
+
+void deviation0(void *arg)
+{
+  fprintf(stderr, "Deviation of a busy thread : %s\n", (char *)arg);
+  stay_busy = FALSE;
+}
 
 void deviation1(void *arg)
 {
-   marcel_fprintf(stdout, "This is a deviation : %s\n", arg);
+  fprintf(stderr, "Deviation of a sleeping thread: %s\n", (char *)arg);
 }
 
 void deviation2(void *arg)
 {
-   marcel_fprintf(stdout, "Deviation of a blocked thread : %s\n", arg);
+  fprintf(stderr, "Deviation of a blocked thread: %s\n", (char *)arg);
 }
 
 void deviation3(void *arg)
 {
-   marcel_fprintf(stdout, "Deviation in order to wake one's self : ");
-   marcel_sem_V(&sem);
+  fprintf(stderr, "Deviation in order to wake one's self: ");
+  marcel_sem_V(&sem);
 }
 
 any_t func(any_t arg)
-{ int i;
+{
+  int i;
 
-   for(i=0; i<10; i++) {
-      marcel_delay(100);
-      marcel_printf("Hi %s!\n", arg);
-   }
+  fprintf(stderr, "I'm on VP(%d)\n", marcel_current_vp());
 
-   marcel_sem_V(&sem);
+  while(stay_busy) ;
 
-   marcel_printf("Will block...\n");
-   marcel_sem_P(&sem);
-   marcel_printf("OK !\n");
+  for(i=0; i<10; i++) {
+    marcel_delay(100);
+    fprintf(stderr, "Hi %s!\n", (char *)arg);
+  }
 
-   return NULL;
+  marcel_sem_V(&sem);
+
+  fprintf(stderr, "Will block...\n");
+  marcel_sem_P(&sem);
+  fprintf(stderr, "OK !\n");
+
+  return NULL;
 }
 
 int marcel_main(int argc, char *argv[])
-{ marcel_t pid;
+{
+  marcel_t pid;
   any_t status;
+  marcel_attr_t attr;
 
-   marcel_init(&argc, argv);
+  marcel_init(&argc, argv);
 
-   marcel_sem_init(&sem, 0);
+  marcel_sem_init(&sem, 0);
 
-   marcel_create(&pid, NULL, func, (any_t)"boys");
+  marcel_attr_init(&attr);
+  marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(marcel_nbvps()-1));
 
-   marcel_delay(500);
+  marcel_create(&pid, &attr, func, (any_t)"boys");
 
-   marcel_deviate(pid, deviation1, "OK !");
+  marcel_delay(100);
 
-   marcel_sem_P(&sem);
+  marcel_deviate(pid, deviation0, "Ok!");
 
-   marcel_delay(500);
+  marcel_delay(500);
 
-   marcel_deviate(pid, deviation2, "OK !");
+  marcel_deviate(pid, deviation1, "Ok!");
 
-   marcel_delay(500);
+  marcel_sem_P(&sem);
 
-   marcel_deviate(pid, deviation3, NULL);
+  marcel_delay(500);
 
-   marcel_join(pid, &status);
+  marcel_deviate(pid, deviation2, "Ok!");
 
-   marcel_end();
-   return 0;
+  marcel_delay(500);
+
+  marcel_deviate(pid, deviation3, NULL);
+
+  marcel_join(pid, &status);
+
+  marcel_end();
+
+  return 0;
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sem.c,v $
+Revision 1.6  2000/04/17 16:09:41  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.5  2000/04/11 09:07:37  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -84,7 +87,6 @@ void marcel_sem_P(marcel_sem_t *s)
   }
 }
 
-#ifndef __ACT__
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
   cell c;
@@ -115,7 +117,6 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
     unlock_task();
   }
 }
-#endif
 
 void marcel_sem_V(marcel_sem_t *s)
 {

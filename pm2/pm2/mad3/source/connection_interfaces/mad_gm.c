@@ -142,7 +142,9 @@ typedef struct s_mad_gm_request {
 
 typedef struct s_mad_gm_driver_specific {
         int                 dummy;
+#ifdef MAD_GM_MARCEL_POLL
         marcel_pollid_t     gm_pollid;
+#endif
 } mad_gm_driver_specific_t, *p_mad_gm_driver_specific_t;
 
 typedef struct s_mad_gm_adapter_specific {

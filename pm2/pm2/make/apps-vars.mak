@@ -39,37 +39,14 @@ endif
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-ifdef OLD_MAKEFILE
-CONFIG_MODULES=$(shell $(PM2_CONFIG) --modules)
-else
 -include $(PM2_MAK_DIR)/apps-libs.mak
-endif
 
 all:
 
 SRC_DIR := $(CURDIR)
 
 ifneq ($(MAKECMDGOALS),config)
-
-ifdef OLD_MAKEFILE
-APP_STAMP := $(shell $(PM2_CONFIG) --stampdir)
-APP_EXT := $(shell $(PM2_CONFIG) --ext)
-APP_LOADER := $(shell $(PM2_CONFIG) --loader)
-
-CC := $(shell $(PM2_CONFIG) --cc $(LIBRARY))
-
-APP_CFLAGS += $(shell $(PM2_CONFIG) --cflags)
-APP_LDFLAGS += $(shell $(PM2_CONFIG) --libs)
-CFLAGS += $(APP_CFLAGS)
-LDFLAGS += $(APP_LDFLAGS)
-APP_LLIBS += $(shell $(PM2_CONFIG) --libs-only-l)
-PM2_MODULES += $(shell $(PM2_CONFIG) --modules)
-APP_STAMP_FILES := $(shell $(PM2_CONFIG) --stampfile)
-APP_STAMP_FILES += $(shell $(PM2_CONFIG) --stampfile all)
-APP_BUILDD := $(shell $(PM2_CONFIG) --builddir)
-else
 -include $(PM2_MAK_DIR)/apps-config.mak
-endif # OLD_MAKEFILE
 endif
 
 THIS_DIR := $(shell basename `pwd`)

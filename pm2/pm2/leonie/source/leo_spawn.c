@@ -96,7 +96,7 @@ connect_processes(p_leonie_t leonie,
       host_name = leo_receive_string(client);
 #else // LEO_IP
       host_name_list = tbx_slist_nil();
-      
+
       {
 	char           *ip_str = NULL;
 	unsigned long   ip     = 0;
@@ -109,18 +109,18 @@ connect_processes(p_leonie_t leonie,
 	tbx_slist_append(host_name_list, host_name);
 	TBX_FREE(ip_str);
 
-	do 
+	do
 	  {
 	    ip_str = leo_receive_string(client);
 	    /*DISP_STR("loop 0", ip_str);*/
 	    if (tbx_streq(ip_str, "-"))
 	      {
-		TBX_FREE(ip_str);	    
+		TBX_FREE(ip_str);
 		break;
 	      }
 
 	    tbx_slist_append(host_name_list, tbx_strdup(ip_str));
-	    TBX_FREE(ip_str);	    
+	    TBX_FREE(ip_str);
 	  }
 	while (1);
       }
@@ -142,7 +142,7 @@ connect_processes(p_leonie_t leonie,
 	    goto found;
 	}
       while (tbx_slist_ref_forward(host_name_list));
-      
+
       tbx_slist_ref_to_head(host_name_list);
       do
 	{
@@ -674,11 +674,13 @@ send_directory(p_leonie_t leonie)
 	  tbx_slist_ref_to_head(slist);
 	  do
 	    {
-	      p_leo_dir_xchannel_t       dir_xchannel           = NULL;
-	      p_ntbx_process_container_t pc                     = NULL;
-	      ntbx_process_grank_t       g_rank_src             =   -1;
-	      p_tbx_slist_t              dir_channel_slist      = NULL;
-	      int                        dir_channel_slist_len  =    0;
+	      p_leo_dir_xchannel_t       dir_xchannel               = NULL;
+	      p_ntbx_process_container_t pc                         = NULL;
+	      ntbx_process_grank_t       g_rank_src                 =   -1;
+	      p_tbx_slist_t              dir_channel_slist          = NULL;
+	      int                        dir_channel_slist_len      =    0;
+	      p_tbx_slist_t              sub_channel_name_slist     = NULL;
+	      int                        sub_channel_name_slist_len =    0;
 
 	      dir_xchannel = tbx_slist_ref_get(slist);
 	      pc = dir_xchannel->pc;
@@ -686,8 +688,8 @@ send_directory(p_leonie_t leonie)
 	      TRACE_STR("Xchannel", dir_xchannel->name);
 	      leo_send_string(client, dir_xchannel->name);
 
-	      dir_channel_slist     = dir_xchannel->dir_channel_slist;
-	      dir_channel_slist_len = tbx_slist_get_length(dir_channel_slist);
+	      dir_channel_slist      = dir_xchannel->dir_channel_slist;
+	      dir_channel_slist_len  = tbx_slist_get_length(dir_channel_slist);
 	      leo_send_int(client, dir_channel_slist_len);
 
 	      tbx_slist_ref_to_head(dir_channel_slist);
@@ -699,6 +701,24 @@ send_directory(p_leonie_t leonie)
 		  leo_send_string(client, dir_channel->name);
 		}
 	      while (tbx_slist_ref_forward(dir_channel_slist));
+
+	      sub_channel_name_slist     = dir_xchannel->sub_channel_name_slist;
+	      sub_channel_name_slist_len =
+		tbx_slist_get_length(sub_channel_name_slist);
+
+	      leo_send_int(client, sub_channel_name_slist_len);
+	      if (sub_channel_name_slist_len)
+		{
+		  tbx_slist_ref_to_head(sub_channel_name_slist);
+		  do
+		    {
+		      char *name = NULL;
+
+		      name = tbx_slist_ref_get(sub_channel_name_slist);
+		      leo_send_string(client, name);
+		    }
+		  while (tbx_slist_ref_forward(sub_channel_name_slist));
+		}
 
 	      TRACE("Virtual channel routing table");
 	      if (ntbx_pc_first_global_rank(pc, &g_rank_src))

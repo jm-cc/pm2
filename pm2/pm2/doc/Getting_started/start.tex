@@ -10,7 +10,7 @@
   Vincent Danjean \and Raymond Namyst}
 
 \date{\footnotesize%
-\url{$Id: start.tex,v 1.6 2001/04/04 17:08:34 bouge Exp $}%
+\url{$Id: start.tex,v 1.7 2001/04/10 16:45:17 bouge Exp $}%
 }
 
 \maketitle
@@ -629,16 +629,16 @@ preferably out of the configuration.
 \begin{warning}
   Just to avoid disturbing problems in the sequel, please make sure
   that you local machine is allowed to issue \|rsh| commands to each
-  machine in the configuration. For instance, try:
+  machine in the configuration, and that the directory \|${PM2_ROOT}|
+  is actually shared by all of them. For instance, try:
 \begin{shell}
-ravel% rsh ravel 'ls ${PM2_ROOT}'
-ravel% rsh debussy 'ls ${PM2_ROOT}'
-ravel% rsh faure 'ls ${PM2_ROOT}'
+ravel% pm2-all 'ls ${PM2_ROOT}'
 \end{shell}
-for each host in the current configuration. (Note the \|'|
-characters!) If you do not get the list of the files in your current
-\|${PM2_ROT}| directory, that is, either you get nothing or a
-message like \|permission denied|, etc., then you are in trouble!
+(Note the \|'| characters!)  This script issues a rsh command to each
+node in the current configuration.  If you do not get the list of the
+files in your current \|${PM2_RO0T}| directory, that is, either you
+get nothing or a message like \|permission denied|, etc., then you are
+in trouble!
 \end{warning}
 
 If \|rsh| does not work because of rights permissions, a possible
@@ -687,8 +687,7 @@ later how to get them.
 
 Feedback from PM2 users showed that several common pitfalls may be
 encountered at this time. If this is your case, please refer to
-Section~\ref{sec:commonpitfalls}: \emph{Common Pitfalls}. Here are the
-most common.
+Section~\ref{sec:commonpitfalls}: \emph{Common Pitfalls}. 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

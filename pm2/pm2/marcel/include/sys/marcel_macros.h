@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.8  2000/07/04 14:01:11  gantoniu
+Added support for DSM located stacks.
+
 Revision 1.7  2000/05/09 10:52:44  vdanjean
 pm2debug module
 
@@ -200,11 +203,19 @@ ______________________________________________________________________________
  * positionnée pour pouvoir annuler la propriété RUNNING du thread
  * courant.
  * */
+
+#if defined(DSM_SHARED_STACK)
+#define MA_THR_LONGJMP(next, ret) \
+  (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
+   __next_thread = next,  \
+   call_ST_FLUSH_WINDOWS(), \
+   longjmp(next->jbuf, ret))
+#else
 #define MA_THR_LONGJMP(next, ret) \
   (MA_THR_DEBUG__MULTIPLE_RUNNING(next), \
    call_ST_FLUSH_WINDOWS(), \
    longjmp(next->jbuf, ret))
-
+#endif
 
 // TODO: C'est dans cette fonction qu'il faut tester si une activation
 // est debloquee...  NOTE: Le parametre "pid" peut etre NULL dans le

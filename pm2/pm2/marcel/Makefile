@@ -59,9 +59,15 @@ define ADD_SUBDIR # subdir SUBNAME base
  MOD_HSPLITS_$(2)_nosection_SOURCES=$$(filter-out $$(MOD_HSPLITS_$(2)_section_SOURCES),$$(MOD_HSPLITS_$(2)_SOURCES))
 endef
 
-$(eval $(call ADD_SUBDIR,asm-$(MOD_ARCH),ARCH))
+#ifeq ($(MOD_ARCH),)
+#$(warning MOD_ARCH not defined)
+#endif
+#ifeq ($(SCHED_NAME),)
+#$(warning SCHED_NAME not defined)
+#endif
 $(eval $(call ADD_SUBDIR,asm-generic,ARCH_GENERIC))
-$(eval $(call ADD_SUBDIR,scheduler-$(SCHED_NAME),SCHED))
+$(if $(MOD_ARCH),$(eval $(call ADD_SUBDIR,asm-$(MOD_ARCH),ARCH)))
+$(if $(SCHED_NAME),$(eval $(call ADD_SUBDIR,scheduler-$(SCHED_NAME),SCHED)))
 
 .PHONY: symlinks
 dot_h: symlinks

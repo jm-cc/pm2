@@ -236,7 +236,7 @@ fi
 FLAVOR_FILE=`pm2-flavor find --flavor=$flavor`
 
 if [ ! -f $FLAVOR_FILE ]; then
-    echo "Flavor $flavor do not exists yet. Create it before." 1>&2
+    echo "Flavor $flavor do not exists yet. Create it before with _make init_." 1>&2
     exit 1
 fi
 

@@ -33,17 +33,11 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
-Revision 1.31  2000/06/06 16:02:18  oaumage
-- Retablissement du code classique
+Revision 1.33  2000/06/07 08:12:06  oaumage
+- Retour a des bases saines
 
-Revision 1.30  2000/06/06 15:58:15  oaumage
-- modifications diverses
-
-Revision 1.29  2000/06/06 13:42:31  oaumage
-- Modifications diverses
-
-Revision 1.28  2000/06/06 12:54:54  oaumage
-- Ajout du calcul de la taille des groupes de buffers dynamiques
+Revision 1.32  2000/06/07 07:49:14  oaumage
+- Retablissement de la version 1.27
 
 Revision 1.27  2000/06/05 11:20:16  oaumage
 - Amelioration de la bande passante
@@ -279,39 +273,37 @@ typedef struct
 
 typedef struct
 {
-  ntbx_host_id_t       local_host_id;
-  p_mad_channel_t      channel;
-  p_mad_connection_t   connection;
+  ntbx_host_id_t local_host_id;
+  p_mad_channel_t channel;
+  p_mad_connection_t connection;
   p_mad_sisci_status_t status;
-  int                   size_array;
+  int size_array;
   p_mad_sisci_status_t *read;
 } mad_sisci_marcel_poll_cell_arg_t, *p_mad_sisci_marcel_poll_cell_arg_t;
 
 typedef struct
 {
   /* SHMem */
-  sci_desc_t                 sd[2];
-  mad_sisci_local_segment_t  local_segment[2];
-  mad_sisci_remote_segment_t remote_segment[2];
-  int                        buffers_read;
-  volatile  tbx_bool_t       write_flag_flushed;
+  sci_desc_t                   sd[2];
+  mad_sisci_local_segment_t    local_segment[2];
+  mad_sisci_remote_segment_t   remote_segment[2];
+  int                          buffers_read;
+  volatile  tbx_bool_t         write_flag_flushed;
 #ifdef MAD_SISCI_DMA
   /* DMA send */
-  sci_desc_t                 dma_send_sd[2];
-  sci_dma_queue_t            dma_send_queue[2];
-  mad_sisci_local_segment_t  local_dma_send_segment[2];
-  mad_sisci_remote_segment_t remote_dma_send_segment[2];
+  sci_desc_t                   dma_send_sd[2];
+  sci_dma_queue_t              dma_send_queue[2];
+  mad_sisci_local_segment_t    local_dma_send_segment[2];
+  mad_sisci_remote_segment_t   remote_dma_send_segment[2];
   
   /* DMA recv */
-  sci_desc_t                 dma_recv_sd[2];
-  mad_sisci_local_segment_t  local_dma_recv_segment[2];
+  sci_desc_t                   dma_recv_sd[2];
+  mad_sisci_local_segment_t    local_dma_recv_segment[2];
 #endif /* MAD_SISCI_DMA */
 } mad_sisci_connection_specific_t, *p_mad_sisci_connection_specific_t;
 
 typedef struct
 {
-  size_t  offset;
-  void   *opt_buffer;
 } mad_sisci_link_specific_t, *p_mad_sisci_link_specific_t;
 
 /*
@@ -1077,7 +1069,7 @@ mad_sisci_channel_init(p_mad_channel_t channel)
 void
 mad_sisci_connection_init(p_mad_connection_t in, p_mad_connection_t out)
 {
-  p_mad_sisci_connection_specific_t specific = NULL;
+  p_mad_sisci_connection_specific_t specific;
   
   LOG_IN();
   specific = TBX_MALLOC(sizeof(mad_sisci_connection_specific_t));
@@ -1093,15 +1085,11 @@ mad_sisci_connection_init(p_mad_connection_t in, p_mad_connection_t out)
 void 
 mad_sisci_link_init(p_mad_link_t lnk)
 {
-  p_mad_sisci_link_specific_t specific = NULL;
-
   LOG_IN();
   lnk->link_mode   = mad_link_mode_buffer_group;
   /* lnk->link_mode   = mad_link_mode_buffer; */
   lnk->buffer_mode = mad_buffer_mode_dynamic;
-  lnk->group_mode  = mad_group_mode_split;
-    
-
+  lnk->group_mode = mad_group_mode_split;
   /*
   if (lnk->id == MAD_SISCI_LINK_REGULAR)
     {
@@ -1109,14 +1097,9 @@ mad_sisci_link_init(p_mad_link_t lnk)
     }
   else
     {
-      specific = TBX_MALLOC(sizeof(mad_sisci_link_specific_t));
-      CTRL_ALLOC(specific);
-      specific->opt_buffer = TBX_MALLOC(MAD_SISCI_OPT_MAX);
-      CTRL_ALLOC(specific->opt_buffer);
       lnk->group_mode = mad_group_mode_aggregate;
     }
   */
-  lnk->specific = specific;
   LOG_OUT();
 }
 
@@ -2220,127 +2203,20 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
     }
   LOG_OUT();
 }
-
+/*
 static void
-mad_sisci_send_sci_buffer_group_opt(p_mad_link_t         link,
-				    p_mad_buffer_group_t buffer_group)
-{
-  p_mad_connection_t                connection          = link->connection;
-  p_mad_sisci_connection_specific_t connection_specific =
-    connection->specific;
-  p_mad_sisci_local_segment_t       local_segment       =
-    &(connection_specific->local_segment[0]);
-  p_mad_sisci_remote_segment_t      remote_segment      =
-    &(connection_specific->remote_segment[0]);
-  p_mad_sisci_user_segment_data_t   local_data          =
-    local_segment->map_addr;
-  p_mad_sisci_user_segment_data_t   remote_data         =
-    remote_segment->map_addr;
-  volatile p_mad_sisci_status_t     read                =
-    &remote_data->status.read;
-  volatile p_mad_sisci_status_t     write               =
-    &local_data->status.write;
-  tbx_list_reference_t              ref;
-  volatile char                    *destination         =
-    remote_data->buffer;
-  size_t                            offset              = 0;
-  size_t                            destination_size    =
-    remote_segment->size - sizeof(mad_sisci_connection_status_t);
-  
-  LOG_IN();
-  tbx_list_reference_init(&ref, &buffer_group->buffer_list); 
-  
-  mad_sisci_wait_for(link, write);
-  
-  do
-    {
-      p_mad_buffer_t buffer = tbx_get_list_reference_object(&ref);
-      char          *source = buffer->buffer + buffer->bytes_read;
-
-      while (mad_more_data(buffer))
-	{
-	  size_t         size         =
-	    min(buffer->bytes_written - buffer->bytes_read,
-	    destination_size - offset);
-	  size_t         mod_4        = size % 4;
-	  size_t         aligned_size = size - mod_4;
-	  sci_error_t    sisci_error;
-
-	  buffer->bytes_read += size;
-	  
-	  SCIMemCopy(source,
-		     remote_segment->map,
-		     sizeof(mad_sisci_connection_status_t) + offset,
-		     aligned_size,
-		     0,
-		     &sisci_error);
-	  mad_sisci_control();
-
-	  offset += aligned_size;
-	  source += aligned_size;
-	  
-	  while (mod_4--)
-	    {
-	      *(destination+(offset++)) = *source++;
-	    }
-	  
-	  while (offset & 0x03)
-	    {
-	      *(destination+(offset++)) = 0;
-	    }	  
-
-	  if (tbx_aligned(offset, 64) >= destination_size)
-	    {
-	      while (offset & 0x30)
-		{
-		  *(unsigned int *)(destination+offset) = 0;
-		  offset += 4;
-		}	  
-
-	      mad_sisci_flush(remote_segment);
-
-	      mad_sisci_clear(write);
-	      mad_sisci_set(read);
-	      mad_sisci_flush(remote_segment);
-
-	      mad_sisci_wait_for(link, write);
-
-	      offset = 0;
-	    }
-	}
-    }
-  while (tbx_forward_list_reference(&ref));
-
-  if (offset > 0)
-    {
-      while (offset & 0x30)
-	{
-	  *(unsigned int *)(destination+offset) = 0;
-	  offset += 4;
-	}	  
-
-      mad_sisci_flush(remote_segment);
-
-      mad_sisci_clear(write);
-      mad_sisci_set(read);
-      mad_sisci_flush(remote_segment);
-    }
-
-  connection_specific->write_flag_flushed = tbx_true;
-  LOG_OUT();
-}
-
-static void 
-mad_sisci_receive_sci_buffer_group_opt(p_mad_link_t         link,
-				       p_mad_buffer_group_t buffer_group)
+mad_sisci_receive_sci_buffer_2(p_mad_link_t   link, 
+			       p_mad_buffer_t buffer)
 {  
   p_mad_connection_t                connection          = link->connection;
   p_mad_sisci_connection_specific_t connection_specific =
     connection->specific;
   p_mad_sisci_local_segment_t       local_segment       =
-    &(connection_specific->local_segment[0]);
+    &connection_specific->local_segment;
   p_mad_sisci_remote_segment_t      remote_segment      =
-    &(connection_specific->remote_segment[0]);
+    &connection_specific->remote_segment;
+  char                             *destination         =
+    buffer->buffer + buffer->bytes_written;
   p_mad_sisci_user_segment_data_t   local_data          =
     local_segment->map_addr;
   p_mad_sisci_user_segment_data_t   remote_data         =
@@ -2349,73 +2225,33 @@ mad_sisci_receive_sci_buffer_group_opt(p_mad_link_t         link,
     &local_data->status.read;
   p_mad_sisci_status_t              write               =
     &remote_data->status.write;
-  tbx_list_reference_t              ref;
-  volatile char                    *source              =
-    local_data->buffer;
-  size_t                            offset              = 0;
-  size_t                            source_size         =
-    local_segment->size - sizeof(mad_sisci_connection_status_t);
-  
   LOG_IN();
   
-  tbx_list_reference_init(&ref, &buffer_group->buffer_list);
-
-  if (!connection_specific->write_flag_flushed)
+  while (!mad_buffer_full(buffer))
     {
-      connection_specific->write_flag_flushed = tbx_true;
+      char    *source = local_data->buffer;
+      size_t   size   =
+	min(buffer->length - buffer->bytes_written,
+	    local_segment->size - sizeof(mad_sisci_connection_status_t));
 
-      if (!mad_sisci_test(read))
+      if (!connection_specific->write_flag_flushed)
 	{
+	  connection_specific->write_flag_flushed = tbx_true;
 	  mad_sisci_flush(remote_segment);
-
-	  mad_sisci_wait_for(link, read);
 	}
-    }
-  else
-    {  
-      mad_sisci_wait_for(link, read);
-    }
       
-  do
-    {
-      p_mad_buffer_t buffer      = tbx_get_list_reference_object(&ref);
-      char          *destination =
-	buffer->buffer + buffer->bytes_written;
+      mad_sisci_wait_for(link, read);
 
-      while (!mad_buffer_full(buffer))
-	{
-	  size_t         size         =
-	    min(buffer->length - buffer->bytes_written,
-		source_size - offset);
-
-	  buffer->bytes_written += size;
-	  memcpy(destination, (const void *)(source + offset), size);
-
-	  offset += tbx_aligned(size, 4);
-	  destination += size;
-
-	  if (tbx_aligned(offset, 64) >= source_size)
-	    {
-	      mad_sisci_clear(read);
-	      mad_sisci_set(write);
-	      mad_sisci_flush(remote_segment);
-	      connection_specific->write_flag_flushed = tbx_true;
-	      mad_sisci_wait_for(link, read);
-	      offset = 0;
-	    }
-	}
-    }
-  while (tbx_forward_list_reference(&ref));
-
-  if (offset > 0)
-    {
+      memcpy(destination, source, size);
       mad_sisci_clear(read);
       mad_sisci_set(write);
       connection_specific->write_flag_flushed = tbx_false;
-    }  
+      buffer->bytes_written +=size;
+      destination += size;
+    }
   LOG_OUT();
 }
-
+*/
 static void
 mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 				p_mad_buffer_group_t buffer_group)
@@ -2527,8 +2363,7 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 
 static void 
 mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
-				   p_mad_buffer_group_t buffer_group,
-				   tbx_bool_t           first)
+				   p_mad_buffer_group_t buffer_group)
 {  
   p_mad_connection_t                connection          = link->connection;
   p_mad_sisci_connection_specific_t connection_specific =
@@ -2548,7 +2383,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
   tbx_list_reference_t              ref;
   volatile char                    *source              =
     local_data->buffer;
-  size_t                            offset              = first?0:link->offset;
+  size_t                            offset              = 0;
   size_t                            source_size         =
     local_segment->size - sizeof(mad_sisci_connection_status_t);
   
@@ -2556,25 +2391,22 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
   
   tbx_list_reference_init(&ref, &buffer_group->buffer_list);
 
-  if (first)
+  if (!connection_specific->write_flag_flushed)
     {
-      if (!connection_specific->write_flag_flushed)
+      connection_specific->write_flag_flushed = tbx_true;
+
+      if (!mad_sisci_test(read))
 	{
-	  connection_specific->write_flag_flushed = tbx_true;
+	  mad_sisci_flush(remote_segment);
 
-	  if (!mad_sisci_test(read))
-	    {
-	      mad_sisci_flush(remote_segment);
-
-	      mad_sisci_wait_for(link, read);
-	    }
-	}
-      else
-	{  
 	  mad_sisci_wait_for(link, read);
 	}
     }
-  
+  else
+    {  
+      mad_sisci_wait_for(link, read);
+    }
+      
   do
     {
       p_mad_buffer_t buffer      = tbx_get_list_reference_object(&ref);
@@ -2612,7 +2444,6 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
       mad_sisci_set(write);
       connection_specific->write_flag_flushed = tbx_false;
     }  
-  link->offset = offset;
   LOG_OUT();
 }
 
@@ -2804,6 +2635,181 @@ mad_sisci_receive_dma_buffer_group(p_mad_link_t           lnk,
  * Optimized routines
  * ------------------
  */
+/*
+static void
+mad_sisci_send_sci_buffer_opt_2(p_mad_link_t   link,
+				p_mad_buffer_t buffer)
+{
+  p_mad_connection_t                connection          = link->connection;
+  p_mad_sisci_connection_specific_t connection_specific =
+    connection->specific;
+  p_mad_sisci_local_segment_t       local_segment       =
+    &connection_specific->local_segment[0];
+  p_mad_sisci_remote_segment_t      remote_segment      =
+    &connection_specific->remote_segment[0];
+  unsigned char                    *source              =
+    buffer->buffer + buffer->bytes_read;
+  p_mad_sisci_user_segment_data_t   local_data          =
+    local_segment->map_addr;
+  volatile p_mad_sisci_status_t     write               =
+    &local_data->status.write;
+  p_mad_sisci_user_segment_data_t   remote_data         =
+    remote_segment->map_addr;
+  register volatile unsigned int   *data_remote_ptr     =
+    (volatile void *)remote_data->status.read.buffer;
+  volatile unsigned int            *remote_ptr          = NULL;
+  register unsigned int             descriptor          = 1;
+  register unsigned int             mask_1              = 2;
+  register size_t                   bread               =
+    buffer->bytes_read;
+  const size_t                      bwrite              =
+    buffer->bytes_written;
+  const size_t                      bwrite3             = bwrite - 3;
+
+  LOG_IN();
+  mad_sisci_wait_for(link, write);
+  mad_sisci_clear(write);
+
+  remote_ptr = data_remote_ptr++;
+  if (bwrite > 3)
+    while (bread < bwrite3)
+      {
+	bread += 4;
+
+	if (*(unsigned int *)source)
+	  {
+	    *data_remote_ptr++ = *(unsigned int *)source;
+	    descriptor |= mask_1;
+	  }
+
+	source += 4;
+	mask_1 <<= 1;
+      }
+
+  if (bread < bwrite)
+    {
+      unsigned int temp_buffer = 0;
+      int          i           = 0;
+
+      do
+	{
+	  temp_buffer += ((unsigned int)*source) << i;
+	  source++;
+	  i += 8;
+	  bread++;
+	}
+      while (bread < bwrite);
+
+      if (temp_buffer)
+	{
+	  *data_remote_ptr++ = temp_buffer;
+	  descriptor |= mask_1;
+	}
+    }
+
+  *remote_ptr = descriptor;
+
+  while (((unsigned int)data_remote_ptr) & 0x30)
+    {
+      *data_remote_ptr++ = 0;
+    }
+
+  mad_sisci_flush(remote_segment);
+  buffer->bytes_read = bread;
+  connection_specific->write_flag_flushed = tbx_true;
+  LOG_OUT();
+}
+
+static void
+mad_sisci_receive_sci_buffer_opt_2(p_mad_link_t   link, 
+				   p_mad_buffer_t buffer)
+{  
+  p_mad_connection_t                connection          = link->connection;
+  p_mad_sisci_connection_specific_t connection_specific =
+    connection->specific;
+  p_mad_sisci_local_segment_t       local_segment       =
+    &connection_specific->local_segment[0];
+  p_mad_sisci_remote_segment_t      remote_segment      =
+    &connection_specific->remote_segment[0];
+  unsigned char                    *destination         =
+    buffer->buffer + buffer->bytes_written;
+  p_mad_sisci_user_segment_data_t   local_data          =
+    local_segment->map_addr;
+  p_mad_sisci_user_segment_data_t   remote_data         =
+    remote_segment->map_addr;
+  p_mad_sisci_status_t              write               =
+    &remote_data->status.write;
+  volatile unsigned int            *local_ptr           =
+    (volatile void *)local_data->status.read.buffer;
+  unsigned int                      descriptor          = 0;
+  unsigned int                      mask_1              = 2;
+  const size_t                      blen                =
+    buffer->length;
+  const size_t                      blen3               =
+    blen - 3;
+  register size_t                   bwrite              =
+    buffer->bytes_written;
+  
+  LOG_IN();
+  if (!connection_specific->write_flag_flushed)
+    {
+      connection_specific->write_flag_flushed = tbx_true;
+      mad_sisci_flush(remote_segment);
+    }
+
+  while (!(descriptor = *local_ptr)) TBX_YIELD();
+
+  if (blen > 3)
+    while (bwrite < blen3)
+      {
+	if (descriptor & mask_1)
+	  {
+	    unsigned int int_buffer;
+
+	    while (!(int_buffer = *local_ptr));      
+	    *(unsigned int *)destination = int_buffer;
+	    *local_ptr++ = 0;
+	  }
+	else
+	  {
+	    *(unsigned int *)destination = 0;
+	  }
+
+	mask_1 <<= 1;
+	destination += 4;
+	bwrite      += 4;
+      }  
+
+  if (bwrite < blen)
+    {
+      register unsigned int temp_buffer = 0;
+      register int          i           = 0;
+      
+      if (descriptor & mask_1)
+	{
+	  while (!(temp_buffer = *local_ptr));
+	  *local_ptr++ = 0;
+	}
+      else
+	{
+	  temp_buffer = 0;
+	}
+
+      do
+	{
+	  *destination++ = (unsigned char)(temp_buffer >> i);
+	  i += 8;
+	  bwrite++;
+	}
+      while (bwrite < blen);
+    }
+
+  mad_sisci_set(write);
+  connection_specific->write_flag_flushed = tbx_false;
+  buffer->bytes_written = bwrite;
+  LOG_OUT();
+}
+*/
 static void
 mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
 			      p_mad_buffer_t buffer)
@@ -3013,6 +3019,8 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
 
   mad_sisci_set(write);
   connection_specific->write_flag_flushed = tbx_false;
+  //connection_specific->write_flag_flushed = tbx_true;
+  //mad_sisci_flush(remote_segment);
   buffer->bytes_written = bwrite;
   LOG_OUT();
 }
@@ -3056,8 +3064,7 @@ mad_sisci_receive_buffer(p_mad_link_t   lnk,
     }
   else if (lnk->id == MAD_SISCI_LINK_REGULAR)
     {
-      mad_sisci_receive_sci_buffer_opt(lnk, *buffer);
-      /*      mad_sisci_receive_sci_buffer(lnk, *buffer); */
+      mad_sisci_receive_sci_buffer(lnk, *buffer);
     }
 #ifdef MAD_SISCI_DMA
   else if (lnk->id == MAD_SISCI_LINK_DMA)
@@ -3075,14 +3082,10 @@ mad_sisci_send_buffer_group(p_mad_link_t         lnk,
 			    p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
-  if (lnk->id == MAD_SISCI_LINK_OPT)
+  if (   (lnk->id == MAD_SISCI_LINK_OPT)
+      || (lnk->id == MAD_SISCI_LINK_REGULAR))
     {
-      mad_sisci_send_sci_buffer_group_opt(lnk, buffer_group);
-    }
-  else if (lnk->id == MAD_SISCI_LINK_REGULAR)
-    {
-      mad_sisci_send_sci_buffer_group_opt(lnk, buffer_group);
-      /* mad_sisci_send_sci_buffer_group(lnk, buffer_group); */
+      mad_sisci_send_sci_buffer_group(lnk, buffer_group);
     }
 #ifdef MAD_SISCI_DMA
   else if (lnk->id == MAD_SISCI_LINK_DMA)
@@ -3102,13 +3105,10 @@ mad_sisci_receive_sub_buffer_group(p_mad_link_t           lnk,
 				   p_mad_buffer_group_t   buffer_group)
 {
   LOG_IN();
-  if (lnk->id == MAD_SISCI_LINK_)
+  if (   (lnk->id == MAD_SISCI_LINK_OPT)
+      || (lnk->id == MAD_SISCI_LINK_REGULAR))
     {
-      mad_sisci_receive_sci_buffer_group_opt(lnk, buffer_group);
-    }
-  else if (lnk->id == MAD_SISCI_LINK_REGULAR)
-    {
-      mad_sisci_receive_sci_buffer_group(lnk, buffer_group, first_sub_group);
+      mad_sisci_receive_sci_buffer_group(lnk, buffer_group);
     }
 #ifdef MAD_SISCI_DMA
   else if (lnk->id == MAD_SISCI_LINK_DMA)

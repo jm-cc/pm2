@@ -41,9 +41,7 @@ typedef struct s_mad_channel
   p_ntbx_process_container_t  pc;
   tbx_bool_t                  not_private;
   p_mad_dir_channel_t         dir_channel;
-  p_mad_dir_fchannel_t        dir_fchannel;
-  p_mad_dir_vchannel_t        dir_vchannel;
-  p_mad_dir_xchannel_t        dir_xchannel;
+  p_mad_dir_channel_t         cloned_dir_channel;
   p_mad_adapter_t             adapter;
   p_tbx_darray_t              in_connection_darray;
   p_tbx_darray_t              out_connection_darray;

@@ -258,6 +258,10 @@ void mad_receive(void)
   (*cur_netinterf->network_receive)(&r_header);
   r_head_size = ALIGN(PIGGYBACK_AREA_LEN * sizeof(long));
   r_vec_size = 0;
+#ifdef DEBUG
+  fprintf(stderr, "mad_receive (header):\n");
+  fprintf(stderr, "\tvec[0].iov_len = ?\n"); 
+#endif
 }
 
 void mad_recvbuf_receive(void)

@@ -74,12 +74,3 @@ DEP_TO_OBJ =  $(APP_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
 COMMON_DEPS += $(APP_STAMP_FLAVOR) $(APP_STAMP_FILES) $(MAKEFILE_FILE)
 
-$(PM2_MAK_DIR)/apps-config.mak: $(APP_STAMP_FLAVOR)
-	@echo "Generating $@"
-	@$(PM2_CONFIG) --gen_mak apps
-
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
-$(PM2_MAK_DIR)/apps-libs.mak:  $(APP_STAMP_FLAVOR)
-	@mkdir -p `dirname $@`
-	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@
-endif

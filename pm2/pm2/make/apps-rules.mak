@@ -144,3 +144,11 @@ targethelpapps:
 
 endif
 
+$(PM2_MAK_DIR)/apps-config.mak: $(APP_STAMP_FLAVOR)
+	$(COMMON_HIDE) $(PM2_GEN_MAK) apps
+
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
+$(PM2_MAK_DIR)/apps-libs.mak:  $(APP_STAMP_FLAVOR)
+	$(COMMON_HIDE) mkdir -p `dirname $@`
+	$(COMMON_HIDE) echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@
+endif

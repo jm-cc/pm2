@@ -392,9 +392,9 @@ void common_post_init(int *argc, char *argv[],
     mad_parse_url(attr->madeleine);
 #endif /* MAD2 && APPLICATION_SPAWN */
 
-#ifdef MAD2
+#if defined(MAD2) || defined(MAD3)
   /*
-   * Mad2 command line clean-up
+   * Mad2/3 command line clean-up
    * --------------------------
    *
    * Provides:
@@ -404,7 +404,7 @@ void common_post_init(int *argc, char *argv[],
    * - Mad2 initialization from command line arguments
    */
   mad_purge_command_line(attr->madeleine, argc, argv);
-#endif /* MAD2 */
+#endif /* MAD2/3 */
 
 #ifdef MAD2
 

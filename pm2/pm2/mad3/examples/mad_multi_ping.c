@@ -343,7 +343,7 @@ ping(p_mad_channel_t      channel,
                                   param = mad_alloc_slice_parameter();
                                   param->length = 0;
                                   param->opcode = mad_op_optional_block;
-                                  param->value  = 0;
+                                  param->value  = 100;
                                   mad_pack_ext(out, ptr, _size,
                                            param_send_mode, param_receive_mode, param, NULL);
                                 }
@@ -424,7 +424,7 @@ ping(p_mad_channel_t      channel,
                                         param = mad_alloc_slice_parameter();
                                         param->length = 0;
                                         param->opcode = mad_op_optional_block;
-                                        param->value  = 0;
+                                        param->value  = 100;
                                         mad_pack_ext(out, ptr, _size,
                                                      param_send_mode,
                                                      param_receive_mode, param, NULL);
@@ -572,7 +572,7 @@ pong(p_mad_channel_t      channel,
                           param = mad_alloc_slice_parameter();
                           param->length = 0;
                           param->opcode = mad_op_optional_block;
-                          param->value  = 0;
+                          param->value  = 100;
                           mad_pack_ext(out, main_buffer, _length,
                                        param_send_mode, param_receive_mode,
                                        param, NULL);
@@ -598,7 +598,7 @@ pong(p_mad_channel_t      channel,
                           param = mad_alloc_slice_parameter();
                           param->length = 0;
                           param->opcode = mad_op_optional_block;
-                          param->value  = 0;
+                          param->value  = 100;
                           mad_pack_ext(out, &dummy, sizeof(dummy),
                                    param_send_mode, param_receive_mode,
                                    param, NULL);
@@ -661,7 +661,7 @@ pong(p_mad_channel_t      channel,
                                         param = mad_alloc_slice_parameter();
                                         param->length = 0;
                                         param->opcode = mad_op_optional_block;
-                                        param->value  = 0;
+                                        param->value  = 100;
                                         mad_pack_ext(out, ptr, _size,
                                                      param_send_mode,
                                                      param_receive_mode,

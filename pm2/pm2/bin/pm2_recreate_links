@@ -75,6 +75,7 @@ make_ln ${PM2_ROOT}/modules ../common common
 make_ln ${PM2_ROOT}/modules ../dsm dsm
 make_ln ${PM2_ROOT}/modules ../generic generic
 make_ln ${PM2_ROOT}/modules ../leonie leonie
+make_ln ${PM2_ROOT}/modules ../leoparse leoparse
 make_ln ${PM2_ROOT}/modules ../mad1 mad1
 make_ln ${PM2_ROOT}/modules ../mad2 mad2
 make_ln ${PM2_ROOT}/modules ../marcel marcel

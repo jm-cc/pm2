@@ -673,6 +673,16 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
   LOG_OUT();
 }
 
+#ifdef NO_REDIRECTION
+void
+mad_output_redirection_init(p_mad_madeleine_t   madeleine TBX_UNUSED,
+			    int                 argc TBX_UNUSED,
+			    char              **argv TBX_UNUSED)
+{
+  LOG_IN();
+  LOG_OUT();
+}
+#else /* NO_REDIRECTION */
 void
 mad_output_redirection_init(p_mad_madeleine_t   madeleine,
 			    int                 argc,
@@ -714,6 +724,7 @@ mad_output_redirection_init(p_mad_madeleine_t   madeleine,
     }
   LOG_OUT();
 }
+#endif /* NO_REDIRECTION */
 
 void
 mad_network_components_init(p_mad_madeleine_t   madeleine,

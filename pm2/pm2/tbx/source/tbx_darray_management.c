@@ -67,6 +67,7 @@ tbx_darray_init(void)
   darray = TBX_CALLOC(1, sizeof(tbx_darray_t));
   CTRL_ALLOC(darray);
 
+  TBX_INIT_SHARED(darray);
   darray->length           =    0;
   darray->allocated_length =    0;
   darray->data             = NULL;
@@ -201,7 +202,7 @@ tbx_darray_expand_and_set(p_tbx_darray_t      darray,
 	}
 
       memset(darray->data + darray->length, 0,
-	     sizeof(void *) * (idx - darray->length));
+	     sizeof(void *) * ((idx + 1) - darray->length));
 
       darray->length = idx + 1;
     }
@@ -228,7 +229,7 @@ tbx_darray_expand_and_get(p_tbx_darray_t     darray,
 	}
 
       memset(darray->data + darray->length, 0,
-	     sizeof(void *) * (idx - darray->length));
+	     sizeof(void *) * ((idx + 1) - darray->length));
 
       darray->length = idx + 1;
     }

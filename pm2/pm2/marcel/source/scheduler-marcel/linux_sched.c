@@ -457,11 +457,9 @@ repeat_lock_task:
 			 */
 			if (tbx_unlikely(sync && !ma_task_running(rq, p) &&
 				(ma_task_lwp(p) != LWP_SELF)
-#ifdef MA__LWPS
 				&& lwp_isset(LWP_NUMBER(LWP_SELF),
-					  p->sched.lwps_allowed) &&
-					!lwp_is_offline(LWP_SELF)
-#endif
+					  p->sched.lwps_allowed)
+				&& !lwp_is_offline(LWP_SELF)
 				)) {
 
 				//ma_set_task_lwp(p, LWP_SELF);
@@ -2556,7 +2554,7 @@ void show_state(void)
 	read_unlock(&tasklist_lock);
 }
 
-void __init init_idle(task_t *idle, int cpu)
+void __marcel_init init_idle(task_t *idle, int cpu)
 {
 	ma_runqueue_t *idle_rq = cpu_rq(cpu), *rq = cpu_rq(task_cpu(idle));
 	unsigned long flags;
@@ -2804,7 +2802,7 @@ static struct notifier_block __devinitdata migration_notifier = {
 	.notifier_call = migration_call,
 };
 
-int __init migration_init(void)
+int __marcel_init migration_init(void)
 {
 	void *cpu = (void *)(long)smp_processor_id();
 	/* Start one for boot CPU. */
@@ -2860,7 +2858,7 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 
-void __init sched_init(void)
+void __marcel_init sched_init(void)
 {
 	LOG_IN();
 

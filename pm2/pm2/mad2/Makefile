@@ -60,7 +60,7 @@ include $(PM2_ROOT)/make/libs-rules.mak
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-ifeq ($(wildcard $(LIB_C_DEPENDS_ADDED)),$(LIB_C_DEPENDS_ADDED))
+ifneq ($(wildcard $(LIB_C_DEPENDS_ADDED)),)
 -include $(LIB_C_DEPENDS_ADDED)
 endif
 endif

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.11  2000/02/28 11:06:12  rnamyst
+Changed #include "" into #include <>.
+
 Revision 1.10  2000/02/08 17:49:04  oaumage
 - support de la net toolbox
 
@@ -75,7 +78,7 @@ ______________________________________________________________________________
  */
 /* #define DEBUG */
 /* #define TRACING */
-#include <madeleine.h>
+#include "madeleine.h"
 
 p_mad_channel_t
 mad_open_channel(p_mad_madeleine_t madeleine,

@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: iso-8859-1 -*-
 
 import sys, string
 
@@ -121,4 +120,5 @@ def appcfg_process(s):
     netcfg_process(s)
 
     leo_channel.channels_process(s)
-    leo_vchannel.vchannels_process(s)
+    leo_vchannel.vchannels_process(s, False)
+    leo_vchannel.vchannels_process(s, True)

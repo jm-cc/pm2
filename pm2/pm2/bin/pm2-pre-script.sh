@@ -15,7 +15,7 @@
 
 
 export PM2_CMD_PREFIX
-PM2_CMD_PREFIX="${PM2_ROOT}/bin/pm2-pre-script.sh"
+PM2_CMD_PREFIX="pm2-pre-script.sh"
 
 #echo "[ pm2-pre-script.sh $@ ]"
 
@@ -23,6 +23,12 @@ debug_file=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --use-local-flavor)
+	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1"
+	    shift
+	    PM2_USE_LOCAL_FLAVOR=on
+	    export PM2_USE_LOCAL_FLAVOR
+	    ;;
 	--preload)
 	    PM2_CMD_PREFIX="$PM2_CMD_PREFIX $1 $2"
 	    shift
@@ -70,11 +76,67 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+PM2_CMD_NAME="$1"
+export PM2_CMD_NAME
+shift
+
+if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
+
+    prog_args="$@"
+
+    # Récupération de (des) chemin(s) d'accès au fichier exécutable
+    set --  --source-mode $PM2_CMD_NAME
+    . ${PM2_ROOT}/bin/pm2which
+
+    if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
+	exit 1
+    fi
+
+    prog="$_PM2WHICH_RESULT"
+
+    # Librairies dynamiques (LD_PRELOAD)
+    if [ -n "$_PM2CONFIG_PRELOAD" ]; then
+	LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$_PM2CONFIG_PRELOAD"
+	export LD_PRELOAD
+	if [ -n "$debug_file" ]; then
+	    echo "set environment LD_PRELOAD $LD_PRELOAD" >> $debug_file
+	fi
+    fi
+
+    # LD library path
+    PM2_LD_LIBRARY_PATH="$_PM2CONFIG_LD_LIBRARY_PATH"
+
+    if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
+	LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+	export LD_LIBRARY_PATH
+    fi
+
+    # Chemin d'accès au chargeur
+    [ -x $_PM2CONFIG_LOADER ] || _pm2load_error "Fatal Error: \"$_PM2CONFIG_LOADER\" exec file not found!"
+
+    case $_PM2CONFIG_LOADER in
+	*conf_not_needed)
+	    # No need to try to access the pm2 conf file
+	    ;;
+	*)
+	    # Récupération du chemin d'accès au fichier de config des machines
+	    set --  --source-mode
+	    . ${PM2_ROOT}/bin/pm2-conf-file
+
+	    [ -f $PM2_CONF_FILE ] || _pm2load_error "Error: PM2 is not yet configured this flavor (please run pm2conf)."
+	    ;;
+    esac
+
+    set -- $prog_args
+
+else
+
+    prog=$PM2_CMD_NAME
+
+fi
+
 # Debug ?
 if [ -n "$debug_file" ]; then
-
-    prog=$1
-    shift
 
     echo "set args $@" >> $debug_file
 
@@ -85,6 +147,6 @@ if [ -n "$debug_file" ]; then
 
 else # debug
 
-    exec "$@"
+    exec $prog "$@"
 
 fi

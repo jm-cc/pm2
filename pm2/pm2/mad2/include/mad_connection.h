@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_connection.h,v $
+Revision 1.5  2000/06/06 12:54:38  oaumage
+- Ajout du calcul de la taille des groupes de buffers dynamiques
+
 Revision 1.4  2000/02/08 17:47:22  oaumage
 - prise en compte des types de la net toolbox
 
@@ -79,6 +82,7 @@ typedef struct s_mad_connection
            tbx_list_t              user_buffer_list; 
            tbx_list_reference_t    user_buffer_list_reference; 
            tbx_list_t              buffer_list;
+           size_t                  cumulated_length;
            tbx_list_t              buffer_group_list;
            tbx_list_t              pair_list;
            p_mad_link_t            last_link;

@@ -1,2 +1,3 @@
-PM2_LIB_CFLAGS_KERNEL="$PM2_LIB_CFLAGS_KERNEL -DPM2DEBUG"
+# auto generated from generic/config/options/*
+PM2_@LIB@_CFLAGS_KERNEL="$PM2_@LIB@_CFLAGS_KERNEL -DPM2DEBUG"
 

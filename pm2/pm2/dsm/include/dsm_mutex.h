@@ -44,6 +44,13 @@ static __inline__ int dsm_mutexattr_getowner(dsm_mutexattr_t *attr, dsm_node_t *
   return 0;
 }
 
+static __inline__ int dsm_mutexattr_init(dsm_mutexattr_t *attr) __attribute__ ((unused));
+static __inline__ int dsm_mutexattr_init(dsm_mutexattr_t *attr)
+{
+  attr->owner = 0;
+  return 0;
+}
+
 static __inline__ int dsm_mutex_init(dsm_mutex_t *mutex, dsm_mutexattr_t *attr) __attribute__ ((unused));
 static __inline__ int dsm_mutex_init(dsm_mutex_t *mutex, dsm_mutexattr_t *attr)
 {

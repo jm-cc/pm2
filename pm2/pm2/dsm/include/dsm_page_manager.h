@@ -20,6 +20,38 @@
 #include "dsm_const.h"
 #include "marcel.h"
 
+
+extern const dsm_page_index_t NO_PAGE;
+
+
+/**********************************************************************/
+/* Functions needed by the hierarchical consistency protocol */
+
+extern dsm_node_t *
+dsm_get_copyset (const dsm_page_index_t);
+
+extern void
+dsm_set_copyset_size (const dsm_page_index_t, const int);
+
+extern void
+dsm_set_twin_ptr (const dsm_page_index_t, void * const);
+
+extern void
+dsm_signal_write_page (const dsm_page_index_t);
+
+extern void
+dsm_wait_for_write_page (const dsm_page_index_t);
+
+extern void
+dsm_wait_for_read_page (const dsm_page_index_t);
+
+extern void
+dsm_signal_read_page (const dsm_page_index_t);
+
+/* End of functions added for the hierarchical consistency protocol */
+/**********************************************************************/
+
+
 dsm_node_t dsm_self();
 
 boolean dsm_static_addr(void *addr);

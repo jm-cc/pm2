@@ -42,16 +42,16 @@ typedef struct s_mad_session
 {
   p_ntbx_client_t      leonie_link;
   ntbx_process_grank_t process_rank;
+#ifdef MARCEL
+  marcel_t             command_thread;
+#endif /* MARCEL */
 } mad_session_t;
 
 typedef struct s_mad_settings
 {
-#ifndef LEO_IP
-  char *leonie_server_host_name;
-#else
-  unsigned long leonie_server_ip;
-#endif // LEO_IP
+  char         *leonie_server_host_name;
   char         *leonie_server_port;
+  tbx_bool_t    leonie_dynamic_mode;
 } mad_settings_t;
 
 
@@ -166,6 +166,13 @@ mad_leonie_print(char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
 
 void
 mad_leonie_barrier(void);
+
+void
+mad_command_thread_init(p_mad_madeleine_t madeleine);
+
+void
+mad_command_thread_exit(p_mad_madeleine_t madeleine);
+
 
 #define LDISP(str, args...)  mad_leonie_print(str , ## args)
 #define LDISP_IN()           mad_leonie_print(__FUNCTION__": -->")

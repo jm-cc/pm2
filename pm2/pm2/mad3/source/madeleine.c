@@ -148,6 +148,8 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 		  char              **argv)
 {
   p_mad_settings_t settings = madeleine->settings;
+  tbx_flag_t       host_ok  = tbx_flag_clear;
+  tbx_flag_t       port_ok  = tbx_flag_clear;
 
   LOG_IN();
 
@@ -157,6 +159,9 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
     {
       if (!strcmp(*argv, "--mad_leonie"))
 	{
+	  if (!tbx_flag_toggle(&host_ok))
+	    FAILURE("Leonie server host name specified twice");
+
 	  argc--; argv++;
 
 	  if (!argc)
@@ -174,6 +179,8 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	}
       else if (!strcmp(*argv, "--mad_link"))
 	{
+	  if (!tbx_flag_toggle(&port_ok))
+	    FAILURE("Leonie server port specified twice");
 	  argc--; argv++;
 
 	  if (!argc)
@@ -184,6 +191,13 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 
       argc--; argv++;
     }
+
+  if (tbx_flag_is_clear(&host_ok))
+    FAILURE("Leonie server host name unspecified");
+  
+  if (tbx_flag_is_clear(&port_ok))
+    FAILURE("Leonie server port unspecified");
+  
   LOG_OUT();
 }
 

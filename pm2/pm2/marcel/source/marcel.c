@@ -42,10 +42,6 @@
 #include <sys/mman.h>
 #endif
 
-#ifdef SOLARIS_SYS
-#include <sys/stack.h>
-#endif
-
 #ifdef RS6K_ARCH
 int _jmg(int r)
 {

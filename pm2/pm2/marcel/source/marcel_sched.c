@@ -749,8 +749,11 @@ void marcel_insert_task(marcel_t t)
   if(!MA_TASK_NO_USE_SCHEDLOCK(t))
     sched_lock(cur_lwp);
 
+#if defined(MA__SMP) && !defined(MA__ONE_QUEUE)
+  // Attention : modif récente. Peut-être source de bugs.
   // Surtout, ne pas oublier de positionner ce champ !
   t->lwp = cur_lwp;
+#endif
 
   mdebug("\t\t\t<Insertion of task %p on LWP %d>\n", t, cur_lwp->number);
 

@@ -194,7 +194,6 @@ void dsmlib_hbrc_add_page(unsigned long index)
 
 void dsmlib_hbrc_mw_update_prot_init(unsigned long index)
 {
-  int i, count = 0;
   hbrc_mw_update_list = init_be_list(10);
 #ifdef DSM_PROT_TRACE
   fprintf(stderr,"Initial  printing\n");

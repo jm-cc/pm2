@@ -46,8 +46,6 @@
 be_list erc_sw_inv_list;
 
 void dsmlib_erc_sw_inv_init(int protocol_number){
-  unsigned long i;
-  int count = 0;
   erc_sw_inv_list = init_be_list(10);
   fprintf(stderr,"Initial  printing\n");
   fprintf_be_list(erc_sw_inv_list);
@@ -219,7 +217,7 @@ void dsmlib_erc_release()
       dsm_set_access(index, READ_ACCESS);
       dsm_unlock_page(index);
       index = remove_first_from_be_list(&erc_sw_inv_list);
-      fprintf(stderr,"Removed: %d\n", index);
+      fprintf(stderr,"Removed: %ld\n", index);
     }
   fprintf(stderr,"End of release\n");
   return;

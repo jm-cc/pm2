@@ -864,7 +864,7 @@ int pm2_main(argc,argv)
 {
    tprintf("\n%s\n%s\n", pmp_bandeau, pmp_underline);
    
-   pm2_init_rpc();
+   pm2_rpc_init();
 
    pm2_init(&argc, argv, 1, &les_modules, &nb_modules);
    nb_modules--; /* On ne se compte pas soi-meme ! */

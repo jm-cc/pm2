@@ -603,12 +603,6 @@ common_exit(common_attr_t *attr)
   mad_dir_channels_exit(attr->madeleine);
 #endif // MAD3 || MAD4
 
-#ifdef MARCEL
-  // Marcel shutdown
-  // --------------------------------
-  marcel_finish();
-  marcel_clear_activity();
-#endif // MARCEL
 
 #ifdef PM2
   pm2_thread_exit();
@@ -671,6 +665,13 @@ common_exit(common_attr_t *attr)
 
   tbx_exit();
 #endif // TBX
+
+#ifdef MARCEL
+  // Marcel shutdown
+  // --------------------------------
+  marcel_finish();
+  marcel_clear_activity();
+#endif // MARCEL
 
 #ifdef PROFILE
   /*

@@ -72,7 +72,7 @@
 GLOBAL_OPTIONS	=	-Wall -O6 #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
-MAD2            =       no
+MAD2            =       yes
 DSM		=	no
 
 OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
@@ -155,7 +155,11 @@ AIX_SYS_CC	=	gcc
 IRIX_SYS_CC	=	gcc
 SOLARIS_SYS_CC	=	gcc
 
+ifdef MAD_PRIVATE_CC
+PM2_CC          =       $(MAD_PRIVATE_CC)
+else
 PM2_CC		=	$($(PM2_SYS)_CC)
+endif
 
 PM2_CFLAGS	=	$(PM2_FLAGS) \
 			-I$(PM2_INC) -I$(MAD_INC) -I$(MAR_INC)

@@ -14,36 +14,44 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_SEM_EST_DEF
-#define MARCEL_SEM_EST_DEF
+#section types
+#section functions
+#section inline
+#section marcel_types
+#section marcel_structures
 
-_PRIVATE_ typedef struct semcell_struct {
+
+#section types
+typedef struct semcell_struct semcell;
+#section marcel_structures
+struct semcell_struct {
   marcel_t task;
   struct semcell_struct *next;
   struct semcell_struct *last; /* Valide uniquement dans la cellule de tête */
   boolean blocked;
-} semcell;
-
-_PRIVATE_ struct semaphor_struct {
-  int value;
-  struct semcell_struct *first,*last;
-  marcel_lock_t lock;  /* For preventing concurrent access from multiple LWPs */
 };
 
+#section structures
+struct semaphor_struct {
+  int value;
+  struct semcell_struct *first,*last;
+  ma_spinlock_t lock;  /* For preventing concurrent access from multiple LWPs */
+};
+
+#section types
 typedef struct semaphor_struct marcel_sem_t;
 
+#section functions
 void marcel_sem_init(marcel_sem_t *s, int initial);
 void marcel_sem_P(marcel_sem_t *s);
 int marcel_sem_try_P(marcel_sem_t *s);
 void marcel_sem_V(marcel_sem_t *s);
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
-_PRIVATE_ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2);
-_PRIVATE_ void marcel_sem_unlock_all(marcel_sem_t *s);
 
-static __inline__ int marcel_sem_destroy(marcel_sem_t* s) __attribute__ ((unused));
+static __inline__ int marcel_sem_destroy(marcel_sem_t* s);
+#section inline
 static __inline__ int marcel_sem_destroy(marcel_sem_t* s)
 {
   return 0;
 }
 
-#endif

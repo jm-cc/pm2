@@ -1,6 +1,4 @@
 #!/bin/sh
-#
-#!/bin/sh
 #                      PM2 HIGH-PERF/ISOMALLOC
 #           High Performance Parallel Multithreaded Machine
 #                           version 3.0
@@ -99,7 +97,10 @@ Options for 'options' command
   --module=""  : consider options for this module (default: generic options)
 
 Action for 'options' command
-  --list       : list of all options name (default)
+  --list           : list of all options name (default)
+  --get-excl-sets  : list of exclusive sets of options
+  --get-excl=set   : list only the exclusive options in set <set>
+  --get-incl       : list only the inclusive options
 
 EOF
 	;;
@@ -301,30 +302,10 @@ do_module() { # module ...
     do_action $module ""
 }
 
-do_options() {
-    module="generic"
-    action=list
-    while test $# -gt 0; do
-	case "$1" in
-	--list)
-	    set_action $1
-	    ;;
-	--module=*)
-	    module=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
-	    module_valid "$module" "" generic
-	    ;;
-	*)
-	    echo Unknown option \`$1\' 1>&2
-	    usage 1
-	    ;;
-	esac
-	shift
-    done
-    case $action in
-    list)
-	if [ -d "${PM2_ROOT}/modules/$module/config/options" ]; then
-	    list=`( cd "${PM2_ROOT}/modules/$module/config/options"; \
-		ls -d *.sh) 2>/dev/null `
+# Donne la liste des options contenues dans le répertoire "$1"
+get_options_in_dir() {
+	if [ -d "$1" ]; then
+	    list=`( cd "$1"; ls -d *.sh) 2>/dev/null`
 	    new_list=
 	    for opt in `echo $list` " "; do
 		case "$opt" in
@@ -345,8 +326,79 @@ do_options() {
 	    done
 	    echo $new_list
 	fi
-	;;
-    esac
+}
+
+# Donne la liste exhaustive des options
+do_options_list() {
+    get_options_in_dir ${PM2_ROOT}/modules/$module/config/options
+}
+
+# Donne la liste des ensembles d'options exclusives
+do_options_get_excl_sets() {
+	if [ -d "${PM2_ROOT}/modules/$module/config" ]; then
+	    for eset in `(cd "${PM2_ROOT}/modules/$module/config"; \
+			ls -d *.excl) 2>/dev/null`; do
+	       e_set=`echo $eset | cut -d. -f1`
+	       echo $e_set
+	    done
+	fi
+}
+
+# Donne les options faisant partie de l'ensemble "$1"
+do_options_get_excl() { # set
+    get_options_in_dir ${PM2_ROOT}/modules/$module/config/$1.excl
+}
+
+# Donne la liste exhaustive de toutes les options dans tous les
+# ensembles d'options exclusives
+get_all_excl_options() {
+    all=
+    for s in `do_options_get_excl_sets`; do
+	all="$all `do_options_get_excl $s`"
+    done
+    echo $all
+}
+
+# Donne la liste des options non-exclusives
+do_options_get_incl() {
+    all_excl=`get_all_excl_options`
+    all_incl=
+    for opt in `do_options_list`; do
+	case " $all_excl " in
+	    *\ $opt\ *)
+		;;
+	    *)
+		all_incl="$all_incl $opt"
+		;;
+	esac
+    done
+    echo $all_incl
+}
+
+do_options() {
+    module="generic"
+    action=list
+    while test $# -gt 0; do
+	case "$1" in
+	--list|--get-excl-sets|--get-incl)
+	    set_action $1
+	    ;;
+	--get-excl=*)
+	    arg=`echo "$1" | cut -d= -f2`
+	    set_action --get-excl
+	    ;;
+	--module=*)
+	    module=`echo "$1" | cut -d= -f2`
+	    module_valid "$module" "" generic
+	    ;;
+	*)
+	    echo Unknown option \`$1\' 1>&2
+	    usage 1
+	    ;;
+	esac
+	shift
+    done
+    do_options_`echo $action | tr - _` $arg
 }
 
 do_option() { # option ...

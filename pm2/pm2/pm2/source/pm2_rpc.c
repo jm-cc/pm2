@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "pm2.h"
 #include "sys/netserver.h"
 #include "pm2_sync.h"
@@ -200,7 +215,6 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 			     slot_general_alloc(NULL, 0,
 						&granted, NULL, NULL));
     marcel_attr_setstacksize(&attr, granted);
-    marcel_attr_setprio(&attr, pm2_attr->priority);
     marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
 
     marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
@@ -250,7 +264,6 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
     old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
     old_mad_pack_int(MAD_IN_HEADER, &num, 1);
-    old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
     old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
 
     old_mad_pack_pointer(MAD_IN_HEADER, &p, 1);
@@ -263,7 +276,7 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
 static void netserver_lrpc(void)
 {
-  int num, tid, priority, sched_policy;
+  int num, tid, sched_policy;
   rpc_args *args;
   marcel_attr_t attr;
   marcel_t pid;
@@ -274,14 +287,12 @@ static void netserver_lrpc(void)
 
   old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
   old_mad_unpack_int(MAD_IN_HEADER, &num, 1);
-  old_mad_unpack_int(MAD_IN_HEADER, &priority, 1);
   old_mad_unpack_int(MAD_IN_HEADER, &sched_policy, 1);
 
   attr = _pm2_lrpc_attr[num];
   marcel_attr_setstackaddr(&attr,
 			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);
-  marcel_attr_setprio(&attr, priority);
   marcel_attr_setschedpolicy(&attr, sched_policy);
 
   marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
@@ -423,7 +434,6 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
 			     slot_general_alloc(NULL, 0,
 						&granted, NULL, NULL));
     marcel_attr_setstacksize(&attr, granted);
-    marcel_attr_setprio(&attr, pm2_attr->priority);
     marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
 
     marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
@@ -469,7 +479,6 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
 
     old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
     old_mad_pack_int(MAD_IN_HEADER, &num, 1);
-    old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
     old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
 
     (*_pm2_pack_req_funcs[num])(args);
@@ -482,7 +491,7 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
 
 static void netserver_async_lrpc(void)
 {
-  int num, tid, priority, sched_policy;
+  int num, tid, sched_policy;
   rpc_args *args;
   marcel_attr_t attr;
   marcel_t pid;
@@ -493,14 +502,12 @@ static void netserver_async_lrpc(void)
 
   old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
   old_mad_unpack_int(MAD_IN_HEADER, &num, 1);
-  old_mad_unpack_int(MAD_IN_HEADER, &priority, 1);
   old_mad_unpack_int(MAD_IN_HEADER, &sched_policy, 1);
 
   attr = _pm2_lrpc_attr[num];
   marcel_attr_setstackaddr(&attr,
 			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);
-  marcel_attr_setprio(&attr, priority);
   marcel_attr_setschedpolicy(&attr, sched_policy);
 
   marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
@@ -562,7 +569,6 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 				 slot_general_alloc(NULL, 0,
 						    &granted, NULL, NULL));
 	marcel_attr_setstacksize(&attr, granted);
-	marcel_attr_setprio(&attr, pm2_attr->priority);
 	marcel_attr_setschedpolicy(&attr, pm2_attr->sched_policy);
 
 	marcel_create(&pid, &attr, (marcel_func_t)_pm2_rpc_funcs[num], NULL);
@@ -606,7 +612,6 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
 
 	old_mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
 	old_mad_pack_int(MAD_IN_HEADER, &num, 1);
-	old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
 	old_mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
 
 	(*_pm2_pack_req_funcs[num])(args);

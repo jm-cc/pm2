@@ -18,13 +18,9 @@
 
 void marcel_sem_init(marcel_sem_t *s, int initial)
 {
-  LOG_IN();
-
   s->value = initial;
   s->first = NULL;
   s->lock = MARCEL_LOCK_INIT;
-
-  LOG_OUT();
 }
 
 void marcel_sem_P(marcel_sem_t *s)

@@ -27,29 +27,6 @@
 #include "leonie.h"
 
 /*
- * Leonie general modes
- * ====================
- */
-// #define LEO_NO_SPAWN
-#define LEO_VCHANNELS
-
-/*
- * Leonie general modes
- * ====================
- */
-#ifdef LEO_NO_SPAWN
-#warning "[1;33m<<< [1;37mLeonie spawn:     [1;31mnot activated [1;33m>>>[0m"
-#else
-#warning "[1;33m<<< [1;37mLeonie spawn:     [1;32mactivated [1;33m    >>>[0m"
-#endif // LEO_NO_SPAWN
-
-#ifdef LEO_VCHANNELS
-#warning "[1;33m<<< [1;37mLeonie vchannels: [1;32mactivated [1;33m    >>>[0m"
-#else
-#warning "[1;33m<<< [1;37mLeonie vchannels: [1;31mnot activated [1;33m>>>[0m"
-#endif // LEO_VCHANNELS
-
-/*
  * Functions
  * =========
  */
@@ -297,7 +274,6 @@ main(int    argc,
   TRACE("== Processing configuration");
   process_application(leonie);
 
-#ifndef LEO_NO_SPAWN
   TRACE("== Launching processes");
   spawn_processes(leonie);
   TRACE("== Transmitting directory");
@@ -326,7 +302,6 @@ main(int    argc,
       getchar();
       leonie_processes_cleanup();
     }
-#endif // LEO_NO_SPAWN
   LOG_OUT();
 
   TRACE("== Leonie server shutdown");

@@ -40,8 +40,6 @@ MAR_EX_DIR	:=	.
 
 include ../Makefile
 
-# MARCEL_CFLAGS	+=	-g
-
 all:	$(BIN_DIR)/active	\
 	$(BIN_DIR)/cleanup	\
 	$(BIN_DIR)/contsw	\

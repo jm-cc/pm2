@@ -503,7 +503,7 @@ void mad_udp_network_receive(network_handler func)
       }
       unlock_task();
       if(n <= 0)
-	marcel_givehandback_np();
+	marcel_yield_np();
     } while(n <= 0);
 
     for(i=0; i<confsize; i++) {

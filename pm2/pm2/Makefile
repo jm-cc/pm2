@@ -101,7 +101,9 @@ distcleanlibs:
 	for i in $(MODULES) ; do \
 		$(MAKE) -C modules/$$i distclean ; \
 	done
-	find stamp -iname "libstamp*" -exec rm {} \;
+	if [ -d stamp ]; then \
+		find stamp -iname "libstamp*" -exec rm {} ;\
+	fi
 
 distcleanflavors:
 	$(RM) -r flavors
@@ -129,7 +131,7 @@ flavorinit flavors: ARCHITECTURES
 	$(COMMON_HIDE) echo Creating initial sample flavors...
 	$(COMMON_HIDE) if [ -d flavors ]; then \
 		echo "Aborting, some flavor already exists" ; \
-		echo "Do 'make distclean' to remove all" ; \
+		echo "Do 'make distcleanall' to remove all" ; \
 	else \
 		$(PM2_ROOT)/bin/pm2_create-sample-flavors ;\
 	fi

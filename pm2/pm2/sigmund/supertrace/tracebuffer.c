@@ -106,7 +106,9 @@ static int read_user_trace(trace *tr)
     }
     add_lwp(tr->args[0], tr->args[2], tr->args[1]);
     for(n = 0; n < NB_MAX_CPU; n++)
-      if (pid_table[n] == tr->args[0]) {set_cpu(tr->args[0], n); break;}
+      if (pid_table[n] == tr->args[0]) {
+	set_cpu(tr->args[0], n); 
+	break;}
     if (!smp) thread = tr->args[2]; // Is this true, I have no clue
     i-=3;
     j+=3;

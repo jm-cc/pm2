@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.15  2000/07/12 15:01:28  cperez
+Add unlock_task_debug for non X86 machine.
+
 Revision 1.14  2000/06/09 17:36:52  vdanjean
 integrating MARCEL_POLL_AT_YIELD
 
@@ -291,6 +294,11 @@ static __inline__ __volatile__ void ma_lock_task(void)
 }
 
 static __inline__ __volatile__ void ma_unlock_task(void)
+{
+  GET_LWP(marcel_self())->_locked--;
+}
+
+static __inline__ __volatile__ void unlock_task_for_debug(void)
 {
   GET_LWP(marcel_self())->_locked--;
 }

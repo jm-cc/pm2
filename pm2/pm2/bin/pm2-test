@@ -1,0 +1,208 @@
+#!/bin/sh
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+_PM2TEST_PROGNAME=pm2-test
+
+_ALL_MODULES="marcel madeleine dsm pm2"
+
+pm2test_error() # msg
+{
+    echo $* >&2
+    exit 1
+}
+
+pm2test_usage() # exit_code
+{
+    cat <<EOF
+Usage: $_PM2TEST_PROGNAME { option } { modules }
+  option:
+    -h,--help  : show this help
+    -q,--quiet : do not be verbose
+    --basic    : run a reasonable number of tests for each PM2 module (default)
+    --advanced : run a lot of tests to check more advanced features
+    --torture  : check each line of C code to search for unknown bugs ;-)))
+  modules:
+    "all" (default) or a subset of "$_ALL_MODULES"
+EOF
+    exit $1
+}
+
+to_be_tested() # module
+{
+    case " $_to_test " in
+	*\ $1\ *)
+	    echo "yes"
+	    ;;
+	*)
+	    echo "no"
+	    ;;
+    esac
+}
+
+do_the_test()
+{
+    nbl=`wc -l < /tmp/pm2test_expected`
+    nbl=`expr $nbl + 0`
+
+    # Compilation
+    echo "Compiling program $prog..."
+    (cd $appdir; make $prog FLAVOR=$flavor)
+    [ $? -eq 0 ] || pm2test_error "Compilation failed"
+
+    # Execution
+    echo "Running program $prog..."
+    ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
+    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_result 2>&1
+    [ $? -eq 0 ] || pm2test_error "Execution failed"
+
+    # Destruction de la flavor
+    #echo "Cleaning flavor & files..."
+    ${PM2_ROOT}/bin/pm2-clean $flavor
+    ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
+
+    # Le moment de verite
+    echo "Checking results..."
+    if head -$nbl /tmp/pm2test_result | diff - /tmp/pm2test_expected ; then
+	echo "Test ok!"
+    else
+	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_result)"
+    fi
+
+    # Destruction des fichiers residuels
+    rm -rf /tmp/pm2test_*
+}
+
+# Programme principal
+
+_level=1 # basic
+_output_redirect=""
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-h|--help)
+	    pm2test_usage 0
+	    ;;
+	-q|--quiet)
+	    _output_redirect="> /dev/null 2>&1"
+	    shift
+	    ;;
+	--basic)
+	    _level=1
+	    shift
+	    ;;
+	--advanced)
+	    _level=2
+	    shift
+	    ;;
+	--torture)
+	    _level=3
+	    shift
+	    ;;
+	--)
+	    shift; break
+	    ;;
+	-*)
+	    pm2test_error "Invalid option: $1"
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+if [ $# -eq 0 -o "$1" = all ] ; then
+    _to_test="$_ALL_MODULES"
+else
+    _to_test=""
+    for m in "$@"; do
+	case " $_ALL_MODULES " in
+	    *\ $m\ *)
+		_to_test="${_to_test:+$_to_test }$m"
+		;;
+	    *)
+		pm2test_error "\"$m\" is not a valid module name"
+		;;
+	esac
+    done
+fi
+
+# ########## Marcel, basic ##########
+if [ `to_be_tested marcel` = "yes" -a $_level -ge 1 ] ; then
+    echo "*** Testing module [marcel], level [basic]."
+
+    # Configuration
+    flavor="test_marcel"
+    appdir="${PM2_ROOT}/marcel/examples"
+    prog="sumtime"
+    args="100"
+    hosts="localhost"
+    cat > /tmp/pm2test_expected <<EOF
+Sum from 1 to 100 = 5050
+EOF
+
+    # Creation de la flavor
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	--builddir=\"/tmp/$flavor\" --ext=\"\" \
+	--modules=\"marcel tbx\" \
+	--marcel=\"mono\" --marcel=\"marcel_main\" \
+	--all=\"opt\" $_output_redirect
+
+    # Compilation, execution et verification des resultats
+    eval do_the_test $_output_redirect
+
+    echo ">>>>> [basic] tests for module [marcel] succeded!"
+fi
+
+
+# ########## PM2, basic ##########
+if [ `to_be_tested pm2` = "yes" -a $_level -ge 1 ] ; then
+    echo "*** Testing module [pm2], level [basic]."
+
+    # Configuration
+    flavor="test_pm2"
+    appdir="${PM2_ROOT}/pm2/examples/simple"
+    prog="remote_hello"
+    args="a b c"
+    hosts="`uname -n` `uname -n`"
+    cat > /tmp/pm2test_expected <<EOF
+[t1] Hello world!
+[t1] argc = 4
+[t1] argv[0] = </tmp/test_pm2/examples/simple/bin/remote_hello>
+[t1] argv[1] = <a>
+[t1] argv[2] = <b>
+[t1] argv[3] = <c>
+EOF
+
+    # Creation de la flavor
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	--builddir=\"/tmp/$flavor\" --ext=\"\" \
+	--modules=\"marcel mad2 ntbx tbx pm2\" \
+	--marcel=\"mono\" --marcel=\"marcel_main\" \
+	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
+	--all=\"opt\" $_output_redirect
+
+    # Compilation, execution et verification des resultats
+    eval do_the_test $_output_redirect
+
+    echo ">>>>> [basic] tests for module [pm2] succeded!"
+fi
+
+# ########## Happy end ##########
+echo "         ******************************"
+echo "         *** All tests did succeed! ***"
+echo "         ******************************"
+
+exit 0

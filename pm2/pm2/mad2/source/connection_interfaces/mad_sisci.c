@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.11  2000/03/01 11:01:28  oaumage
+- modifications diverses
+
 Revision 1.10  2000/02/29 09:28:02  oaumage
 - derniere version optimisee du driver sisci
 
@@ -2432,12 +2435,14 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
     }
 
 #ifdef MAD_SISCI_OPT_COPY
+  PM2_LOCK();
   SCIMemCopy(base,
 	     remote_segment->map,
 	     0,
 	     (void *)data_remote_ptr - (void *)base,
 	     0,
 	     &sisci_error);
+  PM2_UNLOCK();
   //mad_sisci_control();
 #endif /* MAD_SISCI_OPT_COPY */  
   
@@ -2482,7 +2487,10 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
       connection_specific->write_flag_flushed = tbx_true;
       mad_sisci_flush(remote_segment);
     }
-
+#ifdef PM2
+  while (!(descriptor = *local_ptr))
+    PM2_YIELD();
+#endif /* PM2 */
   while (bwrite + 3 < blen)
     {
       if (!j)

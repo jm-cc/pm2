@@ -40,11 +40,6 @@
  * Headers
  * -------
  */
-#if 0
-#if (defined PM2) || (defined MAD_FORWARDING)
-#include "marcel.h"
-#endif /* PM2 || FORWARDING */
-#endif /* 0 */
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -106,12 +101,6 @@
 #ifdef DRV_BIP
 #include "connection_interfaces/mad_bip.h"
 #endif /* DRV_BIP */
-
-#if 0
-#ifdef MAD_FORWARDING
-#include "connection_interfaces/mad_forwarder.h"
-#endif /* MAD_FORWARDING */
-#endif /* 0 */
 
 #include "mad_main.h"
 #include "mad_exit.h"

@@ -1,0 +1,24 @@
+
+# set -x
+
+PROG=$1
+CONF="ravel debussy faure"
+HOSTNAME=`hostname`
+PROG=`basename $PROG /`
+
+run () {
+	CMD=$1
+	echo "$HOSTNAME% $CMD"
+	csh -c "$CMD"
+	echo
+}
+
+cd Progs
+
+make $PROG
+
+run  "pm2conf $CONF"
+
+run "pm2load $PROG"
+
+run "pm2logs"

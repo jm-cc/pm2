@@ -559,6 +559,7 @@ mad_dir_vxchannel_get_cdata(p_ntbx_process_t            process,
 {
   p_ntbx_process_t             pprocess   = NULL;
   ntbx_process_grank_t         g_rank_dst =   -1;
+  ntbx_process_lrank_t         l_rank_dst =   -1;
   p_mad_dir_connection_data_t  cdata      = NULL;
   char                        *ref_name   = NULL;
 
@@ -571,6 +572,7 @@ mad_dir_vxchannel_get_cdata(p_ntbx_process_t            process,
       return tbx_false;
     }
 
+  l_rank_dst = mad_leonie_receive_int();
   pprocess = tbx_darray_get(process_darray, g_rank_dst);
 
   cdata = mad_dir_connection_data_cons();
@@ -578,7 +580,8 @@ mad_dir_vxchannel_get_cdata(p_ntbx_process_t            process,
   cdata->destination_rank = mad_leonie_receive_int();
 
   ref_name = tbx_strdup(_ref_name);
-  ntbx_pc_add(ppc, pprocess, g_rank_dst, process, ref_name, cdata);
+
+  ntbx_pc_add(ppc, pprocess, l_rank_dst, process, ref_name, cdata);
   LOG_OUT();
 
   return tbx_true;
@@ -594,6 +597,7 @@ mad_dir_vchannel_get_cdata(p_mad_directory_t    dir,
   p_tbx_darray_t              process_darray = NULL;
   p_ntbx_process_t            process        = NULL;
   ntbx_process_grank_t        g_rank_src     =   -1;
+  ntbx_process_lrank_t        l_rank_src     =   -1;
   p_mad_dir_connection_t      dir_connection = NULL;
   p_ntbx_process_container_t  ppc            = NULL;
   char                       *ref_name       = NULL;
@@ -608,6 +612,8 @@ mad_dir_vchannel_get_cdata(p_mad_directory_t    dir,
 
       return tbx_false;
     }
+
+  l_rank_src = mad_leonie_receive_int();
 
   process = tbx_darray_get(process_darray, g_rank_src);
 
@@ -630,7 +636,7 @@ mad_dir_vchannel_get_cdata(p_mad_directory_t    dir,
   TBX_FREE(ref_name);
   ref_name = NULL;
 
-  ntbx_pc_add(dir_vchannel->pc, process, g_rank_src,
+  ntbx_pc_add(dir_vchannel->pc, process, l_rank_src,
               dir_vchannel, vchannel_reference_name, dir_connection);
 
   LOG_OUT();
@@ -736,6 +742,7 @@ mad_dir_xchannel_get_connection(p_mad_dir_channel_t dir_xchannel,
 {
   p_ntbx_process_t            process        = NULL;
   ntbx_process_grank_t        g_rank_src     =   -1;
+  ntbx_process_lrank_t        l_rank_src     =   -1;
   p_mad_dir_connection_t      dir_connection = NULL;
   p_ntbx_process_container_t  ppc            = NULL;
   char                       *ref_name       = NULL;
@@ -749,6 +756,7 @@ mad_dir_xchannel_get_connection(p_mad_dir_channel_t dir_xchannel,
     return tbx_false;
   }
 
+  l_rank_src = mad_leonie_receive_int();
   process = tbx_darray_get(process_darray, g_rank_src);
 
   dir_connection = mad_dir_connection_cons();
@@ -769,7 +777,7 @@ mad_dir_xchannel_get_connection(p_mad_dir_channel_t dir_xchannel,
   TBX_FREE(ref_name);
   ref_name = NULL;
 
-  ntbx_pc_add(dir_xchannel->pc, process, g_rank_src,
+  ntbx_pc_add(dir_xchannel->pc, process, l_rank_src,
               dir_xchannel, dir_xchannel->name, dir_connection);
   LOG_OUT();
 

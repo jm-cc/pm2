@@ -49,6 +49,8 @@ void dsm_set_no_access();
 
 void dsm_set_write_access();
 
+void dsm_set_uniform_access(dsm_access_t access);
+
 void dsm_protect_page (void *addr, dsm_access_t access);
 
 void *dsm_page_base(void *addr);
@@ -76,6 +78,8 @@ dsm_node_t dsm_get_next_pending_request(unsigned long index);
 boolean dsm_next_owner_is_set(unsigned long index);
 
 void dsm_set_access(unsigned long index, dsm_access_t access);
+
+void dsm_set_access_without_protect(unsigned long index, dsm_access_t access);
 
 dsm_access_t dsm_get_access(unsigned long index);
 
@@ -123,6 +127,36 @@ void dsm_display_page_ownership();
 #define DSM_BLOCK       1
 #define DSM_CYCLIC      2
 #define DSM_CUSTOM      3
+
+#define DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS 0
+#define DSM_UNIFORM_PROTECT 1
+#define DSM_CUSTOM_PROTECT 2
+
+void dsm_set_user_page_protection(int mode, ...);
+
+int dsm_get_user_data1(unsigned long index, int rank);
+
+void dsm_set_user_data1(unsigned long index, int rank, int value);
+
+void dsm_increment_user_data1(unsigned long index, int rank);
+
+void dsm_decrement_user_data1(unsigned long index, int rank);
+
+void dsm_alloc_user_data2(unsigned long index, int size);
+
+void dsm_free_user_data2(unsigned long index);
+
+void *dsm_get_user_data2(unsigned long index);
+
+void dsm_set_user_data2(unsigned long index, void *addr);
+
+typedef void (*dsm_user_data1_init_func_t)(int *userdata); /* init func for userdata1 */
+
+typedef void (*dsm_user_data2_init_func_t)(void **userdata); /* init func for userdata2 */
+
+void dsm_set_user_data1_init_func(dsm_user_data1_init_func_t func);
+
+void dsm_set_user_data2_init_func(dsm_user_data2_init_func_t func);
 
 /*********************** Hyperion stuff: ****************************/
 

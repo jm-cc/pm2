@@ -63,13 +63,13 @@ void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node);
 void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_node);
 
 void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner);
-
 void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node);
-
 
 /****************** Hyperion protocols *********************************************/
 
 void dsmlib_ws_hyp_send_page_for_write_access(unsigned long index, dsm_node_t req_node);
+
+void dsmlib_rp_hyp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_node);
 
 void dsmlib_erp_hyp_receive_page(void *addr, dsm_access_t access, dsm_node_t reply_node, unsigned long page_size);
 

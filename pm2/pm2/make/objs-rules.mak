@@ -35,9 +35,10 @@ endif
 # Regles de preprocessing
 #---------------------------------------------------------------------
 .PHONY: preproc fut
-preproc: $(LIB_PREPROC)
+preproc: $(MOD_PREPROC)
 
-fut: $(LIB_FUT)
+fut: $(MOD_FUT)
+#	echo $(MOD_FUT)
 
 # Regles de génération des .h
 #---------------------------------------------------------------------

@@ -180,6 +180,10 @@ connect_processes(p_leonie_t    leonie,
 
       leo_send_int(client, process->global_rank);
 
+      //backward compatibility with leony
+      //session id
+      leo_send_int(client, 0);
+       
       TBX_FREE(host_name);
       TRACE_VAL("connected process", process->global_rank);
     }
@@ -389,6 +393,7 @@ send_channels(p_leo_directory_t dir,
     TRACE_STR("Channel", dir_channel->name);
     leo_send_string(client, dir_channel->name);
     leo_send_unsigned_int(client, dir_channel->public);
+    leo_send_unsigned_int(client, 0 ); // mergeable ; backward compatibility
     leo_send_string(client, dir_channel->driver->name);
 
     do_pc_local_s(dir_channel->pc, _f);

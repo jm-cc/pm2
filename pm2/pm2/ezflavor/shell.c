@@ -58,7 +58,7 @@ pid_t exec_single_cmd(int *output_fd, char *argv[])
       close(fd[1]);
 
     } else {
-      int fderr = open("/tmp/ezflavor.errlog", O_WRONLY | O_CREAT, 0600);
+      int fderr = open("/tmp/ezflavor.errlog", O_WRONLY | O_CREAT | O_TRUNC, 0600);
 
       dup2(fderr, STDOUT_FILENO);
       dup2(fderr, STDERR_FILENO);

@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 #include "marcel_sched_generic___sched_marcel_inline.h"
+#include "tbx_compiler.h"
 
 inline static 
 void marcel_postexit_internal(marcel_t cur,
@@ -337,6 +338,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	}
 #endif
 	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp);
+	postexit->sched.internal.prio=0;
 	ma_wake_up_created_thread(postexit);
 	LOG_OUT();
 }
@@ -438,7 +440,7 @@ static void detach_func(any_t arg) {
 	
 }
 
-void marcel_exit_internal(any_t val, int special_mode)
+static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 {
 	marcel_t cur = marcel_self();
 	DEFINE_CUR_LWP(register, , );
@@ -531,15 +533,15 @@ void marcel_exit_internal(any_t val, int special_mode)
 	abort(); // For security
 }
 	
-DEF_MARCEL_POSIX(void, exit, (any_t val))
+DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val))
 {
-	return marcel_exit_internal(val, 0);
+	marcel_exit_internal(val, 0);
 }
 DEF_PTHREAD(exit)
 
-void marcel_exit_special(any_t val)
+void TBX_NORETURN marcel_exit_special(any_t val)
 {
-	return marcel_exit_internal(val, 1);
+	marcel_exit_internal(val, 1);
 }
 
 /****************************************************************/

@@ -87,6 +87,7 @@ enum
  */
 #section types
 #depend "marcel_utils.h[types]"
+#depend "tbx_compiler.h"
 typedef any_t (*marcel_func_t)(any_t);
 typedef void (*cleanup_func_t)(any_t);
 typedef void (*marcel_atexit_func_t)(any_t);
@@ -107,7 +108,7 @@ int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr,
 
 DEC_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status) __THROW);
 
-DEC_MARCEL_POSIX(void, exit, (any_t val) __THROW);
+DEC_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val) __THROW);
 #section marcel_functions
 void marcel_exit_special(any_t val) __THROW;
 

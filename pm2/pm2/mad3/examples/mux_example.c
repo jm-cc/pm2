@@ -7,14 +7,14 @@
 #include "pm2_common.h"
 
 
-#define SUB_CHANNELS 4
+static unsigned SUB_CHANNELS = 0;
+
 #define NUM_MESSAGES 16
-#define MSG_LENGTH   11
+#define MSG_LENGTH   16
 static int master = 0;
-static int slave  = 1;
-static marcel_t thread[SUB_CHANNELS];
-static char buffer1[MSG_LENGTH] = "Hello foo!";
-static char buffer2[MSG_LENGTH] = "Hello goo!";
+static marcel_t thread[1024];
+static char buffer1[MSG_LENGTH] MAD_ALIGNED = "   Hello foo!  ";
+static char buffer2[MSG_LENGTH] MAD_ALIGNED = "   Hello goo!  ";
 
 static marcel_cond_t condition;        
 static marcel_mutex_t barrier;         
@@ -52,7 +52,7 @@ void send_on_channel(p_mad_channel_t channel)
   else
     buf = buffer2;
   
-  out = mad_begin_packing(channel, master);  
+  out = mad_begin_packing(channel, master);
   for(index = 0 ; index < NUM_MESSAGES ; index ++)
     {
       mad_pack(out, buf, MSG_LENGTH, mad_send_CHEAPER, mad_receive_CHEAPER);
@@ -89,9 +89,7 @@ int main(int argc, char **argv)
   p_mad_madeleine_t   madeleine      = NULL;
   p_mad_session_t     session        = NULL;
   p_tbx_slist_t       slist          = NULL;
-  p_mad_channel_t     orig_channel   = NULL;
-  p_mad_channel_t     sub_channel[SUB_CHANNELS];
-  char                *name          = NULL;
+  p_mad_channel_t     sub_channel[1024];
   int                 process_rank;
   int                 index          = 0;  
   
@@ -109,35 +107,33 @@ int main(int argc, char **argv)
   DISP_VAL("My global rank is",process_rank);
   DISP_VAL("The configuration size is",
 	   tbx_slist_get_length(madeleine->dir->process_slist));
-  
   DISP("----------");
-
 
   slist        = madeleine->public_channel_slist;
   tbx_slist_ref_to_head(slist);
-  name         = tbx_slist_ref_get(slist); 
-  orig_channel = tbx_htable_get(madeleine->channel_htable, name);
-  
-  if (!orig_channel)
+  do
     {
-      DISP("I don't belong to this channel");
-      return 0;
+      char *name = NULL;
+
+      name = tbx_slist_ref_get(slist);
+      sub_channel[SUB_CHANNELS] = tbx_htable_get(madeleine->channel_htable,
+						 name);
+      DISP("sub_channel[%d] == <%s>\n", SUB_CHANNELS, name);
+      SUB_CHANNELS++;
     }
-  
-  for(index=0 ; index < SUB_CHANNELS ; index ++)
-    sub_channel[index] = mad_get_sub_channel(orig_channel, index);
-  
+  while (tbx_slist_ref_forward(slist));
+  DISP("----------");
+
   if(process_rank == master)
     for(index=0 ; index < SUB_CHANNELS ; index ++)
       marcel_create (&thread[index], NULL, 
-		     (marcel_func_t )receive_on_channel,sub_channel[index]);
+		     (marcel_func_t )receive_on_channel,
+		     sub_channel[index]);
   else
     for(index=0 ; index < SUB_CHANNELS ; index ++)
       marcel_create (&thread[index], NULL, 
-		     (marcel_func_t) send_on_channel,sub_channel[index]);
-  
-  /* for(index=0 ; index < SUB_CHANNELS ; index ++) */
-  /*     marcel_join(thread[index],NULL); */
+		     (marcel_func_t) send_on_channel,
+		     sub_channel[index]);
   
   mad_leonie_barrier();
   DISP("----------");

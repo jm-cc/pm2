@@ -448,7 +448,6 @@ dir_channel_exit(p_leo_directory_t dir)
   do_slist(dir->channel_slist, channel_exit);
   str_sync(dir);
   LOG_OUT();
-  LOG_OUT();
 }
 
 // dir_driver_exit: manages driver data structures clean-up

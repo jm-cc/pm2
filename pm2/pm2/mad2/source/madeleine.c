@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.26  2000/04/20 13:32:07  oaumage
+- modifications diverses
+
 Revision 1.25  2000/04/05 16:08:14  oaumage
 - retablissement du rsh supplementaire
 
@@ -504,11 +507,10 @@ mad_pre_init(p_mad_adapter_set_t adapter_set)
   p_mad_madeleine_t madeleine = &main_madeleine;
 
   LOG_IN();
-#ifdef PM2  
+#ifdef MARCEL  
   marcel_init(argc, argv);
-#endif /* PM2 */
-  tbx_init();
-  
+#endif /* MARCEL */
+    
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
   mad_managers_init();
@@ -727,15 +729,7 @@ mad_master_spawn(int                    *argc,
       sprintf(arg, " %s ", argv[i]);
       strcat(arg_str, arg);
     }
-  
-  for (i = 1;
-	   i < *argc;
-       i++)
-    {
-      sprintf(arg, " %s ", argv[i]);
-      strcat(arg_str, arg);
-    }
-  
+
   if (argv[0][0] != '/')
     {
       if (conf_spec)
@@ -1162,7 +1156,7 @@ mad_init(
 			     &slave);
     }
 #endif /* MAD_APPLICATION_SPAWN */
-  
+
 #ifdef EXTERNAL_SPAWN
   spawn_interface->configuration_init(spawn_adapter, configuration);
   if (spawn_interface->adapter_configuration_init)
@@ -1227,7 +1221,7 @@ mad_init(
 #else /* APPLICATION_SPAWN */
   rank = configuration->local_host_id;  
 
-  /* Uncomment to disable the first `rsh' step 
+  /* Uncomment to disable the first `rsh' step  
      master = !slave; */
   
   if (!master && !slave)

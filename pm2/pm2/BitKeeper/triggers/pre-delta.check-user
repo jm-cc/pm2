@@ -24,13 +24,16 @@ check_user() { # id ok bad
 			fi
 		done < "$AUTH_FILE"
 	fi
-	for user in $(bk users); do
+	for user in $(unset BK_EVENT; bk users \
+			|| touch "$R/BitKeeper/tmp/error.$$"); do
 		if [ "$user" = "$1" ]; then
 			return ${2:-0}
 		fi
-		echo "$user not $1" >> /tmp/toto
 	done
-	bk users >> /tmp/toto.all
+	if [ -f "$R/BitKeeper/tmp/error.$$" ]; then
+		rm "$R/BitKeeper/tmp/error.$$"
+		exit 1
+	fi
 	return ${3:-1}
 }
 

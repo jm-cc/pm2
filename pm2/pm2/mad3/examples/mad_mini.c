@@ -31,7 +31,7 @@
 //......................
 
 #define MAX 16
-
+//#define ECHO_ARGS
 
 // Static variables
 //......................
@@ -245,12 +245,30 @@ play_with_channel(p_mad_madeleine_t  madeleine,
     }
 }  
 
+#ifdef ECHO_ARGS
+void
+disp_args(int argc, char **argv)
+{
+  argc --; argv ++;
+  
+  while (argc--)
+    {
+      DISP_STR("argv", *argv);
+      argv++;
+    }
+}
+#endif // ECHO_ARGS
+
 int
 tbx_main(int argc, char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
   p_tbx_slist_t     slist     = NULL;
+  
+#ifdef ECHO_ARGS
+  disp_args(argc, argv);
+#endif // ECHO_ARGS
 
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);

@@ -97,11 +97,12 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "tbx.h"
 #include "pm2_profile.h"
 #include "tbx_debug.h"
+
 #include "pm2_common.h"
 
 /* = initialization & termination == */
 
-#define marcel_init(argc, argv) common_init(argc, argv)
+#define marcel_init(argc, argv) common_init(argc, argv, NULL)
 
 // When completed, calls to marcel_self() are ok, etc.
 // So do calls to the Unix Fork primitive.
@@ -278,4 +279,4 @@ int go_marcel_main(int argc, char *argv[]);
 extern int marcel_main(int argc, char *argv[]);
 #endif
 
-#endif
+#endif // MARCEL_EST_DEF

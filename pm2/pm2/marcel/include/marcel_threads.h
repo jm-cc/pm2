@@ -121,7 +121,7 @@ DEC_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW);
 #section functions
 static inline int marcel_equal(marcel_t pid1, marcel_t pid2) __THROW;
 #section inline
-static inline int marcel_equal(marcel_t pid1, marcel_t pid2) __THROW
+static inline int marcel_equal(marcel_t pid1, marcel_t pid2)
 {
   return (pid1 == pid2);
 }

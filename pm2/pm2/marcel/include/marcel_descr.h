@@ -135,7 +135,7 @@ struct marcel_task {
 #section inline
 #depend "[marcel_inline]"
 /* ==== get current thread or LWP id ==== */
-extern MARCEL_INLINE marcel_t marcel_self(void) __THROW
+extern MARCEL_INLINE marcel_t marcel_self(void)
 {
   return __marcel_self();
 }

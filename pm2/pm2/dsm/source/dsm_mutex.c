@@ -48,7 +48,7 @@ void DSM_LRPC_LOCK_func()
 }
 
 
-void DSM_LRPC_UNLOCK_func(void)
+void DSM_LRPC_UNLOCK_threaded_func(void)
 {
   dsm_mutex_t *mutex;
   pm2_completion_t c;
@@ -59,6 +59,12 @@ void DSM_LRPC_UNLOCK_func(void)
   pm2_rawrpc_waitdata();
   marcel_mutex_unlock(&mutex->mutex);
   pm2_completion_signal(&c);
+}
+
+
+void DSM_LRPC_UNLOCK_func()
+{
+  pm2_thread_create(DSM_LRPC_UNLOCK_threaded_func, NULL);
 }
 
 

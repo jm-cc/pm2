@@ -40,8 +40,9 @@ struct marcel_sched_internal_task {
 	struct list_head run_list;              /* List chainée des threads prêts */
 	//unsigned long lwps_runnable;             
 #ifdef MA__LWPS
-	ma_runqueue_t *init_rq,*cur_rq;
+	ma_runqueue_t *init_rq;
 #endif
+	ma_runqueue_t *cur_rq;
 	int sched_policy;
 	int prio;
 	ma_prio_array_t *array;

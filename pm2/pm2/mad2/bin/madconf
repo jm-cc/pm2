@@ -43,6 +43,7 @@ if test $# -gt 0
 then
 	rm -f ${MAD2_ROOT}/.mad2_conf
 	cp /dev/null ${MAD2_ROOT}/.mad2_conf
+	echo $# >> ${MAD2_ROOT}/.mad2_conf
 	for m in $*
 	do
 		echo $m >> ${MAD2_ROOT}/.mad2_conf
@@ -56,6 +57,7 @@ then
     nb=$#
     echo "The current MADELEINE configuration contains $nb host(s) :"
     i=0
+    shift
     for m in $*
     do
 	echo "$i : $m"

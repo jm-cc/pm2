@@ -35,7 +35,7 @@
 
 /* timeout.c */
 
-#include <marcel.h>
+#include "marcel.h"
 
 marcel_sem_t sem;
 

@@ -168,7 +168,7 @@ void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_nod
       if (dsm_get_pending_access(index) == WRITE_ACCESS)
 	{
 	  dsm_set_prob_owner(index, dsm_self());
-	  dsm_invalidate_copyset(index, dsm_self());
+	  //dsm_invalidate_copyset(index, dsm_self());
 	  dsm_set_access(index, READ_ACCESS);
 	  dsm_set_pending_access(index, NO_ACCESS);
 	}

@@ -71,6 +71,7 @@ static  int new_channel = MAD_BIP_FIRST_CHANNEL ;
 
 #define BIP_SMALL_MESSAGE        BIPSMALLSIZE
 #define MAD_BIP_SMALL_SIZE       (BIP_SMALL_MESSAGE*sizeof(int))
+#define MAD_BIP_MAX_SIZE         (128 * 1024)
 
 #define MAD_NB_INTS(bytes)    ((bytes) % sizeof(int) ? \
 			       (bytes)/sizeof(int)+1 : \
@@ -793,8 +794,10 @@ void
 mad_bip_channel_init(p_mad_channel_t channel)
 {
   p_mad_bip_channel_specific_t channel_specific;
+#ifdef MARCEL
   p_mad_bip_driver_specific_t driver_specific =
     (p_mad_bip_driver_specific_t)channel->adapter->driver->specific;
+#endif
   unsigned i;
   unsigned size = bip_numnodes;
 
@@ -1300,13 +1303,13 @@ mad_bip_receive_short_buffer(p_mad_link_t     lnk,
 			     &host);
 
       TRACE("Receiving short buffer. Size = %d. First int = %d\n",
-	    status*sizeof(int),
+	    MAD_NB_INTS(buffer->length),
 	    ((int*)buffer->buffer)[0]);
 
       give_back_credits (channel_specific, connection->remote_host_id);
     }
 
-  buffer->bytes_written = status*sizeof(int);
+  buffer->bytes_written = MAD_NB_INTS(buffer->length);
 
   LOG_OUT();
 }
@@ -1320,6 +1323,10 @@ mad_bip_send_long_buffer(p_mad_link_t lnk,
   p_mad_channel_t channel = connection->channel;
   p_mad_bip_channel_specific_t channel_specific = channel->specific;
 
+  void *ptr = buffer->buffer;
+  unsigned chunk;
+  unsigned to_send = MAD_NB_INTS(buffer->bytes_written);
+
   LOG_IN();
   /* Code to send one buffer */
 
@@ -1331,16 +1338,24 @@ mad_bip_send_long_buffer(p_mad_link_t lnk,
       connection_specific->ack_received = 0;
     }
 
-  wait_ack(channel_specific, connection->remote_host_id);
+  do {
+    wait_ack(channel_specific, connection->remote_host_id);
 
-  connection_specific->ack_received = 1;
+    connection_specific->ack_received = 1;
 
-  bip_sync_send(connection->remote_host_id,
-		channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
-		buffer->buffer,
-		MAD_NB_INTS(buffer->bytes_written));
+    chunk = min(to_send, MAD_BIP_MAX_SIZE);
 
-  buffer->bytes_read = buffer->bytes_written;
+    bip_sync_send(connection->remote_host_id,
+		  channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
+		  ptr,
+		  chunk);
+
+    ptr += chunk;
+    to_send -= chunk;
+
+  } while(to_send);
+
+  buffer->bytes_read = MAD_NB_INTS(buffer->bytes_written);
 
   LOG_OUT();
 }
@@ -1356,6 +1371,10 @@ mad_bip_receive_long_buffer(p_mad_link_t     lnk,
 
   int request;
   int host, status;
+
+  void *ptr = buffer->buffer;
+  unsigned chunk;
+  unsigned to_recv = MAD_NB_INTS(buffer->length);
 
   LOG_IN();
   /* Code to receive one buffer */
@@ -1373,18 +1392,25 @@ mad_bip_receive_long_buffer(p_mad_link_t     lnk,
      connection_specific->ack_sent = 0;
     }
 
-  request = bip_recv_post(channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
-			  buffer->buffer,
-			  MAD_NB_INTS(buffer->length));
+  do {
+    chunk = min(to_recv, MAD_BIP_MAX_SIZE);
 
-  send_ack(channel_specific, connection->remote_host_id);
+    request = bip_recv_post(channel_specific->communicator+MAD_BIP_TRANSFER_TAG,
+			    ptr,
+			    chunk);
 
-  status = bip_recv_wait(channel_specific, request, &host);
+    send_ack(channel_specific, connection->remote_host_id);
 
-  connection_specific->ack_sent = 1;
-  connection_specific->begin_receive = 0 ;
+    connection_specific->ack_sent = 1;
 
-  buffer->bytes_written = status * sizeof(int);
+    status = bip_recv_wait(channel_specific, request, &host);
+
+    ptr += chunk;
+    to_recv -= chunk;
+
+  } while(to_recv);
+
+  buffer->bytes_written = MAD_NB_INTS(buffer->length);
 
   LOG_OUT();
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.h,v $
+Revision 1.6  2000/07/07 14:49:41  oaumage
+- Ajout d'un support pour les tables de hachage
+
 Revision 1.5  2000/05/22 12:18:59  oaumage
 - listes de recherche
 
@@ -90,6 +93,7 @@ ______________________________________________________________________________
 #include "tbx_malloc.h"
 #include "tbx_slist.h"
 #include "tbx_list.h"
+#include "tbx_htable.h"
 
 #include "tbx_interface.h"
 

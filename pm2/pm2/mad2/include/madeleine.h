@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.14  2000/03/07 10:38:59  oaumage
+- pre-support multi-cluster
+
 Revision 1.13  2000/03/02 14:51:56  oaumage
 - support de detection des protocoles au niveau runtime
 
@@ -121,6 +124,7 @@ ______________________________________________________________________________
 #include "mad_driver.h"
 #include "mad_adapter_description.h"
 #include "mad_configuration.h"
+#include "mad_cluster.h"
 
 /* Function prototypes */
 #include "mad_memory_interface.h"

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.31  2001/01/03 14:12:22  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.30  2000/11/15 21:32:20  rnamyst
 Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
 
@@ -1530,6 +1533,15 @@ marcel_t __main_thread;
 static jmp_buf __initial_main_jb;
 static volatile int __main_ret;
 
+#ifdef WIN_SYS
+void win_stack_allocate(unsigned n)
+{
+  int tab[n];
+
+  tab[0] = 0;
+}
+#endif
+
 int main(int argc, char *argv[])
 {
   static int __argc;
@@ -1549,6 +1561,10 @@ int main(int argc, char *argv[])
     mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
 
     __argc = argc; __argv = argv;
+
+#ifdef WIN_SYS
+      win_stack_allocate(SLOT_SIZE);
+#endif
 
     set_sp((unsigned long)__main_thread - TOP_STACK_FREE_AREA);
 

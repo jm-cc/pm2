@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_swann.c,v $
+Revision 1.7  2001/01/29 16:59:33  oaumage
+- transmission des donnees de configuration
+
 Revision 1.6  2000/06/16 13:46:35  oaumage
 - Progression du code
 
@@ -77,7 +80,7 @@ ______________________________________________________________________________
 /*
  * Swann interfacing
  * -----------------
- */
+
 p_leo_swann_module_t
 leo_launch_swann_module(p_leonie_t                  leonie,
 			p_leo_application_cluster_t cluster)
@@ -86,7 +89,7 @@ leo_launch_swann_module(p_leonie_t                  leonie,
   p_leo_swann_module_t      module             = NULL;
   char                     *cmd                = NULL;
   ntbx_status_t             status;  
-  /* int                    n; */
+  // int                    n;
   
   LOG_IN();
   cmd = TBX_MALLOC(MAX_ARG_STR_LEN);
@@ -168,4 +171,4 @@ leo_launch_mad_module(p_leonie_t                  leonie,
   LOG_OUT();
   return module;
 }
-
+*/

@@ -34,8 +34,6 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-echo " config : $@ " >> $HOME/OUT
-
 PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
 PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
 

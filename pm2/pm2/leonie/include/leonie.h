@@ -31,12 +31,13 @@
 
 // #define TEST_SWANN
 
+#if 0
 #ifndef TEST_SWANN
 #warning [1;33m<<< [1;37mSwann testing mode:     [1;31mnot activated [1;33m>>>[0m
 #else
 #warning [1;33m<<< [1;37mSwann testing mode:     [1;32mactivated [1;33m    >>>[0m
 #endif // TEST_SWANN
-
+#endif // 0
 #define FAILURE_CLEANUP() leonie_failure_cleanup()
 
 #include "tbx.h"

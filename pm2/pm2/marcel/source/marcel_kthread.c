@@ -20,6 +20,8 @@
 
 #include "marcel.h"
 
+#include <errno.h>
+
 #ifdef LINUX_SYS
 #include <linux/unistd.h>
 #endif

@@ -138,10 +138,15 @@ mad_object_init(int    argc TBX_UNUSED,
   LOG_IN();
   madeleine = mad_madeleine_cons();
 
-  madeleine->settings = mad_settings_cons();
-  madeleine->session  = mad_session_cons();
-  madeleine->dir      = mad_directory_cons();
-
+  madeleine->settings    = mad_settings_cons();
+  madeleine->session     = mad_session_cons();
+  madeleine->dir         = mad_directory_cons();
+  madeleine->old_dir     = NULL;
+  madeleine->new_dir     = NULL;
+  madeleine->updated     = tbx_false;
+  madeleine->merge_done  = tbx_false;
+  madeleine->mergeable   = tbx_false;
+   
   mad_driver_register(madeleine);
 
   client = ntbx_client_cons();
@@ -244,6 +249,10 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
 
   session->process_rank = mad_ntbx_receive_int(client);
   TRACE_VAL("process rank", session->process_rank);
+   
+  session->session_id = mad_ntbx_receive_int(client);
+  TRACE_VAL("session is", session->session_id);
+
   LOG_OUT();
 }
 

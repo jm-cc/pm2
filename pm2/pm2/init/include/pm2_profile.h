@@ -23,6 +23,7 @@
 #define DSM_PROF_MASK     0x08
 #define TBX_PROF_MASK     0x10
 #define NTBX_PROF_MASK    0x20
+#define USER_APP_MASK     0x40
 
 #if defined(MARCEL_KERNEL)
 #define PROFILE_KEYMASK MARCEL_PROF_MASK
@@ -36,9 +37,16 @@
 #define PROFILE_KEYMASK TBX_PROF_MASK
 #elif defined(NTBX_KERNEL)
 #define PROFILE_KEYMASK NTBX_PROF_MASK
+#else
+#define PROFILE_KEYMASK USER_APP_MASK
 #endif
 
 #ifdef PROFILE
+
+#if !defined(MODULE) && defined(COMMON_PROFILE)
+// Application utilisateur
+#define DO_PROFILE
+#endif
 
 #define CONFIG_FUT
 

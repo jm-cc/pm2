@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.10  2000/10/30 14:21:01  oaumage
+- correction du support Alpha pour MadII au niveau de la toolbox
+  (safe_malloc)
+- correction de pm2logs pour mad2
+
 Revision 1.9  2000/09/05 13:59:40  oaumage
 - reecriture des slists et corrections diverses au niveau des htables
 
@@ -78,18 +83,18 @@ ______________________________________________________________________________
  * ------------------------
  */
 void *
-tbx_aligned_malloc(size_t   size,
-		   int      align)
+tbx_aligned_malloc(size_t      size,
+		   tbx_align_t align)
 {
-  char      *ptr;
-  char      *ini;
-  unsigned   mask = align - 1;
+  char        *ptr;
+  char        *ini;
+  tbx_align_t  mask = align - 1;
 
   ini = ptr = TBX_MALLOC (size + 2 * align - 1);
 
-  if (ptr != NULL && ((unsigned) ptr & mask) != 0)
+  if (ptr != NULL && ((tbx_align_t) ptr & mask) != 0)
     {
-      ptr = (char *) (((unsigned) ptr + mask) & ~mask);
+      ptr = (char *) (((tbx_align_t) ptr + mask) & ~mask);
     }
 
   if (ptr != NULL)
@@ -103,7 +108,7 @@ tbx_aligned_malloc(size_t   size,
 
 void
 tbx_aligned_free (void *ptr,
-		  int   align)
+		  tbx_align_t   align)
 {
   TBX_FREE (*(char **) ((char *) ptr - align));
 }
@@ -130,7 +135,7 @@ typedef struct s_tbx_safe_malloc_header
   p_tbx_safe_malloc_header_t next;
   p_tbx_safe_malloc_header_t prev;
   size_t                     size;
-  unsigned int               line;
+  unsigned long              line;
 } tbx_safe_malloc_header_t;
 
 #define TBX_SAFE_MALLOC_MAGIC_SIZE    (sizeof(tbx_safe_malloc_magic))
@@ -148,10 +153,10 @@ void
 tbx_safe_malloc_mem_check(void)
 {
   fprintf(stderr, "*** SafeMalloc Stats ***\n");
-  fprintf(stderr, "Allocated: %u, Freed: %u, Lost: %u\n",
-	  allocated,
-	  freed,
-	  allocated - freed);
+  fprintf(stderr, "Allocated: %lu, Freed: %lu, Lost: %lu\n",
+	  (long int)allocated,
+	  (long int)freed,
+	  ((long int)allocated) - ((long int)freed));
   
   if (list)
     {
@@ -304,7 +309,7 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 
       if(mode == tbx_safe_malloc_VERBOSE) 
 	fprintf(stderr,
-		"\t[addr=%p, size=%u, malloc'ed in file %s at line %d]\n",
+		"\t[addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
 		ptrh, p->size, ptrf, p->line);
     }
 }

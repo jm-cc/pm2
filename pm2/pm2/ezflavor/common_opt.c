@@ -36,7 +36,8 @@ static gint opt_cmp(gconstpointer a, gconstpointer b)
   return strcmp(((opt_t *)a)->name, (char *)b);
 }
 
-void common_opt_register_option(char *name, GtkWidget *button)
+void common_opt_register_option(char *name,
+				GtkWidget *button)
 {
   GList *ptr;
   opt_t *opt;

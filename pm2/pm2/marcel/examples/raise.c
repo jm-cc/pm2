@@ -16,7 +16,7 @@
 
 #include "marcel.h"
 
-exception USER_ERROR = "USER_ERROR";
+marcel_exception_t USER_ERROR = "USER_ERROR";
 
 any_t func(any_t arg)
 {

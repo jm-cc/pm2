@@ -59,7 +59,7 @@ typedef int my_jmp_buf[6];
 
 extern int my_setjmp(my_jmp_buf buf);
 
-static __inline__ void my_longjmp(my_jmp_buf buf, int val) __attribute__ ((unused));
+static __inline__ void my_longjmp(my_jmp_buf buf, int val) __attribute__ ((unused,no_instrument_function));
 
 static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 {

@@ -489,7 +489,7 @@ __tbx_backtrace(void)
 #  define TBX_ALIGNED     __attribute__ ((__aligned__))
 #  define TBX_PACKED      __attribute__ ((__packed__))
 #  define TBX_UNUSED      __attribute__ ((__unused__))
-#  define TBX_NORETURN    __attribute__ ((__noreturn__))
+#  define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
 #  define TBX_CONST       __attribute__ ((__const__))
 #  define TBX_NOINST      __attribute__ ((__no_instrument_function__))
 #else // TBX_USE_GCC2_ATTRIBUTES

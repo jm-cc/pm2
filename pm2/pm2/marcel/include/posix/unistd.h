@@ -491,7 +491,7 @@ extern int nice (int __inc) __THROW;
 
 
 /* Terminate program execution with the low-order 8 bits of STATUS.  */
-extern void _exit (int __status) __attribute__ ((__noreturn__));
+extern void _exit (int __status) __attribute__ ((__noreturn__,__no_instrument_function__));
 
 
 /* Get the `_PC_*' symbols for the NAME argument to `pathconf' and `fpathconf';

@@ -171,7 +171,7 @@ extern int pmarcel_create (pmarcel_t *__restrict __newthread,
 
 /* Terminate calling thread.  */
 extern void pmarcel_exit (void *__retval)
-     __THROW __attribute__ ((__noreturn__));
+     __THROW __attribute__ ((__noreturn__,__no_instrument_function__));
 
 /* Make calling thread wait for termination of the thread TH.  The
    exit status of the thread is stored in *THREAD_RETURN, if THREAD_RETURN

@@ -72,6 +72,7 @@ then
 	fi
     done
 
+    touch ${MAD2_ROOT}/src/*.c
     touch ${MAD2_ROOT}/src/connection_interfaces/*.c
 fi
 

@@ -419,7 +419,7 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&WORKER, WORKER_service);
   pm2_rawrpc_register(&FINISHED, FINISHED_service);
 
-  dsm_set_default_protocol(MIGRATE_THREAD);
+  dsm_set_default_protocol(LI_HUDAK);
   isoaddr_page_set_distribution(DSM_BLOCK);
 
    
@@ -487,10 +487,9 @@ int pm2_main(int argc, char **argv)
     *best_found = UINT_MAX;
     dsm_unlock(L);
     
-    fprintf(stderr,"Malloc obtained: %d\n", TSPdata);
+    fprintf(stderr,"Malloc obtained: %p\n", TSPdata);
   
-  
-	fprintf(stderr, "%d nodes present\n", pm2_config_size());
+    fprintf(stderr, "%d nodes present\n", pm2_config_size());
     stat_jobs = (unsigned *) malloc(pm2_config_size() *sizeof(unsigned));
     for(i = 0; i < pm2_config_size(); i++)
       stat_jobs[i] = 0;
@@ -505,9 +504,9 @@ int pm2_main(int argc, char **argv)
       pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&best_found, sizeof(unsigned *));
       pm2_rawrpc_end();
     }
-	fprintf(stderr, "Here?------------\n");
+//	fprintf(stderr, "Here?------------\n");
     generate_jobs();
-    fprintf(stderr, "Not There?------------\n");
+//    fprintf(stderr, "Not There?------------\n");
     tbx_timing_init();
   	TBX_GET_TICK(t1);  
     spawn_workers();

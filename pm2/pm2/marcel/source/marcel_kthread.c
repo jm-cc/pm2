@@ -14,7 +14,36 @@
  * General Public License for more details.
  */
 
+/* for clone() and gettid() */
+#define _GNU_SOURCE
+#include <sched.h>
+
 #include "marcel.h"
+
+#ifdef LINUX_SYS
+#include <linux/unistd.h>
+#endif
+#ifdef MA__LWPS
+#ifdef __NR_gettid
+#  ifdef _syscall0
+_syscall0(pid_t,gettid)
+#  else
+#    define gettid() syscall(__NR_gettid)
+#  endif
+#endif
+int marcel_gettid(void) {
+	int ret;
+#ifdef __NR_gettid
+/* 2.6 linux kernels and above have tids */
+	if ((ret=gettid())!=-1 || errno != ENOSYS)
+		return ret;
+	else
+		return getpid();
+#else
+	return getpid();
+#endif
+}
+#endif
 
 #ifdef MA__SMP
 
@@ -22,20 +51,14 @@
 
 #ifdef LINUX_SYS
 
-#include <sched.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <linux/unistd.h>
 
 #define __STACK_SIZE  (1024 * 1024)
-
-#ifdef __NR_gettid
-_syscall0(pid_t,gettid)
-#endif
 
 // WARNING: stack is never freed. That's not a problem since kernel
 // threads only terminate at the end of the program, but...
@@ -81,13 +104,7 @@ void marcel_kthread_exit(void *retval)
 
 marcel_kthread_t marcel_kthread_self(void)
 {
-  pid_t pid;
-#ifdef __NR_gettid
-/* 2.6 kernels and above have tids */
-  if ((pid=gettid())==-1 && errno==ENOSYS)
-#endif
-    pid=getpid();
-  return pid;
+  return marcel_gettid();
 }
 
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)

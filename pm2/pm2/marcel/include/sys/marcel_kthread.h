@@ -36,6 +36,10 @@ typedef pid_t marcel_kthread_t;
 #endif // MA__SMP
 
 #section marcel_functions
+#ifdef MA__LWPS
+int marcel_gettid(void);
+#endif
+
 #ifdef MA__SMP
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   void *stack_base,

@@ -19,7 +19,6 @@
 #include "tbx_compiler.h"
 #include <signal.h>
 #include <errno.h>
-#include <linux/unistd.h>
 
 /* pour déboggage seulement */
 //#define MA_DO_NOT_LAUNCH_SIGNAL_TIMER
@@ -27,14 +26,6 @@
 #ifdef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 #warning NO SIGNAL TIMER ENABLE
 #warning I hope you are debugging
-#endif
-
-#ifdef __NR_gettid
-#  ifdef _syscall0
-_syscall0(pid_t,gettid)
-#  else
-#    define gettid() syscall(__NR_gettid)
-#  endif
 #endif
 
 ma_atomic_t __preemption_disabled=MA_ATOMIC_INIT(0);
@@ -129,11 +120,7 @@ static void TBX_NORETURN fault_catcher(int sig, siginfo_t *act, void *data)
 	fprintf(stderr,
 		"OOPS!!! Entering endless loop "
 		"so you can try to attach process to gdb (pid = %d)\n",
-#ifdef __NR_gettid
-		gettid()!=-1 || errno!= ENOSYS ? gettid() : getpid());
-#else
-		getpid());
-#endif
+		marcel_gettid());
 	for(;;) ;
 #endif
 

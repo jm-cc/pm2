@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
+Revision 1.9  2000/05/31 14:17:19  oaumage
+- Leonie
+
 Revision 1.8  2000/05/23 15:33:14  oaumage
 - extension de la partie analyse de la configuration
 
@@ -255,6 +258,184 @@ leo_start(p_leo_app_application_t  application,
 }
 
 /*
+ * List building
+ * -------------
+ */
+
+void
+leo_build_cluster_host_model_list(p_leo_cluster_definition_t cluster,
+				  p_leo_clu_cluster_file_t   cluster_file)
+{
+  tbx_list_reference_t ref;
+
+  LOG_IN();
+  tbx_list_reference_init(&ref, cluster_file->host_model_list);
+
+  do
+    {
+      p_leo_clu_host_model_t n_host_model = NULL;
+      p_leo_clu_host_model_t host_model   =
+	tbx_get_list_reference_object(&ref);
+
+      n_host_model = malloc(sizeof(leo_clu_host_model_t));
+      CTRL_ALLOC(n_host_model);
+
+      *n_host_model = *host_model;
+
+      tbx_slist_append_tail(cluster->host_model_list, n_host_model);
+    }
+  while(tbx_forward_list_reference(&ref));
+  LOG_OUT();
+}
+
+void
+leo_build_cluster_host_list(p_leo_cluster_definition_t cluster,
+			    p_leo_clu_cluster_file_t   cluster_file)
+{
+  tbx_list_reference_t ref;
+
+  LOG_IN();
+  tbx_list_reference_init(&ref, cluster_file->cluster->hosts);
+
+  do
+    {
+      p_leo_clu_host_name_t n_host_name = NULL;
+      p_leo_clu_host_name_t host_name   =
+	tbx_get_list_reference_object(&ref);
+
+      n_host_name = malloc(sizeof(leo_clu_host_name_t));
+      CTRL_ALLOC(n_host_name);
+
+      *n_host_name = *host_name;
+
+      tbx_slist_append_tail(cluster->host_list, n_host_name);
+    }
+  while(tbx_forward_list_reference(&ref));
+  LOG_OUT();
+}
+
+p_leo_cluster_definition_t
+leo_build_cluster_definition(p_leo_clu_cluster_file_t cluster_file)
+{
+  /* Local cluster */
+  p_leo_cluster_definition_t cluster = NULL;
+
+  LOG_IN();
+  cluster = malloc(sizeof(leo_cluster_definition_t));
+  CTRL_ALLOC(cluster);
+
+  cluster->id = malloc(strlen(cluster_file->cluster->id) + 1);
+  CTRL_ALLOC(cluster->id);
+  strpcy(cluster->id, cluster_file->cluster->id);
+
+  cluster->host_model_list = malloc(sizeof(tbx_slist_t));
+  CTRL_ALLOC(cluster->host_model_list);
+  tbx_slist_init(cluster->host_model_list);
+      
+  cluster->host_list = malloc(sizeof(tbx_slist_t));
+  CTRL_ALLOC(cluster->host_list);
+  tbx_slist_init(cluster->host_list);
+      
+  leo_build_cluster_host_model_list(cluster, cluster_file);
+  leo_build_cluster_host_list(cluster, cluster_file);
+
+  LOG_OUT();
+  return cluster;
+}
+
+
+/*---*/
+
+void
+leo_build_host_list(p_leo_app_cluster_t app_cluster,
+		    p_tbx_slist_t       host_list)
+{
+  tbx_list_reference_t h_ref;
+
+  LOG_IN();
+  tbx_list_reference_init(&h_ref, app_cluster->hosts);
+
+  do
+    {
+      char *host      = tbx_get_list_reference_object(&h_ref);
+      char *host_name = NULL;
+
+      host_name = malloc(strlen(host) + 1);
+      CTRL_ALLOC(host_name);
+      strcpy(host_name, host);
+
+      tbx_slist_append_tail(cluster->host_list, cluster);
+    }
+  while(tbx_forward_list_reference(&h_ref));
+  LOG_OUT();
+}
+
+void
+leo_build_channel_list(p_leo_app_cluster_t app_cluster,
+		       p_tbx_slist_t       channel_list)
+{
+  tbx_list_reference_t c_ref;
+
+  LOG_IN();
+  tbx_list_reference_init(&c_ref, app_cluster->channels);
+
+  do
+    {
+      p_leo_app_channel_t  channel   =
+	tbx_get_list_reference_object(&h_ref);
+      char                *n_channel = NULL;
+
+      n_channel = malloc(sizeof(leo_app_channel_t));
+      CTRL_ALLOC(n_channel);
+      *n_channel = *channel;
+
+      tbx_slist_append_tail(cluster->channel_list, n_channel);
+    }
+  while(tbx_forward_list_reference(&c_ref));
+  LOG_OUT();
+}
+
+void
+leo_build_application_cluster_list(p_leo_app_application_t  application,
+				   p_tbx_slist_t application_cluster_list)
+{
+  tbx_list_reference_t ref;
+
+  LOG_IN();
+  tbx_list_reference_init(&ref, application->cluster_list);
+
+  do
+    {
+      p_leo_app_cluster_t         app_cluster =
+	tbx_get_list_reference_object(&ref);
+      p_leo_application_cluster_t cluster     = NULL;
+
+      cluster = malloc(sizeof(cluster));
+      CTRL_ALLOC(cluster);
+
+      cluster->id = malloc(strlen(app_cluster->id) + 1);
+      CTRL_ALLOC(cluster->id);
+      strcpy(cluster->id, app_cluster->id);
+
+      cluster->host_list = malloc(sizeof(tbx_slist_t));
+      CTRL_ALLOC(cluster->host_list);
+      tbx_slist_init(cluster->host_list);
+
+      cluster->channel_list = malloc(sizeof(tbx_slist_t));
+      CTRL_ALLOC(cluster->channel_list);
+      tbx_slist_init(cluster->channel_list);
+	
+      leo_build_host_list(app_cluster, cluster->host_list);
+      leo_build_channel_list(app_cluster, cluster->channel_list);
+      
+      tbx_slist_append_tail(application_cluster_list, cluster);
+    }
+  while (tbx_forward_list_reference(&ref));
+  LOG_OUT();
+}
+
+
+/*
  * Initialization
  * --------------
  */
@@ -264,18 +445,30 @@ main (int argc, char *argv[])
   p_leo_app_application_t  application       = NULL;
   p_leo_clu_cluster_file_t local_cluster_def = NULL;
   char                    *filename          = NULL;
+  p_tbx_slist_t            application_cluster_list = NULL;
+  p_tbx_slist_t            cluster_definition_list  = NULL;
 
   LOG_IN();
   tbx_init();
   ntbx_init();
   main_leonie = leo_init();
   leo_parser_init();
- 
+
+  application_cluster_list = malloc(sizeof(tbx_slist_t));
+  CTRL_ALLOC(application_cluster_list);
+  tbx_slist_init(application_cluster_list);
+
+  cluster_definition_cluster_list = malloc(sizeof(tbx_slist_t));
+  CTRL_ALLOC(cluster_definition_list);
+  tbx_slist_init(cluster_definition_list);
+
   if (argc < 2)
     FAILURE("no application description file specified");
 
   application = leo_parse_application_file(argv[1]);
   DISP("Starting application %s", application->id);
+  
+  leo_build_application_cluster_list(application, application_cluster_list);
 
   main_leonie->net_server = leo_net_server_init();
 
@@ -287,6 +480,27 @@ main (int argc, char *argv[])
   strcpy(filename, getenv("HOME"));
   strcat(filename, "/.pm2/leo_cluster");
   local_cluster_def = leo_parse_cluster_file(NULL, filename);
+  
+  {
+    /* Cluster list construction */
+
+    /* Local Cluster */
+    tbx_slist_append_tail(cluster_definition_list,
+			  leo_build_cluster_definition(local_cluster_def));
+    
+    /* Remote Clusters */
+    {
+      tbx_slist_t temp_list;
+
+      tbx_slist_init(&temp_list);
+
+      tbx_slist_dup(&temp_list, application_cluster_list);
+#error modification stopped here
+    }
+    
+  }
+  
+
 
   /*
    * Cluster initialization

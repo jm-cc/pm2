@@ -136,13 +136,15 @@ libclean:
 		$(LIB_STAMP_FILE) \
 		$(LIBRARY)-config.mak
 
-
+ifneq ($(strip $(LIB_REP_TO_BUILD)),)
 repclean:
+	@echo "cleaning directories :-$(LIB_REP_TO_BUILD)-"
 	@for rep in $(LIB_REP_TO_BUILD); do \
 		if rmdir $$rep 2> /dev/null; then \
 			echo "empty repertory $$rep removed" ; \
 		fi ; \
 	done
+endif
 
 examplesclean:
 	@set -e; \

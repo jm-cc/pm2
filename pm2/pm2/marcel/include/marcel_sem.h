@@ -38,4 +38,10 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
 _PRIVATE_ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2);
 _PRIVATE_ void marcel_sem_unlock_all(marcel_sem_t *s);
 
+static __inline__ int marcel_sem_destroy(marcel_sem_t* s) __attribute__ ((unused));
+static __inline__ int marcel_sem_destroy(marcel_sem_t* s)
+{
+  return 0;
+}
+
 #endif

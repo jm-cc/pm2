@@ -89,13 +89,13 @@ void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
 static __inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask) __attribute__ ((unused));
 static __inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
 {
-  *mask = 0;
+  *mask = MARCEL_VPMASK_EMPTY;
 }
 
 static __inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask) __attribute__ ((unused));
 static __inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
 {
-  *mask = -1;
+  *mask = MARCEL_VPMASK_FULL;
 }
 
 static __inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,

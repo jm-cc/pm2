@@ -696,24 +696,22 @@ static void update_wall_time(unsigned long ticks)
 	    second_overflow();
 	}
 }
+#endif /* 0 */
 
-static inline void do_process_times(struct task_struct *p,
+static inline void do_process_times(struct marcel_task *p,
 	unsigned long user, unsigned long system)
 {
-	unsigned long psecs;
-
-	psecs = (p->utime += user);
-	psecs += (p->stime += system);
-	if (psecs / HZ > p->rlim[RLIMIT_CPU].rlim_cur) {
-		/* Send SIGXCPU every second.. */
-		if (!(psecs % HZ))
-			send_sig(SIGXCPU, p, 1);
-		/* and SIGKILL when we go over max.. */
-		if (psecs / HZ > p->rlim[RLIMIT_CPU].rlim_max)
-			send_sig(SIGKILL, p, 1);
-	}
+	/*
+	p->utime += user;
+	p->stime += system;
+	*/
+	if (user)
+		ma_atomic_inc(&p->top_utime);
+	else
+		ma_atomic_inc(&p->top_stime);
 }
 
+#if 0
 static inline void do_it_virt(struct task_struct * p, unsigned long ticks)
 {
 	unsigned long it_virt = p->it_virt_value;
@@ -740,15 +738,15 @@ static inline void do_it_prof(struct task_struct *p)
 		p->it_prof_value = it_prof;
 	}
 }
+#endif /* 0 */
 
-void update_one_process(struct task_struct *p, unsigned long user,
-			unsigned long system, int cpu)
+void update_one_process(struct marcel_task *p, unsigned long user,
+			unsigned long system, ma_lwp_t lwp)
 {
 	do_process_times(p, user, system);
-	do_it_virt(p, user);
-	do_it_prof(p);
+	//do_it_virt(p, user);
+	//do_it_prof(p);
 }	
-#endif /* 0 */
 
 /*
  * Called from the timer interrupt handler to charge one tick to the current 
@@ -756,11 +754,11 @@ void update_one_process(struct task_struct *p, unsigned long user,
  */
 void ma_update_process_times(int user_tick)
 {
-	//struct task_struct *p = current;
-	//int cpu = smp_processor_id();
+	struct marcel_task *p = MARCEL_SELF;
+	ma_lwp_t lwp = LWP_SELF;
 	int system = user_tick ^ 1;
 
-	//update_one_process(p, user_tick, system, cpu);
+	update_one_process(p, user_tick, system, lwp);
 	ma_run_local_timers();
 	ma_scheduler_tick(user_tick, system);
 }

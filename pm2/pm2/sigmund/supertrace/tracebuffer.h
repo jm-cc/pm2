@@ -49,6 +49,4 @@ int get_next_trace(trace *tr);
 
 void close_trace_buffer(void);
 
-extern short int smp;
-
 #endif

@@ -33,7 +33,7 @@ struct cache_head {
 	struct cache_head *prev;
 	unsigned nb_max_cached;
 	unsigned nb_cached;
-	void* stacks[];
+	void* stacks[1]; /* en fait plus, mais stacks[] accepte uniquement dans C99 (donc pas gcc-2.95) */
 };
 
 static struct cache_head *stack_cache_mapped = NULL;

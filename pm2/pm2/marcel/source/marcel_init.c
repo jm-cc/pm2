@@ -108,8 +108,8 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
   if(do_not_strip) {	
 #ifdef MA__LWPS
     marcel_lwp_fix_nb_vps(__nb_lwp);
-#endif
     mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
+#endif
   }
 }
 

@@ -31,6 +31,13 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: mad_adapter.h,v $
+Revision 1.2  1999/12/15 17:31:18  oaumage
+Ajout de la commande de logging de CVS
+
+______________________________________________________________________________
 */
 
 /*

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.8  2000/07/07 14:49:42  oaumage
+- Ajout d'un support pour les tables de hachage
+
 Revision 1.7  2000/05/31 14:24:38  oaumage
 - Ajout au niveau des slists
 
@@ -282,5 +285,42 @@ tbx_slist_sort(p_tbx_slist_t          slist,
 void
 tbx_slist_dup(p_tbx_slist_t dest,
 	      p_tbx_slist_t source);
+
+
+/*
+ * Hash table management
+ * ---------------------
+ */
+void
+tbx_htable_manager_init();
+
+void
+tbx_htable_init(p_tbx_htable_t            htable,
+		tbx_htable_bucket_count_t buckets);
+
+tbx_bool_t
+tbx_htable_empty(p_tbx_htable_t htable);
+
+tbx_htable_element_count_t
+tbx_htable_get_size(p_tbx_htable_t htable);
+
+void
+tbx_htable_add(p_tbx_htable_t    htable,
+	       tbx_htable_key_t  key,
+	       void             *object);
+
+void *
+tbx_htable_get(p_tbx_htable_t   htable,
+	       tbx_htable_key_t key);
+
+void *
+tbx_htable_extract(p_tbx_htable_t   htable,
+		   tbx_htable_key_t key);
+
+void
+tbx_htable_free(p_tbx_htable_t htable);
+
+void
+tbx_htable_manager_exit();
 
 #endif /* __TBX_INTERFACE_H */

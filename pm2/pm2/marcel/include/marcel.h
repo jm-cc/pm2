@@ -17,6 +17,20 @@
 #ifndef MARCEL_EST_DEF
 #define MARCEL_EST_DEF
 
+#define _GNU_SOURCE 1
+#include "sys/marcel_flags.h"
+#include <features.h>
+
+#ifdef MARCEL_COMPILE_INLINE_FUNCTIONS
+#  define MARCEL_INLINE
+#else
+#  define MARCEL_INLINE inline
+#endif
+
+#include "marcel_pthread.h"
+#define __attribute_deprecated__ __attribute__((deprecated))
+#include "marcel_pmarcel.h"
+#include "marcel_alias.h"
 
 #define _PRIVATE_
 
@@ -32,12 +46,17 @@
 
 #include "tbx_debug.h"
 
-#ifndef FALSE
-	typedef enum { FALSE, TRUE } boolean;
+#if 0
+typedef enum { FALSE, TRUE } boolean;
 #else
-	typedef int boolean;
+enum { FALSE, TRUE };
+
+typedef int boolean;
 #endif
 
+#ifdef MA__POSIX_FUNCTIONS_NAMES
+#  include "pthread_libc-symbols.h"
+#endif
 
 /* ========== customization =========== */
 
@@ -69,16 +88,12 @@ typedef any_t (*marcel_func_t)(any_t);
 typedef void (*cleanup_func_t)(any_t);
 typedef void (*handler_func_t)(any_t);
 
-_PRIVATE_ struct task_desc_struct;
-_PRIVATE_ typedef struct task_desc_struct *marcel_t;
-
 #ifdef MA__ACTIVATION
 #include <asm/act.h>
 #undef MAX_LWP
-#define MAX_LWP ACT_NB_MAX_CPUS
+#define MAX_LWP ACT_NB_MAX_CPU
 #endif
 
-#include "sys/marcel_flags.h"
 #include "sys/marcel_archdep.h"
 #include "sys/marcel_sig.h"
 #include "sys/marcel_archsetjmp.h"
@@ -87,6 +102,8 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "marcel_lock.h"
 #include "marcel_sem.h"
 #include "marcel_mutex.h"
+#include "marcel_cond.h"
+#include "marcel_rwlock.h"
 #include "marcel_io.h"
 #include "sys/marcel_privatedefs.h"
 #include "marcel_sched.h"
@@ -121,18 +138,17 @@ void marcel_strip_cmdline(int *argc, char *argv[]);
 
 /* ============ threads ============ */
 
-int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t arg);
+int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, marcel_func_t func, any_t arg);
 
-int marcel_join(marcel_t pid, any_t *status);
+DEC_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status));
 
-int marcel_exit(any_t val);
+DEC_MARCEL_POSIX(void, exit, (any_t val));
 
-int marcel_detach(marcel_t pid);
+DEC_MARCEL_POSIX(int, detach, (marcel_t pid));
 
-int marcel_cancel(marcel_t pid);
+DEC_MARCEL_POSIX(int, cancel, (marcel_t pid));
 
-static __inline__ int marcel_equal(marcel_t pid1, marcel_t pid2) __attribute__ ((unused));
-static __inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
+extern MARCEL_INLINE int marcel_equal(marcel_t pid1, marcel_t pid2)
 {
   return (pid1 == pid2);
 }
@@ -150,34 +166,43 @@ void marcel_run(marcel_t pid, any_t arg);
 
 /* ====== specific data ====== */
 
-typedef int marcel_key_t;
+/*typedef int marcel_key_t;*/
 
-int marcel_key_create(marcel_key_t *key, marcel_key_destructor_t any_t);
-int marcel_key_delete(marcel_key_t key);
+DEC_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
+				   marcel_key_destructor_t any_t));
+DEC_MARCEL_POSIX(int, key_delete, (marcel_key_t key));
 
 _PRIVATE_ extern volatile unsigned _nb_keys;
-static __inline__ int marcel_setspecific(marcel_key_t key, any_t value) __attribute__ ((unused));
-static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
-{
 #ifdef MA__DEBUG
+DECINLINE_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
+					  __const void* value),
+{
    if((key < 0) || (key >= marcel_nb_keys))
       RAISE(CONSTRAINT_ERROR);
-#endif
-   marcel_self()->key[key] = value;
+   marcel_self()->key[key] = (any_t)value;
    return 0;
-}
+})
+DECINLINE_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key),
+{
+   if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
+      RAISE(CONSTRAINT_ERROR);
+   return marcel_self()->key[key];
+})
+#else
+DECINLINE_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
+					  __const void* value),
+{
+   marcel_self()->key[key] = (any_t)value;
+   return 0;
+})
+DECINLINE_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key),
+{
+   return marcel_self()->key[key];
+})
+#endif
 
 extern int marcel_key_present[MAX_KEY_SPECIFIC];
 
-static __inline__ any_t marcel_getspecific(marcel_key_t key) __attribute__ ((unused));
-static __inline__ any_t marcel_getspecific(marcel_key_t key)
-{
-#ifdef MA__DEBUG
-   if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
-      RAISE(CONSTRAINT_ERROR);
-#endif
-   return marcel_self()->key[key];
-}
 
 static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
@@ -191,15 +216,18 @@ static __inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t 
 
 /* ========== once objects ============ */
 
-#define marcel_once_init { 0, { 1, NULL, NULL } }
-
-int marcel_once(marcel_once_t *once, void (*f)(void));
-
+#define marcel_once_init { 0 }
 
 /* ========== callbacks ============ */
 
-int marcel_cleanup_push(cleanup_func_t func, any_t arg);
-int marcel_cleanup_pop(boolean execute);
+#undef NAME_PREFIX
+#define NAME_PREFIX _
+DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
+				     cleanup_func_t func, any_t arg))
+DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
+				    boolean execute))
+#undef NAME_PREFIX
+#define NAME_PREFIX
 
 
 /* ===== suspending & resuming ===== */

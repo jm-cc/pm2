@@ -1,6 +1,4 @@
 
-
-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 # 
@@ -14,7 +12,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    ifdef FLAVOR_DEFAULT
+      export FLAVOR:=$(FLAVOR_DEFAULT)
+    else # FLAVOR_DEFAULT
+      export FLAVOR:=default
+    endif # FLAVOR_DEFAULT
+  endif # PM2_FLAVOR
+endif # FLAVOR
 
 # Regular Makefile
 
@@ -55,68 +63,74 @@ include $(ROOT)/make/common-rules.mak
 #---------------------------------------------------------------------
 #       Note: s'agit-il de tous les exemples ou de ceux de PM2 ?
 all: pm2 examples
-.PHONY: pm2 examples all libs preproc fut dot_h
+.PHONY: pm2 all
 
 # pm2: construction des librairies
 #---------------------------------------------------------------------
 pm2: link
 
+# Macros pour règles récursives
+#---------------------------------------------------------------------
+# appelé avec $(eval $(call RECURSIVE_template, 'cible', 'subdirs...', 
+#	               'dependances', "text"))
+# défini les cibles :
+# 'cible'
+# 'cible'-'subdir' pour chaque élément 'subdir' de 'subdirs...'
+# 'cible'-print
+# Tous dépendent de 'dependances'
+# 'cible'-print affiche "text"
+# 'cible'-'subdir' invoque make avec comme cible 'cible' dans modules/'subdir'
+
+define RECURSIVE_template
+ .PHONY: $(1) $(1)-print $(addprefix $(1)-,$(2))
+ $(1): $(1)-print $(addprefix $(1)-,$(2))
+ $(1)-print: $(3) $(if $(4),;$$(COMMON_HIDE) echo $(4))
+ $(addprefix $(1)-,$(2)): $(3) $(1)-print
+	$(COMMON_HIDE) $(MAKE) -C modules/$$(patsubst $(1)-%,%,$$@) $(1)
+endef
+
+# Comme le précédent, make 'subdirs...' est automatiquement $(LIBS)
+define RECURSIVE_LIBS_template
+ $(eval $(call RECURSIVE_template, $(1), $(LIBS), $(2), $(3)))
+endef
+
 # libs: descente recursive dans chaque module pour construction des
 #       fichiers objets et bibliothèques
 #---------------------------------------------------------------------
-libs: fut
-	$(COMMON_HIDE) echo ">>> Creating object files and libs"
-	$(COMMON_HIDE) set -e; \
-	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i $@; \
-	done
+$(eval $(call RECURSIVE_LIBS_template, libs, fut, \
+	">>> Creating object files and libs"))
 
-# libs: descente recursive dans chaque module pour édition de liens
+# link: descente recursive dans chaque module pour édition de liens
 #---------------------------------------------------------------------
-link: libs
-	$(COMMON_HIDE) echo ">>> Linking dynamic libs and programs"
-	$(COMMON_HIDE) set -e; \
-	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i $@; \
-	done
+$(eval $(call RECURSIVE_LIBS_template, link, libs, \
+	">>> Linking dynamic libs and programs"))
 
 # examples: descente recursive dans chaque module pour construction
 #           des exemples 
 #---------------------------------------------------------------------
-examples: flavors
-	$(COMMON_HIDE) set -e; \
-	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i $@ ; \
-	done
+$(eval $(call RECURSIVE_LIBS_template, examples, flavors, \
+	">>> Building examples"))
 
 # preproc: descente recursive dans chaque module pour preprocessing
 #---------------------------------------------------------------------
-preproc: flavors
-	$(COMMON_HIDE) set -e; \
-	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i $@ ; \
-	done
+$(eval $(call RECURSIVE_LIBS_template, preproc, flavors, \
+	">>> Creating preproc files"))
 
 # fut: descente recursive dans chaque module pour action `fut'
 #---------------------------------------------------------------------
-fut: dot_h
-	$(COMMON_HIDE) echo ">>> Making fut files"
-	$(COMMON_HIDE) set -e; EMPTY=""; \
-	for i in $(PROF_LIBS) $$EMPTY; do \
-		$(MAKE) -C modules/$$i $@ ; \
-	done ; \
-	if [ $(APP_PROFILE) = yes ] ; then \
+$(eval $(call RECURSIVE_template, fut, $(PROF_LIBS), dot_h, \
+	">>> Making fut files"))
+fut: fut-app
+.PHONY: fut-app
+fut-app: dot_h fut-print
+	$(COMMON_HIDE) if [ $(APP_PROFILE) = yes ] ; then \
 		$(MAKE) -C $(APP_DIR) APP_RECURSIF=true TARGET=$(APP_TARGET) fut ; \
 	fi
 
 # dot_h: descente recursive dans chaque module pour génération des `headers'
 #-------------------------------------------------------------------------
-dot_h: flavors
-	$(COMMON_HIDE) echo ">>> Generating specific header files"
-	$(COMMON_HIDE) set -e; EMPTY=""; \
-	for i in $(DOT_H_GEN_LIBS) $$EMPTY; do \
-		$(MAKE) -C modules/$$i $@ ; \
-	done
+$(eval $(call RECURSIVE_template, dot_h, $(DOT_H_GEN_LIBS), flavors, \
+	">>> Generating specific header files"))
 
 # Nettoyage
 #---------------------------------------------------------------------
@@ -251,20 +265,6 @@ checkflavor: flavors
 		$(ROOT)/bin/pm2-flavor check --flavor=$$f ; \
 	done
 
-else #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
-
-ifndef FLAVOR
-  ifdef PM2_FLAVOR
-    export FLAVOR:=$(PM2_FLAVOR)
-  else # PM2_FLAVOR
-    ifdef FLAVOR_DEFAULT
-      export FLAVOR:=$(FLAVOR_DEFAULT)
-    else # FLAVOR_DEFAULT
-      export FLAVOR:=default
-    endif # FLAVOR_DEFAULT
-  endif # PM2_FLAVOR
-endif # FLAVOR
-
 .PHONY: sos
 sos:
 	@set -e ; \
@@ -291,8 +291,6 @@ sos:
 	echo "********* Checking correctness for current flavor *********" ; \
 	./bin/pm2-flavor check --flavor=$(FLAVOR) ; \
 	echo "Humm... Well, all should be ok now!"
-
-endif #ifeq (,$(findstring _$(MAKECMDGOALS)_,_sos_))
 
 # Fin du Makefile
 ######################################################################

@@ -53,9 +53,11 @@
 
 #define marcel_main                main
 
+#define marcel_self()              pthread_self()
+
 #else
 
-#ifndef __ACT__
+#ifndef MARCEL_ACT
 /* #define NON_BLOCKING_IO */
 #endif
 
@@ -70,7 +72,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define ITERATIONS    50
+#define ITERATIONS    1000
 
 typedef struct {
   int tub [2] ;
@@ -104,9 +106,13 @@ int send_message (tube *t, char *message, int len)
       break;
   }
 #else
-  //printf("Before write %p\n", marcel_self());
+#ifdef SHOW
+  printf("Before write %p\n", marcel_self());
+#endif
   n = write (t->tub[1], message, len) ;
-  //printf("After write %p\n", marcel_self());
+#ifdef SHOW
+  printf("After write %p\n", marcel_self());
+#endif
 #endif
 
   marcel_mutex_unlock(&t->mutex) ;
@@ -127,10 +133,14 @@ int receive_message (tube *t, char *message, int len)
       break;
   }
 #else
-  //printf("Before read %p\n", marcel_self());
-  marcel_yield();
+#ifdef SHOW
+  printf("Before read %p\n", marcel_self());
+#endif
+  //marcel_yield();
   n = read (t->tub[0], message, len) ;
-  //printf("After read %p\n", marcel_self());
+#ifdef SHOW
+  printf("After read %p\n", marcel_self());
+#endif
 #endif
     
   return n ;
@@ -157,8 +167,12 @@ void * consommateur (void * arg)
   Tick t1, t2;
   unsigned long temps;
 
+  for (i=0; i < 3 ; i++) {
+    receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
+    send_message (&tube_2, (char *)&i, sizeof(int)) ;
+  }
   GET_TICK(t1);
-  for (i=0; i < ITERATIONS ; i++) {
+  for (i=3; i < ITERATIONS ; i++) {
     receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
     send_message (&tube_2, (char *)&i, sizeof(int)) ;
   }

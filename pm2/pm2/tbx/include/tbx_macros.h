@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.19  2001/01/15 15:42:20  oaumage
+- correction d'un bug sur la gestion des flags
+
 Revision 1.18  2000/12/19 16:57:51  oaumage
 - finalisation de leoparse
 - exemples pour leoparse
@@ -251,29 +254,10 @@ ______________________________________________________________________________
  * Flags control macros  ____________________________________________
  * _____________________/////////////////////////////////////////////
  */
-#ifdef __GNUC__
-#define tbx_set(f) \
-        ({typedef _tf = (f); \
-          _tf *_pf = &(f); \
-          *_pf = tbx_flag_set;})
-#define tbx_clear(f) \
-        ({typedef _tf = (f); \
-          _tf *_pf = &(f); \
-          *_pf = tbx_flag_clear;})
-#define tbx_toggle(f) \
-        ({typedef _tf = (f); \
-          _tf *_pf = &(f); \
-          *_pf = 1 - *_pf;})
-#define tbx_test(f) \
-        ({typedef _tf = (f); \
-          _tf *_pf = &(f); \
-          !!*_pf;})
-#else // __GNUC__ 
 #define tbx_set(f)    ((f) = tbx_flag_set)
 #define tbx_clear(f)  ((f) = tbx_flag_clear)
 #define tbx_toggle(f) ((f) = 1 - (f))
 #define tbx_test(f)   (f)
-#endif // __GNUC__
 
 /*
  * Threads specific macros  _________________________________________

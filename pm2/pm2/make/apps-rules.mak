@@ -70,7 +70,10 @@ $(DEPENDS): $(APP_DEP)/%$(APP_EXT).d: $(SRC_DIR)/%.c
 $(APP_BIN)/%: $(APP_OBJ)/%.o
 	$(COMMON_PREFIX) $(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-%: $(APP_BIN)/% ;
+%: $(APP_BIN)/% loader ;
+
+loader:
+	$(COMMON_HIDE) cp -f $(APP_LOADER) $(APP_BIN)/pm2load
 
 else 
 
@@ -79,15 +82,18 @@ MAKE_LIBS = set -e ; for module in $(PM2_MODULES); do \
 	    done
 
 examples:
-.PHONY: examples $(APPS)
+.PHONY: examples $(APPS) loader
 
 include $(PM2_ROOT)/make/common-rules.mak
 
 all: examples
 
-examples:
+examples: 
 	$(COMMON_HIDE) $(MAKE_LIBS)
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
+
+loader:
+	$(COMMON_HIDE) cp -f $(APP_LOADER) $(APP_BIN)/load
 
 .PHONY: clean appclean repclean libclean
 clean: appclean repclean

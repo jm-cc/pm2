@@ -24,6 +24,7 @@ SETTINGS='### SETTINGS:'
 
 PM2_MODULE="${PM2_ROOT}/bin/pm2-module"
 PM2_CONFIGPROG="${PM2_ROOT}/bin/pm2-config"
+PM2_FLAVOR_PROG="${PM2_ROOT}/bin/${PROGNAME}"
 
 MODULES=`"${PM2_ROOT}/bin/pm2-module" modules --with-common`
 
@@ -727,8 +728,9 @@ do_regenerate() {
     else
 	flag="--admin"
     fi
-    for f in ${flavor:-`"$PROGNAME" ${flag} list`} ; do
-	"$PROGNAME" ${flag} set `"$PROGNAME" ${flag} get --flavor=$f`
+    for f in ${flavor:-`"$PM2_FLAVOR_PROG" ${flag} list`} ; do
+	"$PM2_FLAVOR_PROG" ${flag} set \
+		`"$PM2_FLAVOR_PROG" ${flag} get --flavor=$f`
     done
 
     exit 0

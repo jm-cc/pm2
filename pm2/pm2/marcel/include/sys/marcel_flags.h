@@ -17,7 +17,7 @@
 #ifndef MARCEL_FLAGS_EST_DEF
 #define MARCEL_FLAGS_EST_DEF
 
-#ifdef MARCEL_DEBUG
+#ifdef PM2DEBUG
 #define MA__DEBUG
 #endif
 

@@ -37,18 +37,28 @@
 
 static unsigned SAMPLE;
 
-static void SAMPLE_service(void)
+#define __ALIGNED__       __attribute__ ((aligned (sizeof(int))))
+
+#define STRING_SIZE  16
+
+static char msg[STRING_SIZE] __ALIGNED__;
+
+void sample_thread(void *arg)
 {
-  char msg[1024];
   pm2_completion_t c;
 
-  pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, msg);
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, STRING_SIZE);
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
   pm2_rawrpc_waitdata();
 
   pm2_printf("%s\n", msg);
 
   pm2_completion_signal(&c);
+}
+
+static void SAMPLE_service(void)
+{
+  pm2_thread_create(sample_thread, NULL);
 }
 
 int pm2_main(int argc, char **argv)
@@ -67,10 +77,12 @@ int pm2_main(int argc, char **argv)
   if(pm2_self() == 0) {
     pm2_completion_t c;
 
+    strcpy(msg, "Hello world!");
+
     pm2_completion_init(&c, NULL, NULL);
 
     pm2_rawrpc_begin(1, SAMPLE, NULL);
-    pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, "Hello world!");
+    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, STRING_SIZE);
     pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, &c);
     pm2_rawrpc_end();
 

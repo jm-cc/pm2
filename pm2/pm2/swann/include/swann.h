@@ -19,8 +19,8 @@
  * --------
  */
 
-#ifndef __SWANN_H
-#define __SWANN_H
+#ifndef SWANN_H
+#define SWANN_H
 
 /*
  * Checks
@@ -40,4 +40,4 @@
 #include "swann_run.h"
 #include "swann_interface.h"
 
-#endif /* __SWANN_H */
+#endif /* SWANN_H */

@@ -1,50 +1,99 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[a4paper,11pt]{report}
 
 % packages
 \usepackage{moreverb}
-\usepackage{fullpage}
+% \usepackage{fullpage}
 \usepackage{boxedminipage}
 \usepackage[dvips]{graphics}
 \usepackage{url}
 \usepackage{psboxit}
 \usepackage{xspace}
+\usepackage{oldgerm}
+\usepackage{shadow}
+% \usepackage{color}
 
 % settings
 \let\bfseriesaux=\bfseries \def\bfseries{\sffamily\bfseriesaux}
-
+% \definecolor{jaune}{rgb}{1,1,.85}
+% \definecolor{bleu}{rgb}{0, 0, .4}
+% \definecolor{bleu2}{rgb}{0, 0, .6}
+% \definecolor{pourpre}{rgb}{0.4, 0, 0.4}
+% \definecolor{orange1}{rgb}{1, .5, 0}
+% \definecolor{orange2}{rgb}{1, .7, 0}
+% \pagecolor{jaune}
+% \color{bleu2}
 
 % macros
 \def\pm2{PM$^2$\xspace}
 \def\mad{\emph{Madeleine}\xspace}
 \def\madii{\emph{Madeleine~II}\xspace}
 \def\mar{\emph{Marcel}\xspace}
-
+\newcommand{\txty}{\fontfamily{yinit}\fontencoding{U}\fontseries{m}%
+\fontshape{n}\selectfont}
+\newcommand{\txtcmdh}{\fontfamily{cmdh}\fontencoding{T1}\fontseries{m}%
+\fontshape{n}\selectfont}
+\newcommand{\txtcmfr}{\fontfamily{cmfr}\fontencoding{T1}\fontseries{m}%
+\fontshape{n}\selectfont}
+% \def\aut{\txtcmfr}
+\def\aut{\frakfamily}
+\def\mp{\scriptsize\raggedright}
+\def\endchap{\vspace{2cm}\begin{center}\rule{6cm}{1mm}\end{center}}
 
 % first page
-\title{Getting Started with \pm2}
-\author{Gabriel Antoniu \and%
-        Olivier Aumage \and%
-        Luc Boug\'e \and%
-        Jean-Fran\c{c}ois M\'ehaut \and%
-        Raymond Namyst}
-
+%\title{\color{pourpre}{\fontfamily{yinit}\fontencoding{U}\fontseries{m}%
+%\fontshape{n}\selectfont G}\gothfamily\Huge etting Started with PM2}
+%\author{\color{bleu} Gabriel Antoniu \and%
+%        \color{bleu} Olivier Aumage \and%
+%        \color{bleu} Luc Boug\'e \and%
+%        \color{bleu} Jean-Fran\c{c}ois M\'ehaut \and%
+%        \color{bleu} Raymond Namyst}
+\title{{\txty G}\gothfamily\Huge etting Started with PM2}
+\author{\aut {\txty G}abriel Antoniu \and%
+        \aut  {\txty O}livier Aumage \and%
+        \aut {\txty L}uc Boug\'e \and%
+        \aut {\txty J}ean-Fran\c{c}ois M\'ehaut \and%
+        \aut {\txty R}aymond Namyst}
+\date{\swabfamily\small{\txty F}eb. 2000}
 
 %%%%%%%%%%%%%%%%
 \begin{document}
 \maketitle
-
+{\txtcmfr
+\tableofcontents
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introducing \pm2}
 
 % Introduction
 %______________
-\section{Introduction : What is PM2?}
+\section{Introduction : What is \pm2?}
+The PM2 environment is a joint project between the \textsc{LIP}
+(\emph{École Normale Supérieure de Lyon}, France) and the \textsc{LIFL}
+(\emph{Université des Sciences et Technologies de Lille}, France). 
 
 %===========
 \subsection{Multithreaded Programming Environment}
-        API (C language) + set of libraries
+\marginpar{\mp API (C language) + set of libraries}
+\pm2 (Parallel Multithreaded Machine) is a distributed multithreaded
+environment designed to efficiently support irregular parallel
+applications on distributed architectures. \pm2 can manage several
+hundreds of threads on each available physical processor. The \pm2
+interface provides functionalities for the management of this high
+degree of parallelism and for dynamic load balancing. Distinguishing
+features of \pm2 include its priority driven scheduling policy, its
+thread migration mechanisms and its ability to ease the development
+of various load balancing policies.
 
 %===========
-\subsection{Programing model}
-
+\subsection{Programming model}
+The \pm2 distributed multithreaded programming environment easily
+helps the developer to express the parallelism out of his/her programs
+by the mean of the \emph{remote procedure call} paradigm (RPC). Each
+node of a cluster running \pm2 can be considered as being both a
+client and a service provider. While remote requests can be serviced
+on the fly by the server thread of each process, additionnal threads
+may be spawned on demand to handle more computation intensive remote
+client service requests.
 
 % Installation
 %_____________________________________________________________________________
@@ -52,109 +101,167 @@
 
 %===========
 \subsection{Currently Supported Platforms}
-
-\subsubsection{OS/Processors}
-\pm2 has been currently tested on the following platforms:
+\pm2 is a highly portable and efficient environment and the current
+software is yet available on a wide range of architectures. The
+implementation is built on top of two separate software components:
+\mar and \madii. 
+\paragraph{Multithreading}
+\mar is a POSIX-compliant thread package that
+provides extra-features such as thread migration that are needed by
+the \pm2 runtime. \mar is currently available on \textsc{Pentium},
+\textsc{MIPS}, \textsc{ALPHA}, \textsc{Sparc} and \textsc{PowerPC}
+processors. The Table~\ref{tbl:platforms} sums up the currently
+supported platforms. 
+\paragraph{Communications}
+\madii is a generic communication interface which is able to fully
+exploit the low latency and the high bandwidth of high-speed networks
+such as Myrinet or SCI. This \pm2 network subsystem currently supports
+the protocols TCP, MPI (LAM-MPI, MPI-BIP), VIA, SISCI and SBP.
+\begin{table}
+\caption{Supported Platform\label{tbl:platforms}}
+\begin{center}
+\begin{tabular}[h]{|l|l|}                                        \hline
+Operating System & Architecture                               \\ \hline
+\textsc{Linux}   & \textsc{x86}, \textsc{PPC}, \textsc{Alpha} \\
+\textsc{Solaris} & \textsc{Sparc}, \textsc{x86}               \\
+\textsc{FreeBSD} & \textsc{x86}                               \\
+\textsc{Aix}     & \textsc{RS6000}                            \\
+\textsc{Irix}    & \textsc{MIPS}                              \\
+\textsc{OSF}     & \textsc{Alpha}                             \\
+\textsc{Unicos}  & \textsc{Alpha}                             \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+\paragraph{Required development tools}
+As previously mentionned, \pm2 as been designed to be easily portable
+and only relies on the availability of the two following development tools:
 \begin{itemize}
-\footnotesize
-\item \textsc{Linux}: \textsc{x86}, \textsc{PPC}, \textsc{Alpha}
-\item \textsc{Solaris}: \textsc{Sparc}, \textsc{x86}
-\item \textsc{FreeBSD}: \textsc{x86}
-\item \textsc{Aix}: \textsc{RS6000}
-\item \textsc{Irix}: \textsc{Mips}
-\item \textsc{OSF}: \textsc{Alpha}
-\item \textsc{Unicos}: \textsc{Alpha}
-\end{itemize}
-
-\subsubsection{Network procotols}
-The network subsystem of the \pm2 environment currently supports
-the following protocols:
-\begin{itemize}
-\footnotesize
-\item TCP
-\item MPI (LAM-MPI, MPI-BIP)
-\item VIA
-\item SCI/SISCI
-\item SBP
-\end{itemize}
-
-\subsubsection{Required development tools}
-\pm2 relies on the availability of the following development tools:
-\begin{itemize}
-\footnotesize
+\small
 \item GNU C Compiler \textsc{gcc} (versions 2.7.2.3, 2.8.1 and \textsc{Egcs}
-versions have been successfully tested)
-\item GNU Make
+versions have been successfully tested).
+\item GNU Make (versions 3.7x.x or more).
 \end{itemize}
  
 %===========
-\subsection{Getting the PM2 software and help}
-The \pm2 archive is available on the \pm2 web site at 
-\url{http://www.ens-lyon.fr/~rnamyst/pm2.html}.
-
-Contact guru: \url{bouge@ens-lyon.fr}
+\subsection{Getting the \pm2 software and help}
+The \pm2 archive is available from the \pm2 web site at
+\url{http://www.ens-lyon.fr/~rnamyst/pm2.html} 
+(Contact guru:~\url{bouge@ens-lyon.fr}).
 
 %===========
-\subsection{Unpacking the PM2 distribution}
-        $\rightarrow$ making a personal installation
-
-\subsubsection{Contents of the package}
-The \pm2 distribution is organized as follows:
-\begin{footnotesize}
+\subsection{Unpacking the \pm2 distribution}
+\marginpar{\mp $\rightarrow$ making a personal installation}
+The \pm2 archive can be extracted with one of the following commands
+entered at the shell prompt:
+\begin{small}
 \begin{verbatim}
-        pm2 --+
-              |
-              +-- bin........: PM2 scripts
-              |  
-              +-- doc........: documentation files
-              |
-              +-- dsm........: DSM-PM2 distributed shared memory manager
-              |
-              +-- examples...: variety of PM2 examples
-              |
-              +-- include....: PM2 header files
-              |
-              +-- lib........: PM2 library destination
-              |
-              +-- madeleine..: network subsystem
-              |
-              +-- make.......: PM2 makefiles
-              |
-              +-- marcel.....: multithreading management subsystem
-              |
-              +-- source.....: PM2 source files
-              |
-              +-- toolbox....: general purpose library
-              
+        > tar zxvf pm2.tar.gz              # with the GNU tar
+
+        > gunzip -c pm2.tar.gz | tar xvf - # with otherwise
 \end{verbatim}
-\end{footnotesize}
+\end{small}
+Once extracted, the \pm2 distribution should be available under the
+\texttt{./pm2/} directory. This \pm2 distribution is organized as
+shown on Figure~\ref{fig:pm2-tree}.
+\begin{figure}
+\begin{center}
+\begin{boxedminipage}{0.9\textwidth}
+\footnotesize
+\begin{verbatim}
+
+  pm2 --+
+        |
+        +-- bin........: PM2 scripts
+        |  
+        +-- doc........: documentation files
+        |
+        +-- dsm........: DSM-PM2 distributed shared memory manager
+        |
+        +-- examples...: variety of PM2 examples
+        |
+        +-- include....: PM2 header files
+        |
+        +-- lib........: PM2 library destination
+        |
+        +-- mad2.......: network subsystem
+        |
+        +-- make.......: PM2 makefiles
+        |
+        +-- marcel.....: multithreading management subsystem
+        |
+        +-- source.....: PM2 source files
+        |
+        +-- toolbox....: general purpose library              
+
+\end{verbatim}
+\end{boxedminipage}
+\end{center}
+\caption{\pm2 distribution tree structure\label{fig:pm2-tree}}
+\end{figure}
+
 \subsubsection{Environment variables}
-        PM2\_ROOT, etc.
-        PATH
+\marginpar{\mp PM2\_ROOT, PATH, ...}  Several environment
+variables should be set properly for \pm2 to work correctly. The
+variable \texttt{PM2\_ROOT} should contain the path to the \pm2
+distribution root directory. The variables \texttt{MARCEL\_ROOT} and
+\texttt{MAD2\_ROOT} should also be set to the root directory of \mar
+and \madii respectively. The following should be appended to your
+\texttt{PATH} environment variable:
+\texttt{\$\{PM2\_ROOT\}/bin; \$\{MARCEL\_ROOT\}/bin; \$\{MAD2\_ROOT\}/bin;}.
 
 %===========
-\subsection{Configuring}
+\subsection{Configuring\label{subsec:configuring}}
+\marginpar{\mp no need to specify OS/processor}
+Configuring \pm2 is quite straightforward. The underlying platform is
+automatically detected. Hence, there is no need to specify the
+operating sytem/processor pair.
 
-\subsubsection{OS/Processor}
+\marginpar{\mp\texttt{pm2custom}} The only major setting
+left to the user is the underlying network selection, which is
+currently not desirable to be auto-detected by the \madii
+communication library of \pm2. The network protocol choice is made
+using the \texttt{pm2custom} command at the shell prompt. Example:
+\begin{small}
+\begin{verbatim}
+        > pm2custom TCP
+\end{verbatim}
+\end{small}
+Each time the network protocol setting is changed using
+\texttt{pm2custom}, the \pm2 environment should be recompiled
+(see~\ref{subsec:compiling}, \emph{Compiling}).
 
-\subsubsection{Network}
-        pm2custom
-
-\subsubsection{Advanced configuration}
-        Makefiles $\rightarrow$ cf Advanced settings/Makefiles
+\paragraph{Advanced configuration}
+Advanced configuration options are of course available for the more
+demanding users. These options should be used with care. They can be
+found at the top of the main \pm2 makefile, in the file
+\texttt{\$\{PM2\_ROOT\}/make/common.mak}.
 
 %===========
-\subsection{Compiling}
-        not really required, but can be done by typing "cd pm2; make"
+\subsection{Compiling\label{subsec:compiling}}
+\marginpar{\mp not really required, but can be done by typing "cd pm2;
+make"} The compilation step is not really required and rather should
+be integrated into the targeted application build operation. This to
+ensure that the application always gets linked with the up-to-date
+versions of the \pm2 libraries (especially when changing the network
+protocol configuration with \texttt{pm2custom},
+see~\ref{subsec:configuring}, \emph{configuring}). Yet, it can be done
+as a standalone step by typing \texttt{make} at the shell prompt into
+the root directory of the \pm2 distribution.
 
-%===========
-\subsection{Cleanning the directory tree}
-        pm2clean
+\paragraph{Cleanning the directory tree}
+\marginpar{\mp pm2clean} The directory tree of the \pm2 distribution
+may be cleaned at any time from compiled objects and libraries using
+the command \texttt{pm2clean}. This may be needed to free some disk
+space when \pm2 is not in use or to force the whole \pm2 distribution
+to be completely remade by a subsequent \texttt{make} call.
+\endchap
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Discovering \pm2}
 
 % PM2 Step by Step
 %_____________________________________________________________________________
-\section{PM2 step by step}
+\section{\pm2 step by step}
 
 %===========
 \subsection{The minimal PM2 program}
@@ -211,7 +318,7 @@ Once each process reaches the \texttt{pm2\_exit} second termination
 step, the \pm2 session ends.
 
 %===========
-\subsection{Running a PM2 program}
+\subsection{Running a \pm2 program}
         $\rightarrow$ pm2conf, pm2load, pm2logs
 
 %===========
@@ -322,7 +429,7 @@ step, the \pm2 session ends.
 \subsubsection{Example}
 \begin{figure}
 \begin{center}
-\begin{boxedminipage}{0.8\textwidth}
+\begin{boxedminipage}{0.9\textwidth}
 \begin{footnotesize}
 \begin{listing}{0}
 #include <stdio.h>
@@ -377,11 +484,14 @@ int pm2_main(int argc, char **argv)
 \subsubsection{A more interesting example}
 
 %===========
-\subsection{"Treaded" services}
+\subsection{"Threaded" services}
         Services handlers are executed sequentially
         Thread creation: pm2\_thread\_create
         Caveat! pm2\_waitdata...
+\endchap
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Mastering \pm2}
 
 % Advandced Threading
 %_____________________________________________________________________________
@@ -419,7 +529,10 @@ int pm2_main(int argc, char **argv)
 %_____________________________________________________________________________
 \section{Sharing data across clusters}
         DSM-PM2
+\endchap
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Additional \pm2 material}
 
 % FAQ
 %_____________________________________________________________________________
@@ -431,10 +544,23 @@ int pm2_main(int argc, char **argv)
 % Bibliography
 %_____________________________________________________________________________
 \section{Bibliography}
-                
+    
+\endchap
+            
 \end{document}
 _______________________________________________________________________________
 $Log: getting_started.tex,v $
+Revision 1.11  2000/01/25 17:11:31  oaumage
+- diverses modifications et corrections
+
+Revision 1.10  2000/01/25 10:15:50  oaumage
+- passage en mode Report: il semble que se soit plus facile a lire, et il
+  s'agit du style generalement employe pour une documentation
+
+Revision 1.9  2000/01/25 10:03:06  oaumage
+- remplissage de la premiere partie (intro/installation)
+- un petit clin d'oeil pour la page de titre
+
 Revision 1.8  2000/01/21 17:26:00  oaumage
 - modification des exemples pour tenir compte de l'evolution des fonctions
   pack/unpack

@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "profile.h"
+#include "pm2_profile.h"
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"

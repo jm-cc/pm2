@@ -32,7 +32,7 @@
 #include <signal.h>
 
 #include "tbx.h"
-#include "pm2debug.h"
+#include "tbx_debug.h"
 #include "sys/isomalloc_archdep.h"
 #include "as_pool.h"
 

@@ -85,7 +85,7 @@ _dsm_sig_handler(int sig, char *addr, dsm_access_t access) {
 
     TIMING_EVENT("In 2nd handler");
 
-    base0 = (void*) (((unsigned long) marcel_get_cur_thread()) & ~(SLOT_SIZE-1));
+    base0 = (void*) (((unsigned long) marcel_get_cur_thread()) & ~(THREAD_SLOT_SIZE-1));
     base  = (void**) slot_get_usable_address((slot_header_t *) base0);
 
 #ifdef DEBUG2
@@ -163,10 +163,10 @@ static void pagefault_handler_helper(int sig, char *addr, dsm_access_t access) {
 
     TIMING_EVENT("In handler helper");
 #ifdef DEBUG1
-    tfprintf(stderr,"in handler helper : old thread = %p (SLOT_SIZE=%x)\n",
-	 marcel_get_cur_thread(),SLOT_SIZE);
+    tfprintf(stderr,"in handler helper : old thread = %p (THREAD_SLOT_SIZE=%x)\n",
+	 marcel_get_cur_thread(),THREAD_SLOT_SIZE);
 #endif
-    base0 = (void*) (((unsigned long) marcel_get_cur_thread()) & ~(SLOT_SIZE-1));
+    base0 = (void*) (((unsigned long) marcel_get_cur_thread()) & ~(THREAD_SLOT_SIZE-1));
 
     base = slot_get_usable_address((slot_header_t *) base0);
 

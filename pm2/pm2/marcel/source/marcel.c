@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "marcel.h"
 #include "mar_timing.h"
 #include "marcel_alloc.h"
@@ -251,19 +266,22 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 	RAISE(NOT_IMPLEMENTED);
 #endif
       bottom = marcel_slot_alloc();
+
+      PROF_EVENT(thread_stack_allocated);
+
       new_task = (marcel_t)(MAL_BOT((long)bottom + SLOT_SIZE) - MAL(sizeof(task_desc)));
       init_task_desc(new_task);
       new_task->stack_base = bottom;
       new_task->static_stack = FALSE;
     }
 
-#ifdef USE_PRIORITIES
-    new_task->prio = new_task->quantums = attr->priority;
-#endif
     new_task->sched_policy = attr->sched_policy;
     new_task->not_migratable = attr->not_migratable;
     new_task->not_deviatable = attr->not_deviatable;
     new_task->detached = attr->detached;
+
+    if(attr->rt_thread)
+      new_task->special_flags = MA_SF_RT_THREAD;
 
     if(!attr->detached) {
       marcel_sem_init(&new_task->client, 0);
@@ -458,7 +476,7 @@ int marcel_exit(any_t val)
     stack_unprotect(cur);
 #endif
 
-    // On bascule maintenant sur la pile de secours :marcel_self()
+    // On bascule maintenant sur la pile de secours : marcel_self()
     // devient donc égal à cur_lwp->sec_desc...
     call_ST_FLUSH_WINDOWS();
     set_sp(SECUR_STACK_TOP(cur_lwp));
@@ -466,6 +484,8 @@ int marcel_exit(any_t val)
     // On recalcule "cur_lwp" car c'est une variable locale.
     cur_lwp = marcel_self()->lwp;
 #endif
+
+    PROF_EVENT(on_security_stack);
 
     unlock_task();
 
@@ -1352,7 +1372,8 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 #ifdef MINIMAL_PREEMPTION
 	marcel_givehandback();
 #else
-	marcel_trueyield();
+	//marcel_trueyield();
+	marcel_yield();
 #endif
       }
    } while(res <= 0);
@@ -1428,7 +1449,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-
+#ifdef CHRISTIAN_STUFF
 #ifndef MA__ACTIVATION
 /* *** Christian Perez Stuff ;-) *** */
 
@@ -1451,12 +1472,8 @@ void marcel_special_P(marcel_t *liste)
   p = cur->prev;
   p->next = cur->next;
   p->next->prev = p;
-  if(SCHED_DATA(cur_lwp).__first[cur->prio] == cur) {
-    SCHED_DATA(cur_lwp).__first[cur->prio] = 
-      ((cur->next->prio == cur->prio) ? cur->next : NULL);
-    if(SCHED_DATA(cur_lwp).__first[0] == cur)
-      SCHED_DATA(cur_lwp).__first[0] = cur->next;
-  }
+  if(SCHED_DATA(cur_lwp).first == cur)
+    SCHED_DATA(cur_lwp).first = cur->next;
 
   if(*liste == NULL) {
     *liste = cur;
@@ -1467,7 +1484,6 @@ void marcel_special_P(marcel_t *liste)
     cur->prev->next = cur->next->prev = cur;
   }
 
-  cur->quantums = cur->prio;
   SET_BLOCKED(cur);
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
     MA_THR_RESTARTED(cur, "Preemption");
@@ -1480,7 +1496,6 @@ void marcel_special_P(marcel_t *liste)
 void marcel_special_V(marcel_t *pliste)
 {
   register marcel_t liste = *pliste;
-  register unsigned i;
   marcel_t p, queue = liste->prev;
 #ifdef SMP
   __lwp_t *cur_lwp = marcel_self()->lwp;
@@ -1488,20 +1503,13 @@ void marcel_special_V(marcel_t *pliste)
 
    lock_task();
 
-   /* on regarde la priorité du premier   */
-   /* (tous doivent etre de meme priorite */
-   if(liste->prio == MAX_PRIO)
-      i = 0;
-   else
-      for(i=liste->prio; SCHED_DATA(cur_lwp).__first[i] == NULL; i--) ;
-   p = SCHED_DATA(cur_lwp).__first[i];
+   p = SCHED_DATA(cur_lwp).first;
    liste->prev = p->prev;
    queue->next = p;
    p->prev = queue;
    liste->prev->next = liste;
-   SCHED_DATA(cur_lwp).__first[liste->prio] = liste;
-   if(p == SCHED_DATA(cur_lwp).__first[0])
-      SCHED_DATA(cur_lwp).__first[0] = liste;
+   if(p == SCHED_DATA(cur_lwp).first)
+      SCHED_DATA(cur_lwp).first = liste;
 
    *pliste = 0;
 
@@ -1530,12 +1538,8 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
       p = cur->prev;
       p->next = cur->next;
       p->next->prev = p;
-      if(SCHED_DATA(cur_lwp).__first[cur->prio] == cur) {
-         SCHED_DATA(cur_lwp).__first[cur->prio] = 
-	   ((cur->next->prio == cur->prio) ? cur->next : NULL);
-         if(SCHED_DATA(cur_lwp).__first[0] == cur)
-	    SCHED_DATA(cur_lwp).__first[0] = cur->next;
-      }
+      if(SCHED_DATA(cur_lwp).first == cur)
+	SCHED_DATA(cur_lwp).first = cur->next;
 
       if(*liste == NULL) {
          *liste = cur;
@@ -1546,7 +1550,6 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
          cur->prev->next = (*liste)->prev = cur;
       }
 
-      cur->quantums = cur->prio;
       SET_BLOCKED(cur);
       if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
 	MA_THR_RESTARTED(cur, "Preemption");
@@ -1559,3 +1562,4 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
 /* End of Christian Perez Stuff */
 
 #endif /* MA__ACTIVATION */
+#endif /* CHRISTIAN_STUFF */

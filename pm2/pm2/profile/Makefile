@@ -39,12 +39,11 @@ LIBRARY=profile
 #marcel_CC=gcc
 #marcel_AS=gcc
 
-ifdef APP_RECURSIF
-
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
 -include $(PM2_MAK_DIR)/profile-specific.mak
+
+ifdef APP_RECURSIF
 
 # The profile.c file includes fut_entries.h, but it cannot be actually
 # detected by make depend since there would be a circular dependency
@@ -55,20 +54,7 @@ endif
 
 include $(PM2_ROOT)/make/libs-rules.mak
 
-$(PM2_MAK_DIR)/profile-specific.mak: $(LIB_STAMP_FLAVOR)
-	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \
-	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
-	fi;
-
 else # !APP_RECURSIF
-
-default:
-
-include $(PM2_ROOT)/make/config.mak
-include $(PM2_ROOT)/make/libs-vars.mak
-
--include $(PM2_MAK_DIR)/profile-specific.mak
 
 ifneq ($(LIB_GEN_BIN),)
 DUMMY_BUILD := $(shell mkdir -p $(LIB_GEN_BIN))
@@ -76,12 +62,7 @@ endif
 
 .PHONY: default libs fut_files proflib fut
 
-default:
-
 libs: fut_files $(LIB_GEN_INC)/fut_entries.h $(LIB_GEN_BIN)/fut_print proflib
-
-default:
-	$(MAKE) -C $(PM2_ROOT)
 
 fut_files:
 	$(COMMON_HIDE) $(MAKE) -C ${PM2_ROOT} fut
@@ -108,10 +89,17 @@ proflib:
 fut:
 	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
 
+clean:
+	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
+	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
+	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
+	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
+
+endif # APP_RECURSIF
+
 $(PM2_MAK_DIR)/profile-specific.mak: $(LIB_STAMP_FLAVOR)
 	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \
 	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
+		echo "LIB_GEN_INC := $$_PM2_OUTPUT" > $@ ;\
 	fi;
 
-endif

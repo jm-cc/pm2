@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.9  2000/09/13 00:07:17  rnamyst
+Support for profiling + minor bug fixes
+
 Revision 1.8  2000/09/12 16:59:09  rnamyst
 Few bug fixes + support for .fut files
 
@@ -214,13 +217,29 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
  * Logging macros  __________________________________________________
  * _______________///////////////////////////////////////////////////
  */
+
+#ifdef PROFILE
+#include "profile.h"
+
 #ifdef PREPROC
-#define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_FUT_" \
+#define GEN_PREPROC(inout)   { extern int foo asm ("this_is_the_fut_" \
                                                    __FUNCTION__ "_" #inout \
-                                                   "_CODE"); \
+                                                   "_code"); \
                                foo=1; }
 #else
-#define GEN_PREPROC(inout)   (void)0
+#define GEN_PREPROC(inout)   { extern unsigned __code asm("fut_" __FUNCTION__ \
+                                                          "_" #inout "_code"); \
+                               PROF_PROBE0(PROFILE_KEYMASK, __code); }
+#endif
+
+#define PROF_IN()            GEN_PREPROC(entry)
+#define PROF_OUT()           GEN_PREPROC(exit)
+
+#else // else ifndef PROFILE
+
+#define PROF_IN()            (void)0
+#define PROF_OUT()           (void)0
+
 #endif
 
 #if defined(PM2DEBUG)
@@ -229,10 +248,10 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
                                            str "\n" , ## args)
 #define LOG_IN()              do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   __FUNCTION__": -->\n"); \
-                              GEN_PREPROC(ENTRY) } while(0)
+                              PROF_IN(); } while(0)
 #define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   __FUNCTION__": <--\n"); \
-                              GEN_PREPROC(EXIT) } while(0)
+                              PROF_OUT(); } while(0)
 #define LOG_VAL(str, val)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
 #define LOG_PTR(str, ptr)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
@@ -242,8 +261,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else // if not DEBUG
 
 #define LOG(str, args...) 
-#define LOG_IN()              GEN_PREPROC(ENTRY)
-#define LOG_OUT()             GEN_PREPROC(EXIT)
+#define LOG_IN()              PROF_IN()
+#define LOG_OUT()             PROF_OUT()
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)
@@ -253,8 +272,8 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #else // else if not PM2DEBUG
 
 #define LOG(str, args...) 
-#define LOG_IN()              GEN_PREPROC(ENTRY)
-#define LOG_OUT()             GEN_PREPROC(EXIT)
+#define LOG_IN()              PROF_IN()
+#define LOG_OUT()             PROF_OUT()
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)

@@ -36,7 +36,9 @@
  */
 
 #section marcel_macros
+#ifdef MA__LWPS
 #define MA_RW_LOCK_BIAS		 0x01000000
+#endif
 
 #section marcel_types
 /*
@@ -49,14 +51,18 @@
  * irq-safe write-lock, but readers can get non-irqsafe
  * read-locks.
  */
+#ifdef MA__LWPS
 typedef ma_atomic_t ma_rwlock_t;
+#endif
 
 #section marcel_macros
+#ifdef MA__LWPS
 #define MA_RW_LOCK_UNLOCKED MA_ATOMIC_INIT(MA_RW_LOCK_BIAS);
 
 #define ma_rwlock_init(x)	do { ma_atomic_set(x, MA_RW_LOCK_UNLOCKED); } while(0)
 
 #define ma_rwlock_is_locked(x) (ma_atomic_read(x) != MA_RW_LOCK_BIAS)
+#endif
 
 #section marcel_inline
 /*
@@ -70,6 +76,7 @@ typedef ma_atomic_t ma_rwlock_t;
  */
 /* the spinlock helpers are in arch/i386/kernel/semaphore.c */
 
+#ifdef MA__LWPS
 extern void __ma_read_lock_failed(ma_rwlock_t *rw);
 static inline void _ma_raw_read_lock(ma_rwlock_t *rw)
 {
@@ -83,12 +90,16 @@ static inline void _ma_raw_write_lock(ma_rwlock_t *rw)
 	if (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))
 		__ma_write_lock_failed(rw);
 }
+#endif
 
 #section marcel_macros
+#ifdef MA__LWPS
 #define _ma_raw_read_unlock(rw) ma_atomic_inc(rw)
 #define _ma_raw_write_unlock(rw) ma_atomic_add(MA_RW_LOCK_BIAS,rw);
+#endif
 
 #section marcel_inline
+#ifdef MA__LWPS
 static inline int _ma_raw_write_trylock(ma_rwlock_t *rw)
 {
 	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))
@@ -96,4 +107,5 @@ static inline int _ma_raw_write_trylock(ma_rwlock_t *rw)
 	ma_atomic_add(MA_RW_LOCK_BIAS,rw);
 	return 0;
 }
+#endif
 

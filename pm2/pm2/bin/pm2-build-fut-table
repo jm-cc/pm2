@@ -57,7 +57,17 @@ done
 
 #echo "Building fut_entries.h & fut_print.h for flavor $PM2_FLAVOR..."
 
-BUILDDIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir`
+set -- --source-mode
+. ${PM2_ROOT}/bin/pm2-config
+
+BUILDDIR=$_PM2CONFIG_BUILD
+
+if echo $_PM2CONFIG_CFLAGS | grep MARCEL_\*SMP > /dev/null; then
+    # Mode SMP : les enregistrements comportent un paramètre supplémentaire...
+    RECORD_SIZE=16
+else
+    RECORD_SIZE=12
+fi
 
 GENDIR=${BUILDDIR}/profile/include
 
@@ -73,26 +83,31 @@ echo "#define FUT_ENTRIES_IS_DEF" >> $deffile
 echo >> $deffile
 
 printfile=${GENDIR}/fut_print.h
-#> $printfile
-cat > $printfile <<EOF
-{ FUT_SETUP_CODE,	 "fut_setup" },
-{ FUT_KEYCHANGE_CODE,	 "fut_keychange" },
-{ FUT_RESET_CODE,	 "fut_reset" },
-{ FUT_CALIBRATE0_CODE,	 "fut_calibrate0" },
-{ FUT_CALIBRATE1_CODE,	 "fut_calibrate1" },
-{ FUT_CALIBRATE2_CODE,	 "fut_calibrate2" },
-{ FUT_SWITCH_TO_CODE,	 "fut_switch_to" },
-{ FUT_NEW_LWP_CODE,      "fut_new_lwp" },
-{ FUT_THREAD_BIRTH_CODE, "fut_thread_birth" },
-{ FUT_THREAD_DEATH_CODE, "fut_thread_death" },
-{ FUT_MAIN_ENTRY_CODE,	 "main_entry" },
-{ FUT_MAIN_EXIT_CODE,	 "main_exit" },
-EOF
+> $printfile
+
+for c in \
+    FUT_SETUP_CODE \
+    FUT_KEYCHANGE_CODE \
+    FUT_RESET_CODE \
+    FUT_CALIBRATE0_CODE \
+    FUT_CALIBRATE1_CODE \
+    FUT_CALIBRATE2_CODE \
+    FUT_SWITCH_TO_CODE \
+    FUT_NEW_LWP_CODE \
+    FUT_THREAD_BIRTH_CODE \
+    FUT_THREAD_DEATH_CODE \
+    FUT_MAIN_ENTRY_CODE \
+    FUT_MAIN_EXIT_CODE
+    do
+    code="`grep $c ${PM2_ROOT}/profile/include/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
+    label="`echo $c | sed -e 's/^FUT_\(.*\)_CODE$/\1/' | tr A-Z a-z`"
+    echo "{ $code, \"$label\" }," >> $printfile
+done
 
 base=4096 # 0x1000
 value=0
 other=32768 # 0x8000
-for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
+for mod in $_PM2CONFIG_PROF_MODULES ; do
     # Ugly!!! We should use --cppdir <mod> instead of --buildir!
     FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
     if [ -z "$FUT_FILES" ] ; then
@@ -106,7 +121,7 @@ for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
 	    echo "{ `printf "0x%x" $num`, \"`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $num \* 256 + 12`
+	    num=`expr $num \* 256 + $RECORD_SIZE`
 	    num=`printf "0x%x" $num`
             echo "unsigned $e = $num ;" >> $deffile
             ;;
@@ -116,7 +131,7 @@ for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
 	    echo "{ `printf "0x%x" $num`, \"`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $num \* 256 + 12`
+	    num=`expr $num \* 256 + $RECORD_SIZE`
 	    num=`printf "0x%x" $num`
             echo "unsigned $e = $num ;" >> $deffile
 
@@ -131,7 +146,7 @@ for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
 	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $other \* 256 + 12`
+	    num=`expr $other \* 256 + $RECORD_SIZE`
 	    num=`printf "0x%x" $num`
             echo "unsigned $e = $num ;" >> $deffile
 

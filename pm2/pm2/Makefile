@@ -80,13 +80,16 @@ pm2: link
 # Tous dépendent de 'dependances'
 # 'cible'-print affiche "text"
 # 'cible'-'subdir' invoque make avec comme cible 'cible' dans modules/'subdir'
+#
+# Attention, make ne "voit" pas $(MAKE) dans cette définition, on est donc
+# obligé d'ajouter '+' à la main
 
 define RECURSIVE_template
  .PHONY: $(1) $(1)-print $(addprefix $(1)-,$(2))
  $(1): $(1)-print $(addprefix $(1)-,$(2))
  $(1)-print: $(3) $(if $(4),;$$(COMMON_HIDE) echo $(4))
  $(addprefix $(1)-,$(2)): $(3) $(1)-print
-	$(COMMON_HIDE) $(MAKE) -C modules/$$(patsubst $(1)-%,%,$$@) $(1)
+	+$(COMMON_HIDE) $(MAKE) -C modules/$$(patsubst $(1)-%,%,$$@) $(1)
 endef
 
 # Comme le précédent, make 'subdirs...' est automatiquement $(LIBS)

@@ -13,13 +13,14 @@ def vchannel_disconnect(s, vchannel):
         channel_name	= channel.name
         ps_list	= channel.processes
 
-        for src_ps in ps_list:
-            for (dl, dst_ps) in enumerate(ps_list):
+        for (dl, dst_ps) in enumerate(ps_list):
+            dst = dst_ps.client
+
+            for src_ps in ps_list:
                 if dst_ps == src_ps:
                     continue
 
                 src = src_ps.client
-                dst = dst_ps.client
 
                 leo_comm.send_string(src, vchannel_name)
                 leo_comm.send_string(src, channel_name)
@@ -39,13 +40,14 @@ def vchannel_disconnect(s, vchannel):
         channel		= fchannel.channel
         ps_list = channel.processes
 
-        for src_ps in ps_list:
-            for (dl, dst_ps) in enumerate(ps_list):
+        for (dl, dst_ps) in enumerate(ps_list):
+            dst = dst_ps.client
+
+            for src_ps in ps_list:
                 if dst_ps == src_ps:
                     continue
 
                 src = src_ps.client
-                dst = dst_ps.client
 
                 leo_comm.send_string(src, vchannel_name)
                 leo_comm.send_string(src, fchannel_name)
@@ -77,8 +79,8 @@ def xchannel_disconnect(s, xchannel):
         channel_name	= channel.name
         ps_list	= channel.processes
 
-        for src_ps in ps_list:
-            for (dl, dst_ps) in enumerate(ps_list):
+        for (dl, dst_ps) in enumerate(ps_list):
+            for src_ps in ps_list:
                 if dst_ps == src_ps:
                     continue
 
@@ -99,6 +101,7 @@ def xchannel_disconnect(s, xchannel):
                 break
         
 def xchannels_disconnect(s):
+    leo_comm.bcast(s, leo_comm.wait_for_ack)
     for xchannel in s.xchannel_dict.values():
         xchannel_disconnect(s, xchannel)
     leo_comm.bcast_string(s, '-')
@@ -169,10 +172,11 @@ def drivers_exit(s):
         for ps in driver.processes:
             for adapter_name in ps.driver_dict[driver_name].keys():
                 leo_comm.send_string(ps.client, adapter_name)
+                leo_comm.wait_for_ack(ps.client)
 
             leo_comm.send_string(ps.client, '-')
             
-        leo_comm.mcast(driver.processes, leo_comm.wait_for_ack)
+        # leo_comm.mcast(driver.processes, lambda x: leo_comm.wait_for_specific_ack(x, -2))
     
     leo_comm.bcast_string(s, '-')
 

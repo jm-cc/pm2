@@ -133,6 +133,9 @@ _PRIVATE_ typedef struct task_desc_struct {
   unsigned exline, not_migratable, 
     not_deviatable, next_cleanup_func;
   boolean in_sighandler, detached, static_stack;
+#ifdef ENABLE_STACK_JUMPING
+  void *dummy;
+#endif
 } task_desc;
 
 _PRIVATE_ typedef struct {
@@ -183,8 +186,12 @@ static __inline__ marcel_t __marcel_self()
     return &__main_thread_struct;
   else
 #endif
+#ifdef ENABLE_STACK_JUMPING
+    return *((marcel_t *)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *))));
+#else
     return (marcel_t)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE) -
 		      MAL(sizeof(task_desc)));
+#endif
 }
 
 #define SECUR_TASK_DESC(lwp) \
@@ -201,6 +208,13 @@ _PRIVATE_ enum {
 
 #ifdef __ACT__
 _PRIVATE_ extern int nb_idle_sleeping;
+#endif
+
+#ifdef ENABLE_STACK_JUMPING
+static __inline__ void marcel_prepare_stack_jump(void *stack)
+{
+  *(marcel_t *)(stack + SLOT_SIZE - sizeof(void *)) = __marcel_self();
+}
 #endif
 
 #endif

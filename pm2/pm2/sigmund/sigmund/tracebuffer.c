@@ -108,7 +108,7 @@ void init()
 
 void read_str_header()
 {
-
+  fseek(f_str, 500, SEEK_SET);
 }
 
 // Returns 0 if OK 1 if EOF

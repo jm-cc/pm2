@@ -456,8 +456,8 @@ process_channel(p_tbx_htable_t channel)
 	  {
 	    p_ntbx_process_info_t channel_process_info = NULL;
 
-	    channel_process_info = ntbx_pc_get_local(dir_channel->pc,
-						     node_local_rank);
+	    channel_process_info = ntbx_pc_get_global(dir_channel->pc,
+						      process->global_rank);
 	  
 	    if (!channel_process_info)
 	      {
@@ -1070,6 +1070,7 @@ connect_processes(p_tbx_slist_t process_slist)
       p_ntbx_client_t           client           = NULL;
       p_tbx_slist_t             slist            = NULL;
       char                     *host_name        = NULL;
+      char                     *true_name        = NULL;
       p_ntbx_process_t          process          = NULL;
       p_leo_process_specific_t  process_specific = NULL;
       int                       status           = ntbx_failure;
@@ -1088,36 +1089,61 @@ connect_processes(p_tbx_slist_t process_slist)
       TRACE_STR("client remote host", client->remote_host);
 
       slist = tbx_htable_get(node_htable, host_name);
-      if (!slist)
-	{
-	  if (!tbx_slist_is_nil(client->remote_alias))
-	    {
-	      TRACE("client provided hostname not found, trying aliases");
-	      tbx_slist_ref_to_head(client->remote_alias);
-	      do
-		{
-		  char *alias = NULL;
-		  
-		  alias = tbx_slist_ref_get(client->remote_alias);
-		  TRACE_STR("trying", alias);
-
-		  slist = tbx_htable_get(node_htable, alias);
-		  if (slist)
-		    goto alias_found;
-
-		  TRACE("alias mismatched");
-		}
-	      while (tbx_slist_ref_forward(client->remote_alias));
-
-	      FAILURE("client hostname not found");
-	    }
-	  else
-	    FAILURE("invalid client answer");
-
-	alias_found:
-	  TRACE("alias matched");
-	}
+      if (slist)
+	goto found;
       
+      true_name = ntbx_true_name(host_name);
+      TRACE_STR("trying", true_name);
+      slist     = tbx_htable_get(node_htable, true_name);
+      if (slist)
+	{
+	  TBX_FREE(host_name);
+	  host_name = true_name;
+	  true_name = NULL;
+	  goto found;
+	}
+
+      if (!tbx_slist_is_nil(client->remote_alias))
+	{
+	  TRACE("client provided hostname not found, trying aliases");
+	  tbx_slist_ref_to_head(client->remote_alias);
+	  do
+	    {
+	      char *alias = NULL;
+	      
+	      alias = tbx_slist_ref_get(client->remote_alias);
+	      TRACE_STR("trying", alias);
+	      
+	      slist = tbx_htable_get(node_htable, alias);
+	      if (slist)
+		{
+		  TBX_FREE(host_name);
+		  host_name = tbx_strdup(alias);
+		  goto found;
+		}
+	      
+	      true_name = ntbx_true_name(alias);
+	      TRACE_STR("trying", true_name);
+	      slist = tbx_htable_get(node_htable, true_name);
+	      if (slist)
+		{
+		  TBX_FREE(host_name);
+		  host_name = true_name;
+		  true_name = NULL;
+		  goto found;
+		}
+
+	      TRACE("alias mismatched");
+	    }
+	  while (tbx_slist_ref_forward(client->remote_alias));
+	  
+	  FAILURE("client hostname not found");
+	}
+      else
+	FAILURE("invalid client answer");
+      
+    found:
+      TRACE_STR("retained host name", host_name);
       process = tbx_slist_extract(slist);
       if (tbx_slist_is_nil(slist))
 	{
@@ -1131,6 +1157,7 @@ connect_processes(p_tbx_slist_t process_slist)
 
       leo_send_int(client, process->global_rank);
 
+      TBX_FREE(host_name);
       TRACE_VAL("connected process", process->global_rank);
     }
   while (!tbx_htable_empty(node_htable));

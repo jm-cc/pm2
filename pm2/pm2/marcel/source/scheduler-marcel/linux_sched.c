@@ -175,7 +175,6 @@
 //}
 
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
-MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
 
 /*
  * Default context-switch locking:

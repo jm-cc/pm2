@@ -40,6 +40,8 @@ __attribute__((__section__(".ma.main.lwp"))) marcel_lwp_t __main_lwp;
 /**************************************************************************/
 /**************************************************************************/
 
+MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
+
 static struct {
 	unsigned nb_tasks;
 	boolean main_is_waiting;

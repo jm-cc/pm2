@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
@@ -36,8 +35,8 @@ typedef void (*debug_action_func_t)(debug_type_t*, debug_action_t, int);
 
 struct struct_debug_type_t {
 	int show;
-	char* prefix;
-	char* option_name;
+	const char* prefix;
+	const char* option_name;
 	int show_prefix;
 	int show_file;
 	int critical;
@@ -68,11 +67,11 @@ extern int pm2debug_marcel_launched;
 #endif
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
-int pm2debug_printf(debug_type_t *type, int line, char* file, 
+int pm2debug_printf(debug_type_t *type, int line, const char* file, 
 		     const char *format, ...);
 void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
-void pm2debug_flush();
+void pm2debug_flush(void);
 #define debug_printf(type, fmt, args...) \
    ((type) && ((type)->show) ? \
     pm2debug_printf(type, __LINE__, __BASE_FILE__, fmt, ##args) \
@@ -160,18 +159,21 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 					   __FUNCTION__": <--\n")
 #define DISP_VAL(str, val)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
+#define DISP_CHAR(val)       debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
+					   "%c" , (char)(val))
 #define DISP_PTR(str, ptr)   debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
 					   str " = %p\n" , (void *)(ptr))
 #define DISP_STR(str, str2)  debug_printf(&DEBUG_NAME_DISP(DEBUG_NAME), \
-					   str " : %s\n" , (char *)(str2))
+					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
 
 #define DISP(str, args...)  fprintf(stderr, str "\n" , ## args)
 #define DISP_IN()           fprintf(stderr, __FUNCTION__": -->\n")
 #define DISP_OUT()          fprintf(stderr, __FUNCTION__": <--\n")
 #define DISP_VAL(str, val)  fprintf(stderr, str " = %d\n" , (int)(val))
+#define DISP_CHAR(val)      fprintf(stderr, "%c" , (char)(val))
 #define DISP_PTR(str, ptr)  fprintf(stderr, str " = %p\n" , (void *)(ptr))
-#define DISP_STR(str, str2) fprintf(stderr, str " : %s\n" , (char *)(str2))
+#define DISP_STR(str, str2) fprintf(stderr, str ": %s\n" , (char *)(str2))
 
 #endif /* PM2DEBUG */
 
@@ -191,18 +193,21 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   __FUNCTION__": <--\n"); \
                               PROF_OUT(); } while(0)
+#define LOG_CHAR(val)         debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+					   "%c" , (char)(val))
 #define LOG_VAL(str, val)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
 #define LOG_PTR(str, ptr)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
 					   str " = %p\n" , (void *)(ptr))
 #define LOG_STR(str, str2)    debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
-					   str " : %s\n" , (char *)(str2))
+					   str ": %s\n" , (char *)(str2))
 
 #else // else if not PM2DEBUG
 
 #define LOG(str, args...) 
 #define LOG_IN()           PROF_IN()
 #define LOG_OUT()          PROF_OUT()
+#define LOG_CHAR(val)
 #define LOG_VAL(str, val) 
 #define LOG_PTR(str, ptr) 
 #define LOG_STR(str, str2)
@@ -224,16 +229,19 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 					   __FUNCTION__": <--\n")
 #define TRACE_VAL(str, val)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
 					   str " = %d\n" , (int)(val))
+#define TRACE_CHAR(val)       debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+					   "%c" , (char)(val))
 #define TRACE_PTR(str, ptr)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
 					   str " = %p\n" , (void *)(ptr))
 #define TRACE_STR(str, str2)  debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
-					   str " : %s\n" , (char *)(str2))
+					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */
 
 #define TRACE(str, args...) 
 #define TRACE_IN()
 #define TRACE_OUT()
 #define TRACE_VAL(str, val) 
+#define TRACE_CHAR(val)
 #define TRACE_PTR(str, ptr) 
 #define TRACE_STR(str, str2) 
 

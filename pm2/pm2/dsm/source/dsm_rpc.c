@@ -51,9 +51,8 @@ void dsm_pm2_init_rpc()
   pm2_rawrpc_register(&DSM_LRPC_HBRC_DIFFS, DSM_LRPC_HBRC_DIFFS_func);
   pm2_rawrpc_register(&TOKEN_LOCK_REQUEST, token_lock_request_server);
   pm2_rawrpc_register(&TOKEN_LOCK_RECV, token_lock_recv_server);
-  pm2_rawrpc_register(&TOKEN_LOCK_RELEASE_NOTIFICATION, token_lock_recv_release_notification_server);
   pm2_rawrpc_register(&TOKEN_LOCK_MANAGER_SERVER, token_lock_manager_server);
-
+  pm2_rawrpc_register(&TOKEN_LOCK_RELEASE_NOTIFICATION, token_lock_recv_release_notification_server);
 }
 
 

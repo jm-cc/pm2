@@ -86,7 +86,7 @@ static inline void _ma_raw_write_lock(ma_rwlock_t *rw)
 
 #section marcel_macros
 #define _ma_raw_read_unlock(rw) ma_atomic_inc(rw)
-#define _ma_raw_write_unlock(rw) ma_atomic_add(MA_RW_LOCK_BIAIS,rw);
+#define _ma_raw_write_unlock(rw) ma_atomic_add(MA_RW_LOCK_BIAS,rw);
 
 #section marcel_inline
 static inline int _ma_raw_write_trylock(ma_rwlock_t *rw)

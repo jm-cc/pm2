@@ -14,6 +14,7 @@ import sys
 class Leony:
     def __init__(self, compat_p):
         self.session_dict	= {}
+	self.session_number     = 0
         self.next_global_rank	= 0
         self.compatibility_mode	= compat_p
         leo_comm.server_init(self)

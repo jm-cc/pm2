@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.4  2000/03/08 17:17:15  oaumage
+- utilisation de TBX_MALLOC
+
 Revision 1.3  2000/03/01 11:03:49  oaumage
 - mise a jour des #includes ("")
 
@@ -66,7 +69,7 @@ tbx_aligned_malloc(size_t   size,
   char      *ini;
   unsigned   mask = align - 1;
 
-  ini = ptr = malloc (size + 2 * align - 1);
+  ini = ptr = TBX_MALLOC (size + 2 * align - 1);
 
   if (ptr != NULL && ((unsigned) ptr & mask) != 0)
     {
@@ -86,7 +89,7 @@ void
 tbx_aligned_free (void  *ptr,
 		  int    align)
 {
-  free (*(char **) ((char *) ptr - align));
+  TBX_FREE (*(char **) ((char *) ptr - align));
 }
 
 
@@ -99,14 +102,14 @@ tbx_malloc_init(p_tbx_memory_t *mem,
 		size_t block_len,
 		long initial_block_number)
 {
-  p_tbx_memory_t temp_mem = malloc(sizeof(tbx_memory_t));
+  p_tbx_memory_t temp_mem = TBX_MALLOC(sizeof(tbx_memory_t));
 
   if (temp_mem == NULL)
     {
       FAILURE("not enough memory");
     }
 
-  PM2_INIT_SHARED(temp_mem);
+  TBX_INIT_SHARED(temp_mem);
 
   if (initial_block_number <= 0)
     {
@@ -121,7 +124,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
 
   temp_mem->current_mem =
     temp_mem->first_mem =
-    malloc(initial_block_number * block_len + sizeof(void *));
+    TBX_MALLOC(initial_block_number * block_len + sizeof(void *));
 
   if (temp_mem->first_mem == NULL)
     {
@@ -143,7 +146,7 @@ tbx_malloc(p_tbx_memory_t mem)
 {
   void *ptr = NULL;
   
-  PM2_LOCK_SHARED(mem);
+  TBX_LOCK_SHARED(mem);
   if (mem->first_free != NULL)
     {
       LOG_PTR("tbx_malloc: first free", mem->first_free);
@@ -155,7 +158,7 @@ tbx_malloc(p_tbx_memory_t mem)
       if (mem->first_new >= mem->mem_len)
 	{
 	  void *new_mem =
-	    malloc(mem->mem_len * mem->block_len + sizeof(void *));
+	    TBX_MALLOC(mem->mem_len * mem->block_len + sizeof(void *));
 
 	  if (new_mem == NULL)
 	    {
@@ -173,7 +176,7 @@ tbx_malloc(p_tbx_memory_t mem)
       mem->first_new++;
     }
 
-  PM2_UNLOCK_SHARED(mem);
+  TBX_UNLOCK_SHARED(mem);
 
   return ptr ;
 }
@@ -181,12 +184,12 @@ tbx_malloc(p_tbx_memory_t mem)
 void
 tbx_free(p_tbx_memory_t mem, void *ptr)
 {
-  PM2_LOCK_SHARED(mem);
+  TBX_LOCK_SHARED(mem);
 
   *(void **)ptr = mem->first_free ;
   mem->first_free = ptr;
 
-  PM2_UNLOCK_SHARED(mem);
+  TBX_UNLOCK_SHARED(mem);
 }
 
 void
@@ -194,7 +197,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
 {
   void *block_mem;
   
-  PM2_LOCK_SHARED(mem);
+  TBX_LOCK_SHARED(mem);
   block_mem = mem->first_mem;
 
   while (block_mem != NULL)
@@ -203,11 +206,11 @@ tbx_malloc_clean(p_tbx_memory_t mem)
       
       next_block_mem = *(void **)(block_mem
 				  + mem->mem_len * mem->block_len);
-      free(block_mem);
+      TBX_FREE(block_mem);
       block_mem = next_block_mem;
     }
 
   mem->first_mem = mem->current_mem = mem->first_free = NULL ;
-  free(mem);
+  TBX_FREE(mem);
 }
 

@@ -21,12 +21,12 @@
 //#define DO_NOT_DISPLAY_IN_IDLE
 #endif
 
+#include "marcel.h"
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "marcel.h"
 #include "sys/marcel_debug.h"
 #include "sys/marcel_sig.h"
 #include "pm2_list.h"
@@ -499,7 +499,7 @@ static __inline__ void display_sched_queue(__lwp_t *lwp)
       mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, ext_state %p, sf %p)\n",
 	     t, t->number, GET_LWP(t)->number, t->ext_state, t->special_flags);
 #else
-      mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, sf %p)\n" ,
+      mdebug_sched_q("\t\t\t\tThread %p (num %ld, LWP %d, sf %x)\n" ,
              t, t->number, GET_LWP(t)->number, t->special_flags);
 #endif
       t = next_task(t);
@@ -541,7 +541,7 @@ static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
   }
 
   idle = lwp->idle_task;
-  mdebug("\t\t\t<Idle rescheduled: %d on LWP(%d)\n",
+  mdebug("\t\t\t<Idle rescheduled: %ld on LWP(%d)\n",
 	 idle->number, lwp->number);
   marcel_wake_task(idle, NULL);
 
@@ -832,7 +832,7 @@ void ma_wake_task(marcel_t t, boolean *blocked)
 {
   LOG_IN();
 
-  mdebug("\t\t\t<Waking thread %p (num %d)>\n",
+  mdebug("\t\t\t<Waking thread %p (num %ld)>\n",
 	 t, t->number);
 
   if(IS_SLEEPING(t)) {
@@ -957,11 +957,12 @@ marcel_t marcel_unchain_task_and_find_next(marcel_t t, marcel_t find_next)
     }
   }
 
+  //#ifdef MARCEL_DEBUG
+  display_sched_queue(cur_lwp);
+  //#endif
+
   do_unchain_from_queue(t, cur_lwp);
 
-#ifdef MARCEL_DEBUG
-  display_sched_queue(cur_lwp);
-#endif
 
   sched_unlock(cur_lwp);
 
@@ -1154,7 +1155,7 @@ void ma__marcel_find_and_yield_to_rt_task(void)
 
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...
-void marcel_yield(void)
+DEF_MARCEL_POSIX(int, yield, (void))
 {
   LOG_IN();
 
@@ -1164,7 +1165,9 @@ void marcel_yield(void)
   unlock_task();
 
   LOG_OUT();
+  return 0;
 }
+DEF_PTHREAD_STRONG(yield)
 
 void marcel_give_hand(boolean *blocked)
 {
@@ -1173,8 +1176,10 @@ void marcel_give_hand(boolean *blocked)
 
   LOG_IN();
 
-  if(locked() != 1)
+  if(locked() != 1) {
+    fprintf(stderr, "locked=%i\n", locked());
     RAISE(LOCK_TASK_ERROR);
+  }
 
   for(;;) {
 
@@ -1202,8 +1207,8 @@ void marcel_give_hand(boolean *blocked)
   } // for
 }
 
-void marcel_tempo_give_hand(unsigned long timeout,
-			    boolean *blocked, marcel_sem_t *s)
+int __marcel_tempo_give_hand(unsigned long timeout,
+			     boolean *blocked, marcel_sem_t *s)
 {
   marcel_t next, cur = marcel_self();
   unsigned long ttw = marcel_clock() + timeout;
@@ -1226,30 +1231,38 @@ void marcel_tempo_give_hand(unsigned long timeout,
       if((*blocked) && marcel_clock() >= ttw) {
 	/* Expiration timer ou retour d'une deviation : */
 	/* le thread n'a pas ete reveille par un sem_V ! */
-	cell *pc = NULL,
-	     *cc;
+	if (s==NULL) {
+	  /* On se contente de renvoyer le bon code */
+	  marcel_enablemigration(cur);
+	  unlock_task();
+	  return 1;
+	} else {
+	  /* gestion des sémaphores */
+	  semcell *pc = NULL,
+	    *cc;
 
-	marcel_lock_acquire(&s->lock);
+	  marcel_lock_acquire(&s->lock);
 
-	cc = s->first;
-	while(cc && cc->task != cur) {
-	  pc = cc;
-	  cc = cc->next;
+	  cc = s->first;
+	  while(cc && cc->task != cur) {
+	    pc = cc;
+	    cc = cc->next;
+	  }
+	  (s->value)++;
+	  if(cc) {
+	    if(pc == NULL)
+	      s->first = cc->next;
+	    else if((pc->next = cc->next) == NULL)
+	      s->last = pc;
+	  }
+
+	  marcel_lock_release(&s->lock);
+
+	  marcel_enablemigration(cur);
+
+	  unlock_task();
+	  RAISE(TIME_OUT);
 	}
-	(s->value)++;
-	if(cc) {
-	  if(pc == NULL)
-            s->first = cc->next;
-	  else if((pc->next = cc->next) == NULL)
-            s->last = pc;
-	}
-
-	marcel_lock_release(&s->lock);
-
-	marcel_enablemigration(cur);
-
-	unlock_task();
-	RAISE(TIME_OUT);
       }
     } else {
 
@@ -1267,6 +1280,7 @@ void marcel_tempo_give_hand(unsigned long timeout,
   unlock_task();
 
   LOG_OUT();
+  return 0;
 }
 
 void marcel_delay(unsigned long millisecs)
@@ -1575,7 +1589,7 @@ any_t idle_func(any_t arg)
 #endif
 
   }
-  LOG_OUT(); // Probably never executed
+  //LOG_OUT(); // Probably never executed
 }
 
 /**************************************************************************/
@@ -1883,8 +1897,6 @@ void marcel_sched_init(void)
 {
   LOG_IN();
 
-  marcel_sig_init();
-
   _main_struct.nb_tasks = 0;
 
   memset(__main_thread, 0, sizeof(task_desc));
@@ -1925,6 +1937,8 @@ void marcel_sched_start(unsigned nb_lwp)
 #endif
 
   LOG_IN();
+
+  marcel_sig_init();
 
 #ifdef MA__LWPS
 

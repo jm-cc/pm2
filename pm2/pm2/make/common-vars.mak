@@ -65,7 +65,7 @@ COMMON_CLEAN  :=#
 else  # silent
 COMMON_PREFIX  =  @
 COMMON_HIDE   :=  @
-COMMON_CLEAN  :=  @	
+COMMON_CLEAN  :=  @
 endif
 endif
 endif
@@ -86,7 +86,6 @@ endif
 ifndef OLD_MAKEFILE
 # Set variable if not set
 ifeq ($(PM2_MAK_DIR),)
-PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
+export PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
 endif
 endif # OLD_MAKEFILE
-

@@ -49,6 +49,7 @@ Other options
   --stampfile   : stampfile generated
   --loader      : loader used
   --preload     : dynamic libraries to be pre-loaded
+  --ld-library-path : dynamic library path to be added
 
 Known values for MODULE are:
     ${_PM2CONFIG_MODULES}
@@ -208,13 +209,9 @@ pm2config_set_vars()
 	eval _LIB='$'${_lib}_to_upper
 	eval _libname='$'PM2_${_LIB}_LIBNAME
 
-	# Libs stamp files
-	eval _PM2CONFIG_${_libname}_STAMP_FILE=${_PM2CONFIG_BUILD}/${_lib}/lib/lib${_libname}${PM2_EXT}.a
-	eval export _PM2CONFIG_${_libname}_STAMP_FILE
-	eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
-
 	# Directories
-	eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/${_lib}/lib
+	#eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/${_lib}/lib
+	eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/lib
 	eval export _PM2CONFIG_${_lib}_LIB_DIR
 
 	eval _PM2CONFIG_${_lib}_BIN_DIR=$_PM2CONFIG_BUILD/${_lib}/bin
@@ -240,6 +237,32 @@ pm2config_set_vars()
 
 	eval _PM2CONFIG_${_lib}_INCLUDE_DIR=$_PM2CONFIG_BUILD/${_lib}/include${_PM2CONFIG_EXT}
 	eval export _PM2CONFIG_${_lib}_INCLUDE_DIR
+
+	STAMP_FILES=""
+	eval _dir='$'_PM2CONFIG_${_lib}_LIB_DIR
+	if [ "$PM2_COMMON_LINK_MODE_DYNAMIC" = yes ]; then
+	    eval _PM2CONFIG_${_lib}_BUILD_DYNAMIC=true
+	    STAMP_FILES=${_dir}/lib${_libname}${PM2_EXT}.so
+	    case ":${_PM2CONFIG_LD_LIBRARY_PATH}:" in
+		*:${_dir}:*)
+		    ;;
+		*)
+		    _PM2CONFIG_LD_LIBRARY_PATH=${_PM2CONFIG_LD_LIBRARY_PATH:+${_PM2CONFIG_LD_LIBRARY_PATH}:}${_dir} ;;
+	    esac
+	fi
+	eval export _PM2CONFIG_${_lib}_BUILD_DYNAMIC
+
+	if [ "$PM2_COMMON_LINK_MODE_STATIC" = yes ]; then
+	    eval _PM2CONFIG_${_lib}_BUILD_STATIC=true
+	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}${PM2_EXT}.a"
+	fi
+	eval export _PM2CONFIG_${_lib}_BUILD_STATIC
+
+	# Libs stamp files
+	eval _PM2CONFIG_${_libname}_STAMP_FILE='"'$STAMP_FILES'"'
+	eval export _PM2CONFIG_${_libname}_STAMP_FILE
+	eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
+
     done
 
     # Make directory
@@ -412,7 +435,7 @@ pm2config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload)
+    --ext|--protocols|--modules|--profmods|--headgenmods|--cc|--stampfile|--loader|--preload|--ld-library-path)
 	_other=$1
 	;;
     --cflags)
@@ -507,6 +530,10 @@ pm2config_parse_cmdline() # args
 		;;
 	    --preload)
 		echo $_PM2CONFIG_PRELOAD
+		exit 0
+		;;
+	    --ld-library-path)
+		echo $_PM2CONFIG_LD_LIBRARY_PATH
 		exit 0
 		;;
 	    --stampfile)

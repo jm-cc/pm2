@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -30,15 +29,23 @@
 
 //#define DSM_PROT_TRACE
 //#define DSM_COMM_TRACE
+//#define DSM_QUEUE_TRACE
+
+
+#ifdef DSM_PROT_TRACE
+#define ENTER() fprintf(stderr, "[%p] -> %s\n", marcel_self(), __FUNCTION__)
+#define EXIT() fprintf(stderr, "[%p] <- %s\n", marcel_self(), __FUNCTION__)
+#else
+#define ENTER()
+#define EXIT()
+#endif
 
 void dsmlib_rf_ask_for_read_copy(unsigned long index)
 {
 
-#ifdef DSM_PROT_TRACE
-  tfprintf(stderr, "call to dsm_ask_for_read_copy(%d)\n", index);
-#endif
+  ENTER();
 
-  if (dsm_get_access(index) == READ_ACCESS)
+  if (dsm_get_access(index) >= READ_ACCESS)
     {
       return;
     }
@@ -58,13 +65,14 @@ void dsmlib_rf_ask_for_read_copy(unsigned long index)
 #ifdef DSM_COMM_TRACE
   tfprintf(stderr, "RF: I got page %d (I am %p) \n", index, marcel_self());
 #endif
+  EXIT();
 }
 
 void dsmlib_migrate_thread(unsigned long index)
 {
-#ifdef DSM_PROT_TRACE
-  tfprintf(stderr, "Starting dsmlib_migrate_thread(%d)\n", index);
-#endif
+
+  ENTER();
+
   dsm_unlock_page(index); 
   pm2_enable_migration();
   pm2_freeze();
@@ -72,6 +80,8 @@ void dsmlib_migrate_thread(unsigned long index)
   tfprintf(stderr, "I will migrate to %d (I am %p)\n", dsm_get_prob_owner(index), marcel_self());
 #endif
   pm2_migrate(marcel_self(), dsm_get_prob_owner(index));
+
+  EXIT();
 }
 
 void dsmlib_wf_ask_for_write_access(unsigned long index)
@@ -82,6 +92,7 @@ void dsmlib_wf_ask_for_write_access(unsigned long index)
 
   if (dsm_get_access(index) == WRITE_ACCESS)
       return;
+  ENTER();
 
   if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
     {
@@ -113,84 +124,134 @@ void dsmlib_wf_ask_for_write_access(unsigned long index)
       tfprintf(stderr, "WF: I got page %d (I am %p)\n", index, marcel_self());
 #endif
     }
+  EXIT();
 }
 
 
 void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int tag)
 {
-  dsm_lock_page(index);
 
 #ifdef DSM_PROT_TRACE
-  tfprintf(stderr, "entering the read server(%d), access = %d\n", index, dsm_get_access(index));
+  fprintf(stderr, "entering the read server(%ld), access = %d\n", index, dsm_get_access(index));
 #endif
 
-  if (dsm_get_access(index) >= READ_ACCESS) // there is a local copy of the page
+//  dsm_lock_page(index);
+
+  if (!dsm_next_owner_is_set(index))
     {
-      dsm_add_to_copyset(index, req_node);
-      //      lock_task();
-      //      if (dsm_get_access(index) != WRITE_ACCESS)
-      //	dsm_set_access(index, WRITE_ACCESS);
-      dsm_set_access(index, WRITE_ACCESS); // the local copy will be read_only
-      dsm_send_page(req_node, index, READ_ACCESS, tag);
-      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
-      //      unlock_task();
-    }
-  else // no access; maybe a pending access ?
-    if (dsm_get_pending_access(index) != NO_ACCESS && !dsm_next_owner_is_set(index))
-      {
+      if (dsm_get_access(index) >= READ_ACCESS) // there is a local copy of the page
+	{
+	  dsm_add_to_copyset(index, req_node);
+//	        if (dsm_get_access(index) != WRITE_ACCESS)
+//	  	dsm_set_access(index, WRITE_ACCESS);
+	  dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+	  dsm_send_page(req_node, index, READ_ACCESS, tag);
+//           dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+         }
+      else // no access; maybe a pending access ?
+        if (dsm_get_pending_access(index) != NO_ACCESS)
+	  {
 #ifdef DSM_QUEUE_TRACE
-	tfprintf(stderr, "RS: storing req(%d) from node %d, pending access = %d\n", index, req_node, dsm_get_pending_access(index));
-	//assert(req_node != dsm_self());
+	    tfprintf(stderr, "RS: storing req(%d) from node %d, pending access = %d\n", index, req_node, dsm_get_pending_access(index));
+	    assert(req_node != dsm_self());
 #endif
-	dsm_store_pending_request(index, req_node);
-      }
-    else // no access nor pending access? then forward req to prob owner!
-      {
+	    dsm_store_pending_request(index, req_node);
+	  }
+	else // no access nor pending access? then forward req to prob owner!
+	{
 #ifdef DSM_COMM_TRACE
-      tfprintf(stderr, "RS: forwarding req(%d) from node %d to node %d, pending access = %d\n", index, req_node, dsm_get_prob_owner(index), dsm_get_pending_access(index));
+	  tfprintf(stderr, "RS: forwarding req(%ld) from node %d to node %d, pending access = %d\n", index, req_node, dsm_get_prob_owner(index), dsm_get_pending_access(index));
+#endif
+	  dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, tag);
+	}
+    }
+  else
+if (req_node == dsm_get_next_owner(index))
+  {
+	  dsm_add_to_copyset(index, req_node);
+//	        if (dsm_get_access(index) != WRITE_ACCESS)
+//	  	dsm_set_access(index, WRITE_ACCESS);
+	  dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+	  dsm_send_page(req_node, index, READ_ACCESS, tag);
+//           dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+  }
+else
+    {
+#ifdef DSM_COMM_TRACE
+      tfprintf(stderr, "RS: forwarding req(%ld) from node %d to node %d, pending access = %d\n", index, req_node, dsm_get_prob_owner(index), dsm_get_pending_access(index));
 #endif
       dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, READ_ACCESS, tag);
     }
-  dsm_unlock_page(index);
+  
+//  dsm_unlock_page(index);
+
+  EXIT();
 }
 
 
 void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_node, int tag)
 {
-  dsm_lock_page(index);
+
 #ifdef DSM_PROT_TRACE
-  tfprintf(stderr, "entering the write server(%d), req_node = %d\n", index, req_node);
+  fprintf(stderr, "entering the write server(%ld), req_node = %d\n", index, req_node);
 #endif
-  if (dsm_get_prob_owner(index) == dsm_self()) // I am the owner
-    {
-      if (dsm_get_access(index) == READ_ACCESS)//20/10/99
-	dsm_invalidate_copyset(index, req_node);
-      //      lock_task();
-      //      if (dsm_get_access(index) != WRITE_ACCESS)
-      //	dsm_set_access(index, WRITE_ACCESS);
-      dsm_set_access(index, WRITE_ACCESS); // the local copy will become read-only
+//  dsm_lock_page(index);
+
+     if (dsm_next_owner_is_set(index))
+       {
+	 if(dsm_get_next_owner(index) == req_node)
+	   {
+	     if (dsm_get_access(index) == READ_ACCESS)//20/10/99
+	         dsm_invalidate_copyset(index, req_node);
+//            if (dsm_get_access(index) != WRITE_ACCESS)
+//      	dsm_set_access(index, WRITE_ACCESS);
+      dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
       dsm_send_page(req_node, index, WRITE_ACCESS, tag);
       dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
-      //      unlock_task();
-    }
-  else // no access; maybe a pending access ?
-    if (dsm_get_pending_access(index) == WRITE_ACCESS && !dsm_next_owner_is_set(index))
-      {
-	assert(req_node != dsm_self());
-#ifdef DSM_QUEUE_TRACE
-	tfprintf(stderr, "WS: setting next owner (%d) as node %d\n", index, req_node);
-#endif
-	dsm_set_next_owner(index, req_node);
-      }
-    else // no access nor pending access? then forward req to prob owner!
-      {
+      dsm_set_prob_owner(index, req_node); // req_node will soon be owner
+	   }
+	 else
+	   {
 #ifdef DSM_COMM_TRACE
-	tfprintf(stderr, "WS: forwarding req(%d) from node %d to node %d, pending access = %d\n", index, req_node, dsm_get_prob_owner(index), dsm_get_pending_access(index));
+	     tfprintf(stderr, "WS: forwarding req(%d) from node %d to node %d, pending access = %d\n", index, req_node, dsm_get_prob_owner(index), dsm_get_pending_access(index));
 #endif
-	dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, WRITE_ACCESS, tag);
-      }
-  dsm_set_prob_owner(index, req_node); // req_node will soon be owner
-  dsm_unlock_page(index);
+	     dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, WRITE_ACCESS, tag);
+	     dsm_set_prob_owner(index, req_node); // req_node will soon be owner		    
+	   }
+       }
+     else
+       if (dsm_get_prob_owner(index) == dsm_self())
+	 {
+	     if (dsm_get_access(index) == READ_ACCESS)//20/10/99
+	         dsm_invalidate_copyset(index, req_node);
+      //      if (dsm_get_access(index) != WRITE_ACCESS)
+      //	dsm_set_access(index, WRITE_ACCESS);
+      dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
+      dsm_send_page(req_node, index, WRITE_ACCESS, tag);
+      dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
+      dsm_set_prob_owner(index, req_node); // req_node will soon be owner
+	 }
+       else
+       if (dsm_get_pending_access(index) == WRITE_ACCESS)
+	 {
+	    assert(req_node != dsm_self());
+#ifdef DSM_QUEUE_TRACE
+	    tfprintf(stderr, "WS: setting next owner (%d) as node %d\n", index, req_node);
+#endif
+	    dsm_set_next_owner(index, req_node);
+	    dsm_set_prob_owner(index, req_node); // req_node will soon be owner
+	  }
+       else
+	 {
+#ifdef DSM_COMM_TRACE
+	   tfprintf(stderr, "WS: forwarding req(%d) from node %d to node %d, pending access = %d\n", index, req_node, dsm_get_prob_owner(index), dsm_get_pending_access(index));
+#endif
+	   dsm_send_page_req(dsm_get_prob_owner(index), index, req_node, WRITE_ACCESS, tag);
+	   dsm_set_prob_owner(index, req_node); // req_node will soon be owner
+	 }
+
+//  dsm_unlock_page(index);
+  EXIT();
 }
 
 
@@ -235,8 +296,8 @@ void dsmlib_is_invalidate(unsigned long index, dsm_node_t req_node, dsm_node_t n
 #endif
       dsm_send_invalidate_ack(req_node, index);
     }
-
-  dsm_set_prob_owner(index, new_owner);
+  if(dsm_self() != new_owner)
+      dsm_set_prob_owner(index, new_owner); // ?? 15/03
 #ifdef DSM_PROT_TRACE
   tfprintf(stderr, "exiting the invalidate server(%d), req node =%d\n", index, req_node);
 #endif
@@ -254,13 +315,13 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
      tfprintf(stderr, "Received page %ld <- %d for %s (I am %p)\n", index, reply_node, (access == 1)?"read":"write", marcel_self());
 #endif
      if (access == READ_ACCESS)
-       {
+       {	   
+	 dsm_set_access(index, READ_ACCESS);
 	 if (dsm_get_pending_access(index) == READ_ACCESS)
 	   {
 	     dsm_set_prob_owner(index, reply_node);
 	     dsm_set_pending_access(index, NO_ACCESS);
 	   }
-	 dsm_set_access(index, READ_ACCESS);
        }
      else // access = WRITE_ACCESS
        {
@@ -273,15 +334,13 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 #ifdef DSM_PROT_TRACE
 	     tfprintf(stderr,"invalidated copyset\n");
 #endif
-	     //lock_task();
-	     dsm_set_prob_owner(index, dsm_self());
     	     dsm_set_access(index, WRITE_ACCESS);
+	     if ( ! dsm_next_owner_is_set(index))
+	       dsm_set_prob_owner(index, dsm_self());
 	     dsm_set_pending_access(index, NO_ACCESS);
-	     //unlock_task();
 	   }
 	 else
 	   {
-	     //dsm_set_access(index, WRITE_ACCESS);
 	     RAISE (PROGRAM_ERROR);
 	   }
        }
@@ -291,24 +350,32 @@ void dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t reply_n
 #endif
      // process pending requests
      // should wait for a while ?
-     dsm_unlock_page(index);
+     
+//     dsm_unlock_page(index);
+          marcel_delay(40);
+     //     marcel_yield();
      while ((node = dsm_get_next_pending_request(index)) != NO_NODE)
       {
 #ifdef DSM_QUEUE_TRACE
-	tfprintf(stderr, "Processing R-req from node %d (I am %p)\n", node, marcel_self());
+	tfprintf(stderr, "Processing R-req(%d) from node %d (I am %p)\n", index, node, marcel_self());
 #endif
-	(*dsm_get_read_server(index))(index, node, 0);
+	(*dsm_get_read_server(dsm_get_page_protocol(index)))(index, node, 0);
       }
      if(access == WRITE_ACCESS && dsm_next_owner_is_set(index))
       {
-	marcel_delay(10);
 	node = dsm_get_next_owner(index);
 #ifdef DSM_QUEUE_TRACE
-	tfprintf(stderr, "Processing W-req from next owner: node %d (I am %p) \n", node, marcel_self());
+	tfprintf(stderr, "Processing W-req (%d)from next owner: node %d (I am %p) \n", index, node, marcel_self());
 #endif
-	(*dsm_get_write_server(index))(index, node, 0);
+	(*dsm_get_write_server(dsm_get_page_protocol(index)))(index, node, 0);
 	dsm_clear_next_owner(index); // these last 2 calls should be atomic...
       }
+
+//     dsm_lock_page(index);
+
+     dsm_unlock_page(index);
+     
+     EXIT();
 }
 
 

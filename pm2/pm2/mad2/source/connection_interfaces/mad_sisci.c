@@ -33,6 +33,10 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.38  2001/01/16 09:54:25  oaumage
+- modification de l'usage des flags
+- modification de la presentation du module TCP
+
 Revision 1.37  2000/11/10 14:17:57  oaumage
 - nouvelle procedure d'initialisation
 
@@ -189,10 +193,10 @@ ______________________________________________________________________________
  * note: 's' is supposed to be a pointer on a status structure
  */
 #define MAD_SISCI_DISPLAY_ERROR(s) DISP("SISCI failure: " s "\n")
-#define mad_sisci_set(s)    tbx_set((s)->flag)
-#define mad_sisci_clear(s)  tbx_clear((s)->flag)
-#define mad_sisci_toggle(s) tbx_toggle((s)->flag)
-#define mad_sisci_test(s)   tbx_test((s)->flag)
+#define mad_sisci_set(s)    tbx_set(&((s)->flag))
+#define mad_sisci_clear(s)  tbx_clear(&((s)->flag))
+#define mad_sisci_toggle(s) tbx_toggle(&((s)->flag))
+#define mad_sisci_test(s)   tbx_test(&((s)->flag))
 #define mad_sisci_control() if (sisci_error != SCI_ERR_OK)\
  {mad_sisci_display_error(sisci_error);FAILURE("Aborting");} else {}
 

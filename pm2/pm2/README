@@ -58,12 +58,21 @@ madeleine/ directories). For instance, if you choosed to keep this
 directories under $PM2_ROOT, you may set :
 
 		setenv MARCEL_ROOT $PM2_ROOT/marcel
-		setenv MADELEINE_ROOT $PM2_ROOT/madeleine
+		setenv MADELEINE_ROOT $PM2_ROOT/mad1
+		setenv MAD2_ROOT $PM2_ROOT/mad2
+		setenv DSM_ROOT $PM2_ROOT/dsm
 
-		setenv PATH $MARCEL_ROOT/bin:$MADELEINE_ROOT/bin:$PATH
-
+		setenv PATH $MARCEL_ROOT/bin:$MADELEINE_ROOT/bin:$MAD2_ROOT/bin:$PATH
 
 II . Compiling a PM2 application +++++++++++++++++++++++++++++++++++++
+
+NOTE: There are currently two versions of the Madeleine communication
+package. Before trying to target a given network protocol, please
+select either Madeleine I or Madeleine II by typing:
+
+		pm2madselect 1
+	or
+		pm2madselect 2
 
 To build the PM2 library, first choose the underlying communication
 package you want to use. For instance, if you want to build a

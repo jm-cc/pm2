@@ -289,7 +289,7 @@ inline static int remove_success_req(marcel_ev_server_t server,
 	}
 	ma_spin_lock(&server->req_success_lock);
 	list_del_init(&req->chain_req_success);
-	mdebug("Removing success ev %p pour [%s]\n", ev, id->name);
+	mdebug("Removing success ev %p pour [%s]\n", req, server->name);
 	ma_spin_unlock(&server->req_success_lock);	
 	
 	LOG_RETURN(0);
@@ -421,7 +421,7 @@ inline static int __poll_group(marcel_ev_server_t server, marcel_ev_req_t req)
 	    ( server->req_poll_nb > 1 
 	      || ! server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE])) {
 		mdebug("Factorizing %i polling(s) with POLL_GROUP for [%s]\n",
-		       server->ev_poll_nb, server->name);
+		       server->req_poll_nb, server->name);
 		(*server->funcs[MARCEL_EV_FUNCTYPE_POLL_GROUP])
 			(server, MARCEL_EV_FUNCTYPE_POLL_POLLONE,
 			 req, server->req_poll_nb, 0);
@@ -670,8 +670,8 @@ inline static int __register(marcel_ev_server_t server, marcel_ev_req_t req)
 
 	LOG_IN();
 	/* On doit ajouter la requête à celles en attente */
-	mdebug("Register event for [%s]\n", id->name);
-	mdebug("Grouping Poll event %p for [%s]\n", ev, id->name);
+	mdebug("Register event for [%s]\n", server->name);
+	mdebug("Grouping Poll event %p for [%s]\n", req, server->name);
 	list_add(&req->chain_req, &server->list_req_poll);
 	server->req_poll_nb++;
 	req->state |= (MARCEL_EV_STATE_GROUPED|MARCEL_EV_STATE_REGISTERED);

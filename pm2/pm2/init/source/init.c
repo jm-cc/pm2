@@ -446,7 +446,7 @@ void common_post_init(int *argc, char *argv[],
   pm2_init_set_rank(argc, argv, pm2self, pm2_conf_size);
 #endif /* PM2 */
 
-#if defined(PROFILE) && (defined(PM2) || defined(MAD2))
+#if defined(PROFILE) && (defined(PM2) || defined(MAD2) || defined(MAD3))
   profile_set_tracefile("/tmp/prof_file_%d", pm2self);
 #endif /* PROFILE */
 

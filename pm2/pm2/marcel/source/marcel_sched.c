@@ -411,7 +411,7 @@ static __inline__ __lwp_t *choose_lwp(marcel_t t)
 // Utilise par les fonctions one_more_task, wait_all_tasks, etc.
 static marcel_lock_t __wait_lock = MARCEL_LOCK_INIT;
 
-// Appele a chaque fois qu'une tache est cree (y compris par le biais
+// Appele a chaque fois qu'une tache est creee (y compris par le biais
 // de end_hibernation).
 void marcel_one_more_task(marcel_t pid)
 {
@@ -1772,6 +1772,8 @@ static void marcel_fix_nb_vps(unsigned nb_lwp)
 				       " | wc -l`"));
 #elif defined(IRIX_SYS)
   __nb_processors = sysconf(_SC_NPROC_CONF);
+#elif defined(OSF_SYS)
+  __nb_processors = sysconf(_SC_NPROCESSORS_CONF);
 #else
   __nb_processors = 1;
 #endif

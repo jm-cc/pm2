@@ -57,6 +57,8 @@ static void cpu_view_callback(GtkWidget *w, gpointer data)
   strcat(s, " --print_process");
   pid = exec_single_cmd_fmt(NULL,s);
   exec_wait(pid);
+  pid = exec_single_cmd_fmt(NULL, "viewsig");
+  exec_wait(pid); 
 }
 
 static void thread_view_callback(GtkWidget *w, gpointer data)
@@ -67,7 +69,9 @@ static void thread_view_callback(GtkWidget *w, gpointer data)
   options_to_string(s + 10);
   strcat(s, " --print_thread");
   pid = exec_single_cmd_fmt(NULL,s);
-  exec_wait(pid);
+  exec_wait(pid); 
+  pid = exec_single_cmd_fmt(NULL, "viewsig");
+  exec_wait(pid); 
 }
 
 

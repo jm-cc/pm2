@@ -375,6 +375,23 @@ void pm2debug_init_ext(int *argc, char **argv, int debug_flags)
 
 	while ((opt<=(*argc)) && (argv[opt])) {
 	  
+#ifdef LEONIE
+	  // If the TBX lib is included as part of Leonie 
+	  // only the args up to the configuration file name should
+	  // be extracted.
+	  // Args appeating after the cfg file name on the command line
+	  // are dedicated to the application
+	  if ((argv[opt])[0] != '-')
+	    {
+	      break;
+	    }
+
+	  if (!strcmp(argv[opt], "--"))
+	    {
+	      break;
+	    }
+#endif // LEONIE
+
 		if (strncmp(argv[opt], "--debug", 7)) {
 			opt++;
 			continue;

@@ -271,6 +271,7 @@ tbx_htable_free(p_tbx_htable_t htable)
   htable->nb_element = 0;
   TBX_FREE(htable->bucket_array);
   htable->bucket_array = NULL;
+  TBX_FREE(htable);
   LOG_OUT();
 }
 

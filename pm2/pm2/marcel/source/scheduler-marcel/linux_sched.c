@@ -583,9 +583,9 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 //		nr_running_inc(rq);
 //	}
 	ma_spin_unlock_softirq(&rq->lock);
-	if (!ma_in_atomic()) {
+	// on donne la main aussitôt, bien souvent le meilleur choix
+	if (!ma_in_atomic())
 		ma_schedule();
-	}
 	LOG_OUT();
 }
 

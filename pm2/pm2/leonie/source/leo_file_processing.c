@@ -980,6 +980,8 @@ process_xchannel(p_leonie_t     leonie,
   p_leo_dir_xchannel_t        dir_xchannel            = NULL;
   p_ntbx_process_container_t  dir_xchannel_pc         = NULL;
   p_tbx_slist_t               dir_channel_slist       = NULL;
+  p_tbx_slist_t               xchannel_sub_slist      = NULL;
+  p_tbx_slist_t               sub_channel_name_slist  = NULL;
   char                       *xchannel_reference_name = NULL;
   p_leo_directory_t           dir                     = NULL;
 
@@ -994,6 +996,8 @@ process_xchannel(p_leonie_t     leonie,
   dir_xchannel->name     = tbx_strdup(xchannel_name);
   dir_xchannel_pc        = dir_xchannel->pc;
   dir_channel_slist      = dir_xchannel->dir_channel_slist;
+  xchannel_sub_slist     = leoparse_try_read_as_slist(xchannel, "sub_channels");
+  sub_channel_name_slist = dir_xchannel->sub_channel_name_slist;
 
   xchannel_reference_name =
     TBX_MALLOC(strlen("xchannel") + strlen(xchannel_name) + 2);
@@ -1002,6 +1006,23 @@ process_xchannel(p_leonie_t     leonie,
   if (tbx_slist_is_nil(xchannel_channel_slist))
     {
       leo_terminate("xchannel has empty real channel list");
+    }
+
+  if (xchannel_sub_slist)
+    {
+      tbx_slist_ref_to_head(xchannel_sub_slist);
+      do
+	{
+	  p_leoparse_object_t  object            = NULL;
+	  char                *channel_name      = NULL;
+	  char                *channel_name_copy = NULL;
+
+	  object            = tbx_slist_ref_get(xchannel_sub_slist);
+	  channel_name      = leoparse_get_id(object);
+	  channel_name_copy = tbx_strdup(channel_name);
+	  tbx_slist_append(sub_channel_name_slist, channel_name_copy);
+	}
+      while (tbx_slist_ref_forward(xchannel_sub_slist));
     }
 
   TRACE("====== Process list construction");

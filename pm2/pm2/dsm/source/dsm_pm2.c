@@ -98,6 +98,7 @@ void dsm_pm2_init(int my_rank, int confsize)
   dsm_page_table_init(my_rank, confsize);
   dsm_comm_init();
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
+  token_lock_initialization();
 
   LOG_OUT();
 }
@@ -106,6 +107,7 @@ void dsm_pm2_exit()
 {
   LOG_IN();
 
+  token_lock_finalization();
   dsm_uninstall_pagefault_handler();
 
   LOG_OUT();

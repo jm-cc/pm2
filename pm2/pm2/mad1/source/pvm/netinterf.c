@@ -34,7 +34,8 @@
 */
 
 #include <pvm3.h>
-#include <sys/netinterf.h>
+
+#include "sys/netinterf.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -45,15 +46,15 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#include <mad_timing.h>
+#include "mad_timing.h"
 
 #ifdef PM2
 
-#include <marcel.h>
+#include "marcel.h"
 
 #else
 
-#include <safe_malloc.h>
+#include "safe_malloc.h"
 #define lock_task()
 #define unlock_task()
 #define tfree    FREE

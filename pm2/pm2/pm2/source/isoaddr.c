@@ -356,7 +356,8 @@ static void _isoaddr_send_info_req(node_t dest_node, int index, node_t req_node)
 
 static void _isoaddr_send_info(node_t dest_node, int index)
 {
-  int prot = 0, master = isoaddr_page_get_master(index), nb_pages = 1, k, shared;
+  int master = isoaddr_page_get_master(index), nb_pages = 1, k, shared;
+  dsm_proto_t prot;
   node_t dsm_owner;
 
   LOG_IN();
@@ -717,8 +718,10 @@ void _send_slot_maps_to_the_nodes(int i, int n, isoaddr_attr_t *attr)
          pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&n, sizeof(int));
          pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&attr->status, sizeof(int));
          pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&attr->atomic, sizeof(int));
+#ifdef DSM
          if (attr->status == ISO_SHARED)
-	   pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&attr->protocol, sizeof(int));
+            pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&attr->protocol, sizeof(dsm_proto_t));
+#endif   /* DSM */
 	 pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)global_slot_map[j], bitmap_get_size()/8);
 #ifdef ISOADDR_NEGOCIATION_TRACE 
 	 fprintf(stderr, "LOCAL UNLOCK packed :sender = %d, start = %d, nb = %d, status = %d, prot = %d\n", _local_node_rank, i, n, attr->status, attr->protocol);

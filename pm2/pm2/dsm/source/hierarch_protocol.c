@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.17 2002/11/02 18:17:02 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.18 2002/11/07 15:37:42 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -47,14 +47,6 @@ struct pg_elem_struct
 {
    dsm_page_index_t index; /* index of a page */
    pg_elem_t * next;    /* next element in linked list */
-};
-
-/* linked list of token_locks */
-typedef struct token_elem_struct token_elem_t;
-struct token_elem_struct
-{
-   token_lock_id_t lck_id;
-   token_elem_t * next;
 };
 
 /* linked list of nodes */
@@ -123,10 +115,10 @@ static int expected_diff_acks;
  * invalidation acknowledgements; number of expected invalidations
  * from the local cluster and from remote clusters */
 static marcel_mutex_t local_inval_ack_lock;
-static marcel_mutex_t remote_inval_ack_lock;
+static marcel_cond_t local_inval_ack_cond;
 static int expected_local_invalidations;
 
-static marcel_cond_t local_inval_ack_cond;
+static marcel_mutex_t remote_inval_ack_lock;
 static marcel_cond_t remote_inval_ack_cond;
 static int expected_remote_invalidations;
 
@@ -462,15 +454,13 @@ invalidate_copyset (const dsm_page_index_t index, const dsm_node_t reply_node,
                     const token_lock_id_t lck_id, int * const local_inv_ack,
                     int * const remote_inv_ack, const cs_stay_t cs_stay)
 {
-   copyset_t * page_copyset;
+   copyset_t * const page_copyset = get_page_copyset(index);
 
    IN;
    assert ( index != NO_PAGE );
    assert ( reply_node < pm2_config_size() );
    assert ( reply_node != NOBODY );
    assert ( dsm_get_prob_owner(index) == pm2_self() );
-
-   page_copyset = get_page_copyset(index);
    assert ( page_copyset != NULL );
 
    marcel_mutex_lock(&(page_copyset->token_list_lock));
@@ -1059,8 +1049,6 @@ provide_page (void * const unused)
    copyset_t * page_copyset;
 
    IN;
-   /* unpack the index of the requested page and the list of token
-    * locks acquired while that page is requested */
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &index,
                    sizeof(dsm_page_index_t));
    pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, &req_node, sizeof(dsm_node_t));
@@ -1088,8 +1076,7 @@ provide_page (void * const unused)
 
 
 /**********************************************************************/
-/* send a page request to the home node of the page, with the list of
- * token_locks currently acquired */
+/* send a page request to the home node of the page */
 static void
 send_page_req (dsm_page_index_t index)
 {
@@ -1193,7 +1180,7 @@ hierarch_proto_write_fault_handler (const dsm_page_index_t index)
       return;
    }
 
-   /* if i already has read access on the page, just make a twin and
+   /* if i already have read access on the page, just make a twin and
     * set the page in WRITE access mode */
    if ( pg_access == READ_ACCESS )
    {
@@ -1367,10 +1354,10 @@ hierarch_proto_release_func (const token_lock_id_t lck_id)
    marcel_mutex_unlock(&local_inval_ack_lock);
 
    marcel_mutex_lock(&remote_inval_ack_lock);
-   // this assertion has failed: assert ( expected_remote_invalidations >= 0 );
+   assert ( expected_remote_invalidations >= 0 );
 
    /* partially release the lock if this is not a barrier */
-   if ( lck_id != TOKEN_LOCK_NONE && expected_remote_invalidations > 0 )
+   if ( lck_id != TOKEN_LOCK_NONE && expected_remote_invalidations != 0 )
    {
       TRACE("calling partial_unlock for lock %d", lck_id);
       token_partial_unlock(lck_id);
@@ -1407,6 +1394,7 @@ hierarch_proto_initialization (const int prot_id)
    marcel_mutex_init(&hosted_lock, NULL);
 
    /* copysets */
+   copyset = NULL;
    marcel_mutex_init(&copyset_lock, NULL);
 
    marcel_mutex_init(&diff_ack_lock, NULL);
@@ -1433,9 +1421,6 @@ hierarch_proto_page_add_func (const dsm_page_index_t index)
    assert ( index != NO_PAGE );
 
    /* the twin is initialized to NULL beforehand */
-   /* the copyset is allocated, and its size is set to 0 beforehand */
-   /* the write_page and read_page condition variables are initialized
-    * beforehand */
 
    /* ATTENTION:
     * the prob_owner of this page should already be set properly.  If

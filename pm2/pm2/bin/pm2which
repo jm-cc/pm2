@@ -77,7 +77,8 @@ pm2which_handle_colon() # dir:name
     _dir=$1
     _name=$2
     [ -x ${_PM2WHICH_EXDIR}/${_dir}/bin/${_name} ] || pm2which_error "Error: \"${_PM2WHICH_EXDIR}/${_dir}/bin/${_name}\" exec file not found."
-    _PM2WHICH_RESULT="${_PM2WHICH_EXDIR}/${_dir}/bin/${_name} "
+    _PM2WHICH_RESULT="${_PM2WHICH_EXDIR}/${_dir}/bin/${_name}"
+    _PM2WHICH_NB_FOUND=1
 }
 
 pm2which_find_exec() # file
@@ -90,19 +91,18 @@ pm2which_find_exec() # file
 	set $_fifo
 	_rep=$1
 	shift
-	_fifo=$*
+	_fifo="$*"
 
 	for _f in $_rep/* ; do
 	    if [ -d $_f ] ; then
 		_fifo="$_fifo $_f"
 	    elif [ $_rep/$_file = $_f -a -x $_f ] ; then
-		_PM2WHICH_RESULT=${_PM2WHICH_RESULT:+$_PM2WHICH_RESULT }$_f
+		_PM2WHICH_RESULT="${_PM2WHICH_RESULT:+$_PM2WHICH_RESULT }$_f"
 	    #else : ni un sous-répertoire, ni le fichier que l'on cherche
 	    fi
 	done
     done
 
-    export _PM2WHICH_NB_FOUND
     if [ -n "$_PM2WHICH_RESULT" ] ; then
 	set $_PM2WHICH_RESULT
 	_PM2WHICH_NB_FOUND=$#
@@ -130,11 +130,13 @@ pm2which_calc()
     fi
 
     export _PM2WHICH_RESULT
+    export _PM2WHICH_NB_FOUND
     # On regarde si le nom de la commande est relatif/absolu
     case "$1" in
 	/*)
 	    [ -x $1 ] || pm2which_error "Error: \"$1\" exec file not found."
 	    _PM2WHICH_RESULT=$1
+	    _PM2WHICH_NB_FOUND=1
 	    ;;
 	*:*)
 	    pm2which_handle_colon $1
@@ -190,11 +192,12 @@ export _PM2WHICH_SHOW_PREFIX
 
 _PM2WHICH_ARGS="$*"
 
+export PM2_CONFIG_SOURCEABLE
 if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
-    PM2_CONFIG_SOURCEABLE="${PM2_ROOT}/bin/pm2-fast-config --source-mode"
-    export PM2_CONFIG_SOURCEABLE
+    PM2_CONFIG_SOURCEABLE=yes
 
-    . $PM2_CONFIG_SOURCEABLE
+    set -- --source-mode
+    . ${PM2_ROOT}/bin/pm2-fast-config $*
 
     _PM2WHICH_LOADER=$_PM2CONFIG_LOADER
     export _PM2WHICH_LOADER
@@ -205,13 +208,10 @@ fi
 
 set -- $_PM2WHICH_ARGS
 
-export _PM2WHICH_SOURCE_MODE
 if [ "$1" = --source-mode ] ; then
-    _PM2WHICH_SOURCE_MODE=yes
     shift
     pm2which_parse_cmdline $*
 else
-    _PM2WHICH_SOURCE_MODE=no
     pm2which_parse_cmdline $*
     pm2which_prettyprint $_PM2WHICH_RESULT
     if [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then

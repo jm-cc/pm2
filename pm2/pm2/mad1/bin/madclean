@@ -34,51 +34,51 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
 if test $# -gt 0
 then
     ARCH=$*
 else
-    ARCH=`cat ${MADELEINE_ROOT}/ARCHITECTURES`
+    ARCH=`cat ${MAD1_ROOT}/ARCHITECTURES`
 fi
 
-echo Cleaning MADELEINE:
+echo Cleaning MADELEINE :
 echo
 for i in $ARCH
 do
 	echo $i
 	# librairies 
-	for f in `ls ${MADELEINE_ROOT}/lib/$i`
+	for f in `ls ${MAD1_ROOT}/lib/$i`
 	do
-	    if [ ! -d ${MADELEINE_ROOT}/lib/$i/$f ] ; then
-		echo "	deleting ${MADELEINE_ROOT}/lib/$i/$f"
-		rm ${MADELEINE_ROOT}/lib/$i/$f
+	    if [ ! -d ${MAD1_ROOT}/lib/$i/$f ] ; then
+		echo "	deleting ${MAD1_ROOT}/lib/$i/$f"
+		rm ${MAD1_ROOT}/lib/$i/$f
 	    fi
 	done
 	# objets "source"
-	for f in `ls ${MADELEINE_ROOT}/source/obj/$i`
+	for f in `ls ${MAD1_ROOT}/source/obj/$i`
 	do
-	    if [ ! -d ${MADELEINE_ROOT}/source/obj/$i/$f ] ; then
-		echo "	deleting ${MADELEINE_ROOT}/source/obj/$i/$f"
-		rm ${MADELEINE_ROOT}/source/obj/$i/$f
+	    if [ ! -d ${MAD1_ROOT}/source/obj/$i/$f ] ; then
+		echo "	deleting ${MAD1_ROOT}/source/obj/$i/$f"
+		rm ${MAD1_ROOT}/source/obj/$i/$f
 	    fi
 	done
 	# exemples
-	for f in `ls ${MADELEINE_ROOT}/examples/obj/$i`
+	for f in `ls ${MAD1_ROOT}/examples/obj/$i`
 	do
-	    if [ ! -d ${MADELEINE_ROOT}/examples/obj/$i/$f ] ; then
-		echo "	deleting ${MADELEINE_ROOT}/examples/obj/$i/$f"
-		rm ${MADELEINE_ROOT}/examples/obj/$i/$f
+	    if [ ! -d ${MAD1_ROOT}/examples/obj/$i/$f ] ; then
+		echo "	deleting ${MAD1_ROOT}/examples/obj/$i/$f"
+		rm ${MAD1_ROOT}/examples/obj/$i/$f
 	    fi
 	done
-	for f in `ls ${MADELEINE_ROOT}/examples/bin/$i`
+	for f in `ls ${MAD1_ROOT}/examples/bin/$i`
 	do
-	    if [ ! -d ${MADELEINE_ROOT}/examples/bin/$i/$f ] ; then
-		echo "	deleting ${MADELEINE_ROOT}/examples/bin/$i/$f"
-		rm ${MADELEINE_ROOT}/examples/bin/$i/$f
+	    if [ ! -d ${MAD1_ROOT}/examples/bin/$i/$f ] ; then
+		echo "	deleting ${MAD1_ROOT}/examples/bin/$i/$f"
+		rm ${MAD1_ROOT}/examples/bin/$i/$f
 	    fi
 	done
 done

@@ -621,7 +621,7 @@ mad_end_unpacking(p_mad_connection_t connection)
       dest_ref  = &destination_list_reference;
       tbx_list_reference_init(dest_ref, dest_list);
 
-      if (link->buffer_mode == mad_static_buffer)
+      if (link->buffer_mode == mad_buffer_mode_dynamic)
 	{	    
 	  if (!tbx_empty_list(dest_list))
 	    {

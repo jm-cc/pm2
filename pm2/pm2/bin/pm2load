@@ -30,6 +30,7 @@ Usage: $PROGNAME { option } command
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
     -d      : Run command in debug mode (not supported by all implementations)
+    -s      : Run scripts in debug mode
     -c name : Use console named "name"
     -l      : Also generate a log file on first node
     -L      : As '-l' but do not display the log file
@@ -54,8 +55,15 @@ _pm2load_ambiguity() # prog
     exit 1
 }
 
+log()
+{
+    if [ ! -z "$PM2_SCRIPT_DEBUG" ]; then
+	echo "$*" 1>&2
+    fi
+}
 
 # Programme principal
+log "Running $*"
 
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
@@ -76,6 +84,10 @@ while [ $# -gt 0 ]; do
 	-d|--debug)
 	    shift
 	    PM2_DEBUG=on
+	    ;;
+	-s|--debug)
+	    shift
+	    PM2_SCRIPT_DEBUG=on
 	    ;;
 	-c|--console)
 	    shift
@@ -117,6 +129,10 @@ _prescript_args=""
 
 # Variables automatiquement exportées
 PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}DISPLAY:PM2_LD_LIBRARY_PATH:PM2_FLAVOR
+if [ "$PM2_SCRIPT_DEBUG" = on ]; then
+    export PM2_SCRIPT_DEBUG
+    _prescript_args="$_prescript_args --script-debug"
+fi
 
 # Sauvegarde de la commande et des arguments
 PM2_PROG_NAME=$1
@@ -148,11 +164,6 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 
     # LD library path
     PM2_LD_LIBRARY_PATH="$_PM2CONFIG_LD_LIBRARY_PATH"
-
-    if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
-	LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-	export LD_LIBRARY_PATH
-    fi
 
 else # USE_LOCAL_FLAVOR
 
@@ -211,21 +222,31 @@ fi
 # Variables à exporter
 for v in $*; do
     eval _val=\"\$$v\"
+    log "Exporting $v with value '$_val'"
     if [ -n "$_val" ]; then
 	_prescript_args="$_prescript_args --export $v \"$_val\""
     fi
 done
 
+PM2_PRE_SCRIPT=${PM2_ROOT}/bin/pm2-pre-script.sh
+
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
-    $_PM2CONFIG_LOADER pm2-pre-script.sh $_prescript_args -- \
+    log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+	$PM2_CMD_NAME $prog_args"
+    $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
 	$PM2_CMD_NAME $prog_args 2>&1 | tee /tmp/${USER}-pm2log-0
     exit 0
 elif [ "$PM2_LOGS_ON_NODE_0" = "only" ]; then
-    $_PM2CONFIG_LOADER pm2-pre-script.sh $_prescript_args -- \
+    log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+        $PM2_CMD_NAME $prog_args"
+    $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
         $PM2_CMD_NAME $prog_args > /tmp/${USER}-pm2log-0 2>&1
     exit 0
 else
-    set -- pm2-pre-script.sh $_prescript_args -- \
+    log "Executing: set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
+        $PM2_CMD_NAME $prog_args"
+    log "Executing: . $_PM2CONFIG_LOADER"
+    set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
 	$PM2_CMD_NAME $prog_args
     . $_PM2CONFIG_LOADER
 fi

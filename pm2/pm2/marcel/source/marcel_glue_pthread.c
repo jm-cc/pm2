@@ -27,7 +27,10 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
       new_attr.rt_thread = MARCEL_CLASS_REGULAR;
       new_attr.vpmask = MARCEL_VPMASK_EMPTY;
       new_attr.flags = 0;
-      attr = (pthread_attr_t*)&new_attr;
+      // Le cast par (void*) est demandé par gcc pour respecter la norme C
+      // sinon, on a:
+      // warning: dereferencing type-punned pointer will break strict-aliasing rules
+      attr = (pthread_attr_t*)(void*)&new_attr;
     }
   return marcel_create ((marcel_t*)thread, (marcel_attr_t*)attr,
 			start_routine, arg);
@@ -125,7 +128,7 @@ void __pthread_initialize_minimal(void)
 #endif
 }
 
-void __pthread_initialize(int* argc, char**argv)
+void __pthread_initialize(void)
 {
 #ifdef PM2DEBUG
 	printf("__Initialisation libpthread marcel-based\n");
@@ -143,7 +146,6 @@ void marcel_pthread_initialize(int* argc, char**argv)
 		tbx_init(*argc, argv);
 		/* TODO: A reporter : */
 		marcel_start_sched(argc, argv);
-		marcel_set_activity();
 		/* TODO: à la création du premier thread */
 #ifdef PM2DEBUG
 		printf("Initialisation libpthread marcel-init done (and launched :-()\n");

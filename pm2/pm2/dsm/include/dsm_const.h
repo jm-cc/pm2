@@ -36,9 +36,9 @@
 #ifndef DSM_CONST_IS_DEF
 #define DSM_CONST_IS_DEF
 
-//#define DEBUG1
-//#define DEBUG2
-//#define DEBUG3
+#define DEBUG1
+#define DEBUG2
+#define DEBUG3
 
 typedef enum{NO_ACCESS, READ_ACCESS, WRITE_ACCESS} dsm_access_t;
 

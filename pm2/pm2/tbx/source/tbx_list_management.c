@@ -36,6 +36,12 @@
 
 ______________________________________________________________________________
 $Log: tbx_list_management.c,v $
+Revision 1.4  2000/05/22 13:45:55  oaumage
+- correction de bugs divers
+
+Revision 1.3  2000/05/22 12:20:10  oaumage
+- Listes de recherche
+
 Revision 1.2  2000/03/01 11:03:46  oaumage
 - mise a jour des #includes ("")
 
@@ -67,9 +73,8 @@ static p_tbx_memory_t tbx_list_manager_memory;
 void tbx_list_manager_init()
 {
   tbx_malloc_init(&tbx_list_manager_memory,
-		  sizeof(tbx_list_t),
-		  INITIAL_LIST_ELEMENT
-		  );
+		  sizeof(tbx_list_element_t),
+		  INITIAL_LIST_ELEMENT);
 }
 
 void tbx_list_init(p_tbx_list_t list)

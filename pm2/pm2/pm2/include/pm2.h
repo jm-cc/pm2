@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.19  2000/07/04 08:14:17  rnamyst
+By default, netserver threads are *not* spawned when only a single
+process is running.
+
 Revision 1.18  2000/03/01 16:43:04  oaumage
 - suppression des warnings en compilation  -g
 
@@ -91,7 +95,7 @@ void pm2_halt(void);
 
 void pm2_exit(void);
 
-_PRIVATE_ extern unsigned __pm2_self, __conf_size;
+_PRIVATE_ extern unsigned __pm2_self, __pm2_conf_size;
 
 static __inline__ unsigned pm2_self(void) __attribute__ ((unused));
 static __inline__ unsigned pm2_self(void)
@@ -102,7 +106,7 @@ static __inline__ unsigned pm2_self(void)
 static __inline__ unsigned pm2_config_size(void) __attribute__ ((unused));
 static __inline__ unsigned pm2_config_size(void)
 {
-  return __conf_size;
+  return __pm2_conf_size;
 }
 
 void pm2_printf(char *format, ...);

@@ -83,7 +83,7 @@ static int _dsm_page_protect_arg = 0;
 static dsm_user_data1_init_func_t _dsm_user_data1_init_func;
 static dsm_user_data2_init_func_t _dsm_user_data2_init_func;
 
-static int _default_dsm_protocol = LI_HUDAK;
+static int _default_dsm_protocol;
 
 static int __inline__ _dsm_get_prot(dsm_access_t access) __attribute__ ((unused));
 static int __inline__ _dsm_get_prot(dsm_access_t access)
@@ -230,6 +230,7 @@ static __inline__ void _dsm_global_vars_init(int my_rank, int confsize)
 
   dsm_local_node_rank = (dsm_node_t)my_rank;
   dsm_nb_nodes = confsize;
+  _default_dsm_protocol = LI_HUDAK;
 
   /* global vars for the static area: */ 
   static_dsm_base_addr = (char *) DSM_PAGEALIGN(&dsm_data_begin);

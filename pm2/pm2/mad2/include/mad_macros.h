@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_macros.h,v $
+Revision 1.3  2000/01/04 16:47:30  oaumage
+- ajout du flag OOPS et modification de la macro FAILURE:
+  -> quand OOPS est defini, FAILURE genere un `segfault' pour arreter
+     l'execution sous debugger
+
 Revision 1.2  1999/12/15 17:31:23  oaumage
 Ajout de la commande de logging de CVS
 
@@ -55,6 +60,9 @@ ______________________________________________________________________________
 
 /* TRACE: main trace flag */
 /* #define TRACE */
+
+/* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
+#define OOPS
 
 /*
  * Classical boolean type
@@ -135,9 +143,15 @@ typedef enum
 
 
 /* FAILURE: display an error message and abort the program */
+#ifdef OOPS
+#define FAILURE(str) \
+  fprintf(stderr, "MADELEINE FAILURE: %s\nFILE: %s\nLINE: %d\n", \
+            str, __FILE__, __LINE__),   *(int *)0 = 0,   exit(1)
+#else /* OOPS */
 #define FAILURE(str) \
   fprintf(stderr, "MADELEINE FAILURE: %s\nFILE: %s\nLINE: %d\n", \
             str, __FILE__, __LINE__),   exit(1)
+#endif /* OOPS */
 
 #define CTRL_ALLOC(ptr) \
   { \

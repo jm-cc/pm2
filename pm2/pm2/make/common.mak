@@ -73,6 +73,7 @@ GLOBAL_OPTIONS	=	-Wall -O6 #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
 MAD2            =       no
+TOOLBOX         =       no
 DSM		=	no
 
 OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
@@ -99,12 +100,17 @@ endif
 MAD2_MAD1	=	yes
 
 ifeq ($(MAD2),yes)
+TOOLBOX = yes
 PM2_FLAGS += -DMAD2
 ifeq ($(MAD2_MAD1),yes)
 PM2_FLAGS += -DMAD2_MAD1
 endif
 else
 PM2_FLAGS += -DMAD1
+endif
+
+ifeq ($(TOOLBOX),yes)
+PM2_FLAGS += -DTBX
 endif
 
 PM2_LIBD	=	$(PM2_ROOT)/lib/$(PM2_ARCH_SYS)
@@ -118,7 +124,11 @@ PM2_SOBJ	=	$(PM2_SRC)/obj/$(PM2_ARCH_SYS)
 PM2_BIN		=	bin/$(PM2_ARCH_SYS)
 PM2_OBJ		=	obj/$(PM2_ARCH_SYS)
 
+ifeq ($(TOOLBOX),yes)
+default: pm2_default mad_default mar_default tbx_default
+else
 default: pm2_default mad_default mar_default
+endif
 
 include $(MARCEL_ROOT)/make/common.mak
 
@@ -130,6 +140,10 @@ endif
 
 ifeq ($(DSM),yes)
 include $(DSM_ROOT)/make/common.mak
+endif
+
+ifeq ($(TOOLBOX),yes)
+include $(PM2_ROOT)/toolbox/make/common.mak
 endif
 
 PM2_MAKEFILE	=	$(PM2_ROOT)/make/common.mak \
@@ -162,7 +176,11 @@ PM2_CC		=	$($(PM2_SYS)_CC)
 endif
 
 PM2_CFLAGS	=	$(PM2_FLAGS) \
-			-I$(PM2_INC) -I$(MAD_INC) -I$(MAR_INC)
+			-I$(PM2_INC) -I$(MAD_INC) -I$(MAR_INC) 
+
+ifeq ($(TOOLBOX),yes)
+PM2_CFLAGS	+=	-I$(TBX_INC)
+endif
 
 ifeq ($(DSM),yes)
 PM2_CFLAGS	+=	-I$(DSM_INC)
@@ -174,8 +192,12 @@ ifeq ($(DSM),yes)
 PM2_LFLAGS	+=	$(DSM_LFLAGS)
 endif
 
-PM2_LIBS	=	$(PM2_LIB) $(MAD_LIB) $(MAR_LIB) $(DSM_LIB)
-PM2_LLIBS	=	$(PM2_LLIB) $(MAD_LLIB) $(MAR_LLIB) $(DSM_LLIB)
+PM2_LIBS	=	$(PM2_LIB) $(MAD_LIB) $(MAR_LIB) $(DSM_LIB) 
+PM2_LLIBS	=	$(PM2_LLIB) $(MAD_LLIB) $(MAR_LLIB) $(DSM_LLIB) 
+ifeq ($(TOOLBOX),yes)
+PM2_LIBS	+=	$(TBX_LIB)
+PM2_LLIBS	+=	$(TBX_LLIB)
+endif
 
 PM2_LINK	=	$(PM2_CC) $(PM2_LFLAGS) -o $@ $(PM2_OBJ)/$(@F).o
 PM2_MOVE	=	mv $@ $(PM2_BIN)

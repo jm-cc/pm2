@@ -32,7 +32,7 @@ DUMMY_BUILD	:=	$(shell if [ ! -d $(TMP_DIR) ]; then mkdir -p $(TMP_DIR); fi)
 OPTIONS		:=	-DUSE_TRACE -g
 
 CC		:=	gcc
-CFLAGS		:=	-O6 -Wall $(shell gtk-config --cflags) $(OPTIONS)
+CFLAGS		:=	-O6 -Wall -I. $(shell gtk-config --cflags) $(OPTIONS)
 LDFLAGS		:=	$(shell gtk-config --libs) -lfl
 
 ifneq (,$(findstring $(PM2_SYS),"WIN98_SYS_WINNT_SYS_WIN2K_SYS"))

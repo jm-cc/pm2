@@ -14,7 +14,7 @@ be_list init_be_list(long nb_preallocated_be_cells)
 void add_to_be_list(be_list *my_list, unsigned long to_add){
   be_cell *my_new_be_cell = (be_cell *)tbx_malloc(my_preallocated_memory);
   my_new_be_cell->number = to_add;
-  fprintf(stderr, "Page %lu soon added to list\n", to_add);
+//  fprintf(stderr, "Page %lu soon added to list\n", to_add);
   if(my_list == NULL){
     my_new_be_cell->next = NULL;
     *my_list = my_new_be_cell;

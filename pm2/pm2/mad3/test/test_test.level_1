@@ -43,5 +43,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --mad3=\"debug gdb ${net}\" \
  --ntbx=\"debug gdb\" \
  --tbx=\"debug gdb\" \
- --common=\"debug gdb static\"
+ --common=\"debug gdb\" \
+ --all=\"build_static\"
 

@@ -63,7 +63,8 @@ static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
-static const int param_one_way           = 0;
+static const int param_one_way           = 1;
+static const int param_unreliable        = 1;
 
 static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;
@@ -258,8 +259,23 @@ ping(p_mad_channel_t      channel,
       p_mad_connection_t connection = NULL;
 
       connection = mad_begin_packing(channel, lrank_dst);
-      mad_pack(connection, main_buffer, param_max_size,
-	       param_send_mode, param_receive_mode);
+      if (param_unreliable)
+        {
+          p_mad_buffer_slice_parameter_t param = NULL;
+
+          param = mad_alloc_slice_parameter();
+          param->length = 0;
+          param->opcode = mad_op_optional_block;
+          param->value  = 100;
+          mad_pack_ext(connection, main_buffer, param_max_size,
+                       param_send_mode, param_receive_mode, param, NULL);
+        }
+      else
+        {
+          mad_pack(connection, main_buffer, param_max_size,
+                   param_send_mode, param_receive_mode);
+        }
+
       mad_end_packing(connection);
 
       connection = mad_begin_unpacking(channel);
@@ -267,7 +283,7 @@ ping(p_mad_channel_t      channel,
 		 param_send_mode, param_receive_mode);
       mad_end_unpacking(connection);
     }
-  
+
   for (size = param_min_size;
        size <= param_max_size;
        size = param_step?size + param_step:size * 2)
@@ -290,8 +306,23 @@ ping(p_mad_channel_t      channel,
 	  while (nb_tests--)
 	    {
 	      connection = mad_begin_packing(channel, lrank_dst);
-	      mad_pack(connection, main_buffer, _size,
-		       param_send_mode, param_receive_mode);
+              if (param_unreliable)
+                {
+                  p_mad_buffer_slice_parameter_t param = NULL;
+
+                  param = mad_alloc_slice_parameter();
+                  param->length = 0;
+                  param->opcode = mad_op_optional_block;
+                  param->value  = 100;
+                  mad_pack_ext(connection, main_buffer, _size,
+                               param_send_mode, param_receive_mode, param, NULL);
+                }
+              else
+                {
+                  mad_pack(connection, main_buffer, _size,
+                           param_send_mode, param_receive_mode);
+                }
+
 	      mad_end_packing(connection);
 	    }
 
@@ -317,8 +348,23 @@ ping(p_mad_channel_t      channel,
 		  p_mad_connection_t connection = NULL;
 
 		  connection = mad_begin_packing(channel, lrank_dst);
-		  mad_pack(connection, main_buffer, _size,
-			   param_send_mode, param_receive_mode);
+                  if (param_unreliable)
+                    {
+                      p_mad_buffer_slice_parameter_t param = NULL;
+
+                      param = mad_alloc_slice_parameter();
+                      param->length = 0;
+                      param->opcode = mad_op_optional_block;
+                      param->value  = 100;
+                      mad_pack_ext(connection, main_buffer, _size,
+                                   param_send_mode, param_receive_mode, param, NULL);
+                    }
+                  else
+                    {
+                      mad_pack(connection, main_buffer, _size,
+                               param_send_mode, param_receive_mode);
+                    }
+
 		  mad_end_packing(connection);
 
 		  connection = mad_begin_unpacking(channel);
@@ -373,11 +419,25 @@ pong(p_mad_channel_t      channel,
       mad_end_unpacking(connection);
 
       connection = mad_begin_packing(channel, lrank_dst);
-      mad_pack(connection, main_buffer, param_max_size,
-	       param_send_mode, param_receive_mode);
+      if (param_unreliable)
+        {
+          p_mad_buffer_slice_parameter_t param = NULL;
+
+          param = mad_alloc_slice_parameter();
+          param->length = 0;
+          param->opcode = mad_op_optional_block;
+          param->value  = 100;
+          mad_pack_ext(connection, main_buffer, param_max_size,
+                       param_send_mode, param_receive_mode, param, NULL);
+        }
+      else
+        {
+          mad_pack(connection, main_buffer, param_max_size,
+                   param_send_mode, param_receive_mode);
+        }
       mad_end_packing(connection);
     }
-  
+
   for (size = param_min_size;
        size <= param_max_size;
        size = param_step?size + param_step:size * 2)
@@ -400,8 +460,24 @@ pong(p_mad_channel_t      channel,
 	    }
 
 	  connection = mad_begin_packing(channel, lrank_dst);
-	  mad_pack(connection, &dummy, sizeof(dummy),
-		   param_send_mode, param_receive_mode);
+
+          if (param_unreliable)
+            {
+              p_mad_buffer_slice_parameter_t param = NULL;
+
+              param = mad_alloc_slice_parameter();
+              param->length = 0;
+              param->opcode = mad_op_optional_block;
+              param->value  = 100;
+              mad_pack_ext(connection, &dummy, sizeof(dummy),
+                           param_send_mode, param_receive_mode, param, NULL);
+            }
+          else
+            {
+              mad_pack(connection, &dummy, sizeof(dummy),
+                       param_send_mode, param_receive_mode);
+            }
+
 	  mad_end_packing(connection);
 	}
       else
@@ -422,8 +498,22 @@ pong(p_mad_channel_t      channel,
 		  mad_end_unpacking(connection);
 
 		  connection = mad_begin_packing(channel, lrank_dst);
-		  mad_pack(connection, main_buffer, _size,
-			   param_send_mode, param_receive_mode);
+                  if (param_unreliable)
+                    {
+                      p_mad_buffer_slice_parameter_t param = NULL;
+
+                      param = mad_alloc_slice_parameter();
+                      param->length = 0;
+                      param->opcode = mad_op_optional_block;
+                      param->value  = 100;
+                      mad_pack_ext(connection, main_buffer, _size,
+                                   param_send_mode, param_receive_mode, param, NULL);
+                    }
+                  else
+                    {
+                      mad_pack(connection, main_buffer, _size,
+                               param_send_mode, param_receive_mode);
+                    }
 		  mad_end_packing(connection);
 		}
 	    }
@@ -649,13 +739,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 }
 #endif // STARTUP_ONLY
 
-/*
- * Warning: this function is automatically renamed to marcel_main when
- * appropriate
- */
 int
-main(int    argc,
-     char **argv)
+marcel_main(int    argc,
+            char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;
@@ -677,11 +763,11 @@ main(int    argc,
   process_grank = session->process_rank;
   {
     char host_name[1024] = "";
-    
+
     SYSCALL(gethostname(host_name, 1023));
     DISP("(%s): My global rank is %d", host_name, process_grank);
   }
-  
+
   DISP_VAL("The configuration size is",
 	   tbx_slist_get_length(madeleine->dir->process_slist));
 

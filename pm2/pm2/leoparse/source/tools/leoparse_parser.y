@@ -25,14 +25,21 @@
 {
   char                      *str;
   char                      *id;
+  int                        val;
+  p_leoparse_range_t         range;
+  p_leoparse_modifier_t      modifier;
   p_tbx_slist_t              list;
   p_tbx_htable_t             htable;
   p_leoparse_htable_entry_t  htable_entry;
   p_leoparse_object_t        object;
 }
 
-%token <str> LEOP_ID LEOP_STRING 
-%token '{' '}' ':' ';' ',' INCONNU
+%token <val> LEOP_INTEGER
+%token <id> LEOP_ID 
+%token <str> LEOP_STRING 
+%token '{' '}' '[' ']' LEOP_RANGE '(' ')' ':' ';' ',' INCONNU
+%type <range>              leop_range
+%type <modifier>           leop_modifier
 %type <object>             leop_object
 %type <list>               leop_list
 %type <htable_entry>       leop_htable_entry
@@ -101,13 +108,13 @@ leop_htable_entry:
 leop_list:
   leop_list ',' leop_object
 {
-  tbx_slist_enqueue($1, $3);  
+  tbx_slist_append($1, $3);  
   $$ = $1;
 }
 | leop_object
 {
   $$ = tbx_slist_nil();
-  tbx_slist_enqueue($$, $1);
+  tbx_slist_append($$, $1);
 }
 ;
 
@@ -124,11 +131,54 @@ leop_object:
   $$->type = leoparse_o_id;
   $$->id   = $1;
 }
+| LEOP_ID leop_modifier
+{
+  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$->type = leoparse_o_id;
+  $$->id   = $1;
+  $$->modifier = $2;
+}
 | LEOP_STRING
 {
   $$ = calloc(1, sizeof(leoparse_object_t));
   $$->type   = leoparse_o_string;
   $$->string = $1;
+}
+| LEOP_INTEGER
+{
+  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$->type   = leoparse_o_integer;
+  $$->val = $1;
+}
+| leop_range
+{
+  $$ = calloc(1, sizeof(leoparse_object_t));
+  $$->type   = leoparse_o_range;
+  $$->range = $1;
+}
+;
+
+leop_modifier:
+'[' leop_list ']'
+{
+  $$ = calloc(1, sizeof(leoparse_modifier_t));
+  $$->type = leoparse_m_sbracket;
+  $$->sbracket = $2;  
+}
+|'(' leop_list ')'
+{
+  $$ = calloc(1, sizeof(leoparse_modifier_t));
+  $$->type = leoparse_m_parenthesis;
+  $$->sbracket = $2;
+}
+;
+
+leop_range:
+LEOP_INTEGER LEOP_RANGE LEOP_INTEGER
+{
+  $$ = calloc(1, sizeof(leoparse_range_t));
+  $$->begin = $1;
+  $$->end   = $3 + 1;
 }
 ;
 

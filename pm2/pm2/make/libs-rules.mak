@@ -79,7 +79,7 @@ ifneq ($(MAKECMDGOALS),distclean)
 DUMMY_BUILD :=  $(foreach REP, $(LIB_REP_TO_BUILD), $(shell mkdir -p $(REP)))
 
 ifneq ($(wildcard $(LIB_DEPENDS)),)
-include $(LIB_DEPENDS)
+include $(wildcard $(LIB_DEPENDS))
 endif
 endif
 endif
@@ -117,7 +117,7 @@ $(LIB_C_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
 
 $(LIB_C_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.c
-	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(LIB_C_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC)/%.c
@@ -132,7 +132,7 @@ $(LIB_S_PICS): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC)/%.S
 	$(LIB_PREFIX) $(AS) $(CFLAGS) -fPIC -c $(LIB_PIC_TO_S) -o $@
 
 $(LIB_S_DEPENDS): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC)/%.S
-	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(LIB_S_PREPROC): $(LIB_GEN_CPP)/%$(LIB_EXT).si: $(LIB_SRC)/%.S
@@ -143,7 +143,7 @@ $(LIB_FUT): $(LIB_GEN_CPP)/%.fut: $(LIB_GEN_CPP)/%.i
 	$(LIB_PREFIX) cp /dev/null $@
 	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo.o
 	$(COMMON_HIDE) nm /tmp/foo.o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
-
+	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/fut_stamp
 
 .PHONY: clean libclean repclean examplesclean distclean
 clean: libclean repclean examplesclean

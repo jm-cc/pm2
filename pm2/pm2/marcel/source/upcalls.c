@@ -29,7 +29,7 @@
 
 #include <sched.h>
 #include <stdlib.h>
-#include <sys/upcalls.h>
+#include "sys/upcalls.h"
 
 #ifdef MA__DEBUG
 #include <stdio.h>
@@ -60,25 +60,28 @@ void act_goto_next_task(marcel_t pid, int from)
 
 void locked_start() {}
 
-extern int hack_restart_func (act_proc_t new_proc, int return_value, 
-		  int param, long eip, long esp) asm ("hack_restart_func");
+extern int real_restart_func (act_proc_t new_proc, int return_value, 
+		  int k_param, long eip, long esp, int u_param) 
+     asm ("real_restart_func");
 extern void restart_func (act_proc_t new_proc, int return_value, 
-		  int param, long eip, long esp) asm ("restart_func");
+		  int k_param, long eip, long esp, int u_param) 
+     asm ("restart_func");
 /*  void restart_func(act_proc_t new_proc, int return_value,  */
-/*  		  int param, long eip, long esp); */
+/*  		  int k_param, long eip, long esp, int u_param); */
+
 
 __asm__ (".align 16 \n\
 .globl restart_func \n\
 	.type	 restart_func,@function \n\
 restart_func: \n\
 	addl $4, %esp \n\
-	movl %ebx, 20(%esp) \n\
-	movl %ecx, 24(%esp) \n\
-	movl %edx, 28(%esp) \n\
-	call hack_restart_func \n\
-	movl 28(%esp), %edx \n\
-	movl 24(%esp), %ecx \n\
-	movl 20(%esp), %ebx \n\
+	movl %ebx, 24(%esp) \n\
+	movl %ecx, 28(%esp) \n\
+	movl %edx, 32(%esp) \n\
+	call real_restart_func \n\
+	movl 32(%esp), %edx \n\
+	movl 28(%esp), %ecx \n\
+	movl 24(%esp), %ebx \n\
 	movl 16(%esp), %esp \n\
 	ret \n\
 .Lmye: \n\
@@ -94,8 +97,8 @@ int mysleep()
 	return 0;
 }
 
-int hack_restart_func(act_proc_t new_proc, int return_value, 
-		      int param, long eip, long esp)
+int real_restart_func(act_proc_t new_proc, int return_value, 
+		      int k_param, long eip, volatile long esp, int u_param)
 {
 	marcel_t current = marcel_self();
 	
@@ -105,9 +108,10 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 /*  		      " ip 0x%8x, sp 0x%8x)\n", */
 /*  		      new_proc, return_value, param, eip, esp); */
 /*  #else */
-	mdebug("\trestart_func (proc %i, ret %i, param %p,"
-	       " ip 0x%8x, sp 0x%8x) locked=%i\n",
-	       new_proc, return_value, (void*)param, eip, esp, locked());
+	mdebug("\trestart_func (proc %i, ret %i, k_param %p,"
+	       " ip 0x%8x, sp 0x%8x, u_param %p) locked=%i\n",
+	       new_proc, return_value, (void*)k_param, eip, esp,
+	       (void*)u_param, locked());
 	//mdebug("adr de desc = %i\n", *((int*)0xbffefdd8));
 /*  #endif */
 	//mysleep();
@@ -158,7 +162,7 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 		}
 	}
 	
-	*(&esp) = esp-4;  /* on veut empiler l'adresse de retour ret */
+	esp = esp-4;  /* on veut empiler l'adresse de retour ret */
 	*((int*)esp) = eip; /* C'est fait :-) */
 	/* PS : Ça marche car le noyau descend suffisamment la pile :
 	 * il y a une vingtaine d'octets entre esp et &esp
@@ -206,12 +210,6 @@ void upcall_new(act_proc_t proc)
  	marcel_t next;
 	//marcel_t new_task=GET_LWP_BY_NUM(proc)->upcall_new_task;
 
-/*  #ifdef SHOW_UPCALL */
-/*  	marcel_printf("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n", */
-/*  		      proc, marcel_self(),GET_LWP_BY_NUM(proc),  */
-/*  		      GET_LWP_BY_NUM(proc)->number ); */
-/*  #else */
-
 	/* le lock_task n'est pas pris : il n'y a pas d'appels
 	 * bloquant DANS marcel.
 	 *
@@ -223,8 +221,7 @@ void upcall_new(act_proc_t proc)
 	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
 	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
 	       GET_LWP_BY_NUM(proc)->number );
-	//mdebug("adr de desc = %i\n", *((int*)0xbffefdd8));
-/*  #endif */
+
 	MTRACE("UpcallNew", marcel_self());
 	//LOG_PTR("*(0x40083756)", *((int**)0x40083756));
 	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
@@ -242,19 +239,28 @@ void upcall_new(act_proc_t proc)
 		}
 	}
 
-/*  	if (act_nb_unblocked) { */
-/*  		mdebug("\ttrying to restart unblocked (%i)\n",  */
-/*  		       act_nb_unblocked); */
-/*  		act_cntl(ACT_CNTL_RESTART_UNBLOCKED,  */
-/*  			 (void*)ACT_RESTART_FROM_UPCALL_NEW); */
-/*  		mdebug("\tfailed to restart unblocked (%i)\n",  */
-/*  		       act_nb_unblocked);		 */
-/*  	} */
+	{
+		marcel_t cur = marcel_self();
+		
+		DEFINE_CUR_LWP( , ,);
+		
+		SET_CUR_LWP(GET_LWP(cur));
 
-	//lock_task(); //A cause des debug, il faut prendre le lock_task avant
-	//sched_lock(cur_lwp);
-	
-	next=marcel_radical_next_task();
+		LOG_IN();
+
+		sched_lock(cur_lwp);
+
+		
+		mdebug("upcall...%p on %p\n", cur, cur_lwp);
+		next = radical_next_task(NULL, cur_lwp);
+		SET_STATE_RUNNING(NULL, t, cur_lwp);
+		sched_unlock(cur_lwp);
+		
+		return t;
+		
+	}
+
+	//next=marcel_radical_next_task();
 	mdebug("\tupcall_new next=%p (state %i)\n", next, next->ext_state);
 	
 	//ACTDEBUG(printf("upcall_new launch %p\n", next));  
@@ -263,7 +269,6 @@ void upcall_new(act_proc_t proc)
 	GET_LWP(marcel_self())->prev_running=NULL;
 	MA_THR_LONGJMP(next, NORMAL_RETURN);
 	
-
 	/** Never there normally */	
 	RAISE("Aie, aie aie !\n");
 }

@@ -752,7 +752,7 @@ void marcel_insert_task(marcel_t t)
 #if defined(MA__SMP) && !defined(MA__ONE_QUEUE)
   // Attention : modif récente. Peut-être source de bugs.
   // Surtout, ne pas oublier de positionner ce champ !
-  t->lwp = cur_lwp;
+  SET_LWP(t, cur_lwp);
 #endif
 
   mdebug("\t\t\t<Insertion of task %p on LWP %d>\n", t, cur_lwp->number);
@@ -1328,7 +1328,7 @@ static int marcel_check_sleeping(void)
 
   } else
     mdebug("LWP(%d) failed to acquire __delayed_lock\n",
-	   marcel_self()->lwp->number);
+	   GET_LWP(marcel_self())->number);
 
   IDLE_LOG_OUT();
 
@@ -1583,9 +1583,9 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
 
     if(initial_task) {
       SCHED_DATA(lwp).first = initial_task;
-      initial_task->lwp = lwp;
+      SET_LWP(initial_task, lwp);
       mdebug("marcel_self : %p, lwp : %i\n", marcel_self(),
-	     marcel_self()->lwp->number);
+	     GET_LWP(marcel_self())->number);
       INIT_LIST_HEAD(&initial_task->task_list);
       SET_STATE_RUNNING(NULL, initial_task, GET_LWP(initial_task));
       /* Désormais, on s'exécute dans le lwp 0 */
@@ -1635,7 +1635,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   }
 #endif
 
-  lwp->idle_task->lwp = lwp;
+  SET_LWP(lwp->idle_task, lwp);
 #if defined(MA__LWPS) && !defined(MA__ONE_QUEUE) 
   lwp->idle_task->previous_lwp = NULL;
 #endif
@@ -1676,7 +1676,7 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   MTRACE("Upcall_Task", lwp->upcall_new_task);
   SET_FROZEN(lwp->upcall_new_task);
   UNCHAIN_TASK(lwp->upcall_new_task);
-  lwp->upcall_new_task->lwp = lwp;
+  SET_LWP(lwp->upcall_new_task, lwp);
 
   marcel_one_task_less(lwp->upcall_new_task);
 
@@ -1792,7 +1792,7 @@ static void *lwp_startup_func(void *arg)
 unsigned marcel_sched_add_vp(void)
 {
   __lwp_t *lwp = (__lwp_t *)__TBX_MALLOC(sizeof(__lwp_t), __FILE__, __LINE__),
-          *cur_lwp = marcel_self()->lwp;
+          *cur_lwp = GET_LWP(marcel_self());
 
   LOG_IN();
 
@@ -1952,7 +1952,7 @@ void marcel_sched_shutdown()
 #endif
 
 #ifdef MA__SMP
-  if(marcel_self()->lwp != &__main_lwp)
+  if(GET_LWP(marcel_self()) != &__main_lwp)
     RAISE(PROGRAM_ERROR);
 
   lwp = next_lwp(&__main_lwp);
@@ -1993,7 +1993,7 @@ void marcel_sched_shutdown()
 
 inline void marcel_update_time(marcel_t cur)
 {
-  if(cur->lwp == &__main_lwp)
+  if(GET_LWP(cur) == &__main_lwp)
     __milliseconds += time_slice/1000;
 }
 
@@ -2015,6 +2015,12 @@ static void timer_interrupt(int sig)
 #endif
 
   marcel_update_time(cur);
+
+#ifdef PM2DEBUG
+  if(GET_LWP(cur) == NULL) {
+    fprintf(stderr, "WARNING!!! GET_LWP(%p) == NULL!\n", cur);
+  }
+#endif
 
   if(!locked() && preemption_enabled()) {
 
@@ -2071,8 +2077,8 @@ static void fault_catcher(int sig)
 
   fprintf(stderr, "OOPS!!! Signal %d catched on thread %p\n",
 	  sig, cur);
-  if(cur->lwp != NULL)
-    fprintf(stderr, "OOPS!!! current lwp is %d\n", cur->lwp->number);
+  if(GET_LWP(cur) != NULL)
+    fprintf(stderr, "OOPS!!! current lwp is %d\n", GET_LWP(cur)->number);
 
 #ifdef LINUX_SYS
   fprintf(stderr, "OOPS!!! Entering endless loop (pid = %d)\n",

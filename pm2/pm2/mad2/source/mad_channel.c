@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.14  2000/05/18 14:05:48  oaumage
+- Suppression des TBX_LOCK
+
 Revision 1.13  2000/03/27 08:50:51  oaumage
 - pre-support decoupage de groupes
 - correction au niveau du support du demarrage manuel
@@ -102,7 +105,6 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   ntbx_host_id_t              host;
 
   LOG_IN();
-  TBX_LOCK();
   TRACE("channel allocation");
   TBX_LOCK_SHARED(madeleine);
   TBX_LOCK_SHARED(adapter);
@@ -110,7 +112,6 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   CTRL_ALLOC(channel);
 
   TBX_INIT_SHARED(channel);
-  TBX_LOCK_SHARED(channel);
   channel->id             = madeleine->nb_channel++;
   channel->adapter        = adapter;
   channel->reception_lock = tbx_false;
@@ -253,10 +254,8 @@ mad_open_channel(p_mad_madeleine_t madeleine,
     interface->after_open_channel(channel);
 
   tbx_append_list(&(madeleine->channel), channel);
-  TBX_UNLOCK_SHARED(channel);
   TBX_UNLOCK_SHARED(adapter);
   TBX_UNLOCK_SHARED(madeleine);
-  TBX_UNLOCK();
   LOG_OUT();
   
   return channel;
@@ -276,7 +275,6 @@ mad_foreach_close_channel(void *object)
   LOG_IN();
 
   TRACE("channel deallocation");
-  TBX_LOCK();
   TBX_LOCK_SHARED(adapter);
   TBX_LOCK_SHARED(channel);
 
@@ -409,13 +407,14 @@ mad_foreach_close_channel(void *object)
   TBX_FREE(channel);
   /* Note: the channel is never unlocked since it is being destroyed */
   TBX_UNLOCK_SHARED(adapter);
-  TBX_UNLOCK();
   LOG_OUT();
 }
 
 void
 mad_close_channels(p_mad_madeleine_t madeleine)
 {
+  LOG_IN();
   tbx_foreach_destroy_list(&(madeleine->channel),
 			   mad_foreach_close_channel);
+  LOG_OUT();
 }

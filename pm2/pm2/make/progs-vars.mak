@@ -38,7 +38,9 @@ export PROGRAM
 
 include $(PM2_ROOT)/make/common-vars.mak
 
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/progs-libs.mak
+endif
 
 $(PROGRAM):
 
@@ -48,7 +50,9 @@ endif
 
 PRG_SRC := source
 
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/progs-config.mak
+endif
 
 ifneq ($($(PROGRAM)_CC),)
 CC := $($(PROGRAM)_CC)
@@ -101,8 +105,11 @@ PRG_GEN_H_TO_C   =  $(PRG_GEN_INC)/$(patsubst %.h,%.c,$(notdir $@))
 COMMON_DEPS += $(PRG_STAMP_FLAVOR) $(MAKEFILE_FILE) 
 
 $(PM2_MAK_DIR)/progs-config.mak: $(PRG_STAMP_FLAVOR)
+	@echo "Generating $@"
 	@$(PM2_CONFIG) --gen_mak progs
 
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 $(PM2_MAK_DIR)/progs-libs.mak: $(PRG_STAMP_FLAVOR)
 	@mkdir -p `dirname $@`
 	@echo "CONFIG_MODULES= " `$(PM2_CONFIG) --modules` > $@
+endif

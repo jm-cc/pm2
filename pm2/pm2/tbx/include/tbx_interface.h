@@ -34,6 +34,13 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.5  2000/05/22 13:45:45  oaumage
+- ajout d'une fonction de tri aux listes de recherche
+- correction de bugs divers
+
+Revision 1.4  2000/05/22 12:18:59  oaumage
+- listes de recherche
+
 Revision 1.3  2000/03/13 09:48:17  oaumage
 - ajout de l'option TBX_SAFE_MALLOC
 - support de safe_malloc
@@ -193,5 +200,77 @@ tbx_reset_list_reference(p_tbx_list_reference_t ref);
 
 tbx_bool_t 
 tbx_reference_after_end_of_list(p_tbx_list_reference_t ref);
+
+/*
+ * Search list management
+ * ----------------------
+ */
+void
+tbx_slist_manager_init();
+
+void
+tbx_slist_init(p_tbx_slist_t slist);
+
+void
+tbx_slist_manager_exit();
+
+void
+tbx_slist_append_head(p_tbx_slist_t  slist,
+		      void          *object);
+
+void
+tbx_slist_append_tail(p_tbx_slist_t  slist,
+		      void          *object);
+void *
+tbx_slist_extract_head(p_tbx_slist_t  slist);
+
+void *
+tbx_slist_extract_tail(p_tbx_slist_t  slist);
+
+void
+tbx_slist_add_after(p_tbx_slist_reference_t  ref,
+		    void                    *object);
+
+void
+tbx_slist_add_before(p_tbx_slist_reference_t  ref,
+		     void                    *object);
+
+void *
+tbx_slist_remove(p_tbx_slist_reference_t ref);
+
+void *
+tbx_slist_get(p_tbx_slist_reference_t ref);
+
+tbx_bool_t
+tbx_slist_search(p_tbx_slist_search_func_t  sfunc,
+		 void                      *ref_obj,
+		 p_tbx_slist_reference_t    ref);
+
+void
+tbx_slist_ref_init_head(p_tbx_slist_t           slist,
+			p_tbx_slist_reference_t ref);
+
+void
+tbx_slist_ref_init_tail(p_tbx_slist_t           slist,
+			p_tbx_slist_reference_t ref);
+
+tbx_bool_t
+tbx_slist_ref_fwd(p_tbx_slist_reference_t ref);
+
+tbx_bool_t
+tbx_slist_ref_rew(p_tbx_slist_reference_t ref);
+
+void
+tbx_slist_ref_to_head(p_tbx_slist_reference_t ref);
+
+void
+tbx_slist_ref_to_tail(p_tbx_slist_reference_t ref);
+
+tbx_bool_t
+tbx_slist_ref_defined(p_tbx_slist_reference_t ref);
+
+void
+tbx_slist_sort(p_tbx_slist_t          slist,
+	       p_tbx_slist_cmp_func_t cmp);
 
 #endif /* __TBX_INTERFACE_H */

@@ -147,10 +147,6 @@ int get_next_filtered_trace(trace *tr)
 }
 
 // Same as get_next_filtered_trace but considers every switch_to as valid
-// 0 if !eof and valid
-// 1 if eof and !valid
-// 2 if eof and valid
-// 3 if !eof and !valid
 int get_next_loose_filtered_trace(trace *tr)
 {
   int eof = 0;
@@ -159,14 +155,9 @@ int get_next_loose_filtered_trace(trace *tr)
     if (is_valid_calc(tr, eof) == TRUE) {
       if (eof != 0) eof = 2;
       break;
-    } else if ((tr->type == KERNEL) && (tr->code >> 8 == FKT_SWITCH_TO_CODE)) {
-      if (eof == 0) eof = 3;
+    } else if ((tr->type == KERNEL) && (tr->code >> 8 == FKT_SWITCH_TO_CODE))
       break;
-    }
-    else if ((tr->type == USER) && (tr->code >> 8 == FUT_SWITCH_TO_CODE)) {
-      if (eof == 0) eof = 3;
-      break;
-    }
+    else if ((tr->type == USER) && (tr->code >> 8 == FUT_SWITCH_TO_CODE)) break;
   }
   return eof;
 }
@@ -217,8 +208,7 @@ int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end
 
 int max_cpu()
 {
-  //  return nb_cpu;        // This is not perfect return 4;
-  return 4;
+  return nb_cpu;        // This is not perfect return 4;
 }
 
 u_64 get_begin_pid(int pid)

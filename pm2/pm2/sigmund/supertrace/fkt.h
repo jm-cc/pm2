@@ -70,6 +70,7 @@
 #define FKT_CALIBRATE0_CODE			0x220
 #define FKT_CALIBRATE1_CODE			0x221
 #define FKT_CALIBRATE2_CODE			0x222
+#define FKT_NEW_LWP                             0x230
 #define FKT_RET_FROM_SYS_CALL_CODE	0x2ff	/* generic ret_from_sys_call */
 
 /*	Codes for use with fkt items */

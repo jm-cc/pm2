@@ -42,13 +42,25 @@ else
 	ECHO='echo .'
 fi
 
+if [ "${PM2_ROOT}" = "" ]; then
+    echo "PM2_ROOT is not defined"
+    exit 1
+fi
+
 . ${PM2_ROOT}/bin/pm2_vars
+
+make_ln()
+{
+    $ECHO
+    cd $1
+    if [ ! -h $3 ]; then
+	ln -s $2 $3
+    fi
+}
 
 # pm2 links
 echo PM2
-$ECHO
-cd ${PM2_ROOT}; 		ln -s marcel/ARCHITECTURES ARCHITECTURES
-$ECHO
+make_ln ${PM2_ROOT} marcel/ARCHITECTURES ARCHITECTURES
 
 
 # architecture-specific directories for the storage of binaries, etc.
@@ -58,104 +70,74 @@ $ECHO
 # Marcel
 echo
 echo Marcel
-cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
-$ECHO
-cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
-$ECHO
-cd ${MARCEL_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-$ECHO
-cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
-$ECHO
-cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
-$ECHO
-cd ${MARCEL_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-$ECHO
-cd ${MARCEL_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
-$ECHO
-cd ${MARCEL_ROOT}/source/;	ln -s ../../source/timing.c timing.c
-$ECHO
+make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_arch pm2_arch
+make_ln ${MARCEL_ROOT}/bin/ ../../bin/pm2_sys pm2_sys
+make_ln ${MARCEL_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
+make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
+make_ln ${MARCEL_ROOT}/include/sys/ ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
+make_ln ${MARCEL_ROOT}/include/ ../../include/timing.h timing.h
+make_ln ${MARCEL_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
+make_ln ${MARCEL_ROOT}/source/ ../../source/timing.c timing.c
 
 # Mad I
 echo
 echo Madeleine I
-cd ${MAD1_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
-$ECHO
-cd ${MAD1_ROOT}/bin/;	ln -s custom/madload madload
-$ECHO
-cd ${MAD1_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
-$ECHO
-cd ${MAD1_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
-$ECHO
+make_ln ${MAD1_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
+make_ln ${MAD1_ROOT}/bin/ custom/madload madload
+make_ln ${MAD1_ROOT}/bin/ ../../bin/pm2_arch pm2_arch
+make_ln ${MAD1_ROOT}/bin/ ../../bin/pm2_sys pm2_sys
 
 # Mad I / VIA
 if [ -d ${MAD1_ROOT}/bin/via ] ; then
-    cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madload madload
-    $ECHO
-    cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
-    $ECHO
+    make_ln ${MAD1_ROOT}/bin/via/ ../tcp/madload madload    
+    make_ln ${MAD1_ROOT}/bin/via/ ../tcp/madspawn madspawn
 else
-    cd ${MAD1_ROOT}/bin;        ln -s ./tcp via
+    make_ln ${MAD1_ROOT}/bin ./tcp via
 fi
 
 # Mad I / SISCI
 if [ -d ${MAD1_ROOT}/bin/sisci ] ; then
-cd ${MAD1_ROOT}/bin/sisci/;	ln -s ../tcp/madload madload
-$ECHO
-cd ${MAD1_ROOT}/bin/sisci/;	ln -s ../tcp/madspawn madspawn
-$ECHO
+    make_ln ${MAD1_ROOT}/bin/sisci/ ../tcp/madload madload
+    make_ln ${MAD1_ROOT}/bin/sisci/ ../tcp/madspawn madspawn
 else
-    cd ${MAD1_ROOT}/bin;        ln -s ./tcp sisci
+    make_ln ${MAD1_ROOT}/bin ./tcp sisci
 fi
 
 # Mad I / SHM
 if [ -d ${MAD1_ROOT}/bin/shm ] ; then
-cd ${MAD1_ROOT}/bin/shm/;	ln -s ../tcp/madload madload
-$ECHO
-cd ${MAD1_ROOT}/bin/shm/;	ln -s ../tcp/madspawn madspawn
-$ECHO
+    make_ln ${MAD1_ROOT}/bin/shm/ ../tcp/madload madload
+    make_ln ${MAD1_ROOT}/bin/shm/ ../tcp/madspawn madspawn
 else
-    cd ${MAD1_ROOT}/bin;        ln -s ./tcp shm
+    make_ln ${MAD1_ROOT}/bin ./tcp shm
 fi
 
-cd ${MAD1_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-$ECHO
-cd ${MAD1_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
-$ECHO
-cd ${MAD1_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-$ECHO
-cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-bip
-$ECHO
-cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-lam
-$ECHO
-cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-sgi
-$ECHO
-cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-sp2
-$ECHO
-cd ${MAD1_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
-$ECHO
-cd ${MAD1_ROOT}/source/;	ln -s ../../source/timing.c timing.c
-$ECHO
-cd ${MAD1_ROOT}/source/via/;	ln -s via2.c netinterf.c
-$ECHO
+make_ln ${MAD1_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
+make_ln ${MAD1_ROOT}/include/sys/ ../../../include/sys/debug.h debug.h
+make_ln ${MAD1_ROOT}/include/ ../../include/timing.h timing.h
+make_ln ${MAD1_ROOT}/source/ mpi mpi-bip
+make_ln ${MAD1_ROOT}/source/ mpi mpi-lam
+make_ln ${MAD1_ROOT}/source/ mpi mpi-sgi
+make_ln ${MAD1_ROOT}/source/ mpi mpi-sp2
+make_ln ${MAD1_ROOT}/source/ ../../source/safe_malloc.c safe_malloc.c
+make_ln ${MAD1_ROOT}/source/ ../../source/timing.c timing.c
+make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
+
 
 # Mad II
 echo
 echo Madeleine II
-cd ${MAD2_ROOT}/;	ln -s ../marcel/ARCHITECTURES ARCHITECTURES
-$ECHO
+make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 # DSM
 echo
 echo DSM
-cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-$ECHO
-cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-$ECHO
-cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+make_ln ${DSM_ROOT}/include/ ../../include/timing.h timing.h
+make_ln ${DSM_ROOT}/include/ ../../include/safe_malloc.h safe_malloc.h
+make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 # Madeleine default selection
 
 echo .
-pm2madselect 1
+${PM2_ROOT}/bin/pm2madselect 1
 
 

@@ -2,7 +2,7 @@
  *  \brief TBX dynamic array management routines.
  *
  *  This file implements TBX dynamic uni-dimentionnal arrays
- * 
+ *
  */
 
 /*
@@ -88,7 +88,7 @@ size_t
 tbx_darray_length(p_tbx_darray_t darray)
 {
   size_t length = 0;
-  
+
   LOG_IN();
   length = darray->length;
   LOG_OUT();
@@ -104,11 +104,11 @@ tbx_darray_reset(p_tbx_darray_t darray)
     {
       TBX_FREE(darray->data);
     }
-  
+
   darray->length           =    0;
   darray->allocated_length =    0;
   darray->data             = NULL;
-  LOG_OUT();  
+  LOG_OUT();
 }
 
 static
@@ -137,7 +137,7 @@ __tbx_darray_grow(p_tbx_darray_t     darray,
       darray->allocated_length = idx + 1;
 
       darray->data = TBX_CALLOC(TBX_DARRAY_MIN_SIZE, sizeof(void *));
-      CTRL_ALLOC(darray->data);      
+      CTRL_ALLOC(darray->data);
     }
   LOG_OUT();
 }
@@ -153,10 +153,10 @@ tbx_darray_get(p_tbx_darray_t     darray,
     {
       idx = darray->length - idx;
     }
-  
+
   if (idx < 0)
     FAILURE("out-of-bounds index");
-  
+
   if (idx < darray->length)
     {
       result = darray->data[idx];
@@ -176,10 +176,10 @@ tbx_darray_set(p_tbx_darray_t      darray,
     {
       idx = darray->length - idx;
     }
-  
+
   if (idx < 0 || idx >= darray->length)
     FAILURE("out-of-bounds index");
-  
+
   darray->data[idx] = object;
   LOG_OUT();
 }
@@ -197,7 +197,7 @@ tbx_darray_expand_and_set(p_tbx_darray_t      darray,
     {
       if (idx >= darray->allocated_length)
 	{
-	  __tbx_darray_grow(darray, idx);  
+	  __tbx_darray_grow(darray, idx);
 	}
 
       memset(darray->data + darray->length, 0,
@@ -224,7 +224,7 @@ tbx_darray_expand_and_get(p_tbx_darray_t     darray,
     {
       if (idx >= darray->allocated_length)
 	{
-	  __tbx_darray_grow(darray, idx);  
+	  __tbx_darray_grow(darray, idx);
 	}
 
       memset(darray->data + darray->length, 0,
@@ -246,7 +246,7 @@ tbx_darray_append(p_tbx_darray_t  darray,
   LOG_IN();
   if (darray->length == darray->allocated_length)
     {
-      __tbx_darray_grow(darray, darray->length);  
+      __tbx_darray_grow(darray, darray->length);
     }
   darray->data[darray->length] = object;
   darray->length++;
@@ -263,7 +263,7 @@ tbx_darray_first_idx(p_tbx_darray_t       darray,
   if (darray->length)
     {
       *idx = 0;
-      
+
       do
 	{
 	  if (darray->data[*idx])
@@ -276,7 +276,7 @@ tbx_darray_first_idx(p_tbx_darray_t       darray,
 	}
       while (*idx < darray->length);
     }
-  
+
   LOG_OUT();
 
   return result;

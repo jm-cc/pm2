@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_types.h,v $
+Revision 1.2  2000/05/22 12:19:00  oaumage
+- listes de recherche
+
 Revision 1.1  2000/01/13 14:51:31  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -57,6 +60,7 @@ typedef enum
 
 /* List management related types */
 typedef int     tbx_list_length_t,          *p_tbx_list_length_t;
+typedef int     tbx_slist_length_t,         *p_tbx_slist_length_t;
 typedef int     tbx_list_mark_position_t,   *p_tbx_list_mark_position_t;
 
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_pointers.h,v $
+Revision 1.2  2000/05/22 12:19:00  oaumage
+- listes de recherche
+
 Revision 1.1  2000/01/13 14:51:30  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -51,6 +54,9 @@ ______________________________________________________________________________
 typedef struct s_tbx_list_element    *p_tbx_list_element_t;
 typedef struct s_tbx_list            *p_tbx_list_t;
 typedef struct s_tbx_list_reference  *p_tbx_list_reference_t;
+typedef struct s_tbx_slist_element   *p_tbx_slist_element_t;
+typedef struct s_tbx_slist           *p_tbx_slist_t;
+typedef struct s_tbx_slist_reference *p_tbx_slist_reference_t;
 typedef struct s_tbx_memory          *p_tbx_memory_t;
 
 #endif /* TBX_POINTERS_H */

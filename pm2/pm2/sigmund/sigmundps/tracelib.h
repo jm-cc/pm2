@@ -9,8 +9,6 @@
 #define TRUE 1
 #define FALSE 0
 
-extern filter options;
-
 extern char *fut_code2name(int code);
 
 extern int name2code(char *name, mode *type, int *code);
@@ -39,13 +37,15 @@ extern int get_idle_slices();
 
 extern int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end, u_64 *time);
 
-extern int is_a_valid_proc(int proc);
+//extern int is_a_valid_proc(int proc);
 
-extern int is_a_valid_cpu(int logic);
+//extern int is_a_valid_cpu(int logic);
 
 extern int max_cpu();
 
-extern u_64 get_begin_lwp(int lwp);
+extern int pid_of_cpu(int i);
+
+extern u_64 get_begin_pid(int pid);
 
 extern u_64 get_begin_str();
 

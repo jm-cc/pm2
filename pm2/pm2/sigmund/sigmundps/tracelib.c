@@ -1,3 +1,4 @@
+#include <string.h>
 #include "tracebuffer.h"
 #include "filter.h"
 #include "tracelib.h"
@@ -6,6 +7,8 @@
 #include "fut_code.h"
 #include "lwpthread.h"
 #include "graphlib.h"
+
+extern filter options;
 
 struct time_st {
   u_64 active_time;
@@ -17,8 +20,9 @@ struct time_st {
   int first;
 };
 
-struct time_st timing;
+struct time_st timing;                     // For the profiling option
 
+// gives the name of an event given its code (unshifted)
 char *fut_code2name(int code)
 {
   int i = 0;
@@ -29,6 +33,7 @@ char *fut_code2name(int code)
   }
 }
 
+// gives the name of an event given its code (unshifted)
 char *fkt_code2name(int code)
 {
   int i = 0;
@@ -39,6 +44,8 @@ char *fkt_code2name(int code)
   }
 }
 
+/* gives the code and type given its name
+   Returns 0 if found, -1 if not found */
 int name2code(char *name, mode *type, int *a)
 {
   int i = 0;
@@ -64,6 +71,8 @@ int name2code(char *name, mode *type, int *a)
   return -1;
 }
 
+/* gives the code of a system call given its name
+   Returns 0 if found, -1 if not */
 int sys2code(char *name, int *code)
 {
   int i;
@@ -74,6 +83,8 @@ int sys2code(char *name, int *code)
   return 0;
 }
 
+/* gives the code of a trap given its name
+   Returns 0 if found, -1 if not */
 int trap2code(char *name, int *code)
 {
   int i;
@@ -84,11 +95,13 @@ int trap2code(char *name, int *code)
   return 0;
 }
 
+// Initialise the supertrace
 void tracelib_init(char *supertrace)
 {
   init_trace_file(supertrace);
 }
 
+// Tests if tr is valid according to options and updates the timing
 int is_valid_calc(trace *tr, int eof)
 {
   int v = is_valid(tr);
@@ -118,6 +131,7 @@ int is_valid_calc(trace *tr, int eof)
   return v;
 }
 
+// Gets the next trace valid according to the filter
 // O if not eof, 1 if eof and not valid 2 if eof and valid
 int get_next_filtered_trace(trace *tr)
 {
@@ -132,6 +146,11 @@ int get_next_filtered_trace(trace *tr)
   return eof;
 }
 
+// Same as get_next_filtered_trace but considers every switch_to as valid
+// 0 if !eof and valid
+// 1 if eof and !valid
+// 2 if eof and valid
+// 3 if !eof and !valid
 int get_next_loose_filtered_trace(trace *tr)
 {
   int eof = 0;
@@ -140,19 +159,26 @@ int get_next_loose_filtered_trace(trace *tr)
     if (is_valid_calc(tr, eof) == TRUE) {
       if (eof != 0) eof = 2;
       break;
-    } else if ((tr->type == KERNEL) && (tr->code >> 8 == FKT_SWITCH_TO_CODE))
+    } else if ((tr->type == KERNEL) && (tr->code >> 8 == FKT_SWITCH_TO_CODE)) {
+      if (eof == 0) eof = 3;
       break;
-    else if ((tr->type == USER) && (tr->code >> 8 == FUT_SWITCH_TO_CODE)) break;
+    }
+    else if ((tr->type == USER) && (tr->code >> 8 == FUT_SWITCH_TO_CODE)) {
+      if (eof == 0) eof = 3;
+      break;
+    }
   }
   return eof;
 }
 
+// Close the library
 void tracelib_close()
 {
   close_filter();
   close_trace_file();
 }
 
+// Returns the total time active
 u_64 get_active_time()
 {
   return timing.active_time;
@@ -173,6 +199,8 @@ int get_idle_slices()
   return timing.idle_slices;
 }
 
+// Gives the next function time calculated
+//  Needs to be called in a loop until it returns -1
 int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end, u_64 *time)
 {
   int r;
@@ -187,25 +215,15 @@ int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end
   return r;
 }
 
-int is_a_valid_proc(int proc)
-{
-  return is_in_proc_list(proc);
-}
-
-int is_a_valid_logic(int logic)
-{
-  return is_in_logic_list(logic);
-}
-
 int max_cpu()
 {
-  //  return nb_cpu;
+  //  return nb_cpu;        // This is not perfect return 4;
   return 4;
 }
 
-u_64 get_begin_lwp(int lwp)
+u_64 get_begin_pid(int pid)
 {
-  return get_lwp_last_up(lwp);
+  return get_pid_last_up(pid);
 }
 
 int pid_of_cpu(int i)

@@ -1,9 +1,6 @@
 
 #include <stdio.h>
-
 #include "pm2.h"
-
-#include "timing.h"
 
 #define N 20
 

@@ -169,7 +169,7 @@ void print_jmp_buf(char *name, jmp_buf buf)
 static __inline__ void init_task_desc(marcel_t t)
 {
   t->cur_excep_blk = NULL;
-  t->deviation_func = NULL;
+  t->deviate_work = NULL;
   t->state_lock = MARCEL_LOCK_INIT;
 #if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
   t->previous_lwp = NULL;
@@ -180,6 +180,7 @@ static __inline__ void init_task_desc(marcel_t t)
 #endif
   SET_STATE_READY(t);
   t->special_flags = 0;
+  marcel_sem_init(&t->suspend_sem, 0);
 }
 
 int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t arg)
@@ -621,6 +622,28 @@ void marcel_run(marcel_t pid, any_t arg)
   unlock_task();
 }
 
+static void suspend_handler(any_t arg)
+{
+  if((int)arg) {
+    // Suspend
+    marcel_sem_P(&(marcel_self()->suspend_sem));
+  } else {
+    // Resume
+    marcel_sem_V(&(marcel_self()->suspend_sem));
+  }
+}
+
+void marcel_suspend(marcel_t pid)
+{
+  marcel_deviate(pid, suspend_handler, (any_t)1);
+}
+
+void marcel_resume(marcel_t pid)
+{
+  marcel_deviate(pid, suspend_handler, (any_t)0);
+}
+
+
 int marcel_cleanup_push(cleanup_func_t func, any_t arg)
 {
   marcel_t cur = marcel_self();
@@ -818,197 +841,6 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
     marcel_deviate(t, f, arg);
 
   unlock_task();
-}
-
-void marcel_enabledeviation(void)
-{
-  volatile handler_func_t func;
-  any_t arg;
-  marcel_t cur = marcel_self();
-
-  lock_task();
-  if(--cur->not_deviatable == 0 && cur->deviation_func != NULL) {
-    func = cur->deviation_func;
-    arg = cur->deviation_arg;
-    cur->deviation_func = NULL;
-    unlock_task();
-    (*func)(arg);
-  } else
-    unlock_task();
-}
-
-void marcel_disabledeviation(void)
-{
-  ++marcel_self()->not_deviatable;
-}
-
-static int marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
-{
-  if(pid->deviation_func != NULL) {
-    return 0;
-  } else {
-    pid->deviation_arg = arg;
-    pid->deviation_func = h;
-#ifdef MA__WORK
-    pid->has_work |= MARCEL_WORK_DEVIATE;
-#endif
-    return 1;
-  }
-}
-
-static void insertion_relai(handler_func_t f, void *arg)
-{ 
-  jmp_buf back;
-  marcel_t cur = marcel_self();
-
-  memcpy(back, cur->jbuf, sizeof(jmp_buf));
-
-  if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
-    longjmp(cur->father->jbuf, NORMAL_RETURN);
-  } else {
-    MA_THR_RESTARTED(cur, "Preemption");
-    unlock_task();
-
-    (*f)(arg);
-
-    lock_task();
-    longjmp(back, NORMAL_RETURN);
-  }
-}
-
-/* VERY INELEGANT: to avoid inlining of insertion_relai function... */
-typedef void (*relai_func_t)(handler_func_t f, void *arg);
-static volatile relai_func_t relai_func = insertion_relai;
-
-static void do_deviate(marcel_t pid, handler_func_t h, any_t arg)
-{
-  static volatile handler_func_t f_to_call;
-  static void * volatile argument;
-  static volatile long initial_sp;
-
-  if(setjmp(marcel_self()->jbuf) == FIRST_RETURN) {
-    f_to_call = h;
-    argument = arg;
-     
-    pid->father = marcel_self();
-     
-    initial_sp = MAL_BOT((long)SP_FIELD(pid->jbuf)) -
-      TOP_STACK_FREE_AREA - 256;
-
-    call_ST_FLUSH_WINDOWS();
-    set_sp(initial_sp);
-
-    (*relai_func)(f_to_call, argument);
-	
-    RAISE(PROGRAM_ERROR); // on ne doit jamais arriver ici !
-  }
-}
-
-void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
-{ 
-  LOG_IN();
-
-  lock_task();
-
-  if(pid == marcel_self()) {
-
-    if(pid->not_deviatable) {
-
-      if(!marcel_deviate_record(pid, h, arg))
-	RAISE(NOT_IMPLEMENTED);
-
-      unlock_task();
-    } else {
-      unlock_task();
-
-      (*h)(arg);
-    }
-
-    return;
-  }
-
-#ifndef MA__ONE_QUEUE
-  // Pour l'instant, le SMP-multi files n'est pas supporté...
-  RAISE(NOT_IMPLEMENTED);
-#endif
-
-  // Le thread n'est pas "déviable" en ce moment...  TODO: ce test
-  // n'est absolument pas fiable. Il faut en faire une version
-  // atomique...
-  if(pid->not_deviatable) {
-
-    if(!marcel_deviate_record(pid, h, arg))
-      RAISE(NOT_IMPLEMENTED);
-
-    unlock_task();
-    LOG_OUT();
-    return;
-  }
-
-  // En premier lieu, il faut empêcher la tâche 'cible' de changer
-  // d'état
-  state_lock(pid);
-
-  if(IS_RUNNING(pid)) {
-    // La tâche est actuellement dans la file des threads prêts. On
-    // peut 'figer' le LWP sur lequel elle se trouve avec
-    // sched_lock (rappel : on est en mode ONE_QUEUE).
-    sched_lock(GET_LWP(pid));
-
-    mdebug("Deviate: self_lwp = %d, target_lwp = %d\n",
-	   GET_LWP(marcel_self())->number, GET_LWP(pid)->number);
-
-#ifdef MA__MULTIPLE_RUNNING
-    if(pid->ext_state == MARCEL_RUNNING)
-      {
-	// La tâche est actuellement en cours d'exécution sur un autre
-	// LWP...
-#ifdef MA__WORK
-	// On est sauvé (?)
-	__lwp_t *lwp = GET_LWP(pid);
-
-	sched_unlock(lwp);
-	state_unlock(pid);
-
-	while(!marcel_deviate_record(pid, h, arg)) ;
-
-	// Heuristique: on va essayer d'accélérer les choses...
-	marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
-
-	unlock_task();
-	LOG_OUT();
-	return;
-#else
-	// Tant pis !
-	RAISE(NOT_IMPLEMENTED);
-#endif
-      }
-    else
-#endif // MULTIPLE_RUNNING
-      {
-	// Ici, on sait que la tâche est prête mais non active. On peut
-	// donc la dévier tranquillement...
-
-	do_deviate(pid, h, arg);
-      }
-
-    sched_unlock(GET_LWP(pid));
-
-  } else {
-    // La tâche n'est pas dans la file des threads prêts. On va donc
-    // l'y insérer. ATTENTION: il faut éviter qu'un autre LWP 'vole'
-    // la tâche avant que l'on ait pu la dévier. Il suffit pour cela
-    // de la dévier _avant_ sa réinsertion...
-    do_deviate(pid, h, arg);
-
-    ma_wake_task(pid, NULL);
-  }
-
-  state_unlock(pid);
-
-  unlock_task();
-
-  LOG_OUT();
 }
 
 static unsigned __nb_lwp = 0;

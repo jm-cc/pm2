@@ -39,6 +39,7 @@ extern debug_type_t marcel_trymdebug;
 extern debug_type_t marcel_debug_state;
 extern debug_type_t marcel_debug_work;
 extern debug_type_t marcel_debug_deviate;
+extern debug_type_t marcel_mdebug_sched_q;
 
 extern debug_type_t marcel_lock_task_debug;
 
@@ -57,6 +58,8 @@ extern debug_type_t marcel_mtrace_timer;
     debug_printf(&marcel_debug_work, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 #define mdebug_deviate(fmt, args...) \
     debug_printf(&marcel_debug_deviate, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
+#define mdebug_sched_q(fmt, args...) \
+    debug_printf(&marcel_mdebug_sched_q, LWPS_FM fmt LWPS_VAL LWPS_HACK, ##args)
 
 #else // PM2DEBUG
 
@@ -65,7 +68,8 @@ extern debug_type_t marcel_mtrace_timer;
 #define mdebug_state(fmt, args...)     (void)0
 #define mdebug_work(fmt, args...)     (void)0
 #define mdebug_deviate(fmt, args...)     (void)0
-#endif
+#define mdebug_sched_q(fmt, args...)     (void)0
+#endif // PM2DEBUG
 
 #ifdef DEBUG_LOCK_TASK
 #define lock_task_debug(fmt, args...) debug_printf(&marcel_lock_task_debug, \

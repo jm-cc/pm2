@@ -78,7 +78,7 @@ typedef struct s_mad_dir_vchannel_process_routing_table
 
 typedef struct s_mad_dir_vchannel_process_specific
 {
-  p_ntbx_process_container_t  pc;
+  p_ntbx_process_container_t pc;
 } mad_dir_vchannel_process_specific_t;
 
 typedef struct s_mad_dir_fchannel

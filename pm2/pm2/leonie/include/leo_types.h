@@ -137,6 +137,7 @@ typedef struct s_leo_dir_xchannel
   char                       *name;
   p_tbx_slist_t               dir_channel_slist;
   p_ntbx_process_container_t  pc;
+  p_tbx_slist_t               sub_channel_name_slist;
   p_leo_dir_channel_common_t  common;
 } leo_dir_xchannel_t;
 

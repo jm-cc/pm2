@@ -28,7 +28,7 @@ void print_trace(trace tr, FILE *supertrace)
   fwrite(&(tr.clock), sizeof(u_64), 1, supertrace);
   fwrite(&(tr.thread), sizeof(int), 1, supertrace);
   fwrite(&(tr.pid), sizeof(int), 1, supertrace);
-  fwrite(&(tr.proc), sizeof(short int), 1, supertrace);
+  fwrite(&(tr.cpu), sizeof(short int), 1, supertrace);
   fwrite(&(tr.type), sizeof(mode), 1, supertrace);
   fwrite(&(tr.number), sizeof(unsigned int), 1, supertrace);
   fwrite(&(tr.code), sizeof(int), 1, supertrace);

@@ -52,6 +52,9 @@ mad_session_cons(void);
 p_mad_settings_t
 mad_settings_cons(void);
 
+p_mad_dynamic_t
+mad_dynamic_cons(void);
+
 /*
 p_mad_configuration_t
 mad_configuration_cons(void);

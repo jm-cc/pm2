@@ -1403,9 +1403,9 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 extern int marcel_main(int argc, char *argv[]);
 
 marcel_t __main_thread;
+static volatile int __main_ret;
 
 static jmp_buf __initial_main_jb;
-static volatile int __main_ret;
 
 #ifdef WIN_SYS
 void win_stack_allocate(unsigned n)

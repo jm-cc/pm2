@@ -90,4 +90,6 @@ static __inline__ void common_init(int *argc, char *argv[],
   common_post_init(argc, argv, attr);
 }
 
+void common_exit(common_attr_t *attr);
+
 #endif

@@ -41,7 +41,7 @@
 #define ESSAIS 5
 
 static unsigned autre;
-static Tick t1, t2;
+static tbx_tick_t t1, t2;
 static marcel_sem_t sem;
 
 void thread_func(void *arg)
@@ -53,14 +53,14 @@ void thread_func(void *arg)
 
   for(n=0; n<ESSAIS; n++) {
     nping = (unsigned)arg;
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
     while(1) {
       if(nping-- == 0)
 	break;
       pm2_migrate_self(autre);
     }
-    GET_TICK(t2);
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    TBX_GET_TICK(t2);
+    temps = TBX_TIMING_DELAY(t1, t2);
     fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
   }
 

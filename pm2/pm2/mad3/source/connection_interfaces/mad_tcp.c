@@ -145,10 +145,12 @@ mad_tcp_read(int            sock,
 #undef DEBUG_NAME
 #define DEBUG_NAME mad3
 
+
 /*
  * Registration function
  * ---------------------
  */
+
 void
 mad_tcp_register(p_mad_driver_t driver)
 {

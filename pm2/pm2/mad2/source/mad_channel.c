@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.7  2000/01/13 14:45:55  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+- mad_channel.c, madeleine.c: amelioration des fonctions `par defaut' au niveau
+  du support des drivers
+
 Revision 1.6  2000/01/10 10:23:02  oaumage
 *** empty log message ***
 
@@ -82,7 +88,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   PM2_LOCK_SHARED(channel);
   channel->id             = madeleine->nb_channel++;
   channel->adapter        = adapter;
-  channel->reception_lock = mad_false;
+  channel->reception_lock = tbx_false;
   channel->specific       = NULL;
 
   if (interface->channel_init)
@@ -108,8 +114,8 @@ mad_open_channel(p_mad_madeleine_t madeleine,
       in->way            = mad_incoming_connection;
       in->nb_link        = 0;
       in->link           = NULL;
-      in->lock           = mad_false;
-      in->send           = mad_false;
+      in->lock           = tbx_false;
+      in->send           = tbx_false;
       in->specific       = NULL;
       
       out->remote_host_id = host;
@@ -118,8 +124,8 @@ mad_open_channel(p_mad_madeleine_t madeleine,
       out->way            = mad_incoming_connection;
       out->nb_link        = 0;
       out->link           = NULL;
-      out->lock           = mad_false;
-      out->send           = mad_false;
+      out->lock           = tbx_false;
+      out->send           = tbx_false;
       out->specific       = NULL;
       
       if (interface->connection_init)
@@ -219,7 +225,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   if (interface->after_open_channel)
     interface->after_open_channel(channel);
 
-  mad_append_list(&(madeleine->channel), channel);
+  tbx_append_list(&(madeleine->channel), channel);
   PM2_UNLOCK_SHARED(channel);
   PM2_UNLOCK_SHARED(adapter);
   PM2_UNLOCK_SHARED(madeleine);
@@ -372,6 +378,6 @@ mad_foreach_close_channel(void *object)
 void
 mad_close_channels(p_mad_madeleine_t madeleine)
 {
-  mad_foreach_destroy_list(&(madeleine->channel),
+  tbx_foreach_destroy_list(&(madeleine->channel),
 			   mad_foreach_close_channel);
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication_interface.h,v $
+Revision 1.4  2000/03/02 15:45:26  oaumage
+- support du polling Nexus
+
 Revision 1.3  2000/02/08 17:47:19  oaumage
 - prise en compte des types de la net toolbox
 
@@ -55,6 +58,12 @@ ______________________________________________________________________________
  * Functions 
  * ---------
  */
+
+#ifdef MAD_NEXUS
+p_mad_connection_t
+mad_message_ready(p_mad_channel_t channel);
+#endif /* MAD_NEXUS */
+
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,
 		  ntbx_host_id_t    remote_host_id);

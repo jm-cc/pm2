@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: timing.c,v $
+Revision 1.3  2000/02/28 11:17:23  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:58:36  oaumage
 - ajout du Log CVS
 
@@ -46,7 +49,7 @@ ______________________________________________________________________________
 #include <sys/time.h>
 #include <unistd.h>
 
-#include <timing.h>
+#include "timing.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 

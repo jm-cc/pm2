@@ -1160,6 +1160,7 @@ mad_sisci_link_init(p_mad_link_t lnk)
   /* lnk->link_mode   = mad_link_mode_buffer_group; */
   lnk->link_mode   = mad_link_mode_buffer;
   lnk->buffer_mode = mad_buffer_mode_dynamic;
+  lnk->group_mode  = mad_group_mode_split;
   LOG_OUT();
 }
 

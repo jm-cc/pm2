@@ -34,6 +34,29 @@
 
 ______________________________________________________________________________
 $Log: isomalloc_archdep.h,v $
+Revision 1.4  2000/07/14 16:17:09  gantoniu
+Merged with branch dsm3
+
+Revision 1.3.8.4  2000/07/12 15:10:49  gantoniu
+*** empty log message ***
+
+Revision 1.3.8.3  2000/07/11 08:52:34  cperez
+Fix for IRIX
+
+Revision 1.3.8.2  2000/06/28 18:21:29  gantoniu
+Adapted the dsm example for protocol testing.
+
+Revision 1.3.8.1  2000/06/13 16:44:07  gantoniu
+New dsm branch.
+
+Revision 1.3.6.2  2000/06/09 17:55:51  gantoniu
+Added support for alignment of dynamic allocated data. Thread stacks are now
+guaranteed to be aligned with respect to THREAD_SLOT_SIZE whatever the
+isoaddress page distribution may be.
+
+Revision 1.3.6.1  2000/06/07 09:19:37  gantoniu
+Merging new dsm with current PM2 : first try.
+
 Revision 1.3  2000/04/05 11:09:03  gantoniu
 Defined a new TOP_ADDR, to prepare for the dynamic allocator...
 This version contains no change with respect to current isomalloc users.
@@ -48,11 +71,12 @@ ______________________________________________________________________________
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
-//#define DYN_DSM_AREA_SIZE 0x4000000 /* 64 MB */
-#define DYN_DSM_AREA_SIZE 0
+#define ISOADDR_PAGES (64*1024)
+#define DYN_DSM_AREA_SIZE (ISOADDR_PAGES * 4096)
+#define THREAD_SLOT_SIZE              0x10000 /* 64 Ko */
 
 #if defined(SOLARIS_SYS) && defined(SPARC_ARCH)
-
+extern int __zero_fd;
 #define ISOADDR_AREA_TOP          0xe0000000
 #define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)
@@ -76,7 +100,7 @@ ______________________________________________________________________________
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
 #elif defined(SOLARIS_SYS) && defined(X86_ARCH)
-
+extern int __zero_fd;
 extern void marcel_init(int *argc, char **argv);
 #define ISOADDR_AREA_TOP          0xafff0000
 #define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
@@ -101,11 +125,12 @@ extern void marcel_init(int *argc, char **argv);
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
 #elif defined(IRIX_SYS) && defined(MIPS_ARCH)
-
+extern int __zero_fd;
 #define ISOADDR_AREA_TOP          0x40000000
 #define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define FILE_TO_MAP            __zero_fd
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
+#define IS_ON_MAIN_STACK(sp)   ((sp) > SLOT_AREA_TOP)
 
 #else
 

@@ -252,9 +252,13 @@ ntbx_tcp_timeout(p_ntbx_tcp_retry_t retry);
 
 
 void
-ntbx_tcp_address_fill(p_ntbx_tcp_address_t  address, 
+ntbx_tcp_address_fill(p_ntbx_tcp_address_t  address,
 		      ntbx_tcp_port_t       port,
 		      char                 *host_name);
+void
+ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t  address,
+			 ntbx_tcp_port_t       port,
+			 unsigned long        *ip);
 
 void
 ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc);
@@ -278,6 +282,10 @@ ntbx_tcp_client_reset(p_ntbx_client_t client);
 void
 ntbx_tcp_server_reset(p_ntbx_server_t server);
 
+ntbx_status_t
+ntbx_tcp_client_connect_ip(p_ntbx_client_t           client,
+			   unsigned long             server_ip,
+			   p_ntbx_connection_data_t  server_connection_data);
 ntbx_status_t
 ntbx_tcp_client_connect(p_ntbx_client_t           client,
 			char                     *server_host_name,

@@ -370,7 +370,7 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    _PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_extra"
+    _PM2CONFIG_LD_LIBS="-Xlinker -\( $_PM2CONFIG_LD_LIBS $_extra -Xlinker -\)"
     export _PM2CONFIG_LD_LIBS
 
     _PM2CONFIG_LIBS="$_PM2CONFIG_LD_PATH $_PM2CONFIG_LD_LIBS"
@@ -612,7 +612,7 @@ pm2config_parse_cmdline() # args
 # Programme principal
 ######################
 
-_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
+_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 marcel tbx ntbx pm2debug"
 
 _PM2CONFIG_DIRTY_ORDERED_LIBS="common leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
 

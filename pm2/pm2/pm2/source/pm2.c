@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.15  2000/05/29 17:13:08  vdanjean
+End of mad2 corrected
+
 Revision 1.14  2000/05/24 15:35:57  rnamyst
 Enhanced Marcel polling + various directories cleaning
 
@@ -203,14 +206,52 @@ void pm2_init(int *argc, char **argv)
 #endif
 }
 
+#ifdef MAD2
+inline void pm2_send_stop_server(int i){
+  unsigned tag = NETSERVER_END;
+  int c;
+
+  LOG_IN();
+  for(c=0; c<nb_of_channels; c++) {
+    LOG("pm2 halting %i\n", i);
+    mad_sendbuf_init(channel(c), i);
+    pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
+    mad_sendbuf_send();
+  }
+  LOG_OUT();
+}
+
+inline void pm2_send_stop_next_server()
+{
+  int i;
+  static boolean already_called = FALSE;
+
+  LOG_IN();
+  if((__pm2_self != 0) && !already_called) {
+    already_called = TRUE;
+    i= (__pm2_self+1) % __conf_size;
+    pm2_send_stop_server(i);
+  }
+  LOG_OUT();
+}
+
+int pm2_zero_halt=FALSE;
+#endif
+
 static void pm2_wait_end(void)
 {
   char mess[128];
   static boolean already_called = FALSE;
 
+  LOG_IN();
   if(!already_called) {
 
     netserver_wait_end();
+    mdebug("pm2_wait_end netserver_wait_end completed\n");
+#ifdef MAD2
+    pm2_send_stop_next_server();
+    mdebug("pm2_wait_end pm2_send_stop_server completed\n");
+#endif
 
     marcel_end();
 
@@ -223,10 +264,12 @@ static void pm2_wait_end(void)
 
     already_called = TRUE;
   }
+  LOG_OUT();
 }
 
 void pm2_exit(void)
 {
+  LOG_IN();
   pm2_wait_end();
 
   mdebug("pm2_wait_end completed\n");
@@ -248,10 +291,12 @@ void pm2_exit(void)
 
   mdebug("dsm_pm2_exit completed\n");
 #endif
+  LOG_OUT();
 }
 
 void pm2_halt()
 {
+#ifndef MAD2
   int i;
   unsigned tag = NETSERVER_END;
 
@@ -262,21 +307,21 @@ void pm2_halt()
   
   for(i=0; i<__conf_size; i++) {
     if (!(i == __pm2_self && !mad_can_send_to_self())) {
-#ifdef MAD2
-      int c;
-
-      for(c=0; c<nb_of_channels; c++) {
-	mad_sendbuf_init(channel(c), i);
-	pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
-	mad_sendbuf_send();
-      }
-#else
       mad_sendbuf_init(i);
       pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &tag, 1);
       mad_sendbuf_send();
-#endif
     }
   }
+#else
+  LOG_IN();
+  if(__pm2_self==0) {
+    pm2_send_stop_server(1);  
+    pm2_zero_halt=TRUE;
+  } else {
+    pm2_send_stop_server(0);  
+  }
+  LOG_OUT();
+#endif
 }
 
 void pm2_rawrpc_register(int *num, pm2_rawrpc_func_t func)

@@ -34,15 +34,6 @@ leoparse_parse_local_file(const char *filename);
 void
 leoparse_close_local_parser_file(void);
 
-#ifdef LEOPARSE_REMOTE
-void
-leoparse_open_remote_parser_file(p_leoparse_swann_module_t  module,
-				 const char               *file_name);
-
-void
-leoparse_close_remote_parser_file(void);
-#endif /*LEOPARSE_REMOTE */
-
 
 /*
  *Initialization

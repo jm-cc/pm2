@@ -101,7 +101,7 @@ int marcel_main(int argc, char **argv)
   if(argc > 1) {
 
 #ifdef PROFILE
-    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK);
+    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 1);
 #endif
 
     j.inf = 1;

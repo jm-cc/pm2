@@ -7,8 +7,10 @@ pm2_main (int argc, char *argv[])
 
   tprintf ("Hello World!\n");	/* Here! */
 
-  if (pm2_self () == 0)		/* Here! */
+  /* Start */ 
+  if (pm2_self () == 0)		
     pm2_halt ();
+  /* End */
 
   pm2_exit ();
   return 0;

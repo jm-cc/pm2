@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_link.h,v $
+Revision 1.5  2000/03/27 08:49:11  oaumage
+- pre-support pour decoupage des groupes
+
 Revision 1.4  2000/01/13 14:44:32  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -73,6 +76,8 @@ typedef struct s_mad_link
   mad_group_mode_t          group_mode;
   tbx_list_t                buffer_list;
   tbx_list_t                user_buffer_list;
+  size_t                    prefered_group_length;
+  size_t                    group_length;
 
   /* Driver specific data */
   p_mad_driver_specific_t   specific;

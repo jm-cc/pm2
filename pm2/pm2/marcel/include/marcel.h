@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.20  2000/11/15 21:32:19  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.19  2000/11/13 20:41:34  rnamyst
 common_init now performs calls to all libraries
 
@@ -199,6 +202,7 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 #include "mar_timing.h"
 #include "marcel_stdio.h"
 
+#include "tbx.h"
 #include "profile.h"
 #include "pm2debug.h"
 #include "common.h"
@@ -363,10 +367,15 @@ unsigned long marcel_cachedthreads(void);
 
 /* ======= MT-Safe functions from standard library ======= */
 
-void *tmalloc(unsigned size);
-void *trealloc(void *ptr, unsigned size);
-void *tcalloc(unsigned nelem, unsigned elsize);
-void tfree(void *ptr);
+#define tmalloc(size)          marcel_malloc(size, __FILE__, __LINE__)
+#define trealloc(ptr, size)    marcel_realloc(ptr, size, __FILE__, __LINE__)
+#define tcalloc(nelem, elsize) marcel_calloc(nelem, elsize, __FILE__, __LINE__)
+#define tfree(ptr)             marcel_free(ptr, __FILE__, __LINE__)
+
+void *marcel_malloc(unsigned size, char *file, unsigned line);
+void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
+void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
+void marcel_free(void *ptr, char *file, unsigned line);
 
 #ifdef STANDARD_MAIN
 #define marcel_main main

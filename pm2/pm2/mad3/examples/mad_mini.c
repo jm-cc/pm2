@@ -57,8 +57,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   p_ntbx_process_container_t pc             = NULL;
   ntbx_process_lrank_t       my_local_rank  =   -1;
   ntbx_process_lrank_t       its_local_rank =   -1;
+  ntbx_pack_buffer_t         buffer;
   
-  DISP_STR("\nChannel", name);
+  DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
     {
@@ -74,10 +75,13 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   
   if (my_local_rank)
     {
-      p_mad_connection_t in  = NULL;
-      p_mad_connection_t out = NULL;
-      int                len =    0;
-      char               buf[MAX];
+      p_tbx_string_t      string  = NULL;
+      p_mad_connection_t  in      = NULL;
+      p_mad_connection_t  out     = NULL;
+      int                 len     =    0;
+      int                 dyn_len =    0;
+      char               *dyn_buf = NULL;
+      char                buf[MAX];
       
       memset(buf, 0, MAX);
 
@@ -87,15 +91,33 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       in = mad_begin_unpacking(channel);
 #endif // MAD_MESSAGE_POLLING
 
-      mad_unpack(in, &len, sizeof(len),
+      mad_unpack(in, &buffer, sizeof(buffer),
 		 mad_send_CHEAPER, mad_receive_EXPRESS);
+
+      len = ntbx_unpack_int(&buffer);
       if ((len < 1) || (len > MAX))
 	FAILURE("invalid message length");
 
       mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
+      mad_unpack(in, &buffer, sizeof(buffer),
+		 mad_send_CHEAPER, mad_receive_EXPRESS);
+      dyn_len = ntbx_unpack_int(&buffer);
+      if (dyn_len < 1)
+	FAILURE("invalid message length");
+      dyn_buf = TBX_CALLOC(1, dyn_len);
+      mad_unpack(in, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_unpacking(in);
 
       DISP_STR("Hi, I just received", buf);
+      DISP_STR("Source", dyn_buf);
+      TBX_FREE(dyn_buf);
+      dyn_buf = NULL;
+
+      string  = tbx_string_init_to_c_string("the sender is ");
+      tbx_string_append_int(string, my_local_rank);
+      dyn_buf = tbx_string_to_c_string(string);
+      tbx_string_free(string);
+      string  = NULL;      
 
       its_local_rank = my_local_rank;
 
@@ -111,10 +133,20 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	    }
 	}
       while (!out);
-      
-      mad_pack(out, &len, sizeof(len), mad_send_CHEAPER, mad_receive_EXPRESS);
+
+      ntbx_pack_int(len, &buffer);
+      mad_pack(out, &buffer, sizeof(buffer),
+	       mad_send_CHEAPER, mad_receive_EXPRESS);
       mad_pack(out, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
+
+      dyn_len = strlen(dyn_buf) + 1;
+      ntbx_pack_int(dyn_len, &buffer);
+      mad_pack(out, &buffer, sizeof(buffer),
+	       mad_send_CHEAPER, mad_receive_EXPRESS);
+      mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
+      TBX_FREE(dyn_buf);
+      dyn_buf = NULL;
       return;
 
     last:
@@ -126,20 +158,37 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  FAILURE("inconsistent error");
       }
       
-      mad_pack(out, &len, sizeof(len), mad_send_CHEAPER, mad_receive_EXPRESS);
+      ntbx_pack_int(len, &buffer);
+      mad_pack(out, &buffer, sizeof(buffer),
+	       mad_send_CHEAPER, mad_receive_EXPRESS);
       mad_pack(out, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
+      dyn_len = strlen(dyn_buf) + 1;
+      ntbx_pack_int(dyn_len, &buffer);
+      mad_pack(out, &buffer, sizeof(buffer),
+	       mad_send_CHEAPER, mad_receive_EXPRESS);
+      mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
+      TBX_FREE(dyn_buf);
+      dyn_buf = NULL;
       return;
     }
   else
     {
-      p_mad_connection_t  in  = NULL;
-      p_mad_connection_t  out = NULL;
-      char               *msg = "token";
-      int                 len =    0;
+      p_tbx_string_t      string  = NULL;
+      p_mad_connection_t  in      = NULL;
+      p_mad_connection_t  out     = NULL;
+      char               *msg     = "token";
+      int                 len     =    0;
+      int                 dyn_len =    0;
+      char               *dyn_buf = NULL;
       char                buf[MAX];
 
       its_local_rank = my_local_rank;
+      string  = tbx_string_init_to_c_string("the sender is ");
+      tbx_string_append_int(string, my_local_rank);
+      dyn_buf = tbx_string_to_c_string(string);
+      tbx_string_free(string);
+      string  = NULL;
 
       do
 	{
@@ -153,10 +202,19 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       while (!out);
       
       len = strlen(msg) + 1;
-      mad_pack(out, &len, sizeof(len), mad_send_CHEAPER, mad_receive_EXPRESS);
+      ntbx_pack_int(len, &buffer);
+      mad_pack(out, &buffer, sizeof(buffer),
+	       mad_send_CHEAPER, mad_receive_EXPRESS);
       mad_pack(out, msg, len, mad_send_CHEAPER, mad_receive_CHEAPER);
+      dyn_len = strlen(dyn_buf) + 1;
+      ntbx_pack_int(dyn_len, &buffer);
+      mad_pack(out, &buffer, sizeof(buffer),
+	       mad_send_CHEAPER, mad_receive_EXPRESS);
+      mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
 
+      TBX_FREE(dyn_buf);
+      dyn_buf = NULL;
       memset(buf, 0, MAX);
 
 #ifdef MAD_MESSAGE_POLLING
@@ -165,15 +223,27 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       in = mad_begin_unpacking(channel);
 #endif // MAD_MESSAGE_POLLING
 
-      mad_unpack(in, &len, sizeof(len),
+      mad_unpack(in, &buffer, sizeof(buffer),
 		 mad_send_CHEAPER, mad_receive_EXPRESS);
+
+      len = ntbx_unpack_int(&buffer);
       if ((len < 1) || (len > MAX))
 	FAILURE("invalid message length");
 
       mad_unpack(in, buf, len, mad_send_CHEAPER, mad_receive_CHEAPER);
+      mad_unpack(in, &buffer, sizeof(buffer),
+		 mad_send_CHEAPER, mad_receive_EXPRESS);
+      dyn_len = ntbx_unpack_int(&buffer);
+      if (dyn_len < 1)
+	FAILURE("invalid message length");
+      dyn_buf = TBX_CALLOC(1, dyn_len);
+      mad_unpack(in, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_unpacking(in);
 
       DISP_STR("Hi, I just received", buf);
+      DISP_STR("Source", dyn_buf);
+      TBX_FREE(dyn_buf);
+      dyn_buf = NULL;
     }
 }  
 #endif // STARTUP_ONLY

@@ -375,6 +375,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       marcel_self()->state_ext=MARCEL_RUNNING;
 #endif
       MTRACE("Preemption", marcel_self());
+
       unlock_task();
 #ifndef MINIMAL_PREEMPTION
     } else {

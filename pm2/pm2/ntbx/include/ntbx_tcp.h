@@ -64,7 +64,7 @@ typedef int                ntbx_tcp_socket_t,  *p_ntbx_tcp_socket_t;
  * public structures
  * -----------------
  */
-typedef struct
+typedef struct s_ntbx_tcp_retry
 {
   int count;
   int sleep_count;

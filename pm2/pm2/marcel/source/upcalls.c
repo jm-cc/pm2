@@ -42,7 +42,6 @@
 #undef CONFIG_ACT_TIMER
 #endif
 #define CONFIG_ACT_TIMER
-#include "timing.h"
 #endif
 
 #include "marcel.h"

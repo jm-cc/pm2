@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.14  2000/11/16 14:21:50  oaumage
+- correction external spawn
+
+Revision 1.13  2000/11/16 13:24:05  oaumage
+- mise a jour initialisation
+
 Revision 1.12  2000/11/10 14:17:55  oaumage
 - nouvelle procedure d'initialisation
 
@@ -90,9 +96,10 @@ ______________________________________________________________________________
 
 typedef struct s_mad_settings
 {
-  char       *rsh_cmd;
-  char       *configuration_file;
-  tbx_bool_t  debug_mode;
+  char            *rsh_cmd;
+  char            *configuration_file;
+  tbx_bool_t       debug_mode;
+  mad_driver_id_t  external_spawn_driver;
 } mad_settings_t;
 
 
@@ -114,7 +121,8 @@ typedef struct s_mad_madeleine
  * ---------
  */
 int
-mad_protocol_available(p_mad_madeleine_t madeleine, char *name);
+mad_protocol_available(p_mad_madeleine_t  madeleine,
+		       char              *name);
 
 p_mad_adapter_set_t
 mad_adapter_set_init(int nb_adapter, ...);
@@ -128,6 +136,9 @@ void
 mad_driver_fill(p_mad_madeleine_t madeleine);
 
 void 
+mad_driver_init(p_mad_madeleine_t madeleine);
+
+void 
 mad_adapter_fill(p_mad_madeleine_t     madeleine,
 		 p_mad_adapter_set_t   adapter_set);
 
@@ -139,5 +150,41 @@ mad_adapter_configuration_init(p_mad_madeleine_t madeleine);
 
 char *
 mad_get_mad_root(void);
+
+p_mad_madeleine_t
+mad_object_init(int                   argc,
+		char                **argv,
+		char                 *configuration_file,
+		p_mad_adapter_set_t   adapter_set);
+
+void
+mad_cmd_line_init(p_mad_madeleine_t   madeleine,
+		  int                 argc,
+		  char              **argv);
+
+void
+mad_configuration_init(p_mad_madeleine_t   madeleine,
+		       int                 argc,
+		       char              **argv);
+
+void
+mad_output_redirection_init(p_mad_madeleine_t   madeleine,
+			    int                 argc,
+			    char              **argv);
+
+void
+mad_network_components_init(p_mad_madeleine_t   madeleine,
+			    int                 argc,
+			    char              **argv);
+
+void  
+mad_connect(p_mad_madeleine_t   madeleine,
+	    int                 argc,
+	    char              **argv);
+
+void
+mad_purge_command_line(p_mad_madeleine_t   madeleine,
+		       int                *_argc,
+		       char              **_argv);
 
 #endif /* MAD_MAIN_H */

@@ -80,6 +80,10 @@ task_desc __main_thread_struct;
 extern marcel_t __main_thread;
 #endif
 
+#ifdef MARCEL_RT
+unsigned __rt_task_exist = 0;
+#endif
+
 #ifndef DO_NOT_CHAIN_BLOCKED_THREADS
 static LIST_HEAD(__waiting_tasks);
 #endif
@@ -566,9 +570,10 @@ inline static void insert_running_queue(marcel_t t, __lwp_t *lwp)
   volatile head_running_list_t *queue;
 
 #ifdef MARCEL_RT
-  if(MA_TASK_REAL_TIME(t))
+  if(MA_TASK_REAL_TIME(t)) {
     queue = &SCHED_DATA(lwp).rt_first;
-  else
+    __rt_task_exist = 1;
+  } else
 #endif
     queue = &SCHED_DATA(lwp).first;
 
@@ -710,6 +715,10 @@ static __inline__ void do_unchain_from_queue(marcel_t pid, __lwp_t *lwp)
 
   if(list_empty(&pid->task_list)) {
     *queue = NULL;
+#ifdef MARCEL_RT
+  if(MA_TASK_REAL_TIME(pid))
+    __rt_task_exist = 0;
+#endif
   } else {
     *queue = next_task(pid); // par exemple
     list_del(&pid->task_list);
@@ -844,6 +853,50 @@ void ma__marcel_yield(void)
   
   LOG_OUT();
 }
+
+#ifdef MARCEL_RT
+// Cette fonction est appelée dans unlock_task() lorsque l'on devine
+// qu'il y a probablement une tâche "real-time" à exécuter en
+// priorité. Il faut donc d'abord vérifier qu'il en existe puis lui
+// céder la main.
+void ma__marcel_find_and_yield_to_rt_task(void)
+{
+  marcel_t res, first, cur = marcel_self();
+  DEFINE_CUR_LWP(,= ,GET_LWP(cur));
+
+  LOG_IN();
+
+  sched_lock(cur_lwp);
+
+  first = SCHED_DATA(cur_lwp).rt_first;
+
+  if(first != NULL) {
+#ifdef MA__MULTIPLE_RUNNING
+    res = first;
+    do {
+      if(CAN_RUN(cur_lwp, res)) {
+	SET_STATE_RUNNING(cur, res, cur_lwp);
+	sched_unlock(cur_lwp);
+	mdebug("\t\t\t<Must yield to real-time task %d>\n", res->number);
+	marcel_switch_to(cur, res); // on choisit 'res'
+	return;
+      }
+      res = next_task(res);
+    } while (res != first);
+#else
+    SET_STATE_RUNNING(cur, first, cur_lwp);
+    sched_unlock(cur_lwp);
+    mdebug("\t\t\t<Must yield to real-time task %d>\n", first->number);
+    marcel_switch_to(cur, first); // On choisit 'first'
+    return;
+#endif
+  }
+
+  sched_unlock(cur_lwp);
+
+  LOG_OUT();
+}
+#endif
 
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...

@@ -67,7 +67,7 @@ void thread_func(void *arg)
   marcel_sem_V(&sem);
 }
 
-void startup_func()
+void startup_func(int argc, char *argv[])
 {
   autre = (pm2_self() == 0) ? 1 : 0;
 }
@@ -76,7 +76,7 @@ int pm2_main(int argc, char **argv)
 {
   unsigned nb;
 
-  pm2_set_startup_func(startup_func);
+  pm2_push_startup_func(startup_func);
 
   pm2_init(&argc, argv);
 

@@ -87,15 +87,15 @@ int main(int argc, char **argv)
 #ifdef BI_PROTO
       /*      if ((k + 1) <= NB_CHANNELS /2)
 	{
-	  channel[k] = mad_open_channel(madeleine, k, 1);
+	  channel[k] = mad_open_channel(madeleine, 1);
 	}
       else
-	{
-	  channel[k] = mad_open_channel(madeleine, k, 0);
-	  }*/
-	  channel[k] = mad_open_channel(madeleine, k, k & 1);
+      {
+      channel[k] = mad_open_channel(madeleine, 0);
+      }*/
+      channel[k] = mad_open_channel(madeleine, k & 1);
 #else /* BI_PROTO */
-      channel[k] = mad_open_channel(madeleine, k, 0);
+      channel[k] = mad_open_channel(madeleine, 0);
 #endif /* BI_PROTO */
     }
 
@@ -260,11 +260,6 @@ int main(int argc, char **argv)
 	      mad_end_packing(connection);
 	    }
 	}
-    }
-
-  for (k = 0 ; k < NB_CHANNELS ; k++)
-    {
-      mad_close_channel(channel[k]);
     }
   mad_exit(madeleine);
   return 0;

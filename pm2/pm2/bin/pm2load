@@ -32,7 +32,7 @@ Usage: $PROGNAME { option } command
     -d      : Run command in debug mode (not supported by all implementations)
     -c name : Use console named "name"
     -l      : Also generate a log file on first node
-    -L      : Only generate a log file on first node
+    -L      : As '-l' but do not display the log file
     -h      : Display this help message
 EOF
     exit $1

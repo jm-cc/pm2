@@ -180,8 +180,8 @@ to allow for proper barrier initialization. */
 void pm2_thread_barrier_init(pm2_thread_barrier_t *bar, pm2_thread_barrier_attr_t *attr)
 {
   pm2_barrier_init(&bar->node_barrier);
-  marcel_sem_init(&bar->mutex, 1);
-  marcel_sem_init(&bar->wait, 0);
+  marcel_mutex_init(&bar->mutex, NULL);
+  marcel_cond_init(&bar->cond, NULL);
   bar->nb = 0;
   if (attr)
     {
@@ -200,7 +200,7 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
 {
   ENTER();
 
-  marcel_sem_P(&bar->mutex);
+  marcel_mutex_lock(&bar->mutex);
   if(++bar->nb == bar->local) {
 #ifdef DSM
     int i;
@@ -221,12 +221,12 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
 	  (*dsm_get_acquire_func(bar->prot[i]))(TOKEN_LOCK_NONE);
       }
 #endif
-    marcel_sem_unlock_all(&bar->wait);
+    marcel_cond_broadcast(&bar->cond);
     bar->nb = 0;
-    marcel_sem_V(&bar->mutex);
   } else {
-    marcel_sem_VP(&bar->mutex, &bar->wait);
+    marcel_cond_wait(&bar->cond, &bar->mutex);
   }
+  marcel_mutex_unlock(&bar->mutex);
 
   EXIT();
 }

@@ -28,7 +28,8 @@ typedef struct {
 
 
 typedef struct {
-  marcel_sem_t mutex, wait;
+  marcel_mutex_t mutex;
+  marcel_cond_t cond;
   pm2_barrier_t node_barrier;
   int local;
   int nb;

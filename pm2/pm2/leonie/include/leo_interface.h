@@ -24,6 +24,9 @@
 // Objects initialisation
 //------------------------/////////////////////////////////////////////////
 
+p_leo_application_settings_t  
+leo_application_settings_init(void);
+
 p_leo_process_specific_t
 leo_process_specific_init(void);
 
@@ -125,6 +128,9 @@ leo_receive_string(p_ntbx_client_t client);
 //-------//////////////////////////////////////////////////////////////////
 void 
 leo_usage(void) TBX_NORETURN;
+
+void 
+leo_help(void) TBX_NORETURN;
 
 void 
 leo_terminate(const char *msg) TBX_NORETURN;

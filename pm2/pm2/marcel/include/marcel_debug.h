@@ -120,14 +120,15 @@ extern debug_type_t marcel_mtrace_timer;
 #define mdebug_sched_q(fmt, ...) \
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 
-#define MA_BUG() RAISE(PROGRAM_ERROR)
+#include <stdlib.h>
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \
 		mdebug("BUG at %s:%u", __FILE__, __LINE__); \
-		raise(SIGABRT); \
+		abort(); \
 	} \
   } while (0);
+#define MA_BUG() MA_BUG_ON(1)
 
 #define MA_WARN_ON(cond) \
   do { \

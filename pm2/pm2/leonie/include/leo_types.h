@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: leo_types.h,v $
+Revision 1.6  2000/06/09 08:45:46  oaumage
+- Progression du code
+
 Revision 1.5  2000/05/31 14:17:05  oaumage
 - types Leonie
 
@@ -64,15 +67,19 @@ typedef void undefined_t, *p_undefined_t;
 typedef struct s_leo_application_cluster
 {
   char          *id;
+  char          *executable;
+  char          *path;
   p_tbx_slist_t  host_list;
   p_tbx_slist_t  channel_list;
 } leo_application_cluster_t, *p_leo_application_cluster_t;
 
 typedef struct s_leo_cluster_definition
 {
-  char          *id;
-  p_tbx_slist_t  host_model_list;
-  p_tbx_slist_t  host_list;
+  char                *id;
+  p_tbx_slist_t        host_model_list;
+  p_tbx_slist_t        host_list;
+  p_leo_mad_module_t   mad_module;
+  p_leo_swann_module_t swann_module;
 } leo_cluster_definition_t, *p_leo_cluster_definition_t;
 
 #endif /* __LEO_TYPES_H */

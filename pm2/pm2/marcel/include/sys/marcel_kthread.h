@@ -17,6 +17,8 @@
 #ifndef MARCEL_KERNEL_THREADS_IS_DEF
 #define MARCEL_KERNEL_THREADS_IS_DEF
 
+#include <signal.h>
+
 #include "sys/marcel_flags.h"
 
 #ifdef MA__SMP

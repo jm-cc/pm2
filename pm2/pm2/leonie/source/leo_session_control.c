@@ -938,7 +938,7 @@ exit_session(p_leonie_t leonie)
 	      TRACE("status = %d, nb_clients = %d, j = %d", status,
 		   nb_clients, j);
 
-	      if (client->state != ntbx_client_state_data_ready)
+	      if (!client->read_ok)
 		{
 		  j++;
 		  continue;
@@ -954,6 +954,7 @@ exit_session(p_leonie_t leonie)
 		{
 		case leo_command_end:
 		  {
+                          TRACE("leo_command_end");
 		    status--;
 		    nb_clients--;
 		    memmove(client_array + j, client_array + j + 1,
@@ -966,16 +967,19 @@ exit_session(p_leonie_t leonie)
 		  {
 		    char *string = NULL;
 
-		    status--;
+                          TRACE("leo_command_print");
 		    string = leo_receive_string(client);
 		    DISP("%s", string);
 		    free(string);
 		    string = NULL;
+		    status--;
+                    j++;
 		  }
 		  break;
 
 		case leo_command_barrier:
 		  {
+                          TRACE("leo_command_barrier");
 		    if (finishing)
 		      FAILURE("barrier request during session clean-up");
 
@@ -1007,6 +1011,7 @@ exit_session(p_leonie_t leonie)
 		      }
 
 		    status --;
+                    j++;
 		  }
 		  break;
 

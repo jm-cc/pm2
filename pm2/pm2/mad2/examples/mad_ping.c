@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.7  2000/06/06 13:41:43  oaumage
+- rien de particulier
+
 Revision 1.6  2000/05/22 13:44:55  oaumage
 - ajout du support application_spawn & leonie_spawn
 
@@ -104,12 +107,12 @@ ______________________________________________________________________________
 static int param_control_receive = 0;
 static int param_send_mode       = mad_send_CHEAPER;
 static int param_receive_mode    = mad_receive_CHEAPER;
-static int param_nb_echantillons = 1000;
-static int param_min_size        = 0;
-static int param_max_size        = 256;
-static int param_step            = 4; /* 0 = progression log. */
+static int param_nb_echantillons = 100;
+static int param_min_size        = 1024;
+static int param_max_size        = 65536;
+static int param_step            = 0; /* 0 = progression log. */
 static int param_nb_tests        = 5;
-static int param_bandwidth       = 0;
+static int param_bandwidth       = 1;
 static int param_no_zero         = 1;
 static int param_simul_migr      = 0;
 static int param_fill_buffer     = 1;

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.c,v $
+Revision 1.3  2000/05/10 13:08:02  vdanjean
+minor bugs fixes
+
 Revision 1.2  2000/04/11 09:07:35  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -64,6 +67,7 @@ int marcel_check_polling(void)
   int waked_some_task = 0;
   poll_struct_t *ps, *p;
 
+  mdebug("marcel_check_polling start\n");
   if(marcel_lock_tryacquire(&__polling_lock)) {
 
     /* Polling tasks */
@@ -117,6 +121,7 @@ int marcel_check_polling(void)
     marcel_lock_release(&__polling_lock);
   }
 
+  mdebug("marcel_check_polling end\n");
   return waked_some_task;
 }
 

@@ -43,18 +43,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+
 #include <mpi.h>
-#include <sys/netinterf.h>
+
+#include "sys/netinterf.h"
 
 #ifdef PM2
 
-#include <marcel.h>
+#include "marcel.h"
 
 #else
 
-#include <malloc.h>
-#define tfree         free
-#define tmalloc       malloc
+#include "safe_malloc.h"
+#define tfree         FREE
+#define tmalloc       MALLOC
 #define mpi_lock()
 #define mpi_unlock()
 static char *PROGRAM_ERROR = "PROGRAM_ERROR";

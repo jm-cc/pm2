@@ -39,6 +39,9 @@ LIBRARY=pm2
 #marcel_CC=gcc
 #marcel_AS=gcc
 
+.PHONY: default
+default:
+
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
@@ -51,6 +54,9 @@ COMMON_DEPS += $(LIB_GEN_INC)/dsm_page_size.h
 clean: clean-bin
 
 include $(PM2_ROOT)/make/libs-rules.mak
+
+default:
+	$(MAKE) -C $(PM2_ROOT)
 
 $(LIB_GEN_INC)/dsm_page_size.h:
 	$(LIB_PREFIX) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(LIB_GEN_OBJ)/dsm_page_size${LIB_EXT}

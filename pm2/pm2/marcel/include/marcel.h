@@ -10,15 +10,9 @@
 #include <memory.h>
 #include <sys/types.h>
 #include <sys/time.h>
+
 #ifdef AIX_SYS
-#include <sys/select.h>
-
-struct timespec
-{
-  long int tv_sec ;
-  long int tv_nsec ;
-} ;
-
+#include <time.h>
 #endif
 
 #include "pm2debug.h"

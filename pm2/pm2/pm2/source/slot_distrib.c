@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: slot_distrib.c,v $
+Revision 1.4  2000/07/20 09:04:17  oaumage
+- Corrections diverses
+
 Revision 1.3  2000/02/28 11:17:22  rnamyst
 Changed #include <> into #include "".
 
@@ -56,6 +59,7 @@ ______________________________________________________________________________
 
 void UNIFORM_BLOCK_CYCLIC_DISTRIB_FUNC(int *arg)
 {
+  /* Fonction non declaree (mise en commentaire dans isomalloc.h) */
   pm2_set_uniform_slot_distribution((unsigned int)arg, -1);
 }
 
@@ -69,6 +73,8 @@ int period = 0;
   for (i = 1; i <= n; i++) 
     period += arg[i];
 
+  /* Idem ici: pm2_set_non_uniform_slot_distribution n'est plus declaree dans 
+     isomalloc.h */
   for (i = 0; i < n; offset += arg[i+1], i++)
     pm2_set_non_uniform_slot_distribution(i, offset, arg[i+1], period, -1);
 }

@@ -586,6 +586,9 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 //		nr_running_inc(rq);
 //	}
 	ma_spin_unlock_softirq(&rq->lock);
+	if (!ma_in_atomic()) {
+		ma_schedule();
+	}
 	LOG_OUT();
 }
 
@@ -892,7 +895,9 @@ static int find_busiest_node(int this_node)
 #endif
 
 #ifdef MA__LWPS
-#warning A faire...
+#ifdef MA__DEBUG
+#warning "Load balancing non géré pour l'instant. A faire ([^MS])..."
+#endif
 #if 0
 
 /*
@@ -1248,7 +1253,9 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 
 	//rq->timestamp_last_tick = sched_clock();
 
+#ifdef MA__DEBUG
 #warning rcu not yet implemented (utile pour les numa ?)
+#endif
 	//if (rcu_pending(cpu))
 	//      rcu_check_callbacks(cpu, user_ticks);
 
@@ -1433,7 +1440,9 @@ restart:
 #endif
 		if (!currq->nr_running)
 			sched_debug("apparently nobody in %p\n",currq);
+#ifdef MA__DEBUG
 #warning : !! mar_sched_find_first_bit exige au moins un bit cleared ?
+#endif
 		idx = ma_sched_find_first_bit(currq->active->bitmap);
 		if (idx < max_prio) {
 			sched_debug("found better prio %d in rq %p\n",idx,currq);
@@ -1461,7 +1470,9 @@ restart:
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		sched_debug("rebalance\n");
+#ifdef MA__DEBUG
 #warning TODO: demander à l application de rebalancer
+#endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #endif
 		next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
@@ -1611,20 +1622,34 @@ DEF_PTHREAD_STRONG(yield)
 // Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
 // retirer le thread de la file et le replacer dans la file
 // adéquate...
+// IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
+// pour se déplacer sur le LWP courant (cf terminaison des threads)
 void marcel_change_vpmask(marcel_vpmask_t mask)
 {
-	LOG_IN();
 #ifdef MA__LWPS
+	ma_runqueue_t *old_rq, *new_rq;
+	LOG_IN();
 	/* empêcher ma_schedule() */
 	ma_preempt_disable();
-	/* TODO: gérer le cas où on revient sur la même runqueue -> rien à faire en fait */
+	old_rq=ma_this_rq();
+	new_rq=marcel_sched_vpmask_init_rq(mask);
+	if (old_rq==new_rq) {
+		ma_preempt_enable();
+		LOG_OUT();
+		return;
+	}
 	deactivate_running_task(MARCEL_SELF,ma_this_rq());
 	activate_running_task(MARCEL_SELF,marcel_sched_vpmask_init_rq(mask));
-	ma_set_current_state(MA_TASK_MOVING);
-	ma_preempt_enable();
-	ma_schedule();
-#endif
+	/* On teste si le LWP courant est interdit ou pas */
+	if (marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
+		ma_set_current_state(MA_TASK_MOVING);
+		ma_preempt_enable();
+		ma_schedule();
+	} else {
+		ma_preempt_enable();
+	}
 	LOG_OUT();
+#endif
 }
 
 #if 0

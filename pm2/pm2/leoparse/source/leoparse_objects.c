@@ -121,7 +121,18 @@ leoparse_init_range_object(p_leoparse_range_t range)
   return result;
 }
 
-
+/*
+ * Release
+ * -------
+ */
+void
+leoparse_release_object(p_leoparse_object_t object)
+{
+  LOG_IN();
+  memset(object, 0, sizeof(leoparse_object_t));
+  TBX_FREE(object);
+  LOG_OUT();
+}
 
 /*
  * Read
@@ -254,6 +265,8 @@ leoparse_get_range(p_leoparse_object_t object)
 
   return result;
 }
+
+/* - */
 
 p_tbx_slist_t
 leoparse_read_slist(p_tbx_htable_t  htable,
@@ -395,6 +408,156 @@ leoparse_read_range(p_tbx_htable_t  htable,
   return result;
 }
 
+/* - */
+
+p_tbx_slist_t
+leoparse_extract_slist(p_tbx_htable_t  htable,
+		    const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  p_tbx_slist_t       result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_slist(object);
+      leoparse_release_object(object);
+    }  
+  LOG_OUT();
+  
+  return result;
+}
+
+p_tbx_slist_t
+leoparse_extract_as_slist(p_tbx_htable_t  htable,
+		       const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  p_tbx_slist_t       result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_as_slist(object);
+      leoparse_release_object(object);
+    }
+  LOG_OUT();
+  
+  return result;
+}
+
+char *
+leoparse_extract_id(p_tbx_htable_t  htable,
+		 const char     *key)
+{
+  p_leoparse_object_t  object = NULL;
+  char                *result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_id(object);
+      leoparse_release_object(object);
+    }
+  LOG_OUT();
+
+  return result;
+}
+
+char *
+leoparse_extract_string(p_tbx_htable_t  htable,
+		     const char     *key)
+{
+  p_leoparse_object_t  object = NULL;
+  char                *result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_string(object);
+      leoparse_release_object(object);
+    }
+  LOG_OUT();
+
+  return result;
+}
+
+p_tbx_htable_t
+leoparse_extract_htable(p_tbx_htable_t  htable,
+		     const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  p_tbx_htable_t      result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_htable(object);
+      leoparse_release_object(object);
+    }
+  LOG_OUT();
+  
+  return result;
+}
+
+int
+leoparse_extract_val(p_tbx_htable_t  htable,
+		  const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  int                 result =    0;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_val(object);
+      leoparse_release_object(object);
+    }
+  LOG_OUT();
+  
+  return result;
+}
+
+p_leoparse_range_t
+leoparse_extract_range(p_tbx_htable_t  htable,
+		    const char     *key)
+{
+  p_leoparse_object_t object = NULL;
+  p_leoparse_range_t  result = NULL;
+
+  LOG_IN();
+  LOG_STR("key", key);
+  object = tbx_htable_extract(htable, key);
+
+  if (object)
+    {
+      result = leoparse_get_range(object);
+      leoparse_release_object(object);
+    }
+  LOG_OUT();
+
+  return result;
+}
+
+/* - */
 p_tbx_slist_t
 leoparse_try_get_slist(p_leoparse_object_t object)
 {

@@ -134,22 +134,36 @@ void bench_contsw2(unsigned nb)
   marcel_join(pid, &status);
 }
 
+void bench_contsw3(unsigned nb)
+{
+  marcel_t pid;
+  any_t status;
+  register int n = nb;
+
+  if(!nb)
+    return;
+
+  marcel_create(&pid, NULL, f, (any_t)n);
+  marcel_join(pid, &status);
+}
+
 int marcel_main(int argc, char *argv[])
 { 
   int essais = 3;
+
+  marcel_init(&argc, argv);
 
   if(argc != 2) {
     fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
     exit(1);
   }
 
-  marcel_init(&argc, argv);
-
   while(essais--) {
     bench_setjmp(atoi(argv[1]));
     bench_longjmp(atoi(argv[1]));
     bench_contsw(atoi(argv[1]));
     bench_contsw2(atoi(argv[1]));
+    bench_contsw3(atoi(argv[1]));
   }
 
   return 0;

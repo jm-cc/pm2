@@ -81,7 +81,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       int                 len     =    0;
       int                 dyn_len =    0;
       char               *dyn_buf = NULL;
-      char                buf[MAX];
+      char                buf[MAX] MAD_ALIGNED;
       
       memset(buf, 0, MAX);
 
@@ -177,11 +177,13 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       p_tbx_string_t      string  = NULL;
       p_mad_connection_t  in      = NULL;
       p_mad_connection_t  out     = NULL;
-      char               *msg     = "token";
+      char               *msg     = NULL;
       int                 len     =    0;
       int                 dyn_len =    0;
       char               *dyn_buf = NULL;
-      char                buf[MAX];
+      char                buf[MAX] MAD_ALIGNED;
+
+      msg = tbx_strdup("token");
 
       its_local_rank = my_local_rank;
       string  = tbx_string_init_to_c_string("the sender is ");
@@ -212,6 +214,9 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	       mad_send_CHEAPER, mad_receive_EXPRESS);
       mad_pack(out, dyn_buf, dyn_len, mad_send_CHEAPER, mad_receive_CHEAPER);
       mad_end_packing(out);
+
+      TBX_FREE(msg);
+      msg = NULL;
 
       TBX_FREE(dyn_buf);
       dyn_buf = NULL;

@@ -129,6 +129,9 @@ tbx_htable_add(p_tbx_htable_t    htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
+
+  LOG("tbx_htable_add: key = <%s>", key);
+
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = tbx_malloc(tbx_htable_manager_memory);  
   element->key = TBX_MALLOC(strlen(key) + 1);
@@ -151,6 +154,9 @@ tbx_htable_get(p_tbx_htable_t   htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
+
+  LOG("tbx_htable_get: key = <%s>", key);
+
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = htable->bucket_array[bucket];
   
@@ -207,6 +213,8 @@ tbx_htable_extract(p_tbx_htable_t   htable,
 	  tmp_element->key = NULL;
 
 	  tbx_free(tbx_htable_manager_memory, tmp_element);
+
+	  htable->nb_element--;
 
 	  LOG_OUT();
 	  return object;
@@ -273,11 +281,13 @@ tbx_htable_get_key_slist(p_tbx_htable_t htable)
 
   if (htable->nb_element)
     {
-      while (htable->nb_bucket--)
+      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+
+      while (bucket--)
 	{
 	  p_tbx_htable_element_t element = NULL;
 
-	  element = htable->bucket_array[htable->nb_bucket];
+	  element = htable->bucket_array[bucket];
 
 	  while (element)
 	    {
@@ -294,5 +304,5 @@ tbx_htable_get_key_slist(p_tbx_htable_t htable)
     }
   LOG_OUT();
 
-  return tbx_slist_nil();
+  return slist;
 }

@@ -17,64 +17,85 @@
 #include "dsmlib_hbrc_mw_update_protocol.h" 
 
 //#define DSM_PROT_TRACE
+#define HYP_INSTRUMENT
+#ifdef  HYP_INSTRUMENT
+extern int hbrc_diffs_out_cnt;
+extern int hbrc_diffs_in_cnt;
+#endif
 
 #ifdef DSM_PROT_TRACE
-#define IN fprintf(stderr,"[%p]Entering %s\n", marcel_self(), __FUNCTION__)
-#define OUT fprintf(stderr,"[%p]Exiting %s\n", marcel_self(), __FUNCTION__)
+#define IN tfprintf(stderr,"[%p] -> %s\n", marcel_self(), __FUNCTION__)
+#define OUT tfprintf(stderr,"[%p] <- %s\n", marcel_self(), __FUNCTION__)
 #else
 #define IN
 #define OUT
 #endif
 
+#define DO_INV 1
+#define DONT_INV 0
+
+
 be_list hbrc_mw_update_list;
+
+
 
 void dsmlib_hbrc_mw_update_rfh(unsigned long index)
 {
   IN;
-
-#ifdef DSM_PROT_TRACE
-  assert(dsm_get_prob_owner(index) != dsm_self());
-#endif // DSM_PROT_TRACE
-
   dsmlib_rf_ask_for_read_copy(index);
-
   OUT;
 }
 
 void dsmlib_hbrc_mw_update_wfh(unsigned long index)
 {
   IN;
-
 #ifdef DSM_PROT_TRACE
   assert(dsm_get_prob_owner(index) != dsm_self());
 #endif // DSM_PROT_TRACE
 
 
-  if (dsm_get_access(index) == WRITE_ACCESS)
+  if (dsm_get_access(index) == WRITE_ACCESS){
+    OUT;
+    return;
+  }
+  if(dsm_get_access(index) == NO_ACCESS){
+      dsmlib_rf_ask_for_read_copy(index);
+      OUT;
       return;
-  if(dsm_get_access(index) == NO_ACCESS)
-      return dsmlib_rf_ask_for_read_copy(index);
-
+  }
   dsm_alloc_twin(index);
   dsm_set_access(index, WRITE_ACCESS);
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr,"page %d will be added to the page list\n", index);
+#endif
   add_to_be_list(&hbrc_mw_update_list, index);
-
+#ifdef DSM_PROT_TRACE
+  fprintf_be_list(hbrc_mw_update_list);
+#endif
   OUT;
   return;
 }
 
 void dsmlib_hbrc_mw_update_rs(unsigned long index, dsm_node_t req_node, int arg)
 {
-
   IN;
 
-  dsm_lock_page(index);
+  dsm_lock_inv(index);
+  
+  if (dsm_pending_invalidation(index))
+    {
+       dsm_unlock_page(index);
+       dsm_wait_for_inv(index);
+       dsm_lock_page(index);
+    }
+
+  dsm_unlock_inv(index);
+
 #ifdef DSM_PROT_TRACE
   assert(dsm_get_prob_owner(index) == dsm_self());
 #endif
   dsm_add_to_copyset(index, req_node);
   dsm_send_page(req_node, index, READ_ACCESS, arg);
-  dsm_unlock_page(index);
 
   OUT;
 }
@@ -83,61 +104,72 @@ void dsmlib_hbrc_mw_update_ws(unsigned long index, dsm_node_t req_node, int arg)
 {
   IN;
 
-  dsm_lock_page(index);
+  dsm_lock_inv(index);
+  
+  if (dsm_pending_invalidation(index))
+    {
+      dsm_unlock_page(index);
+      dsm_wait_for_inv(index);
+      dsm_lock_page(index);
+    }
+
+  dsm_unlock_inv(index);
+
 #ifdef DSM_PROT_TRACE
   assert(dsm_get_prob_owner(index) == dsm_self());
 #endif //DSM_PROT_TRACE
   dsm_add_to_copyset(index, req_node);
   dsm_send_page(req_node, index, WRITE_ACCESS, arg);
-  dsm_unlock_page(index);
 
  OUT;
 }
 
+
 void dsmlib_hbrc_mw_update_is(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner)
 {
+  pm2_completion_t c;
+
+  IN;
+
 #ifdef DSM_PROT_TRACE
-    fprintf(stderr,"[%s] Entering for page %ld, requested by node %d, New_owner is %d\n", __FUNCTION__, index, req_node, new_owner);
+  tfprintf(stderr,"[%s] Entering for page %ld, requested by node %d, New_owner is %d\n", __FUNCTION__, index, req_node, new_owner);
+  assert(dsm_self() != dsm_get_prob_owner(index));
 #endif // DSM_PROT_TRACE    
-    if(dsm_self() == dsm_get_prob_owner(index))
-      {
-	dsmlib_hrbc_invalidate_copyset(index, req_node, pm2_self());
-	dsm_send_invalidate_ack(req_node, index);
-	OUT;
-	return;
-      }
-    if(dsm_self() != dsm_get_prob_owner(index))
-      {
-//	fprintf(stderr, "0000\n");   
-//	dsm_lock_page(index); ***** commented out on 26/01/01 GA
-//	fprintf(stderr, "1111\n");
-	if(dsm_get_twin(index) != NULL)
-	  {
+
+  if(dsm_get_twin(index) != NULL && dsm_get_access(index) > NO_ACCESS)
+    {
 #ifdef DSM_PROT_TRACE
-	    assert(dsm_get_access(index) == WRITE_ACCESS);
-	    fprintf(stderr,"[%s] Invalidate forces pre-release diff send on page %ld...\n", __FUNCTION__, index);
+	assert(dsm_get_access(index) == WRITE_ACCESS);
+	tfprintf(stderr,"[%s] Invalidate forces pre-release diff send on page %ld...\n", __FUNCTION__, index);
 #endif 
-	    dsmlib_hrbc_send_diffs(index, req_node);
-	    assert(remove_if_noted(&hbrc_mw_update_list, index) == 1);
-	    dsm_free_twin(index);
-	  }
-//	fprintf(stderr, "2222\n");    
-	dsm_set_access(index, NO_ACCESS);
-	dsm_send_invalidate_ack(req_node, index);
-	fprintf(stderr, "3333\n");   
-  //      dsm_unlock_page(index); ***** commented out on 26/01/01 GA
-      }
+	dsm_set_access(index, READ_ACCESS);
+	dsmlib_hrbc_start_send_diffs(index, req_node, DONT_INV, &c);
+	dsmlib_hrbc_wait_diffs_done(&c);
+
+//	lock_be_list(hbrc_mw_update_list);
 #ifdef DSM_PROT_TRACE
-    tfprintf(stderr, "exiting the invalidate server(%d), req node =%d\n", index, req_node);
+	tfprintf(stderr, "IS: will remove %d from page list, req node =%d\n", index, req_node);
 #endif //DSM_PROT_TRACE
+	remove_if_noted(&hbrc_mw_update_list, index) ;
+//	unlock_be_list(hbrc_mw_update_list);
+
+	dsm_free_twin(index);
+	dsm_set_access(index, NO_ACCESS);
+      }
+  dsm_send_invalidate_ack(req_node, index);
+  
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr, "exiting the invalidate server(%d), req node =%d\n", index, req_node);
+#endif //DSM_PROT_TRACE
+  OUT;
+  return;
 }
+
 
 void dsmlib_hbrc_mw_update_rps(void *addr, dsm_access_t access, dsm_node_t reply_node, int arg)
 {
   unsigned long index = dsm_page_index(addr);
-#ifdef DSM_PROT_TRACE
   IN;
-#endif //DSM_PROT_TRACE
   dsm_lock_page(index); 
 
 #ifdef DSM_PROT_TRACE
@@ -145,13 +177,12 @@ void dsmlib_hbrc_mw_update_rps(void *addr, dsm_access_t access, dsm_node_t reply
 #endif //DSM_PROT_TRACE
   dsm_set_pending_access(index, NO_ACCESS);
   dsm_set_access(index, READ_ACCESS);
-//  dsm_set_access(index, access);
   dsm_signal_page_ready(index);
+
   dsm_unlock_page(index);
-#ifdef DSM_PROT_TRACE
   OUT;
-#endif //DSM_PROT_TRACE
 }
+
 
 void dsmlib_hbrc_acquire()
 {
@@ -160,54 +191,110 @@ void dsmlib_hbrc_acquire()
   return;
 }
 
+
 void dsmlib_hbrc_release()
 {
   unsigned long index;
-#ifdef DSM_PROT_TRACE
+  pm2_completion_t c;
+  int  invalidated_pages = 0;
+  dsm_node_t node;
+
   IN;
+
+  lock_be_list(hbrc_mw_update_list);
+
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr, "release: will remove first from page list \n");
   fprintf_be_list(hbrc_mw_update_list);
-#endif // DSM_PROT_TRACE
+#endif //DSM_PROT_TRACE
   index = remove_first_from_be_list(&hbrc_mw_update_list);
   while(index != (unsigned long)-1)
     {
+      dsm_lock_page(index);
       if(dsm_get_prob_owner(index) != dsm_self())
 	{
+	  if (dsm_get_twin(index) != NULL)
+	    {
 #ifdef DSM_PROT_TRACE
-	  fprintf(stderr,"[%s]Processing page: %lu\n",__FUNCTION__, index);
+	      tfprintf(stderr,"[%s]Processing page: %lu\n",__FUNCTION__, index);
+	      assert(dsm_get_access(index) == WRITE_ACCESS);
 #endif // DSM_PROT_TRACE
-	  dsm_lock_page(index);
-	  assert(dsm_get_twin(index) != NULL);
+	      dsm_set_access(index, READ_ACCESS);
+	      dsmlib_hrbc_start_send_diffs(index, dsm_get_prob_owner(index), DO_INV, &c);
+	      dsm_free_twin(index);
+	      dsm_set_access(index, NO_ACCESS);
+	    }
+	  else
+	    {
 #ifdef DSM_PROT_TRACE
-	  assert(dsm_get_access(index) == WRITE_ACCESS);
+	      tfprintf(stderr,"[%s]Processing page: %lu\n",__FUNCTION__, index);
 #endif // DSM_PROT_TRACE
-	  dsmlib_hrbc_send_diffs(index, dsm_get_prob_owner(index));
-	  dsm_free_twin(index);
-	  dsm_send_invalidate_req(dsm_get_prob_owner(index), index, dsm_self(), dsm_get_prob_owner(index));
-	  dsm_wait_ack(index, 1);
-	  dsm_set_access(index, NO_ACCESS);
+	      dsmlib_hrbc_start_send_empty_diffs(index, dsm_get_prob_owner(index), DO_INV, &c);
+	    }
 	  dsm_unlock_page(index);
+	  dsmlib_hrbc_wait_diffs_done(&c);
+	  
 	}
       else
-	dsmlib_hrbc_invalidate_copyset(index, dsm_self(), dsm_self());
+	{
+	  if (!dsm_pending_invalidation(index))
+	    {
+	      dsm_set_pending_invalidation(index);
+	      node = dsm_get_next_from_copyset(index);
+	      
+	      while (node != -1)
+		{ 
+		  if (node != dsm_self()) 
+		    {
+#ifdef DSM_COMM_TRACE
+		      tfprintf(stderr,"IS: Sending invalidate request to node %d (I am %p)\n", node, marcel_self());
+#endif
+		      dsm_send_invalidate_req(node, index, dsm_self(), dsm_self());
+		      invalidated_pages++;
+		    }
+		  node = dsm_get_next_from_copyset(index);
+		}
+	      dsm_unlock_page(index);
+	      // the copyset is empty now
+	      dsm_wait_ack(index, invalidated_pages);
 #ifdef DSM_PROT_TRACE
-      fprintf(stderr,"[%s]Processed\n",__FUNCTION__);
-#endif // DSM_PROT_TRACE
-      index = remove_first_from_be_list(&hbrc_mw_update_list);
+	      tfprintf(stderr,"Got all acks (I am %p)\n", marcel_self());
+#endif
+	      dsm_clear_pending_invalidation(index);
+	      dsm_signal_inv_done(index);
+	    }
+	  else
+	    {
+	      dsm_unlock_page(index);
+	      
+	      dsm_lock_inv(index);
+	      dsm_wait_for_inv(index);
+	      dsm_unlock_inv(index);
+	    }
+	}
+
+#ifdef DSM_PROT_TRACE
+      tfprintf(stderr, "release: will remove %d from page list\n", index);
+      fprintf_be_list(hbrc_mw_update_list);
+#endif //DSM_PROT_TRACE
+      index = remove_first_from_be_list(&hbrc_mw_update_list);  
     }
-#ifdef DSM_PROT_TRACE
-      OUT;
-#endif // DSM_PROT_TRACE
+
+  unlock_be_list(hbrc_mw_update_list);
+  OUT;
+  return;
 }
 
 
 void dsmlib_hbrc_add_page(unsigned long index)
 {
   IN;
-
+  dsm_lock_page(index);
   if (dsm_get_prob_owner(index) == dsm_self()) 
     dsm_set_access(index, WRITE_ACCESS);
   else
     dsm_set_access(index, NO_ACCESS);
+  dsm_unlock_page(index);
   OUT;
 }
 
@@ -217,10 +304,12 @@ void dsmlib_hbrc_mw_update_prot_init(int prot)
 
   hbrc_mw_update_list = init_be_list(10);
 #ifdef DSM_PROT_TRACE
-  fprintf(stderr,"Initial  printing\n");
+  tfprintf(stderr,"Initial  printing\n");
+#ifdef DSM_PROT_TRACE
   fprintf_be_list(hbrc_mw_update_list);
-  fprintf(stderr,"Done printing\n");
-  fprintf(stderr,"Nb total pages: %lu\n", dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages());
+#endif
+  tfprintf(stderr,"Done printing\n");
+  tfprintf(stderr,"Nb total pages: %lu\n", dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages());
 #endif // DSM_PROT_TRACE
   OUT;
 /*  for(i = 0; i < dsm_get_nb_static_pages() + dsm_get_nb_pseudo_static_pages(); i++)
@@ -231,7 +320,10 @@ void dsmlib_hbrc_mw_update_prot_init(int prot)
       else
 	dsm_set_access(i, NO_ACCESS);
     }
-  fprintf(stderr,"Nb erc pages: %d\n", count);*/
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr,"Nb erc pages: %d\n", count);
+#endif // DSM_PROT_TRACE*/
+
   return;
 
 
@@ -239,29 +331,39 @@ void dsmlib_hbrc_mw_update_prot_init(int prot)
 /*------------------------------------------------------*/
 
 
-void dsmlib_hrbc_send_diffs(unsigned long index, dsm_node_t dest_node)
+void dsmlib_hrbc_start_send_diffs(unsigned long index, dsm_node_t dest_node, int invalidate,  pm2_completion_t *c)
 {
-  pm2_completion_t c;
   int i = 0;
+  int self = dsm_self();
   void *start;
   void *twin;
   int stacking_mode = 0;
   int stack_start = 0;
   int stack_size = 0;
+  unsigned long page_size;
 
   IN;
 
+#ifdef HYP_INSTRUMENT
+  hbrc_diffs_out_cnt++;
+#endif
+ 
   start = dsm_get_page_addr(index);
   twin = dsm_get_twin(index);
 #ifdef DSM_PROT_TRACE
 //  assert(dsm_get_twin(index) != NULL);
-  fprintf(stderr,"[%s]Sending diffs for %lu from %d to %d\n",__FUNCTION__, index, dsm_self(), dest_node); 
+  tfprintf(stderr,"[%s]Sending diffs for %lu from %d to %d\n",__FUNCTION__, index, dsm_self(), dest_node);
 #endif // DSM_PROT_TRACE
 
-  pm2_completion_init(&c, NULL, NULL);
+  pm2_completion_init(c, NULL, NULL);
+
+  page_size = dsm_get_page_size(index);
   pm2_rawrpc_begin((int)dest_node, DSM_LRPC_HBRC_DIFFS, NULL);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(unsigned long));
-  for(i = 0; i < (DSM_PAGE_SIZE / 4);i++){
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&invalidate, sizeof(int));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&self, sizeof(int));
+
+  for(i = 0; i < page_size / 4;i++){
     if(*(((int *)start) + i) != *(((int *)twin) + i)){
       if(stacking_mode){
 	stack_size+=sizeof(int);
@@ -276,53 +378,69 @@ void dsmlib_hrbc_send_diffs(unsigned long index, dsm_node_t dest_node)
       if(stacking_mode){
         stacking_mode = 0;
 #ifdef DSM_PROT_TRACE
-	tfprintf(stderr, "[%s]Packing offset %d, size(in words)=%d, first word=%d\n", __FUNCTION__, sizeof(int) * stack_start, stack_size, *((int *)start + i));
+	tfprintf(stderr, "[%s]Packing offset %d, size(in bytes)=%d\n", __FUNCTION__, sizeof(int) * stack_start, stack_size);
 #endif //DSM_PROT_TRACE
         pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&stack_start, sizeof(int));
         pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&stack_size, sizeof(int));
         pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)(((int *)start) + stack_start), stack_size);
-	tfprintf(stderr, "[%s]Packed\n");
+//	tfprintf(stderr, "Packed\n");
       }
     }
   }
   if(stacking_mode){
 #ifdef DSM_PROT_TRACE
-    tfprintf(stderr, "[%s]Packing offset %d, size(in words)=%d, first word is %d\n", __FUNCTION__, sizeof(int) * stack_start, stack_size, *((int *)start + i));
+    tfprintf(stderr, "[%s]Packing offset %d, size(in words)=%d\n", __FUNCTION__, sizeof(int) * stack_start, stack_size);
 #endif //DSM_PROT_TRACE
     pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&stack_start, sizeof(int));
     pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&stack_size, sizeof(int));
     pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)(((int *)start) + stack_start), stack_size);
 #ifdef DSM_PROT_TRACE
-    tfprintf(stderr, "[%s]Packed\n");
+    tfprintf(stderr, "[%s]Packed\n",__FUNCTION__);
 #endif //DSM_PROT_TRACE
   }
 
   i = -1;
   // send the -1 value to terminate 
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&i, sizeof(int));
-  pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER,&c);
+  pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER,c);
   pm2_rawrpc_end();
-  pm2_completion_wait(&c);
 
   OUT;
 }
 
+void dsmlib_hrbc_wait_diffs_done(pm2_completion_t *c)
+{
+  IN;
 
+  pm2_completion_wait(c);
+
+  OUT;
+}
 
 void DSM_HRBC_DIFFS_threaded_func(void)
 {
   unsigned long index;
-  int i;
+  int i,  invalidate, invalidated_pages = 0;
   int size;
   pm2_completion_t c;
   void *start;
+  dsm_node_t node, req_node;
 
-#ifdef DSM_PROT_TRACE
   IN;
-#endif //DSM_PROT_TRACE
-
+#ifdef HYP_INSTRUMENT
+  hbrc_diffs_in_cnt++;
+#endif 
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index,
     sizeof(unsigned long));
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&invalidate, sizeof(int));
+
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&req_node, sizeof(int));
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr,"I will process diffs from %d for page %ld , invalidate = %d\n", req_node, index, invalidate);
+#endif
+
+  dsm_lock_page(index);
+
   start = dsm_get_page_addr(index);
   
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&i, sizeof(void *));
@@ -331,7 +449,7 @@ void DSM_HRBC_DIFFS_threaded_func(void)
     pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&size, sizeof(int));
     pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)((int *)start + i), size);
 #ifdef DSM_PROT_TRACE
-    tfprintf(stderr,"[%s] Received %d words diff at %d offset, first word is %d\n", __FUNCTION__, size, i * sizeof(int), *((int *)start + i));
+    tfprintf(stderr,"[%s] Received %d bytes diff at %d offset\n", __FUNCTION__, size, i * sizeof(int));
 #endif //DSM_PROT_TRACE
 
     pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&i, sizeof(void *));
@@ -340,54 +458,126 @@ void DSM_HRBC_DIFFS_threaded_func(void)
   pm2_unpack_completion(SEND_CHEAPER, RECV_CHEAPER,&c);
 
   pm2_rawrpc_waitdata();
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr,"finished processing diffs (%ld) from node %d\n", index, req_node);
+#endif
+
+  if (invalidate == DO_INV)
+    {
+    if (!dsm_pending_invalidation(index))
+      {
+	dsm_set_pending_invalidation(index);
+	node = dsm_get_next_from_copyset(index);
+	
+      while (node != -1)
+	{ 
+	  if (node != req_node) 
+	    {
+#ifdef DSM_COMM_TRACE
+	      tfprintf(stderr,"IS: Sending invalidate request to node %d (I am %p)\n", node, marcel_self());
+#endif
+	      dsm_send_invalidate_req(node, index, dsm_self(), dsm_self());
+	      invalidated_pages++;
+	    }
+	  node = dsm_get_next_from_copyset(index);
+	}
+      dsm_unlock_page(index);
+      // the copyset is empty now
+      dsm_wait_ack(index, invalidated_pages);
+#ifdef DSM_PROT_TRACE
+  tfprintf(stderr,"Got all acks (I am %p)\n", marcel_self());
+#endif
+      dsm_clear_pending_invalidation(index);
+      dsm_signal_inv_done(index);
+      }
+    else
+      {
+	dsm_unlock_page(index);
+	
+	dsm_lock_inv(index);
+	dsm_wait_for_inv(index);
+	dsm_unlock_inv(index);
+      }
+    }
+  else
+    dsm_unlock_page(index);
 
   pm2_completion_signal(&c);
-  
+
   OUT;
+  return;
 }
 
 void DSM_LRPC_HBRC_DIFFS_func(void)
 {
-  pm2_service_thread_create((pm2_func_t) DSM_HRBC_DIFFS_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t) DSM_HRBC_DIFFS_threaded_func, NULL);
 }
 
 
 
 void dsmlib_hrbc_invalidate_copyset(unsigned long index, dsm_node_t req_node, dsm_node_t new_owner)
 {
-  int i, copyset_size = dsm_get_copyset_size(index);
   int invalidated_pages = 0;
+  dsm_node_t node;
 
-#ifdef DSM_PROT_TRACE
-  tfprintf(stderr, "[%s] Entering, %d node in copyset\n", __FUNCTION__, copyset_size);
-#endif
+  IN;
 
-  if (copyset_size > 0)
-    {
-      dsm_node_t node;
-      for (i = 0; i < copyset_size; i++) 
+  node = dsm_get_next_from_copyset(index);
+
+  while (node != -1)
+    { 
+      if (node != req_node) 
 	{
-	  node = dsm_get_next_from_copyset(index);
-	  if ( node!= req_node) 
-	    {
 #ifdef DSM_COMM_TRACE
-	      tfprintf(stderr,"IS: Sending invalidate request to node %d (I am %p)\n", node, marcel_self());
+	  tfprintf(stderr,"IS: Sending invalidate request to node %d (I am %p)\n", node, marcel_self());
 #endif
-	      dsm_send_invalidate_req(node, index, dsm_self(), new_owner);
-	      invalidated_pages++;
-	    }
+	  dsm_send_invalidate_req(node, index, dsm_self(), new_owner);
+	  invalidated_pages++;
 	}
-	  // the copyset is empty now
-      dsm_wait_ack(index, invalidated_pages);
-#ifdef DSM_PROT_TRACE
-  fprintf(stderr,"Got all acks (I am %p)\n", marcel_self());
-#endif
+//      dsm_lock_page(index);
+      node = dsm_get_next_from_copyset(index);
+//      dsm_unlock_page(index);
     }
-
+  // the copyset is empty now
+       dsm_wait_ack(index, invalidated_pages);
 #ifdef DSM_PROT_TRACE
-  tfprintf(stderr, "exiting the invalidate server(%d), req node =%d\n", index, req_node);
+  tfprintf(stderr,"Got all acks (I am %p)\n", marcel_self());
 #endif
+  OUT;
 }
+
+
+
+void dsmlib_hrbc_start_send_empty_diffs(unsigned long index, dsm_node_t dest_node, int invalidate,  pm2_completion_t *c)
+{
+  int i = 0;
+  int self = dsm_self();
+
+  IN;
+ 
+#ifdef DSM_PROT_TRACE
+//  assert(dsm_get_twin(index) != NULL);
+  tfprintf(stderr,"[%s]Sending empty diffs for %lu from %d to %d\n",__FUNCTION__, index, dsm_self(), dest_node);
+#endif // DSM_PROT_TRACE
+
+  pm2_completion_init(c, NULL, NULL);
+
+  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_HBRC_DIFFS, NULL);
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(unsigned long));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&invalidate, sizeof(int));
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&self, sizeof(int));
+
+  i = -1;
+  // send the -1 value to terminate 
+  pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&i, sizeof(int));
+  pm2_pack_completion(SEND_CHEAPER, RECV_CHEAPER, c);
+  pm2_rawrpc_end();
+
+  OUT;
+}
+
+
+
 
 
 

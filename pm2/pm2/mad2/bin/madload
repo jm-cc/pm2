@@ -34,7 +34,11 @@ done
 args="$args -rank 0"
 
 # Append the command name
-args="$args -mad_app_cmd $prog"
+if [ -n "$PM2_CMD_NAME" ]; then
+    args="$args -mad_app_cmd $PM2_CMD_NAME"
+else
+    args="$args -mad_app_cmd $prog"
+fi
 
 PM2_RSH=${PM2_RSH:-rsh} 
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.31  2000/11/16 16:16:44  rnamyst
+mad1 is up-to-date again + various bug fixes (Malefiles)
+
 Revision 1.30  2000/11/16 13:24:09  oaumage
 - mise a jour initialisation
 
@@ -439,7 +442,11 @@ void pm2_exit(void)
 
   mdebug("pm2_thread_exit completed\n");
 
+#ifdef MAD2
   pm2_mad_exit();
+#else
+  mad_exit();
+#endif
 
   mdebug("mad_exit completed\n");
 

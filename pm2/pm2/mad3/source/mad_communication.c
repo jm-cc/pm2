@@ -745,7 +745,7 @@ mad_pack_ext(p_mad_connection_t   connection,
   p_mad_buffer_t             destination       = NULL;
   p_tbx_list_t               dest_list         = connection->buffer_list;
   p_tbx_list_t               buffer_group_list = connection->buffer_group_list;
-  va_list                    arg_list          = NULL;
+  va_list                    arg_list;
 
   LOG_IN();
   if (!user_buffer_length)

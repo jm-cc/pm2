@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.8  2000/03/08 17:18:52  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+
 Revision 1.7  2000/03/02 14:51:55  oaumage
 - support de detection des protocoles au niveau runtime
 
@@ -74,7 +78,7 @@ ______________________________________________________________________________
 
 typedef struct s_mad_madeleine
 {
-  PM2_SHARED;
+  TBX_SHARED;
   mad_driver_id_t             nb_driver;
   p_mad_driver_t              driver;
   mad_adapter_id_t            nb_adapter;

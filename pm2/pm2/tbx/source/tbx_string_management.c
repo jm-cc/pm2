@@ -144,10 +144,10 @@ char *
 tbx_string_to_cstring(p_tbx_string_t string)
 {
   char   *cstring = NULL;
-  size_t  length   =    0;
+  size_t  length  =    0;
 
   LOG_IN();
-  length   = string->length;
+  length  = string->length;
 
   cstring = TBX_MALLOC(length + 1);
 

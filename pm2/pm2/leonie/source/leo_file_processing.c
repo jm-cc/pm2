@@ -109,11 +109,16 @@ build_network_host_htable(char           *network_device_name,
           device_host_htable =
                   tbx_htable_get(device_hosts_htable, host_name);
         }
-      
-      if (!tbx_htable_get(device_host_htable, network_device_name)) 
+
+      if (!tbx_htable_get(device_host_htable, network_device_name))
         {
-          tbx_htable_add(device_host_htable, network_device_name, device_host_name); 
+          tbx_htable_add(device_host_htable, network_device_name, device_host_name);
         }
+
+      if (!tbx_htable_get(device_host_htable, "_default_")) {
+          tbx_htable_add(device_host_htable, "_default_",
+                         device_host_name);
+      }
     }
   while (tbx_slist_ref_forward(host_slist));
 
@@ -413,7 +418,7 @@ process_channel(p_leonie_t     leonie,
 	  dir_node = leo_dir_node_init();
 	  dir_node->name = strdup(host_name);
 
-          if (!(dir_node->device_host_names = 
+          if (!(dir_node->device_host_names =
                 tbx_htable_get(device_hosts_htable, host_name)))
                   FAILURE("invalid state");
 
@@ -431,7 +436,7 @@ process_channel(p_leonie_t     leonie,
 	  dir_node = leo_dir_node_init();
 	  dir_node->name = strdup(host_name);
 
-          if (!(dir_node->device_host_names = 
+          if (!(dir_node->device_host_names =
                 tbx_htable_get(device_hosts_htable, host_name)))
                   FAILURE("invalid state");
 

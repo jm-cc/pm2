@@ -162,6 +162,10 @@ _PRIVATE_ typedef struct __sched_struct {
 
 _PRIVATE_ typedef struct __lwp_struct {
   unsigned number;                         /* Serial number */
+#ifdef MA__SMP
+  marcel_kthread_t pid;
+  marcel_ctx_t home_ctx;
+#endif
 #ifdef MA__MULTIPLE_RUNNING
   marcel_t prev_running;                   /* Previous task after yielding */
 #endif
@@ -179,10 +183,6 @@ _PRIVATE_ typedef struct __lwp_struct {
   char __security_stack[2 * THREAD_SLOT_SIZE];    /* Used when own stack destruction is required */
   marcel_mutex_t stack_mutex;              /* To protect security_stack */
   volatile marcel_t sec_desc;              /* Task descriptor for security stack */
-#ifdef MA__SMP
-  marcel_ctx_t home_ctx;
-  marcel_kthread_t pid;
-#endif
 #ifndef MA__ONE_QUEUE
   __sched_t __sched_data;
 #endif

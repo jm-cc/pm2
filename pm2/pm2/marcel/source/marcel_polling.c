@@ -31,11 +31,14 @@ int __marcel_check_polling(unsigned polling_point)
   int waked_some_task = 0;
   poll_struct_t *ps, *p;
 
-  mdebug("marcel_check_polling start\n");
+  LOG_IN();
+
   if(marcel_lock_tryacquire(&__polling_lock)) {
 
     if((ps = __polling_tasks) == NULL) {
       marcel_lock_release(&__polling_lock);
+
+      LOG_OUT();
       return 0;
     }
 
@@ -96,7 +99,8 @@ int __marcel_check_polling(unsigned polling_point)
     marcel_lock_release(&__polling_lock);
   }
 
-  mdebug("marcel_check_polling end\n");
+  LOG_OUT();
+
   return waked_some_task;
 }
 

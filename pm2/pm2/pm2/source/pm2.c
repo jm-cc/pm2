@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.12  2000/02/14 10:04:54  rnamyst
+Modified to propose a new interface to "pm2_completion" facilities...
+
 Revision 1.11  2000/01/31 15:58:26  oaumage
 - ajout du Log CVS
 
@@ -112,13 +115,16 @@ void pm2_set_startup_func(pm2_startup_func_t f)
 
 static void pm2_completion_service(void)
 {
-  marcel_sem_t *sem_ptr;
+  pm2_completion_t *c_ptr;
 
-  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&sem_ptr, sizeof(sem_ptr));
+  pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c_ptr, sizeof(c_ptr));
+
+  if(c_ptr->handler)
+    (*c_ptr->handler)(c_ptr->arg);
 
   pm2_rawrpc_waitdata();
 
-  marcel_sem_V(sem_ptr);
+  marcel_sem_V(&c_ptr->sem);
 }
 
 /* BEURK!!! This should *go away* very soon!!! */
@@ -292,23 +298,31 @@ void pm2_rawrpc_end(void)
   pm2_enable_migration();
 }
 
-void pm2_completion_init(pm2_completion_t *c)
+void pm2_completion_init(pm2_completion_t *c,
+			 pm2_completion_handler_t handler,
+			 void *arg)
 {
   marcel_sem_init(&c->sem, 0);
   c->proc = pm2_self();
-  c->sem_ptr = &c->sem;
+  c->c_ptr = c;
+  c->handler = handler;
+  c->arg = arg;
 }
 
-void pm2_pack_completion(pm2_completion_t *c)
+void pm2_pack_completion(mad_send_mode_t sm,
+			 mad_receive_mode_t rm,
+			 pm2_completion_t *c)
 {
-  pm2_pack_int(SEND_CHEAPER, RECV_EXPRESS, &c->proc, 1);
-  pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+  pm2_pack_int(sm, rm, &c->proc, 1);
+  pm2_pack_byte(sm, rm, (char *)&c->c_ptr, sizeof(c->c_ptr));
 }
 
-void pm2_unpack_completion(pm2_completion_t *c)
+void pm2_unpack_completion(mad_send_mode_t sm,
+			   mad_receive_mode_t rm,
+			   pm2_completion_t *c)
 {
-  pm2_unpack_int(SEND_CHEAPER, RECV_EXPRESS, &c->proc, 1);
-  pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+  pm2_unpack_int(sm, rm, &c->proc, 1);
+  pm2_unpack_byte(sm, rm, (char *)&c->c_ptr, sizeof(c->c_ptr));
 }
 
 void pm2_completion_wait(pm2_completion_t *c)
@@ -319,11 +333,22 @@ void pm2_completion_wait(pm2_completion_t *c)
 void pm2_completion_signal(pm2_completion_t *c)
 {
   if(c->proc == pm2_self())
-    marcel_sem_V(c->sem_ptr);
+    marcel_sem_V(&c->c_ptr->sem);
   else {
     pm2_rawrpc_begin(c->proc, PM2_COMPLETION, NULL);
-    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)&c->sem_ptr, sizeof(c->sem_ptr));
+    pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c->c_ptr, sizeof(c->c_ptr));
     pm2_rawrpc_end();
   }
+}
+
+void pm2_completion_signal_begin(pm2_completion_t *c)
+{
+  pm2_rawrpc_begin(c->proc, PM2_COMPLETION, NULL);
+  pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&c->c_ptr, sizeof(c->c_ptr));
+}
+
+void pm2_completion_signal_end(void)
+{
+  pm2_rawrpc_end();
 }
 

@@ -29,12 +29,6 @@
 
 #define call_ST_FLUSH_WINDOWS()  
 
-#define SET_MARCEL_SELF_FROM_SP(sp)
-
-static __inline__ long get_gs(void)
-{
-}
-
 static __inline__ long get_sp(void)
 {
 }

@@ -1,0 +1,13 @@
+#!/bin/csh -f
+##########
+
+# Debugger launching script
+#-------------------------
+# DBG_SCRIPT = mad2_run_gdb
+set DBG_SCRIPT = mad2_run_ddd
+
+# LAM MPI
+#---------
+mpirun N -x DISPLAY ${DBG_SCRIPT} $*
+
+##########

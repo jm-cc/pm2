@@ -83,16 +83,18 @@ endif
 endif
 
 .PHONY: pm2_default
-pm2_default: $(PM2_LIB)
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user$(COMMON_EXT).mak
-	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_ROOT)/make/user$(COMMON_EXT).mak
-	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_ROOT)/make/user$(COMMON_EXT).mak
+pm2_default: $(PM2_LIB) $(PM2_USER_MAK)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(PM2_DEPENDS)),$(PM2_DEPENDS))
 include $(PM2_DEPENDS)
 endif
 endif
+
+$(PM2_USER_MAK):
+	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user*.mak
+	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_USER_MAK)
+	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_USER_MAK)
 
 $(PM2_EXTRA_DEP_FILE):
 	$(PM2_HIDE) rm -f $(PM2_ROOT)/.opt*

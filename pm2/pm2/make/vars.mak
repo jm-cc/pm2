@@ -100,24 +100,22 @@ include $(PM2_OPT_FILES)
 
 COMMON_MAKEFILES	+=	$(PM2_OPT_FILES)
 
-# Fichier de dépendance artificiel pour forcer la recompilation
-# lorsque les options changent
+# Calcul du suffixe
 ifdef PM2_OPTIONS
-PM2_EXTRA_DEP_FILE	:=	$(PM2_ROOT)/.opt_$(subst $(SPACE),_,$(sort $(PM2_OPTIONS)))
-else
-PM2_EXTRA_DEP_FILE	:=	$(PM2_ROOT)/.opt
-endif
-
-# Si on étend les noms de fichiers, il faut calculer le suffixe, sinon
-# il faut ajouter une dépendance supplémentaire...
-ifeq ($(PM2_USE_EXTENSION),yes)
 PM2_EXT		:=	-pm2_$(subst $(SPACE),_,$(sort $(PM2_OPTIONS)))
 else
-COMMON_MAKEFILES	+=	$(PM2_EXTRA_DEP_FILE)
+PM2_EXT		:=	-pm2_none
 endif
 
-# Petite entorse a l'utilisation du '+=' ...
+# Si on étend les noms de fichiers, il faut mettre a jour COMMON_EXT,
+# sinon il faut mettre a jour COMMON_EXTRA_DEP...
+ifeq ($(PM2_USE_EXTENSION),yes)
 COMMON_EXT		:=	$(COMMON_EXT)$(PM2_EXT)
+else
+COMMON_EXTRA_DEP	:=	$(COMMON_EXTRA_DEP)$(PM2_EXT)
+PM2_EXTRA_DEP_FILE	:=	$(PM2_ROOT)/.opt$(COMMON_EXTRA_DEP)
+COMMON_MAKEFILES	+=	$(PM2_EXTRA_DEP_FILE)
+endif
 
 PM2_GEN_OPT	:=	$(PM2_GEN_1) $(PM2_GEN_2) $(PM2_GEN_3) \
 			$(PM2_GEN_4) $(PM2_GEN_5) $(PM2_GEN_6)
@@ -176,6 +174,8 @@ PM2_LIB		:=	$(PM2_LIB_A)
 endif
 
 COMMON_LIBS	:=	$(PM2_LIB)
+
+PM2_USER_MAK		:=	$(PM2_ROOT)/make/user$(COMMON_EXT).mak
 
 
 COMMON_DEFAULT_TARGET	+=	pm2_default

@@ -29,11 +29,11 @@
 #include <sys/utsname.h>
 #include <sys/types.h>
 #include "fut.h"
-#include "get_cpu_info.h"
+#include "fkt/get_cpu_info.h"
+#include "fkt/block.h"
+#include "fkt/sysmap.h"
+#include "fkt/pids.h"
 #include "fkt-tools.h"
-#include "block.h"
-#include "sysmap.h"
-#include "pids.h"
 
 #define MAXCPUS 16
 
@@ -102,7 +102,7 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 	fut_pid = getpid();
 
 	/*	find out speed of this cpu in mhz */
-	ncpus = get_cpu_info(MAXCPUS, mhz);
+	ncpus = fkt_get_cpu_info(MAXCPUS, mhz);
 
 	if( bufptr != NULL )
 		{/* previous allocation region was not released, do it now */
@@ -363,11 +363,11 @@ int fut_endup( char *filename )
   END_BLOCK(fd);
 
   BEGIN_BLOCK(fd);
-  record_sysmap(fd);
+  fkt_record_sysmap(fd);
   END_BLOCK(fd);
 
   BEGIN_BLOCK(fd);
-  record_pids(fd);
+  fkt_record_pids(fd);
   END_BLOCK(fd);
 
   END_BLOCK(fd);

@@ -24,7 +24,7 @@
 #include <stdarg.h>
 
 #include "pm2_profile.h"
-#include "sysmap.h"
+#include "fkt/sysmap.h"
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"
@@ -76,7 +76,7 @@ void profile_init(void)
 
     // Initialisation de FUT
 
-    get_mysymbols();
+    fkt_get_mysymbols();
 
     strcpy(PROF_FILE_USER, "/tmp/prof_file_user_");
     strcat(PROF_FILE_USER, getenv("USER"));

@@ -40,11 +40,11 @@
 #include <sys/wait.h>
 
 #include "fkt.h"
-#include "get_cpu_info.h"
-#include "sysmap.h"
-#include "block.h"
-#include "names.h"
-#include "pids.h"
+#include "fkt/get_cpu_info.h"
+#include "fkt/sysmap.h"
+#include "fkt/block.h"
+#include "fkt/names.h"
+#include "fkt/pids.h"
 #include "fkt-tools.h"
 
 #include "pm2_profile.h"
@@ -130,7 +130,7 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
 
   fkt_keychange(FKT_DISABLE, FKT_KEYMASKALL);
 
-  ncpus = get_cpu_info(MAXCPUS, mhz);
+  ncpus = fkt_get_cpu_info(MAXCPUS, mhz);
   page_size = getpagesize();
   pid = (unsigned long) getpid();
 
@@ -189,7 +189,7 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
 
   record_time( ncpus, mhz );
   BEGIN_BLOCK(fd);
-  record_irqs(fd);
+  fkt_record_irqs(fd);
   END_BLOCK(fd);
 
   /* uname -a */
@@ -216,21 +216,21 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   /* merge of System.map and /proc/ksyms */
   if( !stat("/proc/kallsyms",&st) )
     {/* on >=2.5 kernels, kallsyms gives everything we may want */
-    get_sysmap("/proc/kallsyms",SYSMAP_MODLIST,0);
-    get_sysmap("/proc/kallsyms",SYSMAP_PROC,0);
+    fkt_get_sysmap("/proc/kallsyms",SYSMAP_MODLIST,0);
+    fkt_get_sysmap("/proc/kallsyms",SYSMAP_PROC,0);
     }
   else
     {/* but on 2.4 kernels, only ksyms is available */
-    get_sysmap("/proc/ksyms",SYSMAP_MODLIST,0);
-    get_sysmap("/proc/ksyms",SYSMAP_PROC,0);
+    fkt_get_sysmap("/proc/ksyms",SYSMAP_MODLIST,0);
+    fkt_get_sysmap("/proc/ksyms",SYSMAP_PROC,0);
     }
 
   BEGIN_BLOCK(fd);
-  record_sysmap(fd);
+  fkt_record_sysmap(fd);
   END_BLOCK(fd);
 
   BEGIN_BLOCK(fd);
-  record_pids(fd);
+  fkt_record_pids(fd);
   END_BLOCK(fd);
 
   if( write(fd,&zero,sizeof(zero)) < (ssize_t) sizeof(zero) )

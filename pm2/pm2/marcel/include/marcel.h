@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.5  2000/02/28 10:26:36  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.4  2000/01/31 15:56:17  oaumage
 - ajout du Log CVS
 
@@ -106,19 +109,19 @@ typedef void (*handler_func_t)(any_t);
 _PRIVATE_ struct task_desc_struct;
 _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
-#include <sys/archdep.h>
-#include <sys/archsetjmp.h>
-#include <sys/marcel_trace.h>
-#include <sys/debug.h>
-#include <exception.h>
-#include <marcel_lock.h>
-#include <marcel_sem.h>
-#include <marcel_mutex.h>
-#include <marcel_io.h>
-#include <sys/privatedefs.h>
-#include <marcel_sched.h>
-#include <marcel_attr.h>
-#include <mar_timing.h>
+#include "sys/archdep.h"
+#include "sys/archsetjmp.h"
+#include "sys/marcel_trace.h"
+#include "sys/debug.h"
+#include "exception.h"
+#include "marcel_lock.h"
+#include "marcel_sem.h"
+#include "marcel_mutex.h"
+#include "marcel_io.h"
+#include "sys/privatedefs.h"
+#include "marcel_sched.h"
+#include "marcel_attr.h"
+#include "mar_timing.h"
 
 
 /* = initialization & termination == */

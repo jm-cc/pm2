@@ -69,7 +69,11 @@ typedef generic_h quick_async_lrpc_h;
 typedef generic_h cloning_h;
 typedef generic_h merge_h;
 
+#ifdef MAD2
+void netserver_start(p_mad_channel_t channel, unsigned priority);
+#else
 void netserver_start(unsigned priority);
+#endif
 
 void netserver_wait_end(void);
 

@@ -805,7 +805,7 @@ mad_pack(p_mad_connection_t   connection,
 	  else if (buffer_mode == mad_buffer_mode_static)
 	    {
 	      if (   (send_mode == mad_send_SAFER)
-		     || (send_mode == mad_send_CHEAPER))
+                  || (send_mode == mad_send_CHEAPER))
 		{
 		  if (tbx_empty_list(dest_list) || connection->flushed)
 		    {

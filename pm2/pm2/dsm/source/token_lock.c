@@ -1,9 +1,9 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.17 2002/10/25 11:20:21 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.19 2002/10/27 15:37:05 slacour Exp $
  */
 
-/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
+/* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
 
 /* Distributed management of the locks.  Each lock has a (central)
  * fixed manager and an owner (token owner).  The lock manager can be
@@ -26,7 +26,7 @@
 #undef TRCSL
 #undef DBGSL
 /* remove all assertions "assert" */
-#define NDEBUG
+#undef NDEBUG
 
 #include "trace_debug.h"
 
@@ -106,7 +106,7 @@ struct lock_list_struct
 
    /* the last cluster which requested the lock; relevant for the lock
     * manager only */
-   unsigned int last_cluster;
+   int last_cluster;
 
    int reservation;  /* number of local threads which reserved the
                         lock (granting a lock to a local thread is
@@ -129,6 +129,15 @@ struct lock_list_struct
    node_list_t notif_list;
    /* pointer to the last element of the previous linked list */
    node_list_t end_of_notif_list;
+
+   /* number of times a lock was granted to a thread in the local
+    * process while some other requesting node in a local cluster was
+    * registered */
+   unsigned long int thread_priority;
+   /* number of times a lock was granted to a node in the local
+    * cluster while some other requesting node in a remote cluster was
+    * registered */
+   unsigned long int cluster_priority;
 
    lock_list_elem * next; /* next lock in the linked list */
 };
@@ -153,14 +162,14 @@ static token_lock_id_t local_lock_number;
 static marcel_mutex_t lock_mutex;
 
 /* maximum number of lock acquisitions inside a given process to the
- * detriment of other nodes (0 to disable the local thread priority;
- * -1 to mean "no limit", "infinity") */
-static int max_local_thread_acquire = INFINITE_PRIORITY;
+ * detriment of other nodes (NO_PRIORITY to disable the local thread
+ * priority; INFINITE_PRIORITY to mean "no limit", "infinity") */
+static unsigned long int max_local_thread_acquire;
 
 /* maximum number of lock acquisitions inside a cluster to the
- * detriment of remote nodes (0 to disable the local node priority; -1
- * to mean "no limit", "infinity") */
-static int max_local_cluster_acquire = INFINITE_PRIORITY;
+ * detriment of remote nodes (NO_PRIORITY to disable the local node
+ * priority; INFINITE_PRIORITY to mean "no limit", "infinity") */
+static unsigned long int max_local_cluster_acquire;
 
 
 /**********************************************************************/
@@ -169,6 +178,9 @@ static int max_local_cluster_acquire = INFINITE_PRIORITY;
 
 /* no lock */
 const token_lock_id_t TOKEN_LOCK_NONE = ((token_lock_id_t)(-1));
+
+const unsigned long int INFINITE_PRIORITY = ULONG_MAX;
+const unsigned long int NO_PRIORITY = 0;
 
 
 /**********************************************************************/
@@ -325,12 +337,9 @@ grant_lock (const dsm_node_t to_node, lock_list_elem * const lck_elem)
 
 
 /**********************************************************************/
-/* if the requester is in the same cluster as I, then I must wait
- * until the lock is FREE and there are no local reservations.  If the
- * requester is in another cluster than mine, then wait for the lock
- * to be FREE, with no local reservations and no
- * expected_remote_release and no expected_local_release; the lock
- * entry is assumed to be locked. */
+/* try to grant the lock to a thread in the local process, or to a
+ * process in the local cluster or to a node in a remote cluster (in
+ * that order of preference). */
 static void
 grant_lock_if_possible (lock_list_elem * const lck_elem)
 {
@@ -355,10 +364,19 @@ grant_lock_if_possible (lock_list_elem * const lck_elem)
       TRACE("signal token %d available, lcl_rel=%d, rmt_rel=%d, reserv=%d",
             lck_elem->lock_id, lck_elem->expected_local_release,
             lck_elem->expected_remote_release, lck_elem->reservation);
+      if ( max_local_thread_acquire != INFINITE_PRIORITY &&
+           ( lck_elem->local_next_owner != NOBODY ||
+             lck_elem->remote_next_owner != NOBODY ) )
+         lck_elem->thread_priority++;
       marcel_cond_signal(&(lck_elem->token_available));
    }
    else if ( lck_elem->local_next_owner != NOBODY )
+   {
+      if ( max_local_cluster_acquire != INFINITE_PRIORITY &&
+           lck_elem->remote_next_owner != NOBODY )
+         lck_elem->cluster_priority++;
       grant_lock(lck_elem->local_next_owner, lck_elem);
+   }
    else if ( lck_elem->remote_next_owner != NOBODY  &&
              lck_elem->expected_local_release == 0 &&
              lck_elem->expected_remote_release == 0 )
@@ -543,11 +561,12 @@ create_lock_entry (const token_lock_id_t lck_id)
    lck_elem->reservation = 0;
    lck_elem->notif_list = lck_elem->end_of_notif_list = NULL;
    lck_elem->owner_thread = NULL;
+   lck_elem->thread_priority = lck_elem->cluster_priority = 0;
 
    /* initialization depending on whether I'm the manager or not */
    if ( myself == get_lock_manager(lck_id) )
    {
-      const unsigned int cluster_number = topology_get_cluster_number();
+      const int cluster_number = topology_get_cluster_number();
       int i;
 
       lck_elem->last_cluster = topology_get_cluster_color(myself);
@@ -745,6 +764,8 @@ recv_lock_token_func (void * const unused)
    {
       lck_elem->status = LOCALLY_PRESENT;
       lck_elem->just_granted = SL_FALSE;
+      lck_elem->thread_priority = 0;
+      lck_elem->cluster_priority = 0;
 
       if ( remote_nxt != NOBODY )
       {
@@ -762,8 +783,7 @@ recv_lock_token_func (void * const unused)
          assert ( lck_elem->expected_remote_release == 0 );
       }
 
-      TRACE("signal token %d available with status='FREE'", lck_id);
-      marcel_cond_signal(&(lck_elem->token_available));
+      grant_lock_if_possible(lck_elem);
    }
    else
    {
@@ -847,7 +867,7 @@ lock_manager_server_func (void * const unused)
       send_no_such_token(requester, lck_id);
    else
    {
-      const unsigned int requester_clr = topology_get_cluster_color(requester);
+      const int requester_clr = topology_get_cluster_color(requester);
 
       assert ( requester_clr != NO_COLOR );
       assert ( requester_clr < topology_get_cluster_number() );
@@ -900,6 +920,7 @@ token_lock_initialization (void)
 
    IN;
    local_lock_number = 0;
+   max_local_thread_acquire = max_local_cluster_acquire = INFINITE_PRIORITY;
    marcel_mutex_init(&lock_mutex, NULL);
 
    /* the hash table is initially empty */
@@ -1279,12 +1300,9 @@ token_lock_manager_server (void)
 /* set the maximum number of consecutive acquisitions of a lock within
  * a process; this function must be called after pm2_init(). */
 int
-set_thread_priority_level (const int lvl)
+set_thread_priority_level (const unsigned long int lvl)
 {
-   if ( lvl < INFINITE_PRIORITY ) return DSM_ERR_ILLEGAL;
-   marcel_mutex_lock(&lock_mutex);
    max_local_thread_acquire = lvl;
-   marcel_mutex_unlock(&lock_mutex);
    return DSM_SUCCESS;
 }
 
@@ -1293,12 +1311,9 @@ set_thread_priority_level (const int lvl)
 /* set the maximum number of consecutive acquisitions of a lock within
  * a cluster; this function must be called after pm2_init(). */
 int
-set_cluster_priority_level (const int lvl)
+set_cluster_priority_level (const unsigned long int lvl)
 {
-   if ( lvl < INFINITE_PRIORITY ) return DSM_ERR_ILLEGAL;
-   marcel_mutex_lock(&lock_mutex);
    max_local_cluster_acquire = lvl;
-   marcel_mutex_unlock(&lock_mutex);
    return DSM_SUCCESS;
 }
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.23  2000/04/17 16:09:40  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.22  2000/04/17 08:31:54  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -851,7 +854,7 @@ static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
 
 #ifdef USE_PRIORITIES
 
-#ifdef __ACT__
+#ifdef MA__ACTIVATION
 #error not yet implemented.
 #endif
 
@@ -903,10 +906,14 @@ void marcel_yield(void)
   goto_next_task(next_task_to_run(cur, cur_lwp));
 }
 
-#ifndef __ACT__
+//TODO : adadter aux activations...
 void marcel_explicityield(marcel_t t)
 {
   register marcel_t cur = marcel_self();
+
+#ifdef MA__ACTIVATION
+  RAISE("Not implemented");
+#endif
 
   lock_task();
   if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
@@ -930,10 +937,9 @@ void marcel_trueyield(void)
     return;
   }
 
-  next = marcel_radical_next_task();
+  next = marcel_radical_next_task(); // est-ce ok avec les activations ?
   goto_next_task(next);
 }
-#endif /* __ACT__ */
 
 void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
 {
@@ -1029,7 +1035,6 @@ void marcel_setspecialthread(marcel_t pid)
 #endif
 }
 
-#ifndef __ACT__
 void marcel_givehandback(void)
 {
 #ifdef MINIMAL_PREEMPTION
@@ -1044,7 +1049,6 @@ void marcel_givehandback(void)
   marcel_trueyield();
 #endif
 }
-#endif /* __ACT__ */
 
 void marcel_delay(unsigned long millisecs)
 {
@@ -1181,8 +1185,6 @@ any_t idle_func(any_t arg)
 #endif
 
   lock_task();
-
-  ACTDEBUG(printf("idle_func starting with lock_task\n"));
 
   do {
 
@@ -1564,7 +1566,6 @@ void marcel_sched_init(unsigned nb_lwp)
   sigemptyset(&sigalrmset);
   sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
 
-  ACTDEBUG(printf("marcel_sched_init(%i)\n", nb_lwp)); 
 #ifdef MA__LWPS
 
 #ifdef SOLARIS_SYS
@@ -1633,8 +1634,6 @@ void marcel_sched_init(unsigned nb_lwp)
 
   /* pris dans  init_sched() */
   sched_unlock(&__main_lwp);
-
-  ACTDEBUG(printf("marcel_sched_init sched_unlock done\n")); 
 
 #ifdef MA__LWPS
 

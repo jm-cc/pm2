@@ -71,6 +71,8 @@ MOD_C_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
 MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
 MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
 MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
+MOD_HSPLITS_DIRS ?= $(wildcard h_splits)
+MOD_HSPLITS_SOURCES ?= $(shell find $(MOD_HSPLITS_DIRS) \( -type d -name SCCS -prune \) -o -name *.h -printf "%P ")
 
 # Bases : fichiers sans extension ni repertoire
 #---------------------------------------------------------------------
@@ -94,6 +96,8 @@ MOD_C_BASE = $(foreach I, $(MOD_GEN_C_SOURCES) $(MOD_C_SOURCES), \
 			$(notdir $(basename $I)))
 MOD_S_BASE = $(foreach I, $(MOD_S_SOURCES), $(notdir $(basename $I)))
 MOD_BASE   = $(MOD_C_BASE) $(MOD_S_BASE)
+# Les sources n'ont déjà plus que l'éventuel sous répertoire
+MOD_HSPLITS_BASE = $(foreach I, $(MOD_HSPLITS_SOURCES), $(basename $I))
 
 # Objets
 #---------------------------------------------------------------------
@@ -118,6 +122,19 @@ MOD_PREPROC   = $(MOD_C_PREPROC) $(MOD_S_PREPROC)
 # MOD_S_FUT : pas de sens
 MOD_C_FUT = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).fut)
 MOD_FUT   = $(MOD_C_FUT)
+
+# H splited files
+#---------------------------------------------------------------------
+MOD_HSPLITS_PART_GEN=$(foreach f, $(MOD_HSPLITS_BASE), \
+	$(MOD_GEN_INC)/$(f)_$(strip $(1)).h)
+MOD_HSPLITS_DEFINES_GEN:=$(call MOD_HSPLITS_PART_GEN, defines)
+MOD_HSPLITS_TYPES_GEN:=$(call MOD_HSPLITS_PART_GEN, types)
+MOD_HSPLITS_DECLS_GEN:=$(call MOD_HSPLITS_PART_GEN, decls)
+MOD_HSPLITS_INLINES_GEN:=$(call MOD_HSPLITS_PART_GEN, inlines)
+MOD_HSPLITS_MAIN_GEN:=$(addprefix $(MOD_GEN_INC)/, $(MOD_HSPLITS_SOURCES))
+
+MOD_HSPLITS_GEN:= $(foreach part, DEFINES TYPES DECLS INLINES MAIN EXTRA, \
+			$(MOD_HSPLITS_$(part)_GEN))
 
 # Dependances
 #---------------------------------------------------------------------

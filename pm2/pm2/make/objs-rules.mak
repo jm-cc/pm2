@@ -160,6 +160,40 @@ $(MOD_FUT): $(MOD_GEN_CPP)/%.fut: $(MOD_GEN_CPP)/%.i
 	$(COMMON_HIDE) rm -f /tmp/foo-$(USER).o
 	$(COMMON_HIDE) touch $(MOD_GEN_STAMP)/fut_stamp
 
+# Fichiers *.h découpés
+#---------------------------------------------------------------------
+gen_inline_h: $(MOD_HSPLITS_GEN)
+	$(error stop)
+
+vpath %.h $(MOD_HSPLITS_DIRS)
+
+$(MOD_HSPLITS_DEFINES_GEN): $(MOD_GEN_INC)/%_defines.h: %.h
+	$(COMMON_BUILD)
+	$(COMMON_HIDE) mkdir -p `dirname $@`
+	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
+		--section 'def.*' --symbole-suffix '_DEFINES' $^ >$@
+$(MOD_HSPLITS_TYPES_GEN): $(MOD_GEN_INC)/%_types.h: %.h
+	$(COMMON_BUILD)
+	$(COMMON_HIDE) mkdir -p `dirname $@`
+	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
+		--section 'type.*' --symbole-suffix '_TYPES' $^ >$@
+$(MOD_HSPLITS_DECLS_GEN): $(MOD_GEN_INC)/%_decls.h: %.h
+	$(COMMON_BUILD)
+	$(COMMON_HIDE) mkdir -p `dirname $@`
+	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
+		--section 'decl.*' --symbole-suffix '_DECLS' $^ >$@
+$(MOD_HSPLITS_INLINES_GEN): $(MOD_GEN_INC)/%_inlines.h: %.h
+	$(COMMON_BUILD)
+	$(COMMON_HIDE) mkdir -p `dirname $@`
+	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
+		--section 'in.*' --symbole-suffix '_INLINES' $^ >$@
+$(MOD_HSPLITS_MAIN_GEN): $(MOD_GEN_INC)/%.h: %.h
+	$(COMMON_BUILD)
+	$(COMMON_HIDE) mkdir -p `dirname $@`
+	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file --master --nofile \
+		--no-common-section --source $*.h --symbole-nosuffix \
+		$(foreach s, defines types decls inlines, --section $(s)) \
+		$^ >$@
 # Lex
 #---------------------------------------------------------------------
 $(MOD_GEN_C_L_SOURCES): $(MOD_GEN_SRC)/%$(MOD_EXT).c: %.l

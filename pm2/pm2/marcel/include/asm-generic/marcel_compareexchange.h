@@ -52,6 +52,8 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 				*p = new;
 			break;
 		}
+	default:
+		MA_BUG();
 	}
 	ma_spin_unlock_softirq(&ma_compareexchange_spinlock);
 	return prev;

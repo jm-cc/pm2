@@ -66,30 +66,33 @@
       fut_header(code, arg);                              \
   } while(0)
 
+#define GEN_PREPROC(name) _GEN_PREPROC(name,__LINE__)
+#define _GEN_PREPROC(name,line) __GEN_PREPROC(name,line)
+
 #ifdef PREPROC
 
-#define GEN_PREPROC(name)                                 \
+#define __GEN_PREPROC(name,line)                          \
   do {                                                    \
-    extern int foo asm ("this_is_the_fut_" name "_code"); \
-    foo = 1;                                              \
+    extern int foo##line asm ("this_is_the_fut_" name "_code"); \
+    foo##line = 1;                                              \
   } while(0)
 
 #else // ifndef PREPROC
 
 #if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
 
-#define GEN_PREPROC(name)                                        \
+#define __GEN_PREPROC(name,line)                                 \
   do {                                                           \
-    extern unsigned __code asm("fut_" name "_code");             \
-    PROF_PROBE1(PROFILE_KEYMASK, __code, marcel_self()->number); \
+    extern unsigned __code##line asm("fut_" name "_code");       \
+    PROF_PROBE1(PROFILE_KEYMASK, __code##line, marcel_self()->number); \
   } while(0)
 
 #else
 
-#define GEN_PREPROC(name)                                 \
+#define __GEN_PREPROC(name,line)                          \
   do {                                                    \
-    extern unsigned __code asm("fut_" name "_code");      \
-    PROF_PROBE0(PROFILE_KEYMASK, __code);                 \
+    extern unsigned __code##line asm("fut_" name "_code");\
+    PROF_PROBE0(PROFILE_KEYMASK, __code##line);           \
   } while(0)
 
 #endif

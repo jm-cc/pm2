@@ -71,15 +71,16 @@ endif
 .PHONY: distclean
 distclean:
 	$(COMMON_HIDE) rm -rf $(PM2_ROOT)/$(GEN) \
-	$(COMMON_HIDE) rm -rf $(wildcard $(PM2_ROOT)/exemples/*/$(GEN)) \
+	$(COMMON_HIDE) rm -rf $(wildcard $(PM2_ROOT)/examples/*/$(GEN)) \
+	$(COMMON_HIDE) rm -rf $(MAD1_ROOT)/$(GEN) \
+	$(COMMON_HIDE) rm -rf $(wildcard $(MAD1_ROOT)/examples/*/$(GEN)) \
 	$(COMMON_HIDE) rm -rf $(MAD2_ROOT)/$(GEN) \
 	$(COMMON_HIDE) rm -rf $(wildcard $(MAD2_ROOT)/test/$(GEN)) \
 	$(COMMON_HIDE) rm -rf $(TBX_ROOT)/$(GEN) \
 	$(COMMON_HIDE) rm -rf $(NTBX_ROOT)/$(GEN) \
 	$(COMMON_HIDE) rm -rf $(MARCEL_ROOT)/$(GEN) \
-	$(COMMON_HIDE) rm -rf $(wildcard $(MARCEL_ROOT)/exemples/*/$(GEN)) \
-	$(COMMON_HIDE) rm -rf $(wildcard $(MARCEL_ROOT)/exemple/$(GEN)) \
-	$(COMMON_HIDE) rm -rf $(DSM_ROOT)/$(GEN) \
+	$(COMMON_HIDE) rm -rf $(wildcard $(MARCEL_ROOT)/examples/$(GEN)) \
+	$(COMMON_HIDE) rm -rf $(DSM_ROOT)/$(GEN)
 
 
 $(OPT_FILE):

@@ -33,10 +33,18 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+MASTER_MODULE := $(strip $(MASTER_MODULE))
+
 ifndef PM2_ROOT
 $(error The PM2_ROOT variable is not set)
 endif
 PM2_MAKE :=  $(PM2_ROOT)/make
+
+ifeq ($(MASTER_MODULE),PM2)
+# Choix entre mad1 et mad2
+include $(PM2_ROOT)/make/mad.mak
+COMMON_MAKEFILES	+=	$(PM2_ROOT)/make/mad.mak
+endif
 
 ifndef MARCEL_ROOT
 MARCEL_ROOT :=  $(PM2_ROOT)/marcel
@@ -48,10 +56,19 @@ DSM_ROOT :=  $(PM2_ROOT)/dsm
 endif
 DSM_MAKE :=  $(DSM_ROOT)/make
 
+ifndef MAD1_ROOT
+MAD1_ROOT :=  $(PM2_ROOT)/mad1
+endif
+
 ifndef MAD2_ROOT
 MAD2_ROOT :=  $(PM2_ROOT)/mad2
 endif
+
+ifneq ($(MAD2),yes)
+MAD_MAKE  :=  $(MAD1_ROOT)/make
+else
 MAD_MAKE  :=  $(MAD2_ROOT)/make
+endif
 
 ifndef TBX_ROOT
 TBX_ROOT :=  $(PM2_ROOT)/toolbox
@@ -63,7 +80,14 @@ NTBX_ROOT :=  $(PM2_ROOT)/toolbox/net
 endif
 NTBX_MAKE :=  $(NTBX_ROOT)/make
 
-MASTER_MODULE := $(strip $(MASTER_MODULE))
+ifndef CLASS
+CLASS :=  default
+endif
+
+ifndef NAME
+NAME :=  $(CLASS)
+endif
+
 MASTER_ROOT   := $($(MASTER_MODULE)_ROOT)
 
 GEN := build
@@ -80,14 +104,6 @@ COMMON_ASFLAGS   := -D$(COMMON_SYS) -D$(COMMON_ARCH)
 COMMON_LLIBS     :=
 COMMON_OPTIONS   :=
 COMMON_LINK      := static
-
-ifndef CLASS
-CLASS :=  default
-endif
-
-ifndef NAME
-NAME :=  $(CLASS)
-endif
 
 GEN_DIR :=  $(GEN_ROOT)/$(NAME)
 GEN_BIN :=  $(GEN_DIR)/bin
@@ -152,12 +168,12 @@ MAK_VERB :=  $(VERB)
 endif
 
 ifeq ($(MAK_VERB),verbose)
-COMMON_PREFIX :=#
+COMMON_PREFIX  =#
 COMMON_HIDE   :=#	
 else
 ifeq ($(MAK_VERB),normal)
-COMMON_PREFIX :=#
-COMMON_HIDE    =  @
+COMMON_PREFIX  =#
+COMMON_HIDE   :=  @
 else
 ifeq ($(MAK_VERB),quiet)
 COMMON_PREFIX  =  @ echo "building " $(@F) ;

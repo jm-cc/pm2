@@ -13,8 +13,14 @@ else
     $prog ${@:+"$@"}
 fi
 
-echo "process terminated with code $?"
-if [ "${PM2_PMODE}" = on ]; then
+code=$?
+
+if [ "${PM2_PMODE}" = on ]
+then
+    echo "process terminated with code ${code}"
     sleep 2
     read dummy
+else
+    [ $code -gt 0 ] && echo "process terminated with code ${code}"
+
 fi

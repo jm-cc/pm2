@@ -1,3 +1,9 @@
+/*! \file tbx_pointers.h
+ *  \brief TBX pointer types definition
+ *
+ *  This file defines the pointer version of any TBX data structure
+ * 
+ */
 
 /*
  * PM2: Parallel Multithreaded Machine

@@ -49,9 +49,12 @@ LIB_C_SOURCES_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT
 LIB_C_OBJECTS_ADDED := $(patsubst %.c,%$(LIB_EXT).o,$(subst $(LIB_SRC2),$(LIB_GEN_OBJ),$(LIB_C_SOURCES_ADDED)))
 LIB_C_PICS_ADDED := $(patsubst %.c,%$(LIB_EXT).pic,$(subst $(LIB_SRC2),$(LIB_GEN_OBJ),$(LIB_C_SOURCES_ADDED)))
 LIB_C_DEPENDS_ADDED := $(patsubst %.o,%.d,$(subst $(LIB_GEN_OBJ),$(LIB_GEN_DEP),$(LIB_C_OBJECTS_ADDED)))
+LIB_C_PREPROC_ADDED := $(patsubst %.c,%$(LIB_EXT).i,$(subst $(LIB_SRC2),$(LIB_GEN_CPP),$(LIB_C_SOURCES_ADDED)))
+LIB_C_FUT_ADDED :=  $(patsubst %.i,%.fut,$(LIB_C_PREPROC_ADDED))
 LIB_OBJECTS += $(LIB_C_OBJECTS_ADDED)
 LIB_PICS += $(LIB_C_PICS_ADDED)
-
+LIB_PREPROC += $(LIB_C_PREPROC_ADDED)
+LIB_FUT += $(LIB_C_FUT_ADDED)
 include $(PM2_ROOT)/make/libs-rules.mak
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -69,8 +72,11 @@ $(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(CC) $(CFLAGS) -fPIC -c $< -o $@
 
 $(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
-	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -DDEPEND $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
+
+$(LIB_C_PREPROC_ADDED): $(LIB_GEN_CPP)/%$(LIB_EXT).i: $(LIB_SRC2)/%.c
+	$(LIB_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
 $(PM2_MAK_DIR)/mad2-specific.mak: $(LIB_STAMP_FLAVOR)
 	@_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(LIBRARY)`;\

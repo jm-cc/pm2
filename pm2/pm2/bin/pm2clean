@@ -39,7 +39,7 @@
 ${MARCEL_ROOT}/bin/marcelclean $*
 echo
 
-${MADELEINE_ROOT}/bin/madclean $*
+${MAD1_ROOT}/bin/madclean $*
 echo
 
 ${MAD2_ROOT}/bin/mad2clean $*

@@ -58,32 +58,18 @@ $(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)
 # Inclusion du cache de configuration spécific des programmes
 #---------------------------------------------------------------------
 MOD_LINKED_OBJECTS=$(APPS_LIST)
-$(PM2_MAK_DIR)/$(MODULE)-specific.mak: \
-		$(if $(strip	$(filter-out $(MOD_LINKED_OBJECTS_SAVED), $(MOD_LINKED_OBJECTS)) \
-				$(filter-out $(MOD_LINKED_OBJECTS), $(MOD_LINKED_OBJECTS_SAVED))), \
-			FORCE)
-$(PM2_MAK_DIR)/$(MODULE)-specific.mak: \
-		$(if $(strip $(filter-out $(MOD_OBJECTS_SAVED), $(MOD_BASE:%=%.o)) \
-				$(filter-out $(MOD_BASE:%=%.o), $(MOD_OBJECTS_SAVED))), \
-			FORCE)
 
-$(PM2_MAK_DIR)/$(MODULE)-specific.mak: $(MAIN_STAMP_FLAVOR) $(COMMON_DEPS) $(MAKEFILE)
-	$(COMMON_MAKE)
-	$(COMMON_HIDE) mkdir -p $(PM2_MAK_DIR)
-	$(COMMON_HIDE) ( echo MOD_LINKED_OBJECTS_SAVED=$(MOD_LINKED_OBJECTS) ; \
-		$(foreach p, $(APPS_LIST), \
-		echo '$$(MOD_GEN_BIN)/$p$$(MOD_EXT): $(patsubst %.o, %$$(MOD_EXT).o, \
-			$(if $($p-objs), $($p-objs), $p.o))'; \
-		$(if $(strip $($p-ldflags)), \
-			echo '$$(MOD_GEN_BIN)/$p$$(MOD_EXT): LDFLAGS += $$($p-ldflags)';) \
-		) ) > $@
-	$(COMMON_HIDE) ( echo MOD_OBJECTS_SAVED=$(MOD_BASE:%=%.o) ; \
-		$(foreach o, $(MOD_BASE), \
-		$(if $(strip $($o-cflags)), \
-			echo '$$(MOD_GEN_OBJ)/$o$$(MOD_EXT).o: CFLAGS += $$($o-cflags)';) \
-		) ) >> $@
+define PROGRAM_template
+ $(MOD_GEN_BIN)/$(1)$(MOD_EXT): $$(patsubst %.o, %$(MOD_EXT).o, \
+			$$(if $$($(1)-objs), $$($(1)-objs), $(1).o))
+ $(MOD_GEN_BIN)/$(1)$(MOD_EXT): LDFLAGS += $$($(1)-ldflags)
+endef
+define OBJECT_template
+ $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CFLAGS += $$($(1)-cflags)
+endef
 
+#$(foreach prog, $(APPS_LIST),$(warning $(call PROGRAM_template,$(prog))))
+$(foreach prog, $(APPS_LIST),$(eval    $(call PROGRAM_template,$(prog))))
+#$(foreach obj,  $(MOD_BASE), $(warning $(call  OBJECT_template,$(obj))))
+$(foreach obj,  $(MOD_BASE), $(eval    $(call  OBJECT_template,$(obj))))
 
-.PHONY: FORCE
-#$(patsubst %.o, %$(MOD_EXT).o, \
-#				$(if $($*-objs), $($*-objs), $*.o)

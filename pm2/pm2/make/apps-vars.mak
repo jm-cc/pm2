@@ -36,12 +36,6 @@ MOD_SRC ?= .
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/objs-vars.mak
 
-# Inclusion du cache de configuration spécific des programmes
-#---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/$(MODULE)-specific.mak
-endif
-
 # Répertoire(s) contenant les sources
 #---------------------------------------------------------------------
 APPS_EXCLUDE += $(foreach file, $(MOD_BASE) $(APPS), \
@@ -51,8 +45,6 @@ APPS += $(foreach file, $(MOD_BASE), \
 APPS_LIST=$(if $(filter-out undefined, $(origin PROGS)), \
 		$(PROGS), \
 		$(sort $(APPS) $(filter-out $(APPS_EXCLUDE), $(MOD_BASE))))
-
-override MOD_C_SOURCES:=$(wildcard $(addsuffix .c, $(APPS_LIST)))
 
 export APP_DIR=$(CURDIR)
 

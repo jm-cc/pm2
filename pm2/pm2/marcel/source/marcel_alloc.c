@@ -15,7 +15,6 @@
  */
 
 #include "marcel.h"
-#include "marcel_alloc.h"
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -41,16 +40,21 @@ static struct cache_head *stack_cache_unmapped = NULL;
 
 static unsigned stack_in_use=0;
 
-void marcel_slot_init(void)
+static void __init marcel_slot_init(void)
 {
+	LOG_IN();
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)
-  __zero_fd = open("/dev/zero", O_RDWR);
+	__zero_fd = open("/dev/zero", O_RDWR);
 #endif
-  stack_cache_mapped = NULL;
-  stack_cache_unmapped = NULL;
-
-  next_slot = (void *)SLOT_AREA_TOP;
+	stack_cache_mapped = NULL;
+	stack_cache_unmapped = NULL;
+	
+	next_slot = (void *)SLOT_AREA_TOP;
+	LOG_OUT();
 }
+
+__ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO,
+		   "Initialise memory slot system");
 
 extern volatile unsigned long threads_created_in_cache;
 
@@ -99,6 +103,8 @@ void *marcel_slot_alloc(void)
 	register void *ptr;
 	int main_slot=0;
 
+	LOG_IN();
+
 	marcel_lock_acquire(&alloc_lock);
 
 	if(NULL != (ptr=slot_cache_get(&stack_cache_mapped, NULL))) {
@@ -131,12 +137,20 @@ void *marcel_slot_alloc(void)
 	stack_in_use++;
 	marcel_lock_release(&alloc_lock);
 
+	mdebug("Allocating slot %p\n", ptr);
+
+	LOG_OUT();
+
 	return ptr;
 }
 
 void marcel_slot_free(void *addr)
 {
+	LOG_IN();
+
 	marcel_lock_acquire(&alloc_lock);
+
+	mdebug("Desallocating slot %p\n", addr);
 
 	if(!stack_cache_mapped) {
 		slot_cache_init(addr, NULL);
@@ -152,6 +166,7 @@ void marcel_slot_free(void *addr)
 	}
 	stack_in_use--;
 	marcel_lock_release(&alloc_lock);
+	LOG_OUT();
 }
 
 void marcel_slot_exit(void)

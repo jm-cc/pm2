@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.6  2000/01/13 14:43:59  oaumage
+- Makefile: adaptation pour la prise en compte de la toolbox
+- mad_ping.c: mise a jour relative aux commandes de timing
+
 Revision 1.5  2000/01/10 10:18:09  oaumage
 - TCP par defaut
 
@@ -158,8 +162,8 @@ static void master(p_mad_madeleine_t madeleine)
   double            tst_moyenne ;
   int               tst_taille_courante ;
   int               tst_test_courant ;
-  mad_tick_t        tst_t1 ;
-  mad_tick_t        tst_t2 ;
+  tbx_tick_t        tst_t1 ;
+  tbx_tick_t        tst_t2 ;
   p_mad_channel_t   channel;
   
   channel = mad_open_channel(madeleine, 0);
@@ -175,7 +179,7 @@ static void master(p_mad_madeleine_t madeleine)
 	{
 	  int i ;
 	  
-	  MAD_GET_TICK(tst_t1);
+	  TBX_GET_TICK(tst_t1);
 	  for(i = 0 ; i < param_nb_echantillons ; i++) 
 	    {
 	      static char b1[4];
@@ -211,9 +215,9 @@ static void master(p_mad_madeleine_t madeleine)
 			 MGS_MODE_1, MGR_MODE_1);
 	      mad_end_unpacking(connection);
 	    }
-	  MAD_GET_TICK(tst_t2);       
+	  TBX_GET_TICK(tst_t2);       
 
-	  tst_somme += MAD_TIMING_DELAY(tst_t1, tst_t2);
+	  tst_somme += TBX_TIMING_DELAY(tst_t1, tst_t2);
 	}
 
       tst_moyenne = tst_somme
@@ -240,7 +244,7 @@ static void master(p_mad_madeleine_t madeleine)
 	    {
 	      int i ;
 	  
-	      MAD_GET_TICK(tst_t1);
+	      TBX_GET_TICK(tst_t1);
 	      for(i = 0 ; i < param_nb_echantillons ; i++) 
 		{
 		  p_mad_connection_t connection;
@@ -261,9 +265,9 @@ static void master(p_mad_madeleine_t madeleine)
 			     param_receive_mode);
 		  mad_end_unpacking(connection);
 		}
-	      MAD_GET_TICK(tst_t2);       
+	      TBX_GET_TICK(tst_t2);       
 
-	      tst_somme += MAD_TIMING_DELAY(tst_t1, tst_t2);
+	      tst_somme += TBX_TIMING_DELAY(tst_t1, tst_t2);
 	    }
 
 	  if (param_bandwidth)
@@ -383,8 +387,8 @@ static void master_ctrl(p_mad_madeleine_t madeleine)
   double            tst_moyenne ;
   int               tst_taille_courante ;
   int               tst_test_courant ;
-  mad_tick_t        tst_t1 ;
-  mad_tick_t        tst_t2 ;
+  tbx_tick_t        tst_t1 ;
+  tbx_tick_t        tst_t2 ;
   p_mad_channel_t   channel;
 
   channel = mad_open_channel(madeleine, 0);
@@ -403,7 +407,7 @@ static void master_ctrl(p_mad_madeleine_t madeleine)
 	{
 	  int i ;
 	  
-	  MAD_GET_TICK(tst_t1);
+	  TBX_GET_TICK(tst_t1);
 	  for(i = 0; i < param_nb_echantillons ; i++) 
 	    {
 	      p_mad_connection_t connection;
@@ -428,8 +432,8 @@ static void master_ctrl(p_mad_madeleine_t madeleine)
 	      mad_end_unpacking(connection);
 	      control_buffer(taille_courante);
 	    }
-	  MAD_GET_TICK(tst_t2);       
-	  tst_somme += MAD_TIMING_DELAY(tst_t1, tst_t2);
+	  TBX_GET_TICK(tst_t2);       
+	  tst_somme += TBX_TIMING_DELAY(tst_t1, tst_t2);
 	}
 
       if (param_bandwidth)
@@ -464,16 +468,15 @@ int main(int argc, char **argv)
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
-  /* TCP */
-     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
+  /* TCP 
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
   /* SISCI
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
-  /* MPI 
-     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); */
+  /* MPI */
+     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); 
 
-  mad_timing_init();
   madeleine = mad_init(&argc, argv, "mad2_conf", adapter_set);
 
   /* command line args analysis */

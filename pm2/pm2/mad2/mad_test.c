@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.6  2000/01/13 14:43:59  oaumage
+- Makefile: adaptation pour la prise en compte de la toolbox
+- mad_ping.c: mise a jour relative aux commandes de timing
+
 Revision 1.5  2000/01/10 10:18:09  oaumage
 - TCP par defaut
 
@@ -59,7 +63,7 @@ ______________________________________________________________________________
 #include <unistd.h>
 #include <madeleine.h>
 
-/* #define BI_PROTO */
+#define BI_PROTO
 #define NB_CHANNELS 4
 #define STR_BUFFER_LEN 64
 

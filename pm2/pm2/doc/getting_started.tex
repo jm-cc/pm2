@@ -24,7 +24,7 @@
 % \color{bleu2}
 
 % macros
-\def\pm2{PM$^2$\xspace}
+\def\pmm{PM$^2$\xspace}
 \def\mad{\emph{Madeleine}\xspace}
 \def\madii{\emph{Madeleine~II}\xspace}
 \def\mar{\emph{Marcel}\xspace}
@@ -47,7 +47,7 @@
 %        \color{bleu} Luc Boug\'e \and%
 %        \color{bleu} Jean-Fran\c{c}ois M\'ehaut \and%
 %        \color{bleu} Raymond Namyst}
-\title{{\txty G}\gothfamily\Huge etting Started with PM2}
+\title{{\txty G}\gothfamily\Huge etting Crazy with PM2}
 \author{\aut {\txty G}abriel Antoniu \and%
         \aut {\txty O}livier Aumage \and%
         \aut {\txty L}uc Boug\'e \and%
@@ -102,34 +102,34 @@
 \tableofcontents
 }
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Introducing \pm2}
+\chapter{Introducing \pmm}
 
 % Introduction
 %______________
-\section{Introduction : What is \pm2?}
-The \pm2 environment is a joint project between the \textsc{LIP}
-(\emph{\'Ecole Normale Sup\'erieure de Lyon}, France) and the \textsc{LIFL}
-(\emph{Universit\'e des Sciences et Technologies de Lille}, France). 
+\section{Introduction : What is \pmm?}
 
-%===========
-\subsection{Multithreaded Programming Environment}
-\marginpar{\mp API (C language) + set of libraries}
-\pm2 (Parallel Multithreaded Machine) is a distributed multithreaded
+The \pmm project is conducted at the \emph{Laboratoire de
+  l'Informatique du Parallélisme} (\textsc{LIP}) which is part of the
+(\emph{\'Ecole Normale Sup\'erieure de Lyon} (France). It aims at
+providing an efficient programming environment for the support of high
+demanding parallel applications on top of distributed architectures.
+  
+\pmm (Parallel Multithreaded Machine) is a distributed multithreaded
 environment designed to efficiently support irregular parallel
-applications on distributed architectures. \pm2 can manage several
-hundreds of threads on each available physical processor. The \pm2
+applications on distributed architectures. \pmm can manage several
+hundreds of threads on each available physical processor. The \pmm
 interface provides functionalities for the management of this high
 degree of parallelism and for dynamic load balancing. Distinguishing
-features of \pm2 include its priority driven scheduling policy, its
-thread migration mechanisms and its ability to ease the development
-of various load balancing policies.
+features of \pmm include its priority driven scheduling policy, its
+thread migration mechanisms and its ability to ease the development of
+various load balancing policies.
 
-%===========
 \subsection{Programming model}
-The \pm2 distributed multithreaded programming environment easily
+
+The \pmm distributed multithreaded programming environment easily
 helps the developer to express the parallelism out of his/her programs
 by the mean of the \emph{remote procedure call} paradigm (RPC). Each
-node of a cluster running \pm2 can be considered as being both a
+node of a cluster running \pmm can be considered as being both a
 client and a service provider. While remote requests can be serviced
 on the fly by the server thread of each process, additionnal threads
 may be spawned on demand to handle more computation intensive remote
@@ -139,30 +139,39 @@ client service requests.
 %_____________________________________________________________________________
 \section{Installation}
 
-%===========
+Before getting into describing the installation process of \pmm, we
+briefly review the currently supported architectures and systems. For
+more up-to-date information, please refer to the
+\verb|pm2/ARCHITECTURES| file within the software distribution.
+
 \subsection{Currently Supported Platforms}
-\pm2 is a highly portable and efficient environment and the current
+
+\pmm is a highly portable and efficient environment and the current
 software is yet available on a wide range of architectures. The
 implementation is built on top of two separate software components:
 \mar and \madii. 
+
 \subsubsection{Multithreading}
+
 \mar is a POSIX-compliant thread package that
 provides extra-features such as thread migration that are needed by
-the \pm2 runtime. \mar is currently available on \textsc{Pentium},
+the \pmm runtime. \mar is currently available on \textsc{Pentium},
 \textsc{MIPS}, \textsc{Alpha}, \textsc{Sparc} and \textsc{PowerPC}
 processors. The Table~\ref{tbl:platforms} sums up the currently
 supported platforms. 
+
 \subsubsection{Communications}
+
 \madii is a generic communication interface which is able to fully
 exploit the low latency and the high bandwidth of high-speed networks
-such as Myrinet or SCI. This \pm2 network subsystem currently supports
+such as Myrinet or SCI. This \pmm network subsystem currently supports
 the protocols TCP, MPI (LAM-MPI, MPI-BIP), VIA, SISCI and SBP.
 \begin{table}
 \caption{Supported Platforms\label{tbl:platforms}}
 \begin{center}
 \begin{tabular}[p]{|l|l|}                                        \hline
 Operating System & Architecture                               \\ \hline
-\textsc{Linux}   & \textsc{x86}, \textsc{PPC}, \textsc{Alpha} \\
+\textsc{Linux}   & \textsc{x86}, \textsc{PowerPC}, \textsc{Alpha} \\
 \textsc{Solaris} & \textsc{Sparc}, \textsc{x86}               \\
 \textsc{FreeBSD} & \textsc{x86}                               \\
 \textsc{Aix}     & \textsc{RS6000}                            \\
@@ -172,8 +181,10 @@ Operating System & Architecture                               \\ \hline
 \end{tabular}
 \end{center}
 \end{table}
+
 \subsubsection{Required development tools}
-As previously mentionned, \pm2 as been designed to be easily portable
+
+As previously mentionned, \pmm as been designed to be easily portable
 and only relies on the availability of the two following development tools:
 \begin{itemize}
 \small
@@ -182,33 +193,39 @@ versions have been successfully tested).
 \item GNU Make (versions 3.7x.x or more).
 \end{itemize}
  
+\subsection{Installing \pmm}
 
-%===========
-\subsection{Installing \pm2}
+The following sections illustrate how to install \pmm on your machine.
 
-\subsubsection{Getting the \pm2 software and help}
-The \pm2 archive is available from the \pm2 web site at:%
+\subsubsection{Getting the \pmm software and help}
+
+The \pmm archive containing all the necessary sources is available
+from the \pmm web site at:%
 \begin{quote}
-\url{http://www.ens-lyon.fr/~rnamyst/pm2.html} 
-
-(contact guru:~\url{bouge@ens-lyon.fr}).
+    \url{http://www.ens-lyon.fr/~rnamyst/pm2.html}
 \end{quote}
 
-\subsubsection{Unpacking the \pm2 distribution}
+You send an email to \url{bouge@ens-lyon.fr} if you encounter problems
+with the PM2 software. However, please make sure that your problem is
+not already listed in the \emph{Frequently Asked Questions} section
+(Section \ref{sec:faq}, page~\pageref{sec:faq}).
+
+\subsubsection{Unpacking the \pmm distribution}
+
 \marginpar{\mp $\rightarrow$ making a personal installation}
-The \pm2 archive can be extracted with one of the following commands
+The \pmm archive can be extracted with one of the following commands
 entered at the shell prompt:
 \begin{small}
 \begin{verbatim}
-        > tar zxvf pm2.tar.gz                # with the GNU tar
+        > tar xvfz pm2.tar.gz                # with the GNU tar
 
         > gunzip -c pm2.tar.gz | tar xvf -   # with otherwise
 \end{verbatim}
 \end{small}
-Once extracted, the \pm2 distribution should be available under the
-\texttt{./pm2/} directory. This \pm2 distribution is organized as
+Once extracted, the \pmm distribution should be available under the
+\texttt{./pm2/} directory. This \pmm distribution is organized as
 shown on Figure~\ref{fig:pm2-tree}.
-\begin{figure}[p]
+\begin{figure}%[p]
 \begin{center}
 \begin{boxedminipage}{0.9\textwidth}
 \footnotesize
@@ -217,7 +234,7 @@ shown on Figure~\ref{fig:pm2-tree}.
   pm2 --+
         |
         +-- bin........: PM2 scripts
-        |  
+        |
         +-- doc........: documentation files
         |
         +-- dsm........: DSM-PM2 distributed shared memory manager
@@ -228,6 +245,8 @@ shown on Figure~\ref{fig:pm2-tree}.
         |
         +-- lib........: PM2 library destination
         |
+        +-- mad1.......: old network subsystem (for backward
+        |                compatibility)
         +-- mad2.......: network subsystem
         |
         +-- make.......: PM2 makefiles
@@ -236,38 +255,44 @@ shown on Figure~\ref{fig:pm2-tree}.
         |
         +-- source.....: PM2 source files
         |
-        +-- toolbox....: general purpose library              
+        +-- toolbox....: general purpose library
 
 \end{verbatim}
 \end{boxedminipage}
 \end{center}
-\caption{\pm2 distribution tree structure\label{fig:pm2-tree}}
+\caption{\pmm distribution tree structure\label{fig:pm2-tree}}
 \end{figure}
 
 \subsubsection{Environment variables}
-\marginpar{\mp PM2\_ROOT, PATH, ...}  Several environment
-variables should be set properly for \pm2 to work correctly. The
-variable \texttt{PM2\_ROOT} should contain the path to the \pm2
-distribution root directory. The variables \texttt{MARCEL\_ROOT} and
-\texttt{MAD2\_ROOT} should also be set to the root directory of \mar
-and \madii respectively. The following should be appended to your
-\texttt{PATH} environment variable: 
-\begin{quote}
-\texttt{\$\{PM2\_ROOT\}/bin; \$\{MARCEL\_ROOT\}/bin; \$\{MAD2\_ROOT\}/bin;}.
-\end{quote}
 
-%===========
+Two environment variables have to be set so that \pmm will work
+correctly. First, the \texttt{PM2\_ROOT} variable must contain the
+path to the \pmm distribution root directory. Second, the
+\texttt{\$\{PM2\_ROOT\}/bin} directory has to be included in the
+current search path.
+
+Please make sure that these two variables are set correctly within
+remote shell commands (\emph{i.e.}, scripts invoked by \verb+rsh+).
+Thus, you may insert the following lines in your \verb+.cshrc+ file
+(if your default shell is \texttt{csh}):
+\begin{small}
+\begin{verbatim}
+    setenv PM2_ROOT ${HOME}/pm2
+    setenv PATH ${PATH}:${PM2_ROOT}/bin
+\end{verbatim}%$
+\end{small}
+
 \subsection{Configuring\label{subsec:configuring}}
-\marginpar{\mp no need to specify OS/processor}
-Configuring \pm2 is quite straightforward. The underlying platform is
+
+Configuring \pmm is quite straightforward. The underlying platform is
 automatically detected. Hence, there is no need to specify the
 operating sytem/processor pair.
 
-\marginpar{\mp\texttt{pm2custom}} The only major setting
-left to the user is the network protocol selection, which is
-currently not desirable to be auto-detected by the \madii
-communication library of \pm2. The network protocol choice is made
-using the \texttt{pm2custom} command at the shell prompt. Example:
+The only major setting left to the user is the network protocol
+selection, which is currently not desirable to be auto-detected by the
+\madii communication library of \pmm. The network protocol choice is
+made using the \texttt{pm2custom} command at the shell prompt.
+Example:
 \begin{small}
 \begin{verbatim}
         > pm2custom tcp
@@ -275,45 +300,66 @@ using the \texttt{pm2custom} command at the shell prompt. Example:
 \end{verbatim}
 \end{small}
 Each time the network protocol setting is changed using
-\texttt{pm2custom}, the \pm2 environment should be recompiled
+\texttt{pm2custom}, the \pmm environment should be recompiled
 (see~\ref{subsec:compiling}, \emph{Compiling}).
 
 \subsubsection{Advanced configuration}
+
 Advanced configuration options are of course available for the more
-demanding users. These options should be used with great care. They can be
-found at the top of the main \pm2 makefile, in the file
+demanding users. These options should be used with great care. They
+can be found at the top of the main \pmm makefile, in the file
 \texttt{\$\{PM2\_ROOT\}/make/common.mak}.
 
-%===========
 \subsection{Compiling\label{subsec:compiling}}
-\marginpar{\mp not really required, but can be done by typing "cd pm2;
-make"} The compilation step is not really required and rather should
-be integrated into the targeted application build operation. This to
+
+The compilation step is not really required and rather should be
+integrated into the targeted application build operation. This to
 ensure that the application always gets linked with the up-to-date
-versions of the \pm2 libraries (especially when changing the network
+versions of the \pmm libraries (especially when changing the network
 protocol configuration with \texttt{pm2custom},
 see~\ref{subsec:configuring}, \emph{configuring}). Yet, it can be done
 as a standalone step by typing \texttt{make} at the shell prompt into
-the root directory of the \pm2 distribution.
+the root directory of the \pmm distribution.
 
 \subsubsection{Cleanning the directory tree}
-\marginpar{\mp pm2clean} The directory tree of the \pm2 distribution
-may be cleaned at any time from compiled objects and libraries using
-the command \texttt{pm2clean}. This may be needed to free some disk
-space when \pm2 is not in use or to force the whole \pm2 distribution
-to be completely remade by a subsequent \texttt{make} call.
+
+The directory tree of the \pmm distribution may be cleaned at any time
+from compiled objects and libraries using the command
+\texttt{pm2clean}. This may be needed to free some disk space when
+\pmm is not in use or to force the whole \pmm distribution to be
+completely remade by a subsequent \texttt{make} call.
+
+Note that you can accelerate the cleaning process by specifying the
+target architecture as an argument. For instance, the following
+command will only clean object files, libraries and executable related
+to the Intel Linux architecture :
+\begin{small}
+\begin{verbatim}
+       > pm2clean LINUX/X86
+\end{verbatim}
+\end{small}
+
 \endchap
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Discovering \pm2}
+\chapter{Discovering \pmm}
+
+This chapter aims at illustrating the basic features of \pmm through
+some very simple programs. Next chapter will present more advanced
+features that may be needed when developing ``real'' parallel
+applications.
 
 % PM2 Step by Step
 %_____________________________________________________________________________
-\section{\pm2 step by step}
+\section{Hello World!}
 
-%===========
+Let us start our \pmm tour by writting the traditional ``\emph{Hello
+  World!}'' program. Then, we will extend it step by step to cover the
+main functionalities provided by the \pmm programming interface.
+
 \subsection{The minimal PM2 program}
-\begin{figure}[p]
+
+\begin{figure}%[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -321,15 +367,15 @@ to be completely remade by a subsequent \texttt{make} call.
  #include <stdio.h>
  #include <pm2.h>
 
- int pm2_main(int argc, char **argv)
+ int pm2_main(int argc, char *argv[])
  {
    pm2_init(&argc, argv);
 
-   printf("Hello World !\n");
-  
-   if (pm2_self() == 0)
+   printf("Hello World!\n");
+
+   if(pm2_self() == 0)
      pm2_halt();
-  
+
    pm2_exit();
    return 0;
  }
@@ -337,105 +383,254 @@ to be completely remade by a subsequent \texttt{make} call.
 \end{footnotesize}
 \end{boxedminipage}
 \end{center}
-\caption{Minimal \pm2 program\label{fig:ex1}}
+\caption{Minimal \pmm program\label{fig:ex1}}
 \end{figure}
-\afterpage{\clearpage}
-Let us start our \pm2 tour by writting the minimal \pm2 program. The
-Figure~\ref{fig:ex1} (on page~\pageref{fig:ex1}) shows an example of
-such a minimalist \pm2 code. As we can see, a \pm2 program must first
-include the \texttt{pm2.h} header file along with other standard
-header files.
+%\afterpage{\clearpage}
 
-\subsubsection{Program body}
-We now write the program body. The Line~7 illustrates that the start
-function name should be \texttt{pm2\_main} instead of the classical
-\texttt{main} when using \pm2. Yet, the arguments remain the regular
-\texttt{argc}/\texttt{argv} pair. A call to \texttt{pm2\_init}
-effectively initializes the \pm2 runtime system. Once the
-\texttt{pm2\_init} function returns, the actual application specific
-\emph{parallel processing} can begin. Here, this processing reduces to
-a call to the \texttt{printf} function of the standard library. This
-call will be concurrently performed on any process constituting the
-session configuration during the program execution.
+The Figure~\ref{fig:ex1} (page~\pageref{fig:ex1}) shows an example of
+a minimal \pmm code. Surprising though, this is a parallel program
+that will spawn on several nodes during execution! A \pmm application
+always runs the same code on each node. However, this execution is
+asynchronous most of the time. In this respect, \pmm programs obey an
+\emph{SPMD} programing style. So remember that our example program
+will be executed on several nodes concurrently. 
+
+Let us now concentrate on the minimal rules that a \pmm program must
+obey...
+
+\subsubsection{Header files}
+
+As we can see (line~$1$), a \pmm program must always include the
+\pmm-specific \texttt{pm2.h} header file, along with other standard
+header files.  Note that this is the \emph{only} \pmm header file that
+has to be included by user applications.
+
+\subsubsection{The \texttt{main} function}
+
+Line~$5$ shows that the main function of the \pmm program is named
+\verb+pm2_main+, contrary to traditional {\sc C} programs that use the
+well-known \verb+main+ function name. The arguments remain the regular
+\texttt{argc}/\texttt{argv} pair.
+
+The reason is that the \pmm library actually defines its own
+\verb+main+ function that calls the \verb+pm2_main+ one after some
+internal stack manipulation. This allows \pmm to greatly enhance the
+performance of various thread management functions. Although most
+programs (or programers) will accomodate such a ``C convention
+violation'', there are some applications that may require to use the
+regular \verb+main+ function name. In particular, it can be the case
+with applications linked with non-C code (\emph{e.g.}, Fortran code).
+In this case, please refer to Section \ref{sec:tradimain}
+(page~\pageref{sec:tradimain}).
+
+\subsubsection{\pmm initialization}
+
+A \pmm program has to call \verb+pm2_init+ to effectively initialize
+the \pmm runtime system. Moreover, this step involves a global
+synchronization scheme (actually a barrier) between each \pmm process
+so that, when returning from \verb+pm2_init+, each process is assigned
+a unique \emph{rank number} (see Section \ref{sec:rank},
+page~\pageref{sec:rank}).
+
+Most importantly, the \verb+pm2_init+ function spawns a number of
+internal \emph{thread daemons} that are in charge of listening the
+network and answering to external requests (such as RPC request,
+incoming thread migrations, etc.) That means that, in some programs,
+several application threads may run concurrently to the main program
+at this point. If some initialization code needs to be performed
+before any thread is started, then this code must be called
+\emph{before} \verb+pm2_init+. See Section \ref{sec:startupfunc}
+(page~\pageref{sec:startupfunc}) for a more complete discussion about
+this initialization topic.
+
+Note that the Unix standard input/output streams may not be
+initialized correctly before the call to \verb+pm2_init+. Thus, the
+behavior of programs using I/O operations before \verb+pm2_init+ is
+not defined.
+
+Going back to our example program, we now observe (line~$7$) a call to
+the \verb+printf+ C library function. As we mentioned previously, all
+processes will perform this call and will produce the ``\emph{Hello
+  World!}'' string on their output stream. Section \ref{sec:output}
+(page~\pageref{sec:output}) describes where these outputs
+will actually go during execution.
+
+\subsubsection{Who's who?}
+\label{sec:rank}
+
+As mentioned previously, every process belonging to the same \pmm
+``session'' has its own unique \emph{rank} number. Such a value is
+comprised between $0$ and \verb+pm2_config_size()+$-1$. A process can
+get its rank by calling \verb+pm2_self()+.
+
+The process with the $0$ rank number has a particular status because
+it is the only one which whose input/output streams are linked to the
+terminal the application was launched from. We later refer to this
+process as the ``\emph{main process}'' of an application. As a
+consequence, only the main process of an application may access its
+standard input stream (\emph{e.g.}, using \verb+scanf+, \verb+fgets+,
+etc.)
+
+As an example of use of \verb+pm2_self()+, line~$9$ features a test on
+the rank of the current process: if the current process is the main
+process, then \verb+pm2_halt()+ is called.
 
 \subsubsection{Session termination}
-Finally, the termination phasis concludes our minimal \pm2 program. It
-is splitted into two steps. One (and only one) of the nodes must first
-perform a call to \texttt{pm2\_halt}. This step ensures that no
-further incoming service request will be accepted by any of the
-session processes. The \texttt{pm2\_self} function is used to retrieve
-the local process rank. Hence, in the example the \texttt{pm2\_halt}
-call is executed by the process \texttt{0} (sometimes called the
-\emph{master} process). Once each process reaches the
-\texttt{pm2\_exit} second termination step, the \pm2 session ends.
 
-%===========
-\subsection{Running a \pm2 program}
+The termination of a \pmm program is a delicate task since \pmm
+performs no automatic termination detection. Thus, the termination
+decision must be made at the application level. The termination phase
+is splitted in two steps.
+
+Exactly one process must perform an explicit call to
+\verb+pm2_halt()+. In our example, the main process was chosen to
+execute this function. Actually, any process could have been
+selected. For instance, we could replace line~$9$ by:
+\begin{small}
+\begin{verbatim}
+    if(pm2_self() == pm2_config_size()-1)
+\end{verbatim}
+\end{small}
+
+At least conceptually, \verb+pm2_halt+ performs a broadcast that asks
+all processes to stop answering to requests from the outside world. In
+fact, this steps cuts the links between processes.  Actually, it stops
+the internal daemon threads that are in charge of polling the network.
+Note that after a process receives this order, it still continues its
+execution (it is not ``killed'') in a \emph{standalone} mode.
+
+To exit from a \pmm session, each process must call \verb+pm2_exit()+.
+This call blocks the calling thread until all other threads (belonging
+to the same process) terminate. In our example, no other application
+thread but the main one are running. Thus, \verb+pm2_exit+ will
+complete as soon as the internal daemon threads are stopped. If we
+would remove the call to \verb+pm2_halt+, then every process would
+execute for an infinite time waiting for external requests...
+
+From the user point of vue, the \pmm program terminates as soon as the
+shell prompts for the next command within the terminal. This
+corresponds to the end of the main process. However, note that some
+processes may actually still run after the main process has completed.
+In our example, the main process can terminate even before any other
+process begun to execute \verb+printf+! This is not a problem however,
+since \verb+printf+ does not involve any communication with other
+processes. We will further discuss this termination problem in Section
+\ref{sec:output} (page~\pageref{sec:output}).
+
+\subsection{Running a \pmm program}
+
+Lets us now see how to configure, compile and run our \pmm program on
+a parallel architecture.
+
+\subsubsection{Configuring and compiling the program}
+
+As we described in earlier sections, one may first configure the
+target network protocol before compiling an application. For instance,
+if we assume that the MPI-LAM communication library is available on
+our target machine, then we shall type:
+
+\begin{small}
+\begin{verbatim}
+        > pm2custom mpi-lam
+        The current network interface is set to: mpi-lam
+\end{verbatim}
+\end{small}
+
+The \pmm library is now correctly configured and we can compile our
+example program on the yarget machine. Since the ``\emph{Hello
+  World!}'' program is part of the \pmm original distribution, we just
+have to go to the right directory and launch the compiler:
+
+\begin{small}
+\begin{verbatim}
+        > cd ${PM2_ROOT}/examples/simple
+        > make hello
+\end{verbatim}%$
+\end{small}
+
+The compiled version of our program is automatically placed in a
+directory whose name is architecture dependent: \verb+LINUX/X86+ on
+Intel Linux machines, \verb+SOLARIS/SPARC+ on Sun workstations, etc.
+
 \subsubsection{Session topology definition}
-We now learn how to run our \pm2 program. The first required step is
-to specify the list of hostnames on which the \pm2 session is going to
-span. For this we use the \texttt{pm2conf} command. Example for a
-session using 3 nodes on a cluster called \texttt{POPC}:
+
+The last step before execution is to specify the list of hostnames on
+which the \pmm application is going to run. For this, one must use the
+\texttt{pm2conf} command. Example for a session using the first three
+nodes on a cluster called \texttt{POPC}:
+\begin{small}
 \begin{verbatim}
     > pm2conf popc1 popc2 popc3
-    The current MADELEINE configuration contains 4 host(s) :
+    The current PM2 configuration contains 4 host(s):
     0 : popc1
     1 : popc2
     2 : popc3
 \end{verbatim}
-The node \texttt{popc1} is the master of the session: it owns the
-rank~0. The other nodes are the slaves. 
+\end{small}
+
+In some situations, it may be useful to use a given node name several
+times. For instance, here is how to configure a two-processes \pmm
+execution on your local machine:
+\begin{small}
+\begin{verbatim}
+    > pm2conf localhost localhost
+    The current PM2 configuration contains 2 host(s):
+    0 : localhost
+    1 : localhost
+\end{verbatim}
+\end{small}
+
+See section \ref{sec:scripts} (page~\pageref{sec:scripts}) for an
+exhaustive description of \verb+pm2conf+ options.
 
 \subsubsection{Launching the program}
-Although not a requirement in general, some protocols may expect the
-use of proprietary startup scripts. They may also expect other
-prerequities like the session to be launched from the master node. The
-\pm2 script \texttt{pm2load} takes care about all the details of
-setting up the \pm2 session, whatever the underlying network protocol
-used. This script takes the application program name as the only
-parameter.
 
-If the compiled executable of our sample \pm2 program is
-\texttt{example1}, then it can be launched by typing the following
-command at the prompt:
+Although it is not a requirement in general, some low-level network
+libraries require the use of specific startup scripts. That for, the
+\texttt{pm2load} shell script takes care about all the details of
+setting up the \pmm session, whatever the underlying network protocol
+is. This script takes the application program name and its arguments
+as parameters.
+
+In our case, let us assume that the compiled version of our sample
+\pmm program is located in \verb+./LINUX/X86+. We can launch it by
+simply typing the following command:
+\begin{small}
 \begin{verbatim}
-    > pm2load ./example1
+    > pm2load ./LINUX/X86/hello
     Hello World !
     [Threads : 4 created, 0 imported (0 cached)]
 \end{verbatim}
-We can see that our program generates two messages. The first one is the
-expected \emph{Hello world !} message coming from the master node
-\texttt{printf}. The second one is the multithreads manager stats for
-the session.
+\end{small}
 
-\subsubsection{Results from other nodes}
-One can remark that the previous example only printed the message
+Congratulations, you've run your first \pmm program! \verb+;-)+
+
+We can see that our program generates two messages. The first one is
+the expected \emph{Hello World!} message coming from the master
+process \texttt{printf}. The second one is some \pmm running
+statistics related to the master process.
+
+Note that the output of the other two processes (assuming an execution
+on \verb+popc1+, \verb+popc2+ and \verb+popc3+) do not appear in
+the terminal.
+
+\subsubsection{Problems?}
+
+Feedback from \pmm users showed that several common pitfalls may be
+encountered at this time. If this is your case, please refer to
+Section \ref{sec:commonpitfalls}: ``\emph{Common Pitfalls}''.
+
+\subsection{Where does the output go?}
+\label{sec:output}
+
+One can notice that the previous example only printed the message
 generated by the master node process. Indeed, the standard output of
 the other processes is redirected to log files located into the /tmp
 directory of each node. The logs are easily accessible using the
 command \texttt{pm2logs} which is charged to retrieve and display logs
 from each slave node of the session configuration.
 
-%===========
-\subsection{Common pitfalls}
-Feedback from \pm2 users showed that several common pitfalls may be
-encountered at this time. The Table~\ref{tbl:pitfalls} sums up the
-symptoms together with possible solutions.
-\begin{table}
-\caption{Common Pitfalls\label{tbl:pitfalls}}
-\begin{center}
-\begin{tabular}[p]{|p{5cm}|p{7cm}|}                             \hline
-Symptoms                       & Solutions                    \\ \hline
-`Permission denied' error      & Each configuration node must be made
-accessible by \texttt{rsh} from the local host: update you
-\texttt{.rhosts} file                                         \\ \hline
-\end{tabular}
-\end{center}
-\end{table}
-
-%===========
-\subsection{Getting the output in the console}
-\begin{figure}[p]
+\begin{figure}%[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -443,7 +638,7 @@ accessible by \texttt{rsh} from the local host: update you
  #include <stdio.h>
  #include <pm2.h>
 
- int pm2_main(int argc, char **argv)
+ int pm2_main(int argc, char *argv[])
  {
    pm2_init(&argc, argv);
 
@@ -463,7 +658,9 @@ accessible by \texttt{rsh} from the local host: update you
 \caption{Output redirection, example 1\label{fig:ex2-1}}
 \end{figure}
 
-\begin{figure}[p]
+\subsubsection{Redirecting output to the terminal}
+
+\begin{figure}%[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -471,7 +668,7 @@ accessible by \texttt{rsh} from the local host: update you
  #include <stdio.h>
  #include <pm2.h>
 
- int pm2_main(int argc, char **argv)
+ int pm2_main(int argc, char *argv[])
  {
    pm2_init(&argc, argv);
 
@@ -490,13 +687,13 @@ accessible by \texttt{rsh} from the local host: update you
 \end{center}
 \caption{Output redirection, example 2\label{fig:ex2-2}}
 \end{figure}
+%\afterpage{\clearpage}
 
-\afterpage{\clearpage}
-
+\section{Remote Procedure Calls}
 %===========
 \subsection{Invoking a remote service}
 
-\begin{figure}[p]
+\begin{figure}%[p]
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
 \begin{footnotesize}
@@ -512,7 +709,7 @@ accessible by \texttt{rsh} from the local host: update you
    printf("Hello, World!\n");
  }
 
- int pm2_main(int argc, char **argv)
+ int pm2_main(int argc, char *argv[])
  {
    pm2_rawrpc_register(&service_id, service)
    pm2_init(&argc, argv);
@@ -533,13 +730,12 @@ accessible by \texttt{rsh} from the local host: update you
 \end{center}
 \caption{Sample service\label{fig:ex3}}
 \end{figure}
-
-\afterpage{\clearpage}
+%\afterpage{\clearpage}
 
 %===========
 \subsection{Passing parameters}
 
-\begin{figure}[p]
+\begin{figure}%[p]
 \begin{center}
 \begin{boxedminipage}{0.9\textwidth}
 \begin{footnotesize}
@@ -562,7 +758,7 @@ static void service(void)
   printf("The sentence is %s\n", s);
 }
 
-int pm2_main(int argc, char **argv)
+int pm2_main(int argc, char *argv[])
 {
   pm2_rawrpc_register(&service_id, service)
   pm2_init(&argc, argv);
@@ -588,12 +784,72 @@ int pm2_main(int argc, char **argv)
 \end{center}
 \caption{Service with a string parameter\label{fig:ex4}}
 \end{figure}
-
-\afterpage{\clearpage}
+%\afterpage{\clearpage}
 
 \subsubsection{Packing/unpacking API}
-        pack\_int/pack\_byte
-        SEND\_CHEAPER, etc.
+
+A messages consists of several pieces of data, located anywhere in
+userspace. They are constructed (resp. re-constructed) incrementaly
+using {\em packing} (resp. {\em unpacking}) primitives, possibly at
+multiple software levels without losing efficiency. The following
+example illustrates this need. Let us consider a remote procedure call
+which takes an array of unpredictable size as a parameter. When the
+request reaches the destination node, the header is examined both by
+the multithreaded runtime (to allocate the appropriate thread stack
+and then to spawn the server thread) and by the user application (to
+allocate the memory where the array should be stored).
+
+The critical point of a send operation is obviously the series of {\em
+  packing} calls. Such packing operations simply {\em virtually}
+append the piece of data to a message under construction. In addition
+to the address of data and its size, the packing primitive features a
+\emph{flag} parameter which specifies the semantics of the operation.
+Available send flags are defined as follows:
+\begin{description}
+    
+  \item[\tt SEND\_SAFER] This flag indicates that \pmm should pack
+    the data in a way that further modifications to the corresponding
+    memory area should not corrupt the message. This is particularly
+    mandatory if the data location is reused before the message is
+    actually sent.
+
+  \item[\tt SEND\_LATER] This flag indicates that \pmm should not
+    consider accessing the value of the corresponding data until the
+    \verb+mad_end_packing+ primitive is called. This means that any
+    modification of these data between their packing and their sending
+    shall actually update the message contents.
+    
+  \item[\tt SEND\_CHEAPER] This is the default flag. It allows \pmm
+    to do its best to handle the data as efficiently as possible. The
+    counterpart is that no assumption should be made about the way
+    \pmm will access the data. Thus, the corresponding data should
+    be left unchanged until the send operation has completed. Note
+    that most data transmissions involved in parallel applications can
+    accomodate the \verb+send_CHEAPER+ semantics.
+
+\end{description}
+The following flags control the reception of user data packets:
+\begin{description}
+    
+  \item[\tt RECV\_EXPRESS] This flag forces \pmm to guarantee
+    that the corresponding data are immediately available after the
+    the {\em unpacking} operation. Typically, this flag is mandatory
+    the data is needed to determine the next forthcoming
+    \emph{unpacking} calls. On some network protocols, this
+    functionality may be available for free. On some others, it could
+    penalize latency and bandwidth. The user should therefore extract
+    data this way only when necessary.
+    
+  \item[\tt RECV\_CHEAPER] This flag allows \pmm to defer the
+    extraction of the corresponding data until the execution of
+    \verb+mad_end_unpacking+. Thus, no assumption can be made about
+    the exact moment at which the data will be extracted. Depending on
+    the underlying network protocol, \pmm will do its best to
+    minimize the overall message transmission time. If combined with
+    \verb+send_CHEAPER+, this flag always guarantees that the
+    corresponding data is transmitted as efficiently as possible.
+
+\end{description}
 
 \subsubsection{A more interesting example}
 
@@ -601,59 +857,121 @@ int pm2_main(int argc, char **argv)
 \subsection{"Threaded" services}
         Services handlers are executed sequentially
         Thread creation: pm2\_thread\_create
-        Caveat! pm2\_waitdata...
+        Caveat! pm2\_rawrpc\_waitdata...
 \endchap
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Mastering \pm2}
+\chapter{Mastering \pmm}
 
-% Advandced Threading
-%_____________________________________________________________________________
-\section{Advanced thread features}
+\section{More about Remote Procedure Calls}
 
-%===========
-\subsection{Thread synchronization}
-
-%===========
 \subsection{Invoking services synchronously}
         2 one-way invocations + synchronization
 
 \subsubsection{Examples}
         Better: using the "pm2\_rawrpc\_wait" features
 
-%===========
-\subsection{Thread migration}
+% Thread migration
+%_____________________________________________________________________________
+\section{Thread migration}
         Thread state : migratable/non-...
 
-\subsubsection{Migration in 3 steps}
+\subsection{Migration in 3 steps}
         freezing the local scheduler
         getting the list of migratable threads
         selecting and migrating threads
 
-\subsubsection{Example}
+\subsection{Example}
         Iso-address migration
 
-%===========
 \subsection{Migrating with dynamically allocated data}
 
-\subsubsection{Isomalloc}
-
+\subsection{Isomalloc}
 
 % DSM
 %_____________________________________________________________________________
 \section{Sharing data across clusters}
         DSM-PM2
+
+% Advanced Threading
+%_____________________________________________________________________________
+\section{Advanced thread features}
+
+\subsection{Thread synchronization}
+
+% Miscellaneous
+%_____________________________________________________________________________
+\section{Miscellaneous}
+
+\subsection{Application initialization with \pmm}
+\label{sec:startupfunc}
+
+\verb+pm2_set_startup_func+
+
 \endchap
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Additional \pm2 material}
+\chapter{Additional \pmm material}
+
+% Standard Main
+%_____________________________________________________________________________
+\section{Using a standard main}
+\label{sec:tradimain}
+
+Some application may require to use the traditional \verb+main+
+function name instead of \verb+pm2_main+. In this case, the
+\verb+STANDARD_MAIN+ compilation flag must be defined for each \pmm
+file. This can be done by adding the definition in the \pmm
+makefile (\verb+pm2/make/common.mak+):
+
+\begin{small}
+\begin{verbatim}
+   GLOBAL_OPTIONS   =   -Wall -O6 -DSTANDARD_MAIN
+\end{verbatim}
+\end{small}
+
+Note that this may affect the performance of several thread management
+functions...
+
+% Scripts
+%_____________________________________________________________________________
+\section{Synopsys of PM2 scripts}
+\label{sec:scripts}
+
+\subsection{pm2custom}
+
+\subsection{pm2conf}
+
+\subsection{pm2load}
+
+% Common Pitfalls
+%_____________________________________________________________________________
+\section{Common Pitfalls}
+\label{sec:commonpitfalls}
+
+The Table~\ref{tbl:pitfalls} sums up the
+symptoms together with possible solutions.
+\begin{table}
+\caption{Common Pitfalls\label{tbl:pitfalls}}
+\begin{center}
+\begin{tabular}{|p{5cm}|p{7cm}|}                             \hline
+Symptoms                       & Solutions                    \\ \hline
+`Permission denied' error      & Each configuration node must be made
+accessible by \texttt{rsh} from the local host: update you
+\texttt{.rhosts} file                                         \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
 
 % FAQ
 %_____________________________________________________________________________
 \section{FAQ}
-        Why does my program crash the entire cluster?
-        Why do I get the message "Permission denied" when running pm2load?
+\label{sec:faq}
+\begin{quote}
+    Why do I get the message "Permission denied" when running pm2load?
 
+    Why does my program crash the entire cluster?
+\end{quote}
 
 % Bibliography
 %_____________________________________________________________________________
@@ -664,6 +982,9 @@ int pm2_main(int argc, char **argv)
 \end{document}
 _______________________________________________________________________________
 $Log: getting_started.tex,v $
+Revision 1.15  2000/02/14 09:51:11  rnamyst
+Many modifications... The structure has also been modified a little.
+
 Revision 1.14  2000/02/05 13:17:53  oaumage
 - getting_started.tex: ajout du tableau `pitfalls'
 

@@ -44,6 +44,7 @@ _PRIVATE_ typedef struct {
 
 _PRIVATE_ typedef struct {
   marcel_mutex_t mutex;
+  marcel_sem_t sem;
   dsm_node_t owner;
 } dsm_mutex_t;
 

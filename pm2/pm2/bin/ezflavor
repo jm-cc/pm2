@@ -1,36 +1,24 @@
 #!/bin/sh
+###########
 
-# PM2: Parallel Multithreaded Machine
-# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or (at
-# your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+error()
+{
+  echo $*
+  exit 1
+}
 
+# Main part
+[ -n "${PM2_ROOT}"    ] || error 'PM2_ROOT variable is not set'
 
-PM2_ARCH=`$PM2_ROOT/bin/pm2_arch`
-PM2_SYS=`$PM2_ROOT/bin/pm2_sys`
+PM2_CONFIG="${PM2_ROOT}/bin/pm2-config"
+[ -x "${PM2_CONFIG}" ] || error "cannot execute ${PM2_CONFIG}"
 
-case "$PM2_SYS" in
-    WIN*_SYS)
-	ext=".exe"
-	;;
-    *)
-	ext=""
-	;;
-esac
+EZFLAVOR_DIR=`${PM2_CONFIG} --flavor=ezflavor --bindir ezflavor`
+[ -d "${EZFLAVOR_DIR}"  ] || error "Ezflavor directory not found"
 
-prog=${PM2_HOME:-${HOME}}/.pm2/bin/ezflavor_${PM2_ARCH}_${PM2_SYS}${ext}
+EZFLAVOR="${EZFLAVOR_DIR}/ezflavor"
+[ -x "${EZFLAVOR}"      ] || error "cannot execute ${EZFLAVOR}"
 
-if [ ! -x $prog ]; then
-    echo "ERROR: ezflavor was not compiled for $PM2_ARCH/$PM2_SYS" >&2
-    exit 1
-fi
+exec ${EZFLAVOR} ${@:+"$@"}
 
-exec ${PM2_HOME:-${HOME}}/.pm2/bin/ezflavor_${PM2_ARCH}_${PM2_SYS}${ext} ${@:+"$@"}
+# End

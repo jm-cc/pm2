@@ -41,6 +41,7 @@ extern unsigned long ma_nr_running(void);
 #define MA_TASK_ZOMBIE		8
 #define MA_TASK_DEAD		16
 #define MA_TASK_GHOST		32
+#define MA_TASK_MOVING		64
 
 #define __ma_set_task_state(tsk, state_value)		\
 	do { (tsk)->sched.state = (state_value); } while (0)

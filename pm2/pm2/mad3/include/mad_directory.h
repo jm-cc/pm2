@@ -129,7 +129,7 @@ typedef struct s_mad_dir_xchannel
   int                         id;
   char                       *name;
   p_tbx_slist_t               dir_channel_slist;
-  p_tbx_slist_t               dir_fchannel_slist;
+  p_tbx_slist_t               sub_channel_name_slist;
   p_ntbx_process_container_t  pc;
   p_mad_dir_channel_common_t  common;
 } mad_dir_xchannel_t;

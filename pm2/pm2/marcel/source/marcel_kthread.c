@@ -69,6 +69,11 @@ void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
   sigprocmask(how, newmask, oldmask);
 }
 
+void marcel_kthread_kill(marcel_kthread_t pid, int sig)
+{
+  kill(pid, sig);
+}
+
 #else
 
 #error NOT YET IMPLEMENTED
@@ -112,6 +117,11 @@ marcel_kthread_t marcel_kthread_self(void)
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
 {
   pthread_sigmask(how, newmask, oldmask);
+}
+
+void marcel_kthread_kill(marcel_kthread_t pid, int sig)
+{
+  pthread_kill(pid, sig);
 }
 
 #endif

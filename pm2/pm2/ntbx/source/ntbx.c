@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx.c,v $
+Revision 1.2  2000/03/01 11:03:34  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.1  2000/02/08 15:25:28  oaumage
 - ajout du sous-repertoire `net' a la toolbox
 
@@ -46,7 +49,7 @@ ______________________________________________________________________________
  * ------
  */
 
-#include <ntbx.h>
+#include "ntbx.h"
 
 void
 ntbx_init()

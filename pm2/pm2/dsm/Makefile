@@ -42,11 +42,7 @@ LIBRARY=dsm
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
-ifdef OLD_MAKEFILE
-LIB_GEN_INC := $(shell $(PM2_CONFIG) --includedir $(LIBRARY))
-else
 -include $(PM2_MAK_DIR)/dsm-specific.mak
-endif
 
 LIB_REP_TO_BUILD += $(LIB_GEN_INC)
 

@@ -72,6 +72,8 @@ void print_trace(trace tr)
   printf("\n");
 }
 
+
+// Mangeur de dernière trace vilain!
 void list_events()
 {
   trace tr;
@@ -106,7 +108,7 @@ void nth_event(int nth)
 void active_time()
 {
   trace tr;
-  int active = 1;
+  /*  int active = 1;
   u_64 total_time = 0;
   u_64 slice_begin_time;
   u_64 slice_end_time;
@@ -127,14 +129,17 @@ void active_time()
       }
       slice_end_time = tr.clock;
     }
-  }
-  printf("Temps actif total = %u\n",(unsigned) total_time);
+    }*/
+  int eof = 0;
+  while (eof == 0) 
+    eof = get_next_filtered_trace(&tr);
+  printf("Temps actif total = %u\n",(unsigned) get_active_time());
 }
 
 void idle_time()
 {
   trace tr;
-  int active = 1;
+  /*  int active = 1;
   u_64 total_time = 0;
   u_64 slice_begin_time;
   if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
@@ -148,8 +153,11 @@ void idle_time()
       else slice_begin_time = tr.clock;
       active = 0;
     } else active = 1;
-  }
-  printf("Temps inactif total = %u\n",(unsigned) total_time);
+    }*/
+  int eof = 0;
+  while (eof == 0) 
+    eof = get_next_filtered_trace(&tr);
+  printf("Temps inactif total = %u\n",(unsigned) get_idle_time());
 }
 
 void time()
@@ -166,7 +174,7 @@ void nb_calls()
 void active_slices()
 {
   trace tr;
-  int active = 1;
+  /*  int active = 1;
   int nb_active_slice = 0;
   if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
   if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
@@ -179,14 +187,17 @@ void active_slices()
     } else {
       if (active == 0) active = 1;
     }
-  }
-  printf("Nombre de tranches actives = %u\n", nb_active_slice);
+    }*/
+  int eof = 0;
+  while (eof == 0) 
+    eof = get_next_filtered_trace(&tr);
+  printf("Nombre de tranches actives = %u\n", (unsigned) get_active_slices());
 }
 
 void idle_slices()
 {
   trace tr;
-  int active = 1;
+  /*  int active = 1;
   int nb_idle_slice = 0;
   if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
   if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
@@ -197,14 +208,17 @@ void idle_slices()
       if (active == 0) nb_idle_slice++;
       active = 0;
     } else active = 1;
-  }
-  printf("Nombre de tranches inactives = %u\n", nb_idle_slice);
+    }*/
+  int eof = 0;
+  while (eof == 0) 
+    eof = get_next_filtered_trace(&tr);
+  printf("Nombre de tranches inactives = %u\n", (unsigned) get_idle_slices);
 }
 
 void avg_active_slice()
 {
   trace tr;
-  int active = 1;
+  /*  int active = 1;
   int nb_active_slice = 0;
   u_64 total_time = 0;
   u_64 slice_begin_time = 0;
@@ -228,8 +242,13 @@ void avg_active_slice()
       }
       slice_end_time = tr.clock;
     }
-  }
-  printf("Temps moyen d'une tranche active = %u\n",(unsigned) (total_time / nb_active_slice));
+    }*/
+  int eof = 0;
+  while (eof == 0) 
+    eof = get_next_filtered_trace(&tr);
+  //  printf("Temps moyen d'une tranche active = %u\n",(unsigned) (total_time / nb_active_slice));
+  printf("Temps moyen d'une tranche active = %u\n",
+	 (unsigned) (get_active_time() / get_active_slices()));
 }
 
 

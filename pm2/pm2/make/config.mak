@@ -47,11 +47,3 @@ DEP_ON_FLY:=false
 endif
 endif
 
-# Controle de la version de make
-#---------------------------------------------------------------------
-MAKE_VERSION_REQUIRED=3.80
-# à cause de l'utilisation de '$(eval ...)'
-ifneq (1,$(shell echo "$(MAKE_VERSION) >= $(MAKE_VERSION_REQUIRED)" | bc))
-$(warning Please, update the GNUMake programme)
-$(error Minimal version needed : $(MAKE_VERSION_REQUIRED))
-endif

@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-/* Options: DSM_COMM_TRACE, ASSERT, HYP_INSTRUMENT */
+/* Options: DSM_COMM_TRACE, ASSERT, INSTRUMENT */
 #include <fcntl.h>
 #include <sys/mman.h>
 
@@ -27,7 +27,7 @@
 #include "dsm_rpc.h"
 #include "assert.h"
 
-//#define DSM_COMM_TRACE
+#define DSM_COMM_TRACE
 //#define ASSERT
 //#define MINIMIZE_PACKS_ON_PAGE_TRANSFER
 //#define MINIMIZE_PACKS_ON_DIFF_TRANSFER
@@ -41,9 +41,9 @@
 #endif
 
 /* tie in to the Hyperion instrumentation */
-#define HYP_INSTRUMENT 1
 
-#ifdef HYP_INSTRUMENT
+
+#ifdef INSTRUMENT
 int dsm_pf_handler_calls = 0;
 int hyp_readPage_in_cnt = 0;
 int hyp_readMPage_in_cnt = 0;
@@ -68,6 +68,8 @@ int hyp_lrpcUnlock_out_cnt = 0;
 int hyp_lrpcUnlock_in_cnt = 0;
 int hbrc_diffs_out_cnt = 0;
 int hbrc_diffs_in_cnt = 0;
+
+static marcel_mutex_t dsm_comm_lock;
 
 void dsm_rpc_clear_instrumentation(void)
 {
@@ -160,11 +162,18 @@ void dsm_rpc_dump_instrumentation(void)
 }
 #endif
 
+
+void dsm_comm_init()
+{
+ marcel_mutex_init(&dsm_comm_lock, NULL);
+}
+
+
 void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access, int tag)
 {
  LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
  if (req_access == READ_ACCESS)
    hyp_readPage_out_cnt++;
 else
@@ -234,7 +243,7 @@ void dsm_send_page(dsm_node_t dest_node, unsigned long index, dsm_access_t acces
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendPage_out_cnt++;
 #endif
 
@@ -289,7 +298,7 @@ void dsm_send_page_with_user_data(dsm_node_t dest_node, unsigned long index, dsm
 
  LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendPage_out_cnt++;
 #endif
 
@@ -338,7 +347,7 @@ void dsm_send_invalidate_req(dsm_node_t dest_node, unsigned long index, dsm_node
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_invalidate_out_cnt++;
 #endif
 
@@ -358,7 +367,7 @@ void dsm_send_invalidate_ack(dsm_node_t dest_node, unsigned long index)
 {
 
   LOG_IN();
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_invalidateAck_out_cnt++;
 #endif
 
@@ -381,7 +390,7 @@ static void DSM_LRPC_READ_PAGE_REQ_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_readPage_in_cnt++;
 #endif
 
@@ -412,7 +421,7 @@ static void DSM_LRPC_WRITE_PAGE_REQ_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_writePage_in_cnt++;
 #endif
 #ifdef DSM_COMM_TRACE
@@ -458,7 +467,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendPage_in_cnt++;
 #endif
 
@@ -557,15 +566,13 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 
         dsm_protect_page(addr, WRITE_ACCESS); // to enable the page to be copied
        pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size);
-
+       pm2_rawrpc_waitdata(); 
 
 #endif // USE_DOUBLE_MAPPING
 
 #ifdef DSM_COMM_TRACE
 	tfprintf(stderr, "unpacking page %d, addr = %p, size = %d, access = %d, reply = %d\n", index, addr, page_size, access, reply_node);
 #endif
-
-	pm2_rawrpc_waitdata(); 
 
 	if (access != WRITE_ACCESS)
 	  dsm_protect_page(addr, old_access);
@@ -598,7 +605,7 @@ static void DSM_LRPC_INVALIDATE_REQ_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_invalidate_in_cnt++;
 #endif
 
@@ -626,7 +633,7 @@ void DSM_LRPC_INVALIDATE_ACK_func(void)
   
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_invalidateAck_in_cnt++;
 #endif
 
@@ -642,59 +649,44 @@ void DSM_LRPC_INVALIDATE_ACK_func(void)
 
 #define ISOADDR_TEMP_AREA_SIZE 0x4000000
 #define ISOADDR_AREA_NEW_TOP (ISOADDR_AREA_TOP - ISOADDR_TEMP_AREA_SIZE)
-  static char buf[67108864];
+
+static char buf[67108864];
+
 void dsm_unpack_page(void *addr, unsigned long size)
 {
-      /* Modification: use double mapping */
-      int fd;
-    
-      void *system_view;
+  int fd;
+  void *system_view;
   
-     LOG_IN();
+  LOG_IN();
 
-#if 1
-      /* associate page to a true file */
-      fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
-      write(fd, buf, size);
-      addr = mmap(addr, size, PROT_NONE, MAP_PRIVATE | MAP_FIXED, fd, 0);
-      if(addr == (void *)-1) 
-	RAISE(STORAGE_ERROR);
-      
-      /* associate the file to a system view */
-      system_view = mmap((void*)ISOADDR_AREA_NEW_TOP, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
-	    fd, 0);   
-      if(system_view == (void *)-1) 
-	RAISE(STORAGE_ERROR);
-      
-//      fprintf(stderr, "system view = %p, user view = %p, size = %ld\n", system_view, addr, size);
-
-//      dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
-      /*unpack page using the system view*/
-      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)system_view, size); 
-
-      /*close file */
-      close(fd);
-//tfprintf(stderr, "before unlink\n", index);
-#ifdef USE_DOUBLE_MAPPING
-      unlink(RECEIVE_PAGE_FILE);
-#endif
-//tfprintf(stderr, "after unlink\n", index);
-#else
-      /* associate page to a true file */
-      fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
-      write(fd, buf, size);
-      addr = mmap(addr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, 0);
-      if(addr == (void *)-1) 
-	RAISE(STORAGE_ERROR);
-
-      dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
-
-      /*unpack page using the system view*/
-      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, size); 
-#endif
+  /* page unpacking must be done in exclusive mode */
+  marcel_mutex_lock(&dsm_comm_lock);
+  
+  /* associate page to a true file */
+  fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
+  write(fd, buf, size);
+  addr = mmap(addr, size, PROT_NONE, MAP_PRIVATE | MAP_FIXED, fd, 0);
+  if(addr == (void *)-1) 
+    RAISE(STORAGE_ERROR);
+  
+  /* associate the file to a system view */
+  system_view = mmap((void*)ISOADDR_AREA_NEW_TOP, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
+		     fd, 0);   
+  if(system_view == (void *)-1) 
+    RAISE(STORAGE_ERROR);
+  
+  /*unpack page using the system view*/
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)system_view, size); 
+  pm2_rawrpc_waitdata(); 
+  
+  /*close and delete file */
+  close(fd);
+  unlink(RECEIVE_PAGE_FILE);
+  
+  marcel_mutex_unlock(&dsm_comm_lock);
 
   LOG_OUT();
-  }
+}
 
 /***********************  Hyperion stuff: ****************************/
 
@@ -716,7 +708,7 @@ void dsm_send_diffs(unsigned long index, dsm_node_t dest_node)
   
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendDiffs_out_cnt++;
 #endif
 
@@ -787,7 +779,7 @@ void dsm_send_diffs_start(unsigned long index, dsm_node_t dest_node,
   
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendDiffs_out_cnt++;
 #endif
 
@@ -871,7 +863,7 @@ void DSM_LRPC_SEND_DIFFS_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendDiffs_in_cnt++;
 #endif
 #ifdef DSM_COMM_TRACE
@@ -944,7 +936,7 @@ void DSM_LRPC_SEND_MULTIPLE_DIFFS_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendMDiffs_in_cnt++;
 #endif
 #ifdef DEBUG_HYP
@@ -1004,7 +996,7 @@ static void DSM_LRPC_MULTIPLE_READ_PAGE_REQ_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_readMPage_in_cnt++;
 #endif
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
@@ -1042,7 +1034,7 @@ static void DSM_LRPC_MULTIPLE_WRITE_PAGE_REQ_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_writeMPage_in_cnt++;
 #endif
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char*)&req_node, sizeof(dsm_node_t));
@@ -1082,7 +1074,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_READ_threaded_func(void)
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendMRPage_in_cnt++;
 #endif
 #ifdef DEBUG_HYP
@@ -1143,7 +1135,7 @@ static void DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_threaded_func()
 
   LOG_IN();
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hyp_sendMWPage_in_cnt++;
 #endif
 #ifdef DEBUG_HYP

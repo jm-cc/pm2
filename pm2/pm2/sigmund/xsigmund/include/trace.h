@@ -21,12 +21,12 @@
 
 #ifdef USE_TRACE
 
-#define TRACE(fmt, arg...) \
-  fprintf(stderr, fmt, ##arg)
+#define TRACE(fmt, ...) \
+  fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #else
 
-#define TRACE(fmt, arg...) \
+#define TRACE(fmt, ...) \
   (void)0
 
 #endif // end ifdef USE_TRACE

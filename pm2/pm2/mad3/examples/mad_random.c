@@ -53,21 +53,21 @@
 #endif
 
 #if (DISP_LEVEL >= 3)
-#define DISP3(x...) DISP(x)
+#define DISP3(...) DISP(__VA_ARGS__)
 #else
-#define DISP3(x...)
+#define DISP3(...)
 #endif
 
 #if (DISP_LEVEL >= 2)
-#define DISP2(x...) DISP(x)
+#define DISP2(...) DISP(__VA_ARGS__)
 #else
-#define DISP2(x...)
+#define DISP2(...)
 #endif
 
 #if (DISP_LEVEL >= 1)
-#define DISP1(x...) DISP(x)
+#define DISP1(...) DISP(__VA_ARGS__)
 #else
-#define DISP1(x...)
+#define DISP1(...)
 #endif
 
 typedef struct s_listener

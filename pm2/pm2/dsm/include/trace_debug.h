@@ -48,13 +48,13 @@ static void spaces (const int i) { int j; for (j=0; j<i; j++) marcel_fprintf(std
 
 #undef TRACE
 #ifdef TRCSL
-#define TRACE(strng, args...) { spaces(depth); marcel_fprintf(stderr, "[%d:%x:%s] " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
+#define TRACE(strng, ...) { spaces(depth); marcel_fprintf(stderr, "[%d:%x:%s] " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##__VA_ARGS__); }
 #else
 #define TRACE(...) ((void)0)
 #endif
 
 /* special trace, always active */
-#define STRACE(strng, args...) { marcel_fprintf(stderr, "[%d:%x:%s] *** " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##args); }
+#define STRACE(strng, ...) { marcel_fprintf(stderr, "[%d:%x:%s] *** " strng "\n", pm2_self(), marcel_self(), __FUNCTION__, ##__VA_ARGS__); }
 
 #endif   /* TRACE_DEBUG_H */
 

@@ -27,7 +27,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <pthread.h>
-#define libc_hidden_proto(proto...)
+#define libc_hidden_proto(...)
 #define attribute_hidden
 #include "unistd2.h"
 #include <stdarg.h>

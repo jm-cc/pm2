@@ -154,7 +154,7 @@ mad_leonie_print(char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
 void
 mad_leonie_barrier(void);
 
-#define LDISP(str, args...)  mad_leonie_print(str , ## args)
+#define LDISP(str, ...)      mad_leonie_print(str , ## __VA_ARGS__)
 #define LDISP_IN()           mad_leonie_print(__FUNCTION__": -->")
 #define LDISP_OUT()          mad_leonie_print(__FUNCTION__": <--")
 #define LDISP_VAL(str, val)  mad_leonie_print(str " = %d" , (int)(val))

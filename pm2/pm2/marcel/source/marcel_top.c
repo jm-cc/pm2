@@ -42,7 +42,7 @@ int top_printf (char *fmt, ...) {
 void printtask(marcel_task_t *t) {
 	unsigned long utime = ma_atomic_read(&t->top_utime);
 
-	top_printf(" %s(%d,%lu%%)", t->name, t->sched.internal.prio, (utime*100)/djiffies);
+	top_printf(" %s(%d,%lu%%)", t->name, t->sched.internal.prio, djiffies?(utime*100)/djiffies:0);
 	ma_atomic_sub(utime, &t->top_utime);
 }
 void printrq(ma_runqueue_t *rq) {
@@ -90,7 +90,8 @@ void marcel_top_tick(unsigned long foo) {
 		struct ma_lwp_usage_stat lst = ma_per_lwp(lwp_usage,lwp);
 		unsigned long long tot = lst.user + lst.nice + lst.softirq +
 			lst.irq + lst.idle;
-		top_printf("\
+		if (tot)
+			top_printf("\
 lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);

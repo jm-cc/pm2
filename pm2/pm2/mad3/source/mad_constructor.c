@@ -126,9 +126,9 @@ mad_dir_channel_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_dir_channel_t));
 
-  object->pc     = ntbx_pc_cons();
-  object->public = tbx_true;
-  object->common = mad_dir_channel_common_cons();
+  object->pc          = ntbx_pc_cons();
+  object->not_private = tbx_true;
+  object->common      = mad_dir_channel_common_cons();
   LOG_OUT();
 
   return object;
@@ -412,7 +412,7 @@ mad_settings_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_settings_t));
   LOG_OUT();
-   
+
   return object;
 }
 

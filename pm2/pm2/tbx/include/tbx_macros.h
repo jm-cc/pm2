@@ -39,8 +39,12 @@
 /* TBX_BACKTRACE_ON_FAILURE: controls usage of the backtracing features
  * provided by the GNU C library
  */
-#define TBX_BACKTRACE_ON_FAILURE
-#define TBX_BACKTRACE_DEPTH 15
+#if 0
+#  define TBX_BACKTRACE_ON_FAILURE
+#  define TBX_BACKTRACE_DEPTH 15
+#else
+#  undef  TBX_BACKTRACE_ON_FAILURE
+#endif
 
 /* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
 #define OOPS

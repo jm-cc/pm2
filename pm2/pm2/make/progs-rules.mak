@@ -58,12 +58,13 @@ $(PRG_OBJECTS): $(PRG_GEN_OBJ)/%.o: $(PRG_GEN_DEP)/%.d $(COMMON_DEPS)
 
 $(PRG_PRG): $(PRG_OBJECTS)
 	$(PRG_PREFIX) $(CC) $(PRG_OBJECTS) $(LDFLAGS) -o $(PRG_PRG)
+
 # C
 $(PRG_C_OBJECTS): $(PRG_GEN_OBJ)/%$(PRG_EXT).o: $(PRG_SRC)/%.c
 	$(PRG_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
 
 $(PRG_C_DEPENDS): $(PRG_GEN_DEP)/%$(PRG_EXT).d: $(PRG_SRC)/%.c
-	$(PRG_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
+	$(PRG_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -w $< \
 		| sed '\''s/.*:/$(subst /,\/,$(PRG_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 # Assembleur
@@ -96,14 +97,14 @@ $(PRG_GEN_C_Y_INC): $(PRG_GEN_INC)/%$(PRG_EXT).h: $(PRG_SRC)/%.y
 	$(COMMON_HIDE) $(YACC) $<; mv y.tab.h $@; mv y.tab.h $(PRG_GEN_H_TO_C)
 
 else # !PROG_RECURSIF: premier appel
-MAKE_LIBS = set -e ; for modules in $(CONFIG_MODULES); do \
+MAKE_LIBS = +set -e ; for modules in $(CONFIG_MODULES); do \
                 if [ $$modules != $(PROGRAM) ] ; then \
 		    $(MAKE) -C $(PM2_ROOT)/modules/$$modules ; \
                 fi ;\
 	    done 
 
 .PHONY: $(PROGRAM)
-$(PROGRAM):
+$(PROGRAM): prgclean
 	@ echo "Making libs"
 	$(COMMON_HIDE) $(MAKE_LIBS)
 	@ echo "Making program"

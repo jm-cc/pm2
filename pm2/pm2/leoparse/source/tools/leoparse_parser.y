@@ -18,7 +18,7 @@
   p_tbx_htable_t leoparse_result = NULL;
 
   /* Prototypes */
-  void yyerror(char *s); 
+  void yyerror(char *s);
 %}
 
 %union
@@ -34,8 +34,8 @@
 }
 
 %token <val> LEOP_INTEGER
-%token <id> LEOP_ID 
-%token <str> LEOP_STRING 
+%token <id> LEOP_ID
+%token <str> LEOP_STRING
 %token '{' '}' '[' ']' LEOP_RANGE '(' ')' ':' ';' ',' INCONNU
 %type <range>              leop_range
 %type <modifier>           leop_modifier
@@ -46,7 +46,7 @@
 %type <htable>             entree
 %%
 
-entree:  
+entree:
   leop_file
 {
   LOG("entree -->");
@@ -71,7 +71,7 @@ leop_htable:
   LOG("leop_htable (1) -->");
   tbx_htable_add($1, $2, $4);
   $$ = $1;
-  
+
   LOG("leop_htable (1) <--");
 }
 | LEOP_ID ':' leop_object ';'
@@ -87,7 +87,7 @@ leop_htable:
 leop_list:
   leop_list ',' leop_object
 {
-  tbx_slist_append($1, $3);  
+  tbx_slist_append($1, $3);
   $$ = $1;
 }
 | leop_object
@@ -148,7 +148,7 @@ leop_modifier:
 {
   $$ = TBX_CALLOC(1, sizeof(leoparse_modifier_t));
   $$->type = leoparse_m_sbracket;
-  $$->sbracket = $2;  
+  $$->sbracket = $2;
 }
 |'(' leop_list ')'
 {

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.12  2000/02/08 17:49:07  oaumage
+- support de la net toolbox
+
 Revision 1.11  2000/02/01 17:26:33  rnamyst
 PM2 compatibility functions have moved to pm2_mad.
 
@@ -164,6 +167,7 @@ mad_managers_init(void)
 {
   LOG_IN();
   tbx_init();
+  ntbx_init();
   mad_memory_manager_init();
   LOG_OUT();
 }
@@ -549,7 +553,7 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine)
   p_mad_driver_interface_t spawn_interface;
   p_mad_adapter_t          spawn_adapter;
   mad_adapter_id_t ad;
-  mad_host_id_t rank;
+  ntbx_host_id_t rank;
 
   LOG_IN();
   spawn_adapter   = &(madeleine->adapter[0]);
@@ -569,7 +573,7 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine)
 	adapter->driver->interface.adapter_init(adapter);
       if (!rank)
 	{
-	  mad_host_id_t host_id;
+	  ntbx_host_id_t host_id;
 
 	  for (host_id = 1;
 	       host_id < madeleine->configuration.size;
@@ -598,7 +602,7 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
 		  char              **argv)
 {
   mad_adapter_id_t ad;
-  mad_host_id_t rank;
+  ntbx_host_id_t rank;
 
   LOG_IN();
   rank = madeleine->configuration.local_host_id;
@@ -759,7 +763,7 @@ mad_init(int                   *argc,
   p_mad_madeleine_t          madeleine       = &(main_madeleine);
   p_mad_configuration_t      configuration   =
     &(madeleine->configuration);
-  mad_host_id_t              rank            = -1;
+  ntbx_host_id_t             rank            = -1;
   tbx_bool_t                 master          = tbx_false;
   tbx_bool_t                 slave           = tbx_false;
 #ifdef EXTERNAL_SPAWN

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.28  2000/11/13 20:41:38  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.27  2000/11/06 15:02:21  rnamyst
 pm2_init() has now a modular structure (in fact, common_init).
 
@@ -229,8 +232,8 @@ void pm2_init_data(int *argc, char *argv[])
 }
 
 void pm2_init_open_channels(int *argc, char *argv[],
-				      unsigned pm2_self,
-				      unsigned pm2_config_size)
+			    unsigned pm2_self,
+			    unsigned pm2_config_size)
 {
   __pm2_self = pm2_self;
   __pm2_conf_size = pm2_config_size;
@@ -291,13 +294,7 @@ void pm2_init_listen_network(int *argc, char *argv[])
 }
 
 void pm2_init_purge_cmdline(int *argc, char *argv[])
-{
-}
-
-void pm2_init(int *argc, char **argv)
-{
-  common_init(argc, argv);
-}
+{}
 
 #if 0 // Just kept for documentation purposes (!?!)
 void pm2_init(int *argc, char **argv)

@@ -31,14 +31,14 @@ pid_t exec_single_cmd(int *output_fd, char *argv[])
   pid_t pid;
   int fd[2];
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
   {
     int i;
 
     for(i=0; argv[i]; i++)
       fprintf(stderr, "argv[%d] = <%s>\n", i, argv[i]);
   }
-#endif
+#endif // PM2DEBUG
 
   if(output_fd) {
 

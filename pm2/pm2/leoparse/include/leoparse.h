@@ -27,7 +27,7 @@
  */
 #ifndef __GNUC__
 #error The GNU C Compiler is required to build this tool
-#endif __GNUC__
+#endif // __GNUC__
 
 #include "pm2_common.h"
 #include "tbx_debug.h"

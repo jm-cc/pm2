@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: block_alloc.c,v $
+Revision 1.7  2000/09/12 16:59:11  rnamyst
+Few bug fixes + support for .fut files
+
 Revision 1.6  2000/07/14 16:17:10  gantoniu
 Merged with branch dsm3
 
@@ -115,7 +118,7 @@ ______________________________________________________________________________
 #define MIN_BLOCK_SIZE 32
 
 
-static _self = 0;
+static unsigned _self = 0;
 
 /*#define BLOCK_ALLOC_TRACE*/
 void block_init(unsigned myrank, unsigned confsize)

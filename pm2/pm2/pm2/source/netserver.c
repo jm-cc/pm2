@@ -324,7 +324,7 @@ pm2_net_init_channels(int   *argc,
 	char            *name    = NULL;
 
 	name                     = tbx_slist_extract(slist);
-	printf("channel %d = %s\n", i, name);
+	LOG("channel %d = %s\n", i, name);
 	channel                  = mad_get_channel(madeleine, name);
 	pm2_net_channel_array[i] = channel;
 	tbx_htable_replace(htable, name, channel);

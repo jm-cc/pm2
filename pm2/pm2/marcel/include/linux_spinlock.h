@@ -48,6 +48,9 @@
 #section marcel_macros
 #ifdef MARCEL_DEBUG_SPINLOCK
 
+//#define SPIN_ABORT()
+#define SPIN_ABORT() RAISE(PROGRAM_ERROR) 
+	
 #define MA_SPINLOCK_MAGIC  0x1D244B3C
 typedef struct {
         unsigned long magic;
@@ -74,6 +77,7 @@ typedef struct {
                 if ((x)->magic != MA_SPINLOCK_MAGIC) { \
                         pm2debug("%s:%d: spin_is_locked on uninitialized spinlock %p.\n", \
                                         __FILE__, __LINE__, (x)); \
+			SPIN_ABORT(); \
                 } \
         } while(0)
 
@@ -85,6 +89,7 @@ typedef struct {
                         pm2debug("%s:%d: spin_lock(%s:%p) already locked by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
+			SPIN_ABORT(); \
                 } \
                 (x)->lock = 1; \
                 (x)->owner = __FILE__; \
@@ -101,6 +106,7 @@ typedef struct {
                         pm2debug("%s:%d: spin_is_locked(%s:%p) already locked by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
+			SPIN_ABORT(); \
                 } \
                 0; \
         })
@@ -115,6 +121,7 @@ typedef struct {
                         pm2debug("%s:%d: spin_trylock(%s:%p) already locked by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->oline); \
+			SPIN_ABORT(); \
                 } \
                 (x)->lock = 1; \
                 (x)->owner = __FILE__; \
@@ -130,6 +137,7 @@ typedef struct {
                         pm2debug("%s:%d: spin_unlock_wait(%s:%p) owned by %s/%d\n", \
                                         __FILE__,__LINE__, (x)->module, (x), \
                                         (x)->owner, (x)->oline); \
+			SPIN_ABORT(); \
                 }\
         } while (0)
 
@@ -140,6 +148,7 @@ typedef struct {
                         (x)->babble--; \
                         pm2debug("%s:%d: spin_unlock(%s:%p) not locked\n", \
                                         __FILE__,__LINE__, (x)->module, (x));\
+			SPIN_ABORT(); \
                 } \
                 (x)->lock = 0; \
         } while (0)

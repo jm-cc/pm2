@@ -100,3 +100,10 @@ tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
   
   LOG_OUT();
 }
+
+void
+tbx_exit(void)
+{
+  LOG_IN();
+  LOG_OUT();
+}

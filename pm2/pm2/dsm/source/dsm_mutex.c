@@ -39,33 +39,9 @@
 #include "dsm_rpc.h"
 #include "dsm_mutex.h"
 
+//#define DSM_MUTEX_TRACE
 
 // static dsm_mutexattr_t dsm_mutexattr_default ;
-
-
-int dsm_mutexattr_setowner(dsm_mutexattr_t *attr, dsm_node_t owner)
-{
-  attr->owner = owner;
-  return 0;
-}
-
-
-int dsm_mutexattr_getowner(dsm_mutexattr_t *attr, dsm_node_t *owner)
-{
-  *owner = attr->owner;
-  return 0;
-}
-
-
-int dsm_mutex_init(dsm_mutex_t *mutex, dsm_mutexattr_t *attr)
-{
-  if(!attr)
-    mutex->owner = 0;
-  else
-    mutex->owner = attr->owner;
-  marcel_mutex_init(&mutex->mutex, NULL);
-  return 0;
-}
 
 
 void DSM_LRPC_LOCK_threaded_func()
@@ -79,6 +55,9 @@ void DSM_LRPC_LOCK_threaded_func()
   pm2_rawrpc_waitdata();
   marcel_mutex_lock(&mutex->mutex);
   pm2_completion_signal(&c);
+#ifdef DSM_MUTEX_TRACE
+  fprintf(stderr, " sent lock called\n");
+#endif
 }
 
 
@@ -104,6 +83,9 @@ void DSM_LRPC_UNLOCK_func(void)
 
 int dsm_mutex_lock(dsm_mutex_t *mutex)
 {
+#ifdef DSM_MUTEX_TRACE
+  fprintf(stderr, " dsm_mutex_lock called\n");
+#endif
   if (mutex->owner == dsm_self())
     marcel_mutex_lock(&mutex->mutex);
   else
@@ -118,12 +100,18 @@ int dsm_mutex_lock(dsm_mutex_t *mutex)
       pm2_rawrpc_end();
       pm2_completion_wait(&c);
     }
+#ifdef DSM_MUTEX_TRACE
+  fprintf(stderr, " got dsm_mutex \n");
+#endif
    return 0;
 }
 
 
 int dsm_mutex_unlock(dsm_mutex_t *mutex)
 {
+#ifdef DSM_MUTEX_TRACE
+  fprintf(stderr, " dsm_mutex_unlock called\n");
+#endif
   if (mutex->owner == dsm_self())
     marcel_mutex_unlock(&mutex->mutex);
   else
@@ -138,6 +126,9 @@ int dsm_mutex_unlock(dsm_mutex_t *mutex)
       pm2_rawrpc_end();
       pm2_completion_wait(&c);
     }
+#ifdef DSM_MUTEX_TRACE
+  fprintf(stderr, " released dsm_mutex \n");
+#endif
   return 0;
 }
 

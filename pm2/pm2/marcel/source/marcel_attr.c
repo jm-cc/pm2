@@ -156,9 +156,7 @@ int marcel_attr_getschedpolicy(__const marcel_attr_t *attr, int *policy)
 
 int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
 {
-#ifdef MARCEL_RT
   attr->rt_thread = realtime;
-#endif
   return 0;
 }
 

@@ -338,7 +338,6 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	}
 #endif
 	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp);
-	postexit->sched.internal.prio=0;
 	ma_wake_up_created_thread(postexit);
 	LOG_OUT();
 }

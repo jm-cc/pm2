@@ -1421,7 +1421,7 @@ need_resched:
 			sched_debug("schedule: go to sleep\n");
 			prev_as_next = NULL;
 			prev_as_rq = &ma_idle_runqueue;
-			prev_as_prio = MAX_PRIO-1;
+			prev_as_prio = IDLE_PRIO;
 		}
 	}
 

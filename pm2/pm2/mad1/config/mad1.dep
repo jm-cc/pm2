@@ -1,5 +1,5 @@
 Provide: madeleine
 Provide: module
 Provide: pm2_proto
-Depend: mad1_proto
+Depend: mad1_proto tbx
 Conflict: madeleine

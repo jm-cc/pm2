@@ -26,18 +26,17 @@
 /* begining of X86_ARCH section */
 
 #ifdef MA__LWPS
-#define LOCK_PREFIX "lock\n\t"
+#define LOCK_PREFIX "lock; "
 #else
 #define LOCK_PREFIX ""
 #endif
 
-#define __atomic_fool_gcc(x) (*(volatile struct { int a[100]; } *)x)
-
-#if defined(MA__LWPS) || defined(MA__ACT)
+/*
+ * Make sure gcc doesn't try to be clever and move things around
+ * on us. We need to use _exactly_ the address the user gave us,
+ * not some alias that contains the same information.
+ */
 typedef struct { volatile int counter; } atomic_t;
-#else
-typedef struct { int counter; } atomic_t;
-#endif
 
 #define ATOMIC_INIT(i)	{ (i) }
 
@@ -48,20 +47,20 @@ static __inline__
 void atomic_inc(volatile atomic_t *v) __attribute__ ((unused));
 static __inline__ void atomic_inc(volatile atomic_t *v)
 {
-	__asm__ __volatile__(
-		LOCK_PREFIX "incl %0"
-		:"=m" (__atomic_fool_gcc(v))
-		:"m" (0));
+        __asm__ __volatile__(
+                LOCK_PREFIX "incl %0"
+                :"=m" (v->counter)
+                :"m" (v->counter));
 }
 
 static __inline__ 
 void atomic_dec(volatile atomic_t *v) __attribute__ ((unused));
 static __inline__ void atomic_dec(volatile atomic_t *v)
 {
-	__asm__ __volatile__(
-		LOCK_PREFIX "decl %0"
-		:"=m" (__atomic_fool_gcc(v))
-		:"m" (0));
+        __asm__ __volatile__(
+                LOCK_PREFIX "decl %0"
+                :"=m" (v->counter)
+                :"m" (v->counter));
 }
 
 /* end of X86_ARCH section */

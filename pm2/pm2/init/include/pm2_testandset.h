@@ -22,12 +22,13 @@
  * Most are extracted from Linux kernel sources & LinuxThreads sources.
  */
 
+#include "sys/marcel_flags.h"
 #ifdef X86_ARCH
 #  define SPINLOCK_DEFINED
 #  ifdef MA__LWPS
 #    define LOCK_PREFIX "lock; "
 #  else
-#    define LOCK_PREFIX 
+#    define LOCK_PREFIX ""
 #  endif
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __attribute__ ((unused));
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
@@ -63,9 +64,6 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 #  define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
 
 #endif
-
-//AD: #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
-// cette définition semble redondante.
 
 #ifdef SPARC_ARCH
 #  define SPINLOCK_DEFINED

@@ -69,7 +69,11 @@ mad_memory_manager_clean(void)
 p_mad_buffer_t
 mad_alloc_buffer_struct(void)
 {
-  return tbx_malloc(mad_buffer_memory);
+  p_mad_buffer_t buffer = NULL;
+  
+  buffer = tbx_malloc(mad_buffer_memory);
+
+  return buffer;
 }
 
 void
@@ -85,7 +89,7 @@ mad_alloc_buffer(size_t length)
 
   buffer = mad_alloc_buffer_struct();
 
-  buffer->buffer = TBX_MALLOC(length);
+  buffer->buffer = tbx_aligned_malloc(length, MAD_ALIGNMENT);
   
   buffer->length        = length;
   buffer->bytes_read    = 0;
@@ -101,12 +105,12 @@ mad_free_buffer(p_mad_buffer_t buffer)
 {
   if (buffer->type == mad_dynamic_buffer)
     {
-      if (!buffer->buffer)
+      if (buffer->buffer)
 	{
-	  free(buffer->buffer);
+	  tbx_aligned_free(buffer->buffer, MAD_ALIGNMENT);
 	}
     }
-  tbx_free(mad_buffer_memory, buffer);
+  mad_free_buffer_struct(buffer);
 }
 
 p_mad_buffer_group_t

@@ -17,17 +17,30 @@
  * mad_ntbx_communication.c
  * ========================
  */ 
-
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <madeleine.h>
 
 
+/*
+ * Variables
+ * ---------
+ */
+static size_t           mad_print_buffer_size =    0;
+static char            *mad_print_buffer      = NULL;
+static p_ntbx_client_t  mad_leo_client        = NULL;
+
+/*
+ * Functions
+ * ---------
+ */
 void
 mad_ntbx_send_int(p_ntbx_client_t client,
-	     const int       data)
+		  const int       data)
 {
   int                status = ntbx_failure;
   ntbx_pack_buffer_t buffer;
@@ -127,4 +140,66 @@ mad_ntbx_receive_string(p_ntbx_client_t client)
   LOG_OUT();
 
   return result;
+}
+
+void
+mad_leonie_print_init(p_mad_madeleine_t madeleine,
+		   int                 argc TBX_UNUSED,
+		   char              **argv TBX_UNUSED)
+{
+  p_mad_session_t session = NULL;
+  p_ntbx_client_t client  = NULL;
+
+  LOG_IN();
+  session = madeleine->session;
+  client  = session->leonie_link;
+  TBX_LOCK_SHARED(client);
+  mad_leo_client        = client;
+  mad_print_buffer_size = 16;
+  mad_print_buffer      = TBX_MALLOC(mad_print_buffer_size);
+  TBX_UNLOCK_SHARED(client);
+  LOG_OUT();
+}
+
+void
+mad_leonie_print(char *fmt, ...)
+{
+  va_list ap;
+  int     len = 0;
+
+  LOG_IN();
+  if (!mad_leo_client)
+    FAILURE("leonie print module uninitialized");
+  
+  TBX_LOCK_SHARED(mad_leo_client);
+  len = strlen(fmt);
+
+  if (mad_print_buffer_size < len)
+    {
+      mad_print_buffer_size = 1 + 2 * len;
+      mad_print_buffer      =
+	TBX_REALLOC(mad_print_buffer, mad_print_buffer_size);
+    }
+
+  while (1)
+    {
+      int status;
+      
+      va_start(ap, fmt);
+      status = vsnprintf(mad_print_buffer, mad_print_buffer_size, fmt, ap);
+      va_end(ap);
+      
+      if (status != -1)
+	break;
+
+      mad_print_buffer_size *= 2;
+      mad_print_buffer       =
+	TBX_REALLOC(mad_print_buffer, mad_print_buffer_size);
+    }
+
+  mad_ntbx_send_int(mad_leo_client, mad_leo_command_print);
+  mad_ntbx_send_string(mad_leo_client, mad_print_buffer);
+
+  TBX_UNLOCK_SHARED(mad_leo_client);
+  LOG_OUT();
 }

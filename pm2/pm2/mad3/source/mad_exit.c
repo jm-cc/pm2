@@ -232,7 +232,7 @@ mad_leonie_sync(p_mad_madeleine_t madeleine)
   session = madeleine->session;
   client  = session->leonie_link;
 
-  mad_ntbx_send_int(client, 1);
+  mad_ntbx_send_int(client, mad_leo_command_end);
   data = mad_ntbx_receive_int(client);
   if (data != 1)
     FAILURE("synchronization error");

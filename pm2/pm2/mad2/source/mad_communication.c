@@ -42,7 +42,7 @@ mad_begin_packing(p_mad_channel_t   channel,
   ntbx_host_id_t             real_remote_host_id;
 #endif //MAD_FORWARDING
 
-  
+
   LOG_IN();
   TRACE("New emission request");
 
@@ -63,7 +63,7 @@ mad_begin_packing(p_mad_channel_t   channel,
   connection =
     &(channel->output_connection[remote_host_id]);
 #endif //MAD_FORWARDING
-  
+
 #ifdef MARCEL
   while (connection->lock == tbx_true)
     {
@@ -73,7 +73,7 @@ mad_begin_packing(p_mad_channel_t   channel,
     }
 #else /* MARCEL */
   if (connection->lock == tbx_true)
-    FAILURE("mad_begin_packing: connection dead lock");      
+    FAILURE("mad_begin_packing: connection dead lock");
 #endif /* MARCEL */
 
   connection->lock = tbx_true;
@@ -97,7 +97,7 @@ mad_begin_packing(p_mad_channel_t   channel,
     {
       p_mad_link_t link;
       tbx_bool_t has_been_forwarded = tbx_false;
-      p_mad_buffer_t buffer = mad_get_user_send_buffer(&has_been_forwarded, 
+      p_mad_buffer_t buffer = mad_get_user_send_buffer(&has_been_forwarded,
 						       sizeof(tbx_bool_t));
       if(interface->choice)
 	link = interface->choice(connection, sizeof(tbx_bool_t),
@@ -105,7 +105,7 @@ mad_begin_packing(p_mad_channel_t   channel,
       else
 	link = &(connection->link[0]);
 
-          
+
      if(link->buffer_mode == mad_buffer_mode_static)
        {
 	 p_mad_buffer_t static_buffer = interface->get_static_buffer(link);
@@ -118,18 +118,18 @@ mad_begin_packing(p_mad_channel_t   channel,
      connection->is_being_forwarded = tbx_false;
     }
 #endif //MAD_FORWARDING
-  
+
   /* structure initialisation */
   tbx_list_init(&(connection->buffer_list));
   tbx_list_init(&(connection->buffer_group_list));
-  
+
   for(link_id = 0;
       link_id < connection->nb_link;
       link_id++)
     {
       tbx_list_init(&(connection->link[link_id].buffer_list));
     }
-  
+
   connection->pair_list_used = tbx_false;
   connection->delayed_send   = tbx_false;
   connection->flushed        = tbx_true;
@@ -148,10 +148,10 @@ mad_message_ready(p_mad_channel_t channel)
     &(channel->adapter->driver->interface);
   p_mad_connection_t         connection;
   mad_link_id_t              link_id;
-  
+
   LOG_IN();
   TRACE("New reception request");
-  
+
   TBX_LOCK_SHARED(channel);
 #ifdef MARCEL
   if (channel->reception_lock == tbx_true)
@@ -183,7 +183,7 @@ mad_message_ready(p_mad_channel_t channel)
    tbx_list_init(&(connection->user_buffer_list));
    tbx_list_reference_init(&(connection->user_buffer_list_reference),
 			   &(connection->user_buffer_list));
-   
+
   for(link_id = 0;
       link_id < connection->nb_link;
       link_id++)
@@ -191,7 +191,7 @@ mad_message_ready(p_mad_channel_t channel)
       tbx_list_init(&(connection->link[link_id].buffer_list));
       tbx_list_init(&(connection->link[link_id].user_buffer_list));
     }
-  
+
   connection->lock            = tbx_true;
   connection->send            = tbx_false;
   connection->pair_list_used  = tbx_false;
@@ -219,7 +219,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
   p_mad_driver_interface_t   interface;
   p_mad_connection_t         connection = NULL;
   mad_link_id_t              link_id;
-  
+
   LOG_IN();
   TRACE("New reception request");
 
@@ -229,11 +229,11 @@ mad_begin_unpacking(p_mad_channel_t channel)
       TRACE("Waiting for a thread to have received something");
       marcel_sem_P(&(user_channel->sem_message_ready));
       /*      channel = user_channel->channels[user_channel->msg_adapter_id];
-	      TRACE("Ah ! I found a message on adapter %d (= %d)", 
+	      TRACE("Ah ! I found a message on adapter %d (= %d)",
 	      user_channel->msg_adapter_id, channel->adapter->id);*/
       connection = user_channel->msg_connection;
-      TRACE("Ah ! I found a message on adapter %d", 
-	      connection->channel->adapter->id); 
+      TRACE("Ah ! I found a message on adapter %d",
+	      connection->channel->adapter->id);
       channel = connection->channel;
     }
   else
@@ -246,7 +246,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
       channel = user_channel->channels[user_channel->adapter_ids[i]];
     }
 #endif //MAD_FORWARDING
-  
+
   interface = &(channel->adapter->driver->interface);
 
   TBX_LOCK_SHARED(channel);
@@ -275,7 +275,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
 #ifdef MAD_FORWARDING
   {
     tbx_bool_t has_been_forwarded;
-    p_mad_buffer_t buffer = mad_get_user_receive_buffer(&has_been_forwarded, 
+    p_mad_buffer_t buffer = mad_get_user_receive_buffer(&has_been_forwarded,
 							sizeof(tbx_bool_t));
     p_mad_link_t link;
     if(interface->choice)
@@ -283,7 +283,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
 			       mad_send_CHEAPER, mad_receive_EXPRESS);
     else
       link = &(connection->link[0]);
-    
+
     if(link->buffer_mode == mad_buffer_mode_static)
       {
 	p_mad_buffer_t static_buffer;
@@ -292,7 +292,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
       }
     else
       interface->receive_buffer(link, &buffer);
-    
+
     connection->is_being_forwarded = has_been_forwarded;
 #ifdef PM2DEBUG
     if(has_been_forwarded)
@@ -311,7 +311,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
    tbx_list_init(&(connection->user_buffer_list));
    tbx_list_reference_init(&(connection->user_buffer_list_reference),
 			   &(connection->user_buffer_list));
-   
+
   for(link_id = 0;
       link_id < connection->nb_link;
       link_id++)
@@ -319,7 +319,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
       tbx_list_init(&(connection->link[link_id].buffer_list));
       tbx_list_init(&(connection->link[link_id].user_buffer_list));
     }
-  
+
   connection->lock            = tbx_true;
   connection->send            = tbx_false;
   connection->pair_list_used  = tbx_false;
@@ -351,7 +351,7 @@ mad_end_packing(p_mad_connection_t connection)
     {
       p_mad_link_t    last_link    = connection->last_link;
       p_tbx_list_t    buffer_list  = &(connection->buffer_list);
-  
+
      if (connection->delayed_send == tbx_false)
 	{
 	  if (connection->last_link_mode == mad_link_mode_buffer)
@@ -364,7 +364,7 @@ mad_end_packing(p_mad_connection_t connection)
 	  else if (connection->last_link_mode == mad_link_mode_buffer_group)
 	    {
 	      mad_buffer_group_t buffer_group;
-	      
+
 	      mad_make_buffer_group(&buffer_group,
 				    buffer_list,
 				    last_link);
@@ -388,7 +388,7 @@ mad_end_packing(p_mad_connection_t connection)
 	  if (connection->last_link_mode == mad_link_mode_buffer_group)
 	    {
 	      p_mad_buffer_group_t buffer_group;
-	      	      
+
 	      buffer_group = mad_alloc_buffer_group_struct();
 	      mad_make_buffer_group(buffer_group,
 				    buffer_list,
@@ -399,7 +399,7 @@ mad_end_packing(p_mad_connection_t connection)
 	    FAILURE("invalid link mode");
 	}
 
-      connection->flushed = tbx_true;      
+      connection->flushed = tbx_true;
     }
 
   /* buffer pair handling */
@@ -452,18 +452,18 @@ mad_end_packing(p_mad_connection_t connection)
 	}
       while (tbx_forward_list_reference(&list_ref));
     }
-  
+
   /* link data groups flushing */
   for (link_id = 0;
        link_id < connection->nb_link;
        link_id++)
     {
       p_mad_link_t link = &(connection->link[link_id]);
-      
+
       if (!tbx_empty_list(&(link->buffer_list)))
 	{
 	  mad_buffer_group_t buffer_group;
-	  
+
 	  mad_make_buffer_group(&buffer_group,
 				&(link->buffer_list),
 				link);
@@ -479,7 +479,7 @@ mad_end_packing(p_mad_connection_t connection)
 	    }
 	  }
     }
-  
+
   tbx_foreach_destroy_list(&(connection->buffer_group_list),
 			   mad_foreach_free_buffer_group_struct);
   tbx_foreach_destroy_list(&(connection->buffer_list),
@@ -499,7 +499,7 @@ mad_end_packing(p_mad_connection_t connection)
       interface->send_buffer(connection->fwd_link, empty_buffer);
     }
 #endif //MAD_FORWARDING
-  connection->lock = tbx_false; 
+  connection->lock = tbx_false;
   TRACE("Emission request completed");
   LOG_OUT();
 }
@@ -515,7 +515,7 @@ mad_end_unpacking(p_mad_connection_t connection)
   p_tbx_list_t               dest_list = NULL;
   p_tbx_list_reference_t     dest_ref  = NULL;
   mad_link_id_t              link_id;
-  
+
   LOG_IN();
   if (connection->flushed == tbx_false)
     {
@@ -547,7 +547,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 		  do
 		    {
 		      destination = tbx_get_list_reference_object(dest_ref);
-		      
+
 		      do
 			{
 			  if (!mad_more_data(source))
@@ -563,7 +563,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 		      while (!mad_buffer_full(destination));
 		    }
 		  while (tbx_forward_list_reference(dest_ref));
-		  
+
 		  interface->return_static_buffer(last_link, source);
 		}
 	      else
@@ -573,12 +573,12 @@ mad_end_unpacking(p_mad_connection_t connection)
 		      source = tbx_get_list_object(src_list);
 		      interface->return_static_buffer(last_link, source);
 		    }
-		}	      
+		}
 	    }
 	  else
 	    {
 	      mad_buffer_group_t buffer_group;
-	      
+
 	      mad_make_buffer_group(&buffer_group,
 				    src_list,
 				    last_link);
@@ -604,7 +604,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 			finalize_sub_buffer_group_reception(last_link);
 		    }
 		  */
-		}	      
+		}
 	    }
 	}
       else if (connection->last_link_mode == mad_link_mode_buffer)
@@ -641,11 +641,11 @@ mad_end_unpacking(p_mad_connection_t connection)
 	    {
 	      interface->receive_buffer(link, &source);
 	      tbx_append_list(src_list, source);
-	      
+
 	      do
 		{
 		  destination = tbx_get_list_reference_object(dest_ref);
-		    
+
 		  while (!mad_buffer_full(destination))
 		    {
 		      if (!mad_more_data(source))
@@ -658,16 +658,16 @@ mad_end_unpacking(p_mad_connection_t connection)
 		    }
 		}
 	      while(tbx_forward_list_reference(dest_ref));
-		
+
 	      interface->return_static_buffer(link, source);
 	    }
-	} 
+	}
       else
 	{
 	  if (!tbx_empty_list(src_list))
 	    {
 	      mad_buffer_group_t buffer_group;
-	      
+
 	      mad_make_buffer_group(&buffer_group, src_list, link);
 
 	      if (link->group_mode == mad_group_mode_split
@@ -685,7 +685,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 					     connection->
 					       first_sub_buffer_group,
 					     &buffer_group);
-		}	      
+		}
 	    }
 	}
     }
@@ -694,7 +694,7 @@ mad_end_unpacking(p_mad_connection_t connection)
 			   mad_foreach_free_buffer);
   tbx_foreach_destroy_list(&(connection->user_buffer_list),
 			   mad_foreach_free_buffer);
-  
+
   for (link_id = 0 ;
        link_id < connection->nb_link ;
        link_id++)
@@ -723,7 +723,7 @@ mad_end_unpacking(p_mad_connection_t connection)
   LOG_OUT();
 }
 
-/* 
+/*
  * mad_pack
  * --------
  */
@@ -777,7 +777,7 @@ mad_pack(p_mad_connection_t   connection,
 	}
       TRACE("Link chosen : %d", link->id);
     }
-  
+
   link_id               = link->id;
   link_mode             = link->link_mode;
   buffer_mode           = link->buffer_mode;
@@ -794,7 +794,7 @@ mad_pack(p_mad_connection_t   connection,
     {
       if (receive_mode == mad_receive_EXPRESS)
 	{
-	  link_mode = mad_link_mode_buffer_group;	  
+	  link_mode = mad_link_mode_buffer_group;
 	}
       else
 	{
@@ -840,7 +840,7 @@ mad_pack(p_mad_connection_t   connection,
 		   mad_link_mode_buffer_group)
 	    {
 	      mad_buffer_group_t buffer_group;
-	      
+
 	      mad_make_buffer_group(&buffer_group, dest_list, last_link);
 	      if (last_link->group_mode == mad_group_mode_split
 		  && buffer_group.buffer_list.length == 1)
@@ -882,7 +882,7 @@ mad_pack(p_mad_connection_t   connection,
   if (link_mode == mad_link_mode_buffer)
     {
       /* B U F F E R   mode
-	 -----------        */      
+	 -----------        */
       if (connection->delayed_send == tbx_true)
 	FAILURE("cannot send data in buffer mode when delayed send is on");
 
@@ -895,37 +895,37 @@ mad_pack(p_mad_connection_t   connection,
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
 		  interface->send_buffer(link, source);
-		  mad_free_buffer_struct(source);		  
+		  mad_free_buffer_struct(source);
 		  connection->flushed = tbx_true;
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
-		{		  
+		{
 		  if (tbx_empty_list(dest_list) || connection->flushed)
 		    {
 		      destination = interface->get_static_buffer(link);
-		  
+
 		      tbx_append_list(dest_list, destination);
 		    }
 		  else
 		    {
 		      destination = tbx_get_list_object(dest_list);
 		    }
-	      
+
 		  do
 		    {
 		      if (mad_buffer_full(destination))
-			{  
+			{
 			  interface->send_buffer(link, destination);
 			  destination = interface->get_static_buffer(link);
 			  tbx_append_list(dest_list, destination);
 			}
-		  
-		      mad_copy_buffer(source, destination);  
+
+		      mad_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
-	      
+
 		  if (mad_buffer_full(destination))
-		    {  
+		    {
 		      interface->send_buffer(link, destination);
 		      connection->flushed = tbx_true;
 		    }
@@ -968,7 +968,7 @@ mad_pack(p_mad_connection_t   connection,
 		{
 		  tbx_append_list(dest_list, source);
 		}
-	      else	    
+	      else
 		FAILURE("unknown send mode");
 	    }
 	  else if (buffer_mode == mad_buffer_mode_static)
@@ -985,16 +985,16 @@ mad_pack(p_mad_connection_t   connection,
 		    {
 		      destination = tbx_get_list_object(dest_list);
 		    }
-	      
+
 		  do
 		    {
 		      if (mad_buffer_full(destination))
-			{  
+			{
 			  destination = interface->get_static_buffer(link);
 			  tbx_append_list(dest_list, destination);
 			}
-		  
-		      mad_copy_buffer(source, destination);  
+
+		      mad_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
 		}
@@ -1009,21 +1009,21 @@ mad_pack(p_mad_connection_t   connection,
 		    {
 		      destination = tbx_get_list_object(dest_list);
 		    }
-	      
+
 		  do
 		    {
 		      if (mad_buffer_full(destination))
-			{  
+			{
 			  destination = interface->get_static_buffer(link);
 			  tbx_append_list(dest_list, destination);
 			}
-		  
+
 		      tbx_append_list(&(connection->pair_list),
 				      mad_make_sub_buffer_pair(source,
 							       destination));
-		      mad_pseudo_copy_buffer(source, destination);  
+		      mad_pseudo_copy_buffer(source, destination);
 		    }
-		  while(mad_more_data(source));	      
+		  while(mad_more_data(source));
 		  connection->pair_list_used = tbx_true;
 		}
 	      else
@@ -1045,7 +1045,7 @@ mad_pack(p_mad_connection_t   connection,
 	  if (connection->delayed_send == tbx_false)
 	    {
 	      mad_buffer_group_t buffer_group;
-		  
+
 	      mad_make_buffer_group(&buffer_group, dest_list, link);
 	      if (buffer_group.buffer_list.length == 1)
 		{
@@ -1060,7 +1060,7 @@ mad_pack(p_mad_connection_t   connection,
 	  else
 	    {
 	      p_mad_buffer_group_t buffer_group;
-		  
+
 	      buffer_group = mad_alloc_buffer_group_struct();
 	      mad_make_buffer_group(buffer_group, dest_list, link);
 	      tbx_append_list(buffer_group_list, buffer_group);
@@ -1073,7 +1073,7 @@ mad_pack(p_mad_connection_t   connection,
   else if (link_mode == mad_link_mode_link_group)
     {
       /* G R O U P   mode
-         ---------        */      
+         ---------        */
       dest_list = &(link->buffer_list);
 
       if (receive_mode == mad_receive_CHEAPER)
@@ -1093,15 +1093,15 @@ mad_pack(p_mad_connection_t   connection,
 		    {
 		      destination = tbx_get_list_object(dest_list);
 		    }
-	      
+
 		  do
 		    {
 		      if (mad_buffer_full(destination))
-			{  
+			{
 			  destination = interface->get_static_buffer(link);
 			  tbx_append_list(dest_list, destination);
 			}
-		      mad_copy_buffer(source, destination);  
+		      mad_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
 		}
@@ -1116,19 +1116,19 @@ mad_pack(p_mad_connection_t   connection,
 		    {
 		      destination = tbx_get_list_object(dest_list);
 		    }
-	      
+
 		  do
 		    {
 		      if (mad_buffer_full(destination))
-			{  
+			{
 			  destination = interface->get_static_buffer(link);
 			  tbx_append_list(dest_list, destination);
 			}
-		  
+
 		      tbx_append_list(&(connection->pair_list),
 				      mad_make_sub_buffer_pair(source,
 							       destination));
-		      mad_pseudo_copy_buffer(source, destination);  
+		      mad_pseudo_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
 		  connection->pair_list_used = tbx_true;
@@ -1149,9 +1149,9 @@ mad_pack(p_mad_connection_t   connection,
 		}
 	      else
 		FAILURE("unknown send mode");
-	    }	 
+	    }
 	  else
-	    FAILURE("unknown buffer mode"); 
+	    FAILURE("unknown buffer mode");
 	}
       else if (receive_mode == mad_receive_EXPRESS)
 	FAILURE("Express data cannot be sent in group mode");
@@ -1216,7 +1216,7 @@ mad_unpack(p_mad_connection_t   connection,
 	  link = &(connection->link[0]);
 	}
     }
-  
+
   link_id               = link->id;
   link_mode             = link->link_mode;
   buffer_mode           = link->buffer_mode;
@@ -1233,7 +1233,7 @@ mad_unpack(p_mad_connection_t   connection,
     {
       if (receive_mode == mad_receive_EXPRESS)
 	{
-	  link_mode = mad_link_mode_buffer_group;	  
+	  link_mode = mad_link_mode_buffer_group;
 	}
       else
 	{
@@ -1258,7 +1258,7 @@ mad_unpack(p_mad_connection_t   connection,
 	    }
 	}
     }
-  
+
   if (   (connection->last_link != NULL)
       && (link_mode != mad_link_mode_link_group)
       && (   (link != connection->last_link)
@@ -1292,7 +1292,7 @@ mad_unpack(p_mad_connection_t   connection,
 			{
 			  destination =
 			    tbx_get_list_reference_object(dest_ref);
-		      
+
 			  do
 			    {
 			      if (!mad_more_data(source))
@@ -1318,12 +1318,12 @@ mad_unpack(p_mad_connection_t   connection,
 			  source = tbx_get_list_object(src_list);
 			  interface->return_static_buffer(link, source);
 			}
-		    }	      
+		    }
 		}
 	      else
 		{
 		  mad_buffer_group_t buffer_group;
-		  
+
 		  mad_make_buffer_group(&buffer_group,
 					src_list,
 					last_link);
@@ -1351,7 +1351,7 @@ mad_unpack(p_mad_connection_t   connection,
 	    }
 	  else
 	    FAILURE("invalid link mode");
-	  
+
 	  tbx_mark_list(src_list);
 	  connection->more_data = tbx_false;
 	  connection->flushed   = tbx_true ;
@@ -1359,7 +1359,7 @@ mad_unpack(p_mad_connection_t   connection,
 
       connection->first_sub_buffer_group = tbx_true;
     }
-  
+
   destination = mad_get_user_receive_buffer(user_buffer, user_buffer_length);
 
   if (link_mode == mad_link_mode_buffer)
@@ -1392,20 +1392,20 @@ mad_unpack(p_mad_connection_t   connection,
 		    {
 		      source = tbx_get_list_object(src_list);
 		    }
-	      
+
 		  do
 		    {
 		      if (!mad_more_data(source))
 			{
 			  interface->return_static_buffer(link, source);
-		      
+
 			  interface->receive_buffer(link, &source);
 			  tbx_append_list(src_list, source);
 			}
 		      mad_copy_buffer(source, destination);
 		    }
 		  while(!mad_buffer_full(destination));
-	      
+
 		  if (mad_more_data(source))
 		    {
 		      connection->more_data = tbx_true;
@@ -1417,7 +1417,7 @@ mad_unpack(p_mad_connection_t   connection,
 		      connection->flushed   = tbx_true;
 
 		      interface->return_static_buffer(link, source);
-		  
+
 		      tbx_mark_list(src_list);
 		    }
 		}
@@ -1467,8 +1467,8 @@ mad_unpack(p_mad_connection_t   connection,
 						 connection->
 						 first_sub_buffer_group,
 						 &buffer_group);
-		    }	      
-		  
+		    }
+
 		  connection->flushed                = tbx_true;
 		  connection->more_data              = tbx_false;
 		  if (group_mode == mad_group_mode_split)
@@ -1481,13 +1481,13 @@ mad_unpack(p_mad_connection_t   connection,
 		    }
 		  else
 		    FAILURE("unknown group mode");
-		  
+
 		  tbx_mark_list(src_list);
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
 		{
 		  tbx_append_list(dest_list, destination);
-		  
+
 		  if (   (tbx_empty_list(src_list))
 		      || (!connection->more_data))
 		    {
@@ -1502,7 +1502,7 @@ mad_unpack(p_mad_connection_t   connection,
 		  do
 		    {
 		      destination = tbx_get_list_reference_object(dest_ref);
-		      
+
 		      do
 			{
 			  if (!mad_more_data(source))
@@ -1521,17 +1521,17 @@ mad_unpack(p_mad_connection_t   connection,
 		      && (group_mode == mad_group_mode_aggregate))
 		    {
 		      connection->more_data = tbx_true;
-		      connection->flushed   = tbx_false; 
+		      connection->flushed   = tbx_false;
 		    }
 		  else
 		    {
 		      interface->return_static_buffer(link, source);
 		      tbx_mark_list(src_list);
 		      connection->more_data = tbx_false;
-		      connection->flushed   = tbx_true; 
-		    }		  
+		      connection->flushed   = tbx_true;
+		    }
 		}
-	      else 
+	      else
 		FAILURE("unknown buffer mode");
 	    }
 	  else
@@ -1559,7 +1559,7 @@ mad_unpack(p_mad_connection_t   connection,
 	  else
 	    FAILURE("unknown send mode");
 
-	  connection->flushed   = tbx_false;	      
+	  connection->flushed   = tbx_false;
 	  connection->more_data = tbx_false;
 	}
 
@@ -1587,12 +1587,12 @@ mad_unpack(p_mad_connection_t   connection,
 	      else
 		FAILURE("unknown buffer mode");
 	    }
-	  else 
+	  else
 	    FAILURE("unknown send mode");
 	}
       else if (receive_mode == mad_receive_EXPRESS)
 	FAILURE("Express data cannot be received in group mode");
-      else 
+      else
 	FAILURE("unknown receive mode");
     }
   else

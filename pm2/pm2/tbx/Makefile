@@ -35,9 +35,9 @@
 
 ###################### CUSTOMIZATION SECTION #####################
 
-TBX_OPTIONS		= # -DDEBUG
+TBX_OPTIONS		= -O6 -g -fomit-frame-pointer # -DDEBUG
 
-TBX_STANDALONE_OPTIONS	=	-g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
+TBX_STANDALONE_OPTIONS	= -g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 
 ################### END OF CUSTOMIZATION SECTION #################
 
@@ -121,13 +121,15 @@ include $(TBX_DEPENDS)
 endif
 endif
 
-$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d
 ifdef $(TBX_ALONE)
+$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d $(TBX_MAKEFILE)
 $(TBX_DEPENDS): $(TBX_MAKEFILE)
 else
 ifdef $(MAD_ALONE)
+$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d $(MAD_MAKEFILE)
 $(TBX_DEPENDS): $(MAD_MAKEFILE)
 else
+$(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d $(PM2_MAKEFILE)
 $(TBX_DEPENDS): $(PM2_MAKEFILE)
 endif
 endif
@@ -136,17 +138,17 @@ endif
 tbx_default: $(TBX_LIB) 
 
 $(TBX_LIB): $(TBX_OBJECTS)
-	@ rm -f $(TBX_LIB)
+	rm -f $(TBX_LIB)
 	@ echo "  -  $(@F)"
-	@ ar cr $(TBX_LIB) $(TBX_OBJECTS)
+	ar cr $(TBX_LIB) $(TBX_OBJECTS)
 
 $(TBX_REG_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(TBX_CC) $(TBX_CFLAGS) $(TBX_FLAGS) -c $< -o $@
+	$(TBX_CC) $(TBX_CFLAGS) $(TBX_FLAGS) -c $< -o $@
 
 $(TBX_REG_DEPENDS): $(TBX_DEP)/%.d: $(TBX_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(SHELL) -ec '$(TBX_CC) -MM $(TBX_CFLAGS) $(TBX_FLAGS) $< \
+	$(SHELL) -ec '$(TBX_CC) -MM $(TBX_CFLAGS) $(TBX_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(TBX_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
@@ -154,7 +156,7 @@ ifndef TBX_ALONE
 .PHONY: tbxclean
 tbxclean:
 	@ echo "Cleaning toolbox"
-	@ rm -f $(wildcard $(TBX_LIBD)/*.a $(TBX_OBJ)/*.o $(TBX_DEP)/*.d)
+	rm -f $(wildcard $(TBX_LIBD)/*.a $(TBX_OBJ)/*.o $(TBX_DEP)/*.d)
 
 tbxdistclean:
 	rm -rf $(wildcard $(TBX_ROOT)/lib \
@@ -164,7 +166,7 @@ else
 .PHONY: clean distclean
 clean:
 	@ echo "Cleaning toolbox"
-	@ rm -f $(wildcard $(TBX_LIBD)/*.a $(TBX_OBJ)/*.o $(TBX_DEP)/*.d) \
+	rm -f $(wildcard $(TBX_LIBD)/*.a $(TBX_OBJ)/*.o $(TBX_DEP)/*.d) \
 
 distclean:
 	rm -rf $(wildcard $(TBX_ROOT)/lib \

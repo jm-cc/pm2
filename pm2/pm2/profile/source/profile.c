@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: profile.c,v $
+Revision 1.5  2000/09/15 17:37:15  rnamyst
+Tracefiles are now generated correctly with PM2 applications using multiple processes
+
+Revision 1.4  2000/09/15 02:04:54  rnamyst
+fut_print is now built by the makefile, rather than by pm2-build-fut-entries
+
 Revision 1.3  2000/09/14 20:50:34  rnamyst
 Still some changes to the FUT stuff
 
@@ -43,9 +49,14 @@ Put profile.h into common/include and added few FUT_SWITCH_TO calls
 ______________________________________________________________________________
 */
 
+#ifndef X86_ARCH
+#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86 ARCHITECTURES"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "profile.h"
 
@@ -78,11 +89,7 @@ void profile_init(void)
   static unsigned already_called = 0;
 
   if(!already_called) {
-#ifdef PM2
-    sprintf(PROF_FILE, "/tmp/prof_file_%d", pm2_self());
-#else
-    strcpy(PROF_FILE, "/tmp/prof_file");
-#endif
+    strcpy(PROF_FILE, "/tmp/prof_file_single");
 
     if(fut_setup(PROF_BUFFER_SIZE, 0, PROF_THREAD_ID()) < 0) {
       perror("fut_setup");
@@ -95,6 +102,15 @@ void profile_init(void)
 void profile_activate(int how, unsigned keymask)
 {
   fut_keychange(how, keymask, PROF_THREAD_ID());
+}
+
+void profile_set_tracefile(char *fmt, ...)
+{
+  va_list vl;
+
+  va_start(vl, fmt);
+  vsprintf(PROF_FILE, fmt, vl);
+  va_end(vl);
 }
 
 void profile_stop(void)

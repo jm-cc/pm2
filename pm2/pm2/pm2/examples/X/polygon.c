@@ -167,7 +167,7 @@ void tracer_polygone(void *arg)
     XFlush(dpy);
     X_unlock();
 
-    marcel_delay(1);
+    marcel_delay(20);
 
     l = suivant;
     suivant = suivant->suivant;
@@ -225,13 +225,15 @@ static void migrer(any_t arg)
   marcel_t pids[128];
   int nb;
 
+  X_lock();
   do {
     pm2_freeze();
     pm2_threads_list(128, pids, &nb, MIGRATABLE_ONLY);
     pm2_migrate_group(pids, min(nb, 128), module_suivant);
   } while(nb > 128);
 
-  X_lock(); redessiner(); X_unlock();
+  redessiner();
+  X_unlock();
 }
 
 static void reset_threads(void)
@@ -252,7 +254,7 @@ static void reset_threads(void)
 
 static void pre_migr(marcel_t pid)
 {
-  X_lock(); redessiner(); X_unlock();
+  redessiner();
 }
 
 static void draw(void)

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: profile.h,v $
+Revision 1.3  2000/09/15 17:37:13  rnamyst
+Tracefiles are now generated correctly with PM2 applications using multiple processes
+
+Revision 1.2  2000/09/15 02:04:51  rnamyst
+fut_print is now built by the makefile, rather than by pm2-build-fut-entries
+
 Revision 1.1  2000/09/14 02:08:27  rnamyst
 Put profile.h into common/include and added few FUT_SWITCH_TO calls
 
@@ -83,12 +89,13 @@ ______________________________________________________________________________
 // The keymask of PROF_SWITCH_TO() is -1 because this
 // trace-instruction should be activated whenever one other
 // trace-instruction is active...
-#define PROF_SWITCH_TO(thr) ((-1 & fut_active) ? \
-                                   fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | 16, \
-                                              (unsigned int)((thr)->number)) : \
-                                   0)
+#define PROF_SWITCH_TO(thr) ((fut_active) ? \
+                fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | 16, \
+                           (unsigned int)((thr)->number)) : 0)
 
 void profile_init(void);
+
+void profile_set_tracefile(char *fmt, ...);
 
 void profile_activate(int how, unsigned keymask);
 

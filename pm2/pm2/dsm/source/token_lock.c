@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.23 2002/10/29 13:14:44 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.24 2002/10/30 11:27:21 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -1234,15 +1234,9 @@ token_lock (const token_lock_id_t lck_id)
       lck_elem->requested = SL_TRUE;
    }
 
-   if ( lck_elem->requested == SL_TRUE )
+   while ( lck_elem->requested == SL_TRUE || lck_elem->owner_thread != NULL )
    {
-      TRACE("waiting for requested token %d", lck_id);
-      marcel_cond_wait(&(lck_elem->token_available), &(lck_elem->mutex));
-   }
-
-   while ( lck_elem->owner_thread != NULL )   /* the lock is busy */
-   {
-      TRACE("waiting for lock %d to be free", lck_id);
+      TRACE("waiting for token %d", lck_id);
       marcel_cond_wait(&(lck_elem->token_available), &(lck_elem->mutex));
    }
 

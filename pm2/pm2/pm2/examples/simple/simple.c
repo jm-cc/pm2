@@ -34,16 +34,22 @@
 */
 #include "pm2.h"
 
+#define __ALIGNED__       __attribute__ ((aligned (sizeof(int))))
+
+#define STRING_SIZE  16
+
+static char msg[STRING_SIZE] __ALIGNED__;
+
 static unsigned SAMPLE;
 
 static void SAMPLE_service(void)
 {
-  char msg[1024];
+  char msg[STRING_SIZE];
 
-  pm2_unpack_str(SEND_CHEAPER, RECV_CHEAPER, msg);
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, STRING_SIZE);
   pm2_rawrpc_waitdata();
 
-  pm2_printf("%s\n", msg);
+  printf("%s\n", msg);
 
   pm2_halt();
 }
@@ -62,9 +68,10 @@ int pm2_main(int argc, char **argv)
   }
 
   if(pm2_self() == 0) {
-      pm2_rawrpc_begin(1, SAMPLE, NULL);
-      pm2_pack_str(SEND_CHEAPER, RECV_CHEAPER, "Hello world!");
-      pm2_rawrpc_end();
+    strcpy(msg, "Hello world!   ");
+    pm2_rawrpc_begin(1, SAMPLE, NULL);
+    pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, STRING_SIZE);
+    pm2_rawrpc_end();
   }
 
   pm2_exit();

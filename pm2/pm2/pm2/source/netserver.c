@@ -111,6 +111,9 @@ void netserver_start(void)
 #endif
 
   marcel_attr_init(&attr);
+#ifdef REALTIME_NET_THREADS
+  marcel_attr_setrealtime(&attr, MARCEL_CLASS_REALTIME);
+#endif
   marcel_attr_setstackaddr(&attr,
 			   slot_general_alloc(NULL, 0, &granted, NULL, NULL));
   marcel_attr_setstacksize(&attr, granted);

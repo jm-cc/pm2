@@ -1,4 +1,3 @@
-PM2_MARCEL_LIBNAME=marcel
 PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -fomit-frame-pointer"
 
 case " $PM2_LIBS " in

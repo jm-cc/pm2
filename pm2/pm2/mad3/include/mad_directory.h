@@ -79,7 +79,7 @@ typedef struct s_mad_dir_channel
   char                       *name;
   p_ntbx_process_container_t  pc;
   p_mad_dir_driver_t          driver;
-  tbx_bool_t                  public;
+  tbx_bool_t                  not_private;
   p_ntbx_topology_table_t     ttable;
   p_mad_dir_channel_common_t  common;
 } mad_dir_channel_t;

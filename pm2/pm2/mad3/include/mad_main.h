@@ -59,8 +59,8 @@ typedef struct s_mad_madeleine
  * ---------
  */
 p_mad_madeleine_t
-mad_object_init(int    argc TBX_UNUSED,
-		char **argv TBX_UNUSED);
+mad_object_init(int   TBX_UNUSED   argc,
+		char  TBX_UNUSED **argv);
 
 void
 mad_cmd_line_init(p_mad_madeleine_t   madeleine,
@@ -68,14 +68,14 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 		  char              **argv);
 
 void
-mad_leonie_link_init(p_mad_madeleine_t   madeleine,
-		     int                 argc TBX_UNUSED,
-		     char              **argv TBX_UNUSED);
+mad_leonie_link_init(p_mad_madeleine_t              madeleine,
+		     int               TBX_UNUSED   argc,
+		     char              TBX_UNUSED **argv);
 
 void
-mad_directory_init(p_mad_madeleine_t   madeleine,
-		   int                 argc TBX_UNUSED,
-		   char              **argv TBX_UNUSED);
+mad_directory_init(p_mad_madeleine_t               madeleine,
+		   int                TBX_UNUSED   argc,
+		   char               TBX_UNUSED **argv);
 
 void
 mad_dir_driver_init(p_mad_madeleine_t   madeleine);
@@ -84,9 +84,9 @@ void
 mad_dir_channel_init(p_mad_madeleine_t   madeleine);
 
 void
-mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
-		       int                *_argc,
-		       char              **_argv);
+mad_purge_command_line(p_mad_madeleine_t TBX_UNUSED madeleine,
+		       int                         *_argc,
+		       char                       **_argv);
 
 p_mad_madeleine_t
 mad_get_madeleine(void);

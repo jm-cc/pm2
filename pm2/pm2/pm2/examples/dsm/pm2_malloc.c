@@ -53,12 +53,12 @@ void f()
 //  char *p = (char*)pm2_isomalloc(private_data_size);
 
 //  dsm_mutex_lock(&L);
-//  tfprintf(stderr,"user thread ! ptr = %p, *ptr = %d (I am %p)\n", ptr, *ptr, marcel_self());
+  tfprintf(stderr,"user thread ! ptr = %p, *ptr = %d (I am %p)\n", ptr, *ptr, marcel_self());
   for (i = 0; i < n; i++) {
     (*ptr)++;
     //    fprintf(stderr,"ptr = %p, *ptr = %d\n",ptr, *ptr);
   }
-//  tfprintf(stderr,"user thread finished! ptr = %p, *ptr = %d\n", ptr, *ptr);
+  tfprintf(stderr,"user thread finished! ptr = %p, *ptr = %d\n", ptr, *ptr);
 //  dsm_mutex_unlock(&L);
   pm2_completion_signal(&c); 
 }

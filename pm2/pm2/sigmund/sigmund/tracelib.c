@@ -116,12 +116,16 @@ int is_valid_calc(trace *tr, int eof)
   return v;
 }
 
+// O if not eof, 1 if eof and not valid 2 if eof and valid
 int get_next_filtered_trace(trace *tr)
 {
   int eof = 0;
   while (eof == 0) {
     eof = get_next_trace(tr);
-    if (is_valid_calc(tr, eof) == TRUE) break;
+    if (is_valid_calc(tr, eof) == TRUE) {
+      if (eof != 0) eof = 2;
+      break;
+    }
   }
   return eof;
 }

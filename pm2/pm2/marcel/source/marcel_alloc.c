@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_alloc.c,v $
+Revision 1.5  2000/05/29 10:11:59  oaumage
+- Mise-a-jour du support de la machine IBM/SP2
+
 Revision 1.4  2000/04/11 09:07:20  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -53,6 +56,10 @@ ______________________________________________________________________________
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+
+#ifdef AIX_SYS
+#define MAP_FAILED       -1
+#endif
 
 #include "marcel.h"
 #include "marcel_alloc.h"

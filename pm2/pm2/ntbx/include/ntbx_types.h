@@ -47,12 +47,19 @@ typedef struct s_ntbx_process           *p_ntbx_process_t;
 typedef struct s_ntbx_topology_element  *p_ntbx_topology_element_t;
 typedef struct s_ntbx_topology_table    *p_ntbx_topology_table_t;
 
+
 /*
  * Pack buffers
  * ------------
  */
-#define NTBX_PACK_BUFFER_LEN     17
+#define NTBX_PACK_BUFFER_LEN     32
+#define NTBX_PACK_INT_LEN        11
+#define NTBX_PACK_UINT_LEN       10
+#define NTBX_PACK_LONG_LEN       21
+#define NTBX_PACK_ULONG_LEN      20
+#define NTBX_PACK_MANTISSA_LEN   14
 #define NTBX_PACK_BUFFER_TAG_LEN  4
+
 typedef struct
 {
   char buffer[NTBX_PACK_BUFFER_LEN];

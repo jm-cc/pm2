@@ -41,6 +41,19 @@ typedef enum {
 	POLL_SELECT
 } poll_op_t;
 
+#if __GNU__ < 3
+#  define MA_GCC_NAME __ma_gcc
+#  define FD MA_GCC_NAME.fd
+#  define RFDS MA_GCC_NAME.MA_GCC_NAME.rfds
+#  define WFDS MA_GCC_NAME.MA_GCC_NAME.wfds
+#  define NFDS MA_GCC_NAME.MA_GCC_NAME.nfds
+#else
+#  define MA_GCC_NAME
+#  define FD fd
+#  define RFDS rfds
+#  define WFDS wfds
+#  define NFDS nfds
+#endif
 typedef struct tcp_ev {
 	struct marcel_ev_req inst;
 	poll_op_t op;
@@ -51,8 +64,8 @@ typedef struct tcp_ev {
 			fd_set *rfds;
 			fd_set *wfds;
 			int nfds;	
-		};
-	};
+		} MA_GCC_NAME;
+	} MA_GCC_NAME;
 } *tcp_ev_t;
 
 struct unix_io_server unix_io_server = {
@@ -75,28 +88,28 @@ static int unix_io_group(marcel_ev_server_t server,
 	FOREACH_REQ_POLL(ev, server, inst) {
 		switch(ev->op) {
 		case POLL_READ : {
-			FD_SET(ev->fd, &uid->rfds);
-			uid->nb = tbx_max(uid->nb, ev->fd+1);
+			FD_SET(ev->FD, &uid->rfds);
+			uid->nb = tbx_max(uid->nb, ev->FD+1);
 			break;
 		}
 		case POLL_WRITE : {
-			FD_SET(ev->fd, &uid->wfds);
-			uid->nb = tbx_max(uid->nb, ev->fd+1);
+			FD_SET(ev->FD, &uid->wfds);
+			uid->nb = tbx_max(uid->nb, ev->FD+1);
 			break;
 		}
 		case POLL_SELECT : {
 			unsigned i;
-			if(ev->rfds != NULL) {
-				for(i=0; i<ev->nfds; i++)
-					if(FD_ISSET(i, ev->rfds))
+			if(ev->RFDS != NULL) {
+				for(i=0; i<ev->NFDS; i++)
+					if(FD_ISSET(i, ev->RFDS))
 						FD_SET(i, &uid->rfds);
 			}
-			if(ev->wfds != NULL) {
-				for(i=0; i<ev->nfds; i++)
-					if(FD_ISSET(i, ev->wfds))
+			if(ev->WFDS != NULL) {
+				for(i=0; i<ev->NFDS; i++)
+					if(FD_ISSET(i, ev->WFDS))
 						FD_SET(i, &uid->wfds);
 			}
-			uid->nb = tbx_max(uid->nb, ev->nfds);
+			uid->nb = tbx_max(uid->nb, ev->NFDS);
 			break;
 		}
 		default :
@@ -112,39 +125,39 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 	mdebug("Checking select for IO poll (at least one success)\n");
 	switch(ev->op) {
 	case POLL_READ :
-		if(FD_ISSET(ev->fd, rfds))
+		if(FD_ISSET(ev->FD, rfds))
 			MARCEL_EV_REQ_SUCCESS(&ev->inst);
 		break;
 	case POLL_WRITE :
-		if(FD_ISSET(ev->fd, wfds))
+		if(FD_ISSET(ev->FD, wfds))
 			MARCEL_EV_REQ_SUCCESS(&ev->inst);
 		break;
 	case POLL_SELECT : {
 		unsigned i;
 		unsigned zeroed=0;
 		ev->ret_val=0;
-		if(ev->rfds != NULL) {
-			for(i=0; i<ev->nfds; i++)
-				if(FD_ISSET(i, ev->rfds) && FD_ISSET(i, rfds)) {
+		if(ev->RFDS != NULL) {
+			for(i=0; i<ev->NFDS; i++)
+				if(FD_ISSET(i, ev->RFDS) && FD_ISSET(i, rfds)) {
 					if (!zeroed) {
-						FD_ZERO(ev->rfds);
-						if(ev->wfds != NULL)
-							FD_ZERO(ev->wfds);
+						FD_ZERO(ev->RFDS);
+						if(ev->WFDS != NULL)
+							FD_ZERO(ev->WFDS);
 						zeroed=1;
 					}
-					FD_SET(i, ev->rfds);
+					FD_SET(i, ev->RFDS);
 					ev->ret_val++;
 				}
 		}
-		if(ev->wfds != NULL) {
-			for(i=0; i<ev->nfds; i++)
-				if(FD_ISSET(i, ev->wfds) && FD_ISSET(i, wfds)) {
+		if(ev->WFDS != NULL) {
+			for(i=0; i<ev->NFDS; i++)
+				if(FD_ISSET(i, ev->WFDS) && FD_ISSET(i, wfds)) {
 					if (!zeroed) {
-						FD_ZERO(ev->wfds);
-						if(ev->rfds != NULL)
-							FD_ZERO(ev->rfds);
+						FD_ZERO(ev->WFDS);
+						if(ev->RFDS != NULL)
+							FD_ZERO(ev->RFDS);
 					}
-					FD_SET(i, ev->wfds);
+					FD_SET(i, ev->WFDS);
 					ev->ret_val++;
 				}
 		}
@@ -194,8 +207,8 @@ static int unix_io_poll(marcel_ev_server_t server,
 			case POLL_WRITE :
 				break;
 			case POLL_SELECT : {
-				ev->ret_val=select(ev->nfds, ev->rfds,
-						   ev->wfds, NULL, NULL);
+				ev->ret_val=select(ev->NFDS, ev->RFDS,
+						   ev->WFDS, NULL, NULL);
 				if (ev->ret_val) {
 					MARCEL_EV_REQ_SUCCESS(&ev->inst);
 					found=1;
@@ -244,21 +257,21 @@ static int unix_io_fast_poll(marcel_ev_server_t server,
 
 	switch(ev->op) {
 	case POLL_READ : {
-		FD_SET(ev->fd, &rfds);
-		nb = ev->fd + 1;
+		FD_SET(ev->FD, &rfds);
+		nb = ev->FD + 1;
 		break;
 	}
 	case POLL_WRITE : {
-		FD_SET(ev->fd, &wfds);
-		nb = ev->fd + 1;
+		FD_SET(ev->FD, &wfds);
+		nb = ev->FD + 1;
 		break;
 	}
 	case POLL_SELECT : {
-		if(ev->rfds != NULL)
-			rfds = *(ev->rfds);
-		if(ev->wfds != NULL)
-			wfds = *(ev->wfds);
-		nb = ev->nfds;
+		if(ev->RFDS != NULL)
+			rfds = *(ev->RFDS);
+		if(ev->WFDS != NULL)
+			wfds = *(ev->WFDS);
+		nb = ev->NFDS;
 		break;
 	}
 	default :
@@ -289,7 +302,7 @@ int marcel_read(int fildes, void *buf, size_t nbytes)
 	do {
 #ifndef MA__ACTIVATION
 		ev.op = POLL_READ;
-		ev.fd = fildes;
+		ev.FD = fildes;
 		mdebug("Reading in fd %i\n", fildes);
 		marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
@@ -309,7 +322,7 @@ int marcel_readv(int fildes, const struct iovec *iov, int iovcnt)
 	LOG_IN();
 #ifndef MA__ACTIVATION
 	ev.op = POLL_READ;
-	ev.fd = fildes;
+	ev.FD = fildes;
 	mdebug("Reading in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
@@ -329,7 +342,7 @@ int marcel_write(int fildes, const void *buf, size_t nbytes)
 	do {
 #ifndef MA__ACTIVATION
 		ev.op = POLL_WRITE;
-		ev.fd = fildes;
+		ev.FD = fildes;
 		mdebug("Writing in fd %i\n", fildes);
 		marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
@@ -350,7 +363,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 	LOG_IN();
 #ifndef MA__ACTIVATION
 	ev.op = POLL_WRITE;
-	ev.fd = fildes;
+	ev.FD = fildes;
 	mdebug("Writing in fd %i\n", fildes);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 #endif
@@ -369,9 +382,9 @@ int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
 	
 	LOG_IN();
 	ev.op = POLL_SELECT;
-	ev.rfds = rfds;
-	ev.wfds = wfds;
-	ev.nfds = nfds;
+	ev.RFDS = rfds;
+	ev.WFDS = wfds;
+	ev.NFDS = nfds;
 	mdebug("Selecting within %i fds\n", nfds);
 	marcel_ev_wait(&unix_io_server.server, &ev.inst, &wait, 0);
 	LOG_RETURN(ev.ret_val);
@@ -456,7 +469,7 @@ int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
 #endif /* MA__ACTIVATION */
 }
 
-void __init marcel_io_init(void)
+void __marcel_init marcel_io_init(void)
 {
 	LOG_IN();
 	marcel_ev_server_set_poll_settings(&unix_io_server.server, 

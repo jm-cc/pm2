@@ -94,9 +94,9 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 
 	marcel_ev_server_init(&id->server, name);
 	marcel_ev_server_set_poll_settings(&id->server, 
-					   (polling_points
-					    |MARCEL_EV_POLL_AT_IDLE)
-					   & MARCEL_EV_POLL_AT_TIMER_SIG, 1);
+					    polling_points
+					    |MARCEL_EV_POLL_AT_IDLE
+					    |MARCEL_EV_POLL_AT_TIMER_SIG, 1);
 	if (g) {
 		id->gfunc = g;
 		marcel_ev_server_add_callback(&id->server,

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.19  2000/11/13 20:41:34  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.18  2000/09/14 02:08:29  rnamyst
 Put profile.h into common/include and added few FUT_SWITCH_TO calls
 
@@ -198,12 +201,21 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
 #include "profile.h"
 #include "pm2debug.h"
+#include "common.h"
 
 /* = initialization & termination == */
 
-#define marcel_init(argc, argv) marcel_init_ext(argc, argv, \
-        PM2DEBUG_CLEAROPT|PM2DEBUG_DO_OPT)
-void marcel_init_ext(int *argc, char *argv[], int debug_flags);
+#define marcel_init(argc, argv) common_init(argc, argv)
+
+// When completed, calls to marcel_self() are ok, etc.
+// So do calls to the Unix Fork primitive.
+void marcel_init_data(int *argc, char *argv[]);
+
+// May start some internal threads or activations.
+// When completed, fork calls are prohibited.
+void marcel_start_sched(int *argc, char *argv[]);
+
+void marcel_purge_cmdline(int *argc, char *argv[]);
 
 void marcel_end(void);
 

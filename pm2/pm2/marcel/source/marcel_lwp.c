@@ -268,8 +268,10 @@ static void lwp_init(ma_lwp_t lwp)
 
 	memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
 
+#ifdef MA__LWPS
 	lwp->per_lwp_offset = (unsigned long)lwp -
 			(unsigned long)&__ma_main_lwp_start;;
+#endif
 
 #ifdef MA__SMP
 	marcel_sem_init(&lwp->kthread_stop, 0);

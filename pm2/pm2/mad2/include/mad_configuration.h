@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_configuration.h,v $
+Revision 1.3  2000/02/08 17:47:21  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.2  1999/12/15 17:31:20  oaumage
 Ajout de la commande de logging de CVS
 
@@ -55,7 +58,7 @@ ______________________________________________________________________________
 typedef struct s_mad_configuration
 {
   mad_configuration_size_t     size;
-  mad_host_id_t                local_host_id;
+  ntbx_host_id_t               local_host_id;
   char                       **host_name; /* configuration host name list */
 } mad_configuration_t;
 

@@ -2,6 +2,10 @@
 #ifndef PM2_EST_DEF
 #define PM2_EST_DEF
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "marcel.h"
 #include "pm2_mad.h"
 #include "pm2_types.h"
@@ -197,5 +201,9 @@ static __inline__ void pm2_set_startup_func(pm2_startup_func_t f, void *args)
 {
   pm2_push_startup_func(f, args);
 }
+
+#ifdef __cplusplus
+}; // end of extern "C"
+#endif
 
 #endif

@@ -28,8 +28,8 @@
 #include "dsm_page_size.h"
 #include "dsm_mutex.h"
 #include "assert.h"
-/* the following is useful for "hierarch_lock_id_t" */
-#include "hierarch_lock.h"
+/* the following is useful for "token_lock_id_t" */
+#include "token_lock.h"
 
 
 void dsmlib_erc_sw_inv_init(int protocol_number);
@@ -48,7 +48,7 @@ void dsmlib_erc_sw_inv_rps(void *addr, dsm_access_t access, dsm_node_t reply_nod
 
 void dsmlib_erc_acquire();
 
-void dsmlib_erc_release(const hierarch_lock_id_t);
+void dsmlib_erc_release(const token_lock_id_t);
 
 void dsmlib_erc_add_page(dsm_page_index_t index);
 

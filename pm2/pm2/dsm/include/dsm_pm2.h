@@ -29,7 +29,7 @@
 #include "dsm_protocol_lib.h" 
 #include "dsm_protocol_policy.h"
 #include "dsm_lock.h"
-#include "hierarch_lock.h"
+#include "token_lock.h"
 
 
 /* to enable the user to configure the distribution of dsm pages */

@@ -158,6 +158,8 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
   RAISE(NOT_IMPLEMENTED);
 #if 0
+TODO: Vieux code, à réécrire
+
   lock_task();
 
   if(pid == marcel_self()) {
@@ -216,6 +218,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     mdebug("Deviate: self_lwp = %d, target_lwp = %d\n",
 	   GET_LWP(marcel_self())->number, GET_LWP(pid)->number);
 
+TODO: savoir si on est en MULTIPLE_RUNNING est à la charge du scheduler
 #ifdef MA__MULTIPLE_RUNNING
 #warning task->sched should be delegated to scheduler
     if(pid->sched.internal.ext_state == MARCEL_RUNNING)

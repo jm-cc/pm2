@@ -31,11 +31,6 @@
 
 #section marcel_macros
 
-#ifndef MA__ONE_QUEUE
-#error MA__MULTIPLE_QUEUES: not yet implemented
-//#define SCHED_DATA(lwp) ((lwp)->sched)
-#endif
-
 #section marcel_types
 typedef struct marcel_sched_internal_task marcel_sched_internal_task_t;
 #section marcel_structures

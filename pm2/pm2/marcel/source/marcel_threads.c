@@ -863,10 +863,13 @@ void __init main_thread_init(void)
 	marcel_attr_init(&attr);
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
 	marcel_attr_setmigrationstate(&attr, FALSE);
+#if 0
+TODO: vieux code
 #ifndef MA__ONE_QUEUE
 	// Limitation (actuelle) du mode 'SMP multi-files' : le thread
 	// 'main' doit toujours rester sur le LWP 0
 	marcel_attr_setvpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
+#endif
 #endif
 	SET_LWP(__main_thread,&__main_lwp);
 	marcel_create_init_marcel_thread(__main_thread, &attr);

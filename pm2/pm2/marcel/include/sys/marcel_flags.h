@@ -71,33 +71,6 @@
 #  undef MA__LWPS
 #endif
 
-/* MA__ONE_QUEUE : indique qu'il n'y a qu'une seule queue pour les threads
- * marcels pour tous les lwps
- *
- * C'est le cas tout le temps sauf en SMP
- * */
-#ifdef MA__ONE_QUEUE
-#  undef MA__ONE_QUEUE
-#endif
-
-/* MA__MULTIPLE_QUEUES : indique qu'il n'y a plusieurs queues pour les threads
- * marcels (donc plusieurs LWP)
- *
- * C'est le cas tout le temps sauf en SMP
- * */
-#ifdef MA__MULTIPLE_QUEUES
-#  undef MA__MULTIPLES_QUEUES
-#endif
-
-/* MA__MULTIPLE_RUNNING : indique qu'il peut y avoir plusieurs threads
- * marcel en exécution dans une queue
- *
- * C'est le cas avec les Activations
- * */
-#ifdef MA__MULTIPLE_RUNNING
-#  undef MA__MULTIPLE_RUNNING
-#endif
-
 /* MA__ACTIVATION : indique qu'on utilise les activations (mono ou
  * smp). On peut donc utiliser les constantes de act.h
  * */
@@ -120,7 +93,6 @@
 
 #ifdef MARCEL_MONO /* Marcel Mono */
 #  define MA__MONO
-#  define MA__ONE_QUEUE
 #  define MA__TIMER
 #endif /* Fin Marcel Mono */
 
@@ -129,17 +101,9 @@
 #  define MA__LWPS
 #  define MA__TIMER
 #  define MA__WORK
-#  ifndef SMP_MULTIPLE_QUEUES
-#    define MA__ONE_QUEUE
-#    define MA__MULTIPLE_RUNNING
-#  else
-     define MA__MULTIPLE_QUEUES
-#  endif
 #endif /* Fin Marcel SMP */
 
 #if defined(MARCEL_ACT) || defined(MARCEL_ACTSMP) /* Marcel Activation */
-#  define MA__ONE_QUEUE
-#  define MA__MULTIPLE_RUNNING
 #  define MA__ACTIVATION
 #  define ACTIVATION
 #  define MA__WORK

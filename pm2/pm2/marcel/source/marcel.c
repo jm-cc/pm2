@@ -293,3 +293,17 @@ int _marcel_raise(marcel_exception_t ex)
    return 0;
 }
 
+#ifndef MA__PTHREAD_FUNCTIONS
+int marcel_extlib_protect(void)
+{
+	ma_local_bh_disable();
+	return 0;
+}
+        
+int marcel_extlib_unprotect(void)
+{
+	ma_local_bh_enable();
+	return 0;
+}
+#endif /* MA__PTHREAD_FUNCTIONS */
+

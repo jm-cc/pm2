@@ -30,8 +30,6 @@ void busy_thread(void *arg)
   pm2_completion_signal(&c);
 
   while(stay_busy) ;
-
-  fprintf(stderr, "oups! it's time to die!\n");
 }
 
 static void START_BUSY_service(void)
@@ -44,8 +42,6 @@ static void STOP_BUSY_service(void)
   pm2_rawrpc_waitdata();
 
   stay_busy = FALSE;
-
-  fprintf(stderr, "Busy threads should die now...\n");
 }
 
 void sample_thread(void *arg)

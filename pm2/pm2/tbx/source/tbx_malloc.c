@@ -31,8 +31,8 @@
 #include "tbx.h"
 #define DEFAULT_BLOCK_NUMBER 1024
 
-/* 
- * Aligned block allocation 
+/*
+ * Aligned block allocation
  * ------------------------
  */
 void *
@@ -113,7 +113,7 @@ tbx_get_print_stats_mode(void) {
   return tbx_print_stats;
 }
 
-static 
+static
 void
 tbx_safe_malloc_mem_check(void)
 {
@@ -124,7 +124,7 @@ tbx_safe_malloc_mem_check(void)
 	    (long int)allocated,
 	    (long int)freed,
 	    ((long int)allocated) - ((long int)freed));
-  
+
     if (list) {
       fprintf(stderr,
 	      "SafeMalloc: Warning! All allocated memory has not been restitued :\n");
@@ -228,7 +228,7 @@ tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
 	    TBX_SAFE_MALLOC_MAGIC_SIZE))
     fprintf(stderr,
 	    "SafeMalloc: Error: The block at %p has a corrupted trailer:\n",
-	    data);  
+	    data);
 }
 
 void
@@ -262,7 +262,7 @@ tbx_safe_free(void *ptr)
   memset(base + TBX_SAFE_MALLOC_TRUE_HEADER_SIZE,
 	 0,
 	 TBX_SAFE_MALLOC_MAGIC_SIZE);
-  
+
   base += TBX_SAFE_MALLOC_HEADER_SIZE + p->size;
   memset(base,
 	 0,
@@ -271,11 +271,11 @@ tbx_safe_free(void *ptr)
   free(p);
 }
 
-void 
+void
 tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 {
   p_tbx_safe_malloc_header_t p;
-  
+
   for(p = list; p; p = p->next)
     {
       void *ptr  = p;
@@ -284,7 +284,7 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 
       tbx_safe_malloc_check_chunk(p);
 
-      if(mode == tbx_safe_malloc_VERBOSE) 
+      if(mode == tbx_safe_malloc_VERBOSE)
 	fprintf(stderr,
 		"\t[addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
 		ptrh, (unsigned long)p->size, ptrf, p->line);
@@ -298,14 +298,14 @@ tbx_safe_realloc(void     *ptr,
 		 const unsigned  line)
 {
   void *new_ptr;
-  
+
   new_ptr = tbx_safe_malloc(size, file, line);
-  
+
   if (new_ptr)
     {
       memcpy(new_ptr, ptr, size);
     }
-  
+
   tbx_safe_free(ptr);
 
   return new_ptr;
@@ -345,12 +345,12 @@ tbx_malloc_init(p_tbx_memory_t *mem,
     FAILURE("not enough memory");
 
   temp_mem->current_mem = temp_mem->first_mem;
-  
+
   *(void **)(temp_mem->current_mem + initial_block_number * block_len) = NULL;
 
   temp_mem->block_len  = block_len;
   temp_mem->mem_len    = initial_block_number;
-  temp_mem->first_free = NULL; 
+  temp_mem->first_free = NULL;
   temp_mem->first_new  = 0;
 
   *mem = temp_mem;
@@ -360,15 +360,15 @@ void *
 tbx_malloc(p_tbx_memory_t mem)
 {
   void *ptr = NULL;
-  
+
   TBX_LOCK_SHARED(mem);
   if (mem->first_free != NULL)
     {
       LOG_PTR("tbx_malloc: first free", mem->first_free);
       ptr = mem->first_free;
-      mem->first_free = *(void **)ptr ;     
+      mem->first_free = *(void **)ptr ;
     }
-  else 
+  else
     {
       if (mem->first_new >= mem->mem_len)
 	{
@@ -382,7 +382,7 @@ tbx_malloc(p_tbx_memory_t mem)
 	  mem->current_mem = new_mem;
 	  mem->first_new = 0 ;
 	}
-      
+
       ptr = mem->current_mem + (mem->block_len * mem->first_new);
       mem->first_new++;
     }
@@ -407,14 +407,14 @@ void
 tbx_malloc_clean(p_tbx_memory_t mem)
 {
   void *block_mem = NULL;
-  
+
   TBX_LOCK_SHARED(mem);
   block_mem = mem->first_mem;
 
   while (block_mem != NULL)
     {
       void *next_block_mem ;
-      
+
       next_block_mem = *(void **)(block_mem
 				  + mem->mem_len * mem->block_len);
       TBX_FREE(block_mem);

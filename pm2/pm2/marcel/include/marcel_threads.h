@@ -141,6 +141,30 @@ void marcel_run(marcel_t pid, any_t arg);
 void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
+inline static void marcel_thread_preemption_enable(void);
+inline static void marcel_thread_preemption_disable(void);
+#section inline
+/* Pour ma_barrier */
+#depend "marcel_compiler.h[marcel_macros]"
+inline static void marcel_thread_preemption_enable(void)
+{
+#ifdef MA__DEBUG
+	MA_BUG_ON(!SELF_GETMEM(not_preemptible));
+#endif
+        ma_barrier();
+	MARCEL_SELF->not_preemptible--;
+}
+
+inline static void marcel_thread_preemption_disable(void)
+{
+	MARCEL_SELF->not_preemptible++;
+        ma_barrier();
+}
+
+
+#section marcel_macros
+#define ma_thread_preemptible() (!SELF_GETMEM(not_preemptible))
+
 #section structures
 /* Cleanup buffers */
 struct _marcel_cleanup_buffer

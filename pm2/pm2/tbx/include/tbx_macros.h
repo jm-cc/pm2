@@ -1,3 +1,10 @@
+/*! \file tbx_macros.h
+ *  \brief TBX general-purpose macrocommands
+ *
+ *  This file contains the TBX general-purpose macrocommands.
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -69,13 +76,13 @@
     pm2fulldebug(str " : %s [%4f usecs]\n", (char *)(str2), _TBXT_DIFF); \
     _TBXT_POST
 #else /* TIMING */
-#define TIME_INIT()
-#define TIME(str) 
-#define TIME_IN()
-#define TIME_OUT()
-#define TIME_VAL(str, val) 
-#define TIME_PTR(str, ptr) 
-#define TIME_STR(str, str2) 
+#define TIME_INIT()          (void)(0)
+#define TIME(str)            (void)(0)
+#define TIME_IN()            (void)(0)
+#define TIME_OUT()           (void)(0)
+#define TIME_VAL(str, val)   (void)(0)
+#define TIME_PTR(str, ptr)   (void)(0)
+#define TIME_STR(str, str2)  (void)(0)
 #endif /* TIMING */
 
 /*
@@ -222,13 +229,13 @@
 #else                      //# Threads sync : no thread mode
 #define tbx_main main
 #define TBX_SHARED 
-#define TBX_INIT_SHARED(st) 
-#define TBX_LOCK_SHARED(st) 
-#define TBX_TRYLOCK_SHARED(st) 
-#define TBX_UNLOCK_SHARED(st) 
-#define TBX_LOCK()
-#define TBX_UNLOCK()
-#define TBX_YIELD()
+#define TBX_INIT_SHARED(st)    (void)(0)
+#define TBX_LOCK_SHARED(st)    (void)(0)
+#define TBX_TRYLOCK_SHARED(st) (void)(0)
+#define TBX_UNLOCK_SHARED(st)  (void)(0)
+#define TBX_LOCK()             (void)(0)
+#define TBX_UNLOCK()           (void)(0)
+#define TBX_YIELD()            (void)(0)
 #endif                      //# Threads sync : end
 
 

@@ -106,6 +106,7 @@ int mysleep()
 	for (i=0; i<10000; i++)
 		for (j=0; j<10000; j++)
 			;
+	return 0;
 }
 
 int hack_restart_func(act_proc_t new_proc, int return_value, 
@@ -126,7 +127,7 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 	//mysleep();
 	if (IS_TASK_TYPE_IDLE(current)) {
 		if (param != ACT_RESCHEDULE) {
-			printf("\trestart_func in idle task %p !! \n",
+			fprintf(stderr, "\trestart_func in idle task %p !! \n",
 				      current);
 		}
 	}
@@ -271,7 +272,7 @@ void init_upcalls(int nb_act)
 		nb_act=0;
 
 	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
-	printf("init_upcalls(%i)\n", nb_act);
+	debug("init_upcalls(%i)\n", nb_act);
 #ifdef MA__LWPS
 	for(proc=0; proc<nb_act; proc++) {
 		/* WARNING : value 32 hardcoded : max of processors */

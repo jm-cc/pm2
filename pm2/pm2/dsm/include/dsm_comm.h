@@ -39,6 +39,8 @@
 #include "dsm_const.h" // dsm_access_t, dsm_node_t
 #include "dsm_page_manager.h"
 
+#define DSM_SEND_PAGE_CHEAPER
+
 void dsm_send_page_req(dsm_node_t dest_node, unsigned long index, dsm_node_t req_node, dsm_access_t req_access);
 
 void dsm_invalidate_copyset(unsigned long index, dsm_node_t new_owner);

@@ -38,7 +38,7 @@
 MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
 export MAD2_ROOT
 
-DIRS="${MAD2_ROOT}/make"
+DIR_MAKE=${MAD2_ROOT}/make
 
 for d in $DIRS ; do
     if [ ! -h $d/custom -a -d $d/custom ] ; then
@@ -50,32 +50,18 @@ done
 
 if test $# -ge 1
 then
-
-    if test $# -ne 1
-    then
-	echo "Usage: $0 custom <packagename>"
-	echo "          where packagename can be TCP or VIA"
-	echo "          to build the specified implementation"
-	exit 1
-    fi
-
-    for d in $DIRS
-    do
-	cd $d
-	if test -d $1
-	then
-	    rm -f custom
-	    ln -fs $1 custom
-	else
-	    echo "Error: $d/$1 is not a directory"
-	    exit 1
-	fi
-    done
-
-    touch ${MAD2_ROOT}/src/*.c
+    echo "MAD2_PROTOCOLS := $@" > ${DIR_MAKE}/protocols.mak
     touch ${MAD2_ROOT}/src/connection_interfaces/*.c
 fi
 
-echo "The current network interface is set to:" $1
+if [ ! -f ${DIR_MAKE}/protocols.mak ] ; then
+    echo "MAD2_PROTOCOLS := tcp" > ${DIR_MAKE}/protocols.mak
+    touch ${MAD2_ROOT}/src/connection_interfaces/*.c
+fi
+set `cat ${DIR_MAKE}/protocols.mak`
+
+shift
+shift
+echo "The current network interface is set to:" $@
 
 exit 0

@@ -74,7 +74,7 @@ pm2: libs
 libs: flavors ARCHITECTURES
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i PM2_MAK_DIR=$(PM2_MAK_DIR); \
+		$(MAKE) -C modules/$$i ; \
 	done
 
 examples: flavors
@@ -111,7 +111,14 @@ distcleandoc:
 	$(MAKE) -C doc distclean
 
 .PHONY: init cvsinit flavorinit
-init: cvsinit flavorinit
+init: checkmake cvsinit flavorinit
+
+
+checkmake:
+	@if ( expr $(MAKE_VERSION) \< 3.77 >> /dev/null ) then \
+	echo "Wrong make version. Upgrade to version 3.77"; exit 1;\
+	fi
+
 
 cvsinit ARCHITECTURES:
 	$(COMMON_HIDE) if [ -d CVS ]; then \
@@ -168,11 +175,11 @@ xconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :
 
 
-$(PM2_MAK_DIR)/main-libs.mak:
+$(PM2_MAK_DIR)/main-libs.mak: $(MAIN_STAMP_FLAVOR)
 	@echo "Generating $@"
 	@$(PM2_CONFIG) --gen_mak main-libs
 
 $(PM2_ROOT)/make/main-modules.mak:
 	@echo "Generating $@"
-	@echo "MODULES := " $(PM2_ROOT)/bin/pm2-module modules > $@
+	@echo "MODULES := " `$(PM2_ROOT)/bin/pm2-module modules` > $@
 

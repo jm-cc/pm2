@@ -48,6 +48,8 @@
 //#define DEBUG
 
 dsm_pagefault_handler_t pagefault_handler;
+dsm_std_handler_t dsm_secondary_SIGSEGV_handler = NULL;
+
 /*  typedef void (*std_handler_t )(int); */
 
 /*
@@ -82,9 +84,13 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #endif
     /*    for (i=0;i<22;i++)
 	  fprintf(stderr,"%d %p \n", i, ((int *)&context)[i]);*/
-
-    if ((sig == SIGBUS && bus_sigact.sa_handler == SIG_DFL) ||
-	(sig == SIGSEGV && segv_sigact.sa_handler == SIG_DFL))
+    /* pjh */
+    if (sig == SIGSEGV && dsm_secondary_SIGSEGV_handler != NULL)
+    {
+      (*dsm_secondary_SIGSEGV_handler)(sig);
+    }
+    else if ((sig == SIGBUS && bus_sigact.sa_handler == SIG_DFL) ||
+	    (sig == SIGSEGV && segv_sigact.sa_handler == SIG_DFL))
       {
 	struct sigaction act;
 
@@ -160,4 +166,9 @@ void dsm_uninstall_pagefault_handler()
 {
   sigaction(SIGBUS, &bus_sigact, NULL);
   sigaction(SIGSEGV, &segv_sigact, NULL);
+}
+
+void dsm_setup_secondary_SIGSEGV_handler(dsm_std_handler_t handler_func)
+{
+  dsm_secondary_SIGSEGV_handler = handler_func;
 }

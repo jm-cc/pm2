@@ -27,9 +27,9 @@ MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue);
 ma_runqueue_t ma_main_runqueue;
 
 #ifdef MA__LWPS
-MA_DEFINE_PER_LWP(ma_runqueue_t, norun_runqueue);
+MA_DEFINE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #endif
-ma_runqueue_t ma_norun_runqueue;
+ma_runqueue_t ma_dontsched_runqueue;
 
 #ifdef CONFIG_NUMA
 /*

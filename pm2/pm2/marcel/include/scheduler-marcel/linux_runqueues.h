@@ -107,9 +107,9 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
 ma_runqueue_t ma_main_runqueue;
 
 #ifdef MA__LWPS
-MA_DECLARE_PER_LWP(ma_runqueue_t, norun_runqueue);
+MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #endif
-ma_runqueue_t ma_norun_runqueue;
+ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
 // ceci n'a plus de sens:
@@ -120,10 +120,10 @@ ma_runqueue_t ma_norun_runqueue;
 #define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
-#define ma_norun_rq(lwp)	(&ma_per_lwp(norun_runqueue, (lwp)))
+#define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
-#define ma_norun_rq(lwp)	(&ma_norun_runqueue)
+#define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
 #endif
 #define ma_lwp_curr(lwp)	(ma_lwp_rq(lwp)->curr) //ma_per_lwp(current_thread, lwp))
 

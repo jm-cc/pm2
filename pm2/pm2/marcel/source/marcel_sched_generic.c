@@ -245,7 +245,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	}
 #endif
 	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
-	marcel_attr_setinitrq(&attr, ma_norun_rq(lwp));
+	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)),
 			      &attr, idle_func, (void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
@@ -274,7 +274,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 
 	// la fonction ne sera jamais exécutée, c'est juste pour avoir une
 	// structure de thread marcel dans upcall_new
-	marcel_attr_setinitrq(&attr, ma_norun_rq(lwp));
+	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(upcall_new_task, lwp)),
 			      &attr, (void*)idle_func, NULL);
 	

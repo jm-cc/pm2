@@ -1413,7 +1413,7 @@ need_resched:
 		else {
 			sched_debug("schedule: go to sleep\n");
 			prev_as_next = NULL;
-			prev_as_rq = ma_norun_rq(LWP_SELF);
+			prev_as_rq = ma_dontsched_rq(LWP_SELF);
 			prev_as_prio = MA_IDLE_PRIO;
 		}
 	}
@@ -1454,7 +1454,7 @@ restart:
 	double_rq_lock(prevrq,rq);
 	sched_debug("locked\n");
 
-	if (tbx_unlikely(rq == ma_norun_rq(LWP_SELF))) {
+	if (tbx_unlikely(rq == ma_dontsched_rq(LWP_SELF))) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		sched_debug("rebalance\n");
@@ -1616,7 +1616,7 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 	ma_preempt_disable();
 	/* TODO: gérer le cas où on revient sur la même runqueue -> rien à faire en fait */
 	deactivate_running_task(MARCEL_SELF,ma_this_rq());
-	activate_running_task(MARCEL_SELF,marcel_sched_vpmask_init_rq(0,mask));
+	activate_running_task(MARCEL_SELF,marcel_sched_vpmask_init_rq(mask));
 	ma_set_current_state(MA_TASK_MOVING);
 	ma_preempt_enable();
 	ma_schedule();
@@ -2808,7 +2808,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	init_rq(ma_lwp_rq(lwp));
-	init_rq(&ma_per_lwp(norun_runqueue,lwp));
+	init_rq(&ma_per_lwp(dontsched_runqueue,lwp));
 	ma_lwp_rq(lwp)->curr = ma_per_lwp(run_task,lwp);
 #endif
 	LOG_OUT();
@@ -2856,7 +2856,7 @@ void __init sched_init(void)
 				(void *)(ma_lwp_t)LWP_SELF);
 	ma_register_lwp_notifier(&linux_sched_nb);
 	init_rq(&ma_main_runqueue);
-	init_rq(&ma_norun_runqueue);
+	init_rq(&ma_dontsched_runqueue);
 
 	/*
 	 * We have to do a little magic to get the first

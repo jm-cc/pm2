@@ -45,7 +45,7 @@ endif
 # Regle par defaut : construction des librairies
 # ATTENTION: l'ordre des dépendances est TRES IMPORTANT !
 #---------------------------------------------------------------------
-link_libs: ARCHITECTURES dot_h fut libs
+link: ARCHITECTURES dot_h fut libs
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -59,20 +59,22 @@ all: pm2 examples
 
 # pm2: construction des librairies
 #---------------------------------------------------------------------
-pm2: link_libs
+pm2: link
 
 # libs: descente recursive dans chaque module pour construction des
-#       librairies
+#       fichiers objets et bibliothèques
 #---------------------------------------------------------------------
 libs: fut
-	$(COMMON_HIDE) echo ">>> Making libs"
+	$(COMMON_HIDE) echo ">>> Creating object files and libs"
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@; \
 	done
 
-link_libs: libs
-	$(COMMON_HIDE) echo ">>> Linking libs"
+# libs: descente recursive dans chaque module pour édition de liens
+#---------------------------------------------------------------------
+link: libs
+	$(COMMON_HIDE) echo ">>> Linking dynamic libs and programs"
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
 		$(MAKE) -C modules/$$i $@; \

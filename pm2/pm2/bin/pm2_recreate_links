@@ -34,6 +34,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+. ${PM2_ROOT}/bin/pm2_vars
+
+# pm2 links
+
 cd ${PM2_ROOT}; 		ln -s marcel/ARCHITECTURES ARCHITECTURES
 cd ${MADELEINE_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 cd ${MADELEINE_ROOT}/bin/;	ln -s custom/madload madload
@@ -64,4 +68,44 @@ cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
 cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
 cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 
+
+# architecture-specific directories for the storage of binaries, etc.
+
+cd ${PM2_ROOT}/console/obj/;        pm2_makedirs
+cd ${PM2_ROOT}/console/bin/;        pm2_makedirs
+cd ${PM2_ROOT}/lib/;                pm2_makedirs
+cd ${PM2_ROOT}/source/obj/;         pm2_makedirs
+cd ${PM2_ROOT}/toolbox/lib/;        pm2_makedirs
+cd ${PM2_ROOT}/toolbox/obj/;        pm2_makedirs
+cd ${PM2_ROOT}/toolbox/net/obj/;    pm2_makedirs
+cd ${PM2_ROOT}/toolbox/net/lib/;    pm2_makedirs
+
+cd ${PM2_ROOT}/examples;
+for f in * ; do
+    if [ "$f" != "CVS" ] ; then
+	cd $f/obj; pm2_makedirs; cd ../..
+	cd $f/bin; pm2_makedirs; cd ../..
+    fi
+done
+
+cd ${MARCEL_ROOT}/lib/;             pm2_makedirs
+cd ${MARCEL_ROOT}/source/obj/;      pm2_makedirs
+cd ${MARCEL_ROOT}/examples/bin/;    pm2_makedirs
+cd ${MARCEL_ROOT}/examples/obj/;    pm2_makedirs
+
+cd ${MADELEINE_ROOT}/lib/;          pm2_makedirs
+cd ${MADELEINE_ROOT}/source/obj/;   pm2_makedirs
+cd ${MADELEINE_ROOT}/examples/obj/; pm2_makedirs
+cd ${MADELEINE_ROOT}/examples/bin/; pm2_makedirs
+
+cd ${MAD2_ROOT}/lib/;               pm2_makedirs
+cd ${MAD2_ROOT}/obj/;               pm2_makedirs
+
+cd ${DSM_ROOT}/lib/;                pm2_makedirs
+cd ${DSM_ROOT}/source/obj/;         pm2_makedirs
+
+# Madeleine default selection
+
 pm2madselect 1
+
+

@@ -6,4 +6,5 @@
 #depend "asm/linux_hardirq.h[]"
 #depend "asm/linux_spinlock.h[]"
 #depend "asm/marcel_testandset.h[]"
+#depend "asm/marcel_compareexchange.h[]"
 

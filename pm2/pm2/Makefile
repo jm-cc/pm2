@@ -147,12 +147,15 @@ refreshall:
 	$(COMMON_HIDE) set -e; \
 	$(ROOT)/bin/pm2-clean --all --refresh
 
-.PHONY: clean cleanall
-clean:
+.PHONY: clean cleanall clean-header-autogen
+clean-header-autogen:
+	$(MAKE) -C marcel clean_autogen
+
+clean: clean-header-autogen
 	$(COMMON_HIDE) set -e; \
 	$(ROOT)/bin/pm2-clean $(FLAVOR)
 
-cleanall:
+cleanall: clean-header-autogen
 	$(COMMON_HIDE) set -e; \
 	$(ROOT)/bin/pm2-clean --all
 

@@ -21,6 +21,8 @@
 #include "tracelib.h"
 #include "string.h"
 
+#include "fut_code.h"
+
 extern char *traps[];
 extern char *sys_calls[];
 
@@ -102,37 +104,125 @@ void nth_event(int nth)
 
 void active_time()
 {
-
+  trace tr;
+  int active = 1;
+  u_64 total_time = 0;
+  u_64 slice_begin_time;
+  if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
+  slice_begin_time = tr.clock;
+  if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
+    active = 0;
+  for(;;) {
+    if (get_next_loose_filtered_trace(&tr) == 1) break;
+    if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
+      if (active == 1) total_time += (unsigned) (tr.clock - slice_begin_time);
+      active = 0;
+    } else {
+      if (active == 0) {
+	active = 1;
+	slice_begin_time = tr.clock;
+      }
+    }
+  }
+  printf("Temps actif total = %d\n",(unsigned) total_time);
 }
 
 void idle_time()
 {
-
+  trace tr;
+  int active = 1;
+  u_64 total_time = 0;
+  u_64 slice_begin_time;
+  if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
+  slice_begin_time = tr.clock;
+  if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
+    active = 0;
+  for(;;) {
+    if (get_next_loose_filtered_trace(&tr) == 1) break;
+    if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
+      if (active == 0) total_time += (unsigned) (tr.clock - slice_begin_time);
+      else slice_begin_time = tr.clock;
+      active = 0;
+    } else active = 1;
+  }
+  printf("Temps inactif total = %d\n",(unsigned) total_time);
 }
 
 void time()
 {
-
+  // C'est quoi ce bins
 }
 
 void nb_calls()
 {
-
+  // La il faut que l'on m'explique
 }
 
 void active_slices()
 {
-
+  trace tr;
+  int active = 1;
+  int nb_active_slice = 0;
+  if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
+  if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
+    active = 0;
+  for(;;) {
+    if (get_next_loose_filtered_trace(&tr) == 1) break;
+    if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
+      if (active == 1) nb_active_slice++;
+      active = 0;
+    } else {
+      if (active == 0) active = 1;
+    }
+  }
+  printf("Nombre de tranches actives = %d\n", nb_active_slice);
 }
 
 void idle_slices()
 {
-
+  trace tr;
+  int active = 1;
+  int nb_idle_slice = 0;
+  if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
+  if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
+    active = 0;
+  for(;;) {
+    if (get_next_loose_filtered_trace(&tr) == 1) break;
+    if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
+      if (active == 0) nb_idle_slice++;
+      active = 0;
+    } else active = 1;
+  }
+  printf("Nombre de tranches inactives = %d\n", nb_idle_slice);
 }
 
 void avg_active_slice()
 {
-
+  trace tr;
+  int active = 1;
+  int nb_active_slice = 0;
+  u_64 total_time = 0;
+  u_64 slice_begin_time = 0;
+  if (get_next_loose_filtered_trace(&tr) == 1) return; // Erreur
+  slice_begin_time = tr.clock;
+  if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE))
+    active = 0;
+  for(;;) {
+    if (get_next_loose_filtered_trace(&tr) == 1) break;
+    if ((tr.code >> 8 == FUT_SWITCH_TO_CODE) || (tr.code >> 8 == FKT_SWITCH_TO_CODE)) {
+      if (active == 1) {
+	total_time += (unsigned) (tr.clock - slice_begin_time);
+	nb_active_slice++;
+      }
+      active = 0;
+    } else {
+      if (active == 0) {
+	active = 1;
+	slice_begin_time = tr.clock;
+      }
+    }
+  }
+  printf("Temps moyen d'une tranche active = %d\n",(unsigned) total_time / nb_active_slice);
 }
 
 

@@ -30,9 +30,9 @@ typedef void (*dsm_acq_action_t)(); // acquire func
 
 typedef void (*dsm_rel_action_t)(); // release func
 
-typedef void (*dsm_pi_action_t)(int prot_id); // acquire func
+typedef void (*dsm_pi_action_t)(int prot_id); // protocol init func
 
-typedef void (*dsm_pa_action_t)(int index); // release func
+typedef void (*dsm_pa_action_t)(unsigned long index); // page add func
 
 #endif
 

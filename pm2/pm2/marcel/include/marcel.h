@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.9  2000/04/17 16:09:37  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.8  2000/04/17 08:31:05  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -311,12 +314,6 @@ void tfree(void *ptr);
 
 #ifdef STANDARD_MAIN
 #define marcel_main main
-#endif
-
-#if defined(MA__ACT) && defined(ACT_VERBOSE)
-#define ACTDEBUG(todo) (todo)
-#else
-#define ACTDEBUG(todo)
 #endif
 
 #endif

@@ -7,10 +7,10 @@ prog=$1
 shift
 
 if [ -n "${LEO_LD_PRELOAD}" ]; then
-    env "LD_PRELOAD=${LEO_LD_PRELOAD}" $prog "$@"
+    env "LD_PRELOAD=${LEO_LD_PRELOAD}" $prog ${@:+"$@"}
 else
-#    echo $prog "$@"
-    $prog "$@"
+#    echo $prog ${@:+"$@"}
+    $prog ${@:+"$@"}
 fi
 
 echo "process terminated with code $?"

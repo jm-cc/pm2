@@ -34,6 +34,14 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.5  2000/01/05 09:42:58  oaumage
+- mad_communication.c: support du nouveau `group_mode' (a surveiller !)
+- madeleine.c: external_spawn_init n'est plus indispensable
+- mad_list_management: rien de particulier, mais l'ajout d'une fonction
+  d'acces a la longueur de la liste est a l'etude, pour permettre aux drivers
+  de faire une optimisation simple au niveau des groupes de buffers de
+  taille 1
+
 Revision 1.4  2000/01/04 16:49:10  oaumage
 - madeleine: corrections au niveau du support `external spawn'
 - support des fonctions non definies dans les drivers
@@ -497,7 +505,8 @@ mad_pack(p_mad_connection_t   connection,
   p_mad_link_t               link;
   mad_link_id_t              link_id;
   mad_link_mode_t            link_mode;
-  mad_buffer_mode_t          buffer_mode ;
+  mad_buffer_mode_t          buffer_mode;
+  mad_group_mode_t           group_mode;
   mad_bool_t                 last_delayed_send;
   p_mad_buffer_t             source            = NULL;
   p_mad_buffer_t             destination       = NULL;
@@ -530,6 +539,7 @@ mad_pack(p_mad_connection_t   connection,
   LOG("mad_pack: 1");
   link_mode             = link->link_mode;
   buffer_mode           = link->buffer_mode;
+  group_mode            = link->group_mode;
   last_delayed_send     = connection->delayed_send;
 
   if (      (send_mode == mad_send_LATER)
@@ -784,6 +794,29 @@ mad_pack(p_mad_connection_t   connection,
       connection->flushed        = mad_false;
       connection->last_link      = link;
       connection->last_link_mode = link_mode;
+
+      if (   (group_mode == mad_group_mode_split)
+	  && (receive_mode == mad_receive_EXPRESS))
+	{
+	  if (connection->delayed_send == mad_false)
+	    {
+	      mad_buffer_group_t buffer_group;
+		  
+	      mad_make_buffer_group(&buffer_group, dest_list, link);
+	      interface->send_buffer_group(link, &buffer_group);
+	    }
+	  else
+	    {
+	      p_mad_buffer_group_t buffer_group;
+		  
+	      buffer_group = mad_alloc_buffer_group_struct();
+	      mad_make_buffer_group(buffer_group, dest_list, link);
+	      mad_append_list(buffer_group_list, buffer_group);
+	    }
+
+	  mad_mark_list(dest_list);
+	  connection->flushed = mad_true;
+	}
     }
   else if (link_mode == mad_link_mode_link_group)
     {
@@ -899,6 +932,7 @@ mad_unpack(p_mad_connection_t   connection,
   mad_link_id_t              link_id;
   mad_link_mode_t            link_mode;
   mad_buffer_mode_t          buffer_mode;
+  mad_group_mode_t           group_mode;
   mad_bool_t                 last_delayed_send;
   p_mad_buffer_t             source;
   p_mad_buffer_t             destination;
@@ -930,6 +964,7 @@ mad_unpack(p_mad_connection_t   connection,
   link_id               = link->id;
   link_mode             = link->link_mode;
   buffer_mode           = link->buffer_mode;
+  group_mode            = link->group_mode;
   last_delayed_send     = connection->delayed_send;
 
   if (   (send_mode    == mad_send_LATER)
@@ -1171,7 +1206,17 @@ mad_unpack(p_mad_connection_t   connection,
 		  
 		  connection->flushed                = mad_true;
 		  connection->more_data              = mad_false;
-		  connection->first_sub_buffer_group = mad_false;
+		  if (group_mode == mad_group_mode_split)
+		    {
+		      connection->first_sub_buffer_group = mad_true;
+		    }
+		  else if (group_mode == mad_group_mode_aggregate)
+		    {
+		      connection->first_sub_buffer_group = mad_false;
+		    }
+		  else
+		    FAILURE("unknown group mode");
+		  
 		  mad_mark_list(src_list);
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
@@ -1208,7 +1253,8 @@ mad_unpack(p_mad_connection_t   connection,
 		    }
 		  while (mad_forward_list_reference(dest_ref));
 
-		  if (mad_more_data(source))
+		  if (   mad_more_data(source)
+		      && (group_mode == mad_group_mode_aggregate))
 		    {
 		      connection->more_data = mad_true;
 		      connection->flushed   = mad_false; 
@@ -1219,7 +1265,7 @@ mad_unpack(p_mad_connection_t   connection,
 		      mad_mark_list(src_list);
 		      connection->more_data = mad_false;
 		      connection->flushed   = mad_true; 
-		    }
+		    }		  
 		}
 	      else 
 		FAILURE("unknown buffer mode");

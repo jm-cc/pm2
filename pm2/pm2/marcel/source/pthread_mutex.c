@@ -16,6 +16,7 @@
 #include "marcel.h"
 
 #include <errno.h>
+#include <pthread.h>
 
 #include "marcel_fastlock.h"
 //#include "marcel_restart.h" // pour thread_self()

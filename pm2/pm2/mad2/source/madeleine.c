@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.39  2000/11/20 10:26:45  oaumage
+- initialisation, nouvelle version
+
 Revision 1.38  2000/11/16 14:09:13  oaumage
 - corrections diverses
 
@@ -427,7 +430,7 @@ mad_adapter_init(p_mad_madeleine_t madeleine)
       adapter = &(madeleine->adapter[ad]);
 
 #ifdef EXTERNAL_SPAWN
-      if (&(madeleine->driver[madeleine->settings->external_spawn_driver]) ==
+      if (&(madeleine->driver[settings->external_spawn_driver]) ==
 	  adapter->driver)
 	continue;
 #endif /* EXTERNAL_SPAWN */
@@ -655,47 +658,82 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
   FILE                  *f             = NULL;
   char                  *fmt           = "exit `cat %s | wc -w`";
   int                    len;
-  int                    i;
+  ntbx_host_id_t         i;
 
   LOG_IN();
 
-  if (!settings->configuration_file)
-    FAILURE("no configuration file specified");
-
-  f = fopen(settings->configuration_file, "r");
-    
-  if (!f)
+  if (settings->configuration_file)
     {
-      ERROR("fopen");
+      f = fopen(settings->configuration_file, "r");
+    
+      if (!f)
+	{
+	  ERROR("fopen");
+	}
+
+      len = strlen(settings->configuration_file) + strlen(fmt);
+
+      {
+	char cmd[len];
+	int  ret;
+    
+	sprintf(cmd, "exit `cat %s | wc -w`", settings->configuration_file);
+	ret = system(cmd);
+
+	if (ret == -1)
+	  ERROR("system");
+    
+	configuration->size = WEXITSTATUS(ret);
+      }
+
+      configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
+      CTRL_ALLOC(configuration->host_name);
+
+      for (i = 0; i < configuration->size; i++)
+	{
+	  configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN + 1);
+	  CTRL_ALLOC(configuration->host_name[i]);
+	  fscanf(f, "%s", configuration->host_name[i]);
+	}
+
+      fclose(f);
     }
-
-  len = strlen(settings->configuration_file) + strlen(fmt);
-
-  {
-    char cmd[len];
-    int  ret;
-    
-    sprintf(cmd, "exit `cat %s | wc -w`", settings->configuration_file);
-    ret = system(cmd);
-
-    if (ret == -1)
-      ERROR("system");
-    
-    configuration->size = WEXITSTATUS(ret);
-  }
-
-  configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
-  CTRL_ALLOC(configuration->host_name);
-
-   for (i = 0; i < configuration->size; i++)
+#ifdef EXTERNAL_SPAWN
+	  fprintf(stderr, "Configuration info exchange required\n");
+	  mad_exchange_configuration_info(madeleine);
+	  fprintf(stderr, "Configuration info exchange done\n");
+#else EXTERNAL_SPAWN
+  else
     {
-      configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN);
-      CTRL_ALLOC(configuration->host_name[i]);
-      fscanf(f, "%s", configuration->host_name[i]);
-    }
+      if (configuration->size)
+	{
+	  ntbx_host_id_t rank = configuration->local_host_id;
 
-   fclose(f);
-   LOG_OUT();
+	  configuration->host_name =
+	    TBX_CALLOC(configuration->size, sizeof(char *));
+	  CTRL_ALLOC(configuration->host_name);
+
+	  configuration->host_name[rank] = TBX_MALLOC(MAX_HOSTNAME_LEN + 1);
+	  CTRL_ALLOC(configuration->host_name[rank]);
+	  
+	  gethostname(configuration->host_name[rank], MAX_HOSTNAME_LEN);
+	    
+
+	  for (i = 0; i < configuration->size; i++)
+	    {
+	      p_mad_driver_interface_t spawn_interface;
+	      p_mad_adapter_t          spawn_adapter;
+	      
+	      configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN + 1);
+	      CTRL_ALLOC(configuration->host_name[i]);
+	      strcpy(configuration->host_name[i], "<unknown>");
+	    }
+	}
+      else
+	FAILURE("undefined configuration size");
+    }
+#endif /* EXTERNAL_SPAWN */  
+  LOG_OUT();
 }
 
 void
@@ -757,6 +795,10 @@ mad_connect(p_mad_madeleine_t   madeleine,
 	    char              **argv)
 {
   LOG_IN();
+#ifdef EXTERNAL_SPAWN
+  mad_exchange_connection_info(madeleine);
+#endif /* EXTERNAL_SPAWN */
+
   mad_adapter_configuration_init(madeleine);
   LOG_OUT();
 }

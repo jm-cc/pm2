@@ -42,7 +42,7 @@ typedef struct {
   trace_list last;
 } trace_buffer;
 
-void init_trace_buffer(char *futin, char *fktin);
+void init_trace_buffer(char *futin, char *fktin, int relative, int dec);
 
 int get_next_trace(trace *tr);
 

@@ -45,10 +45,127 @@ fi
 . ${PM2_ROOT}/bin/pm2_vars
 
 # pm2 links
-
+echo PM2
 $ECHO
 cd ${PM2_ROOT}; 		ln -s marcel/ARCHITECTURES ARCHITECTURES
 $ECHO
+
+
+# architecture-specific directories for the storage of binaries, etc.
+
+# Console
+echo
+echo Console
+if [ ! -d ${PM2_ROOT}/console/obj ]; then
+    cd ${PM2_ROOT}/console/; mkdir obj
+fi
+cd ${PM2_ROOT}/console/obj/;        pm2_makedirs
+
+if [ ! -d ${PM2_ROOT}/console/bin ]; then
+    cd ${PM2_ROOT}/console/; mkdir bin
+fi
+cd ${PM2_ROOT}/console/bin/;        pm2_makedirs
+
+# Lib
+echo
+echo Library
+if [ ! -d ${PM2_ROOT}/lib ]; then
+    cd ${PM2_ROOT}/; mkdir lib
+fi
+cd ${PM2_ROOT}/lib/;                pm2_makedirs
+
+# Source
+echo
+echo Source
+if [ ! -d ${PM2_ROOT}/source/obj ]; then
+    cd ${PM2_ROOT}/source/; mkdir obj
+fi
+cd ${PM2_ROOT}/source/obj/;         pm2_makedirs
+
+# Toolbox
+echo
+echo Toolbox
+if [ ! -d ${PM2_ROOT}/toolbox/lib ]; then
+    cd ${PM2_ROOT}/toolbox/; mkdir lib
+fi
+cd ${PM2_ROOT}/toolbox/lib/;        pm2_makedirs
+
+if [ ! -d ${PM2_ROOT}/toolbox/obj ]; then
+    cd ${PM2_ROOT}/toolbox/; mkdir obj
+fi
+cd ${PM2_ROOT}/toolbox/obj/;        pm2_makedirs
+
+if [ ! -d ${PM2_ROOT}/toolbox/net/obj ]; then
+    cd ${PM2_ROOT}/toolbox/net; mkdir obj
+fi
+cd ${PM2_ROOT}/toolbox/net/obj/;    pm2_makedirs
+
+if [ ! -d ${PM2_ROOT}/toolbox/net/lib ]; then
+    cd ${PM2_ROOT}/toolbox/net/; mkdir lib
+fi
+cd ${PM2_ROOT}/toolbox/net/lib/;    pm2_makedirs
+
+# Examples
+echo
+echo Examples
+cd ${PM2_ROOT}/examples;
+for f in * ; do
+    if [ "$f" != "CVS" ] ; then
+	if [ ! -d $f/obj ]; then
+	    cd $f ; mkdir obj ; cd ..
+	fi
+	cd $f/obj; pm2_makedirs; cd ../..
+
+	if [ ! -d $f/bin ]; then
+	    cd $f ; mkdir bin ; cd ..
+	fi
+	cd $f/bin; pm2_makedirs; cd ../..
+    fi
+done
+
+# Marcel
+echo
+echo Marcel
+cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
+$ECHO
+cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
+$ECHO
+cd ${MARCEL_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+$ECHO
+cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
+$ECHO
+cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
+$ECHO
+cd ${MARCEL_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+$ECHO
+cd ${MARCEL_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
+$ECHO
+cd ${MARCEL_ROOT}/source/;	ln -s ../../source/timing.c timing.c
+$ECHO
+
+if [ ! -d ${MARCEL_ROOT}/lib ]; then
+    cd ${MARCEL_ROOT} ; mkdir lib
+fi
+cd ${MARCEL_ROOT}/lib/;             pm2_makedirs
+
+if [ ! -d ${MARCEL_ROOT}/source/obj ]; then
+    cd ${MARCEL_ROOT}/source ; mkdir obj
+fi
+cd ${MARCEL_ROOT}/source/obj/;      pm2_makedirs
+
+if [ ! -d ${MARCEL_ROOT}/examples/bin ]; then
+    cd ${MARCEL_ROOT}/examples ; mkdir bin
+fi
+cd ${MARCEL_ROOT}/examples/bin/;    pm2_makedirs
+
+if [ ! -d ${MARCEL_ROOT}/examples/obj ]; then
+    cd ${MARCEL_ROOT}/examples ; mkdir obj
+fi
+cd ${MARCEL_ROOT}/examples/obj/;    pm2_makedirs
+
+# Mad I
+echo
+echo Madeleine I
 cd ${MAD1_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 $ECHO
 cd ${MAD1_ROOT}/bin/;	ln -s custom/madload madload
@@ -57,18 +174,37 @@ cd ${MAD1_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
 $ECHO
 cd ${MAD1_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
 $ECHO
-cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madload madload
-$ECHO
-cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
-$ECHO
+
+# Mad I / VIA
+if [ -d ${MAD1_ROOT}/bin/via ] ; then
+    cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madload madload
+    $ECHO
+    cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
+    $ECHO
+else
+    cd ${MAD1_ROOT}/bin;        ln -s ./tcp via
+fi
+
+# Mad I / SISCI
+if [ -d ${MAD1_ROOT}/bin/sisci ] ; then
 cd ${MAD1_ROOT}/bin/sisci/;	ln -s ../tcp/madload madload
 $ECHO
 cd ${MAD1_ROOT}/bin/sisci/;	ln -s ../tcp/madspawn madspawn
 $ECHO
+else
+    cd ${MAD1_ROOT}/bin;        ln -s ./tcp sisci
+fi
+
+# Mad I / SHM
+if [ -d ${MAD1_ROOT}/bin/shm ] ; then
 cd ${MAD1_ROOT}/bin/shm/;	ln -s ../tcp/madload madload
 $ECHO
 cd ${MAD1_ROOT}/bin/shm/;	ln -s ../tcp/madspawn madspawn
 $ECHO
+else
+    cd ${MAD1_ROOT}/bin;        ln -s ./tcp shm
+fi
+
 cd ${MAD1_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
 $ECHO
 cd ${MAD1_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
@@ -89,64 +225,58 @@ cd ${MAD1_ROOT}/source/;	ln -s ../../source/timing.c timing.c
 $ECHO
 cd ${MAD1_ROOT}/source/via/;	ln -s via2.c netinterf.c
 $ECHO
+
+if [ ! -d ${MAD1_ROOT}/lib ]; then
+    cd ${MAD1_ROOT} ; mkdir lib
+fi
+cd ${MAD1_ROOT}/lib/;          pm2_makedirs
+
+if [ ! -d ${MAD1_ROOT}/source/obj ]; then
+    cd ${MAD1_ROOT}/source ; mkdir obj
+fi
+cd ${MAD1_ROOT}/source/obj/;   pm2_makedirs
+
+if [ ! -d ${MAD1_ROOT}/examples/obj ]; then
+    cd ${MAD1_ROOT}/examples ; mkdir obj
+fi
+cd ${MAD1_ROOT}/examples/obj/; pm2_makedirs
+
+if [ ! -d ${MAD1_ROOT}/examples/bin ]; then
+    cd ${MAD1_ROOT}/examples ; mkdir bin
+fi
+cd ${MAD1_ROOT}/examples/bin/; pm2_makedirs
+
+# Mad II
+echo
+echo Madeleine II
 cd ${MAD2_ROOT}/;	ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 $ECHO
-cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
-$ECHO
-cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
-$ECHO
-cd ${MARCEL_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-$ECHO
-cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
-$ECHO
-cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
-$ECHO
-cd ${MARCEL_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-$ECHO
-cd ${MARCEL_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
-$ECHO
-cd ${MARCEL_ROOT}/source/;	ln -s ../../source/timing.c timing.c
-$ECHO
+if [ ! -d ${MAD2_ROOT}/lib ]; then
+    cd ${MAD2_ROOT} ; mkdir lib
+fi
+cd ${MAD2_ROOT}/lib/;               pm2_makedirs
+
+if [ ! -d ${MAD2_ROOT}/obj ]; then
+    cd ${MAD2_ROOT} ; mkdir obj
+fi
+cd ${MAD2_ROOT}/obj/;               pm2_makedirs
+
+# DSM
+echo
+echo DSM
 cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
 $ECHO
 cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
 $ECHO
 cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
-
-
-# architecture-specific directories for the storage of binaries, etc.
-
-cd ${PM2_ROOT}/console/obj/;        pm2_makedirs
-cd ${PM2_ROOT}/console/bin/;        pm2_makedirs
-cd ${PM2_ROOT}/lib/;                pm2_makedirs
-cd ${PM2_ROOT}/source/obj/;         pm2_makedirs
-cd ${PM2_ROOT}/toolbox/lib/;        pm2_makedirs
-cd ${PM2_ROOT}/toolbox/obj/;        pm2_makedirs
-cd ${PM2_ROOT}/toolbox/net/obj/;    pm2_makedirs
-cd ${PM2_ROOT}/toolbox/net/lib/;    pm2_makedirs
-
-cd ${PM2_ROOT}/examples;
-for f in * ; do
-    if [ "$f" != "CVS" ] ; then
-	cd $f/obj; pm2_makedirs; cd ../..
-	cd $f/bin; pm2_makedirs; cd ../..
-    fi
-done
-
-cd ${MARCEL_ROOT}/lib/;             pm2_makedirs
-cd ${MARCEL_ROOT}/source/obj/;      pm2_makedirs
-cd ${MARCEL_ROOT}/examples/bin/;    pm2_makedirs
-cd ${MARCEL_ROOT}/examples/obj/;    pm2_makedirs
-
-cd ${MAD1_ROOT}/lib/;          pm2_makedirs
-cd ${MAD1_ROOT}/source/obj/;   pm2_makedirs
-cd ${MAD1_ROOT}/examples/obj/; pm2_makedirs
-cd ${MAD1_ROOT}/examples/bin/; pm2_makedirs
-
-cd ${MAD2_ROOT}/lib/;               pm2_makedirs
-cd ${MAD2_ROOT}/obj/;               pm2_makedirs
-
+if [ ! -d ${DSM_ROOT}/lib ]; then
+    cd ${DSM_ROOT} ; mkdir lib
+fi
 cd ${DSM_ROOT}/lib/;                pm2_makedirs
+
+if [ ! -d ${DSM_ROOT}/source/obj ]; then
+    cd ${DSM_ROOT}/source ; mkdir obj
+fi
 cd ${DSM_ROOT}/source/obj/;         pm2_makedirs
 
 # Madeleine default selection

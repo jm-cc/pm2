@@ -130,9 +130,9 @@ MAR_OPTIONS	+=	-D__ACT__
 endif
 
 ifdef PM2_FLAGS
-MAR_MAKEFILE	:=	$(MARCEL_ROOT)/Makefile $(MARCEL_ROOT)/.mar_pm2
+MAR_MAKEFILE	=	$(MARCEL_ROOT)/Makefile $(MARCEL_ROOT)/.mar_pm2
 else
-MAR_MAKEFILE	:=	$(MARCEL_ROOT)/Makefile $(MARCEL_ROOT)/.mar_standalone
+MAR_MAKEFILE	=	$(MARCEL_ROOT)/Makefile $(MARCEL_ROOT)/.mar_standalone
 endif
 
 MAR_SRC		:= $(MARCEL_ROOT)/source
@@ -209,8 +209,8 @@ else
 THE_MAKEFILES	=	$(MAR_MAKEFILE)
 endif
 
-$(MAR_OBJECTS): $(MAR_OBJ)/%.o: $(MAR_DEP)/%.d
 $(MAR_DEPENDS): $(THE_MAKEFILES)
+$(MAR_OBJECTS): $(MAR_OBJ)/%.o: $(MAR_DEP)/%.d $(THE_MAKEFILES)
 
 $(MAR_LIB): $(MAR_OBJECTS)
 ifdef PM2_FLAGS
@@ -292,7 +292,7 @@ else
 SRC_DIR		:=	$(MAR_EX_DIR)
 endif
 
-THIS_MAKEFILE	:=	$(SRC_DIR)/Makefile
+MAR_MAKEFILE	+=	$(SRC_DIR)/Makefile
 
 DEP_DIR	=	$(SRC_DIR)/depend
 OBJ_DIR	=	$(SRC_DIR)/obj/$(PM2_ARCH_SYS)
@@ -324,8 +324,8 @@ include $(wildcard $(DEPENDS))
 endif
 endif
 
-$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d
-$(DEPENDS): $(THIS_MAKEFILE) $(MAR_MAKEFILE)
+$(DEPENDS): $(MAR_MAKEFILE)
+$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d $(MAR_MAKEFILE)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(MAR_CC) $(MAR_CFLAGS) -c $< -o $@

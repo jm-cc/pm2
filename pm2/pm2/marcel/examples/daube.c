@@ -243,7 +243,7 @@ int marcel_main(int argc, char **argv)
   marcel_attr_t attr;
 #endif
   job_t j;
-  Tick t1, t2;
+  tbx_tick_t t1, t2;
   unsigned long temps;
 
   create_tube (&tube_1) ;
@@ -273,16 +273,16 @@ int marcel_main(int argc, char **argv)
 
   job_init(&j, 1, 50);
 
-  GET_TICK(t1);
+  TBX_GET_TICK(t1);
 
   create_new_thread(&j);
 
   wait_thread(&j);
 
-  GET_TICK(t2);
+  TBX_GET_TICK(t2);
 
   printf("Sum from 1 to %d = %d\n", j.sup, j.res);
-  temps = timing_tick2usec(TICK_DIFF(t1, t2));
+  temps = TBX_TIMING_DELAY(t1, t2);
   printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
 #ifndef NO_IO

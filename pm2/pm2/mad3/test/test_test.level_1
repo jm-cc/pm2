@@ -17,18 +17,20 @@ flavor="test_mad3"
 appdir="${PM2_ROOT}/mad3/examples"
 prog="mad_test"
 args="--x --p --l"
-hosts="localhost localhost"
-cat > /tmp/pm2test_expected <<EOF
-success
-success
-EOF
+hosts=${hosts:-"localhost localhost"}
+net=${net:-tcp}
+rm -f /tmp/pm2test_expected
+for i in $hosts
+do
+  echo "success" >> /tmp/pm2test_expected
+done
 
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--builddir=\"/tmp/$flavor\" --ext=\"\" \
  --modules=\"init mad3 ntbx tbx\" \
  --init=\"debug gdb\" \
- --mad3=\"debug gdb tcp\" \
+ --mad3=\"debug gdb ${net}\" \
  --ntbx=\"debug gdb\" \
  --tbx=\"debug gdb\" \
  --common=\"debug gdb static\"

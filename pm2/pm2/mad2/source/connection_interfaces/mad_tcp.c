@@ -19,8 +19,7 @@
  * =========
  */
 
-//#define USE_MARCEL_POLL
-//#define DEBUG
+
 #include "madeleine.h"
 
 #include <stdlib.h>
@@ -263,11 +262,17 @@ mad_tcp_write(int            sock,
     {
       ssize_t result;
 
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+      SYSTEST(result = marcel_write(sock,
+				    (const void*)(buffer->buffer +
+						  buffer->bytes_read),
+				    buffer->bytes_written - buffer->bytes_read));
+#else
       SYSTEST(result = write(sock,
 			     (const void*)(buffer->buffer +
 					   buffer->bytes_read),
 			     buffer->bytes_written - buffer->bytes_read));
-
+#endif
       if (result > 0)
 	{
 	  buffer->bytes_read += result;
@@ -292,11 +297,17 @@ mad_tcp_read(int            sock,
     {
       ssize_t result;
 
+#if defined(MARCEL) && defined(USE_MARCEL_POLL)
+      SYSTEST(result = marcel_read(sock,
+				   (void*)(buffer->buffer +
+					   buffer->bytes_written),
+				   buffer->length - buffer->bytes_written));
+#else
       SYSTEST(result = read(sock,
 			    (void*)(buffer->buffer +
 				    buffer->bytes_written),
 			    buffer->length - buffer->bytes_written));
-
+#endif
       if (result > 0)
 	{
 	  buffer->bytes_written += result;

@@ -168,7 +168,7 @@ void marcel_gensched_shutdown(void)
 	//marcel_cancel(__main_lwp.sched.idle_task);
 #ifdef PM2
 	/* __sched_task is detached, so we can free its stack now */
-	__TBX_FREE(marcel_stackbase(__main_lwp.sched.idle_task), __FILE__, __LINE__);
+	__TBX_FREE(marcel_stackbase(ma_per_lwp(idle_task,&__main_lwp)), __FILE__, __LINE__);
 #endif
 #endif
 

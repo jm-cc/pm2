@@ -557,7 +557,7 @@ void mad_tcp_network_send(int dest_node, struct iovec *vector, size_t count)
 
 #ifdef PM2
     if(count) {
-      marcel_givehandback();
+      marcel_yield();
     }
 #endif
 
@@ -595,7 +595,7 @@ void mad_tcp_network_receive(char **head)
 #else
       n = tselect(nb_fds+1, &rfds, NULL, NULL);
       if(n <= 0)
-	marcel_givehandback();
+	marcel_yield();
 #endif
 
 #else
@@ -614,7 +614,7 @@ void mad_tcp_network_receive(char **head)
 	    perror("network_receive'read");
 #endif
 #ifdef PM2
-	  marcel_givehandback();
+	  marcel_yield();
 #endif
 	  n = 0;
 	} else {
@@ -652,7 +652,7 @@ void mad_tcp_network_receive(char **head)
       }
 #ifdef PM2
       if(to_send) {
-	marcel_givehandback();
+	marcel_yield();
       }
 #endif
     } while(to_send);
@@ -703,7 +703,7 @@ void mad_tcp_network_receive_data(struct iovec *vector, size_t count)
     }
 #ifdef PM2
     if(count) {
-      marcel_givehandback();
+      marcel_yield();
     }
 #endif
   } while(count != 0);

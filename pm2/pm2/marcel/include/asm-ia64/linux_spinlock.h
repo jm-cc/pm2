@@ -119,8 +119,8 @@ _ma_raw_spin_lock (ma_spinlock_t *lock)
 #section marcel_types
 
 typedef struct {
-	volatile int read_counter	: 31;
-	volatile int write_lock		:  1;
+	volatile unsigned int read_counter	: 31;
+	volatile unsigned int write_lock	:  1;
 } ma_rwlock_t;
 
 #section marcel_macros

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.5  2000/01/31 15:52:01  oaumage
+- mad_main.h  : deplacement de aligned_malloc vers la toolbox
+- madeleine.h : detection de l'absence de GCC
+
 Revision 1.4  2000/01/13 14:44:32  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -78,24 +82,21 @@ typedef struct s_mad_madeleine
  * Functions 
  * ---------
  */
-void *mad_aligned_malloc(size_t   size,
-			 int      align);
-
-void mad_aligned_free (void  *ptr,
-		       int    align);
-
-p_mad_adapter_set_t mad_adapter_set_init(int nb_adapter, ...);
+p_mad_adapter_set_t
+mad_adapter_set_init(int nb_adapter, ...);
 
 #ifdef MAD2_MAD1
-p_mad_madeleine_t mad2_init(int                  *argc,
-			    char                **argv,
-			    char                 *configuration_file,
-			    p_mad_adapter_set_t   adapter_set);
+p_mad_madeleine_t
+mad2_init(int                  *argc,
+	  char                **argv,
+	  char                 *configuration_file,
+	  p_mad_adapter_set_t   adapter_set);
 #else /* MAD2_MAD1 */
-p_mad_madeleine_t mad_init(int                  *argc,
-			   char                **argv,
-			   char                 *configuration_file,
-			   p_mad_adapter_set_t   adapter_set);
+p_mad_madeleine_t
+mad_init(int                  *argc,
+	 char                **argv,
+	 char                 *configuration_file,
+	 p_mad_adapter_set_t   adapter_set);
 #endif /* MAD2_MAD1 */
 
 #ifdef MAD2_MAD1
@@ -104,6 +105,6 @@ void mad2_exit(p_mad_madeleine_t madeleine);
 void mad_exit(p_mad_madeleine_t madeleine);
 #endif /* MAD2_MAD1 */
 
-p_mad_channel_t mad_get_channel(mad_channel_id_t id);
+/* p_mad_channel_t mad_get_channel(mad_channel_id_t id); */
 
 #endif /* MAD_MAIN_H */

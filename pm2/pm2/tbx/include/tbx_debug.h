@@ -96,7 +96,7 @@ void pm2debug_printf_state(int state);
 #ifdef PM2DEBUG
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
-#define PM2DEBUG_MAXLINELEN 256
+#define PM2DEBUG_MAXLINELEN 512
 int __attribute__ ((format (printf, 5, 6))) 
 pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		const char *format, ...);

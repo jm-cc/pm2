@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.17  2000/11/20 10:26:46  oaumage
+- initialisation, nouvelle version
+
 Revision 1.16  2000/08/29 13:27:10  rnamyst
 Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
 
@@ -497,7 +500,7 @@ mad_mpi_new_message(p_mad_connection_t connection)
   p_mad_channel_t              channel          = connection->channel;
   p_mad_mpi_channel_specific_t channel_specific = channel->specific;
   p_mad_configuration_t        configuration    = 
-    &(channel->adapter->driver->madeleine->configuration);
+    channel->adapter->driver->madeleine->configuration;
 #ifdef MARCEL
   MPI_Status status;
 #endif /* MARCEL */
@@ -530,7 +533,7 @@ mad_mpi_receive_message(p_mad_channel_t channel)
   p_mad_mpi_channel_specific_t channel_specific = channel->specific;
 #ifndef MARCEL
   p_mad_configuration_t configuration    = 
-    &(channel->adapter->driver->madeleine->configuration);
+    channel->adapter->driver->madeleine->configuration;
 #endif /* MARCEL */
   p_mad_connection_t    connection       = NULL;
   int                   remote_host_id;
@@ -900,6 +903,7 @@ mad_mpi_send_adapter_parameter(p_mad_adapter_t   spawn_adapter
 	   remote_host_id,
 	   MAD_MPI_SERVICE_TAG,
 	   MPI_COMM_WORLD);
+
   MPI_Send(parameter,
 	   len + 1,
 	   MPI_CHAR,
@@ -922,17 +926,19 @@ mad_mpi_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter
   MPI_Recv(&len,
 	   1,
 	   MPI_INT,
-	   0,
+	   -1,
 	   MAD_MPI_SERVICE_TAG,
 	   MPI_COMM_WORLD,
 	   &status);
+
   *parameter = TBX_MALLOC(len);
   MPI_Recv(*parameter,
 	   len + 1,
 	   MPI_CHAR,
-	   0,
+	   -1,
 	   MAD_MPI_SERVICE_TAG,
 	   MPI_COMM_WORLD,
 	   &status);
+
   LOG_OUT();
 }

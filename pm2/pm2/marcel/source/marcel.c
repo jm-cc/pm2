@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.24  2000/06/15 08:54:04  rnamyst
+Minor modifs
+
 Revision 1.23  2000/06/09 09:09:09  vdanjean
 Correction de l'initialisation de la toolbox avec Marcel
 
@@ -161,6 +164,10 @@ ______________________________________________________________________________
 
 #ifdef SOLARIS_SYS
 #include <sys/stack.h>
+#endif
+
+#ifdef TBX
+#include "tbx.h"
 #endif
 
 #ifdef RS6K_ARCH

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.7  2000/06/18 13:23:33  oaumage
+- Correction de l'appel a mad_managers_init
+
 Revision 1.6  2000/06/16 14:03:51  oaumage
 - Mise a jour par rapport au nouveau fonctionnement de pm2conf
 
@@ -494,7 +497,7 @@ mad_init(
   char                       conf_file[128];
   tbx_bool_t                 conf_spec = tbx_false;
 
-  mad_managers_init();
+  mad_managers_init(argc, argv);
   LOG_IN(); /* After pm2debug_init ... */
 
   if (!configuration_file)

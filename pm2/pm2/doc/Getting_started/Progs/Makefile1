@@ -4,12 +4,11 @@ ifndef PM2_FLAVOR
 $(error PM2_FLAVOR is not yet defined!)
 endif
 
-FLAVOR		:= $(shell echo $$PM2_FLAVOR")
 CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
 
-.PHONY: clean
+.PHONY: all clean
 
 CFILES		:= $(wildcard *.c)
 OFILES		:= $(CFILES:%.c=%.o)
@@ -18,7 +17,7 @@ EXEFILES	:= $(CFILES:%.c=%)
 all: $(EXEFILES)
 
 $(EXEFILES): %: %.c
-	@echo "Compiling $<... for flavor '$(FLAVOR)'"
+	@echo "Compiling $< for flavor '$(PM2_FLAVOR)'..."
 	@$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
 
 clean:

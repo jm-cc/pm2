@@ -108,6 +108,9 @@ p_mad_connection_t
 mad_vrp_receive_message(p_mad_channel_t);
 
 void
+mad_vrp_message_received(p_mad_connection_t);
+
+void
 mad_vrp_send_buffer(p_mad_link_t,
 		    p_mad_buffer_t);
   

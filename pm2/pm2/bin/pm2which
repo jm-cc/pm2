@@ -228,17 +228,32 @@ done
 
 [ $# -eq 1 ] || pm2which_usage 1
 
+_PROG=$1
 _PM2WHICH_ARGS="$*"
 
 set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-config
 pm2which_calc $_PM2WHICH_ARGS
 if [ $_PM2WHICH_SOURCE_MODE = no ]; then
-    pm2which_prettyprint $_PM2WHICH_RESULT
+    if [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
+        echo "pm2which: '${_PROG}' exec file not found"
+    else
+        pm2which_prettyprint $_PM2WHICH_RESULT
+    fi
     if [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then
 	exit 0
     else
 	exit 1
     fi
+else
+    if [ $_PM2WHICH_NB_FOUND -eq 0 ] ; then
+        echo "pm2which: '${_PROG}' exec file not found"
+        exit 1
+    fi
+    if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
+        echo "pm2which: multiple ${_PROG} example binaries found"
+        exit 1
+    fi
+
 fi
 

@@ -20,6 +20,7 @@
    Boston, MA 02111-1307, USA.  */
 
 #include "marcel.h" //VD:
+#include "marcel_for_pthread.h"
 
 #ifdef __USE_UNIX98 // AD:
 
@@ -33,7 +34,6 @@
 //VD: #include "queue.h"
 //VD: #include "spinlock.h"
 //VD: #include "restart.h"
-#include "marcel_restart.h" //VD:
 #include "marcel_rwlock.h" //VD:
 #include "marcel_fastlock.h" //VD:
 #include "pthread_queue.h" //VD:

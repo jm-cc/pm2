@@ -119,6 +119,7 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 			MTRACE("Restarting from idle", current);
 			mdebug("\t\tunchaining idle %p\n",
 			       GET_LWP(current)->idle_task);
+			state_lock(GET_LWP(current)->idle_task);
 			marcel_set_frozen(GET_LWP(current)->idle_task);
 			UNCHAIN_TASK(GET_LWP(current)->idle_task);
 			break;
@@ -133,6 +134,7 @@ int real_restart_func(act_proc_t new_proc, int return_value,
 		if (u_param == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
 		}
+		state_lock(GET_LWP(current)->prev_running);
 		marcel_set_frozen(GET_LWP(current)->prev_running);
 		UNCHAIN_TASK(GET_LWP(current)->prev_running);
 		MTRACE("Restarting from KERNEL IDLE", current);

@@ -33,6 +33,10 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.27  2000/06/05 11:20:16  oaumage
+- Amelioration de la bande passante
+- Correction d'un bug
+
 Revision 1.26  2000/06/02 15:25:40  oaumage
 - Optimisation en bande passante
 
@@ -140,13 +144,13 @@ ______________________________________________________________________________
 /* #define MAD_SISCI_DMA */
 
 /* Optimized SHMem */
-#define MAD_SISCI_OPT_MAX  56
+#define MAD_SISCI_OPT_MAX  128
 /* #define MAD_SISCI_OPT_MAX  0 */
 
 /* SHMem */
 #define MAD_SISCI_BUFFER_SIZE (65536 - sizeof(mad_sisci_connection_status_t))
 //#define MAD_SISCI_BUFFER_SIZE (16384 - sizeof(mad_sisci_connection_status_t))
-#define MAD_SISCI_MIN_SEG_SIZE 1024
+#define MAD_SISCI_MIN_SEG_SIZE 8192
 
 /* DMA */
 #ifdef MAD_SISCI_DMA
@@ -1669,9 +1673,10 @@ mad_sisci_after_open_channel(p_mad_channel_t channel)
 	      mad_sisci_set(&remote_data->status.write);
 	      mad_sisci_flush(remote_segment);
 	      connection_specific->write_flag_flushed = tbx_true;
-	      specific->read[host_id] =
-		&((p_mad_sisci_user_segment_data_t)connection_specific->
-		  local_segment[k].map_addr)->status.read;
+	      if (!k)
+		specific->read[host_id] =
+		  &((p_mad_sisci_user_segment_data_t)connection_specific->
+		    local_segment[k].map_addr)->status.read;
 	    }
 	  
 	  LOG("mad_sisci_after_open_channel: write authorization sent");
@@ -3008,6 +3013,8 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
 
   mad_sisci_set(write);
   connection_specific->write_flag_flushed = tbx_false;
+  //connection_specific->write_flag_flushed = tbx_true;
+  //mad_sisci_flush(remote_segment);
   buffer->bytes_written = bwrite;
   LOG_OUT();
 }

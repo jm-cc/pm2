@@ -16,7 +16,6 @@
 
 PROGNAME=pm2-gen-make.sh
 
-
 #############################################################
 # Setting destination directory
 
@@ -127,6 +126,7 @@ PRG_GEN_SRC := $_PM2CONFIG_SRC_DIR
 PRG_GEN_INC := $_PM2CONFIG_INCLUDE_DIR
 PRG_GEN_STAMP := $_PM2CONFIG_STAMP_DIR
 PRG_STAMP_FLAVOR := $_PM2CONFIG_FLAVOR_STAMP_FILE
+PRG_STAMP_FILES := $_PM2CONFIG_LIB_STAMP_FILES
 PRG_EXT := $_PM2CONFIG_EXT
 
 PRG_CFLAGS := $_PM2CONFIG_KERNEL_CFLAGS

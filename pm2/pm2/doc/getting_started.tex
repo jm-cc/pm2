@@ -418,7 +418,20 @@ from each slave node of the session configuration.
 
 %===========
 \subsection{Common pitfalls}
-
+Feedback from \pm2 users showed that several common pitfalls may be
+encountered at this time. The Table~\ref{tbl:pitfalls} sums up the
+symptoms together with possible solutions.
+\begin{table}
+\caption{Common Pitfalls\label{tbl:pitfalls}}
+\begin{center}
+\begin{tabular}[p]{|p{5cm}|p{7cm}|}                             \hline
+Symptoms                       & Solutions                    \\ \hline
+`Permission denied' error      & Each configuration node must be made
+accessible by \texttt{rsh} from the local host: update you
+\texttt{.rhosts} file                                         \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
 
 %===========
 \subsection{Getting the output in the console}
@@ -651,6 +664,9 @@ int pm2_main(int argc, char **argv)
 \end{document}
 _______________________________________________________________________________
 $Log: getting_started.tex,v $
+Revision 1.14  2000/02/05 13:17:53  oaumage
+- getting_started.tex: ajout du tableau `pitfalls'
+
 Revision 1.13  2000/01/26 17:38:32  oaumage
 - quelques modifs ...
 

@@ -26,6 +26,7 @@ help:
 .PHONY: all
 .PHONY: help globalhelp bannerhelp targethelp commonoptionshelp
 .PHONY: bannertargethelp optionshelp thankshelp tailhelp
+.PHONY: tags
 
 # Aide
 #--------------------------------------------------------------------
@@ -76,3 +77,9 @@ $(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
 	$(COMMON_MAIN) $(PM2_GEN_MAK) --stdout --flavor $(FLAVOR) \
 		$(PM2_GEN_MAK_OPTIONS) $* > $@
 
+# Construction d'un fichier de tags pour les éditeurs de fichiers
+#---------------------------------------------------------------------
+CTAGS := ctags
+
+tags:
+	$(CTAGS) --recurse=yes --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include .

@@ -40,6 +40,16 @@ _____________________________________________________________________________
 
 #//define BARRIER_TRACE
 
+#define TRACE_SYNC
+
+#ifdef TRACE_SYNC
+#define ENTER() fprintf(stderr, "[%p] -> %s\n", marcel_self(), __FUNCTION__)
+#define EXIT() fprintf(stderr, "[%p] <- %s\n", marcel_self(), __FUNCTION__)
+#else
+#define ENTER()
+#define EXIT()
+#endif
+
 static int BARRIER_LRPC, _local_node_rank, _nb_nodes;
 
 #define barrier_lock(bar) marcel_mutex_lock(&bar->sync_mutex)
@@ -175,6 +185,8 @@ void pm2_thread_barrier_init(pm2_thread_barrier_t *bar, pm2_thread_barrier_attr_
 /*Thread-level barrier */
 void pm2_thread_barrier(pm2_thread_barrier_t *bar)
 {
+  ENTER();
+
   marcel_sem_P(&bar->mutex);
   if(++bar->nb == bar->local) {
     pm2_barrier(&bar->node_barrier);
@@ -184,4 +196,6 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
   } else {
     marcel_sem_VP(&bar->mutex, &bar->wait);
   }
+
+  EXIT();
 }

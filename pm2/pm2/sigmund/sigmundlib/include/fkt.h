@@ -1,15 +1,228 @@
-/*	fkt.h */
+/*
+ * fkt.h
+ * 
+ *  Copyright (C) 2000 Robert D. Russell <rdr@cs.unh.edu>
+ *		2003 Samuel Thibault <samuel.thibault@fnac.net>
+ *
+ * This program is free software ; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation ; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY ; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the program ; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 
-#ifndef __FKT_H__
-#define __FKT_H__
+#ifndef __KFT_H__
+#define __KFT_H__
 
 /*	fkt = Fast Kernel Tracing */
 
+#define FKT_POISON	0x45454545
+#define FKT_EOF	0xfefefefe
 
-/*	"how" parameter values, analagous to "how" parameters to sigprocmask */
-#define FKT_DISABLE		0		/* for disabling probes with 1's in keymask */
-#define FKT_ENABLE		1		/* for enabling probes with 1's in keymask */
-#define FKT_SETMASK		2		/* for enabling 1's, disabling 0's in keymask */
+#ifdef __KERNEL__
+
+#include <asm/page.h>
+#include <linux/stringify.h>
+/* linear data buffer */
+#define FKTINITPOWPAGES 7
+#ifdef __ASSEMBLY__
+#define FKTPTRSSIZE (1 << PAGE_SHIFT)
+#else
+#define FKTPTRSSIZE (1UL << PAGE_SHIFT)
+#endif
+
+#ifndef __ASSEMBLY__
+struct fkt_data_page {
+	unsigned long *page;
+	atomic_t count;			/* number of probes currently writing in this page */
+	// useless on non-SMP, but too dangerous to test for CONFIG_SMP
+};
+
+#define FKTMAXNBPTRS (FKTPTRSSIZE/sizeof(struct fkt_data_page))
+
+/* active mask */
+extern volatile unsigned int fkt_active;
+
+/* current data page */
+extern struct fkt_data_page * volatile fkt_cur_data;
+
+/* next slot in that page */
+extern unsigned * volatile fkt_next_slot;
+
+/* process to wake up when a page is filled */
+extern struct task_struct *fkt_sendfile_proc;
+
+/* entry points called by macros or direct asm */
+extern asmlinkage void fkt_header( unsigned int head, ... );
+extern asmlinkage void fkt_eax0( void );
+extern asmlinkage void fkt_eax1( void );
+extern void __cyg_profile_func_enter(void *this_fn, void *call_site);
+extern void __cyg_profile_func_exit(void *this_fn, void *call_site);
+#endif /* __ASSEMBLY__ */
+
+#ifndef __ASSEMBLY__
+
+#if defined(CONFIG_FKT) || defined(CONFIG_FKT_MODULE)
+/* block device callback stuff */
+#define FKT_MAJOR 60
+extern ssize_t (*fkt_sendfile)(struct file *, loff_t *, size_t, read_actor_t, void *);
+
+/* Macros for use from within the kernel */
+
+/* ebx is used by the SMP version (since CMPXCHG8B uses it) */
+#ifdef CONFIG_SMP
+#define MODIFIED_EBX "ebx",
+#else
+#define MODIFIED_EBX
+#endif
+
+/* has to use __stringify to get modversions work */
+#define FKT_ALWAYS_PROBE_NOSHIFT(KEYMASK,CODE)	\
+	do { \
+		__asm__  volatile \
+		("testl %0,"__stringify(fkt_active)"\n" \
+		"\tjz 1f\n" \
+		"\tmovl %1,%%eax\n" \
+		"\tcall "__stringify(fkt_eax0)"\n" \
+		"1:" \
+		: \
+		: "i" ((unsigned int)(KEYMASK)), \
+		  "g" ((unsigned int)(CODE)) \
+		: "eax", MODIFIED_EBX "ecx", "edx", "cc" \
+		); \
+		} while(0)
+
+#define FKT_ALWAYS_PROBE0(KEYMASK,CODE)	\
+	do { \
+		__asm__  volatile \
+		("testl %0,"__stringify(fkt_active)"\n" \
+		"\tjz 1f\n" \
+		"\tmovl %1,%%eax\n" \
+		"\tcall "__stringify(fkt_eax0)"\n" \
+		"1:" \
+		: \
+		: "i" ((unsigned int)(KEYMASK)), \
+		  "i" ((((unsigned int)(CODE))<<8) | 12) \
+		: "eax", MODIFIED_EBX "ecx", "edx", "cc" \
+		); \
+		} while(0)
+
+#define FKT_ALWAYS_PROBE1(KEYMASK,CODE,PARAM1)	\
+	do { \
+		__asm__  volatile \
+		("testl %0,"__stringify(fkt_active)"\n" \
+		"\tjz 1f\n" \
+		"\tmovl %2,%%edx\n" \
+		"\tmovl %1,%%eax\n" \
+		"\tcall "__stringify(fkt_eax1)"\n" \
+		"1:" \
+		: \
+		: "i" ((unsigned int)(KEYMASK)), \
+		  "i" ((((unsigned int)(CODE))<<8) | 16), \
+		  "g" ((unsigned int)(PARAM1)) \
+		: "eax", MODIFIED_EBX "ecx", "edx", "cc" \
+		); \
+		} while(0)
+
+#define FKT_ALWAYS_PROBE2(KEYMASK,CODE,P1,P2)	do { \
+								if( KEYMASK & fkt_active ) \
+								fkt_header( (((unsigned int)(CODE))<<8) | 20, \
+								(unsigned int)(P1), (unsigned int)(P2) ); \
+								} while(0)
+#define FKT_ALWAYS_PROBE3(KEYMASK,CODE,P1,P2,P3) \
+								do { \
+								if( KEYMASK & fkt_active ) \
+								fkt_header( (((unsigned int)(CODE))<<8) | 24, \
+								(unsigned int)(P1), (unsigned int)(P2), \
+								(unsigned int)(P3) ); \
+								} while(0)
+#define FKT_ALWAYS_PROBE4(KEYMASK,CODE,P1,P2,P3,P4) \
+								do { \
+								if( KEYMASK & fkt_active ) \
+								fkt_header( (((unsigned int)(CODE))<<8) | 28, \
+								(unsigned int)(P1), (unsigned int)(P2), \
+								(unsigned int)(P3), (unsigned int)(P4) ); \
+								} while(0)
+#define FKT_ALWAYS_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5) \
+								do { \
+								if( KEYMASK & fkt_active ) \
+								fkt_header( (((unsigned int)(CODE))<<8) | 32, \
+								(unsigned int)(P1), (unsigned int)(P2), \
+								(unsigned int)(P3), (unsigned int)(P4), \
+								(unsigned int)(P5) ); \
+								} while(0)
+
+#else /* CONFIG_FKT || CONFIG_FKT_MODULE */
+
+#define FKT_ALWAYS_PROBE_NOSHIFT(MASK,CODE)			do {} while (0)
+#define FKT_ALWAYS_PROBE0(MASK,CODE)				do {} while (0)
+#define FKT_ALWAYS_PROBE1(MASK,CODE,P1)				do {} while (0)
+#define FKT_ALWAYS_PROBE2(MASK,CODE,P1,P2)			do {} while (0)
+#define FKT_ALWAYS_PROBE3(MASK,CODE,P1,P2,P3)			do {} while (0)
+#define FKT_ALWAYS_PROBE4(MASK,CODE,P1,P2,P3,P4)		do {} while (0)
+#define FKT_ALWAYS_PROBE5(MASK,CODE,P1,P2,P3,P4,P5)		do {} while (0)
+
+#endif
+
+#if defined(CONFIG_FKT_TIME_ONLY)
+
+#define FKT_PROBE_NOSHIFT(KEYMASK,CODE)			FKT_ALWAYS_PROBE_NOSHIFT(KEYMASK,CODE)
+
+#define FKT_PROBE0(KEYMASK,CODE)				FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#define FKT_PROBE1(KEYMASK,CODE,P1)				FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#define FKT_PROBE2(KEYMASK,CODE,P1,P2)			FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#define FKT_PROBE3(KEYMASK,CODE,P1,P2,P3)		FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#define FKT_PROBE4(KEYMASK,CODE,P1,P2,P3,P4)	FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#define FKT_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5)	FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#else	/* CONFIG_FKT_TIME_ONLY */
+
+#define FKT_PROBE_NOSHIFT(KEYMASK,CODE)			FKT_ALWAYS_PROBE_NOSHIFT(KEYMASK,CODE)
+
+#define FKT_PROBE0(KEYMASK,CODE)				FKT_ALWAYS_PROBE0(KEYMASK,CODE)
+
+#define FKT_PROBE1(KEYMASK,CODE,P1)				FKT_ALWAYS_PROBE1(KEYMASK,CODE,P1)
+
+#define FKT_PROBE2(KEYMASK,CODE,P1,P2)			FKT_ALWAYS_PROBE2(KEYMASK,CODE,P1,P2)
+
+#define FKT_PROBE3(KEYMASK,CODE,P1,P2,P3)		FKT_ALWAYS_PROBE3(KEYMASK,CODE,P1,P2,P3)
+
+#define FKT_PROBE4(KEYMASK,CODE,P1,P2,P3,P4)	FKT_ALWAYS_PROBE4(KEYMASK,CODE,P1,P2,P3,P4)
+
+#define FKT_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5)	FKT_ALWAYS_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5)
+
+#endif	/* CONFIG_FKT_TIME_ONLY */
+
+#endif	/* __ASSEMBLY__ */
+
+#endif	/* __KERNEL__ */
+
+/* ioctl's */
+#define FKT_SETINITPOWPAGES	0xCE01	/* set initial number of pending pages */
+#define FKT_SETINITMASK		0xCE02	/* set initial active mask */
+#define FKT_ENABLE			0xCE03	/* set a bit in active mask */
+#define FKT_DISABLE			0xCE04	/* clear a bit in active mask */
+#define FKT_SETMASK			0xCE05	/* set the active mask */
+#define FKT_SETTRYDMA		0xCE06	/* should allocation be tried under 16M for ISA arch */
+#define FKT_FREEBUFFER		0xCE07	/* free allocated pages */
+#define FKT_WAITREADY		0xCE08	/* wait for the sendfile mecanism to be ready */
+
+#define FKT_USER_PROBE0		0xCE10	/* user probe */
+#define FKT_USER_PROBE1		0xCE11	/* user probe */
+#define FKT_USER_PROBE2		0xCE12	/* user probe */
 
 /*	Simple keymasks */
 #define FKT_KEYMASK0				0x00000001	/* IRQs, exceptions, syscalls */
@@ -47,6 +260,7 @@
 #define FKT_KEYMASKALL				0x7fffffff
 
 /*	Assigned keymasks to separate probes into sets by protocol stack layers */
+#define FKT_SYSTEM_KEYMASK		FKT_KEYMASK0	/* IRQs, exceptions, syscalls */
 #define FKT_DRIVER_KEYMASK		FKT_KEYMASK1	/* driver (MAC) layer routines*/
 #define FKT_NETWORK_KEYMASK		FKT_KEYMASK2	/* network (IP) layer routines*/
 #define FKT_TRANSPORT_KEYMASK	FKT_KEYMASK3	/* transport (TCP/UDP) layer */
@@ -56,178 +270,78 @@
 
 #define FKT_APP_KEYMASK			FKT_KEYMASK7   /* test for read mchavan */
 
+#define FKT_GCC_INSTRUMENT_KEYMASK		FKT_KEYMASK29	/* -finstrument-functions option of gcc */
+#define FKT_FKT_KEYMASK			FKT_KEYMASK30
+
 /*	Fixed parameters of the fkt coding scheme */
 #define FKT_GENERIC_EXIT_OFFSET		0x100	/* exit this much above entry */
-#define FKT_SYS_CALL_LIMIT_CODE		0x100	/* all system call nos. below this*/
-#define FKT_TRAP_LIMIT_CODE			0x120	/* all trap nos. below this */
-#define FKT_IRQ_TIMER				0x120	/* timer IRQ always 0 */
-#define FKT_UNSHIFTED_LIMIT_CODE	0x200	/* all unshifted codes below this */
 
-/*	Codes for fkt use */
-#define FKT_SETUP_CODE				0x210
-#define FKT_KEYCHANGE_CODE			0x211
-#define FKT_RESET_CODE				0x212
-#define FKT_CALIBRATE0_CODE			0x220
-#define FKT_CALIBRATE1_CODE			0x221
-#define FKT_CALIBRATE2_CODE			0x222
-#define FKT_NEW_LWP_CODE                        0x230
-#define FKT_RET_FROM_SYS_CALL_CODE	0x2ff	/* generic ret_from_sys_call */
+#define FKT_LCALL7					0x1fd	/* lcall7 for iBCS */
+#define FKT_LCALL27					0x1fe	/* lcall27 for Solaris/x86 */
+#define FKT_SYS_CALL_MASK			0x1ff	/* all system call nos. below this*/
+
+/* Interrupts, soft or hard */
+#define FKT_TRAP_BASE				0x200	/* + trap number -> code */
+#define FKT_TRAP_LIMIT_CODE			0x220	/* all trap nos. below this */
+#define FKT_IRQ_TIMER				0x220	/* timer IRQ always 0 */
+#define FKT_IRQ_SYS					0x2ef	/* system IRQs */
+#define FKT_UNSHIFTED_LIMIT_CODE	0x300	/* all unshifted codes below this */
+
+#define FKT_UNPAIRED_LIMIT_CODE		0xf00000	/* all unpaired code above this limit */
+
+/*	Codes for fkt use... */
+#define FKT_SETUP_CODE					0xffffff
+#define FKT_KEYCHANGE_CODE				0xfffffe
+#define FKT_RESET_CODE					0xfffffd
+#define FKT_CALIBRATE0_CODE				0xfffffc
+#define FKT_CALIBRATE1_CODE				0xfffffb
+#define FKT_CALIBRATE2_CODE				0xfffffa
+#define FKT_RECORD_WRITING_CODE			0xfffff9
+#define FKT_RECORD_WRITTEN_CODE			0xfffff8
+#define FKT_RECORD_EXTRA_WRITTEN_CODE	0xfffff7
+#define FKT_RECORD_EXTRA_PAGE_CODE		0xfffff6
+#define FKT_RECORD_FORCE_SYNC_CODE		0xfffff5
+#define FKT_RECORD_KILLED_CODE			0xfffff4
+#define FKT_END_IO_SYNC_CODE			0xfffff3
+#define FKT_END_IO_ASYNC_CODE			0xfffff2
+#define FKT_DO_FORK_CODE				0xfffff1
+#define FKT_DO_EXECVE_CODE				0xfffff0
+#define FKT_END_OF_PID_CODE				0xffffef
+#define FKT_USER_FORK_CODE				0xffffee
+#define FKT_RET_FROM_SYS_CALL_CODE		0x300	/* generic ret_from_sys_call */
 
 /*	Codes for use with fkt items */
+#define FKT_FKT_FORCE_SYNC_ENTRY_CODE		0x301
+#define FKT_FKT_FORCE_SYNC_EXIT_CODE		0x401
+
+#define FKT_FKT_EXTRA_ALLOC_ENTRY_CODE		0x302
+#define FKT_FKT_EXTRA_ALLOC_EXIT_CODE		0x402
+
+#define FKT_LL_RW_BLOCK_ENTRY_CODE		0x303	/* enter ll_rw_block, P=3 */
+#define FKT_LL_RW_BLOCK_EXIT_CODE		0x403	/* exit ll_rw_block, P=1 */
 //#define	FKT_EXT2_WRITE_ENTRY_CODE 	0x304	/* enter ext2_file_write, P=3 */
 //#define	FKT_EXT2_WRITE_EXIT_CODE 	0x404	/* exit ext2_file_write, P=0 */
-#define FKT_LL_RW_BLOCK_ENTRY_CODE	0x303	/* enter ll_rw_block, P=3 */
-#define FKT_LL_RW_BLOCK_EXIT_CODE	0x403	/* exit ll_rw_block, P=1 */
-#define FKT_EXT2_GETBLK_ENTRY_CODE	0x305	/* enter ext2_getblk, P=3 */
-#define FKT_EXT2_GETBLK_EXIT_CODE	0x405	/* exit  ext2_getblk, P=3 */
+#define FKT_EXT2_GETBLK_ENTRY_CODE		0x305	/* enter ext2_getblk, P=3 */
+#define FKT_EXT2_GETBLK_EXIT_CODE		0x405	/* exit  ext2_getblk, P=3 */
 //#define FKT_INODE_GETBLK_ENTRY_CODE	0x306	/* enter inode_getblk, P=4 */
 //#define FKT_INODE_GETBLK_EXIT_CODE	0x406	/* exit  inode_getblk, P=3 */
 //#define FKT_BLOCK_GETBLK_ENTRY_CODE	0x307	/* enter block_getblk, P=5 */
 //#define FKT_BLOCK_GETBLK_EXIT_CODE	0x407	/* exit  block_getblk, P=3 */
-#define	FKT_SWITCH_TO_CODE			0x31a	/* switch_to in schedule, P=2 */
+#define	FKT_SWITCH_TO_CODE				0x31a	/* switch_to in schedule, P=2 */
+#define FKT_WAIT4_ENTRY_CODE			0x31b	/* enter sys_wait4 */
+#define FKT_WAIT4_EXIT_CODE				0x41b	/* exit sys_wait4 */
+#define FKT_GENERIC_MAKE_REQUEST_ENTRY_CODE		0x31c	/* enter generic_make_request */
+#define FKT_GENERIC_MAKE_REQUEST_EXIT_CODE		0x41c	/* exit generic_make_request */
+#define FKT___MAKE_REQUEST_ENTRY_CODE		0x31d
+#define FKT___MAKE_REQUEST_EXIT_CODE		0x41d
+#define FKT_FSYNC_BUFFERS_LIST_ENTRY_CODE	0x31e
+#define FKT_FSYNC_BUFFERS_LIST_EXIT_CODE	0x41e
 
-/* sadhna start */
-
-/*	socket interface routines, 380->38f */
-#define FKT_SOCKET_ENTRY_CODE		0x380	/* enter sys_socket, P=3          */
-#define FKT_SOCKET_EXIT_CODE		0x480	/* exit sys_socket, P=1           */
-#define FKT_BIND_ENTRY_CODE			0x381	/* enter sys_bind, P=1            */
-#define FKT_BIND_EXIT_CODE			0x481	/* exit sys_bind, P=1             */
-#define FKT_LISTEN_ENTRY_CODE		0x382	/* enter sys_listen, P=2          */
-#define FKT_LISTEN_EXIT_CODE		0x482	/* exit sys_listen, P=1           */
-#define FKT_ACCEPT_ENTRY_CODE		0x383	/* enter sys_accept, P=1          */
-#define FKT_ACCEPT_EXIT_CODE		0x483	/* exit sys_accept, P=1           */
-#define FKT_CONNECT_ENTRY_CODE		0x384	/* enter sys_connect, P=1         */
-#define FKT_CONNECT_EXIT_CODE		0x484	/* exit sys_connect, P=1          */
-#define FKT_SEND_ENTRY_CODE			0x385	/* enter sys_send, P=3            */
-#define FKT_SEND_EXIT_CODE			0x485	/* exit sys_send, P=1             */
-#define FKT_SENDTO_ENTRY_CODE		0x386	/* enter sys_sendto, P=3          */
-#define FKT_SENDTO_EXIT_CODE		0x486	/* exit sys_sendto, P=1           */
-#define FKT_RECVFROM_ENTRY_CODE		0x387	/* enter sys_recvfrom, P=3        */
-#define FKT_RECVFROM_EXIT_CODE		0x487	/* exit sys_recvfrom, P=1         */
-#define FKT_SHUTDOWN_ENTRY_CODE		0x388	/* enter sys_shutdown, P=2        */
-#define FKT_SHUTDOWN_EXIT_CODE		0x488	/* exit sys_shutdown, P=1         */
-
-/*	lamp routines, 390->39f */
-#define FKT_LAMP_CREATE_ENTRY_CODE		0x390	/* enter lamp_create, P=0     */
-#define FKT_LAMP_CREATE_EXIT_CODE		0x490	/* exit  lamp_create, P=1     */
-#define FKT_LAMP_BIND_ENTRY_CODE		0x391	/* enter lamp_bind, P=0       */
-#define FKT_LAMP_BIND_EXIT_CODE			0x491	/* exit  lamp_bind, P=1       */
-#define FKT_LAMP_LISTEN_ENTRY_CODE		0x392	/* enter lamp_listen, P=0     */
-#define FKT_LAMP_LISTEN_EXIT_CODE		0x492	/* exit  lamp_listen, P=1     */
-#define FKT_LAMP_ACCEPT_ENTRY_CODE		0x393	/* enter lamp_accept, P=0     */
-#define FKT_LAMP_ACCEPT_EXIT_CODE		0x493	/* exit  lamp_accept, P=1     */
-#define FKT_LAMP_CONNECT_ENTRY_CODE		0x394	/* enter lamp_connect, P=0    */
-#define FKT_LAMP_CONNECT_EXIT_CODE		0x494	/* exit  lamp_connect, P=1    */
-#define FKT_LAMP_SENDMSG_ENTRY_CODE		0x396	/* enter lamp_sendmsg, P=0    */
-#define FKT_LAMP_SENDMSG_EXIT_CODE		0x496	/* exit  lamp_sendmsg, P=1    */
-#define FKT_LAMP_RECVMSG_ENTRY_CODE		0x397	/* enter lamp_recvmsg, P=0    */
-#define FKT_LAMP_RECVMSG_EXIT_CODE		0x497	/* exit  lamp_recvmsg, P=1    */
-#define FKT_LAMP_DATA_RCV_ENTRY_CODE	0x398	/* enter lamp_data_rcv, P=0   */
-#define FKT_LAMP_DATA_RCV_EXIT_CODE		0x498	/* exit  lamp_data_rcv, P=1   */
-#define FKT_LAMP_SIGNAL_RCV_ENTRY_CODE	0x399	/* enter lamp_signal_rcv, P=0 */
-#define FKT_LAMP_SIGNAL_RCV_EXIT_CODE	0x499	/* exit  lamp_signal_rcv, P=1 */
-#define FKT_LAMP_SHUTDOWN_ENTRY_CODE	0x39a	/* enter lamp_shutdown, P=0   */
-#define FKT_LAMP_SHUTDOWN_EXIT_CODE		0x49a	/* exit  lamp_shutdown, P=1   */
-#define FKT_LAMP_RECVMSG_SCHEDI_CODE	0x39b	/* lamp_recvmsg_sched_call P=0*/
-#define FKT_LAMP_RECVMSG_SCHEDO_CODE	0x49b	/* lamp_recvmsg_sched_ret, P=0*/
-
-/*	inet routines, 3a0->3af */
-#define FKT_INET_CREATE_ENTRY_CODE		   0x3a0 /* enter inet_create, P=0    */
-#define FKT_INET_CREATE_EXIT_CODE		   0x4a0 /* exit  inet_create, P=1    */
-#define FKT_INET_BIND_ENTRY_CODE		   0x3a1 /* enter inet_bind, P=0      */
-#define FKT_INET_BIND_EXIT_CODE			   0x4a1 /* exit  inet_bind, P=1      */
-#define FKT_INET_LISTEN_ENTRY_CODE		   0x3a2 /* enter inet_listen, P=0    */
-#define FKT_INET_LISTEN_EXIT_CODE		   0x4a2 /* exit  inet_listen, P=1    */
-#define FKT_INET_ACCEPT_ENTRY_CODE		   0x3a3 /* enter inet_accept, P=0    */
-#define FKT_INET_ACCEPT_EXIT_CODE		   0x4a3 /* exit  inet_accept, P=1    */
-#define FKT_INET_STREAM_CONNECT_ENTRY_CODE 0x3a4 /* enter inet_connect, P=0   */
-#define FKT_INET_STREAM_CONNECT_EXIT_CODE  0x4a4 /* exit  inet_connect, P=1   */
-#define FKT_INET_SENDMSG_ENTRY_CODE		   0x3a6 /* enter inet_sendmsg, P=0   */
-#define FKT_INET_SENDMSG_EXIT_CODE		   0x4a6 /* exit  inet_sendmsg, P=1   */
-#define FKT_INET_RECVMSG_ENTRY_CODE		   0x3a7 /* enter inet_recvmsg, P=0   */
-#define FKT_INET_RECVMSG_EXIT_CODE		   0x4a7 /* exit  inet_recvmsg, P=1   */
-#define FKT_INET_SHUTDOWN_ENTRY_CODE	   0x3aa /* enter inet_shutdown, P=0  */
-#define FKT_INET_SHUTDOWN_EXIT_CODE		   0x4aa /* exit  inet_shutdown, P=1  */
-
-/*	net routines, 3b0->3bf */
-#define FKT_NET_RX_ACTION_ENTRY_CODE		0x3b0 /* enter net_rx_action, P=0 */
-#define FKT_NET_RX_ACTION_EXIT_CODE			0x4b0 /* exit net_rx_action, P=0  */
-//#define FKT_NET_BH_QUEUE_ENTRY_CODE       0x3b1 /* enter net_bh_queue       */
-//#define FKT_NET_BH_QUEUE_EXIT_CODE        0x4b1 /* exit net_bh_queue        */
-#define FKT_NETIF_RX_ENTRY_CODE             0x3b2 /* enter netif_rx           */
-#define FKT_NETIF_RX_EXIT_CODE              0X4b2 /* exit netif_rx            */
-#define FKT_NET_RX_DEQUEUE_ENTRY_CODE       0x3b3 /* enter net_rx_dequeue     */
-#define FKT_NET_RX_DEQUEUE_EXIT_CODE        0x4b3 /* exit net_rx_dequeue      */
-
-/* sadhna end */
+/* -finstrument-functions code */
+#define FKT_GCC_INSTRUMENT_ENTRY_CODE	0x320
+#define FKT_GCC_INSTRUMENT_EXIT_CODE	0x420
 
 /* miru start */
-
-/*	tcp routines, 320->32f and 330->33f */
-#define FKT_TCP_SENDMSG_ENTRY_CODE          0x320 /* enter tcp_sendmsg.       */
-#define FKT_TCP_SENDMSG_EXIT_CODE           0x420 /* exit tcp_sendmsg         */
-#define FKT_TCP_SEND_SKB_ENTRY_CODE         0x321 /* enter tcp_send_skb.      */
-#define FKT_TCP_SEND_SKB_EXIT_CODE          0x421 /* exit tcp_send_skb.       */
-#define FKT_TCP_TRANSMIT_SKB_ENTRY_CODE     0x322 /* enter tcp_transmit_skb.  */
-#define FKT_TCP_TRANSMIT_SKB_EXIT_CODE      0x422 /* exit tcp_transmit_skb.   */
-#define FKT_TCP_V4_RCV_ENTRY_CODE			0x329 /* enter tcp_v4_rcv, P=0    */
-#define FKT_TCP_V4_RCV_EXIT_CODE			0x429 /* exit  tcp_v4_rcv, P=1    */
-//#define FKT_TCP_RECVMSG_SCHEDI_CODE		0x32b /*tcp_recvmsg_sched_call P=0*/
-//#define FKT_TCP_RECVMSG_SCHEDO_CODE		0x42b /*tcp_recvmsg_sched_ret, P=0*/
-#define FKT_TCP_RCV_ESTABLISHED_ENTRY_CODE  0x32d /* enter tcp_rcv_established*/
-#define FKT_TCP_RCV_ESTABLISHED_EXIT_CODE   0x42d /* exit tcp_rcv_established */
-#define FKT_TCP_DATA_ENTRY_CODE             0x32e /* enter tcp_data           */
-#define FKT_TCP_DATA_EXIT_CODE              0x42e /* exit tcp_data            */
-#define FKT_TCP_ACK_ENTRY_CODE              0x32f /* enter tcp_ack            */
-#define FKT_TCP_ACK_EXIT_CODE               0x42f /* exit tcp_ack             */
-
-#define FKT_TCP_RECVMSG_ENTRY_CODE          0x330 /* enter tcp_recvmsg        */
-#define FKT_TCP_RECVMSG_EXIT_CODE           0x430 /* exit tcp_recvmsg         */
-//#define FKT_TCP_V4_RCV_CSUM_ENTRY_CODE    0x331 /* enter tcp_v4_rcv_csum    */
-//#define FKT_TCP_V4_RCV_CSUM_EXIT_CODE     0x431 /* exit tcp_v4_rcv_csum     */
-#define FKT_TCP_RECVMSG_OK_ENTRY_CODE       0x332 /* enter tcp_recvmsg_ok     */
-#define FKT_TCP_RECVMSG_OK_EXIT_CODE        0x432 /* exit tcp_recvmsg_ok      */
-#define FKT_TCP_SEND_ACK_ENTRY_CODE         0x337 /* enter tcp_send_ack       */
-#define FKT_TCP_SEND_ACK_EXIT_CODE          0x437 /* exit tcp_send_ack        */
-//#define FKT_TCP_V4_RCV_HW_ENTRY_CODE      0x338 /* enter hw_csum            */
-//#define FKT_TCP_V4_RCV_HW_EXIT_CODE       0x438 /* exit hw_csum             */
-//#define FKT_TCP_V4_RCV_NONE_ENTRY_CODE    0x339 /* enter no_csum            */
-//#define FKT_TCP_V4_RCV_NONE_EXIT_CODE     0x439 /* exit no_csum             */
-#define FKT_WAIT_FOR_TCP_MEMORY_ENTRY_CODE  0x33a /*enter wait_for_tcp_memory */
-#define FKT_WAIT_FOR_TCP_MEMORY_EXIT_CODE   0x43a /*exit wait_for_tcp_memory  */
-//#define FKT_TCP_RECVMSG_CSUM_ENTRY_CODE   0x33b /* enter tcp_recvmsg_csum   */
-//#define FKT_TCP_RECVMSG_CSUM_EXIT_CODE    0x43b /* exit tcp_recvmsg_csum    */
-//#define FKT_TCP_RECVMSG_CSUM2_ENTRY_CODE  0x33c /* enter tcp_recvmsg_csum2  */
-//#define FKT_TCP_RECVMSG_CSUM2_EXIT_CODE   0x43c /* exit tcp_recvmsg_csum2   */
-#define FKT_TCP_SYNC_MSS_ENTRY_CODE         0x33d /* enter tcp_sync_mss       */
-#define FKT_TCP_SYNC_MSS_EXIT_CODE          0x43d /* exit tcp_sync_mss        */
-
-/*	udp routines, 340->34f */
-#define FKT_UDP_SENDMSG_ENTRY_CODE          0x341 /* enter udp_sendmsg        */
-#define FKT_UDP_SENDMSG_EXIT_CODE           0x441 /* exit udp_sendmsg         */
-#define FKT_UDP_QUEUE_RCV_SKB_ENTRY_CODE    0x342 /* enter udp_queue_rcv_skb  */
-#define FKT_UDP_QUEUE_RCV_SKB_EXIT_CODE     0x442 /* exit udp_queue_rcv_skb   */
-#define FKT_UDP_GETFRAG_ENTRY_CODE          0x345 /* enter udp_getfrag        */
-#define FKT_UDP_GETFRAG_EXIT_CODE           0x445 /* exit udp_getfrag         */
-#define FKT_UDP_RECVMSG_ENTRY_CODE          0x34e /* enter udp_recvmsg        */
-#define FKT_UDP_RECVMSG_EXIT_CODE           0x44e /* exit udp_recvmsg         */
-#define FKT_UDP_RCV_ENTRY_CODE              0x34f /* enter udp_rcv            */
-#define FKT_UDP_RCV_EXIT_CODE               0x44f /* exit udp_rcv             */
-
-/*	ip routines, 3c0->3cf */
-#define FKT_IP_RCV_ENTRY_CODE				0x3c0 /* enter ip_rcv, P=0        */
-#define FKT_IP_RCV_EXIT_CODE				0x4c0 /* exit  ip_rcv, P=1        */
-#define FKT_IP_QUEUE_XMIT_ENTRY_CODE        0x3c1 /* enter ip_queue_xmit      */
-#define FKT_IP_QUEUE_XMIT_EXIT_CODE         0x4c1 /* exit ip_queue_xmit       */
-#define FKT_IP_BUILD_XMIT_ENTRY_CODE        0x3c2 /* enter ip_build_xmit      */
-#define FKT_IP_BUILD_XMIT_EXIT_CODE         0x4c2 /* exit ip_build_xmit       */
-#define FKT_IP_LOCAL_DELIVER_ENTRY_CODE     0x3c3 /* enter ip_local_deliver   */
-#define FKT_IP_LOCAL_DELIVER_EXIT_CODE      0x4c3 /* exit ip_local_deliver    */
-#define FKT_IP_DEFRAG_ENTRY_CODE            0x3c4 /* enter ip_defrag          */
-#define FKT_IP_DEFRAG_EXIT_CODE             0x4c4 /* exit ip_defrag           */
-#define FKT_IP_FRAG_REASM_ENTRY_CODE        0x3c8 /* enter ip_frag_reasm      */
-#define FKT_IP_FRAG_REASM_EXIT_CODE         0x4c8 /* exit ip_frag_reasm       */
 
 /*	ethernet cards, 350->35f and 360->36f */
 #define FKT_TULIP_START_XMIT_ENTRY_CODE     0x350 /* enter tulip_start_xmit   */
@@ -259,11 +373,171 @@
 #define FKT_ACE_START_XMIT_ENTRY_CODE       0x363  /* enter ace_start_xmit    */
 #define FKT_ACE_START_XMIT_EXIT_CODE        0x463  /* exit ace_start_xmit     */
 
-#define FKT_DO_SOFTIRQ_ENTRY_CODE           0x36f /* enter do_softirq         */
-#define FKT_DO_SOFTIRQ_EXIT_CODE            0x46f /* exit do_softirq          */
+/* sadhna start */
+
+/*	net routines, 370->37f */
+#define FKT_NET_RX_ACTION_ENTRY_CODE		0x370 /* enter net_rx_action, P=0 */
+#define FKT_NET_RX_ACTION_EXIT_CODE			0x470 /* exit net_rx_action, P=0  */
+//#define FKT_NET_BH_QUEUE_ENTRY_CODE       0x371 /* enter net_bh_queue       */
+//#define FKT_NET_BH_QUEUE_EXIT_CODE        0x471 /* exit net_bh_queue        */
+#define FKT_NETIF_RX_ENTRY_CODE             0x372 /* enter netif_rx           */
+#define FKT_NETIF_RX_EXIT_CODE              0x472 /* exit netif_rx            */
+#define FKT_NET_RX_DEQUEUE_ENTRY_CODE       0x373 /* enter net_rx_dequeue     */
+#define FKT_NET_RX_DEQUEUE_EXIT_CODE        0x473 /* exit net_rx_dequeue      */
+
+#define FKT_ALLOC_SKB_ENTRY_CODE			0x374 /* enter alloc_skb          */
+#define FKT_ALLOC_SKB_EXIT_CODE				0x474 /* exit alloc_skb           */
+
+#define FKT_DO_SOFTIRQ_ENTRY_CODE           0x37f /* enter do_softirq         */
+#define FKT_DO_SOFTIRQ_EXIT_CODE            0x47f /* exit do_softirq          */
+
+
+/* sadhna end */
+
+/*	ip routines, 380->38f */
+#define FKT_IP_RCV_ENTRY_CODE				0x380 /* enter ip_rcv, P=0        */
+#define FKT_IP_RCV_EXIT_CODE				0x480 /* exit  ip_rcv, P=1        */
+#define FKT_IP_QUEUE_XMIT_ENTRY_CODE        0x381 /* enter ip_queue_xmit      */
+#define FKT_IP_QUEUE_XMIT_EXIT_CODE         0x481 /* exit ip_queue_xmit       */
+#define FKT_IP_BUILD_XMIT_ENTRY_CODE        0x382 /* enter ip_build_xmit      */
+#define FKT_IP_BUILD_XMIT_EXIT_CODE         0x482 /* exit ip_build_xmit       */
+#define FKT_IP_LOCAL_DELIVER_ENTRY_CODE     0x383 /* enter ip_local_deliver   */
+#define FKT_IP_LOCAL_DELIVER_EXIT_CODE      0x483 /* exit ip_local_deliver    */
+#define FKT_IP_DEFRAG_ENTRY_CODE            0x384 /* enter ip_defrag          */
+#define FKT_IP_DEFRAG_EXIT_CODE             0x484 /* exit ip_defrag           */
+#define FKT_IP_FRAG_REASM_ENTRY_CODE        0x388 /* enter ip_frag_reasm      */
+#define FKT_IP_FRAG_REASM_EXIT_CODE         0x488 /* exit ip_frag_reasm       */
+#define FKT_IP_ROUTE_OUTPUT_KEY_ENTRY_CODE  0x389 /* enter ip_route_output_key*/
+#define FKT_IP_ROUTE_OUTPUT_KEY_EXIT_CODE   0x489 /* exit ip_route_output_key */
+#define FKT_IP_ROUTE_OUTPUT_SLOW_ENTRY_CODE 0x389 /* enter ip_route_output_slow*/
+#define FKT_IP_ROUTE_OUTPUT_SLOW_EXIT_CODE  0x489 /* exit ip_route_output_slow*/
+
+/*	udp routines, 390->39f */
+#define FKT_UDP_SENDMSG_ENTRY_CODE          0x391 /* enter udp_sendmsg        */
+#define FKT_UDP_SENDMSG_EXIT_CODE           0x491 /* exit udp_sendmsg         */
+#define FKT_UDP_QUEUE_RCV_SKB_ENTRY_CODE    0x392 /* enter udp_queue_rcv_skb  */
+#define FKT_UDP_QUEUE_RCV_SKB_EXIT_CODE     0x492 /* exit udp_queue_rcv_skb   */
+#define FKT_UDP_GETFRAG_ENTRY_CODE          0x395 /* enter udp_getfrag        */
+#define FKT_UDP_GETFRAG_EXIT_CODE           0x495 /* exit udp_getfrag         */
+#define FKT_UDP_RECVMSG_ENTRY_CODE          0x39e /* enter udp_recvmsg        */
+#define FKT_UDP_RECVMSG_EXIT_CODE           0x49e /* exit udp_recvmsg         */
+#define FKT_UDP_RCV_ENTRY_CODE              0x39f /* enter udp_rcv            */
+#define FKT_UDP_RCV_EXIT_CODE               0x49f /* exit udp_rcv             */
+
+/*	tcp routines, 3a0->3af and 3b0->3bf */
+#define FKT_TCP_SENDMSG_ENTRY_CODE          0x3a0 /* enter tcp_sendmsg.       */
+#define FKT_TCP_SENDMSG_EXIT_CODE           0x4a0 /* exit tcp_sendmsg         */
+#define FKT_TCP_SEND_SKB_ENTRY_CODE         0x3a1 /* enter tcp_send_skb.      */
+#define FKT_TCP_SEND_SKB_EXIT_CODE          0x4a1 /* exit tcp_send_skb.       */
+#define FKT_TCP_TRANSMIT_SKB_ENTRY_CODE     0x3a2 /* enter tcp_transmit_skb.  */
+#define FKT_TCP_TRANSMIT_SKB_EXIT_CODE      0x4a2 /* exit tcp_transmit_skb.   */
+#define FKT_TCP_WRITE_XMIT_ENTRY_CODE       0x3a3 /* enter tcp_write_xmit.    */
+#define FKT_TCP_WRITE_XMIT_EXIT_CODE        0x4a3 /* exit tcp_write_xmit.     */
+#define FKT_TCP_SENDMSG_COPY_ENTRY_CODE     0x3a4 /* enter tcp_sendmsg's copy */
+#define FKT_TCP_SENDMSG_COPY_EXIT_CODE      0x3a4 /* exit tcp_sendmsg's copy  */
+#define FKT_TCP_V4_RCV_ENTRY_CODE			0x3a9 /* enter tcp_v4_rcv, P=0    */
+#define FKT_TCP_V4_RCV_EXIT_CODE			0x4a9 /* exit  tcp_v4_rcv, P=1    */
+//#define FKT_TCP_RECVMSG_SCHEDI_CODE		0x3ab /*tcp_recvmsg_sched_call P=0*/
+//#define FKT_TCP_RECVMSG_SCHEDO_CODE		0x4ab /*tcp_recvmsg_sched_ret, P=0*/
+#define FKT_TCP_RCV_ESTABLISHED_ENTRY_CODE  0x3ad /* enter tcp_rcv_established*/
+#define FKT_TCP_RCV_ESTABLISHED_EXIT_CODE   0x4ad /* exit tcp_rcv_established */
+#define FKT_TCP_DATA_ENTRY_CODE             0x3ae /* enter tcp_data           */
+#define FKT_TCP_DATA_EXIT_CODE              0x4ae /* exit tcp_data            */
+#define FKT_TCP_ACK_ENTRY_CODE              0x3af /* enter tcp_ack            */
+#define FKT_TCP_ACK_EXIT_CODE               0x4af /* exit tcp_ack             */
+
+#define FKT_TCP_RECVMSG_ENTRY_CODE          0x3b0 /* enter tcp_recvmsg        */
+#define FKT_TCP_RECVMSG_EXIT_CODE           0x4b0 /* exit tcp_recvmsg         */
+//#define FKT_TCP_V4_RCV_CSUM_ENTRY_CODE    0x3b1 /* enter tcp_v4_rcv_csum    */
+//#define FKT_TCP_V4_RCV_CSUM_EXIT_CODE     0x4b1 /* exit tcp_v4_rcv_csum     */
+#define FKT_TCP_RECVMSG_OK_ENTRY_CODE       0x3b2 /* enter tcp_recvmsg_ok     */
+#define FKT_TCP_RECVMSG_OK_EXIT_CODE        0x4b2 /* exit tcp_recvmsg_ok      */
+#define FKT_TCP_SEND_ACK_ENTRY_CODE         0x3b7 /* enter tcp_send_ack       */
+#define FKT_TCP_SEND_ACK_EXIT_CODE          0x4b7 /* exit tcp_send_ack        */
+//#define FKT_TCP_V4_RCV_HW_ENTRY_CODE      0x3b8 /* enter hw_csum            */
+//#define FKT_TCP_V4_RCV_HW_EXIT_CODE       0x4b8 /* exit hw_csum             */
+//#define FKT_TCP_V4_RCV_NONE_ENTRY_CODE    0x3b9 /* enter no_csum            */
+//#define FKT_TCP_V4_RCV_NONE_EXIT_CODE     0x4b9 /* exit no_csum             */
+#define FKT_WAIT_FOR_TCP_MEMORY_ENTRY_CODE  0x3ba /*enter wait_for_tcp_memory */
+#define FKT_WAIT_FOR_TCP_MEMORY_EXIT_CODE   0x4ba /*exit wait_for_tcp_memory  */
+//#define FKT_TCP_RECVMSG_CSUM_ENTRY_CODE   0x3bb /* enter tcp_recvmsg_csum   */
+//#define FKT_TCP_RECVMSG_CSUM_EXIT_CODE    0x4bb /* exit tcp_recvmsg_csum    */
+//#define FKT_TCP_RECVMSG_CSUM2_ENTRY_CODE  0x3bc /* enter tcp_recvmsg_csum2  */
+//#define FKT_TCP_RECVMSG_CSUM2_EXIT_CODE   0x4bc /* exit tcp_recvmsg_csum2   */
+#define FKT_TCP_SYNC_MSS_ENTRY_CODE         0x3bd /* enter tcp_sync_mss       */
+#define FKT_TCP_SYNC_MSS_EXIT_CODE          0x4bd /* exit tcp_sync_mss        */
 
 /* miru end */
 
+#define FKT_TCP_ALLOC_PAGE_ENTRY_CODE		0x3be /* enter tcp_alloc_page     */
+#define FKT_TCP_ALLOC_PAGE_EXIT_CODE		0x4be /* exit tcp_alloc_page      */
+
+
+/* sadhna start */
+
+/*	lamp routines, 3c0->3cf */
+#define FKT_LAMP_CREATE_ENTRY_CODE		0x3c0	/* enter lamp_create, P=0     */
+#define FKT_LAMP_CREATE_EXIT_CODE		0x4c0	/* exit  lamp_create, P=1     */
+#define FKT_LAMP_BIND_ENTRY_CODE		0x3c1	/* enter lamp_bind, P=0       */
+#define FKT_LAMP_BIND_EXIT_CODE			0x4c1	/* exit  lamp_bind, P=1       */
+#define FKT_LAMP_LISTEN_ENTRY_CODE		0x3c2	/* enter lamp_listen, P=0     */
+#define FKT_LAMP_LISTEN_EXIT_CODE		0x4c2	/* exit  lamp_listen, P=1     */
+#define FKT_LAMP_ACCEPT_ENTRY_CODE		0x3c3	/* enter lamp_accept, P=0     */
+#define FKT_LAMP_ACCEPT_EXIT_CODE		0x4c3	/* exit  lamp_accept, P=1     */
+#define FKT_LAMP_CONNECT_ENTRY_CODE		0x3c4	/* enter lamp_connect, P=0    */
+#define FKT_LAMP_CONNECT_EXIT_CODE		0x4c4	/* exit  lamp_connect, P=1    */
+#define FKT_LAMP_SENDMSG_ENTRY_CODE		0x3c6	/* enter lamp_sendmsg, P=0    */
+#define FKT_LAMP_SENDMSG_EXIT_CODE		0x4c6	/* exit  lamp_sendmsg, P=1    */
+#define FKT_LAMP_RECVMSG_ENTRY_CODE		0x3c7	/* enter lamp_recvmsg, P=0    */
+#define FKT_LAMP_RECVMSG_EXIT_CODE		0x4c7	/* exit  lamp_recvmsg, P=1    */
+#define FKT_LAMP_DATA_RCV_ENTRY_CODE	0x3c8	/* enter lamp_data_rcv, P=0   */
+#define FKT_LAMP_DATA_RCV_EXIT_CODE		0x4c8	/* exit  lamp_data_rcv, P=1   */
+#define FKT_LAMP_SIGNAL_RCV_ENTRY_CODE	0x3c9	/* enter lamp_signal_rcv, P=0 */
+#define FKT_LAMP_SIGNAL_RCV_EXIT_CODE	0x4c9	/* exit  lamp_signal_rcv, P=1 */
+#define FKT_LAMP_SHUTDOWN_ENTRY_CODE	0x3ca	/* enter lamp_shutdown, P=0   */
+#define FKT_LAMP_SHUTDOWN_EXIT_CODE		0x4ca	/* exit  lamp_shutdown, P=1   */
+#define FKT_LAMP_RECVMSG_SCHEDI_CODE	0x3cb	/* lamp_recvmsg_sched_call P=0*/
+#define FKT_LAMP_RECVMSG_SCHEDO_CODE	0x4cb	/* lamp_recvmsg_sched_ret, P=0*/
+
+/*	inet routines, 3d0->3df */
+#define FKT_INET_CREATE_ENTRY_CODE		   0x3d0 /* enter inet_create, P=0    */
+#define FKT_INET_CREATE_EXIT_CODE		   0x4d0 /* exit  inet_create, P=1    */
+#define FKT_INET_BIND_ENTRY_CODE		   0x3d1 /* enter inet_bind, P=0      */
+#define FKT_INET_BIND_EXIT_CODE			   0x4d1 /* exit  inet_bind, P=1      */
+#define FKT_INET_LISTEN_ENTRY_CODE		   0x3d2 /* enter inet_listen, P=0    */
+#define FKT_INET_LISTEN_EXIT_CODE		   0x4d2 /* exit  inet_listen, P=1    */
+#define FKT_INET_ACCEPT_ENTRY_CODE		   0x3d3 /* enter inet_accept, P=0    */
+#define FKT_INET_ACCEPT_EXIT_CODE		   0x4d3 /* exit  inet_accept, P=1    */
+#define FKT_INET_STREAM_CONNECT_ENTRY_CODE 0x3d4 /* enter inet_connect, P=0   */
+#define FKT_INET_STREAM_CONNECT_EXIT_CODE  0x4d4 /* exit  inet_connect, P=1   */
+#define FKT_INET_SENDMSG_ENTRY_CODE		   0x3d6 /* enter inet_sendmsg, P=0   */
+#define FKT_INET_SENDMSG_EXIT_CODE		   0x4d6 /* exit  inet_sendmsg, P=1   */
+#define FKT_INET_RECVMSG_ENTRY_CODE		   0x3d7 /* enter inet_recvmsg, P=0   */
+#define FKT_INET_RECVMSG_EXIT_CODE		   0x4d7 /* exit  inet_recvmsg, P=1   */
+#define FKT_INET_SHUTDOWN_ENTRY_CODE	   0x3da /* enter inet_shutdown, P=0  */
+#define FKT_INET_SHUTDOWN_EXIT_CODE		   0x4da /* exit  inet_shutdown, P=1  */
+
+/*	socket interface routines, 3f0->3ff */
+#define FKT_SOCKET_ENTRY_CODE		0x3f0	/* enter sys_socket, P=3          */
+#define FKT_SOCKET_EXIT_CODE		0x4f0	/* exit sys_socket, P=1           */
+#define FKT_BIND_ENTRY_CODE			0x3f1	/* enter sys_bind, P=1            */
+#define FKT_BIND_EXIT_CODE			0x4f1	/* exit sys_bind, P=1             */
+#define FKT_LISTEN_ENTRY_CODE		0x3f2	/* enter sys_listen, P=2          */
+#define FKT_LISTEN_EXIT_CODE		0x4f2	/* exit sys_listen, P=1           */
+#define FKT_ACCEPT_ENTRY_CODE		0x3f3	/* enter sys_accept, P=1          */
+#define FKT_ACCEPT_EXIT_CODE		0x4f3	/* exit sys_accept, P=1           */
+#define FKT_CONNECT_ENTRY_CODE		0x3f4	/* enter sys_connect, P=1         */
+#define FKT_CONNECT_EXIT_CODE		0x4f4	/* exit sys_connect, P=1          */
+#define FKT_SEND_ENTRY_CODE			0x3f5	/* enter sys_send, P=3            */
+#define FKT_SEND_EXIT_CODE			0x4f5	/* exit sys_send, P=1             */
+#define FKT_SENDTO_ENTRY_CODE		0x3f6	/* enter sys_sendto, P=3          */
+#define FKT_SENDTO_EXIT_CODE		0x4f6	/* exit sys_sendto, P=1           */
+#define FKT_RECVFROM_ENTRY_CODE		0x3f7	/* enter sys_recvfrom, P=3        */
+#define FKT_RECVFROM_EXIT_CODE		0x4f7	/* exit sys_recvfrom, P=1         */
+#define FKT_SHUTDOWN_ENTRY_CODE		0x3f8	/* enter sys_shutdown, P=2        */
+#define FKT_SHUTDOWN_EXIT_CODE		0x4f8	/* exit sys_shutdown, P=1         */
+
+/* sadhna end */
 
 /*	the sys_xxx functions -- should be 500->5xx */
 
@@ -396,4 +670,6 @@
 
 /* vs end */
 
-#endif
+/* vi: ts=4
+ */
+#endif	/* __FKT_H__ */

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.9  2000/03/15 16:59:13  oaumage
+- support APPLICATION_SPAWN
+
 Revision 1.8  2000/03/08 17:18:52  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -98,6 +101,11 @@ mad_protocol_available(p_mad_madeleine_t madeleine, char *name);
 p_mad_adapter_set_t
 mad_adapter_set_init(int nb_adapter, ...);
 
+#ifdef APPLICATION_SPAWN
+char*
+mad_pre_init(p_mad_adapter_set_t   adapter_set);
+#endif /* APPLICATION_SPAWN */
+
 #ifdef PM2
 p_mad_madeleine_t
 mad2_init(int                  *argc,
@@ -106,10 +114,19 @@ mad2_init(int                  *argc,
 	  p_mad_adapter_set_t   adapter_set);
 #else /* PM2 */
 p_mad_madeleine_t
-mad_init(int                  *argc,
+mad_init(
+#ifndef APPLICATION_SPAWN
+	 int                  *argc,
 	 char                **argv,
+#else /* APPLICATION_SPAWN */
+	 ntbx_host_id_t        rank,
+#endif /* APPLICATION_SPAWN */
 	 char                 *configuration_file,
+#ifdef APPLICATION_SPAWN
+	 char                 *url);
+#else /* APPLICATION_SPAWN */
 	 p_mad_adapter_set_t   adapter_set);
+#endif /* APPLICATION_SPAWN */
 #endif /* PM2 */
 
 #ifdef PM2

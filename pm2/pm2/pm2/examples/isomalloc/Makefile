@@ -1,70 +1,15 @@
-#
-#                      PM2 HIGH-PERF/ISOMALLOC
-#           High Performance Parallel Multithreaded Machine
-#                           version 3.0
-#
-#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
-#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
-#
-#            Laboratoire de l'Informatique du Parallelisme
-#                        UMR 5668 CNRS-INRIA
-#                 Ecole Normale Superieure de Lyon
-#
-#                      External Contributors:
-#                 Yves Denneulin (PM2_LMC - Grenoble),
-#                 Benoit Planquelle (PM2_LIFL - Lille)
-#
-#                    1998 All Rights Reserved
-#
-#
-#                             NOTICE
-#
-# Permission to use, copy, modify, and distribute this software and
-# its documentation for any purpose and without fee is hereby granted
-# provided that the above copyright notice appear in all copies and
-# that both the copyright notice and this permission notice appear in
-# supporting documentation.
-#
-# Neither the institutions (PM2_Ecole Normale Superieure de Lyon,
-# Laboratoire de L'informatique du Parallelisme, Universite des
-# Sciences et Technologies de Lille, Laboratoire d'Informatique
-# Fondamentale de Lille), nor the Authors make any representations
-# about the suitability of this software for any purpose. This
-# software is provided ``as is'' without express or implied warranty.
-#
-
-
+.PHONY: default all
 default: all
 
-include ../../make/common.mak
+SRC_DIR :=      .
 
-all: slots attach
+include ../../Makefile
 
-# rpc_defs :
+PM2_APP_CFLAGS  =
+PM2_APP_LDFLAGS =
+PM2_APP_LLIBS   =
 
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)
+all:    $(BIN_DIR)/attach $(BIN_DIR)/slots
 
-
-# executables :
-
-
-# slots :
-
-$(PM2_OBJ)/slots.o: slots.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-slots: $(PM2_OBJ)/slots.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
-# attach :
-
-$(PM2_OBJ)/attach.o: attach.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-attach: $(PM2_OBJ)/attach.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
+$(BIN_DIR)/slots: $(OBJ_DIR)/rpc_defs.o
+$(BIN_DIR)/attach: $(OBJ_DIR)/rpc_defs.o

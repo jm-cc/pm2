@@ -162,7 +162,11 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 	  if (!argc)
 	    FAILURE("mad_leonie argument not found");
 
-	  settings->leonie_server_host_name = tbx_strdup(*argv);
+	  {
+	    char *dummy;
+	    // Read server IP address in hexadecimal format
+	    settings->leonie_server_ip = strtoul(*argv, &dummy, 16);
+	  }
 	} 
       else if (!strcmp(*argv, "--mad_link"))
 	{
@@ -196,14 +200,18 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   client   = session->leonie_link;
 
   strcpy(data.data, settings->leonie_server_port);
-  status = ntbx_tcp_client_connect(client,
-				   settings->leonie_server_host_name,
-				   &data);
+  status = ntbx_tcp_client_connect_ip(client,
+				      settings->leonie_server_ip, &data);
   if (status == ntbx_failure)
     FAILURE("could not setup the Leonie link");
 
-  TRACE("Leonie link is up");  
-  mad_ntbx_send_string(client, client->local_host);
+  TRACE("Leonie link is up");
+  {
+    char ip[11];
+    
+    sprintf(ip, "0x%lx", client->local_host_ip);
+    mad_ntbx_send_string(client, ip);
+  }
   session->process_rank = mad_ntbx_receive_int(client);
   TRACE_VAL("process rank", session->process_rank);
   LOG_OUT();

@@ -201,7 +201,12 @@ static void timer_interrupt(int sig)
 	}
 #endif
 	ma_irq_enter();
-	ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
+#ifndef MA_HAVE_COMPAREEXCHANGE
+	// Avoid raising softirq if compareexchange is not implemented and
+	// a compare & exchange is currently running...
+	if (!ma_spin_is_locked(&ma_compareexchange_spinlock))
+#endif
+		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef MA__SMP
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.18  2000/06/15 08:45:00  rnamyst
+pm2load/pm2conf/pm2logs are now handled by pm2.
+
 Revision 1.17  2000/06/05 15:37:41  vdanjean
 adaptation of debug messages
 
@@ -126,6 +129,9 @@ ______________________________________________________________________________
 
 /* Structure pointers */
 #include "mad_pointers.h"
+
+/* Log generation */
+#include "mad_log.h"
 
 /* Fundamental data types */
 #include "mad_types.h"

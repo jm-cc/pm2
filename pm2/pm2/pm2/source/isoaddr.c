@@ -16,9 +16,9 @@
 
 /* Options: ISOADDR_ALOC_TRACE, ISOADDR_NEGOCIATION_TRACE, ISOADDR_INFO_TRACE, ASSERT */
 
-//#define ISOADDR_ALOC_TRACE
-//#define ISOADDR_NEGOCIATION_TRACE
-//#define ISOADDR_INFO_TRACE
+#define ISOADDR_ALOC_TRACE
+#define ISOADDR_NEGOCIATION_TRACE
+#define ISOADDR_INFO_TRACE
 //#define ASSERT
 
 #include <stdio.h>
@@ -780,7 +780,6 @@ static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
 #endif
 
  // local_unlock(); // au lieu de slot_unlock(); /* modif */
-
  /*
   global lock
  */
@@ -801,7 +800,6 @@ static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
 #ifdef ISOADDR_NEGOCIATION_TRACE
      tfprintf(stderr,"!!!!!! Got global lock! I am now the negociation thread: %p\n",marcel_self() );
 #endif
-
  /*
    launch negociation threads on all the other nodes
  */
@@ -828,6 +826,7 @@ static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
  /*
    Unregister as negociation thread
  */ 
+
  marcel_setspecific(_pm2_isomalloc_nego_key, (any_t) 0);
 #ifdef ISOADDR_NEGOCIATION_TRACE
      tfprintf(stderr,"!!!!!! I am no longer the negociation thread: %p\n",marcel_self() );

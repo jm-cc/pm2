@@ -25,13 +25,30 @@
 #include <sys/wait.h>
 #include "leonie.h"
 
+p_leo_application_settings_t  
+leo_application_settings_init(void)
+{
+  p_leo_application_settings_t object = NULL;
+
+  LOG_IN();
+  object = TBX_CALLOC(1, sizeof(leo_application_settings_t));
+  
+  object->gdb_mode   = tbx_false;
+  object->xterm_mode = tbx_true;
+  object->smp_mode   = tbx_false;
+  LOG_OUT();
+
+  return object;
+ 
+}
+
 p_leo_process_specific_t
 leo_process_specific_init(void)
 {
   p_leo_process_specific_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_process_specific_t));
+  object = TBX_CALLOC(1, sizeof(leo_process_specific_t));
 
   object->client                   = ntbx_client_cons();
   object->current_loader_priority  = leo_loader_priority_undefined;
@@ -59,7 +76,7 @@ leo_htable_init(void)
   p_tbx_htable_t object = NULL;
   
   LOG_IN();
-  object = calloc(1, sizeof(tbx_htable_t));
+  object = TBX_CALLOC(1, sizeof(tbx_htable_t));
   tbx_htable_init(object, 0);
   LOG_OUT();
 
@@ -72,7 +89,7 @@ leo_directory_init(void)
   p_leo_directory_t object = NULL;
   
   LOG_IN();
-  object = calloc(1, sizeof(leo_directory_t));
+  object = TBX_CALLOC(1, sizeof(leo_directory_t));
 
   object->process_slist   = tbx_slist_nil();
   object->node_htable     = leo_htable_init();
@@ -96,7 +113,7 @@ leo_dir_adapter_init(void)
   p_leo_dir_adapter_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_adapter_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_adapter_t));
   LOG_OUT();
 
   return object;
@@ -108,7 +125,7 @@ leo_dir_driver_process_specific_init(void)
   p_leo_dir_driver_process_specific_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_driver_process_specific_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_driver_process_specific_t));
 
   object->adapter_htable = leo_htable_init();
   object->adapter_slist  = tbx_slist_nil();
@@ -123,7 +140,7 @@ leo_dir_node_init(void)
   p_leo_dir_node_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_node_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_node_t));
 
   object->pc = ntbx_pc_cons();
   LOG_OUT();
@@ -137,7 +154,7 @@ leo_dir_driver_init(void)
   p_leo_dir_driver_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_driver_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_driver_t));
 
   object->pc = ntbx_pc_cons();
   LOG_OUT();
@@ -151,7 +168,7 @@ leo_dir_channel_process_specific_init(void)
   p_leo_dir_channel_process_specific_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_channel_process_specific_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_channel_process_specific_t));
   LOG_OUT();
 
   return object;
@@ -163,7 +180,7 @@ leo_dir_channel_init(void)
   p_leo_dir_channel_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_channel_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_channel_t));
 
   object->pc     = ntbx_pc_cons();
   object->public = tbx_true;
@@ -178,7 +195,7 @@ leo_dir_vchannel_process_routing_table_init(void)
   p_leo_dir_vchannel_process_routing_table_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_vchannel_process_routing_table_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_vchannel_process_routing_table_t));
 
   object->destination_rank = -1;
   LOG_OUT();
@@ -192,7 +209,7 @@ leo_dir_vchannel_process_specific_init(void)
   p_leo_dir_vchannel_process_specific_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_vchannel_process_specific_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_vchannel_process_specific_t));
 
   object->pc = ntbx_pc_cons();
   LOG_OUT();
@@ -206,7 +223,7 @@ leo_dir_fchannel_init(void)
   p_leo_dir_fchannel_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_fchannel_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_fchannel_t));
   LOG_OUT();
 
   return object;
@@ -218,7 +235,7 @@ leo_dir_vchannel_init(void)
   p_leo_dir_vchannel_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_dir_vchannel_t));
+  object = TBX_CALLOC(1, sizeof(leo_dir_vchannel_t));
 
   object->dir_channel_slist  = tbx_slist_nil();
   object->dir_fchannel_slist = tbx_slist_nil();
@@ -234,7 +251,7 @@ leo_networks_init(void)
   p_leo_networks_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_networks_t));
+  object = TBX_CALLOC(1, sizeof(leo_networks_t));
 
   object->htable = leo_htable_init();
   object->slist  = tbx_slist_nil();
@@ -249,7 +266,7 @@ leo_spawn_group_init(void)
   p_leo_spawn_group_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_spawn_group_t));
+  object = TBX_CALLOC(1, sizeof(leo_spawn_group_t));
   object->process_slist = tbx_slist_nil();
   LOG_OUT();
   
@@ -262,7 +279,7 @@ leo_spawn_groups_init(void)
   p_leo_spawn_groups_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_spawn_groups_t));
+  object = TBX_CALLOC(1, sizeof(leo_spawn_groups_t));
 
   object->htable = leo_htable_init();
   object->slist  = tbx_slist_nil();
@@ -277,7 +294,7 @@ leo_loader_init(void)
   p_leo_loader_t object = NULL;
 
   LOG_IN();
-  object = calloc(1, sizeof(leo_loader_t));
+  object = TBX_CALLOC(1, sizeof(leo_loader_t));
   LOG_OUT();
   
   return object;

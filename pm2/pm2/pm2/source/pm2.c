@@ -314,8 +314,8 @@ void pm2_halt()
 #else
     LOG_IN();
     if(__pm2_self==0) {
-      pm2_send_stop_server(1);  
       pm2_zero_halt=TRUE;
+      pm2_send_stop_server(1);  
     } else {
       pm2_send_stop_server(0);  
     }

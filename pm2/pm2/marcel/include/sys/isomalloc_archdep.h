@@ -40,6 +40,7 @@ extern int __zero_fd;
 #elif defined(LINUX_SYS) && defined(X86_ARCH)
 
 #define ISOADDR_AREA_TOP       0x40000000
+#define SLOT_AREA_BOTTOM       0x10000000
 #define MAIN_STACK_BOT         0xa0000000
 #define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #define FILE_TO_MAP            -1

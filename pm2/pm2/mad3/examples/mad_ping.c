@@ -631,7 +631,10 @@ main(int    argc,
   madeleine = mad_init(&argc, argv);
   TRACE("Returned from mad_init");
 #else // USE_MAD_INIT
-
+  common_pre_init(&argc, argv, NULL);
+  common_post_init(&argc, argv, NULL);
+  TRACE("Returned from common_init");
+  madeleine = mad_get_madeleine();
 #endif // USE_MAD_INIT
 
   session       = madeleine->session;

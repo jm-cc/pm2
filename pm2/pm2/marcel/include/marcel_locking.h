@@ -27,11 +27,10 @@
 typedef ma_spinlock_t marcel_lock_t;
 
 #section marcel_macros
-#define marcel_lock_init(l)       _ma_raw_spin_init(l)
-#define marcel_lock_acquire(l)    _ma_raw_spin_lock(l) 
-#define marcel_lock_tryacquire(l) _ma_raw_spin_trylock(l)
-#define marcel_lock_release(l)    _ma_raw_spin_unlock(l)
-#define marcel_lock_locked(l)     _ma_raw_spin_is_locked(l)
+#define marcel_lock_acquire(l)    ma_spin_lock(l) 
+#define marcel_lock_tryacquire(l) ma_spin_trylock(l)
+#define marcel_lock_release(l)    ma_spin_unlock(l)
+#define marcel_lock_locked(l)     ma_spin_is_locked(l)
 
 /****************************************************************
  * Pour la compatibilité avec lock_task et assimilé

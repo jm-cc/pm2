@@ -338,12 +338,11 @@ void pm2_exit(void)
 void pm2_kill_modules(int *modules, int nb)
 {
   int i;
-  extern marcel_t _recv_pid;
   unsigned tag = NETSERVER_END;
 
   for(i=0; i<nb; i++) {
     if(modules[i] == __pm2_self && !mad_can_send_to_self()) {
-      marcel_cancel(_recv_pid);
+      netserver_stop();
     } else {
       mad_sendbuf_init(modules[i]);
       mad_pack_int(MAD_IN_HEADER, &tag, 1);
@@ -450,6 +449,45 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
 
     mad_sendbuf_send();
   }
+}
+
+void pm2_rpc_call_begin(int module, int num,
+			pm2_attr_t *pm2_attr,
+			any_t args, any_t results,
+			pm2_rpc_wait_t *att)
+{
+  pointer p;
+  unsigned tag = NETSERVER_LRPC;
+
+#ifdef DEBUG
+  if(module == __pm2_self && !mad_can_send_to_self())
+    RAISE(NOT_IMPLEMENTED);
+#endif
+
+  if(pm2_attr == NULL)
+    pm2_attr = &pm2_attr_default;
+
+  pm2_disable_migration();
+
+  marcel_sem_init(&att->sem, 0);
+  att->result = results;
+  att->unpack = _pm2_unpack_res_funcs[num];
+
+  to_pointer((any_t)att, &p);
+
+  mad_sendbuf_init(module);
+  mad_pack_int(MAD_IN_HEADER, &tag, 1);
+  mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+  mad_pack_int(MAD_IN_HEADER, &num, 1);
+  mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
+  mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
+
+  mad_pack_pointer(MAD_IN_HEADER, &p, 1);
+}
+
+void pm2_rpc_call_end(void)
+{
+  mad_sendbuf_send();
 }
 
 void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
@@ -589,6 +627,37 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
     mad_sendbuf_send();
   }
 
+  pm2_enable_migration();
+}
+
+_PRIVATE_ void pm2_async_rpc_begin(int module, int num,
+				   pm2_attr_t *pm2_attr,
+				   any_t args)
+{
+  unsigned tag = NETSERVER_ASYNC_LRPC;
+
+#ifdef DEBUG
+  if(module == __pm2_self && !mad_can_send_to_self())
+    RAISE(NOT_IMPLEMENTED);
+#endif
+
+  if(pm2_attr == NULL)
+    pm2_attr = &pm2_attr_default;
+
+  pm2_disable_migration();
+
+  mad_sendbuf_init(module);
+  mad_pack_int(MAD_IN_HEADER, &tag, 1);
+  mad_pack_int(MAD_IN_HEADER, &__pm2_self, 1);
+  mad_pack_int(MAD_IN_HEADER, &num, 1);
+  mad_pack_int(MAD_IN_HEADER, &pm2_attr->priority, 1);
+  mad_pack_int(MAD_IN_HEADER, &pm2_attr->sched_policy, 1);
+
+}
+
+_PRIVATE_ void pm2_async_rpc_end(void)
+{
+  mad_sendbuf_send();
   pm2_enable_migration();
 }
 

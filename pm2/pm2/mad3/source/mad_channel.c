@@ -42,7 +42,7 @@ mad_get_channel(p_mad_madeleine_t  madeleine,
   if (!channel)
     FAILURE("channel not found");
 
-  if (!channel->public)
+  if (!channel->not_private)
     FAILURE("invalid channel");
 
   LOG_OUT();

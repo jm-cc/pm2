@@ -86,8 +86,8 @@ mad_gm_send_buffer_group(p_mad_link_t         l,
 			 p_mad_buffer_group_t bg);
 void
 mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
-				tbx_bool_t           first_sub_group
-				TBX_UNUSED,
+				tbx_bool_t TBX_UNUSED
+                                first_sub_group,
 				p_mad_buffer_group_t bg);
 void
 mad_gm_link_exit(p_mad_link_t l);

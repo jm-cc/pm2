@@ -1,0 +1,28 @@
+#!/bin/sh
+
+modules=`cd $PM2_ROOT/modules; ls`
+
+for m in ${modules} ; do
+	if [ -d ${PM2_ROOT}/${m}/config/options ]; then
+		echo "Making option sets for module $m..."
+		cd ${PM2_ROOT}/${m}/config/options
+		categories=`ls [0-9]* 2>/dev/null | cut -b -2 | uniq`
+		cd ..
+		for categ in ${categories}; do
+			case ${categ} in
+				0?)
+					suffix="incl" ;;
+				1?)
+					suffix="excl" ;;
+			esac
+			rm -rf ${categ}.${suffix}
+			mkdir ${categ}.${suffix}
+			cd ${categ}.${suffix}
+			for f in ../options/${categ}*; do
+				ln -s $f
+			done
+			cd ..
+			echo "${categ}.${suffix} done."
+		done
+	fi
+done

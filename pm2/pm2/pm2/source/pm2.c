@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.25  2000/10/10 13:31:17  gantoniu
+Modified the startup function mechanism to allow functions to get an argument.
+Updated the pm2_sync functions: global (= node-level) barriers are ready !
+
 Revision 1.24  2000/09/22 08:45:13  rnamyst
 PM2 startup funcs now use argc+argv. Modified the programs accordingly + fixed a bug in the TSP example.
 
@@ -126,6 +130,7 @@ static unsigned PM2_COMPLETION;
 
 static unsigned nb_startup_funcs = 0;
 static pm2_startup_func_t startup_funcs[MAX_STARTUP_FUNCS];
+static void *startup_args[MAX_STARTUP_FUNCS];
 
 static int spmd_conf[MAX_MODULES];
 
@@ -174,10 +179,13 @@ static int pm2_single_mode(void)
 #endif
 }
 
-void pm2_push_startup_func(pm2_startup_func_t f)
+void pm2_push_startup_func(pm2_startup_func_t f, void *args)
 {
   if(nb_startup_funcs < MAX_STARTUP_FUNCS)
-    startup_funcs[nb_startup_funcs++] = f;
+    {
+      startup_funcs[nb_startup_funcs] = f;
+      startup_args[nb_startup_funcs++] = args;
+    }
   else
     RAISE(CONSTRAINT_ERROR);
 }
@@ -262,8 +270,8 @@ void pm2_init(int *argc, char **argv)
   dsm_pm2_init(__pm2_self, __pm2_conf_size);
 #endif
 
-  while(nb_startup_funcs)
-    (*(startup_funcs[--nb_startup_funcs]))(*argc, argv);
+  while(nb_startup_funcs--)
+      (*(startup_funcs[nb_startup_funcs]))(*argc, argv, startup_args[nb_startup_funcs]);
 
   if(!pm2_single_mode()) {
 #ifdef MAD2

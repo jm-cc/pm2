@@ -1,0 +1,22 @@
+#!/bin/sh
+
+FUTD=${HOME}/devel/fut
+PROFD=${PM2_ROOT}/profile
+
+copy()
+{
+    cp $1 $2
+    chmod a+r $2/`basename $1`
+    echo "File `basename $1` updated"
+}
+
+# Include
+copy ${FUTD}/fut.h ${PROFD}/include
+
+# Source
+copy ${FUTD}/fut_header.S ${PROFD}/source
+copy ${FUTD}/fut_setup.c ${PROFD}/source
+
+# Bin/src
+copy ${FUTD}/fut_print.c ${PROFD}/bin/src
+

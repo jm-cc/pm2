@@ -18,13 +18,13 @@
 
 #include "marcel.h"
 
-#define NB    10
+#define NB    20
 
 static marcel_sem_t sem[NB];
 
 any_t thread_func(any_t arg)
 {
-  unsigned long num = (int)arg;
+  unsigned long num = (long)arg;
 
   marcel_detach(marcel_self());
 

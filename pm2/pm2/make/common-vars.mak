@@ -33,6 +33,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Préférences globales
+#---------------------------------------------------------------------
+include $(PM2_ROOT)/make/config.mak
+
 # FLAVOR -> flavor utilisee pour la compilation
 #---------------------------------------------------------------------
 ifndef FLAVOR
@@ -94,22 +98,25 @@ ifdef FLAVOR
 override PM2_CONFIG := $(PM2_CONFIG) --flavor=$(FLAVOR)
 endif
 
+# GOALS pour lesquels on ne générera ni n'incluera les .mak
+#---------------------------------------------------------------------
+ifndef DO_NOT_GENERATE_MAK_FILES
+DO_NOT_GENERATE_MAK_FILES := 
+endif
+DO_NOT_GENERATE_MAK_FILES := _distclean_ _distcleanlibs_ _distcleanflavors_
+DO_NOT_GENERATE_MAK_FILES += _distcleandoc_ _distcleanall_
+DO_NOT_GENERATE_MAK_FILES += _init_ _checkmake_ _cvsinit_ _flavorinit_
+DO_NOT_GENERATE_MAK_FILES += _doc_
+DO_NOT_GENERATE_MAK_FILES += _help_
+DO_NOT_GENERATE_MAK_FILES += _config_ _textconfig_ _menuconfig_
+DO_NOT_GENERATE_MAK_FILES += _xdialogconfig_ _xconfig_
+
 # PM2_MAK_DIR -> repertoire destination des makefiles generes
 #---------------------------------------------------------------------
 # Set variable if not set
-ifneq ($(MAKECMDGOALS),init)
-ifneq ($(MAKECMDGOALS),help)
-ifneq ($(MAKECMDGOALS),textconfig)
-ifneq ($(MAKECMDGOALS),menuconfig)
-ifneq ($(MAKECMDGOALS),xconfig)
-ifneq ($(MAKECMDGOALS),config)
-SIMPLE_TARGET := true
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 ifeq ($(PM2_MAK_DIR),)
 export PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
 endif
 endif
-endif
-endif
-endif
-endif
-endif
+

@@ -13,8 +13,5 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBRARY=init
-
-include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs.mak
 

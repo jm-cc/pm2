@@ -37,7 +37,7 @@
 #ifdef MARCEL
 #include "marcel.h"
 #endif /* MARCEL */
-#include "pm2debug.h"
+#include "tbx_debug.h"
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -1,0 +1,5 @@
+allow to evaluate the amount of stack free
+This option will allow threads to call the
+`marcel_unusedstack_np' function in order to evaluate
+the amount of stack (in bytes) they did not use
+yet. Should only be defined when tuning applications.

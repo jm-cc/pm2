@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_channel.c,v $
+Revision 1.12  2000/03/08 17:19:12  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+- utilisation de TBX_MALLOC
+
 Revision 1.11  2000/02/28 11:06:12  rnamyst
 Changed #include "" into #include <>.
 
@@ -93,15 +98,15 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   ntbx_host_id_t              host;
 
   LOG_IN();
-  PM2_LOCK();
+  TBX_LOCK();
   TRACE("channel allocation");
-  PM2_LOCK_SHARED(madeleine);
-  PM2_LOCK_SHARED(adapter);
-  channel = malloc(sizeof(mad_channel_t));
+  TBX_LOCK_SHARED(madeleine);
+  TBX_LOCK_SHARED(adapter);
+  channel = TBX_MALLOC(sizeof(mad_channel_t));
   CTRL_ALLOC(channel);
 
-  PM2_INIT_SHARED(channel);
-  PM2_LOCK_SHARED(channel);
+  TBX_INIT_SHARED(channel);
+  TBX_LOCK_SHARED(channel);
   channel->id             = madeleine->nb_channel++;
   channel->adapter        = adapter;
   channel->reception_lock = tbx_false;
@@ -111,11 +116,11 @@ mad_open_channel(p_mad_madeleine_t madeleine,
     interface->channel_init(channel);
 
   channel->input_connection =
-    malloc(configuration->size * sizeof(mad_connection_t));
+    TBX_MALLOC(configuration->size * sizeof(mad_connection_t));
   CTRL_ALLOC(channel->input_connection);
   
   channel->output_connection =
-    malloc(configuration->size * sizeof(mad_connection_t));
+    TBX_MALLOC(configuration->size * sizeof(mad_connection_t));
   CTRL_ALLOC(channel->output_connection);  
 
   for (host = 0; host < configuration->size; host++)
@@ -161,9 +166,9 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 	  out->nb_link = 1;
 	}
       
-      in->link  = malloc( in->nb_link * sizeof(mad_link_t));
+      in->link  = TBX_MALLOC( in->nb_link * sizeof(mad_link_t));
       CTRL_ALLOC(in->link);
-      out->link = malloc(out->nb_link * sizeof(mad_link_t));
+      out->link = TBX_MALLOC(out->nb_link * sizeof(mad_link_t));
       CTRL_ALLOC(out->link);
 
       for (link_id = 0;
@@ -242,10 +247,10 @@ mad_open_channel(p_mad_madeleine_t madeleine,
     interface->after_open_channel(channel);
 
   tbx_append_list(&(madeleine->channel), channel);
-  PM2_UNLOCK_SHARED(channel);
-  PM2_UNLOCK_SHARED(adapter);
-  PM2_UNLOCK_SHARED(madeleine);
-  PM2_UNLOCK();
+  TBX_UNLOCK_SHARED(channel);
+  TBX_UNLOCK_SHARED(adapter);
+  TBX_UNLOCK_SHARED(madeleine);
+  TBX_UNLOCK();
   LOG_OUT();
   
   return channel;
@@ -265,9 +270,9 @@ mad_foreach_close_channel(void *object)
   LOG_IN();
 
   TRACE("channel deallocation");
-  PM2_LOCK();
-  PM2_LOCK_SHARED(adapter);
-  PM2_LOCK_SHARED(channel);
+  TBX_LOCK();
+  TBX_LOCK_SHARED(adapter);
+  TBX_LOCK_SHARED(channel);
 
   if (interface->before_close_channel)
     interface->before_close_channel(channel);
@@ -345,18 +350,18 @@ mad_foreach_close_channel(void *object)
 	{
 	  if (out->link->specific)
 	    {
-	      free(out->link->specific);
+	      TBX_FREE(out->link->specific);
 	      out->link->specific = NULL;
 	    }
 
 	  if (in->link->specific)
 	    {
-	      free(in->link->specific);
+	      TBX_FREE(in->link->specific);
 	    }	  
 	}
       
-      free(out->link);
-      free(in->link);
+      TBX_FREE(out->link);
+      TBX_FREE(in->link);
       if (interface->connection_exit)
 	{
 	  interface->connection_exit(in, out);
@@ -365,7 +370,7 @@ mad_foreach_close_channel(void *object)
 	{
 	  if (out->specific)
 	    {	      
-	      free(out->specific);
+	      TBX_FREE(out->specific);
 
 	      if (in->specific == out->specific)
 		{
@@ -376,14 +381,14 @@ mad_foreach_close_channel(void *object)
 
 	  if (in->specific)
 	    {
-	      free(in->specific);
+	      TBX_FREE(in->specific);
 	      in->specific = NULL;
 	    }	  
 	}
     }
 
-  free(channel->output_connection);
-  free(channel->input_connection);
+  TBX_FREE(channel->output_connection);
+  TBX_FREE(channel->input_connection);
   if (interface->channel_exit)
     {
       interface->channel_exit(channel);
@@ -392,13 +397,13 @@ mad_foreach_close_channel(void *object)
     {
       if (channel->specific)
 	{
-	  free(channel->specific);
+	  TBX_FREE(channel->specific);
 	}
     }
-  free(channel);
+  TBX_FREE(channel);
   /* Note: the channel is never unlocked since it is being destroyed */
-  PM2_UNLOCK_SHARED(adapter);
-  PM2_UNLOCK();
+  TBX_UNLOCK_SHARED(adapter);
+  TBX_UNLOCK();
   LOG_OUT();
 }
 

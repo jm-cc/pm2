@@ -12,15 +12,21 @@ typedef struct thread_on_list_st {
   struct thread_on_list_st *next;
 } * thread_on_list;
 
-typedef struct lwp_on_list_st {
-  int lwp;
+typedef struct pid_on_list_st {
+  int pid;
   u_64 last_up;
-  struct lwp_on_list_st *next;
-} * lwp_on_list;
+  struct pid_on_list_st *next;
+} * pid_on_list;
 
-extern void set_lwp_last_up(int lwp, u_64 last_up);
+typedef struct thread_graph_num_list_st {
+  int thread;
+  int num;
+  struct thread_graph_num_list_st *next;
+} * thread_graph_num_list;
 
-extern u_64 get_lwp_last_up(int lwp);
+extern void set_pid_last_up(int pid, u_64 last_up);
+
+extern u_64 get_pid_last_up(int pid);
 
 extern void set_thread_disactivated(int thread, int disactivated);
 

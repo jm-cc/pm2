@@ -18,7 +18,7 @@
  * Mad_via.c
  * =========
  */
-/* #define DEBUG */
+
 #include "madeleine.h"
 #include <vipl.h>
 #include <unistd.h>
@@ -125,7 +125,7 @@ typedef struct
       abort(); }}
 
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
 #define VIA_VERIFY(op) \
 {\
   VIP_RETURN mad_via_status;\
@@ -136,9 +136,9 @@ typedef struct
       mad_via_disp_status(mad_via_status); \
       exit(1);}}
 
-#else /* DEBUG */
+#else /* PM2DEBUG */
 #define VIA_VERIFY(op) ((void)(op))
-#endif /* DEBUG */
+#endif /* PM2DEBUG */
 
 /*
  * Implementation macros
@@ -397,9 +397,9 @@ mad_via_query_nic(p_mad_adapter_t adapter)
 		       &(adapter_specific->nic_attributes)));
   PM2_VIA_UNLOCK();
 
-#ifdef DEBUG
+#ifdef PM2DEBUG
   mad_via_display_nic_attributes(device);
-#endif /* DEBUG */
+#endif /* PM2DEBUG */
 
   LOG_OUT();
 }

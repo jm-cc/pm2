@@ -51,16 +51,8 @@ typedef struct s_leo_swann_module
 
 typedef struct s_leonie
 {
-  leo_file_handle_t     parser_file_handle;
-  FILE                 *parser_file_ptr;
-  p_leo_swann_module_t  parser_file_source;
-  void                 *parser_file_buffer;
-  int                   parser_buf_bytes_read;
-  int                   parser_buf_bytes_written;
-
   int                   cluster_counter;
   tbx_list_t            swann_modules;
-
   p_ntbx_server_t       net_server;
 } leonie_t, *p_leonie_t;
 

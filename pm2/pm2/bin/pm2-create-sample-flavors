@@ -28,7 +28,8 @@ registering_flavors() {
     for i in mono smp act actsmp; do
 	register_flavor marcel-$i \
 	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=smp_shared_queue --marcel=marcel_main
+	    --marcel=$i --marcel=smp_shared_queue --marcel=marcel_main \
+	    --marcel=smp_bind_proc
     done
 
     register_flavor marcel \

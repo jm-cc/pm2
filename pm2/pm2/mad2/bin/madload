@@ -38,11 +38,16 @@
 MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
 export MAD2_ROOT
 
+PM2_ARCH=`${PM2_ROOT}/bin/pm2_arch`
+PM2_SYS=`${PM2_ROOT}/bin/pm2_sys`
+PM2_ARCH_SYS=`basename ${PM2_SYS} _SYS`/`basename ${PM2_ARCH} _ARCH`
+
 case $1 in
     /*) command=$* ;;
-    *) command=`pwd`/$*
+    */*) command=`pwd`/$* ;;
+    *) command=`pwd`/bin/${PM2_ARCH_SYS}/$*
 esac
 
 set `cat ${MAD2_ROOT}/.mad2_conf`
-
+shift
 exec rsh $1 $command

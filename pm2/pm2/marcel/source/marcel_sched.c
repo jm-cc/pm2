@@ -464,8 +464,13 @@ static __inline__ void display_sched_queue(__lwp_t *lwp)
   if(t) {
     mdebug_sched_q("\t\t\t<Queue of real-time tasks on LWP %d:\n", lwp->number);
     do {
+#ifdef MA__MULTIPLE_RUNNING
       mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, ext_state %p, sf %p)\n",
 	     t, t->number, GET_LWP(t)->number, t->ext_state, t->special_flags);
+#else
+      mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, sf %p)\n" ,
+             t, t->number, GET_LWP(t)->number, t->special_flags);
+#endif
       t = next_task(t);
     } while(t != SCHED_DATA(lwp).rt_first);
     mdebug_sched_q("\t\t\t>\n");

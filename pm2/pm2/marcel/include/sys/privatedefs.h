@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: privatedefs.h,v $
+Revision 1.10  2000/03/06 14:56:06  rnamyst
+Modified to include "marcel_flags.h".
+
 Revision 1.9  2000/03/06 12:57:54  vdanjean
 *** empty log message ***
 
@@ -53,6 +56,7 @@ ______________________________________________________________________________
 #ifndef PRIVATEDEFS_EST_DEF
 #define PRIVATEDEFS_EST_DEF
 
+#include "sys/marcel_flags.h"
 #include "sys/isomalloc_archdep.h"
 
 #ifdef SMP

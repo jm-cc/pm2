@@ -13,20 +13,21 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBRARY=marcel
-#LIBNAME=$(LIBRARY)
-
+# Numéro de version majeur (pour une bibliothèque dynamique)
+# 0 nécessaire pour la libpthread
+#---------------------------------------------------------------------
 LIB_SO_MAJ=0
 
-#$(LIBRARY)_CC=gcc
-#$(LIBRARY)_AS=gcc
+# Inclusion des makefiles generiques
+#---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-vars.mak
 
+# TODO LIBNAME devrait provenir des fichiers de la flavor
+#---------------------------------------------------------------------
 ifeq ($(LIBPTHREAD),true)
 LIBNAME=pthread
-LIB_LIB_SO_OPTIONS=-L$(LIB_GEN_LIB) -ltbx
-$(LIB_LIB_SO): $(LIB_LIB_SO).0 libpthread.map
-
 endif
 
+# Inclusion des makefiles generiques
+#---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak

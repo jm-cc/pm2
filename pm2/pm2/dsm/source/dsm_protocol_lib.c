@@ -149,9 +149,9 @@ void dsmlib_rs_send_read_copy(unsigned long index, dsm_node_t req_node, int tag)
       //      lock_task();
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
-      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+      dsm_set_access(index, WRITE_ACCESS); // the local copy will be read_only
       dsm_send_page(req_node, index, READ_ACCESS, tag);
-      //      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
+      dsm_set_access(index, READ_ACCESS); // the local copy will be read_only
       //      unlock_task();
     }
   else // no access; maybe a pending access ?
@@ -187,7 +187,7 @@ void dsmlib_ws_send_page_for_write_access(unsigned long index, dsm_node_t req_no
       //      lock_task();
       //      if (dsm_get_access(index) != WRITE_ACCESS)
       //	dsm_set_access(index, WRITE_ACCESS);
-      dsm_set_access(index, READ_ACCESS); // the local copy will become read-only
+      dsm_set_access(index, WRITE_ACCESS); // the local copy will become read-only
       dsm_send_page(req_node, index, WRITE_ACCESS, tag);
       dsm_set_access(index, NO_ACCESS); // the local copy will be invalidated
       //      unlock_task();

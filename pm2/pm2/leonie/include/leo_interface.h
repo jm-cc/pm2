@@ -66,23 +66,14 @@ leo_dir_channel_init(void);
 p_leo_dir_fchannel_t
 leo_dir_fchannel_init(void);
 
-p_leo_dir_vchannel_process_routing_table_t
-leo_dir_vchannel_process_routing_table_init(void);
+p_leo_dir_vxchannel_process_routing_table_t
+leo_dir_vxchannel_process_routing_table_init(void);
 
-p_leo_dir_vchannel_process_specific_t
-leo_dir_vchannel_process_specific_init(void);
+p_leo_dir_vxchannel_process_specific_t
+leo_dir_vxchannel_process_specific_init(void);
 
-p_leo_dir_vchannel_t
-leo_dir_vchannel_init(void);
-
-p_leo_dir_xchannel_process_routing_table_t
-leo_dir_xchannel_process_routing_table_init(void);
-
-p_leo_dir_xchannel_process_specific_t
-leo_dir_xchannel_process_specific_init(void);
-
-p_leo_dir_xchannel_t
-leo_dir_xchannel_init(void);
+p_leo_dir_vxchannel_t
+leo_dir_vxchannel_init(void);
 
 p_leo_networks_t
 leo_networks_init(void);
@@ -162,15 +153,24 @@ void
 init_channels(p_leonie_t leonie);
 
 void
+init_fchannels(p_leonie_t leonie);
+
+void
+init_vchannels(p_leonie_t leonie);
+
+void
+init_xchannels(p_leonie_t leonie);
+
+void
 exit_session(p_leonie_t leonie);
 
 // Clean-up
 //----------///////////////////////////////////////////////////////////////
 void
-dir_vchannel_disconnect(p_leonie_t leonie);
+dir_xchannel_disconnect(p_leonie_t leonie);
 
 void
-dir_xchannel_disconnect(p_leonie_t leonie);
+dir_vchannel_disconnect(p_leonie_t leonie);
 
 void
 directory_exit(p_leonie_t leonie);
@@ -196,4 +196,409 @@ leonie_failure_cleanup(void);
 void
 leonie_processes_cleanup(void);
 
+// Helpers
+//---------////////////////////////////////////////////////////////////////
+#ifdef NEED_LEO_HELPERS
+static
+p_ntbx_client_t
+process_to_client(p_ntbx_process_t p)
+{
+  p_leo_process_specific_t ps = NULL;
+  p_ntbx_client_t          cl = NULL;
+
+  ps = p->specific;
+  cl = ps?ps->client:NULL;
+
+  return cl;
+}
+
+static
+p_ntbx_client_t
+get_client(p_ntbx_process_container_t pc,
+           ntbx_process_lrank_t       l)
+{
+  p_ntbx_process_t p  = NULL;
+
+  p = ntbx_pc_get_local_process(pc, l);
+  return process_to_client(p);
+}
+
+// pc/global
+static
+void
+do_pc_global(p_ntbx_process_container_t _pc,
+            void (*_f)(ntbx_process_grank_t _g))
+{
+  ntbx_process_grank_t _g = -1;
+
+  if (!ntbx_pc_first_global_rank(_pc, &_g))
+    return;
+
+  do
+    {
+      _f(_g);
+    }
+  while (ntbx_pc_next_global_rank(_pc, &_g));
+}
+
+static
+void
+do_pc2_global(p_ntbx_process_container_t _pc,
+             void (*_f)(ntbx_process_grank_t _g1,
+                        ntbx_process_grank_t _g2))
+{
+  ntbx_process_grank_t _g1 = -1;
+
+  if (!ntbx_pc_first_global_rank(_pc, &_g1))
+    return;
+
+  do
+    {
+      ntbx_process_grank_t _g2 = -1;
+
+      ntbx_pc_first_global_rank(_pc, &_g2);
+      do
+        {
+          _f(_g1, _g2);
+        }
+      while (ntbx_pc_next_global_rank(_pc, &_g2));
+    }
+  while (ntbx_pc_next_global_rank(_pc, &_g1));
+}
+
+static
+void
+do_pc_global_s(p_ntbx_process_container_t _pc,
+              void (*_f)(ntbx_process_grank_t  _g,
+                         void                 *_s))
+{
+  ntbx_process_grank_t _g = -1;
+
+  if (!ntbx_pc_first_global_rank(_pc, &_g))
+    return;
+
+  do
+    {
+      void *_s = ntbx_pc_get_global_specific(_pc, _g);
+      _f(_g, _s);
+    }
+  while (ntbx_pc_next_global_rank(_pc, &_g));
+}
+
+static
+void
+do_pc_send_global(p_ntbx_process_container_t _pc,
+                 void (*_f)(ntbx_process_grank_t _g,
+                            p_ntbx_client_t      _client))
+{
+  void _h(ntbx_process_grank_t _g)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _g);
+      _f(_g, _client);
+    }
+
+  LOG_IN();
+  do_pc_global(_pc, _h);
+  LOG_OUT();
+}
+
+static
+void
+do_pc_cond_global(p_ntbx_process_container_t _pc,
+                 tbx_bool_t (*_f)(ntbx_process_grank_t _g))
+{
+  ntbx_process_grank_t _g = -1;
+
+  LOG_IN();
+  if (!ntbx_pc_first_global_rank(_pc, &_g))
+    {
+      LOG_OUT();
+      return;
+    }
+
+  while (_f(_g) && ntbx_pc_next_global_rank(_pc, &_g))
+    ;
+
+  LOG_OUT();
+}
+
+static
+void
+do_pc_cond_send_global(p_ntbx_process_container_t _pc,
+                      tbx_bool_t (*_f)(ntbx_process_grank_t _l,
+                                       p_ntbx_client_t _client))
+{
+  tbx_bool_t _h(ntbx_process_grank_t _l)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _l);
+      return _f(_l, _client);
+    }
+
+  LOG_IN();
+  do_pc_cond_global(_pc, _h);
+  LOG_OUT();
+}
+
+// pc/local
+static
+void
+do_pc_local(p_ntbx_process_container_t _pc,
+            void (*_f)(ntbx_process_lrank_t _l))
+{
+  ntbx_process_lrank_t _l = -1;
+
+  if (!ntbx_pc_first_local_rank(_pc, &_l))
+    return;
+
+  do
+    {
+      _f(_l);
+    }
+  while (ntbx_pc_next_local_rank(_pc, &_l));
+}
+
+static
+void
+do_pc2_local(p_ntbx_process_container_t _pc,
+             void (*_f)(ntbx_process_lrank_t _l1,
+                        ntbx_process_lrank_t _l2))
+{
+  ntbx_process_lrank_t _l1 = -1;
+
+  if (!ntbx_pc_first_local_rank(_pc, &_l1))
+    return;
+
+  do
+    {
+      ntbx_process_lrank_t _l2 = -1;
+
+      ntbx_pc_first_local_rank(_pc, &_l2);
+      do
+        {
+          _f(_l1, _l2);
+        }
+      while (ntbx_pc_next_local_rank(_pc, &_l2));
+    }
+  while (ntbx_pc_next_local_rank(_pc, &_l1));
+}
+
+static
+void
+do_pc_local_s(p_ntbx_process_container_t _pc,
+              void (*_f)(ntbx_process_lrank_t  _l,
+                         void                 *_s))
+{
+  ntbx_process_lrank_t _l = -1;
+
+  if (!ntbx_pc_first_local_rank(_pc, &_l))
+    return;
+
+  do
+    {
+      void *_s = ntbx_pc_get_local_specific(_pc, _l);
+      _f(_l, _s);
+    }
+  while (ntbx_pc_next_local_rank(_pc, &_l));
+}
+
+static
+void
+do_pc_send_local(p_ntbx_process_container_t _pc,
+                 void (*_f)(ntbx_process_lrank_t _l,
+                            p_ntbx_client_t      _client))
+{
+  void _h(ntbx_process_lrank_t _l)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _l);
+      _f(_l, _client);
+    }
+
+  LOG_IN();
+  do_pc_local(_pc, _h);
+  LOG_OUT();
+}
+
+static
+void
+do_pc_send_local_s(p_ntbx_process_container_t _pc,
+                   void (*_f)(ntbx_process_lrank_t  _l,
+                              p_ntbx_client_t       _client,
+                              void                 *_s))
+{
+  void _h(ntbx_process_lrank_t _l, void *_s)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _l);
+
+      _f(_l, _client, _s);
+    }
+
+  LOG_IN();
+  do_pc_local_s(_pc, _h);
+  LOG_OUT();
+}
+
+static
+void
+do_pc_cond_local(p_ntbx_process_container_t _pc,
+                 tbx_bool_t (*_f)(ntbx_process_lrank_t _l))
+{
+  ntbx_process_lrank_t _l = -1;
+
+  LOG_IN();
+  if (!ntbx_pc_first_local_rank(_pc, &_l))
+    {
+      LOG_OUT();
+      return;
+    }
+
+  while (_f(_l) && ntbx_pc_next_local_rank(_pc, &_l))
+    ;
+
+  LOG_OUT();
+}
+
+static
+void
+do_pc_cond_send_local(p_ntbx_process_container_t _pc,
+                      tbx_bool_t (*_f)(ntbx_process_lrank_t _l,
+                                       p_ntbx_client_t _client))
+{
+  tbx_bool_t _h(ntbx_process_lrank_t _l)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _l);
+      return _f(_l, _client);
+    }
+
+  LOG_IN();
+  do_pc_cond_local(_pc, _h);
+  LOG_OUT();
+}
+
+// pc
+static
+void
+do_pc_s(p_ntbx_process_container_t _pc,
+        void (*_f)(void *_s))
+{
+  ntbx_process_lrank_t _l = -1;
+
+  if (!ntbx_pc_first_local_rank(_pc, &_l))
+    return;
+
+  do
+    {
+      void *_s = ntbx_pc_get_local_specific(_pc, _l);
+      _f(_s);
+    }
+  while (ntbx_pc_next_local_rank(_pc, &_l));
+}
+
+static
+void
+do_pc_send(p_ntbx_process_container_t _pc,
+           void (*_f)(p_ntbx_client_t _client))
+{
+  void _h(ntbx_process_lrank_t _l)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _l);
+      _f(_client);
+    }
+
+  LOG_IN();
+  do_pc_local(_pc, _h);
+  LOG_OUT();
+}
+
+static
+void
+do_pc_send_string(p_ntbx_process_container_t _pc,
+                  char*                      _str)
+{
+  void _h(p_ntbx_client_t cl) {
+    leo_send_string(cl, _str);
+  }
+
+  LOG_IN();
+  do_pc_send(_pc, _h);
+  LOG_OUT();
+}
+
+static
+void
+do_pc_send_s(p_ntbx_process_container_t _pc,
+                 void (*_f)(p_ntbx_client_t  _client,
+                            void            *_s))
+{
+  void _h(ntbx_process_lrank_t _l, void *_s)
+    {
+      p_ntbx_client_t _client = get_client(_pc, _l);
+      _f(_client, _s);
+    }
+
+  LOG_IN();
+  do_pc_local_s(_pc, _h);
+  LOG_OUT();
+}
+
+// slist
+static
+void
+do_slist(p_tbx_slist_t _l,
+         void (*_f)(void *_p))
+{
+  if (tbx_slist_is_nil(_l))
+    return;
+
+  tbx_slist_ref_to_head(_l);
+  do
+    {
+      void *_p = tbx_slist_ref_get(_l);
+      _f(_p);
+    }
+  while (tbx_slist_ref_forward(_l));
+}
+
+static
+void
+do_extract_slist(p_tbx_slist_t _l,
+                void (*_f)(void *_p))
+{
+  while(!tbx_slist_is_nil(_l))
+    {
+      void *_p = tbx_slist_extract(_l);
+      _f(_p);
+    }
+}
+
+static
+void
+do_slist_nref(p_tbx_slist_t _l,
+              p_tbx_slist_nref_t _nref,
+              void (*_f)(void *_p))
+{
+  if (tbx_slist_is_nil(_l))
+    return;
+
+  tbx_slist_nref_to_head(_nref);
+  do
+    {
+      void *_p = tbx_slist_nref_get(_nref);
+      _f(_p);
+    }
+  while (tbx_slist_nref_forward(_nref));
+}
+
+static
+void
+with_all_processes(p_leo_directory_t dir,
+                   void (*_f)(p_ntbx_client_t _client))
+{
+  void _h(void *_p)
+    {
+      _f(process_to_client(_p));
+    }
+
+  do_slist(dir->process_slist, _h);
+}
+#endif /* NEED_LEO_HELPER */
 #endif /* LEO_INTERFACE_H */

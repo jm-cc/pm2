@@ -34,6 +34,18 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.5  2000/04/11 09:07:21  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.4.2.3  2000/04/11 08:17:31  rnamyst
+Comments are back !
+
+Revision 1.4.2.2  2000/04/08 15:09:14  vdanjean
+few bugs fixed
+
+Revision 1.4.2.1  2000/03/15 15:55:07  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.4  2000/02/28 10:25:03  rnamyst
 Changed #include <> into #include "".
 
@@ -125,15 +137,18 @@ static void *unix_io_poll(marcel_pollid_t id,
   fd_set rfds, wfds;
   struct timeval tv, *ptv;
   
-
+#ifndef MA__ACT
+  // Trop de messages avec les activations
   mdebug("Polling function called on LWP %d (%2d A, %2d S, %2d B)\n",
 	 marcel_current_vp(), active, sleeping, blocked);
 
   if(active) {
     mdebug("E/S non bloquante\n");
+#endif
 
     timerclear(&tv);
     ptv = &tv;
+#ifndef MA__ACT
   } else if(sleeping) {
     mdebug("E/S a duree limitee\n");
 
@@ -148,6 +163,7 @@ static void *unix_io_poll(marcel_pollid_t id,
     ptv = &tv;
     /* ptv = NULL; */
   }
+#endif
 
   rfds = unix_io_args.rfds;
   wfds = unix_io_args.wfds;

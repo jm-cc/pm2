@@ -14,7 +14,13 @@
  * General Public License for more details.
  */
 
+#define _GNU_SOURCE /* pour sched_setaffinity sous linux */
 #include "marcel.h"
+#ifdef MA__SMP
+#ifdef LINUX_SYS
+#include <sched.h>
+#endif
+#endif
 
 #define BIND_LWP_ON_PROCESSORS
 
@@ -186,7 +192,7 @@ unsigned marcel_lwp_add_vp(void)
 
   // Initialisation de la structure marcel_lwp_t
   //marcel_lwp_init(lwp);
-  lwp_notify(&lwp_nb, (unsigned long)MA_LWP_UP_PREPARE, (void *)lwp);
+  ma_call_lwp_notifier((unsigned long)MA_LWP_UP_PREPARE, lwp);
 #warning initialisation de la structure à faire...
 
   lwp_list_lock_write();
@@ -355,18 +361,29 @@ static void lwp_init(ma_lwp_t lwp)
 
 inline static void bind_on_processor(marcel_lwp_t *lwp)
 {
-#if defined(BIND_LWP_ON_PROCESSORS) && defined(SOLARIS_SYS)
+	unsigned long target = LWP_NUMBER(lwp) % __nb_processors;
+#if defined(BIND_LWP_ON_PROCESSORS)
+#if defined(SOLARIS_SYS)
 	if(processor_bind(P_LWPID, P_MYID,
-			  (processorid_t)(lwp->number % __nb_processors),
+			  (processorid_t)(target),
 			  NULL) != 0) {
 		perror("processor_bind");
 		exit(1);
 	}
-#ifdef MARCEL_DEBUG
-	if(marcel_mdebug.show)
-		fprintf(stderr, "LWP %d bound to processor %d\n",
-			lwp->number, (lwp->number % __nb_processors));
+#elif defined(LINUX_SYS)
+	cpu_set_t mask;
+
+	CPU_ZERO(&mask);
+	CPU_SET(target, &mask);
+	if(sched_setaffinity(0,&mask)<0) {
+		perror("sched_setaffinity");
+		exit(1);
+	}
+#else
+#error "don't know how to bind on processors on this system"
 #endif
+	mdebug("LWP %u bound to processor %lu\n",
+			LWP_NUMBER(lwp), target);
 #endif
 }
 

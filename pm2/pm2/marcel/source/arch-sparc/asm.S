@@ -14,7 +14,13 @@
  * General Public License for more details.
  */
 
+#if defined(SOLARIS_SYS)
 #include <sys/trap.h>
+#elif defined(LINUX_SYS)
+#include <asm/traps.h>
+#else
+#error Please tell where ST_FLUSH_WINDOWS is defined on your system
+#endif
 
 	.seg	"text"
 

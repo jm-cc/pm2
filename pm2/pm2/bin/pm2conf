@@ -34,4 +34,191 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-exec ${PM2_ROOT}/madeleine/bin/madconf $*
+usage() # exit_code
+{
+    cat <<EOF
+Usage: `basename $0` { option } { item }
+  option:
+    -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
+    -p <name> : Store parameters in file "name" under the preference directory
+    -h        : Display this help message
+  item:
+    <host>            : Add machine "host" to the configuration
+    -l <file>         : Use <file> as an input for host names
+    -e <host> <i>-<j> : Expand to <hosti> <hosti+1> ... <hostj>
+    -s <suffix> item  : Add <suffix> to the "item" expression
+EOF
+    exit $1
+}
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+add_suffix()
+{
+    if [ ! $# -ge 2 ] ; then
+	usage 1
+    fi
+    SUFFIX=$1
+    shift
+    case "$1" in
+	-l) LIST=`load_file $2`
+	    for f in `evaluate $LIST` ; do
+		echo ${f}$SUFFIX
+	    done
+	    shift 2
+	    ;;
+	-e) for f in `expand $2 $3` ; do
+		echo ${f}$SUFFIX
+	    done
+	    shift 3
+	    ;;
+	-s) echo "Error: cannot apply suffix to a suffix command"
+	    exit 1 ;;
+	*)  echo $1$SUFFIX
+	    shift
+	    ;;
+    esac
+    evaluate $*
+}
+
+load_file()
+{
+    if [ ! $# -ge 1 ] ; then
+	usage 1
+    fi
+    if [ ! -f "$1" ]; then
+	case "$1" in
+	    /*)	error "File not found: $1"
+		;;
+	    *) if [ ! -f ${PREF_DIR}/$1 ] ; then
+		    error "File not found: $1"
+		else
+		    file=${PREF_DIR}/$1
+		fi
+		;;
+	esac
+    else
+	file=$1
+    fi
+    cat $file
+    shift
+    echo $*
+}
+
+expand()
+{
+    if [ ! $# -ge 2 ] ; then
+	usage 1
+    fi
+    BASE=$1; shift
+    INF=`IFS='-'; set $1; echo $1`
+    SUP=`IFS='-'; set $1; echo $2`
+    shift
+    if [ "$INF" -le "$SUP" ] ; then
+	while [ $INF -le $SUP ] ; do
+	    echo ${BASE}${INF}
+	    INF=`expr $INF + 1`
+	done
+	evaluate $*
+    else
+	usage 1
+    fi
+}
+
+evaluate()
+{
+    if [ $# -ge 1 ] ; then
+	case "$1" in
+	    -l) shift; evaluate `load_file $*`;;
+	    -e) shift; expand $* ;;
+	    -s) shift; add_suffix $* ;;
+	    *) echo $1; shift; evaluate $* ;;
+	esac
+    fi
+}
+
+# Début du script 
+
+PM2_FLAVOR=${PM2_FLAVOR:-default}
+export PM2_FLAVOR
+
+PREF_DIR=${HOME}/.pm2/preferences/conf
+
+pref_file=""
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f)
+	    shift; PM2_FLAVOR="$1"; shift
+	    ;;
+	-h)
+	    usage 0
+	    ;;
+	-p)
+	    shift
+	    pref_file="$1"
+	    [ -n "$pref_file" ] || usage 1
+	    shift
+	    ;;
+	--)
+	    shift; break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+if [ -n "$pref_file" -a -n "$*" ] ; then
+    rm -f ${PREF_DIR}/"$pref_file"
+    echo "Storing string \"$*\""
+    echo " $@" > ${PREF_DIR}/"$pref_file"
+    echo "Parameters stored in file \"${PREF_DIR}/$pref_file\""
+fi
+
+PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
+
+[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
+
+[ -d ${PM2_CONF_DIR} ] || mkdir -p ${PM2_CONF_DIR}
+
+PM2_CONF_FILE=${PM2_CONF_DIR}/.pm2conf
+export PM2_CONF_FILE
+
+# Modification éventuelle de la configuration courante
+if [ $# -gt 0 ] ; then
+    LINE=''
+    while [ $# -ge 1 ]; do
+	case "$1" in
+	    --) shift; break;;
+	    *) LINE="$LINE $1"; shift;;
+	esac
+    done
+    if [ -n "$LINE" ] ; then
+	rm -f ${PM2_CONF_FILE}
+	cp /dev/null ${PM2_CONF_FILE}
+	for m in `evaluate $LINE`
+	do
+	    echo $m >> ${PM2_CONF_FILE}
+	done
+    fi
+fi
+
+# Affichage de la configuration courante
+if [ -f ${PM2_CONF_FILE} ] ; then
+    set -- `cat ${PM2_CONF_FILE}`
+    nb=$#
+    echo "The current PM2 configuration contains $nb host(s) :"
+    i=0
+    for m in $*
+    do
+	echo "$i : $m"
+	i=`expr $i + 1`
+    done
+else
+    error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\"."
+fi

@@ -42,6 +42,7 @@
 #ifndef __LEO_TYPES_H
 #define __LEO_TYPES_H
 
-typedef int leo_file_handler_t, *p_file_handler_t;
+typedef void               *leo_file_handle_t;
+typedef leo_file_handle_t *p_file_handle_t;
 
 #endif /* __LEO_TYPES_H */

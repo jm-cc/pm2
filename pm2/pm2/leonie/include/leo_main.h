@@ -42,10 +42,26 @@
 #ifndef __LEO_MAIN_H
 #define __LEO_MAIN_H
 
+typedef struct s_leo_swann_module
+{
+  int              id;
+  char            *cluster_id;
+  p_ntbx_client_t  net_client;
+} leo_swann_module_t, *p_leo_swann_module_t;
+
 typedef struct s_leonie
 {
-  leo_file_handler_t  parser_file_handle;
-  FILE               *parser_file_ptr;
+  leo_file_handle_t     parser_file_handle;
+  FILE                 *parser_file_ptr;
+  p_leo_swann_module_t  parser_file_source;
+  void                 *parser_file_buffer;
+  int                   parser_buf_bytes_read;
+  int                   parser_buf_bytes_written;
+
+  int                   cluster_counter;
+  tbx_list_t            swann_modules;
+
+  p_ntbx_server_t       net_server;
 } leonie_t, *p_leonie_t;
 
 #endif /* __LEO_MAIN_H */

@@ -10,19 +10,18 @@ void flavor_init(GtkWidget *vbox);
    pm2-flavor... */
 GList *flavor_list(void);
 
-void flavor_rescan(void);
+void flavor_create(void);
 
-void set_current_flavor(char *name);
+void flavor_load(void);
+
+void flavor_save_as(void);
+
+void flavor_delete(void);
 
 void flavor_mark_modified(void);
 
 void flavor_check_quit(void);
 
-void flavor_load_enable(gint enable);
-
-void flavor_create_enable(gint enable);
-
-void flavor_save_enable(gint enable);
 
 char *flavor_name(void);
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: isomalloc_rpc.c,v $
+Revision 1.4  2000/02/28 11:17:03  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/01/31 15:58:23  oaumage
 - ajout du Log CVS
 
@@ -41,8 +44,8 @@ Revision 1.3  2000/01/31 15:58:23  oaumage
 ______________________________________________________________________________
 */
 
-#include <pm2.h>
-#include <sys/isomalloc_rpc.h>
+#include "pm2.h"
+#include "sys/isomalloc_rpc.h"
 
 /**************************************************/
 /* GLOBAL_LOCK */

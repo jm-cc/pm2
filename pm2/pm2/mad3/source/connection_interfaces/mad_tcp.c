@@ -103,19 +103,19 @@ mad_tcp_write(int            sock,
 	}
       else
 	FAILURE("connection closed");
-      
+
 #ifdef MARCEL
       if (mad_more_data(buffer)) TBX_YIELD();
-#endif // MARCEL 
+#endif // MARCEL
     }
   LOG_OUT();
 }
 
 static
 void
-mad_tcp_read(int            sock, 
+mad_tcp_read(int            sock,
 	     p_mad_buffer_t buffer)
-{  
+{
   LOG_IN();
   while (!mad_buffer_full(buffer))
     {
@@ -132,13 +132,13 @@ mad_tcp_read(int            sock,
 	}
       else
 	FAILURE("connection closed");
-     
+
 #ifdef MARCEL
       if (!mad_buffer_full(buffer))
 	{
 	  TBX_YIELD();
 	}
-#endif // MARCEL 
+#endif // MARCEL
     }
   LOG_OUT();
 }
@@ -164,11 +164,11 @@ mad_tcp_register(p_mad_driver_t driver)
   LOG_IN();
   TRACE("Registering TCP driver");
   interface = driver->interface;
-  
+
   driver->connection_type  = mad_bidirectional_connection;
   driver->buffer_alignment = 32;
   driver->name             = tbx_strdup("tcp");
-  
+
   interface->driver_init                = mad_tcp_driver_init;
   interface->adapter_init               = mad_tcp_adapter_init;
   interface->channel_init               = mad_tcp_channel_init;
@@ -178,7 +178,7 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->accept                     = mad_tcp_accept;
   interface->connect                    = mad_tcp_connect;
   interface->after_open_channel         = mad_tcp_after_open_channel;
-  interface->before_close_channel       = NULL; 
+  interface->before_close_channel       = NULL;
   interface->disconnect                 = mad_tcp_disconnect;
   interface->after_close_channel        = NULL;
   interface->link_exit                  = NULL;
@@ -193,7 +193,7 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->finalize_message           = NULL;
 #ifdef MAD_MESSAGE_POLLING
   interface->poll_message               = mad_tcp_poll_message;
-#endif // MAD_MESSAGE_POLLING 
+#endif // MAD_MESSAGE_POLLING
   interface->receive_message            = mad_tcp_receive_message;
   interface->message_received           = NULL;
   interface->send_buffer                = mad_tcp_send_buffer;
@@ -226,7 +226,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   LOG_IN();
   if (strcmp(adapter->dir_adapter->name, "default"))
     FAILURE("unsupported adapter");
-  
+
   adapter_specific  = TBX_MALLOC(sizeof(mad_tcp_adapter_specific_t));
   adapter_specific->connection_port   = -1;
   adapter_specific->connection_socket = -1;
@@ -241,7 +241,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
     ntbx_tcp_socket_create(&address, 0);
   SYSCALL(listen(adapter_specific->connection_socket,
 		 min(5, SOMAXCONN)));
-  
+
   adapter_specific->connection_port =
     (ntbx_tcp_port_t)ntohs(address.sin_port);
 
@@ -257,7 +257,7 @@ void
 mad_tcp_channel_init(p_mad_channel_t channel)
 {
   p_mad_tcp_channel_specific_t channel_specific = NULL;
-  
+
   LOG_IN();
   channel_specific  = TBX_MALLOC(sizeof(mad_tcp_channel_specific_t));
   channel->specific = channel_specific;
@@ -269,7 +269,7 @@ mad_tcp_connection_init(p_mad_connection_t in,
 			p_mad_connection_t out)
 {
   p_mad_tcp_connection_specific_t specific = NULL;
-  
+
   LOG_IN();
   specific     = TBX_MALLOC(sizeof(mad_tcp_connection_specific_t));
   in->specific = out->specific = specific;
@@ -278,7 +278,7 @@ mad_tcp_connection_init(p_mad_connection_t in,
   LOG_OUT();
 }
 
-void 
+void
 mad_tcp_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
@@ -295,8 +295,8 @@ mad_tcp_before_open_channel(p_mad_channel_t channel)
 
   LOG_IN();
   channel_specific          = channel->specific;
-  channel_specific->max_fds = 0;  
-  FD_ZERO(&(channel_specific->read_fds));  
+  channel_specific->max_fds = 0;
+  FD_ZERO(&(channel_specific->read_fds));
   LOG_OUT();
 }
 
@@ -305,16 +305,16 @@ mad_tcp_accept(p_mad_connection_t   in,
 	       p_mad_adapter_info_t adapter_info TBX_UNUSED)
 {
   p_mad_tcp_adapter_specific_t    adapter_specific    = NULL;
-  p_mad_tcp_connection_specific_t connection_specific = NULL; 
+  p_mad_tcp_connection_specific_t connection_specific = NULL;
   ntbx_tcp_socket_t               desc                =   -1;
-  
+
   LOG_IN();
   connection_specific = in->specific;
   adapter_specific    = in->channel->adapter->specific;
   
   SYSCALL(desc = accept(adapter_specific->connection_socket, NULL, NULL));
   ntbx_tcp_socket_setup(desc);
-  
+
   connection_specific->socket = desc;
   LOG_OUT();
 
@@ -330,7 +330,7 @@ mad_tcp_connect(p_mad_connection_t   out,
   ntbx_tcp_port_t                   remote_port           =    0;
   ntbx_tcp_socket_t                 sock                  =   -1;
   ntbx_tcp_address_t                remote_address;
-  
+
   LOG_IN();
   connection_specific = out->specific;
   remote_node         = adapter_info->dir_node;
@@ -340,9 +340,9 @@ mad_tcp_connect(p_mad_connection_t   out,
 
   ntbx_tcp_address_fill_ip(&remote_address, remote_port, &remote_node->ip);
 
-  SYSCALL(connect(sock, (struct sockaddr *)&remote_address, 
+  SYSCALL(connect(sock, (struct sockaddr *)&remote_address,
 		  sizeof(ntbx_tcp_address_t)));
-  
+
   ntbx_tcp_socket_setup(sock);
   connection_specific->socket = sock;
   LOG_OUT();
@@ -369,26 +369,26 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
   while (in)
     {
       p_mad_tcp_connection_specific_t in_specific = NULL;
-      
+
       in_specific = in->specific;
-      
+
       FD_SET(in_specific->socket, read_fds);
       max_fds = max(in_specific->socket, max_fds);
 
       in = tbx_darray_next_idx(in_darray, &idx);
     }
-  
+
   channel_specific->max_fds       = max_fds;
   channel_specific->active_number =  0;
   channel_specific->last_idx      = -1;
   LOG_OUT();
 }
 
-void 
+void
 mad_tcp_disconnect(p_mad_connection_t connection)
 {
   p_mad_tcp_connection_specific_t connection_specific = connection->specific;
-  
+
   LOG_IN();
   SYSCALL(close(connection_specific->socket));
   connection_specific->socket = -1;
@@ -402,7 +402,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
   p_mad_tcp_channel_specific_t channel_specific = NULL;
   p_tbx_darray_t               in_darray        = NULL;
   p_mad_connection_t           in               = NULL;
-  
+
   LOG_IN();
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
@@ -419,7 +419,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
       status = select(channel_specific->max_fds + 1,
 		      &channel_specific->active_fds,
 		      NULL, NULL, &timeout);
-      
+
 
       if ((status == -1) && (errno != EINTR))
 	{
@@ -432,7 +432,7 @@ mad_tcp_poll_message(p_mad_channel_t channel)
 	  LOG_OUT();
 	  return NULL;
 	}
- 
+
       channel_specific->active_number = status;
 
       in = tbx_darray_first_idx(in_darray, &channel_specific->last_idx);
@@ -445,24 +445,24 @@ mad_tcp_poll_message(p_mad_channel_t channel)
   while (in)
     {
       p_mad_tcp_connection_specific_t in_specific = NULL;
-      
+
       in_specific = in->specific;
-      
+
       if (FD_ISSET(in_specific->socket, &channel_specific->active_fds))
 	{
 	  channel_specific->active_number--;
-	  
+
 	  LOG_OUT();
-	  
+
 	  return in;
-	}      
+	}
 
       in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
     }
-  
+
   FAILURE("invalid channel state");
 }
-#endif // MAD_MESSAGE_POLLING 
+#endif // MAD_MESSAGE_POLLING
 
 p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t channel)
@@ -470,7 +470,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
   p_mad_tcp_channel_specific_t channel_specific = NULL;
   p_tbx_darray_t               in_darray        = NULL;
   p_mad_connection_t           in               = NULL;
-  
+
   LOG_IN();
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
@@ -488,8 +488,8 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	  status = marcel_select(channel_specific->max_fds + 1,
 				 &channel_specific->active_fds,
 				 NULL);
-              
-#else // USE_MARCEL_POLL 
+
+#else // USE_MARCEL_POLL
 	  status = tselect(channel_specific->max_fds + 1,
 			   &channel_specific->active_fds,
 			   NULL, NULL);
@@ -497,8 +497,8 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	    {
 	      TBX_YIELD();
 	    }
-#endif // USE_MARCEL_POLL   
-#else // MARCEL 
+#endif // USE_MARCEL_POLL
+#else // MARCEL
 	  status = select(channel_specific->max_fds + 1,
 			  &channel_specific->active_fds,
 			  NULL, NULL, NULL);
@@ -511,7 +511,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	    }
 	}
       while (status <= 0);
- 
+
       channel_specific->active_number = status;
 
       in = tbx_darray_first_idx(in_darray, &channel_specific->last_idx);
@@ -524,21 +524,21 @@ mad_tcp_receive_message(p_mad_channel_t channel)
   while (in)
     {
       p_mad_tcp_connection_specific_t in_specific = NULL;
-      
+
       in_specific = in->specific;
-      
+
       if (FD_ISSET(in_specific->socket, &channel_specific->active_fds))
 	{
 	  channel_specific->active_number--;
-	  
+
 	  LOG_OUT();
-	  
+
 	  return in;
-	}      
+	}
 
       in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
     }
-  
+
   FAILURE("invalid channel state");
 }
 

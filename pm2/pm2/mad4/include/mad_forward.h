@@ -24,6 +24,7 @@
 
 #define MAD_FORWARD_MAX_MTU 0xFFFFFFFFUL
 
+#ifdef MARCEL
 typedef struct s_mad_fmessage_queue_entry
 {
   ntbx_process_grank_t source;
@@ -165,6 +166,7 @@ typedef struct s_mad_forward_poll_channel_arg
   p_mad_channel_t channel;
   p_mad_channel_t vchannel;
 } mad_forward_poll_channel_arg_t;
+#endif // MARCEL
 
 #endif /* MAD_FORWARD_H */
 

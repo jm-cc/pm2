@@ -43,7 +43,9 @@ typedef struct s_mad_session
   p_ntbx_client_t      leonie_link;
   ntbx_process_grank_t process_rank;
   ntbx_process_grank_t session_id;
+#ifdef MARCEL
   marcel_t             command_thread;
+#endif /* MARCEL */
 } mad_session_t;
 
 typedef struct s_mad_settings

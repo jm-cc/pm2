@@ -56,6 +56,7 @@ typedef struct s_mad_connection
   char                    *parameter;
 
   /* Forwarding connections only */
+#ifdef MARCEL
   marcel_t                 forwarding_thread;
   p_tbx_slist_t            forwarding_block_list;
   marcel_sem_t             something_to_forward;
@@ -71,6 +72,7 @@ typedef struct s_mad_connection
 #ifdef MAD_FORWARD_FLOW_CONTROL
   marcel_sem_t             ack;
 #endif // MAD_FORWARD_FLOW_CONTROL
+#endif // MARCEL
 
   /* Internal use fields */
   int                      nb_link;
@@ -85,8 +87,11 @@ typedef struct s_mad_connection
   mad_link_mode_t          last_link_mode;
 
   /* Flags */
+#ifdef MARCEL
   marcel_mutex_t           lock_mutex;
-
+#else // MARCEL
+  volatile tbx_bool_t      lock;
+#endif // MARCEL
   tbx_bool_t               delayed_send;
   tbx_bool_t               flushed;
   tbx_bool_t               pair_list_used;

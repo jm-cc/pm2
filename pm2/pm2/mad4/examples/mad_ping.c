@@ -740,8 +740,8 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 #endif // STARTUP_ONLY
 
 int
-marcel_main(int    argc,
-            char **argv)
+main(int    argc,
+     char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;

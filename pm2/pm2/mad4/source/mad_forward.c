@@ -24,6 +24,7 @@
 
 /*#define ACCUMULATION 5*/
 
+#ifdef MARCEL
 /*
  * Macros
  * ------
@@ -2167,4 +2168,5 @@ mad_forward_stop_reception(p_mad_channel_t      vchannel,
     }
   LOG_OUT();
 }
+#endif // MARCEL
 

@@ -22,6 +22,7 @@
 #include "madeleine.h"
 #include "tbx.h"
 
+#ifdef MARCEL
 /*
  * Macros
  * ------
@@ -2307,4 +2308,4 @@ mad_mux_add_named_sub_channels(p_mad_channel_t xchannel)
     }
   LOG_OUT();
 }
-
+#endif // MARCEL

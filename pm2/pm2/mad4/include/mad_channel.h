@@ -47,13 +47,18 @@ typedef struct s_mad_channel
   p_tbx_darray_t              in_connection_darray;
   p_tbx_darray_t              out_connection_darray;
   char                       *parameter;
+#ifdef MARCEL
   marcel_mutex_t              reception_lock_mutex;
+#else // MARCEL
+  volatile tbx_bool_t         reception_lock;
+#endif // MARCEL
 
   unsigned int                max_sub;
   unsigned int                sub;
   p_tbx_darray_t              sub_channel_darray;
 
   /* Forwarding/Mux only */
+#ifdef MARCEL
   p_tbx_darray_t              sub_list_darray;
   unsigned int                max_mux;
   unsigned int                mux;
@@ -69,6 +74,7 @@ typedef struct s_mad_channel
   volatile tbx_bool_t         a_message_is_ready;
   p_mad_connection_t          active_connection;
   marcel_t                    polling_thread;
+#endif // MARCEL
 
   p_mad_driver_specific_t specific;
 } mad_channel_t;

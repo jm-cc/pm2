@@ -231,6 +231,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
   while (driver_init_2(dir_driver_htable))
     ;
 
+#ifdef MARCEL
   {
     p_mad_driver_t fwd_driver = NULL;
 
@@ -244,6 +245,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
     mux_driver = tbx_htable_get(mad_driver_htable, "mux");
     mux_driver->interface->driver_init(mux_driver);
   }
+#endif // MARCEL
   LOG_OUT();
 }
 
@@ -1009,6 +1011,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   return tbx_true;
 }
 
+#ifdef MARCEL
 static
 void
 vchannel_connection_open(p_mad_madeleine_t          madeleine,
@@ -1124,6 +1127,7 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
   tbx_darray_expand_and_set(mad_channel->in_connection_darray, l_dst, in);
   tbx_darray_expand_and_set(mad_channel->out_connection_darray, l_dst, out);
 }
+#endif /* MARCEL */
 
 static
 tbx_bool_t
@@ -1132,6 +1136,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 {
   char  *vchannel_name = NULL;
 
+#ifdef MARCEL
   p_mad_adapter_t             mad_adapter    = NULL;
   p_mad_driver_t              mad_driver     = NULL;
   p_mad_dir_channel_t         dir_vchannel   = NULL;
@@ -1142,6 +1147,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   ntbx_process_grank_t        g_rank_dst     =   -1;
   p_mad_driver_interface_t    interface      = NULL;
   ntbx_process_grank_t        g  =   -1;
+#endif // MARCEL
 
   vchannel_name = mad_leonie_receive_string();
   if (tbx_streq(vchannel_name, "-"))
@@ -1150,6 +1156,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
       return tbx_false;
     }
 
+#ifdef MARCEL
   TRACE_STR("Virtual channel", vchannel_name);
 
   g = madeleine->session->process_rank;
@@ -1241,6 +1248,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
 
   tbx_htable_add(mad_adapter->channel_htable, dir_vchannel->name, mad_channel);
   tbx_htable_add(madeleine->channel_htable,   dir_vchannel->name, mad_channel);
+#endif // MARCEL
 
   // Virtual channel ready
   TBX_FREE(vchannel_name);
@@ -1249,6 +1257,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   return tbx_true;
 }
 
+#ifdef MARCEL
 static
 void
 xchannel_connection_open(p_mad_madeleine_t          madeleine,
@@ -1356,6 +1365,7 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
   tbx_darray_expand_and_set(mad_channel->in_connection_darray,  l_dst, in);
   tbx_darray_expand_and_set(mad_channel->out_connection_darray, l_dst, out);
 }
+#endif /* MARCEL */
 
 static
 tbx_bool_t
@@ -1363,6 +1373,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
               p_mad_channel_id_t p_channel_id)
 {
   char                                 *xchannel_name = NULL;
+#ifdef MARCEL
   p_mad_adapter_t            mad_adapter    = NULL;
   p_mad_driver_t             mad_driver     = NULL;
   p_mad_dir_channel_t        dir_xchannel   = NULL;
@@ -1373,6 +1384,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   ntbx_process_grank_t       g_dst          =   -1;
   p_mad_driver_interface_t   interface      = NULL;
   ntbx_process_grank_t       g              =   -1;
+#endif // MARCEL
 
   LOG_IN();
   xchannel_name = mad_leonie_receive_string();
@@ -1382,6 +1394,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
       return tbx_false;
     }
 
+#ifdef MARCEL
   TRACE_STR("Mux channel", xchannel_name);
 
   g = madeleine->session->process_rank;
@@ -1464,6 +1477,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   tbx_htable_add(madeleine->channel_htable,   dir_xchannel->name, mad_channel);
 
   mad_mux_add_named_sub_channels(mad_channel);
+#endif // MARCEL
 
   // Mux channel ready
   mad_leonie_send_int(-1);

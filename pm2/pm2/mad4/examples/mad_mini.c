@@ -331,8 +331,8 @@ disp_args(int argc, char **argv)
 #endif // ECHO_ARGS
 
 int
-marcel_main(int    argc,
-            char **argv)
+main(int    argc,
+     char **argv)
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;

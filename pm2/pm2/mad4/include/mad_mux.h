@@ -26,6 +26,7 @@
 #define MAD_MUX_MAX_SUB 256
 #define MAD_MUX_MAX_MUX 256
 
+#ifdef MARCEL
 typedef struct s_mad_xmessage_queue_entry
 {
   ntbx_process_grank_t source;
@@ -185,5 +186,7 @@ typedef struct s_mad_mux_darray_lane
   p_tbx_slist_t  message_queue;
   marcel_sem_t   something_to_forward;
 } mad_mux_darray_lane_t;
+#endif // MARCEL
+
 #endif /* MAD_MUX_H */
 

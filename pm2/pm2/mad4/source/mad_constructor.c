@@ -210,7 +210,10 @@ mad_channel_cons(void)
   object->sub_channel_darray = tbx_darray_init();
   tbx_darray_expand_and_set(object->sub_channel_darray, 0, object);
 
+#ifdef MARCEL
   marcel_mutex_init(&(object->reception_lock_mutex), NULL);
+#endif // MARCEL
+
   LOG_OUT();
 
   return object;
@@ -234,8 +237,9 @@ mad_connection_cons(void)
   object->buffer_group_list          = TBX_MALLOC(sizeof(tbx_list_t));
   object->pair_list                  = TBX_MALLOC(sizeof(tbx_list_t));
 
-
+#ifdef MARCEL
   marcel_mutex_init(&(object->lock_mutex), NULL);
+#endif // MARCEL
   LOG_OUT();
 
   return object;

@@ -10,7 +10,7 @@
   Vincent Danjean \and Raymond Namyst}
 
 \date{\footnotesize%
-\url{$Id: start.tex,v 1.5 2001/04/02 15:12:02 bouge Exp $}%
+\url{$Id: start.tex,v 1.6 2001/04/04 17:08:34 bouge Exp $}%
 }
 
 \maketitle
@@ -504,13 +504,22 @@ ravel% setenv PM2_FLAVOR pm2
 You are now ready for the big thing: compiling the whole library.  No
 files are created in the \|${PM2_ROOT}| directory, so that you can
 compile and install PM2 from a CDROM. All executable will be placed
-into the \|${PM2_BUILD_DIR}| directory. Remember that this directory
+into the \|${PM2_BUILD_DIR}| directory. 
+
+\begin{warning}
+Remember that this directory
 has to be accessible from all machines included in the PM2
 configuration. A local \|/tmp| directory will not work!
+\end{warning}
 
-To launch the whole compilation, just invoke \|make|. Make sure you
+To launch the whole compilation, just invoke \|make|. 
+
+\begin{warning}
+Make sure you
 use the \emph{right} version of the program (see above for detailed
 specification). Only recent GNU versions will make it!
+\end{warning}
+
 \begin{shell}
 ravel% cd ${PM2_ROOT}/pm2
 ravel% make
@@ -572,14 +581,16 @@ Humm... Well, all should be ok now!
 
 \subsection{Compiling a PM2 program}
 
-The PM2 library should now fully configured. Please, check again that
-your flavor is actually set:
+\begin{warning}
+  Please, make sure that your flavor is actually set to \|pm2|:
 \begin{shell}
-ravel% setenv PM2_FLAVOR pm2
+ravel% echo ${PM2_FLAVOR}
 \end{shell}
-You are ready to compile the example programs of the distribution.
-Let's start with the simplest one: \emph{Hello world!}, located in
-file \|hello.c|.
+\end{warning}
+
+The PM2 library should now fully configured.  You are ready to compile
+the example programs of the distribution.  Let's start with the
+simplest one: \emph{Hello world!}, located in file \|hello.c|.
 \begin{shell}
 ravel% cd ${PM2_ROOT}/pm2/examples/simple
 ravel% make hello
@@ -615,21 +626,36 @@ machine should get enrolled in the execution of the program. In
 running a PM2 on a dedicated cluster, the local machine is most
 preferably out of the configuration.
 
-Just to avoid disturbing problems in the sequel, please make sure that
-you local machine is allowed to issue \|rsh| commands to each machine
-in the configuration. For instance, try:
+\begin{warning}
+  Just to avoid disturbing problems in the sequel, please make sure
+  that you local machine is allowed to issue \|rsh| commands to each
+  machine in the configuration. For instance, try:
 \begin{shell}
-ravel% rsh debussy date
-ravel% rsh faure date
+ravel% rsh ravel 'ls ${PM2_ROOT}'
+ravel% rsh debussy 'ls ${PM2_ROOT}'
+ravel% rsh faure 'ls ${PM2_ROOT}'
 \end{shell}
-If you do not get the current date, that is, either nothing, or a
-message like \|permission denied|, etc., then you are in trouble. A
-possible turnaround is to use \|ssh| instead of \|rsh|:
+for each host in the current configuration. (Note the \|'|
+characters!) If you do not get the list of the files in your current
+\|${PM2_ROT}| directory, that is, either you get nothing or a
+message like \|permission denied|, etc., then you are in trouble!
+\end{warning}
+
+If \|rsh| does not work because of rights permissions, a possible
+turnaround is to use \|ssh| instead of \|rsh|:
 \begin{shell}
 ravel% setenv PM2_RSH ssh
 \end{shell}
-If this is not possible, it is still possible to run all three PM2
-\emph{virtual nodes} as three processes of your local machine:
+
+If it does not output the right list of files, then the remote
+machines in the configuration are not correctly served by the network
+fil system. PM2 cannot work, as it implicitely assumes that the
+excutable of the program will be found on the remote machines at the
+same place as it is on the local one.
+
+If this is not possible to correct such problems, then it is still
+possible to run all three PM2 \emph{virtual nodes} as three processes
+of your local machine:
 \begin{shell}
 ravel% pm2conf ravel ravel ravel
 The current PM2 configuration contains 3 host(s) :
@@ -1064,16 +1090,6 @@ consistent way. More on this in the next section!
 \figurelisting {rpc-params.c} {Service with a string
   parameter} {prog:rpc-params}
 
-\begin{note}
-  Luc to Raymond: Why is variable \|s| not aligned in
-  Program~\ref{prog:rpc-params} as in program \|simple/synchronous.c|?
-\begin{program}
-#define __ALIGNED__ __attribute__ ((aligned (sizeof(int))))
-#define STRING_SIZE  16
-static char msg[STRING_SIZE] __ALIGNED__;
-\end{program}
-\end{note}
-
 Let us now the case of a service function invoked with additional
 parameters. In Program~\ref{prog:rpc-params}, node~0 invokes a service
 on node~1 with a string as a parameter. The service consists namely in
@@ -1117,6 +1133,20 @@ The sentence is: A la recherche du temps perdu.
 *** Process 2 on faure:
 [Threads : 2 created, 0 imported (0 cached)]
 \end{shell}
+
+\begin{warning}
+  Program~\ref{prog:rpc-params} and similar programs may not work
+  properly when used with communication interfaces which require some
+  specific alignment for communication buffers: for instance,
+  BIP/Myrinet and SISCI/SCI. In this case, variable \|s| should
+  be aligned to a proper boundary. This can be done for instance as
+  follows using the specific attributes of \|gcc|:
+\begin{program}
+#define __ALIGNED__ __attribute__ ((aligned (sizeof(int))))
+#define STRING_SIZE  16
+static char s[STRING_SIZE] __ALIGNED__;
+\end{program}
+\end{warning}
 
 \subsection{The packing/unpacking API}
 
@@ -1234,17 +1264,19 @@ services, either explicitely or implicitely.
 Such problems can be addressed by executing services into a fresh
 threads instead of the original service handler. This technique is
 demonstrated on Program~\ref{prog:rpc-threads}. Service function
-\|sample_service| spawns a fresh thread each time it is invoked
+\|service| spawns a fresh thread each time it is invoked
 through a RPC request. Then, it immediately returns. The child thread
 is in charge of extracting the message from the network through a series
 of \|unpack| calls in the usual way. 
 
 Observe that PM2 do not care about \emph{who} extracts a message at a
-node. Any thread can do it. The only requirement enforced within the
-runtime system is that the same thread unpack the series of data
+node. Any thread can do it, as soon as it has been created with a
+special creation routine \|pm2_service_thread_create|, instead of the
+regular \|pm2_thread_create| one. The only requirement enforced within
+the runtime system is that the same thread unpacks the series of data
 pieces and calls the \|pm2_rawrpc_waitdata| routine. Having two or
 more threads extracting data from the network concurrently would
-actually not make sense: it raises a run-time error. 
+actually not make sense: it may raise a run-time error.
 
 \begin{note}
   Luc to Olivier + Raymond: Is it right? A sentence should probably be
@@ -1386,6 +1418,16 @@ ravel% pm2load rpc-threads1
 Sending string: Init
 Received back string: Init 1 2 3 4 5
 \end{shell}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Customizing and debugging PM2}
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1627,7 +1669,7 @@ function. The spawned thread allocate storage locally for a
 completion, and copies the argument completion into its personal
 resources using the \|pm2_completion_copy| routine:
 \begin{program}
-  pm2_completion_copy(&my_c, (pm2_completion_t *)arg)
+pm2_completion_copy(&my_c, (pm2_completion_t *)arg)
 \end{program}
 This saves the allocation of some global storage and it is much
 cleaner. Yet, observe that this works because the storage for the

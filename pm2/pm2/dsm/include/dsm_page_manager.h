@@ -47,9 +47,17 @@ void dsm_page_table_init(int my_rank, int confsize);
 
 void dsm_set_no_access();
 
+void dsm_pseudo_static_set_no_access();
+
 void dsm_set_write_access();
 
+void dsm_pseudo_static_set_write_access();
+
 void dsm_set_uniform_access(dsm_access_t access);
+
+void dsm_pseudo_static_set_uniform_access(dsm_access_t access);
+
+void *dsm_get_pseudo_static_dsm_start_addr();
 
 void dsm_protect_page (void *addr, dsm_access_t access);
 
@@ -60,6 +68,8 @@ unsigned int dsm_page_offset(void *addr);
 unsigned long dsm_page_index(void *addr);
 
 unsigned long dsm_get_nb_static_pages();
+
+unsigned long dsm_get_nb_pseudo_static_pages();
 
 void dsm_set_prob_owner(unsigned long index, dsm_node_t owner);
 
@@ -158,11 +168,17 @@ void dsm_set_user_data1_init_func(dsm_user_data1_init_func_t func);
 
 void dsm_set_user_data2_init_func(dsm_user_data2_init_func_t func);
 
+void dsm_set_pseudo_static_area_size(unsigned size);
+
 /*********************** Hyperion stuff: ****************************/
 
 void dsm_invalidate_not_owned_pages();
 
+void dsm_pseudo_static_invalidate_not_owned_pages();
+
 void dsm_invalidate_not_owned_pages_without_protect();
+
+void dsm_pseudo_static_invalidate_not_owned_pages_without_protect();
 
 void dsm_alloc_page_bitmap(unsigned long index); 
 

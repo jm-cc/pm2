@@ -26,12 +26,28 @@
  */
 
 /* Constants*/
-#define MAD_VIA_INITIAL_CHANNEL_CQ_SIZE    16
-#define MAD_VIA_MAIN_BUFFER_SIZE        32768
+#define MAD_VIA_INITIAL_CHANNEL_CQ_SIZE     16
+#define MAD_VIA_MAIN_BUFFER_SIZE         32768
+
+#define MAD_VIA_MSG_THRES                 4096
+#define MAD_VIA_RDMA_THRES               32768
 
 #define MAD_VIA_RECV_MAIN_DESC_NUM           8
 #define MAD_VIA_RECV_MAIN_DESC_ADDR_NUM      0
 #define MAD_VIA_RECV_MAIN_DESC_DATA_NUM      8
+
+#define MAD_VIA_SEND_CREDIT_DESC_NUM         8
+#define MAD_VIA_SEND_CREDIT_DESC_ADDR_NUM    0
+#define MAD_VIA_SEND_CREDIT_DESC_DATA_NUM    1
+#define MAD_VIA_RECV_CREDIT_DESC_NUM         MAD_VIA_SEND_CREDIT_DESC_NUM
+#define MAD_VIA_RECV_CREDIT_DESC_ADDR_NUM    MAD_VIA_SEND_CREDIT_DESC_ADDR_NUM
+#define MAD_VIA_RECV_CREDIT_DESC_DATA_NUM    MAD_VIA_SEND_CREDIT_DESC_DATA_NUM
+#define MAD_VIA_CREDIT_BUFFER_SIZE           MAD_VIA_MSG_THRES
+#define MAD_VIA_CREDIT_NB_BUFFER             8
+
+#define MAD_VIA_SEND_RDMA_DESC_NUM           2
+#define MAD_VIA_SEND_RDMA_DESC_ADDR_NUM      1
+#define MAD_VIA_SEND_RDMA_DESC_DATA_NUM      1
 
 #ifndef VIP_DATA_ALIGNMENT
 #define VIP_DATA_ALIGNMENT VIP_DESCRIPTOR_ALIGNMENT
@@ -87,16 +103,23 @@ typedef int mad_via_vi_id_base_t, *p_mad_via_vi_id_base_t;
 
 typedef enum e_mad_via_vi_id_idx
   {
-    vi_id_idx_in_main  = 0,
-    vi_id_idx_out_main = 1,
-    vi_id_idx_in_msg   = 2,
-    vi_id_idx_out_msg  = 3,
+    vi_id_idx_in_main    = 0,
+    vi_id_idx_out_main   = 1,
+    vi_id_idx_in_credit  = 2,
+    vi_id_idx_out_credit = 3,
+    vi_id_idx_in_msg     = 4,
+    vi_id_idx_out_msg    = 5,
+    vi_id_idx_in_rdma    = 6,
+    vi_id_idx_out_rdma   = 7,
   }
 mad_via_vi_id_idx_t, *p_mad_via_vi_id_idx_t;
 
 typedef enum e_mad_via_link_id
 {
-  msg_link_id = 0
+  cresit_link_id = 0,
+  msg_link_id,
+  rdma_link_id,
+  nb_link,
 } mad_via_link_id_t, *p_mad_via_link_id_t;
 
 /*
@@ -198,6 +221,7 @@ typedef struct s_mad_via_link_specific
 {
   p_mad_via_vi_t             vi;
   p_mad_via_descriptor_set_t descriptor_set;
+  p_mad_via_buffer_set_t     buffer_set;
 } mad_via_link_specific_t, *p_mad_via_link_specific_t;
 
 /*
@@ -1093,7 +1117,7 @@ mad_via_connection_init(p_mad_connection_t in,
 
       is->vi         = vi;
       in->specific   = is;
-      in->nb_link    =  1;
+      in->nb_link    = nb_link;
       is->vi_id_base = id_base;
       s              = tbx_string_init_to_int(id_base);
       in->parameter  = tbx_string_to_cstring(s);
@@ -1121,7 +1145,7 @@ mad_via_connection_init(p_mad_connection_t in,
 
       os->vi          = vi;
       out->specific   = os;
-      out->nb_link    =  1;
+      out->nb_link    =  nb_link;
       os->vi_id_base  = id_base;
       s               = tbx_string_init_to_int(id_base);
       out->parameter  = tbx_string_to_cstring(s);
@@ -1148,21 +1172,78 @@ mad_via_link_init(p_mad_link_t lnk)
 
   link_specific = TBX_CALLOC(1, sizeof(mad_via_link_specific_t));
 
-  if (connection->way == mad_incoming_connection)
-    {
-      link_specific->vi             =
-	mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_in_msg);
-      link_specific->descriptor_set = NULL;
+  if (lnk->id == c_link_id)
+    {edit
+      if (connection->way == mad_incoming_connection)
+	{
+	  link_specific->vi             =
+	    mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_in_credit);
+	  link_specific->buffer_set = 
+	    mad_via_buffer_set_init(connection->channel->adapter,
+				    MAD_VIA_CREDIT_NB_BUFFER,
+				    MAD_VIA_CREDIT_BUFFER_SIZE)
+	  link_specific->descriptor_set = 
+	    mad_via_descriptor_set_init(connection->channel->adapter,
+					MAD_VIA_SEND_CREDIT_DESC_NUM,
+					MAD_VIA_SEND_CREDIT_DESC_ADDR_NUM,
+					MAD_VIA_SEND_CREDIT_DESC_DATA_NUM);
+	}
+      else if (connection->way == mad_outgoing_connection)
+	{
+	  link_specific->vi =
+	    mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_out_credit);
+	  link_specific->buffer_set = 
+	    mad_via_buffer_set_init(connection->channel->adapter,
+				    MAD_VIA_CREDIT_NB_BUFFER,
+				    MAD_VIA_CREDIT_BUFFER_SIZE)
+	  link_specific->descriptor_set = 
+	    mad_via_descriptor_set_init(connection->channel->adapter,
+					MAD_VIA_RECV_CREDIT_DESC_NUM,
+					MAD_VIA_RECV_CREDIT_DESC_ADDR_NUM,
+					MAD_VIA_RECV_CREDIT_DESC_DATA_NUM);
+	}
+      else
+	FAILURE("unspecified connection way");
     }
-  else if (connection->way == mad_outgoing_connection)
+  else if (lnk->id == msg_link_id)
     {
-      link_specific->vi             =
-	mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_out_msg);
-      link_specific->descriptor_set = NULL;
+      if (connection->way == mad_incoming_connection)
+	{
+	  link_specific->vi =
+	    mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_in_msg);
+	}
+      else if (connection->way == mad_outgoing_connection)
+	{
+	  link_specific->vi =
+	    mad_via_vi_init(adapter, rdma_off, NULL, NULL, vi_id_idx_out_msg);
+	}
+      else
+	FAILURE("unspecified connection way");
+    }
+  else if (lnk->id == rdma_link_id)
+    {
+      if (connection->way == mad_incoming_connection)
+	{
+#warning TODO: verify 'rdma' flag
+	  link_specific->vi =
+	    mad_via_vi_init(adapter, rdma_write, NULL, NULL, vi_id_idx_in_rdma);
+	}
+      else if (connection->way == mad_outgoing_connection)
+	{
+	  link_specific->vi             =
+	    mad_via_vi_init(adapter, rdma_write, NULL, NULL, vi_id_idx_out_rdma);
+	  link_specific->descriptor_set = 
+	    mad_via_descriptor_set_init(connection->channel->adapter,
+					MAD_VIA_SEND_RDMA_DESC_NUM,
+					MAD_VIA_SEND_RDMA_DESC_ADDR_NUM,
+					MAD_VIA_SEND_RDMA_DESC_DATA_NUM);
+	}
+      else
+	FAILURE("unspecified connection way");      
     }
   else
-    FAILURE("unspecified connection way");
-
+    FAILURE("invalid link id");
+  
   lnk->specific    = link_specific;
   lnk->link_mode   = mad_link_mode_buffer_group;
   lnk->buffer_mode = mad_buffer_mode_dynamic;
@@ -1297,12 +1378,36 @@ mad_via_accept(p_mad_connection_t   in,
       accept();
     }
 
+    // Credit link
+    {
+      p_mad_link_t               l  = NULL;
+      p_mad_via_link_specific_t  ls = NULL;
+
+      l  = in->link_array[credit_link_id];
+      ls = l->specific;
+      vi = ls->vi;
+#error descriptors should be posted here
+      accept();
+    }
+
     // MSG link
     {
       p_mad_link_t               l  = NULL;
       p_mad_via_link_specific_t  ls = NULL;
 
       l  = in->link_array[msg_link_id];
+      ls = l->specific;
+      vi = ls->vi;
+
+      accept();
+    }
+
+    // RDMA link
+    {
+      p_mad_link_t               l  = NULL;
+      p_mad_via_link_specific_t  ls = NULL;
+
+      l  = in->link_array[rdma_link_id];
       ls = l->specific;
       vi = ls->vi;
 
@@ -1433,6 +1538,20 @@ mad_via_connect(p_mad_connection_t   out,
       connect();
     }
 
+    // Credit link
+    {
+      p_mad_link_t               l          = NULL;
+      p_mad_via_link_specific_t  ls         = NULL;
+      VIP_DESCRIPTOR            *desc       = NULL;
+      VIP_MEM_HANDLE             mem_handle =    0;
+
+      l  = out->link_array[credit_link_id];
+      ls = l->specific;
+      vi = ls->vi;
+
+      connect();
+    }
+
     // MSG link
     {
       p_mad_link_t               l          = NULL;
@@ -1441,6 +1560,31 @@ mad_via_connect(p_mad_connection_t   out,
       VIP_MEM_HANDLE             mem_handle =    0;
 
       l  = out->link_array[msg_link_id];
+      ls = l->specific;
+      vi = ls->vi;
+
+      desc       = vi->input_desc;
+      mem_handle = vi->input_mem_handle;
+
+      desc->CS.SegCount = 0;
+      desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+      desc->CS.Length   = 0;
+      desc->CS.Status   = 0;
+      desc->CS.Reserved = 0;
+
+      _(VipPostRecv(vi->handle, desc, mem_handle));
+
+      connect();
+    }
+
+    // RDMA link
+    {
+      p_mad_link_t               l          = NULL;
+      p_mad_via_link_specific_t  ls         = NULL;
+      VIP_DESCRIPTOR            *desc       = NULL;
+      VIP_MEM_HANDLE             mem_handle =    0;
+
+      l  = out->link_array[rdma_link_id];
       ls = l->specific;
       vi = ls->vi;
 
@@ -1641,7 +1785,19 @@ mad_via_choice(p_mad_connection_t connection,
   p_mad_link_t lnk = NULL;
 
   LOG_IN();
-  lnk = connection->link_array[0];
+  if (length <= MAD_VIA_MSG_THRES)
+    {
+      lnk = connection->link_array[credit_link_id];
+    }
+  else if (length <= MAD_VIA_RDMA_THRES)
+    {
+      lnk = connection->link_array[msg_link_id];
+    }
+  else
+    {
+      lnk = connection->link_array[rdma_link_id];
+    }
+  
   LOG_OUT();
 
   return lnk;
@@ -1651,7 +1807,22 @@ mad_via_choice(p_mad_connection_t connection,
 p_mad_buffer_t
 mad_via_get_static_buffer(p_mad_link_t lnk)
 {
+  p_mad_buffer_t buffer = NULL;
+    
   LOG_IN();
+  if (lnk->id == credit_link_id)
+    {
+      p_mad_via_link_specific_t ls = NULL;
+      p_mad_via_buffer_set_t    bs = NULL;
+      
+      ls = lnk->specific;
+      bs = ls->buffer_set;
+
+      buffer = mad_via_buffer_set_get_buffer(bs);
+    }
+  else
+    FAILURE("invalid link id");
+  
   LOG_OUT();
 
   return NULL;
@@ -1662,6 +1833,19 @@ mad_via_return_static_buffer(p_mad_link_t   lnk,
 			     p_mad_buffer_t buffer)
 {
   LOG_IN();
+  if (lnk->id == credit_link_id)
+    {
+      p_mad_via_link_specific_t ls = NULL;
+      p_mad_via_buffer_set_t    bs = NULL;
+
+      ls = lnk->specific;
+      bs = ls->buffer_set;
+
+      mad_via_buffer_set_return_buffer(bs, buffer);
+    }
+  else
+    FAILURE("invalid link id");
+  
   LOG_OUT();
 }
 
@@ -1849,9 +2033,82 @@ mad_via_message_received(p_mad_connection_t channel)
   LOG_OUT();
 }
 
-/* Buffer transfer */
+/* Credit link */
 void
-mad_via_send_buffer(p_mad_link_t   lnk,
+mad_via_credit_send_buffer(p_mad_link_t   lnk,
+		    p_mad_buffer_t buffer)
+{
+  p_mad_connection_t                  out = NULL;
+  p_mad_via_out_connection_specific_t os  = NULL;
+  p_mad_via_link_specific_t           ls  = NULL;
+  p_mad_via_vi_t                      vi  = NULL;
+
+  LOG_IN();
+  out  = lnk->connection;
+  os   = out->specific;
+
+  if (os->need_send_wait)
+    {
+      p_mad_via_vi_t  o_vi = NULL;
+      VIP_DESCRIPTOR *desc = NULL;
+
+      o_vi = os->vi;
+      _(VipSendWait(o_vi->handle, VIP_INFINITE, &desc));
+
+      if (desc != o_vi->output_desc)
+	FAILURE("unexpected descriptor");
+
+      os->need_send_wait = tbx_false;
+    }
+
+  ls = lnk->specific;
+  vi = ls->vi;
+
+  LOG_OUT();
+}
+
+void
+mad_via_credit_receive_buffer(p_mad_link_t   lnk,
+			      p_mad_buffer_t buffer)
+{
+  p_mad_connection_t                 in     = NULL;
+  p_mad_via_in_connection_specific_t is     = NULL;
+  p_mad_via_link_specific_t          ls     = NULL;
+  p_mad_via_vi_t                     vi     = NULL;
+
+  LOG_IN();
+  in     =  lnk->connection;
+  is     =  in->specific;
+  ls     =  lnk->specific;
+  vi     =  ls->vi;
+  LOG_OUT();
+}
+
+void
+mad_via_credit_send_buffer_group(p_mad_link_t         lnk,
+			      p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      tbx_list_reference_t ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      do
+	{
+	  p_mad_buffer_t buffer = NULL;
+
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_via_credit_send_buffer(lnk, buffer);
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
+  LOG_OUT();
+}
+
+/* Msg link */
+void
+mad_via_msg_send_buffer(p_mad_link_t   lnk,
 		    p_mad_buffer_t buffer)
 {
   p_mad_connection_t                  out = NULL;
@@ -1931,17 +2188,15 @@ mad_via_send_buffer(p_mad_link_t   lnk,
 }
 
 void
-mad_via_receive_buffer(p_mad_link_t    lnk,
-		       p_mad_buffer_t *pbuffer)
+mad_via_msg_receive_buffer(p_mad_link_t   lnk,
+			   p_mad_buffer_t buffer)
 {
-  p_mad_buffer_t                     buffer = NULL;
   p_mad_connection_t                 in     = NULL;
   p_mad_via_in_connection_specific_t is     = NULL;
   p_mad_via_link_specific_t          ls     = NULL;
   p_mad_via_vi_t                     vi     = NULL;
 
   LOG_IN();
-  buffer = *pbuffer;
   in     =  lnk->connection;
   is     =  in->specific;
   ls     =  lnk->specific;
@@ -2004,10 +2259,9 @@ mad_via_receive_buffer(p_mad_link_t    lnk,
   LOG_OUT();
 }
 
-/* Buffer group transfer */
 void
-mad_via_send_buffer_group(p_mad_link_t         lnk,
-			  p_mad_buffer_group_t buffer_group)
+mad_via_msg_send_buffer_group(p_mad_link_t         lnk,
+			      p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
@@ -2020,10 +2274,303 @@ mad_via_send_buffer_group(p_mad_link_t         lnk,
 	  p_mad_buffer_t buffer = NULL;
 
 	  buffer = tbx_get_list_reference_object(&ref);
-	  mad_via_send_buffer(lnk, buffer);
+	  mad_via_msg_send_buffer(lnk, buffer);
 	}
       while(tbx_forward_list_reference(&ref));
     }
+  LOG_OUT();
+}
+
+void
+mad_via_msg_receive_sub_buffer_group(p_mad_link_t         lnk,
+				     p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      tbx_list_reference_t ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      do
+	{
+	  p_mad_buffer_t buffer = NULL;
+
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_via_msg_receive_buffer(lnk, &buffer);
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
+  LOG_OUT();
+}
+
+/* RDMA link */
+void
+mad_via_rdma_send_buffer(p_mad_link_t   lnk,
+			 p_mad_buffer_t buffer)
+{
+  p_mad_connection_t                   out = NULL;
+  p_mad_via_out_connection_specific_t  os  = NULL;
+  p_mad_via_link_specific_t            ls  = NULL;
+  p_mad_via_vi_t                       vi  = NULL;
+  void                                *ptr = NULL;
+
+  LOG_IN();
+  out  = lnk->connection;
+  os   = out->specific;
+
+  if (os->need_send_wait)
+    {
+      p_mad_via_vi_t  o_vi = NULL;
+      VIP_DESCRIPTOR *desc = NULL;
+
+      o_vi = os->vi;
+      _(VipSendWait(o_vi->handle, VIP_INFINITE, &desc));
+
+      if (desc != o_vi->output_desc)
+	FAILURE("unexpected descriptor");
+
+      os->need_send_wait = tbx_false;
+    }
+
+  ls = lnk->specific;
+  vi = ls->vi;
+
+  mad_via_register_buffer(lnk->connection->channel->adapter, buffer);
+
+  {
+    VIP_DESCRIPTOR *desc       = NULL;
+    VIP_MEM_HANDLE  mem_handle =    0;
+
+    _(VipRecvWait(vi->handle, VIP_INFINITE, &desc));
+    if (desc != vi->input_desc)
+      FAILURE("unexpected descriptor");
+
+    ptr = (void *)desc->CS.ImmediateData;
+
+    desc->CS.SegCount = 0;
+    desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+    desc->CS.Length   = 0;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
+    mem_handle = vi->input_mem_handle;
+
+    _(VipPostRecv(vi->handle, desc, mem_handle));
+  }
+
+
+  {
+    VIP_DESCRIPTOR *desc       = NULL;
+    VIP_MEM_HANDLE  mem_handle =    0;
+
+    desc       = vi->output_desc;
+    mem_handle = vi->output_mem_handle;
+
+    desc->CS.SegCount = 2;
+    desc->CS.Control  =
+      VIP_CONTROL_OP_RDMAWRITE| VIP_CONTROL_IMMEDIATE;
+    desc->CS.Length   = buffer->bytes_written - buffer->bytes_read;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
+
+    desc->DS[0].Local.Data.Address = buffer->buffer + buffer->bytes_read;
+    desc->DS[0].Local.Handle       = (VIP_MEM_HANDLE)buffer->specific;
+    desc->DS[0].Local.Length       = buffer->bytes_written - buffer->bytes_read;
+
+    desc->AS[0].Remote.Data.Address = ptr;
+#error remote address syntax
+
+    _(VipPostSend(vi->handle, desc, mem_handle));
+    _(VipSendWait(vi->handle, VIP_INFINITE, &desc));
+
+    if (desc != vi->output_desc)
+      FAILURE("unexpected descriptor");
+
+    buffer->bytes_read = buffer->bytes_written;
+  }
+  mad_via_unregister_buffer(lnk->connection->channel->adapter, buffer);
+  LOG_OUT();
+}
+
+void
+mad_via_rdma_receive_buffer(p_mad_link_t   lnk,
+			    p_mad_buffer_t buffer)
+{
+  p_mad_connection_t                 in     = NULL;
+  p_mad_via_in_connection_specific_t is     = NULL;
+  p_mad_via_link_specific_t          ls     = NULL;
+  p_mad_via_vi_t                     vi     = NULL;
+
+  LOG_IN();
+  in     =  lnk->connection;
+  is     =  in->specific;
+  ls     =  lnk->specific;
+  vi     =  ls->vi;
+
+  mad_via_register_buffer(lnk->connection->channel->adapter, buffer);
+  {
+    VIP_DESCRIPTOR *desc       = NULL;
+    VIP_MEM_HANDLE  mem_handle =    0;
+
+    desc       = vi->input_desc;
+    mem_handle = vi->input_mem_handle;
+
+    desc->CS.SegCount = 0;
+    desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+    desc->CS.Length   = 0;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
+
+    _(VipPostRecv(vi->handle, desc, mem_handle));
+  }
+
+  {
+    VIP_DESCRIPTOR *desc       = NULL;
+    VIP_MEM_HANDLE  mem_handle =    0;
+
+    desc       = vi->output_desc;
+    mem_handle = vi->output_mem_handle;
+
+    desc->CS.SegCount = 0;
+    desc->CS.Control  = VIP_CONTROL_OP_SENDRECV;
+    desc->CS.Length   = 0;
+    desc->CS.Status   = 0;
+    desc->CS.Reserved = 0;
+
+    _(VipPostSend(vi->handle, desc, mem_handle));
+    _(VipSendWait(vi->handle, VIP_INFINITE, &desc));
+
+    if (desc != vi->output_desc)
+      FAILURE("unexpected descriptor");
+  }
+
+  {
+    VIP_DESCRIPTOR *desc = NULL;
+
+    _(VipRecvWait(vi->handle, VIP_INFINITE, &desc));
+    
+    if (desc != vi->input_desc)
+      FAILURE("unexpected descriptor");
+
+    buffer->bytes_written = buffer->length;
+  }
+
+  
+  mad_via_unregister_buffer(lnk->connection->channel->adapter, buffer);
+  LOG_OUT();
+}
+
+void
+mad_via_rdma_send_buffer_group(p_mad_link_t         lnk,
+			       p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      tbx_list_reference_t ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      do
+	{
+	  p_mad_buffer_t buffer = NULL;
+
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_via_rdma_send_buffer(lnk, buffer);
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
+  LOG_OUT();
+}
+
+void
+mad_via_rdma_receive_sub_buffer_group(p_mad_link_t         lnk,
+				     p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+    {
+      tbx_list_reference_t ref;
+
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+      do
+	{
+	  p_mad_buffer_t buffer = NULL;
+
+	  buffer = tbx_get_list_reference_object(&ref);
+	  mad_via_rdma_receive_buffer(lnk, &buffer);
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
+  LOG_OUT();
+}
+
+/* buffer transfer */
+void
+mad_via_send_buffer(p_mad_link_t   lnk,
+		    p_mad_buffer_t buffer)
+{
+  LOG_IN();
+  if (lnk->id == credit_link_id)
+    {
+      mad_via_credit_send_buffer(lnk, buffer);
+    }
+  else if (lnk->id == msg_link_id)
+    {
+      mad_via_msg_send_buffer(lnk, buffer);
+    }
+  else if (lnk->id == rdma_link_id)
+    {
+      mad_via_rdma_send_buffer(lnk, buffer);
+    }
+  else
+    FAILURE("invalid link id");
+  
+  LOG_OUT();
+}
+
+void
+mad_via_receive_buffer(p_mad_link_t    lnk,
+		       p_mad_buffer_t *pbuffer)
+{
+  LOG_IN();
+  if (lnk->id == credit_link_id)
+    {
+      mad_via_credit_receive_buffer(lnk, pbuffer);
+    }
+  else if (lnk->id == msg_link_id)
+    {
+      mad_via_msg_receive_buffer(lnk, *pbuffer);
+    }
+  else if (lnk->id == rdma_link_id)
+    {
+      mad_via_rdma_receive_buffer(lnk, *pbuffer);
+    }
+  else
+    FAILURE("invalid link id");
+  
+  LOG_OUT();
+}
+
+/* Buffer group transfer */
+void
+mad_via_send_buffer_group(p_mad_link_t         lnk,
+			  p_mad_buffer_group_t buffer_group)
+{
+  LOG_IN();
+  if (lnk->id == credit_link_id)
+    {
+      mad_via_credit_send_buffer_group(lnk, buffer_group);
+    }
+  else if (lnk->id == msg_link_id)
+    {
+      mad_via_msg_send_buffer_group(lnk, buffer_group);
+    }
+  else if (lnk->id == rdma_link_id)
+    {
+      mad_via_rdma_send_buffer_group(lnk, buffer_group);
+    }
+  else
+    FAILURE("invalid link id");
+  
   LOG_OUT();
 }
 
@@ -2033,19 +2580,16 @@ mad_via_receive_sub_buffer_group(p_mad_link_t         lnk,
 				 p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
-  if (!tbx_empty_list(&(buffer_group->buffer_list)))
+  if (lnk->id == msg_link_id)
     {
-      tbx_list_reference_t ref;
-
-      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
-      do
-	{
-	  p_mad_buffer_t buffer = NULL;
-
-	  buffer = tbx_get_list_reference_object(&ref);
-	  mad_via_receive_buffer(lnk, &buffer);
-	}
-      while(tbx_forward_list_reference(&ref));
+      mad_via_msg_receive_buffer_group(lnk, buffer_group);
     }
+  else if (lnk->id == rdma_link_id)
+    {
+      mad_via_rdma_receive_buffer_group(lnk, buffer_group);
+    }
+  else
+    FAILURE("invalid link id");
+  
   LOG_OUT();
 }

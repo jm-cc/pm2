@@ -73,7 +73,7 @@ static void DSM_func(void)
 static void startup_func(int argc, char *argv[], void *arg)
 {
   dsm_lock_attr_t attr;
-  int prot = atoi(argv[3]);
+  dsm_proto_t prot = atoi(argv[3]);
 
   //dsm_set_default_protocol(MIGRATE_THREAD);
   dsm_set_default_protocol(LI_HUDAK);

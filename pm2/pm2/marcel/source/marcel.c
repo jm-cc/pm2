@@ -1283,37 +1283,6 @@ int _raise(marcel_exception_t ex)
    return 0;
 }
 
-/* =============== Gestion des E/S non bloquantes =============== */
-
-int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
-{
-#ifdef MA__ACTIVATION
-  return select(width, readfds, writefds, exceptfds, NULL);
-#else
-  int res = 0;
-  struct timeval timeout;
-  fd_set rfds, wfds, efds;
-
-   do {
-      FD_ZERO(&rfds); FD_ZERO(&wfds); FD_ZERO(&efds);
-      if(readfds) rfds = *readfds;
-      if(writefds) wfds = *writefds;
-      if(exceptfds) efds = *exceptfds;
-
-      timerclear(&timeout);
-      res = select(width, &rfds, &wfds, &efds, &timeout);
-      if(res <= 0)
-	marcel_yield();
-   } while(res <= 0);
-
-   if(readfds) *readfds = rfds;
-   if(writefds) *writefds = wfds;
-   if(exceptfds) *exceptfds = efds;
-
-   return res;
-#endif /* MA__ACTIVATION */
-}
-
 #ifndef STANDARD_MAIN
 
 extern int marcel_main(int argc, char *argv[]);

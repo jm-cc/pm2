@@ -36,7 +36,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <errno.h>
-
+#include <VRP.h>
 
 DEBUG_DECLARE(vrp)
 
@@ -60,17 +60,22 @@ typedef struct s_mad_vrp_adapter_specific
 
 typedef struct s_mad_vrp_channel_specific
 {
-  int                max_fds;
-  fd_set             read_fds;
-  fd_set             active_fds;
-  int                active_number;
-  tbx_darray_index_t last_idx;
+  int dummy;
 } mad_vrp_channel_specific_t, *p_mad_vrp_channel_specific_t;
 
-typedef struct s_mad_vrp_connection_specific
+typedef struct s_mad_vrp_in_connection_specific
 {
-  int socket;
-} mad_vrp_connection_specific_t, *p_mad_vrp_connection_specific_t;
+  int            socket;
+  int            port;
+  vrp_incoming_t vrp_in;
+} mad_vrp_in_connection_specific_t, *p_mad_vrp_in_connection_specific_t;
+
+typedef struct s_mad_vrp_out_connection_specific
+{
+  int            socket;
+  int            port;
+  vrp_outgoing_t vrp_out;
+} mad_vrp_out_connection_specific_t, *p_mad_vrp_out_connection_specific_t;
 
 typedef struct s_mad_vrp_link_specific
 {
@@ -82,147 +87,8 @@ typedef struct s_mad_vrp_link_specific
  * static functions
  * ----------------
  */
-static
-void
-mad_vrp_write(int            sock,
-	      p_mad_buffer_t buffer)
-{
-  LOG_IN();
-  while (mad_more_data(buffer))
-    {
-      ssize_t result;
 
-      SYSTEST(result = write(sock,
-			     (const void*)(buffer->buffer +
-					   buffer->bytes_read),
-			     buffer->bytes_written - buffer->bytes_read));
-
-      if (result > 0)
-	{
-	  buffer->bytes_read += result;
-	}
-      else
-	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (mad_more_data(buffer)) TBX_YIELD();
-#endif // MARCEL
-    }
-  LOG_OUT();
-}
-
-static
-void
-mad_vrp_read(int            sock,
-	     p_mad_buffer_t buffer)
-{
-  LOG_IN();
-  while (!mad_buffer_full(buffer))
-    {
-      ssize_t result;
-
-      SYSTEST(result = read(sock,
-			    (void*)(buffer->buffer +
-				    buffer->bytes_written),
-			    buffer->length - buffer->bytes_written));
-
-      if (result > 0)
-	{
-	  buffer->bytes_written += result;
-	}
-      else
-	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (!mad_buffer_full(buffer)) TBX_YIELD();
-#endif // MARCEL
-    }
-  LOG_OUT();
-}
-
-static
-void
-mad_vrp_writev(int           sock,
-	       struct iovec *array,
-	       int           count)
-{
-  LOG_IN();
-  while (count)
-    {
-      ssize_t result;
-
-      SYSTEST(result = writev(sock, array, count));
-
-      if (result > 0)
-	{
-	  do
-	    {
-	      if (result >= array->iov_len)
-		{
-		  result -= array->iov_len;
-		  array++;
-		  count--;
-		}
-	      else
-		{
-		  array->iov_base += result;
-		  array->iov_len  -= result;
-		  result = 0;
-		}
-	    }
-	  while (result);
-	}
-      else
-	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (count) TBX_YIELD();
-#endif // MARCEL
-    }
-  LOG_OUT();
-}
-
-static
-void
-mad_vrp_readv(int           sock,
-	      struct iovec *array,
-	      int           count)
-{
-  LOG_IN();
-  while (count)
-    {
-      ssize_t result;
-
-      SYSTEST(result = readv(sock, array, count));
-
-      if (result > 0)
-	{
-	  do
-	    {
-	      if (result >= array->iov_len)
-		{
-		  result -= array->iov_len;
-		  array++;
-		  count--;
-		}
-	      else
-		{
-		  array->iov_base += result;
-		  array->iov_len  -= result;
-		  result = 0;
-		}
-	    }
-	  while (result);
-	}
-      else
-	FAILURE("connection closed");
-
-#ifdef MARCEL
-      if (count) TBX_YIELD();
-#endif // MARCEL
-    }
-  LOG_OUT();
-}
+/** none **/
 
 
 #undef DEBUG_NAME
@@ -247,19 +113,19 @@ mad_vrp_register(p_mad_driver_t driver)
   TRACE("Registering VRP driver");
   interface = driver->interface;
 
-  driver->connection_type  = mad_bidirectional_connection;
+  driver->connection_type  = mad_unidirectional_connection;
   driver->buffer_alignment = 32;
   driver->name             = tbx_strdup("vrp");
 
   interface->driver_init                = mad_vrp_driver_init;
   interface->adapter_init               = mad_vrp_adapter_init;
   interface->channel_init               = mad_vrp_channel_init;
-  interface->before_open_channel        = mad_vrp_before_open_channel;
+  interface->before_open_channel        = NULL;
   interface->connection_init            = mad_vrp_connection_init;
   interface->link_init                  = mad_vrp_link_init;
   interface->accept                     = mad_vrp_accept;
   interface->connect                    = mad_vrp_connect;
-  interface->after_open_channel         = mad_vrp_after_open_channel;
+  interface->after_open_channel         = NULL;
   interface->before_close_channel       = NULL;
   interface->disconnect                 = mad_vrp_disconnect;
   interface->after_close_channel        = NULL;
@@ -287,62 +153,61 @@ mad_vrp_register(p_mad_driver_t driver)
 
 
 void
-mad_vrp_driver_init(p_mad_driver_t driver)
+mad_vrp_driver_init(p_mad_driver_t d)
 {
-  p_mad_vrp_driver_specific_t driver_specific = NULL;
+  p_mad_vrp_driver_specific_t ds = NULL;
 
   LOG_IN();
   TRACE("Initializing VRP driver");
-  driver_specific  = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
-  driver->specific = driver_specific;
+  ds          = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
+  ds->dummy   = 0;
+  d->specific = ds;
   LOG_OUT();
 }
 
 void
-mad_vrp_adapter_init(p_mad_adapter_t adapter)
+mad_vrp_adapter_init(p_mad_adapter_t a)
 {
-  p_mad_vrp_adapter_specific_t adapter_specific = NULL;
-  p_tbx_string_t               parameter_string = NULL;
-  ntbx_tcp_address_t           address;
+  p_mad_vrp_adapter_specific_t as    = NULL;
+  p_tbx_string_t               param = NULL;
+  ntbx_tcp_address_t           addr;
 
   LOG_IN();
-  if (strcmp(adapter->dir_adapter->name, "default"))
+  if (strcmp(a->dir_adapter->name, "default"))
     FAILURE("unsupported adapter");
 
-  adapter_specific  = TBX_MALLOC(sizeof(mad_vrp_adapter_specific_t));
-  adapter_specific->connection_port   = -1;
-  adapter_specific->connection_socket = -1;
-  adapter->specific                   = adapter_specific;
+  as  = TBX_MALLOC(sizeof(mad_vrp_adapter_specific_t));
+  as->connection_port   = -1;
+  as->connection_socket = -1;
+  a->specific = as;
+
 #ifdef SSIZE_MAX
-  adapter->mtu                        = min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
+  a->mtu = min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
 #else // SSIZE_MAX
-  adapter->mtu                        = MAD_FORWARD_MAX_MTU;
+  a->mtu = MAD_FORWARD_MAX_MTU;
 #endif // SSIZE_MAX
 
-  adapter_specific->connection_socket =
-    ntbx_tcp_socket_create(&address, 0);
-  SYSCALL(listen(adapter_specific->connection_socket,
-		 min(5, SOMAXCONN)));
+  as->connection_socket = ntbx_tcp_socket_create(&addr, 0);
+  SYSCALL(listen(as->connection_socket, min(5, SOMAXCONN)));
 
-  adapter_specific->connection_port =
-    (ntbx_tcp_port_t)ntohs(address.sin_port);
+  as->connection_port = (ntbx_tcp_port_t)ntohs(addr.sin_port);
 
-  parameter_string   =
-    tbx_string_init_to_int(adapter_specific->connection_port);
-  adapter->parameter = tbx_string_to_cstring(parameter_string);
-  tbx_string_free(parameter_string);
-  parameter_string   = NULL;
+  param = tbx_string_init_to_int(as->connection_port);
+  a->parameter = tbx_string_to_cstring(param);
+  tbx_string_free(param);
+  param = NULL;
   LOG_OUT();
 }
 
 void
-mad_vrp_channel_init(p_mad_channel_t channel)
+mad_vrp_channel_init(p_mad_channel_t c)
 {
-  p_mad_vrp_channel_specific_t channel_specific = NULL;
+  p_mad_vrp_channel_specific_t cs = NULL;
 
   LOG_IN();
-  channel_specific  = TBX_MALLOC(sizeof(mad_vrp_channel_specific_t));
-  channel->specific = channel_specific;
+  cs          = TBX_MALLOC(sizeof(mad_vrp_channel_specific_t));
+  cs->dummy   = 0;
+  c->specific = cs;
   LOG_OUT();
 }
 
@@ -350,13 +215,27 @@ void
 mad_vrp_connection_init(p_mad_connection_t in,
 			p_mad_connection_t out)
 {
-  p_mad_vrp_connection_specific_t specific = NULL;
+  p_mad_vrp_in_connection_specific_t  is = NULL;
+  p_mad_vrp_out_connection_specific_t os = NULL;
 
   LOG_IN();
-  specific     = TBX_MALLOC(sizeof(mad_vrp_connection_specific_t));
-  in->specific = out->specific = specific;
-  in->nb_link  = 1;
-  out->nb_link = 1;
+  is = TBX_MALLOC(sizeof(mad_vrp_in_connection_specific_t));
+
+  is->socket =   -1;
+  is->port   =   -1;
+  is->vrp_in = NULL;
+
+  in->specific = is;
+  in->nb_link  =  1;
+
+  os = TBX_MALLOC(sizeof(mad_vrp_out_connection_specific_t));
+
+  os->socket  =   -1;
+  os->port    =   -1;
+  os->vrp_out = NULL;
+
+  out->specific = os;
+  out->nb_link  =  1;
   LOG_OUT();
 }
 
@@ -372,422 +251,187 @@ mad_vrp_link_init(p_mad_link_t lnk)
 }
 
 void
-mad_vrp_before_open_channel(p_mad_channel_t channel)
-{
-  p_mad_vrp_channel_specific_t channel_specific;
-
-  LOG_IN();
-  channel_specific          = channel->specific;
-  channel_specific->max_fds = 0;
-  FD_ZERO(&(channel_specific->read_fds));
-  LOG_OUT();
-}
-
-void
 mad_vrp_accept(p_mad_connection_t   in,
-	       p_mad_adapter_info_t adapter_info TBX_UNUSED)
+	       p_mad_adapter_info_t ai TBX_UNUSED)
 {
-  p_mad_vrp_adapter_specific_t    adapter_specific    = NULL;
-  p_mad_vrp_connection_specific_t connection_specific = NULL;
-  ntbx_tcp_socket_t               desc                =   -1;
+  p_mad_vrp_adapter_specific_t       as = NULL;
+  p_mad_vrp_in_connection_specific_t is = NULL;
+  ntbx_tcp_socket_t                  s  =   -1;
 
   LOG_IN();
-  connection_specific = in->specific;
-  adapter_specific    = in->channel->adapter->specific;
+  is = in->specific;
+  as = in->channel->adapter->specific;
 
-  SYSCALL(desc = accept(adapter_specific->connection_socket, NULL, NULL));
-  ntbx_tcp_socket_setup(desc);
+  SYSCALL(s = accept(as->connection_socket, NULL, NULL));
 
-  connection_specific->socket = desc;
+  /* ajouter appel à vrp_incoming_construct */
   LOG_OUT();
 
 }
 
 void
 mad_vrp_connect(p_mad_connection_t   out,
-		p_mad_adapter_info_t adapter_info)
+		p_mad_adapter_info_t ai)
 {
-  p_mad_vrp_connection_specific_t   connection_specific   = NULL;
-  p_mad_dir_node_t                  remote_node           = NULL;
-  p_mad_dir_adapter_t               remote_adapter        = NULL;
-  ntbx_tcp_port_t                   remote_port           =    0;
-  ntbx_tcp_socket_t                 sock                  =   -1;
-  ntbx_tcp_address_t                remote_address;
+  p_mad_vrp_out_connection_specific_t os        = NULL;
+  p_mad_dir_node_t                    r_node    = NULL;
+  p_mad_dir_adapter_t                 r_adapter = NULL;
+  ntbx_tcp_port_t                     r_port    =    0;
+  ntbx_tcp_socket_t                   s         =   -1;
+  ntbx_tcp_address_t                  r_addr;
 
   LOG_IN();
-  connection_specific = out->specific;
-  remote_node         = adapter_info->dir_node;
-  remote_adapter      = adapter_info->dir_adapter;
-  remote_port         = atoi(remote_adapter->parameter);
-  sock                = ntbx_tcp_socket_create(NULL, 0);
+  os        = out->specific;
+  r_node    = ai->dir_node;
+  r_adapter = ai->dir_adapter;
+  r_port    = atoi(r_adapter->parameter);
+  s         = ntbx_tcp_socket_create(NULL, 0);
 
 #ifndef LEO_IP
-  ntbx_tcp_address_fill(&remote_address, remote_port, remote_node->name);
+  ntbx_tcp_address_fill(&r_addr, r_port, r_node->name);
 #else // LEO_IP
-  ntbx_tcp_address_fill_ip(&remote_address, remote_port, &remote_node->ip);
+  ntbx_tcp_address_fill_ip(&r_addr, r_port, &r_node->ip);
 #endif // LEO_IP
 
-  SYSCALL(connect(sock, (struct sockaddr *)&remote_address,
+  SYSCALL(connect(s, (struct sockaddr *)&r_addr,
 		  sizeof(ntbx_tcp_address_t)));
 
-  ntbx_tcp_socket_setup(sock);
-  connection_specific->socket = sock;
+  ntbx_tcp_socket_setup(s);
+
+  /* ajouter appel à vrp_outgoing_construct */
   LOG_OUT();
 }
 
 void
-mad_vrp_after_open_channel(p_mad_channel_t channel)
+mad_vrp_disconnect(p_mad_connection_t c)
 {
-  p_mad_vrp_channel_specific_t  channel_specific = NULL;
-  p_mad_dir_channel_t           dir_channel      = NULL;
-  tbx_darray_index_t            idx              =    0;
-  p_tbx_darray_t                in_darray        = NULL;
-  p_mad_connection_t            in               = NULL;
-  fd_set                       *read_fds         = NULL;
-  int                           max_fds          =    0;
-
   LOG_IN();
-  channel_specific = channel->specific;
-  dir_channel      = channel->dir_channel;
-  in_darray        = channel->in_connection_darray;
-  read_fds         = &(channel_specific->read_fds);
-
-  in = tbx_darray_first_idx(in_darray, &idx);
-  while (in)
+  if (c->way == mad_incoming_connection)
     {
-      p_mad_vrp_connection_specific_t in_specific = NULL;
+      p_mad_vrp_in_connection_specific_t is = NULL;
 
-      in_specific = in->specific;
+      is = c->specific;
 
-      FD_SET(in_specific->socket, read_fds);
-      max_fds = max(in_specific->socket, max_fds);
-
-      in = tbx_darray_next_idx(in_darray, &idx);
+      /* ajouter code de deconnexion VRP */
     }
+  else if (c->way == mad_outgoing_connection)
+    {
+      p_mad_vrp_out_connection_specific_t os = NULL;
 
-  channel_specific->max_fds       = max_fds;
-  channel_specific->active_number =  0;
-  channel_specific->last_idx      = -1;
-  LOG_OUT();
-}
+      os = c->specific;
 
-void
-mad_vrp_disconnect(p_mad_connection_t connection)
-{
-  p_mad_vrp_connection_specific_t connection_specific = connection->specific;
+      /* ajouter code de deconnexion VRP */
+    }
+  else
+    FAILURE("invalid connection way");
 
-  LOG_IN();
-  SYSCALL(close(connection_specific->socket));
-  connection_specific->socket = -1;
   LOG_OUT();
 }
 
 #ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
-mad_vrp_poll_message(p_mad_channel_t channel)
+mad_vrp_poll_message(p_mad_channel_t ch)
 {
-  p_mad_vrp_channel_specific_t channel_specific = NULL;
-  p_tbx_darray_t               in_darray        = NULL;
-  p_mad_connection_t           in               = NULL;
+  p_mad_vrp_channel_specific_t chs       = NULL;
+  p_tbx_darray_t               in_darray = NULL;
+  p_mad_connection_t           in        = NULL;
 
   LOG_IN();
-  channel_specific = channel->specific;
-  in_darray        = channel->in_connection_darray;
+  chs       = ch->specific;
+  in_darray = ch->in_connection_darray;
 
-  if (!channel_specific->active_number)
-    {
-      int status = -1;
-      struct timeval timeout;
+  /* TODO */
 
-      channel_specific->active_fds = channel_specific->read_fds;
-      timeout.tv_sec  = 0;
-      timeout.tv_usec = 0;
+  LOG_OUT();
 
-      status = select(channel_specific->max_fds + 1,
-		      &channel_specific->active_fds,
-		      NULL, NULL, &timeout);
-
-
-      if ((status == -1) && (errno != EINTR))
-	{
-	  perror("select");
-	  FAILURE("system call failed");
-	}
-
-      if (status <= 0)
-	{
-	  LOG_OUT();
-	  return NULL;
-	}
-
-      channel_specific->active_number = status;
-
-      in = tbx_darray_first_idx(in_darray, &channel_specific->last_idx);
-   }
-  else
-    {
-      in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
-    }
-
-  while (in)
-    {
-      p_mad_vrp_connection_specific_t in_specific = NULL;
-
-      in_specific = in->specific;
-
-      if (FD_ISSET(in_specific->socket, &channel_specific->active_fds))
-	{
-	  channel_specific->active_number--;
-
-	  LOG_OUT();
-
-	  return in;
-	}
-
-      in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
-    }
-
-  FAILURE("invalid channel state");
+  return NULL;
 }
 #endif // MAD_MESSAGE_POLLING
 
 p_mad_connection_t
-mad_vrp_receive_message(p_mad_channel_t channel)
+mad_vrp_receive_message(p_mad_channel_t ch)
 {
-  p_mad_vrp_channel_specific_t channel_specific = NULL;
-  p_tbx_darray_t               in_darray        = NULL;
-  p_mad_connection_t           in               = NULL;
+  p_mad_vrp_channel_specific_t chs       = NULL;
+  p_tbx_darray_t               in_darray = NULL;
+  p_mad_connection_t           in        = NULL;
 
   LOG_IN();
-  channel_specific = channel->specific;
-  in_darray        = channel->in_connection_darray;
+  chs       = ch->specific;
+  in_darray = ch->in_connection_darray;
 
-  if (!channel_specific->active_number)
-    {
-      int status = -1;
+  /* TODO */
 
-      do
-	{
-	  channel_specific->active_fds = channel_specific->read_fds;
+  LOG_OUT();
 
-#ifdef MARCEL
-#ifdef USE_MARCEL_POLL
-	  status = marcel_select(channel_specific->max_fds + 1,
-				 &channel_specific->active_fds,
-				 NULL);
-
-#else // USE_MARCEL_POLL
-	  status = tselect(channel_specific->max_fds + 1,
-			   &channel_specific->active_fds,
-			   NULL, NULL);
-	  if (status <= 0)
-	    {
-	      TBX_YIELD();
-	    }
-#endif // USE_MARCEL_POLL
-#else // MARCEL
-	  status = select(channel_specific->max_fds + 1,
-			  &channel_specific->active_fds,
-			  NULL, NULL, NULL);
-#endif // MARCEL
-
-	  if ((status == -1) && (errno != EINTR))
-	    {
-	      perror("select");
-	      FAILURE("system call failed");
-	    }
-	}
-      while (status <= 0);
-
-      channel_specific->active_number = status;
-
-      in = tbx_darray_first_idx(in_darray, &channel_specific->last_idx);
-   }
-  else
-    {
-      in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
-    }
-
-  while (in)
-    {
-      p_mad_vrp_connection_specific_t in_specific = NULL;
-
-      in_specific = in->specific;
-
-      if (FD_ISSET(in_specific->socket, &channel_specific->active_fds))
-	{
-	  channel_specific->active_number--;
-
-	  LOG_OUT();
-
-	  return in;
-	}
-
-      in = tbx_darray_next_idx(in_darray, &channel_specific->last_idx);
-    }
-
-  FAILURE("invalid channel state");
+  return in;
 }
 
 void
-mad_vrp_send_buffer(p_mad_link_t     lnk,
-		    p_mad_buffer_t   buffer)
+mad_vrp_send_buffer(p_mad_link_t   lnk,
+		    p_mad_buffer_t b)
 {
-  p_mad_vrp_connection_specific_t connection_specific =
-    lnk->connection->specific;
+  p_mad_vrp_out_connection_specific_t os = NULL;
 
   LOG_IN();
-  mad_vrp_write(connection_specific->socket, buffer);
+  os = lnk->connection->specific;
+  FAILURE("unimplemented");
   LOG_OUT();
 }
 
 void
 mad_vrp_receive_buffer(p_mad_link_t    lnk,
-		       p_mad_buffer_t *buffer)
+		       p_mad_buffer_t *p_b)
 {
-  p_mad_vrp_connection_specific_t connection_specific =
-    lnk->connection->specific;
+  p_mad_vrp_in_connection_specific_t is = NULL;
 
   LOG_IN();
-  mad_vrp_read(connection_specific->socket, *buffer);
+  is = lnk->connection->specific;
+  FAILURE("unimplemented");
   LOG_OUT();
 }
-
-void
-mad_vrp_send_buffer_group_1(p_mad_link_t         lnk,
-			  p_mad_buffer_group_t buffer_group)
-{
-  LOG_IN();
-  if (!tbx_empty_list(&(buffer_group->buffer_list)))
-    {
-      p_mad_vrp_connection_specific_t connection_specific =
-	lnk->connection->specific;
-      tbx_list_reference_t            ref;
-
-      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
-      do
-	{
-	  mad_vrp_write(connection_specific->socket,
-			tbx_get_list_reference_object(&ref));
-	}
-      while(tbx_forward_list_reference(&ref));
-    }
-  LOG_OUT();
-}
-
-void
-mad_vrp_receive_sub_buffer_group_1(p_mad_link_t         lnk,
-				 p_mad_buffer_group_t buffer_group)
-{
-  LOG_IN();
-  if (!tbx_empty_list(&(buffer_group->buffer_list)))
-    {
-      p_mad_vrp_connection_specific_t connection_specific =
-	lnk->connection->specific;
-      tbx_list_reference_t            ref;
-
-      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
-      do
-	{
-	  mad_vrp_read(connection_specific->socket,
-		       tbx_get_list_reference_object(&ref));
-	}
-      while(tbx_forward_list_reference(&ref));
-    }
-  LOG_OUT();
-}
-
-
-void
-mad_vrp_send_buffer_group_2(p_mad_link_t         lnk,
-			    p_mad_buffer_group_t buffer_group)
-{
-  LOG_IN();
-  if (!tbx_empty_list(&(buffer_group->buffer_list)))
-    {
-      p_mad_vrp_connection_specific_t connection_specific =
-	lnk->connection->specific;
-      tbx_list_reference_t            ref;
-
-      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
-
-      {
-	struct iovec array[buffer_group->buffer_list.length];
-	int          i     = 0;
-
-	do
-	  {
-	    p_mad_buffer_t buffer = NULL;
-
-	    buffer = tbx_get_list_reference_object(&ref);
-	    array[i].iov_base = buffer->buffer;
-	    array[i].iov_len  = buffer->bytes_written - buffer->bytes_read;
-	    buffer->bytes_read = buffer->bytes_written;
-	    i++;
-	  }
-	while(tbx_forward_list_reference(&ref));
-
-	mad_vrp_writev(connection_specific->socket, array, i);
-      }
-    }
-  LOG_OUT();
-}
-
-void
-mad_vrp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
-				 p_mad_buffer_group_t buffer_group)
-{
-  LOG_IN();
-  if (!tbx_empty_list(&(buffer_group->buffer_list)))
-    {
-      p_mad_vrp_connection_specific_t connection_specific =
-	lnk->connection->specific;
-      tbx_list_reference_t            ref;
-
-      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
-
-      {
-	struct iovec array[buffer_group->buffer_list.length];
-	int          i     = 0;
-
-	do
-	  {
-	    p_mad_buffer_t buffer = NULL;
-
-	    buffer = tbx_get_list_reference_object(&ref);
-	    array[i].iov_base = buffer->buffer;
-	    array[i].iov_len  = buffer->length - buffer->bytes_written;
-	    buffer->bytes_written = buffer->length;
-	    i++;
-	  }
-	while(tbx_forward_list_reference(&ref));
-
-	mad_vrp_readv(connection_specific->socket, array, i);
-      }
-    }
-  LOG_OUT();
-}
-
-
-
 
 void
 mad_vrp_send_buffer_group(p_mad_link_t         lnk,
-			  p_mad_buffer_group_t buffer_group)
+			  p_mad_buffer_group_t bg)
 {
   LOG_IN();
-  mad_vrp_send_buffer_group_2(lnk, buffer_group);
+  if (!tbx_empty_list(&(bg->buffer_list)))
+    {
+      p_mad_vrp_out_connection_specific_t os = NULL;
+      tbx_list_reference_t                ref;
+
+      os = lnk->connection->specific;
+
+      tbx_list_reference_init(&ref, &(bg->buffer_list));
+      do
+	{
+          FAILURE("unimplemented");
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
   LOG_OUT();
 }
 
 void
 mad_vrp_receive_sub_buffer_group(p_mad_link_t         lnk,
-				 tbx_bool_t           first_sub_group
-				   __attribute__ ((unused)),
-				 p_mad_buffer_group_t buffer_group)
+                                 tbx_bool_t           first TBX_UNUSED,
+				 p_mad_buffer_group_t bg)
 {
   LOG_IN();
-  mad_vrp_receive_sub_buffer_group_2(lnk, buffer_group);
+  if (!tbx_empty_list(&(bg->buffer_list)))
+    {
+      p_mad_vrp_in_connection_specific_t is = NULL;
+      tbx_list_reference_t               ref;
+
+      is = lnk->connection->specific;
+
+      tbx_list_reference_init(&ref, &(bg->buffer_list));
+      do
+	{
+          FAILURE("unimplemented");
+	}
+      while(tbx_forward_list_reference(&ref));
+    }
   LOG_OUT();
 }
 

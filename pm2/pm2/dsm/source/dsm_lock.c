@@ -48,6 +48,8 @@ void dsm_lock_init(dsm_lock_t *lock, dsm_lock_attr_t *attr)
 {
   int i;
 
+  LOG_IN();
+
   *lock = &_dsm_lock_table.locks[_dsm_lock_table.nb++];
 
   if(!attr)
@@ -66,6 +68,8 @@ void dsm_lock_init(dsm_lock_t *lock, dsm_lock_attr_t *attr)
     }
   else
      (*lock)->nb_prot =0;
+  
+  LOG_OUT();
 }
 
 

@@ -53,6 +53,16 @@ void dsm_lock_init(dsm_lock_t *lock, dsm_lock_attr_t *attr)
   LOG_OUT();
 }
 
+void dsm_lock_attr_register_protocol(dsm_lock_attr_t *attr, int prot)
+{
+  if (attr->nb_prot >= _MAX_PROT_PER_LOCK)
+    RAISE(CONSTRAINT_ERROR);
+  attr->prot[attr->nb_prot++] = prot;
+}
 
 
-
+void dsm_lock_attr_init(dsm_lock_attr_t *attr)
+{
+  dsm_mutexattr_init(&attr->dsm_mutex_attr);
+  attr->nb_prot = 0;
+}

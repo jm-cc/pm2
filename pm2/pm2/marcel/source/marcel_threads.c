@@ -825,12 +825,12 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 }
 #endif /* 0 */
 
-void __init main_thread_init(void)
+void __marcel_init main_thread_init(void)
 {
-	LOG_IN();
 	marcel_attr_t attr;
 	char *name="main";
 
+	LOG_IN();
 	memset(__main_thread, 0, sizeof(marcel_task_t));
 	
 	marcel_attr_init(&attr);

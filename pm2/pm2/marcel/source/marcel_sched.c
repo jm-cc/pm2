@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.39  2000/09/15 02:04:52  rnamyst
+fut_print is now built by the makefile, rather than by pm2-build-fut-entries
+
 Revision 1.38  2000/09/14 02:08:30  rnamyst
 Put profile.h into common/include and added few FUT_SWITCH_TO calls
 
@@ -584,6 +587,8 @@ marcel_t marcel_radical_next_task(void)
     t = radical_next_task(NULL, cur_lwp);
     SET_STATE_RUNNING(NULL, t, cur_lwp);
     sched_unlock(cur_lwp);
+
+    LOG_OUT();
     return t;
   }
 #endif
@@ -978,10 +983,11 @@ void ma__marcel_yield(void)
     return;
   }
   next=next_task_to_run(cur, cur_lwp);
-  LOG_OUT();
   can_goto_next_task(cur, next);
   MA_THR_RESTARTED(cur, "");
   unlock_task();
+
+  LOG_OUT();
 }
 
 void marcel_yield(void)
@@ -1131,6 +1137,8 @@ void marcel_tempo_give_hand(unsigned long timeout,
   RAISE(NOT_IMPLEMENTED);
 #endif
 
+  LOG_IN();
+
   if(locked() != 1)
     RAISE(LOCK_TASK_ERROR);
   marcel_disablemigration(cur);
@@ -1180,6 +1188,8 @@ void marcel_tempo_give_hand(unsigned long timeout,
   } while(*blocked);
   marcel_enablemigration(cur);
   unlock_task();
+
+  LOG_OUT();
 }
 
 void marcel_setspecialthread(marcel_t pid)

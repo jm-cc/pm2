@@ -36,9 +36,22 @@
 
 # $1 = host name
 
-for file in /tmp/${USER}-pm2log-* ; do
+hostname=$1
+set `pm2-config --modules`
+
+mod='pm2'
+
+for i
+do
+    case $i in
+      pm2) mod='pm2'; break;;
+      mad2) mod='mad2'; break;; 
+    esac
+done
+
+for file in /tmp/${USER}-${mod}log-* ; do
 	if [ -f $file ] ; then
-		echo "*** Process `echo $file | sed -e 's/.*log-//'` on $1:"
+		echo "*** Process `echo $file | sed -e 's/.*log-//'` on $hostname:"
 		cat $file
 	fi
 done

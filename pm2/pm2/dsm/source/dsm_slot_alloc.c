@@ -45,11 +45,11 @@ void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr
   base = dsm_isoaddr_page_index(isoaddr_page_index(ptr));
 
   if (attr->atomic)
-    dsm_enable_page_entry(base, dsm_self(), attr->protocol, ptr, gsize, TRUE);
+    dsm_enable_page_entry(base, dsm_self(), attr->protocol, ptr, gsize, FALSE);
   else
     /* Add an entry in the page table for each allocated page. */
     for (i = 0; i < gsize/DSM_PAGE_SIZE; i++)
-      dsm_enable_page_entry(base - i, dsm_self(), attr->protocol, (char *)ptr + i*DSM_PAGE_SIZE, DSM_PAGE_SIZE, TRUE);
+      dsm_enable_page_entry(base - i, dsm_self(), attr->protocol, (char *)ptr + i*DSM_PAGE_SIZE, DSM_PAGE_SIZE, FALSE);
   
   if (granted_size != NULL)
     *granted_size = gsize;

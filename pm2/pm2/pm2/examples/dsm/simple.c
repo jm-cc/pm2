@@ -41,9 +41,11 @@
 
 #define COUNTER 
 
-marcel_sem_t main_sem;
+int DSM_SERVICE;
 
 dsm_mutex_t L;
+
+pm2_completion_t c;
 
 BEGIN_DSM_DATA
 atomic_t a = {0};
@@ -78,35 +80,28 @@ void f()
     toto1++;
     dsm_mutex_unlock(&L);
   }
+  pm2_completion_signal(&c); 
 }
 
-BEGIN_SERVICE(TEST_DSM)
-     f();
-     pm2_quick_async_rpc(0,DSM_V,NULL,NULL);
-END_SERVICE(TEST_DSM)
-
-
-BEGIN_SERVICE(DSM_V)
-     marcel_sem_V(&main_sem);
-END_SERVICE(DSM_V)
-     
+static void DSM_func(void)
+{
+  pm2_unpack_completion(&c);
+  pm2_rawrpc_waitdata(); 
+  pm2_thread_create(f, NULL);
+}
 
 
 int pm2_main(int argc, char **argv)
 {
   int i, j;
 
-  if (argc != 3)
+  if (argc != 2)
     {
-      fprintf(stderr, "Usage: simple <number of nodes> <number of threads per node>\n");
+      fprintf(stderr, "Usage: simple <number of threads per node>\n");
       exit(1);
     }
   pm2_rpc_init();
-
-  DECLARE_LRPC(TEST_DSM);
-  DECLARE_LRPC(DSM_V);
-
-  marcel_sem_init(&main_sem, 0);
+  pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
   //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
   pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
@@ -118,15 +113,24 @@ int pm2_main(int argc, char **argv)
   pm2_init(&argc, argv);
 
   dsm_display_page_ownership();
-  if(pm2_self() == 0) { /* master process */
 
-    for (j=0; j < pm2_config_size(); j++)
-      for (i=0; i< atoi(argv[2]) ; i++) {
-	pm2_async_rpc(j, TEST_DSM, NULL, NULL);
+  if(pm2_self() == 0) { /* master process */
+    pm2_completion_init(&c);
+
+    /* create local threads */
+    for (i=0; i< atoi(argv[1]) ; i++)
+      pm2_thread_create(f, NULL); 
+
+    /* create remote threads */
+    for (j=1; j < pm2_config_size(); j++)
+      for (i=0; i< atoi(argv[1]) ; i++) {
+	pm2_rawrpc_begin(j, DSM_SERVICE, NULL);
+	pm2_pack_completion(&c);
+	pm2_rawrpc_end();
       }
 
-    for (i = 0 ; i < atoi(argv[1]) * atoi(argv[2]); i++)
-      marcel_sem_P(&main_sem);
+    for (i = 0 ; i < atoi(argv[1]) * pm2_config_size(); i++)
+      pm2_completion_wait(&c);
 
     tfprintf(stderr, "toto1=%d\n", toto1);
 

@@ -1,3 +1,10 @@
+/*! \file tbx_darray.h
+ *  \brief TBX dynamic array structures
+ *
+ *  This file defines TBX dynamic uni-dimentionnal arrays data structures
+ * 
+ */
+
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)

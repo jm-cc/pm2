@@ -36,6 +36,12 @@
 
 ______________________________________________________________________________
 $Log: swann_file.h,v $
+Revision 1.2  2000/03/27 12:53:56  oaumage
+- progression des fonctionnalites:
+  * support reseau
+  * support execution
+  * extension du support fichier
+
 Revision 1.1  2000/02/17 09:29:28  oaumage
 - ajout des fichiers constitutifs de Swann
 
@@ -67,7 +73,7 @@ typedef enum
   swann_file_mode_exec,
 } swann_file_mode_t, *p_swann_file_mode_t;
 
-typedef struct
+typedef struct s_swann_file
 {
   char               *pathname;
   int                 descriptor;
@@ -77,7 +83,7 @@ typedef struct
   tbx_bool_t          readable;
   tbx_bool_t          writeable;
   tbx_bool_t          executable;
-} swann_file_t, *p_swann_file_t;
+} swann_file_t;
 
 
 #endif /* __SWANN_FILE_H */

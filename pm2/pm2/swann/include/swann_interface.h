@@ -36,6 +36,12 @@
 
 ______________________________________________________________________________
 $Log: swann_interface.h,v $
+Revision 1.2  2000/03/27 12:53:56  oaumage
+- progression des fonctionnalites:
+  * support reseau
+  * support execution
+  * extension du support fichier
+
 Revision 1.1  2000/02/17 09:29:27  oaumage
 - ajout des fichiers constitutifs de Swann
 
@@ -51,5 +57,63 @@ ______________________________________________________________________________
 #ifndef __SWANN_INTERFACE_H
 #define __SWANN_INTERFACE_H
 
+
+/*
+ * File management
+ * ---------------.........................................................
+ */
+swann_status_t
+swann_file_init(p_swann_file_t  file,
+		char           *pathname);
+
+swann_status_t
+swann_file_open(p_swann_file_t file);
+
+swann_status_t
+swann_file_create(p_swann_file_t file);
+
+swann_status_t
+swann_file_close(p_swann_file_t file);
+
+swann_status_t
+swann_file_destroy(p_swann_file_t file);
+
+size_t
+swann_file_read_block(p_swann_file_t  file,
+		      void           *ptr,
+		      size_t          length);
+
+size_t
+swann_file_write_block(p_swann_file_t  file,
+		      void            *ptr,
+		      size_t           length);
+
+/*
+ * Process management
+ * ------------------......................................................
+ */
+swann_status_t
+swann_run_command(p_swann_file_t  file,
+		  char           *argv[],
+		  char           *envp[],
+		  int            *return_code);
+
+p_swann_command_t
+swann_run_async_command(p_swann_file_t  file,
+			char           *argv[],
+			char           *envp[],
+			p_swann_file_t  file_in,
+			p_swann_file_t  file_out,
+			p_swann_file_t  file_err);
+
+
+/*
+ * Network management
+ * ------------------
+ */
+p_swann_net_server_t
+swann_net_server_init(swann_net_server_id_t     id,
+		      char                     *master_host_name,
+		      p_ntbx_connection_data_t  connection_data);
 
 #endif /* __SWANN_INTERFACE_H */

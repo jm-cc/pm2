@@ -31,6 +31,7 @@ typedef enum e_mad_connection_nature
   mad_connection_nature_regular,
   mad_connection_nature_direct_virtual,
   mad_connection_nature_indirect_virtual,
+  mad_connection_nature_mux,
 } mad_connection_nature_t, *p_mad_connection_nature_t;
 
 typedef enum e_mad_connection_way

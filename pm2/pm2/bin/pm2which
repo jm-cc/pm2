@@ -145,57 +145,52 @@ pm2which_calc()
     esac
 }
 
-pm2which_parse_cmdline() # args
-{
-    while [ $# -gt 0 ]; do
-	case $1 in
-	    -f)
-		shift
-		_PM2WHICH_FLAVOR="$1"
-		shift
-		;;
-	    -p)
-		shift
-		_PM2WHICH_SHOW_PREFIX=yes
-		;;
-	    -h)
-		pm2which_usage 0
-		;;
-	    --)
-		shift
-		break
-		;;
-	    *)
-		break
-		;;
-	esac
-    done
-
-    [ $# -eq 1 ] || pm2which_usage 1
-
-    pm2which_calc $*
-}
-
 # Programme principal
 
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
 
 _PM2WHICH_SHOW_PREFIX=no
-export _PM2WHICH_SHOW_PREFIX
+_PM2WHICH_SOURCE_MODE=no
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f)
+	    shift
+	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-p)
+	    shift
+	    _PM2WHICH_SHOW_PREFIX=yes
+	    ;;
+	-h)
+	    pm2which_usage 0
+	    ;;
+	--source-mode)
+	    _PM2WHICH_SOURCE_MODE=yes
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+[ $# -eq 1 ] || pm2which_usage 1
 
 _PM2WHICH_ARGS="$*"
 
 set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-config
 
-set -- $_PM2WHICH_ARGS
+pm2which_calc $_PM2WHICH_ARGS
 
-if [ "$1" = --source-mode ] ; then
-    shift
-    pm2which_parse_cmdline $*
-else
-    pm2which_parse_cmdline $*
+if [ $_PM2WHICH_SOURCE_MODE = no ]; then
     pm2which_prettyprint $_PM2WHICH_RESULT
     if [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then
 	exit 0

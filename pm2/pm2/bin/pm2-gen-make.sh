@@ -52,7 +52,7 @@ make_dir() {
     ldir=$1
 
     if [ ! -d $ldir ]; then
-#	echo "Crating directory : $ldir"
+#	echo "Creating directory : $ldir"
 	mkdir -p $ldir
     fi
 }
@@ -168,7 +168,7 @@ EOF
 
 PM2_CONFIG="pm2-config --flavor=$flavor"
 
-# Gerating directories
+# Generating directories
 
 dir=`$PM2_CONFIG --builddir`
 

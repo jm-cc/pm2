@@ -589,8 +589,9 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		}
 #endif
 		if (get_action_value(type, PM2DEBUG_SHOW_THREAD)) {
-			my_print("(%8p) ", (can_print==2) ?
-			marcel_self():(void*)-1);
+			my_print("(%8p:% 3d) ", (can_print==2) ?
+			marcel_self():(void*)-1, (can_print==2) ?
+			marcel_self()->number:-99);
 		}
 #endif /* MARCEL */
 		va_start(ap, format);

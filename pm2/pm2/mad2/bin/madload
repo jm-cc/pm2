@@ -13,11 +13,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Just in case MAD2_ROOT is not defined
-MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
-export MAD2_ROOT
-
 prog="$1"
 shift
 
@@ -31,13 +26,13 @@ while [ $# -gt 0 ]; do
 done
 
 # The first node has rank 0
-args="$args -rank 0"
+args="$args --mad-rank 0"
 
 # Append the command name
 if [ -n "$PM2_CMD_NAME" ]; then
-    args="$args -mad_app_cmd $PM2_CMD_NAME"
+    args="$args --mad-app-cmd $PM2_CMD_NAME"
 else
-    args="$args -mad_app_cmd $prog"
+    args="$args --mad-app-cmd $prog"
 fi
 
 PM2_RSH=${PM2_RSH:-rsh} 

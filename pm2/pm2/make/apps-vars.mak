@@ -70,7 +70,7 @@ APPS = $(foreach PROG,$(PROGS),$(APP_BIN)/$(PROG)$(APP_EXT))
 # Convertisseurs utiles
 DEP_TO_OBJ =  $(APP_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
-COMMON_DEPS += $(APP_STAMP_FILES) $(MAKEFILE_FILE)
+COMMON_DEPS += $(APP_STAMP_FLAVOR) $(APP_STAMP_FILES) $(MAKEFILE_FILE)
 
 $(PM2_MAK_DIR)/apps-config.mak: $(APP_STAMP_FLAVOR)
 	@$(PM2_CONFIG) --gen_mak apps

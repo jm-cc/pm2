@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.9  2000/09/12 09:39:39  oaumage
+- correction des problemes de log
+
 Revision 1.8  2000/07/12 07:55:14  oaumage
 - Correction de la logique de localisation du fichier de configuration
 
@@ -133,7 +136,8 @@ mad_parse_command_line(int                *argc,
 		       p_mad_madeleine_t   madeleine,
 		       char               *conf_file,
 		       p_tbx_bool_t        master,
-		       p_tbx_bool_t        slave)
+		       p_tbx_bool_t        slave,
+		       p_tbx_bool_t        debug_mode)
 {
   p_mad_adapter_t  current_adapter = madeleine->adapter;
   int              i;
@@ -151,6 +155,10 @@ mad_parse_command_line(int                *argc,
       else if(!strcmp(argv[i], "-slave"))
 	{
 	  *slave = tbx_true;
+	}
+      else if(!strcmp(argv[i], "-d"))
+	{
+	  *debug_mode = tbx_true;
 	}
       else if(!strcmp(argv[i], "-rank"))
 	{
@@ -204,7 +212,6 @@ mad_parse_command_line(int                *argc,
       i++;
     }
   *argc = j;
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
   LOG_OUT();
 }
 
@@ -291,7 +298,8 @@ mad_slave_spawn(int                *argc,
 		char              **argv,
 		tbx_bool_t          conf_spec,
 		p_mad_madeleine_t   madeleine,
-		char               *configuration_file)
+		char               *configuration_file,
+		tbx_bool_t          debug_mode)
 {
   p_mad_configuration_t   configuration = &(madeleine->configuration);
   int                     i;
@@ -299,6 +307,7 @@ mad_slave_spawn(int                *argc,
   char                   *arg_str       = NULL;
   char                   *arg           = NULL;
   char                   *cwd           = NULL;
+  char                   *prefix        = NULL;
   mad_adapter_id_t        ad;
 	
   LOG_IN();
@@ -342,6 +351,27 @@ mad_slave_spawn(int                *argc,
       strcat(arg_str, arg);
     }
 
+  if (debug_mode)
+    {
+      char *display;
+      
+      prefix = TBX_MALLOC(MAX_ARG_LEN);
+      CTRL_ALLOC(prefix);
+
+      display = getenv("DISPLAY");
+
+      if (!display)
+	FAILURE("DISPLAY variable undefined");
+
+      sprintf(prefix, "xterm -display %s -e gdb", display);
+    }
+  else
+    {
+      prefix = TBX_MALLOC(1);
+      CTRL_ALLOC(prefix);
+      prefix[0] = 0;
+    }
+
   for (i = 1;
        i < configuration->size;
        i++)
@@ -351,8 +381,9 @@ mad_slave_spawn(int                *argc,
 	  if (!conf_spec)
 	    {
 	      sprintf(cmd,
-		      "rsh %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
+		      "rsh %s %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
 		      configuration->host_name[i],
+		      prefix,
 		      cwd,
 		      argv[0],
 		      cwd,
@@ -363,8 +394,9 @@ mad_slave_spawn(int                *argc,
 	  else
 	    {
 	      sprintf(cmd,
-		      "rsh %s %s/%s -slave -cwd %s -rank %d %s &",
+		      "rsh %s %s %s/%s -slave -cwd %s -rank %d %s &",
 		      configuration->host_name[i],
+		      prefix,
 		      cwd,
 		      argv[0],
 		      cwd,
@@ -377,8 +409,9 @@ mad_slave_spawn(int                *argc,
 	  if (!conf_spec)
 	    {
 	      sprintf(cmd,
-		      "rsh %s %s -slave -cwd %s -rank %d -conf %s %s &",
+		      "rsh %s %s %s -slave -cwd %s -rank %d -conf %s %s &",
 		      configuration->host_name[i],
+		      prefix,
 		      argv[0],
 		      cwd,
 		      i,  /* rank */
@@ -389,8 +422,9 @@ mad_slave_spawn(int                *argc,
 	    {
 	      
 	      sprintf(cmd,
-		      "rsh %s %s -slave -cwd %s -rank %d %s &",
+		      "rsh %s %s %s -slave -cwd %s -rank %d %s &",
 		      configuration->host_name[i],
+		      prefix,
 		      argv[0],
 		      cwd,
 		      i,  /* rank */
@@ -401,6 +435,7 @@ mad_slave_spawn(int                *argc,
       LOG_STR("mad_init: Spawn", cmd);
       system(cmd);	
     }
+  TBX_FREE(prefix);
   TBX_FREE(cwd);
   TBX_FREE(cmd);
   TBX_FREE(arg_str);
@@ -413,13 +448,19 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
 		  tbx_bool_t          conf_spec,
 		  int                *argc,
 		  char              **argv,
-		  char               *configuration_file)
+		  char               *configuration_file,
+		  tbx_bool_t          debug_mode)
 {
   LOG_IN();
   mad_adapter_init(madeleine);
   if (madeleine->configuration.local_host_id == 0)
     {
-      mad_slave_spawn(argc, argv, conf_spec, madeleine, configuration_file);
+      mad_slave_spawn(argc,
+		      argv,
+		      conf_spec,
+		      madeleine,
+		      configuration_file,
+		      debug_mode);
     }
   mad_adapter_configuration_init(madeleine);
   LOG_OUT();
@@ -497,6 +538,7 @@ mad_init(
   tbx_bool_t                 slave           = tbx_false;
   char                       conf_file[128];
   tbx_bool_t                 conf_spec       = (configuration_file != NULL);
+  tbx_bool_t                 debug_mode      = tbx_false;
 
   mad_managers_init(argc, argv);
   LOG_IN(); /* After pm2debug_init ... */
@@ -522,7 +564,8 @@ mad_init(
 			     madeleine,
 			     NULL,
 			     &master,
-			     &slave);
+			     &slave,
+			     &debug_mode);
     }
   else
     {
@@ -532,7 +575,8 @@ mad_init(
 			     madeleine,
 			     configuration_file,
 			     &master,
-			     &slave);
+			     &slave,
+			     &debug_mode);
     }
 
   mad_read_conf(configuration, configuration_file);
@@ -551,12 +595,15 @@ mad_init(
     }
 
   /* output redirection */
-  if (rank > 0)
+  if ((rank > 0) && (! debug_mode))
     {
-      char   output[MAX_ARG_LEN];
-      int    f;
+      char output[MAX_ARG_LEN];
+      int  f;
 
-      sprintf(output, "/tmp/%s-%s-%d", getenv("USER"), MAD2_LOGNAME, (int)rank);
+      sprintf(output,
+	      "/tmp/%s-%s-%d",
+	      getenv("USER"),
+	      MAD2_LOGNAME, (int)rank);
 
       f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
       dup2(f, STDOUT_FILENO);
@@ -564,9 +611,14 @@ mad_init(
     }
 
   mad_driver_init(madeleine);
-  mad_connect_hosts(madeleine, conf_spec, argc, argv, configuration_file);
-  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
+  mad_connect_hosts(madeleine,
+		    conf_spec,
+		    argc,
+		    argv,
+		    configuration_file,
+		    debug_mode);
   tbx_list_init(&(madeleine->channel));
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
 
   LOG_OUT();
   return madeleine;

@@ -229,7 +229,7 @@ xdialogconfig: flavors
 	$(COMMON_HIDE) $(PM2_ROOT)/bin/pm2-config-flavor --xdialog || :
 
 xconfig: flavors
-	$(COMMON_HIDE) $(MAKE) -C ezflavor
+	$(COMMON_HIDE) $(MAKE) -C ezflavor NO_REBUILD=1
 	$(PM2_ROOT)/bin/ezflavor
 
 # Generation du cache principal des librairies

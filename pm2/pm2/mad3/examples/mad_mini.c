@@ -69,7 +69,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
       return;
     }
 
-  for (sub = 0; sub < min(channel->max_sub, MAX_SUB); sub++)
+  for (sub = 0; sub < ((min(channel->max_sub, MAX_SUB))?:1); sub++)
     {
       if (sub)
 	{

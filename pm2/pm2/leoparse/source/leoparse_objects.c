@@ -20,6 +20,110 @@
 #include "leoparse.h"
 
 /*
+ * Init
+ * ----
+ */
+p_leoparse_object_t
+leoparse_init_object(void)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result = TBX_CALLOC(1, sizeof(leoparse_object_t));
+  LOG_OUT();
+
+  return result;
+}
+
+p_leoparse_object_t
+leoparse_init_slist_object(p_tbx_slist_t slist)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result        = leoparse_init_object();
+  result->type  = leoparse_o_slist;
+  result->slist = slist;
+  LOG_OUT();
+
+  return result;
+}
+
+p_leoparse_object_t
+leoparse_init_htable_object(p_tbx_htable_t htable)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result         = leoparse_init_object();
+  result->type   = leoparse_o_htable;
+  result->htable = htable;
+  LOG_OUT();
+
+  return result;
+}
+
+p_leoparse_object_t
+leoparse_init_id_object(char                  *id,
+			p_leoparse_modifier_t  modifier)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result           = leoparse_init_object();
+  result->type     = leoparse_o_id;
+  result->id       = id;
+  result->modifier = modifier;
+  LOG_OUT();
+
+  return result;
+}
+
+p_leoparse_object_t
+leoparse_init_string_object(char *string)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result         = leoparse_init_object();
+  result->type   = leoparse_o_string;
+  result->string = string;
+  LOG_OUT();
+
+  return result;
+}
+
+p_leoparse_object_t
+leoparse_init_val_object(int value)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result       = leoparse_init_object();
+  result->type = leoparse_o_integer;
+  result->val  = value;
+  LOG_OUT();
+
+  return result;
+}
+
+p_leoparse_object_t
+leoparse_init_range_object(p_leoparse_range_t range)
+{
+  p_leoparse_object_t result = NULL;
+
+  LOG_IN();
+  result        = leoparse_init_object();
+  result->type  = leoparse_o_range;
+  result->range = range;
+  LOG_OUT();
+
+  return result;
+}
+
+
+
+/*
  * Read
  * ----
  */

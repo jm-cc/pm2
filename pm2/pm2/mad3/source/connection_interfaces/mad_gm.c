@@ -26,7 +26,7 @@
 #include <string.h>
 #include <gm.h>
 
-#if defined(MARCEL) && defined (USE_MARCEL_POLL)
+#if defined(MARCEL)
 #  define MAD_GM_MARCEL_POLL
 #  undef TBX_LOCK
 #  undef TBX_UNLOCK
@@ -40,47 +40,51 @@
  *  Macros
  */
 #if 0
-#define __RDTSC__ ({jlong time;__asm__ __volatile__ ("rdtsc" : "=A" (time));time;})
+#  define __RDTSC__ ({jlong time;__asm__ __volatile__ ("rdtsc" : "=A" (time));time;})
 #else
-#define __RDTSC__ 0LL
+#  define __RDTSC__ 0LL
 #endif
 
 /* Debugging macros */
 #if 0
-#define __trace__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#  define __trace__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
 #else
-#define __trace__(s, p...)
+#  define __trace__(s, p...)
 #endif
 
 #if 0
-#define __disp__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
-#define __in__()          fprintf(stderr, "[%Ld]:%s:%d: -->\n", __RDTSC__, __FUNCTION__, __LINE__)
-#define __out__()         fprintf(stderr, "[%Ld]:%s:%d: <--\n", __RDTSC__, __FUNCTION__, __LINE__)
-#define __err__()         fprintf(stderr, "[%Ld]:%s:%d: <!!\n", __RDTSC__, __FUNCTION__, __LINE__)
+#  define __disp__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#  define __in__()          fprintf(stderr, "[%Ld]:%s:%d: -->\n", __RDTSC__, __FUNCTION__, __LINE__)
+#  define __out__()         fprintf(stderr, "[%Ld]:%s:%d: <--\n", __RDTSC__, __FUNCTION__, __LINE__)
+#  define __err__()         fprintf(stderr, "[%Ld]:%s:%d: <!!\n", __RDTSC__, __FUNCTION__, __LINE__)
 #else
-#define __disp__(s, p...)
-#define __in__()
-#define __out__()
-#define __err__()
+#  define __disp__(s, p...)
+#  define __in__()
+#  define __out__()
+#  define __err__()
 #endif
 
 /* Error message macros */
 #if 1
-#define __error__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: *error* "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
+#  define __error__(s, p...) fprintf(stderr, "[%Ld]:%s:%d: *error* "s"\n", __RDTSC__, __FUNCTION__, __LINE__ , ## p)
 #else
-#define __error__(s, p...)
+#  define __error__(s, p...)
 #endif
 
 #define __gmerror__(x) (mad_gm_error((x), __LINE__))
 
 #define MAD_GM_MAX_BLOCK_LEN	 	(2*1024*1024)
-#define MAD_GM_PACKET_LEN                8
+#define MAD_GM_PACKET_LEN                4096
+#define MAD_GM_PACKET_HDR		 8
 #define MAD_GM_CACHE_GRANULARITY	 0x1000
 #define MAD_GM_CACHE_SIZE		 0x1000
+#define MAD_GM_PACKET_CACHE_SIZE	 0x10
 
 #define MAD_GM_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
+#define MAD_GM_LINK_CPY 0
+#define MAD_GM_LINK_RDV 1
 
 typedef struct s_mad_gm_cache *p_mad_gm_cache_t;
 typedef struct s_mad_gm_cache {
@@ -104,6 +108,7 @@ typedef struct s_mad_gm_port {
         unsigned char      *packet;
         unsigned int        packet_size;
         int                 packet_length;
+        p_tbx_slist_t       packet_cache;
 } mad_gm_port_t, *p_mad_gm_port_t;
 
 #ifdef MAD_GM_MARCEL_POLL
@@ -173,6 +178,7 @@ typedef struct s_mad_gm_connection_specific {
         int                 packet_size;
         int                 packet_length;
         volatile int        state;
+        p_tbx_slist_t	    cpy_buffer_slist;
 
 #ifdef MAD_GM_MARCEL_POLL
         marcel_sem_t        sem;
@@ -654,6 +660,33 @@ mad_gm_callback(struct gm_port *p_gm_port,
         LOG_OUT();
 }
 
+static
+void
+mad_gm_fill_header(void       *_hdr,
+                   tbx_bool_t  _incoming,
+                   tbx_bool_t  _cpy,
+                   size_t      _len,
+                   int         _remote_id)
+{
+        unsigned char *const hdr       = _hdr;
+        const unsigned int   incoming  = (_incoming?1:0) << 0;
+        const unsigned int   cpy       = (_cpy?1:0)      << 1;
+        const unsigned int   len       = (_len)          << 2;
+        const unsigned int   remote_id = _remote_id;
+        const unsigned int   data      = len | cpy | incoming;
+
+        LOG_IN();
+        hdr[0] = (data      >>  0) & 0xFF;
+        hdr[1] = (data      >>  8) & 0xFF;
+        hdr[2] = (data      >> 16) & 0xFF;
+        hdr[3] = (data      >> 24) & 0xFF;
+        hdr[4] = (remote_id >>  0) & 0xFF;
+        hdr[5] = (remote_id >>  8) & 0xFF;
+        hdr[6] = (remote_id >> 16) & 0xFF;
+        hdr[7] = (remote_id >> 24) & 0xFF;
+        LOG_OUT();
+}
+
 
 static
 void
@@ -669,6 +702,7 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
 #else
         p_event = gm_blocking_receive(port->p_gm_port);
 #endif
+
         switch (gm_ntohc(p_event->recv.type)) {
 
         case GM_FAST_HIGH_PEER_RECV_EVENT:
@@ -680,8 +714,12 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                         unsigned char *packet         = NULL;
                         int            remote_node_id =    0;
 
+                        TRACE("mad_gm_port_poll: got a packet");
+
                         packet = gm_ntohp(p_event->recv.buffer);
                         msg = gm_ntohp(p_event->recv.message);
+
+                        TRACE("mad_gm_port_poll: - packet is a control message");
 
                         code   |= (int)(((unsigned int)msg[0]) <<  0);
                         code   |= (int)(((unsigned int)msg[1]) <<  8);
@@ -692,29 +730,198 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                         cnx_id |= (int)(((unsigned int)msg[6]) << 16);
                         cnx_id |= (int)(((unsigned int)msg[7]) << 24);
 
-                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
-                                                           port->packet,
-                                                           port->packet_size,
-                                                           GM_HIGH_PRIORITY, 1);
+                        remote_node_id =
+                                gm_ntohs(p_event->recv.sender_node_id);
+
+                        if ((code & 1) == 0) {
+                                p_mad_connection_t             in = NULL;
+                                p_mad_gm_connection_specific_t is = NULL;
+
+                                TRACE("mad_gm_port_poll: - packet is for an incoming connection");
+                                in = tbx_darray_get(port->in_darray, cnx_id);
+                                is = in->specific;
+
+                                if ((code & 2) == 0) {
+                                        TRACE("mad_gm_port_poll: - packet is a request for rendez-vous");
+                                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                           port->packet,
+                                                                           port->packet_size,
+                                                                           GM_HIGH_PRIORITY, 1);
+
+
+#ifdef MAD_GM_MARCEL_POLL
+                                        marcel_sem_V(&is->sem);
+#else
+                                        is->receive_lock = 0;
+#endif
+                                } else {
+                                        void           *ptr = NULL;
+                                        size_t          len = 0;
+                                        p_mad_buffer_t  b   = NULL;
+
+                                        TRACE("mad_gm_port_poll: - packet is an eager data transfer");
+                                        ptr = port->packet;
+                                        len = ((unsigned int)code) >> 2;
+                                        TRACE("mad_gm_port_poll: - packet data length = %d", len);
+
+                                        gm_memorize_message(msg, ptr, len+MAD_GM_PACKET_HDR);
+
+                                        b                = mad_alloc_buffer_struct();
+                                        b->buffer        = ptr + MAD_GM_PACKET_HDR;
+                                        b->length        = len;
+                                        b->bytes_written = len;
+                                        b->bytes_read    = 0;
+                                        b->type          = mad_static_buffer;
+                                        b->specific      = ptr;
+                                        tbx_slist_append(is->cpy_buffer_slist, b);
+
+
+                                        if (tbx_slist_get_length(port->packet_cache)) {
+                                                port->packet = tbx_slist_pop(port->packet_cache);
+                                        } else {
+                                                port->packet = gm_dma_malloc(p_gm_port, MAD_GM_PACKET_LEN);
+                                        }
+
+                                        if (!port->packet) {
+                                                __error__("could not allocate a dma buffer");
+                                                goto error;
+                                        }
+
+                                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                           port->packet,
+                                                                           port->packet_size,
+                                                                           GM_HIGH_PRIORITY, 1);
+#ifdef MAD_GM_MARCEL_POLL
+                                        marcel_sem_V(&is->sem);
+#else
+                                        is->receive_lock = 0;
+#endif
+                                }
+                        } else if ((code & 1) == 1) {
+                                p_mad_connection_t             out = NULL;
+                                p_mad_gm_connection_specific_t os  = NULL;
+
+                                TRACE("mad_gm_port_poll: - packet is for an outgoing connection");
+                                TRACE("mad_gm_port_poll: - packet is an ack for rendez-vous");
+                                gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                   port->packet,
+                                                                   port->packet_size,
+                                                                   GM_HIGH_PRIORITY, 1);
+
+                                out = tbx_darray_get(port->out_darray, cnx_id);
+                                os = out->specific;
+
+#ifdef MAD_GM_MARCEL_POLL
+                                marcel_sem_V(&os->sem);
+#else
+                                os->receive_lock = 0;
+#endif
+                        } else {
+                                __error__("invalid code");
+                                goto error;
+                        }
+                }
+                break;
+
+        case GM_HIGH_PEER_RECV_EVENT:
+        case GM_HIGH_RECV_EVENT:
+                {
+                        int            code           =    0;
+                        int            cnx_id         =    0;
+                        unsigned char *msg            = NULL;
+                        unsigned char *packet         = NULL;
+                        int            remote_node_id =    0;
+
+                        TRACE("mad_gm_port_poll: got a packet");
+
+                        packet = gm_ntohp(p_event->recv.buffer);
+                        msg = gm_ntohp(p_event->recv.message);
+
+                        TRACE("mad_gm_port_poll: - packet is a control message");
+
+                        code   |= (int)(((unsigned int)packet[0]) <<  0);
+                        code   |= (int)(((unsigned int)packet[1]) <<  8);
+                        code   |= (int)(((unsigned int)packet[2]) << 16);
+                        code   |= (int)(((unsigned int)packet[3]) << 24);
+                        cnx_id |= (int)(((unsigned int)packet[4]) <<  0);
+                        cnx_id |= (int)(((unsigned int)packet[5]) <<  8);
+                        cnx_id |= (int)(((unsigned int)packet[6]) << 16);
+                        cnx_id |= (int)(((unsigned int)packet[7]) << 24);
 
                         remote_node_id =
                                 gm_ntohs(p_event->recv.sender_node_id);
 
-                        if (code == 0) {
+                        if ((code & 1) == 0) {
                                 p_mad_connection_t             in = NULL;
                                 p_mad_gm_connection_specific_t is = NULL;
 
+                                TRACE("mad_gm_port_poll: - packet is for an incoming connection");
                                 in = tbx_darray_get(port->in_darray, cnx_id);
                                 is = in->specific;
 
+                                if ((code & 2) == 0) {
+                                        TRACE("mad_gm_port_poll: - packet is a request for rendez-vous");
+                                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                           port->packet,
+                                                                           port->packet_size,
+                                                                           GM_HIGH_PRIORITY, 1);
+
+
 #ifdef MAD_GM_MARCEL_POLL
-                                marcel_sem_V(&is->sem);
+                                        marcel_sem_V(&is->sem);
 #else
-                                is->receive_lock = 0;
+                                        is->receive_lock = 0;
 #endif
-                        } else if (code == 1) {
+                                } else {
+                                        void           *ptr = NULL;
+                                        size_t          len = 0;
+                                        p_mad_buffer_t  b   = NULL;
+
+                                        TRACE("mad_gm_port_poll: - packet is an eager data transfer");
+                                        ptr = port->packet;
+                                        len = ((unsigned int)code) >> 2;
+                                        TRACE("mad_gm_port_poll: - packet data length = %d", len);
+
+                                        b                = mad_alloc_buffer_struct();
+                                        b->buffer        = ptr + MAD_GM_PACKET_HDR;
+                                        b->length        = len;
+                                        b->bytes_written = len;
+                                        b->bytes_read    = 0;
+                                        b->type          = mad_static_buffer;
+                                        b->specific      = ptr;
+                                        tbx_slist_append(is->cpy_buffer_slist, b);
+
+                                        if (tbx_slist_get_length(port->packet_cache)) {
+                                                port->packet = tbx_slist_pop(port->packet_cache);
+                                        } else {
+                                                port->packet = gm_dma_malloc(p_gm_port, MAD_GM_PACKET_LEN);
+                                        }
+
+                                        if (!port->packet) {
+                                                __error__("could not allocate a dma buffer");
+                                                goto error;
+                                        }
+
+                                        gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                           port->packet,
+                                                                           port->packet_size,
+                                                                           GM_HIGH_PRIORITY, 1);
+#ifdef MAD_GM_MARCEL_POLL
+                                        marcel_sem_V(&is->sem);
+#else
+                                        is->receive_lock = 0;
+#endif
+                                }
+                        } else if ((code & 1) == 1) {
                                 p_mad_connection_t             out = NULL;
                                 p_mad_gm_connection_specific_t os  = NULL;
+
+                                TRACE("mad_gm_port_poll: - packet is for an outgoing connection");
+                                TRACE("mad_gm_port_poll: - packet is an ack for rendez-vous");
+                                gm_provide_receive_buffer_with_tag(port->p_gm_port,
+                                                                   port->packet,
+                                                                   port->packet_size,
+                                                                   GM_HIGH_PRIORITY, 1);
 
                                 out = tbx_darray_get(port->out_darray, cnx_id);
                                 os = out->specific;
@@ -737,6 +944,8 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                         p_mad_connection_t             in = NULL;
                         p_mad_gm_connection_specific_t is = NULL;
 
+                        TRACE("mad_gm_port_poll: got a packet");
+                        TRACE("mad_gm_port_poll: - packet is a rendez-vous data message");
                         in = port->active_input;
 			is = in->specific;
 #ifdef MAD_GM_MARCEL_POLL
@@ -951,7 +1160,7 @@ mad_gm_port_open(int device_id) {
         port->cache_head    = NULL;
         port->out_darray    = tbx_darray_init();
         port->in_darray     = tbx_darray_init();
-        port->packet        = gm_dma_malloc(p_gm_port, sizeof(MAD_GM_PACKET_LEN));
+        port->packet        = gm_dma_malloc(p_gm_port, MAD_GM_PACKET_LEN);
         if (!port->packet) {
                 __error__("could not allocate a dma buffer");
                 goto error;
@@ -959,6 +1168,7 @@ mad_gm_port_open(int device_id) {
 
         port->packet_length = MAD_GM_PACKET_LEN;
         port->packet_size   = gm_min_size_for_length(port->packet_length);
+        port->packet_cache  = tbx_slist_nil();
 
         gm_provide_receive_buffer_with_tag(port->p_gm_port, port->packet,
                                            port->packet_size,
@@ -1003,9 +1213,9 @@ mad_gm_register(p_mad_driver_t driver)
         interface->channel_exit               = mad_gm_channel_exit;
         interface->adapter_exit               = mad_gm_adapter_exit;
         interface->driver_exit                = mad_gm_driver_exit;
-        interface->choice                     = NULL;
-        interface->get_static_buffer          = NULL;
-        interface->return_static_buffer       = NULL;
+        interface->choice                     = mad_gm_choice;
+        interface->get_static_buffer          = mad_gm_get_static_buffer;
+        interface->return_static_buffer       = mad_gm_return_static_buffer;
         interface->new_message                = NULL;
         interface->finalize_message           = NULL;
 #ifdef MAD_MESSAGE_POLLING
@@ -1131,7 +1341,7 @@ mad_gm_connection_init(p_mad_connection_t in,
         p_mad_adapter_t             a     = NULL;
         p_mad_gm_adapter_specific_t as    = NULL;
         p_mad_gm_port_t             port  = NULL;
-        const int nb_link = 1;
+        const int nb_link = 2;
 
         LOG_IN();
         ch   = (in?:out)->channel;
@@ -1163,9 +1373,10 @@ mad_gm_connection_init(p_mad_connection_t in,
                 is->request->status = GM_SUCCESS;
                 is->request->port   = port;
                 is->state           = 0;
+                is->cpy_buffer_slist = tbx_slist_nil();
                 TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
                 is->packet          = gm_dma_malloc(port->p_gm_port,
-                                           sizeof(MAD_GM_PACKET_LEN));
+                                                    MAD_GM_PACKET_HDR);
                 TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
                 if (!is->packet) {
@@ -1173,8 +1384,8 @@ mad_gm_connection_init(p_mad_connection_t in,
                         goto error;
                 }
 
-                is->packet_length = MAD_GM_PACKET_LEN;
-                is->packet_size   = gm_min_size_for_length(is->packet_length);
+                is->packet_length = MAD_GM_PACKET_HDR;
+                is->packet_size   = gm_min_size_for_length(MAD_GM_PACKET_LEN);
 
 #ifdef MAD_GM_MARCEL_POLL
                 marcel_sem_init(&is->sem, 0);
@@ -1222,9 +1433,9 @@ mad_gm_connection_init(p_mad_connection_t in,
                 os->request->status = GM_SUCCESS;
                 os->request->port   = port;
                 os->state           = 0;
+                os->cpy_buffer_slist = tbx_slist_nil();
                 TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
-                os->packet = gm_dma_malloc(port->p_gm_port,
-                                           sizeof(MAD_GM_PACKET_LEN));
+                os->packet = gm_dma_malloc(port->p_gm_port, MAD_GM_PACKET_HDR);
                 TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
                 if (!os->packet) {
@@ -1232,8 +1443,8 @@ mad_gm_connection_init(p_mad_connection_t in,
                         goto error;
                 }
 
-                os->packet_length = MAD_GM_PACKET_LEN;
-                os->packet_size   = gm_min_size_for_length(os->packet_length);
+                os->packet_length = MAD_GM_PACKET_HDR;
+                os->packet_size   = gm_min_size_for_length(MAD_GM_PACKET_LEN);
 
 #ifdef MAD_GM_MARCEL_POLL
                 marcel_sem_init(&os->sem, 0);
@@ -1266,14 +1477,26 @@ mad_gm_connection_init(p_mad_connection_t in,
 
 void
 mad_gm_link_init(p_mad_link_t l) {
-        p_mad_gm_link_specific_t ls = NULL;
-
         LOG_IN();
-        ls 		 = TBX_CALLOC(1, sizeof(mad_gm_link_specific_t));
-        l->specific    = ls;
-        l->link_mode   = mad_link_mode_buffer;
-        l->buffer_mode = mad_buffer_mode_dynamic;
-        l->group_mode  = mad_group_mode_split;
+        if (l->id == MAD_GM_LINK_CPY) {
+                p_mad_gm_link_specific_t ls = NULL;
+
+                ls 	       = TBX_CALLOC(1, sizeof(mad_gm_link_specific_t));
+                l->specific    = ls;
+                l->link_mode   = mad_link_mode_buffer;
+                l->buffer_mode = mad_buffer_mode_static;
+                l->group_mode  = mad_group_mode_split;
+        } else if (l->id == MAD_GM_LINK_RDV) {
+                p_mad_gm_link_specific_t ls = NULL;
+
+                ls 	       = TBX_CALLOC(1, sizeof(mad_gm_link_specific_t));
+                l->specific    = ls;
+                l->link_mode   = mad_link_mode_buffer;
+                l->buffer_mode = mad_buffer_mode_dynamic;
+                l->group_mode  = mad_group_mode_split;
+        } else
+                FAILURE("invalid link id");
+
         LOG_OUT();
 }
 
@@ -1313,6 +1536,102 @@ mad_gm_connect(p_mad_connection_t   out,
         os->packet[6] = (os->remote_id >> 16) & 0xFF;
         os->packet[7] = (os->remote_id >> 24) & 0xFF;
         LOG_OUT();
+}
+
+void
+mad_gm_disconnect(p_mad_connection_t cnx) {
+        LOG_IN();
+        //FAILURE("unimplemented");
+        LOG_OUT();
+}
+
+void
+mad_gm_link_exit(p_mad_link_t l) {
+        p_mad_gm_link_specific_t ls = NULL;
+
+        LOG_IN();
+        ls = l->specific;
+        TBX_FREE(ls);
+        l->specific = ls = NULL;
+        LOG_OUT();
+}
+
+void
+mad_gm_connection_exit(p_mad_connection_t in,
+                       p_mad_connection_t out) {
+
+        LOG_IN();
+        if (in) {
+                p_mad_gm_connection_specific_t is = NULL;
+                is = in->specific;
+                TBX_FREE(is);
+                in->specific = is = NULL;
+        }
+
+        if (out) {
+                p_mad_gm_connection_specific_t os = NULL;
+                os = out->specific;
+                TBX_FREE(os);
+                out->specific = os = NULL;
+        }
+        LOG_OUT();
+}
+
+void
+mad_gm_channel_exit(p_mad_channel_t ch) {
+        p_mad_gm_channel_specific_t chs = NULL;
+
+        LOG_IN();
+        chs = ch->specific;
+        TBX_FREE(chs);
+        ch->specific = chs = NULL;
+        LOG_OUT();
+}
+
+void
+mad_gm_adapter_exit(p_mad_adapter_t a) {
+        p_mad_gm_adapter_specific_t as = NULL;
+
+        LOG_IN();
+        as = a->specific;
+        TBX_FREE(as);
+        a->specific = as = NULL;
+        LOG_OUT();
+}
+
+void
+mad_gm_driver_exit(p_mad_driver_t d) {
+        p_mad_gm_driver_specific_t ds = NULL;
+
+        LOG_IN();
+        gm_finalize();
+        ds = d->specific;
+        TBX_FREE(ds);
+        d->specific = ds = NULL;
+        LOG_OUT();
+}
+
+p_mad_link_t
+mad_gm_choice(p_mad_connection_t connection,
+              size_t             size,
+              mad_send_mode_t    send_mode,
+              mad_receive_mode_t receive_mode)
+{
+        p_mad_link_t lnk = NULL;
+
+        LOG_IN();
+#if 1
+        if (size < MAD_GM_PACKET_LEN-MAD_GM_PACKET_HDR) {
+                 lnk = connection->link_array[MAD_GM_LINK_CPY];
+        } else {
+                 lnk = connection->link_array[MAD_GM_LINK_RDV];
+        }
+#else
+        lnk = connection->link_array[MAD_GM_LINK_RDV];
+#endif
+        LOG_OUT();
+
+        return lnk;
 }
 
 #if 0
@@ -1415,9 +1734,236 @@ mad_gm_message_received(p_mad_connection_t in) {
 }
 #endif
 
+static
 void
-mad_gm_send_buffer(p_mad_link_t   l,
-		   p_mad_buffer_t b) {
+mad_gm_send_buffer_cpy(p_mad_link_t   l,
+                       p_mad_buffer_t b) {
+        p_mad_connection_t             out  = NULL;
+        p_mad_gm_connection_specific_t os   = NULL;
+        p_mad_adapter_t                a    = NULL;
+        p_mad_gm_adapter_specific_t    as   = NULL;
+        p_mad_driver_t                 d    = NULL;
+        p_mad_gm_driver_specific_t     ds   = NULL;
+        p_mad_gm_port_t                port = NULL;
+
+        LOG_IN();
+        out  = l->connection;
+        os   = out->specific;
+        a    = out->channel->adapter;
+        as   = a->specific;
+        d    = a->driver;
+        ds   = d->specific;
+
+        port = as->port;
+
+        os->state = 3;
+        os->request->status = GM_SUCCESS;
+
+        mad_gm_fill_header(b->specific,
+                           tbx_false,
+                           tbx_true,
+                           b->bytes_written,
+                           os->remote_id);
+
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+	TBX_LOCK();
+        gm_send_with_callback(port->p_gm_port, b->specific,
+                              os->packet_size, b->bytes_written+MAD_GM_PACKET_HDR,
+                              GM_HIGH_PRIORITY,
+                              os->remote_node_id, os->remote_port_id,
+                              mad_gm_callback, os->request);
+
+	TBX_UNLOCK();
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+        b->bytes_read = b->bytes_written;
+
+#ifdef MAD_GM_MARCEL_POLL
+        mad_gm_wait_for_sem(ds->gm_pollid, port, &os->sem);
+#else
+        while (os->send_lock) {
+                mad_gm_port_poll(port);
+        }
+
+        os->send_lock = 1;
+#endif
+
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+        if (tbx_slist_get_length(as->port->packet_cache) < MAD_GM_PACKET_CACHE_SIZE) {
+                tbx_slist_push(as->port->packet_cache, b->specific);
+        } else {
+                gm_dma_free(as->port->p_gm_port, b->specific);
+        }
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+        os->buffer = NULL;
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_receive_buffer_cpy(p_mad_link_t     l,
+                          p_mad_buffer_t *pb) {
+        p_mad_connection_t             in   = NULL;
+        p_mad_gm_connection_specific_t is   = NULL;
+        p_mad_adapter_t                a    = NULL;
+        p_mad_gm_adapter_specific_t    as   = NULL;
+        p_mad_driver_t                 d    = NULL;
+        p_mad_gm_driver_specific_t     ds   = NULL;
+        p_mad_gm_port_t                port = NULL;
+
+        LOG_IN();
+        in   = l->connection;
+        is   = in->specific;
+        a    = in->channel->adapter;
+        as   = a->specific;
+        d    = a->driver;
+        ds   = d->specific;
+        port = as->port;
+
+        if (is->first) {
+                is->first = 0;
+        } else {
+#ifdef MAD_GM_MARCEL_POLL
+		mad_gm_wait_for_sem(ds->gm_pollid, port, &is->sem);
+#else
+                while (is->receive_lock) {
+                        mad_gm_port_poll(port);
+                }
+
+                is->receive_lock = 1;
+#endif
+        }
+
+        *pb = tbx_slist_extract(is->cpy_buffer_slist);
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_send_buffer_group_cpy_1(p_mad_link_t         l,
+			   p_mad_buffer_group_t bg) {
+        LOG_IN();
+        if (!tbx_empty_list(&(bg->buffer_list))) {
+                tbx_list_reference_t ref;
+
+                tbx_list_reference_init(&ref, &(bg->buffer_list));
+                do {
+                        mad_gm_send_buffer(l, tbx_get_list_reference_object(&ref));
+                }
+                while (tbx_forward_list_reference(&ref));
+        }
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_receive_sub_buffer_group_cpy_1(p_mad_link_t         l,
+				  p_mad_buffer_group_t bg) {
+        LOG_IN();
+        if (!tbx_empty_list(&(bg->buffer_list))) {
+                tbx_list_reference_t ref;
+
+                tbx_list_reference_init(&ref, &(bg->buffer_list));
+                do {
+                        mad_gm_receive_buffer(l, tbx_get_list_reference_object(&ref));
+                } while (tbx_forward_list_reference(&ref));
+        }
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_send_buffer_group_cpy(p_mad_link_t         l,
+                             p_mad_buffer_group_t bg) {
+        LOG_IN();
+        mad_gm_send_buffer_group_cpy_1(l, bg);
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_receive_sub_buffer_group_cpy(p_mad_link_t         l,
+                                    tbx_bool_t           first_sub_group
+                                    TBX_UNUSED,
+                                    p_mad_buffer_group_t bg) {
+        LOG_IN();
+        mad_gm_receive_sub_buffer_group_cpy_1(l, bg);
+        LOG_OUT();
+}
+
+static
+p_mad_buffer_t
+mad_gm_get_static_buffer_cpy(p_mad_link_t l)
+{
+        p_mad_gm_adapter_specific_t as = NULL;
+        p_mad_buffer_t  b   = NULL;
+        void           *ptr = NULL;
+
+        LOG_IN();
+        as = l->connection->channel->adapter->specific;
+
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+        if (tbx_slist_get_length(as->port->packet_cache)) {
+                ptr = tbx_slist_pop(as->port->packet_cache);
+        } else {
+                ptr = gm_dma_malloc(as->port->p_gm_port, MAD_GM_PACKET_LEN);
+        }
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+
+        if (!ptr) {
+                __error__("could not allocate a dma buffer");
+                goto error;
+        }
+
+	b                = mad_alloc_buffer_struct();
+	b->buffer        = ptr + MAD_GM_PACKET_HDR;
+	b->length        = MAD_GM_PACKET_LEN - MAD_GM_PACKET_HDR;
+	b->bytes_written = 0;
+	b->bytes_read    = 0;
+	b->type          = mad_static_buffer;
+	b->specific      = ptr;
+        LOG_OUT();
+
+        return b;
+
+ error:
+        FAILURE("mad_gm_get_static_buffer_cpy failed");
+
+        LOG_OUT();
+
+        return NULL;
+}
+
+static
+void
+mad_gm_return_static_buffer_cpy(p_mad_link_t   l,
+                                p_mad_buffer_t b)
+{
+        p_mad_gm_adapter_specific_t as = NULL;
+
+        LOG_IN();
+        as = l->connection->channel->adapter->specific;
+
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+        if (tbx_slist_get_length(as->port->packet_cache) < MAD_GM_PACKET_CACHE_SIZE) {
+                tbx_slist_push(as->port->packet_cache, b->specific);
+        } else {
+                gm_dma_free(as->port->p_gm_port, b->specific);
+        }
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
+
+        b->buffer        = 0;
+        b->length        = 0;
+        b->bytes_written = 0;
+        b->bytes_read    = 0;
+        b->type          = 0;
+        b->specific      = 0;
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_send_buffer_rdv(p_mad_link_t   l,
+                       p_mad_buffer_t b) {
         p_mad_connection_t             out  = NULL;
         p_mad_gm_connection_specific_t os   = NULL;
         p_mad_adapter_t                a    = NULL;
@@ -1521,9 +2067,10 @@ mad_gm_send_buffer(p_mad_link_t   l,
         LOG_OUT();
 }
 
+static
 void
-mad_gm_receive_buffer(p_mad_link_t     l,
-		      p_mad_buffer_t *pb) {
+mad_gm_receive_buffer_rdv(p_mad_link_t     l,
+                          p_mad_buffer_t *pb) {
         p_mad_buffer_t                 b    = NULL;
         p_mad_connection_t             in   = NULL;
         p_mad_gm_connection_specific_t is   = NULL;
@@ -1623,9 +2170,10 @@ mad_gm_receive_buffer(p_mad_link_t     l,
         LOG_OUT();
 }
 
+static
 void
-mad_gm_send_buffer_group_1(p_mad_link_t         l,
-			   p_mad_buffer_group_t bg) {
+mad_gm_send_buffer_group_rdv_1(p_mad_link_t         l,
+                               p_mad_buffer_group_t bg) {
         LOG_IN();
         if (!tbx_empty_list(&(bg->buffer_list))) {
                 tbx_list_reference_t ref;
@@ -1639,9 +2187,10 @@ mad_gm_send_buffer_group_1(p_mad_link_t         l,
         LOG_OUT();
 }
 
+static
 void
-mad_gm_receive_sub_buffer_group_1(p_mad_link_t         l,
-				  p_mad_buffer_group_t bg) {
+mad_gm_receive_sub_buffer_group_rdv_1(p_mad_link_t         l,
+                                      p_mad_buffer_group_t bg) {
         LOG_IN();
         if (!tbx_empty_list(&(bg->buffer_list))) {
                 tbx_list_reference_t ref;
@@ -1654,93 +2203,133 @@ mad_gm_receive_sub_buffer_group_1(p_mad_link_t         l,
         LOG_OUT();
 }
 
+static
+void
+mad_gm_send_buffer_group_rdv(p_mad_link_t         l,
+                             p_mad_buffer_group_t bg) {
+        LOG_IN();
+        mad_gm_send_buffer_group_rdv_1(l, bg);
+        LOG_OUT();
+}
+
+static
+void
+mad_gm_receive_sub_buffer_group_rdv(p_mad_link_t         l,
+                                    tbx_bool_t           first_sub_group
+                                    TBX_UNUSED,
+                                    p_mad_buffer_group_t bg) {
+        LOG_IN();
+        mad_gm_receive_sub_buffer_group_rdv_1(l, bg);
+        LOG_OUT();
+}
+
+void
+mad_gm_send_buffer(p_mad_link_t   l,
+                   p_mad_buffer_t buffer)
+{
+        LOG_IN();
+        if (l->id == MAD_GM_LINK_CPY)
+                {
+                        mad_gm_send_buffer_cpy(l, buffer);
+                }
+        else if (l->id == MAD_GM_LINK_RDV)
+                {
+                        mad_gm_send_buffer_rdv(l, buffer);
+                }
+        else
+                FAILURE("invalid link id");
+
+        LOG_OUT();
+}
+
+void
+mad_gm_receive_buffer(p_mad_link_t    l,
+                      p_mad_buffer_t *pbuffer)
+{
+        LOG_IN();
+        if (l->id == MAD_GM_LINK_CPY)
+                {
+                        mad_gm_receive_buffer_cpy(l, pbuffer);
+                }
+        else if (l->id == MAD_GM_LINK_RDV)
+                {
+                        mad_gm_receive_buffer_rdv(l, pbuffer);
+                }
+        else
+                FAILURE("invalid link id");
+
+        LOG_OUT();
+}
+
+/* Buffer group transfer */
 void
 mad_gm_send_buffer_group(p_mad_link_t         l,
-			 p_mad_buffer_group_t bg) {
+                         p_mad_buffer_group_t buffer_group)
+{
         LOG_IN();
-        mad_gm_send_buffer_group_1(l, bg);
+        if (l->id == MAD_GM_LINK_CPY)
+                {
+                        mad_gm_send_buffer_group_cpy(l, buffer_group);
+                }
+        else if (l->id == MAD_GM_LINK_RDV)
+                {
+                        mad_gm_send_buffer_group_rdv(l, buffer_group);
+                }
+        else
+                FAILURE("invalid link id");
+
         LOG_OUT();
 }
 
 void
 mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
-				tbx_bool_t           first_sub_group
-				TBX_UNUSED,
-				p_mad_buffer_group_t bg) {
+                                tbx_bool_t           first_subgroup TBX_UNUSED,
+                                p_mad_buffer_group_t buffer_group)
+{
         LOG_IN();
-        mad_gm_receive_sub_buffer_group_1(l, bg);
+        if (l->id == MAD_GM_LINK_CPY)
+                {
+                        mad_gm_receive_sub_buffer_group_cpy(l, first_subgroup, buffer_group);
+                }
+        else if (l->id == MAD_GM_LINK_RDV)
+                {
+                        mad_gm_receive_sub_buffer_group_rdv(l, first_subgroup, buffer_group);
+                }
+        else
+                FAILURE("invalid link id");
+
         LOG_OUT();
 }
 
-void
-mad_gm_disconnect(p_mad_connection_t cnx) {
+p_mad_buffer_t
+mad_gm_get_static_buffer(p_mad_link_t l)
+{
+        p_mad_buffer_t b = NULL;
+
         LOG_IN();
-        //FAILURE("unimplemented");
+        if (l->id == MAD_GM_LINK_CPY)
+                {
+                        b = mad_gm_get_static_buffer_cpy(l);
+                }
+        else
+                FAILURE("invalid link id");
+
         LOG_OUT();
+
+        return b;
 }
 
 void
-mad_gm_link_exit(p_mad_link_t l) {
-        p_mad_gm_link_specific_t ls = NULL;
-
+mad_gm_return_static_buffer(p_mad_link_t   l,
+                            p_mad_buffer_t b)
+{
         LOG_IN();
-        ls = l->specific;
-        TBX_FREE(ls);
-        l->specific = ls = NULL;
-        LOG_OUT();
-}
+        if (l->id == MAD_GM_LINK_CPY)
+                {
+                        mad_gm_return_static_buffer_cpy(l, b);
+                }
+        else
+                FAILURE("invalid link id");
 
-void
-mad_gm_connection_exit(p_mad_connection_t in,
-                       p_mad_connection_t out) {
-
-        LOG_IN();
-        if (in) {
-                p_mad_gm_connection_specific_t is = NULL;
-                is = in->specific;
-                TBX_FREE(is);
-                in->specific = is = NULL;
-        }
-
-        if (out) {
-                p_mad_gm_connection_specific_t os = NULL;
-                os = out->specific;
-                TBX_FREE(os);
-                out->specific = os = NULL;
-        }
-        LOG_OUT();
-}
-
-void
-mad_gm_channel_exit(p_mad_channel_t ch) {
-        p_mad_gm_channel_specific_t chs = NULL;
-
-        LOG_IN();
-        chs = ch->specific;
-        TBX_FREE(chs);
-        ch->specific = chs = NULL;
-        LOG_OUT();
-}
-
-void
-mad_gm_adapter_exit(p_mad_adapter_t a) {
-        p_mad_gm_adapter_specific_t as = NULL;
-
-        LOG_IN();
-        as = a->specific;
-        TBX_FREE(as);
-        a->specific = as = NULL;
-        LOG_OUT();
-}
-
-void
-mad_gm_driver_exit(p_mad_driver_t d) {
-        p_mad_gm_driver_specific_t ds = NULL;
-
-        LOG_IN();
-        gm_finalize();
-        ds = d->specific;
-        TBX_FREE(ds);
-        d->specific = ds = NULL;
         LOG_OUT();
 }

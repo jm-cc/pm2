@@ -20,6 +20,7 @@ struct trace_st{
   short int cpu;                  // n°proc if KERNEL
   unsigned int number;                      // Absolute number
   int args[MAX_NB_ARGS];           // Table of arguments
+  short int relevant;
 };
 
 typedef struct trace_st trace;
@@ -47,5 +48,7 @@ void init_trace_buffer(char *futin, char *fktin, int relative, int dec);
 int get_next_trace(trace *tr);
 
 void close_trace_buffer(void);
+
+extern short int smp;
 
 #endif

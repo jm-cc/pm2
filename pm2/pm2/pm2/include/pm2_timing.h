@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_timing.h,v $
+Revision 1.4  2000/11/15 21:32:38  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.3  2000/02/28 11:18:04  rnamyst
 Changed #include <> into #include "".
 
@@ -47,11 +50,16 @@ ______________________________________________________________________________
 #ifndef PM2_TIMING_EST_DEF
 #define PM2_TIMING_EST_DEF
 
-#include "timing.h"
+#ifdef PM2_TIMING
 
-#ifndef PM2_TIMING
-#undef TIMING_EVENT
+#include "tbx.h"
+
+#define TIMING_EVENT(name)   TIME(name)
+
+#else
+
 #define TIMING_EVENT(name)   /* nothing */
+
 #endif
 
 #endif

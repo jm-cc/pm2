@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.32  2000/05/25 00:23:54  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.31  2000/05/24 15:15:22  rnamyst
 Enhanced the polling capabilities of the Marcel scheduler.
 
@@ -989,6 +992,12 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
   do {
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
       MA_THR_RESTARTED(cur, "Preemption");
+#ifdef MA__WORK
+      if (*blocked) {
+	unlock_task();
+	lock_task();
+      }
+#endif
     } else {
       SET_BLOCKED(cur);
       next = UNCHAIN_TASK_AND_FIND_NEXT(cur);
@@ -1100,9 +1109,9 @@ void marcel_delay(unsigned long millisecs)
   marcel_t p, cur = marcel_self();
   unsigned long ttw = __milliseconds + millisecs;
 
-  lock_task();
-
   mdebug("\t\t\t<Thread %p goes sleeping>\n", cur);
+
+  lock_task();
 
   do {
     if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
@@ -1253,8 +1262,10 @@ any_t idle_func(any_t arg) // Pour les activations
 #ifndef ACT_DONT_USE_SYSCALL
 	    act_cntl(ACT_CNTL_READY_TO_WAIT,0);
 	    if (act_nb_unblocked) break;
-	    mdebug("Idle waiting in kernel...\n");
-	    act_cntl(ACT_CNTL_DO_WAIT,0);	
+	    if(__delayed_tasks == NULL) {
+	      mdebug("Idle waiting in kernel...\n");
+	      act_cntl(ACT_CNTL_DO_WAIT,0);	
+	    }
 #else      
 	    while(!(act_nb_unblocked || next)) {
 		    volatile int i=0;
@@ -1801,6 +1812,12 @@ void marcel_sched_shutdown()
 #define TICK_RATE 1
 #endif
 
+inline void marcel_update_time(marcel_t cur)
+{
+  if(cur->lwp == &__main_lwp)
+    __milliseconds += time_slice/1000;
+}
+
 /* TODO: Call lock_task() before re-enabling the signals to avoid stack
    overflow by recursive interrupts handlers. This needs a modified version
    of marcel_yield() that do not lock_task()... */
@@ -1818,8 +1835,7 @@ static void timer_interrupt(int sig)
   }
 #endif
 
-  if(cur->lwp == &__main_lwp)
-    __milliseconds += time_slice/1000;
+  marcel_update_time(cur);
 
   if(!locked() && preemption_enabled()) {
 

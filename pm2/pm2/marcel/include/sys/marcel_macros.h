@@ -147,7 +147,7 @@
 /* effectue un setjmp. On doit être RUNNING avant et après
  * */
 #define MA_THR_SETJMP(current) \
-  setjmp(current->jbuf)
+  marcel_ctx_setjmp(current->ctx_yield)
 
 /* On vient de reprendre la main. On doit déjà être RUNNING. On enlève
  * le flags RUNNING au thread qui tournait avant.
@@ -166,27 +166,21 @@
  * */
 
 #if defined(DSM_SHARED_STACK)
-
-#define MA_THR_LONGJMP(cur_num, next, ret) \
-  do {                                     \
-    MA_THR_DEBUG__MULTIPLE_RUNNING(next);  \
-    __next_thread = next;                  \
-    PROF_SWITCH_TO(cur_num, next->number); \
-    call_ST_FLUSH_WINDOWS();               \
-    longjmp(next->jbuf, ret);              \
-  } while(0)
-
+#error Ça se marche pas du tout en SMP !!!
+#error Pourquoi pas marcel_self() ?
+#define DSM_SET_NEXT_THREAD __next_thread = next
 #else
+#define DSM_SET_NEXT_THREAD
+#endif
 
 #define MA_THR_LONGJMP(cur_num, next, ret) \
   do {                                     \
     MA_THR_DEBUG__MULTIPLE_RUNNING(next);  \
+    DSM_SET_NEXT_THREAD;                   \
     PROF_SWITCH_TO(cur_num, next->number); \
     call_ST_FLUSH_WINDOWS();               \
-    longjmp(next->jbuf, ret);              \
+    marcel_ctx_longjmp(next->ctx_yield, ret);              \
   } while(0)
-
-#endif
 
 #define FIND_NEXT            (marcel_t)0
 #define DO_NOT_REMOVE_MYSELF (marcel_t)1

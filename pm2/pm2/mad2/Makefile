@@ -37,7 +37,7 @@
 
 MAD_OPTIONS		=  # -DDEBUG
 
-MAD_STANDALONE_OPTIONS	=	-g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
+MAD_STANDALONE_OPTIONS	=	-g -Wall -Werror # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 
 ################### END OF CUSTOMIZATION SECTION #################
 
@@ -51,7 +51,7 @@ PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
 PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
 endif
 
-MAD_MAKEFILE	=	$(MAD2_ROOT)/Makefile
+MAD_MAKEFILE	:=	$(MAD2_ROOT)/Makefile
 
 MAD_SRC		:=	$(MAD2_ROOT)/src
 MAD_DEP		:=	$(MAD_SRC)/depend
@@ -61,6 +61,10 @@ MAD_CI_INC	:=	$(MAD_INC)/connection_interfaces
 MAD_CI_SRC	:=	$(MAD_SRC)/connection_interfaces
 MAD_LIBD	=	$(MAD2_ROOT)/lib/$(PM2_ARCH_SYS)
 
+ifndef PM2_FLAGS
+MAD_OPTIONS    += $(MAD_STANDALONE_OPTIONS) -DNTBX -DNTBX_TCP -DTBX -DMAD2
+MAD_ALONE       :=  true
+endif
 
 ifneq ($(wildcard $(MAD_DEP)),$(MAD_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_DEP))
@@ -79,11 +83,30 @@ MAD_NET_CFLAGS	=
 ifdef PM2_FLAGS
 MAD2_SUB_MAKEFILES := $(MAD2_ROOT)/make/custom/options.mak
 else 
+MAD_MAKEFILE	+= $(MAD2_ROOT)/make/protocols.mak
+include $(MAD2_ROOT)/make/protocols.mak
 MAD2_SUB_MAKEFILES := $(foreach SUB_MAKEFILE, $(MAD2_PROTOCOLS), $(MAD2_ROOT)/make/$(SUB_MAKEFILE)/options.mak)
+ifndef TBX_ROOT
+TBX_ROOT        := $(MAD2_ROOT)/../toolbox
 endif
-include $(MAD2_SUB_MAKEFILES)
+ifndef NTBX_ROOT
+NTBX_ROOT       := $(TBX_ROOT)/net
+endif
+MAD2_SUB_MAKEFILES += $(TBX_ROOT)/Makefile $(NTBX_ROOT)/Makefile
+endif
 
 MAD_MAKEFILE	+=	$(MAD2_SUB_MAKEFILES)
+MAD_LIB		=	$(MAD_LIBD)/libmad2.a
+
+
+
+.PHONY: mad_default
+mad_default: tbx_default ntbx_default $(MAD_LIB) 
+
+
+include $(MAD2_SUB_MAKEFILES)
+
+
 
 MAD_REG_SOURCES	:=	$(wildcard $(MAD_SRC)/*.c)
 # MAD_NET_SOURCES is defined in ./make/custom/options.mak
@@ -91,9 +114,11 @@ MAD_REG_SOURCES	:=	$(wildcard $(MAD_SRC)/*.c)
 MAD_REG_OBJECTS	:=	$(patsubst %.c,%.o,$(subst $(MAD_SRC),$(MAD_OBJ),$(MAD_REG_SOURCES)))
 MAD_NET_OBJECTS	:=	$(patsubst %.c,%.o,$(subst $(MAD_CI_SRC),$(MAD_OBJ),$(MAD_NET_SOURCES)))
 MAD_OBJECTS	:=	$(MAD_REG_OBJECTS) $(MAD_NET_OBJECTS)
-
-MAD_LIB		=	$(MAD_LIBD)/libmad2.a
 MAD_LLIB	=	$(NET_LLIBS) $(ARCHDLIB)
+
+MAD_LIBS	:=	$(MAD_LIB) $(TBX_LIB) $(NTBX_LIB)
+MAD_LLIBS	:=	$(MAD_LLIB) $(TBX_LLIB) $(NTBX_LLIB) 
+
 
 MAD_CC		=	gcc
 
@@ -117,10 +142,11 @@ endif
 endif
 
 $(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d
+ifdef $(MAD_ALONE)
+$(MAD_DEPENDS): $(MAD_MAKEFILE)
+else
 $(MAD_DEPENDS): $(PM2_MAKEFILE)
-
-.PHONY: mad_default
-mad_default: tbx_default ntbx_default $(MAD_LIB) 
+endif
 
 $(MAD_LIB): $(MAD_OBJECTS)
 	@ rm -f $(MAD_LIB)
@@ -145,9 +171,9 @@ $(MAD_NET_DEPENDS): $(MAD_DEP)/%.d: $(MAD_CI_SRC)/%.c
 	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(MAD_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
-ifdef PM2_FLAGS
-.PHONY: madclean
-madclean:
+ifndef MAD_ALONE
+.PHONY: madclean 
+madclean: 
 	@ echo "Cleaning Madeleine II"
 	@ rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d)
 
@@ -157,13 +183,75 @@ maddistclean:
 		$(MAD2_ROOT)/source/depend)
 else
 .PHONY: clean distclean
-clean:
+clean: tbxclean ntbxclean
 	@ echo "Cleaning Madeleine II"
 	@ rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d) \
 
-distclean:
+distclean: tbxdistclean ntbxdistclean
 	rm -rf $(wildcard $(MAD2_ROOT)/lib \
 		$(MAD2_ROOT)/obj \
 		$(MAD2_ROOT)/source/depend)
+
+######################## Applications ########################
+
+ifdef SRC_DIR
+
+ifeq ($(SRC_DIR),.)
+SRC_DIR		:=	./
+endif
+
+THIS_MAKEFILE	:=	$(SRC_DIR)/Makefile
+
+DEP_DIR	=	$(SRC_DIR)/depend
+OBJ_DIR	=	$(SRC_DIR)/obj/$(PM2_ARCH_SYS)
+
+ifndef BIN_DIR
+BIN_DIR	=	$(SRC_DIR)/bin/$(PM2_ARCH_SYS)
+endif
+
+ifneq ($(wildcard $(DEP_DIR)),$(DEP_DIR))
+DUMMY_BUILD	:=	$(shell mkdir -p $(DEP_DIR))
+endif
+
+ifneq ($(wildcard $(OBJ_DIR)),$(OBJ_DIR))
+DUMMY_BUILD	:=	$(shell mkdir -p $(OBJ_DIR))
+endif
+
+ifneq ($(wildcard $(BIN_DIR)),$(BIN_DIR))
+DUMMY_BUILD	:=	$(shell mkdir -p $(BIN_DIR))
+endif
+
+SOURCES	:=	$(wildcard $(SRC_DIR)/*.c)
+OBJECTS	:=	$(patsubst %.c,%.o,$(subst $(SRC_DIR),$(OBJ_DIR),$(SOURCES)))
+DEPENDS	:=	$(patsubst %.c,%.d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
+
+DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
+
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
+include $(DEPENDS)
+endif
+endif
+
+$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d
+$(DEPENDS): $(THIS_MAKEFILE) $(MAD_MAKEFILE)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@ echo "  -  $(@F)"
+	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_APP_CFLAGS) -c $< -o $@
+
+$(DEPENDS): $(DEP_DIR)/%.d: $(SRC_DIR)/%.c
+	@ echo "  -  $(@F)"
+	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_APP_CFLAGS) $< \
+		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
+
+$(BIN_DIR)/%: $(OBJ_DIR)/%.o $(MAD_LIBS)
+	@ echo "  -  $(@F)"
+	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_LDFLAGS) $(MAD_APP_LDFLAGS) $^ -o $@ $(MAD_LLIBS) $(MAD_APP_LLIBS)
+
+%: $(BIN_DIR)/% ;
+
+endif
+
 endif
 

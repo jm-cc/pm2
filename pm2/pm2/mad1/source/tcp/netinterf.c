@@ -35,7 +35,7 @@
 
 #define USE_BLOCKING_IO
 #define USE_MARCEL_POLL
-/*#define DEBUG*/
+//#define DEBUG
 
 #ifdef PM2
 #include "marcel.h"
@@ -570,7 +570,9 @@ void mad_tcp_network_receive(char **head)
       rfds = read_fds;
 #ifdef PM2
 
-#ifdef USE_MARCEL_POLL
+#if defined(USE_BLOCKING_IO) && defined(MARCEL_ACT)
+      n = select(nb_fds+1, &rfds, NULL, NULL, NULL);
+#elif defined(USE_MARCEL_POLL)
       n = marcel_select(nb_fds+1, &rfds, NULL);
 #else
       n = tselect(nb_fds+1, &rfds, NULL, NULL);

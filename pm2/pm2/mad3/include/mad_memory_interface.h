@@ -23,8 +23,8 @@
 #define MAD_MEMORY_MANAGEMENT_H
 
 void
-mad_memory_manager_init(int    argc TBX_UNUSED,
-			char **argv TBX_UNUSED);
+mad_memory_manager_init(int  TBX_UNUSED   argc,
+			char TBX_UNUSED **argv);
 
 void
 mad_memory_manager_exit(void);

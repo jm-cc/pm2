@@ -23,8 +23,7 @@ void marcel_delay(unsigned long millisecs)
 	LOG_IN();
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-#warning Need better convertion milliseconde/ma_jiffies
-	ma_schedule_timeout(millisecs/10);
+	ma_schedule_timeout(millisecs*1000/marcel_gettimeslice());
 
 	LOG_OUT();
 #endif

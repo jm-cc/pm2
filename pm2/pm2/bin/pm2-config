@@ -165,7 +165,7 @@ pm2config_set_vars()
     flavor=$_PM2CONFIG_FLAVOR
 
     # Optimizations
-    pm2config_build_uppercase appli common init $_PM2CONFIG_DIRTY_ORDERED_MODULES leonie swann
+    pm2config_build_uppercase appli common init $_PM2CONFIG_DIRTY_ORDERED_MODULES leonie swann ezflavor
 
     # Build directory
     if [ -z "$PM2_BUILD" ] ; then
@@ -209,6 +209,8 @@ pm2config_set_vars()
 	eval _LIB='$'${_lib}_to_upper
 	eval _libname='$'PM2_${_LIB}_LIBNAME
 
+	eval _PM2CONFIG_${_lib}_MAKEFILE='$'PM2_${_LIB}_MAKEFILE
+	eval export _PM2CONFIG_${_lib}_MAKEFILE
 	# Directories
 	#eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/${_lib}/lib
 	eval _PM2CONFIG_${_lib}_LIB_DIR=$_PM2CONFIG_BUILD/lib
@@ -238,10 +240,18 @@ pm2config_set_vars()
 	eval _PM2CONFIG_${_lib}_INCLUDE_DIR=$_PM2CONFIG_BUILD/${_lib}/include${_PM2CONFIG_EXT}
 	eval export _PM2CONFIG_${_lib}_INCLUDE_DIR
 
+	if [ "$PM2_COMMON_LINK_PM2_SHARED" = yes ]; then
+	    eval _PM2CONFIG_${_lib}_LINK_DYNAMIC=pm2
+	    if [ "$PM2_COMMON_LINK_SHARED" = yes ]; then
+		eval _PM2CONFIG_${_lib}_LINK_DYNAMIC=all
+	    fi
+	fi
+	
 	STAMP_FILES=""
 	eval _dir='$'_PM2CONFIG_${_lib}_LIB_DIR
-	if [ "$PM2_COMMON_LINK_MODE_DYNAMIC" = yes ]; then
-	    eval _PM2CONFIG_${_lib}_BUILD_DYNAMIC=true
+	eval LINK_MODE_DYNAMIC='$'PM2_${_LIB}_BUILD_DYNAMIC
+	if [ "$LINK_MODE_DYNAMIC" = yes ]; then
+	    eval _PM2CONFIG_${_lib}_BUILD_DYNAMIC=yes
 	    STAMP_FILES=${_dir}/lib${_libname}${PM2_EXT}.so
 	    case ":${_PM2CONFIG_LD_LIBRARY_PATH}:" in
 		*:${_dir}:*)
@@ -252,8 +262,9 @@ pm2config_set_vars()
 	fi
 	eval export _PM2CONFIG_${_lib}_BUILD_DYNAMIC
 
-	if [ "$PM2_COMMON_LINK_MODE_STATIC" = yes ]; then
-	    eval _PM2CONFIG_${_lib}_BUILD_STATIC=true
+	eval LINK_MODE_STATIC='$'PM2_${_LIB}_BUILD_STATIC
+	if [ "$LINK_MODE_STATIC" = yes ]; then
+	    eval _PM2CONFIG_${_lib}_BUILD_STATIC=yes
 	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}${PM2_EXT}.a"
 	fi
 	eval export _PM2CONFIG_${_lib}_BUILD_STATIC
@@ -265,6 +276,11 @@ pm2config_set_vars()
 	    eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
 	fi
     done
+
+    for LIB in $PM2_COMMON_PM2_SHLIBS; do
+	eval '_PM2CONFIG_PM2_SHLIBS="$_PM2CONFIG_PM2_SHLIBS "$PM2_'${LIB}'_LIBNAME'
+    done
+    export _PM2CONFIG_PM2_SHLIBS
 
     # Make directory
     _PM2CONFIG_MAK_DIR=$_PM2CONFIG_BUILD/mak
@@ -625,9 +641,9 @@ pm2config_parse_cmdline() # args
 # Programme principal
 ######################
 
-_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 marcel tbx ntbx init"
+_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 marcel tbx ntbx init stackalign"
 
-_PM2CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
+_PM2CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad marcel pthread tbx ntbx profile pm2debug stackalign"
 
 if [ $# -eq 1 -a "$1" = --source-mode ] ; then
     pm2config_set_vars

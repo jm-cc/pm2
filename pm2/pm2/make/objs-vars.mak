@@ -26,6 +26,7 @@ MOD_SRC ?= source
 
 # Inclusion du cache de configuration du module
 #---------------------------------------------------------------------
+DO_NOT_GENERATE_MAK_FILES+=__ _default_ _no_goal_
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/$(MODULE)-config.mak
 endif

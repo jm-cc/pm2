@@ -44,7 +44,9 @@ ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),textconfig)
 ifneq ($(MAKECMDGOALS),menuconfig)
 ifneq ($(MAKECMDGOALS),xconfig)
+ifneq ($(MAKECMDGOALS),config)
 -include $(PM2_MAK_DIR)/main-libs.mak
+endif
 endif
 endif
 endif
@@ -81,9 +83,11 @@ preproc: flavors
 
 fut: flavors
 	$(COMMON_HIDE) set -e; \
-	for i in $(LIBS) ; do \
+	if [ -n "$(PROF_LIBS)" ] ; then \
+	for i in "$(PROF_LIBS)" ; do \
 		$(MAKE) -C modules/$$i fut ; \
-	done
+	done \
+	fi
 
 .PHONY: clean cleanlibs
 clean: cleanlibs

@@ -11,8 +11,8 @@
 #                 Ecole Normale Superieure de Lyon
 #
 #                      External Contributors:
-#                 Yves Denneulin (PM2_LMC - Grenoble),
-#                 Benoit Planquelle (PM2_LIFL - Lille)
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
 #
 #                    1998 All Rights Reserved
 #
@@ -25,7 +25,7 @@
 # that both the copyright notice and this permission notice appear in
 # supporting documentation.
 #
-# Neither the institutions (PM2_Ecole Normale Superieure de Lyon,
+# Neither the institutions (Ecole Normale Superieure de Lyon,
 # Laboratoire de L'informatique du Parallelisme, Universite des
 # Sciences et Technologies de Lille, Laboratoire d'Informatique
 # Fondamentale de Lille), nor the Authors make any representations
@@ -33,17 +33,16 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+CONFIG_MODULES=mad2
 
-.PHONY: default all
-default: all
+ifndef FLAVOR
+export FLAVOR:=mad2
+endif
+
+PROGS := mad_ping mad_test
+
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/apps.mak
 
 
-SRC_DIR     :=  ./
-APP_CFLAGS  :=
-APP_LDFLAGS :=
-APP_LLIBS   :=
 
-include ../Makefile
-
-all:	$(APP_BIN)/mad_ping	\
-	$(APP_BIN)/mad_test	\

@@ -40,7 +40,7 @@
 
 #define ESSAIS 5
 
-static int *les_modules, nb_modules, autre_module;
+static unsigned autre;
 static Tick t1, t2;
 static marcel_sem_t sem;
 
@@ -49,7 +49,7 @@ void thread_func(void *arg)
   unsigned long temps;
   unsigned n, nping;
 
-  marcel_enablemigration(marcel_self());
+  pm2_enable_migration();
 
   for(n=0; n<ESSAIS; n++) {
     nping = (unsigned)arg;
@@ -57,7 +57,7 @@ void thread_func(void *arg)
     while(1) {
       if(nping-- == 0)
 	break;
-      pm2_migrate_self(autre_module);
+      pm2_migrate_self(autre);
     }
     GET_TICK(t2);
     temps = timing_tick2usec(TICK_DIFF(t1, t2));
@@ -67,12 +67,9 @@ void thread_func(void *arg)
   marcel_sem_V(&sem);
 }
 
-void startup_func(int *modules, int nb)
+void startup_func()
 {
-  if(pm2_self() == modules[0])
-    autre_module = modules[1];
-  else
-    autre_module = modules[0];
+  autre = (pm2_self() == 0) ? 1 : 0;
 }
 
 int pm2_main(int argc, char **argv)
@@ -81,9 +78,16 @@ int pm2_main(int argc, char **argv)
 
   pm2_set_startup_func(startup_func);
 
-  pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  if(les_modules[0] == pm2_self()) {
+  if(pm2_config_size() < 2) {
+    fprintf(stderr,
+	    "This program requires at least two processes.\n"
+	    "Please rerun pm2conf.\n");
+    exit(1);
+  }
+
+  if(pm2_self() == 0) {
 
     tprintf("*** Migration sous %s ***\n", mad_arch_name());
     if(argc > 1)
@@ -97,7 +101,7 @@ int pm2_main(int argc, char **argv)
     pm2_thread_create(thread_func, (void *)nb);
     marcel_sem_P(&sem);
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
   }
 
   pm2_exit();

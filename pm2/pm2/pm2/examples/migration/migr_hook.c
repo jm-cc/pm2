@@ -37,7 +37,7 @@
 
 #include <sys/time.h>
 
-static int *les_modules, nb_modules, autre_module;
+static unsigned autre;
 static marcel_key_t user_key;
 static marcel_sem_t sem;
 
@@ -56,18 +56,15 @@ void thread_func(void *arg)
 
   while(nb--) {
     pm2_printf("%s (@ = %p)\n", msg, msg);
-    pm2_migrate_self(autre_module);
+    pm2_migrate_self(autre);
   }
 
   marcel_sem_V(&sem);
 }
 
-void startup_func(int *modules, int nb)
+void startup_func()
 {
-  if(pm2_self() == modules[0])
-    autre_module = modules[1];
-  else
-    autre_module = modules[0];
+  autre = (pm2_self() == 0) ? 1 : 0;
 }
 
 void pre_migration(marcel_t pid)
@@ -104,7 +101,8 @@ any_t post_migration(marcel_t pid)
  */
 void post_post_migration(any_t key)
 {
-  char **loc = (char **)(*marcel_specificdatalocation(marcel_self(), user_key));
+  char **loc = (char **)(*marcel_specificdatalocation(marcel_self(),
+						      user_key));
 
   *loc = (char *)key; /* key == msg */
 }
@@ -118,16 +116,23 @@ int pm2_main(int argc, char **argv)
   pm2_set_post_migration_func(post_migration);
   pm2_set_post_post_migration_func(post_post_migration);
 
-  pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  if(les_modules[0] == pm2_self()) {
+  if(pm2_config_size() < 2) {
+    fprintf(stderr,
+	    "This program requires at least two processes.\n"
+	    "Please rerun pm2conf.\n");
+    exit(1);
+  }
+
+  if(pm2_self() == 0) {
 
     marcel_sem_init(&sem, 0);
 
     pm2_thread_create(thread_func, (void *)10);
     marcel_sem_P(&sem);
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
   }
 
   pm2_exit();

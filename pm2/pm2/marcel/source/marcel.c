@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.15  2000/04/17 08:31:51  rnamyst
+Changed DEBUG into MA__DEBUG.
+
 Revision 1.14  2000/04/11 09:07:20  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -226,7 +229,7 @@ void stack_unprotect(marcel_t t)
 
 #endif
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
 void _showsigmask(char *msg)
 {
   sigset_t set;
@@ -245,7 +248,7 @@ static __inline__ void marcel_terminate(marcel_t t)
     (*((marcel_t)t)->cleanup_funcs[i])(((marcel_t)t)->cleanup_args[i]);
 }
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
 
 static void print_thread(marcel_t pid)
 {
@@ -330,7 +333,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     if(attr->stack_base) {
       register unsigned long top = MAL_BOT((long)attr->stack_base +
 					   attr->stack_size);
-#ifdef DEBUG
+#ifdef MA__DEBUG
       if(top & (SLOT_SIZE-1)) { /* Not slot-aligned */
 	unlock_task();
 	RAISE(CONSTRAINT_ERROR);
@@ -350,7 +353,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     } else {
       char *bottom;
 
-#ifdef DEBUG
+#ifdef MA__DEBUG
       if(attr->stack_size > SLOT_SIZE)
 	RAISE(NOT_IMPLEMENTED);
 #endif
@@ -445,7 +448,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
 int marcel_join(marcel_t pid, any_t *status)
 {
-#ifdef DEBUG
+#ifdef MA__DEBUG
   if(pid->detached)
     RAISE(PROGRAM_ERROR);
 #endif
@@ -785,7 +788,7 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       if(!fork)
 	marcel_exit(NULL);
     } else {
-#ifdef DEBUG
+#ifdef MA__DEBUG
       breakpoint();
 #endif
       unlock_task();
@@ -900,7 +903,7 @@ static void insertion_relai(handler_func_t f, void *arg)
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
     goto_next_task(cur->father);
   } else {
-#ifdef DEBUG
+#ifdef MA__DEBUG
     breakpoint();
 #endif
     unlock_task();

@@ -34,9 +34,9 @@
  * ========================================================================
  */
 
-#ifdef MARCEL
-#error MARCEL support not implemented for UDP driver
-#endif // MARCEL
+//#ifdef MARCEL
+//#warning MARCEL support not implemented for UDP driver
+//#endif // MARCEL
 
 #ifdef SOLARIS_SYS
 #define socklen_t int

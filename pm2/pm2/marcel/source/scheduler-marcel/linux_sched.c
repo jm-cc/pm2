@@ -1639,7 +1639,8 @@ asmlinkage void ma_schedule(void)
 	struct list_head *queue;
 //	unsigned long long now;
 //	unsigned long run_time;
-	int idx,max_prio;
+	int idx;
+	int max_prio;
 	LOG_IN();
 
 	/*
@@ -1667,9 +1668,7 @@ restart:
 	/* by default, reschedule this thread */
 	next = prev = MARCEL_SELF;
 	rq = prevrq = ma_this_rq();
-#ifdef MA__LWPS
 	max_prio = MARCEL_SELF->sched.internal.prio;
-#endif
 
 	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		//switch_count = &prev->nvcsw;
@@ -1692,6 +1691,9 @@ restart:
 #ifdef MA__LWPS
 	sched_debug("default prio: %d, rq: %p\n",max_prio,rq);
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
+#else
+	currq = &ma_main_runqueue;
+#endif
 		if (!currq->nr_running)
 			sched_debug("apparently nobody in %p\n",currq);
 #warning : !! mar_sched_find_first_bit exige au moins un bit cleared ?
@@ -1708,6 +1710,7 @@ restart:
 			max_prio = idx;
 			rq = currq;
 		}
+#ifdef MA__LWPS
 	}
 #endif
 
@@ -1724,23 +1727,24 @@ restart:
 		next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
 	}
 
+	if (next) /* either prev or idle */
+		goto switch_tasks;
+
 #ifdef MA__LWPS
-	if (tbx_unlikely(!rq->nr_running)) {
+	if (tbx_unlikely(!(rq->active->nr_active+rq->expired->nr_active))) {
 		/* too bad: someone stole the task we saw */
-		sched_debug("someone stole the task we saw, restart");
+		sched_debug("someone stole the task we saw, restart\n");
 		double_rq_unlock(prevrq,rq);
 		goto restart;
 	}
 #endif
-	MA_BUG_ON(!rq->nr_running);
 
-	if (next) /* either prev or idle */
-		goto switch_tasks;
+	MA_BUG_ON(!(rq->active->nr_active+rq->expired->nr_active));
 
 	/* now look for next *different* task */
 	array = rq->active;
 	if (tbx_unlikely(!array->nr_active)) {
-		sched_debug("arrays switch");
+		sched_debug("arrays switch\n");
 		/* XXX: todo: handle all rqs... */
 		/*
 		 * Switch the active and expired arrays.
@@ -3060,8 +3064,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 
 static void linux_sched_lwp_start(ma_lwp_t lwp)
 {
-	/* Il faut insérer la tâche courante (RunTask) */
-	ma_wake_up_created_thread(ma_per_lwp(run_task,lwp));
+	/* Cette tâche est en train d'être exécutée */
+	dequeue_task(ma_per_lwp(run_task,lwp),ma_per_lwp(run_task,lwp)->sched.internal.array);
 }
 
 static int linux_sched_lwp_notify(struct ma_notifier_block *self,

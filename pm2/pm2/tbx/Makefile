@@ -66,6 +66,16 @@ else
 TBX_OPTIONS    += $(TBX_STANDALONE_OPTIONS) -DTBX
 TBX_ALONE       :=  true
 endif
+
+ifdef MARCEL_FLAGS
+TBX_OPTIONS    += -DMARCEL -DTHREADS
+else 
+  ifdef MAD_THREAD_SUPPORT
+  TBX_OPTIONS    += -DTHREADS
+  endif
+endif
+else
+TBX_OPTIONS    += -DMARCEL -DTHREADS
 endif
 
 ifneq ($(wildcard $(TBX_DEP)),$(TBX_DEP))

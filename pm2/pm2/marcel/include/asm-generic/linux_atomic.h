@@ -15,6 +15,8 @@
  */
 
 #section common
+#depend "asm-generic/linux_spinlock.h[]"
+
 /*
  * Similar to:
  * include/asm-i386/atomic.h
@@ -26,10 +28,10 @@
  * on us. We need to use _exactly_ the address the user gave us,
  * not some alias that contains the same information.
  */
-typedef struct { int counter; volatile unsigned spinlock } ma_atomic_t;
+typedef struct { int counter; ma_spinlock_t spinlock; } ma_atomic_t;
 
 #section marcel_macros
-#define MA_ATOMIC_INIT(i)	{ (i), 0 }
+#define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
 
 /**
  * ma_atomic_read - read atomic variable
@@ -63,12 +65,12 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v);
 #section marcel_inline
 static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 {
-	while (pm2_spinlock_testandset(&v->spinlock));
+	ma_spin_lock_softirq(&v->spinlock);
 	v->counter += i;
-	pm2_spinlock_release(&v->spinlock);
+	ma_spin_unlock_softirq(&v->spinlock);
 }
 
-#section marcel_functions
+#section marcel_macros
 /**
  * ma_atomic_sub - subtract the atomic variable
  * @i: integer value to subtract
@@ -77,8 +79,6 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
  * Atomically subtracts @i from @v.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */
-static __inline__ void ma_atomic_sub(int i, ma_atomic_t *v);
-#section marcel_inline
 #define ma_atomic_sub(i,v) ma_atomic_add(-(i),(v))
 
 #section marcel_functions
@@ -97,13 +97,13 @@ static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v);
 static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
 {
 	int c;
-	while (pm2_spinlock_testandset(&v->spinlock));
+	ma_spin_lock_softirq(&v->spinlock);
 	c = ((v->counter -= i) == 0);
-	pm2_spinlock_release(&v->spinlock);
+	ma_spin_unlock_softirq(&v->spinlock);
 	return c;
 }
 
-#section marcel_functions
+#section marcel_macros
 /**
  * ma_atomic_inc - increment atomic variable
  * @v: pointer of type ma_atomic_t
@@ -111,11 +111,8 @@ static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
  * Atomically increments @v by 1.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ void ma_atomic_inc(ma_atomic_t *v);
-#section marcel_inline
 #define ma_atomic_inc(v) ma_atomic_add(1,(v))
 
-#section marcel_functions
 /**
  * ma_atomic_dec - decrement atomic variable
  * @v: pointer of type ma_atomic_t
@@ -123,12 +120,9 @@ static __inline__ void ma_atomic_inc(ma_atomic_t *v);
  * Atomically decrements @v by 1.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ void ma_atomic_dec(ma_atomic_t *v);
-#section marcel_inline
 #define ma_atomic_dec(v) ma_atomic_sub(1,(v))
 
 
-#section marcel_functions
 /**
  * ma_atomic_dec_and_test - decrement and test
  * @v: pointer of type ma_atomic_t
@@ -138,11 +132,8 @@ static __inline__ void ma_atomic_dec(ma_atomic_t *v);
  * cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ int ma_atomic_dec_and_test(ma_atomic_t *v);
-#section marcel_inline
 #define ma_atomic_dec_and_test(v) ma_atomic_sub_and_test(1,(v))
 
-#section marcel_functions
 /**
  * ma_atomic_inc_and_test - increment and test 
  * @v: pointer of type ma_atomic_t
@@ -152,9 +143,7 @@ static __inline__ int ma_atomic_dec_and_test(ma_atomic_t *v);
  * other cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ int ma_atomic_inc_and_test(ma_atomic_t *v);
-#section marcel_macros
-#define ma_atomic_inc_and_test(v) ma_atomic_dec_and_test((v))
+#define ma_atomic_inc_and_test(v) ma_atomic_sub_and_test(-1,(v))
 
 #section marcel_functions
 /**
@@ -172,8 +161,8 @@ static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
 static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 {
 	int c;
-	while (pm2_spinlock_testandset(&v->spinlock));
+	ma_spin_lock_softirq(&v->spinlock);
 	c = ((v->counter += i) < 0);
-	pm2_spinlock_release(&v->spinlock);
+	ma_spin_unlock_softirq(&v->spinlock);
 	return c;
 }

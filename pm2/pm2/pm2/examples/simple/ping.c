@@ -47,8 +47,15 @@ static Tick t1, t2;
 
 static int glob_n;
 
+#define MORE_PACKS
+
+static unsigned dummy;
+
 void SAMPLE_service(void)
 {
+#ifdef MORE_PACKS
+  pm2_unpack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
   pm2_rawrpc_waitdata();
 
   marcel_sem_V(&sem);
@@ -56,15 +63,24 @@ void SAMPLE_service(void)
 
 static void threaded_rpc(void *arg)
 {
+#ifdef MORE_PACKS
+  pm2_unpack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
   pm2_rawrpc_waitdata();
 
   if(pm2_self() == 1) {
      pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
+#ifdef MORE_PACKS
+     pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
      pm2_rawrpc_end();
   } else {
     if(glob_n) {
       glob_n--;
       pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
+#ifdef MORE_PACKS
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
       pm2_rawrpc_end();
     } else
       marcel_sem_V(&sem);
@@ -88,6 +104,9 @@ void f(void)
 
     for(j=N/2; j; j--) {
       pm2_rawrpc_begin(autre, SAMPLE, NULL);
+#ifdef MORE_PACKS
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
       pm2_rawrpc_end();
 
       marcel_sem_P(&sem);
@@ -106,6 +125,9 @@ void f(void)
 
     glob_n = N/2-1;
     pm2_rawrpc_begin(autre, SAMPLE_THR, NULL);
+#ifdef MORE_PACKS
+    pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
     pm2_rawrpc_end();
 
     marcel_sem_P(&sem);
@@ -126,6 +148,9 @@ void g(void)
       marcel_sem_P(&sem);
 
       pm2_rawrpc_begin(autre, SAMPLE, NULL);
+#ifdef MORE_PACKS
+      pm2_pack_int(SEND_CHEAPER, RECV_CHEAPER, &dummy, 1);
+#endif
       pm2_rawrpc_end();
     }
   }

@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.14 2002/10/30 09:25:37 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.15 2002/10/31 17:50:23 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -1139,12 +1139,13 @@ hierarch_proto_release_func (const token_lock_id_t lck_id)
    assert ( expected_local_invalidations == 0 );
    marcel_mutex_unlock(&local_inval_ack_lock);
 
-   /* partially release the lock if this is not a barrier */
-   if ( lck_id != TOKEN_LOCK_NONE )
-      token_partial_unlock(lck_id);
-
    marcel_mutex_lock(&remote_inval_ack_lock);
    assert ( expected_remote_invalidations >= 0 );
+
+   /* partially release the lock if this is not a barrier */
+   if ( lck_id != TOKEN_LOCK_NONE && expected_remote_invalidations > 0 )
+      token_partial_unlock(lck_id);
+
    TRACE("waiting for remote_invalidations=%d", expected_remote_invalidations);
    while ( expected_remote_invalidations > 0 )
       marcel_cond_wait(&remote_inval_ack_cond, &remote_inval_ack_lock);

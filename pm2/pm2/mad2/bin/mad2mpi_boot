@@ -1,9 +1,36 @@
 #!/bin/csh -f
 ###########
 
+if (! -e ${MAD2_ROOT}/.mad2mpi_implementation) then
+echo "No MPI implementation has been selected"
+exit 0
+endif
+
+set IMPL = `cat ${MAD2_ROOT}/.mad2mpi_implementation`
+echo "Booting MPI/${IMPL} ..."
+
+switch(${IMPL})
 # LAM MPI
 #---------
-recon   -v ${MAD2_ROOT}/.mad2_conf
-lamboot -v ${MAD2_ROOT}/.mad2_conf
+  case "lam":
+    echo Calling recon ...
+    recon   -v ${MAD2_ROOT}/.mad2_conf
+    echo Calling lamboot ...
+    lamboot -v ${MAD2_ROOT}/.mad2_conf
+  breaksw
+
+# MPI/BIP
+#---------
+  case "bip":
+#   bipconf
+  breaksw
+
+# Default case
+#--------------
+  default:
+    echo "invalid MPI implementation name"
+    exit 0
+  breaksw
+endsw
 
 ###########

@@ -42,23 +42,19 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <sys/wait.h>
-
 #include <errno.h>
-
 #include <string.h>
-#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sched.h>
 
-#include <unistd.h>
-#include <sys/netinterf.h>
+#include "sys/netinterf.h"
 
 #define MAX_SIZE_SEGMENT  8196
 
 #ifdef PM2
 
-#include <marcel.h>
+#include "marcel.h"
 
 #endif
 

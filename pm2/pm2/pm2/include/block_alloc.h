@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: block_alloc.h,v $
+Revision 1.3  2000/02/28 11:17:55  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:49:32  oaumage
 - ajout du Log CVS
 
@@ -45,7 +48,8 @@ ______________________________________________________________________________
 #define BLOCK_ALLOC_IS_DEF
 
 #include <sys/types.h>
-#include <isomalloc.h>
+
+#include "isomalloc.h"
 
 typedef struct _block_header_t {
   size_t size;

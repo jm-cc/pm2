@@ -38,7 +38,7 @@ static marcel_t            *pm2_net_server_pid_array = NULL;
 static unsigned int         pm2_net_server_nb        =    1;
 static p_mad_channel_t     *pm2_net_channel_array    = NULL;
 static volatile tbx_bool_t  pm2_net_finished         = tbx_false;
-static marcel_mutex_t       pm2_net_halt_lock        =MARCEL_MUTEX_INITIALIZER;
+static marcel_mutex_t       pm2_net_halt_lock        = MARCEL_MUTEX_INITIALIZER;
 static int                  pm2_net_zero_halt        =    0;
 
 #ifdef MAD3
@@ -302,11 +302,6 @@ pm2_net_init_channels(int   *argc,
 	pm2_net_channel_slist  = tbx_slist_nil();
 	pm2_net_channel_htable = tbx_htable_empty_table();
       }
-    else
-      {
-	if (tbx_htable_get(pm2_net_channel_htable, name))
-	  FAILURE("'pm2' channel is reserved");
-      }
     
     name = tbx_strdup(pm2_net_pm2_channel_name);
     tbx_slist_enqueue(pm2_net_channel_slist, name);
@@ -329,6 +324,7 @@ pm2_net_init_channels(int   *argc,
 	char            *name    = NULL;
 	  
 	name                     = tbx_slist_extract(slist);
+	printf("channel %d = %s\n", i, name);
 	channel                  = mad_get_channel(madeleine, name);
 	pm2_net_channel_array[i] = channel;
 	tbx_htable_replace(htable, name, channel);

@@ -66,26 +66,26 @@ pm2: libs
 libs: flavors ARCHITECTURES
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i ; \
+		$(MAKE) -C modules/$$i $@; \
 	done
 
 examples: flavors
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i examples ; \
+		$(MAKE) -C modules/$$i $@ ; \
 	done
 
 preproc: flavors
 	$(COMMON_HIDE) set -e; \
 	for i in $(LIBS) ; do \
-		$(MAKE) -C modules/$$i preproc ; \
+		$(MAKE) -C modules/$$i $@ ; \
 	done
 
 fut: flavors
 	$(COMMON_HIDE) set -e; \
 	if [ -n "$(PROF_LIBS)" ] ; then \
 	for i in $(PROF_LIBS) ; do \
-		$(MAKE) -C modules/$$i fut ; \
+		$(MAKE) -C modules/$$i $@ ; \
 	done \
 	fi
 

@@ -34,38 +34,18 @@
 #
 
 
+.PHONY: default all
 default: all
 
-include ../../make/common.mak
+SRC_DIR	:=	.
 
-all: simple ping
+include ../../Makefile
 
+PM2_APP_CFLAGS	=
+PM2_APP_LDFLAGS	=
+PM2_APP_LLIBS	=
 
-# rpc_defs :
+all:	$(BIN_DIR)/simple	\
+	$(BIN_DIR)/ping
 
-$(PM2_OBJ)/rpc_defs.o: rpc_defs.c rpc_defs.h $(PM2_HEADERS)
-	$(PM2_CC2)
-
-
-# executables :
-
-
-# simple :
-
-$(PM2_OBJ)/simple.o: simple.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-simple: $(PM2_OBJ)/simple.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-# ping :
-
-$(PM2_OBJ)/ping.o: ping.c $(PM2_HEADERS) rpc_defs.h
-	$(PM2_CC2)
-
-ping: $(PM2_OBJ)/ping.o $(PM2_OBJ)/rpc_defs.o $(PM2_LIBS)
-	$(PM2_LINK) $(PM2_OBJ)/rpc_defs.o $(PM2_LLIBS)
-	$(PM2_MOVE)
-
-
+$(BIN_DIR)/simple $(BIN_DIR)/ping: $(OBJ_DIR)/rpc_defs.o

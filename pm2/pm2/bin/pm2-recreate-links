@@ -52,6 +52,7 @@ echo Modules
 if [ ! -d ${PM2_ROOT}/modules ] ; then
     mkdir ${PM2_ROOT}/modules
 fi
+make_ln ${PM2_ROOT}/modules ../appli appli
 make_ln ${PM2_ROOT}/modules ../common common
 make_ln ${PM2_ROOT}/modules ../dsm dsm
 make_ln ${PM2_ROOT}/modules ../generic generic

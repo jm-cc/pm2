@@ -807,29 +807,28 @@ mad_vrp_send_buffer(p_mad_link_t   lnk,
 
       os->first = tbx_false;
     }
-  else
-    {
-      if (b->parameter_slist && !tbx_slist_is_nil(b->parameter_slist))
-        {
-          tbx_slist_ref_to_head(b->parameter_slist);
-          do
-            {
-              p_mad_buffer_slice_parameter_t param = NULL;
 
-              param = tbx_slist_ref_get(b->parameter_slist);
-              if (param->opcode == mad_vrp_op_optional_block)
-                {
-                  // note: offset and length are ignored for now
-                  // the whole block is either mandatory or optional
-                  loss_rate = 100;
-                }
-              else
-                FAILURE("invalid vrp parameter opcode");
+  if (b->parameter_slist && !tbx_slist_is_nil(b->parameter_slist))
+    {
+      tbx_slist_ref_to_head(b->parameter_slist);
+      do
+        {
+          p_mad_buffer_slice_parameter_t param = NULL;
+
+          param = tbx_slist_ref_get(b->parameter_slist);
+          if (param->opcode == mad_vrp_op_optional_block)
+            {
+              // note: offset and length are ignored for now
+              // the whole block is either mandatory or optional
+              loss_rate = 100;
             }
-          while(tbx_slist_ref_forward(b->parameter_slist));
+          else
+            FAILURE("invalid vrp parameter opcode");
         }
+      while(tbx_slist_ref_forward(b->parameter_slist));
     }
 
+  TRACE_VAL("loss_rate", loss_rate);
   vrp_b = vrp_buffer_construct(ptr, len);
   vrp_buffer_set_loss_rate(vrp_b, loss_rate, len);
   s = vrp_outgoing_send_frame(os->vrp_out, vrp_b);
@@ -888,6 +887,8 @@ mad_vrp_receive_buffer(p_mad_link_t    lnk,
       p_tbx_slist_t                  slist = NULL;
       p_mad_buffer_slice_parameter_t bsp   = NULL;
       int                            i     =    0;
+
+      DISP_VAL("loss_num", is->loss_num);
 
       slist = tbx_slist_nil();
 

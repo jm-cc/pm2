@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_macros.h,v $
+Revision 1.5  2000/04/17 16:09:38  vdanjean
+clean up : remove __ACT__ flags and use of MA__ACTIVATION instead of MA__ACT when needed
+
 Revision 1.4  2000/04/17 08:31:14  rnamyst
 Changed DEBUG into MA__DEBUG.
 
@@ -200,7 +203,7 @@ ______________________________________________________________________________
 // TODO: C'est dans cette fonction qu'il faut tester si une activation
 // est debloquee...  NOTE: Le parametre "pid" peut etre NULL dans le
 // cas ou l'on sait deja qu'une activation est debloquee.
-#ifdef MA__ACT
+#ifdef MA__ACTIVATION
 #define goto_next_task(pid) \
   (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \
                        (MA_THR_LONGJMP((pid), NORMAL_RETURN))

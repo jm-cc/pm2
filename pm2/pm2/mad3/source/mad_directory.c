@@ -400,7 +400,8 @@ mad_dir_channel_get_channel(p_mad_madeleine_t madeleine)
     {
       tbx_slist_append(madeleine->public_channel_slist, dir_channel->name);
     }
-
+  dir_channel->mergeable = mad_leonie_receive_unsigned_int();  
+   
   driver_name = mad_leonie_receive_string();
   dir_channel->driver = tbx_htable_get(dir->driver_htable, driver_name);
   if (!dir_channel->driver)
@@ -1222,11 +1223,81 @@ mad_directory_exit(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
+
 void
-mad_directory_update(p_mad_madeleine_t madeleine)
-{
-  LOG_IN();
-  LOG_OUT();
+    mad_new_directory_from_leony(p_mad_madeleine_t madeleine)
+{   
+   p_mad_directory_t  new_dir    = NULL;
+   
+   LOG_IN();
+   TRACE("Getting new directory");
+   new_dir            = mad_directory_cons();
+   madeleine->old_dir = madeleine->dir;
+   madeleine->dir     = new_dir;
+   
+   mad_dir_directory_get(madeleine);
+   
+   madeleine->new_dir = madeleine->dir;
+   madeleine->dir     = madeleine->old_dir;
+   madeleine->old_dir = NULL;
+   
+   LOG_OUT();
+}
+
+
+void
+    mad_directory_update(p_mad_madeleine_t madeleine)
+{   
+   LOG_IN();
+   TRACE("Updating  directory");
+   
+   if (madeleine->updated == tbx_false)
+     {	
+	if ( madeleine->new_dir != NULL )
+	  {	     
+	     madeleine->old_dir = madeleine->dir;
+	     madeleine->dir     = madeleine->new_dir;
+	     madeleine->new_dir = NULL;
+	     madeleine->updated = tbx_true;
+	  }	
+     }   
+   LOG_OUT();
+}
+
+void
+    mad_directory_rollback(p_mad_madeleine_t madeleine)
+{   
+   LOG_IN();
+   TRACE("Getting old  directory");
+   if (madeleine->updated == tbx_false)
+     {	
+	if ( madeleine->old_dir != NULL )
+	  {	     
+	     p_mad_directory_t  dir  = NULL;
+	     dir                = madeleine->new_dir;
+	     madeleine->new_dir = madeleine->dir;
+	     madeleine->dir     = madeleine->old_dir;
+	     madeleine->old_dir = dir;
+	     madeleine->updated = tbx_true;
+	  }	
+     }   
+   LOG_OUT();
+}
+
+
+volatile int
+  mad_directory_is_updated(p_mad_madeleine_t madeleine)
+{   
+   tbx_bool_t res = tbx_false;
+   
+   LOG_IN();
+   if ( madeleine->updated == tbx_true )
+     {	
+	madeleine->updated = tbx_false;
+	res                = tbx_true;
+     }
+   LOG_OUT();
+   return res;
 }
 
 

@@ -49,6 +49,7 @@ enum {
    NETSERVER_ASYNC_LRPC,
    NETSERVER_QUICK_LRPC,
    NETSERVER_QUICK_ASYNC_LRPC,
+   NETSERVER_RAW_RPC,
    NETSERVER_CLONING,
    NETSERVER_MERGE
 };
@@ -66,6 +67,7 @@ typedef generic_h lrpc_done_h;
 typedef generic_h async_lrpc_h;
 typedef generic_h quick_lrpc_h;
 typedef generic_h quick_async_lrpc_h;
+typedef generic_h raw_rpc_h;
 typedef generic_h cloning_h;
 typedef generic_h merge_h;
 

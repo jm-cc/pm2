@@ -1805,7 +1805,7 @@ switch_tasks:
 //		++*switch_count;
 
 		dequeue_task(next, next->sched.internal.array);
-		if (prev->sched.internal.array)
+		if (prev->sched.internal.cur_rq)
 			enqueue_task(prev, prevrq->active);
 		ma_set_task_lwp(next, LWP_SELF);
 

@@ -32,7 +32,7 @@
 # about the suitability of this software for any purpose. This
 # software is provided ``as is'' without express or implied warranty.
 #
-include $(MARCEL_ROOT)/make/common.mak
+include ../make/common.mak
 
 # objets :
 

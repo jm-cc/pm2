@@ -1,4 +1,4 @@
-
+# -*- mode: makefile;-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -13,94 +13,77 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-ifdef APP_RECURSIF
+include $(PM2_ROOT)/make/objs-rules.mak
 
-# Target subdirectories
-DUMMY_BUILD :=  $(shell mkdir -p $(APP_BIN))
-DUMMY_BUILD :=  $(shell mkdir -p $(APP_OBJ))
-DUMMY_BUILD :=  $(shell mkdir -p $(APP_ASM))
-DUMMY_BUILD :=  $(shell mkdir -p $(APP_DEP))
-DUMMY_BUILD :=  $(shell mkdir -p $(APP_CPP))
+.PHONY: all examples
+all: $(APPS_LIST)
+	$(COMMON_HIDE) echo $(APPS_LIST) sucessfully generated
 
-ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
-include $(DEPENDS)
-endif
+examples: all
 
-include $(PM2_ROOT)/make/common-rules.mak
+.PHONY: flavor
+flavor:
+	$(COMMON_HIDE) echo "Generating libraries..."
+	$(COMMON_MAIN) $(MAKE) -C $(PM2_ROOT)
+	$(COMMON_HIDE) echo "Generating libraries: done"
 
-$(DEPENDS): $(COMMON_DEPS)
-$(OBJECTS): $(APP_OBJ)/%.o: $(APP_DEP)/%.d $(COMMON_DEPS)
+$(MOD_GEN_BIN)/%$(MOD_EXT): $(MOD_STAMP_FILES)
+	$(COMMON_LINK)
+	$(COMMON_MAIN) $(CC) $(filter %.o, $^) $(LDFLAGS) -o $@
 
-$(APP_OBJ)/%$(APP_EXT).o: $(SRC_DIR)/%.c
-	$(COMMON_PREFIX) $(CC) $(CFLAGS) -c $< -o $@
-
-$(DEPENDS): $(APP_DEP)/%$(APP_EXT).d: $(SRC_DIR)/%.c
-	$(COMMON_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) -w $< \
-		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
-
-
-$(APP_BIN)/%: $(APP_OBJ)/%.o
-	$(COMMON_PREFIX) $(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
-
-$(PROGS): %: $(APP_BIN)/% ;
+.PHONY: $(APPS_LIST)
+$(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)
 
 # Generation des fichiers 'fut'
-.PHONY: fut
-fut:
-	$(COMMON_PREFIX) $(MAKE) -C . APP_RECURSIF=true $(APP_CPP)/$(TARGET).i $(APP_CPP)/$(TARGET).fut
+#.PHONY: fut
+#fut:
+#	$(COMMON_BUILD)
+#	$(COMMON_MAIN) $(MAKE) -C . APP_RECURSIF=true $(APP_CPP)/$(TARGET).i $(APP_CPP)/$(TARGET).fut
 
-$(APP_CPP)/%$(LIB_EXT).i: $(SRC_DIR)/%.c
-	$(COMMON_PREFIX) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
+#$(APP_CPP)/%$(LIB_EXT).i: $(SRC_DIR)/%.c
+#	$(COMMON_BUILD)
+#	$(COMMON_MAIN) $(CC) -E -P -DPREPROC $(CFLAGS) $< > $@
 
-$(APP_CPP)/%.fut: $(APP_CPP)/%.i
-	$(COMMON_PREFIX) cp /dev/null $@
-	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo-$(USER).o
-	$(COMMON_HIDE) nm /tmp/foo-$(USER).o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
-	$(COMMON_HIDE) rm -f /tmp/foo-$(USER).o
-	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/fut_stamp
+#$(APP_CPP)/%.fut: $(APP_CPP)/%.i
+#	$(COMMON_BUILD)
+#	$(COMMON_MAIN) cp /dev/null $@
+#	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo-$(USER).o
+#	$(COMMON_HIDE) nm /tmp/foo-$(USER).o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
+#	$(COMMON_HIDE) rm -f /tmp/foo-$(USER).o
+#	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/fut_stamp
 
-else # APP_RECURSIF
-
-MAKE_LIBS = +$(MAKE) -C $(PM2_ROOT) libs
-
-.PHONY: all
-all: $(PROGS)
-
-include $(PM2_ROOT)/make/common-rules.mak
-
-$(PROGS):
-	$(COMMON_HIDE)$(MAKE_LIBS) APP_TARGET="$@" APP_DIR=$(CURDIR)
-	$(COMMON_HIDE)$(MAKE) APP_RECURSIF=true $@$(APP_EXT)
+#else # APP_RECURSIF
 
 
-# Regles de nettoyage
+# Inclusion du cache de configuration spécific des programmes
 #---------------------------------------------------------------------
-.PHONY: clean cleanall refresh refreshall sos
-clean cleanall refresh refreshall sos:
-	$(COMMON_HIDE) make -s -C $(PM2_ROOT) $@
+MOD_LINKED_OBJECTS=$(APPS_LIST)
+$(PM2_MAK_DIR)/$(MODULE)-specific.mak: \
+		$(if $(strip	$(filter-out $(MOD_LINKED_OBJECTS_SAVED), $(MOD_LINKED_OBJECTS)) \
+				$(filter-out $(MOD_LINKED_OBJECTS), $(MOD_LINKED_OBJECTS_SAVED))), \
+			FORCE)
+$(PM2_MAK_DIR)/$(MODULE)-specific.mak: \
+		$(if $(strip $(filter-out $(MOD_OBJECTS_SAVED), $(MOD_BASE:%=%.o)) \
+				$(filter-out $(MOD_BASE:%=%.o), $(MOD_OBJECTS_SAVED))), \
+			FORCE)
 
-.PHONY: help bannerhelpapps targethelpapps
-help: globalhelp
+$(PM2_MAK_DIR)/$(MODULE)-specific.mak: $(MAIN_STAMP_FLAVOR) $(COMMON_DEPS) $(MAKEFILE)
+	$(COMMON_MAKE)
+	$(COMMON_HIDE) mkdir -p $(PM2_MAK_DIR)
+	$(COMMON_HIDE) ( echo MOD_LINKED_OBJECTS_SAVED=$(MOD_LINKED_OBJECTS) ; \
+		$(foreach p, $(APPS_LIST), \
+		echo '$$(MOD_GEN_BIN)/$p$$(MOD_EXT): $(patsubst %.o, %$$(MOD_EXT).o, \
+			$(if $($p-objs), $($p-objs), $p.o))'; \
+		$(if $(strip $($p-ldflags)), \
+			echo '$$(MOD_GEN_BIN)/$p$$(MOD_EXT): LDFLAGS += $$($p-ldflags)';) \
+		) ) > $@
+	$(COMMON_HIDE) ( echo MOD_OBJECTS_SAVED=$(MOD_BASE:%=%.o) ; \
+		$(foreach o, $(MOD_BASE), \
+		$(if $(strip $($o-cflags)), \
+			echo '$$(MOD_GEN_OBJ)/$o$$(MOD_EXT).o: CFLAGS += $$($o-cflags)';) \
+		) ) >> $@
 
-bannerhelp: bannerhelpapps
 
-bannerhelpapps:
-	@echo "This is PM2 Makefile for examples"
-
-targethelp: targethelpapps
-
-PROGSLIST:=$(foreach PROG,$(PROGS),$(PROG))
-targethelpapps:
-	@echo "  all|examples: build the examples"
-	@echo "  help: this help"
-	@echo "  clean: clean examples source tree for current flavor"
-#	@echo "  distclean: clean examples source tree for all flavors"
-	@echo
-	@echo "Examples to build:"
-	@echo "  $(PROGSLIST)"
-
-endif
-
-$(PM2_MAK_DIR)/apps-config.mak: $(APP_STAMP_FLAVOR)
-	$(COMMON_HIDE) $(PM2_GEN_MAK) apps
-
+.PHONY: FORCE
+#$(patsubst %.o, %$(MOD_EXT).o, \
+#				$(if $($*-objs), $($*-objs), $*.o)

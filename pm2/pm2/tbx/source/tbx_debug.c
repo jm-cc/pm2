@@ -493,6 +493,7 @@ inline static int pm2debug_tryprint()
 	inprint=1;
 	return 1;
 #else
+	return 1;
 	switch (__pm2debug_printf_state) {
 	case PM2DEBUG_PRINTF_UNPROTECT_ALLOWED:
 		if (inprint) {

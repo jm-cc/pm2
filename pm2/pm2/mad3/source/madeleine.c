@@ -46,6 +46,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_TCP
   mad_tcp_register,
 #endif /* DRV_TCP */
+#ifdef DRV_RAND
+  mad_rand_register,
+#endif /* DRV_RAND */
 #ifdef DRV_VRP
   mad_vrp_register,
 #endif /* DRV_VRP */

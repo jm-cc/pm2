@@ -86,6 +86,9 @@
 #ifdef DRV_VRP
 #include "connection_interfaces/mad_vrp.h"
 #endif /* DRV_VRP */
+#ifdef DRV_RAND
+#include "connection_interfaces/mad_rand.h"
+#endif /* DRV_RAND */
 #ifdef DRV_UDP
 #include "connection_interfaces/mad_udp.h"
 #endif /* DRV_UDP */

@@ -60,7 +60,7 @@ typedef struct s_ntbx_topology_table    *p_ntbx_topology_table_t;
 #define NTBX_PACK_MANTISSA_LEN   14
 #define NTBX_PACK_BUFFER_TAG_LEN  4
 
-typedef struct
+typedef struct s_ntbx_pack_buffer
 {
   char buffer[NTBX_PACK_BUFFER_LEN];
 } ntbx_pack_buffer_t, *p_ntbx_pack_buffer_t TBX_ALIGN(64);
@@ -72,7 +72,7 @@ typedef struct
  * (Attention aux types tableaux !!!)
  */
 #define NTBX_CONNECTION_DATA_LEN 11
-typedef struct
+typedef struct s_ntbx_connection_data
 {
   char data[NTBX_CONNECTION_DATA_LEN];
 } ntbx_connection_data_t, *p_ntbx_connection_data_t;

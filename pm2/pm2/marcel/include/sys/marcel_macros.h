@@ -164,20 +164,20 @@
 // TODO: C'est dans cette fonction qu'il faut tester si une activation
 // est debloquee...  NOTE: Le parametre "pid" peut etre NULL dans le
 // cas ou l'on sait deja qu'une activation est debloquee.
-#ifdef MA__ACTIVATION
-#define goto_next_task(pid) \
-  (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \
-                       (MA_THR_LONGJMP((pid), NORMAL_RETURN))
-#define can_goto_next_task(current, pid) \
-  (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \
-                       (((pid)==(current)) ? (void)0 : \
-			            MA_THR_LONGJMP((pid), NORMAL_RETURN))
-#else
-#define goto_next_task(pid) \
-   MA_THR_LONGJMP((pid), NORMAL_RETURN)
-#define can_goto_next_task(current, pid) \
-   (((pid)==(current)) ? (void)0 : MA_THR_LONGJMP((pid), NORMAL_RETURN))
-#endif
+/*  #ifdef MA__ACTIVATION */
+/*  #define goto_next_task(pid) \ */
+/*    (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \ */
+/*                         (MA_THR_LONGJMP((pid), NORMAL_RETURN)) */
+/*  #define can_goto_next_task(current, pid) \ */
+/*    (act_nb_unblocked) ? (act_goto_next_task(pid, ACT_RESTART_FROM_SCHED)): \ */
+/*                         (((pid)==(current)) ? (void)0 : \ */
+/*  			            MA_THR_LONGJMP((pid), NORMAL_RETURN)) */
+/*  #else */
+/*  #define goto_next_task(pid) \ */
+/*     MA_THR_LONGJMP((pid), NORMAL_RETURN) */
+/*  #define can_goto_next_task(current, pid) \ */
+/*     (((pid)==(current)) ? (void)0 : MA_THR_LONGJMP((pid), NORMAL_RETURN)) */
+/*  #endif */
 
 #define FIND_NEXT            (marcel_t)0
 #define DO_NOT_REMOVE_MYSELF (marcel_t)1

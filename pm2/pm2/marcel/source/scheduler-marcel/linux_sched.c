@@ -321,7 +321,6 @@ static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 	__ma_set_bit(p->sched.internal.prio, array->bitmap);
 	array->nr_active++;
 	sched_debug("enqueued %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
-	MA_BUG_ON(!ma_spin_is_locked(&p->sched.internal.cur_rq->lock));
 	MA_BUG_ON(p->sched.internal.array);
 	p->sched.internal.array = array;
 }

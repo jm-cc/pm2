@@ -33,8 +33,8 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <marcel.h>
-#include <marcel_sem.h>
+#include "marcel.h"
+#include "marcel_sem.h"
 
 marcel_sem_t sem;
 

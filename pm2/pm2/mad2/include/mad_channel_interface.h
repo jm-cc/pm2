@@ -47,10 +47,9 @@
  */
 p_mad_channel_t
 mad_open_channel(p_mad_madeleine_t   madeleine,
-		 mad_channel_id_t    id,
 		 mad_adapter_id_t    adapter);
 
 void
-mad_close_channel(p_mad_channel_t channel);
+mad_close_channels(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_CHANNEL_INTERFACE_H */

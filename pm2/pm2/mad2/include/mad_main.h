@@ -59,6 +59,7 @@ typedef struct s_mad_madeleine
   mad_adapter_id_t            nb_adapter;
   p_mad_adapter_t             adapter;
   mad_configuration_t         configuration;
+  mad_channel_id_t            nb_channel;
   mad_list_t                  channel;
 } mad_madeleine_t;
 

@@ -90,7 +90,24 @@ typedef struct s_mad_driver_interface
   
   void 
   (*after_close_channel)(p_mad_channel_t);
+
+  /* Deallocation functions */
+  void
+  (*link_exit)(p_mad_link_t);
   
+  void
+  (*connection_exit)(p_mad_connection_t,
+		     p_mad_connection_t);
+  
+  void
+  (*channel_exit)(p_mad_channel_t);
+
+  void
+  (*adapter_exit)(p_mad_adapter_t);
+  
+  void
+  (*driver_exit)(p_mad_driver_t);
+
   /* Dynamic paradigm selection */
   p_mad_link_t
   (*choice)(p_mad_connection_t,

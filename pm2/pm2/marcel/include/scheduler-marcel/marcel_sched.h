@@ -333,10 +333,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		activate_running_task(new_task,rq);
 		_ma_raw_spin_unlock(&rq->lock);
 
-#ifdef MA__LWPS
 		/* passage de rq de la pile du père au fils */
 		__ma_get_lwp_var(prev_rq)=task_rq(MARCEL_SELF);
-#endif
 
 		marcel_ctx_set_new_stack(new_task,
 					 new_task->initial_sp -

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.c,v $
+Revision 1.4  2000/11/06 15:02:21  rnamyst
+pm2_init() has now a modular structure (in fact, common_init).
+
 Revision 1.3  2000/04/05 16:09:06  oaumage
 - retour du nom de l'adaptateur dans mad_getarchname
 
@@ -238,8 +241,7 @@ _PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
 
 static p_mad_madeleine_t main_madeleine;
 
-void
-mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
+void mad_init(int *argc, char *argv[])
 {
   /* Note:
    *  - l'objet global madeleine est utilise
@@ -253,24 +255,22 @@ mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
   adapter_set =
     mad_adapter_set_init(1, MAD2_MAD1_MAIN_PROTO, MAD2_MAD1_MAIN_PROTO_PARAM);
 
-  main_madeleine    = mad2_init(argc, argv, NULL, adapter_set);
-
-  *nb = main_madeleine->configuration.size;
-  *whoami = (int)main_madeleine->configuration.local_host_id;
-
-  LOG_VAL("Who am I:", *whoami);
-  {
-    int i;
-
-    for (i = 0; i < *nb; i++)
-      tids[i] = i;
-  }
+  main_madeleine = mad2_init(argc, argv, NULL, adapter_set);
 
   LOG_OUT();
 }
 
-void
-mad_buffers_init(void)
+unsigned mad_config_size(void)
+{
+  return main_madeleine->configuration.size;
+}
+
+unsigned mad_who_am_i(void)
+{
+  return (unsigned)main_madeleine->configuration.local_host_id;
+}
+
+void mad_init_thread_related(int *argc, char *argv[])
 {
   marcel_key_create(&mad2_send_key, NULL);
   marcel_key_create(&mad2_recv_key, NULL);

@@ -71,30 +71,60 @@ MAD_OPTIONS	:=	$(ALL_OPTIONS)
 DSM_OPTIONS	:=	$(ALL_OPTIONS)
 endif
 
-# Si PM2_OPTIONS n'est pas specifie en parametre de Make, alors on
-# prend la version specifiee dans le fichier d'options...
-ifndef PM2_OPTIONS
-PM2_USE_OPT_FILE	:=	no
-PM2_OPT_FILE		:=	$(PM2_ROOT)/make/options.mak
-else
-PM2_USE_OPT_FILE	:=	yes
-PM2_OPT_FILE		:=	$(PM2_ROOT)/make/options-$(PM2_OPTIONS).mak
+ifdef _ALL_OPTIONS
+_PM2_OPTIONS	:=	$(_ALL_OPTIONS)
+_MARCEL_OPTIONS	:=	$(_ALL_OPTIONS)
+_MAD_OPTIONS	:=	$(_ALL_OPTIONS)
+_DSM_OPTIONS	:=	$(_ALL_OPTIONS)
 endif
 
-COMMON_MAKEFILES	+=	$(PM2_OPT_FILE)
+# Deux macros déclarées d'intérêt public :
+EMPTY		:=
+SPACE		:=	$(EMPTY) $(EMPTY)
 
-# Verification de l'existence du fichier d'options
-ifneq ($(PM2_OPT_FILE),$(wildcard $(PM2_OPT_FILE)))
-$(error $(PM2_OPT_FILE): No such file)
+# L'utilisation de _PM2_OPTIONS (en lieu et place de PM2_OPTIONS)
+# force l'adjonction d'un suffixe aux fichiers créés (binaires,
+# objets, bibliothèques)
+ifdef _PM2_OPTIONS
+PM2_OPTIONS		:=	$(_PM2_OPTIONS)
+PM2_USE_EXTENSION	:=	yes
 else
-# Inclusion du fichier de parametrage de PM2
-include $(PM2_OPT_FILE)
+PM2_USE_EXTENSION	:=	no
+endif
+
+# Inclusion des options
+PM2_OPT_FILES	:=	$(PM2_ROOT)/make/options.mak \
+	$(foreach OPTION,$(PM2_OPTIONS),$(PM2_ROOT)/make/options-$(OPTION).mak)
+
+include $(PM2_OPT_FILES)
+
+COMMON_MAKEFILES	+=	$(PM2_OPT_FILES)
+
+# Fichier de dépendance artificiel pour forcer la recompilation
+# lorsque les options changent
+ifdef PM2_OPTIONS
+PM2_EXTRA_DEP_FILE	:=	$(PM2_ROOT)/.opt_$(subst $(SPACE),_,$(sort $(PM2_OPTIONS)))
+else
+PM2_EXTRA_DEP_FILE	:=	$(PM2_ROOT)/.opt
+endif
+
+# Si on étend les noms de fichiers, il faut calculer le suffixe, sinon
+# il faut ajouter une dépendance supplémentaire...
+ifeq ($(PM2_USE_EXTENSION),yes)
+PM2_EXT		:=	-pm2_$(subst $(SPACE),_,$(sort $(PM2_OPTIONS)))
+else
+COMMON_MAKEFILES	+=	$(PM2_EXTRA_DEP_FILE)
 endif
 
 # Petite entorse a l'utilisation du '+=' ...
-ifeq ($(PM2_USE_OPT_FILE),yes)
-COMMON_EXT		:=	$(strip $(COMMON_EXT)$(PM2_EXT))
-endif
+COMMON_EXT		:=	$(COMMON_EXT)$(PM2_EXT)
+
+PM2_GEN_OPT	:=	$(PM2_GEN_1) $(PM2_GEN_2) $(PM2_GEN_3) \
+			$(PM2_GEN_4) $(PM2_GEN_5) $(PM2_GEN_6)
+
+PM2_OPT		:=	$(strip $(PM2_OPT_0) $(PM2_OPT_1) $(PM2_OPT_2) \
+			$(PM2_OPT_3) $(PM2_OPT_4) $(PM2_OPT_5) \
+			$(PM2_OPT_6) $(PM2_OPT_7) $(PM2_OPT_8))
 
 # Les options "generiques" (-g, etc.) sont dans PM2_GEN_OPT, et les
 # autres sont dans PM2_OPT...

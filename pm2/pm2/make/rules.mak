@@ -91,15 +91,19 @@ include $(PM2_DEPENDS)
 endif
 endif
 
+$(PM2_EXTRA_DEP_FILE):
+	$(PM2_HIDE) rm -f $(PM2_ROOT)/.opt*
+	$(PM2_HIDE) cp /dev/null $(PM2_EXTRA_DEP_FILE)
+
 $(PM2_OBJECTS): $(PM2_OBJ)/%.o: $(PM2_DEP)/%.d $(COMMON_MAKEFILES)
 $(PM2_DEPENDS): $(COMMON_MAKEFILES)
 
 $(PM2_LIB): $(PM2_OBJECTS)
 	$(PM2_HIDE) rm -f $(PM2_LIB)
 	$(PM2_PREFIX) ar cr $(PM2_LIB) $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user.mak
-	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_ROOT)/make/user.mak
-	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_ROOT)/make/user.mak
+	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user$(COMMON_EXT).mak
+	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_ROOT)/make/user$(COMMON_EXT).mak
+	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_ROOT)/make/user$(COMMON_EXT).mak
 
 
 $(PM2_C_OBJECTS): $(PM2_OBJ)/%$(COMMON_EXT).o: $(PM2_SRC)/%.c
@@ -129,7 +133,9 @@ pm2clean:
 		$(PM2_ROOT)/examples/*/bin/$(PM2_ARCH_SYS)/* \
 		$(PM2_ROOT)/console/bin/$(PM2_ARCH_SYS)/* \
 		$(PM2_ROOT)/console/text/obj/$(PM2_ARCH_SYS)/*.o \
-		$(PM2_ROOT)/console/graphic/obj/$(PM2_ARCH_SYS)/*.o)
+		$(PM2_ROOT)/console/graphic/obj/$(PM2_ARCH_SYS)/*.o \
+		$(PM2_ROOT)/.opt* \
+		$(PM2_ROOT)/make/user*.mak)
 
 pm2distclean:
 		$(PM2_HIDE) rm -rf $(wildcard $(PM2_ROOT)/lib \
@@ -140,7 +146,9 @@ pm2distclean:
 		$(PM2_ROOT)/examples/*/bin \
 		$(PM2_ROOT)/console/bin \
 		$(PM2_ROOT)/console/text/obj \
-		$(PM2_ROOT)/console/graphic/obj)
+		$(PM2_ROOT)/console/graphic/obj \
+		$(PM2_ROOT)/.opt* \
+		$(PM2_ROOT)/make/user*.mak)
 
 
 ######################## Applications ########################

@@ -33,6 +33,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: swann.h,v $
+Revision 1.2  2000/02/17 09:26:14  oaumage
+- Mise en place de l'architecture de Swann
+
+
+______________________________________________________________________________
 */
 
 /*
@@ -53,5 +61,11 @@
 
 #include <tbx.h>
 #include <ntbx.h>
+
+#include <swann_types.h>
+#include <swann_file.h>
+#include <swann_net.h>
+#include <swann_run.h>
+#include <swann_interface.h>
 
 #endif /* __SWANN_H */

@@ -67,6 +67,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef MARCEL /* Forwarding Transmission Module */
   mad_forward_register,
 #endif /* MARCEL */
+#ifdef MARCEL /* MultipleXing Transmission Module */
+  mad_mux_register,
+#endif /* MARCEL */
 
   NULL
 };

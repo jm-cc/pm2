@@ -69,6 +69,19 @@ struct prio_array {
 #depend "asm/linux_atomic.h[types]"
 typedef struct prio_array ma_prio_array_t;
 
+enum ma_rq_type {
+	MA_DONTSCHED_RQ,
+	MA_MACHINE_RQ,
+#ifdef MA__LWPS
+#ifdef CONFIG_NUMA
+	MA_NODE_RQ,
+	MA_CORE_RQ,
+	MA_HT_RQ,
+#endif
+	MA_LWP_RQ,
+#endif
+};
+
 /*
  * This is the main, per-CPU runqueue data structure.
  *
@@ -97,6 +110,7 @@ struct ma_runqueue {
 #ifdef MA__LWPS
 	struct ma_runqueue *father;
 #endif
+	enum ma_rq_type type;
 };
 
 #section marcel_types
@@ -473,5 +487,5 @@ static inline void rq_arrays_switch(ma_runqueue_t *rq)
  * initialize runqueue
  */
 #section marcel_functions
-extern void init_rq(ma_runqueue_t *rq);
+extern void init_rq(ma_runqueue_t *rq, enum ma_rq_type type);
 

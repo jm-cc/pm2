@@ -58,13 +58,14 @@ __marcel_init void node_nr_running_init(void)
 # define nr_running_init(rq)   do { } while (0)
 #endif
 
-void init_rq(ma_runqueue_t *rq)
+void init_rq(ma_runqueue_t *rq, enum ma_rq_type type)
 {
 	int j, k;
 	ma_prio_array_t *array;
 
 	LOG_IN();
 
+	rq->type = type;
 	rq->active = rq->arrays;
 	rq->expired = rq->arrays + 1;
 //	rq->best_expired_prio = MA_MAX_PRIO;

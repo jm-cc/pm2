@@ -60,12 +60,17 @@ APP_LLIBS += $(shell $(PM2_CONFIG) --libs-only-l)
 PM2_MODULES += $(shell $(PM2_CONFIG) --modules)
 APP_STAMP_FILES := $(shell $(PM2_CONFIG) --stampfile)
 APP_STAMP_FILES += $(shell $(PM2_CONFIG) --stampfile all)
-APP_BUILDDIR := $(shell $(PM2_CONFIG) --builddir)
+THIS_DIR := $(shell basename `pwd`)
+ifeq ($(THIS_DIR),examples)
+APP_BUILDDIR := $(shell $(PM2_CONFIG) --builddir)/examples
+else
+APP_BUILDDIR := $(shell $(PM2_CONFIG) --builddir)/examples/$(THIS_DIR)
+endif
 
-APP_BIN := build/$(APP_BUILDDIR)/bin
-APP_OBJ := build/$(APP_BUILDDIR)/obj
-APP_ASM := build/$(APP_BUILDDIR)/asm
-APP_DEP := build/$(APP_BUILDDIR)/dep
+APP_BIN := $(APP_BUILDDIR)/bin
+APP_OBJ := $(APP_BUILDDIR)/obj
+APP_ASM := $(APP_BUILDDIR)/asm
+APP_DEP := $(APP_BUILDDIR)/dep
 endif
 
 # Sources, objets et dependances

@@ -49,7 +49,7 @@ static void SAMPLE_service(void)
   pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, msg, STRING_SIZE);
   pm2_rawrpc_waitdata();
 
-  printf("%s\n", msg);
+  fprintf(stderr,"%s\n", msg);
 
   pm2_halt();
 }
@@ -59,7 +59,8 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&SAMPLE, SAMPLE_service);
 
 #ifdef PROFILE
-  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
+//  profile_activate(FUT_ENABLE, FUT_KEYMASKALL);
+  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
 #endif
 
   pm2_init(&argc, argv);
@@ -84,5 +85,6 @@ int pm2_main(int argc, char **argv)
   profile_stop();
 #endif
 
+   fprintf(stderr, "Main ended\n");
   return 0;
 }

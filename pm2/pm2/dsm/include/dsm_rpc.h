@@ -36,8 +36,8 @@
 #ifndef DSM_RPC_IS_DEF
 #define DSM_RPC_IS_DEF
 
-#include "sys/isomalloc_rpc.h"
 #include "dsm_const.h"
+#include "dsm_mutex.h"
 
 
 BEGIN_LRPC_LIST
@@ -46,7 +46,9 @@ BEGIN_LRPC_LIST
   DSM_LRPC_SEND_PAGE,//13
   DSM_LRPC_INVALIDATE_REQ,//14
   DSM_LRPC_INVALIDATE_ACK,//15
-  DSM_LRPC_SEND_DIFFS//16
+  DSM_LRPC_SEND_DIFFS,//16
+  DSM_LRPC_LOCK,//17
+  DSM_LRPC_UNLOCK//18
 END_LRPC_LIST
 
 /*******************************************************/
@@ -78,6 +80,16 @@ LRPC_DECL_RES(DSM_LRPC_INVALIDATE_ACK,);
 
 LRPC_DECL_REQ(DSM_LRPC_SEND_DIFFS, unsigned long index;);
 LRPC_DECL_RES(DSM_LRPC_SEND_DIFFS,);
+  
+/*******************************************************/
+
+LRPC_DECL_REQ(DSM_LRPC_LOCK, dsm_mutex_t *mutex;);
+LRPC_DECL_RES(DSM_LRPC_LOCK,);
+  
+/*******************************************************/
+
+LRPC_DECL_REQ(DSM_LRPC_UNLOCK, dsm_mutex_t *mutex;);
+LRPC_DECL_RES(DSM_LRPC_UNLOCK,);
   
 /*******************************************************/
 

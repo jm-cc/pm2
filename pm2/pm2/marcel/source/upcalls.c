@@ -1,4 +1,19 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "sys/marcel_flags.h"
 #ifdef MA__ACTIVATION
 
@@ -44,37 +59,6 @@ void act_goto_next_task(marcel_t pid, int from)
 }
 
 void locked_start() {}
-
-static __inline__ long lock_safe_get_sp() __attribute__ ((unused));
-static __inline__ long lock_safe_get_sp()
-{
-  register long sp;
-
-  __asm__ __volatile__("movl %%esp, %0" : "=r" (sp));
-  return sp;
-}
-/******************************************************/
-/* WARNING : this code is duplicated in privatedefs.h */
-/* modify both place when you have to                 */
-/******************************************************/
-static __inline__ marcel_t lock_safe_marcel_self() __attribute__ ((unused));
-static __inline__ marcel_t lock_safe_marcel_self()
-{
-  register unsigned long sp = lock_safe_get_sp();
-
-#ifdef STANDARD_MAIN
-  if(IS_ON_MAIN_STACK(sp))
-    return &__main_thread_struct;
-  else
-#endif
-#ifdef ENABLE_STACK_JUMPING
-    return *((marcel_t *)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *))));
-#else
-    return (marcel_t)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE) -
-		      MAL(sizeof(task_desc)));
-#endif
-}
-/*************************************************/
 
 extern int hack_restart_func (act_proc_t new_proc, int return_value, 
 		  int param, long eip, long esp) asm ("hack_restart_func");
@@ -169,8 +153,8 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 			marcel_update_time(current);
 			lock_task();
 			marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
-			unlock_task();
 			ma__marcel_yield();
+			unlock_task();
 		}
 	}
 	
@@ -195,6 +179,28 @@ void act_unlock(marcel_t self)
 	//act_spin_unlock(&act_spinlock);
 }
 
+// A revoir...
+inline static marcel_t marcel_radical_next_task(void)
+{
+  marcel_t cur = marcel_self(), t;
+
+  DEFINE_CUR_LWP( , ,);
+
+  SET_CUR_LWP(GET_LWP(cur));
+
+  LOG_IN();
+
+  sched_lock(cur_lwp);
+
+  mdebug("upcall...%p on %p\n", cur, cur_lwp);
+  t = radical_next_task(NULL, cur_lwp);
+  SET_STATE_RUNNING(NULL, t, cur_lwp);
+  sched_unlock(cur_lwp);
+  
+  LOG_OUT();
+  return t;
+}
+
 void upcall_new(act_proc_t proc)
 {
  	marcel_t next;
@@ -213,7 +219,7 @@ void upcall_new(act_proc_t proc)
 	 * lock_start/lock_end
 	 * */
 
-	atomic_inc(&GET_LWP(lock_safe_marcel_self())->_locked);
+	atomic_inc(&GET_LWP(marcel_self())->_locked);
 	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
 	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
 	       GET_LWP_BY_NUM(proc)->number );

@@ -33,7 +33,14 @@
 
 /****************************************************************/
 #section functions
+/* ==== `sleep' functions ==== */
+
 void marcel_delay(unsigned long millisecs);
+
+/* ==== scheduler status ==== */
+
+unsigned marcel_nbthreads(void);
+unsigned long marcel_createdthreads(void);
 
 #section marcel_functions
 asmlinkage void marcel_sched_do_work(void);

@@ -122,6 +122,7 @@ static __inline__ void lwp_list_unlock_write(void)
 
 #section functions
 static __inline__ unsigned get_nb_lwps();
+unsigned marcel_nbvps(void);
 #section inline
 #depend "[marcel_variables]"
 static __inline__ unsigned get_nb_lwps()

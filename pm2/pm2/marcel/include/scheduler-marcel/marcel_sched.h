@@ -113,21 +113,12 @@ void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
 
 void marcel_change_vpmask(marcel_vpmask_t mask);
 
-
-/* ==== `sleep' functions ==== */
-
-void marcel_delay(unsigned long millisecs);
-
-
 /* ==== scheduler status ==== */
 
-unsigned marcel_nbvps(void);
-unsigned marcel_nbthreads(void);
 unsigned marcel_activethreads(void);
 unsigned marcel_sleepingthreads(void);
 unsigned marcel_blockedthreads(void);
 unsigned marcel_frozenthreads(void);
-unsigned long marcel_createdthreads(void);
 
 
 #section structures

@@ -39,6 +39,6 @@ case $1 in
     *) command=`pwd`/$*
 esac
 
-set `cat ${MADELEINE_ROOT}/.madconf`
+set `cat ${MADELEINE_ROOT}/.mad2_conf`
 
 exec rsh $1 $command

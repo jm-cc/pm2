@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_memory_management.c,v $
+Revision 1.3  2000/01/13 14:45:58  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+- mad_channel.c, madeleine.c: amelioration des fonctions `par defaut' au niveau
+  du support des drivers
+
 Revision 1.2  1999/12/15 17:31:28  oaumage
 Ajout de la commande de logging de CVS
 
@@ -52,24 +58,24 @@ ______________________________________________________________________________
 #define INITIAL_BUFFER_PAIR_NUM 64
 
 /* data structures */
-static p_mad_memory_t mad_buffer_memory;
-static p_mad_memory_t mad_buffer_group_memory;
-static p_mad_memory_t mad_buffer_pair_memory;
+static p_tbx_memory_t mad_buffer_memory;
+static p_tbx_memory_t mad_buffer_group_memory;
+static p_tbx_memory_t mad_buffer_pair_memory;
 
 /* functions */
 
-/* mad_memory_manager_init:
+/* tbx_memory_manager_init:
    initialize mad memory manager */
 void
 mad_memory_manager_init()
 {
-  mad_malloc_init(&mad_buffer_memory,
+  tbx_malloc_init(&mad_buffer_memory,
 		  sizeof(mad_buffer_t),
 		  INITIAL_BUFFER_NUM);  
-  mad_malloc_init(&mad_buffer_group_memory,
+  tbx_malloc_init(&mad_buffer_group_memory,
 		  sizeof(mad_buffer_group_t),
 		  INITIAL_BUFFER_GROUP_NUM);
-  mad_malloc_init(&mad_buffer_pair_memory,
+  tbx_malloc_init(&mad_buffer_pair_memory,
 		  sizeof(mad_buffer_pair_t),
 		  INITIAL_BUFFER_PAIR_NUM);
 }
@@ -77,21 +83,21 @@ mad_memory_manager_init()
 void
 mad_memory_manager_clean()
 {
-  mad_malloc_clean(mad_buffer_memory);
-  mad_malloc_clean(mad_buffer_group_memory);
-  mad_malloc_clean(mad_buffer_pair_memory);
+  tbx_malloc_clean(mad_buffer_memory);
+  tbx_malloc_clean(mad_buffer_group_memory);
+  tbx_malloc_clean(mad_buffer_pair_memory);
 }
 
 p_mad_buffer_t
 mad_alloc_buffer_struct()
 {
-  return mad_malloc(mad_buffer_memory);
+  return tbx_malloc(mad_buffer_memory);
 }
 
 void
 mad_free_buffer_struct(p_mad_buffer_t buffer)
 {
-  mad_free(mad_buffer_memory, buffer);
+  tbx_free(mad_buffer_memory, buffer);
 }
 
 void
@@ -104,25 +110,25 @@ mad_free_buffer(p_mad_buffer_t buffer)
 	  free(buffer->buffer);
 	}
     }
-  mad_free(mad_buffer_memory, buffer);
+  tbx_free(mad_buffer_memory, buffer);
 }
 
 p_mad_buffer_group_t
 mad_alloc_buffer_group_struct()
 {
-  return mad_malloc(mad_buffer_group_memory);
+  return tbx_malloc(mad_buffer_group_memory);
 }
 
 void
 mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group)
 {
-  mad_free(mad_buffer_group_memory, buffer_group);
+  tbx_free(mad_buffer_group_memory, buffer_group);
 }
 
 void
 mad_foreach_free_buffer_group_struct(void *object)
 {
-  mad_free(mad_buffer_group_memory, object);
+  tbx_free(mad_buffer_group_memory, object);
 }
 
 void
@@ -135,23 +141,23 @@ mad_foreach_free_buffer(void *object)
       free(buffer->buffer);
     }
 
-  mad_free(mad_buffer_memory, object);
+  tbx_free(mad_buffer_memory, object);
 }
 
 p_mad_buffer_pair_t
 mad_alloc_buffer_pair_struct()
 {
-  return mad_malloc(mad_buffer_pair_memory);
+  return tbx_malloc(mad_buffer_pair_memory);
 }
 
 void
 mad_free_buffer_pair_struct(p_mad_buffer_pair_t buffer_pair)
 {
-  mad_free(mad_buffer_pair_memory, buffer_pair);
+  tbx_free(mad_buffer_pair_memory, buffer_pair);
 }
 
 void
 mad_foreach_free_buffer_pair_struct(void *object)
 {
-  mad_free(mad_buffer_pair_memory, object);
+  tbx_free(mad_buffer_pair_memory, object);
 }

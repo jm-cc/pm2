@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.7  2000/10/31 16:21:14  oaumage
+- support de communications entre architectures heterogenes avec Mad2/TCP
+- correction de testandset pour Alpha
+
 Revision 1.6  2000/05/22 13:44:56  oaumage
 - ajout du support application_spawn & leonie_spawn
 
@@ -198,13 +202,13 @@ int main(int argc, char **argv)
 		   i < madeleine->configuration.size ;
 		   i++)
 		{
-		  int test_1 = 0;
-		  int test_2 = 0;
-		  int test_3 = 0;
-		  int test_4 = 0;
-		  int test_5 = 0;
-		  int test_6 = 0;
-		  int len = 0;
+		  char test_1 = 0;
+		  char test_2 = 0;
+		  char test_3 = 0;
+		  char test_4 = 0;
+		  char test_5 = 0;
+		  char test_6 = 0;
+		  char len = 0;
 		  p_mad_connection_t connection;
 
 		  /* mark the buffer */
@@ -214,46 +218,46 @@ int main(int argc, char **argv)
 	      
 		  mad_unpack(connection,
 			     &test_1,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_SAFER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data 1 : %d\n", test_1);
 		  
 		  mad_unpack(connection,
 			     &test_2,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_CHEAPER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data 2 : %d\n", test_2);
 
 		  mad_unpack(connection,
 			     &test_3,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_SAFER,
 			     mad_receive_CHEAPER);
 
 		  mad_unpack(connection,
 			     &test_4,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_CHEAPER,
 			     mad_receive_CHEAPER);
 
 		  mad_unpack(connection,
 			     &test_5,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_LATER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data 5 : %d\n", test_5);
 
 		  mad_unpack(connection,
 			     &test_6,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_LATER,
 			     mad_receive_CHEAPER);
 
 		  mad_unpack(connection,
 			     &len,
-			     sizeof(int),
+			     sizeof(char),
 			     mad_send_CHEAPER,
 			     mad_receive_EXPRESS);
 		  fprintf(stderr, "Express data (len) : %d\n", len);
@@ -280,13 +284,13 @@ int main(int argc, char **argv)
 	  else
 	    {
 	      /* Sender(s) */
-	      int test_1 = 1;
-	      int test_2 = 2;
-	      int test_3 = 3;
-	      int test_4 = 4;
-	      int test_5 = 5;
-	      int test_6 = 6;
-	      int len = 0 ;
+	      char test_1 = 1;
+	      char test_2 = 2;
+	      char test_3 = 3;
+	      char test_4 = 4;
+	      char test_5 = 5;
+	      char test_6 = 6;
+	      char len = 0 ;
 	      p_mad_connection_t connection;
 
 	      sprintf(str_buffer,
@@ -299,37 +303,37 @@ int main(int argc, char **argv)
 	  
 	      mad_pack(connection,
 		       &test_1,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_SAFER,
 		       mad_receive_EXPRESS);
 	      mad_pack(connection,
 		       &test_2,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_CHEAPER,
 		       mad_receive_EXPRESS);			     
 	      mad_pack(connection,
 		       &test_3,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_SAFER,
 		       mad_receive_CHEAPER);
 	      mad_pack(connection,
 		       &test_4,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_CHEAPER,
 		       mad_receive_CHEAPER);
 	      mad_pack(connection,
 		       &test_5,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_LATER,
 		       mad_receive_EXPRESS);
 	      mad_pack(connection,
 		       &test_6,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_LATER,
 		       mad_receive_CHEAPER);
 	      mad_pack(connection,
 		       &len,
-		       sizeof(int),
+		       sizeof(char),
 		       mad_send_CHEAPER,
 		       mad_receive_EXPRESS);
 	      mad_pack(connection,

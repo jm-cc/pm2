@@ -1,4 +1,4 @@
-## $Id: Makefile,v 1.9 2001/04/19 05:09:29 bouge Exp $
+## $Id: Makefile,v 1.10 2003/04/14 15:21:08 vdanjean Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -9,7 +9,7 @@ FIG2DEV= fig2dev
 
 XWDGOAL		:= ezflavor options
 
-.PHONY: all eps bbl dvi ps touch tar  clean open split emph $(XWDGOAL)
+.PHONY: all eps bbl dvi ps touch tar  clean distclean open split emph $(XWDGOAL)
 
 TEXFILES	:= appendicing.tex discovering.tex \
 		installing.tex mastering.tex title.tex \
@@ -113,11 +113,11 @@ $(PSFILES): %.ps: %.dvi
 
 ps: $(PSFILES) 
 
-clean: open
-	-rm *.bbl *.aux *.log *.cb *.ps *.blg *~ *.dvi *.toc 
-	-rm $(OFILES) $(EXEFILES)
-	-rm $(EMPHCFILES) $(EMPHCFILES_SPLIT_0) $(EMPHCFILES_SPLIT_1)
-##	-rm $(AUXEPSFILES)
+distclean clean: open
+	-$(RM) *.bbl *.aux *.log *.cb *.ps *.blg *~ *.dvi *.toc 
+	-$(RM) $(OFILES) $(EXEFILES)
+	-$(RM) $(EMPHCFILES) $(EMPHCFILES_SPLIT_0) $(EMPHCFILES_SPLIT_1)
+##	-$(RM) $(AUXEPSFILES)
 
 open:
 	-chmod -R a+rX . ./*

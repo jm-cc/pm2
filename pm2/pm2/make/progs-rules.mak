@@ -77,13 +77,6 @@ endif
 endif
 endif
 
-# En commentaires, ou pas en commentaires ... ?
-#$(PRG_GEN_STAMP)/$(PROGRAM)$(PRG_EXT): $(PRG_PRG)
-#	$(COMMON_HIDE) touch $@
-
-$(PRG_STAMP_FILE): 
-	$(COMMON_HIDE) touch $@
-
 $(PRG_DEPENDS): $(COMMON_DEPS) $(PRG_GEN_C_SOURCES) $(PRG_GEN_C_INC)
 $(PRG_OBJECTS): $(PRG_GEN_OBJ)/%.o: $(PRG_GEN_DEP)/%.d $(COMMON_DEPS)
 
@@ -148,8 +141,7 @@ prgclean:
 	$(COMMON_CLEAN) $(RM) $(PRG_GEN_OBJ)/*$(PRG_EXT).o \
 		$(PRG_GEN_DEP)/*$(PRG_EXT).d $(PRG_GEN_ASM)/*$(PRG_EXT).s \
 		$(PRG_GEN_SRC)/*$(PRG_EXT).c $(PRG_GEN_INC)/*$(PRG_EXT).h \
-		$(PRG_PRG) \
-		$(PRG_STAMP_FILE)
+		$(PRG_PRG)
 
 repclean:
 	@for rep in $(PRG_REP_TO_BUILD); do \
@@ -159,7 +151,7 @@ repclean:
 	done
 
 distclean:
-	$(COMMON_CLEAN)$(RM) -r build $(PRG_GEN_STAMP)/prgstamp-$(PROGRAM)*
+	$(COMMON_CLEAN)$(RM) -r build
 	@set -e; 
 
 .PHONY: help bannerhelpprg targethelpprg

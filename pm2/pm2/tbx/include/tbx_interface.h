@@ -19,8 +19,8 @@
  * --------------------
  */
 
-#ifndef __TBX_INTERFACE_H
-#define __TBX_INTERFACE_H
+#ifndef TBX_INTERFACE_H
+#define TBX_INTERFACE_H
 
 /* 
  * Common

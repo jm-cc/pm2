@@ -150,7 +150,7 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
 }
 
 /* Fonction du thread run_task pour le démarrage d'un LWP
- *
+ * 
  * Dans ce cas des activations, on appelle directement
  * marcel_lwp_start depuis un upcall
  */
@@ -205,10 +205,15 @@ static void *lwp_kthread_start_func(void *arg)
 
 unsigned marcel_lwp_add_vp(void)
 {
-  marcel_lwp_t *lwp = (marcel_lwp_t *)__TBX_MALLOC(sizeof(marcel_lwp_t) + __ma_per_lwp_size, __FILE__, __LINE__),
+  marcel_lwp_t *lwp,
           *cur_lwp = GET_LWP(marcel_self());
 
   LOG_IN();
+
+  // TODO: allouer cette mémoire sur la bonne QBB pour NUMA
+  lwp = (marcel_lwp_t *)TBX_MALLOC(sizeof(marcel_lwp_t)
+				   + __ma_per_lwp_size);
+  memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
 
   // Initialisation de la structure marcel_lwp_t
   ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
@@ -292,8 +297,6 @@ static void lwp_init(ma_lwp_t lwp)
 
 	LOG_IN();
 
-	memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
-
 #ifdef MA__SMP
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
@@ -361,6 +364,11 @@ static void lwp_init(ma_lwp_t lwp)
 		marcel_attr_setstacksize(&attr, stsize);
 	}
 #endif
+	/* On passe lwp_start_func() comme fonction, mais seul le LWP
+	 * 0 l'exécutera. Les autres LWP en SMP utiliseront ce thread
+	 * pour exécuter lwp_kthread_start_func().
+	 * En mode act-smp, ce thread sera aussi exécuté normalement.
+	 */
 	marcel_create_special(&(ma_per_lwp(run_task, lwp)), &attr, lwp_start_func, NULL);
 	SET_LWP(ma_per_lwp(run_task, lwp), lwp);
 	ma_barrier();
@@ -412,10 +420,6 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 #endif
 }
 
-inline static void marcel_lwp_bind_on_processor(marcel_lwp_t *lwp) {
-	return bind_on_processor(lwp);
-}
-
 #endif /* MA__SMP */
 
 static int lwp_start(ma_lwp_t lwp)
@@ -437,9 +441,9 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(lwp, 300, "Initialisation",
 				  lwp_init, "Création de RunTask",
 				  lwp_start, "PROF_NEW et bind_on_proc");
 
-MA_LWP_NOTIFIER_CALL_ONLINE(lwp, MA_INIT_LWP);
 MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(lwp, MA_INIT_LWP_MAIN_STRUCT,
 				     MA_INIT_LWP_MAIN_STRUCT_PRIO);
+MA_LWP_NOTIFIER_CALL_ONLINE(lwp, MA_INIT_LWP);
 
 void __init marcel_lwp_finished(void)
 {

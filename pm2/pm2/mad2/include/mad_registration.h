@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_registration.h,v $
+Revision 1.3  2000/01/10 10:19:42  oaumage
+- mad_macros.h: modification de la macro de commande de trace
+
 Revision 1.2  1999/12/15 17:31:25  oaumage
 Ajout de la commande de logging de CVS
 
@@ -47,7 +50,6 @@ ______________________________________________________________________________
 
 #ifndef MAD_REGISTRATION_H
 #define MAD_REGISTRATION_H
-
 /*
  * Protocol module identifier
  * --------------------------

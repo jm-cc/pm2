@@ -1,21 +1,12 @@
 
-case " $PM2_MARCEL_CFLAGS " in
-    *\ -DMARCEL_SMP\ *)
-	# Shall we use pthread ?
-	case " $PM2_MARCEL_CFLAGS_KERNEL " in
-	    *\ -DMARCEL_DONT_USE_POSIX_THREADS\ *)
-		# No
-		;;
-	    *)
-		# Yes, we should
-		PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_REENTRANT"
-		PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lpthread"
-		if [ "$PM2_SYS" = LINUX_SYS ]; then
-		    PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$HOME/lib/libpthread.so"
-		fi
-		;;
-	esac
-	;;
-    *)
-	;;
-esac
+if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS ; then
+    # Shall we use pthread ?
+    if not_defined_in MARCEL_DONT_USE_POSIX_THREADS PM2_MARCEL_CFLAGS_KERNEL ; then
+	# Yes, we should
+	PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_REENTRANT"
+	PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lpthread"
+	if [ "$PM2_SYS" = LINUX_SYS ]; then
+	    PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$PM2_ROOT/lib/$PM2_SYS/$PM2_ARCH/libpthread.so"
+	fi
+    fi
+fi

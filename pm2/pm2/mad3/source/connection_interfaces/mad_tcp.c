@@ -365,7 +365,7 @@ mad_tcp_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
   lnk->link_mode   = mad_link_mode_buffer_group;
-  /*  lnk->link_mode   = mad_link_mode_buffer; */
+  /* lnk->link_mode   = mad_link_mode_buffer; */
   lnk->buffer_mode = mad_buffer_mode_dynamic;
   lnk->group_mode  = mad_group_mode_aggregate;
   LOG_OUT();
@@ -710,7 +710,7 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
       tbx_list_reference_t            ref;
 
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
-      
+
       {
 	struct iovec array[buffer_group->buffer_list.length];
 	int          i     = 0;
@@ -718,7 +718,7 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
 	do
 	  {
 	    p_mad_buffer_t buffer = NULL;
-	    
+
 	    buffer = tbx_get_list_reference_object(&ref);
 	    array[i].iov_base = buffer->buffer;
 	    array[i].iov_len  = buffer->bytes_written - buffer->bytes_read;
@@ -753,7 +753,7 @@ mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
 	do
 	  {
 	    p_mad_buffer_t buffer = NULL;
-	    
+
 	    buffer = tbx_get_list_reference_object(&ref);
 	    array[i].iov_base = buffer->buffer;
 	    array[i].iov_len  = buffer->length - buffer->bytes_written;

@@ -45,6 +45,7 @@ typedef struct { /* Should be a union */
 
 static void unix_io_group(marcel_pollid_t id)
 {
+#ifndef MARCEL_DO_NOT_GROUP_TCP
   unix_io_arg_t *myarg;
 
   unix_io_args.nb = 0;
@@ -82,11 +83,28 @@ static void unix_io_group(marcel_pollid_t id)
       RAISE(PROGRAM_ERROR);
     }
   }
+#endif
 }
+
+static void *unix_io_fast_poll(marcel_pollid_t id, any_t arg, boolean first_call);
 
 static void *unix_io_poll(marcel_pollid_t id,
 			  unsigned active, unsigned sleeping, unsigned blocked)
 {
+#ifdef MARCEL_DO_NOT_GROUP_TCP
+  unix_io_arg_t *myarg;
+  void* res;
+
+  FOREACH_POLL(id, myarg) {
+    res=unix_io_fast_poll(id, myarg, 1);
+    if (res) {
+      return res;
+    }
+  }
+  return MARCEL_POLL_FAILED;
+
+#else /* MARCEL_DO_NOT_GROUP_TCP */
+
   unix_io_arg_t *myarg;
   int r;
   fd_set rfds, wfds;
@@ -168,6 +186,8 @@ static void *unix_io_poll(marcel_pollid_t id,
   }
 
   return MARCEL_POLL_FAILED;
+
+#endif /* MARCEL_DO_NOT_GROUP_TCP */
 }
 
 static void *unix_io_fast_poll(marcel_pollid_t id, any_t arg, boolean first_call)
@@ -261,7 +281,7 @@ void marcel_io_init()
 					unix_io_poll,
 					unix_io_fast_poll,
 					MARCEL_POLL_AT_TIMER_SIG 
-					| MARCEL_POLL_AT_YIELD );
+					| MARCEL_POLL_AT_YIELD);
 }
 
 int marcel_read(int fildes, void *buf, size_t nbytes)

@@ -255,7 +255,7 @@ if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
     PM2_CONFIG_SOURCEABLE=yes
 
     set -- --source-mode
-    . ${PM2_ROOT}/bin/pm2-fast-config $*
+    . ${PM2_ROOT}/bin/pm2-fast-config
 else
     PM2_CONFIG="${PM2_ROOT}/bin/pm2-config --flavor=$PM2_FLAVOR"
 fi

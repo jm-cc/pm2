@@ -34,6 +34,19 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.18  2000/03/01 16:44:54  oaumage
+- get_mad_root --> mad_get_mad_root
+- correction du passage du chemin de l'application
+
+Revision 1.17  2000/03/01 14:15:50  oaumage
+- correction sur get_mad_root
+
+Revision 1.16  2000/03/01 14:09:07  oaumage
+- prise en compte d'un fichier de configuration par defaut
+
+Revision 1.15  2000/03/01 11:00:53  oaumage
+- suppression de mad_get_root en compilation standalone
+
 Revision 1.14  2000/02/28 11:06:17  rnamyst
 Changed #include "" into #include <>.
 
@@ -277,9 +290,7 @@ static void
 mad_parse_command_line(int                *argc,
 		       char              **argv,
 		       p_mad_madeleine_t   madeleine,
-#ifdef PM2
 		       char               *conf_file,
-#endif /* PM2 */
 		       p_tbx_bool_t        master,
 		       p_tbx_bool_t        slave)
 {
@@ -311,17 +322,18 @@ mad_parse_command_line(int                *argc,
 	  madeleine->configuration.local_host_id = atoi(argv[i + 1]);
 	  i++;
 	}
-#ifdef PM2
       else if (!strcmp(argv[i], "-conf"))
 	{
 	  if (i == ((*argc) - 1))
 	    FAILURE("-conf must be followed "
 		    "by the path of mad2 root directory");
 
+	  if (!conf_file)
+	    FAILURE("configuration file already specified");
+	  
 	  sprintf(conf_file, "%s/.mad2_conf", argv[i + 1]);
 	  i++;
 	}
-#endif /* PM2 */
 #ifndef EXTERNAL_SPAWN
       else if (!strcmp(argv[i], "-device"))
 	{
@@ -358,7 +370,7 @@ mad_parse_command_line(int                *argc,
   LOG_OUT();
 }
 
-static char *get_mad_root(void)
+static char *mad_get_mad_root(void)
 {
   static char buf[1024];
   char *ptr;
@@ -375,7 +387,8 @@ static char *get_mad_root(void)
 static void
 mad_master_spawn(int                    *argc,
 		 char                  **argv,
-		 p_mad_configuration_t   configuration)
+		 p_mad_configuration_t   configuration,
+		 tbx_bool_t              conf_spec)
 {
   /* Spawn the master mad2 process */
   int    i;
@@ -419,30 +432,36 @@ mad_master_spawn(int                    *argc,
   
   if (argv[0][0] != '/')
     {
-#ifdef PM2
-      sprintf(cmd,
-	      "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
-	      configuration->host_name[0],
-	      cwd, argv[0], cwd, 0, get_mad_root(), arg_str);
-#else /* PM2 */
-      sprintf(cmd,
-	      "rsh %s %s/%s -master -cwd %s -rank %d %s",
-	      configuration->host_name[0],
-	      cwd, argv[0], cwd, 0, arg_str);
-#endif /* PM2 */
+      if (conf_spec)
+	{ 
+	  sprintf(cmd,
+		  "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
+		  configuration->host_name[0],
+		  cwd, argv[0], cwd, 0, mad_get_mad_root(), arg_str);
+	}
+      else
+	{ 
+	  sprintf(cmd,
+		  "rsh %s %s/%s -master -cwd %s -rank %d %s",
+		  configuration->host_name[0],
+		  cwd, argv[0], cwd, 0, arg_str);
+	}
     }
   else
     {
-#ifdef PM2
-      sprintf(cmd,
-	      "rsh %s %s -master -rank %d -conf %s %s",
-	      configuration->host_name[0],
-	      argv[0], 0, get_mad_root(), arg_str);
-#else /* PM2 */
-      sprintf(cmd,
-	      "rsh %s %s -master -rank %d %s",
-	      configuration->host_name[0], argv[0], 0, arg_str);
-#endif /* PM2 */
+      if (conf_spec)
+	{
+	  sprintf(cmd,
+		  "rsh %s %s -master -rank %d -conf %s %s",
+		  configuration->host_name[0],
+		  argv[0], 0, mad_get_mad_root(), arg_str);
+	}
+      else
+	{ 
+	  sprintf(cmd,
+		  "rsh %s %s -master -rank %d %s",
+		  configuration->host_name[0], argv[0], 0, arg_str);
+	}
     }
   LOG_STR("Loader cmd", cmd);
   system(cmd);
@@ -453,6 +472,7 @@ mad_master_spawn(int                    *argc,
 static void
 mad_slave_spawn(int                *argc,
 		char              **argv,
+		tbx_bool_t          conf_spec,
 		p_mad_madeleine_t   madeleine)
 {
   p_mad_configuration_t   configuration = &(madeleine->configuration);
@@ -510,52 +530,59 @@ mad_slave_spawn(int                *argc,
     {
       if (argv[0][0] != '/')
 	{
-#ifdef PM2
-	  sprintf(cmd,
-		  "rsh %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
-		  configuration->host_name[i],
-		  cwd,
-		  argv[0],
-		  cwd,
-		  i,  /* rank */
-		  get_mad_root(),
-		  arg_str);
-#else /* PM2 */
-	  sprintf(cmd,
-		  "rsh %s %s/%s -slave -cwd %s -rank %d %s &",
-		  configuration->host_name[i],
-		  cwd,
-		  argv[0],
-		  cwd,
-		  i,  /* rank */
-		  arg_str);
-#endif /* PM2 */
+	  if (conf_spec)
+	    {
+	      sprintf(cmd,
+		      "rsh %s %s/%s -slave -cwd %s -rank %d -conf %s %s &",
+		      configuration->host_name[i],
+		      cwd,
+		      argv[0],
+		      cwd,
+		      i,  /* rank */
+		      mad_get_mad_root(),
+		      arg_str);
+	    }
+	  else
+	    {
+	      
+	      sprintf(cmd,
+		      "rsh %s %s/%s -slave -cwd %s -rank %d %s &",
+		      configuration->host_name[i],
+		      cwd,
+		      argv[0],
+		      cwd,
+		      i,  /* rank */
+		      arg_str);
+	    }	  
 	}
       else
 	{
-#ifdef PM2
-	  sprintf(cmd,
-		  "rsh %s %s -slave -cwd %s -rank %d -conf %s %s &",
-		  configuration->host_name[i],
-		  argv[0],
-		  cwd,
-		  i,  /* rank */
-		  get_mad_root(),
-		  arg_str);
-#else /* PM2 */
-	  sprintf(cmd,
-		  "rsh %s %s -slave -cwd %s -rank %d %s &",
-		  configuration->host_name[i],
-		  argv[0],
-		  cwd,
-		  i,  /* rank */
-		  arg_str);
-#endif /* PM2 */
+	  if (conf_spec)
+	    {
+	      sprintf(cmd,
+		      "rsh %s %s -slave -cwd %s -rank %d -conf %s %s &",
+		      configuration->host_name[i],
+		      argv[0],
+		      cwd,
+		      i,  /* rank */
+		      mad_get_mad_root(),
+		      arg_str);
+	    }
+	  else
+	    {
+	      
+	      sprintf(cmd,
+		      "rsh %s %s -slave -cwd %s -rank %d %s &",
+		      configuration->host_name[i],
+		      argv[0],
+		      cwd,
+		      i,  /* rank */
+		      arg_str);
+	    }
 	}
 	    
       LOG_STR("mad_init: Spawn", cmd);
-      system(cmd);
-	
+      system(cmd);	
     }
   free(cwd);
   free(cmd);
@@ -617,6 +644,7 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine)
 #else /* EXTERNAL SPAWN */
 static void
 mad_connect_hosts(p_mad_madeleine_t   madeleine,
+		  tbx_bool_t          conf_spec,
 		  int                *argc,
 		  char              **argv)
 {
@@ -640,7 +668,7 @@ mad_connect_hosts(p_mad_madeleine_t   madeleine,
 
   if (rank == 0)
     {
-      mad_slave_spawn(argc, argv, madeleine);
+      mad_slave_spawn(argc, argv, conf_spec, madeleine);
     }
  
   for (ad = 0;
@@ -676,18 +704,7 @@ mad_read_conf(p_mad_configuration_t   configuration,
       exit(1);
     }
 
-#ifdef PM2
-  {
-    int ret; 
-    char command[128];
-
-    sprintf(command, "exit `cat %s | wc -w`", configuration_file);     
-    ret = system(command);
-    configuration->size = WEXITSTATUS(ret);
-  }
-#else /* PM2 */
   fscanf(f, "%d", &(configuration->size));
-#endif /* PM2 */
   configuration->host_name = malloc(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
 
@@ -790,14 +807,16 @@ mad_init(int                   *argc,
   p_mad_driver_interface_t   spawn_interface = NULL;
   p_mad_adapter_t            spawn_adapter   = NULL;
 #endif /* EXTERNAL_SPAWN */
-#ifdef PM2
   char                       conf_file[128];
-  
-  configuration_file = conf_file;
-  sprintf(conf_file, "%s/.mad2_conf", get_mad_root());
-#endif /* PM2 */
+  tbx_bool_t                 conf_spec = tbx_false;
 
   LOG_IN(); 
+  if (!configuration_file)
+    {    
+      configuration_file = conf_file;
+      sprintf(conf_file, "%s/.mad2_conf", mad_get_mad_root());
+      conf_spec = tbx_true;
+    }  
 
 #ifdef PM2  
   marcel_init(argc, argv);
@@ -823,14 +842,24 @@ mad_init(int                   *argc,
     spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
 #endif /* EXTERNAL_SPAWN */
   
-  mad_parse_command_line(argc,
-			 argv,
-			 madeleine,
-#ifdef PM2
-			 conf_file,
-#endif /* PM2 */
-			 &master,
-			 &slave);
+  if (conf_spec)
+    {      
+      mad_parse_command_line(argc,
+			     argv,
+			     madeleine,
+			     conf_file,
+			     &master,
+			     &slave);
+    }
+  else
+    {
+      mad_parse_command_line(argc,
+			     argv,
+			     madeleine,
+			     NULL,
+			     &master,
+			     &slave);
+    }
   
 #ifdef EXTERNAL_SPAWN
   spawn_interface->configuration_init(spawn_adapter, configuration);
@@ -858,7 +887,8 @@ mad_init(int                   *argc,
     {
       mad_master_spawn(argc,
 		       argv,
-		       configuration);
+		       configuration,
+		       conf_spec);
     }
 #endif /* EXTERNAL SPAWN */
 
@@ -878,7 +908,7 @@ mad_init(int                   *argc,
 #ifdef EXTERNAL_SPAWN
   mad_connect_hosts(madeleine);
 #else /* EXTERNAL_SPAWN */
-  mad_connect_hosts(madeleine, argc, argv);
+  mad_connect_hosts(madeleine, conf_spec, argc, argv);
 #endif /* EXTERNAL_SPAWN */
   tbx_list_init(&(madeleine->channel));
 

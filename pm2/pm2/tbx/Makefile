@@ -93,6 +93,12 @@ TBX_DEPENDS	:=	($strip $(TBX_REG_DEPENDS))
 
 TBX_DEP_TO_OBJ	=	$(TBX_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
 
+ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(wildcard $(TBX_DEPENDS)),$(TBX_DEPENDS))
+include $(TBX_DEPENDS)
+endif
+endif
+
 $(TBX_OBJECTS): $(TBX_OBJ)/%.o: $(TBX_DEP)/%.d
 $(TBX_DEPENDS): $(PM2_MAKEFILE)
 

@@ -32,7 +32,7 @@ static int infile=0;
 
 /*ND(_IO_flockfile) ND(_IO_ftrylockfile) ND(_IO_funlockfile)*/ 
 /*ND(__close) ND(__connect) ND(__fcntl) ND(__lseek) ND(__open) ND(__read) ND(__send) ND(__wait)*/ 
-/*ND(__errno_location)*/ ND(__h_errno_location) 
+/*ND(__errno_location) ND(__h_errno_location)*/ 
 /*ND(__pthread_atfork) ND(__pthread_initialize) ND(__pthread_getspecific)*/ 
 /*ND(__pthread_key_create) ND(__pthread_mutex_destroy) ND(__pthread_mutex_init)*/ 
 /*ND(__pthread_mutex_lock) ND(__pthread_mutex_trylock) ND(__pthread_mutex_unlock)*/ 
@@ -91,7 +91,7 @@ ND(sem_close) ND(sem_open) ND(sem_unlink)
 /*ND(__pthread_rwlock_init) ND(__pthread_rwlock_destroy) ND(__pthread_rwlock_rdlock)*/ 
 /*ND(__pthread_rwlock_tryrdlock) ND(__pthread_rwlock_wrlock)*/ 
 /*ND(__pthread_rwlock_trywrlock) ND(__pthread_rwlock_unlock)*/ 
-ND(__res_state) 
+/*ND(__res_state)*/ 
 /*ND(open64) ND(__open64) 
 ND(pread) ND(__pread64) ND(pread64) ND(pwrite) ND(__pwrite64) ND(pwrite64) ND(lseek64)*/ 
 ND(pthread_attr_getstack) ND(pthread_attr_setstack) 

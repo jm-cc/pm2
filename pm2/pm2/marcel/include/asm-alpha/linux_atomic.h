@@ -150,6 +150,9 @@ static __inline__ long ma_atomic_add_return(int i, ma_atomic_t * v)
 	return result;
 }
 
+#section marcel_macros
+#define ma_atomic_add_negative(a, v)	(ma_atomic_add_return((a), (v)) < 0)
+
 #section marcel_functions
 static __inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v);
 #section marcel_inline

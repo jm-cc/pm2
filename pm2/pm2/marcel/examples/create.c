@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <marcel.h>
+#include "marcel.h"
 #include <stdio.h>
 #include <sys/time.h>
 

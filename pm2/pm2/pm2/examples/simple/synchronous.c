@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include <pm2.h>
+#include "pm2.h"
 
 static unsigned SAMPLE;
 
@@ -64,7 +64,7 @@ int pm2_main(int argc, char **argv)
     exit(1);
   }
 
-  if(pm2_self() == 0) { /* first process */
+  if(pm2_self() == 0) {
     pm2_completion_t c;
 
     pm2_completion_init(&c, NULL, NULL);

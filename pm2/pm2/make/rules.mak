@@ -33,64 +33,50 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-ifeq ($(COMMON_USE_EXTENSION),yes)
-COMMON_EXTRA_DEP	:=
-COMMON_EXT		:=	$(COMMON_TEMPO_EXT)
-else
-COMMON_EXT		:=
-endif
+# CFLAGS et LDFLAGS
+PM2_CC      :=  $(COMMON_CC)
+PM2_AS      :=  $(COMMON_AS)
+PM2_CFLAGS  :=  $(COMMON_CFLAGS)
+PM2_KCFLAGS :=  $(PM2_CFLAGS) -DPM2_KERNEL 
+PM2_LDFLAGS :=  $(COMMON_LDFLAGS)
+PM2_ASFLAGS :=  $(COMMON_ASFLAGS)
 
-include $(MARCEL_ROOT)/make/rules.mak
-
-ifeq ($(MAD2),yes)
-$(error Not yet implemented)
-else
-include $(MAD1_ROOT)/make/rules.mak
-endif
-
-ifeq ($(PM2_USE_DSM),yes)
-include $(DSM_ROOT)/make/rules.mak
+# Target subdirectories
+PM2_GEN_OBJ :=  $(GEN_OBJ)/pm2
+PM2_GEN_ASM :=  $(GEN_ASM)/pm2
+PM2_GEN_DEP :=  $(GEN_DEP)/pm2
+ifneq ($(MAKECMDGOALS),distclean)
+DUMMY_BUILD :=  $(shell mkdir -p $(PM2_GEN_DEP))
+DUMMY_BUILD :=  $(shell mkdir -p $(PM2_GEN_ASM))
+DUMMY_BUILD :=  $(shell mkdir -p $(PM2_GEN_OBJ))
 endif
 
 # Sources
-PM2_C_SOURCES	:=	$(wildcard $(PM2_SRC)/*.c)
-PM2_S_SOURCES	:=	$(wildcard $(PM2_SRC)/*.S)
+PM2_C_SOURCES :=  $(wildcard $(PM2_SRC)/*.c)
+PM2_S_SOURCES :=  $(wildcard $(PM2_SRC)/*.S)
 
 # Objets
-PM2_C_OBJECTS	:=	$(patsubst %.c,%$(COMMON_EXT).o,$(subst $(PM2_SRC),$(PM2_OBJ),$(PM2_C_SOURCES)))
-PM2_S_OBJECTS	:=	$(patsubst %.S,%$(COMMON_EXT).o,$(subst $(PM2_SRC),$(PM2_OBJ),$(PM2_S_SOURCES)))
-PM2_OBJECTS	:=	$(PM2_C_OBJECTS) $(PM2_S_OBJECTS)
+PM2_C_OBJECTS :=  $(patsubst %.c,%.o,$(subst $(PM2_SRC),$(PM2_GEN_OBJ),$(PM2_C_SOURCES)))
+PM2_S_OBJECTS :=  $(patsubst %.S,%.o,$(subst $(PM2_SRC),$(PM2_GEN_OBJ),$(PM2_S_SOURCES)))
+PM2_OBJECTS   :=  $(PM2_C_OBJECTS) $(PM2_S_OBJECTS)
 
 # Dependances
-PM2_C_DEPENDS	:=	$(patsubst %.o,%.d,$(subst $(PM2_OBJ),$(PM2_DEP),$(PM2_C_OBJECTS)))
-PM2_S_DEPENDS	:=	$(patsubst %.o,%.d,$(subst $(PM2_OBJ),$(PM2_DEP),$(PM2_S_OBJECTS)))
-PM2_DEPENDS	:=	$(strip $(PM2_C_DEPENDS) $(PM2_S_DEPENDS))
+PM2_C_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(PM2_GEN_OBJ),$(PM2_GEN_DEP),$(PM2_C_OBJECTS)))
+PM2_S_DEPENDS :=  $(patsubst %.o,%.d,$(subst $(PM2_GEN_OBJ),$(PM2_GEN_DEP),$(PM2_S_OBJECTS)))
+PM2_DEPENDS   :=  $(strip $(PM2_C_DEPENDS) $(PM2_S_DEPENDS))
 
 # "Convertisseurs" utiles
-PM2_DEP_TO_OBJ	=	$(PM2_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
-PM2_OBJ_TO_S	=	$(PM2_SRC)/$(patsubst %$(COMMON_EXT).o,%.s,$(notdir $@))
+PM2_DEP_TO_OBJ =  $(PM2_GEN_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
+PM2_OBJ_TO_S   =  $(PM2_GEN_ASM)/$(patsubst %.o,%.s,$(notdir $@))
 
-# Affichage
-ifeq ($(PM2_MAK_VERB),verbose)
-PM2_PREFIX	:=	
-PM2_HIDE	:=	
+ifeq ($(MAK_VERB),quiet)
+PM2_PREFIX =  @ echo "   PM2: building" $(@F) ;
 else
-ifeq ($(PM2_MAK_VERB),normal)
-PM2_PREFIX	:=	
-PM2_HIDE	=	@
-else
-ifeq ($(PM2_MAK_VERB),quiet)
-PM2_PREFIX	=	@ echo "   PM2: building" $(@F) ;
-PM2_HIDE	:=	@
-else  # silent
-PM2_PREFIX	=	@
-PM2_HIDE	:=	@
-endif
-endif
+PM2_PREFIX =  $(COMMON_PREFIX)
 endif
 
 .PHONY: pm2_default
-pm2_default: $(PM2_LIB)
+pm2_default: $(PM2_LIB) marcel_default dsm_default mad_default tbx_default ntbx_default
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(PM2_DEPENDS)),$(PM2_DEPENDS))
@@ -98,109 +84,32 @@ include $(PM2_DEPENDS)
 endif
 endif
 
-$(PM2_EXTRA_DEP_FILE):
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/.opt*
-	$(PM2_HIDE) cp /dev/null $(PM2_EXTRA_DEP_FILE)
-
-$(PM2_OBJECTS): $(PM2_OBJ)/%.o: $(PM2_DEP)/%.d $(COMMON_MAKEFILES)
-$(PM2_DEPENDS): $(COMMON_MAKEFILES)
+$(PM2_DEPENDS): $(COMMON_DEPS)
+$(PM2_OBJECTS): $(PM2_GEN_OBJ)/%.o: $(PM2_GEN_DEP)/%.d $(COMMON_DEPS)
 
 $(PM2_LIB_A): $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_LIB_A)
-	$(PM2_HIDE) rm -f $(PM2_LIB_SO)
+	$(COMMON_HIDE) rm -f $(PM2_LIB_A)
 	$(PM2_PREFIX) ar cr $(PM2_LIB_A) $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user*.mak
-	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_USER_MAK)
-	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_USER_MAK)
 
 $(PM2_LIB_SO): $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_LIB_A)
-	$(PM2_HIDE) rm -f $(PM2_LIB_SO)
+	$(COMMON_HIDE) rm -f $(PM2_LIB_SO)
 	$(PM2_PREFIX) ld -Bdynamic -shared -o $(PM2_LIB_SO) $(PM2_OBJECTS)
-	$(PM2_HIDE) rm -f $(PM2_ROOT)/make/user*.mak
-	$(PM2_HIDE) echo PM2_CFLAGS = $(COMMON_CFLAGS) > $(PM2_USER_MAK)
-	$(PM2_HIDE) echo PM2_LDFLAGS = $(COMMON_LDFLAGS) >> $(PM2_USER_MAK)
 
-$(PM2_C_OBJECTS): $(PM2_OBJ)/%$(COMMON_EXT).o: $(PM2_SRC)/%.c
+$(PM2_C_OBJECTS): $(PM2_GEN_OBJ)/%.o: $(PM2_SRC)/%.c
 	$(PM2_PREFIX) $(PM2_CC) $(PM2_KCFLAGS) -c $< -o $@
 
-$(PM2_C_DEPENDS): $(PM2_DEP)/%$(COMMON_EXT).d: $(PM2_SRC)/%.c
+$(PM2_C_DEPENDS): $(PM2_GEN_DEP)/%.d: $(PM2_SRC)/%.c
 	$(PM2_PREFIX) $(SHELL) -ec '$(PM2_CC) -MM $(PM2_KCFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(PM2_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
-$(PM2_S_OBJECTS): $(PM2_OBJ)/%$(COMMON_EXT).o: $(PM2_SRC)/%.S
-	$(PM2_HIDE) $(PM2_CC) -E -P $(PM2_ASFLAGS) $< > $(PM2_OBJ_TO_S)
+$(PM2_S_OBJECTS): $(PM2_GEN_OBJ)/%.o: $(PM2_SRC)/%.S
+	$(COMMON_HIDE) $(PM2_CC) -E -P $(PM2_ASFLAGS) $< > $(PM2_OBJ_TO_S)
 	$(PM2_PREFIX) $(PM2_AS) $(PM2_ASFLAGS) -c $(PM2_OBJ_TO_S) -o $@
-	$(PM2_HIDE) rm -f $(PM2_OBJ_TO_S)
 
-$(PM2_S_DEPENDS): $(PM2_DEP)/%$(COMMON_EXT).d: $(PM2_SRC)/%.S
+$(PM2_S_DEPENDS): $(PM2_GEN_DEP)/%.d: $(PM2_SRC)/%.S
 	$(PM2_PREFIX) $(SHELL) -ec '$(PM2_CC) -MM $(PM2_KCFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(PM2_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
-.PHONY: pm2clean pm2distclean
-pm2clean:
-		$(PM2_HIDE) rm -f $(wildcard $(PM2_LIBD)/*.a $(PM2_OBJ)/*.o \
-		$(PM2_DEP)/*.d \
-		$(PM2_ROOT)/examples/*/depend/*.d \
-		$(PM2_ROOT)/examples/*/obj/$(PM2_ARCH_SYS)/*.o \
-		$(PM2_ROOT)/examples/*/bin/$(PM2_ARCH_SYS)/* \
-		$(PM2_ROOT)/console/bin/$(PM2_ARCH_SYS)/* \
-		$(PM2_ROOT)/console/text/obj/$(PM2_ARCH_SYS)/*.o \
-		$(PM2_ROOT)/console/graphic/obj/$(PM2_ARCH_SYS)/*.o \
-		$(PM2_ROOT)/.opt* \
-		$(PM2_ROOT)/make/user*.mak)
-
-pm2distclean:
-		$(PM2_HIDE) rm -rf $(wildcard $(PM2_ROOT)/lib \
-		$(PM2_ROOT)/source/obj \
-		$(PM2_ROOT)/source/depend \
-		$(PM2_ROOT)/examples/*/depend \
-		$(PM2_ROOT)/examples/*/obj \
-		$(PM2_ROOT)/examples/*/bin \
-		$(PM2_ROOT)/console/bin \
-		$(PM2_ROOT)/console/text/obj \
-		$(PM2_ROOT)/console/graphic/obj \
-		$(PM2_ROOT)/.opt* \
-		$(PM2_ROOT)/make/user*.mak)
-
-
-######################## Applications ########################
-
-ifdef SRC_DIR
-
-# Sources, objets et dependances
-SOURCES	:=	$(wildcard $(SRC_DIR)/*.c)
-OBJECTS	:=	$(patsubst %.c,%$(COMMON_EXT).o,$(subst $(SRC_DIR),$(OBJ_DIR),$(SOURCES)))
-DEPENDS	:=	$(patsubst %.c,%$(COMMON_EXT).d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
-
-# Convertisseurs utiles
-DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(wildcard $(DEPENDS)),)
-include $(wildcard $(DEPENDS))
-endif
-endif
-
-
-$(DEPENDS): $(COMMON_MAKEFILES)
-$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d $(COMMON_MAKEFILES)
-
-
-$(OBJ_DIR)/%$(COMMON_EXT).o: $(SRC_DIR)/%.c
-	$(PM2_PREFIX) $(PM2_CC) $(PM2_CFLAGS) $(PM2_APP_CFLAGS) -c $< -o $@
-
-$(DEPENDS): $(DEP_DIR)/%$(COMMON_EXT).d: $(SRC_DIR)/%.c
-	$(PM2_PREFIX) $(SHELL) -ec '$(PM2_CC) -MM $(PM2_CFLAGS) $(PM2_APP_CFLAGS) $< \
-		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
-
-
-$(BIN_DIR)/%: $(OBJ_DIR)/%$(COMMON_EXT).o $(COMMON_LIBS)
-	$(PM2_PREFIX) $(PM2_CC) $(PM2_CFLAGS) $(PM2_APP_LDFLAGS) $^ -o $@$(COMMON_EXT) $(PM2_LDFLAGS)
-
-%: $(BIN_DIR)/% ;
-
-endif
-
+##############################################################################

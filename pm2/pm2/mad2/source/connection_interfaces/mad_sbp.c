@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_sbp.c,v $
+Revision 1.6  2000/01/13 14:46:12  oaumage
+- adaptation pour la prise en compte de la toolbox
+
 Revision 1.5  2000/01/05 09:43:59  oaumage
 - initialisation du nouveau champs `group_mode' dans link_init
 - mad_sbp.c: suppression des fonctions vides
@@ -66,7 +69,6 @@ ______________________________________________________________________________
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <dedbuff.h>
 #include <sbp.h>
 #include <sbp_messages.h>
@@ -130,8 +132,8 @@ typedef struct s_mad_sbp_list_element
 
 typedef struct
 {
-  p_mad_memory_t list_element_memory;
-  p_mad_memory_t buffer_pool_memory;
+  p_tbx_memory_t list_element_memory;
+  p_tbx_memory_t buffer_pool_memory;
   int            nb_adapter;
 } mad_sbp_driver_specific_t, *p_mad_sbp_driver_specific_t;
 
@@ -156,9 +158,9 @@ typedef struct
 {
   p_mad_sbp_list_element_t incoming_frames_head;
   p_mad_sbp_list_element_t incoming_frames_tail;
-  mad_bool_t               request_status;
+  tbx_bool_t               request_status;
 #ifdef SOFTWARE_FLOW_CONTROL
-  mad_bool_t               acknowledgement_status;
+  tbx_bool_t               acknowledgement_status;
 #endif /* SOFTWARE_FLOW_CONTROL */
 } mad_sbp_connection_specific_t, *p_mad_sbp_connection_specific_t;
 
@@ -216,7 +218,7 @@ mad_sbp_put_empty_frame(p_mad_sbp_frame_t frame,
 
 static p_mad_sbp_frame_t
 mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
-			  mad_bool_t         probe_only)
+			  tbx_bool_t         probe_only)
 {
   p_mad_sbp_connection_specific_t connection_specific = connection->specific;
   p_mad_sbp_list_element_t        element             = NULL;
@@ -228,7 +230,7 @@ mad_sbp_receive_sbp_frame(p_mad_connection_t connection,
 
   LOG_IN();
   
-  while (mad_true)
+  while (tbx_true)
     {
       PM2_LOCK_SHARED(adapter_specific);
       if ((element = connection_specific->incoming_frames_head))
@@ -389,7 +391,7 @@ mad_sbp_register(p_mad_driver_t driver)
   interface->send_buffer                = mad_sbp_send_buffer;
   interface->receive_buffer             = mad_sbp_receive_buffer;
   interface->send_buffer_group          = mad_sbp_send_buffer_group;
-  interface->receive_sub_buffer_group   = mad_sbp_receive_sub_buffer_group;
+  interface->receive_sub_buffer_group   = NULL;
   interface->external_spawn_init        = NULL;
   interface->configuration_init         = mad_sbp_configuration_init;
   interface->send_adapter_parameter     = mad_sbp_send_adapter_parameter;
@@ -411,10 +413,10 @@ mad_sbp_driver_init(p_mad_driver_t driver)
   driver->specific = driver_specific;
   driver_specific->nb_adapter = 0;
 
-  mad_malloc_init(&(driver_specific->buffer_pool_memory),
+  tbx_malloc_init(&(driver_specific->buffer_pool_memory),
 		  MAD_SBP_PAYLOAD_SIZE,
 		  MAD_SBP_INITIAL_DYNAMIC_BUFFER_POOL_SIZE);
-  mad_malloc_init(&(driver_specific->list_element_memory),
+  tbx_malloc_init(&(driver_specific->list_element_memory),
 		  sizeof(mad_sbp_list_element_t),
 		  MAD_SBP_INITIAL_LIST_ELEMENT_COUNT);
   LOG_OUT();
@@ -669,9 +671,9 @@ mad_sbp_new_message(p_mad_connection_t connection)
   LOG_IN();
   /* Code to prepare a new message */
 
-  connection_specific->request_status         = mad_false;
+  connection_specific->request_status         = tbx_false;
 #ifdef SOFTWARE_FLOW_CONTROL
-  connection_specific->acknowledgement_status = mad_false;
+  connection_specific->acknowledgement_status = tbx_false;
 #endif /* SOFTWARE_FLOW_CONTROL */
   LOG_OUT();
 }
@@ -697,13 +699,13 @@ mad_sbp_receive_message(p_mad_channel_t channel)
       static mad_host_id_t host_id = 0;
 
       /* Incoming communication detection code */      
-      while (mad_true)
+      while (tbx_true)
 	{
 	  if (host_id != configuration->local_host_id)
 	    {
 	      connection = &(channel->input_connection[host_id]);
 
-	      if (mad_sbp_receive_sbp_frame(connection, mad_true))
+	      if (mad_sbp_receive_sbp_frame(connection, tbx_true))
 		break;
 	    }
 	  else
@@ -716,9 +718,9 @@ mad_sbp_receive_message(p_mad_channel_t channel)
     }
 
   connection_specific = connection->specific;
-  connection_specific->request_status         = mad_false;
+  connection_specific->request_status         = tbx_false;
 #ifdef SOFTWARE_FLOW_CONTROL
-  connection_specific->acknowledgement_status = mad_false;
+  connection_specific->acknowledgement_status = tbx_false;
 #endif /* SOFTWARE_FLOW_CONTROL */
   LOG_OUT();
   return connection;
@@ -763,7 +765,7 @@ mad_sbp_send_buffer(p_mad_link_t     lnk,
   
   if (!connection_specific->request_status)
     {
-      connection_specific->request_status = mad_true;
+      connection_specific->request_status = tbx_true;
       sbp_frame->mad_header.message_type  = mad_sbp_REQUEST;
     }
   else
@@ -772,12 +774,12 @@ mad_sbp_send_buffer(p_mad_link_t     lnk,
       if (!connection_specific->acknowledgement_status)
 	{
 	  p_mad_sbp_frame_t ack_sbp_frame =
-	    mad_sbp_receive_sbp_frame(connection, mad_false);
+	    mad_sbp_receive_sbp_frame(connection, tbx_false);
 
 	  if (ack_sbp_frame->mad_header.message_type != mad_sbp_ACK)
 	    FAILURE("unexpected message type");
 	  
-	  connection_specific->acknowledgement_status = mad_true;
+	  connection_specific->acknowledgement_status = tbx_true;
 	}
 #endif /* SOFTWARE_FLOW_CONTROL */
       sbp_frame->mad_header.message_type = mad_sbp_DATA;
@@ -817,17 +819,17 @@ mad_sbp_receive_buffer(p_mad_link_t     lnk,
       ack_sbp_frame->mad_header.message_type = mad_sbp_ACK;
       mad_sbp_put_full_frame(ack_sbp_frame, adapter_specific->output_key);
 
-      connection_specific->acknowledgement_status = mad_true;
+      connection_specific->acknowledgement_status = tbx_true;
     }
 #endif /* SOFTWARE_FLOW_CONTROL */
-  sbp_frame = mad_sbp_receive_sbp_frame(connection, mad_false);
+  sbp_frame = mad_sbp_receive_sbp_frame(connection, tbx_false);
 
   if (!connection_specific->request_status)
     {
       if (sbp_frame->mad_header.message_type != mad_sbp_REQUEST)
 	FAILURE("unexpected message type");
       
-      connection_specific->request_status = mad_true;
+      connection_specific->request_status = tbx_true;
     }
   else if (sbp_frame->mad_header.message_type != mad_sbp_DATA)
     FAILURE("unexpected message type");
@@ -852,28 +854,17 @@ mad_sbp_send_buffer_group(p_mad_link_t           lnk,
 {
   LOG_IN();
   /* Code to send a group of static buffers */
-  if (!mad_empty_list(&(buffer_group->buffer_list)))
+  if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
-      mad_list_reference_t              ref;
+      tbx_list_reference_t ref;
 
-      mad_list_reference_init(&ref, &(buffer_group->buffer_list));
+      tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
 	{
-	  mad_sbp_send_buffer(lnk, mad_get_list_reference_object(&ref));
+	  mad_sbp_send_buffer(lnk, tbx_get_list_reference_object(&ref));
 	}
-      while(mad_forward_list_reference(&ref));
+      while(tbx_forward_list_reference(&ref));
     }
-  LOG_OUT();
-}
-
-void
-mad_sbp_receive_sub_buffer_group(p_mad_link_t           lnk,
-				 mad_bool_t             first_sub_group,
-				 p_mad_buffer_group_t   buffer_group)
-{
-  LOG_IN();
-  /* Note: static buffers may only be received one at a time */
-  FAILURE("grouped buffer reception is not implemented");
   LOG_OUT();
 }
 
@@ -892,7 +883,7 @@ mad_sbp_get_static_buffer(p_mad_link_t lnk)
 
   if (connection->delayed_send)
     {
-      buffer->buffer   = mad_malloc(driver_specific->buffer_pool_memory);
+      buffer->buffer   = tbx_malloc(driver_specific->buffer_pool_memory);
       buffer->specific = NULL;
     }
   else
@@ -923,10 +914,14 @@ mad_sbp_return_static_buffer(p_mad_link_t     lnk,
   
   LOG_IN();
   if (!sbp_frame)
-    FAILURE("invalid static buffer");
-  
-  mad_sbp_put_empty_frame(sbp_frame, adapter_specific->input_key);
-  buffer->specific = NULL;
+    {
+      tbx_free(driver_specific->buffer_pool_memory, buffer->buffer);
+    }
+  else
+    {
+      mad_sbp_put_empty_frame(sbp_frame, adapter_specific->input_key);
+      buffer->specific = NULL;
+    }
   LOG_OUT();
 }
 
@@ -1021,7 +1016,7 @@ mad_sbp_configuration_init(p_mad_adapter_t       spawn_adapter,
 	  p_mad_sbp_frame_t            sbp_frame              = NULL;  
 	  int len;
 
-	  while (mad_true)
+	  while (tbx_true)
 	    {
 	      p_mad_sbp_list_element_t element;
       
@@ -1097,7 +1092,7 @@ mad_sbp_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter,
   size_t                       length;
     
   LOG_IN();
-  while (mad_true)
+  while (tbx_true)
     {
       p_mad_sbp_list_element_t element;
       

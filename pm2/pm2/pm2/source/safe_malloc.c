@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: safe_malloc.c,v $
+Revision 1.3  2000/02/28 11:17:20  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:58:34  oaumage
 - ajout du Log CVS
 
@@ -41,7 +44,8 @@ Revision 1.2  2000/01/31 15:58:34  oaumage
 ______________________________________________________________________________
 */
 
-#include <safe_malloc.h>
+#include "safe_malloc.h"
+
 #include <stdio.h>
 #include <string.h>
 

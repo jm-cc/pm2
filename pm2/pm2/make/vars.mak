@@ -87,9 +87,7 @@ SPACE		:=	$(EMPTY) $(EMPTY)
 # objets, bibliothèques)
 ifdef _PM2_OPTIONS
 PM2_OPTIONS		:=	$(_PM2_OPTIONS)
-PM2_USE_EXTENSION	:=	yes
-else
-PM2_USE_EXTENSION	:=	no
+COMMON_USE_EXTENSION	:=	yes
 endif
 
 # Inclusion des options
@@ -107,14 +105,22 @@ else
 PM2_EXT		:=	-pm2_none
 endif
 
-# Si on étend les noms de fichiers, il faut mettre a jour COMMON_EXT,
-# sinon il faut mettre a jour COMMON_EXTRA_DEP...
-ifeq ($(PM2_USE_EXTENSION),yes)
-COMMON_EXT		:=	$(COMMON_EXT)$(PM2_EXT)
-else
-COMMON_EXTRA_DEP	:=	$(COMMON_EXTRA_DEP)$(PM2_EXT)
-PM2_EXTRA_DEP_FILE	=	$(PM2_ROOT)/.opt$(COMMON_EXTRA_DEP)
-COMMON_MAKEFILES	+=	$(PM2_EXTRA_DEP_FILE)
+# Si on étend les noms de fichiers, il faut mettre à jour COMMON_EXT
+COMMON_TEMPO_EXT	:=	$(COMMON_TEMPO_EXT)$(PM2_EXT)
+# Attention : ici, il faut utiliser COMMON_TEMPO_EXT et non COMMON_EXT
+# car cette dernière sera peut-être remise à zéro dans rules.mak
+PM2_EXTRA_DEP_FILE	=	$(PM2_ROOT)/.opt$(COMMON_TEMPO_EXT)
+
+# Cette variable accumule systématiquement les fichiers de
+# dépendance. Elle sera peut-être remise à zéro in-extremis dans
+# rules.mak...
+COMMON_EXTRA_DEP	+=	$(PM2_EXTRA_DEP_FILE)
+
+# Il faut ajouter COMMON_EXTRA_DEP une seule fois. Je sais, ce n'est
+# pas très beau...
+ifneq ($(__EXTRA_DEP_SET),yes)
+COMMON_MAKEFILES	+=	$(COMMON_EXTRA_DEP)
+__EXTRA_DEP_SET		:=	yes
 endif
 
 PM2_GEN_OPT	:=	$(PM2_GEN_1) $(PM2_GEN_2) $(PM2_GEN_3) \

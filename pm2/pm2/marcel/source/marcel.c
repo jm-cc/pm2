@@ -34,6 +34,60 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.14  2000/04/11 09:07:20  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.13.2.17  2000/04/11 08:17:30  rnamyst
+Comments are back !
+
+Revision 1.13.2.16  2000/04/08 15:09:13  vdanjean
+few bugs fixed
+
+Revision 1.13.2.15  2000/04/06 13:55:20  rnamyst
+Fixed a minor bug in marcel_insert_task and in marcel_exit...
+
+Revision 1.13.2.14  2000/04/06 07:38:01  vdanjean
+Activations mono OK :-)
+
+Revision 1.13.2.13  2000/04/04 08:01:42  rnamyst
+Modified to introduce "goto_next_task" instead of THR_LONGJMP.
+
+Revision 1.13.2.12  2000/03/31 18:38:39  vdanjean
+Activation mono OK
+
+Revision 1.13.2.11  2000/03/31 08:08:08  rnamyst
+Added disable_preemption() and enable_preemption().
+
+Revision 1.13.2.10  2000/03/30 16:57:38  rnamyst
+Introduced TOP_STACK_FREE_AREA...
+
+Revision 1.13.2.9  2000/03/30 09:52:58  rnamyst
+Bug fixed in init_sched.
+
+Revision 1.13.2.8  2000/03/29 16:49:40  vdanjean
+ajout de du champs special_flags dans marcel_t
+
+Revision 1.13.2.7  2000/03/29 14:24:54  rnamyst
+Added the marcel_stdio.c that provides the marcel_printf functions.
+
+Revision 1.13.2.6  2000/03/24 17:55:23  vdanjean
+fixes
+
+Revision 1.13.2.5  2000/03/24 14:16:44  vdanjean
+few bugs fixed
+
+Revision 1.13.2.4  2000/03/22 16:34:13  vdanjean
+*** empty log message ***
+
+Revision 1.13.2.3  2000/03/17 20:09:54  vdanjean
+*** empty log message ***
+
+Revision 1.13.2.2  2000/03/15 15:55:03  vdanjean
+réorganisation de marcel : commit pour CVS
+
+Revision 1.13.2.1  2000/03/15 15:41:20  vdanjean
+réorganisation de marcel. branche de développement
+
 Revision 1.13  2000/03/09 11:07:51  rnamyst
 Modified to use the sched_data() macro.
 
@@ -60,7 +114,6 @@ ______________________________________________________________________________
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <memory.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -69,6 +122,10 @@ ______________________________________________________________________________
 #include <sys/uio.h>
 #include <fcntl.h>
 #include <signal.h>
+
+#ifdef MA__ACT
+#include "sys/upcalls.h"
+#endif
 
 #ifdef UNICOS_SYS
 #include <sys/mman.h>
@@ -201,7 +258,7 @@ static void print_thread(marcel_t pid)
       sp = (long)get_sp();
 #endif
    } else {
-      sp = (long)SP_FIELD(pid->jb);
+      sp = (long)SP_FIELD(pid->jbuf);
    }
 
   mdebug("thread %p :\n"
@@ -240,22 +297,21 @@ static __inline__ void init_task_desc(marcel_t t)
 {
   t->cur_excep_blk = NULL;
   t->deviation_func = NULL;
+#ifdef MA__LWPS
   t->previous_lwp = NULL;
-  t->next_cleanup_func = 0;
-  t->in_sighandler = FALSE;
-#ifdef __ACT__
-  t->marcel_lock=1;
 #endif
+  t->next_cleanup_func = 0;
 #ifdef ENABLE_STACK_JUMPING
   *((marcel_t *)((char *)t + MAL(sizeof(task_desc)) - sizeof(void *))) = t;
 #endif
+  SET_STATE_READY(t);
+  t->special_flags = 0;
 }
 
 int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t arg)
 {
   marcel_t cur = marcel_self(), new_task;
 
-  ACTDEBUG(printf("marcel_create\n")); 
   TIMING_EVENT("marcel_create");
 
   if(!attr)
@@ -263,28 +319,17 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
   lock_task();
 
-  if(setjmp(cur->jb) == NORMAL_RETURN) {
-#ifdef __ACT__
-    marcel_self()->state_ext=MARCEL_RUNNING;
-#endif
-    ACTDEBUG(printf("marcel_create ending\n")); 
-#ifdef DEBUG
-    breakpoint();
-#endif
-    MTRACE("Preemption", cur);
-    if(cur->child)
+  if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
+    MA_THR_RESTARTED(cur, "Preemption");
+    if(cur->child) {
       marcel_insert_task(cur->child);
+    }
     unlock_task();
-    ACTDEBUG(printf("marcel_create ended (%p, %i)\n", marcel_self(), marcel_self()->state_ext)); 
     return 0;
   } else {
-#ifdef __ACT__
-    cur->state_ext=MARCEL_READY;
-#endif
     if(attr->stack_base) {
       register unsigned long top = MAL_BOT((long)attr->stack_base +
 					   attr->stack_size);
-      ACTDEBUG(printf("marcel_create continue stack_base\n")); 
 #ifdef DEBUG
       if(top & (SLOT_SIZE-1)) { /* Not slot-aligned */
 	unlock_task();
@@ -304,7 +349,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       new_task->static_stack = TRUE;
     } else {
       char *bottom;
-      ACTDEBUG(printf("marcel_create continue not stack_base\n")); 
+
 #ifdef DEBUG
       if(attr->stack_size > SLOT_SIZE)
 	RAISE(NOT_IMPLEMENTED);
@@ -315,8 +360,6 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       new_task->stack_base = bottom;
       new_task->static_stack = FALSE;
     }
-
-    mdebug("new_task stack top : %p\n", (char *)new_task + MAL(sizeof(task_desc)));
 
 #ifdef USE_PRIORITIES
     new_task->prio = new_task->quantums = attr->priority;
@@ -343,14 +386,14 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 				 insert_task ! */
     new_task->f_to_call = func;
     new_task->arg = arg;
-    new_task->initial_sp = (long)new_task - MAL(attr->user_space) - WINDOWSIZE;
+    new_task->initial_sp = (long)new_task - MAL(attr->user_space) -
+      TOP_STACK_FREE_AREA;
 
     if(pid)
       *pid = new_task;
 
     marcel_one_more_task(new_task);
     MTRACE("Creation", new_task);
-    ACTDEBUG(printf("marcel_create Created\n")); 
 
 #ifndef MINIMAL_PREEMPTION
     if((locked() > 1) /* lock_task has been called */
@@ -360,50 +403,35 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #endif
        ) {
 #endif
-      ACTDEBUG(printf("marcel_create continue part 1\n")); 
+
       new_task->father->child = ((new_task->user_space_ptr && !attr->immediate_activation)
 				 ? NULL /* do not insert now */
 				 : new_task); /* insert asap */
+      SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
 
       MTRACE("Preemption", marcel_self());
 
-      if(setjmp(marcel_self()->jb) == FIRST_RETURN) {
-	call_ST_FLUSH_WINDOWS();
-#ifdef __ACT__
-	marcel_self()->state_ext=MARCEL_READY;
-	ACTDEBUG(printf("restart_father\n")); 
-	restart_thread(marcel_self()->father);
-#else
-	longjmp(marcel_self()->father->jb, NORMAL_RETURN);
-#endif
+      if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
+	MA_THR_LONGJMP(marcel_self()->father, NORMAL_RETURN);
       }
-#ifdef DEBUG
-      breakpoint();
-#endif
-#ifdef __ACT__
-      marcel_self()->state_ext=MARCEL_RUNNING;
-#endif
-      MTRACE("Preemption", marcel_self());
-
+      MA_THR_RESTARTED(marcel_self(), "Preemption");
       unlock_task();
 #ifndef MINIMAL_PREEMPTION
     } else {
-      ACTDEBUG(printf("marcel_create continue part 2\n")); 
+
       new_task->father->child = NULL;
 
+      SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
       marcel_insert_task(new_task);
 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);
+      SET_STATE_READY(marcel_self()->father);
 
       MTRACE("Preemption", marcel_self());
-
-#ifdef __ACT__
-      marcel_self()->state_ext=MARCEL_RUNNING;
-#endif
 
       unlock_task();
     }
@@ -432,9 +460,10 @@ int marcel_join(marcel_t pid, any_t *status)
 int marcel_exit(any_t val)
 {
   marcel_t cur = marcel_self();
-#ifdef SMP
-  register __lwp_t *cur_lwp = cur->lwp;
+  DEFINE_CUR_LWP(register, , );
+  SET_CUR_LWP(GET_LWP(cur));
 
+#ifdef SMP
   /* Durant cette fonction, il ne faut pas que le thread soit
      "déplacé" intempestivement (e.g. après avoir acquis stack_mutex)
      sur un autre LWP. */
@@ -445,112 +474,153 @@ int marcel_exit(any_t val)
   cur->previous_lwp = NULL;
 #endif
 
-  ACTDEBUG(printf("marcel_exit(%p) %p\n", val, cur));
-
   cur->ret_val = val;
   if(!cur->detached) {
     marcel_sem_V(&cur->client);
-    ACTDEBUG(printf("client ?\n"));
     marcel_sem_P(&cur->thread);
   }
-  ACTDEBUG(printf("thread ?\n"));
 
-  if(cur->static_stack) { /* Si la pile a ete allouee
-			     a l'exterieur de Marcel... */
+  // Dans le cas où la pile a été allouée à l'extérieur de Marcel
+  // (typiquement par PM2/isomalloc), il faut effectuer un traitement
+  // délicat pour pouvoir appeler "marcel_terminate" quelque soit le
+  // code exécuté par cette dernière fonction.
+  if(cur->static_stack) {
 
-    marcel_mutex_lock(&cur_lwp->stack_mutex); /* D'abord le mutex ! */
+    // Il faut commencer par acquérir le verrou d'obtention de la pile
+    // de sécurité sur le LWP courant (il y a une pile de sécurité par
+    // LWP).
+    marcel_mutex_lock(&cur_lwp->stack_mutex);
 
     lock_task();
 
-    /* *cur_lwp->sec_desc = *cur; */
-    init_task_desc(cur_lwp->sec_desc); /* On fabrique un "faux" thread dans
-					  la pile de secours et ce thread 
-					  devient le thread courant */
+    // On fabrique un "faux" thread dans la pile de secours
+    // (cur_lwp->sec_desc) et ce thread devient le thread courant.
+    init_task_desc(cur_lwp->sec_desc);
+
+    // Pour les informations de debug, on reprend le numéro du thread
+    // précédent
     cur_lwp->sec_desc->number = cur->number;
 
-    MTRACE("Mutation", cur_lwp->sec_desc);
+    // Attention : il est nécessaire de s'assurer que le thread "de
+    // secours" ne sera pas inséré sur un autre LWP...
+    cur_lwp->sec_desc->sched_policy = MARCEL_SCHED_FIXED(cur_lwp->number);
 
-    marcel_insert_task(cur_lwp->sec_desc); /* On insere le nouveau thread
-					    *avant* de retirer l'ancien 
-					    (pour eviter le deadlock) */
+    MTRACE("Mutation", cur);
+
+    // On insere le nouveau thread _avant_ de retirer l'ancien (pour
+    // eviter le deadlock)
+    SET_STATE_RUNNING(NULL, cur_lwp->sec_desc, cur_lwp);
+    marcel_insert_task(cur_lwp->sec_desc);
+
+    // On retire l'ancien
     SET_GHOST(cur);
-    marcel_unchain_task(cur);
+    UNCHAIN_MYSELF(cur, cur_lwp->sec_desc);
 
-    cur_lwp->sec_desc->private_val = (any_t)cur; /* On recupere le contenu
-						    de la variable statique
-						    avant unlock_task */
+    // Avant d'exécuter unlock_task, on stocke une référence sur
+    // l'ancien thread dans une variable statique propre au LWP
+    // courant de manière à pouvoir le détruire par la suite...
+    cur_lwp->sec_desc->private_val = (any_t)cur;
 
 #ifdef STACK_OVERFLOW_DETECT
     stack_unprotect(cur);
 #endif
 
-    call_ST_FLUSH_WINDOWS(); /* On bascule sur la pile de secours... */
+    // On bascule maintenant sur la pile de secours :marcel_self()
+    // devient donc égal à cur_lwp->sec_desc...
+    call_ST_FLUSH_WINDOWS();
     set_sp(SECUR_STACK_TOP(cur_lwp));
-#ifdef SMP
+#ifdef MA__LWPS
+    // On recalcule "cur_lwp" car c'est une variable locale.
     cur_lwp = marcel_self()->lwp;
 #endif
 
     unlock_task();
 
-    /* Ouf, le noyau n'est pas verrouille.. */
+    // Ici, le noyau marcel n'est plus vérouillé, on peut donc appeler
+    // marcel_terminate sans risque particulier en cas d'appel
+    // bloquant.
     marcel_terminate(cur_lwp->sec_desc->private_val);
 
+    // Ok, maintenant on ré-entre en "mode noyau" avec lock_task.
     lock_task();
 
-    marcel_mutex_unlock(&cur_lwp->stack_mutex); /* On libere le mutex, mais pas encore
-						   le noyau : ce sera chose faite lors
-						   du retour du setjmp... */
+    // On peut alors relâcher le mutex : aucun thread ne pourra
+    // l'acquérir avant que l'on exécute unlock_task, c'est à dire
+    // lorsque le goto_next_task aboutira.
+    marcel_mutex_unlock(&cur_lwp->stack_mutex);
 
-    /* On averti le main qu'une tache de plus va disparaitre,
-       ce qui va provoquer insert_task(main_task) si
-       le thread courant est le dernier de l'application... */
+    // On averti le main qu'une tache de plus va disparaitre, ce qui
+    // va provoquer insert_task(main_task) si le thread courant est le
+    // dernier de l'application...  ATTENTION : cela signifie qu'il
+    // faut impérativement exécuter cette instruction _avant_
+    // unchain_task, faute de quoi on risquerait d'insérer la tâche
+    // idle à tort !!!
     marcel_one_task_less(cur_lwp->sec_desc);
 
+    // Il est maintenant temps de retirer le "faux" thread par un
+    // appel à unchain_task...
     SET_GHOST(cur_lwp->sec_desc);
-    cur = marcel_unchain_task(cur_lwp->sec_desc); /* Il est maintenant temps
-						     de retirer le "faux"
-						     thread ! */
+    cur = UNCHAIN_TASK_AND_FIND_NEXT(cur_lwp->sec_desc);
 
     MTRACE("Exit", cur_lwp->sec_desc);
 
-    call_ST_FLUSH_WINDOWS();
-#ifdef __ACT__
-    restart_thread(cur);
-#else
-    longjmp(cur->jb, NORMAL_RETURN);
+#ifdef MA__MULTIPLE_RUNNING
+    cur_lwp->prev_running=NULL;
 #endif
+    goto_next_task(cur);
 
-  } else { /* Ici, la pile a ete allouée par le noyau Marcel */
+  } else { // Ici, la pile a été allouée par le noyau Marcel
 
 #ifdef PM2
     RAISE(PROGRAM_ERROR);
 #endif
 
+    // On appelle marcel_terminate sur la pile courante puisque
+    // celle-ci ne sera jamais détruite par l'une des fonction "cleanup"...
     marcel_terminate(cur);
 
-    marcel_mutex_lock(&cur_lwp->stack_mutex); /* Acquisition du mutex *avant* 
-						 lock_task ! */
+    // Il faut acquérir le verrou de la pile de secours avant
+    // d'exécuter lock_task.
+    marcel_mutex_lock(&cur_lwp->stack_mutex);
+
     lock_task();
 
+    // Il peut paraître stupide de relâcher le verrou à cet endroit
+    // (on vient de le prendre !). Premièrement, ce n'est pas grave
+    // car lock_task garanti qu'aucun autre thread (sur le LWP)
+    // n'utilisera la pile. Deuxièmement, il _faut_ relâcher ce verrou
+    // très tôt (avant d'exécuter unchain_task) car sinon la tâche
+    // idle risquerait d'être réveillée (par unchain_task) alors que
+    // mutex_unlock réveillerait par ailleurs une autre tâche du
+    // programme !
     marcel_mutex_unlock(&cur_lwp->stack_mutex); /* idem ci-dessus */
 
-    marcel_one_task_less(cur); /* Voir quelque lignes ci-dessus... */
+    // Même remarque que précédemment : main_thread peut être réveillé
+    // à cet endroit, donc il ne faut appeler unchain_task qu'après.
+    marcel_one_task_less(cur);
 
+    // On peut se retirer de la file des threads prêts. le champ
+    // "child" de la pile de secours désigne maintenant le thread à
+    // qui on donnera la "main" avant de disparaître.
     SET_GHOST(cur);
-    cur_lwp->sec_desc->child = marcel_unchain_task(cur);
-    /* child designe maintenant la tache a
-       laquelle on donnera la "main" avant de
-       mourir. */
+    cur_lwp->sec_desc->child = UNCHAIN_TASK_AND_FIND_NEXT(cur);
 
     MTRACE("Exit", cur);
 
+    // Le champ "father" désigne la tâche courante : cela permettra de
+    // la détruire un peu plus loin...
     cur_lwp->sec_desc->father = cur;
+
+    // Avant de changer de pile il faut, comme toujours, positionner
+    // correctement le champ lwp...
     cur_lwp->sec_desc->lwp = cur_lwp;
 
-    call_ST_FLUSH_WINDOWS(); /* On bascule donc sur une pile annexe */
+    // Ca y est, on peut basculer sur la pile de secours.
+    call_ST_FLUSH_WINDOWS();
     set_sp(SECUR_STACK_TOP(cur_lwp));
 
-#ifdef SMP
+#ifdef MA__LWPS
+    // On recalcule "cur_lwp" car c'est une variable locale.
     cur_lwp = marcel_self()->lwp;
 #endif
 
@@ -558,14 +628,15 @@ int marcel_exit(any_t val)
     stack_unprotect(cur_lwp->sec_desc->father);
 #endif
 
+    // On détruit l'ancien thread
     marcel_slot_free(marcel_stackbase(cur_lwp->sec_desc->father));
 
-    call_ST_FLUSH_WINDOWS();
-#ifdef __ACT__
-    restart_thread(cur_lwp->sec_desc->child);
-#else
-    longjmp(cur_lwp->sec_desc->child->jb, NORMAL_RETURN);
+#ifdef MA__MULTIPLE_RUNNING
+    cur_lwp->prev_running=NULL;
 #endif
+
+    // Enfin, on effectue un changement de contexte vers le thread suivant.
+    goto_next_task(cur_lwp->sec_desc->child);
   }
 
   return 0; /* Silly, isn't it ? */
@@ -577,53 +648,7 @@ int marcel_cancel(marcel_t pid)
     marcel_exit(NULL);
   } else {
     pid->ret_val = NULL;
-    if(!pid->detached) {
-#ifndef __ACT__
-      marcel_deviate(pid, (handler_func_t)marcel_exit, NULL);
-#endif
-      return 0;
-    }
-
-    lock_task();
-
-    if(IS_BLOCKED(pid))
-      RAISE(NOT_IMPLEMENTED);
-
-    if(IS_SLEEPING(pid) || IS_FROZEN(pid))
-      marcel_wake_task(pid, NULL);
-
-    SET_GHOST(pid);
-    marcel_unchain_task(pid);
-
-    marcel_one_task_less(pid);
-
-    MTRACE("Cancelled", pid);
-
-    if(pid->static_stack) {
-#ifdef STACK_OVERFLOW_DETECT
-      stack_unprotect(pid);
-#endif
-
-      unlock_task();
-
-      marcel_terminate(pid);
-
-    } else {
-#ifdef PM2
-      RAISE(PROGRAM_ERROR);
-#endif
-#ifdef STACK_OVERFLOW_DETECT
-      stack_unprotect(pid);
-#endif
-
-      unlock_task();
-
-      marcel_terminate(pid);
-
-      lock_task();
-      marcel_slot_free(pid->stack_base);
-      unlock_task();
-    }
+    marcel_deviate(pid, (handler_func_t)marcel_exit, NULL);
   }
   return 0;
 }
@@ -696,7 +721,7 @@ static void __inline__ freeze(marcel_t t)
          marcel_wake_task(t, NULL);
       }
       SET_FROZEN(t);
-      marcel_unchain_task(t);
+      UNCHAIN_TASK(t);
       unlock_task();
    }
 }
@@ -750,7 +775,7 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
 
       mdebug("hibernation of thread %p", cur);
       mdebug("sp = %lu\n", get_sp());
-      mdebug("sp_field = %lu\n", SP_FIELD(cur->migr_jb));
+      mdebug("sp_field = %u\n", SP_FIELD(cur->migr_jb));
       mdebug("bottom = %lu\n", bottom);
       mdebug("top = %lu\n", top);
       mdebug("blk = %lu\n", blk);
@@ -766,15 +791,15 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       unlock_task();
     }
   } else {
-    memcpy(t->migr_jb, t->jb, sizeof(jmp_buf));
+    memcpy(t->migr_jb, t->jbuf, sizeof(jmp_buf));
 
     top = (long)t + ALIGNED_32(sizeof(task_desc));
-    bottom = ALIGNED_32((long)SP_FIELD(t->jb)) - ALIGNED_32(1);
+    bottom = ALIGNED_32((long)SP_FIELD(t->jbuf)) - ALIGNED_32(1);
     blk = top - bottom;
     depl = bottom - (long)t->stack_base;
 
     mdebug("hibernation of thread %p", t);
-    mdebug("sp_field = %lu\n", SP_FIELD(t->migr_jb));
+    mdebug("sp_field = %u\n", SP_FIELD(t->migr_jb));
     mdebug("bottom = %lu\n", bottom);
     mdebug("top = %lu\n", top);
     mdebug("blk = %lu\n", blk);
@@ -821,7 +846,7 @@ marcel_t marcel_alloc_stack(unsigned size)
 #ifndef __ACT__
 void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
 {
-  memcpy(t->jb, t->migr_jb, sizeof(jmp_buf));
+  memcpy(t->jbuf, t->migr_jb, sizeof(jmp_buf));
 
   mdebug("end of hibernation for thread %p", t);
 
@@ -859,17 +884,21 @@ void marcel_disabledeviation(void)
   ++marcel_self()->not_deviatable;
 }
 
-#ifndef __ACT__
 static void insertion_relai(handler_func_t f, void *arg)
 { 
   jmp_buf back;
   marcel_t cur = marcel_self();
 
-  memcpy(back, cur->jb, sizeof(jmp_buf));
+#ifdef __ACT__
+  RAISE(NOT_IMPLEMENTED);
+#endif
+
+  memcpy(back, cur->jbuf, sizeof(jmp_buf));
   marcel_disablemigration(cur);
-  if(setjmp(cur->jb) == FIRST_RETURN) {
-    call_ST_FLUSH_WINDOWS();
-    longjmp(cur->father->jb, NORMAL_RETURN);
+  // TODO: Si locked() != 1, on peut optimiser en autorisant le fils a
+  // s'executer immediatement...
+  if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
+    goto_next_task(cur->father);
   } else {
 #ifdef DEBUG
     breakpoint();
@@ -878,9 +907,9 @@ static void insertion_relai(handler_func_t f, void *arg)
     (*f)(arg);
     lock_task();
     marcel_enablemigration(cur);
-    memcpy(cur->jb, back, sizeof(jmp_buf));
-    call_ST_FLUSH_WINDOWS(); /* surement inutile... */
-    longjmp(cur->jb, NORMAL_RETURN);
+    // TODO: Ce memcpy est-il vraiment utile ???
+    memcpy(cur->jbuf, back, sizeof(jmp_buf));
+    MA_THR_LONGJMP(cur, NORMAL_RETURN);
   }
 }
 
@@ -893,6 +922,10 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   static volatile handler_func_t f_to_call;
   static void * volatile argument;
   static volatile long initial_sp;
+
+#ifdef __ACT__
+  RAISE(NOT_IMPLEMENTED);
+#endif
 
   lock_task();
 
@@ -920,7 +953,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     else if(IS_FROZEN(pid))
       marcel_wake_task(pid, NULL);
 
-    if(setjmp(marcel_self()->jb) == NORMAL_RETURN) {
+    if(MA_THR_SETJMP(marcel_self()) == NORMAL_RETURN) {
       unlock_task();
     } else {
       f_to_call = h;
@@ -928,7 +961,8 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 
       pid->father = marcel_self();
 
-      initial_sp = MAL_BOT((long)SP_FIELD(pid->jb)) - 2*WINDOWSIZE - 256;
+      initial_sp = MAL_BOT((long)SP_FIELD(pid->jbuf)) -
+	TOP_STACK_FREE_AREA - 256;
 
       call_ST_FLUSH_WINDOWS();
       set_sp(initial_sp);
@@ -939,7 +973,6 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     }
   }
 }
-#endif /* __ACT__ */
 
 static unsigned __nb_lwp = 0;
 
@@ -978,7 +1011,8 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
   *argc = j;
   argv[j] = NULL;
 
-  mdebug("Suggested nb of Virtual Processors : %d\n", __nb_lwp);
+  if(do_not_strip)
+    mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
 }
 
 void marcel_strip_cmdline(int *argc, char *argv[])
@@ -992,12 +1026,10 @@ void marcel_init(int *argc, char *argv[])
 
   if(!already_called) {
 
-    ACTDEBUG(printf("marcel_init\n")); 
+    mdebug("\t\t\t<marcel_init>\n");
 
     /* Analyse but do not strip */
     marcel_parse_cmdline(argc, argv, TRUE);
-
-    ACTDEBUG(printf("marcel_init parsed cmdline\n")); 
 
 #ifndef PM2
     /* Strip without analyse */
@@ -1006,12 +1038,10 @@ void marcel_init(int *argc, char *argv[])
 
 #ifndef PM2
     timing_init();
-    ACTDEBUG(printf("marcel_init timing_init done\n")); 
 #endif
 
 #if !defined(PM2) && defined(USE_SAFE_MALLOC)
     safe_malloc_init();
-    ACTDEBUG(printf("marcel_init safe_molloc_init\n")); 
 #endif
 
 #ifdef SOLARIS_SYS
@@ -1025,24 +1055,25 @@ void marcel_init(int *argc, char *argv[])
 #endif
 
     marcel_slot_init();
-    ACTDEBUG(printf("marcel_init slot_init done\n")); 
 
     marcel_sched_init(__nb_lwp);
-    ACTDEBUG(printf("marcel_init schedt_init done\n")); 
+    mdebug("\t\t\t<marcel_init: sched_init done>\n");
 
     marcel_io_init();
-    ACTDEBUG(printf("marcel_init io_init done\n")); 
+    mdebug("\t\t\t<marcel_init: io_init done>\n");
 
 #ifdef __ACT__
     init_upcalls(0);
-    ACTDEBUG(printf("marcel_init upcalls_init done\n")); 
+    mdebug("\t\t\t<marcel_init upcalls_init done>\n");
 #endif
 
 #ifdef __ACT__
     launch_upcalls(WEXITSTATUS(system("exit `grep rocessor /proc/cpuinfo"
 				       " | wc -l`")));
-    ACTDEBUG(printf("marcel now use upcalls\n")); 
+    mdebug("\t\t\t<marcel now uses upcalls\n>");
 #endif
+
+    mdebug("\t\t\t<marcel_init completed>\n");
 
     already_called = TRUE;
   }
@@ -1139,58 +1170,6 @@ void tfree(void *ptr)
    }
 }
 
-#ifdef SMP
-static unsigned __io_lock = 0;
-#endif
-
-static __inline__ void io_lock()
-{
-  lock_task();
-#ifdef SMP
-  while(testandset(&__io_lock))
-    SCHED_YIELD();
-#endif
-}
-
-static __inline__ void io_unlock()
-{
-#ifdef SMP
-  release(&__io_lock);
-#endif
-  unlock_task();
-}
-
-int tprintf(char *format, ...)
-{
-  static va_list args;
-  int retour;
-
-  io_lock();
-
-  va_start(args, format);
-  retour = vprintf(format, args);
-  va_end(args);
-
-  io_unlock();
-
-  return retour;
-}
-
-int tfprintf(FILE *stream, char *format, ...)
-{
-  static va_list args;
-  int retour;
-
-  io_lock();
-
-  va_start(args, format);
-  retour = vfprintf(stream, format, args);
-  va_end(args);
-
-  io_unlock();
-  return retour;
-}
-
 volatile unsigned _nb_keys = 1;
 /* 
  * Hummm... Should be 0, but for obscure reasons,
@@ -1284,17 +1263,15 @@ int main(int argc, char *argv[])
 
   if(!setjmp(__initial_main_jb)) {
 
-    __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) & ~(SLOT_SIZE-1)) -
+    __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
+				~(SLOT_SIZE-1)) -
 			       MAL(sizeof(task_desc)));
 
-    mdebug("main_thread set to %p\n", __main_thread);
-    mdebug("sp = %lx\n", get_sp());
+    mdebug("\t\t\t<main_thread is %p>\n", __main_thread);
 
     __argc = argc; __argv = argv;
 
-    set_sp((unsigned long)__main_thread - 2 * WINDOWSIZE);
-
-    mdebug("sp = %lx\n", get_sp());
+    set_sp((unsigned long)__main_thread - TOP_STACK_FREE_AREA);
 
 #ifdef ENABLE_STACK_JUMPING
     *((marcel_t *)((char *)__main_thread + MAL(sizeof(task_desc)) - sizeof(void *))) =
@@ -1328,38 +1305,36 @@ void marcel_special_P(marcel_t *liste)
 #ifdef SMP
   __lwp_t *cur_lwp = cur->lwp;
 #endif
+  
+  next = marcel_radical_next_task();
 
-   next = marcel_radical_next_task();
+  p = cur->prev;
+  p->next = cur->next;
+  p->next->prev = p;
+  if(SCHED_DATA(cur_lwp).__first[cur->prio] == cur) {
+    SCHED_DATA(cur_lwp).__first[cur->prio] = 
+      ((cur->next->prio == cur->prio) ? cur->next : NULL);
+    if(SCHED_DATA(cur_lwp).__first[0] == cur)
+      SCHED_DATA(cur_lwp).__first[0] = cur->next;
+  }
 
-   p = cur->prev;
-   p->next = cur->next;
-   p->next->prev = p;
-   if(sched_data(cur_lwp).__first[cur->prio] == cur) {
-      sched_data(cur_lwp).__first[cur->prio] = ((cur->next->prio == cur->prio) ? cur->next : NULL);
-      if(sched_data(cur_lwp).__first[0] == cur)
-	 sched_data(cur_lwp).__first[0] = cur->next;
-   }
+  if(*liste == NULL) {
+    *liste = cur;
+    cur->next = cur->prev = cur;
+  } else {
+    cur->next = *liste;
+    cur->prev = (*liste)->prev;
+    cur->prev->next = cur->next->prev = cur;
+  }
 
-   if(*liste == NULL) {
-      *liste = cur;
-      cur->next = cur->prev = cur;
-   } else {
-      cur->next = *liste;
-      cur->prev = (*liste)->prev;
-      cur->prev->next = cur->next->prev = cur;
-   }
-
-   cur->quantums = cur->prio;
-   SET_BLOCKED(cur);
-   if(setjmp(cur->jb) == NORMAL_RETURN) {
-#ifdef DEBUG
-      breakpoint();
-#endif
-      unlock_task();
-   } else {
-      call_ST_FLUSH_WINDOWS();
-      longjmp(next->jb, NORMAL_RETURN);
-   }
+  cur->quantums = cur->prio;
+  SET_BLOCKED(cur);
+  if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
+    MA_THR_RESTARTED(cur, "Preemption");
+    unlock_task();
+  } else {
+    goto_next_task(next);
+  }
 }
 
 void marcel_special_V(marcel_t *pliste)
@@ -1378,15 +1353,15 @@ void marcel_special_V(marcel_t *pliste)
    if(liste->prio == MAX_PRIO)
       i = 0;
    else
-      for(i=liste->prio; sched_data(cur_lwp).__first[i] == NULL; i--) ;
-   p = sched_data(cur_lwp).__first[i];
+      for(i=liste->prio; SCHED_DATA(cur_lwp).__first[i] == NULL; i--) ;
+   p = SCHED_DATA(cur_lwp).__first[i];
    liste->prev = p->prev;
    queue->next = p;
    p->prev = queue;
    liste->prev->next = liste;
-   sched_data(cur_lwp).__first[liste->prio] = liste;
-   if(p == sched_data(cur_lwp).__first[0])
-      sched_data(cur_lwp).__first[0] = liste;
+   SCHED_DATA(cur_lwp).__first[liste->prio] = liste;
+   if(p == SCHED_DATA(cur_lwp).__first[0])
+      SCHED_DATA(cur_lwp).__first[0] = liste;
 
    *pliste = 0;
 
@@ -1398,9 +1373,9 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
   cell *c;
   register marcel_t p, cur = marcel_self();
   marcel_t next;
-#ifdef SMP
-  __lwp_t *cur_lwp = cur->lwp;
-#endif
+
+  DEFINE_CUR_LWP( , ,);
+  SET_CUR_LWP(GET_LWP(cur));
 
    lock_task();
 
@@ -1415,10 +1390,11 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
       p = cur->prev;
       p->next = cur->next;
       p->next->prev = p;
-      if(sched_data(cur_lwp).__first[cur->prio] == cur) {
-         sched_data(cur_lwp).__first[cur->prio] = ((cur->next->prio == cur->prio) ? cur->next : NULL);
-         if(sched_data(cur_lwp).__first[0] == cur)
-	    sched_data(cur_lwp).__first[0] = cur->next;
+      if(SCHED_DATA(cur_lwp).__first[cur->prio] == cur) {
+         SCHED_DATA(cur_lwp).__first[cur->prio] = 
+	   ((cur->next->prio == cur->prio) ? cur->next : NULL);
+         if(SCHED_DATA(cur_lwp).__first[0] == cur)
+	    SCHED_DATA(cur_lwp).__first[0] = cur->next;
       }
 
       if(*liste == NULL) {
@@ -1432,14 +1408,11 @@ void marcel_special_VP(marcel_sem_t *s, marcel_t *liste)
 
       cur->quantums = cur->prio;
       SET_BLOCKED(cur);
-      if(setjmp(cur->jb) == NORMAL_RETURN) {
-#ifdef DEBUG
-         breakpoint();
-#endif
+      if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
+	MA_THR_RESTARTED(cur, "Preemption");
          unlock_task();
       } else {
-         call_ST_FLUSH_WINDOWS();
-         longjmp(next->jb, NORMAL_RETURN);
+	 goto_next_task(next);
       }
 }
 

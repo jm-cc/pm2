@@ -58,6 +58,8 @@ static __inline__ unsigned long pm2_compareexchange (volatile void *p, unsigned 
 				*p = new;
 			break;
 		}
+	default:
+		MA_BUG();
     }
     ma_spin_unlock_softirq(&compareexchange_spinlock);
   }

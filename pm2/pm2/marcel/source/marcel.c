@@ -276,6 +276,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     marcel_one_more_task(new_task);
     MTRACE("Creation", new_task);
 
+    PROF_THREAD_BIRTH(new_task->number);
+
     if(
           // On ne peut pas céder la main maintenant
           (locked() > 1)
@@ -520,9 +522,11 @@ int marcel_exit(any_t val)
     cur_lwp->prev_running=NULL;
 #endif
 
+    PROF_THREAD_DEATH(cur_lwp->sec_desc->number);
+
     LOG_OUT();
 
-    MA_THR_LONGJMP(cur_lwp->sec_desc->number, (cur), NORMAL_RETURN);
+    MA_THR_LONGJMP(cur_lwp->sec_desc->number, cur, NORMAL_RETURN);
 
   } else { // Ici, la pile a été allouée par le noyau Marcel
 
@@ -590,10 +594,13 @@ int marcel_exit(any_t val)
     cur_lwp->prev_running=NULL;
 #endif
 
+    PROF_THREAD_DEATH(cur_lwp->sec_desc->number);
+
     LOG_OUT();
 
     // Enfin, on effectue un changement de contexte vers le thread suivant.
-    MA_THR_LONGJMP(cur_lwp->sec_desc->number, (cur_lwp->sec_desc->child), NORMAL_RETURN);
+    MA_THR_LONGJMP(cur_lwp->sec_desc->number,
+		   cur_lwp->sec_desc->child, NORMAL_RETURN);
   }
 
   return 0; /* Silly, isn't it ? */

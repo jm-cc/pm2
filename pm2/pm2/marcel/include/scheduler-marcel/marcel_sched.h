@@ -41,6 +41,12 @@ struct marcel_sched_attr {
 	int prio;
 };
 
+#section macros
+#define MARCEL_SCHED_ATTR_DEFAULT { \
+	.init_rq = NULL, \
+	.prio = MA_DEF_PRIO, \
+}
+
 #section functions
 int marcel_sched_attr_init(marcel_sched_attr_t *attr);
 #define marcel_sched_attr_destroy(attr_ptr)	0

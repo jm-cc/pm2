@@ -15,7 +15,7 @@
  */
 
 
-_PRIVATE_ typedef struct blockcell_struct {
+typedef struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;
   struct blockcell_struct *last; /* Valide uniquement dans la cellule de tête */
@@ -25,8 +25,7 @@ _PRIVATE_ typedef struct blockcell_struct {
 inline static int __marcel_init_lock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
-  lock->__status = 0;
-  lock->__spinlock = 0;
+  *lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
   //LOG_OUT();
   return 0;
 }
@@ -91,39 +90,34 @@ inline static int __marcel_unregister_spinlocked(struct _marcel_fastlock * lock,
   return 0;
 }
 
-inline static int __marcel_block_spinlocked(struct _marcel_fastlock * lock,
-					    marcel_t self)
-{
-  blockcell c;
-  int ret;
-  
-  LOG_IN();
-  ret=__marcel_register_spinlocked(lock, self, &c);
-
-  mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
-  marcel_lock_release(&lock->__spinlock);
-  marcel_give_hand(&c.blocked);
-  mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
-  LOG_OUT();
-  return 0;
-}
-
 inline static int __marcel_lock_spinlocked(struct _marcel_fastlock * lock,
 					   marcel_t self)
 {
-  int ret=0;
+	int ret=0;
 
-  LOG_IN();
-  if(lock->__status != 0) { /* busy */
-    ret=__marcel_block_spinlocked(lock, self);
-  } else { /* was free */
-    lock->__status = 1;
-    marcel_lock_release(&lock->__spinlock);
-    unlock_task();
-  }
-  mdebug("getting lock %p in lock %p\n", self, lock);
-  LOG_OUT();
-  return ret;
+	LOG_IN();
+	if(lock->__status != 0) { /* busy */
+		blockcell c;
+
+		ret=__marcel_register_spinlocked(lock, self, &c);
+
+		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
+		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
+			c.blocked, 
+			marcel_lock_release(&lock->__spinlock),
+			marcel_lock_acquire(&lock->__spinlock));
+		marcel_lock_release(&lock->__spinlock);
+		unlock_task();
+		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
+		
+	} else { /* was free */
+		lock->__status = 1;
+		marcel_lock_release(&lock->__spinlock);
+		unlock_task();
+	}
+	mdebug("getting lock %p in lock %p\n", self, lock);
+	LOG_OUT();
+	return ret;
 }
 
 inline static int __marcel_unlock_spinlocked(struct _marcel_fastlock * lock)
@@ -140,7 +134,9 @@ inline static int __marcel_unlock_spinlocked(struct _marcel_fastlock * lock)
     }
     mdebug("releasing lock %p in lock %p to %p\n", marcel_self(), lock, 
 	   first->task);
-    marcel_wake_task(first->task, &first->blocked);
+    first->blocked=0;
+    ma_wmb();
+    ma_wake_up_thread(first->task);
     ret=1;
   } else {
     mdebug("releasing lock %p in lock %p\n", marcel_self(), lock);

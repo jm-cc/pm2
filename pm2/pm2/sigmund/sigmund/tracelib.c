@@ -98,6 +98,19 @@ int get_next_loose_filtered_trace(trace *tr)
   return i;
 }
 
+int get_next_time_filtered_trace(trace *tr)
+{
+  int i = 0;
+  while (i == 0) {
+    i = get_next_trace(tr);
+    if (tr->type == KERNEL) {
+      if (tr->code >> 8 == FKT_SWITCH_TO_CODE) break;
+    } else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) break;
+    if (is_valid(tr) == TRUE) break;
+  }
+  return i;
+}
+
 void tracelib_close()
 {
   close_filter();

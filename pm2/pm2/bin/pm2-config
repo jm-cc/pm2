@@ -370,7 +370,12 @@ pm2config_set_vars()
 	    *) ;;
 	esac
     done
-    _PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
+    if [ $PM2_SYS = "SOLARIS_SYS" ] ; then
+    	_PM2CONFIG_LD_LIBS="$_PM2CONFIG_LD_LIBS $_extra"
+    else
+    	_PM2CONFIG_LD_LIBS="-Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
+    fi
+
     export _PM2CONFIG_LD_LIBS
 
     _PM2CONFIG_LIBS="$_PM2CONFIG_LD_PATH $_PM2CONFIG_LD_LIBS"

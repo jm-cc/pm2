@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.7  2000/03/02 14:51:55  oaumage
+- support de detection des protocoles au niveau runtime
+
 Revision 1.6  2000/02/01 17:22:28  rnamyst
 Replaced MAD2_MAD1 by PM2.
 
@@ -85,6 +88,9 @@ typedef struct s_mad_madeleine
  * Functions 
  * ---------
  */
+int
+mad_protocol_available(p_mad_madeleine_t madeleine, char *name);
+
 p_mad_adapter_set_t
 mad_adapter_set_init(int nb_adapter, ...);
 

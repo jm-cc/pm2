@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_trace.h,v $
+Revision 1.5  2000/04/14 14:01:18  rnamyst
+Minor modifs.
+
 Revision 1.4  2000/04/11 09:07:18  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -66,7 +69,7 @@ ______________________________________________________________________________
 #ifndef MARCEL_TRACE_EST_DEF
 #define MARCEL_TRACE_EST_DEF
 
-#ifdef MAR_TRACE
+#ifdef MARCEL_TRACE
 
 #include "marcel_stdio.h"
 
@@ -83,8 +86,6 @@ ______________________________________________________________________________
             marcel_frozenthreads(), \
             marcel_nbthreads() + 1) \
    : (void)0)
-
-
 
 #else
 

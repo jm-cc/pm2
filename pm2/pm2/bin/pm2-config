@@ -251,7 +251,7 @@ fi
 . $FLAVOR_FILE
 
 if [ $libs_add_all = true ]; then
-    add_list libs "$PM2_LIBS"
+    add_list libs "common $PM2_LIBS"
 fi
 
 if [ "$other" != false ]; then
@@ -388,7 +388,7 @@ if [ -n "${dirtoshow}" ]; then
 fi
 
 if [ -z "$libs" ]; then
-    libs="$PM2_LIBS common"
+    libs="common $PM2_LIBS"
 fi
 
 ##########################################################################
@@ -400,7 +400,7 @@ the_libs="$PM2_COMMON_LIBS"
 #fi
 
 # CFLAGS : on prend tous les cflags
-for lib in $PM2_LIBS common; do
+for lib in common $PM2_LIBS; do
     LIB=`echo $lib | tr 'a-z' 'A-Z'`
     the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS` -D${LIB}"
     if [ -d "$PM2_ROOT/modules/$lib/include" ]; then

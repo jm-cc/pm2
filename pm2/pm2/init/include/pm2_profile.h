@@ -52,6 +52,12 @@
       fut_header(code);                                   \
   } while(0)
 
+#define PROF_PROBE1(keymask, code, arg)                   \
+  do {                                                    \
+    if((keymask) & fut_active)                            \
+      fut_header(code, arg);                              \
+  } while(0)
+
 #ifdef PREPROC
 
 #define GEN_PREPROC(name)                                 \
@@ -62,11 +68,23 @@
 
 #else // ifndef PREPROC
 
+#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
+
+#define GEN_PREPROC(name)                                        \
+  do {                                                           \
+    extern unsigned __code asm("fut_" name "_code");             \
+    PROF_PROBE1(PROFILE_KEYMASK, __code, marcel_self()->number); \
+  } while(0)
+
+#else
+
 #define GEN_PREPROC(name)                                 \
   do {                                                    \
     extern unsigned __code asm("fut_" name "_code");      \
     PROF_PROBE0(PROFILE_KEYMASK, __code);                 \
   } while(0)
+
+#endif
 
 #endif // PREPROC
 
@@ -79,14 +97,15 @@
 
 #else // ifndef DO_PROFILE
 
-#define PROF_PROBE0(keymask, code)   (void)0
+#define PROF_PROBE0(keymask, code)      (void)0
+#define PROF_PROBE1(keymask, code, arg) (void)0
 
-#define PROF_IN()                    (void)0
-#define PROF_OUT()                   (void)0
+#define PROF_IN()                       (void)0
+#define PROF_OUT()                      (void)0
 
-#define PROF_IN_EXT(name)            (void)0
-#define PROF_OUT_EXT(name)           (void)0
-#define PROF_EVENT(name)             (void)0
+#define PROF_IN_EXT(name)               (void)0
+#define PROF_OUT_EXT(name)              (void)0
+#define PROF_EVENT(name)                (void)0
 
 #endif // DO_PROFILE
 
@@ -140,7 +159,7 @@ void profile_init(void);
 
 void profile_set_tracefile(char *fmt, ...);
 
-void profile_activate(int how, unsigned keymask);
+void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask);
 
 void profile_stop(void);
 
@@ -150,19 +169,20 @@ extern volatile unsigned __pm2_profile_active;
 
 #else // ifndef PROFILE
 
-#define PROF_PROBE0(keymask, code)   (void)0
+#define PROF_PROBE0(keymask, code)      (void)0
+#define PROF_PROBE1(keymask, code, arg) (void)0
 
-#define PROF_SWITCH_TO(thr1, thr2)   (void)0
-#define PROF_NEW_LWP(pid, num, thr)  (void)0
-#define PROF_THREAD_BIRTH(thr)       (void)0
-#define PROF_THREAD_DEATH(thr)       (void)0
+#define PROF_SWITCH_TO(thr1, thr2)      (void)0
+#define PROF_NEW_LWP(pid, num, thr)     (void)0
+#define PROF_THREAD_BIRTH(thr)          (void)0
+#define PROF_THREAD_DEATH(thr)          (void)0
 
-#define PROF_IN()                    (void)0
-#define PROF_OUT()                   (void)0
+#define PROF_IN()                       (void)0
+#define PROF_OUT()                      (void)0
 
-#define PROF_IN_EXT(name)            (void)0
-#define PROF_OUT_EXT(name)           (void)0
-#define PROF_EVENT(name)             (void)0
+#define PROF_IN_EXT(name)               (void)0
+#define PROF_OUT_EXT(name)              (void)0
+#define PROF_EVENT(name)                (void)0
 
 #endif // PROFILE
 

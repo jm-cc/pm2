@@ -132,7 +132,7 @@ void dsm_display_page_ownership();
 #define DSM_UNIFORM_PROTECT 1
 #define DSM_CUSTOM_PROTECT 2
 
-void dsm_set_user_page_protection(int mode, ...);
+void pm2_set_dsm_page_protection(int mode, ...);
 
 int dsm_get_user_data1(unsigned long index, int rank);
 
@@ -173,6 +173,20 @@ void *dsm_get_next_modified_data(unsigned long index, int *size);
 boolean dsm_page_bitmap_is_empty(unsigned long index);
 
 void dsm_page_bitmap_clear(unsigned long index) ;
+
+/* user code to migrate to hyperion files: */
+
+#define dsm_get_waiter_count(index)  dsm_get_user_data1(index, 0)
+
+#define dsm_clear_waiter_count(index)  dsm_set_user_data1(index, 0, 0)
+
+#define dsm_increment_waiter_count(index) dsm_increment_user_data1(index, 0)
+
+#define dsm_get_page_arrival_count(index)  dsm_get_user_data1(index, 1)
+
+#define dsm_clear_page_arrival_count(index)  dsm_set_user_data1(index, 1, 0)
+
+#define dsm_increment_page_arrival_count(index) dsm_increment_user_data1(index, 1)
 
 #endif
 

@@ -220,7 +220,7 @@ while test $# -gt 0; do
 	libs_add_all=true
 	;;
     *)
-	case " $MODULES " in
+	case " $MODULES common " in
 	*\ $1\ *)
 	    add_list libs "$1"
 	    ;;
@@ -368,7 +368,7 @@ if [ -n "${dirtoshow}" ]; then
 	echo "This option needs exactly ONE lib" 1>&2
 	exit 1
     fi
-    case " $PM2_LIBS " in
+    case " $PM2_LIBS common " in
     *\ $libs\ *)
 	case $dirtoshow in
 	include)

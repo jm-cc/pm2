@@ -71,6 +71,9 @@ endif
 
 .PHONY: mad_default
 mad_default: $(MAD_LIB)
+	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
+	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
+	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
 
 ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(MAD_DEPENDS)),$(MAD_DEPENDS))
@@ -85,13 +88,15 @@ $(MAD_EXTRA_DEP_FILE):
 $(MAD_DEPENDS): $(COMMON_MAKEFILES)
 $(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d $(COMMON_MAKEFILES)
 
-$(MAD_LIB): $(MAD_OBJECTS)
-	$(MAD_HIDE) rm -f $(MAD_LIB)
-	$(MAD_PREFIX) ar cr $(MAD_LIB) $(MAD_OBJECTS)
-	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
-	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
-	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
+$(MAD_LIB_A): $(MAD_OBJECTS)
+	$(MAD_HIDE) rm -f $(MAD_LIB_A)
+	$(MAD_HIDE) rm -f $(MAD_LIB_SO)
+	$(MAD_PREFIX) ar cr $(MAD_LIB_A) $(MAD_OBJECTS)
 
+$(MAD_LIB_SO): $(MAD_OBJECTS)
+	$(MAD_HIDE) rm -f $(MAD_LIB_A)
+	$(MAD_HIDE) rm -f $(MAD_LIB_SO)
+	$(MAD_PREFIX) ld -Bdynamic -shared -o $(MAD_LIB_SO) $(MAD_OBJECTS)
 
 $(MAD_REG_OBJECTS): $(MAD_OBJ)/%$(COMMON_EXT).o: $(MAD_SRC)/%.c
 	$(MAD_PREFIX) $(MAD_CC) $(MAD_KCFLAGS) -c $< -o $@

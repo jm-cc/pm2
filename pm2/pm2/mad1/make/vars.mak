@@ -142,7 +142,16 @@ MAD_KCFLAGS	=	$(MAD_CFLAGS) -DMAD_KERNEL \
 MAD_LDFLAGS	=	$(COMMON_LDFLAGS)
 
 # Bibliotheques
-MAD_LIB		:=	$(MAD_LIBD)/libmad$(COMMON_EXT).a
+MAD_LIB_A	:=	$(MAD_LIBD)/libmad$(COMMON_EXT).a
+MAD_LIB_SO	:=	$(MAD_LIBD)/libmad$(COMMON_EXT).so
+
+ifeq ($(MAD_LINK),dyn)
+MAD_LIB		:=	$(MAD_LIB_SO)
+else 
+MAD_LIB		:=	$(MAD_LIB_A)
+endif
+
+
 COMMON_LIBS	+=	$(MAD_LIB)
 
 COMMON_LDFLAGS	+=	$(NET_LFLAGS) $(NET_LLIBS) $(ARCHDLIB)

@@ -54,8 +54,8 @@ MAD_STANDALONE_OPTIONS	=	-Wall -O6 # -DMAD_TIMING -DUSE_SAFE_MALLOC
 
 ################### END OF CUSTOMIZATION SECTION #################
 
-ifndef MADELEINE_ROOT
-MADELEINE_ROOT	=	$(PM2_ROOT)/mad1
+ifndef MAD1_ROOT
+MAD1_ROOT	=	$(PM2_ROOT)/mad1
 endif
 
 ifndef PM2_ARCH
@@ -64,22 +64,22 @@ PM2_SYS		:=	$(shell $(PM2_ROOT)/bin/pm2_sys)
 PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _ARCH)
 endif
 
-include $(MADELEINE_ROOT)/make/custom/options.mak
+include $(MAD1_ROOT)/make/custom/options.mak
 
-include $(MADELEINE_ROOT)/make/archdep/$(shell basename $(PM2_SYS) _SYS).inc
+include $(MAD1_ROOT)/make/archdep/$(shell basename $(PM2_SYS) _SYS).inc
 
-MAD_MAKEFILE	=	$(MADELEINE_ROOT)/make/common.mak \
-			$(MADELEINE_ROOT)/make/custom/options.mak
+MAD_MAKEFILE	=	$(MAD1_ROOT)/make/common.mak \
+			$(MAD1_ROOT)/make/custom/options.mak
 
 ifdef PM2_FLAGS
-THE_MAD_MAKEFILES	=	$(MAD_MAKEFILE) $(PM2_ROOT)/make/common.mak $(MADELEINE_ROOT)/.mad_pm2
+THE_MAD_MAKEFILES	=	$(MAD_MAKEFILE) $(PM2_ROOT)/make/common.mak $(MAD1_ROOT)/.mad_pm2
 else
-THE_MAD_MAKEFILES	=	$(MAD_MAKEFILE) $(MADELEINE_ROOT)/.mad_standalone
+THE_MAD_MAKEFILES	=	$(MAD_MAKEFILE) $(MAD1_ROOT)/.mad_standalone
 endif
 
-MAD_SOBJ	=	$(MADELEINE_ROOT)/source/obj/$(PM2_ARCH_SYS)
-MAD_INC		=	$(MADELEINE_ROOT)/include
-MAD_SRC		=	$(MADELEINE_ROOT)/source
+MAD_SOBJ	=	$(MAD1_ROOT)/source/obj/$(PM2_ARCH_SYS)
+MAD_INC		=	$(MAD1_ROOT)/include
+MAD_SRC		=	$(MAD1_ROOT)/source
 
 ifdef PM2_FLAGS
 MAD_OBJECTS	=	$(MAD_SOBJ)/netinterf.o $(MAD_SOBJ)/madeleine.o
@@ -93,7 +93,7 @@ MAD_HEADERS	=	$(MAD_INC)/madeleine.h $(MAD_INC)/pointers.h \
 			$(MAD_INC)/mad_timing.h $(MAD_INC)/sys/debug.h \
 			$(THE_MAD_MAKEFILES)
 
-MAD_LIBD	=	$(MADELEINE_ROOT)/lib/$(PM2_ARCH_SYS)
+MAD_LIBD	=	$(MAD1_ROOT)/lib/$(PM2_ARCH_SYS)
 MAD_LIB		=	$(MAD_LIBD)/libmad.a
 MAD_LLIB	=	-lmad $(NET_LLIBS) $(ARCHDLIB)
 
@@ -148,19 +148,19 @@ mad_default: $(MAD_LIB)
 
 $(MAD_LIB): $(MAD_OBJECTS)
 ifdef PM2_FLAGS
-	rm -f $(MADELEINE_ROOT)/.mad_standalone
+	rm -f $(MAD1_ROOT)/.mad_standalone
 else
-	rm -f $(MADELEINE_ROOT)/.mad_pm2
+	rm -f $(MAD1_ROOT)/.mad_pm2
 endif
 	rm -f $(MAD_LIB)
 	ar cr $(MAD_LIB) $(MAD_OBJECTS)
 	$(MAD_RANLIB)
 
-$(MADELEINE_ROOT)/.mad_pm2:
-	cp /dev/null $(MADELEINE_ROOT)/.mad_pm2
+$(MAD1_ROOT)/.mad_pm2:
+	cp /dev/null $(MAD1_ROOT)/.mad_pm2
 
-$(MADELEINE_ROOT)/.mad_standalone:
-	cp /dev/null $(MADELEINE_ROOT)/.mad_standalone
+$(MAD1_ROOT)/.mad_standalone:
+	cp /dev/null $(MAD1_ROOT)/.mad_standalone
 
 # madeleine :
 

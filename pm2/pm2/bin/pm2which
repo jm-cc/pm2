@@ -128,13 +128,7 @@ pm2which_do_search() # file
 pm2which_calc()
 {
     export _PM2WHICH_EXDIR
-    if [ -n "$PM2_CONFIG_SOURCEABLE" ] ; then
-	_PM2WHICH_EXDIR=$_PM2CONFIG_BUILD/examples
-    else
-	_PM2WHICH_EXDIR=`pm2-config --flavor="${PM2_FLAVOR}" --builddir 2> /dev/null`/examples
-
-	[ $? -eq 0 ] || pm2which_error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
-    fi
+    _PM2WHICH_EXDIR=$_PM2CONFIG_BUILD/examples
 
     export _PM2WHICH_RESULT
     export _PM2WHICH_NB_FOUND
@@ -212,22 +206,11 @@ export _PM2WHICH_SHOW_PREFIX
 
 _PM2WHICH_ARGS="$*"
 
-export PM2_CONFIG_SOURCEABLE
-if [ -x ${PM2_ROOT}/bin/pm2-fast-config ] ; then
-    PM2_CONFIG_SOURCEABLE=yes
+set -- --source-mode
+. ${PM2_ROOT}/bin/pm2-config
 
-    set -- --source-mode
-    . ${PM2_ROOT}/bin/pm2-fast-config
-
-    _PM2WHICH_LOADER=$_PM2CONFIG_LOADER
-    export _PM2WHICH_LOADER
-else
-    _PM2WHICH_LOADER=`pm2-config --flavor="${PM2_FLAVOR}" --loader 2> /dev/null`
-    export _PM2WHICH_LOADER
-
-    PM2_ARCH=`pm2_arch`
-    PM2_SYS=`pm2_sys`
-fi
+_PM2WHICH_LOADER=$_PM2CONFIG_LOADER
+export _PM2WHICH_LOADER
 
 set -- $_PM2WHICH_ARGS
 

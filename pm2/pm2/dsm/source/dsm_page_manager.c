@@ -553,7 +553,8 @@ void dsm_page_table_init(int my_rank, int confsize)
 
       /* pjh: to avoid repeated allocation */
       dsm_page_table[i]->bitmap = NULL;
-    }
+      dsm_page_table[i]->twin = NULL; /// Big bug: the twin field was uninitialized !!!
+					    }
 
   _dsm_page_ownership_init();
   if (pseudo_static_dsm_area_size != 0)
@@ -818,11 +819,11 @@ void dsm_signal_page_ready(unsigned long index)
 void dsm_lock_page(unsigned long index)
 {
 #ifdef DSM_TABLE_TRACE
-  fprintf(stderr,"  Before lock page:(I am %p)\n", marcel_self());
+  tfprintf(stderr,"  Before lock page(%ld):(I am %p)\n", index, marcel_self());
 #endif
   marcel_mutex_lock(&dsm_page_table[index]->mutex);
 #ifdef DSM_TABLE_TRACE
-  fprintf(stderr,"  After lock page:(I am %p)\n", marcel_self());
+  tfprintf(stderr,"  After lock page(%ld):(I am %p)\n", index, marcel_self());
 #endif
 }
 
@@ -831,7 +832,7 @@ void dsm_unlock_page(unsigned long index)
 {
   marcel_mutex_unlock(&dsm_page_table[index]->mutex);
 #ifdef DSM_TABLE_TRACE
-  fprintf(stderr,"  Unlocked page (I am %p)\n", marcel_self());
+  tfprintf(stderr,"  Unlocked page(%ld): (I am %p)\n", index, marcel_self());
 #endif
 }
 
@@ -1052,6 +1053,7 @@ void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, 
   /* Perform protocol-specific initializations. */
    if (dsm_get_page_add_func(protocol) != NULL)
     (*dsm_get_page_add_func(protocol))(index); 
+   dsm_page_table[index]->twin = NULL;
 }
 
 

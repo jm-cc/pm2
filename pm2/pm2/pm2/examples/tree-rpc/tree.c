@@ -37,43 +37,44 @@
 #include <sys/time.h>
 
 
-int *les_modules, nb_modules, module_courant = 0;
+unsigned cur_proc = 0;
 
-static __inline__ int next_module(void)
+static __inline__ int next_proc(void)
 {
-  int res;
-
   lock_task();
-  module_courant = (module_courant+1) % (nb_modules);
-  res = les_modules[module_courant];
+
+  do {
+    cur_proc = (cur_proc+1) % pm2_config_size();
+  } while(cur_proc == pm2_self());
+
   unlock_task();
-  return res;
+  return cur_proc;
 }
 
 BEGIN_SERVICE(DICHOTOMY)
  int i;
 
-   if(req.inf == req.sup) {
-      res.res = req.inf;
-   } else {
-      int mid = (req.inf + req.sup)/2;
-      LRPC_REQ(DICHOTOMY) req1, req2;
-      LRPC_RES(DICHOTOMY) res1, res2;
-      pm2_rpc_wait_t att[2];
+ if(req.inf == req.sup) {
+   res.res = req.inf;
+ } else {
+   int mid = (req.inf + req.sup)/2;
+   LRPC_REQ(DICHOTOMY) req1, req2;
+   LRPC_RES(DICHOTOMY) res1, res2;
+   pm2_rpc_wait_t att[2];
 
-      req1.inf = req.inf; req1.sup = mid;
-      LRP_CALL(next_module(), DICHOTOMY, STD_PRIO, DEFAULT_STACK,
-		&req1, &res1, &att[0]);
+   req1.inf = req.inf; req1.sup = mid;
+   LRP_CALL(next_proc(), DICHOTOMY, STD_PRIO, DEFAULT_STACK,
+	    &req1, &res1, &att[0]);
 
-      req2.inf = mid+1; req2.sup = req.sup;
-      LRP_CALL(next_module(), DICHOTOMY, STD_PRIO, DEFAULT_STACK,
-		&req2, &res2, &att[1]);
+   req2.inf = mid+1; req2.sup = req.sup;
+   LRP_CALL(next_proc(), DICHOTOMY, STD_PRIO, DEFAULT_STACK,
+	    &req2, &res2, &att[1]);
 
-      for(i=0; i<2; i++)
-         LRP_WAIT(&att[i]);
+   for(i=0; i<2; i++)
+     LRP_WAIT(&att[i]);
 
-      res.res = res1.res + res2.res;
-   }
+   res.res = res1.res + res2.res;
+ }
 END_SERVICE(DICHOTOMY)
 
 
@@ -85,8 +86,8 @@ static void f(void)
   unsigned long temps;
 
   while(1) {
-    tfprintf(stderr, "Entrez un entier raisonnable "
-	     "(0 pour terminer) : ");
+    tfprintf(stderr,
+	     "Entrez un entier raisonnable (0 pour terminer) : ");
     scanf("%d", &req.sup);
 
     if(!req.sup)
@@ -113,13 +114,13 @@ int pm2_main(int argc, char **argv)
 
   DECLARE_LRPC_WITH_NAME(DICHOTOMY, "fac", OPTIMIZE_IF_LOCAL);
 
-  pm2_init(&argc, argv, ASK_USER, &les_modules, &nb_modules);
+  pm2_init(&argc, argv);
 
-  if(pm2_self() == les_modules[0]) { /* master process */
+  if(pm2_self() == 0) { /* master process */
 
     f();
 
-    pm2_kill_modules(les_modules, nb_modules);
+    pm2_halt();
   }
 
   pm2_exit();

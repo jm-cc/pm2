@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.17  2000/05/29 10:11:56  oaumage
+- Mise-a-jour du support de la machine IBM/SP2
+
 Revision 1.16  2000/05/25 00:23:49  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -116,6 +119,13 @@ ______________________________________________________________________________
 #include <sys/time.h>
 #ifdef AIX_SYS
 #include <sys/select.h>
+
+struct timespec
+{
+  long int tv_sec ;
+  long int tv_nsec ;
+} ;
+
 #endif
 
 #include "pm2debug.h"

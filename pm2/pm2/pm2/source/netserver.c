@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: netserver.c,v $
+Revision 1.10  2000/05/29 17:13:08  vdanjean
+End of mad2 corrected
+
 Revision 1.9  2000/02/28 11:17:05  rnamyst
 Changed #include <> into #include "".
 
@@ -80,11 +83,16 @@ void _netserver_term_func(void *arg)
   slot_free(NULL, marcel_stackbase((marcel_t)arg));
 }
 
+#ifdef MAD2
+void pm2_send_stop_server(int i);
+extern int pm2_zero_halt;
+#endif
+
 static any_t netserver(any_t arg)
 {
   unsigned tag;
   
-  marcel_cleanup_push(_netserver_term_func, marcel_self());
+  //marcel_cleanup_push(_netserver_term_func, marcel_self());
 
   while(!finished) {
 #ifdef MAD2
@@ -98,7 +106,19 @@ static any_t netserver(any_t arg)
     else {
       switch(tag) {
       case NETSERVER_END : {
+#ifdef MAD2
+	mad_recvbuf_receive();
+	if ((__pm2_self==0) && !pm2_zero_halt) {
+	  LOG("Netserver handling NETSERVER_END node 0 first...");
+	  pm2_send_stop_server(1);  
+	  pm2_zero_halt=TRUE;
+	} else {
+	  LOG("Netserver handling NETSERVER_END\n");
+	  finished = TRUE;
+	}
+#else
 	finished = TRUE;
+#endif
 	break;
       }
       default : {
@@ -145,18 +165,25 @@ void netserver_wait_end(void)
 {
   int i;
 
-  for(i=0; i<nb_netservers; i++)
+  for(i=0; i<nb_netservers; i++) {
+    mdebug("netserveur waiting for %p\n", _recv_pid[i]);
     marcel_join(_recv_pid[i], NULL);
+    mdebug("netserveur wait for %p done\n", _recv_pid[i]);
+  }
 }
 
 void netserver_stop(void)
 {
+#ifndef MAD2
   int i;
 
   for(i=0; i<nb_netservers; i++) {
     if(_recv_pid[i] == marcel_self())
       finished = TRUE;
-    else
+    else {
+      mdebug("netserveur killing %p\n", _recv_pid[i]);
       marcel_cancel(_recv_pid[i]);
+    }
   }
+#endif
 }

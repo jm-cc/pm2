@@ -4,10 +4,10 @@
 #define LWPTHREAD_LIST_NULL (lwpthread_list) NULL
 
 struct lwpthread_list_st {
-  int lwp;
+  int lwp;		/* == kernel pid */
   int thread;
   int logic;
-  short int cpu;
+  short int cpu;	/* == kernel SMP CPU */
   struct lwpthread_list_st *next;
 };
 

@@ -772,6 +772,9 @@ void marcel_wake_task(marcel_t t, boolean *blocked)
 
   }
 
+  mdebug("%p on LWP(%d) is waking %p. locked = %d\n",
+	 marcel_self(), GET_LWP(marcel_self())->number, t, locked());
+
   if(!IS_RUNNING(t))
     marcel_insert_task(t);
 
@@ -914,6 +917,8 @@ static __inline__ void marcel_switch_to(marcel_t cur, marcel_t next)
       LOG_OUT();
       return;
     }
+    mdebug("switchto(%p, %p) on LWP(%d)\n",
+	   cur, next, GET_LWP(cur)->number);
     goto_next_task(next);
   }
 }
@@ -1046,7 +1051,6 @@ void marcel_give_hand(boolean *blocked, marcel_lock_t *lock)
   LOG_IN();
 
   if(locked() != 1) {
-    fprintf(stderr, "self : %p, lock : %d\n", cur, locked());
     RAISE(LOCK_TASK_ERROR);
   }
   do {

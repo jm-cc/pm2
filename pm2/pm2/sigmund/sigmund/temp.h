@@ -1,4 +1,7 @@
-#include "../../../linux/include/linux/fkt.h"
+#ifndef TEMP_H
+#define TEMP_H
+
+#include "fkt.h"
 
 struct code_name	fkt_code_table[] =
 {
@@ -565,3 +568,4 @@ char	*sys_calls[NSYS_CALLS+1] = {
   "sys_fkt_probe2"				/* 232 */			   /* rdr */
 };
 
+#endif

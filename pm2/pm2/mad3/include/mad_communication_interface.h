@@ -23,7 +23,7 @@
 #define MAD_COMMUNICATION_INTERFACE_H
 
 /*
- * Functions 
+ * Functions
  * ---------
  */
 
@@ -82,7 +82,7 @@ void
 mad_forward_connection_init(p_mad_connection_t in,
 			    p_mad_connection_t out);
 
-void 
+void
 mad_forward_link_init(p_mad_link_t lnk);
 
 void
@@ -91,7 +91,7 @@ mad_forward_before_open_channel(p_mad_channel_t channel);
 void
 mad_forward_after_open_channel(p_mad_channel_t channel);
 
-void 
+void
 mad_forward_disconnect(p_mad_connection_t connection);
 
 void
@@ -103,7 +103,7 @@ mad_forward_finalize_message(p_mad_connection_t connection);
 #ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t
 mad_forward_poll_message(p_mad_channel_t channel);
-#endif // MAD_MESSAGE_POLLING 
+#endif // MAD_MESSAGE_POLLING
 
 p_mad_connection_t
 mad_forward_receive_message(p_mad_channel_t channel);

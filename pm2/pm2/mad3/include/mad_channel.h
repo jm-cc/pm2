@@ -45,6 +45,7 @@ typedef struct s_mad_channel
   p_mad_adapter_t             adapter;
   p_tbx_darray_t              in_connection_darray;
   p_tbx_darray_t              out_connection_darray;
+  char                       *parameter;
 #ifdef MARCEL
   marcel_mutex_t              reception_lock_mutex;
 #else // MARCEL

@@ -61,9 +61,12 @@ printfile=${GENDIR}/fut_print.h
 
 base=8192
 value=0
-for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --modules`; do
+for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
     # Ugly!!! We should use --cppdir <mod> instead of --buildir!
     FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
+    if [ -z "$FUT_FILES" ] ; then
+	continue
+    fi
     for e in `cat $FUT_FILES`; do
     case $e in
         *entry_code)

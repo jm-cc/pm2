@@ -14,40 +14,34 @@
  * General Public License for more details.
  */
 
+#include "pm2_common.h"
+
+static common_attr_t default_static_attr;
+
 #ifdef PM2
-#include "pm2.h"
+static unsigned pm2self, pm2_conf_size;
 #endif /* PM2 */
 
-#ifdef MARCEL
-#include "marcel.h"
-#endif /* MARCEL */
 
-#ifdef MAD1
-#include "madeleine.h"
-#endif /* MAD1 */
-
-#ifdef MAD2
-#include "madeleine.h"
-#endif /* MAD2 */
-
-#ifdef TBX
-#include "tbx.h"
-#endif /* TBX */
-
-#ifdef NTBX
-#include "ntbx.h"
-#endif /* NTBX */
-
-void common_init(int *argc, char *argv[])
+void common_attr_init(common_attr_t *attr)
 {
 #ifdef MAD2
-  /* Objet Madeleine (II) */
-  p_mad_madeleine_t madeleine = NULL;
-#endif /* MAD2 */
+  attr->madeleine = NULL;
+  attr->rank = 0;
+  attr->adapter_set = NULL;
+#ifdef APPLICATION_SPAWN
+  attr->url = NULL;
+#endif
+#endif
+}
 
-#ifdef PM2
-  unsigned pm2_self, pm2_conf_size;
-#endif /* PM2 */
+void common_pre_init(int *argc, char *argv[],
+		     common_attr_t *attr)
+{
+  if(!attr) {
+    common_attr_init(&default_static_attr);
+    attr = &default_static_attr;
+  }
 
 #ifdef WIN_SYS
   marcel_for_win_init(argc, argv);
@@ -186,9 +180,9 @@ void common_init(int *argc, char *argv[])
    */
   {
     void *configuration_file = NULL;
-    void *adapter_set        = NULL;
-    
-    madeleine = mad_object_init(*argc, argv, configuration_file, adapter_set);
+    void *adapter_set = (attr && attr->adapter_set) ? attr->adapter_set : NULL;
+
+    attr->madeleine = mad_object_init(*argc, argv, configuration_file, adapter_set);
   }
 #endif /* MAD2 */
 
@@ -205,7 +199,7 @@ void common_init(int *argc, char *argv[])
    * - Mad2 core initialization
    * - Marcel Data Initialization
    */
-  pm2_mad_init(madeleine);
+  pm2_mad_init(attr->madeleine);
 #endif /* PM2 && MAD2 */
 
 #if defined(MAD2) && defined(EXTERNAL_SPAWN)
@@ -218,13 +212,13 @@ void common_init(int *argc, char *argv[])
    *
    * Should provide:
    * - node rank
-   * - pm2_self
+   * - pm2self
    * - pm2_conf_size
    *
    * Requires:
    * - the `madeleine' object
    */
-  mad_spawn_driver_init(madeleine, argc, argv);
+  mad_spawn_driver_init(attr->madeleine, argc, argv);
 #endif /* MAD2 && EXTERNAL_SPAWN */
 
 #ifdef MAD2
@@ -235,16 +229,19 @@ void common_init(int *argc, char *argv[])
    * Provides:
    * - Mad2 initialization from command line arguments
    * - node rank
-   * - pm2_self
+   * - pm2self
    *
    * Requires:
    * - the `madeleine' object
    */
-  mad_cmd_line_init(madeleine, *argc, argv);
+  mad_cmd_line_init(attr->madeleine, *argc, argv);
 
 #ifdef PM2
-  pm2_self = madeleine->configuration->local_host_id;
+  pm2self = attr->madeleine->configuration->local_host_id;
 #endif /* PM2 */
+
+  if(attr)
+    attr->rank = attr->madeleine->configuration->local_host_id;
 
 #endif /* MAD2 */ 
 
@@ -261,7 +258,7 @@ void common_init(int *argc, char *argv[])
    * - the node rank
    * - high priority
    */
-  mad_output_redirection_init(madeleine, *argc, argv);
+  mad_output_redirection_init(attr->madeleine, *argc, argv);
 #endif /* MAD2 */
 
 #ifdef MAD2
@@ -276,10 +273,10 @@ void common_init(int *argc, char *argv[])
    * Requires:
    * - the `madeleine' object
    */
-  mad_configuration_init(madeleine, *argc, argv);
+  mad_configuration_init(attr->madeleine, *argc, argv);
   
 #ifdef PM2
-  pm2_conf_size = madeleine->configuration->size;
+  pm2_conf_size = attr->madeleine->configuration->size;
 #endif
 
 #endif /* MAD2 */
@@ -297,8 +294,34 @@ void common_init(int *argc, char *argv[])
    * - the `madeleine' object
    * - session configuration information
    */
-  mad_network_components_init(madeleine, *argc, argv);
+  mad_network_components_init(attr->madeleine, *argc, argv);
 #endif /* MAD2 */
+
+#if defined(MAD2) && defined(APPLICATION_SPAWN)
+  if(attr && attr->rank == 0) {
+    // url: shall we store it or display it?
+    if(attr->url) {
+      strcpy(attr->url, mad_generate_url(attr->madeleine));
+    } else {
+      DISP("Run slave processes this way:");
+      DISP("   pm2load %s --mad-slave --mad-url '%s' --mad-rank <r> <arg0>...",
+	   getenv("PM2_PROG_NAME"), mad_generate_url(attr->madeleine));
+    }
+  }
+#endif
+}
+
+void common_post_init(int *argc, char *argv[],
+		      common_attr_t *attr)
+{
+
+  if(!attr)
+    attr = &default_static_attr;
+
+#if defined(MAD2) && defined(APPLICATION_SPAWN)
+  if(attr->rank != 0)
+    mad_parse_url(attr->madeleine);
+#endif
 
 #ifdef MAD2
   /*
@@ -311,12 +334,12 @@ void common_init(int *argc, char *argv[])
    * Requires:
    * - Mad2 initialization from command line arguments
    */
-  mad_purge_command_line(madeleine, argc, argv);
+  mad_purge_command_line(attr->madeleine, argc, argv);
 #endif /* MAD2 */
 
 #ifdef MAD2
 
-#if (!defined EXTERNAL_SPAWN) && (!defined LEONIE_SPAWN) && (!defined APPLICATION_SPAWN)
+#if !defined(EXTERNAL_SPAWN) && !defined(LEONIE_SPAWN) && !defined(APPLICATION_SPAWN)
   /*
    * Mad2 slave nodes spawn
    * ----------------------
@@ -329,7 +352,7 @@ void common_init(int *argc, char *argv[])
    * - MadII network components ready to be connected
    * - connection data
    */
-  mad_slave_spawn(madeleine, *argc, argv);
+  mad_slave_spawn(attr->madeleine, *argc, argv);
 #endif /* EXTERNAL_SPAWN && LEONIE_SPAWN && APPLICATION_SPAWN */
   
 #endif /* MAD 2 */
@@ -347,15 +370,15 @@ void common_init(int *argc, char *argv[])
    * - MadII network components ready to be connected
    * - connection data
    */
-  mad_connect(madeleine, *argc, argv);
+  mad_connect(attr->madeleine, *argc, argv);
 #endif /* MAD2 */
 
 #ifdef MAD1
-  mad_init(argc, argv, 0, NULL, &pm2_conf_size, &pm2_self);
+  mad_init(argc, argv, 0, NULL, &pm2_conf_size, &pm2self);
 #endif /* MAD1 */
 
 #ifdef PM2
-  pm2_init_set_rank(argc, argv, pm2_self, pm2_conf_size);
+  pm2_init_set_rank(argc, argv, pm2self, pm2_conf_size);
 #endif /* PM2 */
 
 #ifdef MARCEL
@@ -367,7 +390,7 @@ void common_init(int *argc, char *argv[])
 #endif /* PM2 */
 
 #ifdef DSM
-  dsm_pm2_init(pm2_self, pm2_conf_size);
+  dsm_pm2_init(pm2self, pm2_conf_size);
 #endif /* DSM */
 
 #ifdef PM2

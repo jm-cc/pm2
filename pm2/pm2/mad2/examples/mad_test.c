@@ -57,7 +57,7 @@ int main(int argc, char **argv)
   /* adapter_set =
      mad_adapter_set_init(2, mad_SISCI, NULL, mad_TCP, NULL); */
   adapter_set = 
-    mad_adapter_set_init(2, mad_MPI, NULL, mad_TCP, NULL); 
+    mad_adapter_set_init(2, mad_BIP, NULL, mad_TCP, NULL); 
 #else /* BI_PROTO */
   /* VIA - loopback 
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_lo"); */
@@ -92,6 +92,7 @@ int main(int argc, char **argv)
   madeleine = mad_init(&argc, argv, NULL, adapter_set);
 #endif /* APPLICATION_SPAWN */
 #endif /* LEONIE_SPAWN */  
+
   for (k = 0 ; k < NB_CHANNELS ; k++)
     {
 #ifdef BI_PROTO

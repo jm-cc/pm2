@@ -63,8 +63,8 @@ yyparse(void);
  * ------------
  */
 int
-leoparse_yy_input(char *buffer,
-		  int   max_size)
+leoparse_yy_input(char         *buffer,
+		  unsigned int  max_size)
 {
   LOG_IN();
 
@@ -159,7 +159,7 @@ leoparse_yy_input(char *buffer,
  * ----------------------...............
  */
 void
-leoparse_open_local_parser_file(char *file_name)
+leoparse_open_local_parser_file(const char *file_name)
 {
   LOG_IN();
   if (parser_file_ptr)
@@ -218,7 +218,7 @@ leoparse_close_local_parser_file(void)
 #ifdef LEOPARSE_REMOTE
 void
 leoparse_open_remote_parser_file(p_leoparse_swann_module_t  module,
-			    char                 *file_name) 
+				 const char                *file_name) 
 {
   LOG_IN();
   if (parser_file_ptr)
@@ -271,7 +271,7 @@ leoparse_close_remote_parser_file(void)
  * ------------------------------------
  */
 p_tbx_htable_t
-leoparse_parse_local_file(char* filename)
+leoparse_parse_local_file(const char* filename)
 {
   leoparse_open_local_parser_file(filename);  
 
@@ -288,8 +288,8 @@ leoparse_parse_local_file(char* filename)
  * --------------
  */
 void
-leoparse_init(int    argc,
-	      char **argv)
+leoparse_init(int    argc TBX_UNUSED,
+	      char **argv TBX_UNUSED)
 {
   LOG_IN();
   if (!initialized)
@@ -320,8 +320,8 @@ leoparse_init(int    argc,
 }
 
 void
-leoparse_purge_cmd_line(int   *argc,
-			char **argv)
+leoparse_purge_cmd_line(int   *argc TBX_UNUSED,
+			char **argv TBX_UNUSED)
 {
   LOG_IN();
   /* --- */

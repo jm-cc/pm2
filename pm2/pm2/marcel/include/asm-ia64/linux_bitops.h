@@ -27,7 +27,7 @@
 //#include <linux/compiler.h>
 //#include <linux/types.h>
 
-//#include <asm/intrinsics.h>
+#depend "asm/linux_intrinsics.h[]"
 
 
 /**
@@ -366,8 +366,7 @@ static inline unsigned long
 ma_ffz (unsigned long x)
 {
 	unsigned long result;
-	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x & (~x - 1))); 
-	//	result = ma_ia64_popcnt(x & (~x - 1));
+	result = ma_ia64_popcnt(x & (~x - 1));
 	return result;
 }
 
@@ -385,8 +384,7 @@ static __inline__ unsigned long
 __ma_ffs (unsigned long x)
 {
 	unsigned long result;
-	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x & (~x - 1)));
-	//result = ma_ia64_popcnt((x-1) & ~x);
+	result = ma_ia64_popcnt((x-1) & ~x);
 	return result;
 }
 
@@ -454,103 +452,24 @@ ma_hweight64 (unsigned long x)
 
 //#endif /* __KERNEL__ */
 
-/*
- * Find next zero bit in a bitmap reasonably efficiently..
- */
+
 #section marcel_functions
-static inline int
-ma_find_next_zero_bit (void *addr, unsigned long size, unsigned long offset);
-#section marcel_inline
-static inline int
-ma_find_next_zero_bit (void *addr, unsigned long size, unsigned long offset)
-{
-	unsigned long *p = ((unsigned long *) addr) + (offset >> 6);
-	unsigned long result = offset & ~63UL;
-	unsigned long tmp;
+extern int __ma_find_next_zero_bit (void *addr, unsigned long size,
+				    unsigned long offset);
+extern int __ma_find_next_bit(const void *addr, unsigned long size,
+			      unsigned long offset);
 
-	if (offset >= size)
-		return size;
-	size -= result;
-	offset &= 63UL;
-	if (offset) {
-		tmp = *(p++);
-		tmp |= ~0UL >> (64-offset);
-		if (size < 64)
-			goto found_first;
-		if (~tmp)
-			goto found_middle;
-		size -= 64;
-		result += 64;
-	}
-	while (size & ~63UL) {
-		if (~(tmp = *(p++)))
-			goto found_middle;
-		result += 64;
-		size -= 64;
-	}
-	if (!size)
-		return result;
-	tmp = *p;
-found_first:
-	tmp |= ~0UL << size;
-	if (tmp == ~0UL)		/* any bits zero? */
-		return result + size;	/* nope */
-found_middle:
-	return result + ma_ffz(tmp);
-}
-
+#section marcel_macros
+#define ma_find_next_zero_bit(addr, size, offset) \
+			__ma_find_next_zero_bit((addr), (size), (offset))
+#define ma_find_next_bit(addr, size, offset) \
+			__ma_find_next_bit((addr), (size), (offset))
 /*
  * The optimizer actually does good code for this case..
  */
 #section marcel_macros
 #define ma_find_first_zero_bit(addr, size) ma_find_next_zero_bit((addr), (size), 0)
 
-/*
- * Find next bit in a bitmap reasonably efficiently..
- */
-#section marcel_functions
-static inline int
-ma_find_next_bit(const void *addr, unsigned long size, unsigned long offset);
-#section marcel_inline
-static inline int
-ma_find_next_bit(const void *addr, unsigned long size, unsigned long offset)
-{
-	unsigned long *p = ((unsigned long *) addr) + (offset >> 6);
-	unsigned long result = offset & ~63UL;
-	unsigned long tmp;
-
-	if (offset >= size)
-		return size;
-	size -= result;
-	offset &= 63UL;
-	if (offset) {
-		tmp = *(p++);
-		tmp &= ~0UL << offset;
-		if (size < 64)
-			goto found_first;
-		if (tmp)
-			goto found_middle;
-		size -= 64;
-		result += 64;
-	}
-	while (size & ~63UL) {
-		if ((tmp = *(p++)))
-			goto found_middle;
-		result += 64;
-		size -= 64;
-	}
-	if (!size)
-		return result;
-	tmp = *p;
-  found_first:
-	tmp &= ~0UL >> (64-size);
-	if (tmp == 0UL)		/* Are any bits set? */
-		return result + size; /* Nope. */
-  found_middle:
-	return result + __ma_ffs(tmp);
-}
-
-#section marcel_macros
 #define ma_find_first_bit(addr, size) ma_find_next_bit((addr), (size), 0)
 
 //#ifdef __KERNEL__

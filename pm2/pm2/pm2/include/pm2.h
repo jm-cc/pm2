@@ -152,6 +152,13 @@ void pm2_register_service(int *num, rpc_func_t func,
 	sizeof(LRPC_RES(name)), name##_pack_res, name##_unpack_res, \
 	string, optimize_if_local)
 
+#define DECLARE_RAW_RPC(name) \
+	pm2_register_service(&name, (rpc_func_t) _##name##_func, \
+	0, NULL, NULL, \
+	0, NULL, NULL, \
+	#name, DO_NOT_OPTIMIZE)
+
+
 _PRIVATE_ int pm2_lrpc_runned_by(marcel_t pid);
 _PRIVATE_ char *pm2_lrpc_name(int num);
 
@@ -483,14 +490,10 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 	} \
 	{
 
-#define BEGIN_RAWSERVICE(name) \
+#define BEGIN_RAW_SERVICE(name) \
   void _##name##_func(rpc_args *_arg) { \
-    marcel_setspecific(_pm2_lrpc_num_key, (any_t)((long)_arg->num)); \
-    marcel_setspecific(_pm2_block_key, (any_t)&_arg->sd); \
-    marcel_setspecific(_pm2_isomalloc_nego_key, (any_t) 0);\
-    block_init_list(&_arg->sd); \
-    marcel_cleanup_push(_pm2_term_func, marcel_self()); \
-    {
+
+#define pm2_raw_waitdata() mad_recvbuf_receive()
 
 #define pm2_wait_for_data() \
   { \
@@ -500,8 +503,8 @@ _PRIVATE_ extern void _pm2_term_func(void *arg);
 
 _PRIVATE_ void _end_service(rpc_args *args, any_t res, int local);
 
-#define END_RAWSERVICE(name) \
-    }}
+#define END_RAW_SERVICE(name) \
+    }
 
 #define END_SERVICE(name) \
 	} \

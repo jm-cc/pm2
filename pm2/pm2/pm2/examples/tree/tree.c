@@ -109,7 +109,7 @@ static void dicho(void)
 
 static void f(int argc, char *argv[])
 {
-  Tick t1, t2;
+  tbx_tick_t t1, t2;
   unsigned long temps;
   unsigned inf, sup, res;
   pm2_completion_t c;
@@ -131,7 +131,7 @@ static void f(int argc, char *argv[])
 
     inf = 1;
 
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
 
     pm2_completion_init(&c, completion_handler, &res);
 
@@ -143,9 +143,9 @@ static void f(int argc, char *argv[])
 
     pm2_completion_wait(&c);
 
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
 
-    temps = timing_tick2usec(TICK_DIFF(t1, t2));
+    temps = TBX_TIMING_DELAY(t1, t2);
     fprintf(stderr, "temps = %ld.%03ldms\n", temps/1000, temps%1000);
 
     tfprintf(stderr, "1+...+%d = %d\n", sup, res);

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.4  2000/01/04 16:45:50  oaumage
+- mise a jour pour support de MPI
+- mad_test.c: support multiprotocole MPI+TCP
+
 Revision 1.3  1999/12/15 17:31:08  oaumage
 Ajout de la commande de logging de CVS
 
@@ -61,13 +65,13 @@ ______________________________________________________________________________
 #define MGR_MODE_2 mad_receive_CHEAPER
 
 /* parameter values */
-static int param_control_receive = 1;
+static int param_control_receive = 0;
 static int param_send_mode = mad_send_CHEAPER;
 static int param_receive_mode = mad_receive_CHEAPER;
-static int param_nb_echantillons = 10;
+static int param_nb_echantillons = 1000;
 static int param_min_size = 0;
 static int param_max_size = 256;
-static int param_step = 1;
+static int param_step = 16;
 static int param_nb_tests = 5;
 static int param_bandwidth = 0;
 static int param_no_zero = 1;
@@ -457,14 +461,14 @@ int main(int argc, char **argv)
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
-  /* TCP */
-  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
+  /* TCP 
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
   /* SISCI
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
-  /* MPI 
-     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); */
+  /* MPI */
+     adapter_set = mad_adapter_set_init(1, mad_MPI, NULL); 
 
   mad_timing_init();
   madeleine = mad_init(&argc, argv, "mad2_conf", adapter_set);

@@ -66,13 +66,29 @@ LIB_REP_TO_BUILD := \
 
 # Noms des fichiers bibliothèques cibles
 #---------------------------------------------------------------------
+STAMP_BUILD_LIB=$(foreach name,$(LIBNAME) $(filter-out $(LIBNAME),$(LIBRARY)),\
+	$(LIB_GEN_STAMP)/stamp-build-$(name))
+STAMP_BUILD_LIB_A=$(addsuffix .a, $(STAMP_BUILD_LIB))
+STAMP_BUILD_LIB_SO=$(addsuffix .so, $(STAMP_BUILD_LIB))
+STAMP_LINK_LIB=$(foreach name,$(LIBNAME) $(filter-out $(LIBNAME),$(LIBRARY)), \
+	$(LIB_GEN_STAMP)/stamp-link-$(name))
+
+LIB_SO_MAJ?=0
+
 LIB_LIB_A=$(LIB_GEN_LIB)/lib$(LIBNAME)$(LIB_EXT).a
 LIB_LIB_SO=$(LIB_GEN_LIB)/lib$(LIBNAME)$(LIB_EXT).so
-ifeq ($(BUILD_STATIC_LIBS),true)
-LIB_LIB += $(LIB_LIB_A)
+LIB_LIB_SO_MAJ=$(LIB_LIB_SO)$(addprefix .,$(LIB_SO_MAJ))
+LIB_LIB_SO_MAJ_MIN=$(LIB_LIB_SO_MAJ)$(addprefix .,$(LIB_SO_MIN))
+
+ifeq ($(BUILD_STATIC_LIBS),yes)
+LIB_LIB += buildstatic
 endif
-ifeq ($(BUILD_DYNAMIC_LIBS),true)
-LIB_LIB += $(LIB_LIB_SO)
+ifeq ($(BUILD_DYNAMIC_LIBS),yes)
+LIB_LIB += builddynamic
+LIB_SO_MAP = $(wildcard lib$(LIBNAME).map)
+ifneq ($(LINK_DYNAMIC_LIBS),)
+LINK_LIB += linkdynamic
+endif
 endif
 
 # Sources
@@ -82,39 +98,39 @@ LIB_S_SOURCES +=  $(wildcard $(LIB_SRC)/*.S)
 
 # Bases : fichiers sans extension ni repertoire
 #---------------------------------------------------------------------
-LIB_C_BASE := $(foreach I, $(LIB_C_SOURCES), $(notdir $(basename $I)))
-LIB_S_BASE := $(foreach I, $(LIB_S_SOURCES), $(notdir $(basename $I)))
-LIB_BASE   := $(LIB_C_BASE) $(LIB_S_BASE)
+LIB_C_BASE = $(foreach I, $(LIB_C_SOURCES), $(notdir $(basename $I)))
+LIB_S_BASE = $(foreach I, $(LIB_S_SOURCES), $(notdir $(basename $I)))
+LIB_BASE   = $(LIB_C_BASE) $(LIB_S_BASE)
 
 # Objets
 #---------------------------------------------------------------------
-LIB_C_OBJECTS := $(foreach I, $(LIB_C_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).o)
-LIB_S_OBJECTS := $(foreach I, $(LIB_S_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).o)
-LIB_OBJECTS   := $(LIB_C_OBJECTS) $(LIB_S_OBJECTS)
+LIB_C_OBJECTS = $(foreach I, $(LIB_C_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).o)
+LIB_S_OBJECTS = $(foreach I, $(LIB_S_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).o)
+LIB_OBJECTS   = $(LIB_C_OBJECTS) $(LIB_S_OBJECTS)
 
 # PICS - librairies dynamiques
 #---------------------------------------------------------------------
-LIB_C_PICS :=  $(foreach I, $(LIB_C_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).pic)
-LIB_S_PICS :=  $(foreach I, $(LIB_S_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).pic)
-LIB_PICS   :=  $(LIB_C_PICS) $(LIB_S_PICS)
+LIB_C_PICS =  $(foreach I, $(LIB_C_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).pic)
+LIB_S_PICS =  $(foreach I, $(LIB_S_BASE), $(LIB_GEN_OBJ)/$I$(LIB_EXT).pic)
+LIB_PICS   =  $(LIB_C_PICS) $(LIB_S_PICS)
 
 # Preprocs
 #---------------------------------------------------------------------
-LIB_C_PREPROC := $(foreach I, $(LIB_C_BASE), $(LIB_GEN_CPP)/$I$(LIB_EXT).i)
-LIB_S_PREPROC := $(foreach I, $(LIB_S_BASE), $(LIB_GEN_CPP)/$I$(LIB_EXT).si)
-LIB_PREPROC   := $(LIB_C_PREPROC) $(LIB_S_PREPROC)
+LIB_C_PREPROC = $(foreach I, $(LIB_C_BASE), $(LIB_GEN_CPP)/$I$(LIB_EXT).i)
+LIB_S_PREPROC = $(foreach I, $(LIB_S_BASE), $(LIB_GEN_CPP)/$I$(LIB_EXT).si)
+LIB_PREPROC   = $(LIB_C_PREPROC) $(LIB_S_PREPROC)
 
 # FUT entries
 #---------------------------------------------------------------------
 # LIB_S_FUT : pas de sens
-LIB_C_FUT := $(foreach I, $(LIB_C_BASE), $(LIB_GEN_CPP)/$I$(LIB_EXT).fut)
-LIB_FUT   := $(LIB_C_FUT)
+LIB_C_FUT = $(foreach I, $(LIB_C_BASE), $(LIB_GEN_CPP)/$I$(LIB_EXT).fut)
+LIB_FUT   = $(LIB_C_FUT)
 
 # Dependances
 #---------------------------------------------------------------------
-LIB_C_DEPENDS := $(foreach I, $(LIB_C_BASE), $(LIB_GEN_DEP)/$I$(LIB_EXT).d)
-LIB_S_DEPENDS := $(foreach I, $(LIB_S_BASE), $(LIB_GEN_DEP)/$I$(LIB_EXT).d)
-LIB_DEPENDS   := $(strip $(LIB_C_DEPENDS) $(LIB_S_DEPENDS))
+LIB_C_DEPENDS = $(foreach I, $(LIB_C_BASE), $(LIB_GEN_DEP)/$I$(LIB_EXT).d)
+LIB_S_DEPENDS = $(foreach I, $(LIB_S_BASE), $(LIB_GEN_DEP)/$I$(LIB_EXT).d)
+LIB_DEPENDS   = $(strip $(LIB_C_DEPENDS) $(LIB_S_DEPENDS))
 
 # "Convertisseurs" utiles
 #---------------------------------------------------------------------

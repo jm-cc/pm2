@@ -10,7 +10,7 @@
   Vincent Danjean \and Raymond Namyst}
 
 \date{\footnotesize%
-\url{$Id: start.tex,v 1.3 2001/04/02 14:47:48 bouge Exp $}%
+\url{$Id: start.tex,v 1.5 2001/04/02 15:12:02 bouge Exp $}%
 }
 
 \maketitle
@@ -701,10 +701,9 @@ Observe that the source file \|hello.c| should be mentioned
 \|gcc| in the libraries from left to right.
 
 Well... Such a command line is rather tedious to enter! You will find
-on Figure~\ref{prog:Makefile} (page~\pageref{prog:Makefile}) a
-\|Makefile| which does all the work for you. Executing \|make hello|
-will compile source file \|hello.c| with all the necessary
-parameters. 
+on Figure~\ref{prog:Makefile1} a \|Makefile| which does all the work
+for you. Executing \|make hello| will compile source file \|hello.c|
+with all the necessary parameters.
 
 Observe that using dynamic calls to the \|pm2config| utility garantees
 that you are compiling with the suitable options with respect to the
@@ -721,7 +720,7 @@ main functionalities provided by the PM2 programming interface.
 
 \figurelisting {hello.c} {Minimal PM2 program} {prog:hello}
 
-Figure~\ref{prog:hello} (page~\pageref{prog:hello}) shows an
+Figure~\ref{prog:hello} shows an
 example of a minimal PM2 code. Compile it and run it:
 \begin{shell}
 ravel% make hello
@@ -764,8 +763,7 @@ violation of the usual \emph{C~convention}, there exists some
 applications that require to use the regular \|main| function name. In
 particular, it may be the case with applications linked with non-C
 code (\emph{e.g.}, Fortran code).  In this case, please refer to
-Section~\ref{sec:tradimain} (page~\pageref{sec:tradimain}) for
-details.
+Section~\ref{sec:tradimain} for details.
 
 \subsubsection{PM2 initialization}
 
@@ -776,8 +774,7 @@ among all the PM2 nodes so that each process is assigned a unique
 \emph{rank number} on returning from \|pm2_init|. In consequence, it
 makes no sense to call function concerned with the global execution
 environment (such as node numbers, etc.)  \emph{before} this point.
-Please, refer to Section~\ref{sec:rank}, page~\pageref{sec:rank} for
-details..
+Please, refer to Section~\ref{sec:rank} for details.
 
 Most importantly, the \|pm2_init| function spawns a number of internal
 \emph{thread daemons} that are in charge of listening the network and
@@ -791,9 +788,8 @@ placed just after \|pm2_init|, an arbitrary delay may occur between
 the two successive instructions! It follows that if some
 initialization code needs to be performed before any thread is
 started, then this code \emph{must} be called \emph{before}
-\|pm2_init|.  See Section~\ref{sec:startupfunc}
-(page~\pageref{sec:startupfunc}) for a more complete discussion about
-this subtle initialization topic.
+\|pm2_init|.  See Section~\ref{sec:startupfunc} for a more complete
+discussion about this subtle initialization topic.
 
 Note also that the Unix standard input/output streams may not be
 initialized correctly before the call to \|pm2_init|. Thus, the
@@ -807,15 +803,15 @@ routine of the C~library, which is protected against multithreading
 As mentioned previously, all nodes perform this call and actually
 produce the ``\emph{Hello World!}'' string on their output stream.
 Yet, only the output of node~0 is observed here.
-Section~\ref{sec:output}, page~\pageref{sec:output}, describes where
-these outputs actually go during execution.
+Section~\ref{sec:output} describes where these outputs actually go
+during execution.
 
 \subsubsection{Who's who?}
 \label{sec:rank}
 
 Each processing node (that is, Unix process) taking part to a given
 execution receives its own unique \emph{rank} number. This is an
-\|unsigned int| between 0 and $\mbox{\|pm2_config_size()|}-1$. A node
+\|unsigned int| between 0 and $(\mbox{\|pm2_config_size()|}-1)$. A node
 can learn its own rank by calling \|pm2_self()|.
 
 The processing node with rank~0 has a particular status because it is
@@ -848,21 +844,27 @@ by any other kind of test selecting exactly one node, for instance:
 if(pm2_self() == pm2_config_size()-1)
 \end{program}
 
-At least conceptually, \|pm2_halt| performs a broadcast that requires
-all nodes to stop answering to requests from the outside world. In
-fact, this steps cuts the links between nodes: it stops the internal
-daemon threads that are in charge of polling the network.  Note that
-after a node receives this order, it still continues its normal
-execution in a \emph{standalone} mode: \emph{halting} is no
+At least conceptually, the \|pm2_halt| routine performs a broadcast
+that requires all nodes to stop answering to requests from the outside
+world. In fact, this steps cuts the links between nodes: it stops the
+internal daemon threads that are in charge of polling the network.
+Note that after a node receives this order, it still continues its
+normal execution in a \emph{standalone} mode: \emph{halting} is no
 \emph{killing}!
 
-To exit from a PM2 session, each node must call \|pm2_exit()|.  This
-call blocks the calling thread until all other threads (belonging to
-the same node) terminate. In our example, no other application thread
-but the main one is running. Thus, \|pm2_exit| completes as soon as
-the internal daemon threads are stopped. Had we removed the call to
-\|pm2_halt|, then all nodes would remain hanging, waiting for ever for
-external requests!
+To exit from a PM2 session, each node must call the \|pm2_exit|
+routine.  This call blocks the calling thread until all other threads
+(belonging to the same node) terminate. In our example, no other
+application thread but the main one is running. Thus, \|pm2_exit|
+completes as soon as the internal daemon threads are stopped. Had we
+removed the call to \|pm2_halt|, then all nodes would remain hanging,
+waiting for ever for external requests!
+
+As the call to \|pm2_exit| is potentially blocking, the thread in
+charge of calling \|pm2_halt| should do it first. However, observe
+that it may well be the case that at a node, some thread is in charge
+of calling \|pm2_halt| and another one \|pm2_exit|, so that the order
+may in fact be irrelevant.
 
 From the user point of view, the PM2 program terminates as soon as the
 shell prompts for the next command from the terminal. This corresponds
@@ -871,8 +873,7 @@ actually still run after the main node has completed.  In our example,
 the main node can even terminate before any other node has started
 executing \|tprintf|! Fortunaltely, this is not a problem here, since
 \|tprintf| does not involve any communication with other nodes. We will
-further discuss this termination problem in Section~\ref{sec:output},
-page~\pageref{sec:output}.
+further discuss this termination problem in Section~\ref{sec:output}.
 
 \begin{note}
   LB: Is there a specific ordering to call halt and exit? In this
@@ -904,7 +905,7 @@ Hello World!
   Example~1} {prog:hello1}
 
 Observe that there is no reason why all the nodes should make the
-\emph{same} output requests. Consider for instance the variant of rge
+\emph{same} output requests. Consider for instance the variant of the
 \|hello| program on Figure~\ref{prog:hello1}. Only node~1 outputs a
 message.  Also, just to show you that any node can force termination,
 node~2 is this time in charge of it!
@@ -1227,13 +1228,13 @@ for another client. This may result into deadlocks if the service
 includes some potentially blocking actions, such as invoking other
 services, either explicitely or implicitely.
 
-\figurelisting {rpc-threads.c} {Spwaning a fresh thread to serve a
+\figurelisting {rpc-threads.c} {Spawning a fresh thread to serve a
   remote request} {prog:rpc-threads}
 
 Such problems can be addressed by executing services into a fresh
 threads instead of the original service handler. This technique is
 demonstrated on Program~\ref{prog:rpc-threads}. Service function
-\|sample_service| spwans a fresh thread each time it is invoked
+\|sample_service| spawns a fresh thread each time it is invoked
 through a RPC request. Then, it immediately returns. The child thread
 is in charge of extracting the message from the network through a series
 of \|unpack| calls in the usual way. 
@@ -1660,7 +1661,7 @@ on getting migrated.
 
 Consider the program displayed on Figure~\ref{sec:self-migration}. It
 is a good opportunity to demonstrate advanced techniques for threads
-management. The idea is the following: Node~0 spwans 4~children
+management. The idea is the following: Node~0 spawns 4~children
 threads, numbered from~0 to~3. (Remind that threads disregard
 migration by default.)  Then, the children threads with an even number
 agree on migrating, and all children threads loop, repeatedly yielding

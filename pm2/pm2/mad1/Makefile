@@ -42,11 +42,7 @@ LIBNAME=mad
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
-ifdef OLD_MAKEFILE
-LIB_PROT := $(shell $(PM2_CONFIG) --protocols $(LIBRARY))
-else
 -include $(PM2_MAK_DIR)/mad1-specific.mak
-endif
 
 LIB_C_SOURCES_ADDED := $(LIB_SRC)/$(LIB_PROT)/netinterf.c
 LIB_C_OBJECTS_ADDED := $(LIB_GEN_OBJ)/netinterf$(LIB_EXT).o

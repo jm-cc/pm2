@@ -1,5 +1,19 @@
 #!/bin/sh
 
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
 error() # msg
 {
     echo $*
@@ -61,8 +75,9 @@ echo >> $deffile
 printfile=${GENDIR}/fut_print.h
 > $printfile
 
-base=8192
+base=4096 # 0x1000
 value=0
+other=32768 # 0x8000
 for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
     # Ugly!!! We should use --cppdir <mod> instead of --buildir!
     FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
@@ -74,18 +89,17 @@ for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
         *entry_code)
 	    num=`expr $value + $base`
 
-	    echo "{ $num, \"`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`\" }," >> $printfile
+	    echo "{ `printf "0x%x" $num`, \"`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`\" }," >> $printfile
 
 	    # The following generates the right shifted code
 	    num=`expr $num \* 256 + 12`
 	    num=`printf "0x%x" $num`
             echo "unsigned $e = $num ;" >> $deffile
-
             ;;
         *exit_code)
 	    num=`expr $value + $base + 256`
 
-	    echo "{ $num, \"`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`\" }," >> $printfile
+	    echo "{ `printf "0x%x" $num`, \"`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`\" }," >> $printfile
 
 	    # The following generates the right shifted code
 	    num=`expr $num \* 256 + 12`
@@ -98,7 +112,21 @@ for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --profmods`; do
 		value=0
 	    fi
 	    ;;
-	*) echo "FATAL ERROR!"; exit 1;;
+        *single_code)
+
+	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
+
+	    # The following generates the right shifted code
+	    num=`expr $other \* 256 + 12`
+	    num=`printf "0x%x" $num`
+            echo "unsigned $e = $num ;" >> $deffile
+
+	    other=`expr $other + 1`
+            ;;
+	*)
+	    echo "FATAL ERROR!";
+	    exit 1
+	    ;;
     esac
     done
 done

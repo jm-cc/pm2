@@ -302,7 +302,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		 */
 		marcel_ctx_set_new_stack(new_task, 
 					 new_task->initial_sp-
-					 (base_stack-get_sp()));
+					 (MAL(base_stack-get_sp())));
 		/* départ du fils, en mode interruption */
 
 		LOG_IN();
@@ -353,7 +353,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 		marcel_ctx_set_new_stack(new_task,
 					 new_task->initial_sp -
-					 (base_stack-get_sp()));
+					 (MAL(base_stack-get_sp())));
 		/* départ du fils, en mode interruption */
 
 		/* ré-enqueuer le père */

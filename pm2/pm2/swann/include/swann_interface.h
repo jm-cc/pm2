@@ -36,6 +36,12 @@
 
 ______________________________________________________________________________
 $Log: swann_interface.h,v $
+Revision 1.3  2000/04/21 15:40:19  oaumage
+- fusion de la barnche pm2_mad2_multicluster
+
+Revision 1.2.2.1  2000/04/03 13:44:45  oaumage
+- ajout de fonctions de transmission pour int, long, double et string
+
 Revision 1.2  2000/03/27 12:53:56  oaumage
 - progression des fonctionnalites:
   * support reseau
@@ -88,6 +94,14 @@ swann_file_write_block(p_swann_file_t  file,
 		      void            *ptr,
 		      size_t           length);
 
+swann_status_t
+swann_file_send_block(p_swann_net_client_t client,
+		      p_swann_file_t       file);
+
+swann_status_t
+swann_file_receive_block(p_swann_net_client_t client,
+			 p_swann_file_t       file);
+
 /*
  * Process management
  * ------------------......................................................
@@ -115,5 +129,34 @@ p_swann_net_server_t
 swann_net_server_init(swann_net_server_id_t     id,
 		      char                     *master_host_name,
 		      p_ntbx_connection_data_t  connection_data);
+
+void
+swann_net_send_int(p_ntbx_client_t client,
+		   int             data);
+
+int
+swann_net_receive_int(p_ntbx_client_t client);
+
+void
+swann_net_send_long(p_ntbx_client_t client,
+		    long            data);
+
+long
+swann_net_receive_long(p_ntbx_client_t client);
+
+void
+swann_net_send_double(p_ntbx_client_t client,
+		      double          data);
+
+double
+swann_net_receive_double(p_ntbx_client_t client);
+
+void
+swann_net_send_string(p_ntbx_client_t  client,
+		      char            *data);
+
+char *
+swann_net_receive_string(p_ntbx_client_t client);
+
 
 #endif /* __SWANN_INTERFACE_H */

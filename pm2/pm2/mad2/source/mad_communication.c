@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.9  2000/02/28 11:06:14  rnamyst
+Changed #include "" into #include <>.
+
 Revision 1.8  2000/02/08 17:49:06  oaumage
 - support de la net toolbox
 
@@ -70,7 +73,7 @@ ______________________________________________________________________________
  */
 /* #define DEBUG */
 /* #define TRACING */
-#include <madeleine.h>
+#include "madeleine.h"
 
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t   channel,

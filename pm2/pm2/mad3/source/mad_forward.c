@@ -184,7 +184,7 @@ mad_forward_direct_reemit_block(void *arg)
   p_tbx_slist_t                     message_list       = NULL;
 #ifdef ACCUMULATION
  int m = ACCUMULATION;
-#endif	  
+#endif
   LOG_IN();
   rarg               = arg;
   vout               = rarg->connection;
@@ -238,9 +238,9 @@ mad_forward_direct_reemit_block(void *arg)
 #ifdef ACCUMULATION
 	  {
 	    int l = 0;
-	    
+
 	    l = tbx_slist_get_length(block_slist);
-	    
+
 	    if (l > m)
 	      {
 		m = l;
@@ -289,6 +289,7 @@ mad_forward_direct_reemit_block(void *arg)
       if (interface->finalize_message)
 	interface->finalize_message(out);
 
+      
       marcel_mutex_unlock(&(out->lock_mutex));
       marcel_mutex_unlock(&(vout->lock_mutex));
     }
@@ -529,7 +530,7 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
 	    {
 	      fbh->block->length = fbh->length;
 	    }
-	  
+
 	  interface->receive_buffer(data_lnk, &(fbh->block));
 	}
       else
@@ -1764,7 +1765,7 @@ mad_forward_send_buffer(p_mad_link_t   lnk,
 
       if (interface->new_message)
 	interface->new_message(out);
-      
+
       if (nb_block)
 	{
 	  mad_forward_fill_fbh_data(data, src, dst, nb_block + 1,

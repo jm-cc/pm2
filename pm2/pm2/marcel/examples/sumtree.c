@@ -47,6 +47,8 @@ static any_t sum(any_t arg)
 {
   job *j = (job *)arg;
 
+  LOG_IN();
+
 #ifdef AUGMENT_COMPUTING_TIME
   { int j = 100000; while(j--); }
 #endif
@@ -85,6 +87,8 @@ static any_t sum(any_t arg)
   marcel_write(j->channel[1], &j->res, sizeof(j->res));
 #endif
 
+  LOG_OUT();
+
   return NULL;
 }
 
@@ -101,7 +105,7 @@ int marcel_main(int argc, char **argv)
   if(argc > 1) {
 
 #ifdef PROFILE
-    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 1);
+    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK | USER_APP_MASK, 1);
 #endif
 
     j.inf = 1;

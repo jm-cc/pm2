@@ -41,7 +41,7 @@
 
 #define ESSAIS 5
 
-static Tick t1, t2;
+static tbx_tick_t t1, t2;
 
 static void term_func(void *arg)
 {
@@ -77,7 +77,7 @@ static void eval_thread_creation(void)
   temps = ~0L;
   for(i=0; i<10; i++) {
 
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
 
     stack = slot_general_alloc(NULL, 0, &granted, NULL, NULL);
     marcel_attr_setstackaddr(&attr, stack);
@@ -87,22 +87,22 @@ static void eval_thread_creation(void)
     marcel_create(NULL, &attr, (marcel_func_t)null_thread, NULL);
     /* marcel_trace_off(); */
 
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
 
-    temps = min(temps, timing_tick2usec(TICK_DIFF(t1, t2)));
+    temps = min(temps, TBX_TIMING_DELAY(t1, t2));
   }
   fprintf(stderr, "thread create : %ld.%03ldms\n", temps/1000, temps%1000);
 
   fprintf(stderr, "With static stacks :\n");
   temps = ~0L;
   {
-    char *stack = MALLOC(2*SLOT_SIZE);
+    char *stack = tmalloc(2*SLOT_SIZE);
     unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) & 
 			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
 
     for(i=0; i<10; i++) {
 
-      GET_TICK(t1);
+      TBX_GET_TICK(t1);
 
       marcel_attr_setstackaddr(&attr, stack);
       marcel_attr_setstacksize(&attr, stsize);
@@ -111,28 +111,28 @@ static void eval_thread_creation(void)
       marcel_create(NULL, &attr, (marcel_func_t)null_static_thread, NULL);
       /* marcel_trace_off(); */
 
-      GET_TICK(t2);
+      TBX_GET_TICK(t2);
 
-      temps = min(temps, timing_tick2usec(TICK_DIFF(t1, t2)));
+      temps = min(temps, TBX_TIMING_DELAY(t1, t2));
     }
     fprintf(stderr, "thread create : %ld.%03ldms\n", temps/1000, temps%1000);
 
-    FREE(stack);
+    tfree(stack);
   }
 
   fprintf(stderr, "With pm2_thread_create :\n");
   temps = ~0L;
   for(i=0; i<10; i++) {
 
-    GET_TICK(t1);
+    TBX_GET_TICK(t1);
 
     marcel_trace_on();
     pm2_thread_create(null_pm2_thread, NULL);
     marcel_trace_off();
 
-    GET_TICK(t2);
+    TBX_GET_TICK(t2);
 
-    temps = min(temps, timing_tick2usec(TICK_DIFF(t1, t2)));
+    temps = min(temps, TBX_TIMING_DELAY(t1, t2));
   }
   fprintf(stderr, "thread create : %ld.%03ldms\n", temps/1000, temps%1000);
 }
@@ -141,9 +141,13 @@ int pm2_main(int argc, char **argv)
 {
   pm2_init(&argc, argv);
 
-  eval_thread_creation();
+  if(pm2_self() == 0) {
 
-  pm2_halt();
+    eval_thread_creation();
+
+    pm2_halt();
+
+  }
 
   pm2_exit();
 

@@ -105,14 +105,20 @@ __ma_initfunc(timer_start, MA_INIT_TIMER, "Install TIMER SoftIRQ");
  * Trappeur de SIGSEGV, de manière à obtenir des indications sur le
  * thread fautif (ça aide pour le debug !)
  */
+#ifdef SA_SIGINFO
 #include <ucontext.h>
 static void TBX_NORETURN fault_catcher(int sig, siginfo_t *act, void *data)
+#else
+static void TBX_NORETURN fault_catcher(int sig)
+#endif
 {
+#ifdef SA_SIGINFO
 	ucontext_t *ctx =(ucontext_t *)data;
 	pm2debug("OOPS!!! Signal %d catched on thread %p (%ld)\n"
 			"si_code=%x, si_signo=%x, si_addr=%p, ctx=%p\n",
 		sig, MARCEL_SELF, THREAD_GETMEM(MARCEL_SELF,number),
 		act->si_code, act->si_signo, act->si_addr, ctx);
+#endif
 	if(LWP_SELF != NULL)
 		pm2debug("OOPS!!! current lwp is %d\n",
 			LWP_NUMBER(LWP_SELF));
@@ -135,8 +141,12 @@ static void fault_catcher_init(ma_lwp_t lwp)
 	LOG_IN();
 	// On va essayer de rattraper SIGSEGV, etc.
 	sigemptyset(&sa.sa_mask);
+#ifdef SA_SIGINFO
 	sa.sa_sigaction = fault_catcher;
 	sa.sa_flags = SA_SIGINFO;
+#else
+	sa.sa_handler = fault_catcher;
+#endif
 	sigaction(SIGSEGV, &sa, (struct sigaction *)NULL);
 	LOG_OUT();
 }

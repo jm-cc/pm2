@@ -1,0 +1,38 @@
+#!/bin/sh
+##########
+
+COMMAND=$1
+shift
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-b)
+	    recon   -v ${PM2_CONF_FILE}
+	    lamboot -v ${PM2_CONF_FILE}
+	    exit
+	    ;;
+	-w)
+	    wipe -v ${PM2_CONF_FILE}
+	    exit
+	    ;;
+	-r)
+	    shift
+	    mpirun N ${COMMAND} "$@"
+	    exit
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+recon   -v ${PM2_CONF_FILE}
+lamboot -v ${PM2_CONF_FILE}
+mpirun N ${COMMAND} "$@"
+wipe -v ${PM2_CONF_FILE}
+
+##########

@@ -80,6 +80,7 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_archdep.h"
+#include "sys/marcel_sig.h"
 #include "sys/marcel_archsetjmp.h"
 #include "sys/marcel_debug.h"
 #include "marcel_exception.h"
@@ -247,10 +248,6 @@ static __inline__ char *marcel_stackbase(marcel_t pid)
 {
   return (char *)pid->stack_base;
 }
-
-/* ========== time slicing ========= */
-
-void marcel_settimeslice(unsigned long microsecs);
 
 
 /* ============= miscellaneous ============ */

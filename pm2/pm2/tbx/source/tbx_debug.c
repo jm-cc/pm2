@@ -93,6 +93,9 @@ DEBUG_DECLARE(mad2)
 #ifdef MAD3
 DEBUG_DECLARE(mad3)
 #endif
+#ifdef MAD4
+DEBUG_DECLARE(mad4)
+#endif
 #ifdef LEONIE
 DEBUG_DECLARE(leonie)
 #endif

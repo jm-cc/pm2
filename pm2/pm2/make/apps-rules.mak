@@ -86,11 +86,16 @@ include $(PM2_ROOT)/make/common-rules.mak
 all: examples
 
 examples:
-	@$(MAKE_LIBS)
-	@$(MAKE) APP_RECURSIF=true $@
+	$(COMMON_HIDE) $(MAKE_LIBS)
+	$(COMMON_HIDE) $(MAKE) APP_RECURSIF=true $@
 
-.PHONY: clean appclean repclean
+.PHONY: clean appclean repclean libclean
 clean: appclean repclean
+
+libclean:
+	$(COMMON_HIDE) for module in $(PM2_MODULES); do \
+		$(MAKE) -C $(PM2_ROOT)/modules/$$module clean ; \
+	done
 
 appclean:
 	$(COMMON_CLEAN) $(RM) $(APP_OBJ)/*$(APP_EXT).o \
@@ -98,7 +103,7 @@ appclean:
 		$(APPS)
 
 repclean:
-	@for rep in $(APP_OBJ) $(APP_ASM) $(APP_BIN) \
+	$(COMMON_HIDE) for rep in $(APP_OBJ) $(APP_ASM) $(APP_BIN) \
 		$(APP_DEP) $(APP_STAMP); do \
 		if rmdir $$rep 2> /dev/null; then \
 			echo "empty repertory $$rep removed" ; \

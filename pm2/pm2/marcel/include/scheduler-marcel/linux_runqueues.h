@@ -104,12 +104,12 @@ typedef struct ma_runqueue ma_runqueue_t;
 #ifdef MA__LWPS
 MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
 #endif
-ma_runqueue_t ma_main_runqueue;
+extern ma_runqueue_t ma_main_runqueue;
 
 #ifdef MA__LWPS
 MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #endif
-ma_runqueue_t ma_dontsched_runqueue;
+extern ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
 // ceci n'a plus de sens:

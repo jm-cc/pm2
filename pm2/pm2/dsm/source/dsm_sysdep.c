@@ -61,8 +61,10 @@ static void _internal_sig_handler(int sig, struct sigcontext_struct context)
 static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #endif
 {
+  dsm_access_t access = UNKNOWN_ACCESS;
 #if defined(LINUX_SYS) && defined(X86_ARCH)
   char *addr = (char *)(context.cr2);
+  access = context.err & 2 ? WRITE_ACCESS : READ_ACCESS;
 #elif defined(SOLARIS_SYS)
   char *addr = siginfo->si_addr;
 #else
@@ -73,7 +75,7 @@ static void _internal_sig_handler(int sig, siginfo_t *siginfo , void *p)
 #endif
   // Test if DSM seg fault
   if (dsm_addr(addr))
-    (*pagefault_handler)(sig, addr);
+    (*pagefault_handler)(sig, addr, access);
   else { // regular seg fault
 #ifdef DEBUG1
     fprintf(stderr, "Not a DSM page fault!\n");

@@ -111,27 +111,19 @@ done
 
 [ -n "$*" ] || usage 1
 
-loader=`pm2-config --flavor="${PM2_FLAVOR}" --loader 2> /dev/null`
-
-[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
-
-[ -x ${loader} ] || error "Fatal Error: \"${loader}\" exec file not found!"
-
-PM2_CONF_FILE=`pm2-conf-file`
-[ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
-export PM2_CONF_FILE
-
-[ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf)."
-
-#echo "Using flavor \"${PM2_FLAVOR}\" to search for \"$1\"..."
-
-ex_dir=`pm2-config --flavor="${PM2_FLAVOR}" --builddir 2> /dev/null`/examples
-
 prog=$1
 shift
 
-command=`${PM2_ROOT}/bin/pm2which $prog`
+prog_args="$@"
 
-[ $? -eq 0 ] || ambiguity $prog
+. ${PM2_ROOT}/bin/pm2which --source-mode $prog
 
-exec ${loader} ${command} "$@"
+if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
+    ambiguity $prog
+fi
+
+[ -x $_PM2WHICH_LOADER ] || error "Fatal Error: \"$_PM2WHICH_LOADER\" exec file not found!"
+
+. ${PM2_ROOT}/bin/pm2-conf-file --source-mode
+
+exec $_PM2WHICH_LOADER $_PM2WHICH_RESULT $prog_args

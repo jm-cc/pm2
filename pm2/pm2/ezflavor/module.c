@@ -14,6 +14,7 @@
 #include "flavor.h"
 #include "intro.h"
 #include "menu.h"
+#include "common_opt.h"
 
 static GtkWidget *notebook;
 static GtkWidget *module_frame, *general_frame;
@@ -217,6 +218,8 @@ static void add_inclusive_option_set(char *module,
 
     gtk_widget_show(button);
     gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 0);
+
+    common_opt_register_option(ptr->data, button);
   }
 
   string_list_destroy(&options);

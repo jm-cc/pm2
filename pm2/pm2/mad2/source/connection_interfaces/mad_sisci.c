@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.37  2000/11/10 14:17:57  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.36  2000/08/29 13:27:11  rnamyst
 Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
 
@@ -752,7 +755,7 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 {
   p_mad_driver_t                    driver           = adapter->driver;
   p_mad_configuration_t             configuration    =
-    &driver->madeleine->configuration;
+    driver->madeleine->configuration;
   p_mad_sisci_adapter_specific_t    adapter_specific = adapter->specific;
   mad_sisci_connection_specific_t   connection[configuration->size];
   sci_error_t                       sisci_error      = SCI_ERR_OK;
@@ -1067,7 +1070,7 @@ mad_sisci_channel_init(p_mad_channel_t channel)
 {
   p_mad_sisci_channel_specific_t specific;
   mad_configuration_size_t size=channel->adapter->driver->
-    madeleine->configuration.size; 
+    madeleine->configuration->size; 
 
   LOG_IN();
   specific = TBX_MALLOC(sizeof(mad_sisci_channel_specific_t));
@@ -1124,7 +1127,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
   p_mad_sisci_adapter_specific_t      adapter_specific = adapter->specific;
   p_mad_driver_t                      driver           = adapter->driver;
   p_mad_configuration_t               configuration    =
-    &driver->madeleine->configuration;
+    driver->madeleine->configuration;
   sci_error_t                         sisci_error      = SCI_ERR_OK;
   ntbx_host_id_t host_id;
 
@@ -1358,7 +1361,7 @@ mad_sisci_connect(p_mad_connection_t connection)
   p_mad_driver_t                      driver                      =
     adapter->driver;
   p_mad_configuration_t               configuration               =
-    &driver->madeleine->configuration;
+    driver->madeleine->configuration;
   p_mad_sisci_connection_specific_t   connection_specific         =
     connection->specific;
   p_mad_connection_t                  connect_connection          =
@@ -1529,7 +1532,7 @@ mad_sisci_accept(p_mad_channel_t channel)
   p_mad_driver_t                      driver                     =
     adapter->driver;
   p_mad_configuration_t               configuration              =
-    &driver->madeleine->configuration;
+    driver->madeleine->configuration;
   p_mad_connection_t                  accept_connection          =
     &channel->input_connection[configuration->local_host_id];
   p_mad_sisci_connection_specific_t   accept_connection_specific =
@@ -1662,7 +1665,7 @@ mad_sisci_after_open_channel(p_mad_channel_t channel)
   p_mad_sisci_adapter_specific_t    adapter_specific = adapter->specific;
   p_mad_driver_t                    driver           = adapter->driver;
   p_mad_configuration_t             configuration    =
-    &driver->madeleine->configuration;
+    driver->madeleine->configuration;
   const ntbx_host_id_t               rank             =
     configuration->local_host_id;
   ntbx_host_id_t                     host_id;
@@ -1898,7 +1901,7 @@ mad_sisci_poll_message(p_mad_channel_t channel)
   p_mad_driver_t                    driver           =
     adapter->driver;
   p_mad_configuration_t             configuration    =
-    &driver->madeleine->configuration;
+    driver->madeleine->configuration;
   const ntbx_host_id_t               rank             =
     configuration->local_host_id;
   ntbx_host_id_t                     remote_host_id;
@@ -1951,7 +1954,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 	 p_mad_driver_t                    driver           =
 	   adapter->driver;
 	 p_mad_configuration_t             configuration    =
-	   &driver->madeleine->configuration;
+	   driver->madeleine->configuration;
 	 const ntbx_host_id_t               rank             =
 	   configuration->local_host_id;
 	 ntbx_host_id_t                     remote_host_id;

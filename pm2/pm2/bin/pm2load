@@ -34,31 +34,111 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-file_not_found()
+PROGNAME=pm2load
+
+error() # msg
 {
-    echo "$1: file not found"
+    echo $*
     exit 1
 }
 
-case $1 in
-    /*) command=$* ;;
-    *) if [ -f `pwd`/$1 ] ; then
-	    command=`pwd`/$*
-       else
-	    case $1 in
-		-*) command=$* ;;
-		*/*) file_not_found $1 ;;
-		*) sys=`pm2_sys`
-		   arch=`pm2_arch`
-		   rep=bin/`basename $sys _SYS`/`basename $arch _ARCH`
-		   echo "Searching in $rep..."
-		   command=$rep/$*
-		   if [ ! -f $command ] ; then
-			file_not_found $1
-		   fi
-	    esac
-       fi ;;
+usage() # exit_code
+{
+    cat <<EOF
+Usage: $PROGNAME { option } command
+
+  option:
+    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -d      : Run command in debug mode (not supported by all implementations)
+    -c name : Use console named "name"
+    -h : Display this help message
+EOF
+    exit $1
+}
+
+PM2_FLAVOR=${PM2_FLAVOR:-default}
+export PM2_FLAVOR
+
+PM2_CONSOLE=""
+export PM2_CONSOLE
+
+PM2_DEBUG=off
+export PM2_DEBUG
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f)
+	    shift
+	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-d)
+	    shift
+	    PM2_DEBUG=on
+	    ;;
+	-c)
+	    shift
+	    PM2_CONSOLE="$1"
+	    shift
+	    ;;
+	-h)
+	    usage 0
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+[ -n "$*" ] || usage 1
+
+loader=`pm2-config --flavor="${PM2_FLAVOR}" --loader 2> /dev/null`
+
+[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
+
+[ -x ${loader} ] || error "Fatal Error: \"${loader}\" exec file not found!"
+
+PM2_CONF_FILE=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir`/.pm2conf
+export PM2_CONF_FILE
+
+[ -f ${PM2_CONF_FILE} ] || error "ERROR: madconf should be runned before $0..."
+
+echo "Using flavor \"${PM2_FLAVOR}\" to search for \"$1\"..."
+
+ex_dir=`pm2-config --flavor="${PM2_FLAVOR}" --builddir 2> /dev/null`/examples
+
+# On regarde si le nom de la commande est relatif/absolu
+case "$1" in
+    /*)
+	[ -x $1 ] || error "Error: \"$1\" exec file not found."
+	cmd_prefix=$1
+	shift
+	;;
+    */*)
+	f_dir=`dirname $1`
+	f_name=`basename $1`
+	[ -x ${ex_dir}/${f_dir}/bin/${f_name} ] || error "Error: \"${ex_dir}/${f_dir}/bin/${f_name}\" exec file not found."
+	cmd_prefix="${ex_dir}/${f_dir}/bin/${f_name} "
+	shift
+	;;
+    *)
+	if [ -f "$1" -a -x "$1" ]; then
+	    cmd_prefix="`pwd`/$1"
+        else
+	    files=`find ${ex_dir} -name "$1" -type f -print`
+	    [ -n "$files" ] || error "Error: no \"$1\" exec file found under \"${ex_dir}\""
+	    nb_found=`echo $files | wc -w`
+	    [ $nb_found -eq 1 ] || error "Error: there are multiple exec files named \"$1\" under \"${ex_dir}\": please remove ambiguity."
+	    cmd_prefix="`dirname $files`/$1"
+        fi
+	shift
+	;;
 esac
 
-exec ${PM2_ROOT}/madeleine/bin/madload $command
+exec ${loader} ${cmd_prefix} "$@"
+
 

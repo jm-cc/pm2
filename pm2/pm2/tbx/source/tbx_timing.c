@@ -26,7 +26,7 @@
 #include "tbx.h"
 
 static double   scale = 0.0;
-long long       tbx_residual;
+unsigned long long       tbx_residual;
 tbx_tick_t      tbx_new_event ;
 tbx_tick_t      tbx_last_event;
 

@@ -10,7 +10,7 @@
 #include "tracebuffer.h"
 #include "assert.h"
 
-#include "../../../linux/include/linux/fkt.h"
+#include "fkt.h"
 
 #define FUT_SETUP_CODE				0x210
 #define FUT_KEYCHANGE_CODE			0x211
@@ -35,9 +35,9 @@ static void code_copy(int code, char *name)
   code_table[nb_code].name = name;
   nb_code++;
 }
-  
 
-static void init()
+
+void init()
 { 
   int fd; 
   nb_code = 0;
@@ -110,7 +110,8 @@ int get_next_trace(trace *tr)
 
 void init_trace_file(char *supertrace)
 {
-  init();
+  if (supertrace == NULL)
+    supertrace = "prof_file";
   if ((f_str = fopen(supertrace ,"r")) == NULL) {
     fprintf(stderr,"Erreur dans l'ouverture du fichier %s\n", supertrace);
     exit(1);

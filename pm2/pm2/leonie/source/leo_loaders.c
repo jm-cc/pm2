@@ -32,62 +32,10 @@
  * ============================
  */
 
-// #define LEO_DEBUG_MODE
-// #define LEO_MAD_DEBUG_MODE
-// #define LEO_TBX_DEBUG_MODE
-// #define LEO_TRACE_MODE
-// #define LEO_MARCEL_DEBUG_MODE
-// #define LEO_MARCEL_SMP
-#define LEO_XMODE
-
-
 /*
  * Leonie loaders general modes information
  * ========================================
  */
-
-#ifdef LEO_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders debug mode:        [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders debug mode:        [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_DEBUG_MODE
-
-#ifdef LEO_MAD_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders MAD debug mode:    [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders MAD debug mode:    [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_MAD_DEBUG_MODE
-
-#ifdef LEO_TBX_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders TBX debug mode:    [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders TBX debug mode:    [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_TBX_DEBUG_MODE
-
-#ifdef LEO_MARCEL_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders Marcel debug mode: [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders Marcel debug mode: [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_MARCEL_DEBUG_MODE
-
-#ifdef LEO_TRACE_MODE
-#warning [1;33m<<< [1;37mLeonie loaders trace mode:        [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders trace mode:        [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_TRACE_MODE
-
-#ifdef LEO_MARCEL_SMP
-#warning [1;33m<<< [1;37mLeonie loaders marcel smp mode:   [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders marcel smmp mode:  [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_MARCEL_SMP
-
-#ifdef LEO_XMODE
-#warning [1;33m<<< [1;37mLeonie loaders Xwindow mode:      [1;32mactivated [1;33m    >>>[0m
-#else
-#warning [1;33m<<< [1;37mLeonie loaders Xwindow mode:      [1;31mnot activated [1;33m>>>[0m
-#endif // LEO_XMODE
-
 
 //
 // PM2 scripts
@@ -99,10 +47,9 @@ static tbx_bool_t  auto_display = tbx_false;
 // ... Default loader .................................................. //
 static
 void
-leo_default_loader(char              *application_name,
-		   char              *application_flavor,
-		   p_ntbx_server_t    net_server,
-		   p_tbx_slist_t      process_slist)
+leo_default_loader(p_leo_application_settings_t settings,
+		   p_ntbx_server_t              net_server,
+		   p_tbx_slist_t                process_slist)
 {
   LOG_IN();
   TRACE("default loader selected");
@@ -132,41 +79,23 @@ leo_default_loader(char              *application_name,
 	p_tbx_arguments_t   args         = NULL;
 	p_tbx_environment_t env          = NULL;
 	    
-	main_command = tbx_command_init_to_c_string(application_name);
+	main_command =
+	  tbx_command_init_to_cstring(settings->name);
 	env  = main_command->environment;
 	args = main_command->arguments;
 
-	tbx_arguments_append_c_strings_option(args, "--mad_leonie", ' ',
-					      net_server->local_host);
+	if (settings->args)
+	  {
+	    tbx_arguments_append_arguments(args, settings->args);
+	  }
+	
+	tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
+						 net_server->local_host);
 
-	tbx_arguments_append_c_strings_option(args, "--mad_link", ' ',
+	tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
 					      net_server->
 					      connection_data.data);
 
-#ifdef LEO_MAD_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "mad3-log");
-#endif // LEO_MAD_DEBUG_MODE
-#ifdef LEO_TBX_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "tbx-log");
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "ntbx-log");
-#endif // LEO_TBX_DEBUG_MODE
-#ifdef LEO_TRACE_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "mad3-trace");
-#endif // LEO_TRACE_MODE
-	
-#ifdef LEO_MARCEL_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "marcel-log");
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "mar-schedlock");
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "mar-trace");
-#endif // LEO_MARCEL_DEBUG_MODE
-	
 	main_command_string = tbx_command_to_string(main_command);
 
 	tbx_command_free(main_command);
@@ -180,12 +109,12 @@ leo_default_loader(char              *application_name,
 	p_tbx_arguments_t            args          = NULL;
 	p_tbx_environment_variable_t var           = NULL;
 
-	relay_command = tbx_command_init_to_c_string("leo-load");
+	relay_command = tbx_command_init_to_cstring("leo-load");
 	env  = relay_command->environment;
 	args = relay_command->arguments;
 
 	var = tbx_environment_variable_to_variable("PATH");
-	tbx_environment_variable_append_c_string(var, ':', "${PATH}");
+	tbx_environment_variable_append_cstring(var, ':', "${PATH}");
 	tbx_environment_append_variable(env, var);
 	    
 	var = tbx_environment_variable_to_variable("PM2_ROOT");
@@ -194,31 +123,33 @@ leo_default_loader(char              *application_name,
 	var = tbx_environment_variable_to_variable("LEO_XTERM");
 	tbx_environment_append_variable(env, var);
 
-#ifdef LEO_MARCEL_SMP
-	var =
-	  tbx_environment_variable_init_to_c_strings("LEO_LD_PRELOAD",
-						     "${HOME}/lib/libpthread.so");
-	tbx_environment_append_variable(env, var);
-#endif // LEO_MARCEL_SMP
-
+	if (settings->smp_mode)
+	  {
+	    var =
+	      tbx_environment_variable_init_to_cstrings("LEO_LD_PRELOAD",
+							"${HOME}/lib/libpthread.so");
+	    tbx_environment_append_variable(env, var);
+	  }
+	
 	if (!auto_display)
 	  {
 	    var = tbx_environment_variable_to_variable("DISPLAY");
 	    tbx_environment_append_variable(env, var);
 	  }
 
-#ifdef LEO_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "-d", 0, NULL);
-#endif // LEO_DEBUG_MODE
-#ifdef LEO_XMODE
-	tbx_arguments_append_c_strings_option(args, "-x", 0, NULL);
-#endif // LEO_XMODE
+	if (settings->gdb_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-d");
+	  }
 
-	tbx_arguments_append_c_strings_option(args, "-f", ' ',
-					      application_flavor);
+	if (settings->xterm_mode)
+	  {
+	    tbx_arguments_append_cstring(args, "-x");
+	  }
+	
+	tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
 
-	tbx_arguments_append_strings_option(args, main_command_string,
-					    0, NULL);
+	tbx_arguments_append_string(args, main_command_string);
 	tbx_string_free(main_command_string);
 	main_command_string = NULL;
 
@@ -232,11 +163,10 @@ leo_default_loader(char              *application_name,
 	p_tbx_command_t   env_command = NULL;
 	p_tbx_arguments_t args        = NULL;
 	    
-	env_command = tbx_command_init_to_c_string("env");
+	env_command = tbx_command_init_to_cstring("env");
 	args = env_command->arguments;
 
-	tbx_arguments_append_strings_option(args, relay_command_string,
-					    0, NULL);
+	tbx_arguments_append_string(args, relay_command_string);
 	tbx_string_free(relay_command_string);
 	relay_command_string = NULL;
 
@@ -250,19 +180,18 @@ leo_default_loader(char              *application_name,
 	p_tbx_arguments_t args        = NULL;
 
 	LOG_STR("leo_rsh", leo_rsh);
-	rsh_command = tbx_command_init_to_c_string(leo_rsh);
+	rsh_command = tbx_command_init_to_cstring(leo_rsh);
 	args = rsh_command->arguments;
 
 	if (strstr(leo_rsh, "ssh"))
 	  {
-	    // tbx_arguments_append_c_strings_option(args, "-f", 0, NULL);
-	    tbx_arguments_append_c_strings_option(args, "-n", 0, NULL);
+	    // tbx_arguments_append_cstring(args, "-f");
+	    tbx_arguments_append_cstring(args, "-n");
 	  }
 
-	tbx_arguments_append_c_strings_option(args, host_name, 0, NULL);
+	tbx_arguments_append_cstring(args, host_name);
 
-	tbx_arguments_append_strings_option(args, env_command_string,
-					    0, NULL);
+	tbx_arguments_append_string(args, env_command_string);
 	tbx_string_free(env_command_string);
 	env_command_string = NULL;
 
@@ -299,10 +228,12 @@ leo_default_loader(char              *application_name,
 	  }	    
 	
 	process->pid = pid;
-#if defined (LEO_DEBUG_MODE) || defined (LEO_XMODE)
-	// Necessary to avoid Xlib multiple connection overflow
-	sleep(2);
-#endif // LEO_DEBUG_MODE / LEO_XMODE
+
+	if (settings->xterm_mode)
+	  {
+	    // Necessary to avoid Xlib multiple connection overflow
+	    sleep(2);
+	  }
       }
     }
   while (tbx_slist_ref_forward(process_slist));
@@ -328,10 +259,9 @@ leo_default_loader_register(p_tbx_htable_t loaders)
 // ... BIP loader ...................................................... //
 static
 void
-leo_bipload_loader(char            *application_name,
-		   char            *application_flavor,
-		   p_ntbx_server_t  net_server,
-		   p_tbx_slist_t    process_slist)
+leo_bipload_loader(p_leo_application_settings_t settings,
+		   p_ntbx_server_t              net_server,
+		   p_tbx_slist_t                process_slist)
 {
   char *master_host_name = NULL;
 
@@ -341,347 +271,342 @@ leo_bipload_loader(char            *application_name,
   if (tbx_slist_is_nil(process_slist))
     return;
   
-  /* bipconf step */
+  /*
+   * bipconf step
+   * ------------
+   */
   {
     p_tbx_string_t        relay_command_string = NULL;
     p_tbx_string_t        env_command_string   = NULL;
     p_tbx_argument_set_t  arg_set              = NULL;
     
-      {
-	p_tbx_command_t              relay_command = NULL;
-	p_tbx_environment_t          env           = NULL;
-	p_tbx_arguments_t            args          = NULL;
-	p_tbx_environment_variable_t var           = NULL;
+    {
+      p_tbx_command_t              relay_command = NULL;
+      p_tbx_environment_t          env           = NULL;
+      p_tbx_arguments_t            args          = NULL;
+      p_tbx_environment_variable_t var           = NULL;
 
-	relay_command = tbx_command_init_to_c_string("bipconf");
-	env  = relay_command->environment;
-	args = relay_command->arguments;
+      relay_command = tbx_command_init_to_cstring("bipconf");
+      env  = relay_command->environment;
+      args = relay_command->arguments;
 
-	var = tbx_environment_variable_to_variable("PATH");
-	tbx_environment_variable_append_c_string(var, ':', "${PATH}");
-	tbx_environment_append_variable(env, var);
+      var = tbx_environment_variable_to_variable("PATH");
+      tbx_environment_variable_append_cstring(var, ':', "${PATH}");
+      tbx_environment_append_variable(env, var);
 	    
-	tbx_slist_ref_to_head(process_slist);
-	do
-	  {
-	    p_ntbx_process_t  process   = NULL;
-	    p_leo_dir_node_t  dir_node  = NULL;
-	    char             *host_name = NULL;
+      tbx_slist_ref_to_head(process_slist);
+      do
+	{
+	  p_ntbx_process_t  process   = NULL;
+	  p_leo_dir_node_t  dir_node  = NULL;
+	  char             *host_name = NULL;
 	  
-	    process   = tbx_slist_ref_get(process_slist);
-	    dir_node  = tbx_htable_get(process->ref, "node");
-	    host_name = dir_node->name;      
+	  process   = tbx_slist_ref_get(process_slist);
+	  dir_node  = tbx_htable_get(process->ref, "node");
+	  host_name = dir_node->name;      
 
-	    if (!master_host_name)
-	      {
-		master_host_name = host_name;
-	      }
-
-	    host_name = strdup(host_name);
-	    
+	  if (!master_host_name)
 	    {
-	      char *ptr = NULL;
+	      master_host_name = host_name;
+	    }
+
+	  host_name = strdup(host_name);
+	    
+	  {
+	    char *ptr = NULL;
 	      
-	      ptr = strchr(host_name, '.');
-	      if (ptr)
-		{
-		  *ptr = '\0';
-		}
-	    }
+	    ptr = strchr(host_name, '.');
+	    if (ptr)
+	      {
+		*ptr = '\0';
+	      }
+	  }
 	    
-	    tbx_arguments_append_c_strings_option(args, host_name, 0, NULL);
-	    free(host_name);
-	    host_name = NULL;
-	  }
-	while (tbx_slist_ref_forward(process_slist));
+	  tbx_arguments_append_cstring(args, host_name);
+	  free(host_name);
+	  host_name = NULL;
+	}
+      while (tbx_slist_ref_forward(process_slist));
 
-	relay_command_string = tbx_command_to_string(relay_command);
-	tbx_command_free(relay_command);
-	relay_command = NULL;
-      }
+      relay_command_string = tbx_command_to_string(relay_command);
+      tbx_command_free(relay_command);
+      relay_command = NULL;
+    }
 	  
-      {
-	p_tbx_command_t   env_command = NULL;
-	p_tbx_arguments_t args        = NULL;
+    {
+      p_tbx_command_t   env_command = NULL;
+      p_tbx_arguments_t args        = NULL;
 	    
-	env_command = tbx_command_init_to_c_string("env");
-	args = env_command->arguments;
+      env_command = tbx_command_init_to_cstring("env");
+      args = env_command->arguments;
 
-	tbx_arguments_append_strings_option(args, relay_command_string,
-					    0, NULL);
-	tbx_string_free(relay_command_string);
-	relay_command_string = NULL;
+      tbx_arguments_append_string(args, relay_command_string);
+      tbx_string_free(relay_command_string);
+      relay_command_string = NULL;
 
-	env_command_string = tbx_command_to_string(env_command);
-	tbx_command_free(env_command);
-	env_command = NULL;
-      }
+      env_command_string = tbx_command_to_string(env_command);
+      tbx_command_free(env_command);
+      env_command = NULL;
+    }
 	  
-      {
-	p_tbx_command_t   rsh_command = NULL;
-	p_tbx_arguments_t args        = NULL;
+    {
+      p_tbx_command_t   rsh_command = NULL;
+      p_tbx_arguments_t args        = NULL;
 
-	LOG_STR("leo_rsh", leo_rsh);
-	rsh_command = tbx_command_init_to_c_string(leo_rsh);
-	args = rsh_command->arguments;
+      LOG_STR("leo_rsh", leo_rsh);
+      rsh_command = tbx_command_init_to_cstring(leo_rsh);
+      args = rsh_command->arguments;
 
-	if (strstr(leo_rsh, "ssh"))
+      if (strstr(leo_rsh, "ssh"))
+	{
+	  // tbx_arguments_append_cstring(args, "-f");
+	  tbx_arguments_append_cstring(args, "-n");
+	}
+
+      tbx_arguments_append_cstring(args, master_host_name);
+      tbx_arguments_append_string(args, env_command_string);
+      tbx_string_free(env_command_string);
+      env_command_string = NULL;
+
+      arg_set = tbx_command_to_argument_set(rsh_command);
+      tbx_command_free(rsh_command);
+      rsh_command = NULL;
+    }
+
+    {
+      pid_t pid = -1;
+
+      pid = fork();
+
+      if (pid == -1)
+	{
+	  leo_error("fork");
+	}
+
+      if (!pid)
+	{
 	  {
-	    // tbx_arguments_append_c_strings_option(args, "-f", 0, NULL);
-	    tbx_arguments_append_c_strings_option(args, "-n", 0, NULL);
+	    int i = 0;
+
+	    while (arg_set->argv[i])
+	      {
+		TRACE_STR("execvp command", arg_set->argv[i]);
+		i++;
+	      }
 	  }
+	  execvp(arg_set->argv[0], arg_set->argv);
+	  leo_error("execvp");
+	}	
+      else
+	{
+	  pid_t result;
+	  int   status;
 
-	tbx_arguments_append_c_strings_option(args, master_host_name, 0, NULL);
+	  result = waitpid(pid, &status, 0);
 
-	tbx_arguments_append_strings_option(args, env_command_string,
-					    0, NULL);
-	tbx_string_free(env_command_string);
-	env_command_string = NULL;
-
-	arg_set = tbx_command_to_argument_set(rsh_command);
-	tbx_command_free(rsh_command);
-	rsh_command = NULL;
-      }
-
-      {
-	pid_t pid = -1;
-
-	pid = fork();
-
-	if (pid == -1)
-	  {
-	    leo_error("fork");
-	  }
-
-	if (!pid)
-	  {
+	  if (result == -1)
 	    {
-	      int i = 0;
+	      leo_error("waitpid");
+	    }
 
-	      while (arg_set->argv[i])
+	  if (WIFEXITED(status))
+	    {
+	      int code = 0;
+		
+	      code = WEXITSTATUS(status);
+	      if (code)
 		{
-		  TRACE_STR("execvp command", arg_set->argv[i]);
-		  i++;
+		  leo_terminate("bipconf failed");
 		}
 	    }
-	    execvp(arg_set->argv[0], arg_set->argv);
-	    leo_error("execvp");
-	  }	
-	else
-	  {
-	    pid_t result;
-	    int   status;
-
-	    result = waitpid(pid, &status, 0);
-
-	    if (result == -1)
-	      {
-		leo_error("waitpid");
-	      }
-
-	    if (WIFEXITED(status))
-	      {
-		int code = 0;
-		
-		code = WEXITSTATUS(status);
-		if (code)
-		  {
-		    leo_terminate("bipconf failed");
-		  }
-	      }
-	    else
-	      FAILURE("unexpected behaviour");
-	  }
-      }
+	  else
+	    FAILURE("unexpected behaviour");
+	}
+    }
   }
   
-  /* bipload step */
+  /*
+   * bipload step
+   * ------------
+   */
+      
+  {
+    p_tbx_string_t       main_command_string  = NULL;
+    p_tbx_string_t       relay_command_string = NULL;
+    p_tbx_string_t       env_command_string   = NULL;
+    p_tbx_argument_set_t arg_set              = NULL;
+	  
+    {
+      p_tbx_command_t   main_command = NULL;
+      p_tbx_arguments_t args         = NULL;
+	    
+      main_command = tbx_command_init_to_cstring(settings->name);
+
+      args = main_command->arguments;	    
+
+      if (settings->args)
+	{
+	  tbx_arguments_append_arguments(args, settings->args);
+	}
+
+      tbx_arguments_append_cstring_ext(args, "--mad_leonie", ' ',
+				       net_server->local_host);
+
+      tbx_arguments_append_cstring_ext(args, "--mad_link", ' ',
+				       net_server->
+				       connection_data.data);
+
+	
+      main_command_string = tbx_command_to_string(main_command);
+
+      tbx_command_free(main_command);
+      main_command = NULL;
+    }
       
     {
-      p_tbx_string_t        main_command_string  = NULL;
-      p_tbx_string_t        relay_command_string = NULL;
-      p_tbx_string_t        env_command_string   = NULL;
-      p_tbx_argument_set_t  arg_set              = NULL;
-	  
-      {
-	p_tbx_command_t   main_command = NULL;
-	p_tbx_arguments_t args         = NULL;
+      p_tbx_command_t              relay_command = NULL;
+      p_tbx_environment_t          env           = NULL;
+      p_tbx_arguments_t            args          = NULL;
+      p_tbx_environment_variable_t var           = NULL;
+
+      relay_command = tbx_command_init_to_cstring("bipload");
+      env  = relay_command->environment;
+      args = relay_command->arguments;
+
+      var = tbx_environment_variable_to_variable("PATH");
+      tbx_environment_variable_append_cstring(var, ':', "${PATH}");
+      tbx_environment_append_variable(env, var);
 	    
-	main_command = tbx_command_init_to_c_string(application_name);
-
-
-	args = main_command->arguments;	    
-
-	tbx_arguments_append_c_strings_option(args, "--mad_leonie", ' ',
-					      net_server->local_host);
-
-	tbx_arguments_append_c_strings_option(args, "--mad_link", ' ',
-					      net_server->
-					      connection_data.data);
-
-#ifdef LEO_MAD_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "mad3-log");
-#endif // LEO_MAD_DEBUG_MODE
-#ifdef LEO_TBX_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "tbx-log");
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "ntbx-log");
-#endif // LEO_TBX_DEBUG_MODE
-#ifdef LEO_TRACE_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "mad3-trace");
-#endif // LEO_TRACE_MODE
-	
-#ifdef LEO_MARCEL_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "--debug", ':',
-					      "marcel-log");
-#endif // LEO_MARCEL_DEBUG_MODE
-	
-	main_command_string = tbx_command_to_string(main_command);
-
-	tbx_command_free(main_command);
-	main_command = NULL;
-      }
-      
-      {
-	p_tbx_command_t              relay_command = NULL;
-	p_tbx_environment_t          env           = NULL;
-	p_tbx_arguments_t            args          = NULL;
-	p_tbx_environment_variable_t var           = NULL;
-
-	relay_command = tbx_command_init_to_c_string("bipload");
-	env  = relay_command->environment;
-	args = relay_command->arguments;
-
-	var = tbx_environment_variable_to_variable("PATH");
-	tbx_environment_variable_append_c_string(var, ':', "${PATH}");
-	tbx_environment_append_variable(env, var);
+      var = tbx_environment_variable_to_variable("PM2_ROOT");
+      tbx_environment_append_variable(env, var);
 	    
-	var = tbx_environment_variable_to_variable("PM2_ROOT");
-	tbx_environment_append_variable(env, var);
-	    
-	var = tbx_environment_variable_to_variable("LEO_XTERM");
-	tbx_environment_append_variable(env, var);
+      var = tbx_environment_variable_to_variable("LEO_XTERM");
+      tbx_environment_append_variable(env, var);
 	
-	if (!auto_display)
-	  {
-	    var = tbx_environment_variable_to_variable("DISPLAY");
-	    tbx_environment_append_variable(env, var);
-	  }
+      if (!auto_display)
+	{
+	  var = tbx_environment_variable_to_variable("DISPLAY");
+	  tbx_environment_append_variable(env, var);
+	}
 
+      if (settings->smp_mode)
+	{
+	  var =
+	    tbx_environment_variable_init_to_cstrings("LEO_LD_PRELOAD",
+						      "${HOME}/lib/libpthread.so");
+	  tbx_environment_append_variable(env, var);
+	}
 	
-//	tbx_arguments_append_c_strings_option(args, "-v", 0, NULL);
-	tbx_arguments_append_c_strings_option(args, "-mget", 0, NULL);
-	tbx_arguments_append_c_strings_option(args, "-hwflow", 0, NULL);
-	tbx_arguments_append_c_strings_option(args, "leo-load", 0, NULL);
-
-#ifdef LEO_DEBUG_MODE
-	tbx_arguments_append_c_strings_option(args, "-d", 0, NULL);
-#endif // LEO_DEBUG_MODE
-#ifdef LEO_XMODE
-	tbx_arguments_append_c_strings_option(args, "-x", 0, NULL);
-#endif // LEO_XMODE
-
-	tbx_arguments_append_c_strings_option(args, "-f", ' ',
-					      application_flavor);
-
-	tbx_arguments_append_strings_option(args, main_command_string,
-					    0, NULL);
-	tbx_string_free(main_command_string);
-	main_command_string = NULL;
-
-	relay_command_string = tbx_command_to_string(relay_command);
-	tbx_command_free(relay_command);
-	relay_command = NULL;
-      }
-	  
-      {
-	p_tbx_command_t   env_command = NULL;
-	p_tbx_arguments_t args        = NULL;
-	    
-	env_command = tbx_command_init_to_c_string("env");
-	args = env_command->arguments;
-
-	tbx_arguments_append_strings_option(args, relay_command_string,
-					    0, NULL);
-	tbx_string_free(relay_command_string);
-	relay_command_string = NULL;
-
-	env_command_string = tbx_command_to_string(env_command);
-	tbx_command_free(env_command);
-	env_command = NULL;
-      }
-	  
-      {
-	p_tbx_command_t   rsh_command = NULL;
-	p_tbx_arguments_t args        = NULL;
-
-	LOG_STR("leo_rsh", leo_rsh);
-	rsh_command = tbx_command_init_to_c_string(leo_rsh);
-	args = rsh_command->arguments;
-
-	if (strstr(leo_rsh, "ssh"))
-	  {
-	    // tbx_arguments_append_c_strings_option(args, "-f", 0, NULL);
-	    tbx_arguments_append_c_strings_option(args, "-n", 0, NULL);
-	  }
-
-	tbx_arguments_append_c_strings_option(args, master_host_name, 0, NULL);
-
-	tbx_arguments_append_strings_option(args, env_command_string,
-					    0, NULL);
-	tbx_string_free(env_command_string);
-	env_command_string = NULL;
-
-	arg_set = tbx_command_to_argument_set(rsh_command);
-	tbx_command_free(rsh_command);
-	rsh_command = NULL;
-      }
-
-      {
-	pid_t pid = -1;
-
-	pid = fork();
-
-	if (pid == -1)
-	  {
-	    leo_error("fork");
-	  }
-
-	if (!pid)
-	  {
-	    {
-	      int i = 0;
-
-	      while (arg_set->argv[i])
-		{
-		  TRACE_STR("execvp command", arg_set->argv[i]);
-		  i++;
-		}
-	    }
-	    
-	    execvp(arg_set->argv[0], arg_set->argv);
-	    leo_error("execvp");
-	  }
 	
-	tbx_slist_ref_to_head(process_slist);
-	do
-	  {
-	    p_ntbx_process_t process = NULL;
-	  
-	    process      = tbx_slist_ref_get(process_slist);
-	    process->pid = pid;
-	  }
-	while (tbx_slist_ref_forward(process_slist));
+      //	tbx_arguments_append_cstring(args, "-v");
+      tbx_arguments_append_cstring(args, "-mget");
+      tbx_arguments_append_cstring(args, "-hwflow");
+      tbx_arguments_append_cstring(args, "leo-load");
 
-#if defined (LEO_DEBUG_MODE) || defined (LEO_XMODE)
-	// Necessary to avoid Xlib multiple connection overflow
-	sleep(2);
-#endif // LEO_DEBUG_MODE / LEO_XMODE
-      }
+      if (settings->gdb_mode)
+	{
+	  tbx_arguments_append_cstring(args, "-d");
+	}
+
+      if (settings->xterm_mode)
+	{
+	  tbx_arguments_append_cstring(args, "-x");
+	}
+	
+      tbx_arguments_append_cstring_ext(args, "-f", ' ', settings->flavor);
+
+      tbx_arguments_append_string(args, main_command_string);
+      tbx_string_free(main_command_string);
+      main_command_string = NULL;
+
+      relay_command_string = tbx_command_to_string(relay_command);
+      tbx_command_free(relay_command);
+      relay_command = NULL;
     }
+	  
+    {
+      p_tbx_command_t   env_command = NULL;
+      p_tbx_arguments_t args        = NULL;
+	    
+      env_command = tbx_command_init_to_cstring("env");
+      args = env_command->arguments;
+
+      tbx_arguments_append_string(args, relay_command_string);
+      tbx_string_free(relay_command_string);
+      relay_command_string = NULL;
+
+      env_command_string = tbx_command_to_string(env_command);
+      tbx_command_free(env_command);
+      env_command = NULL;
+    }
+	  
+    {
+      p_tbx_command_t   rsh_command = NULL;
+      p_tbx_arguments_t args        = NULL;
+
+      LOG_STR("leo_rsh", leo_rsh);
+      rsh_command = tbx_command_init_to_cstring(leo_rsh);
+      args = rsh_command->arguments;
+
+      if (strstr(leo_rsh, "ssh"))
+	{
+	  // tbx_arguments_append_cstring(args, "-f");
+	  tbx_arguments_append_cstring(args, "-n");
+	}
+
+      tbx_arguments_append_cstring(args, master_host_name);
+      tbx_arguments_append_string(args, env_command_string);
+      tbx_string_free(env_command_string);
+      env_command_string = NULL;
+
+      arg_set = tbx_command_to_argument_set(rsh_command);
+      tbx_command_free(rsh_command);
+      rsh_command = NULL;
+    }
+
+    {
+      pid_t pid = -1;
+
+      pid = fork();
+
+      if (pid == -1)
+	{
+	  leo_error("fork");
+	}
+
+      if (!pid)
+	{
+	  {
+	    int i = 0;
+
+	    while (arg_set->argv[i])
+	      {
+		TRACE_STR("execvp command", arg_set->argv[i]);
+		i++;
+	      }
+	  }
+	    
+	  execvp(arg_set->argv[0], arg_set->argv);
+	  leo_error("execvp");
+	}
+	
+      tbx_slist_ref_to_head(process_slist);
+      do
+	{
+	  p_ntbx_process_t process = NULL;
+	  
+	  process      = tbx_slist_ref_get(process_slist);
+	  process->pid = pid;
+	}
+      while (tbx_slist_ref_forward(process_slist));
+
+      if (settings->xterm_mode)
+	{
+	  // Necessary to avoid Xlib multiple connection overflow
+	  sleep(2);
+	}
+    }
+  }
 
   LOG_OUT();
 }

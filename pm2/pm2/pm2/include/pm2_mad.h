@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.h,v $
+Revision 1.5  2000/11/13 20:41:37  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.4  2000/11/06 15:02:20  rnamyst
 pm2_init() has now a modular structure (in fact, common_init).
 
@@ -153,15 +156,11 @@ typedef union {
 
 #define to_any_t(p_addr) (*((void **)p_addr))
 
-void mad_init(int *argc, char *argv[]);
+void pm2_mad_init(p_mad_madeleine_t madeleine);
 
 void mad_init_thread_related(int *argc, char *argv[]);
 
 void mad_exit(void);
-
-unsigned mad_config_size(void);
-
-unsigned mad_who_am_i(void);
 
 char *mad_arch_name(void);
 

@@ -50,7 +50,8 @@ typedef struct s_mad_mx_driver_specific
 
 typedef struct s_mad_mx_adapter_specific
 {
-        uint64_t	id;
+        uint64_t nic_id;
+        uint32_t board_id;
 } mad_mx_adapter_specific_t, *p_mad_mx_adapter_specific_t;
 
 typedef struct s_mad_mx_channel_specific
@@ -92,9 +93,6 @@ typedef struct s_mad_mx_poll_req {
 /*
  * Malloc protection hooks
  * -----------------------
- *
- * Note: this driver is incompatible with any other driver also using
- * malloc hooks.
  */
 
 /* Prototypes */
@@ -136,10 +134,18 @@ static
 void *
 (*mad_mx_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
 
+#if 0
+/*
+ * Malloc hooks installation is delayed to mad_mx_driver_init because
+ * __malloc_initialize_hook is already defined by the MX library.
+ *
+ * This is expected to be safe because at the time mad_mx_driver_init is called,
+ * no polling request should already be pending.
+ */
+
 /* Entry point */
-#if MAD_MX_MEMORY_CACHE
-void (*__malloc_initialize_hook) (void) = mad_gm_malloc_initialize_hook;
-#endif // MAD_MX_MEMORY_CACHE
+void (*__malloc_initialize_hook) (void) = mad_mx_malloc_initialize_hook;
+#endif /* 0 */
 
 /* Flag to prevent multiple hooking */
 static
@@ -875,7 +881,7 @@ mad_mx_driver_init(p_mad_driver_t d) {
 
 void
 mad_mx_adapter_init(p_mad_adapter_t a) {
-        p_mad_mx_adapter_specific_t as = NULL;
+        p_mad_mx_adapter_specific_t	as	= NULL;
 
         LOG_IN();
         as		= TBX_MALLOC(sizeof(mad_mx_adapter_specific_t));
@@ -883,7 +889,7 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
         if (strcmp(a->dir_adapter->name, "default")) {
                 FAILURE("unsupported adapter");
         } else {
-                as->id	= MX_ANY_NIC;
+                as->board_id	= MX_ANY_NIC;
         }
 
         a->specific	= as;
@@ -907,7 +913,7 @@ mad_mx_channel_init(p_mad_channel_t ch) {
 
         mad_mx_lock();
         do {
-                return_code	= mx_open_endpoint(as->id,
+                return_code	= mx_open_endpoint(as->board_id,
                                                    e_id,
                                                    e_key,
                                                    NULL,
@@ -971,7 +977,6 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
         p_mad_mx_connection_specific_t	 cs		= NULL;
         p_mad_mx_channel_specific_t	 chs		= NULL;
         mx_return_t			 return_code	= MX_SUCCESS;
-        uint32_t			 nb_r_nic_ids	= 1;
         uint64_t			 r_nic_id	= 0;
         const uint32_t			 e_key		= 0xFFFFFFFF;
         char				*r_hostname	= NULL;
@@ -1007,9 +1012,9 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
         }
 
         mad_mx_lock();
-        return_code	= mx_hostname_to_nic_ids(r_hostname, &r_nic_id, &nb_r_nic_ids);
+        return_code	= mx_hostname_to_nic_id(r_hostname, &r_nic_id);
         mad_mx_unlock();
-        mad_mx_check_return("mx_hostname_to_nic_ids", return_code);
+        mad_mx_check_return("mx_hostname_to_nic_id", return_code);
 
         TBX_FREE(r_hostname);
         r_hostname	= NULL;

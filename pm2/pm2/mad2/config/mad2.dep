@@ -1,0 +1,3 @@
+Provide: madeleine
+Depend: mad2_proto tbx ntbx
+Provide: module

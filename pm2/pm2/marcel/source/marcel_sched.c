@@ -206,10 +206,6 @@ inline unsigned marcel_nbvps(void)
 
 static __inline__ int CAN_RUN(__lwp_t *lwp, marcel_t pid)
 {
-  if (!marcel_vpmask_vp_ismember(&pid->vpmask, lwp->number)) {
-    mdebug_sched_q("%p can not run on LWP %i (mask %p)\n", pid, lwp->number,
-		   pid->vpmask);
-  }
   return
     ( 1
 #ifdef MA__MULTIPLE_RUNNING

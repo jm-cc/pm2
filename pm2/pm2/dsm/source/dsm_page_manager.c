@@ -1032,7 +1032,7 @@ void dsm_alloc_page_entry(unsigned long index)
 
 void dsm_enable_page_entry(unsigned long index, dsm_node_t owner, int protocol, void *addr, size_t size, boolean map)
 {
-#if 1//def DSM_TABLE_TRACE
+#ifdef DSM_TABLE_TRACE
   fprintf(stderr,"Enabling table entry for page %ld, owner = %d , prot = %d, addr = %p, size = %d (I am %p)\n", index, owner, protocol, addr, size, marcel_self());
 #endif
   dsm_page_table[index] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));

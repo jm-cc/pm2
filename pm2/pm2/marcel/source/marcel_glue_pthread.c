@@ -5,9 +5,6 @@
 #include "pm2_common.h"
 
 
-#define MARCEL_NOT_IMPLEMENTED \
-	printf("Function %s not yet implemented\n", __FUNCTION__)
-
 int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
                          void * (*start_routine)(void *), void *arg)
 {
@@ -15,7 +12,11 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
      the old size and access to the new members might crash the program.
      We convert the struct now.  */
   marcel_attr_t new_attr;
+  static int _launched=0;
 
+  if (__builtin_expect(_launched, 1)==0) {
+    marcel_start_sched(NULL, NULL);
+  }
   if (attr != NULL)
     {
       memcpy (&new_attr, attr,
@@ -145,7 +146,7 @@ void marcel_pthread_initialize(int* argc, char**argv)
 		marcel_init_data(argc, argv);
 		tbx_init(*argc, argv);
 		/* TODO: A reporter : */
-		marcel_start_sched(argc, argv);
+                //TODO__on_exit (pthread_onexit_process, NULL);
 		/* TODO: à la création du premier thread */
 #ifdef PM2DEBUG
 		printf("Initialisation libpthread marcel-init done (and launched :-()\n");

@@ -279,7 +279,7 @@ static void record_time( int fd, int ncpus, double mhz[], size_t page_size )
   int pid;
   int format;
 
-#ifdef MA__LWPS
+#ifdef MA__FUT_RECORD_TID
   format=FUT_FORMAT_SMP_THREAD;
 #else
   format=FUT_FORMAT_MONO;
@@ -318,17 +318,9 @@ int fut_endup( char *filename )
 	int n, nints, size, fd;
 	static const unsigned int zero = 0;
 	unsigned int *copy;
-	unsigned int smp_mode;
 	unsigned int len;
 	struct utsname unameinfo;
 	char unamestr[UNAMESTRLEN];
-
-
-#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
-	smp_mode = 1;
-#else
-	smp_mode = 0;
-#endif
 
 	/* stop all futher tracing */
 	fut_active = 0;

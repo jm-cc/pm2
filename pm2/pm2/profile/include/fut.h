@@ -177,7 +177,7 @@
 #define FUT_GCC_INSTRUMENT_ENTRY_CODE	0x320
 #define FUT_GCC_INSTRUMENT_EXIT_CODE	0x420
 
-#ifdef MA__LWPS
+#ifdef MA__FUT_RECORD_TID
 #  define FUT_SIZE(nb_param) ((nb_param)*4+16)
 #else
 #  define FUT_SIZE(nb_param) ((nb_param)*4+12)

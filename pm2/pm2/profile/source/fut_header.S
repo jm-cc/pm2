@@ -75,8 +75,8 @@ caller_code	= 8
 /* 	Offsets into probe record */
 probe_lo_cycles		= 0
 probe_hi_cycles		= 4
-probe_threadid		= 8 /* with LWPS only */
-#ifdef MA__LWPS
+probe_threadid		= 8 /* with FUT_RECORD_TID only */
+#ifdef MA__FUT_RECORD_TID
 probe_code			= 12
 #else
 probe_code			= 8
@@ -104,7 +104,7 @@ fut_header:							/*  normal entry point to take a probe */
 	rdtsc							/*  get 64-bit cpu cycle counter in edx-eax */
 	movl	%eax,probe_lo_cycles(%ecx)	/*  low-order 32 bits from eax to 1st slot */
 	movl	%edx,probe_hi_cycles(%ecx)	/*  hi-order 32 bits from edx to 2nd slot */
-#ifdef MA__LWPS
+#ifdef MA__FUT_RECORD_TID
 	MA_PROFILE_ASM_GET_TID(eax)
 	movl	%eax,probe_threadid(%ecx)
 #endif

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.12  2000/06/09 18:15:04  vdanjean
+minor update
+
 Revision 1.11  2000/06/08 13:57:09  oaumage
 - Macros d'attributs
 
@@ -186,11 +189,11 @@ typedef enum
  */
 #ifdef OOPS
 #define FAILURE(str) \
-  fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
+  pm2debug_flush(), fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
             (str), __FILE__, __LINE__),   abort()
 #else /* OOPS */
 #define FAILURE(str) \
-  fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
+  pm2debug_flush(), fprintf(stderr, "FAILURE: %s\nFILE: %s\nLINE: %d\n", \
             (str), __FILE__, __LINE__),   exit(1)
 #endif /* OOPS */
 

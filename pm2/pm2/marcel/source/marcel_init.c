@@ -206,7 +206,10 @@ int main(int argc, char *argv[])
 #endif
 		
 		__main_ret = marcel_main(__argc, __argv);
-		
+
+#ifdef MA__ACTIVATION
+		marcel_upcalls_disallow();
+#endif
 		marcel_ctx_longjmp(__initial_main_ctx, 1);
 	}
 

@@ -228,12 +228,12 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
 #define LOG(str, args...)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
                                            str "\n" , ## args)
-#define LOG_IN()              do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG_IN()              do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   "%s: -->\n", __TBX_FUNCTION__); \
                                    PROF_IN(); \
                               } while(0)
-#define LOG_OUT()             do { debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG_OUT()             do { debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   "%s: <--\n", __TBX_FUNCTION__); \
                                    PROF_OUT(); \
@@ -242,16 +242,16 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
                                    LOG_OUT() ;\
                                    return _ret; \
                               } while (0)
-#define LOG_CHAR(val)         debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG_CHAR(val)         debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   "%c" , (char)(val))
-#define LOG_VAL(str, val)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG_VAL(str, val)     debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   str " = %d\n" , (int)(val))
-#define LOG_PTR(str, ptr)     debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG_PTR(str, ptr)     debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   str " = %p\n" , (void *)(ptr))
-#define LOG_STR(str, str2)    debug_printf(&DEBUG_NAME_LOG(DEBUG_NAME), \
+#define LOG_STR(str, str2)    debug_printfl(&DEBUG_NAME_LOG(DEBUG_NAME), \
                                            PM2DEBUG_LOGLEVEL, \
 					   str ": %s\n" , (char *)(str2))
 
@@ -275,25 +275,25 @@ debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME)= \
  */
 #ifdef PM2DEBUG
 
-#define TRACE(str, args...)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE(str, args...)   debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   str "\n" , ## args)
-#define TRACE_IN()            debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE_IN()            debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   "%s: -->\n", __TBX_FUNCTION__)
-#define TRACE_OUT()           debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE_OUT()           debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   "%s: <--\n", __TBX_FUNCTION__)
-#define TRACE_VAL(str, val)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE_VAL(str, val)   debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   str " = %d\n" , (int)(val))
-#define TRACE_CHAR(val)       debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE_CHAR(val)       debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   "%c" , (char)(val))
-#define TRACE_PTR(str, ptr)   debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE_PTR(str, ptr)   debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   str " = %p\n" , (void *)(ptr))
-#define TRACE_STR(str, str2)  debug_printf(&DEBUG_NAME_TRACE(DEBUG_NAME), \
+#define TRACE_STR(str, str2)  debug_printfl(&DEBUG_NAME_TRACE(DEBUG_NAME), \
                                            PM2DEBUG_TRACELEVEL, \
 					   str ": %s\n" , (char *)(str2))
 #else /* PM2DEBUG */

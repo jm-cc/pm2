@@ -859,10 +859,15 @@ mad_pack_ext(p_mad_connection_t   connection,
             param->length = source->length;
           }
 
+        TRACE_VAL("source->length", source->length);
+        TRACE_VAL("param->offset", param->offset);
+        TRACE_VAL("param->length", param->length);
+        TRACE_VAL("param->opcode", param->opcode);
+
         if (param->offset >= source->length)
           FAILURE("invalid buffer slice parameter offset");
 
-        if (param->length+param->offset >= source->length)
+        if (param->length+param->offset > source->length)
           FAILURE("invalid buffer slice parameter length");
 
         param->base = source->buffer;

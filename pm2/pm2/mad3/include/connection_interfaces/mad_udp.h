@@ -20,14 +20,10 @@
 #ifndef MAD_UDP_H
 #define MAD_UDP_H
 
-/*
- * Structures
- * ----------
- */
 
 /*
- * Functions 
- * ---------
+ * Mad_udp functions 
+ * -----------------
  */
 
 void
@@ -41,10 +37,7 @@ mad_udp_adapter_init(p_mad_adapter_t);
 
 void
 mad_udp_channel_init(p_mad_channel_t);
-/*
-void
-mad_udp_before_open_channel(p_mad_channel_t);
-*/
+
 void
 mad_udp_connection_init(p_mad_connection_t,
 			p_mad_connection_t);
@@ -59,41 +52,16 @@ mad_udp_accept(p_mad_connection_t,
 void
 mad_udp_connect(p_mad_connection_t,
 		       p_mad_adapter_info_t);
-/*
-void
-mad_udp_after_open_channel(p_mad_channel_t);
 
-void
-mad_udp_before_close_channel(p_mad_channel_t);
-*/
 void
 mad_udp_disconnect(p_mad_connection_t);
-/*
-void
-mad_udp_after_close_channel(p_mad_channel_t);
 
-void
-mad_udp_link_exit(p_mad_link_t);
-
-void
-mad_udp_connection_exit(p_mad_connection_t,
-			p_mad_connection_t);
-*/
 void
 mad_udp_channel_exit(p_mad_channel_t);
 
 void
 mad_udp_adapter_exit(p_mad_adapter_t);
-/*
-void
-mad_udp_driver_exit(p_mad_driver_t);
 
-p_mad_link_t
-mad_udp_choice(p_mad_connection_t,
-	       size_t,
-	       mad_send_mode_t,
-	       mad_receive_mode_t);
-*/
 void
 mad_udp_new_message(p_mad_connection_t);
 

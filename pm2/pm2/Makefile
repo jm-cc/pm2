@@ -235,8 +235,10 @@ PM2_OBJ_TO_S	=	$(PM2_SRC)/$(patsubst %.o,%.s,$(notdir $@))
 .PHONY: pm2_default
 pm2_default: $(PM2_LIB)
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(PM2_DEPENDS)),$(PM2_DEPENDS))
 include $(PM2_DEPENDS)
+endif
 endif
 
 $(PM2_OBJECTS): $(PM2_OBJ)/%.o: $(PM2_DEP)/%.d
@@ -320,8 +322,10 @@ DEPENDS	:=	$(patsubst %.c,%.d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
 
 DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
 include $(DEPENDS)
+endif
 endif
 
 $(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d

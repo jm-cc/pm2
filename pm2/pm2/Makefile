@@ -84,7 +84,7 @@ preproc: flavors
 fut: flavors
 	$(COMMON_HIDE) set -e; \
 	if [ -n "$(PROF_LIBS)" ] ; then \
-	for i in "$(PROF_LIBS)" ; do \
+	for i in $(PROF_LIBS) ; do \
 		$(MAKE) -C modules/$$i fut ; \
 	done \
 	fi

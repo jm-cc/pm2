@@ -782,6 +782,12 @@ do_remove() {
 }
 
 
+do_regenerate() {
+    #get_flavor 1 "Choose a flavor to regenerate"
+    #load_flavor "$flavor"
+    "${PM2_FLAVOR}" regenerate #--flavor=$flavor
+}
+
 main_text() {
     listflavors=`$PM2_FLAVOR list`
     while :; do
@@ -798,7 +804,8 @@ main_text() {
 	echo " 4) see    a flavor"
 	echo " 5) check  a flavor"
 	echo " 6) remove a flavor"
-	echo " 7) quit this programme"
+	echo " 7) regenerate the flavors"
+	echo " 8) quit this programme"
 	echo
 	read i
 	case "$i" in
@@ -829,7 +836,11 @@ main_text() {
 	    do_remove
 	    exit 0
 	    ;; 
-	7|quit|q)
+	7|regenerate)
+	    do_regenerate
+	    exit 0
+	    ;;
+	8|quit|q)
 	    exit 0
 	    ;;
 	esac
@@ -868,7 +879,7 @@ main_dialog() {
     done
     $DIALOG --title "Flavors management" --menu \
 	"Existing flavors :\n$list_text\n\nYou can :" \
-	$DELTA $DELTA 7 \
+	$DELTA $DELTA 8 \
 	"create" "a flavor" \
 	"modify" "a flavor" \
 	"export" "a flavor" \
@@ -876,6 +887,7 @@ main_dialog() {
 	"see" "a flavor" \
 	"check" "a flavor" \
 	"remove" "a flavor" \
+	"regenerate" "all the flavors" \
 	2> /tmp/tmp-dialog.$$
     retval=$?
     choice=`cat /tmp/tmp-dialog.$$ 2>/dev/null`
@@ -884,7 +896,7 @@ main_dialog() {
     if [ $retval -eq 0 ]; then 
 	opt=`eval echo $choice`
 	case "$opt" in
-	create|modify|export|import|see|check|remove)
+	create|modify|export|import|see|check|remove|regenerate)
 	    eval do_$opt
 	    ;;
 	esac
@@ -906,7 +918,7 @@ interf=dialog
 
 while [ $# != 0 ]; do
     case "$1" in
-    create|modify|export|import|see|check|remove)
+    create|modify|export|import|see|check|remove|regenerate)
 	eval do_$1 '"$@"'
 	;;
     --dialog)

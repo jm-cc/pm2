@@ -54,8 +54,7 @@ typedef struct s_mad_vrp_driver_specific
 
 typedef struct s_mad_vrp_adapter_specific
 {
-  int  connection_socket;
-  int  connection_port;
+  p_ntbx_server_t server;
 } mad_vrp_adapter_specific_t, *p_mad_vrp_adapter_specific_t;
 
 typedef struct s_mad_vrp_channel_specific
@@ -88,8 +87,12 @@ typedef struct s_mad_vrp_link_specific
  * ----------------
  */
 
-/** none **/
-
+static
+void
+mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
+{
+  /**/
+}
 
 #undef DEBUG_NAME
 #define DEBUG_NAME mad3
@@ -101,8 +104,7 @@ typedef struct s_mad_vrp_link_specific
  */
 
 void
-mad_vrp_register(p_mad_driver_t driver)
-{
+mad_vrp_register(p_mad_driver_t driver){
   p_mad_driver_interface_t interface = NULL;
 
 #ifdef DEBUG
@@ -168,17 +170,18 @@ mad_vrp_driver_init(p_mad_driver_t d)
 void
 mad_vrp_adapter_init(p_mad_adapter_t a)
 {
-  p_mad_vrp_adapter_specific_t as    = NULL;
-  p_tbx_string_t               param = NULL;
-  ntbx_tcp_address_t           addr;
+  p_mad_vrp_adapter_specific_t as         = NULL;
+  p_tbx_string_t               param      = NULL;
+  p_ntbx_server_t              net_server = NULL;
 
   LOG_IN();
   if (strcmp(a->dir_adapter->name, "default"))
     FAILURE("unsupported adapter");
 
   as  = TBX_MALLOC(sizeof(mad_vrp_adapter_specific_t));
-  as->connection_port   = -1;
-  as->connection_socket = -1;
+  net_server = ntbx_server_cons();
+  ntbx_tcp_server_init(net_server);
+  as->server = net_server;
   a->specific = as;
 
 #ifdef SSIZE_MAX
@@ -187,13 +190,7 @@ mad_vrp_adapter_init(p_mad_adapter_t a)
   a->mtu = MAD_FORWARD_MAX_MTU;
 #endif // SSIZE_MAX
 
-  as->connection_socket = ntbx_tcp_socket_create(&addr, 0);
-  SYSCALL(listen(as->connection_socket, min(5, SOMAXCONN)));
-
-  as->connection_port = (ntbx_tcp_port_t)ntohs(addr.sin_port);
-
-  param = tbx_string_init_to_int(as->connection_port);
-  a->parameter = tbx_string_to_cstring(param);
+  a->parameter = tbx_strdup(net_server->connection_data.data);
   tbx_string_free(param);
   param = NULL;
   LOG_OUT();
@@ -219,23 +216,29 @@ mad_vrp_connection_init(p_mad_connection_t in,
   p_mad_vrp_out_connection_specific_t os = NULL;
 
   LOG_IN();
-  is = TBX_MALLOC(sizeof(mad_vrp_in_connection_specific_t));
+  if (in)
+    {
+      is = TBX_MALLOC(sizeof(mad_vrp_in_connection_specific_t));
 
-  is->socket =   -1;
-  is->port   =   -1;
-  is->vrp_in = NULL;
+      is->socket =   -1;
+      is->port   =   -1;
+      is->vrp_in = NULL;
 
-  in->specific = is;
-  in->nb_link  =  1;
+      in->specific = is;
+      in->nb_link  =  1;
+    }
 
-  os = TBX_MALLOC(sizeof(mad_vrp_out_connection_specific_t));
+  if (out)
+    {
+      os = TBX_MALLOC(sizeof(mad_vrp_out_connection_specific_t));
 
-  os->socket  =   -1;
-  os->port    =   -1;
-  os->vrp_out = NULL;
+      os->socket  =   -1;
+      os->port    =   -1;
+      os->vrp_out = NULL;
 
-  out->specific = os;
-  out->nb_link  =  1;
+      out->specific = os;
+      out->nb_link  =  1;
+    }
   LOG_OUT();
 }
 
@@ -254,17 +257,22 @@ void
 mad_vrp_accept(p_mad_connection_t   in,
 	       p_mad_adapter_info_t ai TBX_UNUSED)
 {
-  p_mad_vrp_adapter_specific_t       as = NULL;
-  p_mad_vrp_in_connection_specific_t is = NULL;
-  ntbx_tcp_socket_t                  s  =   -1;
+  p_mad_vrp_adapter_specific_t       as         = NULL;
+  p_mad_vrp_in_connection_specific_t is         = NULL;
+  p_ntbx_client_t                    net_client = NULL;
+  int                                vrp_port   =    0;
 
   LOG_IN();
   is = in->specific;
   as = in->channel->adapter->specific;
 
-  SYSCALL(s = accept(as->connection_socket, NULL, NULL));
+  net_client = ntbx_client_cons();
+  ntbx_tcp_client_init(net_client);
+  ntbx_tcp_server_accept(as->server, net_client);
 
-  /* ajouter appel à vrp_incoming_construct */
+  is->vrp_in = vrp_incoming_construct(&vrp_port, mad_vrp_frame_handler);
+  mad_ntbx_send_int(net_client, vrp_port);
+  /* lancer le thread de traitement asynchrone */
   LOG_OUT();
 
 }
@@ -273,32 +281,31 @@ void
 mad_vrp_connect(p_mad_connection_t   out,
 		p_mad_adapter_info_t ai)
 {
-  p_mad_vrp_out_connection_specific_t os        = NULL;
-  p_mad_dir_node_t                    r_node    = NULL;
-  p_mad_dir_adapter_t                 r_adapter = NULL;
-  ntbx_tcp_port_t                     r_port    =    0;
-  ntbx_tcp_socket_t                   s         =   -1;
-  ntbx_tcp_address_t                  r_addr;
+  p_mad_vrp_out_connection_specific_t os         = NULL;
+  p_mad_dir_node_t                    r_node     = NULL;
+  p_mad_dir_adapter_t                 r_adapter  = NULL;
+  p_ntbx_client_t                     net_client = NULL;
+  int                                 vrp_port   =    0;
 
   LOG_IN();
   os        = out->specific;
   r_node    = ai->dir_node;
   r_adapter = ai->dir_adapter;
-  r_port    = atoi(r_adapter->parameter);
-  s         = ntbx_tcp_socket_create(NULL, 0);
 
-#ifndef LEO_IP
-  ntbx_tcp_address_fill(&r_addr, r_port, r_node->name);
-#else // LEO_IP
-  ntbx_tcp_address_fill_ip(&r_addr, r_port, &r_node->ip);
-#endif // LEO_IP
+  net_client = ntbx_client_cons();
+  ntbx_tcp_client_init(net_client);
+  {
+    ntbx_connection_data_t cnx_data;
 
-  SYSCALL(connect(s, (struct sockaddr *)&r_addr,
-		  sizeof(ntbx_tcp_address_t)));
+    strncpy(cnx_data.data, r_adapter->parameter, NTBX_CONNECTION_DATA_LEN-1);
+    cnx_data.data[NTBX_CONNECTION_DATA_LEN-1] = 0;
+    ntbx_tcp_client_connect(net_client, r_node->name, &cnx_data);
+  }
+  vrp_port = mad_ntbx_receive_int(net_client);
 
-  ntbx_tcp_socket_setup(s);
-
-  /* ajouter appel à vrp_outgoing_construct */
+  os->vrp_out = vrp_outgoing_construct(r_node->name, vrp_port, 0, 0);
+  /* lancer le thread de traitement asynchrone */
+  vrp_outgoing_connect(os->vrp_out);
   LOG_OUT();
 }
 

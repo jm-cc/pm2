@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include <gm.h>
 
 #if defined(MARCEL)
@@ -35,7 +36,7 @@
 #  define TBX_UNLOCK() marcel_extlib_unprotect()
 #endif
 
-#define MAD_GM_MEMORY_CACHE 0
+#define MAD_GM_MEMORY_CACHE 1
 
 /*
  *  Macros
@@ -93,6 +94,7 @@ typedef struct s_mad_gm_cache {
         int                 len;
         int                 ref_count;
         p_mad_gm_cache_t    next;
+        volatile int        dirty;
 } mad_gm_cache_t;
 
 typedef struct s_mad_gm_port {
@@ -101,7 +103,7 @@ typedef struct s_mad_gm_port {
         int                 local_port_id;
         unsigned int        local_node_id;
         char                local_unique_node_id[6];
-        p_mad_gm_cache_t    cache_head;
+        //p_mad_gm_cache_t    cache_head;
         p_mad_adapter_t     adapter;
         p_tbx_darray_t      out_darray;
         p_tbx_darray_t      in_darray;
@@ -194,10 +196,27 @@ typedef struct s_mad_gm_link_specific {
 } mad_gm_link_specific_t, *p_mad_gm_link_specific_t;
 
 /*
+ *  Prototypes
+ * ____________
+ */
+static
+void
+mad_gm_free_hook(void *ptr, const void *caller);
+
+static
+void *
+mad_gm_realloc_hook(void *ptr, size_t len, const void *caller);
+
+static
+void
+mad_gm_malloc_initialize_hook(void);
+
+/*
  *  Global variables
  * __________________
  */
 
+static
 const int mad_gm_pub_port_array[] = {
         2,
         4,
@@ -207,6 +226,34 @@ const int mad_gm_pub_port_array[] = {
         -1
 };
 
+static
+const int mad_gm_nb_ports = 5;
+
+static
+p_mad_gm_cache_t mad_gm_cache_array[8] = {
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+};
+
+static
+void (*mad_gm_old_free_hook)(void *PTR, const void *CALLER) = NULL;
+
+static
+void * (*mad_gm_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
+
+#if MAD_GM_MEMORY_CACHE
+void (*__malloc_initialize_hook) (void) = mad_gm_malloc_initialize_hook;
+#endif // MAD_GM_MEMORY_CACHE
+
+static
+int mad_gm_malloc_hooked = 0;
+
 static TBX_CRITICAL_SECTION(mad_gm_access);
 static TBX_CRITICAL_SECTION(mad_gm_reception);
 
@@ -215,6 +262,75 @@ static TBX_CRITICAL_SECTION(mad_gm_reception);
  *  Functions
  * ___________
  */
+
+static
+void
+mad_gm_malloc_initialize_hook(void) {
+        mad_gm_malloc_hooked = 1;
+        mad_gm_old_free_hook	= __free_hook;
+        mad_gm_old_realloc_hook	= __realloc_hook;
+        __free_hook		= mad_gm_free_hook;
+        __realloc_hook		= mad_gm_realloc_hook;
+}
+
+static
+void
+mad_gm_uncache(void *ptr)
+{
+        int i = 0;
+
+        for (i = 0; i < mad_gm_nb_ports; i++) {
+                p_mad_gm_cache_t cache = mad_gm_cache_array[i];
+
+                while (cache) {
+                        if (ptr  >=  cache->ptr
+                            &&
+                            ptr  <  cache->ptr+cache->len) {
+                                cache->dirty = 1;
+                        }
+
+                        cache = cache->next;
+                }
+        }
+}
+
+static
+void *
+mad_gm_realloc_hook(void *ptr, size_t len, const void *caller) {
+        void *new_ptr = NULL;
+
+        __free_hook		= mad_gm_old_free_hook;
+        __realloc_hook		= mad_gm_old_realloc_hook;
+
+        mad_gm_uncache(ptr);
+        new_ptr = realloc(ptr, len);
+
+        mad_gm_old_free_hook	= __free_hook;
+        mad_gm_old_realloc_hook	= __realloc_hook;
+
+        __free_hook		= mad_gm_free_hook;
+        __realloc_hook		= mad_gm_realloc_hook;
+
+        return new_ptr;
+}
+
+
+static
+void
+mad_gm_free_hook(void *ptr, const void *caller) {
+        __free_hook		= mad_gm_old_free_hook;
+        __realloc_hook		= mad_gm_old_realloc_hook;
+
+        mad_gm_uncache(ptr);
+        free(ptr);
+
+        mad_gm_old_free_hook	= __free_hook;
+        mad_gm_old_realloc_hook	= __realloc_hook;
+
+        __free_hook		= mad_gm_free_hook;
+        __realloc_hook		= mad_gm_realloc_hook;
+}
+
 
 /* GM error message display fonction. */
 static
@@ -496,29 +612,67 @@ mad_gm_register_block(p_mad_gm_port_t    port,
         gm_status_t        gms       = GM_SUCCESS;
         p_mad_gm_cache_t   cache     = NULL;
         p_mad_gm_cache_t  *p_cache   = NULL;
+        p_mad_gm_cache_t  *p_cache_head   = NULL;
 
         LOG_IN();
 	p_gm_port =  port->p_gm_port;
-        p_cache   = &port->cache_head;
+        p_cache_head	= &(mad_gm_cache_array[port->number]);
+        p_cache   = p_cache_head;
 
         mad_gm_round2page(&ptr, &len);
 #if MAD_GM_MEMORY_CACHE
         while ((cache = *p_cache)) {
-                if (ptr      >=  cache->ptr
+                if (!cache->dirty
+                    &&
+                    ptr      >=  cache->ptr
                     &&
                     ptr+len  <=  cache->ptr+cache->len) {
                         cache->ref_count++;
 
-                        if (p_cache != &port->cache_head) {
+                        if (p_cache != p_cache_head) {
                                 *p_cache = cache->next;
-                                cache->next = port->cache_head;
-                                port->cache_head = cache;
+                                cache->next = *p_cache_head;
+                                *p_cache_head = cache;
                         }
 
                         goto success;
                 }
 
-                p_cache = &(cache->next);
+                if (cache->dirty) {
+
+                        if (!cache->ref_count) {
+                                if (p_cache == p_cache_head) {
+                                        *p_cache_head = cache->next;
+                                }
+
+                                *p_cache = cache->next;
+
+                                {
+                                        gm_status_t gms =  GM_SUCCESS;
+
+                                        gms = gm_deregister_memory(p_gm_port,
+                                                                   cache->ptr,
+                                                                   cache->len);
+                                        if (gms) {
+                                                __error__("memory deregistration failed");
+                                                __gmerror__(gms);
+                                                goto error;
+                                        }
+
+                                        cache->ptr = NULL;
+                                        cache->len =    0;
+
+                                        cache->next = NULL;
+                                }
+
+                                TBX_FREE(cache);
+                        } else {
+                                // DISP("cache entry dirty but ref_count is not null:  %p->%p, refcount = %d", cache->ptr, cache->ptr+cache->len, cache->ref_count);
+                                p_cache = &(cache->next);
+                        }
+                } else {
+                        p_cache = &(cache->next);
+                }
         }
 #endif /* MAD_GM_MEMORY_CACHE */
         cache = TBX_MALLOC(sizeof(mad_gm_cache_t));
@@ -532,12 +686,16 @@ mad_gm_register_block(p_mad_gm_port_t    port,
                 goto error;
         }
 
+        cache->dirty	 = 0;
         cache->ptr       = ptr;
         cache->len       = len;
         cache->ref_count = 1;
-        cache->next      = port->cache_head;
+        cache->next      = *p_cache_head;
 
-        port->cache_head = cache;
+        // DISP("new cache entry: %p->%p", ptr, ptr+len);
+
+        *p_cache_head = cache;
+        // DISP("port_num = %d, cache_head = %p", port->number, mad_gm_cache_array[port->number]);
 
 #if MAD_GM_MEMORY_CACHE
  success:
@@ -561,9 +719,11 @@ mad_gm_deregister_block(p_mad_gm_port_t  port,
 
         if (!--cache->ref_count) {
                 p_mad_gm_cache_t *p_cache = NULL;
+                p_mad_gm_cache_t *p_cache_head   = NULL;
                 int               i       =    0;
 
-                p_cache = &port->cache_head;
+                p_cache_head	= &(mad_gm_cache_array[port->number]);
+                p_cache   = p_cache_head;
 
                 while (*p_cache != cache) {
                         p_cache = &((*p_cache)->next);
@@ -571,7 +731,7 @@ mad_gm_deregister_block(p_mad_gm_port_t  port,
                 }
 
 #if MAD_GM_MEMORY_CACHE
-                if (i >= MAD_GM_CACHE_SIZE) 
+                if (cache->dirty || i >= MAD_GM_CACHE_SIZE)
 #endif /* MAD_GM_MEMORY_CACHE */
                         {
                         gm_status_t gms =  GM_SUCCESS;
@@ -1163,7 +1323,6 @@ mad_gm_port_open(int device_id) {
 	}
 #endif
 
-        port->cache_head    = NULL;
         port->out_darray    = tbx_darray_init();
         port->in_darray     = tbx_darray_init();
         port->packet        = gm_dma_malloc(p_gm_port, MAD_GM_PACKET_LEN);
@@ -1244,6 +1403,12 @@ mad_gm_driver_init(p_mad_driver_t d) {
 
         LOG_IN();
         TRACE("Initializing GM driver");
+#if MAD_GM_MEMORY_CACHE
+        if (!mad_gm_malloc_hooked) {
+                mad_gm_malloc_initialize_hook();
+        }
+#endif // MAD_GM_MEMORY_CACHE
+
         ds          = TBX_MALLOC(sizeof(mad_gm_driver_specific_t));
 
 #ifdef MAD_GM_MARCEL_POLL

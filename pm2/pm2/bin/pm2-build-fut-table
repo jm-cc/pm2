@@ -1,0 +1,111 @@
+#!/bin/sh
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+usage() # exit_code
+{
+    cat <<EOF
+Usage: $PROGNAME { option }
+
+  option:
+    -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -h : Display this help message
+EOF
+    exit $1
+}
+
+PM2_FLAVOR=${PM2_FLAVOR:-default}
+export PM2_FLAVOR
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f)
+	    shift
+	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-h)
+	    usage 0
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+#echo "Building fut_entries.h & fut_print.h for flavor $PM2_FLAVOR..."
+
+BUILDDIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir`
+
+GENDIR=${BUILDDIR}/profile/include
+
+if [ ! -d ${GENDIR} ] ; then
+    mkdir -p ${GENDIR}
+fi
+
+deffile=${GENDIR}/fut_entries.h
+echo "#ifndef FUT_ENTRIES_IS_DEF" > $deffile
+echo "#define FUT_ENTRIES_IS_DEF" >> $deffile
+echo >> $deffile
+
+printfile=${GENDIR}/fut_print.h
+> $printfile
+
+base=8192
+value=0
+for mod in `pm2-config --flavor=${PM2_FLAVOR:-default} --modules`; do
+    # Ugly!!! We should use --cppdir <mod> instead of --buildir!
+    FUT_FILES=`find ${BUILDDIR}/$mod -name '*.fut'`
+    for e in `cat $FUT_FILES`; do
+    case $e in
+        *entry_code)
+	    num=`expr $value + $base`
+
+	    echo "{ $num, \"`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`\" }," >> $printfile
+
+	    # The following generates the right shifted code
+	    num=`expr $num \* 256 + 12`
+	    num=`printf "0x%x" $num`
+            echo "unsigned $e = $num ;" >> $deffile
+
+            ;;
+        *exit_code)
+	    num=`expr $value + $base + 256`
+
+	    echo "{ $num, \"`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`\" }," >> $printfile
+
+	    # The following generates the right shifted code
+	    num=`expr $num \* 256 + 12`
+	    num=`printf "0x%x" $num`
+            echo "unsigned $e = $num ;" >> $deffile
+
+            value=`expr $value + 1`
+	    if [ $value = 256 ]; then
+		base=`expr $base + 512`
+		value=0
+	    fi
+	    ;;
+	*) echo "FATAL ERROR!"; exit 1;;
+    esac
+    done
+done
+echo >> $deffile
+echo "#endif" >> $deffile
+
+# Now we must build the fut_print tool...
+
+# Ugly again! We should rather use --bindir...
+if [ ! -d ${BUILDDIR}/profile/bin ]; then
+    mkdir -p ${BUILDDIR}/profile/bin
+fi
+gcc -o ${BUILDDIR}/profile/bin/fut_print -I${PM2_ROOT}/profile/include -I${GENDIR} ${PM2_ROOT}/profile/bin/src/fut_print.c
+
+exit 0

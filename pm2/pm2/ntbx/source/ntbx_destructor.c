@@ -23,8 +23,8 @@
 #include "ntbx.h"
 
 void
-ntbx_client_dest(p_ntbx_client_t            object,
-		 p_tbx_specific_dest_func_t dest_func)
+ntbx_client_dest_ext(p_ntbx_client_t            object,
+		     p_tbx_specific_dest_func_t dest_func)
 {
   LOG_IN();
   if (object->state)
@@ -71,8 +71,16 @@ ntbx_client_dest(p_ntbx_client_t            object,
 }
 
 void
-ntbx_server_dest(p_ntbx_server_t            object,
-		 p_tbx_specific_dest_func_t dest_func)
+ntbx_client_dest(p_ntbx_client_t object)
+{
+  LOG_IN();
+  ntbx_client_dest_ext(object, NULL);
+  LOG_OUT();
+}
+
+void
+ntbx_server_dest_ext(p_ntbx_server_t            object,
+		     p_tbx_specific_dest_func_t dest_func)
 {
   LOG_IN();
   if (object->state)
@@ -109,6 +117,15 @@ ntbx_server_dest(p_ntbx_server_t            object,
 }
 
 void
+ntbx_server_dest(p_ntbx_server_t object)
+{
+  LOG_IN();
+  ntbx_server_dest_ext(object, NULL);
+  LOG_OUT();
+}
+
+
+void
 ntbx_process_info_dest(p_ntbx_process_info_t      object,
 		       p_tbx_specific_dest_func_t dest_func)
 {
@@ -134,7 +151,7 @@ ntbx_process_info_dest(p_ntbx_process_info_t      object,
 
 void
 ntbx_pc_dest(p_ntbx_process_container_t object,
-			    p_tbx_specific_dest_func_t dest_func)
+	     p_tbx_specific_dest_func_t dest_func)
 {
   LOG_IN();
   while (object->local_array_size--)

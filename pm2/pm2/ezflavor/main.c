@@ -32,6 +32,7 @@ gint destroy_phase = FALSE;
 gint tips_enabled = TRUE;
 gint skip_intro = FALSE;
 gint with_sound = FALSE;
+gint show_all_modules = FALSE;
 static gint show_help = FALSE;
 
 GtkWidget *main_window;
@@ -75,6 +76,9 @@ static void parse_options(int *argc, char *argv[])
     } else if(!strcmp(argv[i], "--with-sound") || !strcmp(argv[i], "-s")) {
       with_sound = TRUE;
       i++;
+    } else if(!strcmp(argv[i], "--all-modules") || !strcmp(argv[i], "-a")) {
+      show_all_modules = TRUE;
+      i++;
     } else if(!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
       show_help = TRUE;
       i++;
@@ -89,10 +93,11 @@ static void do_show_help(char *cmd)
 {
   g_print("Usage: %s { <option> }\n", cmd);
   g_print("<option> can be:\n");
-  g_print("\t--expert | -e      : disables tips (noticeably accelerates startup!)\n");
-  g_print("\t--skip-intro | -ni : skips introduction window\n");
-  g_print("\t--with-sound | -s  : enables sounds during intro\n");
-  g_print("\t--help | -h        : shows this help screen\n");
+  g_print("\t--expert | -e      : disable tips (noticeably accelerates startup!)\n");
+  g_print("\t--all-modules | -a : show all modules\n");
+  g_print("\t--skip-intro | -ni : skip introduction window\n");
+  g_print("\t--with-sound | -s  : enable sounds during intro\n");
+  g_print("\t--help | -h        : show this help screen\n");
 }
 
 int main(int argc, char *argv[])

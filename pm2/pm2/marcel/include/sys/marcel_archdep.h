@@ -18,7 +18,7 @@
 #define ARCHDEP_EST_DEF
 
 #include "sys/marcel_flags.h"
-#include "sys/marcel_for_win.h"
+#include "sys/marcel_win_sys.h"
 
 #ifdef MA__LWPS
 

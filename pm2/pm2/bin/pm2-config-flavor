@@ -48,7 +48,7 @@ usage()
     exit_code=$1
 
     cat <<EOF
-Usage: $PROGNAME [Command ...]
+Usage: $PROGNAME [--text|--dialog] [Command ...]
 
 Commands:
     create [flavor [model]] : create flavor 'flavor' based on model 'model'
@@ -76,8 +76,14 @@ get_modules() {
 #    while : ; do
 	get_options modules "Modules to include in the flavor" "" module
 
+    case $interf in
+    text)
 	echo
 	echo "Modules selected: $fl_modules"
+	;;
+    dialog)
+	;;
+    esac
 #	settings_ok 1 && return 0
 #    done
 }
@@ -105,63 +111,8 @@ if [ "`echo -n`" = "-n" ]; then
 else
     NN=-n
 fi
-get_options() { # mod help list_options_to_add option/module
-    curopts=
-    case $4 in
-    option)
-	case $1 in
-	all)
-	    module=""
-	    ;;
-	*)
-	    module="--module=$1"
-	    for opt in $3 `eval echo \\$fl_$1` " "; do
-		case $opt in
-		\ )
-		    ;;
-		*)
-		    case " $curopts " in
-		    *\ $opt\ *)
-			;;
-		    *)
-			curopts="${curopts:+$curopts }$opt"
-			;;
-		    esac
-		    ;;
-		esac
-	    done
-	    ;;
-	esac
-	listopt=`"$PM2_MODULE" options $module`
-	helpcmd1="option="
-	helpcmd2="$module"
-	;;
-    module)
-	for opt in $3 `eval echo \\$fl_$1` " "; do
-	    case $opt in
-	    \ )
-		;;
-	    *)
-		case " $curopts " in
-		*\ $opt\ *)
-		    ;;
-		*)
-		    curopts="${curopts:+$curopts }$opt"
-		    ;;
-		esac
-		;;
-	    esac
-	done	
-	listopt=`"$PM2_MODULE" modules`
-	helpcmd1="module="
-	helpcmd2=""
-	;;
-    esac
 
-    if [ -z "$listopt" ]; then
-	return 0
-    fi
-
+get_options_text() { # mod help list_options_to_add option/module
     echo "$SEP"
     echo "$2 (type help for help)"
     echo "Permited ${4}s: $listopt"
@@ -267,9 +218,134 @@ get_options() { # mod help list_options_to_add option/module
     eval fl_$1='"$curopts"'
 }
 
+get_options_dialog() { # mod help list_options_to_add option/module
+    text_opt=
+    nb_opt=0
+    for opt in $listopt; do
+	text_opt="$text_opt '$opt' '"`"$PM2_MODULE" $helpcmd1$opt \
+	    $helpcmd2 --quickhelp`"'"
+	case " $curopts " in
+	*\ $opt\ *)
+	    text_opt="$text_opt on"
+	    ;;
+	*)
+	    text_opt="$text_opt off"
+	    ;;
+	esac
+	nb_opt=`expr $nb_opt + 1`
+    done
+    if [ $nb_opt -ge 20 ]; then
+	nb_opt=20
+    fi
+
+    (
+	case $4 in
+	option)
+	    case $1 in
+	    all)
+		echo "Options you choose there will be selected in next screens"
+		;;
+	    common)
+		echo "Options you choose there applied to programmes you compile,"
+		echo "not to the libraries themselves"
+		;;
+	    *)
+		"$PM2_MODULE" module=$1 --help
+		;;
+	    esac
+	    ;;
+        module)
+	    echo "Choose libraries to include in your flavor"
+	    ;;
+	esac
+    ) | ( 
+	addtext=
+	while read i; do
+	    addtext="$addtext\n$i"
+	done
+	echo "$addtext" > /tmp/tmp-dialog.$$
+    )
+    addtext="`cat /tmp/tmp-dialog.$$`"
+    rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+
+    #echo dialog --title '"$2"' --checklist '"$addtext"' 0 0 $nb_opt "$text_opt"
+    eval dialog --title '"$2"' --checklist '"$addtext"' -1 -1 $nb_opt "$text_opt"\
+		    2> /tmp/tmp-dialog.$$
+    retval=$?
+    choice=`cat /tmp/tmp-dialog.$$`
+    rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+    if [ $retval -eq 0 ]; then 
+	curopts=`eval echo "$choice"`; 
+    else
+	echo "Aborting..."
+	exit $retval
+    fi
+    eval fl_$1='"$curopts"'
+}
+
+get_options() { # mod help list_options_to_add option/module
+    curopts=
+    case $4 in
+    option)
+	case $1 in
+	all)
+	    module=""
+	    ;;
+	*)
+	    module="--module=$1"
+	    for opt in $3 `eval echo \\$fl_$1` " "; do
+		case $opt in
+		\ )
+		    ;;
+		*)
+		    case " $curopts " in
+		    *\ $opt\ *)
+			;;
+		    *)
+			curopts="${curopts:+$curopts }$opt"
+			;;
+		    esac
+		    ;;
+		esac
+	    done
+	    ;;
+	esac
+	listopt=`"$PM2_MODULE" options $module`
+	helpcmd1="option="
+	helpcmd2="$module"
+	;;
+    module)
+	for opt in $3 `eval echo \\$fl_$1` " "; do
+	    case $opt in
+	    \ )
+		;;
+	    *)
+		case " $curopts " in
+		*\ $opt\ *)
+		    ;;
+		*)
+		    curopts="${curopts:+$curopts }$opt"
+		    ;;
+		esac
+		;;
+	    esac
+	done	
+	listopt=`"$PM2_MODULE" modules`
+	helpcmd1="module="
+	helpcmd2=""
+	;;
+    esac
+
+    if [ -z "$listopt" ]; then
+	return 0
+    fi
+
+    eval "get_options_${interf}" '"$@"'
+}
+
 SEP="******************************************************"
 
-get_value() { # needed name help
+get_value_text() { # needed name help
     default="`eval echo \\$$2`"
     end=false
     while [ $end = false ]; do
@@ -286,6 +362,34 @@ get_value() { # needed name help
 	fi
     done
     eval $2="$rep"
+}
+
+get_value_dialog() { # needed name help
+    default="`eval echo \\$$2`"
+    end=false
+    title=`echo $2 | sed -e 's/fl_//'`
+    while [ $end = false ]; do
+	dialog --title "$title" --inputbox "\n$3\n" 0 0 "$default" \
+	    2> /tmp/tmp-dialog.$$
+	retval=$?
+	choice=`cat /tmp/tmp-dialog.$$`
+	rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+	if [ $retval -eq 0 ]; then 
+	    rep="$choice"; 
+	else
+	    echo "Aborting..."
+	    exit $retval
+	fi
+
+	if [ $1 = 0 -o "$rep" ]; then
+	    end=true
+	fi
+    done
+    eval $2="$rep"
+}
+
+get_value() { # needed name help
+    eval "get_value_${interf}" '"$@"'
 }
 
 settings_ok() { # ok
@@ -325,7 +429,8 @@ do_cmdline() { # no_flavor
     done
 }
 
-show_flavor() { # check
+show_flavor_text() { # check
+    echo "$SEP"
     echo "Current settings:"
     echo "flavor name: $fl_flavor"
     echo "builddir   : $fl_builddir"
@@ -336,14 +441,14 @@ show_flavor() { # check
     for mod in $fl_modules "" ; do
 	module="`echo $mod'             ' | cut -c-6`"
 	[ ! -z "$mod" ] &&
-	    echo "  Modules $module with options: `eval echo \\$fl_$mod`"
+	    echo "  Module $module with options: `eval echo \\$fl_$mod`"
     done
     echo
     if [ ! -z "$1" ]; then
 	do_cmdline 1
 	echo "Checking dependances in the configuration..."
 	if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
-	    echo "All seem good"
+	    echo "All seems good"
 	    echo
 	    return 0
 	else
@@ -353,7 +458,65 @@ show_flavor() { # check
     fi
 }
 
-do_edite() {
+show_flavor_dialog() { # check init_text last_text yesno
+    addtext=
+    if [ ! -z "$1" ]; then
+	do_cmdline 1
+	( 
+	    echo "Checking dependances in the configuration..."
+	    if eval '"$PM2_FLAVOR"' $1 "$cmdline"; then
+		echo "All seems good"
+	    fi
+	) | ( 
+	    while read i; do
+		echo $i
+		addtext="$addtext\n$i"
+	    done
+	    echo "$addtext" > /tmp/tmp-dialog.$$
+	)
+	addtext="`cat /tmp/tmp-dialog.$$`"
+	rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+	#case "$addtext" in
+	#*All\ seem\ good*)
+	#    return_value=0
+	#    ;;
+	#*)
+	#    return_value=1
+	#    ;;
+	#esac
+    else
+	return_value=0
+    fi
+
+    text="${2}Current settings for flavor '$fl_flavor'\n"
+    text="${text}\n"\
+    text="${text}builddir   : $fl_builddir\n"\
+    text="${text}extension  : $fl_ext\n"\
+    text="${text}modules    : $fl_modules\n"
+    [ ! -z "$fl_common" ] &&
+	text="$text  Common options             : $fl_common\n"
+    for mod in $fl_modules "" ; do
+	module="`echo $mod'             ' | cut -c-6`"
+	[ ! -z "$mod" ] &&
+	    text="$text  Module $module with options: `eval echo \\$fl_$mod`\n"
+    done
+    case $4 in
+    1)
+	boite="--yesno"
+	;;
+    *)
+	boite="--msgbox"
+	;;
+    esac
+    dialog --title "Flavor description" $boite "$text$addtext$3" 0 0
+    #return $return_value
+}
+
+show_flavor() { # check
+    eval "show_flavor_${interf}" '"$@"'
+}
+
+do_edite_text() {
     fin=
     while [ "$fin" != true ]; do
 	echo "$SEP"
@@ -382,6 +545,31 @@ do_edite() {
     eval '"$PM2_FLAVOR"' set "$cmdline"
 }
 
+do_edite_dialog() {
+    fin=
+    while [ "$fin" != true ]; do
+	show_flavor "" "Editing flavor...\n\n"
+	get_value 0 fl_builddir "Directory for compiling"
+	get_value 0 fl_ext "Extension added to libraries and binaries"
+	get_modules
+	get_options all "Options for all modules and applications" "" option
+	get_options common "Common options" "$fl_all" option
+	for mod in $fl_modules; do
+	    get_options $mod "Options for module $mod" "$fl_all" option
+	done
+	
+	if show_flavor check "" "\n\nWrite this flavor ?" 1; then
+	    fin=true
+	fi
+    done
+    do_cmdline
+    eval '"$PM2_FLAVOR"' set "$cmdline"
+}
+
+do_edite() {
+    eval "do_edite_${interf}" '"$@"'
+}
+
 list_flavors=`"$PM2_FLAVOR" list`
 get_flavor_ok() { # flavor need_existing can_be_empty first
     f=`echo "$1" | tr -c -d '[\-_a-zA-Z0-9]'`
@@ -403,7 +591,7 @@ get_flavor_ok() { # flavor need_existing can_be_empty first
     return 0
 }
 
-get_flavor() { # need_existing prompt can_be_empty
+get_flavor_text() { # need_existing prompt can_be_empty
     get_flavor_ok "$flavor" "$1" "$3" 1 && return 0
     fin=0
     while [ $fin = 0 ]; do
@@ -417,12 +605,112 @@ get_flavor() { # need_existing prompt can_be_empty
     done
 }
 
-get_file() { # need_existing prompt
+get_flavor_dialog() { # need_existing prompt can_be_empty
+    get_flavor_ok "$flavor" "$1" "$3" 1 && return 0
+    fin=0
+    addtxt=
+    while [ $fin = 0 ]; do
+	if [ "$1" = 0 -a -z "$3" ]; then
+	    dialog --title Flavors --inputbox "$2$addtxt" 0 0 "newflavor" \
+		    2> /tmp/tmp-dialog.$$
+	    retval=$?
+	    choice=`cat /tmp/tmp-dialog.$$`
+	    rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+	    if [ $retval -eq 0 ]; then 
+		flavor="$choice"; 
+	    else
+		echo "Aborting..."
+		exit $retval
+	    fi
+	else
+	    items=
+	    for i in ${3:+"$3"} $list_flavors ; do
+		items="$items '$i' ''"
+	    done
+	    eval dialog --title Flavors --menu '"$2"' 0 0 "$dialcomp" "$items"\
+		2> /tmp/tmp-dialog.$$
+	    retval=$?
+	    choice=`cat /tmp/tmp-dialog.$$`
+	    rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+	    
+	    if [ $retval -eq 0 ]; then 
+		flavor="$choice"; 
+	    else
+		echo "Aborting..."
+		exit $retval
+	    fi
+	fi
+	if [ "$flavor" = "$3" ]; then
+	    flavor=
+	fi
+	get_flavor_ok "$flavor" "$1" "$3" 0 && fin=1
+	addtxt="\n\nName incorrect. Try Again"
+    done
+}
+
+get_flavor() { # need_existing prompt can_be_empty
+    eval "get_flavor_${interf}" '"$@"'
+}
+
+get_file_text() { # need_existing prompt
     while [  \( -z "$file" \) -o \( "$1" = 1 -a ! -f "$file" \) ]; do
 	echo
 	echo "$2"
 	read file
     done
+}
+
+get_file_dialog() { # need_existing prompt
+    [ \( -z "$file" \) -o \( "$1" = 1 -a ! -f "$file" \) ] || return 0
+    case $1 in
+    1)
+	dir=.
+	while [ -d $dir ]
+	do
+	    # This strips extra slashes, and '..' fields
+	    dir=`cd $dir; pwd`
+	    items=
+    	    for i in `ls -a1 $dir` ; do
+		if [ -d "$i" ]; then
+		    items="$items '$i/' ''"
+		else
+		    items="$items '$i' ''"
+		fi
+	    done
+	    eval dialog --title Files --menu '"$2"' 0 0 "$dialcomp" "$items" \
+		2> /tmp/tmp-dialog.$$
+	    retval=$?
+	    choice=`cat /tmp/tmp-dialog.$$`
+	    rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+	    if [ $retval -ne 0 ] ; then break; fi
+	    dir="$dir/$choice"
+	done
+
+	if [ $retval -eq 0 ]; then 
+	    file="$dir"; 
+	else
+	    echo "Aborting..."
+	    exit $retval
+	fi
+	;;
+    *)
+	dialog --title Files --inputbox "$2" 0 0 "newfile" \
+		2> /tmp/tmp-dialog.$$
+	retval=$?
+	choice=`cat /tmp/tmp-dialog.$$`
+	rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+	if [ $retval -eq 0 ]; then 
+	    file="$choice"; 
+	else
+	    echo "Aborting..."
+	    exit $retval
+	fi
+	;;
+    esac
+}
+
+get_file() { # need_existing prompt
+    eval "get_file_${interf}" '"$@"'
 }
 
 load_flavor() { # flavor
@@ -440,7 +728,7 @@ do_create() {
     get_flavor 0 "Choose a name for the new flavor"
     name=$flavor
     flavor="$file"
-    get_flavor 0 "Choose a model flavor if you want" 1
+    get_flavor 0 "Choose a model flavor if you want" "[No model]"
     [ ! -z "$flavor" ] && load_flavor $flavor
     if [ "$fl_builddir" = "$flavor" ]; then
 	fl_builddir=$name
@@ -475,14 +763,12 @@ do_import() {
 do_see() {
     get_flavor 1 "Choose a flavor to see"
     load_flavor "$flavor"
-    echo "$SEP"
     show_flavor
 }
 
 do_check() {
     get_flavor 1 "Choose a flavor to check"
     load_flavor "$flavor"
-    echo "$SEP"
     show_flavor "-v check"
     exit $?
 }
@@ -493,7 +779,7 @@ do_remove() {
 }
 
 
-main() {
+main_text() {
     listflavors=`$PM2_FLAVOR list`
     while :; do
 	echo "================= Flavors management =================="
@@ -547,22 +833,98 @@ main() {
     done
 }
 
-if test $# -eq 0; then
-    main
-    exit 0
-fi
+main_dialog() {
+    list_item=`$PM2_FLAVOR list`
+    list_start="  "
+    list_text=
+    list_line=
+    list_nb_lines=0
+    list_newline=yes
+    for i in $list_item ; do
+	listtmp="${list_line:+$list_line }$i"
+	lg=`echo "$list_start$listtmp" | wc -c`
+	if [ $lg -ge $WSIZE -a $list_newline = no ]; then
+	    # on crée une nouvelle ligne
+	    list_text="${list_text:+$list_text\n}$list_start$list_line" 
+	    list_line="$i"
+	    list_nb_lines=`expr $list_nb_lines + 1`
+	    list_newline=yes
+	else
+	    # on ajoute à la ligne courante
+	    list_line="$listtmp"
+	    list_newline=no
+	fi
+    done
+    if [ ! -z "$list_line" ]; then
+	list_text="${list_text:+$list_text\n}$list_start$list_line" 	
+	list_nb_lines=`expr $list_nb_lines + 1`
+    fi
+    items=
+    for i in ${3:+"[$3]"} $list_flavors ; do
+	items="$items '$i' ''"
+    done
+    dialog --title "Flavors management" --menu \
+	"Existing flavors :\n$list_text\n\nYou can :" \
+	0 0 7 \
+	"create" "a flavor" \
+	"modify" "a flavor" \
+	"export" "a flavor" \
+	"import" "a flavor" \
+	"see" "a flavor" \
+	"check" "a flavor" \
+	"remove" "a flavor" \
+	2> /tmp/tmp-dialog.$$
+    retval=$?
+    choice=`cat /tmp/tmp-dialog.$$ 2>/dev/null`
+    rm -f /tmp/tmp-dialog.$$ 2>/dev/null
+    
+    if [ $retval -eq 0 ]; then 
+	opt=`eval echo $choice`
+	case "$opt" in
+	create|modify|export|import|see|check|remove)
+	    eval do_$opt
+	    ;;
+	esac
+    else
+	exit 0
+    fi
+}
+
+main() {
+    eval "main_${interf}"
+}
 
 flavor="$2"
 file="$3"
 
-case "$1" in
-create|modify|export|import|see|check|remove)
-    eval do_$1 '"$@"'
-    ;;
-*)
-    usage 0
-    ;;
-esac
+WSIZE=75
+interf=dialog
+
+dialog --version >/dev/null 2>&1
+if [ $? = 0 ]; then
+    dialcomp="''"
+else
+    dialcomp=""
+fi
+
+while [ $# != 0 ]; do
+    case "$1" in
+    create|modify|export|import|see|check|remove)
+	eval do_$1 '"$@"'
+	;;
+    --dialog)
+	interf=dialog
+	;;
+    --text)
+	interf=text
+	;;
+    *)
+	usage 0
+	;;
+    esac
+    shift
+done
+main
 
 exit 0
 

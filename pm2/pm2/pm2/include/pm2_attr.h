@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_attr.h,v $
+Revision 1.5  2000/02/28 11:17:59  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.4  2000/01/31 15:49:39  oaumage
 - ajout du Log CVS
 
@@ -44,9 +47,9 @@ ______________________________________________________________________________
 #ifndef PM2_ATTR_EST_DEF
 #define PM2_ATTR_EST_DEF
 
-#include <marcel.h>
-#include <madeleine.h>
-#include <pm2_types.h>
+#include "marcel.h"
+#include "madeleine.h"
+#include "pm2_types.h"
 
 typedef unsigned pm2_channel_t;
 

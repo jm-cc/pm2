@@ -69,6 +69,9 @@ typedef pthread_mutex_t mutex;
 #define _ma_raw_spin_trylock(x) (!pm2_spinlock_testandset(x))
 #define _ma_raw_spin_lock(x) do { } while (!(_ma_raw_spin_trylock(x)))
 #else
+#ifdef MARCEL_DONT_USE_POSIX_THREADS
+#error "Can't avoid using Posix Threads library if neither cmpxchg nor testandset are implemented !"
+#endif
 #define ma_spin_is_locked(x)	({ int ___ret; \
 				pthread_mutex_t *___px = &(x); \
 				if (!(___ret = pthread_mutex_trylock(___px))) \

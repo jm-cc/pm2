@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leonie.c,v $
+Revision 1.8  2000/05/23 15:33:14  oaumage
+- extension de la partie analyse de la configuration
+
 Revision 1.7  2000/05/18 11:34:18  oaumage
 - remplacement des types `tableau' par des types `structure de tableau'
   par securite
@@ -78,6 +81,45 @@ static p_leonie_t main_leonie = NULL;
  * Functions
  * ==========================================================================
  */
+
+/*
+ * Cluster list/host list building
+ * -------------------------------
+ */
+p_undefined_t
+leo_build_host_list(p_leo_app_application_t  application,
+		    p_leo_clu_cluster_file_t local_cluster_def);
+{
+  tbx_slist_t          host_list;
+  tbx_slist_t          cluster_list;
+  tbx_list_reference_t ref;
+
+  tbx_slist_init(&host_list);
+  tbx_slist_init(&cluster_list);
+
+  tbx_list_reference_init(&ref, application->cluster_list);
+
+  do
+    {
+      p_leo_app_cluster_t app_cluster = tbx_get_list_reference_object(&ref);
+      p_leo_cluster_t     cluster     = NULL;
+
+      cluster->name = malloc(strlen(app_cluster->id) + 1);
+      CTRL_ALLOC(cluster->name);
+      strcpy(cluster->name, app_cluster->id);
+
+      cluster->dist       = -1;
+      cluster->master     = NULL;
+      cluster->host_list  = malloc(sizeof(tbx_slist_t));
+      CTRL_ALLOC(cluster->host_list);
+      tbx_slist_init(&cluster->host_list);
+      cluster->spawn_mode = -1;
+
+      tbx_slist_append_tail(cluster_list, cluster);
+    }
+  while (tbx_forward_list_reference(&ref));
+}
+
 
 /*
  * Madeleine interfacing
@@ -152,7 +194,13 @@ leo_start(p_leo_app_application_t  application,
   LOG_IN();
   if (tbx_empty_list(application->cluster_list))
     FAILURE("no cluster in application description file");
+
+
+#error a completer
+  leo_build_host_list(application, local_cluster_def);
   
+
+
   if (application->cluster_list->length > 1)
     FAILURE("multicluster sessions are not yet supported");
 

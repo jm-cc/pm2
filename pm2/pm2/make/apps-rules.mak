@@ -108,8 +108,8 @@ repclean:
 		fi ; \
 	done
 
-distclean:
-	$(RM) -r build
+#distclean:
+#	$(RM) -r build
 
 $(PROGS):
 	@$(MAKE_LIBS)
@@ -137,7 +137,7 @@ targethelpapps:
 	@echo "  all|examples: build the examples"
 	@echo "  help: this help"
 	@echo "  clean: clean examples source tree for current flavor"
-	@echo "  distclean: clean examples source tree for all flavors"
+#	@echo "  distclean: clean examples source tree for all flavors"
 	@echo
 	@echo "Examples to build:"
 	@echo "  $(PROGSLIST)"

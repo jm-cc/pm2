@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_mad.c,v $
+Revision 1.5  2000/11/13 20:41:39  rnamyst
+common_init now performs calls to all libraries
+
 Revision 1.4  2000/11/06 15:02:21  rnamyst
 pm2_init() has now a modular structure (in fact, common_init).
 
@@ -241,6 +244,7 @@ _PRIVATE_ extern marcel_key_t        _pm2_isomalloc_nego_key;
 
 static p_mad_madeleine_t main_madeleine;
 
+#if 0
 void mad_init(int *argc, char *argv[])
 {
   /* Note:
@@ -259,15 +263,11 @@ void mad_init(int *argc, char *argv[])
 
   LOG_OUT();
 }
+#endif
 
-unsigned mad_config_size(void)
+void pm2_mad_init(p_mad_madeleine_t madeleine)
 {
-  return main_madeleine->configuration.size;
-}
-
-unsigned mad_who_am_i(void)
-{
-  return (unsigned)main_madeleine->configuration.local_host_id;
+  main_madeleine = madeleine;
 }
 
 void mad_init_thread_related(int *argc, char *argv[])

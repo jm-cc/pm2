@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.10  2000/10/30 14:21:00  oaumage
+- correction du support Alpha pour MadII au niveau de la toolbox
+  (safe_malloc)
+- correction de pm2logs pour mad2
+
 Revision 1.9  2000/09/05 13:58:53  oaumage
 - quelques corrections et reorganisations dans le support des types
   structures
@@ -99,12 +104,12 @@ tbx_tick2usec(long long t);
  * --------------
  */
 void *
-tbx_aligned_malloc(size_t size,
-		   int    align);
+tbx_aligned_malloc(size_t      size,
+		   tbx_align_t align);
 
 void
-tbx_aligned_free (void *ptr,
-		  int   align);
+tbx_aligned_free (void        *ptr,
+		  tbx_align_t  align);
 
 /*
  * Safe malloc

@@ -544,7 +544,8 @@ void fastcall ma_freeze_thread(marcel_task_t *p)
 		RAISE(NOT_IMPLEMENTED);
 	}
 
-	deactivate_task(p,rq);
+	if (!MA_TASK_IS_SLEEPING(p))
+		deactivate_task(p,rq);
 	task_rq_unlock(rq);
 	p->sched.state = MA_TASK_FROZEN;
 }

@@ -20,20 +20,37 @@
 #include "marcel.h"
 #include "madeleine.h"
 
-enum {
-   NETSERVER_END,
-   NETSERVER_REQUEST_HALT,
-   NETSERVER_RAW_RPC  /* Must be the last one */
-};
+typedef enum e_pm2_net_request_tag
+{
+   NETSERVER_END          = 0,
+   NETSERVER_REQUEST_HALT = 1,
 
-#ifdef MAD2
-void netserver_start(p_mad_channel_t channel);
-#else
-void netserver_start(void);
-#endif
+   NETSERVER_RAW_RPC,    /* Must be the last one */
+} pm2_net_request_tag, *p_pm2_net_request_tag;
 
-void netserver_wait_end(void);
+void
+pm2_net_init_channels(int   *argc,
+		      char **argv);
 
-void netserver_stop(void);
+void
+pm2_net_servers_start(int   *argc,
+		      char **argv);
+
+void
+pm2_net_request_end(void);
+
+void
+pm2_net_wait_end(void);
+
+p_mad_channel_t
+pm2_net_get_channel(pm2_channel_t c);
+
+/*
+ * Interface
+ * ---------
+ */
+void
+pm2_channel_alloc(pm2_channel_t *channel,
+		  char          *name);
 
 #endif

@@ -43,9 +43,10 @@
 #ifdef _REENTRANT
 #include <pthread.h>
 #endif /* _REENTRANT */
-#ifdef MARCEL
-#include "marcel.h"
-#endif /* MARCEL */
+
+#include "tbx_compiler.h"
+
+#include "tbx_snprintf.h"
 #include "tbx_debug.h"
 
 #include <stdlib.h>
@@ -63,6 +64,13 @@
 #include "tbx_pointers.h"
 #include "tbx_types.h"
 
+//#ifdef TBX_KERNEL
+/* Inclusion de marcel.h uniquement si on compile les sources de tbx 
+ * Les autres modules doivent l'inclure si nécesaire
+ */
+#include "marcel-master___structures.h"
+//#endif
+
 #include "tbx_malloc.h"
 #include "tbx_slist.h"
 #include "tbx_list.h"
@@ -72,5 +80,12 @@
 #include "tbx_parameter.h"
 
 #include "tbx_interface.h"
+
+#ifdef TBX_KERNEL
+/* Inclusion de marcel.h uniquement si on compile les sources de tbx 
+ * Les autres modules doivent l'inclure si nécesaire
+ */
+#include "marcel.h"
+#endif
 
 #endif /* TBX_H */

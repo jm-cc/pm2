@@ -16,7 +16,7 @@
 
 _PM2TEST_PROGNAME=pm2-test
 
-_ALL_MODULES="marcel madeleine dsm pm2"
+_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
 
 pm2test_error() # msg
 {
@@ -139,70 +139,50 @@ else
     done
 fi
 
-# ########## Marcel, basic ##########
-if [ `to_be_tested marcel` = "yes" -a $_level -ge 1 ] ; then
-    echo "*** Testing module [marcel], level [basic]."
 
-    # Configuration
-    flavor="test_marcel"
-    appdir="${PM2_ROOT}/marcel/examples"
-    prog="sumtime"
-    args="100"
-    hosts="localhost"
-    cat > /tmp/pm2test_expected <<EOF
-Sum from 1 to 100 = 5050
-EOF
+_l=1
+while [ $_l -le $_level ]; do
 
-    # Creation de la flavor
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--builddir=\"/tmp/$flavor\" --ext=\"\" \
-	--modules=\"marcel tbx\" \
-	--marcel=\"mono\" --marcel=\"marcel_main\" \
-	--all=\"opt\" $_output_redirect
+    echo "*** Performing level $_l tests ***"
 
-    # Compilation, execution et verification des resultats
-    eval do_the_test $_output_redirect
+    for _m in $_to_test ; do
 
-    echo ">>>>> [basic] tests for module [marcel] succeded!"
-fi
+	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
 
+	    cd ${PM2_ROOT}/modules/$_m/test
+	    _tests=`ls test_*.level_$_l 2> /dev/null`
+	    if [ -n "$_tests" ]; then
 
-# ########## PM2, basic ##########
-if [ `to_be_tested pm2` = "yes" -a $_level -ge 1 ] ; then
-    echo "*** Testing module [pm2], level [basic]."
+		for _f in $_tests ; do
 
-    # Configuration
-    flavor="test_pm2"
-    appdir="${PM2_ROOT}/pm2/examples/simple"
-    prog="remote_hello"
-    args="a b c"
-    hosts="`uname -n` `uname -n`"
-    cat > /tmp/pm2test_expected <<EOF
-[t1] Hello world!
-[t1] argc = 4
-[t1] argv[0] = </tmp/test_pm2/examples/simple/bin/remote_hello>
-[t1] argv[1] = <a>
-[t1] argv[2] = <b>
-[t1] argv[3] = <c>
-EOF
+		    # Affichage
+		    _tst_name=`echo $_f | sed -e 's/test_\(.*\).level_.*/\1/g'`
+		    echo "Level [$_l], module [$_m], Test [$_tst_name]"
 
-    # Creation de la flavor
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--builddir=\"/tmp/$flavor\" --ext=\"\" \
-	--modules=\"marcel mad2 ntbx tbx pm2\" \
-	--marcel=\"mono\" --marcel=\"marcel_main\" \
-	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
-	--all=\"opt\" $_output_redirect
+		    # Source
+		    . $_f
 
-    # Compilation, execution et verification des resultats
-    eval do_the_test $_output_redirect
+		    # Compilation, execution et verification des resultats
+		    eval do_the_test $_output_redirect
 
-    echo ">>>>> [basic] tests for module [pm2] succeded!"
-fi
+		    echo "   [$_tst_name] did succeed."
+
+		done
+
+		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
+	    fi
+
+	fi
+    done
+
+    echo ">>>>>> All Level [$_l] tests did succeed!"
+
+    _l=`expr $_l + 1`
+done
 
 # ########## Happy end ##########
-echo "         ******************************"
-echo "         *** All tests did succeed! ***"
-echo "         ******************************"
+echo "         ************************"
+echo "         *** Congratulations! ***"
+echo "         ************************"
 
 exit 0

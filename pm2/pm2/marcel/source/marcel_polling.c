@@ -151,41 +151,6 @@ void marcel_force_check_polling(marcel_pollid_t id)
  ****************************************************************/
 
 
-/****************************************************************
- * Fonctions d'initialisation
- */
-
-int marcel_ev_server_set_poll_settings(marcel_ev_serverid_t id, 
-					      unsigned poll_points,
-					      unsigned frequency)
-{
-#ifdef MA__DEBUG
-	/* Cette fonction doit être appelée entre l'initialisation et
-	 * le démarrage de ce serveur d'événements */
-	MA_BUG_ON(id->state != MA_EV_SERVER_STATE_INIT);
-#endif
-	id->poll_points=poll_points;
-	if (poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
-		frequency=frequency?:1;
-		id->frequency = frequency * MA_JIFFIES_PER_TIMER_TICK;
-	}
-	return 0;	
-}
-
-int marcel_ev_server_start(marcel_ev_serverid_t id)
-{
-	/* Cette fonction doit être appelée entre l'initialisation et
-	 * le démarrage de ce serveur d'événements */
-	MA_BUG_ON(id->state != MA_EV_SERVER_STATE_INIT);
-	if (!id->funcs[MARCEL_EV_FUNCTYPE_POLL_ONE]
-	    && !id->funcs[MARCEL_EV_FUNCTYPE_POLL_ALL]) {
-		mdebug("One poll function needed for %s\n", id->name);
-		RAISE(PROGRAM_ERROR);
-	}
-	id->state=MA_EV_SERVER_STATE_LAUNCHED;
-	return 0;
-}
-
 /* Variable contenant la liste chainée des serveurs de polling ayant
  * quelque chose à scruter.
  * Le lock permet de protéger le parcours/modification de la liste
@@ -366,6 +331,7 @@ inline static int wake_ev_waiters(marcel_ev_serverid_t id, marcel_ev_inst_t ev,
 			mdebug("Poll awake with task %p on code %i\n", wait->task, code);
 		}
 #endif
+		wait->ret=code;
 		list_del_init(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
@@ -373,12 +339,21 @@ inline static int wake_ev_waiters(marcel_ev_serverid_t id, marcel_ev_inst_t ev,
 }
 
 /* Réveils du serveur */
-inline static int wake_id_waiters(marcel_ev_serverid_t id, int nb)
+inline static int wake_id_waiters(marcel_ev_serverid_t id, int code)
 {
 	struct waiter *wait, *tmp;
 	LOG_IN();
 	list_for_each_entry_safe(wait, tmp, &id->list_id_waiters, chain_wait) {
-		mdebug("Poll succeed with task %p\n", wait->task);
+#ifdef MA__DEBUG
+		switch (code) {
+		case 0:
+			mdebug("Poll succeed with global task %p\n", wait->task);
+			break;
+		default:
+			mdebug("Poll awake with global task %p on code %i\n", wait->task, code);
+		}
+#endif
+		wait->ret=code;
 		list_del_init(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
@@ -825,6 +800,7 @@ int marcel_ev_wait_server(marcel_ev_serverid_t id, marcel_time_t timeout)
 	LOG_IN();
 
 	lock=ensure_lock_server(id);
+	verify_server_state(id);
 
 	if (timeout) {
 		RAISE(NOT_IMPLEMENTED);
@@ -1002,3 +978,62 @@ int marcel_ev_wait(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 }
 
 #endif
+
+/****************************************************************
+ * Fonctions d'initialisation/terminaison
+ */
+
+int marcel_ev_server_set_poll_settings(marcel_ev_serverid_t id, 
+					      unsigned poll_points,
+					      unsigned frequency)
+{
+#ifdef MA__DEBUG
+	/* Cette fonction doit être appelée entre l'initialisation et
+	 * le démarrage de ce serveur d'événements */
+	MA_BUG_ON(id->state != MA_EV_SERVER_STATE_INIT);
+#endif
+	id->poll_points=poll_points;
+	if (poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
+		frequency=frequency?:1;
+		id->frequency = frequency * MA_JIFFIES_PER_TIMER_TICK;
+	}
+	return 0;	
+}
+
+int marcel_ev_server_start(marcel_ev_serverid_t id)
+{
+	/* Cette fonction doit être appelée entre l'initialisation et
+	 * le démarrage de ce serveur d'événements */
+	MA_BUG_ON(id->state != MA_EV_SERVER_STATE_INIT);
+	if (!id->funcs[MARCEL_EV_FUNCTYPE_POLL_ONE]
+	    && !id->funcs[MARCEL_EV_FUNCTYPE_POLL_ALL]) {
+		mdebug("One poll function needed for %s\n", id->name);
+		RAISE(PROGRAM_ERROR);
+	}
+	id->state=MA_EV_SERVER_STATE_LAUNCHED;
+	return 0;
+}
+
+int marcel_ev_server_stop(marcel_ev_serverid_t id)
+{
+	int lock;
+	marcel_ev_inst_t ev, tmp;
+	LOG_IN();
+
+	lock=ensure_lock_server(id);
+	verify_server_state(id);
+
+	id->state=MA_EV_SERVER_STATE_HALTED;
+
+	FOREACH_EV_POLL_BASE_SAFE(ev, tmp, id) {
+		__unregister(id, ev);
+	}
+	wake_id_waiters(id, -ECANCELED);
+
+	restore_lock_server_unlocked(id, lock);
+
+	LOG_RETURN(0);
+	
+	return 0;
+}
+

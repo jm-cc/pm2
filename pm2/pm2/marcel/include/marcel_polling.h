@@ -77,6 +77,10 @@ int marcel_ev_server_set_poll_settings(marcel_ev_serverid_t id,
  * Il devient possible d'attendre des événements
  */
 int marcel_ev_server_start(marcel_ev_serverid_t id);
+/* Arrêt du serveur
+ * Il est nécessaire de le réinitialiser pour le redémarrer
+ */
+int marcel_ev_server_stop(marcel_ev_serverid_t id);
 
 /*[U]****************************************************************
  * Fonctions à l'usage des threads applicatifs
@@ -202,10 +206,12 @@ typedef enum {
  *
  * La valeur de retour est pour l'instant ignorée.
  */
-typedef int (*marcel_ev_func_t)(marcel_ev_serverid_t id, 
-				marcel_ev_op_t op,
-				marcel_ev_inst_t ev, 
-				int nb_ev, int option);
+typedef int (marcel_ev_callback_t)(marcel_ev_serverid_t id, 
+				   marcel_ev_op_t op,
+				   marcel_ev_inst_t ev, 
+				   int nb_ev, int option);
+
+typedef marcel_ev_callback_t *marcel_ev_func_t;
 
 /*[C]****************************************************************
  * Les flags des call-backs (voir ci-dessus)
@@ -227,6 +233,10 @@ enum {
 */
 #define FOREACH_EV_POLL_BASE(ev, ps) \
   list_for_each_entry((ev), &(ps)->list_ev_poll_grouped, chain_ev)
+
+/* Idem mais protéger (usage interne) */
+#define FOREACH_EV_POLL_BASE_SAFE(ev, tmp, ps) \
+  list_for_each_entry_safe((ev), (tmp), &(ps)->list_ev_poll_grouped, chain_ev)
 
 /* Itérateur avec un type utilisateur
    [User Type] ev : pointeur sur structure contenant un
@@ -303,6 +313,8 @@ enum {
 	MA_EV_SERVER_STATE_INIT=1,
 	/* En fonctionnement */
 	MA_EV_SERVER_STATE_LAUNCHED=2,
+	/* En arrêt */
+	MA_EV_SERVER_STATE_HALTED=3,
 };
 
 /****************************************************************

@@ -22,20 +22,26 @@
 #include <sys/types.h>
 #include "isoaddr.h"
 
+
 typedef struct _slot_header_t {
   size_t size;
+#ifdef ASSERT
   int magic_number;
+#endif
   struct _slot_header_t *next;
   struct _slot_header_t *prev;
   struct _slot_descr_t *thread_slot_descr;
   int prot;
   int atomic;
+  int special;
 } slot_header_t;
 
 
 typedef struct _slot_descr_t {
   slot_header_t *slots;
+#ifdef ASSERT
   int magic_number;
+#endif
   slot_header_t *last_slot;
 } slot_descr_t;
 
@@ -63,6 +69,10 @@ void slot_print_header(slot_header_t *ptr);
 #ifdef DSM
 void slot_set_shared(void *addr);
 #endif
+
+slot_header_t *slot_detach(void *addr);
+
+void slot_attach(slot_descr_t *descr, slot_header_t *header_ptr);
 
 #define ALIGN_UNIT 32
 

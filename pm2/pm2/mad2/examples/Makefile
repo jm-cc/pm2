@@ -33,11 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-CONFIG_MODULES=mad2
-
-ifndef FLAVOR
-export FLAVOR:=mad2
-endif
+export FLAVOR_DEFAULT:=mad2
 
 PROGS := mad_ping mad_test
 

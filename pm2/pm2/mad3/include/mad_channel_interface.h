@@ -31,4 +31,7 @@ p_mad_channel_t
 mad_get_channel(p_mad_madeleine_t   madeleine,
 		char               *name);
 
+p_mad_channel_t
+mad_get_sub_channel(p_mad_channel_t channel,
+		    unsigned int    sub);
 #endif /* MAD_CHANNEL_INTERFACE_H */

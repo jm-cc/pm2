@@ -36,7 +36,7 @@
 #include "sisci_types.h"
 #include "sisci_error.h"
 
-/* 
+/*
  * constants
  * ---------
  */
@@ -105,18 +105,18 @@ typedef struct s_mad_sisci_connection_status
 typedef volatile struct s_mad_sisci_internal_segment_data
 {
   mad_sisci_connection_status_t status;
-  mad_sisci_node_id_t           node_id;  
+  mad_sisci_node_id_t           node_id;
 } mad_sisci_internal_segment_data_t, *p_mad_sisci_internal_segment_data_t;
 
 typedef volatile struct s_mad_sisci_user_segment_data
 {
   mad_sisci_connection_status_t status;
-  char                          buffer[MAD_SISCI_BUFFER_SIZE];  
+  char                          buffer[MAD_SISCI_BUFFER_SIZE];
 } mad_sisci_user_segment_data_t, *p_mad_sisci_user_segment_data_t;
 
 typedef struct s_mad_sisci_local_segment
 {
-  sci_local_segment_t        segment;  
+  sci_local_segment_t        segment;
   sci_map_t                  map;
   mad_sisci_map_addr_t       map_addr;
   mad_sisci_segment_id_t     id;
@@ -145,7 +145,7 @@ typedef struct s_mad_sisci_driver_specific
 
 typedef struct s_mad_sisci_adapter_specific
 {
-  mad_sisci_adapter_id_t local_adapter_id;  
+  mad_sisci_adapter_id_t local_adapter_id;
   mad_sisci_node_id_t    local_node_id;
   p_mad_sisci_node_id_t  remote_node_id;
 } mad_sisci_adapter_specific_t, *p_mad_sisci_adapter_specific_t;
@@ -167,7 +167,7 @@ typedef enum e_mad_sisci_poll_op
 typedef struct s_mad_sisci_poll_channel_data
 {
   p_mad_channel_t    channel;
-  p_mad_connection_t connection;  
+  p_mad_connection_t connection;
 } mad_sisci_poll_channel_data_t, *p_mad_sisci_poll_channel_data_t;
 
 typedef struct s_mad_sisci_poll_flag_data
@@ -212,7 +212,7 @@ mad_sisci_display_error(sci_error_t error)
   DISP("SISCI error code : %u, %X", error, error);
   DISP("SISCI stripped error code : %u, %X",
        error & ~SCI_ERR_MASK, error & ~SCI_ERR_MASK);
-  
+
   switch (error)
     {
     case SCI_ERR_OK:
@@ -379,7 +379,7 @@ mad_sisci_display_error(sci_error_t error)
       {
 	MAD_SISCI_DISPLAY_ERROR("Unknown error");
 	break;
-      }      
+      }
     }
 }
 
@@ -397,7 +397,7 @@ mad_sisci_flush(p_mad_sisci_remote_segment_t segment)
 
 /* mad_sisci_get_node_id: query an adapter for the local SCI node id
  * --------------------- */
-static mad_sisci_node_id_t 
+static mad_sisci_node_id_t
 mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
 {
   mad_sisci_node_id_t      node_id = 0;
@@ -409,10 +409,10 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
   SCIOpen(&descriptor, 0, &sisci_error);
   mad_sisci_control();
 
-  query_adapter.subcommand     = SCI_Q_ADAPTER_NODEID; 
+  query_adapter.subcommand     = SCI_Q_ADAPTER_NODEID;
   query_adapter.localAdapterNo = adapter_id;
   query_adapter.data           = &node_id;
-  
+
   SCIQuery(SCI_Q_ADAPTER, &query_adapter, 0, &sisci_error);
   mad_sisci_control();
 
@@ -438,7 +438,7 @@ inline static int
 mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
 {
   int status = 0;
- 
+
   LOG_IN();
   if (info->op == mad_sisci_poll_flag)
     {
@@ -461,7 +461,7 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
       next             = channel_specific->next;
 
       i = max;
-      
+
       while (i--)
 	{
 	  next = (next + 1) % max;
@@ -470,7 +470,7 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
 	  if (in)
 	    {
 	      p_mad_sisci_connection_specific_t in_specific = NULL;
-	  
+
 	      in_specific = in->specific;
 
 	      if (!in_specific->write_flag_flushed)
@@ -498,7 +498,7 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
     FAILURE("unknown polling operation");
 
   LOG_OUT();
-  
+
   return status;
 }
 
@@ -521,7 +521,7 @@ mad_sisci_marcel_fast_poll(marcel_pollid_t id,
 
 static void *
 mad_sisci_marcel_poll(marcel_pollid_t id,
-		      unsigned        active, 
+		      unsigned        active,
 		      unsigned        sleeping,
 		      unsigned        blocked)
 {
@@ -529,9 +529,9 @@ mad_sisci_marcel_poll(marcel_pollid_t id,
   void                               *status = MARCEL_POLL_FAILED;
 
   LOG_IN();
-  FOREACH_POLL(id, my_arg) 
+  FOREACH_POLL(id, my_arg)
     {
-      if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) my_arg)) 
+      if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) my_arg))
 	{
 	  status = MARCEL_POLL_SUCCESS(id);
 	  goto found;
@@ -546,7 +546,7 @@ found:
 
 inline static
 void
-mad_sisci_wait_for(p_mad_link_t         link, 
+mad_sisci_wait_for(p_mad_link_t         link,
 		   p_mad_sisci_status_t flag)
 {
   LOG_IN();
@@ -590,11 +590,11 @@ mad_sisci_register(p_mad_driver_t driver)
   LOG_IN();
   TRACE("Registering SISCI driver");
   interface = driver->interface;
-  
+
   driver->connection_type = mad_bidirectional_connection;
-  driver->buffer_alignment = 64;  
+  driver->buffer_alignment = 64;
   driver->name = tbx_strdup("sisci");
-  
+
   interface->driver_init                = mad_sisci_driver_init;
   interface->adapter_init               = mad_sisci_adapter_init;
   interface->channel_init               = mad_sisci_channel_init;
@@ -638,7 +638,7 @@ mad_sisci_driver_init(p_mad_driver_t driver)
   TRACE("Initializing SISCI driver");
   driver_specific  = TBX_MALLOC(sizeof(mad_sisci_driver_specific_t));
   driver->specific = driver_specific;
- 
+
 #if defined(MARCEL) && defined(USE_MARCEL_POLL)
   driver_specific->mad_sisci_pollid =
     marcel_pollid_create(mad_sisci_marcel_group,
@@ -654,13 +654,13 @@ mad_sisci_adapter_init(p_mad_adapter_t adapter)
 {
   p_mad_sisci_adapter_specific_t adapter_specific = NULL;
   p_tbx_string_t                 parameter_string = NULL;
-  
+
   LOG_IN();
   adapter_specific  = TBX_CALLOC(1, sizeof(mad_sisci_adapter_specific_t));
   adapter->specific = adapter_specific;
 
   adapter->mtu      = 0xFFFFFFFFUL;
- 
+
   if (!strcmp(adapter->dir_adapter->name, "default"))
     {
       adapter_specific->local_adapter_id = 0;
@@ -671,7 +671,7 @@ mad_sisci_adapter_init(p_mad_adapter_t adapter)
     }
 
   adapter_specific->local_node_id =
-    mad_sisci_get_node_id(adapter_specific->local_adapter_id);  
+    mad_sisci_get_node_id(adapter_specific->local_adapter_id);
 
   parameter_string   =
     tbx_string_init_to_int(adapter_specific->local_node_id);
@@ -712,7 +712,7 @@ mad_sisci_connection_init(p_mad_connection_t in,
   ntbx_process_lrank_t              lrank_r          =   -1;
   int                               segment          =    0;
   int                               ch_id            =    0;
-  
+
   LOG_IN();
   specific      = TBX_MALLOC(sizeof(mad_sisci_connection_specific_t));
   in->specific  = specific;
@@ -726,56 +726,56 @@ mad_sisci_connection_init(p_mad_connection_t in,
   adapter_specific = adapter->specific;
 
   ch_id = channel->dir_channel->id;
-  
+
   if (channel->type == mad_channel_type_forwarding)
     {
       ch_id |= 0x80;
     }
-  
+
   lrank_l = channel->process_lrank;
   lrank_r = in->remote_rank;
-  
+
   for (segment = 0; segment < 2; segment++)
-    {	  
+    {
       p_mad_sisci_local_segment_t     local_segment = NULL;
       p_mad_sisci_user_segment_data_t local_data    = NULL;
       sci_error_t                     sisci_error   = SCI_ERR_OK;
       int i                                         =    0;
-      
+
       local_segment = &specific->local_segment[segment];
- 
-      local_segment->id = 
+
+      local_segment->id =
 	ch_id
 	| (lrank_l << 8)
 	| (lrank_r << 16)
 	| (segment << 28);
 
-      local_segment->size   = sizeof(mad_sisci_user_segment_data_t);      
+      local_segment->size   = sizeof(mad_sisci_user_segment_data_t);
       local_segment->offset = 0;
 
       SCIOpen(&specific->sd[segment], 0, &sisci_error);
       mad_sisci_control();
-      
+
       SCICreateSegment(specific->sd[segment],
 		       &local_segment->segment,
 		       local_segment->id,
 		       local_segment->size,
 		       0, NULL, 0, &sisci_error);
       mad_sisci_control();
-      
+
       SCIPrepareSegment(local_segment->segment,
 			adapter_specific->local_adapter_id,
 			0, &sisci_error);
       mad_sisci_control();
-      
+
       local_segment->map_addr =
 	SCIMapLocalSegment(local_segment->segment,
 			   &local_segment->map,
 			   local_segment->offset,
 			   local_segment->size,
-			   NULL, 0, &sisci_error);    
-      mad_sisci_control();      
-	  
+			   NULL, 0, &sisci_error);
+      mad_sisci_control();
+
      local_data = local_segment->map_addr;
 
       for (i = 0; i < MAD_SISCI_OPT_MAX; i++)
@@ -796,11 +796,11 @@ mad_sisci_connection_init(p_mad_connection_t in,
 			     adapter_specific->local_adapter_id,
 			     0, &sisci_error);
       mad_sisci_control();
-    }  
+    }
   LOG_OUT();
 }
 
-void 
+void
 mad_sisci_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
@@ -822,7 +822,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 void
 mad_sisci_connect(p_mad_connection_t   out,
 		  p_mad_adapter_info_t ai)
-{  
+{
   p_mad_channel_t                   channel            = NULL;
   p_mad_adapter_t                   adapter            = NULL;
   p_mad_dir_adapter_t               dir_remote_adapter = NULL;
@@ -843,11 +843,11 @@ mad_sisci_connect(p_mad_connection_t   out,
   channel_id         = channel->dir_channel->id;
   dir_remote_adapter = ai->dir_adapter;
   remote_node_sci_id = atoi(dir_remote_adapter->parameter);
-  
+
   if (channel->type == mad_channel_type_forwarding)
     {
       channel_id |= 0x80;
-    }  
+    }
 
   lrank_l = channel->process_lrank;
   lrank_r = out->remote_rank;
@@ -856,10 +856,10 @@ mad_sisci_connect(p_mad_connection_t   out,
     {
       p_mad_sisci_remote_segment_t    remote_segment = NULL;
       p_mad_sisci_user_segment_data_t remote_data    = NULL;
-      
+
       remote_segment = &(out_specific->remote_segment[segment]);
-    
-      remote_segment->id = 
+
+      remote_segment->id =
 	channel_id
 	| (lrank_r << 8)
 	| (lrank_l << 16)
@@ -885,7 +885,7 @@ mad_sisci_connect(p_mad_connection_t   out,
 	      marcel_delay(1000);
 #else // MARCEL
 	      sleep(1);
-#endif // MARCEL	      
+#endif // MARCEL
 	      DISP("mad_sisci: could not connect, waking up");
 	    }
 	}
@@ -898,7 +898,7 @@ mad_sisci_connect(p_mad_connection_t   out,
 			    remote_segment->size,
 			    NULL, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCICreateMapSequence(remote_segment->map, &remote_segment->sequence,
 			   0, &sisci_error);
       mad_sisci_control();
@@ -939,23 +939,23 @@ mad_sisci_accept(p_mad_connection_t   in,
   if (channel->type == mad_channel_type_forwarding)
     {
       channel_id |= 0x80;
-    }  
+    }
 
   lrank_l = channel->process_lrank;
   lrank_r = in->remote_rank;
 
   for (segment = 0; segment < 2; segment++)
-    {      
+    {
       p_mad_sisci_remote_segment_t    remote_segment = NULL;
       p_mad_sisci_user_segment_data_t remote_data    = NULL;
-     
+
       remote_segment = &(in_specific->remote_segment[segment]);
 
-      remote_segment->id = 
+      remote_segment->id =
 	channel_id
 	| (lrank_r << 8)
 	| (lrank_l << 16)
-	| (segment << 28);  
+	| (segment << 28);
 
       remote_segment->size   = sizeof(mad_sisci_user_segment_data_t);
       remote_segment->offset = 0;
@@ -977,7 +977,7 @@ mad_sisci_accept(p_mad_connection_t   in,
 	      marcel_delay(1000);
 #else // MARCEL
 	      sleep(1);
-#endif // MARCEL	      
+#endif // MARCEL
 	      DISP("mad_sisci: could not connect, waking up");
 	    }
 	}
@@ -990,7 +990,7 @@ mad_sisci_accept(p_mad_connection_t   in,
 			    remote_segment->size,
 			    NULL, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCICreateMapSequence(remote_segment->map, &remote_segment->sequence,
 			   0, &sisci_error);
       mad_sisci_control();
@@ -1033,24 +1033,24 @@ mad_sisci_disconnect(p_mad_connection_t connection)
 
       SCIUnmapSegment(remote_segment->map, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCIDisconnectSegment(remote_segment->segment, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCIRemoveSequence(remote_segment->sequence, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCISetSegmentUnavailable(local_segment->segment,
 			       adapter_specific->local_adapter_id,
 			       0, &sisci_error);
       mad_sisci_control();
-  
+
       SCIUnmapSegment(local_segment->map, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCIRemoveSegment(local_segment->segment, 0, &sisci_error);
       mad_sisci_control();
-  
+
       SCIClose(connection_specific->sd[k], 0, &sisci_error);
       mad_sisci_control();
     }
@@ -1077,7 +1077,7 @@ void
 mad_sisci_channel_exit(p_mad_channel_t channel)
 {
   p_mad_sisci_channel_specific_t channel_specific = channel->specific;
-  
+
   LOG_IN();
   TBX_FREE(channel_specific->read);
   TBX_FREE(channel_specific);
@@ -1089,7 +1089,7 @@ void
 mad_sisci_adapter_exit(p_mad_adapter_t adapter)
 {
   p_mad_sisci_adapter_specific_t adapter_specific = adapter->specific;
-  
+
   LOG_IN();
   TBX_FREE(adapter_specific);
   adapter->specific = NULL;
@@ -1097,7 +1097,7 @@ mad_sisci_adapter_exit(p_mad_adapter_t adapter)
 }
 
 #ifdef MAD_MESSAGE_POLLING
-p_mad_connection_t 
+p_mad_connection_t
 mad_sisci_poll_message(p_mad_channel_t channel)
 {
   p_mad_sisci_channel_specific_t channel_specific = NULL;
@@ -1106,14 +1106,14 @@ mad_sisci_poll_message(p_mad_channel_t channel)
   int                            next             =    0;
   int                            max              =    0;
   int                            i                =    0;
- 
+
   LOG_IN();
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
   max              = channel_specific->max;
   next             = channel_specific->next;
   i                = max;
-      
+
   while (i--)
     {
       next = (next + 1) % max;
@@ -1122,7 +1122,7 @@ mad_sisci_poll_message(p_mad_channel_t channel)
       if (in)
 	{
 	  p_mad_sisci_connection_specific_t in_specific = NULL;
-	  
+
 	  in_specific = in->specific;
 
 	  if (!in_specific->write_flag_flushed)
@@ -1144,14 +1144,14 @@ mad_sisci_poll_message(p_mad_channel_t channel)
 
 found:
   channel_specific->next = next;
-  
+
   LOG_OUT();
 
   return in;
 }
 #endif /* MAD_MESSAGE_POLLING */
 
-p_mad_connection_t 
+p_mad_connection_t
 mad_sisci_receive_message(p_mad_channel_t channel)
 {
   p_mad_sisci_channel_specific_t channel_specific = NULL;
@@ -1159,7 +1159,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   p_tbx_darray_t                 in_darray        = NULL;
   int                            next             =    0;
   int                            max              =    0;
- 
+
   LOG_IN();
   channel_specific = channel->specific;
   in_darray        = channel->in_connection_darray;
@@ -1183,11 +1183,11 @@ mad_sisci_receive_message(p_mad_channel_t channel)
   }
 #else // MARCEL && USE_MARCEL_POLL
   while (tbx_true)
-    {     
+    {
       int i = 0;
 
       i = max;
-      
+
       while (i--)
 	{
 	  next = (next + 1) % max;
@@ -1196,7 +1196,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 	  if (in)
 	    {
 	      p_mad_sisci_connection_specific_t in_specific = NULL;
-	  
+
 	      in_specific = in->specific;
 
 	      if (!in_specific->write_flag_flushed)
@@ -1214,12 +1214,12 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 	    }
 	}
       TBX_YIELD();
-    }  
+    }
 
 found:
   channel_specific->next = next;
 #endif // MARCEL && USE_MARCEL_POLL
-  
+
   LOG_OUT();
 
   return in;
@@ -1234,7 +1234,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
   p_mad_sisci_connection_specific_t connection_specific =
     connection->specific;
   int k                                                 = 0;
-  size_t segment_size                                   = 
+  size_t segment_size                                   =
     connection_specific->remote_segment[0].size
     - sizeof(mad_sisci_connection_status_t);
 
@@ -1249,7 +1249,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 
   if (mad_more_data(buffer))
     {
-      do 
+      do
 	{
 	  p_mad_sisci_local_segment_t       local_segment       =
 	    &(connection_specific->local_segment[k]);
@@ -1305,7 +1305,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 	    {
 	      volatile int *destination =
 		(volatile void *)remote_data->buffer + size;
-	  
+
 	      do
 		{
 		  *destination++ = 0;
@@ -1313,7 +1313,7 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 		}
 	      while (size & 63);
 	    }
-      
+
 	  mad_sisci_flush(remote_segment);
 	  mad_sisci_clear(write);
 	  mad_sisci_set(read);
@@ -1324,19 +1324,19 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 
       connection_specific->write_flag_flushed = tbx_true;
     }
-  
+
   LOG_OUT();
 }
 
 static void
-mad_sisci_receive_sci_buffer(p_mad_link_t   link, 
+mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 			     p_mad_buffer_t buffer)
-{  
+{
   p_mad_connection_t                connection          = link->connection;
   p_mad_sisci_connection_specific_t connection_specific =
     connection->specific;
   int k = 0;
-  size_t segment_size                                   = 
+  size_t segment_size                                   =
     connection_specific->remote_segment[0].size
     - sizeof(mad_sisci_connection_status_t);
 
@@ -1346,10 +1346,10 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
       if (segment_size < MAD_SISCI_MIN_SEG_SIZE)
 	segment_size = MAD_SISCI_MIN_SEG_SIZE;
     }
-  
+
 
   LOG_IN();
-  
+
   if (!mad_buffer_full(buffer))
     {
       size_t  size;
@@ -1377,7 +1377,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	    connection_specific->write_flag_flushed = tbx_true;
 	    mad_sisci_flush(remote_segment);
 	  }
-      
+
 	mad_sisci_wait_for(link, read);
 
 	memcpy(destination, source, size);
@@ -1414,7 +1414,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	  buffer->bytes_written +=size;
 	  destination += size;
 	  k ^= 1;
-	}      
+	}
 
       connection_specific->write_flag_flushed = tbx_false;
     }
@@ -1446,12 +1446,12 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
   size_t                            offset              = 0;
   size_t                            destination_size    =
     remote_segment->size - sizeof(mad_sisci_connection_status_t);
-  
+
   LOG_IN();
-  tbx_list_reference_init(&ref, &buffer_group->buffer_list); 
-  
+  tbx_list_reference_init(&ref, &buffer_group->buffer_list);
+
   mad_sisci_wait_for(link, write);
-  
+
   do
     {
       p_mad_buffer_t buffer = tbx_get_list_reference_object(&ref);
@@ -1467,7 +1467,7 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 	  sci_error_t    sisci_error;
 
 	  buffer->bytes_read += size;
-	  
+
 	  SCIMemCopy(source,
 		     remote_segment->map,
 		     sizeof(mad_sisci_connection_status_t) + offset,
@@ -1478,16 +1478,16 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 
 	  offset += aligned_size;
 	  source += aligned_size;
-	  
+
 	  while (mod_4--)
 	    {
 	      *(destination+(offset++)) = *source++;
 	    }
-	  
+
 	  while (offset & 0x03)
 	    {
 	      *(destination+(offset++)) = 0;
-	    }	  
+	    }
 
 	  if (tbx_aligned(offset, 64) >= destination_size)
 	    {
@@ -1495,7 +1495,7 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 		{
 		  *(unsigned int *)(destination+offset) = 0;
 		  offset += 4;
-		}	  
+		}
 
 	      mad_sisci_flush(remote_segment);
 
@@ -1517,7 +1517,7 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
 	{
 	  *(unsigned int *)(destination+offset) = 0;
 	  offset += 4;
-	}	  
+	}
 
       mad_sisci_flush(remote_segment);
 
@@ -1530,10 +1530,10 @@ mad_sisci_send_sci_buffer_group(p_mad_link_t         link,
   LOG_OUT();
 }
 
-static void 
+static void
 mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
 				   p_mad_buffer_group_t buffer_group)
-{  
+{
   p_mad_connection_t                connection          = link->connection;
   p_mad_sisci_connection_specific_t connection_specific =
     connection->specific;
@@ -1555,9 +1555,9 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
   size_t                            offset              = 0;
   size_t                            source_size         =
     local_segment->size - sizeof(mad_sisci_connection_status_t);
-  
+
   LOG_IN();
-  
+
   tbx_list_reference_init(&ref, &buffer_group->buffer_list);
 
   if (!connection_specific->write_flag_flushed)
@@ -1572,10 +1572,10 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
 	}
     }
   else
-    {  
+    {
       mad_sisci_wait_for(link, read);
     }
-      
+
   do
     {
       p_mad_buffer_t buffer      = tbx_get_list_reference_object(&ref);
@@ -1612,7 +1612,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
       mad_sisci_clear(read);
       mad_sisci_set(write);
       connection_specific->write_flag_flushed = tbx_false;
-    }  
+    }
   LOG_OUT();
 }
 
@@ -1678,7 +1678,7 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
 	    descriptor  = 1;
 	    mask_1      = 2;
 	    j           = 0;
-	  
+
 	    if (bread < bwrite)
 	      {
 		remote_ptr = data_remote_ptr++;
@@ -1710,8 +1710,8 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
   else if (j)
     {
       *remote_ptr = descriptor;
-    }    
-  
+    }
+
   while (((unsigned int)data_remote_ptr) & 0x30)
     {
       *data_remote_ptr++ = 0;
@@ -1724,9 +1724,9 @@ mad_sisci_send_sci_buffer_opt(p_mad_link_t   link,
 }
 
 static void
-mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link, 
+mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
 				   p_mad_buffer_t buffer)
-{  
+{
   p_mad_connection_t                connection          = link->connection;
   p_mad_sisci_connection_specific_t connection_specific =
     connection->specific;
@@ -1753,7 +1753,7 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
     blen - 3;
   register size_t                   bwrite              =
     buffer->bytes_written;
-  
+
   LOG_IN();
   if (!connection_specific->write_flag_flushed)
     {
@@ -1768,7 +1768,7 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
   if (blen > 3)
     while (bwrite < blen3)
       {
-	
+
 	if (!j)
 	  {
 	    while (!(descriptor = *local_ptr));
@@ -1776,12 +1776,12 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
 	    mask_1       = 2;
 	    j++;
 	  }
-	
+
 	if (descriptor & mask_1)
 	  {
 	    unsigned int int_buffer;
 
-	    while (!(int_buffer = *local_ptr));      
+	    while (!(int_buffer = *local_ptr));
 	    *(unsigned int *)destination = int_buffer;
 	    *local_ptr++ = 0;
 	  }
@@ -1794,20 +1794,20 @@ mad_sisci_receive_sci_buffer_opt(p_mad_link_t   link,
 	j = (j + 1) & 0x7;
 	destination += 4;
 	bwrite      += 4;
-      }  
+      }
 
   if (bwrite < blen)
     {
       unsigned int temp_buffer = 0;
       int          i           = 0;
-      
+
       if (!j)
 	{
 	  while (!(descriptor = *local_ptr));
 	  *local_ptr++ = 0;
 	  mask_1       = 2;
 	}
-    
+
       if (descriptor & mask_1)
 	{
 	  while (!(temp_buffer = *local_ptr));
@@ -1857,7 +1857,7 @@ mad_sisci_send_buffer(p_mad_link_t   lnk,
   LOG_OUT();
 }
 
-void 
+void
 mad_sisci_receive_buffer(p_mad_link_t   lnk,
 			 p_mad_buffer_t *buffer)
 {

@@ -61,6 +61,7 @@ MAD_CI_INC	:=	$(MAD_INC)/connection_interfaces
 MAD_CI_SRC	:=	$(MAD_SRC)/connection_interfaces
 MAD_LIBD	=	$(MAD2_ROOT)/lib/$(PM2_ARCH_SYS)
 
+
 ifneq ($(wildcard $(MAD_DEP)),$(MAD_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_DEP))
 endif
@@ -116,27 +117,33 @@ $(MAD_DEPENDS): $(PM2_MAKEFILE)
 mad_default: tbx_default ntbx_default $(MAD_LIB) 
 
 $(MAD_LIB): $(MAD_OBJECTS)
-	rm -f $(MAD_LIB)
-	ar cr $(MAD_LIB) $(MAD_OBJECTS)
+	@ rm -f $(MAD_LIB)
+	@ echo "  -  $(@F)"
+	@ ar cr $(MAD_LIB) $(MAD_OBJECTS)
 
 $(MAD_REG_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_SRC)/%.c
-	$(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
+	@ echo "  -  $(@F)"
+	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
 
 $(MAD_REG_DEPENDS): $(MAD_DEP)/%.d: $(MAD_SRC)/%.c
-	$(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
+	@ echo "  -  $(@F)"
+	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(MAD_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(MAD_NET_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_CI_SRC)/%.c
-	$(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
+	@ echo "  -  $(@F)"
+	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
 
 $(MAD_NET_DEPENDS): $(MAD_DEP)/%.d: $(MAD_CI_SRC)/%.c
-	$(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
+	@ echo "  -  $(@F)"
+	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(MAD_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 ifdef PM2_FLAGS
 .PHONY: madclean
 madclean:
-	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d)
+	@ echo "Cleaning Madeleine II"
+	@ rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d)
 
 maddistclean:
 	rm -rf $(wildcard $(MAD2_ROOT)/lib \
@@ -145,7 +152,8 @@ maddistclean:
 else
 .PHONY: clean distclean
 clean:
-	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d) \
+	@ echo "Cleaning Madeleine II"
+	@ rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d) \
 
 distclean:
 	rm -rf $(wildcard $(MAD2_ROOT)/lib \

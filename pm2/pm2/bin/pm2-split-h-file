@@ -491,6 +491,7 @@ sub gen_section {
     my($texte)=shift;
     my($prefilekey)=shift;
     my($pretexte)=shift;
+    my($uptodate)=shift;
     my($mainsection)=$info_section->{"name"};
     my($key)=$info_section->{"masterkey"};
 
@@ -505,6 +506,11 @@ sub gen_section {
     if (!test_option($key->{"sections"}, $mainsection, "common", 0) 
 	&& !test_option($key->{"sections"}, "common", "write-section", 0)) {
 	$listsections{"common"}=1;
+    }
+
+    if ($uptodate) {
+	openfile_make($info_section->{"filekey"});
+	return;
     }
 
     openfile($info_section->{"filekey"}, undef, $mainsection,
@@ -636,6 +642,24 @@ sub closemainfile {
     print "\n";
 }
 
+my($new_ext)=".splinew";
+#my($new_ext)="";
+my($show)=1;
+
+sub openfile_make {
+    my($hashkey)=shift;
+    my($file)=genfilename($hashkey);
+
+    push @genfiles, $file;
+    if (hasMakefile()) {
+	print MAKEFILE genfilename($hashkey), ": \\\n";
+	if (defined $hashkey->{"srcdir"}) {
+	    print MAKEFILE "\t", srcfilename($hashkey), " \\\n";
+	}
+	print MAKEFILE "\t", genfilename(specialfile("makefile")), "\n";
+    }
+}
+
 sub openfile {
     my($hashkey)=shift;
     my($file_name)=filename($hashkey);
@@ -643,8 +667,8 @@ sub openfile {
     my($mfile)=shift;
     my($section)=shift;
     my($show_section)=shift;
-    my($file)=genfilename($hashkey);
 
+    my($file)=genfilename($hashkey);
     my(@rep, $rep);
     @rep=split('/', $file);
     pop @rep;
@@ -658,19 +682,12 @@ sub openfile {
 	open(MAKEFILE, ">", $file) or die "Unable to write file $file: $!\n";
     } else {
 	if (defined ($section)) {
-	    print "[$section" if $show_section;
+	    $show and print "[$section" if $show_section;
 	} else {
-	    print "[";
+	    $show and print "[";
 	}
-	open(OUT, ">", $file.".splitnew") or die "Unable to write file $file.splitnew: $!\n";
-	push @genfiles, $file;
-	if (hasMakefile()) {
-	    print MAKEFILE genfilename($hashkey), ": \\\n";
-	    if (defined $hashkey->{"srcdir"}) {
-		print MAKEFILE "\t", srcfilename($hashkey), " \\\n";
-	    }
-	    print MAKEFILE "\t", genfilename(specialfile("makefile")), "\n";
-	}
+	open(OUT, ">", $file.$new_ext) or die "Unable to write file $file$new_ext: $!\n";
+	openfile_make($hashkey);
     }
 }
 
@@ -686,46 +703,69 @@ sub closefile {
     } else {
 	close(OUT);
 	my($file)=genfilename($hashkey);
-	my($diff)=system("cmp", "-s", $file, $file.".splitnew");
-	if ($diff) {
-	    if (-f $file) {
-		$diff=1;
+	my($diff)=2;
+	if ( $new_ext ) {
+	    $diff=system("cmp", "-s", $file, $file.$new_ext);
+	    if ($diff) {
+	    	if (-f $file) {
+		    $diff=1;
+	    	} else {
+		    $diff=2;
+	    	}
+	    	rename($file.$new_ext, $file) 
+		    or die "Unable to rename $file$new_ext: $!\n";
 	    } else {
-		$diff=2;
+	    	unlink($file.$new_ext);
 	    }
-	    rename($file.".splitnew", $file) 
-		or die "Unable to rename $file.splitnew: $!\n";
-	} else {
-	    unlink($file.".splitnew");
 	}
 	if ($gendir) {
 	    my ($secname)="";
 	    if ($diff == 1) {
-		print "*";
+		$show and print "*";
 	    } elsif ($diff == 2) {
-		print "+";
+		$show and print "+";
 	    } else {
 		$secname=".";
 	    }
 	    if (defined ($section)) {
 		if ($show_section) {
-		    print "]";
+		    $show and print "]";
 		} else {
-		    print $secname;
+		    $show and print $secname;
 		}
 	    } else {
-		print "]";
+		$show and print "]";
 	    }
 	}
     }
 }
 
+sub uptodate {
+    my($key)=shift;
+    my($src)=srcfilename($key);
+    my($gen)=genfilename($key);
+
+    my($s_mtime)=(stat($src))[9];
+    
+    if ( -f $gen && ($s_mtime < (stat(_))[9])) {
+	print "skipping (up-to-date)";
+	return 1;
+    }
+    
+}    
+
 sub gen_master {
     my($key)=shift;
+    my($uptodate)=shift;
 
     my($sections)=$key->{"sections"};
     my($section);
-    
+
+    if ($uptodate) {
+	openfile_make($key);
+	return;
+    }
+
     openfile($key);
     gen_header($key);
     for $section (@{$key->{"list_sections"}}) {
@@ -796,12 +836,15 @@ sub main {
 	scan_sections($key, \@texte, $key->{"preload"}, \@pretexte);
 
 	openmainfile($key);
-	gen_master($key);
+	my($uptodate)=uptodate($key);
+	
+	gen_master($key, $uptodate);
 
 	for $section (@{$key->{"list_sections"}}) {
 	    gen_section($key->{"sections"}{$section}, \@texte, 
-			$key->{"preload"}, \@pretexte);
+			$key->{"preload"}, \@pretexte, $uptodate);
 	}
+
 	closemainfile($key);
 	if (defined($key->{"if_errors"})) {
 	    $error=1;

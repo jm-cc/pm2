@@ -15,7 +15,4 @@
 
 export FLAVOR_DEFAULT:=swann
 
-PROGRAM :=  swann
-LEX     :=  flex
-YACC    :=  bison -y -d
 include $(PM2_ROOT)/make/progs.mak

@@ -15,8 +15,10 @@
  */
 
 #section marcel_functions
+#if 0
 static __inline__ unsigned 
-pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
+pm2_spinlock_testandset(volatile unsigned *spinlock) ;//__tbx_deprecated__;
+#endif
 #section marcel_inline
 #if 0
 static __inline__ unsigned __tbx_deprecated__
@@ -26,9 +28,10 @@ pm2_spinlock_testandset(volatile unsigned *spinlock)
 }
 #endif
 
-#warning "Bad implementation of test and set !"
+//#warning "Bad implementation of test and set !"
 
-#define pm2_spinlock_testandset(volatile unsigned *spinlock) \
+#section marcel_macros
+#define pm2_spinlock_testandset(spinlock) \
   (*(spinlock) ? 1 : (*(spinlock)=1,0))
 
 #section marcel_macros

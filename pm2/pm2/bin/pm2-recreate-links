@@ -38,6 +38,9 @@ make_ln() # Create $3 pointing on $2 in the directory $1
     else
 	LINK=$3
     fi
+    if [ `echo "$2" | cut -c1` = '/' ]; then
+        echo "WARNING: absolute path $2 does not allow moving sources"
+    fi
     if [ ! -h "$LINK" ]; then
 	ln -s $2 $LINK
     fi
@@ -66,8 +69,8 @@ done
 
 # examples links
 rm -f ${PM2_ROOT}/mad3/examples/cfgs ${PM2_ROOT}/mad3/examples/networks.cfg
-make_ln ${PM2_ROOT}/mad3/examples ${PM2_ROOT}/leonie/examples         cfgs
-make_ln ${PM2_ROOT}/mad3/examples ${PM2_ROOT}/leonie/examples/networks.cfg
+make_ln ${PM2_ROOT}/mad3/examples ../../leonie/examples         cfgs
+make_ln ${PM2_ROOT}/mad3/examples ../../leonie/examples/networks.cfg
 
 # architecture-specific directories for the storage of binaries, etc.
 

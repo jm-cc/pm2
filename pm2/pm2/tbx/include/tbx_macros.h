@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.8  2000/05/18 13:27:52  oaumage
+- correction de l'expansion conditionnelle des macros de synchronisation
+  multithread
+
 Revision 1.7  2000/04/27 09:05:52  oaumage
 - fusion de la branche pm2_mad2_multicluster
 
@@ -268,7 +272,6 @@ typedef enum
  * Threads specific macros  _________________________________________
  * ________________________//////////////////////////////////////////
  */
-#ifdef THREADS
 #ifdef MARCEL
 #define TBX_SHARED marcel_mutex_t __pm2_mutex
 #define TBX_INIT_SHARED(st) marcel_mutex_init((&((st)->__pm2_mutex)), NULL)
@@ -279,9 +282,6 @@ typedef enum
 #define TBX_UNLOCK() unlock_task()
 #define TBX_YIELD() marcel_yield()
 #else /* MARCEL */
-#error unsupported thread package
-#endif /* MARCEL */
-#else /* THREADS */
 #define TBX_SHARED 
 #define TBX_INIT_SHARED(st) 
 #define TBX_LOCK_SHARED(st) 
@@ -290,7 +290,7 @@ typedef enum
 #define TBX_LOCK()
 #define TBX_UNLOCK()
 #define TBX_YIELD()
-#endif
+#endif /* MARCEL */
 
 
 /*

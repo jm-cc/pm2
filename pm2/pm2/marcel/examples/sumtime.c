@@ -111,7 +111,7 @@ int marcel_main(int argc, char **argv)
     printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
   } else {
     LOOP(bcle)
-	mdebug("sched task= %p\n", SCHED_DATA(GET_LWP(0)).sched_task); 
+	mdebug("sched task= %p\n", GET_LWP_BY_NUM(0)->idle_task); 
       printf("Enter a rather small integer (0 to quit) : ");
       scanf("%d", &j.sup);
       if(j.sup == 0)

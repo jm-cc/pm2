@@ -119,6 +119,7 @@
 #define MA__SMP /* Utilisation des pthreads pour les lwp */
 #define MA__LWPS
 #define MA__TIMER
+#define MA__WORK
 #ifndef SMP_MULTIPLE_QUEUES
 #define MA__ONE_QUEUE
 #define MA__MULTIPLE_RUNNING

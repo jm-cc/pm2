@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_driver.h,v $
+Revision 1.5  2000/03/08 17:18:51  oaumage
+- support de compilation avec Marcel sans PM2
+- pre-support de packages de Threads != Marcel
+
 Revision 1.4  2000/03/02 14:51:55  oaumage
 - support de detection des protocoles au niveau runtime
 
@@ -65,7 +69,7 @@ typedef enum
 typedef struct s_mad_driver
 {
   /* Common use fields */
-  PM2_SHARED;
+  TBX_SHARED;
   char                       *name;
   p_mad_madeleine_t           madeleine;
   mad_driver_id_t             id;

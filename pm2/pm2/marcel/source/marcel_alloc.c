@@ -136,7 +136,8 @@ retry:
 				if (!ma_in_atomic() && nb_try_left--) {
 					/* On tente de faire avancer les autres
 					 * threads */
-					mdebugl(2, "Trying to wait for mmap. Current: mmap(%p, %x, ...)\n", next_slot, THREAD_SLOT_SIZE);
+					mdebugl(PM2DEBUG_DISPLEVEL,
+						"Trying to wait for mmap. Current: mmap(%p, %x, ...)\n", next_slot, THREAD_SLOT_SIZE);
 					marcel_yield();
 					goto retry;
 				}

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: dsm_slot_alloc.c,v $
+Revision 1.3  2000/09/25 12:05:08  gantoniu
+Added double mapping after tests.
+
 Revision 1.2  2000/07/14 16:16:56  gantoniu
 Merged with branch dsm3
 
@@ -62,7 +65,7 @@ ______________________________________________________________________________
 #include "dsm_page_manager.h"
 #include "dsm_page_size.h"
 
-#define DEBUG_SLOT
+//#define DEBUG_SLOT
 
 void *dsm_slot_alloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr_t *attr)
 {

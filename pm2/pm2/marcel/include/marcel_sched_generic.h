@@ -43,7 +43,7 @@ unsigned marcel_nbthreads(void);
 unsigned long marcel_createdthreads(void);
 
 #section marcel_functions
-asmlinkage void marcel_sched_do_work(void);
+//asmlinkage void marcel_sched_do_work(void);
 
 void marcel_gensched_shutdown(void);
 

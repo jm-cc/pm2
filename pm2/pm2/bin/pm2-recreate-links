@@ -33,8 +33,13 @@ make_ln() # Create $3 pointing on $2 in the directory $1
 {
     $ECHO
     cd $1
-    if [ ! -h $3 ]; then
-	ln -s $2 $3
+    if [ -z "$3" ]; then
+	LINK=`basename $2`
+    else
+	LINK=$3
+    fi
+    if [ ! -h "$LINK" ]; then
+	ln -s $2 $LINK
     fi
 }
 
@@ -68,6 +73,10 @@ make_ln ${PM2_ROOT}/modules ../pm2 pm2
 make_ln ${PM2_ROOT}/modules ../profile profile
 make_ln ${PM2_ROOT}/modules ../tbx tbx
 make_ln ${PM2_ROOT}/modules ../swann swann
+
+# examples links
+make_ln ${PM2_ROOT}/mad3/examples ${PM2_ROOT}/leonie/examples         cfgs
+make_ln ${PM2_ROOT}/mad3/examples ${PM2_ROOT}/leonie/examples/networks.cfg
 
 # architecture-specific directories for the storage of binaries, etc.
 

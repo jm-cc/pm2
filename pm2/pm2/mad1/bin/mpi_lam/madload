@@ -34,18 +34,18 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-# Just in case MADELEINE_ROOT is not defined
-MADELEINE_ROOT=${MADELEINE_ROOT-${PM2_ROOT}/mad1}
-export MADELEINE_ROOT
+# Just in case MAD1_ROOT is not defined
+MAD1_ROOT=${MAD1_ROOT-${PM2_ROOT}/mad1}
+export MAD1_ROOT
 
 case $1 in
     /*) command=$* ;;
     *) command=`pwd`/$*
 esac
 
-lamboot $MADELEINE_ROOT/.madconf
+lamboot $MAD1_ROOT/.madconf
 
-set `cat $MADELEINE_ROOT/.madconf`
+set `cat $MAD1_ROOT/.madconf`
 nb_hosts=$#
 
 set $command
@@ -54,5 +54,5 @@ shift
 
 mpirun -f -w -nger -c2c -c $nb_hosts $prog -- $*
 
-wipe $MADELEINE_ROOT/.madconf
+wipe $MAD1_ROOT/.madconf
 

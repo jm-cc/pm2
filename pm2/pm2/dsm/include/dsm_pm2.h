@@ -36,15 +36,18 @@
 #ifndef DSM_PM2_IS_DEF
 #define DSM_PM2_IS_DEF
 
-#include "dsm_const.h" /* access_t */
+#include "dsm_const.h" 
 #include "dsm_sysdep.h"
 
 /* the following 2 need to be included by the user
- * program to allow protocol initialization 
- * using library functions
+ * program to allow:
+ *  - protocol initialization using library functions
+ *  - user-defined protocol epecification
  */
+
 #include "dsm_protocol_lib.h" 
 #include "dsm_protocol_policy.h"
+#include "dsm_lock.h"
 
 /* to enable the user to configure the distribution of dsm pages */
 #include "dsm_page_manager.h"
@@ -67,8 +70,6 @@
 void dsm_pm2_init(int my_rank, int confsize);
 
 void dsm_pm2_exit();
-
-void pm2_set_dsm_protocol(dsm_protocol_t *protocol);
 
 #endif
 

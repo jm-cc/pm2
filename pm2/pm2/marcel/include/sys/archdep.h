@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: archdep.h,v $
+Revision 1.3  2000/03/06 14:56:02  rnamyst
+Modified to include "marcel_flags.h".
+
 Revision 1.2  2000/01/31 15:56:45  oaumage
 - ajout du Log CVS
 
@@ -44,7 +47,9 @@ ______________________________________________________________________________
 #ifndef ARCHDEP_EST_DEF
 #define ARCHDEP_EST_DEF
 
-#ifdef SMP
+#include "sys/marcel_flags.h"
+
+#ifdef ACT_OR_SMP
 
 #if defined(SOLARIS_SYS)
 #include <thread.h>

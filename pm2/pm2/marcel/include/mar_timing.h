@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mar_timing.h,v $
+Revision 1.5  2000/11/15 21:32:19  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.4  2000/04/11 09:07:09  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -53,11 +56,16 @@ ______________________________________________________________________________
 #ifndef MAR_TIMING_EST_DEF
 #define MAR_TIMING_EST_DEF
 
-#include "timing.h"
+#ifdef MAR_TIMING
 
-#ifndef MAR_TIMING
-#undef TIMING_EVENT
-#define TIMING_EVENT(name)   /* nothing */
+#include "tbx.h"
+
+#define TIMING_EVENT(name) TIME(name)
+
+#else
+
+#define TIMING_EVENT(name) /* nothing */
+
 #endif
 
 #endif

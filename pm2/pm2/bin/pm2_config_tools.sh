@@ -15,7 +15,7 @@ included_in()
 
 not_included_in()
 {
-    if included_in "$@" ; then
+    if included_in ${@:+"$@"} ; then
 	return 1
     else
 	return 0
@@ -37,7 +37,7 @@ defined_in() # option list
 
 not_defined_in() # option list
 {
-    if defined_in "$@" ; then
+    if defined_in ${@:+"$@"} ; then
 	return 1
     else
 	return 0

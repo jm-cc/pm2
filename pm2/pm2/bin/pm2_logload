@@ -7,7 +7,7 @@
 
 prog=$1
 shift
-args="$@"
+args=${@:+"$@"}
 
 title="$prog.${HOST:-`hostname`}"
 

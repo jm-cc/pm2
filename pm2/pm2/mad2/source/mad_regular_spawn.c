@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.4  2000/06/15 08:45:03  rnamyst
+pm2load/pm2conf/pm2logs are now handled by pm2.
+
 Revision 1.3  2000/06/06 15:58:00  oaumage
 - suppression des fonctions *exit redondantes
 
@@ -151,12 +154,12 @@ mad_parse_command_line(int                *argc,
 	{
 	  if (i == ((*argc) - 1))
 	    FAILURE("-conf must be followed "
-		    "by the path of mad2 root directory");
+		    "by the path of mad2 configuration file");
 
 	  if (!conf_file)
 	    FAILURE("configuration file already specified");
 	  
-	  sprintf(conf_file, "%s/.mad2_conf", argv[i + 1]);
+	  sprintf(conf_file, "%s", argv[i + 1]);
 	  i++;
 	}
       else if (!strcmp(argv[i], "-device"))
@@ -197,7 +200,8 @@ static void
 mad_master_spawn(int                    *argc,
 		 char                  **argv,
 		 p_mad_configuration_t   configuration,
-		 tbx_bool_t              conf_spec)
+		 tbx_bool_t              conf_spec,
+		 char                   *configuration_file)
 {
   /* Spawn the master mad2 process */
   int    i;
@@ -238,7 +242,7 @@ mad_master_spawn(int                    *argc,
 	  sprintf(cmd,
 		  "rsh %s %s/%s -master -cwd %s -rank %d -conf %s %s",
 		  configuration->host_name[0],
-		  cwd, argv[0], cwd, 0, mad_get_mad_root(), arg_str);
+		  cwd, argv[0], cwd, 0, configuration_file, arg_str);
 	}
       else
 	{ 
@@ -255,7 +259,7 @@ mad_master_spawn(int                    *argc,
 	  sprintf(cmd,
 		  "rsh %s %s -master -rank %d -conf %s %s",
 		  configuration->host_name[0],
-		  argv[0], 0, mad_get_mad_root(), arg_str);
+		  argv[0], 0, configuration_file, arg_str);
 	}
       else
 	{ 
@@ -274,7 +278,8 @@ static void
 mad_slave_spawn(int                *argc,
 		char              **argv,
 		tbx_bool_t          conf_spec,
-		p_mad_madeleine_t   madeleine)
+		p_mad_madeleine_t   madeleine,
+		char               *configuration_file)
 {
   p_mad_configuration_t   configuration = &(madeleine->configuration);
   int                     i;
@@ -340,7 +345,7 @@ mad_slave_spawn(int                *argc,
 		      argv[0],
 		      cwd,
 		      i,  /* rank */
-		      mad_get_mad_root(),
+		      configuration_file,
 		      arg_str);
 	    }
 	  else
@@ -365,7 +370,7 @@ mad_slave_spawn(int                *argc,
 		      argv[0],
 		      cwd,
 		      i,  /* rank */
-		      mad_get_mad_root(),
+		      configuration_file,
 		      arg_str);
 	    }
 	  else
@@ -395,13 +400,14 @@ static void
 mad_connect_hosts(p_mad_madeleine_t   madeleine,
 		  tbx_bool_t          conf_spec,
 		  int                *argc,
-		  char              **argv)
+		  char              **argv,
+		  char               *configuration_file)
 {
   LOG_IN();
   mad_adapter_init(madeleine);
   if (madeleine->configuration.local_host_id == 0)
     {
-      mad_slave_spawn(argc, argv, conf_spec, madeleine);
+      mad_slave_spawn(argc, argv, conf_spec, madeleine, configuration_file);
     }
   mad_adapter_configuration_init(madeleine);
   LOG_OUT();
@@ -417,6 +423,8 @@ mad_read_conf(p_mad_configuration_t   configuration,
   int i;
 
   LOG_IN();
+  LOG_STR("Configuration file", configuration_file);
+
   f = fopen(configuration_file, "r");
   if(f == NULL)
     {
@@ -424,7 +432,17 @@ mad_read_conf(p_mad_configuration_t   configuration,
       exit(1);
     }
 
-  fscanf(f, "%d", &(configuration->size));
+    {
+      char commande[MAX_ARG_STR_LEN];
+      int ret;
+      
+      sprintf(commande, "exit `cat %s | wc -w`", configuration_file);
+
+      ret = system(commande);
+
+      configuration->size = WEXITSTATUS(ret);
+    }
+
   configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
   CTRL_ALLOC(configuration->host_name);
 
@@ -470,10 +488,14 @@ mad_init(
 
   if (!configuration_file)
     {    
-      configuration_file = conf_file;
-      sprintf(conf_file, "%s/.mad2_conf", mad_get_mad_root());
-      conf_spec = tbx_true;
+      if (getenv("PM2_CONF_FILE"))
+	{
+	  configuration_file = conf_file;
+	  sprintf(conf_file, "%s", getenv("PM2_CONF_FILE"));
+	  conf_spec = tbx_true;
+	}
     }  
+
 #ifdef MARCEL  
   marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #endif /* MARCEL */
@@ -491,16 +513,17 @@ mad_init(
       mad_parse_command_line(argc,
 			     argv,
 			     madeleine,
-			     conf_file,
+			     NULL,
 			     &master,
 			     &slave);
     }
   else
     {
+      configuration_file = conf_file;
       mad_parse_command_line(argc,
 			     argv,
 			     madeleine,
-			     NULL,
+			     conf_file,
 			     &master,
 			     &slave);
     }
@@ -508,15 +531,16 @@ mad_init(
   mad_read_conf(configuration, configuration_file);
   rank = configuration->local_host_id;  
 
-  /* Uncomment to disable the first `rsh' step  
-     master = !slave; */
+  /* Uncomment to disable the first `rsh' step  */
+  master = !slave; 
   
   if (!master && !slave)
     {
       mad_master_spawn(argc,
 		       argv,
 		       configuration,
-		       conf_spec);
+		       conf_spec,
+		       configuration_file);
     }
 
   /* output redirection */
@@ -525,14 +549,15 @@ mad_init(
       char   output[MAX_ARG_LEN];
       int    f;
 
-      sprintf(output, "/tmp/%s-mad2log-%d", getenv("USER"), (int)rank);
+      sprintf(output, "/tmp/%s-%s-%d", getenv("USER"), MAD2_LOGNAME, (int)rank);
+
       f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
       dup2(f, STDOUT_FILENO);
       dup2(STDOUT_FILENO, STDERR_FILENO);
     }
 
   mad_driver_init(madeleine);
-  mad_connect_hosts(madeleine, conf_spec, argc, argv);
+  mad_connect_hosts(madeleine, conf_spec, argc, argv, configuration_file);
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
   tbx_list_init(&(madeleine->channel));
 

@@ -99,6 +99,16 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
 	i += 2;
       continue;
     } else
+    if(!strcmp(argv[i], "--marcel-xtop")) {
+      if (do_not_strip) {
+        if (marcel_init_top("|xterm -S//0")) {
+	  fprintf(stderr, "Error: can't launch xterm\n");
+	  exit(1);
+	}
+	argv[j++] = argv[i++];
+      } else
+	i++;
+    } else
 #endif
       argv[j++] = argv[i++];
   }

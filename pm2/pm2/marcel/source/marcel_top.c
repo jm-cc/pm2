@@ -95,6 +95,7 @@ void marcel_top_tick(unsigned long foo) {
 }
 
 int marcel_init_top(char *outfile) {
+	mdebug("marcel_init_top(%s)\n",outfile);
 	if (*outfile=='|') {
 		int fds[2];
 		outfile++;

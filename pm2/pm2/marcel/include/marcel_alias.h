@@ -17,8 +17,8 @@
 #ifndef MARCEL_ALIAS_EST_DEF
 #define MARCEL_ALIAS_EST_DEF
 
-#define xstr(s) str(s)
-#define str(s) #s
+#define marcel_xstr(s) marcel_str(s)
+#define marcel_str(s) #s
 
 #define NAME_PREFIX
 #define PTHREAD_PREFIX pthread_
@@ -108,10 +108,10 @@
 #ifdef MA__POSIX_FUNCTIONS_NAMES
 # define DEF_ALIAS_POSIX_OF_MARCEL(name) \
     typeof(LOCAL_POSIX_NAME(name)) LOCAL_POSIX_NAME(name) \
-      __attribute__((alias(xstr(LOCAL_MARCEL_NAME(name)))));
+      __attribute__((alias(marcel_xstr(LOCAL_MARCEL_NAME(name)))));
 # define DEF_ALIAS_POSIX(name) \
     typeof(POSIX_NAME(name)) POSIX_NAME(name) \
-      __attribute__((alias(xstr(LOCAL_POSIX_NAME(name)))));
+      __attribute__((alias(marcel_xstr(LOCAL_POSIX_NAME(name)))));
 //      __attribute__((alias(xstr(LOCAL_POSIX_NAME(name)))ADD_WEAK_ATTRIBUTE));
 #else
 # define DEF_ALIAS_POSIX_OF_MARCEL(name)
@@ -119,10 +119,10 @@
 #endif
 #define DEF_ALIAS_MARCEL(name) \
   typeof(MARCEL_NAME(name)) MARCEL_NAME(name) \
-    __attribute__((alias(xstr(LOCAL_MARCEL_NAME(name)))));
+    __attribute__((alias(marcel_xstr(LOCAL_MARCEL_NAME(name)))));
 #define DEF_ALIAS_LOCAL_MARCEL(name) \
   typeof(LOCAL_MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) \
-    __attribute__((alias(xstr(MARCEL_NAME(name)))));
+    __attribute__((alias(marcel_xstr(MARCEL_NAME(name)))));
 
 
 #define DEF_MARCEL_POSIX(rtype, name, proto) \
@@ -145,7 +145,7 @@
   
 #define DEFINLINE_MARCEL_POSIX(rtype, name, proto) \
   typeof(MARCEL_NAME(name)) MARCEL_NAME(name) \
-    __attribute__((alias(xstr(MARCEL_INLINE_NAME(name))))); \
+    __attribute__((alias(marcel_xstr(MARCEL_INLINE_NAME(name))))); \
   DEF_ALIAS_LOCAL_MARCEL(name) \
   DEF_ALIAS_POSIX(name) \
   DEF_ALIAS_POSIX_OF_MARCEL(name)

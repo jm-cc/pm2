@@ -435,7 +435,7 @@ debug_lock_t dl={NULL,0,0};
 static volatile int lock_debug=0;
 
 #ifdef MARCEL
-int pm2debug_marcel_launched=0;
+volatile int pm2debug_marcel_launched = 0;
 #endif
 
 #ifdef ACTIVATION
@@ -500,7 +500,7 @@ void pm2debug_flush()
 
 #ifdef ACTIVATION
 #define my_print(prefix, args...) \
-	if (pm2debug_marcel_launched) { \
+	if (_launched) { \
 		new_bytes=prefix##snprintf(pos_buffer, \
 				   DEBUG_SIZE_BUFFER-10-debug_buffer_lenght, \
 				   ##args); \
@@ -525,13 +525,17 @@ int pm2debug_printf(debug_type_t *type, int line, const char* file,
 #endif
 	volatile int timeout=TIMEOUT;
 	va_list ap;
+#ifdef MARCEL
+	int _launched;
+#endif
 
 	if (!type) { 
 		return 0;
 	}
 
 #ifdef MARCEL
-	if (pm2debug_marcel_launched) {
+	_launched = pm2debug_marcel_launched;
+	if (_launched) {
 		ma_lock_task(); /* Pas de debug ici ! */
 	}
 #endif
@@ -552,7 +556,7 @@ int pm2debug_printf(debug_type_t *type, int line, const char* file,
 #endif
 		}
 #ifdef MARCEL
-		if (pm2debug_marcel_launched) {
+		if (_launched) {
 			unlock_task_for_debug(); /* Pas de debug ici ! */
 		}
 #endif			
@@ -573,15 +577,15 @@ have_lock:
 		}
 #ifdef MARCEL
 #ifdef MA__LWPS
-		if (pm2debug_marcel_launched && !type->do_not_show_lwp) {
+		if (_launched && !type->do_not_show_lwp) {
 			my_print(,"[P%02d] ", 
-				 ((pm2debug_marcel_launched 
+				 ((_launched 
 				   && (marcel_self())->lwp) 
 				  ? (marcel_self())->lwp->number : -1));
 		}
 #endif
-		if (pm2debug_marcel_launched && !type->do_not_show_thread) {
-			my_print(,"(%8p) ", pm2debug_marcel_launched ?
+		if (_launched && !type->do_not_show_thread) {
+			my_print(,"(%8p) ", _launched ?
 			marcel_self():(void*)-1);
 		}
 #endif /* MARCEL */
@@ -590,7 +594,7 @@ have_lock:
 		va_end(ap);
 	}
 #ifdef ACTIVATION
-	if (pm2debug_marcel_launched) {
+	if (_launched) {
 		if (!pm2_spinlock_testandset(&in_flush)) {
 			if ((locked()==1) // appel sans lock_task
 			    && (MA_GET_TASK_TYPE(marcel_self())==
@@ -610,7 +614,7 @@ have_lock:
 	dl.file_line=0;
 	lock_debug=0;
 #ifdef MARCEL	
-	if (pm2debug_marcel_launched) {
+	if (_launched) {
 		unlock_task_for_debug();
 	}
 #endif

@@ -7,6 +7,7 @@
 typedef enum e_mad_leo_command
 {
   mad_leo_command_end = 0,
+  mad_leo_command_end_ack,
   mad_leo_command_print,
   mad_leo_command_barrier,
   mad_leo_command_barrier_passed,

@@ -52,37 +52,27 @@
 #		verify bad malloc/free usage.
 #
 
-# Extension utilisee pour les fichiers binaires, objets, etc.
-PM2_EXT		:=	
-
 PM2_GEN_1	:=	-Wall
 PM2_GEN_2	:=	-O6
-PM2_GEN_3	:=	#-g
-PM2_GEN_4	:=	#-DUSE_SAFE_MALLOC
+#PM2_GEN_3	:=	-g
+#PM2_GEN_4	:=	-DUSE_SAFE_MALLOC
 PM2_GEN_5	:=	-fomit-frame-pointer
-PM2_GEN_6	:=	#
+#PM2_GEN_6	:=	
 
 PM2_USE_DSM	:=	yes
 #PM2_USE_DSM	:=	no
 
-PM2_OPT_0	:=	#-DPM2_DEBUG
-PM2_OPT_1	:=	#-DPM2_TRACE
-PM2_OPT_2	:=	#-DPM2_TIMING
-PM2_OPT_3	:=	#-DMINIMAL_PREEMPTION
-PM2_OPT_4	:=	#-DMIGRATE_IN_HEADER
-PM2_OPT_5	:=	#
-PM2_OPT_6	:=	#
-PM2_OPT_7	:=	#
-PM2_OPT_8	:=	#
+#PM2_OPT_0	:=	-DPM2_DEBUG
+#PM2_OPT_1	:=	-DPM2_TRACE
+#PM2_OPT_2	:=	-DPM2_TIMING
+#PM2_OPT_3	:=	-DMINIMAL_PREEMPTION
+#PM2_OPT_4	:=	-DMIGRATE_IN_HEADER
+#PM2_OPT_5	:=	
+#PM2_OPT_6	:=	
+#PM2_OPT_7	:=	
+#PM2_OPT_8	:=	
 
 PM2_MAK_VERB	:=	verbose
 #PM2_MAK_VERB	:=	normal
 #PM2_MAK_VERB	:=	quiet
 #PM2_MAK_VERB	:=	silent
-
-PM2_GEN_OPT	:=	$(PM2_GEN_1) $(PM2_GEN_2) $(PM2_GEN_3) \
-			$(PM2_GEN_4) $(PM2_GEN_5) $(PM2_GEN_6)
-
-PM2_OPT		:=	$(strip $(PM2_OPT_0) $(PM2_OPT_1) $(PM2_OPT_2) \
-			$(PM2_OPT_3) $(PM2_OPT_4) $(PM2_OPT_5) \
-			$(PM2_OPT_6) $(PM2_OPT_7) $(PM2_OPT_8))

@@ -83,7 +83,6 @@ void filter_add_time_slice(u_64 begin, u_64 end)
   tmp->t.begin = begin;
   tmp->t.end = end;
   options.time = tmp;
-  options.active = 0;
 }
 
 void filter_add_evnum_slice(unsigned int begin, unsigned int end)
@@ -125,9 +124,17 @@ int is_valid(trace *tr)
     time_slice_list temp;
     temp = options.time;
     while (temp != TIME_SLICE_LIST_NULL) {
-      if ((unsigned) temp->t.begin == (unsigned) tr->clock)
-	options.active++;
+      if (((unsigned) temp->t.begin <= (unsigned) tr->clock) &&
+	  ((unsigned) temp->t.end >= (unsigned) tr->clock))
+	break;
       temp = temp->next;
+    }
+    if (temp == TIME_SLICE_LIST_NULL) {
+      if ((options.gen_slice == GENERAL_SLICE_LIST_NULL) &&
+	  (options.evnum_slice == EVNUM_SLICE_LIST_NULL))
+	options.active = 1;
+      else options.active = 0;
+      return FALSE;
     }
   }
   if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
@@ -189,15 +196,6 @@ int is_valid(trace *tr)
       temp = temp->next;
     }
     if (temp == EVENT_LIST_NULL) return FALSE;
-  }
-  if (options.time != TIME_SLICE_LIST_NULL) {
-    time_slice_list temp;
-    temp = options.time;
-    while (temp != TIME_SLICE_LIST_NULL) {
-      if (temp->t.end == tr->clock)
-	if (options.active > 0) options.active--;
-      temp = temp->next;
-    }
   }
   if (options.evnum_slice != EVNUM_SLICE_LIST_NULL) {
     evnum_slice_list temp;

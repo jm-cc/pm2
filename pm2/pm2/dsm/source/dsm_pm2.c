@@ -34,7 +34,6 @@
 */
 
 /* Options: SIGSEGV_TRACE */
-
 //#define SIGSEGV_TRACE
 
 #include <stdio.h>
@@ -58,6 +57,8 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
   extern int dsm_pf_handler_calls;
   dsm_pf_handler_calls++;
 #endif
+
+  LOG_IN();
 
 #ifdef SIGSEGV_TRACE
   tfprintf(stderr, "Starting handler: sig = %d addr = %p index = %ld (I am %p)\n", sig, addr, index, marcel_self() );
@@ -99,18 +100,28 @@ static void dsm_pagefault_handler(int sig, void *addr, dsm_access_t access)
     default: RAISE(PROGRAM_ERROR); break;
 				     }
   dsm_unlock_page(index);
+
+ LOG_OUT();
 }
 
 
 void dsm_pm2_init(int my_rank, int confsize)
 {  
+  LOG_IN();
+
   dsm_init_protocol_table();
   dsm_page_table_init(my_rank, confsize);
   dsm_install_pagefault_handler((dsm_pagefault_handler_t)dsm_pagefault_handler);
+
+  LOG_OUT();
 }
 
 void dsm_pm2_exit()
 {
+  LOG_IN();
+
   dsm_uninstall_pagefault_handler();
+
+  LOG_OUT();
 }
 

@@ -139,9 +139,11 @@ extern ma_runqueue_t ma_dontsched_runqueue;
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
+#define ma_rq_covers(rq,lwp)	(MA_CPU_ISSET(LWP_NUMBER(lwp), &rq->cpuset))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
+#define ma_rq_covers(rq,lwp)	(1)
 #endif
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
 

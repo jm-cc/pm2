@@ -151,9 +151,11 @@
 #define LOW_CREDIT(p) \
 	((p)->interactive_credit < -CREDIT_LIMIT)
 
-// TODO: plus de curr, puisqu'une rq peut être utilisée pour une machine entière...
-#define TASK_PREEMPTS_CURR(p, rq) \
-	((p)->sched.internal.prio < (rq)->curr->sched.internal.prio)
+#define TASK_PREEMPTS_TASK(p, q) \
+	((p)->sched.internal.prio < (q)->sched.internal.prio)
+#define TASK_PREEMPTS_CURR(p, lwp) \
+	TASK_PREEMPTS_TASK((p), ma_per_lwp(current_thread, (lwp)))
+
 
 /*
  * BASE_TIMESLICE scales user-nice values [ -20 ... 19 ]
@@ -467,7 +469,12 @@ repeat_lock_task:
 				&& !lwp_is_offline(LWP_SELF)
 				)) {
 
+				//deactivate_task(p,rq);
+				//activate_task(p,ma_lwp_rq(LWP_SELF));
+
+				//réalisé par ma_schedule()
 				//ma_set_task_lwp(p, LWP_SELF);
+
 				task_rq_unlock(rq);
 				goto repeat_lock_task;
 			}
@@ -479,21 +486,29 @@ repeat_lock_task:
 				 */
 //				p->activated = -1;
 			}
-			/* sens différent maintenant: une tâche n'est plus
-			 * "sur" un lwp, mais dans une liste dans laquelle un
-			 * lwp peut piocher. TODO: on pourrait cependant
-			 * vérifier si la runqueue de la tâche à exécuter est
-			 * atteignable par ce lwp */
-			if (sync && (ma_task_lwp(p) == LWP_SELF))
-				__activate_task(p, rq);
-			else {
-				activate_task(p, rq);
-				/* TODO: vérifier si c'est une rq de lwp,
-				 * auquel cas effectuer un resched_task.
-				 * sinon, trouver qqun pour l'exécuter ?
-				if (TASK_PREEMPTS_CURR(p, rq))
-					resched_task(rq->curr);
-				*/
+
+			activate_task(p, rq);
+			/*
+			 * Sync wakeups (i.e. those types of wakeups where the waker
+			 * has indicated that it will leave the CPU in short order)
+			 * don't trigger a preemption, if the woken up task will run on
+			 * this cpu. (in this case the 'I will reschedule' promise of
+			 * the waker guarantees that the freshly woken up task is going
+			 * to be considered on this CPU.)
+			 */
+			if (ma_rq_covers(rq, LWP_SELF) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
+				/* we can avoid remote reschedule by switching to it */
+				if (!sync) /* only if we won't for sure yield() soon */
+					resched_task(MARCEL_SELF);
+			} else {
+				marcel_lwp_t *lwp;
+				for_each_lwp_begin(lwp)
+					/* TODO: ça va toujours charger LWP0 en premier, c'est bof... */
+					if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
+						resched_task(ma_per_lwp(current_thread, lwp));
+						break;
+					}
+				for_each_lwp_end();
 			}
 			success = 1;
 		}

@@ -677,7 +677,10 @@ leo_loaders_register(void)
   LOG_IN();
   if (!(leo_rsh = getenv("LEO_RSH")))
     {
-      leo_rsh = "rsh";
+      if (!(leo_rsh = getenv("PM2_RSH")))
+        {
+	  leo_rsh = "ssh";
+	}
     }
 
   if (strstr(leo_rsh, "ssh") || strstr(leo_rsh, "ssf"))

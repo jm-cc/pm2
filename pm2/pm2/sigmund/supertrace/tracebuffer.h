@@ -27,7 +27,7 @@ typedef struct trace_st trace;
 
 //#define FKT_UNSHIFTED_LIMIT_CODE	        0x200
 
-#define TRACE_BUFFER_SIZE 1000
+#define TRACE_BUFFER_SIZE 10000
 #define EMPTY_LIST (trace_list) NULL
 
 typedef struct trace_item_st * trace_list;

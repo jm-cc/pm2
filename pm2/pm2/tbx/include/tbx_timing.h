@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_timing.h,v $
+Revision 1.2  2000/03/13 09:48:20  oaumage
+- ajout de l'option TBX_SAFE_MALLOC
+- support de safe_malloc
+- extension des macros de logging
+
 Revision 1.1  2000/01/13 14:51:31  oaumage
 Inclusion de la toolbox dans le repository
 
@@ -51,9 +56,11 @@ ______________________________________________________________________________
 #include <sys/types.h>
 #include <sys/time.h>
 
-typedef union {
+typedef union
+{
   unsigned long long tick;
-  struct {
+  struct
+  {
     unsigned long low, high;
   } sub;
   struct timeval timev;

@@ -24,13 +24,18 @@
 
 #ifdef X86_ARCH
 #  define SPINLOCK_DEFINED
+#  ifdef MA__LWPS
+#    define LOCK_PREFIX "lock; "
+#  else
+#    define LOCK_PREFIX 
+#  endif
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __attribute__ ((unused));
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   unsigned ret;
 
   __asm__ __volatile__(
-       "xchgl %b0, %1"
+       LOCK_PREFIX "xchgl %0, %1"
        : "=q"(ret), "=m"(*spinlock)
        : "0"(1), "m"(*spinlock)
        : "memory");

@@ -1,2 +1,2 @@
-Depend: marcel_proctype tbx
+Depend: marcel_proctype tbx init
 Provide: module

@@ -85,8 +85,8 @@ ifndef MARCEL_ROOT
 MARCEL_ROOT	:=	$(PM2_ROOT)/marcel
 endif
 
-ifndef MADELEINE_ROOT
-MADELEINE_ROOT	:=	$(PM2_ROOT)/mad1
+ifndef MAD1_ROOT
+MAD1_ROOT	:=	$(PM2_ROOT)/mad1
 endif
 
 ifndef MAD2_ROOT
@@ -153,7 +153,7 @@ include $(MARCEL_ROOT)/make/common.mak
 ifeq ($(MAD2),yes)
  include $(MAD2_ROOT)/make/common.mak
 else
- include $(MADELEINE_ROOT)/make/common.mak
+ include $(MAD1_ROOT)/make/common.mak
 endif
 
 ifeq ($(DSM),yes)

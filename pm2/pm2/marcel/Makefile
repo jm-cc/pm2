@@ -195,8 +195,10 @@ MAR_OBJ_TO_S	=	$(MAR_SRC)/$(patsubst %.o,%.s,$(notdir $@))
 .PHONY: mar_default
 mar_default: $(MAR_LIB)
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(MAR_DEPENDS)),$(MAR_DEPENDS))
 include $(MAR_DEPENDS)
+endif
 endif
 
 ifdef PM2_FLAGS
@@ -308,8 +310,10 @@ DEPENDS	:=	$(patsubst %.c,%.d,$(subst $(SRC_DIR),$(DEP_DIR),$(SOURCES)))
 
 DEP_TO_OBJ	=	$(OBJ_DIR)/$(patsubst %.d,%.o,$(notdir $@))
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
 include $(DEPENDS)
+endif
 endif
 
 $(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d

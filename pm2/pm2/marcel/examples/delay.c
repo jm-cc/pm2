@@ -20,6 +20,8 @@
 
 #define SCHED_POLICY   MARCEL_SCHED_OTHER
 
+#define DELAY 500
+
 any_t ALL_IS_OK = (any_t)0xdeadbeef;
 
 char *mess[2] = { "boys", "girls" };
@@ -47,7 +49,7 @@ any_t writer(any_t arg)
   for(i=0;i<10;i++) {
     tprintf("Hi %s! (I'm %p on vp %d)\n", (char*)arg,
 	    marcel_self(), marcel_current_vp());
-    marcel_delay(500);
+    marcel_delay(DELAY);
   }
 
   return ALL_IS_OK;

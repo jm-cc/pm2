@@ -22,6 +22,9 @@ if [ -z "${PM2_ROOT}" ]; then
 fi
 
 ##########################################################################
+
+HIDDEN_MODULES="generic|appli"
+
 # aide
 usage() # exit_code section
 {
@@ -127,7 +130,7 @@ module_valid() { # module noabort generic
     $3)
 	return 0
 	;;
-    generic)
+    $HIDDEN_MODULES)
 	;;
     *)
 	if [ -d "${PM2_ROOT}/modules/$1/config" ]; then
@@ -246,10 +249,10 @@ do_modules() {
     list)
 	if [ -d "${PM2_ROOT}/modules" ]; then
 	    if [ "$with_common" = true ]; then
-		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v generic`
+		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v -E $HIDDEN_MODULES`
 	    else
 		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
-		    grep -v generic | grep -v common`
+		    grep -v -E $HIDDEN_MODULES | grep -v common`
 	    fi
 	    new_list=
 	    for mod in `echo $list` " "; do
@@ -265,7 +268,7 @@ do_modules() {
 
 do_module() { # module ...
     action=quickhelp
-    module_valid "$1" "" generic
+    module_valid "$1" "" $HIDDEN_MODULES
     module=$1
     shift
     while test $# -gt 0; do
@@ -404,7 +407,7 @@ do_options() {
 	    ;;
 	--module=*)
 	    module=`echo "$1" | cut -d= -f2`
-	    module_valid "$module" "" generic
+	    module_valid "$module" "" $HIDDEN_MODULES
 	    ;;
 	*)
 	    echo Unknown option \`$1\' 1>&2
@@ -428,7 +431,7 @@ do_option() { # option ...
 	    ;;
 	--module=*)
 	    module=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
-	    module_valid "$module" "" generic
+	    module_valid "$module" "" $HIDDEN_MODULES
 	    ;;
 	*)
 	    echo Unknown option \`$1\' 1>&2

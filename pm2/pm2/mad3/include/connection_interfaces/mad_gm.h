@@ -89,6 +89,14 @@ mad_gm_receive_sub_buffer_group(p_mad_link_t         l,
 				tbx_bool_t TBX_UNUSED
                                 first_sub_group,
 				p_mad_buffer_group_t bg);
+
+p_mad_buffer_t
+mad_gm_get_static_buffer(p_mad_link_t l);
+
+void
+mad_gm_return_static_buffer(p_mad_link_t   l,
+                            p_mad_buffer_t b);
+
 void
 mad_gm_link_exit(p_mad_link_t l);
 
@@ -104,4 +112,11 @@ mad_gm_adapter_exit(p_mad_adapter_t a);
 
 void
 mad_gm_driver_exit(p_mad_driver_t d);
+
+p_mad_link_t
+mad_gm_choice(p_mad_connection_t connection,
+              size_t             size,
+              mad_send_mode_t    send_mode,
+              mad_receive_mode_t receive_mode);
+
 #endif /* MAD_GM_H */

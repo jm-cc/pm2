@@ -143,9 +143,6 @@ tbx_htable_add(p_tbx_htable_t  htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
-
-  LOG("tbx_htable_add: key = <%s>", key);
-
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = tbx_malloc(tbx_htable_manager_memory);  
   element->key = tbx_strdup(key);
@@ -157,37 +154,78 @@ tbx_htable_add(p_tbx_htable_t  htable,
   LOG_OUT();
 }
 
-void *
-tbx_htable_get(p_tbx_htable_t  htable,
-	       const char     *key)
+static
+p_tbx_htable_element_t
+__tbx_htable_get_element(p_tbx_htable_t  htable,
+			 const char     *key)
 {
   tbx_htable_bucket_count_t bucket  = -1;
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
-
-  LOG("tbx_htable_get: key = <%s>", key);
-
   bucket  = __tbx_htable_get_bucket(htable, key);
   element = htable->bucket_array[bucket];
   
-  while(element)
+  while (element)
     {
       if (!strcmp(key, element->key))
-	{
-	  void *object = NULL;
-	  
-	  object = element->object;
-	  LOG_OUT();
-
-	  return object;
-	}
-
+	goto end;
+      
       element = element->next;
+    }  
+
+ end:
+  LOG_OUT();
+
+  return element;
+}
+
+void *
+tbx_htable_get(p_tbx_htable_t  htable,
+	       const char     *key)
+{
+  p_tbx_htable_element_t  element = NULL;
+  void                   *result  = NULL;
+  
+  LOG_IN();
+
+  LOG("tbx_htable_get: key = <%s>", key);
+
+  element = __tbx_htable_get_element(htable, key);
+  
+  if (element)
+    {
+      result = element->object;
     }  
   LOG_OUT();
 
-  return NULL;
+  return result;
+}
+
+void *
+tbx_htable_replace(p_tbx_htable_t  htable,
+		   const char     *key,
+		   void           *object)
+{
+  p_tbx_htable_element_t  element = NULL;
+  void                   *result  = NULL;
+  
+  LOG_IN();
+  element = __tbx_htable_get_element(htable, key);
+  
+  if (element)
+    {
+      result = element->object;
+      element->object = object;
+    }
+  else
+    {
+      tbx_htable_add(htable, key, object);
+    }
+  
+  LOG_OUT();
+
+  return result;
 }
 
 void *

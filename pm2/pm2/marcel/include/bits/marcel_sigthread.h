@@ -29,6 +29,6 @@ extern int marcel_sigmask (int __how,
 			    __sigset_t *__restrict __oldmask)__THROW;
 
 /* Send signal SIGNO to the given thread. */
-extern int marcel_kill (marcel_t __thread, int __signo) __THROW;
+extern int marcel_kill (marcel_t thread, int __signo) __THROW;
 
 #endif	/* bits/marcel_sigthread.h */

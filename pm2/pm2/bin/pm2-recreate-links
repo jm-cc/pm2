@@ -56,6 +56,7 @@ make_ln ${PM2_ROOT}/modules ../appli appli
 make_ln ${PM2_ROOT}/modules ../common common
 make_ln ${PM2_ROOT}/modules ../dsm dsm
 make_ln ${PM2_ROOT}/modules ../generic generic
+make_ln ${PM2_ROOT}/modules ../init init
 make_ln ${PM2_ROOT}/modules ../leonie leonie
 make_ln ${PM2_ROOT}/modules ../leoparse leoparse
 #make_ln ${PM2_ROOT}/modules ../mad1 mad1

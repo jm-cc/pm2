@@ -41,6 +41,12 @@ marcel_key_t pm2_mad_recv_key = -1;
  * ---------
  */
 #ifdef MAD3
+int
+mad_can_send_to_self()
+{
+  return 0;
+}
+
 void
 pm2_begin_packing(p_mad_channel_t channel,
 		  int             global_rank)

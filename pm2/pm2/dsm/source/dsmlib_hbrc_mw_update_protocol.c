@@ -85,7 +85,7 @@ void dsmlib_hbrc_mw_update_rs(dsm_page_index_t index, dsm_node_t req_node, int a
 {
   IN;
 
-  dsm_lock_page(index);
+  //  dsm_lock_page(index);
   dsm_lock_inv(index);
   
   if (dsm_pending_invalidation(index))
@@ -95,7 +95,7 @@ void dsmlib_hbrc_mw_update_rs(dsm_page_index_t index, dsm_node_t req_node, int a
        dsm_lock_page(index);
     }
 
-  dsm_unlock_inv(index);
+  //  dsm_unlock_inv(index);
 
 #ifdef DSM_PROT_TRACE
   assert(dsm_get_prob_owner(index) == dsm_self());
@@ -111,7 +111,7 @@ void dsmlib_hbrc_mw_update_ws(dsm_page_index_t index, dsm_node_t req_node, int a
 {
   IN;
 
-  dsm_lock_page(index);
+  //  dsm_lock_page(index);
   dsm_lock_inv(index);
   
   if (dsm_pending_invalidation(index))
@@ -129,7 +129,7 @@ void dsmlib_hbrc_mw_update_ws(dsm_page_index_t index, dsm_node_t req_node, int a
   dsm_add_to_copyset(index, req_node);
   dsm_send_page(req_node, index, WRITE_ACCESS, arg);
 
-  dsm_unlock_page(index);
+  //  dsm_unlock_page(index);
  OUT;
 }
 

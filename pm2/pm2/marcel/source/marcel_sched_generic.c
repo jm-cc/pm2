@@ -182,7 +182,9 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 		RAISE(PROGRAM_ERROR);
 	}
 	for(;;) {
-		marcel_yield();
+//		marcel_yield();
+	  marcel_check_polling(MARCEL_POLL_AT_IDLE);
+	  marcel_yield_intern();
 	}
 }
 

@@ -173,6 +173,7 @@ int marcel_cond_wait(marcel_cond_t *cond, marcel_mutex_t *mutex)
   lock_task();
 
   marcel_lock_acquire(&mutex->lock);
+  marcel_lock_acquire(&cond->lock);
 
   if(mutex->first != NULL) {
     cp = mutex->first;
@@ -182,8 +183,6 @@ int marcel_cond_wait(marcel_cond_t *cond, marcel_mutex_t *mutex)
     mutex->value = 1; /* free */
 
   marcel_lock_release(&mutex->lock);
-
-  marcel_lock_acquire(&cond->lock);
 
   if(--(cond->value) < 0) {
     c.next = NULL;

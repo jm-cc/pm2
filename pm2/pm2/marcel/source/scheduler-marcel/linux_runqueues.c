@@ -22,7 +22,7 @@
 #include "marcel.h"
 
 #ifdef MA__LWPS
-MA_DEFINE_PER_LWP(ma_runqueue_t, runqueues);
+MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue);
 #endif
 ma_runqueue_t ma_main_runqueue;
 ma_runqueue_t ma_idle_runqueue;

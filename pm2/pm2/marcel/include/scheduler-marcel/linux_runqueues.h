@@ -102,7 +102,7 @@ typedef struct ma_runqueue ma_runqueue_t;
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"
 #ifdef MA__LWPS
-MA_DECLARE_PER_LWP(ma_runqueue_t, runqueues);
+MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
 #endif
 
 ma_runqueue_t ma_main_runqueue;
@@ -113,7 +113,7 @@ ma_runqueue_t ma_idle_runqueue;
 //#define task_rq(p)		lwp_rq(ma_task_lwp(p))
 #define ma_task_cur_rq(p)	((p)->sched.internal.cur_rq)
 #ifdef MA__LWPS
-#define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueues, (lwp)))
+#define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
 #define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
 #define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
 #define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))

@@ -9,10 +9,10 @@ def id_range_normalize(id_range):
     return id_range
 
 def node_process_dict_get(s, hostname):
-    if not s.process_dict.has_key(hostname):
-        s.process_dict[hostname] = {}
+    if not s.node_dict.has_key(hostname):
+        s.node_dict[hostname] = {}
 
-    return s.process_dict[hostname]
+    return s.node_dict[hostname]
 
 def list_normalize(l):
     if type(l) is not list:

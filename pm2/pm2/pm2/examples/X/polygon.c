@@ -212,7 +212,7 @@ static void sync_display_service(void)
 {
   unsigned regul;
 
-  mad_unpack_int(MAD_IN_HEADER, &regul, 1);
+  old_mad_unpack_int(MAD_IN_HEADER, &regul, 1);
   pm2_rawrpc_waitdata();
 
   sync_display(regul);
@@ -227,7 +227,7 @@ static void positionner_regul(any_t arg)
       sync_display((unsigned)arg);
     else {
       pm2_rawrpc_begin(p, SYNC_DISPLAY, NULL);
-      mad_pack_int(MAD_IN_HEADER, (unsigned *)&arg, 1);
+      old_mad_pack_int(MAD_IN_HEADER, (unsigned *)&arg, 1);
       pm2_rawrpc_end();
     }
   }

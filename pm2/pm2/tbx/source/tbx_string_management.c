@@ -2,7 +2,7 @@
  *  \brief TBX string object management routines.
  *
  *  This file contains the TBX string object management functions.
- * 
+ *
  */
 
 /*
@@ -63,12 +63,12 @@ tbx_strdup(const char *src)
 {
   char   *dst    = NULL;
   size_t  length =    0;
-  
+
   LOG_IN();
   length = strlen(src);
   dst    = TBX_MALLOC(length + 1);
   strcpy(dst, src);
-  LOG_OUT();  
+  LOG_OUT();
 
   return dst;
 }
@@ -85,7 +85,7 @@ tbx_streq(const char *s1,
       result = tbx_true;
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -117,7 +117,7 @@ size_t
 tbx_string_length(p_tbx_string_t string)
 {
   size_t length = 0;
-  
+
   LOG_IN();
   length = string->length;
   LOG_OUT();
@@ -133,11 +133,11 @@ tbx_string_reset(p_tbx_string_t string)
     {
       TBX_FREE(string->data);
     }
-  
+
   string->length           =    0;
   string->allocated_length =    0;
   string->data             = NULL;
-  LOG_OUT();  
+  LOG_OUT();
 }
 
 char *
@@ -145,19 +145,19 @@ tbx_string_to_cstring(p_tbx_string_t string)
 {
   char   *cstring = NULL;
   size_t  length   =    0;
-  
+
   LOG_IN();
   length   = string->length;
-  
+
   cstring = TBX_MALLOC(length + 1);
-  
+
   if (length)
     {
       memcpy(cstring, string->data, length);
     }
-  
+
   cstring[length] = '\0';
-  LOG_OUT();  
+  LOG_OUT();
 
   return cstring;
 }
@@ -166,11 +166,11 @@ char *
 tbx_string_to_cstring_and_free(p_tbx_string_t string)
 {
   char *cstring = NULL;
-  
+
   LOG_IN();
   cstring = tbx_string_to_cstring(string);
   tbx_string_free(string);
-  LOG_OUT();  
+  LOG_OUT();
 
   return cstring;
 }
@@ -189,7 +189,7 @@ tbx_string_set_to_cstring(p_tbx_string_t  string,
       memcpy(string->data, cstring, length);
       string->length           = length;
       string->allocated_length = length;
-    }  
+    }
   LOG_OUT();
 }
 
@@ -263,7 +263,7 @@ tbx_string_append_cstring(p_tbx_string_t  string,
   if (string->allocated_length)
     {
       size_t length = 0;
-      
+
       if ((length = strlen(cstring)))
 	{
 	  if (string->length + length > string->allocated_length)
@@ -309,7 +309,7 @@ tbx_string_append_char(p_tbx_string_t string,
 	  string->allocated_length = 2 * (string->allocated_length + 1);
 	  string->data = TBX_REALLOC(string->data, string->allocated_length);
 	}
-      
+
       string->data[string->length - 1] = (char)data;
     }
   else
@@ -327,24 +327,24 @@ tbx_string_append_int(p_tbx_string_t string,
   size_t     offset = 0;
   tbx_bool_t neg    = (data < 0);
 
-  LOG_IN();  
+  LOG_IN();
   if (neg)
     {
       data = -data;
     }
-      
+
   do
     {
       temp[offset++] = '0' + data % 10;
       data /= 10;
     }
   while (data);
-  
+
   if (neg)
     {
       temp[offset++] = '-';
     }
-  
+
   do
     {
       tbx_string_append_char(string, temp[--offset]);
@@ -357,7 +357,7 @@ void
 tbx_string_set_to_int(p_tbx_string_t string,
 		      int            data)
 {
-  LOG_IN(); 
+  LOG_IN();
   tbx_string_reset(string);
   tbx_string_append_int(string, data);
   LOG_OUT();
@@ -381,7 +381,7 @@ tbx_string_reverse(p_tbx_string_t string)
 {
   size_t offset_left  = 0;
   size_t offset_right = string->length - 1;
-  
+
   LOG_IN();
   while (offset_left < offset_right)
     {
@@ -398,7 +398,7 @@ void
 tbx_string_set_to_string(p_tbx_string_t dst_string,
 			 p_tbx_string_t src_string)
 {
-  LOG_IN(); 
+  LOG_IN();
   tbx_string_reset(dst_string);
   if (src_string->length)
     {
@@ -439,7 +439,7 @@ tbx_string_append_string(p_tbx_string_t dst_string,
 		TBX_REALLOC(dst_string->data, dst_string->allocated_length);
 	    }
 
-	  memcpy(dst_string->data + dst_string->length, 
+	  memcpy(dst_string->data + dst_string->length,
 		 src_string->data, src_string->length);
 	  dst_string->length += src_string->length;
 	}
@@ -510,7 +510,7 @@ tbx_string_double_quote(p_tbx_string_t src_string)
   LOG_IN();
   // Leading double quote
   dst_string = tbx_string_init_to_char('"');
-  
+
   while (offset < src_length)
     {
       switch (src_data[offset])
@@ -528,7 +528,7 @@ tbx_string_double_quote(p_tbx_string_t src_string)
 	  break;
 	}
     }
-  
+
 
   // Trailing double quote
   tbx_string_append_char(dst_string, '"');
@@ -582,7 +582,7 @@ tbx_string_split(p_tbx_string_t  src_string,
 		 const char     *IFS)
 {
   p_tbx_slist_t slist = NULL;
-  
+
   slist = tbx_slist_nil();
 
   LOG_IN();
@@ -600,30 +600,30 @@ tbx_string_split(p_tbx_string_t  src_string,
       IFS = (IFS)?:" \t\n";
 
       do
-	{	  
+	{
 	  if (copy_mode)
 	    {
 	      if (!single_mode && !double_mode && !quoting_mode)
 		{
 		  const char *ptr = IFS;
-		  
+
 		  while (*ptr)
 		    {
 		      if (*ptr == data[offset])
 			{
 			  offset++;
 			  copy_mode = tbx_false;
-			  
+
 			  tbx_slist_append(slist, dst_string);
 			  dst_string = NULL;
-			  
+
 			  goto next_1;
 			}
-		      
+
 		      ptr++;
 		    }
 		}
-	      
+
 	      switch (data[offset])
 		{
 		case '\\':
@@ -677,15 +677,15 @@ tbx_string_split(p_tbx_string_t  src_string,
 	      dst_string = tbx_string_init();
 	      copy_mode = tbx_true;
 	    }
-	next_1: 
+	next_1:
 	    ;
 	}
       while (offset < length);
-  
+
       if (dst_string)
 	{
 	  tbx_slist_append(slist, dst_string);
-	  dst_string = NULL;      
+	  dst_string = NULL;
 	}
     }
   LOG_OUT();
@@ -729,7 +729,7 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
 	{
 	  name->allocated_length = name->length;
 	  name->data             = TBX_MALLOC(name->allocated_length);
-	  
+
 	  memcpy(name->data, path_name->data + idx, name->length);
 
 	  path_name->length = (idx > 0)?idx - 1:idx;

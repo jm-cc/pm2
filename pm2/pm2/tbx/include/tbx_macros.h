@@ -90,10 +90,10 @@
             #op " != " #val, __FILE__, __LINE__),   abort()
 
 /*
- * VERIFY: assertion verification macro activated by DEBUG flag
+ * VERIFY: assertion verification macro activated by PM2DEBUG flag
  * ------------------------------------------------------------
  */
-#ifdef DEBUG
+#ifdef PM2DEBUG
 #define TBX_VERIFY(op, val) \
   if((op) != (val))     \
     pm2fulldebug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \

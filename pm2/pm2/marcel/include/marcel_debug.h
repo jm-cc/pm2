@@ -16,6 +16,7 @@
 
 #section marcel_macros
 
+#ifdef PM2DEBUG
 #define MA_DEBUG_VAR_NAME(name)   MA_DEBUG_VAR_NAME_S(name)
 #define MA_DEBUG_VAR_NAME_S(name) ma_debug_##name
 
@@ -73,6 +74,7 @@ MA_DEBUG_DECLARE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
 #  undef mdebugl
 #  define mdebugl(level, fmt, args...) \
   ma_debugl(MA_FILE_DEBUG, level, fmt , ##args)
+#endif
 #endif
 
 

@@ -60,10 +60,10 @@ void *marcel_slot_alloc(void)
 
   } else {
 
-    next_slot -= SLOT_SIZE;
+    next_slot -= THREAD_SLOT_SIZE;
 
     ptr = mmap(next_slot,
-	       SLOT_SIZE,
+	       THREAD_SLOT_SIZE,
 	       PROT_READ | PROT_WRITE | PROT_EXEC,
 	       MMAP_MASK,
 	       FILE_TO_MAP, 0);
@@ -86,7 +86,7 @@ void marcel_slot_free(void *addr)
   if(stack_cache.last < MAX_STACK_CACHE) /* Si le cache n'est pas plein */
     stack_cache.stacks[stack_cache.last++] = addr;
   else
-    if(munmap(addr, SLOT_SIZE) == -1)
+    if(munmap(addr, THREAD_SLOT_SIZE) == -1)
       RAISE(CONSTRAINT_ERROR);
 
   marcel_lock_release(&alloc_lock);
@@ -96,7 +96,7 @@ void marcel_slot_exit(void)
 {
   while(stack_cache.last) {
     stack_cache.last--;
-    if(munmap(stack_cache.stacks[stack_cache.last], SLOT_SIZE) == -1)
+    if(munmap(stack_cache.stacks[stack_cache.last], THREAD_SLOT_SIZE) == -1)
       RAISE(CONSTRAINT_ERROR);
   }
 }

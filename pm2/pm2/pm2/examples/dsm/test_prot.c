@@ -82,7 +82,8 @@ static void DSM_func(void)
 
 int pm2_main(int argc, char **argv)
 {
-  int i, j, prot;
+  int i, j;
+  dsm_proto_t prot;
   dsm_lock_attr_t attr;
 
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);

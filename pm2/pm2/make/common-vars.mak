@@ -98,6 +98,10 @@ ifdef FLAVOR
 override PM2_CONFIG := $(PM2_CONFIG) --flavor=$(FLAVOR)
 endif
 
+# PM2_GEN_MAK -> script de génération des makefiles "accélérateurs"
+#---------------------------------------------------------------------
+PM2_GEN_MAK := $(PM2_ROOT)/bin/pm2-gen-make.sh $(FLAVOR)
+
 # GOALS pour lesquels on ne générera ni n'incluera les .mak
 #---------------------------------------------------------------------
 ifndef DO_NOT_GENERATE_MAK_FILES

@@ -1,3 +1,5 @@
+# -*- mode: makefile;-*-
+
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 # 
@@ -11,41 +13,49 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+all:
+
 ifndef FLAVOR_DEFAULT
 FLAVOR_DEFAULT := default
 endif
 
-include $(PM2_ROOT)/make/common-vars.mak
+# Pseudo module pour les applications/exemples
+#---------------------------------------------------------------------
+MODULE ?= $(strip $(if $(filter-out examples, $(notdir $(CURDIR))), \
+			examples-$(notdir $(CURDIR)), \
+			examples))
+GEN_SUBDIR ?= $(strip $(if $(filter-out examples, $(notdir $(CURDIR))), \
+			examples/$(notdir $(CURDIR)), \
+			examples))
 
-all:
+# Répertoire(s) contenant les sources
+#---------------------------------------------------------------------
+MOD_SRC ?= .
 
-SRC_DIR := $(CURDIR)
+# Variables communes pour produire du code
+#---------------------------------------------------------------------
+include $(PM2_ROOT)/make/objs-vars.mak
 
+# Inclusion du cache de configuration spécific des programmes
+#---------------------------------------------------------------------
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/apps-config.mak
+-include $(PM2_MAK_DIR)/$(MODULE)-specific.mak
 endif
 
-THIS_DIR := $(shell basename `pwd`)
-ifeq ($(THIS_DIR),examples)
-APP_BUILDDIR := $(APP_BUILDD)/examples
-else
-APP_BUILDDIR := $(APP_BUILDD)/examples/$(THIS_DIR)
-endif
+# Répertoire(s) contenant les sources
+#---------------------------------------------------------------------
+APPS_EXCLUDE += $(foreach file, $(MOD_BASE) $(APPS), \
+			$(basename $($(file)-objs)))
+APPS += $(foreach file, $(MOD_BASE), \
+			$(if $($(file)-objs), $(file)))
+APPS_LIST=$(if $(filter-out undefined, $(origin PROGS)), \
+		$(PROGS), \
+		$(sort $(APPS) $(filter-out $(APPS_EXCLUDE), $(MOD_BASE))))
 
-APP_BIN := $(APP_BUILDDIR)/bin
-APP_OBJ := $(APP_BUILDDIR)/obj
-APP_ASM := $(APP_BUILDDIR)/asm
-APP_DEP := $(APP_BUILDDIR)/dep
-APP_CPP := $(APP_BUILDDIR)/cpp
+# Type de cache à générer
+#---------------------------------------------------------------------
+PM2_GEN_MAK_OPTIONS += --type apps --subdir $(GEN_SUBDIR)
 
-# Sources, objets et dependances
-SOURCES :=  $(wildcard $(SRC_DIR)/*.c)
-OBJECTS :=  $(patsubst %.c,%$(APP_EXT).o,$(subst $(SRC_DIR),$(APP_OBJ),$(SOURCES)))
-DEPENDS :=  $(patsubst %.c,%$(APP_EXT).d,$(subst $(SRC_DIR),$(APP_DEP),$(SOURCES)))
-APPS = $(foreach PROG,$(PROGS),$(APP_BIN)/$(PROG)$(APP_EXT))
 
-# Convertisseurs utiles
-DEP_TO_OBJ =  $(APP_OBJ)/$(patsubst %.d,%.o,$(notdir $@))
-
-COMMON_DEPS += $(APP_STAMP_FLAVOR) $(APP_STAMP_FILES) $(MAKEFILE_FILE)
+#COMMON_DEPS += $(APP_STAMP_FLAVOR) $(APP_STAMP_FILES) $(MAKEFILE_FILE)
 

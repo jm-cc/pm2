@@ -1,4 +1,4 @@
-
+# -*- mode: makefile;-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -17,6 +17,13 @@
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/config.mak
 
+# MODULE -> module en cours de compilation
+#---------------------------------------------------------------------
+MODULE ?= $(notdir $(CURDIR))
+#$(if $(filter-out examples, $(notdir $(CURDIR))), \
+#		$(notdir $(CURDIR)), \
+#		$(notdir $(shell dirname $(CURDIR))))
+
 # FLAVOR -> flavor utilisee pour la compilation
 #---------------------------------------------------------------------
 ifndef FLAVOR
@@ -33,42 +40,84 @@ endif # FLAVOR
 
 # MAK_VERB -> niveau d'affichage des messages
 #---------------------------------------------------------------------
+# Préréglages standard
+
+#SHOW_FLAGS=true
+SHOW_FLAVOR=true
+
 ifeq ($(MAK_VERB),verbose)
-COMMON_BUILD   = @ printf "    building $(@F) due to:\n$(foreach file, $?,      * $(file)\n)";:
-COMMON_MAIN   :=#
-COMMON_PREFIX  =  echo "    building $(@F)";
-COMMON_HIDE   :=#
-COMMON_CLEAN  :=#
+SHOW_TARGET   := true
+SHOW_DEPEND   := true
+SHOW_MAIN     := true
+SHOW_HIDE     := true
+SHOW_CLEAN    := true
+SHOW_DIRECTORY:= true
 else
 ifeq ($(MAK_VERB),normal)
-COMMON_BUILD   =  @ echo "    building $(@F)";:
-COMMON_MAIN    =#
-COMMON_PREFIX  =#
-COMMON_HIDE   :=  @
-COMMON_CLEAN  :=#
+SHOW_TARGET   := true
+SHOW_DEPEND   := false
+SHOW_MAIN     := true
+SHOW_HIDE     := false
+SHOW_CLEAN    := true
+SHOW_DIRECTORY:= false
 else
 ifeq ($(MAK_VERB),quiet)
-COMMON_BUILD   =  @ echo "    building $(@F)";:
-COMMON_MAIN    =  $(COMMON_HIDE)
-COMMON_PREFIX  =  $(COMMON_BUILD);
-COMMON_HIDE   :=  @
-COMMON_CLEAN  :=#
+SHOW_TARGET   := true
+SHOW_DEPEND   := false
+SHOW_MAIN     := false
+SHOW_HIDE     := false
+SHOW_CLEAN    := true
+SHOW_DIRECTORY:= false
+else
+ifeq ($(MAK_VERB),depend)
+SHOW_TARGET   := true
+SHOW_DEPEND   := true
+SHOW_MAIN     := false
+SHOW_HIDE     := false
+SHOW_CLEAN    := true
+SHOW_DIRECTORY:= false
+else  # silent
+SHOW_TARGET   := false
+SHOW_DEPEND   := false
+SHOW_MAIN     := false
+SHOW_HIDE     := false
+SHOW_CLEAN    := false
+SHOW_DIRECTORY:= false
+endif
+endif
+endif
+endif
+# Constructions des messages en fonctions des variables SHOW_
+ifeq ($(SHOW_TARGET),true)
+ifeq ($(SHOW_DEPEND),true)
+show-depend    = $(EMPTY) due to:$(foreach file,$?,\n      * $(file))
+endif
+show-target    = @ printf "%s $(@F)$(show-depend)\n" $1;:
+else
+show-target    = @:
+endif
+COMMON_MAKE    = $(call show-target, "  Generating Makefile")
+COMMON_BUILD   = $(call show-target, "    building")
+COMMON_LINK    = $(call show-target, "    linking")
+ifeq ($(SHOW_MAIN),true)
+COMMON_MAIN    = #
+else
+COMMON_MAIN    = @
+endif
+ifeq ($(SHOW_HIDE),true)
+COMMON_HIDE    = #
+else
+COMMON_HIDE    = @
+endif
+ifeq ($(SHOW_CLEAN),true)
+COMMON_CLEAN   = #
+else
+COMMON_CLEAN   = @
+endif
+ifneq ($(SHOW_DIRECTORY),true)
 # Do not print directories enter/exit
 MAKEFLAGS += --no-print-directory
-else  # silent
-COMMON_BUILD   =  @:
-COMMON_MAIN    =  @
-COMMON_PREFIX  =  @
-COMMON_HIDE   :=  @
-COMMON_CLEAN  :=  @
 endif
-endif
-endif
-
-# Prefixes -> utilite ?
-#---------------------------------------------------------------------
-LIB_PREFIX = $(COMMON_PREFIX)
-PRG_PREFIX = $(COMMON_PREFIX)
 
 # COMMON_DEPS -> dependances racines
 # - config.mak contient les reglages du processus de contruction
@@ -80,17 +129,11 @@ COMMON_DEPS += $(PM2_ROOT)/make/config.mak
 ifndef PM2_CONFIG
 PM2_CONFIG := PM2_ROOT=$(PM2_ROOT) $(PM2_ROOT)/bin/pm2-config
 endif
-
-# Utilite de cette commande ?
-# Dans quel cas, FLAVOR n'est pas definie ?
-#---------------------------------------------------------------------
-ifdef FLAVOR
 override PM2_CONFIG := $(PM2_CONFIG) --flavor=$(FLAVOR)
-endif
 
 # PM2_GEN_MAK -> script de génération des makefiles "accélérateurs"
 #---------------------------------------------------------------------
-PM2_GEN_MAK := $(PM2_ROOT)/bin/pm2-gen-make.sh $(FLAVOR)
+PM2_GEN_MAK := $(PM2_ROOT)/bin/pm2-gen-make.sh --silent
 
 # GOALS pour lesquels on ne générera ni n'incluera les .mak
 #---------------------------------------------------------------------

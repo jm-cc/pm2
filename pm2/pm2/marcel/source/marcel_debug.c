@@ -26,6 +26,7 @@ debug_type_t marcel_trymdebug=NEW_DEBUG_TYPE(0, "MAR: ", "mar-tick");
 debug_type_t marcel_debug_state=NEW_DEBUG_TYPE(0, "MAR: ", "mar-state");
 debug_type_t marcel_debug_work=NEW_DEBUG_TYPE(0, "MAR: ", "mar-work");
 debug_type_t marcel_debug_deviate=NEW_DEBUG_TYPE(0, "MAR: ", "mar-deviate");
+debug_type_t marcel_mdebug_sched_q=NEW_DEBUG_TYPE(0, "MAR: ", "mar-mdebug-sched-q");
 
 #ifdef DEBUG_LOCK_TASK
 debug_type_t marcel_lock_task_debug=NEW_DEBUG_TYPE(0, "MAR: ", "mar-locktask");
@@ -66,6 +67,7 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	pm2debug_setup(&marcel_trymdebug, DEBUG_TRYONLY, 1);
 	pm2debug_register(&marcel_debug_work);
 	pm2debug_register(&marcel_debug_deviate);
+	pm2debug_register(&marcel_mdebug_sched_q);
 
 	pm2debug_register(&marcel_lock_task_debug);
 	pm2debug_setup(&marcel_lock_task_debug, DEBUG_SHOW_FILE, 1);

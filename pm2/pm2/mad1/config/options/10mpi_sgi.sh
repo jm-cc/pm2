@@ -1,4 +1,5 @@
 PM2_PROTOCOLS=mpi_sgi
+PM2_LOADER=${PM2_ROOT}/mad1/bin/mpi_sgi/madload
 PM2_MAD1_LIBS="$PM2_MAD1_LIBS -lmpi"
 PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -DNET_ARCH="'\"'mpi_sgi'\"'
 PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -DNETINTERF_INIT=mad_mpi_netinterf_init"

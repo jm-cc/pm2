@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.3  2000/03/13 09:48:38  oaumage
+- ajout de l'option TBX_SAFE_MALLOC
+- support de safe_malloc
+
 Revision 1.2  2000/03/01 11:03:45  oaumage
 - mise a jour des #includes ("")
 
@@ -52,6 +56,11 @@ ______________________________________________________________________________
 
 void tbx_init()
 {
+  /* Safe malloc */
+#ifdef TBX_SAFE_MALLOC
+  tbx_safe_malloc_init();
+#endif /* TBX_SAFE_MALLOC */
+
   /* Timer */
   tbx_timing_init();
 

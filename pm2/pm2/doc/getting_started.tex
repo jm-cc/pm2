@@ -161,7 +161,7 @@ The \pm2 distribution is organized as follows:
 \begin{figure}
 \begin{center}
 \begin{boxedminipage}{0.8\textwidth}
-\begin{small}
+\begin{footnotesize}
 \begin{listing}{0}
  #include <stdio.h>
  #include <pm2.h>
@@ -170,7 +170,7 @@ The \pm2 distribution is organized as follows:
  {
    pm2_init(&argc, argv);
 
-   print("Hello World !\n");
+   printf("Hello World !\n");
   
    if (pm2_self() == 0)
      pm2_halt();
@@ -179,7 +179,7 @@ The \pm2 distribution is organized as follows:
    return 0;
  }
 \end{listing}
-\end{small}
+\end{footnotesize}
 \end{boxedminipage}
 \end{center}
 \caption{Minimal \pm2 program\label{fig:ex1}}
@@ -219,16 +219,128 @@ step, the \pm2 session ends.
 
 %===========
 \subsection{Getting the output in the console}
+\begin{figure}
+\begin{center}
+\begin{boxedminipage}{0.8\textwidth}
+\begin{footnotesize}
+\begin{listing}{0}
+ #include <stdio.h>
+ #include <pm2.h>
+
+ int pm2_main(int argc, char **argv)
+ {
+   pm2_init(&argc, argv);
+
+   pm2_printf("Hello World !\n");
+  
+   if (pm2_self() == 0)
+     pm2_halt();
+  
+   pm2_exit();
+   return 0;
+ }
+\end{listing}
+\end{footnotesize}
+\end{boxedminipage}
+\end{center}
+\caption{Output redirection\label{fig:ex2}}
+\end{figure}
 
 %===========
 \subsection{Invoking a remote service}
 
 \subsubsection{Example}
+\begin{figure}
+\begin{center}
+\begin{boxedminipage}{0.8\textwidth}
+\begin{footnotesize}
+\begin{listing}{0}
+ #include <stdio.h>
+ #include <pm2.h>
+
+ static unsigned int service_id;
+
+ static void service(void)
+ {
+   pm2_rawrpc_waitdata();
+   printf("Hello, World!\n");
+ }
+
+ int pm2_main(int argc, char **argv)
+ {
+   pm2_rawrpc_register(&service_id, service)
+   pm2_init(&argc, argv);
+
+   if (pm2_self() == 0)
+     {
+       pm2_rawrpc_begin(1, service_id, NULL);
+       pm2_rawrpc_end();
+
+       pm2_halt();
+     }
+   pm2_exit();
+   return 0;
+ }
+\end{listing}
+\end{footnotesize}
+\end{boxedminipage}
+\end{center}
+\caption{Sample service\label{fig:ex3}}
+\end{figure}
 
 %===========
 \subsection{Passing parameters}
 
 \subsubsection{Example}
+\begin{figure}
+\begin{center}
+\begin{boxedminipage}{0.8\textwidth}
+\begin{footnotesize}
+\begin{listing}{0}
+#include <stdio.h>
+#include <pm2.h>
+
+static unsigned int service_id;
+
+static void service(void)
+{
+  int len;
+  char *s;
+
+  mad_unpack_int(mad_send_CHEAPER, mad_receive_EXPRESS, &len, 1);
+  s = malloc(len);
+  mad_unpack_char(mad_send_CHEAPER, mad_receive_CHEAPER, s, len);
+  pm2_rawrpc_waitdata();
+
+  printf("The sentence is %s\n", s);
+}
+
+int pm2_main(int argc, char **argv)
+{
+  pm2_rawrpc_register(&service_id, service)
+  pm2_init(&argc, argv);
+  if (pm2_self() == 0)
+    {
+      char s[] = "A la recherche du temps perdu.";
+      int len;
+
+      len = strlen(s) + 1;
+      pm2_rawrpc_begin(1, service_id, NULL);
+      mad_pack_int(mad_send_CHEAPER, mad_receive_EXPRESS, &len, 1);
+      mad_pack_char(mad_send_CHEAPER, mad_receive_CHEAPER, s, len);
+      pm2_rawrpc_end();
+
+      pm2_halt();
+    }
+  pm2_exit();
+  return 0;
+}
+\end{listing}
+\end{footnotesize}
+\end{boxedminipage}
+\end{center}
+\caption{Service with a string parameter\label{fig:ex4}}
+\end{figure}
 
 \subsubsection{Packing/unpacking API}
         pack\_int/pack\_byte
@@ -295,6 +407,9 @@ step, the \pm2 session ends.
 \end{document}
 _______________________________________________________________________________
 $Log: getting_started.tex,v $
+Revision 1.6  2000/01/14 17:16:00  oaumage
+- ajout des exemples 2, 3 et 4
+
 Revision 1.5  2000/01/14 16:06:15  oaumage
 - exemple minimal + texte
 

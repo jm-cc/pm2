@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.42  2000/11/20 17:17:45  oaumage
+- suppression de certains fprintf
+
 Revision 1.41  2000/11/20 14:40:29  rnamyst
 Fixed the '_argv' bug again. Thanks Olivier ;-)
 
@@ -705,9 +708,7 @@ mad_configuration_init(p_mad_madeleine_t   madeleine,
       fclose(f);
     }
 #ifdef EXTERNAL_SPAWN
-	  fprintf(stderr, "Configuration info exchange required\n");
 	  mad_exchange_configuration_info(madeleine);
-	  fprintf(stderr, "Configuration info exchange done\n");
 #else EXTERNAL_SPAWN
   else
     {

@@ -84,8 +84,10 @@ DSM_OBJ_TO_S	=	$(DSM_SRC)/$(patsubst %.o,%.s,$(notdir $@))
 .PHONY: dsm_default
 dsm_default: $(DSM_LIB)
 
+ifneq ($(MAKECMDGOALS),clean)
 ifeq ($(wildcard $(DSM_DEPENDS)),$(DSM_DEPENDS))
 include $(DSM_DEPENDS)
+endif
 endif
 
 $(DSM_OBJECTS): $(DSM_OBJ)/%.o: $(DSM_DEP)/%.d

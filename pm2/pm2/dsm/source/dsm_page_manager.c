@@ -270,25 +270,10 @@ void dsm_page_table_init(int my_rank, int confsize)
    *      one additional page assigned. (That is, the leftover pages
    *      are assigned one to a node starting with node 0, node 1, etc.)
    */
-  int chunk;
-  int split;
   int curOwner;
   int curCount;
-  int low;
-  int high;
 
   _dsm_global_vars_init(my_rank, confsize);
-
-  /* pjh */
-  /*  chunk = nb_static_dsm_pages / confsize;
-  split = nb_static_dsm_pages % confsize;
-  if (split == 0)
-  {
-    split = confsize;
-    chunk -= 1;
-    }*/
-
-  tprintf("nb_static_dsm_pages is %d\n", nb_static_dsm_pages);
 
   dsm_page_table = (dsm_page_table_t)tmalloc(nb_static_dsm_pages * sizeof(dsm_page_table_entry_t));
   if (dsm_page_table == NULL)
@@ -301,7 +286,6 @@ void dsm_page_table_init(int my_rank, int confsize)
 
   for (i = 0; i < nb_static_dsm_pages; i++)
     {
-      //      dsm_page_table[i].prob_owner = (dsm_node_t)curOwner; /* pjh */
       dsm_page_table[i].next_owner = (dsm_node_t)-1;
       fifo_init(&dsm_page_table[i].pending_req, 2 * dsm_nb_nodes - 1);
       if ((dsm_page_table[i].copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
@@ -313,76 +297,7 @@ void dsm_page_table_init(int my_rank, int confsize)
       marcel_sem_init(&dsm_page_table[i].sem, 0);
       dsm_page_table[i].size = DSM_PAGE_SIZE;
       dsm_page_table[i].addr = static_dsm_base_addr + DSM_PAGE_SIZE * i;
-#if 0
-      /* pjh */
-      if (curOwner == my_rank)
-      {
-        dsm_page_table[i].access = WRITE_ACCESS;
-      }
-      else
-      {
-        dsm_page_table[i].access = NO_ACCESS;
-      }
-
-      /* pjh */
-      curCount++;
-      if (curOwner < split)
-      {
-        if (curCount == chunk+1)
-        {
-          curOwner++;
-          curCount = 0;
-        }
-      }
-      else
-      {
-        if (curCount == chunk)
-        {
-          curOwner++;
-          curCount = 0;
-        }
-      }
-#endif
     }
-/* pjh: don't want this */
-#if 0
-  /* Specific initializations for master/slaves */
-  if (dsm_local_node_rank == 1)
-      for (i = 0; i < nb_static_dsm_pages; i++)
-	{
-	  dsm_page_table[i].access = WRITE_ACCESS;
-	  dsm_set_write_access();
-	}
-  else
-      for (i = 0; i < nb_static_dsm_pages; i++)
-	{
-	  dsm_page_table[i].access = NO_ACCESS; 
-	  dsm_set_no_access();
-	}
-
-
-/* pjh: first mark all pages as "no access"
- *      then mark my chunk as "write access"
- */
-  dsm_set_no_access();
-
-  /* what are the bounds on my chunk? */
-  if (my_rank < split)
-  {
-    low = (my_rank * (chunk + 1));
-    high = low + (chunk + 1);
-  }
-  else
-  {
-    low = (split * (chunk + 1)) + ((my_rank - split) * chunk);
-    high = low + chunk;
-  }
-
-  mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
-           (high - low + 1) * DSM_PAGE_SIZE,
-
-           PROT_READ|PROT_WRITE);
-#endif
   dsm_page_ownership_init();
 }
 

@@ -35,7 +35,7 @@ extern marcel_exception_t
                        marcel_t __cur = marcel_self(); \
                        _excep_blk.old_blk=__cur->cur_excep_blk; \
                        __cur->cur_excep_blk=&_excep_blk; \
-                       if (setjmp(_excep_blk.jb) == 0) {
+                       if (marcel_ctx_setjmp(_excep_blk.ctx) == 0) {
 #define EXCEPTION      __cur->cur_excep_blk=_excep_blk.old_blk; } \
                        else { __cur->cur_excep_blk=_excep_blk.old_blk; \
                        if(always_false) {
@@ -57,10 +57,10 @@ extern marcel_exception_t
 	int _##name##_val; \
 	_##name##_excep_blk.old_blk=marcel_self()->cur_excep_blk; \
 	marcel_self()->cur_excep_blk=&_##name##_excep_blk; \
-	if ((_##name##_val = setjmp(_##name##_excep_blk.jb)) == 0) { \
+	if ((_##name##_val = marcel_ctx_setjmp(_##name##_excep_blk.ctx)) == 0) { \
 	while(!always_false) {
 
-#define EXIT_LOOP(name) longjmp(_##name##_excep_blk.jb, 2)
+#define EXIT_LOOP(name) marcel_ctx_longjmp(_##name##_excep_blk.ctx, 2)
 
 #define END_LOOP(name) } } \
 	marcel_self()->cur_excep_blk=_##name##_excep_blk.old_blk; \

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.14  2000/03/02 15:46:04  oaumage
+- support du polling Nexus
+
+Revision 1.13  2000/03/02 14:51:24  oaumage
+- indication du nom du protocole dans la structure driver
+
 Revision 1.12  2000/02/28 11:06:37  rnamyst
 Changed #include "" into #include <>.
 
@@ -304,6 +310,9 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
   interface->new_message                = NULL;
+#ifdef MAD_NEXUS
+  interface->poll_message            = mad_tcp_poll_message;
+#endif /* MAD_NEXUS */
   interface->receive_message            = mad_tcp_receive_message;
   interface->send_buffer                = mad_tcp_send_buffer;
   interface->receive_buffer             = mad_tcp_receive_buffer;
@@ -327,6 +336,10 @@ mad_tcp_driver_init(p_mad_driver_t driver)
   CTRL_ALLOC(driver_specific);
   driver->specific = driver_specific;
   driver_specific->nb_adapter = 0;
+  
+  driver->name = malloc(4);
+  CTRL_ALLOC(driver->name);
+  strcpy(driver->name, "tcp");
   LOG_OUT();
 }
 
@@ -648,13 +661,84 @@ mad_tcp_adapter_exit(p_mad_adapter_t adapter)
   LOG_OUT();
 }
 
+#ifdef MAD_NEXUS
+p_mad_connection_t
+mad_tcp_poll_message(p_mad_channel_t channel)
+{
+  p_mad_configuration_t configuration    = 
+    &(channel->adapter->driver->madeleine->configuration);
+  p_mad_tcp_channel_specific_t channel_specific = channel->specific;
+  fd_set rfds;
+  int n;
+  int i;
+
+  do
+    {
+      struct timeval timeout;
+      rfds = channel_specific->read_fds;
+#ifdef PM2
+#ifdef USE_MARCEL_POLL
+      n = marcel_select(channel_specific->max_fds + 1, &rfds, NULL);
+	      
+#else /* USE_MARCEL_POLL */
+      n = tselect(channel_specific->max_fds + 1, &rfds, NULL, NULL);
+      if(n == 0)
+	{
+	  return NULL;
+	}
+      else if (n < 0)
+	{
+	  PM2_YIELD();
+	}
+#endif /* USE_MARCEL_POLL */  
+#else /* PM2 */
+      timeout.tv_sec  = 0;
+      timeout.tv_usec = 0;
+		
+      n = select(channel_specific->max_fds + 1,
+		 &rfds,
+		 NULL,
+		 NULL,
+		 &timeout);
+      if (!n)
+	{
+	  LOG_OUT();
+	  return NULL;
+	}
+#endif /* PM2 */
+    }
+  while(n < 0);
+
+  for (i = 0;
+       i < configuration->size;
+       i++)
+    {
+      p_mad_tcp_connection_specific_t connection_specific
+	= channel->input_connection[i].specific;
+	  
+      if (i == configuration->local_host_id)
+	{
+	  continue;
+	}
+	  
+      if (FD_ISSET(connection_specific->socket, &rfds))
+	{
+	  break;
+	}
+    }
+
+  LOG_OUT();
+  return &(channel->input_connection[i]);
+}
+#endif /* MAD_NEXUS */
+
 p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t channel)
 {
   p_mad_configuration_t configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
 
-#ifndef PM2
+#if !defined(PM2) && !defined(MAD_NEXUS)
   LOG_IN();
   if (configuration->size == 2)
     {
@@ -663,7 +747,7 @@ mad_tcp_receive_message(p_mad_channel_t channel)
 	       input_connection[1 - configuration->local_host_id]);
     }
   else
-#endif /* PM2 */
+#endif /* PM2/MAD_NEXUS */
     {
       p_mad_tcp_channel_specific_t channel_specific = channel->specific;
       fd_set rfds;

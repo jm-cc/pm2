@@ -119,6 +119,23 @@
     }                                                            \
   } while(0)
 
+#define PROF_THREAD_BIRTH(thr)                                      \
+ do {                                                               \
+   if(__pm2_profile_active) {                                       \
+      fut_header((((unsigned int)(FUT_THREAD_BIRTH_CODE))<<8) | 16, \
+                 (unsigned int)(thr));                              \
+   }                                                                \
+ } while(0)
+
+#define PROF_THREAD_DEATH(thr)                                      \
+ do {                                                               \
+   if(__pm2_profile_active) {                                       \
+      fut_header((((unsigned int)(FUT_THREAD_DEATH_CODE))<<8) | 16, \
+                 (unsigned int)(thr));                              \
+   }                                                                \
+ } while(0)
+
+
 void profile_init(void);
 
 void profile_set_tracefile(char *fmt, ...);
@@ -137,6 +154,8 @@ extern volatile unsigned __pm2_profile_active;
 
 #define PROF_SWITCH_TO(thr1, thr2)   (void)0
 #define PROF_NEW_LWP(pid, num, thr)  (void)0
+#define PROF_THREAD_BIRTH(thr)       (void)0
+#define PROF_THREAD_DEATH(thr)       (void)0
 
 #define PROF_IN()                    (void)0
 #define PROF_OUT()                   (void)0

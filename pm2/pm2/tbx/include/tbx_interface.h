@@ -57,6 +57,9 @@ tbx_default_specific_dest(void *specific);
 void
 tbx_timing_init(void);
 
+void
+tbx_timing_exit(void);
+
 double
 tbx_tick2usec(long long t);
 
@@ -543,50 +546,61 @@ p_tbx_string_t
 tbx_string_init_to_int(const int data);
 
 void
+tbx_string_append_uint(p_tbx_string_t     string,
+		       const unsigned int data);
+
+void
+tbx_string_set_to_uint(p_tbx_string_t     string,
+		       const unsigned int data);
+
+p_tbx_string_t
+tbx_string_init_to_uint(const unsigned int data);
+
+void
 tbx_string_reverse(p_tbx_string_t string);
 
 void
 tbx_string_set_to_string(p_tbx_string_t dst_string,
-			 const p_tbx_string_t srcstring);
+			 const p_tbx_string_t src_string);
 
 void
 tbx_string_set_to_string_and_free(p_tbx_string_t dst_string,
-				  p_tbx_string_t srcstring);
+				  p_tbx_string_t src_string);
 void
 tbx_string_append_string(p_tbx_string_t dst_string,
-			 const p_tbx_string_t srcstring);
+			 const p_tbx_string_t src_string);
 
 void
 tbx_string_append_string_and_free(p_tbx_string_t dst_string,
-				  p_tbx_string_t srcstring);
+				  p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_init_to_string(const p_tbx_string_t srcstring);
+tbx_string_init_to_string(const p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_dup(p_tbx_string_t srcstring);
+tbx_string_dup(p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_init_to_string_and_free(p_tbx_string_t srcstring);
+tbx_string_init_to_string_and_free(p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_double_quote(const p_tbx_string_t srcstring);
+tbx_string_double_quote(const p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_double_quote_and_free(p_tbx_string_t srcstring);
+tbx_string_double_quote_and_free(p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_single_quote(const p_tbx_string_t srcstring);
+tbx_string_single_quote(const p_tbx_string_t src_string);
 
 p_tbx_string_t
-tbx_string_single_quote_free(p_tbx_string_t srcstring);
+tbx_string_single_quote_free(p_tbx_string_t src_string);
 
 p_tbx_slist_t
-tbx_string_split(const p_tbx_string_t  srcstring,
+tbx_string_split(const p_tbx_string_t  src_string,
 		 const char           *IFS);
 
 p_tbx_slist_t
-tbx_string_split_and_free(p_tbx_string_t  srcstring,
+tbx_string_split_and_free(p_tbx_string_t  src_string,
 			  const char     *IFS);
 
 p_tbx_string_t

@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.19  2000/03/15 09:59:39  oaumage
+- renommage du polling Nexus
+
 Revision 1.18  2000/03/08 17:19:36  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -515,9 +518,9 @@ mad_sisci_register(p_mad_driver_t driver)
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
   interface->new_message                = NULL;
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
   interface->poll_message            = mad_sisci_poll_message;
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
   interface->receive_message            = mad_sisci_receive_message;
   interface->send_buffer                = mad_sisci_send_buffer;
   interface->receive_buffer             = mad_sisci_receive_buffer;
@@ -1678,7 +1681,7 @@ mad_sisci_adapter_exit(p_mad_adapter_t adapter)
   LOG_OUT();
 }
 
-#ifdef MAD_NEXUS
+#ifdef MAD_MESSAGE_POLLING
 p_mad_connection_t 
 mad_sisci_poll_message(p_mad_channel_t channel)
 {
@@ -1738,7 +1741,7 @@ mad_sisci_poll_message(p_mad_channel_t channel)
 
   return NULL;
 }
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
 p_mad_connection_t 
 mad_sisci_receive_message(p_mad_channel_t channel)
@@ -1755,14 +1758,14 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 	 ntbx_host_id_t                     remote_host_id;
 	 
   LOG_IN();
-#ifndef MAD_NEXUS
+#ifndef MAD_MESSAGE_POLLING
   if (configuration->size == 2)
     {
       LOG_VAL("channel", channel->id);
       LOG_OUT();
       return &channel->input_connection[1 - rank];
     }
-#endif /* MAD_NEXUS */
+#endif /* MAD_MESSAGE_POLLING */
 
   while(tbx_true)
     {     

@@ -203,10 +203,10 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 
   if (tbx_flag_is_clear(&host_ok))
     FAILURE("Leonie server host name unspecified");
-  
+
   if (tbx_flag_is_clear(&port_ok))
     FAILURE("Leonie server port unspecified");
-  
+
   LOG_OUT();
 }
 

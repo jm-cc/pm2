@@ -41,7 +41,10 @@ DUMMY_BUILD :=  $(shell mkdir -p $(APP_OBJ))
 DUMMY_BUILD :=  $(shell mkdir -p $(APP_ASM))
 DUMMY_BUILD :=  $(shell mkdir -p $(APP_DEP))
 DUMMY_BUILD :=  $(shell mkdir -p $(APP_STAMP))
-include $(wildcard $(DEPENDS))
+ifeq ($(wildcard $(DEPENDS)),$(DEPENDS))
+include $(DEPENDS)
+endif
+#include $(wildcard $(DEPENDS))
 
 examples: $(APPS)
 .PHONY: examples
@@ -72,11 +75,11 @@ $(APP_BIN)/%: $(APP_OBJ)/%.o
 else 
 
 MAKE_LIBS = for module in $(PM2_MODULES); do \
-		$(MAKE) -C $(PM2_ROOT)/$$module ; \
+		$(MAKE) -C $(PM2_ROOT)/modules/$$module ; \
 	    done
 
 examples:
-.PHONY: examples
+.PHONY: examples $(APPS)
 
 include $(PM2_ROOT)/make/common-rules.mak
 

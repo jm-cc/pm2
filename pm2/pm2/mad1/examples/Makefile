@@ -34,49 +34,16 @@
 #
 
 
-include ../make/common.mak
-
+.PHONY: default all
 default: all
 
-all: simple token ping multiping
+MAD_EX_DIR	:=	.
 
+include ../Makefile
 
-# simple :
+# MAD_CFLAGS	+=	-g
 
-$(MAD_OBJ)/simple.o: simple.c $(MAD_HEADERS)
-	$(MAD_CC2)
-
-simple: $(MAD_OBJ)/simple.o $(MAD_LIB)
-	$(MAD_LINK) $(MAD_LLIB)
-	$(MAD_MOVE)
-
-
-# token :
-
-$(MAD_OBJ)/token.o: token.c $(MAD_HEADERS)
-	$(MAD_CC2)
-
-token: $(MAD_OBJ)/token.o $(MAD_LIB)
-	$(MAD_LINK) $(MAD_LLIB)
-	$(MAD_MOVE)
-
-
-# pong :
-
-$(MAD_OBJ)/pong.o: pong.c $(MAD_HEADERS)
-	$(MAD_CC2)
-
-pong: $(MAD_OBJ)/pong.o $(MAD_LIB)
-	$(MAD_LINK) $(MAD_LLIB)
-	$(MAD_MOVE)
-
-
-# multiping :
-
-$(MAD_OBJ)/multiping.o: multiping.c $(MAD_HEADERS)
-	$(MAD_CC2)
-
-multiping: $(MAD_OBJ)/multiping.o $(MAD_LIB)
-	$(MAD_LINK) $(MAD_LLIB)
-	$(MAD_MOVE)
-
+all:	$(BIN_DIR)/simple	\
+	$(BIN_DIR)/token	\
+	$(BIN_DIR)/ping		\
+	$(BIN_DIR)/multiping

@@ -92,6 +92,9 @@ mad_bip_choice(p_mad_connection_t,
 void
 mad_bip_new_message(p_mad_connection_t);
 
+void
+mad_bip_finalize_message(p_mad_connection_t);
+
 p_mad_connection_t 
 mad_bip_poll_message(p_mad_channel_t);
 

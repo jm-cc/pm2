@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.25 2002/10/31 17:50:23 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.26 2002/11/07 15:37:42 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -75,11 +75,11 @@ typedef enum
 } lock_status_t;
 
 /* linked list of nodes */
-typedef struct node_list_struct node_list_elem_t;
+typedef struct node_list_struct node_elem_t;
 struct node_list_struct
 {
    dsm_node_t node;         /* node number */
-   node_list_elem_t * next; /* next element of the linked list */
+   node_elem_t * next; /* next element of the linked list */
 };
 
 /* linked list of locks */
@@ -128,16 +128,16 @@ struct lock_list_struct
     * local cluster) */
    int expected_remote_release;
 
-   /* number of release signals expected from other threads of this
+   /* number of release signals expected from the threads of this
     * process */
    int expected_local_release;
 
    /* list of nodes (in the local cluster) which were granted the lock
     * token while releases were expected (lock partially granted) and
     * to which I must send a release notification. */
-   node_list_elem_t * notif_list;
+   node_elem_t * notif_list;
    /* pointer to the last element of the previous linked list */
-   node_list_elem_t * end_of_notif_list;
+   node_elem_t * end_of_notif_list;
 
    /* number of times a lock was granted to a thread in the local
     * process while some other requesting node in a local cluster was
@@ -258,15 +258,15 @@ seek_lock_in_hash (const token_lock_id_t lck_id)
  * lock gets fully released.  The lock entry is assumed to be
  * locked.  The node must be added at the end of the list. */
 static void
-insert_into_node_list (node_list_elem_t ** list,
-                       node_list_elem_t ** end_of_list, const dsm_node_t node)
+insert_into_node_list (node_elem_t ** list, node_elem_t ** end_of_list,
+                       const dsm_node_t node)
 {
-   node_list_elem_t * elem;
+   node_elem_t * elem;
 
    IN;
    TRACE("add node %d to list", node);
 
-   elem = (node_list_elem_t *) tmalloc (sizeof(node_list_elem_t));
+   elem = (node_elem_t *) tmalloc (sizeof(node_elem_t));
    if ( elem == NULL )
    {
       perror(__FUNCTION__);
@@ -366,7 +366,7 @@ grant_lock (const dsm_node_t to_node, lock_list_elem_t * const lck_elem)
 static void
 send_release_notification (lock_list_elem_t * const lck_elem)
 {
-   node_list_elem_t * const save = lck_elem->notif_list;
+   node_elem_t * const save = lck_elem->notif_list;
 
    IN;
    assert ( lck_elem != NULL );
@@ -630,8 +630,8 @@ grant_lock_if_possible (lock_list_elem_t * const lck_elem,
       assert ( destination == LOCAL_CLUSTER || destination == REMOTE_CLUSTER );
       assert ( lck_elem->local_next_owner == NOBODY );
       assert ( lck_elem->remote_next_owner == NOBODY );
-
       assert ( lck_elem->status == UNKNOWN );
+
       if ( lck_elem->just_granted == SL_TRUE )
       {
          lck_elem->just_granted = SL_FALSE;
@@ -1020,6 +1020,7 @@ lock_manager_server_func (void * const unused)
       }
       else
       {
+         assert ( requester != lck_elem->last_requester[requester_clr] );
          send_lock_request(lck_elem->last_requester[requester_clr], requester,
                            lck_id);
          lck_elem->last_requester[requester_clr] = requester;
@@ -1083,7 +1084,7 @@ token_lock_finalization (void)
       while ( lck_list != NULL )
       {
          lock_list_elem_t * const save = lck_list;
-         node_list_elem_t * lst;
+         node_elem_t * lst;
 
          lck_list = save->next;
          marcel_cond_destroy(&(save->token_available));
@@ -1093,13 +1094,14 @@ token_lock_finalization (void)
          lst = save->notif_list;
          while ( lst != NULL )
          {
-            node_list_elem_t * l = lst->next;
+            node_elem_t * const l = lst->next;
 
             lst = lst->next;
             tfree(l);
          }
          tfree(save);
       }
+      lock_hash[i] = NULL;
    }
 
    local_lock_number = 0;
@@ -1122,15 +1124,13 @@ token_lock_init (token_lock_id_t * const lck_id)
     * than pm2_self(), do an RPC onto the other node (wanted as the
     * owner) to get a lock_id */
    {
-      token_lock_id_t local_id;
       lock_list_elem_t * lck_elem;
 
       /* initialize this new lock data structure */
       /* the local node can only deliver lock_id's which are congruent
        * to "pm2_self()" modulo "pm2_config_size()"... */
       marcel_mutex_lock(&lock_mutex);
-      local_id = local_lock_number;
-      *lck_id = local_to_global_lock_id(local_id);
+      *lck_id = local_to_global_lock_id(local_lock_number);
       lck_elem = seek_lock_in_hash(*lck_id);
       if ( lck_elem == NULL )
          lck_elem = create_lock_entry(*lck_id);
@@ -1209,8 +1209,7 @@ token_lock (const token_lock_id_t lck_id)
    /* reserve the lock locally so that the token could not be passed
     * to another process */
    lck_elem->reservation++;
-   if ( lck_elem->requested == SL_FALSE &&
-        lck_elem->status != LOCALLY_PRESENT )
+   if ( lck_elem->requested == SL_FALSE && lck_elem->status != LOCALLY_PRESENT )
    {
       request_tag_t tag;
 

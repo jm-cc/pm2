@@ -18,6 +18,8 @@
 no_goal:
 	$(MAKE) -C $(PM2_ROOT)
 
+.DELETE_ON_ERROR:
+
 # Affichage en fonction des options 
 #---------------------------------------------------------------------
 ifdef SHOW_FLAVOR

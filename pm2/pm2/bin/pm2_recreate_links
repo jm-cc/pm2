@@ -77,7 +77,7 @@ make_ln ${PM2_ROOT}/modules ../dsm dsm
 make_ln ${PM2_ROOT}/modules ../generic generic
 make_ln ${PM2_ROOT}/modules ../leonie leonie
 make_ln ${PM2_ROOT}/modules ../leoparse leoparse
-make_ln ${PM2_ROOT}/modules ../mad1 mad1
+#make_ln ${PM2_ROOT}/modules ../mad1 mad1
 make_ln ${PM2_ROOT}/modules ../mad2 mad2
 make_ln ${PM2_ROOT}/modules ../marcel marcel
 make_ln ${PM2_ROOT}/modules ../ntbx ntbx
@@ -94,26 +94,17 @@ make_ln ${PM2_ROOT}/modules ../swann swann
 # Marcel
 echo
 echo Marcel
-make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${MARCEL_ROOT}/include/sys/ ../../../pm2/include/sys/isomalloc_archdep.h isomalloc_archdep.h
-make_ln ${MARCEL_ROOT}/include/ ../../pm2/include/timing.h timing.h
-make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/safe_malloc.c safe_malloc.c
-make_ln ${MARCEL_ROOT}/source/ ../../pm2/source/timing.c timing.c
 
 # Mad I
 echo
 echo Madeleine I
 make_ln ${MAD1_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
-make_ln ${MAD1_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
-make_ln ${MAD1_ROOT}/include/sys/ ../../../pm2/include/sys/debug.h debug.h
-make_ln ${MAD1_ROOT}/include/ ../../pm2/include/timing.h timing.h
 make_ln ${MAD1_ROOT}/source/ mpi mpi_bip
 make_ln ${MAD1_ROOT}/source/ mpi mpi_lam
 make_ln ${MAD1_ROOT}/source/ mpi mpi_sgi
 make_ln ${MAD1_ROOT}/source/ mpi mpi_sp2
-make_ln ${MAD1_ROOT}/source/ ../../pm2/source/safe_malloc.c safe_malloc.c
-make_ln ${MAD1_ROOT}/source/ ../../pm2/source/timing.c timing.c
 make_ln ${MAD1_ROOT}/source/via/ via2.c netinterf.c
 
 # Mad II
@@ -124,8 +115,6 @@ make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 # DSM
 echo
 echo DSM
-make_ln ${DSM_ROOT}/include/ ../../pm2/include/timing.h timing.h
-make_ln ${DSM_ROOT}/include/ ../../pm2/include/safe_malloc.h safe_malloc.h
 make_ln ${DSM_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 
 # Fabrication des catégories d'options

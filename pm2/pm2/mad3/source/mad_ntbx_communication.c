@@ -436,6 +436,14 @@ mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 }
 
 void
+mad_leonie_command_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
+{
+  LOG_IN();
+  TBX_FREE(mad_print_buffer);
+  LOG_OUT();
+}
+
+void
 mad_leonie_print(char *fmt, ...)
 {
   va_list ap;

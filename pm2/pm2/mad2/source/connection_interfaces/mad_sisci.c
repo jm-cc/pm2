@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.36  2000/08/29 13:27:11  rnamyst
+Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
+
 Revision 1.35  2000/06/13 16:08:10  oaumage
 - Correction de l'affichage des messages d'erreur de SISCI
 
@@ -573,7 +576,9 @@ mad_sisci_do_poll(p_mad_sisci_marcel_poll_cell_arg_t info)
   return 0;
 }
 
-static void* mad_sisci_marcel_fast_poll(marcel_pollid_t id, any_t arg)
+static void* mad_sisci_marcel_fast_poll(marcel_pollid_t id,
+					any_t arg,
+					boolean first_call)
 {
   LOG_IN();
   if (mad_sisci_do_poll((p_mad_sisci_marcel_poll_cell_arg_t) arg)) {

@@ -35,7 +35,7 @@ marcel_attr_t marcel_attr_default = {
   .rt_thread= MARCEL_CLASS_REGULAR,
   .vpmask= MARCEL_VPMASK_EMPTY,
   .flags= 0,
-  .name= "run_task",
+  .name= "user_task",
 };
 
 /* Déclaré dans marcel.c : */

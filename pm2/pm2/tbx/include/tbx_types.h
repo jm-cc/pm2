@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: tbx_types.h,v $
+Revision 1.4  2000/10/30 14:21:00  oaumage
+- correction du support Alpha pour MadII au niveau de la toolbox
+  (safe_malloc)
+- correction de pm2logs pour mad2
+
 Revision 1.3  2000/09/05 13:58:54  oaumage
 - quelques corrections et reorganisations dans le support des types
   structures
@@ -91,6 +96,11 @@ typedef enum
   tbx_cmp_lt = -1   /*  < */
 } tbx_cmp_t, *p_tbx_cmp_t;
 
+/*
+ * Safe malloc related types
+ * :::::::::::::::::::::::::__________________________________________________
+ */
+typedef unsigned long tbx_align_t, *p_tbx_align_t;
 
 /*
  * List management related types 

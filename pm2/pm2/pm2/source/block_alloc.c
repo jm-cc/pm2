@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: block_alloc.c,v $
+Revision 1.5  2000/02/28 11:16:57  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.4  2000/02/01 17:28:43  rnamyst
 Minor modifications.
 
@@ -54,12 +57,10 @@ ______________________________________________________________________________
 #include <sys/mman.h>
 #include <assert.h>
 
-#include <marcel.h>
-#include <sys/archdep.h>
-#include  <pm2_mad.h>
-
-#include <isomalloc_timing.h>
-
+#include "marcel.h"
+#include "sys/archdep.h"
+#include "pm2_mad.h"
+#include "isomalloc_timing.h"
 #include "block_alloc.h"
 #include "magic.h"
 

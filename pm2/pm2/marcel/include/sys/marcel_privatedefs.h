@@ -20,6 +20,7 @@
 #include "sys/marcel_flags.h"
 #include "sys/isomalloc_archdep.h"
 #include "sys/marcel_kthread.h"
+#include "sys/marcel_deviate.h"
 #include "pm2_list.h"
 #include "marcel_exception.h"
 
@@ -81,22 +82,22 @@ _PRIVATE_ typedef struct task_desc_struct {
   marcel_vpmask_t vpmask; // Contraintes sur le placement sur les LWP
   int special_flags; // utilisé pour marquer les task idle, upcall, idle, ...
   task_state state;
+#if defined(MA__LWPS)
+  struct __lwp_struct *previous_lwp;
+#endif
 #ifdef MA__WORK
   volatile unsigned has_work;
 #endif
   jmp_buf jbuf;
-#if defined(MA__LWPS)
-  struct __lwp_struct *previous_lwp;
-#endif
+  deviate_record_t *deviate_work;
   int sched_policy;
   jmp_buf migr_jb;
   marcel_t child, father;
   _exception_block *cur_excep_blk;
   marcel_sem_t client, thread;
   cleanup_func_t cleanup_funcs[MAX_CLEANUP_FUNCS];
-  handler_func_t deviation_func;
   marcel_func_t f_to_call;
-  any_t ret_val, arg, deviation_arg,
+  any_t ret_val, arg,
     cleanup_args[MAX_CLEANUP_FUNCS],
     key[MAX_KEY_SPECIFIC],
     private_val, stack_base;
@@ -107,6 +108,7 @@ _PRIVATE_ typedef struct task_desc_struct {
   unsigned exline, not_migratable, 
     not_deviatable, next_cleanup_func;
   boolean detached, static_stack;
+  marcel_sem_t suspend_sem;
 #ifdef ENABLE_STACK_JUMPING
   void *dummy; // Doit rester le _dernier_ champ
 #endif

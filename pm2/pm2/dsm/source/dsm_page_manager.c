@@ -729,7 +729,7 @@ void dsm_set_next_owner(dsm_page_index_t index, dsm_node_t next)
 
 void dsm_clear_next_owner(dsm_page_index_t index)
 {
-  dsm_page_table[index]->next_owner = NO_NODE;
+  dsm_page_table[index]->next_owner = NOBODY;
 #ifdef DSM_TABLE_TRACE
   fprintf(stderr, "cleared next owner (%ld): %d\n", index, dsm_page_table[index]->next_owner);
 #endif
@@ -761,7 +761,7 @@ dsm_node_t dsm_get_next_pending_request(dsm_page_index_t index)
 
 boolean dsm_next_owner_is_set(dsm_page_index_t index)
 {
-  return (dsm_page_table[index]->next_owner != NO_NODE);
+  return (dsm_page_table[index]->next_owner != NOBODY);
 }
 
 
@@ -966,7 +966,7 @@ dsm_node_t dsm_get_next_from_copyset(dsm_page_index_t index)
       return dsm_page_table[index]->copyset[*copyset_size];
     }
   else
-    return NO_NODE;
+    return NOBODY;
 }
 
 

@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.15  2000/11/20 17:17:44  oaumage
+- suppression de certains fprintf
+
+Revision 1.14  2000/11/20 16:57:21  oaumage
+- correction d'une faute de frappe
+
 Revision 1.13  2000/11/20 10:26:45  oaumage
 - initialisation, nouvelle version
 
@@ -116,168 +122,6 @@ ______________________________________________________________________________
  * Initialisation des drivers
  * --------------------------
  */
-/*
-static void 
-mad_driver_init(p_mad_madeleine_t madeleine)
-{
-  mad_driver_id_t drv;
-    
-  LOG_IN();
-  for (drv = 0;
-       drv < madeleine->nb_driver;
-       drv++)
-    {
-      p_mad_driver_t driver;
-      
-      if (drv == EXTERNAL_SPAWN)
-	continue;
-      driver = &(madeleine->driver[drv]);      
-      driver->specific = NULL;
-      driver->interface.driver_init(driver);
-    }
-  LOG_OUT();
-}
-
-static void
-mad_connect_hosts(p_mad_madeleine_t   madeleine)
-{
-  p_mad_driver_interface_t spawn_interface;
-  p_mad_adapter_t          spawn_adapter;
-  mad_adapter_id_t ad;
-  ntbx_host_id_t rank;
-
-  LOG_IN();
-  spawn_adapter   = &(madeleine->adapter[0]);
-  spawn_interface = &(madeleine->driver[EXTERNAL_SPAWN].interface);
-  rank            = madeleine->configuration.local_host_id;
-
-  for (ad = 1;
-       ad < madeleine->nb_adapter;
-       ad++)
-    {
-      p_mad_adapter_t adapter;
-      
-      adapter = &(madeleine->adapter[ad]);
-      adapter->specific = NULL;      
-
-      if (adapter->driver->interface.adapter_init)
-	adapter->driver->interface.adapter_init(adapter);
-      if (!rank)
-	{
-	  ntbx_host_id_t host_id;
-
-	  for (host_id = 1;
-	       host_id < madeleine->configuration.size;
-	       host_id++)
-	    {
-	      spawn_interface->send_adapter_parameter(spawn_adapter,
-						      host_id,
-						      adapter->parameter);
-	    }
-	}
-      else
-	{
-	  spawn_interface->receive_adapter_parameter(spawn_adapter,
-						     &(adapter->
-						       master_parameter));
-	}
-      if (adapter->driver->interface.adapter_configuration_init)
-	adapter->driver->interface.adapter_configuration_init(adapter);
-    }
-  LOG_OUT();
-}
-*/
-
-/*
-#ifdef PM2
-p_mad_madeleine_t
-mad2_init(int                  *argc,
-	  char                **argv,
-	  char                 *configuration_file TBX_UNUSED,
-	  p_mad_adapter_set_t   adapter_set)
-#else
-p_mad_madeleine_t
-mad_init(
-	 int                   *argc,
-	 char                 **argv,
-	 char                  *configuration_file TBX_UNUSED,
-	 p_mad_adapter_set_t    adapter_set
-	 )
-#endif
-{
-  p_mad_madeleine_t          madeleine       = &(main_madeleine);
-  p_mad_configuration_t      configuration   =
-    &(madeleine->configuration);
-  ntbx_host_id_t             rank            = -1;
-  tbx_bool_t                 master          = tbx_false;
-  tbx_bool_t                 slave           = tbx_false;
-  p_mad_driver_t             spawn_driver    = NULL;
-  p_mad_driver_interface_t   spawn_interface = NULL;
-  p_mad_adapter_t            spawn_adapter   = NULL;
-
-  mad_managers_init(argc, argv);
-  LOG_IN();  
-  
-  madeleine->nb_channel = 0;
-  TBX_INIT_SHARED(madeleine);
-  mad_managers_init(argc, argv);
-  mad_driver_fill(madeleine);
-  mad_adapter_fill(madeleine, adapter_set);  
-
-  spawn_driver = &(madeleine->driver[EXTERNAL_SPAWN]);
-  spawn_interface = &(madeleine->driver[EXTERNAL_SPAWN].interface);
-  spawn_driver->specific = NULL;
-  spawn_interface->driver_init(spawn_driver);
-  if (adapter_set)
-    {
-      spawn_adapter = &(madeleine->adapter[0]);
-    }
-  else
-    {
-      spawn_adapter = &(madeleine->adapter[EXTERNAL_SPAWN]);
-    }  
-  spawn_adapter->specific = NULL;
-  mad_driver_init(madeleine);
-  if (spawn_interface->adapter_init)
-    spawn_interface->adapter_init(spawn_adapter);
-  if (spawn_interface->external_spawn_init)
-    spawn_interface->external_spawn_init(spawn_adapter, argc, argv);
-
-  spawn_interface->configuration_init(spawn_adapter, configuration);
-  if (spawn_interface->adapter_configuration_init)
-    spawn_interface->adapter_configuration_init(spawn_adapter);
-  rank = configuration->local_host_id;
-
-  if (rank == 0)
-    {
-      master = tbx_true;
-      slave  = tbx_false;
-    }
-  else
-    {
-      master = tbx_false;
-      slave  = tbx_true;
-    }
-
-  if (rank > 0)
-    {
-      char   output[MAX_ARG_LEN];
-      int    f;
-
-      sprintf(output, "/tmp/%s-%s-%d", getenv("USER"), MAD2_LOGNAME, (int)rank);
-      f = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0600);
-      dup2(f, STDOUT_FILENO);
-      dup2(STDOUT_FILENO, STDERR_FILENO);
-    }
-
-  mad_connect_hosts(madeleine);
-  tbx_list_init(&(madeleine->channel));
-
-  LOG_OUT();
-  return madeleine;
-}
-*/
-
 void
 mad_spawn_driver_init(p_mad_madeleine_t   madeleine,
 		      int                *argc,
@@ -335,28 +179,21 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 	  spawn_interface->receive_adapter_parameter(spawn_adapter, &msg);
 	  need_conf_info = atoi(msg);
       
-	  fprintf(stderr, "1 - received msg = %s\n", msg);
 	  TBX_FREE(msg);
 	  msg = NULL;
 
 	  if (need_conf_info)
 	    {
-	      fprintf(stderr, "1-1\n");
 	      spawn_interface->
 		send_adapter_parameter(spawn_adapter, 0, 
 				       configuration->host_name[rank]);
-	      fprintf(stderr, "1-2\n");
 	    }
-	  fprintf(stderr, "2\n");
 
 	  sprintf(answer, "%d",
 		  (int)(settings->configuration_file?tbx_false:tbx_true));
 	  
-	  fprintf(stderr, "answer = %s\n", answer);
 	  spawn_interface->send_adapter_parameter(spawn_adapter, 0, answer);
-	  fprintf(stderr, "3\n");
 	  spawn_interface->receive_adapter_parameter(spawn_adapter, &msg);
-	  fprintf(stderr, "4\n");
 
 	  send_conf_info = atoi(msg);
       
@@ -367,18 +204,14 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 	    {
 	      ntbx_host_id_t i;
 
-	      fprintf(stderr, "4-1\n");
-
 	      for (i = 0; i < size; i++)
 		{
 		  if (i != rank)
 		    {
 		      char *host_name = NULL;
 	      
-		      fprintf(stderr, "4-1-1-%d\n", i);
 		      spawn_interface->
 			receive_adapter_parameter(spawn_adapter, &host_name);
-		      fprintf(stderr, "4-1-2-%d\n", i);
 
 		      if (configuration->host_name[i])
 			{
@@ -392,14 +225,10 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 		      host_name = NULL;
 		    }
 		}
-
-	      fprintf(stderr, "4-2\n");
 	    }
 
-	  fprintf(stderr, "5\n");
 	  strcpy(answer, "ok");
 	  spawn_interface->send_adapter_parameter(spawn_adapter, 0, answer);
-	  fprintf(stderr, "6\n");
 	}
       else
 	{ // Master
@@ -411,33 +240,26 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 	  
 	  sprintf(msg, "%d", (int)need_conf_info);
 	  
-	  fprintf(stderr, "1 msg = %s\n", msg);
 	  for (i = 1; i < size; i++)
 	    {
 	      char *answer = NULL;
 	      
 	      spawn_interface->send_adapter_parameter(spawn_adapter, i, msg);
-	      fprintf(stderr, "1-0\n");
 	      
 	      if (need_conf_info)
 		{
-		  fprintf(stderr, "1-1\n");
 		  spawn_interface->
 		    receive_adapter_parameter(spawn_adapter,
 					      &(configuration->
 						host_name[i]));
-		  fprintf(stderr, "1-2\n");
 		}
 	      
-	      fprintf(stderr, "1-3\n");
 	      spawn_interface->
 		receive_adapter_parameter(spawn_adapter, &answer);
-	      fprintf(stderr, "1-4\n");
 
 	      send_conf_info |= atoi(answer);
 	      TBX_FREE(answer);
 	    }
-	  fprintf(stderr, "2\n");
 
 	  sprintf(msg, "%d", (int)send_conf_info);
 	  
@@ -445,9 +267,7 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 	    {
 	      char *answer = NULL;
 	      
-	      fprintf(stderr, "2-1\n");
 	      spawn_interface->send_adapter_parameter(spawn_adapter, i, msg);
-	      fprintf(stderr, "2-2\n");
 	      
 	      if (send_conf_info)
 		{
@@ -455,7 +275,6 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 
 		  for (j = 0; j < size; j++)
 		    {
-		      fprintf(stderr, "2-2-1-%d\n", i);
 		      if (j != i)
 			{
 			  spawn_interface->
@@ -463,18 +282,14 @@ mad_exchange_configuration_info(p_mad_madeleine_t madeleine)
 						   configuration->
 						   host_name[j]);
 			}
-		      fprintf(stderr, "2-2-2-%d\n", i);
 		    }
 		}
 
-	      fprintf(stderr, "2-3\n");
 	      spawn_interface->
 		receive_adapter_parameter(spawn_adapter, &answer);
-	      fprintf(stderr, "2-4\n");
 
 	      TBX_FREE(answer);
 	    }
-	  fprintf(stderr, "3\n");
 	}
     }
   else
@@ -718,7 +533,7 @@ mad_init(int                  *argc,
    * - ??? <to be completed>
    */
 
-m2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT); 
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT); 
 #endif /* PM2DEBUG */
 
   LOG_OUT();

@@ -88,6 +88,7 @@ ifndef DO_NOT_GENERATE_MAK_FILES
 DO_NOT_GENERATE_MAK_FILES := 
 endif
 DO_NOT_GENERATE_MAK_FILES += _sos_
+DO_NOT_GENERATE_MAK_FILES += _checkflavor_
 DO_NOT_GENERATE_MAK_FILES += _clean_ _cleanall_ _cleantools_ _cleantoolsall_
 DO_NOT_GENERATE_MAK_FILES += _distclean_ _distcleanflavors_ _distcleandoc_
 DO_NOT_GENERATE_MAK_FILES += _refresh_ _refreshall_

@@ -60,6 +60,7 @@ int main(int argc, char **argv)
   char *fkt_name = NULL;
   int argCount;
   FILE *supertrace;
+  FILE *supertrace_header;
   dec = 0;
   relative = 1;
   for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
@@ -90,12 +91,15 @@ int main(int argc, char **argv)
     fprintf(stderr,"Unable to open %s", supertrace_name);
     exit(1);
   }
+  fseek(supertrace, 500, SEEK_SET);
   init_trace_buffer(fut_name, fkt_name, relative, dec);
   while(i == 0) {
     i = get_next_trace(&tr);
      if (tr.relevant != 0)
       print_trace(tr, supertrace);
   }
+  rewind(supertrace);
+  supertrace_end(supertrace);
   fclose(supertrace);
   return 0;
 }

@@ -68,7 +68,7 @@ pm2flavorfile_parse_cmdline()
 
     [ $# -eq 0 ] || pm2flavorfile_usage 1
 
-    PM2_USER_FLAVOR_DIR=${PM2_FLAVOR_DIR:-$HOME/.pm2/flavors}
+    PM2_USER_FLAVOR_DIR=${PM2_FLAVOR_DIR:-${PM2_HOME:-${HOME}}/.pm2/flavors}
     export PM2_USER_FLAVOR_DIR
 
     PM2_FLAVOR_FILE=$PM2_USER_FLAVOR_DIR/$PM2_FLAVOR

@@ -592,7 +592,6 @@ void dsm_page_table_init(int my_rank, int confsize)
   /* Perform protocol-specific initializations */
   for (i = 0; i < dsm_registered_protocols(); i++)
     {
-      fprintf(stderr, "i=%d\n", i);
     if (dsm_get_prot_init_func(i) != NULL)
       (*dsm_get_prot_init_func(i))(i);
     }

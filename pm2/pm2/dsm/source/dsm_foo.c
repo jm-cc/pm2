@@ -16,6 +16,11 @@
 
 #include "dsm_pm2.h"
 
+#if !defined(AIX_SYS) && !defined(RS6K_ARCH)
 BEGIN_DSM_DATA
 int __dsm_data_foo = 0;
 END_DSM_DATA
+#else
+int dsm_data_begin, dsm_data_end;
+#endif
+

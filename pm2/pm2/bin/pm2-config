@@ -73,7 +73,7 @@ Compilation support options
   --kernel      print flags to compile the libs themselves
 
 Directories pm2-libs was configured to
-  --libdir --objdir --dependdir --asmdir --stampdir --builddir --includedir
+  --bindir --srcdir --libdir --objdir --depdir --asmdir --stampdir --builddir --includedir
 
 Other options
   --ext       : extension used
@@ -140,6 +140,8 @@ flavor=
 libs=
 libdir=false
 includedir=false
+bindir=false
+srcdir=false
 objdir=false
 depdir=false
 asmdir=false

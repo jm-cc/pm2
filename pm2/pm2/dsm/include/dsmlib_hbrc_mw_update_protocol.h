@@ -36,7 +36,7 @@ void dsmlib_hbrc_release();
 
 void dsmlib_hbrc_add_page(unsigned long index);
 
-void dsmlib_hbrc_mw_update_prot_init(unsigned long index);
+void dsmlib_hbrc_mw_update_prot_init(int prot);
 
 void dsmlib_hrbc_send_diffs(unsigned long index, dsm_node_t dest_node);
 

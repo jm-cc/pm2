@@ -314,7 +314,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->connection_socket = -1;
   adapter->specific                   = adapter_specific;
 #ifdef SSIZE_MAX
-  adapter->mtu                        = min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
+  adapter->mtu                        = tbx_min(SSIZE_MAX, MAD_FORWARD_MAX_MTU);
 #else // SSIZE_MAX
   adapter->mtu                        = MAD_FORWARD_MAX_MTU;
 #endif // SSIZE_MAX
@@ -322,7 +322,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   adapter_specific->connection_socket =
     ntbx_tcp_socket_create(&address, 0);
   SYSCALL(listen(adapter_specific->connection_socket,
-		 min(5, SOMAXCONN)));
+		 tbx_min(5, SOMAXCONN)));
 
   adapter_specific->connection_port =
     (ntbx_tcp_port_t)ntohs(address.sin_port);
@@ -418,7 +418,7 @@ mad_tcp_connect(p_mad_connection_t   out,
   connection_specific = out->specific;
   remote_node         = adapter_info->dir_node;
   remote_adapter      = adapter_info->dir_adapter;
-  remote_port         = atoi(remote_adapter->parameter);
+  remote_port         = strtol(remote_adapter->parameter, (char **)NULL, 10);
   sock                = ntbx_tcp_socket_create(NULL, 0);
 
 #ifndef LEO_IP
@@ -460,7 +460,7 @@ mad_tcp_after_open_channel(p_mad_channel_t channel)
       in_specific = in->specific;
 
       FD_SET(in_specific->socket, read_fds);
-      max_fds = max(in_specific->socket, max_fds);
+      max_fds = tbx_max(in_specific->socket, max_fds);
 
       in = tbx_darray_next_idx(in_darray, &idx);
     }

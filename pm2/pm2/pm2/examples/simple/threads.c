@@ -52,7 +52,7 @@ static void SAMPLE_thread(void *arg)
 
 static void SAMPLE_service(void)
 {
-  pm2_thread_create(SAMPLE_thread, NULL);
+  pm2_service_thread_create(SAMPLE_thread, NULL);
 }
 
 int pm2_main(int argc, char **argv)

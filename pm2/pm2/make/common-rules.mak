@@ -1,4 +1,4 @@
-
+# -*- mode: makefile;-*-
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -16,6 +16,10 @@
 # Regle par defaut : aide
 #---------------------------------------------------------------------
 help:
+
+# En cas d'erreur, on efface la cible
+#---------------------------------------------------------------------
+.DELETE_ON_ERROR:
 
 # Declarations Phony
 #---------------------------------------------------------------------
@@ -41,8 +45,6 @@ commonoptionshelp:
 	@echo
 	@echo "Common options:"
 	@echo "  FLAVOR=flavor: build for flavor 'flavor'"
-	@echo "  BUILD_STATIC_LIBS=true: build static libraries"
-	@echo "  BUILD_DYNAMIC_LIBS=true: build dynamic libraries"
 	@echo "  SHOW_FLAGS=true: show CFLAGS used"
 	@echo "  SHOW_FLAVOR=true: show flavor target"
 	@echo "  VERB=verbose|normal|quiet|silent: vebosity of building process"
@@ -66,8 +68,11 @@ tailhelp:
 $(PM2_MAK_DIR):
 	$(COMMON_HIDE)mkdir -p $@
 
-# Generation du cache principal des librairies
+# Generation des caches des makefiles
 #---------------------------------------------------------------------
-$(PM2_MAK_DIR)/main-config.mak: $(MAIN_STAMP_FLAVOR)
-	$(COMMON_HIDE) $(PM2_GEN_MAK) all
+$(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
+	$(COMMON_MAKE)
+	$(COMMON_HIDE) mkdir -p $(PM2_MAK_DIR)
+	$(COMMON_MAIN) $(PM2_GEN_MAK) --stdout --flavor $(FLAVOR) \
+		$(PM2_GEN_MAK_OPTIONS) $* > $@
 

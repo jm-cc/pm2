@@ -230,13 +230,13 @@ static inline int marcel_sched_internal_create(marcel_task_t *cur,
 					       marcel_task_t *new_task,
 					       __const marcel_attr_t *attr,
 					       __const int special_mode,
-					       __const unsigned int base_stack);
+					       __const unsigned long base_stack);
 #section sched_marcel_inline
 static inline 
 int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const marcel_attr_t *attr,
 				 __const int special_mode,
-				 __const unsigned int base_stack)
+				 __const unsigned long base_stack)
 { 
 	LOG_IN();
 

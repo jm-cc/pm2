@@ -30,21 +30,31 @@
  * Copyright (C) 1998, 1999, 2002-2003 Hewlett-Packard Co
  *	David Mosberger-Tang <davidm@hpl.hp.com>
  */
-#include <linux/types.h>
 
-#include <asm/intrinsics.h>
+//#include <linux/types.h>
+
+
+//#include <asm/intrinsics.h>
+
+
+#section common
 
 /*
  * On IA-64, counter must always be volatile to ensure that that the
  * memory accesses are ordered.
  */
-#section marcel_structs
-typedef struct { volatile __s32 counter; } ma_atomic_t;
-typedef struct { volatile __s64 counter; } ma_atomic64_t;
+
+
+
+#section marcel_types
+#depend "linux_types.h[]"
+
+typedef struct { volatile __ma_s32 counter; } ma_atomic_t;
+typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 
 #section marcel_macros
 #define MA_ATOMIC_INIT(i)	((ma_atomic_t) { (i) })
-#define MA_ATOMIC64_INIT(i)	((ma_atomice64_t) { (i) })
+#define MA_ATOMIC64_INIT(i)	((ma_atomic64_t) { (i) })
 
 #define ma_atomic_read(v)	((v)->counter)
 #define ma_atomic64_read(v)	((v)->counter)
@@ -55,36 +65,37 @@ typedef struct { volatile __s64 counter; } ma_atomic64_t;
 #section marcel_functions
 static __inline__ int
 ma_ia64_atomic_add (int i, ma_atomic_t *v);
+
 #section marcel_inline
 static __inline__ int
 ma_ia64_atomic_add (int i, ma_atomic_t *v)
 {
-	__s32 old, new;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_s32 old, new;
+	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
-		CMPXCHG_BUGCHECK(v);
+		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old + i;
-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
 #section marcel_functions
 static __inline__ int
-ma_ia64_atomic64_add (__s64 i, ma_atomice64_t *v);
+ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v);
 #section marcel_inline
 static __inline__ int
-ma_ia64_atomic64_add (__s64 i, ma_atomice64_t *v)
+ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
 {
-	__s64 old, new;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_s64 old, new;
+	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
-		CMPXCHG_BUGCHECK(v);
+		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old + i;
-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
@@ -95,32 +106,32 @@ ma_ia64_atomic_sub (int i, ma_atomic_t *v);
 static __inline__ int
 ma_ia64_atomic_sub (int i, ma_atomic_t *v)
 {
-	__s32 old, new;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_s32 old, new;
+	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
-		CMPXCHG_BUGCHECK(v);
+		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old - i;
-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
 #section marcel_functions
 static __inline__ int
-ma_ia64_atomic64_sub (__s64 i, ma_atomice64_t *v);
+ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v);
 #section marcel_inline
 static __inline__ int
-ma_ia64_atomic64_sub (__s64 i, ma_atomice64_t *v)
+ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
 {
-	__s64 old, new;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_s64 old, new;
+	MA_CMPXCHG_BUGCHECK_DECL
 
 	do {
-		CMPXCHG_BUGCHECK(v);
+		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old - i;
-	} while (ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
@@ -133,8 +144,8 @@ ma_ia64_atomic64_sub (__s64 i, ma_atomice64_t *v)
 	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
 	     || (__ia64_aar_i == -1) || (__ia64_aar_i ==  -4)		\
 	     || (__ia64_aar_i == -8) || (__ia64_aar_i == -16)))		\
-		? ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
-		: ia64_atomic_add(__ia64_aar_i, v);			\
+		? ma_ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
+		: ma_ia64_atomic_add(__ia64_aar_i, v);			\
 })
 
 #define ma_atomic64_add_return(i,v)					\
@@ -145,8 +156,8 @@ ma_ia64_atomic64_sub (__s64 i, ma_atomice64_t *v)
 	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
 	     || (__ia64_aar_i == -1) || (__ia64_aar_i ==  -4)		\
 	     || (__ia64_aar_i == -8) || (__ia64_aar_i == -16)))		\
-		? ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
-		: ia64_atomic64_add(__ia64_aar_i, v);			\
+		? ma_ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
+		: ma_ia64_atomic64_add(__ia64_aar_i, v);			\
 })
 
 #section marcel_functions
@@ -165,10 +176,10 @@ ma_atomic_add_negative (int i, ma_atomic_t *v)
 
 #section marcel_functions
 static __inline__ int
-ma_atomic64_add_negative (__s64 i, ma_atomice64_t *v);
+ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v);
 #section marcel_inline
 static __inline__ int
-ma_atomic64_add_negative (__s64 i, ma_atomice64_t *v)
+ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v)
 {
 	return ma_atomic64_add_return(i, v) < 0;
 }
@@ -182,8 +193,8 @@ ma_atomic64_add_negative (__s64 i, ma_atomice64_t *v)
 	     || (__ia64_asr_i ==   8) || (__ia64_asr_i ==  16)		\
 	     || (__ia64_asr_i ==  -1) || (__ia64_asr_i ==  -4)		\
 	     || (__ia64_asr_i ==  -8) || (__ia64_asr_i == -16)))	\
-		? ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
-		: ia64_atomic_sub(__ia64_asr_i, v);			\
+		? ma_ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
+		: ma_ia64_atomic_sub(__ia64_asr_i, v);			\
 })
 
 #define ma_atomic64_sub_return(i,v)					\
@@ -194,8 +205,8 @@ ma_atomic64_add_negative (__s64 i, ma_atomice64_t *v)
 	     || (__ia64_asr_i ==   8) || (__ia64_asr_i ==  16)		\
 	     || (__ia64_asr_i ==  -1) || (__ia64_asr_i ==  -4)		\
 	     || (__ia64_asr_i ==  -8) || (__ia64_asr_i == -16)))	\
-		? ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
-		: ia64_atomic64_sub(__ia64_asr_i, v);			\
+		? ma_ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
+		: ma_ia64_atomic64_sub(__ia64_asr_i, v);			\
 })
 
 #define ma_atomic_dec_return(v)		ma_atomic_sub_return(1, (v))

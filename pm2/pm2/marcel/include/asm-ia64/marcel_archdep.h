@@ -16,7 +16,7 @@
 
 #ifndef ARCHDEP_EST_DEF
 #define ARCHDEP_EST_DEF
-
+ 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 
@@ -89,5 +89,7 @@ static __inline__ long get_bsp(void)
 		    ";; \n\t" \
                        : : "r" (0), "r"(0), "r" (val), "r" (bsp) : "memory", "sp" ); \
   } while (0)
+
+
 
 #endif

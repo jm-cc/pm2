@@ -26,15 +26,15 @@
  * without sampling the sequence number in xtime_lock.
  * get_jiffies_64() will do this for you as appropriate.
  */
-extern u64 ma_jiffies_64;
+extern ma_u64 ma_jiffies_64;
 extern unsigned long volatile ma_jiffies;
 
 #if (BITS_PER_LONG < 64)
-u64 ma_get_jiffies_64(void);
+ma_u64 ma_get_jiffies_64(void);
 #else
-static inline u64 ma_get_jiffies_64(void)
+static inline ma_u64 ma_get_jiffies_64(void)
 {
-	return (u64)ma_jiffies;
+	return (ma_u64)ma_jiffies;
 }
 #endif
 

@@ -22,26 +22,26 @@
 #depend "asm/linux_types.h[]"
 
 #section marcel_macros
-#define BITS_TO_LONGS(bits) \
-	(((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
-#define DECLARE_BITMAP(name,bits) \
-	unsigned long name[BITS_TO_LONGS(bits)]
-#define CLEAR_BITMAP(name,bits) \
-	memset(name, 0, BITS_TO_LONGS(bits)*sizeof(unsigned long))
+#define MA_BITS_TO_LONGS(bits) \
+	(((bits)+MA_BITS_PER_LONG-1)/MA_BITS_PER_LONG)
+#define MA_DECLARE_BITMAP(name,bits) \
+	unsigned long name[MA_BITS_TO_LONGS(bits)]
+#define MA_CLEAR_BITMAP(name,bits) \
+	memset(name, 0, MA_BITS_TO_LONGS(bits)*sizeof(unsigned long))
 
 #section marcel_types
 #depend "asm/linux_types.h[]"
 
-#ifndef __BIT_TYPES_DEFINED__
-#define __BIT_TYPES_DEFINED__
+#ifndef __MA_BIT_TYPES_DEFINED__
+#define __MA_BIT_TYPES_DEFINED__
 
-typedef		__u8		u_int8_t;
-typedef		__s8		int8_t;
-typedef		__u16		u_int16_t;
-typedef		__s16		int16_t;
-typedef		__u32		u_int32_t;
-typedef		__s32		int32_t;
+typedef		__ma_u8		ma_u_int8_t;
+typedef		__ma_s8		ma_int8_t;
+typedef		__ma_u16	ma_u_int16_t;
+typedef		__ma_s16	ma_int16_t;
+typedef		__ma_u32	ma_u_int32_t;
+typedef		__ma_s32	ma_int32_t;
 
-#endif /* !(__BIT_TYPES_DEFINED__) */
+#endif /* !(__MA_BIT_TYPES_DEFINED__) */
 
 

@@ -175,62 +175,64 @@ static ma_rwlock_t ev_poll_lock = MA_RW_LOCK_UNLOCKED;
  *     (exemple marcel_ev_wait())
  */
 
-inline static int __lock_server(marcel_ev_serverid_t id, marcel_task_t *owner)
+inline static void __lock_server(marcel_ev_serverid_t id, marcel_task_t *owner)
 {
 	LOG_IN();
 	ma_spin_lock_softirq(&id->lock);
 	ma_tasklet_disable(&id->poll_tasklet);
 	id->lock_owner = owner;
-	LOG_RETURN(0);
+	LOG_OUT();
 }
 
-inline static int __unlock_server(marcel_ev_serverid_t id)
+inline static void __unlock_server(marcel_ev_serverid_t id)
 {
 	LOG_IN();
 	id->lock_owner=NULL;
 	ma_tasklet_enable(&id->poll_tasklet);
 	ma_spin_unlock_softirq(&id->lock);
-	LOG_RETURN(0);
+	LOG_OUT();
 }
 
 /* Renvoie MARCEL_SELF si on a le lock
    NULL sinon
 */
-inline static int ensure_lock_server(marcel_ev_serverid_t id)
+inline static marcel_task_t* ensure_lock_server(marcel_ev_serverid_t id)
 {
 	LOG_IN();
 	if (id->lock_owner == MARCEL_SELF) {
-		LOG_RETURN((int)MARCEL_SELF);
+		LOG_RETURN(MARCEL_SELF);
 	}
 	__lock_server(id, MARCEL_SELF);
-	LOG_RETURN(0);
+	LOG_RETURN(NULL);
 }
 
-inline static int lock_server_owner(marcel_ev_serverid_t id, int owner)
+inline static void lock_server_owner(marcel_ev_serverid_t id,
+				     marcel_task_t *owner)
 {
 	LOG_IN();
-	__lock_server(id, (marcel_task_t*)owner);
-	LOG_RETURN(0);
+	__lock_server(id, owner);
+	LOG_OUT();
 }
 
-inline static int restore_lock_server_locked(marcel_ev_serverid_t id, 
-					     int old_owner)
+inline static void restore_lock_server_locked(marcel_ev_serverid_t id, 
+					      marcel_task_t *old_owner)
 {
 	LOG_IN();
 	if (!old_owner) {
 		__unlock_server(id);
 	}
-	LOG_RETURN(0);
+	LOG_OUT();
 }
 
-inline static int restore_lock_server_unlocked(marcel_ev_serverid_t id,
-					       int old_owner)
+inline static void restore_lock_server_unlocked(marcel_ev_serverid_t id,
+					        marcel_task_t *old_owner)
 {
 	LOG_IN();
 	if (old_owner) {
-		__lock_server(id, (marcel_task_t*)old_owner);
+		__lock_server(id, old_owner);
 	}
-	LOG_RETURN(0);
+	LOG_OUT();
+
 }
 
 /* Utilisé par l'application */
@@ -603,7 +605,7 @@ void marcel_ev_poll_force(marcel_ev_serverid_t id)
 /* Force une scrutation synchrone sur un serveur */
 void marcel_ev_poll_force_sync(marcel_ev_serverid_t id)
 {
-	int lock;
+	marcel_task_t *lock;
 	LOG_IN();
 	mdebug("Sync poll forced for %s\n", id->name);
 
@@ -684,7 +686,7 @@ inline static int __register(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 /* Enregistrement d'un événement */
 int marcel_ev_register(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 {
-	int lock;
+	marcel_task_t *lock;
 	LOG_IN();
 
 	lock=ensure_lock_server(id);
@@ -724,7 +726,7 @@ inline static int __unregister(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 /* Abandon d'un événement et retour des threads en attente sur cet événement */
 int marcel_ev_unregister(marcel_ev_serverid_t id, marcel_ev_inst_t ev)
 {
-	int lock;
+	marcel_task_t *lock;
 	LOG_IN();
 
 	lock=ensure_lock_server(id);
@@ -767,7 +769,7 @@ inline static int __wait_ev(marcel_ev_serverid_t id, marcel_ev_inst_t ev,
 int marcel_ev_wait_ev(marcel_ev_serverid_t id, marcel_ev_inst_t ev, 
 		      marcel_time_t timeout)
 {
-	int lock;
+	marcel_task_t *lock;
 	int ret=0;
 	LOG_IN();
 
@@ -795,7 +797,7 @@ int marcel_ev_wait_ev(marcel_ev_serverid_t id, marcel_ev_inst_t ev,
 /* Attente d'un thread sur un quelconque événement du serveur */
 int marcel_ev_wait_server(marcel_ev_serverid_t id, marcel_time_t timeout)
 {
-	int lock;
+	marcel_task_t *lock;
 	struct waiter wait;
 	LOG_IN();
 
@@ -827,7 +829,7 @@ int marcel_ev_wait_server(marcel_ev_serverid_t id, marcel_time_t timeout)
 /* Enregistrement, attente et désenregistrement d'un événement */
 int marcel_ev_wait_one(marcel_ev_serverid_t id, marcel_ev_inst_t ev, marcel_time_t timeout)
 {
-	int lock;
+	marcel_task_t *lock;
 	int checked=0;
 	int waken_up=0;
 	LOG_IN();
@@ -1016,7 +1018,7 @@ int marcel_ev_server_start(marcel_ev_serverid_t id)
 
 int marcel_ev_server_stop(marcel_ev_serverid_t id)
 {
-	int lock;
+	marcel_task_t *lock;
 	marcel_ev_inst_t ev, tmp;
 	LOG_IN();
 

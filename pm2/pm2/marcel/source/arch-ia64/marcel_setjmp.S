@@ -21,7 +21,7 @@
 #include <sys/marcel_ia64_sysdep.h>
 #include <features.h>
 
-#include "marcel_ia64_ucontext_i.h"
+#include "marcel_ucontext_i.h"
 
 /* copied from the source of __getcontext
   Return value changed (according to setjmp)

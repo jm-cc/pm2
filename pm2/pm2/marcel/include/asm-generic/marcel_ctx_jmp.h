@@ -14,11 +14,8 @@
  * General Public License for more details.
  */
 
-#section marcel_types
-enum {
-	FIRST_RETURN,
-	NORMAL_RETURN
-};
+#section common
+#depend "asm-generic/marcel_ctx_types.h[]"
 
 #section structures
 #include "sys/marcel_archsetjmp.h"

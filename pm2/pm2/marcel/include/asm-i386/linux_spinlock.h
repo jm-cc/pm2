@@ -19,6 +19,8 @@
  * Similar to:
  * include/asm-i386/spinlock.h
  */
+#depend "asm/linux_rwlock.h[]"
+
 #ifdef MA__LWPS
 
 #section types

@@ -30,19 +30,19 @@
  * header files exported to user space
  */
 
-typedef __signed__ char __s8;
-typedef unsigned char __u8;
+typedef __signed__ char __ma_s8;
+typedef unsigned char __ma_u8;
 
-typedef __signed__ short __s16;
-typedef unsigned short __u16;
+typedef __signed__ short __ma_s16;
+typedef unsigned short __ma_u16;
 
-typedef __signed__ int __s32;
-typedef unsigned int __u32;
+typedef __signed__ int __ma_s32;
+typedef unsigned int __ma_u32;
 
-#if defined(__GNUC__) && !defined(__STRICT_ANSI__)
-typedef __signed__ long long __s64;
-typedef unsigned long long __u64;
-#endif
+//#if defined(__GNUC__) && !defined(__STRICT_ANSI__)
+typedef __signed__ long long __ma_s64;
+typedef unsigned long long __ma_u64;
+//#endif
 
 //#endif /* __ASSEMBLY__ */
 
@@ -51,23 +51,23 @@ typedef unsigned long long __u64;
  */
 //#ifdef __KERNEL__
 
-#define BITS_PER_LONG 32
+#define MA_BITS_PER_LONG 32
 
 //#ifndef __ASSEMBLY__
 
 //#include <linux/config.h>
 
-typedef signed char s8;
-typedef unsigned char u8;
+typedef signed char ma_s8;
+typedef unsigned char ma_u8;
 
-typedef signed short s16;
-typedef unsigned short u16;
+typedef signed short ma_s16;
+typedef unsigned short ma_u16;
 
-typedef signed int s32;
-typedef unsigned int u32;
+typedef signed int ma_s32;
+typedef unsigned int ma_u32;
 
-typedef signed long long s64;
-typedef unsigned long long u64;
+typedef signed long long ma_s64;
+typedef unsigned long long ma_u64;
 
 //#endif /* __ASSEMBLY__ */
 

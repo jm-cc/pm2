@@ -24,10 +24,11 @@
  *	    scheduler patch
  */
 
-#include <linux/compiler.h>
-#include <linux/types.h>
+//#include <linux/compiler.h>
+//#include <linux/types.h>
 
-#include <asm/intrinsics.h>
+//#include <asm/intrinsics.h>
+
 
 /**
  * set_bit - Atomically set a bit in memory
@@ -53,17 +54,17 @@ ma_set_bit (int nr, volatile void *addr);
 static __inline__ void
 ma_set_bit (int nr, volatile void *addr)
 {
-	__u32 bit, old, new;
-	volatile __u32 *m;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_u32 bit, old, new;
+	volatile __ma_u32 *m;
+	MA_CMPXCHG_BUGCHECK_DECL
 
-	m = (volatile __u32 *) addr + (nr >> 5);
+	m = (volatile __ma_u32 *) addr + (nr >> 5);
 	bit = 1 << (nr & 31);
 	do {
-		CMPXCHG_BUGCHECK(m);
+		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
 		new = old | bit;
-	} while (cmpxchg_acq(m, old, new) != old);
+	} while (ma_cmpxchg_acq(m, old, new) != old);
 }
 
 /**
@@ -82,7 +83,7 @@ __ma_set_bit (int nr, volatile void *addr);
 static __inline__ void
 __ma_set_bit (int nr, volatile void *addr)
 {
-	*((__u32 *) addr + (nr >> 5)) |= (1 << (nr & 31));
+	*((__ma_u32 *) addr + (nr >> 5)) |= (1 << (nr & 31));
 }
 
 /*
@@ -109,33 +110,34 @@ ma_clear_bit (int nr, volatile void *addr);
 static __inline__ void
 ma_clear_bit (int nr, volatile void *addr)
 {
-	__u32 mask, old, new;
-	volatile __u32 *m;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_u32 mask, old, new;
+	volatile __ma_u32 *m;
+	MA_CMPXCHG_BUGCHECK_DECL
 
-	m = (volatile __u32 *) addr + (nr >> 5);
+	m = (volatile __ma_u32 *) addr + (nr >> 5);
 	mask = ~(1 << (nr & 31));
 	do {
-		CMPXCHG_BUGCHECK(m);
+		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
 		new = old & mask;
-	} while (cmpxchg_acq(m, old, new) != old);
+	} while (ma_cmpxchg_acq(m, old, new) != old);
 }
 
 /**
  * __clear_bit - Clears a bit in memory (non-atomic version)
  */
-#section marcel_functions
-static __inline__ void
-__ma_clear_bit (int nr, volatile void *addr);
-#section marcel_inline
-static __inline__ void
-__ma_clear_bit (int nr, volatile void *addr)
-{
-	volatile __u32 *p = (__u32 *) addr + (nr >> 5);
-	__u32 m = 1 << (nr & 31);
-	*p &= ~m;
-}
+/* #section marcel_functions
+ *static __inline__ void
+ *__ma_clear_bit (int nr, volatile void *addr);
+ *#section marcel_inline
+ *static __inline__ void
+ *__ma_clear_bit (int nr, volatile void *addr)
+ *{
+ *	volatile __ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
+ *	__ma_u32 m = 1 << (nr & 31);
+ *	*p &= ~m;
+ *}
+ */
 
 /**
  * change_bit - Toggle a bit in memory
@@ -153,17 +155,17 @@ ma_change_bit (int nr, volatile void *addr);
 static __inline__ void
 ma_change_bit (int nr, volatile void *addr)
 {
-	__u32 bit, old, new;
-	volatile __u32 *m;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_u32 bit, old, new;
+	volatile __ma_u32 *m;
+	MA_CMPXCHG_BUGCHECK_DECL
 
-	m = (volatile __u32 *) addr + (nr >> 5);
+	m = (volatile __ma_u32 *) addr + (nr >> 5);
 	bit = (1 << (nr & 31));
 	do {
-		CMPXCHG_BUGCHECK(m);
+		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
 		new = old ^ bit;
-	} while (cmpxchg_acq(m, old, new) != old);
+	} while (ma_cmpxchg_acq(m, old, new) != old);
 }
 
 /**
@@ -182,7 +184,7 @@ __ma_change_bit (int nr, volatile void *addr);
 static __inline__ void
 __ma_change_bit (int nr, volatile void *addr)
 {
-	*((__u32 *) addr + (nr >> 5)) ^= (1 << (nr & 31));
+	*((__ma_u32 *) addr + (nr >> 5)) ^= (1 << (nr & 31));
 }
 
 /**
@@ -200,17 +202,17 @@ ma_test_and_set_bit (int nr, volatile void *addr);
 static __inline__ int
 ma_test_and_set_bit (int nr, volatile void *addr)
 {
-	__u32 bit, old, new;
-	volatile __u32 *m;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_u32 bit, old, new;
+	volatile __ma_u32 *m;
+	MA_CMPXCHG_BUGCHECK_DECL
 
-	m = (volatile __u32 *) addr + (nr >> 5);
+	m = (volatile __ma_u32 *) addr + (nr >> 5);
 	bit = 1 << (nr & 31);
 	do {
-		CMPXCHG_BUGCHECK(m);
+		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
 		new = old | bit;
-	} while (cmpxchg_acq(m, old, new) != old);
+	} while (ma_cmpxchg_acq(m, old, new) != old);
 	return (old & bit) != 0;
 }
 
@@ -230,8 +232,8 @@ __ma_test_and_set_bit (int nr, volatile void *addr);
 static __inline__ int
 __ma_test_and_set_bit (int nr, volatile void *addr)
 {
-	__u32 *p = (__u32 *) addr + (nr >> 5);
-	__u32 m = 1 << (nr & 31);
+	__ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
+	__ma_u32 m = 1 << (nr & 31);
 	int oldbitset = (*p & m) != 0;
 
 	*p |= m;
@@ -253,17 +255,17 @@ ma_test_and_clear_bit (int nr, volatile void *addr);
 static __inline__ int
 ma_test_and_clear_bit (int nr, volatile void *addr)
 {
-	__u32 mask, old, new;
-	volatile __u32 *m;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_u32 mask, old, new;
+	volatile __ma_u32 *m;
+	MA_CMPXCHG_BUGCHECK_DECL
 
-	m = (volatile __u32 *) addr + (nr >> 5);
+	m = (volatile __ma_u32 *) addr + (nr >> 5);
 	mask = ~(1 << (nr & 31));
 	do {
-		CMPXCHG_BUGCHECK(m);
+		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
 		new = old & mask;
-	} while (cmpxchg_acq(m, old, new) != old);
+	} while (ma_cmpxchg_acq(m, old, new) != old);
 	return (old & ~mask) != 0;
 }
 
@@ -271,6 +273,7 @@ ma_test_and_clear_bit (int nr, volatile void *addr)
  * __test_and_clear_bit - Clear a bit and return its old value
  * @nr: Bit to set
  * @addr: Address to count from
+
  *
  * This operation is non-atomic and can be reordered.  
  * If two examples of this operation race, one can appear to succeed
@@ -283,8 +286,8 @@ __ma_test_and_clear_bit(int nr, volatile void * addr);
 static __inline__ int
 __ma_test_and_clear_bit(int nr, volatile void * addr)
 {
-	__u32 *p = (__u32 *) addr + (nr >> 5);
-	__u32 m = 1 << (nr & 31);
+	__ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
+	__ma_u32 m = 1 << (nr & 31);
 	int oldbitset = *p & m;
 
 	*p &= ~m;
@@ -306,17 +309,17 @@ ma_test_and_change_bit (int nr, volatile void *addr);
 static __inline__ int
 ma_test_and_change_bit (int nr, volatile void *addr)
 {
-	__u32 bit, old, new;
-	volatile __u32 *m;
-	CMPXCHG_BUGCHECK_DECL
+	__ma_u32 bit, old, new;
+	volatile __ma_u32 *m;
+	MA_CMPXCHG_BUGCHECK_DECL
 
-	m = (volatile __u32 *) addr + (nr >> 5);
+	m = (volatile __ma_u32 *) addr + (nr >> 5);
 	bit = (1 << (nr & 31));
 	do {
-		CMPXCHG_BUGCHECK(m);
+		MA_CMPXCHG_BUGCHECK(m);
 		old = *m;
 		new = old ^ bit;
-	} while (cmpxchg_acq(m, old, new) != old);
+	} while (ma_cmpxchg_acq(m, old, new) != old);
 	return (old & bit) != 0;
 }
 
@@ -330,8 +333,8 @@ __ma_test_and_change_bit (int nr, void *addr);
 static __inline__ int
 __ma_test_and_change_bit (int nr, void *addr)
 {
-	__u32 old, bit = (1 << (nr & 31));
-	__u32 *m = (__u32 *) addr + (nr >> 5);
+	__ma_u32 old, bit = (1 << (nr & 31));
+	__ma_u32 *m = (__ma_u32 *) addr + (nr >> 5);
 
 	old = *m;
 	*m = old ^ bit;
@@ -345,7 +348,7 @@ ma_test_bit (int nr, const volatile void *addr);
 static __inline__ int
 ma_test_bit (int nr, const volatile void *addr)
 {
-	return 1 & (((const volatile __u32 *) addr)[nr >> 5] >> (nr & 31));
+	return 1 & (((const volatile __ma_u32 *) addr)[nr >> 5] >> (nr & 31));
 }
 
 /**
@@ -363,8 +366,8 @@ static inline unsigned long
 ma_ffz (unsigned long x)
 {
 	unsigned long result;
-
-	result = ia64_popcnt(x & (~x - 1));
+	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x & (~x - 1))); 
+	//	result = ma_ia64_popcnt(x & (~x - 1));
 	return result;
 }
 
@@ -379,11 +382,11 @@ static __inline__ unsigned long
 __ma_ffs (unsigned long x);
 #section marcel_inline
 static __inline__ unsigned long
-__ffs (unsigned long x)
+__ma_ffs (unsigned long x)
 {
 	unsigned long result;
-
-	result = ia64_popcnt((x-1) & ~x);
+	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x & (~x - 1)));
+	//result = ma_ia64_popcnt((x-1) & ~x);
 	return result;
 }
 
@@ -403,18 +406,19 @@ ma_ia64_fls (unsigned long x)
 	long double d = x;
 	long exp;
 
-	exp = ia64_getf_exp(d);
+	__asm__ ("getf.exp %0=%1" : "=r"(exp) : "f"(d));
+	//	exp = ma_ia64_getf_exp(d);
 	return exp - 0xffff;
 }
 
 #section marcel_functions
 static inline int
-fls (int x);
+ma_fls (int x);
 #section marcel_inline
 static inline int
-fls (int x)
+ma_fls (int x)
 {
-	return ia64_fls((unsigned int) x);
+	return ma_ia64_fls((unsigned int) x);
 }
 
 /*
@@ -438,7 +442,8 @@ static __inline__ unsigned long
 ma_hweight64 (unsigned long x)
 {
 	unsigned long result;
-	result = ia64_popcnt(x);
+	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x));
+     //	result = ma_ia64_popcnt(x);
 	return result;
 }
 
@@ -542,7 +547,7 @@ ma_find_next_bit(const void *addr, unsigned long size, unsigned long offset)
 	if (tmp == 0UL)		/* Are any bits set? */
 		return result + size; /* Nope. */
   found_middle:
-	return result + __ffs(tmp);
+	return result + __ma_ffs(tmp);
 }
 
 #section marcel_macros
@@ -559,10 +564,10 @@ ma_sched_find_first_bit (unsigned long *b);
 static inline int
 ma_sched_find_first_bit (unsigned long *b)
 {
-	if (unlikely(b[0]))
-		return __ffs(b[0]);
-	if (unlikely(b[1]))
-		return 64 + __ffs(b[1]);
+	if (tbx_unlikely(b[0]))
+		return __ma_ffs(b[0]);
+	if (tbx_unlikely(b[1]))
+		return 64 + __ma_ffs(b[1]);
 	return __ma_ffs(b[2]) + 128;
 }
 

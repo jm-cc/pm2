@@ -143,7 +143,7 @@ inline static int
 marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr, 
 		       marcel_func_t func, any_t arg, 
 		       __const int special_mode, 
-		       __const unsigned int base_stack)
+		       __const unsigned long base_stack)
 {
 	marcel_t cur = marcel_self(), new_task;
 #ifdef MA__POSIX_BEHAVIOUR
@@ -254,14 +254,14 @@ int marcel_create(marcel_t *pid, __const marcel_attr_t *attr,
 		  marcel_func_t func, any_t arg)
 {
 	return marcel_create_internal(pid, attr, func, arg, 
-				      0, (unsigned int)&arg);
+				      0, (unsigned long)&arg);
 }
 
 int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr,
 			  marcel_func_t func, any_t arg)
 {
 	return marcel_create_internal(pid, attr, func, arg, 
-				      1, (unsigned int)&arg);
+				      1, (unsigned long)&arg);
 }
 
 /****************************************************************/

@@ -50,7 +50,6 @@ typedef struct
 
 #section functions
 #depend "marcel_alias.h[macros]"
-#depend "sched.h"
 //#ifdef __USE_UNIX98
 
 DEC_MARCEL_POSIX(int,

@@ -39,14 +39,14 @@
 #
 if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	if [ -f /bin/uname ]; then
-		os="`/bin/uname -s`"
-		ht="`/bin/uname -m`"
+		_os="`/bin/uname -s`"
+		_ht="`/bin/uname -m`"
 	else
-		os="`/usr/bin/uname -s`"
-		ht="`/usr/bin/uname -m`"
+		_os="`/usr/bin/uname -s`"
+		_ht="`/usr/bin/uname -m`"
 	fi
 
-	case "$os,$ht" in
+	case "$_os,$_ht" in
 	SunOS,*)           PM2_SYS=SOLARIS_SYS ;;
 	AIX*,*)            PM2_SYS=AIX_SYS ;;
 	IRIX*,*)           PM2_SYS=IRIX_SYS ;;
@@ -56,6 +56,7 @@ if [ -f /bin/uname -o -f /usr/bin/uname ]; then
 	esac
 fi
 
-echo $PM2_SYS
-exit
-
+if [ "$1" != --source-mode ] ; then
+    echo $PM2_SYS
+    exit 0
+fi

@@ -203,6 +203,10 @@ tbx_bool_t
 tbx_slist_is_nil(const p_tbx_slist_t slist);
 
 p_tbx_slist_t
+tbx_slist_dup_ext(const p_tbx_slist_t    source,
+		  p_tbx_slist_dup_func_t dfunc);
+
+p_tbx_slist_t
 tbx_slist_dup(const p_tbx_slist_t source);
 
 void
@@ -243,6 +247,21 @@ tbx_slist_extract(p_tbx_slist_t slist);
 p_tbx_slist_t
 tbx_slist_cons(void                *object,
 	       const p_tbx_slist_t  source);
+
+void
+tbx_slist_merge_before_ext(p_tbx_slist_t          destination,
+			   const p_tbx_slist_t    source,
+			   p_tbx_slist_dup_func_t dfunc);
+
+void
+tbx_slist_merge_after_ext(p_tbx_slist_t          destination,
+			  const p_tbx_slist_t    source,
+			  p_tbx_slist_dup_func_t dfunc);
+
+p_tbx_slist_t
+tbx_slist_merge_ext(const p_tbx_slist_t    destination,
+		    const p_tbx_slist_t    source,
+		    p_tbx_slist_dup_func_t dfunc);
 
 void
 tbx_slist_merge_before(      p_tbx_slist_t destination,
@@ -442,6 +461,10 @@ tbx_string_manager_exit(void);
 char *
 tbx_strdup(const char *src);
 
+tbx_bool_t
+tbx_streq(const char *s1,
+	  const char *s2);
+
 p_tbx_string_t
 tbx_string_init(void);
 
@@ -455,39 +478,39 @@ void
 tbx_string_reset(p_tbx_string_t string);
 
 char *
-tbx_string_to_c_string(const p_tbx_string_t string);
+tbx_string_to_cstring(const p_tbx_string_t string);
 
 char *
-tbx_string_to_c_string_and_free(p_tbx_string_t string);
+tbx_string_to_cstring_and_free(p_tbx_string_t string);
 
 void
-tbx_string_set_to_c_string(p_tbx_string_t  string,
-			   const char     *c_string);
+tbx_string_set_to_cstring(p_tbx_string_t  string,
+			   const char     *cstring);
 
 void
-tbx_string_set_to_c_string_and_free(p_tbx_string_t  string,
-				    char           *c_string);
+tbx_string_set_to_cstring_and_free(p_tbx_string_t  string,
+				    char           *cstring);
 
 void
 tbx_string_set_to_char(p_tbx_string_t string,
 		       const int      data);
 
 p_tbx_string_t
-tbx_string_init_to_c_string(const char *c_string);
+tbx_string_init_to_cstring(const char *cstring);
 
 p_tbx_string_t
-tbx_string_init_to_c_string_and_free(char *c_string);
+tbx_string_init_to_cstring_and_free(char *cstring);
 
 p_tbx_string_t
 tbx_string_init_to_char(const int data);
 
 void
-tbx_string_append_c_string(p_tbx_string_t  string,
-			   const char     *c_string);
+tbx_string_append_cstring(p_tbx_string_t  string,
+			   const char     *cstring);
 
 void
-tbx_string_append_c_string_and_free(p_tbx_string_t  string,
-				    char           *c_string);
+tbx_string_append_cstring_and_free(p_tbx_string_t  string,
+				    char           *cstring);
 
 void
 tbx_string_append_char(p_tbx_string_t string,
@@ -509,43 +532,46 @@ tbx_string_reverse(p_tbx_string_t string);
 
 void
 tbx_string_set_to_string(p_tbx_string_t dst_string,
-			 const p_tbx_string_t src_string);
+			 const p_tbx_string_t srcstring);
 
 void
 tbx_string_set_to_string_and_free(p_tbx_string_t dst_string,
-				  p_tbx_string_t src_string);
+				  p_tbx_string_t srcstring);
 void
 tbx_string_append_string(p_tbx_string_t dst_string,
-			 const p_tbx_string_t src_string);
+			 const p_tbx_string_t srcstring);
 
 void
 tbx_string_append_string_and_free(p_tbx_string_t dst_string,
-				  p_tbx_string_t src_string);
+				  p_tbx_string_t srcstring);
 
 p_tbx_string_t
-tbx_string_init_to_string(const p_tbx_string_t src_string);
+tbx_string_init_to_string(const p_tbx_string_t srcstring);
 
 p_tbx_string_t
-tbx_string_init_to_string_and_free(p_tbx_string_t src_string);
+tbx_string_dup(p_tbx_string_t srcstring);
 
 p_tbx_string_t
-tbx_string_double_quote(const p_tbx_string_t src_string);
+tbx_string_init_to_string_and_free(p_tbx_string_t srcstring);
 
 p_tbx_string_t
-tbx_string_double_quote_and_free(p_tbx_string_t src_string);
+tbx_string_double_quote(const p_tbx_string_t srcstring);
 
 p_tbx_string_t
-tbx_string_single_quote(const p_tbx_string_t src_string);
+tbx_string_double_quote_and_free(p_tbx_string_t srcstring);
 
 p_tbx_string_t
-tbx_string_single_quote_free(p_tbx_string_t src_string);
+tbx_string_single_quote(const p_tbx_string_t srcstring);
+
+p_tbx_string_t
+tbx_string_single_quote_free(p_tbx_string_t srcstring);
 
 p_tbx_slist_t
-tbx_string_split(const p_tbx_string_t  src_string,
+tbx_string_split(const p_tbx_string_t  srcstring,
 		 const char           *IFS);
 
 p_tbx_slist_t
-tbx_string_split_and_free(p_tbx_string_t  src_string,
+tbx_string_split_and_free(p_tbx_string_t  srcstring,
 			  const char     *IFS);
 
 p_tbx_string_t
@@ -615,17 +641,23 @@ tbx_parameter_manager_exit(void);
 
 // ... Argument option ................................................. //
 p_tbx_argument_option_t
-tbx_argument_option_init_to_c_strings(const char *option,
-				      const char  separator,
-				      const char *value);
+tbx_argument_option_init_to_cstring_ext(const char *option,
+					 const char  separator,
+					 const char *value);
 
 p_tbx_argument_option_t
-tbx_argument_option_init(const p_tbx_string_t option);
+tbx_argument_option_init_to_cstring(const char *option);
 
 p_tbx_argument_option_t
 tbx_argument_option_init_ext(const p_tbx_string_t option,
 			     const char           separator,
 			     const p_tbx_string_t value);
+
+p_tbx_argument_option_t
+tbx_argument_option_init(const p_tbx_string_t option);
+
+p_tbx_argument_option_t
+tbx_argument_option_dup(p_tbx_argument_option_t arg);
 
 void
 tbx_argument_option_free(p_tbx_argument_option_t arg);
@@ -637,6 +669,13 @@ tbx_argument_option_to_string(const p_tbx_argument_option_t arg);
 p_tbx_arguments_t
 tbx_arguments_init(void);
 
+p_tbx_arguments_t
+tbx_arguments_dup(p_tbx_arguments_t src_args);
+
+void
+tbx_arguments_append_arguments(p_tbx_arguments_t dst_args,
+			       p_tbx_arguments_t src_args);
+
 void
 tbx_arguments_free(p_tbx_arguments_t args);
 
@@ -645,16 +684,23 @@ tbx_arguments_append_option(p_tbx_arguments_t             args,
 			    const p_tbx_argument_option_t arg);
 
 void
-tbx_arguments_append_strings_option(p_tbx_arguments_t args,
-				    p_tbx_string_t    option,
-				    const char        separator,
-				    p_tbx_string_t    value);
+tbx_arguments_append_string_ext(p_tbx_arguments_t args,
+				p_tbx_string_t    option,
+				const char        separator,
+				p_tbx_string_t    value);
 
 void
-tbx_arguments_append_c_strings_option(p_tbx_arguments_t  args,
-				      const char        *option,
-				      const char         separator,
-				      const char        *value);
+tbx_arguments_append_string(p_tbx_arguments_t args,
+				   p_tbx_string_t    option);
+
+void
+tbx_arguments_append_cstring_ext(p_tbx_arguments_t  args,
+				  const char        *option,
+				  const char         separator,
+				  const char        *value);
+void
+tbx_arguments_append_cstring(p_tbx_arguments_t  args,
+			      const char        *option);
 
 p_tbx_string_t
 tbx_arguments_to_string(p_tbx_arguments_t args,
@@ -681,14 +727,14 @@ tbx_environment_variable_init(const p_tbx_string_t name,
 			      const p_tbx_string_t value);
 
 p_tbx_environment_variable_t
-tbx_environment_variable_init_to_c_strings(const char *name,
+tbx_environment_variable_init_to_cstrings(const char *name,
 					   const char *value);
 
 p_tbx_environment_variable_t
 tbx_environment_variable_to_variable(const char *name);
 
 void
-tbx_environment_variable_append_c_string(p_tbx_environment_variable_t  var,
+tbx_environment_variable_append_cstring(p_tbx_environment_variable_t  var,
 					 const char                    sep,
 					 const char                   *data);
 
@@ -704,7 +750,7 @@ tbx_environment_variable_set_to_string(p_tbx_environment_variable_t variable,
 				       const p_tbx_string_t         value);
 
 void
-tbx_environment_variable_set_to_c_string(p_tbx_environment_variable_t variable,
+tbx_environment_variable_set_to_cstring(p_tbx_environment_variable_t variable,
 					 const char                  *value);
 
 
@@ -728,7 +774,7 @@ p_tbx_command_t
 tbx_command_init(const p_tbx_string_t command_name);
 
 p_tbx_command_t
-tbx_command_init_to_c_string(const char *command_name);
+tbx_command_init_to_cstring(const char *command_name);
 
 void
 tbx_command_free(p_tbx_command_t command);

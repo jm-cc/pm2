@@ -168,8 +168,8 @@ void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func);
 struct marcel_sched_param {
 	int __sched_priority;
 };
-#ifndef sched_policy
-#define sched_policy __sched_policy
+#ifndef sched_priority
+#define sched_priority __sched_priority
 #endif
 
 #section functions

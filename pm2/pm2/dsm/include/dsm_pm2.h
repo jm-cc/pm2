@@ -29,6 +29,8 @@
 #include "dsm_protocol_lib.h" 
 #include "dsm_protocol_policy.h"
 #include "dsm_lock.h"
+#include "hierarch_lock.h"
+
 
 /* to enable the user to configure the distribution of dsm pages */
 #include "dsm_page_manager.h"

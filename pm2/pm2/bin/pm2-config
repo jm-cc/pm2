@@ -308,6 +308,9 @@ fi
 ##########################################################################
 # CFLAGS et LDFLAGS...
 the_flags="-D${PM2_ARCH} -D${PM2_SYS} $PM2_COMMON_CFLAGS_KERNEL $PM2_COMMON_LIBS"
+if [ -d "$PM2_ROOT/modules/common/include" ]; then
+    the_flags="$the_flags -I$PM2_ROOT/modules/common/include"
+fi
 
 # CFLAGS : on prend tous les cflags
 for lib in $PM2_LIBS; do
@@ -326,7 +329,7 @@ vide=
 for lib in $libs; do
     LIB=`echo $lib | tr [a-z] [A-Z]`
     libs="`eval echo \\$PM2_${LIB}_LIBNAME`"
-    case "libs" in
+    case "$libs" in
     $vide)
 	;;
     *)
@@ -334,12 +337,15 @@ for lib in $libs; do
 	for l in $libs; do
 	    the_libs="$the_libs -l${l}$PM2_EXT"
 	done
+	for l in `eval echo \\$PM2_${LIB}_LIBS_PM2`; do
+	    the_libs="$the_libs -l${l}$PM2_EXT"
+	done
 	;;
     esac
     the_libs="$the_libs `eval echo '$'PM2_${LIB}_LIBS`"
     # CFLAGS spécifique à la compilation d'une lib
     if [ "$kernel" = true ]; then
-	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL"
+	the_flags="$the_flags `eval echo '$'PM2_${LIB}_CFLAGS_KERNEL` -D${LIB}_KERNEL -DMODULE=${LIB}"
     fi
 done
 

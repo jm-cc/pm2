@@ -31,13 +31,14 @@ usage()
 Usage: $PROGNAME [--text | --dialog | --xdialog] [Command ...]
 
 Commands:
-    create [flavor [model]] : create flavor 'flavor' based on model 'model'
-    modify [flavor]         : modify flavor 'flavor'
-    export [flavor [file]]  : export flavor 'flavor' to file 'file'
-    import [flavor [file]]  : export flavor 'flavor' from file 'file'
-    see    [flavor]         : show the flavor 'flavor'
-    check  [flavor]         : check the flavor 'flavor'
-    remove [flavor]         : remove the flavor 'flavor'
+    create     [flavor [model]] : create flavor 'flavor' based on model 'model'
+    modify     [flavor]         : modify flavor 'flavor'
+    export     [flavor [file]]  : export flavor 'flavor' to file 'file'
+    import     [flavor [file]]  : export flavor 'flavor' from file 'file'
+    see        [flavor]         : show the flavor 'flavor'
+    check      [flavor]         : check the flavor 'flavor'
+    remove     [flavor]         : remove the flavor 'flavor'
+    regenerate [flavor]         : regenerate the flavor 'flavor'
 
 EOF
     if [ $exit_code != 0 ]; then

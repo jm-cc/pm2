@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: debug.h,v $
+Revision 1.3  2000/05/25 00:23:37  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.2  2000/01/31 15:50:17  oaumage
 - ajout du Log CVS
 
@@ -44,14 +47,7 @@ ______________________________________________________________________________
 #ifndef DEBUG_EST_DEF
 #define DEBUG_EST_DEF
 
-
-#undef mdebug
-#ifdef DEBUG
-#define mdebug(fmt, args...)  fprintf(stderr, fmt, ##args)
-#else
-#define mdebug(fmt, args...)  (void)0
-#endif
-
+#include "sys/marcel_debug.h"
 
 #endif
 

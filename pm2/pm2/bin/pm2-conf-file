@@ -68,7 +68,7 @@ pm2conffile_parse_cmdline()
 
     [ $# -eq 0 ] || pm2conffile_usage 1
 
-    PM2_CONF_FILE=${HOME}/.pm2/conf/${PM2_FLAVOR:-default}/.pm2conf
+    PM2_CONF_FILE=${PM2_HOME:-${HOME}}/.pm2/conf/${PM2_FLAVOR:-default}/.pm2conf
     export PM2_CONF_FILE
 }
 

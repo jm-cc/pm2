@@ -16,10 +16,17 @@
 #include "fut_code.h"
 
 
+/* reads the supertrace */
+
 #define NB_MAX_PROC  16
 
 struct code_name code_table[1000];
 int nb_code;
+
+int nb_cpu;
+u_64 begin_str;
+u_64 end_str;
+double cpu_cycles;
 
 static FILE *f_str;
 
@@ -83,15 +90,7 @@ void init()
   int fd; 
   char fut_print[550];
   nb_code = 0;
-  /*  code_copy(FUT_SETUP_CODE, "fut_setup");
-  code_copy(FUT_KEYCHANGE_CODE, "fut_keychange");
-  code_copy(FUT_RESET_CODE, "fut_reset");
-  code_copy(FUT_CALIBRATE0_CODE, "fut_calibrate0");
-  code_copy(FUT_CALIBRATE1_CODE, "fut_calibrate1");
-  code_copy(FUT_CALIBRATE2_CODE, "fut_calibrate2");
-  code_copy(FUT_SWITCH_TO_CODE, "fut_switch_to");
-  code_copy(FUT_MAIN_ENTRY_CODE, "main_entry");
-  code_copy(FUT_MAIN_EXIT_CODE, "main_exit");*/
+ 
   get_builddir(fut_print);
   strcat(fut_print, "/profile/include/fut_print.h");
   fd = open(fut_print, O_RDONLY);
@@ -108,6 +107,10 @@ void init()
 
 void read_str_header()
 {
+  fread(&nb_cpu, sizeof(short int), 1, f_str);
+  fread(&begin_str, sizeof(u_64), 1, f_str);
+  fread(&end_str, sizeof(u_64), 1, f_str);
+  fread(&cpu_cycles, sizeof(double), 1, f_str);
   fseek(f_str, 500, SEEK_SET);
 }
 

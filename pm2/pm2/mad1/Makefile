@@ -142,7 +142,7 @@ THE_MAKEFILES	=	$(MAD_MAKEFILE)
 endif
 
 
-$(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d
+$(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d $(THE_MAKEFILES)
 $(MAD_DEPENDS): $(THE_MAKEFILES)
 
 $(MAD_LIB): $(MAD_OBJECTS)
@@ -221,7 +221,7 @@ else
 SRC_DIR		:=	$(MAD_EX_DIR)
 endif
 
-THIS_MAKEFILE	:=	$(SRC_DIR)/Makefile
+MAD_MAKEFILE	+=	$(SRC_DIR)/Makefile
 
 DEP_DIR	=	$(SRC_DIR)/depend
 OBJ_DIR	=	$(SRC_DIR)/obj/$(PM2_ARCH_SYS)
@@ -253,8 +253,8 @@ include $(wildcard $(DEPENDS))
 endif
 endif
 
-$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d
-$(DEPENDS): $(THIS_MAKEFILE) $(MAD_MAKEFILE)
+$(OBJECTS): $(OBJ_DIR)/%.o: $(DEP_DIR)/%.d $(MAD_MAKEFILE)
+$(DEPENDS): $(MAD_MAKEFILE)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(MAD_CC) $(MAD_CFLAGS) -c $< -o $@

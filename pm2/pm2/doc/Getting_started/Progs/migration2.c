@@ -4,11 +4,11 @@ char hostname[128];
 
 
 void
-thread_function (void *arg)
+f (void *arg)
 {
   int i, proc;
   pm2_completion_t my_c;
-  pm2_completion_copy (&my_c, (pm2_completion_t *) arg);
+  pm2_completion_copy (&my_c, (pm2_completion_t *) arg);	/* Here! */
 
   pm2_enable_migration ();
 
@@ -36,11 +36,11 @@ pm2_main (int argc, char *argv[])
   pm2_init (&argc, argv);
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       pm2_completion_t c;
       pm2_completion_init (&c, NULL, NULL);
 
-      pm2_thread_create (thread_function, (void *) (&c));
+      pm2_thread_create (f, (void *) (&c));	/* Here! */
 
       pm2_completion_wait (&c);
       pm2_halt ();

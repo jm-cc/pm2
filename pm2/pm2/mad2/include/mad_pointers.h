@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_pointers.h,v $
+Revision 1.4  2000/11/10 14:17:55  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.3  2000/03/07 10:38:56  oaumage
 - pre-support multi-cluster
 
@@ -63,7 +66,7 @@ typedef struct s_mad_link                 *p_mad_link_t;
 /* ... Protocol module ............................................... */
 typedef struct s_mad_driver               *p_mad_driver_t;
 
-/* ... Carte d'interface ............................................. */
+/* ... Network interface card ........................................ */
 typedef struct s_mad_adapter              *p_mad_adapter_t;
 
 /* ... Cluster members ............................................... */
@@ -83,6 +86,9 @@ typedef struct s_mad_channel              *p_mad_channel_t;
 
 /* ... Main madeleine object ......................................... */
 typedef struct s_mad_madeleine            *p_mad_madeleine_t;
+
+/* ... Madeleine module settings ..................................... */
+typedef struct s_mad_settings             *p_mad_settings_t;
 
 /* ... Adapter identification ........................................ */
 typedef struct s_mad_adapter_description  *p_mad_adapter_description_t;

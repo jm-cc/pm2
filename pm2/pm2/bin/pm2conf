@@ -34,4 +34,4 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-exec ${MADELEINE_ROOT}/bin/madconf $*
+exec ${PM2_ROOT}/madeleine/bin/madconf $*

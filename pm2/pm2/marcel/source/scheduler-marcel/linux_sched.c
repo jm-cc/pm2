@@ -305,10 +305,10 @@ static void recalc_task_prio(marcel_task_t *p, unsigned long long now)
  * resched_task - mark a task 'to be rescheduled now'.
  *
  * On UP this means the setting of the need_resched flag, on SMP it
- * might also involve a cross-CPU call to trigger the scheduler on
- * the target CPU.
+ * might also involve a LWP killing to trigger the scheduler on
+ * the target LWP.
  */
-static inline void resched_task(marcel_task_t *p)
+static inline void resched_task(marcel_task_t *p, ma_lwp_t lwp)
 {
 #ifdef MA__LWPS
 	int need_resched, nrpolling;
@@ -319,11 +319,8 @@ static inline void resched_task(marcel_task_t *p)
 	need_resched = ma_test_and_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
 	nrpolling |= ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
 
-	if (!need_resched && !nrpolling && (ma_task_lwp(p) != LWP_SELF))
-		//smp_send_reschedule(task_cpu(p));
-		//RAISE(NOT_IMPLEMENTED);
-		; // TODO: essayer de trouver un LWP (éventuellement idle)
-		  // qui pourrait s'en occuper ?
+	if (!need_resched && !nrpolling && lwp != LWP_SELF)
+		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
 	ma_preempt_enable();
 #else
 	ma_set_tsk_need_resched(p);
@@ -499,12 +496,13 @@ repeat_lock_task:
 			if (ma_rq_covers(rq, LWP_SELF) && TASK_PREEMPTS_TASK(p, MARCEL_SELF)) {
 				/* we can avoid remote reschedule by switching to it */
 				if (!sync) /* only if we won't for sure yield() soon */
-					resched_task(MARCEL_SELF);
+					resched_task(MARCEL_SELF, LWP_SELF);
 			} else {
 				marcel_lwp_t *lwp;
 				for_each_lwp_from_begin(lwp, LWP_SELF)
+					/* TODO: regarder celui qui préeempte le plus ? (histoire d'aller taper dans Idle plutôt) */
 					if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
-						resched_task(ma_per_lwp(current_thread, lwp));
+						resched_task(ma_per_lwp(current_thread, lwp), lwp);
 						break;
 					}
 				for_each_lwp_from_end();

@@ -12,6 +12,7 @@
 
   /* Lex interface */
   extern FILE *yyin, *yyout;
+  extern const char *parser_filename;
   extern int yylex(void);
 
   /* Global variables */
@@ -20,6 +21,8 @@
   /* Prototypes */
   void yyerror(char *s);
 %}
+
+%error-verbose
 
 %union
 {
@@ -36,7 +39,7 @@
 %token <val> LEOP_INTEGER
 %token <id> LEOP_ID
 %token <str> LEOP_STRING
-%token '{' '}' '[' ']' LEOP_RANGE '(' ')' ':' ';' ',' INCONNU
+%token '{' '}' '[' ']' LEOP_RANGE '(' ')' ':' ';' ',' 
 %type <range>              leop_range
 %type <modifier>           leop_modifier
 %type <object>             leop_object
@@ -176,6 +179,6 @@ LEOP_INTEGER LEOP_RANGE LEOP_INTEGER
 void yyerror(char *s)
 {
   fflush(stdout);
-  fprintf(stderr, "%s\n", s);
+  fprintf(stderr, "%s at %s:%d:%d\n", s, parser_filename, yylloc.first_line, yylloc.first_column);
 }
 

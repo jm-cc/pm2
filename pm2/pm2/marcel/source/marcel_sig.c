@@ -14,8 +14,8 @@
  * General Public License for more details.
  */
 
-#include "sys/marcel_sig.h"
 #include "marcel.h"
+#include "sys/marcel_sig.h"
 
 #define MIN_TIME_SLICE		10000
 #define DEFAULT_TIME_SLICE	MIN_TIME_SLICE
@@ -309,3 +309,4 @@ unsigned long marcel_clock(void)
 {
    return __milliseconds;
 }
+

@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -32,6 +31,10 @@
 
 /* OOPS: causes FAILURE to generate a segfault instead of a call to exit */
 #define OOPS
+
+/* TBX_MALLOC_CTRL: causes TBX to perform additional memory allocation
+   verification */
+#define TBX_MALLOC_CTRL
 
 /*
  * Constant definition  _____________________________________________
@@ -106,29 +109,29 @@
  * FAILURE: display an error message and abort the program
  * -------------------------------------------------------
  */
+#ifdef FAILURE_CLEANUP
 #ifdef OOPS
-#define FAILURE(str) do { \
-  pm2debug_flush(); \
-  pm2fulldebug("FAILURE: %s\n", (str)); \
-  abort(); \
-} while(0)
-#define ERROR(str) do { \
-  pm2debug_flush(); \
-  pm2fulldebug("FAILURE: %s: %s\n\n", (str), strerror(errno)); \
-  abort(); \
-} while(0)
+#define _TBX_EXIT_FAILURE() FAILURE_CLEANUP(),abort()
 #else /* OOPS */
-#define FAILURE(str) do { \
-  pm2debug_flush(); \
-  pm2fulldebug("FAILURE: %s\n", (str)); \
-  exit(1); \
-} while(0)
-#define ERROR(str) do { \
-  pm2debug_flush(); \
-  pm2fulldebug("FAILURE: %s: %s\n\n", (str), strerror(errno)); \
-  exit(1); \
-} while(0)
+#define _TBX_EXIT_FAILURE() FAILURE_CLEANUP(),exit(1)
 #endif /* OOPS */
+#else // FAILURE_CLEANUP
+#ifdef OOPS
+#define _TBX_EXIT_FAILURE() abort()
+#else /* OOPS */
+#define _TBX_EXIT_FAILURE() exit(1)
+#endif /* OOPS */
+#endif // FAILURE_CLEANUP
+
+#define FAILURE(str) \
+     (pm2debug_flush(), \
+      pm2fulldebug("FAILURE: %s\n", (str)), \
+      _TBX_EXIT_FAILURE())
+
+#define ERROR(str) \
+     (pm2debug_flush(), \
+      pm2fulldebug("FAILURE: %s: %s\n\n", (str), strerror(errno)), \
+      _TBX_EXIT_FAILURE())
 
 /*
  * CTRL_ALLOC
@@ -147,11 +150,11 @@
  * _______________///////////////////////////////////////////////////
  */
 #ifdef __GNUC__
-#define max(a,b) \
+#define max(a, b) \
        ({typedef _ta = (a), _tb = (b);  \
          _ta _a = (a); _tb _b = (b);     \
          _a > _b ? _a : _b; })
-#define min(a,b) \
+#define min(a, b) \
        ({typedef _ta = (a), _tb = (b);  \
          _ta _a = (a); _tb _b = (b);     \
          _a < _b ? _a : _b; })
@@ -193,6 +196,7 @@
  * ________________________//////////////////////////////////////////
  */
 #if defined (MARCEL)       //# Thread sync : Marcel mode
+#define tbx_main marcel_main
 #define TBX_SHARED             marcel_mutex_t __tbx_mutex
 #define TBX_INIT_SHARED(st)    marcel_mutex_init((&((st)->__tbx_mutex)), NULL)
 #define TBX_LOCK_SHARED(st)    marcel_mutex_lock((&((st)->__tbx_mutex)))
@@ -202,6 +206,7 @@
 #define TBX_UNLOCK() unlock_task()
 #define TBX_YIELD()  marcel_yield()
 #elif defined (_REENTRANT) //# Thread sync : Pthread mode
+#define tbx_main main
 #define TBX_SHARED             pthread_mutex_t __tbx_mutex
 #define TBX_INIT_SHARED(st)    pthread_mutex_init((&((st)->__tbx_mutex)), NULL)
 #define TBX_LOCK_SHARED(st)    pthread_mutex_lock((&((st)->__tbx_mutex)))
@@ -215,6 +220,7 @@
 #define TBX_YIELD()        pthread_yield()
 #endif                        //# pthread yield : end
 #else                      //# Threads sync : no thread mode
+#define tbx_main main
 #define TBX_SHARED 
 #define TBX_INIT_SHARED(st) 
 #define TBX_LOCK_SHARED(st) 
@@ -230,11 +236,9 @@
  * Memory allocation macros  ________________________________________
  * _________________________/////////////////////////////////////////
  */
+   
+    /* Marcel-internal specific allocation */
 #ifdef MARCEL
-#define TBX_MALLOC(s)     tmalloc  ((s))
-#define TBX_CALLOC(n, s)  tcalloc  ((n), (s))
-#define TBX_REALLOC(p, s) trealloc ((p), (s))
-#define TBX_FREE(s)       tfree    ((s))
 #ifdef TBX_SAFE_MALLOC
 #define __TBX_MALLOC(s, f, l)     tbx_safe_malloc  ((s), (f), (l))
 #define __TBX_CALLOC(n, s, f, l)  tbx_safe_calloc  ((n), (s), (f), (l))
@@ -246,20 +250,45 @@
 #define __TBX_REALLOC(p, s, f, l) realloc ((p), (s))
 #define __TBX_FREE(s, f, l)       free    ((s))
 #endif /* TBX_SAFE_MALLOC */
+#endif /* MARCEL */
+
+    /* Allocation operation */
+#ifdef MARCEL
+#define __TBX_MALLOC_OP(s)     tmalloc  ((s))
+#define __TBX_CALLOC_OP(n, s)  tcalloc  ((n), (s))
+#define __TBX_REALLOC_OP(p, s) trealloc ((p), (s))
+#define __TBX_FREE_OP(s)       tfree    ((s))
 #else /* MARCEL */
 #ifdef TBX_SAFE_MALLOC
-#define TBX_MALLOC(s)     tbx_safe_malloc  ((s), __FILE__, __LINE__)
-#define TBX_CALLOC(n, s)  tbx_safe_calloc  ((n), (s), __FILE__, __LINE__)
-#define TBX_REALLOC(p, s) tbx_safe_realloc ((p), (s), __FILE__, __LINE__)
-#define TBX_FREE(s)       tbx_safe_free    ((s), __FILE__, __LINE__)
+#define __TBX_MALLOC_OP(s)     tbx_safe_malloc  ((s), __FILE__, __LINE__)
+#define __TBX_CALLOC_OP(n, s)  tbx_safe_calloc  ((n), (s), __FILE__, __LINE__)
+#define __TBX_REALLOC_OP(p, s) tbx_safe_realloc ((p), (s), __FILE__, __LINE__)
+#define __TBX_FREE_OP(s)       tbx_safe_free    ((s), __FILE__, __LINE__)
 #else /* TBX_SAFE_MALLOC */
-#define TBX_MALLOC(s)     malloc  ((s))
-#define TBX_CALLOC(n, s)  calloc  ((n), (s))
-#define TBX_REALLOC(p, s) realloc ((p), (s))
-#define TBX_FREE(s)       free    ((s))
+#define __TBX_MALLOC_OP(s)     malloc  ((s))
+#define __TBX_CALLOC_OP(n, s)  calloc  ((n), (s))
+#define __TBX_REALLOC_OP(p, s) realloc ((p), (s))
+#define __TBX_FREE_OP(s)       free    ((s))
 #endif /* TBX_SAFE_MALLOC */
 #endif /* MARCEL */
 
+    /* Regular allocation macro */
+#if (defined TBX_MALLOC_CTRL) && (!defined __GNUC__)
+#warning TBX_MALLOC_CTRL requires the GNU Compiler Collection
+#undef TBX_MALLOC_CTRL
+#endif /* TBX_MALLOC_CTRL && !__GNUC__ */
+
+#ifdef TBX_MALLOC_CTRL
+#define TBX_MALLOC(s)     ((__TBX_MALLOC_OP  ((s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
+#define TBX_CALLOC(n, s)  ((__TBX_CALLOC_OP  ((n)?:(FAILURE("attempt to alloc 0 bytes"), 0), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory allocation error"), NULL))
+#define TBX_REALLOC(p, s) ((__TBX_REALLOC_OP ((p)?:(FAILURE("attempt to realloc a NULL area"), NULL), (s)?:(FAILURE("attempt to alloc 0 bytes"), 0)))?:(FAILURE("memory reallocation error"), NULL))
+#define TBX_FREE(s)       (__TBX_FREE_OP    ((s)?:(FAILURE("attempt to free a NULL area"), NULL)))
+#else /* TBX_MALLOC_CTRL */
+#define TBX_MALLOC(s)     (__TBX_MALLOC_OP  ((s)))
+#define TBX_CALLOC(n, s)  (__TBX_CALLOC_OP  ((n), (s)))
+#define TBX_REALLOC(p, s) (__TBX_REALLOC_OP ((p), (s)))
+#define TBX_FREE(s)       (__TBX_FREE_OP    ((s)))
+#endif /* TBX_MALLOC_CTRL */
 
 /*
  * Alignment macros  ________________________________________________
@@ -273,12 +302,35 @@
 #define TBX_ALIGN(a)  __attribute__ ((__aligned__ (a)))
 #else // __GNUC__
 #define tbx_aligned(v, a) (((v) + (a - 1)) & ~(a - 1))
+#define TBX_ALIGN(a)
 #endif // __GNUC__
+
+
+/*
+ * Arithmetic macros  _______________________________________________
+ * __________________////////////////////////////////////////////////
+ */
+    // Bi-directional shifts
+#define tbx_lshift(x, n) (((n) > 0)?((x) << (n)):((x) >> (-(n))))
+#define tbx_rshift(x, n) (((n) > 0)?((x) >> (n)):((x) << (-(n))))
+
+
+/*
+ * Fields access macros _____________________________________________
+ * ____________________//////////////////////////////////////////////
+ */
+#define tbx_expand_field(h, f) (tbx_lshift((((unsigned int)(h)[f]) & f ## _mask), f ## _shift))
+
+#define tbx_clear_field(h, f) ((h)[f] &= ~(f ## _mask))
+
+#define tbx_contract_field(h, v, f) (tbx_clear_field((h), f), (h)[f] |= (unsigned char)((tbx_rshift((v), f ## _shift)) & f ## _mask))
+
 
 /*
  * Attribute macros  ________________________________________________
  * _________________/////////////////////////////////////////////////
  */
+#ifdef __GNUC__
 #define TBX_BYTE        __attribute__ ((__mode__ (__byte__)))
 #define TBX_WORD        __attribute__ ((__mode__ (__word__)))
 #define TBX_POINTER     __attribute__ ((__mode__ (__pointer__)))
@@ -287,6 +339,16 @@
 #define TBX_UNUSED      __attribute__ ((__unused__))
 #define TBX_NORETURN    __attribute__ ((__noreturn__))
 #define TBX_CONST       __attribute__ ((__const__))
+#else // __GNUC__
+#define TBX_BYTE
+#define TBX_WORD
+#define TBX_POINTER
+#define TBX_ALIGNED
+#define TBX_PACKED
+#define TBX_UNUSED
+#define TBX_NORETURN
+#define TBX_CONST
+#endif // __GNUC__
 
 /*
  * System calls wrappers  ___________________________________________

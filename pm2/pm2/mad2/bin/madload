@@ -35,9 +35,40 @@
 #
 
 # Just in case MAD2_ROOT is not defined
-case $1 in
-    /*) command=$* ;;
-    *) command=`pwd`/$*
+MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
+export MAD2_ROOT
+
+echo Console
+
+if [ -n "${PM2_CONSOLE}" ]; then
+    prog="$1 -pm2cons $PM2_CONSOLE"
+    shift
+else
+    prog="$1"
+    shift
+fi
+
+echo Display
+
+case "_${DISPLAY}" in
+    _) DISPLAY=`uname -n`:0.0 ;;
+    _:*) DISPLAY=`uname -n`${DISPLAY} ;;
+    *) ;;
 esac
-echo Launching $command ...
-exec $command
+
+# Note: PM2_CONF_FILE is inherited
+host=`head -1 ${PM2_CONF_FILE}`
+echo Master = $host
+
+args=""
+while [ $# -gt 0 ]; do
+    args="$args '$1'"
+    shift
+done
+
+if [ "${PM2_DEBUG}" = on ]; then
+    echo "DISPLAY=$DISPLAY;export DISPLAY;PM2_CONF_FILE=$PM2_CONF_FILE;export PM2_CONF_FILE; ${MAD2_ROOT}/bin/tcp/maddebug $prog $args" | ${PM2_RSH:-rsh} $host /bin/sh
+else
+    echo "DISPLAY=$DISPLAY;export DISPLAY;PM2_CONF_FILE=$PM2_CONF_FILE;export PM2_CONF_FILE;$prog $args" | ${PM2_RSH:-rsh} $host /bin/sh
+fi
+

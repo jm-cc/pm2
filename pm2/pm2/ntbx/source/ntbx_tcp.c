@@ -382,8 +382,10 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
   client_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
 #ifdef MARCEL
   ntbx_tcp_socket_setup(client_specific->descriptor);
+  client->blocking = 1;
 #else // MARCEL
   ntbx_tcp_nb_socket_setup(client_specific->descriptor);
+  client->blocking = 0;
 #endif // MARCEL
   client->state = ntbx_client_state_initialized;
   LOG_OUT();
@@ -1038,9 +1040,15 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
     {
       int status;
 
+#ifdef MARCEL
+      status = marcel_read(client_specific->descriptor,
+                           ptr + bytes_read,
+                           length - bytes_read);
+#else /* MARCEL */
       status = read(client_specific->descriptor,
 		    ptr + bytes_read,
 		    length - bytes_read);
+#endif /* MARCEL */
 
       if (status == -1)
 	{
@@ -1109,10 +1117,15 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
     {
       int status;
 
+#ifdef MARCEL
+      status = marcel_write(client_specific->descriptor,
+                            ptr + bytes_written,
+                            length - bytes_written);
+#else /* MARCEL */
       status = write(client_specific->descriptor,
 		    ptr + bytes_written,
 		    length - bytes_written);
-
+#endif /* MARCEL */
       if (status == -1)
 	{
 	  if (errno == EAGAIN)
@@ -1170,12 +1183,7 @@ ntbx_btcp_read_block(p_ntbx_client_t  client,
   if (client->state != ntbx_client_state_connected)
     FAILURE("invalid client state");
 
-  while (!(status = ntbx_tcp_read_poll(1, &client)));
-  if (status == ntbx_failure)
-    {
-      return ntbx_failure;
-    }
-
+  client->state = ntbx_client_state_data_ready;
   status = ntbx_tcp_read_block(client, ptr, length);
 
   LOG_OUT();
@@ -1195,12 +1203,7 @@ ntbx_btcp_write_block(p_ntbx_client_t  client,
   if (client->state != ntbx_client_state_connected)
     FAILURE("invalid client state");
 
-  while (!(status = ntbx_tcp_write_poll(1, &client)));
-  if (status == ntbx_failure)
-    {
-      return ntbx_failure;
-    }
-
+  client->state = ntbx_client_state_write_ready;
   status = ntbx_tcp_write_block(client, ptr, length);
 
   LOG_OUT();
@@ -1379,7 +1382,11 @@ ntbx_tcp_write(int           socket_fd,
     {
       int status;
 
+#ifdef MARCEL
+      status = marcel_write(socket_fd, ptr + bytes_written, length - bytes_written);
+#else /* MARCEL */
       status = write(socket_fd, ptr + bytes_written, length - bytes_written);
+#endif /* MARCEL */
 
       if (status == -1)
 	{

@@ -155,7 +155,7 @@ PACK_REQ_STUB(DSM_LRPC_SEND_DIFFS)
        {
 	 mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
 	 mad_pack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
-	 mad_pack_byte(MAD_IN_PLACE, (char *)addr, size);
+	 mad_pack_byte(MAD_IN_HEADER, (char *)addr, size);
        }
     /* send the NULL value to terminate */ 
     mad_pack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));   
@@ -170,7 +170,7 @@ UNPACK_REQ_STUB(DSM_LRPC_SEND_DIFFS)
      while (addr != NULL)
        {
 	 mad_unpack_byte(MAD_IN_HEADER, (char *)&size, sizeof(int));
-	 mad_unpack_byte(MAD_IN_PLACE, (char *)addr, size); 
+	 mad_unpack_byte(MAD_IN_HEADER, (char *)addr, size); 
 	 mad_unpack_byte(MAD_IN_HEADER, (char *)&addr, sizeof(void *));
        }
 END_STUB

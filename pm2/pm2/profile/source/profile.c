@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: profile.c,v $
+Revision 1.8  2000/10/18 12:41:20  rnamyst
+Euh... Je ne sais plus ce que j'ai modifie, mais c'est par mesure d'hygiene..
+
 Revision 1.7  2000/09/26 09:50:59  rnamyst
 removed -x in shell script mad2bip_load
 
@@ -104,7 +107,7 @@ void profile_init(void)
 
     strcpy(PROF_FILE, "/tmp/prof_file_single");
 
-    if(fut_setup(PROF_BUFFER_SIZE, 0, PROF_THREAD_ID()) < 0) {
+    if(fut_setup(PROF_BUFFER_SIZE, FUT_KEYMASKALL, PROF_THREAD_ID()) < 0) {
       perror("fut_setup");
       exit(EXIT_FAILURE);
     }
@@ -115,7 +118,8 @@ void profile_init(void)
       fut_keychange(activate_params.how,
 		    activate_params.keymask,
 		    activate_params.thread_id);
-
+    else
+      fut_keychange(FUT_DISABLE, FUT_KEYMASKALL, PROF_THREAD_ID());
   }
 }
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.c,v $
+Revision 1.2  2000/05/25 00:23:38  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.1  2000/05/17 14:34:15  oaumage
 - Reorganisation des sources au niveau de mad_init
 
@@ -63,6 +66,8 @@ ______________________________________________________________________________
 /* #define DEBUG */
 /* #define TIMING */
 #include "madeleine.h"
+
+#include "pm2debug.h"
 
 #ifdef REGULAR_SPAWN
 
@@ -518,18 +523,17 @@ mad_init(
   char                       conf_file[128];
   tbx_bool_t                 conf_spec = tbx_false;
 
-  LOG_IN(); 
   if (!configuration_file)
     {    
       configuration_file = conf_file;
       sprintf(conf_file, "%s/.mad2_conf", mad_get_mad_root());
       conf_spec = tbx_true;
     }  
-
 #ifdef MARCEL  
-  marcel_init(argc, argv);
+  marcel_init_ext(argc, argv, PM2DEBUG_DO_OPT);
 #endif /* MARCEL */
-  tbx_init();
+  tbx_init(argc, argv, PM2DEBUG_DO_OPT);
+  LOG_IN(); /* After pm2debug_init ... */
   
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
@@ -584,6 +588,7 @@ mad_init(
 
   mad_driver_init(madeleine);
   mad_connect_hosts(madeleine, conf_spec, argc, argv);
+  pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
   tbx_list_init(&(madeleine->channel));
 
   LOG_OUT();

@@ -21,6 +21,7 @@ LIB_SO_MAJ=0
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-vars.mak
+DO_NOT_GENERATE_MAK_FILES += _clean_autogen_
 
 # TODO LIBNAME devrait provenir des fichiers de la flavor
 #---------------------------------------------------------------------

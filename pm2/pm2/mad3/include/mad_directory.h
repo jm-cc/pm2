@@ -84,6 +84,14 @@ typedef struct s_mad_dir_channel
   p_mad_dir_channel_common_t  common;
 } mad_dir_channel_t;
 
+typedef struct s_mad_dir_fchannel
+{
+  int                         id;
+  char                       *name;
+  char                       *channel_name;
+  p_mad_dir_channel_common_t  common;
+} mad_dir_fchannel_t;
+
 typedef struct s_mad_dir_vchannel_process_routing_table
 {
   char                 *channel_name;
@@ -95,15 +103,6 @@ typedef struct s_mad_dir_vchannel_process_specific
   p_ntbx_process_container_t pc;
 } mad_dir_vchannel_process_specific_t;
 
-typedef struct s_mad_dir_fchannel
-{
-  int                         id;
-  char                       *name;
-  char                       *channel_name;
-  p_mad_dir_channel_common_t  common;
-} mad_dir_fchannel_t;
-
-
 typedef struct s_mad_dir_vchannel
 {
   int                         id;
@@ -113,6 +112,27 @@ typedef struct s_mad_dir_vchannel
   p_ntbx_process_container_t  pc;
   p_mad_dir_channel_common_t  common;
 } mad_dir_vchannel_t;
+
+typedef struct s_mad_dir_xchannel_process_routing_table
+{
+  char                 *channel_name;
+  ntbx_process_grank_t  destination_rank;
+} mad_dir_xchannel_process_routing_table_t;
+
+typedef struct s_mad_dir_xchannel_process_specific
+{
+  p_ntbx_process_container_t pc;
+} mad_dir_xchannel_process_specific_t;
+
+typedef struct s_mad_dir_xchannel
+{
+  int                         id;
+  char                       *name;
+  p_tbx_slist_t               dir_channel_slist;
+  p_tbx_slist_t               dir_fchannel_slist;
+  p_ntbx_process_container_t  pc;
+  p_mad_dir_channel_common_t  common;
+} mad_dir_xchannel_t;
 
 typedef struct s_mad_directory
 {
@@ -133,6 +153,9 @@ typedef struct s_mad_directory
 
   p_tbx_htable_t vchannel_htable;
   p_tbx_slist_t  vchannel_slist;
+
+  p_tbx_htable_t xchannel_htable;
+  p_tbx_slist_t  xchannel_slist;
 } mad_directory_t;
 
 #endif /* MAD_DIRECTORY_H */

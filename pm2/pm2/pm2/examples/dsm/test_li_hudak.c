@@ -334,7 +334,7 @@ void prof_dsmlib_rp_validate_page(void *addr, dsm_access_t access, dsm_node_t re
      // process pending requests
      // should wait for a while ?
      dsm_unlock_page(index);
-     while ((node = dsm_get_next_pending_request(index)) != NO_NODE)
+     while ((node = dsm_get_next_pending_request(index)) != NOBODY)
       {
 #ifdef DSM_QUEUE_TRACE
 	tfprintf(stderr, "Processing R-req from node %d (I am %p)\n", node, marcel_self());

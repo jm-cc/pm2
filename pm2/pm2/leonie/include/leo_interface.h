@@ -24,7 +24,7 @@
 // Objects initialisation
 //------------------------/////////////////////////////////////////////////
 
-p_leo_settings_t  
+p_leo_settings_t
 leo_settings_init(void);
 
 p_leo_process_specific_t
@@ -50,6 +50,12 @@ leo_dir_node_init(void);
 
 p_leo_dir_driver_t
 leo_dir_driver_init(void);
+
+p_leo_dir_channel_common_process_specific_t
+leo_dir_channel_common_process_specific_init(void);
+
+p_leo_dir_channel_common_t
+leo_dir_channel_common_init(void);
 
 p_leo_dir_channel_process_specific_t
 leo_dir_channel_process_specific_init(void);
@@ -160,16 +166,16 @@ directory_exit(p_leonie_t leonie);
 
 // Usage
 //-------//////////////////////////////////////////////////////////////////
-void 
+void
 leo_usage(void) TBX_NORETURN;
 
-void 
+void
 leo_help(void) TBX_NORETURN;
 
-void 
+void
 leo_terminate(const char *msg) TBX_NORETURN;
 
-void 
+void
 leo_error(const char *command) TBX_NORETURN;
 
 void

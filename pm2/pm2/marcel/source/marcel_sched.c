@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.29  2000/05/09 10:52:46  vdanjean
+pm2debug module
+
 Revision 1.28  2000/05/03 18:34:47  vdanjean
 few bugs fixes in key managment
 
@@ -188,6 +191,7 @@ ______________________________________________________________________________
 #include <sys/wait.h>
 
 #include "marcel.h"
+#include "sys/marcel_debug.h"
 #include "safe_malloc.h"
 
 #ifdef SMP
@@ -907,6 +911,7 @@ static __inline__ marcel_t next_task_to_run(marcel_t t, __lwp_t *lwp)
 void marcel_yield(void)
 {
   register marcel_t cur = marcel_self();
+  register marcel_t next;
   DEFINE_CUR_LWP(,,);
   SET_CUR_LWP(GET_LWP(cur));
 
@@ -917,7 +922,10 @@ void marcel_yield(void)
     unlock_task();
     return;
   }
-  goto_next_task(next_task_to_run(cur, cur_lwp));
+  next=next_task_to_run(cur, cur_lwp);
+  can_goto_next_task(cur, next);
+  MA_THR_RESTARTED(cur, "");
+  unlock_task();
 }
 
 //TODO : is it correct for marcel-smp ?
@@ -1226,7 +1234,7 @@ any_t idle_func(any_t arg) // Pour les activations
 #ifdef MA__ACTSMP
 #define ACT_DONT_USE_SYSCALL
 #endif
-#define myfprintf(arg...) fprintf(##arg)
+#define myfprintf(arg...) mdebug(##arg)
     while (!(next || act_nb_unblocked)) {
 //	    int i;
 	    MTRACE("active wait", cur);
@@ -1234,6 +1242,7 @@ any_t idle_func(any_t arg) // Pour les activations
 #ifndef ACT_DONT_USE_SYSCALL
 	    act_cntl(ACT_CNTL_READY_TO_WAIT,0);
 	    if (act_nb_unblocked) break;
+	    mdebug("Idle waiting in kernel...\n");
 	    act_cntl(ACT_CNTL_DO_WAIT,0);	
 #else      
 	    while(!(act_nb_unblocked || next)) {
@@ -1247,14 +1256,14 @@ any_t idle_func(any_t arg) // Pour les activations
 				    ;
 		    }
 		    if (!act_nb_unblocked) {
-			    myfprintf(stderr, "act_nb_unblocked=%i (LWP = %d)\n",
+			    myfprintf("act_nb_unblocked=%i (LWP = %d)\n",
 				    act_nb_unblocked, cur_lwp->number);
 		    }
 	    }
 	    MTRACE("end active wait", cur);
 	    mdebug("fin attente active\n");
 	    if (next) {
-		    myfprintf(stderr, "idle has job (LWP = %d)\n",
+		    myfprintf("idle has job (LWP = %d)\n",
 			    cur_lwp->number);
 		    break;
 	    }
@@ -1268,11 +1277,11 @@ any_t idle_func(any_t arg) // Pour les activations
     
     if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
 	    if (next) {
-		    myfprintf(stderr, "idle has job (LWP = %d)\n",
+		    myfprintf("idle has job (LWP = %d)\n",
 			    cur_lwp->number);
 		    goto_next_task(next);
 	    } else {
-		    myfprintf(stderr, "idle can have job (LWP = %d)\n",
+		    myfprintf("idle can have job (LWP = %d)\n",
 			    cur_lwp->number);
 		    act_goto_next_task(NULL, ACT_RESTART_FROM_IDLE);
 	    }
@@ -1795,7 +1804,7 @@ static void timer_interrupt(int sig)
 
   if(!locked() && preemption_enabled()) {
 
-    MTRACE("TimerSig", cur);
+    MTRACE_TIMER("TimerSig", cur);
 
     lock_task();
     marcel_check_delayed_tasks();

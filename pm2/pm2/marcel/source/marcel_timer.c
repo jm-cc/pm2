@@ -20,6 +20,14 @@
 #include <errno.h>
 #include <linux/unistd.h>
 
+/* pour déboggage seulement */
+//#define MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+
+#ifdef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#warning NO SIGNAL TIMER ENABLE
+#warning I hope you are debugging
+#endif
+
 #ifdef __NR_gettid
 _syscall0(pid_t,gettid)
 #endif
@@ -240,8 +248,10 @@ static void sig_reset_timer(void)
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	setitimer(MARCEL_ITIMER_TYPE, &value, 
 		  (struct itimerval *)NULL);
+#endif
 	
 	LOG_OUT();
 }
@@ -310,7 +320,9 @@ static void sig_start_timer(void)
 	sa.sa_flags = 0;
 #endif
 	
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+#endif
 
 	sig_reset_timer();
 	
@@ -327,14 +339,18 @@ static void sig_stop_timer(void)
 	fault_catcher_exit();
 
 	memset(&value,0,sizeof(value));
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	setitimer(MARCEL_ITIMER_TYPE, &value,
 		  (struct itimerval *)NULL);
+#endif
 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = SIG_DFL;
 	sa.sa_flags = 0;
 
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+#endif
 
 	LOG_OUT();
 }

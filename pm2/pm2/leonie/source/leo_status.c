@@ -51,6 +51,8 @@ leonie_failure_cleanup(void)
   pid_t pid = 0;
   
   LOG_IN();
+  DISP("A failure has been detected, hit return to close the session");
+  getchar();
   pid = getpid();
   kill(-pid, SIGTERM);
   LOG_OUT();

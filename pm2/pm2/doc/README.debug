@@ -153,7 +153,7 @@ on peut mettre dans calcul_debug.h :
 #include "tbx.h"
 extern debug_type_t debug_calcul_trace;
 #define CALCUL_TRACE(fmt, args...) \
-    debug_printf(&debug_calcul_trace, fmt, ##args)
+    debug_printf(&debug_calcul_trace, fmt , ##args)
 /****************************************************************/
 
 et dans calcul_debug.c

@@ -27,6 +27,7 @@ any_t f(any_t arg)
   struct timespec ts;
 
   marcel_mutex_lock(&mutex);
+
   for(;;) {
     gettimeofday(&now, NULL);
 
@@ -37,6 +38,7 @@ any_t f(any_t arg)
       break;
     tprintf("What a boring job, isn't it ?\n");
   }
+
   marcel_mutex_unlock(&mutex);
 
   tprintf("What a relief !\n");

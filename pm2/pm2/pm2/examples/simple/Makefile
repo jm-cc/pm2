@@ -38,10 +38,20 @@ default: all
 
 include ../../make/common.mak
 
-all: simple synchronous threads ping thr_create
+all: hello simple synchronous threads ping thr_create
 
 
 # executables :
+
+
+# hello :
+
+$(PM2_OBJ)/hello.o: hello.c $(PM2_HEADERS)
+	$(PM2_CC2)
+
+hello: $(PM2_OBJ)/hello.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
+	$(PM2_MOVE)
 
 
 # simple :
@@ -90,6 +100,15 @@ $(PM2_OBJ)/thr_create.o: thr_create.c $(PM2_HEADERS)
 	$(PM2_CC2)
 
 thr_create: $(PM2_OBJ)/thr_create.o $(PM2_LIBS)
+	$(PM2_LINK) $(PM2_LLIBS)
+	$(PM2_MOVE)
+
+# test :
+
+$(PM2_OBJ)/test.o: test.c $(PM2_HEADERS)
+	$(PM2_CC2)
+
+test: $(PM2_OBJ)/test.o $(PM2_LIBS)
 	$(PM2_LINK) $(PM2_LLIBS)
 	$(PM2_MOVE)
 

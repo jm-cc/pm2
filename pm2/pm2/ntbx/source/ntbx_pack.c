@@ -34,6 +34,21 @@
 
 ______________________________________________________________________________
 $Log: ntbx_pack.c,v $
+Revision 1.3  2000/04/27 08:59:19  oaumage
+- fusion de la branche pm2_mad2_multicluster
+
+Revision 1.2.2.4  2000/04/15 15:23:29  oaumage
+- corrections diverses
+
+Revision 1.2.2.3  2000/04/15 15:20:36  oaumage
+- corrections diverses
+
+Revision 1.2.2.2  2000/04/13 15:54:29  oaumage
+- correction des fonctions pack/unpack
+
+Revision 1.2.2.1  2000/04/03 13:46:23  oaumage
+- ajout de fonctions d'empaquetage (donnees long)
+
 Revision 1.2  2000/03/01 11:03:35  oaumage
 - mise a jour des #includes ("")
 
@@ -49,11 +64,15 @@ ______________________________________________________________________________
  * ntbx_pack.c
  * -----------
  */
-
+/* #define DEBUG */
 #include "ntbx.h"
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * Integer
+ * -------
+ */
 void
 ntbx_pack_int(int                  data,
 	      p_ntbx_pack_buffer_t pack_buffer)
@@ -66,7 +85,12 @@ ntbx_pack_int(int                  data,
     {
       sprintf(ptr++, "I");
     }
-  sprintf(ptr, "%*d", NTBX_PACK_BUFFER_LEN, data);
+  sprintf(ptr,
+	  "%*d%c",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
+	  data, 0);
+  LOG_VAL("data", data);
+  LOG_STR("pack_buffer", pack_buffer);
   LOG_OUT();
 }
 
@@ -84,10 +108,57 @@ ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
 	FAILURE("synchronisation error");
     }
   data = atoi(ptr);
+  LOG_VAL("data", data);
+  LOG_STR("pack_buffer", pack_buffer);
   LOG_OUT();
   return data;
 }
 
+/*
+ * Long integer
+ * ------------
+ */
+void
+ntbx_pack_long(long                 data,
+	       p_ntbx_pack_buffer_t pack_buffer)
+{
+  void *ptr = pack_buffer;
+  int   i;
+  
+  LOG_IN();
+  for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
+    {
+      sprintf(ptr++, "L");
+    }
+  sprintf(ptr,
+	  "%*ld%c",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
+	  data, 0);
+  LOG_OUT();
+}
+
+long
+ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
+{
+  void *ptr = pack_buffer;
+  long  data;
+  int   i;
+ 
+  LOG_IN();
+  for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
+    {
+      if (*(char*)ptr++ != 'L')
+	FAILURE("synchronisation error");
+    }
+  data = atol(ptr);
+  LOG_OUT();
+  return data;
+}
+
+/*
+ * Double
+ * ------
+ */
 void
 ntbx_pack_double(double               data,
 		 p_ntbx_pack_buffer_t pack_buffer)
@@ -100,7 +171,10 @@ ntbx_pack_double(double               data,
     {
       sprintf(ptr++, "D");
     }
-  sprintf(ptr, "%*f", NTBX_PACK_BUFFER_LEN, data);
+  sprintf(ptr,
+	  "%*f%c",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
+	  data, 0);
   LOG_OUT();
 }
 

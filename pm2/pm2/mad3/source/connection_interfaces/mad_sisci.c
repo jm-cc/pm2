@@ -264,156 +264,6 @@ mad_sisci_receive_sci_buffer_group_3(p_mad_link_t           lnk,
 static  char tmp[2048] __attribute__ ((aligned (4096)));
 
 
-static
-inline
-void
-cpy4(const void *src,
-     volatile void *dest,
-     unsigned long nbytes)
-{
-
-  /*
-   *
-
-   We should use movntq instead of movq as store but it seems not to be available on PII
-
-   *
-   */
-
-  __asm__ __volatile__(
-    "    movl %0, %%esi \n\t"
-    "    movl %1, %%edi \n\t"
-    "    movl %2, %%ecx \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    shrl $11, %%ebx \n\t"
-    "    jz 4f \n\t"
-
-    "0: \n\t"
-    "    pushl %%edi \n\t"
-    "    mov %3, %%edi \n\t"
-    "    mov $32, %%ecx \n\t"
-
-    "1: \n\t"
-#if MAD_SISCI_MEM_PREFETCH
-    "    prefetchnta 64(%%esi) \n\t"
-    "    prefetchnta 96(%%esi) \n\t"
-#endif
-    "    movq  0(%%esi), %%mm1 \n\t"
-    "    movq  8(%%esi), %%mm2 \n\t"
-    "    movq 16(%%esi), %%mm3 \n\t"
-    "    movq 24(%%esi), %%mm4 \n\t"
-    "    movq 32(%%esi), %%mm5 \n\t"
-    "    movq 40(%%esi), %%mm6 \n\t"
-    "    movq 48(%%esi), %%mm7 \n\t"
-    "    movq 56(%%esi), %%mm0 \n\t"
-
-    "    movq %%mm1,  0(%%edi) \n\t"
-    "    movq %%mm2,  8(%%edi) \n\t"
-    "    movq %%mm3, 16(%%edi) \n\t"
-    "    movq %%mm4, 24(%%edi) \n\t"
-    "    movq %%mm5, 32(%%edi) \n\t"
-    "    movq %%mm6, 40(%%edi) \n\t"
-    "    movq %%mm7, 48(%%edi) \n\t"
-    "    movq %%mm0, 56(%%edi) \n\t"
-
-    "    addl $64, %%esi \n\t"
-    "    addl $64, %%edi \n\t"
-    "    decl %%ecx \n\t"
-    "    jnz 1b \n\t"
-
-    "    popl %%edi \n\t"
-    "    pushl %%esi \n\t"
-    "    mov %3, %%esi \n\t"
-    "    mov $32, %%ecx \n\t"
-
-    "2: \n\t"
-#if MAD_SISCI_MEM_PREFETCH
-    "    prefetchnta 64(%%esi) \n\t"
-    "    prefetchnta 96(%%esi) \n\t"
-#endif
-    "    movq  0(%%esi), %%mm1 \n\t"
-    "    movq  8(%%esi), %%mm2 \n\t"
-    "    movq 16(%%esi), %%mm3 \n\t"
-    "    movq 24(%%esi), %%mm4 \n\t"
-    "    movq 32(%%esi), %%mm5 \n\t"
-    "    movq 40(%%esi), %%mm6 \n\t"
-    "    movq 48(%%esi), %%mm7 \n\t"
-    "    movq 56(%%esi), %%mm0 \n\t"
-#if MAD_SISCI_NT_MOVE
-    "    movntq %%mm1,  0(%%edi) \n\t"
-    "    movntq %%mm2,  8(%%edi) \n\t"
-    "    movntq %%mm3, 16(%%edi) \n\t"
-    "    movntq %%mm4, 24(%%edi) \n\t"
-    "    movntq %%mm5, 32(%%edi) \n\t"
-    "    movntq %%mm6, 40(%%edi) \n\t"
-    "    movntq %%mm7, 48(%%edi) \n\t"
-    "    movntq %%mm0, 56(%%edi) \n\t"
-#else
-    "    movq %%mm1,  0(%%edi) \n\t"
-    "    movq %%mm2,  8(%%edi) \n\t"
-    "    movq %%mm3, 16(%%edi) \n\t"
-    "    movq %%mm4, 24(%%edi) \n\t"
-    "    movq %%mm5, 32(%%edi) \n\t"
-    "    movq %%mm6, 40(%%edi) \n\t"
-    "    movq %%mm7, 48(%%edi) \n\t"
-    "    movq %%mm0, 56(%%edi) \n\t"
-#endif
-    "    addl $64, %%esi \n\t"
-    "    addl $64, %%edi \n\t"
-    "    decl %%ecx \n\t"
-    "    jnz 2b \n\t"
-
-    "    popl %%esi \n\t"
-    "    decl %%ebx \n\t"
-    "    jnz 0b \n\t"
-
-    "    movl %2, %%ecx \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    movl $2047, %%eax \n\t"
-    "    andl %%eax, %%ecx \n\t"
-    "4: \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    shrl $6, %%ebx \n\t"
-    "    jz 5f \n\t"
-
-    "3: \n\t"
-#if MAD_SISCI_MEM_PREFETCH
-    "    prefetchnta 64(%%esi) \n\t"
-    "    prefetchnta 96(%%esi) \n\t"
-#endif
-    "    movq  0(%%esi), %%mm1 \n\t"
-    "    movq  8(%%esi), %%mm2 \n\t"
-    "    movq 16(%%esi), %%mm3 \n\t"
-    "    movq 24(%%esi), %%mm4 \n\t"
-    "    movq 32(%%esi), %%mm5 \n\t"
-    "    movq 40(%%esi), %%mm6 \n\t"
-    "    movq 48(%%esi), %%mm7 \n\t"
-    "    movq 56(%%esi), %%mm0 \n\t"
-    "    movq %%mm1,  0(%%edi) \n\t"
-    "    movq %%mm2,  8(%%edi) \n\t"
-    "    movq %%mm3, 16(%%edi) \n\t"
-    "    movq %%mm4, 24(%%edi) \n\t"
-    "    movq %%mm5, 32(%%edi) \n\t"
-    "    movq %%mm6, 40(%%edi) \n\t"
-    "    movq %%mm7, 48(%%edi) \n\t"
-    "    movq %%mm0, 56(%%edi) \n\t"
-    "    addl $64, %%esi \n\t"
-    "    addl $64, %%edi \n\t"
-    "    decl %%ebx \n\t"
-    "    jnz 3b \n\t"
-
-    "5:  \n\t"
-    "    emms \n\t"
-    "    movl %2, %%ecx \n\t"
-    "    movl %%ecx, %%ebx \n\t"
-    "    movl $63, %%eax \n\t"
-    "    andl %%eax, %%ecx \n\t"
-    "    cld \n\t"
-    "    rep movsb \n\t"
-    : : "m" (src), "m" (dest), "m" (nbytes), "p" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
-  //: : "m" (src), "m" (dest), "m" (nbytes), "m" (tmp) : "esi", "edi", "eax", "ebx", "ecx", "cc", "memory");
-}
-
 static void
 mad_sisci_display_error(sci_error_t error)
 {
@@ -1657,8 +1507,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 
 	mad_sisci_wait_for(link, read);
 
-	/* memcpy(destination, source, size); */
-	cpy4(source, destination, size);
+	memcpy(destination, source, size);
 
 	mad_sisci_clear(read);
 
@@ -1691,8 +1540,7 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
 	  mad_sisci_flush(remote_segment);
 	  mad_sisci_wait_for(link, read);
 
-//	  memcpy(destination, source, size);
-          cpy4(source, destination, size);
+	  memcpy(destination, source, size);
 
 	  mad_sisci_clear(read);
 	  mad_sisci_set(write);
@@ -1934,8 +1782,7 @@ transmission:
 	      need_wait = tbx_false;
 	    }
 
-	  //memcpy(destination, (const void *)(source + offset), size);
-	  cpy4((const void *)(source + offset), destination, size);
+	  memcpy(destination, (const void *)(source + offset), size);
 
 	  offset += tbx_aligned(size, 4);
 	  destination += size;
@@ -2140,8 +1987,7 @@ mad_sisci_receive_sci_buffer_group_1(p_mad_link_t         link,
 		source_size - offset);
 
 	  buffer->bytes_written += size;
-	  //memcpy(destination, (const void *)(source + offset), size);
-	  cpy4((const void *)(source + offset), destination, size);
+	  memcpy(destination, (const void *)(source + offset), size);
 
 	  offset += tbx_aligned(size, 4);
 	  destination += size;

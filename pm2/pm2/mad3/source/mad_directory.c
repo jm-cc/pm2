@@ -472,8 +472,8 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
     {
       p_mad_dir_channel_t  dir_fchannel            = NULL;
 
-      dir_fchannel->id           = tbx_htable_get_size(dir->channel_htable);
       dir_fchannel               = mad_dir_channel_cons();
+      dir_fchannel->id           = tbx_htable_get_size(dir->channel_htable);
       dir_fchannel->name         = mad_leonie_receive_string();
       dir_fchannel->cloned_channel_name = mad_leonie_receive_string();
       TRACE_STR("Forwarding channel name", dir_fchannel->name);

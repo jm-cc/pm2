@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_exit.c,v $
+Revision 1.2  2000/06/07 08:12:05  oaumage
+- Retour a des bases saines
+
 Revision 1.1  2000/05/17 14:34:14  oaumage
 - Reorganisation des sources au niveau de mad_init
 
@@ -45,7 +48,6 @@ ______________________________________________________________________________
  * Mad_exit.c
  * ==========
  */
-/* #define DEBUG */
 /* #define TIMING */
 #include "madeleine.h"
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.h,v $
+Revision 1.5  2000/05/22 12:18:59  oaumage
+- listes de recherche
+
 Revision 1.4  2000/03/08 17:16:00  oaumage
 - support de Marcel sans PM2
 - support de tmalloc en mode `Marcel'
@@ -85,6 +88,7 @@ ______________________________________________________________________________
 #include "tbx_types.h"
 
 #include "tbx_malloc.h"
+#include "tbx_slist.h"
 #include "tbx_list.h"
 
 #include "tbx_interface.h"

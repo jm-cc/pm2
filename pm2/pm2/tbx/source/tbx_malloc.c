@@ -140,6 +140,12 @@ tbx_safe_malloc_init(void)
   atexit(tbx_safe_malloc_mem_check);
 }
 
+void
+tbx_safe_malloc_exit(void)
+{
+        /**/
+}
+
 void *
 tbx_safe_malloc(const size_t    size,
 		const char     *file,
@@ -232,7 +238,7 @@ tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
 }
 
 void
-tbx_safe_free(void *ptr)
+tbx_safe_free(void *ptr, const char *file, const unsigned  line)
 {
   p_tbx_safe_malloc_header_t  p    =
     ptr - TBX_SAFE_MALLOC_HEADER_SIZE;
@@ -306,7 +312,7 @@ tbx_safe_realloc(void     *ptr,
       memcpy(new_ptr, ptr, size);
     }
 
-  tbx_safe_free(ptr);
+  tbx_safe_free(ptr, file, line);
 
   return new_ptr;
 }

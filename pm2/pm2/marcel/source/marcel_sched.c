@@ -206,6 +206,10 @@ inline unsigned marcel_nbvps(void)
 
 static __inline__ int CAN_RUN(__lwp_t *lwp, marcel_t pid)
 {
+  if (!marcel_vpmask_vp_ismember(&pid->vpmask, lwp->number)) {
+    mdebug_sched_q("%p can not run on LWP %i (mask %p)\n", pid, lwp->number,
+		   pid->vpmask);
+  }
   return
     ( 1
 #ifdef MA__MULTIPLE_RUNNING
@@ -395,29 +399,31 @@ static __inline__ void display_sched_queue(__lwp_t *lwp)
 {
   marcel_t t;
 
+  LOG_IN();
   t = SCHED_DATA(lwp).first;
   if(t) {
-    mdebug("\t\t\t<Queue of regular tasks on LWP %d:\n", lwp->number);
+    mdebug_sched_q("\t\t\t<Queue of regular tasks on LWP %d:\n", lwp->number);
     do {
-      mdebug("\t\t\t\tThread %p (num %d, LWP %d)\n",
-	     t, t->number, GET_LWP(t)->number);
+      mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, ext_state %p, sf %p)\n",
+	     t, t->number, GET_LWP(t)->number, t->ext_state, t->special_flags);
       t = next_task(t);
     } while(t != SCHED_DATA(lwp).first);
-    mdebug("\t\t\t>\n");
+    mdebug_sched_q("\t\t\t>\n");
   }
 
 #ifdef MARCEL_RT
   t = SCHED_DATA(lwp).rt_first;
   if(t) {
-    mdebug("\t\t\t<Queue of real-time tasks on LWP %d:\n", lwp->number);
+    mdebug_sched_q("\t\t\t<Queue of real-time tasks on LWP %d:\n", lwp->number);
     do {
-      mdebug("\t\t\t\tThread %p (num %d, LWP %d)\n",
-	     t, t->number, GET_LWP(t)->number);
+      mdebug_sched_q("\t\t\t\tThread %p (num %d, LWP %d, ext_state %p, sf %p)\n",
+	     t, t->number, GET_LWP(t)->number, t->ext_state, t->special_flags);
       t = next_task(t);
     } while(t != SCHED_DATA(lwp).rt_first);
-    mdebug("\t\t\t>\n");
+    mdebug_sched_q("\t\t\t>\n");
   }
 #endif
+  LOG_OUT();
 }
 
 // Insere la tache "idle" et retourne son identificateur. Cette
@@ -446,78 +452,113 @@ static marcel_t insert_and_choose_idle_task(marcel_t cur, __lwp_t *lwp)
 // "MARCEL_RT", on regarde d'abord s'il existe une éventuelle tâche
 // 'real-time'. Si aucune tâche n'est trouvée, alors on retourne la
 // tâche courante (cur).
-static __inline__ marcel_t next_runnable_task(marcel_t cur
-					      , __lwp_t *lwp
-#ifdef MARCEL_RT
-					      , boolean avoid_self
-#endif
+static __inline__ marcel_t next_runnable_task(marcel_t cur, __lwp_t *lwp,
+					      boolean avoid_self,
+					      boolean cur_is_valid
 					      )
+     // * avoid_self : on doit retourner une autre tâche que nous
+     // même. Utile uniquement en mode RT pour aller voir dans l'autre
+     // file si cur est RT et qu'on ne trouve pas d'autres tâche RT
+     // convenables.  
+     // * cur_is_valid : TRUE sauf si cur n'est pas dans une des deux
+     // files. Ceci ne survient qu'avec les pseudo threads des upcalls
+     // new.
 {
-  register marcel_t res;
+  register marcel_t res=NULL;
+  register marcel_t first;
 
+  LOG_IN();
 #ifdef MARCEL_RT
-  marcel_t first;
-
-  // Si 'cur' est une tâche normale mais qu'il existe des tâches dans
-  // la file 'real-time', alors il faut d'abord chercher dans cette
-  // file.
-  if(!MA_TASK_REAL_TIME(cur) &&
-     (first = SCHED_DATA(lwp).rt_first) != NULL) {
-#ifdef MA__MULTIPLE_RUNNING
-    res = first;
-    do {
-      if(CAN_RUN(lwp, res))
-	return res;
-      res = next_task(res);
-    } while (res != first);
-#else
-    return first;
-#endif
-    // Si on arrive ici, alors res == first et c'est un echec. On va
-    // donc passer au bloc d'instruction suivant...
-  }
-#endif // MARCEL_RT
-
-  // On arrive ici si :
-  //     - 'cur' est une tâche 'real-time'
-  // ou
-  //     - 'cur' est une tâche normale et la file 'real-time' est vide
-  // ou
-  //     - 'cur' est normale, la file 'real-time' n'est pas vide mais
-  //       on n'a pas trouvé de tâches "exécutables sur ce LWP" dedans
-  // On cherche donc au sein de sa propre file...
-#ifdef MA__MULTIPLE_RUNNING
-  res = cur;
+  // S'il existe des tâches RT, on cherche d'abord parmi elles.
   do {
-    res = next_task(res);
-  } while ((CANNOT_RUN(lwp, res)) && (res != cur));
-#else
-  res = next_task(cur);
-#endif
-
-#ifdef MARCEL_RT
-  // Si on est appelé depuis 'radical_next_task' (avoid_self) et que
-  // la tâche courante "real-time" n'a pas daigné trouver quelqu'un
-  // d'autre, alors il faut aller regarder du côté de la file des
-  // tâches normales.
-  if(avoid_self && res == cur && MA_TASK_REAL_TIME(cur) &&
-     (first = SCHED_DATA(lwp).first) != NULL) {
+    if (cur_is_valid && MA_TASK_REAL_TIME(cur)) {
+      // Si on est dans la file et on est RT, on commence par nous
+      first = cur;
+      mdebug_sched_q("commençons pour nous (rt): %p\n", first);
+    } else if ((first = SCHED_DATA(lwp).rt_first) == NULL) {
+      // S'il n'y a pas de tâche RT, on part.
+      break;
+    } else {
+      mdebug_sched_q("commençons au début rt: %p\n", first);
+      if (CAN_RUN(lwp, first)) {
+	// Le premier RT convient.
+	LOG_OUT();
+	return first;
+      }
+    }
+    res = next_task(first);    
 #ifdef MA__MULTIPLE_RUNNING
-    res = first;
-    do {
-      if(CAN_RUN(lwp, res))
+    while (res != first) {
+      if (CAN_RUN(lwp, res)) {
+	LOG_OUT();
 	return res;
-      res = next_task(res);
-    } while (res != first);
+      }
+      mdebug_sched_q("non, pas rt %p\n", res);
+      res = next_task(res);      
+    }
 #else
-    return first;
+    if (res != cur) {
+      // Une autre tâche que nous même est là. On la prend.
+      LOG_OUT();
+      return res;
+    }
 #endif
-    // Si echec, on retourne cur en définitive...
-    return cur;
+  } while (0);
+
+  // On n'a pas trouvé de nouvelle tâche RT. Si res==cur, c'est que
+  // cur est RT. Si avoid_self est faux, ça convient.
+  if ((!avoid_self) && (res==cur)) {
+    LOG_OUT();
+    return res;
   }
 #endif
 
-  return res;
+  // On arrive ici si aucune tâche RT ne convient. Il y a plusieurs
+  // raisons à ceci :
+  //    - aucune tâche RT ne convient (mauvais LWP ou absence de tâche RT)
+  //    - une seule tâche RT disponible : nous-même. Mais avoid_self==TRUE.
+
+  // S'il existe des tâches normales, on cherche parmi elles.
+  do {
+    if (cur_is_valid && !MA_TASK_REAL_TIME(cur)) {
+      // Si on est dans la file, on commence par nous
+      first = cur;
+      mdebug_sched_q("commençons par nous: %p\n", first);
+    } else if ((first = SCHED_DATA(lwp).first) == NULL) {
+      // S'il n'y a pas de tâche, on part.
+      LOG_OUT();
+      return cur;
+    } else {
+      mdebug_sched_q("commençons au début: %p\n", first);
+      if (CAN_RUN(lwp, first)) {
+	// Le premier thread convient.
+	LOG_OUT();
+	return first;
+      }
+    }
+    // Rem: sans MA__MULTIPLE_RUNNING, un des cas précédents a
+    // forcément réussi : CAN_RUN(thread) est défini à TRUE...
+
+    res = next_task(first);
+#ifdef MA__MULTIPLE_RUNNING
+    while (res != first) {
+      if (CAN_RUN(lwp, res)) {
+	LOG_OUT();
+	return res;
+      }
+      mdebug_sched_q("non, pas %p\n", res);
+      res = next_task(res);
+    }
+#else
+    LOG_OUT();
+    return res;
+#endif
+  } while (0);
+
+  // On n'a pas trouvé de tâche. On renvoie cur.
+  
+  LOG_OUT();
+  return cur;
 }
 
 // Cherche la prochaine tâche à exécuter et la marque 'RUNNING'.
@@ -528,7 +569,7 @@ static __inline__ marcel_t next_task_to_run(marcel_t cur, __lwp_t *lwp)
 
   sched_lock(lwp);
 
-  res = next_runnable_task(cur, lwp __CALLED_FROM_YIELD__);
+  res = next_runnable_task(cur, lwp, FALSE, TRUE);
   SET_STATE_RUNNING(cur, res, lwp);
 
   sched_unlock(lwp);
@@ -553,7 +594,7 @@ static marcel_t radical_next_task(marcel_t cur, __lwp_t *lwp)
     cur = SCHED_DATA(cur_lwp).first;
 #endif
 
-  next = next_runnable_task(cur, lwp __CALLED_FROM_UNCHAIN__);
+  next = next_runnable_task(cur, lwp, TRUE, TRUE);
   if(next == cur)
     next = insert_and_choose_idle_task(first, lwp);
 
@@ -1222,7 +1263,7 @@ static marcel_t idle_body(void)
 any_t idle_func(any_t arg) // Sans activation (mono et smp)
 {
   marcel_t next, cur = marcel_self();
-#ifdef MA__DEBUG
+#ifdef PM2DEBUG
     DEFINE_CUR_LWP(, =, GET_LWP(cur));
 #endif
 

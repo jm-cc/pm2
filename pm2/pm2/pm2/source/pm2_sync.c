@@ -17,13 +17,13 @@
 #include "pm2.h"
 #include "pm2_sync.h"
 
-#//define BARRIER_TRACE
+//#define BARRIER_TRACE
 
-#define TRACE_SYNC
+//#define TRACE_SYNC
 
 #ifdef TRACE_SYNC
-#define ENTER() fprintf(stderr, "[%p] -> %s\n", marcel_self(), __FUNCTION__)
-#define EXIT() fprintf(stderr, "[%p] <- %s\n", marcel_self(), __FUNCTION__)
+#define ENTER() fprintf(stderr, "[%p] >>> %s\n", marcel_self(), __FUNCTION__)
+#define EXIT() fprintf(stderr, "[%p] <<< %s\n", marcel_self(), __FUNCTION__)
 #else
 #define ENTER()
 #define EXIT()
@@ -42,6 +42,7 @@ static void BARRIER_LRPC_threaded_func(void)
 #ifdef BARRIER_TRACE
   int i;
 #endif
+  ENTER();
 
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&bar, sizeof(bar));
   pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&sender, sizeof(int));
@@ -57,22 +58,36 @@ static void BARRIER_LRPC_threaded_func(void)
     fprintf(stderr,"[%s] --->t[%d] = %d\n", __FUNCTION__, i, bar->tab_sync[i]);
 #endif
   barrier_unlock(bar);
+
+  EXIT();
 }
 
 static void BARRIER_LRPC_func(void)
 {
-  pm2_service_thread_create((pm2_func_t)BARRIER_LRPC_threaded_func, NULL);
+  pm2_thread_create((pm2_func_t)BARRIER_LRPC_threaded_func, NULL);
 }
 
 static int _received_from_all_other_nodes (pm2_barrier_t *bar)
 {
   int i = 0;
-  
-  while(( i < _nb_nodes) && (bar->tab_sync[i] >= 1)) i++;
+
+  barrier_lock(bar);
+  while(( i < _nb_nodes) && (bar->tab_sync[i] >= 1)) 
+      i++;
+
 #ifdef BARRIER_TRACE
   if (i >= _nb_nodes)
     fprintf(stderr,"Received all acks for sync\n");
+  /*  else
+    {
+      int j;
+
+      for (j=0 ; j < _nb_nodes ; j++)
+	fprintf(stderr,"Sync status: t[%d] = %d\n", j, bar->tab_sync[j]);
+    }
+    */
 #endif
+     barrier_unlock(bar);
   return (i == _nb_nodes);
 }
 
@@ -93,6 +108,7 @@ void pm2_barrier_init(pm2_barrier_t *bar)
 void pm2_barrier(pm2_barrier_t *bar)
 {
  int i;
+ ENTER();
 
  barrier_lock(bar);
  bar->tab_sync[_local_node_rank]++;
@@ -108,10 +124,11 @@ void pm2_barrier(pm2_barrier_t *bar)
        pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&bar, sizeof(pm2_barrier_t *));
        pm2_pack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&_local_node_rank, sizeof(int));
        pm2_rawrpc_end();
+     }
 #ifdef BARRIER_TRACE
        fprintf(stderr, "[%s] Sent all sync msg. Local node = %d\n", __FUNCTION__, _local_node_rank);
 #endif
-     }
+
  /* 
     wait for messages from all nodes
  */
@@ -133,6 +150,8 @@ void pm2_barrier(pm2_barrier_t *bar)
    fprintf(stderr,"Sync ended: t[%d] = %d\n", i, bar->tab_sync[i]);
 #endif
  barrier_unlock(bar);
+ 
+ EXIT();
 }
 
 
@@ -157,8 +176,17 @@ void pm2_thread_barrier_init(pm2_thread_barrier_t *bar, pm2_thread_barrier_attr_
   pm2_barrier_init(&bar->node_barrier);
   marcel_sem_init(&bar->mutex, 1);
   marcel_sem_init(&bar->wait, 0);
-  bar->local = attr->local;
   bar->nb = 0;
+  if (attr)
+    {
+      int i;
+      bar->nb_prot = attr->nb_prot;
+      bar->local = attr->local;     
+      for(i = 0; i < attr->nb_prot; i++)
+	(bar->prot)[i] = (attr->prot)[i];
+    }
+  else
+    bar->nb_prot =0;
 }
 
 /*Thread-level barrier */
@@ -168,7 +196,21 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
 
   marcel_sem_P(&bar->mutex);
   if(++bar->nb == bar->local) {
+    int i;
+    /* Here we handle consistency (first phase: release) */
+    for (i = 0; i < bar->nb_prot; i++) 
+      {
+	if (dsm_get_release_func(bar->prot[i]) != NULL)
+	  (*dsm_get_release_func(bar->prot[i]))();   
+      }
+
     pm2_barrier(&bar->node_barrier);
+    /* Here we handle consistency (second phase: acquire) */
+    for (i = 0; i < bar->nb_prot; i++) 
+      {
+	if (dsm_get_acquire_func(bar->prot[i]) != NULL)
+	  (*dsm_get_acquire_func(bar->prot[i]))();  
+      }
     marcel_sem_unlock_all(&bar->wait);
     bar->nb = 0;
     marcel_sem_V(&bar->mutex);

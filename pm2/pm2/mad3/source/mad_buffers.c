@@ -27,7 +27,7 @@ mad_get_user_send_buffer(void   *ptr,
   p_mad_buffer_t buffer = NULL;
 
   buffer = mad_alloc_buffer_struct();
-  
+
   buffer->buffer        = ptr;
   buffer->length        = length;
   buffer->bytes_written = length ;
@@ -45,7 +45,7 @@ mad_get_user_receive_buffer(void   *ptr,
   p_mad_buffer_t buffer = NULL;
 
   buffer = mad_alloc_buffer_struct();
-  
+
   buffer->buffer        = ptr;
   buffer->length        = length;
   buffer->bytes_written = 0 ;
@@ -130,7 +130,7 @@ mad_make_sub_buffer_pair(p_mad_buffer_t source,
 
   length = mad_copy_length(source, destination);
   pair   = mad_alloc_buffer_pair_struct();
-  
+
   pair->dynamic_buffer.buffer        = source->buffer + source->bytes_read;
   pair->dynamic_buffer.length        = length;
   pair->dynamic_buffer.bytes_written = length;
@@ -153,7 +153,7 @@ p_mad_buffer_t
 mad_duplicate_buffer(p_mad_buffer_t source)
 {
   p_mad_buffer_t destination = NULL;
-  
+
   destination = mad_alloc_buffer(source->length);
   mad_copy_buffer(source, destination);
 
@@ -192,17 +192,17 @@ mad_split_buffer(p_mad_buffer_t buffer,
       new_buffer->specific      = NULL;
 
       buffer->length = limit;
-      
+
       if (buffer->bytes_written > limit)
 	{
 	  buffer->bytes_written = limit;
 	}
-      
+
       if (buffer->bytes_read > limit)
 	{
 	  buffer->bytes_read = limit;
 	}
-      
+
       return new_buffer;
     }
   else
@@ -218,11 +218,11 @@ mad_append_buffer_to_list(p_tbx_list_t   list,
   if (limit)
     {
       p_mad_buffer_t new_buffer = buffer;
-      
+
       if (position)
 	{
 	  new_buffer = mad_split_buffer(buffer, limit - position);
-	  
+
 	  tbx_append_list(list, buffer);
 
 	  if (!new_buffer)

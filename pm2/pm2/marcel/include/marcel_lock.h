@@ -18,7 +18,7 @@
 #define MARCEL_LOCK_EST_DEF
 
 #include "sys/marcel_flags.h"
-#include "testandset.h"
+#include "pm2_testandset.h"
 
 #define MARCEL_SPIN_ITERATIONS 100
 
@@ -74,8 +74,8 @@ static __inline__ void atomic_dec(volatile atomic_t *v)
 typedef unsigned marcel_lock_t;
 
 #define MARCEL_LOCK_INIT_UNLOCKED   0
-#define MARCEL_LOCK_INIT_LOCKED   1
-#define MARCEL_LOCK_INIT   MARCEL_LOCK_INIT_UNLOCKED
+#define MARCEL_LOCK_INIT_LOCKED     1
+#define MARCEL_LOCK_INIT            MARCEL_LOCK_INIT_UNLOCKED
 
 void marcel_lock_init(marcel_lock_t *lock);
 
@@ -84,7 +84,7 @@ static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 #ifdef MA__LWPS
   unsigned counter = 0;
 
-  while(testandset(lock)) {
+  while(pm2_spinlock_testandset(lock)) {
     if(++counter > MARCEL_SPIN_ITERATIONS) {
       SCHED_YIELD();
       counter=0;
@@ -97,7 +97,7 @@ static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock) __attribu
 static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 {
 #ifdef MA__LWPS
-  return !testandset(lock);
+  return !pm2_spinlock_testandset(lock);
 #else
   return 1;
 #endif
@@ -105,7 +105,7 @@ static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 static __inline__ void marcel_lock_release(marcel_lock_t *lock)
 {
 #ifdef MA__LWPS
-  release(lock);
+  pm2_spinlock_release(lock);
 #endif
 }
 

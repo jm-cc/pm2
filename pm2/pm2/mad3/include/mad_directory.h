@@ -28,7 +28,6 @@
 
 typedef struct s_mad_dir_node
 {
-  int                         id;
   char                       *name;
   unsigned long               ip; // network form !
   p_ntbx_process_container_t  pc;
@@ -36,7 +35,6 @@ typedef struct s_mad_dir_node
 
 typedef struct s_mad_dir_adapter
 {
-  int           id;
   char         *name;
   char         *selector;
   char         *parameter;
@@ -51,77 +49,47 @@ typedef struct s_mad_dir_driver_process_specific
 
 typedef struct s_mad_dir_driver
 {
-  int                         id;
   char                       *name;
   p_ntbx_process_container_t  pc;
 } mad_dir_driver_t;
 
-typedef struct s_mad_dir_channel_process_specific
-{
-  char *adapter_name;
-} mad_dir_channel_process_specific_t;
-
-typedef struct s_mad_dir_channel_common_process_specific
-{
-  char           *parameter;
-  p_tbx_darray_t  in_connection_parameter_darray;
-  p_tbx_darray_t  out_connection_parameter_darray;
-} mad_dir_channel_common_process_specific_t;
-
-typedef struct s_mad_dir_channel_common
-{
-  p_ntbx_process_container_t pc;
-} mad_dir_channel_common_t;
-
-typedef struct s_mad_dir_channel
-{
-  int                         id;
-  char                       *name;
-  p_ntbx_process_container_t  pc;
-  p_mad_dir_driver_t          driver;
-  tbx_bool_t                  not_private;
-  p_ntbx_topology_table_t     ttable;
-  p_mad_dir_channel_common_t  common;
-} mad_dir_channel_t;
-
-typedef struct s_mad_dir_fchannel
-{
-  int                         id;
-  char                       *name;
-  char                       *channel_name;
-  p_mad_dir_channel_common_t  common;
-} mad_dir_fchannel_t;
-
-typedef struct s_mad_dir_vxchannel_process_routing_table
+typedef struct s_mad_dir_connection_data
 {
   char                 *channel_name;
   ntbx_process_grank_t  destination_rank;
-} mad_dir_vxchannel_process_routing_table_t;
+} mad_dir_connection_data_t;
 
-typedef struct s_mad_dir_vxchannel_process_specific
+typedef struct s_mad_dir_connection
 {
-  p_ntbx_process_container_t pc;
-} mad_dir_vxchannel_process_specific_t;
+  p_ntbx_process_container_t  pc;
+  char *in_parameter;
+  char *out_parameter;
+  char *channel_parameter;
+  char *adapter_name;
+} mad_dir_connection_t;
 
-typedef struct s_mad_dir_vchannel
+typedef struct s_mad_dir_channel
 {
-  int                         id;
   char                       *name;
+  p_ntbx_process_container_t  pc;
+  p_mad_dir_driver_t          driver;
+
+  // Regular channel
+  tbx_bool_t                  not_private;
+  p_ntbx_topology_table_t     ttable;
+
+  // Forwarding channel
+  char                       *cloned_channel_name;
+
+  // Virtual/Mux
   p_tbx_slist_t               dir_channel_slist;
+
+  // Virtual
   p_tbx_slist_t               dir_fchannel_slist;
-  p_ntbx_process_container_t  pc;
-  p_mad_dir_channel_common_t  common;
-} mad_dir_vchannel_t;
 
-typedef struct s_mad_dir_xchannel
-{
-  int                         id;
-  char                       *name;
-  p_tbx_slist_t               dir_channel_slist;
+  // Mux
   p_tbx_slist_t               sub_channel_name_slist;
-  p_ntbx_process_container_t  pc;
-  p_mad_dir_channel_common_t  common;
-} mad_dir_xchannel_t;
+} mad_dir_channel_t;
 
 typedef struct s_mad_directory
 {
@@ -136,15 +104,17 @@ typedef struct s_mad_directory
 
   p_tbx_htable_t channel_htable;
   p_tbx_slist_t  channel_slist;
-
-  p_tbx_htable_t fchannel_htable;
   p_tbx_slist_t  fchannel_slist;
-
-  p_tbx_htable_t vchannel_htable;
   p_tbx_slist_t  vchannel_slist;
-
-  p_tbx_htable_t xchannel_htable;
   p_tbx_slist_t  xchannel_slist;
 } mad_directory_t;
 
 #endif /* MAD_DIRECTORY_H */
+
+
+/*
+ * Local variables:
+ *  c-basic-offset: 2
+ *  c-hanging-braces-alist: '((defun-open before after) (class-open before after) (inline-open before after) (block-open before after) (brace-list-open) (brace-entry-open) (substatement-open before after) (block-close . c-snug-do-while) (extern-lang-open before after) (inexpr-class-open before after) (inexpr-class-close before))
+ * End:
+ */

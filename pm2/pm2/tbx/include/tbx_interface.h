@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.14  2001/01/29 17:00:36  oaumage
+- extension du support des tables de hachage
+
 Revision 1.13  2001/01/16 10:03:23  oaumage
 - flags
 - modification de l'interface de tbx pour les listes
@@ -497,5 +500,8 @@ tbx_htable_free(p_tbx_htable_t htable);
 
 void
 tbx_htable_manager_exit();
+
+p_tbx_slist_t
+tbx_htable_get_key_slist(p_tbx_htable_t htable);
 
 #endif /* __TBX_INTERFACE_H */

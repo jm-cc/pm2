@@ -77,7 +77,7 @@ ma_ia64_atomic_add (int i, ma_atomic_t *v)
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old + i;
-	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
@@ -95,7 +95,7 @@ ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old + i;
-	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
@@ -113,7 +113,7 @@ ma_ia64_atomic_sub (int i, ma_atomic_t *v)
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old - i;
-	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 
@@ -131,7 +131,7 @@ ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
 		new = old - i;
-	} while (ma_ia64_cmpxchg("acq", v, old, new, sizeof(ma_atomic_t)) != old);
+	} while (ma_ia64_cmpxchg(acq, v, old, new, sizeof(ma_atomic_t)) != old);
 	return new;
 }
 

@@ -30,7 +30,7 @@
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
-#include "common.h"
+#include "pm2_common.h"
 #include "pm2debug.h"
 #include "tbx.h"
 

@@ -34,6 +34,9 @@ if [ -z "$MODULES" ]; then
     exit 1
 fi
 
+HIDDEN_MODULES="common appli"
+HIDDEN_MODULES_OR=`echo $HIDDEN_MODULES | sed 's/ /|/g'`
+
 ##########################################################################
 # aide
 usage() # exit_code section
@@ -239,7 +242,7 @@ create_flavor() {
     line=
     for mod in $lst_opt_modules " "; do
 	case $mod in
-	" "|common)
+	" "|$HIDDEN_MODULES_OR)
 	    ;;
 	*)
 	    modules="${modules:+$modules }$mod"
@@ -248,7 +251,7 @@ create_flavor() {
 	esac
     done
     echo "${SETTINGS}$line" >> ${OUT}
-    for mod in $lst_opt_modules common; do
+    for mod in $lst_opt_modules $HIDDEN_MODULES; do
 	[ "`eval echo \\$lst_opt_$mod`" ] && 
 	    echo "${SETTINGS}`eval echo '\ '\\$lst_opt_$mod | \
 	    	sed -e 's, \([^ ]*\), --'$mod'=\1,g'`" >> ${OUT}
@@ -257,7 +260,7 @@ create_flavor() {
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}
     echo "PM2_EXT=$ext" >> ${OUT}
 
-    for mod in $modules common; do
+    for mod in $modules $HIDDEN_MODULES; do
 	options="`eval echo \\$lst_opt_$mod`"
 
 	echo "# Pre-configuring $mod" >> ${OUT}
@@ -385,7 +388,7 @@ vide=
 
 do_read_provide() {
     $ECHO "Reading provides..."
-    for mod in common $modules; do
+    for mod in $HIDDEN_MODULES $modules; do
 	for name in `"$PM2_MODULE" module=$mod --provide`; do
 	    before="`eval echo \\$provide_${name}`"
 	    eval provide_${name}='"${before:+$before }$mod"'
@@ -406,7 +409,7 @@ do_read_provide() {
 do_check_depend() {
     $ECHO "Checking depends..."
     depend_list=""
-    for mod in common $modules; do
+    for mod in $HIDDEN_MODULES $modules; do
 	for name in `"$PM2_MODULE" module=$mod --depend`; do
 	    value="`eval echo \\$provide_${name}`"
 	    if [ -z "$value" ]; then
@@ -459,7 +462,7 @@ do_check_depend() {
 
 do_check_confict() {
     $ECHO "Checking conflicts..."
-    for mod in common $modules; do
+    for mod in $HIDDEN_MODULES $modules; do
 	for name in `"$PM2_MODULE" module=$mod --conflict`; do
 	    value="`eval echo \\$provide_${name}`"
 	    if [ \( ! -z "$value" \) -a \( "$value" != "$mod" \) ]; then
@@ -706,7 +709,7 @@ do_check() {
     modules=
     for mod in $lst_opt_modules " "; do
 	case $mod in
-	" "|common)
+	" "|$HIDDEN_MODULES_OR)
 	    ;;
 	*)
 	    modules="${modules:+$modules }$mod"

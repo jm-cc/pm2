@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.21  2000/09/12 15:45:52  gantoniu
+Made all necessary modifications to allow flavors without dsm be created and compiled.
+
 Revision 1.20  2000/09/12 13:23:30  rnamyst
 Minor bug fixes
 
@@ -88,7 +91,6 @@ ______________________________________________________________________________
 #include "sys/netserver.h"
 #include "isomalloc.h"
 #include "block_alloc.h"
-#include "dsm_slot_alloc.h"
 #include "pm2_sync.h"
 
 #include <fcntl.h>
@@ -98,6 +100,7 @@ ______________________________________________________________________________
 #include "pm2_timing.h"
 
 #ifdef DSM
+#include "dsm_slot_alloc.h"
 #include "dsm_pm2.h"
 #endif
 
@@ -465,7 +468,11 @@ void pm2_completion_signal_end(void)
 void *pm2_malloc(size_t size, isoaddr_attr_t *attr)
 {
   switch(attr->status){
+#ifdef DSM
   case ISO_SHARED: return dsm_slot_alloc(size, NULL, NULL, attr); break;
+#else
+  case ISO_SHARED: RAISE(PROGRAM_ERROR);break;
+#endif
   case ISO_PRIVATE:
   case ISO_DEFAULT:return block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size, attr); break;
   default: RAISE(NOT_IMPLEMENTED);

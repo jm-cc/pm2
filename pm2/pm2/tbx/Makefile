@@ -35,7 +35,7 @@
 
 ###################### CUSTOMIZATION SECTION #####################
 
-TBX_OPTIONS		=  # -DDEBUG
+TBX_OPTIONS		= # -DDEBUG
 
 TBX_STANDALONE_OPTIONS	=	-g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_application_spawn.c,v $
+Revision 1.4  2000/05/19 08:20:07  oaumage
+- correction de la fonction de generation de l'URL
+
 Revision 1.3  2000/05/18 13:51:34  oaumage
 - modification du format de l'URL
 
@@ -178,11 +181,7 @@ mad_generate_url(p_mad_madeleine_t madeleine)
     {
       p_mad_adapter_t adapter = &(madeleine->adapter[ad]);
 
-      if (ad + 1 < madeleine->nb_adapter)
-	sprintf(arg, "device=%s&", adapter->parameter);
-      else
-	sprintf(arg, "device=%s", adapter->parameter);
-	
+      sprintf(arg, "device=%s&", adapter->parameter);
       strcat (cgi_string, arg);
     }
   l = strlen(cgi_string);

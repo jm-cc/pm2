@@ -2,7 +2,7 @@
 
 static int service_id;
 
-#define SIZE 32
+#define SIZE 1024
 
 static void
 f (void *arg)

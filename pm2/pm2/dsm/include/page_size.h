@@ -1,0 +1,1 @@
+#define DSM_PAGE_SIZE 4096

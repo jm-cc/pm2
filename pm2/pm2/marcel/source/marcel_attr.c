@@ -32,7 +32,6 @@ marcel_attr_t marcel_attr_default = {
   .immediate_activation= FALSE,
   .not_migratable= 1,
   .not_deviatable= 0,
-  .rt_thread= MARCEL_CLASS_REGULAR,
   .vpmask= MARCEL_VPMASK_EMPTY,
   .flags= 0,
   .name= "user_task",
@@ -157,13 +156,14 @@ int marcel_attr_getschedpolicy(__const marcel_attr_t *attr, int *policy)
 
 int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
 {
-  attr->rt_thread = realtime;
-  return 0;
+  return marcel_attr_setprio(attr, MA_RT_PRIO);
 }
 
 int marcel_attr_getrealtime(__const marcel_attr_t *attr, boolean *realtime)
 {
-  *realtime = attr->rt_thread;
+  int prio;
+  marcel_attr_getprio(attr, &prio);
+  *realtime = prio < MA_DEF_PRIO;
   return 0;
 }
 

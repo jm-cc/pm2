@@ -131,8 +131,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	else
 		t->sched.internal.init_rq=marcel_sched_vpmask_init_rq(attr->vpmask);
 	sched_debug("%p's init_rq is %p\n",t, t->sched.internal.init_rq);
-	if (attr->rt_thread)
-		t->sched.internal.prio=MA_RT_PRIO;
 	t->sched.internal.cur_rq=NULL;
 	t->sched.internal.sched_policy = attr->__schedpolicy;
 	t->sched.internal.array=NULL;

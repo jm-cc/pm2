@@ -63,7 +63,7 @@ struct __marcel_attr_s
   unsigned not_migratable;
   unsigned not_deviatable;
   //int sched_policy;
-  /*boolean*/int rt_thread;
+  /*boolean int rt_thread; On utilise la priorité maintenant */
   marcel_vpmask_t vpmask;
   int flags;
   char name[MARCEL_MAXNAMESIZE];

@@ -73,8 +73,37 @@ _PRIVATE_ typedef struct _struct_exception_block {
 
 _PRIVATE_ struct __lwp_struct;
 
+#ifdef __ACT__
+
+#include <asm/act.h>
+
+_PRIVATE_ typedef enum {
+  SCHED_BY_MARCEL,
+  SCHED_BY_ACT
+} sched_by_t;
+
+_PRIVATE_ typedef enum {
+  MARCEL_READY,
+  MARCEL_RUNNING,
+} marcel_state_t;
+
+#endif
+
 _PRIVATE_ typedef struct task_desc_struct {
+#ifdef __ACT__
+  union {
+    jmp_buf migr_jb;
+    act_buf_t act_jb;
+  } jb;
+  sched_by_t sched_by;
+  // TODO : merge state and state_ext in one field
+  volatile marcel_state_t state_ext;
+  volatile int marcel_lock;
+
+  act_id_t aid;
+#else
   jmp_buf jb;
+#endif
   struct task_desc_struct *next,*prev;
   struct __lwp_struct *lwp, *previous_lwp;
   int sched_policy;
@@ -110,7 +139,9 @@ _PRIVATE_ typedef struct __lwp_struct {
   volatile unsigned running_tasks;         /* Nb of user running tasks */
   marcel_lock_t sched_queue_lock;          /* Lock for scheduler queue */
 #ifdef X86_ARCH
+#ifndef __ACT__
   volatile atomic_t _locked;               /* Lock for (un)lock_task() */
+#endif
 #else
   volatile unsigned _locked;               /* Lock for (un)lock_task() */
 #endif

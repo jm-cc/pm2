@@ -229,7 +229,7 @@ static void compute_nb_steps(void)
   token_t tok;
   max_steps = 2; // pm2-module + pm2-flavor...
 
-  parser_start_cmd("pm2-module modules");
+  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
 
   while((tok = parser_next_token()) != END_OF_INPUT)
     max_steps++;

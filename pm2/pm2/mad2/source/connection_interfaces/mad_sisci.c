@@ -33,6 +33,11 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.6  2000/02/03 17:37:38  oaumage
+- mad_channel.c : correction de la liberation des donnees specifiques aux
+                  connections
+- mad_sisci.c   : support DMA avec double buffering
+
 Revision 1.5  2000/01/21 17:28:16  oaumage
 - preversion du support DMA
 - !!! attention: cette version du driver n'a pas encore ete testee
@@ -58,11 +63,17 @@ ______________________________________________________________________________
 #include "sisci_error.h"
 
 /* 
- * constant
- * --------
+ * constants
+ * ---------
  */
-#define MAD_SISCI_DMA_MIN 32768
+
+/* SHMem */
 #define MAD_SISCI_BUFFER_SIZE (65536 - sizeof(mad_sisci_connection_status_t))
+
+/* DMA */
+#define MAD_SISCI_DMA_BUFFER_SIZE 64000
+#define MAD_SISCI_DMA_MIN         (MAD_SISCI_DMA_BUFFER_SIZE * 3)
+
 
 /*
  * macros
@@ -168,17 +179,23 @@ typedef struct
 
 typedef struct
 {
+  /* SHMem */
   sci_desc_t                   sd;
   mad_sisci_local_segment_t    local_segment;
   mad_sisci_remote_segment_t   remote_segment;
   size_t                       offset;
   int                          buffers_read;
   tbx_bool_t                   write_flag_flushed;
-  sci_desc_t                   dma_sd[2];
-  sci_dma_queue_t              dma_queue;
-  mad_sisci_local_segment_t    local_dma_segment[2];
-  int                          next_dma_num;
-  tbx_bool_t                   dma_flushed;
+
+  /* DMA send */
+  sci_desc_t                   dma_send_sd[2];
+  sci_dma_queue_t              dma_send_queue[2];
+  mad_sisci_local_segment_t    local_dma_send_segment[2];
+  mad_sisci_remote_segment_t   remote_dma_send_segment[2];
+  
+  /* DMA recv */
+  sci_desc_t                   dma_recv_sd[2];
+  mad_sisci_local_segment_t    local_dma_recv_segment[2];
 } mad_sisci_connection_specific_t, *p_mad_sisci_connection_specific_t;
 
 typedef struct
@@ -376,6 +393,7 @@ mad_sisci_flush(p_mad_sisci_remote_segment_t segment)
   sci_error_t sisci_error = SCI_ERR_OK;
 
   SCIStoreBarrier(segment->sequence, 0, &sisci_error);
+  mad_sisci_control();
 }
 
 /* mad_sisci_get_node_id: query an adapter for the local SCI node id
@@ -544,30 +562,40 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 	  local_segment->offset = 0;
 	  local_segment->id = 
 	      0
-	    | (configuration->local_host_id  << 10)
-	    | (i << 20)
-	    | (1 << 30);
+	    | (configuration->local_host_id  << 8)
+	    | (i << 16)
+	    | (1 << 24);
 	  SCIOpen(&connection_specific->sd, 0, &sisci_error);
+	  mad_sisci_control();
+
 	  SCICreateSegment(connection_specific->sd,
 			   &local_segment->segment,
 			   local_segment->id,
 			   local_segment->size,
 			   0, NULL, 0, &sisci_error);
+	  mad_sisci_control();
+
 	  SCIPrepareSegment(local_segment->segment,
 			    adapter_specific->local_adapter_id,
 			    0, &sisci_error);
-	  SCIMapLocalSegment(local_segment->segment,
-			     &local_segment->map,
-			     local_segment->offset,
-			     local_segment->size,
-			     NULL, 0, &sisci_error);
+	  mad_sisci_control();
+
+	  local_segment->map_addr =
+	    SCIMapLocalSegment(local_segment->segment,
+			       &local_segment->map,
+			       local_segment->offset,
+			       local_segment->size,
+			       NULL, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  data = local_segment->map_addr;
 	  data->status.read.flag  = tbx_flag_clear;
 	  data->status.write.flag = tbx_flag_clear;
 	  SCISetSegmentAvailable(local_segment->segment,
 				 adapter_specific->local_adapter_id,
 				 0, &sisci_error);
-
+	  mad_sisci_control();
+	  
 	  mad_sisci_set(&data->status.write);
 	  while (!mad_sisci_test(&data->status.read));
 	  mad_sisci_clear(&data->status.read);
@@ -577,9 +605,9 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 	  /* Remote segment */
 	  remote_segment->id = 
 	      0
-	    | (i << 10)
-	    | (configuration->local_host_id  << 20)
-	    | (1 << 30);
+	    | (i << 8)
+	    | (configuration->local_host_id  << 16)
+	    | (1 << 24);
 	  remote_segment->size   = sizeof(mad_sisci_internal_segment_data_t);
 	  remote_segment->offset = 0;
 
@@ -598,6 +626,7 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 				&sisci_error);
 	    }
 	  while (sisci_error != SCI_ERR_OK);
+	  
 	  remote_segment->map_addr =
 	   SCIMapRemoteSegment(remote_segment->segment,
 						      &remote_segment->map,
@@ -606,10 +635,13 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 						      NULL,
 						      0,
 						      &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCICreateMapSequence(remote_segment->map,
 			       &remote_segment->sequence,
 			       0,
 			       &sisci_error);
+	  mad_sisci_control();
 	}
       
       LOG("mad_sisci_adapter_configuration_init: phase 1 terminee");
@@ -637,18 +669,32 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 		  data->node_id = adapter_specific->local_node_id;
 		  mad_sisci_flush(remote_segment);
 		  mad_sisci_set(&data->status.read);
+		  mad_sisci_flush(remote_segment);
 		}
 	    }
 	  
 	  SCIUnmapSegment(remote_segment->map, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIDisconnectSegment(remote_segment->segment, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIRemoveSequence(remote_segment->sequence, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCISetSegmentUnavailable(local_segment->segment,
 				   adapter_specific->local_adapter_id,
 				   0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIUnmapSegment(local_segment->map, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIRemoveSegment(local_segment->segment, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIClose(connection_specific->sd, 0, &sisci_error);
+	  mad_sisci_control();
 	}
       LOG("mad_sisci_adapter_configuration_init: phase 2 terminee");
     }
@@ -671,23 +717,32 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
       local_segment->offset = 0;
       local_segment->id = 
 	0
-	| (configuration->local_host_id  << 10)
-	| (0 << 20)
-	| (1 << 30);
+	| (configuration->local_host_id  << 8)
+	| (0 << 16)
+	| (1 << 24);
       SCIOpen(&connection_specific->sd, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCICreateSegment(connection_specific->sd,
 		       &local_segment->segment,
 		       local_segment->id,
 		       local_segment->size,
 		       0, NULL, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCIPrepareSegment(local_segment->segment,
 			adapter_specific->local_adapter_id,
 			0, &sisci_error);
-      SCIMapLocalSegment(local_segment->segment,
-			 &local_segment->map,
-			 local_segment->offset,
-			 local_segment->size,
-			 NULL, 0, &sisci_error);    
+      mad_sisci_control();
+      
+      local_segment->map_addr =
+	SCIMapLocalSegment(local_segment->segment,
+			   &local_segment->map,
+			   local_segment->offset,
+			   local_segment->size,
+			   NULL, 0, &sisci_error);
+      mad_sisci_control();
+      
       data = local_segment->map_addr;
 
       data->status.read.flag  = tbx_flag_clear;
@@ -695,13 +750,14 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
       SCISetSegmentAvailable(local_segment->segment,
 			     adapter_specific->local_adapter_id,
 			     0, &sisci_error);
-
+      mad_sisci_control();
+      
       /* Remote segment */
       remote_segment->id = 
 	0
-	| (0 << 10)
-	| (configuration->local_host_id  << 20)
-	| (1 << 30);
+	| (0 << 8)
+	| (configuration->local_host_id  << 16)
+	| (1 << 24);
       remote_segment->size   = sizeof(mad_sisci_internal_segment_data_t);
       remote_segment->offset = 0;
 
@@ -722,15 +778,19 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 			    remote_segment->offset,
 			    remote_segment->size,
 			    NULL, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCICreateMapSequence(remote_segment->map,
 			   &remote_segment->sequence,
 			   0, &sisci_error);
+      mad_sisci_control();
       
       while (!mad_sisci_test(&data->status.write));
       mad_sisci_clear(&data->status.write);
       data->node_id = adapter_specific->local_node_id;
       mad_sisci_flush(remote_segment);
       mad_sisci_set(&data->status.read);
+      mad_sisci_flush(remote_segment);
 
       LOG("mad_sisci_adapter_configuration_init: phase 1 terminee");
 	  
@@ -749,14 +809,28 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 	}
 
       SCIUnmapSegment(remote_segment->map, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCIDisconnectSegment(remote_segment->segment, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCIRemoveSequence(remote_segment->sequence, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCISetSegmentUnavailable(local_segment->segment,
 			       adapter_specific->local_adapter_id,
 			       0, &sisci_error);
+      mad_sisci_control();
+      
       SCIUnmapSegment(local_segment->map, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCIRemoveSegment(local_segment->segment, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCIClose(connection_specific->sd, 0, &sisci_error);
+      mad_sisci_control();
+      
       LOG("mad_sisci_adapter_configuration_init: phase 2 terminee");
     }
   LOG_OUT();
@@ -809,6 +883,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
   mad_host_id_t host_id;
 
   LOG_IN();
+
   for (host_id = 0;
        host_id < configuration->size;
        host_id++)
@@ -819,23 +894,21 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 	connection->specific;
       p_mad_sisci_local_segment_t         local_segment       =
 	&connection_specific->local_segment;
-       
+
       connection->remote_host_id = host_id;
       local_segment->id = 
 	  channel->id
-	| (configuration->local_host_id << 10)
-	| (connection->remote_host_id   << 20);
+	| (configuration->local_host_id << 8)
+	| (connection->remote_host_id   << 16);
       
       if (host_id == configuration->local_host_id)
 	{
-	  /* 'Accept' segment */
 	  LOG("mad_sisci_before_open_channel: preparing 'accept' segment");
 	  local_segment->size =
 	    configuration->size * sizeof(mad_sisci_status_t);
 	}
       else
 	{
-	  /* 'User' segment */
 	  LOG_VAL("mad_sisci_before_open_channel: "
                   "preparing segment for host id", host_id);
 	  local_segment->size = sizeof(mad_sisci_user_segment_data_t);
@@ -843,20 +916,28 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
       
       local_segment->offset = 0;
       SCIOpen(&connection_specific->sd, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCICreateSegment(connection_specific->sd,
 		       &local_segment->segment,
 		       local_segment->id,
 		       local_segment->size,
 		       0, NULL, 0, &sisci_error);
+      mad_sisci_control();
+      
       SCIPrepareSegment(local_segment->segment,
 			adapter_specific->local_adapter_id,
 			0, &sisci_error);
-      SCIMapLocalSegment(local_segment->segment,
-			 &local_segment->map,
-			 local_segment->offset,
-			 local_segment->size,
-			 NULL, 0, &sisci_error);    
-
+      mad_sisci_control();
+      
+      local_segment->map_addr =
+	SCIMapLocalSegment(local_segment->segment,
+			   &local_segment->map,
+			   local_segment->offset,
+			   local_segment->size,
+			   NULL, 0, &sisci_error);    
+      mad_sisci_control();
+      
       if (host_id == configuration->local_host_id)
 	{
 	  mad_host_id_t        remote_host_id;
@@ -876,6 +957,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 	    local_segment->map_addr;
 	  int i;
 	  
+	  LOG_VAL("local_segment_id", local_segment->id);
 	  for (i = 0; i < 64; i++)
 	    {
 	      local_data->status.read.buffer[i] = 0;
@@ -888,6 +970,8 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
       SCISetSegmentAvailable(local_segment->segment,
 			     adapter_specific->local_adapter_id,
 			     0, &sisci_error);
+      mad_sisci_control();
+      
       LOG("mad_sisci_before_open_channel: segment is ready");
     }
 
@@ -903,50 +987,105 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 	    &channel->input_connection[host_id];
 	  p_mad_sisci_connection_specific_t   connection_specific =
 	    connection->specific;
-	  int k;
+	  int                                 k;
 	  
 	  for (k = 0; k < 2; k++)
 	    {	      
-	      p_mad_sisci_local_segment_t         local_segment       =
-		&connection_specific->local_dma_segment[k];
+	      p_mad_sisci_local_segment_t local_segment       =
+		&connection_specific->local_dma_send_segment[k];
       
 	      connection->remote_host_id = host_id;
 	      local_segment->id = 
 		channel->id
-		| (configuration->local_host_id << 10)
-		| (connection->remote_host_id   << 20)
-	        | ((k + 2) << 30);
+		| (configuration->local_host_id << 8)
+		| (connection->remote_host_id   << 16)
+	        | ((k + 2) << 28);
       
-	      local_segment->size = sizeof(mad_sisci_user_segment_data_t);
+	      local_segment->size = MAD_SISCI_DMA_BUFFER_SIZE;
+	      
 	      local_segment->offset = 0;
-	      SCIOpen(&connection_specific->dma_sd[k], 0, &sisci_error);
-	      SCICreateSegment(connection_specific->dma_sd[k],
+	      SCIOpen(&connection_specific->dma_send_sd[k], 0, &sisci_error);
+	      mad_sisci_control();
+	      
+	      SCICreateSegment(connection_specific->dma_send_sd[k],
 			       &local_segment->segment,
 			       local_segment->id,
 			       local_segment->size,
 			       0, NULL, 0, &sisci_error);
+	      mad_sisci_control();
+	      
 	      SCIPrepareSegment(local_segment->segment,
 				adapter_specific->local_adapter_id,
 				0, &sisci_error);
-	      SCIMapLocalSegment(local_segment->segment,
-				 &local_segment->map,
-				 local_segment->offset,
-				 local_segment->size,
-				 NULL, 0, &sisci_error);
+	      mad_sisci_control();
+	      
+	      local_segment->map_addr =
+		SCIMapLocalSegment(local_segment->segment,
+				   &local_segment->map,
+				   local_segment->offset,
+				   local_segment->size,
+				   NULL, 0, &sisci_error);
+	      mad_sisci_control();
+	      
 	      SCISetSegmentAvailable(local_segment->segment,
 				     adapter_specific->local_adapter_id,
 				     0, &sisci_error);
-	      LOG("mad_sisci_before_open_channel: segment is ready");
+	      mad_sisci_control();
+
+	      SCICreateDMAQueue(connection_specific->dma_send_sd[k],
+				&connection_specific->dma_send_queue[k],
+				adapter_specific->local_adapter_id,
+				1, 0, &sisci_error);
+	      mad_sisci_control();
+	      LOG("mad_sisci_before_open_channel: DMA segment is ready");
 	    }
 
-	  SCICreateDMAQueue(connection_specific->sd,
-			    &connection_specific->dma_queue,
-			    adapter_specific->local_adapter_id,
-			    2, 0, &sisci_error);
-	  connection_specific->next_dma_num = 0;
-	  connection_specific->dma_flushed  = tbx_true;
+	  for (k = 0; k < 2; k++)
+	    {	      
+	      p_mad_sisci_local_segment_t local_segment       =
+		&connection_specific->local_dma_recv_segment[k];
+      
+	      connection->remote_host_id = host_id;
+	      local_segment->id = 
+		channel->id
+		| (configuration->local_host_id << 8)
+		| (connection->remote_host_id   << 16)
+	        | ((k + 2) << 24);
+      
+	      local_segment->size   = MAD_SISCI_BUFFER_SIZE;
+	      local_segment->offset = 0;
+
+	      SCIOpen(&connection_specific->dma_recv_sd[k], 0, &sisci_error);
+	      mad_sisci_control();
+	      
+	      SCICreateSegment(connection_specific->dma_recv_sd[k],
+			       &local_segment->segment,
+			       local_segment->id,
+			       local_segment->size,
+			       0, NULL, 0, &sisci_error);
+	      mad_sisci_control();
+	      
+	      SCIPrepareSegment(local_segment->segment,
+				adapter_specific->local_adapter_id,
+				0, &sisci_error);
+	      mad_sisci_control();
+	      
+	      local_segment->map_addr =
+		SCIMapLocalSegment(local_segment->segment,
+				   &local_segment->map,
+				   local_segment->offset,
+				   local_segment->size,
+				   NULL, 0, &sisci_error);
+	      mad_sisci_control();
+	      
+	      SCISetSegmentAvailable(local_segment->segment,
+				     adapter_specific->local_adapter_id,
+				     0, &sisci_error);
+	      mad_sisci_control();
+	      LOG("mad_sisci_before_open_channel: DMA segment is ready");
+	    }
 	}
-    }
+    } 
   LOG_OUT();
 }
 
@@ -972,7 +1111,8 @@ mad_sisci_accept(p_mad_channel_t channel)
   p_mad_sisci_connection_specific_t   connection_specific;
   p_mad_sisci_remote_segment_t        remote_segment;
   sci_error_t                         sisci_error                = SCI_ERR_OK;
-
+  int                                 k;
+  
   LOG_IN();
 
   do
@@ -987,10 +1127,10 @@ mad_sisci_accept(p_mad_channel_t channel)
 	{
 	  if (remote_host_id != configuration->local_host_id)
 	    {
-	      /*fprintf(stderr, "testing address %p\n", accept_local_data + remote_host_id);*/
 	      if (mad_sisci_test(accept_local_data + remote_host_id))
 		{
 		  LOG("mad_sisci_accept: incoming connection request");
+
 		  mad_sisci_clear(accept_local_data + remote_host_id);
 		  host_id = remote_host_id;
 		  break;
@@ -1008,8 +1148,8 @@ mad_sisci_accept(p_mad_channel_t channel)
 
   remote_segment->id = 
       0
-    | (connection->remote_host_id << 20)
-    | (configuration->local_host_id << 10);
+    | (connection->remote_host_id << 8)
+    | (configuration->local_host_id << 16);
   
 
   remote_segment->size = sizeof(mad_sisci_user_segment_data_t);
@@ -1038,10 +1178,46 @@ mad_sisci_accept(p_mad_channel_t channel)
 			NULL,
 			0,
 			&sisci_error);
+  mad_sisci_control();
+  
   SCICreateMapSequence(remote_segment->map,
 		       &remote_segment->sequence,
 		       0,
 		       &sisci_error);
+  mad_sisci_control();
+
+  /* DMA */
+  for (k = 0; k < 2; k++)
+    {
+      remote_segment = &connection_specific->remote_dma_send_segment[k];
+
+      remote_segment->id = 
+	0
+	| (connection->remote_host_id << 8)
+	| (configuration->local_host_id << 16)
+	| ((k + 2) << 24);
+  
+
+      remote_segment->size   = MAD_SISCI_DMA_BUFFER_SIZE;
+      remote_segment->offset = 0;
+
+      do
+	{
+	  SCIConnectSegment(connection_specific->dma_send_sd[k],
+			    &remote_segment->segment,
+			    adapter_specific->
+			    remote_node_id[connection->remote_host_id],
+			    remote_segment->id,
+			    adapter_specific->local_adapter_id,
+			    0,
+			    NULL,
+			    SCI_INFINITE_TIMEOUT,
+			    0,
+			    &sisci_error);
+	}
+      while (sisci_error != SCI_ERR_OK);
+    }
+  
   LOG_OUT();
 }
 
@@ -1072,6 +1248,7 @@ mad_sisci_connect(p_mad_connection_t connection)
     NULL;
   sci_error_t                         sisci_error                 =
     SCI_ERR_OK;
+  int                                 k;
 
   LOG_IN();
 
@@ -1082,15 +1259,16 @@ mad_sisci_connect(p_mad_connection_t connection)
   LOG("mad_sisci_connect: Preparing 'connection' segment");
   connect_remote_segment->id = 
       0
-    | (connection->remote_host_id << 20)
-    | (connection->remote_host_id << 10);
+    | (connection->remote_host_id << 16)
+    | (connection->remote_host_id << 8);
 
   connect_remote_segment->size =
     configuration->size * sizeof(mad_sisci_status_t);
   connect_remote_segment->offset = 0;
+
   do
     {
-      SCIConnectSegment(connection_specific->sd,
+      SCIConnectSegment(connect_connection_specific->sd,
 			&connect_remote_segment->segment,
 			adapter_specific->
 			remote_node_id[connection->remote_host_id],
@@ -1103,6 +1281,8 @@ mad_sisci_connect(p_mad_connection_t connection)
 			&sisci_error);
     }
   while (sisci_error != SCI_ERR_OK);
+  LOG("`connection' segment connected");
+
   connect_remote_data = connect_remote_segment->map_addr =
     SCIMapRemoteSegment(connect_remote_segment->segment,
 			&connect_remote_segment->map,
@@ -1111,17 +1291,19 @@ mad_sisci_connect(p_mad_connection_t connection)
 			NULL,
 			0,
 			&sisci_error);
+  mad_sisci_control();
   LOG("mad_sisci_connect: 'connection' segment ready");
 
   /* Preparation des segments de communication */
   LOG("mad_sisci_connect: Preparing 'communication' segment");
   remote_segment->id = 
       0
-    | (connection->remote_host_id << 20)
-    | (configuration->local_host_id << 10);
+    | (connection->remote_host_id << 8)
+    | (configuration->local_host_id << 16);
   remote_segment->size = sizeof(mad_sisci_user_segment_data_t);
   remote_segment->offset = 0;
-
+  LOG_VAL("remote_segment_id", remote_segment->id);
+  
   do
     {
       SCIConnectSegment(connection_specific->sd,
@@ -1137,6 +1319,7 @@ mad_sisci_connect(p_mad_connection_t connection)
 			&sisci_error);
     }
   while (sisci_error != SCI_ERR_OK);
+  LOG("`communication' segment connected");
   remote_segment->map_addr =
     SCIMapRemoteSegment(remote_segment->segment,
 			&remote_segment->map,
@@ -1145,20 +1328,57 @@ mad_sisci_connect(p_mad_connection_t connection)
 			NULL,
 			0,
 			&sisci_error);
+  mad_sisci_control();
+  
   SCICreateMapSequence(remote_segment->map,
 		       &remote_segment->sequence,
 		       0, &sisci_error);
-      
-  LOG("mad_sisci_connect: 'communication' segment ready");
-
+  mad_sisci_control();
+  LOG("mad_sisci_connect: 'communication' segment ready");  
+  
   /* Envoi du ack sur le segment de connexion */
   mad_sisci_set(connect_remote_data + configuration->local_host_id);
   while (mad_sisci_test(connect_remote_data + configuration->local_host_id));
   LOG("mad_sisci_connect: acknowledgement sent");
-
+  
   /* Liberation du segment de connexion */
   SCIUnmapSegment(connect_remote_segment->map, 0, &sisci_error);
+  mad_sisci_control();
+  
   SCIDisconnectSegment(connect_remote_segment->segment, 0, &sisci_error);
+  mad_sisci_control();
+
+  /* DMA */
+  for (k = 0; k < 2; k++)
+    {
+      remote_segment = &connection_specific->remote_dma_send_segment[k];
+
+      remote_segment->id = 
+	0
+	| (connection->remote_host_id << 8)
+	| (configuration->local_host_id << 16)
+	| ((k + 2) << 24);
+  
+
+      remote_segment->size   = MAD_SISCI_BUFFER_SIZE;
+      remote_segment->offset = 0;
+
+      do
+	{
+	  SCIConnectSegment(connection_specific->dma_send_sd[k],
+			    &remote_segment->segment,
+			    adapter_specific->
+			    remote_node_id[connection->remote_host_id],
+			    remote_segment->id,
+			    adapter_specific->local_adapter_id,
+			    0,
+			    NULL,
+			    SCI_INFINITE_TIMEOUT,
+			    0,
+			    &sisci_error);
+	}
+      while (sisci_error != SCI_ERR_OK);
+    }
   LOG("mad_sisci_connect: connection established");
   LOG_OUT();
 }
@@ -1210,9 +1430,16 @@ mad_sisci_after_open_channel(p_mad_channel_t channel)
 	  SCISetSegmentUnavailable(local_segment->segment,
 				   adapter_specific->local_adapter_id,
 				   0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIUnmapSegment(local_segment->map, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIRemoveSegment(local_segment->segment, 0, &sisci_error);
+	  mad_sisci_control();
+	  
 	  SCIClose(connection_specific->sd, 0, &sisci_error);
+	  mad_sisci_control();
 	}
     }
   
@@ -1232,33 +1459,79 @@ mad_sisci_disconnect(p_mad_connection_t connection)
     &connection_specific->local_segment;
   p_mad_sisci_remote_segment_t        remote_segment      =
     &connection_specific->remote_segment;
-  p_mad_sisci_local_segment_t         local_dma_segment  =
-    connection_specific->local_dma_segment;
-  sci_error_t                         sisci_error         =
-    SCI_ERR_OK;
+  sci_error_t                         sisci_error         = SCI_ERR_OK;
   int k;
 
   LOG_IN();
   SCIUnmapSegment(remote_segment->map, 0, &sisci_error);
+  mad_sisci_control();
+  
   SCIDisconnectSegment(remote_segment->segment, 0, &sisci_error);
+  mad_sisci_control();
+  
   SCIRemoveSequence(remote_segment->sequence, 0, &sisci_error);
+  mad_sisci_control();
+  
   SCISetSegmentUnavailable(local_segment->segment,
 			   adapter_specific->local_adapter_id,
 			   0, &sisci_error);
+  mad_sisci_control();
+  
   SCIUnmapSegment(local_segment->map, 0, &sisci_error);
+  mad_sisci_control();
+  
   SCIRemoveSegment(local_segment->segment, 0, &sisci_error);
+  mad_sisci_control();
+  
   SCIClose(connection_specific->sd, 0, &sisci_error);
+  mad_sisci_control();
+  
   for (k = 0; k < 2; k++)
     {
-      SCISetSegmentUnavailable(local_dma_segment[k].segment,
+      p_mad_sisci_local_segment_t local_dma_send_segment =
+	&connection_specific->local_dma_send_segment[k];      
+      p_mad_sisci_local_segment_t local_dma_recv_segment =
+	&connection_specific->local_dma_recv_segment[k];
+      p_mad_sisci_remote_segment_t remote_dma_send_segment =
+	&connection_specific->remote_dma_send_segment[k];
+      
+      /* Send */
+      SCIDisconnectSegment(remote_dma_send_segment->segment, 0, &sisci_error);
+      mad_sisci_control();
+  
+      SCISetSegmentUnavailable(local_dma_send_segment->segment,
 			       adapter_specific->local_adapter_id,
 			       0, &sisci_error);
-      SCIUnmapSegment(local_dma_segment[k].map, 0, &sisci_error);
-      SCIRemoveSegment(local_dma_segment[k].segment, 0, &sisci_error);
-      SCIClose(connection_specific->dma_sd[k], 0, &sisci_error);      
-    }
-  SCIRemoveDMAQueue(connection_specific->dma_queue, 0, &sisci_error);
+      mad_sisci_control();
+      
+      SCIUnmapSegment(local_dma_send_segment->map, 0, &sisci_error);
+      mad_sisci_control();
+      
+      SCIRemoveSegment(local_dma_send_segment->segment, 0, &sisci_error);
+      mad_sisci_control();
+  
+      SCIRemoveDMAQueue(connection_specific->dma_send_queue[k],
+			0, &sisci_error);
+      mad_sisci_control();
+  
+      SCIClose(connection_specific->dma_send_sd[k], 0, &sisci_error);
+      mad_sisci_control();
 
+      /* Recv */
+      SCISetSegmentUnavailable(local_dma_recv_segment->segment,
+			       adapter_specific->local_adapter_id,
+			       0, &sisci_error);
+      mad_sisci_control();
+      
+      SCIUnmapSegment(local_dma_recv_segment->map, 0, &sisci_error);
+      mad_sisci_control();
+      
+      SCIRemoveSegment(local_dma_recv_segment->segment, 0, &sisci_error);
+      mad_sisci_control();
+  
+      SCIClose(connection_specific->dma_recv_sd[k], 0, &sisci_error);
+      mad_sisci_control();
+    }
   LOG_OUT();
 }
 
@@ -1361,9 +1634,7 @@ mad_sisci_receive_message(p_mad_channel_t channel)
 #ifdef PM2
       PM2_YIELD();
 #endif /* PM2 */
-
-    }
-  
+    }  
 }
 
 
@@ -1443,13 +1714,6 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
       mad_sisci_flush(remote_segment);
       PM2_UNLOCK();
       connection_specific->write_flag_flushed = tbx_true;
-      
-#ifdef PM2
-      if (mad_more_data(buffer))
-	{
-	  PM2_YIELD();
-	}
-#endif /* PM2 */
     }
 
   LOG_OUT();
@@ -1504,12 +1768,6 @@ mad_sisci_receive_sci_buffer(p_mad_link_t   link,
       connection_specific->write_flag_flushed = tbx_false;
       buffer->bytes_written +=size;
       destination += size;
-      if (!mad_buffer_full(buffer))
-	{
-#ifdef PM2
-	  PM2_YIELD();
-#endif /* PM2 */
-	}
     }
   LOG_OUT();
 }
@@ -1719,7 +1977,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
 		source_size - offset);
 
 	  buffer->bytes_written += size;
-	  memcpy(destination, (const char *)(source + offset), size);
+	  memcpy(destination, (const void *)(source + offset), size);
 
 	  offset      += tbx_aligned(size, 64);
 	  destination += size;
@@ -1779,88 +2037,79 @@ mad_sisci_send_dma_buffer(p_mad_link_t   link,
     connection->specific;
   p_mad_sisci_local_segment_t       local_segment       =
     &connection_specific->local_segment;
-  p_mad_sisci_remote_segment_t      remote_segment      =
-    &connection_specific->remote_segment;
   char                             *source              =
     buffer->buffer + buffer->bytes_read;
   p_mad_sisci_user_segment_data_t   local_data          =
     local_segment->map_addr;
+  p_mad_sisci_remote_segment_t      remote_segment      =
+    &connection_specific->remote_segment;
   p_mad_sisci_user_segment_data_t   remote_data         =
     remote_segment->map_addr;
   volatile p_mad_sisci_status_t     read                =
     &remote_data->status.read;
   volatile p_mad_sisci_status_t     write               =
     &local_data->status.write;
+  unsigned int                      iter                = 0;
+  sci_error_t                       sisci_error;
 
   LOG_IN();
-
   while (mad_more_data(buffer))
     {
-      p_mad_sisci_local_segment_t local_dma_segment =
-	&connection_specific->
-	  local_dma_segment[connection_specific->next_dma_num];
-      p_mad_sisci_user_segment_data_t   local_dma_data          =
+      unsigned int                    dma_num             = iter & 1;
+      p_mad_sisci_local_segment_t     local_dma_segment   =
+	&connection_specific->local_dma_send_segment[dma_num];
+      p_mad_sisci_user_segment_data_t local_dma_send_data =
 	local_dma_segment->map_addr;
-      size_t      size =
+      p_mad_sisci_remote_segment_t    remote_dma_send_segment =
+	&connection_specific->remote_dma_send_segment[dma_num];
+      size_t                          size                =
 	min(buffer->bytes_written - buffer->bytes_read,
-	    remote_segment->size - sizeof(mad_sisci_connection_status_t));
-      sci_error_t sisci_error;
+	    MAD_SISCI_DMA_BUFFER_SIZE);
 
-      buffer->bytes_read += size;
-      
-#ifdef PM2
-      while (!mad_sisci_test(write))
-	PM2_YIELD();
-#else /* PM2 */
-      while (!mad_sisci_test(write));
-#endif /* PM2 */
+      buffer->bytes_read += size;      
+      memcpy((void *)local_dma_send_data, source, size);
 
-      memcpy(local_dma_data + sizeof(mad_sisci_connection_status_t),
-	     source,
-	     size);
-
-      if (!connection_specific->dma_flushed)
+      if (iter)
 	{
-	  /* Wait for dma to finish */
-	  SCIWaitForDMAQueue(connection_specific->dma_queue,
-			     SCI_INFINITE_TIMEOUT,
-			     0, &sisci_error);
-	  connection_specific->dma_flushed = tbx_true;
+	  SCIWaitForDMAQueue(connection_specific->dma_send_queue[1 - dma_num],
+			     SCI_INFINITE_TIMEOUT, 0, &sisci_error);
+
+	  mad_sisci_clear(write);
+	  mad_sisci_set(read);
+	  mad_sisci_flush(remote_segment);
+
+	  SCIResetDMAQueue(connection_specific->dma_send_queue[1 - dma_num],
+			   0, &sisci_error);
 	}
-
-      /* Enqueue the segments */
-      SCIEnqueueDMATransfer(connection_specific->dma_queue,
+      
+      while (!mad_sisci_test(write));
+      
+      SCIEnqueueDMATransfer(connection_specific->dma_send_queue[dma_num],
 			    local_dma_segment->segment,
-			    remote_segment->segment,
-			    sizeof(mad_sisci_connection_status_t),
-			    sizeof(mad_sisci_connection_status_t),
-			    size + sizeof(mad_sisci_connection_status_t),
-			    0, &sisci_error);
+			    remote_dma_send_segment->segment,
+			    0, 0, tbx_aligned(size, 64), 0, &sisci_error);
 
-      /* Post the dma queue */
-      SCIPostDMAQueue(connection_specific->dma_queue,
+      SCIPostDMAQueue(connection_specific->dma_send_queue[dma_num],
 		      0, NULL, 0, &sisci_error);
-      connection_specific->dma_flushed = tbx_false;
-      connection_specific->next_dma_num =
-	1 - connection_specific->next_dma_num;
-
       source += size;
+      iter++;
+    }
+
+    {
+      unsigned dma_num = iter & 1;
+
+      SCIWaitForDMAQueue(connection_specific->dma_send_queue[1 - dma_num],
+			 SCI_INFINITE_TIMEOUT, 0, &sisci_error);
 
       mad_sisci_clear(write);
       mad_sisci_set(read);
-      PM2_LOCK();
       mad_sisci_flush(remote_segment);
-      PM2_UNLOCK();
-      connection_specific->write_flag_flushed = tbx_true;
-      
-#ifdef PM2
-      if (mad_more_data(buffer))
-	{
-	  PM2_YIELD();
-	}
-#endif /* PM2 */
+
+      SCIResetDMAQueue(connection_specific->dma_send_queue[1 - dma_num],
+		       0, &sisci_error);
     }
 
+  connection_specific->write_flag_flushed = tbx_true;
   LOG_OUT();
 }
 
@@ -1885,41 +2134,37 @@ mad_sisci_receive_dma_buffer(p_mad_link_t   link,
     &local_data->status.read;
   p_mad_sisci_status_t              write               =
     &remote_data->status.write;
+  int                               iter                = 0;
+  
   LOG_IN();
   
+
   while (!mad_buffer_full(buffer))
     {
-      char    *source = local_data->buffer;
-      size_t   size   =
-	min(buffer->length - buffer->bytes_written,
-	    local_segment->size - sizeof(mad_sisci_connection_status_t));
-
+      unsigned int                     dma_num        = iter & 1;
+      p_mad_sisci_user_segment_data_t  local_dma_data =
+	connection_specific->local_dma_recv_segment[dma_num].map_addr;
+      volatile void                   *source         = local_dma_data;
+      size_t                           size           =
+	min(buffer->length - buffer->bytes_written, MAD_SISCI_DMA_BUFFER_SIZE);      
       if (!connection_specific->write_flag_flushed)
 	{
 	  connection_specific->write_flag_flushed = tbx_true;
 	  mad_sisci_flush(remote_segment);
 	}
-      
-#ifdef PM2
-      while (!mad_sisci_test(read))
-	PM2_YIELD();
-#else /* PM2 */
+
       while (!mad_sisci_test(read));
-#endif /* PM2 */
 
       memcpy(destination, source, size);
       mad_sisci_clear(read);
       mad_sisci_set(write);
       connection_specific->write_flag_flushed = tbx_false;
+
       buffer->bytes_written +=size;
       destination += size;
-      if (!mad_buffer_full(buffer))
-	{
-#ifdef PM2
-	  PM2_YIELD();
-#endif /* PM2 */
-	}
+      iter++;
     }
+
   LOG_OUT();
 }
 

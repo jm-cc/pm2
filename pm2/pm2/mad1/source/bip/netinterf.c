@@ -42,17 +42,17 @@
 #include <sys/time.h>
 
 #include <bip.h>
-#include <sys/netinterf.h>
+#include "sys/netinterf.h"
 
-#include <mad_timing.h>
+#include "mad_timing.h"
 
 #ifdef PM2
 
-#include <marcel.h>
+#include "marcel.h"
 
 #else
 
-#include <safe_malloc.h>
+#include "safe_malloc.h"
 #define tfree      FREE
 #define tmalloc    MALLOC
 #define lock_task()

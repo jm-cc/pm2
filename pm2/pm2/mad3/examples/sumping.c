@@ -391,7 +391,7 @@ play_with_channel(p_mad_madeleine_t  madeleine,
     {
       // Master
       ntbx_process_lrank_t lrank_dst = -1;
-      int i;
+      int                  i         =  0;
       
       LDISP_STR("Channel", name);
       LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");

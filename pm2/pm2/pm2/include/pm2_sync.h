@@ -17,6 +17,8 @@
 #ifndef PM2_SYNC_EST_DEF
 #define PM2_SYNC_EST_DEF
 
+#define _MAX_PROT_PER_BARRIER 10
+
 #include "marcel.h"
 
 typedef struct {
@@ -30,11 +32,26 @@ typedef struct {
   pm2_barrier_t node_barrier;
   int local;
   int nb;
+  int prot[_MAX_PROT_PER_BARRIER];
+  int nb_prot;
 } pm2_thread_barrier_t;
 
 typedef struct {
   int local;
+  int prot[_MAX_PROT_PER_BARRIER];
+  int nb_prot;
 } pm2_thread_barrier_attr_t;
+
+
+
+static __inline__ void pm2_thread_barrier_attr_register_protocol(pm2_thread_barrier_attr_t *attr, int prot) __attribute__ ((unused));
+static __inline__ void pm2_thread_barrier_attr_register_protocol(pm2_thread_barrier_attr_t *attr, int prot)
+{
+  fprintf(stderr, "nb prot = %d\n", attr->nb_prot);
+  if (attr->nb_prot >= _MAX_PROT_PER_BARRIER)
+    RAISE(CONSTRAINT_ERROR);
+  attr->prot[attr->nb_prot++] = prot;
+}
 
 
 void pm2_barrier_init_rpc();

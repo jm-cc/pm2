@@ -1,10 +1,24 @@
 
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
 LIBRARY=profile
 
 
 include $(PM2_ROOT)/make/libs-vars.mak
 
-ifeq (,$(findstring _$(MAKECMDGOALS)_,_clean_ $(DO_NOT_GENERATE_MAK_FILES)))
+ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
 -include $(PM2_MAK_DIR)/profile-specific.mak
 endif
 
@@ -38,12 +52,6 @@ $(LIB_GEN_STAMP)/fut_stamp: $(LIB_STAMP_FLAVOR)
 
 # Nothing can be done at 'do_h generation time'
 dot_h: ;
-
-clean:
-	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
-	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
-	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
-	@echo "THIS HAVE TO BE FIXED. NOTHING DONE TO CLEAN FOR NOW."
 
 $(PM2_MAK_DIR)/profile-specific.mak: $(LIB_STAMP_FLAVOR)
 	@_PM2_OUTPUT=`$(PM2_CONFIG) --includedir $(LIBRARY)`; \

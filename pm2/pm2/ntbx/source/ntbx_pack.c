@@ -37,34 +37,34 @@ ntbx_pack_int(int                  data,
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
-      sprintf(ptr++, "I");
+      *(char*)ptr++ = 'i';
     }
-  sprintf(ptr,
-	  "%*d%c",
-	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
-	  data, 0);
-  LOG_VAL("data", data);
-  LOG_STR("pack_buffer", pack_buffer);
+
+  sprintf(ptr, "%*d", 
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1, data);
   LOG_OUT();
 }
 
 int
 ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer->buffer;
+  void *ptr     = pack_buffer->buffer;
+  char *end_ptr = NULL;
   int   data;
   int   i;
  
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
-      if (*(char*)ptr++ != 'I')
+      if (*(char*)ptr++ != 'i')
 	FAILURE("synchronisation error");
     }
-  data = atoi(ptr);
-  LOG_VAL("data", data);
-  LOG_STR("pack_buffer", pack_buffer);
+
+  data = (int)strtol(ptr, &end_ptr, 10);
+  if (*end_ptr != '\0')
+    FAILURE("synchronisation error");  
   LOG_OUT();
+
   return data;
 }
 
@@ -82,21 +82,111 @@ ntbx_pack_long(long                 data,
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
-      sprintf(ptr++, "L");
+      *(char*)ptr++ = 'l';
     }
-  sprintf(ptr,
-	  "%*ld%c",
-	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
-	  data, 0);
+
+  sprintf(ptr, "%*ld",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1, data);
   LOG_OUT();
 }
 
 long
 ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
 {
-  void *ptr = pack_buffer->buffer;
+  void *ptr     = pack_buffer->buffer;
+  char *end_ptr = NULL;
   long  data;
   int   i;
+ 
+  LOG_IN();
+  for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
+    {
+      if (*(char*)ptr++ != 'l')
+	FAILURE("synchronisation error");
+    }
+
+  data = strtol(ptr, &end_ptr, 10);
+  if (*end_ptr != '\0')
+    FAILURE("synchronisation error");  
+  LOG_OUT();
+
+  return data;
+}
+
+/*
+ * Unsigned integer
+ * ----------------
+ */
+void
+ntbx_pack_unsigned_int(unsigned int         data,
+		       p_ntbx_pack_buffer_t pack_buffer)
+{
+  void *ptr = pack_buffer->buffer;
+  int   i;
+  
+  LOG_IN();
+  for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
+    {
+      *(char*)ptr++ = 'I';
+    }
+
+  sprintf(ptr, "%*u",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1, data);
+  LOG_OUT();
+}
+
+unsigned int
+ntbx_unpack_unsigned_int(p_ntbx_pack_buffer_t pack_buffer)
+{
+  void         *ptr     = pack_buffer->buffer;
+  char         *end_ptr = NULL;
+  unsigned int  data;
+  int           i;
+ 
+  LOG_IN();
+  for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
+    {
+      if (*(char*)ptr++ != 'I')
+	FAILURE("synchronisation error");
+    }
+
+  data = (unsigned int)strtoul(ptr, &end_ptr, 10);
+  if (*end_ptr != '\0')
+    FAILURE("synchronisation error");
+  LOG_OUT();
+
+  return data;
+}
+
+/*
+ * Unsigned long integer
+ * ---------------------
+ */
+void
+ntbx_pack_unsigned_long(unsigned long        data,
+			p_ntbx_pack_buffer_t pack_buffer)
+{
+  void *ptr = pack_buffer->buffer;
+  int   i;
+  
+  LOG_IN();
+  for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
+    {
+      *(char*)ptr++ = 'L';
+    }
+
+  sprintf(ptr, "%*ld",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1, data);
+  LOG_OUT();
+}
+
+unsigned long
+ntbx_unpack_unsigned_long(p_ntbx_pack_buffer_t pack_buffer)
+{
+  void          *ptr = pack_buffer->buffer;
+  char          *end_ptr = NULL;
+  unsigned long  data;
+  int            i;
  
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
@@ -104,8 +194,12 @@ ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
       if (*(char*)ptr++ != 'L')
 	FAILURE("synchronisation error");
     }
-  data = atol(ptr);
+
+  data = strtoul(ptr, &end_ptr, 10);
+  if (*end_ptr != '\0')
+    FAILURE("synchronisation error");  
   LOG_OUT();
+
   return data;
 }
 
@@ -123,12 +217,10 @@ ntbx_pack_double(double               data,
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
-      sprintf(ptr++, "D");
+      *(char*)ptr++ = 'D';
     }
-  sprintf(ptr,
-	  "%*f%c",
-	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1,
-	  data, 0);
+  sprintf(ptr, "%*f",
+	  NTBX_PACK_BUFFER_LEN - NTBX_PACK_BUFFER_TAG_LEN - 1, data);
   LOG_OUT();
 }
 
@@ -136,6 +228,7 @@ int
 ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
 {
   void   *ptr = pack_buffer->buffer;
+  char   *end_ptr = NULL;
   double  data;
   int     i;
  
@@ -145,7 +238,11 @@ ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
       if (*(char*)ptr++ != 'D')
 	FAILURE("synchronisation error");
     }
-  data = atof(ptr);
+
+  data = strtod(ptr, &end_ptr);
+  if (*end_ptr != '\0')
+    FAILURE("synchronisation error");  
   LOG_OUT();
+
   return data;
 }

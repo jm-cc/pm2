@@ -33,49 +33,107 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MASTER_MODULE =  PM2
-
 ifndef PM2_ROOT
-$(error The PM2_ROOT variable is not set)
+export PM2_ROOT := $(CURDIR)
 endif
 
-include $(PM2_ROOT)/make/master_vars.mak
+include $(PM2_ROOT)/make/common-vars.mak
 
-ifeq ($(LIGHT),yes)
-COMMON_DEFAULT_TARGET :=  marcel_default mad_default
-else
-COMMON_DEFAULT_TARGET :=  pm2_default
+MODULES := $(shell $(PM2_ROOT)/bin/pm2-module modules)
+
+ifneq ($(MAKECMDGOALS),init)
+ifneq ($(MAKECMDGOALS),help)
+ifneq ($(MAKECMDGOALS),)
+LIBS = $(shell $(PM2_CONFIG) --modules)
+endif
+endif
 endif
 
-# Ce makefile
-COMMON_MAKEFILES +=  $(PM2_ROOT)/Makefile
+help:
 
-# Inclusion des variables
-ifneq ($(LIGHT),yes)
-include $(PM2_MAKE)/vars.mak
-include $(DSM_MAKE)/vars.mak
-endif
-include $(MARCEL_MAKE)/vars.mak
-include $(MAD_MAKE)/vars.mak
-include $(NTBX_MAKE)/vars.mak
-include $(TBX_MAKE)/vars.mak
+include $(PM2_ROOT)/make/common-rules.mak
 
-ifeq ($(LIGHT),yes)
-COMMON_OPTIONS += LIGHT $(LIGHT)
-endif
+all: pm2 examples
+.PHONY: pm2 examples all
 
-# Regles principales
-include $(PM2_ROOT)/make/master_rules.mak
+pm2: flavors
+	@set -e; \
+	for i in $(LIBS) ; do \
+		$(MAKE) -C modules/$$i ; \
+	done
 
-# Inclusion des regles de compilation
-ifneq ($(LIGHT),yes)
-include $(PM2_MAKE)/rules.mak
-include $(DSM_MAKE)/rules.mak
-endif
-include $(MARCEL_MAKE)/rules.mak
-include $(MAD_MAKE)/rules.mak
-include $(NTBX_MAKE)/rules.mak
-include $(TBX_MAKE)/rules.mak
+examples: flavors
+	@set -e; \
+	for i in $(LIBS) ; do \
+		$(MAKE) -C modules/$$i examples ; \
+	done
 
+.PHONY: clean cleanlibs
+clean: cleanlibs
 
-##############################################################################
+cleanlibs:
+	@set -e; \
+	for i in $(MODULES) ; do \
+		$(MAKE) -C modules/$$i clean ; \
+	done
+
+.PHONY: distclean distcleanlibs distcleanflavors distcleandoc
+distclean: distcleanlibs distcleanflavors distcleandoc
+
+distcleanlibs:
+	@set -e; \
+	for i in $(MODULES) ; do \
+		$(MAKE) -C modules/$$i distclean ; \
+	done
+
+distcleanflavors:
+	$(MAKE) -C doc distclean
+
+distcleandoc:
+	$(RM) -r stamp
+	$(RM) -r flavors
+
+.PHONY: init cvsinit flavorinit
+init: cvsinit flavorinit
+
+cvsinit ARCHITECTURES:
+	@if [ -d CVS ]; then \
+		$(PM2_ROOT)/bin/pm2_recreate_links ; \
+	fi
+
+flavorinit flavors: ARCHITECTURES
+	@echo Creating initial sample flavors...
+	@if [ -d flavors ]; then \
+		echo "Aborting, some flavor already exists" ; \
+		echo "Do 'make distclean' to remove all" ; \
+	else \
+		$(PM2_ROOT)/bin/pm2_create-sample-flavors ;\
+	fi
+
+.PHONY: doc
+doc:
+	$(MAKE) -C doc
+
+flavors:
+ARCHITECTURES:
+
+.PHONY: help
+help: globalhelp
+
+bannerhelp:
+	@echo "This is PM2 main Makefile"
+
+targethelp:
+	@echo "  init: initialise PM2 source tree"
+	@echo "  pm2: build the PM2 libraries"
+	@echo "  examples: build all the example (do not use the FLAVOR="
+	@echo "    option there, unless you know what you do)"
+	@echo "  config: configure flavors"
+	@echo "  doc: build the documentation"
+	@echo "  help: this help"
+	@echo "  clean: clean source tree for current flavor"
+	@echo "  distclean: clean all source tree for all flavors"
+
+.PHONY: config
+config: flavors
+	@$(PM2_ROOT)/bin/pm2-config-flavor

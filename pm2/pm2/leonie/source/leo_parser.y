@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "leonie.h"
-  /* #define DEBUG */
+#undef DEBUG
+
+#define DEBUG
 
   /* Lex interface */
   extern FILE *yyin, *yyout;

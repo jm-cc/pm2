@@ -4,7 +4,7 @@
 #include <string.h>
 /* #define DEBUG */
 #include "leonie.h"
-
+#undef DEBUG
 #define YY_INPUT(buf, result, max_size) \
    {result = leo_yy_input(buf, max_size);}
 %}

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_exit.c,v $
+Revision 1.3  2000/11/16 13:24:06  oaumage
+- mise a jour initialisation
+
 Revision 1.2  2000/06/07 08:12:05  oaumage
 - Retour a des bases saines
 
@@ -109,19 +112,91 @@ mad_driver_exit(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
-#ifdef PM2
-void
-mad2_exit(p_mad_madeleine_t madeleine)
-#else
+static void
+mad_settings_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_settings_t settings = madeleine->settings;
+
+  LOG_IN();
+  settings->rsh_cmd = NULL;
+  if (settings->configuration_file)
+    {
+      TBX_FREE(settings->configuration_file);
+      settings->configuration_file = NULL;
+    }
+  settings->debug_mode            = tbx_false;
+  settings->external_spawn_driver =        -1;
+  LOG_OUT();
+}
+
+static void
+mad_configuration_exit(p_mad_madeleine_t madeleine)
+{
+  p_mad_configuration_t configuration = madeleine->configuration;
+
+  LOG_IN();
+  if (configuration->program_name)
+    {
+      ntbx_host_id_t id = configuration->local_host_id;
+      
+      while (id--)
+	{
+	  if (configuration->program_name[id])
+	    {
+	      TBX_FREE(configuration->program_name[id]);
+	      configuration->program_name[id] = NULL;
+	    }
+	}
+
+      TBX_FREE(configuration->program_name);
+      configuration->program_name = NULL;
+    }
+  
+  if (configuration->host_name)
+    {
+      ntbx_host_id_t id = configuration->local_host_id;
+      
+      while (id--)
+	{
+	  if (configuration->host_name[id])
+	    {
+	      TBX_FREE(configuration->host_name[id]);
+	      configuration->host_name[id] = NULL;
+	    }
+	}
+
+      TBX_FREE(configuration->host_name);
+      configuration->host_name = NULL;
+    }
+  
+  configuration->local_host_id = -1;
+  configuration->size          =  0;
+  LOG_OUT();
+}
+
 void
 mad_exit(p_mad_madeleine_t madeleine)
-#endif
 {
   LOG_IN();
   TBX_LOCK_SHARED(madeleine);
   mad_close_channels(madeleine);
   mad_driver_exit(madeleine);
   tbx_list_manager_exit();
+
+  if (madeleine->settings)
+    {
+      mad_settings_exit(madeleine);
+      TBX_FREE(madeleine->settings);
+      madeleine->settings = NULL;
+    }
+  
+  if (madeleine->configuration)
+    {
+      mad_configuration_exit(madeleine);
+      TBX_FREE(madeleine->configuration);
+      madeleine->configuration = NULL;
+    }
+
   TBX_UNLOCK_SHARED(madeleine);
   LOG_OUT();
 }

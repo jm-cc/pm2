@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_regular_spawn.h,v $
+Revision 1.3  2000/11/16 13:24:06  oaumage
+- mise a jour initialisation
+
 Revision 1.2  2000/11/10 14:17:56  oaumage
 - nouvelle procedure d'initialisation
 
@@ -56,46 +59,11 @@ ______________________________________________________________________________
  * Fonctions exportees
  * -------------------
  */
-p_mad_madeleine_t
-mad_object_init(int                   argc,
-		char                **argv,
-		char                 *configuration_file,
-		p_mad_adapter_set_t   adapter_set);
-
-void
-mad_cmd_line_init(p_mad_madeleine_t   madeleine,
-		  int                 argc,
-		  char              **argv);
-
-void
-mad_configuration_init(p_mad_madeleine_t   madeleine,
-		       int                 argc,
-		       char              **argv);
-
-void
-mad_output_redirection_init(p_mad_madeleine_t   madeleine,
-			    int                 argc,
-			    char              **argv);
-
-void
-mad_network_components_init(p_mad_madeleine_t   madeleine,
-			    int                 argc,
-			    char              **argv);
 
 void
 mad_slave_spawn(p_mad_madeleine_t   madeleine,
 		int                 argc,
 		char              **argv);
-
-void  
-mad_connect(p_mad_madeleine_t   madeleine,
-	    int                 argc,
-	    char              **argv);
-
-void
-mad_purge_command_line(p_mad_madeleine_t   madeleine,
-		       int                *_argc,
-		       char              **_argv);
 
 p_mad_madeleine_t
 mad_init(int                  *argc,

@@ -18,6 +18,8 @@
 #define DSM_PROT_LIB_IS_DEF
 
 #include "dsm_const.h" 
+#include "dsm_page_manager.h"   /* for type "dsm_page_index_t" */
+
 
 void dsmlib_rf_ask_for_read_copy(dsm_page_index_t index);
 

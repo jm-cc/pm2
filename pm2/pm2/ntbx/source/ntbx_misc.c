@@ -73,11 +73,11 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
       pc->local_array_size  = 1 + 2 * local_rank;
       pc->global_array_size = 1 + 2 * process->global_rank;
 
-      pc->local_index  = 
+      pc->local_index  =
 	TBX_CALLOC((size_t)pc->local_array_size,
 		   sizeof(p_ntbx_process_info_t));
       CTRL_ALLOC(pc->local_index);
-      
+
       pc->global_index =
 	TBX_CALLOC((size_t)pc->global_array_size,
 		   sizeof(p_ntbx_process_info_t));
@@ -88,27 +88,27 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
       if (local_rank >= pc->local_array_size)
 	{
 	  ntbx_process_lrank_t old_size = pc->local_array_size;
-	  
+
 	  pc->local_array_size =
 	    max(2 * pc->local_array_size, local_rank + 1);
 
 	  pc->local_index =
 	    TBX_REALLOC(pc->local_index,
-			pc->local_array_size 
+			pc->local_array_size
 			* sizeof(p_ntbx_process_info_t));
 	  CTRL_ALLOC(pc->local_index);
 
 	  memset(pc->local_index + old_size,
-		 0, 
+		 0,
 		 sizeof(p_ntbx_process_info_t)
 		 * (pc->local_array_size - old_size));
 	}
-      
+
       if (process->global_rank >= pc->global_array_size)
 	{
 	  ntbx_process_grank_t old_size = pc->global_array_size;
-	  
-	  pc->global_array_size = 
+
+	  pc->global_array_size =
 	    max(2 * pc->global_array_size, process->global_rank + 1);
 
 	  pc->global_index =
@@ -123,18 +123,18 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
 		 * (pc->global_array_size - old_size));
 	}
     }
-  
+
   process_info = TBX_MALLOC(sizeof(ntbx_process_info_t));
   CTRL_ALLOC(process_info);
-  
+
   process_info->local_rank = local_rank;
   process_info->process    = process;
-  process_info->specific   = specific;  
+  process_info->specific   = specific;
 
   if (   pc->local_index[local_rank]
 	 || pc->global_index[process->global_rank])
     FAILURE("process_container slot already in use");
-  
+
   pc->local_index[local_rank]            = process_info;
   pc->global_index[process->global_rank] = process_info;
   pc->count++;
@@ -147,7 +147,7 @@ ntbx_process_lrank_t
 ntbx_pc_local_max(p_ntbx_process_container_t pc)
 {
   ntbx_process_lrank_t lrank = -1;
-  
+
   LOG_IN();
   if (pc->local_array_size)
     {
@@ -201,7 +201,7 @@ ntbx_pc_get_local_process(p_ntbx_process_container_t pc,
       process = process_info->process;
     }
   LOG_OUT();
-  
+
   return process;
 }
 
@@ -217,7 +217,7 @@ ntbx_pc_get_local(p_ntbx_process_container_t pc,
       process_info = pc->local_index[local_rank];
     }
   LOG_OUT();
-  
+
   return process_info;
 }
 
@@ -231,16 +231,16 @@ ntbx_pc_get_local_specific(p_ntbx_process_container_t pc,
   if ((local_rank >= 0) && (local_rank < pc->local_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
-      
+
       process_info = pc->local_index[local_rank];
-      
+
       if (process_info)
 	{
 	  result = process_info->specific;
 	}
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -286,7 +286,7 @@ ntbx_pc_next_local_rank(p_ntbx_process_container_t  pc,
 	      break;
 	    }
 
-	  (*local_rank)++;	  
+	  (*local_rank)++;
 	}
     }
   LOG_OUT();
@@ -298,7 +298,7 @@ ntbx_process_grank_t
 ntbx_pc_global_max(p_ntbx_process_container_t pc)
 {
   ntbx_process_grank_t grank = -1;
-  
+
   LOG_IN();
   if (pc->global_array_size)
     {
@@ -326,7 +326,7 @@ ntbx_pc_global_to_local(p_ntbx_process_container_t pc,
     {
       p_ntbx_process_info_t process_info = NULL;
 
-      process_info = pc->global_index[global_rank];      
+      process_info = pc->global_index[global_rank];
 
       if (process_info)
 	{
@@ -348,12 +348,12 @@ ntbx_pc_get_global_process(p_ntbx_process_container_t pc,
   if ((global_rank >= 0) && (global_rank < pc->global_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
-      
+
       process_info = pc->global_index[global_rank];
       process = process_info->process;
     }
   LOG_OUT();
-  
+
   return process;
 }
 
@@ -370,7 +370,7 @@ ntbx_pc_get_global(p_ntbx_process_container_t pc,
       process_info = pc->global_index[global_rank];
     }
   LOG_OUT();
-  
+
   return process_info;
 }
 
@@ -389,7 +389,7 @@ ntbx_pc_get_global_specific(p_ntbx_process_container_t pc,
       result = process_info->specific;
     }
   LOG_OUT();
-  
+
   return result;
 }
 
@@ -435,7 +435,7 @@ ntbx_pc_next_global_rank(p_ntbx_process_container_t pc,
 	      break;
 	    }
 
-	  (*global_rank)++;	  
+	  (*global_rank)++;
 	}
     }
   LOG_OUT();
@@ -455,21 +455,21 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 {
   p_ntbx_topology_table_t ttable = NULL;
   ntbx_process_lrank_t    size   =    0;
-  
+
   LOG_IN();
   size = pc->local_array_size;
-  
+
   while (size)
     {
       if (pc->local_index[size - 1])
 	break;
-      
+
       size--;
     }
 
   ttable = ntbx_topology_table_cons();
   ttable->size = size;
-  
+
   if (size)
     {
       ttable->table =
@@ -485,11 +485,11 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 	case ntbx_topology_regular:
 	  {
 	    ntbx_process_lrank_t src = 0;
-	    
+
 	    for (src = 0; src < size; src++)
 	      {
 		ntbx_process_lrank_t dst = 0;
-	    
+
 		for (dst = 0; dst < size; dst++)
 		  {
 		    if (dst == src)
@@ -505,11 +505,11 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 	  FAILURE("unsupported feature");
 	  {
 	    ntbx_process_lrank_t src = 0;
-	    
+
 	    for (src = 0; src < size; src++)
 	      {
 		ntbx_process_lrank_t dst = 0;
-	    
+
 		for (dst = 0; dst < size; dst++)
 		  {
 		    ttable->table[size * src + dst] =
@@ -564,18 +564,18 @@ ntbx_topology_table_set(p_ntbx_topology_table_t ttable,
 
   LOG_IN();
   size = ttable->size;
-  
+
   if ((src < 0) || (dst < 0))
     FAILURE("invalid parameters");
 
   if ((src >= size) || (dst >= size))
     FAILURE("out-of-bound parameters");
-  
+
   if (!ttable->table[size * src + dst])
     {
       ttable->table[size * src + dst] =
 	ntbx_topology_element_cons();
-    }  
+    }
   LOG_OUT();
 }
 
@@ -589,13 +589,13 @@ ntbx_topology_table_clear(p_ntbx_topology_table_t ttable,
 
   LOG_IN();
   size = ttable->size;
-  
+
   if ((src < 0) || (dst < 0))
     FAILURE("invalid parameters");
 
   if ((src >= size) || (dst >= size))
     FAILURE("out-of-bound parameters");
-  
+
   element = ttable->table[size * src + dst];
   if (element)
     {
@@ -617,13 +617,13 @@ ntbx_topology_table_get(p_ntbx_topology_table_t ttable,
 
   LOG_IN();
   size = ttable->size;
-  
+
   if ((src < 0) || (dst < 0))
     FAILURE("invalid parameters");
 
   if ((src >= size) || (dst >= size))
     FAILURE("out-of-bound parameters");
-  
+
   element = ttable->table[size * src + dst];
   LOG_OUT();
 
@@ -641,10 +641,10 @@ ntbx_topology_table_exit(p_ntbx_topology_table_t ttable)
   if (size)
     {
       p_ntbx_topology_element_t *ptr = NULL;
-      
+
       ptr   = ttable->table;
       size *= size;
-      
+
       while (size)
 	{
 	  if (*ptr)
@@ -652,7 +652,7 @@ ntbx_topology_table_exit(p_ntbx_topology_table_t ttable)
 	      ntbx_topology_element_dest(*ptr, NULL);
 	      *ptr = NULL;
 	    }
-	  
+
 	  ptr++; size--;
 	}
     }
@@ -671,15 +671,15 @@ ntbx_true_name(char *host_name)
 {
   struct hostent *host_entry = NULL;
   char           *result     = NULL;
-  
+
   LOG_IN();
   if (strcmp(host_name, "localhost"))
     {
       host_entry = gethostbyname(host_name);
-      
+
       if (!host_entry)
 	ERROR("gethostbyname");
-      
+
       result = tbx_strdup(host_entry->h_name);
     }
   else

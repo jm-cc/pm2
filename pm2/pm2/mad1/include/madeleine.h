@@ -57,6 +57,14 @@ typedef int boolean;
 
 #endif
 
+typedef enum {
+  MAD_IN_HEADER,
+  MAD_IN_PLACE,
+  MAD_IN_PLACE_N_FREE,
+  MAD_BY_COPY
+} madeleine_part;
+
+
 void mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami);
 
 void mad_buffers_init(void);
@@ -74,65 +82,6 @@ void mad_sendbuf_send(void);
 void mad_receive(void);
 
 void mad_recvbuf_receive(void);
-
-typedef enum
-{
-  mad_send_SAFER,
-  mad_send_LATER,
-  mad_send_CHEAPER
-} mad_send_mode_t;
-
-#define SEND_SAFER	mad_send_SAFER
-#define SEND_LATER	mad_send_LATER
-#define SEND_CHEAPER	mad_send_CHEAPER
-
-typedef enum
-{
-  mad_receive_EXPRESS,
-  mad_receive_CHEAPER
-} mad_receive_mode_t;
-
-#define RECV_EXPRESS	mad_receive_EXPRESS
-#define RECV_CHEAPER	mad_receive_CHEAPER
-
-typedef enum {
-  MAD_IN_HEADER,
-  MAD_IN_PLACE,
-  MAD_IN_PLACE_N_FREE,
-  MAD_BY_COPY
-} madeleine_part;
-
-void pm2_pack_byte(mad_send_mode_t sm,
-		   mad_receive_mode_t rm,
-		   char *data,
-		   size_t nb);
-void pm2_unpack_byte(mad_send_mode_t sm,
-		     mad_receive_mode_t rm,
-		     char *data,
-		     size_t nb);
-
-void pm2_pack_str(mad_send_mode_t sm,
-		  mad_receive_mode_t rm,
-		  char *data);
-void pm2_unpack_str(mad_send_mode_t sm,
-		    mad_receive_mode_t rm,
-		    char *data);
-
-static void __inline__ pm2_pack_int(mad_send_mode_t sm,
-				    mad_receive_mode_t rm,
-				    int *data,
-				    size_t nb)
-{
-  pm2_pack_byte(sm, rm, (char *)data, nb*sizeof(int));
-}
-
-static void __inline__ pm2_unpack_int(mad_send_mode_t sm,
-				      mad_receive_mode_t rm,
-				      int *data,
-				      size_t nb)
-{
-  pm2_unpack_byte(sm, rm, (char *)data, nb*sizeof(int));
-}
 
 void old_mad_pack_byte(madeleine_part where, char *data, size_t nb);
 void old_mad_unpack_byte(madeleine_part where, char *data, size_t nb);

@@ -153,7 +153,7 @@ pm2_net_server(any_t arg)
 {
   unsigned tag;
 
-  marcel_cleanup_push(pm2_net_server_term_func, marcel_self());
+  marcel_postexit(pm2_net_server_term_func, marcel_self());
 
   while (!pm2_net_finished)
     {

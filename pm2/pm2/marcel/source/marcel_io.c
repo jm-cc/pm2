@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.3  2000/02/01 14:31:21  rnamyst
+Minor modifications.
+
 Revision 1.2  2000/01/31 15:57:15  oaumage
 - ajout du Log CVS
 
@@ -130,17 +133,15 @@ static void *unix_io_poll(marcel_pollid_t id,
   } else if(sleeping) {
     mdebug("E/S a duree limitee\n");
 
-    timerclear(&tv);
-    /*tv.tv_sec = 0;
+    tv.tv_sec = 0;
     tv.tv_usec = 5000;
-    ptv = &tv;*/
+    ptv = &tv;
   } else {
     mdebug("E/S bloquante\n");
 
-    timerclear(&tv);
-    /* tv.tv_sec = 0;
+    tv.tv_sec = 0;
     tv.tv_usec = 5000;
-    ptv = &tv;*/
+    ptv = &tv;
     /* ptv = NULL; */
   }
 

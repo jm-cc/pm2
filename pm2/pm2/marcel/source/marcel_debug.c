@@ -88,18 +88,9 @@ void __init marcel_debug_init_auto(void)
 	unsigned long __ma_debug_size_entry=(void*)&ma_dummy2-(void*)&ma_dummy1;
 	unsigned long __ma_debug_size=(void*)&(__ma_debug_start[1])-(void*)__ma_debug_start;
 
-	if (__ma_debug_size_entry != __ma_debug_size) {
-		pm2debug("Warning : entry_size %li differ from %li (sizeof %i)\n"
-			 "Someone to correct the linker script (that does extra alignments) ?\n",
-			 __ma_debug_size_entry, __ma_debug_size, sizeof(debug_type_t));
-		for(var=__ma_debug_start; var < __ma_debug_end; 
-		    var=(debug_type_aligned_t *)((void*)(var)+__ma_debug_size_entry)) {
-			pm2debug_register(&var->d);
-		}
-	} else {
-		for(var=__ma_debug_start; var < __ma_debug_end; var++) {
-			pm2debug_register(&var->d);
-		}
+	MA_BUG_ON(__ma_debug_size_entry != __ma_debug_size);
+	for(var=__ma_debug_start; var < __ma_debug_end; var++) {
+		pm2debug_register(&var->d);
 	}
 }
 

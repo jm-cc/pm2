@@ -606,7 +606,7 @@ common_exit(common_attr_t *attr)
 #ifdef MARCEL
   // Marcel shutdown
   // --------------------------------
-  marcel_end();
+  marcel_finish();
   marcel_clear_activity();
 #endif // MARCEL
 
@@ -671,6 +671,20 @@ common_exit(common_attr_t *attr)
 
   tbx_exit();
 #endif // TBX
+
+#ifdef PROFILE
+  /*
+   * Profiling services
+   * ------------------
+   *
+   * Provides:
+   * - Fast User Traces internal initialization
+   *
+   * Requires:
+   * - nothing
+   */
+  profile_exit();
+#endif /* PROFILE */
 
   LOG_OUT();
 }

@@ -135,6 +135,7 @@ typedef void (*handler_func_t)(any_t);
 /* = initialization & termination == */
 
 #define marcel_init(argc, argv) common_init(argc, argv, NULL)
+#define marcel_end() common_exit(NULL)
 
 // When completed, calls to marcel_self() are ok, etc.
 // So do calls to the Unix Fork primitive.
@@ -146,7 +147,7 @@ void marcel_start_sched(int *argc, char *argv[]);
 
 void marcel_purge_cmdline(int *argc, char *argv[]);
 
-void marcel_end(void);
+void marcel_finish(void);
 
 void marcel_strip_cmdline(int *argc, char *argv[]);
 

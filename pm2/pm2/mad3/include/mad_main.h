@@ -23,11 +23,13 @@
 
 typedef enum e_mad_vrp_parameter_opcode
   {
+    mad_op_uninitialized = 0,
     mad_op_optional_block,
   } mad_parameter_opcode_t, *p_mad_parameter_opcode_t;
 
 typedef enum e_mad_status_opcode
   {
+    mad_os_uninitialized = 0,
     mad_os_lost_block,
   } mad_status_opcode_t, *p_mad_status_opcode_t;
 

@@ -66,15 +66,14 @@ struct ma_runqueue {
 #section marcel_macros
 // ceci n'a plus de sens:
 //#define task_rq(p)		lwp_rq(ma_task_lwp(p))
+#define ma_task_cur_rq(p)	((p)->sched.internal.cur_rq)
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueues, (lwp)))
 #define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
-#define ma_task_cur_rq(p)	((p)->sched.internal.cur_rq)
 #define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
 #define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
-#define ma_lwp_cur_rq(lwp)	(&ma_main_runqueue)
 #define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_idle_runqueue)
 #define ma_task_cur_rq(p)	(&ma_main_runqueue)
 #define ma_this_rq()		(&ma_main_runqueue)

@@ -378,7 +378,7 @@ void dsmlib_erp_hyp_receive_page(void *addr, dsm_access_t access, dsm_node_t rep
 
   if (wc == (ac +1))  /* keep the page */
   {
-    dsm_access_t old_access = dsm_get_access(index);
+    //dsm_access_t old_access = dsm_get_access(index);
 
 #ifdef DSM_SEND_PAGE_CHEAPER
     pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, page_size); 

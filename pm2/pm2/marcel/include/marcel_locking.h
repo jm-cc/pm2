@@ -83,9 +83,6 @@ static __inline__ void ma_unlock_task(void)
 
   atomic_dec(&cur->_locked);
 
-#if defined(PM2DEBUG) && defined(MA__ACTIVATION)
-  pm2debug_flush();
-#endif
 }
 #endif
 */

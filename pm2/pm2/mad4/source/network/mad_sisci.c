@@ -977,7 +977,6 @@ void
 mad_sisci_link_init(p_mad_link_t lnk)
 {
   LOG_IN();
-  pm2debug_flush();
 //  lnk->link_mode   = mad_link_mode_buffer_group;
   lnk->link_mode   = mad_link_mode_link_group;
   lnk->buffer_mode = mad_buffer_mode_dynamic;

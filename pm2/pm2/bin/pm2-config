@@ -50,7 +50,7 @@ if [ -z "$MODULES" ]; then
 fi
 
 DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 marcel tbx ntbx pm2debug"
-DIRTY_ORDERED_LIBS="leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug"
+DIRTY_ORDERED_LIBS="leoparse pm2 dsm mad marcel tbx ntbx profile pm2debug common"
 
 ##########################################################################
 # aide
@@ -388,7 +388,7 @@ if [ -n "${dirtoshow}" ]; then
 fi
 
 if [ -z "$libs" ]; then
-    libs="$PM2_LIBS"
+    libs="$PM2_LIBS common"
 fi
 
 ##########################################################################

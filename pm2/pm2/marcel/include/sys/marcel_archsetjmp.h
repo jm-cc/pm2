@@ -18,6 +18,7 @@
 #define ARCHSETJMP_EST_DEF
 
 #include <setjmp.h>
+#include <tbx_compiler.h>
 
 #if defined(ALPHA_ARCH) && defined(LINUX_SYS)
 
@@ -32,7 +33,7 @@
 #if defined(RS6K_ARCH)
 
 _PRIVATE_ extern int _jmg(int r);
-_PRIVATE_ extern void LONGJMP(jmp_buf buf, int val);
+_PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 #ifdef setjmp
 #undef setjmp
 #endif
@@ -59,7 +60,7 @@ typedef int my_jmp_buf[6];
 
 extern int my_setjmp(my_jmp_buf buf);
 
-static __inline__ void my_longjmp(my_jmp_buf buf, int val) __attribute__ ((unused,no_instrument_function));
+static __inline__ void TBX_NORETURN my_longjmp(my_jmp_buf buf, int val) __attribute__ ((__unused__));
 
 static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 {
@@ -69,9 +70,11 @@ static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 		       "movl 8(%0), %%edi\n\t"
 		       "movl 12(%0), %%ebp\n\t"
 		       "movl 16(%0), %%esp\n\t"
-		       "movl 20(%0), %%ecx\n\t"
+		       "movl 20(%0), %0\n\t"
 		       "jmp *%0"
-		       : : "c" (buf), "a" (val) : "memory");
+		       : : "c,d" (buf), "a" (val));
+  // to make gcc believe us that the above statement doesn't return
+  for(;;);
 }
 
 #define jmp_buf my_jmp_buf

@@ -35,9 +35,9 @@
 
 ###################### CUSTOMIZATION SECTION #####################
 
-MAD_OPTIONS		= # -DAPPLICATION_SPAWN # -DMAD_MESSAGE_POLLING  # -DDEBUG
+MAD_OPTIONS		= -O6 -g -fomit-frame-pointer # -DAPPLICATION_SPAWN # -DMAD_MESSAGE_POLLING  # -DDEBUG
 
-MAD_STANDALONE_CC       = gcc #egcc
+MAD_STANDALONE_CC       = gcc # egcc
 
 # MAD_STANDALONE_OPTIONS	= -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
 MAD_STANDALONE_OPTIONS	=	-g -Wall -Werror # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
@@ -159,41 +159,42 @@ include $(MAD_DEPENDS)
 endif
 endif
 
-$(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d
 ifdef $(MAD_ALONE)
+$(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d $(MAD_MAKEFILE)
 $(MAD_DEPENDS): $(MAD_MAKEFILE)
 else
+$(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d $(PM2_MAKEFILE)
 $(MAD_DEPENDS): $(PM2_MAKEFILE)
 endif
 
 $(MAD_LIB): $(MAD_OBJECTS)
-	@ rm -f $(MAD_LIB)
+	rm -f $(MAD_LIB)
 	@ echo "  -  $(@F)"
-	@ ar cr $(MAD_LIB) $(MAD_OBJECTS)
+	ar cr $(MAD_LIB) $(MAD_OBJECTS)
 
 $(MAD_REG_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
+	$(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
 
 $(MAD_REG_DEPENDS): $(MAD_DEP)/%.d: $(MAD_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
+	$(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(MAD_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(MAD_NET_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_CI_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
+	$(MAD_CC) $(MAD_CFLAGS) $(MAD_FLAGS) -c $< -o $@
 
 $(MAD_NET_DEPENDS): $(MAD_DEP)/%.d: $(MAD_CI_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
+	$(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(MAD_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 ifndef MAD_ALONE
 .PHONY: madclean 
 madclean: 
 	@ echo "Cleaning Madeleine II"
-	@ rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d)
+	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d)
 
 maddistclean:
 	rm -rf $(wildcard $(MAD2_ROOT)/lib \
@@ -203,7 +204,7 @@ else
 .PHONY: clean distclean
 clean: tbxclean ntbxclean
 	@ echo "Cleaning Madeleine II"
-	@ rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d) \
+	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d) \
 
 distclean: tbxdistclean ntbxdistclean
 	rm -rf $(wildcard $(MAD2_ROOT)/lib \
@@ -258,16 +259,16 @@ $(DEPENDS): $(THIS_MAKEFILE) $(MAD_MAKEFILE)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@ echo "  -  $(@F)"
-	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_APP_CFLAGS) -c $< -o $@
+	$(MAD_CC) $(MAD_CFLAGS) $(MAD_APP_CFLAGS) -c $< -o $@
 
 $(DEPENDS): $(DEP_DIR)/%.d: $(SRC_DIR)/%.c
 	@ echo "  -  $(@F)"
-	@ $(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_APP_CFLAGS) $< \
+	$(SHELL) -ec '$(MAD_CC) -MM $(MAD_CFLAGS) $(MAD_APP_CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 $(BIN_DIR)/%: $(OBJ_DIR)/%.o $(MAD_LIBS)
 	@ echo "  -  $(@F)"
-	@ $(MAD_CC) $(MAD_CFLAGS) $(MAD_LDFLAGS) $(MAD_APP_LDFLAGS) $^ -o $@ $(MAD_LLIBS) $(MAD_APP_LLIBS)
+	$(MAD_CC) $(MAD_CFLAGS) $(MAD_LDFLAGS) $(MAD_APP_LDFLAGS) $^ -o $@ $(MAD_LLIBS) $(MAD_APP_LLIBS)
 
 %: $(BIN_DIR)/% ;
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.13  2000/05/02 13:55:53  vdanjean
+little bugs correction
+
 Revision 1.12  2000/04/28 18:33:34  vdanjean
 debug actsmp + marcel_key
 
@@ -231,7 +234,7 @@ static __inline__ int marcel_setspecific(marcel_key_t key, any_t value)
    return 0;
 }
 
-extern volatile int marcel_key_present[MAX_KEY_SPECIFIC];
+extern int marcel_key_present[MAX_KEY_SPECIFIC];
 
 static __inline__ any_t marcel_getspecific(marcel_key_t key) __attribute__ ((unused));
 static __inline__ any_t marcel_getspecific(marcel_key_t key)

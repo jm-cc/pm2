@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.23  2000/09/15 17:37:13  rnamyst
+Tracefiles are now generated correctly with PM2 applications using multiple processes
+
 Revision 1.22  2000/09/13 00:07:21  rnamyst
 Support for profiling + minor bug fixes
 
@@ -215,6 +218,10 @@ void pm2_init(int *argc, char **argv)
 #endif
 
   mad_init(argc, argv, 0, spmd_conf, &__pm2_conf_size, &__pm2_self);
+
+#ifdef PROFILE
+  profile_set_tracefile("/tmp/prof_file_%d", __pm2_self);
+#endif
 
 #ifdef MAD2
   if(!pm2_single_mode()) {

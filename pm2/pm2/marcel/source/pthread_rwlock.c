@@ -255,7 +255,7 @@ DEF_MARCEL_POSIX(int,
 		 rwlock_destroy, (marcel_rwlock_t *rwlock))
 {
   int readers;
-  _marcel_descr writer;
+  marcel_descr writer;
 
   __pmarcel_lock (&rwlock->__rw_lock, NULL);
   readers = rwlock->__rw_readers;
@@ -442,7 +442,7 @@ DEF_MARCEL_POSIX(int,
       __pmarcel_lock (&rwlock->__rw_lock, self);
       if (rwlock->__rw_readers == 0 && rwlock->__rw_writer == NULL)
 	{
-	  rwlock->__rw_writer = (_marcel_descr)self;
+	  rwlock->__rw_writer = (marcel_descr)self;
 	  __pmarcel_unlock (&rwlock->__rw_lock);
 	  return 0;
 	}
@@ -525,7 +525,7 @@ DEF_MARCEL_POSIX(int,
   __pmarcel_lock (&rwlock->__rw_lock, NULL);
   if (rwlock->__rw_readers == 0 && rwlock->__rw_writer == NULL)
     {
-      rwlock->__rw_writer = (_marcel_descr)thread_self ();
+      rwlock->__rw_writer = (marcel_descr)thread_self ();
       result = 0;
     }
   __pmarcel_unlock (&rwlock->__rw_lock);
@@ -547,7 +547,7 @@ DEF_MARCEL_POSIX(int,
   if (rwlock->__rw_writer != NULL)
     {
       /* Unlocking a write lock.  */
-      if (rwlock->__rw_writer != (_marcel_descr)thread_self ())
+      if (rwlock->__rw_writer != (marcel_descr)thread_self ())
 	{
 	  __pmarcel_unlock (&rwlock->__rw_lock);
 	  return EPERM;

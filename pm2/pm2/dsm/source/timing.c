@@ -31,6 +31,18 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: timing.c,v $
+Revision 1.3  2000/02/28 10:30:42  rnamyst
+Modified to change #include <> into #include "". Also renamed the files that
+should not be automatically included in libdsm.a.
+
+Revision 1.2  2000/01/31 15:58:36  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #include <stdio.h>
@@ -38,7 +50,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include <timing.h>
+#include "timing.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 

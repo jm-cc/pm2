@@ -101,10 +101,13 @@ inline static void slot_cache_init(struct cache_head *cache,
 void *marcel_slot_alloc(void)
 {
 	register void *ptr;
-	int main_slot=0;
+	int main_slot;
+	int nb_try_left=1000;
 
 	LOG_IN();
 
+retry:
+	main_slot=0;
 	marcel_lock_acquire(&alloc_lock);
 
 	if(NULL != (ptr=slot_cache_get(&stack_cache_mapped, NULL))) {
@@ -129,6 +132,14 @@ void *marcel_slot_alloc(void)
 				   FILE_TO_MAP, 0);
 
 			if(ptr == MAP_FAILED) {
+				marcel_lock_release(&alloc_lock);
+				if (!ma_in_atomic() && nb_try_left--) {
+					/* On tente de faire avancer les autres
+					 * threads */
+					mdebugl(2, "Trying to wait for mmap. Current: mmap(%p, %x, ...)\n", next_slot, THREAD_SLOT_SIZE);
+					marcel_yield();
+					goto retry;
+				}
 				perror("mmap");
 				RAISE(CONSTRAINT_ERROR);
 			}

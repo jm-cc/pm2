@@ -18,7 +18,7 @@
 #define BIND_LWP_ON_PROCESSORS
 
 #ifdef PM2DEBUG
-#define DO_NOT_DISPLAY_IN_IDLE
+//#define DO_NOT_DISPLAY_IN_IDLE
 #endif
 
 #include <unistd.h>
@@ -1058,6 +1058,8 @@ void ma__marcel_yield(void)
 
   LOG_IN();
 
+  display_sched_queue(cur_lwp);
+
   marcel_switch_to(cur, next_task_to_run(cur, cur_lwp));
   
   LOG_OUT();
@@ -1988,6 +1990,8 @@ void marcel_sched_shutdown()
   __TBX_FREE(marcel_stackbase(__main_lwp.idle_task), __FILE__, __LINE__);
 #endif
 #endif
+
+  marcel_sig_exit();
 
   LOG_OUT();
 }

@@ -23,9 +23,17 @@
 
 #define MAX_THREADS  512
 
+static marcel_vpmask_t global_vpmask = MARCEL_VPMASK_EMPTY;
+
 extern marcel_key_t mad2_send_key, mad2_recv_key;
 
+typedef enum {
+  PM2_THREAD_REGULAR,
+  PM2_THREAD_SERVICE
+} pm2_thread_class_t;
+
 struct pm2_thread_arg {
+  pm2_thread_class_t class;
   marcel_attr_t attr;
   pm2_func_t func;
   void *arg;
@@ -51,7 +59,7 @@ static __inline__ void pm2_thread_stack_free(void *stack)
   slot_free(NULL, stack);
 }
 
-static __inline__ struct pm2_thread_arg *pm2_thread_alloc(void)
+static struct pm2_thread_arg *__thread_alloc(void)
 {
   struct pm2_thread_arg *res;
 
@@ -63,7 +71,6 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(void)
 
     mdebug("Params allocated in cache\n");
 
-    marcel_attr_setstackaddr(&res->attr, pm2_thread_stack_alloc());
   } else {
     if(next_unalloc == MAX_PARAMS)
       RAISE(CONSTRAINT_ERROR);
@@ -75,9 +82,32 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(void)
     marcel_attr_setdetachstate(&res->attr, TRUE);
     marcel_attr_setuserspace(&res->attr, sizeof(block_descr_t));
     marcel_attr_setactivation(&res->attr, TRUE);
-    marcel_attr_setstackaddr(&res->attr, pm2_thread_stack_alloc());
-    marcel_attr_setstacksize(&res->attr, the_granted_size);
   }
+
+  marcel_attr_setstackaddr(&res->attr, pm2_thread_stack_alloc());
+  marcel_attr_setstacksize(&res->attr, the_granted_size);
+
+  return res;
+}
+
+static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t class)
+{
+  struct pm2_thread_arg *res;
+
+  res = __thread_alloc();
+
+  res->class = class;
+
+  if(class == PM2_THREAD_REGULAR) {
+    marcel_attr_setvpmask(&res->attr, global_vpmask);
+    marcel_attr_setrealtime(&res->attr, MARCEL_CLASS_REGULAR);
+  } else {
+    marcel_attr_setvpmask(&res->attr, marcel_self()->vpmask);
+    marcel_attr_setrealtime(&res->attr,
+			    MA_TASK_REAL_TIME(marcel_self()) ?
+			       MARCEL_CLASS_REALTIME : MARCEL_CLASS_REGULAR);
+  }
+
   return res;
 }
 
@@ -107,10 +137,16 @@ static any_t pm2_thread_starter(any_t arg)
   _func = ta->func;
   _arg = ta->arg;
 
+  // TO BE FIXED: pour des raisons de compatibilité des codes
+  // existants, le test suivant est biaisé pour l'instant...
+  if(1 || ta->class == PM2_THREAD_SERVICE) {
+    // On hérite des capacités d'accès au réseau que si l'on est un
+    // 'thread de service'.
 #ifdef MAD2
-  marcel_setspecific(mad2_recv_key, ta->mad2_specific);
+    marcel_setspecific(mad2_recv_key, ta->mad2_specific);
 #endif
-  marcel_setspecific(_pm2_mad_key, ta->mad_sem);
+    marcel_setspecific(_pm2_mad_key, ta->mad_sem);
+  }
 
   pm2_thread_free(ta);
 
@@ -125,22 +161,38 @@ static any_t pm2_thread_starter(any_t arg)
   return NULL;
 }
 
-marcel_t pm2_thread_create(pm2_func_t func, void *arg)
+static __inline__ marcel_t __pm2_thread_create(pm2_func_t func, void *arg,
+					       pm2_thread_class_t class)
 {
   struct pm2_thread_arg *ta;
   marcel_t pid;
 
-  ta = pm2_thread_alloc();
+  ta = pm2_thread_alloc(class);
   ta->func = func;
   ta->arg = arg;
+
+  // TO BE FIXED: pour des raisons de compatibilité des codes
+  // existants, le test suivant est biaisé pour l'instant...
+  if(1 || class == PM2_THREAD_SERVICE) {
 #ifdef MAD2
-  ta->mad2_specific = marcel_getspecific(mad2_recv_key);
+    ta->mad2_specific = marcel_getspecific(mad2_recv_key);
 #endif
-  ta->mad_sem = marcel_getspecific(_pm2_mad_key);
+    ta->mad_sem = marcel_getspecific(_pm2_mad_key);
+  }
 
   marcel_create(&pid, &ta->attr, (marcel_func_t)pm2_thread_starter, ta);
 
   return pid;
+}
+
+marcel_t pm2_thread_create(pm2_func_t func, void *arg)
+{
+  return __pm2_thread_create(func, arg, PM2_THREAD_REGULAR);
+}
+
+marcel_t pm2_service_thread_create(pm2_func_t func, void *arg)
+{
+  return __pm2_thread_create(func, arg, PM2_THREAD_SERVICE);
 }
 
 void pm2_thread_init(void)
@@ -149,4 +201,9 @@ void pm2_thread_init(void)
 
 void pm2_thread_exit(void)
 {
+}
+
+void pm2_thread_vp_is_reserved(unsigned vp)
+{
+  marcel_vpmask_add_vp(&global_vpmask, vp);
 }

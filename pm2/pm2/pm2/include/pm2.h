@@ -191,8 +191,23 @@ typedef block_descr_t isomalloc_dataset_t;
 
 void *pm2_malloc(size_t size, isoaddr_attr_t *attr);
 
-void pm2_empty();
+#define pm2_isomalloc_attach_data(slot) \
+   slot_attach((slot_descr_t *)marcel_getspecific(_pm2_block_key), slot)
 
+#define pm2_isomalloc_attach_data_to_other(desc, slot) \
+   slot_attach((slot_descr_t *) desc, slot)
+
+#define pm2_isomalloc_detach_data(addr) \
+     slot_detach(addr)
+
+#define pm2_give_isomalloc_data(descr, addr) \
+{\
+  slot_header_t *slot_ptr = slot_detach(addr);\
+  slot_attach(descr, slot_ptr);\
+}
+
+#define pm2_pack_isomalloc_data(addr, dest_node, f, extra, size) \
+  block_special_pack(addr, dest_node, f, extra, size)
 /*********************************************************/
 
 typedef void (*pm2_user_func)(int argc, char **argv);

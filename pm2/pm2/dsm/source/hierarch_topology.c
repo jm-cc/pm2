@@ -1,7 +1,13 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.c,v 1.4 2002/10/19 15:13:31 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.c,v 1.5 2002/10/22 18:17:59 slacour Exp $
  */
+
+
+/* This module stores the information about the underlying topology of
+ * the nodes connected over a hierarchical network.  It offers 'set'
+ * functions for the user to specify the topology, and 'get' functions
+ * for the token_locks and the hierarchical consistency protocol. */
 
 
 #include "dsm_const.h"   /* return codes */
@@ -65,8 +71,8 @@ topology_finalization (void)
 
 
 /**********************************************************************/
-/* return the number of clusters; this function is not protected
- * against concurrency. */
+/* return the number of clusters; this function is NOT protected
+ * against concurrency and must be called after pm2_init(). */
 unsigned int
 topology_get_cluster_number (void)
 {
@@ -76,11 +82,12 @@ topology_get_cluster_number (void)
 
 /**********************************************************************/
 /* return the color of the given node to determine to what cluster it
- * belongs; this function is not protected against concurrency. */
+ * belongs; this function is NOT protected against concurrency and
+ * must be called after pm2_init(). */
 unsigned int
 topology_get_cluster_color (const dsm_node_t node)
 {
-   if ( node < pm2_config_size() )
+   if ( node < pm2_config_size() && node != NOBODY )
       return cluster_colors[node];
    return NO_COLOR;
 }
@@ -89,7 +96,8 @@ topology_get_cluster_color (const dsm_node_t node)
 /**********************************************************************/
 /* set the colors of the processes, depending on what cluster they
  * belong to: 2 processes with the same color belong to the same
- * cluster; this function is NOT protected against concurrency. */
+ * cluster; this function is NOT protected against concurrency and
+ * must be called after pm2_init(). */
 int
 topology_set_cluster_colors (const unsigned int * const tab)
 {
@@ -104,6 +112,30 @@ topology_set_cluster_colors (const unsigned int * const tab)
          cluster_number = tab[i];
    }
    cluster_number++;
+
+   return DSM_SUCCESS;
+}
+
+
+/**********************************************************************/
+/* this function dumps on stderr all the topology information (for
+ * debugging purpose...); this function is NOT protected against
+ * concurrency and must be called after pm2_init(). */
+int
+topology_dump_information (void)
+{
+   int i;
+   const int size = pm2_config_size();
+
+   tfprintf(stderr, "Maximum number of clusters (colors): %d\n",
+            cluster_number);
+   tfprintf(stderr, "Node:\t");
+   for (i = 0; i < size; i++)
+      tfprintf(stderr, "%3d", i);
+   tfprintf(stderr, "\nColor:\t");
+   for (i = 0; i < size; i++)
+      tfprintf(stderr, "%3u", cluster_colors[i]);
+   tfprintf(stderr, "\n");
 
    return DSM_SUCCESS;
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.c,v $
+Revision 1.16  2000/06/02 09:57:44  rnamyst
+Removed some LOG_IN/LOG_OUT calls
+
 Revision 1.15  2000/05/29 17:13:08  vdanjean
 End of mad2 corrected
 
@@ -243,7 +246,6 @@ static void pm2_wait_end(void)
   char mess[128];
   static boolean already_called = FALSE;
 
-  LOG_IN();
   if(!already_called) {
 
     netserver_wait_end();
@@ -264,12 +266,10 @@ static void pm2_wait_end(void)
 
     already_called = TRUE;
   }
-  LOG_OUT();
 }
 
 void pm2_exit(void)
 {
-  LOG_IN();
   pm2_wait_end();
 
   mdebug("pm2_wait_end completed\n");
@@ -291,7 +291,6 @@ void pm2_exit(void)
 
   mdebug("dsm_pm2_exit completed\n");
 #endif
-  LOG_OUT();
 }
 
 void pm2_halt()

@@ -43,12 +43,9 @@ duplique_global:
 		echo "duplicating $$name" ; \
 		for lib in $(LIBS); do \
 			LIB=`echo $$lib | tr [a-z] [A-Z]`; \
-			case $$LIB in \
-			mad1|mad2) LIB=MAD ;; \
-			esac ; \
-			cp $$name.help ../../$$lib/config/options ; \
+			cp $$name.help $$PM2_ROOT/modules/$$lib/config/options ; \
 			sed -e "s,LIB,$$LIB,g" < $$file \
-				> ../../$$lib/config/options/$$file ; \
+				> $$PM2_ROOT/modules/$$lib/config/options/$$file ; \
 		done ; \
 	done
 

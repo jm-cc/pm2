@@ -46,11 +46,13 @@ typedef struct {
 } pm2_barrier_t;
 
 
+
+
 void pm2_barrier_init_rpc();
 
 void pm2_sync_init(int myself, int confsize);
 
-void pm2_barrier_init(pm2_barrier_t *bar, int size);
+void pm2_barrier_init(pm2_barrier_t *bar);
 
 void pm2_barrier(pm2_barrier_t *bar);
 

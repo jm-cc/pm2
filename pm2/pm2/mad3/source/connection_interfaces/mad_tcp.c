@@ -36,6 +36,12 @@
 #include <netinet/tcp.h>
 #include <errno.h>
 
+
+DEBUG_DECLARE(tcp)
+
+#undef DEBUG_NAME
+#define DEBUG_NAME tcp
+
 /*
  * local structures
  * ----------------
@@ -136,6 +142,9 @@ mad_tcp_read(int            sock,
   LOG_OUT();
 }
 
+#undef DEBUG_NAME
+#define DEBUG_NAME mad3
+
 /*
  * Registration function
  * ---------------------
@@ -144,6 +153,10 @@ void
 mad_tcp_register(p_mad_driver_t driver)
 {
   p_mad_driver_interface_t interface = NULL;
+
+#ifdef DEBUG
+  DEBUG_INIT(tcp);
+#endif // DEBUG
 
   LOG_IN();
   TRACE("Registering TCP driver");

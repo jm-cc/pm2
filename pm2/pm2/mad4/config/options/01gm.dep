@@ -1,2 +1,1 @@
-Provide: mad4_proto mad4_spawn
-Conflict: mad4_spawn
+Provide: mad4_proto

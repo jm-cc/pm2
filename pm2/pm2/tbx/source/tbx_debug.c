@@ -14,7 +14,9 @@
  * General Public License for more details.
  */
 
+#ifndef PM2DEBUG
 #define PM2DEBUG
+#endif
 
 #include <unistd.h>
 #include <string.h>

@@ -33,25 +33,22 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-ifndef MAD1_ROOT
-MAD1_ROOT	=	$(PM2_ROOT)/mad1
-endif
+MASTER_MODULE =  MAD1
+COMMON_DEFAULT_TARGET :=  mad_default
 
-# Ce fichier Makefile doit etre ajoute a la liste globales
-COMMON_MAKEFILES	+=	$(MAD1_ROOT)/Makefile
+include $(PM2_ROOT)/make/master_vars.mak
 
-# Inclusion des definition de variables (macros)
-include $(MAD1_ROOT)/make/vars.mak
+# Ce makefile
+COMMON_MAKEFILES +=  $(MAD1_ROOT)/Makefile
 
-.PHONY: default
-default: $(COMMON_DEFAULT_TARGET)
+# Inclusion des variables
+include $(MAD_MAKE)/vars.mak
 
-.PHONY: clean
-clean: $(COMMON_CLEAN_TARGET)
-
-.PHONY: distclean
-distclean: $(COMMON_DISTCLEAN_TARGET)
+# Regles principales
+include $(PM2_ROOT)/make/master_rules.mak
 
 # Inclusion des regles de compilation
-include $(MAD1_ROOT)/make/rules.mak
+include $(MAD_MAKE)/rules.mak
 
+
+##############################################################################

@@ -2071,7 +2071,7 @@ __mad_mux_generate_sub_channel_skel(p_mad_channel_t xchannel)
   channel->id            = xchannel->id;
 
   channel->pc           = xchannel->pc;
-  channel->public       = xchannel->public;
+  channel->not_private  = xchannel->not_private;
   channel->dir_channel  = xchannel->dir_channel;
   channel->dir_xchannel = xchannel->dir_xchannel;
   channel->adapter      = xchannel->adapter;
@@ -2299,7 +2299,7 @@ mad_mux_add_named_sub_channels(p_mad_channel_t xchannel)
 	  tbx_htable_add(mux_adapter->channel_htable, channel->name, channel);
 	  tbx_htable_add(madeleine->channel_htable,   channel->name, channel);
 
-	  if (channel->public)
+	  if (channel->not_private)
 	    {
 	      tbx_slist_append(madeleine->public_channel_slist, channel->name);
 	    }

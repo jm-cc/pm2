@@ -52,6 +52,10 @@ APPS_LIST=$(if $(filter-out undefined, $(origin PROGS)), \
 		$(PROGS), \
 		$(sort $(APPS) $(filter-out $(APPS_EXCLUDE), $(MOD_BASE))))
 
+override MOD_C_SOURCES:=$(wildcard $(addsuffix .c, $(APPS_LIST)))
+
+export APP_DIR=$(CURDIR)
+
 # Type de cache à générer
 #---------------------------------------------------------------------
 PM2_GEN_MAK_OPTIONS += --type apps --subdir $(GEN_SUBDIR)

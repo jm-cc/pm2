@@ -52,17 +52,20 @@ typedef struct s_mad_ping_result
 //......................
 
 static const int param_control_receive   = 0;
-static const int param_send_mode         = mad_send_CHEAPER;
-static const int param_receive_mode      = mad_receive_CHEAPER;
+static const int param_warmup            = 1;
+//static const int param_send_mode         = mad_send_CHEAPER;
+static const int param_send_mode         = mad_send_SAFER;
+//static const int param_receive_mode      = mad_receive_CHEAPER;
+static const int param_receive_mode      = mad_receive_EXPRESS;
 static const int param_nb_samples        = 1000;
 static const int param_min_size          = MAD_LENGTH_ALIGNMENT;
-static const int param_max_size          = 1024*1024*2;
+static const int param_max_size          = 1024;//*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
 static const int param_nb_tests          = 5;
 static const int param_no_zero           = 1;
 static const int param_fill_buffer       = 1;
 static const int param_fill_buffer_value = 1;
-static const int param_one_way           = 0;
+static const int param_one_way           = 1;
 
 static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;
@@ -164,27 +167,27 @@ process_results(p_mad_channel_t     channel,
 	  in = mad_begin_unpacking(channel);
 
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  tmp_results.lrank_src       = ntbx_unpack_int(&buffer);
 
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  tmp_results.lrank_dst       = ntbx_unpack_int(&buffer);
 
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  tmp_results.size            = ntbx_unpack_int(&buffer);
 
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  tmp_results.latency         = ntbx_unpack_double(&buffer);
 
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  tmp_results.bandwidth_mbit  = ntbx_unpack_double(&buffer);
 
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  tmp_results.bandwidth_mbyte = ntbx_unpack_double(&buffer);
 
 	  mad_end_unpacking(in);
@@ -209,27 +212,27 @@ process_results(p_mad_channel_t     channel,
 
       ntbx_pack_int(results->lrank_src, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
 
       ntbx_pack_int(results->lrank_dst, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
 
       ntbx_pack_int(results->size, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
 
       ntbx_pack_double(results->latency, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
 
       ntbx_pack_double(results->bandwidth_mbit, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
 
       ntbx_pack_double(results->bandwidth_mbyte, &buffer);
       mad_pack(out, &buffer, sizeof(buffer),
-	       mad_send_CHEAPER, mad_receive_EXPRESS);
+	       mad_send_SAFER, mad_receive_EXPRESS);
 
       mad_end_packing(out);
     }
@@ -252,6 +255,21 @@ ping(p_mad_channel_t      channel,
       fill_buffer();
     }
 
+  if (param_warmup)
+    {
+      p_mad_connection_t connection = NULL;
+
+      connection = mad_begin_packing(channel, lrank_dst);
+      mad_pack(connection, main_buffer, param_max_size,
+	       param_send_mode, param_receive_mode);
+      mad_end_packing(connection);
+
+      connection = mad_begin_unpacking(channel);
+      mad_unpack(connection, main_buffer, param_max_size,
+		 param_send_mode, param_receive_mode);
+      mad_end_unpacking(connection);
+    }
+  
   for (size = param_min_size;
        size <= param_max_size;
        size = param_step?size + param_step:size * 2)
@@ -342,6 +360,26 @@ pong(p_mad_channel_t      channel,
   LOG_IN();
   DISP_VAL("pong with", lrank_dst);
 
+  if (param_fill_buffer)
+    {
+      fill_buffer();
+    }
+
+  if (param_warmup)
+    {
+      p_mad_connection_t connection = NULL;
+
+      connection = mad_begin_unpacking(channel);
+      mad_unpack(connection, main_buffer, param_max_size,
+		 param_send_mode, param_receive_mode);
+      mad_end_unpacking(connection);
+
+      connection = mad_begin_packing(channel, lrank_dst);
+      mad_pack(connection, main_buffer, param_max_size,
+	       param_send_mode, param_receive_mode);
+      mad_end_packing(connection);
+    }
+  
   for (size = param_min_size;
        size <= param_max_size;
        size = param_step?size + param_step:size * 2)
@@ -480,10 +518,10 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  out = mad_begin_packing(channel, lrank_dst);
 		  ntbx_pack_int(lrank_src, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  ntbx_pack_int(0, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
 		  in = mad_begin_unpacking(channel);
@@ -501,10 +539,10 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  out = mad_begin_packing(channel, lrank_src);
 		  ntbx_pack_int(lrank_dst, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  ntbx_pack_int(1, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
 		  in = mad_begin_unpacking(channel);
@@ -522,10 +560,10 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  out = mad_begin_packing(channel, lrank_dst);
 		  ntbx_pack_int(lrank_src, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  ntbx_pack_int(0, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
 		  in = mad_begin_unpacking(channel);
@@ -536,10 +574,10 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  out = mad_begin_packing(channel, lrank_src);
 		  ntbx_pack_int(lrank_dst, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  ntbx_pack_int(1, &buffer);
 		  mad_pack(out, &buffer, sizeof(buffer),
-			   mad_send_CHEAPER, mad_receive_EXPRESS);
+			   mad_send_SAFER, mad_receive_EXPRESS);
 		  mad_end_packing(out);
 
 		  in = mad_begin_unpacking(channel);
@@ -564,10 +602,10 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	  out = mad_begin_packing(channel, lrank_src);
 	  ntbx_pack_int(lrank_src, &buffer);
 	  mad_pack(out, &buffer, sizeof(buffer),
-		   mad_send_CHEAPER, mad_receive_EXPRESS);
+		   mad_send_SAFER, mad_receive_EXPRESS);
 	  ntbx_pack_int(0, &buffer);
 	  mad_pack(out, &buffer, sizeof(buffer),
-		   mad_send_CHEAPER, mad_receive_EXPRESS);
+		   mad_send_SAFER, mad_receive_EXPRESS);
 	  mad_end_packing(out);
 	}
     }
@@ -583,10 +621,10 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 
 	  in = mad_begin_unpacking(channel);
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  its_local_rank = ntbx_unpack_int(&buffer);
 	  mad_unpack(in, &buffer, sizeof(buffer),
-		     mad_send_CHEAPER, mad_receive_EXPRESS);
+		     mad_send_SAFER, mad_receive_EXPRESS);
 	  direction = ntbx_unpack_int(&buffer);
 	  mad_end_unpacking(in);
 
@@ -639,7 +677,13 @@ main(int    argc,
 
   session       = madeleine->session;
   process_grank = session->process_rank;
-  DISP_VAL("My global rank is", process_grank);
+  {
+    char host_name[1024] = "";
+    
+    SYSCALL(gethostname(host_name, 1023));
+    DISP("(%s): My global rank is %d", host_name, process_grank);
+  }
+  
   DISP_VAL("The configuration size is",
 	   tbx_slist_get_length(madeleine->dir->process_slist));
 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_interface.h,v $
+Revision 1.11  2000/11/07 17:34:50  oaumage
+- modification des macros
+
 Revision 1.10  2000/10/30 14:21:00  oaumage
 - correction du support Alpha pour MadII au niveau de la toolbox
   (safe_malloc)
@@ -87,7 +90,12 @@ ______________________________________________________________________________
  * ------
  */
 void
-tbx_init(int* argc, char** argv, int debug_flags);
+tbx_init(int    argc,
+	 char **argv);
+
+void
+tbx_purge_cmd_line(int   *argc,
+		   char **argv);
 
 /*
  * Timing

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.h,v $
+Revision 1.4  2000/06/06 12:54:38  oaumage
+- Ajout du calcul de la taille des groupes de buffers dynamiques
+
 Revision 1.3  2000/01/13 14:44:30  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -86,6 +89,7 @@ typedef struct s_mad_buffer_group
 {
   tbx_list_t      buffer_list;
   p_mad_link_t    link; /* associated link */
+  size_t          length;
 } mad_buffer_group_t;
 
 #endif /* MAD_BUFFERS_H */

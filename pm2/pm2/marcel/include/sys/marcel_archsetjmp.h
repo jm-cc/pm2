@@ -19,6 +19,16 @@
 
 #include <setjmp.h>
 
+#ifdef ALPHA_ARCH
+
+#ifdef setjmp
+#undef setjmp
+#endif
+
+#define setjmp(env) __sigsetjmp ((env), 0)
+
+#endif
+
 #if defined(RS6K_ARCH)
 
 _PRIVATE_ extern int _jmg(int r);

@@ -22,7 +22,17 @@
 static int dec;
 static int relative;
 
-/* write one event into the supertrace */
+/* write one event into the supertrace. Its format is this:
+      u_64           time in ticks of the event
+      int            number of thread (-1 if none [Kernel])
+      int            number of pid which runs this thread
+      short int      number of cpu on which the cpu turns at this date
+      mode           type of the event
+                     (Kernel or User: usefull for the decoding of codes'events)
+      unsigned int   number of this event (first one gets number 0)
+      int            code of the event (same as in FUT and FKT)
+      int[]          arguments as in FUT and FKT
+*/
 void print_trace(trace tr, FILE *supertrace)
 {
   int i;
@@ -50,6 +60,7 @@ void error_usage()
   fprintf(stderr,"-o supertrace_nom   par défault prof_file\n");
   fprintf(stderr,"--no-rel-time       empêche la renormalisation des dates\n");
   fprintf(stderr,"--dec-time          prend en considération le temps mis par l'écriture d'une trace\n");
+  fprintf(stderr,"--all               considère toute la trace noyau\n");
   exit(1);
 }
 
@@ -58,14 +69,20 @@ int main(int argc, char **argv)
 {
   trace tr;
   int i = 0;
-  char *supertrace_name = NULL;
-  char *fut_name = NULL;
-  char *fkt_name = NULL;
+  int all = 0;                   // 1 if all kernel information is to be writen
+  char *supertrace_name = NULL;  /* supertrace file name, 
+				    NULL -> default = prof_file */
+  char *fut_name = NULL;         /* name of fut trace file, 
+				    NULL -> no fut given */
+  char *fkt_name = NULL;         /* name if fkt trace file, 
+				    NULL -> no fkt given */
   int argCount;
-  FILE *supertrace;
-  FILE *supertrace_header;
-  dec = 0;
-  relative = 1;
+  FILE *supertrace;              // file where to record the supertrace
+  dec = 0;                       // 0 if no shifting of date is asked
+  relative = 1;                  // If 0 don't put the first event to time 0
+  
+  // Parse the arguments
+  
   for(argc--, argv++; argc > 0; argc -= argCount, argv +=argCount) {
     argCount = 1;
     if ((!strcmp(*argv, "--user-trace")) || (!strcmp(*argv, "-u"))) {
@@ -87,24 +104,30 @@ int main(int argc, char **argv)
       relative = 0;
     } else if (!strcmp(*argv, "--dec-time")) {
       dec = 1;
+    } else if (!strcmp(*argv, "--all")) {
+      all = 1;
     } else error_usage();
   }
-  if (supertrace_name == NULL) supertrace_name = "prof_file";
+  // Default for supertrace is prof_file
+  if (supertrace_name == NULL) supertrace_name = "prof_file";   
   if ((supertrace = fopen(supertrace_name, "w")) == NULL) {
     fprintf(stderr,"Unable to open %s", supertrace_name);
     exit(1);
-  }
+  }    
+
+  // Leave room for the header
   fseek(supertrace, 500, SEEK_SET);
-  init_trace_buffer(fut_name, fkt_name, relative, dec);
-  while(i == 0) {
-    i = get_next_trace(&tr);
-    /*    printf("%s: %u %d %d %d %x\n",(tr.type == USER)? "USER": "KERN",
-	  (unsigned) tr.clock, tr.cpu, tr.pid, tr.thread, tr.code); */
-    if (tr.relevant != 0)
+
+  // Initialise the buffer for the events
+  init_trace_buffer(fut_name, fkt_name, relative, dec);          
+
+  while(i == 0) {                         // While there are still events
+    i = get_next_trace(&tr);              // Get the next one
+    if ((tr.relevant != 0) || (all))      // reduces if needed the kernel trace
       print_trace(tr, supertrace);
   }
-  rewind(supertrace);
-  supertrace_end(supertrace);
+  rewind(supertrace);                     //
+  supertrace_end(supertrace);             //  Writes the supertrace header
   fclose(supertrace);
   return 0;
 }

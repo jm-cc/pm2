@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_bip.c,v $
+Revision 1.9  2000/07/12 15:33:21  oaumage
+- Support du transfert des parametres
+
 Revision 1.8  2000/07/12 14:50:48  rnamyst
 Added support for msg probing
 
@@ -978,13 +981,26 @@ mad_bip_send_adapter_parameter(p_mad_adapter_t   spawn_adapter
 			       ntbx_host_id_t    remote_host_id,
 			       char             *parameter)
 {  
+  int l;  
+
   LOG_IN();
+  
+  l = strlen(parameter) + 1;
+  
 
-  printf ("NOT YET IMPLEMENTED call a mad_bip_send_adapter_parameter\n") ;
-  fflush (stdout) ;
+  bip_tsend (remote_host_id, 0, &l, 1);
+  bip_tsend (remote_host_id, 0, parameter, l/sizeof(int));
+  
 
-  exit (-1) ;
+      /*
+	Note: Ack Olivier
 
+
+	printf ("NOT YET IMPLEMENTED call a mad_bip_send_adapter_parameter\n") ;
+	fflush (stdout) ;
+	
+	exit (-1) ;
+      */
   LOG_OUT();
 }
 
@@ -993,12 +1009,22 @@ mad_bip_receive_adapter_parameter(p_mad_adapter_t   spawn_adapter
 				  __attribute__ ((unused)),
 				  char            **parameter)
 {
+  int l;
+
   LOG_IN();
 
+  bip_trecv (0, &l, 1);
+  *parameter = TBX_MALLOC(l);
+  CTRL_ALLOC(*parameter);
+  bip_trecv (0, *parameter, l / sizeof(int));
+
+
+  /*
+    Note: Ack olivier
   printf ("NOT YET IMPLEMENTED call a mad_bip_receive_adapter_parameter\n") ;
   fflush (stdout) ;
   exit (-1) ;
-  
+  */
   LOG_OUT();
 }
 

@@ -1441,10 +1441,13 @@ restart:
 			max_prio = idx;
 			rq = currq;
 		}
-		if (idx == max_prio && ma_need_resched()) {
+		if (next && ma_need_resched() && idx == prev_as_prio) {
+		/*  still wanting to schedule prev
+		 *          which needs resched
+		 *                               and this is same prio
+		 */
 			sched_debug("found same prio %d in rq %p\n",idx,currq);
 			next = NULL;
-			max_prio = idx;
 			rq = currq;
 		}
 #ifdef MA__LWPS
@@ -1464,18 +1467,7 @@ restart:
 		next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
 	}
 
-	if (next && next!=prev)
-		/* idle */
-		goto switch_tasks;
-
-	if (next && !ma_test_thread_flag(TIF_NEED_RESCHED))
-		/* prev, but don't need resched */
-		goto switch_tasks;
-
-	ma_clear_tsk_need_resched(prev);
-
-	if (next && !(rq->active->nr_active+rq->expired->nr_active))
-		/* prev, but nobody to take turn */
+	if (next) /* either prev or idle */
 		goto switch_tasks;
 
 #ifdef MA__LWPS
@@ -1528,6 +1520,7 @@ switch_tasks:
 	}
 
 	prefetch(next);
+	ma_clear_tsk_need_resched(prev);
 //Pour quand on voudra ce mécanisme...
 	//ma_RCU_qsctr(ma_task_lwp(prev))++;
 

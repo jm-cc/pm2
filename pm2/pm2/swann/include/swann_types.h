@@ -22,13 +22,27 @@
 #ifndef SWANN_TYPES_H
 #define SWANN_TYPES_H
 
-typedef enum
+typedef struct s_swann_settings
 {
-  swann_success =  0,
-  swann_failure = -1,
-} swann_status_t, *p_swann_status_t;
+  char       *leonie_server_host_name;
+  char       *leonie_server_port;
+  tbx_bool_t  gdb_mode;
+  tbx_bool_t  xterm_mode;
+  tbx_bool_t  log_mode;
+  tbx_bool_t  pause_mode;
+  tbx_bool_t  smp_mode;
+} swann_settings_t;
 
-typedef int swann_net_client_id_t, *p_swann_net_client_id_t;
-typedef int swann_net_server_id_t, *p_swann_net_server_id_t;
+typedef struct s_swann_session
+{
+  p_ntbx_client_t      leonie_link;
+  ntbx_process_grank_t process_rank;
+} swann_session_t;
+
+typedef struct s_swann
+{
+  p_swann_settings_t settings;
+  p_swann_session_t  session;
+} swann_t;
 
 #endif /* SWANN_TYPES_H */

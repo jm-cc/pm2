@@ -165,6 +165,7 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 	} else if (param & ACT_RESCHEDULE) {
 		if(!locked() && preemption_enabled()) {
 			MTRACE("ActSched", current);
+			marcel_update_time(current);
 			marcel_yield();
 		}
 	}

@@ -81,6 +81,37 @@ void act_goto_next_task(marcel_t pid, int from)
 
 void locked_start() {}
 
+static __inline__ long lock_safe_get_sp() __attribute__ ((unused));
+static __inline__ long lock_safe_get_sp()
+{
+  register long sp;
+
+  __asm__ __volatile__("movl %%esp, %0" : "=r" (sp));
+  return sp;
+}
+/******************************************************/
+/* WARNING : this code is duplicated in privatedefs.h */
+/* modify both place when you have to                 */
+/******************************************************/
+static __inline__ marcel_t lock_safe_marcel_self() __attribute__ ((unused));
+static __inline__ marcel_t lock_safe_marcel_self()
+{
+  register unsigned long sp = lock_safe_get_sp();
+
+#ifdef STANDARD_MAIN
+  if(IS_ON_MAIN_STACK(sp))
+    return &__main_thread_struct;
+  else
+#endif
+#ifdef ENABLE_STACK_JUMPING
+    return *((marcel_t *)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE - sizeof(void *))));
+#else
+    return (marcel_t)(((sp & ~(SLOT_SIZE-1)) + SLOT_SIZE) -
+		      MAL(sizeof(task_desc)));
+#endif
+}
+/*************************************************/
+
 extern int hack_restart_func (act_proc_t new_proc, int return_value, 
 		  int param, long eip, long esp) asm ("hack_restart_func");
 extern void restart_func (act_proc_t new_proc, int return_value, 
@@ -121,8 +152,9 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 /*  		      new_proc, return_value, param, eip, esp); */
 /*  #else */
 	mdebug("\trestart_func (proc %i, ret %i, param %p,"
-	       " ip 0x%8x, sp 0x%8x)\n",
-	       new_proc, return_value, (void*)param, eip, esp);
+	       " ip 0x%8x, sp 0x%8x) locked=%i\n",
+	       new_proc, return_value, (void*)param, eip, esp, locked());
+	//mdebug("adr de desc = %i\n", *((int*)0xbffefdd8));
 /*  #endif */
 	//mysleep();
 	if (IS_TASK_TYPE_IDLE(current)) {
@@ -137,7 +169,6 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 			MTRACE("Restarting", current);
 			MA_THR_RESTARTED(current, "Syscall");
 			SET_STATE_READY(marcel_next[GET_LWP_NUMBER(current)]);
-			unlock_task();
 			break;
 		case ACT_RESTART_FROM_IDLE:
 			/* we comme from the idle task */
@@ -146,14 +177,14 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 			       GET_LWP(current)->prev_running);
 			SET_FROZEN(GET_LWP(current)->prev_running);
 			UNCHAIN_TASK(GET_LWP(current)->prev_running);
-			unlock_task();
 			break;
 		case ACT_RESTART_FROM_UPCALL_NEW:
-			MTRACE("Restarting", current);
+			MTRACE("Restarting from upcall_new", current);
 			break;
 		default:
 			RAISE("invalid parameter");
 		}
+		unlock_task();
   	} else if (param & ACT_UNBLK_IDLE) {
 		if ((param & 0xFF) == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
@@ -201,16 +232,27 @@ void upcall_new(act_proc_t proc)
 /*  		      proc, marcel_self(),GET_LWP_BY_NUM(proc),  */
 /*  		      GET_LWP_BY_NUM(proc)->number ); */
 /*  #else */
+
+	/* le lock_task n'est pas pris : il n'y a pas d'appels
+	 * bloquant DANS marcel.
+	 *
+	 * Il faut prendre le lock_task sans que le pc sorte de
+	 * lock_start/lock_end
+	 * */
+
+	atomic_inc(&GET_LWP(lock_safe_marcel_self())->_locked);
 	mdebug("\tupcall_new(%i) : task_upcall=%p, lwp=%p (%i)\n",
 	       proc, marcel_self(),GET_LWP_BY_NUM(proc), 
 	       GET_LWP_BY_NUM(proc)->number );
+	//mdebug("adr de desc = %i\n", *((int*)0xbffefdd8));
 /*  #endif */
 	MTRACE("UpcallNew", marcel_self());
 	SET_STATE_RUNNING(NULL, marcel_self(), GET_LWP_BY_NUM(proc));
 
-	if (locked()) {
+	if (locked()>1) {
+	        unlock_task();
 		mdebug("Kai kai kai : appel bloquant dans marcel !"
-		       " (locked=%i)\n", locked());
+		       " (locked was %i)\n", locked());
 		/* C'est peut-être juste un printf, on va essayer de s'en
 		   sortir */
 		for (;;) {
@@ -220,19 +262,16 @@ void upcall_new(act_proc_t proc)
 		}
 	}
 
-	if (act_nb_unblocked) {
-/*  #ifdef SHOW_UPCALL */
-/*  		marcel_printf("\t\tupcall_new(%i) : restart unblocked(%i)\n", */
-/*  			      proc, act_nb_unblocked); */
-/*  #endif */
-		act_cntl(ACT_CNTL_RESTART_UNBLOCKED, 
-			 (void*)ACT_RESTART_FROM_UPCALL_NEW);
-	}
+/*  	if (act_nb_unblocked) { */
+/*  		mdebug("\ttrying to restart unblocked (%i)\n",  */
+/*  		       act_nb_unblocked); */
+/*  		act_cntl(ACT_CNTL_RESTART_UNBLOCKED,  */
+/*  			 (void*)ACT_RESTART_FROM_UPCALL_NEW); */
+/*  		mdebug("\tfailed to restart unblocked (%i)\n",  */
+/*  		       act_nb_unblocked);		 */
+/*  	} */
 
-	/* le lock_task n'est pas pris : il n'y a pas d'appels
-	 * bloquant DANS marcel.
-	 * */
-	lock_task();
+	//lock_task(); //A cause des debug, il faut prendre le lock_task avant
 	//sched_lock(cur_lwp);
 	
 	next=marcel_radical_next_task();
@@ -257,7 +296,7 @@ static void init_act(int proc, act_param_t *param)
 
 	stack=(void*)GET_LWP_BY_NUM(proc)->upcall_new_task->initial_sp;
 	param->upcall_new_sp[proc]=stack;
-	param->locked[proc]=NULL; //TODO
+	param->locked[proc]=(unsigned long)(&(GET_LWP_BY_NUM(proc)->_locked));
 	mdebug("upcall_new on proc %i use stack %p\n", proc, stack);
 
 }

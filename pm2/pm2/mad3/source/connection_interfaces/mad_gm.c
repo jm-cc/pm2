@@ -112,18 +112,18 @@ typedef struct s_mad_gm_poll_channel_data {
         p_mad_connection_t c;
 } mad_gm_poll_channel_data_t, *p_mad_gm_poll_channel_data;
 
-typedef struct s_mad_gm_poll_mutex_data {
-        marcel_mutex_t *mutex;
-} mad_gm_poll_mutex_data_t;
+typedef struct s_mad_gm_poll_sem_data {
+        marcel_sem_t *sem;
+} mad_gm_poll_sem_data_t;
 
 typedef union u_mad_gm_poll_data {
         mad_gm_poll_channel_data_t channel_op;
-        mad_gm_poll_mutex_data_t   mutex_op;
+        mad_gm_poll_sem_data_t   sem_op;
 } mad_gm_poll_data_t, *p_mad_gm_poll_data_t;
 
 typedef enum e_mad_gm_poll_op {
         mad_gm_poll_channel_op,
-        mad_gm_poll_mutex_op,
+        mad_gm_poll_sem_op,
 } mad_gm_poll_op_t, *p_mad_gm_poll_op_t;
 
 typedef struct s_mad_gm_poll_req {
@@ -172,7 +172,7 @@ typedef struct s_mad_gm_connection_specific {
         volatile int        state;
 
 #ifdef MAD_GM_MARCEL_POLL
-        marcel_mutex_t      lock;
+        marcel_sem_t        sem;
 #else
         volatile int        send_lock;
         volatile int        receive_lock;
@@ -198,6 +198,7 @@ const int mad_gm_pub_port_array[] = {
 };
 
 static TBX_CRITICAL_SECTION(mad_gm_access);
+static TBX_CRITICAL_SECTION(mad_gm_reception);
 
 
 /*
@@ -562,6 +563,11 @@ mad_gm_callback(struct gm_port *p_gm_port,
         p_mad_gm_port_t    port = NULL;
         
         LOG_IN();
+	if (gms != GM_SUCCESS) {
+	  __gmerror__(gms);
+	  FAILURE("send request failed");
+	}
+
         rq         = ptr;
         rq->status = gms;
         port       = rq->port;
@@ -583,7 +589,7 @@ mad_gm_callback(struct gm_port *p_gm_port,
                 }
 
 #ifdef MAD_GM_MARCEL_POLL
-                marcel_mutex_unlock(&os->lock);
+                marcel_sem_V(&os->sem);
 #else
                 os->send_lock  = 0;
 #endif
@@ -595,7 +601,7 @@ mad_gm_callback(struct gm_port *p_gm_port,
                 is = in->specific;
 
 #ifdef MAD_GM_MARCEL_POLL
-                marcel_mutex_unlock(&is->lock);
+                marcel_sem_V(&is->sem);
 #else
                 is->send_lock = 0;
 #endif
@@ -622,8 +628,11 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
         LOG_IN();
         p_gm_port = port->p_gm_port;
 
+#ifdef MAD_GM_MARCEL_POLL
+        p_event = gm_receive(port->p_gm_port);
+#else
         p_event = gm_blocking_receive(port->p_gm_port);
-
+#endif
         switch (gm_ntohc(p_event->recv.type)) {
                         
         case GM_FAST_HIGH_PEER_RECV_EVENT:
@@ -634,7 +643,7 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                         unsigned char *msg            = NULL;
                         unsigned char *packet         = NULL;
                         int            remote_node_id =    0;
-                                
+
                         packet = gm_ntohp(p_event->recv.buffer);
                         msg = gm_ntohp(p_event->recv.message);
 
@@ -663,7 +672,7 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                                 is = in->specific;
 
 #ifdef MAD_GM_MARCEL_POLL
-                                marcel_mutex_unlock(&is->lock);
+                                marcel_sem_V(&is->sem);
 #else
                                 is->receive_lock = 0;
 #endif
@@ -675,7 +684,7 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                                 os = out->specific;
 
 #ifdef MAD_GM_MARCEL_POLL
-                                marcel_mutex_unlock(&os->lock);
+                                marcel_sem_V(&os->sem);
 #else
                                 os->receive_lock = 0;
 #endif
@@ -691,13 +700,11 @@ mad_gm_port_poll(p_mad_gm_port_t port) {
                 {
                         p_mad_connection_t             in = NULL;
                         p_mad_gm_connection_specific_t is = NULL;
-                        int                            id =    0;
 
                         in = port->active_input;
-                        id = gm_ntohs(p_event->recv.sender_node_id);
 			is = in->specific;
 #ifdef MAD_GM_MARCEL_POLL
-                        marcel_mutex_unlock(&is->lock);
+                        marcel_sem_V(&is->sem);
 #else
                         is->receive_lock = 0;
 #endif
@@ -762,7 +769,7 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
                                 p_mad_gm_connection_specific_t is = NULL;
 
                                 is = in->specific;
-                                r = marcel_mutex_trylock(&is->lock);
+                                r = marcel_sem_try_P(&is->sem);
                                 if (r) {
                                         rq->data.channel_op.c = in;
                                         break;
@@ -775,11 +782,11 @@ mad_gm_do_poll(p_mad_gm_poll_req_t rq) {
                 TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
                 return r;
-        } else if (rq->op == mad_gm_poll_mutex_op) {
-                marcel_mutex_t *m = rq->data.mutex_op.mutex;
+        } else if (rq->op == mad_gm_poll_sem_op) {
+                marcel_sem_t *s = rq->data.sem_op.sem;
                 int             r = 0;
                 
-                r = marcel_mutex_trylock(m);
+                r = marcel_sem_try_P(s);
                 TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
                 return r;
@@ -831,16 +838,16 @@ mad_gm_marcel_poll(marcel_pollid_t id,
 
 static
 void
-mad_gm_wait_for_mutex(marcel_pollid_t  pollid,
-                      p_mad_gm_port_t  port,
-                      marcel_mutex_t  *m) {
+mad_gm_wait_for_sem(marcel_pollid_t  pollid,
+		    p_mad_gm_port_t  port,
+		    marcel_sem_t  *m) {
         LOG_IN();
-        if (!marcel_mutex_trylock(m)) {
+        if (!marcel_sem_try_P(m)) {
                 mad_gm_poll_req_t req;
                 
-                req.op       = mad_gm_poll_mutex_op;
+                req.op       = mad_gm_poll_sem_op;
                 req.port     = port;
-                req.data.mutex_op.mutex = m;
+                req.data.sem_op.sem = m;
 
                 marcel_poll(pollid, &req);
         }
@@ -1117,8 +1124,7 @@ mad_gm_connection_init(p_mad_connection_t in,
                 is->packet_size   = gm_min_size_for_length(is->packet_length);
                 
 #ifdef MAD_GM_MARCEL_POLL
-                marcel_mutex_init(&is->lock, NULL);
-                marcel_mutex_lock(&is->lock);
+                marcel_sem_init(&is->sem, 0);
 #else
                 is->send_lock    = 1;
                 is->receive_lock = 1;
@@ -1177,8 +1183,7 @@ mad_gm_connection_init(p_mad_connection_t in,
                 os->packet_size   = gm_min_size_for_length(os->packet_length);
 
 #ifdef MAD_GM_MARCEL_POLL
-                marcel_mutex_init(&os->lock, NULL);
-                marcel_mutex_lock(&os->lock);
+                marcel_sem_init(&os->sem, 0);
 #else
                 os->send_lock    = 1;
                 os->receive_lock = 1;                
@@ -1382,6 +1387,7 @@ mad_gm_send_buffer(p_mad_link_t   l,
         os->request->status = GM_SUCCESS;
 
         TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+	TBX_LOCK();
         gm_send_with_callback(port->p_gm_port, os->packet,
                               os->packet_size, os->packet_length,
                               GM_HIGH_PRIORITY,
@@ -1389,13 +1395,12 @@ mad_gm_send_buffer(p_mad_link_t   l,
                               mad_gm_callback, os->request);
 
         mad_gm_register_block(port, b->buffer, b->length, &os->cache);
+	TBX_UNLOCK();
         TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
 
 #ifdef MAD_GM_MARCEL_POLL
-	//DISP("s1-->");
-        mad_gm_wait_for_mutex(ds->gm_pollid, port, &os->lock);
-	//DISP("s1<--");
+        mad_gm_wait_for_sem(ds->gm_pollid, port, &os->sem);
 #else
         while (os->receive_lock) {
                 mad_gm_port_poll(port);
@@ -1406,9 +1411,7 @@ mad_gm_send_buffer(p_mad_link_t   l,
 
 
 #ifdef MAD_GM_MARCEL_POLL
-	//DISP("s2-->");
-        mad_gm_wait_for_mutex(ds->gm_pollid, port, &os->lock);
-	//DISP("s2<--");
+        mad_gm_wait_for_sem(ds->gm_pollid, port, &os->sem);
 #else
         while (os->send_lock) {
                 mad_gm_port_poll(port);
@@ -1429,19 +1432,19 @@ mad_gm_send_buffer(p_mad_link_t   l,
                 os->state           = 3;
         
                 TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+		TBX_LOCK();
                 gm_send_with_callback(port->p_gm_port,
                                       b->buffer + b->bytes_read,
                                       gm_min_size_for_length(MAD_GM_MAX_BLOCK_LEN),
                                       os->length, GM_LOW_PRIORITY,
                                       os->remote_node_id, os->remote_port_id,
                                       mad_gm_callback, os->request);
+		TBX_UNLOCK();
                 TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
 
 #ifdef MAD_GM_MARCEL_POLL
-		//DISP("s3-->");
-                mad_gm_wait_for_mutex(ds->gm_pollid, port, &os->lock);
-		//DISP("s3<--");
+                mad_gm_wait_for_sem(ds->gm_pollid, port, &os->sem);
 #else
                 while (os->send_lock) {
                         mad_gm_port_poll(port);
@@ -1455,7 +1458,9 @@ mad_gm_send_buffer(p_mad_link_t   l,
         }
 
         TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+	TBX_LOCK();
         mad_gm_deregister_block(port, os->cache);
+	TBX_UNLOCK();
         TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
         os->cache = NULL;
         os->buffer  = NULL;
@@ -1490,9 +1495,7 @@ mad_gm_receive_buffer(p_mad_link_t     l,
                 is->first = 0;
         } else {
 #ifdef MAD_GM_MARCEL_POLL
-	  //DISP("r1-->");
-                mad_gm_wait_for_mutex(ds->gm_pollid, port, &is->lock);
-		//DISP("r1<--");
+		mad_gm_wait_for_sem(ds->gm_pollid, port, &is->sem);
 #else
                 while (is->receive_lock) {
                         mad_gm_port_poll(port);
@@ -1502,22 +1505,22 @@ mad_gm_receive_buffer(p_mad_link_t     l,
 #endif
         }
 
+        TBX_CRITICAL_SECTION_ENTER(mad_gm_reception);
         is->request->status = GM_SUCCESS;
         TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+	TBX_LOCK();
         gm_send_with_callback(port->p_gm_port, is->packet,
                               is->packet_size, is->packet_length,
                               GM_HIGH_PRIORITY,
                               is->remote_node_id, is->remote_port_id,
                               mad_gm_callback, is->request);
-
         mad_gm_register_block(port, b->buffer, b->length, &is->cache);
+	TBX_UNLOCK();
         TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
 
 #ifdef MAD_GM_MARCEL_POLL
-	//DISP("r2-->");
-        mad_gm_wait_for_mutex(ds->gm_pollid, port, &is->lock);
-	//DISP("r2<--");
+        mad_gm_wait_for_sem(ds->gm_pollid, port, &is->sem);
 #else
         while (is->send_lock) {
                 mad_gm_port_poll(port);
@@ -1535,17 +1538,17 @@ mad_gm_receive_buffer(p_mad_link_t     l,
                               b->length - b->bytes_written);
                 is->length = len;
                 TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+		TBX_LOCK();
                 gm_provide_receive_buffer_with_tag(port->p_gm_port,
                                                    b->buffer+b->bytes_written,
                                                    gm_min_size_for_length(MAD_GM_MAX_BLOCK_LEN),
                                                    GM_LOW_PRIORITY, 0);
+		TBX_UNLOCK();
                 TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
 
 
 #ifdef MAD_GM_MARCEL_POLL
-		//DISP("r3-->");
-                mad_gm_wait_for_mutex(ds->gm_pollid, port, &is->lock);
-		//DISP("r3<--");
+                mad_gm_wait_for_sem(ds->gm_pollid, port, &is->sem);
 #else
                 while (is->receive_lock) {
                         mad_gm_port_poll(port);
@@ -1556,8 +1559,12 @@ mad_gm_receive_buffer(p_mad_link_t     l,
                 b->bytes_written += len;
         }
         
+        TBX_CRITICAL_SECTION_LEAVE(mad_gm_reception);
+
         TBX_CRITICAL_SECTION_ENTER(mad_gm_access);
+	TBX_LOCK();
         mad_gm_deregister_block(port, is->cache);
+	TBX_UNLOCK();
         TBX_CRITICAL_SECTION_LEAVE(mad_gm_access);
         is->cache = NULL;
         LOG_OUT();

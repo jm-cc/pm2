@@ -21,7 +21,7 @@
 #include <assert.h>
 
 #include "marcel.h"
-#include "sys/archdep.h"
+#include "sys/marcel_archdep.h"
 #include "pm2_mad.h"
 #include "isomalloc_timing.h"
 #include "block_alloc.h"

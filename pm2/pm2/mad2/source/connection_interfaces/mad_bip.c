@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_bip.c,v $
+Revision 1.8  2000/07/12 14:50:48  rnamyst
+Added support for msg probing
+
 Revision 1.7  2000/07/11 09:46:27  rnamyst
 Bug fixed in standalone mode
 
@@ -59,6 +62,7 @@ ______________________________________________________________________________
 
 #define MARCEL_POLL_WA
 
+/* #define GROUP_SMALL_PACKS */
 
 /*
  * headerfiles
@@ -124,6 +128,11 @@ typedef struct
 {
   TBX_SHARED;
   int nb_adapter;
+
+#ifdef GROUP_SMALL_PACKS
+  p_tbx_memory_t bip_buffer_key;
+#endif
+
 } mad_bip_driver_specific_t, *p_mad_bip_driver_specific_t;
 
 typedef struct
@@ -245,13 +254,12 @@ static int bip_recv_post(int tag, int *message, int size)
 static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
 {
 #ifdef MARCEL
-  int tmphost, which = 0, status;
+  int tmphost, status;
+  static which = 0;
 
   LOG_IN();
 
-  for(;;) {
-
-    switch(which) {
+  switch(which) {
     case 0 : { /* SERVICE ou TRANSFERT */
       bip_lock();
       status = bip_rtestx(request, host);
@@ -301,9 +309,35 @@ static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
     default:
       fprintf(stderr, "Oh my God! We should never execute that code!\n");
       break;
+  }
+
+  which = (which + 1) % 3;
+
+  LOG_OUT();
+  return -1;
+#else
+  LOG_IN();
+  return bip_rtestx(request, host);
+  LOG_OUT();
+#endif
+}
+
+static int bip_recv_wait(p_mad_bip_channel_specific_t p, int request, int *host)
+{
+#ifdef MARCEL
+  int status;
+
+  LOG_IN();
+
+  for(;;) {
+
+    status = bip_recv_poll(p, request, host);
+
+    if(status != -1) {
+      LOG_OUT();
+      return status;
     }
 
-    which = (which + 1) % 3;
     marcel_yield();
   };
 
@@ -311,7 +345,7 @@ static int bip_recv_poll(p_mad_bip_channel_specific_t p, int request, int *host)
   fprintf(stderr, "Oh my God! We should never execute that code!\n");
   return -1;
 #else
-  return bip_rwait(request);
+  return bip_rwaitx(request, host);
 #endif
 }
 
@@ -321,10 +355,31 @@ static __inline__ int bip_sync_recv (p_mad_bip_channel_specific_t p,
   LOG_IN();
 
 #ifdef MARCEL
-  return bip_recv_poll(p, bip_recv_post(tag, message, size), host);
+  return bip_recv_wait(p, bip_recv_post(tag, message, size), host);
 #else
   return bip_trecvx(tag, message, size, host);
 #endif
+
+  LOG_OUT();
+}
+
+static __inline__ int bip_probe_recv(p_mad_bip_channel_specific_t p,
+				     int tag, int *message, int size, int *host)
+{
+  static int request = -1;
+  int status;
+  LOG_IN();
+
+  if(request == -1)
+    request = bip_recv_post(tag, message, size);
+
+  status = bip_recv_poll(p, request, host);
+
+  if(status != -1)
+    request = -1; /* pour la prochaine fois */
+
+  LOG_OUT();
+  return status;
 
   LOG_OUT();
 }
@@ -526,9 +581,17 @@ mad_bip_register(p_mad_driver_t driver)
   interface->adapter_exit               = mad_bip_adapter_exit;
   interface->driver_exit                = mad_bip_driver_exit;
   interface->choice                     = mad_bip_choice;
+#ifdef GROUP_SMALL_PACKS
+  interface->get_static_buffer          = mad_bip_get_static_buffer;
+  interface->return_static_buffer       = mad_bip_return_static_buffer;
+#else
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
+#endif
   interface->new_message                = mad_bip_new_message;
+#ifdef MAD_MESSAGE_POLLING
+  interface->poll_message               = mad_bip_poll_message;
+#endif /* MAD_MESSAGE_POLLING */
   interface->receive_message            = mad_bip_receive_message;
   interface->send_buffer                = mad_bip_send_buffer;
   interface->receive_buffer             = mad_bip_receive_buffer;
@@ -537,7 +600,7 @@ mad_bip_register(p_mad_driver_t driver)
   interface->external_spawn_init        = mad_bip_external_spawn_init;
   interface->configuration_init         = mad_bip_configuration_init;
   interface->send_adapter_parameter     = mad_bip_send_adapter_parameter;
-  interface->receive_adapter_parameter  = mad_bip_receive_adapter_parameter;;
+  interface->receive_adapter_parameter  = mad_bip_receive_adapter_parameter;
 
   LOG_OUT();
 }
@@ -557,6 +620,12 @@ mad_bip_driver_init(p_mad_driver_t driver)
   driver->specific = driver_specific;
   TBX_INIT_SHARED(driver_specific);
   driver_specific->nb_adapter = 0;
+
+#ifdef GROUP_SMALL_PACKS
+  tbx_malloc_init(&(driver_specific->bip_buffer_key),
+		  BIP_SMALL_MESSAGE,
+		  32);
+#endif
 
 #ifdef MARCEL
   mad_bip_driver_specific = driver_specific;
@@ -681,9 +750,15 @@ mad_bip_connection_init(p_mad_connection_t in, p_mad_connection_t out)
   connection_specific->begin_receive = 0 ;
   
   in->specific = connection_specific ;
-  in->nb_link = 2;
   out->specific = connection_specific ;
+#ifdef GROUP_SMALL_PACKS
+  in->nb_link = 3;
+  out->nb_link = 3;
+#else
+  in->nb_link = 2;
   out->nb_link = 2;
+#endif
+
   LOG_OUT();
 }
 
@@ -722,6 +797,7 @@ mad_bip_adapter_exit(p_mad_adapter_t adapter)
   TBX_FREE(adapter->parameter);
   TBX_FREE(adapter->name);
   TBX_FREE(adapter->specific);
+
   LOG_OUT();
 }
 
@@ -730,7 +806,17 @@ mad_bip_driver_exit(p_mad_driver_t driver)
 {
   LOG_IN();
   /* Code to execute to clean up a driver */
+
+#ifdef GROUP_SMALL_PACKS
+  {
+    p_mad_bip_driver_specific_t driver_specific = driver->specific;
+
+    tbx_malloc_clean(driver_specific->bip_buffer_key);
+  }
+#endif
+
   TBX_FREE (driver->specific);
+
 #ifdef MARCEL
   mad_bip_driver_specific = NULL;
 #endif /* MARCEL */
@@ -755,6 +841,39 @@ mad_bip_new_message(p_mad_connection_t connection)
 
   return ;
 }
+
+#ifdef MAD_MESSAGE_POLLING
+p_mad_connection_t 
+mad_bip_poll_message(p_mad_channel_t channel)
+{
+  p_mad_bip_channel_specific_t channel_specific = channel->specific;
+  p_mad_connection_t    connection       = NULL;
+  p_mad_bip_connection_specific_t connection_specific = NULL ;
+  int host ;
+
+  LOG_IN();
+
+  channel_specific->message_size = bip_probe_recv(
+       channel_specific,
+       channel_specific->communicator+MAD_BIP_SERVICE_TAG, 
+       (int *) channel_specific->small_buffer, 
+       BIP_SMALL_MESSAGE,
+       &host);
+
+  if(channel_specific->message_size == -1) {
+    LOG_OUT();
+    return NULL;
+  }
+
+  connection = &(channel->input_connection[host]);
+  connection_specific = connection->specific ;      
+  connection_specific->begin_receive = 1 ;
+
+  LOG_OUT();
+
+  return connection;
+}
+#endif
 
 p_mad_connection_t
 mad_bip_receive_message(p_mad_channel_t channel)
@@ -1114,7 +1233,7 @@ mad_bip_receive_long_buffer(p_mad_link_t     lnk,
 
   send_ack(channel_specific, connection->remote_host_id);
 
-  bip_recv_poll(channel_specific, request, &status);
+  bip_recv_wait(channel_specific, request, &status);
 
   connection_specific->ack_sent = 1;
   connection_specific->begin_receive = 0 ;

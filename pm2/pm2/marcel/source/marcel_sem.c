@@ -1,16 +1,37 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "marcel.h"
 
 void marcel_sem_init(marcel_sem_t *s, int initial)
 {
+  LOG_IN();
+
   s->value = initial;
   s->first = NULL;
   s->lock = MARCEL_LOCK_INIT;
+
+  LOG_OUT();
 }
 
 void marcel_sem_P(marcel_sem_t *s)
 {
   cell c;
+
+  LOG_IN();
 
   lock_task();
 
@@ -31,11 +52,15 @@ void marcel_sem_P(marcel_sem_t *s)
     marcel_lock_release(&s->lock);
     unlock_task();
   }
+
+  LOG_OUT();
 }
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
   cell c;
+
+  LOG_IN();
 
   lock_task();
 
@@ -46,6 +71,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->value++;
       marcel_lock_release(&s->lock);
       unlock_task();
+      LOG_OUT();
       RAISE(TIME_OUT);
     }
     c.next = NULL;
@@ -62,11 +88,15 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
     marcel_lock_release(&s->lock);
     unlock_task();
   }
+
+  LOG_OUT();
 }
 
 void marcel_sem_V(marcel_sem_t *s)
 {
   cell *c;
+
+  LOG_IN();
 
   lock_task();
 
@@ -80,6 +110,8 @@ void marcel_sem_V(marcel_sem_t *s)
 
   marcel_lock_release(&s->lock);
   unlock_task();
+
+  LOG_OUT();
 }
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
@@ -91,40 +123,46 @@ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
    P(s2)  en ne perdant pas la main entre les 2
 */
 
- lock_task();
+  LOG_IN();
 
- marcel_lock_acquire(&s1->lock);
+  lock_task();
 
- if(++(s1->value) <= 0) {
-   ce = s1->first;
-   s1->first = ce->next;
-   marcel_wake_task(ce->task, &ce->blocked);
- }
+  marcel_lock_acquire(&s1->lock);
 
- marcel_lock_acquire(&s2->lock);
- marcel_lock_release(&s1->lock);
+  if(++(s1->value) <= 0) {
+    ce = s1->first;
+    s1->first = ce->next;
+    marcel_wake_task(ce->task, &ce->blocked);
+  }
 
- if(--(s2->value) < 0) {
-   c.next = NULL;
-   c.blocked = TRUE;
-   c.task = marcel_self();
-   if(s2->first == NULL)
-     s2->first = s2->last = &c;
-   else {
-     s2->last->next = &c;
-     s2->last = &c;
-   }
-   marcel_give_hand(&c.blocked, &s2->lock);
- } else {
+  marcel_lock_acquire(&s2->lock);
+  marcel_lock_release(&s1->lock);
 
-   marcel_lock_release(&s2->lock);
-   unlock_task();
- }
+  if(--(s2->value) < 0) {
+    c.next = NULL;
+    c.blocked = TRUE;
+    c.task = marcel_self();
+    if(s2->first == NULL)
+      s2->first = s2->last = &c;
+    else {
+      s2->last->next = &c;
+      s2->last = &c;
+    }
+    marcel_give_hand(&c.blocked, &s2->lock);
+  } else {
+
+    marcel_lock_release(&s2->lock);
+    unlock_task();
+  }
+
+  LOG_OUT();
 }
 
 void marcel_sem_unlock_all(marcel_sem_t *s)
 {
   cell *cur;
+
+  LOG_IN();
 
   lock_task();
 
@@ -143,5 +181,7 @@ void marcel_sem_unlock_all(marcel_sem_t *s)
   s->first = NULL;
   marcel_lock_release(&s->lock);
   unlock_task();
+
+  LOG_OUT();
 }
 

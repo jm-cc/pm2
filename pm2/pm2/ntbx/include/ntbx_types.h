@@ -115,6 +115,7 @@ typedef enum
 /*...Client/Server structures...........*/
 typedef struct s_ntbx_client
 {
+  TBX_SHARED;
   ntbx_client_state_t  state;
   char                *local_host;
   p_tbx_slist_t        local_alias;

@@ -258,6 +258,48 @@ connection_exit(p_mad_channel_t ch)
 
 static
 void
+common_channel_exit(p_mad_channel_t mad_channel)
+{
+  p_mad_adapter_t          mad_adapter = NULL;
+  p_mad_driver_t           mad_driver  = NULL;
+  p_mad_driver_interface_t interface   = NULL;
+
+  mad_adapter = mad_channel->adapter;
+  mad_driver  = mad_adapter->driver;
+  interface   = mad_driver->interface;
+
+  if (interface->before_close_channel)
+    interface->before_close_channel(mad_channel);
+
+  while (connection_disconnect(mad_channel))
+    ;
+
+  mad_leonie_send_int(-1);
+
+  if (interface->after_close_channel)
+    interface->after_close_channel(mad_channel);
+
+  while (connection_exit(mad_channel))
+    ;
+
+  tbx_darray_free(mad_channel->in_connection_darray);
+  tbx_darray_free(mad_channel->out_connection_darray);
+
+  mad_channel->in_connection_darray  = NULL;
+  mad_channel->out_connection_darray = NULL;
+
+  if (interface->channel_exit)
+    interface->channel_exit(mad_channel);
+
+  tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
+
+  TBX_FREE(mad_channel->name);
+  mad_channel->name = NULL;
+}
+
+
+static
+void
 mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 {
   p_mad_directory_t dir                = NULL;
@@ -373,12 +415,9 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
   while (1)
     {
 #ifdef MARCEL
-      p_mad_channel_t           mad_channel  = NULL;
-      p_mad_adapter_t           mad_adapter  = NULL;
-      p_mad_driver_t            mad_driver   = NULL;
-      p_mad_driver_interface_t  interface    = NULL;
+      p_mad_channel_t  mad_channel  = NULL;
 #endif // MARCEL
-      char                     *channel_name = NULL;
+      char            *channel_name = NULL;
 
       channel_name = mad_leonie_receive_string();
       if (tbx_streq(channel_name, "-"))
@@ -391,38 +430,7 @@ mad_dir_vchannel_exit(p_mad_madeleine_t madeleine)
 	FAILURE("vchannel not found");
 
       TRACE_STR("Vchannel", channel_name);
-
-      mad_adapter = mad_channel->adapter;
-      mad_driver  = mad_adapter->driver;
-      interface   = mad_driver->interface;
-
-      if (interface->before_close_channel)
-	interface->before_close_channel(mad_channel);
-
-      while (connection_disconnect(mad_channel))
-	;
-
-      mad_leonie_send_int(-1);
-
-      if (interface->after_close_channel)
-	interface->after_close_channel(mad_channel);
-
-      while (connection_exit(mad_channel))
-	;
-
-      tbx_darray_free(mad_channel->in_connection_darray);
-      tbx_darray_free(mad_channel->out_connection_darray);
-
-      mad_channel->in_connection_darray  = NULL;
-      mad_channel->out_connection_darray = NULL;
-
-      if (interface->channel_exit)
-	interface->channel_exit(mad_channel);
-
-      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
-
-      TBX_FREE(mad_channel->name);
-      mad_channel->name = NULL;
+      common_channel_exit(mad_channel);
 
       {
 	p_tbx_slist_t slist = NULL;
@@ -561,9 +569,6 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
     {
 #ifdef MARCEL
       p_mad_channel_t           mad_channel  = NULL;
-      p_mad_adapter_t           mad_adapter  = NULL;
-      p_mad_driver_t            mad_driver   = NULL;
-      p_mad_driver_interface_t  interface    = NULL;
 #endif // MARCEL
       char                     *channel_name = NULL;
 
@@ -579,37 +584,7 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
 
       TRACE_STR("Xchannel", channel_name);
 
-      mad_adapter = mad_channel->adapter;
-      mad_driver  = mad_adapter->driver;
-      interface   = mad_driver->interface;
-
-      if (interface->before_close_channel)
-	interface->before_close_channel(mad_channel);
-
-      while (connection_disconnect(mad_channel))
-	;
-
-      mad_leonie_send_int(-1);
-
-      if (interface->after_close_channel)
-	interface->after_close_channel(mad_channel);
-
-      while (connection_exit(mad_channel))
-	;
-
-      tbx_darray_free(mad_channel->in_connection_darray);
-      tbx_darray_free(mad_channel->out_connection_darray);
-
-      mad_channel->in_connection_darray  = NULL;
-      mad_channel->out_connection_darray = NULL;
-
-      if (interface->channel_exit)
-	interface->channel_exit(mad_channel);
-
-      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
-
-      TBX_FREE(mad_channel->name);
-      mad_channel->name = NULL;
+      common_channel_exit(mad_channel);
 
       {
 	p_tbx_slist_t slist = NULL;
@@ -636,79 +611,6 @@ mad_dir_xchannel_exit(p_mad_madeleine_t madeleine)
 
 static
 void
-mad_dir_fchannel_exit(p_mad_madeleine_t madeleine)
-{
-  p_mad_directory_t dir                = NULL;
-  p_tbx_htable_t    mad_channel_htable = NULL;
-
-  LOG_IN();
-
-  TRACE("Closing fchannels");
-  dir                = madeleine->dir;
-  mad_channel_htable = madeleine->channel_htable;
-
-  while (1)
-    {
-      p_mad_channel_t           mad_channel  = NULL;
-      p_mad_adapter_t           mad_adapter  = NULL;
-      p_mad_driver_t            mad_driver   = NULL;
-      p_mad_driver_interface_t  interface    = NULL;
-      char                     *channel_name = NULL;
-
-      channel_name = mad_leonie_receive_string();
-      if (tbx_streq(channel_name, "-"))
-	break;
-
-      mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
-
-      if (!mad_channel)
-	FAILURE("fchannel not found");
-
-      TRACE_STR("Fchannel", channel_name);
-
-      mad_adapter = mad_channel->adapter;
-      mad_driver  = mad_adapter->driver;
-      interface   = mad_driver->interface;
-
-      if (interface->before_close_channel)
-	interface->before_close_channel(mad_channel);
-
-      while (connection_disconnect(mad_channel))
-	;
-
-      mad_leonie_send_int(-1);
-
-      if (interface->after_close_channel)
-	interface->after_close_channel(mad_channel);
-
-      while (connection_exit(mad_channel))
-	;
-
-      tbx_darray_free(mad_channel->in_connection_darray);
-      tbx_darray_free(mad_channel->out_connection_darray);
-
-      mad_channel->in_connection_darray  = NULL;
-      mad_channel->out_connection_darray = NULL;
-
-      if (interface->channel_exit)
-	interface->channel_exit(mad_channel);
-
-      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
-
-      TBX_FREE(mad_channel->name);
-      mad_channel->name = NULL;
-
-      memset(mad_channel, 0, sizeof(mad_channel_t));
-      TBX_FREE(mad_channel);
-      mad_channel = NULL;
-
-      mad_leonie_send_int(-1);
-    }
-  LOG_OUT();
-}
-
-static
-void
 mad_dir_channel_exit(p_mad_madeleine_t madeleine)
 {
   p_mad_directory_t dir                = NULL;
@@ -722,63 +624,25 @@ mad_dir_channel_exit(p_mad_madeleine_t madeleine)
 
   while (1)
     {
-      p_mad_channel_t           mad_channel  = NULL;
-      p_mad_adapter_t           mad_adapter  = NULL;
-      p_mad_driver_t            mad_driver   = NULL;
-      p_mad_driver_interface_t  interface    = NULL;
-      p_tbx_darray_t            in_darray    = NULL;
-      p_tbx_darray_t            out_darray   = NULL;
-      char                     *channel_name = NULL;
+      p_mad_channel_t  mad_channel  = NULL;
+      char            *channel_name = NULL;
 
       channel_name = mad_leonie_receive_string();
-      TRACE_STR("Pass 1 - Channel", channel_name);
       if (tbx_streq(channel_name, "-"))
 	break;
 
-
       mad_channel = tbx_htable_extract(mad_channel_htable, channel_name);
-
       if (!mad_channel)
 	FAILURE("channel not found");
 
-      mad_adapter = mad_channel->adapter;
-      mad_driver  = mad_adapter->driver;
-      interface   = mad_driver->interface;
+      TRACE_STR("Channel", channel_name);
 
-      if (interface->before_close_channel)
-	interface->before_close_channel(mad_channel);
-
-      while (connection_disconnect(mad_channel))
-	;
-
-      TRACE("Pass 2 - sending -1 ack");
-      mad_leonie_send_int(-1);
-
-      if (interface->after_close_channel)
-	interface->after_close_channel(mad_channel);
-
-      while (connection_exit(mad_channel))
-	;
-
-      tbx_darray_free(mad_channel->in_connection_darray);
-      tbx_darray_free(mad_channel->out_connection_darray);
-
-      mad_channel->in_connection_darray  = NULL;
-      mad_channel->out_connection_darray = NULL;
-
-      if (interface->channel_exit)
-	interface->channel_exit(mad_channel);
-
-      tbx_htable_extract(mad_adapter->channel_htable, mad_channel->name);
-
-      TBX_FREE(mad_channel->name);
-      mad_channel->name = NULL;
+      common_channel_exit(mad_channel);
 
       memset(mad_channel, 0, sizeof(mad_channel_t));
       TBX_FREE(mad_channel);
       mad_channel = NULL;
 
-      TRACE("Pass 3 - sending -1 ack");
       mad_leonie_send_int(-1);
     }
   LOG_OUT();
@@ -799,7 +663,7 @@ mad_dir_channels_exit(p_mad_madeleine_t madeleine)
   mad_dir_xchannel_exit(madeleine);
 
   // Forwarding channels
-  mad_dir_fchannel_exit(madeleine);
+  mad_dir_channel_exit(madeleine);
 
   // Regular channels
   mad_dir_channel_exit(madeleine);
@@ -974,7 +838,11 @@ void
 mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
 {
   LOG_IN();
-#warning unimplemented
+  /* TODO: liberer les champs (tables, listes, ...) */
+  TBX_FREE(madeleine->dir);
+  TBX_FREE(madeleine->session);
+  TBX_FREE(madeleine->settings);
+  TBX_FREE(madeleine);
   LOG_OUT();
 }
 

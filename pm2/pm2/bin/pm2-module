@@ -24,6 +24,7 @@ fi
 ##########################################################################
 
 HIDDEN_MODULES="generic|appli"
+EXPERT_MODULES="generic|appli|leonie|mad2|leoparse|swann"
 
 # aide
 usage() # exit_code section
@@ -57,6 +58,7 @@ EOF
 	cat <<EOF
 Options for 'modules' command
   --with-common : include the 'common' module
+  --user-only : get only the modules useful for a regular use
 
 Action for 'modules' command
   --list       : list of all options name (default)
@@ -230,6 +232,7 @@ do_help() {
 do_modules() {
     action=list
     with_common=
+    user_only=
     while test $# -gt 0; do
 	case "$1" in
 	--list)
@@ -238,6 +241,9 @@ do_modules() {
 	--with-common)
 	    with_common=true
 	    ;;
+        --user-only)
+            user_only=true
+            ;;
 	*)
 	    echo Unknown option \`$1\' 1>&2
 	    usage 1
@@ -251,8 +257,13 @@ do_modules() {
 	    if [ "$with_common" = true ]; then
 		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v generic`
 	    else
-		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
-		    grep -v -E $HIDDEN_MODULES | grep -v common`
+                if [ "$user_only" = true ]; then
+		    list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
+			grep -v -E $EXPERT_MODULES | grep -v common`
+		else
+		    list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
+			grep -v -E $HIDDEN_MODULES | grep -v common`
+		fi
 	    fi
 	    new_list=
 	    for mod in `echo $list` " "; do

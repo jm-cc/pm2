@@ -183,7 +183,7 @@ pm2config_set_vars()
     flavor=$_PM2CONFIG_FLAVOR
 
     # Optimizations
-    pm2config_build_uppercase common $_PM2CONFIG_DIRTY_ORDERED_MODULES
+    pm2config_build_uppercase common $_PM2CONFIG_DIRTY_ORDERED_MODULES leonie swann
 
     # Build directory
     if [ -z "$PM2_BUILD" ] ; then

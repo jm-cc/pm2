@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_polling.c,v $
+Revision 1.7  2000/08/29 13:27:30  rnamyst
+Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
+
 Revision 1.6  2000/05/25 00:23:54  vdanjean
 marcel_poll with sisci and few bugs fixes
 
@@ -86,7 +89,7 @@ int __marcel_check_polling(unsigned polling_point)
 
 	if(ps->nb_cells == 1 && ps->fastfunc) {
 	  ps->cur_cell = ps->first_cell;
-	  cell = ((poll_cell_t *)(*ps->fastfunc)(ps, ps->first_cell->arg) ?
+	  cell = ((poll_cell_t *)(*ps->fastfunc)(ps, ps->first_cell->arg, FALSE) ?
 		  ps->first_cell : MARCEL_POLL_FAILED);
 	}
 	else
@@ -121,7 +124,7 @@ int __marcel_check_polling(unsigned polling_point)
 	      p->next->prev = p;
 	    }
 	  } else {
-	    /* S'il reste au moins 2 requetes ou s'il ny a pas de
+	    /* S'il reste au moins 2 requetes ou s'il n'y a pas de
 	       "fast poll", alors il faut factoriser. */
 	    if(ps->nb_cells > 1 || !ps->fastfunc) {
 	      mdebug("Factorizing polling");
@@ -182,21 +185,24 @@ void marcel_poll(marcel_pollid_t id, any_t arg)
   mdebug("using pollid %p (gr=%p, func=%p, fast=%p, pts=%x)\n",
 	 id, id->gfunc, id->func, id->fastfunc, id->polling_points);
 
+  lock_task();
+
+  marcel_lock_acquire(&__polling_lock);
+
   if(id->fastfunc) {
     mdebug("Using Immediate FastPoll %p\n", id->fastfunc);
-    if((*id->fastfunc)(id, arg) != MARCEL_POLL_FAILED) {
+    id->cur_cell = &cell;
+    if((*id->fastfunc)(id, arg, TRUE) != MARCEL_POLL_FAILED) {
       mdebug("Fast Poll completed ok!\n");
+      marcel_lock_release(&__polling_lock);
+      unlock_task();
       return;
     }
   }
 
-  lock_task();
-
   cell.task = marcel_self();
   cell.blocked = TRUE;
   cell.arg = arg;
-
-  marcel_lock_acquire(&__polling_lock);
 
   /* Insertion dans la liste des taches sur le meme id */
   cell.prev = NULL;

@@ -96,7 +96,7 @@ int pm2_main(int argc, char **argv)
 
   marcel_sem_init(&main_sem, 0);
 
-  //  pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
+  // pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
 
   pm2_set_dsm_protocol(&dsmlib_ddm_li_hudak_prot);
 

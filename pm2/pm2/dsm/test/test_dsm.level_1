@@ -28,5 +28,5 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel mad2 ntbx tbx pm2 dsm\" \
 	--marcel=\"mono\" --marcel=\"marcel_main\" \
 	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
-	--all=\"opt\" $_output_redirect
+	--all=\"opt\" --common=\"static\" $_output_redirect
 

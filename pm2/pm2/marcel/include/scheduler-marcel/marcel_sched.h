@@ -66,12 +66,13 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	LOG_IN();
 	INIT_LIST_HEAD(&t->sched.internal.run_list);
 	//t->sched.internal.lwps_runnable=~0UL;
+	t->sched.internal.prio=DEF_PRIO;
 #ifdef MA__LWPS
 	if (attr->vpmask==MARCEL_VPMASK_EMPTY)
 		t->sched.internal.init_rq=&ma_main_runqueue;
 	else if (attr->vpmask==MARCEL_VPMASK_FULL) {
 		t->sched.internal.init_rq=&ma_idle_runqueue;
-		t->sched.internal.prio=MAX_PRIO-1;
+		t->sched.internal.prio=IDLE_PRIO;
 	} else {
 		int first_vp;
 		first_vp=ma_ffz(attr->vpmask);
@@ -79,11 +80,11 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
 		t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
 	}
+	if (attr->rt_thread)
+		t->sched.internal.prio=RT_PRIO;
 	t->sched.internal.cur_rq=NULL;
 #endif
 	t->sched.internal.sched_policy = attr->__schedpolicy;
-#warning RT_TASK à ajuster
-	t->sched.internal.prio=DEF_PRIO;
 	t->sched.internal.array=NULL;
 	LOG_OUT();
 }

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.24  2000/11/03 14:12:29  gantoniu
+Added support for profiling (LOG_IN/LOG_OUT).
+
 Revision 1.23  2000/10/10 13:31:16  gantoniu
 Modified the startup function mechanism to allow functions to get an argument.
 Updated the pm2_sync functions: global (= node-level) barriers are ready !
@@ -90,11 +93,11 @@ ______________________________________________________________________________
 #include "pm2_attr.h"
 #include "pm2_thread.h"
 #include "block_alloc.h"
-//#include "sys/slot_distrib.h"
 #include "pm2_timing.h"
 #include "sys/debug.h"
 #include "pm2_rpc.h"
 #include "isoaddr_attr.h"
+#include "pm2_sync.h"
 
 #ifdef DSM
 #include "dsm_pm2.h"
@@ -236,6 +239,8 @@ typedef block_descr_t isomalloc_dataset_t;
    block_merge_lists(descr, (block_descr_t *) task->key[_pm2_block_key])
 
 void *pm2_malloc(size_t size, isoaddr_attr_t *attr);
+
+void pm2_empty();
 
 /*********************************************************/
 

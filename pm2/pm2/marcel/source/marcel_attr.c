@@ -1,17 +1,32 @@
 
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include "marcel.h"
 
-	/* Déclaré non statique car utilisé dans marcel.c : */
+/* Déclaré non statique car utilisé dans marcel.c : */
 marcel_attr_t marcel_attr_default = {
   DEFAULT_STACK,           /* stack size */
   NULL,                    /* stack base */
   MARCEL_CREATE_JOINABLE,  /* detached */
   0,                       /* user space */
   FALSE,                   /* immediate activation */
-  STD_PRIO,                /* priority */
   1,                       /* not_migratable */
   0,                       /* not_deviatable */
-  MARCEL_SCHED_OTHER       /* scheduling policy */
+  MARCEL_SCHED_OTHER,      /* scheduling policy */
+  MARCEL_CLASS_REGULAR     /* scheduling class */
 };
 
 /* Déclaré dans marcel.c : */
@@ -84,20 +99,6 @@ int marcel_attr_getactivation(marcel_attr_t *attr, boolean *immediate)
   return 0;
 }
 
-int marcel_attr_setprio(marcel_attr_t *attr, unsigned prio)
-{
-   if(prio == 0 || prio > MAX_PRIO)
-      RAISE(CONSTRAINT_ERROR);
-   attr->priority = prio;
-   return 0;
-}
-
-int marcel_attr_getprio(marcel_attr_t *attr, unsigned *prio)
-{
-   *prio = attr->priority;
-   return 0;
-}
-
 int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable)
 {
    attr->not_migratable = (migratable ? 0 : 1 );
@@ -133,3 +134,16 @@ int marcel_attr_getschedpolicy(marcel_attr_t *attr, int *policy)
   *policy = attr->sched_policy;
   return 0;
 }
+
+int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
+{
+  attr->rt_thread = realtime;
+  return 0;
+}
+
+int marcel_attr_getrealtime(marcel_attr_t *attr, boolean *realtime)
+{
+  *realtime = attr->rt_thread;
+  return 0;
+}
+

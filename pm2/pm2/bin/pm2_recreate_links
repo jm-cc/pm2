@@ -145,6 +145,7 @@ echo
 echo Madeleine II
 make_ln ${MAD2_ROOT}/ ../marcel/ARCHITECTURES ARCHITECTURES
 make_ln ${MAD2_ROOT}/ src source
+make_ln ${MAD2_ROOT}/ test examples
 
 # DSM
 echo

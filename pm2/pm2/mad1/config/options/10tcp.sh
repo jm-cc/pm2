@@ -1,3 +1,4 @@
 PM2_PROTOCOLS=tcp
+PM2_LOADER=${PM2_ROOT}/mad1/bin/tcp/madload
 PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -DNET_ARCH="'\"'tcp'\"'
 PM2_MAD1_CFLAGS="$PM2_MAD1_CFLAGS -DNETINTERF_INIT=mad_tcp_netinterf_init"

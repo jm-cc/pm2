@@ -25,9 +25,13 @@
     !defined(DSM_KERNEL) && \
     !defined(MAD1_KERNEL)
 
-#ifdef PM2
-#include "pm2.h"
-#endif /* PM2 */
+#ifdef TBX
+#include "tbx.h"
+#endif /* TBX */
+
+#ifdef NTBX
+#include "ntbx.h"
+#endif /* NTBX */
 
 #ifdef MARCEL
 #include "marcel.h"
@@ -41,13 +45,9 @@
 #include "madeleine.h"
 #endif /* MAD2 */
 
-#ifdef TBX
-#include "tbx.h"
-#endif /* TBX */
-
-#ifdef NTBX
-#include "ntbx.h"
-#endif /* NTBX */
+#ifdef PM2
+#include "pm2.h"
+#endif /* PM2 */
 
 typedef struct {
 #ifdef MAD2

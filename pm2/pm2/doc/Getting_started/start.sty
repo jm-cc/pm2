@@ -18,7 +18,7 @@
     \begin{center}
       \footnotesize
       \begin{boxedminipage}{0.95\textwidth}
-        \message{^^J  -> Including Progs/#1^^J}
+        \message{[Including Progs/#1] }
         \listinginput[5]{1}{Progs/#1}
       \end{boxedminipage}
     \end{center}
@@ -41,7 +41,7 @@
   \internalfigurelisting{#1-2}{#1}{#2 (Part 2/3)}{#3-2}
   }
 
-\def\|#1|{\protect\url{#1}}
+\def\|#1|{{\bf \protect\url{#1}}}
 
 \let\bfseriesaux=\bfseries%
 \def\bfseries{\sffamily\bfseriesaux}%

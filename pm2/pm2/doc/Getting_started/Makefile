@@ -1,5 +1,5 @@
 
-## $Id: Makefile,v 1.1 2001/04/02 09:42:25 bouge Exp $
+## $Id: Makefile,v 1.2 2001/04/02 12:23:42 bouge Exp $
 
 GNUPLOT= gnuplot
 FIG2DEV= fig2dev
@@ -13,7 +13,7 @@ FIG2DEV= fig2dev
 TEXFILES	:= start.tex
 STYFILES	:= start.sty
 
-TO_SPLIT	:= rpc-threads1 migration3 migrate-group dsm dsm1
+TO_SPLIT	:= rpc-threads1 migration3 migrate-group dsm dsm1 dsm2
 
 CFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c)
 CFILES_SPLIT_0	:= $(CFILES_TO_SPLIT:%=%-0) 

@@ -65,7 +65,7 @@ static void dsm_pagefault_handler(int sig, void *addr)
   sigaddset(&signals, MARCEL_TIMER_SIGNAL);
   sigaddset(&signals, SIGSEGV);
   sigprocmask(SIG_UNBLOCK, &signals, NULL);
-      
+
   dsm_lock_page(index);
 
   //call the apropriate handler 

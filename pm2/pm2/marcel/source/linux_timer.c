@@ -339,7 +339,7 @@ int ma_del_timer_sync(struct ma_timer_list *timer)
 del_again:
 	ret += ma_del_timer(timer);
 
-	for_each_lwp(lwp) {
+	for_each_lwp_begin(lwp)
 		base = &ma_per_lwp(tvec_bases, lwp);
 		if (base->running_timer == timer) {
 			while (base->running_timer == timer) {
@@ -348,7 +348,7 @@ del_again:
 			}
 			break;
 		}
-	}
+	for_each_lwp_end()
 	ma_smp_rmb();
 	if (ma_timer_pending(timer))
 		goto del_again;

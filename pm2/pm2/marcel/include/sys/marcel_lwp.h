@@ -202,15 +202,12 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #define IS_FIRST_LWP(lwp)                   (LWP_NUMBER(lwp)==0)
 #define for_all_lwp(lwp) \
    list_for_each_entry(lwp, &list_lwp_head, lwp_list)
-// XXX: (ST) ce n'est pas terrible: 
-// if (blabla)
-//   for_each_lwp(lwp)
-//      machin();
-// va warninger, mais sera au moins correct. Je ne sais pas trop comment faire
-// mieux sans exiger un '}'
-#define for_each_lwp(lwp) \
-   list_for_each_entry(lwp, &list_lwp_head, lwp_list) \
-      if (!ma_lwp_online(lwp)) {} else
+#define for_each_lwp_begin(lwp) \
+   list_for_each_entry(lwp, &list_lwp_head, lwp_list) {\
+      if (ma_lwp_online(lwp)) {
+#define for_each_lwp_end() \
+      } \
+   }
 
 #define lwp_isset(num, map) ma_test_bit(num, &map)
 #define lwp_is_offline(lwp) 0
@@ -231,7 +228,8 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #define IS_FIRST_LWP(lwp)                   (1)
 
 #define for_all_lwp(lwp) lwp=cur_lwp;
-#define for_each_lwp(lwp) for_all_lwp(lwp)
+#define for_each_lwp_begin(lwp) for_all_lwp(lwp) {
+#define for_each_lwp_end() }
 
 #endif
 

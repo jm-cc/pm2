@@ -30,8 +30,8 @@ PROGRAM		:=	$(BIN_DIR)/sigmund_$(PM2_ARCH)_$(PM2_SYS)
 OPTIONS		:=	-g
 
 CC		:=	gcc
-CFLAGS		:=	-O6 -Wall $(shell gtk-config --cflags) $(OPTIONS)
-LDFLAGS		:=	$(shell gtk-config --libs) -lfl
+CFLAGS		:=	-O6 -Wall $(OPTIONS)
+LDFLAGS		:=	 -lfl
 
 ifneq (,$(findstring $(PM2_SYS),"WIN98_SYS_WINNT_SYS_WIN2K_SYS"))
 CFLAGS		+=	-fnative-struct

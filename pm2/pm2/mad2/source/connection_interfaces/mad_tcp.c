@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.27  2000/11/08 08:16:09  oaumage
+*** empty log message ***
+
 Revision 1.26  2000/10/31 16:21:15  oaumage
 - support de communications entre architectures heterogenes avec Mad2/TCP
 - correction de testandset pour Alpha
@@ -160,14 +163,14 @@ typedef struct
 
 typedef struct
 {
-  int connection_socket;
-  int connection_port;
+  int  connection_socket;
+  int  connection_port;
   int *remote_connection_port;
 } mad_tcp_adapter_specific_t, *p_mad_tcp_adapter_specific_t;
 
 typedef struct
 {
-  int max_fds;
+  int    max_fds;
   fd_set read_fds;
 } mad_tcp_channel_specific_t, *p_mad_tcp_channel_specific_t;
 
@@ -224,9 +227,9 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 	      connection_specific = connection->specific;
 
 	      LOG_VAL("Receiving channel id from host", j);
-	      SYSCALL(read(connection_specific->socket, 
+	      ntbx_tcp_read(connection_specific->socket, 
 			   &pack_buffer,
-			   sizeof(ntbx_pack_buffer_t)));
+			   sizeof(ntbx_pack_buffer_t));
 	      channel_id = (mad_channel_id_t)ntbx_unpack_int(&pack_buffer);
 	      LOG_VAL("Received channel id from host", j);
 	      LOG_VAL("Channel id", channel_id);
@@ -238,9 +241,9 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 
 	      LOG_VAL("Writing local host id", configuration->local_host_id);
 	      ntbx_pack_int((int)configuration->local_host_id, &pack_buffer);
-	      SYSCALL(write(connection_specific->socket,
-			    &pack_buffer,
-			    sizeof(ntbx_pack_buffer_t)));	      
+	      ntbx_tcp_write(connection_specific->socket,
+			     &pack_buffer,
+			     sizeof(ntbx_pack_buffer_t));
 	      LOG_VAL("Wrote local host id", configuration->local_host_id);
 	    }
 	}
@@ -255,15 +258,15 @@ mad_tcp_sync_in_channel(p_mad_channel_t channel)
 
 	  LOG_VAL("Writing channel id", channel->id);
 	  ntbx_pack_int((int)channel->id, &pack_buffer);
-	  SYSCALL(write(connection_specific->socket,
-			&pack_buffer,
-			sizeof(ntbx_pack_buffer_t)));
+	  ntbx_tcp_write(connection_specific->socket,
+			 &pack_buffer,
+			 sizeof(ntbx_pack_buffer_t));
 	  LOG_VAL("Wrote channel id", channel->id);
 	      
 	  LOG_VAL("Receiving host id from host", i);
-	  SYSCALL(read(connection_specific->socket,
-		       &pack_buffer,
-		       sizeof(ntbx_pack_buffer_t)));
+	  ntbx_tcp_read(connection_specific->socket,
+			&pack_buffer,
+			sizeof(ntbx_pack_buffer_t));
 	  host_id = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 	  LOG_VAL("Received host id from host", i);
 	  LOG_VAL("Host id", host_id);
@@ -318,15 +321,15 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 
 	      LOG_VAL("Writing channel id", channel->id);
 	      ntbx_pack_int((int)channel->id, &pack_buffer);
-	      SYSCALL(write(connection_specific->socket,
-			    &pack_buffer,
-			    sizeof(ntbx_pack_buffer_t)));
+	      ntbx_tcp_write(connection_specific->socket,
+			     &pack_buffer,
+			     sizeof(ntbx_pack_buffer_t));
 	      LOG_VAL("Wrote channel id", channel->id);	      	  
 
 	      LOG_VAL("Receiving host id from host", j);
-	      SYSCALL(read(connection_specific->socket,
-			   &pack_buffer,
-			   sizeof(ntbx_pack_buffer_t)));
+	      ntbx_tcp_read(connection_specific->socket,
+			    &pack_buffer,
+			    sizeof(ntbx_pack_buffer_t));
 	      host_id = (ntbx_host_id_t)ntbx_unpack_int(&pack_buffer);
 	      LOG_VAL("Received host id from host", j);
 	      LOG_VAL("Host id", host_id);
@@ -347,9 +350,9 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	  connection_specific = connection->specific;
 
 	  LOG_VAL("Receiving channel id from host", i);
-	  SYSCALL(read(connection_specific->socket, 
-		       &pack_buffer,
-		       sizeof(ntbx_pack_buffer_t)));
+	  ntbx_tcp_read(connection_specific->socket, 
+			&pack_buffer,
+			sizeof(ntbx_pack_buffer_t));
 	  channel_id = (mad_channel_id_t)ntbx_unpack_int(&pack_buffer);
 	  LOG_VAL("Received channel id from host", i);
 	  LOG_VAL("Channel id", channel_id);
@@ -361,9 +364,9 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 
 	  LOG_VAL("Writing local host id", configuration->local_host_id);
 	  ntbx_pack_int((int)configuration->local_host_id, &pack_buffer);
-	  SYSCALL(write(connection_specific->socket,
-			&pack_buffer,
-			sizeof(ntbx_pack_buffer_t)));	      
+	  ntbx_tcp_write(connection_specific->socket,
+			 &pack_buffer,
+			 sizeof(ntbx_pack_buffer_t));
 	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 	}
     }
@@ -384,7 +387,13 @@ mad_tcp_write(int              sock,
 					   buffer->bytes_read),
 			     buffer->bytes_written - buffer->bytes_read));
 
-      if (result > 0) buffer->bytes_read += result;
+      if (result > 0)
+	{
+	  buffer->bytes_read += result;
+	}
+      else
+	FAILURE("connection closed");
+      
 #ifdef MARCEL
       if (mad_more_data(buffer)) TBX_YIELD();
 #endif /* MARCEL */
@@ -406,7 +415,13 @@ mad_tcp_read(int              sock,
 				    buffer->bytes_written),
 			    buffer->length - buffer->bytes_written));
 
-      if (result > 0) buffer->bytes_written += result;
+      if (result > 0)
+	{
+	  buffer->bytes_written += result;
+	}
+      else
+	FAILURE("connection closed");
+     
 #ifdef MARCEL
       if (!mad_buffer_full(buffer))
 	{

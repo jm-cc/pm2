@@ -1,4 +1,5 @@
 
+FLAVOR		:= $(shell echo $$PM2_FLAVOR")
 CFLAGS		:= $(shell pm2-config --cflags)
 LDFLAGS		:= $(shell pm2-config --libs)
 CC		:= $(shell pm2-config --cc)
@@ -18,7 +19,7 @@ clean:
 	-./cleanlogs
 
 $(EXEFILES): %: %.c
-	@echo "Compiling $<..."
+	@echo "Compiling $<... for flavor '$(FLAVOR)'"
 	@$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
 
 $(CPPFILES): %.C: %.c

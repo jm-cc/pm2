@@ -132,6 +132,9 @@ $(MAR_OBJ)/daube.o: $(MAR_SRC)/daube.c $(MAR_HEADERS)
 $(MAR_OBJ)/tube.o: $(MAR_SRC)/tube.c $(MAR_HEADERS)
 	$(MAR_CC2)
 
+$(MAR_OBJ)/stack_jump.o: $(MAR_SRC)/stack_jump.c $(MAR_HEADERS)
+	$(MAR_CC2)
+
 # tsp
 $(MAR_OBJ)/tsp-job.o: $(MAR_SRC)/tsp-job.c $(MAR_HEADERS)
 	$(MAR_CC2) -DMT -DMARCEL
@@ -266,6 +269,10 @@ daube: $(MAR_OBJ)/daube.o $(MAR_LIB)
 	$(MAR_MOVE)
 
 tube: $(MAR_OBJ)/tube.o $(MAR_LIB)
+	$(MAR_LINK)
+	$(MAR_MOVE)
+
+stack_jump: $(MAR_OBJ)/stack_jump.o $(MAR_LIB)
 	$(MAR_LINK)
 	$(MAR_MOVE)
 

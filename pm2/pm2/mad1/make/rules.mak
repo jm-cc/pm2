@@ -40,8 +40,6 @@ MAD_KCFLAGS :=  $(MAD_CFLAGS) -DMAD_KERNEL
 MAD_LDFLAGS :=  $(COMMON_LDFLAGS)
 
 # Target subdirectories
-MAD_GEN_OBJ := $(GEN_OBJ)/mad
-MAD_GEN_DEP := $(GEN_DEP)/mad
 ifneq ($(MAKECMDGOALS),distclean)
 DUMMY_BUILD :=  $(shell mkdir -p $(MAD_GEN_DEP))
 DUMMY_BUILD :=  $(shell mkdir -p $(MAD_GEN_OBJ))

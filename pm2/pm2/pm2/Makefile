@@ -34,10 +34,6 @@
 #
 
 LIBRARY=pm2
-#LIBNAME=$(LIBRARY)
-
-#$(LIBRARY)_CC=gcc
-#$(LIBRARY)_AS=gcc
 
 include $(PM2_ROOT)/make/libs-vars.mak
 
@@ -47,9 +43,10 @@ endif
 
 LIB_REP_TO_BUILD += $(LIB_GEN_INC)
 
-COMMON_DEPS += $(LIB_GEN_INC)/dsm_page_size.h 
-
+.PHONY: clean-bin
 clean: clean-bin
+
+dot_h: $(LIB_GEN_INC)/dsm_page_size.h
 
 include $(PM2_ROOT)/make/libs-rules.mak
 

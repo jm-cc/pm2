@@ -16,6 +16,8 @@
 
 #include "pm2.h"
 
+#include "token_lock.h"
+
 extern void DSM_LRPC_READ_PAGE_REQ_func(void);
 extern void DSM_LRPC_WRITE_PAGE_REQ_func(void);
 extern void DSM_LRPC_SEND_PAGE_func(void);
@@ -47,6 +49,11 @@ void dsm_pm2_init_rpc()
   pm2_rawrpc_register(&DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE, DSM_LRPC_SEND_MULTIPLE_PAGES_WRITE_func);
   pm2_rawrpc_register(&DSM_LRPC_SEND_MULTIPLE_DIFFS, DSM_LRPC_SEND_MULTIPLE_DIFFS_func);
   pm2_rawrpc_register(&DSM_LRPC_HBRC_DIFFS, DSM_LRPC_HBRC_DIFFS_func);
+  pm2_rawrpc_register(&TOKEN_LOCK_REQUEST, token_lock_request_server);
+  pm2_rawrpc_register(&TOKEN_LOCK_RECV, token_lock_recv_server);
+  pm2_rawrpc_register(&TOKEN_LOCK_RELEASE_NOTIFICATION, token_lock_recv_release_notification_server);
+  pm2_rawrpc_register(&TOKEN_LOCK_MANAGER_SERVER, token_lock_manager_server);
+
 }
 
 

@@ -90,7 +90,17 @@ connect_processes(p_leonie_t leonie,
 
       TRACE("Incoming connection detected");
       
-      host_name = leo_receive_string(client);
+      {
+	char           *ip_str = NULL;
+	unsigned long   ip     = 0;
+	struct hostent *h      = NULL;
+	
+	ip_str = leo_receive_string(client);
+	ip     = strtoul(ip_str, &host_name, 16);
+	h      = gethostbyaddr((char *)&ip, sizeof(unsigned long), AF_INET);
+	host_name = tbx_strdup(h->h_name);
+	TBX_FREE(ip_str);
+      }
 
       TRACE_STR("process location", host_name);
       TRACE_STR("client remote host", client->remote_host);
@@ -290,6 +300,13 @@ send_directory(p_leonie_t leonie)
 	  
 	  TRACE_STR("Node", dir_node->name);
 	  leo_send_string(client, dir_node->name);
+	  {
+	    char ip_str[11];
+
+	    sprintf(ip_str,"%lx", dir_node->ip);
+	    TRACE_STR("Node IP", ip_str);
+	    leo_send_string(client, ip_str);
+	  }
 	  
 	  if (ntbx_pc_first_global_rank(pc, &global_rank))
 	    {

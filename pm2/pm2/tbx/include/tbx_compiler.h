@@ -155,4 +155,13 @@
         1; \
 })
 
+/* C++ needs to know that types and declarations are C, not C++.  */
+#ifdef  __cplusplus
+# define __TBX_BEGIN_DECLS  extern "C" {
+# define __TBX_END_DECLS    }
+#else
+# define __TBX_BEGIN_DECLS
+# define __TBX_END_DECLS
+#endif
+
 #endif /* TBX_COMPILER_H_EST_DEF */

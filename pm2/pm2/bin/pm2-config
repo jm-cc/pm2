@@ -275,6 +275,14 @@ pm2config_set_vars()
 	    eval export _PM2CONFIG_${_libname}_STAMP_FILE
 	    eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
 	fi
+
+	eval LINK_OTHER='$'PM2_${_LIB}_DO_NOT_LINK_LIB_WITH_OTHERS
+	if [ -z "$LINK_OTHER" ]; then
+	    for LIB in $PM2_COMMON_PM2_SHLIBS; do
+		eval '_PM2CONFIG_'${_lib}'_PM2_SHLIBS="$_PM2CONFIG_'${_lib}'_PM2_SHLIBS "$PM2_'${LIB}'_LIBNAME'
+	    done
+	fi
+	eval export _PM2CONFIG_${_lib}_PM2_SHLIBS
     done
 
     for LIB in $PM2_COMMON_PM2_SHLIBS; do

@@ -147,6 +147,9 @@ mad_leonie_command_init(p_mad_madeleine_t   madeleine,
 			char              **argv);
 
 void
+mad_leonie_command_exit(p_mad_madeleine_t   madeleine);
+
+void
 mad_leonie_print(char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
 
 void

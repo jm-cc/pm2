@@ -126,6 +126,7 @@ EOF
     check)
 	cat <<EOF
 Options for '$2' command 
+  --no-resolution  do not try to find how to remediate to error
   --flavor=""      name of the flavor to check (default: "default")
                    other options are ignored in this case
 
@@ -434,7 +435,7 @@ do_check_depend() {
 	    done
 	done
     done
-    if [ -z "$depend_list" ]; then
+    if [ -z "$depend_list" -o "$check_no_resolution" = true ]; then
 	return 0
     fi
     for mod in $MODULES; do
@@ -475,7 +476,7 @@ do_check_confict() {
 	    fi
 	done
 	lst_opt="`eval echo \\$lst_opt_${mod}`"
-	[ -z "$lst_opt" ] && continue
+	[ -z "$lst_opt" -o "$check_no_resolution" = true ] && continue
 	for opt in $lst_opt; do
 	    for name in `"$PM2_MODULE" option=$opt --module=$mod --conflict`; do
 		value="`eval echo \\$provide_${name}`"
@@ -671,6 +672,9 @@ do_check() {
     do_add
     while test $# -gt 0; do
 	case "$1" in
+	--no-resolution)
+	    check_no_resolution=true
+	    ;;
 	--flavor=*)
 	    set_option "$1" 1 '[_a-zA-Z0-9-]' ""
 	    options=`do_get "$1"`

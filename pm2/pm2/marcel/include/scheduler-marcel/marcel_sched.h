@@ -72,9 +72,7 @@ typedef struct marcel_sched_internal_task marcel_sched_internal_task_t;
 struct marcel_sched_internal_task {
 	struct list_head run_list;              /* List chainée des threads prêts */
 	//unsigned long lwps_runnable;             
-#ifdef MA__LWPS
 	ma_runqueue_t *init_rq;
-#endif
 	ma_runqueue_t *cur_rq;
 	int sched_policy;
 	int prio;
@@ -98,7 +96,6 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	INIT_LIST_HEAD(&t->sched.internal.run_list);
 	//t->sched.internal.lwps_runnable=~0UL;
 	t->sched.internal.prio=attr->sched.prio;
-#ifdef MA__LWPS
 	if (attr->sched.init_rq)
 		t->sched.internal.init_rq=attr->sched.init_rq;
 	else {
@@ -113,13 +110,12 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 			MA_BUG_ON(attr->vpmask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
 			MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
 			if (tbx_unlikely(attr->flags & MA_SF_NORUN)) {
-				t->sched.internal.init_rq=&ma_per_lwp(norun_runqueue,GET_LWP_BY_NUM(first_vp));
+				t->sched.internal.init_rq=ma_norun_rq(GET_LWP_BY_NUM(first_vp));
 			} else {
 				t->sched.internal.init_rq=ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
 			}
 		}
 	}
-#endif
 	if (attr->rt_thread)
 		t->sched.internal.prio=MA_RT_PRIO;
 	t->sched.internal.cur_rq=NULL;
@@ -395,9 +391,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
-#ifdef MA__LWPS
 MA_DECLARE_PER_LWP(ma_runqueue_t *, prev_rq);
-#endif
 
 #section marcel_functions
 

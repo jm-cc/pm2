@@ -174,9 +174,7 @@
 //	return BASE_TIMESLICE(p);
 //}
 
-#ifdef MA__LWPS
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
-#endif
 MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
 
 /*
@@ -642,9 +640,7 @@ void fastcall sched_exit(task_t * p)
 static inline void finish_task_switch(marcel_task_t *prev)
 {
 	ma_runqueue_t *prevrq = ma_prev_rq();
-#ifdef MA__LWPS
 	ma_runqueue_t *rq = ma_this_rq();
-#endif
 //	struct mm_struct *mm = rq->prev_mm;
 	unsigned long prev_task_flags;
 
@@ -666,10 +662,8 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	/* si le lwp change de runqueue, il faut libérer les deux.
 	 * finish_arch_switch s'occupe de la précédente (ou s'en est déjà occupé
 	 * dans prepare_arch_switch) */
-#ifdef MA__LWPS
 	if (rq && prevrq!=rq)
 		_ma_raw_spin_unlock(&rq->lock);
-#endif
 	finish_arch_switch(prevrq, prev);
 //	if (mm)
 //		mmdrop(mm);
@@ -712,9 +706,7 @@ static inline marcel_task_t * context_switch(ma_runqueue_t *rq, marcel_task_t *p
 //	}
 
 	/* Here we just switch the register state and the stack. */
-#ifdef MA__LWPS
 	__ma_get_lwp_var(prev_rq)=rq;
-#endif
 	prev=marcel_switch_to(prev, next);//switch_to(prev, next, prev);
 
 	return prev;
@@ -2801,6 +2793,7 @@ EXPORT_SYMBOL(kernel_flag);
 static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
 	LOG_IN();
+	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	init_rq(ma_lwp_rq(lwp));
 	init_rq(&ma_per_lwp(norun_runqueue,lwp));

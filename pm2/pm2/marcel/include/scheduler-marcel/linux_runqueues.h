@@ -115,17 +115,14 @@ ma_runqueue_t ma_norun_runqueue;
 // ceci n'a plus de sens:
 //#define task_rq(p)		lwp_rq(ma_task_lwp(p))
 #define ma_task_cur_rq(p)	((p)->sched.internal.cur_rq)
+#define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
+#define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
+#define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
-#define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
-#define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
-#define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
 #define ma_norun_rq(lwp)	(&ma_per_lwp(norun_runqueue, (lwp)))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
-#define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_norun_runqueue)
-#define ma_this_rq()		(&ma_main_runqueue)
-#define ma_prev_rq()		(&ma_main_runqueue)
 #define ma_norun_rq(lwp)	(&ma_norun_runqueue)
 #endif
 #define ma_lwp_curr(lwp)	(ma_lwp_rq(lwp)->curr) //ma_per_lwp(current_thread, lwp))
@@ -163,11 +160,8 @@ static inline void nr_running_dec(ma_runqueue_t *rq)
  * explicitly disabling preemption.
  */
 #section marcel_functions
-#ifdef MA__LWPS
 static inline ma_runqueue_t *task_rq(marcel_task_t *p);
-#endif
 #section marcel_inline
-#ifdef MA__LWPS
 static inline ma_runqueue_t *task_rq(marcel_task_t *p)
 {
 	ma_runqueue_t *rq;
@@ -177,9 +171,6 @@ static inline ma_runqueue_t *task_rq(marcel_task_t *p)
 	return p->sched.internal.init_rq;
 
 }
-#else
-#define task_rq(p) (&ma_main_runqueue)
-#endif
 
 #section marcel_functions
 static inline ma_runqueue_t *task_rq_lock(marcel_task_t *p);

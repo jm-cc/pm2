@@ -42,7 +42,7 @@ include $(PM2_ROOT)/make/common-rules.mak
 
 .PHONY: all clean distclean examples
 all clean distclean examples:
-	@set -e;\
+	$(COMMON_HIDE) set -e;\
 	for rep in $(SUBDIR); do \
 		$(MAKE) -C $$rep $@; \
 	done
@@ -54,7 +54,7 @@ examples:
 SUBDIRSLASH := $(foreach DIR, $(SUBDIR), $(DIR)/)
 .PHONY: $(SUBDIR) $(SUBDIRSLASH)
 $(SUBDIR) $(SUBDIRSLASH):
-	@$(MAKE) -C $@ examples
+	$(COMMON_HIDE) $(MAKE) -C $@ examples
 
 .PHONY: help bannerhelpapps targethelpapps
 help: globalhelp

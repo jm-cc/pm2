@@ -34,6 +34,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Just in case MARCEL_ROOT is not defined
+MARCEL_ROOT=${MARCEL_ROOT-${PM2_ROOT}/mad1}
+export MARCEL_ROOT
+
 if test $# -gt 0
 then
     ARCH=$*

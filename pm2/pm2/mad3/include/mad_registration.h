@@ -55,6 +55,10 @@ typedef enum
   mad_BIP,
 #endif // DRV_BIP
 
+#ifdef DRV_GM
+  mad_GM,
+#endif // DRV_GM
+
 #ifdef MARCEL
   mad_FORWARD,
 #endif // MARCEL

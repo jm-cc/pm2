@@ -304,17 +304,6 @@ if [ -z "$libs" ]; then
 fi
 
 ##########################################################################
-# traitement de la configuration des modules
-
-# Postconfiguration
-for mod in $PM2_LIBS " "; do
-    MOD=`echo $mod | tr [a-z] [A-Z]`
-    if [ "`eval echo \\$PM2_${MOD}_POST_CONF`" = true ]; then
-	eval PM2_${MOD}_POST_CONF_FUNC
-    fi
-done
-
-##########################################################################
 # CFLAGS et LDFLAGS...
 the_flags="-D${PM2_ARCH} -D${PM2_SYS} $PM2_COMMON_CFLAGS_KERNEL $PM2_COMMON_LIBS"
 

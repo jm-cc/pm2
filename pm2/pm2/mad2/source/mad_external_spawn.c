@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_external_spawn.c,v $
+Revision 1.5  2000/06/18 13:23:33  oaumage
+- Correction de l'appel a mad_managers_init
+
 Revision 1.4  2000/06/16 13:47:47  oaumage
 - Mise a jour des routines d'initialisation de Madeleine II
 - Progression du code de mad_leonie_spawn.c
@@ -197,7 +200,7 @@ mad_init(
   
   madeleine->nb_channel = 0;
   TBX_INIT_SHARED(madeleine);
-  mad_managers_init();
+  mad_managers_init(argc, argv);
   mad_driver_fill(madeleine);
   mad_adapter_fill(madeleine, adapter_set);  
 

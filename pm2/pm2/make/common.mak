@@ -69,10 +69,10 @@
 # MADELEINE too.
 #
 
-GLOBAL_OPTIONS	=	-Wall -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
+GLOBAL_OPTIONS	=	-Wall -g # -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
-MAD2            =       no
+MAD2            =       yes
 TOOLBOX         =       no
 DSM		=	no
 

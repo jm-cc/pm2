@@ -150,7 +150,7 @@ mad_slave_spawn(p_mad_madeleine_t   madeleine,
 		  settings->configuration_file,
 		  arg_str);
 	}
-	    
+
       LOG_STR("mad_init: Spawn", cmd);
 
       system(cmd);

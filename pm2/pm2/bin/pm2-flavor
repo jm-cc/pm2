@@ -565,8 +565,8 @@ do_set() {
     if [ -z "$flavor" ]; then
 	flavor=${PM2_FLAVOR:-default}
     fi
-    if [ -z "$builddir" -a "$flavor" != default ]; then
-	builddir="$flavor"
+    if [ -z "$builddir" ]; then
+	builddir='$flavor'
     fi
 
     if [ -f "${PM2_ROOT}/flavors/$flavor" ]; then

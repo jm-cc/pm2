@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_io.c,v $
+Revision 1.13  2000/08/29 13:27:29  rnamyst
+Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
+
 Revision 1.12  2000/06/09 18:08:17  vdanjean
 integrating MARCEL_POLL_AT_YIELD
 
@@ -234,7 +237,7 @@ static void *unix_io_poll(marcel_pollid_t id,
   return MARCEL_POLL_FAILED;
 }
 
-static void *unix_io_fast_poll(marcel_pollid_t id, any_t arg)
+static void *unix_io_fast_poll(marcel_pollid_t id, any_t arg, boolean first_call)
 {
   unix_io_arg_t *myarg = (unix_io_arg_t *)arg;
   fd_set rfds, wfds;

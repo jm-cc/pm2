@@ -43,7 +43,15 @@ case $1 in
     *) command=`pwd`/$*
 esac
 
-set `cat ${MAD1_ROOT}/.madconf`
+PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
+
+[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
+
+PM2_CONF_FILE=${PM2_CONF_DIR}/.pm2conf
+
+[ -f ${PM2_CONF_FILE} ] || error "Error: conf file not found -> use pm2conf."
+
+set `cat ${PM2_CONF_FILE}`
 
 chaine=""
 for i in $*

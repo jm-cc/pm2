@@ -63,3 +63,32 @@ int marcel_fprintf(FILE *stream, char *format, ...)
   return retour;
 }
 
+int marcel_sprintf(char *string, char *format, ...)
+ {
+  static va_list args;
+  int retour;
+
+  io_lock();
+
+  va_start(args, format);
+  retour = vsprintf(string, format, args);
+  va_end(args);
+
+  io_unlock();
+  return retour;
+} 
+  
+int marcel_snprintf(char *string, size_t size, char *format, ...)
+ {
+  static va_list args;
+  int retour;
+
+  io_lock();
+
+  va_start(args, format);
+  retour = vsnprintf(string, size, format, args);
+  va_end(args);
+
+  io_unlock();
+  return retour;
+} 

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.h,v $
+Revision 1.6  2000/03/06 14:55:44  rnamyst
+Modified to include "marcel_flags.h".
+
 Revision 1.5  2000/03/01 16:45:23  oaumage
 - suppression des warnings en compilation  -g
 
@@ -50,6 +53,7 @@ ______________________________________________________________________________
 #ifndef MARCEL_SCHED_EST_DEF
 #define MARCEL_SCHED_EST_DEF
 
+#include "sys/marcel_flags.h"
 
 /* ==== Starting and Shuting down the scheduler ==== */
 
@@ -208,6 +212,7 @@ static __inline__ void lock_task()
 {
 #ifdef SMP
   atomic_inc(&marcel_self()->lwp->_locked);
+  /* NDR: vincent, je pense qu'il suffit de supprimer le cas suivant... */
 #elif defined(__ACT__)
   marcel_t self=marcel_self();
   if (! self->marcel_lock) {
@@ -224,6 +229,7 @@ static __inline__ void unlock_task()
 {
 #ifdef SMP
   atomic_dec(&marcel_self()->lwp->_locked);
+  /* NDR: vincent, je pense qu'il suffit de supprimer le cas suivant... */
 #elif defined(__ACT__)
   marcel_t self=marcel_self();
   self->marcel_lock--;  
@@ -240,6 +246,7 @@ static __inline__ int locked()
 {
 #ifdef SMP
   return atomic_read(&marcel_self()->lwp->_locked);
+  /* NDR: vincent, je pense qu'il suffit de supprimer le cas suivant... */
 #elif defined(__ACT__)
   return marcel_self()->marcel_lock;
 #else

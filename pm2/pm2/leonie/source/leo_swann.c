@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: leo_swann.c,v $
+Revision 1.3  2000/05/18 11:34:18  oaumage
+- remplacement des types `tableau' par des types `structure de tableau'
+  par securite
+
 Revision 1.2  2000/05/17 12:41:00  oaumage
 - reorganisation du code de demarrage de Leonie
 
@@ -98,7 +102,7 @@ leo_launch_swann_module(p_leonie_t             leonie,
 	  "rsh %s swann -id %d -cnx %s -master %s &",
 	  cluster_id,
 	  module->id,
-	  leonie->net_server->connection_data,
+	  leonie->net_server->connection_data.data,
 	  module->net_client->local_host);
   DISP("Launching swann module: %s", cmd);
   system(cmd);

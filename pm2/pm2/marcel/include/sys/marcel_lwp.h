@@ -32,7 +32,6 @@ struct marcel_lwp {
 #ifdef MA__SMP
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
-	unsigned long per_lwp_offset;
 #endif
 };
 

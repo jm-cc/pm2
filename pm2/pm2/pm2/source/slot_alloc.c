@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: slot_alloc.c,v $
+Revision 1.5  2000/11/03 14:12:31  gantoniu
+Added support for profiling (LOG_IN/LOG_OUT).
+
 Revision 1.4  2000/09/12 15:45:53  gantoniu
 Made all necessary modifications to allow flavors without dsm be created and compiled.
 
@@ -179,6 +182,8 @@ void slot_print_list(slot_descr_t *descr)
 
 void slot_init_list(slot_descr_t *descr)
 {
+  LOG_IN();
+
   descr->slots = NULL;
   descr->last_slot = NULL;
 #ifdef ASSERT
@@ -187,6 +192,8 @@ void slot_init_list(slot_descr_t *descr)
 #ifdef ISOADDR_SLOT_ALLOC_TRACE
   fprintf(stderr,"slot_list initialized: list address = %p\n", descr);
 #endif
+  
+  LOG_OUT();
 }
 
 
@@ -200,6 +207,8 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
 #else
   static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 0, 1, 32};
 #endif
+
+  LOG_IN();
 
 #ifdef ISOADDR_SLOT_ALLOC_TRACE
   fprintf(stderr,"Slot_alloc is starting, req_size = %d\n", req_size);
@@ -261,6 +270,8 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
   fprintf(stderr,"Slot_alloc is ending\n");
 #endif
 
+  LOG_OUT();
+
   return (void *)((char *)header_ptr + SLOT_HEADER_SIZE);
 }
 
@@ -269,19 +280,25 @@ void *slot_general_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_s
 {
   void *ptr;
 
+  LOG_IN();
+
 #ifdef ISOADDR_SLOT_ALLOC_TRACE
   fprintf(stderr,"slot_general_alloc is starting, req_size = %d, task = %p\n", req_size, marcel_self());
 #endif
 // slot_lock();
  ptr =  slot_alloc(descr, req_size, granted_size, addr, attr);
 // slot_unlock();
- return ptr;
+
+  LOG_OUT();
+  return ptr;
 }
 
 
 void slot_free(slot_descr_t *descr, void * addr)
 {
   slot_header_t * header_ptr; 
+
+ LOG_IN();
 
 #ifdef ISOADDR_SLOT_ALLOC_TRACE
   fprintf(stderr,"Slot_free is starting\n");
@@ -339,12 +356,15 @@ void slot_free(slot_descr_t *descr, void * addr)
 #endif
 // slot_unlock();
 
+  LOG_OUT();
 }
 
 
 void slot_flush_list(slot_descr_t *descr)
 {
   slot_header_t *slot_ptr, *current_slot;
+
+  LOG_IN();
 
 #ifdef ISOADDR_SLOT_ALLOC_TRACE
   fprintf(stderr, "slot_flush_list is starting...\n");
@@ -378,6 +398,8 @@ void slot_flush_list(slot_descr_t *descr)
   fprintf(stderr, "Slot_flush_list is ending...\n");
 #endif
 //  slot_unlock();
+
+  LOG_OUT();
 }
 
 #ifndef ISOMALLOC_USE_MACROS

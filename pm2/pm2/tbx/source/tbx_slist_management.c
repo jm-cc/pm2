@@ -1,9 +1,9 @@
 /*! \file tbx_slist_management.c
  *  \brief TBX double-linked search list management routines
  *
- *  This file contains the TBX double-linked multi-purpose search list 
+ *  This file contains the TBX double-linked multi-purpose search list
  *  management functions.
- * 
+ *
  */
 
 /*
@@ -28,7 +28,7 @@
 
 #include "tbx.h"
 
-/* 
+/*
  *  Macros
  * ___________________________________________________________________________
  */
@@ -161,7 +161,7 @@ __tbx_slist_free_element(p_tbx_slist_t         slist,
 
   LOG_IN();
   object = element->object;
-  
+
   if (!element->previous)
     {
       slist->head = element->next;
@@ -171,12 +171,12 @@ __tbx_slist_free_element(p_tbx_slist_t         slist,
     {
       slist->tail = element->previous;
     }
-      
+
   if (element->previous)
     {
       element->previous->next = element->next;
     }
-  
+
   if (element->next)
     {
       element->next->previous = element->previous;
@@ -190,19 +190,19 @@ __tbx_slist_free_element(p_tbx_slist_t         slist,
   if (slist->nref_head)
     {
       p_tbx_slist_nref_t nref = slist->nref_head;
-      
+
       do
 	{
 	  if (nref->element == element)
 	    {
 	      nref->element = NULL;
 	    }
-	  
+
 	  nref = nref->next;
 	}
       while (nref);
     }
-  
+
   element->previous = NULL;
   element->next     = NULL;
   element->object   = NULL;
@@ -222,7 +222,7 @@ tbx_slist_length_t
 tbx_slist_get_length(p_tbx_slist_t slist)
 {
   tbx_slist_length_t length = -1;
-  
+
   LOG_IN();
   length = slist->length;
   LOG_OUT();
@@ -239,7 +239,7 @@ tbx_bool_t
 tbx_slist_is_nil(p_tbx_slist_t slist)
 {
   tbx_bool_t test = tbx_false;
-  
+
   LOG_IN();
   test = (slist->length == 0);
   LOG_OUT();
@@ -252,7 +252,7 @@ tbx_slist_is_nil(p_tbx_slist_t slist)
  * Duplicate a list
  * ----------------
  */
-static 
+static
 void *
 __tbx_slist_default_dup(void *object)
 {
@@ -285,7 +285,7 @@ tbx_slist_dup_ext(const p_tbx_slist_t    source,
 	}
 
       ptr = source->head;
-      
+
       object            = dfunc(ptr->object);
       destination->head = tbx_slist_alloc_element(object);
       destination->tail = destination->head;
@@ -296,13 +296,13 @@ tbx_slist_dup_ext(const p_tbx_slist_t    source,
 	{
 	  object                            = dfunc(ptr->object);
 	  destination->tail->next           = tbx_slist_alloc_element(object);
-	  destination->tail->next->previous = destination->tail;	  
+	  destination->tail->next->previous = destination->tail;
 	  destination->tail                 = destination->tail->next;
 	  ptr = ptr->next;
 	}
 
       destination->length = source->length;
-    }  
+    }
 
   LOG_OUT();
   return destination;
@@ -336,7 +336,7 @@ tbx_slist_add_at_head(p_tbx_slist_t  slist,
       slist->head = slist->head->previous;
     }
 
-  slist->length++;  
+  slist->length++;
   LOG_OUT();
 }
 
@@ -355,7 +355,7 @@ tbx_slist_add_at_tail(p_tbx_slist_t  slist,
       slist->tail->next = tbx_slist_alloc_element(object);
       slist->tail->next->previous = slist->tail;
       slist->tail = slist->tail->next;
-    }  
+    }
 
   slist->length++;
   LOG_OUT();
@@ -369,9 +369,9 @@ tbx_slist_remove_from_head(p_tbx_slist_t slist)
     {
       p_tbx_slist_element_t  element = slist->head;
       void                  *object  = NULL;
-      
+
       object = __tbx_slist_free_element(slist, element);
-      
+
       LOG_OUT();
       return object;
     }
@@ -387,9 +387,9 @@ tbx_slist_remove_from_tail(p_tbx_slist_t slist)
     {
       p_tbx_slist_element_t  element = slist->tail;
       void                  *object  = NULL;
-      
+
       object = __tbx_slist_free_element(slist, element);
-      
+
       LOG_OUT();
       return object;
     }
@@ -418,7 +418,7 @@ void *
 tbx_slist_dequeue(p_tbx_slist_t slist)
 {
   void *object;
-  
+
   LOG_IN();
   object = tbx_slist_remove_from_tail(slist);
   LOG_OUT();
@@ -439,7 +439,7 @@ tbx_slist_push(p_tbx_slist_t  slist,
 {
   LOG_IN();
   tbx_slist_add_at_tail(slist, object);
-  LOG_OUT();  
+  LOG_OUT();
 }
 
 /* Remove the element at the tail of the list */
@@ -447,7 +447,7 @@ void *
 tbx_slist_pop(p_tbx_slist_t slist)
 {
   void *object;
-  
+
   LOG_IN();
   object = tbx_slist_remove_from_tail(slist);
   LOG_OUT();
@@ -456,7 +456,7 @@ tbx_slist_pop(p_tbx_slist_t slist)
 }
 
 
-/* 
+/*
  * File access functions
  * ---------------------
  */
@@ -467,7 +467,7 @@ tbx_slist_append(p_tbx_slist_t slist, void *object)
 {
   LOG_IN();
   tbx_slist_add_at_tail(slist, object);
-  LOG_OUT();  
+  LOG_OUT();
 }
 
 /* Remove an element at the head of the list */
@@ -475,16 +475,16 @@ void *
 tbx_slist_extract(p_tbx_slist_t slist)
 {
   void *object;
-  
+
   LOG_IN();
   object = tbx_slist_remove_from_head(slist);
   LOG_OUT();
 
-  return object;  
+  return object;
 }
 
 /*
- * Concatenation functions 
+ * Concatenation functions
  * -----------------------
  */
 p_tbx_slist_t
@@ -512,7 +512,7 @@ __tbx_slist_merge_before_and_free(p_tbx_slist_t destination,
       *destination = *source;
       goto end;
     }
-  
+
   if (destination->head)
     {
       destination->head->previous = source->tail;
@@ -542,7 +542,7 @@ __tbx_slist_merge_after_and_free(p_tbx_slist_t destination,
       *destination = *source;
       goto end;
     }
-  
+
   if (source->head)
     {
       source->head->previous = destination->tail;
@@ -569,7 +569,7 @@ tbx_slist_merge_before_ext(p_tbx_slist_t          destination,
   LOG_IN();
   if (tbx_slist_is_nil(source))
     goto end;
-  
+
   source = tbx_slist_dup_ext(source, dfunc);
   __tbx_slist_merge_before_and_free(destination, source);
 
@@ -585,7 +585,7 @@ tbx_slist_merge_after_ext(p_tbx_slist_t          destination,
   LOG_IN();
   if (tbx_slist_is_nil(source))
     goto end;
-  
+
   source = tbx_slist_dup_ext(source, dfunc);
   __tbx_slist_merge_after_and_free(destination, source);
 
@@ -613,7 +613,7 @@ tbx_slist_merge_before(p_tbx_slist_t destination,
   LOG_IN();
   if (tbx_slist_is_nil(source))
     goto end;
-  
+
   source = tbx_slist_dup(source);
   __tbx_slist_merge_before_and_free(destination, source);
 
@@ -628,7 +628,7 @@ tbx_slist_merge_after(p_tbx_slist_t destination,
   LOG_IN();
   if (tbx_slist_is_nil(source))
     goto end;
-  
+
   source = tbx_slist_dup(source);
   __tbx_slist_merge_after_and_free(destination, source);
 
@@ -661,11 +661,11 @@ tbx_slist_reverse_list(p_tbx_slist_t slist)
   ptr         = slist->head;
   slist->head = slist->tail;
   slist->tail = ptr;
-  
+
   while (ptr)
     {
       void *temp = NULL;
-      
+
       temp          = ptr->next;
       ptr->next     = ptr->previous;
       ptr->previous = temp;
@@ -679,12 +679,12 @@ p_tbx_slist_t
 tbx_slist_reverse(p_tbx_slist_t source)
 {
   p_tbx_slist_t destination = NULL;
-  
+
   LOG_IN();
   destination = tbx_slist_dup(source);
   tbx_slist_reverse_list(destination);
   LOG_OUT();
-  
+
   return destination;
 }
 
@@ -701,7 +701,7 @@ tbx_slist_index_get(p_tbx_slist_t     slist,
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t  element = NULL;
-      
+
       element = slist->head;
 
       while (element)
@@ -728,7 +728,7 @@ tbx_slist_index_get(p_tbx_slist_t     slist,
     FAILURE("empty list");
 }
 
-static 
+static
 p_tbx_slist_element_t
 __tbx_slist_index_get_element(p_tbx_slist_t     slist,
 			      tbx_slist_index_t idx)
@@ -750,7 +750,7 @@ __tbx_slist_index_get_element(p_tbx_slist_t     slist,
 	  break;
 	}
     }
-  
+
   LOG_OUT();
 
   return element;
@@ -765,14 +765,14 @@ tbx_slist_index_extract(p_tbx_slist_t     slist,
 
   LOG_IN();
   element = __tbx_slist_index_get_element(slist, idx);
-  
+
   if (element)
     {
       object = __tbx_slist_free_element(slist, element);
     }
   else
     FAILURE("out-of-bound index");
-      
+
   LOG_OUT();
 
   return object;
@@ -787,7 +787,7 @@ tbx_slist_index_set_ref(p_tbx_slist_t     slist,
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t element = NULL;
-      
+
       element = slist->head;
 
       while (element)
@@ -824,7 +824,7 @@ tbx_slist_index_set_nref(p_tbx_slist_nref_t nref,
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t element = NULL;
-      
+
       element = slist->head;
 
       while (element)
@@ -873,23 +873,23 @@ tbx_slist_search_get_index(p_tbx_slist_t              slist,
 			   void                      *object)
 {
   tbx_slist_index_t idx = 0;
-  
+
   LOG_IN();
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t ptr = NULL;
-      
+
       sfunc = (sfunc)?:__tbx_slist_default_search;
       ptr   = slist->head;
-      
+
       while (ptr)
 	{
 	  if (sfunc(object, ptr->object))
 	    goto end;
-	  
+
 	  idx++;
 	  ptr = ptr->next;
-	} 
+	}
     }
   else
     FAILURE("empty list");
@@ -913,10 +913,10 @@ tbx_slist_search_and_extract(p_tbx_slist_t              slist,
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t element = NULL;
-      
-      sfunc   = (sfunc)?:__tbx_slist_default_search;      
+
+      sfunc   = (sfunc)?:__tbx_slist_default_search;
       element = slist->head;
-      
+
       while (element)
 	{
 	  if (sfunc(object, element->object))
@@ -926,7 +926,7 @@ tbx_slist_search_and_extract(p_tbx_slist_t              slist,
 	    }
 
 	  element = element->next;
-	} 
+	}
     }
   else
     FAILURE("empty list");
@@ -947,9 +947,9 @@ tbx_slist_search_forward_set_ref(p_tbx_slist_t              slist,
   LOG_IN();
   if (!tbx_slist_is_nil(slist))
     {
-      sfunc      = (sfunc)?:__tbx_slist_default_search;      
+      sfunc      = (sfunc)?:__tbx_slist_default_search;
       slist->ref = slist->head;
-      
+
       while (slist->ref)
 	{
 	  if (sfunc(object, slist->ref->object))
@@ -959,7 +959,7 @@ tbx_slist_search_forward_set_ref(p_tbx_slist_t              slist,
 	    }
 
 	  slist->ref = slist->ref->next;
-	} 
+	}
     }
   else
     FAILURE("empty list");
@@ -983,7 +983,7 @@ tbx_slist_search_backward_set_ref(p_tbx_slist_t              slist,
     {
       sfunc      = (sfunc)?:__tbx_slist_default_search;
       slist->ref = slist->tail;
-      
+
       while (slist->ref)
 	{
 	  if (sfunc(object, slist->ref->object))
@@ -993,7 +993,7 @@ tbx_slist_search_backward_set_ref(p_tbx_slist_t              slist,
 	    }
 
 	  slist->ref = slist->ref->previous;
-	} 
+	}
     }
   else
     FAILURE("empty list");
@@ -1017,7 +1017,7 @@ tbx_slist_search_next_set_ref(p_tbx_slist_t              slist,
       if (!tbx_slist_is_nil(slist))
 	{
 	  sfunc = (sfunc)?:__tbx_slist_default_search;
-	  
+
 	  while (slist->ref)
 	    {
 	      if (sfunc(object, slist->ref->object))
@@ -1027,7 +1027,7 @@ tbx_slist_search_next_set_ref(p_tbx_slist_t              slist,
 		}
 
 	      slist->ref = slist->ref->next;
-	    } 
+	    }
 	}
       else
 	FAILURE("empty list");
@@ -1053,9 +1053,9 @@ tbx_slist_search_previous_set_ref(p_tbx_slist_t              slist,
   if (slist->ref)
     {
       if (!tbx_slist_is_nil(slist))
-	{      
+	{
 	  sfunc = (sfunc)?:__tbx_slist_default_search;
-      
+
 	  while (slist->ref)
 	    {
 	      if (sfunc(object, slist->ref->object))
@@ -1065,7 +1065,7 @@ tbx_slist_search_previous_set_ref(p_tbx_slist_t              slist,
 		}
 
 	      slist->ref = slist->ref->previous;
-	    } 
+	    }
 	}
       else
 	FAILURE("empty list");
@@ -1089,14 +1089,14 @@ tbx_slist_search_forward_set_nref(p_tbx_slist_nref_t         nref,
 
   LOG_IN();
   slist = nref->slist;
-  
+
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t nref_element = NULL;
 
       sfunc        = (sfunc)?:__tbx_slist_default_search;
       nref_element = slist->head;
-      
+
       while (nref_element)
 	{
 	  if (sfunc(object, nref_element->object))
@@ -1107,7 +1107,7 @@ tbx_slist_search_forward_set_nref(p_tbx_slist_nref_t         nref,
 	    }
 
 	  nref_element = nref_element->next;
-	} 
+	}
     }
   else
     FAILURE("empty list");
@@ -1129,14 +1129,14 @@ tbx_slist_search_backward_set_nref(p_tbx_slist_nref_t         nref,
 
   LOG_IN();
   slist = nref->slist;
-  
+
   if (!tbx_slist_is_nil(slist))
     {
       p_tbx_slist_element_t nref_element = NULL;
 
       sfunc        = (sfunc)?:__tbx_slist_default_search;
       nref_element = slist->tail;
-      
+
       while (nref_element)
 	{
 	  if (sfunc(object, nref_element->object))
@@ -1147,7 +1147,7 @@ tbx_slist_search_backward_set_nref(p_tbx_slist_nref_t         nref,
 	    }
 
 	  nref_element = nref_element->previous;
-	} 
+	}
     }
   else
     FAILURE("empty list");
@@ -1170,7 +1170,7 @@ tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
   LOG_IN();
   slist        = nref->slist;
   nref_element = nref->element;
-  
+
   if (nref_element)
     {
       if (!tbx_slist_is_nil(slist))
@@ -1187,7 +1187,7 @@ tbx_slist_search_next_set_nref(p_tbx_slist_nref_t         nref,
 		}
 
 	      nref_element = nref_element->next;
-	    } 
+	    }
 	}
       else
 	FAILURE("empty list");
@@ -1214,7 +1214,7 @@ tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
   LOG_IN();
   slist        = nref->slist;
   nref_element = nref->element;
-  
+
   if (nref_element)
     {
       if (!tbx_slist_is_nil(slist))
@@ -1231,7 +1231,7 @@ tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
 		}
 
 	      nref_element = nref_element->previous;
-	    } 
+	    }
 	}
       else
 	FAILURE("empty list");
@@ -1361,7 +1361,7 @@ tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 	      offset--;
 	      slist->ref = slist->ref->next;
 	    }
-	  
+
 	  result = (slist->ref != NULL);
 	}
       else
@@ -1390,7 +1390,7 @@ tbx_slist_ref_step_backward(p_tbx_slist_t        slist,
 	      offset--;
 	      slist->ref = slist->ref->previous;
 	    }
-	  
+
 	  result = (slist->ref != NULL);
 	}
       else
@@ -1462,7 +1462,7 @@ tbx_slist_nref_free(p_tbx_slist_nref_t nref)
 
   LOG_IN();
   slist = nref->slist;
-  
+
   if (slist->nref_head == nref)
     {
       slist->nref_head = nref->next;
@@ -1476,7 +1476,7 @@ tbx_slist_nref_free(p_tbx_slist_nref_t nref)
     {
       nref->next->previous = nref->previous;
     }
-  
+
   nref->element  = NULL;
   nref->previous = NULL;
   nref->next     = NULL;
@@ -1604,7 +1604,7 @@ tbx_slist_nref_step_forward(p_tbx_slist_nref_t   nref,
 	      offset--;
 	      nref->element = nref->element->next;
 	    }
-	  
+
 	  result = (nref->element != NULL);
 	}
       else
@@ -1633,7 +1633,7 @@ tbx_slist_nref_step_backward(p_tbx_slist_nref_t   nref,
 	      offset--;
 	      nref->element = nref->element->previous;
 	    }
-	  
+
 	  result = (nref->element != NULL);
 	}
       else

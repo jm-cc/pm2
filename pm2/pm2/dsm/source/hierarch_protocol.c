@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_protocol.c,v 1.10 2002/10/27 17:11:37 slacour Exp $
+ * CVS Id: $Id: hierarch_protocol.c,v 1.11 2002/10/28 17:44:59 slacour Exp $
  */
 
 /* Sebastien Lacour, Paris Research Group, IRISA / INRIA, May 2002 */
@@ -1175,10 +1175,12 @@ hierarch_proto_acquire_func (const token_lock_id_t lck_id)
    marcel_mutex_unlock(&pend_inval_lock);
    marcel_mutex_unlock(&modif_list_lock);
 
-   /* the token lock can't be acquired when local invalidations are
-    * expected; but it can be acquired while remote invalidations are
-    * expected due to partial unlock. */
    assert ( token_elem->expected_local_invalidations == 0 );
+   /* the token lock can be acquired when local invalidations are
+    * expected because the acquire consistency function does not wait
+    * for the local invalidation ACKs to arrive; and it can be
+    * acquired while remote invalidations are expected due to partial
+    * unlock. */
 
    TRACE("waiting for %d diff acks, lck=%d", diff_number, lck_id);
 

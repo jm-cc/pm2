@@ -680,7 +680,12 @@ ntbx_true_name(char *host_name)
       host_entry = gethostbyname(host_name);
 
       if (!host_entry)
-	ERROR("gethostbyname");
+	{
+	  pm2debug_flush();
+	  pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", "gethostbyname", hstrerror(h_errno));
+	  __TBX_PRINT_TRACE();
+	  _TBX_EXIT_FAILURE();
+	}
 
       result = tbx_strdup(host_entry->h_name);
       TBX_FREE(host_name);
@@ -690,7 +695,12 @@ ntbx_true_name(char *host_name)
       host_entry = gethostbyname(host_name);
 
       if (!host_entry)
-	ERROR("gethostbyname");
+	{
+	  pm2debug_flush();
+	  pm2fulldebug("FAILURE: " FAILURE_CONTEXT "%s: %s\n\n", "gethostbyname", hstrerror(h_errno));
+	  __TBX_PRINT_TRACE();
+	  _TBX_EXIT_FAILURE();
+	}
 
       result = tbx_strdup(host_entry->h_name);
     }

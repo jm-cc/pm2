@@ -73,6 +73,7 @@ GLOBAL_OPTIONS	=	-Wall -O6 #-DMAR_TRACE #-DSTANDARD_MAIN -g -DUSE_SAFE_MALLOC
 
 SMP		=	no
 TOOLBOX         =       no
+NETTOOLBOX      =       no
 DSM		=	no
 
 OPTIONS		=	#-DMIGRATE_IN_HEADER # -DPM2_TIMING
@@ -99,7 +100,8 @@ endif
 include $(PM2_ROOT)/make/mad.mak
 
 ifeq ($(MAD2),yes)
-TOOLBOX = yes
+TOOLBOX    = yes
+NETTOOLBOX = yes
 PM2_FLAGS += -DMAD2
 else
 PM2_FLAGS += -DMAD1
@@ -107,6 +109,10 @@ endif
 
 ifeq ($(TOOLBOX),yes)
 PM2_FLAGS += -DTBX
+endif
+
+ifeq ($(NETTOOLBOX),yes)
+PM2_FLAGS += -DNTBX -DNTBX_TCP
 endif
 
 PM2_LIBD	=	$(PM2_ROOT)/lib/$(PM2_ARCH_SYS)
@@ -121,7 +127,7 @@ PM2_BIN		=	bin/$(PM2_ARCH_SYS)
 PM2_OBJ		=	obj/$(PM2_ARCH_SYS)
 
 ifeq ($(TOOLBOX),yes)
-default: pm2_default mad_default mar_default tbx_default
+default: pm2_default mad_default mar_default tbx_default ntbx_default
 else
 default: pm2_default mad_default mar_default
 endif
@@ -142,11 +148,17 @@ ifeq ($(TOOLBOX),yes)
 include $(PM2_ROOT)/toolbox/make/common.mak
 endif
 
+ifeq ($(NETTOOLBOX),yes)
+include $(PM2_ROOT)/toolbox/net/make/common.mak
+endif
+
 PM2_MAKEFILE	=	$(PM2_ROOT)/make/common.mak \
 			$(PM2_ROOT)/make/mad.mak \
 			$(MAR_MAKEFILE) \
 			$(MAD_MAKEFILE) \
-			$(DSM_MAKEFILE)
+			$(DSM_MAKEFILE) \
+                        $(TBX_MAKEFILE) \
+                        $(NTBX_MAKEFILE)
 
 OSF_SYS_CFL	=	-fomit-frame-pointer
 UNICOS_SYS_CFL	=	-t cray-t3d
@@ -179,6 +191,10 @@ ifeq ($(TOOLBOX),yes)
 PM2_CFLAGS	+=	-I$(TBX_INC)
 endif
 
+ifeq ($(NETTOOLBOX),yes)
+PM2_CFLAGS	+=	-I$(NTBX_INC)
+endif
+
 ifeq ($(DSM),yes)
 PM2_CFLAGS	+=	-I$(DSM_INC)
 endif
@@ -194,6 +210,11 @@ PM2_LLIBS	=	$(PM2_LLIB) $(MAD_LLIB) $(MAR_LLIB) $(DSM_LLIB)
 ifeq ($(TOOLBOX),yes)
 PM2_LIBS	+=	$(TBX_LIB)
 PM2_LLIBS	+=	$(TBX_LLIB)
+endif
+
+ifeq ($(NETTOOLBOX),yes)
+PM2_LIBS	+=	$(NTBX_LIB)
+PM2_LLIBS	+=	$(NTBX_LLIB)
 endif
 
 PM2_LINK	=	$(PM2_CC) $(PM2_LFLAGS) -o $@ $(PM2_OBJ)/$(@F).o

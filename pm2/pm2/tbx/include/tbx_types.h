@@ -71,16 +71,26 @@ typedef unsigned long tbx_align_t, *p_tbx_align_t;
 typedef int tbx_list_length_t,        *p_tbx_list_length_t;
 typedef int tbx_list_mark_position_t, *p_tbx_list_mark_position_t;
 
-
 /*
  * SList management related types 
  * ::::::::::::::::::::::::::::::_____________________________________________
  */
-typedef int tbx_slist_index_t,  *p_tbx_slist_index_t;
-typedef int tbx_slist_length_t, *p_tbx_slist_length_t;
-typedef int tbx_slist_offset_t, *p_tbx_slist_offset_t;
+typedef int tbx_slist_index_t,   *p_tbx_slist_index_t;
+typedef int tbx_slist_length_t,  *p_tbx_slist_length_t;
+typedef int tbx_slist_offset_t,  *p_tbx_slist_offset_t;
 typedef tbx_bool_t (*p_tbx_slist_search_func_t)(void *ref_obj, void *obj);
 typedef tbx_cmp_t  (*p_tbx_slist_cmp_func_t)(void *ref_obj, void *obj);
 
+/*
+ * Darray management related types 
+ * :::::::::::::::::::::::::::::::____________________________________________
+ */
+typedef int tbx_darray_index_t, *p_tbx_darray_index_t;
+
+/*
+ * Destructor function types 
+ * :::::::::::::::::::::::::__________________________________________________
+ */
+typedef void (*p_tbx_specific_dest_func_t)(void *specific);
 
 #endif /* TBX_TYPES_H */

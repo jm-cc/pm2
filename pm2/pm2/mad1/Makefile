@@ -81,6 +81,7 @@ MAD_DEP		:=	$(MAD_SRC)/depend
 MAD_OBJ		:=	$(MAD_SRC)/obj/$(PM2_ARCH_SYS)
 MAD_LIBD	:=	$(MAD1_ROOT)/lib/$(PM2_ARCH_SYS)
 
+ifneq ($(MAKECMDGOALS),distclean) # avoid auto-building of directories
 ifneq ($(wildcard $(MAD_DEP)),$(MAD_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_DEP))
 endif
@@ -91,6 +92,7 @@ endif
 
 ifneq ($(wildcard $(MAD_LIBD)),$(MAD_LIBD))
 DUMMY_BUILD	:=	$(shell mkdir -p $(MAD_LIBD))
+endif
 endif
 
 MAD_REG_SOURCES	:=	$(wildcard $(MAD_SRC)/*.c)
@@ -179,7 +181,8 @@ madclean:
 	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d \
 		$(MAD1_ROOT)/examples/depend/*.d \
 		$(MAD1_ROOT)/examples/obj/$(PM2_ARCH_SYS)/*.o \
-		$(MAD1_ROOT)/examples/bin/$(PM2_ARCH_SYS)/*)
+		$(MAD1_ROOT)/examples/bin/$(PM2_ARCH_SYS)/* \
+		$(MAD1_ROOT)/.mad_*)
 
 maddistclean:
 	rm -rf $(wildcard $(MAD1_ROOT)/lib \
@@ -187,14 +190,16 @@ maddistclean:
 		$(MAD1_ROOT)/source/depend \
 		$(MAD1_ROOT)/examples/depend \
 		$(MAD1_ROOT)/examples/obj \
-		$(MAD1_ROOT)/examples/bin)
+		$(MAD1_ROOT)/examples/bin \
+		$(MAD1_ROOT)/.mad_*)
 else
 .PHONY: clean distclean
 clean:
 	rm -f $(wildcard $(MAD_LIBD)/*.a $(MAD_OBJ)/*.o $(MAD_DEP)/*.d \
 		$(MAD1_ROOT)/examples/depend/*.d \
 		$(MAD1_ROOT)/examples/obj/$(PM2_ARCH_SYS)/*.o \
-		$(MAD1_ROOT)/examples/bin/$(PM2_ARCH_SYS)/*)
+		$(MAD1_ROOT)/examples/bin/$(PM2_ARCH_SYS)/* \
+		$(MAD1_ROOT)/.mad_*)
 
 distclean:
 	rm -rf $(wildcard $(MAD1_ROOT)/lib \
@@ -202,7 +207,8 @@ distclean:
 		$(MAD1_ROOT)/source/depend \
 		$(MAD1_ROOT)/examples/depend \
 		$(MAD1_ROOT)/examples/obj \
-		$(MAD1_ROOT)/examples/bin)
+		$(MAD1_ROOT)/examples/bin \
+		$(MAD1_ROOT)/.mad_*)
 endif
 
 ######################## Applications ########################

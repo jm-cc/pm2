@@ -31,6 +31,14 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: marcel_alloc.c,v $
+Revision 1.2  2000/01/31 15:57:11  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
 #include <unistd.h>

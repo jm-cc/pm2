@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_lock.h,v $
+Revision 1.5  2000/03/06 14:55:42  rnamyst
+Modified to include "marcel_flags.h".
+
 Revision 1.4  2000/03/01 16:45:22  oaumage
 - suppression des warnings en compilation  -g
 
@@ -47,6 +50,8 @@ ______________________________________________________________________________
 #ifndef MARCEL_LOCK_EST_DEF
 #define MARCEL_LOCK_EST_DEF
 
+#include "sys/marcel_flags.h"
+
 #define MARCEL_SPIN_ITERATIONS 100
 
 /* 
@@ -56,7 +61,7 @@ ______________________________________________________________________________
 
 #ifdef X86_ARCH
 
-#ifdef SMP
+#ifdef ACT_OR_SMP
 #define LOCK_PREFIX "lock\n\t"
 #else
 #define LOCK_PREFIX ""
@@ -64,7 +69,7 @@ ______________________________________________________________________________
 
 #define __atomic_fool_gcc(x) (*(volatile struct { int a[100]; } *)x)
 
-#ifdef SMP
+#ifdef ACT_OR_SMP
 typedef struct { volatile int counter; } atomic_t;
 #else
 #ifndef __ACT__
@@ -244,7 +249,7 @@ void marcel_lock_init(marcel_lock_t *lock);
 
 static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 {
-#ifdef SMP
+#ifdef ACT_OR_SMP
   unsigned counter = 0;
 
   while(testandset(lock)) {
@@ -257,7 +262,7 @@ static __inline__ void marcel_lock_acquire(marcel_lock_t *lock)
 static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock) __attribute__ ((unused));
 static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 {
-#ifdef SMP
+#ifdef ACT_OR_SMP
   return !testandset(lock);
 #else
   return 1;
@@ -265,7 +270,7 @@ static __inline__ unsigned marcel_lock_tryacquire(marcel_lock_t *lock)
 }
 static __inline__ void marcel_lock_release(marcel_lock_t *lock)
 {
-#ifdef SMP
+#ifdef ACT_OR_SMP
   release(lock);
 #endif
 }

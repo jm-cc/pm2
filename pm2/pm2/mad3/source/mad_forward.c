@@ -22,6 +22,8 @@
 #include "madeleine.h"
 #include "tbx.h"
 
+/*#define ACCUMULATION 5*/
+
 #ifdef MARCEL
 /*
  * Macros
@@ -180,7 +182,9 @@ mad_forward_direct_reemit_block(void *arg)
   p_mad_driver_interface_t          interface          = NULL;
   marcel_sem_t                     *message_to_forward = NULL;
   p_tbx_slist_t                     message_list       = NULL;
-
+#ifdef ACCUMULATION
+ int m = ACCUMULATION;
+#endif	  
   LOG_IN();
   rarg               = arg;
   vout               = rarg->connection;
@@ -231,6 +235,23 @@ mad_forward_direct_reemit_block(void *arg)
 
 	  marcel_sem_P(block_to_forward);
 	  TBX_LOCK_SHARED(block_slist);
+#ifdef ACCUMULATION
+	  {
+	    int l = 0;
+	    
+	    l = tbx_slist_get_length(block_slist);
+	    
+	    if (l > m)
+	      {
+		m = l;
+		LDISP_VAL("stored blocks", m);
+	      }
+	    else if (l <= ACCUMULATION)
+	      {
+		m = ACCUMULATION;
+	      }
+	  }
+#endif // ACCUMULATION
 	  fbh = tbx_slist_extract(block_slist);
 	  TBX_UNLOCK_SHARED(block_slist);
 

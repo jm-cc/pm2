@@ -34,71 +34,83 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+if [ "`echo -n`" != "-n" ] ; then
+	ECHO='echo -n .'
+elif [ -x /usr/bin/printf ] ; then
+	ECHO='printf .'
+else
+	ECHO='echo .'
+fi
+
 . ${PM2_ROOT}/bin/pm2_vars
 
 # pm2 links
 
-echo -n .
+$ECHO
 cd ${PM2_ROOT}; 		ln -s marcel/ARCHITECTURES ARCHITECTURES
-echo -n .
-cd ${MADELEINE_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
-echo -n .
-cd ${MADELEINE_ROOT}/bin/;	ln -s custom/madload madload
-echo -n .
-cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
-echo -n .
-cd ${MADELEINE_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
-echo -n .
-cd ${MADELEINE_ROOT}/bin/via/;	ln -s ../tcp/madload madload
-echo -n .
-cd ${MADELEINE_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
-echo -n .
-cd ${MADELEINE_ROOT}/bin/sisci/;	ln -s ../tcp/madload madload
-echo -n .
-cd ${MADELEINE_ROOT}/bin/sisci/;	ln -s ../tcp/madspawn madspawn
-echo -n .
-cd ${MADELEINE_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-echo -n .
-cd ${MADELEINE_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
-echo -n .
-cd ${MADELEINE_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-echo -n .
-cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-bip
-echo -n .
-cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-lam
-echo -n .
-cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-sgi
-echo -n .
-cd ${MADELEINE_ROOT}/source/;	ln -s mpi mpi-sp2
-echo -n .
-cd ${MADELEINE_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
-echo -n .
-cd ${MADELEINE_ROOT}/source/;	ln -s ../../source/timing.c timing.c
-echo -n .
-cd ${MADELEINE_ROOT}/source/via/;	ln -s via2.c netinterf.c
-echo -n .
+$ECHO
+cd ${MAD1_ROOT}/;	        ln -s ../marcel/ARCHITECTURES ARCHITECTURES
+$ECHO
+cd ${MAD1_ROOT}/bin/;	ln -s custom/madload madload
+$ECHO
+cd ${MAD1_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
+$ECHO
+cd ${MAD1_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
+$ECHO
+cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madload madload
+$ECHO
+cd ${MAD1_ROOT}/bin/via/;	ln -s ../tcp/madspawn madspawn
+$ECHO
+cd ${MAD1_ROOT}/bin/sisci/;	ln -s ../tcp/madload madload
+$ECHO
+cd ${MAD1_ROOT}/bin/sisci/;	ln -s ../tcp/madspawn madspawn
+$ECHO
+cd ${MAD1_ROOT}/bin/shm/;	ln -s ../tcp/madload madload
+$ECHO
+cd ${MAD1_ROOT}/bin/shm/;	ln -s ../tcp/madspawn madspawn
+$ECHO
+cd ${MAD1_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
+$ECHO
+cd ${MAD1_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
+$ECHO
+cd ${MAD1_ROOT}/include/;	ln -s ../../include/timing.h timing.h
+$ECHO
+cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-bip
+$ECHO
+cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-lam
+$ECHO
+cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-sgi
+$ECHO
+cd ${MAD1_ROOT}/source/;	ln -s mpi mpi-sp2
+$ECHO
+cd ${MAD1_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
+$ECHO
+cd ${MAD1_ROOT}/source/;	ln -s ../../source/timing.c timing.c
+$ECHO
+cd ${MAD1_ROOT}/source/via/;	ln -s via2.c netinterf.c
+$ECHO
 cd ${MAD2_ROOT}/;	ln -s ../marcel/ARCHITECTURES ARCHITECTURES
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_arch pm2_arch
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/bin/;	ln -s ../../bin/pm2_sys pm2_sys
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/debug.h debug.h
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/include/sys/;	ln -s ../../../include/sys/isomalloc_archdep.h isomalloc_archdep.h
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/source/;	ln -s ../../source/safe_malloc.c safe_malloc.c
-echo -n .
+$ECHO
 cd ${MARCEL_ROOT}/source/;	ln -s ../../source/timing.c timing.c
-echo -n .
+$ECHO
 cd ${DSM_ROOT}/include/;	ln -s ../../include/timing.h timing.h
-echo -n .
+$ECHO
 cd ${DSM_ROOT}/include/;	ln -s ../../include/safe_malloc.h safe_malloc.h
-echo -n .
+$ECHO
 cd ${DSM_ROOT}/;		ln -s ../marcel/ARCHITECTURES ARCHITECTURES
 
 
@@ -126,10 +138,10 @@ cd ${MARCEL_ROOT}/source/obj/;      pm2_makedirs
 cd ${MARCEL_ROOT}/examples/bin/;    pm2_makedirs
 cd ${MARCEL_ROOT}/examples/obj/;    pm2_makedirs
 
-cd ${MADELEINE_ROOT}/lib/;          pm2_makedirs
-cd ${MADELEINE_ROOT}/source/obj/;   pm2_makedirs
-cd ${MADELEINE_ROOT}/examples/obj/; pm2_makedirs
-cd ${MADELEINE_ROOT}/examples/bin/; pm2_makedirs
+cd ${MAD1_ROOT}/lib/;          pm2_makedirs
+cd ${MAD1_ROOT}/source/obj/;   pm2_makedirs
+cd ${MAD1_ROOT}/examples/obj/; pm2_makedirs
+cd ${MAD1_ROOT}/examples/bin/; pm2_makedirs
 
 cd ${MAD2_ROOT}/lib/;               pm2_makedirs
 cd ${MAD2_ROOT}/obj/;               pm2_makedirs

@@ -70,6 +70,12 @@ typedef struct
   p_tbx_list_t          hosts;
   p_tbx_list_t          channels;
   p_leo_app_makefile_t  makefile;
+} leo_app_cluster_t, *p_leo_app_cluster_t;
+
+typedef struct
+{
+  char         *id;
+  p_tbx_list_t  cluster_list;
 } leo_app_application_t, *p_leo_app_application_t;
 
 typedef struct

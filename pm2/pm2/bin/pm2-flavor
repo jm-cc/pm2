@@ -67,7 +67,8 @@ usage() # exit_code section
 Usage: $PROGNAME [GLOBAL_OPTION]... COMMAND [OPTION]...
 
 Global Options
-  --verbose : add outputs
+  --verbose,-v : add outputs
+  --admin,-a   : admin mode (only considers directory pm2/flavors)
 
 Commands
   version   : output pm2 version information.
@@ -188,10 +189,32 @@ EOF
 ##########################################################################
 # usefull function
 
+USER_FLAVOR_DIR=${PM2_FLAVOR_DIR:-$HOME/.pm2/flavors}
+
+output_flavor_dir() {
+    if [ ${EDIT_MODE} = "admin" ] ; then
+	echo "${PM2_CONFIG}"
+    else
+	echo "$USER_FLAVOR_DIR"
+    fi
+}
+
+find_flavor() {
+    if [ ${EDIT_MODE} = "normal" -a -f "$USER_FLAVOR_DIR" ]; then
+	echo "$USER_FLAVOR_DIR/$flavor"
+    else
+	echo "${PM2_CONFIG}/$flavor"
+    fi
+}
+
 get_liste_flavor() {
     if [ -d "$PM2_ROOT/flavors" ]; then
-	liste_flavor_tmp=`( cd "$PM2_ROOT/flavors" ; ls * )`
-	liste_flavor="`eval echo $liste_flavor_tmp`"
+	if [ -d "$USER_FLAVOR_DIR" ]; then
+	    liste_flavor_tmp=`( cd $PM2_ROOT/flavors; ls; cd $USER_FLAVOR_DIR; ls) | sort | uniq`
+	else
+	    liste_flavor_tmp=`( cd $PM2_ROOT/flavors; ls)`
+	fi
+	liste_flavor="`echo $liste_flavor_tmp`"
 	return 0
     fi
     return 1
@@ -238,9 +261,9 @@ set_option() { # option max_val filtre null_allowed
 # Création réelle
 create_flavor() {
     $ECHO "Creating flavor '$flavor'"
-    OUT="${PM2_CONFIG}/$flavor"
-    OUTOLD="${PM2_CONFIG}/$flavor.old"
-    test -f "$OUT" && mv "${OUT}" "${OUTOLD}"
+    mkdir -p `output_flavor_dir`
+    OUT="`output_flavor_dir`/$flavor.new"
+    OUTOLD=`find_flavor`
     echo "# Flavor $flavor" > ${OUT} || exit 1
     echo "${SETTINGS} --flavor=$flavor" >> ${OUT}
     echo "${SETTINGS} --builddir=$builddir" >> ${OUT}
@@ -285,38 +308,20 @@ create_flavor() {
 
     if diff "${OUTOLD}" "${OUT}" >/dev/null 2>&1; then
 	echo "flavor '$flavor' unmodified"
+	rm -f "${OUT}" 2>/dev/null
     else
 	echo "$1"
-#	mkdir -p "${PM2_ROOT}/stamp/$flavor"
-#	echo $flavor > "${PM2_ROOT}/stamp/$flavor/stamp$ext"
+	mv -f "${OUT}" "`dirname ${OUT}`/`basename ${OUT} .new`" 2>/dev/null
     fi
-    rm -f "${OUTOLD}" 2>/dev/null
-#    if [ ! -d "${PM2_ROOT}/stamp/$flavor" ]; then
-#	mkdir -p "${PM2_ROOT}/stamp/$flavor"
-#	if [ ! -f "${PM2_ROOT}/stamp/$flavor/stamp$ext" ]; then
-#	    echo $flavor > "${PM2_ROOT}/stamp/$flavor/stamp$ext"
-#	fi
-#    fi
 }
 
 ##########################################################################
 # Deletion
 delete_flavor() {
     $ECHO "Deleting flavor '$flavor'"
-    make -C ${PM2_ROOT} FLAVOR=$flavor clean
-#    STAMP_FILE=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampfile`
-#    STAMP_REP=`"${PM2_CONFIGPROG}" --flavor=$flavor --stampdir`
-#    BUILDDIR=`"${PM2_CONFIGPROG}" --flavor=$flavor --builddir`
-#    PM2_EXT=`"${PM2_CONFIGPROG}" --flavor=$flavor --ext`
-
-#    if [ -f "$STAMP_FILE" ]; then
-#	rm -f "$STAMP_FILE"
-#    fi
-#    if [ "$BUILDDIR" -a -d "$STAMP_REP" ]; then
-#	rmdir "$STAMP_REP"
-#    fi
-    if [ -f "$PM2_CONFIG/$flavor" ]; then
-	rm -f "$PM2_CONFIG/$flavor"
+    #make -C ${PM2_ROOT} FLAVOR=$flavor clean
+    if [ -f "`find_flavor`" ]; then
+	rm -f "`find_flavor`"
     fi
 }
 
@@ -327,7 +332,7 @@ verify_option() { # module name
     # not yet implemented
     name=`echo $2 | tr -c -d '[\-_a-zA-Z0-9]'`
     if [ "$2" != "$name" ]; then
-	echo "Invalid caracters in option --$2" 1>&2
+	echo "Invalid characters in option --$2" 1>&2
 	exit 1
     fi
     return 0
@@ -569,13 +574,8 @@ do_set() {
 	builddir='$flavor'
     fi
 
-    if [ -f "${PM2_ROOT}/flavors/$flavor" ]; then
+    if [ -f "`find_flavor`" ]; then
 	msg="Modifying flavor '$flavor'"
-#    elif [ -f ${PM2_CONFIG}/$flavor ]; then
-#	echo "Modifying $flavor and changing repertory/extention"
-#	echo "removing the old one"
-#	msg="Recreating flavor $flavor"
-#	delete_flavor || ( echo "Error: aborting"; exit 1 )
     else
 	msg="Creating flavor $flavor"
     fi
@@ -589,7 +589,7 @@ do_delete() {
 	case "$1" in
 	--flavor=*)
 	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
-	    file="${PM2_ROOT}/$flavor"
+	    file="`find_flavor`"
 	    ;;	
 	*)
 	    echo Unknown option \`$1\' 1>&2
@@ -598,7 +598,7 @@ do_delete() {
 	esac
 	shift
     done
-    if [ -f "${PM2_ROOT}/flavors/$flavor" ]; then
+    if [ -f "$file" ]; then
 	delete_flavor
     else
 	echo "Flavor $flavor does not exist. Cannot delete it"
@@ -621,7 +621,7 @@ do_get() {
 	case "$1" in
 	--flavor=*)
 	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
-	    file="${PM2_ROOT}/flavors/$flavor"
+	    file="`find_flavor`"
 	    nb_fromfile=$nb_flavor
 	    ;;	
 	--fromfile=*)
@@ -745,9 +745,9 @@ do_regenerate() {
 	case "$1" in
 	--flavor=*)
 	    set_option "$1" 1 '[\-_a-zA-Z0-9]' ""
-	    file="${PM2_ROOT}/flavors/$flavor"
+	    file="`find_flavor`"
 	    nb_fromfile=$nb_flavor
-	    ;;	
+	    ;;
 	*)
 	    echo Unknown option \`$1\' 1>&2
 	    usage 1
@@ -768,6 +768,7 @@ fi
 
 DEBUG=":"
 ECHO=":"
+EDIT_MODE="normal"
 while test $# -gt 0; do
     CMD="$1"
     case "$CMD" in
@@ -784,6 +785,9 @@ while test $# -gt 0; do
 	    DEBUG=echo
 	fi
 	;;
+    --admin|-a)
+	EDIT_MODE="admin"
+	;;
     -h|--help)
 	do_help
 	exit 0
@@ -796,6 +800,3 @@ while test $# -gt 0; do
 done
 
 exit 0
-
-
-

@@ -59,11 +59,11 @@
 
 #define STACK_SIZE 10000
 
-void restart_thread(marcel_t next)
-{
-	next->state_ext=MARCEL_RUNNING;
-	longjmp(next->jb, NORMAL_RETURN);
-}
+//void restart_thread(marcel_t next)
+//{
+//	next->state_ext=MARCEL_RUNNING;
+//	longjmp(next->jb, NORMAL_RETURN);
+//}
 
 static act_spinlock_t act_spinlock=ACT_SPIN_LOCK_UNLOCKED;
 static marcel_t marcel_idle[32];
@@ -99,7 +99,7 @@ void upcall_new(act_proc_t proc)
 	
 	//self=marcel_self();
 	do {
-		lock_task(NULL);
+		sched_lock(cur_lwp);
 
 		next=cur_lwp->__first[0];
 		if (next->state_ext != MARCEL_READY) {
@@ -111,11 +111,13 @@ void upcall_new(act_proc_t proc)
 				goto something_wrong;
 		}
 		
-		//self->state_ext=MARCEL_READY;
+
 		next->state_ext=MARCEL_RUNNING;
 		ACTDEBUG(printf("upcall_new launch %p\n", next));  
-		//restart_thread(act_update(next));
-		restart_thread(next);
+
+		sched_unlock(cur_lwp);
+
+		longjmp(next->jb, NORMAL_RETURN);
 		
 		/** Never there normally */
 	something_wrong:

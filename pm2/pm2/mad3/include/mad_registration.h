@@ -31,6 +31,10 @@ typedef enum
   mad_TCP,
 #endif // DRV_TCP
 
+#ifdef DRV_UDP
+  mad_UDP,
+#endif // DRV_UDP
+
 #ifdef DRV_VIA
   mad_VIA,
 #endif // DRV_VIA

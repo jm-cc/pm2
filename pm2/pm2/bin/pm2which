@@ -74,7 +74,7 @@ pm2which_handle_colon() # dir:name
     _PM2WHICH_NB_FOUND=1
 }
 
-pm2which_find_exec() # file
+pm2which_do_search() # file
 {
     _file=$1
     _fifo=$_PM2WHICH_EXDIR
@@ -104,20 +104,16 @@ pm2which_find_exec() # file
     fi
 }
 
-pm2which_do_search() # file
-{
-    pm2which_find_exec $1
-
-    [ $_PM2WHICH_NB_FOUND -eq 0 ] && pm2which_error "Error: no \"$1\" exec file found under \"${_PM2WHICH_EXDIR}\""
-}
+# pm2which_do_search() # file
+# {
+#     pm2which_find_exec $1
+# 
+#     [ $_PM2WHICH_NB_FOUND -eq 0 ] && pm2which_error "Error: no \"$1\" exec file found under \"${_PM2WHICH_EXDIR}\""
+# }
 
 pm2which_calc()
 {
-    export _PM2WHICH_EXDIR
-    _PM2WHICH_EXDIR=$_PM2CONFIG_BUILD/examples
-
-    export _PM2WHICH_RESULT
-    export _PM2WHICH_NB_FOUND
+    _PM2WHICH_ARGS="$*"
     # On regarde si le nom de la commande est relatif/absolu
 
     case "$PM2_SYS" in
@@ -131,24 +127,67 @@ pm2which_calc()
 
     _prog="$1"
 
-    case "$_prog" in
-	/*)
-	    [ -x "$_prog" ] || pm2which_error "Error: \"$_prog\" exec file not found."
-	    _PM2WHICH_RESULT=$1
-	    _PM2WHICH_NB_FOUND=1
-	    ;;
-	*:*)
-	    pm2which_handle_colon $_prog$_ext
-	    ;;
-	*)
-	    if [ -f "$_prog" -a -x "$_prog" ]; then
-		_PM2WHICH_RESULT="$PWD/$_prog"
-		_PM2WHICH_NB_FOUND=1
-	    else
-		pm2which_do_search $_prog$_ext
-	    fi
-	    ;;
-    esac
+
+    DIRS=$_PM2CONFIG_BUILD/examples
+    if [ -n "$PATH" ]; then
+        DIRS="$DIRS:$PATH"
+    fi
+
+    _old_ifs="$IFS"
+    _ifs_not_set=${IFS-yes}
+    IFS=":"
+    set $DIRS
+    IFS=" "
+    if [ "$_ifs_not_set" = yes ]; then
+        unset IFS
+    else
+        IFS="$_old_ifs"
+    fi
+
+    export _PM2WHICH_RESULT
+    export _PM2WHICH_NB_FOUND
+    export _PM2WHICH_EXDIR
+
+    first=1
+
+    while [ $# -gt 0  ]; do
+        _PM2WHICH_EXDIR=$1
+        shift
+
+        case "$_prog" in
+            /*)
+                if [ -x "$_prog" ]; then
+                    _PM2WHICH_RESULT=$1
+                    _PM2WHICH_NB_FOUND=1
+                fi
+                ;;
+            *:*)
+                pm2which_handle_colon $_prog$_ext
+                ;;
+            *)
+                if [ $first -eq 1 ]; then
+                    if [ -f "$_prog" -a -x "$_prog" ]; then
+                        _PM2WHICH_RESULT="$PWD/$_prog"
+                        _PM2WHICH_NB_FOUND=1
+                    else
+                        pm2which_do_search $_prog$_ext
+                    fi
+                else
+                    __prog="$_PM2WHICH_EXDIR/$_prog"
+                    if [ -f "$__prog" -a -x "$__prog" ]; then
+                        _PM2WHICH_RESULT=$__prog
+                        _PM2WHICH_NB_FOUND=1
+                    fi                    
+                fi
+                ;;
+        esac
+
+        if [ $_PM2WHICH_NB_FOUND -gt 0 ]; then
+            break
+        fi
+
+        first=0
+    done
 }
 
 # Programme principal
@@ -193,9 +232,7 @@ _PM2WHICH_ARGS="$*"
 
 set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-config
-
 pm2which_calc $_PM2WHICH_ARGS
-
 if [ $_PM2WHICH_SOURCE_MODE = no ]; then
     pm2which_prettyprint $_PM2WHICH_RESULT
     if [ $_PM2WHICH_NB_FOUND -eq 1 ] ; then

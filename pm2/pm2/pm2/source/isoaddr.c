@@ -34,6 +34,9 @@
 
 _____________________________________________________________________________
 $Log: isoaddr.c,v $
+Revision 1.9  2000/11/20 20:13:03  rnamyst
+Slight modification to avoid warning when DSM is not used
+
 Revision 1.8  2000/11/20 10:29:24  gantoniu
 Minor correction.
 
@@ -646,15 +649,18 @@ void ISOADDR_INFO_func(void)
 
 int isoaddr_page_get_status(int index)
 {
+#ifdef DSM 
   int master = _info_table[index].master;
+#endif
 
   LOG_IN();
+
+#ifdef DSM
 
 #ifdef ISOADDR_INFO_TRACE
   fprintf(stderr, "Entering get_status (%d), master = %d, status = %d, owner = %d\n", index, master, _info_table[master].status, _info_table[master].owner );
 #endif
 
-#ifdef DSM 
   if (_info_table[master].owner != _local_node_rank &&  _info_table[master].status != ISO_SHARED)
      {
        isoaddr_page_info_lock(index);

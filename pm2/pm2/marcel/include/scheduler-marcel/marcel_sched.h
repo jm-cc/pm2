@@ -106,7 +106,7 @@ marcel_sched_vpmask_init_rq(marcel_vpmask_t mask)
 		return &ma_dontsched_runqueue;
 	else {
 		int first_vp;
-		first_vp=ma_ffz(mask);
+		first_vp=ma_ffs(~mask);
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
 		MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());

@@ -70,7 +70,7 @@ _PRIVATE_ typedef enum {
 } marcel_state_t;
 #endif
 
-// VP mask: useful for selecting the set of "allowed" LWP for a given thread
+// VP mask: useful for selecting the set of "forbiden" LWP for a given thread
 typedef unsigned long marcel_vpmask_t;
 
 _PRIVATE_ typedef struct task_desc_struct {

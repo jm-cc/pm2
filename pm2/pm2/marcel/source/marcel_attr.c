@@ -37,15 +37,15 @@
 
 	/* Déclaré non statique car utilisé dans marcel.c : */
 marcel_attr_t marcel_attr_default = {
-  DEFAULT_STACK,     /* stack size */
-  NULL,              /* stack base */
-  FALSE,             /* detached */
-  0,                 /* user space */
-  FALSE,             /* immediate activation (only if user_space != 0) */
-  STD_PRIO,          /* priority */
-  1,                 /* not_migratable */
-  0,                 /* not_deviatable */
-  MARCEL_SCHED_OTHER /* scheduling policy */
+  DEFAULT_STACK,           /* stack size */
+  NULL,                    /* stack base */
+  MARCEL_CREATE_JOINABLE,  /* detached */
+  0,                       /* user space */
+  FALSE,                   /* immediate activation */
+  STD_PRIO,                /* priority */
+  1,                       /* not_migratable */
+  0,                       /* not_deviatable */
+  MARCEL_SCHED_OTHER       /* scheduling policy */
 };
 
 /* Déclaré dans marcel.c : */

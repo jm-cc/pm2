@@ -80,6 +80,7 @@ typedef int tbx_slist_length_t,  *p_tbx_slist_length_t;
 typedef int tbx_slist_offset_t,  *p_tbx_slist_offset_t;
 typedef tbx_bool_t (*p_tbx_slist_search_func_t)(void *ref_obj, void *obj);
 typedef tbx_cmp_t  (*p_tbx_slist_cmp_func_t)(void *ref_obj, void *obj);
+typedef void *     (*p_tbx_slist_dup_func_t)(void *object);
 
 /*
  * Darray management related types 

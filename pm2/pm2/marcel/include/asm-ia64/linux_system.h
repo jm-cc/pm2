@@ -254,6 +254,9 @@ extern void ia64_load_extra (struct task_struct *task);
  * of that CPU which will not be released, because there we wait for the
  * tasklist_lock to become available.
  */
+#if 0
+  /* On n'a pas ces problèmes avec marcel. Pas besoin de version spécifique ici
+   * */
 #define ma_prepare_arch_switch(rq, next)		\
 do {						\
 	ma_spin_lock(&(next)->switch_lock);	\
@@ -261,6 +264,7 @@ do {						\
 } while (0)
 #define ma_finish_arch_switch(rq, prev)	ma_spin_unlock_irq(&(prev)->switch_lock)
 #define ma_task_running(rq, p) 		((rq)->curr == (p) || ma_spin_is_locked(&(p)->switch_lock))
+#endif
 
 #define ma_ia64_platform_is(x) (strcmp(x, platform_name) == 0)
 

@@ -180,10 +180,10 @@ MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
 /*
  * Default context-switch locking:
  */
-#ifndef prepare_arch_switch
-# define prepare_arch_switch(rq, next)	do { } while(0)
-# define finish_arch_switch(rq, next)	ma_spin_unlock_softirq(&(rq)->lock)
-# define task_running(rq, p)		((rq)->curr == (p))
+#ifndef ma_prepare_arch_switch
+# define ma_prepare_arch_switch(rq, next)	do { } while(0)
+# define ma_finish_arch_switch(rq, next)	ma_spin_unlock_softirq(&(rq)->lock)
+# define ma_task_running(rq, p)		((rq)->curr == (p))
 #endif
 
 /*
@@ -362,7 +362,7 @@ static int __set_cpus_allowed(task_t *p, cpumask_t new_mask,
 	 * If the task is not on a runqueue (and not running), then
 	 * it is sufficient to simply update the task's cpu field.
 	 */
-	if (!p->array && !task_running(rq, p)) {
+	if (!p->array && !ma_task_running(rq, p)) {
 		set_task_cpu(p, any_online_cpu(p->cpus_allowed));
 		return 0;
 	}
@@ -393,7 +393,7 @@ repeat:
 	/* Must be off runqueue entirely, not preempted. */
 	if (unlikely(p->array)) {
 		/* If it's preempted, we yield.  It could be a while. */
-		preempted = !task_running(rq, p);
+		preempted = !ma_task_running(rq, p);
 		task_rq_unlock(rq, &flags);
 		cpu_relax();
 		if (preempted)
@@ -456,7 +456,7 @@ repeat_lock_task:
 			 * Fast-migrate the task if it's not running or runnable
 			 * currently. Do not violate hard affinity.
 			 */
-			if (tbx_unlikely(sync && !task_running(rq, p) &&
+			if (tbx_unlikely(sync && !ma_task_running(rq, p) &&
 				(ma_task_lwp(p) != LWP_SELF)
 #ifdef MA__LWPS
 				&& lwp_isset(LWP_NUMBER(LWP_SELF),
@@ -664,7 +664,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	 * dans prepare_arch_switch) */
 	if (rq && prevrq!=rq)
 		_ma_raw_spin_unlock(&rq->lock);
-	finish_arch_switch(prevrq, prev);
+	ma_finish_arch_switch(prevrq, prev);
 //	if (mm)
 //		mmdrop(mm);
 //	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
@@ -1035,7 +1035,7 @@ can_migrate_task(task_t *tsk, ma_runqueue_t *rq, int this_cpu, int idle)
 	 * 2) cannot be migrated to this CPU due to cpus_allowed, or
 	 * 3) are cache-hot on their current CPU.
 	 */
-	if (task_running(rq, tsk))
+	if (ma_task_running(rq, tsk))
 		return 0;
 	if (!cpu_isset(this_cpu, tsk->cpus_allowed))
 		return 0;
@@ -1544,7 +1544,7 @@ switch_tasks:
 			enqueue_task(prev,prevrq->active);
 		ma_set_task_lwp(next, LWP_SELF);
 
-		prepare_arch_switch(rq, next);
+		ma_prepare_arch_switch(rq, next);
 		prev = context_switch(prevrq, prev, next);
 		ma_barrier();
 
@@ -1874,7 +1874,7 @@ void set_user_nice(task_t *p, long nice)
 		 * If the task increased its priority or is running and
 		 * lowered its priority, then reschedule its CPU:
 		 */
-		if (delta < 0 || (delta > 0 && task_running(rq, p)))
+		if (delta < 0 || (delta > 0 && ma_task_running(rq, p)))
 			resched_task(rq->curr);
 	}
 out_unlock:
@@ -2069,7 +2069,7 @@ static int setscheduler(pid_t pid, int policy, struct sched_param __user *param)
 		 * our priority decreased, or if we are not currently running on
 		 * this runqueue and our priority is higher than the current's
 		 */
-		if if (task_running(rq, p)) {
+		if if (ma_task_running(rq, p)) {
 			if (p->prio > oldprio)
 				resched_task(rq->curr);
 		} else if (p->prio < rq->curr->prio)

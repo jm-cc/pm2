@@ -39,6 +39,9 @@ COMMON_MAKEFILES +=  $(PM2_MAKE)/rules.mak
 
 PM2_SRC :=  $(PM2_ROOT)/source
 PM2_INC :=  $(PM2_ROOT)/include
+PM2_GEN_OBJ :=  $(GEN_OBJ)/pm2
+PM2_GEN_ASM :=  $(GEN_ASM)/pm2
+PM2_GEN_DEP :=  $(GEN_DEP)/pm2
 
 PM2_OPT :=
 

@@ -61,7 +61,7 @@ tbx_aligned_free (void        *ptr,
  * -----------
  */
 void
-tbx_safe_malloc_init();
+tbx_safe_malloc_init(void);
 
 void *
 tbx_safe_malloc(size_t    size,
@@ -392,7 +392,7 @@ tbx_slist_ref_get(p_tbx_slist_t slist);
  * ---------------------
  */
 void
-tbx_htable_manager_init();
+tbx_htable_manager_init(void);
 
 void 
 tbx_htable_init(p_tbx_htable_t            htable,
@@ -421,7 +421,7 @@ void
 tbx_htable_free(p_tbx_htable_t htable);
 
 void
-tbx_htable_manager_exit();
+tbx_htable_manager_exit(void);
 
 p_tbx_slist_t
 tbx_htable_get_key_slist(p_tbx_htable_t htable);

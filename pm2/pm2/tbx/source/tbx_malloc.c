@@ -34,6 +34,15 @@
 
 ______________________________________________________________________________
 $Log: tbx_malloc.c,v $
+Revision 1.8  2000/05/29 16:56:23  oaumage
+- Correction de safe malloc
+
+Revision 1.7  2000/05/29 16:31:32  oaumage
+- safe malloc: position du marquage
+
+Revision 1.6  2000/05/29 16:30:30  oaumage
+- safe malloc
+
 Revision 1.5  2000/03/13 09:48:40  oaumage
 - ajout de l'option TBX_SAFE_MALLOC
 - support de safe_malloc
@@ -122,6 +131,7 @@ typedef struct s_tbx_safe_malloc_header
 } tbx_safe_malloc_header_t;
 
 #define TBX_SAFE_MALLOC_MAGIC_SIZE    (sizeof(tbx_safe_malloc_magic))
+#define TBX_SAFE_MALLOC_TRUE_HEADER_SIZE tbx_aligned(sizeof(tbx_safe_malloc_header_t), 16)
 #define TBX_SAFE_MALLOC_HEADER_SIZE   (tbx_aligned(sizeof(tbx_safe_malloc_header_t), 16) + TBX_SAFE_MALLOC_MAGIC_SIZE)
 #define TBX_SAFE_MALLOC_ALIGNED_HEADER_SIZE (tbx_aligned(TBX_SAFE_MALLOC_HEADER_SIZE, 16))
 
@@ -174,7 +184,7 @@ tbx_safe_malloc(size_t    size,
   p->size = size;
   p->line = line;
 
-  memcpy(ptr + TBX_SAFE_MALLOC_ALIGNED_HEADER_SIZE,
+  memcpy(ptr + TBX_SAFE_MALLOC_TRUE_HEADER_SIZE,
 	 tbx_safe_malloc_magic,
 	 TBX_SAFE_MALLOC_MAGIC_SIZE);
 
@@ -221,7 +231,7 @@ tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
   void *base = p;
   void *data = base + TBX_SAFE_MALLOC_HEADER_SIZE;
 
-  if(memcmp(base + TBX_SAFE_MALLOC_ALIGNED_HEADER_SIZE,
+  if(memcmp(base + TBX_SAFE_MALLOC_TRUE_HEADER_SIZE,
 	    tbx_safe_malloc_magic,
 	    TBX_SAFE_MALLOC_MAGIC_SIZE))
     fprintf(stderr,
@@ -259,7 +269,7 @@ void tbx_safe_free(void *ptr, char *file, unsigned line)
 
   freed += p->size;
 
-  memset(base + TBX_SAFE_MALLOC_ALIGNED_HEADER_SIZE,
+  memset(base + TBX_SAFE_MALLOC_TRUE_HEADER_SIZE,
 	 0,
 	 TBX_SAFE_MALLOC_MAGIC_SIZE);
   

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.26  2000/09/15 02:04:52  rnamyst
+fut_print is now built by the makefile, rather than by pm2-build-fut-entries
+
 Revision 1.25  2000/09/13 00:07:19  rnamyst
 Support for profiling + minor bug fixes
 
@@ -350,6 +353,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 {
   marcel_t cur = marcel_self(), new_task;
 
+  LOG_IN();
+
   TIMING_EVENT("marcel_create");
 
   if(!attr)
@@ -363,6 +368,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       marcel_insert_task(cur->child);
     }
     unlock_task();
+    LOG_OUT();
     return 0;
   } else {
     if(attr->stack_base) {
@@ -433,6 +439,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
     marcel_one_more_task(new_task);
     MTRACE("Creation", new_task);
+
+    PROF_SWITCH_TO(new_task);
 
 #ifndef MINIMAL_PREEMPTION
     if((locked() > 1) /* lock_task has been called */

@@ -283,6 +283,7 @@ tbx_main(int argc, char **argv)
   DISP_VAL("The configuration size is",
 	   tbx_slist_get_length(madeleine->dir->process_slist));
 
+  DISP("----------");
   slist = madeleine->public_channel_slist;
 
   if (!tbx_slist_is_nil(slist))
@@ -294,6 +295,9 @@ tbx_main(int argc, char **argv)
 
 	  name = tbx_slist_ref_get(slist);
 	  play_with_channel(madeleine, name);
+
+	  mad_leonie_barrier();
+	  DISP("----------");
 	}
       while (tbx_slist_ref_forward(slist));
     }

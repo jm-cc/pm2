@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: profile.c,v $
+Revision 1.6  2000/09/23 16:54:46  rnamyst
+profile_activate can now be called before init
+
 Revision 1.5  2000/09/15 17:37:15  rnamyst
 Tracefiles are now generated correctly with PM2 applications using multiple processes
 
@@ -82,26 +85,54 @@ ______________________________________________________________________________
 
 #define PROF_BUFFER_SIZE  (1024*1024)
 
-char PROF_FILE[1024];
+static char PROF_FILE[1024];
+
+static boolean profile_initialized = FALSE;
+static boolean activate_called_before_init = FALSE;
+static struct {
+  int how;
+  unsigned keymask;
+  unsigned thread_id;
+} activate_params;
 
 void profile_init(void)
 {
   static unsigned already_called = 0;
 
-  if(!already_called) {
+  if(!profile_initialized) {
+
     strcpy(PROF_FILE, "/tmp/prof_file_single");
 
     if(fut_setup(PROF_BUFFER_SIZE, 0, PROF_THREAD_ID()) < 0) {
       perror("fut_setup");
       exit(EXIT_FAILURE);
     }
-    already_called = 1;
+
+    profile_initialized = TRUE;
+
+    if(activate_called_before_init)
+      fut_keychange(activate_params.how,
+		    activate_params.keymask,
+		    activate_params.thread_id);
+
   }
 }
 
 void profile_activate(int how, unsigned keymask)
 {
-  fut_keychange(how, keymask, PROF_THREAD_ID());
+  if(profile_initialized) {
+
+    fut_keychange(how, keymask, PROF_THREAD_ID());
+
+  } else {
+
+    activate_params.how = how;
+    activate_params.keymask = keymask;
+    activate_params.thread_id = PROF_THREAD_ID();
+
+    activate_called_before_init = TRUE;
+
+  }
 }
 
 void profile_set_tracefile(char *fmt, ...)

@@ -33,7 +33,7 @@
  software is provided ``as is'' without express or implied warranty.
 */
 
-#include "rpc_defs.h"
+#include <pm2.h>
 #include "custom.h"
 #include "regul.h"
 
@@ -57,9 +57,7 @@ short black_bits[] = {
 #define X_SIZE	460
 #define Y_SIZE	320
 
-int *les_modules, nb_modules;
-
-int mon_rang, module_suivant, module_precedent;
+unsigned module_suivant, module_precedent;
 
 typedef struct {
   int rouge, vert, bleu;
@@ -121,10 +119,9 @@ Canvas canvas;
 Server_image chip;
 Cms cms;
 
-int current_prio = 1, current_color = 0;
+int current_color = 0;
 
-/* Fréquence d'observation en millisecondes : */
-#define FREQ_OBS	200
+static unsigned SYNC_DISPLAY;
 
 static __inline__ void X_lock(void)
 {
@@ -169,12 +166,16 @@ void afficher_polygone(liste l)
   fprintf(stderr, "\n");
 }
 
-void tracer_polygone(liste l)
+void tracer_polygone(void *arg)
 {
-  liste premier = l, suivant = l->suivant;
   int couleur = current_color;
+  liste l, premier, suivant;
+  
+  premier = l = generer_liste();
+  suivant = premier->suivant;
 
   marcel_setspecific(color_key, color_names[couleur]);
+  pm2_enable_migration();
 
   while(1) {
 
@@ -194,93 +195,42 @@ void tracer_polygone(liste l)
   }
 }
 
-void polygone()
+static void sync_display(unsigned regul)
 {
-  liste points = generer_liste();
-
-  tracer_polygone(points);
-}
-
-BEGIN_SERVICE(SYNC_DISPLAY)
-
-  if(!req.regul) /* Regulation On */
+  if(!regul) /* Regulation On */
     regul_start();
   else
     regul_stop();
 
   X_lock();
-  xv_set(regul_item, PANEL_VALUE, req.regul, NULL);
+  xv_set(regul_item, PANEL_VALUE, regul, NULL);
   XFlush(dpy);
   X_unlock();
-
-END_SERVICE(SYNC_DISPLAY)
-
-static void slot_cleanup_func(void *arg)
-{
-  slot_free(NULL, marcel_stackbase((marcel_t)arg));
 }
 
-any_t positionner_regul(any_t arg)
+static void sync_display_service(void)
 {
-  LRPC_REQ(SYNC_DISPLAY) req;
+  unsigned regul;
 
-  marcel_detach(marcel_self());
-  marcel_cleanup_push(slot_cleanup_func, marcel_self());
+  mad_unpack_int(MAD_IN_HEADER, &regul, 1);
+  pm2_rawrpc_waitdata();
 
-  req.regul = (int)arg;
-  MULTI_QUICK_ASYNC_LRPC(les_modules, nb_modules, SYNC_DISPLAY, &req);
-
-  return NULL;
+  sync_display(regul);
 }
 
-void toggle_regulate(Panel_item item, int value)
+static void positionner_regul(any_t arg)
 {
-  marcel_attr_t attr;
-  unsigned granted;
+  int p;
 
-  marcel_attr_init(&attr);
-
-  marcel_attr_setstackaddr(&attr, slot_general_alloc(NULL, 0,
-						     &granted, NULL));
-  marcel_attr_setstacksize(&attr, granted);
-
-  marcel_create(NULL, &attr, positionner_regul, (void *)value);
-}
-
-BEGIN_SERVICE(GRAPH)
-
-   pm2_enable_migration();
-
-   polygone();
-
-END_SERVICE(GRAPH)
-
-any_t graphique(any_t arg)
-{
-  marcel_detach(marcel_self());
-  marcel_cleanup_push(slot_cleanup_func, marcel_self());
-
-  ASYNC_LRPC(pm2_self(), GRAPH, current_prio, DEFAULT_STACK, NULL);
-  return NULL;
-}
-
-void lignes(void)
-{
-  marcel_attr_t attr;
-  unsigned granted;
-
-  marcel_attr_init(&attr);
-
-  marcel_attr_setstackaddr(&attr, slot_general_alloc(NULL, 0,
-						     &granted, NULL));
-  marcel_attr_setstacksize(&attr, granted);
-
-  marcel_create(NULL, &attr, graphique, NULL);
-}
-
-void quit(void)
-{
-  finished = TRUE;
+  for(p=0; p<pm2_config_size(); p++) {
+    if(pm2_self() == p)
+      sync_display((unsigned)arg);
+    else {
+      pm2_rawrpc_begin(p, SYNC_DISPLAY, NULL);
+      mad_pack_int(MAD_IN_HEADER, (unsigned *)&arg, 1);
+      pm2_rawrpc_end();
+    }
+  }
 }
 
 void redessiner(void)
@@ -289,50 +239,21 @@ void redessiner(void)
   XFlush(dpy);
 }
 
-void pre_migr(marcel_t pid)
+static void migrer(any_t arg)
 {
-  X_lock();
-  redessiner();
-  X_unlock();
-}
-
-any_t migrer(any_t arg)
-{
-  marcel_t pids[32];
+  marcel_t pids[128];
   int nb;
-
-  marcel_detach(marcel_self());
-  marcel_cleanup_push(slot_cleanup_func, marcel_self());
 
   do {
     pm2_freeze();
-    pm2_threads_list(32, pids, &nb, MIGRATABLE_ONLY);
-    pm2_migrate_group(pids, min(nb, 32), module_suivant);
-  } while(nb > 32);
+    pm2_threads_list(128, pids, &nb, MIGRATABLE_ONLY);
+    pm2_migrate_group(pids, min(nb, 128), module_suivant);
+  } while(nb > 128);
 
-  X_lock();
-  redessiner();
-  X_unlock();
-
-  return NULL;
+  X_lock(); redessiner(); X_unlock();
 }
 
-void migr(void)
-{
-  marcel_attr_t attr;
-  unsigned granted;
-
-  marcel_attr_init(&attr);
-  marcel_attr_setprio(&attr, MAX_PRIO);
-
-  marcel_attr_setstackaddr(&attr, slot_general_alloc(NULL, 0,
-						     &granted, NULL));
-  marcel_attr_setstacksize(&attr, granted);
-
-  marcel_create(NULL, &attr, migrer, NULL);
-}
-
-void reset_threads(void)
+static void reset_threads(void)
 {
   marcel_t pids[32];
   int i, nb;
@@ -348,17 +269,37 @@ void reset_threads(void)
   redessiner();
 }
 
-void color_notify(Panel_item p, int choice)
+static void pre_migr(marcel_t pid)
 {
-   current_color = choice;
+  X_lock(); redessiner(); X_unlock();
 }
 
-void prio_proc(Panel_item p, int value)
+static void draw(void)
 {
-  current_prio = value;
+  pm2_thread_create(tracer_polygone, NULL);
 }
 
-void ma_main_loop(void)
+static void migr(void)
+{
+  pm2_thread_create(migrer, NULL);
+}
+
+static void toggle_regulate(Panel_item item, int value)
+{
+  pm2_thread_create(positionner_regul, (void *)value);
+}
+
+static void color_notify(Panel_item p, int choice)
+{
+  current_color = choice;
+}
+
+static void quit(void)
+{
+  finished = TRUE;
+}
+
+static void ma_main_loop(void)
 {
   for(;;) {
 
@@ -373,18 +314,12 @@ void ma_main_loop(void)
   }
 }
 
-void startup_func(int *modules, int nb)
+static void startup_func()
 {
-   mon_rang = 0;
-   while(modules[mon_rang] != pm2_self())
-      mon_rang++;
-   module_suivant = modules[(mon_rang+1)%nb];
-   if(mon_rang == 0)
-      module_precedent = modules[nb-1];
-   else
-      module_precedent = modules[mon_rang-1];
+  module_suivant = (pm2_self() + 1) % pm2_config_size();
+  module_precedent = (pm2_self() == 0) ? pm2_config_size() - 1 : pm2_self() - 1;
 
-   regul_init(modules, nb);
+  regul_init();
 }
 
 int pm2_main(int argc, char **argv)
@@ -433,17 +368,6 @@ int pm2_main(int argc, char **argv)
 				WIN_CMS,	cms,
 				NULL);
 
-  prio_slider = (Panel_item)xv_create(base_panel, PANEL_SLIDER,
-				      PANEL_LABEL_STRING,	"Priority",
-				      PANEL_VALUE,		1,
-				      PANEL_MIN_VALUE,	1,
-				      PANEL_MAX_VALUE,	100,
-				      PANEL_SLIDER_WIDTH,	100,
-				      PANEL_TICKS,		1,
-				      PANEL_NOTIFY_PROC,	prio_proc,
-				      PANEL_ITEM_COLOR,	CMS_CONTROL_COLORS + c_noir,
-				      NULL);
-
   regul_item = (Panel_item)xv_create(base_panel, PANEL_CHOICE,
 				     PANEL_LABEL_STRING,	"Regulation",
 				     PANEL_CHOICE_STRINGS,	"On", "Off", NULL,
@@ -456,7 +380,7 @@ int pm2_main(int argc, char **argv)
   draw_button = (Panel_item)xv_create(base_panel, PANEL_BUTTON,
 				      PANEL_NEXT_ROW,		-1,
 				      PANEL_LABEL_STRING,	"Run",
-				      PANEL_NOTIFY_PROC,	lignes,
+				      PANEL_NOTIFY_PROC,	draw,
 				      PANEL_ITEM_COLOR,	CMS_CONTROL_COLORS + c_noir,
 				      NULL);
 
@@ -547,17 +471,16 @@ int pm2_main(int argc, char **argv)
   }
   xv_set(base_frame, XV_SHOW, TRUE, NULL);
 
-  pm2_init_rpc();
-  regul_init_rpc();
+  pm2_rpc_init();
+  regul_rpc_init();
 
   pm2_set_startup_func(startup_func);
   pm2_set_user_func(user_func);
   pm2_set_pre_migration_func(pre_migr);
 
-  DECLARE_LRPC_WITH_NAME(GRAPH, "graph", OPTIMIZE_IF_LOCAL);
-  DECLARE_LRPC(SYNC_DISPLAY);
+  pm2_rawrpc_register(&SYNC_DISPLAY, sync_display_service);
 
-  pm2_init(&argc_save, argv_save, ASK_USER, &les_modules, &nb_modules);
+  pm2_init(&argc_save, argv_save);
 
   marcel_key_create(&color_key, NULL);
 
@@ -566,13 +489,9 @@ int pm2_main(int argc, char **argv)
 
   ma_main_loop();
 
-  {
-    int self = pm2_self();
+  reset_threads();
 
-    reset_threads();
-
-    pm2_kill_modules(&self, 1);
-  }
+  pm2_halt();
 
   regul_exit();
   pm2_exit();

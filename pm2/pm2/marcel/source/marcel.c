@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.25  2000/09/13 00:07:19  rnamyst
+Support for profiling + minor bug fixes
+
 Revision 1.24  2000/06/15 08:54:04  rnamyst
 Minor modifs
 
@@ -168,6 +171,10 @@ ______________________________________________________________________________
 
 #ifdef TBX
 #include "tbx.h"
+#endif
+
+#ifdef PROFILE
+#include "profile.h"
 #endif
 
 #ifdef RS6K_ARCH
@@ -477,22 +484,28 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 
 int marcel_join(marcel_t pid, any_t *status)
 {
+  LOG_IN();
+
 #ifdef MA__DEBUG
   if(pid->detached)
     RAISE(PROGRAM_ERROR);
 #endif
 
-   marcel_sem_P(&pid->client);
-   if(status)
-      *status = pid->ret_val;
-   marcel_sem_V(&pid->thread);
-   return 0;
+  marcel_sem_P(&pid->client);
+  if(status)
+    *status = pid->ret_val;
+  marcel_sem_V(&pid->thread);
+
+  LOG_OUT();
+  return 0;
 }
 
 int marcel_exit(any_t val)
 {
   marcel_t cur = marcel_self();
   DEFINE_CUR_LWP(register, , );
+
+  LOG_IN();
 
   // gestion des thread_keys
   {
@@ -621,6 +634,9 @@ int marcel_exit(any_t val)
 #ifdef MA__MULTIPLE_RUNNING
     cur_lwp->prev_running=NULL;
 #endif
+
+    LOG_OUT();
+
     goto_next_task(cur);
 
   } else { // Ici, la pile a été allouée par le noyau Marcel
@@ -688,6 +704,8 @@ int marcel_exit(any_t val)
 #ifdef MA__MULTIPLE_RUNNING
     cur_lwp->prev_running=NULL;
 #endif
+
+    LOG_OUT();
 
     // Enfin, on effectue un changement de contexte vers le thread suivant.
     goto_next_task(cur_lwp->sec_desc->child);
@@ -1154,6 +1172,11 @@ void marcel_init_ext(int *argc, char *argv[], int debug_flags)
   static volatile boolean already_called = FALSE;
 
   if(!already_called) {
+
+#ifdef PROFILE
+    profile_init();
+#endif
+
 #ifdef TBX
     tbx_init(argc, argv, debug_flags);
 #endif

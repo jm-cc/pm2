@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2_timing.h,v $
+Revision 1.3  2000/02/28 11:18:04  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.2  2000/01/31 15:49:46  oaumage
 - ajout du Log CVS
 
@@ -44,7 +47,7 @@ ______________________________________________________________________________
 #ifndef PM2_TIMING_EST_DEF
 #define PM2_TIMING_EST_DEF
 
-#include <timing.h>
+#include "timing.h"
 
 #ifndef PM2_TIMING
 #undef TIMING_EVENT

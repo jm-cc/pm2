@@ -902,7 +902,7 @@ void ma__marcel_yield(void)
 // céder la main.
 void ma__marcel_find_and_yield_to_rt_task(void)
 {
-  marcel_t res, first, cur = marcel_self();
+  marcel_t first, cur = marcel_self();
   DEFINE_CUR_LWP(,= ,GET_LWP(cur));
 
   LOG_IN();
@@ -913,7 +913,7 @@ void ma__marcel_find_and_yield_to_rt_task(void)
 
   if(first != NULL) {
 #ifdef MA__MULTIPLE_RUNNING
-    res = first;
+    marcel_t res = first;
     do {
       if(CAN_RUN(cur_lwp, res)) {
 	SET_STATE_RUNNING(cur, res, cur_lwp);
@@ -1125,10 +1125,6 @@ static int marcel_check_sleeping(void)
 	   marcel_self()->lwp->number);
 
   LOG_OUT();
-
-  if(!waked_some_task)
-    mdebug("Failed to wake any task (present = %ld)\n",
-	   present);
 
   return waked_some_task;
 }

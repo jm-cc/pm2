@@ -576,9 +576,17 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
             buffer = tbx_get_list_reference_object(&ref);
             if (buffer->type == mad_user_buffer && buffer->parameter_slist)
               {
-                tbx_slist_merge_after(connection->parameter_slist,
-                                      buffer->parameter_slist);
-                tbx_slist_clear_and_free(buffer->parameter_slist);
+                if (!connection->parameter_slist)
+                  {
+                    connection->parameter_slist = buffer->parameter_slist;
+                  }
+                else
+                  {
+                    tbx_slist_merge_after(connection->parameter_slist,
+                                          buffer->parameter_slist);
+                    tbx_slist_clear_and_free(buffer->parameter_slist);
+                  }
+
                 buffer->parameter_slist = NULL;
               }
           }
@@ -595,9 +603,17 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
             buffer = tbx_get_list_reference_object(&ref);
             if (buffer->type == mad_user_buffer && buffer->parameter_slist)
               {
-                tbx_slist_merge_after(connection->parameter_slist,
-                                      buffer->parameter_slist);
-                tbx_slist_clear_and_free(buffer->parameter_slist);
+                if (!connection->parameter_slist)
+                  {
+                    connection->parameter_slist = buffer->parameter_slist;
+                  }
+                else
+                  {
+                    tbx_slist_merge_after(connection->parameter_slist,
+                                          buffer->parameter_slist);
+                    tbx_slist_clear_and_free(buffer->parameter_slist);
+                  }
+
                 buffer->parameter_slist = NULL;
               }
           }
@@ -616,9 +632,17 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
                 buffer = tbx_get_list_reference_object(&ref);
                 if (buffer->type == mad_user_buffer && buffer->parameter_slist)
                   {
-                    tbx_slist_merge_after(connection->parameter_slist,
-                                          buffer->parameter_slist);
-                    tbx_slist_clear_and_free(buffer->parameter_slist);
+                    if (!connection->parameter_slist)
+                      {
+                        connection->parameter_slist = buffer->parameter_slist;
+                      }
+                    else
+                      {
+                        tbx_slist_merge_after(connection->parameter_slist,
+                                              buffer->parameter_slist);
+                        tbx_slist_clear_and_free(buffer->parameter_slist);
+                      }
+
                     buffer->parameter_slist = NULL;
                   }
               }
@@ -635,9 +659,17 @@ mad_end_unpacking_ext(p_mad_connection_t connection)
                 buffer = tbx_get_list_reference_object(&ref);
                 if (buffer->type == mad_user_buffer && buffer->parameter_slist)
                   {
-                    tbx_slist_merge_after(connection->parameter_slist,
-                                          buffer->parameter_slist);
-                    tbx_slist_clear_and_free(buffer->parameter_slist);
+                    if (!connection->parameter_slist)
+                      {
+                        connection->parameter_slist = buffer->parameter_slist;
+                      }
+                    else
+                      {
+                        tbx_slist_merge_after(connection->parameter_slist,
+                                              buffer->parameter_slist);
+                        tbx_slist_clear_and_free(buffer->parameter_slist);
+                      }
+
                     buffer->parameter_slist = NULL;
                   }
               }

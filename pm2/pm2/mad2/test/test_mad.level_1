@@ -35,4 +35,4 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"mad2 tbx ntbx init\" \
 	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
-	--all=\"opt\" --common=\"static\" $_output_redirect
+	--all=\"opt\" --all=\"build_static\" $_output_redirect

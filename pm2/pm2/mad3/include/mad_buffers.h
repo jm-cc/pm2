@@ -22,8 +22,10 @@
 #define MAD_BUFFERS_H
 
 /* Default buffer alignment */
-#define MAD_ALIGNMENT 64
-#define MAD_ALIGNED   TBX_ALIGN(MAD_ALIGNMENT)
+#define MAD_ALIGNMENT        4
+#define MAD_LENGTH_ALIGNMENT 4
+#define MAD_ALIGNED          TBX_ALIGN(MAD_ALIGNMENT)
+#define MAD_LENGTH_ALIGNED   TBX_ALIGN(MAD_SIZE_ALIGNMENT)
 
 /* mad_buffer_type: indicates the category of the buffer */
 typedef enum

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_ping.c,v $
+Revision 1.5  2000/03/02 14:27:54  oaumage
+- support d'un protocole par defaut
+
 Revision 1.4  2000/03/02 09:52:21  jfmehaut
 pilote Madeleine II/BIP
 
@@ -98,10 +101,10 @@ ______________________________________________________________________________
 static int param_control_receive = 0;
 static int param_send_mode       = mad_send_CHEAPER;
 static int param_receive_mode    = mad_receive_CHEAPER;
-static int param_nb_echantillons = 1001;
-static int param_min_size        = 16;
+static int param_nb_echantillons = 1000;
+static int param_min_size        = 0;
 static int param_max_size        = 256;
-static int param_step            = 16; /* 0 = progression log. */
+static int param_step            = 4; /* 0 = progression log. */
 static int param_nb_tests        = 5;
 static int param_bandwidth       = 0;
 static int param_no_zero         = 1;
@@ -497,16 +500,18 @@ int main(int argc, char **argv)
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_list = mad_adapter_list_init(1, mad_VIA, "/dev/via_eth0"); */
-  /* TCP */
-  /* adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
+  /* TCP
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); */
   /* SISCI 
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 
      adapter_set = mad_adapter_set_init(1, mad_SBP, NULL); */
   /* MPI 
      adapter_set = mad_adapter_set_init(1, mad_MPI, NULL);  */
-  /* BIP */
-     adapter_set = mad_adapter_set_init(1, mad_BIP, NULL);  
+  /* BIP 
+     adapter_set = mad_adapter_set_init(1, mad_BIP, NULL);  */
+  /* Default */
+  adapter_set = mad_adapter_set_init(1, mad_DRIVER_DEFAULT, NULL); 
 
   madeleine = mad_init(&argc, argv, NULL, adapter_set);
 

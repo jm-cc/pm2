@@ -46,8 +46,44 @@ mad_get_channel(p_mad_madeleine_t  madeleine,
     FAILURE("invalid channel");
 
   LOG_OUT();
-  
+
   return channel;
 }
 
+p_mad_channel_t
+mad_get_sub_channel(p_mad_channel_t channel,
+		    unsigned int    sub)
+{
+  p_mad_channel_t sub_channel = NULL;
+  p_tbx_darray_t  darray  = NULL;
 
+  LOG_IN();
+  darray = channel->sub_channel_darray;
+
+  TBX_LOCK_SHARED(darray);
+  if (sub >= channel->max_sub)
+    FAILURE("not enough resources to allocate anonymous sub channel");
+
+  sub_channel = tbx_darray_expand_and_get(darray, sub);
+
+  if (!sub_channel)
+    {
+      p_mad_driver_interface_t interface = NULL;
+
+      interface = channel->adapter->driver->interface;
+
+      if (interface->get_sub_channel)
+	{
+	  sub_channel = interface->get_sub_channel(channel, sub);
+	}
+      else
+	FAILURE("anonymous sub channels unsupported by the driver");
+
+      tbx_darray_set(darray, sub, sub_channel);
+    }
+  TBX_UNLOCK_SHARED(darray);
+
+  LOG_OUT();
+
+  return sub_channel;
+}

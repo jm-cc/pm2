@@ -24,7 +24,7 @@
 
 #include "marcel.h"
 #include "sys/marcel_debug.h"
-#include "list.h"
+#include "pm2_list.h"
 
 #ifdef SMP
 #include <errno.h>
@@ -38,7 +38,7 @@
 #endif
 
 #ifdef MA__ACTIVATION
-#include "sys/upcalls.h"
+#include "sys/marcel_upcalls.h"
 int nb_idle_sleeping = 0;
 #endif
 
@@ -141,7 +141,7 @@ static __inline__ void display_sched_queue(marcel_t pid)
   mdebug("\t\t\t<Task queue on LWP %d:\n", pid->lwp->number);
   do {
     mdebug("\t\t\t\tThread %p (num %d, LWP %d)\n", t, t->number, t->lwp->number);
-    t = t->next;
+    t = next_task(t);
   } while(t != pid);
   mdebug("\t\t\t>\n");
 #endif

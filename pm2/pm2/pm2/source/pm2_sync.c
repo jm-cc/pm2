@@ -197,20 +197,23 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
   marcel_sem_P(&bar->mutex);
   if(++bar->nb == bar->local) {
     int i;
+#ifdef DSM
     /* Here we handle consistency (first phase: release) */
     for (i = 0; i < bar->nb_prot; i++) 
       {
 	if (dsm_get_release_func(bar->prot[i]) != NULL)
 	  (*dsm_get_release_func(bar->prot[i]))();   
       }
-
+#endif
     pm2_barrier(&bar->node_barrier);
+#ifdef DSM
     /* Here we handle consistency (second phase: acquire) */
     for (i = 0; i < bar->nb_prot; i++) 
       {
 	if (dsm_get_acquire_func(bar->prot[i]) != NULL)
 	  (*dsm_get_acquire_func(bar->prot[i]))();  
       }
+#endif
     marcel_sem_unlock_all(&bar->wait);
     bar->nb = 0;
     marcel_sem_V(&bar->mutex);

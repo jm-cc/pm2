@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: console.c,v $
+Revision 1.4  2000/02/28 11:16:59  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.3  2000/01/31 15:58:19  oaumage
 - ajout du Log CVS
 
@@ -41,7 +44,8 @@ Revision 1.3  2000/01/31 15:58:19  oaumage
 ______________________________________________________________________________
 */
 
-#include <pm2.h>
+#include "pm2.h"
+
 #include <ctype.h>
 
 static long xtoi(char *p)

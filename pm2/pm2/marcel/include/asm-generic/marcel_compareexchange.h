@@ -52,6 +52,13 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 				*p = new;
 			break;
 		}
+        case 8:
+                {
+                        volatile ma_u64 *p = ptr;
+                        if (old == (prev=*p))
+                                *p = new;
+                        break;
+                }
 	default:
 		MA_BUG();
 	}

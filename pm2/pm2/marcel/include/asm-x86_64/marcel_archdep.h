@@ -19,26 +19,27 @@
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
+#include <setjmp.h>
 
-#error "to write !"
+#define TOP_STACK_FREE_AREA     128
+#define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_RSP])
 
-#define TOP_STACK_FREE_AREA     
-#define SP_FIELD(buf)           
-#define BSP_FIELD(buf)          
-#define PC_FIELD(buf)           
-
-#define call_ST_FLUSH_WINDOWS()  
-
-#define SET_MARCEL_SELF_FROM_SP(sp)
-
-static __inline__ long get_gs(void)
-{
-}
+#define call_ST_FLUSH_WINDOWS()  ((void)0)
 
 static __inline__ long get_sp(void)
 {
+  register long sp;
+
+  __asm__ __volatile__("movq %%rsp, %0" : "=r" (sp));
+  return sp;
 }
 
-#define set_sp(val)
+#define set_sp(val) \
+  do { \
+    typeof(val) value=(val); \
+    __asm__ __volatile__("movq %0, %%rsp" \
+                       : : "m" (value) : "memory" ); \
+  } while (0)
+
 
 #endif

@@ -52,6 +52,11 @@ extern int __zero_fd;
 #    define SLOT_AREA_BOTTOM       0x10000000
 #    define MAIN_STACK_BOT         0xb8000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#  elif defined(X86_64_ARCH)
+#    define ISOADDR_AREA_TOP       0x2000000000
+#    define SLOT_AREA_BOTTOM       0x1000000000
+#    define MAIN_STACK_BOT         0x7000000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(IA64_ARCH)
 #    undef ASM_THREAD_SLOT_SIZE
      /* 0x30000 nécessaire pour pthread_create */

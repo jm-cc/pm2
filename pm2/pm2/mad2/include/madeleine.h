@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.7  2000/01/21 17:26:56  oaumage
+- mise a jour de l'interface de compatibilite /mad1
+
 Revision 1.6  2000/01/21 11:47:37  oaumage
 - interface de compatibilite mad1: remplacement de mad_pack/unpack par
   pm2_pack/unpack
@@ -165,6 +168,85 @@ void mad_receive(p_mad_channel_t channel);
 
 void mad_recvbuf_receive(void);
 
+
+#define SEND_CHEAPER  mad_send_CHEAPER
+#define SEND_SAFER    mad_send_SAFER
+#define SEND_LATER    mad_send_LATER
+#define RECV_EXPRESS  mad_receive_EXPRESS
+#define RECV_CHEAPER  mad_receive_CHEAPER
+
+void pm2_pack_byte(mad_send_mode_t     sm,
+		   mad_receive_mode_t  rm,
+		   char               *data,
+		   size_t              nb);
+void pm2_unpack_byte(mad_send_mode_t     sm,
+		     mad_receive_mode_t  rm,
+		     char               *data,
+		     size_t              nb);
+
+void pm2_pack_short(mad_send_mode_t     sm,
+		    mad_receive_mode_t  rm,
+		    short              *data,
+		    size_t              nb);
+void pm2_unpack_short(mad_send_mode_t     sm,
+		      mad_receive_mode_t  rm,
+		      short              *data,
+		      size_t nb);
+
+void pm2_pack_int(mad_send_mode_t     sm,
+		  mad_receive_mode_t  rm,
+		  int                *data,
+		  size_t              nb);
+void pm2_unpack_int(mad_send_mode_t     sm,
+		    mad_receive_mode_t  rm,
+		    int                *data,
+		    size_t              nb);
+
+void pm2_pack_long(mad_send_mode_t      sm,
+		   mad_receive_mode_t   rm,
+		   long                *data,
+		   size_t               nb);
+void pm2_unpack_long(mad_send_mode_t     sm,
+		     mad_receive_mode_t  rm,
+		     long               *data,
+		     size_t              nb);
+
+void pm2_pack_float(mad_send_mode_t     sm,
+		    mad_receive_mode_t  rm,
+		    float              *data,
+		    size_t              nb);
+void pm2_unpack_float(mad_send_mode_t     sm,
+		      mad_receive_mode_t  rm,
+		      float              *data,
+		      size_t              nb);
+
+void pm2_pack_double(mad_send_mode_t     sm,
+		     mad_receive_mode_t  rm,
+		     double             *data,
+		     size_t              nb);
+void pm2_unpack_double(mad_send_mode_t     sm,
+		       mad_receive_mode_t  rm,
+		       double             *data,
+		       size_t              nb);
+
+void pm2_pack_pointer(mad_send_mode_t     sm,
+		      mad_receive_mode_t  rm,
+		      pointer            *data,
+		      size_t              nb);
+void pm2_unpack_pointer(mad_send_mode_t     sm,
+			mad_receive_mode_t  rm,
+			pointer            *data,
+			size_t              nb);
+
+/* !!! Use with great care: send_LATER mode unsupported */
+void pm2_pack_str(mad_send_mode_t     sm,
+		  mad_receive_mode_t  rm,
+		  char               *data);
+void pm2_unpack_str(mad_send_mode_t     sm,
+		    mad_receive_mode_t  rm,
+		    char               *data);
+
+/* Previous MAD1 compatibility layer */
 typedef enum {
   MAD_IN_HEADER,
   MAD_IN_PLACE,
@@ -172,29 +254,30 @@ typedef enum {
   MAD_BY_COPY
 } madeleine_part;
 
-void pm2_pack_byte(madeleine_part where, char *data, size_t nb);
-void pm2_unpack_byte(madeleine_part where, char *data, size_t nb);
+void old_mad_pack_byte(madeleine_part where, char *data, size_t nb);
+void old_mad_unpack_byte(madeleine_part where, char *data, size_t nb);
 
-void pm2_pack_short(madeleine_part where, short *data, size_t nb);
-void pm2_unpack_short(madeleine_part where, short *data, size_t nb);
+void old_mad_pack_short(madeleine_part where, short *data, size_t nb);
+void old_mad_unpack_short(madeleine_part where, short *data, size_t nb);
 
-void pm2_pack_int(madeleine_part where, int *data, size_t nb);
-void pm2_unpack_int(madeleine_part where, int *data, size_t nb);
+void old_mad_pack_int(madeleine_part where, int *data, size_t nb);
+void old_mad_unpack_int(madeleine_part where, int *data, size_t nb);
 
-void pm2_pack_long(madeleine_part where, long *data, size_t nb);
-void pm2_unpack_long(madeleine_part where, long *data, size_t nb);
+void old_mad_pack_long(madeleine_part where, long *data, size_t nb);
+void old_mad_unpack_long(madeleine_part where, long *data, size_t nb);
 
-void pm2_pack_float(madeleine_part where, float *data, size_t nb);
-void pm2_unpack_float(madeleine_part where, float *data, size_t nb);
+void old_mad_pack_float(madeleine_part where, float *data, size_t nb);
+void old_mad_unpack_float(madeleine_part where, float *data, size_t nb);
 
-void pm2_pack_double(madeleine_part where, double *data, size_t nb);
-void pm2_unpack_double(madeleine_part where, double *data, size_t nb);
+void old_mad_pack_double(madeleine_part where, double *data, size_t nb);
+void old_mad_unpack_double(madeleine_part where, double *data, size_t nb);
 
-void pm2_pack_pointer(madeleine_part where, pointer *data, size_t nb);
-void pm2_unpack_pointer(madeleine_part where, pointer *data, size_t nb);
+void old_mad_pack_pointer(madeleine_part where, pointer *data, size_t nb);
+void old_mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb);
 
-void pm2_pack_str(madeleine_part where, char *data);
-void pm2_unpack_str(madeleine_part where, char *data);
+void old_mad_pack_str(madeleine_part where, char *data);
+void old_mad_unpack_str(madeleine_part where, char *data);
+
 
 p_mad_madeleine_t mad_get_madeleine();
 

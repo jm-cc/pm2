@@ -33,7 +33,7 @@
 /* *** Credits ........................................................ *** */
 typedef int mad_via_credit_t;
 
-typedef struct
+typedef struct s_mad_via_credits
 {
   mad_via_credit_t max_credits;
   mad_via_credit_t available_credits;
@@ -42,7 +42,7 @@ typedef struct
 } mad_via_credits_t, *p_mad_via_credits_t;
 
 /* *** vi abstraction ................................................. *** */
-typedef struct
+typedef struct s_mad_via_discriminator
 {
   unsigned char adapter_id;
   unsigned char channel_id;
@@ -50,7 +50,7 @@ typedef struct
   unsigned char vi_id;
 } mad_via_discriminator_t, *p_mad_via_discriminator_t;
 
-typedef struct
+typedef struct s_mad_via_descriptor
 {
   VIP_DESCRIPTOR  *descriptor;
   VIP_MEM_HANDLE   handle;
@@ -58,13 +58,13 @@ typedef struct
   size_t           size;
 } mad_via_descriptor_t, *p_mad_via_descriptor_t;
 
-typedef struct
+typedef struct s_mad_via_way
 {
   p_mad_via_descriptor_t descriptor;
   p_mad_buffer_t         buffer;
 } mad_via_way_t, *p_mad_via_way_t;
 
-typedef struct
+typedef struct s_mad_via_vi
 {
   VIP_VI_HANDLE           handle;
   mad_via_discriminator_t discriminator;
@@ -74,13 +74,13 @@ typedef struct
 } mad_via_vi_t, *p_mad_via_vi_t;
 
 /* *** preregistered memory blocks manager data ....................... *** */
-typedef struct
+typedef struct s_mad_via_memory_element
 {
   void           *next;
   VIP_MEM_HANDLE  handle;
 } mad_via_memory_element_t, *p_mad_via_memory_element_t;
 
-typedef struct
+typedef struct s_mad_via_memory
 {
   PM2_SHARED;
   void             *first_block;
@@ -94,12 +94,12 @@ typedef struct
 } mad_via_memory_t, *p_mad_via_memory_t;
 
 /* *** MadII's driver specific data structures ........................ *** */
-typedef struct
+typedef struct s_mad_via_driver_specific
 {
   int nb_adapter;
 } mad_via_driver_specific_t, *p_mad_via_driver_specific_t;
 
-typedef struct
+typedef struct s_mad_via_adapter_specific
 {
   p_mad_via_memory_t    memory;
   VIP_NIC_HANDLE        handle;
@@ -108,18 +108,18 @@ typedef struct
   VIP_MEM_ATTRIBUTES    memory_attributes;
 } mad_via_adapter_specific_t, *p_mad_via_adapter_specific_t;
 
-typedef struct
+typedef struct s_mad_via_channel_specific
 {
   VIP_CQ_HANDLE completion_queue;
 } mad_via_channel_specific_t, *p_mad_via_channel_specific_t;
 
-typedef struct
+typedef struct s_mad_via_connection_specific
 {
   mad_via_vi_t     vi;
   mad_bool_t       posted; /* ack reception ready ? */
 } mad_via_connection_specific_t, *p_mad_via_connection_specific_t;
 
-typedef struct
+typedef struct s_mad_via_link_specific
 {
   mad_via_vi_t vi;
 } mad_via_link_specific_t, *p_mad_via_link_specific_t;

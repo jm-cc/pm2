@@ -33,6 +33,10 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.7  2000/02/04 16:35:38  oaumage
+- DMA optionnel
+- correction de la transmission des `node_id'
+
 Revision 1.6  2000/02/03 17:37:38  oaumage
 - mad_channel.c : correction de la liberation des donnees specifiques aux
                   connections
@@ -67,13 +71,16 @@ ______________________________________________________________________________
  * ---------
  */
 
+/* #define MAD_SISCI_DMA */
+
 /* SHMem */
 #define MAD_SISCI_BUFFER_SIZE (65536 - sizeof(mad_sisci_connection_status_t))
 
 /* DMA */
+#ifdef MAD_SISCI_DMA
 #define MAD_SISCI_DMA_BUFFER_SIZE 64000
 #define MAD_SISCI_DMA_MIN         (MAD_SISCI_DMA_BUFFER_SIZE * 3)
-
+#endif /* MAD_SISCI_DMA */
 
 /*
  * macros
@@ -187,6 +194,7 @@ typedef struct
   int                          buffers_read;
   tbx_bool_t                   write_flag_flushed;
 
+#ifdef MAD_SISCI_DMA
   /* DMA send */
   sci_desc_t                   dma_send_sd[2];
   sci_dma_queue_t              dma_send_queue[2];
@@ -196,6 +204,7 @@ typedef struct
   /* DMA recv */
   sci_desc_t                   dma_recv_sd[2];
   mad_sisci_local_segment_t    local_dma_recv_segment[2];
+#endif /* MAD_SISCI_DMA */
 } mad_sisci_connection_specific_t, *p_mad_sisci_connection_specific_t;
 
 typedef struct
@@ -457,7 +466,11 @@ mad_sisci_register(p_mad_driver_t driver)
   interface->channel_exit               = NULL;
   interface->adapter_exit               = mad_sisci_adapter_exit;
   interface->driver_exit                = NULL;
+#ifdef MAD_SISCI_DMA
   interface->choice                     = mad_sisci_choice;
+#else /* MAD_SISCI_DMA */
+  interface->choice                     = NULL;
+#endif /* MAD_SISCI_DMA */  
   interface->get_static_buffer          = NULL;
   interface->return_static_buffer       = NULL;
   interface->new_message                = NULL;
@@ -601,12 +614,13 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 	  mad_sisci_clear(&data->status.read);
 
 	  adapter_specific->remote_node_id[i] = data->node_id;
+	  LOG_VAL("node_id", data->node_id);
 
 	  /* Remote segment */
 	  remote_segment->id = 
 	      0
 	    | (i << 8)
-	    | (configuration->local_host_id  << 16)
+	    | (configuration->local_host_id << 16)
 	    | (1 << 24);
 	  remote_segment->size   = sizeof(mad_sisci_internal_segment_data_t);
 	  remote_segment->offset = 0;
@@ -644,6 +658,8 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 	  mad_sisci_control();
 	}
       
+
+
       LOG("mad_sisci_adapter_configuration_init: phase 1 terminee");
       for(i = 1; i < configuration->size; i++)
 	{
@@ -666,7 +682,7 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 		{
 		  while (!mad_sisci_test(&data->status.write));
 		  mad_sisci_clear(&data->status.write);
-		  data->node_id = adapter_specific->local_node_id;
+		  data->node_id = adapter_specific->remote_node_id[j];
 		  mad_sisci_flush(remote_segment);
 		  mad_sisci_set(&data->status.read);
 		  mad_sisci_flush(remote_segment);
@@ -805,6 +821,7 @@ mad_sisci_adapter_configuration_init(p_mad_adapter_t adapter)
 
 	      adapter_specific->remote_node_id[i] =
 		data->node_id;
+	      LOG_VAL("node_id", data->node_id);
 	    }
 	}
 
@@ -900,7 +917,8 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 	  channel->id
 	| (configuration->local_host_id << 8)
 	| (connection->remote_host_id   << 16);
-      
+      LOG_VAL("local_segment_id", local_segment->id);
+
       if (host_id == configuration->local_host_id)
 	{
 	  LOG("mad_sisci_before_open_channel: preparing 'accept' segment");
@@ -957,7 +975,6 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 	    local_segment->map_addr;
 	  int i;
 	  
-	  LOG_VAL("local_segment_id", local_segment->id);
 	  for (i = 0; i < 64; i++)
 	    {
 	      local_data->status.read.buffer[i] = 0;
@@ -976,6 +993,7 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
     }
 
 
+#ifdef MAD_SISCI_DMA
   /* DMA segments */
   for (host_id = 0;
        host_id < configuration->size;
@@ -995,6 +1013,8 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 		&connection_specific->local_dma_send_segment[k];
       
 	      connection->remote_host_id = host_id;
+
+	      /* ID no used */
 	      local_segment->id = 
 		channel->id
 		| (configuration->local_host_id << 8)
@@ -1085,139 +1105,8 @@ mad_sisci_before_open_channel(p_mad_channel_t channel)
 	      LOG("mad_sisci_before_open_channel: DMA segment is ready");
 	    }
 	}
-    } 
-  LOG_OUT();
-}
-
-void
-mad_sisci_accept(p_mad_channel_t channel)
-{
-  mad_host_id_t                       host_id                    = -1;
-  p_mad_adapter_t                     adapter                    =
-    channel->adapter;
-  p_mad_sisci_adapter_specific_t      adapter_specific           =
-    adapter->specific;
-  p_mad_driver_t                      driver                     =
-    adapter->driver;
-  p_mad_configuration_t               configuration              =
-    &driver->madeleine->configuration;
-  p_mad_connection_t                  accept_connection          =
-    &channel->input_connection[configuration->local_host_id];
-  p_mad_sisci_connection_specific_t   accept_connection_specific =
-    accept_connection->specific;
-  p_mad_sisci_local_segment_t         accept_local_segment       =
-  &accept_connection_specific->local_segment;
-  p_mad_connection_t                  connection;
-  p_mad_sisci_connection_specific_t   connection_specific;
-  p_mad_sisci_remote_segment_t        remote_segment;
-  sci_error_t                         sisci_error                = SCI_ERR_OK;
-  int                                 k;
-  
-  LOG_IN();
-
-  do
-    {
-      mad_host_id_t          remote_host_id;
-      p_mad_sisci_status_t   accept_local_data =
-	accept_local_segment->map_addr;
-      
-      for (remote_host_id = 0;
-	   remote_host_id < configuration->size;
-	   remote_host_id++)
-	{
-	  if (remote_host_id != configuration->local_host_id)
-	    {
-	      if (mad_sisci_test(accept_local_data + remote_host_id))
-		{
-		  LOG("mad_sisci_accept: incoming connection request");
-
-		  mad_sisci_clear(accept_local_data + remote_host_id);
-		  host_id = remote_host_id;
-		  break;
-		}
-	      exit;
-	    }
-	}
     }
-  while(host_id == -1);
-
-  connection = &channel->input_connection[host_id];
-  connection_specific = connection->specific;
-
-  remote_segment = &connection_specific->remote_segment;
-
-  remote_segment->id = 
-      0
-    | (connection->remote_host_id << 8)
-    | (configuration->local_host_id << 16);
-  
-
-  remote_segment->size = sizeof(mad_sisci_user_segment_data_t);
-  remote_segment->offset = 0;
-
-  do
-    {
-      SCIConnectSegment(connection_specific->sd,
-			&remote_segment->segment,
-			adapter_specific->
-			remote_node_id[connection->remote_host_id],
-			remote_segment->id,
-			adapter_specific->local_adapter_id,
-			0,
-			NULL,
-			SCI_INFINITE_TIMEOUT,
-			0,
-			&sisci_error);
-    }
-  while (sisci_error != SCI_ERR_OK);
-  remote_segment->map_addr =
-    SCIMapRemoteSegment(remote_segment->segment,
-			&remote_segment->map,
-			remote_segment->offset,
-			remote_segment->size,
-			NULL,
-			0,
-			&sisci_error);
-  mad_sisci_control();
-  
-  SCICreateMapSequence(remote_segment->map,
-		       &remote_segment->sequence,
-		       0,
-		       &sisci_error);
-  mad_sisci_control();
-
-  /* DMA */
-  for (k = 0; k < 2; k++)
-    {
-      remote_segment = &connection_specific->remote_dma_send_segment[k];
-
-      remote_segment->id = 
-	0
-	| (connection->remote_host_id << 8)
-	| (configuration->local_host_id << 16)
-	| ((k + 2) << 24);
-  
-
-      remote_segment->size   = MAD_SISCI_DMA_BUFFER_SIZE;
-      remote_segment->offset = 0;
-
-      do
-	{
-	  SCIConnectSegment(connection_specific->dma_send_sd[k],
-			    &remote_segment->segment,
-			    adapter_specific->
-			    remote_node_id[connection->remote_host_id],
-			    remote_segment->id,
-			    adapter_specific->local_adapter_id,
-			    0,
-			    NULL,
-			    SCI_INFINITE_TIMEOUT,
-			    0,
-			    &sisci_error);
-	}
-      while (sisci_error != SCI_ERR_OK);
-    }
-  
+#endif /* MAD_SISCI_DMA */  
   LOG_OUT();
 }
 
@@ -1248,8 +1137,9 @@ mad_sisci_connect(p_mad_connection_t connection)
     NULL;
   sci_error_t                         sisci_error                 =
     SCI_ERR_OK;
+#ifdef MAD_SISCI_DMA
   int                                 k;
-
+#endif /* MAD_SISCI_DMA */
   LOG_IN();
 
   LOG_VAL("mad_sisci_connect: trying to connect to host",
@@ -1265,7 +1155,10 @@ mad_sisci_connect(p_mad_connection_t connection)
   connect_remote_segment->size =
     configuration->size * sizeof(mad_sisci_status_t);
   connect_remote_segment->offset = 0;
-
+  LOG_VAL("remote_segment_id", connect_remote_segment->id);
+  LOG_VAL("remote_node_id", adapter_specific->
+	  remote_node_id[connection->remote_host_id]);
+  
   do
     {
       SCIConnectSegment(connect_connection_specific->sd,
@@ -1349,6 +1242,7 @@ mad_sisci_connect(p_mad_connection_t connection)
   mad_sisci_control();
 
   /* DMA */
+#ifdef MAD_SISCI_DMA
   for (k = 0; k < 2; k++)
     {
       remote_segment = &connection_specific->remote_dma_send_segment[k];
@@ -1379,7 +1273,143 @@ mad_sisci_connect(p_mad_connection_t connection)
 	}
       while (sisci_error != SCI_ERR_OK);
     }
+#endif /* MAD_SISCI_DMA */
   LOG("mad_sisci_connect: connection established");
+  LOG_OUT();
+}
+
+void
+mad_sisci_accept(p_mad_channel_t channel)
+{
+  mad_host_id_t                       host_id                    = -1;
+  p_mad_adapter_t                     adapter                    =
+    channel->adapter;
+  p_mad_sisci_adapter_specific_t      adapter_specific           =
+    adapter->specific;
+  p_mad_driver_t                      driver                     =
+    adapter->driver;
+  p_mad_configuration_t               configuration              =
+    &driver->madeleine->configuration;
+  p_mad_connection_t                  accept_connection          =
+    &channel->input_connection[configuration->local_host_id];
+  p_mad_sisci_connection_specific_t   accept_connection_specific =
+    accept_connection->specific;
+  p_mad_sisci_local_segment_t         accept_local_segment       =
+  &accept_connection_specific->local_segment;
+  p_mad_connection_t                  connection;
+  p_mad_sisci_connection_specific_t   connection_specific;
+  p_mad_sisci_remote_segment_t        remote_segment;
+  sci_error_t                         sisci_error                = SCI_ERR_OK;
+#ifdef MAD_SISCI_DMA
+  int                                 k;
+#endif /* MAD_SISCI_DMA */
+
+  LOG_IN();
+
+  do
+    {
+      mad_host_id_t          remote_host_id;
+      p_mad_sisci_status_t   accept_local_data =
+	accept_local_segment->map_addr;
+      
+      for (remote_host_id = 0;
+	   remote_host_id < configuration->size;
+	   remote_host_id++)
+	{
+	  if (remote_host_id != configuration->local_host_id)
+	    {
+	      if (mad_sisci_test(accept_local_data + remote_host_id))
+		{
+		  LOG("mad_sisci_accept: incoming connection request");
+
+		  mad_sisci_clear(accept_local_data + remote_host_id);
+		  host_id = remote_host_id;
+		  break;
+		}
+	      exit;
+	    }
+	}
+    }
+  while(host_id == -1);
+
+  connection = &channel->input_connection[host_id];
+  connection_specific = connection->specific;
+
+  remote_segment = &connection_specific->remote_segment;
+
+  remote_segment->id = 
+      0
+    | (connection->remote_host_id << 8)
+    | (configuration->local_host_id << 16);
+  
+
+  remote_segment->size = sizeof(mad_sisci_user_segment_data_t);
+  remote_segment->offset = 0;
+
+  do
+    {
+      SCIConnectSegment(connection_specific->sd,
+			&remote_segment->segment,
+			adapter_specific->
+			remote_node_id[connection->remote_host_id],
+			remote_segment->id,
+			adapter_specific->local_adapter_id,
+			0,
+			NULL,
+			SCI_INFINITE_TIMEOUT,
+			0,
+			&sisci_error);
+    }
+  while (sisci_error != SCI_ERR_OK);
+  remote_segment->map_addr =
+    SCIMapRemoteSegment(remote_segment->segment,
+			&remote_segment->map,
+			remote_segment->offset,
+			remote_segment->size,
+			NULL,
+			0,
+			&sisci_error);
+  mad_sisci_control();
+  
+  SCICreateMapSequence(remote_segment->map,
+		       &remote_segment->sequence,
+		       0,
+		       &sisci_error);
+  mad_sisci_control();
+
+#ifdef MAD_SISCI_DMA
+  /* DMA */
+  for (k = 0; k < 2; k++)
+    {
+      remote_segment = &connection_specific->remote_dma_send_segment[k];
+
+      remote_segment->id = 
+	0
+	| (connection->remote_host_id << 8)
+	| (configuration->local_host_id << 16)
+	| ((k + 2) << 24);
+  
+
+      remote_segment->size   = MAD_SISCI_DMA_BUFFER_SIZE;
+      remote_segment->offset = 0;
+
+      do
+	{
+	  SCIConnectSegment(connection_specific->dma_send_sd[k],
+			    &remote_segment->segment,
+			    adapter_specific->
+			    remote_node_id[connection->remote_host_id],
+			    remote_segment->id,
+			    adapter_specific->local_adapter_id,
+			    0,
+			    NULL,
+			    SCI_INFINITE_TIMEOUT,
+			    0,
+			    &sisci_error);
+	}
+      while (sisci_error != SCI_ERR_OK);
+    }
+#endif /* MAD_SISCI_DMA */  
   LOG_OUT();
 }
 
@@ -1460,8 +1490,9 @@ mad_sisci_disconnect(p_mad_connection_t connection)
   p_mad_sisci_remote_segment_t        remote_segment      =
     &connection_specific->remote_segment;
   sci_error_t                         sisci_error         = SCI_ERR_OK;
+#ifdef MAD_SISCI_DMA
   int k;
-
+#endif /* MAD_SISCI_DMA */
   LOG_IN();
   SCIUnmapSegment(remote_segment->map, 0, &sisci_error);
   mad_sisci_control();
@@ -1485,7 +1516,8 @@ mad_sisci_disconnect(p_mad_connection_t connection)
   
   SCIClose(connection_specific->sd, 0, &sisci_error);
   mad_sisci_control();
-  
+
+#ifdef MAD_SISCI_DMA  
   for (k = 0; k < 2; k++)
     {
       p_mad_sisci_local_segment_t local_dma_send_segment =
@@ -1532,15 +1564,17 @@ mad_sisci_disconnect(p_mad_connection_t connection)
       SCIClose(connection_specific->dma_recv_sd[k], 0, &sisci_error);
       mad_sisci_control();
     }
+#endif /* MAD_SISCI_DMA */
   LOG_OUT();
 }
 
 p_mad_link_t
 mad_sisci_choice(p_mad_connection_t connection,
-		 size_t             size,
+		 size_t             size         __attribute__ ((unused)),
 		 mad_send_mode_t    send_mode    __attribute__ ((unused)),
 		 mad_receive_mode_t receive_mode __attribute__ ((unused)))
 {
+#ifdef MAD_SISCI_DMA
   if (size < MAD_SISCI_DMA_MIN)
     {
       return &connection->link[0];
@@ -1549,6 +1583,9 @@ mad_sisci_choice(p_mad_connection_t connection,
     {
       return &connection->link[1];
     }
+#else /* MAD_SISCI_DMA */
+  return &connection->link[0];
+#endif /* MAD_SISCI_DMA */
 }
 
 
@@ -2024,6 +2061,7 @@ mad_sisci_receive_sci_buffer_group(p_mad_link_t         link,
   LOG_OUT();
 }
 
+#ifdef MAD_SISCI_DMA
 /*
  * DMA transfer subroutines
  * -------------------------
@@ -2207,6 +2245,7 @@ mad_sisci_receive_dma_buffer_group(p_mad_link_t           lnk,
     }
   LOG_OUT();
 }
+#endif /* MAD_SISCI_DMA */
 
 /*
  * send/receive interface
@@ -2217,6 +2256,7 @@ mad_sisci_send_buffer(p_mad_link_t   lnk,
 		      p_mad_buffer_t buffer)
 {
   LOG_IN();
+#ifdef MAD_SISCI_DMA
   if (lnk->id == 0)
     {
       mad_sisci_send_sci_buffer(lnk, buffer);
@@ -2227,7 +2267,9 @@ mad_sisci_send_buffer(p_mad_link_t   lnk,
     }
   else
     FAILURE("Invalid link ID");
-  
+#else /* MAD_SISCI_DMA */
+  mad_sisci_send_sci_buffer(lnk, buffer);    
+#endif /* MAD_SISCI_DMA */
   LOG_OUT();
 }
 
@@ -2236,6 +2278,7 @@ mad_sisci_receive_buffer(p_mad_link_t   lnk,
 			 p_mad_buffer_t *buffer)
 {
   LOG_IN();
+#ifdef MAD_SISCI_DMA
   if (lnk->id == 0)
     {
       mad_sisci_receive_sci_buffer(lnk, *buffer);
@@ -2246,7 +2289,9 @@ mad_sisci_receive_buffer(p_mad_link_t   lnk,
     }
   else
     FAILURE("Invalid link ID");
-  
+#else /* MAD_SISCI_DMA */
+  mad_sisci_receive_sci_buffer(lnk, *buffer); 
+#endif /* MAD_SISCI_DMA */
   LOG_OUT();
   
 }
@@ -2256,6 +2301,7 @@ mad_sisci_send_buffer_group(p_mad_link_t         lnk,
 			    p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
+#ifdef MAD_SISCI_DMA
   if (lnk->id == 0)
     {
       mad_sisci_send_sci_buffer_group(lnk, buffer_group);
@@ -2266,7 +2312,9 @@ mad_sisci_send_buffer_group(p_mad_link_t         lnk,
     }
   else
     FAILURE("Invalid link ID");
-  
+#else /* MAD_SISCI_DMA*/
+  mad_sisci_send_sci_buffer_group(lnk, buffer_group);
+#endif /* MAD_SISCI_DMA */  
   LOG_OUT();
 }
 
@@ -2277,6 +2325,7 @@ mad_sisci_receive_sub_buffer_group(p_mad_link_t           lnk,
 				   p_mad_buffer_group_t   buffer_group)
 {
   LOG_IN();
+#ifdef MAD_SISCI_DMA
   if (lnk->id == 0)
     {
       mad_sisci_receive_sci_buffer_group(lnk, first_sub_group, buffer_group);
@@ -2287,6 +2336,10 @@ mad_sisci_receive_sub_buffer_group(p_mad_link_t           lnk,
     }
   else
     FAILURE("Invalid link ID");
+#else  /* MAD_SISCI_DMA */
+  mad_sisci_receive_sci_buffer_group(lnk, first_sub_group, buffer_group);
+#endif /* MAD_SISCI_DMA */
   
   LOG_OUT();
 }
+

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.h,v $
+Revision 1.16  2000/05/25 00:23:49  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.15  2000/05/09 11:18:03  vdanjean
 pm2debug module : minor fixes
 
@@ -115,6 +118,8 @@ ______________________________________________________________________________
 #include <sys/select.h>
 #endif
 
+#include "pm2debug.h"
+
 #ifndef FALSE
 	typedef enum { FALSE, TRUE } boolean;
 #else
@@ -185,7 +190,9 @@ _PRIVATE_ typedef struct task_desc_struct *marcel_t;
 
 /* = initialization & termination == */
 
-void marcel_init(int *argc, char *argv[]);
+#define marcel_init(argc, argv) marcel_init_ext(argc, argv, \
+        PM2DEBUG_CLEAROPT|PM2DEBUG_DO_OPT)
+void marcel_init_ext(int *argc, char *argv[], int debug_flags);
 
 void marcel_end(void);
 

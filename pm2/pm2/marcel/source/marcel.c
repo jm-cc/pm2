@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.22  2000/05/25 00:23:52  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.21  2000/05/09 10:52:45  vdanjean
 pm2debug module
 
@@ -132,6 +135,7 @@ ______________________________________________________________________________
 #include "mar_timing.h"
 #include "safe_malloc.h"
 #include "marcel_alloc.h"
+#include "sys/marcel_work.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -931,6 +935,7 @@ void marcel_disabledeviation(void)
   ++marcel_self()->not_deviatable;
 }
 
+#ifndef MA__WORK
 static void insertion_relai(handler_func_t f, void *arg)
 { 
   jmp_buf back;
@@ -963,62 +968,126 @@ static void insertion_relai(handler_func_t f, void *arg)
 /* VERY INELEGANT: to avoid inlining of insertion_relai function... */
 typedef void (*relai_func_t)(handler_func_t f, void *arg);
 static relai_func_t relai_func = insertion_relai;
+#endif
+
+static int marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg){
+#ifndef MA__WORK
+  if (pid->deviation_func != NULL) {
+    return 0;
+  } else {
+    pid->deviation_func = h;
+    pid->deviation_arg = arg;
+    return 1;
+  }
+#else
+  if (pid->deviation_func != NULL) {
+    return 0;
+  } else {
+    pid->deviation_func = h;
+    pid->deviation_arg = arg;
+    pid->has_work |= MARCEL_WORK_DEVIATE;
+    return 1;
+  }
+#endif
+}
 
 void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 { 
+#ifndef MA__WORK
   static volatile handler_func_t f_to_call;
   static void * volatile argument;
   static volatile long initial_sp;
+#endif
+
+  mdebug_deviate("%p deviate pid:%p, f:%p, arg:%p\n", marcel_self(),
+		 pid,h,arg); 
+  lock_task();
+  LOCK_WORK(pid);
+  if(pid == marcel_self()) {
+    if(pid->not_deviatable) {
+      if(! marcel_deviate_record(pid, h, arg)) {
+	UNLOCK_WORK(pid);
+	unlock_task();
+	RAISE(NOT_IMPLEMENTED);
+      }
+      UNLOCK_WORK(pid);
+      unlock_task();
+    } else {
+      UNLOCK_WORK(pid);
+      unlock_task();
+      (*h)(arg);
+    }
+  } else {
+#ifndef MA__WORK
+    if(pid->not_deviatable) {
+      if(! marcel_deviate_record(pid, h, arg)) {
+	UNLOCK_WORK(pid);
+	unlock_task();
+	RAISE(NOT_IMPLEMENTED);
+      }
+      unlock_task();
+    } else {
+      if(IS_BLOCKED(pid) || IS_SLEEPING(pid))
+	marcel_wake_task(pid, NULL);
+      else if(IS_FROZEN(pid))
+	marcel_wake_task(pid, NULL);
 
 #ifdef MA__ACTIVATION
-  RAISE(NOT_IMPLEMENTED);
-#endif
-
-  lock_task();
-
-#ifdef SMP
-  if(marcel_self()->lwp != pid->lwp)
-    RAISE(NOT_IMPLEMENTED);
-#endif
-
-  if(pid->not_deviatable) {
-    if(pid->deviation_func != NULL) {
-      unlock_task();
       RAISE(NOT_IMPLEMENTED);
+#endif
+#ifdef SMP
+      if(marcel_self()->lwp != pid->lwp)
+	RAISE(NOT_IMPLEMENTED);
+#endif
+
+      UNLOCK_WORK(pid);
+      if(MA_THR_SETJMP(marcel_self()) == NORMAL_RETURN) {
+	unlock_task();
+      } else {
+	f_to_call = h;
+	argument = arg;
+     
+	pid->father = marcel_self();
+     
+	initial_sp = MAL_BOT((long)SP_FIELD(pid->jbuf)) -
+	  TOP_STACK_FREE_AREA - 256;
+
+	call_ST_FLUSH_WINDOWS();
+	set_sp(initial_sp);
+
+	(*relai_func)(f_to_call, argument);
+	
+	RAISE(PROGRAM_ERROR); /* on ne doit jamais arriver ici ! */      
+      }
     }
-    pid->deviation_func = h;
-    pid->deviation_arg = arg;
-    unlock_task();
-    return;
-  }
-  if(pid == marcel_self()) {
-    unlock_task();
-    (*h)(arg);
-  } else {
+#else
+    for(;;) {
+      if(marcel_deviate_record(pid, h, arg)) {
+	break;
+      }
+      if(pid->not_deviatable) {
+	UNLOCK_WORK(pid);
+	unlock_task();
+	RAISE(NOT_IMPLEMENTED);
+      }
+      if(IS_BLOCKED(pid) || IS_SLEEPING(pid))
+	marcel_wake_task(pid, NULL);
+      else if(IS_FROZEN(pid))
+	marcel_wake_task(pid, NULL);
+      UNLOCK_WORK(pid);
+      unlock_task();
+      marcel_explicityield(pid);
+      lock_task();
+      LOCK_WORK(pid);
+    }
     if(IS_BLOCKED(pid) || IS_SLEEPING(pid))
       marcel_wake_task(pid, NULL);
     else if(IS_FROZEN(pid))
       marcel_wake_task(pid, NULL);
-
-    if(MA_THR_SETJMP(marcel_self()) == NORMAL_RETURN) {
-      unlock_task();
-    } else {
-      f_to_call = h;
-      argument = arg;
-
-      pid->father = marcel_self();
-
-      initial_sp = MAL_BOT((long)SP_FIELD(pid->jbuf)) -
-	TOP_STACK_FREE_AREA - 256;
-
-      call_ST_FLUSH_WINDOWS();
-      set_sp(initial_sp);
-
-      (*relai_func)(f_to_call, argument);
-
-      RAISE(PROGRAM_ERROR); /* on ne doit jamais arriver ici ! */
-    }
-  }
+    UNLOCK_WORK(pid);
+    unlock_task();
+#endif
+  }   
 }
 
 static unsigned __nb_lwp = 0;
@@ -1070,12 +1139,12 @@ void marcel_strip_cmdline(int *argc, char *argv[])
   marcel_parse_cmdline(argc, argv, FALSE);
 }
 
-void marcel_init(int *argc, char *argv[])
+void marcel_init_ext(int *argc, char *argv[], int debug_flags)
 {
   static volatile boolean already_called = FALSE;
 
   if(!already_called) {
-    marcel_debug_init(argc, argv);
+    marcel_debug_init(argc, argv, debug_flags);
 
     mdebug("\t\t\t<marcel_init>\n");
 
@@ -1342,7 +1411,11 @@ int main(int argc, char *argv[])
   static int __argc;
   static char **__argv;
 
-  marcel_debug_init(&argc, argv);
+#ifdef MAD2
+  marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT);
+#else
+  marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
+#endif
   if(!setjmp(__initial_main_jb)) {
 
     __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &

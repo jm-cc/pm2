@@ -37,29 +37,26 @@ void print_trace(trace tr)
   i = (i - 12) / 4;
   printf("%s",(tr.type == USER)? "USER: " : "KERN: ");
   printf("%9u ",(unsigned) tr.clock);
-  if (tr.type == USER)
-    printf("%5u  %1u  %1u ", tr.pid, tr.cpu, tr.thread);
-  else
-    printf("%5u  %1u    ", tr.pid, tr.cpu);
+  printf("%5u  %1u  %1u ", tr.pid, tr.cpu, tr.thread);
   printf("%6x",tr.code);
   if (tr.type == USER) {
     printf("%40s", fut_code2name(tr.code >> 8));
   } else {
     if (tr.code >= FKT_UNSHIFTED_LIMIT_CODE)
-      printf("%30s", fkt_code2name(tr.code >> 8));
+      printf("%40s", fkt_code2name(tr.code >> 8));
     else {
       if (tr.code < FKT_SYS_CALL_LIMIT_CODE) {
-	printf("\t\t\t\t    system call   %3u", tr.code);
+	printf("\t\t\t       system call   %3u", tr.code);
 	printf("   %s", sys_calls[tr.code]);
       }
       else if (tr.code < FKT_TRAP_LIMIT_CODE) {
 	i = tr.code - FKT_SYS_CALL_LIMIT_CODE;
-	printf("\t\t\t\t\t   trap   %3u", i);
+	printf("\t\t\t\t      trap   %3u", i);
 	printf("   %s", traps[i]);
       }
       else {
 	i = tr.code -  FKT_TRAP_LIMIT_CODE;
-	printf("\t\t\t\t\t    IRQ   %3u", i);
+	printf("\t\t\t\t       IRQ   %3u", i);
       }
       i = 0;
     }
@@ -183,6 +180,34 @@ void avg_active_slice()
 void error_usage()
 {
   fprintf(stderr,"Usage: sigmund [options] [filters] action\n");
+  fprintf(stderr,"Options:\n");
+  fprintf(stderr,"   --trace-file <nom_supertrace>        Indique la supertrace à utiliser\n");
+  fprintf(stderr,"                                          par défaut: prof_file\n");
+  fprintf(stderr,"   --cpu <num_cpu>                      Restreint les traces considérées à celles concernant ce cpu\n");
+  fprintf(stderr,"   --process <pid>                      Restreint les traces considérées à celles concernant ce processus\n");
+  fprintf(stderr,"   --logic <num>                        Restreint les traces considérées à celles concernant ce numéro logique de lwp\n");
+  fprintf(stderr,"   --thread <num>                       Restreint les traces considérées à celles concernant ce thread\n");
+  fprintf(stderr,"   --time_slice <begin_tick> <end_tick> Restreint les traces considérées à celles concernant cette zone de temps\n");
+  fprintf(stderr,"   --function <function_name>           Restreint les traces considérées à celles concernant cette fonction\n");
+  fprintf(stderr,"   --event <event_name>                 Ne considére que cet événement là.\n");
+  fprintf(stderr,"                                          Attention ce filtre est inutilisée lors des calculs de temps\n");
+  fprintf(stderr,"   --event-slice <begin_num> <end_num>  Restreint les traces considérées à celles entre le <begin_num> ème événement\n");
+  fprintf(stderr,"                                          et le <end_num> ème\n");
+  fprintf(stderr,"   --sys_call                           Identique à --event mais pour les appels systèmes\n");
+  fprintf(stderr,"   --begin <func_name[:param]> --end <func_name[:param]>\n");
+  fprintf(stderr,"                                        Indique des zones à considérées comprises entre ces 2 événements avec la possibilité\n");
+  fprintf(stderr,"                                           de préciser un argument (le 1er)\n");
+  fprintf(stderr,"Actions:\n");
+  fprintf(stderr,"   --list-events                        Affiche la liste des événements demandés\n");
+  fprintf(stderr,"   --nb-events                          Affiche le nombre d'événements\n");
+  fprintf(stderr,"   --nth-event <n>                      Affiche le <n> ème événement\n");
+  fprintf(stderr,"   --active-time                        Temps total actif\n");
+  fprintf(stderr,"   --idle-time                          Temps total inactif\n");
+  fprintf(stderr,"   --time                               Temps total actif+inactif\n");
+  fprintf(stderr,"   --active-slices                      Nombre de tranches actives\n");
+  fprintf(stderr,"   --idle-slices                        Nombre de tranches inactives\n");
+  fprintf(stderr,"   --avg-active-slices                  Temps moyen d'une tranche active\n");
+  fprintf(stderr,"   --nb-calls                           Identique à --nb-events\n");
   exit(1);
 }
 
@@ -209,6 +234,10 @@ int main(int argc, char **argv)
     } else if (!strcmp(*argv, "--process")) {
       if (argc <= 1) error_usage();
       filter_add_proc(atoi(*(argv + 1)));
+      argCount = 2;
+    } else if (!strcmp(*argv, "--logic")) {
+      if (argc <= 1) error_usage();
+      filter_add_logic(atoi(*(argv + 1)));
       argCount = 2;
     } else if (!strcmp(*argv, "--cpu")) {
       if (argc <= 1) error_usage();
@@ -246,12 +275,6 @@ int main(int argc, char **argv)
       if (sys2code(*(argv+1), &a) != 0) error_usage();
       filter_add_event(KERNEL, a);
       argCount = 2;
-    } else if (!strcmp(*argv, "--event")) {
-      int a;
-      if (argc <= 1) error_usage();
-      if (trap2code(*(argv+1), &a) != 0) error_usage();
-      filter_add_event(KERNEL, a);
-      argCount = 2;
     } else if (!strcmp(*argv, "--event-slice")) {
       if (argc <= 2) error_usage();
       filter_add_evnum_slice(atoi(*(argv + 1)), atoi(*(argv + 2)));
@@ -281,7 +304,7 @@ int main(int argc, char **argv)
       }
       if (strchr(*(argv+3),':') == NULL) {
 	end_param_active = FALSE;
-	if (name2code(*(argv+1), &end_type, &end) != 0) error_usage();
+	if (name2code(*(argv+3), &end_type, &end) != 0) error_usage();
       }
       else {
 	char *s;

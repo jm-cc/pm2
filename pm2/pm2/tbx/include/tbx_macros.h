@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.6  2000/04/20 12:17:39  oaumage
+- corrections diverses
+
 Revision 1.5  2000/04/05 16:10:09  oaumage
 - remplacement de marcel_givehandback par marcel_yield
 
@@ -89,12 +92,12 @@ typedef enum
  * Display  macros  _________________________________________________
  * ________________//////////////////////////////////////////////////
  */
-#define DISP(str, args...)     fprintf(stderr, str "\n", ## args)
+#define DISP(str, args...)     fprintf(stderr, str "\n" , ## args)
 #define DISP_IN()              fprintf(stderr, __FUNCTION__": -->\n")
 #define DISP_OUT()             fprintf(stderr, __FUNCTION__": <--\n")
-#define DISP_VAL(str, val)     fprintf(stderr, str " = %d\n", (int)(val))
-#define DISP_PTR(str, ptr)     fprintf(stderr, str " = %p\n", (void *)(ptr))
-#define DISP_STR(str, str2)    fprintf(stderr, str " : %s\n", (char *)(str2))
+#define DISP_VAL(str, val)     fprintf(stderr, str " = %d\n" , (int)(val))
+#define DISP_PTR(str, ptr)     fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define DISP_STR(str, str2)    fprintf(stderr, str " : %s\n" , (char *)(str2))
 
 
 /*
@@ -102,12 +105,12 @@ typedef enum
  * _______________///////////////////////////////////////////////////
  */
 #ifdef DEBUG
-#define LOG(str, args...)     fprintf(stderr, str "\n", ## args)
+#define LOG(str, args...)     fprintf(stderr, str "\n" , ## args)
 #define LOG_IN()              fprintf(stderr, __FUNCTION__": -->\n")
 #define LOG_OUT()             fprintf(stderr, __FUNCTION__": <--\n")
-#define LOG_VAL(str, val)     fprintf(stderr, str " = %d\n", (int)(val))
-#define LOG_PTR(str, ptr)     fprintf(stderr, str " = %p\n", (void *)(ptr))
-#define LOG_STR(str, str2)    fprintf(stderr, str " : %s\n", (char *)(str2))
+#define LOG_VAL(str, val)     fprintf(stderr, str " = %d\n" , (int)(val))
+#define LOG_PTR(str, ptr)     fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define LOG_STR(str, str2)    fprintf(stderr, str " : %s\n" , (char *)(str2))
 #else /* DEBUG */
 #define LOG(str, args...) 
 #define LOG_IN() 
@@ -126,9 +129,9 @@ typedef enum
 #define TRACE(str, args...)   fprintf(stderr, str "\n", ## args)
 #define TRACE_IN()            fprintf(stderr, __FUNCTION__": -->\n")
 #define TRACE_OUT()           fprintf(stderr, __FUNCTION__": <--\n")
-#define TRACE_VAL(str, val)   fprintf(stderr, str " = %d\n", (int)(val))
-#define TRACE_PTR(str, ptr)   fprintf(stderr, str " = %p\n", (void *)(ptr))
-#define TRACE_STR(str, str2)  fprintf(stderr, str " : %s\n", (char *)(str2))
+#define TRACE_VAL(str, val)   fprintf(stderr, str " = %d\n" , (int)(val))
+#define TRACE_PTR(str, ptr)   fprintf(stderr, str " = %p\n" , (void *)(ptr))
+#define TRACE_STR(str, str2)  fprintf(stderr, str " : %s\n" , (char *)(str2))
 #else /* TRACING */
 #define TRACE(str, args...) 
 #define TRACE_IN()

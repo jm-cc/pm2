@@ -28,7 +28,12 @@ extern char *traps[];
 extern char *sys_calls[];
 
 enum action {NONE, LIST_EVENTS, NB_EVENTS, NTH_EVENT, ACTIVE_TIME, IDLE_TIME,
-	     TIME, NB_CALLS, ACTIVE_SLICES, IDLE_SLICES, AVG_ACTIVE_SLICE};
+	     TIME, NB_CALLS, ACTIVE_SLICES, IDLE_SLICES, AVG_ACTIVE_SLICE, FUNCTION_TIME};
+
+void print_help()
+{
+  printf("type date_tick pid cpu thr  code                       name           args\n");  // A faire
+}
 
 void print_trace(trace tr)
 {
@@ -74,6 +79,7 @@ void print_trace(trace tr)
 void list_events()
 {
   trace tr;
+  print_help();
   for(;;) {
     switch(get_next_filtered_trace(&tr))
       {
@@ -103,6 +109,7 @@ void nth_event(int nth)
   int n;
   int eof;
   trace tr;
+  print_help();
   for(n = 1; ; n++) {
     if ((eof = get_next_filtered_trace(&tr)) != 0) break;
     if (n == nth) {
@@ -177,6 +184,26 @@ void avg_active_slice()
 	 (unsigned) (get_active_time() / get_active_slices()));
 }
 
+void function_time()
+{
+  int code;
+  mode type;
+  int thread;
+  char *name;
+  u_64 begin, end, time; 
+  trace tr;
+  int eof = 0;
+  while (eof == 0) 
+    eof = get_next_filtered_trace(&tr);
+  while(1) {
+    if (get_function_time(&code, &type, &thread, &begin, &end, &time) == -1) break;
+    if (type == USER)
+      name = fut_code2name(code >> 8);
+    else name = fkt_code2name(code >> 8);
+    printf("%s sur thread %d de %u à %u en %u\n", name, thread, (unsigned) begin, (unsigned) end, (unsigned) time);
+  }
+}
+
 void error_usage()
 {
   fprintf(stderr,"Usage: sigmund [options] [filters] action\n");
@@ -208,12 +235,12 @@ void error_usage()
   fprintf(stderr,"   --idle-slices                        Nombre de tranches inactives\n");
   fprintf(stderr,"   --avg-active-slices                  Temps moyen d'une tranche active\n");
   fprintf(stderr,"   --nb-calls                           Identique à --nb-events\n");
+  fprintf(stderr,"   --function-time                      Temps pour chaque appel de foncion\n");
   exit(1);
 }
 
 int main(int argc, char **argv)
 {
-
   int argCount;
   char *trace_file_name = NULL;
   enum action ac;
@@ -350,6 +377,9 @@ int main(int argc, char **argv)
     } else if (!strcmp(*argv, "--avg-active-slice")) {
       if (ac != NONE) error_usage();
       ac = AVG_ACTIVE_SLICE;
+    } else if (!strcmp(*argv, "--function-time")) {
+      if (ac != NONE) error_usage();
+      ac = FUNCTION_TIME;
     } else error_usage();
   }
   tracelib_init(trace_file_name);
@@ -396,6 +426,10 @@ int main(int argc, char **argv)
   }
   case AVG_ACTIVE_SLICE : {
     avg_active_slice();
+    break;
+  }
+  case FUNCTION_TIME : {
+    function_time();
     break;
   }
   default: {

@@ -58,14 +58,25 @@ void pm2_push_startup_func(pm2_startup_func_t f, void *args);
 
 // Needs to be called after profile_init()
 _PRIVATE_ void pm2_init_data(int *argc, char **argv);
+
 // Needs to be called after mad_init()
-_PRIVATE_ void pm2_init_open_channels(int *argc, char *argv[],
-				      unsigned pm2_self,
-				      unsigned pm2_config_size);
+_PRIVATE_ void pm2_init_set_rank(int *argc, char *argv[],
+				 unsigned pm2_self,
+				 unsigned pm2_config_size);
+
 // Needs to be called after marcel_init()
 _PRIVATE_ void pm2_init_thread_related(int *argc, char *argv[]);
+
+// Need to be called before pm2_init_listen_network()
+_PRIVATE_ void pm2_init_exec_startup_funcs(int *argc, char *argv[]);
+
+// Needs to be called before pm2_init_listen_network()
+// Should be called after pm2_init_exec_startup_funcs()
+_PRIVATE_ void pm2_init_open_channels(int *argc, char *argv[]);
+
 // Starts netserver threads => begins answering the network
 _PRIVATE_ void pm2_init_listen_network(int *argc, char *argv[]);
+
 // Removes pm2 arguments from cmdline...
 _PRIVATE_ void pm2_init_purge_cmdline(int *argc, char *argv[]);
 

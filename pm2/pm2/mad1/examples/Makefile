@@ -33,17 +33,15 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+CONFIG_MODULES=mad1
 
-.PHONY: default all
-default: all
+ifndef FLAVOR
+export FLAVOR:=mad1
+endif
 
-MAD_EX_DIR	:=	.
+PROGS := simple	token ping multiping
 
-include ../Makefile
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/apps.mak
 
-# MAD_CFLAGS	+=	-g
 
-all:	$(BIN_DIR)/simple	\
-	$(BIN_DIR)/token	\
-	$(BIN_DIR)/ping		\
-	$(BIN_DIR)/multiping

@@ -8,7 +8,7 @@
 #include "tracebuffer.h"
 #include "assert.h"
 
-#include "../../../linux/include/linux/fkt.h"
+#include "fkt.h"
 
 #define FUT_SETUP_CODE				0x210
 #define FUT_KEYCHANGE_CODE			0x211

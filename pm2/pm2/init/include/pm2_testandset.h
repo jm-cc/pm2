@@ -38,8 +38,8 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 }
 
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
-#endif /* X86_ARCH */
 
+#endif /* X86_ARCH */
 
 #ifdef SPARC_ARCH
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
@@ -63,15 +63,13 @@ static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinl
   long unsigned ret, temp;
 
   __asm__ __volatile__(
-	"/* Inline spinlock test & set */\n"
-	"1:\t"
+	"\n1:\t"
 	"ldl_l %0,%3\n\t"
 	"bne %0,2f\n\t"
 	"or $31,1,%1\n\t"
 	"stl_c %1,%2\n\t"
 	"beq %1,1b\n"
 	"2:\tmb\n"
-	"/* End spinlock test & set */"
 	: "=&r"(ret), "=&r"(temp), "=m"(*spinlock)
 	: "m"(*spinlock)
         : "memory");
@@ -82,6 +80,7 @@ static __inline__ long unsigned pm2_spinlock_testandset(volatile unsigned *spinl
 #define pm2_spinlock_release(spinlock) \
   __asm__ __volatile__("mb" : : : "memory"); \
   *spinlock = 0
+
 #endif /* ALPHA_ARCH */
 
 #ifdef RS6K_ARCH

@@ -123,6 +123,7 @@ typedef struct s_ntbx_client
 {
   TBX_SHARED;
   ntbx_client_state_t  state;
+  unsigned long        local_host_ip; // network form !
   char                *local_host;
   p_tbx_slist_t        local_alias;
   char                *remote_host;
@@ -133,8 +134,9 @@ typedef struct s_ntbx_client
 typedef struct s_ntbx_server
 {
   ntbx_server_state_t     state;
+  unsigned long           local_host_ip; // network form !
   char                   *local_host;
-  p_tbx_slist_t           local_alias;  
+  p_tbx_slist_t           local_alias;
   ntbx_connection_data_t  connection_data;
   void                   *specific;
 } ntbx_server_t;

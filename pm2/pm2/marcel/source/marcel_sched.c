@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_sched.c,v $
+Revision 1.44  2001/01/03 14:12:24  rnamyst
+Added support for Win2K. For now, only Marcel is available under Cygwin...
+
 Revision 1.43  2000/12/19 22:31:11  rnamyst
 bug fixed in marcel_trueyield
 
@@ -2082,7 +2085,11 @@ static void start_timer(void)
 
   sigemptyset(&sa.sa_mask);
   sa.sa_handler = timer_interrupt;
+#ifndef WIN_SYS
   sa.sa_flags = SA_RESTART;
+#else
+  sa.sa_flags = 0;
+#endif
 
   sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 

@@ -673,7 +673,7 @@ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, __lwp_t *lwp)
   DEFINE_CUR_LWP( , ,);
 
   LOG_IN();
-		
+
   SET_CUR_LWP(lwp);
   mdebug("upcall...%p on %p\n", cur, cur_lwp);
 
@@ -1740,10 +1740,12 @@ static void marcel_bind_on_processor(__lwp_t *lwp)
 		    NULL) != 0) {
     perror("processor_bind");
     exit(1);
-  } else
-    if(marcel_mdebug.show)
-      fprintf(stderr, "LWP %d bound to processor %d\n",
-	      lwp->number, (lwp->number % __nb_processors));
+  } 
+#ifdef MARCEL_DEBUG
+  if(marcel_mdebug.show)
+    fprintf(stderr, "LWP %d bound to processor %d\n",
+	    lwp->number, (lwp->number % __nb_processors));
+#endif
 #endif
 }
 

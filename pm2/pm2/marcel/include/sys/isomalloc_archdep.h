@@ -97,6 +97,14 @@ extern void *ISOADDR_AREA_TOP;
 #define FILE_TO_MAP            -1
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
+#elif defined(OSF_SYS) && defined(ALPHA_ARCH)
+
+#define ISOADDR_AREA_TOP       0x30000000000
+#define MAIN_STACK_TOP         0x130000000
+#define IS_ON_MAIN_STACK(sp)   ((unsigned long)(sp) < MAIN_STACK_TOP)
+#define FILE_TO_MAP            -1
+#define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
+
 #else
 
 #error Sorry. This system/architecture is not yet supported.

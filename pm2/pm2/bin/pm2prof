@@ -69,6 +69,11 @@ while [ $# -gt 0 ]; do
 	-h)
 	    usage 0
 	    ;;
+	-[mM])
+	    OPTIONS="$OPTIONS $1 $2"
+	    shift
+	    shift
+	    ;;
 	--)
 	    shift
 	    break
@@ -93,6 +98,8 @@ analyser=${bindir}/fut_print
 
 [ -x ${analyser} ] || error "Fatal Error: \"${analyser}\" exec file not found!"
 
+echo File = "$@"
+echo Options = $OPTIONS
 exec ${analyser} $OPTIONS -f "$@"
 
 

@@ -580,8 +580,8 @@ have_lock:
 		if (_launched && !type->do_not_show_lwp) {
 			my_print(,"[P%02d] ", 
 				 ((_launched 
-				   && (marcel_self())->lwp) 
-				  ? (marcel_self())->lwp->number : -1));
+				   && GET_LWP(marcel_self())) 
+				  ? GET_LWP_NUMBER(marcel_self()) : -1));
 		}
 #endif
 		if (_launched && !type->do_not_show_thread) {

@@ -18,9 +18,9 @@
 
 static common_attr_t default_static_attr;
 
-#ifdef PM2
+#if defined(PM2) || defined(MAD2)
 static unsigned pm2self, pm2_conf_size;
-#endif /* PM2 */
+#endif
 
 
 void common_attr_init(common_attr_t *attr)
@@ -236,9 +236,7 @@ void common_pre_init(int *argc, char *argv[],
    */
   mad_cmd_line_init(attr->madeleine, *argc, argv);
 
-#ifdef PM2
   pm2self = attr->madeleine->configuration->local_host_id;
-#endif /* PM2 */
 
   if(attr)
     attr->rank = attr->madeleine->configuration->local_host_id;
@@ -275,9 +273,7 @@ void common_pre_init(int *argc, char *argv[],
    */
   mad_configuration_init(attr->madeleine, *argc, argv);
   
-#ifdef PM2
   pm2_conf_size = attr->madeleine->configuration->size;
-#endif
 
 #endif /* MAD2 */
 
@@ -354,7 +350,7 @@ void common_post_init(int *argc, char *argv[],
    */
   mad_slave_spawn(attr->madeleine, *argc, argv);
 #endif /* EXTERNAL_SPAWN && LEONIE_SPAWN && APPLICATION_SPAWN */
-  
+
 #endif /* MAD 2 */
 
 #ifdef MAD2
@@ -380,6 +376,10 @@ void common_post_init(int *argc, char *argv[],
 #ifdef PM2
   pm2_init_set_rank(argc, argv, pm2self, pm2_conf_size);
 #endif /* PM2 */
+
+#if defined(PROFILE) && (defined(PM2) || defined(MAD2))
+  profile_set_tracefile("/tmp/prof_file_%d", pm2self);
+#endif /* PROFILE */
 
 #ifdef MARCEL
   marcel_start_sched(argc, argv);
@@ -434,5 +434,4 @@ void common_post_init(int *argc, char *argv[],
    */
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT); 
 #endif /* PM2DEBUG */
-
 }

@@ -369,7 +369,7 @@ void dsmlib_hrbc_start_send_diffs(dsm_page_index_t index, dsm_node_t dest_node, 
   pm2_completion_init(c, NULL, NULL);
 
   page_size = dsm_get_page_size(index);
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_HBRC_DIFFS, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_HBRC_DIFFS, NULL);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&invalidate, sizeof(int));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&self, sizeof(int));
@@ -573,7 +573,7 @@ void dsmlib_hrbc_start_send_empty_diffs(dsm_page_index_t index, dsm_node_t dest_
 
   pm2_completion_init(c, NULL, NULL);
 
-  pm2_rawrpc_begin((int)dest_node, DSM_LRPC_HBRC_DIFFS, NULL);
+  pm2_rawrpc_begin(dest_node, DSM_LRPC_HBRC_DIFFS, NULL);
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index, sizeof(dsm_page_index_t));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&invalidate, sizeof(int));
   pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&self, sizeof(int));

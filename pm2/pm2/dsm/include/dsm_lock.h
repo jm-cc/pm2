@@ -30,7 +30,7 @@ typedef struct {
   dsm_mutex_t dsm_mutex;
   int prot[_MAX_PROT_PER_LOCK];
   int nb_prot;
-}dsm_lock_struct_t;
+} dsm_lock_struct_t;
 
 typedef dsm_lock_struct_t *dsm_lock_t;
 
@@ -38,7 +38,7 @@ typedef struct {
   dsm_mutexattr_t dsm_mutex_attr;
   int prot[_MAX_PROT_PER_LOCK];
   int nb_prot;
-  }dsm_lock_attr_t;
+} dsm_lock_attr_t;
 
 #define dsm_lock_attr_set_owner(attr, owner) dsm_mutexattr_setowner(&attr->dsm_mutex, owner)
 #define dsm_lock_attr_get_owner(attr, owner) dsm_mutexattr_getowner(&attr->dsm_mutex, owner)

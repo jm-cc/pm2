@@ -16,7 +16,7 @@
 /*
  * leo_spawn.c
  * ===========
- */ 
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,13 +26,13 @@
 #include <sys/wait.h>
 #include "leonie.h"
 
-// connect_processes: establishes the network connections between a set of 
+// connect_processes: establishes the network connections between a set of
 // processes of the session and the Leonie server.
 // The 'process_slist' argument contains the list of the set of processes
 // to connect to Leonie. For identifications purposes, each process has to
 // send its host name to Leonie. The matching between the host name sent
 // by the client and the host names availables in the internal directory
-// is performed by this function, possibly by normalizing and/or trying 
+// is performed by this function, possibly by normalizing and/or trying
 // host name aliases.
 static
 void
@@ -41,13 +41,13 @@ connect_processes(p_leonie_t leonie,
 {
   p_ntbx_server_t net_server  = NULL;
   p_tbx_htable_t  node_htable = NULL;
-  
+
   if (tbx_slist_is_nil(process_slist))
     return;
-  
+
   net_server  = leonie->net_server;
   node_htable = leo_htable_init();
-  
+
   tbx_slist_ref_to_head(process_slist);
   do
     {
@@ -61,7 +61,7 @@ connect_processes(p_leonie_t leonie,
       host_name = dir_node->name;
 
       slist = tbx_htable_get(node_htable, host_name);
-      
+
       if (!slist)
 	{
 	  slist = tbx_slist_nil();
@@ -71,7 +71,7 @@ connect_processes(p_leonie_t leonie,
       tbx_slist_append(slist, process);
     }
   while (tbx_slist_ref_forward(process_slist));
-  
+
   do
     {
       p_ntbx_client_t           client           = NULL;
@@ -88,19 +88,24 @@ connect_processes(p_leonie_t leonie,
       if (status == ntbx_failure)
 	FAILURE("client failed to connect");
 
-      TRACE("Incoming connection detected");
-      
+
+      TRACE("Incoming connection detected\n");
+
+#ifndef LEO_IP
+      host_name = leo_receive_string(client);
+#else // LEO_IP
       {
 	char           *ip_str = NULL;
 	unsigned long   ip     = 0;
 	struct hostent *h      = NULL;
-	
+
 	ip_str = leo_receive_string(client);
 	ip     = strtoul(ip_str, &host_name, 16);
 	h      = gethostbyaddr((char *)&ip, sizeof(unsigned long), AF_INET);
 	host_name = tbx_strdup(h->h_name);
 	TBX_FREE(ip_str);
       }
+#endif // LEO_IP
 
       TRACE_STR("process location", host_name);
       TRACE_STR("client remote host", client->remote_host);
@@ -108,7 +113,7 @@ connect_processes(p_leonie_t leonie,
       slist = tbx_htable_get(node_htable, host_name);
       if (slist)
 	goto found;
-      
+
       true_name = ntbx_true_name(host_name);
       TRACE_STR("trying", true_name);
       slist     = tbx_htable_get(node_htable, true_name);
@@ -127,10 +132,10 @@ connect_processes(p_leonie_t leonie,
 	  do
 	    {
 	      char *alias = NULL;
-	      
+
 	      alias = tbx_slist_ref_get(client->remote_alias);
 	      TRACE_STR("trying", alias);
-	      
+
 	      slist = tbx_htable_get(node_htable, alias);
 	      if (slist)
 		{
@@ -138,7 +143,7 @@ connect_processes(p_leonie_t leonie,
 		  host_name = tbx_strdup(alias);
 		  goto found;
 		}
-	      
+
 	      true_name = ntbx_true_name(alias);
 	      TRACE_STR("trying", true_name);
 	      slist = tbx_htable_get(node_htable, true_name);
@@ -153,12 +158,12 @@ connect_processes(p_leonie_t leonie,
 	      TRACE("alias mismatched");
 	    }
 	  while (tbx_slist_ref_forward(client->remote_alias));
-	  
+
 	  FAILURE("client hostname not found");
 	}
       else
 	FAILURE("invalid client answer");
-      
+
     found:
       TRACE_STR("retained host name", host_name);
       process = tbx_slist_extract(slist);
@@ -247,13 +252,13 @@ send_directory(p_leonie_t leonie)
       p_leo_process_specific_t process_specific = NULL;
       p_ntbx_client_t          client           = NULL;
       int                      len              = 0;
-  
+
       process          = tbx_slist_nref_get(process_ref);
       TRACE_VAL("Transmitting to", process->global_rank);
 
       process_specific = process->specific;
       client           = process_specific->client;
-      
+
       // Processes
       TRACE("Sending processes");
       slist = dir->process_slist;
@@ -261,21 +266,21 @@ send_directory(p_leonie_t leonie)
 
       if (len <= 0)
 	FAILURE("invalid number of processes");
-      
+
       leo_send_int(client, len);
 
       tbx_slist_ref_to_head(slist);
       do
 	{
 	  p_ntbx_process_t dir_process = NULL;
-	  
+
 	  dir_process = tbx_slist_ref_get(slist);
-	  
+
 	  TRACE_VAL("Process", dir_process->global_rank);
 	  leo_send_int(client, dir_process->global_rank);
 	}
       while (tbx_slist_ref_forward(slist));
-      
+
       leo_send_string(client, "end{processes}");
 
       // Nodes
@@ -285,7 +290,7 @@ send_directory(p_leonie_t leonie)
 
       if (len <= 0)
 	FAILURE("invalid number of nodes");
-      
+
       leo_send_int(client, len);
 
       tbx_slist_ref_to_head(slist);
@@ -297,9 +302,11 @@ send_directory(p_leonie_t leonie)
 
 	  dir_node = tbx_slist_ref_get(slist);
 	  pc = dir_node->pc;
-	  
+
 	  TRACE_STR("Node", dir_node->name);
 	  leo_send_string(client, dir_node->name);
+
+#ifdef LEO_IP
 	  {
 	    char ip_str[11];
 
@@ -307,7 +314,8 @@ send_directory(p_leonie_t leonie)
 	    TRACE_STR("Node IP", ip_str);
 	    leo_send_string(client, ip_str);
 	  }
-	  
+#endif // LEO_IP
+
 	  if (ntbx_pc_first_global_rank(pc, &global_rank))
 	    {
 	      do
@@ -316,7 +324,7 @@ send_directory(p_leonie_t leonie)
 
 		  leo_send_int(client, global_rank);
 		  local_rank = ntbx_pc_global_to_local(pc, global_rank);
-		  
+
 		  leo_send_int(client, local_rank);
 		}
 	      while (ntbx_pc_next_global_rank(pc, &global_rank));
@@ -334,7 +342,7 @@ send_directory(p_leonie_t leonie)
 
       if (len <= 0)
 	FAILURE("invalid number of drivers");
-      
+
       leo_send_int(client, len);
 
       tbx_slist_ref_to_head(slist);
@@ -343,13 +351,13 @@ send_directory(p_leonie_t leonie)
 	  p_leo_dir_driver_t         dir_driver  = NULL;
 	  p_ntbx_process_container_t pc          = NULL;
 	  ntbx_process_grank_t       global_rank =   -1;
-	  
+
 	  dir_driver = tbx_slist_ref_get(slist);
 	  pc = dir_driver->pc;
-	  
+
 	  TRACE_STR("Driver", dir_driver->name);
 	  leo_send_string(client, dir_driver->name);
-	  
+
 	  if (ntbx_pc_first_global_rank(pc, &global_rank))
 	    {
 	      do
@@ -398,7 +406,7 @@ send_directory(p_leonie_t leonie)
 
       if (len <= 0)
 	FAILURE("invalid number of channels");
-      
+
       leo_send_int(client, len);
 
       tbx_slist_ref_to_head(slist);
@@ -409,16 +417,16 @@ send_directory(p_leonie_t leonie)
 	  p_ntbx_topology_table_t    ttable      = NULL;
 	  ntbx_process_grank_t       global_rank =   -1;
 	  ntbx_process_lrank_t       l_rank_src  =   -1;
-	  
+
 	  dir_channel = tbx_slist_ref_get(slist);
 	  pc     = dir_channel->pc;
 	  ttable = dir_channel->ttable;
-	  
+
 	  TRACE_STR("Channel", dir_channel->name);
 	  leo_send_string(client, dir_channel->name);
 	  leo_send_unsigned_int(client, dir_channel->public);
 	  leo_send_string(client, dir_channel->driver->name);
-	  
+
 	  if (ntbx_pc_first_global_rank(pc, &global_rank))
 	    {
 	      do
@@ -436,7 +444,7 @@ send_directory(p_leonie_t leonie)
 	      while (ntbx_pc_next_global_rank(pc, &global_rank));
 	    }
 	  leo_send_int(client, -1);
-	  
+
 	  if (ntbx_pc_first_local_rank(pc, &l_rank_src))
 	    {
 	      do
@@ -475,7 +483,7 @@ send_directory(p_leonie_t leonie)
 
       if (len < 0)
 	FAILURE("invalid number of forwarding channels");
-      
+
       leo_send_int(client, len);
 
       if (!tbx_slist_is_nil(slist))
@@ -484,9 +492,9 @@ send_directory(p_leonie_t leonie)
 	  do
 	    {
 	      p_leo_dir_fchannel_t dir_fchannel = NULL;
-	      
+
 	      dir_fchannel = tbx_slist_ref_get(slist);
-	      
+
 	      TRACE_STR("Fchannel", dir_fchannel->name);
 	      leo_send_string(client, dir_fchannel->name);
 	      leo_send_string(client, dir_fchannel->channel_name);
@@ -502,7 +510,7 @@ send_directory(p_leonie_t leonie)
 
       if (len < 0)
 	FAILURE("invalid number of virtual channels");
-      
+
       leo_send_int(client, len);
 
       if (!tbx_slist_is_nil(slist))
@@ -517,13 +525,13 @@ send_directory(p_leonie_t leonie)
 	      int                        dir_channel_slist_len  =    0;
 	      p_tbx_slist_t              dir_fchannel_slist     = NULL;
 	      int                        dir_fchannel_slist_len =    0;
-	  
+
 	      dir_vchannel = tbx_slist_ref_get(slist);
 	      pc = dir_vchannel->pc;
-	  
+
 	      TRACE_STR("Vchannel", dir_vchannel->name);
 	      leo_send_string(client, dir_vchannel->name);
-	  
+
 	      dir_channel_slist     = dir_vchannel->dir_channel_slist;
 	      dir_channel_slist_len = tbx_slist_get_length(dir_channel_slist);
 	      leo_send_int(client, dir_channel_slist_len);
@@ -532,12 +540,12 @@ send_directory(p_leonie_t leonie)
 	      do
 		{
 		  p_leo_dir_channel_t dir_channel = NULL;
-	      
+
 		  dir_channel = tbx_slist_ref_get(dir_channel_slist);
 		  leo_send_string(client, dir_channel->name);
 		}
 	      while (tbx_slist_ref_forward(dir_channel_slist));
-	  
+
 	      dir_fchannel_slist     = dir_vchannel->dir_fchannel_slist;
 	      dir_fchannel_slist_len = tbx_slist_get_length(dir_fchannel_slist);
 	      leo_send_int(client, dir_fchannel_slist_len);
@@ -546,12 +554,12 @@ send_directory(p_leonie_t leonie)
 	      do
 		{
 		  p_leo_dir_fchannel_t dir_fchannel = NULL;
-	      
+
 		  dir_fchannel = tbx_slist_ref_get(dir_fchannel_slist);
 		  leo_send_string(client, dir_fchannel->name);
 		}
 	      while (tbx_slist_ref_forward(dir_fchannel_slist));
-  
+
 	      TRACE("Virtual channel routing table");
 	      if (ntbx_pc_first_global_rank(pc, &g_rank_src))
 		{
@@ -578,7 +586,7 @@ send_directory(p_leonie_t leonie)
 			      TRACE("Process %d to %d: using channel %s through process %d",
 				    g_rank_src, g_rank_dst, rtable->channel_name,
 				    rtable->destination_rank);
-			  
+
 			      leo_send_string(client, rtable->channel_name);
 			      leo_send_int(client,    rtable->destination_rank);
 			    }
@@ -596,13 +604,13 @@ send_directory(p_leonie_t leonie)
 	  while (tbx_slist_ref_forward(slist));
 	}
       leo_send_string(client, "end{vchannels}");
-  
+
       // End
       leo_send_string(client, "end{directory}");
 
      }
   while (tbx_slist_nref_forward(process_ref));
-  
+
   tbx_slist_nref_free(process_ref);
 
   TRACE("Directory transmission completed");

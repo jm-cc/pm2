@@ -34,20 +34,30 @@ endif # FLAVOR
 # MAK_VERB -> niveau d'affichage des messages
 #---------------------------------------------------------------------
 ifeq ($(MAK_VERB),verbose)
-COMMON_PREFIX  =#
+COMMON_BUILD   = @ printf "    building $(@F) due to:\n$(foreach file, $?,      * $(file)\n)";:
+COMMON_MAIN   :=#
+COMMON_PREFIX  =  echo "    building $(@F)";
 COMMON_HIDE   :=#
 COMMON_CLEAN  :=#
 else
 ifeq ($(MAK_VERB),normal)
+COMMON_BUILD   =  @ echo "    building $(@F)";:
+COMMON_MAIN    =#
 COMMON_PREFIX  =#
 COMMON_HIDE   :=  @
 COMMON_CLEAN  :=#
 else
 ifeq ($(MAK_VERB),quiet)
-COMMON_PREFIX  =  @ echo "building " $(@F) ;
+COMMON_BUILD   =  @ echo "    building $(@F)";:
+COMMON_MAIN    =  $(COMMON_HIDE)
+COMMON_PREFIX  =  $(COMMON_BUILD);
 COMMON_HIDE   :=  @
 COMMON_CLEAN  :=#
+# Do not print directories enter/exit
+MAKEFLAGS += --no-print-directory
 else  # silent
+COMMON_BUILD   =  @:
+COMMON_MAIN    =  @
 COMMON_PREFIX  =  @
 COMMON_HIDE   :=  @
 COMMON_CLEAN  :=  @

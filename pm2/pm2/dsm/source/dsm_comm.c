@@ -360,7 +360,7 @@ static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 #ifdef HYP_INSTRUMENT
   hyp_sendPage_in_cnt++;
 #endif
-tfprintf(stderr, "DSM_LRPC_SEND_PAGE_threaded_func called\n");
+
 #ifdef DSM_COMM_TRACE
 tfprintf(stderr, "DSM_LRPC_SEND_PAGE_threaded_func called\n");
 #endif
@@ -475,11 +475,11 @@ void dsm_unpack_page(void *addr, unsigned long size)
       int fd;
       static char buf[4096];
       void *system_view;
-
+#if 1
       /* associate page to a true file */
       fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
       write(fd, buf, 4096);
-      addr = mmap(addr, 4096, PROT_NONE, MAP_SHARED | MAP_FIXED,
+      addr = mmap(addr, 4096, PROT_NONE, MAP_PRIVATE | MAP_FIXED,
 	    fd, 0);
       if(addr == (void *)-1) 
 	RAISE(STORAGE_ERROR);
@@ -490,11 +490,27 @@ void dsm_unpack_page(void *addr, unsigned long size)
       if(system_view == (void *)-1) 
 	RAISE(STORAGE_ERROR);
       
+      fprintf(stderr, "system view = %p, user view = %p\n",system_view, addr);
+
+      dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
       /*unpack page using the system view*/
       pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)system_view, size); 
 
       /*close file */
       close(fd);
+#else
+      /* associate page to a true file */
+      fd = open(RECEIVE_PAGE_FILE, O_CREAT | O_RDWR, 0666);
+      write(fd, buf, 4096);
+      addr = mmap(addr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, 0);
+      if(addr == (void *)-1) 
+	RAISE(STORAGE_ERROR);
+
+      dsm_set_access(dsm_page_index(addr), WRITE_ACCESS);
+
+      /*unpack page using the system view*/
+      pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)addr, size); 
+#endif
   }
 
 /***********************  Hyperion stuff: ****************************/

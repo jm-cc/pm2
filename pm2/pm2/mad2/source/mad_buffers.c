@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_buffers.c,v $
+Revision 1.6  2000/03/27 08:50:50  oaumage
+- pre-support decoupage de groupes
+- correction au niveau du support du demarrage manuel
+
 Revision 1.5  2000/03/08 17:19:10  oaumage
 - support de compilation avec Marcel sans PM2
 - pre-support de packages de Threads != Marcel
@@ -226,4 +230,71 @@ void mad_make_buffer_group(p_mad_buffer_group_t   buffer_group,
 {
   tbx_extract_sub_list(buffer_list, &(buffer_group->buffer_list));
   buffer_group->link = link;
+}
+
+p_mad_buffer_t mad_split_buffer(p_mad_buffer_t buffer,
+				size_t         limit)
+{
+  if (buffer->length > limit)
+    {
+      p_mad_buffer_t new_buffer;
+
+      new_buffer = mad_alloc_buffer_struct();
+      new_buffer->buffer        = buffer->buffer + limit;
+      new_buffer->length        = buffer->length - limit;
+      new_buffer->bytes_written =
+	(buffer->bytes_written > limit)?buffer->bytes_written - limit:0;
+      new_buffer->bytes_read    =
+	(buffer->bytes_read > limit)?buffer->bytes_read - limit:0;
+      new_buffer->type          = mad_user_buffer;
+      new_buffer->specific      = NULL;
+
+      buffer->length        = limit;
+      if (buffer->bytes_written > limit)
+	buffer->bytes_written = limit;
+      if (buffer->bytes_read > limit)
+	buffer->bytes_read = limit;
+
+      return new_buffer;
+    }
+  else
+    return NULL;
+}
+
+size_t mad_append_buffer_to_list(p_tbx_list_t   list,
+				 p_mad_buffer_t buffer,
+				 size_t         position,
+				 size_t         limit)
+{
+  if (limit)
+    {
+      p_mad_buffer_t new_buffer = buffer;
+      
+      if (position)
+	{
+	  new_buffer = mad_split_buffer(buffer, limit - position);
+	  
+	  tbx_append_list(list, buffer);
+
+	  if (!new_buffer)
+	    {
+	      return position + buffer->length;
+	    }
+	}
+
+      do
+	{
+	  buffer = new_buffer;
+	  new_buffer = mad_split_buffer(buffer, limit);
+	  tbx_append_list(list, buffer);
+	}
+      while(new_buffer);
+
+      return buffer->length % limit;
+    }
+  else
+    {
+      tbx_append_list(list, buffer);
+      return position + buffer->length;
+    }
 }

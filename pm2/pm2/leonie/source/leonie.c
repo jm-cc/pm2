@@ -34,8 +34,8 @@
 */
 
 /*
- * leonie.c
- * =================
+ * Leonie.c
+ * ========
  */ 
 
 #include <stdlib.h>
@@ -43,3 +43,77 @@
 #include <string.h>
 #include <unistd.h>
 #include <leonie.h>
+
+/*
+ * Lex/Yacc and related external objects
+ * -------------------------------------
+ */
+extern FILE *yyin;
+extern FILE *yyout;
+extern p_leo_parser_result_t leo_parser_result;
+
+int 
+yylex(void);
+
+
+/*
+ * Functions
+ * ---------
+ */
+int main (int argc, char *argv[])
+{
+  FILE *cluster_description;
+  FILE *application_description;
+  FILE *protocol_description;
+  
+  if (argc != 4) 
+    {
+      printf("usage: leonie <filename1> <filename2> <filename3>\n");
+      printf("  filename1 == cluster description file name\n");
+      printf("  filename2 == application description file name\n");
+      printf("  filename3 == protocol description file name\n");
+      exit(0);
+    }
+
+  tbx_init();
+  ntbx_init();
+  
+  cluster_description     = fopen(argv[1], "r");
+  application_description = fopen(argv[2], "r");
+  protocol_description = fopen(argv[3], "r");
+
+  printf("Parsing cluster description file ... ");
+  yyin = cluster_description;
+  if (yyparse() == 0)
+    {
+      printf("Parsing succeeded\n");
+    }
+  else
+    {
+      printf("Parsing failed\n");
+    }
+
+  printf("Parsing application description file ... ");
+  yyin = application_description;
+  if (yyparse() == 0)
+    {
+      printf("Parsing succeeded\n");
+    }
+  else
+    {
+      printf("Parsing failed\n");
+    }
+ 
+  printf("Parsing protocol description file ... ");
+  yyin = protocol_description;
+  if (yyparse() == 0)
+    {
+      printf("Parsing succeeded\n");
+    }
+  else
+    {
+      printf("Parsing failed\n");
+    }
+  
+  return 0;
+}

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: leo_swann.c,v $
+Revision 1.5  2000/06/09 12:40:35  oaumage
+- Progression du code
+
 Revision 1.4  2000/06/09 08:45:58  oaumage
 - Progression du code
 
@@ -147,7 +150,7 @@ leo_launch_mad_module(p_leonie_t                  leonie,
   ntbx_tcp_client_init(module->net_client);
 
   sprintf(cmd,
-	  "cd%s;/pm2load %s -id %d -cnx %s -master %s &",
+	  "cd %s;./pm2load %s -id %d -cnx %s -master %s &",
 	  cluster->path,
 	  cluster->executable,
 	  module->id,

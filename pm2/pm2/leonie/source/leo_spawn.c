@@ -76,6 +76,7 @@ connect_processes(p_leonie_t leonie,
     {
       p_ntbx_client_t           client           = NULL;
       p_tbx_slist_t             slist            = NULL;
+      p_tbx_slist_t             host_name_list   = NULL;
       char                     *host_name        = NULL;
       char                     *true_name        = NULL;
       p_ntbx_process_t          process          = NULL;
@@ -88,12 +89,12 @@ connect_processes(p_leonie_t leonie,
       if (status == ntbx_failure)
 	FAILURE("client failed to connect");
 
-
-      TRACE("Incoming connection detected\n");
-
+      TRACE("Incoming connection detected");
 #ifndef LEO_IP
       host_name = leo_receive_string(client);
 #else // LEO_IP
+      host_name_list = tbx_slist_nil();
+      
       {
 	char           *ip_str = NULL;
 	unsigned long   ip     = 0;
@@ -103,13 +104,61 @@ connect_processes(p_leonie_t leonie,
 	ip     = strtoul(ip_str, &host_name, 16);
 	h      = gethostbyaddr((char *)&ip, sizeof(unsigned long), AF_INET);
 	host_name = tbx_strdup(h->h_name);
+	tbx_slist_append(host_name_list, host_name);
 	TBX_FREE(ip_str);
+
+	do 
+	  {
+	    ip_str = leo_receive_string(client);
+	    /*DISP_STR("loop 0", ip_str);*/
+	    if (tbx_streq(ip_str, "-"))
+	      {
+		TBX_FREE(ip_str);	    
+		break;
+	      }
+
+	    tbx_slist_append(host_name_list, tbx_strdup(ip_str));
+	    TBX_FREE(ip_str);	    
+	  }
+	while (1);
       }
+
+      tbx_slist_ref_to_head(host_name_list);
+      host_name = tbx_slist_ref_get(host_name_list);
 #endif // LEO_IP
 
       TRACE_STR("process location", host_name);
       TRACE_STR("client remote host", client->remote_host);
 
+#ifdef LEO_IP
+      do
+	{
+	  host_name = tbx_slist_ref_get(host_name_list);
+	  /*DISP_STR("loop 1", host_name);*/
+	  slist = tbx_htable_get(node_htable, host_name);
+	  if (slist)
+	    goto found;
+	}
+      while (tbx_slist_ref_forward(host_name_list));
+      
+      tbx_slist_ref_to_head(host_name_list);
+      do
+	{
+	  host_name = tbx_slist_ref_get(host_name_list);
+	  /*DISP_STR("loop 2", host_name);*/
+	  true_name = ntbx_true_name(host_name);
+	  TRACE_STR("trying", true_name);
+	  slist     = tbx_htable_get(node_htable, true_name);
+	  if (slist)
+	    {
+	      TBX_FREE(host_name);
+	      host_name = true_name;
+	      true_name = NULL;
+	      goto found;
+	    }
+	}
+      while (tbx_slist_ref_forward(host_name_list));
+#else // LEO_IP
       slist = tbx_htable_get(node_htable, host_name);
       if (slist)
 	goto found;
@@ -124,6 +173,8 @@ connect_processes(p_leonie_t leonie,
 	  true_name = NULL;
 	  goto found;
 	}
+
+#endif // LEO_IP
 
       if (!tbx_slist_is_nil(client->remote_alias))
 	{

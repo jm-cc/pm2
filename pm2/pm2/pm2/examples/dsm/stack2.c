@@ -36,7 +36,7 @@
 #include <sys/mman.h>
 #include <stdio.h>
 #include "pm2.h"
-#include "timing.h"
+
 
 #if !defined(DSM_SHARED_STACK) || !defined(ENABLE_STACK_JUMPING)
 #warning "This example needs DSM SHARED_STACK and MARCEL STACK_JUMP options"

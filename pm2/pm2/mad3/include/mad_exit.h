@@ -23,6 +23,28 @@
 #define MAD_EXIT_H
 
 void
-mad_exit(p_mad_madeleine_t madeleine);
+mad_leonie_sync(p_mad_madeleine_t madeleine);
+
+void
+mad_leonie_link_exit(p_mad_madeleine_t madeleine);
+
+void
+mad_object_exit(p_mad_madeleine_t madeleine);
+
+
+/*
+ * Directory clean-up
+ * ------------------
+ */
+
+void
+mad_dir_channels_exit(p_mad_madeleine_t madeleine);
+
+void
+mad_dir_driver_exit(p_mad_madeleine_t madeleine);
+
+void
+mad_directory_exit(p_mad_madeleine_t madeleine);
+
 
 #endif /* MAD_EXIT_H */

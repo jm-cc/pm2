@@ -78,8 +78,8 @@ analyser=${bindir}/fut_print
 
 [ -x ${analyser} ] || error "Fatal Error: \"${analyser}\" exec file not found!"
 
-echo File = "$@"
+echo File = ${@:+"$@"}
 echo Options = $OPTIONS
-exec ${analyser} $OPTIONS -f "$@"
+exec ${analyser} $OPTIONS -f ${@:+"$@"}
 
 

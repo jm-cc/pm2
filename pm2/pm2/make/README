@@ -1,0 +1,49 @@
+
+Files in this directory are included in the Makefile of exemple or modules
+of PM2
+
+Here is a quick description of each file:
+common-vars.mak: variables used everywhere. Included by all *-vars.mak
+common-rules.mak: rules used everywhere. Included by all *-rules.mak
+config.mak: global option configuration file. Included by common-vars.mak
+apps.mak: used for application (examples). Include the two next one.
+apps-vars.mak: variables definitions
+apps-rules.mak: rules descriptions
+libs.mak: used for module generation. Include the two next one.
+libs-vars.mak: variables definitions
+libs-rules.mak: rules descriptions
+progs.mak: used for progs generation (leonie, swann). Include the two next one.
+progs-vars.mak: variables definitions
+progs-rules.mak: rules descriptions
+
+In addition, *config.mak are generated for each modules/application and for
+each flavor if they do not exist (else they are included). They define
+variables that are flavor dependant.
+Theses files are stored in the flavor build directory
+
+
+How to write a module Makefile ?
+================================
+It is quite simple: see modules/marcel/Makefile for example.
+
+You have to define LIBRARY: the name of the module (mad2 for mad2)
+You can define LIBNAME if different of the previvous: the name of the
+library generated (mad for mad2)
+You can define $(LIBRARY)_CC and/or $(LIBRARY)_AS (default CC and AS defined
+in config.mak)
+
+You include $(PM2_ROOT)/make/libs.mak
+
+If you have more complexe things to do, you can refere to the Makefile of pm2
+and mad2.
+
+How to write a examples Makefile ?
+==================================
+You can define a FLAVOR_DEFAULT
+You have to define PROGS (the list of progs to build)
+You include $(PM2_ROOT)/make/apps.mak
+
+You can define special rules for the building when APP_RECURSIF is defined.
+Do not forget the extention in files' name.
+
+See modules/marcel/examples/Makefile for example.

@@ -35,9 +35,9 @@
 
 ###################### CUSTOMIZATION SECTION #####################
 
-NTBX_OPTIONS		=  # -DDEBUG
+NTBX_OPTIONS		= -O6 -g -fomit-frame-pointer  # -DDEBUG
 
-NTBX_STANDALONE_OPTIONS	=	-g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
+NTBX_STANDALONE_OPTIONS	= -g -Wall # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 
 ################### END OF CUSTOMIZATION SECTION #################
 
@@ -123,13 +123,15 @@ include $(NTBX_DEPENDS)
 endif
 endif
 
-$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d
 ifdef $(NTBX_ALONE)
+$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d $(NTBX_MAKEFILE)
 $(NTBX_DEPENDS): $(NTBX_MAKEFILE)
 else
 ifdef $(MAD_ALONE)
+$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d $(MAD_MAKEFILE)
 $(NTBX_DEPENDS): $(MAD_MAKEFILE)
 else
+$(NTBX_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_DEP)/%.d $(PM2_MAKEFILE)
 $(NTBX_DEPENDS): $(PM2_MAKEFILE)
 endif
 endif
@@ -138,17 +140,17 @@ endif
 ntbx_default: tbx_default $(NTBX_LIB)
 
 $(NTBX_LIB): $(NTBX_OBJECTS)
-	@ rm -f $(NTBX_LIB)
+	rm -f $(NTBX_LIB)
 	@ echo "  -  $(@F)"
-	@ ar cr $(NTBX_LIB) $(NTBX_OBJECTS)
+	ar cr $(NTBX_LIB) $(NTBX_OBJECTS)
 
 $(NTBX_REG_OBJECTS): $(NTBX_OBJ)/%.o: $(NTBX_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(NTBX_CC) $(NTBX_CFLAGS) $(NTBX_FLAGS) -c $< -o $@
+	$(NTBX_CC) $(NTBX_CFLAGS) $(NTBX_FLAGS) -c $< -o $@
 
 $(NTBX_REG_DEPENDS): $(NTBX_DEP)/%.d: $(NTBX_SRC)/%.c
 	@ echo "  -  $(@F)"
-	@ $(SHELL) -ec '$(NTBX_CC) -MM $(NTBX_CFLAGS) $(NTBX_FLAGS) $< \
+	$(SHELL) -ec '$(NTBX_CC) -MM $(NTBX_CFLAGS) $(NTBX_FLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(NTBX_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
 
 
@@ -156,7 +158,7 @@ ifndef NTBX_ALONE
 .PHONY: ntbxclean
 ntbxclean:
 	@echo "Cleaning net toolbox"
-	@rm -f $(wildcard $(NTBX_LIBD)/*.a $(NTBX_OBJ)/*.o $(NTBX_DEP)/*.d)
+	rm -f $(wildcard $(NTBX_LIBD)/*.a $(NTBX_OBJ)/*.o $(NTBX_DEP)/*.d)
 
 ntbxdistclean:
 	rm -rf $(wildcard $(NTBX_ROOT)/lib \
@@ -166,7 +168,7 @@ else
 .PHONY: clean distclean
 clean:
 	@echo "Cleaning net toolbox"
-	@rm -f $(wildcard $(NTBX_LIBD)/*.a $(NTBX_OBJ)/*.o $(NTBX_DEP)/*.d) \
+	rm -f $(wildcard $(NTBX_LIBD)/*.a $(NTBX_OBJ)/*.o $(NTBX_DEP)/*.d) \
 
 distclean:
 	rm -rf $(wildcard $(NTBX_ROOT)/lib \

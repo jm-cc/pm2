@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.c,v $
+Revision 1.6  2000/04/28 10:41:40  rnamyst
+Added the marcel_cond_timedwait primitive
+
 Revision 1.5  2000/04/11 09:07:33  rnamyst
 Merged the "reorganisation" development branch.
 
@@ -54,6 +57,8 @@ ______________________________________________________________________________
 */
 
 #include "marcel.h"
+
+#include <errno.h>
 
 int marcel_mutexattr_init(marcel_mutexattr_t *attr)
 {
@@ -262,3 +267,83 @@ int marcel_cond_wait(marcel_cond_t *cond, marcel_mutex_t *mutex)
   return 0;
 }
 
+int marcel_cond_timedwait(marcel_cond_t *cond, marcel_mutex_t *mutex,
+			  const struct timespec *abstime)
+{
+  cell c, *cp;
+  struct timeval now, tv;
+  unsigned long timeout;
+
+  tv.tv_sec = abstime->tv_sec;
+  tv.tv_usec = abstime->tv_nsec / 1000;
+
+  gettimeofday(&now, NULL);
+
+  if(timercmp(&tv, &now, <=))
+    return ETIMEDOUT;
+
+  timeout = ((tv.tv_sec*1e6 + tv.tv_usec) -
+	     (now.tv_sec*1e6 + now.tv_usec)) / 1000;
+
+  printf("timeout = %ld\n", timeout);
+
+  lock_task();
+
+  marcel_lock_acquire(&mutex->lock);
+
+  if(mutex->first != NULL) {
+    cp = mutex->first;
+    mutex->first = cp->next;
+    marcel_wake_task(cp->task, &cp->blocked);
+  } else
+    mutex->value = 1; /* free */
+
+  marcel_lock_release(&mutex->lock);
+
+  marcel_lock_acquire(&cond->lock);
+
+  if(--(cond->value) < 0) {
+    c.next = NULL;
+    c.blocked = TRUE;
+    c.task = marcel_self();
+    if(cond->first == NULL)
+      cond->first = cond->last = &c;
+    else {
+      cond->last->next = &c;
+      cond->last = &c;
+    }
+    BEGIN
+      marcel_tempo_give_hand(timeout, &c.blocked, cond);
+    EXCEPTION
+      WHEN(TIME_OUT)
+        return ETIMEDOUT;
+    END
+  } else {
+   marcel_lock_release(&cond->lock);
+   unlock_task();
+  }
+
+  lock_task();
+
+  marcel_lock_acquire(&mutex->lock);
+
+  if(mutex->value == 0) { /* busy */
+    c.next = NULL;
+    c.blocked = TRUE;
+    c.task = marcel_self();
+    if(mutex->first == NULL)
+      mutex->first = mutex->last = &c;
+    else {
+      mutex->last->next = &c;
+      mutex->last = &c;
+    }
+    marcel_give_hand(&c.blocked, &mutex->lock);
+  } else {
+    mutex->value = 0;
+
+    marcel_lock_release(&mutex->lock);
+    unlock_task();
+  }
+
+  return 0;
+}

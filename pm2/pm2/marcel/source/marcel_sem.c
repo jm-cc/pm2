@@ -43,7 +43,8 @@ void marcel_sem_P(marcel_sem_t *s)
       s->last->next = &c;
       s->last = &c;
     }
-    marcel_give_hand(&c.blocked, &s->lock);
+    marcel_lock_release(&s->lock);
+    marcel_give_hand(&c.blocked);
   } else {
     marcel_lock_release(&s->lock);
     unlock_task();
@@ -79,6 +80,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last->next = &c;
       s->last = &c;
     }
+    marcel_lock_release(&s->lock);
     marcel_tempo_give_hand(timeout, &c.blocked, s);
   } else {
     marcel_lock_release(&s->lock);
@@ -144,7 +146,8 @@ void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
       s2->last->next = &c;
       s2->last = &c;
     }
-    marcel_give_hand(&c.blocked, &s2->lock);
+    marcel_lock_release(&s2->lock);
+    marcel_give_hand(&c.blocked);
   } else {
 
     marcel_lock_release(&s2->lock);

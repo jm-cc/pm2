@@ -34,6 +34,10 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Just in case MAD2_ROOT is not defined
+MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
+export MAD2_ROOT
+
 # Modification éventuelle de la configuration courante
 if test $# -gt 0
 then

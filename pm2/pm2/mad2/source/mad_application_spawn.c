@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: mad_application_spawn.c,v $
+Revision 1.3  2000/05/18 13:51:34  oaumage
+- modification du format de l'URL
+
+Revision 1.2  2000/05/18 11:38:03  oaumage
+- suppression de la fonction `dummy' commitee par erreur
+
 Revision 1.1  2000/05/17 14:34:14  oaumage
 - Reorganisation des sources au niveau de mad_init
 
@@ -64,13 +70,15 @@ ______________________________________________________________________________
 /* #define TIMING */
 #include "madeleine.h"
 
-void dummy(void)
-{
-  DISP("dummy");
-}
-
-
 #ifdef APPLICATION_SPAWN
+
+/*
+ * Constantes
+ * ----------
+ */
+#define MAX_HOSTNAME_LEN  256
+#define MAX_ARG_STR_LEN  1024
+#define MAX_ARG_LEN       256
 
 /*
  * Objet Madeleine
@@ -101,6 +109,42 @@ mad_driver_init(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
+/*
+ * Lecture du fichier de configuration
+ * -----------------------------------
+ */
+static void
+mad_read_conf(p_mad_configuration_t   configuration,
+	      char                   *configuration_file)
+{
+  /* configuration retrieval */
+  FILE *f;
+  int i;
+
+  LOG_IN();
+  f = fopen(configuration_file, "r");
+  if(f == NULL)
+    {
+      perror("configuration file");
+      exit(1);
+    }
+
+  fscanf(f, "%d", &(configuration->size));
+  configuration->host_name = TBX_MALLOC(configuration->size * sizeof(char *));
+  CTRL_ALLOC(configuration->host_name);
+
+  for (i = 0;
+       i < configuration->size;
+       i++)
+    {
+      configuration->host_name[i] = TBX_MALLOC(MAX_HOSTNAME_LEN);
+      CTRL_ALLOC(configuration->host_name[i]);
+      fscanf(f, "%s", configuration->host_name[i]);
+    }
+
+  fclose(f);
+  LOG_OUT();
+}
 
 /*
  * Generation de l'URL de connexion
@@ -113,16 +157,10 @@ mad_generate_url(p_mad_madeleine_t madeleine)
   char             *cgi_string   = NULL;
   char             *arg          = NULL;
   char             *host_name    = NULL;
-  char             *cwd          = NULL;
-  /* char             *program_name = NULL;
-     char             *realp        = NULL;
-     const char       *exec_name     = NULL; */
   mad_adapter_id_t  ad;
   int               l;
   
   LOG_IN();
-  /* realp = TBX_MALLOC(PATH_MAX);
-     CTRL_ALLOC(realp);  */
   host_name = TBX_MALLOC(MAX_HOSTNAME_LEN);
   CTRL_ALLOC(host_name);  
   url = TBX_MALLOC(MAX_ARG_STR_LEN);
@@ -134,58 +172,27 @@ mad_generate_url(p_mad_madeleine_t madeleine)
 
   SYSCALL(gethostname(host_name, MAX_HOSTNAME_LEN));
 
-  while (!(cwd = getcwd(NULL, MAX_ARG_LEN)))
-    {    
-      if(errno != EINTR)
-	{
-	  perror("getcwd");
-	  FAILURE("syscall failed");
-	}
-    }
-
   for (ad = 0;
        ad < madeleine->nb_adapter;
        ad++)
     {
       p_mad_adapter_t adapter = &(madeleine->adapter[ad]);
 
-      sprintf(arg,
-	      "device=%s&",
-	      adapter->parameter);
+      if (ad + 1 < madeleine->nb_adapter)
+	sprintf(arg, "device=%s&", adapter->parameter);
+      else
+	sprintf(arg, "device=%s", adapter->parameter);
+	
       strcat (cgi_string, arg);
     }
   l = strlen(cgi_string);
-  l--;
-  cgi_string[l] = 0;
-  /*
-  exec_name = getexecname();
-  if (exec_name[0] != '/')
-    {
-      strcat(cwd, "/");
-      strcat(cwd, exec_name);
-      realpath(cwd, realp);
-      exec_name = realp;
-    }
-
-  program_name = strrchr(exec_name, '/');
-  *program_name = '\0';
-  program_name++;
-  
-  sprintf(url, "x-nexus://%s:mad2%s/%s?%s",
-	  host_name,
-	  exec_name,
-	  program_name,
-	  cgi_string);
-  */
-
-  sprintf(url, "x-nexus://%s:mad2/?%s",
-	  host_name,
-	  cgi_string);
+  cgi_string[l - 1] = 0;
+  sprintf(url, "%s?%s", host_name, cgi_string);
 
   TBX_FREE(host_name);
   TBX_FREE(cgi_string);
   TBX_FREE(arg);
-  /* TBX_FREE(realp); */
+
   LOG_OUT();
   return url;
 }

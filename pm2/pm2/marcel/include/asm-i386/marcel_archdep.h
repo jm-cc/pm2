@@ -22,6 +22,8 @@
 
 #define TOP_STACK_FREE_AREA     64
 #define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
+#define BSP_FIELD(buf)          ((buf)[MARCEL_JB_BP])
+#define PC_FIELD(buf)           ((buf)[MARCEL_JB_PC])
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 

@@ -91,4 +91,18 @@ void __marcel_init marcel_debug_init_auto(void)
 __ma_initfunc_prio(marcel_debug_init_auto, MA_INIT_DEBUG, MA_INIT_DEBUG_PRIO, 
 	      "Register debug variables");
 
-
+#ifdef BSP_FIELD
+void *marcel_get_bsp(marcel_task_t *t) {
+	return (void *) BSP_FIELD(t->ctx_yield[0].jbuf);
+}
+#endif
+#ifdef SP_FIELD
+void *marcel_get_sp(marcel_task_t *t) {
+	return (void *) SP_FIELD(t->ctx_yield[0].jbuf);
+}
+#endif
+#ifdef PC_FIELD
+void *marcel_get_pc(marcel_task_t *t) {
+	return (void *) PC_FIELD(t->ctx_yield[0].jbuf);
+}
+#endif

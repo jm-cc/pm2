@@ -24,6 +24,8 @@
 #if defined(IRIX_SYS)
 #  define TOP_STACK_FREE_AREA     128
 #  define SP_FIELD(buf)           ((buf)[JB_SP])
+#  define BSP_FIELD(buf)          ((buf)[JB_BP])
+#  define PC_FIELD(buf)           ((buf)[JB_PC])
 #endif
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)

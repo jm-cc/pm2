@@ -1,0 +1,12 @@
+
+- Add popup windows to prevent the user from quitting without saving, etc.
+
+- Add a menubar with options such as
+	Flavor/New
+	Flavor/Save
+	Flavor/Save as or Duplicate
+	Flavor/Quit
+	View/Toggle tips
+	View/???
+
+- Add a toolbar?

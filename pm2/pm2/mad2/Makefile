@@ -37,49 +37,19 @@
 # Makefile : Madeleine 2
 ##########################
 
-#..Settings..................................................................#
-
-# Debug
-# DEBUG = on
-
-# Trace
-# TRACE = on
-
-# Timing
-# TIMING = on
-
-#  OS 
-#----------
-OS_SOLARIS = on
-# OS_LINUX = on
-
-#  Drivers
-#-----------
-# TCP
-DRV_TCP = on
-# VIA
-# DRV_VIA = on
-# SISCI
-# DRV_SISCI = on
-# SBP
-# DRV_SBP = on
-# MPI
-# DRV_MPI = on
-# MPI_IMPL = lam
-# MPI_IMPL = bip
-
-# PM2
-# PM2 = on
-
-#..Private.part..............................................................#
+include $(MAD2_ROOT)/make/config.mak
 
 # directories
-OBJ = $(MAD2_ROOT)/obj
-INC = $(MAD2_ROOT)/include
+ROOT   = $(MAD2_ROOT)
+OBJ    = $(ROOT)/obj
+INC    = $(ROOT)/include
 CI_INC = $(INC)/connection_interfaces
-SRC = $(MAD2_ROOT)/src
+SRC    = $(ROOT)/src
 CI_SRC = $(SRC)/connection_interfaces
-LIB = $(MAD2_ROOT)/lib
+LIB    = $(ROOT)/lib
+
+# libraries
+LIB_MAD2 = $(LIB)/libmad2.a
 
 # applications
 APPS = mad_test \
@@ -124,45 +94,13 @@ HEADERS = $(INC)/mad_adapter.h \
           $(INC)/mad_types.h \
           $(INC)/madeleine.h 
 
-# libs
-LIB_MAD2 = $(LIB)/libmad2.a
-
-# compiler
-# CC = purify gcc
-CC = gcc
-# CC = egcc
-
-# preprocessor flags
-CPPFLAGS = -I$(INC) -I$(CI_INC) 
-
-# compiler flags
-# CFLAGS = -O6 -Wall 
-# CFLAGS = -g
-# CFLAGS = 
-CFLAGS = -g -Wall -W -Wbad-function-cast -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes # -Werror
-# CFLAGS = -pg -Wall
-# CFLAGS = -fomit-frame-pointer -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -O6 -Wall
-# CFLAGS = -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
-
-# linker flags 
-# LDFLAGS = -pg 
-LDFLAGS =
-
-CONF = 
-
 # ToolBox
 # -------
-TBX_ROOT  = $(MAD2_ROOT)/../toolbox
-CPPFLAGS += -I$(TBX_ROOT)/include
 LDFLAGS  += $(TBX_ROOT)/lib/libtbx.a
 
-# PM2
-# ---
-ifdef PM2
-  CPPFLAGS += -DPM2 -D$(PM2_ARCH) -D$(PM2_SYS) -I$(MARCEL_ROOT)/include
-# CFLAGS   += 
-  LDFLAGS  += $(MARCEL_ROOT)/lib/libmarcel.a
-endif
+# Net ToolBox
+# -----------
+LDFLAGS  += $(NTBX_ROOT)/lib/libntbx.a
 
 # Drivers
 # -------
@@ -172,10 +110,8 @@ ifdef DRV_TCP
   HEADERS  += $(CI_INC)/mad_tcp.h
   SRCS     += $(CI_SRC)/mad_tcp.c
   CPPFLAGS += -DDRV_TCP=mad_TCP
-# CFLAGS += 
-  ifdef OS_SOLARIS
-    LDFLAGS += -lnsl -lsocket
-  endif
+# CFLAGS   += 
+# LDFLAGS  += 
 endif
 
 # M-VIA specific
@@ -233,33 +169,8 @@ ifeq ($(MPI_IMPL), bip)
 endif
 endif
 
-# Debug mode
-# ----------
-ifdef DEBUG
-  CPPFLAGS += -DDEBUG
-endif
-
-# Trace mode
-# ----------
-ifdef TRACE
-  CPPFLAGS += -DTRACE
-endif
-
-# Timing mode
-# ----------
-ifdef TIMING
-  CPPFLAGS += -DTIMING
-endif
-
 # dependencies
-DEP_DIRS = $(TBX_ROOT)
-
-# goals transfer
-ifeq ($(MAKECMDGOALS), clean)
-DEP_GOAL = clean
-else
-DEP_GOAL = all
-endif
+DEP_DIRS = $(TBX_ROOT) $(NTBX_ROOT)
 
 # Rules
 # -----
@@ -271,13 +182,13 @@ all: lib $(APPS) conf
 lib: $(LIB_MAD2)
 
 ps: 
-	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(MAD2_ROOT)/mad_2.ps
+	enscript -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/mad_2.ps
 
 html: 
-	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(MAD2_ROOT)/mad_2.html
+	enscript -W html -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/mad_2.html
 
 rtf: 
-	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(MAD2_ROOT)/mad_2.rtf
+	enscript -W rtf -MA4 -1 -C -Ec -j -r -v -H --color --toc $(SRCS) $(HEADERS) -p $(ROOT)/mad_2.rtf
 
 mad_ping: mad_ping.o $(LIB_MAD2)
 	$(CC) $< $(LIB_MAD2) $(LDFLAGS) -o $@
@@ -299,10 +210,10 @@ clean: dep_dirs
 	rm -f $(APPS) $(APPS_OBJS) $(OBJS) $(LIB_MAD2)
 
 clean_src:
-	rm -f $(MAD2_ROOT)/*~ $(SRC)/*~ $(CI_SRC)/*~ $(INC)/*~ $(CI_INC)/*~
+	rm -f $(ROOT)/*~ $(SRC)/*~ $(CI_SRC)/*~ $(INC)/*~ $(CI_INC)/*~
 
 lines:
-	wc -l $(MAD2_ROOT)/*.c \
+	wc -l $(ROOT)/*.c \
               $(SRC)/*.c $(CI_SRC)/*.c \
               $(INC)/*.h $(CI_INC)/*.h
 
@@ -344,6 +255,6 @@ $(DEP_DIRS):
 conf: $(CONF)
 
 mad_mpi_impl:
-	@echo "$(MPI_IMPL)" > $(MAD2_ROOT)/.mad2mpi_implementation
+	@echo "$(MPI_IMPL)" > $(ROOT)/.mad2mpi_implementation
 #
 

@@ -29,7 +29,7 @@ mad_begin_packing(p_mad_channel_t      channel,
 
   LOG_IN();
   TRACE("New emission request");
-  if (!channel->public)
+  if (!channel->not_private)
     return NULL;
 
   interface = channel->adapter->driver->interface;
@@ -85,7 +85,7 @@ mad_message_ready(p_mad_channel_t channel)
   LOG_IN();
   TRACE("New reception request");
 
-  if (!channel->public)
+  if (!channel->not_private)
     return NULL;
 
   interface = channel->adapter->driver->interface;
@@ -150,7 +150,7 @@ mad_begin_unpacking(p_mad_channel_t channel)
   LOG_IN();
   TRACE("New reception request");
 
-  if (!channel->public)
+  if (!channel->not_private)
     return NULL;
 
   interface = channel->adapter->driver->interface;

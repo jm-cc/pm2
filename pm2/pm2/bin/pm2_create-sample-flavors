@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+#                      PM2 HIGH-PERF/ISOMALLOC
+#           High Performance Parallel Multithreaded Machine
+#                           version 3.0
+#
+#     Gabriel Antoniu, Olivier Aumage, Luc Bouge, Vincent Danjean,
+#       Christian Perez, Jean-Francois Mehaut, Raymond Namyst
+#
+#            Laboratoire de l'Informatique du Parallelisme
+#                        UMR 5668 CNRS-INRIA
+#                 Ecole Normale Superieure de Lyon
+#
+#                      External Contributors:
+#                 Yves Denneulin (LMC - Grenoble),
+#                 Benoit Planquelle (LIFL - Lille)
+#
+#                    1998 All Rights Reserved
+#
+#
+#                             NOTICE
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby granted
+# provided that the above copyright notice appear in all copies and
+# that both the copyright notice and this permission notice appear in
+# supporting documentation.
+#
+# Neither the institutions (Ecole Normale Superieure de Lyon,
+# Laboratoire de L'informatique du Parallelisme, Universite des
+# Sciences et Technologies de Lille, Laboratoire d'Informatique
+# Fondamentale de Lille), nor the Authors make any representations
+# about the suitability of this software for any purpose. This
+# software is provided ``as is'' without express or implied warranty.
+#
+
+PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2_create-flavor}
+
+if [ ! -d ${PM2_ROOT}/stamp ]; then
+    mkdir -p ${PM2_ROOT}/stamp
+fi
+if [ ! -d ${PM2_ROOT}/flavors ]; then
+    mkdir -p ${PM2_ROOT}/flavors
+fi
+
+$PM2_CREATE_FLAVOR --flavor=default --builddir=" " \
+    --modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt
+
+for i in mono smp act actsmp; do
+    $PM2_CREATE_FLAVOR --flavor=marcel-$i --modules="marcel" \
+	--ext=-$i --marcel=$i --builddir=marcel --all=opt
+done
+$PM2_CREATE_FLAVOR --flavor=marcel --modules="marcel" --all=opt
+
+$PM2_CREATE_FLAVOR --flavor=mad1 --modules="mad1" --all=opt
+$PM2_CREATE_FLAVOR --flavor=pm2 --modules="pm2 dsm marcel mad2 tbx ntbx" \
+    --all=opt
+$PM2_CREATE_FLAVOR --flavor=pm2-mad1 --modules="pm2 dsm marcel mad1" --all=opt

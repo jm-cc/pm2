@@ -165,7 +165,7 @@ static void set_data_dir(char *buf, char *suffix)
     sprintf(buf, "./%s_%s", mad_arch_name(), suffix);
 }
 
-static void startup_func()
+static void startup_func(int argc, char *argv[])
 {
   autre = (pm2_self() == 0) ? 1 : 0;
 }
@@ -181,7 +181,7 @@ int pm2_main(int argc, char **argv)
   DECLARE_LRPC(LRPC_PING);
   DECLARE_LRPC(LRPC_PING_ASYNC);
 
-  pm2_set_startup_func(startup_func);
+  pm2_push_startup_func(startup_func);
 
   pm2_init(&argc, argv);
 

@@ -15,6 +15,6 @@
 
 export FLAVOR_DEFAULT:=pm2
 
-PROGS := hello simple synchronous threads argv remote_hello
+PROGS := hello simple synchronous threads argv remote_hello channel
 
 include $(PM2_ROOT)/make/apps.mak

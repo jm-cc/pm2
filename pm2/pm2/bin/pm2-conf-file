@@ -1,0 +1,47 @@
+#!/bin/sh
+
+usage() # exit_code
+{
+    cat <<EOF
+Usage: `basename $0` { option }
+  option:
+    -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
+    -h        : Display this help message
+EOF
+    exit $1
+}
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+PM2_FLAVOR=${PM2_FLAVOR:-default}
+export PM2_FLAVOR
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f)
+	    shift; PM2_FLAVOR="$1"; shift
+	    ;;
+	-h)
+	    usage 0
+	    ;;
+	--)
+	    shift; break
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+#PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
+
+PM2_CONF_DIR=${HOME}/.pm2/conf/${PM2_FLAVOR:-default}
+
+[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
+
+echo ${PM2_CONF_DIR}/.pm2conf
+

@@ -5,7 +5,7 @@
 
 static int service_id;
 
-dsm_mutex_t L;
+dsm_mutex_t mutex;
 
 BEGIN_DSM_DATA;
 int shvar = 0;
@@ -26,12 +26,12 @@ f (void *arg)
 
   tprintf ("Thread %d started on node %d\n", my_name, my_node);
 
-  dsm_mutex_lock (&L);
+  dsm_mutex_lock (&mutex);
   initial = shvar;
   for (i = 0; i < NB_ITERATIONS; i++)
     shvar++;
   final = shvar;
-  dsm_mutex_unlock (&L);
+  dsm_mutex_unlock (&mutex);
 
   tprintf ("Thread %d from node %d finished on node %d: "
 	   "from %d to %d!\n",
@@ -60,7 +60,7 @@ pm2_main (int argc, char **argv)
   pm2_completion_init (&c, NULL, NULL);
 
   dsm_set_default_protocol (LI_HUDAK);
-  dsm_mutex_init (&L, NULL);
+  dsm_mutex_init (&mutex, NULL);
 
   pm2_init (&argc, argv);
 

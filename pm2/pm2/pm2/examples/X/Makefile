@@ -15,12 +15,13 @@
 
 export FLAVOR_DEFAULT:=pm2
 
-CFLAGS += -I/usr/X11R6/include -I$$OPENWINHOME/include
-LDFLAGS += -L/usr/X11R6/lib -L$$OPENWINHOME/lib -lxview -lolgx -lX11
-
 PROGS := polygon
+polygon-objs := polygon.o regul.o custom.o
+polygon-ldflags := -L/usr/X11R6/lib -L$$OPENWINHOME/lib -lxview -lolgx -lX11
+polygon-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
+regul-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
+custom-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
 
 include $(PM2_ROOT)/make/apps.mak
 
-$(APP_BIN)/polygon$(APP_EXT): $(APP_OBJ)/regul$(APP_EXT).o $(APP_OBJ)/custom$(APP_EXT).o
 

@@ -17,8 +17,9 @@ export FLAVOR_DEFAULT:=pm2
 
 PROGS := attach slots
 
+attach-objs := attach.o rpc_defs.o
+slots-objs := slots.o rpc_defs.o
+
 include $(PM2_ROOT)/make/apps.mak
 
-$(APP_BIN)/slots$(APP_EXT): $(APP_OBJ)/rpc_defs$(APP_EXT).o
-$(APP_BIN)/attach$(APP_EXT): $(APP_OBJ)/rpc_defs$(APP_EXT).o
 

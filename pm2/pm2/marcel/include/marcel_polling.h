@@ -16,7 +16,7 @@
 
 // THESE: INTERFACE START
 /****************************************************************
- * Certain commentaires sont étiquetés par U/S/C/I signifiant
+ * Certains commentaires sont étiquetés par U/S/C/I signifiant
  * User       : utile aux threads applicatifs pour exploiter ces mécanismes
  * Start      : utile pour l'initialisation
  * Call-backs : utile pour le concepteur de call-backs
@@ -67,7 +67,7 @@ typedef struct marcel_ev_wait *marcel_ev_wait_t;
 
 /* Initialisation statique
  * var : la variable constante marcel_ev_server_t
- * name: une chaine de caractère pour identifier ce serveur dans les
+ * name: une chaîne de caractères pour identifier ce serveur dans les
  *        messages de debug
  */
 #define MARCEL_EV_SERVER_DEFINE(var, name) \
@@ -116,15 +116,15 @@ enum {
 };
 
 #section functions
-/* Un raccourci pratique des fonctions suivantes utile si on ne
+/* Un raccourci pratique des fonctions suivantes, utile si l'on ne
  * soumet la requête qu'une seule fois. Les opérations suivantes sont
- * effectuée : initialisation, soumission, et attente d'un
+ * effectuées : initialisation, soumission et attente d'un
  * événement avec ONE_SHOT positionné */
 int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
 		   marcel_ev_wait_t wait, marcel_time_t timeout);
 
 /* Initialisation d'un événement
- * (à appeler en premier si on utilise autre chose que marcel_ev_wait) */
+ * (à appeler en premier si l'on utilise autre chose que marcel_ev_wait) */
 int marcel_ev_req_init(marcel_ev_req_t req);
 
 /* Ajout d'un attribut spécifique à une requête */
@@ -158,21 +158,21 @@ marcel_ev_req_t marcel_ev_get_success_req(marcel_ev_server_t server);
  *   exclusion mutuelle.
  * - les call-backs BLOCK_ONE|ALL doivent relâcher puis reprendre ce
  *   lock avant et après l'appel système bloquant avec les deux fonctions
- *   prévue pour (marcel_ev_callback_*).
+ *   prévues pour (marcel_ev_callback_*).
  * - les fonctions précédentes peuvent être appelées avec ou sans ce
  *   lock
  * - le lock est relâché automatiquement par les fonctions d'attente
  *   (marcel_ev_*wait*())
 
  * - les call-backs et les réveils des threads en attente sur les
- *   événements signalés par le call-back sont atomiques (vis à vis de 
+ *   événements signalés par le call-back sont atomiques (vis-à-vis de 
  *   ce lock)
  * - si le lock est pris avant les fonctions d'attente (ev_wait_*),
- *   la mise en attente est atomique vis à vis des call-backs
+ *   la mise en attente est atomique vis-à-vis des call-backs
  *   ie: un call-back signalant l'événement attendu réveillera cette
  *   attente
  * - si un événement à la propriété ONE_SHOT, le désenregistrement est
- *   atomic vis à vis du call-back qui a généré l'événement.
+ *   atomic vis-à-vis du call-back qui a généré l'événement.
  */
 int marcel_ev_lock(marcel_ev_server_t server);
 int marcel_ev_unlock(marcel_ev_server_t server);
@@ -222,12 +222,12 @@ typedef enum {
 /*[C]****************************************************************
  * Le prototype des call-back
  * id : le serveur
- * op : l'opération (call-back) demandé
+ * op : l'opération (call-back) demandée
  * req : pour *(POLL|WAIT)ONE* : la requête à tester en particulier
  * nb_req : pour POLL_* : le nombre de requêtes groupées
  * option : flags dépendant de l'opération
  *  - pour POLL_POLLONE : 
- *     + EV_IS_GROUPED : si la requête est déjà groupé
+ *     + EV_IS_GROUPED : si la requête est déjà groupée
  *     + EV_ITER : si POLL_POLLONE est appelée sur toutes les requêtes
  *                 en attente (ie POLL_POLLANY n'est pas disponible)
  *
@@ -354,11 +354,11 @@ enum {
 
 
 
-/* Macros utilisable dans les call-backs pour indiquer qu'une requête
+/* Macro utilisable dans les call-backs pour indiquer qu'une requête
    a reçu un événement.
 
    * la requête sera fournie à marcel_ev_get_success_req() (tant
-   qu'elle n'est pas désenregistré)
+   qu'elle n'est pas désenregistrée)
    * les threads encore en attente d'un événement lié à cette requête seront
    réveillés et renverront le code 0
 
@@ -372,7 +372,7 @@ enum {
  
 
 
-/* Macros utilisable dans les call-backs pour réveiller un thread en attente
+/* Macro utilisable dans les call-backs pour réveiller un thread en attente
    en lui fournissant le code de retour
    marcel_ev_wait_t wait : l'événement à reveiller
 */

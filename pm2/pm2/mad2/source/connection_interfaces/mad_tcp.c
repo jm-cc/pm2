@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.19  2000/05/29 17:12:22  vdanjean
+End of mad2 corrected
+
 Revision 1.18  2000/05/29 09:15:15  oaumage
 - Modificationde mad_tcp_sync_channel en deux fonctions mad_tcp_sync_in_channel
   (synchronisation par reception) et mad_tcp_sync_out_channel
@@ -283,23 +286,23 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	      connection = &(channel->output_connection[j]);
 	      connection_specific = connection->specific;
 
-	      LOG_VAL("Writing channel id", channel->id);
-	      SYSCALL(write(connection_specific->socket,
-			    &(channel->id),
-			    sizeof(mad_channel_id_t)));
-	      LOG_VAL("Wrote channel id", channel->id);
-	      
 	      LOG_VAL("Receiving host id from host", j);
 	      SYSCALL(read(connection_specific->socket,
 			   &(host_id),
 			   sizeof(ntbx_host_id_t)));
 	      LOG_VAL("Received host id from host", j);
 	      LOG_VAL("Host id", host_id);
-	  
+
 	      if (host_id != j)
 		{
 		  FAILURE("wrong host id");
 		}
+
+	      LOG_VAL("Writing channel id", channel->id);
+	      SYSCALL(write(connection_specific->socket,
+			    &(channel->id),
+			    sizeof(mad_channel_id_t)));
+	      LOG_VAL("Wrote channel id", channel->id);	      	  
 	    }
 	}
       else
@@ -309,6 +312,12 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 
 	  connection = &(channel->input_connection[i]);
 	  connection_specific = connection->specific;
+
+	  LOG_VAL("Writing local host id", configuration->local_host_id);
+	  SYSCALL(write(connection_specific->socket,
+			&(configuration->local_host_id),
+			sizeof(ntbx_host_id_t)));	      
+	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 
 	  LOG_VAL("Receiving channel id from host", i);
 	  SYSCALL(read(connection_specific->socket, 
@@ -321,11 +330,6 @@ mad_tcp_sync_out_channel(p_mad_channel_t channel)
 	    {
 	      FAILURE("wrong channel id");
 	    }
-	  LOG_VAL("Writing local host id", configuration->local_host_id);
-	  SYSCALL(write(connection_specific->socket,
-			&(configuration->local_host_id),
-			sizeof(ntbx_host_id_t)));	      
-	  LOG_VAL("Wrote local host id", configuration->local_host_id);
 	}
     }
   LOG_VAL("Channel synced", channel->id);
@@ -639,8 +643,10 @@ mad_tcp_accept(p_mad_channel_t channel)
   LOG_IN();
   SYSCALL(desc = accept(adapter_specific->connection_socket, NULL, NULL));
   ntbx_tcp_socket_setup(desc);
+  LOG("Waiting for read on %i", desc);
 
   SYSCALL(read(desc, &remote_host_id, sizeof(ntbx_host_id_t)));
+  LOG("Read on %i done", desc);
   channel->input_connection[remote_host_id].remote_host_id = remote_host_id;
   channel->output_connection[remote_host_id].remote_host_id = remote_host_id;
   
@@ -655,6 +661,8 @@ mad_tcp_accept(p_mad_channel_t channel)
 void
 mad_tcp_connect(p_mad_connection_t connection)
 {
+/*  	char dummy[128]={0,}; */
+/*  	int i; */
   p_mad_tcp_connection_specific_t   connection_specific =
     connection->specific;
   p_mad_connection_t                reverse             =
@@ -666,31 +674,47 @@ mad_tcp_connect(p_mad_connection_t connection)
   ntbx_tcp_address_t                address;
   ntbx_tcp_address_t                server_address;
   ntbx_tcp_socket_t                 desc;
-  
+/*  	char dummy2[128]={0,}; */
+
+/*  	memset(dummy, -1, 128); */
+/*  	memset(dummy2, -1, 128); */
+
   LOG_IN();
   desc = ntbx_tcp_socket_create(&address, 0);
+  LOG("desc = %i", desc);
   ntbx_tcp_address_fill(&server_address,
 			adapter_specific->
 			remote_connection_port[connection->remote_host_id],
 			adapter->driver->madeleine->
 			configuration.host_name[connection->remote_host_id]);
 
+  //LOG("juste presaue avant desc = %i", desc);
   SYSCALL(connect(desc, (struct sockaddr *)&server_address, 
 		  sizeof(ntbx_tcp_address_t)));
 
+/*    for (i=0; i<128; i++) */
+/*  	  if (dummy[i] != -1) */
+/*  		  LOG("dummy[%i]=%i", i, dummy[i]); */
+/*    for (i=0; i<128; i++) */
+/*  	  if (dummy2[i] != -1) */
+/*  		  LOG("dummy2[%i]=%i", i, dummy2[i]); */
+  LOG("juste avant desc = %i, adr=%p", desc, &desc);
   ntbx_tcp_socket_setup(desc);
+  //LOG("juste apres desc = %i, adr=%p", desc, &desc);
   
   SYSCALL(write(desc,
 		&(connection->channel->adapter->driver->madeleine->
 		  configuration.local_host_id), 
 		sizeof(ntbx_host_id_t)));
   
+  //LOG("un peu plus loin desc = %i, adr=%p", desc, &desc);
 
   reverse->remote_host_id = connection->remote_host_id;
   /* Note:
      The `specific' field of tcp connections is shared by input
      and output connections */
   connection_specific->socket = desc;
+  //LOG("à la fin desc = %i, adr=%p", desc, &desc);
   LOG_OUT();
 }
 

@@ -57,6 +57,8 @@ char *known_static_modules[] =
   NULL
 };
 
+#if 0 
+/* not used ?! */
 static gint mod_cmp(gconstpointer a, gconstpointer b)
 {
   return strcmp(((module_t *)a)->name, (char *)b);
@@ -74,6 +76,7 @@ static module_t *find_module(char *name)
     return (module_t *)ptr->data;
   }
 }
+#endif
 
 static void module_rescan(void)
 {

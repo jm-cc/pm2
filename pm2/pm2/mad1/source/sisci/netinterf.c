@@ -881,13 +881,26 @@ static void parse_cmd_line(int *argc, char **argv)
   argv[j] = NULL;
 }
 
+static char *get_mad_root(void)
+{
+  static char buf[1024];
+  char *ptr;
+
+  if((ptr = getenv("MADELEINE_ROOT")) != NULL)
+    return ptr;
+  else {
+    sprintf(buf, "%s/mad1", getenv("PM2_ROOT"));
+    return buf;
+  }
+}
+
 static void spawn_procs(char *argv[], int port)
 { 
   char cmd[1024], arg[128];
   int i;
 
   sprintf(cmd, "%s/bin/sisci/madspawn %s %d %d %s",
-	  getenv("MADELEINE_ROOT"),
+	  get_mad_root(),
 	  my_name, confsize, port, cons_image);
   i=0;
   while(argv[i]) {
@@ -1132,7 +1145,7 @@ void mad_sisci_network_init(int *argc, char **argv, int nb_proc, int *tids, int 
     dup2(STDERR_FILENO, STDOUT_FILENO);
 
     {
-      int ret = system("exit `cat ${MADELEINE_ROOT}/.madconf | wc -w`");
+      int ret = system("exit `cat ${MADELEINE_ROOT-${PM2_ROOT}/mad1}/.madconf | wc -w`");
 
       confsize = WEXITSTATUS(ret);
     }
@@ -1140,7 +1153,7 @@ void mad_sisci_network_init(int *argc, char **argv, int nb_proc, int *tids, int 
     {
       FILE *f;
 
-      sprintf(output, "%s/.madconf", getenv("MADELEINE_ROOT"));
+      sprintf(output, "%s/.madconf", get_mad_root());
       f = fopen(output, "r");
       if(f == NULL) {
 	perror("fichier ~/.madconf");

@@ -45,6 +45,7 @@ DSM_LIBD	:= $(DSM_ROOT)/lib/$(PM2_ARCH_SYS)
 DSM_MAKEFILE	= $(DSM_ROOT)/Makefile \
 		  $(DSM_INC)/dsm_page_size.h
 
+ifneq ($(MAKECMDGOALS),distclean) # avoid auto-building of directories
 ifneq ($(wildcard $(DSM_DEP)),$(DSM_DEP))
 DUMMY_BUILD	:=	$(shell mkdir -p $(DSM_DEP))
 endif
@@ -55,6 +56,7 @@ endif
 
 ifneq ($(wildcard $(DSM_LIBD)),$(DSM_LIBD))
 DUMMY_BUILD	:=	$(shell mkdir -p $(DSM_LIBD))
+endif
 endif
 
 DSM_CC		=	gcc

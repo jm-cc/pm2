@@ -246,7 +246,7 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
 		echo "Options you choose there will be selected in next screens"
 		;;
 	    common)
-		echo "Options you choose there applied to programs you compile,"
+		echo "These options will only be applied to programs you compile,"
 		echo "not to the libraries themselves"
 		;;
 	    *)
@@ -385,7 +385,7 @@ get_value_text() { # needed name help
 	    end=true
 	fi
     done
-    eval $2="$rep"
+    eval $2='"$rep"'
 }
 
 get_value_dialog() { # needed name help
@@ -409,7 +409,7 @@ get_value_dialog() { # needed name help
 	    end=true
 	fi
     done
-    eval $2="$rep"
+    eval $2='"$rep"'
 }
 
 get_value() { # needed name help
@@ -444,10 +444,10 @@ do_cmdline() { # no_flavor
     else
 	cmdline="--flavor=$fl_flavor"
     fi
-    cmdline="$cmdline --builddir=$fl_builddir"
+    cmdline="$cmdline --builddir=\"\$fl_builddir\""
     cmdline="$cmdline --ext=$fl_ext"
-    cmdline="$cmdline --modules=\"$fl_modules\""
-    cmdline="$cmdline --common=\"$fl_common\""
+    cmdline="$cmdline --modules=\"\$fl_modules\""
+    cmdline="$cmdline --common=\"\$fl_common\""
     for mod in $fl_modules; do
 	cmdline="$cmdline --$mod=\"`eval echo \\$fl_$mod`\""
     done
@@ -748,7 +748,9 @@ load_flavor() { # flavor
     fi
     options_name=`echo "$options" | sed -e 's, --\([^=]*\)=[^ ]*, fl_\1=,g'`
     eval $options_name
-    options=`echo "$options" | sed -e 's, --\([^=]*\)=\([^ ]*\), fl_\1="${fl_\1:+${fl_\1} }\2",g'`
+    # La ligne ci-dessous est horrible. Le "sed" du milieu sert a
+    # proteger l'expansion des variables...
+    options=`echo "$options" | sed -e 's/[$]/\\\\$/g' | sed -e 's, --\([^=]*\)=\([^ ]*\), fl_\1="${fl_\1:+${fl_\1} }\2",g'`
     eval $options
 }
 

@@ -14,15 +14,10 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_TESTANDSET_H
-#define MARCEL_TESTANDSET_H
-
+#section marcel_macros
 #warning Bad implementation
 
 #define pm2_spinlock_testandset(volatile unsigned *spinlock) \
   (*(spinlock) ? 1 : (*(spinlock)=1,0))
 
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
-
-
-#endif

@@ -14,9 +14,9 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_TESTANDSET_H
-#define MARCEL_TESTANDSET_H
-
+#section marcel_functions
+static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
+#section marcel_inline
 static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   char ret = 0;
@@ -28,8 +28,7 @@ static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
   return (unsigned)ret;
 }
 
+#section marcel_macros
 #define pm2_spinlock_release(spinlock) \
   __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0));
 
-
-#endif

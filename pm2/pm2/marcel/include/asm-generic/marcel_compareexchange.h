@@ -55,6 +55,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 	return prev;
 }
 
+#section marcel_macros
 #define ma_cmpxchg(ptr,o,n)\
 	((__typeof__(*(ptr)))pm2_compareexchange((ptr),(unsigned long)(o),\
 					(unsigned long)(n),sizeof(*(ptr))))

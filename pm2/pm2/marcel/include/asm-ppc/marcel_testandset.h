@@ -14,11 +14,12 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_TESTANDSET_H
-#define MARCEL_TESTANDSET_H
-
+#section marcel_macros
 #define sync() __asm__ __volatile__ ("sync")
 
+#section marcel_functions
+static __inline__ unsigned __compare_and_swap (long unsigned *p, long unsigned oldval, long unsigned newval);
+#section marcel_inline
 static __inline__ unsigned __compare_and_swap (long unsigned *p, long unsigned oldval, long unsigned newval)
 {
   unsigned ret;
@@ -38,9 +39,7 @@ static __inline__ unsigned __compare_and_swap (long unsigned *p, long unsigned o
   return ret == 0;
 }
 
+#section marcel_macros
 #define pm2_spinlock_testandset(spinlock) __compare_and_swap(spinlock, 0, 1)
 
 #define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
-
-
-#endif

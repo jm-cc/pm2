@@ -658,6 +658,7 @@ tbx_string_split(p_tbx_string_t  src_string,
 	      copy_mode = tbx_true;
 	    }
 	next_1: 
+	    ;
 	}
       while (offset < length);
   

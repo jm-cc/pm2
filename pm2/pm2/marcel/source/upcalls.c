@@ -108,8 +108,6 @@ int mysleep()
 			;
 }
 
-extern int flag;
-
 int hack_restart_func(act_proc_t new_proc, int return_value, 
 		      int param, long eip, long esp)
 {
@@ -132,7 +130,6 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 				      current);
 		}
 	}
-	mdebug("\tcoucou\n");
   	if (param & ACT_UNBLK_RESTART_UNBLOCKED) {
 		switch (param & 0xFF) {
 		case ACT_RESTART_FROM_SCHED:
@@ -157,19 +154,12 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 			RAISE("invalid parameter");
 		}
   	} else if (param & ACT_UNBLK_IDLE) {
-		mdebug("\trestarting unblocked\n");
 		if ((param & 0xFF) == ACT_NEW_WITH_LOCK) {
 			mdebug("Ouf ouf ouf : On semble s'en sortir\n");
 		}
-		mdebug("\trestarting unblocked 1\n");
 		SET_FROZEN(GET_LWP(current)->prev_running);
-		mdebug("\trestarting unblocked 2\n");
-		flag=1;
 		UNCHAIN_TASK(GET_LWP(current)->prev_running);
-		flag=0;
-		mdebug("\trestarting unblocked 3\n");
 		MTRACE("Restarting", current);
-		mdebug("\trestarting unblocked 4\n");
 		unlock_task();
 	} else if (param & ACT_RESCHEDULE) {
 		if(!locked() && preemption_enabled()) {

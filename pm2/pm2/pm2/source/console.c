@@ -44,7 +44,7 @@ static void snap(marcel_t p)
    old_mad_pack_long(MAD_IN_HEADER, &tamp, 1);
    temp=1;
    old_mad_pack_int(MAD_IN_HEADER, &temp, 1);
-   temp=p->sched.internal.state;
+   temp=p->sched.state;
    old_mad_pack_int(MAD_IN_HEADER, &temp, 1);
    temp=64*1024;
    old_mad_pack_int(MAD_IN_HEADER, &temp, 1);
@@ -87,9 +87,9 @@ UNPACK_RES_STUB(LRPC_CONSOLE_THREADS)
       old_mad_unpack_int(MAD_IN_HEADER, &pile_threads, 1);
       old_mad_unpack_str(MAD_IN_HEADER, rpc_name);
       old_mad_unpack_int(MAD_IN_HEADER, &not_migratable, 1);
-      if(state_threads == RUNNING)
+      if(state_threads == MA_TASK_RUNNING)
 		sprintf(s1, "run");
-      else if(state_threads == BLOCKED)
+      else if(state_threads == MA_TASK_UNINTERRUPTIBLE)
 	        sprintf(s1, "blocked");
       else
 		sprintf(s1, "asleep");

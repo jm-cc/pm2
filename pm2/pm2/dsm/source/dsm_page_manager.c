@@ -38,7 +38,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include "errno.h"
+#include <errno.h>
+#include <malloc.h>
 #include "marcel.h"
 #include "fifo_credits.h"
 #include "dsm_page_manager.h"
@@ -48,10 +49,10 @@
 #include "dsm_bitmap.h"
 
 #define DSM_PAGEALIGN(X) ((((int)(X))+(DSM_PAGE_SIZE-1)) & ~(DSM_PAGE_SIZE-1))
+#define USER_DATA_SIZE 8
 
 typedef struct _dsm_page_table_entry
 {
-  int              state;
   dsm_node_t       prob_owner;
   dsm_node_t       next_owner;
   fifo_t           pending_req;
@@ -59,13 +60,14 @@ typedef struct _dsm_page_table_entry
   int              copyset_size;
   dsm_access_t     access;
   dsm_access_t     pending_access;
-/*    dsm_protocol_t   protocol; */
   marcel_mutex_t   mutex;
   marcel_cond_t    cond;
   marcel_sem_t     sem;
   unsigned long    size;
   void             *addr;
   dsm_bitmap_t     bitmap;
+  int user_data1[USER_DATA_SIZE];
+  void *user_data2;
 } dsm_page_table_entry_t;
 
 typedef dsm_page_table_entry_t *dsm_page_table_t;
@@ -78,7 +80,11 @@ extern char dsm_data_begin, dsm_data_end;
 static dsm_node_t dsm_local_node_rank = 0, dsm_nb_nodes = 1;
 static int _dsm_page_distrib_mode;
 static int _dsm_page_distrib_arg;
+static int _dsm_page_protect_mode = DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS;
+static int _dsm_page_protect_arg = 0;
 
+static dsm_user_data1_init_func_t _dsm_user_data1_init_func;
+static dsm_user_data2_init_func_t _dsm_user_data2_init_func;
 
 void pm2_set_dsm_page_distribution(int mode, ...)
 {
@@ -91,6 +97,19 @@ void pm2_set_dsm_page_distribution(int mode, ...)
   case DSM_CYCLIC: _dsm_page_distrib_arg = va_arg(l, int); break;
   case DSM_CUSTOM: _dsm_page_distrib_arg = (int)va_arg(l, int *); break;
   case DSM_BLOCK: break;
+  }
+  va_end(l);
+}
+
+void pm2_set_user_page_protection(int mode, ...)
+{
+  va_list l;
+  
+  _dsm_page_protect_mode = mode;
+  va_start(l, mode);
+  switch(mode) {
+  case DSM_CUSTOM_PROTECT: _dsm_page_protect_arg = (int)va_arg(l, int *); break;
+  case DSM_UNIFORM_PROTECT:_dsm_page_protect_arg = va_arg(l, int); break;
   }
   va_end(l);
 }
@@ -141,6 +160,7 @@ static void _dsm_global_vars_init(int my_rank, int confsize)
     nb_static_dsm_pages++;
 }
 
+
 #define min(a,b) ((a) < (b))?(a):(b)
 
 void dsm_page_ownership_init()
@@ -156,8 +176,8 @@ void dsm_page_ownership_init()
 	  dsm_page_table[i].prob_owner = (dsm_node_t)_dsm_page_distrib_arg;
 	  dsm_page_table[i].access = access;
 	}
-      
-      mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
+   if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)
+     mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
       break;    
     }
   
@@ -179,7 +199,8 @@ void dsm_page_ownership_init()
 	      dsm_page_table[i].access = access;      
 	      i++;
 	    }
-	  mprotect(dsm_page_table[i - bound].addr, bound * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
+	  if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)
+	    mprotect(dsm_page_table[i - bound].addr, bound * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
 	  curOwner = (curOwner + 1) % dsm_nb_nodes;
 	}
       break;
@@ -237,10 +258,10 @@ void dsm_page_ownership_init()
 	  low = (split * (chunk + 1)) + ((dsm_local_node_rank - split) * chunk);
 	  high = low + chunk;
 	}
-      
-      mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
-	       (high - low + 1) * DSM_PAGE_SIZE,
-	       PROT_READ|PROT_WRITE);
+      if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)     
+	mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
+		 (high - low + 1) * DSM_PAGE_SIZE,
+		 PROT_READ|PROT_WRITE);
       break;
     }
   case DSM_CUSTOM :
@@ -249,29 +270,33 @@ void dsm_page_ownership_init()
       for (i = 0; i < nb_static_dsm_pages; i++)
 	{
 	  dsm_page_table[i].prob_owner = array[i];
-	  dsm_set_access(i, (dsm_local_node_rank == array[i])?WRITE_ACCESS:NO_ACCESS);
+	  if (_dsm_page_protect_mode == DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS)
+	    dsm_set_access(i, (dsm_local_node_rank == array[i])?WRITE_ACCESS:NO_ACCESS);
+	  else
+	    dsm_set_access_without_protect(i, (dsm_local_node_rank == array[i])?WRITE_ACCESS:NO_ACCESS);
 	}
       break;
     }
   }
-  
+   if (_dsm_page_protect_mode != DSM_OWNER_WRITE_ACCESS_OTHER_NO_ACCESS) 
+     switch(_dsm_page_distrib_mode){
+     case DSM_UNIFORM_PROTECT:
+       dsm_set_uniform_access((dsm_access_t)_dsm_page_distrib_arg);break;
+     case DSM_CUSTOM_PROTECT:
+       RAISE(NOT_IMPLEMENTED);break;
+     }
+}
+
+
+void dsm_set_user_data1_init_func(dsm_user_data1_init_func_t func)
+{
+  _dsm_user_data1_init_func = func;
 }
 
 
 void dsm_page_table_init(int my_rank, int confsize)
 {
   int i;
-
-  /* pjh: contiguous allocation of pages
-   *
-   *      The idea is to give all nodes a roughly equal number of
-   *      contiguous pages. Every node has at least "chunk" number
-   *      of pages. Nodes with node numbers less than "split" have
-   *      one additional page assigned. (That is, the leftover pages
-   *      are assigned one to a node starting with node 0, node 1, etc.)
-   */
-  int curOwner;
-  int curCount;
 
   _dsm_global_vars_init(my_rank, confsize);
 
@@ -280,9 +305,6 @@ void dsm_page_table_init(int my_rank, int confsize)
     RAISE(STORAGE_ERROR);
 
   /* Common initializations for all nodes */
-
-  curOwner = 0; /* pjh */
-  curCount = 0;
 
   for (i = 0; i < nb_static_dsm_pages; i++)
     {
@@ -297,9 +319,18 @@ void dsm_page_table_init(int my_rank, int confsize)
       marcel_sem_init(&dsm_page_table[i].sem, 0);
       dsm_page_table[i].size = DSM_PAGE_SIZE;
       dsm_page_table[i].addr = static_dsm_base_addr + DSM_PAGE_SIZE * i;
+//      dsm_page_table[i].waiter_count = 0;        /* pjh */
+//      dsm_page_table[i].page_arrival_count = -1; /* pjh */
+      if (_dsm_user_data1_init_func)
+	(*_dsm_user_data1_init_func)(dsm_page_table[i].user_data1);
+      if (_dsm_user_data2_init_func)
+	(*_dsm_user_data2_init_func)(&dsm_page_table[i].user_data2);
+      else
+	dsm_page_table[i].user_data2 = NULL;
     }
   dsm_page_ownership_init();
 }
+
 
 void dsm_display_page_ownership()
 {
@@ -322,6 +353,19 @@ void dsm_set_no_access()
 void dsm_set_write_access()
 {  
   mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, PROT_READ|PROT_WRITE);
+}
+
+
+void dsm_set_uniform_access(dsm_access_t access)
+{
+  int prot;
+
+  switch(access){
+  case NO_ACCESS: prot = PROT_NONE; break;
+  case READ_ACCESS: prot = PROT_READ; break;
+  default: prot = PROT_READ|PROT_WRITE; /* WRITE_ACCESS */
+  }
+  mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, prot);
 }
 
 
@@ -399,6 +443,12 @@ void dsm_set_access(unsigned long index, dsm_access_t access)
 #ifdef DEBUG3
   tfprintf(stderr,"access set: %d\n", access);
 #endif
+}
+
+
+void dsm_set_access_without_protect(unsigned long index, dsm_access_t access)
+{
+  dsm_page_table[index].access = access;
 }
 
 
@@ -548,16 +598,65 @@ void dsm_remove_from_copyset(unsigned long index, dsm_node_t node)
 }
 
 
-void dsm_set_page_state(unsigned long index, dsm_state_t state)
+int dsm_get_user_data1(unsigned long index, int rank)
 {
-  dsm_page_table[index].state = state;
+  if (rank >= USER_DATA_SIZE)
+    RAISE(CONSTRAINT_ERROR);
+  
+  return dsm_page_table[index].user_data1[rank];
 }
 
 
-dsm_state_t dsm_get_page_state(unsigned long index)
+void dsm_set_user_data1(unsigned long index, int rank, int value)
 {
-  return dsm_page_table[index].state;
+  if (rank >= USER_DATA_SIZE)
+    RAISE(CONSTRAINT_ERROR);
+  
+  dsm_page_table[index].user_data1[rank] = value;
 }
+
+
+void dsm_increment_user_data1(unsigned long index, int rank)
+{
+  if (rank >= USER_DATA_SIZE)
+    RAISE(CONSTRAINT_ERROR);
+  
+  dsm_page_table[index].user_data1[rank]++;
+}
+
+
+void dsm_decrement_user_data1(unsigned long index, int rank)
+{
+  if (rank >= USER_DATA_SIZE)
+    RAISE(CONSTRAINT_ERROR);
+  
+  dsm_page_table[index].user_data1[rank]--;
+}
+
+
+void dsm_alloc_user_data2(unsigned long index, int size)
+{
+  dsm_page_table[index].user_data2 = malloc(size);
+}
+
+
+void dsm_free_user_data2(unsigned long index)
+{
+  free(dsm_page_table[index].user_data2);
+}
+
+
+void * dsm_get_user_data2(unsigned long index)
+{
+  return dsm_page_table[index].user_data2;
+}
+
+
+void dsm_set_user_data2(unsigned long index, void *addr)
+{
+  dsm_page_table[index].user_data2 = addr;
+}
+
 
 /*********************** Hyperion stuff: ****************************/
 
@@ -576,7 +675,7 @@ void dsm_invalidate_not_owned_pages()
     if ((dsm_get_prob_owner(i) != dsm_self())  && (dsm_get_access(i) != NO_ACCESS))
       {
 	dsm_lock_page(i);
-	dsm_set_access(i, NO_ACCESS);
+	dsm_set_access_without_protect(i, NO_ACCESS);
 	dsm_free_page_bitmap(i);
 	dsm_unlock_page(i);
       }
@@ -597,30 +696,50 @@ void dsm_free_page_bitmap(unsigned long index)
   dsm_bitmap_free(dsm_page_table[index].bitmap);
 }
 
-//#define DEBUG_HYP
+
 void dsm_mark_dirty(void *addr, int length)
 {
+  unsigned long index = dsm_page_index(addr);
+
 #ifdef DEBUG_HYP
-  fprintf(stderr,"dsm_mark_dirty: addr = %p, length=%d\n", addr, length);
+  tfprintf(stderr,"dsm_mark_dirty: addr = %p, index = %ld, length=%d\n",
+    addr, index, length);
 #endif
-  if (dsm_get_prob_owner(dsm_page_index(addr)) != dsm_self())
-    dsm_bitmap_mark_dirty(dsm_page_offset(addr), length, dsm_page_table[dsm_page_index(addr)].bitmap);
+  if (dsm_get_prob_owner(index) != dsm_self())
+  {
+#ifdef DEBUG_HYP
+  tfprintf(stderr,"dsm_mark_dirty: page offset = %d, length=%d\n", dsm_page_offset(addr), length);
+#endif
+    /* pjh: make sure that no one is sending diffs while I am in here! */
+    dsm_lock_page(index);
+    dsm_bitmap_mark_dirty(dsm_page_offset(addr), length,
+      dsm_page_table[index].bitmap);
+    dsm_unlock_page(index);
+  }
 }
+
 
 
 void *dsm_get_next_modified_data(unsigned long index, int *size)
 {
   static int _offset = 0;
   int start;
-  
-  if ((start = first_series_of_1_from_offset(dsm_page_table[index].bitmap, dsm_page_table[index].size/8, _offset, size)) == -1)
+ 
+  if ((start = first_series_of_1_from_offset(dsm_page_table[index].bitmap, dsm_page_table[index].size, _offset, size)) == -1)
     {
       _offset = 0;
+#ifdef DEBUG_HYP
+      tfprintf(stderr,"dsm_get_next_modified_data(%d) returns NULL\n", (int) index);
+#endif
       return NULL;
     }
   else
     {
       _offset = start + *size;
+#ifdef DEBUG_HYP
+      tfprintf(stderr,"dsm_get_next_modified_data(%d) returns %p\n", (int) index,
+	       (void *)((char*)dsm_get_page_addr(index) + start));
+#endif
       return (void *)((char*)dsm_get_page_addr(index) + start);
     }
 }
@@ -628,11 +747,19 @@ void *dsm_get_next_modified_data(unsigned long index, int *size)
 
 boolean dsm_page_bitmap_is_empty(unsigned long index) 
 {
-  return dsm_bitmap_is_empty(dsm_page_table[index].bitmap, dsm_page_table[index].size/8);
+#ifdef DEBUG_HYP
+tfprintf(stderr, "dsm_bitmap_is_empty(%ld)\n", index);
+#endif
+  return dsm_bitmap_is_empty(dsm_page_table[index].bitmap, dsm_page_table[index].size);
 }
 
 
 void dsm_page_bitmap_clear(unsigned long index) 
 {
+#ifdef HYP_DEBUG
+tfprintf(stderr, "dsm_page_bitmap_clear(%ld) called\n", index);
+#endif
   dsm_bitmap_clear(dsm_page_table[index].bitmap, dsm_page_table[index].size);
 }
+
+

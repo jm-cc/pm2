@@ -479,7 +479,7 @@ void block_pack_all(block_descr_t *descr)
    /* 
       pack the address of the first slot 
    */
-   mad_pack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
+   old_mad_pack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
    /* 
       pack the slot list 
    */
@@ -488,19 +488,19 @@ void block_pack_all(block_descr_t *descr)
        /* 
 	  pack the header 
        */
-       mad_pack_byte(MAD_IN_HEADER, (char*)slot_ptr, sizeof(slot_header_t));
+       old_mad_pack_byte(MAD_IN_HEADER, (char*)slot_ptr, sizeof(slot_header_t));
        /*
 	 pack the remaining slot data 
        */
        block_ptr = (block_header_t *)slot_get_usable_address(slot_ptr);
        do
 	 {
-	   mad_pack_byte(MAD_IN_HEADER, (char *)block_ptr, sizeof(block_header_t));
+	   old_mad_pack_byte(MAD_IN_HEADER, (char *)block_ptr, sizeof(block_header_t));
 	   next_block_ptr = block_get_next(block_ptr);
 	   if ((next_block_ptr != NULL) && (block_get_usable_size(block_ptr) == 0))
 	     {
 	       char *addr = (char *)block_get_usable_address(block_ptr);
-	       mad_pack_byte(MAD_IN_PLACE, addr, (char *)next_block_ptr - addr);
+	       old_mad_pack_byte(MAD_IN_PLACE, addr, (char *)next_block_ptr - addr);
 	     }
 	   block_ptr = next_block_ptr;
 	 }
@@ -523,7 +523,7 @@ void block_unpack_all()
    /* 
       unpack the address of the first slot 
    */
-   mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
+   old_mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_ptr, sizeof(slot_header_t *));
 #ifdef DEBUG
    tfprintf(stderr,"unpack_all:the address of the first slot is %p\n", slot_ptr);
 #endif
@@ -536,7 +536,7 @@ void block_unpack_all()
        /* 
 	  unpack the slot header 
        */
-       mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_header, sizeof(slot_header_t));
+       old_mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_header, sizeof(slot_header_t));
        /* 
 	  allocate memory for the slot 
        */
@@ -551,12 +551,12 @@ void block_unpack_all()
        block_ptr = (block_header_t *)slot_get_usable_address(slot_ptr);
        do
 	 {
-	   mad_unpack_byte(MAD_IN_HEADER, (char *)block_ptr, sizeof(block_header_t));
+	   old_mad_unpack_byte(MAD_IN_HEADER, (char *)block_ptr, sizeof(block_header_t));
 	   next_block_ptr = block_get_next(block_ptr);
 	   if ((next_block_ptr != NULL) && (block_get_usable_size(block_ptr) == 0))
 	     {
 	       char *addr = (char *)block_get_usable_address(block_ptr);
-	       mad_unpack_byte(MAD_IN_PLACE, addr, (char *)next_block_ptr - addr);
+	       old_mad_unpack_byte(MAD_IN_PLACE, addr, (char *)next_block_ptr - addr);
 	     }
 	   block_ptr = next_block_ptr;
 	 }

@@ -45,6 +45,10 @@ fut: $(LIB_FUT)
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/common-rules.mak
 
+# Dépendances du fichier de cache sur la flavor
+#---------------------------------------------------------------------
+$(PM2_MAK_DIR)/$(MODULE)-config.mak: $(MOD_STAMP_FLAVOR)
+
 # Affichage des flags 
 #---------------------------------------------------------------------
 .PHONY: showflags showflags-obj showflags-ld

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx.c,v $
+Revision 1.6  2000/06/08 13:57:23  oaumage
+- Corrections diverses
+
 Revision 1.5  2000/06/05 15:42:13  vdanjean
 adaptation of debug messages
 
@@ -74,4 +77,7 @@ void tbx_init(int *argc, char **argv, int debug_flags)
 
   /* List manager */
   tbx_list_manager_init();
+
+  /* Slist manager */
+  tbx_slist_manager_init();
 }

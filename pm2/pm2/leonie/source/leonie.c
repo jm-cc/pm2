@@ -1586,6 +1586,149 @@ init_drivers(void)
   process_ref = tbx_slist_nref_alloc(directory->process_slist);
 
   TRACE("First pass");
+  {
+    p_tbx_slist_t slist = NULL;
+ 
+    slist = directory->driver_slist;
+
+    tbx_slist_ref_to_head(slist);
+    do
+      {
+	p_leo_dir_driver_t         dir_driver = NULL;
+	p_ntbx_process_container_t pc         = NULL;
+	
+	dir_driver = tbx_slist_ref_get(slist);
+	pc         = dir_driver->pc;
+	
+	TRACE_STR("Driver", dir_driver->name);
+
+	// Name
+	tbx_slist_nref_to_head(process_ref);
+	do
+	  {
+	    p_ntbx_process_t         process          = NULL;
+	    ntbx_process_grank_t     global_rank      =   -1;
+	    p_leo_process_specific_t process_specific = NULL;
+	    p_ntbx_client_t          client           = NULL;
+	    p_ntbx_process_info_t    process_info     = NULL;
+ 
+	    process      = tbx_slist_nref_get(process_ref);
+	    global_rank  = process->global_rank;
+	    process_info = ntbx_pc_get_global(pc, global_rank);
+
+	    if (!process_info)
+	      continue;
+
+	    process_specific = process->specific;
+	    client           = process_specific->client;
+
+	    TRACE_VAL("Transmitting to", global_rank);
+	    TRACE("Sending drivers");
+	  
+	    leo_send_string(client, dir_driver->name);
+	  }
+	while (tbx_slist_nref_forward(process_ref));
+
+	// Ack
+	tbx_slist_nref_to_head(process_ref);
+	do
+	  {
+	    p_ntbx_process_t         process          = NULL;
+	    ntbx_process_grank_t     global_rank      =   -1;
+	    p_leo_process_specific_t process_specific = NULL;
+	    p_ntbx_client_t          client           = NULL;
+	    p_ntbx_process_info_t    process_info     = NULL;
+	    int                      ack              =    0;
+  
+	    process      = tbx_slist_nref_get(process_ref);
+	    global_rank  = process->global_rank;
+	    process_info = ntbx_pc_get_global(pc, global_rank);
+
+	    if (!process_info)
+	      continue;
+
+	    process_specific = process->specific;
+	    client           = process_specific->client;
+
+	    TRACE_VAL("Transmitting to", global_rank);
+	    TRACE("Receiving ack");
+	    ack = leo_receive_int(client);
+	    
+	    if (ack != 1)
+	      FAILURE("synchronisation error");
+	  }
+	while (tbx_slist_nref_forward(process_ref));
+
+	// adapters
+	tbx_slist_nref_to_head(process_ref);
+	do
+	  {
+	    p_ntbx_process_t                    process          = NULL;
+	    ntbx_process_grank_t                global_rank      =   -1;
+	    p_leo_process_specific_t            process_specific = NULL;
+	    p_ntbx_client_t                     client           = NULL;
+	    p_ntbx_process_info_t               process_info     = NULL;
+	    p_leo_dir_driver_process_specific_t pi_specific      = NULL;
+	    p_tbx_slist_t                       adapter_slist    = NULL;
+  
+	    process      = tbx_slist_nref_get(process_ref);
+	    global_rank  = process->global_rank;
+	    process_info = ntbx_pc_get_global(pc, global_rank);
+
+	    if (!process_info)
+	      continue;
+
+	    process_specific = process->specific;
+	    client           = process_specific->client;
+
+	    TRACE_VAL("Transmitting to", global_rank);
+	    TRACE("Sending adapters"); 	    
+	    pi_specific   = process_info->specific;
+	    adapter_slist = pi_specific->adapter_slist;
+	    
+	    tbx_slist_ref_to_head(adapter_slist);
+	    do
+	      {
+		p_leo_dir_adapter_t dir_adapter = NULL;
+		
+		dir_adapter = tbx_slist_ref_get(adapter_slist);
+		TRACE_STR("Adapter", dir_adapter->name);
+		leo_send_string(client, dir_adapter->name);	  
+		dir_adapter->parameter = leo_receive_string(client);
+		dir_adapter->mtu       = leo_receive_unsigned_int(client);
+		TRACE_STR("Parameter", dir_adapter->parameter);
+	      }
+	    while (tbx_slist_ref_forward(adapter_slist));
+
+	    leo_send_string(client, "-");	  
+	  }
+	while (tbx_slist_nref_forward(process_ref));
+
+      }
+    while (tbx_slist_ref_forward(slist));
+  }
+  
+  tbx_slist_nref_to_head(process_ref);
+  do
+    {
+      p_ntbx_process_t         process          = NULL;
+      ntbx_process_grank_t     global_rank      =   -1;
+      p_leo_process_specific_t process_specific = NULL;
+      p_ntbx_client_t          client           = NULL;
+  
+      process          = tbx_slist_nref_get(process_ref);
+      process_specific = process->specific;
+      client           = process_specific->client;
+
+      TRACE_VAL("Transmitting to", global_rank);
+      TRACE("Sending drivers");
+	  
+      leo_send_string(client, "-");
+    }
+  while (tbx_slist_nref_forward(process_ref));
+
+#if 0
+  TRACE("First pass");
   tbx_slist_nref_to_head(process_ref);
   do
     {
@@ -1648,6 +1791,8 @@ init_drivers(void)
       leo_send_string(client, "-");	  
     }
   while (tbx_slist_nref_forward(process_ref));
+#endif // 0
+
   
   TRACE("Second pass");
   tbx_slist_nref_to_head(process_ref);

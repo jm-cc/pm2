@@ -36,6 +36,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_slist_management.c,v $
+Revision 1.5  2000/06/07 08:58:38  oaumage
+- Suppression de Warnings
+
 Revision 1.4  2000/06/05 11:38:02  oaumage
 - Ajout d'une fonction de duplication
 - Corrections diverses
@@ -341,6 +344,10 @@ tbx_slist_get(p_tbx_slist_reference_t ref)
 }
 
 /* ------------- */
+void
+tbx_slist_elt_append_head(p_tbx_slist_t         slist,
+			  p_tbx_slist_element_t slist_element) __attribute__((unused));
+
 static void
 tbx_slist_elt_append_head(p_tbx_slist_t         slist,
 			  p_tbx_slist_element_t slist_element)
@@ -363,6 +370,9 @@ tbx_slist_elt_append_head(p_tbx_slist_t         slist,
   LOG_OUT();
 }
 
+void
+tbx_slist_elt_append_tail(p_tbx_slist_t         slist,
+			  p_tbx_slist_element_t slist_element) __attribute__((unused));
 
 static void
 tbx_slist_elt_append_tail(p_tbx_slist_t         slist,
@@ -385,6 +395,9 @@ tbx_slist_elt_append_tail(p_tbx_slist_t         slist,
   slist->length++;
   LOG_OUT();
 }
+
+p_tbx_slist_element_t
+tbx_slist_elt_extract_head(p_tbx_slist_t slist) __attribute__((unused));
 
 static p_tbx_slist_element_t
 tbx_slist_elt_extract_head(p_tbx_slist_t slist)
@@ -414,6 +427,9 @@ tbx_slist_elt_extract_head(p_tbx_slist_t slist)
     FAILURE("empty slist");
 }
 
+p_tbx_slist_element_t
+tbx_slist_elt_extract_tail(p_tbx_slist_t slist) __attribute__((unused));
+
 static p_tbx_slist_element_t
 tbx_slist_elt_extract_tail(p_tbx_slist_t slist)
 {
@@ -442,6 +458,10 @@ tbx_slist_elt_extract_tail(p_tbx_slist_t slist)
     FAILURE("empty slist");
 }
 
+void
+tbx_slist_elt_add_after(p_tbx_slist_reference_t ref,
+			p_tbx_slist_element_t   slist_element) __attribute__((unused));
+
 static void
 tbx_slist_elt_add_after(p_tbx_slist_reference_t ref,
 			p_tbx_slist_element_t   slist_element)
@@ -469,6 +489,10 @@ tbx_slist_elt_add_after(p_tbx_slist_reference_t ref,
   LOG_OUT();
 }
 
+void
+tbx_slist_elt_add_before(p_tbx_slist_reference_t ref,
+			 p_tbx_slist_element_t   slist_element) __attribute__((unused));
+
 static void
 tbx_slist_elt_add_before(p_tbx_slist_reference_t ref,
 			 p_tbx_slist_element_t   slist_element)
@@ -493,6 +517,9 @@ tbx_slist_elt_add_before(p_tbx_slist_reference_t ref,
     }
   LOG_OUT();
 }
+
+p_tbx_slist_element_t
+tbx_slist_elt_remove(p_tbx_slist_reference_t ref) __attribute__((unused));
 
 static p_tbx_slist_element_t
 tbx_slist_elt_remove(p_tbx_slist_reference_t ref)

@@ -1,0 +1,3 @@
+Provide: madeleine
+Depend: mad1_proto
+Provide: module

@@ -48,7 +48,7 @@
 #include <string.h>
 #include "tbx.h"
 #include "ntbx.h"
-#include "pm2debug.h"
+#include "tbx_debug.h"
 
 /* Protocol registration */
 #include "mad_registration.h"

@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: isomalloc_archdep.h,v $
+Revision 1.3  2000/04/05 11:09:03  gantoniu
+Defined a new TOP_ADDR, to prepare for the dynamic allocator...
+This version contains no change with respect to current isomalloc users.
+
 Revision 1.2  2000/01/31 15:50:19  oaumage
 - ajout du Log CVS
 
@@ -44,16 +48,21 @@ ______________________________________________________________________________
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
+//#define DYN_DSM_AREA_SIZE 0x4000000 /* 64 MB */
+#define DYN_DSM_AREA_SIZE 0
+
 #if defined(SOLARIS_SYS) && defined(SPARC_ARCH)
 
-#define SLOT_AREA_TOP          0xe0000000
-#define IS_ON_MAIN_STACK(sp)   ((sp) > SLOT_AREA_TOP)
+#define ISOADDR_AREA_TOP          0xe0000000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
+#define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)
 #define FILE_TO_MAP            __zero_fd
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
 
 #elif defined(LINUX_SYS) && defined(X86_ARCH)
 
-#define SLOT_AREA_TOP          0x40000000
+#define ISOADDR_AREA_TOP          0x40000000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define MAIN_STACK_BOT         0xa0000000
 #define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #define FILE_TO_MAP            -1
@@ -61,21 +70,24 @@ ______________________________________________________________________________
 
 #elif defined(LINUX_SYS) && defined(PPC_ARCH)
 
-#define SLOT_AREA_TOP          0x30000000
+#define ISOADDR_AREA_TOP          0x30000000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define FILE_TO_MAP            -1
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
 #elif defined(SOLARIS_SYS) && defined(X86_ARCH)
 
 extern void marcel_init(int *argc, char **argv);
-#define SLOT_AREA_TOP          0xafff0000
+#define ISOADDR_AREA_TOP          0xafff0000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define IS_ON_MAIN_STACK(sp)   ((sp) < (unsigned long)marcel_init)
 #define FILE_TO_MAP            __zero_fd
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
 
 #elif defined(FREEBSD_SYS) && defined(X86_ARCH)
 
-#define SLOT_AREA_TOP          0x40000000
+#define ISOADDR_AREA_TOP          0x40000000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define MAIN_STACK_BOT         0xa0000000
 #define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #define FILE_TO_MAP            __zero_fd
@@ -83,13 +95,15 @@ extern void marcel_init(int *argc, char **argv);
 
 #elif defined(AIX_SYS) && defined(RS6K_ARCH)
 
-#define SLOT_AREA_TOP          0xcfff0000
+#define ISOADDR_AREA_TOP          0xcfff0000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define FILE_TO_MAP            -1
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)
 
 #elif defined(IRIX_SYS) && defined(MIPS_ARCH)
 
-#define SLOT_AREA_TOP          0x40000000
+#define ISOADDR_AREA_TOP          0x40000000
+#define SLOT_AREA_TOP  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 #define FILE_TO_MAP            __zero_fd
 #define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED)
 
@@ -106,3 +120,4 @@ extern int _zerofd;
 #endif
 
 #endif
+

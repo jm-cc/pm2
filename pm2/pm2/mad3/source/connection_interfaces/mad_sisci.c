@@ -18,6 +18,7 @@
  * ===========
  */
 //#define USE_MARCEL_POLL
+#define OLD_SISCI
 #define MAD_SISCI_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
 
@@ -542,12 +543,17 @@ mad_sisci_display_error(sci_error_t error)
 static void
 mad_sisci_flush(p_mad_sisci_remote_segment_t segment)
 {
-  sci_error_t sisci_error = SCI_ERR_OK;
-
-  LOG_IN();
-  SCIStoreBarrier(segment->sequence, 0, &sisci_error);
-  mad_sisci_control();
-  LOG_OUT();
+#ifdef OLD_SISCI
+   sci_error_t sisci_error = SCI_ERR_OK;
+   LOG_IN();
+   SCIStoreBarrier(segment->sequence, 0, &sisci_error);
+   mad_sisci_control();
+   LOG_OUT();
+#else
+   LOG_IN();
+   SCIStoreBarrier(segment->sequence, 0);
+   LOG_OUT();
+#endif
 }
 
 /* mad_sisci_get_node_id: query an adapter for the local SCI node id
@@ -558,22 +564,35 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
   mad_sisci_node_id_t      node_id = 0;
   sci_desc_t               descriptor;
   sci_error_t              sisci_error;
-  struct sci_query_adapter query_adapter;
+#ifdef OLD_SISCI
+   struct sci_query_adapter query_adapter;
+#else
+   sci_query_adapter_t      query_adapter;
+#endif
+   
+   LOG_IN();
 
-  LOG_IN();
-  SCIOpen(&descriptor, 0, &sisci_error);
-  mad_sisci_control();
-
-  query_adapter.subcommand     = SCI_Q_ADAPTER_NODEID;
-  query_adapter.localAdapterNo = adapter_id;
-  query_adapter.data           = &node_id;
-
+#ifndef OLD_SISCI
+   SCIInitialize( 0 , &sisci_error);
+   mad_sisci_control();
+#endif
+   
+   SCIOpen(&descriptor, 0, &sisci_error);
+   mad_sisci_control();
+   
+   query_adapter.subcommand     = SCI_Q_ADAPTER_NODEID;
+   query_adapter.localAdapterNo = adapter_id;
+   query_adapter.data           = &node_id;
+   
   SCIQuery(SCI_Q_ADAPTER, &query_adapter, 0, &sisci_error);
   mad_sisci_control();
 
   SCIClose(descriptor, 0, &sisci_error);
   mad_sisci_control();
 
+#ifndef OLD_SISCI
+     SCITerminate();
+#endif
   LOG_VAL("mad_sisci_get_node_id: val ", node_id);
   LOG_OUT();
 

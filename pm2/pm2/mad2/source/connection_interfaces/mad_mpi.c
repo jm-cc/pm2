@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.8  2000/01/31 15:54:57  oaumage
+- mad_mpi.c : terminaison amelioree sous PM2
+- mad_tcp.c : debogage de la synchronisation finale
+
 Revision 1.7  2000/01/13 14:46:11  oaumage
 - adaptation pour la prise en compte de la toolbox
 
@@ -69,6 +73,12 @@ ______________________________________________________________________________
  */
 /* #define DEBUG */
 /* #define USE_MARCEL_POLL */
+
+/*
+ * !!!!!!!!!!!!!!!!!!!!!!!! Workarounds !!!!!!!!!!!!!!!!!!!!
+ * _________________________________________________________
+ */
+#define MARCEL_POLL_WA
 
 /*
  * headerfiles
@@ -196,6 +206,9 @@ static void *mpi_io_poll(marcel_pollid_t id,
       if(flag) 
 	{
 	  mad_mpi_driver_specific->poll_arg[index]->status = status;
+#ifdef MARCEL_POLL_WA
+	  mad_mpi_driver_specific->poll_nb_req--;
+#endif /* MARCEL_POLL_WA */
 	  LOG_OUT();
 	  return MARCEL_POLL_SUCCESS_FOR(mad_mpi_driver_specific->
 					 poll_arg[index]->pollinst);

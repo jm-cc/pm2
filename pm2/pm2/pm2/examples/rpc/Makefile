@@ -33,7 +33,7 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-export FLAVOR_DEFAULT:=pm2-mad2
+export FLAVOR_DEFAULT:=pm2
 
 PROGS := ping simple
 

@@ -31,6 +31,8 @@
  * ============================
  */
 
+#define LEO_SILENT_MODE
+// #define LEO_DETACH_MODE
 // #define LEO_DEBUG_MODE
 // #define LEO_MAD_DEBUG_MODE
 // #define LEO_TBX_DEBUG_MODE
@@ -44,38 +46,50 @@
  * ========================================
  */
 
+#ifdef LEO_SILENT_MODE
+#warning [1;33m<<< [1;37mLeonie loaders silent mode:       [1;32mactivated [1;33m    >>>[0m
+#else
+#warning [1;33m<<< [1;37mLeonie loaders silent mode:       [1;31mnot activated [1;33m>>>[0m
+#endif // LEO_SILENT_MODE
+
+#ifdef LEO_DETACH_MODE
+#warning [1;33m<<< [1;37mLeonie loaders detach mode:       [1;32mactivated [1;33m    >>>[0m
+#else
+#warning [1;33m<<< [1;37mLeonie loaders detach mode:       [1;31mnot activated [1;33m>>>[0m
+#endif // LEO_DETACH_MODE
+
 #ifdef LEO_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders debug mode:        [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie loaders debug mode:        [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie loaders debug mode:        [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_DEBUG_MODE
 
 #ifdef LEO_MAD_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders MAD debug mode:    [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie loaders MAD debug mode:    [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie loaders MAD debug mode:    [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_MAD_DEBUG_MODE
 
 #ifdef LEO_TBX_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders TBX debug mode:    [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie loaders TBX debug mode:    [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie loaders TBX debug mode:    [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_TBX_DEBUG_MODE
 
 #ifdef LEO_MARCEL_DEBUG_MODE
-#warning [1;33m<<< [1;37mLeonie loaders Marcel debug mode: [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie loaders Marcel debug mode: [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie loaders Marcel debug mode: [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_MARCEL_DEBUG_MODE
 
 #ifdef LEO_TRACE_MODE
-#warning [1;33m<<< [1;37mLeonie loaders trace mode:        [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie loaders trace mode:        [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie loaders trace mode:        [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_TRACE_MODE
 
 #ifdef LEO_XMODE
-#warning [1;33m<<< [1;37mLeonie loaders Xwindow mode:      [1;32mactivated [1;33m>>>[0m
+#warning [1;33m<<< [1;37mLeonie loaders Xwindow mode:      [1;32mactivated [1;33m    >>>[0m
 #else
 #warning [1;33m<<< [1;37mLeonie loaders Xwindow mode:      [1;31mnot activated [1;33m>>>[0m
 #endif // LEO_XMODE
@@ -171,6 +185,7 @@ leo_default_loader(char              *application_name,
 	args = relay_command->arguments;
 
 	var = tbx_environment_variable_to_variable("PATH");
+	tbx_environment_variable_append_c_string(var, ':', "${PATH}");
 	tbx_environment_append_variable(env, var);
 	    
 	var = tbx_environment_variable_to_variable("PM2_ROOT");
@@ -254,11 +269,21 @@ leo_default_loader(char              *application_name,
 
 	if (!pid)
 	  {
+#if defined(LEO_DETACH_MODE) || defined(LEO_SILENT_MODE)
+	    close(STDIN_FILENO);
+	    close(STDOUT_FILENO);
+	    close(STDERR_FILENO);
+#endif // LEO_DETACH_MODE || LEO_SILENT_MODE
+
+#ifdef LEO_DETACH_MODE
+	    setpgrp();
+#endif // LEO_DETACH_MODE
+
 	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
 	    leo_error("execvp");
 	  }
-  
+	
 	process->pid = pid;
 #if defined (LEO_DEBUG_MODE) || defined (LEO_XMODE)
 	// Necessary to avoid Xlib multiple connection overflow

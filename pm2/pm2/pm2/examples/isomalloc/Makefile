@@ -1,15 +1,15 @@
 .PHONY: default all
 default: all
 
-SRC_DIR :=      .
+SRC_DIR     :=  ./
+APP_CFLAGS  :=
+APP_LDFLAGS :=
+APP_LLIBS   :=
 
 include ../../Makefile
 
-PM2_APP_CFLAGS  =
-PM2_APP_LDFLAGS =
-PM2_APP_LLIBS   =
+all:    $(APP_BIN)/attach\
+        $(APP_BIN)/slots
 
-all:    $(BIN_DIR)/attach $(BIN_DIR)/slots
-
-$(BIN_DIR)/slots: $(OBJ_DIR)/rpc_defs.o
-$(BIN_DIR)/attach: $(OBJ_DIR)/rpc_defs.o
+$(APP_BIN)/slots: $(APP_OBJ)/rpc_defs.o
+$(APP_BIN)/attach: $(APP_OBJ)/rpc_defs.o

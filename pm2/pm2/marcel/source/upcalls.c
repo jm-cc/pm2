@@ -36,15 +36,15 @@
 #include <stdio.h>
 #endif
 
-//#define SHOW_UPCALL
+#define SHOW_UPCALL
 
 #define STACK_SIZE 100000
 #define ACT_NEW_WITH_LOCK 1
 
 marcel_t marcel_next[ACT_NB_MAX_CPU];
-
 //volatile boolean has_new_tasks=0;
 volatile int act_nb_unblocked=0;
+#if 0
 
 void locked_start() {}
 void locked_end(); /* Déclaration simplement */
@@ -214,6 +214,7 @@ void upcall_new(act_proc_t proc)
 
 void locked_end() {}
 
+#endif
 static void init_act(int proc, act_param_t *param)
 {
 	void *stack;
@@ -246,6 +247,7 @@ void init_upcalls(int nb_act)
 #else
 	init_act(0, &param);
 #endif
+#if 0
 	param.magic_number=ACT_MAGIC_NUMBER;
 	param.nb_proc_wanted=nb_act;
 	param.reset_count=0;
@@ -281,6 +283,7 @@ void init_upcalls(int nb_act)
 	mdebug("Initialisation upcall done\n");
 	//ACTDEBUG(printf("Fin act_init\n"));
 	//scanf("%i", &proc);
+#endif
 	LOG_OUT();
 }
 

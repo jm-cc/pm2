@@ -68,14 +68,36 @@ int dsm_mutex_init(dsm_mutex_t *mutex, dsm_mutexattr_t *attr)
 }
 
 
-BEGIN_SERVICE(DSM_LRPC_LOCK)
-     marcel_mutex_lock(&req.mutex->mutex);
-END_SERVICE(DSM_LRPC_LOCK)
+void DSM_LRPC_LOCK_threaded_func()
+{
+  dsm_mutex_t *mutex;
+  pm2_completion_t c;
+  
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+  pm2_unpack_completion(&c);
+  pm2_rawrpc_waitdata();
+  marcel_mutex_lock(&mutex->mutex);
+  pm2_completion_signal(&c);
+}
 
 
-BEGIN_SERVICE(DSM_LRPC_UNLOCK)
-     marcel_mutex_unlock(&req.mutex->mutex);
-END_SERVICE(DSM_LRPC_LOCK)
+void DSM_LRPC_LOCK_func()
+{
+  pm2_thread_create(DSM_LRPC_LOCK_threaded_func, NULL);
+}
+
+
+void DSM_LRPC_UNLOCK_func(void)
+{
+  dsm_mutex_t *mutex;
+  pm2_completion_t c;
+
+  pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+  pm2_unpack_completion(&c);
+  pm2_rawrpc_waitdata();
+  marcel_mutex_unlock(&mutex->mutex);
+  pm2_completion_signal(&c);
+}
 
 
 int dsm_mutex_lock(dsm_mutex_t *mutex)
@@ -84,9 +106,14 @@ int dsm_mutex_lock(dsm_mutex_t *mutex)
     marcel_mutex_lock(&mutex->mutex);
   else
     {
-      LRPC_REQ(DSM_LRPC_LOCK) req;
-      req.mutex = mutex;
-      pm2_rpc(mutex->owner, DSM_LRPC_LOCK, NULL, &req, NULL);
+      pm2_completion_t c;
+
+      pm2_completion_init(&c);
+      pm2_rawrpc_begin((int)mutex->owner, DSM_LRPC_LOCK, NULL);
+      pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+      pm2_pack_completion(&c);
+      pm2_rawrpc_end();
+      pm2_completion_wait(&c);
     }
    return 0;
 }
@@ -98,9 +125,14 @@ int dsm_mutex_unlock(dsm_mutex_t *mutex)
     marcel_mutex_unlock(&mutex->mutex);
   else
     {
-      LRPC_REQ(DSM_LRPC_UNLOCK) req;
-      req.mutex = mutex;
-      pm2_rpc(mutex->owner, DSM_LRPC_UNLOCK, NULL, &req, NULL);
+      pm2_completion_t c;
+
+      pm2_completion_init(&c);
+      pm2_rawrpc_begin((int)mutex->owner, DSM_LRPC_UNLOCK, NULL);
+      pm2_pack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&mutex, sizeof(dsm_mutex_t *));
+      pm2_pack_completion(&c);
+      pm2_rawrpc_end();
+      pm2_completion_wait(&c);
     }
   return 0;
 }

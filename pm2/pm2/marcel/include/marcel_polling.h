@@ -83,6 +83,8 @@ static __inline__ void *marcel_pollid_getspecific(marcel_pollid_t id)
   return id->specific;
 }
 
+int marcel_force_check_polling(marcel_pollid_t id);
+
 // =============== PRIVATE ===============
 
 _PRIVATE_ typedef struct _poll_cell_struct {

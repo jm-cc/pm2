@@ -26,84 +26,126 @@ poll_struct_t *__polling_tasks = NULL;
 // Checks to see if some polling jobs should be done. NOTE: The
 // function assumes that:
 //   1) "lock_task()" was called previously ;
-int __marcel_check_polling(unsigned polling_point)
+//   2) __polling_lock is acquired
+//   3) la structure poll_struct_t possède au moins une tâche en attente de poll
+int __marcel_check_polling_for(poll_struct_t *ps)
 {
-  int waked_some_task = 0;
-  poll_struct_t *ps, *p;
-
-  LOG_IN();
-
-  if(marcel_lock_tryacquire(&__polling_lock)) {
-
-    if((ps = __polling_tasks) == NULL) {
-      marcel_lock_release(&__polling_lock);
-
-      LOG_OUT();
-      return 0;
-    }
-
-    do {
-      if(ps->polling_points & polling_point) {
+	int waked_some_task = 0;
 	register poll_cell_t *cell;
+	poll_struct_t *p;
+
         DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
 
 	if(ps->nb_cells == 1 && ps->fastfunc) {
-	  ps->cur_cell = ps->first_cell;
-	  cell = ((poll_cell_t *)
-		  (*ps->fastfunc)(ps, ps->first_cell->arg, FALSE) ?
-		  ps->first_cell : MARCEL_POLL_FAILED);
+		ps->cur_cell = ps->first_cell;
+		cell = ((poll_cell_t *)
+			(*ps->fastfunc)(ps, ps->first_cell->arg, FALSE) ?
+			ps->first_cell : MARCEL_POLL_FAILED);
+	} else {
+		cell = (poll_cell_t *)(*ps->func)(ps,
+						  SCHED_DATA(cur_lwp).running_tasks,
+						  marcel_sleepingthreads(),
+						  marcel_blockedthreads());
 	}
-	else
-	  cell = (poll_cell_t *)(*ps->func)(ps,
-					    SCHED_DATA(cur_lwp).running_tasks,
-					    marcel_sleepingthreads(),
-					    marcel_blockedthreads());
 
 	if(cell != MARCEL_POLL_FAILED) {
 
-	  waked_some_task = 1;
-	  marcel_wake_task(cell->task, &cell->blocked);
-	  mdebug("Poll succeed with task %p\n", cell->task);
+		waked_some_task = 1;
+		marcel_wake_task(cell->task, &cell->blocked);
+		mdebug("Poll succeed with task %p\n", cell->task);
 
-	  /* Retrait de d'un élément de la liste */
-	  if(cell->prev != NULL)
-	    cell->prev->next = cell->next;
-	  else
-	    ps->first_cell = cell->next;
-	  if(cell->next != NULL)
-	    cell->next->prev = cell->prev;
-	  ps->nb_cells--;
-
-	  if(!ps->nb_cells) {
-	    /* Il faut retirer la tache de __polling_task */
-	    if((p = ps->prev) == ps) {
-	      __polling_tasks = NULL;
-	      break;
-	    } else {
-	      if(ps == __polling_tasks)
-		__polling_tasks = p;
-	      p->next = ps->next;
-	      p->next->prev = p;
-	    }
-	  } else {
-	    /* S'il reste au moins 2 requetes ou s'il n'y a pas de
-	       "fast poll", alors il faut factoriser. */
-	    if(ps->nb_cells > 1 || !ps->fastfunc) {
-	      mdebug("Factorizing polling");
-	      (*(ps->gfunc))((marcel_pollid_t)ps);
-	    }
-	  }
+		/* Retrait de d'un élément de la liste */
+		if(cell->prev != NULL)
+			cell->prev->next = cell->next;
+		else
+			ps->first_cell = cell->next;
+		if(cell->next != NULL)
+			cell->next->prev = cell->prev;
+		ps->nb_cells--;
+		
+		if(!ps->nb_cells) {
+			/* Il faut retirer la tache de __polling_task */
+			if((p = ps->prev) == ps) {
+				__polling_tasks = NULL;
+			} else {
+				if(ps == __polling_tasks)
+					__polling_tasks = p;
+				p->next = ps->next;
+				p->next->prev = p;
+			}
+		} else {
+			/* S'il reste au moins 2 requetes ou s'il n'y a pas de
+			   "fast poll", alors il faut factoriser. */
+			if(ps->nb_cells > 1 || !ps->fastfunc) {
+				mdebug("Factorizing polling");
+				(*(ps->gfunc))((marcel_pollid_t)ps);
+			}
+		}
 	}
-      }
-      ps = ps->next;
-    } while(ps != __polling_tasks);
+	return waked_some_task;
+}
 
-    marcel_lock_release(&__polling_lock);
-  }
+// Checks to see if some polling jobs should be done. NOTE: The
+// function assumes that:
+//   1) "lock_task()" was called previously ;
+int __marcel_check_polling(unsigned polling_point)
+{
+	int waked_some_task = 0;
+	poll_struct_t *ps;
 
-  LOG_OUT();
+	LOG_IN();
 
-  return waked_some_task;
+	if(marcel_lock_tryacquire(&__polling_lock)) {
+		
+		if((ps = __polling_tasks) == NULL) {
+			marcel_lock_release(&__polling_lock);
+			
+			LOG_OUT();
+			return 0;
+		}
+
+		do {
+			if(ps->polling_points & polling_point) {
+				waked_some_task = __marcel_check_polling_for(ps);
+				if (__polling_tasks == NULL) {
+					/* La dernière tâche de polling vient de disparaître ... */
+					break;
+				}
+			}
+			ps = ps->next;
+		} while(ps != __polling_tasks);
+		
+		marcel_lock_release(&__polling_lock);
+	}
+	
+	LOG_OUT();
+
+	return waked_some_task;
+}
+
+int marcel_force_check_polling(poll_struct_t *ps)
+{
+	int waked_some_task = 0;
+	
+	LOG_IN();
+	
+	lock_task();
+	marcel_lock_acquire(&__polling_lock);
+	
+	if(ps->first_cell == NULL) {
+		/* Rien en attente sur ce poll_struct_t */
+		marcel_lock_release(&__polling_lock);
+		LOG_OUT();
+		return 0;
+	}
+		
+	waked_some_task = __marcel_check_polling_for(ps);
+	marcel_lock_release(&__polling_lock);
+	unlock_task();
+
+	LOG_OUT();
+
+	return waked_some_task;
 }
 
 marcel_pollid_t marcel_pollid_create(marcel_pollgroup_func_t g,

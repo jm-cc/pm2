@@ -20,8 +20,14 @@ log()
     fi
 }
 
+_pm2load_error() # msg
+{
+    echo $*
+    exit 1
+}
+
 export PM2_CMD_PREFIX
-PM2_CMD_PREFIX="${PM2_ROOT}/bin/pm2-pre-script.sh"
+PM2_CMD_PREFIX="pm2-pre-script.sh"
 
 #echo "[ pm2-pre-script.sh $@ ]"
 
@@ -93,6 +99,10 @@ while [ $# -gt 0 ]; do
 	    ;;
     esac
 done
+
+if [ "$PM2_USE_LOCAL_FLAVOR" != on ]; then
+    PM2_CMD_PREFIX="${PM2_ROOT}/bin/${PM2_CMD_PREFIX}"
+fi
 
 PM2_CMD_NAME="$1"
 export PM2_CMD_NAME

@@ -137,7 +137,7 @@ retry:
 					/* On tente de faire avancer les autres
 					 * threads */
 					mdebugl(PM2DEBUG_DISPLEVEL,
-						"Trying to wait for mmap. Current: mmap(%p, %x, ...)\n", next_slot, THREAD_SLOT_SIZE);
+						"Trying to wait for mmap. Current: mmap(%p, %lx, ...)\n", next_slot, THREAD_SLOT_SIZE);
 					marcel_yield();
 					goto retry;
 				}

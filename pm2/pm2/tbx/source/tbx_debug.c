@@ -533,8 +533,8 @@ int pm2debug_printf(debug_type_t *type, int line, const char* file,
 		}
 #endif			
 		return 0;
-	have_lock:
 	}
+have_lock:
 
 	dl.file_lock=file;
 	dl.file_line=line;

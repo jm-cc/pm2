@@ -138,10 +138,17 @@ int fkt_record(char *file, unsigned int initmask, int powpages, int dma)
   page_size = getpagesize();
   kpid = (unsigned long) getpid();
 
-  if ((fd = open(file, O_RDWR|O_CREAT|O_TRUNC, 0666)) < 0) {
+  if ((fd = open(file, O_RDWR|O_CREAT|O_TRUNC|O_EXCL, 0666)) < 0) {
+    if (errno == EEXIST) {
+      fprintf(stderr, "%s already exists\nSkipping recording\n", file);
+      close(fkt);
+      fkt=-1;
+      return -1;
+    }
     perror(file);
     exit(EXIT_FAILURE);
   }
+  fprintf(stderr, "%s opened\n", file);
 
   if (!size) {
     if( fstat(fd, &st) ) {

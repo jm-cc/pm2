@@ -47,19 +47,19 @@ char *flavor_builddir(void);
 char *flavor_extension(void);
 
 // Format for module is "--modules=name"
-gint flavor_uses_module(char *module);
+gint flavor_uses_module(const char *module);
 
 // Format for option is "--module=option"
-gint flavor_uses_option(char *option);
+gint flavor_uses_option(const char *option);
 
 void flavor_reset_contents(void);
 
-void flavor_set_builddir(char *name);
+void flavor_set_builddir(const char *name);
 
-void flavor_set_extension(char *name);
+void flavor_set_extension(const char *name);
 
-void flavor_add_module(char *name);
+void flavor_add_module(const char *name);
 
-void flavor_add_option(char *name);
+void flavor_add_option(const char *name);
 
 #endif

@@ -19,7 +19,7 @@
 
 #include <glib.h>
 
-char *string_new(char *str);
+char *string_new(const char *str);
 
 GList *string_list_from_parser(void);
 

@@ -20,7 +20,7 @@
 #include "trace.h"
 #include "str_list.h"
 
-char *string_new(char *str)
+char *string_new(const char *str)
 {
   char *copy = g_malloc(strlen(str)+1);
 

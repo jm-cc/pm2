@@ -78,11 +78,11 @@ static void flavor_print(void)
 }
 #endif // PM2DEBUG
 
-static gint flavor_exists(char *name);
+static gint flavor_exists(const char *name);
 
 static void update_the_buttons(void)
 {
-  char *selected = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+  const char *selected = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
   gint load_enabled, create_enabled, save_enabled, delete_enabled;
   gint save_as = FALSE;
   gint reload = FALSE;
@@ -172,7 +172,7 @@ static gint flacmp(gconstpointer a, gconstpointer b)
   return strcmp(((flavor_t *)a)->name, (char *)b);
 }
 
-static gint flavor_exists(char *name)
+static gint flavor_exists(const char *name)
 {
   return g_list_find_custom(flavor_list(), name, (GCompareFunc)strcmp) ?
     TRUE : FALSE;
@@ -428,7 +428,7 @@ static void reload_flavor(gpointer data)
   save_and_proceed((gpointer)FALSE);
 }
 
-void set_current_flavor(char *name)
+void set_current_flavor(const char *name)
 {
   static char str[1024];
 
@@ -671,7 +671,8 @@ static void save_and_quit(gpointer data)
 
 void flavor_check_quit(void)
 {
-  char str1[128], *new_fla;
+  char str1[128];
+  const char *new_fla;
 
   if(cur_flavor == NULL) {
     save_and_quit((gpointer)FALSE);
@@ -719,7 +720,7 @@ GList *flavor_list(void)
 static void flavor_name_changed(GtkWidget *widget,
 				gpointer data )
 {
-  char *name;
+  const char *name;
 
   if(!destroy_phase) {
     name = gtk_entry_get_text(GTK_ENTRY(widget));
@@ -819,7 +820,7 @@ char *flavor_extension(void)
   return (cur_flavor == NULL) ? "" : cur_flavor->extension;
 }
 
-gint flavor_uses_module(char *module)
+gint flavor_uses_module(const char *module)
 {
   if(cur_flavor == NULL)
     return FALSE;
@@ -828,7 +829,7 @@ gint flavor_uses_module(char *module)
       TRUE : FALSE;
 }
 
-gint flavor_uses_option(char *option)
+gint flavor_uses_option(const char *option)
 {
   if(cur_flavor == NULL)
     return FALSE;
@@ -860,23 +861,23 @@ void flavor_reset_contents(void)
   string_list_destroy(&cur_flavor->options);
 }
 
-void flavor_set_builddir(char *name)
+void flavor_set_builddir(const char *name)
 {
   cur_flavor->builddir = string_new(name);
 }
 
-void flavor_set_extension(char *name)
+void flavor_set_extension(const char *name)
 {
   cur_flavor->extension = string_new(name);
 }
 
-void flavor_add_module(char *name)
+void flavor_add_module(const char *name)
 {
   cur_flavor->modules = g_list_append(cur_flavor->modules,
 				      (gpointer)string_new(name));
 }
 
-void flavor_add_option(char *name)
+void flavor_add_option(const char *name)
 {
   cur_flavor->options = g_list_append(cur_flavor->options,
 				      (gpointer)string_new(name));

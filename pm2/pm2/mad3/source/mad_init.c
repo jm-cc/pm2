@@ -877,7 +877,7 @@ channel_open(p_mad_madeleine_t  madeleine,
       (madeleine->session->session_id > 0) && 
       (mad_channel->mergeable))
      {	
-	madeleine->mergeable = tbx_true;
+	madeleine->dynamic->mergeable = tbx_true;
      }
    
   mad_channel->dir_channel   = dir_channel;

@@ -56,16 +56,23 @@
 
 #endif // MA__LWPS
 
-#define SET_STATE_READY(current)  \
-  (SET_STATE_READY_HOOK(current), \
-   MTRACE("READY", (current)),    \
+#define SET_STATE_RUNNING_ONLY(next)  \
+  (SET_STATE_RUNNING_HOOK(next),      \
+   (next)->ext_state=MARCEL_RUNNING,  \
+   MTRACE("RUNNING", (next)))
+
+#define SET_STATE_READY(current)      \
+  (SET_STATE_READY_HOOK(current),     \
+   MTRACE("READY", (current)),        \
    (current)->ext_state=MARCEL_READY)
 
 #else // MA__MULTIPLE_RUNNING
 
-#define SET_STATE_RUNNING(previous, next, lwp) SET_STATE_RUNNING_HOOK(next)
+#define SET_STATE_RUNNING_ONLY(next)            SET_STATE_RUNNING_HOOK(next)
 
-#define SET_STATE_READY(current)               SET_STATE_READY_HOOK(current)
+#define SET_STATE_RUNNING(previous, next, lwp)  SET_STATE_RUNNING_HOOK(next)
+
+#define SET_STATE_READY(current)                SET_STATE_READY_HOOK(current)
 
 #endif
 
@@ -197,7 +204,7 @@
 #define MA_SF_NORMAL       0
 // UPCALL_NEW : no comment
 #define MA_SF_UPCALL_NEW   1
-// POLL : le thread "sched_task" qui fait plein de choses
+// POLL : le thread "idle_task" qui fait plein de choses
 #define MA_SF_POLL         2
 // IDLE : le thread "wait_and_yield" ne consomme pas de CPU...
 #define MA_SF_IDLE         4

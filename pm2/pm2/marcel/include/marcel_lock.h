@@ -48,7 +48,7 @@ void atomic_inc(volatile atomic_t *v) __attribute__ ((unused));
 static __inline__ void atomic_inc(volatile atomic_t *v)
 {
 	__asm__ __volatile__(
-		"incl %0"
+		LOCK_PREFIX "incl %0"
 		:"=m" (__atomic_fool_gcc(v))
 		:"m" (0));
 }
@@ -58,7 +58,7 @@ void atomic_dec(volatile atomic_t *v) __attribute__ ((unused));
 static __inline__ void atomic_dec(volatile atomic_t *v)
 {
 	__asm__ __volatile__(
-		"decl %0"
+		LOCK_PREFIX "decl %0"
 		:"=m" (__atomic_fool_gcc(v))
 		:"m" (0));
 }

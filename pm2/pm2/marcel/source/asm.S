@@ -37,26 +37,6 @@ my_setjmp:
         xorl    %eax, %eax
         jmp     *%edx
 
-#if (__GNUC__ >= 3)
-#define FASTCALL(x)     x __attribute__((regparm(3)))
-
-#if defined(FREEBSD_SYS) || defined(WIN_SYS)
-	.globl _my_longjmp_gcc3
-_my_longjmp_gcc3:
-#else
-	.globl my_longjmp_gcc3
-my_longjmp_gcc3:
-#endif
-	movl	0(%ecx), %ebx
-	movl	4(%ecx), %esi
-	movl	8(%ecx), %edi
-	movl	12(%ecx), %ebp
-	movl	16(%ecx), %esp
-	movl	20(%ecx), %ecx
-	jmp	*%ecx
-
-#endif
-	
 #endif
 
 #if defined(UNICOS_SYS) && defined(ALPHA_ARCH)

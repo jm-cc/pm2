@@ -53,7 +53,7 @@ main(int argc, char **argv) {
          * Récupération de l'objet 'channel' correspondant au canal "test"
          * défini dans le fichier de configuration.
          */
-        channel = tbx_htable_get(madeleine->channel_htable, "test");
+        channel = tbx_htable_get(madeleine->channel_htable, tbx_slist_index_get(madeleine->public_channel_slist, 0));
 
         /*
          * Conversion du numéro global du processus en numéro local au

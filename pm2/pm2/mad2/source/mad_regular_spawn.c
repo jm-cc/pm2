@@ -35,7 +35,7 @@
 /* #define TIMING */
 #include "madeleine.h"
 
-#include "pm2debug.h"
+#include "tbx_debug.h"
 
 #ifdef REGULAR_SPAWN
 

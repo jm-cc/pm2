@@ -870,20 +870,26 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 void
 mad_leonie_sync(p_mad_madeleine_t madeleine)
 {
-  p_mad_session_t session = NULL;
-  p_ntbx_client_t client  = NULL;
-  int             data    =    0;
+  p_mad_session_t session   = NULL;
+  p_mad_settings_t settings = NULL;
+  p_ntbx_client_t client    = NULL;
+  int             data      =    0;
 
   LOG_IN();
   TRACE("Termination sync");
-  session = madeleine->session;
-  client  = session->leonie_link;
+  session  = madeleine->session;
+  settings = madeleine->settings;
+  client   = session->leonie_link;
 
   mad_ntbx_send_int(client, mad_leo_command_end);
-  data = mad_ntbx_receive_int(client);
-  if (data != 1)
-    FAILURE("synchronization error");
+  if (settings->leonie_dynamic_mode) {
+    mad_command_thread_exit(madeleine);
+  } else {
+    data = mad_ntbx_receive_int(client);
+    if (data != 1)
+      FAILURE("synchronization error");
 
+  }
   LOG_OUT();
 }
 

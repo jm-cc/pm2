@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: ntbx_pack.c,v $
+Revision 1.2  2000/03/01 11:03:35  oaumage
+- mise a jour des #includes ("")
+
 Revision 1.1  2000/02/17 09:09:07  oaumage
 - ajout du support TCP a la net toolbox
 - ajout des fonctions d'empaquetage de donnees numeriques
@@ -47,7 +50,7 @@ ______________________________________________________________________________
  * -----------
  */
 
-#include <ntbx.h>
+#include "ntbx.h"
 #include <stdlib.h>
 #include <string.h>
 

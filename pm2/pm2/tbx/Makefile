@@ -33,21 +33,11 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MASTER_MODULE =  TBX
-COMMON_DEFAULT_TARGET :=  tbx_default
+LIBRARY=tbx
+#LIBNAME=marcel
 
-include $(PM2_ROOT)/make/master_vars.mak
+#marcel_CC=gcc
+#marcel_AS=gcc
 
-# Ce makefile
-COMMON_MAKEFILES +=  $(TBX2_ROOT)/Makefile
-
-# Inclusion des variables
-include $(TBX_MAKE)/vars.mak
-
-# Regles principales
-include $(PM2_ROOT)/make/master_rules.mak
-
-# Inclusion des regles de compilation
-include $(TBX_MAKE)/rules.mak
-
-##############################################################################
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/libs.mak

@@ -11,31 +11,40 @@ par des options sur la ligne de commande.
                             |  Utilisation de base  |
                             +-----------------------+
 
-  Il faut compiler et linker le programme pm2 avec le module
-pm2debug. Sans ce module dans la flavor, tous les messages seront
-ignorés par le préprocesseur.
-  Il faut AUSSI avoir défini le flag DEBUG pour les fichiers dont on
-veut que tous les messages soient pris en compte. Si on veut valider
-tous les messages (ce qui est conseillé : on peut choisir si on les
-affiche ou non plus tard, à l'exécution), il suffit de valider
-l'option DEBUG de tous les modules.
+  Il faut compiler le programme pm2 et les modules avec l'option
+"-DPM2DEBUG". Sans ce flag de compilation (indiqué par l'option DEBUG
+dans les flavors), tous les messages seront ignorés par le
+préprocesseur.
 
+  La macro 'pm2debug()' (s'utilisant comme printf) peut alors être
+utilisée.  Elle peut être manipulé (voir plus bas) avec le nom 'pm2debug'
+pour la ligne de commande ou debug_pm2debug dans le programme.
+
+  Si PM2DEBUG n'est pas défini, pm2debug() est une macro appelant
+fprintf(stderr, ...).
+
+Rem :
+  Il existe aussi 'pm2fulldebug' qui force l'affichage immédiat du
+message. Son utilisation peut conduire à un état instable, mais peut
+être utile juste avant une terminaison brutale.
 
                             +----------------------+
                             |  Macros déjà prêtes  |
                             +----------------------+
 
-  En faisant '#include "pm2debug"', on dispose des macros DISP..,
-LOG.. et TRACE.. qui étaient présentes dans tbx auparavant. Comme dit
-précédemment, DEBUG doit être défini pour que LOG.. et TRACE.. soient
-pris en compte. En revanche, DISP.. est pris en compte même sans DEBUG
-et est affiché par défaut (on peut alors le désactiver par la ligne de
-commande).
+  Les macros de base sont définies dans "tbx_debug.h". On les optient
+en faisant '#include "tbx.h"'. On dispose alors des macros DISP..,
+LOG.. et TRACE... Comme dit précédemment, PM2DEBUG doit être défini pour
+que LOG.. et TRACE.. soient pris en compte. En revanche, DISP.. est
+pris en compte même sans DEBUG et est affiché par défaut (on peut
+alors le désactiver par la ligne de commande).
 
-  Ces macros utilisent les variables 'mod'-disp, 'mod'-log et
-'mod'-trace. Par défaut, mod vaut marcel, mad1, mad2, pm2, dsm, tbx,
-ntbx ou app suivant si l'on est en train de compiler le module
-correspondant ou l'application (pour app).
+  Ces macros utilisent les noms 'mod'-disp, 'mod'-log et 'mod'-trace
+pour la ligne de commande et les variables debug_'mod'_disp,
+debug_'mod'_disp et debug_'mod'_trace dans le programme. Par défaut,
+mod vaut marcel, mad1, mad2, pm2, dsm, tbx, ntbx ou app suivant si
+l'on est en train de compiler le module correspondant ou l'application
+(pour app).
 
   On peut choisir un autre nom. Il suffit de définir DEBUG_NAME pour
 que son contenu remplace 'mod'. DEBUG_NAME peut-être redéfini
@@ -46,7 +55,7 @@ spécifiques à un fichier et non pas à un module entier par exemple),
 il faut alors déclarer les variables correspondantes dans un fichier C
 avec la macro :
 
-#include "pm2debug.h"
+#include "tbx.h"
 DEBUG_DECLARE(mod)
 
 et dans une fonction d'initialisation, enregistrer ces variables :
@@ -56,7 +65,7 @@ init() { DEBUG_INIT(mod); }
 
 On peut alors faire, dans un fichier C :
 
-#include "pm2debug.h"
+#include "log.h"
 #define DEBUG_NAME mod
 ..
   LOG("Je suis ici");
@@ -87,6 +96,34 @@ avec
 	- show : affiche ou pas les messages correspondant
 	- prefix : affiche ou pas le préfix du message
 	- file : affiche ou non la ligne et le fichier du message
+	- lwp : cache ou non le lwp écrivant le message
+	- thread : cache ou non le thread écrivant le message
+
+
+                           +------------------------+
+                           |  Et dans le programme  |
+                           +------------------------+
+
+  La fonction pm2debug_setup() peut être utilisée pour changer
+dynamiquement les paramètres d'affichages des messages de debug. Elle
+prend en argument la variable de debug, une constante pour le type
+d'action et une valeur.
+  Les constantes utilisables sont :
+	PM2DEBUG_SHOW
+	PM2DEBUG_SHOW_PREFIX
+	PM2DEBUG_SHOW_FILE
+	PM2DEBUG_DO_NOT_SHOW_THREAD
+	PM2DEBUG_DO_NOT_SHOW_LWP
+	PM2DEBUG_CRITICAL
+	PM2DEBUG_TRYONLY
+	PM2DEBUG_REGISTER
+  Les trois dernières sont à éviter de modifier si on ne sait pas de
+quoi il s'agit. Les précédentes correspondent aux actions décrites
+précédemment.
+
+Exemple:
+#define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 1)
+#define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)
 
 
                             +-----------------------+
@@ -104,9 +141,8 @@ mar-locktask : changement de locktask (nécessite -DDEBUG_LOCK_TASK,
   option marcel/locktask)
 ...
 
-  Les fonctions de pm2debug.h ne seront valides que si PM2DEBUG est
-défini (c'est à dire si la flavor contient le module pm2debug). En
-revanche, DEBUG n'a pas besoin d'être défini.
+  Les fonctions de tbx_debug.h ne seront valides que si PM2DEBUG est
+défini.
 
                           Explications par l'exemple     
                           --------------------------     
@@ -114,7 +150,7 @@ revanche, DEBUG n'a pas besoin d'être défini.
   Si l'on veut créer une série de messages de trace pour des calculs,
 on peut mettre dans calcul_debug.h :
 /****************************************************************/
-#include "pm2debug.h"
+#include "tbx.h"
 extern debug_type_t debug_calcul_trace;
 #define CALCUL_TRACE(fmt, args...) \
     debug_printf(&debug_calcul_trace, fmt, ##args)
@@ -123,7 +159,7 @@ extern debug_type_t debug_calcul_trace;
 et dans calcul_debug.c
 
 /****************************************************************/
-#include "pm2debug.h"
+#include "tbx.h"
 debug_type_t debug_calcul_trace=NEW_DEBUG_TYPE(0, "CALCUL: ", "cal-trace");
 void calcul_debug_init(int* argc, char** argv, int debug_flags)
 {
@@ -137,7 +173,8 @@ printf().
   Remarque: l'initialisation (appel à pm2debug_init_ext) est déjà
 faite par les modules marcel, mad1, mad2, pm2. Il est inutile de la
 refaire pour un programme inclu dans pm2. Il suffit d'enregistrer la
-variable avec pm2debug_register()
+variable avec pm2debug_register() (avant ou après l'appel à
+pm2debug_init_ext : il n'y a pas d'ordre imposé)
 
   Rq2: NEW_DEBUG_TYPE(show, prefix, name)
 show vaut 1 ou 0 suivant si le message doit être afficher par défaut

@@ -36,18 +36,18 @@
 
 I . Configuring MADELEINE ++++++++++++++++++++++++++++++++++++++++++++++
 
-Before starting building MADELEINE, set the MADELEINE_ROOT environment
+Before starting building MADELEINE, set the MAD1_ROOT environment
 variable.  For example, if you have installed MADELEINE in your home
 directory, type the following line (if under csh) :
 
-		setenv MADELEINE_ROOT ${HOME}/madeleine
+		setenv MAD1_ROOT ${HOME}/madeleine
 
-Then, add the ${MADELEINE_ROOT}/bin entry in your PATH environment
+Then, add the ${MAD1_ROOT}/bin entry in your PATH environment
 variable.
 
 for example (under csh):
 
-		setenv PATH ${PATH}:${MADELEINE_ROOT}/bin
+		setenv PATH ${PATH}:${MAD1_ROOT}/bin
 
 
 II . Building examples programs ++++++++++++++++++++++++++++++++++++++++
@@ -63,10 +63,10 @@ the PVM_ROOT variable), type:
 
 		madcustom pvm
 
-Please have a look into the $MADELEINE_ROOT/make/ directory to see
+Please have a look into the $MAD1_ROOT/make/ directory to see
 which communication packages are currently supported.
 
-Once you made your choice, go into the $MADELEINE_ROOT/examples
+Once you made your choice, go into the $MAD1_ROOT/examples
 subdirectory and type:
 
 		make

@@ -34,11 +34,15 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# Just in case MAD2_ROOT is not defined
+MAD2_ROOT=${MAD2_ROOT-${PM2_ROOT}/mad2}
+export MAD2_ROOT
+
 case $1 in
     /*) command=$* ;;
     *) command=`pwd`/$*
 esac
 
-set `cat ${MADELEINE_ROOT}/.mad2_conf`
+set `cat ${MAD2_ROOT}/.mad2_conf`
 
 exec rsh $1 $command

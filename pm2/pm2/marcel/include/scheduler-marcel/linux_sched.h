@@ -16,80 +16,6 @@
 
 #section common
 /*
- * These are the runqueue data structures:
- */
-#section marcel_macros
-#define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
-
-#section marcel_types
-typedef struct ma_runqueue ma_runqueue_t;
-
-#section marcel_structures
-struct prio_array {
-	int nr_active;
-	unsigned long bitmap[BITMAP_SIZE];
-	struct list_head queue[MAX_PRIO];
-};
-
-/*
- * This is the main, per-CPU runqueue data structure.
- *
- * Locking rule: those places that want to lock multiple runqueues
- * (such as the load balancing or the thread migration code), lock
- * acquire operations must be ordered by ascending &runqueue.
- */
-//MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
-//MA_DEFINE_PER_LWP(marcel_task_t *, idle_thread)=NULL;
-struct ma_runqueue {
-	ma_spinlock_t lock;
-	unsigned long long nr_switches;
-	unsigned long nr_running, expired_timestamp, nr_uninterruptible,
-		timestamp_last_tick;
-	marcel_task_t *curr;//, *idle;
-	struct mm_struct *prev_mm;
-	ma_prio_array_t *active, *expired, arrays[2];
-//	int best_expired_prio, prev_cpu_load[NR_CPUS];
-#ifdef CONFIG_NUMA
-	atomic_t *node_nr_running;
-	int prev_node_load[MAX_NUMNODES];
-#endif
-	marcel_task_t *migration_thread;
-	struct list_head migration_queue;
-
-	atomic_t nr_iowait;
-
-#ifdef MA__LWPS
-	struct ma_runqueue *father;
-#endif
-};
-
-#section marcel_macros
-// ceci n'a plus de sens:
-//#define task_rq(p)		lwp_rq(ma_task_lwp(p))
-#define ma_task_cur_rq(p)	((p)->sched.internal.cur_rq)
-#ifdef MA__LWPS
-#define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueues, (lwp)))
-#define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
-#define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
-#define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
-#else
-#define ma_lwp_rq(lwp)		(&ma_main_runqueue)
-#define ma_task_init_rq(p)	((p)->sched.lwps_allowed?&ma_main_runqueue:&ma_idle_runqueue)
-#define ma_this_rq()		(&ma_main_runqueue)
-#define ma_prev_rq()		(&ma_main_runqueue)
-#endif
-#define ma_lwp_curr(lwp)	(ma_lwp_rq(lwp)->curr) //ma_per_lwp(current_thread, lwp))
-
-
-#section marcel_variables
-#ifdef MA__LWPS
-MA_DECLARE_PER_LWP(ma_runqueue_t, runqueues);
-#endif
-
-ma_runqueue_t ma_main_runqueue;
-ma_runqueue_t ma_idle_runqueue;
-
-/*
  * Similar to:
  * include/linux/interrupt.h
  */
@@ -98,6 +24,8 @@ ma_runqueue_t ma_idle_runqueue;
 extern int nr_threads;
 //extern int last_tid;
 //MA_DECLARE_PER_LWP(unsigned long, process_counts);
+//MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
+//MA_DEFINE_PER_LWP(marcel_task_t *, idle_thread)=NULL;
 
 #section marcel_functions
 //extern int ma_nr_threads(void);
@@ -196,31 +124,6 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 	/* thread group stop support, overloads group_exit_code too */
 //	int			group_stop_count;
 //};
-
-#section marcel_macros
-/*
- * Priority of a process goes from 0..MAX_PRIO-1, valid RT
- * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL tasks are
- * in the range MAX_RT_PRIO..MAX_PRIO-1. Priority values
- * are inverted: lower p->prio value means higher priority.
- *
- * The MAX_RT_USER_PRIO value allows the actual maximum
- * RT priority to be separate from the value exported to
- * user-space.  This allows kernel threads to set their
- * priority to a value higher than any user task. Note:
- * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
- */
-
-//#define MAX_USER_RT_PRIO	100
-//#define MAX_RT_PRIO		MAX_USER_RT_PRIO
-
-//#define MAX_PRIO		(MAX_RT_PRIO + 40)
-#define MAX_PRIO                2
-
-//#define rt_task(p)		((p)->prio < MAX_RT_PRIO)
-
-#section marcel_types
-typedef struct prio_array ma_prio_array_t;
 
 #section marcel_structures
 #if 0

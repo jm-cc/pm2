@@ -175,11 +175,8 @@
 //}
 
 #ifdef MA__LWPS
-MA_DEFINE_PER_LWP(ma_runqueue_t, runqueues);
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
 #endif
-ma_runqueue_t ma_main_runqueue;
-ma_runqueue_t ma_idle_runqueue;
 
 /*
  * Default context-switch locking:
@@ -189,141 +186,6 @@ ma_runqueue_t ma_idle_runqueue;
 # define finish_arch_switch(rq, next)	ma_spin_unlock_softirq(&(rq)->lock)
 # define task_running(rq, p)		((rq)->curr == (p))
 #endif
-
-#ifdef CONFIG_NUMA
-
-/*
- * Keep track of running tasks.
- */
-
-static atomic_t node_nr_running[MAX_NUMNODES] ____cacheline_maxaligned_in_smp =
-	{[0 ...MAX_NUMNODES-1] = ATOMIC_INIT(0)};
-
-static inline void nr_running_init(ma_runqueue_t *rq)
-{
-	rq->node_nr_running = &node_nr_running[0];
-}
-
-static inline void nr_running_inc(ma_runqueue_t *rq)
-{
-	atomic_inc(rq->node_nr_running);
-	rq->nr_running++;
-}
-
-static inline void nr_running_dec(ma_runqueue_t *rq)
-{
-	atomic_dec(rq->node_nr_running);
-	rq->nr_running--;
-}
-
-__init void node_nr_running_init(void)
-{
-	int i;
-
-	for (i = 0; i < NR_CPUS; i++) {
-		if (cpu_possible(i))
-			cpu_rq(i)->node_nr_running =
-				&node_nr_running[cpu_to_node(i)];
-	}
-}
-
-#else /* !CONFIG_NUMA */
-
-# define nr_running_init(rq)   do { } while (0)
-# define nr_running_inc(rq)    do { (rq)->nr_running++; } while (0)
-# define nr_running_dec(rq)    do { (rq)->nr_running--; } while (0)
-
-#endif /* CONFIG_NUMA */
-
-/*
- * task_rq_lock - lock the runqueue a given task resides on and disable
- * interrupts.  Note the ordering: we can safely lookup the task_rq without
- * explicitly disabling preemption.
- */
-#ifdef MA__LWPS
-static inline ma_runqueue_t *task_rq(marcel_task_t *p)
-{
-	ma_runqueue_t *rq;
-	if ((rq = p->sched.internal.cur_rq))
-		return rq;
-	sched_debug("using default queue for %s\n",p->name);
-	return p->sched.internal.init_rq;
-
-}
-#else
-#define task_rq(p) (&ma_main_runqueue)
-#endif
-static inline ma_runqueue_t *task_rq_lock(marcel_task_t *p)
-{
-	ma_runqueue_t *rq;
-
-repeat_lock_task:
-	//local_irq_save(*flags);
-	ma_local_bh_disable();
-	rq = task_rq(p);
-	sched_debug("task_rq_locking(%p)\n",rq);
-	if (rq==&ma_main_runqueue)
-	  sched_debug("main queue\n");
-	ma_spin_lock(&rq->lock);
-	if (tbx_unlikely(rq != task_rq(p))) {
-		sched_debug("task_rq_unlocking(%p)\n",rq);
-		ma_spin_unlock_softirq(&rq->lock);
-		goto repeat_lock_task;
-	}
-	sched_debug("task_rq_locked(%p)\n",rq);
-	return rq;
-}
-
-static inline void task_rq_unlock(ma_runqueue_t *rq)
-{
-	sched_debug("task_rq_unlock(%p)\n",rq);
-	ma_spin_unlock_softirq(&rq->lock);
-}
-
-/*
- * rq_lock - lock a given runqueue and disable interrupts.
- */
-static inline ma_runqueue_t *this_rq_lock(void)
-{
-	ma_runqueue_t *rq;
-
-	ma_local_bh_disable();
-	rq = ma_this_rq();
-	ma_spin_lock(&rq->lock);
-
-	return rq;
-}
-
-static inline void rq_unlock(ma_runqueue_t *rq)
-{
-	ma_spin_unlock_softirq(&rq->lock);
-}
-
-/*
- * Adding/removing a task to/from a priority array:
- */
-static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
-{
-	array->nr_active--;
-	list_del(&p->sched.internal.run_list);
-	if (list_empty(array->queue + p->sched.internal.prio)) {
-		sched_debug("array %p empty\n",array);
-		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
-	}
-	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
-	MA_BUG_ON(!p->sched.internal.array);
-	p->sched.internal.array = NULL;
-}
-
-static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
-{
-	list_add_tail(&p->sched.internal.run_list, array->queue + p->sched.internal.prio);
-	__ma_set_bit(p->sched.internal.prio, array->bitmap);
-	array->nr_active++;
-	sched_debug("enqueued %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
-	MA_BUG_ON(p->sched.internal.array);
-	p->sched.internal.array = array;
-}
 
 /*
  * effective_prio - return the priority that is based on the static
@@ -357,16 +219,6 @@ static int effective_prio(marcel_task_t *p)
 	return prio;
 }
 #endif
-
-/*
- * __activate_task - move a task to the runqueue.
- */
-static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
-{
-	p->sched.internal.cur_rq = rq;
-	enqueue_task(p, rq->active);
-	nr_running_inc(rq);
-}
 
 #if 0
 static void recalc_task_prio(marcel_task_t *p, unsigned long long now)
@@ -445,56 +297,6 @@ static void recalc_task_prio(marcel_task_t *p, unsigned long long now)
 	p->prio = effective_prio(p);
 }
 #endif /* 0 */
-
-/*
- * activate_task - move a task to the runqueue and do priority recalculation
- *
- * Update all the scheduling statistics stuff. (sleep average
- * calculation, priority modifiers, etc.)
- */
-static inline void activate_task(marcel_task_t *p, ma_runqueue_t *rq)
-{
-//	unsigned long long now = sched_clock();
-
-//	recalc_task_prio(p, now);
-
-	/*
-	 * This checks to make sure it's not an uninterruptible task
-	 * that is now waking up.
-	 */
-//	if (!p->activated){
-		/*
-		 * Tasks which were woken up by interrupts (ie. hw events)
-		 * are most likely of interactive nature. So we give them
-		 * the credit of extending their sleep time to the period
-		 * of time they spend on the runqueue, waiting for execution
-		 * on a CPU, first time around:
-		 */
-//		if (in_interrupt())
-//			p->activated = 2;
-//		else
-		/*
-		 * Normal first-time wakeups get a credit too for on-runqueue
-		 * time, but it will be weighted down:
-		 */
-//			p->activated = 1;
-//		}
-//	p->timestamp = now;
-
-	__activate_task(p, rq);
-}
-
-/*
- * deactivate_task - remove a task from the runqueue.
- */
-static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
-{
-	nr_running_dec(rq);
-	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
-		rq->nr_uninterruptible++;
-	dequeue_task(p, p->sched.internal.array);
-	p->sched.internal.cur_rq = NULL;
-}
 
 /*
  * resched_task - mark a task 'to be rescheduled now'.
@@ -771,6 +573,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
 //	if (tbx_unlikely(!MARCEL_SELF->sched.internal.array))
+	if (!p->sched.internal.array)
 		__activate_task(p, rq);
 //	else {
 //		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
@@ -963,64 +766,6 @@ unsigned long nr_iowait(void)
 	return sum;
 }
 #endif
-
-/*
- * double_rq_lock - safely lock two runqueues
- *
- * Note this does not disable interrupts like task_rq_lock,
- * you need to do so manually before calling.
- */
-static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	if (rq1 == rq2)
-		ma_spin_lock(&rq1->lock);
-	else {
-		if (rq1 < rq2) {
-			ma_spin_lock(&rq1->lock);
-			_ma_raw_spin_lock(&rq2->lock);
-		} else {
-			ma_spin_lock(&rq2->lock);
-			_ma_raw_spin_lock(&rq1->lock);
-		}
-	}
-}
-static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_local_bh_disable();
-
-	if (rq1 == rq2)
-		ma_spin_lock(&rq1->lock);
-	else {
-		if (rq1 < rq2) {
-			ma_spin_lock(&rq1->lock);
-			_ma_raw_spin_lock(&rq2->lock);
-		} else {
-			ma_spin_lock(&rq2->lock);
-			_ma_raw_spin_lock(&rq1->lock);
-		}
-	}
-}
-
-/*
- * double_rq_unlock - safely unlock two runqueues
- *
- * Note this does not restore interrupts like task_rq_unlock,
- * you need to do so manually after calling.
- */
-static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_spin_unlock(&rq1->lock);
-	if (rq1 != rq2)
-		_ma_raw_spin_unlock(&rq2->lock);
-}
-static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_spin_unlock(&rq1->lock);
-	if (rq1 != rq2)
-		_ma_raw_spin_unlock(&rq2->lock);
-
-	ma_local_bh_enable();
-}
 
 #if 0
 #ifdef CONFIG_NUMA
@@ -1745,14 +1490,7 @@ restart:
 	if (tbx_unlikely(!array->nr_active)) {
 		sched_debug("arrays switch\n");
 		/* XXX: todo: handle all rqs... */
-		/*
-		 * Switch the active and expired arrays.
-		 */
-		rq->active = rq->expired;
-		rq->expired = array;
-		array = rq->active;
-		rq->expired_timestamp = 0;
-//		rq->best_expired_prio = MAX_PRIO;
+		rq_arrays_switch(rq);
 	}
 
 	idx = ma_sched_find_first_bit(array->bitmap);
@@ -1775,12 +1513,11 @@ restart:
 //	}
 //	next->activated = 0;
 switch_tasks:
-	/* still wanting to go to sleep ? */
-	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		/* XXX: pas joli: */
-		enqueue_task(prev,prevrq->active);
-		deactivate_task(prev, prevrq);
-	}
+	/* still wanting to go to sleep ? (now that runqueues are locked, we can
+	 * safely deactivate ourselves */
+	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE))
+		/* yes, deactivate */
+		deactivate_running_task(prev,prevrq);
 
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
@@ -3026,42 +2763,6 @@ EXPORT_SYMBOL(kernel_flag);
 
 #endif /* 0 */
 
-static void init_rq(ma_runqueue_t *rq)
-{
-	int j, k;
-	ma_prio_array_t *array;
-
-	LOG_IN();
-
-	rq->active = rq->arrays;
-	rq->expired = rq->arrays + 1;
-//	rq->best_expired_prio = MAX_PRIO;
-
-	ma_spin_lock_init(&rq->lock);
-	INIT_LIST_HEAD(&rq->migration_queue);
-	atomic_set(&rq->nr_iowait, 0);
-	nr_running_init(rq);
-
-	for (j = 0; j < 2; j++) {
-		array = rq->arrays + j;
-		for (k = 0; k < MAX_PRIO; k++) {
-			INIT_LIST_HEAD(array->queue + k);
-			__ma_clear_bit(k, array->bitmap);
-		}
-		// delimiter for bitsearch
-		__ma_set_bit(MAX_PRIO, array->bitmap);
-	}
-
-#ifdef MA__LWPS
-	if (tbx_likely(rq != &ma_main_runqueue))
-		rq->father = &ma_main_runqueue;
-	else
-		rq->father = NULL;
-#endif
-
-	LOG_OUT();
-}
-
 static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
 	LOG_IN();
@@ -3078,8 +2779,7 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	marcel_task_t *p = ma_per_lwp(run_task,lwp);
 	/* Cette tâche est en train d'être exécutée */
 	rq=task_rq_lock(p);
-	__activate_task(p, rq);
-	dequeue_task(p,p->sched.internal.array);
+	activate_running_task(p, rq);
 	task_rq_unlock(rq);
 }
 
@@ -3108,6 +2808,8 @@ static struct ma_notifier_block linux_sched_nb = {
 
 void __init sched_init(void)
 {
+	LOG_IN();
+
 	linux_sched_lwp_notify(&linux_sched_nb,
 				(unsigned long)MA_LWP_UP_PREPARE,
 				(void *)(ma_lwp_t)LWP_SELF);
@@ -3133,6 +2835,7 @@ void __init sched_init(void)
 	 */
 //	atomic_inc(&init_mm.mm_count);
 //	enter_lazy_tlb(&init_mm, current);
+	LOG_OUT();
 }
 
 __ma_initfunc(sched_init, MA_INIT_LINUX_SCHED,

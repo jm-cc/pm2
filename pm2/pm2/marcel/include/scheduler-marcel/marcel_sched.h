@@ -36,6 +36,8 @@ typedef struct marcel_sched_internal_task marcel_sched_internal_task_t;
 #section marcel_structures
 #depend "pm2_list.h"
 #depend "scheduler/linux_sched.h[marcel_types]"
+#depend "scheduler/linux_runqueues.h[marcel_types]"
+#depend "scheduler/linux_runqueues.h[marcel_variables]"
 struct marcel_sched_internal_task {
 	struct list_head run_list;              /* List chainée des threads prêts */
 	//unsigned long lwps_runnable;             
@@ -56,7 +58,7 @@ inline static void
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
 					 const marcel_attr_t *attr);
 #section sched_marcel_inline
-#include <asm/bitops.h>
+#depend "asm/linux_bitops.h[marcel_inline]"
 inline static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
 					 const marcel_attr_t *attr)
@@ -81,7 +83,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #endif
 	t->sched.internal.sched_policy = attr->__schedpolicy;
 #warning RT_TASK à ajuster
-	t->sched.internal.prio=0;
+	t->sched.internal.prio=DEF_PRIO;
 	t->sched.internal.array=NULL;
 	LOG_OUT();
 }
@@ -195,7 +197,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 	/* On est encore dans le père. On doit démarrer le fils */
 #warning No auto start...
-	ma_preempt_disable();
 	if(
 		// On ne peut pas céder la main maintenant
 		(ma_in_atomic())
@@ -232,6 +233,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 					   NULL: /* On ne fait rien */
 					   new_task); /* insert asap */
 
+		ma_preempt_disable();
 		/* On sauve l'état du père sachant qu'on va y revenir
 		 * tout de suite 
 		 */
@@ -268,9 +270,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		ma_schedule_tail(MARCEL_SELF);
 		
 	} else {
-		// Pas de démarrage direct pour l'instant. Il faudra
-		// que le scheduler soit au courrant pour pouvoir le faire
-		RAISE(PROGRAM_ERROR);
+		ma_runqueue_t *rq;
 		// Cas le plus favorable (sur le plan de
 		// l'efficacité) : le père sauve son contexte et on
 		// démarre le fils immédiatement.
@@ -278,6 +278,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// ne change rien ici...
 
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
+			ma_preempt_enable(); // par rapport à celui ci-dessous
+			ma_schedule_tail(MARCEL_SELF);
 			MA_THR_RESTARTED(cur, "Father Preemption");
 			LOG_OUT();
 			return 0;
@@ -288,12 +290,28 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		PROF_IN_EXT(newborn_thread);
 		
 		new_task->father->child = NULL;
-		
+
 		//TODO:SET_STATE_RUNNING(NULL, new_task, GET_LWP(new_task));
-		ma_wake_up_thread(new_task);
-		
-		marcel_ctx_set_new_stack(new_task, new_task->initial_sp -
+		ma_preempt_disable();
+
+		//ma_wake_up_thread(new_task);
+		rq = ma_task_init_rq(new_task);
+		MA_BUG_ON(!rq);
+		ma_spin_lock_softirq(&rq->lock);
+		ma_set_task_lwp(new_task, LWP_SELF);
+		activate_running_task(new_task,rq);
+		ma_spin_unlock_softirq(&rq->lock);
+
+		rq = task_rq_lock(MARCEL_SELF);
+		enqueue_task(MARCEL_SELF, rq->active);
+#ifdef MA__LWPS
+		__ma_get_lwp_var(prev_rq)=rq;
+#endif
+		marcel_ctx_set_new_stack(new_task,
+					 new_task->initial_sp -
 					 (base_stack-get_sp()));
+		rq = ma_prev_rq();
+		task_rq_unlock(rq);
 		//SET_STATE_READY(marcel_self()->father);
 		
 		MTRACE("Preemption", marcel_self());
@@ -338,6 +356,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
+#ifdef MA__LWPS
+MA_DECLARE_PER_LWP(ma_runqueue_t *, prev_rq);
+#endif
 
 #section marcel_functions
 

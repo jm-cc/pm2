@@ -684,6 +684,8 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
       interface = mad_driver->interface;
       interface->driver_init(mad_driver);
 
+      mad_ntbx_send_int(client, 1);
+
       mad_adapter_htable = mad_driver->adapter_htable;
 
       pc                 = dir_driver->pc;

@@ -226,7 +226,7 @@ done
 _prescript_args=""
 
 # Variables automatiquement exportées
-PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}DISPLAY:PM2_LD_LIBRARY_PATH:PM2_FLAVOR
+PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}PM2_LD_LIBRARY_PATH:PM2_FLAVOR
 if [ "$PM2_SCRIPT_DEBUG" = on ]; then
     export PM2_SCRIPT_DEBUG
     _prescript_args="$_prescript_args --script-debug"
@@ -306,11 +306,11 @@ case $_PM2CONFIG_LOADER in
 esac
 
 # Variable DISPLAY
-case "_${DISPLAY}" in
-    _) DISPLAY=`uname -n`:0.0 ;;
-    _:*) DISPLAY=`uname -n`${DISPLAY} ;;
-    *) ;;
-esac
+#case "_${DISPLAY}" in
+#    _) DISPLAY=`uname -n`:0.0 ;;
+#    _:*) DISPLAY=`uname -n`${DISPLAY} ;;
+#    *) ;;
+#esac
 
 # Arguments à passer à pm2-pre-script.sh
 

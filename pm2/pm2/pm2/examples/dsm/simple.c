@@ -95,13 +95,6 @@ int pm2_main(int argc, char **argv)
 {
   int i, j;
 
-  if (argc != 2)
-    {
-      fprintf(stderr, "Usage: simple <number of threads per node>\n");
-      exit(1);
-    }
-
-
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);
 
   //pm2_set_dsm_protocol(&dsmlib_migrate_thread_prot);
@@ -112,6 +105,18 @@ int pm2_main(int argc, char **argv)
   dsm_mutex_init(&L, NULL);
 
   pm2_init(&argc, argv);
+
+  if (argc != 2)
+    {
+      fprintf(stderr, "argc = %d\n", argc);
+      while (--argc)
+	{
+	  fprintf(stderr, "%d, %s\n", argc, argv[argc]);
+	}
+      
+      fprintf(stderr, "Usage: simple <number of threads per node>\n");
+      exit(1);
+    }
 
   dsm_display_page_ownership();
 

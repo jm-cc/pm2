@@ -163,6 +163,74 @@ mad_dir_node_get(p_mad_madeleine_t madeleine)
 }
 
 static
+char *
+mad_dir_build_reference_name(const char *type, const char *name)
+{
+  char *reference_name = NULL;
+
+  reference_name = TBX_MALLOC(strlen(type) + strlen(name) + 2);
+  sprintf(reference_name, "%s:%s", type, name);
+
+  return reference_name;
+}
+
+static
+void
+mad_dir_adapter_get(p_tbx_htable_t adapter_htable,
+                    p_tbx_slist_t  adapter_slist)
+{
+  int adapter_number = 0;
+  adapter_number = mad_leonie_receive_int();
+
+  while (adapter_number--)
+    {
+      p_mad_dir_adapter_t adapter = NULL;
+
+      adapter            = mad_dir_adapter_cons();
+      adapter->name      = mad_leonie_receive_string();
+      adapter->selector  = mad_leonie_receive_string();
+      TRACE_STR("- name", adapter->name);
+
+      adapter->id = tbx_slist_get_length(adapter_slist);
+      tbx_slist_append(adapter_slist, adapter);
+      tbx_htable_add(adapter_htable, adapter->name, adapter);
+    }
+}
+
+static
+tbx_bool_t
+mad_dir_driver_process_get(p_tbx_darray_t      process_darray,
+                           p_mad_dir_driver_t  dir_driver,
+                           char               *driver_reference_name)
+{
+  p_ntbx_process_t                    process            = NULL;
+  p_mad_dir_driver_process_specific_t pi_specific        = NULL;
+  ntbx_process_grank_t                driver_global_rank =   -1;
+  ntbx_process_lrank_t                driver_local_rank  =   -1;
+  p_tbx_slist_t                       adapter_slist      = NULL;
+  p_tbx_htable_t                      adapter_htable     = NULL;
+
+  driver_global_rank = mad_leonie_receive_int();
+  if (driver_global_rank == -1)
+    return tbx_false;
+
+  driver_local_rank = mad_leonie_receive_int();
+  process = tbx_darray_get(process_darray, driver_global_rank);
+
+  pi_specific    = mad_dir_driver_process_specific_cons();
+  adapter_slist  = pi_specific->adapter_slist;
+  adapter_htable = pi_specific->adapter_htable;
+
+  TRACE("Adapters for local process %d:", driver_local_rank);
+  mad_dir_adapter_get(adapter_htable, adapter_slist);
+
+  ntbx_pc_add(dir_driver->pc, process, driver_local_rank,
+              dir_driver, driver_reference_name, pi_specific);
+
+  return tbx_true;
+}
+
+static
 void
 mad_dir_driver_get(p_mad_madeleine_t madeleine)
 {
@@ -195,60 +263,94 @@ mad_dir_driver_get(p_mad_madeleine_t madeleine)
       TRACE_STR("Driver name", dir_driver->name);
 
       driver_reference_name =
-	TBX_MALLOC(strlen("driver") + strlen(dir_driver->name) + 2);
-      sprintf(driver_reference_name, "%s:%s", "driver", dir_driver->name);
+        mad_dir_build_reference_name("driver", dir_driver->name);
 
       tbx_htable_add(driver_htable, dir_driver->name, dir_driver);
       dir_driver->id = tbx_slist_get_length(driver_slist);
       tbx_slist_append(driver_slist, dir_driver);
 
-      while (1)
-	{
-	  p_ntbx_process_t                    process            = NULL;
-	  p_mad_dir_driver_process_specific_t pi_specific        = NULL;
-	  ntbx_process_grank_t                driver_global_rank =   -1;
-	  ntbx_process_lrank_t                driver_local_rank  =   -1;
-	  int                                 adapter_number     =    0;
-	  p_tbx_slist_t                       adapter_slist      = NULL;
-	  p_tbx_htable_t                      adapter_htable     = NULL;
-
-	  driver_global_rank = mad_leonie_receive_int();
-	  if (driver_global_rank == -1)
-	    break;
-
-	  driver_local_rank = mad_leonie_receive_int();
-	  process = tbx_darray_get(process_darray, driver_global_rank);
-
-	  adapter_number = mad_leonie_receive_int();
-
-	  pi_specific    = mad_dir_driver_process_specific_cons();
-	  adapter_slist  = pi_specific->adapter_slist;
-	  adapter_htable = pi_specific->adapter_htable;
-
-	  TRACE("Adapters for local process %d:", driver_local_rank);
-	  while (adapter_number--)
-	    {
-	      p_mad_dir_adapter_t adapter = NULL;
-
-	      adapter            = mad_dir_adapter_cons();
-	      adapter->name      = mad_leonie_receive_string();
-	      adapter->selector  = mad_leonie_receive_string();
-	      TRACE_STR("- name", adapter->name);
-
-	      adapter->id = tbx_slist_get_length(adapter_slist);
-	      tbx_slist_append(adapter_slist, adapter);
-	      tbx_htable_add(adapter_htable, adapter->name, adapter);
-	    }
-
-	  ntbx_pc_add(dir_driver->pc, process, driver_local_rank,
-		      dir_driver, dir_driver->name, pi_specific);
-	}
+      while (mad_dir_driver_process_get(process_darray,
+                                        dir_driver,
+                                        driver_reference_name))
+        ;
 
       TBX_FREE(driver_reference_name);
     }
 
   mad_dir_sync("end{drivers}");
   LOG_OUT();
+}
+
+static
+tbx_bool_t
+mad_dir_channel_get_adapters(p_mad_dir_channel_t  dir_channel,
+                             p_tbx_darray_t       process_darray,
+                             char                *channel_reference_name)
+{
+  p_ntbx_process_t                     process             = NULL;
+  p_mad_dir_channel_process_specific_t cp_specific         = NULL;
+  ntbx_process_grank_t                 channel_global_rank =   -1;
+  ntbx_process_lrank_t                 channel_local_rank  =   -1;
+
+  channel_global_rank = mad_leonie_receive_int();
+  if (channel_global_rank == -1)
+    return tbx_false;
+
+  channel_local_rank = mad_leonie_receive_int();
+  process = tbx_darray_get(process_darray, channel_global_rank);
+
+  cp_specific = mad_dir_channel_process_specific_cons();
+  cp_specific->adapter_name = mad_leonie_receive_string();
+  TRACE("local process %d: %s", channel_local_rank,
+        cp_specific->adapter_name);
+
+  ntbx_pc_add(dir_channel->pc, process, channel_local_rank,
+              dir_channel, channel_reference_name, cp_specific);
+
+  return tbx_true;
+}
+
+static
+p_ntbx_topology_table_t
+mad_dir_channel_ttable_build(p_ntbx_process_container_t pc)
+{
+  p_ntbx_topology_table_t ttable     = NULL;
+  ntbx_process_lrank_t    l_rank_src =   -1;
+
+  ttable =
+    ntbx_topology_table_init(pc, ntbx_topology_empty, NULL);
+
+  if (ntbx_pc_first_local_rank(pc, &l_rank_src))
+    {
+      do
+        {
+          ntbx_process_lrank_t l_rank_dst = -1;
+
+          ntbx_pc_first_local_rank(pc, &l_rank_dst);
+          do
+            {
+              int value = 0;
+
+              value = mad_leonie_receive_int();
+              if (value)
+                {
+                  ntbx_topology_table_set(ttable,
+                                          l_rank_src,
+                                          l_rank_dst);
+                  TRACE_CHAR('+');
+                }
+              else
+                {
+                  TRACE_CHAR(' ');
+                }
+            }
+          while (ntbx_pc_next_local_rank(pc, &l_rank_dst));
+          TRACE_CHAR('\n');
+        }
+      while (ntbx_pc_next_local_rank(pc, &l_rank_src));
+    }
+
+  return ttable;
 }
 
 static
@@ -280,21 +382,16 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
 
   while (number--)
     {
-      p_mad_dir_channel_t         dir_channel            = NULL;
-      char                       *channel_reference_name = NULL;
-      char                       *driver_name            = NULL;
-      p_ntbx_process_container_t  pc                     = NULL;
-      p_ntbx_topology_table_t     ttable                 = NULL;
-      ntbx_process_lrank_t        l_rank_src             =   -1;
+      p_mad_dir_channel_t  dir_channel            = NULL;
+      char                *channel_reference_name = NULL;
+      char                *driver_name            = NULL;
 
       dir_channel       = mad_dir_channel_cons();
-      pc                = dir_channel->pc;
       dir_channel->name = mad_leonie_receive_string();
       TRACE_STR("Channel name", dir_channel->name);
 
       channel_reference_name =
-	TBX_MALLOC(strlen("channel") + strlen(dir_channel->name) + 2);
-      sprintf(channel_reference_name, "%s:%s", "channel", dir_channel->name);
+        mad_dir_build_reference_name("channel", dir_channel->name);
 
       dir_channel->not_private = mad_leonie_receive_unsigned_int();
       if (dir_channel->not_private)
@@ -315,63 +412,10 @@ mad_dir_channel_get(p_mad_madeleine_t madeleine)
       tbx_slist_append(channel_slist, dir_channel);
 
       TRACE("Adapters:");
-      while (1)
-	{
-	  p_ntbx_process_t                     process             = NULL;
-	  p_mad_dir_channel_process_specific_t cp_specific         = NULL;
-	  ntbx_process_grank_t                 channel_global_rank =   -1;
-	  ntbx_process_lrank_t                 channel_local_rank  =   -1;
+      while (mad_dir_channel_get_adapters(dir_channel, process_darray, channel_reference_name))
+	;
 
-	  channel_global_rank = mad_leonie_receive_int();
-	  if (channel_global_rank == -1)
-	    break;
-
-	  channel_local_rank = mad_leonie_receive_int();
-	  process = tbx_darray_get(process_darray, channel_global_rank);
-
-	  cp_specific = mad_dir_channel_process_specific_cons();
-	  cp_specific->adapter_name = mad_leonie_receive_string();
-	  TRACE("local process %d: %s", channel_local_rank,
-	       cp_specific->adapter_name);
-
-	  ntbx_pc_add(pc, process, channel_local_rank,
-		      dir_channel, dir_channel->name, cp_specific);
-	}
-
-      ttable =
-	ntbx_topology_table_init(pc, ntbx_topology_empty, NULL);
-
-      if (ntbx_pc_first_local_rank(pc, &l_rank_src))
-	{
-	  do
-	    {
-	      ntbx_process_lrank_t l_rank_dst = -1;
-
-	      ntbx_pc_first_local_rank(pc, &l_rank_dst);
-	      do
-		{
-		  int value = 0;
-
-		  value = mad_leonie_receive_int();
-		  if (value)
-		    {
-		      ntbx_topology_table_set(ttable,
-					      l_rank_src,
-					      l_rank_dst);
-		      TRACE_CHAR('+');
-		    }
-		  else
-		    {
-		      TRACE_CHAR(' ');
-		    }
-		}
-	      while (ntbx_pc_next_local_rank(pc, &l_rank_dst));
-	      TRACE_CHAR('\n');
-	    }
-	  while (ntbx_pc_next_local_rank(pc, &l_rank_src));
-	}
-
-      dir_channel->ttable = ttable;
+      dir_channel->ttable = mad_dir_channel_ttable_build(dir_channel->pc);
       TBX_FREE(channel_reference_name);
     }
 
@@ -407,23 +451,15 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
   while (number--)
     {
       p_mad_dir_fchannel_t  dir_fchannel            = NULL;
-      char                 *fchannel_reference_name = NULL;
 
       dir_fchannel               = mad_dir_fchannel_cons();
       dir_fchannel->name         = mad_leonie_receive_string();
       dir_fchannel->channel_name = mad_leonie_receive_string();
       TRACE_STR("Forwarding channel name", dir_fchannel->name);
 
-      fchannel_reference_name =
-	TBX_MALLOC(strlen("fchannel") + strlen(dir_fchannel->name) + 2);
-
-      sprintf(fchannel_reference_name,
-	      "%s:%s", "fchannel", dir_fchannel->name);
-
       tbx_htable_add(fchannel_htable, dir_fchannel->name, dir_fchannel);
       dir_fchannel->id = tbx_slist_get_length(fchannel_slist);
       tbx_slist_append(fchannel_slist, dir_fchannel);
-      TBX_FREE(fchannel_reference_name);
     }
 
   mad_dir_sync("end{fchannels}");
@@ -432,14 +468,137 @@ mad_dir_fchannel_get(p_mad_madeleine_t madeleine)
 
 static
 void
+mad_dir_vchannel_receive_channel_list(p_mad_dir_vchannel_t dir_vchannel,
+                                      p_tbx_htable_t       channel_htable)
+{
+  p_tbx_slist_t dir_channel_slist     = NULL;
+  int           dir_channel_slist_len =    0;
+
+  dir_channel_slist     = dir_vchannel->dir_channel_slist;
+  dir_channel_slist_len = mad_leonie_receive_int();
+
+  TRACE("Supporting channels:");
+  do
+    {
+      p_mad_dir_channel_t  dir_channel      = NULL;
+      char                *dir_channel_name = NULL;
+
+      dir_channel_name = mad_leonie_receive_string();
+      dir_channel = tbx_htable_get(channel_htable, dir_channel_name);
+      if (!dir_channel)
+        FAILURE("channel not found");
+
+      TRACE_STR("- Channel", dir_channel->name);
+
+      tbx_slist_append(dir_channel_slist, dir_channel);
+      TBX_FREE(dir_channel_name);
+    }
+  while (--dir_channel_slist_len);
+}
+
+static
+void
+mad_dir_vchannel_receive_fchannel_list(p_mad_dir_vchannel_t dir_vchannel,
+                                      p_tbx_htable_t       fchannel_htable)
+{
+  p_tbx_slist_t dir_fchannel_slist     = NULL;
+  int           dir_fchannel_slist_len =    0;
+
+  dir_fchannel_slist     = dir_vchannel->dir_fchannel_slist;
+  dir_fchannel_slist_len = mad_leonie_receive_int();
+
+  TRACE("Supporting forwarding channels:");
+  do
+    {
+      p_mad_dir_fchannel_t  dir_fchannel      = NULL;
+      char                 *dir_fchannel_name = NULL;
+
+      dir_fchannel_name = mad_leonie_receive_string();
+      dir_fchannel = tbx_htable_get(fchannel_htable, dir_fchannel_name);
+      if (!dir_fchannel)
+        FAILURE("channel not found");
+
+      TRACE_STR("- Forwarding channel", dir_fchannel->name);
+
+      tbx_slist_append(dir_fchannel_slist, dir_fchannel);
+      TBX_FREE(dir_fchannel_name);
+    }
+  while (--dir_fchannel_slist_len);
+}
+
+static
+tbx_bool_t
+mad_dir_vchannel_get_routing_table(p_mad_directory_t     dir,
+                                   p_mad_dir_vchannel_t  dir_vchannel,
+                                   char                 *vchannel_reference_name) {
+  p_tbx_darray_t                        process_darray  = NULL;
+  p_tbx_htable_t                        channel_htable  = NULL;
+  p_tbx_htable_t                        fchannel_htable = NULL;
+  p_ntbx_process_t                      process         = NULL;
+  ntbx_process_grank_t                  g_rank_src      =   -1;
+  p_mad_dir_vchannel_process_specific_t pi_specific     = NULL;
+  p_ntbx_process_container_t            ppc             = NULL;
+
+  process_darray  = dir->process_darray;
+  channel_htable  = dir->channel_htable;
+  fchannel_htable = dir->fchannel_htable;
+
+  g_rank_src = mad_leonie_receive_int();
+  if (g_rank_src == -1)
+    return tbx_false;
+
+  process = tbx_darray_get(process_darray, g_rank_src);
+
+  pi_specific = mad_dir_vchannel_process_specific_cons();
+  ppc = pi_specific->pc;
+
+  while (1)
+    {
+      p_ntbx_process_t                            pprocess   = NULL;
+      ntbx_process_grank_t                        g_rank_dst =   -1;
+      p_mad_dir_vchannel_process_routing_table_t  rtable     = NULL;
+      char                                       *ref_name   = NULL;
+
+      g_rank_dst = mad_leonie_receive_int();
+      if (g_rank_dst == -1)
+        break;
+
+      pprocess = tbx_darray_get(process_darray, g_rank_dst);
+
+      rtable = mad_dir_vchannel_process_routing_table_cons();
+
+      rtable->channel_name     = mad_leonie_receive_string();
+      rtable->destination_rank = mad_leonie_receive_int();
+      TRACE("Process %d to %d: using channel %s through process %d",
+            g_rank_src, g_rank_dst, rtable->channel_name,
+            rtable->destination_rank);
+
+      {
+        size_t len = 0;
+
+        len = strlen(dir_vchannel->name) + 8;
+        ref_name = malloc(len);
+
+        sprintf(ref_name, "%s:%d", dir_vchannel->name,
+                g_rank_src);
+      }
+
+      ntbx_pc_add(ppc, pprocess, g_rank_dst, process,
+                  ref_name, rtable);
+    }
+
+  ntbx_pc_add(dir_vchannel->pc, process, g_rank_src,
+              dir_vchannel, vchannel_reference_name, pi_specific);
+
+  return tbx_true;
+}
+
+static
+void
 mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
 {
   p_mad_directory_t dir                      = NULL;
   p_tbx_slist_t     mad_public_channel_slist = NULL;
-  p_tbx_darray_t    process_darray           = NULL;
-  p_tbx_htable_t    driver_htable            = NULL;
-  p_tbx_htable_t    channel_htable           = NULL;
-  p_tbx_htable_t    fchannel_htable          = NULL;
   p_tbx_htable_t    vchannel_htable          = NULL;
   p_tbx_slist_t     vchannel_slist           = NULL;
   int               number                   =    0;
@@ -447,10 +606,6 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
   LOG_IN();
   dir                      = madeleine->dir;
   mad_public_channel_slist = madeleine->public_channel_slist;
-  process_darray           = dir->process_darray;
-  driver_htable            = dir->driver_htable;
-  channel_htable           = dir->channel_htable;
-  fchannel_htable          = dir->fchannel_htable;
   vchannel_htable          = dir->vchannel_htable;
   vchannel_slist  = dir->vchannel_slist;
 
@@ -465,10 +620,6 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
     {
       p_mad_dir_vchannel_t  dir_vchannel            = NULL;
       char                 *vchannel_reference_name = NULL;
-      p_tbx_slist_t         dir_channel_slist       = NULL;
-      int                   dir_channel_slist_len   =    0;
-      p_tbx_slist_t         dir_fchannel_slist      = NULL;
-      int                   dir_fchannel_slist_len  =    0;
 
       dir_vchannel = mad_dir_vchannel_cons();
       dir_vchannel->name = mad_leonie_receive_string();
@@ -477,112 +628,20 @@ mad_dir_vchannel_get(p_mad_madeleine_t madeleine)
       tbx_slist_append(mad_public_channel_slist, dir_vchannel->name);
 
       vchannel_reference_name =
-	TBX_MALLOC(strlen("vchannel") + strlen(dir_vchannel->name) + 2);
-      sprintf(vchannel_reference_name, "%s:%s", "vchannel", dir_vchannel->name);
+        mad_dir_build_reference_name("vchannel", dir_vchannel->name);
 
-      dir_channel_slist     = dir_vchannel->dir_channel_slist;
-      dir_channel_slist_len = mad_leonie_receive_int();
 
-      TRACE("Supporting channels:");
-      do
-	{
-	  p_mad_dir_channel_t  dir_channel      = NULL;
-	  char                *dir_channel_name = NULL;
-
-	  dir_channel_name = mad_leonie_receive_string();
-	  dir_channel = tbx_htable_get(channel_htable,
-				       dir_channel_name);
-	  if (!dir_channel)
-	    FAILURE("channel not found");
-
-	  TRACE_STR("- Channel", dir_channel->name);
-
-	  tbx_slist_append(dir_channel_slist, dir_channel);
-	  TBX_FREE(dir_channel_name);
-	}
-      while (--dir_channel_slist_len);
-
-      dir_fchannel_slist     = dir_vchannel->dir_fchannel_slist;
-      dir_fchannel_slist_len = mad_leonie_receive_int();
-
-      TRACE("Supporting forwarding channels:");
-      do
-	{
-	  p_mad_dir_fchannel_t  dir_fchannel      = NULL;
-	  char                 *dir_fchannel_name = NULL;
-
-	  dir_fchannel_name = mad_leonie_receive_string();
-	  dir_fchannel = tbx_htable_get(fchannel_htable,
-				       dir_fchannel_name);
-	  if (!dir_fchannel)
-	    FAILURE("channel not found");
-
-	  TRACE_STR("- Forwarding channel", dir_fchannel->name);
-
-	  tbx_slist_append(dir_fchannel_slist, dir_fchannel);
-	  TBX_FREE(dir_fchannel_name);
-	}
-      while (--dir_fchannel_slist_len);
+      mad_dir_vchannel_receive_channel_list(dir_vchannel, dir->channel_htable);
+      mad_dir_vchannel_receive_fchannel_list(dir_vchannel, dir->fchannel_htable);
 
       tbx_htable_add(vchannel_htable, dir_vchannel->name, dir_vchannel);
       dir_vchannel->id = tbx_slist_get_length(vchannel_slist);
       tbx_slist_append(vchannel_slist, dir_vchannel);
 
       TRACE("Virtual channel routing table");
-      while (1)
-	{
-	  p_ntbx_process_t                      process     = NULL;
-	  ntbx_process_grank_t                  g_rank_src  =   -1;
-	  p_mad_dir_vchannel_process_specific_t pi_specific = NULL;
-	  p_ntbx_process_container_t            ppc         = NULL;
-
-	  g_rank_src = mad_leonie_receive_int();
-	  if (g_rank_src == -1)
-	    break;
-
-	  process = tbx_darray_get(process_darray, g_rank_src);
-
-	  pi_specific = mad_dir_vchannel_process_specific_cons();
-	  ppc = pi_specific->pc;
-
-	  while (1)
-	    {
-	      p_ntbx_process_t                            pprocess   = NULL;
-	      ntbx_process_grank_t                        g_rank_dst =   -1;
-	      p_mad_dir_vchannel_process_routing_table_t  rtable     = NULL;
-	      char                                       *ref_name   = NULL;
-
-	      g_rank_dst = mad_leonie_receive_int();
-	      if (g_rank_dst == -1)
-		break;
-
-	      pprocess = tbx_darray_get(process_darray, g_rank_dst);
-
-	      rtable = mad_dir_vchannel_process_routing_table_cons();
-
-	      rtable->channel_name     = mad_leonie_receive_string();
-	      rtable->destination_rank = mad_leonie_receive_int();
-	      TRACE("Process %d to %d: using channel %s through process %d",
-		   g_rank_src, g_rank_dst, rtable->channel_name,
-		   rtable->destination_rank);
-
-	      {
-		size_t len = 0;
-
-		len = strlen(dir_vchannel->name) + 8;
-		ref_name = malloc(len);
-
-		sprintf(ref_name, "%s:%d", dir_vchannel->name,
-			g_rank_src);
-	      }
-
-	      ntbx_pc_add(ppc, pprocess, g_rank_dst, process,
-			  ref_name, rtable);
-	    }
-
-	  ntbx_pc_add(dir_vchannel->pc, process, g_rank_src,
-		      dir_vchannel, dir_vchannel->name, pi_specific);
-	}
+      while (mad_dir_vchannel_get_routing_table(dir, dir_vchannel,
+                                                vchannel_reference_name))
+	;
 
       TBX_FREE(vchannel_reference_name);
     }
@@ -636,8 +695,7 @@ mad_dir_xchannel_get(p_mad_madeleine_t madeleine)
       tbx_slist_append(mad_public_channel_slist, dir_xchannel->name);
 
       xchannel_reference_name =
-	TBX_MALLOC(strlen("xchannel") + strlen(dir_xchannel->name) + 2);
-      sprintf(xchannel_reference_name, "%s:%s", "xchannel", dir_xchannel->name);
+        mad_dir_build_reference_name("xchannel", dir_xchannel->name);
 
       dir_channel_slist     = dir_xchannel->dir_channel_slist;
       dir_channel_slist_len = mad_leonie_receive_int();

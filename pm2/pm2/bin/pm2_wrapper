@@ -3,10 +3,14 @@
 #
 # Wrapper for pm2_xload
 
+prog=$1
+shift
+
 if [ -n "${LEO_LD_PRELOAD}" ]; then
-    env "LD_PRELOAD=${LEO_LD_PRELOAD}" $1 "$@"
+    env "LD_PRELOAD=${LEO_LD_PRELOAD}" $prog "$@"
 else
-    $1 "$@"
+#    echo $prog "$@"
+    $prog "$@"
 fi
 
 echo "process terminated with code $?"

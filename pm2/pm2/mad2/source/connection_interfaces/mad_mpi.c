@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.16  2000/08/29 13:27:10  rnamyst
+Added the fantastic ezflavor tool ;-) + some minor modifs to the mad II/bip driver
+
 Revision 1.15  2000/06/09 08:46:25  oaumage
 - Correction d'un bug d'allocation d'une structure de taille 0
 
@@ -363,7 +366,10 @@ mad_mpi_driver_init(p_mad_driver_t driver)
 #ifdef MARCEL
   mad_mpi_driver_specific = driver_specific;
   mad_mpi_driver_specific->poll_id =
-    marcel_pollid_create(mpi_io_group, mpi_io_poll, NULL, 1);
+    marcel_pollid_create(mpi_io_group,
+			 mpi_io_poll,
+			 NULL,
+			 MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD);
 #endif /* MARCEL */
   driver->name = TBX_MALLOC(4);
   CTRL_ALLOC(driver->name);

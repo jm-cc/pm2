@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_mpi.c,v $
+Revision 1.14  2000/05/17 14:34:42  oaumage
+- correction d'une erreur au niveau de MPI_Type_free
+
 Revision 1.13  2000/05/16 09:05:18  rnamyst
 Fast Polling added into Marcel + make xconfig
 
@@ -690,7 +693,7 @@ mad_mpi_send_buffer_group(p_mad_link_t           lnk,
 		   channel_specific->communicator);
 #endif /* MARCEL */
 	  TBX_LOCK_SHARED(mad_mpi_driver_specific);
-	  MPI_Type_TBX_FREE(&hindexed);
+	  MPI_Type_free(&hindexed);
 	  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
 	}
     }
@@ -769,7 +772,7 @@ mad_mpi_receive_sub_buffer_group(p_mad_link_t           lnk,
 		   &status);	  
 #endif /* MARCEL */
 	  TBX_LOCK_SHARED(mad_mpi_driver_specific);
-	  MPI_Type_TBX_FREE(&hindexed);
+	  MPI_Type_free(&hindexed);
 	  TBX_UNLOCK_SHARED(mad_mpi_driver_specific);
 	}
     }

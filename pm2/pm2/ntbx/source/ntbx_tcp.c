@@ -1286,6 +1286,7 @@ ntbx_btcp_read_string(p_ntbx_client_t   client,
   ntbx_pack_buffer_t pack_buffer;
 
   LOG_IN();
+  memset(&pack_buffer, 0, sizeof(ntbx_pack_buffer_t));
   *string = NULL;
 
   status = ntbx_btcp_read_pack_buffer(client, &pack_buffer);
@@ -1315,6 +1316,7 @@ ntbx_btcp_write_string(p_ntbx_client_t  client,
   ntbx_pack_buffer_t pack_buffer;
 
   LOG_IN();
+  memset(&pack_buffer, 0, sizeof(ntbx_pack_buffer_t));
   len = strlen(string) + 1;
   ntbx_pack_int(len, &pack_buffer);
   status = ntbx_btcp_write_pack_buffer(client, &pack_buffer);

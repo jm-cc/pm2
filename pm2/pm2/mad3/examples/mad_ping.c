@@ -667,7 +667,8 @@ tbx_main(int argc, char **argv)
 
   DISP("Exiting");  
   
-  mad_exit(madeleine);
+  // mad_exit(madeleine);
+  common_exit(NULL);
 
   return 0;
 }

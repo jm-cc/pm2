@@ -18,9 +18,8 @@
 #ifndef FKT_PM2_IS_DEF
 #define FKT_PM2_IS_DEF
 
-extern void fkt_start_time(void);
-extern void fkt_stop_time(void);
-
-extern void fkt_record(char *file);
+extern void fkt_record(char *file, unsigned int initmask, int powpages, int dma);
+extern void fkt_stop(void);
+extern void fkt_keychange(int how, unsigned int keymask);
 
 #endif

@@ -24,7 +24,7 @@
 
 /*	Macros for use from within the kernel */
 
-#if defined(CONFIG_FUT) || defined(CONFIG_FUT_TIME_ONLY)
+#if defined(CONFIG_FUT)
 
 #define FUT_ALWAYS_PROBE0(KEYMASK,CODE)	do { \
 								if( KEYMASK & fut_active ) \
@@ -63,6 +63,17 @@
 								(unsigned int)(P5) ); \
 								} while(0)
 
+#else /* CONFIG_FUT */
+
+#define FKT_ALWAYS_PROBE0(MASK,CODE)				do {} while (0)
+#define FKT_ALWAYS_PROBE1(MASK,CODE,P1)				do {} while (0)
+#define FKT_ALWAYS_PROBE2(MASK,CODE,P1,P2)			do {} while (0)
+#define FKT_ALWAYS_PROBE3(MASK,CODE,P1,P2,P3)			do {} while (0)
+#define FKT_ALWAYS_PROBE4(MASK,CODE,P1,P2,P3,P4)		do {} while (0)
+#define FKT_ALWAYS_PROBE5(MASK,CODE,P1,P2,P3,P4,P5)		do {} while (0)
+
+#endif
+
 #if defined(CONFIG_FUT_TIME_ONLY)
 
 #define FUT_PROBE0(KEYMASK,CODE)				FUT_ALWAYS_PROBE0(KEYMASK,CODE)
@@ -93,34 +104,6 @@
 
 #endif	/* CONFIG_FUT_TIME_ONLY */
 
-#else	/* CONFIG_FUT or CONFIG_FUT_TIME_ONLY */
-
-#define FUT_ALWAYS_PROBE0(KEYMASK,CODE)					do {} while(0)
-
-#define FUT_ALWAYS_PROBE1(KEYMASK,CODE,P1)				do {} while(0)
-
-#define FUT_ALWAYS_PROBE2(KEYMASK,CODE,P1,P2)			do {} while(0)
-
-#define FUT_ALWAYS_PROBE3(KEYMASK,CODE,P1,P2,P3)		do {} while(0)
-
-#define FUT_ALWAYS_PROBE4(KEYMASK,CODE,P1,P2,P3,P4)		do {} while(0)
-
-#define FUT_ALWAYS_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5)	do {} while(0)
-
-#define FUT_PROBE0(KEYMASK,CODE)						do {} while(0)
-
-#define FUT_PROBE1(KEYMASK,CODE,P1)						do {} while(0)
-
-#define FUT_PROBE2(KEYMASK,CODE,P1,P2)					do {} while(0)
-
-#define FUT_PROBE3(KEYMASK,CODE,P1,P2,P3)				do {} while(0)
-
-#define FUT_PROBE4(KEYMASK,CODE,P1,P2,P3,P4)			do {} while(0)
-
-#define FUT_PROBE5(KEYMASK,CODE,P1,P2,P3,P4,P5)			do {} while(0)
-
-#endif	/* CONFIG_FUT or CONFIG_FUT_TIME_ONLY */
-
 
 /*	"how" parameter values, analagous to "how" parameters to sigprocmask */
 #define FUT_DISABLE		0		/* for disabling probes with 1's in keymask */
@@ -128,7 +111,7 @@
 #define FUT_SETMASK		2		/* for enabling 1's, disabling 0's in keymask */
 
 /*	Simple keymasks */
-#define FUT_KEYMASK0				0x00000001	/* IRQs, exceptions, syscalls */
+#define FUT_KEYMASK0				0x00000001
 #define FUT_KEYMASK1				0x00000002
 #define FUT_KEYMASK2				0x00000004
 #define FUT_KEYMASK3				0x00000008
@@ -162,23 +145,34 @@
 #define FUT_KEYMASK31				0x80000000
 #define FUT_KEYMASKALL				0xffffffff
 
+#define FUT_GCC_INSTRUMENT_KEYMASK	FUT_KEYMASK29
+
 
 /*	Fixed parameters of the fut coding scheme */
 #define FUT_GENERIC_EXIT_OFFSET		0x100	/* exit this much above entry */
 
+#define FUT_UNPAIRED_LIMIT_CODE		0xf00000	/* all unpaired codes above this limit */
+
 /*	Codes for fut use */
-#define FUT_SETUP_CODE				0x210
-#define FUT_KEYCHANGE_CODE			0x211
-#define FUT_RESET_CODE				0x212
-#define FUT_CALIBRATE0_CODE			0x220
-#define FUT_CALIBRATE1_CODE			0x221
-#define FUT_CALIBRATE2_CODE			0x222
-#define FUT_SWITCH_TO_CODE			0x230
-#define FUT_NEW_LWP_CODE                        0x231
-#define FUT_THREAD_BIRTH_CODE                   0x232
-#define FUT_THREAD_DEATH_CODE                   0x233
-#define FUT_MAIN_ENTRY_CODE			0x240
-#define FUT_MAIN_EXIT_CODE			0x340
+#define FUT_SETUP_CODE				0xffffff
+#define FUT_KEYCHANGE_CODE			0xfffffe
+#define FUT_RESET_CODE				0xfffffd
+#define FUT_CALIBRATE0_CODE			0xfffffc
+#define FUT_CALIBRATE1_CODE			0xfffffb
+#define FUT_CALIBRATE2_CODE			0xfffffa
+
+#define FUT_NEW_LWP_CODE                        0xfffff9
+#define FUT_THREAD_BIRTH_CODE                   0xfffff8
+#define FUT_THREAD_DEATH_CODE                   0xfffff7
+
+#define FUT_SWITCH_TO_CODE			0x31a
+
+#define FUT_MAIN_ENTRY_CODE			0x301
+#define FUT_MAIN_EXIT_CODE			0x401
+
+/* -finstrument-functions code */
+#define FUT_GCC_INSTRUMENT_ENTRY_CODE	0x320
+#define FUT_GCC_INSTRUMENT_EXIT_CODE	0x420
 
 /*	Codes for use with fut items (ifdefs for Raymond) */
 #if !defined(PREPROC) && !defined(DEPEND)
@@ -186,6 +180,7 @@
 #endif
 
 
+#ifndef __ASSEMBLY__
 extern volatile unsigned int fut_active;
 extern volatile unsigned int *fut_next_slot;
 extern volatile unsigned int *fut_last_slot;
@@ -200,6 +195,7 @@ extern int fut_reset( unsigned int keymask, unsigned int threadid );
 extern int fut_getbuffer( int *nints, unsigned int **buffer );
 
 extern void fut_header( unsigned int head, ... );
+#endif
 
 
 #endif

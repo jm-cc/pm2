@@ -25,11 +25,19 @@
 #include <errno.h>
 #include <time.h>
 #include <fcntl.h>
+#include <string.h>
+#include <sys/utsname.h>
+#include <sys/types.h>
 #include "fut.h"
-#include "get_cpu_mhz.h"
+#include "get_cpu_info.h"
+#include "fkt-tools.h"
+#include "block.h"
+#include "sysmap.h"
+#include "pids.h"
 
+#define MAXCPUS 16
 
-#define DEFAULT_TRACE_FILE	"fut_trace_file"
+#define UNAMESTRLEN 256
 
 
 /*	active masks should never become negative numbers in order to prevent
@@ -59,9 +67,24 @@ static unsigned int	fut_pid = 0;
 
 /*	holds times of setup(), endup() */
 static time_t	fut_start_time = 0, fut_stop_time = 0;
+static clock_t	fut_start_jiffies = 0, fut_stop_jiffies = 0;
 
 /*	holds cpu mhz as retrieved from /proc/cpuinfo */
-static double	fut_cpu_mhz;
+static double	mhz[MAXCPUS];
+
+/*	holds cpu number */
+static int	ncpus;
+
+void dumptime( time_t *the_time, clock_t *the_jiffies)
+{
+  struct tms cur_time;
+
+  if( (*the_time = time(NULL)) == -1 )
+    perror("time");
+
+  if( (*the_jiffies = times(&cur_time)) < 0 )
+    perror("times");
+}
 
 /*	called once to set up tracing.
 	includes mallocing the buffer to hold the trace.
@@ -79,7 +102,7 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 	fut_pid = getpid();
 
 	/*	find out speed of this cpu in mhz */
-	fut_cpu_mhz = get_cpu_mhz();
+	ncpus = get_cpu_info(MAXCPUS, mhz);
 
 	if( bufptr != NULL )
 		{/* previous allocation region was not released, do it now */
@@ -106,7 +129,7 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 		iptr += 0x100;
 		}
 
-	fut_start_time = time(NULL);
+	dumptime(&fut_start_time, &fut_start_jiffies);
 
 	fut_next_slot = (unsigned int *)bufptr;
 	fut_active = keymask & FULL_ACTIVE_MASK;
@@ -244,11 +267,47 @@ out:
 	return local_nints;
 	}
 
+static void record_time( int fd, int ncpus, double mhz[], size_t page_size )
+{
+  int i;
+  int kpid;
+  int pid;
+
+  BEGIN_BLOCK(fd);
+  if( write(fd, (void *)&ncpus, sizeof(ncpus)) < 0 )
+    perror("write ncpus");
+  for( i = 0;  i < ncpus;  i++ ) {
+    if( write(fd, (void *)&mhz[i], sizeof(mhz[i])) < 0 )
+      perror("write mhz");
+  }
+  pid = getpid();
+  if( write(fd, (void *)&pid, sizeof(pid)) < 0 )
+    perror("write pid");
+  kpid = 0;
+  if( write(fd, (void *)&kpid, sizeof(kpid)) < 0 )
+    perror("write kpid");
+  if( write(fd, (void *)&fut_start_time, sizeof(fut_start_time)) < 0 )
+    perror("write start_time");
+  if( write(fd, (void *)&fut_stop_time, sizeof(fut_stop_time)) < 0 )
+    perror("write stop_time");
+  if( write(fd, (void *)&fut_start_jiffies, sizeof(fut_start_jiffies)) < 0 )
+    perror("write start_jiffies");
+  if( write(fd, (void *)&fut_stop_jiffies, sizeof(fut_stop_jiffies)) < 0 )
+    perror("write stop_jiffies");
+  if( write(fd, (void *)&page_size, sizeof(page_size)) < 0 )
+    perror("write page_size");
+  END_BLOCK(fd);
+}
+
 int fut_endup( char *filename )
 	{
 	int n, nints, size, fd;
+	static const unsigned int zero = 0;
 	unsigned int *copy;
 	unsigned int smp_mode;
+	unsigned int len;
+	struct utsname unameinfo;
+	char unamestr[UNAMESTRLEN];
 
 
 #if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
@@ -260,7 +319,7 @@ int fut_endup( char *filename )
 	/* stop all futher tracing */
 	fut_active = 0;
 
-	fut_stop_time = time(NULL);
+	dumptime(&fut_stop_time,&fut_stop_jiffies);
 
 	if( (n = fut_getbuffer(&nints, &copy)) < 0 )
 		return n;
@@ -273,18 +332,51 @@ int fut_endup( char *filename )
 	if( (fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0666)) < 0 )
 		return fd;
 
-	if( write(fd, (void *)&smp_mode, sizeof(smp_mode)) < 0 )
-		perror("write smp_mode");
-	if( write(fd, (void *)&fut_pid, sizeof(fut_pid)) < 0 )
-		perror("write pid");
-	if( write(fd, (void *)&fut_cpu_mhz, sizeof(fut_cpu_mhz)) < 0 )
-		perror("write cpu_mhz");
-	if( write(fd, (void *)&fut_start_time, sizeof(fut_start_time)) < 0 )
-		perror("write start_time");
-	if( write(fd, (void *)&fut_stop_time, sizeof(fut_stop_time)) < 0 )
-		perror("write stop_time");
-	if( write(fd, (void *)&nints, sizeof(nints)) < 0 )
-		perror("write nints");
+	BEGIN_BLOCK(fd);
+	record_time( fd, ncpus, mhz, size+sizeof(size) );
+	BEGIN_BLOCK(fd);
+	// no irq
+	write(fd,(void *)&zero,sizeof(zero));
+	// no cpu for irqs
+	write(fd,(void *)&zero,sizeof(zero));
+	END_BLOCK(fd);
+
+  /* uname -a */
+  if( uname(&unameinfo) )
+    {
+    perror("getting uname information");
+    exit(EXIT_FAILURE);
+    }
+
+  snprintf(unamestr,UNAMESTRLEN,"%s %s %s %s %s",
+        unameinfo.sysname,
+        unameinfo.nodename,
+        unameinfo.release,
+        unameinfo.version,
+        unameinfo.machine);
+  unamestr[UNAMESTRLEN-1]='\0';
+
+  len = strlen(unamestr);
+  BEGIN_BLOCK(fd);
+  write(fd,&len,sizeof(len));
+  write(fd,unamestr,len);
+  END_BLOCK(fd);
+
+  BEGIN_BLOCK(fd);
+  record_sysmap(fd);
+  END_BLOCK(fd);
+
+  BEGIN_BLOCK(fd);
+  record_pids(fd);
+  END_BLOCK(fd);
+
+  END_BLOCK(fd);
+
+  size+=sizeof(size);
+  if( write(fd, (void *)&size, sizeof(size)) < sizeof(size) )
+    perror("write buffer's size");
+  size-=sizeof(size);
+
 	if( write(fd, (void *)copy, size) < 0 )
 		perror("write buffer");
 

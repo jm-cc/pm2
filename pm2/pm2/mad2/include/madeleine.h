@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: madeleine.h,v $
+Revision 1.5  2000/01/13 14:44:34  oaumage
+- adaptation pour la prise en compte de la toolbox
+- suppression des fichiers redondant
+
 Revision 1.4  2000/01/10 10:19:42  oaumage
 - mad_macros.h: modification de la macro de commande de trace
 
@@ -63,24 +67,17 @@ ______________________________________________________________________________
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-
-/* Timing */
-#include <mad_timing.h>
+#include <tbx.h>
 
 /* Protocol registration */
 #include <mad_registration.h>
-
-/* Macros */
-#include <mad_macros.h>
 
 /* Structure pointers */
 #include <mad_pointers.h>
 
 /* Fundamental data types */
 #include <mad_types.h>
-#include <mad_malloc.h>
 #include <mad_modes.h>
-#include <mad_list.h>
 #include <mad_buffers.h>
 #include <mad_link.h>
 #include <mad_connection.h>
@@ -92,10 +89,8 @@ ______________________________________________________________________________
 #include <mad_configuration.h>
 
 /* Function prototypes */
-#include <mad_malloc_interface.h>
 #include <mad_memory_interface.h>
 #include <mad_buffer_interface.h>
-#include <mad_list_interface.h>
 #include <mad_communication_interface.h>
 #include <mad_channel_interface.h>
 

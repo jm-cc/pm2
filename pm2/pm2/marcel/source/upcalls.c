@@ -50,7 +50,6 @@
 
 #include <sched.h>
 #include <stdlib.h>
-#include <sys/act_spinlock.h>
 #include <sys/upcalls.h>
 
 #ifdef MA__DEBUG
@@ -62,7 +61,6 @@
 #define STACK_SIZE 100000
 #define ACT_NEW_WITH_LOCK 1
 
-//static act_spinlock_t act_spinlock=ACT_SPIN_LOCK_UNLOCKED;
 static marcel_t marcel_next[ACT_NB_MAX_CPU];
 
 //volatile boolean has_new_tasks=0;
@@ -172,13 +170,13 @@ int hack_restart_func(act_proc_t new_proc, int return_value,
 
 void act_lock(marcel_t self)
 {
-	ACTDEBUG(printf("act_lock (%p)\n", self));
+	//ACTDEBUG(printf("act_lock (%p)\n", self));
 	//act_spin_lock(&act_spinlock);
 }
 
 void act_unlock(marcel_t self)
 {
-	ACTDEBUG(printf("act_unlock(%p)\n", self));
+	//ACTDEBUG(printf("act_unlock(%p)\n", self));
 	//act_spin_unlock(&act_spinlock);
 }
 
@@ -263,7 +261,7 @@ void init_upcalls(int nb_act)
 	if (nb_act<=0)
 		nb_act=0;
 
-	ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
+	//ACTDEBUG(printf("init_upcalls(%i)\n", nb_act));
 
 #ifdef MA__LWPS
 	for(proc=0; proc<ACT_NB_MAX_CPU; proc++) {
@@ -288,9 +286,9 @@ void init_upcalls(int nb_act)
 //	param.upcall_unblock=upcall_unblock;
 //	param.upcall_change_proc=upcall_change_proc;
 	
-	ACTDEBUG(printf("sp=%p, new = %p, restart=%p, nb_unblk=%p\n",
-			param.upcall_new_sp[0], 
-			upcall_new, restart_func, &act_nb_unblocked));
+	//ACTDEBUG(printf("sp=%p, new = %p, restart=%p, nb_unblk=%p\n",
+	//		param.upcall_new_sp[0], 
+	//		upcall_new, restart_func, &act_nb_unblocked));
 	
        
 	if (act_cntl(ACT_CNTL_INIT, &param)) {

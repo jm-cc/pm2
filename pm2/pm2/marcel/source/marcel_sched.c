@@ -1659,10 +1659,10 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   marcel_attr_setflags(&attr, MA_SF_POLL | MA_SF_NOSCHEDLOCK | MA_SF_NORUN);
 #ifdef PM2
   {
-    char *stack = __TBX_MALLOC(2*SLOT_SIZE, __FILE__, __LINE__);
+    char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
 
-    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) &
-			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
+    unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
+			     ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
 
     marcel_attr_setstackaddr(&attr, stack);
     marcel_attr_setstacksize(&attr, stsize);
@@ -1712,10 +1712,10 @@ static void init_lwp(__lwp_t *lwp, marcel_t initial_task)
   marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);
 #ifdef PM2
   {
-    char *stack = __TBX_MALLOC(2*SLOT_SIZE, __FILE__, __LINE__);
+    char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
 
-    unsigned long stsize = (((unsigned long)(stack + 2*SLOT_SIZE) &
-			     ~(SLOT_SIZE-1)) - (unsigned long)stack);
+    unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
+			     ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
 
     marcel_attr_setstackaddr(&attr, stack);
     marcel_attr_setstacksize(&attr, stsize);

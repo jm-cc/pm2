@@ -1694,7 +1694,7 @@ DEF_MARCEL_POSIX(int, yield, (void))
   LOG_IN();
 
   //lock_task();
-  marcel_check_polling(MARCEL_POLL_AT_YIELD);
+  marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
   marcel_yield_intern();
   //unlock_task();
 
@@ -3069,3 +3069,4 @@ void __ma_preempt_write_lock(ma_rwlock_t *lock)
 
 MARCEL_INT(__ma_preempt_write_lock);
 #endif 
+

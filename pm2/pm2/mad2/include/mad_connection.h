@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_connection.h,v $
+Revision 1.4  2000/02/08 17:47:22  oaumage
+- prise en compte des types de la net toolbox
+
 Revision 1.3  2000/01/13 14:44:31  oaumage
 - adaptation pour la prise en compte de la toolbox
 - suppression des fichiers redondant
@@ -65,7 +68,7 @@ typedef enum
 typedef struct s_mad_connection
 {
   /* Common use fields */
-           mad_host_id_t           remote_host_id;
+           ntbx_host_id_t          remote_host_id;
            p_mad_channel_t         channel;
            p_mad_connection_t      reverse;
            mad_connection_way_t    way;

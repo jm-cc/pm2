@@ -336,11 +336,3 @@ void marcel_init_section(int sec)
 	       __ma_init_start[sec].debug);
 }
 
-extern int marcel_lwp_force_link;
-void marcel_force_link(void)
-{
-	/* Ne sert qu'à forcer l'inclusion de fichiers lors de la
-	 * création du binaire (édition statique)
-	 */
-	marcel_lwp_force_link++;
-}

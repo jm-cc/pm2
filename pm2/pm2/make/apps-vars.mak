@@ -43,10 +43,6 @@ all:
 
 SRC_DIR := $(CURDIR)
 
-APP_BIN := build/$(FLAVOR)/bin
-APP_OBJ := build/$(FLAVOR)/obj
-APP_ASM := build/$(FLAVOR)/asm
-APP_DEP := build/$(FLAVOR)/dep
 ifneq ($(MAKECMDGOALS),config)
 APP_STAMP := $(shell $(PM2_CONFIG) --stampdir)
 APP_EXT := $(shell $(PM2_CONFIG) --ext)
@@ -61,6 +57,12 @@ APP_LLIBS += $(shell $(PM2_CONFIG) --libs-only-l)
 PM2_MODULES += $(shell $(PM2_CONFIG) --modules)
 APP_STAMP_FILES := $(shell $(PM2_CONFIG) --stampfile)
 APP_STAMP_FILES += $(shell $(PM2_CONFIG) --stampfile all)
+APP_BUILDDIR := $(shell $(PM2_CONFIG) --builddir)
+
+APP_BIN := build/$(APP_BUILDDIR)/bin
+APP_OBJ := build/$(APP_BUILDDIR)/obj
+APP_ASM := build/$(APP_BUILDDIR)/asm
+APP_DEP := build/$(APP_BUILDDIR)/dep
 endif
 
 # Sources, objets et dependances

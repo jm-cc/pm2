@@ -33,22 +33,11 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-MASTER_MODULE := MARCEL
-COMMON_DEFAULT_TARGET :=  marcel_default
+LIBRARY=marcel
+#LIBNAME=marcel
 
-include $(PM2_ROOT)/make/master_vars.mak
+#marcel_CC=gcc
+#marcel_AS=gcc
 
-# Ce makefile
-COMMON_MAKEFILES +=  $(MARCEL_ROOT)/Makefile
-
-# Inclusion des variables
-include $(MARCEL_MAKE)/vars.mak
-
-# Regles principales
-include $(PM2_ROOT)/make/master_rules.mak
-
-# Inclusion des regles de compilation
-include $(MARCEL_MAKE)/rules.mak
-
-
-##############################################################################
+include $(PM2_ROOT)/make/config.mak
+include $(PM2_ROOT)/make/libs.mak

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_main.h,v $
+Revision 1.12  2000/11/10 14:17:55  oaumage
+- nouvelle procedure d'initialisation
+
 Revision 1.11  2000/06/16 14:03:31  oaumage
 - Modification du format de la fonction mad_managers_init
 
@@ -85,16 +88,25 @@ ______________________________________________________________________________
  * -----------------------------
  */
 
+typedef struct s_mad_settings
+{
+  char       *rsh_cmd;
+  char       *configuration_file;
+  tbx_bool_t  debug_mode;
+} mad_settings_t;
+
+
 typedef struct s_mad_madeleine
 {
   TBX_SHARED;
-  mad_driver_id_t             nb_driver;
-  p_mad_driver_t              driver;
-  mad_adapter_id_t            nb_adapter;
-  p_mad_adapter_t             adapter;
-  mad_configuration_t         configuration;
-  mad_channel_id_t            nb_channel;
-  tbx_list_t                  channel;
+  mad_driver_id_t       nb_driver;
+  p_mad_driver_t        driver;
+  mad_adapter_id_t      nb_adapter;
+  p_mad_adapter_t       adapter;
+  mad_channel_id_t      nb_channel;
+  tbx_list_t            channel;
+  p_mad_settings_t      settings;
+  p_mad_configuration_t configuration;
 } mad_madeleine_t;
 
 /*
@@ -111,9 +123,6 @@ mad_adapter_set_init(int nb_adapter, ...);
  * Private part : these functions should not be called directly
  * --------------...............................................
  */
-void 
-mad_managers_init(int   *argc,
-		  char **argv);
 
 void 
 mad_driver_fill(p_mad_madeleine_t madeleine);

@@ -12,24 +12,18 @@ set $command
 prog=$1
 shift
 
-set `cat $PM2_ROOT/mad2/.mad2_conf`
+set `cat $PM2_CONF_FILE`
 nb_hosts=$1
 shift
 
-rm -f /tmp/$LOGNAME/.mad2_mpl_conf
-touch /tmp/$LOGNAME/.mad2_mpl_conf
 for h in $*
 do
- echo $h >> /tmp/$LOGNAME/.mad2_mpl_conf
- echo copying $prog to $h:/tmp/$LOGNAME ...
  rcp $prog $h:/tmp/$LOGNAME
 done
-#echo copying $prog to /tmp/$LOGNAME ...
-#cp $prog /tmp/$LOGNAME
 
 MP_PROCS=$nb_hosts
 MP_EUILIB=us
-MP_HOSTFILE=/tmp/$LOGNAME/.mad2_mpl_conf
+MP_HOSTFILE=$PM2_CONF_FILE
 MP_EUIDEVICE=css0
 export MP_PROCS
 export MP_EUILIB
@@ -39,10 +33,7 @@ export MP_EUIDEVICE
 set $command
 shift
 
-cd /tmp/mehaut
+cd /tmp/$LOGNAME
 prog=`basename $prog`
-
-echo "launching poe $prog $*"
-
 poe $prog $*
 

@@ -19,8 +19,8 @@
  * ------------
  */
 
-#ifndef __SWANN_FILE_H
-#define __SWANN_FILE_H
+#ifndef SWANN_FILE_H
+#define SWANN_FILE_H
 
 typedef enum
 {

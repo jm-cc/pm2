@@ -17,6 +17,64 @@
 #ifndef PM2_COMMON_IS_DEF
 #define PM2_COMMON_IS_DEF
 
-void common_init(int *argc, char *argv[]);
+#if !defined(MARCEL_KERNEL) && \
+    !defined(MAD2_KERNEL) && \
+    !defined(PM2_KERNEL) && \
+    !defined(TBX_KERNEL) && \
+    !defined(NTBX_KERNEL) && \
+    !defined(DSM_KERNEL) && \
+    !defined(MAD1_KERNEL)
+
+#ifdef PM2
+#include "pm2.h"
+#endif /* PM2 */
+
+#ifdef MARCEL
+#include "marcel.h"
+#endif /* MARCEL */
+
+#ifdef MAD1
+#include "madeleine.h"
+#endif /* MAD1 */
+
+#ifdef MAD2
+#include "madeleine.h"
+#endif /* MAD2 */
+
+#ifdef TBX
+#include "tbx.h"
+#endif /* TBX */
+
+#ifdef NTBX
+#include "ntbx.h"
+#endif /* NTBX */
+
+typedef struct {
+#ifdef MAD2
+  p_mad_madeleine_t madeleine; // OUT
+  int rank; // OUT
+  p_mad_adapter_set_t adapter_set; // IN
+#ifdef APPLICATION_SPAWN
+  char *url; // IN/OUT
+#endif
+#endif
+} common_attr_t;
+
+void common_attr_init(common_attr_t *attr);
+
+void common_pre_init(int *argc, char *argv[],
+		     common_attr_t *attr);
+
+void common_post_init(int *argc, char *argv[],
+		      common_attr_t *attr);
+
+static __inline__ void common_init(int *argc, char *argv[],
+				   common_attr_t *attr)
+{
+  common_pre_init(argc, argv, attr);
+  common_post_init(argc, argv, attr);
+}
+
+#endif // *_KERNEL
 
 #endif

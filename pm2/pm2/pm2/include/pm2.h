@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2.h,v $
+Revision 1.17  2000/02/28 11:17:58  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.16  2000/02/14 10:00:35  rnamyst
 Modified to propose a new interface to the "pm2_completion" facilities.
 
@@ -50,17 +53,21 @@ ______________________________________________________________________________
 #ifndef PM2_EST_DEF
 #define PM2_EST_DEF
 
-#include <marcel.h>
-#include <safe_malloc.h>
-#include <pm2_mad.h>
-#include <pm2_types.h>
-#include <pm2_attr.h>
-#include <pm2_thread.h>
-#include <block_alloc.h>
-#include <sys/slot_distrib.h>
-#include <pm2_timing.h>
-#include <sys/debug.h>
-#include <pm2_rpc.h>
+#include "marcel.h"
+#include "safe_malloc.h"
+#include "pm2_mad.h"
+#include "pm2_types.h"
+#include "pm2_attr.h"
+#include "pm2_thread.h"
+#include "block_alloc.h"
+#include "sys/slot_distrib.h"
+#include "pm2_timing.h"
+#include "sys/debug.h"
+#include "pm2_rpc.h"
+
+#ifdef DSM
+#include "dsm_pm2.h"
+#endif
 
 /* A startup function may be specified. If so, it will be called after
  * all modules will be spawned but before the current module will

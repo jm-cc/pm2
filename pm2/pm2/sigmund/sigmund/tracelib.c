@@ -4,6 +4,8 @@
 #include "temp.h"
 #include "fkt.h"
 #include "fut_code.h"
+#include "lwpthread.h"
+#include "graphlib.h"
 
 struct time_st {
   u_64 active_time;
@@ -132,15 +134,18 @@ int get_next_filtered_trace(trace *tr)
 
 int get_next_loose_filtered_trace(trace *tr)
 {
-  int i = 0;
-  while (i == 0) {
-    i = get_next_trace(tr);
-    if (tr->type == KERNEL) {
-      if (tr->code >> 8 == FKT_SWITCH_TO_CODE) break;
-    } else if (tr->code >> 8 == FUT_SWITCH_TO_CODE) break;
-    if (is_valid_calc(tr, i) == TRUE) break;
+  int eof = 0;
+  while (eof == 0) {
+    eof = get_next_trace(tr);
+    if (is_valid_calc(tr, eof) == TRUE) {
+      if (eof != 0) eof = 2;
+      break;
+    } else if ((tr->type == KERNEL) && \
+	       (tr->code >> 8 == FKT_SWITCH_TO_CODE)) {
+      break;
+    }
   }
-  return i;
+  return eof;
 }
 
 void tracelib_close()
@@ -181,4 +186,24 @@ int get_function_time(int *code, mode *type, int *thread, u_64 *begin, u_64 *end
   *end = fct_time.end;
   *time = fct_time.time;
   return r;
+}
+
+int is_a_valid_proc(int proc)
+{
+  return is_in_proc_list(proc);
+}
+
+int is_a_valid_logic(int logic)
+{
+  return is_in_logic_list(logic);
+}
+
+int max_cpu()
+{
+  return 16;
+}
+
+u_64 get_begin_lwp(int lwp)
+{
+  return get_lwp_last_up(lwp);
 }

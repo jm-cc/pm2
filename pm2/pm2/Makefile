@@ -33,24 +33,49 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+MASTER_MODULE =  PM2
+
 ifndef PM2_ROOT
 $(error The PM2_ROOT variable is not set)
 endif
 
-# Ce fichier Makefile doit etre ajoute a la liste globales
-COMMON_MAKEFILES	+=	$(PM2_ROOT)/Makefile
+include $(PM2_ROOT)/make/master_vars.mak
 
-# Inclusion des definition de variables (macros)
-include $(PM2_ROOT)/make/vars.mak
+ifeq ($(LIGHT),yes)
+COMMON_DEFAULT_TARGET :=  marcel_default mad_default
+else
+COMMON_DEFAULT_TARGET :=  pm2_default
+endif
 
-.PHONY: default
-default: $(COMMON_DEFAULT_TARGET)
+# Ce makefile
+COMMON_MAKEFILES +=  $(MAD2_ROOT)/Makefile
 
-.PHONY: clean
-clean: $(COMMON_CLEAN_TARGET)
+# Inclusion des variables
+ifneq ($(LIGHT),yes)
+include $(PM2_MAKE)/vars.mak
+include $(DSM_MAKE)/vars.mak
+endif
+include $(MARCEL_MAKE)/vars.mak
+include $(MAD_MAKE)/vars.mak
+include $(NTBX_MAKE)/vars.mak
+include $(TBX_MAKE)/vars.mak
 
-.PHONY: distclean
-distclean: $(COMMON_DISTCLEAN_TARGET)
+ifeq ($(LIGHT),yes)
+COMMON_OPTIONS += LIGHT $(LIGHT)
+endif
+
+# Regles principales
+include $(PM2_ROOT)/make/master_rules.mak
 
 # Inclusion des regles de compilation
-include $(PM2_ROOT)/make/rules.mak
+ifneq ($(LIGHT),yes)
+include $(PM2_MAKE)/rules.mak
+include $(DSM_MAKE)/rules.mak
+endif
+include $(MARCEL_MAKE)/rules.mak
+include $(MAD_MAKE)/rules.mak
+include $(NTBX_MAKE)/rules.mak
+include $(TBX_MAKE)/rules.mak
+
+
+##############################################################################

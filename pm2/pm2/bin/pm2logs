@@ -56,13 +56,11 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-PM2_CONF_DIR=`pm2-config --flavor=${PM2_FLAVOR:-default} --builddir 2>/dev/null`
+PM2_CONF_FILE=`pm2-conf-file`
+[ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
+export PM2_CONF_FILE
 
-[ $? -eq 0 ] || error "Error: \"${PM2_FLAVOR}\" is not a valid flavor."
-
-PM2_CONF_FILE=${PM2_CONF_DIR}/.pm2conf
-
-[ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\"."
+[ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf)."
 
 for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do
 	${PM2_RSH:-rsh} $host ${PM2_ROOT}/bin/pm2_vlocallogs $host

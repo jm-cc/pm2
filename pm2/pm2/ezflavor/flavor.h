@@ -14,6 +14,8 @@ void flavor_create(void);
 
 void flavor_load(void);
 
+void flavor_check(void);
+
 void flavor_save_as(void);
 
 void flavor_delete(void);

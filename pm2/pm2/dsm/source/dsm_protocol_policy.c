@@ -37,27 +37,30 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "dsm_page_manager.h"
-#include "dsm_protocol_policy.h"
+#include "dsm_protocol_policy.h" 
 
-const dsm_protocol_t 
+dsm_protocol_t 
 dsmlib_hyp_java_prot = {NULL, 
 			NULL, 
 			NULL, 
 			dsmlib_ws_hyp_send_page_for_write_access, 
+			NULL,
 			dsmlib_rp_hyp_validate_page};
 
-const dsm_protocol_t 
+dsm_protocol_t 
 dsmlib_ddm_li_hudak_prot = {dsmlib_rf_ask_for_read_copy,
 			    dsmlib_wf_ask_for_write_access,
 			    dsmlib_rs_send_read_copy,
 			    dsmlib_ws_send_page_for_write_access, 
+			    dsmlib_is_invalidate,
 			    dsmlib_rp_validate_page};
 
-const dsm_protocol_t 
+dsm_protocol_t 
 dsmlib_migrate_thread_prot = {dsmlib_migrate_thread,
 			      dsmlib_migrate_thread,
 			      NULL,
 			      NULL, 
+			      NULL,
 			      NULL};
 
 /* Global data structures for the protocol policy module */

@@ -44,16 +44,17 @@ extern void stop_timer(void);
 
 tbx_tick_t t1, t2;
 
-any_t main_thread()
+any_t main_thread(void *arg)
 {
   marcel_attr_t attr;
   marcel_sem_t sem;
   int nb;
+  int essais = 3;
 
   marcel_detach(marcel_self());
 
-  fprintf(stderr, "Main thread launched on LWP %d\n",
-	  marcel_current_vp());
+  //  fprintf(stderr, "Main thread launched on LWP %d\n",
+  //  marcel_current_vp());
 
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, TRUE);
@@ -65,38 +66,38 @@ any_t main_thread()
 
   marcel_sem_init(&sem, 0);
 
-  while(1) {
-    printf("How many creations ? ");
-    scanf("%d", &nb);
+  while(essais--) {
+    nb = (int)arg;
+
     if(nb == 0)
       break;
 
     while(nb--) {
-#ifndef SMP
-      lock_task();
-#endif
 
-      if(nb == 0) {
+      if(nb != 0) {
+	marcel_create(NULL, &attr, f, (any_t)&sem);
+	marcel_sem_P(&sem);
+      } else {
+#ifndef SMP
+	//      lock_task();
+#endif
 	TBX_GET_TICK(t1);
 #ifdef PROFILE
 	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 	marcel_create(NULL, &attr, f, (any_t)&sem);
+	marcel_sem_P(&sem);
 #ifdef PROFILE
 	profile_stop();
 #endif
 	TBX_GET_TICK(t2);
-      } else
-	marcel_create(NULL, &attr, f, (any_t)&sem);
-
 #ifndef SMP
-      unlock_task();
+	//unlock_task();
 #endif
-      marcel_sem_P(&sem);
+	printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+      }
     }
-    printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
   }
-
   finished = TRUE;
   return NULL;
 }
@@ -105,12 +106,18 @@ int marcel_main(int argc, char *argv[])
 {
   marcel_attr_t attr;
 
+  if(argc != 2) {
+    fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+    exit(1);
+  }
+
   marcel_init(&argc, argv);
 
   marcel_attr_init(&attr);
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
-  marcel_create(NULL, &attr, main_thread, NULL);
+  marcel_create(NULL, &attr, main_thread, (void *)atoi(argv[1]));
 
   marcel_end();
   return 0;
 }
+

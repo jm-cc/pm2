@@ -517,7 +517,7 @@ void
 old_mad_pack_str(madeleine_part  where,
 		 char           *data)
 {
-  size_t len = 0;
+  int len = 0;
 
   LOG_IN();  
   len = strlen(data);
@@ -531,7 +531,7 @@ void
 old_mad_unpack_str(madeleine_part  where,
 		   char           *data)
 {
-  size_t len = 0;
+  int len = 0;
 
   LOG_IN();
   old_mad_unpack_int(MAD_IN_HEADER, &len, 1);

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.17  2000/11/15 21:32:43  rnamyst
+Removed 'timing' and 'safe_malloc' : all modules now use the toolbox for timing & safe malloc
+
 Revision 1.16  2000/11/08 08:16:35  oaumage
 *** empty log message ***
 
@@ -118,6 +121,10 @@ ______________________________________________________________________________
 #define OOPS
 
 #include "pm2debug.h"
+
+#ifdef MARCEL
+#include "marcel.h"
+#endif
 
 /*
  * Constant definition  _____________________________________________
@@ -272,15 +279,15 @@ ______________________________________________________________________________
 #define TBX_REALLOC(p, s) trealloc ((p), (s))
 #define TBX_FREE(s)       tfree    ((s))
 #ifdef TBX_SAFE_MALLOC
-#define __TBX_MALLOC(s)     tbx_safe_malloc  ((s), __FILE__, __LINE__)
-#define __TBX_CALLOC(n, s)  tbx_safe_calloc  ((n), (s), __FILE__, __LINE__)
-#define __TBX_REALLOC(p, s) tbx_safe_realloc ((p), (s), __FILE__, __LINE__)
-#define __TBX_FREE(s)       tbx_safe_free    ((s), __FILE__, __LINE__)
+#define __TBX_MALLOC(s, f, l)     tbx_safe_malloc  ((s), (f), (l))
+#define __TBX_CALLOC(n, s, f, l)  tbx_safe_calloc  ((n), (s), (f), (l))
+#define __TBX_REALLOC(p, s, f, l) tbx_safe_realloc ((p), (s), (f), (l))
+#define __TBX_FREE(s, f, l)       tbx_safe_free    ((s), (f), (l))
 #else  /* TBX_SAFE_MALLOC */
-#define __TBX_MALLOC(s)     malloc  ((s))
-#define __TBX_CALLOC(n, s)  calloc  ((n), (s))
-#define __TBX_REALLOC(p, s) realloc ((p), (s))
-#define __TBX_FREE(s)       free    ((s))
+#define __TBX_MALLOC(s, f, l)     malloc  ((s))
+#define __TBX_CALLOC(n, s, f, l)  calloc  ((n), (s))
+#define __TBX_REALLOC(p, s, f, l) realloc ((p), (s))
+#define __TBX_FREE(s, f, l)       free    ((s))
 #endif /* TBX_SAFE_MALLOC */
 #else /* MARCEL */
 #ifdef TBX_SAFE_MALLOC

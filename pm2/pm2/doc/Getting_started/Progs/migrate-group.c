@@ -4,7 +4,7 @@ static int service_id;
 char hostname[128];
 
 #define N 4
-marcel_t threads[N];
+marcel_t threads[N];		/* Here! */
 int where = 1;
 
 struct arg
@@ -13,10 +13,10 @@ struct arg
   int i;
 };
 
-volatile int barrier = 0;
+volatile int barrier = 0;	/* Here! */
 
 void
-thread_function (void *arg)
+f (void *arg)
 {
   struct arg *argp;
   pm2_completion_t my_c;
@@ -26,8 +26,8 @@ thread_function (void *arg)
   pm2_completion_copy (&my_c, argp->cp);
   i = argp->i;
 
-  if (i % 2 == 0)
-    pm2_enable_migration ();
+  if (i % 2 == 0)		/* Here! */
+    pm2_enable_migration ();	/* Here! */
 
   tprintf ("Thread %d: Created on node %d, host %s\n",
 	   i, pm2_self (), hostname);
@@ -36,10 +36,10 @@ thread_function (void *arg)
   for (;;)
     {
       int tmp;
-      tmp = barrier;
+      tmp = barrier;		/* Here! */
       if (tmp != 0)
 	break;
-      marcel_yield ();
+      marcel_yield ();		/* Here! */
     }
 
   tprintf ("Thread %d: Now on node %d, host %s\n",
@@ -70,7 +70,7 @@ pm2_main (int argc, char *argv[])
   tprintf ("Initialization completed on node %d\n", pm2_self ());
 
   if (pm2_self () == 0)
-    {				/* master process */
+    {				/* Master process */
       for (i = 0; i < N; i++)
 	{
 	  pm2_completion_t c;
@@ -78,13 +78,13 @@ pm2_main (int argc, char *argv[])
 	  pm2_completion_init (&c, NULL, NULL);
 	  arg.cp = &c;
 	  arg.i = i;
-	  pm2_thread_create (thread_function, (void *) (&arg));
+	  pm2_thread_create (f, (void *) (&arg));
 	  pm2_completion_wait (&c);
 	}
 
-      pm2_freeze ();
-      pm2_threads_list (N, threads, &n, MIGRATABLE_ONLY);
-      pm2_migrate_group (threads, n, where);
+      pm2_freeze ();		/* Here! */
+      pm2_threads_list (N, threads, &n, MIGRATABLE_ONLY);	/* Here! */
+      pm2_migrate_group (threads, n, where);	/* Here! */
       tprintf ("%d threads among %d migrated off"
 	       "to node %d\n", n, N, where);
 

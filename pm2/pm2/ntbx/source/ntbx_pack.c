@@ -34,7 +34,7 @@ ntbx_pack_int(int                  data,
 {
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
-  
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -52,7 +52,7 @@ ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
   char *end_ptr = NULL;
   int   data    = 0;
   int   i       = 0;
- 
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -62,7 +62,7 @@ ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
 
   data = (int)strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");  
+    FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -78,7 +78,7 @@ ntbx_pack_long(long                 data,
 {
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
-  
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -96,7 +96,7 @@ ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
   char *end_ptr = NULL;
   long  data    = 0;
   int   i       = 0;
- 
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -106,7 +106,7 @@ ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
 
   data = strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");  
+    FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -122,7 +122,7 @@ ntbx_pack_unsigned_int(unsigned int         data,
 {
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
-  
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -140,7 +140,7 @@ ntbx_unpack_unsigned_int(p_ntbx_pack_buffer_t pack_buffer)
   char         *end_ptr = NULL;
   unsigned int  data    = 0;
   int           i       = 0;
- 
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -166,7 +166,7 @@ ntbx_pack_unsigned_long(unsigned long        data,
 {
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
-  
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -184,7 +184,7 @@ ntbx_unpack_unsigned_long(p_ntbx_pack_buffer_t pack_buffer)
   char          *end_ptr = NULL;
   unsigned long  data    = 0;
   int            i       = 0;
- 
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -194,7 +194,7 @@ ntbx_unpack_unsigned_long(p_ntbx_pack_buffer_t pack_buffer)
 
   data = strtoul(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
-    FAILURE("synchronisation error");  
+    FAILURE("synchronisation error");
   LOG_OUT();
 
   return data;
@@ -212,7 +212,7 @@ ntbx_pack_double(double               data,
   int     i        = 0;
   int     exponent = 0;
   double  mantissa = 0.0;
-  
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -238,7 +238,7 @@ ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
   int     exponent = 0;
   double  mantissa = 0.0;
   double  data     = 0.0;
- 
+
   LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
@@ -251,7 +251,7 @@ ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
     FAILURE("synchronisation error");
 
   end_ptr++;
-  
+
   mantissa = strtod(end_ptr, &end_ptr);
   if (*end_ptr != '-')
     FAILURE("synchronisation error");

@@ -13,72 +13,182 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-if [ "$1" = --force ]; then
-    FORCE=yes
-else
-    FORCE=no
-fi
+registering_flavors() {
+#########################################################
+# START OF LIST OF SAMPLE FLAVORS
+#########################################################
 
-set -- --source-mode
-. ${PM2_ROOT}/bin/pm2-flavor-file
+    COMMON_OPTIONS="--all=opt --all=build_static --common=static"
 
-if [ $FORCE = yes -o ! -d $PM2_USER_FLAVOR_DIR ]; then
-    # No existing flavors yet
-    echo "Creating initial sample flavors..."
-
-    COMMON_OPTIONS="--all=opt --common=static"
-
-    PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
-
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=default \
+    register_flavor default \
 	--modules="pm2 dsm marcel mad2 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--mad2=auto_spawn --mad2=tcp
 
     for i in mono smp act actsmp; do
-	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-$i \
+	register_flavor marcel-$i \
 	    --modules="marcel tbx init" $COMMON_OPTIONS \
 	    --marcel=$i --marcel=smp_shared_queue --marcel=marcel_main
     done
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel \
+    register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-prof \
+    register_flavor marcel-prof \
 	--modules="marcel profile tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--marcel=profile
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=swann \
+    register_flavor swann \
 	--modules="swann leoparse tbx ntbx init" $COMMON_OPTIONS
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leonie \
+    register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" $COMMON_OPTIONS
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leoparse \
+    register_flavor leoparse \
 	--modules="leoparse tbx ntbx init" $COMMON_OPTIONS
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad2 \
+    register_flavor mad2 \
 	--modules="mad2 tbx ntbx init" $COMMON_OPTIONS \
 	--mad2=auto_spawn --mad2=tcp
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad3 \
+    register_flavor mad3 \
 	--modules="mad3 marcel tbx ntbx init" $COMMON_OPTIONS \
 	--mad3=tcp --marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
 
-    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2 \
+    register_flavor pm2 \
 	--modules="pm2 dsm marcel mad2 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
 	--mad2=auto_spawn --mad2=tcp
 
-else
+    register_flavor ezflavor \
+	--modules="ezflavor" $COMMON_OPTIONS \
+	--ezflavor=gtk2
 
-    # Some flavors are already existing. We just have to make sure
-    # that they are still valid
-    ${PM2_ROOT}/bin/pm2-clean --refresh --all
+    register_flavor libpthread \
+	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
+	--marcel=mono --marcel=smp_shared_queue --marcel=main_as_func \
+	--marcel=posix --marcel=pthread --common=link_pm2_shared
 
+#########################################################
+# END OF LIST OF SAMPLE FLAVORS
+#########################################################
+}
+
+disp() {
+    $PRINT "$@"
+}
+
+usage() {
+    echo "Usage: `basename $0` [-f|--force] [-h|--help] [-v|--verbose] [-l|--list] [flavors...]"
+}
+
+erreur() {
+    echo "ERROR: ""$@"
+}
+
+FORCE=no
+LIST_FLAVORS=""
+PRINT=":"
+SHOW_LIST=no
+
+while [ $# != 0 ]; do
+    case "$1" in
+    -f|--force)
+	FORCE=yes;;
+    -h|--help)
+        usage
+	exit 0;;
+    -v|--verbose)
+        PRINT=echo;;
+    -l|--list)
+	SHOW_LIST=yes;;
+    -*)
+    	erreur "Unknown option $1"
+	usage
+	exit 1;;
+    *)
+        LIST_FLAVORS="$LIST_FLAVORS $1";;
+    esac
+    shift
+done
+
+register_flavor() {
+  name="$1"
+  shift
+  disp "registering $name"
+  REGISTERED_FLAVORS="$REGISTERED_FLAVORS $name"
+  name=`echo $name | sed -e 's/-/_/g'`
+  i=0;
+  while [ $# != 0 ]; do
+      eval REGISTERED_FLAVOR_${name}_$i='"$1"'
+      i=`expr $i + 1`
+      shift
+  done
+  eval REGISTERED_FLAVOR_${name}_number=$i
+}
+
+create_flavor() {
+    name="$1"
+    shift
+
+    case " $REGISTERED_FLAVORS " in
+        *" $name "*)
+	    SAMPLE_FLAVOR=yes;;
+	*)
+	    SAMPLE_FLAVOR=no;;
+    esac
+
+    if [ $SAMPLE_FLAVOR = yes -a \( \
+		$FORCE = yes -o \
+		! -d $PM2_USER_FLAVOR_DIR -o \
+		! -f "$PM2_USER_FLAVOR_DIR/$name" \) \
+	]; then
+	# No existing flavor yet
+	echo "Creating initial sample flavor $name..."
+
+	regname=`echo $name | sed -e 's/-/_/g'`
+	i=0
+	eval max=\$REGISTERED_FLAVOR_${regname}_number
+	set --
+	while [ $i != $max ]; do
+	    eval arg='"$REGISTERED_FLAVOR_'${regname}_$i'"'
+	    set -- "$@" "$arg"
+            i=`expr $i + 1`
+	done
+
+	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor="$name" "$@"
+    else
+        ${PM2_ROOT}/bin/pm2-clean --refresh "$name"
+    fi
+}
+
+set -- --source-mode
+. ${PM2_ROOT}/bin/pm2-flavor-file
+
+PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
+    
+registering_flavors
+
+if [ $SHOW_LIST = yes ]; then
+    echo "$REGISTERED_FLAVORS"
+    exit 0
 fi
 
-exit 0
+if [ -z "$LIST_FLAVORS" ]; then
+    # All flavors (registered + exinsting)
+    LIST_FLAVORS="$REGISTERED_FLAVORS"
+    for flavor in `${PM2_ROOT}/bin/pm2-flavor list` ; do
+	case " $LIST_FLAVORS " in
+	    *" $flavor "*) ;;
+	    *) LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;
+	esac
+    done
+fi
+
+for flavor in $LIST_FLAVORS; do
+    create_flavor $flavor
+done
+
 

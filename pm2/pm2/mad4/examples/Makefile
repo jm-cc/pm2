@@ -11,8 +11,21 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=mad3
+export FLAVOR_DEFAULT:=mad4
 
-PROGS := mad_mini mad_ping mad_ping2 mad_multi_ping mad_multi_ping2 mad_test sumping mad_control mux_example mad_fault mad_mad4
+PROGS :=			\
+mad_mini			\
+mad_ping			\
+mad_multi_ping			\
+mad_test			\
+mad_sumping			\
+mad_control			\
+mad_mux_example			\
+mad_micro			\
+mad_unreliable			\
+mad_reliability_test		\
+mad_random 			\
+mad_list_ping			\
+mad_micro_direct
 
 include $(PM2_ROOT)/make/apps.mak

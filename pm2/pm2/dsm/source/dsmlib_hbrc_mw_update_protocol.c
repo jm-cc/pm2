@@ -17,8 +17,7 @@
 #include "dsmlib_hbrc_mw_update_protocol.h" 
 
 //#define DSM_PROT_TRACE
-#define HYP_INSTRUMENT
-#ifdef  HYP_INSTRUMENT
+#ifdef INSTRUMENT
 extern int hbrc_diffs_out_cnt;
 extern int hbrc_diffs_in_cnt;
 #endif
@@ -344,7 +343,7 @@ void dsmlib_hrbc_start_send_diffs(unsigned long index, dsm_node_t dest_node, int
 
   IN;
 
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hbrc_diffs_out_cnt++;
 #endif
  
@@ -427,7 +426,7 @@ void DSM_HRBC_DIFFS_threaded_func(void)
   dsm_node_t node, req_node;
 
   IN;
-#ifdef HYP_INSTRUMENT
+#ifdef INSTRUMENT
   hbrc_diffs_in_cnt++;
 #endif 
   pm2_unpack_byte(SEND_SAFER, RECV_EXPRESS, (char *)&index,

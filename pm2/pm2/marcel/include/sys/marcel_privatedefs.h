@@ -81,6 +81,9 @@ _PRIVATE_ typedef struct task_desc_struct {
   marcel_vpmask_t vpmask; // Contraintes sur le placement sur les LWP
   int special_flags; // utilisé pour marquer les task idle, upcall, idle, ...
   task_state state;
+#ifdef MA__WORK
+  volatile unsigned has_work;
+#endif
   jmp_buf jbuf;
 #if defined(MA__LWPS)
   struct __lwp_struct *previous_lwp;
@@ -104,9 +107,6 @@ _PRIVATE_ typedef struct task_desc_struct {
   unsigned exline, not_migratable, 
     not_deviatable, next_cleanup_func;
   boolean detached, static_stack;
-#ifdef MA__WORK
-  volatile int has_work;
-#endif
 #ifdef ENABLE_STACK_JUMPING
   void *dummy; // Doit rester le _dernier_ champ
 #endif

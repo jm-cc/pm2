@@ -80,19 +80,39 @@ typedef struct
 
 typedef struct
 {
-  char  *alias;
-  char  *protocol;
-  char  *selector;
-  char  *suffix;
-} leo_clu_adapter_t, *p_leo_clu_adapter_t;
+  p_tbx_list_t  name_list;
+  char         *model;
+  char         *alias;
+} leo_clu_host_name_t, *p_leo_clu_host_name_t;
 
 typedef struct
 {
-  char          *id;
-  p_tbx_list_t   hosts;
-  p_tbx_list_t   adapters;
-  tbx_bool_t     nfs;
+  char         *id;
+  p_tbx_list_t  hosts;
 } leo_clu_cluster_t, *p_leo_clu_cluster_t;
+
+typedef struct
+{
+  char *alias;
+  char *protocol;
+} leo_clu_model_adapter_t, *p_leo_clu_model_adapter_t;
+
+typedef struct
+{
+  char         *id;
+  p_tbx_list_t  domain_list;
+  char         *model;
+  char         *os;
+  char         *archi;
+  p_tbx_list_t  adapter_list;
+  char         *nfs;
+} leo_clu_host_model_t, *p_leo_clu_host_model_t;
+
+typedef struct
+{
+  p_tbx_list_t        host_model_list;
+  p_leo_clu_cluster_t cluster;
+} leo_clu_cluster_file_t, * p_leo_clu_cluster_file_t;
 
 typedef struct
 {
@@ -106,9 +126,9 @@ typedef struct
 
 typedef struct
 {
-  p_leo_app_application_t application;
-  p_leo_clu_cluster_t     cluster;
-  p_tbx_list_t            protocol_table;
+  p_leo_app_application_t  application;
+  p_leo_clu_cluster_file_t cluster_file;
+  p_tbx_list_t             protocol_table;
 } leo_parser_result_t, *p_leo_parser_result_t;
 
 #endif /* __LEO_PARSER_TYPES_H */

@@ -366,6 +366,10 @@ DEF___PTHREAD(mutexattr_getkind_np)
      /********************/
      /* mutex_getpshared */
      /********************/
+/* certains pthread.h n'ont pas encore cette définition */
+extern int pthread_mutexattr_getpshared (__const pthread_mutexattr_t *
+                                         __restrict __attr,
+                                         int *__restrict __pshared) __THROW;
 DEF_POSIX(int, mutexattr_getpshared, (const pmarcel_mutexattr_t *attr,
 				      int *pshared),
 {
@@ -378,6 +382,9 @@ DEF___PTHREAD(mutexattr_getpshared)
      /********************/
      /* mutex_setpshared */
      /********************/
+/* certains pthread.h n'ont pas encore cette définition */
+extern int pthread_mutexattr_setpshared (pthread_mutexattr_t *__attr,
+                                         int __pshared) __THROW;
 DEF_POSIX(int, mutexattr_setpshared, (pmarcel_mutexattr_t *attr, int pshared),
 {
   if (pshared != MARCEL_PROCESS_PRIVATE && pshared != MARCEL_PROCESS_SHARED)

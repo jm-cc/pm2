@@ -1144,6 +1144,8 @@ DEF_MARCEL_POSIX(int, yield, (void))
   LOG_OUT();
   return 0;
 }
+/* La définition n'est pas toujours dans pthread.h */
+extern int pthread_yield (void) __THROW;
 DEF_PTHREAD_STRONG(yield)
 
 void marcel_give_hand(boolean *blocked)

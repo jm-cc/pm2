@@ -36,6 +36,23 @@
 //VD:#include <tls.h>
 //VD:#include <locale.h>		/* for __uselocale */
 //VD:#include <version.h>
+
+#ifndef _NSIG
+#  warning _NSIG not defined by system headers
+#  warning setting _NSIG to 65
+#  define _NSIG        65
+#endif
+#ifndef __SIGRTMIN
+#  warning __SIGRTMIN not defined by system headers
+#  warning setting __SIGRTMIN to 32
+#  define __SIGRTMIN   32
+#endif
+#ifndef __SIGRTMAX
+#  warning __SIGRTMAX not defined by system headers
+#  warning setting __SIGRTMAX to (_NSIG - 1)
+#  define __SIGRTMAX   (_NSIG - 1)
+#endif
+
 #ifdef MA__PTHREAD_FUNCTIONS
 
 #define __ASSUME_REALTIME_SIGNALS 1 //VD:

@@ -106,7 +106,8 @@ PM2_CONF_FILE=`pm2-conf-file`
 [ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
 export PM2_CONF_FILE
 
-[ -f ${PM2_CONF_FILE} ] || error "ERROR: madconf should be runned before $0..."
+[ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2conf)."
+
 
 echo "Using flavor \"${PM2_FLAVOR}\" to search for \"$1\"..."
 

@@ -22,33 +22,33 @@
 #define LEO_POINTERS_H
 
 // .. Enums ............................................................ //
-typedef enum   e_leo_loader_priority  *p_leo_loader_priority_t;
+typedef enum   e_leo_loader_priority     *p_leo_loader_priority_t;
 
 // .. Structures ....................................................... //
-typedef struct s_leo_process_specific *p_leo_process_specific_t;
-typedef struct s_leo_dir_node         *p_leo_dir_node_t;
-typedef struct s_leo_dir_adapter      *p_leo_dir_adapter_t;
+typedef struct s_leo_process_specific    *p_leo_process_specific_t;
+typedef struct s_leo_dir_node            *p_leo_dir_node_t;
+typedef struct s_leo_dir_adapter         *p_leo_dir_adapter_t;
 typedef struct s_leo_dir_driver_process_specific 
-                                      *p_leo_dir_driver_process_specific_t;
-typedef struct s_leo_dir_driver       *p_leo_dir_driver_t;
+                                         *p_leo_dir_driver_process_specific_t;
+typedef struct s_leo_dir_driver          *p_leo_dir_driver_t;
 typedef struct s_leo_dir_channel_process_specific
-                                      *p_leo_dir_channel_process_specific_t;
-typedef struct s_leo_dir_channel      *p_leo_dir_channel_t;
-typedef struct s_leo_dir_fchannel     *p_leo_dir_fchannel_t;
+                                         *p_leo_dir_channel_process_specific_t;
+typedef struct s_leo_dir_channel         *p_leo_dir_channel_t;
+typedef struct s_leo_dir_fchannel        *p_leo_dir_fchannel_t;
 typedef struct s_leo_dir_vchannel_process_routing_table
                                   *p_leo_dir_vchannel_process_routing_table_t;
 typedef struct s_leo_dir_vchannel_process_specific 
-                                      *p_leo_dir_vchannel_process_specific_t;
-typedef struct s_leo_dir_vchannel     *p_leo_dir_vchannel_t;
-typedef struct s_leo_directory        *p_leo_directory_t;
-typedef struct s_leo_networks         *p_leo_networks_t;
-typedef struct s_leo_spawn_group      *p_leo_spawn_group_t;
-typedef struct s_leo_spawn_groups     *p_leo_spawn_groups_t;
-typedef struct s_leo_loader           *p_leo_loader_t;
+                                  *p_leo_dir_vchannel_process_specific_t;
+typedef struct s_leo_dir_vchannel         *p_leo_dir_vchannel_t;
+typedef struct s_leo_directory            *p_leo_directory_t;
+typedef struct s_leo_networks             *p_leo_networks_t;
+typedef struct s_leo_spawn_group          *p_leo_spawn_group_t;
+typedef struct s_leo_spawn_groups         *p_leo_spawn_groups_t;
+typedef struct s_leo_loader               *p_leo_loader_t;
+typedef struct s_leo_application_settings *p_leo_application_settings_t;
 
 // .. Functions ........................................................ //
-typedef void (*p_leo_loader_func_t) (char *,
-				     char *,
+typedef void (*p_leo_loader_func_t) (p_leo_application_settings_t,
 				     p_ntbx_server_t,
 				     p_tbx_slist_t);
 

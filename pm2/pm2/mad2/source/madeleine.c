@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: madeleine.c,v $
+Revision 1.31  2000/05/25 00:23:39  vdanjean
+marcel_poll with sisci and few bugs fixes
+
 Revision 1.30  2000/05/17 14:34:16  oaumage
 - Reorganisation des sources au niveau de mad_init
 
@@ -153,7 +156,6 @@ ______________________________________________________________________________
 /* #define TIMING */
 #include "madeleine.h"
 
-
 /*
  * Driver registration
  * -------------------
@@ -244,7 +246,7 @@ void
 mad_managers_init(void)
 {
   LOG_IN();
-  tbx_init();
+  tbx_init(NULL, NULL, 0);
   ntbx_init();
   mad_memory_manager_init();
   LOG_OUT();

@@ -24,9 +24,9 @@ static unsigned int pm2_conf_size = 0;
 
 void common_attr_init(common_attr_t *attr)
 {
-#ifdef MAD3
+#if defined (MAD3) || defined (MAD4)
   attr->madeleine = NULL;
-#endif // MAD 3
+#endif // MAD 3 || MAD4
 
 #ifdef MAD2
   attr->madeleine = NULL;
@@ -156,7 +156,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_memory_manager_init(*argc, argv);
 #endif /* MAD2 */
 
-#ifdef MAD3
+#if defined (MAD3) || defined (MAD4)
   /*
    * Mad3 memory managers
    * --------------------
@@ -172,7 +172,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_forward_memory_manager_init(*argc, argv);
   mad_mux_memory_manager_init(*argc, argv);
 #endif // MARCEL
-#endif /* MAD3 */
+#endif /* MAD3 || MAD4 */
 
 #ifdef MAD2
   /*
@@ -202,7 +202,7 @@ void common_pre_init(int *argc, char *argv[],
   }
 #endif /* MAD2 */
 
-#ifdef MAD3
+#if defined (MAD3) || defined (MAD4)
   /*
    * Mad3 core initialization
    * ------------------------
@@ -255,7 +255,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_spawn_driver_init(attr->madeleine, argc, argv);
 #endif /* MAD2 && EXTERNAL_SPAWN */
 
-#ifdef MAD3
+#if defined (MAD3) || defined (MAD4)
   /*
    * Mad3 structure initializations
    * ------------------------------
@@ -282,7 +282,7 @@ void common_pre_init(int *argc, char *argv[],
 // number of processes = tbx_slist_get_length(madeleine->dir->process_slist));
 // global rank max     = tbx_darray_length(madeleine->dir->process_darray));
 #endif /* PM2 */
-#endif /* MAD3 */
+#endif /* MAD3 || MAD4 */
 
 #ifdef MAD2
   /*
@@ -390,7 +390,7 @@ void common_post_init(int *argc, char *argv[],
     mad_parse_url(attr->madeleine);
 #endif /* MAD2 && APPLICATION_SPAWN */
 
-#if defined(MAD2) || defined(MAD3)
+#if defined(MAD2) || defined(MAD3) || defined(MAD4)
   /*
    * Mad2/3 command line clean-up
    * --------------------------
@@ -449,10 +449,14 @@ void common_post_init(int *argc, char *argv[],
 #endif /* PROFILE */
 
 #ifdef MARCEL
-  marcel_start_sched(argc, argv);
+  if (!marcel_test_activity())
+     {
+	marcel_start_sched(argc, argv);
+	marcel_set_activity();
+     }
 #endif /* MARCEL */
 
-#ifdef MAD3
+#if defined (MAD3) || defined(MAD4)
   mad_dir_channel_init(attr->madeleine);
 #endif /* MAD3 */
 
@@ -509,6 +513,35 @@ void common_post_init(int *argc, char *argv[],
    */
   pm2debug_init_ext(argc, argv, PM2DEBUG_CLEAROPT);
 #endif /* PM2DEBUG */
+
+#ifdef MAD4
+  /*
+   * Mad4 base services init
+   * ------------------------
+   *
+   * Provides:
+   *  - the initial Factory service
+   * 
+   * Requires:
+   * - NTBX services
+   * - TBX services
+   * - MARCEL 
+   */
+     {	
+	int index; 	
+	for(index = 0 ; index < SERVICE_NUMBER ; index++)
+	  {
+	     p_mad_service_t    service  = NULL;
+	     mad_service_args_t args;
+	     service = mad_find_service(attr->madeleine,service_names[index]);
+	     if(service)
+	       {
+		  args.service = service;
+		  (*service->interface->start_service)( &args );	  	    		      
+	       }  
+	  }	
+     }
+#endif   
 }
 
 void
@@ -520,12 +553,40 @@ common_exit(common_attr_t *attr)
       attr = &default_static_attr;
     }
 
+#ifdef MAD4
+     {	
+	int index; 	
+	for(index = (SERVICE_NUMBER - 1) ; index >= 0 ; index--)
+	  {
+	     p_mad_service_t    service  = NULL;
+	     mad_service_args_t args;
+	     service = mad_find_service(attr->madeleine, service_names[index]);
+	     if(service)
+	       {
+		  if(!mad_test_service_name(service,"mad3_service"))
+		    {
+		       args.service  = service;
+		       (*service->interface->exit_service)( &args );
+		    }
+		  else {
+		     (*service->interface->exit_service)( NULL );
+		  }
+		  if (mad_test_service_name(service,"initial_factory"))
+		    {
+		       mad_remove_service(attr->madeleine, service);
+		    }
+	       }  
+	  }	
+     }
+#endif      
+   
+   
 #ifdef PM2
   pm2_net_request_end();
   pm2_net_wait_end();
 #endif // PM2
 
-#ifdef MAD3
+#if defined (MAD3) || defined (MAD4)
   //
   // Leonie termination synchronisation
   // ----------------------------------
@@ -541,7 +602,7 @@ common_exit(common_attr_t *attr)
 
   mad_leonie_sync(attr->madeleine);
   mad_dir_channels_exit(attr->madeleine);
-#endif // MAD3
+#endif // MAD3 || MAD4
 
 #ifdef MARCEL
   // Marcel shutdown
@@ -559,7 +620,7 @@ common_exit(common_attr_t *attr)
 #endif // DSM
 #endif // PM2
 
-#ifdef MAD3
+#if defined  (MAD3) || defined (MAD4)
   mad_dir_driver_exit(attr->madeleine);
   mad_directory_exit(attr->madeleine);
   mad_leonie_link_exit(attr->madeleine);
@@ -571,7 +632,7 @@ common_exit(common_attr_t *attr)
 #endif // MARCEL
 
   mad_memory_manager_exit();
-#endif // MAD3
+#endif // MAD3 || MAD4
 
 #ifdef MAD2
   mad_exit(attr->madeleine);

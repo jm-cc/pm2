@@ -22,6 +22,7 @@ struct _struct_common_attr_t;
 typedef struct _struct_common_attr_t common_attr_t;
 
 #if !defined(MARCEL_KERNEL) && \
+    !defined(MAD4_KERNEL)   && \
     !defined(MAD3_KERNEL)   && \
     !defined(MAD2_KERNEL)   && \
     !defined(PM2_KERNEL)    && \

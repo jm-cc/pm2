@@ -20,18 +20,8 @@
 
 void do_work(marcel_t self)
 {
-  MTRACE("DO_WORK", self);
-
   if(HAS_DEVIATE_WORK(self)) {
-    handler_func_t h = self->deviation_func;
-    any_t arg = self->deviation_arg;
-
-    self->deviation_func = NULL;
-    self->has_work &= ~MARCEL_WORK_DEVIATE;
-
-    unlock_task();
-    (*h)(arg);
-    lock_task();
+    marcel_execute_deviate_work();
     return;
   }
 

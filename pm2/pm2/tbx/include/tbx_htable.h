@@ -2,7 +2,7 @@
  *  \brief TBX hash-table management routines
  *
  *  This file implements hash-table TBX associative arrays.
- * 
+ *
  */
 
 /*
@@ -29,7 +29,7 @@
 #define TBX_HTABLE_H
 
 /*
- * Data types 
+ * Data types
  * ----------
  */
 typedef int                        tbx_htable_bucket_count_t;
@@ -39,7 +39,7 @@ typedef int                         tbx_htable_element_count_t;
 typedef tbx_htable_element_count_t *p_tbx_htable_element_count_t;
 
 /*
- * Data structures 
+ * Data structures
  * ---------------
  */
 typedef struct s_tbx_htable_element

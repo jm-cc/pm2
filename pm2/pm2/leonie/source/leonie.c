@@ -257,7 +257,7 @@ process_channel(p_tbx_htable_t channel)
   channel_network  = leoparse_read_id(channel, "net");
   TRACE_STR("====== Channel network is", channel_network);
 
-  channel_host_slist = leoparse_read_slist(channel, "hosts");
+  channel_host_slist = leoparse_read_as_slist(channel, "hosts");
   
   network_htable = tbx_htable_get(networks->htable, channel_network);
   if (!network_htable)
@@ -287,7 +287,7 @@ process_channel(p_tbx_htable_t channel)
     {
       p_tbx_slist_t network_host_slist = NULL;
       
-      network_host_slist  = leoparse_read_slist(network_htable, "hosts");
+      network_host_slist  = leoparse_read_as_slist(network_htable, "hosts");
       network_host_htable = build_network_host_htable(network_host_slist);
       tbx_htable_add(network_htable, "host_htable", network_host_htable);
     }
@@ -561,7 +561,7 @@ process_vchannel(p_tbx_htable_t vchannel)
   vchannel_name = leoparse_read_id(vchannel, "name");
   TRACE_STR("====== Processing vchannel", vchannel_name);
 
-  vchannel_channel_slist = leoparse_read_slist(vchannel, "channels");
+  vchannel_channel_slist = leoparse_read_as_slist(vchannel, "channels");
   dir_vchannel           = leo_dir_vchannel_init();
   dir_vchannel->name     = tbx_strdup(vchannel_name);
   dir_vchannel_pc        = dir_vchannel->pc;
@@ -969,7 +969,7 @@ process_application(p_tbx_htable_t application)
   TRACE_STR("==== Application flavor", application_flavor);
   application_networks = leoparse_read_htable(application, "networks");
 
-  include_slist = leoparse_read_slist(application_networks, "include"); 
+  include_slist = leoparse_read_as_slist(application_networks, "include"); 
   if (!include_slist || tbx_slist_is_nil(include_slist))
     {
       leo_terminate("parse error : no network include list");      
@@ -978,7 +978,9 @@ process_application(p_tbx_htable_t application)
   TRACE("==== Including Network configuration files");
   include_network_files(networks, include_slist);
   
-  channel_slist = leoparse_read_slist(application_networks, "channels");
+  channel_slist =
+    leoparse_read_as_slist(application_networks, "channels");
+
   if (!channel_slist || tbx_slist_is_nil(channel_slist))
     {
       leo_terminate("parse error : no channel list");
@@ -998,7 +1000,8 @@ process_application(p_tbx_htable_t application)
     }
   while (tbx_slist_ref_forward(channel_slist));
 
-  vchannel_slist = leoparse_try_read_slist(application_networks, "vchannels");
+  vchannel_slist = leoparse_read_as_slist(application_networks, "vchannels");
+  
   if (vchannel_slist)
     {
       if (tbx_slist_is_nil(vchannel_slist))

@@ -334,6 +334,14 @@
  * Attribute macros  ________________________________________________
  * _________________/////////////////////////////////////////////////
  */
+#if (__GNUC__ >= 3)
+#define TBX_PURE        __attribute__ ((__pure__))
+#define TBX_FMALLOC     __attribute__ ((__malloc__))
+#else // (__GNUC__ >= 3)
+#define TBX_PURE
+#define TBX_FMALLOC
+#endif  // (__GNUC__ >= 3)
+
 #ifdef __GNUC__
 #define TBX_BYTE        __attribute__ ((__mode__ (__byte__)))
 #define TBX_WORD        __attribute__ ((__mode__ (__word__)))
@@ -343,6 +351,7 @@
 #define TBX_UNUSED      __attribute__ ((__unused__))
 #define TBX_NORETURN    __attribute__ ((__noreturn__))
 #define TBX_CONST       __attribute__ ((__const__))
+#define TBX_NOINST      __attribute__ ((__no_instrument_function__))
 #else // __GNUC__
 #define TBX_BYTE
 #define TBX_WORD
@@ -352,6 +361,7 @@
 #define TBX_UNUSED
 #define TBX_NORETURN
 #define TBX_CONST
+#define TBX_NOINST
 #endif // __GNUC__
 
 /*

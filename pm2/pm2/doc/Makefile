@@ -11,7 +11,7 @@ ifeq ($(INCLUDE_MAKE),Makefile.include)
 include Makefile.include
 endif
 
-PS?= $(SRC_DOC:%.tex=%.ps)
+PS= $(SRC_DOC:%.tex=%.ps)
 
 DVI = $(PS:%.ps=%.dvi)
 

@@ -42,7 +42,11 @@ LIBNAME=mad
 include $(PM2_ROOT)/make/config.mak
 include $(PM2_ROOT)/make/libs-vars.mak
 
+ifdef OLD_MAKEFILE
 MAD2_PROTOCOLS := $(shell $(PM2_CONFIG) --protocols $(LIBRARY))
+else
+-include $(PM2_MAK_DIR)/mad2-specific.mak
+endif
 
 LIB_SRC2=$(LIB_SRC)/connection_interfaces
 LIB_C_SOURCES_ADDED := $(foreach PROT, $(MAD2_PROTOCOLS), $(LIB_SRC2)/mad_$(PROT).c)
@@ -71,3 +75,7 @@ $(LIB_C_PICS_ADDED): $(LIB_GEN_OBJ)/%$(LIB_EXT).pic: $(LIB_SRC2)/%.c
 $(LIB_C_DEPENDS_ADDED): $(LIB_GEN_DEP)/%$(LIB_EXT).d: $(LIB_SRC2)/%.c
 	$(LIB_PREFIX) $(SHELL) -ec '$(CC) -MM $(CFLAGS) $< \
 		| sed '\''s/.*:/$(subst /,\/,$(LIB_DEP_TO_OBJ)) $(subst /,\/,$@) :/g'\'' > $@'
+
+$(PM2_MAK_DIR)/mad2-specific.mak: $(PM2_MAK_DIR)
+	echo "MAD2_PROTOCOLS := `$(PM2_CONFIG) --protocols $(LIBRARY)`" >  $@
+

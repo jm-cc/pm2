@@ -78,27 +78,19 @@ include $(MAD_DEPENDS)
 endif
 endif
 
+$(MAD_EXTRA_DEP_FILE):
+	$(MAD_HIDE) rm -f $(MAD1_ROOT)/.opt*
+	$(MAD_HIDE) cp /dev/null $(MAD_EXTRA_DEP_FILE)
+
 $(MAD_DEPENDS): $(COMMON_MAKEFILES)
 $(MAD_OBJECTS): $(MAD_OBJ)/%.o: $(MAD_DEP)/%.d $(COMMON_MAKEFILES)
 
 $(MAD_LIB): $(MAD_OBJECTS)
-ifdef PM2
-	$(MAD_HIDE) rm -f $(MAD1_ROOT)/.mad_standalone
-else
-	$(MAD_HIDE) rm -f $(MAD1_ROOT)/.mad_pm2
-endif
 	$(MAD_HIDE) rm -f $(MAD_LIB)
 	$(MAD_PREFIX) ar cr $(MAD_LIB) $(MAD_OBJECTS)
-	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user.mak
-	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD1_ROOT)/make/user.mak
-	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD1_ROOT)/make/user.mak
-
-
-$(MAD1_ROOT)/.mad_pm2:
-	$(MAD_HIDE) cp /dev/null $(MAD1_ROOT)/.mad_pm2
-
-$(MAD1_ROOT)/.mad_standalone:
-	$(MAD_HIDE) cp /dev/null $(MAD1_ROOT)/.mad_standalone
+	$(MAD_HIDE) rm -f $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
+	$(MAD_HIDE) echo MAD_CFLAGS = $(COMMON_CFLAGS) > $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
+	$(MAD_HIDE) echo MAD_LDFLAGS = $(COMMON_LDFLAGS) >> $(MAD1_ROOT)/make/user$(COMMON_EXT).mak
 
 
 $(MAD_REG_OBJECTS): $(MAD_OBJ)/%$(COMMON_EXT).o: $(MAD_SRC)/%.c
@@ -124,7 +116,8 @@ madclean:
 		$(MAD1_ROOT)/examples/depend/*.d \
 		$(MAD1_ROOT)/examples/obj/$(PM2_ARCH_SYS)/*.o \
 		$(MAD1_ROOT)/examples/bin/$(PM2_ARCH_SYS)/* \
-		$(MAD1_ROOT)/.mad_*)
+		$(MAD1_ROOT)/.opt* \
+		$(MAD1_ROOT)/make/user*.mak)
 
 maddistclean:
 	$(MAD_HIDE) rm -rf $(wildcard $(MAD1_ROOT)/lib \
@@ -133,7 +126,8 @@ maddistclean:
 		$(MAD1_ROOT)/examples/depend \
 		$(MAD1_ROOT)/examples/obj \
 		$(MAD1_ROOT)/examples/bin \
-		$(MAD1_ROOT)/.mad_*)
+		$(MAD1_ROOT)/.opt* \
+		$(MAD1_ROOT)/make/user*.mak)
 
 ######################## Applications ########################
 

@@ -45,25 +45,46 @@ PM2_ARCH_SYS	:=	$(shell basename $(PM2_SYS) _SYS)/$(shell basename $(PM2_ARCH) _
 COMMON_CFLAGS	+=	-D$(PM2_SYS) -D$(PM2_ARCH)
 endif
 
-# Si MAD_OPTIONS n'est pas specifie en parametre de Make, alors on
-# prend la version specifiee dans le fichier d'options...
-ifndef MAD_OPTIONS
-MAD_USE_OPT_FILE	:=	no
-MAD_OPT_FILE		:=	$(MAD1_ROOT)/make/options.mak
+# Deux macros déclarées d'intérêt public :
+EMPTY		:=
+SPACE		:=	$(EMPTY) $(EMPTY)
+
+# L'utilisation de _MAD_OPTIONS (en lieu et place de MAD_OPTIONS)
+# force l'adjonction d'un suffixe aux fichiers créés (binaires,
+# objets, bibliothèques)
+ifdef _MAD_OPTIONS
+MAD_OPTIONS		:=	$(_MAD_OPTIONS)
+MAD_USE_EXTENSION	:=	yes
 else
-MAD_USE_OPT_FILE	:=	yes
-MAD_OPT_FILE		:=	$(MAD1_ROOT)/make/options-$(MAD_OPTIONS).mak
+MAD_USE_EXTENSION	:=	no
 endif
 
-COMMON_MAKEFILES	+=	$(MAD_OPT_FILE)
+# Inclusion des options
+MAD_OPT_FILES		:=	$(MAD1_ROOT)/make/options.mak \
+	$(foreach OPTION,$(MAD_OPTIONS),$(MAD1_ROOT)/make/options-$(OPTION).mak)
 
-# Verification de l'existence du fichier d'options
-ifneq ($(MAD_OPT_FILE),$(wildcard $(MAD_OPT_FILE)))
-$(error $(MAD_OPT_FILE): No such file)
+include $(MAD_OPT_FILES)
+
+COMMON_MAKEFILES	+=	$(MAD_OPT_FILES)
+
+# Fichier de dépendance artificiel pour forcer la recompilation
+# lorsque les options changent
+ifdef MAD_OPTIONS
+MAD_EXTRA_DEP_FILE	:=	$(MAD1_ROOT)/.opt_$(subst $(SPACE),_,$(sort $(MAD_OPTIONS)))
 else
-# Inclusion du fichier de parametrage de Marcel
-include $(MAD_OPT_FILE)
+MAD_EXTRA_DEP_FILE	:=	$(MAD1_ROOT)/.opt
 endif
+
+# Si on étend les noms de fichiers, il faut calculer le suffixe, sinon
+# il faut ajouter une dépendance supplémentaire...
+ifeq ($(MAD_USE_EXTENSION),yes)
+MAD_EXT		:=	-mad_$(subst $(SPACE),_,$(sort $(MAD_OPTIONS)))
+else
+COMMON_MAKEFILES	+=	$(MAD_EXTRA_DEP_FILE)
+endif
+
+# Petite entorse a l'utilisation du '+=' ...
+COMMON_EXT		:=	$(COMMON_EXT)$(MAD_EXT)
 
 # Inclusion des options specifiques au protocole reseau
 include $(MAD1_ROOT)/make/custom/options.mak
@@ -73,19 +94,12 @@ COMMON_MAKEFILES	+=	$(MAD1_ROOT)/make/custom/options.mak
 # Inclusion des options specifiques a l'architecture
 include $(MAD1_ROOT)/make/archdep/$(shell basename $(PM2_SYS) _SYS).inc
 
-# Petite entorse a l'utilisation du '+=' ...
-ifeq ($(MAD_USE_OPT_FILE),yes)
-COMMON_EXT		:=	$(strip $(COMMON_EXT)$(MAD_EXT))
-endif
+MAD_GEN_OPT	:=	$(MAD_GEN_1) $(MAD_GEN_2) $(MAD_GEN_3) \
+			$(MAD_GEN_4) $(MAD_GEN_5) $(MAD_GEN_6)
 
-# TODO: C'est un peu obsolete ! Il faudrait utiliser un moyen plus
-# generique pour detecter si les "flags" de compilation ont change
-# depuis la derniere fois !
-ifdef PM2
-COMMON_MAKEFILES	+=	$(MAD1_ROOT)/.mad_pm2
-else
-COMMON_MAKEFILES	+=	$(MAD1_ROOT)/.mad_standalone
-endif
+MAD_OPT		:=	$(strip $(MAD_OPT_0) $(MAD_OPT_1) $(MAD_OPT_2) \
+			$(MAD_OPT_3) $(MAD_OPT_4) $(MAD_OPT_5) \
+			$(MAD_OPT_6) $(MAD_OPT_7) $(MAD_OPT_8))
 
 # Les options "generiques" (-g, etc.) sont dans MAD_GEN_OPT, et les
 # autres sont dans MAD_OPT...

@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: mad_communication.c,v $
+Revision 1.21  2000/06/07 11:26:52  oaumage
+- Fin du retablissement de la version de mardi matin
+
 Revision 1.20  2000/06/07 08:12:04  oaumage
 - Retour a des bases saines
 
@@ -539,6 +542,13 @@ mad_end_unpacking(p_mad_connection_t connection)
 					     connection->
 					       first_sub_buffer_group,
 					     &buffer_group);
+		  /*
+		  if (interface->finalize_sub_buffer_group_reception)
+		    {
+		      interface->
+			finalize_sub_buffer_group_reception(last_link);
+		    }
+		  */
 		}	      
 	    }
 	}

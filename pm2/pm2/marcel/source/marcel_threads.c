@@ -491,12 +491,6 @@ void marcel_exit_internal(any_t val, int special_mode)
 	   stack_mutex) sur un autre LWP. */
 #warning task->sched should be delegated to scheduler
 // ST: à remettre	cur->sched.vpmask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(cur_lwp));
-	/* Ne pas oublier de mettre "ancien LWP a NULL", sinon la
-	   tache sera replacee dessus dans insert_task(). Cette
-	   optimisation est source de confusion et il vaudrait
-	   peut-etre mieux la supprimer... */
-#warning task->sched should be delegated to scheduler
-	cur->sched.internal.previous_lwp = NULL;
 #endif
 	ma_preempt_enable();
 

@@ -20,12 +20,14 @@
 #include "pm2_profile.h"
 
 typedef enum {
-	DEBUG_SHOW,
-	DEBUG_SHOW_PREFIX,
-	DEBUG_SHOW_FILE,
-	DEBUG_CRITICAL,
-	DEBUG_TRYONLY,
-	DEBUG_REGISTER,
+	PM2DEBUG_SHOW,
+	PM2DEBUG_SHOW_PREFIX,
+	PM2DEBUG_SHOW_FILE,
+	PM2DEBUG_CRITICAL,
+	PM2DEBUG_DO_NOT_SHOW_THREAD,
+	PM2DEBUG_DO_NOT_SHOW_LWP,
+	PM2DEBUG_TRYONLY,
+	PM2DEBUG_REGISTER,
 } debug_action_t;
 
 typedef struct struct_debug_type_t debug_type_t;
@@ -39,6 +41,8 @@ struct struct_debug_type_t {
 	int show_prefix;
 	int show_file;
 	int critical;
+	int do_not_show_thread;
+	int do_not_show_lwp;
 	int try_only;
 	debug_action_func_t setup;
 	void* data;
@@ -50,9 +54,11 @@ enum {
 };
 
 #define NEW_DEBUG_TYPE(show, prefix, name) \
-   {show, prefix, name, 0, 0, 0, 0, NULL, NULL}
+   {show, prefix, name, 0, 0, 0, 0, 0, 0, NULL, NULL}
 
-extern debug_type_t debug_type_default;
+extern debug_type_t debug_pm2debug;
+extern debug_type_t debug_pm2fulldebug;
+
 void debug_setup_default(debug_type_t*, debug_action_t, int);
 
 #ifdef PM2DEBUG
@@ -67,6 +73,14 @@ int pm2debug_printf(debug_type_t *type, int line, char* file,
 void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 void pm2debug_flush();
+#define debug_printf(type, fmt, args...) \
+   ((type) && ((type)->show) ? \
+    pm2debug_printf(type, __LINE__, __BASE_FILE__, fmt, ##args) \
+    : (void)0 )
+#define pm2debug(fmt, args...) \
+   debug_printf(&debug_pm2debug, fmt, ##args)
+#define pm2fulldebug(fmt, args...) \
+   debug_printf(&debug_pm2fulldebug, fmt, ##args)
 
 #else /* PM2DEBUG */
 
@@ -75,20 +89,15 @@ void pm2debug_flush();
 #define pm2debug_register(type)
 #define pm2debug_setup(type, action, value)
 #define pm2debug_flush() ((void)0)
+#define debug_printf(type, fmt, args...) ((void)0)
+#define pm2debug(fmt, args...) fprintf(stderr, fmt, ##args)
+#define pm2fulldebug(fmt, args...) fprintf(stderr, fmt, ##args)
 
-#endif
+#endif /* PM2DEBUG */
 
 #define pm2debug_init(argc, argv) \
    pm2debug_init_ext((argc), (argv), PM2DEBUG_CLEAROPT|PM2DEBUG_DO_OPT)
-#define debug_printf(type, fmt, args...) \
-   ((type) && ((type)->show) ? \
-    pm2debug_printf(type, __LINE__, __BASE_FILE__, fmt, ##args) \
-    : (void)0 )
 
-#define debug(fmt, args...) \
-   debug_printf(&debug_type_default, fmt, ##args)
-
-//#endif /* PM2DEBUG */
 
 #ifdef PM2DEBUG
 

@@ -17,8 +17,8 @@ export FLAVOR_DEFAULT:=marcel
 
 PROGS := active	cleanup	contsw create daube delay derout eclone force_raise \
 	kbd keys matrix nojoin once poll raise realtime sample schedpolicy \
-	smptest stack_jump sumtime sumtree timed timeout tsp tube usersched \
-	userspace vpmask
+	smptest stack_jump sumtime sumtree suspend timed timeout tsp tube \
+	usersched userspace vpmask
 
 include $(PM2_ROOT)/make/apps.mak
 

@@ -261,8 +261,8 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       new_task->user_space_ptr = NULL;
 
     new_task->father = cur;
-    new_task->lwp = cur->lwp; /* In case timer_interrupt is called before
-				 insert_task ! */
+    SET_LWP(new_task, GET_LWP(cur)); /* In case timer_interrupt is
+				 called before insert_task ! */
     new_task->f_to_call = func;
     new_task->arg = arg;
     new_task->initial_sp = (long)new_task - MAL(attr->user_space) -
@@ -475,7 +475,7 @@ int marcel_exit(any_t val)
     set_sp(SECUR_STACK_TOP(cur_lwp));
 #ifdef MA__LWPS
     // On recalcule "cur_lwp" car c'est une variable locale.
-    cur_lwp = marcel_self()->lwp;
+    cur_lwp = GET_LWP(marcel_self());
 #endif
 
     PROF_EVENT(on_security_stack);
@@ -562,7 +562,7 @@ int marcel_exit(any_t val)
 
     // Avant de changer de pile il faut, comme toujours, positionner
     // correctement le champ lwp...
-    cur_lwp->sec_desc->lwp = cur_lwp;
+    SET_LWP(cur_lwp->sec_desc, cur_lwp);
 
     // Ca y est, on peut basculer sur la pile de secours.
     call_ST_FLUSH_WINDOWS();
@@ -570,7 +570,7 @@ int marcel_exit(any_t val)
 
 #ifdef MA__LWPS
     // On recalcule "cur_lwp" car c'est une variable locale.
-    cur_lwp = marcel_self()->lwp;
+    cur_lwp = GET_LWP(marcel_self());
 #endif
 
     // On détruit l'ancien thread
@@ -936,7 +936,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
       RAISE(NOT_IMPLEMENTED);
 #endif
 #ifdef MA__SMP
-      if(marcel_self()->lwp != pid->lwp)
+      if(GET_LWP(marcel_self()) != GET_LWP(pid))
 	RAISE(NOT_IMPLEMENTED);
 #endif
 

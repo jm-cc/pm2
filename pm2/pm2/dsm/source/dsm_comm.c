@@ -451,6 +451,7 @@ void DSM_LRPC_WRITE_PAGE_REQ_func(void)
 }
 
 #define USE_DOUBLE_MAPPING 1
+#undef USE_DOUBLE_MAPPING
 
 static void DSM_LRPC_SEND_PAGE_threaded_func(void)
 {

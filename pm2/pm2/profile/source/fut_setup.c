@@ -246,10 +246,16 @@ out:
 
 int fut_endup( char *filename )
 	{
-	int				n, nints, size, fd;
-	unsigned int	*copy;
+	int n, nints, size, fd;
+	unsigned int *copy;
+	unsigned int smp_mode;
 
 
+#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
+	smp_mode = 1;
+#else
+	smp_mode = 0;
+#endif
 
 	/* stop all futher tracing */
 	fut_active = 0;
@@ -267,6 +273,8 @@ int fut_endup( char *filename )
 	if( (fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0666)) < 0 )
 		return fd;
 
+	if( write(fd, (void *)&smp_mode, sizeof(smp_mode)) < 0 )
+		perror("write smp_mode");
 	if( write(fd, (void *)&fut_pid, sizeof(fut_pid)) < 0 )
 		perror("write pid");
 	if( write(fd, (void *)&fut_cpu_mhz, sizeof(fut_cpu_mhz)) < 0 )

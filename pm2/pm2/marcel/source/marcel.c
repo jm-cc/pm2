@@ -245,6 +245,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     new_task->not_deviatable = attr->not_deviatable;
     new_task->detached = attr->detached;
     new_task->vpmask = attr->vpmask;
+    new_task->special_flags = attr->flags;
 
     if(attr->rt_thread)
       new_task->special_flags |= MA_SF_RT_THREAD;
@@ -309,7 +310,13 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 				 ? NULL /* do not insert now */
 				 : new_task); /* insert asap */
 
-      SET_STATE_READY(new_task);
+      if(IS_TASK_TYPE_IDLE(new_task))
+	// Si la tâche créée est une tâche 'idle', alors il est
+	// prudent de la marquer 'RUNNING' si l'on est en mode
+	// MA__MULTIPLE_RUNNING
+	SET_STATE_RUNNING_ONLY(new_task);
+      else
+	SET_STATE_READY(new_task);
 
       call_ST_FLUSH_WINDOWS();
       set_sp(new_task->initial_sp);

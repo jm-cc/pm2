@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: tbx_macros.h,v $
+Revision 1.13  2000/07/11 09:01:26  oaumage
+- Suppression de la collision sur la macro CTRL
+- Suppression de la collision potentielle sur la macro VERIFY
+
 Revision 1.12  2000/06/09 18:15:04  vdanjean
 minor update
 
@@ -165,7 +169,7 @@ typedef enum
  * CTRL: assertion verification macro
  * ----------------------------------
  */
-#define CTRL(op, val) \
+#define TBX_CTRL(op, val) \
   if((op) != (val))     \
     fprintf(stderr, "ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
             #op " != " #val, __FILE__, __LINE__),   exit(1)
@@ -175,12 +179,12 @@ typedef enum
  * ------------------------------------------------------------
  */
 #ifdef DEBUG
-#define VERIFY(op, val) \
+#define TBX_VERIFY(op, val) \
   if((op) != (val))     \
     fprintf(stderr, "ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
             #op " != " #val, __FILE__, __LINE__),   exit(1)
 #else /* DEBUG */
-#define VERIFY(op, val) ((void)(op))
+#define TBX_VERIFY(op, val) ((void)(op))
 #endif /* DEBUG */
 
 /*

@@ -132,26 +132,15 @@ void pm2_init_data(int *argc, char *argv[])
     pm2_rpc_init();
 }
 
-void pm2_init_open_channels(int *argc, char *argv[],
-			    unsigned pm2_self,
-			    unsigned pm2_config_size)
+void pm2_init_set_rank(int *argc, char *argv[],
+		       unsigned pm2_self,
+		       unsigned pm2_config_size)
 {
   __pm2_self = pm2_self;
   __pm2_conf_size = pm2_config_size;
 
 #ifdef PROFILE
   profile_set_tracefile("/tmp/prof_file_%d", __pm2_self);
-#endif
-
-#ifdef MAD2
-  if(!pm2_single_mode()) {
-    int i;
-
-    for(i=0; i<nb_of_channels; i++) {
-      pm2_channel[i] = mad_open_channel(mad_get_madeleine(), 0);
-      mdebug("Channel %d created.\n", i);
-    }
-  }
 #endif
 }
 
@@ -176,12 +165,29 @@ void pm2_init_thread_related(int *argc, char *argv[])
   pm2_sync_init(__pm2_self, __pm2_conf_size);
 }
 
-void pm2_init_listen_network(int *argc, char *argv[])
+void pm2_init_open_channels(int *argc, char *argv[])
+{
+#ifdef MAD2
+  if(!pm2_single_mode()) {
+    int i;
+
+    for(i=0; i<nb_of_channels; i++) {
+      pm2_channel[i] = mad_open_channel(mad_get_madeleine(), 0);
+      mdebug("Channel %d created.\n", i);
+    }
+  }
+#endif
+}
+
+void pm2_init_exec_startup_funcs(int *argc, char *argv[])
 {
   while(nb_startup_funcs--)
     (*(startup_funcs[nb_startup_funcs]))(*argc, argv,
 					 startup_args[nb_startup_funcs]);
+}
 
+void pm2_init_listen_network(int *argc, char *argv[])
+{
   if(!pm2_single_mode()) {
 #ifdef MAD2
     int i;

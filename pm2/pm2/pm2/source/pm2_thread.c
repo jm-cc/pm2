@@ -102,7 +102,7 @@ static __inline__ struct pm2_thread_arg *pm2_thread_alloc(pm2_thread_class_t cla
     marcel_attr_setvpmask(&res->attr, __pm2_global_vpmask);
     marcel_attr_setrealtime(&res->attr, MARCEL_CLASS_REGULAR);
   } else {
-    marcel_attr_setvpmask(&res->attr, marcel_self()->vpmask);
+    marcel_attr_setvpmask(&res->attr, marcel_self()->sched.vpmask);
     marcel_attr_setrealtime(&res->attr,
 			    MA_TASK_REAL_TIME(marcel_self()) ?
 			       MARCEL_CLASS_REALTIME : MARCEL_CLASS_REGULAR);
@@ -148,11 +148,11 @@ static any_t pm2_thread_starter(any_t arg)
 
   pm2_thread_free(ta);
 
-  marcel_getuserspace(marcel_self(), (void **)&bdesc);
+  marcel_getuserspace(marcel_self(), (void *)&bdesc);
   block_init_list(bdesc);
   marcel_setspecific(_pm2_block_key, (any_t)bdesc);
 
-  marcel_cleanup_push(pm2_thread_term_func, marcel_self());
+  marcel_postexit(pm2_thread_term_func, marcel_self());
 
   (*_func)(_arg);
 

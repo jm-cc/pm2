@@ -109,6 +109,9 @@ typedef struct
 
   int               *credits_a_rendre;
   int               *credits_disponibles;
+  
+  int                which;
+
   p_tbx_memory_t     bip_buffer_key;
   tbx_bool_t         first_time;
 
@@ -399,12 +402,11 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
 	      int                          *host)
 {
 #if defined(MARCEL)
-  static unsigned which   = 0;
-  int             tmphost = 0;
-  int             status  = 0;
+  int tmphost = 0;
+  int status  = 0;
 
   LOG_IN();
-  switch (which)
+  switch (p->which)
     {
     case 0 : 
       { /* SERVICE ou TRANSFERT */
@@ -445,7 +447,7 @@ bip_recv_poll(p_mad_bip_channel_specific_t  p,
       FAILURE("invalid message");
   }
 
-  which = (which + 1) % 2;
+  p->which = (p->which + 1) % 2;
 
   LOG_OUT();
   return -1;
@@ -867,6 +869,7 @@ mad_bip_channel_init(p_mad_channel_t channel)
   channel_specific->credits_a_rendre    = TBX_MALLOC (size * sizeof (int));
   channel_specific->first_time          = 1;
   channel_specific->ack_was_received    = TBX_MALLOC(size * sizeof(tbx_bool_t));
+  channel_specific->which               = 0;
 
 #ifdef MARCEL
   channel_specific->cond_cred = TBX_MALLOC(size*sizeof(marcel_cond_t));

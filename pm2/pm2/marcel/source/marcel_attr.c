@@ -20,21 +20,22 @@
 
 /* Déclaré non statique car utilisé dans marcel.c : */
 marcel_attr_t marcel_attr_default = {
-  __detachstate: MARCEL_CREATE_JOINABLE,
-  __schedpolicy: MARCEL_SCHED_OTHER,
-  __schedparam: {0,},
-  __inheritsched: 0,
-  __scope: 0,
-  __guardsize: 0,
-  __stackaddr_set: 0,
-  __stackaddr: NULL,
-  user_space: 0,
-  immediate_activation: FALSE,
-  not_migratable: 1,
-  not_deviatable: 0,
-  rt_thread: MARCEL_CLASS_REGULAR,
-  vpmask: MARCEL_VPMASK_EMPTY,
-  flags: 0
+  .__detachstate= MARCEL_CREATE_JOINABLE,
+  .__schedpolicy= MARCEL_SCHED_OTHER,
+  .__schedparam= {0,},
+  .__inheritsched= 0,
+  .__scope= 0,
+  .__guardsize= 0,
+  .__stackaddr_set= 0,
+  .__stackaddr= NULL,
+  .user_space= 0,
+  .immediate_activation= FALSE,
+  .not_migratable= 1,
+  .not_deviatable= 0,
+  .rt_thread= MARCEL_CLASS_REGULAR,
+  .vpmask= MARCEL_VPMASK_EMPTY,
+  .flags= 0,
+  .name= "run_task",
 };
 
 /* Déclaré dans marcel.c : */
@@ -176,6 +177,21 @@ int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask)
 int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask)
 {
   *mask = attr->vpmask;
+  return 0;
+}
+
+int marcel_attr_setname(marcel_attr_t *attr, const char *name)
+{
+  strncpy(attr->name,name,MARCEL_MAXNAMESIZE-1);
+  attr->name[MARCEL_MAXNAMESIZE-1]='\0';
+  return 0;
+}
+
+int marcel_attr_getname(marcel_attr_t *attr, char *name, size_t n)
+{
+  strncpy(name,attr->name,n);
+  if (MARCEL_MAXNAMESIZE>n)
+    name[n-1]='\0';
   return 0;
 }
 

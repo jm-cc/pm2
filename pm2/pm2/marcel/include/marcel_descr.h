@@ -33,6 +33,7 @@ typedef p_marcel_task_t marcel_t;
 #depend "asm/atomic.h"
 #depend "sys/marcel_work.h[marcel_structures]"
 #depend "marcel_sched_generic.h[marcel_structures]"
+#depend "marcel_attr.h[macros]"
  /* Pour struct __res_state */
 #define __need_res_state
 #depend <resolv.h>
@@ -100,6 +101,7 @@ struct marcel_task {
 	any_t stack_base;
 	int static_stack;
 	long initial_sp, depl;
+	char name[MARCEL_MAXNAMESIZE];
 	unsigned long number, time_to_wake;
 	unsigned not_migratable, not_deviatable;
 	marcel_sem_t suspend_sem;

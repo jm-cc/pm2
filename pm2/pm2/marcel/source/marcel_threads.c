@@ -76,6 +76,7 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	//t->static_stack
 	//t->initial_sp
 	//t->depl
+	marcel_attr_getname(attr,t->name,MARCEL_MAXNAMESIZE);
 	//t->number
 	//t->time_to_wake
 	t->not_migratable = attr->not_migratable;
@@ -315,10 +316,13 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 {
 	marcel_attr_t attr;
 	marcel_t postexit;
+	char name[MARCEL_MAXNAMESIZE];
 
 	LOG_IN();
 	/* Démarrage du thread responsable des terminaisons */
 	marcel_attr_init(&attr);
+	snprintf(name,MARCEL_MAXNAMESIZE,"postexit/%u",LWP_NUMBER(lwp));
+	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
@@ -857,10 +861,12 @@ void __init main_thread_init(void)
 {
 	LOG_IN();
 	marcel_attr_t attr;
+	char *name="main";
 
 	memset(__main_thread, 0, sizeof(marcel_task_t));
 	
 	marcel_attr_init(&attr);
+	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
 	marcel_attr_setmigrationstate(&attr, FALSE);
 #if 0

@@ -269,15 +269,11 @@ static void lwp_init(ma_lwp_t lwp)
 {
 	static unsigned __nb_lwp = 0;
 	marcel_attr_t attr;
+	char name[MARCEL_MAXNAMESIZE];
 
 	LOG_IN();
 
 	memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
-
-#ifdef MA__LWPS
-	lwp->per_lwp_offset = (unsigned long)lwp -
-			(unsigned long)&__ma_main_lwp_start;;
-#endif
 
 #ifdef MA__SMP
 	marcel_sem_init(&lwp->kthread_stop, 0);
@@ -330,6 +326,8 @@ static void lwp_init(ma_lwp_t lwp)
 	 * - soit par un appel direct à cette fonction (ACTIVATIONS)
 	 */
 	marcel_attr_init(&attr);
+	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%u",LWP_NUMBER(lwp));
+	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
 	marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(lwp)));
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);

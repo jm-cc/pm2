@@ -208,6 +208,7 @@ MA_DEFINE_PER_LWP(marcel_task_t *,idle_task)=NULL;
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {
 	marcel_attr_t attr;
+	char name[MARCEL_MAXNAMESIZE];
 	LOG_IN();
 
 	if (!IS_FIRST_LWP(lwp)) {
@@ -219,6 +220,8 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	/* Création de la tâche Idle (idle_task) */
 	/*****************************************/
 	marcel_attr_init(&attr);
+	snprintf(name,MARCEL_MAXNAMESIZE,"idle/%u",LWP_NUMBER(lwp));
+	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
 	// Il vaut mieux généraliser l'utilisation des 'vpmask'
 	marcel_attr_setvpmask(&attr, 
@@ -246,6 +249,8 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
   /* Création de la tâche pour les upcalls upcall_new */
   /****************************************************/
 	marcel_attr_init(&attr);
+	snprintf(name,MARCEL_MAXNAMESIZE,"upcalld/%u",LWP_NUMBER(lwp));
+	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, TRUE);
 	marcel_attr_setvpmask(MARCEL_VPMASK_ALL_BUT_VP(lwp->number));
 	marcel_attr_setflags(&attr, MA_SF_UPCALL_NEW | MA_SF_NORUN);

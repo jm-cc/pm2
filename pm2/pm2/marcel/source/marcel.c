@@ -252,7 +252,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       stack_protect(new_task);
 #endif
       new_task->static_stack = TRUE;
-    } else {
+    } else { /* (!attr->stack_base) */
       char *bottom;
 
 #ifdef MA__DEBUG
@@ -268,7 +268,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       init_task_desc(new_task);
       new_task->stack_base = bottom;
       new_task->static_stack = FALSE;
-    }
+    } /* fin (attr->stack_base) */
 
     new_task->sched_policy = attr->sched_policy;
     new_task->not_migratable = attr->not_migratable;
@@ -277,7 +277,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
     new_task->vpmask = attr->vpmask;
 
     if(attr->rt_thread)
-      new_task->special_flags = MA_SF_RT_THREAD;
+      new_task->special_flags |= MA_SF_RT_THREAD;
 
     if(!attr->detached) {
       marcel_sem_init(&new_task->client, 0);
@@ -315,7 +315,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
 #ifdef MA__LWPS
 	  // On ne peut pas placer ce thread sur le LWP courant
        || (marcel_vpmask_vp_ismember(&new_task->vpmask,
-				     GET_LWP(cur)->number))
+				      GET_LWP(cur)->number))
 #ifndef MA__ONE_QUEUE
 	  // Si la politique est du type 'placer sur le LWP le moins
 	  // chargé', alors on ne peut pas placer ce thread sur le LWP
@@ -1006,7 +1006,9 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 	marcel_wake_task(pid, NULL);
       UNLOCK_WORK(pid);
       unlock_task();
-      marcel_explicityield(pid);
+      RAISE(NOT_IMPLEMENTED);
+#warning deviate with activation not yet fully implemented
+      //marcel_explicityield(pid);
       lock_task();
       LOCK_WORK(pid);
     }

@@ -337,7 +337,11 @@ for v in $*; do
     fi
 done
 
-PM2_PRE_SCRIPT=${PM2_ROOT}/bin/pm2-pre-script.sh
+if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
+    PM2_PRE_SCRIPT=pm2-pre-script.sh
+else
+    PM2_PRE_SCRIPT=${PM2_ROOT}/bin/pm2-pre-script.sh
+fi
 
 if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
     log "Executing: $_PM2CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \

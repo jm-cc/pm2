@@ -66,8 +66,8 @@ void pm2_printf(char *format, ...)
       unsigned len = strlen(_pm2_print_buf)+1;
 
       pm2_rawrpc_begin(pm2_main_module(), PM2_PRINTF, NULL);
-      mad_pack_int(MAD_IN_HEADER, &len, 1);
-      mad_pack_byte(MAD_IN_HEADER, _pm2_print_buf, len);
+      pm2_pack_int(SEND_CHEAPER, RECV_EXPRESS, &len, 1);
+      pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, _pm2_print_buf, len);
       pm2_rawrpc_end();
     }
     marcel_sem_V(&print_mutex);
@@ -79,8 +79,8 @@ static void netserver_printf(void)
   static char buf[2048] __MAD_ALIGNED__;
   unsigned len;
 
-  mad_unpack_int(MAD_IN_HEADER, &len, 1);
-  mad_unpack_byte(MAD_IN_HEADER, buf, len);
+  pm2_unpack_int(SEND_CHEAPER, RECV_EXPRESS, &len, 1);
+  pm2_unpack_byte(SEND_CHEAPER, RECV_CHEAPER, buf, len);
 
   pm2_rawrpc_waitdata();
 

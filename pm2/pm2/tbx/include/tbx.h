@@ -34,6 +34,14 @@
 
 ______________________________________________________________________________
 $Log: tbx.h,v $
+Revision 1.7  2000/12/19 16:57:50  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.6  2000/07/07 14:49:41  oaumage
 - Ajout d'un support pour les tables de hachage
 
@@ -80,6 +88,8 @@ ______________________________________________________________________________
 #ifdef MARCEL
 #include "marcel.h"
 #endif /* MARCEL */
+#include "pm2debug.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>

@@ -276,7 +276,181 @@ void mad_recvbuf_receive(void)
 #endif
 }
 
-void mad_pack_byte(madeleine_part where, char *data, size_t nb)
+void pm2_pack_byte(mad_send_mode_t sm,
+		   mad_receive_mode_t rm,
+		   char *data,
+		   size_t nb)
+{
+  switch(sm) {
+  case SEND_CHEAPER : {
+    switch(rm) {
+    case RECV_EXPRESS : {
+      old_mad_pack_byte(MAD_IN_HEADER, data, nb);
+      break;
+    }
+    case RECV_CHEAPER : {
+      old_mad_pack_byte(MAD_IN_PLACE, data, nb);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  case SEND_SAFER : {
+    old_mad_pack_byte(MAD_IN_HEADER, data, nb);
+    break;
+  }
+  case SEND_LATER : {
+    switch(rm) {
+    case RECV_CHEAPER : {
+      old_mad_pack_byte(MAD_IN_PLACE, data, nb);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  default:
+    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+    exit(1);
+  }
+}
+
+void pm2_unpack_byte(mad_send_mode_t sm,
+		     mad_receive_mode_t rm,
+		     char *data,
+		     size_t nb)
+{
+  switch(sm) {
+  case SEND_CHEAPER : {
+    switch(rm) {
+    case RECV_EXPRESS : {
+      old_mad_unpack_byte(MAD_IN_HEADER, data, nb);
+      break;
+    }
+    case RECV_CHEAPER : {
+      old_mad_unpack_byte(MAD_IN_PLACE, data, nb);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  case SEND_SAFER : {
+    old_mad_unpack_byte(MAD_IN_HEADER, data, nb);
+    break;
+  }
+  case SEND_LATER : {
+    switch(rm) {
+    case RECV_CHEAPER : {
+      old_mad_unpack_byte(MAD_IN_PLACE, data, nb);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  default:
+    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+    exit(1);
+  }
+}
+
+void pm2_pack_str(mad_send_mode_t sm,
+		  mad_receive_mode_t rm,
+		  char *data)
+{
+  switch(sm) {
+  case SEND_CHEAPER : {
+    switch(rm) {
+    case RECV_EXPRESS : {
+      old_mad_pack_str(MAD_IN_HEADER, data);
+      break;
+    }
+    case RECV_CHEAPER : {
+      old_mad_pack_str(MAD_IN_PLACE, data);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  case SEND_SAFER : {
+    old_mad_pack_str(MAD_IN_HEADER, data);
+    break;
+  }
+  case SEND_LATER : {
+    switch(rm) {
+    case RECV_CHEAPER : {
+      old_mad_pack_str(MAD_IN_PLACE, data);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  default:
+    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+    exit(1);
+  }
+}
+
+void pm2_unpack_str(mad_send_mode_t sm,
+		    mad_receive_mode_t rm,
+		    char *data)
+{
+  switch(sm) {
+  case SEND_CHEAPER : {
+    switch(rm) {
+    case RECV_EXPRESS : {
+      old_mad_unpack_str(MAD_IN_HEADER, data);
+      break;
+    }
+    case RECV_CHEAPER : {
+      old_mad_unpack_str(MAD_IN_PLACE, data);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  case SEND_SAFER : {
+    old_mad_unpack_str(MAD_IN_HEADER, data);
+    break;
+  }
+  case SEND_LATER : {
+    switch(rm) {
+    case RECV_CHEAPER : {
+      old_mad_unpack_str(MAD_IN_PLACE, data);
+      break;
+    }
+    default:
+      fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+      exit(1);
+    }
+    break;
+  }
+  default:
+    fprintf(stderr, "Oups! This packing mode is not supported by Madeleine I.\n");
+    exit(1);
+  }
+}
+
+void old_mad_pack_byte(madeleine_part where, char *data, size_t nb)
 {
   register struct s_buffer *cur_buf=CUR_BUF;
 
@@ -336,7 +510,7 @@ void mad_pack_byte(madeleine_part where, char *data, size_t nb)
   }
 }
 
-void mad_unpack_byte(madeleine_part where, char *data, size_t nb)
+void old_mad_unpack_byte(madeleine_part where, char *data, size_t nb)
 {
   if(nb) {
     switch(where) {
@@ -380,67 +554,67 @@ void mad_unpack_byte(madeleine_part where, char *data, size_t nb)
   }
 }
 
-void mad_pack_short(madeleine_part where, short *data, size_t nb)
+void old_mad_pack_short(madeleine_part where, short *data, size_t nb)
 {
-  mad_pack_byte(where, (char *)data, nb*sizeof(short));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(short));
 }
 
-void mad_unpack_short(madeleine_part where, short *data, size_t nb)
+void old_mad_unpack_short(madeleine_part where, short *data, size_t nb)
 {
-  mad_unpack_byte(where, (char *)data, nb*sizeof(short));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(short));
 }
 
-void mad_pack_int(madeleine_part where, int *data, size_t nb)
+void old_mad_pack_int(madeleine_part where, int *data, size_t nb)
 {
-  mad_pack_byte(where, (char *)data, nb*sizeof(int));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(int));
 }
 
-void mad_unpack_int(madeleine_part where, int *data, size_t nb)
+void old_mad_unpack_int(madeleine_part where, int *data, size_t nb)
 {
-  mad_unpack_byte(where, (char *)data, nb*sizeof(int));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(int));
 }
 
-void mad_pack_long(madeleine_part where, long *data, size_t nb)
+void old_mad_pack_long(madeleine_part where, long *data, size_t nb)
 {
-  mad_pack_byte(where, (char *)data, nb*sizeof(long));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(long));
 }
 
-void mad_unpack_long(madeleine_part where, long *data, size_t nb)
+void old_mad_unpack_long(madeleine_part where, long *data, size_t nb)
 {
-  mad_unpack_byte(where, (char *)data, nb*sizeof(long));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(long));
 }
 
-void mad_pack_float(madeleine_part where, float *data, size_t nb)
+void old_mad_pack_float(madeleine_part where, float *data, size_t nb)
 {
-  mad_pack_byte(where, (char *)data, nb*sizeof(float));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(float));
 }
 
-void mad_unpack_float(madeleine_part where, float *data, size_t nb)
+void old_mad_unpack_float(madeleine_part where, float *data, size_t nb)
 {
-  mad_unpack_byte(where, (char *)data, nb*sizeof(float));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(float));
 }
 
-void mad_pack_double(madeleine_part where, double *data, size_t nb)
+void old_mad_pack_double(madeleine_part where, double *data, size_t nb)
 {
-  mad_pack_byte(where, (char *)data, nb*sizeof(double));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(double));
 }
 
-void mad_unpack_double(madeleine_part where, double *data, size_t nb)
+void old_mad_unpack_double(madeleine_part where, double *data, size_t nb)
 {
-  mad_unpack_byte(where, (char *)data, nb*sizeof(double));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(double));
 }
 
-void mad_pack_pointer(madeleine_part where, pointer *data, size_t nb)
+void old_mad_pack_pointer(madeleine_part where, pointer *data, size_t nb)
 {
-  mad_pack_byte(where, (char *)data, nb*sizeof(pointer));
+  old_mad_pack_byte(where, (char *)data, nb*sizeof(pointer));
 }
 
-void mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb)
+void old_mad_unpack_pointer(madeleine_part where, pointer *data, size_t nb)
 {
-  mad_unpack_byte(where, (char *)data, nb*sizeof(pointer));
+  old_mad_unpack_byte(where, (char *)data, nb*sizeof(pointer));
 }
 
-void mad_pack_str(madeleine_part where, char *data)
+void old_mad_pack_str(madeleine_part where, char *data)
 {
   int nb;
   register struct s_buffer *cur_buf=CUR_BUF;
@@ -496,7 +670,7 @@ void mad_pack_str(madeleine_part where, char *data)
   }
 }
 
-void mad_unpack_str(madeleine_part where, char *data)
+void old_mad_unpack_str(madeleine_part where, char *data)
 { int nb;
 
   switch(where) {

@@ -120,52 +120,6 @@ unsigned marcel_frozenthreads(void)
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/
-/*            Gestion des lock_task                                       */
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
-
-#if 0
-#ifdef MA_PROTECT_LOCK_TASK_FROM_SIG
-void ma_sched_protect_start(void){}
-
-void ma_lock_task(void)
-{
-  atomic_inc(&marcel_self()->_locked);
-}
-
-void ma_unlock_task(void)
-{
-  marcel_t cur __attribute__ ((unused)) = marcel_self();
-
-  if(atomic_read(&cur->_locked) == 1) {
-
-#ifdef MARCEL_RT
-    if(__rt_task_exist && !MA_TASK_REAL_TIME(cur))
-      ma__marcel_find_and_yield_to_rt_task();
-#endif
-
-#ifdef MA__WORK
-    if(cur->work.has_work)
-      do_work(cur);
-#endif
-  }
-
-  atomic_dec(&cur->_locked);
-
-#if defined(PM2DEBUG) && defined(MA__ACTIVATION)
-  pm2debug_flush();
-#endif
-}
-
-void ma_sched_protect_end(void){}
-
-#endif
-#endif
-
-/**************************************************************************/
-/**************************************************************************/
-/**************************************************************************/
 /*              Choix des lwp, choix des threads, etc.                    */
 /**************************************************************************/
 /**************************************************************************/

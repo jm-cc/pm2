@@ -1383,7 +1383,11 @@ void win_stack_allocate(unsigned n)
 }
 #endif
 
+#ifdef MARCEL_MAIN_AS_FUNC
+int go_marcel_main(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
   static int __argc;
   static char **__argv;

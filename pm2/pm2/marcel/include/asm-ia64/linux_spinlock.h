@@ -121,6 +121,7 @@ _ma_raw_spin_lock (ma_spinlock_t *lock)
 typedef struct {
 	volatile unsigned int read_counter	: 31;
 	volatile unsigned int write_lock	:  1;
+	volatile unsigned int need_write;
 } ma_rwlock_t;
 
 #section marcel_macros
@@ -137,7 +138,7 @@ typedef struct {
 #define _ma_raw_read_lock(rw)								\
 do {											\
 	ma_rwlock_t *__ma_read_lock_ptr = (rw);						\
-											\
+	while(((volatile int *)__ma_read_lock_ptr)[1] > 0);				\
 	while (tbx_unlikely(ma_ia64_fetchadd(1, (int *) __ma_read_lock_ptr, acq) < 0)) {		\
 		ma_ia64_fetchadd(-1, (int *) __ma_read_lock_ptr, rel);			\
 		while (*(volatile int *)__ma_read_lock_ptr < 0)				\
@@ -158,11 +159,13 @@ do {								\
 ({											\
 	__u64 ia64_val, ia64_set_val = ia64_dep_mi(-1, 0, 31, 1);			\
 	__u32 *ia64_write_lock_ptr = (__u32 *) (l);					\
+	ma_ia64_fetchadd(1 , ia64_write_lock_ptr+1);\
 	do {										\
 		while (*ia64_write_lock_ptr)						\
 			ia64_barrier();							\
 		ia64_val = ia64_cmpxchg4_acq(ia64_write_lock_ptr, ia64_set_val, 0);	\
 	} while (ia64_val);								\
+        ma_ia64_fetchadd(-1 , ia64_write_lock_ptr+1);\
 })
 
 #define _ma_raw_write_trylock(rw)						\
@@ -175,6 +178,7 @@ do {								\
 #else
 #define _ma_raw_write_lock(rw)							\
 do {										\
+	ma_ia64_fetchadd(1 , ((int*)rw)+1,acq);\
  	__asm__ __volatile__ (							\
 		"mov ar.ccv = r0\n"						\
 		"dep r29 = -1, r0, 31, 1;;\n"					\
@@ -186,6 +190,7 @@ do {										\
 		"cmp4.eq p0,p7 = r0, r2\n"					\
 		"(p7) br.cond.spnt.few 1b;;\n"					\
 		:: "r"(rw) : "ar.ccv", "p7", "r2", "r29", "memory");		\
+	 ma_ia64_fetchadd(-1 , ((int*)rw)+1,acq);\
 } while(0)
 
 #define _ma_raw_write_trylock(rw)							\

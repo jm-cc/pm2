@@ -33,18 +33,22 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
+# FLAVOR -> flavor utilisee pour la compilation
+#---------------------------------------------------------------------
 ifndef FLAVOR
-ifdef PM2_FLAVOR
-export FLAVOR:=$(PM2_FLAVOR)
-else
-ifdef FLAVOR_DEFAULT
-export FLAVOR:=$(FLAVOR_DEFAULT)
-else
-export FLAVOR:=default
-endif
-endif
-endif
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    ifdef FLAVOR_DEFAULT
+      export FLAVOR:=$(FLAVOR_DEFAULT)
+    else # FLAVOR_DEFAULT
+      export FLAVOR:=default
+    endif # FLAVOR_DEFAULT
+  endif # PM2_FLAVOR
+endif # FLAVOR
 
+# MAK_VERB -> niveau d'affichage des messages
+#---------------------------------------------------------------------
 ifeq ($(MAK_VERB),verbose)
 COMMON_PREFIX  =#
 COMMON_HIDE   :=#
@@ -67,19 +71,31 @@ endif
 endif
 endif
 
+# Prefixes -> utilite ?
+#---------------------------------------------------------------------
 LIB_PREFIX = $(COMMON_PREFIX)
 PRG_PREFIX = $(COMMON_PREFIX)
 
+# COMMON_DEPS -> dependances racines
+# - config.mak contient les reglages du processus de contruction
+#---------------------------------------------------------------------
 COMMON_DEPS += $(PM2_ROOT)/make/config.mak
 
+# PM2_CONFIG -> script d'information de configuration de PM2
+#---------------------------------------------------------------------
 ifndef PM2_CONFIG
 PM2_CONFIG := $(PM2_ROOT)/bin/pm2-config
 endif
 
+# Utilite de cette commande ? 
+# Dans quel cas, FLAVOR n'est pas definie ?
+#---------------------------------------------------------------------
 ifdef FLAVOR
 override PM2_CONFIG := $(PM2_CONFIG) --flavor=$(FLAVOR)
 endif
 
+# PM2_MAK_DIR -> repertoire destination des makefiles generes
+#---------------------------------------------------------------------
 # Set variable if not set
 ifneq ($(MAKECMDGOALS),init)
 ifneq ($(MAKECMDGOALS),help)
@@ -87,6 +103,7 @@ ifneq ($(MAKECMDGOALS),textconfig)
 ifneq ($(MAKECMDGOALS),menuconfig)
 ifneq ($(MAKECMDGOALS),xconfig)
 ifneq ($(MAKECMDGOALS),config)
+SIMPLE_TARGET := true
 ifeq ($(PM2_MAK_DIR),)
 export PM2_MAK_DIR := $(shell $(PM2_CONFIG) --makdir)
 endif

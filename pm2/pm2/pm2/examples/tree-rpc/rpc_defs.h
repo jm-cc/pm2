@@ -36,7 +36,7 @@
 #ifndef LRPC_DEFS_EST_DEF
 #define LRPC_DEFS_EST_DEF
 
-#include <pm2.h>
+#include "pm2.h"
 
 BEGIN_LRPC_LIST
   DICHOTOMY

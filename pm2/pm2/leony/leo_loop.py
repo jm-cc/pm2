@@ -26,6 +26,9 @@ command_string_dict = {
     }
 
 def prompt():
+    if compat_p:
+        return
+    
     sys.stdout.write(prompt_string)
     sys.stdout.flush()
 
@@ -45,7 +48,7 @@ def process_user_command(leo):
     elif command_word == 'add':
         name	= command_tokens.pop(0)
         logger.info("opening session '%s'" % name)
-        s	= leo_session.Session(leo, name, command_tokens)
+        s	= leo_session.Session(leo, name, command_tokens, 'session')
         s.init()
     else:
         logger.error('invalid command')
@@ -92,15 +95,20 @@ def process_client_command(ps):
         logger.error('invalid client command: %d' % command)
         
     else:
-        logger.error('invalid command %d' % command)
+        logger.error('invalid command: %d' % command)
 
 def loop(leo):
-    dummy_stdin_client = (0, '<stdin>')
+    dummy_stdin_client	= (0, '<stdin>')
+    global compat_p
+    compat_p	= leo.compatibility_mode
     prompt()
 
     while True:
-        ps_list = [ dummy_stdin_client ]
-
+        if compat_p:
+            ps_list = []
+        else:
+            ps_list = [ dummy_stdin_client ]
+        
         for session_name, session in leo.session_dict.iteritems():
             session = leo.session_dict[session_name]
             ps_list = ps_list + session.active_process_dict.values()
@@ -117,6 +125,8 @@ def loop(leo):
                     session.exit()
                     del leo.session_dict[session_name]
                     logger.info("session '%s' completed" % session.name)
+                    if compat_p:
+                        sys.exit(0)
                 
         if len(active_list) > 0:
             prompt()

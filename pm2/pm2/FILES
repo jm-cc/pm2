@@ -8,6 +8,7 @@ console       : PM2 consoles
 doc           : Documentation
 dsm           : Distribuated Shared Memory module
 examples      : Some examples of PM2
+ezflavor      : A GTK interface to configure PM2
 flavors       : settings of flavors (see bin/pm2_create-sample-flavors)
 include	      : include files of PM2 module
 leonie        : ??? module

@@ -49,13 +49,13 @@
 
 /*******************************************************/
 
-#include <mad_timing.h>
+#include "mad_timing.h"
 
 #ifdef PM2
-#include <marcel.h>
+#include "marcel.h"
 #endif
 
-#include <sys/netinterf.h>
+#include "sys/netinterf.h"
 
 #define SBP_SMALL_SIZE   (MAX_CS_USER_MESSAGE/sizeof(int))
 #define SBP_HEADER_SIZE  (sizeof(SbpHeader_t)+sizeof(MsgHeader_t)+sizeof(int))

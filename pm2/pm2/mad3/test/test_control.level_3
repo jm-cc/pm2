@@ -35,5 +35,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ntbx=\"opt\" \
  --tbx=\"opt\" \
  --marcel=\"opt mono\" \
- --common=\"opt static\"
+ --common=\"opt\" \
+ --all=\"build_static\"
 

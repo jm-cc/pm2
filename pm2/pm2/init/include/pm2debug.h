@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: pm2debug.h,v $
+Revision 1.3  2000/05/15 14:06:26  vdanjean
+syntaxe bug fixes
+
 Revision 1.2  2000/05/10 13:08:03  vdanjean
 minor bugs fixes
 
@@ -97,7 +100,7 @@ void pm2debug_register(debug_type_t *type);
 void pm2debug_setup(debug_type_t* type, debug_action_t action, int value);
 #else
 #define pm2debug_init(argc, argv)
-#define pm2debug_printf(type, line, file, format, ...)
+#define pm2debug_printf(type, line, file, format...)
 #define pm2debug_register(type)
 #define pm2debug_setup(type, action, value)
 #endif

@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (pm2-dev@listes.ens-lyon.fr)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+set -- --source-mode
+. ${PM2_ROOT}/bin/pm2-flavor-file
+
+if [ ! -d $PM2_USER_FLAVOR_DIR ]; then
+    # No existing flavors yet
+    echo "Creating initial sample flavors..."
+
+    PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=default \
+	--modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt \
+	--marcel=mono --mad2=auto_spawn --mad2=tcp
+
+    for i in mono smp act actsmp; do
+	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-$i \
+	    --modules="marcel tbx" --marcel=$i --builddir=marcel-$i \
+	    --all=opt
+    done
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel \
+	--modules="marcel tbx" --all=opt --marcel=mono
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=marcel-prof \
+	--modules="marcel profile tbx" --marcel=mono --marcel=profile \
+	--all=opt
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=swann \
+	--modules="swann tbx ntbx" --all=opt
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leonie \
+	--modules="leonie tbx ntbx" --all=opt
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=leoparse \
+	--modules="leoparse tbx ntbx" --all=opt
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=mad2 \
+	--modules="mad2 tbx ntbx" --all=opt --mad2=auto_spawn \
+	--mad2=tcp
+
+    $PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor=pm2 \
+	--modules="pm2 dsm marcel mad2 tbx ntbx" --all=opt \
+	--marcel=mono --mad2=auto_spawn --mad2=tcp
+
+else
+
+    # Some flavors are already existing. We just have to make sure
+    # that they are still valid
+    ${PM2_ROOT}/bin/pm2-clean --refresh --all
+
+fi
+
+exit 0
+

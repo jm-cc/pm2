@@ -36,6 +36,14 @@
 
 ______________________________________________________________________________
 $Log: tbx_htable_management.c,v $
+Revision 1.4  2000/12/19 16:57:51  oaumage
+- finalisation de leoparse
+- exemples pour leoparse
+- modification des macros de logging
+- version typesafe de certaines macros
+- finalisation des tables de hachage
+- finalisation des listes de recherche
+
 Revision 1.3  2000/09/05 13:59:39  oaumage
 - reecriture des slists et corrections diverses au niveau des htables
 
@@ -144,13 +152,18 @@ __tbx_htable_get_bucket(p_tbx_htable_t   htable,
 
   LOG_IN();
   key_len = strlen(key);
+  LOG_PTR("*** htable", htable);
+  LOG_STR("*** key", key);
+  LOG_VAL("*** len", key_len);
 
   while(key_len--)
     {
       bucket += key[key_len];
     }
 
+  LOG_VAL("*** pre_bucket", bucket);
   bucket %= htable->nb_bucket;
+  LOG_VAL("*** post_bucket", bucket);
   LOG_OUT();
 
   return bucket;
@@ -165,7 +178,13 @@ tbx_htable_add(p_tbx_htable_t    htable,
   p_tbx_htable_element_t    element = NULL;
   
   LOG_IN();
+  LOG_PTR("htable", htable);
+  LOG_PTR("object", object);
+  LOG_STR("key", key);
+  
   bucket  = __tbx_htable_get_bucket(htable, key);
+
+  LOG_VAL("bucket", bucket);
 
   element = tbx_malloc(tbx_htable_manager_memory);  
   element->key = TBX_MALLOC(strlen(key) + 1);
@@ -189,6 +208,10 @@ tbx_htable_get(p_tbx_htable_t   htable,
   
   LOG_IN();
   bucket  = __tbx_htable_get_bucket(htable, key);
+  LOG_PTR("htable", htable);
+  LOG_STR("key", key);
+  LOG_VAL("bucket", bucket);
+  
   element = htable->bucket_array[bucket];
   
   while(element)
@@ -198,6 +221,7 @@ tbx_htable_get(p_tbx_htable_t   htable,
 	  void *object = NULL;
 	  
 	  object = element->object;
+	  LOG_PTR("object", object);
 	  LOG_OUT();
 
 	  return object;

@@ -38,6 +38,12 @@
 #define DSM_PAGEALIGN(X) ((((int)(X))+(DSM_PAGE_SIZE-1)) & ~(DSM_PAGE_SIZE-1))
 #define USER_DATA_SIZE 8
 
+
+/* no page */
+const dsm_page_index_t NO_PAGE = ((dsm_page_index_t)(-1));
+
+
+
 typedef struct _dsm_page_table_entry
 {
   marcel_mutex_t   mutex;
@@ -50,6 +56,8 @@ typedef struct _dsm_page_table_entry
   dsm_access_t     access;
   dsm_access_t     pending_access;
   marcel_cond_t    cond;
+  marcel_cond_t    read_page_cond;
+  marcel_cond_t    write_page_cond;
   marcel_cond_t    cond2;
   marcel_sem_t     sem;
   unsigned long    size;
@@ -94,6 +102,82 @@ static int __inline__ _dsm_get_prot(dsm_access_t access)
   default: return PROT_READ|PROT_WRITE; /* WRITE_ACCESS */
   }
 }
+
+
+/**********************************************************************/
+/* Functions needed by the hierarchical consistency protocol */
+
+/**********************************************************************/
+int
+dsm_get_default_protocol (void)
+
+{
+   return _default_dsm_protocol;
+}
+
+/**********************************************************************/
+dsm_node_t *
+dsm_get_copyset (const dsm_page_index_t index)
+{
+   return dsm_page_table[index]->copyset;
+}
+
+/**********************************************************************/
+void
+dsm_set_copyset_size (const dsm_page_index_t index, const int sz)
+{
+   dsm_page_table[index]->copyset_size = sz;
+   return;
+}
+
+/**********************************************************************/
+void
+dsm_set_twin_ptr (const dsm_page_index_t index, void * const ptr)
+{
+   dsm_page_table[index]->twin = ptr;
+   return;
+}
+
+/**********************************************************************/
+/* wait for a given page to arrive in read mode (at least) */
+void
+dsm_wait_for_read_page (const dsm_page_index_t index)
+{
+   marcel_cond_wait(&(dsm_page_table[index]->read_page_cond),
+                    &(dsm_page_table[index]->mutex));
+   return;
+}
+
+/**********************************************************************/
+/* notify the page arrived in read mode */
+void
+dsm_signal_read_page (const dsm_page_index_t index)
+{
+   marcel_cond_broadcast(&(dsm_page_table[index]->read_page_cond));
+   return;
+}
+
+/**********************************************************************/
+/* wait for a given page to arrive in write mode */
+void
+dsm_wait_for_write_page (const dsm_page_index_t index)
+{
+   marcel_cond_wait(&(dsm_page_table[index]->write_page_cond),
+                    &(dsm_page_table[index]->mutex));
+   return;
+}
+
+/**********************************************************************/
+/* notify the page arrived in write mode */
+void
+dsm_signal_write_page (const dsm_page_index_t index)
+{
+   marcel_cond_broadcast(&(dsm_page_table[index]->write_page_cond));
+   return;
+}
+
+/* End of functions for the hierarchical consistency protocol */
+/**********************************************************************/
 
 void pm2_set_dsm_page_distribution(int mode, ...)
 {
@@ -549,7 +633,7 @@ void dsm_page_table_init(int my_rank, int confsize)
   for (i = 0; i < nb_static_dsm_pages + nb_pseudo_static_dsm_pages; i++)
     {
       dsm_page_table[i] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));
-      dsm_page_table[i]->next_owner = (dsm_node_t)-1;
+      dsm_page_table[i]->next_owner = NOBODY;
       fifo_init(&dsm_page_table[i]->pending_req, 2 * dsm_nb_nodes - 1);
       if ((dsm_page_table[i]->copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
 	RAISE(STORAGE_ERROR);
@@ -558,6 +642,8 @@ void dsm_page_table_init(int my_rank, int confsize)
       marcel_mutex_init(&dsm_page_table[i]->mutex, NULL);
       marcel_mutex_init(&dsm_page_table[i]->mutex2, NULL);
       marcel_cond_init(&dsm_page_table[i]->cond, NULL);
+      marcel_cond_init(&dsm_page_table[i]->read_page_cond, NULL);
+      marcel_cond_init(&dsm_page_table[i]->write_page_cond, NULL);
       marcel_cond_init(&dsm_page_table[i]->cond2, NULL);
       marcel_sem_init(&dsm_page_table[i]->sem, 0);
       dsm_page_table[i]->size = DSM_PAGE_SIZE;
@@ -1113,7 +1199,7 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
   dsm_page_table[index] = (dsm_page_table_entry_t *)tmalloc(sizeof(dsm_page_table_entry_t));
  // fprintf(stderr,"Allocated entry, @=%p\n", dsm_page_table[index]);
 
-  dsm_page_table[index]->next_owner = (dsm_node_t)-1;
+  dsm_page_table[index]->next_owner = NOBODY;
   fifo_init(&dsm_page_table[index]->pending_req, 2 * dsm_nb_nodes - 1);
   if ((dsm_page_table[index]->copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
     RAISE(STORAGE_ERROR);
@@ -1122,6 +1208,8 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
   marcel_mutex_init(&dsm_page_table[index]->mutex, NULL);
   marcel_mutex_init(&dsm_page_table[index]->mutex2, NULL);
   marcel_cond_init(&dsm_page_table[index]->cond, NULL);
+  marcel_cond_init(&dsm_page_table[index]->read_page_cond, NULL);
+  marcel_cond_init(&dsm_page_table[index]->write_page_cond, NULL);
   marcel_cond_init(&dsm_page_table[index]->cond2, NULL);
   marcel_sem_init(&dsm_page_table[index]->sem, 0);
   dsm_page_table[index]->size = size;//DSM_PAGE_SIZE;
@@ -1149,14 +1237,6 @@ void dsm_enable_page_entry(dsm_page_index_t index, dsm_node_t owner, int protoco
     (*dsm_get_page_add_func(protocol))(index); 
    dsm_page_table[index]->twin = NULL;
    dsm_page_table[index]->pending_inv = 0;
-}
-
-
-/**********************************************************************/
-int
-dsm_get_default_protocol (void)
-{
-   return _default_dsm_protocol;
 }
 
 

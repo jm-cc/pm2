@@ -34,6 +34,9 @@
 
 ______________________________________________________________________________
 $Log: marcel.c,v $
+Revision 1.21  2000/05/09 10:52:45  vdanjean
+pm2debug module
+
 Revision 1.20  2000/05/03 18:34:47  vdanjean
 few bugs fixes in key managment
 
@@ -345,6 +348,7 @@ int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t 
       register unsigned long top = MAL_BOT((long)attr->stack_base +
 					   attr->stack_size);
 #ifdef MA__DEBUG
+      mdebug("top=%p, stack_base=%p\n", top, attr->stack_base);
       if(top & (SLOT_SIZE-1)) { /* Not slot-aligned */
 	unlock_task();
 	RAISE(CONSTRAINT_ERROR);
@@ -492,7 +496,7 @@ int marcel_exit(any_t val)
       }
     }
 #ifdef MA__DEBUG
-   if(nb_bcl==NB_MAX_BCL)
+   if((NB_MAX_BCL>1) && (nb_bcl==NB_MAX_BCL))
       mdebug("  max iteration in key destructor for thread %i\n",cur->number);
 #endif
   }
@@ -1071,6 +1075,7 @@ void marcel_init(int *argc, char *argv[])
   static volatile boolean already_called = FALSE;
 
   if(!already_called) {
+    marcel_debug_init(argc, argv);
 
     mdebug("\t\t\t<marcel_init>\n");
 
@@ -1277,7 +1282,7 @@ int _raise(exception ex)
       fprintf(stderr, "\nUnhandled exception %s in task %ld"
 	      "\nFILE : %s, LINE : %d\n",
 	      ex, cur->number, cur->exfile, cur->exline);
-      *(int *)0L = -1; /* To generate a core file */
+      abort(); /* To generate a core file */
       exit(1);
    } else {
       cur->cur_exception = ex ;
@@ -1337,6 +1342,7 @@ int main(int argc, char *argv[])
   static int __argc;
   static char **__argv;
 
+  marcel_debug_init(&argc, argv);
   if(!setjmp(__initial_main_jb)) {
 
     __main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &

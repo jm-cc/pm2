@@ -183,6 +183,40 @@ UNPACK_RES_STUB(DSM_LRPC_SEND_DIFFS)
 END_STUB
 
 /**************************************************/
+/* DSM_LRPC_LOCK */
+
+PACK_REQ_STUB(DSM_LRPC_LOCK)
+     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+END_STUB
+
+UNPACK_REQ_STUB(DSM_LRPC_LOCK)
+     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+END_STUB
+
+PACK_RES_STUB(DSM_LRPC_LOCK)
+END_STUB
+
+UNPACK_RES_STUB(DSM_LRPC_LOCK)
+END_STUB
+
+/**************************************************/
+/* DSM_LRPC_UNLOCK */
+
+PACK_REQ_STUB(DSM_LRPC_UNLOCK)
+     mad_pack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+END_STUB
+
+UNPACK_REQ_STUB(DSM_LRPC_UNLOCK)
+     mad_unpack_byte(MAD_IN_HEADER, (char *)&arg->mutex, sizeof(dsm_mutex_t *));
+END_STUB
+
+PACK_RES_STUB(DSM_LRPC_UNLOCK)
+END_STUB
+
+UNPACK_RES_STUB(DSM_LRPC_UNLOCK)
+END_STUB
+
+/**************************************************/
 
 EXTERN_LRPC_SERVICE(DSM_LRPC_READ_PAGE_REQ);
 EXTERN_LRPC_SERVICE(DSM_LRPC_WRITE_PAGE_REQ);
@@ -190,6 +224,8 @@ EXTERN_LRPC_SERVICE(DSM_LRPC_SEND_PAGE);
 EXTERN_LRPC_SERVICE(DSM_LRPC_INVALIDATE_REQ);
 EXTERN_LRPC_SERVICE(DSM_LRPC_INVALIDATE_ACK);
 EXTERN_LRPC_SERVICE(DSM_LRPC_SEND_DIFFS);
+EXTERN_LRPC_SERVICE(DSM_LRPC_LOCK);
+EXTERN_LRPC_SERVICE(DSM_LRPC_UNLOCK);
 
 void dsm_pm2_init_rpc()
 {
@@ -199,4 +235,6 @@ void dsm_pm2_init_rpc()
   DECLARE_LRPC(DSM_LRPC_INVALIDATE_REQ);
   DECLARE_LRPC(DSM_LRPC_INVALIDATE_ACK);
   DECLARE_LRPC(DSM_LRPC_SEND_DIFFS);
+  DECLARE_LRPC(DSM_LRPC_LOCK);
+  DECLARE_LRPC(DSM_LRPC_UNLOCK);
 }

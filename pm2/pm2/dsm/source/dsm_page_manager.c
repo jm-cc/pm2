@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include "errno.h"
 #include "marcel.h"
 #include "fifo_credits.h"
@@ -75,6 +76,24 @@ static int nb_static_dsm_pages;
 static char *static_dsm_base_addr;
 extern char dsm_data_begin, dsm_data_end;
 static dsm_node_t dsm_local_node_rank = 0, dsm_nb_nodes = 1;
+static int _dsm_page_distrib_mode;
+static int _dsm_page_distrib_arg;
+
+
+void pm2_set_dsm_page_distribution(int mode, ...)
+{
+  va_list l;
+  
+  _dsm_page_distrib_mode = mode;
+  va_start(l, mode);
+  switch(mode) {
+  case DSM_CENTRALIZED: 
+  case DSM_CYCLIC: _dsm_page_distrib_arg = va_arg(l, int); break;
+  case DSM_CUSTOM: _dsm_page_distrib_arg = (int)va_arg(l, int *); break;
+  case DSM_BLOCK: break;
+  }
+  va_end(l);
+}
 
 
 dsm_node_t dsm_self()
@@ -122,6 +141,122 @@ static void _dsm_global_vars_init(int my_rank, int confsize)
     nb_static_dsm_pages++;
 }
 
+#define min(a,b) ((a) < (b))?(a):(b)
+
+void dsm_page_ownership_init()
+{
+  int i;
+
+  switch(_dsm_page_distrib_mode){
+  case DSM_CENTRALIZED :
+    {
+      dsm_access_t access = (dsm_local_node_rank == (dsm_node_t)_dsm_page_distrib_arg)?WRITE_ACCESS:NO_ACCESS;
+      for (i = 0; i < nb_static_dsm_pages; i++)
+	{
+	  dsm_page_table[i].prob_owner = (dsm_node_t)_dsm_page_distrib_arg;
+	  dsm_page_table[i].access = access;
+	}
+      
+      mprotect(static_dsm_base_addr, nb_static_dsm_pages * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
+      break;    
+    }
+  
+  case DSM_CYCLIC :
+    {
+      /* Here, _dsm_page_distrib_arg stores the chunk size: the number of
+	 contiguous pages to assign to the same node */
+      int bound, j, curOwner = 0;
+      dsm_access_t access;
+      
+      i = 0;
+      while(i < nb_static_dsm_pages)
+	{
+	  access = (curOwner == dsm_local_node_rank)?WRITE_ACCESS:NO_ACCESS;
+	  bound = min(_dsm_page_distrib_arg, nb_static_dsm_pages - i);
+	  for (j = 0; j < bound; j++)
+	    {
+	      dsm_page_table[i].prob_owner = curOwner;
+	      dsm_page_table[i].access = access;      
+	      i++;
+	    }
+	  mprotect(dsm_page_table[i - bound].addr, bound * DSM_PAGE_SIZE, access == WRITE_ACCESS? PROT_READ|PROT_WRITE:PROT_NONE);
+	  curOwner = (curOwner + 1) % dsm_nb_nodes;
+	}
+      break;
+    }
+  case DSM_BLOCK :
+    {
+      int chunk = nb_static_dsm_pages / dsm_nb_nodes;
+      int split = nb_static_dsm_pages % dsm_nb_nodes;
+      int curOwner = 0;
+      int curCount = 0;
+      int low;
+      int high;
+
+      if (split == 0)
+	{
+	  split = dsm_nb_nodes;
+	  chunk -= 1;
+	}
+      for (i = 0; i < nb_static_dsm_pages; i++)
+	{
+	  dsm_page_table[i].prob_owner = (dsm_node_t)curOwner;
+	  if (curOwner == dsm_local_node_rank)
+	    dsm_page_table[i].access = WRITE_ACCESS;
+	  else
+	    dsm_page_table[i].access = NO_ACCESS;
+	  
+	  curCount++;
+	  if (curOwner < split)
+	    {
+	      if (curCount == chunk+1)
+		{
+		  curOwner++;
+		  curCount = 0;
+		}
+	    }
+	  else
+	    {
+	      if (curCount == chunk)
+		{
+		  curOwner++;
+		  curCount = 0;
+		}
+	    }
+	}
+      dsm_set_no_access();
+      
+      /* what are the bounds on my chunk? */
+      if (dsm_local_node_rank < split)
+	{
+	  low = (dsm_local_node_rank * (chunk + 1));
+	  high = low + (chunk + 1);
+	}
+      else
+	{
+	  low = (split * (chunk + 1)) + ((dsm_local_node_rank - split) * chunk);
+	  high = low + chunk;
+	}
+      
+      mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
+	       (high - low + 1) * DSM_PAGE_SIZE,
+	       PROT_READ|PROT_WRITE);
+      break;
+    }
+  case DSM_CUSTOM :
+    {
+      int *array = (int *)_dsm_page_distrib_arg;
+      for (i = 0; i < nb_static_dsm_pages; i++)
+	{
+	  dsm_page_table[i].prob_owner = array[i];
+	  dsm_set_access(i, (dsm_local_node_rank == array[i])?WRITE_ACCESS:NO_ACCESS);
+	}
+      break;
+    }
+  }
+  
+}
+
 
 void dsm_page_table_init(int my_rank, int confsize)
 {
@@ -145,13 +280,13 @@ void dsm_page_table_init(int my_rank, int confsize)
   _dsm_global_vars_init(my_rank, confsize);
 
   /* pjh */
-  chunk = nb_static_dsm_pages / confsize;
+  /*  chunk = nb_static_dsm_pages / confsize;
   split = nb_static_dsm_pages % confsize;
   if (split == 0)
   {
     split = confsize;
     chunk -= 1;
-  }
+    }*/
 
   tprintf("nb_static_dsm_pages is %d\n", nb_static_dsm_pages);
 
@@ -166,7 +301,7 @@ void dsm_page_table_init(int my_rank, int confsize)
 
   for (i = 0; i < nb_static_dsm_pages; i++)
     {
-      dsm_page_table[i].prob_owner = (dsm_node_t)curOwner; /* pjh */
+      //      dsm_page_table[i].prob_owner = (dsm_node_t)curOwner; /* pjh */
       dsm_page_table[i].next_owner = (dsm_node_t)-1;
       fifo_init(&dsm_page_table[i].pending_req, 2 * dsm_nb_nodes - 1);
       if ((dsm_page_table[i].copyset = (dsm_node_t *)tmalloc(dsm_nb_nodes * sizeof(dsm_node_t))) == NULL)
@@ -178,7 +313,7 @@ void dsm_page_table_init(int my_rank, int confsize)
       marcel_sem_init(&dsm_page_table[i].sem, 0);
       dsm_page_table[i].size = DSM_PAGE_SIZE;
       dsm_page_table[i].addr = static_dsm_base_addr + DSM_PAGE_SIZE * i;
-
+#if 0
       /* pjh */
       if (curOwner == my_rank)
       {
@@ -207,8 +342,8 @@ void dsm_page_table_init(int my_rank, int confsize)
           curCount = 0;
         }
       }
+#endif
     }
-
 /* pjh: don't want this */
 #if 0
   /* Specific initializations for master/slaves */
@@ -224,7 +359,7 @@ void dsm_page_table_init(int my_rank, int confsize)
 	  dsm_page_table[i].access = NO_ACCESS; 
 	  dsm_set_no_access();
 	}
-#endif
+
 
 /* pjh: first mark all pages as "no access"
  *      then mark my chunk as "write access"
@@ -245,9 +380,19 @@ void dsm_page_table_init(int my_rank, int confsize)
 
   mprotect(static_dsm_base_addr + (low * DSM_PAGE_SIZE),
            (high - low + 1) * DSM_PAGE_SIZE,
+
            PROT_READ|PROT_WRITE);
+#endif
+  dsm_page_ownership_init();
 }
 
+void dsm_display_page_ownership()
+{
+  int i;
+
+  for (i = 0; i < nb_static_dsm_pages; i++)
+    tfprintf(stderr,"page %d: owner = %d, access = %d\n", i, dsm_page_table[i].prob_owner, dsm_page_table[i].access);
+}
 
 void dsm_set_no_access()
 {  

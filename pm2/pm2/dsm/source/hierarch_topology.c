@@ -1,6 +1,6 @@
 
 /*
- * CVS Id: $Id: hierarch_topology.c,v 1.3 2002/10/16 15:53:45 slacour Exp $
+ * CVS Id: $Id: hierarch_topology.c,v 1.4 2002/10/19 15:13:31 slacour Exp $
  */
 
 
@@ -30,7 +30,8 @@ const unsigned int NO_COLOR = ((unsigned int)(-1));
 
 /**********************************************************************/
 /* initialization of the topology information to a flat hierarchy by
- * default; this function is called by dsm_pm2_init() */
+ * default; this function is called by dsm_pm2_init(); only one thread
+ * should execute this function. */
 int
 topology_initialization (void)
 {
@@ -50,7 +51,8 @@ topology_initialization (void)
 
 /**********************************************************************/
 /* finalization function for the topology information; this function
- * is called by dsm_pm2_exit() */
+ * is called by dsm_pm2_exit(); only one thread should execute this
+ * function. */
 int
 topology_finalization (void)
 {
@@ -63,7 +65,8 @@ topology_finalization (void)
 
 
 /**********************************************************************/
-/* return the number of clusters */
+/* return the number of clusters; this function is not protected
+ * against concurrency. */
 unsigned int
 topology_get_cluster_number (void)
 {
@@ -73,7 +76,7 @@ topology_get_cluster_number (void)
 
 /**********************************************************************/
 /* return the color of the given node to determine to what cluster it
- * belongs */
+ * belongs; this function is not protected against concurrency. */
 unsigned int
 topology_get_cluster_color (const dsm_node_t node)
 {
@@ -86,15 +89,21 @@ topology_get_cluster_color (const dsm_node_t node)
 /**********************************************************************/
 /* set the colors of the processes, depending on what cluster they
  * belong to: 2 processes with the same color belong to the same
- * cluster */
+ * cluster; this function is NOT protected against concurrency. */
 int
 topology_set_cluster_colors (const unsigned int * const tab)
 {
    int i;
    const int size = pm2_config_size();
 
+   cluster_number = 0;
    for (i = 0; i < size; i++)
+   {
       cluster_colors[i] = tab[i];
+      if ( tab[i] > cluster_number )
+         cluster_number = tab[i];
+   }
+   cluster_number++;
 
    return DSM_SUCCESS;
 }

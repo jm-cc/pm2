@@ -42,6 +42,9 @@ MAD_STANDALONE_CC       = gcc #egcc
 # MAD_STANDALONE_OPTIONS	= -Di686 -fexpensive-optimizations -finline-functions -Dpentiumpro -mcpu=pentiumpro -march=pentiumpro -O6 -fomit-frame-pointer -Wall
 MAD_STANDALONE_OPTIONS	=	-g -Wall -Werror # -O6 -DMAD_TIMING -DUSE_SAFE_MALLOC
 
+# Support for thread packages != marcel
+# MAD_THREAD_SUPPORT    = yes 
+
 ################### END OF CUSTOMIZATION SECTION #################
 
 ifndef MAD2_ROOT
@@ -67,6 +70,15 @@ MAD_LIBD	=	$(MAD2_ROOT)/lib/$(PM2_ARCH_SYS)
 ifndef PM2_FLAGS
 MAD_OPTIONS    += $(MAD_STANDALONE_OPTIONS) -DNTBX -DNTBX_TCP -DTBX -DMAD2
 MAD_ALONE       :=  true
+ifdef MARCEL_FLAGS
+MAD_OPTIONS    += -DMARCEL -DTHREADS
+else 
+  ifdef MAD_THREAD_SUPPORT
+  MAD_OPTIONS    += -DTHREADS
+  endif
+endif
+else
+MAD_OPTIONS    += -DMARCEL -DTHREADS
 endif
 
 ifneq ($(MAKECMDGOALS),distclean)

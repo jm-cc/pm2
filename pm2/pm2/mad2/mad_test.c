@@ -34,6 +34,10 @@
 
 ______________________________________________________________________________
 $Log: mad_test.c,v $
+Revision 1.4  2000/01/04 16:45:51  oaumage
+- mise a jour pour support de MPI
+- mad_test.c: support multiprotocole MPI+TCP
+
 Revision 1.3  1999/12/15 17:31:08  oaumage
 Ajout de la commande de logging de CVS
 
@@ -48,10 +52,11 @@ ______________________________________________________________________________
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <madeleine.h>
 
-/* #define BI_PROTO */
+#define BI_PROTO
 #define NB_CHANNELS 4
 #define STR_BUFFER_LEN 64
 
@@ -66,19 +71,21 @@ int main(int argc, char **argv)
   char str_buffer[STR_BUFFER_LEN];
   int k ;
   p_mad_channel_t channel[NB_CHANNELS];
-  
+
 #ifdef BI_PROTO
   /*  adapter_set =
       mad_adapter_set_init(2, mad_VIA, "/dev/via_lo", mad_TCP, NULL);*/
-  adapter_set =
-    mad_adapter_set_init(2, mad_SISCI, NULL, mad_TCP, NULL);
+  /* adapter_set =
+     mad_adapter_set_init(2, mad_SISCI, NULL, mad_TCP, NULL); */
+  adapter_set = 
+    mad_adapter_set_init(2, mad_MPI, NULL, mad_TCP, NULL); 
 #else /* BI_PROTO */
   /* VIA - loopback 
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_lo"); */
   /* VIA - ethernet 
      adapter_set = mad_adapter_set_init(1, mad_VIA, "/dev/via_eth0"); */
   /* TCP */
-  adapter_set = mad_adapter_set_init(1, mad_TCP, NULL);
+     adapter_set = mad_adapter_set_init(1, mad_TCP, NULL); 
   /* SISCI
      adapter_set = mad_adapter_set_init(1, mad_SISCI, NULL); */
   /* SBP 

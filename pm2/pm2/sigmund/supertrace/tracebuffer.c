@@ -86,19 +86,6 @@ static int read_user_trace(trace *tr)
   tr->type = USER;
   j = 0;
   i = ((tr->code & 0xff) - 12) / 4;
-  // These instructions are useless
-  if ((tr->code >> 8) == FUT_SWITCH_TO_CODE) {  
-    CORRUPTED_FUT(fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0);
-    CORRUPTED_FUT(fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0);
-    i-=2;
-    j+=2;
-  } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) {
-    CORRUPTED_FUT(fread(&(tr->args[0]), sizeof(int), 1, f_fut) == 0);
-    CORRUPTED_FUT(fread(&(tr->args[1]), sizeof(int), 1, f_fut) == 0);
-    CORRUPTED_FUT(fread(&(tr->args[2]), sizeof(int), 1, f_fut) == 0);
-    i-=3;
-    j+=3;
-  }
   while (i != 0) {                                 // reads arguments
     CORRUPTED_FUT(fread(&(tr->args[j]), sizeof(int), 1, f_fut) == 0);
     i--;
@@ -136,11 +123,6 @@ static int read_kernel_trace(trace *tr)
       i--;
       j++;
     }
-    if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {  // This should not be here !!!
-      if (pid_table[tr->args[1]] == -1) {
-	pid_table[tr->args[1]] = tr->args[0];
-      }
-    }
   }
   return 0;
 }
@@ -166,18 +148,19 @@ static void fut_trace_calc(trace *tr)
 						      new thread to lwp */
     set_switch(tr->args[0], tr->args[1]);
     if (!smp) thread = tr->args[1];                 // If !smp, updates thread
-  } else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) { // IN case of FUT_NEW_LWP
-    int n;
-    add_lwp(tr->args[0], tr->args[2], tr->args[1]); /* adds this new lwp to
-						       the lwp list */
-    for(n = 0; n < NB_MAX_CPU; n++)                 /* tries to find the cpu
-						       number */
-      if (pid_table[n] == tr->args[0]) {
-	set_cpu(tr->args[0], n);                    // sets the cpu to this lwp
-	break;
-      }
-    if (!smp) thread = tr->args[2];                 // This is false!!!!!!!
-  }
+  } 
+  //  else if ((tr->code >> 8) == FUT_NEW_LWP_CODE) { // IN case of FUT_NEW_LWP
+  //    int n;
+  //    add_lwp(tr->args[0], tr->args[2], tr->args[1]); /* adds this new lwp to
+  //						       the lwp list */
+  //    for(n = 0; n < NB_MAX_CPU; n++)                 /* tries to find the cpu
+  //						       number */
+  //      if (pid_table[n] == tr->args[0]) {
+  //	set_cpu(tr->args[0], n);                    // sets the cpu to this lwp
+  //	break;
+  //      }
+  //    if (!smp) thread = tr->args[2];                 // This is false!!!!!!!
+  //  }
   tr->cpu = cpu_of_lwp(tr->pid);                    // gets the cpu of this event
   if ((tr->cpu >= NB_MAX_CPU) || (tr->cpu < 0)) {   /* Bad luck, no way of 
 						       finding the cpu number */
@@ -193,8 +176,8 @@ static void fkt_trace_calc(trace *tr)
   tr->relevant = 0;
   if (pid_table[tr->cpu] == -1) {               // We found usefull information
     pid_table[tr->cpu] = tr->pid;
-    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);   /* Sets this lwp to its 
-							 correct cpu */
+    //    if (is_lwp(tr->pid)) set_cpu(tr->pid, tr->cpu);   /* Sets this lwp to its 
+    //							 correct cpu */
   }
   if (tr->code > FKT_UNSHIFTED_LIMIT_CODE) {
     if (tr->code >> 8 == FKT_SWITCH_TO_CODE) {
@@ -207,6 +190,10 @@ static void fkt_trace_calc(trace *tr)
 	set_cpu(tr->args[0], tr->args[1]);
 	if (!smp) thread = thread_of_lwp(tr->args[0]);
       }
+    } else if (tr->code >> 8 == FKT_NEW_LWP) {
+      tr->relevant = 1;
+      add_lwp(tr->pid, tr->args[0], tr->args[1]);
+      set_cpu(tr->pid, tr->cpu);
     }
   }
   if (is_lwp(tr->pid)) {               // If this event is an event from PM2

@@ -28,10 +28,10 @@
  * on us. We need to use _exactly_ the address the user gave us,
  * not some alias that contains the same information.
  */
-typedef struct { int counter; ma_spinlock_t spinlock; } ma_atomic_t;
+typedef struct { volatile int counter; } ma_atomic_t;
 
 #section marcel_macros
-#define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
+#define MA_ATOMIC_INIT(i)	{ (i) }
 
 /**
  * ma_atomic_read - read atomic variable
@@ -52,6 +52,17 @@ typedef struct { int counter; ma_spinlock_t spinlock; } ma_atomic_t;
  */ 
 #define ma_atomic_set(v,i)		(((v)->counter) = (i))
 
+#define MA_ATOMIC_ADD_RETURN(test) \
+	int old, new, ret; \
+	old = ma_atomic_read(v); \
+	while (1) { \
+		new = old + i; \
+		ret = pm2_compareexchange(&v->counter,old,new,sizeof(v->counter)); \
+		if (tbx_likely(ret == old)) \
+			return test; \
+		old = ret; \
+	} \
+
 #section marcel_functions
 /**
  * ma_atomic_add - add integer to atomic variable
@@ -65,9 +76,7 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v);
 #section marcel_inline
 static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 {
-	ma_spin_lock_softirq(&v->spinlock);
-	v->counter += i;
-	ma_spin_unlock_softirq(&v->spinlock);
+	MA_ATOMIC_ADD_RETURN();
 }
 
 #section marcel_macros
@@ -83,6 +92,24 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 
 #section marcel_functions
 /**
+ * ma_atomic_add_and_test - add value to variable and test result
+ * @i: integer value to add
+ * @v: pointer of type ma_atomic_t
+ * 
+ * Atomically adds @i to @v and returns
+ * true if the result is zero, or false for all
+ * other cases.  Note that the guaranteed
+ * useful range of an ma_atomic_t is only 24 bits.
+ */
+static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
+#section marcel_inline
+static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
+{
+	MA_ATOMIC_ADD_RETURN(new == 0);
+}
+
+#section marcel_macros
+/**
  * ma_atomic_sub_and_test - subtract value from variable and test result
  * @i: integer value to subtract
  * @v: pointer of type ma_atomic_t
@@ -92,18 +119,8 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
  * other cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */
-static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v);
-#section marcel_inline
-static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
-{
-	int c;
-	ma_spin_lock_softirq(&v->spinlock);
-	c = ((v->counter -= i) == 0);
-	ma_spin_unlock_softirq(&v->spinlock);
-	return c;
-}
+#define ma_atomic_sub_and_test(i,v) ma_atomic_add_and_test(-(i),(v))
 
-#section marcel_macros
 /**
  * ma_atomic_inc - increment atomic variable
  * @v: pointer of type ma_atomic_t
@@ -160,9 +177,10 @@ static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
 #section marcel_inline
 static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 {
-	int c;
-	ma_spin_lock_softirq(&v->spinlock);
-	c = ((v->counter += i) < 0);
-	ma_spin_unlock_softirq(&v->spinlock);
-	return c;
+	MA_ATOMIC_ADD_RETURN(new < 0);
 }
+
+#define ma_smp_mb__before_atomic_dec()  ma_barrier()
+#define ma_smp_mb__after_atomic_dec()   ma_barrier()
+#define ma_smp_mb__before_atomic_inc()  ma_barrier()
+#define ma_smp_mb__after_atomic_inc()   ma_barrier()

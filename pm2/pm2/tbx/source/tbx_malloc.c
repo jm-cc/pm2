@@ -92,11 +92,23 @@ static p_tbx_safe_malloc_header_t last = NULL;
 static size_t                     allocated = 0;
 static size_t                     freed     = 0;
 
+static tbx_bool_t tbx_print_stats = tbx_true;
+
+void
+tbx_set_print_stats_mode(tbx_bool_t b) {
+  tbx_print_stats = b;
+}
+
+tbx_bool_t
+tbx_get_print_stats_mode(void) {
+  return tbx_print_stats;
+}
+
 static 
 void
 tbx_safe_malloc_mem_check(void)
 {
-  if(allocated) { // i.e. if Safe_Malloc was really used
+  if(allocated && tbx_print_stats) { // i.e. if Safe_Malloc was really used
 
     fprintf(stderr, "*** SafeMalloc Stats ***\n");
     fprintf(stderr, "Allocated: %lu, Freed: %lu, Lost: %lu\n",

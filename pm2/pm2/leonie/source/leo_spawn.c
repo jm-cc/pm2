@@ -658,6 +658,93 @@ send_directory(p_leonie_t leonie)
 	}
       leo_send_string(client, "end{vchannels}");
 
+
+      // MultipleXing channels
+      TRACE("Sending xchannels");
+      slist = dir->xchannel_slist;
+      len = tbx_slist_get_length(slist);
+
+      if (len < 0)
+	FAILURE("invalid number of virtual channels");
+
+      leo_send_int(client, len);
+
+      if (!tbx_slist_is_nil(slist))
+	{
+	  tbx_slist_ref_to_head(slist);
+	  do
+	    {
+	      p_leo_dir_xchannel_t       dir_xchannel           = NULL;
+	      p_ntbx_process_container_t pc                     = NULL;
+	      ntbx_process_grank_t       g_rank_src             =   -1;
+	      p_tbx_slist_t              dir_channel_slist      = NULL;
+	      int                        dir_channel_slist_len  =    0;
+
+	      dir_xchannel = tbx_slist_ref_get(slist);
+	      pc = dir_xchannel->pc;
+
+	      TRACE_STR("Xchannel", dir_xchannel->name);
+	      leo_send_string(client, dir_xchannel->name);
+
+	      dir_channel_slist     = dir_xchannel->dir_channel_slist;
+	      dir_channel_slist_len = tbx_slist_get_length(dir_channel_slist);
+	      leo_send_int(client, dir_channel_slist_len);
+
+	      tbx_slist_ref_to_head(dir_channel_slist);
+	      do
+		{
+		  p_leo_dir_channel_t dir_channel = NULL;
+
+		  dir_channel = tbx_slist_ref_get(dir_channel_slist);
+		  leo_send_string(client, dir_channel->name);
+		}
+	      while (tbx_slist_ref_forward(dir_channel_slist));
+
+	      TRACE("Virtual channel routing table");
+	      if (ntbx_pc_first_global_rank(pc, &g_rank_src))
+		{
+		  do
+		    {
+		      p_leo_dir_xchannel_process_specific_t pi_specific  = NULL;
+		      p_ntbx_process_container_t            ppc          = NULL;
+		      ntbx_process_grank_t                  g_rank_dst   =   -1;
+
+		      leo_send_int(client, g_rank_src);
+		      pi_specific = ntbx_pc_get_global_specific(pc, g_rank_src);
+		      ppc = pi_specific->pc;
+
+		      if (ntbx_pc_first_global_rank(ppc, &g_rank_dst))
+			{
+			  do
+			    {
+			      p_leo_dir_xchannel_process_routing_table_t rtable =
+				NULL;
+
+			      leo_send_int(client, g_rank_dst);
+
+			      rtable = ntbx_pc_get_global_specific(ppc, g_rank_dst);
+			      TRACE("Process %d to %d: using channel %s through process %d",
+				    g_rank_src, g_rank_dst, rtable->channel_name,
+				    rtable->destination_rank);
+
+			      leo_send_string(client, rtable->channel_name);
+			      leo_send_int(client,    rtable->destination_rank);
+			    }
+			  while
+			    (ntbx_pc_next_global_rank(ppc, &g_rank_dst));
+			}
+
+		      leo_send_int(client, -1);
+		    }
+		  while (ntbx_pc_next_global_rank(pc, &g_rank_src));
+		}
+
+	      leo_send_int(client, -1);
+	    }
+	  while (tbx_slist_ref_forward(slist));
+	}
+      leo_send_string(client, "end{xchannels}");
+
       // End
       leo_send_string(client, "end{directory}");
 

@@ -180,6 +180,7 @@ int pm2_main(int argc, char **argv)
      }
    pm2_exit();
    tfprintf(stderr, "Main is ending\n");
+   return 0;
  }
 
 

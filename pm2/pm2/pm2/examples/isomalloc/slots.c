@@ -20,8 +20,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
-
-#include "rpc_defs.h"
+#include "pm2.h"
 
 #define DEBUG
 
@@ -29,15 +28,13 @@
 #define NB_SLOTS 3
 
 
-int *les_modules, nb_modules;
-/*marcel_key_t user_key;*/
-
 typedef struct _item {
   int valeur;
   struct _item *suivant;
 } item;
 
- 
+pm2_completion_t c;
+
 void creer_liste_a_partir_de(void *debut)
 {
   item *tableau = (item *)debut;
@@ -54,19 +51,21 @@ void creer_liste_a_partir_de(void *debut)
 }
 
 
-BEGIN_SERVICE(PROCESSING)
+void MIGRATION_ISOMALLOC_func()
+{
+  item *ptr ;
+  int j,i = 0, k;
+  item *lists[NB_SLOTS];    
 
-item *ptr ;
-int j,i = 0, k;
-item *lists[NB_SLOTS];      
-
+  tfprintf(stderr, "thread starts...\n");
      /* allocate a few pages and write some data into them... */
      for (j = 0 ; j < NB_SLOTS ; j++)
      {
-      ptr = lists[j] = (item *)pm2_isomalloc(60000);
+       tfprintf(stderr,"before pm2_malloc\n");
+      ptr = lists[j] = (item *)pm2_isomalloc(6000);
       if (ptr == NULL) 
 	return;
-      pm2_printf("pm2_malloc returned %p\n", ptr);
+      tfprintf(stderr,"pm2_malloc returned %p\n", ptr);
       creer_liste_a_partir_de(ptr);
      }
      pm2_enable_migration();
@@ -78,13 +77,14 @@ item *lists[NB_SLOTS];
          ptr = lists[j];
 	 while(ptr != NULL) {
            marcel_delay(200);
-	   pm2_printf("Element = %d  j=%d, i=%d\n", ptr->valeur, j, i++);
+	   tfprintf(stderr,"Element = %d  j=%d, i=%d\n", ptr->valeur, j, i++);
            ptr = ptr->suivant;
          }
        }
       }
- 
-END_SERVICE(PROCESSING)
+     pm2_completion_signal(&c); 
+}
+
 
 
 int pm2_main(int argc, char **argv)
@@ -92,30 +92,30 @@ int pm2_main(int argc, char **argv)
    unsigned nb;
    marcel_t pids[MAX_THREADS];
 
-
-   DECLARE_LRPC(PROCESSING);
-
-   pm2_rpc_init();
    pm2_init(&argc, argv);
 
    if(pm2_self() == 0) { /* master process */
 
-      pm2_printf("launching processing...\n");
-      ASYNC_LRPC(0, PROCESSING, STD_PRIO,DEFAULT_STACK, NULL);
+      tfprintf(stderr, "launching processing...\n");
+      pm2_completion_init(&c, NULL, NULL);
+      tfprintf(stderr, "launching thread...\n");
+      pm2_thread_create(MIGRATION_ISOMALLOC_func, NULL);
+      tfprintf(stderr, "waiting...\n");
       marcel_delay(2000);
 
       /* start  migration */
-      pm2_printf("the module 0 will freeze!\n");
+      tprintf("the module 0 will freeze!\n");
       pm2_freeze();
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
-      pm2_printf("migratable threads on module 0 : %d\n",nb);
+      tprintf("migratable threads on module 0 : %d\n",nb);
       pm2_migrate(pids[0], 1);
-      pm2_printf("migration ended\n");
+      tprintf("migration ended\n");
 
       /* count remaining migratable threads */
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
-      pm2_printf("migratable threads on module 0 : %d\n",nb);
-      marcel_delay(3000);
+      tprintf("migratable threads on module 0 : %d\n",nb);
+      pm2_completion_wait(&c);
+//      marcel_delay(10000);
       pm2_halt();
       }
      else
@@ -125,20 +125,21 @@ int pm2_main(int argc, char **argv)
 	 {
 	   pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);      
 	   marcel_delay(200);
+	   tprintf("looping...\n");
 	 }
        marcel_delay(2000);
 
       /* start  migration */
-      pm2_printf("the module 1 will freeze!\n");
+      tprintf("the module 1 will freeze!\n");
       pm2_freeze();
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
-      pm2_printf("migratable threads on module 1 : %d\n",nb);
+      tprintf("migratable threads on module 1 : %d\n",nb);
       pm2_migrate(pids[0], 0);
-      pm2_printf("migration ended\n");
+      tprintf("migration ended\n");
 
       /* count remaining migratable threads */
       pm2_threads_list(MAX_THREADS, pids, &nb, MIGRATABLE_ONLY);
-      pm2_printf("migratable threads on module 1 : %d\n",nb);
+      tprintf("migratable threads on module 1 : %d\n",nb);
      }
    pm2_exit();
    tfprintf(stderr, "Main is ending\n");

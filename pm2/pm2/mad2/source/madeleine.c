@@ -896,7 +896,7 @@ mad_init(int *argc, char **argv, int nb_proc, int *tids, int *nb, int *whoami)
   /*sprintf(mad_conf, "%s/.mad2_conf", getenv("MAD2_ROOT"));*/
 
   madeleine    = mad2_init(argc, argv, NULL, adapter_set);
-  main_channel = mad_open_channel(madeleine, 0, 0);
+  main_channel = mad_open_channel(madeleine, 0);
 
   *nb = madeleine->configuration.size;
   *whoami = (int)madeleine->configuration.local_host_id;
@@ -929,7 +929,6 @@ mad_exit(void)
   p_mad_madeleine_t madeleine = &main_madeleine;
   
   LOG_IN();
-  mad_close_channel(main_channel);
   mad2_exit(madeleine);
   LOG_OUT();
 }

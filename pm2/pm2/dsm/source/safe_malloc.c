@@ -31,9 +31,22 @@
  Fondamentale de Lille), nor the Authors make any representations
  about the suitability of this software for any purpose. This
  software is provided ``as is'' without express or implied warranty.
+
+______________________________________________________________________________
+$Log: safe_malloc.c,v $
+Revision 1.3  2000/02/28 10:30:41  rnamyst
+Modified to change #include <> into #include "". Also renamed the files that
+should not be automatically included in libdsm.a.
+
+Revision 1.2  2000/01/31 15:58:34  oaumage
+- ajout du Log CVS
+
+
+______________________________________________________________________________
 */
 
-#include <safe_malloc.h>
+#include "safe_malloc.h"
+
 #include <stdio.h>
 #include <string.h>
 

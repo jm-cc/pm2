@@ -33,6 +33,9 @@
  software is provided ``as is'' without express or implied warranty.
 ______________________________________________________________________________
 $Log: mad_sisci.c,v $
+Revision 1.9  2000/02/28 11:46:09  rnamyst
+Changed #include <> into #include "".
+
 Revision 1.8  2000/02/08 17:49:52  oaumage
 - support de la net toolbox
 - mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
@@ -60,7 +63,8 @@ ______________________________________________________________________________
  * ===========
  */
 /* #define DEBUG */
-#include <madeleine.h>
+#include "madeleine.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

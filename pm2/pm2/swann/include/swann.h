@@ -36,6 +36,12 @@
 
 ______________________________________________________________________________
 $Log: swann.h,v $
+Revision 1.3  2000/03/27 12:53:56  oaumage
+- progression des fonctionnalites:
+  * support reseau
+  * support execution
+  * extension du support fichier
+
 Revision 1.2  2000/02/17 09:26:14  oaumage
 - Mise en place de l'architecture de Swann
 
@@ -59,13 +65,14 @@ ______________________________________________________________________________
 #error The GNU C Compiler is required to build this tool
 #endif __GNUC__
 
-#include <tbx.h>
-#include <ntbx.h>
+#include "tbx.h"
+#include "ntbx.h"
 
-#include <swann_types.h>
-#include <swann_file.h>
-#include <swann_net.h>
-#include <swann_run.h>
-#include <swann_interface.h>
+#include "swann_pointers.h"
+#include "swann_types.h"
+#include "swann_file.h"
+#include "swann_net.h"
+#include "swann_run.h"
+#include "swann_interface.h"
 
 #endif /* __SWANN_H */

@@ -34,4 +34,30 @@
 # software is provided ``as is'' without express or implied warranty.
 #
 
-exec ${PM2_ROOT}/madeleine/bin/madload $*
+file_not_found()
+{
+    echo "$1: file not found"
+    exit 1
+}
+
+case $1 in
+    /*) command=$* ;;
+    *) if [ -f `pwd`/$1 ] ; then
+	    command=`pwd`/$*
+       else
+	    case $1 in
+		*/*) file_not_found $1 ;;
+		*) sys=`pm2_sys`
+		   arch=`pm2_arch`
+		   rep=bin/`basename $sys _SYS`/`basename $arch _ARCH`
+		   echo "Searching in $rep..."
+		   command=$rep/$*
+		   if [ ! -f $command ] ; then
+			file_not_found $1
+		   fi
+	    esac
+       fi ;;
+esac
+
+exec ${PM2_ROOT}/madeleine/bin/madload $command
+

@@ -170,6 +170,7 @@ static __inline__ void init_task_desc(marcel_t t)
 {
   t->cur_excep_blk = NULL;
   t->deviation_func = NULL;
+  t->state_lock = MARCEL_LOCK_INIT;
 #if defined(MA__LWPS) && ! defined(MA__ONE_QUEUE)
   t->previous_lwp = NULL;
 #endif
@@ -660,6 +661,9 @@ int marcel_once(marcel_once_t *once, void (*f)(void))
 
 static void __inline__ freeze(marcel_t t)
 {
+#ifndef MA__MONO
+  RAISE(NOT_IMPLEMENTED);
+#endif
    if(t != marcel_self()) {
       lock_task();
       if(IS_BLOCKED(t) || IS_FROZEN(t)) {
@@ -668,7 +672,7 @@ static void __inline__ freeze(marcel_t t)
       } else if(IS_SLEEPING(t)) {
          marcel_wake_task(t, NULL);
       }
-      SET_FROZEN(t);
+      marcel_set_frozen(t);
       UNCHAIN_TASK(t);
       unlock_task();
    }
@@ -676,6 +680,9 @@ static void __inline__ freeze(marcel_t t)
 
 static void __inline__ unfreeze(marcel_t t)
 {
+#ifndef MA__MONO
+  RAISE(NOT_IMPLEMENTED);
+#endif
    if(IS_FROZEN(t)) {
       lock_task();
       marcel_wake_task(t, NULL);
@@ -852,9 +859,7 @@ static void insertion_relai(handler_func_t f, void *arg)
   if(MA_THR_SETJMP(cur) == FIRST_RETURN) {
     MA_THR_LONGJMP((cur->father), NORMAL_RETURN);
   } else {
-#ifdef MA__DEBUG
-    breakpoint();
-#endif
+    MA_THR_RESTARTED(cur, "Preemption");
     unlock_task();
     (*f)(arg);
     lock_task();
@@ -870,25 +875,18 @@ typedef void (*relai_func_t)(handler_func_t f, void *arg);
 static relai_func_t relai_func = insertion_relai;
 #endif
 
-static int marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg){
-#ifndef MA__WORK
+static int marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
+{
   if (pid->deviation_func != NULL) {
     return 0;
   } else {
     pid->deviation_func = h;
     pid->deviation_arg = arg;
-    return 1;
-  }
-#else
-  if (pid->deviation_func != NULL) {
-    return 0;
-  } else {
-    pid->deviation_func = h;
-    pid->deviation_arg = arg;
+#ifdef MA__WORK
     pid->has_work |= MARCEL_WORK_DEVIATE;
+#endif
     return 1;
   }
-#endif
 }
 
 void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
@@ -900,7 +898,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 #endif
 
   mdebug_deviate("%p deviate pid:%p, f:%p, arg:%p\n", marcel_self(),
-		 pid,h,arg); 
+		 pid,h,arg);
   lock_task();
   LOCK_WORK(pid);
   if(pid == marcel_self()) {

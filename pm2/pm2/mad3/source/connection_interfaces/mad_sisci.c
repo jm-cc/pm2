@@ -559,7 +559,6 @@ mad_sisci_get_node_id(mad_sisci_adapter_id_t adapter_id)
 
   LOG_IN();
   SCIOpen(&descriptor, 0, &sisci_error);
-  fprintf(stderr, "SCIOpen status = %x\n", sisci_error);
   mad_sisci_control();
 
   query_adapter.subcommand     = SCI_Q_ADAPTER_NODEID;
@@ -1453,6 +1452,20 @@ mad_sisci_send_sci_buffer(p_mad_link_t   link,
 	    {
 	      source += size;
 	    }
+
+
+/* 	  if (size & 60) */
+/* 	    { */
+/* 	      volatile int *destination = */
+/* 		(volatile void *)remote_data->buffer + size; */
+
+/* 	      do */
+/* 		{ */
+/* 		  *destination++ = 0; */
+/* 		  size += 4; */
+/* 		} */
+/* 	      while (size & 60); */
+/* 	    } */
 
 	  if (size & 63)
 	    {

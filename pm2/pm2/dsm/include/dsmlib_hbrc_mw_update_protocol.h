@@ -29,8 +29,8 @@
 #include "dsmlib_belist.h"
 #include "dsm_page_size.h"
 #include "dsm_mutex.h"
-/* the following is useful for "hierarch_lock_id_t" */
-#include "hierarch_lock.h"
+/* the following is useful for "token_lock_id_t" */
+#include "token_lock.h"
 
 
 void dsmlib_hbrc_mw_update_init(int protocol_number);
@@ -49,7 +49,7 @@ void dsmlib_hbrc_mw_update_rps(void *addr, dsm_access_t access, dsm_node_t reply
 
 void dsmlib_hbrc_acquire();
 
-void dsmlib_hbrc_release(const hierarch_lock_id_t);
+void dsmlib_hbrc_release(const token_lock_id_t);
 
 void dsmlib_hbrc_add_page(dsm_page_index_t index);
 

@@ -42,7 +42,6 @@
 
 p_mad_channel_t
 mad_open_channel(p_mad_madeleine_t madeleine,
-		 mad_channel_id_t channel_id,
 		 mad_adapter_id_t adapter_id)
 {
   p_mad_configuration_t      configuration = &(madeleine->configuration);
@@ -62,7 +61,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
 
   PM2_INIT_SHARED(channel);
   PM2_LOCK_SHARED(channel);
-  channel->id             = channel_id;
+  channel->id             = madeleine->nb_channel++;
   channel->adapter        = adapter;
   channel->reception_lock = mad_false;
   channel->specific       = NULL;
@@ -105,8 +104,8 @@ mad_open_channel(p_mad_madeleine_t madeleine,
       
       interface->connection_init(in, out);
 
-      if (   (in->nb_link == -1)
-	  || (out->nb_link == -1)
+      if (   (in->nb_link <= 0)
+	  || (out->nb_link <= 0)
 	  || (in->nb_link != out->nb_link))
 	{
 	  FAILURE("mad_open_channel: invalid link number");
@@ -183,6 +182,7 @@ mad_open_channel(p_mad_madeleine_t madeleine,
     }
 
   interface->after_open_channel(channel);
+
   mad_append_list(&(madeleine->channel), channel);
   PM2_UNLOCK_SHARED(channel);
   PM2_UNLOCK_SHARED(adapter);
@@ -192,9 +192,10 @@ mad_open_channel(p_mad_madeleine_t madeleine,
   return channel;
 }
 
-void
-mad_close_channel(p_mad_channel_t channel)
+static void
+mad_foreach_close_channel(void *object)
 {
+  p_mad_channel_t            channel       = object;
   p_mad_adapter_t            adapter       = channel->adapter;
   p_mad_driver_t             driver        = adapter->driver;
   p_mad_driver_interface_t   interface     = &(driver->interface);
@@ -204,7 +205,6 @@ mad_close_channel(p_mad_channel_t channel)
 
   LOG_IN();
 
-  PM2_LOCK_SHARED(madeleine);
   PM2_LOCK_SHARED(adapter);
   PM2_LOCK_SHARED(channel);
   
@@ -256,16 +256,40 @@ mad_close_channel(p_mad_channel_t channel)
     }
    
   interface->after_close_channel(channel);
+  for (host = 0; host < configuration->size; host++)
+    {
+      p_mad_connection_t   in  = &(channel->input_connection[host]);
+      p_mad_connection_t   out = &(channel->output_connection[host]);
+      mad_link_id_t        link_id;
 
-  channel->id = -1;
-  
-  PM2_UNLOCK_SHARED(channel);
-  /* free(channel);
-   * NOTE: Channel cannot currently be removed from madeleine's list
-   *       (mad2 lists can only grow)
-   *       Hence 'channel' cannot be freed here 
-   */
+      for (link_id = 0;
+	   link_id < in->nb_link;
+	   link_id++)
+	{
+	  p_mad_link_t   in_link  = &(in->link[link_id]);
+	  p_mad_link_t   out_link = &(out->link[link_id]);
+
+	  interface->link_exit(out->link);
+	  interface->link_exit(in->link);
+	}
+
+      free(out->link);
+      free(in->link);
+      interface->connection_exit(in, out);
+    }
+
+  free(channel->output_connection);
+  free(channel->input_connection);
+  interface->channel_exit(channel);
+  free(channel);
+  /* Note: the channel is never unlocked since it is being destroyed */
   PM2_UNLOCK_SHARED(adapter);
-  PM2_UNLOCK_SHARED(madeleine);
   LOG_OUT();
+}
+
+void
+mad_close_channels(p_mad_madeleine_t madeleine)
+{
+  mad_foreach_destroy_list(&(madeleine->channel),
+			   mad_foreach_close_channel);
 }

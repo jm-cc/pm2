@@ -34,6 +34,11 @@
 
 ______________________________________________________________________________
 $Log: mad_tcp.c,v $
+Revision 1.11  2000/02/08 17:49:55  oaumage
+- support de la net toolbox
+- mad_tcp.c : deplacement des fonctions statiques de gestion des sockets
+              vers la net toolbox
+
 Revision 1.10  2000/01/31 15:55:01  oaumage
 - mad_mpi.c : terminaison amelioree sous PM2
 - mad_tcp.c : debogage de la synchronisation finale
@@ -138,7 +143,7 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
     &(driver->madeleine->configuration);
   p_mad_connection_t                connection;
   p_mad_tcp_connection_specific_t   connection_specific;
-  mad_host_id_t                     i;
+  ntbx_host_id_t                     i;
 
   LOG_IN();
   LOG_VAL("Syncing channel", channel->id);
@@ -150,7 +155,7 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
       if (i == configuration->local_host_id)
 	{
 	  /* Receive */
-	  mad_host_id_t j;
+	  ntbx_host_id_t j;
 
 	  for (j = 0;
 	       j < configuration->size;
@@ -180,14 +185,14 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
 	      LOG_VAL("Writing local host id", configuration->local_host_id);
 	      SYSCALL(write(connection_specific->socket,
 			    &(configuration->local_host_id),
-			    sizeof(mad_host_id_t)));	      
+			    sizeof(ntbx_host_id_t)));	      
 	      LOG_VAL("Wrote local host id", configuration->local_host_id);
 	    }
 	}
       else
 	{
 	  /* send */
-	  mad_host_id_t host_id;
+	  ntbx_host_id_t host_id;
 
 	  connection = &(channel->output_connection[i]);
 	  connection_specific = connection->specific;
@@ -201,7 +206,7 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
 	  LOG_VAL("Receiving host id from host", i);
 	  SYSCALL(read(connection_specific->socket,
 		       &(host_id),
-		       sizeof(mad_host_id_t)));
+		       sizeof(ntbx_host_id_t)));
 	  LOG_VAL("Received host id from host", i);
 	  LOG_VAL("Host id", host_id);
 	  
@@ -213,83 +218,6 @@ mad_tcp_sync_channel(p_mad_channel_t channel)
     }
   LOG_VAL("Channel synced", channel->id);
   LOG_OUT();
-}
-
-static void
-mad_tcp_fill_sockaddr(struct sockaddr_in  *sockaddr, 
-		      p_mad_adapter_t      adapter,
-		      mad_host_id_t        rank)
-{
-  p_mad_tcp_adapter_specific_t   adapter_specific = adapter->specific;
-  struct hostent                *host;
-
-  LOG_IN();
-  LOG_STR("mad_tcp_fill_sockaddr: host", adapter->
-	  driver->
-	  madeleine->
-	  configuration.host_name[rank]);
-  
-  host =
-    gethostbyname(adapter->driver->madeleine->configuration.host_name[rank]);
-  
-  if (host == NULL)
-    {
-      fprintf(stderr,
-	      "ERROR: Cannot find internet address of %s",
-	      adapter->
-	      driver->
-	      madeleine->
-	      configuration.host_name[rank]);
-      exit(1);
-    }
-      
-  sockaddr->sin_family = AF_INET;
-  sockaddr->sin_port   =
-    htons(adapter_specific->remote_connection_port[rank]);
-  memcpy(&sockaddr->sin_addr.s_addr, host->h_addr, host->h_length);
-  LOG_OUT();
-}
-
-static void
-mad_tcp_setup_socket(int sock)
-{
-  int             u      = 1;
-  int             packet = 0x8000;
-  struct linger   ling   = { 1, 50 };
-  int             sint   = sizeof(int);
-  
-  LOG_IN();      
-  SYSCALL(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&u, sint));
-  SYSCALL(setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *)&ling,
-		     sizeof(struct linger)));
-  SYSCALL(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char *)&packet, sint));
-  SYSCALL(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&packet, sint));
-  LOG_OUT();
-}
-
-static int creer_socket(int type, int port, struct sockaddr_in *adresse)
-{
-  struct sockaddr_in temp;
-  int desc;
-  int length = sizeof(struct sockaddr_in);
-  /*int packet = 0x8000;
-  struct linger ling = { 1, 50 };
-  int un = 1;*/
-
-  LOG_IN();
-  SYSCALL(desc = socket(AF_INET, type, 0));
-  
-  temp.sin_family      = AF_INET;
-  temp.sin_addr.s_addr = htonl(INADDR_ANY);
-  temp.sin_port        = htons(port);
-
-  SYSCALL(bind(desc, (struct sockaddr *)&temp, sizeof(struct sockaddr_in)));
-
-  if (adresse)
-    SYSCALL(getsockname(desc, (struct sockaddr *)adresse, &length));
-
-  LOG_OUT();
-  return desc;
 }
 
 static void
@@ -405,7 +333,7 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
   p_mad_driver_t                 driver;
   p_mad_tcp_driver_specific_t    driver_specific;
   p_mad_tcp_adapter_specific_t   adapter_specific;
-  struct sockaddr_in             address;
+  ntbx_tcp_address_t             address;
   
   LOG_IN();
   driver          = adapter->driver;
@@ -433,15 +361,13 @@ mad_tcp_adapter_init(p_mad_adapter_t adapter)
     malloc(driver->madeleine->configuration.size * sizeof(int));
   CTRL_ALLOC(adapter_specific->remote_connection_port);
 
-  adapter_specific->connection_socket =
-    creer_socket(SOCK_STREAM, 0, &address);
+  adapter_specific->connection_socket = ntbx_tcp_socket_create(&address, 0);
   
   SYSCALL(listen(adapter_specific->connection_socket,
 		 driver->madeleine->configuration.size - 1));
   
-  adapter_specific->connection_port = (int)ntohs(address.sin_port);
-  LOG_VAL("mad_tcp_adapter_init: connection port",
-	  adapter_specific->connection_port);
+  adapter_specific->connection_port =
+    (ntbx_tcp_port_t)ntohs(address.sin_port);
 
   adapter->parameter = malloc(10);
   CTRL_ALLOC(adapter->parameter);
@@ -456,86 +382,78 @@ mad_tcp_adapter_configuration_init(p_mad_adapter_t adapter)
   p_mad_configuration_t          configuration    =
     &(driver->madeleine->configuration);
   p_mad_tcp_adapter_specific_t   adapter_specific = adapter->specific;
-  mad_host_id_t                  i;
+  ntbx_host_id_t                 i;
 
   LOG_IN();
   if (configuration->local_host_id == 0)
     {
       /* Master */
-      int                            sock[configuration->size];
-      int                            fd;
-      mad_host_id_t                  rank;
+      int            desc_array[configuration->size];
+      int            desc;
+      ntbx_host_id_t rank;
       
       LOG("mad_tcp_adapter_configuration_init: master");
-      for(i = 1;
-	  i < configuration->size;
-	  i++)
+      for(i = 1; i < configuration->size; i++)
 	{
-	  SYSCALL(fd = accept(adapter_specific->connection_socket, NULL,
-			      NULL));
+	  SYSCALL(desc =
+		  accept(adapter_specific->connection_socket, NULL, NULL));
       
-	  SYSCALL(read(fd, &rank, sizeof(mad_host_id_t)));
-	  sock[rank] = fd;
-	  SYSCALL(read(sock[rank],
+	  SYSCALL(read(desc, &rank, sizeof(ntbx_host_id_t)));
+	  desc_array[rank] = desc;
+	  SYSCALL(read(desc_array[rank],
 		       &(adapter_specific->remote_connection_port[rank]),
-		       sizeof(int)));
+		       sizeof(ntbx_tcp_port_t)));
 	}
       
       LOG("mad_tcp_adapter_configuration_init: phase 1 terminee");
-      for(i = 1;
-	  i < configuration->size;
-	  i++)
+      for(i = 1; i < configuration->size; i++)
 	{
 	  int j;
 	  
-	  for (j = 1;
-	       j < configuration->size;
-	       j++)
+	  for (j = 1; j < configuration->size; j++)
 	    {
 	      if (j != i)
-		SYSCALL(write(sock[i],
+		SYSCALL(write(desc_array[i],
 			      &(adapter_specific->remote_connection_port[j]),
-			      sizeof(int)));
+			      sizeof(ntbx_tcp_port_t)));
 	    }
-	  SYSCALL(close(sock[i]));
+	  SYSCALL(close(desc_array[i]));
 	}
       LOG("mad_tcp_adapter_configuration_init: phase 2 terminee");
     }
   else
     {
       /* Slave */
-      struct sockaddr_in server;
-      int sock;
+      ntbx_tcp_address_t server_address;
+      ntbx_tcp_socket_t  desc;
       
       LOG("mad_tcp_adapter_configuration_init: slave");
       adapter_specific->remote_connection_port[0] =
 	atoi(adapter->master_parameter);
-      LOG_VAL("mad_tcp_adapter_configuration_init: master port",
-	      adapter_specific->remote_connection_port[0]);
       
-      SYSCALL(sock = creer_socket(SOCK_STREAM, 0, NULL));      
-      mad_tcp_fill_sockaddr(&server, adapter, 0);
-      SYSCALL(connect(sock, (struct sockaddr*)&server,
-		      sizeof(struct sockaddr_in)));
+      desc = ntbx_tcp_socket_create(NULL, 0);
+      ntbx_tcp_address_fill(&server_address,
+			    adapter_specific->remote_connection_port[0],
+			    adapter->driver->madeleine->
+			    configuration.host_name[0]);
       
-      SYSCALL(write(sock,
-		    &(configuration->local_host_id),
-		    sizeof(mad_host_id_t)));
-      SYSCALL(write(sock,
-		    &(adapter_specific->connection_port),
-		    sizeof(int)));
+      SYSCALL(connect(desc, (struct sockaddr*)&server_address,
+		      sizeof(ntbx_tcp_address_t)));
+      
+      SYSCALL(write(desc, &(configuration->local_host_id),
+		    sizeof(ntbx_host_id_t)));
+      SYSCALL(write(desc, &(adapter_specific->connection_port),
+		    sizeof(ntbx_tcp_port_t)));
       
       LOG("mad_tcp_adapter_configuration_init: phase 1 terminee");
-      for (i = 1;
-	   i < configuration->size;
-	   i++)
+      for (i = 1; i < configuration->size; i++)
 	{
 	  if (i != configuration->local_host_id)
-	    SYSCALL(read(sock, &(adapter_specific->remote_connection_port[i]),
-			 sizeof(int)));
+	    SYSCALL(read(desc, &(adapter_specific->remote_connection_port[i]),
+			 sizeof(ntbx_tcp_port_t)));
 	}
 
-      close(sock);
+      close(desc);
       LOG("mad_tcp_adapter_configuration_init: phase 2 terminee");
     }
   LOG_OUT();
@@ -595,26 +513,23 @@ mad_tcp_accept(p_mad_channel_t channel)
 {
   p_mad_adapter_t                   adapter          = channel->adapter;
   p_mad_tcp_adapter_specific_t      adapter_specific = adapter->specific;
-  mad_host_id_t                     remote_host_id;  
+  ntbx_host_id_t                    remote_host_id;  
   p_mad_tcp_connection_specific_t   connection_specific; 
-  int                               sock;
+  ntbx_tcp_socket_t                 desc;
   
   LOG_IN();
-  SYSCALL(sock = accept(adapter_specific->connection_socket, NULL, NULL));
-  mad_tcp_setup_socket(sock);
+  SYSCALL(desc = accept(adapter_specific->connection_socket, NULL, NULL));
+  ntbx_tcp_socket_setup(desc);
 
-  SYSCALL(read(sock, &remote_host_id, sizeof(mad_host_id_t)));
-  channel->input_connection[remote_host_id].remote_host_id =
-    remote_host_id;
-  channel->output_connection[remote_host_id].remote_host_id =
-    remote_host_id;
+  SYSCALL(read(desc, &remote_host_id, sizeof(ntbx_host_id_t)));
+  channel->input_connection[remote_host_id].remote_host_id = remote_host_id;
+  channel->output_connection[remote_host_id].remote_host_id = remote_host_id;
   
-  connection_specific =
-    channel->input_connection[remote_host_id].specific;
+  connection_specific = channel->input_connection[remote_host_id].specific;
   /* Note:
      The `specific' field of tcp connections is shared by input
      and output connections */
-  connection_specific->socket = sock;
+  connection_specific->socket = desc;
   LOG_OUT();
 }
 
@@ -625,48 +540,45 @@ mad_tcp_connect(p_mad_connection_t connection)
     connection->specific;
   p_mad_connection_t                reverse             =
     connection->reverse;
-  struct sockaddr_in                adresse;
-  struct sockaddr_in                server;
-  int                               sock;
+  p_mad_adapter_t                   adapter             =
+    connection->channel->adapter;
+  p_mad_tcp_adapter_specific_t      adapter_specific    =
+    adapter->specific;
+  ntbx_tcp_address_t                address;
+  ntbx_tcp_address_t                server_address;
+  ntbx_tcp_socket_t                 desc;
   
   LOG_IN();
-  sock = creer_socket(SOCK_STREAM, 0, &adresse);
-  if(sock == -1)
-    {
-      FAILURE("mad_tcp_connect: creer_socket");
-    }
+  desc = ntbx_tcp_socket_create(&address, 0);
+  ntbx_tcp_address_fill(&server_address,
+			adapter_specific->
+			remote_connection_port[connection->remote_host_id],
+			adapter->driver->madeleine->
+			configuration.host_name[connection->remote_host_id]);
 
-  mad_tcp_fill_sockaddr(&server,
-			connection->channel->adapter,
-			connection->remote_host_id);
+  SYSCALL(connect(desc, (struct sockaddr *)&server_address, 
+		  sizeof(ntbx_tcp_address_t)));
 
-  SYSCALL(connect(sock, (struct sockaddr *)&server,
-		  sizeof(struct sockaddr_in)));
-
-  mad_tcp_setup_socket(sock);
+  ntbx_tcp_socket_setup(desc);
   
-  SYSCALL(write(sock,
-		&(connection->
-		  channel->
-		  adapter->
-		  driver->
-		  madeleine->
-		  configuration.local_host_id),
-		sizeof(mad_host_id_t)));
+  SYSCALL(write(desc,
+		&(connection->channel->adapter->driver->madeleine->
+		  configuration.local_host_id), 
+		sizeof(ntbx_host_id_t)));
   
 
   reverse->remote_host_id = connection->remote_host_id;
   /* Note:
      The `specific' field of tcp connections is shared by input
      and output connections */
-  connection_specific->socket = sock;
+  connection_specific->socket = desc;
   LOG_OUT();
 }
 
 void
 mad_tcp_after_open_channel(p_mad_channel_t channel)
 {
-  mad_host_id_t                  host;
+  ntbx_host_id_t                 host;
   p_mad_tcp_channel_specific_t   channel_specific = channel->specific;
   p_mad_configuration_t          configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
@@ -736,7 +648,7 @@ mad_tcp_adapter_exit(p_mad_adapter_t adapter)
 p_mad_connection_t
 mad_tcp_receive_message(p_mad_channel_t channel)
 {
-  p_mad_configuration_t          configuration    = 
+  p_mad_configuration_t configuration    = 
     &(channel->adapter->driver->madeleine->configuration);
 
 #ifndef PM2
@@ -810,7 +722,7 @@ void
 mad_tcp_send_buffer(p_mad_link_t     lnk,
 		    p_mad_buffer_t   buffer)
 {
-  p_mad_tcp_connection_specific_t   connection_specific =
+  p_mad_tcp_connection_specific_t connection_specific =
     lnk->connection->specific;
   LOG_IN();
   mad_tcp_write(connection_specific->socket, buffer);
@@ -818,10 +730,10 @@ mad_tcp_send_buffer(p_mad_link_t     lnk,
 }
 
 void
-mad_tcp_receive_buffer(p_mad_link_t     lnk,
-		       p_mad_buffer_t  *buffer)
+mad_tcp_receive_buffer(p_mad_link_t    lnk,
+		       p_mad_buffer_t *buffer)
 {
-  p_mad_tcp_connection_specific_t   connection_specific =
+  p_mad_tcp_connection_specific_t connection_specific =
     lnk->connection->specific;
   LOG_IN();
   mad_tcp_read(connection_specific->socket, *buffer);
@@ -829,15 +741,15 @@ mad_tcp_receive_buffer(p_mad_link_t     lnk,
 }
 
 void
-mad_tcp_send_buffer_group(p_mad_link_t           lnk,
-			  p_mad_buffer_group_t   buffer_group)
+mad_tcp_send_buffer_group(p_mad_link_t         lnk,
+			  p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
-      p_mad_tcp_connection_specific_t   connection_specific =
+      p_mad_tcp_connection_specific_t connection_specific =
 	lnk->connection->specific;
-      tbx_list_reference_t              ref;
+      tbx_list_reference_t            ref;
 
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do
@@ -851,17 +763,17 @@ mad_tcp_send_buffer_group(p_mad_link_t           lnk,
 }
 
 void
-mad_tcp_receive_sub_buffer_group(p_mad_link_t           lnk,
-				 tbx_bool_t             first_sub_group
+mad_tcp_receive_sub_buffer_group(p_mad_link_t         lnk,
+				 tbx_bool_t           first_sub_group
 				   __attribute__ ((unused)),
-				 p_mad_buffer_group_t   buffer_group)
+				 p_mad_buffer_group_t buffer_group)
 {
   LOG_IN();
   if (!tbx_empty_list(&(buffer_group->buffer_list)))
     {
-      p_mad_tcp_connection_specific_t   connection_specific =
+      p_mad_tcp_connection_specific_t connection_specific =
 	lnk->connection->specific;
-      tbx_list_reference_t              ref;
+      tbx_list_reference_t            ref;
 
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
       do

@@ -673,7 +673,19 @@ ntbx_true_name(char *host_name)
   char           *result     = NULL;
 
   LOG_IN();
-  if (strcmp(host_name, "localhost"))
+  if (!strcmp(host_name, "localhost"))
+    {
+      host_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
+      gethostname(host_name, MAXHOSTNAMELEN);
+      host_entry = gethostbyname(host_name);
+
+      if (!host_entry)
+	ERROR("gethostbyname");
+
+      result = tbx_strdup(host_entry->h_name);
+      TBX_FREE(host_name);
+    }
+  else
     {
       host_entry = gethostbyname(host_name);
 
@@ -681,11 +693,6 @@ ntbx_true_name(char *host_name)
 	ERROR("gethostbyname");
 
       result = tbx_strdup(host_entry->h_name);
-    }
-  else
-    {
-        result = TBX_MALLOC(MAXHOSTNAMELEN + 1);
-	gethostname(result, MAXHOSTNAMELEN);
     }
   LOG_OUT();
 

@@ -102,18 +102,19 @@ done
 [ -n "$*" ] || _pm2load_usage 1
 
 # Sauvegarde de la commande et des arguments
-prog=$1
+PM2_PROG_NAME=$1
+export PM2_PROG_NAME
 shift
 
 prog_args="$@"
 
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
 
-set --  --source-mode $prog
+set --  --source-mode $PM2_PROG_NAME
 . ${PM2_ROOT}/bin/pm2which
 
 if [ $_PM2WHICH_NB_FOUND -gt 1 ] ; then
-    _pm2load_ambiguity $prog
+    _pm2load_ambiguity $PM2_PROG_NAME
 fi
 
 PM2_CMD_NAME="$_PM2WHICH_RESULT"

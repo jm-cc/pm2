@@ -226,6 +226,9 @@ static __inline__ void init_task_desc(marcel_t t)
 #ifdef __ACT__
   t->marcel_lock=1;
 #endif
+#ifdef ENABLE_STACK_JUMPING
+  *((marcel_t *)((char *)t + MAL(sizeof(task_desc)) - sizeof(void *))) = t;
+#endif
 }
 
 int marcel_create(marcel_t *pid, marcel_attr_t *attr, marcel_func_t func, any_t arg)
@@ -1292,6 +1295,11 @@ int main(int argc, char *argv[])
     set_sp((unsigned long)__main_thread - 2 * WINDOWSIZE);
 
     mdebug("sp = %lx\n", get_sp());
+
+#ifdef ENABLE_STACK_JUMPING
+    *((marcel_t *)((char *)__main_thread + MAL(sizeof(task_desc)) - sizeof(void *))) =
+      __main_thread;
+#endif
 
     __main_ret = marcel_main(__argc, __argv);
 

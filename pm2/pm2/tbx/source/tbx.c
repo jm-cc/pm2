@@ -20,6 +20,7 @@
  */
 #include "tbx.h"
 
+static const char tbx_no_safe_malloc_stats[]="--tbx-no-safe-malloc-stats";
 static volatile tbx_bool_t initialized = tbx_false;
 
 void
@@ -28,6 +29,21 @@ tbx_init(int    argc,
 {
   if (!initialized)
     {
+
+      LOG_IN();
+
+      argc--; argv++;
+
+      while (argc)
+	{ 
+	  if (!strcmp(*argv, tbx_no_safe_malloc_stats))
+	    {
+	      tbx_set_print_stats_mode(tbx_false); // tbx_true by default
+	    }
+
+	  argc--; argv++;
+	}
+
       initialized = tbx_true;
 
       /* Safe malloc */
@@ -46,15 +62,35 @@ tbx_init(int    argc,
 
       /* Hash table manager */
       tbx_htable_manager_init();
+
+      LOG_OUT();
     }
   
 }
 
 void
-tbx_purge_cmd_line(int   *argc,
-		   char **argv)
+tbx_purge_cmd_line(int   *_argc,
+		   char **_argv)
 {
+  int     argc = *_argc;
+  char ** argv =  _argv;
   LOG_IN();
-  /* --- */
+
+  argv++; _argv++; argc--;
+  
+  while (argc)
+    {
+      if (!strcmp(*_argv, tbx_no_safe_malloc_stats))
+	{
+	  _argv++; (*_argc)--;
+	}
+      else
+	{
+	  *argv++ = *_argv++;
+	}
+
+      argc--;
+    }
+  
   LOG_OUT();
 }

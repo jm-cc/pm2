@@ -1,12 +1,15 @@
 
 /*
- * CVS Id: $Id: token_lock.c,v 1.13 2002/10/22 19:28:43 slacour Exp $
+ * CVS Id: $Id: token_lock.c,v 1.16 2002/10/23 13:26:51 slacour Exp $
  */
+
+/* Sebastien Lacour, Paris Research Group, IRISA, May 2002 */
 
 /* Distributed management of the locks.  Each lock has a (central)
  * fixed manager and an owner (token owner).  The lock manager can be
  * determined using the ID of the lock.  The manager always knows who
  * currently holds the token (lock). */
+
 
 #include <stdlib.h>
 #include "token_lock.h"
@@ -361,8 +364,7 @@ grant_lock_if_possible (lock_list_elem * const lck_elem)
 {
    IN;
    assert ( lck_elem != NULL );
-   if ( lck_elem->status != LOCALLY_PRESENT || lck_elem->reservation != 0 ||
-        lck_elem->owner_thread != NULL )
+   if ( lck_elem->status != LOCALLY_PRESENT || lck_elem->owner_thread != NULL )
    {
       OUT;
       return;
@@ -373,9 +375,17 @@ grant_lock_if_possible (lock_list_elem * const lck_elem)
          lck_elem->local_next_owner, lck_elem->expected_remote_release,
          lck_elem->expected_local_release);
 
-   /* granting the lock to a node in the local cluster is prefered to
-    * granting it to a node in a remote cluster */
-   if ( lck_elem->local_next_owner != NOBODY )
+   /* granting the lock to a local thread is prefered to granting it
+    * to another ndoe; granting the lock to a node in the local
+    * cluster is prefered to granting it to a node in a remote cluster */
+   if ( lck_elem->reservation != 0 )
+   {
+      TRACE("signal token %d available, lcl_rel=%d, rmt_rel=%d, reserv=%d",
+            lck_elem->lock_id, lck_elem->expected_local_release,
+            lck_elem->expected_remote_release, lck_elem->reservation);
+      marcel_cond_signal(&(lck_elem->token_available));
+   }
+   else if ( lck_elem->local_next_owner != NOBODY )
       grant_lock(lck_elem->local_next_owner, lck_elem);
    else if ( lck_elem->remote_next_owner != NOBODY  &&
              lck_elem->expected_local_release == 0 &&
@@ -385,8 +395,6 @@ grant_lock_if_possible (lock_list_elem * const lck_elem)
       grant_lock(lck_elem->remote_next_owner, lck_elem);
       lck_elem->just_granted = SL_TRUE;
    }
-
-   assert ( lck_elem->local_next_owner == NOBODY );
 
    OUT;
    return;
@@ -1181,13 +1189,6 @@ token_partial_unlock (const token_lock_id_t lck_id)
       assert ( lck_elem->status == LOCALLY_PRESENT );
       lck_elem->owner_thread = NULL;
       grant_lock_if_possible(lck_elem);
-      if ( lck_elem->reservation != 0 && lck_elem->status == LOCALLY_PRESENT )
-      {
-         TRACE("signal token available, lcl_rel=%d, rmt_rel=%d, reservation=%d",
-               lck_elem->expected_local_release,
-               lck_elem->expected_remote_release, lck_elem->reservation);
-         marcel_cond_signal(&(lck_elem->token_available));
-      }
    }
 
    marcel_mutex_unlock(&(lck_elem->mutex));
@@ -1241,7 +1242,7 @@ token_unlock (const token_lock_id_t lck_id)
    if ( local_reserv == 0 )
    {
       const dsm_rel_action_t release_func =
-                             dsm_get_release_func(dsm_get_default_protocol());
+                              dsm_get_release_func(dsm_get_default_protocol());
 
       TRACE("calling release consistency function for lock %d", lck_id);
       if ( release_func != NULL ) (*release_func)(lck_id);
@@ -1253,12 +1254,6 @@ token_unlock (const token_lock_id_t lck_id)
 
    update_expected_release(lck_elem, JUST_RELEASED);
    grant_lock_if_possible(lck_elem);
-   if ( lck_elem->status == LOCALLY_PRESENT && lck_elem->reservation != 0 &&
-        lck_elem->owner_thread == NULL )
-   {
-      TRACE("signal lock %d locally released", lck_elem->lock_id);
-      marcel_cond_signal(&(lck_elem->token_available));
-   }
 
    marcel_mutex_unlock(&(lck_elem->mutex));
 

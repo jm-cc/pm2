@@ -72,7 +72,7 @@ int pm2_main(int argc, char **argv)
   int i, j;
 
 #ifdef PROFILE
-  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK);
+  profile_activate(FUT_ENABLE, PM2_PROF_MASK | DSM_PROF_MASK, 0);
 #endif
  
   pm2_rawrpc_register(&DSM_SERVICE, DSM_func);

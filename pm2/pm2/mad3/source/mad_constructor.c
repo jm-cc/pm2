@@ -326,8 +326,10 @@ mad_channel_cons(void)
   object = TBX_CALLOC(1, sizeof(mad_channel_t));
 
   TBX_INIT_SHARED(object);
-  object->id        =  -1;
-  object->parameter = "-";
+  object->id              =  -1;
+  object->parameter       = "-";
+  object->sub_channel_darray = tbx_darray_init();
+  tbx_darray_expand_and_set(object->sub_channel_darray, 0, object);
 
 #ifdef MARCEL
   marcel_mutex_init(&(object->reception_lock_mutex), NULL);

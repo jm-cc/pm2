@@ -34,6 +34,12 @@
 
 ______________________________________________________________________________
 $Log: marcel_mutex.c,v $
+Revision 1.5  2000/04/11 09:07:33  rnamyst
+Merged the "reorganisation" development branch.
+
+Revision 1.4.2.1  2000/03/15 15:55:11  vdanjean
+réorganisation de marcel : commit pour CVS
+
 Revision 1.4  2000/03/06 15:30:31  rnamyst
 Modified to use the MARCEL_MUTEX_INITIALIZER macro.
 

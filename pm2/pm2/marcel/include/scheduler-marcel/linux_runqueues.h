@@ -85,6 +85,7 @@ enum ma_rq_type {
  * acquire operations must be ordered by ascending &runqueue.
  */
 #section marcel_structures
+#depend "marcel_topology.h[marcel_types]"
 struct ma_runqueue {
 	ma_spinlock_t lock;
 	unsigned long long nr_switches;
@@ -106,6 +107,10 @@ struct ma_runqueue {
 	struct ma_runqueue *father;
 #endif
 	enum ma_rq_type type;
+
+#ifdef MA__LWPS
+	ma_cpu_set_t cpuset;
+#endif
 };
 
 #section marcel_types

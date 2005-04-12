@@ -88,7 +88,7 @@ void printrq(ma_runqueue_t *rq) {
 void marcel_top_tick(unsigned long foo) {
 	marcel_lwp_t *lwp;
 	unsigned long now;
-#define NBPIDS 24
+#define NBPIDS 22
 	marcel_t pids[NBPIDS];
 	int nbpids;
 
@@ -128,6 +128,8 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	}
 	marcel_freeze_sched();
 	marcel_threadslist(NBPIDS,pids,&nbpids,0);
+	if (nbpids > NBPIDS)
+		nbpids = NBPIDS;
 	for (;nbpids;nbpids--)
 		printtask(pids[nbpids-1]);
 	marcel_unfreeze_sched();

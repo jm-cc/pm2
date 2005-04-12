@@ -157,7 +157,7 @@ int marcel_attr_getschedpolicy(__const marcel_attr_t *attr, int *policy)
 
 int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
 {
-  return marcel_attr_setprio(attr, MA_RT_PRIO);
+  return marcel_attr_setprio(attr, realtime ? MA_RT_PRIO : MA_DEF_PRIO);
 }
 
 int marcel_attr_getrealtime(__const marcel_attr_t *attr, boolean *realtime)

@@ -52,7 +52,7 @@ extern int marcel_main(int argc, char *argv[]);
 #endif
 
 #section marcel_macros
-#define __marcel_init TBX_SECTION(".ma.initfunc")
+#define __marcel_init TBX_TEXTSECTION(".ma.initfunc")
 
 #section marcel_types
 typedef void (*__ma_initfunc_t)(void);

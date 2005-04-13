@@ -56,9 +56,9 @@ void __memory_barrier(void);
 #define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
 #define TBX_CONST       __attribute__ ((__const__))
 #define TBX_NOINST      __attribute__ ((__no_instrument_function__))
-#define TBX_ALIAS(name)	__attribute__ ((__alias__(name)))
-#define TBX_WEAK	__attribute__ ((__weak__))
-#define TBX_FORMAT(...)	__attribute__ ((__format__(__VA_ARGS__)))
+#define TBX_ALIAS(name) __attribute__ ((__alias__(name)))
+#define TBX_WEAK        __attribute__ ((__weak__))
+#define TBX_FORMAT(...) __attribute__ ((__format__(__VA_ARGS__)))
 
 #define TBX_VISIBILITY(vis)
 // l'attribut visibility n'est pas encore disponible...
@@ -113,10 +113,13 @@ void __memory_barrier(void);
 #endif
 
 #ifdef DARWIN_SYS
-#  define TBX_SECTION(secname)	__attribute__((__section__("__DATA," secname)))
+#  define TBX_DATASECTION(secname)	__attribute__((__section__("__DATA," secname)))
+#  define TBX_TEXTSECTION(secname)	__attribute__((__section__("__TEXT," secname)))
 #else
-#  define TBX_SECTION(secname)	__attribute__((__section__(secname)))
+#  define TBX_DATASECTION(secname)	__attribute__((__section__(secname)))
+#  define TBX_TEXTSECTION(secname)	TBX_DATASECTION(secname)
 #endif
+#  define TBX_SECTION(secname)		TBX_DATASECTION(secname)
 
 /*
  * Generic compiler-dependent macros required for kernel

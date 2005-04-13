@@ -11,7 +11,8 @@ case "$PM2_SYS" in
 	PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -DWIN_SYS"
 	;;
     DARWIN_SYS)
-        PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -fno-common -no-cpp-precomp -traditional-cpp"
+        PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -fno-common -no-cpp-precomp"
+	# -traditional-cpp makes darwin's gcc 3.3 crash
         ;;
     *)
 	;;

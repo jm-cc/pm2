@@ -39,6 +39,8 @@ typedef p_marcel_task_t marcel_t;
 #depend "marcel_attr.h[macros]"
  /* Pour struct __res_state */
 #define __need_res_state
+#depend <netinet/in.h>
+#depend <arpa/nameser.h>
 #depend <resolv.h>
 #undef __need_res_state
 

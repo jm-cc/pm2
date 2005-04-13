@@ -73,7 +73,7 @@ $(STAMP_BUILD_LIB_A): $(LIB_LIB_A)
 $(LIB_LIB_A): $(MOD_OBJECTS)
 	$(COMMON_BUILD)
 	$(COMMON_HIDE) rm -f $@
-	$(COMMON_MAIN) ar cr $@ $(filter %.o, $^)
+	$(COMMON_MAIN) ar crs $@ $(filter %.o, $^)
 
 $(STAMP_BUILD_LIB_SO): $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 

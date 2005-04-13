@@ -307,7 +307,15 @@ static void sig_start_timer(ma_lwp_t lwp)
 
 	sigemptyset(&sa.sa_mask);
 #if !defined(WIN_SYS)
-	sa.sa_flags = SA_RESTART|SA_NOMASK;
+	sa.sa_flags = SA_RESTART;
+#if defined(SA_NOMASK)
+	sa.sa_flags |= SA_NOMASK;
+#elif defined(SA_NODEFER)
+	sa.sa_flags |= SA_NODEFER;
+#else
+#warning no way to prevent nested signals
+#endif
+
 #if defined(OSF_SYS) && defined(ALPHA_ARCH)
 	sa.sa_flags |= SA_SIGINFO;
 #endif

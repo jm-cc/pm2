@@ -129,7 +129,7 @@ typedef struct __ma_init_info {
 
 
 /* A besoin de MARCEL_SELF et LWP_SELF */
-#define MA_INIT_PRIO_BASE                          0
+#define MA_INIT_PRIO_BASE                          5
 
 #define MA_INIT_THREADS_MAIN          MA_INIT_SELF
 #define MA_INIT_FAULT_CATCHER         MA_INIT_MAIN_LWP

@@ -57,9 +57,10 @@ void printtask(marcel_task_t *t) {
 		default:			state = '?'; break;
 	}
 	utime = ma_atomic_read(&t->top_utime);
-	top_printf("0x%p %16s %2d %3lu%% %c %p %p\r\n", t, t->name,
+	top_printf("0x%p %16s %2d %3lu%% %c %2d %p %p\r\n", t, t->name,
 		t->sched.internal.prio, djiffies?(utime*100)/djiffies:0,
-		state, t->sched.internal.init_rq, t->sched.internal. cur_rq);
+		state, LWP_NUMBER(GET_LWP(t)),
+		t->sched.internal.init_rq, t->sched.internal. cur_rq);
 	ma_atomic_sub(utime, &t->top_utime);
 }
 #if 0
@@ -170,3 +171,4 @@ int marcel_init_top(char *outfile) {
 	ma_add_timer(&timer);
 	return 0;
 }
+

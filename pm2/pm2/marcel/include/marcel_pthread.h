@@ -15,6 +15,7 @@
 
 #ifndef _MARCEL_PTHREAD_H
 #define _MARCEL_PTHREAD_H	1
+#include "tbx_compiler.h"
 
 #warning toto
 /* Function for handling threads.  */
@@ -35,7 +36,7 @@ extern int marcel_equal (marcel_t __thread1, marcel_t __thread2) __THROW;
 
 /* Terminate calling thread.  */
 extern void marcel_exit (void *__retval)
-     __THROW __attribute__ ((__noreturn__,__no_instrument_function__));
+     __THROW TBX_NORETURN;
 
 /* Make calling thread wait for termination of the thread TH.  The
    exit status of the thread is stored in *THREAD_RETURN, if THREAD_RETURN

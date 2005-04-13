@@ -559,6 +559,7 @@ struct marcel_ev_wait {
 
 
 #section marcel_variables
+#include "tbx_compiler.h"
 /* Liste des serveurs en cours de polling 
  * (state == 2 et tâches en attente de polling) 
  */
@@ -566,9 +567,9 @@ extern struct list_head ma_ev_list_poll;
 
 #section marcel_functions
 static __inline__ int marcel_polling_is_required(unsigned polling_point)
-__attribute__ ((unused));
+TBX_UNUSED;
 static __inline__ void marcel_check_polling(unsigned polling_point)
-__attribute__ ((unused));
+TBX_UNUSED;
 #section marcel_inline
 void __marcel_check_polling(unsigned polling_point);
 

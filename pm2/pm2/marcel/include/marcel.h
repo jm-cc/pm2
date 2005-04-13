@@ -154,7 +154,7 @@ unsigned long marcel_usablestack(void);
 
 unsigned long marcel_unusedstack(void);
 
-static __inline__ char *marcel_stackbase(marcel_t pid) __attribute__ ((unused));
+static __inline__ char *marcel_stackbase(marcel_t pid) TBX_UNUSED;
 static __inline__ char *marcel_stackbase(marcel_t pid)
 {
   return (char *)pid->stack_base;

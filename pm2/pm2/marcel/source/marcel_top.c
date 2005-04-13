@@ -17,6 +17,7 @@
 
 #define _GNU_SOURCE
 #include "marcel.h"
+#include "tbx_compiler.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -27,7 +28,7 @@ int marcel_top_file=-1;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 
-int top_printf (char *fmt, ...) __attribute__((__format__(printf, 1, 2)));
+int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
 int top_printf (char *fmt, ...) {
 	char buf[81];
 	va_list va;

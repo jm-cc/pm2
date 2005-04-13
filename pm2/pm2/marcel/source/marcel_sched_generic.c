@@ -14,6 +14,7 @@
  */
 
 #include "marcel.h"
+#include "tbx_compiler.h"
 
 void marcel_delay(unsigned long millisecs)
 {
@@ -29,7 +30,7 @@ void marcel_delay(unsigned long millisecs)
 #endif
 }
 
-__attribute__((__section__(".ma.main.lwp"))) marcel_lwp_t __main_lwp;
+TBX_SECTION(".ma.main.lwp") marcel_lwp_t __main_lwp;
 
 /**************************************************************************/
 /**************************************************************************/
@@ -123,7 +124,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 {
 	marcel_t t;
 	int nb_pids = 0;
-	DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
+	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
 
 	if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
@@ -148,7 +149,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
-	DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
+	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
 	ma_spin_lock(&__wait_lock);
 	list_for_each_entry(t, &all_threads, all_threads)

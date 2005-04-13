@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
+
 #section macros
 #depend "marcel_utils.h[stringification]"
 
@@ -38,23 +41,23 @@
 
 #define LOCAL_SYMBOL(local_symbol, symbol) \
   extern __typeof(symbol) local_symbol \
-    __attribute__ ((alias(#symbol)))
+    TBX_ALIAS(#symbol)
 // l'attribut visibility n'est pas encore disponible...
-//    __attribute__ ((alias(symbol), visibility("hidden")))
+//    TBX_ALIAS(#symbol) TBX_VISIBILITY("hidden")
 
 #define ALIAS_SYMBOL(alias_symbol, symbol) \
   extern __typeof(symbol) alias_symbol \
-    __attribute__ ((alias(#symbol)))
+    TBX_ALIAS(#symbol)
 
 
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
-#define LOCAL_ATTRIBUTE __attribute__ ((visibility("hidden")))
+#define LOCAL_ATTRIBUTE TBX_VISIBILITY("hidden")
 #else
 #define LOCAL_ATTRIBUTE //WEAK_ATTRIBUTE
 #endif
 
 #define ADD_WEAK_ATTRIBUTE ,weak
-#define WEAK_ATTRIBUTE __attribute__((weak))
+#define WEAK_ATTRIBUTE TBX_WEAK
 
 /****************************************************************
  * Déclarations
@@ -105,21 +108,21 @@
 #ifdef MA__POSIX_FUNCTIONS_NAMES
 # define DEF_ALIAS_POSIX_OF_MARCEL(name) \
     typeof(LOCAL_POSIX_NAME(name)) LOCAL_POSIX_NAME(name) \
-      __attribute__((alias(marcel_xstr(LOCAL_MARCEL_NAME(name)))));
+      TBX_ALIAS(marcel_xstr(LOCAL_MARCEL_NAME(name)));
 # define DEF_ALIAS_POSIX(name) \
     typeof(POSIX_NAME(name)) POSIX_NAME(name) \
-      __attribute__((alias(marcel_xstr(LOCAL_POSIX_NAME(name)))));
-//      __attribute__((alias(xstr(LOCAL_POSIX_NAME(name)))ADD_WEAK_ATTRIBUTE));
+      TBX_ALIAS(marcel_xstr(LOCAL_POSIX_NAME(name)));
+//      TBX_ALIAS(xstr(LOCAL_POSIX_NAME(name))) TBX_WEAK;
 #else
 # define DEF_ALIAS_POSIX_OF_MARCEL(name)
 # define DEF_ALIAS_POSIX(name)
 #endif
 #define DEF_ALIAS_MARCEL(name) \
   typeof(MARCEL_NAME(name)) MARCEL_NAME(name) \
-    __attribute__((alias(marcel_xstr(LOCAL_MARCEL_NAME(name)))));
+    TBX_ALIAS(marcel_xstr(LOCAL_MARCEL_NAME(name)));
 #define DEF_ALIAS_LOCAL_MARCEL(name) \
   typeof(LOCAL_MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) \
-    __attribute__((alias(marcel_xstr(MARCEL_NAME(name)))));
+    TBX_ALIAS(marcel_xstr(MARCEL_NAME(name)));
 
 
 #define DEF_MARCEL_POSIX(rtype, name, proto) \
@@ -142,7 +145,7 @@
   
 #define DEFINLINE_MARCEL_POSIX(rtype, name, proto) \
   typeof(MARCEL_NAME(name)) MARCEL_NAME(name) \
-    __attribute__((alias(marcel_xstr(MARCEL_INLINE_NAME(name))))); \
+    TBX_ALIAS(marcel_xstr(MARCEL_INLINE_NAME(name))); \
   DEF_ALIAS_LOCAL_MARCEL(name) \
   DEF_ALIAS_POSIX(name) \
   DEF_ALIAS_POSIX_OF_MARCEL(name)
@@ -152,11 +155,11 @@
 
 # define strong_alias_t(t, name, aliasname) _strong_alias_t(t, name, aliasname)
 # define _strong_alias_t(type, name, aliasname) \
-  extern __typeof (type) aliasname __attribute__ ((alias (#name)));
+  extern __typeof (type) aliasname TBX_ALIAS (#name);
 
 #  define weak_alias_t(t, name, aliasname) _weak_alias_t (t, name, aliasname)
 #  define _weak_alias_t(type, name, aliasname) \
-  extern __typeof (type) aliasname __attribute__ ((weak, alias (#name)));
+  extern __typeof (type) aliasname TBX_WEAK TBX_ALIAS(#name);
 
 #ifdef MA__PTHREAD_FUNCTIONS
 #define DEF_STRONG_T(type, name, aliasname) \

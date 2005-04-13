@@ -15,6 +15,7 @@
  */
 
 #section common
+#include "tbx_compiler.h"
 /*
  * Similar to:
  * include/asm-generic/percpu.h
@@ -31,14 +32,14 @@
 
 /* Separate out the type, so (int[3], foo) works. */
 /*#define MA_DEFINE_PER_LWP_SUBSEC(subsec, type, name) \
-    __attribute__((__section__(__MA_PERLWP_SECTION ".offset" \
-                                     subsec ",\"\",@progbits \n#"))) \
+    TBX_SECTION(__MA_PERLWP_SECTION ".offset" \
+                                     subsec ",\"\",@progbits \n#") \
        __typeof__(type) ma_per_lwp__##name; \
-    __attribute__((__section__(__MA_PERLWP_SECTION ".main" subsec))) \
+    TBX_SECTION(__MA_PERLWP_SECTION ".main" subsec) \
        __typeof__(type) ma_per_lwp_main__##name
 */
 #define MA_DEFINE_PER_LWP_SUBSEC(subsec, type, name) \
-    __attribute__((__section__(__MA_PERLWP_SECTION ".main" subsec))) \
+    TBX_SECTION(__MA_PERLWP_SECTION ".main" subsec) \
        __typeof__(type) ma_per_lwp__##name
 
 extern unsigned long __ma_main_lwp_start;
@@ -55,7 +56,7 @@ extern unsigned long __ma_main_lwp_start;
 #else /* ! MA__LWPS */
 
 #define MA_DEFINE_PER_LWP_SUBSEC(subsec, type, name) \
-    __attribute__((__section__(__MA_PERLWP_SECTION ".main" subsec))) \
+    TBX_SECTION(__MA_PERLWP_SECTION ".main" subsec) \
        __typeof__(type) ma_per_lwp__##name
 
 #define ma_per_lwp(var, lwp)		(*((void)lwp, &ma_per_lwp__##var))

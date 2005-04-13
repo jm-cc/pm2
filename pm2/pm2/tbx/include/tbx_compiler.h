@@ -56,6 +56,13 @@ void __memory_barrier(void);
 #define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
 #define TBX_CONST       __attribute__ ((__const__))
 #define TBX_NOINST      __attribute__ ((__no_instrument_function__))
+#define TBX_ALIAS(name)	__attribute__ ((__alias__(name)))
+#define TBX_WEAK	__attribute__ ((__weak__))
+#define TBX_FORMAT(...)	__attribute__ ((__format__(__VA_ARGS__)))
+
+#define TBX_VISIBILITY(vis)
+// l'attribut visibility n'est pas encore disponible...
+//#define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
 
 #if __GNUC__ > 3
 #  define __TBX_FUNCTION__		__func__
@@ -105,6 +112,11 @@ void __memory_barrier(void);
 #  error Sorry, your compiler is too old/not recognized.
 #endif
 
+#ifdef DARWIN_SYS
+#  define TBX_SECTION(secname)	__attribute__((__section__("__DATA," secname)))
+#else
+#  define TBX_SECTION(secname)	__attribute__((__section__(secname)))
+#endif
 
 /*
  * Generic compiler-dependent macros required for kernel

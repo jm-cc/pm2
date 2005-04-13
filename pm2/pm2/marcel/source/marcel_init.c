@@ -19,6 +19,7 @@
 
 #define MA_FILE_DEBUG init
 #include "marcel.h"
+#include "tbx_compiler.h"
 
 /*
  * Begin: added by O.A.
@@ -254,24 +255,23 @@ typedef struct {
 	__ma_init_info_t *infos;
 	int prio;
 	char* debug;
-} __attribute__((aligned)) __ma_init_index_t;
+} TBX_ALIGNED __ma_init_index_t;
 
 typedef struct {
 	struct {
 		int section_number;
-	} a __attribute__((aligned));
+	} a TBX_ALIGNED;
 	struct {
 		__ma_init_info_t infos[2];
-	} b __attribute__((aligned));
-} __attribute__((aligned)) __ma_init_section_index_t;
+	} b TBX_ALIGNED;
+} TBX_ALIGNED __ma_init_section_index_t;
 	
 
 #define _ADD_INIT_SECTION(number, text) \
   int __ma_init_info_##number \
-    __attribute__((aligned, \
-		section(__MA_INIT_SECTION "info." #number)))=number; \
+    TBX_ALIGNED TBX_SECTION(__MA_INIT_SECTION "inf." #number) = number; \
   const __ma_init_index_t __ma_init_index_##number \
-    __attribute__((section(__MA_INIT_SECTION "index." #number))) \
+    TBX_SECTION(__MA_INIT_SECTION "ind." #number) \
     = { .infos=(tbx_container_of(&__ma_init_info_##number, \
 			     __ma_init_section_index_t, a.section_number) \
     		->b.infos), \

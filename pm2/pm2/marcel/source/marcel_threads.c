@@ -286,7 +286,7 @@ MA_DEFINE_PER_LWP(marcel_sem_t, postexit_space)={0,};
 
 static void postexit_thread_atexit_func(any_t arg) {
 
-	marcel_lwp_t *lwp __attribute__((unused)) =(marcel_lwp_t*)arg;
+	marcel_lwp_t *lwp TBX_UNUSED =(marcel_lwp_t*)arg;
 
 	TRACE("postexit thread killed on lwp %i\n", LWP_NUMBER(LWP_SELF));
 	RAISE(PROGRAM_ERROR);

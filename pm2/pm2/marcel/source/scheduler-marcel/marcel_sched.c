@@ -20,6 +20,7 @@
 #endif
 
 #include "marcel.h"
+#include "tbx_compiler.h"
 
 #warning "[1;33m<<< [1;37mScheduler [1;32mmarcel[1;37m selected[1;33m >>>[0m"
 
@@ -718,7 +719,7 @@ void marcel_snapshot(snapshot_func_t f)
 {
   marcel_t t;
   struct list_head *pos;
-  DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
+  DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
   lock_task();
 
@@ -779,7 +780,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
   marcel_t t;
   struct list_head *pos;
   int nb_pids = 0;
-  DEFINE_CUR_LWP(, __attribute__((unused)) =, GET_LWP(marcel_self()));
+  DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
   if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
       ((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||

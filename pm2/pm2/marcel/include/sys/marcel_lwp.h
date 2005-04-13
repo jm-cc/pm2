@@ -182,6 +182,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #endif
 
 #section marcel_macros
+#include "tbx_compiler.h"
 /****************************************************************
  * Accès aux LWP
  */
@@ -220,7 +221,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #  define SET_LWP_NB(proc, value)             ((void)0)
 #  define GET_LWP_BY_NUMBER(number)           (cur_lwp)
 #  define DEFINE_CUR_LWP(OPTIONS, signe, current) \
-     int __cur_lwp_unused__ __attribute__ ((unused))
+     int __cur_lwp_unused__ TBX_UNUSED
 #  define IS_FIRST_LWP(lwp)                   (1)
 
 #  define for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)

@@ -28,6 +28,7 @@
 #undef __need_sigset_t
 #include <bits/pmarceltypes.h>
 
+#include "tbx_compiler.h"
 
 /* Detach state.  */
 enum
@@ -171,7 +172,7 @@ extern int pmarcel_create (pmarcel_t *__restrict __newthread,
 
 /* Terminate calling thread.  */
 extern void pmarcel_exit (void *__retval)
-     __THROW __attribute__ ((__noreturn__,__no_instrument_function__));
+     __THROW TBX_NORETURN;
 
 /* Make calling thread wait for termination of the thread TH.  The
    exit status of the thread is stored in *THREAD_RETURN, if THREAD_RETURN
@@ -198,7 +199,7 @@ extern int pmarcel_detach (pmarcel_t __th) __THROW;
 
 
 /* Obtain the identifier of the current thread.  */
-extern pmarcel_t pmarcel_self (void) __THROW __attribute__ ((__const__));
+extern pmarcel_t pmarcel_self (void) __THROW TBX_CONST;
 
 /* Compare two thread identifiers.  */
 extern int pmarcel_equal (pmarcel_t __thread1, pmarcel_t __thread2) __THROW;

@@ -60,7 +60,7 @@ typedef int my_jmp_buf[6];
 
 extern int my_setjmp(my_jmp_buf buf);
 
-static __inline__ void TBX_NORETURN my_longjmp(my_jmp_buf buf, int val) __attribute__ ((__unused__));
+static __inline__ void TBX_NORETURN TBX_UNUSED my_longjmp(my_jmp_buf buf, int val);
 
 static __inline__ void my_longjmp(my_jmp_buf buf, int val)
 {

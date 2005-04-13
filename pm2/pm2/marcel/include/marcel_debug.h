@@ -15,9 +15,10 @@
  */
 
 #section marcel_macros
+#include "tbx_compiler.h"
 
 #define MA_DEBUG_VAR_ATTRIBUTE \
-    __attribute__((section(".ma.debug.var"),aligned))
+    TBX_SECTION(".ma.debug.var") TBX_ALIGNED
 
 #ifdef PM2DEBUG
 #define MA_DEBUG_VAR_NAME(name)   MA_DEBUG_VAR_NAME_S(name)

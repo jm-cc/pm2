@@ -64,6 +64,7 @@ static __inline__ void ma_unlock_task(void);
 */
 
 #section marcel_inline
+#include "tbx_compiler.h"
 /*
 #ifndef MA_PROTECT_LOCK_TASK_FROM_SIG
 static __inline__ void ma_lock_task(void)
@@ -73,7 +74,7 @@ static __inline__ void ma_lock_task(void)
 
 static __inline__ void ma_unlock_task(void)
 {
-  marcel_t cur __attribute__ ((unused)) = marcel_self();
+  marcel_t cur TBX_UNUSED = marcel_self();
 
   if(atomic_read(&cur->_locked) == 1) {
 

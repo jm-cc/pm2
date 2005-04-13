@@ -16,6 +16,7 @@
 
 
 #include "marcel.h"
+#include "tbx_compiler.h"
 
 #ifdef PM2DEBUG
 
@@ -68,10 +69,10 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	pm2debug_init_ext(argc, argv, debug_flags);
 }
 
-typedef struct { debug_type_t d;} __attribute__((aligned)) debug_type_aligned_t;
+typedef struct { debug_type_t d;} TBX_ALIGNED debug_type_aligned_t;
 
-debug_type_t ma_dummy1 __attribute__((section(".ma.debug.size.0"),aligned)) =  NEW_DEBUG_TYPE("dummy", "dummy");
-debug_type_t ma_dummy2 __attribute__((section(".ma.debug.size.1"),aligned)) =  NEW_DEBUG_TYPE("dummy", "dummy");
+debug_type_t ma_dummy1 TBX_SECTION(".ma.debug.size.0") TBX_ALIGNED =  NEW_DEBUG_TYPE("dummy", "dummy");
+debug_type_t ma_dummy2 TBX_SECTION(".ma.debug.size.1") TBX_ALIGNED =  NEW_DEBUG_TYPE("dummy", "dummy");
 extern debug_type_aligned_t __ma_debug_pre_start[];
 extern debug_type_aligned_t __ma_debug_start[];
 extern debug_type_aligned_t __ma_debug_end[];

@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
+
 #section functions
 
 /* = initialization & termination == */
@@ -49,7 +52,7 @@ extern int marcel_main(int argc, char *argv[]);
 #endif
 
 #section marcel_macros
-#define __marcel_init __attribute__((section(".ma.initfunc")))
+#define __marcel_init TBX_SECTION(".ma.initfunc")
 
 #section marcel_types
 typedef void (*__ma_initfunc_t)(void);
@@ -59,15 +62,14 @@ typedef struct __ma_init_info {
 	char prio;
 	const char **debug;
 	char *file;
-} __attribute__((aligned)) __ma_init_info_t;
+} TBX_ALIGNED __ma_init_info_t;
 
 #section marcel_macros
 #define __MA_INIT_SECTION ".ma.init."
 
 #define __ma_initfunc_prio_internal(_func, _section, _prio, _pdebug) \
   const __ma_init_info_t ma_init_info_##_func \
-    __attribute__((aligned, \
-		section (__MA_INIT_SECTION "info." #_section "." #_prio))) \
+    TBX_ALIGNED TBX_SECTION(__MA_INIT_SECTION "inf." #_section "." #_prio) \
     = {.func=&_func, .section=_section, .prio=_prio, .debug=_pdebug, .file=__FILE__};
 #define __ma_initfunc_prio__(_func, _section, _prio, _debug) \
   static const char *ma_init_info_##_func##_help=_debug; \
@@ -127,17 +129,17 @@ typedef struct __ma_init_info {
 
 
 /* A besoin de MARCEL_SELF et LWP_SELF */
-#define MA_INIT_PRIO_BASE                          'H'
+#define MA_INIT_PRIO_BASE                          0
 
 #define MA_INIT_THREADS_MAIN          MA_INIT_SELF
 #define MA_INIT_FAULT_CATCHER         MA_INIT_MAIN_LWP
-#define MA_INIT_FAULT_CATCHER_PRIO                 'A'
+#define MA_INIT_FAULT_CATCHER_PRIO                 0
 #define MA_INIT_DEBUG                 MA_INIT_MAIN_LWP
-#define MA_INIT_DEBUG_PRIO                         'B'
+#define MA_INIT_DEBUG_PRIO                         1
 #define MA_INIT_SLOT                  MA_INIT_MAIN_LWP
-#define MA_INIT_SLOT_PRIO                          'C'
+#define MA_INIT_SLOT_PRIO                          2
 #define MA_INIT_LWP_MAIN_STRUCT       MA_INIT_MAIN_LWP
-#define MA_INIT_LWP_MAIN_STRUCT_PRIO               'F'
+#define MA_INIT_LWP_MAIN_STRUCT_PRIO               3
 #define MA_INIT_SOFTIRQ               MA_INIT_MAIN_LWP
 #define MA_INIT_THREADS_DATA          MA_INIT_MAIN_LWP
 #define MA_INIT_MARCEL_SCHED          MA_INIT_MAIN_LWP
@@ -149,16 +151,16 @@ typedef struct __ma_init_info {
 #define MA_INIT_TIMER                 MA_INIT_MAIN_LWP
 #define MA_INIT_LINUX_TIMER           MA_INIT_MAIN_LWP
 #define MA_INIT_REGISTER_LWP_NOTIFIER MA_INIT_MAIN_LWP
-#define MA_INIT_REGISTER_LWP_NOTIFIER_PRIO          'R'
+#define MA_INIT_REGISTER_LWP_NOTIFIER_PRIO          7
 #define MA_INIT_LWP_FINISHED          MA_INIT_MAIN_LWP
-#define MA_INIT_LWP_FINISHED_PRIO                   'Z'
+#define MA_INIT_LWP_FINISHED_PRIO                   9
 #define MA_INIT_GENSCHED_PREEMPT      MA_INIT_SCHEDULER
-#define MA_INIT_GENSCHED_PREEMPT_PRIO               'C'
+#define MA_INIT_GENSCHED_PREEMPT_PRIO               2
 #define MA_INIT_THREADS_THREAD        MA_INIT_SCHEDULER
 #define MA_INIT_TIMER_SIG             MA_INIT_SCHEDULER
 #define MA_INIT_SOFTIRQ_KSOFTIRQD     MA_INIT_SCHEDULER
 #define MA_INIT_UPCALL_TASK_NEW       MA_INIT_SCHEDULER
 #define MA_INIT_GENSCHED_START_LWPS   MA_INIT_START_LWPS
 #define MA_INIT_UPCALL_START	      MA_INIT_START_LWPS
-#define MA_INIT_UPCALL_START_PRIO		    'I'
+#define MA_INIT_UPCALL_START_PRIO		    6
 

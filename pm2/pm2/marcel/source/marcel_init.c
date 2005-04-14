@@ -196,7 +196,6 @@ void win_stack_allocate(unsigned n)
 }
 #endif // WIN_SYS
 
-marcel_t __main_thread;
 static volatile int __main_ret;
 static marcel_ctx_t __initial_main_ctx;
 

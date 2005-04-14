@@ -33,8 +33,8 @@ _syscall0(pid_t,gettid)
 #  endif
 #endif
 int marcel_gettid(void) {
-	int ret;
 #ifdef __NR_gettid
+	int ret;
 /* 2.6 linux kernels and above have tids */
 	if ((ret=gettid())!=-1 || errno != ENOSYS)
 		return ret;

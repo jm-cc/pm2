@@ -101,15 +101,10 @@ static unsigned __nb_processors = 1;
 void marcel_lwp_fix_nb_vps(unsigned nb_lwp)
 {
 	// Détermination du nombre de processeurs disponibles
-#ifdef SOLARIS_SYS
+#if defined(_SC_NPROCESSORS_CONF)
 	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(LINUX_SYS)
-	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-  //__nb_processors = 2;
-#elif defined(IRIX_SYS)
+#elif defined(_SC_NPROC_CONF)
 	__nb_processors = sysconf(_SC_NPROC_CONF);
-#elif defined(OSF_SYS)
-	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
 #else
 #warning __nb_processors set to 1 for this system
 	__nb_processors = 1;

@@ -33,10 +33,17 @@ void __memory_barrier(void);
 /* This macro obfuscates arithmetic on a variable address so that gcc
    shouldn't recognize the original var, and make assumptions about it */
 #ifndef __INTEL_COMPILER
+#if !defined(PPC_ARCH) || (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ > 3)
 #define TBX_RELOC_HIDE(ptr, off)					\
   ({ unsigned long __ptr;					\
     __asm__ ("" : "=g"(__ptr) : "0"(ptr));		\
     (typeof(ptr)) (__ptr + (off)); })
+#else
+#define TBX_RELOC_HIDE(ptr, off)					\
+  ({ unsigned long __ptr;					\
+    __asm__ ("" : "=r"(__ptr) : "0"(ptr));		\
+    (typeof(ptr)) (__ptr + (off)); })
+#endif
 #else
 #define TBX_RELOC_HIDE(ptr, off)                                   \
   ({ unsigned long __ptr;                                       \

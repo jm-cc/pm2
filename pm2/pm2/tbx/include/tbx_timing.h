@@ -68,6 +68,13 @@ typedef union u_tbx_tick
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    ((t2).tick - (t1).tick)
 
+#elif defined(PPC_ARCH)
+
+#define TBX_GET_TICK(t) __asm__ volatile("mftb %0" : "=r" (t.tick))
+
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+   ((t2).tick - (t1).tick)
+
 #else
 
 #define TBX_GET_TICK(t) \

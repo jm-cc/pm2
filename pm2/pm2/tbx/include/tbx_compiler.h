@@ -21,6 +21,9 @@
 #ifndef TBX_COMPILER_H_EST_DEF
 #define TBX_COMPILER_H_EST_DEF
 
+#define _TBX_STRING(x) #x
+#define TBX_STRING(x) _TBX_STRING(x)
+
 /* Optimization barrier */
 /* The "volatile" is due to gcc bugs */
 #ifndef __INTEL_COMPILER
@@ -71,7 +74,7 @@ void __memory_barrier(void);
      ret name proto TBX_WEAK { return alias args; }
 #else
 #  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
-     __typeof(alias) name __attribute__ ((__alias__(#alias)))
+     __typeof(alias) name __attribute__ ((__alias__(TBX_STRING(alias))))
 #  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
      TBX_FUN_ALIAS(ret, name, alias, proto, args) TBX_WEAK
 #endif

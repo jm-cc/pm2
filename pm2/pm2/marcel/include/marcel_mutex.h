@@ -91,6 +91,8 @@ DEC_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex) __THROW)
 
 DEC_MARCEL(int, mutexattr_init, (marcel_mutexattr_t *attr) __THROW)
 DEC_MARCEL(int, mutexattr_destroy, (marcel_mutexattr_t *attr) __THROW)
+DEC_MARCEL(int, once, (marcel_once_t * once_control, 
+		      void (*init_routine)(void)) __THROW)
 
 
 

@@ -279,10 +279,10 @@ int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr,
  *                Thread helper
  */
 
-MA_DEFINE_PER_LWP(marcel_postexit_func_t, postexit_func)=NULL;
-MA_DEFINE_PER_LWP(any_t, postexit_arg)=NULL;
-MA_DEFINE_PER_LWP(marcel_sem_t, postexit_thread)={0,};
-MA_DEFINE_PER_LWP(marcel_sem_t, postexit_space)={0,};
+MA_DEFINE_PER_LWP(marcel_postexit_func_t, postexit_func, NULL);
+MA_DEFINE_PER_LWP(any_t, postexit_arg, NULL);
+MA_DEFINE_PER_LWP(marcel_sem_t, postexit_thread, {0});
+MA_DEFINE_PER_LWP(marcel_sem_t, postexit_space, {0});
 
 static void postexit_thread_atexit_func(any_t arg) {
 
@@ -507,11 +507,11 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	abort(); // For security
 }
 	
-DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val))
+DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val))
 {
 	marcel_exit_internal(val, 0);
 }
-DEF_PTHREAD(exit)
+DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))
 
 void TBX_NORETURN marcel_exit_special(any_t val)
 {
@@ -582,7 +582,7 @@ inline static
 void marcel_postexit_internal(marcel_t cur,
 			      marcel_postexit_func_t func, any_t arg);
 
-DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status))
+DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status))
 {
 	LOG_IN();
 
@@ -607,10 +607,10 @@ DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status))
 	LOG_OUT();
 	return 0;
 }
-DEF_PTHREAD(join)
+DEF_PTHREAD(int, join, (pthread_t pid, void **status), (pid, status))
 
 
-DEF_MARCEL_POSIX(int, cancel, (marcel_t pid))
+DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid))
 {
   if(pid == marcel_self()) {
     marcel_exit(NULL);
@@ -621,14 +621,14 @@ DEF_MARCEL_POSIX(int, cancel, (marcel_t pid))
   }
   return 0;
 }
-DEF_PTHREAD(cancel)
+DEF_PTHREAD(int, cancel, (pthread_t pid), (pid))
 
-DEF_MARCEL_POSIX(int, detach, (marcel_t pid))
+DEF_MARCEL_POSIX(int, detach, (marcel_t pid), (pid))
 {
    pid->detached = TRUE;
    return 0;
 }
-DEF_PTHREAD(detach)
+DEF_PTHREAD(int, detach, (pthread_t pid), (pid))
 
 static void suspend_handler(any_t arg)
 {
@@ -654,7 +654,8 @@ void marcel_resume(marcel_t pid)
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
-				     cleanup_func_t func, any_t arg))
+				     cleanup_func_t func, any_t arg),
+		(__buffer, func, arg))
 {
 	marcel_t cur = marcel_self();
 	__buffer->__routine=func;
@@ -662,10 +663,12 @@ DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
 	__buffer->__prev=cur->last_cleanup;
 	cur->last_cleanup=__buffer;
 }
-DEF_PTHREAD(cleanup_push)
+DEF_PTHREAD(void, cleanup_push,(struct _pthread_cleanup_buffer *__buffer,
+				     void (*__routine)(void *), void * __arg),
+		(__buffer, __routine, __arg))
 
 DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
-				    boolean execute))
+				    boolean execute), (__buffer, execute))
 {
 	marcel_t cur = marcel_self();
 	
@@ -676,7 +679,8 @@ DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 	if(execute)
 		(*__buffer->__routine)(__buffer->__arg);
 }
-DEF_PTHREAD(cleanup_pop)
+DEF_PTHREAD(void, cleanup_pop,(struct _pthread_cleanup_buffer *__buffer,
+				     int __execute), (__buffer, __execute))
 #undef NAME_PREFIX
 #define NAME_PREFIX
 

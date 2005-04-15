@@ -73,7 +73,7 @@ $(STAMP_BUILD_LIB_A): $(LIB_LIB_A)
 $(LIB_LIB_A): $(MOD_OBJECTS)
 	$(COMMON_BUILD)
 	$(COMMON_HIDE) rm -f $@
-	$(COMMON_MAIN) ar crs $@ $(filter %.o, $^)
+	$(COMMON_MAIN) ar crs $@ $(filter-out %/_$(LIBNAME)_link.o, $(filter %.o, $^))
 
 $(STAMP_BUILD_LIB_SO): $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 
@@ -81,7 +81,7 @@ VERSION_SCRIPT_OPT=-Xlinker --version-script=
 LINK_CMD=$(LD) -Xlinker --soname=$(notdir $(LIB_LIB_SO_MAJ)) \
 		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
 		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(LDFLAGS) \
-		$(filter %.pic, $(MOD_PICS))
+		$(filter-out %/_$(LIBNAME)_link.pic, $(filter %.pic, $(MOD_PICS)))
 $(LIB_LIB_SO_MAJ_MIN): $(MOD_PICS) $(LIB_LIB_SO_MAP)
 	$(COMMON_LINK)
 	$(COMMON_HIDE) rm -f $@

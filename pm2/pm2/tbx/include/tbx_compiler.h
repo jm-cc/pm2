@@ -63,8 +63,18 @@ void __memory_barrier(void);
 #define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
 #define TBX_CONST       __attribute__ ((__const__))
 #define TBX_NOINST      __attribute__ ((__no_instrument_function__))
-#define TBX_ALIAS(name) __attribute__ ((__alias__(name)))
 #define TBX_WEAK        __attribute__ ((__weak__))
+#if defined(DARWIN_SYS)
+#  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
+     ret name proto { return alias args; }
+#  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
+     ret name proto TBX_WEAK { return alias args; }
+#else
+#  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
+     __typeof(alias) name __attribute__ ((__alias__(#alias)))
+#  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
+     TBX_FUN_ALIAS(ret, name, alias, proto, args) TBX_WEAK
+#endif
 #define TBX_FORMAT(...) __attribute__ ((__format__(__VA_ARGS__)))
 
 #define TBX_VISIBILITY(vis)

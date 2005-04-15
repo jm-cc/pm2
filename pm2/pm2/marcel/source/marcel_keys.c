@@ -16,7 +16,7 @@
 #include "marcel.h"
 
 DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
-				    __const void* value))
+				    __const void* value), (key, value))
 {
 #ifdef MA__DEBUG
    if((key < 0) || (key >= marcel_nb_keys))
@@ -25,8 +25,12 @@ DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
    marcel_self()->key[key] = (any_t)value;
    return 0;
 }
+DEF_PTHREAD(int, setspecific, (pthread_key_t key,
+				    __const void* value), (key, value))
+DEF___PTHREAD(int, setspecific, (pthread_key_t key,
+				    __const void* value), (key, value))
 
-DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key))
+DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key))
 {
 #ifdef MA__DEBUG
    if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
@@ -34,3 +38,5 @@ DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key))
 #endif
    return marcel_self()->key[key];
 }
+DEF_PTHREAD(any_t, getspecific, (pthread_key_t key), (key))
+DEF___PTHREAD(any_t, getspecific, (pthread_key_t key), (key))

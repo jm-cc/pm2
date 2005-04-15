@@ -25,23 +25,24 @@
       * CONDITIONS
       */
      
-DEF_MARCEL_POSIX(int, condattr_init, (marcel_condattr_t *attr))
+DEF_MARCEL_POSIX(int, condattr_init, (marcel_condattr_t *attr), (attr))
 {
   return 0;
 }
-DEF_PTHREAD(condattr_init)
+DEF_PTHREAD(int, condattr_init, (pthread_condattr_t *attr), (attr))
 
-DEF_MARCEL_POSIX(int, condattr_destroy, (marcel_condattr_t *attr))
+DEF_MARCEL_POSIX(int, condattr_destroy, (marcel_condattr_t *attr), (attr))
 {
   return 0;
 }
-DEF_PTHREAD(condattr_destroy)
+DEF_PTHREAD(int, condattr_destroy, (pthread_condattr_t *attr), (attr))
 
 static marcel_condattr_t marcel_condattr_default = { 0, };
 
 DEF_MARCEL_POSIX(int, cond_init, 
 		 (marcel_cond_t *cond, 
-		  __const marcel_condattr_t *attr))
+		  __const marcel_condattr_t *attr),
+		 (cond, attr))
 {
   //LOG_IN();
   if(!attr) {
@@ -52,9 +53,12 @@ DEF_MARCEL_POSIX(int, cond_init,
   //LOG_OUT();
   return 0;
 }
-DEF_PTHREAD(cond_init)
+DEF_PTHREAD(int, cond_init, 
+		 (pthread_cond_t *cond, 
+		  __const pthread_condattr_t *attr),
+		 (cond, attr))
 
-DEF_MARCEL_POSIX(int, cond_destroy, (marcel_cond_t *cond))
+DEF_MARCEL_POSIX(int, cond_destroy, (marcel_cond_t *cond), (cond))
 {
   LOG_IN();
   if (cond->__c_waiting != NULL) {
@@ -64,9 +68,9 @@ DEF_MARCEL_POSIX(int, cond_destroy, (marcel_cond_t *cond))
   LOG_OUT();
   return 0;
 }
-DEF_PTHREAD(cond_destroy)
+DEF_PTHREAD(int, cond_destroy, (pthread_cond_t *cond), (cond))
 
-DEF_MARCEL_POSIX(int, cond_signal, (marcel_cond_t *cond))
+DEF_MARCEL_POSIX(int, cond_signal, (marcel_cond_t *cond), (cond))
 {
   LOG_IN();
   lock_task();
@@ -74,9 +78,9 @@ DEF_MARCEL_POSIX(int, cond_signal, (marcel_cond_t *cond))
   LOG_OUT();
   return 0;
 }
-DEF_PTHREAD(cond_signal)
+DEF_PTHREAD(int, cond_signal, (pthread_cond_t *cond), (cond))
 
-DEF_MARCEL_POSIX(int, cond_broadcast, (marcel_cond_t *cond))
+DEF_MARCEL_POSIX(int, cond_broadcast, (marcel_cond_t *cond), (cond))
 {
   LOG_IN();
   marcel_lock_acquire(&cond->__c_lock.__spinlock);
@@ -85,10 +89,10 @@ DEF_MARCEL_POSIX(int, cond_broadcast, (marcel_cond_t *cond))
   LOG_OUT();
   return 0;
 }
-DEF_PTHREAD(cond_broadcast)
+DEF_PTHREAD(int, cond_broadcast, (pthread_cond_t *cond), (cond))
 
 DEF_MARCEL_POSIX(int, cond_wait, (marcel_cond_t *cond, 
-				  marcel_mutex_t *mutex))
+				  marcel_mutex_t *mutex), (cond, mutex))
 {
   LOG_IN();
 
@@ -116,11 +120,12 @@ DEF_MARCEL_POSIX(int, cond_wait, (marcel_cond_t *cond,
   LOG_OUT();
   return 0;
 }
-DEF_PTHREAD(cond_wait)
+DEF_PTHREAD(int, cond_wait, (pthread_cond_t *cond, 
+				  pthread_mutex_t *mutex), (cond, mutex))
 
 DEF_MARCEL_POSIX(int, cond_timedwait, 
 		 (marcel_cond_t *cond, marcel_mutex_t *mutex,
-		  const struct timespec *abstime))
+		  const struct timespec *abstime), (cond, mutex, abstime))
 {
 	struct timeval now, tv;
 	unsigned long timeout;
@@ -173,5 +178,9 @@ DEF_MARCEL_POSIX(int, cond_timedwait,
 	LOG_OUT();
 	return ret;
 }
-DEF_PTHREAD(cond_timedwait)
-DEF___PTHREAD(cond_timedwait)
+DEF_PTHREAD(int, cond_timedwait, 
+		 (pthread_cond_t *cond, pthread_mutex_t *mutex,
+		  const struct timespec *abstime), (cond, mutex, abstime))
+DEF___PTHREAD(int, cond_timedwait, 
+		 (pthread_cond_t *cond, pthread_mutex_t *mutex,
+		  const struct timespec *abstime), (cond, mutex, abstime))

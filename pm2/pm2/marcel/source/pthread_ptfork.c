@@ -70,8 +70,14 @@ int __pmarcel_atfork(void (*prepare)(void),
   return 0;
 }
 strong_alias (__pmarcel_atfork, pmarcel_atfork)
-DEF___PTHREAD(atfork)
-DEF_PTHREAD(atfork)
+DEF_PTHREAD(int, atfork, (void (*prepare)(void),
+			void (*parent)(void),
+			void (*child)(void)),
+		(prepare, parent, child))
+DEF___PTHREAD(int, atfork, (void (*prepare)(void),
+			void (*parent)(void),
+			void (*child)(void)),
+		(prepare, parent, child))
 
 static inline void pmarcel_call_handlers(struct handler_list * list)
 {

@@ -37,7 +37,8 @@ static inline _pmarcel_descr thread_self() {
 static marcel_mutexattr_t marcel_mutexattr_default = {0,};
 
 DEF_MARCEL(int, mutex_init, 
-	   (marcel_mutex_t *mutex, __const marcel_mutexattr_t *attr))
+	   (marcel_mutex_t *mutex, __const marcel_mutexattr_t *attr),
+	   (mutex, attr))
 {
   //LOG_IN();
   mdebug("initializing mutex %p by %p in lock %p\n", 
@@ -51,6 +52,7 @@ DEF_MARCEL(int, mutex_init,
 }
 DEF_POSIX(int, mutex_init,
 	  (pmarcel_mutex_t * mutex, const pmarcel_mutexattr_t * mutex_attr),
+	  (mutex, mutex_attr),
 {
   __marcel_init_lock((struct _marcel_fastlock *)&mutex->__m_lock);
   mutex->__m_kind =
@@ -59,13 +61,17 @@ DEF_POSIX(int, mutex_init,
   mutex->__m_owner = NULL;
   return 0;
 })
-DEF_PTHREAD(mutex_init)
-DEF___PTHREAD(mutex_init)
+DEF_PTHREAD(int, mutex_init,
+	  (pthread__mutex_t * mutex, const pthread_mutexattr_t * mutex_attr),
+	  (mutex, mutex_attr))
+DEF___PTHREAD(int, mutex_init,
+	  (pthread__mutex_t * mutex, const pthread_mutexattr_t * mutex_attr),
+	  (mutex, mutex_attr))
 	  
      /*****************/
      /* mutex_destroy */
      /*****************/
-DEF_MARCEL(int, mutex_destroy, (marcel_mutex_t *mutex))
+DEF_MARCEL(int, mutex_destroy, (marcel_mutex_t *mutex), (mutex))
 {
   LOG_IN();
   if (mutex->__m_lock.__status != 0) {
@@ -75,7 +81,7 @@ DEF_MARCEL(int, mutex_destroy, (marcel_mutex_t *mutex))
   LOG_OUT();
   return 0;
 }
-DEF_POSIX(int, mutex_destroy, (pmarcel_mutex_t * mutex), 
+DEF_POSIX(int, mutex_destroy, (pmarcel_mutex_t * mutex), (mutex),
 {
   switch (mutex->__m_kind) {
   case MARCEL_MUTEX_ADAPTIVE_NP:
@@ -92,13 +98,13 @@ DEF_POSIX(int, mutex_destroy, (pmarcel_mutex_t * mutex),
     return EINVAL;
   }
 })
-DEF_PTHREAD(mutex_destroy)
-DEF___PTHREAD(mutex_destroy)
+DEF_PTHREAD(int, mutex_destroy, (pthread_mutex_t * mutex), (mutex))
+DEF___PTHREAD(int, mutex_destroy, (pthread_mutex_t * mutex), (mutex))
 
      /**************/
      /* mutex_lock */
      /**************/
-DEF_MARCEL(int, mutex_lock, (marcel_mutex_t *mutex))
+DEF_MARCEL(int, mutex_lock, (marcel_mutex_t *mutex), (mutex))
 {
   LOG_IN();
   lock_task();
@@ -108,7 +114,7 @@ DEF_MARCEL(int, mutex_lock, (marcel_mutex_t *mutex))
   LOG_OUT();
   return 0;
 }
-DEF_POSIX(int, mutex_lock, (pmarcel_mutex_t * mutex),
+DEF_POSIX(int, mutex_lock, (pmarcel_mutex_t * mutex), (mutex),
 {
   _pmarcel_descr self;
 
@@ -142,13 +148,13 @@ DEF_POSIX(int, mutex_lock, (pmarcel_mutex_t * mutex),
     return EINVAL;
   }
 })
-DEF_PTHREAD(mutex_lock)
-DEF___PTHREAD(mutex_lock)
+DEF_PTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
+DEF___PTHREAD(int, mutex_lock, (pthread_mutex_t * mutex), (mutex))
 
      /*****************/
      /* mutex_trylock */
      /*****************/
-DEF_MARCEL(int, mutex_trylock, (marcel_mutex_t *mutex))
+DEF_MARCEL(int, mutex_trylock, (marcel_mutex_t *mutex), (mutex))
 {
   int ret;
   LOG_IN();
@@ -158,7 +164,7 @@ DEF_MARCEL(int, mutex_trylock, (marcel_mutex_t *mutex))
   LOG_OUT();
   return ret;
 }
-DEF_POSIX(int, mutex_trylock, (pmarcel_mutex_t * mutex),
+DEF_POSIX(int, mutex_trylock, (pmarcel_mutex_t * mutex), (mutex),
 {
   _pmarcel_descr self;
   int retcode;
@@ -192,8 +198,8 @@ DEF_POSIX(int, mutex_trylock, (pmarcel_mutex_t * mutex),
     return EINVAL;
   }
 })
-DEF_PTHREAD(mutex_trylock)
-DEF___PTHREAD(mutex_trylock)
+DEF_PTHREAD(int, mutex_trylock, (pthread_mutex_t * mutex), (mutex))
+DEF___PTHREAD(int, mutex_trylock, (pthread_mutex_t * mutex), (mutex))
 
 #if 0
      /*******************/
@@ -201,6 +207,7 @@ DEF___PTHREAD(mutex_trylock)
      /*******************/
 DEF_POSIX(int, mutex_timedlock, (pmarcel_mutex_t *mutex,
 				 const struct timespec *abstime),
+		(mutex, abstime),
 {
   marcel_descr self;
   int res;
@@ -241,14 +248,18 @@ DEF_POSIX(int, mutex_timedlock, (pmarcel_mutex_t *mutex,
     return EINVAL;
   }
 })
-DEF_PTHREAD(mutex_timedlock)
-DEF___PTHREAD(mutex_timedlock)
+DEF_PTHREAD(int, mutex_timedlock, (pthread_mutex_t *mutex,
+				 const struct timespec *abstime),
+		(mutex, abstime))
+DEF___PTHREAD(int, mutex_timedlock, (pthread_mutex_t *mutex,
+				 const struct timespec *abstime),
+		(mutex, abstime))
 #endif
 
      /****************/
      /* mutex_unlock */
      /****************/
-DEF_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex))
+DEF_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex), (mutex))
 {
   int ret;
   LOG_IN();
@@ -257,7 +268,7 @@ DEF_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex))
   LOG_OUT();
   return ret;
 }
-DEF_POSIX(int, mutex_unlock, (pmarcel_mutex_t * mutex),
+DEF_POSIX(int, mutex_unlock, (pmarcel_mutex_t * mutex), (mutex),
 {
   switch (mutex->__m_kind) {
   case MARCEL_MUTEX_ADAPTIVE_NP:
@@ -288,38 +299,39 @@ DEF_POSIX(int, mutex_unlock, (pmarcel_mutex_t * mutex),
     return EINVAL;
   }
 })
-DEF_PTHREAD(mutex_unlock)
-DEF___PTHREAD(mutex_unlock)
+DEF_PTHREAD(int, mutex_unlock, (pthread_mutex_t * mutex), (mutex))
+DEF___PTHREAD(int, mutex_unlock, (pthread_mutex_t * mutex), (mutex))
 
      /******************/
      /* mutexattr_init */
      /******************/
-DEF_MARCEL(int, mutexattr_init, (marcel_mutexattr_t *attr))
+DEF_MARCEL(int, mutexattr_init, (marcel_mutexattr_t *attr), (attr))
 {
   return 0;
 }
-DEF_POSIX(int, mutexattr_init, (pmarcel_mutexattr_t *attr),
+DEF_POSIX(int, mutexattr_init, (pmarcel_mutexattr_t *attr), (attr),
 {
   attr->__mutexkind = MARCEL_MUTEX_TIMED_NP;
   return 0;
 })
-DEF_PTHREAD(mutexattr_init)
-DEF___PTHREAD(mutexattr_init)
+DEF_PTHREAD(int, mutexattr_init, (pthread_mutexattr_t *attr), (attr))
+DEF___PTHREAD(int, mutexattr_init, (pthread_mutexattr_t *attr), (attr))
 
      /*********************/
      /* mutexattr_destroy */
      /*********************/
-DEF_MARCEL_POSIX(int, mutexattr_destroy, (marcel_mutexattr_t *attr))
+DEF_MARCEL_POSIX(int, mutexattr_destroy, (marcel_mutexattr_t *attr), (attr))
 {
   return 0;
 }
-DEF_PTHREAD(mutexattr_destroy)
-DEF___PTHREAD(mutexattr_destroy)
+DEF_PTHREAD(int, mutexattr_destroy, (pthread_mutexattr_t *attr), (attr))
+DEF___PTHREAD(int, mutexattr_destroy, (pthread_mutexattr_t *attr), (attr))
 
      /****************************/
      /* mutex_settype/setkind_np */
      /****************************/
 DEF_POSIX(int, mutexattr_settype, (pmarcel_mutexattr_t *attr, int kind),
+		(attr, kind),
 {
   if (kind != MARCEL_MUTEX_ADAPTIVE_NP
       && kind != MARCEL_MUTEX_RECURSIVE_NP
@@ -329,39 +341,51 @@ DEF_POSIX(int, mutexattr_settype, (pmarcel_mutexattr_t *attr, int kind),
   attr->__mutexkind = kind;
   return 0;
 })
-DEF_PTHREAD_WEAK(mutexattr_settype)
-DEF___PTHREAD(mutexattr_settype)
+DEF_PTHREAD_WEAK(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind),
+		(attr, kind))
+DEF___PTHREAD(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind),
+		(attr, kind))
 
-DEF_ALIAS_POSIX(mutexattr_setkind_np)
-DEF_STRONG_T(LOCAL_POSIX_NAME(mutexattr_setkind_np),
-	     LOCAL_POSIX_NAME(mutexattr_settype),
-	     LOCAL_POSIX_NAME(mutexattr_setkind_np))
+DEF_ALIAS_POSIX(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
+			int kind), (attr, kind))
+DEF_STRONG_T(int, LOCAL_POSIX_NAME(mutexattr_settype),
+	     LOCAL_POSIX_NAME(mutexattr_setkind_np),
+	     (pthread_mutex_attr_t *attr, int kind), (attr, kind))
 #ifdef MA__PTHREAD_FUNCTIONS
   extern typeof(pthread_mutexattr_settype) pthread_mutexattr_setkind_np;
 #endif
-DEF_PTHREAD_WEAK(mutexattr_setkind_np)
-DEF___PTHREAD(mutexattr_setkind_np)
+DEF_PTHREAD_WEAK(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
+			int kind), (attr, kind))
+DEF___PTHREAD(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
+			int kind), (attr, kind))
 
      /****************************/
      /* mutex_gettype/getkind_np */
      /****************************/
 DEF_POSIX(int, mutexattr_gettype, (const pmarcel_mutexattr_t *attr, int *kind),
+		(attr, kind),
 {
   *kind = attr->__mutexkind;
   return 0;
 })
-DEF_PTHREAD_WEAK(mutexattr_gettype)
-DEF___PTHREAD(mutexattr_gettype)
+DEF_PTHREAD_WEAK(int, mutexattr_gettype, (const pthread_mutexattr_t *attr,
+			int *kind), (attr, kind))
+DEF___PTHREAD(int, mutexattr_gettype, (const pthread_mutexattr_t *attr,
+			int *kind), (attr, kind))
 
-DEF_ALIAS_POSIX(mutexattr_getkind_np)
-DEF_STRONG_T(LOCAL_POSIX_NAME(mutexattr_getkind_np),
-	     LOCAL_POSIX_NAME(mutexattr_gettype),
-	     LOCAL_POSIX_NAME(mutexattr_getkind_np))
+DEF_ALIAS_POSIX(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
+			int *kind), (attr, kind))
+DEF_STRONG_T(int, LOCAL_POSIX_NAME(mutexattr_gettype),
+	     LOCAL_POSIX_NAME(mutexattr_getkind_np),
+	     (cont pthread_mutexattr_t *attr,
+			int *kind), (attr, kind))
 #ifdef MA__PTHREAD_FUNCTIONS
   extern typeof(pthread_mutexattr_gettype) pthread_mutexattr_getkind_np;
 #endif
-DEF_PTHREAD_WEAK(mutexattr_getkind_np)
-DEF___PTHREAD(mutexattr_getkind_np)
+DEF_PTHREAD_WEAK(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
+			int *kind), (attr, kind))
+DEF___PTHREAD(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
+			int *kind), (attr, kind))
 
 
      /********************/
@@ -372,13 +396,15 @@ extern int pthread_mutexattr_getpshared (__const pthread_mutexattr_t *
                                          __restrict __attr,
                                          int *__restrict __pshared) __THROW;
 DEF_POSIX(int, mutexattr_getpshared, (const pmarcel_mutexattr_t *attr,
-				      int *pshared),
+				      int *pshared), (attr, pshared),
 {
   *pshared = MARCEL_PROCESS_PRIVATE;
   return 0;
 })
-DEF_PTHREAD_WEAK(mutexattr_getpshared)
-DEF___PTHREAD(mutexattr_getpshared)
+DEF_PTHREAD_WEAK(int, mutexattr_getpshared, (const pthread_mutexattr_t *attr,
+				      int *pshared), (attr, pshared))
+DEF___PTHREAD(int, mutexattr_getpshared, (const pthread_mutexattr_t *attr,
+				      int *pshared), (attr, pshared))
 
      /********************/
      /* mutex_setpshared */
@@ -387,6 +413,7 @@ DEF___PTHREAD(mutexattr_getpshared)
 extern int pthread_mutexattr_setpshared (pthread_mutexattr_t *__attr,
                                          int __pshared) __THROW;
 DEF_POSIX(int, mutexattr_setpshared, (pmarcel_mutexattr_t *attr, int pshared),
+		(attr, pshared),
 {
   if (pshared != MARCEL_PROCESS_PRIVATE && pshared != MARCEL_PROCESS_SHARED)
     return EINVAL;
@@ -397,8 +424,10 @@ DEF_POSIX(int, mutexattr_setpshared, (pmarcel_mutexattr_t *attr, int pshared),
 
   return 0;
 })
-DEF_PTHREAD_WEAK(mutexattr_setpshared)
-DEF___PTHREAD(mutexattr_setpshared)
+DEF_PTHREAD_WEAK(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
+			int pshared), (attr, pshared))
+DEF___PTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
+			int pshared), (attr, pshared))
 
 
      /****************************************************************
@@ -427,7 +456,8 @@ static void marcel_once_cancelhandler(void *arg)
 }
 
 DEF_MARCEL_POSIX(int, once, (marcel_once_t * once_control, 
-                             void (*init_routine)(void)))
+                             void (*init_routine)(void)),
+		(once_control, init_routine))
 {
   /* flag for doing the condition broadcast outside of mutex */
   int state_changed;
@@ -472,8 +502,12 @@ DEF_MARCEL_POSIX(int, once, (marcel_once_t * once_control,
 
   return 0;
 }
-DEF_PTHREAD(once)
-DEF___PTHREAD(once)
+DEF_PTHREAD(int, once, (pthread_once_t * once_control, 
+                             void (*init_routine)(void)),
+		(once_control, init_routine))
+DEF___PTHREAD(int, once, (pthread_once_t * once_control, 
+                             void (*init_routine)(void)),
+		(once_control, init_routine))
 
 /*
  * Handle the state of the marcel_once mechanism across forks.  The
@@ -495,13 +529,13 @@ void __pmarcel_once_fork_prepare(void)
 {
   pmarcel_mutex_lock((pmarcel_mutex_t *)(void *)&once_masterlock);
 }
-__DEF___PTHREAD(once_fork_prepare)
+__DEF___PTHREAD(void, once_fork_prepare, (void), ())
 
 void __pmarcel_once_fork_parent(void)
 {
   pmarcel_mutex_unlock((pmarcel_mutex_t *)(void *)&once_masterlock);
 }
-__DEF___PTHREAD(once_fork_parent)
+__DEF___PTHREAD(void, once_fork_parent, (void), ())
 
 void __pmarcel_once_fork_child(void)
 {
@@ -512,6 +546,6 @@ void __pmarcel_once_fork_child(void)
   else
     fork_generation = 0;
 }
-__DEF___PTHREAD(once_fork_child)
+__DEF___PTHREAD(void, once_fork_child, (void), ())
 
 #endif

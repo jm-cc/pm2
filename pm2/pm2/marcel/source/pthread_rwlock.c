@@ -225,7 +225,7 @@ rwlock_have_already(marcel_descr *pself, marcel_rwlock_t *rwlock,
 
 DEF_MARCEL_POSIX(int,
 		 rwlock_init, (marcel_rwlock_t *rwlock,
-			       const marcel_rwlockattr_t *attr))
+			       const marcel_rwlockattr_t *attr), (rwlock, attr))
 {
   __marcel_init_lock(&rwlock->__rw_lock);
   rwlock->__rw_readers = 0;
@@ -247,12 +247,16 @@ DEF_MARCEL_POSIX(int,
   return 0;
 }
 //VD:strong_alias (__marcel_rwlock_init, marcel_rwlock_init)
-DEF_PTHREAD(rwlock_init)
-DEF___PTHREAD(rwlock_init)
+DEF_PTHREAD(int, rwlock_init, (pthread_rwlock_t *rwlock,
+			       const pthread_rwlockattr_t *attr),
+		(rwlock, attr))
+DEF___PTHREAD(int, rwlock_init, (pthread_rwlock_t *rwlock,
+			       const pthread_rwlockattr_t *attr),
+		(rwlock, attr))
 
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_destroy, (marcel_rwlock_t *rwlock))
+		 rwlock_destroy, (marcel_rwlock_t *rwlock), (rwlock))
 {
   int readers;
   marcel_descr writer;
@@ -268,11 +272,11 @@ DEF_MARCEL_POSIX(int,
   return 0;
 }
 //VD:strong_alias (__marcel_rwlock_destroy, marcel_rwlock_destroy)
-DEF_PTHREAD(rwlock_destroy)
-DEF___PTHREAD(rwlock_destroy)
+DEF_PTHREAD(int, rwlock_destroy, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_destroy, (pthread_rwlock_t *rwlock), (rwlock))
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_rdlock, (marcel_rwlock_t *rwlock))
+		 rwlock_rdlock, (marcel_rwlock_t *rwlock), (rwlock))
 {
   marcel_descr self = NULL;
   marcel_readlock_info *existing;
@@ -310,14 +314,15 @@ DEF_MARCEL_POSIX(int,
   return 0;
 }
 //VD:strong_alias (__marcel_rwlock_rdlock, marcel_rwlock_rdlock)
-DEF_PTHREAD(rwlock_rdlock)
-DEF___PTHREAD(rwlock_rdlock)
+DEF_PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
 
 #if 0 //VD:
 //VD: A lire et corriger
 DEF_MARCEL_POSIX(int,
 		 rwlock_timedrdlock, (marcel_rwlock_t *rwlock,
-				      const struct timespec *abstime))
+				      const struct timespec *abstime),
+		 (rwlock, abstime))
 {
   marcel_descr self = NULL;
   marcel_readlock_info *existing;
@@ -388,7 +393,7 @@ DEF_MARCEL_POSIX(int,
 #endif
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_tryrdlock, (marcel_rwlock_t *rwlock))
+		 rwlock_tryrdlock, (marcel_rwlock_t *rwlock), (rwlock))
 {
   marcel_descr self = thread_self();
   marcel_readlock_info *existing;
@@ -428,12 +433,12 @@ DEF_MARCEL_POSIX(int,
   return retval;
 }
 //VD:strong_alias (__marcel_rwlock_tryrdlock, marcel_rwlock_tryrdlock)
-DEF_PTHREAD(rwlock_tryrdlock)
-DEF___PTHREAD(rwlock_tryrdlock)
+DEF_PTHREAD(int, rwlock_tryrdlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_tryrdlock, (pthread_rwlock_t *rwlock), (rwlock))
 
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_wrlock, (marcel_rwlock_t *rwlock))
+		 rwlock_wrlock, (marcel_rwlock_t *rwlock), (rwlock))
 {
   marcel_descr self = thread_self ();
 
@@ -454,8 +459,8 @@ DEF_MARCEL_POSIX(int,
     }
 }
 //VD:strong_alias (__marcel_rwlock_wrlock, marcel_rwlock_wrlock)
-DEF_PTHREAD(rwlock_wrlock)
-DEF___PTHREAD(rwlock_wrlock)
+DEF_PTHREAD(int, rwlock_wrlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_wrlock, (pthread_rwlock_t *rwlock), (rwlock))
 
 
 #if 0 //VD:
@@ -518,7 +523,7 @@ strong_alias (__marcel_rwlock_timedwrlock, marcel_rwlock_timedwrlock)
 #endif
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_trywrlock, (marcel_rwlock_t *rwlock))
+		 rwlock_trywrlock, (marcel_rwlock_t *rwlock), (rwlock))
 {
   int result = EBUSY;
 
@@ -533,12 +538,12 @@ DEF_MARCEL_POSIX(int,
   return result;
 }
 //VD:strong_alias (__marcel_rwlock_trywrlock, marcel_rwlock_trywrlock)
-DEF_PTHREAD(rwlock_trywrlock)
-DEF___PTHREAD(rwlock_trywrlock)
+DEF_PTHREAD(int, rwlock_trywrlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_trywrlock, (pthread_rwlock_t *rwlock), (rwlock))
 
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_unlock, (marcel_rwlock_t *rwlock))
+		 rwlock_unlock, (marcel_rwlock_t *rwlock), (rwlock))
 {
   marcel_descr torestart;
   marcel_descr th;
@@ -619,45 +624,48 @@ DEF_MARCEL_POSIX(int,
   return 0;
 }
 //VD:strong_alias (__marcel_rwlock_unlock, marcel_rwlock_unlock)
-DEF_PTHREAD(rwlock_unlock)
-DEF___PTHREAD(rwlock_unlock)
+DEF_PTHREAD(int, rwlock_unlock, (pthread_rwlock_t *rwlock), (rwlock))
+DEF___PTHREAD(int, rwlock_unlock, (pthread_rwlock_t *rwlock), (rwlock))
 
 
 
 DEF_MARCEL_POSIX(int,
-		 rwlockattr_init, (marcel_rwlockattr_t *attr))
+		 rwlockattr_init, (marcel_rwlockattr_t *attr), (attr))
 {
   attr->__lockkind = 0;
   attr->__pshared = MARCEL_PROCESS_PRIVATE;
 
   return 0;
 }
-DEF_PTHREAD(rwlockattr_init)
+DEF_PTHREAD(int, rwlockattr_init, (pthread_rwlockattr_t *attr), (attr))
 
 
 DEF_MARCEL_POSIX(int,
-		 rwlockattr_destroy, (marcel_rwlockattr_t *attr))
+		 rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr))
 {
   return 0;
 }
 //VD:strong_alias (__marcel_rwlockattr_destroy, marcel_rwlockattr_destroy)
-DEF_PTHREAD(rwlockattr_destroy)
-DEF___PTHREAD(rwlockattr_destroy)
+DEF_PTHREAD(int, rwlockattr_destroy, (pthread_rwlockattr_t *attr), (attr))
+DEF___PTHREAD(int, rwlockattr_destroy, (pthread_rwlockattr_t *attr), (attr))
 
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_getpshared,
-		 (const marcel_rwlockattr_t *attr, int *pshared))
+		 (const marcel_rwlockattr_t *attr, int *pshared),
+		 (attr, pshared))
 {
   *pshared = attr->__pshared;
   return 0;
 }
-DEF_PTHREAD(rwlockattr_getpshared)
+DEF_PTHREAD(int, rwlockattr_getpshared,
+		 (const pthread_rwlockattr_t *attr, int *pshared),
+		 (attr, pshared))
 
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_setpshared,
-		 (marcel_rwlockattr_t *attr, int pshared))
+		 (marcel_rwlockattr_t *attr, int pshared), (attr, pshared))
 {
   if (pshared != MARCEL_PROCESS_PRIVATE && pshared != MARCEL_PROCESS_SHARED)
     return EINVAL;
@@ -670,21 +678,24 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 }
-DEF_PTHREAD(rwlockattr_setpshared)
+DEF_PTHREAD(int, rwlockattr_setpshared,
+		 (pthread_rwlockattr_t *attr, int pshared), (attr, pshared))
 
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_getkind_np,
-		 (const marcel_rwlockattr_t *attr, int *pref))
+		 (const marcel_rwlockattr_t *attr, int *pref), (attr, pref))
 {
   *pref = attr->__lockkind;
   return 0;
 }
-DEF_PTHREAD(rwlockattr_getkind_np)
+DEF_PTHREAD(int, rwlockattr_getkind_np,
+		 (const pthread_rwlockattr_t *attr, int *pref), (attr, pref))
 
 
 DEF_MARCEL_POSIX(int,
-		 rwlockattr_setkind_np, (marcel_rwlockattr_t *attr, int pref))
+		 rwlockattr_setkind_np, (marcel_rwlockattr_t *attr, int pref),
+		 (attr, pref))
 {
   if (pref != MARCEL_RWLOCK_PREFER_READER_NP
       && pref != MARCEL_RWLOCK_PREFER_WRITER_NP
@@ -696,7 +707,8 @@ DEF_MARCEL_POSIX(int,
 
   return 0;
 }
-DEF_PTHREAD(rwlockattr_setkind_np)
+DEF_PTHREAD(int, rwlockattr_setkind_np, (pthread_rwlockattr_t *attr, int pref),
+		 (attr, pref))
 
 
 #endif // __USE_UNIX98 (AD:)

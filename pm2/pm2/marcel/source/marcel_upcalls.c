@@ -26,7 +26,7 @@
 
 #define ACT_NEW_WITH_LOCK 1
 
-static MA_DEFINE_PER_LWP(marcel_task_t *,upcall_new_task)=NULL;
+static MA_DEFINE_PER_LWP(marcel_task_t *,upcall_new_task, NULL);
 
 marcel_t marcel_next[ACT_NB_MAX_CPU];
 //volatile boolean has_new_tasks=0;
@@ -60,11 +60,7 @@ stub_upcall_"#type": \n\
         .size    stub_upcall_"#type", .-stub_upcall_"#type" \n\
 ")
 
-MA_DEFINE_PER_LWP(act_proc_info_t, act_info)= {
-        .disallowed_events=0,
-        .current_act_id=0,
-        .critical_section=NULL	
-};
+MA_DEFINE_PER_LWP(act_proc_info_t, act_info, {0});
 
 DEFINE_UPCALL(new);
 DEFINE_UPCALL(restart);

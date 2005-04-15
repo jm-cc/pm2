@@ -30,7 +30,7 @@ void marcel_delay(unsigned long millisecs)
 #endif
 }
 
-TBX_SECTION(".ma.main.lwp") marcel_lwp_t __main_lwp;
+TBX_SECTION(".ma.main.lwp") marcel_lwp_t __main_lwp = {};
 
 /**************************************************************************/
 /**************************************************************************/
@@ -40,7 +40,7 @@ TBX_SECTION(".ma.main.lwp") marcel_lwp_t __main_lwp;
 /**************************************************************************/
 /**************************************************************************/
 
-MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread)=NULL;
+MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread, NULL);
 
 static struct {
 	unsigned nb_tasks;
@@ -258,7 +258,7 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 	}
 }
 
-MA_DEFINE_PER_LWP(marcel_task_t *,idle_task)=NULL;
+MA_DEFINE_PER_LWP(marcel_task_t *,idle_task, NULL);
 
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {

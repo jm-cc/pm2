@@ -3,7 +3,7 @@
 
 #ifdef MA__LWPS
 
-MA_DEFINE_PER_LWP(unsigned long *, ma_ia64_tp)=NULL;
+MA_DEFINE_PER_LWP(unsigned long *, ma_ia64_tp, NULL);
 
 #endif
 

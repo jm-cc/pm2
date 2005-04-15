@@ -45,8 +45,8 @@
 
 static struct ma_softirq_action softirq_vec[32] /*__cacheline_aligned_in_smp*/;
 
-static MA_DEFINE_PER_LWP(marcel_task_t *, ksoftirqd);
-MA_DEFINE_PER_LWP(unsigned long, softirq_pending)=0;
+static MA_DEFINE_PER_LWP(marcel_task_t *, ksoftirqd, NULL);
+MA_DEFINE_PER_LWP(unsigned long, softirq_pending, 0);
 
 /*
  * we cannot loop indefinitely here to avoid userspace starvation,
@@ -255,8 +255,8 @@ struct tasklet_head
 
 /* Some compilers disobey section attribute on statics when not
    initialized -- RR */
-static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_vec) = { NULL };
-static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_hi_vec) = { NULL };
+static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_vec, { NULL });
+static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_hi_vec, { NULL });
 
 void fastcall __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 {

@@ -79,7 +79,7 @@ static inline void set_running_timer(tvec_base_t *base,
 }
 
 /* Fake initialization */
-static MA_DEFINE_PER_LWP(tvec_base_t, tvec_bases) = { MA_SPIN_LOCK_UNLOCKED };
+static MA_DEFINE_PER_LWP(tvec_base_t, tvec_bases, { MA_SPIN_LOCK_UNLOCKED });
 
 static void check_timer_failed(struct ma_timer_list *timer)
 {

@@ -42,9 +42,9 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #endif
 
 #ifdef MA__LWPS
-MA_DEFINE_PER_LWP(unsigned, number)=0;
+MA_DEFINE_PER_LWP(unsigned, number, 0);
 #endif
-MA_DEFINE_PER_LWP(int, online)=0;
+MA_DEFINE_PER_LWP(int, online, 0);
 
 #ifdef MA__LWPS
 static MA_DEFINE_NOTIFIER_CHAIN(lwp_chain, "LWP");
@@ -156,7 +156,7 @@ static void* lwp_start_func(void* arg)
 	return NULL; /* For gcc */
 }
 
-MA_DEFINE_PER_LWP(marcel_task_t *, run_task)=NULL;
+MA_DEFINE_PER_LWP(marcel_task_t *, run_task, NULL);
 
 #ifdef MA__LWPS
 #ifdef MA__SMP

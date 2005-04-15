@@ -70,6 +70,6 @@ extern unsigned long __ma_main_lwp_end;
 #define __ma_per_lwp_size ((size_t)((unsigned long)&__ma_main_lwp_end \
                                     -(unsigned long)&__ma_main_lwp_start))
 
-#define MA_DEFINE_PER_LWP(type, name) MA_DEFINE_PER_LWP_SUBSEC("", type, name)
+#define MA_DEFINE_PER_LWP(type, name, init) MA_DEFINE_PER_LWP_SUBSEC("", type, name) = init
 #define MA_DECLARE_PER_LWP(type, name) extern __typeof__(type) ma_per_lwp__##name
 

@@ -27,7 +27,7 @@ extern int nr_threads;
 //extern int last_tid;
 //MA_DECLARE_PER_LWP(unsigned long, process_counts);
 MA_DECLARE_PER_LWP(marcel_task_t *, current_thread);
-//MA_DEFINE_PER_LWP(marcel_task_t *, idle_thread)=NULL;
+//MA_DEFINE_PER_LWP(marcel_task_t *, idle_thread, NULL);
 
 #section marcel_functions
 //extern int ma_nr_threads(void);

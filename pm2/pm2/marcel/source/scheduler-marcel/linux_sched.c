@@ -177,9 +177,9 @@
 //	return BASE_TIMESLICE(p);
 //}
 
-MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq)=NULL;
-MA_DEFINE_PER_LWP(marcel_task_t *, current_thread)=NULL;
-MA_DEFINE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage);
+MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq, NULL);
+MA_DEFINE_PER_LWP(marcel_task_t *, current_thread, NULL);
+MA_DEFINE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage, {0});
 
 /*
  * Default context-switch locking:
@@ -1739,7 +1739,7 @@ MARCEL_INT(ma_preempt_schedule);
 
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...
-DEF_MARCEL_POSIX(int, yield, (void))
+DEF_MARCEL_POSIX(int, yield, (void), ())
 {
   LOG_IN();
 
@@ -1753,7 +1753,7 @@ DEF_MARCEL_POSIX(int, yield, (void))
 }
 /* La définition n'est pas toujours dans pthread.h */
 extern int pthread_yield (void) __THROW;
-DEF_PTHREAD_STRONG(yield)
+DEF_PTHREAD_STRONG(int, yield, (void), ())
 
 // Modifie le 'vpmask' du thread courant. Le cas échéant, il faut donc
 // retirer le thread de la file et le replacer dans la file

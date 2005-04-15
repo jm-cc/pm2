@@ -97,7 +97,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 #section functions
 /* ==== explicit preemption ==== */
-DEC_MARCEL_POSIX(int, yield, (void) __THROW)
+DEC_MARCEL_GNU(int, yield, (void) __THROW)
 
 /****************************************************************/
 /*               Scheduler et threads                           */

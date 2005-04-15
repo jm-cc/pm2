@@ -25,7 +25,7 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
       new_attr.immediate_activation = FALSE;
       new_attr.not_migratable = 1;
       new_attr.not_deviatable = 0;
-      new_attr.rt_thread = MARCEL_CLASS_REGULAR;
+      new_attr.sched = marcel_sched_attr_default;
       new_attr.vpmask = MARCEL_VPMASK_EMPTY;
       new_attr.flags = 0;
       // Le cast par (void*) est demandé par gcc pour respecter la norme C

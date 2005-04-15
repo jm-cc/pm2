@@ -23,6 +23,15 @@
 #include "tbx_macros.h"
 #include "sys/marcel_flags.h"
 
+#ifdef MA__PTHREAD_FUNCTIONS
+//#  include "marcel_pthread.h"
+#endif
+
+#ifdef MA__POSIX_FUNCTIONS_NAMES
+#  include "marcel_pmarcel.h"
+#  include "pthread_libc-symbols.h"
+#endif
+
 __TBX_BEGIN_DECLS
 
 #include "asm/marcel-master___compiler.h"
@@ -95,11 +104,6 @@ __TBX_BEGIN_DECLS
 
 __TBX_END_DECLS
 
-//#include "marcel_pthread.h"
-
-#ifdef MA__POSIX_FUNCTIONS_NAMES
-#  include "marcel_pmarcel.h"
-#endif 
 //#include "marcel_alias.h"
 
 //#ifdef AIX_SYS
@@ -107,10 +111,6 @@ __TBX_END_DECLS
 //#endif
 
 #include "tbx_debug.h"
-
-#ifdef MA__POSIX_FUNCTIONS_NAMES
-#  include "pthread_libc-symbols.h"
-#endif
 
 /* ========== customization =========== */
 

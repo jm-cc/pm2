@@ -247,7 +247,12 @@ pm2config_set_vars()
 	    fi
 	fi
 	
+	eval _STAMP_FILES='$'PM2_${_LIB}_STAMP_FILES
+	eval _obj='$'_PM2CONFIG_${_lib}_OBJ_DIR
 	STAMP_FILES=""
+	for i in ${_STAMP_FILES}; do
+	    STAMP_FILES="${STAMP_FILES:+${STAMP_FILES} }${_obj}/${i}"
+	done
 	eval _dir='$'_PM2CONFIG_${_lib}_LIB_DIR
 	eval LINK_MODE_DYNAMIC='$'PM2_${_LIB}_BUILD_DYNAMIC
 	if [ "$LINK_MODE_DYNAMIC" = yes ]; then
@@ -271,9 +276,9 @@ pm2config_set_vars()
 
 	# Libs stamp files
 	if [ -n "$_libname" ]; then
-	    eval _PM2CONFIG_${_libname}_STAMP_FILE='"'$STAMP_FILES'"'
-	    eval export _PM2CONFIG_${_libname}_STAMP_FILE
-	    eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILE\"
+	    eval _PM2CONFIG_${_libname}_STAMP_FILES='"'$STAMP_FILES'"'
+	    eval export _PM2CONFIG_${_libname}_STAMP_FILES
+	    eval _PM2CONFIG_LIB_STAMP_FILES=\"'$'{_PM2CONFIG_LIB_STAMP_FILES:+$_PM2CONFIG_LIB_STAMP_FILES }'$'_PM2CONFIG_${_libname}_STAMP_FILES\"
 	fi
 
 	eval LINK_OTHER='$'PM2_${_LIB}_DO_NOT_LINK_LIB_WITH_OTHERS
@@ -406,7 +411,8 @@ pm2config_set_vars()
 	esac
     done
     if [ $PM2_SYS = "SOLARIS_SYS" -o $PM2_SYS = "OSF_SYS" -o $PM2_SYS = "DARWIN_SYS" ] ; then
-    	_PM2CONFIG_LD_LIBS="$_scripts $_PM2CONFIG_LD_LIBS $_extra"
+    # repeating libs twice should be sufficient for back-dependancies (tbx uses marcel_mutex_init/lock/unlock for instance)
+    	_PM2CONFIG_LD_LIBS="$_scripts $_PM2CONFIG_LD_LIBS $_PM2CONFIG_LD_LIBS $_extra"
     else
     	_PM2CONFIG_LD_LIBS="$_scripts -Xlinker --start-group $_PM2CONFIG_LD_LIBS $_extra -Xlinker --end-group"
     fi
@@ -585,7 +591,7 @@ pm2config_parse_cmdline() # args
 		    for _lib in $_libs; do
 			_LIB=`echo $_lib | tr 'a-z' 'A-Z'`
 			eval _libname=\$PM2_${_LIB}_LIBNAME
-			eval echo \$_PM2CONFIG_${_libname}_STAMP_FILE
+			eval echo \$_PM2CONFIG_${_libname}_STAMP_FILES
 		    done
 		fi
 		exit 0

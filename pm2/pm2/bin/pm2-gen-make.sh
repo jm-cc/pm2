@@ -123,7 +123,7 @@ MOD_EXT := $_PM2CONFIG_EXT
 MOD_ARCH := $PM2_ASM
 MOD_CFLAGS := $_PM2CONFIG_KERNEL_CFLAGS
 
-#CFLAGS est modifier au moment de la compilation (objs-rules.mak)
+#CFLAGS est modifié au moment de la compilation (objs-rules.mak)
 #CFLAGS += \$(MOD_CFLAGS)
 CC := $_PM2CONFIG_CC
 

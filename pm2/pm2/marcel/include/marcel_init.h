@@ -139,7 +139,7 @@ typedef struct __ma_init_info {
 #define MA_INIT_SLOT                  MA_INIT_MAIN_LWP
 #define MA_INIT_SLOT_PRIO                          2
 #define MA_INIT_LWP_MAIN_STRUCT       MA_INIT_MAIN_LWP
-#define MA_INIT_LWP_MAIN_STRUCT_PRIO               3
+#define MA_INIT_LWP_MAIN_STRUCT_PRIO               4
 #define MA_INIT_SOFTIRQ               MA_INIT_MAIN_LWP
 #define MA_INIT_THREADS_DATA          MA_INIT_MAIN_LWP
 #define MA_INIT_MARCEL_SCHED          MA_INIT_MAIN_LWP

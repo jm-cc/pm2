@@ -75,6 +75,31 @@ typedef struct s_ntbx_tcp_server_specific
  * -------------------------
  */
 
+char *
+ntbx_tcp_h_errno_to_str(void) {
+        char *msg = NULL;
+
+        switch (h_errno) {
+                case HOST_NOT_FOUND:
+                        msg = "HOST_NOT_FOUND";
+                break;
+
+                case TRY_AGAIN:
+                        msg = "TRY_AGAIN";
+                break;
+
+                case NO_RECOVERY:
+                        msg = "NO_RECOVERY";
+                break;
+
+                case NO_ADDRESS:
+                        msg = "NO_ADDRESS";
+                break;
+        }
+
+        return msg;
+}
+
 /* ...Read/Write services ..............*/
 
 ssize_t
@@ -180,8 +205,12 @@ ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address,
         struct hostent *host_entry;
 
         LOG_IN();
-        if (!(host_entry = gethostbyname(host_name)))
-                FAILURE("ERROR: Cannot find host internet address");
+        if (!(host_entry = gethostbyname(host_name))) {
+                char *msg = NULL;
+
+                msg = ntbx_tcp_h_errno_to_str();
+                FAILUREF("ntbx_tcp_address_fill: gethostbyname: %s", msg);
+        }
 
         address->sin_family = AF_INET;
         address->sin_port   = htons(port);
@@ -201,8 +230,12 @@ ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t   address,
 
         LOG_IN();
         if (!(host_entry = gethostbyaddr((char *)ip,
-                                         sizeof(unsigned long), AF_INET)))
-                FAILURE("ERROR: Cannot find host internet address");
+                                         sizeof(unsigned long), AF_INET))) {
+                char *msg = NULL;
+
+                msg = ntbx_tcp_h_errno_to_str();
+                FAILUREF("ntbx_tcp_address_fill_ip: gethostbyaddr: %s", msg);
+        }
 
         address->sin_family = AF_INET;
         address->sin_port   = htons(port);
@@ -287,6 +320,13 @@ ntbx_tcp_server_init(p_ntbx_server_t server)
         */
 
         local_host_entry = gethostbyname(server->local_host);
+        if (!local_host_entry) {
+                char *msg = NULL;
+
+                msg = ntbx_tcp_h_errno_to_str();
+                FAILUREF("ntbx_tcp_server_init: gethostbyname: %s", msg);
+        }
+
         server->local_host_ip =
                 (unsigned long) *(unsigned long *)(local_host_entry->h_addr);
 
@@ -336,6 +376,13 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
         gethostname(client->local_host, MAXHOSTNAMELEN);
 
         local_host_entry = gethostbyname(client->local_host);
+        if (!local_host_entry) {
+                char *msg = NULL;
+
+                msg = ntbx_tcp_h_errno_to_str();
+                FAILUREF("ntbx_tcp_client_init: gethostbyname: %s", msg);
+        }
+
 #ifdef LEO_IP
         client->local_host_ip =
                 (unsigned long) *(unsigned long *)(local_host_entry->h_addr);
@@ -473,6 +520,12 @@ ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
         remote_host_entry   = (server_ip)
                 ? gethostbyaddr((char *)server_ip, sizeof(unsigned long), AF_INET)
                 : gethostbyname(server_host_name);
+        if (!remote_host_entry) {
+                char *msg = NULL;
+
+                msg = ntbx_tcp_h_errno_to_str();
+                FAILUREF("ntbx_tcp_client_connect_body: %s: %s", ((server_ip)?"gethostbyaddr":"gethostbyname"), msg);
+        }
         client->remote_host = tbx_strdup(remote_host_entry->h_name);
 
         {
@@ -547,8 +600,10 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
                               remote_address.sin_family);
 
         if (!remote_host_entry) {
-                perror("gethostbyaddr");
-                FAILURE("ntbx_tcp_server_accept");
+                char *msg = NULL;
+
+                msg = ntbx_tcp_h_errno_to_str();
+                FAILUREF("ntbx_tcp_server_accept: gethostbyaddr: %s", msg);
         }
 
         client->remote_host = tbx_strdup(remote_host_entry->h_name);
@@ -806,7 +861,7 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
         }
 
         if (!client->read_rq_flag) {
-                TRACE("read block[%lu], %u bytes", client->read_rq, length);
+                TRACE("read block[%lu], %zu bytes", client->read_rq, length);
                 client->read_rq++;
         }
         LOG_OUT();
@@ -860,7 +915,7 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
         }
 
         if (!client->write_rq_flag) {
-                TRACE("write block[%lu], %u bytes", client->write_rq, length);
+                TRACE("write block[%lu], %zu bytes", client->write_rq, length);
                 client->write_rq++;
         }
         LOG_OUT();

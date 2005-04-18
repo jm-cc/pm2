@@ -88,8 +88,8 @@ enum ma_rq_type {
 #section marcel_structures
 #depend "marcel_topology.h[marcel_types]"
 struct ma_runqueue {
-	ma_spinlock_t lock;
 	unsigned long long nr_switches;
+	ma_spinlock_t lock;
 	unsigned long nr_running, expired_timestamp, nr_uninterruptible,
 		timestamp_last_tick;
 	struct mm_struct *prev_mm;

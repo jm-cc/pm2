@@ -77,6 +77,37 @@ typedef struct s_ntbx_tcp_server_specific
 
 /* ...Read/Write services ..............*/
 
+ssize_t
+ntbx_tcp_read_call(int		 s,
+                   void		*p,
+                   size_t	 l) {
+      ssize_t result = 0;
+
+#ifdef MARCEL
+      result = marcel_read(s, p, l);
+#else /* MARCEL */
+      result = read(s, p, l);
+#endif /* MARCEL */
+
+      return result;
+}
+
+ssize_t
+ntbx_tcp_write_call(int		 	 s,
+                    const void		*p,
+                    const size_t	 l) {
+      ssize_t result = 0;
+
+#ifdef MARCEL
+      result = marcel_write(s, p, l);
+#else /* MARCEL */
+      result = write(s, p, l);
+#endif /* MARCEL */
+
+      return result;
+}
+
+
 /* read a block */
 void
 ntbx_tcp_read(int     socket_fd,
@@ -89,18 +120,7 @@ ntbx_tcp_read(int     socket_fd,
         while (bytes_read < length) {
                 int status;
 
-#ifdef MARCEL
-                if (marcel_test_activity())
-                  {
-                    status = marcel_read(socket_fd, ptr + bytes_read, length - bytes_read);
-                  }
-                else
-                  {
-                    status = read(socket_fd, ptr + bytes_read, length - bytes_read);
-                  }
-#else /* MARCEL */
-                status = read(socket_fd, ptr + bytes_read, length - bytes_read);
-#endif /* MARCEL */
+                status = ntbx_tcp_read_call(socket_fd, ptr + bytes_read, length - bytes_read);
 
                 if (status == -1) {
                         if (errno == EINTR) {
@@ -131,18 +151,7 @@ ntbx_tcp_write(int           socket_fd,
         while (bytes_written < length) {
                 int status;
 
-#ifdef MARCEL
-                if (marcel_test_activity())
-                  {
-                    status = marcel_write(socket_fd, ptr + bytes_written, length - bytes_written);
-                  }
-                else
-                  {
-                    status = write(socket_fd, ptr + bytes_written, length - bytes_written);
-                  }
-#else /* MARCEL */
-                status = write(socket_fd, ptr + bytes_written, length - bytes_written);
-#endif /* MARCEL */
+                status = ntbx_tcp_write_call(socket_fd, ptr + bytes_written, length - bytes_written);
 
                 if (status == -1) {
                         if (errno == EINTR) {

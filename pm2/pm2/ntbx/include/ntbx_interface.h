@@ -344,6 +344,16 @@ ntbx_tcp_write(int           socket_fd,
 	       const void   *ptr,
 	       const size_t  length);
 
+ssize_t
+ntbx_tcp_read_call(int		 s,
+                   void		*p,
+                   size_t	 l);
+
+ssize_t
+ntbx_tcp_write_call(int		 	 s,
+                    const void		*p,
+                    const size_t	 l);
+
 #endif /* NTBX_TCP */
 
 

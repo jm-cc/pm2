@@ -861,7 +861,7 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
         }
 
         if (!client->read_rq_flag) {
-                TRACE("read block[%lu], %zu bytes", client->read_rq, length);
+                TRACE("read block[%zu], %zu bytes", client->read_rq, length);
                 client->read_rq++;
         }
         LOG_OUT();
@@ -915,7 +915,7 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
         }
 
         if (!client->write_rq_flag) {
-                TRACE("write block[%lu], %zu bytes", client->write_rq, length);
+                TRACE("write block[%zu], %zu bytes", client->write_rq, length);
                 client->write_rq++;
         }
         LOG_OUT();
@@ -941,7 +941,7 @@ ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
 
         status = ntbx_tcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
         if (rq_flag_toggled) {
-                TRACE("read buffer[%lu]", client->read_rq);
+                TRACE("read buffer[%zu]", client->read_rq);
                 client->read_rq++;
                 client->read_rq_flag = tbx_false;
         }
@@ -967,7 +967,7 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 
         status = ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
         if (rq_flag_toggled) {
-                TRACE("write buffer[%lu]", client->write_rq);
+                TRACE("write buffer[%zu]", client->write_rq);
                 client->write_rq++;
                 client->write_rq_flag = tbx_false;
         }
@@ -1005,7 +1005,7 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
 
         len = ntbx_unpack_int(&pack_buffer);
         if (rq_flag_toggled) {
-                TRACE("read string[%lu] len = '%d'", client->read_rq, len);
+                TRACE("read string[%zu] len = '%d'", client->read_rq, len);
         }
         if (len < 0)
                 FAILURE("synchronization error");
@@ -1016,7 +1016,7 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
         status = ntbx_tcp_read_block(client, *string, len);
 
         if (rq_flag_toggled) {
-                TRACE("read string[%lu] = '%s'", client->read_rq, *string);
+                TRACE("read string[%zu] = '%s'", client->read_rq, *string);
                 client->read_rq++;
                 client->read_rq_flag = tbx_false;
         }
@@ -1051,7 +1051,7 @@ ntbx_tcp_write_string(p_ntbx_client_t  client,
 
         status = ntbx_tcp_write_block(client, string, len);
         if (rq_flag_toggled) {
-                TRACE("write string[%lu] = '%s'", client->write_rq, string);
+                TRACE("write string[%zu] = '%s'", client->write_rq, string);
                 client->write_rq++;
                 client->write_rq_flag = tbx_false;
         }

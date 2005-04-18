@@ -168,14 +168,13 @@
        size    = backtrace (array, TBX_BACKTRACE_DEPTH);\
        strings = backtrace_symbols (array, size);\
 \
-       pm2fulldebug("Obtained %zu stack frames.\n", size);\
+       pm2debug("Obtained %zu stack frames.\n", size);\
 \
        for (i = 0; i < size; i++)\
           pm2debug ("%s\n", strings[i]);\
 \
        free (strings);\
      })
-  fprintf(stderr, "Obtained %zu stack frames.\n", size);
 #else  /* TBX_BACKTRACE_ON_FAILURE */
 #  define __TBX_PRINT_TRACE() (void)(0)
 #endif /* TBX_BACKTRACE_ON_FAILURE */

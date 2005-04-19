@@ -1,5 +1,5 @@
 
-if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS ; then
+if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_CFLAGS; then
     # Shall we use pthread ?
     if not_defined_in MARCEL_DONT_USE_POSIX_THREADS PM2_MARCEL_CFLAGS_KERNEL ; then
 	# Yes, we should

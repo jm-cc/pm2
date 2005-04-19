@@ -21,15 +21,20 @@
 
 #include "marcel.h"
 
-#ifdef MA__LWPS
-MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue, {0});
+MA_DEFINE_RUNQUEUE(ma_main_runqueue);
+MA_DEFINE_RUNQUEUE(ma_dontsched_runqueue);
+#ifdef MA__NUMA
+MA_DEFINE_RUNQUEUE(ma_node_runqueue)[MARCEL_NBMAXNODES];
+MA_DEFINE_RUNQUEUE(ma_die_runqueue)[MARCEL_NBMAXDIES];
+MA_DEFINE_RUNQUEUE(ma_core_runqueue)[MARCEL_NBMAXCORES];
+
+ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_core_runqueue};
 #endif
-ma_runqueue_t ma_main_runqueue;
 
 #ifdef MA__LWPS
+MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue, {0});
 MA_DEFINE_PER_LWP(ma_runqueue_t, dontsched_runqueue, {0});
 #endif
-ma_runqueue_t ma_dontsched_runqueue;
 
 #ifdef CONFIG_NUMA
 /*
@@ -58,13 +63,15 @@ __marcel_init void node_nr_running_init(void)
 # define nr_running_init(rq)   do { } while (0)
 #endif
 
-void init_rq(ma_runqueue_t *rq, enum ma_rq_type type)
+void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 {
 	int j, k;
 	ma_prio_array_t *array;
 
 	LOG_IN();
 
+	strncpy(rq->name,name,sizeof(rq->name)-1);
+	rq->name[sizeof(rq->name)-1]=0;
 	rq->type = type;
 	rq->active = rq->arrays;
 	rq->expired = rq->arrays + 1;
@@ -84,12 +91,8 @@ void init_rq(ma_runqueue_t *rq, enum ma_rq_type type)
 		// delimiter for bitsearch
 		__ma_set_bit(MA_MAX_PRIO, array->bitmap);
 	}
-
 #ifdef MA__LWPS
-	if (tbx_likely(rq != &ma_main_runqueue))
-		rq->father = &ma_main_runqueue;
-	else
-		rq->father = NULL;
+	rq->father = NULL;
 #endif
 
 	LOG_OUT();

@@ -32,19 +32,6 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-typedef union u_tbx_tick
-{
-  unsigned long long tick;
-
-  struct
-  {
-    unsigned long low;
-    unsigned long high;
-  } sub;
-
-  struct timeval timev;
-} tbx_tick_t, *p_tbx_tick_t;
-
 /* Hum hum... Here we suppose that X86ARCH => Pentium! */
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
@@ -54,34 +41,53 @@ typedef union u_tbx_tick
 #define TBX_TICK_RAW_DIFF(t1, t2) \
    ((t2).tick - (t1).tick)
 
+typedef union u_tbx_tick
+{
+  unsigned long long tick;
+
+  struct
+  {
+    unsigned low;
+    unsigned high;
+  } sub;
+} tbx_tick_t, *p_tbx_tick_t;
+
 #elif defined(ALPHA_ARCH)
 
+typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
+
 #define TBX_GET_TICK(t) \
-   __asm__ volatile("rpcc %0\n\t" : "=r"((t).tick))
+   __asm__ volatile("rpcc %0\n\t" : "=r"(t))
 #define TBX_TICK_RAW_DIFF(t1, t2) \
-   (((t2).tick & 0xFFFFFFFF) - ((t1).tick & 0xFFFFFFFF))
+   (((t2) & 0xFFFFFFFF) - ((t1) & 0xFFFFFFFF))
 
 #elif defined(IA64_ARCH)
 
+typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
+
 #define TBX_GET_TICK(t) \
-   __asm__ volatile("mov %0=ar%1" : "=r" ((t).tick) : "i"(44))
+   __asm__ volatile("mov %0=ar%1" : "=r" ((t)) : "i"(44))
 #define TBX_TICK_RAW_DIFF(t1, t2) \
-   ((t2).tick - (t1).tick)
+   ((t2) - (t1))
 
 #elif defined(PPC_ARCH)
 
-#define TBX_GET_TICK(t) __asm__ volatile("mftb %0" : "=r" (t.tick))
+typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
+
+#define TBX_GET_TICK(t) __asm__ volatile("mftb %0" : "=r" (t))
 
 #define TBX_TICK_RAW_DIFF(t1, t2) \
-   ((t2).tick - (t1).tick)
+   ((t2) - (t1))
 
 #else
 
+typedef struct timeval tbx_tick_t, *p_tbx_tick_t;
+
 #define TBX_GET_TICK(t) \
-   gettimeofday(&(t).timev, NULL)
+   gettimeofday(&(t), NULL)
 #define TBX_TICK_RAW_DIFF(t1, t2) \
-   ((t2.timev.tv_sec * 1000000L + t2.timev.tv_usec) - \
-    (t1.timev.tv_sec * 1000000L + t1.timev.tv_usec))
+   ((t2.tv_sec * 1000000L + t2.tv_usec) - \
+    (t1.tv_sec * 1000000L + t1.tv_usec))
 
 #endif
 

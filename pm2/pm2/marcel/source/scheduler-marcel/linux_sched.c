@@ -620,11 +620,15 @@ void fastcall ma_sched_fork(marcel_task_t *p)
  */
 void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 {
-	ma_runqueue_t *rq = ma_task_init_rq(p);
+	ma_runqueue_t *rq;
+	marcel_bubble_t *b;
 	LOG_IN();
 
-	MA_BUG_ON(!rq);
+	if ((b=p->sched.internal.holdingbubble))
+		marcel_bubble_inserttask(b,p);
 
+	rq = ma_task_init_rq(p);
+	MA_BUG_ON(!rq);
 	ma_spin_lock_softirq(&rq->lock);
 
 	MA_BUG_ON(p->sched.state != MA_TASK_RUNNING);
@@ -740,6 +744,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	ma_runqueue_t *rq = ma_this_rq();
 //	struct mm_struct *mm = rq->prev_mm;
 	unsigned long prev_task_flags;
+	marcel_bubble_t *bubble;
 
 //	rq->prev_mm = NULL;
 
@@ -766,6 +771,11 @@ static inline void finish_task_switch(marcel_task_t *prev)
 //		mmdrop(mm);
 //	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
 //		ma_put_task_struct(prev);
+
+	if ((bubble=ma_per_lwp(bubble_towake,LWP_SELF))) {
+		ma_per_lwp(bubble_towake,LWP_SELF)=NULL;
+		marcel_wake_up_bubble(bubble);
+	}
 }
 
 /**
@@ -776,8 +786,11 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 {
 	finish_task_switch(prev);
 
-//	if (current->set_child_tid)
-//		put_user(current->pid, current->set_child_tid);
+	if (tbx_unlikely(MARCEL_SELF == ma_per_lwp(idle_task, LWP_SELF))) {
+		ma_topology_lwp_idle_start(LWP_SELF);
+		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
+			pause();
+	}
 }
 
 /*
@@ -1390,6 +1403,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		ma_set_tsk_need_resched(p);
 		goto out;
 	}
+
+#if 0
 	ma_spin_lock(&rq->lock);
 	/*
 	 * The task was running during this tick - update the
@@ -1398,7 +1413,6 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	 * timeslice. This makes it possible for interactive tasks
 	 * to use up their timeslices at their highest priority levels.
 	 */
-#if 0
 	if (unlikely(rt_task(p))) {
 		/*
 		 * RR tasks need a special form of timeslice management.
@@ -1416,20 +1430,29 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		goto out_unlock;
 	}
 #endif
-	if (preemption_enabled() && ma_thread_preemptible() &&
-			!--p->sched.internal.time_slice) {
-		ma_set_tsk_need_resched(p);
-		//p->prio = effective_prio(p);
-		p->sched.internal.time_slice = 1; /* TODO: utiliser la priorité pour le calculer */
-				//task_timeslice(p);
-		//p->first_time_slice = 0;
+	if (preemption_enabled() && ma_thread_preemptible()) {
+		marcel_bubble_t *b;
+		if (ma_atomic_dec_and_test(&p->sched.internal.time_slice)) {
+			ma_set_tsk_need_resched(p);
+			//p->prio = effective_prio(p);
+			ma_atomic_set(&p->sched.internal.time_slice,10); /* TODO: utiliser la priorité pour le calculer */
+					//task_timeslice(p);
+			//p->first_time_slice = 0;
 
-		//if (!rq->expired_timestamp)
-			//rq->expired_timestamp = jiffies;
-		//if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
-//			if (p->static_prio < rq->best_expired_prio)
-//				rq->best_expired_prio = p->static_prio;
-		//}
+			//if (!rq->expired_timestamp)
+				//rq->expired_timestamp = jiffies;
+			//if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
+	//			if (p->static_prio < rq->best_expired_prio)
+	//				rq->best_expired_prio = p->static_prio;
+			//}
+		}
+		// attention: rq->lock ne doit pas être pris pour pouvoir
+		// verrouiller la bulle.
+		if ((b = p->sched.internal.holdingbubble)
+			&& b!=&marcel_root_bubble
+			&& b->status != MA_BUBBLE_CLOSING
+			&& ma_atomic_dec_and_test(&b->sched.time_slice))
+				marcel_close_bubble(b);
 	}
 #if 0
 	else {
@@ -1462,8 +1485,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 	}
 out_unlock:
-#endif
 	ma_spin_unlock(&rq->lock);
+#endif
 out:
 	rebalance_tick(rq, 0);
 	LOG_OUT();
@@ -1478,13 +1501,16 @@ asmlinkage void ma_schedule(void)
 {
 //	long *switch_count;
 	marcel_task_t *prev, *next, *prev_as_next;
-	ma_runqueue_t *rq,*prevrq,*currq, *prev_as_rq;
+	marcel_bubble_entity_t *nextent;
+	marcel_bubble_t *bubble;
+	ma_runqueue_t *rq, *prevrq, *currq, *prev_as_rq;
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
 	unsigned long run_time;
 	int idx;
 	int max_prio, prev_as_prio;
+	int go_to_sleep, wake_bubble;
 	LOG_IN();
 
 	/*
@@ -1504,8 +1530,7 @@ need_resched:
 	ma_preempt_disable();
 	ma_local_bh_disable();
 
-	/* by default, reschedule this thread */
-	prev_as_next = prev = MARCEL_SELF;
+	prev = MARCEL_SELF;
 	MA_BUG_ON(!prev);
 
 	now = marcel_clock();
@@ -1516,21 +1541,33 @@ need_resched:
 		run_time = NS_MAX_SLEEP_AVG;
 		*/
 
-	prev_as_rq = prevrq = ma_this_rq();
+	prevrq = ma_this_rq();
 	MA_BUG_ON(!prevrq);
-	prev_as_prio = MARCEL_SELF->sched.internal.prio;
+
+	go_to_sleep = 0;
+need_resched_atomic:
+	/* by default, reschedule this thread */
+	prev_as_next = prev;
+	prev_as_rq = prevrq;
+	prev_as_prio = prev->sched.internal.prio;
 
 	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		//switch_count = &prev->nvcsw;
 		if (tbx_unlikely((prev->sched.state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))
 			prev->sched.state = MA_TASK_RUNNING;
-		else {
-			sched_debug("schedule: go to sleep\n");
-			prev_as_next = NULL;
-			prev_as_rq = ma_dontsched_rq(LWP_SELF);
-			prev_as_prio = MA_IDLE_PRIO;
-		}
+		else
+			go_to_sleep = 1;
+	}
+	if ((bubble = prev->sched.internal.holdingbubble)
+			&& bubble->status == MA_BUBBLE_CLOSING)
+		go_to_sleep = 1;
+
+	if (go_to_sleep) {
+		sched_debug("schedule: go to sleep\n");
+		prev_as_next = NULL;
+		prev_as_rq = ma_dontsched_rq(LWP_SELF);
+		prev_as_prio = MA_IDLE_PRIO;
 	}
 
 #ifdef MA__LWPS
@@ -1541,16 +1578,16 @@ restart:
 	max_prio = prev_as_prio;
 
 #ifdef MA__LWPS
-	sched_debug("default prio: %d, rq: %p\n",max_prio,rq);
+	sched_debug("default prio: %d, rq: %s\n",max_prio,rq->name);
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
 #else
 	currq = &ma_main_runqueue;
 #endif
 		if (!currq->nr_running)
-			sched_debug("apparently nobody in %p\n",currq);
+			sched_debug("apparently nobody in %s\n",currq->name);
 		idx = ma_sched_find_first_bit(currq->active->bitmap);
 		if (idx < max_prio) {
-			sched_debug("found better prio %d in rq %p\n",idx,currq);
+			sched_debug("found better prio %d in rq %s\n",idx,currq->name);
 			next = NULL;
 			max_prio = idx;
 			rq = currq;
@@ -1559,7 +1596,7 @@ restart:
 		/* still wanted to schedule prev, but it needs resched
 		 * and this is same prio
 		 */
-			sched_debug("found same prio %d in rq %p\n",idx,currq);
+			sched_debug("found same prio %d in rq %s\n",idx,currq->name);
 			next = NULL;
 			rq = currq;
 		}
@@ -1606,10 +1643,8 @@ restart:
 	idx = ma_sched_find_first_bit(array->bitmap);
 	queue = array->queue + idx;
 	/* we may here see ourselves, if someone awoked us */
-	next = list_entry(queue->next, marcel_task_t, sched.internal.run_list);
+	nextent = list_entry(queue->next, marcel_bubble_entity_t, run_list);
 	
-	sched_debug("prio %d in %p, next %p(%s)\n",idx,rq,next,next->name);
-
 //	if (next->activated > 0) {
 //		unsigned long long delta = now - next->timestamp;
 
@@ -1622,16 +1657,139 @@ restart:
 //		enqueue_task(next, array);
 //	}
 //	next->activated = 0;
+
+#ifdef MA__LWPS
+	/* sur smp, descendre l'entité si besoin est */
+	if (nextent->sched_level > rq->level) {
+		/* on peut relâcher la runqueue de la tâche courante */
+		if (prevrq != rq)
+			_ma_raw_spin_unlock(&prevrq->lock);
+
+		/* s'assurer d'abord que personne n'a activé une entité d'une
+		 * telle priorité (ou encore plus forte) avant nous */
+		max_prio = idx;
+		for (currq = ma_lwp_rq(LWP_SELF); currq != rq; currq = currq->father) {
+			idx = ma_sched_find_first_bit(currq->active->bitmap);
+			if (idx <= max_prio) {
+				bubble_sched_debug("prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
+				ma_spin_unlock(&rq->lock);
+				goto need_resched_atomic;
+			}
+		}
+		for (; currq; currq = currq->father) {
+			idx = ma_sched_find_first_bit(currq->active->bitmap);
+			if (idx < max_prio) {
+				bubble_sched_debug("better prio %d on rq %s in the meanwhile\n", idx, currq->name);
+				ma_spin_unlock(&rq->lock);
+				goto need_resched_atomic;
+			}
+		}
+
+		deactivate_entity(nextent,rq);
+		/* trouver une runqueue qui va bien */
+		for (currq = ma_lwp_rq(LWP_SELF); currq &&
+			nextent->sched_level < currq->level;
+			currq = currq->father);
+
+		MA_BUG_ON(!currq);
+		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
+
+		/* on descend, l'ordre des adresses est donc correct */
+		lock_second_rq(rq, currq);
+		activate_entity(nextent,currq);
+		double_rq_unlock(rq, currq);
+		goto need_resched_atomic;
+	}
+#endif
+
+	if (nextent->type == MARCEL_TASK_ENTITY) {
+		next = list_entry(nextent, marcel_task_t, sched.internal);
+		goto switch_tasks;
+	}
+
+/*
+ * c'est une bulle
+ */
+	bubble = list_entry(nextent, marcel_bubble_t, sched);
+
+	/* relâche la queue de la tâche courante: on ne lui fera rien, à part
+	 * squatter sa pile avant de recommencer ma_schedule() */
+	if (prevrq!=rq)
+		_ma_raw_spin_unlock(&prevrq->lock);
+
+	/* maintenant on peut s'occuper de la bulle */
+	/* l'enlever de la queue */
+	deactivate_entity(nextent,rq);
+	ma_spin_unlock(&rq->lock);
+	{
+		marcel_bubble_entity_t *new;
+
+		/* respect ordre verrouillage */
+		ma_spin_lock(&bubble->lock);
+		ma_spin_lock(&rq->lock);
+
+		bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
+		bubble->status = MA_BUBBLE_OPENED;
+		/* XXX: time_slice proportionnel au parallélisme de la runqueue */
+/* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
+   les #ifdef dans les arguments de macro...
+ */
+#ifdef MA__LWPS
+#  define _TIME_SLICE MA_CPU_WEIGHT(&rq->cpuset)
+#else
+#  define _TIME_SLICE 1
+#endif
+		ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
+#undef _TIME_SLICE
+		bubble_sched_debug("timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
+		nextent->init_rq = rq;
+		list_for_each_entry(new, &bubble->heldentities, entity_list) {
+			bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
+			new->init_rq=rq;
+			activate_entity(new, rq);
+			bubble->nbrunning++;
+		}
+		ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
+
+		ma_spin_unlock(&rq->lock);
+		ma_spin_unlock(&bubble->lock);
+	}
+
+	LOG("restarting to need_resched");
+	goto need_resched_atomic;
+
 switch_tasks:
+	sched_debug("prio %d in %s, next %p(%s)\n",idx,rq->name,next,next->name);
+	MTRACE("previous",prev);
+	MTRACE("next",next);
+
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
+
 	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+		MA_BUG_ON(next==prev);
 		if (prev->sched.state & MA_TASK_MOVING)
 			/* moving, make it running elsewhere */
 			ma_set_current_state(MA_TASK_RUNNING);
-		else
+		else {
 			/* yes, deactivate */
+			sched_debug("%p going to sleep\n",prev);
 			deactivate_running_task(prev,prevrq);
+		}
+	}
+	if ((bubble = prev->sched.internal.holdingbubble)
+			&& bubble->status == MA_BUBBLE_CLOSING) {
+		MA_BUG_ON(next==prev);
+		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
+		deactivate_running_task(prev,prevrq);
+		ma_spin_lock(&bubble->lock);
+		if ((wake_bubble = !(--bubble->nbrunning))) {
+			bubble_sched_debug("we're last, bubble %p closed\n", bubble);
+			bubble->status = MA_BUBBLE_CLOSED;
+		}
+		ma_spin_unlock(&bubble->lock);
+		if (wake_bubble)
+			ma_per_lwp(bubble_towake,LWP_SELF)=bubble;
 	}
 
 	prefetch(next);
@@ -1648,6 +1806,8 @@ switch_tasks:
 	prev->sched.internal.timestamp = prev->sched.internal.last_ran = now;
 
 	if (tbx_likely(prev != next)) {
+		if (tbx_unlikely(prev == ma_per_lwp(idle_task, LWP_SELF)))
+			ma_topology_lwp_idle_end(LWP_SELF);
 //		next->timestamp = now;
 //		rq->nr_switches++;
 		ma_per_lwp(current_thread, LWP_SELF) = next;
@@ -1663,9 +1823,13 @@ switch_tasks:
 		prev = context_switch(prevrq, prev, next);
 		ma_barrier();
 
-		finish_task_switch(prev);
-	} else
+		ma_schedule_tail(prev);
+	} else {
 		ma_spin_unlock_softirq(&rq->lock);
+		if (tbx_unlikely(MARCEL_SELF == ma_per_lwp(idle_task, LWP_SELF))
+			&& !ma_topology_lwp_idle_core(LWP_SELF))
+			pause();
+	}
 
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
@@ -2979,8 +3143,28 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
-	init_rq(ma_lwp_rq(lwp), MA_LWP_RQ);
-	init_rq(&ma_per_lwp(dontsched_runqueue,lwp), MA_DONTSCHED_RQ);
+	{
+	char name[16];
+	snprintf(name,sizeof(name),"lwp%d",LWP_NUMBER(lwp));
+	init_rq(ma_lwp_rq(lwp),name, MA_LWP_RQ);
+#ifdef MA__NUMA
+	if (marcel_topo_nblevels>2) {
+		int level,i;
+		level = marcel_topo_nblevels-2;
+		for (i=0; marcel_topo_levels[level][i].cpuset
+			&& !(MA_CPU_ISSET(LWP_NUMBER(lwp),
+			&marcel_topo_levels[level][i].cpuset));
+				i++);
+		// should find somebody holding us !
+		MA_BUG_ON(!marcel_topo_levels[level][i].cpuset);
+		ma_lwp_rq(lwp)->father=marcel_topo_levels[level][i].sched;
+	} else
+#endif
+		ma_lwp_rq(lwp)->father=&ma_main_runqueue;
+	mdebug("runqueue %s has father %s\n",name,ma_lwp_rq(lwp)->father->name);
+	snprintf(name,sizeof(name),"dontsched%d",LWP_NUMBER(lwp));
+	init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
+	ma_lwp_rq(lwp)->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
 	MA_CPU_ZERO(&(ma_lwp_rq(lwp)->cpuset));
@@ -2990,6 +3174,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	MA_CPU_SET(LWP_NUMBER(lwp),&ma_main_runqueue.cpuset);
 	MA_CPU_SET(LWP_NUMBER(lwp),&ma_dontsched_runqueue.cpuset);
 #endif
+	}
 #endif
 	LOG_OUT();
 }
@@ -3010,15 +3195,59 @@ MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 
+#ifdef MA__NUMA
+static int level_rq_num[MARCEL_LEVEL_LAST-2];
+static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq, int levelnum) {
+	unsigned i;
+	char name[16];
+	ma_runqueue_t *newrqs = ma_level_runqueues[levelnum-1]+level_rq_num[levelnum-1];
+	static const char *base[] = {
+		[MARCEL_LEVEL_NODE]	= "node",
+		[MARCEL_LEVEL_DIE]	= "die",
+		[MARCEL_LEVEL_CORE]	= "core",
+	};
+	static const enum ma_rq_type rqtypes[] = {
+		[MARCEL_LEVEL_NODE]	= MA_NODE_RQ,
+		[MARCEL_LEVEL_DIE]	= MA_DIE_RQ,
+		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
+	};
+
+	level->sched = rq;
+	if (level->sons[0]->type == MARCEL_LEVEL_PROC) {
+		return;
+	}
+
+	for (i=0;i<level->arity;i++) {
+		level_rq_num[levelnum-1]++;
+		snprintf(name,sizeof(name),"%s%d",
+			base[level->sons[i]->type],level->sons[i]->number);
+		init_rq(&newrqs[i], name, rqtypes[level->sons[i]->type]);
+		newrqs[i].level = levelnum;
+		newrqs[i].father = rq;
+		newrqs[i].cpuset = level->sons[i]->cpuset;
+		mdebug("runqueue %s has father %s\n", name, rq->name);
+		init_subrunqueues(level->sons[i],&newrqs[i],levelnum+1);
+	}
+}
+#endif
+
 void __marcel_init sched_init(void)
 {
 	LOG_IN();
 
-	init_rq(&ma_main_runqueue, MA_MACHINE_RQ);
-	init_rq(&ma_dontsched_runqueue, MA_DONTSCHED_RQ);
+	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
+#ifdef MA__LWPS
+	ma_main_runqueue.level = 0;
+#endif
+	init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
 #ifdef MA__LWPS
 	MA_CPU_ZERO(&ma_main_runqueue.cpuset);
 	MA_CPU_ZERO(&ma_dontsched_runqueue.cpuset);
+#endif
+
+#ifdef MA__NUMA
+	if (marcel_topo_nblevels>1)
+		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
 #endif
 
 	/*
@@ -3033,10 +3262,9 @@ void __marcel_init sched_init(void)
 	ma_spin_lock(&ma_main_runqueue.lock);
 	dequeue_task(MARCEL_SELF, MARCEL_SELF->sched.internal.array);
 	ma_spin_unlock(&ma_main_runqueue.lock);
-
-#ifdef MA__NUMA
-	/* initialiser des runqueues par noeud / core / ht */
-#endif
+	marcel_root_bubble.status=MA_BUBBLE_OPENED;
+	marcel_root_bubble.sched.init_rq=&ma_main_runqueue;
+	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
 
 //	init_timers();
 
@@ -3048,7 +3276,7 @@ void __marcel_init sched_init(void)
 	LOG_OUT();
 }
 
-__ma_initfunc(sched_init, MA_INIT_LINUX_SCHED,
+__ma_initfunc_prio(sched_init, MA_INIT_LINUX_SCHED, MA_INIT_LINUX_SCHED_PRIO,
 	      "Scheduler Linux 2.6");
 
 #if 0

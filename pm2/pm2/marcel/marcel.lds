@@ -12,6 +12,8 @@ SECTIONS {
   .data : 
     {
       . = ALIGN(4096) ;
+      *(.ma.runqueues)
+      . = ALIGN(4096) ;
       __ma_main_lwp_start = . ;
       *(.ma.main.lwp)
       *( SORT(.ma.per.lwp.main.*))

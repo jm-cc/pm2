@@ -101,6 +101,9 @@ void marcel_create_init_marcel_thread(marcel_t t,
 int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, 
 		  marcel_func_t func, any_t arg) __THROW;
 
+int marcel_create_dontsched(marcel_t *pid, __const marcel_attr_t *attr, 
+		  marcel_func_t func, any_t arg) __THROW;
+
 #section marcel_functions
 int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr, 
 			  marcel_func_t func, any_t arg) __THROW;

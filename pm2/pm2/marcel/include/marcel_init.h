@@ -131,6 +131,7 @@ typedef struct __ma_init_info {
 /* A besoin de MARCEL_SELF et LWP_SELF */
 #define MA_INIT_PRIO_BASE                          5
 
+#define MA_INIT_TOPOLOGY              MA_INIT_SELF
 #define MA_INIT_THREADS_MAIN          MA_INIT_SELF
 #define MA_INIT_FAULT_CATCHER         MA_INIT_MAIN_LWP
 #define MA_INIT_FAULT_CATCHER_PRIO                 0
@@ -138,6 +139,8 @@ typedef struct __ma_init_info {
 #define MA_INIT_DEBUG_PRIO                         1
 #define MA_INIT_SLOT                  MA_INIT_MAIN_LWP
 #define MA_INIT_SLOT_PRIO                          2
+#define MA_INIT_LINUX_SCHED           MA_INIT_MAIN_LWP
+#define MA_INIT_LINUX_SCHED_PRIO                   3
 #define MA_INIT_LWP_MAIN_STRUCT       MA_INIT_MAIN_LWP
 #define MA_INIT_LWP_MAIN_STRUCT_PRIO               4
 #define MA_INIT_SOFTIRQ               MA_INIT_MAIN_LWP
@@ -146,7 +149,6 @@ typedef struct __ma_init_info {
 #define MA_INIT_LWP                   MA_INIT_MAIN_LWP
 #define MA_INIT_IO                    MA_INIT_MAIN_LWP
 #define MA_INIT_GENSCHED_IDLE         MA_INIT_MAIN_LWP
-#define MA_INIT_LINUX_SCHED           MA_INIT_MAIN_LWP
 #define MA_INIT_TIMER_SIG_DATA        MA_INIT_MAIN_LWP
 #define MA_INIT_TIMER                 MA_INIT_MAIN_LWP
 #define MA_INIT_LINUX_TIMER           MA_INIT_MAIN_LWP

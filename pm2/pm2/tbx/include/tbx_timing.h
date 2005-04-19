@@ -47,7 +47,7 @@ typedef union u_tbx_tick
 
 /* Hum hum... Here we suppose that X86ARCH => Pentium! */
 
-#if defined(X86_ARCH)
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
 
 #define TBX_GET_TICK(t) \
    __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))

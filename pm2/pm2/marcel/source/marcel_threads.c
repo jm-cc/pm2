@@ -135,12 +135,12 @@ static void* wait_marcel_run(void* arg)
  */
 
 /* special_mode est à 0 normalement. Pour les cas spéciaux (threads
- * internes, threads idle, ...), il est à 1.
+ * internes, threads idle, ...), il est à 2.
  *
  * Il est calculé directement à la compilation par les deux fonctions
  * suivantes qui ne sont qu'un 'inline' de celle-ci
  */
-inline static int 
+static __tbx_inline__ int 
 marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr, 
 		       marcel_func_t func, any_t arg, 
 		       __const int special_mode, 
@@ -226,7 +226,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	if(pid)
 		*pid = new_task;
 	
-	if (!(special_mode && MA_TASK_NOT_COUNTED_IN_RUNNING(new_task))) {
+	if (!(special_mode==2 && MA_TASK_NOT_COUNTED_IN_RUNNING(new_task))) {
 		marcel_one_more_task(new_task);
 	} else {
 		static int norun_pid=0;
@@ -262,11 +262,18 @@ int marcel_create(marcel_t *pid, __const marcel_attr_t *attr,
 				      0, (unsigned long)&arg);
 }
 
+int marcel_create_dontsched(marcel_t *pid, __const marcel_attr_t *attr,
+			    marcel_func_t func, any_t arg)
+{
+	return marcel_create_internal(pid, attr, func, arg,
+				      1, (unsigned long)&arg);
+}
+
 int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr,
 			  marcel_func_t func, any_t arg)
 {
 	return marcel_create_internal(pid, attr, func, arg, 
-				      1, (unsigned long)&arg);
+				      2, (unsigned long)&arg);
 }
 
 /****************************************************************/

@@ -1,0 +1,3 @@
+Provide: marcel_proctype
+Provide: marcel_smp
+Conflict: marcel_proctype

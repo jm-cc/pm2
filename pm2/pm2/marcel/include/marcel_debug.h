@@ -100,6 +100,7 @@ extern debug_type_t marcel_mdebug_sched_q;
 extern debug_type_t marcel_lock_task_debug;
 
 extern debug_type_t marcel_sched_debug;
+extern debug_type_t marcel_bubble_sched_debug;
 
 extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
@@ -147,6 +148,13 @@ extern debug_type_t marcel_mtrace_timer;
         fmt, ##__VA_ARGS__)
 #else
 #  define sched_debug(fmt, ...) (void)0
+#endif
+
+#ifdef DEBUG_BUBBLE_SCHED
+#  define bubble_sched_debug(fmt, ...) debug_printf(&marcel_bubble_sched_debug, \
+        fmt, ##__VA_ARGS__)
+#else
+#  define bubble_sched_debug(fmt, ...) (void)0
 #endif
 
 #ifndef MARCEL_TRACE

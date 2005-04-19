@@ -251,7 +251,11 @@ pm2config_set_vars()
 	eval _obj='$'_PM2CONFIG_${_lib}_OBJ_DIR
 	STAMP_FILES=""
 	for i in ${_STAMP_FILES}; do
-	    STAMP_FILES="${STAMP_FILES:+${STAMP_FILES} }${_obj}/${i}"
+	    if [ -r "$i" ] ; then
+		STAMP_FILES="${STAMP_FILES:+${STAMP_FILES} }${i}"
+	    else
+		STAMP_FILES="${STAMP_FILES:+${STAMP_FILES} }${_obj}/${i}"
+	    fi
 	done
 	eval _dir='$'_PM2CONFIG_${_lib}_LIB_DIR
 	eval LINK_MODE_DYNAMIC='$'PM2_${_LIB}_BUILD_DYNAMIC

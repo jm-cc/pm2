@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#section common
+#depend "scheduler-marcel/marcel_bubble_sched.h[types]"
+
 /*
  * These are the runqueue data structures:
  */
@@ -71,8 +74,8 @@ enum ma_rq_type {
 #ifdef MA__LWPS
 #ifdef MA__NUMA
 	MA_NODE_RQ,
+	MA_DIE_RQ,
 	MA_CORE_RQ,
-	MA_HT_RQ,
 #endif
 	MA_LWP_RQ,
 #endif
@@ -86,9 +89,11 @@ enum ma_rq_type {
  * acquire operations must be ordered by ascending &runqueue.
  */
 #section marcel_structures
+#depend "marcel_topology.h[types]"
 #depend "marcel_topology.h[marcel_types]"
 struct ma_runqueue {
 	unsigned long long nr_switches;
+	char name[16];
 	ma_spinlock_t lock;
 	unsigned long nr_running, expired_timestamp, nr_uninterruptible,
 		timestamp_last_tick;
@@ -106,6 +111,7 @@ struct ma_runqueue {
 
 #ifdef MA__LWPS
 	struct ma_runqueue *father;
+	int level;
 #endif
 	enum ma_rq_type type;
 
@@ -116,18 +122,29 @@ struct ma_runqueue {
 
 #section marcel_types
 typedef struct ma_runqueue ma_runqueue_t;
+typedef ma_runqueue_t ma_topo_level_schedinfo;
+
+#section marcel_macros
+#define MA_DEFINE_RUNQUEUE(name) \
+	__attribute__((__section__(".ma.runqueues"))) ma_runqueue_t name
 
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"
-#ifdef MA__LWPS
-MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
-#endif
+#depend "[marcel_macros]"
+
 extern ma_runqueue_t ma_main_runqueue;
+extern ma_runqueue_t ma_dontsched_runqueue;
+#ifdef MA__NUMA
+extern ma_runqueue_t ma_node_runqueue[MARCEL_NBMAXNODES];
+extern ma_runqueue_t ma_die_runqueue[MARCEL_NBMAXDIES];
+extern ma_runqueue_t ma_core_runqueue[MARCEL_NBMAXCORES];
+extern ma_runqueue_t *ma_level_runqueues[];
+#endif
 
 #ifdef MA__LWPS
+MA_DECLARE_PER_LWP(ma_runqueue_t, runqueue);
 MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #endif
-extern ma_runqueue_t ma_dontsched_runqueue;
 
 #section marcel_macros
 // ceci n'a plus de sens:
@@ -180,39 +197,39 @@ static inline void nr_running_dec(ma_runqueue_t *rq)
  * explicitly disabling preemption.
  */
 #section marcel_functions
-static inline ma_runqueue_t *task_rq(marcel_task_t *p);
+static inline ma_runqueue_t *entity_rq(marcel_bubble_entity_t *e);
+#define task_rq(t) entity_rq(&(t)->sched.internal)
 #section marcel_inline
-static inline ma_runqueue_t *task_rq(marcel_task_t *p)
+static inline ma_runqueue_t *entity_rq(marcel_bubble_entity_t *e)
 {
 	ma_runqueue_t *rq;
-	if ((rq = p->sched.internal.cur_rq))
+	if ((rq = e->cur_rq))
 		return rq;
-	sched_debug("using default queue for %s\n",p->name);
-	return p->sched.internal.init_rq;
+	sched_debug("using default queue for %p\n",e);
+	return e->init_rq;
 
 }
 
 #section marcel_functions
-static inline ma_runqueue_t *task_rq_lock(marcel_task_t *p);
+static inline ma_runqueue_t *entity_rq_lock(marcel_bubble_entity_t *e);
+#define task_rq_lock(t) entity_rq_lock(&(t)->sched.internal)
 #section marcel_inline
-static inline ma_runqueue_t *task_rq_lock(marcel_task_t *p)
+static inline ma_runqueue_t *entity_rq_lock(marcel_bubble_entity_t *e)
 {
 	ma_runqueue_t *rq;
 
 repeat_lock_task:
 	//local_irq_save(*flags);
 	ma_local_bh_disable();
-	rq = task_rq(p);
-	sched_debug("task_rq_locking(%p)\n",rq);
-	if (rq==&ma_main_runqueue)
-	  sched_debug("main queue\n");
+	rq = entity_rq(e);
+	sched_debug("task_rq_locking(%s)\n",rq->name);
 	ma_spin_lock(&rq->lock);
-	if (tbx_unlikely(rq != task_rq(p))) {
-		sched_debug("task_rq_unlocking(%p)\n",rq);
+	if (tbx_unlikely(rq != entity_rq(e))) {
+		sched_debug("task_rq_unlocking(%s)\n",rq->name);
 		ma_spin_unlock_softirq(&rq->lock);
 		goto repeat_lock_task;
 	}
-	sched_debug("task_rq_locked(%p)\n",rq);
+	sched_debug("task_rq_locked(%s)\n",rq->name);
 	return rq;
 }
 
@@ -245,7 +262,7 @@ static inline void task_rq_unlock(ma_runqueue_t *rq);
 #section marcel_inline
 static inline void task_rq_unlock(ma_runqueue_t *rq)
 {
-	sched_debug("task_rq_unlock(%p)\n",rq);
+	sched_debug("task_rq_unlock(%s)\n",rq->name);
 	ma_spin_unlock_softirq(&rq->lock);
 }
 
@@ -279,31 +296,44 @@ static inline void rq_unlock(ma_runqueue_t *rq)
  */
 #section marcel_functions
 static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array);
+static inline void dequeue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
 #section marcel_inline
 static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
+	sched_debug("dequeueing %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
+	dequeue_entity(&p->sched.internal, array);
+}
+
+static inline void dequeue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
+{
+	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
 	array->nr_active--;
-	list_del(&p->sched.internal.run_list);
-	if (list_empty(array->queue + p->sched.internal.prio)) {
-		sched_debug("array %p (prio %d) empty\n",array, p->sched.internal.prio);
-		__ma_clear_bit(p->sched.internal.prio, array->bitmap);
+	list_del(&e->run_list);
+	if (list_empty(array->queue + e->prio)) {
+		sched_debug("array %p (prio %d) empty\n",array, e->prio);
+		__ma_clear_bit(e->prio, array->bitmap);
 	}
-	sched_debug("dequeued %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
-	MA_BUG_ON(!p->sched.internal.array);
-	p->sched.internal.array = NULL;
+	MA_BUG_ON(!e->array);
+	e->array = NULL;
 }
 
 #section marcel_functions
 static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array);
+static inline void enqueue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
 #section marcel_inline
 static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
-	list_add_tail(&p->sched.internal.run_list, array->queue + p->sched.internal.prio);
-	__ma_set_bit(p->sched.internal.prio, array->bitmap);
+	sched_debug("enqueueing %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
+	enqueue_entity(&p->sched.internal,array);
+}
+static inline void enqueue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
+{
+	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
+	list_add_tail(&e->run_list, array->queue + e->prio);
+	__ma_set_bit(e->prio, array->bitmap);
 	array->nr_active++;
-	sched_debug("enqueued %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
-	MA_BUG_ON(p->sched.internal.array);
-	p->sched.internal.array = array;
+	MA_BUG_ON(e->array);
+	e->array = array;
 }
 
 /*
@@ -315,6 +345,7 @@ static inline void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline             
 static inline void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
+	MA_BUG_ON(p->sched.internal.cur_rq);
 	p->sched.internal.cur_rq = rq;
 	nr_running_inc(rq);
 }
@@ -373,6 +404,20 @@ static inline void activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 }
 
 /*
+ * activate entity
+ */
+#section marcel_functions
+static inline void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq);
+#section marcel_inline
+static inline void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
+{
+	MA_BUG_ON(e->cur_rq);
+	e->cur_rq = rq;
+	nr_running_inc(rq);
+	enqueue_entity(e, rq->active);
+}
+
+/*
  * deactivate_running_task - remove a task from the runqueue, without
  * dequeueing it, since it is already running.
  */
@@ -384,6 +429,7 @@ static inline void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
 	nr_running_dec(rq);
 	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
 		rq->nr_uninterruptible++;
+	MA_BUG_ON(!p->sched.internal.cur_rq);
 	p->sched.internal.cur_rq = NULL;
 }
 
@@ -397,6 +443,20 @@ static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	dequeue_task(p, p->sched.internal.array);
 	deactivate_running_task(p,rq);
+}
+
+/*
+ * deactivate entity
+ */
+#section marcel_functions
+static inline void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq);
+#section marcel_inline
+static inline void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
+{
+	dequeue_entity(e, rq->active);
+	nr_running_dec(rq);
+	MA_BUG_ON(!e->cur_rq);
+	e->cur_rq = NULL;
 }
 
 /*
@@ -495,5 +555,5 @@ static inline void rq_arrays_switch(ma_runqueue_t *rq)
  * initialize runqueue
  */
 #section marcel_functions
-extern void init_rq(ma_runqueue_t *rq, enum ma_rq_type type);
+extern void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type);
 

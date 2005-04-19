@@ -115,7 +115,7 @@ struct marcel_sched_task {
 	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
 	unsigned long lwps_allowed; /* Contraintes sur le placement sur les LWP */
 	unsigned int state; /* État du thread */
-	struct marcel_sched_internal_task internal;
+	marcel_sched_internal_task_t internal;
 };
 
 #section marcel_macros
@@ -161,21 +161,21 @@ marcel_sched_init_marcel_thread(marcel_task_t* t,
 
 #section sched_marcel_functions
 /* Démarrage d'un thread par le scheduler */
-inline static int marcel_sched_create(marcel_task_t* cur,
+__tbx_inline__ static int marcel_sched_create(marcel_task_t* cur,
 				      marcel_task_t* new_task,
 				      __const marcel_attr_t *attr,
-				      __const int special_mode,
+				      __const int dont_schedule,
 				      __const unsigned long base_stack);
 #section sched_marcel_inline
-inline static int marcel_sched_create(marcel_task_t* cur,
+__tbx_inline__ static int marcel_sched_create(marcel_task_t* cur,
 				      marcel_task_t* new_task,
 				      __const marcel_attr_t *attr,
-				      __const int special_mode,
+				      __const int dont_schedule,
 				      __const unsigned long base_stack)
 {
 	LOG_IN();
 	LOG_RETURN(marcel_sched_internal_create(cur, new_task, attr, 
-						special_mode, base_stack));
+						dont_schedule, base_stack));
 }
 
 #section marcel_functions

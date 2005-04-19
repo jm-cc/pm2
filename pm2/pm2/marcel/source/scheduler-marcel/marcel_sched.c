@@ -56,6 +56,18 @@ int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio)
   return 0;
 }
 
+int marcel_sched_attr_setstayinbubble(marcel_sched_attr_t *attr, int stay)
+{
+  attr->stayinbubble = stay;
+  return 0;
+}
+
+int marcel_sched_attr_getstayinbubble(__const marcel_sched_attr_t *attr, int *stay)
+{
+  *stay = attr->stayinbubble;
+  return 0;
+}
+
 #define work_pending(thread) (0)
 
 // Restriction d'affichage de debug lorsque l'on est la tâche idle

@@ -63,21 +63,43 @@ void printtask(marcel_task_t *t) {
 		t->sched.internal.init_rq, t->sched.internal. cur_rq);
 	ma_atomic_sub(utime, &t->top_utime);
 }
+
 #if 0
+void printbubble(int sep, marcel_bubble_t *b) {
+	int rsep=0;
+	marcel_bubble_entity_t *e;
+
+	top_printf("%s(",sep?" ":"");
+	if (b->status == MA_BUBBLE_CLOSED)
+		list_for_each_entry(e, &b->heldentities, entity_list) {
+			printentity(rsep,e);
+			rsep=1;
+		}
+	top_printf(")(%d)", b->sched.prio);
+}
+
+void printentity(int sep, marcel_bubble_entity_t *e) {
+	if (e->type == MARCEL_TASK_ENTITY) {
+		printtask(sep,tbx_container_of(e, marcel_task_t, sched.internal ));
+	} else {
+		printbubble(sep,tbx_container_of(e, marcel_bubble_t, sched));
+	}
+}
+
 void printrq(ma_runqueue_t *rq) {
 	int prio;
-	marcel_task_t *t;
+	marcel_bubble_entity_t *e;
 	ma_spin_lock(&rq->lock);
 	int somebody = 0;
 	for (prio=0; prio<MA_MAX_PRIO; prio++) {
-		list_for_each_entry(t, rq->active->queue+prio, sched.internal.run_list) {
-			printtask(t);
+		list_for_each_entry(e, rq->active->queue+prio, run_list) {
+			printentity(1,e);
 			somebody = 1;
 		}
 	}
 	for (prio=0; prio<MA_MAX_PRIO; prio++) {
-		list_for_each_entry(t, rq->expired->queue+prio, sched.internal.run_list) {
-			printtask(t);
+		list_for_each_entry(e, rq->expired->queue+prio, run_list) {
+			printentity(1,e);
 			somebody = 1;
 		}
 	}
@@ -105,7 +127,7 @@ void marcel_top_tick(unsigned long foo) {
 	//printrq(&ma_main_runqueue);
 #if 0
 #ifndef MA__LWPS
-	printtask(ma_per_lwp__current_thread);
+	printtask(1,ma_per_lwp__current_thread);
 	top_printf("\r\n");
 #endif
 	printrq(&ma_dontsched_runqueue);
@@ -123,7 +145,8 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
 #if 0
-		printtask(ma_per_lwp(current_thread,lwp));
+		printtask(1,ma_per_lwp(current_thread,lwp));
+		top_printf("\r\n");
 		printrq(&ma_per_lwp(runqueue,lwp));
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
 #endif

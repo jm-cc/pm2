@@ -33,9 +33,19 @@
 #  define MARCEL_SMP
 #endif
 
+#ifdef MARCEL_MONO
+#  undef MARCEL_MONO
+#  define MARCEL_MONO 1
+#endif
+
 #ifdef MARCEL_SMP
 #  undef MARCEL_SMP
 #  define MARCEL_SMP 1
+#endif
+
+#ifdef MARCEL_NUMA
+#  undef MARCEL_NUMA
+#  define MARCEL_NUMA 1
 #endif
 
 #ifdef MARCEL_ACT
@@ -48,18 +58,18 @@
 #  define MARCEL_ACTSMP 1
 #endif
 
-#ifdef MARCEL_MONO
-#  undef MARCEL_MONO
-#  define MARCEL_MONO 1
+#ifdef MARCEL_ACTNUMA
+#  undef MARCEL_ACTNUMA
+#  define MARCEL_ACTNUMA 1
 #endif
 
-#if ((MARCEL_SMP + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_MONO) == 0)
-#  error No MARCEL_... defined. Choose between MONO SMP ACT and ACTSMP
+#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_ACTNUMA) == 0)
+#  error No MARCEL_... defined. Choose between MONO SMP NUMA ACT ACTSMP and ACTNUMA
 //#define MARCEL_MONO 1
 #endif
 
-#if ((MARCEL_SMP + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_MONO) > 1)
-#  error You must define at most one of MARCEL_SMP, MARCEL_ACT, MARCEL_ACTSMP or MARCEL_MONO
+#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA + MARCEL_ACT + MARCEL_ACTSMP + MARCEL_ACTNUMA) > 1)
+#  error You must define at most one of MARCEL_MONO, MARCEL_SMP, MARCEL_NUMA, MARCEL_ACT, MARCEL_ACTSMP or MARCEL_ACTNUMA
 #endif
 
 /* MA__LWPS : indique que l'on a plusieurs entités ordonnancées par
@@ -139,7 +149,7 @@
 #  define MA__WORK
 #endif /* Fin Marcel Mono */
 
-#ifdef MARCEL_SMP /* Marcel SMP */
+#if defined(MARCEL_SMP) || defined(MARCEL_NUMA) /* Marcel SMP */
 #  define MA__SMP /* Utilisation des pthreads pour les lwp */
 #  define MA__LWPS
 #  define MA__TIMER
@@ -149,7 +159,7 @@
 #  endif
 #endif /* Fin Marcel SMP */
 
-#if defined(MARCEL_ACT) || defined(MARCEL_ACTSMP) /* Marcel Activation */
+#if defined(MARCEL_ACT) || defined(MARCEL_ACTSMP) || defined(MARCEL_ACTNUMA) /* Marcel Activation */
 #  define MA__ACTIVATION
 #  define ACTIVATION
 #  define MA__WORK
@@ -160,12 +170,16 @@
 #  undef CONFIG_SMP
 #endif /* Fin Marcel Activation Mono */
 
-#ifdef MARCEL_ACTSMP /* Marcel Activation SMP */
+#if defined(MARCEL_ACTSMP) || defined(MARCEL_ACTNUMA) /* Marcel Activation SMP */
 #  define MA__ACTSMP
 #  define CONFIG_SMP
 #  define __SMP__
 #  define MA__LWPS
 #endif /* Fin Marcel Activation SMP */
+
+#if defined(MARCEL_NUMA) || defined(MARCEL_ACTNUMA)
+#  define MA__NUMA
+#endif
 
 #if defined(MA__LWPS) && defined(MA__TIMER)
 #  define MA_PROTECT_LOCK_TASK_FROM_SIG

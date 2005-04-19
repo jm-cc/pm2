@@ -943,6 +943,10 @@ int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
 /****************************************************************
  * Fonctions d'initialisation/terminaison
  */
+void marcel_ev_server_init(marcel_ev_server_t server, char* name)
+{
+        *server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name);
+}
 
 int marcel_ev_server_set_poll_settings(marcel_ev_server_t server, 
 				       unsigned poll_points,

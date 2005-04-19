@@ -76,9 +76,9 @@ typedef struct marcel_ev_wait *marcel_ev_wait_t;
 
 #section functions
 /* Idem, mais dynamique */
-#ifndef __cplusplus
-inline static void marcel_ev_server_init(marcel_ev_server_t server, char* name);
-#endif
+//#ifndef __cplusplus
+void marcel_ev_server_init(marcel_ev_server_t server, char* name);
+//#endif
 
 /* Enregistrement des call-backs utilisables */
 inline static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
@@ -394,12 +394,12 @@ enum {
 #depend "[marcel_structures]"
 
 #section inline
-#ifndef __cplusplus
-inline static void marcel_ev_server_init(marcel_ev_server_t server, char* name)
-{
-	*server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name);
-}
-#endif
+// #ifndef __cplusplus
+// inline static void marcel_ev_server_init(marcel_ev_server_t server, char* name)
+// {
+// 	*server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name);
+// }
+// #endif
 
 inline static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
 						marcel_ev_op_t op,

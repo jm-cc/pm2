@@ -745,6 +745,7 @@ mad_pack_ext(p_mad_connection_t   connection,
   p_mad_buffer_t             destination       = NULL;
   p_tbx_list_t               dest_list         = connection->buffer_list;
   p_tbx_list_t               buffer_group_list = connection->buffer_group_list;
+  tbx_bool_t                 free_source       = tbx_false;
   va_list                    arg_list;
 
   LOG_IN();
@@ -925,7 +926,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 	      if (buffer_mode == mad_buffer_mode_dynamic)
 		{
 		  interface->send_buffer(lnk, source);
-		  mad_free_buffer_struct(source);
+                  free_source = tbx_true;
 		  connection->flushed = tbx_true;
 		}
 	      else if (buffer_mode == mad_buffer_mode_static)
@@ -953,6 +954,8 @@ mad_pack_ext(p_mad_connection_t   connection,
 		      mad_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
+
+                  free_source = tbx_true;
 
 		  if (mad_buffer_full(destination))
 		    {
@@ -992,6 +995,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 	      if (send_mode == mad_send_SAFER)
 		{
 		  tbx_append_list(dest_list, mad_duplicate_buffer(source));
+                  free_source = tbx_true;
 		}
 	      else if (   (send_mode == mad_send_LATER)
 		       || (send_mode == mad_send_CHEAPER))
@@ -1027,6 +1031,8 @@ mad_pack_ext(p_mad_connection_t   connection,
 		      mad_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
+
+                  free_source = tbx_true;
 		}
 	      else if (send_mode == mad_send_LATER)
 		{
@@ -1054,6 +1060,8 @@ mad_pack_ext(p_mad_connection_t   connection,
 		      mad_pseudo_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
+
+                  free_source = tbx_true;
 		  connection->pair_list_used = tbx_true;
 		}
 	      else
@@ -1133,6 +1141,8 @@ mad_pack_ext(p_mad_connection_t   connection,
 		      mad_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
+
+                  free_source = tbx_true;
 		}
 	      else if (send_mode == mad_send_LATER)
 		{
@@ -1160,6 +1170,8 @@ mad_pack_ext(p_mad_connection_t   connection,
 		      mad_pseudo_copy_buffer(source, destination);
 		    }
 		  while(mad_more_data(source));
+
+                  free_source = tbx_true;
 		  connection->pair_list_used = tbx_true;
 		}
 	      else
@@ -1170,6 +1182,7 @@ mad_pack_ext(p_mad_connection_t   connection,
 	      if (send_mode == mad_send_SAFER)
 		{
 		  tbx_append_list(dest_list, mad_duplicate_buffer(source));
+                  free_source = tbx_true;
 		}
 	      else if (   (send_mode == mad_send_LATER)
 		       || (send_mode == mad_send_CHEAPER))
@@ -1189,6 +1202,11 @@ mad_pack_ext(p_mad_connection_t   connection,
     }
   else
     FAILURE("unknown link mode");
+
+  if (free_source) {
+          mad_free_buffer_struct(source);
+          source = NULL;
+  }
 
   LOG_OUT();
 }

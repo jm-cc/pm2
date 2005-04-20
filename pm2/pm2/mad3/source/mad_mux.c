@@ -49,10 +49,12 @@ mad_mux_memory_manager_init(int    argc TBX_UNUSED,
   LOG_IN();
   tbx_malloc_init(&mad_xbheader_memory,
 		  sizeof(mad_xblock_header_t),
-		  INITIAL_XBHEADER_NUM);
+		  INITIAL_XBHEADER_NUM,
+                  "madeleine/xblock_headers");
   tbx_malloc_init(&mad_mqentry_memory,
 		  sizeof(mad_xmessage_queue_entry_t),
-		  INITIAL_MQENTRY_NUM);
+		  INITIAL_MQENTRY_NUM,
+                  "madeleine/xmessage_queue_entries");
   LOG_OUT();
 }
 
@@ -1043,7 +1045,8 @@ mad_mux_register(p_mad_driver_t driver)
   interface->channel_exit               =
     mad_mux_channel_exit;
   interface->adapter_exit               = NULL;
-  interface->driver_exit                = NULL;
+  interface->driver_exit                =
+    mad_mux_driver_exit;
   interface->choice                     =
     mad_mux_choice;
   interface->get_static_buffer          =
@@ -1524,6 +1527,29 @@ mad_mux_channel_exit(p_mad_channel_t channel)
 {
   LOG_IN();
   /* unimplemented */
+  LOG_OUT();
+}
+
+void
+mad_mux_driver_exit(p_mad_driver_t driver)
+{
+  p_mad_adapter_t dummy_adapter = NULL;
+
+  LOG_IN();
+  dummy_adapter =  tbx_htable_extract(driver->adapter_htable, "mux");
+  TBX_FREE(dummy_adapter->selector);
+  dummy_adapter->selector	= NULL;
+
+  TBX_FREE(dummy_adapter->parameter);
+  dummy_adapter->parameter	= NULL;
+
+  tbx_htable_free(dummy_adapter->channel_htable);
+  dummy_adapter->channel_htable	= NULL;
+
+  TBX_FREE(dummy_adapter);
+
+  tbx_htable_free(driver->adapter_htable);
+  driver->adapter_htable	= NULL;
   LOG_OUT();
 }
 

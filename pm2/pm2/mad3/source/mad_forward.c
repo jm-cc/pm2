@@ -51,10 +51,12 @@ mad_forward_memory_manager_init(int    argc TBX_UNUSED,
   LOG_IN();
   tbx_malloc_init(&mad_fbheader_memory,
 		  sizeof(mad_fblock_header_t),
-		  INITIAL_FBHEADER_NUM);
+		  INITIAL_FBHEADER_NUM,
+                  "madeleine/fblock_headers");
   tbx_malloc_init(&mad_mqentry_memory,
 		  sizeof(mad_fmessage_queue_entry_t),
-		  INITIAL_MQENTRY_NUM);
+		  INITIAL_MQENTRY_NUM,
+                  "madeleine/fmessage_queue_entries");
   LOG_OUT();
 }
 
@@ -289,7 +291,7 @@ mad_forward_direct_reemit_block(void *arg)
       if (interface->finalize_message)
 	interface->finalize_message(out);
 
-      
+
       marcel_mutex_unlock(&(out->lock_mutex));
       marcel_mutex_unlock(&(vout->lock_mutex));
     }
@@ -1067,7 +1069,8 @@ mad_forward_register(p_mad_driver_t driver)
   interface->channel_exit               =
     mad_forward_channel_exit;
   interface->adapter_exit               = NULL;
-  interface->driver_exit                = NULL;
+  interface->driver_exit                =
+    mad_forward_driver_exit;
   interface->choice                     =
     mad_forward_choice;
   interface->get_static_buffer          =
@@ -1612,6 +1615,29 @@ mad_forward_channel_exit(p_mad_channel_t channel)
 {
   LOG_IN();
   /* unimplemented */
+  LOG_OUT();
+}
+
+void
+mad_forward_driver_exit(p_mad_driver_t driver)
+{
+  p_mad_adapter_t dummy_adapter = NULL;
+
+  LOG_IN();
+  dummy_adapter =  tbx_htable_extract(driver->adapter_htable, "forward");
+  TBX_FREE(dummy_adapter->selector);
+  dummy_adapter->selector	= NULL;
+
+  TBX_FREE(dummy_adapter->parameter);
+  dummy_adapter->parameter	= NULL;
+
+  tbx_htable_free(dummy_adapter->channel_htable);
+  dummy_adapter->channel_htable	= NULL;
+
+  TBX_FREE(dummy_adapter);
+
+  tbx_htable_free(driver->adapter_htable);
+  driver->adapter_htable	= NULL;
   LOG_OUT();
 }
 

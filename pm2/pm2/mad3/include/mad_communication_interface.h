@@ -148,6 +148,9 @@ mad_forward_connection_exit(p_mad_connection_t in,
 void
 mad_forward_channel_exit(p_mad_channel_t channel);
 
+void
+mad_forward_driver_exit(p_mad_driver_t driver);
+
 p_mad_link_t
 mad_forward_choice(p_mad_connection_t connection,
 		   size_t             size,
@@ -255,6 +258,9 @@ mad_mux_connection_exit(p_mad_connection_t in,
 
 void
 mad_mux_channel_exit(p_mad_channel_t channel);
+
+void
+mad_mux_driver_exit(p_mad_driver_t driver);
 
 p_mad_link_t
 mad_mux_choice(p_mad_connection_t connection,

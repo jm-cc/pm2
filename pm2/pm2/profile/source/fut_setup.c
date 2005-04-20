@@ -28,13 +28,11 @@
 #include <string.h>
 #include <sys/utsname.h>
 #include <sys/types.h>
+#include <sys/times.h>
 #include "fut.h"
-#include <fkt/get_cpu_info.h>
-#include <fkt/block.h>
-#include <fkt/sysmap.h>
-#include <fkt/pids.h>
-#include <fkt/names.h>
-#include "fkt-tools.h"
+#include <fxt.h>
+#include <fxt-tools.h>
+#include "pm2_fxt-tools.h"
 
 #ifdef MARCEL
 #  include "sys/marcel_flags.h"
@@ -60,25 +58,14 @@ volatile unsigned int *fut_next_slot = NULL;
 /*	points to byte beyond end of buffer (multiple of 4) */
 volatile unsigned int *fut_last_slot = NULL;
 
+fxt_t fut;
+static struct fxt_infos *fut_infos;
 
 /*	points to region of allocated buffer space */
 static char	*bufptr = NULL;
 
 /*	number of contiguous allocated bytes pointed to by bufptr */
 static unsigned int	nallocated = 0;
-
-/*	holds pid of process that called fut_setup() */
-static unsigned int	fut_pid = 0;
-
-/*	holds times of setup(), endup() */
-static time_t	fut_start_time = 0, fut_stop_time = 0;
-static clock_t	fut_start_jiffies = 0, fut_stop_jiffies = 0;
-
-/*	holds cpu mhz as retrieved from /proc/cpuinfo */
-static double	mhz[MAXCPUS];
-
-/*	holds cpu number */
-static int	ncpus;
 
 void dumptime( time_t *the_time, clock_t *the_jiffies)
 {
@@ -103,11 +90,17 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 	/* paranoia, so nobody waits for us while we are in here */
 	fut_active = 0;
 
-	/*	remember pid of process that called setup */
-	fut_pid = getpid();
+	fut = fxt_newrecord(
+#ifdef MA__FUT_RECORD_TID
+			FUT_FORMAT_SMP_THREAD
+#else
+			FUT_FORMAT_MONO
+#endif
+			);
+	fut_infos = fxt_infos(fut);
 
-	/*	find out speed of this cpu in mhz */
-	ncpus = fkt_get_cpu_info(MAXCPUS, mhz);
+	/*	remember pid of process that called setup */
+	fut_infos->record_pid = getpid();
 
 	if( bufptr != NULL )
 		{/* previous allocation region was not released, do it now */
@@ -134,7 +127,7 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 		iptr += 0x100;
 		}
 
-	dumptime(&fut_start_time, &fut_start_jiffies);
+	dumptime(&fut_infos->start_time, &fut_infos->start_jiffies);
 
 	fut_next_slot = (unsigned int *)bufptr;
 	fut_active = keymask & FULL_ACTIVE_MASK;
@@ -272,60 +265,15 @@ out:
 	return local_nints;
 	}
 
-static void record_time( int fd, int ncpus, double mhz[], size_t page_size )
-{
-  int i;
-  int kpid;
-  int pid;
-  int format;
-
-#ifdef MA__FUT_RECORD_TID
-  format=FUT_FORMAT_SMP_THREAD;
-#else
-  format=FUT_FORMAT_MONO;
-#endif
-
-  BEGIN_BLOCK(fd);
-  if( write(fd, (void *)&ncpus, sizeof(ncpus)) < 0 )
-    perror("write ncpus");
-  for( i = 0;  i < ncpus;  i++ ) {
-    if( write(fd, (void *)&mhz[i], sizeof(mhz[i])) < 0 )
-      perror("write mhz");
-  }
-  pid = getpid();
-  if( write(fd, (void *)&pid, sizeof(pid)) < 0 )
-    perror("write pid");
-  kpid = 0;
-  if( write(fd, (void *)&kpid, sizeof(kpid)) < 0 )
-    perror("write kpid");
-  if( write(fd, (void *)&fut_start_time, sizeof(fut_start_time)) < 0 )
-    perror("write start_time");
-  if( write(fd, (void *)&fut_stop_time, sizeof(fut_stop_time)) < 0 )
-    perror("write stop_time");
-  if( write(fd, (void *)&fut_start_jiffies, sizeof(fut_start_jiffies)) < 0 )
-    perror("write start_jiffies");
-  if( write(fd, (void *)&fut_stop_jiffies, sizeof(fut_stop_jiffies)) < 0 )
-    perror("write stop_jiffies");
-  if( write(fd, (void *)&page_size, sizeof(page_size)) < 0 )
-    perror("write page_size");
-  if( write(fd, (void *)&format, sizeof(format)) < 0 )
-    perror("write format");
-  END_BLOCK(fd);
-}
-
 int fut_endup( char *filename )
 	{
 	int n, nints, size, fd;
-	static const unsigned int zero = 0;
 	unsigned int *copy;
-	unsigned int len;
-	struct utsname unameinfo;
-	char unamestr[UNAMESTRLEN];
 
 	/* stop all futher tracing */
 	fut_active = 0;
 
-	dumptime(&fut_stop_time,&fut_stop_jiffies);
+	dumptime(&fut_infos->stop_time,&fut_infos->stop_jiffies);
 
 	if( (n = fut_getbuffer(&nints, &copy)) < 0 )
 		return n;
@@ -338,50 +286,12 @@ int fut_endup( char *filename )
 	if( (fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0666)) < 0 )
 		return fd;
 
-	BEGIN_BLOCK(fd);
-	record_time( fd, ncpus, mhz, size+sizeof(size) );
-	BEGIN_BLOCK(fd);
-	// no irq
-	write(fd,(void *)&zero,sizeof(zero));
-	// no cpu for irqs
-	write(fd,(void *)&zero,sizeof(zero));
-	END_BLOCK(fd);
+	fxt_fdwrite(fut,fd);
 
-  /* uname -a */
-  if( uname(&unameinfo) )
-    {
-    perror("getting uname information");
-    exit(EXIT_FAILURE);
-    }
-
-  snprintf(unamestr,UNAMESTRLEN,"%s %s %s %s %s",
-        unameinfo.sysname,
-        unameinfo.nodename,
-        unameinfo.release,
-        unameinfo.version,
-        unameinfo.machine);
-  unamestr[UNAMESTRLEN-1]='\0';
-
-  len = strlen(unamestr);
-  BEGIN_BLOCK(fd);
-  write(fd,&len,sizeof(len));
-  write(fd,unamestr,len);
-  END_BLOCK(fd);
-
-  BEGIN_BLOCK(fd);
-  fkt_record_sysmap(fd);
-  END_BLOCK(fd);
-
-  BEGIN_BLOCK(fd);
-  fkt_record_pids(fd);
-  END_BLOCK(fd);
-
-  END_BLOCK(fd);
-
-  size+=sizeof(size);
-  if( write(fd, (void *)&size, sizeof(size)) < sizeof(size) )
-    perror("write buffer's size");
-  size-=sizeof(size);
+	size+=sizeof(size);
+	if( write(fd, (void *)&size, sizeof(size)) < sizeof(size) )
+	  perror("write buffer's size");
+	size-=sizeof(size);
 
 	if( write(fd, (void *)copy, size) < 0 )
 		perror("write buffer");

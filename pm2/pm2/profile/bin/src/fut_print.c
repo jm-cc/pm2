@@ -4,6 +4,7 @@
 					fkt_record using fkt (fast kernel tracing) in the kernel.
 
 	Copyright (C) 2000, 2001  Robert D. Russell -- rdr@unh.edu
+				  2003, 2004  Samuel Thibault -- samuel.thibault@ens-lyon.org
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -29,17 +30,16 @@
 
 	singleton codes (i.e., those that are NOT paired in entry-exit pairs)
 		MUST be greater than FKT_UNPAIRED_LIMIT_CODE
-		and be less thant GCC_TRACED_FUNCTION_MINI
+		and be less thant GCC_TRACED_FUNCTION_X86_MINI
 		FKT_SETUP_CODE and less than FKT_LAST_FKT_CORE.
 
 	function entry and exit codes MUST be greater than
 		FKT_UNSHIFTED_LIMIT_CODE.
 	function entry codes MUST have the FKT_GENERIC_EXIT_OFFSET bit set.
 
-	gcc traced functions codes are greater than GCC_TRACED_FUNCTION_MINI
-		entry codes must have GCC_TRACED_FUNCTION_EXIT bit set
+	gcc traced functions codes are greater than GCC_TRACED_FUNCTION_X86_MINI
+		entry codes must have GCC_TRACED_FUNCTION_X86_EXIT bit set
 */
-#define FUT
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -58,43 +58,44 @@
 #include <time.h>
 #include <stdint.h>
 #include <linux/unistd.h>
-#ifndef FUT
 #include <linux/fkt.h>
-#else
+#include "fxt.h"
 #include "fut.h"
+
+/* one day, FUT and FKT could be both enabled... */
+#if !defined(FUT)
+#  define FKT
 #endif
 
-#include "fkt-tools.h"
-#include "fkt/names.h"
-#ifndef FUT
-#define find_name(code, keep, maxlen) ({ \
-	char *_res; \
-	if (code >= FKT_GCC_TRACED_FUNCTION_MINI) \
-		_res=fkt_lookup_symbol(code|FKT_GCC_TRACED_FUNCTION_EXIT); \
+#include "fxt-tools.h"
+//#include "fxt/names.h"
+#ifdef FKT
+#  define find_name(code, keep, maxlen) ({ \
+	const char *_res; \
+	if (code >= FKT_I386_FUNCTION_MINI) \
+		_res=fxt_lookup_symbol(fxt,code|FKT_I386_FUNCTION_EXIT); \
 	else \
-		_res=fkt_find_name(code, keep, maxlen, fkt_code_table); \
+		_res=fkt_find_name(fxt, code, keep, maxlen, fkt_code_table); \
 	_res; \
 	})
-#else
+#endif
+#ifdef FUT
 struct fkt_code_name fut_code_table [] = 
 	{
-#if !defined(PREPROC) && !defined(DEPEND)
-#include "fut_print.h"
-#endif
+#  if !defined(PREPROC) && !defined(DEPEND)
+#    include "fut_print.h"
+#  endif
 	{0, NULL }
 	};
-#define find_name(code, keep, maxlen) ({ \
-	char *_res; \
-	if (code >= FUT_GCC_TRACED_FUNCTION_MINI) \
-		_res=fkt_lookup_symbol(code&~FUT_GCC_TRACED_FUNCTION_EXIT); \
+#  define find_name(code, keep, maxlen) ({ \
+	const char *_res; \
+	if (code >= FUT_I386_FUNCTION_MINI) \
+		_res=fxt_lookup_symbol(fxt,code&~FUT_I386_FUNCTION_EXIT); \
 	else \
-		_res=fkt_find_name(code, keep, maxlen, fut_code_table); \
+		_res=fkt_find_name(fxt, code, keep, maxlen, fut_code_table); \
 	_res; \
 	})
 #endif
-#include "fkt/sysmap.h"
-#include "fkt/block.h"
-#include "fkt/pids.h"
 
 #define MALLOC(t,fmt,...) \
 	do \
@@ -146,14 +147,28 @@ struct fkt_code_name fut_code_table [] =
 #define COUNTNUM "%" S(COUNTLEN) "u"
 #define AVGSTR "%" S(AVGLEN) "s"
 #define AVGNUM "%" S(AVGLEN) ".0f"
-#ifndef FUT
-#define COMMSTR		" %" S(MAXCOMMLEN) "s"
+#define COMMSTR	" %" S(FXT_MAXCOMMLEN) "s"
 #define COMMNAME	"Command"
-#define COMMUNDERLINE   "-------"
-#else
-#define COMMSTR		"%s"
-#define COMMNAME	""
-#define COMMUNDERLINE   ""
+#define COMMUNDERLINE "-------"
+#ifdef FKT
+#  define SWITCH_TO_CODE FKT_SWITCH_TO_CODE
+#  define CALIBRATE0_CODE FKT_CALIBRATE0_CODE
+#  define CALIBRATE1_CODE FKT_CALIBRATE1_CODE
+#  define CALIBRATE2_CODE FKT_CALIBRATE2_CODE
+#  define GCC_INSTRUMENT_ENTRY_CODE FKT_GCC_INSTRUMENT_ENTRY_CODE
+#  define GCC_INSTRUMENT_EXIT_CODE FKT_GCC_INSTRUMENT_EXIT_CODE
+#  define GCC_TRACED_FUNCTION_X86_EXIT FKT_I386_FUNCTION_EXIT
+#  define fxt_lookup_pid fkt_lookup_pid
+#endif
+#ifdef FUT
+#  define SWITCH_TO_CODE FUT_SWITCH_TO_CODE
+#  define CALIBRATE0_CODE FUT_CALIBRATE0_CODE
+#  define CALIBRATE1_CODE FUT_CALIBRATE1_CODE
+#  define CALIBRATE2_CODE FUT_CALIBRATE2_CODE
+#  define GCC_INSTRUMENT_ENTRY_CODE FUT_GCC_INSTRUMENT_ENTRY_CODE
+#  define GCC_INSTRUMENT_EXIT_CODE FUT_GCC_INSTRUMENT_EXIT_CODE
+#  define GCC_TRACED_FUNCTION_X86_EXIT FUT_I386_FUNCTION_EXIT
+#  define fxt_lookup_pid fut_lookup_pid
 #endif
 
 #define UNAMESTRLEN 256
@@ -189,21 +204,28 @@ static char *pagebufstats;
 static char *pagetimestats;
 
 /*
+ * lib fxt structure
+ */
+static fxt_t fxt;
+static struct fxt_infos *info;
+
+/*
  * 
  * Some limits and their actual use
  *
  */
 
 /* number of function probes */
-#define MAX_FUNS 200
+#define MAX_FUNS 2000
 static unsigned int	actual_max_funs_pos = 0;
 
 /* number of times the same function could be called (nested or between
  * processes) */
-#ifndef FUT
-#define MAX_EACH_FUN_RECUR 32
-#else
-#define MAX_EACH_FUN_RECUR 256
+#ifdef FKT
+#  define MAX_EACH_FUN_RECUR 32
+#endif
+#ifdef FUT
+#  define MAX_EACH_FUN_RECUR 256
 #endif
 static unsigned int	actual_max_cycles_pos = 0;
 
@@ -218,7 +240,6 @@ static unsigned int	actual_max_pos = 0;
  */
 
 /* per-cpu speed */
-static double		*mhz;
 static unsigned int	lastcpu = -1;
 
 /* fun_time is initially 0.
@@ -230,6 +251,14 @@ static unsigned int	lastcpu = -1;
 static size_t		page_size;
 
 static int fun_time = 0;
+
+static unsigned int trace_format = 1;
+static const char* trace_format_name[] = { 
+	[0]="No format",
+	[FKT_FORMAT]="Kernel traces",
+	[FUT_FORMAT_MONO]="User mono traces",
+	[FUT_FORMAT_SMP]="User SMP traces",
+};
 
 
 /*	called once to start statistics taking */
@@ -258,7 +287,7 @@ struct pid_cycles_item	{
 	int						pid;
 	u_64					total_cycles;
 	int						dead;
-	char					name[MAXCOMMLEN+1];
+	char					name[FXT_MAXCOMMLEN+1];
 	struct pid_cycles_item	*next;
 };
 
@@ -266,27 +295,27 @@ static struct pid_cycles_item	*pid_cycles_list;
 static int			pid;
 static int			kidpid;
 
-void find_category( int z, char *category, char **name )
+void find_category( int z, char *category, const char **name )
 	{
 	if( z == kidpid )
 		{/* this is the user process */
-		*name=fkt_lookup_pid(z);
+		*name=fxt_lookup_pid(fxt,z);
 		*category = 'u';
 		}
 	else if( z <= 0 )
 		{/* this is an idle process (z <= 0) */
-		*name = "idle process";	/* mustn't be longer than MAXCOMMLEN */
+		*name = "idle process";	/* mustn't be longer than FXT_MAXCOMMLEN */
 		*category = 'i';
 		}
 	else if( z == pid )
 		{
 		/* this is fkt_record process */
-		*name=fkt_lookup_pid(z);
+		*name=fxt_lookup_pid(fxt,z);
 		*category = 'f';
 		}
 	else
 		{/* this is some other process (z != 0) */
-		*name=fkt_lookup_pid(z);
+		*name=fxt_lookup_pid(fxt,z);
 		*category = 'o';
 		}
 	}
@@ -310,7 +339,7 @@ void update_pid_cycles( u_64 cycles, int pid )
 	ptr->pid = pid;
 	ptr->total_cycles = cycles;
 	ptr->dead = 0;
-	strcpy(ptr->name,fkt_lookup_pid(pid));
+	strcpy(ptr->name,fxt_lookup_pid(fxt,pid));
 	ptr->next = pid_cycles_list;		/* add to front of list */
 	pid_cycles_list = ptr;
 	fprintf(stdbug,"create new cycles for pid %d, initial %llu\n",pid,cycles);
@@ -377,7 +406,7 @@ void print_cycles( u_64 ratio )
 	double					t, r, jtot, ptot;
 	u_64					total;
 	char					category;
-	char					*name;
+	const char				*name;
 
 	r = (double)ratio;
 	total = 0ULL;
@@ -400,11 +429,7 @@ void print_cycles( u_64 ratio )
 		find_category(ptr->pid,&category,&name);
 		printf("%c"COMMSTR" %6d "CYCNUM" %15.2f %10.2f%%\n",
 					category, 
-#ifndef FUT
 					ptr->name,
-#else
-					"",
-#endif
 					ptr->pid, ptr->total_cycles, t/r, t*100.0/((double)total));
 		ptot += t*100.0/((double)total);
 		}
@@ -629,7 +654,7 @@ struct dead_process {
 	/* total number of cycles used in user level by this pid */
 	u_64				user_cycles;
 
-	char				name[MAXCOMMLEN+1];
+	char				name[FXT_MAXCOMMLEN+1];
 
 	/* next dead process */
 	struct dead_process	*next;
@@ -648,10 +673,8 @@ static unsigned int	syscall_counter[FKT_UNSHIFTED_LIMIT_CODE];
 /*	lastreltime[thiscpu] is last relative time ever seen for thiscpu */
 /*	should have lastreltime = lasttime - basetime */
 /*	basehigh is the current 32bit hi part of the 64bit time */
-static u_64		*basetime,*lasttime;
-#ifndef FUT
+static u_64		basetime,*lasttime;
 static u_64		*basehigh;
-#endif
 static u_64		*lastreltime;
 
 /*	start_time_cpu[thiscpu] is 1st relative time for thiscpu once taking stats*/
@@ -664,9 +687,7 @@ static u_64		*start_time_cpu, *end_time_cpu;
 static int			*already_saw, *fun_time_cpu;
 static int			*lastpid;
 static clock_t		start_jiffies, stop_jiffies;
-static time_t		start_time, stop_time;
 static int			fd;
-static unsigned int	ncpus;
 
 /* this gets incremented each time we charge a a function with
  * cycles, to detect incoherencies as soon as possible */
@@ -706,11 +727,11 @@ void update_stack( struct stack_item	*stack, u_64 delta, unsigned long code )
 		stack->start_cycle[i] += delta;
 
 	/* if this is a switch, update functions as well */
-#ifndef FUT
-	if ( code == FKT_SWITCH_TO_CODE || code < FKT_UNSHIFTED_LIMIT_CODE )
-#else
-	if ( code == FUT_SWITCH_TO_CODE )
+	if ( code == SWITCH_TO_CODE 
+#ifdef FKT
+	     || code < FKT_UNSHIFTED_LIMIT_CODE
 #endif
+		)
 		{
 		for( k = 0;  k < newfun_pos; k++ )
 			for ( i = 0; i<MAX_EACH_FUN_RECUR && funs[k].start_cycle[i] != -1LL;
@@ -749,22 +770,14 @@ void setup_stack( u_64 cyc_time, int thispid )
 				{/* found an existing stack for the new pid */
 				fprintf(stdbug, "go back to stack for pid %d, cpu %u, pos %d\n",
 					thispid, stack->cpu, stack->pos);
-#ifndef FUT
-				if( stack->code[stack->pos] == FKT_SWITCH_TO_CODE )
-#else
-				if( stack->code[stack->pos] == FUT_SWITCH_TO_CODE )
-#endif
+				if( stack->code[stack->pos] == SWITCH_TO_CODE )
 					{/* top of previous stack is switch_to, pop it off */
 					cpu_stack[lastcpu] = stack;
 					/* and use the time of the last probe (this process might
 					 * have handled an IRQ just before actually yielding) */
 					delta = off_cyc_time - stack->lastreltime;
 					/* move up start of all previous in nesting and pop stack */
-#ifndef FUT
-					update_stack(stack, delta, FKT_SWITCH_TO_CODE);
-#else
-					update_stack(stack, delta, FUT_SWITCH_TO_CODE);
-#endif
+					update_stack(stack, delta, SWITCH_TO_CODE);
 					}
 				else
 				/* we've already seen this pid before, it should have switched*/
@@ -867,18 +880,19 @@ void return_from_function( struct stack_item	*stack, unsigned long code,
 	EPRINTF("function %s wasn't opened\n",find_name(code,1,-1));
 	}
 
-#ifndef FUT
+#ifdef FKT
 /* code for return from system calls */
 void return_from_sys_call( struct stack_item	*stack, unsigned long code,
 		u_64 cyc_time )
 	{
-	char	category, *name;
-	int		should_be_hex;
-	u_64	delta;
+	char		category;
+	const char	*name;
+	int			should_be_hex;
+	u_64		delta;
 
 	if( stack->pos > 0 && code<FKT_UNSHIFTED_LIMIT_CODE )
 		{/* stacked code was a trap/syscall/IRQ */
-		fkt_find_syscall(code, &category, &name, &should_be_hex);
+		fkt_find_syscall(fxt,code, &category, &name, &should_be_hex);
 		delta = cyc_time - stack->start_cycle[stack->pos];
 		syscall_cycles[code] +=  delta;
 		syscall_counter[code] += 1;
@@ -898,7 +912,7 @@ void return_from_sys_call( struct stack_item	*stack, unsigned long code,
 		EPRINTF("return from system call improperly nested: "
 			"code %08lx, depth %d\n", code,stack->pos);
 	}
-#endif
+#endif /* FKT */
 
 /*	here to close a non-empty v3 stack (pos>0) when we stop taking stats */
 /*	cyc_time is current (relative) time since the starting base time */
@@ -909,11 +923,7 @@ void close_stack( struct stack_item	*stack, int thispid, u_64 cyc_time )
 	fprintf(stdbug, "close stack for pid %4d, pos %u, cyc_time %llu\n",
 		thispid, stack->pos, cyc_time);
 
-#ifndef FUT
-	if( stack->pos > 0 && stack->code[stack->pos] == FKT_SWITCH_TO_CODE )
-#else
-	if( stack->pos > 0 && stack->code[stack->pos] == FUT_SWITCH_TO_CODE )
-#endif
+	if( stack->pos > 0 && stack->code[stack->pos] == SWITCH_TO_CODE )
 		{/* top of current stack is switch_to, ie the process was blocked
 		  * use its time and pop it */
 		cyc_time = stack->lastreltime;
@@ -925,12 +935,13 @@ void close_stack( struct stack_item	*stack, int thispid, u_64 cyc_time )
 		/*	code gets code at top of this stack */
 		code = stack->code[stack->pos];
 		fprintf(stdbug, "v3[%u] ", stack->pos);
-#ifndef FUT
+#ifdef FKT
 		if( code < FKT_UNSHIFTED_LIMIT_CODE )
 			{/* this is a trap/syscall/irq entry */
 			int				z, should_be_hex;
-			char			category, *name;
-			z = fkt_find_syscall(code, &category, &name, &should_be_hex);
+			char			category;
+			const char		*name;
+			z = fkt_find_syscall(fxt,code, &category, &name, &should_be_hex);
 			fprintf(stdbug, "%c ", category);
 			if( should_be_hex )
 				fprintf(stdbug, "%04x", z);
@@ -967,21 +978,13 @@ void bury_stack( int pid, u_64 cyc_time )
 			{
 			fprintf(stdbug,"burying pid %d\n", pid);
 
-#ifndef FUT
-			if ( stack->code[stack->pos] != FKT_SWITCH_TO_CODE)
-#else
-			if ( stack->code[stack->pos] != FUT_SWITCH_TO_CODE)
-#endif
+			if ( stack->code[stack->pos] != SWITCH_TO_CODE)
 				EPRINTF("dead pid %d has bad last code %lx\n", pid, stack->code[stack->pos]);
 
 			/* simulate return from exit system call */
 			delta = cyc_time - stack->lastreltime;
-#ifndef FUT
-			update_stack(stack, delta, FKT_SWITCH_TO_CODE);
-#else
-			update_stack(stack, delta, FUT_SWITCH_TO_CODE);
-#endif
-#ifndef FUT // TODO !!
+			update_stack(stack, delta, SWITCH_TO_CODE);
+#ifdef FKT // TODO !!
 			return_from_sys_call( stack, 1, cyc_time );
 #endif
 
@@ -991,8 +994,8 @@ void bury_stack( int pid, u_64 cyc_time )
 
 			grave->pid = pid;
 			grave->user_cycles = stack->user_cycles;
-			strcpy(grave->name,fkt_lookup_pid(pid));
-			fkt_remove_pid(pid);
+			strcpy(grave->name,fxt_lookup_pid(fxt,pid));
+			fkt_remove_pid(fxt,pid);
 			grave->next = grave_head;
 			grave_head = grave;
 
@@ -1046,53 +1049,64 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 	else
 #endif
 #ifndef FUT
-	if( code >= FKT_UNPAIRED_LIMIT_CODE && code < FKT_GCC_TRACED_FUNCTION_MINI )
+	if( code >= FKT_UNPAIRED_LIMIT_CODE && code < FKT_I386_FUNCTION_MINI )
 #else
-	if( code >= FUT_UNPAIRED_LIMIT_CODE && code < FUT_GCC_TRACED_FUNCTION_MINI )
+	if( code >= FUT_UNPAIRED_LIMIT_CODE && code < FUT_I386_FUNCTION_MINI )
 #endif
 		{
 		switch( code )
 			{
-#ifndef FUT // TODO
+#ifndef FUT
 			case FKT_END_OF_PID_CODE:
+#else
+			case FUT_THREAD_DEATH_CODE:
+#endif
 				/* this process buried a child, do it as well */
 				/* total cycles count */
 				bury_pid(param1);
 				/* stack */
 				bury_stack(param1, cyc_time);
 				break;
+#ifndef FUT
 			case FKT_DO_FORK_CODE:
-				fkt_add_pid(param1,fkt_lookup_pid(thispid));
+#else
+			case FUT_THREAD_BIRTH_CODE:
+#endif
+				fkt_add_pid(fxt,param1,fxt_lookup_pid(fxt,thispid));
 				break;
-			case FKT_DO_EXECVE_CODE: {
+#ifndef FUT
+			case FKT_DO_EXECVE_CODE:
+#else
+			case FUT_SET_THREAD_NAME_CODE:
+#endif
+			{
 				char *name=(char *)params;
-				if( fkt_add_pid(thispid,name) )
+				if( fkt_add_pid(fxt,thispid,name) )
 					EPRINTF("new pid execve()ing\n");
 				update_pid_name(thispid,name);
 				break;
 			}
-#endif
 		}
 		return; /* do nothing for unpaired entries */
 		}
 	else
 		{/* code for the exit of a function entry/exit */
 #ifndef FUT
-		if( (!(code>=FKT_GCC_TRACED_FUNCTION_MINI) &&
+		if( (!(code>=FKT_I386_FUNCTION_MINI) &&
 				(code & FKT_GENERIC_EXIT_OFFSET) == 0  &&
 				code == i + FKT_GENERIC_EXIT_OFFSET)
 			||
-			((code>=FKT_GCC_TRACED_FUNCTION_MINI) &&
-			 	(code & FKT_GCC_TRACED_FUNCTION_EXIT) == 0 &&
-				code == i - FKT_GCC_TRACED_FUNCTION_EXIT))
+			((code>=FKT_I386_FUNCTION_MINI) &&
+			 	(code & FKT_I386_FUNCTION_EXIT) == 0 &&
+				code == i - FKT_I386_FUNCTION_EXIT))
 #else
-		if( (!(code>=FUT_GCC_TRACED_FUNCTION_MINI) &&
+		if( (!(code>=FUT_I386_FUNCTION_MINI) &&
 				(code & FUT_GENERIC_EXIT_OFFSET) == 0  &&
 				code == i + FUT_GENERIC_EXIT_OFFSET)
 			||
-			((code>=FUT_GCC_TRACED_FUNCTION_MINI) &&
-			 	(code & FUT_GCC_TRACED_FUNCTION_EXIT) != 0 &&
-				code == i + FUT_GCC_TRACED_FUNCTION_EXIT))
+			((code>=FUT_I386_FUNCTION_MINI) &&
+			 	(code & FUT_I386_FUNCTION_EXIT) != 0 &&
+				code == i + FUT_I386_FUNCTION_EXIT))
 #endif
 			{
 			/* this is the exit corresponding to a previously stacked entry */
@@ -1101,24 +1115,24 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 		else
 			{/* this should be an entry code */
 #ifndef FUT
-			if( (!(code>=FKT_GCC_TRACED_FUNCTION_MINI) &&
+			if( (!(code>=FKT_I386_FUNCTION_MINI) &&
 					(code & FKT_GENERIC_EXIT_OFFSET) == 0)
 				||
-				( (code&FKT_GCC_TRACED_FUNCTION_MINI) &&
-					(code & FKT_GCC_TRACED_FUNCTION_EXIT) == 0) )
+				( (code&FKT_I386_FUNCTION_MINI) &&
+					(code & FKT_I386_FUNCTION_EXIT) == 0) )
 #else
-			if( (!(code>=FUT_GCC_TRACED_FUNCTION_MINI) &&
+			if( (!(code>=FUT_I386_FUNCTION_MINI) &&
 					(code & FUT_GENERIC_EXIT_OFFSET) == 0)
 				||
-				( (code&FUT_GCC_TRACED_FUNCTION_MINI) &&
-					(code & FUT_GCC_TRACED_FUNCTION_EXIT) != 0) )
+				( (code&FUT_I386_FUNCTION_MINI) &&
+					(code & FUT_I386_FUNCTION_EXIT) != 0) )
 #endif
 				{/* this is an exit code, not an entry code */
 				/* if the stack is not empty, it means something bad happened */
 				if (cpu_stack[lastcpu]->pos>0)
-					EPRINTF("exiting from function code %08lx, %s,\n"
-							"but code %08lx, %s was on the stack\n",
-							code, find_name(code, 1, -1),
+					EPRINTF("exiting from function code %08lx, %s,\n",
+							code, find_name(code, 1, -1));
+					EPRINTF("but code %08lx, %s was on the stack\n",
 							i, find_name(i, 1, -1));
 				/* else ignore it */
 				return;
@@ -1136,19 +1150,11 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 					= code;
 				fprintf(stdbug, "push stack for pid %d, pos %d, code %08lx, %s\n",
 					thispid, cpu_stack[lastcpu]->pos, code,
-#ifndef FUT
-					code==FKT_SWITCH_TO_CODE?"switch_to":"function");
-#else
-					code==FUT_SWITCH_TO_CODE?"switch_to":"function");
-#endif
+					code==SWITCH_TO_CODE?"switch_to":"function");
 				}
 			}
 		}
-#ifndef FUT
-	if( code == FKT_SWITCH_TO_CODE )
-#else
-	if( code == FUT_SWITCH_TO_CODE )
-#endif
+	if( code == SWITCH_TO_CODE )
 		return;
 
 	/*	this is a function entry or matched exit */
@@ -1157,11 +1163,11 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 		{
 		if( code == funs[k].code  ||
 #ifndef FUT
-			(!(code>=FKT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FKT_GENERIC_EXIT_OFFSET) ||
-			((code>=FKT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code - FKT_GCC_TRACED_FUNCTION_EXIT) )
+			(!(code>=FKT_I386_FUNCTION_MINI) && code == funs[k].code + FKT_GENERIC_EXIT_OFFSET) ||
+			((code>=FKT_I386_FUNCTION_MINI) && code == funs[k].code - FKT_I386_FUNCTION_EXIT) )
 #else
-			(!(code>=FUT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FUT_GENERIC_EXIT_OFFSET) ||
-			((code>=FUT_GCC_TRACED_FUNCTION_MINI) && code == funs[k].code + FUT_GCC_TRACED_FUNCTION_EXIT) )
+			(!(code>=FUT_I386_FUNCTION_MINI) && code == funs[k].code + FUT_GENERIC_EXIT_OFFSET) ||
+			((code>=FUT_I386_FUNCTION_MINI) && code == funs[k].code + FUT_I386_FUNCTION_EXIT) )
 #endif
 			{/* funs[k] is the entry code that matches this code's entry or exit */
 			if ( code == funs[k].code )
@@ -1234,11 +1240,11 @@ void do_stats_code( unsigned long code, u_64 cyc_time,
 		}
 
 #ifndef FUT
-	if( (!(code >= FKT_GCC_TRACED_FUNCTION_MINI) && code & FKT_GENERIC_EXIT_OFFSET) ||
-		( (code >= FKT_GCC_TRACED_FUNCTION_MINI) && code & FKT_GCC_TRACED_FUNCTION_EXIT) )
+	if( (!(code >= FKT_I386_FUNCTION_MINI) && code & FKT_GENERIC_EXIT_OFFSET) ||
+		( (code >= FKT_I386_FUNCTION_MINI) && code & FKT_I386_FUNCTION_EXIT) )
 #else
-	if( (!(code >= FUT_GCC_TRACED_FUNCTION_MINI) && code & FUT_GENERIC_EXIT_OFFSET) ||
-		( (code >= FUT_GCC_TRACED_FUNCTION_MINI) && !(code & FUT_GCC_TRACED_FUNCTION_EXIT)) )
+	if( (!(code >= FUT_I386_FUNCTION_MINI) && code & FUT_GENERIC_EXIT_OFFSET) ||
+		( (code >= FUT_I386_FUNCTION_MINI) && !(code & FUT_I386_FUNCTION_EXIT)) )
 #endif
 		{/* if this is an entry */
 		/* also push pointer to this called function on fun_index */
@@ -1290,7 +1296,7 @@ void check_coherency(void)
 	if (fun_time<1) return;
 
 	total_accounted=accounted;
-	for ( i = 0; i < ncpus; i++ )
+	for ( i = 0; i < info->ncpus; i++ )
 		{
 		if (fun_time_cpu[i] == 1)
 			total_accounted -= lastreltime[i]-start_time_cpu[i];
@@ -1305,6 +1311,24 @@ void check_coherency(void)
 	if (total_accounted != 0)
 		EPRINTF("incoherent computing: %lld cycles\n",total_accounted);
 	}
+
+static void error_format(const char* str)
+{
+	fprintf(stderr, "Format %i (%s) not yet supported (%s)\n",
+					trace_format, trace_format_name[trace_format], str);
+	exit(EXIT_FAILURE);
+}
+
+static int getcpu_from_pid(unsigned int pid)
+{
+		int cpu;
+		for(cpu=0; cpu<info->ncpus; cpu++) {
+				if (already_saw[cpu] && lastpid[cpu]==pid) {
+						return cpu;
+				}
+		}
+		return 0;
+}
 
 /*
 bufptr[0] is the first item for each line ie cycles
@@ -1330,20 +1354,61 @@ unsigned int *dumpslot( unsigned int *bufptr )
 	int				thispid, print_this = printing;
 
 	fprintf(stdbug,"\n");
+#if 0
+	printf("value: %16llx %8x %8x (%i, %i) %8x %8x %8x %8x %8x\n",
+				*(u_64*)bufptr, bufptr[2], 
+				bufptr[3], bufptr[3]>>8, bufptr[3]&0xff,
+				bufptr[4], bufptr[5], bufptr[6], bufptr[7], bufptr[8]); 
+#endif
+	
+	switch (trace_format) {
+		case FKT_FORMAT:
+			thiscpu = bufptr[1] >> 16;
+			break;
+		case FUT_FORMAT_MONO:
+			thiscpu = 0;
+			break;
+		case FUT_FORMAT_SMP:
+			if (bufptr[3]>>8 == FUT_NEW_LWP_CODE) {
+					thiscpu = bufptr[5];
+			} else {
+				thiscpu = getcpu_from_pid(bufptr[2]);
+			}
+			break;
+		default:
+			error_format("thiscpu");
+	}
 
-	thiscpu = bufptr[1] >> 16;		/* get cpu number */
-
-	if( thiscpu >= ncpus )
-		EPRINTF("thiscpu = %u, limit is %u\n", thiscpu, ncpus);
+	if (!basetime)
+		{
+		switch (trace_format) {
+			case FKT_FORMAT:
+				basetime=(u_64)bufptr[0];
+				break;
+			case FUT_FORMAT_MONO:
+			case FUT_FORMAT_SMP:
+				basetime=*(u_64*)bufptr;
+				break;
+			default:
+				error_format("basetime");
+		}
+		fprintf(stdout, "initial: basetime %llu\n", basetime);
+		}
+	if( thiscpu >= info->ncpus )
+		EPRINTF("thiscpu = %u, limit is %u\n", thiscpu, info->ncpus);
 	else if( !already_saw[thiscpu] )
 		{/* this is first time we have seen this cpu */
-#ifndef FUT
-		lasttime[thiscpu] = basetime[thiscpu] = (u_64)bufptr[0];
-#else
-		lasttime[thiscpu] = basetime[thiscpu] = *(u_64*)bufptr;
-#endif
-		fprintf(stdout, "initial: basetime[%u] %llu\n",
-			thiscpu, basetime[thiscpu]);
+		switch (trace_format) {
+			case FKT_FORMAT:
+				lasttime[thiscpu] = (u_64)bufptr[0];
+				break;
+			case FUT_FORMAT_MONO:
+			case FUT_FORMAT_SMP:
+				lasttime[thiscpu] = *(u_64*)bufptr;
+				break;
+			default:
+				error_format("lasttime");
+		}
 		already_saw[thiscpu] = 1;	/* mark that we have seen this cpu*/
 		lastcpu = thiscpu;
 		}
@@ -1353,42 +1418,52 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		lastcpu = thiscpu;
 		}
 
-#ifndef FUT
-	x = ((u_64)bufptr[0])+basehigh[thiscpu];/* cnv 32-bit cycles to 64-bit */
-	if( x < lasttime[thiscpu] )
-		{
-		fprintf(stdbug,"cycle overflow: x %llu, lasttime %llu, basehigh %llu\n",
-			x, lasttime[thiscpu], basehigh[thiscpu]);
-		basehigh[thiscpu]+= 0x100000000LL;	/* add 1 to high 32-bits */
-		x += 0x100000000LL;	/* add 1 to high 32-bits */
-		fprintf(stdbug,"after overflow: x %llu, lasttime %llu, basehigh %llu\n",
-			x, lasttime[thiscpu], basehigh[thiscpu]);
-		}
-#else
-	x = (*(u_64*)bufptr); /* read 64 bits value */
-#endif
+	switch (trace_format) {
+		case FKT_FORMAT:
+			x = ((u_64)bufptr[0])+basehigh[thiscpu];/* cnv 32-bit cycles to 64-bit */
+			if( x < lasttime[thiscpu] )
+				{
+				fprintf(stdbug,"cycle overflow: x %llu, lasttime %llu, basehigh %llu\n",
+					x, lasttime[thiscpu], basehigh[thiscpu]);
+				basehigh[thiscpu]+= 0x100000000LL;	/* add 1 to high 32-bits */
+				x += 0x100000000LL;	/* add 1 to high 32-bits */
+				fprintf(stdbug,"after overflow: x %llu, lasttime %llu, basehigh %llu\n",
+					x, lasttime[thiscpu], basehigh[thiscpu]);
+				}
+			break;
+		case FUT_FORMAT_MONO:
+		case FUT_FORMAT_SMP:
+			x = (*(u_64*)bufptr); /* read 64 bits value */
+			break;
+		default:
+			 error_format("time");
+	}
 	lasttime[thiscpu] = x;
-	reltime = x - basetime[thiscpu];
+	reltime = x - basetime;
 	r = reltime-lastreltime[thiscpu];
+	switch (trace_format) {
+		case FKT_FORMAT:
+			thispid = bufptr[1]&0xffff;
+			if( !thispid )	/* an idle process, give it the cpu number */
+				thispid=-thiscpu;
+			break;
+		case FUT_FORMAT_MONO:
+			thispid = lastpid[thiscpu];
+			break;
+		case FUT_FORMAT_SMP:
+			thispid = bufptr[2];
+			bufptr++;
+			bufptr[2]-=4;
+			break;
+		default:
+			 error_format("pid");
+	}
 	fullcode = bufptr[2];
 	code = fullcode >> 8;
-#ifndef FUT
-	if( code == FKT_CALIBRATE0_CODE  ||
-		code == FKT_CALIBRATE1_CODE  ||
-		code == FKT_CALIBRATE2_CODE )
-#else
-	if( code == FUT_CALIBRATE0_CODE  ||
-		code == FUT_CALIBRATE1_CODE  ||
-		code == FUT_CALIBRATE2_CODE )
-#endif
+	if( code == CALIBRATE0_CODE  ||
+		code == CALIBRATE1_CODE  ||
+		code == CALIBRATE2_CODE )
 		print_this = 1;
-#ifndef FUT
-	thispid = bufptr[1]&0xffff;
-	if( !thispid )	/* an idle process, give it the cpu number */
-		thispid=-thiscpu;
-#else
-	thispid = lastpid[thiscpu];
-#endif
 
 	if( !printing && (printpid == -1 || (printpid > 0 && thispid == printpid)) )
 		{
@@ -1399,8 +1474,8 @@ unsigned int *dumpslot( unsigned int *bufptr )
 
 	fprintf(stdbug,
 	"dumpslot: thiscpu %u, lastpid %d(%s), thispid %d(%s), code 0x%04lx, delta %llu\n",
-		thiscpu, lastpid[thiscpu], fkt_lookup_pid(lastpid[thiscpu]),
-		thispid, fkt_lookup_pid(thispid), fullcode, r);
+		thiscpu, lastpid[thiscpu], fxt_lookup_pid(fxt,lastpid[thiscpu]),
+		thispid, fxt_lookup_pid(fxt,thispid), fullcode, r);
 
 	if( fun_time == 0 && (statspid == -1 || (statspid > 0 && thispid == statspid)) )
 		start_taking_stats();		/* start taking stats */
@@ -1412,13 +1487,19 @@ unsigned int *dumpslot( unsigned int *bufptr )
 	adjust_cpu_state(thiscpu, reltime);
 
 	if( print_this )
-		printf( "%8llu "CYCNUM" %2u %5d"COMMSTR, r, reltime, thiscpu, thispid,
-#ifndef FUT
-			fkt_lookup_pid(thispid)
-#else
-			""
-#endif
-			);
+		switch (trace_format) {
+			case FKT_FORMAT:
+				printf( "%8llu "CYCNUM" %2u %5d"COMMSTR, r, reltime, 
+								thiscpu, thispid, fxt_lookup_pid(fxt,thispid));
+				break;
+			case FUT_FORMAT_MONO:
+			case FUT_FORMAT_SMP:
+				printf( "%8llu "CYCNUM" %2u 0x%.08x"COMMSTR, r, reltime, 
+								thiscpu, thispid, fxt_lookup_pid(fxt,thispid));
+				break;
+			default:
+				error_format("printf");
+		}
 
 #ifndef FUT
 	if( fullcode < FKT_UNSHIFTED_LIMIT_CODE )
@@ -1437,66 +1518,59 @@ unsigned int *dumpslot( unsigned int *bufptr )
 				{
 				i = fullcode;
 				sprintf(workspace, "system call %u", i);
-				if( i > FKT_NSYSCALLS )
-					i = FKT_NSYSCALLS;
+				if( i > FKT_I386_NSYSCALLS )
+					i = FKT_I386_NSYSCALLS;
 				if( print_this )
-					printf(" "NAMESTR"  %-s", workspace, fkt_syscalls[i]);
+					printf(" "NAMESTR"  %-s", workspace, fkt_i386_syscalls[i]);
 				}
 		else if( fullcode < FKT_TRAP_LIMIT_CODE )
 			{
 			i = fullcode - FKT_TRAP_BASE;
 			sprintf(workspace, "trap %u", i);
-			if( i > FKT_NTRAPS )
-				i = FKT_NTRAPS;
+			if( i > FKT_I386_NTRAPS )
+				i = FKT_I386_NTRAPS;
 			if( print_this )
-				printf(" "NAMESTR"  %-s", workspace, fkt_traps[i]);
+				printf(" "NAMESTR"  %-s", workspace, fkt_i386_traps[i]);
 			}
 		else if( fullcode < FKT_IRQ_SYS )
 			{
 			i = fullcode - FKT_IRQ_TIMER;
 			sprintf(workspace, "IRQ %u", i);
 			if( print_this )
-				printf(" "NAMESTR"  %-s", workspace, fkt_find_irq(i));
+				printf(" "NAMESTR"  %-s", workspace, fkt_find_irq(fxt,i));
 			}
 		else
 			{
 			i = fullcode - FKT_IRQ_SYS;
 			sprintf(workspace, "sysIRQ 0x%x", i+0xef);
 			if( print_this )
-				printf(" "NAMESTR"  %-s", workspace, fkt_sysirqs[i]);
+				printf(" "NAMESTR"  %-s", workspace, fkt_i386_sysirqs[i]);
 			}
 		params = 3;
 		}
 	else
 #endif
-#ifndef FUT
-	if( code == FKT_GCC_INSTRUMENT_ENTRY_CODE ||
-			 code == FKT_GCC_INSTRUMENT_EXIT_CODE)
-#else
-	if( code == FUT_GCC_INSTRUMENT_ENTRY_CODE ||
-			 code == FUT_GCC_INSTRUMENT_EXIT_CODE)
-#endif
+	if( code == GCC_INSTRUMENT_ENTRY_CODE ||
+			 code == GCC_INSTRUMENT_EXIT_CODE)
 		{
-		char *s;
-		params = bufptr[2] & 0xff;
+		const char *s;
+		params = fullcode & 0xff;
 		if( params & 0x03 )
 			{
-			EPRINTF( "header size not multiple of 4: %08x, %04lx, %d\n",
-				bufptr[2], code, params);
+			EPRINTF( "header size not multiple of 4: %08lx, %04lx, %d\n",
+				fullcode, code, params);
 			exit(EXIT_FAILURE);
 			}
 		params = (params>>2);
 		if( print_this )
+			printf(" "NAMESTR, code==GCC_INSTRUMENT_ENTRY_CODE?
+						"gcc-traced function entry":"gcc-traced function exit");
 #ifndef FUT
-			printf(" "NAMESTR, code==FKT_GCC_INSTRUMENT_ENTRY_CODE?
-						"gcc-traced function entry":"gcc-traced function exit");
-		code=bufptr[3]-(code==FKT_GCC_INSTRUMENT_ENTRY_CODE?0:FKT_GCC_TRACED_FUNCTION_EXIT);
-		if( print_this && (s=fkt_lookup_symbol(code|FKT_GCC_TRACED_FUNCTION_EXIT)) )
+		code=bufptr[3]-(code==GCC_INSTRUMENT_ENTRY_CODE?0:GCC_TRACED_FUNCTION_X86_EXIT);
+		if( print_this && (s=fxt_lookup_symbol(fxt,code|GCC_TRACED_FUNCTION_X86_EXIT)) )
 #else
-			printf(" "NAMESTR, code==FUT_GCC_INSTRUMENT_ENTRY_CODE?
-						"gcc-traced function entry":"gcc-traced function exit");
-		code=bufptr[3]+(code==FUT_GCC_INSTRUMENT_ENTRY_CODE?0:FUT_GCC_TRACED_FUNCTION_EXIT);
-		if( print_this && (s=fkt_lookup_symbol(code&(~(FUT_GCC_TRACED_FUNCTION_EXIT)))) )
+		code=bufptr[3]+(code==GCC_INSTRUMENT_ENTRY_CODE?0:GCC_TRACED_FUNCTION_X86_EXIT);
+		if( print_this && (s=fxt_lookup_symbol(fxt,code&(~(GCC_TRACED_FUNCTION_X86_EXIT)))) )
 #endif
 			{
 			printf("  %s",s);
@@ -1505,11 +1579,11 @@ unsigned int *dumpslot( unsigned int *bufptr )
 			}
 		}
 	else {/* shifted code or parameter */
-		params = bufptr[2] & 0xff;
+		params = fullcode & 0xff;
 		if( params & 0x03 )
 			{
-			EPRINTF( "header size not multiple of 4: %08x, %04lx, %d\n",
-				bufptr[2], code, params);
+			EPRINTF( "header size not multiple of 4: %08lx, %04lx, %d\n",
+				fullcode, code, params);
 			exit(EXIT_FAILURE);
 			}
 		params = (params>>2);
@@ -1518,19 +1592,18 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		}
 	if( print_this )
 		{
-#ifndef FUT // TODO
-		if( code == FKT_DO_EXECVE_CODE )
+#ifdef FKT // TODO
+		if( code == FKT_DO_EXECVE_CODE || code == FKT_OPEN_ENTRY_CODE )
 			{
-			if( params - 3 < 4 )
-				EPRINTF("bad execve record\n");
-			else
-				{
 				char *comm = (char *)(bufptr+3);
-				comm[15]='\0';
+				comm[(params-3)*4-1]='\0';
 				printf("  %s",comm);
-				}
 			}
 		else
+		if( (code == SWITCH_TO_CODE) && !bufptr[3])
+		{
+				bufptr[3]= -thiscpu; /* Idle */
+		}
 #endif
 		for( i = 3;  i < params;  i++ )
 			{
@@ -1559,11 +1632,11 @@ unsigned int *dumpslot( unsigned int *bufptr )
 	lastreltime[thiscpu] = reltime;
 
 #ifdef FUT
-	if( code == FUT_SWITCH_TO_CODE )
+	if( code == SWITCH_TO_CODE )
 		{
-		if( thispid != bufptr[3] )
-			EPRINTF("switch_to from wrong pid\n");
-		thispid = bufptr[4];
+		//if( thispid != bufptr[3] )
+		//	EPRINTF("switch_to from wrong pid\n");
+		thispid = bufptr[3];
 		}
 #endif
 
@@ -1604,7 +1677,7 @@ int dumpit( int fd, unsigned long *npages )
 	if( printpid )
 		{
 		printf("%8s "  CYCSTR  " %3s %4s"   COMMSTR" %28s",
-			"Cycles", "Delta", "Cpu","Pid", COMMNAME, "Name");
+			"Delta", "Cycles", "Cpu","Pid", COMMNAME, "Name");
 		printf("  P1, P2, P3, ...\n");
 		printf("%8s "  CYCSTR  " %3s %4s"   COMMSTR" %28s",
 			"------", "-----", "---","---", COMMUNDERLINE, "----");
@@ -1639,7 +1712,7 @@ int dumpit( int fd, unsigned long *npages )
 				pagelimit=bufptr+page_size/sizeof(unsigned int);
 				bufptr++;
 				}
-#ifndef FUT
+#ifdef FKT
 			else if( *bufptr == FKT_POISON )
 				{
 				/* just for debugging */
@@ -1696,7 +1769,7 @@ int dumpit( int fd, unsigned long *npages )
 		stop_taking_stats();
 
 	/* end times on all cpus */
-	for( n = 0;  n < ncpus;  n++ )
+	for( n = 0;  n < info->ncpus;  n++ )
 		adjust_cpu_state(n, lastreltime[n]);
 
 	/* now close up all stacks */
@@ -1755,7 +1828,8 @@ void print_stats(u_64 CycPerJiffy)
 	struct dead_process	*grave;
 	u_64			histo_max;
 	u_64			histo_sum;
-	char			category, *name, commname[MAXCOMMLEN+2+5+1];
+	char			category, commname[FXT_MAXCOMMLEN+2+5+1];
+	const char		*name;
 	char			*histo_name[HISTO_SIZE];
 	u_64			histo_cycles[HISTO_SIZE];
 
@@ -1764,23 +1838,23 @@ void print_stats(u_64 CycPerJiffy)
 	printf("\n");
 
 	printf("%30s ", "");
-	for( i = 0;  i < ncpus;  i++ )
+	for( i = 0;  i < info->ncpus;  i++ )
 		printf("%11s %2d", "cpu", i);
 	printf("\n");
 
 	printf ("%30s:", "Cycles at start of stat taking");
-	for( i = 0;  i < ncpus;  i++ )
+	for( i = 0;  i < info->ncpus;  i++ )
 		printf(CYCNUM, start_time_cpu[i]);
 	printf("\n");
 
 	printf ("%30s:", "Cycles at end of stat taking");
-	for( i = 0;  i < ncpus;  i++ )
+	for( i = 0;  i < info->ncpus;  i++ )
 		printf(CYCNUM, end_time_cpu[i]);
 	printf("\n");
 
 	totaltimetaken = 0ll;
 	printf ("%30s:", "Number of elapsed stat cycles");
-	for( i = 0;  i < ncpus;  i++ )
+	for( i = 0;  i < info->ncpus;  i++ )
 		{
 		timediff = end_time_cpu[i] - start_time_cpu[i];
 		totaltimetaken += timediff;
@@ -1943,14 +2017,14 @@ if( newfun_pos > 0 )
 			' ', "Name", "Cycles", "Count", "Average", "Percent");
 	printf(  "%c "NAMESTR" "CYCSTR" "COUNTSTR" "AVGSTR" %7s\n",
 			' ', "----", "------", "-----", "-------", "-------");
-#ifndef FUT
+#ifdef FKT
 	for( i = 0;  i < FKT_UNSHIFTED_LIMIT_CODE; i++ )
 		{
 		if( syscall_counter[i] > 0 )
 			{/* this occurred at least once, print it */
 			int	should_be_hex;
 
-			z = fkt_find_syscall(i, &category, &name, &should_be_hex);
+			z = fkt_find_syscall(fxt, i, &category, &name, &should_be_hex);
 			if( (histo_name[k] = malloc(strlen(name)+10)) == NULL )
 				{
 				fprintf(stderr, "no space to malloc histo_name\n");
@@ -1969,7 +2043,7 @@ if( newfun_pos > 0 )
 				100.*((double)histo_cycles[k])/((double)totaltimetaken));
 			if (++k>=HISTO_SIZE)
 				{
-				EPRINTF("=== please increase HISTO_SIZE\n");
+				EPRINTF("please increase HISTO_SIZE\n");
 				return;
 				}
 			}
@@ -1997,7 +2071,7 @@ if( newfun_pos > 0 )
 			100.0*((double)histo_cycles[k])/(double)totaltimetaken);
 		if (++k>=HISTO_SIZE)
 			{
-			EPRINTF("=== please increase HISTO_SIZE\n");
+			EPRINTF("please increase HISTO_SIZE\n");
 			return;
 			}
 		}
@@ -2014,7 +2088,7 @@ if( newfun_pos > 0 )
 			histo_name[k]=commname;
 		else
 			{
-			if( (histo_name[k] = malloc(MAXCOMMLEN+2+5+1)) == NULL )
+			if( (histo_name[k] = malloc(FXT_MAXCOMMLEN+2+5+1)) == NULL )
 				{
 				fprintf(stderr, "no space to malloc histo_name\n");
 				exit(EXIT_FAILURE);
@@ -2026,11 +2100,7 @@ if( newfun_pos > 0 )
 			}
 
 		sprintf(histo_name[k], "%s(%d)",
-#ifndef FUT
 				name,
-#else
-				"",
-#endif
 				stack->pid);
 
 		printf("%c "NAMESTR" "CYCNUM" "COUNTSTR" "AVGSTR" %6.2f%%\n",
@@ -2038,7 +2108,7 @@ if( newfun_pos > 0 )
 			100.0*((double)stack->user_cycles)/(double)totaltimetaken);
 		if (!kernel_only && ++k>=HISTO_SIZE)
 			{
-			EPRINTF("=== please increase HISTO_SIZE\n");
+			EPRINTF("please increase HISTO_SIZE\n");
 			return;
 			}
 		}
@@ -2050,7 +2120,7 @@ if( newfun_pos > 0 )
 			histo_name[k]=commname;
 		else
 			{
-			if( (histo_name[k] = malloc(MAXCOMMLEN+2+5+1)) == NULL )
+			if( (histo_name[k] = malloc(FXT_MAXCOMMLEN+2+5+1)) == NULL )
 				{
 				fprintf(stderr, "no space to malloc histo_name\n");
 				exit(EXIT_FAILURE);
@@ -2067,7 +2137,7 @@ if( newfun_pos > 0 )
 			100.0*((double)grave->user_cycles)/(double)totaltimetaken);
 		if( !kernel_only && ++k>=HISTO_SIZE)
 			{
-			EPRINTF("=== please increase HISTO_SIZE\n");
+			EPRINTF("please increase HISTO_SIZE\n");
 			return;
 			}
 		}
@@ -2089,18 +2159,13 @@ if( newfun_pos > 0 )
 
 
 
-void get_the_time( time_t *the_time, char *message )
+void get_the_time( time_t the_time, char *message )
 	{
 	struct tm	breakout;
 	char		buffer[128];
 
 
-	if( read(fd, (void *)the_time, sizeof(time_t)) <= 0 )
-		{
-		perror(message);
-		exit(EXIT_FAILURE);
-		}
-	if( localtime_r(the_time, &breakout) == NULL )
+	if( localtime_r(&the_time, &breakout) == NULL )
 		{
 		fprintf(stderr, "Unable to break out %s\n", message);
 		exit(EXIT_FAILURE);
@@ -2150,17 +2215,16 @@ void usage(char *progname)
 }
 
 int main( int argc, char *argv[] )
-	{
+{
 	char			*infile,*ptr;
-	int				c, i;
+	int				c;
 	unsigned long	npages=0;
 	struct stat		st;
 	off_t			off=0;
-	int				len;
 	size_t			size;
-
+	
 	u_64			ratio;
-
+	
 	kidpid = 0;
 	infile = NULL;
 	stdbug = NULL;
@@ -2168,22 +2232,22 @@ int main( int argc, char *argv[] )
 
 	while( (c = getopt(argc, argv, OPTIONS)) != EOF )
 		switch( c )
-			{
+		{
 		case 's':
 			statspid = strtol(optarg, &ptr, 0);
 			if( strspn(ptr,	WHITE_SPACE) != strlen(ptr) )
-				{
+			{
 				fprintf(stderr, "illegal pid parameter %s\n", optarg);
 				exit(EXIT_FAILURE);
-				}
+			}
 			break;
 		case 'p':
 			printpid = strtol(optarg, &ptr, 0);
 			if( strspn(ptr,	WHITE_SPACE) != strlen(ptr) )
-				{
+			{
 				fprintf(stderr, "illegal pid parameter %s\n", optarg);
 				exit(EXIT_FAILURE);
-				}
+			}
 			printonlypid = optarg[0]=='+';
 			break;
 		case 'd':
@@ -2212,215 +2276,141 @@ int main( int argc, char *argv[] )
 			fprintf(stderr, "illegal switch %c\n", optopt);
 			usage(argv[0]);
 			exit(EXIT_FAILURE);
-			}	/* switch */
-
+		}	/* switch */
+	
 	if( optind < argc )
 		fprintf(stderr, "extra command line arguments ignored\n");
-
+	
 	if( stdbug == NULL )
-		{
+	{
 		if( (stdbug = fopen("/dev/null", "w")) == NULL )
-			{
+		{
 			perror("/dev/null");
 			stdbug = stdout;
-			}
 		}
-
+	}
+	
 	if( infile == NULL )
-		{
+	{
 		if( (infile = getenv("TRACE_FILE")) == NULL )
 			infile = DEFAULT_TRACE_FILE;
-		}
-
+	}
+	
 	while( (fd = open(infile, O_RDONLY)) < 0 )
-		{/* could not open the indicated file name for reading */
+	{/* could not open the indicated file name for reading */
 		perror(infile);
 		if( strcmp(infile, DEFAULT_TRACE_FILE) == 0 )
 			/* can't open the default file, have to give up */
 			exit(EXIT_FAILURE);
 		infile = DEFAULT_TRACE_FILE;
 		fprintf(stderr, "input defaulting to %s\n", infile);
-		}
-
-	ENTER_BLOCK(fd); /* main block */
-	ENTER_BLOCK(fd);
-	/*	the order of reading items from the trace file must obviously
-		correspond with the order they were written by fkt_record	*/
-	if( read(fd, (void *)&ncpus, sizeof(ncpus)) < 0 )
-		{
-		perror("read ncpus");
-		exit(EXIT_FAILURE);
-		}
-	printf("%14s = %i\n", "ncpus", ncpus);
-
-	CALLOC(mhz,ncpus);
-
-	for( i = 0;  i < ncpus;  i++ )
-		{
-		if( read(fd, (void *)&mhz[i], sizeof(mhz[i])) < 0 )
-			{
-			perror("read mhz[i]");
-			exit(EXIT_FAILURE);
-			}
-		printf("%12s %d = %.3f MHZ\n", "cpu", i, mhz[i]);
-		}
-
-	CALLOC(basetime,ncpus);
-#ifndef FUT
-	CALLOC(basehigh,ncpus);
-#endif
-	CALLOC(lasttime,ncpus);
-	CALLOC(lastreltime,ncpus);
-	CALLOC(start_time_cpu,ncpus);
-	CALLOC(end_time_cpu,ncpus);
-	CALLOC(lastpid,ncpus);
-	CALLOC(already_saw,ncpus);
-	CALLOC(fun_time_cpu,ncpus);
-	CALLOC(cpu_stack,ncpus);
-
-	if( read(fd, (void *)&pid, sizeof(pid)) <= 0 )
-		{
-		perror("read pid");
-		exit(EXIT_FAILURE);
-		}
-	printf("%14s = %d\n", "pid", pid);
-
-	if( read(fd, (void *)&kidpid, sizeof(kidpid)) <= 0 )
-		{
-		perror("read kidpid");
-		exit(EXIT_FAILURE);
-		}
-	printf("%14s = %d\n", "kidpid", kidpid);
-
-
-	get_the_time(&start_time, "start time");
-	get_the_time(&stop_time, "stop time");
-
-	if( read(fd, (void *)&start_jiffies, sizeof(start_jiffies)) <= 0 )
-		{
-		perror("read start_jiffies");
-		exit(EXIT_FAILURE);
-		}
-	printf("%14s = %lu\n", "start jiffies", (unsigned long)start_jiffies);
-
-	if( read(fd, (void *)&stop_jiffies, sizeof(stop_jiffies)) <= 0 )
-		{
-		perror("read stop_jiffies");
-		exit(EXIT_FAILURE);
-		}
-	printf("%14s = %lu\n", "stop jiffies", (unsigned long)stop_jiffies);
-	printf("%14s = %lu\n", "total jiffies", (unsigned long)stop_jiffies -
-												 (unsigned long)start_jiffies);
-
-	if( read(fd, (void *)&page_size, sizeof(page_size)) <= 0 )
-		{
-		perror("read page_size");
-		exit(EXIT_FAILURE);
-		}
-	printf("%14s = %u\n", "page size", page_size);
-	LEAVE_BLOCK(fd);
-
-	ENTER_BLOCK(fd);
-	fkt_load_irqs(fd);
-	LEAVE_BLOCK(fd);
-
-	ENTER_BLOCK(fd);
-	if( read(fd,&len,sizeof(len)) < sizeof(len) )
-		{
-		perror("read size of uname");
-		exit(EXIT_FAILURE);
-		}
-	{
-		char uname[len+1];
-
-		if( read(fd,uname,len) < len )
-			{
-			perror("dumping uname");
-			exit(EXIT_FAILURE);
-			}
-		uname[len]='\0';
-		printf("%s\n",uname);
 	}
-	LEAVE_BLOCK(fd);
+	
+	if (!(fxt = fxt_fdopen(fd)))
+		{
+		perror("fxt_fdopen");
+		exit(EXIT_FAILURE);
+		}
+	info = fxt_infos(fxt);
 
-	ENTER_BLOCK(fd);
-	fkt_load_sysmap(fd);
-	LEAVE_BLOCK(fd);
+	printf("%14s = %i\n", "ncpus", info->ncpus);
+	
+#ifdef FKT
+	CALLOC(basehigh,info->ncpus);
+#endif
+	CALLOC(lasttime,info->ncpus);
+	CALLOC(lastreltime,info->ncpus);
+	CALLOC(start_time_cpu,info->ncpus);
+	CALLOC(end_time_cpu,info->ncpus);
+	CALLOC(lastpid,info->ncpus);
+	CALLOC(already_saw,info->ncpus);
+	CALLOC(fun_time_cpu,info->ncpus);
+	CALLOC(cpu_stack,info->ncpus);
+	
+	pid = info->record_pid;
+	kidpid = info->traced_pid;
+	
+	get_the_time(info->start_time, "start time");
+	get_the_time(info->stop_time, "stop time");
 
-	ENTER_BLOCK(fd);
-	fkt_load_pids(fd);
-	LEAVE_BLOCK(fd);
-
-	LEAVE_BLOCK(fd); /* main block */
-
+	printf("%14s = %lu\n", "stop jiffies", (unsigned long)info->stop_jiffies);
+	printf("%14s = %lu\n", "total jiffies", (unsigned long)info->stop_jiffies -
+	       (unsigned long)info->start_jiffies);
+	
+	page_size = info->page_size;
+	printf("%14s = %u\n", "page size", page_size);
+	trace_format = info->format;
+	printf("%14s = %u (%s)\n", "trace format", trace_format, trace_format_name[trace_format]);
+	printf(info->uname);
+	
 	if (fstat(fd, &st)) {
 		perror("fstat");
 		exit(EXIT_FAILURE);
 	}
-
+	
 	if( S_ISBLK(st.st_mode) )
-		{
+	{
 		int sectors;
 		if( ioctl(fd,BLKGETSIZE,&sectors) )
-			{
+		{
 			perror("getting device size\n");
 			exit(EXIT_FAILURE);
-			}
+		}
 		if( sectors >= 0xffffffffUL >> 9 )
 			size=0xffffffffUL;
 		else
 			size = sectors << 9;
-		}
+	}
 	else
 		size=st.st_size;
-
+	
 	printf("%14s = %lu\n", "bytes", size-off);
-
+	
 	CALLOC(page_status,(int)((size-off+page_size-1)/page_size + 1));
 	current_page_status=page_status;
 	memset(current_page_status,0,sizeof(*current_page_status));
-
+	
 	if( size > off )
-		{
+	{
 		npages = (size-off+page_size-1)/page_size;
 		dumpit(fd, &npages);
-		}
-
+	}
+	
 	ratio = 0LL;
 	if (stop_jiffies)
-		{/* fkt_record could write the stop time, good */
-			ratio = (u_64)(stop_jiffies - start_jiffies);
-			if( ratio != 0LL )
-				ratio = lastreltime[lastcpu] / ratio;
-			printf("%llu clock cycles in %u jiffies = %llu cycles per jiffy\n",
-				lastreltime[lastcpu], (unsigned int)(stop_jiffies - start_jiffies), ratio);
+	{/* fkt_record could write the stop time, good */
+		ratio = (u_64)(stop_jiffies - start_jiffies);
+		if( ratio != 0LL )
+			ratio = lastreltime[lastcpu] / ratio;
+		printf("%llu clock cycles in %u jiffies = %llu cycles per jiffy\n",
+		       lastreltime[lastcpu], (unsigned int)(stop_jiffies - start_jiffies), ratio);
 		printf("\n");
-		}
-
+	}
+	
 	print_stats(ratio);
-
+	
 	/* print final statistics about storage usage */
 	printf("\n\n");
 	printf("internal storage usage statistics\n\n");
-
+	
 	printf("%21s %3u, last possible %3d, percentage used %7.2f%%\n",
-			"last used pos",
+	       "last used pos",
 			actual_max_pos, MAX_FUN_RECUR-1,
-			((double)actual_max_pos)*100.0/((double)(MAX_FUN_RECUR-1)));
+	       ((double)actual_max_pos)*100.0/((double)(MAX_FUN_RECUR-1)));
 	printf("%21s %3u, last possible %3d, percentage used %7.2f%%\n",
-			"last used cycles_pos",
-			actual_max_cycles_pos, MAX_EACH_FUN_RECUR-1,
-			((double)actual_max_cycles_pos)*100.0/
-											((double)(MAX_EACH_FUN_RECUR-1)));
+	       "last used cycles_pos",
+	       actual_max_cycles_pos, MAX_EACH_FUN_RECUR-1,
+	       ((double)actual_max_cycles_pos)*100.0/
+	       ((double)(MAX_EACH_FUN_RECUR-1)));
 	printf("%21s %3u, last possible %3d, percentage used %7.2f%%\n",
-			"last used newfun_pos",
-			actual_max_funs_pos, MAX_FUNS-1,
-			((double)actual_max_funs_pos)*100.0/((double)(MAX_FUNS-1)));
+	       "last used newfun_pos",
+	       actual_max_funs_pos, MAX_FUNS-1,
+	       ((double)actual_max_funs_pos)*100.0/((double)(MAX_FUNS-1)));
 
 	if (npages)
 		page_stats_print(npages);
 	return EXIT_SUCCESS;
-	}
+}
 
 /* vim: ts=4
  */

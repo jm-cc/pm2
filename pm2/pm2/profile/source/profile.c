@@ -24,7 +24,8 @@
 #include <stdarg.h>
 
 #include "pm2_profile.h"
-#include <fkt/sysmap.h>
+#include <fxt.h>
+#include "pm2_fxt-tools.h"
 
 #if !defined(PREPROC) && !defined(DEPEND)
 #include "fut_entries.h"
@@ -76,8 +77,6 @@ void profile_init(void)
 
     // Initialisation de FUT
 
-    fkt_get_mysymbols();
-		
     profile_set_tracefile("/tmp/prof_file");
     
     if(fut_setup(PROF_BUFFER_SIZE, FUT_KEYMASKALL, PROF_THREAD_ID()) < 0) {
@@ -85,6 +84,8 @@ void profile_init(void)
       exit(EXIT_FAILURE);
     }
 
+    fut_get_mysymbols(fut);
+		
     if(activate_called_before_init)
       fut_keychange(activate_params.how,
 		    activate_params.user_keymask,

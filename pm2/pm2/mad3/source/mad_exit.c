@@ -975,6 +975,22 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
       TBX_FREE(driver_name);
     }
 
+#ifdef MARCEL
+  {
+    p_mad_driver_t fwd_driver = NULL;
+
+    fwd_driver = tbx_htable_extract(mad_driver_htable, "forward");
+    fwd_driver->interface->driver_exit(fwd_driver);
+  }
+
+  {
+    p_mad_driver_t mux_driver = NULL;
+
+    mux_driver = tbx_htable_extract(mad_driver_htable, "mux");
+    mux_driver->interface->driver_exit(mux_driver);
+  }
+#endif // MARCEL
+
   // Drivers
   while (1)
     {

@@ -433,6 +433,12 @@ receiver_thread(void *_arg)
 		}
 	}
 
+	tbx_slist_free(buffer_slist);
+        buffer_slist	= NULL;
+#ifdef DATA_CHECK
+	tbx_slist_free(pack_info_slist);
+        pack_info_slist	= NULL;
+#endif /* DATA_CHECK */
 	DISP1("receiver[%d]: leaving", arg->remote_lrank);
 	return NULL;
 }
@@ -541,6 +547,9 @@ sender_thread(void *_arg)
 			TBX_FREE(buffer);
 		}
 	}
+
+        tbx_slist_free(buffer_slist);
+        buffer_slist = NULL;
 
 	return NULL;
 }
@@ -715,6 +724,9 @@ main(	int    argc,
 			marcel_join(tester->thread, NULL);
 			TBX_FREE(tester);
 		}
+
+                tbx_slist_free(thread_slist);
+                thread_slist = NULL;
 	}
 	else
 	{

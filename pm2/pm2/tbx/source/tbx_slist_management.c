@@ -60,13 +60,16 @@ tbx_slist_manager_init(void)
   LOG_IN();
   tbx_malloc_init(&tbx_slist_element_manager_memory,
 		  sizeof(tbx_slist_element_t),
-		  INITIAL_SLIST_ELEMENT);
+		  INITIAL_SLIST_ELEMENT,
+                  "tbx/slist elements");
   tbx_malloc_init(&tbx_slist_nref_manager_memory,
 		  sizeof(tbx_slist_nref_t),
-		  INITIAL_SLIST_NREF);
+		  INITIAL_SLIST_NREF,
+                  "tbx/slist nrefs");
   tbx_malloc_init(&tbx_slist_struct_manager_memory,
 		  sizeof(tbx_slist_t),
-		  INITIAL_SLIST_NUMBER);
+		  INITIAL_SLIST_NUMBER,
+                  "tbx/slists");
   LOG_OUT();
 }
 

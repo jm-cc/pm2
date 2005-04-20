@@ -122,7 +122,8 @@ tbx_safe_realloc(void     *ptr,
 void
 tbx_malloc_init(p_tbx_memory_t *mem,
 		const size_t    block_len,
-		long            initial_block_number);
+		long            initial_block_number,
+                const char     *name);
 
 void *
 tbx_malloc(p_tbx_memory_t mem);

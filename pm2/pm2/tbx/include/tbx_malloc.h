@@ -55,6 +55,8 @@ typedef struct s_tbx_memory
   long     mem_len;
   void    *first_free;
   long     first_new;
+  long     nb_allocated;
+  const char *name;
 } tbx_memory_t;
 
 #endif /* TBX_MALLOC_H */

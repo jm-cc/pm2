@@ -45,7 +45,8 @@ tbx_list_manager_init()
 {
   tbx_malloc_init(&tbx_list_manager_memory,
 		  sizeof(tbx_list_element_t),
-		  INITIAL_LIST_ELEMENT);
+		  INITIAL_LIST_ELEMENT,
+                  "tbx/list elements");
 }
 
 void

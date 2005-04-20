@@ -55,7 +55,8 @@ tbx_htable_manager_init(void)
   LOG_IN();
   tbx_malloc_init(&tbx_htable_manager_memory,
 		  sizeof(tbx_htable_element_t),
-		  INITIAL_HTABLE_ELEMENT);
+		  INITIAL_HTABLE_ELEMENT,
+                  "tbx/htable elements");
   LOG_OUT();
 }
 

@@ -59,9 +59,10 @@
 /*  */
 
 #ifdef MARCEL
-#  include "asm/marcel_profile.h"
+/*#  include "asm/marcel_profile.h"*/
 #endif
 #include <asm/page.h>
+#define __ASSEMBLY__
 #include "fut.h"
 
 #undef PAGE_SIZE

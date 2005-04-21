@@ -143,7 +143,7 @@ main(int argc, char **argv) {
                 /*
                  * On alloue de la mémoire pour recevoir la chaîne.
                  */
-                msg = malloc(len);
+                msg = TBX_MALLOC(len);
 
                 /*
                  * On reçoit la chaîne de caractères.
@@ -162,6 +162,11 @@ main(int argc, char **argv) {
                  * On affiche le message pour montrer qu'on l'a bien reçu.
                  */
                 printf("msg = [%s]\n", msg);
+
+                /*
+                 * On libère la mémoire allouée pour recevoir la chaîne.
+                 */
+                TBX_FREE(msg);
         }
 
         /*

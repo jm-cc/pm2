@@ -36,7 +36,7 @@ $(MOD_GEN_BIN)/fut_print: $(MOD_GEN_INC)/fut_entries.h
 
 $(MOD_GEN_BIN)/fut_print: ./bin/src/fut_print.c
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lbfd -lfkt
+	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lbfd -lfkt -DFUT
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)

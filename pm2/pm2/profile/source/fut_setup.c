@@ -286,6 +286,7 @@ int fut_endup( char *filename )
 	if( (fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0666)) < 0 )
 		return fd;
 
+	fut_infos->page_size = size;
 	fxt_fdwrite(fut,fd);
 
 	size+=sizeof(size);

@@ -338,214 +338,21 @@ mad_mx_print_status(mx_status_t s) TBX_UNUSED;
 static
 void
 mad_mx_print_status(mx_status_t s) {
-        DISP("status");
+        const char *msg = NULL;
 
-        switch (s.code) {
-        case MX_STATUS_SUCCESS:
-                DISP("Successful completion");
-                break;
-        case MX_STATUS_PENDING:
-                DISP("Request still pending");
-                break;
-        case MX_STATUS_BUFFERED:
-                DISP("Request has been buffered, but still pending");
-                break;
-        case MX_STATUS_REJECTED:
-                DISP("Posted operation failed");
-                break;
-        case MX_STATUS_TIMEOUT:
-                DISP("Posted operation timed out");
-                break;
-        case MX_STATUS_TRUNCATED:
-                DISP("Operation completed, but data was truncated due to undersized buffer");
-                break;
-        case MX_STATUS_CANCELLED:
-                DISP("Panding receive was cancelled");
-                break;
-        case MX_STATUS_ENDPOINT_UNKNOWN:
-                DISP("Destination endpoint is unknown on the network fabric");
-                break;
-        case MX_STATUS_ENDPOINT_CLOSED:
-                DISP("remoted endpoint is closed");
-                break;
-        case MX_STATUS_ENDPOINT_UNREACHABLE:
-                DISP("Connectivity is broken between the source and the destination");
-                /*
-                 * case MX_STATUS_BAD_SESSION:
-                 * DISP("Bad session (no mx_connect done?)"
-                 */
-                break;
-        case MX_STATUS_BAD_KEY:
-                DISP("Connect failed because of bad credentials");
-                break;
-        }
+        msg = mx_strstatus(s.code);
+        DISP("mx status: %s", msg);
 }
-
-static
-char *
-mad_mx_return_code(mx_return_t return_code) {
-        char *msg = NULL;
-
-        switch (return_code) {
-        case MX_SUCCESS:
-                msg = "MX_SUCCESS";
-                break;
-
-        case MX_BAD_BAD_BAD:
-                msg = "MX_BAD_BAD_BAD";
-                break;
-
-        case MX_FAILURE:
-                msg = "MX_FAILURE";
-                break;
-
-        case MX_ALREADY_INITIALIZED:
-                msg = "MX_ALREADY_INITIALIZED";
-                break;
-
-        case MX_NOT_INITIALIZED:
-                msg = "MX_NOT_INITIALIZED";
-                break;
-
-        case MX_NO_DEV:
-                msg = "MX_NO_DEV";
-                break;
-
-        case MX_NO_DRIVER:
-                msg = "MX_NO_DRIVER";
-                break;
-
-        case MX_NO_PERM:
-                msg = "MX_NO_PERM";
-                break;
-
-        case MX_BOARD_UNKNOWN:
-                msg = "MX_BOARD_UNKNOWN";
-                break;
-
-        case MX_BAD_ENDPOINT:
-                msg = "MX_BAD_ENDPOINT";
-                break;
-
-        case MX_BAD_SEG_LIST:
-                msg = "MX_BAD_SEG_LIST";
-                break;
-
-        case MX_BAD_SEG_MEM:
-                msg = "MX_BAD_SEG_MEM";
-                break;
-
-        case MX_BAD_SEG_CNT:
-                msg = "MX_BAD_SEG_CNT";
-                break;
-
-        case MX_BAD_REQUEST:
-                msg = "MX_BAD_REQUEST";
-                break;
-
-        case MX_BAD_MATCH_MASK:
-                msg = "MX_BAD_MATCH_MASK";
-                break;
-
-        case MX_NO_RESOURCES:
-                msg = "MX_NO_RESOURCES";
-                break;
-
-        case MX_BAD_ADDR_LIST:
-                msg = "MX_BAD_ADDR_LIST";
-                break;
-
-        case MX_BAD_ADDR_COUNT:
-                msg = "MX_BAD_ADDR_COUNT";
-                break;
-
-        case MX_BAD_ROOT:
-                msg = "MX_BAD_ROOT";
-                break;
-
-        case MX_NOT_COMPLETED:
-                msg = "MX_NOT_COMPLETED";
-                break;
-
-        case MX_BUSY:
-                msg = "MX_BUSY";
-                break;
-
-        case MX_BAD_INFO_KEY:
-                msg = "MX_BAD_INFO_KEY";
-                break;
-
-        case MX_BAD_INFO_VAL:
-                msg = "MX_BAD_INFO_VAL";
-                break;
-
-        case MX_BAD_NIC:
-                msg = "MX_BAD_NIC";
-                break;
-
-        case MX_BAD_PARAM_LIST:
-                msg = "MX_BAD_PARAM_LIST";
-                break;
-
-        case MX_BAD_PARAM_NAME:
-                msg = "MX_BAD_PARAM_NAME";
-                break;
-
-        case MX_BAD_PARAM_VAL:
-                msg = "MX_BAD_PARAM_VAL";
-                break;
-
-        case MX_BAD_HOSTNAME_ARGS:
-                msg = "MX_BAD_HOSTNAME_ARGS";
-                break;
-
-        case MX_HOST_NOT_FOUND:
-                msg = "MX_HOST_NOT_FOUND";
-                break;
-
-        case MX_REQUEST_PENDING:
-                msg = "MX_REQUEST_PENDING";
-                break;
-
-        case MX_TIMEOUT:
-                msg = "MX_TIMEOUT";
-                break;
-
-        case MX_NO_MATCH:
-                msg = "MX_NO_MATCH";
-                break;
-
-        case MX_BAD_ENDPOINT_ID:
-                msg = "MX_BAD_ENDPOINT_ID";
-                break;
-
-        case MX_CONNECTION_FAILED:
-                msg = "MX_CONNECTION_FAILED";
-                break;
-
-        case MX_BAD_CONNECTION_KEY:
-                msg = "MX_BAD_CONNECTION_KEY";
-                break;
-
-        case MX_BAD_INFO_LENGTH:
-                msg = "MX_BAD_INFO_LENGTH";
-                break;
-
-        default:
-                msg = "unknown";
-                break;
-
-        }
-
-        return msg;
-}
-
 
 static
 void
 mad_mx_check_return(char *msg, mx_return_t return_code) {
         if (return_code != MX_SUCCESS) {
-                DISP("%s failed with code %s = %d/0x%x", msg, mad_mx_return_code(return_code), return_code, return_code);
+                const char *msg_mx = NULL;
+
+                msg_mx = mx_strerror(return_code);
+
+                DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
                 FAILURE("mx error");
         }
 }
@@ -565,6 +372,8 @@ mad_mx_startup_info(void) {
         // NICs count
         mad_mx_lock();
         return_code = mx_get_info(NULL, MX_NIC_COUNT, &nb_nic, sizeof(nb_nic));
+        nb_nic = nb_nic & 0xff;
+
         mad_mx_unlock();
         mad_mx_check_return("mad_mx_startup_info", return_code);
         DISP("NIC count: %d", nb_nic);
@@ -784,10 +593,10 @@ mad_mx_register(p_mad_driver_t driver) {
         interface->disconnect                 = mad_mx_disconnect;
         interface->after_close_channel        = NULL;
         interface->link_exit                  = NULL;
-        interface->connection_exit            = NULL;
-        interface->channel_exit               = NULL;
-        interface->adapter_exit               = NULL;
-        interface->driver_exit                = NULL;
+        interface->connection_exit            = mad_mx_connection_exit;
+        interface->channel_exit               = mad_mx_channel_exit;
+        interface->adapter_exit               = mad_mx_adapter_exit;
+        interface->driver_exit                = mad_mx_driver_exit;
         interface->choice                     = NULL;
         interface->get_static_buffer          = NULL;
         interface->return_static_buffer       = NULL;
@@ -1023,7 +832,7 @@ mad_mx_disconnect(p_mad_connection_t c) {
 }
 
 void
-connection_exit(p_mad_connection_t in,
+mad_mx_connection_exit(p_mad_connection_t in,
                 p_mad_connection_t out) {
         p_mad_mx_connection_specific_t cs = NULL;
 
@@ -1051,6 +860,9 @@ mad_mx_channel_exit(p_mad_channel_t ch) {
 
         TBX_FREE(chs);
         ch->specific	= NULL;
+
+        TBX_FREE(ch->parameter);
+        ch->parameter	= NULL;
         LOG_OUT();
 }
 
@@ -1062,6 +874,7 @@ mad_mx_adapter_exit(p_mad_adapter_t a) {
         as		= a->specific;
         TBX_FREE(as);
         a->specific	= NULL;
+        TBX_FREE(a->parameter);
         a->parameter	= NULL;
         LOG_OUT();
 }

@@ -75,12 +75,12 @@
 	if (code >= FKT_I386_FUNCTION_MINI) \
 		_res=fxt_lookup_symbol(fxt,code|FKT_I386_FUNCTION_EXIT); \
 	else \
-		_res=fkt_find_name(fxt, code, keep, maxlen, fkt_code_table); \
+		_res=fxt_find_name(fxt, code, keep, maxlen, fkt_code_table); \
 	_res; \
 	})
 #endif
 #ifdef FUT
-struct fkt_code_name fut_code_table [] = 
+struct fxt_code_name fut_code_table [] = 
 	{
 #  if !defined(PREPROC) && !defined(DEPEND)
 #    include "fut_print.h"
@@ -92,7 +92,7 @@ struct fkt_code_name fut_code_table [] =
 	if (code >= FUT_I386_FUNCTION_MINI) \
 		_res=fxt_lookup_symbol(fxt,code&~FUT_I386_FUNCTION_EXIT); \
 	else \
-		_res=fkt_find_name(fxt, code, keep, maxlen, fut_code_table); \
+		_res=fxt_find_name(fxt, code, keep, maxlen, fut_code_table); \
 	_res; \
 	})
 #endif

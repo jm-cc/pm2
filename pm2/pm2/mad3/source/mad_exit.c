@@ -968,10 +968,6 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  mad_leonie_send_int(-1);
           TBX_FREE(adapter_name);
 	}
-
-      tbx_htable_free(mad_adapter_htable);
-      mad_adapter_htable         = NULL;
-      mad_driver->adapter_htable = NULL;
       TBX_FREE(driver_name);
     }
 
@@ -979,14 +975,14 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
   {
     p_mad_driver_t fwd_driver = NULL;
 
-    fwd_driver = tbx_htable_extract(mad_driver_htable, "forward");
+    fwd_driver = tbx_htable_get(mad_driver_htable, "forward");
     fwd_driver->interface->driver_exit(fwd_driver);
   }
 
   {
     p_mad_driver_t mux_driver = NULL;
 
-    mux_driver = tbx_htable_extract(mad_driver_htable, "mux");
+    mux_driver = tbx_htable_get(mad_driver_htable, "mux");
     mux_driver->interface->driver_exit(mux_driver);
   }
 #endif // MARCEL
@@ -1006,7 +1002,7 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
         }
 
       mad_driver =
-	tbx_htable_extract(mad_driver_htable, driver_name);
+	tbx_htable_get(mad_driver_htable, driver_name);
       if (!mad_driver)
 	FAILURE("driver not available");
 
@@ -1025,15 +1021,42 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
       interface             = NULL;
       mad_driver->interface = NULL;
 
-      TBX_FREE(mad_driver->name);
-      mad_driver->name = NULL;
-
-      TBX_FREE(mad_driver);
-      mad_driver = NULL;
-
       mad_leonie_send_int(-1);
       TBX_FREE(driver_name);
     }
+
+
+ {
+   p_tbx_slist_t mad_driver_key_slist = NULL;
+
+   mad_driver_key_slist = tbx_htable_get_key_slist(mad_driver_htable);
+
+   while (!tbx_slist_is_nil(mad_driver_key_slist))
+     {
+       p_mad_driver_t  mad_driver  = NULL;
+       char           *driver_name = NULL;
+
+       driver_name = tbx_slist_extract(mad_driver_key_slist);
+       mad_driver = tbx_htable_extract(mad_driver_htable, driver_name);
+
+
+       tbx_htable_free(mad_driver->adapter_htable);
+       mad_driver->adapter_htable = NULL;
+
+       TBX_FREE(mad_driver->interface);
+       mad_driver->interface = NULL;
+
+       TBX_FREE(mad_driver->name);
+       mad_driver->name = NULL;
+
+       TBX_FREE(mad_driver);
+       mad_driver = NULL;
+
+       TBX_FREE(driver_name);
+     }
+
+   tbx_slist_free(mad_driver_key_slist);
+ }
 
   LOG_OUT();
 }
@@ -1121,6 +1144,12 @@ mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
 
   tbx_htable_free(madeleine->driver_htable);
   madeleine->driver_htable = NULL;
+
+  if (madeleine->dynamic)
+    {
+      TBX_FREE(madeleine->dynamic);
+      madeleine->dynamic = NULL;
+    }
 
   TBX_FREE(madeleine);
   LOG_OUT();

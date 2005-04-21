@@ -849,7 +849,8 @@ mad_bip_channel_init(p_mad_channel_t channel)
 
   tbx_malloc_init(&(channel_specific->bip_buffer_key),
 		  MAD_BIP_SMALL_SIZE,
-		  32);
+		  32,
+                  "madeleine/bip small buffers");
 
   TBX_LOCK_SHARED(driver_specific); 
 

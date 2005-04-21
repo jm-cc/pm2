@@ -41,13 +41,16 @@ mad_memory_manager_init(int    argc,
 {
   tbx_malloc_init(&mad_buffer_memory,
 		  sizeof(mad_buffer_t),
-		  INITIAL_BUFFER_NUM);  
+		  INITIAL_BUFFER_NUM,
+                  "madeleine/buffers");
   tbx_malloc_init(&mad_buffer_group_memory,
 		  sizeof(mad_buffer_group_t),
-		  INITIAL_BUFFER_GROUP_NUM);
+		  INITIAL_BUFFER_GROUP_NUM,
+                  "madeleine/buffer groups");
   tbx_malloc_init(&mad_buffer_pair_memory,
 		  sizeof(mad_buffer_pair_t),
-		  INITIAL_BUFFER_PAIR_NUM);
+		  INITIAL_BUFFER_PAIR_NUM,
+                  "madeleine/buffer pairs");
 }
 
 void

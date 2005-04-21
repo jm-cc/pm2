@@ -368,10 +368,12 @@ mad_sbp_driver_init(p_mad_driver_t driver)
 
   tbx_malloc_init(&(driver_specific->buffer_pool_memory),
 		  MAD_SBP_PAYLOAD_SIZE,
-		  MAD_SBP_INITIAL_DYNAMIC_BUFFER_POOL_SIZE);
+		  MAD_SBP_INITIAL_DYNAMIC_BUFFER_POOL_SIZE,
+                  "madeleine/sbp dynamic pool");
   tbx_malloc_init(&(driver_specific->list_element_memory),
 		  sizeof(mad_sbp_list_element_t),
-		  MAD_SBP_INITIAL_LIST_ELEMENT_COUNT);
+		  MAD_SBP_INITIAL_LIST_ELEMENT_COUNT,
+                  "madeleine/sbp list elements");
   driver->name = malloc(4);
   CTRL_ALLOC(driver->name);
   strcpy(driver->name, "sbp");

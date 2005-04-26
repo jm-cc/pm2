@@ -54,26 +54,36 @@
 
 #ifdef DO_PROFILE
 
+#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
+#  define FUT_HEADER(code,...) fut_header(code, marcel_self()->number, ##__VA_ARGS__)
+#else
+#  define FUT_HEADER(code,...) fut_header(code, ##__VA_ARGS__)
+#endif
+
 #define PROF_PROBE0(keymask, code)                        \
   do {                                                    \
     if((keymask) & fut_active)                            \
-      fut_header(code);                                   \
+      FUT_HEADER(code);                                   \
   } while(0)
 
 #define PROF_PROBE1(keymask, code, arg)                   \
   do {                                                    \
     if((keymask) & fut_active)                            \
-      fut_header(code, arg);                              \
+      FUT_HEADER(code, arg);                              \
   } while(0)
 
 #define PROF_PROBE2(keymask, code, arg1, arg2)            \
   do {                                                    \
     if((keymask) & fut_active)                            \
-      fut_header(code, arg1, arg2);                       \
+      FUT_HEADER(code, arg1, arg2);                       \
   } while(0)
 
 #define GEN_PREPROC(name) _GEN_PREPROC(name,__LINE__)
 #define _GEN_PREPROC(name,line) __GEN_PREPROC(name,line)
+#define GEN_PREPROC1(name,arg1) _GEN_PREPROC1(name,__LINE__,arg1)
+#define _GEN_PREPROC1(name,line,arg1) __GEN_PREPROC(name,line,arg1)
+#define GEN_PREPROC2(name,arg1,arg2) _GEN_PREPROC1(name,__LINE__,arg1,arg2)
+#define _GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC(name,line,arg1,arg2)
 
 #ifdef PREPROC
 
@@ -82,18 +92,10 @@
     extern int foo##line asm ("this_is_the_fut_" name "_code"); \
     foo##line = 1;                                              \
   } while(0)
+#define __GEN_PREPROC1(name,line) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC2(name,line) __GEN_PREPROC(name,line)
 
 #else // ifndef PREPROC
-
-#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
-
-#define __GEN_PREPROC(name,line)                                 \
-  do {                                                           \
-    extern unsigned __code##line asm("fut_" name "_code");       \
-    PROF_PROBE1(PROFILE_KEYMASK, __code##line, marcel_self()->number); \
-  } while(0)
-
-#else
 
 #define __GEN_PREPROC(name,line)                          \
   do {                                                    \
@@ -101,7 +103,17 @@
     PROF_PROBE0(PROFILE_KEYMASK, __code##line);           \
   } while(0)
 
-#endif
+#define __GEN_PREPROC1(name,line,arg1)                    \
+  do {                                                    \
+    extern unsigned __code##line asm("fut_" name "_code");\
+    PROF_PROBE1(PROFILE_KEYMASK, __code##line, arg1);     \
+  } while(0)
+
+#define __GEN_PREPROC2(name,line,arg1,arg2)               \
+  do {                                                    \
+    extern unsigned __code##line asm("fut_" name "_code");\
+    PROF_PROBE2(PROFILE_KEYMASK, __code##line, arg1,arg2);\
+  } while(0)
 
 #endif // PREPROC
 
@@ -125,21 +137,26 @@
   } while(0)
 #endif
 
-#define PROF_IN_EXT(name)    GEN_PREPROC(#name "_entry")
-#define PROF_OUT_EXT(name)   GEN_PREPROC(#name "_exit")
-#define PROF_EVENT(name)     GEN_PREPROC(#name "_single")
+#define PROF_IN_EXT(name)             GEN_PREPROC(#name "_entry")
+#define PROF_OUT_EXT(name)            GEN_PREPROC(#name "_exit")
+#define PROF_EVENT(name)              GEN_PREPROC(#name "_single")
+#define PROF_EVENT1(name, arg1)       GEN_PREPROC(#name "_single1", arg1)
+#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC(#name "_single2", arg1, arg2)
 
 #else // ifndef DO_PROFILE
 
-#define PROF_PROBE0(keymask, code)      (void)0
-#define PROF_PROBE1(keymask, code, arg) (void)0
+#define PROF_PROBE0(keymask, code)            (void)0
+#define PROF_PROBE1(keymask, code, arg)       (void)0
+#define PROF_PROBE2(keymask, code, arg, arg2) (void)0
 
-#define PROF_IN()                       (void)0
-#define PROF_OUT()                      (void)0
+#define PROF_IN()                             (void)0
+#define PROF_OUT()                            (void)0
 
-#define PROF_IN_EXT(name)               (void)0
-#define PROF_OUT_EXT(name)              (void)0
-#define PROF_EVENT(name)                (void)0
+#define PROF_IN_EXT(name)                     (void)0
+#define PROF_OUT_EXT(name)                    (void)0
+#define PROF_EVENT(name)                      (void)0
+#define PROF_EVENT1(name, arg1)               (void)0
+#define PROF_EVENT2(name, arg1, arg2)         (void)0
 
 #endif // DO_PROFILE
 
@@ -228,21 +245,24 @@ extern volatile unsigned __pm2_profile_active;
 
 #else // ifndef PROFILE
 
-#define PROF_PROBE0(keymask, code)      (void)0
-#define PROF_PROBE1(keymask, code, arg) (void)0
+#define PROF_PROBE0(keymask, code)            (void)0
+#define PROF_PROBE1(keymask, code, arg)       (void)0
+#define PROF_PROBE2(keymask, code, arg, arg2) (void)0
 
-#define PROF_SWITCH_TO(thr1, thr2)      (void)0
-#define PROF_NEW_LWP(num, thr)     (void)0
-#define PROF_THREAD_BIRTH(thr)          (void)0
-#define PROF_THREAD_DEATH(thr)          (void)0
-#define PROF_SET_THREAD_NAME()		(void)0
+#define PROF_SWITCH_TO(thr1, thr2)            (void)0
+#define PROF_NEW_LWP(num, thr)                (void)0
+#define PROF_THREAD_BIRTH(thr)                (void)0
+#define PROF_THREAD_DEATH(thr)                (void)0
+#define PROF_SET_THREAD_NAME()	              (void)0
 
-#define PROF_IN()                       (void)0
-#define PROF_OUT()                      (void)0
+#define PROF_IN()                             (void)0
+#define PROF_OUT()                            (void)0
 
-#define PROF_IN_EXT(name)               (void)0
-#define PROF_OUT_EXT(name)              (void)0
-#define PROF_EVENT(name)                (void)0
+#define PROF_IN_EXT(name)                     (void)0
+#define PROF_OUT_EXT(name)                    (void)0
+#define PROF_EVENT(name)                      (void)0
+#define PROF_EVENT1(name, arg1)               (void)0
+#define PROF_EVENT2(name, arg1, arg2)         (void)0
 
 #endif // PROFILE
 

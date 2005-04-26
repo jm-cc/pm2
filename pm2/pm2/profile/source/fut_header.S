@@ -87,6 +87,9 @@ probe_code			= 8
 	.globl	fut_header
 fut_header:							/*  normal entry point to take a probe */
 	pushl	%ebx					/*  save this register */
+#ifdef MA__FUT_RECORD_TID
+	addl	$4,caller_code(%esp)		/*  add TID size */
+#endif
 	movzbl	caller_code(%esp),%edx	/*  get number of bytes needed by this record */
 	movl	fut_next_slot,%eax		/*  get pointer to next free slot */
 1:

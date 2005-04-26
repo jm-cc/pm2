@@ -1349,9 +1349,11 @@ bufptr[n] is P(n-2)
 unsigned int *dumpslot( unsigned int *bufptr )
 	{
 	unsigned long	code, fullcode;
+	unsigned long	tid;
 	unsigned int	params, i, thiscpu;
 	u_64			reltime, r, x;
 	int				thispid, print_this = printing;
+	int				idx = 0;
 
 	fprintf(stdbug,"\n");
 #if 0
@@ -1453,7 +1455,8 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		case FUT_FORMAT_SMP:
 			thispid = bufptr[2];
 			bufptr++;
-			bufptr[2]-=4;
+			if( fullcode >= FKT_UNSHIFTED_LIMIT_CODE )
+			    bufptr[2]-=4;
 			break;
 		default:
 			 error_format("pid");
@@ -1592,7 +1595,7 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		}
 	if( print_this )
 		{
-#ifdef FKT // TODO
+#ifdef FKT
 		if( code == FKT_DO_EXECVE_CODE || code == FKT_OPEN_ENTRY_CODE )
 			{
 				char *comm = (char *)(bufptr+3);
@@ -1604,6 +1607,14 @@ unsigned int *dumpslot( unsigned int *bufptr )
 		{
 				bufptr[3]= -thiscpu; /* Idle */
 		}
+#endif
+#ifdef FUT
+		if( code == FUT_SET_THREAD_NAME_CODE )
+			{
+				char *comm = (char *)(bufptr+3);
+				comm[(params-3)*4-1]='\0';
+				printf("  %s",comm);
+			}
 #endif
 		for( i = 3;  i < params;  i++ )
 			{

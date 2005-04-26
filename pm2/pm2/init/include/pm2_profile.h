@@ -54,7 +54,7 @@
 
 #ifdef DO_PROFILE
 
-#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP)
+#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP) || defined(MARCEL_NUMA) || defined(MARCEL_ACTNUMA)
 #  define FUT_HEADER(code,...) fut_header(code, marcel_self()->number, ##__VA_ARGS__)
 #else
 #  define FUT_HEADER(code,...) fut_header(code, ##__VA_ARGS__)

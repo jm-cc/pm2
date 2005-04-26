@@ -1692,6 +1692,7 @@ restart:
 			currq = currq->father);
 
 		MA_BUG_ON(!currq);
+		PROF_EVENT2(bubble_sched_down,nextent,currq);
 		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
 
 		/* on descend, l'ordre des adresses est donc correct */
@@ -1729,6 +1730,7 @@ restart:
 		ma_spin_lock(&rq->lock);
 
 		bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
+		PROF_EVENT1(bubble_sched_explode, bubble)
 		bubble->status = MA_BUBBLE_OPENED;
 		/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
@@ -1781,10 +1783,12 @@ switch_tasks:
 			&& bubble->status == MA_BUBBLE_CLOSING) {
 		MA_BUG_ON(next==prev);
 		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
+		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
 		deactivate_running_task(prev,prevrq);
 		ma_spin_lock(&bubble->lock);
 		if ((wake_bubble = !(--bubble->nbrunning))) {
 			bubble_sched_debug("we're last, bubble %p closed\n", bubble);
+			PROF_EVENT1(bubble_sched_closed,bubble);
 			bubble->status = MA_BUBBLE_CLOSED;
 		}
 		ma_spin_unlock(&bubble->lock);

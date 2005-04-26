@@ -79,6 +79,7 @@ int __marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t
 	ma_runqueue_t *rq;
 	LOG_IN();
 	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
+	PROV_EVENT2(bubble_sched_insert,entity,bubble);
 	list_add(&entity->entity_list, &bubble->heldentities);
 	entity->holdingbubble=bubble;
 	if (bubble->status == MA_BUBBLE_OPENED
@@ -102,13 +103,15 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *
 }
 
 void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
+	ma_runqueue_t *rq;
 	LOG_IN();
-	bubble_sched_debug("waking up bubble %p\n",bubble);
-	if (!bubble->sched.init_rq)
-		bubble->sched.init_rq = &ma_main_runqueue;
-	ma_spin_lock_softirq(&bubble->sched.init_rq->lock);
-	activate_entity(&bubble->sched, bubble->sched.init_rq);
-	ma_spin_unlock_softirq(&bubble->sched.init_rq->lock);
+	if (!(rq = bubble->sched.init_rq))
+		rq = bubble->sched.init_rq = &ma_main_runqueue;
+	ma_spin_lock_softirq(&rq->lock);
+	bubble_sched_debug("waking up bubble %p on rq %s\n",bubble,rq->name);
+	PROV_EVENT2(bubble_sched_wake,bubble,rq);
+	activate_entity(&bubble->sched, rq);
+	ma_spin_unlock_softirq(&rq->lock);
 	LOG_OUT();
 }
 
@@ -118,6 +121,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble) {
 	marcel_bubble_t *b;
 	ma_runqueue_t *rq;
 
+	PROF_EVENT1(bubble_sched_closing,bubble);
 	bubble_sched_debug("bubble %p closing\n", bubble);
 	bubble->status = MA_BUBBLE_CLOSING;
 	list_for_each_entry(e, &bubble->heldentities, entity_list) {
@@ -131,6 +135,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble) {
 			rq = task_rq_lock(t);
 			if (e->array) { /* not running */
 				bubble_sched_debug("deactivating task %s(%p) from %s\n", t->name, t, rq->name);
+				PROF_EVENT2(bubble_sched_goingback,e,bubble);
 				deactivate_task(t,rq);
 				bubble->nbrunning--;
 			}
@@ -155,3 +160,4 @@ void marcel_close_bubble(marcel_bubble_t *bubble) {
 		marcel_wake_up_bubble(bubble);
 	LOG_OUT();
 }
+

@@ -160,7 +160,7 @@ static void __marcel_init look_cpuinfo(void) {
 #endif
 
 #include <numa.h>
-void __marcel_init look_libnuma(void) {
+static void __marcel_init look_libnuma(void) {
 	unsigned long *buffer,*buffer2;
 	unsigned buffersize=MARCEL_NBMAXCPUS/8;
 	unsigned i;
@@ -214,7 +214,7 @@ void __marcel_init look_libnuma(void) {
 }
 #endif /* MA__NUMA */
 
-void look_cpu(void) {
+static void look_cpu(void) {
 	unsigned __nb_processors;
 	struct marcel_topo_level *cpu_level;
 	unsigned i;

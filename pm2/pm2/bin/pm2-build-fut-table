@@ -62,7 +62,7 @@ set -- --source-mode
 
 BUILDDIR=$_PM2CONFIG_BUILD
 
-if echo $_PM2CONFIG_CFLAGS | grep MARCEL_\*SMP > /dev/null; then
+if echo $_PM2CONFIG_CFLAGS | egrep 'MARCEL_.*(SMP|NUMA)' > /dev/null; then
     # Mode SMP : les enregistrements comportent un paramètre supplémentaire...
     RECORD_SIZE=16
 else
@@ -94,6 +94,7 @@ for c in \
     FUT_NEW_LWP_CODE \
     FUT_THREAD_BIRTH_CODE \
     FUT_THREAD_DEATH_CODE \
+    FUT_SET_THREAD_NAME_CODE \
     FUT_MAIN_ENTRY_CODE \
     FUT_MAIN_EXIT_CODE
     do
@@ -154,6 +155,28 @@ for mod in $THE_MODULES ; do
 
 	    # The following generates the right shifted code
 	    num=`expr $other \* 256 + $RECORD_SIZE`
+	    num=`printf "0x%x" $num`
+            echo "unsigned $e = $num ;" >> $deffile
+
+	    other=`expr $other + 1`
+            ;;
+        *single_code1)
+
+	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
+
+	    # The following generates the right shifted code
+	    num=`expr $other \* 256 + $RECORD_SIZE + 4`
+	    num=`printf "0x%x" $num`
+            echo "unsigned $e = $num ;" >> $deffile
+
+	    other=`expr $other + 1`
+            ;;
+        *single_code2)
+
+	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
+
+	    # The following generates the right shifted code
+	    num=`expr $other \* 256 + $RECORD_SIZE + 8`
 	    num=`printf "0x%x" $num`
             echo "unsigned $e = $num ;" >> $deffile
 

@@ -28,7 +28,7 @@ endif
 
 libs: $(MOD_GEN_INC)/fut_entries.h $(MOD_GEN_BIN)/fut_print ./include/fut.h
 
-$(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp
+$(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
 
@@ -36,7 +36,7 @@ $(MOD_GEN_BIN)/fut_print: $(MOD_GEN_INC)/fut_entries.h
 
 $(MOD_GEN_BIN)/fut_print: ./bin/src/fut_print.c
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lbfd -lfkt -DFUT
+	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lbfd -lfxt -DFUT
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)

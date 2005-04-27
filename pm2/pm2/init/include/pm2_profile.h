@@ -54,11 +54,7 @@
 
 #ifdef DO_PROFILE
 
-#if defined(MARCEL_SMP) || defined(MARCEL_ACTSMP) || defined(MARCEL_NUMA) || defined(MARCEL_ACTNUMA)
-#  define FUT_HEADER(code,...) fut_header(code, marcel_self()->number, ##__VA_ARGS__)
-#else
 #  define FUT_HEADER(code,...) fut_header(code, ##__VA_ARGS__)
-#endif
 
 #define PROF_PROBE0(keymask, code)                        \
   do {                                                    \
@@ -81,9 +77,9 @@
 #define GEN_PREPROC(name) _GEN_PREPROC(name,__LINE__)
 #define _GEN_PREPROC(name,line) __GEN_PREPROC(name,line)
 #define GEN_PREPROC1(name,arg1) _GEN_PREPROC1(name,__LINE__,arg1)
-#define _GEN_PREPROC1(name,line,arg1) __GEN_PREPROC(name,line,arg1)
-#define GEN_PREPROC2(name,arg1,arg2) _GEN_PREPROC1(name,__LINE__,arg1,arg2)
-#define _GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC(name,line,arg1,arg2)
+#define _GEN_PREPROC1(name,line,arg1) __GEN_PREPROC1(name,line,arg1)
+#define GEN_PREPROC2(name,arg1,arg2) _GEN_PREPROC2(name,__LINE__,arg1,arg2)
+#define _GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC2(name,line,arg1,arg2)
 
 #ifdef PREPROC
 
@@ -92,8 +88,8 @@
     extern int foo##line asm ("this_is_the_fut_" name "_code"); \
     foo##line = 1;                                              \
   } while(0)
-#define __GEN_PREPROC1(name,line) __GEN_PREPROC(name,line)
-#define __GEN_PREPROC2(name,line) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC1(name,line,arg1) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC(name,line)
 
 #else // ifndef PREPROC
 
@@ -140,8 +136,8 @@
 #define PROF_IN_EXT(name)             GEN_PREPROC(#name "_entry")
 #define PROF_OUT_EXT(name)            GEN_PREPROC(#name "_exit")
 #define PROF_EVENT(name)              GEN_PREPROC(#name "_single")
-#define PROF_EVENT1(name, arg1)       GEN_PREPROC(#name "_single1", arg1)
-#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC(#name "_single2", arg1, arg2)
+#define PROF_EVENT1(name, arg1)       GEN_PREPROC1(#name "_single1", arg1)
+#define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(#name "_single2", arg1, arg2)
 
 #else // ifndef DO_PROFILE
 

@@ -126,7 +126,7 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 
 #section marcel_macros
 #define MA_DEFINE_RUNQUEUE(name) \
-	__attribute__((__section__(".ma.runqueues"))) ma_runqueue_t name
+	TBX_SECTION(".ma.runqueues") ma_runqueue_t name
 
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"

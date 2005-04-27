@@ -100,10 +100,10 @@ for c in \
     do
     code="`grep $c ${PM2_ROOT}/profile/include/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
     label="`echo $c | sed -e 's/^\(FUT_.*\)_CODE$/\1/' | tr A-Z a-z`"
-    echo "{ $code, \"$label\" }," >> $printfile
+    echo "{ $c, \"$label\" }," >> $printfile
 done
 
-base=`expr 4096 + 256` # 0x1100
+base=$((4096 + 256)) # 0x1100
 value=0
 other=15728640 # 0xf00000
 
@@ -124,66 +124,81 @@ for mod in $THE_MODULES ; do
     for e in `cat $FUT_FILES | sort | uniq`; do
     case $e in
         *entry_code)
-	    num=`expr $value + $base`
-
-	    echo "{ `printf "0x%x" $num`, \"`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`\" }," >> $printfile
+	    num=$(($value + $base))
+	    xnum=`printf "0x%x" $num`
+	    name=`echo $e | sed -e 's/fut_\(.*\)_entry_code/\1_entry/'`
+	    upname=`echo $name | tr a-z A-Z`
+	    echo "#define $upname $xnum" >> $printfile
+	    echo "{ $upname, \"$name\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $num \* 256 + $RECORD_SIZE`
-	    num=`printf "0x%x" $num`
-            echo "unsigned $e = $num ;" >> $deffile
+	    num=$(($num * 256 + $RECORD_SIZE))
+	    xnum=`printf "0x%x" $num`
+            echo "unsigned $e = $xnum ;" >> $deffile
             ;;
         *exit_code)
-	    num=`expr $value + $base + 256`
-
-	    echo "{ `printf "0x%x" $num`, \"`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`\" }," >> $printfile
+	    num=$(($value + $base + 256))
+	    xnum=`printf "0x%x" $num`
+	    name=`echo $e | sed -e 's/fut_\(.*\)_exit_code/\1_exit/'`
+	    upname=`echo $name | tr a-z A-Z`
+	    echo "#define $upname $xnum" >> $printfile
+	    echo "{ $upname, \"$name\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $num \* 256 + $RECORD_SIZE`
-	    num=`printf "0x%x" $num`
-            echo "unsigned $e = $num ;" >> $deffile
+	    num=$(($num * 256 + $RECORD_SIZE))
+	    xnum=`printf "0x%x" $num`
+            echo "unsigned $e = $xnum ;" >> $deffile
 
-            value=`expr $value + 1`
+            value=$(($value + 1))
 	    if [ $value = 256 ]; then
-		base=`expr $base + 512`
+		base=$(($base + 512))
 		value=0
 	    fi
 	    ;;
         *single_code)
-
-	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
+	    xnum=`printf "0x%x" $other`
+	    name=`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`
+	    upname=`echo $name | tr a-z A-Z`
+	    echo "#define $upname $xnum" >> $printfile
+	    echo "{ $upname, \"$name\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $other \* 256 + $RECORD_SIZE`
-	    num=`printf "0x%x" $num`
-            echo "unsigned $e = $num ;" >> $deffile
+	    num=$(($other * 256 + $RECORD_SIZE))
+	    xnum=`printf "0x%x" $num`
+            echo "unsigned $e = $xnum ;" >> $deffile
 
-	    other=`expr $other + 1`
+	    other=$(($other + 1))
             ;;
-        *single_code1)
-
-	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
+        *single1_code)
+	    xnum=`printf "0x%x" $other`
+	    name=`echo $e | sed -e 's/fut_\(.*\)_single1_code/\1/'`
+	    upname=`echo $name | tr a-z A-Z`
+	    echo "#define $upname $xnum" >> $printfile
+	    echo "{ $upname, \"$name\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $other \* 256 + $RECORD_SIZE + 4`
-	    num=`printf "0x%x" $num`
-            echo "unsigned $e = $num ;" >> $deffile
+	    num=$(($other * 256 + $RECORD_SIZE + 4))
+	    xnum=`printf "0x%x" $num`
+            echo "unsigned $e = $xnum ;" >> $deffile
 
-	    other=`expr $other + 1`
+	    other=$(($other + 1))
             ;;
-        *single_code2)
-
-	    echo "{ `printf "0x%x" $other`, \"`echo $e | sed -e 's/fut_\(.*\)_single_code/\1/'`\" }," >> $printfile
+        *single2_code)
+	    xnum=`printf "0x%x" $other`
+	    name=`echo $e | sed -e 's/fut_\(.*\)_single2_code/\1/'`
+	    upname=`echo $name | tr a-z A-Z`
+	    echo "#define $upname $xnum" >> $printfile
+	    echo "{ $upname, \"$name\" }," >> $printfile
 
 	    # The following generates the right shifted code
-	    num=`expr $other \* 256 + $RECORD_SIZE + 8`
-	    num=`printf "0x%x" $num`
-            echo "unsigned $e = $num ;" >> $deffile
+	    num=$(($other * 256 + $RECORD_SIZE + 8))
+	    xnum=`printf "0x%x" $num`
+            echo "unsigned $e = $xnum ;" >> $deffile
 
-	    other=`expr $other + 1`
+	    other=$(($other + 1))
             ;;
 	*)
-	    echo "FATAL ERROR!";
+	    echo "unknown profile type $e";
 	    exit 1
 	    ;;
     esac

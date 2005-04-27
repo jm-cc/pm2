@@ -2344,6 +2344,7 @@ int main( int argc, char *argv[] )
 	get_the_time(info->start_time, "start time");
 	get_the_time(info->stop_time, "stop time");
 
+	printf("%14s = %lu\n", "start jiffies", (unsigned long)info->start_jiffies);
 	printf("%14s = %lu\n", "stop jiffies", (unsigned long)info->stop_jiffies);
 	printf("%14s = %lu\n", "total jiffies", (unsigned long)info->stop_jiffies -
 	       (unsigned long)info->start_jiffies);

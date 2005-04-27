@@ -1730,7 +1730,7 @@ restart:
 		ma_spin_lock(&rq->lock);
 
 		bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
-		PROF_EVENT1(bubble_sched_explode, bubble)
+		PROF_EVENT1(bubble_sched_explode, bubble);
 		bubble->status = MA_BUBBLE_OPENED;
 		/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
@@ -3150,6 +3150,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	{
 	char name[16];
 	snprintf(name,sizeof(name),"lwp%d",LWP_NUMBER(lwp));
+	PROF_EVENT2(runqueues_newlwprq,LWP_NUMBER(lwp),ma_lwp_rq(lwp));
 	init_rq(ma_lwp_rq(lwp),name, MA_LWP_RQ);
 #ifdef MA__NUMA
 	if (marcel_topo_nblevels>2) {
@@ -3221,10 +3222,12 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		return;
 	}
 
+	PROF_EVENT2(runqueues_newlevel,levelnum,level->arity);
 	for (i=0;i<level->arity;i++) {
 		level_rq_num[levelnum-1]++;
 		snprintf(name,sizeof(name),"%s%d",
 			base[level->sons[i]->type],level->sons[i]->number);
+		PROF_EVENT1(runqueues_newrq,&newrqs[i]);
 		init_rq(&newrqs[i], name, rqtypes[level->sons[i]->type]);
 		newrqs[i].level = levelnum;
 		newrqs[i].father = rq;
@@ -3239,6 +3242,8 @@ void __marcel_init sched_init(void)
 {
 	LOG_IN();
 
+	PROF_EVENT2(runqueues_newlevel,0,1);
+	PROF_EVENT1(runqueues_newrq,&ma_main_runqueue);
 	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;
@@ -3350,5 +3355,6 @@ void __ma_preempt_write_lock(ma_rwlock_t *lock)
 
 MARCEL_INT(__ma_preempt_write_lock);
 #endif 
+
 
 

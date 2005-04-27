@@ -79,7 +79,7 @@ int __marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t
 	ma_runqueue_t *rq;
 	LOG_IN();
 	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
-	PROV_EVENT2(bubble_sched_insert,entity,bubble);
+	PROF_EVENT2(bubble_sched_insert,entity,bubble);
 	list_add(&entity->entity_list, &bubble->heldentities);
 	entity->holdingbubble=bubble;
 	if (bubble->status == MA_BUBBLE_OPENED
@@ -109,7 +109,7 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 		rq = bubble->sched.init_rq = &ma_main_runqueue;
 	ma_spin_lock_softirq(&rq->lock);
 	bubble_sched_debug("waking up bubble %p on rq %s\n",bubble,rq->name);
-	PROV_EVENT2(bubble_sched_wake,bubble,rq);
+	PROF_EVENT2(bubble_sched_wake,bubble,rq);
 	activate_entity(&bubble->sched, rq);
 	ma_spin_unlock_softirq(&rq->lock);
 	LOG_OUT();

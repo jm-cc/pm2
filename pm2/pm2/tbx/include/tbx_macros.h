@@ -39,7 +39,7 @@
 /* TBX_BACKTRACE_ON_FAILURE: controls usage of the backtracing features
  * provided by the GNU C library
  */
-#if 1
+#if !defined(DARWIN_SYS)
 #  define TBX_BACKTRACE_ON_FAILURE
 #  define TBX_BACKTRACE_DEPTH 15
 #else
@@ -51,7 +51,7 @@
 
 /* TBX_MALLOC_CTRL: causes TBX to perform additional memory allocation
    verification */
-/* 0 allocation/désallocation is correct */
+/* 0 allocation/dÃ©sallocation is correct */
 /*#define TBX_MALLOC_CTRL*/
 
 /*

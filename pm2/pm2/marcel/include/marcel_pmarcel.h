@@ -19,7 +19,9 @@
 #ifndef _PMARCEL_H
 #define _PMARCEL_H	1
 
+#ifndef DARWIN_SYS
 #include <features.h>
+#endif
 #include <sched.h>
 #include <time.h>
 
@@ -29,6 +31,10 @@
 #include <bits/pmarceltypes.h>
 
 #include "tbx_compiler.h"
+
+#ifndef __attribute_deprecated__
+#define __attribute_deprecated__ __tbx_deprecated__
+#endif
 
 /* Detach state.  */
 enum

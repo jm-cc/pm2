@@ -23,6 +23,12 @@
 #include "tbx_macros.h"
 #include "sys/marcel_flags.h"
 
+__TBX_BEGIN_DECLS
+
+#include "asm/marcel-master___compiler.h"
+#include "marcel-master___compiler.h"
+#include "scheduler/marcel-master___compiler.h"
+
 #ifdef MA__PTHREAD_FUNCTIONS
 //#  include "marcel_pthread.h"
 #endif
@@ -31,12 +37,6 @@
 #  include "marcel_pmarcel.h"
 #  include "pthread_libc-symbols.h"
 #endif
-
-__TBX_BEGIN_DECLS
-
-#include "asm/marcel-master___compiler.h"
-#include "marcel-master___compiler.h"
-#include "scheduler/marcel-master___compiler.h"
 
 #include "asm/marcel-master___macros.h"
 #include "marcel-master___macros.h"

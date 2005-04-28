@@ -24,9 +24,8 @@ typedef struct __marcel_attr_s marcel_attr_t;
 
 #section structures
 
-#ifdef LINUX_SYS
-#define __need_schedparam
-#include <bits/sched.h>
+#if defined(LINUX_SYS) || defined(DARWIN_SYS)
+#include <sched.h>
 #else // AD: fake Linux-like structures on other systems
 #include <sys/signal.h>
 struct __sched_param
@@ -47,7 +46,7 @@ struct __marcel_attr_s
   /* begin of pthread */
   int __detachstate;
   int __schedpolicy;
-  struct __sched_param __schedparam;
+  struct sched_param __schedparam;
   int __inheritsched;
   int __scope;
   size_t __guardsize;

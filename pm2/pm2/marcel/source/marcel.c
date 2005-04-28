@@ -233,9 +233,9 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
    return 0;
 }
 DEF_PTHREAD(int, key_create, (pthread_key_t *key, 
-				   pthread_key_destructor_t func), (key, func))
+				   void (*func)(void *)), (key, func))
 DEF___PTHREAD(int, key_create, (pthread_key_t *key, 
-				   pthread_key_destructor_t func), (key, func))
+				   void (*func)(void *)), (key, func))
 
 DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
 { /* pour l'instant, le destructeur n'est pas utilise */

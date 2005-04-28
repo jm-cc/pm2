@@ -49,7 +49,7 @@ extern volatile unsigned default_stack;
 int marcel_attr_init(marcel_attr_t *attr)
 {
 #ifdef MA__POSIX_BEHAVIOUR
-    size_t ps = __getpagesize ();
+    size_t ps = sysconf(_SC_PAGESIZE);
 #endif
     *attr = marcel_attr_default;
 #ifdef MA__POSIX_BEHAVIOUR

@@ -23,7 +23,9 @@
 #ifndef	_UNISTD_H
 #define	_UNISTD_H	1
 
+#ifndef DARWIN_SYS
 #include <features.h>
+#endif
 
 __BEGIN_DECLS
 

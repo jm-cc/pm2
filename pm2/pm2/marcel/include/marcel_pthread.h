@@ -15,7 +15,9 @@
 
 #ifndef _MARCEL_PTHREAD_H
 #define _MARCEL_PTHREAD_H	1
+#ifndef DARWIN_SYS
 #include <features.h>
+#endif
 #include "tbx_compiler.h"
 
 #warning toto

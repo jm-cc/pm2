@@ -28,7 +28,7 @@ typedef struct __marcel_attr_s marcel_attr_t;
 #include <sched.h>
 #else // AD: fake Linux-like structures on other systems
 #include <sys/signal.h>
-struct __sched_param
+struct sched_param
 {
   int __sched_priority;
 };

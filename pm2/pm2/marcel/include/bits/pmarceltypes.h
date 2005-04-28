@@ -19,8 +19,7 @@
 #ifndef _BITS_PMARCELTYPES_H
 #define _BITS_PMARCELTYPES_H	1
 
-#define __need_schedparam
-#include <bits/sched.h>
+#include <sched.h>
 
 typedef int pm__atomic_lock_t;
 
@@ -44,7 +43,7 @@ typedef struct __pmarcel_attr_s
 {
   int __detachstate;
   int __schedpolicy;
-  struct __sched_param __schedparam;
+  struct sched_param __schedparam;
   int __inheritsched;
   int __scope;
   size_t __guardsize;

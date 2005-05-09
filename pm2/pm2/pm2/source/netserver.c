@@ -403,6 +403,10 @@ pm2_net_wait_end(void)
 	  pm2_net_server_pid_array[i] = NULL;
 	}
     }
+  tbx_slist_clear_and_free(pm2_net_channel_slist);
+  pm2_net_channel_slist = NULL;
+  tbx_htable_free(pm2_net_channel_htable);
+  pm2_net_channel_htable = NULL;
   LOG_OUT();
 }
 

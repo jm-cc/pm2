@@ -21,7 +21,7 @@ p_tbx_memory_t my_preallocated_memory;
 be_list init_be_list(long nb_preallocated_be_cells)
 {
   be_list *my_be_list = tmalloc(sizeof(be_list));
-  tbx_malloc_init(&my_preallocated_memory, sizeof(be_cell) + 4, nb_preallocated_be_cells);
+  tbx_malloc_init(&my_preallocated_memory, sizeof(be_cell) + 4, nb_preallocated_be_cells,"dsmlib_belist");
   marcel_mutex_init(&(my_be_list->the_mutex), NULL);
   my_be_list->the_list = NULL;
   return *my_be_list;;

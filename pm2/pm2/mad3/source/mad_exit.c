@@ -1040,8 +1040,11 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
        mad_driver = tbx_htable_extract(mad_driver_htable, driver_name);
 
 
-       tbx_htable_free(mad_driver->adapter_htable);
-       mad_driver->adapter_htable = NULL;
+       /* may have already be done in mad_forward_driver_exit... */
+       if (mad_driver->adapter_htable) {
+         tbx_htable_free(mad_driver->adapter_htable);
+         mad_driver->adapter_htable = NULL;
+       }
 
        TBX_FREE(mad_driver->interface);
        mad_driver->interface = NULL;

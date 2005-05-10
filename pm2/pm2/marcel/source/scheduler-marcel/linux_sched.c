@@ -530,23 +530,31 @@ int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 	return try_to_wake_up(p, state, 0);
 }
 
+static int frozen_scheduler;
+
 void fastcall ma_freeze_thread(marcel_task_t *p)
 {
 	ma_runqueue_t *rq;
-	rq = task_rq_lock(p);
+	if (!frozen_scheduler)
+		rq = task_rq_lock(p);
+	else
+		rq = task_rq(p);
 
 	if (MA_TASK_IS_FROZEN(p)) {
-		task_rq_unlock(rq);
+		if (!frozen_scheduler)
+			task_rq_unlock(rq);
 		RAISE(PROGRAM_ERROR);
 	}
 	if (MA_TASK_IS_RUNNING(p)) {
-		task_rq_unlock(rq);
+		if (!frozen_scheduler)
+			task_rq_unlock(rq);
 		RAISE(NOT_IMPLEMENTED);
 	}
 
-	if (!MA_TASK_IS_SLEEPING(p))
+	if (!MA_TASK_IS_BLOCKED(p))
 		deactivate_task(p,rq);
-	task_rq_unlock(rq);
+	if (!frozen_scheduler)
+		task_rq_unlock(rq);
 	p->sched.state = MA_TASK_FROZEN;
 }
 
@@ -567,10 +575,12 @@ void fastcall marcel_freeze_sched(void)
 			_ma_raw_spin_lock(&ma_lwp_rq(lwp)->lock);
 	}
 #endif
+	frozen_scheduler=1;
 }
 
 void fastcall marcel_unfreeze_sched(void)
 {
+	frozen_scheduler=0;
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
@@ -1518,6 +1528,7 @@ asmlinkage void ma_schedule(void)
 	 * schedule() atomically, we ignore that path for now.
 	 * Otherwise, whine if we are scheduling when we should not be.
 	 */
+	MA_BUG_ON(ma_preempt_count()<0);
 	if (tbx_likely(!(MARCEL_SELF->sched.state & (MA_TASK_DEAD | MA_TASK_ZOMBIE)))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
@@ -1768,7 +1779,7 @@ switch_tasks:
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
 
-	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
 		MA_BUG_ON(next==prev);
 		if (prev->sched.state & MA_TASK_MOVING)
 			/* moving, make it running elsewhere */
@@ -3355,6 +3366,7 @@ void __ma_preempt_write_lock(ma_rwlock_t *lock)
 
 MARCEL_INT(__ma_preempt_write_lock);
 #endif 
+
 
 
 

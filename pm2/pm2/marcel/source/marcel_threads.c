@@ -795,10 +795,10 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
   marcel_sched_init_marcel_thread(t, &marcel_attr_default);
   t->preempt_count=(2*MA_PREEMPT_OFFSET)|MA_SOFTIRQ_OFFSET;
   marcel_one_more_task(t);
+  ma_set_task_state(t, MA_TASK_INTERRUPTIBLE);
   if (t->timer) {
 	t->timer->expires = ma_jiffies + t->remaining_sleep_time;
 	/* TODO: on a perdu cet état. Ça ne devrait pas être écrasé par freeze */
-	ma_set_task_state(t, MA_TASK_INTERRUPTIBLE);
 	ma_add_timer(t->timer);
   } else
   	ma_wake_up_thread(t);

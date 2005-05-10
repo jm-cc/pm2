@@ -180,7 +180,7 @@ void pm2_threads_list(int max, marcel_t *pids, int *nb, int which)
 { int mask = which | DETACHED_ONLY;
 
    if(which == MIGRATABLE_ONLY)
-      mask |= NOT_BLOCKED_ONLY;
+      mask |= SLEEPING_ONLY;
 
    marcel_threadslist(max, pids, nb, mask);
 }

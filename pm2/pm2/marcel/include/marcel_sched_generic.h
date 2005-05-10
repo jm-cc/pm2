@@ -140,8 +140,8 @@ struct marcel_sched_task {
 	ma_set_mb(MARCEL_SELF->sched.state, (state_value))
 
 #define MA_TASK_IS_RUNNING(tsk) ((tsk)->sched.internal.cur_rq && !(tsk)->sched.internal.array)
-#define MA_TASK_IS_BLOCKED(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
-#define MA_TASK_IS_SLEEPING(tsk) (!(tsk)->sched.internal.cur_rq)
+#define MA_TASK_IS_SLEEPING(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
+#define MA_TASK_IS_BLOCKED(tsk) (!(tsk)->sched.internal.cur_rq)
 #define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
 
 #section sched_marcel_functions

@@ -88,6 +88,7 @@
 #define ma_nmi_exit()		(ma_preempt_count() -= MA_HARDIRQ_OFFSET)
 
 #define ma_in_atomic()		(ma_preempt_count() & ~MA_PREEMPT_ACTIVE)
+#define ma_last_preempt()	((ma_preempt_count() & ~MA_PREEMPT_ACTIVE) == MA_PREEMPT_OFFSET)
 #define MA_IRQ_EXIT_OFFSET	(MA_HARDIRQ_OFFSET-1)
 #define ma_irq_exit()							\
 do {									\

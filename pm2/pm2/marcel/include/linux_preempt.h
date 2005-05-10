@@ -60,8 +60,9 @@ do { \
 #define ma_preempt_enable_no_resched() \
 do { \
         ma_barrier(); \
+	if (ma_last_preempt()) \
+        	check_work(); \
         ma_preempt_count_dec(); \
-        check_work(); \
 } while (0)
 
 #define ma_preempt_check_resched() \

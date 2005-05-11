@@ -43,6 +43,7 @@ static inline void ma_set_need_resched(void);
 static inline void ma_clear_need_resched(void);
 
 #section marcel_inline
+#depend "asm/linux_bitops.h[marcel_inline]"
 static inline void ma_set_thread_flag(int flag)
 {
 	ma_set_bit(flag,&MARCEL_SELF->flags);

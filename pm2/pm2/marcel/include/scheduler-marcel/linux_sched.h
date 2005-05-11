@@ -494,6 +494,7 @@ extern void unhash_process(marcel_task_t *p);
 #endif
 
 #section marcel_inline
+#depend "linux_thread_info.h[marcel_inline]"
 /* Protects ->fs, ->files, ->mm, and synchronises with wait4().
  * Nests both inside and outside of read_lock(&tasklist_lock).
  * It must not be nested with write_lock_irq(&tasklist_lock),

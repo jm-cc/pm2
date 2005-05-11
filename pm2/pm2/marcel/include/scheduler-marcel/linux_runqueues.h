@@ -192,6 +192,81 @@ static inline void nr_running_dec(ma_runqueue_t *rq)
 #endif /* CONFIG_NUMA */
 
 /*
+ * double_rq_lock - safely lock two runqueues
+ *
+ * Note this does not disable interrupts like task_rq_lock,
+ * you need to do so manually before calling.
+ *
+ * Note: runqueues order is 
+ * main_runqueue < node_runqueue < core_runqueue < lwp_runqueue
+ * so that once main_runqueue locked, one can lock lwp runqueues for instance.
+ */
+#section marcel_functions
+static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+#section marcel_inline
+static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	if (rq1 == rq2)
+		ma_spin_lock(&rq1->lock);
+	else {
+		if (rq1 < rq2) {
+			ma_spin_lock(&rq1->lock);
+			_ma_raw_spin_lock(&rq2->lock);
+		} else {
+			ma_spin_lock(&rq2->lock);
+			_ma_raw_spin_lock(&rq1->lock);
+		}
+	}
+}
+#section marcel_functions
+static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+#section marcel_inline
+static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	ma_local_bh_disable();
+
+	double_rq_lock(rq1, rq2);
+}
+
+/*
+ * lock_second_rq: locks another runqueue. Of course, addresses must be in
+ * proper order
+ */
+#section marcel_functions
+static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+#section marcel_inline
+static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	MA_BUG_ON(rq1 > rq2);
+	if (rq1 < rq2)
+		_ma_raw_spin_lock(&rq2->lock);
+}
+
+/*
+ * double_rq_unlock - safely unlock two runqueues
+ *
+ * Note this does not restore interrupts like task_rq_unlock,
+ * you need to do so manually after calling.
+ */
+#section marcel_functions
+static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+#section marcel_inline
+static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	ma_spin_unlock(&rq1->lock);
+	if (rq1 != rq2)
+		_ma_raw_spin_unlock(&rq2->lock);
+}
+#section marcel_functions
+static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+#section marcel_inline
+static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+{
+	double_rq_unlock(rq1, rq2);
+	ma_local_bh_enable();
+}
+
+/*
  * task_rq_lock - lock the runqueue a given task resides on and disable
  * interrupts.  Note the ordering: we can safely lookup the task_rq without
  * explicitly disabling preemption.
@@ -298,12 +373,6 @@ static inline void rq_unlock(ma_runqueue_t *rq)
 static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array);
 static inline void dequeue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
 #section marcel_inline
-static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
-{
-	sched_debug("dequeueing %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
-	dequeue_entity(&p->sched.internal, array);
-}
-
 static inline void dequeue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
@@ -316,16 +385,16 @@ static inline void dequeue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *ar
 	MA_BUG_ON(!e->array);
 	e->array = NULL;
 }
+static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
+{
+	sched_debug("dequeueing %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
+	dequeue_entity(&p->sched.internal, array);
+}
 
 #section marcel_functions
 static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array);
 static inline void enqueue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
 #section marcel_inline
-static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
-{
-	sched_debug("enqueueing %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
-	enqueue_entity(&p->sched.internal,array);
-}
 static inline void enqueue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
@@ -334,6 +403,11 @@ static inline void enqueue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *ar
 	array->nr_active++;
 	MA_BUG_ON(e->array);
 	e->array = array;
+}
+static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
+{
+	sched_debug("enqueueing %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
+	enqueue_entity(&p->sched.internal,array);
 }
 
 /*
@@ -457,81 +531,6 @@ static inline void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *r
 	nr_running_dec(rq);
 	MA_BUG_ON(!e->cur_rq);
 	e->cur_rq = NULL;
-}
-
-/*
- * double_rq_lock - safely lock two runqueues
- *
- * Note this does not disable interrupts like task_rq_lock,
- * you need to do so manually before calling.
- *
- * Note: runqueues order is 
- * main_runqueue < node_runqueue < core_runqueue < lwp_runqueue
- * so that once main_runqueue locked, one can lock lwp runqueues for instance.
- */
-#section marcel_functions
-static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	if (rq1 == rq2)
-		ma_spin_lock(&rq1->lock);
-	else {
-		if (rq1 < rq2) {
-			ma_spin_lock(&rq1->lock);
-			_ma_raw_spin_lock(&rq2->lock);
-		} else {
-			ma_spin_lock(&rq2->lock);
-			_ma_raw_spin_lock(&rq1->lock);
-		}
-	}
-}
-#section marcel_functions
-static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_local_bh_disable();
-
-	double_rq_lock(rq1, rq2);
-}
-
-/*
- * lock_second_rq: locks another runqueue. Of course, addresses must be in
- * proper order
- */
-#section marcel_functions
-static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	MA_BUG_ON(rq1 > rq2);
-	if (rq1 < rq2)
-		_ma_raw_spin_lock(&rq2->lock);
-}
-
-/*
- * double_rq_unlock - safely unlock two runqueues
- *
- * Note this does not restore interrupts like task_rq_unlock,
- * you need to do so manually after calling.
- */
-#section marcel_functions
-static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	ma_spin_unlock(&rq1->lock);
-	if (rq1 != rq2)
-		_ma_raw_spin_unlock(&rq2->lock);
-}
-#section marcel_functions
-static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
-#section marcel_inline
-static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
-{
-	double_rq_unlock(rq1, rq2);
-	ma_local_bh_enable();
 }
 
 /*

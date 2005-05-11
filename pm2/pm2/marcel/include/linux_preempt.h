@@ -40,6 +40,7 @@ do { \
 asmlinkage void ma_preempt_schedule(void);
 
 #section marcel_macros
+#depend "linux_thread_info.h[marcel_inline]"
 #define ma_preempt_disable() \
 do { \
         ma_preempt_count_inc(); \

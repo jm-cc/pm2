@@ -130,6 +130,9 @@ define marcel-printthread
   ma-printrq $arg0->sched.internal.cur_rq
   printf "\n"
 end
+document marcel-printthread
+Prints the state of a thread
+end
 
 define marcel-threads
   set $threade=all_threads->next

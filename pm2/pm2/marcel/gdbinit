@@ -41,7 +41,6 @@ define marcel-continue
   handle SIGVTALRM pass
   if $marcel_saved==1
     __rest-ctx
-    echo go\n
   end
 end
 
@@ -50,7 +49,6 @@ define marcel-step
   handle SIGVTALRM nopass
   if $marcel_saved==1
     __rest-ctx
-    echo go\n
   end
 end
 
@@ -86,4 +84,62 @@ define hook-until
 end
 define hook-advance
   marcel-continue
+end
+
+define ma-printrq
+  if $arg0
+    printf " %s", $arg0->name
+  else
+    printf " nil"
+  end
+end
+
+define marcel-printthread
+  set $state='?'
+  if $arg0->sched.state == 0
+    set $state='R'
+  end
+  if $arg0->sched.state == 1
+    set $state='I'
+  end
+  if $arg0->sched.state == 2
+    set $state='U'
+  end
+  if $arg0->sched.state == 4
+    set $state='S'
+  end
+  if $arg0->sched.state == 8
+    set $state='Z'
+  end
+  if $arg0->sched.state == 16
+    set $state='D'
+  end
+  if $arg0->sched.state == 32
+    set $state='G'
+  end
+  if $arg0->sched.state == 64
+    set $state='M'
+  end
+  if $arg0->sched.state == 128
+    set $state='F'
+  end
+  printf "%p %16s %2d %c %2d", \
+    $arg0, $arg0->name, $arg0->sched.internal.prio, $state, \
+    *(unsigned *)((char*)$arg0->sched.lwp+((char*)&ma_per_lwp__number-(char*)&__main_lwp))
+  ma-printrq $arg0->sched.internal.init_rq
+  ma-printrq $arg0->sched.internal.cur_rq
+  printf "\n"
+end
+
+define marcel-threads
+  set $threade=all_threads->next
+  while $threade!=&all_threads
+    set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))
+    marcel-printthread $thread
+    set $threade=$threade->next
+  end
+end
+
+document marcel-threads
+Prints a list of marcel threads
 end

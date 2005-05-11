@@ -44,6 +44,7 @@ marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubbl
 MA_DEFINE_PER_LWP(marcel_bubble_t *, bubble_towake, NULL);
 
 int marcel_bubble_init(marcel_bubble_t *bubble) {
+	PROF_EVENT1(bubble_sched_new,bubble);
 	*bubble = (marcel_bubble_t) MARCEL_BUBBLE_INITIALIZER(*bubble);
 	return 0;
 }
@@ -66,6 +67,7 @@ int marcel_entity_getschedlevel(__const marcel_bubble_entity_t *entity, int *lev
 }
 
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio) {
+	PROF_EVENT2(bubble_sched_setprio,bubble,prio);
 	bubble->sched.prio = prio;
 	return 0;
 }
@@ -161,3 +163,9 @@ void marcel_close_bubble(marcel_bubble_t *bubble) {
 	LOG_OUT();
 }
 
+void __marcel_init bubble_sched_init() {
+	PROF_EVENT1(bubble_sched_new,marcel_root_bubble);
+}
+
+__ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,
+		MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");

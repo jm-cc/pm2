@@ -56,22 +56,16 @@
 
 #  define FUT_HEADER(code,...) fut_header(code, ##__VA_ARGS__)
 
-#define PROF_PROBE0(keymask, code)                        \
+#define PROF_PROBE(keymask, code, ...)                    \
   do {                                                    \
     if((keymask) & fut_active)                            \
-      FUT_HEADER(code);                                   \
+      FUT_HEADER(code, ##__VA_ARGS__);                    \
   } while(0)
 
-#define PROF_PROBE1(keymask, code, arg)                   \
+#define PROF_ALWAYS_PROBE(code, ...)                      \
   do {                                                    \
-    if((keymask) & fut_active)                            \
-      FUT_HEADER(code, arg);                              \
-  } while(0)
-
-#define PROF_PROBE2(keymask, code, arg1, arg2)            \
-  do {                                                    \
-    if((keymask) & fut_active)                            \
-      FUT_HEADER(code, arg1, arg2);                       \
+    if(__pm2_profile_active)                              \
+      FUT_HEADER(code, ##__VA_ARGS__);                    \
   } while(0)
 
 #define GEN_PREPROC(name) _GEN_PREPROC(name,__LINE__)
@@ -96,7 +90,7 @@
 #define __GEN_PREPROC(name,line)                          \
   do {                                                    \
     extern unsigned __code##line asm("fut_" name "_code");\
-    PROF_PROBE0(PROFILE_KEYMASK, __code##line);           \
+    PROF_PROBE(PROFILE_KEYMASK, __code##line);            \
   } while(0)
 
 #define __GEN_PREPROC1(name,line,arg1)                    \
@@ -123,13 +117,13 @@
   do {							\
     extern void fun(void) asm(__FUNCTION__);		\
     /*__cyg_profile_func_enter(fun,NULL);	*/	\
-    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|FUT_SIZE(1), fun);	\
+    PROF_PROBE(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_ENTRY_CODE)<<8)|FUT_SIZE(1), fun);	\
   } while(0)
 #define PROF_OUT()					\
   do {							\
     extern void fun(void) asm(__FUNCTION__);		\
     /*__cyg_profile_func_exit(fun,NULL);	*/	\
-    PROF_PROBE1(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|FUT_SIZE(1), fun);	\
+    PROF_PROBE(PROFILE_KEYMASK, ((FUT_GCC_INSTRUMENT_EXIT_CODE)<<8)|FUT_SIZE(1), fun);	\
   } while(0)
 #endif
 
@@ -141,9 +135,7 @@
 
 #else // ifndef DO_PROFILE
 
-#define PROF_PROBE0(keymask, code)            (void)0
-#define PROF_PROBE1(keymask, code, arg)       (void)0
-#define PROF_PROBE2(keymask, code, arg, arg2) (void)0
+#define PROF_PROBE(keymask, code, ...)        (void)0
 
 #define PROF_IN()                             (void)0
 #define PROF_OUT()                            (void)0
@@ -164,13 +156,9 @@
 // user-level threads. The parameters are the values of the 'number'
 // fields of the task_desc structure.
 #define PROF_SWITCH_TO(thr1, thr2)                               \
- do {                                                            \
-   if(__pm2_profile_active) {                                    \
-      fut_header((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | FUT_SIZE(2), \
+  PROF_ALWAYS_PROBE((((unsigned int)(FUT_SWITCH_TO_CODE))<<8) | FUT_SIZE(2), \
                  (unsigned int)(MA_PROFILE_TID(thr2)),           \
-                 (unsigned int)thr2->number);                    \
-   }                                                             \
- } while(0)
+                 (unsigned int)thr2->number)
 
 // Must be called when a new kernel threads (SMP or activation flavors
 // only) is about to execute the very first thread (usually the
@@ -199,20 +187,12 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
 
 
 #define PROF_THREAD_BIRTH(thr)                                      \
- do {                                                               \
-   if(__pm2_profile_active) {                                       \
-      fut_header((((unsigned int)(FUT_THREAD_BIRTH_CODE))<<8) | FUT_SIZE(1), \
-                 (unsigned int)(MA_PROFILE_TID(thr)));                              \
-   }                                                                \
- } while(0)
+  PROF_ALWAYS_PROBE((((unsigned int)(FUT_THREAD_BIRTH_CODE))<<8) | FUT_SIZE(1), \
+                 (unsigned int)(MA_PROFILE_TID(thr)))
 
 #define PROF_THREAD_DEATH(thr)                                      \
- do {                                                               \
-   if(__pm2_profile_active) {                                       \
-      fut_header((((unsigned int)(FUT_THREAD_DEATH_CODE))<<8) | FUT_SIZE(1), \
-                 (unsigned int)(MA_PROFILE_TID(thr)));                              \
-   }                                                                \
- } while(0)
+  PROF_ALWAYS_PROBE((((unsigned int)(FUT_THREAD_DEATH_CODE))<<8) | FUT_SIZE(1), \
+                 (unsigned int)(MA_PROFILE_TID(thr)))
 
 #define PROF_SET_THREAD_NAME()                                      \
  do {                                                               \
@@ -241,9 +221,7 @@ extern volatile unsigned __pm2_profile_active;
 
 #else // ifndef PROFILE
 
-#define PROF_PROBE0(keymask, code)            (void)0
-#define PROF_PROBE1(keymask, code, arg)       (void)0
-#define PROF_PROBE2(keymask, code, arg, arg2) (void)0
+#define PROF_PROBE(keymask, code, ...)        (void)0
 
 #define PROF_SWITCH_TO(thr1, thr2)            (void)0
 #define PROF_NEW_LWP(num, thr)                (void)0

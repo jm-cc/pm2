@@ -887,12 +887,14 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 {
   p_mad_session_t      session             = NULL;
   p_mad_directory_t    dir                 = NULL;
-  p_tbx_htable_t       mad_driver_htable   = NULL;
+  p_tbx_htable_t       mad_network_htable  = NULL;
+  p_tbx_htable_t       mad_device_htable   = NULL;
 
   LOG_IN();
-  session           = madeleine->session;
-  dir               = madeleine->dir;
-  mad_driver_htable = madeleine->driver_htable;
+  session            = madeleine->session;
+  dir                = madeleine->dir;
+  mad_network_htable = madeleine->network_htable;
+  mad_device_htable  = madeleine->device_htable;
 
   // Adapters
   while (1)
@@ -909,9 +911,9 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
           break;
         }
 
-      mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
+      mad_driver = tbx_htable_get(mad_network_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver not available");
+	FAILURE("driver instance not found");
 
       TRACE_STR("Shutting down adapters of driver", driver_name);
       interface = mad_driver->interface;
@@ -975,14 +977,14 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
   {
     p_mad_driver_t fwd_driver = NULL;
 
-    fwd_driver = tbx_htable_get(mad_driver_htable, "forward");
+    fwd_driver = tbx_htable_get(mad_network_htable, "forward_network");
     fwd_driver->interface->driver_exit(fwd_driver);
   }
 
   {
     p_mad_driver_t mux_driver = NULL;
 
-    mux_driver = tbx_htable_get(mad_driver_htable, "mux");
+    mux_driver = tbx_htable_get(mad_network_htable, "mux_network");
     mux_driver->interface->driver_exit(mux_driver);
   }
 #endif // MARCEL
@@ -1002,9 +1004,9 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
         }
 
       mad_driver =
-	tbx_htable_get(mad_driver_htable, driver_name);
+	tbx_htable_get(mad_network_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver not available");
+	FAILURE("driver instance not found");
 
       TRACE_STR("Shutting down driver", driver_name);
       interface = mad_driver->interface;
@@ -1017,8 +1019,6 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  mad_driver->specific = NULL;
 	}
 
-      TBX_FREE(interface);
-      interface             = NULL;
       mad_driver->interface = NULL;
 
       mad_leonie_send_int(-1);
@@ -1027,17 +1027,17 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
 
  {
-   p_tbx_slist_t mad_driver_key_slist = NULL;
+   p_tbx_slist_t mad_network_key_slist = NULL;
 
-   mad_driver_key_slist = tbx_htable_get_key_slist(mad_driver_htable);
+   mad_network_key_slist = tbx_htable_get_key_slist(mad_network_htable);
 
-   while (!tbx_slist_is_nil(mad_driver_key_slist))
+   while (!tbx_slist_is_nil(mad_network_key_slist))
      {
        p_mad_driver_t  mad_driver  = NULL;
-       char           *driver_name = NULL;
+       char           *network_name = NULL;
 
-       driver_name = tbx_slist_extract(mad_driver_key_slist);
-       mad_driver = tbx_htable_extract(mad_driver_htable, driver_name);
+       network_name = tbx_slist_extract(mad_network_key_slist);
+       mad_driver = tbx_htable_extract(mad_network_htable, network_name);
 
 
        /* may have already be done in mad_forward_driver_exit... */
@@ -1046,19 +1046,39 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
          mad_driver->adapter_htable = NULL;
        }
 
-       TBX_FREE(mad_driver->interface);
-       mad_driver->interface = NULL;
+       TBX_FREE(mad_driver->device_name);
+       mad_driver->device_name = NULL;
 
-       TBX_FREE(mad_driver->name);
-       mad_driver->name = NULL;
+       TBX_FREE(mad_driver->network_name);
+       mad_driver->network_name = NULL;
 
        TBX_FREE(mad_driver);
        mad_driver = NULL;
 
-       TBX_FREE(driver_name);
+       TBX_FREE(network_name);
      }
 
-   tbx_slist_free(mad_driver_key_slist);
+   tbx_slist_free(mad_network_key_slist);
+ }
+
+ {
+   p_tbx_slist_t mad_device_key_slist = NULL;
+
+   mad_device_key_slist = tbx_htable_get_key_slist(mad_device_htable);
+
+   while (!tbx_slist_is_nil(mad_device_key_slist))
+     {
+       p_mad_driver_interface_t  interface   = NULL;
+       char                     *device_name = NULL;
+
+       device_name = tbx_slist_extract(mad_device_key_slist);
+       interface   = tbx_htable_extract(mad_device_htable, device_name);
+
+       TBX_FREE(interface);
+       TBX_FREE(device_name);
+     }
+
+   tbx_slist_free(mad_device_key_slist);
  }
 
   LOG_OUT();
@@ -1145,8 +1165,11 @@ mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
   tbx_htable_free(madeleine->channel_htable);
   madeleine->channel_htable = NULL;
 
-  tbx_htable_free(madeleine->driver_htable);
-  madeleine->driver_htable = NULL;
+  tbx_htable_free(madeleine->network_htable);
+  madeleine->network_htable = NULL;
+
+  tbx_htable_free(madeleine->device_htable);
+  madeleine->device_htable = NULL;
 
   if (madeleine->dynamic)
     {

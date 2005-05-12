@@ -26,7 +26,9 @@
  */
 
 #include "tbx.h"
+#include <errno.h>
 #include <string.h>
+#include <limits.h>
 
 /*
  *  Macros
@@ -791,4 +793,45 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
   LOG_OUT();
 
   return name;
+}
+
+long
+tbx_cstr_to_long(const char *s) {
+        long  val = 0;
+        char *p   = NULL;
+
+        LOG_IN();
+        val = strtol(s, &p, 0);
+
+        if (p == s)
+                FAILUREF("failed to convert string '%s' to <long>", s);
+
+        if (val == LONG_MIN  &&  errno == ERANGE)
+                FAILUREF("underflow error while converting string '%s' to <long>", s);
+
+        if (val == LONG_MAX  &&  errno == ERANGE)
+                FAILUREF("overflow error while converting string '%s' to <long>", s);
+
+        LOG_OUT();
+
+        return val;
+}
+
+unsigned long
+tbx_cstr_to_unsigned_long(const char *s) {
+        unsigned long  val = 0;
+        char *p   = NULL;
+
+        LOG_IN();
+        val = strtoul(s, &p, 0);
+
+        if (p == s)
+                FAILUREF("failed to convert string '%s' to <long>", s);
+
+        if (val == LONG_MAX  &&  errno == ERANGE)
+                FAILUREF("overflow error while converting string '%s' to <long>", s);
+
+        LOG_OUT();
+
+        return val;
 }

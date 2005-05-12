@@ -48,9 +48,9 @@ $(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)
 #$(APP_CPP)/%.fut: $(APP_CPP)/%.i
 #	$(COMMON_BUILD)
 #	$(COMMON_MAIN) cp /dev/null $@
-#	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo-$(USER).o
-#	$(COMMON_HIDE) nm /tmp/foo-$(USER).o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@
-#	$(COMMON_HIDE) rm -f /tmp/foo-$(USER).o
+#	$(COMMON_HIDE) gcc -c -O0 $< -o /tmp/foo-$$$$.o && \
+#	nm /tmp/foo-$$$$.o | fgrep this_is_the_ | sed -e 's/^.*this_is_the_//' >> $@ && \
+#	rm -f /tmp/foo-$$$$.o
 #	$(COMMON_HIDE) touch $(LIB_GEN_STAMP)/fut_stamp
 
 #else # APP_RECURSIF

@@ -51,7 +51,9 @@ tbx_timing_init()
     tbx_residual = tbx_min(tbx_residual, TBX_TICK_RAW_DIFF(t1, t2));
   }
 
-#if defined(X86_ARCH) || (defined(ALPHA_ARCH) && defined(LINUX_SYS))
+#ifdef TBX_TIMING_GETTIMEOFDAY
+  scale = 1.0;
+#else
   {
     struct timeval tv1,tv2;
 
@@ -64,8 +66,6 @@ tbx_timing_init()
 	     (tv1.tv_sec*1e6 + tv1.tv_usec)) /
              (double)(TBX_TICK_DIFF(t1, t2));
   }
-#else
-  scale = 1.0;
 #endif
 
   TBX_GET_TICK(tbx_last_event);

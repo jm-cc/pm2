@@ -38,11 +38,6 @@
 #include <errno.h>
 
 
-DEBUG_DECLARE(tcp)
-
-#undef DEBUG_NAME
-#define DEBUG_NAME tcp
-
 #define MAD_TCP_GROUP_MALLOC_THRESHOLD 256
 
 /*
@@ -225,31 +220,16 @@ mad_tcp_readv(int           sock,
 }
 
 
-#undef DEBUG_NAME
-#define DEBUG_NAME mad3
-
-
 /*
  * Registration function
  * ---------------------
  */
 
-void
-mad_tcp_register(p_mad_driver_t driver)
+char *
+mad_tcp_register(p_mad_driver_interface_t interface)
 {
-  p_mad_driver_interface_t interface = NULL;
-
-#ifdef DEBUG
-  DEBUG_INIT(tcp);
-#endif // DEBUG
-
   LOG_IN();
   TRACE("Registering TCP driver");
-  interface = driver->interface;
-
-  driver->connection_type  = mad_bidirectional_connection;
-  driver->buffer_alignment = 32;
-  driver->name             = tbx_strdup("tcp");
 
   interface->driver_init                = mad_tcp_driver_init;
   interface->adapter_init               = mad_tcp_adapter_init;
@@ -283,6 +263,8 @@ mad_tcp_register(p_mad_driver_t driver)
   interface->send_buffer_group          = mad_tcp_send_buffer_group;
   interface->receive_sub_buffer_group   = mad_tcp_receive_sub_buffer_group;
   LOG_OUT();
+
+  return "tcp";
 }
 
 
@@ -293,6 +275,8 @@ mad_tcp_driver_init(p_mad_driver_t driver)
 
   LOG_IN();
   TRACE("Initializing TCP driver");
+  driver->connection_type  = mad_bidirectional_connection;
+  driver->buffer_alignment = 32;
   driver_specific  = TBX_MALLOC(sizeof(mad_tcp_driver_specific_t));
   driver->specific = driver_specific;
   LOG_OUT();

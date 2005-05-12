@@ -43,6 +43,8 @@ DEBUG_DECLARE(tcp)
 #undef DEBUG_NAME
 #define DEBUG_NAME tcp
 
+#define MAD_TCP_GROUP_MALLOC_THRESHOLD 256
+
 /*
  * local structures
  * ----------------
@@ -694,28 +696,61 @@ mad_tcp_send_buffer_group_2(p_mad_link_t         lnk,
     {
       p_mad_tcp_connection_specific_t connection_specific =
 	lnk->connection->specific;
+      tbx_list_length_t               length ;
       tbx_list_reference_t            ref;
 
+      length = buffer_group->buffer_list.length;
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
 
-      {
-	struct iovec array[buffer_group->buffer_list.length];
-	int          i     = 0;
+      if (length < MAD_TCP_GROUP_MALLOC_THRESHOLD)
+        {
+          struct iovec array[length];
+          int          i     = 0;
 
-	do
-	  {
-	    p_mad_buffer_t buffer = NULL;
+          do
+            {
+              p_mad_buffer_t buffer = NULL;
 
-	    buffer = tbx_get_list_reference_object(&ref);
-	    array[i].iov_base = buffer->buffer;
-	    array[i].iov_len  = buffer->bytes_written - buffer->bytes_read;
-	    buffer->bytes_read = buffer->bytes_written;
-	    i++;
-	  }
-	while(tbx_forward_list_reference(&ref));
+              if (i >= length)
+                FAILURE("index out of bounds");
 
-	mad_tcp_writev(connection_specific->socket, array, i);
-      }
+              buffer = tbx_get_list_reference_object(&ref);
+              array[i].iov_base = buffer->buffer;
+              array[i].iov_len  = buffer->bytes_written - buffer->bytes_read;
+              buffer->bytes_read = buffer->bytes_written;
+              i++;
+            }
+          while(tbx_forward_list_reference(&ref));
+
+          mad_tcp_writev(connection_specific->socket, array, i);
+        }
+      else
+        {
+          struct iovec *array = NULL;
+          int           i     = 0;
+
+          array = TBX_MALLOC(length * sizeof(struct iovec));
+
+          do
+            {
+              p_mad_buffer_t buffer = NULL;
+
+              if (i >= length)
+                FAILURE("index out of bounds");
+
+              buffer = tbx_get_list_reference_object(&ref);
+              array[i].iov_base = buffer->buffer;
+              array[i].iov_len  = buffer->bytes_written - buffer->bytes_read;
+              buffer->bytes_read = buffer->bytes_written;
+              i++;
+            }
+          while(tbx_forward_list_reference(&ref));
+
+          mad_tcp_writev(connection_specific->socket, array, i);
+
+          TBX_FREE(array);
+        }
+
     }
   LOG_OUT();
 }
@@ -729,28 +764,61 @@ mad_tcp_receive_sub_buffer_group_2(p_mad_link_t         lnk,
     {
       p_mad_tcp_connection_specific_t connection_specific =
 	lnk->connection->specific;
+      tbx_list_length_t               length;
       tbx_list_reference_t            ref;
 
+
+      length = buffer_group->buffer_list.length;
       tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
 
-      {
-	struct iovec array[buffer_group->buffer_list.length];
-	int          i     = 0;
+      if (length < MAD_TCP_GROUP_MALLOC_THRESHOLD)
+        {
+          struct iovec array[buffer_group->buffer_list.length];
+          int          i     = 0;
 
-	do
-	  {
-	    p_mad_buffer_t buffer = NULL;
+          do
+            {
+              p_mad_buffer_t buffer = NULL;
 
-	    buffer = tbx_get_list_reference_object(&ref);
-	    array[i].iov_base = buffer->buffer;
-	    array[i].iov_len  = buffer->length - buffer->bytes_written;
-	    buffer->bytes_written = buffer->length;
-	    i++;
-	  }
-	while(tbx_forward_list_reference(&ref));
+              if (i >= length)
+                FAILURE("index out of bounds");
 
-	mad_tcp_readv(connection_specific->socket, array, i);
-      }
+              buffer = tbx_get_list_reference_object(&ref);
+              array[i].iov_base = buffer->buffer;
+              array[i].iov_len  = buffer->length - buffer->bytes_written;
+              buffer->bytes_written = buffer->length;
+              i++;
+            }
+          while(tbx_forward_list_reference(&ref));
+
+          mad_tcp_readv(connection_specific->socket, array, i);
+        }
+      else
+        {
+          struct iovec *array = NULL;
+          int           i     = 0;
+
+          array = TBX_MALLOC(length * sizeof(struct iovec));
+
+          do
+            {
+              p_mad_buffer_t buffer = NULL;
+
+              if (i >= length)
+                FAILURE("index out of bounds");
+
+              buffer = tbx_get_list_reference_object(&ref);
+              array[i].iov_base = buffer->buffer;
+              array[i].iov_len  = buffer->length - buffer->bytes_written;
+              buffer->bytes_written = buffer->length;
+              i++;
+            }
+          while(tbx_forward_list_reference(&ref));
+
+          mad_tcp_readv(connection_specific->socket, array, i);
+
+          TBX_FREE(array);
+        }
     }
   LOG_OUT();
 }

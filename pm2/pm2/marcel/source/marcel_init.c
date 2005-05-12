@@ -135,20 +135,21 @@ void marcel_init_data(int *argc, char *argv[])
 {
   static volatile boolean already_called = FALSE;
 
-  marcel_init_section(MA_INIT_SCHEDULER);
   // Only execute this function once
   if(already_called)
     return;
   already_called = TRUE;
+
+  // Parse command line
+  marcel_parse_cmdline(argc, argv, TRUE);
+
+  marcel_init_section(MA_INIT_SCHEDULER);
 
   // Windows/Cygwin specific stuff
   marcel_win_sys_init(argc, argv);
 
   // Initialize debug facilities
   marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
-
-  // Parse command line
-  marcel_parse_cmdline(argc, argv, TRUE);
 
 }
 

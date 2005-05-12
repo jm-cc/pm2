@@ -71,6 +71,10 @@ typedef enum
   mad_MX,
 #endif // DRV_MX
 
+#ifdef DRV_QUADRICS
+  mad_QUADRICS,
+#endif // DRV_QUADRICS
+
 #ifdef MARCEL
   mad_FORWARD,
 #endif // MARCEL

@@ -81,7 +81,10 @@ int __marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t
 	ma_runqueue_t *rq;
 	LOG_IN();
 	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
-	PROF_EVENT2(bubble_sched_insert,entity,bubble);
+	if (entity->type == MARCEL_BUBBLE_ENTITY)
+		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
+	else
+		PROF_EVENT2(bubble_sched_insert_thread,tbx_container_of(entity,marcel_task_t,sched.internal),bubble);
 	list_add(&entity->entity_list, &bubble->heldentities);
 	entity->holdingbubble=bubble;
 	if (bubble->status == MA_BUBBLE_OPENED

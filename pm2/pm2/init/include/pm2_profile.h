@@ -136,6 +136,7 @@
 #else // ifndef DO_PROFILE
 
 #define PROF_PROBE(keymask, code, ...)        (void)0
+#define PROF_ALWAYS_PROBE(code, ...)          (void)0
 
 #define PROF_IN()                             (void)0
 #define PROF_OUT()                            (void)0
@@ -222,6 +223,7 @@ extern volatile unsigned __pm2_profile_active;
 #else // ifndef PROFILE
 
 #define PROF_PROBE(keymask, code, ...)        (void)0
+#define PROF_ALWAYS_PROBE(code, ...)          (void)0
 
 #define PROF_SWITCH_TO(thr1, thr2)            (void)0
 #define PROF_NEW_LWP(num, thr)                (void)0

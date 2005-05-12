@@ -96,13 +96,13 @@
 #define __GEN_PREPROC1(name,line,arg1)                    \
   do {                                                    \
     extern unsigned __code##line asm("fut_" name "_code");\
-    PROF_PROBE1(PROFILE_KEYMASK, __code##line, arg1);     \
+    PROF_PROBE(PROFILE_KEYMASK, __code##line, arg1);      \
   } while(0)
 
 #define __GEN_PREPROC2(name,line,arg1,arg2)               \
   do {                                                    \
     extern unsigned __code##line asm("fut_" name "_code");\
-    PROF_PROBE2(PROFILE_KEYMASK, __code##line, arg1,arg2);\
+    PROF_PROBE(PROFILE_KEYMASK, __code##line, arg1,arg2); \
   } while(0)
 
 #endif // PREPROC

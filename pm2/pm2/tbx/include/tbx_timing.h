@@ -81,6 +81,9 @@ typedef unsigned long tbx_tick_t, *p_tbx_tick_t;
 
 #else
 
+/* fall back to imprecise but portable way */
+#define TBX_TIMING_GETTIMEOFDAY
+
 typedef struct timeval tbx_tick_t, *p_tbx_tick_t;
 
 #define TBX_GET_TICK(t) \

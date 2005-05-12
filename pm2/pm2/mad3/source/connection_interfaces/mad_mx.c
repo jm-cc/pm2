@@ -90,12 +90,13 @@ typedef struct s_mad_mx_ev {
  * handlers, the server pointer must be global
  */
 static struct marcel_ev_server mad_mx_ev_server = MARCEL_EV_SERVER_INIT(mad_mx_ev_server, "Mad/MX I/O");
+static tbx_bool_t mad_mx_ev_server_started = tbx_false;
 
 #endif /* MARCEL */
 
 #define GATHER_SCATTER_THRESHOLD	32768
 #define FIRST_PACKET_THRESHOLD		32768
-
+#define MAD_MX_GROUP_MALLOC_THRESHOLD   256
 
 /*
  * Malloc protection hooks
@@ -103,6 +104,8 @@ static struct marcel_ev_server mad_mx_ev_server = MARCEL_EV_SERVER_INIT(mad_mx_e
  */
 
 /* Prototypes */
+
+#ifdef MARCEL
 static
 void *
 mad_mx_malloc_hook(size_t len, const void *caller);
@@ -141,6 +144,8 @@ static
 void *
 (*mad_mx_old_realloc_hook)(void *PTR, size_t LEN, const void *CALLER) = NULL;
 
+#endif /* MARCEL */
+
 #if 0
 /*
  * Malloc hooks installation is delayed to mad_mx_driver_init because
@@ -154,10 +159,11 @@ void *
 void (*__malloc_initialize_hook) (void) = mad_mx_malloc_initialize_hook;
 #endif /* 0 */
 
+#ifdef MARCEL
 /* Flag to prevent multiple hooking */
 static
 int mad_mx_malloc_hooked = 0;
-
+#endif /* MARCEL */
 
 
 /*
@@ -184,6 +190,7 @@ __mad_mx_hook_unlock(void) {
 #endif /* MARCEL */
 }
 
+#ifdef MARCEL
 static
 void
 mad_mx_install_hooks(void) {
@@ -307,7 +314,7 @@ mad_mx_malloc_initialize_hook(void) {
         mad_mx_malloc_hooked = 1;
         mad_mx_install_hooks();
 }
-
+#endif /* MARCEL */
 
 static
 inline
@@ -568,18 +575,10 @@ mad_mx_recv(p_mad_channel_t	 ch,
  */
 
 
-void
-mad_mx_register(p_mad_driver_t driver) {
-        p_mad_driver_interface_t interface = NULL;
-
+char *
+mad_mx_register(p_mad_driver_interface_t interface) {
         LOG_IN();
         TRACE("Registering MX driver");
-        interface = driver->interface;
-
-        driver->connection_type  = mad_bidirectional_connection;
-        driver->buffer_alignment = 32;
-        driver->name             = tbx_strdup("mx");
-
         interface->driver_init                = mad_mx_driver_init;
         interface->adapter_init               = mad_mx_adapter_init;
         interface->channel_init               = mad_mx_channel_init;
@@ -611,7 +610,14 @@ mad_mx_register(p_mad_driver_t driver) {
         interface->receive_buffer             = mad_mx_receive_buffer;
         interface->send_buffer_group          = mad_mx_send_buffer_group;
         interface->receive_sub_buffer_group   = mad_mx_receive_sub_buffer_group;
+
+#ifdef MARCEL
+        marcel_ev_server_set_poll_settings(&mad_mx_ev_server, MAD_MX_POLLING_MODE, 1);
+        marcel_ev_server_add_callback(&mad_mx_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_mx_do_poll);
+#endif /* MARCEL */
         LOG_OUT();
+
+        return "mx";
 }
 
 
@@ -621,6 +627,9 @@ mad_mx_driver_init(p_mad_driver_t d) {
         mx_return_t			 return_code	= MX_SUCCESS;
 
         LOG_IN();
+        d->buffer_alignment = 32;
+        d->connection_type  = mad_bidirectional_connection;
+
         TRACE("Initializing MX driver");
 #ifdef MARCEL
         if (!mad_mx_malloc_hooked) {
@@ -628,10 +637,6 @@ mad_mx_driver_init(p_mad_driver_t d) {
         }
 #endif /* MARCEL */
         ds  		= TBX_MALLOC(sizeof(mad_mx_driver_specific_t));
-#ifdef MARCEL
-        marcel_ev_server_set_poll_settings(&mad_mx_ev_server, MAD_MX_POLLING_MODE, 1);
-        marcel_ev_server_add_callback(&mad_mx_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_mx_do_poll);
-#endif /* MARCEL */
         d->specific	= ds;
 
         mad_mx_lock();
@@ -647,7 +652,10 @@ mad_mx_driver_init(p_mad_driver_t d) {
         mad_mx_startup_info();
 
 #ifdef MARCEL
-	marcel_ev_server_start(&mad_mx_ev_server);
+        if (!mad_mx_ev_server_started) {
+                marcel_ev_server_start(&mad_mx_ev_server);
+                mad_mx_ev_server_started = tbx_true;
+        }
 #endif /* MARCEL */
         LOG_OUT();
 }
@@ -1077,6 +1085,104 @@ mad_mx_receive_sub_buffer_group_1(p_mad_link_t         lnk,
 }
 
 
+void
+mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list,
+                                        p_mad_buffer_group_t            buffer_group,
+                                        p_mad_connection_t              out,
+                                        p_mad_mx_connection_specific_t	os,
+                                        uint64_t                        match_info) {
+  tbx_list_reference_t	ref;
+  uint32_t		offset	= 0;
+  unsigned int		i	= 0;
+
+  LOG_IN();
+  TRACE_VAL("sbg: group length", buffer_list->length);
+
+  tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+
+  do {
+    p_mad_buffer_t	b		= NULL;
+    void *          data_ptr	= NULL;
+    uint32_t	data_length	= 0;
+
+    b = tbx_get_list_reference_object(&ref);
+
+    if (os->first_outgoing_packet_flag){
+      mx_segment_t s;
+
+      os->first_outgoing_packet_flag = 0;
+
+      // on envoie une premiere partie en guise de new_msg
+      data_ptr	= b->buffer + b->bytes_read;
+      data_length	= tbx_min(b->bytes_written - b->bytes_read, FIRST_PACKET_THRESHOLD);
+
+      TRACE("sbg: first packet length: %x", data_length);
+      b->bytes_read		+= data_length;
+
+      s.segment_ptr		 = data_ptr;
+      s.segment_length	 = data_length;
+
+      mad_mx_send(out, &s, 1, match_info);
+
+      if(!mad_more_data(b))
+        goto no_more_data;
+    }
+
+    TRACE("sbg: offset: %x", offset);
+    data_ptr	 = b->buffer        + b->bytes_read;
+    data_length	 =
+      i?tbx_min(b->bytes_written - b->bytes_read,
+                GATHER_SCATTER_THRESHOLD - offset)
+      :b->bytes_written - b->bytes_read;
+
+    TRACE("sbg: segment length: %x", data_length);
+
+    b->bytes_read	+= data_length;
+
+    seg_list[i].segment_ptr		= data_ptr;
+    seg_list[i].segment_length	= data_length;
+
+    i++;
+    offset += data_length;
+
+    if (offset >= GATHER_SCATTER_THRESHOLD){
+      TRACE("sbg: seg_list full, flushing");
+      mad_mx_send(out, seg_list, i, match_info);
+
+      if (mad_more_data(b)) {
+        mx_segment_t s;
+
+        data_ptr	+= data_length;
+        data_length	 = b->bytes_written - b->bytes_read;
+
+        b->bytes_read	+= data_length;
+
+        TRACE("sbg: sending large block: %x", data_length);
+
+        s.segment_ptr		= data_ptr;
+        s.segment_length	= data_length;
+
+        mad_mx_send(out, &s, 1, match_info);
+      }
+
+      i = 0;
+      offset = 0;
+    }
+
+  no_more_data:
+    ;
+
+    TRACE("sbg: while");
+
+  } while (tbx_forward_list_reference(&ref));
+
+  if (offset) {
+    TRACE("sbg: remaining offset: %x", offset);
+    mad_mx_send(out, seg_list, i, match_info);
+  }
+
+  LOG_OUT();
+}
 
 
 void
@@ -1097,97 +1203,140 @@ mad_mx_send_buffer_group_2(p_mad_link_t         lnk,
         buffer_list = &buffer_group->buffer_list;
 
         if (!tbx_empty_list(buffer_list)) {
-                mx_segment_t		seg_list[buffer_list->length];
-                tbx_list_reference_t	ref;
-                uint32_t		offset	= 0;
-                unsigned int		i	= 0;
 
-                TRACE_VAL("sbg: group length", buffer_list->length);
+          if (buffer_list->length < MAD_MX_GROUP_MALLOC_THRESHOLD) {
+            mx_segment_t		seg_list[buffer_list->length];
 
-                tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+            mad_mx_send_buffer_group_2_process_list(seg_list, buffer_group, out, os, match_info);
+          }
+          else {
+            mx_segment_t               *seg_list = NULL;
 
-                do {
-                        p_mad_buffer_t	b		= NULL;
-                        void *          data_ptr	= NULL;
-                        uint32_t	data_length	= 0;
+            seg_list = TBX_MALLOC(buffer_list->length * sizeof(mx_segment_t));
 
-                        b = tbx_get_list_reference_object(&ref);
+            mad_mx_send_buffer_group_2_process_list(seg_list, buffer_group, out, os, match_info);
 
-                        if (os->first_outgoing_packet_flag){
-                                mx_segment_t s;
+            TBX_FREE(seg_list);
+          }
 
-                                os->first_outgoing_packet_flag = 0;
-
-                                // on envoie une premiere partie en guise de new_msg
-                                data_ptr	= b->buffer + b->bytes_read;
-                                data_length	= tbx_min(b->bytes_written - b->bytes_read, FIRST_PACKET_THRESHOLD);
-
-                                TRACE("sbg: first packet length: %x", data_length);
-                                b->bytes_read		+= data_length;
-
-                                s.segment_ptr		 = data_ptr;
-                                s.segment_length	 = data_length;
-
-                                mad_mx_send(out, &s, 1, match_info);
-
-                                if(!mad_more_data(b))
-                                        goto no_more_data;
-                        }
-
-                        TRACE("sbg: offset: %x", offset);
-                        data_ptr	 = b->buffer        + b->bytes_read;
-                        data_length	 =
-                                i?tbx_min(b->bytes_written - b->bytes_read,
-                                          GATHER_SCATTER_THRESHOLD - offset)
-                                :b->bytes_written - b->bytes_read;
-
-                        TRACE("sbg: segment length: %x", data_length);
-
-                        b->bytes_read	+= data_length;
-
-                        seg_list[i].segment_ptr		= data_ptr;
-                        seg_list[i].segment_length	= data_length;
-
-                        i++;
-                        offset += data_length;
-
-                        if (offset >= GATHER_SCATTER_THRESHOLD){
-                                TRACE("sbg: seg_list full, flushing");
-                                mad_mx_send(out, seg_list, i, match_info);
-
-                                if (mad_more_data(b)) {
-                                        mx_segment_t s;
-
-                                        data_ptr	+= data_length;
-                                        data_length	 = b->bytes_written - b->bytes_read;
-
-                                        b->bytes_read	+= data_length;
-
-                                        TRACE("sbg: sending large block: %x", data_length);
-
-                                        s.segment_ptr		= data_ptr;
-                                        s.segment_length	= data_length;
-
-                                        mad_mx_send(out, &s, 1, match_info);
-                                }
-
-                                i = 0;
-                                offset = 0;
-                        }
-
-                no_more_data:
-                        ;
-
-                        TRACE("sbg: while");
-
-                } while (tbx_forward_list_reference(&ref));
-
-                if (offset) {
-                        TRACE("sbg: remaining offset: %x", offset);
-                        mad_mx_send(out, seg_list, i, match_info);
-                }
         }
         LOG_OUT();
+}
+
+void
+mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *seg_list,
+                                               mx_request_t                  *req_list,
+                                               p_mad_buffer_group_t           buffer_group,
+                                               p_mad_mx_connection_specific_t is,
+                                               p_mad_channel_t		      ch,
+                                               p_mad_mx_channel_specific_t    chs,
+                                               uint64_t                       match_info) {
+  tbx_list_reference_t	ref;
+  uint32_t		offset	= 0;
+  unsigned int		i	= 0;
+  unsigned int		j	= 0;
+  unsigned int		k	= 0;
+  uint64_t              mi      = 0;
+
+  LOG_IN();
+  TRACE_VAL("rbg: group length", buffer_list->length);
+  tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+
+  do {
+    p_mad_buffer_t b = NULL;
+    void *          data_ptr	= NULL;
+    uint32_t	data_length	= 0;
+
+    b = tbx_get_list_reference_object(&ref);
+
+    if (is->first_incoming_packet_flag){
+
+
+      is->first_incoming_packet_flag = 0;
+
+      //on a deja recu une premiere partie dans receive_message
+      data_ptr	= b->buffer + b->bytes_written;
+      data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
+
+      TRACE("rbg: first packet length: %x", chs->first_packet_length);
+      TRACE("rbg: expected first packet length: %x", data_length);
+
+      if (chs->first_packet_length != data_length)
+        FAILURE("invalid first packet length");
+
+      memcpy(data_ptr, chs->first_packet, data_length);
+
+      b->bytes_written += data_length;
+
+      if (mad_buffer_full(b))
+        goto no_more_data;
+    }
+
+    TRACE("rbg: offset: %x", offset);
+    data_ptr	= b->buffer + b->bytes_written;
+    data_length	=
+      i?tbx_min(b->length - b->bytes_written,
+                GATHER_SCATTER_THRESHOLD - offset)
+      :b->length - b->bytes_written;
+
+    TRACE("rbg: segment length: %x", data_length);
+
+    b->bytes_written	+= data_length;
+
+    seg_list[i].segment_ptr		= data_ptr;
+    seg_list[i].segment_length	= data_length;
+
+    i++;
+    offset += data_length;
+
+    if (offset >= GATHER_SCATTER_THRESHOLD){
+      TRACE("rbg: seg_list full, flushing");
+      mi	= match_info;
+      mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
+      j++;
+
+      if (!mad_buffer_full(b)) {
+        mx_segment_t s;
+
+        data_ptr	+= data_length;
+        data_length	 = b->length - b->bytes_written;
+
+        b->bytes_written	+= data_length;
+
+        TRACE("rbg: receiving large block: %x", data_length);
+        s.segment_ptr		= data_ptr;
+        s.segment_length	= data_length;
+
+        mi	= match_info;
+        mad_mx_irecv(ch, &s, 1, &mi, MX_MATCH_MASK_NONE, req_list+j);
+        j++;
+      }
+
+      i = 0;
+      offset = 0;
+    }
+
+  no_more_data:
+    ;
+
+    TRACE("rbg: while");
+
+  } while(tbx_forward_list_reference(&ref));
+
+  if (offset) {
+    TRACE("rbg: remaining offset: %x", offset);
+    mi 	= match_info;
+    mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
+    j++;
+  }
+
+  for(k = 0; k < j; k++){
+    TRACE("rbg: %d/%d...", k+1, j);
+    mad_mx_blocking_test(ch, req_list+k, NULL);
+    TRACE("rbg: %d/%d.", k+1, j);
+  }
+
+  LOG_OUT();
 }
 
 void
@@ -1198,7 +1347,6 @@ mad_mx_receive_sub_buffer_group_2(p_mad_link_t         lnk,
         p_mad_channel_t			ch	    = NULL;
         p_mad_mx_channel_specific_t	chs	    = NULL;
         uint64_t                        match_info  = 0;
-        uint64_t                        mi	    = 0;
         p_tbx_list_t                    buffer_list = NULL;
 
         LOG_IN();
@@ -1211,110 +1359,25 @@ mad_mx_receive_sub_buffer_group_2(p_mad_link_t         lnk,
         buffer_list = &buffer_group->buffer_list;
 
         if (!tbx_empty_list(buffer_list)) {
-                mx_segment_t		seg_list[buffer_list->length];
-                mx_request_t		req_list[buffer_list->length*2];
-                tbx_list_reference_t	ref;
-                uint32_t		offset	= 0;
-                unsigned int		i	= 0;
-                unsigned int		j	= 0;
-                unsigned int		k	= 0;
 
-                TRACE_VAL("rbg: group length", buffer_list->length);
-                tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
+          if (buffer_list->length < MAD_MX_GROUP_MALLOC_THRESHOLD) {
+            mx_segment_t		seg_list[buffer_list->length];
+            mx_request_t		req_list[buffer_list->length*2];
 
-                do {
-                        p_mad_buffer_t b = NULL;
-                        void *          data_ptr	= NULL;
-                        uint32_t	data_length	= 0;
+            mad_mx_receive_sub_buffer_group_2_process_list(seg_list, req_list, buffer_group, is, ch, chs, match_info);
+          }
+          else {
+            mx_segment_t                *seg_list = NULL;
+            mx_request_t                *req_list = NULL;
 
-                        b = tbx_get_list_reference_object(&ref);
+            seg_list = TBX_MALLOC(buffer_list->length * sizeof(mx_segment_t));
+            req_list = TBX_MALLOC(buffer_list->length * 2 * sizeof(mx_request_t));
 
-                        if (is->first_incoming_packet_flag){
+            mad_mx_receive_sub_buffer_group_2_process_list(seg_list, req_list, buffer_group, is, ch, chs, match_info);
 
-
-                                is->first_incoming_packet_flag = 0;
-
-                                //on a deja recu une premiere partie dans receive_message
-                                data_ptr	= b->buffer + b->bytes_written;
-                                data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
-
-                                TRACE("rbg: first packet length: %x", chs->first_packet_length);
-                                TRACE("rbg: expected first packet length: %x", data_length);
-
-                                if (chs->first_packet_length != data_length)
-                                        FAILURE("invalid first packet length");
-
-                                memcpy(data_ptr, chs->first_packet, data_length);
-
-                                b->bytes_written += data_length;
-
-                                if (mad_buffer_full(b))
-                                        goto no_more_data;
-                        }
-
-                        TRACE("rbg: offset: %x", offset);
-                        data_ptr	= b->buffer + b->bytes_written;
-                        data_length	=
-                                i?tbx_min(b->length - b->bytes_written,
-                                          GATHER_SCATTER_THRESHOLD - offset)
-                                :b->length - b->bytes_written;
-
-                        TRACE("rbg: segment length: %x", data_length);
-
-                        b->bytes_written	+= data_length;
-
-                        seg_list[i].segment_ptr		= data_ptr;
-                        seg_list[i].segment_length	= data_length;
-
-                        i++;
-                        offset += data_length;
-
-                        if (offset >= GATHER_SCATTER_THRESHOLD){
-                                TRACE("rbg: seg_list full, flushing");
-                                mi	= match_info;
-                                mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
-                                j++;
-
-                                if (!mad_buffer_full(b)) {
-                                        mx_segment_t s;
-
-                                        data_ptr	+= data_length;
-                                        data_length	 = b->length - b->bytes_written;
-
-                                        b->bytes_written	+= data_length;
-
-                                        TRACE("rbg: receiving large block: %x", data_length);
-                                        s.segment_ptr		= data_ptr;
-                                        s.segment_length	= data_length;
-
-                                        mi	= match_info;
-                                        mad_mx_irecv(ch, &s, 1, &mi, MX_MATCH_MASK_NONE, req_list+j);
-                                        j++;
-                                }
-
-                                i = 0;
-                                offset = 0;
-                        }
-
-                no_more_data:
-                        ;
-
-                        TRACE("rbg: while");
-
-                } while(tbx_forward_list_reference(&ref));
-
-                if (offset) {
-                        TRACE("rbg: remaining offset: %x", offset);
-                        mi 	= match_info;
-                        mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
-                        j++;
-                }
-
-                for(k = 0; k < j; k++){
-                        TRACE("rbg: %d/%d...", k+1, j);
-                        mad_mx_blocking_test(ch, req_list+k, NULL);
-                        TRACE("rbg: %d/%d.", k+1, j);
-                }
+            TBX_FREE(seg_list);
+            TBX_FREE(req_list);
+          }
         }
         LOG_OUT();
 }

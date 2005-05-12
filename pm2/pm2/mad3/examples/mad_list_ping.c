@@ -159,7 +159,7 @@ file_size_func(void) {
 static
 void
 init_size_list() {
-        tbx_malloc_init(&size_wrapper_memory, sizeof(int), 16);
+        tbx_malloc_init(&size_wrapper_memory, sizeof(int), 16, "size wrappers");
         size_slist = tbx_slist_nil();
 }
 

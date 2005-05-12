@@ -90,7 +90,9 @@ adapter_init(p_mad_driver_t mad_driver,
 
 static
 tbx_bool_t
-driver_init_1(p_tbx_htable_t       mad_driver_htable,
+driver_init_1(p_mad_madeleine_t    madeleine,
+              p_tbx_htable_t       mad_device_htable,
+              p_tbx_htable_t       mad_network_htable,
               p_tbx_htable_t       dir_driver_htable,
               ntbx_process_grank_t g)
 {
@@ -100,29 +102,48 @@ driver_init_1(p_tbx_htable_t       mad_driver_htable,
   p_mad_dir_driver_t                   dir_driver         = NULL;
   p_mad_dir_driver_process_specific_t  pi_specific        = NULL;
   p_tbx_htable_t                       dir_adapter_htable = NULL;
-  char                                *driver_name        = NULL;
+  char                                *network_name       = NULL;
+  char                                *device_name        = NULL;
 
-  driver_name = mad_leonie_receive_string();
-  if (tbx_streq(driver_name, "-"))
+  network_name = mad_leonie_receive_string();
+  if (tbx_streq(network_name, "-"))
     {
-      TBX_FREE(driver_name);
+      TBX_FREE(network_name);
       LOG_OUT();
 
       return tbx_false;
     }
 
-  dir_driver = tbx_htable_get(dir_driver_htable, driver_name);
+  dir_driver = tbx_htable_get(dir_driver_htable, network_name);
   if (!dir_driver)
-    FAILURE("driver not found");
+    FAILURE("driver instance not found");
 
-  mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
-  if (!mad_driver)
-    FAILURE("driver not available");
+  mad_driver = tbx_htable_get(mad_network_htable, network_name);
 
-  TRACE_STR("Initializing driver", driver_name);
+  if (mad_driver)
+    FAILUREF("driver instance %s already initialized", network_name);
+
+  device_name = dir_driver->device_name;
+
+  TRACE("Initializing driver instance %s of %s", network_name, device_name);
+  interface = tbx_htable_get(mad_device_htable, device_name);
+  if (!interface)
+    FAILUREF("driver %s not available", device_name);
+
+  mad_driver = mad_driver_cons();
+
+  mad_driver->madeleine      = madeleine;
+  mad_driver->network_name   = tbx_strdup(network_name);
+  mad_driver->device_name    = tbx_strdup(device_name);
+  mad_driver->adapter_htable = tbx_htable_empty_table();
+  mad_driver->interface      = interface;
+
+  tbx_htable_add(mad_network_htable, network_name, mad_driver);
+
   mad_driver->dir_driver = dir_driver;
 
-  interface = mad_driver->interface;
+  mad_driver->process_lrank = ntbx_pc_global_to_local(dir_driver->pc, g);
+
   interface->driver_init(mad_driver);
 
   mad_leonie_send_int(-1);
@@ -136,7 +157,7 @@ driver_init_1(p_tbx_htable_t       mad_driver_htable,
   while (adapter_init(mad_driver, mad_adapter_htable, dir_adapter_htable))
     ;
 
-  TBX_FREE(driver_name);
+  TBX_FREE(network_name);
   LOG_OUT();
 
   return tbx_true;
@@ -215,15 +236,18 @@ driver_init_2(p_tbx_htable_t dir_driver_htable)
 void
 mad_dir_driver_init(p_mad_madeleine_t madeleine)
 {
-  p_tbx_htable_t mad_driver_htable = NULL;
-  p_tbx_htable_t dir_driver_htable = NULL;
+  p_tbx_htable_t mad_device_htable  = NULL;
+  p_tbx_htable_t mad_network_htable = NULL;
+  p_tbx_htable_t dir_driver_htable  = NULL;
 
   LOG_IN();
-  mad_driver_htable = madeleine->driver_htable;
-  dir_driver_htable = madeleine->dir->driver_htable;
+  mad_device_htable  = madeleine->device_htable;
+  mad_network_htable = madeleine->network_htable;
+  dir_driver_htable  = madeleine->dir->driver_htable;
 
   TRACE("Driver initialization: first pass");
-  while (driver_init_1(mad_driver_htable, dir_driver_htable,
+  while (driver_init_1(madeleine,
+                       mad_device_htable, mad_network_htable, dir_driver_htable,
                        madeleine->session->process_rank))
     ;
 
@@ -233,17 +257,39 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
 #ifdef MARCEL
   {
-    p_mad_driver_t fwd_driver = NULL;
+    p_mad_driver_t            mad_driver   = NULL;
+    p_mad_driver_interface_t  interface    = NULL;
+    const char               *device_name  = "forward";
+    const char               *network_name = "forward_network";
 
-    fwd_driver = tbx_htable_get(mad_driver_htable, "forward");
-    fwd_driver->interface->driver_init(fwd_driver);
+    interface = tbx_htable_get(mad_device_htable, device_name);
+    mad_driver->madeleine      = madeleine;
+    mad_driver->network_name   = tbx_strdup(network_name);
+    mad_driver->device_name    = tbx_strdup(device_name);
+    mad_driver->adapter_htable = tbx_htable_empty_table();
+    mad_driver->interface      = interface;
+
+    tbx_htable_add(mad_network_htable, network_name, mad_driver);
+
+    mad_driver->interface->driver_init(mad_driver);
   }
 
   {
-    p_mad_driver_t mux_driver = NULL;
+    p_mad_driver_t            mad_driver   = NULL;
+    p_mad_driver_interface_t  interface    = NULL;
+    const char               *device_name  = "mux";
+    const char               *network_name = "mux_network";
 
-    mux_driver = tbx_htable_get(mad_driver_htable, "mux");
-    mux_driver->interface->driver_init(mux_driver);
+    interface = tbx_htable_get(mad_device_htable, device_name);
+    mad_driver->madeleine      = madeleine;
+    mad_driver->network_name   = tbx_strdup(network_name);
+    mad_driver->device_name    = tbx_strdup(device_name);
+    mad_driver->adapter_htable = tbx_htable_empty_table();
+    mad_driver->interface      = interface;
+
+    tbx_htable_add(mad_network_htable, network_name, mad_driver);
+
+    mad_driver->interface->driver_init(mad_driver);
   }
 #endif // MARCEL
   LOG_OUT();
@@ -847,7 +893,7 @@ channel_open(p_mad_madeleine_t  madeleine,
     FAILURE("channel not found");
 
   mad_driver =
-    tbx_htable_get(madeleine->driver_htable, dir_channel->driver->name);
+    tbx_htable_get(madeleine->network_htable, dir_channel->driver->network_name);
   if (!mad_driver)
     FAILURE("driver not found");
 
@@ -872,14 +918,14 @@ channel_open(p_mad_madeleine_t  madeleine,
   mad_channel->pc            = dir_channel->pc;
   mad_channel->not_private   = dir_channel->not_private;
   mad_channel->mergeable     = dir_channel->mergeable;
-   
-  if ((madeleine->settings->leonie_dynamic_mode) && 
-      (madeleine->session->session_id > 0) && 
+
+  if ((madeleine->settings->leonie_dynamic_mode) &&
+      (madeleine->session->session_id > 0) &&
       (mad_channel->mergeable))
-     {	
+     {
 	madeleine->dynamic->mergeable = tbx_true;
      }
-   
+
   mad_channel->dir_channel   = dir_channel;
   mad_channel->adapter       = mad_adapter;
 
@@ -949,8 +995,8 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   dir_channel =
     tbx_htable_get(madeleine->dir->channel_htable, dir_fchannel->cloned_channel_name);
 
-  mad_driver  = tbx_htable_get(madeleine->driver_htable,
-                               dir_channel->driver->name);
+  mad_driver  = tbx_htable_get(madeleine->network_htable,
+                               dir_channel->driver->network_name);
   if (!mad_driver)
     FAILURE("driver not found");
 
@@ -1165,7 +1211,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   if (!dir_vchannel)
     FAILURE("virtual channel not found");
 
-  mad_driver  = tbx_htable_get(madeleine->driver_htable, "forward");
+  mad_driver  = tbx_htable_get(madeleine->network_htable, "forward_network");
   if (!mad_driver)
     FAILURE("forwarding driver not found");
 
@@ -1403,7 +1449,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   if (!dir_xchannel)
     FAILURE("mux channel not found");
 
-  mad_driver  = tbx_htable_get(madeleine->driver_htable, "mux");
+  mad_driver  = tbx_htable_get(madeleine->network_htable, "mux_network");
   if (!mad_driver)
     FAILURE("mux driver not found");
 

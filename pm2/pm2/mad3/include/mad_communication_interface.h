@@ -90,8 +90,8 @@ mad_forward_memory_manager_init(int    argc,
 void
 mad_forward_memory_manager_exit(void);
 
-void
-mad_forward_register(p_mad_driver_t driver);
+char *
+mad_forward_register(p_mad_driver_interface_t driver_interface);
 
 void
 mad_forward_driver_init(p_mad_driver_t driver);
@@ -201,8 +201,8 @@ mad_mux_memory_manager_init(int    argc,
 void
 mad_mux_memory_manager_exit(void);
 
-void
-mad_mux_register(p_mad_driver_t driver);
+char *
+mad_mux_register(p_mad_driver_interface_t interface);
 
 void
 mad_mux_driver_init(p_mad_driver_t driver);

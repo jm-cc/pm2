@@ -1004,19 +1004,11 @@ mad_mux_receive_bytes(p_mad_connection_t  in,
   LOG_OUT();
 }
 
-void
-mad_mux_register(p_mad_driver_t driver)
+char *
+mad_mux_register(p_mad_driver_interface_t interface)
 {
-  p_mad_driver_interface_t interface;
-
   LOG_IN();
   TRACE("Registering MUX driver");
-  interface = driver->interface;
-
-  driver->connection_type  = mad_unidirectional_connection;
-  driver->buffer_alignment = 64;
-  driver->name             = tbx_strdup("mux");
-
   interface->driver_init                =
     mad_mux_driver_init;
   interface->adapter_init               = NULL;
@@ -1076,6 +1068,8 @@ mad_mux_register(p_mad_driver_t driver)
   interface->get_sub_channel            =
     mad_mux_get_sub_channel;
   LOG_OUT();
+
+  return "mux";
 }
 
 void
@@ -1084,6 +1078,9 @@ mad_mux_driver_init(p_mad_driver_t driver)
   p_mad_adapter_t dummy_adapter = NULL;
 
   LOG_IN();
+  driver->connection_type  = mad_unidirectional_connection;
+  driver->buffer_alignment = 64;
+
   dummy_adapter                 = mad_adapter_cons();
   dummy_adapter->driver         = driver;
   dummy_adapter->id             = -1;

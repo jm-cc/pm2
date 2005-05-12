@@ -1028,19 +1028,11 @@ mad_forward_poll_channel(void *arg)
   return NULL;
 }
 
-void
-mad_forward_register(p_mad_driver_t driver)
+char *
+mad_forward_register(p_mad_driver_interface_t interface)
 {
-  p_mad_driver_interface_t interface;
-
   LOG_IN();
   TRACE("Registering FORWARD driver");
-  interface = driver->interface;
-
-  driver->connection_type  = mad_unidirectional_connection;
-  driver->buffer_alignment = 64;
-  driver->name             = tbx_strdup("forward");
-
   interface->driver_init                =
     mad_forward_driver_init;
   interface->adapter_init               = NULL;
@@ -1098,6 +1090,8 @@ mad_forward_register(p_mad_driver_t driver)
   interface->receive_sub_buffer_group   =
     mad_forward_receive_sub_buffer_group;
   LOG_OUT();
+
+  return "forward";
 }
 
 void
@@ -1106,6 +1100,9 @@ mad_forward_driver_init(p_mad_driver_t driver)
   p_mad_adapter_t dummy_adapter = NULL;
 
   LOG_IN();
+  driver->connection_type  = mad_unidirectional_connection;
+  driver->buffer_alignment = 64;
+
   dummy_adapter                 = mad_adapter_cons();
   dummy_adapter->driver         = driver;
   dummy_adapter->id             = -1;

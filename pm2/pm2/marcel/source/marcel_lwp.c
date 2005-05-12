@@ -101,8 +101,12 @@ static unsigned __nb_processors = 1;
 void marcel_lwp_fix_nb_vps(unsigned nb_lwp)
 {
 	// Détermination du nombre de processeurs disponibles
-#if defined(_SC_NPROCESSORS_CONF)
+#if defined(_SC_NPROCESSORS_ONLN)
+	__nb_processors = sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
 	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROC_ONLN)
+	__nb_processors = sysconf(_SC_NPROC_ONLN);
 #elif defined(_SC_NPROC_CONF)
 	__nb_processors = sysconf(_SC_NPROC_CONF);
 #else

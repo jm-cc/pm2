@@ -41,7 +41,7 @@
  * Driver registration
  * -------------------
  */
-static void (*mad_driver_registration[])(p_mad_driver_t driver) =
+static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 {
 #ifdef DRV_TCP
   mad_tcp_register,
@@ -76,6 +76,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_MX
   mad_mx_register,
 #endif /* DRV_MX */
+#ifdef DRV_QUADRICS
+  mad_quadrics_register,
+#endif /* DRV_QUADRICS */
 #ifdef MARCEL /* Forwarding Transmission Module */
   mad_forward_register,
 #endif /* MARCEL */
@@ -108,25 +111,20 @@ static
 void
 mad_driver_register(p_mad_madeleine_t madeleine)
 {
-  p_tbx_htable_t  driver_htable = NULL;
+  p_tbx_htable_t  device_htable = NULL;
   mad_driver_id_t drv           =   -1;
 
   LOG_IN();
-  driver_htable = madeleine->driver_htable;
+  device_htable = madeleine->device_htable;
 
   for (drv = 0; drv < mad_driver_number; drv++)
     {
-      p_mad_driver_t driver = NULL;
+      p_mad_driver_interface_t  interface	= NULL;
+      char                     *device_name	= NULL;
 
-      driver = mad_driver_cons();
-
-      driver->madeleine      = madeleine;
-      driver->adapter_htable = tbx_htable_empty_table();
-      driver->interface      = mad_driver_interface_cons();
-
-      mad_driver_registration[drv](driver);
-
-      tbx_htable_add(driver_htable, driver->name, driver);
+      interface		= mad_driver_interface_cons();
+      device_name	= mad_driver_registration[drv](interface);
+      tbx_htable_add(device_htable, device_name, interface);
     }
   LOG_OUT();
 }
@@ -140,17 +138,17 @@ mad_object_init(int    argc TBX_UNUSED,
 
   LOG_IN();
   madeleine                      = mad_madeleine_cons();
-  madeleine->dynamic             = mad_dynamic_cons(); 
+  madeleine->dynamic             = mad_dynamic_cons();
   madeleine->dynamic->updated    = tbx_false;
   madeleine->dynamic->merge_done = tbx_false;
-  madeleine->dynamic->mergeable  = tbx_false; 
+  madeleine->dynamic->mergeable  = tbx_false;
   madeleine->settings            = mad_settings_cons();
   madeleine->session             = mad_session_cons();
   madeleine->dir                 = mad_directory_cons();
   madeleine->old_dir             = NULL;
   madeleine->new_dir             = NULL;
 
-   
+
   mad_driver_register(madeleine);
 
   client = ntbx_client_cons();
@@ -253,7 +251,7 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
 
   session->process_rank = mad_ntbx_receive_int(client);
   TRACE_VAL("process rank", session->process_rank);
-   
+
   session->session_id = mad_ntbx_receive_int(client);
   TRACE_VAL("session is", session->session_id);
 

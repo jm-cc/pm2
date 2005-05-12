@@ -265,6 +265,7 @@ int mad_gm_malloc_hooked = 0;
 #ifdef MARCEL
 static struct marcel_ev_server mad_gm_ev_server = MARCEL_EV_SERVER_INIT(mad_gm_ev_server, "Mad/GM I/O");
 
+static tbx_bool_t mad_gm_ev_server_started = tbx_false;
 #endif /* MARCEL */
 
 /* static TBX_CRITICAL_SECTION(mad_gm_access); */
@@ -1642,19 +1643,11 @@ mad_gm_lock_poll(p_mad_gm_port_t port)
 }
 #endif /* MARCEL */
 
-void
-mad_gm_register(p_mad_driver_t driver)
+char *
+mad_gm_register(p_mad_driver_interface_t interface)
 {
-        p_mad_driver_interface_t interface = NULL;
-
         LOG_IN();
         TRACE("Registering GM driver");
-        interface = driver->interface;
-
-        driver->connection_type  = mad_unidirectional_connection;
-        driver->buffer_alignment = 1;
-        driver->name             = tbx_strdup("gm");
-
         interface->driver_init                = mad_gm_driver_init;
         interface->adapter_init               = mad_gm_adapter_init;
         interface->channel_init               = mad_gm_channel_init;
@@ -1686,7 +1679,14 @@ mad_gm_register(p_mad_driver_t driver)
         interface->receive_buffer             = mad_gm_receive_buffer;
         interface->send_buffer_group          = mad_gm_send_buffer_group;
         interface->receive_sub_buffer_group   = mad_gm_receive_sub_buffer_group;
+
+#ifdef MARCEL
+        marcel_ev_server_set_poll_settings(&mad_gm_ev_server, MAD_MX_POLLING_MODE, 1);
+        marcel_ev_server_add_callback(&mad_gm_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_gm_do_poll);
+#endif /* MARCEL */
         LOG_OUT();
+
+        return "gm";
 }
 
 
@@ -1697,6 +1697,9 @@ mad_gm_driver_init(p_mad_driver_t d) {
 
         LOG_IN();
         TRACE("Initializing GM driver");
+        d->connection_type  = mad_unidirectional_connection;
+        d->buffer_alignment = 1;
+
 #if MAD_GM_MEMORY_CACHE
         if (!mad_gm_malloc_hooked) {
                 mad_gm_malloc_initialize_hook();
@@ -1704,11 +1707,6 @@ mad_gm_driver_init(p_mad_driver_t d) {
 #endif // MAD_GM_MEMORY_CACHE
 
         ds          = TBX_MALLOC(sizeof(mad_gm_driver_specific_t));
-
-#ifdef MARCEL
-        marcel_ev_server_set_poll_settings(&mad_gm_ev_server, MAD_MX_POLLING_MODE, 1);
-        marcel_ev_server_add_callback(&mad_gm_ev_server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, mad_gm_do_poll);
-#endif /* MARCEL */
 
         d->specific = ds;
         gms = gm_init();
@@ -1719,7 +1717,10 @@ mad_gm_driver_init(p_mad_driver_t d) {
         }
 
 #ifdef MARCEL
-	marcel_ev_server_start(&mad_gm_ev_server);
+        if (!mad_gm_ev_server_started) {
+                marcel_ev_server_start(&mad_gm_ev_server);
+                mad_gm_ev_server_started = tbx_true;
+        }
 #endif /* MARCEL */
 
         LOG_OUT();

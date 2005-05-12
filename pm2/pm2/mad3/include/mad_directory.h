@@ -43,14 +43,16 @@ typedef struct s_mad_dir_adapter
 
 typedef struct s_mad_dir_driver_process_specific
 {
-  p_tbx_htable_t adapter_htable;
-  p_tbx_slist_t  adapter_slist;
+  p_tbx_htable_t  adapter_htable;
+  p_tbx_slist_t   adapter_slist;
+  char           *parameter;
 } mad_dir_driver_process_specific_t;
 
 typedef struct s_mad_dir_driver
 {
   mad_driver_id_t         id;
-  char                       *name;
+  char                       *network_name;
+  char                       *device_name;
   p_ntbx_process_container_t  pc;
 } mad_dir_driver_t;
 

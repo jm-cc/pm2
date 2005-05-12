@@ -189,7 +189,7 @@ mad_dir_build_reference_name(const char *type, const char *name)
 
 static
 p_mad_dir_driver_process_specific_t
-mad_dir_adapter_get(void)
+mad_dir_driver_process_specific_get(void)
 {
   p_mad_dir_driver_process_specific_t pi_specific        = NULL;
   p_tbx_slist_t                       adapter_slist      = NULL;
@@ -215,6 +215,8 @@ mad_dir_adapter_get(void)
       tbx_slist_append(adapter_slist, adapter);
       tbx_htable_add(adapter_htable, adapter->name, adapter);
     }
+
+  pi_specific->parameter = mad_leonie_receive_string();
   LOG_OUT();
 
   return pi_specific;
@@ -236,9 +238,13 @@ mad_dir_driver_process_get(p_tbx_darray_t      process_darray,
   if (driver_global_rank == -1)
     return tbx_false;
 
+  TRACE_VAL("  Driver dps for process (global rank)", driver_global_rank);
+
   driver_local_rank = mad_leonie_receive_int();
+  TRACE_VAL("  Driver dps for process (local rank)", driver_local_rank);
+
   process     = tbx_darray_get(process_darray, driver_global_rank);
-  pi_specific = mad_dir_adapter_get();
+  pi_specific = mad_dir_driver_process_specific_get();
 
   ntbx_pc_add(dir_driver->pc, process, driver_local_rank,
               dir_driver, driver_reference_name, pi_specific);
@@ -259,14 +265,16 @@ mad_dir_driver_get_driver(p_mad_madeleine_t madeleine)
   dir = madeleine->dir;
 
   dir_driver = mad_dir_driver_cons();
-  dir_driver->name = mad_leonie_receive_string();
-  TRACE_STR("Driver name", dir_driver->name);
+  dir_driver->network_name = mad_leonie_receive_string();
+  TRACE_STR("Driver name", dir_driver->network_name);
+
+  dir_driver->device_name = mad_leonie_receive_string();
+
+  tbx_htable_add(dir->driver_htable, dir_driver->network_name, dir_driver);
+  tbx_slist_append(dir->driver_slist, dir_driver);
 
   driver_reference_name =
-    mad_dir_build_reference_name("driver", dir_driver->name);
-
-  tbx_htable_add(dir->driver_htable, dir_driver->name, dir_driver);
-  tbx_slist_append(dir->driver_slist, dir_driver);
+    mad_dir_build_reference_name("driver", dir_driver->network_name);
 
   while (mad_dir_driver_process_get(dir->process_darray,
                                     dir_driver,
@@ -383,7 +391,7 @@ mad_dir_channel_get_channel(p_mad_madeleine_t madeleine)
   p_mad_directory_t    dir                    = NULL;
   p_mad_dir_channel_t  dir_channel            = NULL;
   char                *channel_reference_name = NULL;
-  char                *driver_name            = NULL;
+  char                *network_name            = NULL;
 
   LOG_IN();
   dir = madeleine->dir;
@@ -400,15 +408,15 @@ mad_dir_channel_get_channel(p_mad_madeleine_t madeleine)
     {
       tbx_slist_append(madeleine->public_channel_slist, dir_channel->name);
     }
-  dir_channel->mergeable = mad_leonie_receive_unsigned_int();  
-   
-  driver_name = mad_leonie_receive_string();
-  dir_channel->driver = tbx_htable_get(dir->driver_htable, driver_name);
+  dir_channel->mergeable = mad_leonie_receive_unsigned_int();
+
+  network_name = mad_leonie_receive_string();
+  dir_channel->driver = tbx_htable_get(dir->driver_htable, network_name);
   if (!dir_channel->driver)
     FAILURE("driver not found");
 
-  TRACE_STR("Channel driver", dir_channel->driver->name);
-  TBX_FREE(driver_name);
+  TRACE_STR("Channel driver", dir_channel->driver->network_name);
+  TBX_FREE(network_name);
 
   dir_channel->id = tbx_htable_get_size(dir->channel_htable);
 
@@ -1052,7 +1060,9 @@ mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
       ntbx_process_lrank_t       l_rank     =   -1;
 
       dir_driver = tbx_slist_extract(driver_slist);
-      tbx_htable_extract(driver_htable, dir_driver->name);
+      tbx_htable_extract(driver_htable, dir_driver->network_name);
+
+      TRACE_STR("Cleaning dir_driver instance", dir_driver->network_name);
 
       pc = dir_driver->pc;
 
@@ -1062,6 +1072,7 @@ mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
 	    {
 	      p_mad_dir_driver_process_specific_t dps = NULL;
 
+              TRACE_VAL("Cleaning dps for process", l_rank);
 	      dps = ntbx_pc_get_local_specific(pc, l_rank);
 
 	      if (dps)
@@ -1104,16 +1115,22 @@ mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
 
 		  tbx_htable_free(adapter_htable);
 		  dps->adapter_htable = NULL;
+
+                  TBX_FREE(dps->parameter);
+                  dps->parameter = NULL;
 		}
 	    }
-	  while (ntbx_pc_next_global_rank(pc, &l_rank));
+	  while (ntbx_pc_next_local_rank(pc, &l_rank));
 	}
 
       ntbx_pc_dest(dir_driver->pc, tbx_default_specific_dest);
       dir_driver->pc = NULL;
 
-      TBX_FREE(dir_driver->name);
-      dir_driver->name = NULL;
+      TBX_FREE(dir_driver->device_name);
+      dir_driver->device_name = NULL;
+
+      TBX_FREE(dir_driver->network_name);
+      dir_driver->network_name = NULL;
 
       TBX_FREE(dir_driver);
     }
@@ -1226,71 +1243,71 @@ mad_directory_exit(p_mad_madeleine_t madeleine)
 
 void
     mad_new_directory_from_leony(p_mad_madeleine_t madeleine)
-{   
+{
    p_mad_directory_t  new_dir    = NULL;
-   
+
    LOG_IN();
    TRACE("Getting new directory");
    new_dir            = mad_directory_cons();
    madeleine->old_dir = madeleine->dir;
    madeleine->dir     = new_dir;
-   
+
    mad_dir_directory_get(madeleine);
-   
+
    madeleine->new_dir = madeleine->dir;
    madeleine->dir     = madeleine->old_dir;
    madeleine->old_dir = NULL;
-   
+
    LOG_OUT();
 }
 
 
 void
     mad_directory_update(p_mad_madeleine_t madeleine)
-{   
+{
    LOG_IN();
    TRACE("Updating  directory");
-   
+
    if (madeleine->dynamic->updated == tbx_false)
-     {	
+     {
 	if ( madeleine->new_dir != NULL )
-	  {	     
+	  {
 	     madeleine->old_dir = madeleine->dir;
 	     madeleine->dir     = madeleine->new_dir;
 	     madeleine->new_dir = NULL;
 	     madeleine->dynamic->updated = tbx_true;
-	  }	
-     }   
+	  }
+     }
    LOG_OUT();
 }
 
 void
     mad_directory_rollback(p_mad_madeleine_t madeleine)
-{   
+{
    LOG_IN();
    TRACE("Getting old  directory");
    if (madeleine->dynamic->updated == tbx_false)
-     {	
+     {
 	if ( madeleine->old_dir != NULL )
-	  {	     
+	  {
 	     madeleine->dir              = madeleine->old_dir;
 	     madeleine->new_dir          = NULL;
 	     madeleine->old_dir          = NULL;
 	     madeleine->dynamic->updated = tbx_true;
-	  }	
-     }   
+	  }
+     }
    LOG_OUT();
 }
 
 
 volatile int
   mad_directory_is_updated(p_mad_madeleine_t madeleine)
-{   
+{
    tbx_bool_t res = tbx_false;
-   
+
    LOG_IN();
    if ( madeleine->dynamic->updated == tbx_true )
-     {	
+     {
 	madeleine->dynamic->updated = tbx_false;
 	res                         = tbx_true;
      }

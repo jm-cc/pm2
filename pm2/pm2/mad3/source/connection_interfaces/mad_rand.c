@@ -178,19 +178,11 @@ mad_rand_read(int            sock,
  * ---------------------
  */
 
-void
-mad_rand_register(p_mad_driver_t driver)
+char *
+mad_rand_register(p_mad_driver_interface_t interface)
 {
-        p_mad_driver_interface_t interface = NULL;
-
         LOG_IN();
         TRACE("Registering RAND driver");
-        interface = driver->interface;
-
-        driver->connection_type  = mad_bidirectional_connection;
-        driver->buffer_alignment = 32;
-        driver->name             = tbx_strdup("rand");
-
         interface->driver_init                = mad_rand_driver_init;
         interface->adapter_init               = mad_rand_adapter_init;
         interface->channel_init               = mad_rand_channel_init;
@@ -223,6 +215,8 @@ mad_rand_register(p_mad_driver_t driver)
         interface->send_buffer_group          = mad_rand_send_buffer_group;
         interface->receive_sub_buffer_group   = mad_rand_receive_sub_buffer_group;
         LOG_OUT();
+
+        return "rand";
 }
 
 
@@ -232,6 +226,9 @@ mad_rand_driver_init(p_mad_driver_t driver)
         p_mad_rand_driver_specific_t driver_specific = NULL;
 
         LOG_IN();
+        driver->connection_type  = mad_bidirectional_connection;
+        driver->buffer_alignment = 32;
+
         TRACE("Initializing RAND driver");
         driver_specific  = TBX_MALLOC(sizeof(mad_rand_driver_specific_t));
         driver->specific = driver_specific;

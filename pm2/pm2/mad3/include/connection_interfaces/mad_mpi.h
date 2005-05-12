@@ -31,8 +31,8 @@
  * ---------
  */
 
-void
-mad_mpi_register(p_mad_driver_t driver);
+char *
+mad_mpi_register(p_mad_driver_interface_t);
 
 void
 mad_mpi_driver_init(p_mad_driver_t);

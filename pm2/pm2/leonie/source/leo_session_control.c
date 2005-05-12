@@ -72,7 +72,7 @@ init_drivers(p_leonie_t leonie)
     p_leo_dir_driver_t dir_driver = _dir_driver;
 
     void _driver_name(p_ntbx_client_t _client) {
-      leo_send_string(_client, dir_driver->name);
+      leo_send_string(_client, dir_driver->network_name);
     }
 
     void _adapters(p_ntbx_client_t  _client, void *_dps) {
@@ -93,7 +93,7 @@ init_drivers(p_leonie_t leonie)
       leo_send_string(_client, "-");
     }
 
-    TRACE_STR("Driver", dir_driver->name);
+    TRACE_STR("Driver", dir_driver->network_name);
 
     do_pc_send(dir_driver->pc, _driver_name);
     do_pc_send(dir_driver->pc, wait_for_ack);
@@ -121,8 +121,8 @@ init_drivers(p_leonie_t leonie)
             leo_send_string(_client, "-");
         }
 
-        TRACE_STR("Driver", dir_driver->name);
-        leo_send_string(_client, dir_driver->name);
+        TRACE_STR("Driver", dir_driver->network_name);
+        leo_send_string(_client, dir_driver->network_name);
         do_pc_global_s(dir_driver->pc, _f);
         leo_send_int(_client, -1);
     }

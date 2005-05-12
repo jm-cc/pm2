@@ -59,13 +59,15 @@ typedef struct s_leo_dir_adapter
 
 typedef struct s_leo_dir_driver_process_specific
 {
-  p_tbx_htable_t adapter_htable;
-  p_tbx_slist_t  adapter_slist;
+  p_tbx_htable_t  adapter_htable;
+  p_tbx_slist_t   adapter_slist;
+  char           *parameter;
 } leo_dir_driver_process_specific_t;
 
 typedef struct s_leo_dir_driver
 {
-  char                       *name;
+  char                       *network_name;
+  char                       *device_name;
   p_ntbx_process_container_t  pc;
 } leo_dir_driver_t;
 

@@ -34,7 +34,8 @@ typedef struct s_mad_driver
   /* Common use fields */
   TBX_SHARED;
   p_mad_madeleine_t           madeleine;
-  char                       *name;
+  char                       *network_name;
+  char                       *device_name;
   mad_driver_id_t             id;
 
   p_mad_driver_interface_t    interface;
@@ -46,6 +47,7 @@ typedef struct s_mad_driver
   /* Internal use fields */
   p_tbx_htable_t              adapter_htable;
   p_mad_dir_driver_t          dir_driver;
+  ntbx_process_lrank_t        process_lrank;
 
   /*  p_ntbx_process_container_t  process_container; */
 

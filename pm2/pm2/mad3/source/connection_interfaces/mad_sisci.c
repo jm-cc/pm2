@@ -623,19 +623,11 @@ mad_sisci_wait_for(p_mad_link_t         link,
  * ------------------
  */
 
-void
-mad_sisci_register(p_mad_driver_t driver)
+char *
+mad_sisci_register(p_mad_driver_interface_t interface)
 {
-  p_mad_driver_interface_t interface = NULL;
-
   LOG_IN();
   TRACE("Registering SISCI driver");
-  interface = driver->interface;
-
-  driver->connection_type = mad_bidirectional_connection;
-  driver->buffer_alignment = 64;
-  driver->name = tbx_strdup("sisci");
-
   interface->driver_init                = mad_sisci_driver_init;
   interface->adapter_init               = mad_sisci_adapter_init;
   interface->channel_init               = mad_sisci_channel_init;
@@ -668,15 +660,22 @@ mad_sisci_register(p_mad_driver_t driver)
   interface->send_buffer_group          = mad_sisci_send_buffer_group;
   interface->receive_sub_buffer_group   = mad_sisci_receive_sub_buffer_group;
   LOG_OUT();
+
+  return "sisci";
 }
 
 void
 mad_sisci_driver_init(p_mad_driver_t driver)
 {
   p_mad_sisci_driver_specific_t driver_specific = NULL;
+#if defined(MARCEL)
   struct marcel_ev_server *server = NULL;
+#endif // MARCEL
 
   LOG_IN();
+  driver->connection_type = mad_bidirectional_connection;
+  driver->buffer_alignment = 64;
+
   TRACE("Initializing SISCI driver");
   driver_specific  = TBX_MALLOC(sizeof(mad_sisci_driver_specific_t));
   driver->specific = driver_specific;

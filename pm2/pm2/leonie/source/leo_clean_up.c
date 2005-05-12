@@ -472,8 +472,8 @@ driver_exit_pass1(void *_dir_driver)
   }
 
   LOG_IN();
-  TRACE_STR("Driver", dir_driver->name);
-  do_pc_send_string(dir_driver->pc, dir_driver->name);
+  TRACE_STR("Driver", dir_driver->network_name);
+  do_pc_send_string(dir_driver->pc, dir_driver->network_name);
   do_pc_send_s     (dir_driver->pc, _adapters);
   do_pc_send       (dir_driver->pc, wait_for_ack);
   LOG_OUT();
@@ -486,8 +486,8 @@ driver_exit_pass2(void *_dir_driver)
   p_leo_dir_driver_t dir_driver = _dir_driver;
 
   LOG_IN();
-  TRACE_STR("Driver", dir_driver->name);
-  do_pc_send_string(dir_driver->pc, dir_driver->name);
+  TRACE_STR("Driver", dir_driver->network_name);
+  do_pc_send_string(dir_driver->pc, dir_driver->network_name);
   do_pc_send(dir_driver->pc, wait_for_ack);
   LOG_OUT();
 }
@@ -726,14 +726,17 @@ dir_driver_cleanup(p_leo_directory_t dir)
       p_leo_dir_driver_t dir_driver = _p;
 
       LOG_IN();
-      tbx_htable_extract(dir->driver_htable, dir_driver->name);
+      tbx_htable_extract(dir->driver_htable, dir_driver->network_name);
 
       do_pc_s(dir_driver->pc, dps_cleanup);
       ntbx_pc_dest(dir_driver->pc, tbx_default_specific_dest);
       dir_driver->pc = NULL;
 
-      TBX_FREE(dir_driver->name);
-      dir_driver->name = NULL;
+      TBX_FREE(dir_driver->network_name);
+      dir_driver->network_name = NULL;
+
+      TBX_FREE(dir_driver->device_name);
+      dir_driver->device_name = NULL;
 
       TBX_FREE(dir_driver);
       LOG_OUT();

@@ -337,12 +337,14 @@ send_drivers(p_leo_directory_t dir,
       leo_send_int(client, g);
       leo_send_int(client, l);
       send_adapters(dps->adapter_slist, client);
+      leo_send_string(client, dps->parameter);
       LOG_OUT();
     }
 
     LOG_IN();
-    TRACE_STR("Driver", dir_driver->name);
-    leo_send_string(client, dir_driver->name);
+    TRACE_STR("Driver", dir_driver->network_name);
+    leo_send_string(client, dir_driver->network_name);
+    leo_send_string(client, dir_driver->device_name);
     do_pc_local_s(dir_driver->pc, _process_specific);
     leo_send_int(client, -1);
     LOG_OUT();
@@ -394,7 +396,7 @@ send_channels(p_leo_directory_t dir,
     leo_send_string(client, dir_channel->name);
     leo_send_unsigned_int(client, dir_channel->public);
     leo_send_unsigned_int(client, 0 ); // mergeable ; backward compatibility
-    leo_send_string(client, dir_channel->driver->name);
+    leo_send_string(client, dir_channel->driver->network_name);
 
     do_pc_local_s(dir_channel->pc, _f);
     leo_send_int(client, -1);

@@ -57,7 +57,7 @@ typedef struct s_mad_settings
 
 typedef struct s_mad_dynamic
 {
-  volatile tbx_bool_t mergeable; 
+  volatile tbx_bool_t mergeable;
   volatile tbx_bool_t updated;
   volatile tbx_bool_t merge_done;
   volatile tbx_bool_t split_done;
@@ -67,13 +67,14 @@ typedef struct s_mad_dynamic
 typedef struct s_mad_madeleine
 {
   TBX_SHARED;
-  p_mad_dynamic_t     dynamic; 
+  p_mad_dynamic_t     dynamic;
   p_mad_settings_t    settings;
   p_mad_session_t     session;
   p_mad_directory_t   dir;
   p_mad_directory_t   old_dir;
   p_mad_directory_t   new_dir;
-  p_tbx_htable_t      driver_htable;
+  p_tbx_htable_t      device_htable;
+  p_tbx_htable_t      network_htable;
   p_tbx_htable_t      channel_htable;
   p_tbx_slist_t       public_channel_slist;
 } mad_madeleine_t;

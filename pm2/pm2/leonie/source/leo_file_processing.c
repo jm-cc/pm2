@@ -76,27 +76,39 @@ build_network_host_htable(p_tbx_slist_t network_host_slist)
 static
 void
 build_network_host_htable(char           *network_device_name,
-                          p_tbx_slist_t   host_slist,
-                          p_tbx_htable_t *p_host_htable,
+                          p_tbx_slist_t   hosts_slist,
+                          p_tbx_htable_t *p_hosts_htable,
                           p_tbx_htable_t *p_device_hosts_htable)
 {
-  p_tbx_htable_t host_htable         = NULL;
+  p_tbx_htable_t hosts_htable        = NULL;
   p_tbx_htable_t device_hosts_htable = NULL;
 
   void _f(void *_object) {
     p_leoparse_object_t  object             = _object;
     char                *host_name          = NULL;
     char                *device_host_name   = NULL;
+    p_tbx_htable_t	 network_host_htable = NULL;
     p_tbx_htable_t       device_host_htable = NULL;
 
-    device_host_name = leoparse_get_id(object);
+    device_host_name = leoparse_try_get_id(object);
+
+    if (device_host_name) {
+      network_host_htable = leo_htable_init();
+      leoparse_write_id(network_host_htable, "name", device_host_name);
+    } else {
+      network_host_htable = leoparse_get_htable(object);
+      device_host_name = leoparse_read_id(network_host_htable, "name");
+    }
+
     TRACE_STR("expected name", device_host_name);
 
     host_name = ntbx_true_name(device_host_name);
     TRACE_STR("true name", host_name);
 
-    if (!tbx_htable_get(host_htable, host_name)) {
-        tbx_htable_add(host_htable, host_name, host_name);
+    tbx_htable_add(network_host_htable, "host_name", host_name);
+
+    if (!tbx_htable_get(hosts_htable, host_name)) {
+        tbx_htable_add(hosts_htable, host_name, network_host_htable);
         device_host_htable = leo_htable_init();
         tbx_htable_add(device_hosts_htable, host_name, device_host_htable);
     } else {
@@ -113,12 +125,12 @@ build_network_host_htable(char           *network_device_name,
   }
 
   LOG_IN();
-  host_htable         = leo_htable_init();
+  hosts_htable        = leo_htable_init();
   device_hosts_htable = leo_htable_init();
 
-  do_slist(host_slist, _f);
+  do_slist(hosts_slist, _f);
 
-  *p_host_htable         = host_htable;
+  *p_hosts_htable        = hosts_htable;
   *p_device_hosts_htable = device_hosts_htable;
   LOG_OUT();
 }
@@ -219,9 +231,10 @@ expand_sbracket_modifier(p_leoparse_modifier_t modifier,
 
 static
 void
-fill_dps(p_leo_dir_driver_process_specific_t dps,
-         const char *adapter_name,
-         const char *adapter_selector)
+fill_dps(p_leo_dir_driver_process_specific_t  dps,
+         p_tbx_htable_t                       network_host_htable,
+         const char                          *adapter_name,
+         const char                          *adapter_selector)
 {
   p_leo_dir_adapter_t dir_adapter = NULL;
 
@@ -237,6 +250,13 @@ fill_dps(p_leo_dir_driver_process_specific_t dps,
     tbx_htable_add(dps->adapter_htable, dir_adapter->name, dir_adapter);
     tbx_slist_append(dps->adapter_slist, dir_adapter);
   }
+
+  dps->parameter = leoparse_try_read_string(network_host_htable, "parameter");
+  if (!dps->parameter) {
+    dps->parameter = tbx_strdup("-");
+  }
+
+  TRACE_STR("driver parameter", dps->parameter);
 }
 
 static
@@ -260,6 +280,7 @@ static
 void
 set_driver_process_info(p_leo_dir_driver_t  dir_driver,
                         p_ntbx_process_t    process,
+                        p_tbx_htable_t      network_host_htable,
                         const char         *adapter_name,
                         const char         *adapter_selector)
 {
@@ -273,7 +294,7 @@ set_driver_process_info(p_leo_dir_driver_t  dir_driver,
     char *ref_name = NULL;
 
     dps = leo_dir_driver_process_specific_init();
-    ref_name = build_ref_name(dir_driver->name, "driver");
+    ref_name = build_ref_name(dir_driver->network_name, "driver");
     ntbx_pc_add(dir_driver->pc, process, -1, dir_driver, ref_name, dps);
 
     TBX_FREE(ref_name);
@@ -281,7 +302,7 @@ set_driver_process_info(p_leo_dir_driver_t  dir_driver,
     dps = dpi->specific;
   }
 
-  fill_dps(dps, adapter_name, adapter_selector);
+  fill_dps(dps, network_host_htable, adapter_name, adapter_selector);
   LOG_OUT();
 }
 
@@ -320,8 +341,8 @@ process_channel(p_leonie_t     leonie,
   p_tbx_slist_t          channel_host_slist      = NULL;
   p_tbx_htable_t         network_htable          = NULL;
   char                  *network_name            = NULL;
-  p_tbx_htable_t         host_htable             = NULL;
-  p_tbx_htable_t         device_hosts_htable    = NULL;
+  p_tbx_htable_t         hosts_htable            = NULL;
+  p_tbx_htable_t         device_hosts_htable     = NULL;
   char                  *network_device_name     = NULL;
   char                  *network_loader          = NULL;
   leo_loader_priority_t  network_loader_priority =
@@ -370,18 +391,18 @@ process_channel(p_leonie_t     leonie,
       network_loader = strdup("default");
     }
 
-  host_htable         = tbx_htable_get(network_htable, "host_htable");
+  hosts_htable        = tbx_htable_get(network_htable, "hosts_htable");
   device_hosts_htable = tbx_htable_get(network_htable, "device_hosts_htable");
 
-  if (!host_htable) {
-    p_tbx_slist_t network_host_slist = NULL;
+  if (!hosts_htable) {
+    p_tbx_slist_t network_hosts_slist = NULL;
 
-    network_host_slist  = leoparse_read_as_slist(network_htable, "hosts");
+    network_hosts_slist = leoparse_read_as_slist(network_htable, "hosts");
     build_network_host_htable(network_device_name,
-                              network_host_slist,
-                              &host_htable,
+                              network_hosts_slist,
+                              &hosts_htable,
                               &device_hosts_htable);
-    tbx_htable_add(network_htable, "host_htable", host_htable);
+    tbx_htable_add(network_htable, "hosts_htable", hosts_htable);
     tbx_htable_add(network_htable, "device_hosts_htable",
                    device_hosts_htable);
   }
@@ -395,17 +416,18 @@ process_channel(p_leonie_t     leonie,
   dir_channel->name      = strdup(channel_name);
   channel_reference_name = build_ref_name(channel_name, "channel");
 
-  dir_driver = tbx_htable_get(dir->driver_htable, network_device_name);
+  dir_driver = tbx_htable_get(dir->driver_htable, network_name);
 
   if (!dir_driver) {
     dir_driver = leo_dir_driver_init();
-    dir_driver->name = strdup(network_device_name);
-    tbx_htable_add(dir->driver_htable, dir_driver->name, dir_driver);
+    dir_driver->network_name = strdup(network_name);
+    dir_driver->device_name = strdup(network_device_name);
+    tbx_htable_add(dir->driver_htable, dir_driver->network_name, dir_driver);
     tbx_slist_append(dir->driver_slist, dir_driver);
   }
 
   dir_channel->driver	= dir_driver;
-  driver_reference_name	= build_ref_name(dir_driver->name, "driver");
+  driver_reference_name	= build_ref_name(dir_driver->network_name, "driver");
 
   spawn_group = tbx_htable_get(spawn_groups->htable, network_name);
 
@@ -418,13 +440,14 @@ process_channel(p_leonie_t     leonie,
 
   tbx_slist_ref_to_head(channel_host_slist);
   do {
-      p_leoparse_object_t  object            = NULL;
-      char                *host_name         = NULL;
-      char                *channel_host_name = NULL;
-      p_leo_dir_node_t     dir_node          = NULL;
-      p_tbx_slist_t        process_slist     = NULL;
-      const char          *adapter_name      = "default";
-      const char          *adapter_selector  = "-";
+      p_leoparse_object_t  object              = NULL;
+      char                *host_name           = NULL;
+      char                *channel_host_name   = NULL;
+      p_leo_dir_node_t     dir_node            = NULL;
+      p_tbx_slist_t        process_slist       = NULL;
+      p_tbx_htable_t       network_host_htable = NULL;
+      const char          *adapter_name        = "default";
+      const char          *adapter_selector    = "-";
 
       object = tbx_slist_ref_get(channel_host_slist);
 
@@ -434,7 +457,8 @@ process_channel(p_leonie_t     leonie,
       host_name = ntbx_true_name(channel_host_name);
       TRACE_STR("true name", host_name);
 
-      if (!tbx_htable_get(host_htable, host_name))
+      network_host_htable = tbx_htable_get(hosts_htable, host_name);
+      if (!network_host_htable)
 	FAILURE("unknown hostname");
 
       TRACE_STR("====== node hostname", host_name);
@@ -529,7 +553,7 @@ process_channel(p_leonie_t     leonie,
 
         set_channel_process_info(dir_channel, process, adapter_name);
 
-        set_driver_process_info(dir_driver, process,
+        set_driver_process_info(dir_driver, process, network_host_htable,
                                 adapter_name, adapter_selector);
 
       } while (tbx_slist_ref_forward(process_slist));

@@ -319,7 +319,8 @@ mad_madeleine_cons(void)
   object = TBX_CALLOC(1, sizeof(mad_madeleine_t));
 
   TBX_INIT_SHARED(object);
-  object->driver_htable        = tbx_htable_empty_table();
+  object->device_htable        = tbx_htable_empty_table();
+  object->network_htable       = tbx_htable_empty_table();
   object->channel_htable       = tbx_htable_empty_table();
   object->public_channel_slist = tbx_slist_nil();
   LOG_OUT();

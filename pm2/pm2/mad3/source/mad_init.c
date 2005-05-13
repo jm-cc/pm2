@@ -263,6 +263,8 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
     const char               *network_name = "forward_network";
 
     interface = tbx_htable_get(mad_device_htable, device_name);
+    mad_driver = mad_driver_cons();
+
     mad_driver->madeleine      = madeleine;
     mad_driver->network_name   = tbx_strdup(network_name);
     mad_driver->device_name    = tbx_strdup(device_name);
@@ -281,6 +283,8 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
     const char               *network_name = "mux_network";
 
     interface = tbx_htable_get(mad_device_htable, device_name);
+    mad_driver = mad_driver_cons();
+
     mad_driver->madeleine      = madeleine;
     mad_driver->network_name   = tbx_strdup(network_name);
     mad_driver->device_name    = tbx_strdup(device_name);

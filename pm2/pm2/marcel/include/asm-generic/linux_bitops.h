@@ -32,6 +32,7 @@
  * C language equivalents written by Theodore Ts'o, 9/26/92
  */
 
+#depend "asm/marcel_compareexchange.h[]"
 #define ATOMIC_BITOPT_RETURN(op,retexpr) \
 { \
 	unsigned long	mask, old, new, ret; \
@@ -154,6 +155,7 @@ static __inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
  */
 
 #section common
+#depend "linux_bitops.h[]"
 #define ma_fls(x) ma_generic_fls(x)
 
 /*

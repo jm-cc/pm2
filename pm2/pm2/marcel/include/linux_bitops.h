@@ -20,7 +20,6 @@
  * include/linux/bitops.h
  */
 #depend "asm/linux_types.h[]"
-#depend "asm/linux_bitops.h[]"
 
 /*
  * ma_ffs: find first bit set. This is defined the same way as
@@ -106,17 +105,6 @@ extern __inline__ unsigned long ma_generic_fls(unsigned long x)
 		r -= 1;
 	}
 	return r;
-}
-
-#section marcel_functions
-extern __inline__ int ma_get_bitmask_order(unsigned int count);
-#section marcel_inline
-extern __inline__ int ma_get_bitmask_order(unsigned int count)
-{
-	int order;
-	
-	order = ma_fls(count);
-	return order;	/* We could be slightly more clever with -1 here... */
 }
 
 /*

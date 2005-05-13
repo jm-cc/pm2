@@ -101,6 +101,7 @@ gen_module() {
     # Nothing to do for (flavor) stampfile
     # Nothing to do for extension
     eval _PM2CONFIG_KERNEL_CFLAGS='$'_PM2CONFIG_${MODULE}_KERNEL_CFLAGS
+    eval _PM2CONFIG_KERNEL_EARLY_LDFLAGS='$'_PM2CONFIG_${MODULE}_KERNEL_EARLY_LDFLAGS
     # Nothing to do for CC
    
 cat <<EOF
@@ -122,6 +123,7 @@ MOD_STAMP_FLAVOR := $_PM2CONFIG_FLAVOR_STAMP_FILE
 MOD_EXT := $_PM2CONFIG_EXT
 MOD_ARCH := $PM2_ASM
 MOD_CFLAGS := $_PM2CONFIG_KERNEL_CFLAGS
+MOD_EARLY_LDFLAGS := $_PM2CONFIG_KERNEL_EARLY_LDFLAGS
 
 #CFLAGS est modifié au moment de la compilation (objs-rules.mak)
 #CFLAGS += \$(MOD_CFLAGS)

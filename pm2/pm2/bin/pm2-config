@@ -261,7 +261,7 @@ pm2config_set_vars()
 	eval LINK_MODE_DYNAMIC='$'PM2_${_LIB}_BUILD_DYNAMIC
 	if [ "$LINK_MODE_DYNAMIC" = yes ]; then
 	    eval _PM2CONFIG_${_lib}_BUILD_DYNAMIC=yes
-	    STAMP_FILES=${_dir}/lib${_libname}${PM2_EXT}.so
+	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}${PM2_EXT}.so"
 	    case ":${_PM2CONFIG_LD_LIBRARY_PATH}:" in
 		*:${_dir}:*)
 		    ;;
@@ -389,6 +389,18 @@ pm2config_set_vars()
 	eval _PM2CONFIG_${_lib}_KERNEL_CFLAGS=\"\$_PM2CONFIG_CFLAGS '$'PM2_${_LIB}_CFLAGS_KERNEL\"
 	eval export _PM2CONFIG_${_lib}_KERNEL_CFLAGS
 	eval pm2config_remove_dupplicates_keep_first _PM2CONFIG_${_lib}_KERNEL_CFLAGS
+    done
+
+    # early LDFLAGS "kernel"
+    for _lib in $PM2_LIBS ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS_KERNEL\"
+	eval export _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS
+    done
+    for _lib in appli common ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS_KERNEL\"
+	eval export _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS
     done
 
     # LDFLAGS

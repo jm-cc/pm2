@@ -391,16 +391,16 @@ pm2config_set_vars()
 	eval pm2config_remove_dupplicates_keep_first _PM2CONFIG_${_lib}_KERNEL_CFLAGS
     done
 
-    # early LDFLAGS "kernel"
+    # early LDFLAGS
     for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
-	eval _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS_KERNEL\"
-	eval export _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS
+	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
+	export _PM2CONFIG_EARLY_LDFLAGS
     done
     for _lib in appli common ; do
 	eval _LIB='$'${_lib}_to_upper
-	eval _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS_KERNEL\"
-	eval export _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS
+	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
+	export _PM2CONFIG_EARLY_LDFLAGS
     done
 
     # LDFLAGS

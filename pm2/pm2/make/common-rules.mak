@@ -82,4 +82,7 @@ $(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
 tags:
 	$(CTAGS) --recurse=yes --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include .
 
+# Annulation de la règle implicite avec SCCS (pose des problèmes avec marcel.lds)
+#---------------------------------------------------------------------
+%: SCCS/s.%
 

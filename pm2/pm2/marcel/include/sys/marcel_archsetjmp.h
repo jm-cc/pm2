@@ -47,7 +47,7 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 
 #endif
 
-#if defined(X86_ARCH)
+#if defined(X86_ARCH) && 1
 
 #define MARCEL_JB_BX   0
 #define MARCEL_JB_SI   1

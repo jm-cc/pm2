@@ -383,9 +383,19 @@ of Marcel threads: \texttt{info threads} will only show LWPs,
 \texttt{backtrace} will only show the backtrace of the \emph{current}
 Marcel thread running in the chosen LWPs.
 
-However, if the program was compiled with the gdb option, one may
-switch to not-running threads' context thanks PM2-provided functions
-\footnote{yet implemented on X86 only}:
+However, if Marcel was compiled with the gdb option, Marcel provides
+several gdb functions for printing thread state like the --marcel-xtop
+option:
+\begin{verbatim}
+(gdb) marcel-threads
+0x3ff4fc00        user_task 43 I  1 machine nil
+(gdb) marcel-printthread __main_thread
+0xbffefc00             main 43 I  0 machine nil
+(gdb)
+\end{verbatim}
+
+One may switch to not-running threads' context thanks PM2-provided
+functions\footnote{yet implemented on X86 only}:
 
 \begin{verbatim}
 (gdb) r

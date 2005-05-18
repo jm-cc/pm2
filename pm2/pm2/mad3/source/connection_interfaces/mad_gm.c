@@ -1624,6 +1624,71 @@ mad_gm_port_open(int device_id) {
         return NULL;
 }
 
+static
+void
+mad_gm_port_close(p_mad_gm_port_t port) {
+        gm_status_t gms = GM_SUCCESS;
+
+        LOG_IN();
+
+        mad_gm_lock();
+        while (mad_gm_cache_array[port->number]) {
+                p_mad_gm_cache_t cache = NULL;
+
+                cache	= mad_gm_cache_array[port->number];
+                mad_gm_cache_array[port->number]	= cache->next;
+
+                gms = gm_deregister_memory(port->p_gm_port,
+                                           cache->ptr,
+                                           cache->len);
+                if (gms) {
+                        __error__("memory deregistration failed");
+                        __gmerror__(gms);
+                        goto error;
+                }
+
+                cache->ptr	= NULL;
+                cache->len	=    0;
+                cache->next	= NULL;
+                mad_gm_unlock();
+                TBX_FREE(cache);
+                mad_gm_lock();
+        }
+        mad_gm_unlock();
+
+        while (!tbx_slist_is_nil(port->packet_cache)) {
+                void *ptr = NULL;
+
+                ptr = tbx_slist_extract(port->packet_cache);
+                gm_dma_free(port->p_gm_port, ptr);
+        }
+
+        tbx_slist_free(port->packet_cache);
+        port->packet_cache = NULL;
+
+        gm_dma_free(port->p_gm_port, port->packet);
+        port->packet = NULL;
+
+        tbx_darray_free(port->out_darray);
+        port->out_darray = NULL;
+
+        tbx_darray_free(port->in_darray);
+        port->in_darray = NULL;
+
+        gm_close(port->p_gm_port);
+        port->p_gm_port = NULL;
+
+        TBX_FREE(port);
+
+        LOG_OUT();
+
+        return;
+
+ error:
+        FAILURE("mad_gm_port_close failed");
+}
+
+
 #ifdef MARCEL
 static
 void
@@ -2041,11 +2106,15 @@ mad_gm_link_exit(p_mad_link_t l) {
 void
 mad_gm_connection_exit(p_mad_connection_t in,
                        p_mad_connection_t out) {
-
         LOG_IN();
         if (in) {
                 p_mad_gm_connection_specific_t is = NULL;
                 is = in->specific;
+
+                if (!tbx_slist_is_nil(is->cpy_buffer_slist))
+                        FAILURE("input copy buffer list not empty");
+
+                tbx_slist_free(is->cpy_buffer_slist);
                 TBX_FREE(is);
                 in->specific = is = NULL;
         }
@@ -2053,6 +2122,10 @@ mad_gm_connection_exit(p_mad_connection_t in,
         if (out) {
                 p_mad_gm_connection_specific_t os = NULL;
                 os = out->specific;
+                if (!tbx_slist_is_nil(os->cpy_buffer_slist))
+                        FAILURE("input copy buffer list not empty");
+
+                tbx_slist_free(os->cpy_buffer_slist);
                 TBX_FREE(os);
                 out->specific = os = NULL;
         }
@@ -2085,6 +2158,9 @@ mad_gm_adapter_exit(p_mad_adapter_t a) {
         }
 #endif
         TBX_FREE(as);
+
+        mad_gm_port_close(as->port);
+        as->port = NULL;
 
         a->specific = as = NULL;
         LOG_OUT();

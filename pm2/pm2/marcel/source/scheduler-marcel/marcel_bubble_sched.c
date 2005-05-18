@@ -168,11 +168,12 @@ void marcel_close_bubble(marcel_bubble_t *bubble) {
 
 int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 		ma_runqueue_t *rq, int idx) {
-	int max_prio;
 	marcel_bubble_t *bubble;
-	ma_runqueue_t *currq;
 
 #ifdef MA__LWPS
+	int max_prio;
+	ma_runqueue_t *currq;
+
 	/* sur smp, descendre l'entité si besoin est */
 	if (nextent->sched_level > rq->level) {
 		/* on peut relâcher la runqueue de la tâche courante */

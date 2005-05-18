@@ -166,8 +166,119 @@ void marcel_close_bubble(marcel_bubble_t *bubble) {
 	LOG_OUT();
 }
 
+int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
+		ma_runqueue_t *rq, int idx) {
+	int max_prio;
+	marcel_bubble_t *bubble;
+	ma_runqueue_t *currq;
+
+#ifdef MA__LWPS
+	/* sur smp, descendre l'entité si besoin est */
+	if (nextent->sched_level > rq->level) {
+		/* on peut relâcher la runqueue de la tâche courante */
+		if (prevrq != rq)
+			_ma_raw_spin_unlock(&prevrq->lock);
+
+		/* s'assurer d'abord que personne n'a activé une entité d'une
+		 * telle priorité (ou encore plus forte) avant nous */
+		max_prio = idx;
+		for (currq = ma_lwp_rq(LWP_SELF); currq != rq; currq = currq->father) {
+			idx = ma_sched_find_first_bit(currq->active->bitmap);
+			if (idx <= max_prio) {
+				bubble_sched_debug("prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
+				ma_spin_unlock(&rq->lock);
+				return 1;
+			}
+		}
+		for (; currq; currq = currq->father) {
+			idx = ma_sched_find_first_bit(currq->active->bitmap);
+			if (idx < max_prio) {
+				bubble_sched_debug("better prio %d on rq %s in the meanwhile\n", idx, currq->name);
+				ma_spin_unlock(&rq->lock);
+				return 1;
+			}
+		}
+
+		deactivate_entity(nextent,rq);
+		/* trouver une runqueue qui va bien */
+		for (currq = ma_lwp_rq(LWP_SELF); currq &&
+			nextent->sched_level < currq->level;
+			currq = currq->father);
+
+		MA_BUG_ON(!currq);
+		PROF_EVENT2(bubble_sched_down,nextent,currq);
+		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
+
+		/* on descend, l'ordre des adresses est donc correct */
+		lock_second_rq(rq, currq);
+		activate_entity(nextent,currq);
+		double_rq_unlock(rq, currq);
+		return 1;
+	}
+#endif
+
+	if (nextent->type == MARCEL_TASK_ENTITY)
+		return 0;
+
+/*
+ * c'est une bulle
+ */
+	bubble = list_entry(nextent, marcel_bubble_t, sched);
+
+	/* relâche la queue de la tâche courante: on ne lui fera rien, à part
+	 * squatter sa pile avant de recommencer ma_schedule() */
+	if (prevrq!=rq)
+		_ma_raw_spin_unlock(&prevrq->lock);
+
+	/* maintenant on peut s'occuper de la bulle */
+	/* l'enlever de la queue */
+	deactivate_entity(nextent,rq);
+	ma_spin_unlock(&rq->lock);
+	{
+		marcel_bubble_entity_t *new;
+
+		/* respect ordre verrouillage */
+		ma_spin_lock(&bubble->lock);
+		ma_spin_lock(&rq->lock);
+
+		bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
+		PROF_EVENT1(bubble_sched_explode, bubble);
+		bubble->status = MA_BUBBLE_OPENED;
+		/* XXX: time_slice proportionnel au parallélisme de la runqueue */
+/* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
+   les #ifdef dans les arguments de macro...
+ */
+#ifdef MA__LWPS
+#  define _TIME_SLICE MA_CPU_WEIGHT(&rq->cpuset)
+#else
+#  define _TIME_SLICE 1
+#endif
+		ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
+#undef _TIME_SLICE
+		bubble_sched_debug("timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
+		nextent->init_rq = rq;
+		list_for_each_entry(new, &bubble->heldentities, entity_list) {
+			bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
+			new->init_rq=rq;
+			activate_entity(new, rq);
+			bubble->nbrunning++;
+		}
+		ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
+
+		ma_spin_unlock(&rq->lock);
+		ma_spin_unlock(&bubble->lock);
+	}
+
+	LOG("restarting to need_resched");
+	return 1;
+}
+
 void __marcel_init bubble_sched_init() {
+	marcel_root_bubble.status=MA_BUBBLE_OPENED;
+	marcel_root_bubble.sched.init_rq=&ma_main_runqueue;
+	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
 	PROF_EVENT1(bubble_sched_new,marcel_root_bubble);
+	PROF_EVENT1(bubble_sched_explode,marcel_root_bubble);
 }
 
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,

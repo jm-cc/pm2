@@ -124,3 +124,11 @@ struct marcel_bubble {
 
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_bubble_t *, bubble_towake);
+
+#section marcel_functions
+/* called from ma_schedule() to achieve bubble scheduling. prevrq and rq are
+ * locked, returns 1 if ma_schedule() should restart (prevrq and rq have then
+ * been released), returns 0 if ma_schedule() can continue with entity nextent
+ * (prevrq and rq have been kept locked) */
+int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
+		ma_runqueue_t *rq, int idx);

@@ -80,7 +80,7 @@ $(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
 # Construction d'un fichier de tags pour les éditeurs de fichiers
 #---------------------------------------------------------------------
 tags:
-	$(CTAGS) --recurse=yes --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include .
+	$(CTAGS) --recurse=yes --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX .
 
 # Annulation de la règle implicite avec SCCS (pose des problèmes avec marcel.lds)
 #---------------------------------------------------------------------

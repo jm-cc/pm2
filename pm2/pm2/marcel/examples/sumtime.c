@@ -22,7 +22,8 @@
 //#define dprintf(fmt,args...) fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
 
-#define MAX_BUBBLE_LEVEL 6
+//#define MAX_BUBBLE_LEVEL 6
+#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
   int inf, sup, res;

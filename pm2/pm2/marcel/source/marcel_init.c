@@ -44,7 +44,7 @@ marcel_test_activity(void)
  * ------------------
  */
 
-static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
+static void marcel_parse_cmdline_early(int *argc, char **argv, boolean do_not_strip)
 {
   int i, j;
 #ifdef MA__LWPS
@@ -80,6 +80,29 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
       continue;
     } else
 #endif
+      argv[j++] = argv[i++];
+  }
+  *argc = j;
+  argv[j] = NULL;
+
+  if(do_not_strip) {	
+#ifdef MA__LWPS
+    marcel_lwp_fix_nb_vps(__nb_lwp);
+    mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
+#endif
+  }
+}
+
+static void marcel_parse_cmdline_lastly(int *argc, char **argv, boolean do_not_strip)
+{
+  int i, j;
+
+  if (!argc)
+    return;
+
+  i = j = 1;
+
+  while(i < *argc) {
     if(!strcmp(argv[i], "--marcel-top")) {
       if (i == *argc-1) {
 	fprintf(stderr,
@@ -113,20 +136,15 @@ static void marcel_parse_cmdline(int *argc, char **argv, boolean do_not_strip)
   }
   *argc = j;
   argv[j] = NULL;
-
-  if(do_not_strip) {	
-#ifdef MA__LWPS
-    marcel_lwp_fix_nb_vps(__nb_lwp);
-    mdebug("\t\t\t<Suggested nb of Virtual Processors : %d>\n", __nb_lwp);
-#endif
-  }
 }
 
 void marcel_strip_cmdline(int *argc, char *argv[])
 {
-  marcel_parse_cmdline(argc, argv, FALSE);
+  marcel_parse_cmdline_early(argc, argv, FALSE);
 
   marcel_debug_init(argc, argv, PM2DEBUG_CLEAROPT);
+
+  marcel_parse_cmdline_lastly(argc, argv, FALSE);
 }
 
 // Cannot start some internal threads or activations.
@@ -141,7 +159,7 @@ void marcel_init_data(int *argc, char *argv[])
   already_called = TRUE;
 
   // Parse command line
-  marcel_parse_cmdline(argc, argv, TRUE);
+  marcel_parse_cmdline_early(argc, argv, TRUE);
 
   marcel_init_section(MA_INIT_SCHEDULER);
 
@@ -151,6 +169,7 @@ void marcel_init_data(int *argc, char *argv[])
   // Initialize debug facilities
   marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
+  marcel_parse_cmdline_lastly(argc, argv, TRUE);
 }
 
 // When completed, some threads/activations may be started

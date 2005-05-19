@@ -1765,12 +1765,15 @@ int marcel_yield_to(marcel_t next)
 	if (next==prev)
 		return 0;
 
+	LOG_IN();
+
 	nextrq = task_rq_rq_lock(next, prevrq);
 
 	if (!next->sched.internal.cur_rq || !next->sched.internal.array) {
 		double_rq_unlock_softirq(prevrq, nextrq);
 		sched_debug("marcel_yield: %s task %p\n",
 			!next->sched.internal.cur_rq?"not enqueued":"busy", next);
+		LOG_OUT();
 		return -1;
 	}
 
@@ -1787,6 +1790,7 @@ int marcel_yield_to(marcel_t next)
 	ma_barrier();
 	finish_task_switch(prev);
 
+	LOG_OUT();
 	return 0;
 }
 

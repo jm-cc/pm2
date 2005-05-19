@@ -23,9 +23,9 @@ static unsigned _pm2_imported_threads = 0;
 static pm2_pre_migration_hook _pm2_pre_migr_func = NULL;
 static pm2_post_migration_hook _pm2_post_migr_func = NULL;
 static pm2_post_post_migration_hook _pm2_post_post_migr_func = NULL;
-static int _isoaddr_migr_dest = 0;
 
 typedef struct {
+  int dest;
   int nb;
   marcel_t *pids;
   boolean do_send;
@@ -86,8 +86,8 @@ static void migrate_func(marcel_t task, unsigned long depl, unsigned long blk, v
   pm2_pack_byte(SEND_CHEAPER, RECV_CHEAPER, (char *)mctl.stack_base + depl, blk);
 
   block_descr_ptr = (block_descr_t *)(*marcel_specificdatalocation(task, _pm2_block_key));
-  block_pack_all(block_descr_ptr, _isoaddr_migr_dest);
-  isoaddr_page_set_owner(isoaddr_page_index(mctl.stack_base), _isoaddr_migr_dest);
+  block_pack_all(block_descr_ptr, args->dest);
+  isoaddr_page_set_owner(isoaddr_page_index(mctl.stack_base), args->dest);
 
 
   if(_pm2_pre_migr_func != NULL)
@@ -134,11 +134,9 @@ void pm2_migrate_group(marcel_t *pids, int nb, int module)
     arg.do_send = FALSE;
     arg.pids = pids;
     arg.nb = nb;
+    arg.dest = module;
 
     pm2_rawrpc_begin(module, PM2_MIGR, NULL);
-
-    /* GA: modif 3/05/2000: record destination */
-    _isoaddr_migr_dest = module;
 
     pm2_pack_int(SEND_SAFER, RECV_EXPRESS, &nb, 1);
 

@@ -1696,7 +1696,8 @@ switch_tasks:
 		MA_BUG_ON(next==prev);
 		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
 		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-		deactivate_running_task(prev,prevrq);
+		if (ma_task_cur_rq(prev))
+			deactivate_running_task(prev,prevrq);
 		ma_spin_lock(&bubble->lock);
 		if ((wake_bubble = !(--bubble->nbrunning))) {
 			bubble_sched_debug("we're last, bubble %p closed\n", bubble);

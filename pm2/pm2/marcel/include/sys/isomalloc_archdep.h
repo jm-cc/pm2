@@ -17,8 +17,11 @@
 #ifndef ISOMALLOC_ARCHDEP_IS_DEF
 #define ISOMALLOC_ARCHDEP_IS_DEF
 
+/* SLOT_AREA_TOP doit Ítre un multiple de THREAD_SLOT_SIZE
+ * et THREAD_SLOT_SIZE doit Ítre une puissance de deux */
+
 #define ISOADDR_PAGES                 (128*1024)
-/* Attention : ASM_THREAD_SLOT_SIZE red√©fini pour ia64 */
+/* Attention : ASM_THREAD_SLOT_SIZE redÈfini pour ia64 */
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilis√©e
    dans un source assembleur */
 #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */

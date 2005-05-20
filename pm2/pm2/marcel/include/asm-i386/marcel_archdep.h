@@ -45,6 +45,7 @@
 #    define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #endif
 
+#include "tbx_compiler.h"
 static __tbx_inline__ long get_gs(void)
 {
   register long gs;

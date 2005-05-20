@@ -1517,7 +1517,7 @@ asmlinkage void ma_schedule(void)
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
-	unsigned long run_time;
+	//unsigned long run_time;
 	int idx;
 	int max_prio, prev_as_prio;
 	int go_to_sleep, wake_bubble;
@@ -1546,7 +1546,7 @@ need_resched:
 
 	now = marcel_clock();
 	//if (likely(now - prev->timestamp < NS_MAX_SLEEP_AVG))
-		run_time = now - prev->sched.internal.timestamp;
+		//run_time = now - prev->sched.internal.timestamp;
 	/*
 	else
 		run_time = NS_MAX_SLEEP_AVG;
@@ -1626,8 +1626,15 @@ restart:
 #warning TODO: demander à l application de rebalancer
 #endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
+		next = ma_per_lwp(idle_task, LWP_SELF);
+#else
+		/* mono: nobody can even use our stack, so there's no need for
+		 * idle thread */
+		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+		double_rq_unlock(prevrq,rq);
+		go_to_sleep = 0;
+		goto need_resched_atomic;
 #endif
-		next = ma_per_lwp(idle_task, LWP_SELF);//rq->idle;
 	}
 
 	if (next) /* either prev or idle */

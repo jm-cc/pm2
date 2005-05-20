@@ -238,13 +238,14 @@ void marcel_gensched_shutdown(void)
 	//marcel_cancel(__main_lwp.sched.idle_task);
 #ifdef PM2
 	/* __sched_task is detached, so we can free its stack now */
-	__TBX_FREE(marcel_stackbase(ma_per_lwp(idle_task,&__main_lwp)), __FILE__, __LINE__);
+	//__TBX_FREE(marcel_stackbase(ma_per_lwp(idle_task,&__main_lwp)), __FILE__, __LINE__);
 #endif
 #endif
 
 	LOG_OUT();
 }
 
+#ifdef MA__LWPS
 static any_t TBX_NORETURN idle_func(any_t hlwp)
 {
 	if (hlwp == NULL) {
@@ -259,11 +260,14 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 }
 
 MA_DEFINE_PER_LWP(marcel_task_t *,idle_task, NULL);
+#endif
 
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {
+#ifdef MA__LWPS
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
+#endif
 	LOG_IN();
 
 	if (IS_FIRST_LWP(lwp)) {
@@ -273,6 +277,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 	} 
 
+#ifdef MA__LWPS
 	/*****************************************/
 	/* Création de la tâche Idle (idle_task) */
 	/*****************************************/
@@ -299,6 +304,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)),
 			      &attr, idle_func, (void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
+#endif
 
 	LOG_OUT();
 }
@@ -310,7 +316,9 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 
 	MA_BUG_ON(!ma_in_irq());
 
+#ifdef MA__LWPS
 	ma_wake_up_created_thread(ma_per_lwp(idle_task,lwp));
+#endif
 
 	ma_irq_exit();
 	MA_BUG_ON(ma_in_atomic());
@@ -322,7 +330,7 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(generic_sched, 100, "Sched generic",
 				  marcel_sched_lwp_init, "Création de idle",
-				  marcel_sched_lwp_start, "Réveil de idle et démarrage de la préemtion");
+				  marcel_sched_lwp_start, "Réveil de idle et démarrage de la préemption");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(generic_sched, MA_INIT_GENSCHED_IDLE);
 MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(generic_sched, MA_INIT_GENSCHED_PREEMPT,

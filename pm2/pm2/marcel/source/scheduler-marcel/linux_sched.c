@@ -1628,10 +1628,12 @@ restart:
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 		next = ma_per_lwp(idle_task, LWP_SELF);
 #else
-		/* mono: nobody can even use our stack, so there's no need for
-		 * idle thread */
-		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+		/* mono: nobody can use our stack, so there's no need for idle
+		 * thread */
 		double_rq_unlock(prevrq,rq);
+		ma_local_bh_enable();
+		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
+		ma_local_bh_disable();
 		go_to_sleep = 0;
 		goto need_resched_atomic;
 #endif
@@ -2217,12 +2219,14 @@ MARCEL_INT(task_nice);
  * idle_lwp - is a given cpu idle currently?
  * @lwp: the processor in question.
  */
+#ifdef MA__LWPS
 int idle_lwp(ma_lwp_t lwp)
 {
 	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);//ma_lwp_rq(lwp)->idle;
 }
 
 MARCEL_INT(idle_lwp);
+#endif
 
 #if 0
 /**

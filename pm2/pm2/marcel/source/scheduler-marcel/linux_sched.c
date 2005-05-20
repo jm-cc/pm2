@@ -180,6 +180,11 @@
 MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq, NULL);
 MA_DEFINE_PER_LWP(marcel_task_t *, current_thread, NULL);
 MA_DEFINE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage, {0});
+#ifndef MA__LWPS
+/* mono: pas de thread idle, mais on a besoin d'une variable pour savoir si on
+ * est dans la boucle idle */
+static int currently_idle;
+#endif
 
 /*
  * Default context-switch locking:
@@ -1387,7 +1392,12 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		sys_ticks = 0;
 	}
 
-	if (p->sched.internal.init_rq->type == MA_DONTSCHED_RQ) {
+#ifdef MA__LWPS
+	if (p->sched.internal.init_rq->type == MA_DONTSCHED_RQ)
+#else
+	if (currently_idle)
+#endif
+	{
 		// TODO on n'a pas non plus de notion d'iowait
 		/*if (atomic_read(&rq->nr_iowait) > 0)
 			lwpstat->iowait += sys_ticks;
@@ -1631,9 +1641,11 @@ restart:
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
 		double_rq_unlock(prevrq,rq);
+		currently_idle = 1;
 		ma_local_bh_enable();
 		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
 		ma_local_bh_disable();
+		currently_idle = 0;
 		go_to_sleep = 0;
 		goto need_resched_atomic;
 #endif

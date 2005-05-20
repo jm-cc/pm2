@@ -88,12 +88,12 @@ int ma_wake_up_task(marcel_task_t * p);
 
 #section marcel_functions
 #depend "scheduler/linux_runqueues.h[marcel_types]"
-inline static ma_runqueue_t *
+__tbx_inline__ static ma_runqueue_t *
 marcel_sched_vpmask_init_rq(marcel_vpmask_t mask);
 
 #section marcel_inline
 #depend "scheduler/linux_runqueues.h[marcel_types]"
-inline static ma_runqueue_t *
+__tbx_inline__ static ma_runqueue_t *
 marcel_sched_vpmask_init_rq(marcel_vpmask_t mask)
 {
 	if (tbx_unlikely(mask==MARCEL_VPMASK_EMPTY))

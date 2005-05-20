@@ -166,19 +166,19 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 
 #section marcel_functions
 #ifdef CONFIG_NUMA
-static inline void nr_running_inc(ma_runqueue_t *rq);
-static inline void nr_running_dec(ma_runqueue_t *rq);
+static __tbx_inline__ void nr_running_inc(ma_runqueue_t *rq);
+static __tbx_inline__ void nr_running_dec(ma_runqueue_t *rq);
 #endif
 
 #section marcel_inline
 #ifdef CONFIG_NUMA
-static inline void nr_running_inc(ma_runqueue_t *rq)
+static __tbx_inline__ void nr_running_inc(ma_runqueue_t *rq)
 {
 	atomic_inc(rq->node_nr_running);
 	rq->nr_running++;
 }
 
-static inline void nr_running_dec(ma_runqueue_t *rq)
+static __tbx_inline__ void nr_running_dec(ma_runqueue_t *rq)
 {
 	atomic_dec(rq->node_nr_running);
 	rq->nr_running--;
@@ -202,9 +202,9 @@ static inline void nr_running_dec(ma_runqueue_t *rq)
  * so that once main_runqueue locked, one can lock lwp runqueues for instance.
  */
 #section marcel_functions
-static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+static __tbx_inline__ void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
 #section marcel_inline
-static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+static __tbx_inline__ void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	if (rq1 == rq2)
 		ma_spin_lock(&rq1->lock);
@@ -219,9 +219,9 @@ static inline void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 	}
 }
 #section marcel_functions
-static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+static __tbx_inline__ void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
 #section marcel_inline
-static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+static __tbx_inline__ void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	ma_local_bh_disable();
 
@@ -233,12 +233,12 @@ static inline void double_rq_lock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2
  * proper order
  */
 #section marcel_functions
-static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+static __tbx_inline__ void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
 #section marcel_inline
-static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+static __tbx_inline__ void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	MA_BUG_ON(rq1 > rq2);
-	if (rq1 < rq2)
+	if (rq1 != rq2)
 		_ma_raw_spin_lock(&rq2->lock);
 }
 
@@ -249,18 +249,18 @@ static inline void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
  * you need to do so manually after calling.
  */
 #section marcel_functions
-static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+static __tbx_inline__ void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
 #section marcel_inline
-static inline void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+static __tbx_inline__ void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
-	ma_spin_unlock(&rq1->lock);
 	if (rq1 != rq2)
 		_ma_raw_spin_unlock(&rq2->lock);
+	ma_spin_unlock(&rq1->lock);
 }
 #section marcel_functions
-static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
+static __tbx_inline__ void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);
 #section marcel_inline
-static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
+static __tbx_inline__ void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	double_rq_unlock(rq1, rq2);
 	ma_local_bh_enable();
@@ -272,10 +272,10 @@ static inline void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *r
  * explicitly disabling preemption.
  */
 #section marcel_functions
-static inline ma_runqueue_t *entity_rq(marcel_bubble_entity_t *e);
+static __tbx_inline__ ma_runqueue_t *entity_rq(marcel_bubble_entity_t *e);
 #define task_rq(t) entity_rq(&(t)->sched.internal)
 #section marcel_inline
-static inline ma_runqueue_t *entity_rq(marcel_bubble_entity_t *e)
+static __tbx_inline__ ma_runqueue_t *entity_rq(marcel_bubble_entity_t *e)
 {
 	ma_runqueue_t *rq;
 	if ((rq = e->cur_rq))
@@ -333,9 +333,9 @@ repeat_lock_task:
 }
 
 #section marcel_functions
-static inline void task_rq_unlock(ma_runqueue_t *rq);
+static __tbx_inline__ void task_rq_unlock(ma_runqueue_t *rq);
 #section marcel_inline
-static inline void task_rq_unlock(ma_runqueue_t *rq)
+static __tbx_inline__ void task_rq_unlock(ma_runqueue_t *rq)
 {
 	sched_debug("task_rq_unlock(%s)\n",rq->name);
 	ma_spin_unlock_softirq(&rq->lock);
@@ -345,9 +345,9 @@ static inline void task_rq_unlock(ma_runqueue_t *rq)
  * rq_lock - lock a given runqueue and disable interrupts.
  */
 #section marcel_functions
-static inline ma_runqueue_t *this_rq_lock(void);
+static __tbx_inline__ ma_runqueue_t *this_rq_lock(void);
 #section marcel_inline
-static inline ma_runqueue_t *this_rq_lock(void)
+static __tbx_inline__ ma_runqueue_t *this_rq_lock(void)
 {
 	ma_runqueue_t *rq;
 
@@ -359,9 +359,9 @@ static inline ma_runqueue_t *this_rq_lock(void)
 }
 
 #section marcel_functions
-static inline void rq_unlock(ma_runqueue_t *rq);
+static __tbx_inline__ void rq_unlock(ma_runqueue_t *rq);
 #section marcel_inline
-static inline void rq_unlock(ma_runqueue_t *rq)
+static __tbx_inline__ void rq_unlock(ma_runqueue_t *rq)
 {
 	ma_spin_unlock_softirq(&rq->lock);
 }
@@ -370,10 +370,10 @@ static inline void rq_unlock(ma_runqueue_t *rq)
  * Adding/removing a task to/from a priority array:
  */
 #section marcel_functions
-static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array);
-static inline void dequeue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
+static __tbx_inline__ void dequeue_task(marcel_task_t *p, ma_prio_array_t *array);
+static __tbx_inline__ void dequeue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
 #section marcel_inline
-static inline void dequeue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
+static __tbx_inline__ void dequeue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
 	array->nr_active--;
@@ -385,17 +385,17 @@ static inline void dequeue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *ar
 	MA_BUG_ON(!e->array);
 	e->array = NULL;
 }
-static inline void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
+static __tbx_inline__ void dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
 	sched_debug("dequeueing %ld:%s (prio %d) from %p\n",p->number,p->name,p->sched.internal.prio,array);
 	dequeue_entity(&p->sched.internal, array);
 }
 
 #section marcel_functions
-static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array);
-static inline void enqueue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
+static __tbx_inline__ void enqueue_task(marcel_task_t *p, ma_prio_array_t *array);
+static __tbx_inline__ void enqueue_entity(marcel_bubble_entity_t *p, ma_prio_array_t *array);
 #section marcel_inline
-static inline void enqueue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
+static __tbx_inline__ void enqueue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
 	list_add_tail(&e->run_list, array->queue + e->prio);
@@ -404,7 +404,7 @@ static inline void enqueue_entity(marcel_bubble_entity_t *e, ma_prio_array_t *ar
 	MA_BUG_ON(e->array);
 	e->array = array;
 }
-static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
+static __tbx_inline__ void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
 	sched_debug("enqueueing %ld:%s (prio %d) in %p\n",p->number,p->name,p->sched.internal.prio,array);
 	enqueue_entity(&p->sched.internal,array);
@@ -415,9 +415,9 @@ static inline void enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
  * because it is already running (p == MARCEL_SELF)
  */
 #section marcel_functions
-static inline void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq);
+static __tbx_inline__ void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline             
-static inline void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
+static __tbx_inline__ void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	MA_BUG_ON(p->sched.internal.cur_rq);
 	p->sched.internal.cur_rq = rq;
@@ -428,9 +428,9 @@ static inline void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
  * __activate_task - move a task to the runqueue.
  */
 #section marcel_functions
-static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq);
+static __tbx_inline__ void __activate_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
+static __tbx_inline__ void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	activate_running_task(p,rq);
 	enqueue_task(p, rq->active);
@@ -443,9 +443,9 @@ static inline void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
  * calculation, priority modifiers, etc.)
  */
 #section marcel_functions
-static inline void activate_task(marcel_task_t *p, ma_runqueue_t *rq);
+static __tbx_inline__ void activate_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void activate_task(marcel_task_t *p, ma_runqueue_t *rq)
+static __tbx_inline__ void activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 //	unsigned long long now = sched_clock();
 
@@ -481,9 +481,9 @@ static inline void activate_task(marcel_task_t *p, ma_runqueue_t *rq)
  * activate entity
  */
 #section marcel_functions
-static inline void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq);
+static __tbx_inline__ void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
+static __tbx_inline__ void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
 {
 	MA_BUG_ON(e->cur_rq);
 	e->cur_rq = rq;
@@ -496,9 +496,9 @@ static inline void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
  * dequeueing it, since it is already running.
  */
 #section marcel_functions
-static inline void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq);
+static __tbx_inline__ void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline               
-static inline void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
+static __tbx_inline__ void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	nr_running_dec(rq);
 	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
@@ -511,9 +511,9 @@ static inline void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
  * deactivate_task - remove a task from the runqueue.
  */
 #section marcel_functions
-static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq);
+static __tbx_inline__ void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
+static __tbx_inline__ void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	dequeue_task(p, p->sched.internal.array);
 	deactivate_running_task(p,rq);
@@ -523,9 +523,9 @@ static inline void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
  * deactivate entity
  */
 #section marcel_functions
-static inline void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq);
+static __tbx_inline__ void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static inline void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
+static __tbx_inline__ void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
 {
 	dequeue_entity(e, rq->active);
 	nr_running_dec(rq);
@@ -537,9 +537,9 @@ static inline void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *r
  * Switch the active and expired arrays.
  */
 #section marcel_functions
-static inline void rq_arrays_switch(ma_runqueue_t *rq);
+static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq);
 #section marcel_inline
-static inline void rq_arrays_switch(ma_runqueue_t *rq)
+static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 {
 	ma_prio_array_t *array = rq->active;
 

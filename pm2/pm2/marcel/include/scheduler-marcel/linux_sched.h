@@ -296,7 +296,7 @@ do { if (ma_atomic_dec_and_test(&(tsk)->usage)) __ma_put_task_struct(tsk); } whi
 #ifdef MA__LWPS
 extern int ma_set_lwps_allowed(marcel_task_t *p, ma_lwpmask_t new_mask);
 #else
-static inline int ma_set_lwps_allowed(marcel_task_t *p, ma_lwpmask_t new_mask)
+static __tbx_inline__ int ma_set_lwps_allowed(marcel_task_t *p, ma_lwpmask_t new_mask)
 {
 	return 0;
 }
@@ -340,7 +340,7 @@ extern void FASTCALL(marcel_unfreeze_sched());
 #ifdef MA__LWPS
  extern void ma_kick_process(marcel_task_t * tsk);
 #else
- static inline void ma_kick_process(marcel_task_t *tsk) { }
+ static __tbx_inline__ void ma_kick_process(marcel_task_t *tsk) { }
 #endif
 extern void FASTCALL(ma_wake_up_created_thread(marcel_task_t * tsk));
 
@@ -355,7 +355,7 @@ extern void ma_flush_signals(marcel_task_t *);
 extern void ma_flush_signal_handlers(marcel_task_t *, int force_default);
 extern int ma_dequeue_signal(marcel_task_t *tsk, sigset_t *mask, siginfo_t *info);
 
-static inline int ma_dequeue_signal_lock(marcel_task_t *tsk, sigset_t *mask, siginfo_t *info)
+static __tbx_inline__ int ma_dequeue_signal_lock(marcel_task_t *tsk, sigset_t *mask, siginfo_t *info)
 {
 	//unsigned long flags;
 	int ret;
@@ -401,12 +401,12 @@ extern int do_sigaltstack(const stack_t __user *, stack_t __user *, unsigned lon
 
 /* True if we are on the alternate signal stack.  */
 
-static inline int on_sig_stack(unsigned long sp)
+static __tbx_inline__ int on_sig_stack(unsigned long sp)
 {
 	return (sp - current->sas_ss_sp < current->sas_ss_size);
 }
 
-static inline int sas_ss_flags(unsigned long sp)
+static __tbx_inline__ int sas_ss_flags(unsigned long sp)
 {
 	return (current->sas_ss_size == 0 ? SS_DISABLE
 		: on_sig_stack(sp) ? SS_ONSTACK : 0);
@@ -480,7 +480,7 @@ extern task_t * FASTCALL(next_thread(task_t *p));
 
 #define thread_group_leader(p)	(p->pid == p->tgid)
 
-static inline int thread_group_empty(task_t *p)
+static __tbx_inline__ int thread_group_empty(task_t *p)
 {
 	struct pid *pid = p->pids[PIDTYPE_TGID].pidptr;
 
@@ -501,12 +501,12 @@ extern void unhash_process(marcel_task_t *p);
  * neither inside nor outside.
  */
 #if 0
-static inline void ma_task_lock(marcel_task_t *p)
+static __tbx_inline__ void ma_task_lock(marcel_task_t *p)
 {
 	ma_spin_lock(&p->alloc_lock);
 }
 
-static inline void ma_task_unlock(marcel_task_t *p)
+static __tbx_inline__ void ma_task_unlock(marcel_task_t *p)
 {
 	ma_spin_unlock(&p->alloc_lock);
 }
@@ -515,53 +515,53 @@ static inline void ma_task_unlock(marcel_task_t *p)
 /* set thread flags in other task's structures
  * - see asm/thread_info.h for TIF_xxxx flags available
  */
-static inline void ma_set_tsk_thread_flag(marcel_task_t *tsk, int flag)
+static __tbx_inline__ void ma_set_tsk_thread_flag(marcel_task_t *tsk, int flag)
 {
 	ma_set_ti_thread_flag(tsk,flag);
 }
 
-static inline void ma_clear_tsk_thread_flag(marcel_task_t *tsk, int flag)
+static __tbx_inline__ void ma_clear_tsk_thread_flag(marcel_task_t *tsk, int flag)
 {
 	ma_clear_ti_thread_flag(tsk,flag);
 }
 
-static inline int ma_test_and_set_tsk_thread_flag(marcel_task_t *tsk, int flag)
+static __tbx_inline__ int ma_test_and_set_tsk_thread_flag(marcel_task_t *tsk, int flag)
 {
 	return ma_test_and_set_ti_thread_flag(tsk,flag);
 }
 
-static inline int ma_test_and_clear_tsk_thread_flag(marcel_task_t *tsk, int flag)
+static __tbx_inline__ int ma_test_and_clear_tsk_thread_flag(marcel_task_t *tsk, int flag)
 {
 	return ma_test_and_clear_ti_thread_flag(tsk,flag);
 }
 
-static inline int ma_test_tsk_thread_flag(marcel_task_t *tsk, int flag)
+static __tbx_inline__ int ma_test_tsk_thread_flag(marcel_task_t *tsk, int flag)
 {
 	return ma_test_ti_thread_flag(tsk,flag);
 }
 
-static inline void ma_set_tsk_need_resched(marcel_task_t *tsk)
+static __tbx_inline__ void ma_set_tsk_need_resched(marcel_task_t *tsk)
 {
 	ma_set_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
 }
 
-static inline void ma_clear_tsk_need_resched(marcel_task_t *tsk)
+static __tbx_inline__ void ma_clear_tsk_need_resched(marcel_task_t *tsk)
 {
 	ma_clear_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
 }
 
-static inline int ma_signal_pending(marcel_task_t *p)
+static __tbx_inline__ int ma_signal_pending(marcel_task_t *p)
 {
 	return tbx_unlikely(ma_test_tsk_thread_flag(p,TIF_WORKPENDING));
 }
   
-static inline int ma_need_resched(void)
+static __tbx_inline__ int ma_need_resched(void)
 {
 	return tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED));
 }
 
 extern void __ma_cond_resched(void);
-static inline void ma_cond_resched(void)
+static __tbx_inline__ void ma_cond_resched(void)
 {
 	if (ma_need_resched())
 		__ma_cond_resched();
@@ -575,7 +575,7 @@ static inline void ma_cond_resched(void)
  * operations here to prevent schedule() from being called twice (once via
  * spin_unlock(), once by hand).
  */
-static inline void ma_cond_resched_lock(ma_spinlock_t * lock)
+static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
 {
 	if (ma_need_resched()) {
 		_ma_raw_spin_unlock(lock);
@@ -599,12 +599,12 @@ extern void signal_wake_up(marcel_task_t *t, int resume_stopped);
 /*
  * Wrappers for p->thread_info->cpu access. No-op on UP.
  */
-static inline ma_lwp_t ma_task_lwp(marcel_task_t *p)
+static __tbx_inline__ ma_lwp_t ma_task_lwp(marcel_task_t *p)
 {
 	return GET_LWP(p); //p->thread_info->cpu;
 }
 
-static inline void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
+static __tbx_inline__ void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
 {
 	SET_LWP(p, lwp);
 	//p->thread_info->cpu = cpu;

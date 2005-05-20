@@ -73,7 +73,6 @@ DEF_PTHREAD(int, cond_destroy, (pthread_cond_t *cond), (cond))
 DEF_MARCEL_POSIX(int, cond_signal, (marcel_cond_t *cond), (cond))
 {
   LOG_IN();
-  lock_task();
   __marcel_unlock(&cond->__c_lock);
   LOG_OUT();
   return 0;

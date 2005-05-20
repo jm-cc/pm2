@@ -107,7 +107,6 @@ DEF___PTHREAD(int, mutex_destroy, (pthread_mutex_t * mutex), (mutex))
 DEF_MARCEL(int, mutex_lock, (marcel_mutex_t *mutex), (mutex))
 {
   LOG_IN();
-  lock_task();
 
   __marcel_lock(&mutex->__m_lock, marcel_self());
 
@@ -158,7 +157,6 @@ DEF_MARCEL(int, mutex_trylock, (marcel_mutex_t *mutex), (mutex))
 {
   int ret;
   LOG_IN();
-  lock_task();
 
   ret=__marcel_trylock(&mutex->__m_lock);
   LOG_OUT();
@@ -263,7 +261,6 @@ DEF_MARCEL(int, mutex_unlock, (marcel_mutex_t *mutex), (mutex))
 {
   int ret;
   LOG_IN();
-  lock_task();
   ret=__marcel_unlock(&mutex->__m_lock);
   LOG_OUT();
   return ret;

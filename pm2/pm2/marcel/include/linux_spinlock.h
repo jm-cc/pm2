@@ -366,7 +366,7 @@ do { \
 #define ma_spin_unlock_bh(lock) \
 do { \
 	_ma_raw_spin_unlock(lock); \
-	ma_preempt_enable(); \
+	ma_preempt_enable_no_resched(); \
 	ma_local_bh_enable(); \
 } while (0)
 
@@ -390,7 +390,7 @@ do { \
 #define ma_read_unlock_bh(lock) \
 do { \
 	_ma_raw_read_unlock(lock); \
-	ma_preempt_enable(); \
+	ma_preempt_enable_no_resched(); \
 	ma_local_bh_enable(); \
 } while (0)
 
@@ -414,14 +414,14 @@ do { \
 #define ma_write_unlock_bh(lock) \
 do { \
 	_ma_raw_write_unlock(lock); \
-	ma_preempt_enable(); \
+	ma_preempt_enable_no_resched(); \
 	ma_local_bh_enable(); \
 } while (0)
 
 #define ma_spin_trylock_bh(lock) \
 	({ ma_local_bh_disable(); ma_preempt_disable(); \
 	_ma_raw_spin_trylock(lock) ? 1 : \
-	({ma_preempt_enable(); ma_local_bh_enable(); 0;});})
+	({ma_preempt_enable_no_resched(); ma_local_bh_enable(); 0;});})
 
 #section marcel_functions
 /* "lock on reference count zero" */

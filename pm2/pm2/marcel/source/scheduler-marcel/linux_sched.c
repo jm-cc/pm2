@@ -589,7 +589,7 @@ void fastcall marcel_unfreeze_sched(void)
 	}
 #endif
 	_ma_raw_spin_unlock(&ma_main_runqueue.lock);
-	ma_preempt_enable();
+	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
 
@@ -3281,6 +3281,7 @@ void __ma_preempt_write_lock(ma_rwlock_t *lock)
 
 MARCEL_INT(__ma_preempt_write_lock);
 #endif 
+
 
 
 

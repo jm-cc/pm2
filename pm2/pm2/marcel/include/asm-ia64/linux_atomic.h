@@ -63,11 +63,11 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 #define ma_atomic64_set(v,i)	(((v)->counter) = (i))
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic_add (int i, ma_atomic_t *v);
 
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic_add (int i, ma_atomic_t *v)
 {
 	__ma_s32 old, new;
@@ -82,10 +82,10 @@ ma_ia64_atomic_add (int i, ma_atomic_t *v)
 }
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
 {
 	__ma_s64 old, new;
@@ -100,10 +100,10 @@ ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
 }
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic_sub (int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic_sub (int i, ma_atomic_t *v)
 {
 	__ma_s32 old, new;
@@ -118,10 +118,10 @@ ma_ia64_atomic_sub (int i, ma_atomic_t *v)
 }
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
 {
 	__ma_s64 old, new;
@@ -161,24 +161,24 @@ ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
 })
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_atomic_add_negative (int i, ma_atomic_t *v);
 #section marcel_inline
 /*
  * Atomically add I to V and return TRUE if the resulting value is
  * negative.
  */
-static __inline__ int
+static __tbx_inline__ int
 ma_atomic_add_negative (int i, ma_atomic_t *v)
 {
 	return ma_atomic_add_return(i, v) < 0;
 }
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v)
 {
 	return ma_atomic64_add_return(i, v) < 0;

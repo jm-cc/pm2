@@ -48,10 +48,10 @@
  * bit 0 is the LSB of addr; bit 32 is the LSB of (addr+1).
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 ma_set_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 ma_set_bit (int nr, volatile void *addr)
 {
 	__ma_u32 bit, old, new;
@@ -77,10 +77,10 @@ ma_set_bit (int nr, volatile void *addr)
  * may be that only one operation succeeds.
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 __ma_set_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 __ma_set_bit (int nr, volatile void *addr)
 {
 	*((__ma_u32 *) addr + (nr >> 5)) |= (1 << (nr & 31));
@@ -104,10 +104,10 @@ __ma_set_bit (int nr, volatile void *addr)
  * in order to ensure changes are visible on other processors.
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 ma_clear_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 ma_clear_bit (int nr, volatile void *addr)
 {
 	__ma_u32 mask, old, new;
@@ -127,10 +127,10 @@ ma_clear_bit (int nr, volatile void *addr)
  * __clear_bit - Clears a bit in memory (non-atomic version)
  */
 /* #section marcel_functions
- *static __inline__ void
+ *static __tbx_inline__ void
  *__ma_clear_bit (int nr, volatile void *addr);
  *#section marcel_inline
- *static __inline__ void
+ *static __tbx_inline__ void
  *__ma_clear_bit (int nr, volatile void *addr)
  *{
  *	volatile __ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
@@ -149,10 +149,10 @@ ma_clear_bit (int nr, volatile void *addr)
  * restricted to acting on a single-word quantity.
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 ma_change_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 ma_change_bit (int nr, volatile void *addr)
 {
 	__ma_u32 bit, old, new;
@@ -178,10 +178,10 @@ ma_change_bit (int nr, volatile void *addr)
  * may be that only one operation succeeds.
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 __ma_change_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 __ma_change_bit (int nr, volatile void *addr)
 {
 	*((__ma_u32 *) addr + (nr >> 5)) ^= (1 << (nr & 31));
@@ -196,10 +196,10 @@ __ma_change_bit (int nr, volatile void *addr)
  * It also implies a memory barrier.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_test_and_set_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_test_and_set_bit (int nr, volatile void *addr)
 {
 	__ma_u32 bit, old, new;
@@ -226,10 +226,10 @@ ma_test_and_set_bit (int nr, volatile void *addr)
  * but actually fail.  You must protect multiple accesses with a lock.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_set_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_set_bit (int nr, volatile void *addr)
 {
 	__ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
@@ -249,10 +249,10 @@ __ma_test_and_set_bit (int nr, volatile void *addr)
  * It also implies a memory barrier.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_test_and_clear_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_test_and_clear_bit (int nr, volatile void *addr)
 {
 	__ma_u32 mask, old, new;
@@ -280,10 +280,10 @@ ma_test_and_clear_bit (int nr, volatile void *addr)
  * but actually fail.  You must protect multiple accesses with a lock.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_clear_bit(int nr, volatile void * addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_clear_bit(int nr, volatile void * addr)
 {
 	__ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
@@ -303,10 +303,10 @@ __ma_test_and_clear_bit(int nr, volatile void * addr)
  * It also implies a memory barrier.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_test_and_change_bit (int nr, volatile void *addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_test_and_change_bit (int nr, volatile void *addr)
 {
 	__ma_u32 bit, old, new;
@@ -327,10 +327,10 @@ ma_test_and_change_bit (int nr, volatile void *addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_change_bit (int nr, void *addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_change_bit (int nr, void *addr)
 {
 	__ma_u32 old, bit = (1 << (nr & 31));
@@ -342,10 +342,10 @@ __ma_test_and_change_bit (int nr, void *addr)
 }
 
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 ma_test_bit (int nr, const volatile void *addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 ma_test_bit (int nr, const volatile void *addr)
 {
 	return 1 & (((const volatile __ma_u32 *) addr)[nr >> 5] >> (nr & 31));
@@ -359,10 +359,10 @@ ma_test_bit (int nr, const volatile void *addr)
  * no zero exists, so code should check against ~0UL first...
  */
 #section marcel_functions
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_ffz (unsigned long x);
 #section marcel_inline
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_ffz (unsigned long x)
 {
 	unsigned long result;
@@ -377,10 +377,10 @@ ma_ffz (unsigned long x)
  * Undefined if no bit exists, so code should check against 0 first.
  */
 #section marcel_functions
-static __inline__ unsigned long
+static __tbx_inline__ unsigned long
 __ma_ffs (unsigned long x);
 #section marcel_inline
-static __inline__ unsigned long
+static __tbx_inline__ unsigned long
 __ma_ffs (unsigned long x)
 {
 	unsigned long result;
@@ -395,10 +395,10 @@ __ma_ffs (unsigned long x)
  * @x: The value to search
  */
 #section marcel_functions
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_ia64_fls (unsigned long x);
 #section marcel_inline
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_ia64_fls (unsigned long x)
 {
 	long double d = x;
@@ -413,10 +413,10 @@ ma_ia64_fls (unsigned long x)
 }
 
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 ma_fls (int x);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 ma_fls (int x)
 {
 	return ma_ia64_fls((unsigned int) x);
@@ -436,10 +436,10 @@ ma_fls (int x)
  * of bits set) of a N-bit word
  */
 #section marcel_functions
-static __inline__ unsigned long
+static __tbx_inline__ unsigned long
 ma_hweight64 (unsigned long x);
 #section marcel_inline
-static __inline__ unsigned long
+static __tbx_inline__ unsigned long
 ma_hweight64 (unsigned long x)
 {
 	unsigned long result;
@@ -484,10 +484,10 @@ extern int __ma_find_next_bit(const void *addr, unsigned long size,
 #define __ma_clear_bit(nr, addr)	ma_clear_bit(nr, addr)
 
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 ma_sched_find_first_bit (unsigned long *b);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 ma_sched_find_first_bit (unsigned long *b)
 {
 	if (tbx_unlikely(b[0]))

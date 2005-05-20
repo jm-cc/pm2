@@ -25,12 +25,12 @@
 
 typedef unsigned marcel_spinlock_t;
 
-inline static void __marcel_raw_spin_init(marcel_spinlock_t *lock)
+__tbx_inline__ static void __marcel_raw_spin_init(marcel_spinlock_t *lock)
 {
   *lock = MARCEL_SPIN_LOCK_UNLOCKED;
 }
 
-inline static void __marcel_raw_spin_lock(marcel_spinlock_t *lock)
+__tbx_inline__ static void __marcel_raw_spin_lock(marcel_spinlock_t *lock)
 {
   unsigned counter = 0;
 
@@ -42,17 +42,17 @@ inline static void __marcel_raw_spin_lock(marcel_spinlock_t *lock)
   }
 }
 
-inline static int __marcel_raw_spin_trylock(marcel_spinlock_t *lock)
+__tbx_inline__ static int __marcel_raw_spin_trylock(marcel_spinlock_t *lock)
 {
   return !pm2_spinlock_testandset(lock);
 }
 
-inline static void __marcel_raw_spin_unlock(marcel_spinlock_t *lock)
+__tbx_inline__ static void __marcel_raw_spin_unlock(marcel_spinlock_t *lock)
 {
   pm2_spinlock_release(lock);
 }
 
-inline static int __marcel_raw_spin_is_locked(marcel_spinlock_t *lock)
+__tbx_inline__ static int __marcel_raw_spin_is_locked(marcel_spinlock_t *lock)
 {
   return *lock;
 }

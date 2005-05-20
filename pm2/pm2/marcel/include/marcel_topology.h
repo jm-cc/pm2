@@ -91,16 +91,16 @@ MA_DECLARE_PER_LWP(struct marcel_topo_level *, core_level);
 
 #section functions
 #depend "[variables]"
-static inline unsigned marcel_topo_arity(unsigned level) {
+static __tbx_inline__ unsigned marcel_topo_arity(unsigned level) {
 	return marcel_topo_levels[level][0].arity;
 }
 
 #section marcel_functions
 #ifdef MARCEL_SMT_IDLE
 // return whether one should sleep (because other siblings are working)
-static inline void ma_topology_lwp_idle_start(ma_lwp_t lwp);
-static inline  int ma_topology_lwp_idle_core(ma_lwp_t lwp);
-static inline void ma_topology_lwp_idle_end(ma_lwp_t lwp);
+static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp);
+static __tbx_inline__  int ma_topology_lwp_idle_core(ma_lwp_t lwp);
+static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp);
 #else
 #define ma_topology_lwp_idle_start(lwp) (void)0
 #define ma_topology_lwp_idle_core(lwp) 1
@@ -109,20 +109,20 @@ static inline void ma_topology_lwp_idle_end(ma_lwp_t lwp);
 
 #section marcel_inline
 #ifdef MARCEL_SMT_IDLE
-static inline void ma_topology_lwp_idle_start(ma_lwp_t lwp) {
+static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
 	if ((level = ma_per_lwp(core_level,lwp)))
 		ma_atomic_inc(&level->nbidle);
 }
 
-static inline  int ma_topology_lwp_idle_core(ma_lwp_t lwp) {
+static __tbx_inline__  int ma_topology_lwp_idle_core(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
 	if ((level = ma_per_lwp(core_level,lwp)))
 		return (ma_atomic_read(&level->nbidle) == level->arity);
 	return 1;
 }
 
-static inline void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
+static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
 	if ((level = ma_per_lwp(core_level,lwp)))
 		ma_atomic_dec(&level->nbidle);

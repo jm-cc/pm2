@@ -29,7 +29,7 @@
 
 #define call_ST_FLUSH_WINDOWS()  
 
-static __inline__ long get_sp(void)
+static __tbx_inline__ long get_sp(void)
 {
 }
 

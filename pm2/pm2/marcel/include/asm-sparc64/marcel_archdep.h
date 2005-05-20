@@ -39,7 +39,7 @@
 
 extern void call_ST_FLUSH_WINDOWS(void);
 
-static __inline__ long get_sp()
+static __tbx_inline__ long get_sp()
 {
   register long sp;
 

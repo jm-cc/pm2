@@ -168,8 +168,8 @@ do {								\
 #else
 # define IS_IA32_PROCESS(regs)		0
 struct task_struct;
-static inline void ia32_save_state(struct task_struct *t __attribute__((unused))){}
-static inline void ia32_load_state(struct task_struct *t __attribute__((unused))){}
+static __tbx_inline__ void ia32_save_state(struct task_struct *t __attribute__((unused))){}
+static __tbx_inline__ void ia32_load_state(struct task_struct *t __attribute__((unused))){}
 #endif
 
 /*

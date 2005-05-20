@@ -54,23 +54,23 @@ void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);
 
 #section marcel_functions
-static __inline__ void disable_preemption(void);
-static __inline__ void enable_preemption(void);
-static __inline__ unsigned int preemption_enabled(void);
+static __tbx_inline__ void disable_preemption(void);
+static __tbx_inline__ void enable_preemption(void);
+static __tbx_inline__ unsigned int preemption_enabled(void);
 #section marcel_variables
 extern ma_atomic_t __preemption_disabled;
 #section marcel_inline
-static __inline__ void disable_preemption(void)
+static __tbx_inline__ void disable_preemption(void)
 {
 	ma_atomic_inc(&__preemption_disabled);
 }
 
-static __inline__ void enable_preemption(void)
+static __tbx_inline__ void enable_preemption(void)
 {
 	ma_atomic_dec(&__preemption_disabled);
 }
 
-static __inline__ unsigned int preemption_enabled(void)
+static __tbx_inline__ unsigned int preemption_enabled(void)
 {
 	return ma_atomic_read(&__preemption_disabled) == 0;
 }

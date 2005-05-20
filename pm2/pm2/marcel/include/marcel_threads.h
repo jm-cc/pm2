@@ -122,9 +122,9 @@ DEC_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW);
 DEC_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW);
 
 #section functions
-static inline int marcel_equal(marcel_t pid1, marcel_t pid2) __THROW;
+static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2) __THROW;
 #section inline
-static inline int marcel_equal(marcel_t pid1, marcel_t pid2)
+static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 {
   return (pid1 == pid2);
 }
@@ -144,12 +144,12 @@ void marcel_run(marcel_t pid, any_t arg);
 void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
-inline static void marcel_thread_preemption_enable(void);
-inline static void marcel_thread_preemption_disable(void);
+__tbx_inline__ static void marcel_thread_preemption_enable(void);
+__tbx_inline__ static void marcel_thread_preemption_disable(void);
 #section inline
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"
-inline static void marcel_thread_preemption_enable(void)
+__tbx_inline__ static void marcel_thread_preemption_enable(void)
 {
 #ifdef MA__DEBUG
 	MA_BUG_ON(!SELF_GETMEM(not_preemptible));
@@ -158,7 +158,7 @@ inline static void marcel_thread_preemption_enable(void)
 	MARCEL_SELF->not_preemptible--;
 }
 
-inline static void marcel_thread_preemption_disable(void)
+__tbx_inline__ static void marcel_thread_preemption_disable(void)
 {
 	MARCEL_SELF->not_preemptible++;
         ma_barrier();
@@ -203,17 +203,17 @@ typedef void (*transfert_func_t)(marcel_t t, unsigned long depl, unsigned long b
 typedef void (*post_migration_func_t)(void *arg);
 
 #section functions
-static __inline__ void marcel_disablemigration(marcel_t pid);
+static __tbx_inline__ void marcel_disablemigration(marcel_t pid);
 #section inline
-static __inline__ void marcel_disablemigration(marcel_t pid)
+static __tbx_inline__ void marcel_disablemigration(marcel_t pid)
 {
   pid->not_migratable++;
 }
 
 #section functions
-static __inline__ void marcel_enablemigration(marcel_t pid);
+static __tbx_inline__ void marcel_enablemigration(marcel_t pid);
 #section inline
-static __inline__ void marcel_enablemigration(marcel_t pid)
+static __tbx_inline__ void marcel_enablemigration(marcel_t pid)
 {
   pid->not_migratable--;
 }

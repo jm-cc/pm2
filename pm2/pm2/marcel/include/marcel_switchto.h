@@ -45,14 +45,14 @@
 
 #section marcel_functions
 
-inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
+__tbx_inline__ static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
 
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
 
 #section marcel_inline
 
-inline static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
+__tbx_inline__ static marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
 	MA_BUG_ON(!ma_in_atomic());
 	if (cur != next) {

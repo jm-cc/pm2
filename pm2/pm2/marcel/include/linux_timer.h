@@ -57,7 +57,7 @@ struct ma_timer_list {
  * init_timer() must be done to a timer prior calling *any* of the
  * other timer functions.
  */
-static inline void ma_init_timer(struct ma_timer_list * timer)
+static __tbx_inline__ void ma_init_timer(struct ma_timer_list * timer)
 {
 	timer->base = NULL;
 	timer->magic = MA_TIMER_MAGIC;
@@ -74,7 +74,7 @@ static inline void ma_init_timer(struct ma_timer_list * timer)
  *
  * return value: 1 if the timer is pending, 0 if not.
  */
-static inline int ma_timer_pending(const struct ma_timer_list * timer)
+static __tbx_inline__ int ma_timer_pending(const struct ma_timer_list * timer)
 {
 	return timer->base != NULL;
 }
@@ -100,7 +100,7 @@ extern int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
  * Timers with an ->expired field in the past will be executed in the next
  * timer tick.
  */
-static inline void ma_add_timer(struct ma_timer_list * timer)
+static __tbx_inline__ void ma_add_timer(struct ma_timer_list * timer)
 {
 	__ma_mod_timer(timer, timer->expires);
 }

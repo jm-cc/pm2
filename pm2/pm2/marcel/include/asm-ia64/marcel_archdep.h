@@ -29,7 +29,7 @@
 
 #define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #ifndef __INTEL_COMPILER
-static __inline__ long get_sp(void)
+static __tbx_inline__ long get_sp(void)
 {
   register long sp;
 
@@ -41,7 +41,7 @@ static __inline__ long get_sp(void)
 
   return sp;
 }
-static __inline__ long get_bsp(void)
+static __tbx_inline__ long get_bsp(void)
 {
   register long bsp;
 
@@ -93,7 +93,7 @@ static __inline__ long get_bsp(void)
 #else
 #define _MA_IA64_REG_SP		1036	/* R12 */
 __u64 __getReg(const int whichReg);
-static __inline__ long get_sp(void)
+static __tbx_inline__ long get_sp(void)
 {
   register long sp;
 

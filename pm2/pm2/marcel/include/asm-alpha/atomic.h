@@ -9,7 +9,7 @@ typedef int atomic_t;
 #define atomic_read(v)		(*(v))
 #define atomic_set(v, i)	(*(v) = (i))
 
-extern __inline__ void atomic_add(atomic_t i, volatile atomic_t * v)
+extern __tbx_inline__ void atomic_add(atomic_t i, volatile atomic_t * v)
 {
         unsigned long temp;
         __asm__ __volatile__(
@@ -25,7 +25,7 @@ extern __inline__ void atomic_add(atomic_t i, volatile atomic_t * v)
                  "m" (__atomic_fool_gcc(v)));
 }
 
-extern __inline__ void atomic_sub(atomic_t i, volatile atomic_t * v)
+extern __tbx_inline__ void atomic_sub(atomic_t i, volatile atomic_t * v)
 {
         unsigned long temp;
         __asm__ __volatile__(

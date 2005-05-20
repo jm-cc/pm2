@@ -34,10 +34,10 @@
  */
 
 #section marcel_functions
-static inline void
+static __tbx_inline__ void
 ma_set_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline void
+static __tbx_inline__ void
 ma_set_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long temp;
@@ -59,10 +59,10 @@ ma_set_bit(unsigned long nr, volatile void * addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static inline void
+static __tbx_inline__ void
 __ma_set_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline void
+static __tbx_inline__ void
 __ma_set_bit(unsigned long nr, volatile void * addr)
 {
 	int *m = ((int *) addr) + (nr >> 5);
@@ -75,10 +75,10 @@ __ma_set_bit(unsigned long nr, volatile void * addr)
 #define ma_smp_mb__after_clear_bit()	ma_smp_mb()
 
 #section marcel_functions
-static inline void
+static __tbx_inline__ void
 ma_clear_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline void
+static __tbx_inline__ void
 ma_clear_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long temp;
@@ -100,10 +100,10 @@ ma_clear_bit(unsigned long nr, volatile void * addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 __ma_clear_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 __ma_clear_bit(unsigned long nr, volatile void * addr)
 {
 	int *m = ((int *) addr) + (nr >> 5);
@@ -112,10 +112,10 @@ __ma_clear_bit(unsigned long nr, volatile void * addr)
 }
 
 #section marcel_functions
-static inline void
+static __tbx_inline__ void
 ma_change_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline void
+static __tbx_inline__ void
 ma_change_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long temp;
@@ -137,10 +137,10 @@ ma_change_bit(unsigned long nr, volatile void * addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static __inline__ void
+static __tbx_inline__ void
 __ma_change_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static __inline__ void
+static __tbx_inline__ void
 __ma_change_bit(unsigned long nr, volatile void * addr)
 {
 	int *m = ((int *) addr) + (nr >> 5);
@@ -149,10 +149,10 @@ __ma_change_bit(unsigned long nr, volatile void * addr)
 }
 
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 ma_test_and_set_bit(unsigned long nr, volatile void *addr);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 ma_test_and_set_bit(unsigned long nr, volatile void *addr)
 {
 	unsigned long oldbit;
@@ -183,10 +183,10 @@ ma_test_and_set_bit(unsigned long nr, volatile void *addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 __ma_test_and_set_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 __ma_test_and_set_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long mask = 1 << (nr & 0x1f);
@@ -198,10 +198,10 @@ __ma_test_and_set_bit(unsigned long nr, volatile void * addr)
 }
 
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 ma_test_and_clear_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 ma_test_and_clear_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long oldbit;
@@ -232,10 +232,10 @@ ma_test_and_clear_bit(unsigned long nr, volatile void * addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 __ma_test_and_clear_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 __ma_test_and_clear_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long mask = 1 << (nr & 0x1f);
@@ -247,10 +247,10 @@ __ma_test_and_clear_bit(unsigned long nr, volatile void * addr)
 }
 
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 ma_test_and_change_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 ma_test_and_change_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long oldbit;
@@ -279,10 +279,10 @@ ma_test_and_change_bit(unsigned long nr, volatile void * addr)
  * WARNING: non atomic version.
  */
 #section marcel_functions
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_change_bit(unsigned long nr, volatile void * addr);
 #section marcel_inline
-static __inline__ int
+static __tbx_inline__ int
 __ma_test_and_change_bit(unsigned long nr, volatile void * addr)
 {
 	unsigned long mask = 1 << (nr & 0x1f);
@@ -294,10 +294,10 @@ __ma_test_and_change_bit(unsigned long nr, volatile void * addr)
 }
 
 #section marcel_functions
-static inline int
+static __tbx_inline__ int
 ma_test_bit(int nr, const volatile void * addr);
 #section marcel_inline
-static inline int
+static __tbx_inline__ int
 ma_test_bit(int nr, const volatile void * addr)
 {
 	return (1UL & (((const int *) addr)[nr >> 5] >> (nr & 31))) != 0UL;
@@ -311,9 +311,9 @@ ma_test_bit(int nr, const volatile void * addr)
  * constants on the alpha, it is worthwhile to split the search.
  */
 #section marcel_functions
-static inline unsigned long ma_ffz_b(unsigned long x);
+static __tbx_inline__ unsigned long ma_ffz_b(unsigned long x);
 #section marcel_inline
-static inline unsigned long ma_ffz_b(unsigned long x)
+static __tbx_inline__ unsigned long ma_ffz_b(unsigned long x)
 {
 	unsigned long sum, x1, x2, x4;
 
@@ -329,9 +329,9 @@ static inline unsigned long ma_ffz_b(unsigned long x)
 }
 
 #section marcel_functions
-static inline unsigned long ma_ffz(unsigned long word);
+static __tbx_inline__ unsigned long ma_ffz(unsigned long word);
 #section marcel_inline
-static inline unsigned long ma_ffz(unsigned long word)
+static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 {
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
 	/* Whee.  EV67 can calculate it directly.  */
@@ -352,9 +352,9 @@ static inline unsigned long ma_ffz(unsigned long word)
  * __ffs = Find First set bit in word.  Undefined if no set bit exists.
  */
 #section marcel_functions
-static inline unsigned long __ma_ffs(unsigned long word);
+static __tbx_inline__ unsigned long __ma_ffs(unsigned long word);
 #section marcel_inline
-static inline unsigned long __ma_ffs(unsigned long word)
+static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 {
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
 	/* Whee.  EV67 can calculate it directly.  */
@@ -380,9 +380,9 @@ static inline unsigned long __ma_ffs(unsigned long word)
  */
 
 #section marcel_functions
-static inline int ma_ffs(int word);
+static __tbx_inline__ int ma_ffs(int word);
 #section marcel_inline
-static inline int ma_ffs(int word)
+static __tbx_inline__ int ma_ffs(int word)
 {
 	int result = __ma_ffs(word) + 1;
 	return word ? result : 0;
@@ -392,10 +392,10 @@ static inline int ma_ffs(int word)
  * fls: find last bit set.
  */
 #section marcel_functions
-static inline unsigned long ma_fls(unsigned long word);
+static __tbx_inline__ unsigned long ma_fls(unsigned long word);
 #section marcel_inline
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
-static inline unsigned long ma_fls(unsigned long word)
+static __tbx_inline__ unsigned long ma_fls(unsigned long word)
 {
 	return 64 - __kernel_ctlz(word & 0xffffffff);
 }
@@ -406,10 +406,10 @@ static inline unsigned long ma_fls(unsigned long word)
 #endif
 
 #section marcel_functions
-static inline int ma_floor_log2(unsigned long word);
+static __tbx_inline__ int ma_floor_log2(unsigned long word);
 #section marcel_inline
 /* Compute powers of two for the given integer.  */
-static inline int ma_floor_log2(unsigned long word)
+static __tbx_inline__ int ma_floor_log2(unsigned long word)
 {
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
 	return 63 - __kernel_ctlz(word);
@@ -422,9 +422,9 @@ static inline int ma_floor_log2(unsigned long word)
 }
 
 #section marcel_functions
-static inline int ma_ceil_log2(unsigned int word);
+static __tbx_inline__ int ma_ceil_log2(unsigned int word);
 #section marcel_inline
-static inline int ma_ceil_log2(unsigned int word)
+static __tbx_inline__ int ma_ceil_log2(unsigned int word)
 {
 	long bit = ma_floor_log2(word);
 	return bit + (word > (1UL << bit));
@@ -436,17 +436,17 @@ static inline int ma_ceil_log2(unsigned int word)
  */
 
 #section marcel_functions
-static inline unsigned long ma_hweight64(unsigned long w);
+static __tbx_inline__ unsigned long ma_hweight64(unsigned long w);
 #section marcel_inline
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
 /* Whee.  EV67 can calculate it directly.  */
-static inline unsigned long ma_hweight64(unsigned long w)
+static __tbx_inline__ unsigned long ma_hweight64(unsigned long w)
 {
 	return __kernel_ctpop(w);
 }
 
 #else
-static inline unsigned long ma_hweight64(unsigned long w)
+static __tbx_inline__ unsigned long ma_hweight64(unsigned long w)
 {
 	unsigned long result;
 	for (result = 0; w ; w >>= 1)
@@ -472,10 +472,10 @@ static inline unsigned long ma_hweight64(unsigned long w)
  * Find next zero bit in a bitmap reasonably efficiently..
  */
 #section marcel_functions
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_find_next_zero_bit(void * addr, unsigned long size, unsigned long offset);
 #section marcel_inline
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_find_next_zero_bit(void * addr, unsigned long size, unsigned long offset)
 {
 	unsigned long * p = ((unsigned long *) addr) + (offset >> 6);
@@ -517,10 +517,10 @@ ma_find_next_zero_bit(void * addr, unsigned long size, unsigned long offset)
  * Find next one bit in a bitmap reasonably efficiently.
  */
 #section marcel_functions
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_find_next_bit(void * addr, unsigned long size, unsigned long offset);
 #section marcel_inline
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_find_next_bit(void * addr, unsigned long size, unsigned long offset)
 {
 	unsigned long * p = ((unsigned long *) addr) + (offset >> 6);
@@ -576,10 +576,10 @@ ma_find_next_bit(void * addr, unsigned long size, unsigned long offset)
  * bits is set.
  */
 #section marcel_functions
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_sched_find_first_bit(unsigned long b[3]);
 #section marcel_inline
-static inline unsigned long
+static __tbx_inline__ unsigned long
 ma_sched_find_first_bit(unsigned long b[3])
 {
 	unsigned long b0 = b[0], b1 = b[1], b2 = b[2];

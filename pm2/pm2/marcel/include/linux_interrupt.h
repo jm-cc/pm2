@@ -122,18 +122,18 @@ enum
 
 #section marcel_inline
 #ifdef MA__LWPS
-static inline int ma_tasklet_trylock(struct ma_tasklet_struct *t)
+static __tbx_inline__ int ma_tasklet_trylock(struct ma_tasklet_struct *t)
 {
 	return !ma_test_and_set_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 }
 
-static inline void ma_tasklet_unlock(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_unlock(struct ma_tasklet_struct *t)
 {
 	ma_smp_mb__before_clear_bit(); 
 	ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 }
 
-static inline void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
 {
 	while (ma_test_bit(MA_TASKLET_STATE_RUN, &(t)->state)) { ma_barrier(); }
 }
@@ -147,7 +147,7 @@ static inline void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
 extern void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *t));
 
 #section marcel_inline
-static inline void ma_tasklet_schedule(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 {
 	if (!ma_test_and_set_bit(MA_TASKLET_STATE_SCHED, &t->state))
 		__ma_tasklet_schedule(t);
@@ -157,7 +157,7 @@ static inline void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 extern void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struct *t));
 
 #section marcel_inline
-static inline void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 {
 	if (!ma_test_and_set_bit(MA_TASKLET_STATE_SCHED, &t->state))
 		__ma_tasklet_hi_schedule(t);
@@ -165,26 +165,26 @@ static inline void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 
 
 #section marcel_inline
-static inline void ma_tasklet_disable_nosync(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_disable_nosync(struct ma_tasklet_struct *t)
 {
 	ma_atomic_inc(&t->count);
 	ma_smp_mb__after_atomic_inc();
 }
 
-static inline void ma_tasklet_disable(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_disable(struct ma_tasklet_struct *t)
 {
 	ma_tasklet_disable_nosync(t);
 	ma_tasklet_unlock_wait(t);
 	ma_smp_mb();
 }
 
-static inline void ma_tasklet_enable(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_enable(struct ma_tasklet_struct *t)
 {
 	ma_smp_mb__before_atomic_dec();
 	ma_atomic_dec(&t->count);
 }
 
-static inline void ma_tasklet_hi_enable(struct ma_tasklet_struct *t)
+static __tbx_inline__ void ma_tasklet_hi_enable(struct ma_tasklet_struct *t)
 {
 	ma_smp_mb__before_atomic_dec();
 	ma_atomic_dec(&t->count);

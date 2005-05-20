@@ -92,9 +92,9 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
  * Atomically adds @i to @v.  Note that the guaranteed useful range
  * of an ma_atomic_t is only 24 bits.
  */
-static __inline__ void ma_atomic_add(int i, ma_atomic_t *v);
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 {
 	MA_ATOMIC_ADD_RETURN();
 }
@@ -121,9 +121,9 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
  * other cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */
-static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
 {
 	MA_ATOMIC_ADD_RETURN(new == 0);
 }
@@ -193,9 +193,9 @@ static __inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
  * result is greater than or equal to zero.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 {
 	MA_ATOMIC_ADD_RETURN(new < 0);
 }

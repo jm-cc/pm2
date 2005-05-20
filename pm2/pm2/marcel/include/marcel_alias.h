@@ -93,15 +93,15 @@
 #endif
 
 #define DECINLINE_MARCEL_POSIX(rtype, name, proto, code) \
-  extern inline rtype MARCEL_NAME(name) proto code; \
+  extern __tbx_inline__ rtype MARCEL_NAME(name) proto code; \
   DEC_LOCAL_POSIX(name) \
   DEC_LOCAL_MARCEL(name) \
-  static inline rtype MARCEL_INLINE_NAME(name) proto code
+  static __tbx_inline__ rtype MARCEL_INLINE_NAME(name) proto code
 
 #define DECINLINE_MARCEL(rtype, name, proto) \
-  static inline rtype MARCEL_NAME(name) proto code \
+  static __tbx_inline__ rtype MARCEL_NAME(name) proto code \
   DEC_LOCAL_MARCEL(name) \
-  static inline rtype MARCEL_INLINE_NAME(name) proto code
+  static __tbx_inline__ rtype MARCEL_INLINE_NAME(name) proto code
 
 #ifdef __USE_UNIX98
 #define DEC_MARCEL_UNIX98(rtype, name, proto) \

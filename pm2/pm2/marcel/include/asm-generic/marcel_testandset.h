@@ -27,13 +27,13 @@ extern ma_spinlock_t testandset_spinlock;
 #endif
 #section marcel_functions
 #ifndef MA_HAVE_COMPAREEXCHANGE
-static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
+static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
 #endif
 #section marcel_inline
 #ifndef MA_HAVE_COMPAREEXCHANGE
 #depend "linux_spinlock.h"
 #depend "asm/linux_types.h"
-static __inline__ unsigned __tbx_deprecated__ pm2_spinlock_testandset(volatile unsigned *spinlock)
+static __tbx_inline__ unsigned __tbx_deprecated__ pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   unsigned ret;
   ma_spin_lock_softirq(&testandset_spinlock);

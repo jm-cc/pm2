@@ -36,7 +36,7 @@
  *	  but generally the primitive is invalid, *ptr is output argument. --ANK
  */
 #define __ma_xg(x) ((volatile long *)(x))
-static inline unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
+static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
 {
 	switch (size) {
 		case 1:
@@ -80,7 +80,7 @@ static inline unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int 
 #define MA_LOCK_PREFIX ""
 #endif
 
-static inline unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
+static __tbx_inline__ unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
 				      unsigned long new, int size)
 {
 	unsigned long prev;

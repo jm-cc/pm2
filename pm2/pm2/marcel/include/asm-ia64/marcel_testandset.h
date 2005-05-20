@@ -19,14 +19,14 @@
 
 #section marcel_functions
 
-static __inline__ unsigned 
+static __tbx_inline__ unsigned 
 pm2_spinlock_testandset(volatile unsigned *spinlock) ;
 
 
 #section marcel_inline
 
 #ifndef __INTEL_COMPILER
-static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
+static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
         register long result;
 

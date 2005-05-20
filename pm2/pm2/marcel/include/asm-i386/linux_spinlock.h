@@ -74,7 +74,7 @@ typedef struct {
 		:"=m" (lock->lock) : : "memory"
 
 
-static inline void _ma_raw_spin_unlock(ma_spinlock_t *lock)
+static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 {
 	__asm__ __volatile__(
 		ma_spin_unlock_string
@@ -88,7 +88,7 @@ static inline void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 		:"=q" (oldval), "=m" (lock->lock) \
 		:"0" (oldval) : "memory"
 
-static inline void _ma_raw_spin_unlock(ma_spinlock_t *lock)
+static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 {
 	char oldval = 1;
 	__asm__ __volatile__(
@@ -98,7 +98,7 @@ static inline void _ma_raw_spin_unlock(ma_spinlock_t *lock)
 
 #endif
 
-static inline int _ma_raw_spin_trylock(ma_spinlock_t *lock)
+static __tbx_inline__ int _ma_raw_spin_trylock(ma_spinlock_t *lock)
 {
 	char oldval;
 	__asm__ __volatile__(
@@ -108,7 +108,7 @@ static inline int _ma_raw_spin_trylock(ma_spinlock_t *lock)
 	return oldval > 0;
 }
 
-static inline void _ma_raw_spin_lock(ma_spinlock_t *lock)
+static __tbx_inline__ void _ma_raw_spin_lock(ma_spinlock_t *lock)
 {
 	__asm__ __volatile__(
 		ma_spin_lock_string
@@ -142,19 +142,19 @@ typedef struct {
  * On x86, we implement read-write locks as a 32-bit counter
  * with the high bit (sign) being the "contended" bit.
  *
- * The inline assembly is non-obvious. Think about it.
+ * The __tbx_inline__ assembly is non-obvious. Think about it.
  *
  * Changed to use the same technique as rw semaphores.  See
  * semaphore.h for details.  -ben
  */
 /* the spinlock helpers are in arch/i386/kernel/semaphore.c */
 
-static inline void _ma_raw_read_lock(ma_rwlock_t *rw)
+static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
 {
 	__ma_build_read_lock(rw, "__read_lock_failed");
 }
 
-static inline void _ma_raw_write_lock(ma_rwlock_t *rw)
+static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
 {
 	__ma_build_write_lock(rw, "__write_lock_failed");
 }
@@ -164,7 +164,7 @@ static inline void _ma_raw_write_lock(ma_rwlock_t *rw)
 #define _ma_raw_write_unlock(rw)	asm volatile("lock ; addl $" MA_RW_LOCK_BIAS_STR ",%0":"=m" ((rw)->lock) : : "memory")
 
 #section marcel_inline
-static inline int _ma_raw_write_trylock(ma_rwlock_t *lock)
+static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
 {
 	ma_atomic_t *count = (ma_atomic_t *)lock;
 	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, count))

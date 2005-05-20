@@ -45,7 +45,7 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
  * of the instruction set reference 24319102.pdf. We need
  * the reader side to see the coherent 64bit value.
  */
-static inline void __ma_set_64bit (unsigned long long * ptr,
+static __tbx_inline__ void __ma_set_64bit (unsigned long long * ptr,
 		unsigned int low, unsigned int high)
 {
 	__asm__ __volatile__ (
@@ -61,7 +61,7 @@ static inline void __ma_set_64bit (unsigned long long * ptr,
 		:	"ax","dx","memory");
 }
 
-static inline void __ma_set_64bit_constant (unsigned long long *ptr,
+static __tbx_inline__ void __ma_set_64bit_constant (unsigned long long *ptr,
 						 unsigned long long value)
 {
 	__ma_set_64bit(ptr,(unsigned int)(value), (unsigned int)((value)>>32ULL));
@@ -69,7 +69,7 @@ static inline void __ma_set_64bit_constant (unsigned long long *ptr,
 #define ma_ll_low(x)	*(((unsigned int*)(void*)&(x))+0)
 #define ma_ll_high(x)	*(((unsigned int*)(void*)&(x))+1)
 
-static inline void __ma_set_64bit_var (unsigned long long *ptr,
+static __tbx_inline__ void __ma_set_64bit_var (unsigned long long *ptr,
 			 unsigned long long value)
 {
 	__ma_set_64bit(ptr,ma_ll_low(value), ma_ll_high(value));
@@ -90,7 +90,7 @@ static inline void __ma_set_64bit_var (unsigned long long *ptr,
  * Note 2: xchg has side effect, so that attribute volatile is necessary,
  *	  but generally the primitive is invalid, *ptr is output argument. --ANK
  */
-static inline unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
+static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
 {
 	switch (size) {
 		case 1:
@@ -123,7 +123,7 @@ static inline unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int 
  * indicated by comparing RETURN with OLD.
  */
 
-static inline unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
+static __tbx_inline__ unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
 				      unsigned long new, int size)
 {
 	unsigned long prev;

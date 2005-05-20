@@ -29,78 +29,78 @@
  * - pass TIF_xxxx constants to these functions
  */
 
-static inline void ma_set_thread_flag(int flag);
-static inline void ma_clear_thread_flag(int flag);
-static inline int ma_test_and_set_thread_flag(int flag);
-static inline int ma_test_and_clear_thread_flag(int flag);
-static inline int ma_test_thread_flag(int flag);
-static inline void ma_set_ti_thread_flag(marcel_task_t *ti, int flag);
-static inline void ma_clear_ti_thread_flag(marcel_task_t *ti, int flag);
-static inline int ma_test_and_set_ti_thread_flag(marcel_task_t *ti, int flag);
-static inline int ma_test_and_clear_ti_thread_flag(marcel_task_t *ti, int flag);
-static inline int ma_test_ti_thread_flag(marcel_task_t *ti, int flag);
-static inline void ma_set_need_resched(void);
-static inline void ma_clear_need_resched(void);
+static __tbx_inline__ void ma_set_thread_flag(int flag);
+static __tbx_inline__ void ma_clear_thread_flag(int flag);
+static __tbx_inline__ int ma_test_and_set_thread_flag(int flag);
+static __tbx_inline__ int ma_test_and_clear_thread_flag(int flag);
+static __tbx_inline__ int ma_test_thread_flag(int flag);
+static __tbx_inline__ void ma_set_ti_thread_flag(marcel_task_t *ti, int flag);
+static __tbx_inline__ void ma_clear_ti_thread_flag(marcel_task_t *ti, int flag);
+static __tbx_inline__ int ma_test_and_set_ti_thread_flag(marcel_task_t *ti, int flag);
+static __tbx_inline__ int ma_test_and_clear_ti_thread_flag(marcel_task_t *ti, int flag);
+static __tbx_inline__ int ma_test_ti_thread_flag(marcel_task_t *ti, int flag);
+static __tbx_inline__ void ma_set_need_resched(void);
+static __tbx_inline__ void ma_clear_need_resched(void);
 
 #section marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
-static inline void ma_set_thread_flag(int flag)
+static __tbx_inline__ void ma_set_thread_flag(int flag)
 {
 	ma_set_bit(flag,&MARCEL_SELF->flags);
 }
 
-static inline void ma_clear_thread_flag(int flag)
+static __tbx_inline__ void ma_clear_thread_flag(int flag)
 {
 	ma_clear_bit(flag,&MARCEL_SELF->flags);
 }
 
-static inline int ma_test_and_set_thread_flag(int flag)
+static __tbx_inline__ int ma_test_and_set_thread_flag(int flag)
 {
 	return ma_test_and_set_bit(flag,&MARCEL_SELF->flags);
 }
 
-static inline int ma_test_and_clear_thread_flag(int flag)
+static __tbx_inline__ int ma_test_and_clear_thread_flag(int flag)
 {
 	return ma_test_and_clear_bit(flag,&MARCEL_SELF->flags);
 }
 
-static inline int ma_test_thread_flag(int flag)
+static __tbx_inline__ int ma_test_thread_flag(int flag)
 {
 	return ma_test_bit(flag,&MARCEL_SELF->flags);
 }
 
-static inline void ma_set_ti_thread_flag(marcel_task_t *ti, int flag)
+static __tbx_inline__ void ma_set_ti_thread_flag(marcel_task_t *ti, int flag)
 {
         ma_set_bit(flag,&ti->flags);
 }
 
-static inline void ma_clear_ti_thread_flag(marcel_task_t *ti, int flag)
+static __tbx_inline__ void ma_clear_ti_thread_flag(marcel_task_t *ti, int flag)
 {
         ma_clear_bit(flag,&ti->flags);
 }
 
-static inline int ma_test_and_set_ti_thread_flag(marcel_task_t *ti, int flag)
+static __tbx_inline__ int ma_test_and_set_ti_thread_flag(marcel_task_t *ti, int flag)
 {
         return ma_test_and_set_bit(flag,&ti->flags);
 }
 
-static inline int ma_test_and_clear_ti_thread_flag(marcel_task_t *ti, int flag
+static __tbx_inline__ int ma_test_and_clear_ti_thread_flag(marcel_task_t *ti, int flag
 )
 {
         return ma_test_and_clear_bit(flag,&ti->flags);
 }
 
-static inline int ma_test_ti_thread_flag(marcel_task_t *ti, int flag)
+static __tbx_inline__ int ma_test_ti_thread_flag(marcel_task_t *ti, int flag)
 {
         return ma_test_bit(flag,&ti->flags);
 }
 
-static inline void ma_set_need_resched(void)
+static __tbx_inline__ void ma_set_need_resched(void)
 {
         ma_set_thread_flag(TIF_NEED_RESCHED);
 }
 
-static inline void ma_clear_need_resched(void)
+static __tbx_inline__ void ma_clear_need_resched(void)
 {
         ma_clear_thread_flag(TIF_NEED_RESCHED);
 }

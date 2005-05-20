@@ -22,21 +22,21 @@ typedef struct blockcell_struct {
   boolean blocked;
 } blockcell;
 
-inline static int __marcel_init_lock(struct _marcel_fastlock * lock)
+__tbx_inline__ static int __marcel_init_lock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
   *lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
-  //LOG_OUT();
+  ////LOG_OUT();
   return 0;
 }
 #define __pmarcel_init_lock(lock) __marcel_init_lock(lock)
 
-inline static int __marcel_register_spinlocked(struct _marcel_fastlock * lock,
+__tbx_inline__ static int __marcel_register_spinlocked(struct _marcel_fastlock * lock,
 					       marcel_t self, blockcell*c)
 {
   blockcell *first;
 
-  LOG_IN();
+  //LOG_IN();
   c->next = NULL;
   c->blocked = TRUE;
   c->task = (self)?:marcel_self();
@@ -50,16 +50,16 @@ inline static int __marcel_register_spinlocked(struct _marcel_fastlock * lock,
   }
   first->last=c;
   mdebug("registering %p (cell %p) in lock %p\n", self, c, lock);
-  LOG_OUT();
+  //LOG_OUT();
   return 0;
 }
 
-inline static int __marcel_unregister_spinlocked(struct _marcel_fastlock * lock,
+__tbx_inline__ static int __marcel_unregister_spinlocked(struct _marcel_fastlock * lock,
 						 blockcell *c)
 {
   blockcell *first, *prev;
 
-  LOG_IN();
+  //LOG_IN();
   mdebug("unregistering %p (cell %p) in lock %p\n", c->task, c, lock);
   first=NULL;
   first=(blockcell*)(lock->__status & ~1);
@@ -77,7 +77,7 @@ inline static int __marcel_unregister_spinlocked(struct _marcel_fastlock * lock,
     while (prev->next != c) {
       prev = prev->next;
       if (! prev) {
-	LOG_OUT();
+	//LOG_OUT();
 	return 1;
       }
     }
@@ -86,16 +86,16 @@ inline static int __marcel_unregister_spinlocked(struct _marcel_fastlock * lock,
       first->last=prev;
     }
   }
-  LOG_OUT();
+  //LOG_OUT();
   return 0;
 }
 
-inline static int __marcel_lock_spinlocked(struct _marcel_fastlock * lock,
+__tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * lock,
 					   marcel_t self)
 {
 	int ret=0;
 
-	LOG_IN();
+	//LOG_IN();
 	if(lock->__status != 0) { /* busy */
 		blockcell c;
 
@@ -116,16 +116,16 @@ inline static int __marcel_lock_spinlocked(struct _marcel_fastlock * lock,
 		unlock_task();
 	}
 	mdebug("getting lock %p in lock %p\n", self, lock);
-	LOG_OUT();
+	//LOG_OUT();
 	return ret;
 }
 
-inline static int __marcel_unlock_spinlocked(struct _marcel_fastlock * lock)
+__tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * lock)
 {
   int ret;
   blockcell *first;
 
-  LOG_IN();
+  //LOG_IN();
   first=(blockcell*)(lock->__status & ~1);
   if(first != 0) { /* waiting threads */
     lock->__status= (unsigned long)first->next|1;
@@ -144,22 +144,22 @@ inline static int __marcel_unlock_spinlocked(struct _marcel_fastlock * lock)
     ret=0;
   }
 
-  LOG_OUT();
+  //LOG_OUT();
   return ret;
 }
 
-inline static int __marcel_lock(struct _marcel_fastlock * lock,
+__tbx_inline__ static int __marcel_lock(struct _marcel_fastlock * lock,
 				marcel_t self)
 {
   int ret;
 
-  LOG_IN();
+  //LOG_IN();
   marcel_lock_acquire(&lock->__spinlock);
   ret=__marcel_lock_spinlocked(lock, self);
-  LOG_OUT();
+  //LOG_OUT();
   return ret;
 }
-inline static int __pmarcel_lock(struct _marcel_fastlock * lock,
+__tbx_inline__ static int __pmarcel_lock(struct _marcel_fastlock * lock,
 				 marcel_t self)
 {
   lock_task();
@@ -167,9 +167,9 @@ inline static int __pmarcel_lock(struct _marcel_fastlock * lock,
 }
 #define __pmarcel_alt_lock(lock, self) __pmarcel_lock(lock, self)
 
-inline static int __marcel_trylock(struct _marcel_fastlock * lock)
+__tbx_inline__ static int __marcel_trylock(struct _marcel_fastlock * lock)
 {
-  LOG_IN();
+  //LOG_IN();
 
   marcel_lock_acquire(&lock->__spinlock);
 
@@ -177,35 +177,35 @@ inline static int __marcel_trylock(struct _marcel_fastlock * lock)
     lock->__status = 1;
     marcel_lock_release(&lock->__spinlock);
     unlock_task();
-    LOG_OUT();
+    //LOG_OUT();
     return 1;
   } else {
     marcel_lock_release(&lock->__spinlock);
     unlock_task();
-    LOG_OUT();
+    //LOG_OUT();
     return 0;
   }
 }
-inline static int __pmarcel_trylock(struct _marcel_fastlock * lock)
+__tbx_inline__ static int __pmarcel_trylock(struct _marcel_fastlock * lock)
 {
   lock_task();
   return __marcel_trylock(lock);
 }
 #define __pmarcel_alt_trylock(lock) __pmarcel_trylock(lock)
 
-inline static int __marcel_unlock(struct _marcel_fastlock * lock)
+__tbx_inline__ static int __marcel_unlock(struct _marcel_fastlock * lock)
 {
   int ret;
 
-  LOG_IN();
+  //LOG_IN();
   marcel_lock_acquire(&lock->__spinlock);
   ret=__marcel_unlock_spinlocked(lock);
   marcel_lock_release(&lock->__spinlock);
   unlock_task();
-  LOG_OUT();
+  //LOG_OUT();
   return ret;
 }
-inline static int __pmarcel_unlock(struct _marcel_fastlock * lock)
+__tbx_inline__ static int __pmarcel_unlock(struct _marcel_fastlock * lock)
 {
   lock_task();
   return __marcel_unlock(lock);

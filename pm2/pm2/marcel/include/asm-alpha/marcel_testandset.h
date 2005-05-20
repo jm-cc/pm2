@@ -18,9 +18,9 @@
 #define MA_HAVE_TESTANDSET 1
 
 #section marcel_functions
-static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
+static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
 #section marcel_inline
-static __inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
+static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
   long unsigned ret, temp;
 

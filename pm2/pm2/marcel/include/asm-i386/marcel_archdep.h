@@ -45,7 +45,7 @@
 #    define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #endif
 
-static __inline__ long get_gs(void)
+static __tbx_inline__ long get_gs(void)
 {
   register long gs;
 
@@ -53,7 +53,7 @@ static __inline__ long get_gs(void)
     return gs;
 }
 
-static __inline__ long get_sp(void)
+static __tbx_inline__ long get_sp(void)
 {
   register long sp;
 

@@ -78,14 +78,14 @@ typedef ma_atomic_t ma_rwlock_t;
 
 #ifdef MA__LWPS
 extern void __ma_read_lock_failed(ma_rwlock_t *rw);
-static inline void _ma_raw_read_lock(ma_rwlock_t *rw)
+static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
 {
 	if (ma_atomic_add_negative(-1,rw))
 		__ma_read_lock_failed(rw);
 }
 
 extern void __ma_write_lock_failed(ma_rwlock_t *rw);
-static inline void _ma_raw_write_lock(ma_rwlock_t *rw)
+static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
 {
 	if (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))
 		__ma_write_lock_failed(rw);
@@ -100,7 +100,7 @@ static inline void _ma_raw_write_lock(ma_rwlock_t *rw)
 
 #section marcel_inline
 #ifdef MA__LWPS
-static inline int _ma_raw_write_trylock(ma_rwlock_t *rw)
+static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *rw)
 {
 	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))
 		return 1;

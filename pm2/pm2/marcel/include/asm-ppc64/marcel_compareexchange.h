@@ -30,9 +30,9 @@ extern ma_spinlock_t ma_compareexchange_spinlock;
 #endif
 
 #section marcel_functions
-static __inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long new, int size);
+static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long new, int size);
 #section marcel_inline
-static __inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long new, int size)
+static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long new, int size)
 {
   unsigned long prev;
 

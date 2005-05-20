@@ -58,8 +58,8 @@ void ma_lock_task(void);
 void ma_unlock_task(void);
 void ma_sched_protect_end(void);
 #else
-static __inline__ void ma_lock_task(void);
-static __inline__ void ma_unlock_task(void);
+static __tbx_inline__ void ma_lock_task(void);
+static __tbx_inline__ void ma_unlock_task(void);
 #endif
 */
 
@@ -67,12 +67,12 @@ static __inline__ void ma_unlock_task(void);
 #include "tbx_compiler.h"
 /*
 #ifndef MA_PROTECT_LOCK_TASK_FROM_SIG
-static __inline__ void ma_lock_task(void)
+static __tbx_inline__ void ma_lock_task(void)
 {
   atomic_inc(&marcel_self()->_locked);
 }
 
-static __inline__ void ma_unlock_task(void)
+static __tbx_inline__ void ma_unlock_task(void)
 {
   marcel_t cur TBX_UNUSED = marcel_self();
 
@@ -118,10 +118,10 @@ static __inline__ void ma_unlock_task(void)
 */
 
 #section marcel_functions
-//static __inline__ void unlock_task_for_debug(void);
+//static __tbx_inline__ void unlock_task_for_debug(void);
 #section marcel_inline
 /*
-static __inline__ void unlock_task_for_debug(void)
+static __tbx_inline__ void unlock_task_for_debug(void)
 {
   atomic_dec(&marcel_self()->_locked);
 }

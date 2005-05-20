@@ -28,9 +28,9 @@
  */
 
 #section marcel_functions
-static __inline__ long ma_generic_ffs(long x);
+static __tbx_inline__ long ma_generic_ffs(long x);
 #section marcel_inline
-static __inline__ long ma_generic_ffs(long x)
+static __tbx_inline__ long ma_generic_ffs(long x)
 {
 	int r = 1;
 
@@ -70,9 +70,9 @@ static __inline__ long ma_generic_ffs(long x)
  */
 
 #section marcel_functions
-extern __inline__ unsigned long ma_generic_fls(unsigned long x);
+extern __tbx_inline__ unsigned long ma_generic_fls(unsigned long x);
 #section marcel_inline
-extern __inline__ unsigned long ma_generic_fls(unsigned long x)
+extern __tbx_inline__ unsigned long ma_generic_fls(unsigned long x)
 {
 	int r = MA_BITS_PER_LONG;
 
@@ -113,9 +113,9 @@ extern __inline__ unsigned long ma_generic_fls(unsigned long x)
  */
 
 #section marcel_functions
-static inline unsigned int ma_generic_hweight32(unsigned int w);
+static __tbx_inline__ unsigned int ma_generic_hweight32(unsigned int w);
 #section marcel_inline
-static inline unsigned int ma_generic_hweight32(unsigned int w)
+static __tbx_inline__ unsigned int ma_generic_hweight32(unsigned int w)
 {
         unsigned int res = (w & 0x55555555) + ((w >> 1) & 0x55555555);
         res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
@@ -125,9 +125,9 @@ static inline unsigned int ma_generic_hweight32(unsigned int w)
 }
 
 #section marcel_functions
-static inline unsigned int ma_generic_hweight16(unsigned int w);
+static __tbx_inline__ unsigned int ma_generic_hweight16(unsigned int w);
 #section marcel_inline
-static inline unsigned int ma_generic_hweight16(unsigned int w)
+static __tbx_inline__ unsigned int ma_generic_hweight16(unsigned int w)
 {
         unsigned int res = (w & 0x5555) + ((w >> 1) & 0x5555);
         res = (res & 0x3333) + ((res >> 2) & 0x3333);
@@ -136,9 +136,9 @@ static inline unsigned int ma_generic_hweight16(unsigned int w)
 }
 
 #section marcel_functions
-static inline unsigned int ma_generic_hweight8(unsigned int w);
+static __tbx_inline__ unsigned int ma_generic_hweight8(unsigned int w);
 #section marcel_inline
-static inline unsigned int ma_generic_hweight8(unsigned int w)
+static __tbx_inline__ unsigned int ma_generic_hweight8(unsigned int w)
 {
         unsigned int res = (w & 0x55) + ((w >> 1) & 0x55);
         res = (res & 0x33) + ((res >> 2) & 0x33);
@@ -146,9 +146,9 @@ static inline unsigned int ma_generic_hweight8(unsigned int w)
 }
 
 #section marcel_functions
-static inline unsigned long ma_generic_hweight64(unsigned long long w);
+static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w);
 #section marcel_inline
-static inline unsigned long ma_generic_hweight64(unsigned long long w)
+static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w)
 {
 #if MA_BITS_PER_LONG < 64
 	return ma_generic_hweight32((unsigned int)(w >> 32)) +
@@ -165,9 +165,9 @@ static inline unsigned long ma_generic_hweight64(unsigned long long w)
 }
 
 #section marcel_functions
-static inline unsigned long ma_hweight_long(unsigned long w);
+static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w);
 #section marcel_inline
-static inline unsigned long ma_hweight_long(unsigned long w)
+static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w)
 {
 	return sizeof(w) == 4 ? ma_generic_hweight32(w) : ma_generic_hweight64(w);
 }

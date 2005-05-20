@@ -71,9 +71,9 @@ typedef struct { volatile int counter; } ma_atomic_t;
  * Atomically adds @i to @v.  Note that the guaranteed useful range
  * of an ma_atomic_t is only 24 bits.
  */
-static __inline__ void ma_atomic_add(int i, ma_atomic_t *v);
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
 {
 	__asm__ __volatile__(
 		MA_LOCK_PREFIX "addl %1,%0"
@@ -90,9 +90,9 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t *v)
  * Atomically subtracts @i from @v.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */
-static __inline__ void ma_atomic_sub(int i, ma_atomic_t *v);
+static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ void ma_atomic_sub(int i, ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t *v)
 {
 	__asm__ __volatile__(
 		MA_LOCK_PREFIX "subl %1,%0"
@@ -111,9 +111,9 @@ static __inline__ void ma_atomic_sub(int i, ma_atomic_t *v)
  * other cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */
-static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
 {
 	unsigned char c;
 
@@ -132,9 +132,9 @@ static __inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
  * Atomically increments @v by 1.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ void ma_atomic_inc(ma_atomic_t *v);
+static __tbx_inline__ void ma_atomic_inc(ma_atomic_t *v);
 #section marcel_inline
-static __inline__ void ma_atomic_inc(ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_inc(ma_atomic_t *v)
 {
 	__asm__ __volatile__(
 		MA_LOCK_PREFIX "incl %0"
@@ -150,9 +150,9 @@ static __inline__ void ma_atomic_inc(ma_atomic_t *v)
  * Atomically decrements @v by 1.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ void ma_atomic_dec(ma_atomic_t *v);
+static __tbx_inline__ void ma_atomic_dec(ma_atomic_t *v);
 #section marcel_inline
-static __inline__ void ma_atomic_dec(ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_dec(ma_atomic_t *v)
 {
 	__asm__ __volatile__(
 		MA_LOCK_PREFIX "decl %0"
@@ -170,9 +170,9 @@ static __inline__ void ma_atomic_dec(ma_atomic_t *v)
  * cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ int ma_atomic_dec_and_test(ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_dec_and_test(ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int ma_atomic_dec_and_test(ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_dec_and_test(ma_atomic_t *v)
 {
 	unsigned char c;
 
@@ -193,9 +193,9 @@ static __inline__ int ma_atomic_dec_and_test(ma_atomic_t *v)
  * other cases.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ int ma_atomic_inc_and_test(ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_inc_and_test(ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int ma_atomic_inc_and_test(ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_inc_and_test(ma_atomic_t *v)
 {
 	unsigned char c;
 
@@ -217,9 +217,9 @@ static __inline__ int ma_atomic_inc_and_test(ma_atomic_t *v)
  * result is greater than or equal to zero.  Note that the guaranteed
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
-static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
 #section marcel_inline
-static __inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 {
 	unsigned char c;
 

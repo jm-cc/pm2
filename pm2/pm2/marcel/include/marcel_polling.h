@@ -81,7 +81,7 @@ void marcel_ev_server_init(marcel_ev_server_t server, char* name);
 //#endif
 
 /* Enregistrement des call-backs utilisables */
-inline static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
+__tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
 						marcel_ev_op_t op,
 						marcel_ev_callback_t *func);
 /* Réglage des paramètres de scrutation */
@@ -395,13 +395,13 @@ enum {
 
 #section inline
 // #ifndef __cplusplus
-// inline static void marcel_ev_server_init(marcel_ev_server_t server, char* name)
+// __tbx_inline__ static void marcel_ev_server_init(marcel_ev_server_t server, char* name)
 // {
 // 	*server=(struct marcel_ev_server)MARCEL_EV_SERVER_INIT(*server, name);
 // }
 // #endif
 
-inline static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
+__tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
 						marcel_ev_op_t op,
 						marcel_ev_pcallback_t func)
 {
@@ -566,19 +566,19 @@ struct marcel_ev_wait {
 extern struct list_head ma_ev_list_poll;
 
 #section marcel_functions
-static __inline__ int marcel_polling_is_required(unsigned polling_point)
+static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
 TBX_UNUSED;
-static __inline__ void marcel_check_polling(unsigned polling_point)
+static __tbx_inline__ void marcel_check_polling(unsigned polling_point)
 TBX_UNUSED;
 #section marcel_inline
 void __marcel_check_polling(unsigned polling_point);
 
-static __inline__ int marcel_polling_is_required(unsigned polling_point)
+static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
 {
 	return !list_empty(&ma_ev_list_poll);
 }
 
-static __inline__ void marcel_check_polling(unsigned polling_point)
+static __tbx_inline__ void marcel_check_polling(unsigned polling_point)
 {
 	if(marcel_polling_is_required(polling_point))
 		__marcel_check_polling(polling_point);
@@ -666,7 +666,7 @@ void __tbx_deprecated__ marcel_poll(marcel_pollid_t id, any_t arg);
 
 void __tbx_deprecated__ marcel_force_check_polling(marcel_pollid_t id);
 
-static __inline__ void __tbx_deprecated__ 
+static __tbx_inline__ void __tbx_deprecated__ 
 marcel_pollid_setspecific(marcel_pollid_t id, void *specific)
 {
 	id->specific = specific;
@@ -675,7 +675,7 @@ marcel_pollid_setspecific(marcel_pollid_t id, void *specific)
 void marcel_poll_lock(void);
 void marcel_poll_unlock(void);
 
-static __inline__ void * __tbx_deprecated__ 
+static __tbx_inline__ void * __tbx_deprecated__ 
 marcel_pollid_getspecific(marcel_pollid_t id)
 {
 	return id->specific;

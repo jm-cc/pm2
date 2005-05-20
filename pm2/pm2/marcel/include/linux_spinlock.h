@@ -435,7 +435,7 @@ extern int ma_atomic_dec_and_lock(ma_atomic_t *atomic, ma_spinlock_t *lock);
  * Don't use this unless you really need to: spin_lock() and spin_unlock()
  * are significantly faster.
  */
-static inline void ma_bit_spin_lock(int bitnum, unsigned long *addr)
+static __tbx_inline__ void ma_bit_spin_lock(int bitnum, unsigned long *addr)
 {
 	/*
 	 * Assuming the lock is uncontended, this never enters
@@ -456,7 +456,7 @@ static inline void ma_bit_spin_lock(int bitnum, unsigned long *addr)
 /*
  * Return true if it was acquired
  */
-static inline int ma_bit_spin_trylock(int bitnum, unsigned long *addr)
+static __tbx_inline__ int ma_bit_spin_trylock(int bitnum, unsigned long *addr)
 {
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	int ret;
@@ -475,7 +475,7 @@ static inline int ma_bit_spin_trylock(int bitnum, unsigned long *addr)
 /*
  *  bit-based spin_unlock()
  */
-static inline void ma_bit_spin_unlock(int bitnum, unsigned long *addr)
+static __tbx_inline__ void ma_bit_spin_unlock(int bitnum, unsigned long *addr)
 {
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	MA_BUG_ON(!ma_test_bit(bitnum, addr));
@@ -488,7 +488,7 @@ static inline void ma_bit_spin_unlock(int bitnum, unsigned long *addr)
 /*
  * Return true if the lock is held.
  */
-static inline int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
+static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
 {
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	return ma_test_bit(bitnum, addr);

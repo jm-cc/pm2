@@ -58,7 +58,7 @@ typedef struct {
 
 #define MA_IA64_SPINLOCK_CLOBBERS "ar.ccv", "ar.pfs", "p14", "r28", "r29", "r30", "b6", "memory"
 
-static inline void
+static __tbx_inline__ void
 _ma_raw_spin_lock (ma_spinlock_t *lock)
 {
 	register volatile unsigned int *ptr asm ("r31") = &lock->lock;

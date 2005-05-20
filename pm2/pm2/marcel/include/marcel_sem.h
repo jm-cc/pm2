@@ -48,9 +48,9 @@ int marcel_sem_try_P(marcel_sem_t *s);
 void marcel_sem_V(marcel_sem_t *s);
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
 
-static __inline__ int marcel_sem_destroy(marcel_sem_t* s);
+static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
 #section inline
-static __inline__ int marcel_sem_destroy(marcel_sem_t* s)
+static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s)
 {
   return 0;
 }

@@ -54,9 +54,9 @@ typedef struct { volatile long counter; } ma_atomic64_t;
  */
 
 #section marcel_functions
-static __inline__ void ma_atomic_add(int i, ma_atomic_t * v);
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v);
 #section marcel_inline
-static __inline__ void ma_atomic_add(int i, ma_atomic_t * v)
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v)
 {
 	unsigned long temp;
 	__asm__ __volatile__(
@@ -72,9 +72,9 @@ static __inline__ void ma_atomic_add(int i, ma_atomic_t * v)
 }
 
 #section marcel_functions
-static __inline__ void ma_atomic64_add(long i, ma_atomic64_t * v);
+static __tbx_inline__ void ma_atomic64_add(long i, ma_atomic64_t * v);
 #section marcel_inline
-static __inline__ void ma_atomic64_add(long i, ma_atomic64_t * v)
+static __tbx_inline__ void ma_atomic64_add(long i, ma_atomic64_t * v)
 {
 	unsigned long temp;
 	__asm__ __volatile__(
@@ -90,9 +90,9 @@ static __inline__ void ma_atomic64_add(long i, ma_atomic64_t * v)
 }
 
 #section marcel_functions
-static __inline__ void ma_atomic_sub(int i, ma_atomic_t * v);
+static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t * v);
 #section marcel_inline
-static __inline__ void ma_atomic_sub(int i, ma_atomic_t * v)
+static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t * v)
 {
 	unsigned long temp;
 	__asm__ __volatile__(
@@ -108,9 +108,9 @@ static __inline__ void ma_atomic_sub(int i, ma_atomic_t * v)
 }
 
 #section marcel_functions
-static __inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v);
+static __tbx_inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v);
 #section marcel_inline
-static __inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v)
+static __tbx_inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v)
 {
 	unsigned long temp;
 	__asm__ __volatile__(
@@ -130,9 +130,9 @@ static __inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v)
  * Same as above, but return the result value
  */
 #section marcel_functions
-static __inline__ long ma_atomic_add_return(int i, ma_atomic_t * v);
+static __tbx_inline__ long ma_atomic_add_return(int i, ma_atomic_t * v);
 #section marcel_inline
-static __inline__ long ma_atomic_add_return(int i, ma_atomic_t * v)
+static __tbx_inline__ long ma_atomic_add_return(int i, ma_atomic_t * v)
 {
 	long temp, result;
 	__asm__ __volatile__(
@@ -154,9 +154,9 @@ static __inline__ long ma_atomic_add_return(int i, ma_atomic_t * v)
 #define ma_atomic_add_negative(a, v)	(ma_atomic_add_return((a), (v)) < 0)
 
 #section marcel_functions
-static __inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v);
+static __tbx_inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v);
 #section marcel_inline
-static __inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v)
+static __tbx_inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v)
 {
 	long temp, result;
 	__asm__ __volatile__(
@@ -175,9 +175,9 @@ static __inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v)
 }
 
 #section marcel_functions
-static __inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v);
+static __tbx_inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v);
 #section marcel_inline
-static __inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v)
+static __tbx_inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v)
 {
 	long temp, result;
 	__asm__ __volatile__(
@@ -196,9 +196,9 @@ static __inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v)
 }
 
 #section marcel_functions
-static __inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v);
+static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v);
 #section marcel_inline
-static __inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v)
+static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v)
 {
 	long temp, result;
 	__asm__ __volatile__(

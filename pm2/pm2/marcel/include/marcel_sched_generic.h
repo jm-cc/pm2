@@ -145,11 +145,11 @@ struct marcel_sched_task {
 #define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
 
 #section sched_marcel_functions
-inline static void 
+__tbx_inline__ static void 
 marcel_sched_init_marcel_thread(marcel_task_t* t,
 				const marcel_attr_t* attr);
 #section sched_marcel_inline
-inline static void 
+__tbx_inline__ static void 
 marcel_sched_init_marcel_thread(marcel_task_t* t,
 				const marcel_attr_t* attr)
 {
@@ -179,9 +179,9 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* cur,
 }
 
 #section marcel_functions
-inline static void marcel_yield_intern();
+__tbx_inline__ static void marcel_yield_intern();
 #section marcel_inline
-inline static void marcel_yield_intern(){
+__tbx_inline__ static void marcel_yield_intern(){
   ma_set_need_resched();
   ma_schedule(); 
 }
@@ -211,74 +211,74 @@ typedef unsigned long marcel_vpmask_t;
 #define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
 
 #section functions
-static __inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask);
+static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask);
 #section inline
-static __inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
+static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
 {
   *mask = MARCEL_VPMASK_EMPTY;
 }
 #section functions
-static __inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask);
+static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask);
 #section inline
-static __inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
+static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
 {
   *mask = MARCEL_VPMASK_FULL;
 }
 #section functions
-static __inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
 					    unsigned vp);
 #section inline
-static __inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
 					    unsigned vp)
 {
   *mask |= 1U << vp;
 }
 
 #section functions
-static __inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
 					     unsigned vp);
 #section inline
-static __inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
 					     unsigned vp)
 {
   *mask = 1U << vp;
 }
 
 #section functions
-static __inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
 					    unsigned vp);
 #section inline
-static __inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
 					    unsigned vp)
 {
   *mask &= ~(1U << vp);
 }
 
 #section functions
-static __inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
 						unsigned vp);
 #section inline
-static __inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
+static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
 						unsigned vp)
 {
   *mask = ~(1U << vp);
 }
 
 #section functions
-static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
+static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
 						unsigned vp);
 #section inline
-static __inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
+static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
 						unsigned vp)
 {
   return 1 & (mask >> vp);
 }
 
 #section functions
-static __inline__ unsigned marcel_current_vp(void);
+static __tbx_inline__ unsigned marcel_current_vp(void);
 #section inline
 #depend "sys/marcel_lwp.h[marcel_variables]"
-static __inline__ unsigned marcel_current_vp(void)
+static __tbx_inline__ unsigned marcel_current_vp(void)
 {
   return LWP_NUMBER(LWP_SELF);
 }

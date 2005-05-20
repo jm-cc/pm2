@@ -153,12 +153,12 @@ extern MARCEL_INLINE marcel_t marcel_self(void)
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
 #section marcel_functions
-static __inline__ marcel_t __marcel_self(void);
+static __tbx_inline__ marcel_t __marcel_self(void);
 #section marcel_inline
 #depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h"
 #depend "marcel_threads.h[marcel_macros]"
-static __inline__ marcel_t __marcel_self(void)
+static __tbx_inline__ marcel_t __marcel_self(void)
 {
 #ifdef MARCEL_SELF_IN_REG
   return (marcel_t)get_gs();

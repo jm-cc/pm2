@@ -60,44 +60,44 @@
 }
 
 #section marcel_functions
-static __inline__ void ma_set_bit(int nr, unsigned long * addr);
+static __tbx_inline__ void ma_set_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ void ma_set_bit(int nr, unsigned long * addr)
+static __tbx_inline__ void ma_set_bit(int nr, unsigned long * addr)
 	ATOMIC_BITOPT_RETURN(|,)
 
 #section marcel_functions
-static __inline__ void __ma_set_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
 	BITOPT_RETURN(|,)
 
-static __inline__ void ma_clear_bit(int nr, unsigned long * addr);
+static __tbx_inline__ void ma_clear_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ void ma_clear_bit(int nr, unsigned long * addr)
+static __tbx_inline__ void ma_clear_bit(int nr, unsigned long * addr)
 	ATOMIC_BITOPT_RETURN(& ~,)
 
 #section marcel_functions
-static __inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
 	BITOPT_RETURN(& ~,)
 
-static __inline__ void ma_change_bit(int nr, unsigned long * addr);
+static __tbx_inline__ void ma_change_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ void ma_change_bit(int nr, unsigned long * addr)
+static __tbx_inline__ void ma_change_bit(int nr, unsigned long * addr)
 	ATOMIC_BITOPT_RETURN(^,)
 
 #section marcel_functions
-static __inline__ void __ma_change_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
 	BITOPT_RETURN(^,)
 
-static __inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
+static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
 {
         return ((1UL << (nr % MA_BITS_PER_LONG)) & (addr[nr / MA_BITS_PER_LONG])) != 0;
 }
-static __inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
+static __tbx_inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
 {
 	unsigned long	mask;
 
@@ -107,7 +107,7 @@ static __inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
 }
 	
 #section marcel_macros
-//static __inline__ int ma__test_bit(int nr, const unsigned long * addr);
+//static __tbx_inline__ int ma__test_bit(int nr, const unsigned long * addr);
 #define ma_test_bit(nr,addr) \
 	(__builtin_constant_p(nr) ? \
 	 ma_constant_test_bit((nr),(addr)) : \
@@ -115,39 +115,39 @@ static __inline__ int ma_variable_test_bit(int nr, const unsigned long * addr)
 
 
 #section marcel_functions
-static __inline__ int ma_test_and_set_bit(int nr, unsigned long * addr);
+static __tbx_inline__ int ma_test_and_set_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ int ma_test_and_set_bit(int nr, unsigned long * addr)
+static __tbx_inline__ int ma_test_and_set_bit(int nr, unsigned long * addr)
 	ATOMIC_BITOPT_RETURN(|,(old & mask) != 0)
 
 #section marcel_functions
-static __inline__ int __ma_test_and_set_bit(int nr, unsigned long * addr);
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ int __ma_test_and_set_bit(int nr, unsigned long * addr)
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, unsigned long * addr)
 	BITOPT_RETURN(|,(old & mask) != 0)
 
 #section marcel_functions
-static __inline__ int ma_test_and_clear_bit(int nr, unsigned long * addr);
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ int ma_test_and_clear_bit(int nr, unsigned long * addr)
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, unsigned long * addr)
 	ATOMIC_BITOPT_RETURN(& ~,(old & mask) != 0)
 
 #section marcel_functions
-static __inline__ int __ma_test_and_clear_bit(int nr, unsigned long * addr);
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ int __ma_test_and_clear_bit(int nr, unsigned long * addr)
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, unsigned long * addr)
 	BITOPT_RETURN(& ~,(old & mask) != 0)
 
 #section marcel_functions
-static __inline__ int ma_test_and_change_bit(int nr, unsigned long * addr);
+static __tbx_inline__ int ma_test_and_change_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ int ma_test_and_change_bit(int nr, unsigned long * addr)
+static __tbx_inline__ int ma_test_and_change_bit(int nr, unsigned long * addr)
 	ATOMIC_BITOPT_RETURN(^,(old & mask) != 0)
 
 #section marcel_functions
-static __inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr);
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr);
 #section marcel_inline
-static __inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
 	BITOPT_RETURN(^,(old & mask) != 0)
 
 /*
@@ -180,9 +180,9 @@ static __inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
 #define ma_smp_mb__after_clear_bit()    ma_barrier()
 
 #section marcel_functions
-static inline int ma_sched_find_first_bit(const unsigned long *b);
+static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b);
 #section marcel_inline
-static inline int ma_sched_find_first_bit(const unsigned long *b)
+static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 {
 	int i;
 	for (i=0;i<140/MA_BITS_PER_LONG;i++) {

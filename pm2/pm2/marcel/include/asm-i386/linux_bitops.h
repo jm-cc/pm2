@@ -42,9 +42,9 @@
  * Note that @nr may be almost arbitrarily large; this function is not
  * restricted to acting on a single-word quantity.
  */
-static __inline__ void ma_set_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btsl %1,%0"
@@ -63,9 +63,9 @@ static __inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
  * If it's called on the same region of memory simultaneously, the effect
  * may be that only one operation succeeds.
  */
-static __inline__ void __ma_set_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__(
 		"btsl %1,%0"
@@ -84,10 +84,10 @@ static __inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
  * you should call ma_smp_mb__before_clear_bit() and/or ma_smp_mb__after_clear_bit()
  * in order to ensure changes are visible on other processors.
  */
-static __inline__ void ma_clear_bit(int nr, volatile unsigned long * addr);
-static __inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btrl %1,%0"
@@ -95,7 +95,7 @@ static __inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
 		:"Ir" (nr));
 }
 
-static __inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__(
 		"btrl %1,%0"
@@ -116,9 +116,9 @@ static __inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
  * If it's called on the same region of memory simultaneously, the effect
  * may be that only one operation succeeds.
  */
-static __inline__ void __ma_change_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__(
 		"btcl %1,%0"
@@ -136,9 +136,9 @@ static __inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
  * Note that @nr may be almost arbitrarily large; this function is not
  * restricted to acting on a single-word quantity.
  */
-static __inline__ void ma_change_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btcl %1,%0"
@@ -155,9 +155,9 @@ static __inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
  * This operation is atomic and cannot be reordered.  
  * It also implies a memory barrier.
  */
-static __inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr)
 {
 	int oldbit;
 
@@ -178,9 +178,9 @@ static __inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr)
  * If two examples of this operation race, one can appear to succeed
  * but actually fail.  You must protect multiple accesses with a lock.
  */
-static __inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr)
 {
 	int oldbit;
 
@@ -200,9 +200,9 @@ static __inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * add
  * This operation is atomic and cannot be reordered.  
  * It also implies a memory barrier.
  */
-static __inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr);
 #section marcel_inline
-static __inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr)
 {
 	int oldbit;
 
@@ -223,10 +223,10 @@ static __inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * add
  * If two examples of this operation race, one can appear to succeed
  * but actually fail.  You must protect multiple accesses with a lock.
  */
-static __inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *addr);
-static __inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *addr);
 #section marcel_inline
-static __inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *addr)
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
@@ -238,7 +238,7 @@ static __inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *ad
 }
 
 /* WARNING: non atomic and it can be reordered! */
-static __inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *addr)
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
@@ -258,9 +258,9 @@ static __inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *a
  * This operation is atomic and cannot be reordered.  
  * It also implies a memory barrier.
  */
-static __inline__ int ma_test_and_change_bit(int nr, volatile unsigned long* addr);
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long* addr);
 #section marcel_inline
-static __inline__ int ma_test_and_change_bit(int nr, volatile unsigned long* addr)
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long* addr)
 {
 	int oldbit;
 
@@ -281,15 +281,15 @@ static __inline__ int ma_test_and_change_bit(int nr, volatile unsigned long* add
 static int ma_test_bit(int nr, const volatile void * addr);
 #endif
 
-static inline int ma_constant_test_bit(int nr, const volatile unsigned long *addr);
-static __inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr);
+static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr);
+static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr);
 #section marcel_inline
-static inline int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
+static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
 {
 	return ((1UL << (nr & 31)) & (addr[nr >> 5])) != 0;
 }
 
-static __inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr)
+static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr)
 {
 	int oldbit;
 
@@ -318,9 +318,9 @@ static __inline__ int ma_variable_test_bit(int nr, const volatile unsigned long 
  * Returns the bit-number of the first zero bit, not the number of the byte
  * containing a bit.
  */
-static __inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size);
+static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size);
 #section marcel_inline
-static __inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size)
+static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size)
 {
 	int d0, d1, d2;
 	int res;
@@ -353,9 +353,9 @@ static __inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned
  * Returns the bit-number of the first set bit, not the number of the byte
  * containing a bit.
  */
-static __inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size);
+static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size);
 #section marcel_inline
-static __inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size)
+static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size)
 {
 	int d0, d1;
 	int res;
@@ -382,9 +382,9 @@ static __inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size
  * @offset: The bitnumber to start searching at
  * @size: The maximum size to search
  */
-static __inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset);
+static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset);
 #section marcel_inline
-static __inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset)
+static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset)
 {
 	unsigned long * p = ((unsigned long *) addr) + (offset >> 5);
 	int set = 0, bit = offset & 31, res;
@@ -418,9 +418,9 @@ static __inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size,
  * @offset: The bitnumber to start searching at
  * @size: The maximum size to search
  */
-static __inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset);
+static __tbx_inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset);
 #section marcel_inline
-static __inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset)
+static __tbx_inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset)
 {
 	const unsigned long *p = addr + (offset >> 5);
 	int set = 0, bit = offset & 31, res;
@@ -454,9 +454,9 @@ static __inline__ int ma_find_next_bit(const unsigned long *addr, int size, int 
  *
  * Undefined if no zero exists, so code should check against ~0UL first.
  */
-static __inline__ unsigned long ma_ffz(unsigned long word);
+static __tbx_inline__ unsigned long ma_ffz(unsigned long word);
 #section marcel_inline
-static __inline__ unsigned long ma_ffz(unsigned long word)
+static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 {
 	__asm__("bsfl %1,%0"
 		:"=r" (word)
@@ -471,9 +471,9 @@ static __inline__ unsigned long ma_ffz(unsigned long word)
  *
  * Undefined if no bit exists, so code should check against 0 first.
  */
-static __inline__ unsigned long __ma_ffs(unsigned long word);
+static __tbx_inline__ unsigned long __ma_ffs(unsigned long word);
 #section marcel_inline
-static __inline__ unsigned long __ma_ffs(unsigned long word)
+static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 {
 	__asm__("bsfl %1,%0"
 		:"=r" (word)
@@ -495,9 +495,9 @@ static __inline__ unsigned long __ma_ffs(unsigned long word)
  * unlikely to be set. It's guaranteed that at least one of the 140
  * bits is cleared.
  */
-static inline int ma_sched_find_first_bit(const unsigned long *b);
+static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b);
 #section marcel_inline
-static inline int ma_sched_find_first_bit(const unsigned long *b)
+static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 {
 	if (tbx_unlikely(b[0]))
 		return __ma_ffs(b[0]);
@@ -519,9 +519,9 @@ static inline int ma_sched_find_first_bit(const unsigned long *b)
  * the libc and compiler builtin ffs routines, therefore
  * differs in spirit from the above ma_ffz (man ffs).
  */
-static __inline__ int ma_ffs(int x);
+static __tbx_inline__ int ma_ffs(int x);
 #section marcel_inline
-static __inline__ int ma_ffs(int x)
+static __tbx_inline__ int ma_ffs(int x)
 {
 	int r;
 

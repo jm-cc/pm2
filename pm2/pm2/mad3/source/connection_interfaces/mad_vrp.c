@@ -496,7 +496,7 @@ mad_vrp_register(p_mad_driver_t driver)
 
 
 void
-mad_vrp_driver_init(p_mad_driver_t d)
+mad_vrp_driver_init(p_mad_driver_t d, int *argc, char ***argv)
 {
   p_mad_vrp_driver_specific_t ds = NULL;
 

@@ -34,7 +34,7 @@ char *
 mad_sisci_register(p_mad_driver_interface_t);
 
 void
-mad_sisci_driver_init(p_mad_driver_t driver);
+mad_sisci_driver_init(p_mad_driver_t driver, int *, char ***);
 
 void
 mad_sisci_adapter_init(p_mad_adapter_t adapter);

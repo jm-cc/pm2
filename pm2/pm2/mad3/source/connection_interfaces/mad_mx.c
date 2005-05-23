@@ -395,7 +395,7 @@ mad_mx_startup_info(void) {
         mad_mx_check_return("mad_mx_startup_info", return_code);
 
         for (i = 0; i < nb_nic; i++) {
-                DISP("NIC %d id: %llx", i, nic_id_array[i]);
+                DISP("NIC %d id: %llx", i, (long long unsigned)nic_id_array[i]);
         }
         TBX_FREE(nic_id_array);
         nic_id_array = NULL;
@@ -622,7 +622,7 @@ mad_mx_register(p_mad_driver_interface_t interface) {
 
 
 void
-mad_mx_driver_init(p_mad_driver_t d) {
+mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         p_mad_mx_driver_specific_t	 ds		= NULL;
         mx_return_t			 return_code	= MX_SUCCESS;
 
@@ -912,7 +912,6 @@ mad_mx_new_message(p_mad_connection_t out){
         LOG_IN();
         os	= out->specific;
         os->first_outgoing_packet_flag	= tbx_true;
-        TRACE("nm: first_packet_flag = true");
         LOG_OUT();
 }
 
@@ -934,13 +933,11 @@ mad_mx_receive_message(p_mad_channel_t ch) {
         s.segment_length	= FIRST_PACKET_THRESHOLD;
 
         chs->first_packet_length = mad_mx_recv(ch, &s, 1, &match_info, MX_MATCH_MASK_BC);
-        TRACE("rm: first_packet_length = %x", chs->first_packet_length);
 
         in	= tbx_darray_get(in_darray, match_info & 0xFFFFFFFF);
         is	= in->specific;
 
         is-> first_incoming_packet_flag		= tbx_true;
-        TRACE("rm: first_packet_flag = true");
         LOG_OUT();
 
         return in;
@@ -971,7 +968,6 @@ mad_mx_send_buffer(p_mad_link_t     lnk,
                 s.segment_ptr		= b->buffer + b->bytes_read;
                 s.segment_length	= length;
 
-                TRACE("sb: first packet length: %x", length);
                 mad_mx_send(out, &s, 1, match_info);
 
                 b->bytes_read += length;
@@ -985,7 +981,6 @@ mad_mx_send_buffer(p_mad_link_t     lnk,
 
         b->bytes_read += s.segment_length;
 
-        TRACE("sb: packet length: %x", s.segment_length);
         mad_mx_send(out, &s, 1, match_info);
 
  no_more_data:
@@ -1020,9 +1015,6 @@ mad_mx_receive_buffer(p_mad_link_t    lnk,
                 data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
 
 
-                TRACE("rb: first packet length: %x", chs->first_packet_length);
-                TRACE("rb: expected first packet length: %x", data_length);
-
                 if (chs->first_packet_length != data_length)
                         FAILURE("invalid first packet length");
 
@@ -1036,7 +1028,6 @@ mad_mx_receive_buffer(p_mad_link_t    lnk,
         s.segment_ptr		= b->buffer + b->bytes_written;
         s.segment_length	= b->length - b->bytes_written;
 
-        TRACE("rb: segment length: %x", s.segment_length);
         b->bytes_written += s.segment_length;
 
         match_info = (uint64_t)in->channel->id <<32 | in->remote_rank;
@@ -1096,8 +1087,6 @@ mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list
   unsigned int		i	= 0;
 
   LOG_IN();
-  TRACE_VAL("sbg: group length", buffer_list->length);
-
   tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
 
   do {
@@ -1116,7 +1105,6 @@ mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list
       data_ptr	= b->buffer + b->bytes_read;
       data_length	= tbx_min(b->bytes_written - b->bytes_read, FIRST_PACKET_THRESHOLD);
 
-      TRACE("sbg: first packet length: %x", data_length);
       b->bytes_read		+= data_length;
 
       s.segment_ptr		 = data_ptr;
@@ -1128,14 +1116,11 @@ mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list
         goto no_more_data;
     }
 
-    TRACE("sbg: offset: %x", offset);
     data_ptr	 = b->buffer        + b->bytes_read;
     data_length	 =
       i?tbx_min(b->bytes_written - b->bytes_read,
                 GATHER_SCATTER_THRESHOLD - offset)
       :b->bytes_written - b->bytes_read;
-
-    TRACE("sbg: segment length: %x", data_length);
 
     b->bytes_read	+= data_length;
 
@@ -1146,7 +1131,6 @@ mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list
     offset += data_length;
 
     if (offset >= GATHER_SCATTER_THRESHOLD){
-      TRACE("sbg: seg_list full, flushing");
       mad_mx_send(out, seg_list, i, match_info);
 
       if (mad_more_data(b)) {
@@ -1156,8 +1140,6 @@ mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list
         data_length	 = b->bytes_written - b->bytes_read;
 
         b->bytes_read	+= data_length;
-
-        TRACE("sbg: sending large block: %x", data_length);
 
         s.segment_ptr		= data_ptr;
         s.segment_length	= data_length;
@@ -1172,12 +1154,9 @@ mad_mx_send_buffer_group_2_process_list(mx_segment_t                   *seg_list
   no_more_data:
     ;
 
-    TRACE("sbg: while");
-
   } while (tbx_forward_list_reference(&ref));
 
   if (offset) {
-    TRACE("sbg: remaining offset: %x", offset);
     mad_mx_send(out, seg_list, i, match_info);
   }
 
@@ -1239,7 +1218,6 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
   uint64_t              mi      = 0;
 
   LOG_IN();
-  TRACE_VAL("rbg: group length", buffer_list->length);
   tbx_list_reference_init(&ref, &(buffer_group->buffer_list));
 
   do {
@@ -1258,9 +1236,6 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
       data_ptr	= b->buffer + b->bytes_written;
       data_length	= tbx_min(b->length - b->bytes_written, FIRST_PACKET_THRESHOLD);
 
-      TRACE("rbg: first packet length: %x", chs->first_packet_length);
-      TRACE("rbg: expected first packet length: %x", data_length);
-
       if (chs->first_packet_length != data_length)
         FAILURE("invalid first packet length");
 
@@ -1272,14 +1247,11 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
         goto no_more_data;
     }
 
-    TRACE("rbg: offset: %x", offset);
     data_ptr	= b->buffer + b->bytes_written;
     data_length	=
       i?tbx_min(b->length - b->bytes_written,
                 GATHER_SCATTER_THRESHOLD - offset)
       :b->length - b->bytes_written;
-
-    TRACE("rbg: segment length: %x", data_length);
 
     b->bytes_written	+= data_length;
 
@@ -1290,7 +1262,6 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
     offset += data_length;
 
     if (offset >= GATHER_SCATTER_THRESHOLD){
-      TRACE("rbg: seg_list full, flushing");
       mi	= match_info;
       mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
       j++;
@@ -1303,7 +1274,6 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
 
         b->bytes_written	+= data_length;
 
-        TRACE("rbg: receiving large block: %x", data_length);
         s.segment_ptr		= data_ptr;
         s.segment_length	= data_length;
 
@@ -1319,21 +1289,16 @@ mad_mx_receive_sub_buffer_group_2_process_list(mx_segment_t                  *se
   no_more_data:
     ;
 
-    TRACE("rbg: while");
-
   } while(tbx_forward_list_reference(&ref));
 
   if (offset) {
-    TRACE("rbg: remaining offset: %x", offset);
     mi 	= match_info;
     mad_mx_irecv(ch, seg_list, i, &mi, MX_MATCH_MASK_NONE, req_list+j);
     j++;
   }
 
   for(k = 0; k < j; k++){
-    TRACE("rbg: %d/%d...", k+1, j);
     mad_mx_blocking_test(ch, req_list+k, NULL);
-    TRACE("rbg: %d/%d.", k+1, j);
   }
 
   LOG_OUT();

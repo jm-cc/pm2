@@ -665,7 +665,7 @@ mad_sisci_register(p_mad_driver_interface_t interface)
 }
 
 void
-mad_sisci_driver_init(p_mad_driver_t driver)
+mad_sisci_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
 {
   p_mad_sisci_driver_specific_t driver_specific = NULL;
 #if defined(MARCEL)

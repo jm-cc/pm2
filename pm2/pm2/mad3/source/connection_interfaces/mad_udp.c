@@ -1701,7 +1701,7 @@ mad_udp_register(p_mad_driver_t driver)
 }
 
 void
-mad_udp_driver_init(p_mad_driver_t driver)
+mad_udp_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
 {
   //LOG_IN();
   TRACE("Initializing UDP driver");

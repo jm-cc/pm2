@@ -1073,7 +1073,7 @@ mad_mux_register(p_mad_driver_interface_t interface)
 }
 
 void
-mad_mux_driver_init(p_mad_driver_t driver)
+mad_mux_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
 {
   p_mad_adapter_t dummy_adapter = NULL;
 

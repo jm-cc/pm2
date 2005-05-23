@@ -524,7 +524,7 @@ mad_quadrics_register(p_mad_driver_interface_t interface) {
 
 
 void
-mad_quadrics_driver_init(p_mad_driver_t d) {
+mad_quadrics_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         p_mad_dir_driver_t			 dd		= NULL;
         p_mad_quadrics_driver_specific_t	 ds		= NULL;
         ntbx_process_lrank_t        		 process_lrank	=   -1;

@@ -35,7 +35,7 @@ char *
 mad_bip_register(p_mad_driver_interface_t);
 
 void
-mad_bip_driver_init(p_mad_driver_t);
+mad_bip_driver_init(p_mad_driver_t, int *, char ***);
 
 void
 mad_bip_adapter_init(p_mad_adapter_t);

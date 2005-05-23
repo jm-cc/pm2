@@ -359,7 +359,7 @@ mad_sbp_register(p_mad_driver_t driver)
 }
 
 void
-mad_sbp_driver_init(p_mad_driver_t driver)
+mad_sbp_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
 {
   p_mad_sbp_driver_specific_t driver_specific;
 

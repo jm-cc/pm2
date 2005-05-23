@@ -1008,7 +1008,7 @@ mad_bip_register(p_mad_driver_t driver)
 }
 
 void
-mad_bip_driver_init(p_mad_driver_t driver)
+mad_bip_driver_init(p_mad_driver_t driver, int *p_argc, char ***p_argv)
 {
   p_mad_bip_driver_specific_t driver_specific = NULL;
   int i;

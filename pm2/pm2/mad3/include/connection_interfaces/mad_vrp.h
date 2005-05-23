@@ -48,7 +48,7 @@ char *
 mad_vrp_register(p_mad_driver_interface_t);
 
 void
-mad_vrp_driver_init(p_mad_driver_t);
+mad_vrp_driver_init(p_mad_driver_t, int *, char ***);
 
 void
 mad_vrp_adapter_init(p_mad_adapter_t);

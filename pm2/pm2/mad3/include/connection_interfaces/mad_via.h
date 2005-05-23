@@ -26,7 +26,7 @@ char *
 mad_via_register(p_mad_driver_interface_t);
 
 void
-mad_via_driver_init(p_mad_driver_t);
+mad_via_driver_init(p_mad_driver_t, int *, char ***);
 
 void
 mad_via_adapter_init(p_mad_adapter_t);

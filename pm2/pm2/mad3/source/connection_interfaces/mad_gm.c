@@ -1756,7 +1756,7 @@ mad_gm_register(p_mad_driver_interface_t interface)
 
 
 void
-mad_gm_driver_init(p_mad_driver_t d) {
+mad_gm_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         p_mad_gm_driver_specific_t ds  = NULL;
         gm_status_t                gms = GM_SUCCESS;
 

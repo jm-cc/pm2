@@ -35,7 +35,7 @@ char *
 mad_gm_register(p_mad_driver_interface_t);
 
 void
-mad_gm_driver_init(p_mad_driver_t d);
+mad_gm_driver_init(p_mad_driver_t d, int *, char ***);
 
 void
 mad_gm_adapter_init(p_mad_adapter_t a);

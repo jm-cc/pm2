@@ -113,11 +113,13 @@ typedef struct s_mad_mpi_link_specific
 } mad_mpi_link_specific_t, *p_mad_mpi_link_specific_t;
 
 
+#ifdef MARCEL
 typedef struct s_mad_mpi_ev {
 	struct marcel_ev_req	 inst;
         MPI_Request		 mpi_request;
         MPI_Status		*p_mpi_status;
 } mad_mpi_ev_t, *p_mad_mpi_ev_t;
+#endif /* MARCEL */
 
 #ifdef MARCEL
 static struct marcel_ev_server mad_mpi_ev_server = MARCEL_EV_SERVER_INIT(mad_mpi_ev_server, "Mad/MPI I/O");

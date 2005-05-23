@@ -240,7 +240,7 @@ void marcel_enable_deviation(void)
 {
   marcel_t cur = marcel_self();
 
-  lock_task();
+  //lock_task();
 
   marcel_lock_acquire(&deviate_lock);
 
@@ -249,12 +249,12 @@ void marcel_enable_deviation(void)
 
   marcel_lock_release(&deviate_lock);
 
-  unlock_task();
+  //unlock_task();
 }
 
 void marcel_disable_deviation(void)
 {
-  lock_task();
+  //lock_task();
 
   marcel_lock_acquire(&deviate_lock);
 
@@ -262,5 +262,5 @@ void marcel_disable_deviation(void)
 
   marcel_lock_release(&deviate_lock);
 
-  unlock_task();
+  //unlock_task();
 }

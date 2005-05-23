@@ -203,7 +203,7 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 				   marcel_key_destructor_t func), (key, func))
 { /* pour l'instant, le destructeur n'est pas utilise */
 
-   lock_task();
+   //lock_task();
    marcel_lock_acquire(&marcel_key_lock);
    while ((++marcel_last_key < MAX_KEY_SPECIFIC) &&
 	  (marcel_key_present[marcel_last_key])) {
@@ -212,7 +212,7 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
      /* sinon, il faudrait remettre à 0 toutes les valeurs spécifiques
 	des threads existants */
       marcel_lock_release(&marcel_key_lock);
-      unlock_task();
+      //unlock_task();
       RAISE(CONSTRAINT_ERROR);
 /*        marcel_last_key=0; */
 /*        while ((++marcel_last_key < MAX_KEY_SPECIFIC) && */
@@ -229,7 +229,7 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
    marcel_key_present[marcel_last_key]=1;
    marcel_key_destructor[marcel_last_key]=func;
    marcel_lock_release(&marcel_key_lock);
-   unlock_task();
+   //unlock_task();
    return 0;
 }
 DEF_PTHREAD(int, key_create, (pthread_key_t *key, 
@@ -240,7 +240,7 @@ DEF___PTHREAD(int, key_create, (pthread_key_t *key,
 DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
 { /* pour l'instant, le destructeur n'est pas utilise */
 
-   lock_task();
+   //lock_task();
    marcel_lock_acquire(&marcel_key_lock);
    if (marcel_key_present[key]) {
       marcel_nb_keys--;
@@ -248,7 +248,7 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
       marcel_key_destructor[key]=NULL;
    }
    marcel_lock_release(&marcel_key_lock);
-   unlock_task();
+   //unlock_task();
    return 0;
 }
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))

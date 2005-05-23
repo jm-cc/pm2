@@ -90,11 +90,13 @@ adapter_init(p_mad_driver_t mad_driver,
 
 static
 tbx_bool_t
-driver_init_1(p_mad_madeleine_t    madeleine,
-              p_tbx_htable_t       mad_device_htable,
-              p_tbx_htable_t       mad_network_htable,
-              p_tbx_htable_t       dir_driver_htable,
-              ntbx_process_grank_t g)
+driver_init_1(p_mad_madeleine_t      madeleine,
+              p_tbx_htable_t         mad_device_htable,
+              p_tbx_htable_t         mad_network_htable,
+              p_tbx_htable_t         dir_driver_htable,
+              ntbx_process_grank_t   g,
+              int                   *p_argc,
+              char                ***p_argv)
 {
   p_mad_driver_t                       mad_driver         = NULL;
   p_mad_driver_interface_t             interface          = NULL;
@@ -144,7 +146,7 @@ driver_init_1(p_mad_madeleine_t    madeleine,
 
   mad_driver->process_lrank = ntbx_pc_global_to_local(dir_driver->pc, g);
 
-  interface->driver_init(mad_driver);
+  interface->driver_init(mad_driver, p_argc, p_argv);
 
   mad_leonie_send_int(-1);
 
@@ -234,7 +236,9 @@ driver_init_2(p_tbx_htable_t dir_driver_htable)
 }
 
 void
-mad_dir_driver_init(p_mad_madeleine_t madeleine)
+mad_dir_driver_init(p_mad_madeleine_t    madeleine,
+                    int                 *p_argc,
+                    char              ***p_argv)
 {
   p_tbx_htable_t mad_device_htable  = NULL;
   p_tbx_htable_t mad_network_htable = NULL;
@@ -248,7 +252,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
   TRACE("Driver initialization: first pass");
   while (driver_init_1(madeleine,
                        mad_device_htable, mad_network_htable, dir_driver_htable,
-                       madeleine->session->process_rank))
+                       madeleine->session->process_rank, p_argc, p_argv))
     ;
 
   TRACE("Driver initialization: second pass");
@@ -273,7 +277,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
     tbx_htable_add(mad_network_htable, network_name, mad_driver);
 
-    mad_driver->interface->driver_init(mad_driver);
+    mad_driver->interface->driver_init(mad_driver, NULL, NULL);
   }
 
   {
@@ -293,7 +297,7 @@ mad_dir_driver_init(p_mad_madeleine_t madeleine)
 
     tbx_htable_add(mad_network_htable, network_name, mad_driver);
 
-    mad_driver->interface->driver_init(mad_driver);
+    mad_driver->interface->driver_init(mad_driver, NULL, NULL);
   }
 #endif // MARCEL
   LOG_OUT();

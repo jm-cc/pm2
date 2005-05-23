@@ -25,7 +25,9 @@ typedef struct s_mad_driver_interface
 {
   /* Driver initialization */
   void
-  (*driver_init)(p_mad_driver_t);
+  (*driver_init)(p_mad_driver_t,
+                 int *,
+                 char ***);
 
 
   /* Adapter initialization */

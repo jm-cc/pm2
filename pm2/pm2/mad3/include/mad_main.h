@@ -103,7 +103,9 @@ mad_directory_init(p_mad_madeleine_t               madeleine,
 		   char               TBX_UNUSED **argv);
 
 void
-mad_dir_driver_init(p_mad_madeleine_t   madeleine);
+mad_dir_driver_init(p_mad_madeleine_t    madeleine,
+		   int                  *p_argc,
+		   char               ***p_argv);
 
 void
 mad_dir_channel_init(p_mad_madeleine_t   madeleine);

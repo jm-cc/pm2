@@ -608,7 +608,9 @@ mad_command_thread(void *_madeleine)
     case mad_leo_command_merge_channel:
       {	    
 	 DISP("mad_leo_command_merge_channel");
-	 mad_dir_driver_init(madeleine);
+
+         /* non compatible avec les pilotes nécessitant argc/argv */
+	 mad_dir_driver_init(madeleine, NULL, NULL);
 	 channel_reopen(madeleine);
 	 mad_channel_merge_done(madeleine);
       }       
@@ -618,7 +620,9 @@ mad_command_thread(void *_madeleine)
       {	    
 	 DISP("mad_leo_command_split_channel");
 	 mad_leonie_send_int(-1);
-	 mad_dir_driver_init(madeleine);
+
+         /* non compatible avec les pilotes nécessitant argc/argv */
+	 mad_dir_driver_init(madeleine, NULL, NULL);
 	 channel_reopen(madeleine);
 	 mad_channel_split_done(madeleine);
       }       

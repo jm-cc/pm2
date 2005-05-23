@@ -158,7 +158,6 @@ init_channels(p_leonie_t leonie)
       p_leo_dir_connection_t cnx = _cnx;
 
       LOG_IN();
-      leo_send_string(client, dir_channel->name);
       cnx->parameter = leo_receive_string(client);
       TRACE_STR("Channel connection parameter", cnx->parameter);
       LOG_OUT();
@@ -245,6 +244,7 @@ init_channels(p_leonie_t leonie)
     LOG_IN();
     TRACE_STR("Channel", dir_channel->name);
 
+    do_pc_send_string  (dir_channel->pc, dir_channel->name);
     do_pc_send_s       (dir_channel->pc, _f);
     do_pc_send_local_s (dir_channel->pc, _src_func1);
     do_pc_send         (dir_channel->pc, _int_sync);

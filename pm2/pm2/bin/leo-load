@@ -95,6 +95,8 @@ export PM2_SMPMODE
 PM2_LOGMODE=off
 export PM2_LOGMODE
 
+ADD_WRAPPER=
+
 while [ $# -gt 0 ]; do
     case $1 in
 	-f)
@@ -125,6 +127,15 @@ while [ $# -gt 0 ]; do
 	-c)
 	    shift
 	    PM2_CONSOLE="$1"
+	    shift
+	    ;;
+	-w)
+	    shift
+            if [ -z "${ADD_WRAPPER}" ]; then
+                ADD_WRAPPER="$1"
+            else
+                ADD_WRAPPER="${ADD_WRAPPER} $1"
+            fi
 	    shift
 	    ;;
 	-h)
@@ -168,4 +179,4 @@ fi
 
 # echo "### Leonie loader ###"
 # echo exec $prefix "$_PM2WHICH_RESULT" "$@"
-exec $prefix "$_PM2WHICH_RESULT" "$@"
+exec $ADD_WRAPPER $prefix "$_PM2WHICH_RESULT" "$@"

@@ -287,6 +287,20 @@ tbx_htable_free(p_tbx_htable_t htable)
 {
   LOG_IN();
   if (htable->nb_element)
+    FAILURE("htable is not empty");
+
+  TBX_FREE(htable->bucket_array);
+  htable->bucket_array = NULL;
+  htable->nb_bucket = 0;
+  TBX_FREE(htable);
+  LOG_OUT();
+}
+
+void
+tbx_htable_cleanup_and_free(p_tbx_htable_t htable)
+{
+  LOG_IN();
+  if (htable->nb_element)
     {
       while (htable->nb_bucket--)
 	{
@@ -307,6 +321,7 @@ tbx_htable_free(p_tbx_htable_t htable)
 
 	      tbx_free(tbx_htable_manager_memory, element);
 
+              htable->nb_element--;
 	      element = temp;
 	    }
 
@@ -314,7 +329,9 @@ tbx_htable_free(p_tbx_htable_t htable)
 	}
     }
 
-  htable->nb_element = 0;
+  if (htable->nb_element)
+    FAILURE("inconsistent htable state");
+
   TBX_FREE(htable->bucket_array);
   htable->bucket_array = NULL;
   TBX_FREE(htable);

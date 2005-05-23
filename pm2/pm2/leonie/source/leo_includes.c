@@ -127,13 +127,13 @@ include_network_files(p_leo_networks_t networks,
 	  include_htable = leoparse_parse_local_file(filename);
 	  process_network_include_file(networks, include_htable);
 
-	  tbx_htable_free(include_htable);
+	  tbx_htable_cleanup_and_free(include_htable);
 	  include_htable = NULL;
 	}
     }
   while (tbx_slist_ref_forward(include_files_slist));
 
-  tbx_htable_free(filename_htable);
+  tbx_htable_cleanup_and_free(filename_htable);
   filename_htable = NULL;
   LOG_OUT();
 }

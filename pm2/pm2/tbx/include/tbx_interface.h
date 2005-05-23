@@ -470,6 +470,9 @@ void
 tbx_htable_free(p_tbx_htable_t htable);
 
 void
+tbx_htable_cleanup_and_free(p_tbx_htable_t htable);
+
+void
 tbx_htable_manager_exit(void);
 
 p_tbx_slist_t

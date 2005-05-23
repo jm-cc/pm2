@@ -42,7 +42,7 @@ registering_flavors() {
 	--marcel=profile
 
     register_flavor leonie \
-	--modules="leonie leoparse tbx ntbx init" --all=debug $COMMON_OPTIONS
+	--modules="leonie leoparse tbx ntbx init" --all=debug --all=gdb $COMMON_OPTIONS
 
     register_flavor leoparse \
 	--modules="leoparse tbx ntbx init" $COMMON_OPTIONS

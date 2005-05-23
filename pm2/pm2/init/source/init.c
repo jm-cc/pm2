@@ -272,7 +272,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_leonie_link_init(attr->madeleine, *argc, argv);
   mad_leonie_command_init(attr->madeleine, *argc, argv);
   mad_directory_init(attr->madeleine, *argc, argv);
-  mad_dir_driver_init(attr->madeleine);
+  mad_dir_driver_init(attr->madeleine, argc, &argv);
 
 #ifdef PM2
   pm2self       = attr->madeleine->session->process_rank;

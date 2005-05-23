@@ -17,4 +17,4 @@ LEO_XTERM=${LEO_XTERM:-'xterm'}
 title="$prog.$HOST"
 
 # echo ${LEO_XTERM} -title $title -e pm2_wrapper $prog ${@:+"$@"}
-${LEO_XTERM} -title $title -e pm2_wrapper $prog ${@:+"$@"}
+${LEO_XTERM} -title $title -e env LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" pm2_wrapper $prog ${@:+"$@"}

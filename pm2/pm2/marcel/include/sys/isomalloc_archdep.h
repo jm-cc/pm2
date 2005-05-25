@@ -54,7 +54,12 @@ extern int __zero_fd;
 #    define ISOADDR_AREA_TOP       0x40000000
 #    define SLOT_AREA_BOTTOM       0x10000000
 #    define MAIN_STACK_BOT         0xb8000000
+#ifdef ENABLE_STACK_JUMPING
+#warning "valgrind won't work"
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
+#else
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)
+#endif
 #  elif defined(X86_64_ARCH)
 #    define ISOADDR_AREA_TOP       0x2000000000
 #    define SLOT_AREA_BOTTOM       0x1000000000
@@ -69,6 +74,8 @@ extern int __zero_fd;
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(PPC_ARCH)
 #    define ISOADDR_AREA_TOP       0x30000000
+#    define MAIN_STACK_BOT         0x80000000
+#    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(ALPHA_ARCH)
 #    define ISOADDR_AREA_TOP       0x30000000000
 #    define MAIN_STACK_TOP         0x130000000

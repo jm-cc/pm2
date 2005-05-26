@@ -67,7 +67,7 @@ extern volatile unsigned long threads_created_in_cache;
 inline static void* slot_cache_get(struct cache_head **head, int *main_slot)
 {
 	struct cache_head *cache=*head;
-	register void *ptr      = NULL;
+	register void *ptr;
 
 	if (!cache) {
 		return NULL;
@@ -198,7 +198,7 @@ void marcel_slot_free(void *addr)
 
 void marcel_slot_exit(void)
 {
-	register void *ptr = NULL;
+	register void *ptr;
         int main_slot=0;
 	while((ptr=slot_cache_get(&stack_cache_mapped,NULL))!=NULL) {
 		if(munmap(ptr, THREAD_SLOT_SIZE) == -1)

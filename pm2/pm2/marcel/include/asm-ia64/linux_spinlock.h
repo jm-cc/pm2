@@ -17,6 +17,7 @@
 
 #section common
 #ifdef MA__LWPS
+#include "tbx_compiler.h"
 /*
  * Similar to:
  * include/asm-ia64/spinlock.h

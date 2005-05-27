@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #depend "asm/marcel_testandset.h"
 
 #section marcel_variables

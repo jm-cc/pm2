@@ -16,6 +16,8 @@
 
 #section default [no-include-in-main,no-include-in-master-section]
 
+#section common
+#include "tbx_compiler.h"
 #section sched_marcel_functions [no-depend-previous]
 
 #section sched_marcel_inline

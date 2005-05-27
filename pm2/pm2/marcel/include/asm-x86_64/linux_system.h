@@ -14,6 +14,7 @@
  */
 
 #section common
+#include "tbx_compiler.h"
 /*
  * Similar to:
  * include/asm-ia64/system.h

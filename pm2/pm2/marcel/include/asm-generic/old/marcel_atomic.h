@@ -1,3 +1,5 @@
+#section common
+#include "tbx_compiler.h"
 #section marcel_macros
 
 #warning using generic atomic.h. Please provide one for this architecture.

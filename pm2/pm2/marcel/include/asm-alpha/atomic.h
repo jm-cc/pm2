@@ -1,5 +1,6 @@
 #ifndef ATOMIC_H_EST_DEF
 #define ATOMIC_H_EST_DEF
+#include "tbx_compiler.h"
 
 #define __atomic_fool_gcc(x) (*(struct { int a[100]; } *)x)
 

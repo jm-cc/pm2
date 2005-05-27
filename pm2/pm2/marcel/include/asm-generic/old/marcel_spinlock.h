@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #section default [no-include-in-main,no-include-in-master-section,no-write-section]
 
 #section all [write-section]

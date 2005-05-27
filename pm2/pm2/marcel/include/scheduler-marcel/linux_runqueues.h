@@ -16,6 +16,7 @@
 
 #section common
 #depend "scheduler-marcel/marcel_bubble_sched.h[types]"
+#include "tbx_compiler.h"
 
 /*
  * These are the runqueue data structures:

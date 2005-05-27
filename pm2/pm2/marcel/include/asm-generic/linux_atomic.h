@@ -17,6 +17,7 @@
 #section common
 #depend "asm/marcel_compareexchange.h[]"
 #depend "asm/linux_spinlock.h[]"
+#include "tbx_compiler.h"
 
 /*
  * Similar to:

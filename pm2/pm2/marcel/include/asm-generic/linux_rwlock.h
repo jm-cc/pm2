@@ -16,6 +16,7 @@
 
 #section common
 #depend "asm/linux_atomic.h[]"
+#include "tbx_compiler.h"
 /*
  * Similar to:
  * include/asm-i386/rwlock.h

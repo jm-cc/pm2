@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #section marcel_macros
 #depend "asm/marcel_compareexchange.h[macros]"
 #ifdef MA_HAVE_COMPAREEXCHANGE

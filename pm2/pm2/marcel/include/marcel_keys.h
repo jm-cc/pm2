@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 /*********************************************************************
  * thread_key 
  * */

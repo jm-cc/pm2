@@ -17,6 +17,8 @@
 
 /****************************************************************/
 
+#section common
+#include "tbx_compiler.h"
 #section types
 typedef struct marcel_task marcel_task_t;
 typedef marcel_task_t *p_marcel_task_t;

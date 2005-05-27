@@ -15,6 +15,7 @@
  */
 
 #section common
+#include "tbx_compiler.h"
 /*
  * similar to:
  * thread_info.h: common low-level thread information accessors

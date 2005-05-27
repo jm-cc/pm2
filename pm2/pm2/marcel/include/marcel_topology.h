@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #section types
 enum marcel_topo_level_t {
 	MARCEL_LEVEL_MACHINE,

@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #section marcel_macros
 #depend "asm/marcel_arch_switchto.h[]"
 

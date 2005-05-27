@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #section macros
 #define MA_HAVE_COMPAREEXCHANGE 1
 

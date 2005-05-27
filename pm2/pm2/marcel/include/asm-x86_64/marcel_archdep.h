@@ -19,6 +19,7 @@
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
+#include "tbx_compiler.h"
 #include <setjmp.h>
 
 #define TOP_STACK_FREE_AREA     128

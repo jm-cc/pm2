@@ -17,6 +17,7 @@
 #ifndef ARCHDEP_EST_DEF
 #define ARCHDEP_EST_DEF
  
+#include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 

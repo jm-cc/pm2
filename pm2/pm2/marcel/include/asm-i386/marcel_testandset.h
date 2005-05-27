@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include "tbx_compiler.h"
 #section macros
 #define MA_HAVE_TESTANDSET 1
 

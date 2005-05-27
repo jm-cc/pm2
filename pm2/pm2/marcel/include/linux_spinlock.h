@@ -15,6 +15,7 @@
  */
 
 #section common
+#include "tbx_compiler.h"
 /*
  * similar to:
  * include/linux/spinlock.h - generic locking declarations

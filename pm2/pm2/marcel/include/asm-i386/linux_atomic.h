@@ -15,6 +15,7 @@
  */
 
 #section common
+#include "tbx_compiler.h"
 /*
  * Similar to:
  * include/asm-i386/atomic.h

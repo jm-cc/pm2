@@ -131,6 +131,17 @@
 #  define TBX_VERIFY(op, val) ((void)(op))
 #endif /* DEBUG */
 
+#ifdef PM2DEBUG
+#  define TBX_ASSERT(op) \
+  if(!(op))     \
+    pm2debug("ASSERTION FAILED: %s\nFILE: %s\nLINE: %d\n", \
+            #op, __FILE__, __LINE__),   abort()
+#else /* DEBUG */
+#  define TBX_ASSERT(op) ((void)(op))
+#endif /* DEBUG */
+
+
+
 /*
  * FAILURE: display an error message and abort the program
  * -------------------------------------------------------

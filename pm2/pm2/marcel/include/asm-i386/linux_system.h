@@ -124,7 +124,7 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
  * indicated by comparing RETURN with OLD.
  */
 
-static __tbx_inline__ unsigned long __ma_cmpxchg(volatile void *ptr, unsigned long old,
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, unsigned long old,
 				      unsigned long new, int size)
 {
 	unsigned long prev;

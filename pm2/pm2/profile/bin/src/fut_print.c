@@ -41,6 +41,7 @@
 		entry codes must have GCC_TRACED_FUNCTION_X86_EXIT bit set
 */
 
+#error Please, use fut_print in the FxT distribution (tools subdirectory)
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -58,8 +59,8 @@
 #include <time.h>
 #include <stdint.h>
 #include <linux/unistd.h>
-#include <linux/fkt.h>
-#include "fxt.h"
+#include "fxt/linux/fkt.h"
+#include "fxt/fxt.h"
 #include "fut.h"
 
 /* one day, FUT and FKT could be both enabled... */
@@ -67,7 +68,7 @@
 #  define FKT
 #endif
 
-#include "fxt-tools.h"
+#include "fxt/fxt-tools.h"
 //#include "fxt/names.h"
 #ifdef FKT
 #  define find_name(code, keep, maxlen) ({ \

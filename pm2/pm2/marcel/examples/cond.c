@@ -53,6 +53,8 @@ void bench_cond(unsigned nb)
   n = nb >> 1;
   n++;
 
+  marcel_cond_init(&cond, NULL);
+  marcel_mutex_init(&mutex, NULL);
   marcel_sem_init(&sem, 0);
   marcel_create(&pid, NULL, f, (any_t)n);
 

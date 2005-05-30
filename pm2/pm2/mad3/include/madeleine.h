@@ -79,6 +79,9 @@
 #include "mad_communication_interface.h"
 #include "mad_channel_interface.h"
 
+#include "mad_buffers_inline.h"
+#include "mad_memory_inline.h"
+
 /* connection interfaces */
 #ifdef DRV_TCP
 #include "connection_interfaces/mad_tcp.h"

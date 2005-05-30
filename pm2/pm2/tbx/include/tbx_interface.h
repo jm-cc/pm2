@@ -67,10 +67,12 @@ tbx_tick2usec(long long t);
  * Aligned malloc
  * --------------
  */
+static __inline__
 void *
 tbx_aligned_malloc(const size_t      size,
 		   const tbx_align_t align);
 
+static __inline__
 void
 tbx_aligned_free (void              *ptr,
 		  const tbx_align_t  align);
@@ -119,19 +121,27 @@ tbx_safe_realloc(void     *ptr,
  * Fast malloc
  * -----------
  */
+static
+__inline__
 void
 tbx_malloc_init(p_tbx_memory_t *mem,
 		const size_t    block_len,
 		long            initial_block_number,
                 const char     *name);
 
+static
+__inline__
 void *
 tbx_malloc(p_tbx_memory_t mem);
 
+static
+__inline__
 void
 tbx_free(p_tbx_memory_t  mem,
          void           *ptr);
 
+static
+__inline__
 void
 tbx_malloc_clean(p_tbx_memory_t memory);
 
@@ -144,51 +154,82 @@ tbx_malloc_clean(p_tbx_memory_t memory);
 void
 tbx_list_manager_init(void);
 
+
+static
+__inline__
 void
 tbx_list_init(p_tbx_list_t list);
 
+static
+__inline__
 void
 tbx_foreach_destroy_list(p_tbx_list_t                    list,
 			 const p_tbx_list_foreach_func_t func);
+
 void
 tbx_list_manager_exit(void);
 
+
+static
+__inline__
 void
 tbx_destroy_list(p_tbx_list_t list);
 
+static
+__inline__
 void
 tbx_append_list(p_tbx_list_t   list,
 		void*          object);
+static
+__inline__
 void *
 tbx_get_list_object(const p_tbx_list_t list);
 
+static
+__inline__
 void
 tbx_mark_list(p_tbx_list_t list);
 
+static
+__inline__
 void
 tbx_duplicate_list(const p_tbx_list_t source,
 		   p_tbx_list_t destination);
 
+static
+__inline__
 void
 tbx_extract_sub_list(const p_tbx_list_t source,
 		     p_tbx_list_t destination);
 
+static
+__inline__
 tbx_bool_t
 tbx_empty_list(const p_tbx_list_t list);
 
+static
+__inline__
 void
 tbx_list_reference_init(p_tbx_list_reference_t ref,
 			const p_tbx_list_t     list);
 
+static
+__inline__
 void *
 tbx_get_list_reference_object(const p_tbx_list_reference_t ref);
 
+static
+__inline__
 tbx_bool_t
 tbx_forward_list_reference(p_tbx_list_reference_t ref);
 
+static
+__inline__
 void
 tbx_reset_list_reference(p_tbx_list_reference_t ref);
 
+static
+__inline__
 tbx_bool_t
 tbx_reference_after_end_of_list(const p_tbx_list_reference_t ref);
 
@@ -634,44 +675,66 @@ tbx_darray_manager_init(void);
 void
 tbx_darray_manager_exit(void);
 
+static
+__inline__
 p_tbx_darray_t
 tbx_darray_init(void);
 
+static
+__inline__
 void
 tbx_darray_free(p_tbx_darray_t darray);
 
+static
+__inline__
 size_t
 tbx_darray_length(p_tbx_darray_t darray);
 
+static
+__inline__
 void
 tbx_darray_reset(p_tbx_darray_t darray);
 
+static
+__inline__
 void *
 tbx_darray_get(p_tbx_darray_t     darray,
 	       tbx_darray_index_t idx);
 
+static
+__inline__
 void
 tbx_darray_set(p_tbx_darray_t      darray,
 	       tbx_darray_index_t  idx,
 	       void               *object);
 
+static
+__inline__
 void
 tbx_darray_expand_and_set(p_tbx_darray_t      darray,
 			  tbx_darray_index_t  idx,
 			  void               *object);
 
+static
+__inline__
 void *
 tbx_darray_expand_and_get(p_tbx_darray_t     darray,
 			  tbx_darray_index_t idx);
 
+static
+__inline__
 void
 tbx_darray_append(p_tbx_darray_t  darray,
 		  void           *object);
 
+static
+__inline__
 void *
 tbx_darray_first_idx(p_tbx_darray_t       darray,
 		     p_tbx_darray_index_t idx);
 
+static
+__inline__
 void *
 tbx_darray_next_idx(p_tbx_darray_t       darray,
 		    p_tbx_darray_index_t idx);

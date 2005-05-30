@@ -29,39 +29,68 @@ mad_memory_manager_init(int  TBX_UNUSED   argc,
 void
 mad_memory_manager_exit(void);
 
+static
+__inline__
+p_mad_buffer_t
+mad_alloc_buffer(size_t length);
+
+static
+__inline__
 p_mad_buffer_t
 mad_alloc_buffer_struct(void);
 
+static
+__inline__
 void
 mad_free_buffer_struct(p_mad_buffer_t buffer);
 
+static
+__inline__
 void
 mad_free_buffer(p_mad_buffer_t buf);
 
+static
+__inline__
 p_mad_buffer_group_t
 mad_alloc_buffer_group_struct(void);
 
+static
+__inline__
 void
 mad_free_buffer_group_struct(p_mad_buffer_group_t buffer_group);
 
+static
+__inline__
 void
 mad_foreach_free_buffer_group_struct(void *object);
 
+static
+__inline__
 void
 mad_foreach_free_buffer(void *object);
 
+static
+__inline__
 p_mad_buffer_pair_t
 mad_alloc_buffer_pair_struct(void);
 
+static
+__inline__
 void
 mad_free_buffer_pair_struct(p_mad_buffer_pair_t buffer_pair);
 
+static
+__inline__
 void
 mad_foreach_free_buffer_pair_struct(void *object);
 
+static
+__inline__
 p_mad_buffer_slice_parameter_t
 mad_alloc_slice_parameter(void);
 
+static
+__inline__
 void
 mad_free_slice_parameter(p_mad_buffer_slice_parameter_t slice_parameter);
 

@@ -30,7 +30,7 @@
 
 #define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #ifndef __INTEL_COMPILER
-static __tbx_inline__ long get_sp(void)
+static __tbx_inline__ long TBX_NOINST get_sp(void)
 {
   register long sp;
 

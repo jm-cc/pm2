@@ -29,9 +29,9 @@
 #include <sys/utsname.h>
 #include <sys/types.h>
 #include <sys/times.h>
-#include "fut.h"
-#include <fxt.h>
-#include <fxt-tools.h>
+#include "fxt/fxt.h"
+#include "fxt/fut.h"
+#include "fxt/fxt-tools.h"
 #include "pm2_fxt-tools.h"
 
 #ifdef MARCEL
@@ -53,10 +53,10 @@
 volatile unsigned int fut_active = 0;
 
 /*	points to next unused byte in buffer (multiple of 4) */
-volatile unsigned int *fut_next_slot = NULL;
+volatile unsigned long *fut_next_slot = NULL;
 
 /*	points to byte beyond end of buffer (multiple of 4) */
-volatile unsigned int *fut_last_slot = NULL;
+volatile unsigned long *fut_last_slot = NULL;
 
 fxt_t fut;
 static struct fxt_infos *fut_infos;
@@ -82,21 +82,16 @@ void dumptime( time_t *the_time, clock_t *the_jiffies)
 	includes mallocing the buffer to hold the trace.
 	returns number of bytes allocated if all ok, else a negative error code.
 */
-int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
+int fut_setup( unsigned int nlongs, unsigned int keymask, unsigned int threadid )
 	{
-	unsigned int	nbytes, *iptr;
+	unsigned int	nbytes;
+	unsigned long	*iptr;
 
 
 	/* paranoia, so nobody waits for us while we are in here */
 	fut_active = 0;
 
-	fut = fxt_newrecord(
-#ifdef MA__FUT_RECORD_TID
-			FUT_FORMAT_SMP_THREAD
-#else
-			FUT_FORMAT_MONO
-#endif
-			);
+	fut = fxt_setinfos(FXT_SPACE_USER);
 	fut_infos = fxt_infos(fut);
 
 	/*	remember pid of process that called setup */
@@ -111,17 +106,17 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 		}
 
 	/*	allocate buffer */
-	nbytes = nints << 2;			/* force multiple of 4 bytes */
+	nbytes = nlongs * sizeof(long);		/* force multiple of 4/8 bytes */
 	if( (bufptr = (char *)malloc(nbytes)) == NULL )
 		return -ENOMEM;
 	nallocated = nbytes;
-	nints = nbytes >> 2;
+	nlongs = nbytes / sizeof(long);
 		
 
-	fut_last_slot = (unsigned int *)(bufptr + nbytes);
+	fut_last_slot = (unsigned long *)(bufptr + nbytes);
 
 	/*	touch all pages so they get loaded */
-	for( iptr = (unsigned int *)bufptr;  iptr < fut_last_slot;  )
+	for( iptr = (unsigned long *)bufptr;  iptr < fut_last_slot;  )
 		{
 		*iptr = 0;
 		iptr += 0x100;
@@ -129,10 +124,13 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 
 	dumptime(&fut_infos->start_time, &fut_infos->start_jiffies);
 
-	fut_next_slot = (unsigned int *)bufptr;
+	fut_next_slot = (unsigned long *)bufptr;
 	fut_active = keymask & FULL_ACTIVE_MASK;
 
-	FUT_PROBE3(-1, FUT_SETUP_CODE, fut_active, threadid, nints);
+	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
+		FUT_GCC_INSTRUMENT_ENTRY_CODE,
+		fut_setup);
+	FUT_PROBE3(-1, FUT_SETUP_CODE, fut_active, threadid, nlongs);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
@@ -143,7 +141,7 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
 
-	return nints;
+	return nlongs;
 	}
 
 
@@ -153,7 +151,11 @@ int fut_setup( unsigned int nints, unsigned int keymask, unsigned int threadid )
 int fut_keychange( int how, unsigned int keymask, unsigned int threadid )
 	{
 	unsigned int	old_active = fut_active;
-
+#if 0
+	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
+		FUT_GCC_INSTRUMENT_ENTRY_CODE,
+		&fut_keychange);
+#endif
 
 	if( fut_next_slot >= fut_last_slot  ||  bufptr == NULL )
 		return -EPERM;
@@ -174,6 +176,12 @@ int fut_keychange( int how, unsigned int keymask, unsigned int threadid )
 		}
 
 	FUT_PROBE2(-1, FUT_KEYCHANGE_CODE, fut_active, threadid);
+#if 0
+	printf("Recording keychange %p\n", &fut_keychange);
+	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
+                   FUT_GCC_INSTRUMENT_EXIT_CODE,
+                   &fut_keychange);
+#endif
 	return old_active;
 	}
 
@@ -203,7 +211,7 @@ int fut_done( void )
 */
 int fut_reset( unsigned int keymask, unsigned int threadid )
 	{
-	unsigned int	nints;
+	unsigned int	nlongs;
 
 
 	/* paranoia, so nobody waits for us while we are in here */
@@ -215,12 +223,12 @@ int fut_reset( unsigned int keymask, unsigned int threadid )
 		}
 
 	/* reset the buffer to completely empty */
-	fut_last_slot = (unsigned int *)(bufptr + nallocated);
-	fut_next_slot = (unsigned int *)bufptr;
+	fut_last_slot = (unsigned long *)(bufptr + nallocated);
+	fut_next_slot = (unsigned long *)bufptr;
 	fut_active = keymask & FULL_ACTIVE_MASK;
-	nints = nallocated >> 2;
+	nlongs = nallocated / sizeof(long);
 
-	FUT_PROBE3(-1, FUT_RESET_CODE, fut_active, threadid, nints);
+	FUT_PROBE3(-1, FUT_RESET_CODE, fut_active, threadid, nlongs);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
 	FUT_PROBE0(-1, FUT_CALIBRATE0_CODE);
@@ -231,16 +239,16 @@ int fut_reset( unsigned int keymask, unsigned int threadid )
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
 	FUT_PROBE2(-1, FUT_CALIBRATE2_CODE, 1, 2);
 
-	return nints;
+	return nlongs;
 	}
 
 
 /*	called repeatedly to copy current buffer into user space.
-	returns nints >= 0 if all ok, else a negative error code.
+	returns nlongs >= 0 if all ok, else a negative error code.
 */
-int fut_getbuffer( int *nints, unsigned int **buffer )
+int fut_getbuffer( int *nlongs, unsigned long **buffer )
 	{
-	int				local_nints = 0;
+	int				local_nlongs = 0;
 
 
 	/* paranoia, so nobody waits for us while we are in here */
@@ -248,37 +256,38 @@ int fut_getbuffer( int *nints, unsigned int **buffer )
 
 	if( bufptr == NULL )
 		{
-		local_nints = -EPERM;
+		local_nlongs = -EPERM;
 		goto out;
 		}
 
 	/*	get number of ints worth of trace data currently in the buffer */
-	local_nints = ((char *)fut_next_slot - bufptr) >> 2;
+	local_nlongs = ((char *)fut_next_slot - bufptr) / sizeof(long);
 
-	if( nints != NULL )
-		*nints = local_nints;
+	if( nlongs != NULL )
+		*nlongs = local_nlongs;
 
 	if( buffer != NULL )
-		*buffer = (unsigned int *)bufptr;
+		*buffer = (unsigned long *)bufptr;
 
 out:
-	return local_nints;
+	return local_nlongs;
 	}
 
 int fut_endup( char *filename )
 	{
-	int n, nints, size, fd;
-	unsigned int *copy;
+	int n, nlongs=0, fd;
+	long size;
+	unsigned long *copy=NULL;
 
 	/* stop all futher tracing */
 	fut_active = 0;
 
 	dumptime(&fut_infos->stop_time,&fut_infos->stop_jiffies);
 
-	if( (n = fut_getbuffer(&nints, &copy)) < 0 )
+	if( (n = fut_getbuffer(&nlongs, &copy)) < 0 )
 		return n;
 
-	size = nints << 2;
+	size = nlongs * sizeof(long);
 
 	if( filename == NULL )
 		filename = DEFAULT_TRACE_FILE;
@@ -289,18 +298,18 @@ int fut_endup( char *filename )
 	fut_infos->page_size = size;
 	fxt_fdwrite(fut,fd);
 
-	size+=sizeof(size);
-	if( write(fd, (void *)&size, sizeof(size)) < sizeof(size) )
-	  perror("write buffer's size");
-	size-=sizeof(size);
-
+	fxt_fdevents_start(fut, fd, FXT_TRACE_USER_RAW);
+	//if( write(fd, (void *)&size, sizeof(size)) < sizeof(size) )
+	//  perror("write buffer's size");
+	
 	if( write(fd, (void *)copy, size) < 0 )
 		perror("write buffer");
+	fxt_fdevents_stop(fut, fd);
 
 	if( close(fd) < 0 )
 		perror(filename);
 
 	//fut_done(); // Removed by Raymond
 
-	return nints;
+	return nlongs;
 	}

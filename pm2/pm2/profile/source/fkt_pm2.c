@@ -14,8 +14,8 @@
  * General Public License for more details.
  */
 
-#ifndef X86_ARCH
-#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86 ARCHITECTURES"
+#if ! defined(X86_ARCH) && ! defined(IA64_ARCH)
+#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86 AND IA64 ARCHITECTURES"
 #endif
 
 #ifdef USE_FKT

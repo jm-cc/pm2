@@ -29,6 +29,8 @@
 #define PROFILE_KEYMASK MARCEL_PROF_MASK
 #elif defined(MAD2_KERNEL) || defined(MAD1_KERNEL)
 #define PROFILE_KEYMASK MAD_PROF_MASK
+#elif defined(MAD3_KERNEL) || defined(MAD4_KERNEL)
+#define PROFILE_KEYMASK MAD_PROF_MASK
 #elif defined(PM2_KERNEL)
 #define PROFILE_KEYMASK PM2_PROF_MASK
 #elif defined(DSM_KERNEL)

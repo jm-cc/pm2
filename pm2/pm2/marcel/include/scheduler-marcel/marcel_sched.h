@@ -312,6 +312,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		 * la taille entre le plus haut argument de cette
 		 * fonction dans la pile et la position courante
 		 */
+		PROF_SWITCH_TO(cur->number, new_task);
 		marcel_ctx_set_new_stack(new_task, 
 					 new_task->initial_sp-
 					 (MAL(base_stack-get_sp()))
@@ -327,6 +328,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
 			// On rend la main au père
+			PROF_SWITCH_TO(marcel_self()->number, marcel_self()->father);
 			call_ST_FLUSH_WINDOWS();
 			marcel_ctx_longjmp(marcel_self()->father->ctx_yield,
 					   NORMAL_RETURN);

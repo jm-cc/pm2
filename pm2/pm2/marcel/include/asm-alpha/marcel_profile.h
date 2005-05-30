@@ -21,6 +21,3 @@
 #define MA_PROFILE_ASM_GET_TID(reg)
 #error "to write !"
 
-#define MA_PROFILE_TID(tid)
-#error "to write !"
-#endif

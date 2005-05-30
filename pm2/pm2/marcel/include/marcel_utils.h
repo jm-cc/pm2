@@ -32,3 +32,7 @@ typedef int boolean;
 typedef void* any_t;
 typedef void (*handler_func_t)(any_t);
 #endif
+
+#define MA_PROFILE_TID(tid) \
+	((long)(tid))
+

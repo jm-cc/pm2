@@ -20,7 +20,3 @@
 #define MA_PROFILE_ASM_GET_TID(reg) \
 	movl    %esp,%reg ; \
 	andl    $(~(ASM_THREAD_SLOT_SIZE-1)),%reg ;
-
-#define MA_PROFILE_TID(tid) \
-	((int)(tid) & (int)(~(THREAD_SLOT_SIZE-1)))
-

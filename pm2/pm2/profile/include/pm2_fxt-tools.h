@@ -1,6 +1,6 @@
 #ifndef __PM2_FXT_TOOLS_H__
 #define __PM2_FXT_TOOLS_H__
-#include <fxt.h>
+#include "fxt/fxt.h"
 #undef DEFAULT_TRACE_FILE
 #ifndef FUT
 #define DEFAULT_TRACE_FILE "trace_file"

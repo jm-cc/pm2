@@ -83,14 +83,16 @@
 
 #include "tbx_interface.h"
 
-#ifdef TBX_KERNEL
 #ifdef MARCEL
-/* Inclusion de marcel.h uniquement si on compile les sources de tbx 
- * avec marcel.
- * Les autres modules doivent l'inclure si nécesaire
- */
 #include "marcel.h"
-#endif
-#endif
+#endif /* MARCEL */
+
+#include "tbx_malloc_inline.h"
+//#include "tbx_slist_inline.h"
+#include "tbx_list_inline.h"
+//#include "tbx_htable_inline.h"
+//#include "tbx_string_inline.h"
+#include "tbx_darray_inline.h"
+//#include "tbx_parameter_inline.h"
 
 #endif /* TBX_H */

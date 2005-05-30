@@ -14,8 +14,25 @@
  * General Public License for more details.
  */
 
+#section macros
+#define tmalloc(size)          marcel_malloc(size, __FILE__, __LINE__)
+#define trealloc(ptr, size)    marcel_realloc(ptr, size, __FILE__, __LINE__)
+#define tcalloc(nelem, elsize) marcel_calloc(nelem, elsize, __FILE__, __LINE__)
+#define tfree(ptr)             marcel_free(ptr, __FILE__, __LINE__)
+
 #section functions
+
 void *marcel_slot_alloc(void);
 void marcel_slot_free(void *addr);
 void marcel_slot_exit(void);
+
+
+
+/* ======= MT-Safe functions from standard library ======= */
+
+
+void *marcel_malloc(unsigned size, char *file, unsigned line);
+void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
+void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
+void marcel_free(void *ptr, char *file, unsigned line);
 

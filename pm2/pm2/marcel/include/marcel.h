@@ -21,6 +21,7 @@
 
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
+#include "marcel_alloc___macros.h"
 #include "sys/marcel_flags.h"
 
 __TBX_BEGIN_DECLS
@@ -137,6 +138,7 @@ __TBX_END_DECLS
 #include "marcel_timing.h"
 #include "marcel_stdio.h"
 
+#include "marcel_alloc___functions.h"
 #include "tbx.h"
 #include "pm2_profile.h"
 
@@ -166,17 +168,5 @@ static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
 unsigned long marcel_cachedthreads(void);
 
 int  marcel_test_activity(void);
-
-/* ======= MT-Safe functions from standard library ======= */
-
-#define tmalloc(size)          marcel_malloc(size, __FILE__, __LINE__)
-#define trealloc(ptr, size)    marcel_realloc(ptr, size, __FILE__, __LINE__)
-#define tcalloc(nelem, elsize) marcel_calloc(nelem, elsize, __FILE__, __LINE__)
-#define tfree(ptr)             marcel_free(ptr, __FILE__, __LINE__)
-
-void *marcel_malloc(unsigned size, char *file, unsigned line);
-void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
-void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
-void marcel_free(void *ptr, char *file, unsigned line);
 
 #endif // MARCEL_EST_DEF

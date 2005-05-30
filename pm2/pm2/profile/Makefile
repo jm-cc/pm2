@@ -26,7 +26,9 @@ endif
 
 .PHONY: default libs fut_files
 
-libs: $(MOD_GEN_INC)/fut_entries.h $(MOD_GEN_BIN)/fut_print ./include/fut.h
+#libs: $(MOD_GEN_BIN)/fut_print
+libs: $(MOD_GEN_INC)/fut_entries.h
+#libs: ./include/fut.h
 
 $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
 	$(COMMON_BUILD)
@@ -36,13 +38,21 @@ $(MOD_GEN_BIN)/fut_print: $(MOD_GEN_INC)/fut_entries.h
 
 $(MOD_GEN_BIN)/fut_print: ./bin/src/fut_print.c
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lbfd -lfxt -DFUT
+	$(COMMON_MAIN) $(CC) -g -o $@ -I./include -I${MOD_GEN_INC} $< -lfxt -lbfd -DFUT $(filter -L%, $(LDFLAGS))
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) touch $@
 
 # Nothing can be done at 'do_h generation time'
-dot_h: ;
+dot_h: include/fxt ;
+
+include/fxt:
+	@echo "**********************************************************"
+	@echo "Please, set a symbolic link from $(PM2_ROOT)/$(LIBRARY)/$@ to your distribution of FxT"
+	@echo 
+	@echo "ln -s .../FxT/tools $(PM2_ROOT)/$(LIBRARY)/$@"
+	@echo "**********************************************************"
+	@exit 1
 
 include $(PM2_ROOT)/make/libs-rules.mak

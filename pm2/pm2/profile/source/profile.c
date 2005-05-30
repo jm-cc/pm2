@@ -14,8 +14,8 @@
  * General Public License for more details.
  */
 
-#ifndef X86_ARCH
-#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86 ARCHITECTURES"
+#if ! defined(X86_ARCH) && ! defined(IA64_ARCH)
+#error "PROFILE FACILITIES ARE CURRENTLY ONLY AVAILABLE ON X86 AND IA64 ARCHITECTURES"
 #endif
 
 #include <stdio.h>
@@ -24,7 +24,7 @@
 #include <stdarg.h>
 
 #include "pm2_profile.h"
-#include <fxt.h>
+#include "fxt/fxt.h"
 #include "pm2_fxt-tools.h"
 
 #if !defined(PREPROC) && !defined(DEPEND)

@@ -444,7 +444,7 @@ static int lwp_start(ma_lwp_t lwp)
 */
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(lwp, 300, "Initialisation",
 				  lwp_init, "Création de RunTask",
-				  lwp_start, "PROF_NEW et bind_on_proc");
+				  lwp_start, "PROF_NEW_LWP et bind_on_proc");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(lwp, MA_INIT_LWP_MAIN_STRUCT,
 				     MA_INIT_LWP_MAIN_STRUCT_PRIO);

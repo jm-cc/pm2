@@ -98,7 +98,7 @@ for c in \
     FUT_MAIN_ENTRY_CODE \
     FUT_MAIN_EXIT_CODE
     do
-    code="`grep $c ${PM2_ROOT}/profile/include/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
+    code="`grep $c ${PM2_ROOT}/profile/include/fxt/fut.h | sed -e 's/#define[ \t]*[_A-Za-z0-9]*.*\(0x[0-9A-Fa-f]*\)/\1/'`"
     label="`echo $c | sed -e 's/^\(FUT_.*\)_CODE$/\1/' | tr A-Z a-z`"
     echo "{ $c, \"$label\" }," >> $printfile
 done

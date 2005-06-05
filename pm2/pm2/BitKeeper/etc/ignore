@@ -14,3 +14,4 @@ leo.tab
 leony/*.pyc
 marcel/autogen-include/*
 tags
+.tar-exclude

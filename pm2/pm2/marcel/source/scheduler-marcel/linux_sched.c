@@ -3090,7 +3090,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	{
 	char name[16];
 	snprintf(name,sizeof(name),"lwp%d",LWP_NUMBER(lwp));
-	PROF_ALWAYS_PROBE((FUT_RQS_NEWLWPRQ<<8)|FUT_SIZE(2),LWP_NUMBER(lwp),ma_lwp_rq(lwp));
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),LWP_NUMBER(lwp),ma_lwp_rq(lwp));
 	init_rq(ma_lwp_rq(lwp),name, MA_LWP_RQ);
 #ifdef MA__NUMA
 	if (marcel_topo_nblevels>2) {
@@ -3162,12 +3162,12 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		return;
 	}
 
-	PROF_ALWAYS_PROBE((FUT_RQS_NEWLEVEL<<8)|FUT_SIZE(2),levelnum,level->arity);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),levelnum,level->arity);
 	for (i=0;i<level->arity;i++) {
 		level_rq_num[levelnum-1]++;
 		snprintf(name,sizeof(name),"%s%d",
 			base[level->sons[i]->type],level->sons[i]->number);
-		PROF_ALWAYS_PROBE((FUT_RQS_NEWRQ<<8)|FUT_SIZE(1),&newrqs[i]);
+		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,1),&newrqs[i]);
 		init_rq(&newrqs[i], name, rqtypes[level->sons[i]->type]);
 		newrqs[i].level = levelnum;
 		newrqs[i].father = rq;
@@ -3182,8 +3182,8 @@ void __marcel_init sched_init(void)
 {
 	LOG_IN();
 
-	PROF_ALWAYS_PROBE((FUT_RQS_NEWLEVEL<<8)|FUT_SIZE(2),0,1);
-	PROF_ALWAYS_PROBE((FUT_RQS_NEWRQ<<8)|FUT_SIZE(1),&ma_main_runqueue);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),0,1);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,1),&ma_main_runqueue);
 	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;
@@ -3198,7 +3198,7 @@ void __marcel_init sched_init(void)
 	if (marcel_topo_nblevels>1)
 		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
 #endif
-	PROF_ALWAYS_PROBE((FUT_RQS_NEWLEVEL<<8)|FUT_SIZE(2),marcel_topo_nblevels-1,get_nb_lwps());
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),marcel_topo_nblevels-1,get_nb_lwps());
 
 	/*
 	 * We have to do a little magic to get the first

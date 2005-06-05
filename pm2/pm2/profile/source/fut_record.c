@@ -1,8 +1,13 @@
 
+#ifdef MARCEL
 #define MARCEL_INTERNAL_INCLUDE
 #include "marcel.h"
+#endif
 
 #include "tbx_timing.h"
+#include "tbx_compiler.h"
+#include "pm2_profile.h"
+
 #include "fxt/fxt.h"
 #include "fxt/fut.h"
 #include "fxt_format.h"

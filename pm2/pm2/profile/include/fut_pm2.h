@@ -27,7 +27,7 @@
 
 #if defined(MARCEL_KERNEL)
 #define PROFILE_KEYMASK MARCEL_PROF_MASK
-#elif defined(MAD2_KERNEL) || defined(MAD1_KERNEL)
+#elif defined(MAD4_KERNEL) || defined(MAD3_KERNEL) || defined(MAD2_KERNEL) || defined(MAD1_KERNEL)
 #define PROFILE_KEYMASK MAD_PROF_MASK
 #elif defined(MAD3_KERNEL) || defined(MAD4_KERNEL)
 #define PROFILE_KEYMASK MAD_PROF_MASK
@@ -75,6 +75,12 @@
 #define _GEN_PREPROC1(name,line,arg1) __GEN_PREPROC1(name,line,arg1)
 #define GEN_PREPROC2(name,arg1,arg2) _GEN_PREPROC2(name,__LINE__,arg1,arg2)
 #define _GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC2(name,line,arg1,arg2)
+#define GEN_PREPROC_ALWAYS(name) _GEN_PREPROC_ALWAYS(name,__LINE__)
+#define _GEN_PREPROC_ALWAYS(name,line) __GEN_PREPROC_ALWAYS(name,line)
+#define GEN_PREPROC1_ALWAYS(name,arg1) _GEN_PREPROC1_ALWAYS(name,__LINE__,arg1)
+#define _GEN_PREPROC1_ALWAYS(name,line,arg1) __GEN_PREPROC1_ALWAYS(name,line,arg1)
+#define GEN_PREPROC2_ALWAYS(name,arg1,arg2) _GEN_PREPROC2_ALWAYS(name,__LINE__,arg1,arg2)
+#define _GEN_PREPROC2_ALWAYS(name,line,arg1,arg2) __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2)
 
 #ifdef PREPROC
 
@@ -85,6 +91,9 @@
   } while(0)
 #define __GEN_PREPROC1(name,line,arg1) __GEN_PREPROC(name,line)
 #define __GEN_PREPROC2(name,line,arg1,arg2) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC_ALWAYS(name,line) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC1_ALWAYS(name,line,arg1) __GEN_PREPROC(name,line)
+#define __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2) __GEN_PREPROC(name,line)
 
 #else // ifndef PREPROC
 
@@ -104,6 +113,24 @@
   do {                                                    \
     extern unsigned __code##line asm("fut_" name "_code");\
     FUT_PROBE2(PROFILE_KEYMASK, __code##line, arg1,arg2); \
+  } while(0)
+
+#define __GEN_PREPROC_ALWAYS(name,line)                   \
+  do {                                                    \
+    extern unsigned __code##line asm("fut_" name "_code");\
+    FUT_DO_PROBE0(__code##line);                          \
+  } while(0)
+
+#define __GEN_PREPROC1_ALWAYS(name,line,arg1)             \
+  do {                                                    \
+    extern unsigned __code##line asm("fut_" name "_code");\
+    FUT_DO_PROBE1(__code##line, arg1);                    \
+  } while(0)
+
+#define __GEN_PREPROC2_ALWAYS(name,line,arg1,arg2)        \
+  do {                                                    \
+    extern unsigned __code##line asm("fut_" name "_code");\
+    FUT_DO_PROBE2(__code##line, arg1,arg2);               \
   } while(0)
 
 #endif // PREPROC
@@ -133,6 +160,9 @@
 #define PROF_EVENT(name)              GEN_PREPROC(#name "_single")
 #define PROF_EVENT1(name, arg1)       GEN_PREPROC1(#name "_single1", arg1)
 #define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(#name "_single2", arg1, arg2)
+#define PROF_EVENT_ALWAYS(name)              GEN_PREPROC_ALWAYS(#name "_single")
+#define PROF_EVENT1_ALWAYS(name, arg1)       GEN_PREPROC1_ALWAYS(#name "_single1", arg1)
+#define PROF_EVENT2_ALWAYS(name, arg1, arg2) GEN_PREPROC2_ALWAYS(#name "_single2", arg1, arg2)
 
 #else // ifndef DO_PROFILE
 
@@ -147,6 +177,9 @@
 #define PROF_EVENT(name)                      (void)0
 #define PROF_EVENT1(name, arg1)               (void)0
 #define PROF_EVENT2(name, arg1, arg2)         (void)0
+#define PROF_EVENT_ALWAYS(name)               (void)0
+#define PROF_EVENT1_ALWAYS(name, arg1)        (void)0
+#define PROF_EVENT2_ALWAYS(name, arg1, arg2)  (void)0
 
 #endif // DO_PROFILE
 

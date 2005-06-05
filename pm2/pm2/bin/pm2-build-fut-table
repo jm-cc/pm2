@@ -62,12 +62,7 @@ set -- --source-mode
 
 BUILDDIR=$_PM2CONFIG_BUILD
 
-if echo $_PM2CONFIG_CFLAGS | egrep 'MARCEL_.*(SMP|NUMA)' > /dev/null; then
-    # Mode SMP : les enregistrements comportent un paramètre supplémentaire...
-    RECORD_SIZE=16
-else
-    RECORD_SIZE=12
-fi
+RECORD_SIZE=1
 
 GENDIR=${BUILDDIR}/profile/include
 
@@ -130,10 +125,6 @@ for mod in $THE_MODULES ; do
 	    upname=`echo $name | tr a-z A-Z`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
-
-	    # The following generates the right shifted code
-	    num=$(($num * 256 + $RECORD_SIZE))
-	    xnum=`printf "0x%x" $num`
             echo "unsigned $e = $xnum ;" >> $deffile
             ;;
         *exit_code)
@@ -143,10 +134,6 @@ for mod in $THE_MODULES ; do
 	    upname=`echo $name | tr a-z A-Z`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
-
-	    # The following generates the right shifted code
-	    num=$(($num * 256 + $RECORD_SIZE))
-	    xnum=`printf "0x%x" $num`
             echo "unsigned $e = $xnum ;" >> $deffile
 
             value=$(($value + 1))
@@ -161,10 +148,6 @@ for mod in $THE_MODULES ; do
 	    upname=`echo $name | tr a-z A-Z`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
-
-	    # The following generates the right shifted code
-	    num=$(($other * 256 + $RECORD_SIZE))
-	    xnum=`printf "0x%x" $num`
             echo "unsigned $e = $xnum ;" >> $deffile
 
 	    other=$(($other + 1))
@@ -175,10 +158,6 @@ for mod in $THE_MODULES ; do
 	    upname=`echo $name | tr a-z A-Z`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
-
-	    # The following generates the right shifted code
-	    num=$(($other * 256 + $RECORD_SIZE + 4))
-	    xnum=`printf "0x%x" $num`
             echo "unsigned $e = $xnum ;" >> $deffile
 
 	    other=$(($other + 1))
@@ -189,10 +168,6 @@ for mod in $THE_MODULES ; do
 	    upname=`echo $name | tr a-z A-Z`
 	    echo "#define $upname $xnum" >> $printfile
 	    echo "{ $upname, \"$name\" }," >> $printfile
-
-	    # The following generates the right shifted code
-	    num=$(($other * 256 + $RECORD_SIZE + 8))
-	    xnum=`printf "0x%x" $num`
             echo "unsigned $e = $xnum ;" >> $deffile
 
 	    other=$(($other + 1))

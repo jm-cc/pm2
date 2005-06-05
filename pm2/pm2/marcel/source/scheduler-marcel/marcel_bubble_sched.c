@@ -207,7 +207,11 @@ int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 			currq = currq->father);
 
 		MA_BUG_ON(!currq);
-		PROF_EVENT2(bubble_sched_down,nextent,currq);
+		PROF_EVENT2(bubble_sched_down,
+			nextent->type == MARCEL_TASK_ENTITY?
+			(void*)list_entry(nextent, marcel_task_t, sched):
+			(void*)list_entry(nextent, marcel_bubble_t, sched),
+			currq);
 		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
 
 		/* on descend, l'ordre des adresses est donc correct */
@@ -276,10 +280,11 @@ int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 
 void __marcel_init bubble_sched_init() {
 	marcel_root_bubble.status=MA_BUBBLE_OPENED;
+	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);
 	marcel_root_bubble.sched.init_rq=&ma_main_runqueue;
+	PROF_EVENT2_ALWAYS(bubble_sched_down,&marcel_root_bubble,&ma_main_runqueue);
 	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
-	PROF_EVENT1(bubble_sched_new,marcel_root_bubble);
-	PROF_EVENT1(bubble_sched_explode,marcel_root_bubble);
+	PROF_EVENT1_ALWAYS(bubble_sched_explode,&marcel_root_bubble);
 }
 
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,

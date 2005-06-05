@@ -20,4 +20,4 @@
 #ifdef DO_PROFILE
 #define MA_PROFILE_ASM_GET_TID(reg)
 #error "to write !"
-
+#endif

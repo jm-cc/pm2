@@ -26,8 +26,11 @@ typedef p_marcel_task_t marcel_t;
 
 #section marcel_macros
 
+/* à préférer lorsque l'on veut accéder à un champ d'un marcel_t */
 #define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
 #define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
+
+/* à préférer lorsque l'on veut accéder à un champ du thread courant (tls un jour... */
 #define SELF_GETMEM(field)	THREAD_GETMEM(MARCEL_SELF, field)
 #define SELF_SETMEM(field, value) THREAD_SETMEM(MARCEL_SELF, field, value)
 

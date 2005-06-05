@@ -29,6 +29,9 @@
 #error The GNU C Compiler is required to build this tool
 #endif // __GNUC__
 
+void
+leonie_failure_cleanup(void);
+
 #define FAILURE_CLEANUP() leonie_failure_cleanup()
 
 #include "tbx.h"

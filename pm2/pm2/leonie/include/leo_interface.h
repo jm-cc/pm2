@@ -182,9 +182,6 @@ void
 leo_error(const char *command) TBX_NORETURN;
 
 void
-leonie_failure_cleanup(void);
-
-void
 leonie_processes_cleanup(void);
 
 // Helpers

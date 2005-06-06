@@ -53,6 +53,9 @@ void bench_cond(unsigned nb)
   n = nb >> 1;
   n++;
 
+#ifdef PROFILE
+   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+#endif
   marcel_cond_init(&cond, NULL);
   marcel_mutex_init(&mutex, NULL);
   marcel_sem_init(&sem, 0);
@@ -67,6 +70,9 @@ void bench_cond(unsigned nb)
   marcel_mutex_unlock(&mutex);
 
   marcel_join(pid, &status);
+#ifdef PROFILE
+   profile_stop();
+#endif
 }
 
 int marcel_main(int argc, char *argv[])

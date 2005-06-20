@@ -663,6 +663,8 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
 void
 mad_mx_adapter_init(p_mad_adapter_t a) {
         p_mad_mx_adapter_specific_t	as	= NULL;
+        uint64_t                        nic_id;
+        char                            hostname[MX_MAX_HOSTNAME_LEN];
 
         LOG_IN();
         as		= TBX_MALLOC(sizeof(mad_mx_adapter_specific_t));
@@ -674,7 +676,13 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
         }
 
         a->specific	= as;
-        a->parameter	= tbx_strdup("-");
+
+        /* ID of the first Myrinet card */
+        mx_board_number_to_nic_id(0, &nic_id);
+        /* Hostname attached to this ID */
+        mx_nic_id_to_hostname(nic_id, hostname);
+
+        a->parameter	= tbx_strdup(hostname);
         LOG_OUT();
 }
 
@@ -768,21 +776,9 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
         cs	= cnx->specific;
         chs	= cnx->channel->specific;
 
-        r_hostname_len	= strlen(ai->dir_node->name) + 2;
+        r_hostname_len	= strlen(ai->dir_adapter->parameter) + 2;
         r_hostname	= TBX_MALLOC(r_hostname_len + 1);
-        strcpy(r_hostname, ai->dir_node->name);
-
-        {
-                char *tmp = NULL;
-
-                tmp = strchr(r_hostname, '.');
-                if (tmp) {
-                        *tmp = '\0';
-                }
-        }
-
-        strcat(r_hostname, ":0");
-
+        strcpy(r_hostname, ai->dir_adapter->parameter);
 
         {
                 char *ptr = NULL;

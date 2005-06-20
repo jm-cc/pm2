@@ -30,6 +30,10 @@
 // Uncomment the following line if you are using a version >= to 1.0.0
 //#define MX_VERSION_AFTER_1_0_0
 
+#ifdef MX_VERSION_AFTER_1_0_0
+#define MX_MATCH_MASK_BC   ((uint64_t)0xffffffff << 32)
+#endif
+
 /*
  * macros
  * ------

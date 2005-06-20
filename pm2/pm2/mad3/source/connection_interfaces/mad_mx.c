@@ -27,6 +27,9 @@
 
 #include <myriexpress.h>
 
+// Uncomment the following line if you are using a version >= to 1.0.0
+//#define MX_VERSION_AFTER_1_0_0
+
 /*
  * macros
  * ------
@@ -378,7 +381,11 @@ mad_mx_startup_info(void) {
 
         // NICs count
         mad_mx_lock();
+#ifdef MX_VERSION_AFTER_1_0_0
+        return_code = mx_get_info(NULL, MX_NIC_COUNT, &nb_nic, sizeof(nb_nic), &nb_nic, sizeof(nb_nic));
+#else // ! MX_VERSION_AFTER_1_0_0
         return_code = mx_get_info(NULL, MX_NIC_COUNT, &nb_nic, sizeof(nb_nic));
+#endif // MX_VERSION_AFTER_1_0_0
         nb_nic = nb_nic & 0xff;
 
         mad_mx_unlock();
@@ -390,7 +397,11 @@ mad_mx_startup_info(void) {
         mad_mx_check_return("mad_mx_startup_info", return_code);
 
         mad_mx_lock();
+#ifdef MX_VERSION_AFTER_1_0_0
+        return_code = mx_get_info(NULL, MX_NIC_IDS, nic_id_array, (nb_nic+1) * sizeof(*nic_id_array), nic_id_array, (nb_nic+1) * sizeof(*nic_id_array));
+#else // ! MX_VERSION_AFTER_1_0_0
         return_code = mx_get_info(NULL, MX_NIC_IDS, nic_id_array, (nb_nic+1) * sizeof(*nic_id_array));
+#endif // MX_VERSION_AFTER_1_0_0
         mad_mx_unlock();
         mad_mx_check_return("mad_mx_startup_info", return_code);
 
@@ -402,7 +413,11 @@ mad_mx_startup_info(void) {
 
         // Number of native endpoints
         mad_mx_lock();
+#ifdef MX_VERSION_AFTER_1_0_0
+        return_code = mx_get_info(NULL, MX_MAX_NATIVE_ENDPOINTS, &nb_native_ep, sizeof(nb_native_ep), &nb_native_ep, sizeof(nb_native_ep));
+#else // ! MX_VERSION_AFTER_1_0_0
         return_code = mx_get_info(NULL, MX_MAX_NATIVE_ENDPOINTS, &nb_native_ep, sizeof(nb_native_ep));
+#endif // MX_VERSION_AFTER_1_0_0
         mad_mx_unlock();
         mad_mx_check_return("mad_mx_startup_info", return_code);
         DISP("Native endpoint count: %d", nb_native_ep);

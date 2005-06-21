@@ -668,7 +668,9 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
         mad_mx_check_return("mx_init", return_code);
 
         /* debug only */
+#ifndef MX_NO_STARTUP_INFO
         mad_mx_startup_info();
+#endif // MX_NO_STARTUP_INFO
 
 #ifdef MARCEL
         if (!mad_mx_ev_server_started) {

@@ -1,1 +1,0 @@
-../options/106actnuma.sh

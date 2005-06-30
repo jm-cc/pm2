@@ -1,1 +1,0 @@
-../options/011parano_malloc.sh

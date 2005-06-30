@@ -1,1 +1,0 @@
-../options/02no_min_packs_on_page_send.sh

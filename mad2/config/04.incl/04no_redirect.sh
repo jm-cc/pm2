@@ -1,1 +1,0 @@
-../options/04no_redirect.sh

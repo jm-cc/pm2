@@ -1,1 +1,0 @@
-../options/03spinlock.sh

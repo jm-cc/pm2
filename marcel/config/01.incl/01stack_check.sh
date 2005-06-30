@@ -1,1 +1,0 @@
-../options/01stack_check.sh

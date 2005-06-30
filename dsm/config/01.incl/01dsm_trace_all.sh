@@ -1,1 +1,0 @@
-../options/01dsm_trace_all.sh

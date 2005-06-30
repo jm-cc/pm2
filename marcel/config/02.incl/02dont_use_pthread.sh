@@ -1,1 +1,0 @@
-../options/02dont_use_pthread.sh

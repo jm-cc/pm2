@@ -1,1 +1,0 @@
-../options/101app_spawn.sh

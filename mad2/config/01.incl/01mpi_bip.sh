@@ -1,1 +1,0 @@
-../options/01mpi_bip.sh

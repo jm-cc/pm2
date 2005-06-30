@@ -1,1 +1,0 @@
-../options/123main_as_func.sh

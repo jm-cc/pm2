@@ -1,1 +1,0 @@
-../options/100auto_spawn.sh

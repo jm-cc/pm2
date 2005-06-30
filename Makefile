@@ -202,6 +202,8 @@ linksinit modules ARCHITECTURES: $(if $(wildcard README),,README)
 
 bkinit: optionsinit
 
+svninit: optionsinit
+
 cvsinit: linksinit optionsinit
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :

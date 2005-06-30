@@ -1,0 +1,1 @@
+../options/192build_dynamic.sh

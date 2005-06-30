@@ -1,0 +1,1 @@
+../options/01mxno_startup_info.sh

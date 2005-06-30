@@ -1,0 +1,1 @@
+../options/02smp_bind_proc.sh

@@ -41,7 +41,7 @@
  * Driver registration
  * -------------------
  */
-static void (*mad_driver_registration[])(p_mad_driver_t driver) =
+static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 {
 #ifdef DRV_TCP
   mad_tcp_register,
@@ -52,9 +52,21 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_VRP
   mad_vrp_register,
 #endif /* DRV_VRP */
+#ifdef DRV_UDP
+  mad_udp_register,
+#endif /* DRV_UDP */
+#ifdef DRV_VIA
+  mad_via_register,
+#endif /* DRV_VIA */
 #ifdef DRV_SISCI
   mad_sisci_register,
 #endif /* DRV_SISCI */
+#ifdef DRV_SBP
+  mad_sbp_register,
+#endif /* DRV_SBP */
+#ifdef DRV_MPI
+  mad_mpi_register,
+#endif /* DRV_MPI */
 #ifdef DRV_BIP
   mad_bip_register,
 #endif /* DRV_BIP */
@@ -64,6 +76,9 @@ static void (*mad_driver_registration[])(p_mad_driver_t driver) =
 #ifdef DRV_MX
   mad_mx_register,
 #endif /* DRV_MX */
+#ifdef DRV_QUADRICS
+  mad_quadrics_register,
+#endif /* DRV_QUADRICS */
 #ifdef MARCEL /* Forwarding Transmission Module */
   mad_forward_register,
 #endif /* MARCEL */
@@ -91,33 +106,28 @@ static p_mad_madeleine_t main_madeleine = NULL;
  * Functions
  * ---------------
  */
-
 static
 void
 mad_driver_register(p_mad_madeleine_t madeleine)
 {
-  p_tbx_htable_t  driver_htable = NULL;
+  p_tbx_htable_t  device_htable = NULL;
   mad_driver_id_t drv           =   -1;
 
   LOG_IN();
-  driver_htable = madeleine->driver_htable;
+  device_htable = madeleine->device_htable;
 
   for (drv = 0; drv < mad_driver_number; drv++)
     {
-      p_mad_driver_t driver = NULL;
+      p_mad_driver_interface_t  interface	= NULL;
+      char                     *device_name	= NULL;
 
-      driver = mad_driver_cons();
-
-      driver->madeleine      = madeleine;
-      driver->adapter_htable = tbx_htable_empty_table();
-      driver->interface      = mad_driver_interface_cons();
-
-      mad_driver_registration[drv](driver);
-
-      tbx_htable_add(driver_htable, driver->name, driver);
+      interface		= mad_driver_interface_cons();
+      device_name	= mad_driver_registration[drv](interface);
+      tbx_htable_add(device_htable, device_name, interface);
     }
   LOG_OUT();
 }
+
 
 p_mad_madeleine_t
 mad_object_init(int    argc TBX_UNUSED,

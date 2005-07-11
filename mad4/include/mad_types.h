@@ -33,4 +33,11 @@ typedef long    mad_channel_id_t,           *p_mad_channel_id_t;
 typedef int     mad_adapter_id_t,           *p_mad_adapter_id_t;
 typedef int     mad_buffer_alignment_t,     *p_mad_buffer_alignment_t;
 
+typedef uint8_t  type_t;
+typedef uint16_t rank_t;
+typedef uint8_t  channel_id_t;
+typedef uint8_t  sequence_t;
+typedef uint32_t length_t;
+typedef uint8_t  nb_seg_t;
+
 #endif /* MAD_TYPES_H */

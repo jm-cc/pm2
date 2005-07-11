@@ -221,6 +221,41 @@ mad_dir_adapter_get(void)
 }
 
 static
+p_mad_dir_driver_process_specific_t
+mad_dir_driver_process_specific_get(void)
+{
+  p_mad_dir_driver_process_specific_t pi_specific        = NULL;
+  p_tbx_slist_t                       adapter_slist      = NULL;
+  p_tbx_htable_t                      adapter_htable     = NULL;
+  int                                 adapter_number = 0;
+
+  LOG_IN();
+  pi_specific    = mad_dir_driver_process_specific_cons();
+  adapter_slist  = pi_specific->adapter_slist;
+  adapter_htable = pi_specific->adapter_htable;
+
+  adapter_number = mad_leonie_receive_int();
+
+  while (adapter_number--)
+    {
+      p_mad_dir_adapter_t adapter = NULL;
+
+      adapter            = mad_dir_adapter_cons();
+      adapter->name      = mad_leonie_receive_string();
+      adapter->selector  = mad_leonie_receive_string();
+      TRACE_STR("- name", adapter->name);
+
+      tbx_slist_append(adapter_slist, adapter);
+      tbx_htable_add(adapter_htable, adapter->name, adapter);
+    }
+
+  pi_specific->parameter = mad_leonie_receive_string();
+  LOG_OUT();
+
+  return pi_specific;
+}
+
+static
 tbx_bool_t
 mad_dir_driver_process_get(p_tbx_darray_t      process_darray,
                            p_mad_dir_driver_t  dir_driver,
@@ -236,9 +271,13 @@ mad_dir_driver_process_get(p_tbx_darray_t      process_darray,
   if (driver_global_rank == -1)
     return tbx_false;
 
+  TRACE_VAL("  Driver dps for process (global rank)", driver_global_rank);
+
   driver_local_rank = mad_leonie_receive_int();
+  TRACE_VAL("  Driver dps for process (local rank)", driver_local_rank);
+
   process     = tbx_darray_get(process_darray, driver_global_rank);
-  pi_specific = mad_dir_adapter_get();
+  pi_specific = mad_dir_driver_process_specific_get();
 
   ntbx_pc_add(dir_driver->pc, process, driver_local_rank,
               dir_driver, driver_reference_name, pi_specific);
@@ -246,6 +285,8 @@ mad_dir_driver_process_get(p_tbx_darray_t      process_darray,
 
   return tbx_true;
 }
+
+
 
 static
 void
@@ -259,14 +300,16 @@ mad_dir_driver_get_driver(p_mad_madeleine_t madeleine)
   dir = madeleine->dir;
 
   dir_driver = mad_dir_driver_cons();
-  dir_driver->name = mad_leonie_receive_string();
-  TRACE_STR("Driver name", dir_driver->name);
+  dir_driver->network_name = mad_leonie_receive_string();
+  TRACE_STR("Driver name", dir_driver->network_name);
+
+  dir_driver->device_name = mad_leonie_receive_string();
+
+  tbx_htable_add(dir->driver_htable, dir_driver->network_name, dir_driver);
+  tbx_slist_append(dir->driver_slist, dir_driver);
 
   driver_reference_name =
-    mad_dir_build_reference_name("driver", dir_driver->name);
-
-  tbx_htable_add(dir->driver_htable, dir_driver->name, dir_driver);
-  tbx_slist_append(dir->driver_slist, dir_driver);
+    mad_dir_build_reference_name("driver", dir_driver->network_name);
 
   while (mad_dir_driver_process_get(dir->process_darray,
                                     dir_driver,
@@ -276,6 +319,7 @@ mad_dir_driver_get_driver(p_mad_madeleine_t madeleine)
   TBX_FREE(driver_reference_name);
   LOG_OUT();
 }
+
 
 static
 void
@@ -1032,6 +1076,99 @@ mad_dir_channels_cleanup(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
+//static
+//void
+//mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
+//{
+//  p_mad_directory_t dir           = NULL;
+//  p_tbx_htable_t    driver_htable = NULL;
+//  p_tbx_slist_t     driver_slist  = NULL;
+//
+//  LOG_IN();
+//  dir           = madeleine->dir;
+//  driver_htable = dir->driver_htable;
+//  driver_slist  = dir->driver_slist;
+//
+//  while (!tbx_slist_is_nil(driver_slist))
+//    {
+//      p_mad_dir_driver_t         dir_driver = NULL;
+//      p_ntbx_process_container_t pc         = NULL;
+//      ntbx_process_lrank_t       l_rank     =   -1;
+//
+//      dir_driver = tbx_slist_extract(driver_slist);
+//      tbx_htable_extract(driver_htable, dir_driver->name);
+//
+//      pc = dir_driver->pc;
+//
+//      if (ntbx_pc_first_local_rank(pc, &l_rank))
+//	{
+//	  do
+//	    {
+//	      p_mad_dir_driver_process_specific_t dps = NULL;
+//
+//	      dps = ntbx_pc_get_local_specific(pc, l_rank);
+//
+//	      if (dps)
+//		{
+//		  p_tbx_htable_t adapter_htable = NULL;
+//		  p_tbx_slist_t  adapter_slist  = NULL;
+//
+//		  adapter_htable = dps->adapter_htable;
+//		  adapter_slist  = dps->adapter_slist;
+//
+//		  while (!tbx_slist_is_nil(adapter_slist))
+//		    {
+//		      p_mad_dir_adapter_t dir_adapter = NULL;
+//
+//		      dir_adapter = tbx_slist_extract(adapter_slist);
+//		      tbx_htable_extract(adapter_htable, dir_adapter->name);
+//
+//		      TBX_FREE(dir_adapter->name);
+//		      dir_adapter->name = NULL;
+//
+//		      if (dir_adapter->selector)
+//			{
+//			  TBX_FREE(dir_adapter->selector);
+//			  dir_adapter->selector = NULL;
+//			}
+//
+//		      if (dir_adapter->parameter)
+//			{
+//			  TBX_FREE(dir_adapter->parameter);
+//			  dir_adapter->parameter = NULL;
+//			}
+//
+//		      dir_adapter->mtu = 0;
+//
+//		      TBX_FREE(dir_adapter);
+//		    }
+//
+//		  tbx_slist_free(adapter_slist);
+//		  dps->adapter_slist = NULL;
+//
+//		  tbx_htable_free(adapter_htable);
+//		  dps->adapter_htable = NULL;
+//		}
+//	    }
+//	  while (ntbx_pc_next_global_rank(pc, &l_rank));
+//	}
+//
+//      ntbx_pc_dest(dir_driver->pc, tbx_default_specific_dest);
+//      dir_driver->pc = NULL;
+//
+//      TBX_FREE(dir_driver->name);
+//      dir_driver->name = NULL;
+//
+//      TBX_FREE(dir_driver);
+//    }
+//
+//  tbx_slist_free(dir->driver_slist);
+//  dir->driver_slist = NULL;
+//
+//  tbx_htable_free(dir->driver_htable);
+//  dir->driver_htable = NULL;
+//  LOG_OUT();
+//}
 static
 void
 mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
@@ -1052,7 +1189,9 @@ mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
       ntbx_process_lrank_t       l_rank     =   -1;
 
       dir_driver = tbx_slist_extract(driver_slist);
-      tbx_htable_extract(driver_htable, dir_driver->name);
+      tbx_htable_extract(driver_htable, dir_driver->network_name);
+
+      TRACE_STR("Cleaning dir_driver instance", dir_driver->network_name);
 
       pc = dir_driver->pc;
 
@@ -1062,6 +1201,7 @@ mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
 	    {
 	      p_mad_dir_driver_process_specific_t dps = NULL;
 
+              TRACE_VAL("Cleaning dps for process", l_rank);
 	      dps = ntbx_pc_get_local_specific(pc, l_rank);
 
 	      if (dps)
@@ -1104,16 +1244,22 @@ mad_dir_driver_cleanup(p_mad_madeleine_t madeleine)
 
 		  tbx_htable_free(adapter_htable);
 		  dps->adapter_htable = NULL;
+
+                  TBX_FREE(dps->parameter);
+                  dps->parameter = NULL;
 		}
 	    }
-	  while (ntbx_pc_next_global_rank(pc, &l_rank));
+	  while (ntbx_pc_next_local_rank(pc, &l_rank));
 	}
 
       ntbx_pc_dest(dir_driver->pc, tbx_default_specific_dest);
       dir_driver->pc = NULL;
 
-      TBX_FREE(dir_driver->name);
-      dir_driver->name = NULL;
+      TBX_FREE(dir_driver->device_name);
+      dir_driver->device_name = NULL;
+
+      TBX_FREE(dir_driver->network_name);
+      dir_driver->network_name = NULL;
 
       TBX_FREE(dir_driver);
     }

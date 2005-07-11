@@ -52,6 +52,12 @@ p_tbx_slist_t
 mad_end_unpacking_ext(p_mad_connection_t connection);
 
 void
+mad_wait_packs(p_mad_connection_t connection);
+
+void
+mad_wait_unpacks(p_mad_connection_t connection);
+
+void
 mad_pack(p_mad_connection_t   connection,
 	 void                *buffer,
 	 size_t               buffer_length,
@@ -60,12 +66,13 @@ mad_pack(p_mad_connection_t   connection,
 	 );
 
 void
-mad_pack_ext(p_mad_connection_t   connection,
-             void                *buffer,
-             size_t               buffer_length,
-             mad_send_mode_t      send_mode,
-             mad_receive_mode_t   receive_mode,
-             ...);
+mad_pack2(p_mad_connection_t   connection,
+          void                *buffer,
+          size_t               buffer_length,
+          mad_send_mode_t      send_mode,
+          mad_receive_mode_t   receive_mode,
+          mad_send_mode_t      next_send_mode,
+          mad_receive_mode_t   next_receive_mode);
 
 void
 mad_unpack(p_mad_connection_t   connection,
@@ -75,12 +82,15 @@ mad_unpack(p_mad_connection_t   connection,
 	 mad_receive_mode_t     receive_mode
 	 );
 
-p_tbx_slist_t
-mad_unpack_ext(p_mad_connection_t   connection,
-               void                  *buffer,
-               size_t                 buffer_length,
-               mad_send_mode_t        send_mode,
-               mad_receive_mode_t     receive_mode);
+void
+mad_unpack2(p_mad_connection_t   connection,
+            void                  *buffer,
+            size_t                 buffer_length,
+            mad_send_mode_t        send_mode,
+            mad_receive_mode_t     receive_mode,
+            mad_send_mode_t        next_send_mode,
+            mad_receive_mode_t     next_receive_mode);
+
 
 #ifdef MARCEL
 void
@@ -306,3 +316,4 @@ mad_mux_add_named_sub_channels(p_mad_channel_t xchannel);
 #endif // MARCEL
 
 #endif /* MAD_COMMUNICATION_INTERFACE_H */
+

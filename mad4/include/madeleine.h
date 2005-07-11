@@ -64,10 +64,18 @@
 #include "mad_buffers.h"
 #include "mad_link.h"
 #include "mad_connection.h"
+
+#include "mad_pending_communication.h"
+#include "mad_iovec_builder.h"
+#include "mad_optimizer.h"
+
 #include "mad_channel.h"
 #include "mad_adapter.h"
 #include "mad_directory.h"
+
+#include "mad_sender_receiver.h"
 #include "mad_driver_interface.h"
+
 #include "mad_driver.h"
 #include "mad_forward.h"
 #include "mad_mux.h"

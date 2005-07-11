@@ -23,24 +23,43 @@
 
 typedef struct s_mad_adapter_info
 {
-  p_mad_dir_node_t     dir_node;
-  p_mad_dir_adapter_t  dir_adapter;
-  char                *channel_parameter;
-  char                *connection_parameter;
+    p_mad_dir_node_t     dir_node;
+    p_mad_dir_adapter_t  dir_adapter;
+    char                *channel_parameter;
+    char                *connection_parameter;
 } mad_adapter_info_t;
 
 typedef struct s_mad_adapter
 {
-  // Common use fields
-  TBX_SHARED;
-  p_mad_driver_t           driver;
-  mad_adapter_id_t         id;
-  char                    *selector;
-  char                    *parameter;
-  unsigned int             mtu;
-  p_tbx_htable_t           channel_htable;
-  p_mad_dir_adapter_t      dir_adapter;
-  p_mad_driver_specific_t  specific;
+    // Common use fields
+    TBX_SHARED;
+    p_mad_driver_t           driver;
+    mad_adapter_id_t         id;
+    char                    *selector;
+    char                    *parameter;
+    unsigned int             mtu;
+    p_tbx_htable_t           channel_htable;
+    p_mad_dir_adapter_t      dir_adapter;
+
+    /* use for the pending communications */
+    p_mad_track_t s_track;
+    p_mad_track_t r_track;
+
+    /* for msg waiting for a transmission */
+    p_tbx_slist_t sending_list;
+    p_tbx_slist_t receiving_list;
+
+    /* unexpected msg */
+    p_tbx_slist_t waiting_list;
+
+    /* large msg waiting for an acknowlegment */
+    p_tbx_slist_t            large_mad_iovec_list;
+
+    /* waiting rdv */
+    p_tbx_slist_t            rdv_list;
+
+
+    p_mad_driver_specific_t  specific;
 } mad_adapter_t;
 
 #endif /* MAD_ADAPTER_H */

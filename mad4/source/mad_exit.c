@@ -887,12 +887,14 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 {
   p_mad_session_t      session             = NULL;
   p_mad_directory_t    dir                 = NULL;
-  p_tbx_htable_t       mad_driver_htable   = NULL;
-
+  p_tbx_htable_t       mad_network_htable  = NULL;
+  p_tbx_htable_t       mad_device_htable   = NULL;
+  
   LOG_IN();
-  session           = madeleine->session;
-  dir               = madeleine->dir;
-  mad_driver_htable = madeleine->driver_htable;
+  session            = madeleine->session;
+  dir                = madeleine->dir;
+  mad_network_htable = madeleine->network_htable;
+  mad_device_htable  = madeleine->device_htable;
 
   // Adapters
   while (1)
@@ -909,9 +911,9 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
           break;
         }
 
-      mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
+      mad_driver = tbx_htable_get(mad_network_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver not available");
+	FAILURE("driver instance not found");
 
       TRACE_STR("Shutting down adapters of driver", driver_name);
       interface = mad_driver->interface;
@@ -968,12 +970,24 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  mad_leonie_send_int(-1);
           TBX_FREE(adapter_name);
 	}
-
-      tbx_htable_free(mad_adapter_htable);
-      mad_adapter_htable         = NULL;
-      mad_driver->adapter_htable = NULL;
       TBX_FREE(driver_name);
     }
+
+#ifdef MARCEL
+  {
+    p_mad_driver_t fwd_driver = NULL;
+
+    fwd_driver = tbx_htable_get(mad_network_htable, "forward_network");
+    fwd_driver->interface->driver_exit(fwd_driver);
+  }
+
+  {
+    p_mad_driver_t mux_driver = NULL;
+
+    mux_driver = tbx_htable_get(mad_network_htable, "mux_network");
+    mux_driver->interface->driver_exit(mux_driver);
+  }
+#endif // MARCEL
 
   // Drivers
   while (1)
@@ -990,9 +1004,9 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
         }
 
       mad_driver =
-	tbx_htable_extract(mad_driver_htable, driver_name);
+	tbx_htable_get(mad_network_htable, driver_name);
       if (!mad_driver)
-	FAILURE("driver not available");
+	FAILURE("driver instance not found");
 
       TRACE_STR("Shutting down driver", driver_name);
       interface = mad_driver->interface;
@@ -1005,21 +1019,205 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  mad_driver->specific = NULL;
 	}
 
-      TBX_FREE(interface);
-      interface             = NULL;
       mad_driver->interface = NULL;
-
-      TBX_FREE(mad_driver->name);
-      mad_driver->name = NULL;
-
-      TBX_FREE(mad_driver);
-      mad_driver = NULL;
 
       mad_leonie_send_int(-1);
       TBX_FREE(driver_name);
     }
 
+
+ {
+   p_tbx_slist_t mad_network_key_slist = NULL;
+
+   mad_network_key_slist = tbx_htable_get_key_slist(mad_network_htable);
+
+   while (!tbx_slist_is_nil(mad_network_key_slist))
+     {
+       p_mad_driver_t  mad_driver  = NULL;
+       char           *network_name = NULL;
+
+       network_name = tbx_slist_extract(mad_network_key_slist);
+       mad_driver = tbx_htable_extract(mad_network_htable, network_name);
+
+
+       /* may have already be done in mad_forward_driver_exit... */
+       if (mad_driver->adapter_htable) {
+         tbx_htable_free(mad_driver->adapter_htable);
+         mad_driver->adapter_htable = NULL;
+       }
+
+       TBX_FREE(mad_driver->device_name);
+       mad_driver->device_name = NULL;
+
+       TBX_FREE(mad_driver->network_name);
+       mad_driver->network_name = NULL;
+
+       TBX_FREE(mad_driver);
+       mad_driver = NULL;
+
+       TBX_FREE(network_name);
+     }
+
+   tbx_slist_free(mad_network_key_slist);
+ }
+
+ {
+   p_tbx_slist_t mad_device_key_slist = NULL;
+
+   mad_device_key_slist = tbx_htable_get_key_slist(mad_device_htable);
+
+   while (!tbx_slist_is_nil(mad_device_key_slist))
+     {
+       p_mad_driver_interface_t  interface   = NULL;
+       char                     *device_name = NULL;
+
+       device_name = tbx_slist_extract(mad_device_key_slist);
+       interface   = tbx_htable_extract(mad_device_htable, device_name);
+
+       TBX_FREE(interface);
+       TBX_FREE(device_name);
+     }
+
+   tbx_slist_free(mad_device_key_slist);
+ }
+
   LOG_OUT();
+
+  //p_mad_session_t      session             = NULL;
+  //p_mad_directory_t    dir                 = NULL;
+  //p_tbx_htable_t       mad_driver_htable   = NULL;
+  //
+  //LOG_IN();
+  //session           = madeleine->session;
+  //dir               = madeleine->dir;
+  //mad_driver_htable = madeleine->driver_htable;
+  //
+  //// Adapters
+  //while (1)
+  //  {
+  //    p_mad_driver_t            mad_driver         = NULL;
+  //    p_mad_driver_interface_t  interface          = NULL;
+  //    p_tbx_htable_t            mad_adapter_htable = NULL;
+  //    char                     *driver_name        = NULL;
+  //
+  //    driver_name = mad_leonie_receive_string();
+  //    if (tbx_streq(driver_name, "-"))
+  //      {
+  //        TBX_FREE(driver_name);
+  //        break;
+  //      }
+  //
+  //    mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
+  //    if (!mad_driver)
+  //      FAILURE("driver not available");
+  //
+  //    TRACE_STR("Shutting down adapters of driver", driver_name);
+  //    interface = mad_driver->interface;
+  //    //mad_leonie_send_int(-1);
+  //
+  //    mad_adapter_htable = mad_driver->adapter_htable;
+  //
+  //    while (1)
+  //      {
+  //        p_mad_adapter_t  mad_adapter  = NULL;
+  //        char            *adapter_name = NULL;
+  //
+  //        adapter_name = mad_leonie_receive_string();
+  //        if (tbx_streq(adapter_name, "-"))
+  //          {
+  //            TBX_FREE(adapter_name);
+  //            break;
+  //          }
+  //
+  //        mad_adapter =
+  //          tbx_htable_extract(mad_adapter_htable, adapter_name);
+  //        if (!mad_adapter)
+  //          FAILURE("adapter not found");
+  //
+  //        TRACE_STR("Shutting down adapter", adapter_name);
+  //
+  //        if (interface->adapter_exit)
+  //          interface->adapter_exit(mad_adapter);
+  //
+  //        if (mad_adapter->selector)
+  //          {
+  //            TBX_FREE(mad_adapter->selector);
+  //            mad_adapter->selector = NULL;
+  //          }
+  //
+  //        if (mad_adapter->parameter)
+  //          {
+  //            TBX_FREE(mad_adapter->parameter);
+  //            mad_adapter->parameter = NULL;
+  //          }
+  //
+  //        if (mad_adapter->specific)
+  //          {
+  //            TBX_FREE(mad_adapter->specific);
+  //            mad_adapter->specific = NULL;
+  //          }
+  //
+  //        tbx_htable_free(mad_adapter->channel_htable);
+  //        mad_adapter->channel_htable = NULL;
+  //
+  //        TBX_FREE(mad_adapter);
+  //        mad_adapter = NULL;
+  //
+  //        mad_leonie_send_int(-1);
+  //        TBX_FREE(adapter_name);
+  //      }
+  //
+  //    tbx_htable_free(mad_adapter_htable);
+  //    mad_adapter_htable         = NULL;
+  //    mad_driver->adapter_htable = NULL;
+  //    TBX_FREE(driver_name);
+  //  }
+  //
+  //// Drivers
+  //while (1)
+  //  {
+  //    p_mad_driver_t            mad_driver  = NULL;
+  //    p_mad_driver_interface_t  interface   = NULL;
+  //    char                     *driver_name = NULL;
+  //
+  //    driver_name = mad_leonie_receive_string();
+  //    if (tbx_streq(driver_name, "-"))
+  //      {
+  //        TBX_FREE(driver_name);
+  //        break;
+  //      }
+  //
+  //    mad_driver =
+  //      tbx_htable_extract(mad_driver_htable, driver_name);
+  //    if (!mad_driver)
+  //      FAILURE("driver not available");
+  //
+  //    TRACE_STR("Shutting down driver", driver_name);
+  //    interface = mad_driver->interface;
+  //    if (interface->driver_exit)
+  //      interface->driver_exit(mad_driver);
+  //
+  //    if (mad_driver->specific)
+  //      {
+  //        TBX_FREE(mad_driver->specific);
+  //        mad_driver->specific = NULL;
+  //      }
+  //
+  //    TBX_FREE(interface);
+  //    interface             = NULL;
+  //    mad_driver->interface = NULL;
+  //
+  //    TBX_FREE(mad_driver->name);
+  //    mad_driver->name = NULL;
+  //
+  //    TBX_FREE(mad_driver);
+  //    mad_driver = NULL;
+  //
+  //    mad_leonie_send_int(-1);
+  //    TBX_FREE(driver_name);
+  //  }
+  //
+  //LOG_OUT();
 }
 
 void
@@ -1086,6 +1284,29 @@ void
 mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
 {
   LOG_IN();
+  //TBX_FREE(madeleine->dir);
+  //session_exit(madeleine->session);
+  //
+  //settings_exit(madeleine->settings);
+  //madeleine->settings = NULL;
+  //
+  //while (!tbx_slist_is_nil(madeleine->public_channel_slist))
+  //  {
+  //    tbx_slist_extract(madeleine->public_channel_slist);
+  //  }
+  //
+  //tbx_slist_free(madeleine->public_channel_slist);
+  //madeleine->public_channel_slist = NULL;
+  //
+  //tbx_htable_free(madeleine->channel_htable);
+  //madeleine->channel_htable = NULL;
+  //
+  //tbx_htable_free(madeleine->driver_htable);
+  //madeleine->driver_htable = NULL;
+  //
+  //TBX_FREE(madeleine);
+
+
   TBX_FREE(madeleine->dir);
   session_exit(madeleine->session);
 
@@ -1103,10 +1324,20 @@ mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
   tbx_htable_free(madeleine->channel_htable);
   madeleine->channel_htable = NULL;
 
-  tbx_htable_free(madeleine->driver_htable);
-  madeleine->driver_htable = NULL;
+  tbx_htable_free(madeleine->network_htable);
+  madeleine->network_htable = NULL;
+
+  tbx_htable_free(madeleine->device_htable);
+  madeleine->device_htable = NULL;
+
+  if (madeleine->dynamic)
+    {
+      TBX_FREE(madeleine->dynamic);
+      madeleine->dynamic = NULL;
+    }
 
   TBX_FREE(madeleine);
+
   LOG_OUT();
 }
 

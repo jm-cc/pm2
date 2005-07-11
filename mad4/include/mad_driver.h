@@ -31,23 +31,33 @@ typedef enum
 
 typedef struct s_mad_driver
 {
-  /* Common use fields */
-  TBX_SHARED;
-  p_mad_madeleine_t           madeleine;
-  char                       *name;
-  mad_driver_id_t             id;
+    /* Common use fields */
+    TBX_SHARED;
+    p_mad_madeleine_t           madeleine;
+    //char                       *name;
+    char                       *network_name;
+    char                       *device_name;
 
-  p_mad_driver_interface_t    interface;
+    mad_driver_id_t             id;
 
-  /* Settings */
-  mad_buffer_alignment_t      buffer_alignment;
-  mad_connection_type_t       connection_type;
+    p_mad_driver_interface_t    interface;
 
-  /* Internal use fields */
-  p_tbx_htable_t              adapter_htable;
-  p_mad_dir_driver_t          dir_driver;
+    /* Settings */
+    mad_buffer_alignment_t      buffer_alignment;
+    mad_connection_type_t       connection_type;
 
-  /*  p_ntbx_process_container_t  process_container; */
+    /* Internal use fields */
+    p_tbx_htable_t              adapter_htable;
+    p_mad_dir_driver_t          dir_driver;
+
+    ntbx_process_lrank_t        process_lrank;
+
+    /*  p_ntbx_process_container_t  process_container; */
+
+    p_tbx_slist_t               s_msg_slist;
+    p_tbx_slist_t               r_msg_slist;
+
+
 
   /* Driver specific */
   p_mad_driver_specific_t     specific;

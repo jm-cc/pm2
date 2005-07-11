@@ -22,16 +22,16 @@
 #define MAD_MAIN_H
 
 typedef enum e_mad_vrp_parameter_opcode
-  {
-    mad_op_uninitialized = 0,
-    mad_op_optional_block,
-  } mad_parameter_opcode_t, *p_mad_parameter_opcode_t;
+    {
+        mad_op_uninitialized = 0,
+        mad_op_optional_block,
+    } mad_parameter_opcode_t, *p_mad_parameter_opcode_t;
 
 typedef enum e_mad_status_opcode
-  {
-    mad_os_uninitialized = 0,
-    mad_os_lost_block,
-  } mad_status_opcode_t, *p_mad_status_opcode_t;
+    {
+        mad_os_uninitialized = 0,
+        mad_os_lost_block,
+    } mad_status_opcode_t, *p_mad_status_opcode_t;
 
 /*
  * Structures
@@ -40,42 +40,55 @@ typedef enum e_mad_status_opcode
 
 typedef struct s_mad_session
 {
-  p_ntbx_client_t      leonie_link;
-  ntbx_process_grank_t process_rank;
-  ntbx_process_grank_t session_id;
+    p_ntbx_client_t      leonie_link;
+    ntbx_process_grank_t process_rank;
+    ntbx_process_grank_t session_id;
 #ifdef MARCEL
-  marcel_t             command_thread;
+    marcel_t             command_thread;
 #endif /* MARCEL */
 } mad_session_t;
 
 typedef struct s_mad_settings
 {
-  char         *leonie_server_host_name;
-  char         *leonie_server_port;
-  tbx_bool_t    leonie_dynamic_mode;
+    char         *leonie_server_host_name;
+    char         *leonie_server_port;
+    tbx_bool_t    leonie_dynamic_mode;
 } mad_settings_t;
 
 typedef struct s_mad_dynamic
 {
-  volatile tbx_bool_t mergeable; 
-  volatile tbx_bool_t updated;
-  volatile tbx_bool_t merge_done;
-  volatile tbx_bool_t split_done;
+    volatile tbx_bool_t mergeable;
+    volatile tbx_bool_t updated;
+    volatile tbx_bool_t merge_done;
+    volatile tbx_bool_t split_done;
 } mad_dynamic_t;
 
 
 typedef struct s_mad_madeleine
 {
-  TBX_SHARED;
-  p_mad_dynamic_t     dynamic; 
-  p_mad_settings_t    settings;
-  p_mad_session_t     session;
-  p_mad_directory_t   dir;
-  p_mad_directory_t   old_dir;
-  p_mad_directory_t   new_dir;
-  p_tbx_htable_t      driver_htable;
-  p_tbx_htable_t      channel_htable;
-  p_tbx_slist_t       public_channel_slist;
+    TBX_SHARED;
+//    p_mad_dynamic_t     dynamic;
+//    p_mad_settings_t    settings;
+//    p_mad_session_t     session;
+//    p_mad_directory_t   dir;
+//    p_mad_directory_t   old_dir;
+//    p_mad_directory_t   new_dir;
+//    p_tbx_htable_t      driver_htable;
+//    p_tbx_htable_t      channel_htable;
+//    p_tbx_slist_t       public_channel_slist;
+
+    p_mad_dynamic_t     dynamic;
+    p_mad_settings_t    settings;
+    p_mad_session_t     session;
+    p_mad_directory_t   dir;
+    p_mad_directory_t   old_dir;
+    p_mad_directory_t   new_dir;
+    p_tbx_htable_t      device_htable;
+    p_tbx_htable_t      network_htable;
+    p_tbx_htable_t      channel_htable;
+    p_tbx_slist_t       public_channel_slist;
+
+    p_mad_channel_t  *channel_tab;
 } mad_madeleine_t;
 
 /*
@@ -101,8 +114,13 @@ mad_directory_init(p_mad_madeleine_t               madeleine,
 		   int                TBX_UNUSED   argc,
 		   char               TBX_UNUSED **argv);
 
+//void
+//mad_dir_driver_init(p_mad_madeleine_t   madeleine);
+
 void
-mad_dir_driver_init(p_mad_madeleine_t   madeleine);
+mad_dir_driver_init(p_mad_madeleine_t    madeleine,
+		   int                  *p_argc,
+		   char               ***p_argv);
 
 void
 mad_dir_channel_init(p_mad_madeleine_t   madeleine);
@@ -205,15 +223,15 @@ void
 mad_dir_directory_get(p_mad_madeleine_t madeleine);
 
 void
-  mad_new_directory_from_leony(p_mad_madeleine_t madeleine);
+mad_new_directory_from_leony(p_mad_madeleine_t madeleine);
 
 void
-  mad_directory_update(p_mad_madeleine_t madeleine);
+mad_directory_update(p_mad_madeleine_t madeleine);
 
 void
-  mad_directory_rollback(p_mad_madeleine_t madeleine);
+mad_directory_rollback(p_mad_madeleine_t madeleine);
 
 volatile int
-  mad_directory_is_updated(p_mad_madeleine_t madeleine);
+mad_directory_is_updated(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_MAIN_H */

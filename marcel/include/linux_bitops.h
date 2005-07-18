@@ -71,9 +71,9 @@ static __tbx_inline__ long ma_generic_ffs(long x)
  */
 
 #section marcel_functions
-extern __tbx_inline__ unsigned long ma_generic_fls(unsigned long x);
+static __tbx_inline__ unsigned long ma_generic_fls(unsigned long x);
 #section marcel_inline
-extern __tbx_inline__ unsigned long ma_generic_fls(unsigned long x)
+static __tbx_inline__ unsigned long ma_generic_fls(unsigned long x)
 {
 	int r = MA_BITS_PER_LONG;
 

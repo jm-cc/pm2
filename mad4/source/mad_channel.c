@@ -125,8 +125,8 @@ tbx_bool_t
        FAILURE("Old channel not found");
 
    mad_driver =
-     tbx_htable_get(madeleine->driver_htable, dir_channel->driver->name);
-      if (!mad_driver)
+     tbx_htable_get(madeleine->network_htable, dir_channel->driver->network_name);
+   if (!mad_driver)
      FAILURE("driver not found");
 
 

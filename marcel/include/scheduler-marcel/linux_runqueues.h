@@ -153,7 +153,7 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #define ma_task_cur_rq(p)	((p)->sched.internal.cur_rq)
 #define ma_this_rq()		(ma_task_cur_rq(MARCEL_SELF))
 #define ma_task_init_rq(p)	((p)->sched.internal.init_rq)
-#define ma_prev_rq()		(ma_per_lwp(prev_rq, (LWP_SELF)))
+#define ma_prev_rq()		(__ma_get_lwp_var(prev_rq))
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))

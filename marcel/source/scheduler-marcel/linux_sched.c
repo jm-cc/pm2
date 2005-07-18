@@ -787,8 +787,8 @@ static inline void finish_task_switch(marcel_task_t *prev)
 //	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
 //		ma_put_task_struct(prev);
 
-	if ((bubble=ma_per_lwp(bubble_towake,LWP_SELF))) {
-		ma_per_lwp(bubble_towake,LWP_SELF)=NULL;
+	if ((bubble=__ma_get_lwp_var(bubble_towake))) {
+		__ma_get_lwp_var(bubble_towake)=NULL;
 		marcel_wake_up_bubble(bubble);
 	}
 }
@@ -801,7 +801,7 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 {
 	finish_task_switch(prev);
 
-	if (tbx_unlikely(MARCEL_SELF == ma_per_lwp(idle_task, LWP_SELF))) {
+	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
 		ma_topology_lwp_idle_start(LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
 			pause();
@@ -1367,7 +1367,7 @@ static inline void rebalance_tick(ma_runqueue_t *this_rq, int idle)
 void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	//int cpu = smp_processor_id();
-	struct ma_lwp_usage_stat *lwpstat = &ma_per_lwp(lwp_usage,LWP_SELF);
+	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
 	ma_runqueue_t *rq = ma_this_rq();
 	marcel_task_t *p = MARCEL_SELF;
 
@@ -1636,7 +1636,7 @@ restart:
 #warning TODO: demander à l application de rebalancer
 #endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
-		next = ma_per_lwp(idle_task, LWP_SELF);
+		next = __ma_get_lwp_var(idle_task);
 #else
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
@@ -1727,7 +1727,7 @@ switch_tasks:
 		}
 		ma_spin_unlock(&bubble->lock);
 		if (wake_bubble)
-			ma_per_lwp(bubble_towake,LWP_SELF)=bubble;
+			__ma_get_lwp_var(bubble_towake)=bubble;
 	}
 
 	prefetch(next);
@@ -1744,11 +1744,11 @@ switch_tasks:
 	prev->sched.internal.timestamp = prev->sched.internal.last_ran = now;
 
 	if (tbx_likely(prev != next)) {
-		if (tbx_unlikely(prev == ma_per_lwp(idle_task, LWP_SELF)))
+		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task)))
 			ma_topology_lwp_idle_end(LWP_SELF);
 //		next->timestamp = now;
 //		rq->nr_switches++;
-		ma_per_lwp(current_thread, LWP_SELF) = next;
+		__ma_get_lwp_var(current_thread) = next;
 //		++*switch_count;
 
 		dequeue_task(next, next->sched.internal.array);
@@ -1764,7 +1764,7 @@ switch_tasks:
 		ma_schedule_tail(prev);
 	} else {
 		ma_spin_unlock_softirq(&rq->lock);
-		if (tbx_unlikely(MARCEL_SELF == ma_per_lwp(idle_task, LWP_SELF))
+		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
 			&& !ma_topology_lwp_idle_core(LWP_SELF))
 			pause();
 	}
@@ -1801,7 +1801,7 @@ int marcel_yield_to(marcel_t next)
 	// we suppose we don't want to go to sleep, and we're not yielding to a
 	// dontsched thread like idle or activations
 	
-	ma_per_lwp(current_thread, LWP_SELF) = next;
+	__ma_get_lwp_var(current_thread) = next;
 	dequeue_task(next, next->sched.internal.array);
 	enqueue_task(prev, prevrq->active);
 	ma_set_task_lwp(next, LWP_SELF);

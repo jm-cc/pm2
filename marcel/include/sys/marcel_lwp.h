@@ -250,7 +250,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #define ma_softirq_pending(lwp) \
    (ma_per_lwp(softirq_pending,(lwp)))
 #define ma_local_softirq_pending() \
-   (ma_softirq_pending(LWP_SELF))
+   (__ma_get_lwp_var(softirq_pending))
 
 #section marcel_variables
 #depend "linux_perlwp.h[marcel_macros]"

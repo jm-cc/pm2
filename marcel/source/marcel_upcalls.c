@@ -313,7 +313,7 @@ void locked_end() {}
 
 void marcel_upcalls_disallow(void)
 {
-	ma_per_lwp(act_info, LWP_SELF).disallowed_events=-1;
+	__ma_get_lwp_var(act_info).disallowed_events=-1;
 }
 
 static void init_act(int proc, act_param_t *param)

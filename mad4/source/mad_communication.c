@@ -35,9 +35,13 @@ mad_begin_packing(p_mad_channel_t      channel,
     connection  = tbx_darray_get(channel->out_connection_darray, remote_rank);
 
     // lock the connection
+#ifdef MARCEL
+    marcel_mutex_lock(&(connection->lock_mutex));
+#else /* MARCEL */
     if (connection->lock == tbx_true)
         FAILURE("mad_begin_packing: connection dead lock");
     connection->lock = tbx_true;
+#endif /* MARCEL*/
 
     if (interface->new_message)
         interface->new_message(connection);
@@ -160,7 +164,11 @@ mad_end_packing(p_mad_connection_t connection){
     connection->sequence = 0;
 
     // unlock the connection
+#ifdef MARCEL
+    marcel_mutex_unlock(&(connection->lock_mutex));
+#else // MARCEL
     connection->lock = tbx_false;
+#endif // MARCEL
 
     LOG_OUT();
 }
@@ -191,9 +199,13 @@ mad_begin_unpacking(p_mad_channel_t channel){
     LOG_IN();
 
     // lock the channel
-    if (channel->reception_lock == tbx_true)
+#ifdef MARCEL
+  marcel_mutex_lock(&(channel->reception_lock_mutex));
+#else /* MARCEL */
+  if (channel->reception_lock == tbx_true)
         FAILURE("mad_begin_unpacking: reception dead lock");
     channel->reception_lock = tbx_true;
+#endif /* MARCEL */
 
     interface = channel->adapter->driver->interface;
     connection = interface->receive_message(channel);
@@ -322,7 +334,12 @@ mad_end_unpacking(p_mad_connection_t connection){
     channel->sequence = 0;
 
     // unlock the channel
+#ifdef MARCEL
+    marcel_mutex_unlock(&(connection->channel->reception_lock_mutex));
+#else // MARCEL
     channel->reception_lock = tbx_false;
+#endif //MARCEL
+
     LOG_OUT();
 }
 

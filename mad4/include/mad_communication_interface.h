@@ -66,30 +66,30 @@ mad_pack(p_mad_connection_t   connection,
 	 );
 
 void
-mad_pack2(p_mad_connection_t   connection,
-          void                *buffer,
-          size_t               buffer_length,
-          mad_send_mode_t      send_mode,
-          mad_receive_mode_t   receive_mode,
-          mad_send_mode_t      next_send_mode,
-          mad_receive_mode_t   next_receive_mode);
+mad_extended_pack(p_mad_connection_t   connection,
+                  void                *buffer,
+                  size_t               buffer_length,
+                  mad_send_mode_t      send_mode,
+                  mad_receive_mode_t   receive_mode,
+                  mad_send_mode_t      next_send_mode,
+                  mad_receive_mode_t   next_receive_mode);
 
 void
 mad_unpack(p_mad_connection_t   connection,
-	 void                  *buffer,
-	 size_t                 buffer_length,
-	 mad_send_mode_t        send_mode,
-	 mad_receive_mode_t     receive_mode
-	 );
+           void                  *buffer,
+           size_t                 buffer_length,
+           mad_send_mode_t        send_mode,
+           mad_receive_mode_t     receive_mode
+           );
 
 void
-mad_unpack2(p_mad_connection_t   connection,
-            void                  *buffer,
-            size_t                 buffer_length,
-            mad_send_mode_t        send_mode,
-            mad_receive_mode_t     receive_mode,
-            mad_send_mode_t        next_send_mode,
-            mad_receive_mode_t     next_receive_mode);
+mad_extended_unpack(p_mad_connection_t   connection,
+                    void                  *buffer,
+                    size_t                 buffer_length,
+                    mad_send_mode_t        send_mode,
+                    mad_receive_mode_t     receive_mode,
+                    mad_send_mode_t        next_send_mode,
+                    mad_receive_mode_t     next_receive_mode);
 
 
 #ifdef MARCEL

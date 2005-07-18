@@ -140,7 +140,6 @@ client(p_mad_channel_t channel){
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
 
-
             mad_wait_unpacks(connection2);
 
             counter++;
@@ -155,7 +154,7 @@ client(p_mad_channel_t channel){
              sum / (NB_LOOPS * 2),
              (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
-        // on passe à la taille supérieure
+        // next length
         cur_length*=2;
         counter = 0;
         connection1 = NULL;
@@ -230,7 +229,6 @@ server(p_mad_channel_t channel){
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
 
-
             mad_wait_unpacks(connection1);
 
             counter++;
@@ -245,7 +243,7 @@ server(p_mad_channel_t channel){
         mad_end_unpacking(connection1);
         mad_end_packing(connection2);
 
-        // on passe à la taille suppérieure
+        // next length
         cur_length*=2;
         counter = 0;
         connection1 = NULL;
@@ -281,11 +279,11 @@ main(int argc, char **argv) {
     my_local_rank  = ntbx_pc_global_to_local(pc, my_global_rank);
 
     if (my_local_rank == 1) {
-        DISP("JE SUIS LE CLIENT");
+        DISP("CLIENT");
         client(channel);
 
     } else if (my_local_rank == 0) {
-        DISP("JE SUIS LE SERVEUR");
+        DISP("SERVER");
         server(channel);
     }
     common_exit(NULL);

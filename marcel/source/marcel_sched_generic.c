@@ -63,7 +63,7 @@ unsigned long marcel_createdthreads(void)
 // Utilise par les fonctions one_more_task, wait_all_tasks, etc.
 static ma_spinlock_t __wait_lock = MA_SPIN_LOCK_UNLOCKED;
 
-static LIST_HEAD(all_threads);
+static MA_DEFINE_PER_LWP(struct list_head, all_threads, {0});
 
 // Appele a chaque fois qu'une tache est creee (y compris par le biais
 // de end_hibernation).
@@ -73,7 +73,7 @@ void marcel_one_more_task(marcel_t pid)
 
 	pid->number = task_number++;
 	_main_struct.nb_tasks++;
-	list_add(&pid->all_threads,&all_threads);
+	list_add(&pid->all_threads,&__ma_get_lwp_var(all_threads));
 
 	ma_spin_unlock(&__wait_lock);
 }
@@ -124,6 +124,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 {
 	marcel_t t;
 	int nb_pids = 0;
+	ma_lwp_t lwp;
 	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
 
@@ -134,14 +135,16 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 		RAISE(CONSTRAINT_ERROR);
 
 	ma_spin_lock(&__wait_lock);
-	list_for_each_entry(t, &all_threads, all_threads) {
-		if (want_to_see(t, which)) {
-			if (nb_pids < max)
-				pids[nb_pids++] = t;
-			else
-				nb_pids++;
+	for_each_lwp_begin(lwp)
+		list_for_each_entry(t, &ma_per_lwp(all_threads,lwp), all_threads) {
+			if (want_to_see(t, which)) {
+				if (nb_pids < max)
+					pids[nb_pids++] = t;
+				else
+					nb_pids++;
+			}
 		}
-	}
+	for_each_lwp_end();
 	*nb = nb_pids;
 	ma_spin_unlock(&__wait_lock);
 }
@@ -149,11 +152,14 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
+	ma_lwp_t lwp;
 	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
 	ma_spin_lock(&__wait_lock);
-	list_for_each_entry(t, &all_threads, all_threads)
-		(*f)(t);
+	for_each_lwp_begin(lwp)
+		list_for_each_entry(t, &ma_per_lwp(all_threads,lwp), all_threads)
+			(*f)(t);
+	for_each_lwp_end()
 	ma_spin_unlock(&__wait_lock);
 }
 
@@ -276,6 +282,8 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 		/* run_task DOIT démarrer en contexte d'irq */
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 	} 
+
+	INIT_LIST_HEAD(&ma_per_lwp(all_threads, lwp));
 
 #ifdef MA__LWPS
 	/*****************************************/

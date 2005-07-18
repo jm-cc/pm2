@@ -573,6 +573,7 @@ void fastcall marcel_freeze_sched(void)
 	ma_local_bh_disable();
 	ma_preempt_disable();
 	_ma_raw_spin_lock(&ma_main_runqueue.lock);
+	/* TODO: other levels */
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;

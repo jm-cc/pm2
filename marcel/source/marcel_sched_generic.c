@@ -42,53 +42,76 @@ TBX_SECTION(".ma.main.lwp") marcel_lwp_t __main_lwp = {};
 
 MA_DEFINE_PER_LWP(marcel_task_t *, previous_thread, NULL);
 
-static struct {
-	unsigned nb_tasks;
-	boolean main_is_waiting;
-	marcel_sem_t blocked;
-} _main_struct = { 0, FALSE, };
+static MA_DEFINE_PER_LWP(boolean, main_is_waiting, FALSE);
+static MA_DEFINE_PER_LWP(unsigned, nb_tasks, 0);
+static boolean a_new_thread;
+
+// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
+static MA_DEFINE_PER_LWP(ma_spinlock_t, threadlist_lock, MA_SPIN_LOCK_UNLOCKED);
 
 unsigned marcel_nbthreads(void)
 {
-   return _main_struct.nb_tasks + 1;   /* + 1 pour le main */
+   unsigned num = 0;
+   ma_lwp_t lwp;
+   for_each_lwp_begin(lwp)
+      num += ma_per_lwp(nb_tasks,lwp)-1;
+   for_each_lwp_end();
+   return num + 1;   /* + 1 pour le main */
 }
 
-static volatile unsigned long task_number = 1;
+/* TODO: this could be an "async_t": on x86, incl is interrupt-safe (so
+ * signal-safe) for instance, and quite less costly than lock incl */
+static volatile MA_DEFINE_PER_LWP(unsigned long, task_number, 1);
+
+static MA_DEFINE_PER_LWP(struct list_head, all_threads, {0});
+
+/* TODO: utiliser plutôt le numéro de slot ? (le profilage sait se débrouiller lors de la réutilisation des numéros) (problème avec les piles allouées statiquement) */
+#define MA_MAX_LWP_THREADS 1000000
 
 unsigned long marcel_createdthreads(void)
 {
-   return task_number -1;    /* -1 pour le main */
+   unsigned long num = 0;
+   ma_lwp_t lwp;
+   for_each_lwp_begin(lwp)
+      num += ma_per_lwp(task_number,lwp)-1;
+   for_each_lwp_end();
+   return num;
 }
-
-// Utilise par les fonctions one_more_task, wait_all_tasks, etc.
-static ma_spinlock_t __wait_lock = MA_SPIN_LOCK_UNLOCKED;
-
-static MA_DEFINE_PER_LWP(struct list_head, all_threads, {0});
 
 // Appele a chaque fois qu'une tache est creee (y compris par le biais
 // de end_hibernation).
 void marcel_one_more_task(marcel_t pid)
 {
-	ma_spin_lock(&__wait_lock);
+	unsigned oldnbtasks;
+	ma_spin_lock_softirq(&__ma_get_lwp_var(threadlist_lock));
 
-	pid->number = task_number++;
-	_main_struct.nb_tasks++;
+	pid->number = LWP_NUMBER(LWP_SELF)*MA_MAX_LWP_THREADS+__ma_get_lwp_var(task_number)++;
 	list_add(&pid->all_threads,&__ma_get_lwp_var(all_threads));
+	oldnbtasks = __ma_get_lwp_var(nb_tasks)++;
 
-	ma_spin_unlock(&__wait_lock);
+	if (!oldnbtasks && &__ma_get_lwp_var(main_is_waiting))
+		a_new_thread = TRUE;
+
+	ma_spin_unlock_softirq(&__ma_get_lwp_var(threadlist_lock));
 }
 
 // Appele a chaque fois qu'une tache est terminee.
 void marcel_one_task_less(marcel_t pid)
 {
-	ma_spin_lock(&__wait_lock);
+	unsigned lwpnum = pid->number/MA_MAX_LWP_THREADS;
+	ma_lwp_t lwp;
+
+	MA_BUG_ON(lwpnum >= get_nb_lwps())
+
+	lwp = GET_LWP_BY_NUMBER(lwpnum);
+
+	ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 
 	list_del(&pid->all_threads);
-	if(((--(_main_struct.nb_tasks)) == 0) && (_main_struct.main_is_waiting)) {
-		marcel_sem_V(&_main_struct.blocked);
-	}
+	if(((--(ma_per_lwp(nb_tasks,lwp))) == 0) && (ma_per_lwp(main_is_waiting, lwp)))
+		ma_wake_up_thread(__main_thread);
 
-	ma_spin_unlock(&__wait_lock);
+	ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 }
 
 static __inline__ int want_to_see(marcel_t t, int which)
@@ -134,8 +157,8 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 		((which & SLEEPING_ONLY) && (which & NOT_SLEEPING_ONLY)))
 		RAISE(CONSTRAINT_ERROR);
 
-	ma_spin_lock(&__wait_lock);
 	for_each_lwp_begin(lwp)
+		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 		list_for_each_entry(t, &ma_per_lwp(all_threads,lwp), all_threads) {
 			if (want_to_see(t, which)) {
 				if (nb_pids < max)
@@ -144,9 +167,9 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 					nb_pids++;
 			}
 		}
+		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 	for_each_lwp_end();
 	*nb = nb_pids;
-	ma_spin_unlock(&__wait_lock);
 }
 
 void marcel_snapshot(snapshot_func_t f)
@@ -155,21 +178,21 @@ void marcel_snapshot(snapshot_func_t f)
 	ma_lwp_t lwp;
 	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
 
-	ma_spin_lock(&__wait_lock);
 	for_each_lwp_begin(lwp)
+		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 		list_for_each_entry(t, &ma_per_lwp(all_threads,lwp), all_threads)
 			(*f)(t);
+		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 	for_each_lwp_end()
-	ma_spin_unlock(&__wait_lock);
 }
 
 // Attend que toutes les taches soient terminees. Cette fonction
 // _doit_ etre appelee par la tache "main".
 static void wait_all_tasks_end(void)
 {
+	ma_lwp_t lwp_first_wait = &__main_lwp;
+	ma_lwp_t lwp;
 	LOG_IN();
-
-	lock_task();
 
 #ifdef MA__DEBUG
 	if (marcel_self() != __main_thread) {
@@ -177,17 +200,24 @@ static void wait_all_tasks_end(void)
 	}
 #endif 
 
-	ma_spin_lock(&__wait_lock);
-	
-	if(_main_struct.nb_tasks) {
-		_main_struct.main_is_waiting = TRUE;
-		ma_spin_unlock(&__wait_lock);
-		unlock_task();
-		marcel_sem_P(&_main_struct.blocked);
-	} else {
-		ma_spin_unlock(&__wait_lock);
-		unlock_task();
-	}
+	for_each_lwp_begin(lwp)
+		ma_per_lwp(main_is_waiting, lwp) = TRUE;
+	for_each_lwp_end();
+retry:
+	a_new_thread = FALSE;
+	for_each_lwp_from_begin(lwp, lwp_first_wait)
+		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+		if (ma_per_lwp(nb_tasks, lwp)) {
+			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+			ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+			lwp_first_wait = lwp;
+			fprintf(stderr,"retry\n");
+			goto retry;
+		}
+		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+	for_each_lwp_end();
+	if (a_new_thread)
+		goto retry;
 
 	LOG_OUT();
 }
@@ -276,11 +306,11 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 #endif
 	LOG_IN();
 
-	if (IS_FIRST_LWP(lwp)) {
-		marcel_sem_init(&_main_struct.blocked,0);
-	} else {
+	if (!IS_FIRST_LWP(lwp)) {
 		/* run_task DOIT démarrer en contexte d'irq */
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
+		ma_per_lwp(task_number, lwp) = 1;
+		ma_spin_lock_init(&ma_per_lwp(threadlist_lock, lwp));
 	} 
 
 	INIT_LIST_HEAD(&ma_per_lwp(all_threads, lwp));

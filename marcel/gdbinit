@@ -135,11 +135,19 @@ Prints the state of a thread
 end
 
 define marcel-threads
-  set $threade=all_threads->next
-  while $threade!=&all_threads
-    set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))
-    marcel-printthread $thread
-    set $threade=$threade->next
+  set $num=0
+  while $num<ma__nb_lwp
+    set $lwp=addr_lwp[$num]
+    if ($lwp)
+      set $all_threads=(struct list_head *)((char *)$lwp+((char *)&ma_per_lwp__all_threads-(char*)&__main_lwp))
+      set $threade=$all_threads->next
+      while $threade!=$all_threads
+        set $thread=(marcel_t)(((char*)$threade)-(unsigned)(&(((marcel_t)0)->all_threads)))
+        marcel-printthread $thread
+        set $threade=$threade->next
+      end
+    end
+    set $num = $num + 1
   end
 end
 

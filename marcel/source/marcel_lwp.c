@@ -93,9 +93,10 @@ unsigned marcel_nbvps(void)
 /**************************************************************************/
 /**************************************************************************/
 
+unsigned  ma__nb_lwp = 1;
+
 #if defined(MA__LWPS)
 
-unsigned  ma__nb_lwp;
 static unsigned __nb_processors = 1;
 
 void marcel_lwp_fix_nb_vps(unsigned nb_lwp)

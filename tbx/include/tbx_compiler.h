@@ -210,4 +210,9 @@ void __memory_barrier(void);
 # define __TBX_END_DECLS
 #endif
 
+#ifdef NOINLINE
+#undef __tbx_inline__
+#define __tbx_inline__ TBX_UNUSED
+#endif
+
 #endif /* TBX_COMPILER_H_EST_DEF */

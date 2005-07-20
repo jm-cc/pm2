@@ -29,7 +29,7 @@ any_t f(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -47,7 +47,7 @@ any_t f2(any_t arg)
   }
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("contsw'time (schedule+switch) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -61,7 +61,7 @@ any_t f3(any_t arg)
     marcel_yield();
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (schedule) =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("contsw'time (schedule) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -75,7 +75,7 @@ any_t f4(any_t arg)
     marcel_yield_to(__main_thread);
   TBX_GET_TICK(t2);
 
-  printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("contsw'time (yield_to) =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(long)arg);
   return NULL;
 }
 
@@ -84,15 +84,16 @@ extern void stop_timer(void);
 void bench_setjmp(unsigned nb)
 {
   tbx_tick_t t1, t2;
+  int i = nb;
   jmp_buf buf;
 
   TBX_GET_TICK(t1);
-  while(--nb) {
+  while(--i) {
     setjmp(buf);
   }
   TBX_GET_TICK(t2);
 
-  printf("setjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("setjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
  
 }
@@ -111,7 +112,7 @@ void bench_longjmp(unsigned nb)
   }
   TBX_GET_TICK(t2);
 
-  printf("longjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("longjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
  
 }

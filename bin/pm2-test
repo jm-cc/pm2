@@ -69,7 +69,7 @@ do_the_test()
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
     (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
 #    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
-    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2test_error "Execution failed"
+    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || [ `cat /tmp/pm2test_${USER}_status` -eq 142 ] || pm2test_error "Execution failed"
 
     # Destruction de la flavor
     #echo "Cleaning flavor & files..."
@@ -79,7 +79,7 @@ do_the_test()
     # Le moment de verite
     echo "Checking results..."
 #    if head -$nbl /tmp/pm2test_${USER}_result | diff - /tmp/pm2test_${USER}_expected ; then
-    if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl - | diff - /tmp/pm2test_${USER}_expected ; then
+    if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl - | diff -u - /tmp/pm2test_${USER}_expected ; then
 	echo "Test ok!"
     else
 	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"

@@ -60,6 +60,9 @@ void clone_slave(clone_t *c)
 #ifdef FP_FIELD
   (long)FP_FIELD(buf) = (long)FP_FIELD(buf) + clone_my_delta();
 #endif
+#ifdef BSP_FIELD
+  (long)BSP_FIELD(buf) = (long)BSP_FIELD(buf) + clone_my_delta();
+#endif
 
   marcel_mutex_unlock(&c->mutex);
 

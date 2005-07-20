@@ -37,7 +37,7 @@ any_t f(any_t arg)
   TBX_GET_TICK(t2);
   marcel_mutex_unlock(&mutex);
 
-  printf("cond'time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
+  printf("cond'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)(int)arg);
   return NULL;
 }
 

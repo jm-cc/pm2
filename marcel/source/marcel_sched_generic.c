@@ -205,13 +205,13 @@ static void wait_all_tasks_end(void)
 	for_each_lwp_end();
 retry:
 	a_new_thread = FALSE;
-	for_each_lwp_from_begin(lwp, lwp_first_wait)
+	for_each_lwp_begin(lwp)//, lwp_first_wait)
 		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
 		if (ma_per_lwp(nb_tasks, lwp)) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));
+			ma_schedule();
 			lwp_first_wait = lwp;
-			fprintf(stderr,"retry\n");
 			goto retry;
 		}
 		ma_spin_unlock_softirq(&ma_per_lwp(threadlist_lock, lwp));

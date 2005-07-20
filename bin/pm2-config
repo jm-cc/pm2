@@ -388,14 +388,22 @@ pm2config_set_vars()
     done
 
     # early LDFLAGS
-    for _lib in $PM2_LIBS ; do
+    for _lib in $PM2_LIBS appli common ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
+	eval _flags=\"'$'PM2_${_LIB}_EARLY_OBJECT_FILES\"
+	for _f in $_flags ; do
+	    eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS \$_PM2CONFIG_${_lib}_OBJ_DIR/$_f\"
+
+	done
+
     done
-    for _lib in appli common ; do
-	eval _LIB='$'${_lib}_to_upper
-	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
-    done
+
+#    for _lib in appli common ; do
+#	eval _LIB='$'${_lib}_to_upper
+#	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
+#    done
+
     export _PM2CONFIG_EARLY_LDFLAGS
 
     # LDFLAGS

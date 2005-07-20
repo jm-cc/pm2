@@ -395,13 +395,12 @@ pm2config_set_vars()
     for _lib in $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
-	export _PM2CONFIG_EARLY_LDFLAGS
     done
     for _lib in appli common ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
-	export _PM2CONFIG_EARLY_LDFLAGS
     done
+    export _PM2CONFIG_EARLY_LDFLAGS
 
     # LDFLAGS
     _requested=""

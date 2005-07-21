@@ -79,8 +79,7 @@ do_the_test()
 
     # Le moment de verite
     echo "Checking results..."
-#    if head -$nbl /tmp/pm2test_${USER}_result | diff - /tmp/pm2test_${USER}_expected ; then
-    if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl - | diff -u - /tmp/pm2test_${USER}_expected ; then
+    if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl | diff -u /tmp/pm2test_${USER}_expected - ; then
 	echo "Test ok!"
     else
 	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"

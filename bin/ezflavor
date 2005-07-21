@@ -85,6 +85,13 @@ if [ ! -x "${PROG}" ]; then
 	-- ${@:+"$@"}
 fi
 
-exec ${PROG} ${@:+"$@"}
+if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a "$flavor" = "ezflavor" ] ; then
+
+    exec open-x11 ${PROG} ${@:+"$@"}
+
+else
+
+    exec ${PROG} ${@:+"$@"}
+fi
 
 # End

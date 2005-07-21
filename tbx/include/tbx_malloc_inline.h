@@ -72,13 +72,19 @@ tbx_aligned_free (void *ptr,
  * ---------------------
  */
 #if 0
-#define TBX_MALLOC_DEBUG_NAME ("madeleine/buffers")
+#  define TBX_MALLOC_DEBUG_NAME ("madeleine/buffers")
 #else
-#define TBX_MALLOC_DEBUG_NAME NULL
+#  define TBX_MALLOC_DEBUG_NAME NULL
 #endif
 
-#define TBX_MALLOC_BTRACE_DEPTH  0
-#define TBX_MALLOC_DEBUG_LEN  (TBX_MALLOC_BTRACE_DEPTH*sizeof(void *))
+#if !defined(DARWIN_SYS)
+#  define TBX_MALLOC_BTRACE_DEPTH  0
+#  define TBX_MALLOC_DEBUG_LEN  (TBX_MALLOC_BTRACE_DEPTH*sizeof(void *))
+#else
+   /* no backtrace function in Darwin C library */
+#  define TBX_MALLOC_BTRACE_DEPTH  0
+#  define TBX_MALLOC_DEBUG_LEN     0
+#endif /* !DARWIN_SYS */
 
 static
 __inline__
@@ -164,10 +170,10 @@ tbx_malloc(p_tbx_memory_t mem)
     pm2debug("tbx_malloc(%s): 0x%p\n", mem->name, ptr);
   }
 
-  if (TBX_MALLOC_DEBUG_LEN) {
-    backtrace(ptr, TBX_MALLOC_BTRACE_DEPTH);
-    ptr += TBX_MALLOC_DEBUG_LEN;
-  }
+#if TBX_MALLOC_BTRACE_DEPTH
+  backtrace(ptr, TBX_MALLOC_BTRACE_DEPTH);
+  ptr += TBX_MALLOC_DEBUG_LEN;
+#endif /* TBX_MALLOC_BTRACE_DEPTH */
 
   mem->nb_allocated++;
   TBX_UNLOCK_SHARED(mem);
@@ -182,10 +188,10 @@ tbx_free(p_tbx_memory_t  mem,
 	 void           *ptr)
 {
   TBX_LOCK_SHARED(mem);
-  if (TBX_MALLOC_DEBUG_LEN) {
-    ptr -= TBX_MALLOC_DEBUG_LEN;
-    memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
-  }
+#if TBX_MALLOC_BTRACE_DEPTH
+  ptr -= TBX_MALLOC_DEBUG_LEN;
+  memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
+#endif /* TBX_MALLOC_BTRACE_DEPTH */
 
   if (TBX_MALLOC_DEBUG_NAME && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
     pm2debug("tbx_free(%s): 0x%p\n", mem->name, ptr);

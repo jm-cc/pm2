@@ -383,7 +383,7 @@ mad_forward_read_block_header(p_mad_channel_t    mad_vchannel,
   p_mad_buffer_t            fbh_buffer = NULL;
   p_mad_driver_interface_t  interface  = NULL;
   p_mad_link_t              lnk        = NULL;
-  char                     *data       = NULL;
+  unsigned char            *data       = NULL;
   tbx_bool_t                no_data    = tbx_false;
 
   LOG_IN();

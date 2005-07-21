@@ -399,11 +399,6 @@ pm2config_set_vars()
 
     done
 
-#    for _lib in appli common ; do
-#	eval _LIB='$'${_lib}_to_upper
-#	eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
-#    done
-
     export _PM2CONFIG_EARLY_LDFLAGS
 
     # LDFLAGS

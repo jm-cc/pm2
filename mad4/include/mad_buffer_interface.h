@@ -22,6 +22,8 @@
 #ifndef MAD_BUFFER_INTERFACE_H
 #define MAD_BUFFER_INTERFACE_H
 
+#include "tbx_compiler.h"
+
 p_mad_buffer_t
 mad_get_user_send_buffer(void   *ptr, 
 			 size_t  length);
@@ -30,6 +32,7 @@ p_mad_buffer_t
 mad_get_user_receive_buffer(void   *ptr, 
 			    size_t  length);
 
+TBX_FMALLOC
 p_mad_buffer_t
 mad_alloc_buffer(size_t length);
 

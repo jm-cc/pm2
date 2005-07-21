@@ -28,6 +28,8 @@
 #ifndef TBX_INTERFACE_H
 #define TBX_INTERFACE_H
 
+#include "tbx_compiler.h"
+
 /*
  * Common
  * ------
@@ -67,6 +69,7 @@ tbx_tick2usec(long long t);
  * Aligned malloc
  * --------------
  */
+TBX_FMALLOC
 static __inline__
 void *
 tbx_aligned_malloc(const size_t      size,
@@ -91,11 +94,13 @@ tbx_get_print_stats_mode(void);
 void
 tbx_safe_malloc_init(void);
 
+TBX_FMALLOC
 void *
 tbx_safe_malloc(const size_t    size,
 		const char     *file,
 		const unsigned  line);
 
+TBX_FMALLOC
 void *
 tbx_safe_calloc(const size_t    nmemb,
 		const size_t    size,
@@ -110,6 +115,7 @@ tbx_safe_free(void           *ptr,
 void
 tbx_safe_malloc_check(const tbx_safe_malloc_mode_t mode);
 
+TBX_FMALLOC
 void *
 tbx_safe_realloc(void     *ptr,
 		 const size_t    size,
@@ -129,6 +135,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
 		long            initial_block_number,
                 const char     *name);
 
+TBX_FMALLOC
 static
 __inline__
 void *
@@ -256,6 +263,7 @@ tbx_slist_clear(p_tbx_slist_t slist);
 void
 tbx_slist_clear_and_free(p_tbx_slist_t slist);
 
+TBX_FMALLOC
 p_tbx_slist_element_t
 tbx_slist_alloc_element(void *object);
 
@@ -437,6 +445,7 @@ void *
 tbx_slist_ref_get(const p_tbx_slist_t slist);
 
 
+TBX_FMALLOC
 p_tbx_slist_nref_t
 tbx_slist_nref_alloc(p_tbx_slist_t slist);
 

@@ -17,6 +17,10 @@
  * Mad_buffers_inline.h
  * ====================
  */
+
+#include "tbx_compiler.h"
+
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
@@ -38,6 +42,7 @@ mad_get_user_send_buffer(void   *ptr,
   return buffer;
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
@@ -230,6 +235,7 @@ mad_make_sub_buffer_pair(p_mad_buffer_t source,
   return pair;
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
@@ -254,6 +260,7 @@ mad_make_buffer_group(p_mad_buffer_group_t buffer_group,
   buffer_group->link = lnk;
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t

@@ -18,11 +18,14 @@
  * -----------------------
  */
 
+#include "tbx_compiler.h"
+
 extern p_tbx_memory_t mad_buffer_memory;
 extern p_tbx_memory_t mad_buffer_group_memory;
 extern p_tbx_memory_t mad_buffer_pair_memory;
 extern p_tbx_memory_t mad_buffer_slice_parameter_memory;
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
@@ -58,6 +61,7 @@ mad_free_buffer_struct(p_mad_buffer_t buffer)
   tbx_free(mad_buffer_memory, buffer);
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
@@ -94,6 +98,7 @@ mad_free_buffer(p_mad_buffer_t buffer)
   mad_free_buffer_struct(buffer);
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_group_t
@@ -128,6 +133,7 @@ mad_foreach_free_buffer(void *object)
   mad_free_buffer(buffer);
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_pair_t
@@ -155,6 +161,7 @@ mad_foreach_free_buffer_pair_struct(void *object)
   tbx_free(mad_buffer_pair_memory, object);
 }
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_slice_parameter_t

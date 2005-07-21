@@ -150,6 +150,7 @@ __TBX_END_DECLS
 
 /* ============== stack ============= */
 
+TBX_FMALLOC
 marcel_t marcel_alloc_stack (unsigned size) __tbx_deprecated__;
 
 unsigned long marcel_usablestack(void);

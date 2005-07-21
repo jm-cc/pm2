@@ -20,10 +20,13 @@
 
 #define DEFAULT_BLOCK_NUMBER 1024
 
+#include "tbx_compiler.h"
+
 /*
  * Aligned block allocation
  * ------------------------
  */
+TBX_FMALLOC
 static
 __inline__
 void *
@@ -135,6 +138,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
   *mem = temp_mem;
 }
 
+TBX_FMALLOC
 static
 __inline__
 void *

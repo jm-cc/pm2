@@ -20,6 +20,7 @@
 #include <sys/types.h>
 
 #include "isomalloc.h"
+#include "tbx_compiler.h"
 
 typedef struct _block_header_t {
   size_t size;
@@ -41,6 +42,7 @@ void block_init(unsigned myrank, unsigned confsize);
 
 void block_init_list(block_descr_t *descr);
 
+TBX_FMALLOC
 void *block_alloc(block_descr_t *descr, size_t size, isoaddr_attr_t *attr);
 
 void block_free(block_descr_t *descr, void * addr);

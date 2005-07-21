@@ -23,6 +23,7 @@
 #include <sys/types.h>
 
 #include "slot_alloc.h"
+#include "tbx_compiler.h"
 
 /*
 typedef struct _slot_header_t {
@@ -50,6 +51,7 @@ void slot_init_list(slot_descr_t *descr);
 
 void slot_flush_list(slot_descr_t *descr);
 
+TBX_FMALLOC
 void *slot_general_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_size, void *addr);
 
 void slot_free(slot_descr_t *descr, void * addr);

@@ -22,6 +22,8 @@
 #ifndef MAD_MEMORY_MANAGEMENT_H
 #define MAD_MEMORY_MANAGEMENT_H
 
+#include "tbx_compiler.h"
+
 void
 mad_memory_manager_init(int  TBX_UNUSED   argc,
 			char TBX_UNUSED **argv);
@@ -29,11 +31,13 @@ mad_memory_manager_init(int  TBX_UNUSED   argc,
 void
 mad_memory_manager_exit(void);
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
 mad_alloc_buffer(size_t length);
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_t
@@ -49,6 +53,7 @@ __inline__
 void
 mad_free_buffer(p_mad_buffer_t buf);
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_group_t
@@ -69,6 +74,7 @@ __inline__
 void
 mad_foreach_free_buffer(void *object);
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_pair_t
@@ -84,6 +90,7 @@ __inline__
 void
 mad_foreach_free_buffer_pair_struct(void *object);
 
+TBX_FMALLOC
 static
 __inline__
 p_mad_buffer_slice_parameter_t

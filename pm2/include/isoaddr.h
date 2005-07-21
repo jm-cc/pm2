@@ -19,6 +19,7 @@
 
 #include <sys/types.h>
 #include "sys/isoaddr_const.h"
+#include "tbx_compiler.h"
 
 #define ALIGN_UNIT 32
 #define ALIGN(x, unit) ((((unsigned long)x) + ((unit) - 1)) & ~((unit) - 1))
@@ -40,6 +41,7 @@ int isoaddr_page_index(void *addr);
 
 void *isoaddr_page_addr(int index);
 
+TBX_FMALLOC
 void *isoaddr_malloc(size_t size, size_t *granted_size, void *addr, isoaddr_attr_t *attr);
 
 void isoaddr_free(void *addr, size_t size);

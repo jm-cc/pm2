@@ -21,8 +21,9 @@
 #define tfree(ptr)             marcel_free(ptr, __FILE__, __LINE__)
 
 #section functions
+#depend "tbx_compiler.h"
 
-void *marcel_slot_alloc(void);
+TBX_FMALLOC void *marcel_slot_alloc(void);
 void marcel_slot_free(void *addr);
 void marcel_slot_exit(void);
 
@@ -31,8 +32,8 @@ void marcel_slot_exit(void);
 /* ======= MT-Safe functions from standard library ======= */
 
 
-void *marcel_malloc(unsigned size, char *file, unsigned line);
-void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
-void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
+TBX_FMALLOC void *marcel_malloc(unsigned size, char *file, unsigned line);
+TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
+TBX_FMALLOC void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
 void marcel_free(void *ptr, char *file, unsigned line);
 

@@ -32,6 +32,7 @@ extern "C" {
 #include "pm2_rpc.h"
 #include "isoaddr_attr.h"
 #include "pm2_sync.h"
+#include "tbx_compiler.h"
 
 #ifdef DSM
 #include "dsm_pm2.h"
@@ -194,6 +195,7 @@ typedef block_descr_t isomalloc_dataset_t;
 #define pm2_dataset_attach_other(task,descr) \
    block_merge_lists(descr, (block_descr_t *) task->key[_pm2_block_key])
 
+TBX_FMALLOC
 void *pm2_malloc(size_t size, isoaddr_attr_t *attr);
 
 #define pm2_isomalloc_attach_data(slot) \

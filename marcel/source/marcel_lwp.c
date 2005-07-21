@@ -191,13 +191,25 @@ unsigned marcel_lwp_add_vp(void)
 {
   marcel_lwp_t *lwp,
           *cur_lwp = GET_LWP(marcel_self());
+  static unsigned __nb_lwp = 1;
+  unsigned num;
 
   LOG_IN();
 
-  // TODO: allouer cette mémoire sur la bonne QBB pour NUMA
-  lwp = (marcel_lwp_t *)TBX_MALLOC(sizeof(marcel_lwp_t)
-				   + __ma_per_lwp_size);
+  lwp_list_lock_write();
+  {
+    if(__nb_lwp >= MA_NR_LWPS)
+      RAISE("Too many lwp\n");
+    
+    num = __nb_lwp++;
+  }
+  lwp_list_unlock_write();
+
+  lwp = (marcel_lwp_t *)marcel_malloc_node(sizeof(marcel_lwp_t)
+		  + __ma_per_lwp_size, ma_lwp_node[num]);
   memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
+
+  SET_LWP_NB(num, lwp);
 
   // Initialisation de la structure marcel_lwp_t
   ma_call_lwp_notifier(MA_LWP_UP_PREPARE, lwp);
@@ -275,7 +287,6 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
  */
 static void lwp_init(ma_lwp_t lwp)
 {
-	static unsigned __nb_lwp = 0;
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
 
@@ -299,17 +310,6 @@ static void lwp_init(ma_lwp_t lwp)
 	// LWP, on passera à 2, pour les autres, on passera à 1 sur le
 	// LWP courant.
 	//lock_task();
-
-	lwp_list_lock_write();
-	{
-		if(__nb_lwp >= MA_NR_LWPS)
-			RAISE("Too many lwp\n");
-		
-		SET_LWP_NB(__nb_lwp, lwp);
-		// Attribution du numéro protégé par le lwp_list_lock_write()
-		__nb_lwp++;
-	}
-	lwp_list_unlock_write();
 
 	if (IS_FIRST_LWP(lwp)) {
 		ma_per_lwp(run_task, lwp)=MARCEL_SELF;

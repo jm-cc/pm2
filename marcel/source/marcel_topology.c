@@ -85,6 +85,8 @@ static struct marcel_topo_level *marcel_topo_core_level;
 MA_DEFINE_PER_LWP(struct marcel_topo_level *, node_level, NULL);
 static struct marcel_topo_level *marcel_topo_node_level;
 
+int ma_lwp_node[MA_NR_LWPS];
+
 #ifdef LINUX_SYS
 #define PROCESSOR	"processor\t: "
 #define PHYSID		"physical id\t: "
@@ -187,9 +189,10 @@ static void __marcel_init look_cpuinfo(void) {
 static void __marcel_init look_libnuma(void) {
 	unsigned long *buffer,*buffer2;
 	unsigned buffersize=MARCEL_NBMAXCPUS/8;
-	unsigned i;
+	unsigned i,j;
 	unsigned nbnodes;
 	struct marcel_topo_level *node_level;
+	ma_cpu_set_t cpuset;
 
 	numa_exit_on_error=1;
 
@@ -205,6 +208,9 @@ static void __marcel_init look_libnuma(void) {
 	MA_BUG_ON(nbnodes==0);
 
 	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+1)*sizeof(*node_level))));
+
+	for (i=0;i<get_nb_lwps();i++)
+		ma_lwp_node[i]=-1;
 
 	if (!(buffer=TBX_MALLOC(buffersize))) {
 		fprintf(stderr,"no room for storing cpu mask\n");
@@ -228,8 +234,11 @@ static void __marcel_init look_libnuma(void) {
 		}
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].number=i;
-		node_level[i].cpuset=buffer[0];
-		mdebug("node %d has cpuset %lx\n",i,buffer[0]);
+		node_level[i].cpuset=cpuset=buffer[0];
+		mdebug("node %d has cpuset %lx\n",i,cpuset);
+		for (j=0;j<get_nb_lwps();j++)
+			if (MA_CPU_ISSET(j,&cpuset))
+				ma_lwp_node[j]=i;
 	}
 
 	MA_CPU_ZERO(&node_level[i].cpuset);
@@ -334,7 +343,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 #endif /* MA__LWPS */
 
 #ifdef MA__NUMA
-void *ma_node_malloc(unsigned size, int node, char *file, unsigned line) {
+void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 	void *p;
 	if (node < 0 || numa_available()==-1)
 		return marcel_malloc(size, file, line);

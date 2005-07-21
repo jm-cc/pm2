@@ -18,10 +18,12 @@
 #include "tbx_compiler.h"
 
 #section variables
+#depend "sys/marcel_lwp.h[marcel_macros]"
 unsigned marcel_nbprocessors;
 #ifndef MA__LWPS
 #define marcel_nbprocessors 1
 #endif
+int ma_lwp_node[MA_NR_LWPS];
 
 #section functions
 #ifdef MA__LWPS
@@ -154,9 +156,9 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #endif
 
 #section functions
-extern void *ma_node_malloc(unsigned size, int node, char *file,  unsigned line);
-extern void *marcel_node_malloc(unsigned size, int node);
+extern void *ma_malloc_node(unsigned size, int node, char *file,  unsigned line);
+extern void *marcel_malloc_node(unsigned size, int node);
 #ifndef MA__NUMA
-#define ma_node_malloc(size, node, file, line) marcel_malloc(size, file, line)
+#define ma_malloc_node(size, node, file, line) marcel_malloc(size, file, line)
 #endif
-#define marcel_node_malloc(size, node)	ma_node_malloc(size, node, __FILE__, __LINE__)
+#define marcel_malloc_node(size, node)	ma_malloc_node(size, node, __FILE__, __LINE__)

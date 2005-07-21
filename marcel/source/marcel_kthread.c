@@ -144,7 +144,9 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
 	/* Contraintes d'alignement (16 pour l'IA64) */
 	stack_base=(void*)(((unsigned long int)stack_base+15)&(~0xF));
-	stack_size=(sp-stack_base)&(~0xF);
+	/* On ne peut pas savoir combien la libpthread veut que cela soit
+	 * aligné, donc on aligne au maximum */
+	stack_size=1<<(ma_fls(sp-stack_base)-1);
 	if ((err=pthread_attr_setstack (&attr, stack_base, stack_size))) {
 		char s[256];
 		strerror_r(err,s,256);

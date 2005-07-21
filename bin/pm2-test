@@ -61,6 +61,7 @@ do_the_test()
 
     # Compilation
     echo "Compiling program $prog..."
+    (cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
     (cd $appdir; ${PM2_MAKE:-make} $prog FLAVOR=$flavor)
     [ $? -eq 0 ] || pm2test_error "Compilation failed"
 

@@ -154,6 +154,7 @@ mad_message_ready(p_mad_channel_t channel)
   connection->last_link       = NULL;
   connection->first_sub_buffer_group = tbx_true;
   connection->more_data       = tbx_false;
+  connection->parameter_slist = NULL;
   LOG_OUT();
   return connection;
 }

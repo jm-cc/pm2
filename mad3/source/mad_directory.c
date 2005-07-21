@@ -1300,7 +1300,7 @@ void
 }
 
 
-volatile int
+int
   mad_directory_is_updated(p_mad_madeleine_t madeleine)
 {
    tbx_bool_t res = tbx_false;

@@ -134,7 +134,9 @@ mad_object_init(int    argc TBX_UNUSED,
 		char **argv TBX_UNUSED)
 {
   p_mad_madeleine_t madeleine = NULL;
+#ifndef MAD3_PMI
   p_ntbx_client_t   client    = NULL;
+#endif /* !MAD3_PMI */
 
   LOG_IN();
   madeleine                      = mad_madeleine_cons();
@@ -151,9 +153,13 @@ mad_object_init(int    argc TBX_UNUSED,
 
   mad_driver_register(madeleine);
 
+#ifdef MAD3_PMI
+  mad_pmi_init(madeleine);
+#else /* MAD3_PMI */
   client = ntbx_client_cons();
   ntbx_tcp_client_init(client);
   madeleine->session->leonie_link = client;
+#endif /* MAD3_PMI */
 
   main_madeleine = madeleine;
   LOG_OUT();
@@ -166,6 +172,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
 		  int                 argc,
 		  char              **argv)
 {
+#ifndef MAD3_PMI
   p_mad_settings_t settings = madeleine->settings;
   tbx_flag_t       host_ok  = tbx_flag_clear;
   tbx_flag_t       port_ok  = tbx_flag_clear;
@@ -221,6 +228,7 @@ mad_cmd_line_init(p_mad_madeleine_t   madeleine,
     FAILURE("Leonie server port unspecified");
 
   LOG_OUT();
+#endif /* !MAD3_PMI */
 }
 
 void
@@ -228,6 +236,7 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
 		     int                 argc TBX_UNUSED,
 		     char              **argv TBX_UNUSED)
 {
+#ifndef MAD3_PMI
   p_mad_settings_t       settings = NULL;
   p_mad_session_t        session  = NULL;
   p_ntbx_client_t        client   = NULL;
@@ -256,6 +265,7 @@ mad_leonie_link_init(p_mad_madeleine_t   madeleine,
   TRACE_VAL("session is", session->session_id);
 
   LOG_OUT();
+#endif /* !MAD3_PMI */
 }
 
 void
@@ -264,15 +274,40 @@ mad_directory_init(p_mad_madeleine_t   madeleine,
 		   char              **argv TBX_UNUSED)
 {
   LOG_IN();
+#ifdef MAD3_PMI
+#else /* MAD3_PMI */
   mad_dir_directory_get(madeleine);
+#endif /* MAD3_PMI */
   LOG_OUT();
 }
+
+void
+mad_drivers_init(p_mad_madeleine_t   madeleine,
+                 int                 *p_argc TBX_UNUSED,
+                 char              ***p_argv TBX_UNUSED)
+{
+#ifdef MAD3_PMI
+#else /* MAD3_PMI */
+  mad_dir_driver_init(madeleine, p_argc, p_argv);
+#endif
+}
+
+void
+mad_channels_init(p_mad_madeleine_t   madeleine)
+{
+#ifdef MAD3_PMI
+#else /* MAD3_PMI */
+  mad_dir_channel_init(madeleine);
+#endif
+}
+
 
 void
 mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
 		       int                *_argc,
 		       char              **_argv)
 {
+#ifndef MAD3_PMI
   int     argc = *_argc;
   char ** argv =  _argv;
   LOG_IN();
@@ -312,6 +347,7 @@ mad_purge_command_line(p_mad_madeleine_t   madeleine TBX_UNUSED,
     }
 
   LOG_OUT();
+#endif /* MAD3_PMI */
 }
 
 p_mad_madeleine_t

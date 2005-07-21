@@ -198,7 +198,7 @@ void
    LOG_OUT();
 }
 
-volatile tbx_bool_t
+tbx_bool_t
   mad_channel_is_merged(p_mad_madeleine_t madeleine)
 {
    tbx_bool_t res = tbx_false;
@@ -248,7 +248,7 @@ void
    LOG_OUT();
 }
 
-volatile tbx_bool_t
+tbx_bool_t
   mad_channel_is_split(p_mad_madeleine_t madeleine)
 {
    tbx_bool_t res = tbx_false;

@@ -47,7 +47,7 @@ tbx_bool_t
 void
     mad_channel_merge_done(p_mad_madeleine_t madeleine);
 
-volatile tbx_bool_t
+tbx_bool_t
    mad_channel_is_merged(p_mad_madeleine_t madeleine);
 
 tbx_bool_t

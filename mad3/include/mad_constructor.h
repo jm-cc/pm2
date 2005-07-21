@@ -46,6 +46,11 @@ mad_dir_connection_cons(void);
 p_mad_directory_t
 mad_directory_cons(void);
 
+#ifdef MAD3_PMI
+p_mad_pmi_t
+mad_pmi_cons(void);
+#endif /* MAD3_PMI */
+
 p_mad_session_t
 mad_session_cons(void);
 

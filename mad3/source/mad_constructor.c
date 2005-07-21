@@ -267,6 +267,21 @@ mad_link_cons(void)
   return object;
 }
 
+// mad_pmi_t
+#ifdef MAD3_PMI
+p_mad_pmi_t
+mad_pmi_cons(void)
+{
+  p_mad_pmi_t object = NULL;
+
+  LOG_IN();
+  object = TBX_CALLOC(1, sizeof(mad_pmi_t));
+  LOG_OUT();
+
+  return object;
+}
+#endif /* MAD3_PMI */
+
 // mad_session_t
 p_mad_session_t
 mad_session_cons(void)

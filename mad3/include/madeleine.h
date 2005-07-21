@@ -72,6 +72,10 @@
 #include "mad_forward.h"
 #include "mad_mux.h"
 
+#ifdef MAD3_PMI
+#include "mad_pmi.h"
+#endif /* MAD3_PMI */
+
 /* Function prototypes */
 #include "mad_memory_interface.h"
 #include "mad_buffer_interface.h"

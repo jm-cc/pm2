@@ -77,6 +77,9 @@ typedef struct s_mad_madeleine
   p_tbx_htable_t      network_htable;
   p_tbx_htable_t      channel_htable;
   p_tbx_slist_t       public_channel_slist;
+#ifdef MAD3_PMI
+  p_mad_pmi_t         pmi;
+#endif /* MAD3_PMI */
 } mad_madeleine_t;
 
 /*
@@ -103,6 +106,14 @@ mad_directory_init(p_mad_madeleine_t               madeleine,
 		   char               TBX_UNUSED **argv);
 
 void
+mad_drivers_init(p_mad_madeleine_t                madeleine,
+                 int                TBX_UNUSED   *p_argc,
+                 char               TBX_UNUSED ***p_argv);
+
+void
+mad_channels_init(p_mad_madeleine_t               madeleine);
+
+void
 mad_dir_driver_init(p_mad_madeleine_t    madeleine,
 		   int                  *p_argc,
 		   char               ***p_argv);
@@ -126,6 +137,11 @@ mad_get_madeleine(void);
 p_mad_madeleine_t
 mad_init(int   *argc,
 	 char **argv);
+
+#ifdef MAD3_PMI
+void
+mad_pmi_init(p_mad_madeleine_t madeleine);
+#endif /* MAD3_PMI */
 
 // NTBX data transmission wrappers
 void
@@ -216,7 +232,7 @@ void
 void
   mad_directory_rollback(p_mad_madeleine_t madeleine);
 
-volatile int
+int
   mad_directory_is_updated(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_MAIN_H */

@@ -272,7 +272,11 @@ void common_pre_init(int *argc, char *argv[],
   mad_leonie_link_init(attr->madeleine, *argc, argv);
   mad_leonie_command_init(attr->madeleine, *argc, argv);
   mad_directory_init(attr->madeleine, *argc, argv);
+#ifdef MAD3
+  mad_drivers_init(attr->madeleine, argc, &argv);
+#else /* MAD4 */
   mad_dir_driver_init(attr->madeleine, argc, &argv);
+#endif /* MAD4 */
 
 #ifdef PM2
   pm2self       = attr->madeleine->session->process_rank;
@@ -456,7 +460,9 @@ void common_post_init(int *argc, char *argv[],
   marcel_start_sched(argc, argv);
 #endif /* MARCEL */
 
-#if defined (MAD3) || defined(MAD4)
+#if defined (MAD3)
+  mad_channels_init(attr->madeleine);
+#elif defined(MAD4)
   mad_dir_channel_init(attr->madeleine);
 #endif /* MAD3 */
 

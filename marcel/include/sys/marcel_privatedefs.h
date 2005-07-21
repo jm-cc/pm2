@@ -17,6 +17,8 @@
 #ifndef PRIVATEDEFS_EST_DEF
 #define PRIVATEDEFS_EST_DEF
 
+#include "tbx_compiler.h"
+
 #define MARCEL_ALIGN    64L
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
@@ -26,13 +28,13 @@
 extern marcel_task_t __main_thread_struct;
 
 #ifdef ENABLE_STACK_JUMPING
-static __inline__ void marcel_prepare_stack_jump(void *stack)
+static __tbx_inline__ void marcel_prepare_stack_jump(void *stack)
 {
   char *s = (char *)stack;
   *(marcel_t *)(s + THREAD_SLOT_SIZE - sizeof(char *)) = __marcel_self();
 }
 
-static __inline__ void marcel_set_stack_jump(marcel_t m)
+static __tbx_inline__ void marcel_set_stack_jump(marcel_t m)
 {
   register unsigned long sp = get_sp();
 

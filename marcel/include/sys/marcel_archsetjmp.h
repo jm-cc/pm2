@@ -60,9 +60,9 @@ typedef int my_jmp_buf[6];
 
 extern int my_setjmp(my_jmp_buf buf);
 
-static __inline__ void TBX_NORETURN TBX_UNUSED my_longjmp(my_jmp_buf buf, int val);
+static __tbx_inline__ void TBX_NORETURN TBX_UNUSED my_longjmp(my_jmp_buf buf, int val);
 
-static __inline__ void my_longjmp(my_jmp_buf buf, int val)
+static __tbx_inline__ void my_longjmp(my_jmp_buf buf, int val)
 {
   __asm__ __volatile__ (
 		       "movl 0(%0), %%ebx\n\t"

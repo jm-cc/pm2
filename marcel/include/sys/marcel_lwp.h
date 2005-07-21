@@ -13,6 +13,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
+#section common
+#depend "tbx_compiler.h"
 
 #section marcel_types
 typedef struct marcel_lwp marcel_lwp_t;
@@ -81,9 +83,9 @@ extern unsigned  ma__nb_lwp;
 #endif
 
 #section marcel_functions
-static __inline__ void lwp_list_lock_read(void);
+static __tbx_inline__ void lwp_list_lock_read(void);
 #section marcel_inline
-static __inline__ void lwp_list_lock_read(void)
+static __tbx_inline__ void lwp_list_lock_read(void)
 {
 #ifdef MA__LWPS
   ma_read_lock(&__lwp_list_lock);
@@ -91,9 +93,9 @@ static __inline__ void lwp_list_lock_read(void)
 }
 
 #section marcel_functions
-static __inline__ void lwp_list_unlock_read(void);
+static __tbx_inline__ void lwp_list_unlock_read(void);
 #section marcel_inline
-static __inline__ void lwp_list_unlock_read(void)
+static __tbx_inline__ void lwp_list_unlock_read(void)
 {
 #ifdef MA__LWPS
   ma_read_unlock(&__lwp_list_lock);
@@ -101,9 +103,9 @@ static __inline__ void lwp_list_unlock_read(void)
 }
 
 #section marcel_functions
-static __inline__ void lwp_list_lock_write(void);
+static __tbx_inline__ void lwp_list_lock_write(void);
 #section marcel_inline
-static __inline__ void lwp_list_lock_write(void)
+static __tbx_inline__ void lwp_list_lock_write(void)
 {
 #ifdef MA__LWPS
   ma_write_lock(&__lwp_list_lock);
@@ -111,9 +113,9 @@ static __inline__ void lwp_list_lock_write(void)
 }
 
 #section marcel_functions
-static __inline__ void lwp_list_unlock_write(void);
+static __tbx_inline__ void lwp_list_unlock_write(void);
 #section marcel_inline
-static __inline__ void lwp_list_unlock_write(void)
+static __tbx_inline__ void lwp_list_unlock_write(void)
 {
 #ifdef MA__LWPS
   ma_write_unlock(&__lwp_list_lock);
@@ -121,11 +123,11 @@ static __inline__ void lwp_list_unlock_write(void)
 }
 
 #section functions
-static __inline__ unsigned get_nb_lwps();
+static __tbx_inline__ unsigned get_nb_lwps();
 unsigned marcel_nbvps(void);
 #section inline
 #depend "[marcel_variables]"
-static __inline__ unsigned get_nb_lwps()
+static __tbx_inline__ unsigned get_nb_lwps()
 {
 #ifdef MA__LWPS
   return ma__nb_lwp;
@@ -135,17 +137,17 @@ static __inline__ unsigned get_nb_lwps()
 }
 
 #section functions
-static __inline__ unsigned marcel_get_nb_lwps_np();
+static __tbx_inline__ unsigned marcel_get_nb_lwps_np();
 #section inline
-static __inline__ unsigned marcel_get_nb_lwps_np()
+static __tbx_inline__ unsigned marcel_get_nb_lwps_np()
 {
    return get_nb_lwps();
 }
 
 #section marcel_functions
-static __inline__ void set_nb_lwps(unsigned value);
+static __tbx_inline__ void set_nb_lwps(unsigned value);
 #section marcel_inline
-static __inline__ void set_nb_lwps(unsigned value)
+static __tbx_inline__ void set_nb_lwps(unsigned value)
 {
 #ifdef MA__LWPS
   ma__nb_lwp=value;
@@ -153,17 +155,17 @@ static __inline__ void set_nb_lwps(unsigned value)
 }
 
 #section marcel_functions
-inline static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp);
+__tbx_inline__ static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp);
 #section marcel_inline
-inline static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp)
+__tbx_inline__ static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp)
 {
   return list_entry(lwp->lwp_list.next, marcel_lwp_t, lwp_list);
 }
 
 #section marcel_functions
-inline static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp);
+__tbx_inline__ static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp);
 #section marcel_inline
-inline static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp)
+__tbx_inline__ static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp)
 {
   return list_entry(lwp->lwp_list.prev, marcel_lwp_t, lwp_list);
 }
@@ -344,30 +346,30 @@ MA_DECLARE_PER_LWP(unsigned long, softirq_pending);
 
 
 #section marcel_functions
-static inline int ma_lwp_online(ma_lwp_t lwp);
+static __tbx_inline__ int ma_lwp_online(ma_lwp_t lwp);
 #ifdef MA__LWPS
 /* Need to know about LWPs going up/down? */
 extern int ma_register_lwp_notifier(struct ma_notifier_block *nb);
 extern void ma_unregister_lwp_notifier(struct ma_notifier_block *nb);
 
 #else
-static inline int ma_register_lwp_notifier(struct ma_notifier_block *nb);
-static inline void ma_unregister_lwp_notifier(struct ma_notifier_block *nb);
+static __tbx_inline__ int ma_register_lwp_notifier(struct ma_notifier_block *nb);
+static __tbx_inline__ void ma_unregister_lwp_notifier(struct ma_notifier_block *nb);
 #endif /* MA__LWPS */
 #section marcel_inline
 #ifndef MA__LWPS
-static inline int ma_register_lwp_notifier(struct ma_notifier_block *nb)
+static __tbx_inline__ int ma_register_lwp_notifier(struct ma_notifier_block *nb)
 {
         return 0;
 }
-static inline void ma_unregister_lwp_notifier(struct ma_notifier_block *nb)
+static __tbx_inline__ void ma_unregister_lwp_notifier(struct ma_notifier_block *nb)
 {
 }
 #else /* MA__LWPS */
 MA_DECLARE_PER_LWP(int, online);
 #endif /* MA__LWPS */
 
-static inline int ma_lwp_online(ma_lwp_t lwp)
+static __tbx_inline__ int ma_lwp_online(ma_lwp_t lwp)
 {
 #ifdef MA__LWPS
 	return ma_per_lwp(online,lwp);

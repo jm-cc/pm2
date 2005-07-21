@@ -110,10 +110,9 @@ void __memory_barrier(void);
 #    define __tbx_attribute_used__	__attribute__((__unused__))
 #  endif
 
-#  define __tbx_attribute_pure__	__attribute__((pure))
+#  define __tbx_attribute_pure__	__attribute__((__pure__))
 #elif __GNUC__ == 2
 #  define __TBX_FUNCTION__		__FUNCTION__
-#  define TBX_FMALLOC
 #  if __GNUC_MINOR__ < 96
 #    ifndef __builtin_expect
 #      define __builtin_expect(x, expected_value) (x)
@@ -123,7 +122,10 @@ void __memory_barrier(void);
 #  define __tbx_attribute_used__	__attribute__((__unused__))
 
 #  if __GNUC_MINOR__ >= 96
-#    define __tbx_attribute_pure__	__attribute__((pure))
+#    define TBX_FMALLOC			__attribute__((__malloc__))
+#    define __tbx_attribute_pure__	__attribute__((__pure__))
+#  else
+#    define TBX_FMALLOC
 #  endif
 #else
 #  error Sorry, your compiler is too old/not recognized.

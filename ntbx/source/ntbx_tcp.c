@@ -571,7 +571,7 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
 {
         p_ntbx_tcp_server_specific_t server_specific    = server->specific;
         p_ntbx_tcp_client_specific_t client_specific    = NULL;
-        int                          remote_address_len = sizeof(ntbx_tcp_address_t);
+        unsigned int                 remote_address_len = sizeof(ntbx_tcp_address_t);
         struct hostent              *remote_host_entry  = NULL;
         ntbx_tcp_address_t           remote_address;
         ntbx_tcp_socket_t            descriptor;

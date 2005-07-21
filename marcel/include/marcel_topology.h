@@ -16,6 +16,18 @@
 
 #section common
 #include "tbx_compiler.h"
+
+#section variables
+unsigned marcel_nbprocessors;
+#ifndef MA__LWPS
+#define marcel_nbprocessors 1
+#endif
+
+#section functions
+#ifdef MA__LWPS
+void ma_set_nbprocessors(void);
+#endif
+
 #section types
 enum marcel_topo_level_t {
 	MARCEL_LEVEL_MACHINE,
@@ -140,3 +152,11 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #define MARCEL_NBMAXNODES	8
 #endif
 #endif
+
+#section functions
+extern void *ma_node_malloc(unsigned size, int node, char *file,  unsigned line);
+extern void *marcel_node_malloc(unsigned size, int node);
+#ifndef MA__NUMA
+#define ma_node_malloc(size, node, file, line) marcel_malloc(size, file, line)
+#endif
+#define marcel_node_malloc(size, node)	ma_node_malloc(size, node, __FILE__, __LINE__)

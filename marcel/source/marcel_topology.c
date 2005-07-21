@@ -52,7 +52,28 @@ struct marcel_topo_level *marcel_topo_levels[MARCEL_LEVEL_LAST+1] = {
 
 #ifdef MA__LWPS
 
-static int discovering_level=1;
+static int discovering_level = 1;
+unsigned marcel_nbprocessors = 1;
+
+void ma_set_nbprocessors(void) {
+	// Détermination du nombre de processeurs disponibles
+#ifdef SOLARIS_SYS
+	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(LINUX_SYS)
+	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(IRIX_SYS)
+	marcel_nbprocessors = sysconf(_SC_NPROC_CONF);
+#elif defined(OSF_SYS)
+	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
+#else
+#warning No known way to discover number of available processors on this system
+#warning marcel_nbprocessors will default to 1
+#warning use the --marcel-nvp option to set it by hand when running your program
+	marcel_nbprocessors = 1;
+#endif
+
+	mdebug("%d processors available\n", marcel_nbprocessors);
+}
 
 #ifdef MA__NUMA
 
@@ -60,6 +81,9 @@ static int discovering_level=1;
 MA_DEFINE_PER_LWP(struct marcel_topo_level *, core_level, NULL);
 static struct marcel_topo_level *marcel_topo_core_level;
 #endif
+
+MA_DEFINE_PER_LWP(struct marcel_topo_level *, node_level, NULL);
+static struct marcel_topo_level *marcel_topo_node_level;
 
 #ifdef LINUX_SYS
 #define PROCESSOR	"processor\t: "
@@ -210,40 +234,21 @@ static void __marcel_init look_libnuma(void) {
 
 	MA_CPU_ZERO(&node_level[i].cpuset);
 
-	marcel_topo_levels[discovering_level++]=node_level;
+	marcel_topo_levels[discovering_level++] =
+		marcel_topo_node_level = node_level;
 }
 #endif /* MA__NUMA */
 
 static void look_cpu(void) {
-	unsigned __nb_processors;
 	struct marcel_topo_level *cpu_level;
 	unsigned i;
 
-	// Détermination du nombre de processeurs disponibles
-#ifdef SOLARIS_SYS
-	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(LINUX_SYS)
-	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-  //__nb_processors = 2;
-#elif defined(IRIX_SYS)
-	__nb_processors = sysconf(_SC_NPROC_CONF);
-#elif defined(OSF_SYS)
-	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-#else
-#warning No known way to discover number of available processors on this system
-#warning __nb_processors will default to 1
-#warning use the --marcel-nvp option to set it by hand when running your program
-	__nb_processors = 1;
-#endif
-
-	mdebug("%d processors available\n", __nb_processors);
-
-	if (__nb_processors==1)
+	if (marcel_nbprocessors==1)
 		return;
 
-	MA_BUG_ON(!(cpu_level=TBX_MALLOC((__nb_processors+1)*sizeof(*cpu_level))));
+	MA_BUG_ON(!(cpu_level=TBX_MALLOC((marcel_nbprocessors+1)*sizeof(*cpu_level))));
 
-	for (i=0; i<__nb_processors; i++) {
+	for (i=0; i<marcel_nbprocessors; i++) {
 		cpu_level[i].type=MARCEL_LEVEL_PROC;
 		cpu_level[i].number=i;
 		MA_CPU_ZERO(&cpu_level[i].cpuset);
@@ -293,13 +298,23 @@ static void topo_discover(void) {
 
 __ma_initfunc(topo_discover, MA_INIT_TOPOLOGY, "Finding Topology");
 
-#ifdef MARCEL_SMT_IDLE
+#ifdef MA__NUMA
 static void topology_lwp_init(ma_lwp_t lwp) {
+	int i;
+#ifdef MARCEL_SMT_IDLE
 	if (marcel_topo_core_level) {
-		int i;
 		for (i=0; marcel_topo_core_level[i].cpuset; i++) {
 			if (MA_CPU_ISSET(LWP_NUMBER(lwp),&marcel_topo_core_level[i].cpuset)) {
 				ma_per_lwp(core_level,lwp) = &marcel_topo_core_level[i];
+				break;
+			}
+		}
+	}
+#endif /* MARCEL_SMT_IDLE */
+	if (marcel_topo_node_level) {
+		for (i=0; marcel_topo_node_level[i].cpuset; i++) {
+			if (MA_CPU_ISSET(LWP_NUMBER(lwp),&marcel_topo_node_level[i].cpuset)) {
+				ma_per_lwp(node_level,lwp) = &marcel_topo_node_level[i];
 				break;
 			}
 		}
@@ -314,6 +329,19 @@ MA_DEFINE_LWP_NOTIFIER_START(topology, "Topology",
 				  topology_lwp_start, "Activation de la topologi");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
-#endif
+#endif /* MA_NUMA */
 
 #endif /* MA__LWPS */
+
+#ifdef MA__NUMA
+void *ma_node_malloc(unsigned size, int node, char *file, unsigned line) {
+	void *p;
+	if (node < 0 || numa_available()==-1)
+		return marcel_malloc(size, file, line);
+	lock_task();
+	p = numa_alloc_onnode(size, node);
+	if (p == NULL)
+		return marcel_malloc(size, file, line);
+	return p;
+}
+#endif

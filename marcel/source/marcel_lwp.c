@@ -97,31 +97,15 @@ unsigned  ma__nb_lwp = 1;
 
 #if defined(MA__LWPS)
 
-static unsigned __nb_processors = 1;
-
 void marcel_lwp_fix_nb_vps(unsigned nb_lwp)
 {
-	// Détermination du nombre de processeurs disponibles
-#if defined(_SC_NPROCESSORS_ONLN)
-	__nb_processors = sysconf(_SC_NPROCESSORS_ONLN);
-#elif defined(_SC_NPROCESSORS_CONF)
-	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(_SC_NPROC_ONLN)
-	__nb_processors = sysconf(_SC_NPROC_ONLN);
-#elif defined(_SC_NPROC_CONF)
-	__nb_processors = sysconf(_SC_NPROC_CONF);
-#else
-#warning __nb_processors set to 1 for this system
-	__nb_processors = 1;
-#endif
-
-	mdebug("%d processors available\n", __nb_processors);
+	ma_set_nbprocessors();
 
 	// Choix du nombre de LWP
 #ifdef MA__ACTSMP
 	set_nb_lwps(nb_lwp ? nb_lwp : ACT_NB_MAX_CPU);
 #else
-	set_nb_lwps(nb_lwp ? nb_lwp : __nb_processors);
+	set_nb_lwps(nb_lwp ? nb_lwp : marcel_nbprocessors);
 #endif
 }
 
@@ -386,7 +370,7 @@ static void lwp_init(ma_lwp_t lwp)
 inline static void bind_on_processor(marcel_lwp_t *lwp)
 {
 #if defined(MA__BIND_LWP_ON_PROCESSORS)
-	unsigned long target = LWP_NUMBER(lwp) % __nb_processors;
+	unsigned long target = LWP_NUMBER(lwp) % marcel_nbprocessors;
 #if defined(SOLARIS_SYS)
 	if(processor_bind(P_LWPID, P_MYID,
 			  (processorid_t)(target),

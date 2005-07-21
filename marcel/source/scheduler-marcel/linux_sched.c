@@ -1399,7 +1399,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	if (currently_idle)
 #endif
 	{
-		// TODO on n'a pas non plus de notion d'iowait
+		// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
 		/*if (atomic_read(&rq->nr_iowait) > 0)
 			lwpstat->iowait += sys_ticks;
 		else*/

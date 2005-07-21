@@ -86,9 +86,6 @@ enum marcel_bubble_entity {
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 #depend "scheduler/linux_runqueues.h[marcel_variables]"
 
-/* TODO: bulle "préemptible" ou pas, éclatable plus haut ou pas (pour
- * rééquilibrer au besoin quand idle) */
-
 typedef enum {
 	MA_BUBBLE_CLOSED,
 	MA_BUBBLE_OPENED,

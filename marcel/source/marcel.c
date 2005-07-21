@@ -144,13 +144,13 @@ void *marcel_malloc(unsigned size, char *file, unsigned line)
   void *p;
 
     lock_task();
-    if((p = __TBX_MALLOC(size, file, line)) == NULL) {
+    p = __TBX_MALLOC(size, file, line);
+    unlock_task();
+    if(p == NULL) {
       fprintf(stderr, "Storage error at %s:%d\n", file, line);
       RAISE(STORAGE_ERROR);
-    } else {
-      unlock_task();
-      return p;
     }
+    return p;
 }
 
 void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line)
@@ -158,9 +158,10 @@ void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line)
   void *p;
 
    lock_task();
-   if((p = __TBX_REALLOC(ptr, size, file, line)) == NULL)
-      RAISE(STORAGE_ERROR);
+   p = __TBX_REALLOC(ptr, size, file, line);
    unlock_task();
+   if(p == NULL)
+      RAISE(STORAGE_ERROR);
    return p;
 }
 
@@ -170,12 +171,11 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
 
    if(nelem && elsize) {
       lock_task();
-      if((p = __TBX_CALLOC(nelem, elsize, file, line)) == NULL)
+      p = __TBX_CALLOC(nelem, elsize, file, line);
+      unlock_task();
+      if(p == NULL)
          RAISE(STORAGE_ERROR);
-      else {
-         unlock_task();
-         return p;
-      }
+      return p;
    }
    return NULL;
 }

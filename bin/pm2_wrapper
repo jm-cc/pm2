@@ -3,7 +3,7 @@
 #
 # Wrapper for pm2_xload
 
-hostname
+echo "##### `hostname`"
 prog=$1
 shift
 

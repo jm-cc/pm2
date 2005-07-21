@@ -123,9 +123,11 @@ define marcel-printthread
   if $arg0->sched.state == 128
     set $state='F'
   end
-  printf "%p %16s %2d %c %2d", \
-    $arg0, $arg0->name, $arg0->sched.internal.prio, $state, \
-    *(unsigned *)((char*)$arg0->sched.lwp+((char*)&ma_per_lwp__number-(char*)&__main_lwp))
+  printf "%p %16s %2d %c", \
+    $arg0, $arg0->name, $arg0->sched.internal.prio, $state
+  if $arg0->sched.lwp
+    printf " %2d", *(unsigned *)((char*)$arg0->sched.lwp+((char*)&ma_per_lwp__number-(char*)&__main_lwp))
+  end
   ma-printrq $arg0->sched.internal.init_rq
   ma-printrq $arg0->sched.internal.cur_rq
   printf "\n"

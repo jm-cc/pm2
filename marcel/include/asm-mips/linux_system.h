@@ -55,6 +55,7 @@
  */
 
 #error "to write !"
+/* dans le noyau linux, ils disent que cela dépend du processeur: utiliser sync ou wb */
 #define ma_mb()
 #define ma_rmb()	ma_mb()
 #define ma_wmb()	ma_mb()

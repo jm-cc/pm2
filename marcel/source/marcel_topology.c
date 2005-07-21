@@ -230,7 +230,9 @@ static void look_cpu(void) {
 #elif defined(OSF_SYS)
 	__nb_processors = sysconf(_SC_NPROCESSORS_CONF);
 #else
-#warning __nb_processors set to 1 for this system
+#warning No known way to discover number of available processors on this system
+#warning __nb_processors will default to 1
+#warning use the --marcel-nvp option to set it by hand when running your program
 	__nb_processors = 1;
 #endif
 

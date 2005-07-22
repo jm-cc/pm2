@@ -100,6 +100,7 @@ static __inline__ unsigned pm2_config_size(void)
   return __pm2_conf_size;
 }
 
+TBX_FORMAT(printf,1,2)
 void pm2_printf(char *format, ...);
 
 

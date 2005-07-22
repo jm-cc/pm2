@@ -29,6 +29,7 @@
 #endif
 
 #include "pm2_profile.h"
+#include "tbx_compiler.h"
 
 typedef enum {
 	PM2DEBUG_SHOW,
@@ -97,7 +98,7 @@ void pm2debug_printf_state(int state);
 
 void pm2debug_init_ext(int *argc, char **argv, int debug_flags);
 #define PM2DEBUG_MAXLINELEN 512
-int __attribute__ ((format (printf, 5, 6))) 
+int TBX_FORMAT (printf, 5, 6) 
 pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		const char *format, ...);
 void pm2debug_register(debug_type_t *type);

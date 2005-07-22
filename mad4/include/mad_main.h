@@ -21,6 +21,8 @@
 #ifndef MAD_MAIN_H
 #define MAD_MAIN_H
 
+#include "tbx_compiler.h"
+
 typedef enum e_mad_vrp_parameter_opcode
     {
         mad_op_uninitialized = 0,
@@ -198,7 +200,7 @@ void
 mad_leonie_command_exit(p_mad_madeleine_t   madeleine);
 
 void
-mad_leonie_print(char *fmt, ...)  __attribute__ ((format (printf, 1, 2)));
+mad_leonie_print(char *fmt, ...)  TBX_FORMAT (printf, 1, 2);
 
 void
 mad_leonie_barrier(void);

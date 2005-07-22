@@ -20,13 +20,19 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#include "tbx_compiler.h"
+
 // For compatibility purposes :
 #define tprintf  marcel_printf
 #define tfprintf marcel_fprintf
 
+TBX_FORMAT(printf,1,2)
 int marcel_printf(char *format, ...);
+TBX_FORMAT(printf,2,3)
 int marcel_fprintf(FILE *stream, char *format, ...);
+TBX_FORMAT(printf,2,3)
 int marcel_sprintf(char *string, char *format, ...);
+TBX_FORMAT(printf,3,4)
 int marcel_snprintf(char *string, size_t size, char *format,...);
 FILE *marcel_fopen(char *path, char *mode);
 int marcel_fclose(FILE *stream);

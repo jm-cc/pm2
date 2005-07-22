@@ -33,7 +33,10 @@
 #include <stdarg.h> /* Pour va_list */
 #include <stdlib.h> /* Pour size_t */
 
+#include "tbx_compiler.h"
+
 int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
+TBX_FORMAT(printf, 3, 4)
 int tbx_snprintf(char * buf, size_t size, const char *fmt, ...);
 
 #endif /* TBX_SNPRINTF_H */

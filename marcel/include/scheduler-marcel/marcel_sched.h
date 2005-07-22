@@ -239,13 +239,21 @@ int marcel_check_sleeping(void);
 /**************************************************************************/
 
 #section sched_marcel_functions
-static __tbx_inline__ int marcel_sched_internal_create(marcel_task_t *cur, 
+static
+// gcc 4.0 doesn't implement setjmp in an inline function.
+#if (__GNUC__ != 4 || __GNUC_MINOR__ != 0 || __GNUC_PATCHLEVEL__ != 0)
+__tbx_inline__
+#endif
+int marcel_sched_internal_create(marcel_task_t *cur, 
 					       marcel_task_t *new_task,
 					       __const marcel_attr_t *attr,
 					       __const int dont_schedule,
 					       __const unsigned long base_stack);
 #section sched_marcel_inline
-static __tbx_inline__
+static
+#if (__GNUC__ != 4 || __GNUC_MINOR__ != 0 || __GNUC_PATCHLEVEL__ != 0)
+__tbx_inline__
+#endif
 int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const marcel_attr_t *attr,
 				 __const int dont_schedule,

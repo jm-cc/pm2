@@ -150,9 +150,9 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	if ((err=pthread_attr_setstack (&attr, stack_base, stack_size))) {
 		char s[256];
 		strerror_r(err,s,256);
-		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p, %zu):"
+		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p, %#zx):"
 			" (%d)%s\n", &attr, stack_base, stack_size, err, s);
-		fprintf(stderr, "PTHREAD_STACK_MIN: %x\n", PTHREAD_STACK_MIN);
+		fprintf(stderr, "PTHREAD_STACK_MIN: %#x\n", PTHREAD_STACK_MIN);
 		abort();
 	}
 	pthread_create(pid, &attr, func, arg);

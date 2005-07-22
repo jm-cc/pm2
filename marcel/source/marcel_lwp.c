@@ -191,19 +191,13 @@ unsigned marcel_lwp_add_vp(void)
 {
   marcel_lwp_t *lwp,
           *cur_lwp = GET_LWP(marcel_self());
-  static unsigned __nb_lwp = 1;
+  static ma_atomic_t nb_lwp = MA_ATOMIC_INIT(0);
   unsigned num;
 
   LOG_IN();
 
-  lwp_list_lock_write();
-  {
-    if(__nb_lwp >= MA_NR_LWPS)
-      RAISE("Too many lwp\n");
-    
-    num = __nb_lwp++;
-  }
-  lwp_list_unlock_write();
+  if ((num = ma_atomic_inc_return(&nb_lwp)) >= MA_NR_LWPS)
+    RAISE("Too many lwp\n");
 
   lwp = (marcel_lwp_t *)marcel_malloc_node(sizeof(marcel_lwp_t)
 		  + __ma_per_lwp_size, ma_lwp_node[num]);

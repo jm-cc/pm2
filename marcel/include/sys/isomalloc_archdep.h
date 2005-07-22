@@ -21,7 +21,9 @@
  * et THREAD_SLOT_SIZE doit être une puissance de deux */
 
 #define ISOADDR_PAGES                 (128*1024)
-/* Attention : ASM_THREAD_SLOT_SIZE redéfini pour ia64 */
+/* Attention : ASM_THREAD_SLOT_SIZE redéfini pour certaines archis */
+/* il doit être une puissance de deux, et au moins deux fois plus grand que
+ * PTHREAD_STACK_MIN */
 /* Pas de typage pour ASM_THREAD_SLOT_SIZE car la constante est utilisÃ©e
    dans un source assembleur */
 #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */

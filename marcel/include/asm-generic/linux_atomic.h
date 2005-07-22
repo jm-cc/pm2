@@ -201,6 +201,14 @@ static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 	MA_ATOMIC_ADD_RETURN(new < 0);
 }
 
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v);
+#section marcel_inline
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
+{
+	MA_ATOMIC_ADD_RETURN(new);
+}
+
+#define ma_atomic_sub_return(i,v) ma_atomic_add_return(-(i),(v))
 #define ma_smp_mb__before_atomic_dec()  ma_barrier()
 #define ma_smp_mb__after_atomic_dec()   ma_barrier()
 #define ma_smp_mb__before_atomic_inc()  ma_barrier()

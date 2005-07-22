@@ -231,6 +231,24 @@ static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 	return c;
 }
 
+static __tbx_inline__ int atomic_add_return(int i, atomic_t *v)
+{
+	int __i;
+	/* Modern 486+ processor */
+	__i = i;
+	__asm__ __volatile__(
+		LOCK "xaddl %0, %1;"
+		:"=r"(i)
+		:"m"(v->counter), "0"(i));
+	return i + __i;
+
+}
+
+static __tbx_inline__ int atomic_sub_return(int i, atomic_t *v)
+{
+	return atomic_add_return(-i,v);
+}
+
 #section marcel_macros
 /* These are x86-specific, used by some header files */
 #define ma_atomic_clear_mask(mask, addr) \

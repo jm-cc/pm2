@@ -28,7 +28,7 @@
  */
 #define MAX_POLL_IDS    16
 	
-static unsigned nb_poll_structs = 0;
+static ma_atomic_t nb_poll_structs = MA_ATOMIC_INIT(-1);
 static struct poll_struct poll_structs[MAX_POLL_IDS];
 
 static int compat_poll_one(marcel_ev_server_t server, 
@@ -81,16 +81,16 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 				       char* name)
 {
 	marcel_pollid_t id;
+	int index;
 
 	LOG_IN();
 
-	if(nb_poll_structs == MAX_POLL_IDS) {
+	if ((index = ma_atomic_inc_return(&nb_poll_structs)) == MAX_POLL_IDS) {
 		RAISE(CONSTRAINT_ERROR);
 	}
 
-#warning non Thread-Safe incrementation here
-#warning marcel_pollid_create will be removed (and not corrected) in flavor of marcel_ev_server_init	
-	id = &poll_structs[nb_poll_structs++];
+#warning marcel_pollid_create will be removed in flavor of marcel_ev_server_init	
+	id = &poll_structs[index];
 
 	marcel_ev_server_init(&id->server, name);
 	marcel_ev_server_set_poll_settings(&id->server, 

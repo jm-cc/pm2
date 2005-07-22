@@ -232,9 +232,9 @@ static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
 }
 
 #section marcel_functions
-static __tbx_inline__ int atomic_add_return(int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v);
 #section marcel_inline
-static __tbx_inline__ int atomic_add_return(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 {
 	int __i;
 	/* Modern 486+ processor */
@@ -248,12 +248,15 @@ static __tbx_inline__ int atomic_add_return(int i, ma_atomic_t *v)
 }
 
 #section marcel_functions
-static __tbx_inline__ int atomic_sub_return(int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_atomic_sub_return(int i, ma_atomic_t *v);
 #section marcel_inline
-static __tbx_inline__ int atomic_sub_return(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_sub_return(int i, ma_atomic_t *v)
 {
-	return atomic_add_return(-i,v);
+	return ma_atomic_add_return(-i,v);
 }
+
+#define ma_atomic_inc_return(v)  (ma_atomic_add_return(1,v))
+#define ma_atomic_dec_return(v)  (ma_atomic_sub_return(1,v))
 
 #section marcel_macros
 /* These are x86-specific, used by some header files */

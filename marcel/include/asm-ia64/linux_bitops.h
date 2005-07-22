@@ -394,6 +394,7 @@ __ma_ffs (unsigned long x)
 /*
  * find_last_zero_bit - find the last zero bit in a 64 bit quantity
  * @x: The value to search
+ * undefined for x == 0
  */
 #section marcel_functions
 static __tbx_inline__ unsigned long
@@ -420,7 +421,7 @@ ma_fls (int x);
 static __tbx_inline__ int
 ma_fls (int x)
 {
-	return ma_ia64_fls((unsigned int) x);
+	return ma_ia64_fls((unsigned int) x)+1;
 }
 
 /*

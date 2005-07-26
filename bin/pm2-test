@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -37,6 +37,7 @@ Usage: $_PM2TEST_PROGNAME { option } { modules }
     -l2,--normal    : run a reasonable number of tests for each PM2 module (default)
     -l3,--advanced : run a lot of tests to check more advanced features
     -l4,--torture  : check each line of C code to search for hidden bugs ;-)))
+    -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
 EOF
@@ -63,7 +64,7 @@ do_the_test()
     # Compilation
     echo "Compiling program $prog..."
     (cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
-    (cd $appdir; ${PM2_MAKE:-make} $prog FLAVOR=$flavor)
+    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor)
     [ $? -eq 0 ] || pm2test_error "Compilation failed"
 
     # Execution
@@ -94,6 +95,7 @@ do_the_test()
 
 _level=2 # normal
 _output_redirect=""
+jobs=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -118,6 +120,14 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--torture|-l4)
 	    _level=4
+	    shift
+	    ;;
+	--jobs|-j)
+	    jobs="$1 $2"
+	    shift
+	    ;;
+	--jobs=*|-j*)
+	    jobs=$1
 	    shift
 	    ;;
 	--)

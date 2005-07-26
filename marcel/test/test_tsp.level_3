@@ -19,7 +19,7 @@ appdir="${PM2_ROOT}/marcel/examples"
 prog="tsp"
 args="32 16 123"
 hosts="localhost"
-eat > /tmp/pm2test_"${USER}"_expected <<EOF
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
 nb_threads =  32 ncities =  16
 EOF
 

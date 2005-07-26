@@ -33,9 +33,10 @@ Usage: $_PM2TEST_PROGNAME { option } { modules }
   option:
     -h,--help      : show this help
     -q,--quiet     : do not be verbose
-    -l1,--basic    : run a reasonable number of tests for each PM2 module (default)
-    -l2,--advanced : run a lot of tests to check more advanced features
-    -l3,--torture  : check each line of C code to search for hidden bugs ;-)))
+    -l1,--basic    : run a basic number of tests
+    -l2,--normal    : run a reasonable number of tests for each PM2 module (default)
+    -l3,--advanced : run a lot of tests to check more advanced features
+    -l4,--torture  : check each line of C code to search for hidden bugs ;-)))
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
 EOF
@@ -91,7 +92,7 @@ do_the_test()
 
 # Programme principal
 
-_level=1 # basic
+_level=2 # normal
 _output_redirect=""
 
 while [ $# -gt 0 ]; do
@@ -107,12 +108,16 @@ while [ $# -gt 0 ]; do
 	    _level=1
 	    shift
 	    ;;
-	--advanced|-l2)
+	--normal|-l2)
 	    _level=2
 	    shift
 	    ;;
-	--torture|-l3)
+	--advanced|-l3)
 	    _level=3
+	    shift
+	    ;;
+	--torture|-l4)
+	    _level=4
 	    shift
 	    ;;
 	--)

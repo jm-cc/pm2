@@ -14,7 +14,7 @@
 
 
 # Configuration
-flavor="test_marcel_smp"
+flavor="test_marcel"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="create"
 args="100000"
@@ -26,5 +26,5 @@ EOF
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
-	--marcel=\"smp\" --marcel=\"marcel_main\" \
+	--marcel=\"mono\" --marcel=\"marcel_main\" \
 	--all=\"opt\" --all=\"build_static\" $_output_redirect

@@ -16,24 +16,16 @@
 # Configuration
 flavor="test_marcel"
 appdir="${PM2_ROOT}/marcel/examples"
-prog="active"
-args=""
+prog="sumtime"
+args="100"
 hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-active threads = 0
-thread creation
-thread will sleep during 2 seconds...
-active threads = 0
-thread will work a little bit...
-active threads = 0
-thread termination
-thread termination catched
-active threads = 0
+Sum from 1 to 100 = 5050
 EOF
 
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
-	--marcel=\"mono\" --marcel=\"marcel_main\" \
+	--marcel=\"smp\" --marcel=\"marcel_main\" \
 	--all=\"opt\" --all=\"build_static\" $_output_redirect

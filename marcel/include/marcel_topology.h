@@ -73,7 +73,9 @@ typedef unsigned ma_cpu_set_t;
 #endif
 
 #section structures
-// XXX TODO #warning il ne faudrait pas dépendre d un scheduler particulier
+#ifdef PM2_DEV
+// #warning il ne faudrait pas dépendre d un scheduler particulier
+#endif
 #depend "scheduler-marcel/linux_runqueues.h[marcel_types]"
 #depend "[types]"
 #ifdef MARCEL_SMT_IDLE

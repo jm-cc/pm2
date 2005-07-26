@@ -101,7 +101,9 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
       s->last = &c;
     }
     ma_spin_unlock_bh(&s->lock);
+#ifdef PM2_DEV
 #warning timeout to manage
+#endif
     RAISE(NOT_IMPLEMENTED);
     //__marcel_tempo_give_hand(timeout, &c.blocked, s);
   } else {

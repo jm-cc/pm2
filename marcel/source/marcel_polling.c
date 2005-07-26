@@ -89,7 +89,9 @@ marcel_pollid_t marcel_pollid_create_X(marcel_pollgroup_func_t g,
 		RAISE(CONSTRAINT_ERROR);
 	}
 
+#ifdef PM2_DEV
 #warning marcel_pollid_create will be removed in flavor of marcel_ev_server_init	
+#endif
 	id = &poll_structs[index];
 
 	marcel_ev_server_init(&id->server, name);

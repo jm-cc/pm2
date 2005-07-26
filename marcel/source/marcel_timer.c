@@ -24,8 +24,10 @@
 //#define MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 
 #ifdef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#ifdef PM2_DEV
 #warning NO SIGNAL TIMER ENABLE
 #warning I hope you are debugging
+#endif
 #endif
 
 ma_atomic_t __preemption_disabled=MA_ATOMIC_INIT(0);

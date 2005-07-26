@@ -56,7 +56,9 @@ void LONGJMP(jmp_buf buf, int val)
   lock_task();
   memcpy(_buf, buf, sizeof(jmp_buf));
   _val = val;
+#ifdef PM2_DEV
 #warning set_sp() should not be directly used
+#endif
   set_sp(SP_FIELD(buf)-256);
   longjmp(_buf, _val);
 }

@@ -2,8 +2,10 @@
 #include "tbx_compiler.h"
 #section marcel_macros
 
+#ifdef PM2_DEV
 #warning using generic atomic.h. Please provide one for this architecture.
 #warning Look at the one in the kernel sources for example.
+#endif
 
 typedef unsigned atomic_t;
 

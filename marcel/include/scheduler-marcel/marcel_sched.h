@@ -272,7 +272,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 #ifdef MA__LWPS
 		// On ne peut pas placer ce thread sur le LWP courant
 		|| (!lwp_isset(LWP_NUMBER(LWP_SELF), THREAD_GETMEM(new_task, sched.lwps_allowed)))
+#ifdef PM2_DEV
 #warning TODO: MARCEL_SCHED_OTHER
+#endif
 #if 0
 #ifndef MA__ONE_QUEUE
 		// Si la politique est du type 'placer sur le LWP le moins

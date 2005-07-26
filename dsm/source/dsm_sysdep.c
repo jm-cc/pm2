@@ -360,7 +360,9 @@ void dsm_install_pagefault_handler(dsm_pagefault_handler_t handler)
   act.sa_flags = SA_SIGINFO | SA_RESTART;
 #else
 #if defined(GNU_SYS)
+#ifdef PM2_DEV
 #warning no SA_SIGINFO defined, uh...
+#endif
 #endif
   act.sa_flags = SA_RESTART;
 #endif

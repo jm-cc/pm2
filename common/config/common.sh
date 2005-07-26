@@ -18,3 +18,4 @@ case "$PM2_SYS" in
 	;;
 esac
 
+[ -n "$PM2_DEV" ] && PM2_COMMON_CFLAGS="$PM2_COMMON_CFLAGS -DPM2_DEV"

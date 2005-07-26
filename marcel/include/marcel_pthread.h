@@ -20,7 +20,6 @@
 #endif
 #include "tbx_compiler.h"
 
-#warning toto
 /* Function for handling threads.  */
 
 /* Create a thread with given attributes ATTR (or default attributes

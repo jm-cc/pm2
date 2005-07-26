@@ -1,7 +1,9 @@
 
 #ifdef GTK2
 #define GTK_ENABLE_BROKEN
+#ifdef PM2_DEV
 #warning TODO: fix GTK2 code
+#endif
 #endif
 
 #include <gdk/gdkkeysyms.h>

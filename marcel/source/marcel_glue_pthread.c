@@ -207,7 +207,9 @@ int pthread_equal(pthread_t thread1, pthread_t thread2)
   return thread1 == thread2;
 }
 
+#ifdef PM2_DEV
 #warning _pthread_cleanup_push,restore à écrire
+#endif
 #if 0
 strong_alias(_pthread_cleanup_push_defer,_pthread_cleanup_push);
 strong_alias(_pthread_cleanup_pop_restore,_pthread_cleanup_pop);

@@ -33,7 +33,9 @@
 #if defined(LINUX_SYS)
 #  define STACK_INFO
 #  include <sys/ucontext.h>
+#ifdef PM2_DEV
 #warning XXX: est-ce vraiment ça ?
+#endif
 #  define TOP_STACK_FREE_AREA     (SPARC_MAXREGWINDOW*8+128)
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
 #endif

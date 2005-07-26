@@ -221,7 +221,9 @@ static marcel_ctx_t __initial_main_ctx;
 
 #ifdef MARCEL_MAIN_AS_FUNC
 int go_marcel_main(int argc, char *argv[])
+#ifdef PM2_DEV
 #warning go_marcel_main defined
+#endif
 #else
 int main(int argc, char *argv[])
 #endif // MARCEL_MAIN_AS_FUNC

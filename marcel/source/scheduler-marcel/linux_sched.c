@@ -1018,7 +1018,7 @@ static int find_busiest_node(int this_node)
 #endif
 
 #ifdef MA__LWPS
-#ifdef MA__DEBUG
+#ifdef PM2_DEV
 #warning "Load balancing non géré pour l'instant. A faire ([^MS])..."
 #endif
 #if 0
@@ -1376,7 +1376,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 
 	rq->timestamp_last_tick = marcel_clock();
 
-#ifdef MA__DEBUG
+#ifdef PM2_DEV
 #warning rcu not yet implemented (utile pour les numa ?)
 #endif
 	//if (rcu_pending(cpu))
@@ -1633,7 +1633,7 @@ restart:
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
 		sched_debug("rebalance\n");
-#ifdef MA__DEBUG
+#ifdef PM2_DEV
 #warning TODO: demander à l application de rebalancer
 #endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));

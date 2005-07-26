@@ -57,7 +57,9 @@ extern int __zero_fd;
 #    define SLOT_AREA_BOTTOM       0x10000000
 #    define MAIN_STACK_BOT         0xb8000000
 #ifdef ENABLE_STACK_JUMPING
+#ifdef PM2_DEV
 #warning "valgrind won't work"
+#endif
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #else
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > ISOADDR_AREA_TOP)

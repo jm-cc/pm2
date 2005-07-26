@@ -155,7 +155,9 @@ DEF_MARCEL_POSIX(int, cond_timedwait,
 		
 		mdebug("blocking %p (cell %p) in cond_wait %p\n", marcel_self(), &c,
 		       cond);
+#ifdef PM2_DEV
 #warning not managing work in cond_timedwait
+#endif
 		while(c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			marcel_lock_release(&cond->__c_lock.__spinlock);

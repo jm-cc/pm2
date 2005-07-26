@@ -1224,7 +1224,9 @@ mad_via_link_init(p_mad_link_t lnk)
     {
       if (connection->way == mad_incoming_connection)
 	{
+#ifdef PM2_DEV
 #warning TODO: verify 'rdma' flag
+#endif
 	  link_specific->vi =
 	    mad_via_vi_init(adapter, rdma_write, NULL, NULL, vi_id_idx_in_rdma);
 	}
@@ -1898,7 +1900,9 @@ mad_via_new_message(p_mad_connection_t out)
     os->need_send_wait = tbx_true;
 
 
+#ifdef PM2_DEV
 #warning temp
+#endif
       _(VipSendWait(vi->handle, VIP_INFINITE, &desc));
 
       if (desc != vi->output_desc)

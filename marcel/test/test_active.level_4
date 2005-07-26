@@ -20,15 +20,6 @@ prog="active"
 args=""
 hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-active threads = 0
-thread creation
-thread will sleep during 2 seconds...
-active threads = 0
-thread will work a little bit...
-active threads = 0
-thread termination
-thread termination catched
-active threads = 0
 EOF
 
 # Creation de la flavor

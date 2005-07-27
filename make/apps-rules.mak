@@ -30,7 +30,7 @@ flavor:
 
 $(MOD_GEN_BIN)/%$(MOD_EXT): $(MOD_STAMP_FILES)
 	$(COMMON_LINK)
-	$(COMMON_MAIN) $(CC) $(EARLY_LDFLAGS) $(filter %.o, $^) $(LDFLAGS) -o $@
+	$(COMMON_MAIN) $(CC) $(EARLY_LDFLAGS) $(LDFLAGS) -o $@
 
 .PHONY: $(APPS_LIST)
 $(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)

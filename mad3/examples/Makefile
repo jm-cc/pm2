@@ -27,6 +27,7 @@ mad_unreliable			\
 mad_reliability_test		\
 mad_random 			\
 mad_list_ping			\
+mad_bench_ping			\
 mad_micro_direct
 
 include $(PM2_ROOT)/make/apps.mak

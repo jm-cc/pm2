@@ -157,6 +157,9 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
 	LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 	export LD_LIBRARY_PATH
+	if [ -n "$debug_file" ]; then
+	    echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $debug_file
+	fi
 	log "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH"
     fi
 
@@ -183,6 +186,9 @@ else
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
         LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
         export LD_LIBRARY_PATH
+	if [ -n "$debug_file" ]; then
+	    echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $debug_file
+	fi
 	log "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH"
     fi
 

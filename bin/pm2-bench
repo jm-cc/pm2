@@ -62,7 +62,7 @@ compile()
 
 run()
 {
-    ${PM2_ROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $args --debug:leonie-trace $cfgfile; echo "$?"
+    ${PM2_ROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $args $cfgfile; echo "$?"
 }
 
 clean()

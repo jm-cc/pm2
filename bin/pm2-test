@@ -93,6 +93,7 @@ do_the_test()
 
 # Programme principal
 
+_init_level=1 # first level to test
 _level=2 # normal
 _output_redirect=""
 jobs=""
@@ -120,6 +121,26 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--torture|-l4)
 	    _level=4
+	    shift
+	    ;;
+	-L1)
+	    _level=1
+	    _init_level=$_level
+	    shift
+	    ;;
+	-L2)
+	    _level=2
+	    _init_level=$_level
+	    shift
+	    ;;
+	-L3)
+	    _level=3
+	    _init_level=$_level
+	    shift
+	    ;;
+	-L4)
+	    _level=4
+	    _init_level=$_level
 	    shift
 	    ;;
 	--jobs|-j)
@@ -183,7 +204,7 @@ done
 
 _to_test="$_prefix $_suffix"
 
-_l=1
+_l=$_init_level
 while [ $_l -le $_level ]; do
 
     echo "*** Performing level $_l tests ***"

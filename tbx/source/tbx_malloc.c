@@ -82,8 +82,8 @@ tbx_safe_malloc_mem_check(void)
 {
   if(allocated && tbx_print_stats) { // i.e. if Safe_Malloc was really used
 
-    fprintf(stderr, "*** SafeMalloc Stats ***\n");
-    fprintf(stderr, "Allocated: %lu, Freed: %lu, Lost: %lu\n",
+    fprintf(stderr, "#### SafeMalloc Stats ***\n");
+    fprintf(stderr, "#### Allocated: %lu, Freed: %lu, Lost: %lu\n",
 	    (long int)allocated,
 	    (long int)freed,
 	    ((long int)allocated) - ((long int)freed));

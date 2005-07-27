@@ -20,6 +20,7 @@ mad_multi_ping			\
 mad_test			\
 mad_sumping			\
 mad_control			\
+mad_random_test			\
 mad_mux_example			\
 mad_micro			\
 mad_unreliable			\

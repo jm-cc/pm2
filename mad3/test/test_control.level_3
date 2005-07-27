@@ -12,23 +12,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-compile_leonie()
-{
-	(cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
-}
-
-# Verification et compilation du lanceur leonie
-#leonie --help > /dev/null 2>&1 || compile_leonie
-compile_leonie
-
 # Configuration
 flavor="test_mad3"
 appdir="${PM2_ROOT}/mad3/examples"
-prog="mad_test"
+prog="mad_control"
 args="-w --x --p --l"
 hosts=${TESTCONFIG:-"localhost localhost"}
 net=${TESTNET:-tcp}
+
 rm -f /tmp/pm2test_"${USER}"_expected
 for i in $hosts
 do
@@ -38,11 +29,12 @@ done
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ext=\"\" \
- --modules=\"init mad3 ntbx tbx\" \
- --init=\"debug gdb\" \
- --mad3=\"debug gdb ${net}\" \
- --ntbx=\"debug gdb\" \
- --tbx=\"debug gdb\" \
- --common=\"debug gdb\" \
+ --modules=\"init mad3 ntbx tbx marcel\" \
+ --init=\"opt\" \
+ --mad3=\"opt ${net} marcel_poll\" \
+ --ntbx=\"opt\" \
+ --tbx=\"opt\" \
+ --marcel=\"opt mono\" \
+ --common=\"opt\" \
  --all=\"build_static\"
 

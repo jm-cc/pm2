@@ -209,6 +209,10 @@ static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 }
 
 #define ma_atomic_sub_return(i,v) ma_atomic_add_return(-(i),(v))
+
+#define ma_atomic_inc_return(v)  (ma_atomic_add_return(1,v))
+#define ma_atomic_dec_return(v)  (ma_atomic_sub_return(1,v))
+
 #define ma_smp_mb__before_atomic_dec()  ma_barrier()
 #define ma_smp_mb__after_atomic_dec()   ma_barrier()
 #define ma_smp_mb__before_atomic_inc()  ma_barrier()

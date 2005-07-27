@@ -94,6 +94,9 @@ tbx_get_print_stats_mode(void);
 void
 tbx_safe_malloc_init(void);
 
+void
+tbx_safe_malloc_exit(void);
+
 TBX_FMALLOC
 void *
 tbx_safe_malloc(const size_t    size,

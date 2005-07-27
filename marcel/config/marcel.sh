@@ -2,12 +2,6 @@ PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -fomit-frame-pointer"
 #PM2_MARCEL_LIBS_SCRIPTS="$PM2_MARCEL_LIBS_SCRIPTS ${PM2_ROOT}/marcel/marcel.lds"
 PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -I${PM2_ROOT}/marcel/autogen-include"
 
-if [ "$PM2_SYS" = DARWIN_SYS ]; then
-    PM2_MARCEL_EARLY_OBJECT_FILES="_marcel_link.o"
-else
-    PM2_MARCEL_EARLY_LDFLAGS="${PM2_ROOT}/marcel/marcel.lds"
-fi
-
 case " $PM2_LIBS " in
     *\ mad?\ *) ;;
     *) PM2_DEFAULT_LOADER=${PM2_ROOT}/marcel/bin/marcelload_conf_not_needed ;;

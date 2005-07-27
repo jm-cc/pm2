@@ -394,12 +394,21 @@ pm2config_set_vars()
 	eval _flags=\"'$'PM2_${_LIB}_EARLY_OBJECT_FILES\"
 	for _f in $_flags ; do
 	    eval _PM2CONFIG_EARLY_LDFLAGS=\"\$_PM2CONFIG_EARLY_LDFLAGS \$_PM2CONFIG_${_lib}_OBJ_DIR/$_f\"
-
 	done
-
     done
 
     export _PM2CONFIG_EARLY_LDFLAGS
+
+    # early LDFLAGS "kernel":
+    for _lib in $PM2_LIBS appli common ; do
+	eval _LIB='$'${_lib}_to_upper
+	eval _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS=\"'$'PM2_${_LIB}_EARLY_LDFLAGS_KERNEL\"
+	eval _flags=\"'$'PM2_${_LIB}_EARLY_OBJECT_FILES_KERNEL\"
+	for _f in $_flags ; do
+	    eval _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS=\"\$_PM2CONFIG_${_LIB}_KERNEL_EARLY_LDFLAGS \$_PM2CONFIG_${_lib}_OBJ_DIR/$_f\"
+	done
+        eval export _PM2CONFIG_${_lib}_KERNEL_EARLY_LDFLAGS
+    done
 
     # LDFLAGS
     _requested=""

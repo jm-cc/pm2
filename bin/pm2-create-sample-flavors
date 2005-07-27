@@ -22,23 +22,29 @@ registering_flavors() {
 
     register_flavor default \
 	--modules="pm2 dsm marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
-	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
+	--marcel=mono --marcel=marcel_main \
 	--mad3=tcp
 
-    for i in mono smp act actsmp; do
+    for i in mono act; do
 	register_flavor marcel-$i \
 	    --modules="marcel tbx init" $COMMON_OPTIONS \
-	    --marcel=$i --marcel=smp_shared_queue --marcel=marcel_main \
-	    --marcel=smp_bind_proc
+	    --marcel=$i --marcel=marcel_main
+    done
+
+    for i in smp actsmp; do
+	register_flavor marcel-$i \
+	    --modules="marcel tbx init" $COMMON_OPTIONS \
+	    --marcel=$i --marcel=smp_multiple_queues --marcel=marcel_main \
+	    --marcel=smp_bind_proc --marcel=smp_smt_idle
     done
 
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
-	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
+	--marcel=mono --marcel=marcel_main
 
     register_flavor marcel-prof \
 	--modules="marcel profile tbx init" $COMMON_OPTIONS \
-	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
+	--marcel=mono --marcel=marcel_main \
 	--marcel=profile
 
     register_flavor leonie \
@@ -53,16 +59,16 @@ registering_flavors() {
 
     register_flavor mad3 \
 	--modules="mad3 marcel tbx ntbx init" $COMMON_OPTIONS \
-	--mad3=tcp --marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
+	--mad3=tcp --marcel=mono --marcel=marcel_main
 
     register_flavor pm2 \
 	--modules="pm2 dsm marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
-	--marcel=mono --marcel=smp_shared_queue --marcel=marcel_main \
+	--marcel=mono --marcel=marcel_main \
 	--mad3=tcp
 
     register_flavor mad4 \
 	--modules="mad4 marcel tbx ntbx init" $COMMON_OPTIONS \
-	--mad4=tcp --marcel=mono --marcel=smp_shared_queue --marcel=marcel_main
+	--mad4=tcp --marcel=mono --marcel=marcel_main
 
     register_flavor ezflavor \
 	--modules="ezflavor" $COMMON_OPTIONS \
@@ -70,7 +76,7 @@ registering_flavors() {
 
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
-	--marcel=mono --marcel=smp_shared_queue --marcel=main_as_func \
+	--marcel=mono --marcel=main_as_func \
 	--marcel=posix --marcel=pthread --common=link_pm2_shared
 
     register_flavor sigmund \

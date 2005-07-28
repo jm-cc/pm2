@@ -76,6 +76,9 @@ do_the_bench()
     _iter=$1
     shift
 
+    echo "%----------" | tee -a $file_result
+    echo "$_iter" | tee -a $file_result
+
     # Initialisation du bench
     initialize_bench $_iter
 
@@ -83,7 +86,7 @@ do_the_bench()
     compile
 
     # Execution
-    run
+    run 2>&1|tee -a $file_result 
 
     # Nettoyage
     clean
@@ -184,20 +187,24 @@ for _m in $_to_bench ; do
     	    # Source
     	    . ./$_f
 
-	    # Fichier de sortie
-	    rm -f /tmp/pm2bench_${prog}_${USER}_result
-	    touch /tmp/pm2bench_${prog}_${USER}_result
+	    # Fichiers de sortie
+	    file_result="/tmp/pm2bench_${prog}_${USER}_result"
+	    rm -f $file_result
+	    touch $file_result
+
+	    file_status="/tmp/pm2bench_${prog}_${USER}_status"
+	    rm -f $file_status
+	    touch $file_status
 
 	    for _l in $loop; do
 
-	    	echo "$_l" | tee -a /tmp/pm2bench_${prog}_${USER}_result
-
     	    	# Compilation et execution
-    	    	eval do_the_bench $_l $_output_redirect 2>&1 | tee -a /tmp/pm2bench_${prog}_${USER}_result || continue
+		eval do_the_bench $_l 2>&1 | tee -a $file_status
 
 	    done
 
     	done
+        echo "%==========" | tee -a $file_result
 
         fi
 

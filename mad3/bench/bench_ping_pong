@@ -34,6 +34,7 @@ initialize_bench()
 
 	if [ "_${line}" == "_" ]; then
 		echo "device ${dev} not found in setting file"
+		exit 1
 	fi
 
 	OLD_IFS=$IFS
@@ -73,6 +74,7 @@ application : {
 	};
 };
 END
+	echo "Device = ${dev}, network = ${net}, hosts = ${_host_list}"
 }
 
 # args: loop variable
@@ -82,8 +84,8 @@ finalize_bench()
 }
 
 ####################
-# Verification et compilation du lanceur leonie
-#leonie --help > /dev/null 2>&1 || compile_leonie
+# Compilation du lanceur leonie
+echo "Compiling Leonie"
 compile_leonie
 
 flavor="bench_mad3"
@@ -91,8 +93,7 @@ cfgfile="/tmp/bench_mad3.cfg"
 appdir="${PM2_ROOT}/mad3/examples"
 prog="mad_bench_ping"
 args="-w --x --p --l"
-#loop="tcp gm mx quadrics"
-loop="tcp"
+loop="tcp gm mx quadrics"
 bench_setting_file="${PM2_HOME:-${HOME}}/.pm2/bench/mad3"
 #
 

@@ -30,7 +30,6 @@
 // Setup
 //......................
 
-// #define STARTUP_ONLY
 
 // Macros
 //......................
@@ -51,11 +50,10 @@ typedef struct s_mad_ping_result
 // Static variables
 //......................
 
-static const int param_control_receive   = 0;
 static const int param_warmup            = 1;
 static const int param_send_mode         = mad_send_CHEAPER;
 static const int param_receive_mode      = mad_receive_CHEAPER;
-static const int param_nb_samples        = 1000;
+static const int param_nb_samples        = 100;
 static const int param_min_size          = MAD_LENGTH_ALIGNMENT;
 static const int param_max_size          = 1024*1024*2;
 static const int param_step              = 0; /* 0 = progression log. */
@@ -74,87 +72,15 @@ static ntbx_process_grank_t process_grank = -1;
 static ntbx_process_lrank_t process_lrank = -1;
 static ntbx_process_lrank_t master_lrank  = -1;
 
-#ifndef STARTUP_ONLY
 static unsigned char *main_buffer = NULL;
-#endif // STARTUP_ONLY
 
 // Functions
 //......................
-
-#ifndef STARTUP_ONLY
-static void
-mark_buffer(int len);
-
-static void
-mark_buffer(int len)
-{
-  unsigned int n = 0;
-  int          i = 0;
-
-  for (i = 0; i < len; i++)
-    {
-      unsigned char c = 0;
-
-      n += 7;
-      c = (unsigned char)(n % 256);
-
-      main_buffer[i] = c;
-    }
-}
-
-static void
-clear_buffer(void);
-
-static void
-clear_buffer(void)
-{
-  memset(main_buffer, 0, param_max_size);
-}
 
 static void
 fill_buffer(void)
 {
   memset(main_buffer, param_fill_buffer_value, param_max_size);
-}
-
-static void
-control_buffer(int len);
-
-static void
-control_buffer(int len)
-{
-  tbx_bool_t   ok = tbx_true;
-  unsigned int n  = 0;
-  int          i  = 0;
-
-  for (i = 0; i < len; i++)
-    {
-      unsigned char c = 0;
-
-      n += 7;
-      c = (unsigned char)(n % 256);
-
-      if (main_buffer[i] != c)
-	{
-	  int v1 = 0;
-	  int v2 = 0;
-
-	  v1 = c;
-	  v2 = main_buffer[i];
-	  DISP("Bad data at byte %X: expected %X, received %X", i, v1, v2);
-	  ok = tbx_false;
-	}
-    }
-
-  if (!ok)
-    {
-      DISP("%d bytes reception failed", len);
-      FAILURE("data corruption");
-    }
-  else
-    {
-      DISP("ok");
-    }
 }
 
 static
@@ -273,8 +199,6 @@ ping(p_mad_channel_t      channel,
   int size = 0;
 
   LOG_IN();
-  DISP_VAL("ping with", lrank_dst);
-
   if (!param_dynamic_allocation && param_fill_buffer)
     {
       fill_buffer();
@@ -395,27 +319,16 @@ ping(p_mad_channel_t      channel,
                     }
                   else
                     {
-                      if (param_control_receive) {
-                        mark_buffer(_size);
-                      }
-
                       mad_pack(connection, main_buffer, _size,
                                param_send_mode, param_receive_mode);
                     }
 
 		  mad_end_packing(connection);
 
-                  if (!param_unreliable && param_control_receive) {
-                    clear_buffer();
-                  }
-
 		  connection = mad_begin_unpacking(channel);
 		  mad_unpack(connection, main_buffer, _size,
 			     param_send_mode, param_receive_mode);
 		  mad_end_unpacking(connection);
-                  if (!param_unreliable && param_control_receive) {
-                    control_buffer(_size);
-                  }
                   cond_free_main_buffer();
 		}
 	      TBX_GET_TICK(t2);
@@ -448,8 +361,6 @@ pong(p_mad_channel_t      channel,
   int size = 0;
 
   LOG_IN();
-  DISP_VAL("pong with", lrank_dst);
-
   if (!param_dynamic_allocation && param_fill_buffer)
     {
       fill_buffer();
@@ -604,7 +515,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
   tbx_bool_t                 status  = tbx_false;
   ntbx_pack_buffer_t         buffer;
 
-  DISP_STR("Channel", name);
   channel = tbx_htable_get(madeleine->channel_htable, name);
   if (!channel)
     {
@@ -620,14 +530,12 @@ play_with_channel(p_mad_madeleine_t  madeleine,
     return;
 
   process_lrank = ntbx_pc_global_to_local(pc, process_grank);
-  DISP_VAL("My local channel rank is", process_lrank);
 
   if (process_lrank == master_lrank)
     {
       // Master
 	   ntbx_process_lrank_t lrank_src = -1;
 
-      LDISP_STR("Channel", name);
       LDISP("src|dst|size        |latency     |10^6 B/s|MB/s    |");
 
       ntbx_pc_first_local_rank(pc, &lrank_src);
@@ -734,7 +642,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	}
       while (ntbx_pc_next_local_rank(pc, &lrank_src));
 
-      DISP("test series completed");
       ntbx_pc_first_local_rank(pc, &lrank_src);
 
       while (ntbx_pc_next_local_rank(pc, &lrank_src))
@@ -791,7 +698,6 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	}
     }
 }
-#endif // STARTUP_ONLY
 
 #ifdef MARCEL
 static
@@ -812,9 +718,7 @@ void *
 pseudo_main(void *_madeleine) {
   p_mad_madeleine_t madeleine = _madeleine;
   p_mad_session_t   session   = NULL;
-#ifndef STARTUP_ONLY
   p_tbx_slist_t     slist     = NULL;
-#endif // STARTUP_ONLY
 
   session       = madeleine->session;
   process_grank = session->process_rank;
@@ -822,11 +726,8 @@ pseudo_main(void *_madeleine) {
     char host_name[1024] = "";
 
     SYSCALL(gethostname(host_name, 1023));
-    DISP("(%s): My global rank is %d", host_name, process_grank);
+    DISP("(%s): rank %d", host_name, process_grank);
   }
-
-  DISP_VAL("The configuration size is",
-	   tbx_slist_get_length(madeleine->dir->process_slist));
 
 #ifdef MARCEL
   if (param_nb_working_threads > 0) {
@@ -839,7 +740,6 @@ pseudo_main(void *_madeleine) {
   }
 #endif /* MARCEL */
 
-#ifndef STARTUP_ONLY
   slist = madeleine->public_channel_slist;
   if (!tbx_slist_is_nil(slist))
     {
@@ -866,7 +766,6 @@ pseudo_main(void *_madeleine) {
     {
       DISP("No channels");
     }
-#endif // STARTUP_ONLY
 
   return NULL;
 }
@@ -882,15 +781,10 @@ main(int    argc,
 {
   p_mad_madeleine_t madeleine = NULL;
 
-#ifdef USE_MAD_INIT
-  madeleine = mad_init(&argc, argv);
-  TRACE("Returned from mad_init");
-#else // USE_MAD_INIT
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);
   TRACE("Returned from common_init");
   madeleine = mad_get_madeleine();
-#endif // USE_MAD_INIT
 
 #ifdef MARCEL
  {
@@ -906,10 +800,6 @@ main(int    argc,
   pseudo_main(madeleine);
 #endif /* MARCEL */
 
-
-  DISP("Exiting");
-
-  // mad_exit(madeleine);
   common_exit(NULL);
 
   return 0;

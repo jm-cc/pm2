@@ -146,6 +146,7 @@ while [ $# -gt 0 ]; do
 	--jobs|-j)
 	    jobs="$1 $2"
 	    shift
+	    shift
 	    ;;
 	--jobs=*|-j*)
 	    jobs=$1

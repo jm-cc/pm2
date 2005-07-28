@@ -1,0 +1,63 @@
+This document describe the use of the 'pm2-bench' script for automated
+benchmarking
+
+  -----
+
+Usage
+=====
+
+The easiest way to use 'pm2-bench' is to simply call it in a terminal without
+additional argument. This will run all the benchmarks availables in each PM2
+module. Specifying a module name after 'pm2-bench' on the command-line will run
+the benchmarks for this module only.
+
+Note: some modules may requires site-dependent configuration information for
+running their benchmarks. See the "Benchmarks configuration" section below.
+
+
+Benchmarks configuration
+========================
+
+- Module Mad3
+  -----------
+
+  This module benchmark requires some information about mapping devices onto actual
+  networks and computers. This information should be written in the
+  ${HOME}|${PM2_HOME}/bench/mad3 file according to the following format:
+  <dev>:<net>:<comma separated host list>
+
+  Example:
+<<
+tcp:dalton:jack,william
+mx:dalton_mx:averell,william
+quadrics:dalton_quadrics:joe,jack
+>>
+
+Adding new benchmarks
+=====================
+
+Adding a benchmark to a module consists in writing a piece of (sh) shell script
+defining some specific variables and functions and putting it in the 'bench' subdirectory of
+the module.
+
+- specific variables
+
+  . flavor:	the name for the flavor to create and use for the test
+  . appdir:	directory containing the benchmark program source
+  . prog:	name of the program (with the extension)
+  . loop:	list of args to loop the benchmark on (for instance a list of
+  devices with the Mad3 module)
+
+- specific functions
+
+  . initialize_bench:	configure the flavor and the bench for a given
+  iteration and is called before the compilation step
+
+  . run_bench:	actually launch and run the bench for a given iteration, is called after
+  compilation step and before cleaning step
+
+  . finalize_bench:	called after the cleaning step for bench specific
+  cleaning
+
+  -----
+

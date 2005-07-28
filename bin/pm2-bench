@@ -60,11 +60,6 @@ compile()
     [ $? -eq 0 ] || pm2bench_error "Compilation failed"
 }
 
-run()
-{
-    ${PM2_ROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $args $cfgfile; echo "$?"
-}
-
 clean()
 {
     ${PM2_ROOT}/bin/pm2-clean $flavor
@@ -86,7 +81,7 @@ do_the_bench()
     compile
 
     # Execution
-    run 2>&1|tee -a $file_result 
+    run_bench 2>&1|tee -a $file_result 
 
     # Nettoyage
     clean

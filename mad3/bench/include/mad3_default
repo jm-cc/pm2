@@ -15,6 +15,7 @@
 
 compile_leonie()
 {
+	echo "Compiling Leonie"
 	(cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
 }
 
@@ -26,7 +27,7 @@ initialize_bench()
 	
 	if [ ! -f ${bench_setting_file} ]; then
 		echo "bench setting file \"${bench_setting_file}\" not found"
-		exit 1
+		return 1
 	fi
 
         # Configuration
@@ -34,7 +35,7 @@ initialize_bench()
 
 	if [ "_${line}" == "_" ]; then
 		echo "device ${dev} not found in setting file"
-		exit 1
+		return 1
 	fi
 
 	OLD_IFS=$IFS
@@ -81,6 +82,9 @@ run_bench()
 	_run_flavor=$1
 	shift
 
+	# wait for NFS to propagate the new compiled program
+	sleep 10
+
 	${PM2_ROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $leo_args $leo_cfg_file $leo_appli_args
 }
 
@@ -93,8 +97,7 @@ finalize_bench()
 ####################
 
 # Compilation du lanceur leonie
-echo "Compiling Leonie"
-compile_leonie
+compile_leonie 2>&1 | sed -e 's/^/..../'
 
 #
 

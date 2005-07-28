@@ -55,9 +55,8 @@ to_be_benched() # module
 compile()
 {
     echo "Compiling program $prog..."
-    (cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor)
-    (cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor)
-    [ $? -eq 0 ] || pm2bench_error "Compilation failed"
+    cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor
+    cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor
 }
 
 clean()
@@ -75,19 +74,23 @@ do_the_bench()
     echo "$_iter" | tee -a $file_result
 
     # Initialisation du bench
-    initialize_bench $_iter
+    (initialize_bench $_iter; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2bench_error "Initialization failed"
 
     # Compilation
-    compile
+    (compile; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2bench_error "Compilation failed"
 
     # Execution
-    run_bench 2>&1|tee -a $file_result 
+    (run_bench; echo "$?" >$file_status) 2>&1|tee -a $file_result 
+    [ `cat $file_status` -eq 0 ] || pm2bench_error "Execution failed"
 
     # Nettoyage
-    clean
+    (clean; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2bench_error "Cleaning failed"
 
     # Finalisation
-    finalize_bench $_iter
+    (finalize_bench $_iter) 2>&1 | sed -e 's/^/..../'
 }
 
 # Programme principal
@@ -184,18 +187,20 @@ for _m in $_to_bench ; do
     	    . ./$_f
 
 	    # Fichiers de sortie
+	    file_status="/tmp/pm2bench_${prog}_${USER}_status"
+
 	    file_result="/tmp/pm2bench_${prog}_${USER}_result"
 	    rm -f $file_result
 	    touch $file_result
 
-	    file_status="/tmp/pm2bench_${prog}_${USER}_status"
-	    rm -f $file_status
-	    touch $file_status
+	    file_log="/tmp/pm2bench_${prog}_${USER}_log"
+	    rm -f $file_log
+	    touch $file_log
 
 	    for _l in $loop; do
 
     	    	# Compilation et execution
-		eval do_the_bench $_l 2>&1 | tee -a $file_status
+		eval do_the_bench $_l 2>&1 | tee -a $file_log
 
 	    done
 

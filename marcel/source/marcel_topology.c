@@ -221,7 +221,7 @@ static void __marcel_init look_libnuma(void) {
 		buffersize*=2;
 		if (!(buffer2 = TBX_REALLOC(buffer, buffersize))) {
 			fprintf(stderr,"no room for storing cpu mask\n");
-			free(buffer);
+			TBX_FREE(buffer);
 			return;
 		}
 		buffer=buffer2;
@@ -245,6 +245,8 @@ static void __marcel_init look_libnuma(void) {
 
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
+
+	TBX_FREE(buffer);
 }
 #endif /* MA__NUMA */
 
@@ -302,6 +304,16 @@ static void topo_discover(void) {
 					marcel_topo_levels[l][i].sons[m++]=
 						&marcel_topo_levels[l+1][j];
 		}
+	}
+}
+
+void ma_topo_exit(void) {
+	unsigned l,i;
+	for (l=1; l<marcel_topo_nblevels-1; l++) {
+		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+			TBX_FREE(marcel_topo_levels[l][i].sons);
+		}
+		TBX_FREE(marcel_topo_levels[l]);
 	}
 }
 

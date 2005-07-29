@@ -26,8 +26,11 @@ unsigned marcel_nbprocessors;
 int ma_lwp_node[MA_NR_LWPS];
 
 #section functions
-#ifdef MA__LWPS
-void ma_set_nbprocessors(void);
+extern void ma_set_nbprocessors(void);
+extern void ma_topo_exit(void);
+#ifndef MA__LWPS
+#define ma_set_nbprocessors() (void)0
+#define ma_topo_exit() (void)0
 #endif
 
 #section types

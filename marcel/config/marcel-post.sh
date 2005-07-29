@@ -18,6 +18,21 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_
     fi
 fi
 
+if [ "$PM2_MARCEL_BUILD_STATIC" = yes ]; then
+    if [ "$PM2_SYS" = DARWIN_SYS ]; then
+	PM2_MARCEL_EARLY_OBJECT_FILES="_marcel_link.o"
+    else
+	PM2_MARCEL_EARLY_LDFLAGS="${PM2_ROOT}/marcel/marcel.lds"
+    fi
+fi
+if [ "$PM2_MARCEL_BUILD_DYNAMIC" = yes ]; then
+    if [ "$PM2_SYS" = DARWIN_SYS ]; then
+        PM2_MARCEL_EARLY_OBJECT_FILES_KERNEL="_marcel_link.o"
+    else
+        PM2_MARCEL_EARLY_LDFLAGS_KERNEL="${PM2_ROOT}/marcel/marcel.lds"
+    fi
+fi
+
 # can be set by 'pthread' option
 PM2_MARCEL_LIBNAME=${PM2_MARCEL_LIBNAME:-marcel}
 

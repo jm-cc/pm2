@@ -74,11 +74,6 @@ do_the_test()
 #    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
     [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || [ `cat /tmp/pm2test_${USER}_status` -eq 142 ] || pm2test_error "Execution failed"
 
-    # Destruction de la flavor
-    #echo "Cleaning flavor & files..."
-    ${PM2_ROOT}/bin/pm2-clean $flavor
-    ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
-
     # Le moment de verite
     echo "Checking results..."
     if grep -v '^####' /tmp/pm2test_${USER}_result | head -$nbl | diff -u /tmp/pm2test_${USER}_expected - ; then
@@ -86,6 +81,11 @@ do_the_test()
     else
 	pm2test_error "Test failed: unexpected result (see /tmp/pm2test_${USER}_result)"
     fi
+
+    # Destruction de la flavor
+    #echo "Cleaning flavor & files..."
+    ${PM2_ROOT}/bin/pm2-clean $flavor
+    ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
 
     # Destruction des fichiers residuels
     rm -rf /tmp/pm2test_${USER}_*

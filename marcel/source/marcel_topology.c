@@ -309,11 +309,12 @@ static void topo_discover(void) {
 
 void ma_topo_exit(void) {
 	unsigned l,i;
-	for (l=1; l<marcel_topo_nblevels-1; l++) {
+	for (l=0; l<marcel_topo_nblevels; l++) {
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
 			TBX_FREE(marcel_topo_levels[l][i].sons);
 		}
-		TBX_FREE(marcel_topo_levels[l]);
+		if (l)
+			TBX_FREE(marcel_topo_levels[l]);
 	}
 }
 

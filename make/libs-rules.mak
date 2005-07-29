@@ -80,7 +80,7 @@ $(STAMP_BUILD_LIB_SO): $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 VERSION_SCRIPT_OPT=-Xlinker --version-script=
 LINK_CMD=$(LD) -Xlinker --soname=$(notdir $(LIB_LIB_SO_MAJ)) \
 		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
-		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LDFLAGS) \
+		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
 		$(filter-out %/_$(LIBNAME)_link.pic, $(filter %.pic, $(MOD_PICS)))
 $(LIB_LIB_SO_MAJ_MIN): $(MOD_PICS) $(LIB_LIB_SO_MAP)
 	$(COMMON_LINK)

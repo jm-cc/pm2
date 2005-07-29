@@ -23,6 +23,7 @@
 #include "tbx_macros.h"
 #include "marcel_alloc___macros.h"
 #include "sys/marcel_flags.h"
+#include "marcel_valgrind.h"
 
 __TBX_BEGIN_DECLS
 

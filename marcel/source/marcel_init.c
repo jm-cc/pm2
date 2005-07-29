@@ -200,6 +200,7 @@ void marcel_finish(void)
 {
   marcel_gensched_shutdown();
   marcel_slot_exit();
+  ma_topo_exit();
   mdebug("threads created in cache : %ld\n", marcel_cachedthreads());
 }
 
@@ -230,6 +231,7 @@ int main(int argc, char *argv[])
 {
 	static int __argc;
 	static char **__argv;
+	unsigned long new_sp;
 
 #ifdef MAD2
 	marcel_debug_init(&argc, argv, PM2DEBUG_DO_OPT);
@@ -246,12 +248,15 @@ int main(int argc, char *argv[])
 		
 		__argc = argc; __argv = argv;
 
-#ifdef WIN_SYS
-		win_stack_allocate(THREAD_SLOT_SIZE);
-#endif
+		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
 
 		/* On se contente de descendre la pile. Tout va bien, même sur Itanium */
-		set_sp((unsigned long)__main_thread - TOP_STACK_FREE_AREA);
+		/* prévenir valgrind de cette grande descente, sinon il risque de croire à un changement de pile */
+		VALGRIND_MAKE_WRITABLE(new_sp, get_sp() - new_sp);
+#ifdef WIN_SYS
+		win_stack_allocate(get_sp() - new_sp);
+#endif
+		set_sp(new_sp);
 		
 #ifdef ENABLE_STACK_JUMPING
 		*((marcel_t *)((char *)__main_thread + MAL(sizeof(marcel_task_t)) - 

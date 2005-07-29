@@ -145,6 +145,8 @@ retry:
 				   PROT_READ | PROT_WRITE | PROT_EXEC,
 				   MMAP_MASK,
 				   FILE_TO_MAP, 0);
+			/* TODO: mémoriser l'id et effectuer des VALGRIND_STACK_DEREGISTER sur munmap() */
+			VALGRIND_STACK_REGISTER(next_slot, next_slot + THREAD_SLOT_SIZE);
 
 			if(ptr == MAP_FAILED) {
 				marcel_lock_release(&alloc_lock);
@@ -211,5 +213,4 @@ void marcel_slot_exit(void)
 			main_slot=0;
 		}
 	}
-	
 }

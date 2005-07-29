@@ -300,7 +300,13 @@ options of module \|tbx|, the toolbox common to all PM2 modules. If
 you suspect a problem with synchronization objects, you will find
 useful options in the \|marcel| module, and in the \|dsm| module for
 the inter-node synchronization actions induced by the DSM consistency
-protocols.
+protocols. I you wish to use the \|valgrind| debugger on a program using
+\|marcel|, you need to set the \|valgrind| option of the \|marcel|
+module to let \|valgrind| know about \|marcel| stacks. If your version
+of \|valgrind| is older than 3.0, you will also need to recompile it
+after setting, in \|coregrind/vg_memory.c|, the
+\|VG_PLAUSIBLE_STACK_SIZE| constant to the size of \|marcel| stacks
+(65536 by default).
 
 Assuming that you are using the \|pm2| flavor, make up a
 \|pm2-debug| one. Set your \|PM2_FLAVOR| shell variable to this value,

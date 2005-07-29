@@ -165,7 +165,7 @@ static void *lwp_kthread_start_func(void *arg)
 	mdebug("\t\t\t<LWP %d started (self == %lx)>\n",
 	       ma_per_lwp(number,lwp), (unsigned long)marcel_kthread_self());
 
-	marcel_lwp_start(GET_LWP(marcel_self()));
+	marcel_lwp_start(lwp);
 
 	marcel_sem_P(&lwp->kthread_stop);
 

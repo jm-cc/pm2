@@ -19,11 +19,11 @@
 
 #section variables
 #depend "sys/marcel_lwp.h[marcel_macros]"
-unsigned marcel_nbprocessors;
+extern unsigned marcel_nbprocessors;
 #ifndef MA__LWPS
 #define marcel_nbprocessors 1
 #endif
-int ma_lwp_node[MA_NR_LWPS];
+extern int ma_lwp_node[MA_NR_LWPS];
 
 #section functions
 extern void ma_set_nbprocessors(void);

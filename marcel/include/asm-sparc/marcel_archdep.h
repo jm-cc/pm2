@@ -42,13 +42,13 @@
 
 extern void call_ST_FLUSH_WINDOWS(void);
 
-static __tbx_inline__ long get_sp()
-{
-  register long sp;
+#define get_sp() \
+({ \
+  register long sp; \
+  __asm__ __volatile__("mov %%sp, %0" : "=r" (sp)); \
+  sp; \
+})
 
-  __asm__ __volatile__("mov %%sp, %0" : "=r" (sp));
-  return sp;
-}
 #  define set_sp(val) \
     __asm__ __volatile__("mov %0, %%sp\n\t" \
                          : : "r" (val) : "memory")

@@ -30,18 +30,18 @@
 
 #define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #ifndef __INTEL_COMPILER
-static __tbx_inline__ long TBX_NOINST get_sp(void)
-{
-  register long sp;
-
-  __asm__ __volatile__(
+#define get_sp() \
+({ \
+  register long sp; \
+  __asm__ __volatile__( \
 		  ";; \n\t" \
-		  "mov %0 = sp ;; \n\t"
+		  "mov %0 = sp ;; \n\t" \
 		  ";; \n\t" \
-		  : "=r" (sp));
+		  : "=r" (sp)); \
+  __asm__ __volatile__("" : "=r" (sp)); \
+  sp; \
+})
 
-  return sp;
-}
 static __tbx_inline__ long get_bsp(void)
 {
   register long bsp;
@@ -94,18 +94,7 @@ static __tbx_inline__ long get_bsp(void)
 #else
 #define _MA_IA64_REG_SP		1036	/* R12 */
 __u64 __getReg(const int whichReg);
-static __tbx_inline__ long get_sp(void)
-{
-  register long sp;
-
-/*   __asm__ __volatile__( */
-/* 		  ";; \n\t" \ */
-/* 		  "mov %0 = sp ;; \n\t" */
-/* 		  ";; \n\t" \ */
-/* 		  : "=r" (sp)); */
-  sp = __getReg(_MA_IA64_REG_SP);
-  return sp;
-}
+#define get_sp() ((long)__getReg(_MA_IA64_REG_SP))
 #endif
 
 #endif

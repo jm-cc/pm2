@@ -46,13 +46,13 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-static __tbx_inline__ long get_sp(void)
-{
-  register long sp;
+#define get_sp() \
+({ \
+  register long sp; \
+  __asm__ __volatile__("addq $sp, $31, %0" : "=r" (sp)); \
+  sp; \
+})
 
-  __asm__ __volatile__("addq $sp, $31, %0" : "=r" (sp));
-  return sp;
-}
 #  define set_sp(val) \
   __asm__ __volatile__("addq %0, $31, $sp" \
                        : : "r" (val) : "memory" )

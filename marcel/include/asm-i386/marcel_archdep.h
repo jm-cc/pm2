@@ -55,13 +55,13 @@ static __tbx_inline__ long get_gs(void)
     return gs;
 }
 
-static __tbx_inline__ long get_sp(void)
-{
-  register long sp;
+#define get_sp() \
+({ \
+  register long sp; \
+  __asm__ __volatile__("movl %%esp, %0" : "=r" (sp)); \
+  sp; \
+})
 
-  __asm__ __volatile__("movl %%esp, %0" : "=r" (sp));
-  return sp;
-}
 #define set_sp(val) \
   do { \
     typeof(val) value=(val); \

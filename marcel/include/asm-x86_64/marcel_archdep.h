@@ -27,13 +27,12 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-static __tbx_inline__ long get_sp(void)
-{
-  register long sp;
-
-  __asm__ __volatile__("movq %%rsp, %0" : "=r" (sp));
-  return sp;
-}
+#define get_sp() \
+({ \
+  register long sp; \
+  __asm__ __volatile__("movq %%rsp, %0" : "=r" (sp)); \
+  sp; \
+})
 
 #define set_sp(val) \
   do { \

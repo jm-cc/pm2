@@ -114,7 +114,11 @@ tbx_safe_malloc_mem_check(void)
 void
 tbx_safe_malloc_init(void)
 {
+#ifdef MARCEL
+  marcel_atexit((marcel_atexit_func_t) tbx_safe_malloc_mem_check, NULL);
+#else
   atexit(tbx_safe_malloc_mem_check);
+#endif
 }
 
 void

@@ -30,8 +30,6 @@
 #endif
 #endif
 
-ma_atomic_t __preemption_disabled=MA_ATOMIC_INIT(0);
-
 /* Unité : microsecondes */
 #define MIN_TIME_SLICE		10000
 #define DEFAULT_TIME_SLICE	MIN_TIME_SLICE
@@ -307,6 +305,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 
 	LOG_IN();
 
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigemptyset(&sa.sa_mask);
 #if !defined(WIN_SYS)
 	sa.sa_flags = SA_RESTART;
@@ -331,7 +330,6 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sa.sa_handler = timer_interrupt;
 #endif
 	
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
@@ -347,17 +345,15 @@ static void sig_stop_timer(ma_lwp_t lwp)
 
 	LOG_IN();
 
-	memset(&value,0,sizeof(value));
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+	memset(&value,0,sizeof(value));
 	setitimer(MARCEL_ITIMER_TYPE, &value,
 		  (struct itimerval *)NULL);
-#endif
 
 	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = SIG_DFL;
+	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;
 
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 

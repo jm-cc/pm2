@@ -28,6 +28,7 @@
  * ------------
  */
 #undef DEBUG
+#define MARCEL_INTERNAL_INCLUDE
 #include "tbx.h"
 
 /*
@@ -65,9 +66,9 @@ static size_t                     allocated = 0;
 static size_t                     freed     = 0;
 
 #ifdef MARCEL
-static marcel_mutex_t	mutex;
-#define lock() marcel_mutex_lock(&mutex)
-#define unlock() marcel_mutex_unlock(&mutex)
+static ma_spinlock_t	mutex = MA_SPIN_LOCK_UNLOCKED;
+#define lock() ma_spin_lock(&mutex)
+#define unlock() ma_spin_unlock(&mutex)
 #else
 #define lock() ((void)0)
 #define unlock() ((void)0)

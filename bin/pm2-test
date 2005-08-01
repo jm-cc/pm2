@@ -72,7 +72,7 @@ do_the_test()
     ${PM2_ROOT}/bin/pm2conf -f $flavor $hosts
     (${PM2_ROOT}/bin/pm2load -f $flavor $prog $args; echo "$?" > /tmp/pm2test_${USER}_status) 2>&1 | tee /tmp/pm2test_${USER}_result | grep '^####'
 #    ${PM2_ROOT}/bin/pm2load -f $flavor $prog $args > /tmp/pm2test_${USER}_result 2>&1
-    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || [ `cat /tmp/pm2test_${USER}_status` -eq 142 ] || pm2test_error "Execution failed"
+    [ `cat /tmp/pm2test_${USER}_status` -eq 0 ] || pm2test_error "Execution failed"
 
     # Le moment de verite
     echo "Checking results..."

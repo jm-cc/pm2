@@ -245,6 +245,7 @@ int marcel_main (int argc, char **argv)
  top2 () ;
  temps = cpu_time();
  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+ marcel_end();
  return 0 ;
 }
 

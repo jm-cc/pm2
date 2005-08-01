@@ -64,6 +64,15 @@ static p_tbx_safe_malloc_header_t last = NULL;
 static size_t                     allocated = 0;
 static size_t                     freed     = 0;
 
+#ifdef MARCEL
+static marcel_mutex_t	mutex;
+#define lock() marcel_mutex_lock(&mutex)
+#define unlock() marcel_mutex_unlock(&mutex)
+#else
+#define lock() ((void)0)
+#define unlock() ((void)0)
+#endif
+
 static tbx_bool_t tbx_print_stats = tbx_true;
 
 void
@@ -80,6 +89,7 @@ static
 void
 tbx_safe_malloc_mem_check(void)
 {
+  lock();
   if(allocated && tbx_print_stats) { // i.e. if Safe_Malloc was really used
 
     fprintf(stderr, "#### SafeMalloc Stats ***\n");
@@ -95,6 +105,7 @@ tbx_safe_malloc_mem_check(void)
     }
 
   }
+  unlock();
 }
 
 void
@@ -117,20 +128,22 @@ tbx_safe_malloc(const size_t    size,
   p_tbx_safe_malloc_header_t p;
   void *ptr;
 
-#ifdef TBX_PARANO_MALLOC
-  tbx_safe_malloc_check(tbx_safe_malloc_ERRORS_ONLY);
-#endif
-
   p = malloc(TBX_SAFE_MALLOC_HEADER_SIZE +
 	     size +
 	     TBX_SAFE_MALLOC_MAGIC_SIZE +
 	     strlen(file) +
 	     1);
+
   ptr = p;
 
   if (!ptr)
     return NULL;
 
+#ifdef TBX_PARANO_MALLOC
+  tbx_safe_malloc_check(tbx_safe_malloc_ERRORS_ONLY);
+#endif
+
+  lock();
   allocated += size;
 
   p->next = NULL;
@@ -160,6 +173,7 @@ tbx_safe_malloc(const size_t    size,
       p->prev    = last;
       last       = p;
     }
+  unlock();
 
   return (char *)p + TBX_SAFE_MALLOC_HEADER_SIZE;
 }
@@ -210,12 +224,13 @@ tbx_safe_free(void *ptr, const char *file, const unsigned  line)
   if (!p)
     FAILURE("cannot free NULL ptr");
 
+  tbx_safe_malloc_check_chunk(p);
+
 #ifdef TBX_PARANO_MALLOC
   tbx_safe_malloc_check(tbx_safe_malloc_ERRORS_ONLY);
 #endif
 
-  tbx_safe_malloc_check_chunk(p);
-
+  lock();
   if(!p->next)
     last = p->prev;
   else
@@ -236,6 +251,7 @@ tbx_safe_free(void *ptr, const char *file, const unsigned  line)
   memset(base,
 	 0,
 	 TBX_SAFE_MALLOC_MAGIC_SIZE);
+  unlock();
 
   free(p);
 }
@@ -245,6 +261,7 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 {
   p_tbx_safe_malloc_header_t p;
 
+  lock();
   for(p = list; p; p = p->next)
     {
       void *ptr  = p;
@@ -258,6 +275,7 @@ tbx_safe_malloc_check(tbx_safe_malloc_mode_t mode)
 		"\t[addr=%p, size=%lu, malloc'ed in file %s at line %lu]\n",
 		ptrh, (unsigned long)p->size, ptrf, p->line);
     }
+  unlock();
 }
 
 void *

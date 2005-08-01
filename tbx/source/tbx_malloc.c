@@ -102,7 +102,9 @@ tbx_safe_malloc_mem_check(void)
     if (list) {
       fprintf(stderr,
 	      "SafeMalloc: Warning! All allocated memory has not been restitued :\n");
+      unlock();
       tbx_safe_malloc_check(tbx_safe_malloc_VERBOSE);
+      return;
     }
 
   }

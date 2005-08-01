@@ -217,5 +217,7 @@ int marcel_main(int argc, char *argv[])
     bench_contsw4(atol(argv[1]));
   }
 
+  marcel_end();
+
   return 0;
 }

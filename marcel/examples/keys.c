@@ -73,5 +73,7 @@ int marcel_main(int argc, char *argv[])
    marcel_join(writer1_pid, &status);
    marcel_join(writer2_pid, &status);
 
+   marcel_end();
+
    return 0;
 }

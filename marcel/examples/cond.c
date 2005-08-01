@@ -90,5 +90,7 @@ int marcel_main(int argc, char *argv[])
     bench_cond(atoi(argv[1]));
   }
 
+  marcel_end();
+
   return 0;
 }

@@ -59,5 +59,7 @@ int marcel_main(int argc, char *argv[])
    marcel_join(writer_pid, &status);
 
    tfprintf(stderr, "marcel ended\n");
+
+   marcel_end();
    return 0;
 }

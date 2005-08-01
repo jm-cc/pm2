@@ -55,5 +55,7 @@ int marcel_main(int argc, char *argv[])
 
    tprintf("thread termination catched\n");
 
+   marcel_end();
+
    return 0;
 }

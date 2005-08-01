@@ -63,5 +63,7 @@ int marcel_main(int argc, char *argv[])
    marcel_delay(10);
 
    tprintf("active threads = %d\n", marcel_activethreads());
+
+   marcel_end();
    return 0;
 }

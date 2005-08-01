@@ -53,6 +53,8 @@ int marcel_main(int argc, char *argv[])
 
    marcel_join(pid, &status);
 
+   marcel_end();
+
    return 0;
 }
 

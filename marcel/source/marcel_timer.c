@@ -30,6 +30,8 @@
 #endif
 #endif
 
+ma_atomic_t __preemption_disabled = MA_ATOMIC_INIT(0);
+
 /* Unité : microsecondes */
 #define MIN_TIME_SLICE		10000
 #define DEFAULT_TIME_SLICE	MIN_TIME_SLICE

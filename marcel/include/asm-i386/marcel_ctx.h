@@ -15,5 +15,37 @@
  */
 
 #section common
+#depend "asm-generic/marcel_ctx_types.h[]"
 
-#depend "asm-generic/marcel_ctx.h[]"
+#section structures
+#include "sys/marcel_archsetjmp.h"
+typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
+	jmp_buf jbuf;
+} marcel_ctx_t[1];
+
+#section macros
+#define marcel_ctx_getcontext(ctx) \
+  setjmp(ctx[0].jbuf)
+#define marcel_ctx_setjmp(ctx) marcel_ctx_getcontext(ctx)
+
+#define marcel_ctx_setcontext(ctx, ret) \
+  longjmp(ctx[0].jbuf, ret)
+#define marcel_ctx_longjmp(ctx, ret) marcel_ctx_setcontext(ctx, ret)
+
+#section marcel_macros
+/* marcel_create : passage père->fils */
+#define marcel_ctx_set_new_stack(new_task, new_sp) \
+  do { \
+    set_bp(new_sp); \
+    set_sp(new_sp); \
+  } while (0)
+
+/* marcel_deviate : passage temporaire sur une autre pile */
+#define marcel_ctx_switch_stack(from_task, to_task, new_sp) \
+  do { \
+    set_sp(new_sp); \
+  } while (0)
+
+#define marcel_ctx_get_sp(ctx) \
+  (SP_FIELD(ctx[0].jbuf))
+

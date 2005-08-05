@@ -57,7 +57,7 @@ static __tbx_inline__ long get_gs(void)
 
 #define get_sp() \
 ({ \
-  register long sp; \
+  register unsigned long sp; \
   __asm__ __volatile__("movl %%esp, %0" : "=r" (sp)); \
   sp; \
 })

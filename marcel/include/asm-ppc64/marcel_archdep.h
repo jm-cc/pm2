@@ -35,7 +35,7 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-extern void set_sp(long);
-extern long get_sp(void);
+extern void set_sp(unsigned long);
+extern unsigned long get_sp(void);
 
 #endif

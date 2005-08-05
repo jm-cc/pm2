@@ -229,12 +229,9 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	if (!(special_mode==2 && MA_TASK_NOT_COUNTED_IN_RUNNING(new_task))) {
 		marcel_one_more_task(new_task);
 	} else {
-		static int norun_pid=0;
-		int norun_pid_new;
-		do {
-			norun_pid_new=norun_pid;
-		} while ( norun_pid_new != ma_cmpxchg(&norun_pid, norun_pid_new, norun_pid_new-1));
-		new_task->number= norun_pid_new-1;
+		/* TODO: per_lwp ? */
+		static ma_atomic_t norun_pid = MA_ATOMIC_INIT(0);
+		new_task->number = ma_atomic_dec_return(&norun_pid);
 	}
 	MTRACE("Creation", new_task);
 	

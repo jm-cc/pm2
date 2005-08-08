@@ -49,3 +49,6 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 #define marcel_ctx_get_sp(ctx) \
   (SP_FIELD(ctx[0].jbuf))
 
+#define marcel_ctx_get_bsp(ctx) \
+  (BSP_FIELD(ctx[0].jbuf))
+

@@ -70,5 +70,12 @@ static __tbx_inline__ long get_gs(void)
                        : : "m" (value) : "memory" ); \
   } while (0)
 
+#define set_bp(val) \
+  do { \
+    typeof(val) value=(val); \
+    __asm__ __volatile__("movl %0, %%ebp" \
+                       : : "m" (value) : "memory" ); \
+  } while (0)
+
 
 #endif

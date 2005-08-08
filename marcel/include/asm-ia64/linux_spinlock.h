@@ -57,7 +57,7 @@ typedef struct {
  * carefully coded to touch only those registers that spin_lock() marks "clobbered".
  */
 
-#define MA_IA64_SPINLOCK_CLOBBERS "ar.ccv", "ar.pfs", "p14", "r28", "r29", "r30", "b6", "memory"
+#define MA_IA64_SPINLOCK_CLOBBERS "ar.ccv", "ar.pfs", "p14", /*"p15", "r27", */ "r28", "r29", "r30", "b6", "memory"
 
 static __tbx_inline__ void
 _ma_raw_spin_lock (ma_spinlock_t *lock)
@@ -76,8 +76,9 @@ _ma_raw_spin_lock (ma_spinlock_t *lock)
 		      "movl r29 = ma_ia64_spinlock_contention_pre3_4;;\n\t"
 		      "cmp4.ne p14, p0 = r30, r0\n\t"
 		      "mov b6 = r29;;\n"
+		      //"mov r27=%2\n\t"
 		      "(p14) br.cond.spnt.many b6"
-		      : "=r"(ptr) : "r"(ptr) : MA_IA64_SPINLOCK_CLOBBERS);
+		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
 #   else
 	asm volatile ("{\n\t"
 		      "  mov ar.ccv = r0\n\t"
@@ -86,28 +87,31 @@ _ma_raw_spin_lock (ma_spinlock_t *lock)
 		      "}\n\t"
 		      "cmpxchg4.acq r30 = [%1], r30, ar.ccv;;\n\t"
 		      "cmp4.ne p14, p0 = r30, r0\n"
+		      //"mov r27=%2\n\t"
 		      "(p14) brl.cond.spnt.many ma_ia64_spinlock_contention_pre3_4;;"
-		      : "=r"(ptr) : "r"(ptr) : MA_IA64_SPINLOCK_CLOBBERS);
+		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
 #   endif /* CONFIG_MCKINLEY */
 #else
 #   ifdef CONFIG_ITANIUM
 	/* don't use brl on Itanium... */
 	/* mis-declare, so we get the entry-point, not it's function descriptor: */
 	asm volatile ("mov r30 = 1\n\t"
+		      //"mov r27=%2\n\t"
 		      "mov ar.ccv = r0;;\n\t"
 		      "cmpxchg4.acq r30 = [%0], r30, ar.ccv\n\t"
 		      "movl r29 = ma_ia64_spinlock_contention;;\n\t"
 		      "cmp4.ne p14, p0 = r30, r0\n\t"
 		      "mov b6 = r29;;\n"
 		      "(p14) br.call.spnt.many b6 = b6"
-		      : "=r"(ptr) : "r"(ptr) : MA_IA64_SPINLOCK_CLOBBERS);
+		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
 #   else
 	asm volatile ("mov r30 = 1\n\t"
+		      //"mov r27=%2\n\t"
 		      "mov ar.ccv = r0;;\n\t"
 		      "cmpxchg4.acq r30 = [%0], r30, ar.ccv;;\n\t"
 		      "cmp4.ne p14, p0 = r30, r0\n\t"
 		      "(p14) brl.call.spnt.many b6=ma_ia64_spinlock_contention;;"
-		      : "=r"(ptr) : "r"(ptr) : MA_IA64_SPINLOCK_CLOBBERS);
+		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
 #   endif /* CONFIG_MCKINLEY */
 #endif
 }

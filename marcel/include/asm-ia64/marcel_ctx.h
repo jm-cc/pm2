@@ -45,6 +45,13 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
   ia64_longjmp(&(ctx[0].jbuf), ret)
 #define marcel_ctx_longjmp(ctx, ret) marcel_ctx_setcontext(ctx, ret)
 
+#define marcel_ctx_get_bsp(ctx) \
+  (BSP_FIELD(ctx[0].jbuf))
+
+#define marcel_ctx_get_sp(ctx) \
+  (SP_FIELD(ctx[0].jbuf))
+
+
 #section marcel_macros
 /* marcel_create : passage père->fils */
 /* marcel_exit : déplacement de pile */
@@ -60,10 +67,3 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(new_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
   } while (0)
-
-#define marcel_ctx_get_bsp(ctx) \
-  (BSP_FIELD(ctx[0].jbuf))
-
-#define marcel_ctx_get_sp(ctx) \
-  (SP_FIELD(ctx[0].jbuf))
-

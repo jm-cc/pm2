@@ -32,6 +32,19 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
   longjmp(ctx[0].jbuf, ret)
 #define marcel_ctx_longjmp(ctx, ret) marcel_ctx_setcontext(ctx, ret)
 
+#define marcel_ctx_get_sp(ctx) \
+  (SP_FIELD(ctx[0].jbuf))
+
+#ifdef FP_FIELD
+#define marcel_ctx_get_fp(ctx) \
+  (FP_FIELD(ctx[0].jbuf))
+#endif
+
+#ifdef BSP_FIELD
+#define marcel_ctx_get_bsp(ctx) \
+  (BSP_FIELD(ctx[0].jbuf))
+#endif
+
 #section marcel_macros
 /* marcel_create : passage père->fils */
 #define marcel_ctx_set_new_stack(new_task, new_sp) \
@@ -46,16 +59,3 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
     call_ST_FLUSH_WINDOWS(); \
     set_sp(new_sp); \
   } while (0)
-
-#define marcel_ctx_get_sp(ctx) \
-  (SP_FIELD(ctx[0].jbuf))
-
-#ifdef FP_FIELD
-#define marcel_ctx_get_fp(ctx) \
-  (FP_FIELD(ctx[0].jbuf))
-#endif
-
-#ifdef BSP_FIELD
-#define marcel_ctx_get_bsp(ctx) \
-  (BSP_FIELD(ctx[0].jbuf))
-#endif

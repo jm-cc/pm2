@@ -16,7 +16,6 @@
 
 
 #include "clone.h"
-#include "asm/marcel_archdep.h"
 
 marcel_key_t _clone_key, _slave_key;
 
@@ -34,7 +33,7 @@ void clone_init(clone_t *c, int nb_slaves)
 
 void clone_slave(clone_t *c)
 {
-  jmp_buf buf;
+  marcel_ctx_t buf;
 
   marcel_mutex_lock(&c->mutex);
 
@@ -54,19 +53,19 @@ void clone_slave(clone_t *c)
 		     (any_t)((long)marcel_stackbase(marcel_self()) -
 			     (long)marcel_stackbase(c->master_pid)));
 
-  memcpy(&buf, &c->master_jb, sizeof(jmp_buf));
+  memcpy(&buf, &c->master_jb, sizeof(marcel_ctx_t));
 
-  (long)SP_FIELD(buf) = (long)SP_FIELD(buf) + clone_my_delta();
-#ifdef FP_FIELD
-  (long)FP_FIELD(buf) = (long)FP_FIELD(buf) + clone_my_delta();
+  (long)marcel_ctx_get_sp(buf) = (long)marcel_ctx_get_sp(buf) + clone_my_delta();
+#ifdef marcel_ctx_get_fp
+  (long)marcel_ctx_get_fp(buf) = (long)marcel_ctx_get_fp(buf) + clone_my_delta();
 #endif
-#ifdef BSP_FIELD
-  (long)BSP_FIELD(buf) = (long)BSP_FIELD(buf) + clone_my_delta();
+#ifdef marcel_ctx_get_bsp
+  (long)marcel_ctx_get_bsp(buf) = (long)marcel_ctx_get_bsp(buf) + clone_my_delta();
 #endif
 
   marcel_mutex_unlock(&c->mutex);
 
-  longjmp(buf, 1);
+  marcel_ctx_setcontext(buf, 1);
 }
 
 void clone_slave_ends(clone_t *c)
@@ -79,7 +78,7 @@ void clone_slave_ends(clone_t *c)
 
   marcel_mutex_unlock(&c->mutex);
 
-  longjmp(my_data()->buf, 1);
+  marcel_ctx_setcontext(my_data()->buf, 1);
 }
 
 void clone_master(clone_t *c)

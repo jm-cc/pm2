@@ -23,12 +23,12 @@ typedef struct {
   marcel_mutex_t mutex;
   marcel_cond_t master, slave;
   int nb, nbs, total, terminate;
-  jmp_buf master_jb;
+  marcel_ctx_t master_jb;
   marcel_t master_pid;
 } clone_t;
 
 typedef struct {
-  jmp_buf buf;
+  marcel_ctx_t buf;
 } slave_data;
 
 void clone_init(clone_t *c, int nb_slaves);
@@ -57,13 +57,13 @@ extern marcel_key_t _clone_key, _slave_key;
 #define CLONE_BEGIN(c) \
    marcel_setspecific(_clone_key, NULL); \
    (c)->master_pid = marcel_self(); \
-   if(setjmp((c)->master_jb) == 0) \
+   if(marcel_ctx_getcontext((c)->master_jb) == 0) \
      clone_master(c);
 
 
 #define CLONE_WAIT(c) \
    marcel_setspecific(_slave_key, (any_t)tmalloc(sizeof(slave_data))), \
-   setjmp(my_data()->buf), \
+   marcel_ctx_getcontext(my_data()->buf), \
    clone_slave(c)
 
 #endif

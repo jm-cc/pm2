@@ -523,7 +523,7 @@ static __inline__ void job_init(job *j, int inf, int sup)
   marcel_sem_init(&j->sem, 0);
 }
 
-marcel_attr_t static sum_attr;
+marcel_attr_t static sum_attr = MARCEL_ATTR_INITIALIZER;
 
 any_t sum(any_t arg)
 {
@@ -558,7 +558,6 @@ void* sum_thread(thread_infos_t * info)
   unsigned long temps;
   int i;
 
-  marcel_attr_init(&sum_attr);
   marcel_attr_setdetachstate(&sum_attr, TRUE);
   //marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);
 

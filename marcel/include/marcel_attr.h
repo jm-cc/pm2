@@ -73,6 +73,35 @@ struct __marcel_attr_s
 };
 
 
+#section macros
+// MARCEL_CREATE_JOINABLE
+#depend "marcel_threads.h[types]"
+// MARCEL_SCHED_OTHER
+// MARCEL_SCHED_ATTR_INITIALIZER
+#define MARCEL_SCHED_INTERNAL_INCLUDE
+#depend "scheduler/marcel_sched.h[marcel_macros]"
+// MARCEL_VPMASK_EMPTY
+#depend "marcel_sched_generic.h[macros]"
+
+#define MARCEL_ATTR_INITIALIZER { \
+  .__detachstate= MARCEL_CREATE_JOINABLE, \
+  .__schedpolicy= MARCEL_SCHED_OTHER, \
+  .__schedparam= {0,}, \
+  .__inheritsched= 0, \
+  .__scope= 0, \
+  .__guardsize= 0, \
+  .__stackaddr_set= 0, \
+  .__stackaddr= NULL, \
+  .user_space= 0, \
+  .immediate_activation= FALSE, \
+  .not_migratable= 1, \
+  .not_deviatable= 0, \
+  .not_preemptible= 0, \
+  .vpmask= MARCEL_VPMASK_EMPTY, \
+  .flags= 0, \
+  .name= "user_task", \
+  .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
+}
 
 /* detachstate */
 /*#define MARCEL_CREATE_JOINABLE    FALSE

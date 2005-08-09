@@ -19,25 +19,7 @@
 #include <string.h>
 
 /* Déclaré non statique car utilisé dans marcel.c : */
-marcel_attr_t marcel_attr_default = {
-  .__detachstate= MARCEL_CREATE_JOINABLE,
-  .__schedpolicy= MARCEL_SCHED_OTHER,
-  .__schedparam= {0,},
-  .__inheritsched= 0,
-  .__scope= 0,
-  .__guardsize= 0,
-  .__stackaddr_set= 0,
-  .__stackaddr= NULL,
-  .user_space= 0,
-  .immediate_activation= FALSE,
-  .not_migratable= 1,
-  .not_deviatable= 0,
-  .not_preemptible= 0,
-  .vpmask= MARCEL_VPMASK_EMPTY,
-  .flags= 0,
-  .name= "user_task",
-  .sched= MARCEL_SCHED_ATTR_DEFAULT,
-};
+marcel_attr_t marcel_attr_default = MARCEL_ATTR_INITIALIZER;
 
 /* Déclaré dans marcel.c : */
 extern volatile unsigned default_stack;

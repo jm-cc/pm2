@@ -48,7 +48,7 @@ struct marcel_sched_attr {
 extern marcel_sched_attr_t marcel_sched_attr_default;
 
 #section macros
-#define MARCEL_SCHED_ATTR_DEFAULT { \
+#define MARCEL_SCHED_ATTR_INITIALIZER { \
 	.init_rq = NULL, \
 	.prio = MA_DEF_PRIO, \
 	.stayinbubble = FALSE, \

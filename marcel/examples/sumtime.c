@@ -147,6 +147,7 @@ int marcel_main(int argc, char **argv)
     END_LOOP(bcle)
   }
 
+  fflush(stdout);
   marcel_end();
   return 0;
 }

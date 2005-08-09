@@ -119,6 +119,36 @@ struct marcel_bubble {
 	struct marcel_bubble_sched_entity sched;
 };
 
+#section macros
+// LIST_HEAD_INIT
+#depend "pm2_list.h"
+// MA_SPIN_LOCK_UNLOCKED
+#depend "asm/linux_spinlock.h"
+// MA_ATOMIC_INIT
+#depend "asm/linux_atomic.h"
+#ifdef MA__LWPS
+#define SCHED_LEVEL_INIT .sched_level = MARCEL_LEVEL_DEFAULT,
+#else
+#define SCHED_LEVEL_INIT
+#endif
+
+#define MARCEL_BUBBLE_INITIALIZER(b) { \
+	.heldentities = LIST_HEAD_INIT((b).heldentities), \
+	.nbrunning = 0, \
+	.lock = MA_SPIN_LOCK_UNLOCKED, \
+	.status = MA_BUBBLE_CLOSED, \
+	.sched = { \
+		.type = MARCEL_BUBBLE_ENTITY, \
+		.run_list = LIST_HEAD_INIT((b).sched.run_list), \
+		.init_rq = NULL, .cur_rq = NULL, \
+		.array = NULL, \
+		.prio = MA_BATCH_PRIO, \
+		.timestamp = 0, .last_ran = 0, \
+		.time_slice = MA_ATOMIC_INIT(0), \
+		SCHED_LEVEL_INIT \
+	}, \
+}
+
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_bubble_t *, bubble_towake);
 

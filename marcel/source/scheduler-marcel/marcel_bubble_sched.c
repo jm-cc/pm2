@@ -16,29 +16,6 @@
 
 #include "marcel.h"
 
-#ifdef MA__LWPS
-#define SCHED_LEVEL_INIT .sched_level = MARCEL_LEVEL_DEFAULT,
-#else
-#define SCHED_LEVEL_INIT
-#endif
-
-#define MARCEL_BUBBLE_INITIALIZER(b) { \
-	.heldentities = LIST_HEAD_INIT((b).heldentities), \
-	.nbrunning = 0, \
-	.lock = MA_SPIN_LOCK_UNLOCKED, \
-	.status = MA_BUBBLE_CLOSED, \
-	.sched = { \
-		.type = MARCEL_BUBBLE_ENTITY, \
-		.run_list = LIST_HEAD_INIT((b).sched.run_list), \
-		.init_rq = NULL, .cur_rq = NULL, \
-		.array = NULL, \
-		.prio = MA_BATCH_PRIO, \
-		.timestamp = 0, .last_ran = 0, \
-		.time_slice = MA_ATOMIC_INIT(0), \
-		SCHED_LEVEL_INIT \
-	}, \
-}
-
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
 MA_DEFINE_PER_LWP(marcel_bubble_t *, bubble_towake, NULL);

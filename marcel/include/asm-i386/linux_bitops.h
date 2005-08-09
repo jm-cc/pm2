@@ -319,8 +319,11 @@ static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned l
  * Returns the bit-number of the first zero bit, not the number of the byte
  * containing a bit.
  */
+#if 0
 static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size);
+#endif
 #section marcel_inline
+#if 0
 static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size)
 {
 	int d0, d1, d2;
@@ -344,6 +347,7 @@ static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsi
 		:"1" ((size + 31) >> 5), "2" (addr), "b" (addr));
 	return res;
 }
+#endif
 
 #section marcel_functions
 /**
@@ -354,8 +358,11 @@ static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsi
  * Returns the bit-number of the first set bit, not the number of the byte
  * containing a bit.
  */
+#if 0
 static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size);
+#endif
 #section marcel_inline
+#if 0
 static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size)
 {
 	int d0, d1;
@@ -375,6 +382,7 @@ static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned 
 		:"1" ((size + 31) >> 5), "2" (addr), "b" (addr));
 	return res;
 }
+#endif
 
 #section marcel_functions
 /**
@@ -383,8 +391,11 @@ static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned 
  * @offset: The bitnumber to start searching at
  * @size: The maximum size to search
  */
+#if 0
 static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset);
+#endif
 #section marcel_inline
+#if 0
 static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset)
 {
 	unsigned long * p = ((unsigned long *) addr) + (offset >> 5);
@@ -411,6 +422,7 @@ static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int s
 	res = ma_find_first_zero_bit (p, size - 32 * (p - (unsigned long *) addr));
 	return (offset + set + res);
 }
+#endif
 
 #section marcel_functions
 /**
@@ -419,8 +431,11 @@ static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int s
  * @offset: The bitnumber to start searching at
  * @size: The maximum size to search
  */
+#if 0
 static __tbx_inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset);
+#endif
 #section marcel_inline
+#if 0
 static __tbx_inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset)
 {
 	const unsigned long *p = addr + (offset >> 5);
@@ -447,6 +462,7 @@ static __tbx_inline__ int ma_find_next_bit(const unsigned long *addr, int size, 
 	res = ma_find_first_bit (p, size - 32 * (p - addr));
 	return (offset + set + res);
 }
+#endif
 
 #section marcel_functions
 /**

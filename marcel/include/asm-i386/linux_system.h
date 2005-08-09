@@ -46,6 +46,7 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
  * of the instruction set reference 24319102.pdf. We need
  * the reader side to see the coherent 64bit value.
  */
+#if 0
 static __tbx_inline__ void __ma_set_64bit (unsigned long long * ptr,
 		unsigned int low, unsigned int high)
 {
@@ -85,6 +86,7 @@ static __tbx_inline__ void __ma_set_64bit_var (unsigned long long *ptr,
 (__builtin_constant_p(value) ? \
  __ma_set_64bit(ptr, (unsigned int)(value), (unsigned int)((value)>>32ULL) ) : \
  __ma_set_64bit(ptr, ma_ll_low(value), ma_ll_high(value)) )
+#endif
 
 /*
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway

@@ -22,8 +22,8 @@
 //#define dprintf(fmt,args...) fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
 
-//#define MAX_BUBBLE_LEVEL 6
-#define MAX_BUBBLE_LEVEL 0
+#define MAX_BUBBLE_LEVEL 6
+//#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
   int inf, sup, res;
@@ -45,6 +45,10 @@ any_t sum(any_t arg)
 {
   job *j = (job *)arg;
   job j1, j2;
+  char name[MARCEL_MAXNAMESIZE];
+
+  snprintf(name,sizeof(name),"%d-%d",j->inf,j->sup);
+  marcel_setname(marcel_self(),name);
 
   dprintf("sum(%p,%p,%p) started\n",j,&j1,&j2);
 

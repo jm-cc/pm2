@@ -225,6 +225,8 @@ static void timer_interrupt(int sig)
 #ifdef MA__INTERRUPTS_USE_SIGINFO
 	if (info->si_code > 0)
 		/* kernel timer signal, distribute */
+#else
+#error I need to know who sends SIGALRM
 #endif
 	{
 		ma_lwp_t lwp;
@@ -253,7 +255,10 @@ static void timer_interrupt(int sig)
 	if (info->si_code > 0)
 		/* kernel timer signal */
 #endif
-		ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
+#ifndef CHAINED_SIGALRM
+		if (IS_FIRST_LWP(LWP_SELF))
+#endif
+			ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
 #ifdef MA__SMP
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);

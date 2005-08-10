@@ -160,7 +160,7 @@ marcel_sched_init_marcel_thread(marcel_task_t* t,
 	//t->lwp
 	t->sched.lwps_allowed = ~attr->vpmask; 
 	ma_set_task_state(t, MA_TASK_RUNNING);
-	marcel_sched_internal_init_marcel_thread(t, attr);
+	marcel_sched_internal_init_marcel_thread(t, &t->sched.internal, attr);
 }
 
 #section sched_marcel_functions

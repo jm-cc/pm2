@@ -747,7 +747,7 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
       breakpoint();
 #endif
       MA_THR_RESTARTED(MARCEL_SELF,"End of hibernation");
-      ma_schedule_tail(MARCEL_SELF);
+      ma_schedule_tail(__ma_get_lwp_var(previous_thread));
       unlock_task();
     }
   } else {

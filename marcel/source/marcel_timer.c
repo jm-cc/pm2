@@ -139,6 +139,7 @@ static void TBX_NORETURN fault_catcher(int sig)
 static void fault_catcher_init(ma_lwp_t lwp)
 {
 	static struct sigaction sa;
+	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 
 	LOG_IN();
 	// On va essayer de rattraper SIGSEGV, etc.
@@ -174,13 +175,36 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER,
 
 /****************************************************************
  * Le signal TIMER
+ *
+ * dans la norme posix, setitimer(ITIMER_REAL) envoie régulièrement un SIGALRM
+ * au _processus_ (donc à un seul des threads), il est partagé entre tous les
+ * threads; par contre setitimer(ITIMER_VIRTUAL) est "par thread".
+ *
+ * Il se trouve que linux <= 2.4 voire un peu plus, solaris <= je ne sais
+ * pas,... ont un ITIMER_REAL "par thread" !
+ *
+ * La manière sûre d'utiliser ITIMER_REAL est donc de l'appeler seulement pour
+ * le LWP0 et bloquer SIGALRM sur les autres threads, chaque LWP s'occupant de
+ * propager le signal au suivant.
+ *
+ * Si l'utilisateur sait avoir une ancienne sémantique, il peut activer
+ * l'option old real timer.
+ *
+ * On préfèrerait donc ITIMER_VIRTUAL, où c'est le noyau qui s'occupe de
+ * distribuer (bien, a priori). Seul problème, c'est qu'il n'expire que si on
+ * consomme du cpu...
  */
-#ifdef MA__TIMER
+#if defined(MA__SMP) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
+#define CHAINED_SIGALRM
+#endif
 
-static boolean __marcel_sig_initialized = FALSE;
+#ifdef MA__TIMER
 
 static sigset_t sigalrmset, sigeptset;
 
+#ifdef MA__SMP
+static MA_DEFINE_PER_LWP(int, no_interrupt, 0);
+#endif
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
 // courant
@@ -196,6 +220,27 @@ static void timer_interrupt(int sig)
 
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 
+#ifdef CHAINED_SIGALRM
+#ifdef MA__INTERRUPTS_USE_SIGINFO
+	if (info->si_code > 0)
+		/* kernel timer signal, distribute */
+#endif
+	{
+		int num = LWP_NUMBER(LWP_SELF);
+		ma_lwp_t next;
+		marcel_kthread_t pid;
+		if (num < get_nb_lwps()-1) {
+			if ((next = GET_LWP_BY_NUM(num+1)))
+				if ((pid = next->pid))
+					marcel_kthread_kill(pid, SIGALRM);
+		}
+	}
+#endif
+#ifdef MA__SMP
+	if (__ma_get_lwp_var(no_interrupt))
+		goto out;
+#endif
+
 #ifdef MA__DEBUG
 	if (++tick == TICK_RATE) {
 		mdebugl(7,"\t\t\t<<Sig handler>>\n");
@@ -207,6 +252,10 @@ static void timer_interrupt(int sig)
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...
 	if (!ma_spin_is_locked(&ma_compareexchange_spinlock))
+#endif
+#ifdef MA__INTERRUPTS_USE_SIGINFO
+	if (info->si_code > 0)
+		/* kernel timer signal */
 #endif
 		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef MA__SMP
@@ -224,6 +273,7 @@ static void timer_interrupt(int sig)
 	 * il faut réarmer les signaux AVANT
 	 */
 	ma_irq_exit();
+out:
 	MA_ARCH_INTERRUPT_EXIT_LWP_FIX(MARCEL_SELF, uc);
 }
 
@@ -242,8 +292,6 @@ static void sig_reset_timer(void)
 	struct itimerval value;
 
 	LOG_IN();
-
-	marcel_sig_enable_interrupts();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	value.it_interval.tv_sec = 0;
@@ -285,7 +333,11 @@ unsigned long marcel_gettimeslice(void)
 void marcel_sig_enable_interrupts(void)
 {
 #ifdef MA__SMP
+#ifdef CHAINED_SIGALRM
+	__ma_get_lwp_var(no_interrupt) = 0;
+#else
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
+#endif
 #else
 	sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
@@ -294,7 +346,11 @@ void marcel_sig_enable_interrupts(void)
 void marcel_sig_disable_interrupts(void)
 {
 #ifdef MA__SMP
+#ifdef CHAINED_SIGALRM
+	__ma_get_lwp_var(no_interrupt) = 1;
+#else
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
+#endif
 #else
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
 #endif
@@ -316,7 +372,10 @@ static void sig_start_timer(ma_lwp_t lwp)
 #elif defined(SA_NODEFER)
 	sa.sa_flags |= SA_NODEFER;
 #else
-#warning no way to prevent nested signals
+	// TODO: oui, c'est bien "allow" qu'indique NOMASK/NODEFER.
+	// Préfère-t-on dépenser deux appels systèmes par préemption que de
+	// risquer une récursion des signaux ?
+#warning no way to allow nested signals
 #endif
 
 #if defined(OSF_SYS) && defined(ALPHA_ARCH)
@@ -332,31 +391,48 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sa.sa_handler = timer_interrupt;
 #endif
 	
+	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
-	sig_reset_timer();
+	marcel_sig_enable_interrupts();
+
+#ifdef CHAINED_SIGALRM
+	if (IS_FIRST_LWP(lwp))
+#endif
+		sig_reset_timer();
 	
 	LOG_OUT();
 }
 
 static void sig_stop_timer(ma_lwp_t lwp)
 {
-	struct sigaction sa;
-	struct itimerval value;
-
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-	memset(&value,0,sizeof(value));
-	setitimer(MARCEL_ITIMER_TYPE, &value,
-		  (struct itimerval *)NULL);
+#ifndef CHAINED_SIGALRM
+	{
+		struct itimerval value;
+		memset(&value,0,sizeof(value));
+		setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
+	}
+#endif
 
-	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = SIG_IGN;
-	sa.sa_flags = 0;
+	/* à part avec linux <= 2.4, les traitants de signaux ne sont _pas_
+	 * par thread, il faut donc garder le traitant commun jusqu'au bout, en
+	 * désactivant simplement l'interruption. */
+#ifdef MA__SMP
+	marcel_sig_disable_interrupts();
+#else
+	{
+		struct sigaction sa;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_handler = SIG_IGN;
+		sa.sa_flags = 0;
 
-	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+		sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
+	}
+#endif
 #endif
 
 	LOG_OUT();
@@ -380,8 +456,6 @@ void __marcel_init sig_init(void)
 	sigemptyset(&sigeptset);
 	sigemptyset(&sigalrmset);
 	sigaddset(&sigalrmset, MARCEL_TIMER_SIGNAL);
-	
-	__marcel_sig_initialized = TRUE;
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");
 

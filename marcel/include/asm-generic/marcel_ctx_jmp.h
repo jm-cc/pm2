@@ -49,13 +49,15 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 /* marcel_create : passage père->fils */
 #define marcel_ctx_set_new_stack(new_task, new_sp) \
   do { \
+    unsigned long _sp = (new_sp); \
     call_ST_FLUSH_WINDOWS(); \
-    set_sp(new_sp); \
+    set_sp(_sp); \
   } while (0)
 
 /* marcel_deviate : passage temporaire sur une autre pile */
 #define marcel_ctx_switch_stack(from_task, to_task, new_sp) \
   do { \
+    unsigned long _sp = (new_sp); \
     call_ST_FLUSH_WINDOWS(); \
-    set_sp(new_sp); \
+    set_sp(_sp); \
   } while (0)

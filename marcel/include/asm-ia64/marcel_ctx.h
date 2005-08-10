@@ -57,13 +57,15 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 /* marcel_exit : déplacement de pile */
 #define marcel_ctx_set_new_stack(new_task, new_sp) \
   do { \
+    unsigned long _sp = (new_sp); \
     call_ST_FLUSH_WINDOWS(); \
-    set_sp_bsp(new_sp, new_task->stack_base); \
+    set_sp_bsp(_sp, new_task->stack_base); \
   } while (0)
 
 /* marcel_deviate : passage temporaire sur une autre pile */
 #define marcel_ctx_switch_stack(from_task, to_task, new_sp) \
   do { \
+    unsigned long _sp = (new_sp); \
     call_ST_FLUSH_WINDOWS(); \
-    set_sp_bsp(new_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
+    set_sp_bsp(_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
   } while (0)

@@ -214,9 +214,6 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   ma_wake_up_state(pid,MA_TASK_STOPPED|MA_TASK_INTERRUPTIBLE|MA_TASK_FROZEN);
 #ifdef MA__SMP
   // Heuristique: on va essayer d'accélérer les choses...
-#ifdef PM2_DEV
-#warning TODO: deroute() dérègle l horloge
-#endif
   // TODO: chercher plutôt un lwp qui atteint la runqueue...
   ma_lwp_t target_lwp = GET_LWP(pid);
   if (target_lwp!=LWP_SELF)

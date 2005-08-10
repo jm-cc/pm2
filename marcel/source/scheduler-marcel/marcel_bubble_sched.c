@@ -54,33 +54,60 @@ int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio) {
 	return 0;
 }
 
-int __marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *entity) {
-	ma_runqueue_t *rq;
-	LOG_IN();
+static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *entity) {
 	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
 	if (entity->type == MARCEL_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
 	else
 		PROF_EVENT2(bubble_sched_insert_thread,tbx_container_of(entity,marcel_task_t,sched.internal),bubble);
-	list_add(&entity->entity_list, &bubble->heldentities);
+	list_add_tail(&entity->entity_list, &bubble->heldentities);
 	entity->holdingbubble=bubble;
-	if (bubble->status == MA_BUBBLE_OPENED
-			&& entity->type==MARCEL_BUBBLE_ENTITY) {
-		/* containing bubble already has exploded ! wake up this one */
-		rq=entity->init_rq=bubble->sched.init_rq;
-		ma_spin_lock_softirq(&rq->lock);
-		activate_entity(entity, rq);
-		bubble->nbrunning++;
-		ma_spin_unlock_softirq(&rq->lock);
-	}
-	LOG_OUT();
-	return 0;
+#ifdef MARCEL_BUBBLE_STEAL
+	list_add_tail(&entity->runningentities, &bubble->runningentities);
+#endif
 }
 
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *entity) {
-	ma_spin_lock_softirq(&bubble->lock);
-	__marcel_bubble_insertentity(bubble, entity);
-	ma_spin_unlock_softirq(&bubble->lock);
+#ifdef MARCEL_BUBBLE_EXPLODE
+	ma_runqueue_t *rq = NULL;
+#endif
+	LOG_IN();
+
+#ifdef MARCEL_BUBBLE_EXPLODE
+	if (bubble->status != MA_BUBBLE_OPENED) {
+retryclosed:
+#endif
+		ma_spin_lock_softirq(&bubble->lock);
+#ifdef MARCEL_BUBBLE_EXPLODE
+		if (bubble->status == MA_BUBBLE_OPENED) {
+			ma_spin_unlock_softirq(&bubble->lock);
+			goto retryopened;
+		}
+#endif
+		__do_bubble_insertentity(bubble,entity);
+		ma_spin_unlock_softirq(&bubble->lock);
+#ifdef MARCEL_BUBBLE_EXPLODE
+	} else {
+retryopened:
+		rq = bubble->sched.init_rq;
+		ma_spin_lock_softirq(&rq->lock);
+		_ma_raw_spin_lock(&bubble->lock);
+		if (bubble->status != MA_BUBBLE_OPENED
+				|| rq != bubble->sched.init_rq) {
+			_ma_raw_spin_unlock(&bubble->lock);
+			ma_spin_unlock_softirq(&rq->lock);
+			goto retryclosed;
+		}
+		__do_bubble_insertentity(bubble,entity);
+		/* containing bubble already has exploded ! wake up this one */
+		entity->init_rq=rq;
+		bubble->nbrunning++;
+		activate_entity(entity, rq);
+		_ma_raw_spin_unlock(&bubble->lock);
+		ma_spin_unlock_softirq(&rq->lock);
+	}
+#endif
+	LOG_OUT();
 	return 0;
 }
 
@@ -97,7 +124,8 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	LOG_OUT();
 }
 
-static void __marcel_close_bubble(marcel_bubble_t *bubble) {
+#ifdef MARCEL_BUBBLE_EXPLODE
+static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq) {
 	marcel_bubble_entity_t *e;
 	marcel_task_t *t;
 	marcel_bubble_t *b;
@@ -110,42 +138,111 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble) {
 		if (e->type == MARCEL_BUBBLE_ENTITY) {
 			b = tbx_container_of(e, marcel_bubble_t, sched);
 			ma_spin_lock(&b->lock);
-			__marcel_close_bubble(b);
+			__marcel_close_bubble(b, rootrq);
 			ma_spin_unlock(&b->lock);
 		} else {
 			t=tbx_container_of(e, marcel_task_t, sched.internal);
-			rq = task_rq_lock(t);
+			if (t->sched.internal.cur_rq == rootrq)
+				rq = rootrq;
+			else
+				rq = task_rq_lock(t);
 			if (e->array) { /* not running */
 				bubble_sched_debug("deactivating task %s(%p) from %s\n", t->name, t, rq->name);
 				PROF_EVENT2(bubble_sched_goingback,e,bubble);
 				deactivate_task(t,rq);
 				bubble->nbrunning--;
 			}
-			task_rq_unlock(rq);
+			if (rq != rootrq)
+				task_rq_unlock(rq);
 		}
 	}
 }
 
 void marcel_close_bubble(marcel_bubble_t *bubble) {
 	int wake_bubble;
+	ma_runqueue_t *rq;
 	LOG_IN();
 
-	ma_spin_lock_softirq(&bubble->lock);
-	__marcel_close_bubble(bubble);
+	rq = entity_rq_lock(&bubble->sched);
+	_ma_raw_spin_lock(&bubble->lock);
+	PROF_EVENT2(bubble_sched_close,bubble,rq);
+	__marcel_close_bubble(bubble, rq);
 	if ((wake_bubble = (!bubble->nbrunning))) {
 		bubble_sched_debug("last already off, bubble %p closed\n", bubble);
 		bubble->status = MA_BUBBLE_CLOSED;
+		activate_entity(&bubble->sched, rq);
 	}
-	ma_spin_unlock_softirq(&bubble->lock);
-
-	if (wake_bubble)
-		marcel_wake_up_bubble(bubble);
+	_ma_raw_spin_unlock(&bubble->lock);
+	ma_spin_unlock_softirq(&rq->lock);
 	LOG_OUT();
 }
 
-int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
-		ma_runqueue_t *rq, int idx) {
+static void __do_bubble_explode(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
+	marcel_bubble_entity_t *new;
+
+	bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
+	PROF_EVENT1(bubble_sched_explode, bubble);
+	bubble->status = MA_BUBBLE_OPENED;
+	bubble->sched.init_rq = rq;
+	list_for_each_entry(new, &bubble->heldentities, entity_list) {
+		bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
+		new->init_rq=rq;
+		activate_entity(new, rq);
+		bubble->nbrunning++;
+	}
+}
+#endif
+
+void ma_bubble_tick(marcel_bubble_t *bubble) {
+#ifdef MARCEL_BUBBLE_EXPLODE
+	if (bubble->status != MA_BUBBLE_CLOSING)
+		marcel_close_bubble(bubble);
+#endif
+}
+
+#ifdef MARCEL_BUBBLE_STEAL
+/* given an entity, find next running entity within the bubble */
+static marcel_bubble_entity_t *ma_next_running_in_bubble(
+		marcel_bubble_t *root,
+		marcel_bubble_t *curb,
+		struct list_head *curhead) {
+	marcel_bubble_entity_t *next;
+	marcel_bubble_t *up;
+	struct list_head *nexthead;
+
+	nexthead = curhead->next;
+	if (tbx_unlikely(nexthead == &curb->runningentities)) {
+		/* Got at the end of the list of curb bubble, go up */
+		bubble_sched_debug("got at end of curb, go up\n");
+		if (curb == root)
+			bubble_sched_debug("finished root\n");
+			/* finished root bubble */
+			return NULL;
+		up = marcel_bubble_holding_bubble(curb);
+		bubble_sched_debug("up to %p\n",up);
+		return ma_next_running_in_bubble(root,up,&curb->sched.runningentities);
+	}
+
+	next = list_entry(nexthead, marcel_bubble_entity_t, runningentities);
+	bubble_sched_debug("next %p\n",next);
+
+	if (tbx_likely(next->type == MARCEL_TASK_ENTITY))
+		return next;
+
+	/* bubble, go down */
+	curb = tbx_container_of(next, marcel_bubble_t, sched);
+	bubble_sched_debug("it is bubble %p\n",curb);
+	return ma_next_running_in_bubble(root,curb,&curb->heldentities);
+}
+#endif
+
+marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
+		ma_runqueue_t *prevrq, ma_runqueue_t *rq, int idx) {
 	marcel_bubble_t *bubble;
+#ifdef MARCEL_BUBBLE_STEAL
+	marcel_bubble_entity_t *next_nextent;
+#endif
+	LOG_IN();
 
 #ifdef MA__LWPS
 	int max_prio;
@@ -165,7 +262,7 @@ int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 			if (idx <= max_prio) {
 				bubble_sched_debug("prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
 				ma_spin_unlock(&rq->lock);
-				return 1;
+				LOG_RETURN(NULL);
 			}
 		}
 		for (; currq; currq = currq->father) {
@@ -173,7 +270,7 @@ int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 			if (idx < max_prio) {
 				bubble_sched_debug("better prio %d on rq %s in the meanwhile\n", idx, currq->name);
 				ma_spin_unlock(&rq->lock);
-				return 1;
+				LOG_RETURN(NULL);
 			}
 		}
 
@@ -195,37 +292,29 @@ int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 		lock_second_rq(rq, currq);
 		activate_entity(nextent,currq);
 		double_rq_unlock(rq, currq);
-		return 1;
+		LOG_RETURN(NULL);
 	}
 #endif
 
 	if (nextent->type == MARCEL_TASK_ENTITY)
-		return 0;
+		LOG_RETURN(nextent);
 
 /*
  * c'est une bulle
  */
-	bubble = list_entry(nextent, marcel_bubble_t, sched);
+	bubble = tbx_container_of(nextent, marcel_bubble_t, sched);
 
 	/* relâche la queue de la tâche courante: on ne lui fera rien, à part
 	 * squatter sa pile avant de recommencer ma_schedule() */
 	if (prevrq!=rq)
 		_ma_raw_spin_unlock(&prevrq->lock);
 
+#if defined(MARCEL_BUBBLE_EXPLODE)
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
 	deactivate_entity(nextent,rq);
-	ma_spin_unlock(&rq->lock);
 	{
-		marcel_bubble_entity_t *new;
-
-		/* respect ordre verrouillage */
-		ma_spin_lock(&bubble->lock);
-		ma_spin_lock(&rq->lock);
-
-		bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
-		PROF_EVENT1(bubble_sched_explode, bubble);
-		bubble->status = MA_BUBBLE_OPENED;
+		_ma_raw_spin_lock(&bubble->lock);
 		/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
    les #ifdef dans les arguments de macro...
@@ -238,30 +327,55 @@ int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
 		ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
 #undef _TIME_SLICE
 		bubble_sched_debug("timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
-		nextent->init_rq = rq;
-		list_for_each_entry(new, &bubble->heldentities, entity_list) {
-			bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
-			new->init_rq=rq;
-			activate_entity(new, rq);
-			bubble->nbrunning++;
-		}
+		__do_bubble_explode(bubble,rq);
 		ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
 
+		_ma_raw_spin_unlock(&bubble->lock);
 		ma_spin_unlock(&rq->lock);
-		ma_spin_unlock(&bubble->lock);
+	}
+	LOG_RETURN(NULL);
+
+#elif defined(MARCEL_BUBBLE_STEAL)
+	_ma_raw_spin_lock(&bubble->lock);
+	/* Get next thread to run */
+	if (!(nextent = bubble->next))
+		/* None, restart from beginning */
+		nextent = ma_next_running_in_bubble(bubble, bubble,
+				&bubble->runningentities);
+	bubble_sched_debug("next entity to run %p\n",nextent);
+	/* and compute next after that */
+	next_nextent = ma_next_running_in_bubble(bubble,
+			marcel_bubble_holding_entity(nextent),
+			&nextent->runningentities);
+	bubble_sched_debug("next next ent to run %p\n",next_nextent);
+
+	if (!next_nextent) {
+		/* end of bubble, put at end of list */
+		dequeue_entity(nextent,rq->active);
+		enqueue_entity(nextent,rq->active);
 	}
 
-	LOG("restarting to need_resched");
-	return 1;
+	_ma_raw_spin_unlock(&bubble->lock);
+	ma_spin_unlock(&rq->lock);
+	LOG_RETURN(nextent);
+#else
+#error Please choose a bubble algorithm
+#endif
 }
 
 void __marcel_init bubble_sched_init() {
-	marcel_root_bubble.status=MA_BUBBLE_OPENED;
 	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);
-	marcel_root_bubble.sched.init_rq=&ma_main_runqueue;
 	PROF_EVENT2_ALWAYS(bubble_sched_down,&marcel_root_bubble,&ma_main_runqueue);
+	marcel_root_bubble.sched.init_rq=&ma_main_runqueue;
+#ifdef MARCEL_BUBBLE_EXPLODE
+	deactivate_running_task(MARCEL_SELF,&ma_main_runqueue);
 	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
-	PROF_EVENT1_ALWAYS(bubble_sched_explode,&marcel_root_bubble);
+	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
+	dequeue_task(MARCEL_SELF, MARCEL_SELF->sched.internal.array);
+#endif
+#ifdef MARCEL_BUBBLE_STEAL
+	activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue);
+#endif
 }
 
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,

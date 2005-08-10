@@ -49,7 +49,6 @@ int marcel_entity_getschedlevel(__const marcel_bubble_entity_t *entity, int *lev
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 
-int __marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *entity);
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *entity);
 int marcel_bubble_insertbubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
 int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);
@@ -67,7 +66,9 @@ marcel_bubble_t marcel_bubble_holding_entity(marcel_bubble_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal)
 
+#ifdef MARCEL_BUBBLE_EXPLODE
 void marcel_close_bubble(marcel_bubble_t *bubble);
+#endif
 
 /******************************************************************************
  * scheduler view
@@ -86,11 +87,13 @@ enum marcel_bubble_entity {
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 #depend "scheduler/linux_runqueues.h[marcel_variables]"
 
+#ifdef MARCEL_BUBBLE_EXPLODE
 typedef enum {
 	MA_BUBBLE_CLOSED,
 	MA_BUBBLE_OPENED,
 	MA_BUBBLE_CLOSING,
 } ma_bubble_status;
+#endif
 
 struct marcel_bubble_sched_entity {
 	enum marcel_bubble_entity type;
@@ -107,16 +110,35 @@ struct marcel_bubble_sched_entity {
 #ifdef MA__LWPS
 	int sched_level;
 #endif
+#ifdef MARCEL_BUBBLE_STEAL
+	struct list_head runningentities;
+#endif
 };
 
 struct marcel_bubble {
-	struct list_head heldentities;
-	int nbrunning;
-	/* verrouillage: toujours dans l'ordre contenant puis contenu,
-	 * puis runqueue */
-	ma_spinlock_t lock;
-	ma_bubble_status status;
+	/* garder en premier, pour que les conversion bubble / entity soient
+	 * triviales */
 	struct marcel_bubble_sched_entity sched;
+	struct list_head heldentities;
+	/* verrouillage: toujours dans l'ordre contenant puis contenu:
+	 * runqueue, puis bulle sur la runqueues, puis bulles contenues dans la
+	 * bulle, mais sur la même runqueue, puis sous-runqueue, puis bulles
+	 * contenues dan bulle, mais sur la sous-runqueue, etc... */
+	ma_spinlock_t lock;
+#ifdef MARCEL_BUBBLE_EXPLODE
+	ma_bubble_status status;
+	int nbrunning; /* number of entities released by the bubble (i.e. currently in runqueues) */
+#endif
+#ifdef MARCEL_BUBBLE_STEAL
+	/* number of threads in bubble */
+	int nbthreads;
+	/* number of LWPs running a thread in bubble */
+	int nbactive;
+	/* next entity to try to run in this bubble */
+	struct marcel_bubble_sched_entity *next;
+	/* list of running entities */
+	struct list_head runningentities;
+#endif
 };
 
 #section macros
@@ -132,11 +154,22 @@ struct marcel_bubble {
 #define SCHED_LEVEL_INIT
 #endif
 
+#ifdef MARCEL_BUBBLE_EXPLODE
+#define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
+	.status = MA_BUBBLE_CLOSED, \
+	.nbrunning = 0,
+#endif
+#ifdef MARCEL_BUBBLE_STEAL
+#define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
+	.nbthreads = 0, \
+	.nbactive = 0, \
+	.next = NULL, \
+	.runningentities = LIST_HEAD_INIT((b).runningentities),
+#endif
+
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
-	.nbrunning = 0, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
-	.status = MA_BUBBLE_CLOSED, \
 	.sched = { \
 		.type = MARCEL_BUBBLE_ENTITY, \
 		.run_list = LIST_HEAD_INIT((b).sched.run_list), \
@@ -147,6 +180,7 @@ struct marcel_bubble {
 		.time_slice = MA_ATOMIC_INIT(0), \
 		SCHED_LEVEL_INIT \
 	}, \
+	MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 }
 
 #section marcel_variables
@@ -157,5 +191,9 @@ MA_DECLARE_PER_LWP(marcel_bubble_t *, bubble_towake);
  * locked, returns 1 if ma_schedule() should restart (prevrq and rq have then
  * been released), returns 0 if ma_schedule() can continue with entity nextent
  * (prevrq and rq have been kept locked) */
-int ma_bubble_sched(marcel_bubble_entity_t *nextent, ma_runqueue_t *prevrq,
-		ma_runqueue_t *rq, int idx);
+marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
+		ma_runqueue_t *prevrq, ma_runqueue_t *rq, int idx);
+
+/* called from ma_scheduler_tick() when the timeslice for the currently running
+ * bubble has expired */
+void ma_bubble_tick(marcel_bubble_t *bubble);

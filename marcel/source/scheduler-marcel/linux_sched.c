@@ -1478,9 +1478,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		// verrouiller la bulle.
 		if ((b = p->sched.internal.holdingbubble)
 			&& b!=&marcel_root_bubble
-			&& b->status != MA_BUBBLE_CLOSING
 			&& ma_atomic_dec_and_test(&b->sched.time_slice))
-				marcel_close_bubble(b);
+				ma_bubble_tick(b);
 	}
 #if 0
 	else {
@@ -1538,7 +1537,7 @@ asmlinkage void ma_schedule(void)
 	//unsigned long run_time;
 	int idx;
 	int max_prio, prev_as_prio;
-	int go_to_sleep, wake_bubble;
+	int go_to_sleep;
 	LOG_IN();
 
 	/*
@@ -1588,9 +1587,11 @@ need_resched_atomic:
 		else
 			go_to_sleep = 1;
 	}
+#ifdef MARCEL_BUBBLE_EXPLODE
 	if ((bubble = prev->sched.internal.holdingbubble)
 			&& bubble->status == MA_BUBBLE_CLOSING)
 		go_to_sleep = 1;
+#endif
 
 	if (go_to_sleep) {
 		sched_debug("schedule: go to sleep\n");
@@ -1698,9 +1699,10 @@ restart:
 //	}
 //	next->activated = 0;
 
-	if (ma_bubble_sched(nextent, prevrq, rq, idx))
+	if (!(nextent = ma_bubble_sched(nextent, prevrq, rq, idx)))
 		goto need_resched_atomic;
-	next = list_entry(nextent, marcel_task_t, sched.internal);
+	MA_BUG_ON(nextent->type != MARCEL_TASK_ENTITY);
+	next = tbx_container_of(nextent, marcel_task_t, sched.internal);
 switch_tasks:
 	sched_debug("prio %d in %s, next %p(%s)\n",idx,rq->name,next,next->name);
 	MTRACE("previous",prev);
@@ -1722,8 +1724,10 @@ switch_tasks:
 			deactivate_running_task(prev,prevrq);
 		}
 	}
+#ifdef MARCEL_BUBBLE_EXPLODE
 	if ((bubble = prev->sched.internal.holdingbubble)
 			&& bubble->status == MA_BUBBLE_CLOSING) {
+		int wake_bubble;
 		MA_BUG_ON(next==prev);
 		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
 		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
@@ -1739,6 +1743,7 @@ switch_tasks:
 		if (wake_bubble)
 			__ma_get_lwp_var(bubble_towake)=bubble;
 	}
+#endif
 
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);
@@ -1785,8 +1790,11 @@ switch_tasks:
 
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
-	if (ma_test_thread_flag(TIF_NEED_RESCHED))
+	if (ma_test_thread_flag(TIF_NEED_RESCHED)) {
+		sched_debug("need resched\n");
 		goto need_resched;
+	}
+	sched_debug("switched\n");
 	LOG_OUT();
 }
 

@@ -201,6 +201,7 @@ unsigned marcel_lwp_add_vp(void)
 
   lwp = (marcel_lwp_t *)marcel_malloc_node(sizeof(marcel_lwp_t)
 		  + __ma_per_lwp_size, ma_lwp_node[num]);
+  /* initialiser le lwp *avant* de l'enregistrer */
   memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
 
   SET_LWP_NB(num, lwp);

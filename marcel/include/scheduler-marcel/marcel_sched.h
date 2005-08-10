@@ -114,42 +114,46 @@ marcel_sched_vpmask_init_rq(marcel_vpmask_t mask)
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
-marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
-					 const marcel_attr_t *attr);
+marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr);
 #section sched_marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
 #depend "scheduler/linux_runqueues.h[variables]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
-					 const marcel_attr_t *attr)
+		marcel_sched_internal_task_t *internal,
+		const marcel_attr_t *attr)
 {
 	LOG_IN();
-	INIT_LIST_HEAD(&t->sched.internal.run_list);
-	//t->sched.internal.lwps_runnable=~0UL;
-	t->sched.internal.type = MARCEL_TASK_ENTITY;
+	INIT_LIST_HEAD(&internal->run_list);
+	internal->type = MARCEL_TASK_ENTITY;
 	if (attr->sched.stayinbubble) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
 		marcel_bubble_t *bubble=marcel_bubble_holding_task(MARCEL_SELF);
 		MA_BUG_ON(!bubble);
-		t->sched.internal.holdingbubble=bubble;
-		t->sched.internal.init_rq=MARCEL_SELF->sched.internal.init_rq;
+		internal->holdingbubble=bubble;
+		internal->init_rq=MARCEL_SELF->sched.internal.init_rq;
 	} else {
-		t->sched.internal.holdingbubble=NULL;
+		internal->holdingbubble=NULL;
 		if (attr->sched.init_rq)
-			t->sched.internal.init_rq=attr->sched.init_rq;
+			internal->init_rq=attr->sched.init_rq;
 		else
-			t->sched.internal.init_rq=marcel_sched_vpmask_init_rq(attr->vpmask);
+			internal->init_rq=marcel_sched_vpmask_init_rq(attr->vpmask);
 	}
-	t->sched.internal.cur_rq=NULL;
-	t->sched.internal.sched_policy = attr->__schedpolicy;
-	t->sched.internal.prio=attr->sched.prio;
-	ma_atomic_set(&t->sched.internal.time_slice,10); /* TODO: utiliser les priorités pour le calculer */
-	t->sched.internal.array=NULL;
+	internal->cur_rq=NULL;
+	internal->sched_policy = attr->__schedpolicy;
+	internal->prio=attr->sched.prio;
+	ma_atomic_set(&internal->time_slice,10); /* TODO: utiliser les priorités pour le calculer */
+	internal->array=NULL;
 #ifdef MA__LWPS
-	t->sched.internal.sched_level=MARCEL_LEVEL_DEFAULT;
+	internal->sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
-	sched_debug("%p(%s)'s init_rq is %s (prio %d)\n", t, t->name, t->sched.internal.init_rq->name, t->sched.internal.prio);
+#ifdef MARCEL_BUBBLE_STEAL
+	INIT_LIST_HEAD(&internal->runningentities);
+#endif
+	sched_debug("%p(%s)'s init_rq is %s (prio %d)\n", t, t->name, internal->init_rq->name, internal->prio);
 	LOG_OUT();
 }
 

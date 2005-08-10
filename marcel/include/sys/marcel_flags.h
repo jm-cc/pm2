@@ -195,6 +195,10 @@
 #  define MA__INTERRUPTS_USE_SIGINFO
 #endif
 
+#if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)
+#error Please choose a bubble algorithm
+#endif
+
 /* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter
  * les interruptions entre l'enregistrement du switch_to et le switch_to
  * effectif 

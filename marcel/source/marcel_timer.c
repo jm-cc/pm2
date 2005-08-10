@@ -202,8 +202,11 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER,
 
 static sigset_t sigalrmset, sigeptset;
 
-#ifdef MA__SMP
-static MA_DEFINE_PER_LWP(int, no_interrupt, 0);
+#ifdef CHAINED_SIGALRM
+static MA_DEFINE_PER_LWP(int, _no_interrupt, 0);
+#define no_interrupt __ma_get_lwp_var(_no_interrupt)
+#else
+#define no_interrupt 0
 #endif
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
@@ -236,10 +239,8 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
-#ifdef MA__SMP
-	if (__ma_get_lwp_var(no_interrupt))
+	if (no_interrupt)
 		goto out;
-#endif
 
 #ifdef MA__DEBUG
 	if (++tick == TICK_RATE) {
@@ -294,7 +295,6 @@ static void sig_reset_timer(void)
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;
@@ -335,7 +335,7 @@ void marcel_sig_enable_interrupts(void)
 {
 #ifdef MA__SMP
 #ifdef CHAINED_SIGALRM
-	__ma_get_lwp_var(no_interrupt) = 0;
+	no_interrupt = 0;
 #else
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
@@ -348,7 +348,7 @@ void marcel_sig_disable_interrupts(void)
 {
 #ifdef MA__SMP
 #ifdef CHAINED_SIGALRM
-	__ma_get_lwp_var(no_interrupt) = 1;
+	no_interrupt = 1;
 #else
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #endif

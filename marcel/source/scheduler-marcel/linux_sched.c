@@ -1781,7 +1781,6 @@ switch_tasks:
 			&& !ma_topology_lwp_idle_core(LWP_SELF))
 			marcel_sig_pause();
 #endif
-#endif
 	}
 
 //	reacquire_kernel_lock(current);

@@ -435,6 +435,19 @@ EXPORT_SYMBOL_GPL(kick_process);
 #endif
 #endif /* 0 */
 
+/* tries to resched the given task on the given runqueue (which needs be locked) */
+void try_to_resched(marcel_task_t *p, ma_runqueue_t *rq)
+{
+	marcel_lwp_t *lwp;
+	for_each_lwp_from_begin(lwp, LWP_SELF)
+		/* TODO: regarder celui qui préeempte le plus ? (histoire d'aller taper dans Idle plutôt) */
+		if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
+			resched_task(ma_per_lwp(current_thread, lwp), lwp);
+			break;
+		}
+	for_each_lwp_from_end();
+}
+
 /***
  * try_to_wake_up - wake up a thread
  * @p: the to-be-woken-up thread
@@ -502,16 +515,7 @@ repeat_lock_task:
 				/* we can avoid remote reschedule by switching to it */
 				if (!sync) /* only if we won't for sure yield() soon */
 					resched_task(MARCEL_SELF, LWP_SELF);
-			} else {
-				marcel_lwp_t *lwp;
-				for_each_lwp_from_begin(lwp, LWP_SELF)
-					/* TODO: regarder celui qui préeempte le plus ? (histoire d'aller taper dans Idle plutôt) */
-					if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
-						resched_task(ma_per_lwp(current_thread, lwp), lwp);
-						break;
-					}
-				for_each_lwp_from_end();
-			}
+			} else try_to_resched(p, rq);
 			success = 1;
 		}
 		p->sched.state = MA_TASK_RUNNING;
@@ -804,9 +808,10 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 
 #ifdef MA__LWPS
 	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
-		ma_topology_lwp_idle_start(LWP_SELF);
+		if (prev != MARCEL_SELF)
+			ma_topology_lwp_idle_start(LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
-			pause();
+			marcel_sig_pause();
 	}
 #endif
 }
@@ -1706,10 +1711,12 @@ switch_tasks:
 
 	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
 		MA_BUG_ON(next==prev);
-		if (prev->sched.state & MA_TASK_MOVING)
+		if (prev->sched.state & MA_TASK_MOVING) {
 			/* moving, make it running elsewhere */
+			MTRACE("moving",prev);
 			ma_set_current_state(MA_TASK_RUNNING);
-		else {
+			try_to_resched(prev, prevrq);
+		} else {
 			/* yes, deactivate */
 			sched_debug("%p going to sleep\n",prev);
 			deactivate_running_task(prev,prevrq);
@@ -1772,7 +1779,7 @@ switch_tasks:
 #ifdef MA__LWPS
 		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
 			&& !ma_topology_lwp_idle_core(LWP_SELF))
-			pause();
+			marcel_sig_pause();
 #endif
 	}
 
@@ -1885,12 +1892,17 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 	old_rq=ma_this_rq();
 	new_rq=marcel_sched_vpmask_init_rq(mask);
 	if (old_rq==new_rq) {
+		ma_local_bh_enable();
 		ma_preempt_enable();
 		LOG_OUT();
 		return;
 	}
-	deactivate_running_task(MARCEL_SELF,ma_this_rq());
-	activate_running_task(MARCEL_SELF,marcel_sched_vpmask_init_rq(mask));
+	_ma_raw_spin_lock(&old_rq->lock);
+	deactivate_running_task(MARCEL_SELF,old_rq);
+	_ma_raw_spin_unlock(&old_rq->lock);
+	_ma_raw_spin_lock(&new_rq->lock);
+	activate_running_task(MARCEL_SELF,new_rq);
+	_ma_raw_spin_unlock(&new_rq->lock);
 	/* On teste si le LWP courant est interdit ou pas */
 	if (marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);

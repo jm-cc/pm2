@@ -158,13 +158,14 @@ struct marcel_bubble {
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 	.status = MA_BUBBLE_CLOSED, \
 	.nbrunning = 0,
-#endif
-#ifdef MARCEL_BUBBLE_STEAL
+#elif defined(MARCEL_BUBBLE_STEAL)
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 	.nbthreads = 0, \
 	.nbactive = 0, \
 	.next = NULL, \
 	.runningentities = LIST_HEAD_INIT((b).runningentities),
+#else
+#error need a bubble algorithm
 #endif
 
 #define MARCEL_BUBBLE_INITIALIZER(b) { \

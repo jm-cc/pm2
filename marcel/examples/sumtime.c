@@ -112,6 +112,8 @@ int marcel_main(int argc, char **argv)
   marcel_trace_on();
   marcel_init(&argc, argv);
 
+  marcel_setname(marcel_self(), "sumtime");
+
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, TRUE);
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);

@@ -88,8 +88,6 @@ static void timer_action(struct ma_softirq_action *a)
 		
 	//marcel_check_sleeping();
 	//marcel_check_polling(MARCEL_POLL_AT_TIMER_SIG);
-	if (LWP_NUMBER(LWP_SELF) == 0)
-		ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
 	ma_update_process_times(1);
 		
 	LOG_OUT();
@@ -229,14 +227,10 @@ static void timer_interrupt(int sig)
 		/* kernel timer signal, distribute */
 #endif
 	{
-		int num = LWP_NUMBER(LWP_SELF);
-		ma_lwp_t next;
-		marcel_kthread_t pid;
-		if (num < get_nb_lwps()-1) {
-			if ((next = GET_LWP_BY_NUM(num+1)))
-				if ((pid = next->pid))
-					marcel_kthread_kill(pid, SIGALRM);
-		}
+		ma_lwp_t lwp;
+		for_each_lwp_from_begin(lwp,LWP_SELF)
+			marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
+		for_each_lwp_from_end()
 	}
 #endif
 	if (no_interrupt)
@@ -254,11 +248,12 @@ static void timer_interrupt(int sig)
 	// a compare & exchange is currently running...
 	if (!ma_spin_is_locked(&ma_compareexchange_spinlock))
 #endif
+		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
 #ifdef MA__INTERRUPTS_USE_SIGINFO
 	if (info->si_code > 0)
 		/* kernel timer signal */
 #endif
-		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
+		ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
 #ifdef MA__SMP
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);

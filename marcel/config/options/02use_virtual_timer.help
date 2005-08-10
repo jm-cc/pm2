@@ -1,1 +1,1 @@
-Use SIGVTALRM instead of SIGALRM to implement automatic preemption.
+Use virtual timer instead of real timer to implement automatic preemption (hence SIGVTALRM instead of SIGALRM).

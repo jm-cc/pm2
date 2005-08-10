@@ -420,6 +420,7 @@ static __tbx_inline__ void activate_running_task(marcel_task_t *p, ma_runqueue_t
 #section marcel_inline             
 static __tbx_inline__ void activate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
+	sched_debug("activating running %ld:%s in %s\n",p->number,p->name,rq->name);
 	MA_BUG_ON(p->sched.internal.cur_rq);
 	p->sched.internal.cur_rq = rq;
 	nr_running_inc(rq);
@@ -434,6 +435,7 @@ static __tbx_inline__ void __activate_task(marcel_task_t *p, ma_runqueue_t *rq);
 static __tbx_inline__ void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	activate_running_task(p,rq);
+	sched_debug("activating %ld:%s in %s\n",p->number,p->name,rq->name);
 	enqueue_task(p, rq->active);
 }
 
@@ -486,6 +488,7 @@ static __tbx_inline__ void activate_entity(marcel_bubble_entity_t *e, ma_runqueu
 #section marcel_inline
 static __tbx_inline__ void activate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
 {
+	sched_debug("activating %p in %s\n",e,rq->name);
 	MA_BUG_ON(e->cur_rq);
 	e->cur_rq = rq;
 	nr_running_inc(rq);
@@ -501,6 +504,7 @@ static __tbx_inline__ void deactivate_running_task(marcel_task_t *p, ma_runqueue
 #section marcel_inline               
 static __tbx_inline__ void deactivate_running_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
+	sched_debug("deactivating running %ld:%s from %s\n",p->number,p->name,rq->name);
 	nr_running_dec(rq);
 	if (p->sched.state == MA_TASK_UNINTERRUPTIBLE)
 		rq->nr_uninterruptible++;
@@ -517,6 +521,7 @@ static __tbx_inline__ void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq);
 static __tbx_inline__ void deactivate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
 	dequeue_task(p, p->sched.internal.array);
+	sched_debug("deactivating %ld:%s from %s\n",p->number,p->name,rq->name);
 	deactivate_running_task(p,rq);
 }
 
@@ -528,6 +533,7 @@ static __tbx_inline__ void deactivate_entity(marcel_bubble_entity_t *e, ma_runqu
 #section marcel_inline
 static __tbx_inline__ void deactivate_entity(marcel_bubble_entity_t *e, ma_runqueue_t *rq)
 {
+	sched_debug("deactivating %p from %s\n",e,rq->name);
 	dequeue_entity(e, rq->active);
 	nr_running_dec(rq);
 	MA_BUG_ON(!e->cur_rq);

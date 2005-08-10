@@ -802,11 +802,13 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 {
 	finish_task_switch(prev);
 
+#ifdef MA__LWPS
 	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
 		ma_topology_lwp_idle_start(LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
 			pause();
 	}
+#endif
 }
 
 /*
@@ -1745,8 +1747,10 @@ switch_tasks:
 	prev->sched.internal.timestamp = prev->sched.internal.last_ran = now;
 
 	if (tbx_likely(prev != next)) {
+#ifdef MA__LWPS
 		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task)))
 			ma_topology_lwp_idle_end(LWP_SELF);
+#endif
 //		next->timestamp = now;
 //		rq->nr_switches++;
 		__ma_get_lwp_var(current_thread) = next;
@@ -1765,9 +1769,11 @@ switch_tasks:
 		ma_schedule_tail(prev);
 	} else {
 		ma_spin_unlock_softirq(&rq->lock);
+#ifdef MA__LWPS
 		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))
 			&& !ma_topology_lwp_idle_core(LWP_SELF))
 			pause();
+#endif
 	}
 
 //	reacquire_kernel_lock(current);

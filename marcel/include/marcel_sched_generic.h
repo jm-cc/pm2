@@ -106,7 +106,9 @@ DEC_MARCEL_GNU(int, yield, (void) __THROW)
 /****************************************************************/
 
 #section marcel_variables
+#ifdef MA__LWPS
 MA_DECLARE_PER_LWP(marcel_task_t *,idle_task);
+#endif
 
 
 #section marcel_types

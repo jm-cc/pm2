@@ -294,6 +294,7 @@ static void sig_reset_timer(void)
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;

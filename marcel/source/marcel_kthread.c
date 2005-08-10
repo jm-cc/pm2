@@ -67,25 +67,34 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   void* stack_base,
 			   marcel_kthread_func_t func, void *arg)
 {
-  void *stack;
-
   LOG_IN();
   //stack = mmap(NULL, __STACK_SIZE, PROT_READ | PROT_WRITE,
   //	       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS | MAP_GROWSDOWN,
   //	       -1, 0);
   if (!sp) {
-	  stack = malloc(__STACK_SIZE);
-	  sp = stack + __STACK_SIZE;
-	  mdebug("Allocating stack for kthread at %p\n", stack);
+	  stack_base = malloc(__STACK_SIZE);
+	  sp = stack_base + __STACK_SIZE;
+	  mdebug("Allocating stack for kthread at %p\n", stack_base);
   }
   sp -= 64;
   mdebug("Stack for kthread set at %p\n", sp);
 
+#ifdef IA64_ARCH
+  extern int __clone2 (int (*__fn) (void *__arg), void *__child_stack_base,
+                       size_t __child_stack_size, int __flags,
+                       void *__arg, ...);
+  *pid = __clone2((int (*)(void *))func, 
+	       stack_base, sp - stack_base,
+	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	       CLONE_THREAD | CLONE_PARENT |
+	       SIGCHLD, arg);
+#else
   *pid = clone((int (*)(void *))func, 
 	       sp,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
 	       CLONE_THREAD | CLONE_PARENT |
 	       SIGCHLD, arg);
+#endif
   LOG_OUT();
 }
 

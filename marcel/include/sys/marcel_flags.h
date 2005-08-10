@@ -196,7 +196,7 @@
 #endif
 
 #if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)
-#error Please choose a bubble algorithm
+#  define MARCEL_BUBBLE_EXPLODE
 #endif
 
 /* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter

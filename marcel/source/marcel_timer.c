@@ -245,10 +245,10 @@ static void sig_reset_timer(void)
 
 	marcel_sig_enable_interrupts();
 
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	setitimer(MARCEL_ITIMER_TYPE, &value, 
 		  (struct itimerval *)NULL);
 #endif

@@ -1,2 +1,2 @@
 Depend: marcel_smp
-Conflict: virtual_timer
+Conflict: marcel_virtual_timer

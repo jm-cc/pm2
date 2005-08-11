@@ -1,1 +1,1 @@
-assume that setitimer(ITIMER_REAL) on this system has the old semantic, i.e. is per thread
+assume that setitimer(ITIMER_REAL) on this system has the old semantic, i.e. is per thread (linux 2.4 and below, old solaris, ...)

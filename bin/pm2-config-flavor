@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -115,7 +115,7 @@ get_options_text() { # mod help list_options_to_add option/module
 	    echo "$SEP"
 	    ;;
 	help\ *)
-	    opt="`echo $i | sed -e 's,^help ,,'`"
+	    opt="${i#help }"
 	    echo
 	    echo $NN "$opt: "
 	    "$PM2_MODULE" $helpcmd1$opt $helpcmd2 --help
@@ -125,7 +125,7 @@ get_options_text() { # mod help list_options_to_add option/module
 	    curopts=
 	    ;;
 	add\ *)
-	    options="`echo $i | sed -e 's,^add ,,'`"
+	    options="${i#add }"
 	    for opt in $options " "; do
 		case $opt in
 		\ )
@@ -149,7 +149,7 @@ get_options_text() { # mod help list_options_to_add option/module
 	    done
 	    ;;
 	sub\ *)
-	    options="`echo $i | sed -e 's,^sub ,,'`"
+	    options="${i#sub }"
 	    for opt in $options " "; do
 		case $opt in
 		\ )
@@ -157,7 +157,9 @@ get_options_text() { # mod help list_options_to_add option/module
 		*)
 		    case " $curopts " in
 		    *\ $opt\ *)
-			curopts=`echo "$curopts " | sed -e "s,$opt ,," -e 's, $,,'`
+		        curopts="${curopts} "
+			curopts="${curopts/$opt }"
+			curopts="${curopts% }"
 			;;
 		    *)
 			;;
@@ -178,7 +180,9 @@ get_options_text() { # mod help list_options_to_add option/module
 		*)
 		    case " $curopts " in
 		    *\ $opt\ *)
-			curopts=`echo "$curopts " | sed -e "s,$opt ,," -e 's, $,,'`
+		        curopts="${curopts} "
+			curopts="${curopts/$opt }"
+			curopts="${curopts% }"
 			;;
 		    *)
 			case " $listopt " in
@@ -213,7 +217,7 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
 	    text_opt="$text_opt off"
 	    ;;
 	esac
-	nb_opt=`expr $nb_opt + 1`
+	nb_opt=$(($nb_opt + 1))
     done
     if [ $nb_opt -ge 20 ]; then
 	nb_opt=20
@@ -260,7 +264,7 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
     choice=`cat /tmp/tmp-dialog.$$`
     rm -f /tmp/tmp-dialog.$$ 2>/dev/null
     if [ $retval -eq 0 ]; then 
-	opts=`echo $choice | sed -e 's/"//g'`
+	opts=${choice//\"}
     else
 	echo "Aborting..."
 	exit $retval
@@ -372,7 +376,7 @@ get_value_text() { # needed name help
 get_value_dialog() { # needed name help
     default="`eval echo \\$$2`"
     end=false
-    title=`echo $2 | sed -e 's/fl_//'`
+    title=${2/fl_}
     while [ $end = false ]; do
 	$DIALOG --title "$title" --inputbox "\n$3\n" $DELTA $DELTA "$default" \
 	    2> /tmp/tmp-dialog.$$
@@ -577,7 +581,7 @@ do_edite() {
 
 list_flavors=`"$PM2_FLAVOR" list`
 get_flavor_ok() { # flavor need_existing can_be_empty first
-    f=`echo "$1" | tr -c -d '_\-a-zA-Z0-9'`
+    f=${1//[^-_\\a-zA-Z0-9]}
     if [ "$1" != "$f" ]; then
 	return 1
     fi
@@ -632,7 +636,7 @@ get_flavor_dialog() { # need_existing prompt can_be_empty
 	    count=0
 	    for i in ${3:+"$3"} $list_flavors ; do
 		items="$items '$i' ''"
-		count=`expr $count + 1`
+		count=$(($count + 1))
 	    done
 	    eval $DIALOG --title Flavors --menu '"$2"' $DELTA $DELTA "$count" "$items"\
 		2> /tmp/tmp-dialog.$$
@@ -684,7 +688,7 @@ get_file_dialog() { # need_existing prompt
 		else
 		    items="$items '$i' ''"
 		fi
-		count=`expr $count + 1`
+		count=$(($count + 1))
 	    done
 	    eval $DIALOG --title Files --menu '"$2"' $DELTA $DELTA "$count" "$items" \
 		2> /tmp/tmp-dialog.$$
@@ -869,7 +873,7 @@ main_dialog() {
 	    # on crée une nouvelle ligne
 	    list_text="${list_text:+$list_text\n}$list_start$list_line" 
 	    list_line="$i"
-	    list_nb_lines=`expr $list_nb_lines + 1`
+	    list_nb_lines=$(($list_nb_lines + 1))
 	    list_newline=yes
 	else
 	    # on ajoute à la ligne courante
@@ -879,7 +883,7 @@ main_dialog() {
     done
     if [ ! -z "$list_line" ]; then
 	list_text="${list_text:+$list_text\n}$list_start$list_line" 	
-	list_nb_lines=`expr $list_nb_lines + 1`
+	list_nb_lines=$(($list_nb_lines + 1))
     fi
     items=
     for i in ${3:+"[$3]"} $list_flavors ; do

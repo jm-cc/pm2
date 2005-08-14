@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -131,11 +131,11 @@ register_flavor() {
   shift
   disp "registering $name"
   REGISTERED_FLAVORS="$REGISTERED_FLAVORS $name"
-  name=`echo $name | sed -e 's/-/_/g'`
+  name=${name//-/_}
   i=0;
   while [ $# != 0 ]; do
       eval REGISTERED_FLAVOR_${name}_$i='"$1"'
-      i=`expr $i + 1`
+      i=$(($i + 1))
       shift
   done
   eval REGISTERED_FLAVOR_${name}_number=$i
@@ -164,14 +164,14 @@ create_flavor() {
 	# No existing flavor yet
 	echo "Creating initial sample flavor $name..."
 
-	regname=`echo $name | sed -e 's/-/_/g'`
+	regname=${name//-/_}
 	i=0
 	eval max=\$REGISTERED_FLAVOR_${regname}_number
 	set --
 	while [ $i != $max ]; do
 	    eval arg='"$REGISTERED_FLAVOR_'${regname}_$i'"'
 	    set -- "$@" "$arg"
-            i=`expr $i + 1`
+            i=$(($i + 1))
 	done
 
 	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor="$name" "$@"

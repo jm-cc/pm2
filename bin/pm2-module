@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -150,7 +150,7 @@ module_valid() { # module noabort generic
 action_set=
 set_action() { # --action
     if [ -z "$action_set" ]; then
-	action=`echo $1 | sed -e 's/^--//'`
+	action=${1#--}
 	action_set=true
 	return 0
     fi
@@ -160,6 +160,14 @@ set_action() { # --action
 
 ##########################################################################
 # Main fonctions
+
+find_field() {
+	IFS="$2"
+	while read tag field
+	do
+		[ "$tag" = "$1" ] && echo -n " $field"
+	done
+}
 
 do_action() { # module option
     case "$action" in
@@ -188,33 +196,23 @@ do_action() { # module option
 	    echo $flags
 	    return 0
 	fi	
-	for fl in `cat "$directory/$filename.dep" | grep "^Provide:" \
-	    | sed -e 's/^Provide://'`; do
-	    flags="$flags $fl"
-	done
-	echo $flags
+	echo -n "$flags"
+	find_field Provide : < $directory/$filename.dep
+	echo ""
 	;;
     conflict)
 	if [ ! -f "$directory/$filename.dep" ]; then
 	    return 0
 	fi	
-	flags=
-	for fl in `cat "$directory/$filename.dep" | grep "^Conflict:" \
-	    | sed -e 's/^Conflict://'`; do
-	    flags="$flags $fl"
-	done
-	echo $flags
+	find_field Conflict : < $directory/$filename.dep
+	echo ""
 	;;
     depend)
 	if [ ! -f "$directory/$filename.dep" ]; then
 	    return 0
 	fi	
-	flags=
-	for fl in `cat "$directory/$filename.dep" | grep "^Depend:" \
-	    | sed -e 's/^Depend://'`; do
-	    flags="$flags $fl"
-	done
-	echo $flags
+	find_field Depend : < $directory/$filename.dep
+	echo ""
 	;;
     esac
 }
@@ -310,7 +308,7 @@ get_options_in_dir() {
 		    optname=`echo $opt | sed -e 's/^[0-9]*\(.*\)\.sh$/\1/'`
 		    ;;
 		*)
-		    optname=`echo $opt | cut -d. -f1`
+		    optname=${opt%%.*}
 		    ;;
 		esac
 		case " $new_list " in
@@ -335,7 +333,7 @@ do_options_get_excl_sets() {
 	if [ -d "${PM2_ROOT}/modules/$module/config" ]; then
 	    for eset in `(cd "${PM2_ROOT}/modules/$module/config"; \
 			ls -d *.excl) 2>/dev/null`; do
-	       e_set=`echo $eset | cut -d. -f1`
+	       e_set=${eset%%.*}
 	       echo $e_set
 	    done
 	fi
@@ -409,15 +407,15 @@ do_options() {
 	    set_action $1
 	    ;;
 	--get-excl=*)
-	    arg=`echo "$1" | cut -d= -f2`
+	    arg="${1#*=}"
 	    set_action --get-excl
 	    ;;
 	--get-incl=*)
-	    arg=`echo "$1" | cut -d= -f2`
+	    arg="${1#*=}"
 	    set_action --get-incl
 	    ;;
 	--module=*)
-	    module=`echo "$1" | cut -d= -f2`
+	    module="${1#*=}"
 	    module_valid "$module" "" $HIDDEN_MODULES
 	    ;;
 	*)
@@ -427,7 +425,7 @@ do_options() {
 	esac
 	shift
     done
-    do_options_`echo $action | tr - _` $arg
+    do_options_${action//-/_} $arg
 }
 
 do_option() { # option ...
@@ -441,7 +439,7 @@ do_option() { # option ...
 	    set_action $1
 	    ;;
 	--module=*)
-	    module=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+	    module="${1#*=}"
 	    module_valid "$module" "" $HIDDEN_MODULES
 	    ;;
 	*)
@@ -471,8 +469,8 @@ version|modules|options|help)
     do_help
     ;;
 module=*|option=*)
-    optname=`echo $1 | sed -e 's/^\([^=]*\)=.*$/\1/'`
-    optarg=`echo "$1" | sed 's/^[-_a-zA-Z0-9]*=//'`
+    optname="${1%%=*}"
+    optarg="${1#*=}"
     shift
     eval do_$optname '"$optarg"' '${@:+"$@"}'
     ;;

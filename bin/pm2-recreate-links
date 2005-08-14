@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -38,7 +38,7 @@ make_ln() # Create $3 pointing on $2 in the directory $1
     else
 	LINK=$3
     fi
-    if [ `echo "$2" | cut -c1` = '/' ]; then
+    if [ -z "${2##\/*}" ]; then
         echo "WARNING: absolute path $2 does not allow moving sources"
     fi
     if [ ! -h "$LINK" ]; then

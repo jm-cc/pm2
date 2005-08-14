@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -483,7 +483,7 @@ pm2config_parse_cmdline() # args
 
     while [ $# -gt 0 ] ; do
 	case "$1" in
-	    -*=*) _optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+	    -*=*) _optarg="${1#*=}" ;;
 	    *) _optarg= ;;
 	esac
 
@@ -499,7 +499,8 @@ pm2config_parse_cmdline() # args
 	_kernel=true
 	;;
     --*dir)
-	_dirname1=`echo $1 | sed -e 's,^--,,' -e 's,dir$,,'`
+	_dirname1=${1#--}
+	_dirname1=${_dirname1%dir}
 	eval _dirname='$'_${_dirname1}dir
 	test -z "$_dirname" && exit 1
 	eval ${_dirname1}dir=true
@@ -633,7 +634,7 @@ pm2config_parse_cmdline() # args
 		exit 0
 		;;
 	esac
-	if [ `echo "$_libs" | wc -w` != 1 ]; then
+	if [ -z "${_libs/* *}" ]; then
 	    echo "This option needs exactly ONE lib" 1>&2
 	    exit 1
 	fi
@@ -655,7 +656,7 @@ pm2config_parse_cmdline() # args
     # On a demandé les CFLAGS
     if [ "$_cflags" = true ] ; then
 	if [ "$_kernel" = true ] ; then
-	    if [ `echo "$_libs" | wc -w` != 1 ]; then
+	    if [ -z "${_libs/* *}" ]; then
 		echo "This option needs exactly ONE lib" 1>&2
 		exit 1
 	    fi

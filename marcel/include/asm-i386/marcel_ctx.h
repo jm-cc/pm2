@@ -43,7 +43,7 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 #define marcel_ctx_set_new_stack(new_task, new_sp) \
   do { \
     unsigned long _sp = (new_sp); \
-    set_bp(_sp); \
+    set_bp(NULL); \
     set_sp(_sp); \
   } while (0)
 

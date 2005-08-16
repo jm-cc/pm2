@@ -127,7 +127,7 @@ mad_copy_buffer_parameters(p_mad_buffer_t source,
       size_t                         param_offset =    0;
       size_t                         param_length =    0;
 
-      src_param = tbx_slist_ref_get(param_slist_src);
+      src_param = (p_mad_buffer_slice_parameter_t)tbx_slist_ref_get(param_slist_src);
 
       if (src_param->offset >= source->bytes_read + length)
         continue;

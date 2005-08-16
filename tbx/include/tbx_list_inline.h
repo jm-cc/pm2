@@ -98,7 +98,7 @@ tbx_append_list(p_tbx_list_t   list,
   if (list->read_only)
     FAILURE("attempted to modify a read only list");
 
-  list_element = tbx_malloc(tbx_list_manager_memory);
+  list_element = (p_tbx_list_element_t)tbx_malloc(tbx_list_manager_memory);
 
   list_element->object = object;
   list_element->next = NULL ;

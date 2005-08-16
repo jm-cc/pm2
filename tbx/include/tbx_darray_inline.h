@@ -39,7 +39,7 @@ tbx_darray_init(void)
   p_tbx_darray_t darray = NULL;
 
   LOG_IN();
-  darray = TBX_CALLOC(1, sizeof(tbx_darray_t));
+  darray = (p_tbx_darray_t)TBX_CALLOC(1, sizeof(tbx_darray_t));
   CTRL_ALLOC(darray);
 
   TBX_INIT_SHARED(darray);
@@ -109,7 +109,7 @@ __tbx_darray_grow(p_tbx_darray_t     darray,
 	    tbx_max(2 * (darray->allocated_length + 1), idx);
 
 	  darray->data =
-	    TBX_REALLOC(darray->data,
+	    (void**)TBX_REALLOC(darray->data,
 			darray->allocated_length * sizeof(void *));
 	  CTRL_ALLOC(darray->data);
 	}
@@ -118,7 +118,7 @@ __tbx_darray_grow(p_tbx_darray_t     darray,
     {
       darray->allocated_length =  tbx_max(idx, TBX_DARRAY_MIN_SIZE);
 
-      darray->data = TBX_CALLOC(darray->allocated_length, sizeof(void *));
+      darray->data = (void**)TBX_CALLOC(darray->allocated_length, sizeof(void *));
       CTRL_ALLOC(darray->data);
     }
   LOG_OUT();

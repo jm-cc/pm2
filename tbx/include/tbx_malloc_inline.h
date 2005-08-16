@@ -41,7 +41,7 @@ tbx_aligned_malloc(size_t      size,
           align = sizeof(void *);
   }
 
-  ini = ptr = TBX_MALLOC (size + 2 * align - 1);
+  ini = ptr = (char*)TBX_MALLOC (size + 2 * align - 1);
 
   if (ptr != NULL && ((tbx_align_t) ptr & mask) != 0)
     {
@@ -99,7 +99,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
 {
   p_tbx_memory_t temp_mem  = NULL;
 
-  temp_mem = TBX_MALLOC(sizeof(tbx_memory_t));
+  temp_mem = (p_tbx_memory_t)TBX_MALLOC(sizeof(tbx_memory_t));
   CTRL_ALLOC(temp_mem);
 
   TBX_INIT_SHARED(temp_mem);

@@ -122,7 +122,7 @@ DEC_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW);
 DEC_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW);
 
 #section functions
-static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2) __THROW;
+static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2);
 #section inline
 static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 {

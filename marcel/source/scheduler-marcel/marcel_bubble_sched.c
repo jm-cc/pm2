@@ -102,7 +102,11 @@ retryopened:
 		/* containing bubble already has exploded ! wake up this one */
 		entity->init_rq=rq;
 		bubble->nbrunning++;
-		activate_entity(entity, rq);
+		if (entity->type == MARCEL_BUBBLE_ENTITY)
+			activate_entity(entity, rq);
+		else {
+			/* TODO: on ne faisait rien de plus avant: problème: thread créé avec marcel_create_dontsched, et que l'on insère dans une bulle qui a éclaté, il ne sera pas réveillé... */
+		}
 		_ma_raw_spin_unlock(&bubble->lock);
 		ma_spin_unlock_softirq(&rq->lock);
 	}

@@ -132,7 +132,8 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	if (attr->sched.stayinbubble) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
 		marcel_bubble_t *bubble=marcel_bubble_holding_task(MARCEL_SELF);
-		MA_BUG_ON(!bubble);
+		if (!bubble)
+			bubble = &marcel_root_bubble;
 		internal->holdingbubble=bubble;
 		internal->init_rq=MARCEL_SELF->sched.internal.init_rq;
 	} else {

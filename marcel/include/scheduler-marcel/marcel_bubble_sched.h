@@ -197,3 +197,26 @@ marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
 /* called from ma_scheduler_tick() when the timeslice for the currently running
  * bubble has expired */
 void ma_bubble_tick(marcel_bubble_t *bubble);
+
+#ifdef MARCEL_BUBBLE_STEAL
+static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b);
+void ma_bubble_enqueue_task(marcel_task_t *t, marcel_bubble_t *b);
+void ma_bubble_enqueue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
+#define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->sched.internal,b)
+#define ma_bubble_enqueue_bubble(sb,b) ma_bubble_enqueue_entity(&sb->sched,b)
+static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b);
+void ma_bubble_dequeue_task(marcel_task_t *t, marcel_bubble_t *b);
+void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
+#define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->sched.internal,b)
+#define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->sched,b)
+#endif
+
+#section marcel_inline
+#ifdef MARCEL_BUBBLE_STEAL
+static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b) {
+	list_add_tail(&e->runningentities, &b->runningentities);
+}
+static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b) {
+	list_del(&e->runningentities);
+}
+#endif

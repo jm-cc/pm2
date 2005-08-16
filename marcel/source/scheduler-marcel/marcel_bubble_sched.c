@@ -207,8 +207,9 @@ static marcel_bubble_entity_t *ma_next_running_in_bubble(
 		marcel_bubble_t *curb,
 		struct list_head *curhead) {
 	marcel_bubble_entity_t *next;
-	marcel_bubble_t *up;
+	marcel_bubble_t *b;
 	struct list_head *nexthead;
+	ma_runqueue_t *rq;
 
 	nexthead = curhead->next;
 	if (tbx_unlikely(nexthead == &curb->runningentities)) {
@@ -218,9 +219,9 @@ static marcel_bubble_entity_t *ma_next_running_in_bubble(
 			bubble_sched_debug("finished root\n");
 			/* finished root bubble */
 			return NULL;
-		up = marcel_bubble_holding_bubble(curb);
-		bubble_sched_debug("up to %p\n",up);
-		return ma_next_running_in_bubble(root,up,&curb->sched.runningentities);
+		b = marcel_bubble_holding_bubble(curb);
+		bubble_sched_debug("up to %p\n",b);
+		return ma_next_running_in_bubble(root,b,&curb->sched.runningentities);
 	}
 
 	next = list_entry(nexthead, marcel_bubble_entity_t, runningentities);
@@ -230,9 +231,15 @@ static marcel_bubble_entity_t *ma_next_running_in_bubble(
 		return next;
 
 	/* bubble, go down */
-	curb = tbx_container_of(next, marcel_bubble_t, sched);
-	bubble_sched_debug("it is bubble %p\n",curb);
-	return ma_next_running_in_bubble(root,curb,&curb->heldentities);
+	b = tbx_container_of(next, marcel_bubble_t, sched);
+	bubble_sched_debug("it is bubble %p\n",b);
+	/* attention, il ne faudrait pas qu'elle bouge entre-temps */
+	_ma_raw_spin_lock(&b->lock);
+	rq = b->sched.cur_rq;
+	_ma_raw_spin_unlock(&b->lock);
+	if (rq) /* bubble on another rq (probably down elsewhere), don't go down */
+		return ma_next_running_in_bubble(root,curb,&b->sched.runningentities);
+	return ma_next_running_in_bubble(root,b,&b->heldentities);
 }
 #endif
 
@@ -304,12 +311,12 @@ marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
  */
 	bubble = tbx_container_of(nextent, marcel_bubble_t, sched);
 
+#if defined(MARCEL_BUBBLE_EXPLODE)
 	/* relâche la queue de la tâche courante: on ne lui fera rien, à part
 	 * squatter sa pile avant de recommencer ma_schedule() */
 	if (prevrq!=rq)
 		_ma_raw_spin_unlock(&prevrq->lock);
 
-#if defined(MARCEL_BUBBLE_EXPLODE)
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
 	deactivate_entity(nextent,rq);
@@ -349,14 +356,17 @@ marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
 			&nextent->runningentities);
 	bubble_sched_debug("next next ent to run %p\n",next_nextent);
 
-	if (!next_nextent) {
+	if (!(bubble->next = next_nextent)) {
 		/* end of bubble, put at end of list */
-		dequeue_entity(nextent,rq->active);
-		enqueue_entity(nextent,rq->active);
+		dequeue_entity(&bubble->sched,rq->active);
+		enqueue_entity(&bubble->sched,rq->active);
 	}
 
-	_ma_raw_spin_unlock(&bubble->lock);
-	ma_spin_unlock(&rq->lock);
+	if (!nextent) {
+		/* TODO il faudrait virer la bulle de la runqueue */
+		_ma_raw_spin_unlock(&bubble->lock);
+		double_rq_unlock(prevrq,rq);
+	}
 	LOG_RETURN(nextent);
 #else
 #error Please choose a bubble algorithm

@@ -184,7 +184,7 @@ int marcel_init_top(char *outfile) {
 		}
 		close(fds[1]);
 		// TODO récupérer le pid et le tuer proprement (il se termine dès qu'on tape dedans...)
-	} else if ((marcel_top_file=open(outfile,O_WRONLY))<0) {
+	} else if ((marcel_top_file=open(outfile,O_WRONLY|O_APPEND|O_CREAT))<0) {
 		perror("opening top file");
 		return -1;
 	}

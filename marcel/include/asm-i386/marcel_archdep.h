@@ -62,6 +62,13 @@ static __tbx_inline__ long get_gs(void)
   sp; \
 })
 
+#define get_bp() \
+({ \
+  register unsigned long bp; \
+  __asm__ __volatile__("movl %%ebp, %0" : "=r" (bp)); \
+  bp; \
+})
+
 #define set_sp(val) \
   do { \
     typeof(val) value=(val); \

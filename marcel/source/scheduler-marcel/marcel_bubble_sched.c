@@ -58,8 +58,12 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_enti
 	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
 	if (entity->type == MARCEL_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
-	else
+	else {
+		marcel_t t = tbx_container_of(entity, marcel_task_t, sched.internal);
+		if (t->sched.state == MA_TASK_BORNING)
+			ma_set_task_state(t, MA_TASK_RUNNING);
 		PROF_EVENT2(bubble_sched_insert_thread,tbx_container_of(entity,marcel_task_t,sched.internal),bubble);
+	}
 	list_add_tail(&entity->entity_list, &bubble->heldentities);
 	entity->holdingbubble=bubble;
 #ifdef MARCEL_BUBBLE_STEAL
@@ -104,9 +108,6 @@ retryopened:
 		bubble->nbrunning++;
 		if (entity->type == MARCEL_BUBBLE_ENTITY)
 			activate_entity(entity, rq);
-		else {
-			/* TODO: on ne faisait rien de plus avant: problème: thread créé avec marcel_create_dontsched, et que l'on insère dans une bulle qui a éclaté, il ne sera pas réveillé... */
-		}
 		_ma_raw_spin_unlock(&bubble->lock);
 		ma_spin_unlock_softirq(&rq->lock);
 	}
@@ -191,7 +192,8 @@ static void __do_bubble_explode(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	list_for_each_entry(new, &bubble->heldentities, entity_list) {
 		bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
 		new->init_rq=rq;
-		activate_entity(new, rq);
+		if (new->type == MARCEL_BUBBLE_ENTITY || tbx_container_of(new, marcel_task_t, sched.internal)->sched.state == MA_TASK_RUNNING)
+			activate_entity(new, rq);
 		bubble->nbrunning++;
 	}
 }

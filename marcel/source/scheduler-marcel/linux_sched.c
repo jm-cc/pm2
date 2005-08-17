@@ -643,14 +643,16 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	marcel_bubble_t *b;
 	LOG_IN();
 
+	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
+
 	if ((b=p->sched.internal.holdingbubble))
 		marcel_bubble_inserttask(b,p);
+
+	ma_set_task_state(p, MA_TASK_RUNNING);
 
 	rq = ma_task_init_rq(p);
 	MA_BUG_ON(!rq);
 	ma_spin_lock_softirq(&rq->lock);
-
-	MA_BUG_ON(p->sched.state != MA_TASK_RUNNING);
 
 	p->sched.internal.timestamp = marcel_clock();
 	/*

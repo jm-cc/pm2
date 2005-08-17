@@ -832,7 +832,7 @@ TODO: vieux code
 	
 	ma_preempt_count()=0;
 	ma_irq_enter();
-	ma_set_current_state(MA_TASK_RUNNING);
+	ma_set_current_state(MA_TASK_BORNING);
 
 #ifdef PM2DEBUG
 	pm2debug_printf_state(PM2DEBUG_MARCEL_PRINTF_ALLOWED);

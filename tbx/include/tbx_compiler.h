@@ -65,7 +65,15 @@ void __memory_barrier(void);
 #define TBX_UNUSED      __attribute__ ((__unused__))
 #define TBX_NORETURN    __attribute__ ((__noreturn__,__no_instrument_function__))
 #define TBX_CONST       __attribute__ ((__const__))
-#define TBX_NOINST      __attribute__ ((__no_instrument_function__))
+#if defined(__cplusplus)
+#  if defined(PM2_INSTRUMENT)
+#    error "Can't instrument PM2 code in C++"
+#  else
+#    define TBX_NOINST
+#  endif
+#else
+#  define TBX_NOINST      __attribute__ ((__no_instrument_function__))
+#endif
 #define TBX_WEAK        __attribute__ ((__weak__))
 #if defined(DARWIN_SYS)
 #  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \

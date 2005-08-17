@@ -151,7 +151,7 @@ tbx_malloc(p_tbx_memory_t mem)
     {
       LOG_PTR("tbx_malloc: first free", mem->first_free);
       ptr = mem->first_free;
-      mem->first_free = *(void **)(TBX_MALLOC_DEBUG_LEN+ptr) ;
+      mem->first_free = *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) ;
     }
   else
     {
@@ -160,13 +160,13 @@ tbx_malloc(p_tbx_memory_t mem)
           const size_t  mem_size = mem->mem_len * (TBX_MALLOC_DEBUG_LEN+mem->block_len);
 	  void   *new_mem        = TBX_MALLOC(mem_size + sizeof(void *));
 
-	  *(void **)(new_mem + mem_size) = NULL;
-	  *(void **)(mem->current_mem + mem_size) = new_mem;
+	  *(void **)((char*)new_mem + mem_size) = NULL;
+	  *(void **)((char*)mem->current_mem + mem_size) = new_mem;
 	  mem->current_mem = new_mem;
 	  mem->first_new = 0 ;
 	}
 
-      ptr = mem->current_mem + ((mem->block_len+TBX_MALLOC_DEBUG_LEN) * mem->first_new);
+      ptr = (char*)mem->current_mem + ((mem->block_len+TBX_MALLOC_DEBUG_LEN) * mem->first_new);
       mem->first_new++;
     }
 
@@ -200,7 +200,7 @@ tbx_free(p_tbx_memory_t  mem,
   if (TBX_MALLOC_DEBUG_NAME && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
     pm2debug("tbx_free(%s): 0x%p\n", mem->name, ptr);
   }
-  *(void **)(TBX_MALLOC_DEBUG_LEN+ptr) = mem->first_free ;
+  *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) = mem->first_free ;
   mem->first_free = ptr;
   mem->nb_allocated--;
   TBX_UNLOCK_SHARED(mem);
@@ -226,7 +226,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
         size_t i = 0;
 
         for (i = 0; i < mem->mem_len; i++) {
-          void *ptr = block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN);
+          void *ptr = (char*)block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN);
           int j = 0;
 
           if (!*(void **)ptr)
@@ -243,7 +243,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
           n++;
         }
 
-        block_mem = *(void **)(block_mem
+        block_mem = *(void **)((char*)block_mem
                                + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
       }
 
@@ -256,7 +256,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
     {
       void *next_block_mem = NULL;
 
-      next_block_mem = *(void **)(block_mem
+      next_block_mem = *(void **)((char*)block_mem
 				  + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
       TBX_FREE(block_mem);
       block_mem = next_block_mem;

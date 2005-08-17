@@ -178,8 +178,8 @@ mad_copy_buffer(p_mad_buffer_t source,
 
   length = mad_copy_length(source, destination);
 
-  memcpy(destination->buffer + destination->bytes_written,
-	 source->buffer + source->bytes_read, length);
+  memcpy((char*)destination->buffer + destination->bytes_written,
+	 (char*)source->buffer + source->bytes_read, length);
 
   source->bytes_read         += length ;
   destination->bytes_written += length ;
@@ -217,7 +217,7 @@ mad_make_sub_buffer_pair(p_mad_buffer_t source,
   length = mad_copy_length(source, destination);
   pair   = mad_alloc_buffer_pair_struct();
 
-  pair->dynamic_buffer.buffer        = source->buffer + source->bytes_read;
+  pair->dynamic_buffer.buffer        = (char*)source->buffer + source->bytes_read;
   pair->dynamic_buffer.length        = length;
   pair->dynamic_buffer.bytes_written = length;
   pair->dynamic_buffer.bytes_read    = 0;
@@ -225,7 +225,7 @@ mad_make_sub_buffer_pair(p_mad_buffer_t source,
   pair->dynamic_buffer.specific      = NULL;
 
   pair->static_buffer.buffer         =
-    destination->buffer + destination->bytes_written;
+    (char*)destination->buffer + destination->bytes_written;
   pair->static_buffer.length         = length;
   pair->static_buffer.bytes_written  = 0;
   pair->static_buffer.bytes_read     = 0 ;
@@ -272,7 +272,7 @@ mad_split_buffer(p_mad_buffer_t buffer,
       p_mad_buffer_t new_buffer = NULL;
 
       new_buffer = mad_alloc_buffer_struct();
-      new_buffer->buffer        = buffer->buffer + limit;
+      new_buffer->buffer        = (char*)buffer->buffer + limit;
       new_buffer->length        = buffer->length - limit;
       new_buffer->bytes_written =
 	(buffer->bytes_written > limit)?buffer->bytes_written - limit:0;

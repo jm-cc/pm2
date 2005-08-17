@@ -126,7 +126,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
 
   temp_mem->current_mem = temp_mem->first_mem;
 
-  *(void **)(temp_mem->current_mem + initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len)) = NULL;
+  *(void **)((char*)temp_mem->current_mem + initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len)) = NULL;
 
   temp_mem->block_len    = block_len;
   temp_mem->mem_len      = initial_block_number;

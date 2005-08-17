@@ -126,12 +126,14 @@ struct marcel_sched_task {
 #define MA_TASK_RUNNING		0
 #define MA_TASK_INTERRUPTIBLE	1
 #define MA_TASK_UNINTERRUPTIBLE	2
-#define MA_TASK_STOPPED		4
-#define MA_TASK_ZOMBIE		8
+//#define MA_TASK_STOPPED	4 pas utilisé
+//#define MA_TASK_TRACED	  pas utilisé
+//#define MA_TASK_ZOMBIE	8 pas utilisé
 #define MA_TASK_DEAD		16
-#define MA_TASK_GHOST		32
+//#define MA_TASK_GHOST		32 pas utilisé
 #define MA_TASK_MOVING		64
 #define MA_TASK_FROZEN		128
+#define MA_TASK_BORNING		256
 
 #define __ma_set_task_state(tsk, state_value)		\
 	do { (tsk)->sched.state = (state_value); } while (0)

@@ -211,7 +211,7 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   marcel_lock_release(&deviate_lock);
   unlock_task();
 
-  ma_wake_up_state(pid,MA_TASK_STOPPED|MA_TASK_INTERRUPTIBLE|MA_TASK_FROZEN);
+  ma_wake_up_state(pid,MA_TASK_INTERRUPTIBLE|MA_TASK_FROZEN);
 #ifdef MA__SMP
   // Heuristique: on va essayer d'accélérer les choses...
   // TODO: chercher plutôt un lwp qui atteint la runqueue...

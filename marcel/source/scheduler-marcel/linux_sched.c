@@ -527,8 +527,7 @@ repeat_lock_task:
 
 int fastcall ma_wake_up_thread(marcel_task_t * p)
 {
-	return try_to_wake_up(p, MA_TASK_STOPPED | 
-			      MA_TASK_INTERRUPTIBLE |
+	return try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
 			      MA_TASK_UNINTERRUPTIBLE, 0);
 }
 
@@ -1546,7 +1545,7 @@ asmlinkage void ma_schedule(void)
 	 * Otherwise, whine if we are scheduling when we should not be.
 	 */
 	MA_BUG_ON(ma_preempt_count()<0);
-	if (tbx_likely(!(MARCEL_SELF->sched.state & (MA_TASK_DEAD | MA_TASK_ZOMBIE)))) {
+	if (tbx_likely(!(MARCEL_SELF->sched.state & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
 			MA_BUG();

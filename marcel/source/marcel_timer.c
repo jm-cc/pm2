@@ -46,12 +46,6 @@ unsigned long volatile ma_jiffies=0;
 
 // l'horloge de marcel
 static volatile unsigned long __milliseconds = 0;
-static void update_time()
-{
-	if(LWP_NUMBER(LWP_SELF) == 0) {
-		__milliseconds += time_slice/1000;
-	}
-}
 
 unsigned long marcel_clock(void)
 {
@@ -74,8 +68,6 @@ static void timer_action(struct ma_softirq_action *a)
 	}
 #endif
 
-	update_time();
-	
 #ifdef MA__DEBUG
 	if(LWP_SELF == NULL) {
 		pm2debug("WARNING!!! LWP_SELF == NULL in thread %p!\n",
@@ -256,9 +248,11 @@ static void timer_interrupt(int sig)
 		/* kernel timer signal */
 #endif
 #ifndef CHAINED_SIGALRM
-		if (IS_FIRST_LWP(LWP_SELF))
+		if (IS_FIRST_LWP(LWP_SELF)) {
 #endif
 			ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
+			__milliseconds += time_slice/1000;
+		}
 #ifdef MA__SMP
 	//SA_NOMASK est mis dans l'appel à sigaction
 	//marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);

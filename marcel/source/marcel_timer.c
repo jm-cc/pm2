@@ -248,8 +248,9 @@ static void timer_interrupt(int sig)
 		/* kernel timer signal */
 #endif
 #ifndef CHAINED_SIGALRM
-		if (IS_FIRST_LWP(LWP_SELF)) {
+		if (IS_FIRST_LWP(LWP_SELF))
 #endif
+		{
 			ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
 			__milliseconds += time_slice/1000;
 		}

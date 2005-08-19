@@ -80,9 +80,9 @@ void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 //	rq->best_expired_prio = MA_MAX_PRIO;
 
 	ma_spin_lock_init(&rq->lock);
-	INIT_LIST_HEAD(&rq->migration_queue);
-	ma_atomic_set(&rq->nr_iowait, 0);
-	nr_running_init(rq);
+//	INIT_LIST_HEAD(&rq->migration_queue);
+//	ma_atomic_set(&rq->nr_iowait, 0);
+//	nr_running_init(rq);
 
 	for (j = 0; j < 2; j++) {
 		array = rq->arrays + j;

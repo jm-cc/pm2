@@ -128,7 +128,7 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
 		RAISE(PROGRAM_ERROR);
         }
 
-	ma_per_lwp(online,lwp)=1;
+	__ma_get_lwp_var(online)=1;
 
 	MA_BUG_ON(!preemption_enabled());
 }
@@ -189,8 +189,7 @@ static void *lwp_kthread_start_func(void *arg)
 
 unsigned marcel_lwp_add_vp(void)
 {
-  marcel_lwp_t *lwp,
-          *cur_lwp = GET_LWP(marcel_self());
+  marcel_lwp_t *lwp;
   static ma_atomic_t nb_lwp = MA_ATOMIC_INIT(0);
   unsigned num;
 
@@ -212,7 +211,7 @@ unsigned marcel_lwp_add_vp(void)
   lwp_list_lock_write();
   {
     // Ajout dans la liste globale des LWP
-    list_add_tail(&lwp->lwp_list, &cur_lwp->lwp_list);
+    list_add_tail(&lwp->lwp_list,&list_lwp_head);
   }
   lwp_list_unlock_write();
 
@@ -351,6 +350,7 @@ static void lwp_init(ma_lwp_t lwp)
 	 * En mode act-smp, ce thread sera aussi exécuté normalement.
 	 */
 	marcel_create_special(&(ma_per_lwp(run_task, lwp)), &attr, lwp_start_func, NULL);
+	ma_set_task_state((ma_per_lwp(run_task, lwp)), MA_TASK_RUNNING);
 	SET_LWP(ma_per_lwp(run_task, lwp), lwp);
 	ma_barrier();
 	MTRACE("RunTask", ma_per_lwp(run_task, lwp));

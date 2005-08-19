@@ -211,7 +211,6 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #  define for_all_lwp_from_end() \
      list_for_each_entry_from_end()
 #  define lwp_isset(num, map) ma_test_bit(num, &map)
-#  define lwp_is_offline(lwp) 0
 #else
 #  define cur_lwp                             (&__main_lwp)
 #  define LWP_NUMBER(lwp)                     ((void)(lwp),0)
@@ -230,7 +229,6 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #  define for_all_lwp_from_begin(lwp, lwp_start) for(;0;) {
 #  define for_all_lwp_from_end() }
 #  define lwp_isset(num, map) 1
-#  define lwp_is_offline(lwp) 0
 #endif
 
 #  define for_each_lwp_begin(lwp) \

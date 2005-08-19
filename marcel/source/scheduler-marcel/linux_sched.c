@@ -481,7 +481,7 @@ repeat_lock_task:
 				(ma_task_lwp(p) != LWP_SELF)
 				&& lwp_isset(LWP_NUMBER(LWP_SELF),
 					  p->sched.lwps_allowed)
-				&& !lwp_is_offline(LWP_SELF)
+				&& ma_lwp_online(LWP_SELF)
 				)) {
 
 				//deactivate_task(p,rq);

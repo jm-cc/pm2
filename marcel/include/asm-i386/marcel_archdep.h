@@ -81,7 +81,7 @@ static __tbx_inline__ long get_gs(void)
   do { \
     typeof(val) value=(val); \
     __asm__ __volatile__("movl %0, %%ebp" \
-                       : : "m" (value) : "memory" ); \
+                       : : "m" (value) : "memory", "ebp" ); \
   } while (0)
 
 

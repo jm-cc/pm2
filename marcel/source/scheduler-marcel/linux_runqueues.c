@@ -36,6 +36,7 @@ MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue, {0});
 MA_DEFINE_PER_LWP(ma_runqueue_t, dontsched_runqueue, {0});
 #endif
 
+#if 0
 #ifdef CONFIG_NUMA
 /*
  * Keep track of running tasks.
@@ -61,6 +62,7 @@ __marcel_init void node_nr_running_init(void)
 }
 #else
 # define nr_running_init(rq)   do { } while (0)
+#endif
 #endif
 
 void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)

@@ -98,17 +98,17 @@ struct ma_runqueue {
 	ma_spinlock_t lock;
 	unsigned long nr_running, expired_timestamp, nr_uninterruptible,
 		timestamp_last_tick;
-	struct mm_struct *prev_mm;
+//	struct mm_struct *prev_mm;
 	ma_prio_array_t *active, *expired, arrays[2];
 //	int best_expired_prio, prev_cpu_load[NR_CPUS];
-#ifdef CONFIG_NUMA
-	atomic_t *node_nr_running;
-	int prev_node_load[MAX_NUMNODES];
-#endif
-	marcel_task_t *migration_thread;
-	struct list_head migration_queue;
+//#ifdef CONFIG_NUMA
+//	atomic_t *node_nr_running;
+//	int prev_node_load[MAX_NUMNODES];
+//#endif
+//	marcel_task_t *migration_thread;
+//	struct list_head migration_queue;
 
-	ma_atomic_t nr_iowait;
+//	ma_atomic_t nr_iowait;
 
 #ifdef MA__LWPS
 	struct ma_runqueue *father;
@@ -172,6 +172,7 @@ static __tbx_inline__ void nr_running_dec(ma_runqueue_t *rq);
 #endif
 
 #section marcel_inline
+#if 0
 #ifdef CONFIG_NUMA
 static __tbx_inline__ void nr_running_inc(ma_runqueue_t *rq)
 {
@@ -184,6 +185,7 @@ static __tbx_inline__ void nr_running_dec(ma_runqueue_t *rq)
 	atomic_dec(rq->node_nr_running);
 	rq->nr_running--;
 }
+#endif
 
 #else /* !CONFIG_NUMA */
 

@@ -436,8 +436,8 @@ static __tbx_inline__ void __activate_task(marcel_task_t *p, ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void __activate_task(marcel_task_t *p, ma_runqueue_t *rq)
 {
-	activate_running_task(p,rq);
 	sched_debug("activating %ld:%s in %s\n",p->number,p->name,rq->name);
+	activate_running_task(p,rq);
 	enqueue_task(p, rq->active);
 }
 

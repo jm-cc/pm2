@@ -73,11 +73,9 @@ void marcel_close_bubble(marcel_bubble_t *bubble);
  * scheduler view
  */
 
-#section marcel_structures
+#section structures
 #depend "pm2_list.h"
-#depend "scheduler/linux_sched.h[marcel_types]"
-#depend "scheduler/linux_runqueues.h[marcel_types]"
-#depend "scheduler/linux_runqueues.h[marcel_variables]"
+#depend "scheduler/marcel_holder.h[structures]"
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 typedef enum {

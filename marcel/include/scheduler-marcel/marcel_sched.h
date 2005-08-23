@@ -90,8 +90,8 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
 #define marcel_attr_setprio(attr,prio) marcel_sched_attr_setprio(&(attr)->sched,prio)
 #define marcel_attr_getprio(attr,prio) marcel_sched_attr_getprio(&(attr)->sched,prio)
 
-#define marcel_attr_setstayinbubble(attr,stay) marcel_sched_attr_setstayinbubble(&(attr)->sched,stay)
-#define marcel_attr_getstayinbubble(attr,stay) marcel_sched_attr_getstayinbubble(&(attr)->sched,stay)
+#define marcel_attr_setinheritholder(attr,yes) marcel_sched_attr_setinheritholder(&(attr)->sched,yes)
+#define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
 
 /****************************************************************/
 /* Structure interne pour une tâche

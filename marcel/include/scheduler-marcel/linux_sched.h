@@ -161,8 +161,6 @@ struct task_struct {
 	struct list_head ptrace_children;
 	struct list_head ptrace_list;
 
-	struct mm_struct *mm, *active_mm;
-
 /* task state */
 	struct linux_binfmt *binfmt;
 	int exit_code, exit_signal;

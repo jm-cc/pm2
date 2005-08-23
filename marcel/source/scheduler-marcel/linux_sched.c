@@ -177,7 +177,6 @@
 //	return BASE_TIMESLICE(p);
 //}
 
-MA_DEFINE_PER_LWP(ma_runqueue_t *, prev_rq, NULL);
 MA_DEFINE_PER_LWP(marcel_task_t *, current_thread, NULL);
 MA_DEFINE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage, {0});
 #ifndef MA__LWPS
@@ -435,10 +434,11 @@ EXPORT_SYMBOL_GPL(kick_process);
 #endif
 #endif /* 0 */
 
-/* tries to resched the given task on the given runqueue (which needs be locked) */
-void try_to_resched(marcel_task_t *p, ma_runqueue_t *rq)
+/* tries to resched the given task in the given holder */
+void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 {
 	marcel_lwp_t *lwp;
+	ma_runqueue_t *rq = ma_to_rq_holder(h);
 	for_each_lwp_from_begin(lwp, LWP_SELF)
 		/* TODO: regarder celui qui préeempte le plus ? (histoire d'aller taper dans Idle plutôt) */
 		if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
@@ -517,7 +517,7 @@ repeat_lock_task:
 				/* we can avoid remote reschedule by switching to it */
 				if (!sync) /* only if we won't for sure yield() soon */
 					resched_task(MARCEL_SELF, LWP_SELF);
-			} else try_to_resched(p, rq);
+			} else try_to_resched(p, h);
 			success = 1;
 		}
 		p->sched.state = MA_TASK_RUNNING;
@@ -769,13 +769,26 @@ void fastcall sched_exit(task_t * p)
  */
 static inline void finish_task_switch(marcel_task_t *prev)
 {
-	ma_holder_t *prevh = ma_prev_holder();
-	ma_holder_t *h = ma_this_holder();
-//	struct mm_struct *mm = rq->prev_mm;
+	ma_holder_t *prevh = ma_task_holder_lock(prev);
 	unsigned long prev_task_flags;
 	marcel_bubble_t *bubble;
 
-//	rq->prev_mm = NULL;
+	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
+		if (prev->sched.state & MA_TASK_MOVING) {
+			/* moving, make it running elsewhere */
+			MTRACE("moving",prev);
+			ma_set_task_state(prev, MA_TASK_RUNNING);
+			try_to_resched(prev, prevh);
+		} else {
+			/* yes, deactivate */
+			sched_debug("%p going to sleep\n",prev);
+			ma_deactivate_running_task(prev,prevh);
+			goto sleep;
+		}
+	}
+	/* still runnable */
+	ma_enqueue_task(prev,prevh);
+sleep:
 
 	/*
 	 * A task struct has one reference for the use as "current".
@@ -790,14 +803,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	 */
 	prev_task_flags = prev->flags;
 
-	/* si le lwp change de runqueue, il faut libérer les deux.
-	 * finish_arch_switch s'occupe de la précédente (ou s'en est déjà occupé
-	 * dans prepare_arch_switch) */
-	if (h && prevh!=h)
-		ma_holder_rawunlock(h);
 	ma_finish_arch_switch(prevh, prev);
-//	if (mm)
-//		mmdrop(mm);
 //	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
 //		ma_put_task_struct(prev);
 
@@ -823,35 +829,6 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 			marcel_sig_pause();
 	}
 #endif
-}
-
-/*
- * context_switch - switch to the new MM and the new
- * thread's register state.
- */
-static inline marcel_task_t * context_switch(ma_holder_t *h, marcel_task_t *prev, marcel_task_t *next)
-{
-//	struct mm_struct *mm = next->mm;
-//	struct mm_struct *oldmm = prev->active_mm;
-
-//	if (unlikely(!mm)) {
-//		next->active_mm = oldmm;
-//		atomic_inc(&oldmm->mm_count);
-//		enter_lazy_tlb(oldmm, next);
-//	} else
-//		switch_mm(oldmm, mm, next);
-
-//	if (unlikely(!prev->mm)) {
-//		prev->active_mm = NULL;
-//		WARN_ON(rq->prev_mm);
-//		rq->prev_mm = oldmm;
-//	}
-
-	/* Here we just switch the register state and the stack. */
-	__ma_get_lwp_var(prev_holder)=h;
-	prev=marcel_switch_to(prev, next);//switch_to(prev, next, prev);
-
-	return prev;
 }
 
 /*
@@ -1654,8 +1631,8 @@ restart:
 	}
 #endif
 
-	double_rq_lock(prevrq,rq);
-	sched_debug("locked(%p,%p)\n",prevrq,rq);
+	ma_holder_lock(&rq->hold);
+	sched_debug("locked(%p)\n",rq);
 
 	if (tbx_unlikely(rq == ma_dontsched_rq(LWP_SELF))) {
 		/* found no interesting queue, not even previous one */
@@ -1731,19 +1708,9 @@ switch_tasks:
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
 
-	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
+	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
 		MA_BUG_ON(next==prev);
-		if (prev->sched.state & MA_TASK_MOVING) {
-			/* moving, make it running elsewhere */
-			MTRACE("moving",prev);
-			ma_set_current_state(MA_TASK_RUNNING);
-			try_to_resched(prev, prevrq);
-		} else {
-			/* yes, deactivate */
-			sched_debug("%p going to sleep\n",prev);
-			ma_deactivate_running_task(prev,&prevrq->hold);
-		}
-	}
+
 #ifdef MARCEL_BUBBLE_EXPLODE
 	if ((bubble = prev->sched.internal.holdingbubble)
 			&& bubble->status == MA_BUBBLE_CLOSING) {
@@ -1789,14 +1756,12 @@ switch_tasks:
 //		++*switch_count;
 
 		ma_dequeue_task(next, &rq->hold);
-		/* still runnable */
-		if (ma_task_holder(prev))
-			ma_enqueue_task(prev,&prevrq->hold);
 		ma_set_task_lwp(next, LWP_SELF);
 
 		ma_prepare_arch_switch(rq, next);
-		prev = context_switch(&prevrq->hold, prev, next);
+		prev = marcel_switch_to(prev, next);
 		ma_barrier();
+		ma_holder_unlock(&rq->hold);
 
 		ma_schedule_tail(prev);
 	} else {
@@ -1823,7 +1788,7 @@ MARCEL_INT(ma_schedule);
 int marcel_yield_to(marcel_t next)
 {
 	marcel_t prev = MARCEL_SELF;
-	ma_holder_t *prevh = ma_this_holder(), *nexth;
+	ma_holder_t *nexth;
 
 	if (next==prev)
 		return 0;
@@ -1848,12 +1813,8 @@ int marcel_yield_to(marcel_t next)
 	ma_set_task_lwp(next, LWP_SELF);
 	ma_holder_rawunlock(nexth);
 
-	ma_holder_rawlock(prevh);
-	ma_enqueue_task(prev, prevh);
-#warning ==== FIX lock ====
-
 	ma_prepare_arch_switch(nexth,next);
-	prev = context_switch(prevh, prev, next);
+	prev = marcel_switch_to(prev, next);
 	ma_barrier();
 	finish_task_switch(prev);
 

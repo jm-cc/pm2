@@ -22,8 +22,8 @@
 //#define dprintf(fmt,args...) fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
 
-#define MAX_BUBBLE_LEVEL 6
-//#define MAX_BUBBLE_LEVEL 0
+//#define MAX_BUBBLE_LEVEL 6
+#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
   int inf, sup, res;
@@ -117,7 +117,7 @@ int marcel_main(int argc, char **argv)
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, TRUE);
   marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_AFFINITY);
-  marcel_attr_setstayinbubble(&attr, TRUE);
+  marcel_attr_setinheritholder(&attr, TRUE);
 #ifdef CPU0ONLY
   marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(0));
 #endif

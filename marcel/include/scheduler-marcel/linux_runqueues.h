@@ -96,7 +96,6 @@ struct ma_runqueue {
 	unsigned long long nr_switches;
 	char name[16];
 	unsigned long expired_timestamp, timestamp_last_tick;
-//	struct mm_struct *prev_mm;
 	ma_prio_array_t *active, *expired, arrays[2];
 //	int best_expired_prio, prev_cpu_load[NR_CPUS];
 //#ifdef CONFIG_NUMA
@@ -170,14 +169,14 @@ static __tbx_inline__ void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2
 static __tbx_inline__ void double_rq_lock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	if (rq1 == rq2)
-		ma_spin_lock(&rq1->hold.lock);
+		ma_holder_lock(&rq1->hold);
 	else {
 		if (rq1 < rq2) {
-			ma_spin_lock(&rq1->hold.lock);
-			_ma_raw_spin_lock(&rq2->hold.lock);
+			ma_holder_lock(&rq1->hold);
+			ma_holder_rawlock(&rq2->hold);
 		} else {
-			ma_spin_lock(&rq2->hold.lock);
-			_ma_raw_spin_lock(&rq1->hold.lock);
+			ma_holder_lock(&rq2->hold);
+			ma_holder_rawlock(&rq1->hold);
 		}
 	}
 }
@@ -202,7 +201,7 @@ static __tbx_inline__ void lock_second_rq(ma_runqueue_t *rq1, ma_runqueue_t *rq2
 {
 	MA_BUG_ON(rq1 > rq2);
 	if (rq1 != rq2)
-		_ma_raw_spin_lock(&rq2->hold.lock);
+		ma_holder_rawlock(&rq2->hold);
 }
 
 /*
@@ -217,8 +216,8 @@ static __tbx_inline__ void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *r
 static __tbx_inline__ void double_rq_unlock(ma_runqueue_t *rq1, ma_runqueue_t *rq2)
 {
 	if (rq1 != rq2)
-		_ma_raw_spin_unlock(&rq2->hold.lock);
-	ma_spin_unlock(&rq1->hold.lock);
+		ma_holder_rawunlock(&rq2->hold);
+	ma_holder_unlock(&rq1->hold);
 }
 #section marcel_functions
 static __tbx_inline__ void double_rq_unlock_softirq(ma_runqueue_t *rq1, ma_runqueue_t *rq2);

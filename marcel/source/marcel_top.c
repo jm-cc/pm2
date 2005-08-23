@@ -40,9 +40,22 @@ int top_printf (char *fmt, ...) {
 	return n;
 }
 
-void printtask(marcel_task_t *t) {
+static char *get_holder_name(ma_holder_t *h, char *buf, int size) {
+	if (!h)
+		return "nil";
+
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		return ma_rq_holder(h)->name;
+
+	snprintf(buf,size,"%p",ma_bubble_holder(h));
+	return buf;
+}
+
+static void printtask(marcel_task_t *t) {
 	unsigned long utime;
 	char state;
+	char buf1[32];
+	char buf2[32];
 
 	switch (t->sched.state) {
 		case MA_TASK_RUNNING: 		state = 'R'; break;
@@ -62,8 +75,8 @@ void printtask(marcel_task_t *t) {
 	top_printf("0x%p %16s %2d %3lu%% %c %2d %s %s\r\n", t, t->name,
 		t->sched.internal.prio, djiffies?(utime*100)/djiffies:0,
 		state, LWP_NUMBER(GET_LWP(t)),
-		t->sched.internal.init_rq?t->sched.internal.init_rq->name:"nil",
-		t->sched.internal.cur_rq?t->sched.internal.cur_rq->name:"nil");
+		get_holder_name(ma_task_holder(t),buf1,sizeof(buf1)),
+		get_holder_name(ma_task_cur_holder(t),buf2,sizeof(buf2)));
 	ma_atomic_sub(utime, &t->top_utime);
 }
 

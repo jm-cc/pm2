@@ -115,6 +115,7 @@ MA_DECLARE_PER_LWP(marcel_task_t *,idle_task);
 typedef struct marcel_sched_task marcel_sched_task_t;
 
 #section marcel_structures
+#depend "scheduler/marcel_sched.h[marcel_types]"
 struct marcel_sched_task {
 	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
 	unsigned long lwps_allowed; /* Contraintes sur le placement sur les LWP */
@@ -145,9 +146,6 @@ struct marcel_sched_task {
 #define ma_set_current_state(state_value)		\
 	ma_set_mb(MARCEL_SELF->sched.state, (state_value))
 
-#define MA_TASK_IS_RUNNING(tsk) ((tsk)->sched.internal.cur_rq && !(tsk)->sched.internal.array)
-#define MA_TASK_IS_SLEEPING(tsk) ((tsk)->sched.internal.cur_rq &&  (tsk)->sched.internal.array)
-#define MA_TASK_IS_BLOCKED(tsk) (!(tsk)->sched.internal.cur_rq)
 #define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
 
 #section sched_marcel_functions

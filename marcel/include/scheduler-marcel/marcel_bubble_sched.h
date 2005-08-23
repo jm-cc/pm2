@@ -25,7 +25,6 @@
 
 #section types
 typedef struct marcel_bubble marcel_bubble_t;
-typedef struct marcel_bubble_sched_entity marcel_bubble_entity_t;
 
 #section variables
 extern marcel_bubble_t marcel_root_bubble;
@@ -33,13 +32,14 @@ extern marcel_bubble_t marcel_root_bubble;
 #section functions
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
+#depend "scheduler/marcel_holder.h[types]"
 #depend "marcel_descr.h[types]"
 int marcel_bubble_init(marcel_bubble_t *bubble);
 int marcel_bubble_destroy(marcel_bubble_t *bubble);
 #define marcel_bubble_destroy(bubble) 0
 
-int marcel_entity_setschedlevel(marcel_bubble_entity_t *entity, int level);
-int marcel_entity_getschedlevel(__const marcel_bubble_entity_t *entity, int *level);
+int marcel_entity_setschedlevel(marcel_entity_t *entity, int level);
+int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 #define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->sched,level)
 #define marcel_bubble_getschedlevel(bubble,level) marcel_entity_getschedlevel(&(bubble)->sched,level)
@@ -49,7 +49,7 @@ int marcel_entity_getschedlevel(__const marcel_bubble_entity_t *entity, int *lev
 int marcel_bubble_setprio(marcel_bubble_t *bubble, int prio);
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 
-int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_bubble_entity_t *entity);
+int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
 int marcel_bubble_insertbubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
 int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);
 
@@ -58,11 +58,10 @@ int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);
 
 void marcel_wake_up_bubble(marcel_bubble_t *bubble);
 
-marcel_bubble_t marcel_bubble_holding_task(marcel_task_t *task);
-marcel_bubble_t marcel_bubble_holding_bubble(marcel_bubble_t *bubble);
-marcel_bubble_t marcel_bubble_holding_entity(marcel_bubble_entity_t *entity);
+marcel_bubble_t *marcel_bubble_holding_task(marcel_task_t *task);
+marcel_bubble_t *marcel_bubble_holding_bubble(marcel_bubble_t *bubble);
+marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 
-#define marcel_bubble_holding_entity(e) ((e)->holdingbubble)
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->sched)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->sched.internal)
 
@@ -73,13 +72,6 @@ void marcel_close_bubble(marcel_bubble_t *bubble);
 /******************************************************************************
  * scheduler view
  */
-
-#section marcel_types
-
-enum marcel_bubble_entity {
-	MARCEL_TASK_ENTITY,
-	MARCEL_BUBBLE_ENTITY,
-};
 
 #section marcel_structures
 #depend "pm2_list.h"
@@ -95,36 +87,12 @@ typedef enum {
 } ma_bubble_status;
 #endif
 
-struct marcel_bubble_sched_entity {
-	enum marcel_bubble_entity type;
-	struct list_head run_list; /* liste chaînée des entités prêtes */
-	ma_runqueue_t *init_rq;
-	ma_runqueue_t *cur_rq;
-	ma_prio_array_t *array;
-	int sched_policy;
-	int prio;
-	unsigned long timestamp, last_ran;
-	ma_atomic_t time_slice;
-	struct list_head entity_list;
-	marcel_bubble_t *holdingbubble; /* ne change pas */
-#ifdef MA__LWPS
-	int sched_level;
-#endif
-#ifdef MARCEL_BUBBLE_STEAL
-	struct list_head runningentities;
-#endif
-};
-
 struct marcel_bubble {
 	/* garder en premier, pour que les conversion bubble / entity soient
 	 * triviales */
-	struct marcel_bubble_sched_entity sched;
+	struct ma_sched_entity sched;
+	struct ma_holder hold;
 	struct list_head heldentities;
-	/* verrouillage: toujours dans l'ordre contenant puis contenu:
-	 * runqueue, puis bulle sur la runqueues, puis bulles contenues dans la
-	 * bulle, mais sur la même runqueue, puis sous-runqueue, puis bulles
-	 * contenues dan bulle, mais sur la sous-runqueue, etc... */
-	ma_spinlock_t lock;
 #ifdef MARCEL_BUBBLE_EXPLODE
 	ma_bubble_status status;
 	int nbrunning; /* number of entities released by the bubble (i.e. currently in runqueues) */
@@ -135,10 +103,10 @@ struct marcel_bubble {
 	/* number of LWPs running a thread in bubble */
 	int nbactive;
 	/* next entity to try to run in this bubble */
-	struct marcel_bubble_sched_entity *next;
+	struct ma_sched_entity *next;
+#endif
 	/* list of running entities */
 	struct list_head runningentities;
-#endif
 };
 
 #section macros
@@ -148,11 +116,7 @@ struct marcel_bubble {
 #depend "asm/linux_spinlock.h"
 // MA_ATOMIC_INIT
 #depend "asm/linux_atomic.h"
-#ifdef MA__LWPS
-#define SCHED_LEVEL_INIT .sched_level = MARCEL_LEVEL_DEFAULT,
-#else
-#define SCHED_LEVEL_INIT
-#endif
+#depend "scheduler/marcel_holder.h[macros]"
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
@@ -168,20 +132,12 @@ struct marcel_bubble {
 #endif
 
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
+	.hold = MA_HOLDER_INITIALIZER(MA_BUBBLE_HOLDER), \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
-	.lock = MA_SPIN_LOCK_UNLOCKED, \
-	.sched = { \
-		.type = MARCEL_BUBBLE_ENTITY, \
-		.run_list = LIST_HEAD_INIT((b).sched.run_list), \
-		.init_rq = NULL, .cur_rq = NULL, \
-		.array = NULL, \
-		.prio = MA_BATCH_PRIO, \
-		.timestamp = 0, .last_ran = 0, \
-		.time_slice = MA_ATOMIC_INIT(0), \
-		SCHED_LEVEL_INIT \
-	}, \
+	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_BATCH_PRIO), \
 	MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 }
+
 
 #section marcel_variables
 MA_DECLARE_PER_LWP(marcel_bubble_t *, bubble_towake);
@@ -191,7 +147,7 @@ MA_DECLARE_PER_LWP(marcel_bubble_t *, bubble_towake);
  * locked, returns 1 if ma_schedule() should restart (prevrq and rq have then
  * been released), returns 0 if ma_schedule() can continue with entity nextent
  * (prevrq and rq have been kept locked) */
-marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
+marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_runqueue_t *prevrq, ma_runqueue_t *rq, int idx);
 
 /* called from ma_scheduler_tick() when the timeslice for the currently running
@@ -199,12 +155,12 @@ marcel_bubble_entity_t *ma_bubble_sched(marcel_bubble_entity_t *nextent,
 void ma_bubble_tick(marcel_bubble_t *bubble);
 
 #ifdef MARCEL_BUBBLE_STEAL
-static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b);
+static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_enqueue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_enqueue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #define ma_bubble_enqueue_task(t,b) ma_bubble_enqueue_entity(&t->sched.internal,b)
 #define ma_bubble_enqueue_bubble(sb,b) ma_bubble_enqueue_entity(&sb->sched,b)
-static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b);
+static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_dequeue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->sched.internal,b)
@@ -212,11 +168,11 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #endif
 
 #section marcel_inline
-#ifdef MARCEL_BUBBLE_STEAL
-static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b) {
-	list_add_tail(&e->runningentities, &b->runningentities);
+static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+	list_add_tail(&e->run_list, &b->runningentities);
+	e->data = (void *)1;
 }
-static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_bubble_entity_t *e, marcel_bubble_t *b) {
-	list_del(&e->runningentities);
+static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+	list_del(&e->run_list);
+	e->data = NULL;
 }
-#endif

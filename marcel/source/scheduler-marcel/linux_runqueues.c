@@ -32,37 +32,8 @@ ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_core_runqueue};
 #endif
 
 #ifdef MA__LWPS
-MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue, {0});
-MA_DEFINE_PER_LWP(ma_runqueue_t, dontsched_runqueue, {0});
-#endif
-
-#if 0
-#ifdef CONFIG_NUMA
-/*
- * Keep track of running tasks.
- */
-
-static atomic_t node_nr_running[MAX_NUMNODES] ____cacheline_maxaligned_in_smp =
-	{[0 ...MAX_NUMNODES-1] = ATOMIC_INIT(0)};
-
-static inline void nr_running_init(ma_runqueue_t *rq)
-{
-        rq->node_nr_running = &node_nr_running[0]; // corriger le numro de noeud
-}
-
-__marcel_init void node_nr_running_init(void)
-{
-	int i;
-
-	for (i = 0; i < NR_CPUS; i++) {
-		if (cpu_possible(i))
-			cpu_rq(i)->node_nr_running =
-				&node_nr_running[cpu_to_node(i)];
-	}
-}
-#else
-# define nr_running_init(rq)   do { } while (0)
-#endif
+MA_DEFINE_PER_LWP(ma_runqueue_t, runqueue, {{0}});
+MA_DEFINE_PER_LWP(ma_runqueue_t, dontsched_runqueue, {{0}});
 #endif
 
 void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
@@ -72,17 +43,17 @@ void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 
 	LOG_IN();
 
+	ma_holder_init(&rq->hold, MA_RUNQUEUE_HOLDER);
+	rq->nr_switches = 0;
 	strncpy(rq->name,name,sizeof(rq->name)-1);
 	rq->name[sizeof(rq->name)-1]=0;
-	rq->type = type;
+	//expired_timestamp, timestamp_last_tick
 	rq->active = rq->arrays;
 	rq->expired = rq->arrays + 1;
 //	rq->best_expired_prio = MA_MAX_PRIO;
 
-	ma_spin_lock_init(&rq->lock);
 //	INIT_LIST_HEAD(&rq->migration_queue);
 //	ma_atomic_set(&rq->nr_iowait, 0);
-//	nr_running_init(rq);
 
 	for (j = 0; j < 2; j++) {
 		array = rq->arrays + j;
@@ -95,7 +66,10 @@ void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 	}
 #ifdef MA__LWPS
 	rq->father = NULL;
+	// level set by topology
+	// cpuset set by topology
 #endif
+	rq->type = type;
 
 	LOG_OUT();
 }

@@ -32,17 +32,35 @@ int marcel_sched_attr_init(marcel_sched_attr_t *attr)
   return 0;
 }
 
-int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq)
+int marcel_sched_attr_setinitholder(marcel_sched_attr_t *attr, ma_holder_t *h)
 {
-  attr->init_rq = rq;
+  attr->init_holder = h;
+  return 0;
+}
+
+int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t *attr, ma_holder_t **h)
+{
+  *h = attr->init_holder;
   return 0;
 }
 
 int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq)
 {
-  *rq = attr->init_rq;
+  ma_holder_t *h = attr->init_holder;
+  MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
+  *rq = tbx_container_of(h, ma_runqueue_t, hold);
   return 0;
 }
+
+#ifdef MA__BUBBLES
+int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **b)
+{
+  ma_holder_t *h = attr->init_holder;
+  MA_BUG_ON(h->type != MA_BUBBLE_HOLDER);
+  *b = tbx_container_of(h, marcel_bubble_t, hold);
+  return 0;
+}
+#endif
 
 int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio)
 {
@@ -56,15 +74,15 @@ int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio)
   return 0;
 }
 
-int marcel_sched_attr_setstayinbubble(marcel_sched_attr_t *attr, int stay)
+int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes)
 {
-  attr->stayinbubble = stay;
+  attr->inheritholder = yes;
   return 0;
 }
 
-int marcel_sched_attr_getstayinbubble(__const marcel_sched_attr_t *attr, int *stay)
+int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes)
 {
-  *stay = attr->stayinbubble;
+  *yes = attr->inheritholder;
   return 0;
 }
 

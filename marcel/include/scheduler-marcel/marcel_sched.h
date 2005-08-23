@@ -37,11 +37,11 @@
 typedef struct marcel_sched_attr marcel_sched_attr_t;
 
 #section structures
-#depend "scheduler/linux_runqueues.h[marcel_types]"
+#depend "scheduler/marcel_holder.h[types]"
 struct marcel_sched_attr {
-	ma_runqueue_t *init_rq;
+	ma_holder_t *init_holder;
 	int prio;
-	int stayinbubble;
+	int inheritholder;
 };
 
 #section variables
@@ -49,27 +49,43 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 
 #section macros
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
-	.init_rq = NULL, \
+	.init_holder = NULL, \
 	.prio = MA_DEF_PRIO, \
-	.stayinbubble = FALSE, \
+	.inheritholder = TRUE, \
 }
 
 #section functions
 int marcel_sched_attr_init(marcel_sched_attr_t *attr);
 #define marcel_sched_attr_destroy(attr_ptr)	0
 
+int marcel_sched_attr_setinitholder(marcel_sched_attr_t *attr, ma_holder_t *h) __THROW;
+int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t *attr, ma_holder_t **h) __THROW;
+
 int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
+#define marcel_sched_attr_setinitrq(attr, rq) marcel_sched_attr_setinitholder(attr, &rq->hold)
 int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
+
+#ifdef MA__BUBBLES
+int marcel_sched_attr_setinitbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
+#define marcel_sched_attr_setinitbubble(attr, bubble) marcel_sched_attr_setinitholder(attr, &bubble->hold)
+int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
+#endif
 
 int marcel_sched_attr_setprio(marcel_sched_attr_t *attr, int prio) __THROW;
 int marcel_sched_attr_getprio(__const marcel_sched_attr_t *attr, int *prio) __THROW;
 
-int marcel_sched_attr_setstayinbubble(marcel_sched_attr_t *attr, int stay) __THROW;
-int marcel_sched_attr_getstayinbubble(__const marcel_sched_attr_t *attr, int *stay) __THROW;
+int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
+int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW;
 
 #section macros
 #define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
 #define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
+#define marcel_attr_setinitholder(attr,holder) marcel_sched_attr_setinitholder(&(attr)->sched,holder)
+#define marcel_attr_getinitholder(attr,holder) marcel_sched_attr_getinitholder(&(attr)->sched,holder)
+#ifdef MA__BUBBLE
+#define marcel_attr_setinitbubble(attr,bubble) marcel_sched_attr_setinitbubble(&(attr)->sched,bubble)
+#define marcel_attr_getinitbubble(attr,bubble) marcel_sched_attr_getinitbubble(&(attr)->sched,bubble)
+#endif
 
 #define marcel_attr_setprio(attr,prio) marcel_sched_attr_setprio(&(attr)->sched,prio)
 #define marcel_attr_getprio(attr,prio) marcel_sched_attr_getprio(&(attr)->sched,prio)
@@ -82,8 +98,8 @@ int marcel_sched_attr_getstayinbubble(__const marcel_sched_attr_t *attr, int *st
  */
 
 #section marcel_types
-#depend "scheduler/marcel_bubble_sched.h[marcel_structures]"
-typedef struct marcel_bubble_sched_entity marcel_sched_internal_task_t;
+#depend "scheduler/marcel_holder.h[marcel_structures]"
+typedef struct ma_sched_entity marcel_sched_internal_task_t;
 
 #section marcel_functions
 int ma_wake_up_task(marcel_task_t * p);
@@ -120,6 +136,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #section sched_marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
 #depend "scheduler/linux_runqueues.h[variables]"
+#depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
 __tbx_inline__ static void 
 marcel_sched_internal_init_marcel_thread(marcel_task_t* t, 
@@ -127,34 +144,34 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		const marcel_attr_t *attr)
 {
 	LOG_IN();
-	INIT_LIST_HEAD(&internal->run_list);
-	internal->type = MARCEL_TASK_ENTITY;
-	if (attr->sched.stayinbubble) {
+	internal->type = MA_TASK_ENTITY;
+	if (attr->sched.inheritholder) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
-		marcel_bubble_t *bubble=marcel_bubble_holding_task(MARCEL_SELF);
-		if (!bubble)
-			bubble = &marcel_root_bubble;
-		internal->holdingbubble=bubble;
-		internal->init_rq=MARCEL_SELF->sched.internal.init_rq;
+		ma_holder_t *h = ma_task_holder(MARCEL_SELF);
+		if (!h)
+			h = &ma_main_runqueue.hold;
+		internal->holder = h;
 	} else {
-		internal->holdingbubble=NULL;
-		if (attr->sched.init_rq)
-			internal->init_rq=attr->sched.init_rq;
+		if (attr->sched.init_holder)
+			internal->holder=attr->sched.init_holder;
 		else
-			internal->init_rq=marcel_sched_vpmask_init_rq(attr->vpmask);
+			internal->holder=&(marcel_sched_vpmask_init_rq(attr->vpmask)->hold);
 	}
-	internal->cur_rq=NULL;
+	internal->cur_holder=NULL;
+	internal->data=NULL;
+	INIT_LIST_HEAD(&internal->run_list);
 	internal->sched_policy = attr->__schedpolicy;
 	internal->prio=attr->sched.prio;
+	//timestamp, last_ran
 	ma_atomic_set(&internal->time_slice,10); /* TODO: utiliser les priorités pour le calculer */
-	internal->array=NULL;
+	//entity_list
 #ifdef MA__LWPS
 	internal->sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
-#ifdef MARCEL_BUBBLE_STEAL
-	INIT_LIST_HEAD(&internal->runningentities);
-#endif
-	sched_debug("%p(%s)'s init_rq is %s (prio %d)\n", t, t->name, internal->init_rq->name, internal->prio);
+	if (ma_holder_type(internal->holder) == MA_RUNQUEUE_HOLDER)
+		sched_debug("%p(%s)'s init_holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->holder)->name, internal->prio);
+	else
+		sched_debug("%p(%s)'s init_holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->holder), internal->prio);
 	LOG_OUT();
 }
 
@@ -242,6 +259,14 @@ int marcel_check_sleeping(void);
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/
+
+/* prev_holder permet de savoir, lors d'un changement de contexte, le holder
+ * qui était pris avant le changement, qu'il faut donc libérer */
+#section marcel_variables
+MA_DECLARE_PER_LWP(ma_holder_t *, prev_holder);
+
+#section marcel_macros
+#define ma_prev_holder()	(__ma_get_lwp_var(prev_holder))
 
 #section sched_marcel_functions
 static
@@ -353,8 +378,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
 		
 	} else {
-		ma_runqueue_t *rq;
-		marcel_bubble_t *b;
+		ma_holder_t *h;
 		// Cas le plus favorable (sur le plan de
 		// l'efficacité) : le père sauve son contexte et on
 		// démarre le fils immédiatement.
@@ -371,22 +395,24 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* le fils sera déjà démarré */
 		new_task->father->child = NULL;
 
-		if ((b=new_task->sched.internal.holdingbubble))
-			marcel_bubble_inserttask(b,new_task);
+#ifdef MA__BUBBLES
+		if ((h=ma_task_holder(new_task)) && (h->type == MA_BUBBLE_HOLDER))
+			marcel_bubble_inserttask(ma_bubble_holder(h),new_task);
+#endif
 
 		PROF_SWITCH_TO(cur->number, new_task);
 		PROF_IN_EXT(newborn_thread);
 		
 		/* activer le fils */
-		rq = ma_task_init_rq(new_task);
-		ma_spin_lock_softirq(&rq->lock); // passage en mode interruption
+		h = ma_task_holder(new_task);
+		ma_holder_lock_softirq(h); // passage en mode interruption
 		ma_set_task_lwp(new_task, LWP_SELF);
 		new_task->sched.internal.timestamp = marcel_clock();
-		activate_running_task(new_task,rq);
-		_ma_raw_spin_unlock(&rq->lock);
+		ma_activate_running_task(new_task,h);
+		ma_holder_rawunlock(h);
 
 		/* passage de rq de la pile du père au fils */
-		__ma_get_lwp_var(prev_rq)=task_rq(MARCEL_SELF);
+		ma_prev_holder()=ma_task_holder(MARCEL_SELF);
 
 		marcel_ctx_set_new_stack(new_task,
 					 new_task->initial_sp -
@@ -398,11 +424,11 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* Signaler le changement de thread aux activations */
 		MA_ACT_SET_THREAD(MARCEL_SELF);
 		/* ré-enqueuer le père */
-		rq = ma_prev_rq();
-		_ma_raw_spin_lock(&rq->lock);
-		enqueue_task(marcel_self()->father, rq->active);
-		ma_spin_unlock_softirq(&rq->lock); // sortie du mode interruption
-		
+		h = ma_prev_holder();
+		ma_holder_rawlock(h);
+		ma_enqueue_task(marcel_self()->father, h);
+		ma_holder_unlock_softirq(h); // sortie du mode interruption
+
 		MTRACE("Early start", marcel_self());
 		
 		PROF_OUT_EXT(newborn_thread);
@@ -425,8 +451,5 @@ struct ma_lwp_usage_stat {
 	unsigned long long idle;
 	unsigned long long iowait;
 };
-
-#section marcel_variables
-MA_DECLARE_PER_LWP(ma_runqueue_t *, prev_rq);
 
 MA_DECLARE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage);

@@ -205,5 +205,8 @@
  * */
 #define MA__FUT_RECORD_TID
 
+/* Pour l'instant, toujours activer les bulles */
+#define MA__BUBBLES
+
 #endif /* MARCEL_FLAGS_EST_DEF */
 

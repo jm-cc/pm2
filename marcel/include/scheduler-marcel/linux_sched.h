@@ -602,13 +602,12 @@ extern void signal_wake_up(marcel_task_t *t, int resume_stopped);
  */
 static __tbx_inline__ ma_lwp_t ma_task_lwp(marcel_task_t *p)
 {
-	return GET_LWP(p); //p->thread_info->cpu;
+	return GET_LWP(p);
 }
 
 static __tbx_inline__ void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
 {
 	SET_LWP(p, lwp);
-	//p->thread_info->cpu = cpu;
 }
 
 

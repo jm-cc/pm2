@@ -78,7 +78,8 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 #ifdef MARCEL_BUBBLE_EXPLODE
-	ma_runqueue_t *rq = NULL;
+	ma_holder_t *h = NULL;
+	ma_runqueue_t *rq;
 #endif
 	LOG_IN();
 
@@ -98,23 +99,23 @@ retryclosed:
 #ifdef MARCEL_BUBBLE_EXPLODE
 	} else {
 retryopened:
-		rq = bubble->sched.init_rq;
-		ma_holder_lock_softirq(&rq->hold);
+		h = ma_entity_holder_lock_softirq(&bubble->sched);
 		ma_holder_rawlock(&bubble->hold);
-		if (bubble->status != MA_BUBBLE_OPENED
-				|| rq != bubble->sched.init_rq) {
+		if (bubble->status != MA_BUBBLE_OPENED) {
 			ma_holder_rawunlock(&bubble->hold);
-			ma_holder_unlock_softirq(&rq->hold);
+			ma_entity_holder_unlock_softirq(h);
 			goto retryclosed;
 		}
 		__do_bubble_insertentity(bubble,entity);
 		/* containing bubble already has exploded ! wake up this one */
-		entity->init_rq=rq;
+		entity->holder=h;
 		bubble->nbrunning++;
-		if (entity->type == MA_BUBBLE_ENTITY)
+		if (entity->type == MA_BUBBLE_ENTITY) {
+			rq = ma_to_rq_holder(h);
 			ma_activate_entity(entity, &rq->hold);
+		}
 		ma_holder_rawunlock(&bubble->hold);
-		ma_holder_unlock_softirq(&rq->hold);
+		ma_entity_holder_unlock_softirq(h);
 	}
 #endif
 	LOG_OUT();
@@ -144,7 +145,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 	marcel_entity_t *e;
 	marcel_task_t *t;
 	marcel_bubble_t *b;
-	ma_runqueue_t *rq;
+	ma_holder_t *h;
 
 	PROF_EVENT1(bubble_sched_closing,bubble);
 	bubble_sched_debug("bubble %p closing\n", bubble);
@@ -157,38 +158,43 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 			ma_holder_unlock(&b->hold);
 		} else {
 			t=tbx_container_of(e, marcel_task_t, sched.internal);
-			if (t->sched.internal.cur_holder == &rootrq.hold)
-				rq = rootrq;
-			else
-				rq = task_rq_lock(t);
-			if (e->array) { /* not running */
+			h = ma_task_cur_holder(t);
+			if (h!=&rootrq->hold) {
+				MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
+				ma_holder_lock(h);
+			}
+			if (ma_task_holder_data(t)) { /* not running */
 				bubble_sched_debug("deactivating task %s(%p) from %s\n", t->name, t, rq->name);
 				PROF_EVENT2(bubble_sched_goingback,e,bubble);
-				ma_deactivate_task(t,&rq->hold);
+				ma_deactivate_task(t,h);
 				bubble->nbrunning--;
 			}
-			if (rq != rootrq)
-				task_rq_unlock(rq);
+			if (h!=&rootrq->hold)
+				ma_task_holder_unlock(h);
 		}
 	}
 }
 
 void marcel_close_bubble(marcel_bubble_t *bubble) {
 	int wake_bubble;
+	ma_holder_t *h;
 	ma_runqueue_t *rq;
 	LOG_IN();
 
-	rq = entity_rq_lock(&bubble->sched);
+	h = ma_entity_holder_lock_softirq(&bubble->sched);
+	MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
+	rq = ma_rq_holder(h);
 	ma_holder_rawlock(&bubble->hold);
 	PROF_EVENT2(bubble_sched_close,bubble,rq);
 	__marcel_close_bubble(bubble, rq);
 	if ((wake_bubble = (!bubble->nbrunning))) {
 		bubble_sched_debug("last already off, bubble %p closed\n", bubble);
 		bubble->status = MA_BUBBLE_CLOSED;
+		/* et on la remet pour plus tard */
 		ma_activate_entity(&bubble->sched, &rq->hold);
 	}
 	ma_holder_rawunlock(&bubble->hold);
-	ma_holder_unlock_softirq(&rq->hold);
+	ma_entity_holder_unlock_softirq(&rq->hold);
 	LOG_OUT();
 }
 
@@ -198,12 +204,12 @@ static void __do_bubble_explode(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
 	PROF_EVENT1(bubble_sched_explode, bubble);
 	bubble->status = MA_BUBBLE_OPENED;
-	bubble->sched.init_rq = rq;
+	bubble->sched.holder = &rq->hold;
 	list_for_each_entry(new, &bubble->heldentities, entity_list) {
 		bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
-		new->init_rq=rq;
+		new->holder=&rq->hold;
 		if (new->type == MA_BUBBLE_ENTITY || tbx_container_of(new, marcel_task_t, sched.internal)->sched.state == MA_TASK_RUNNING)
-			ma_activate_entity(new, &rq->hold));
+			ma_activate_entity(new, &rq->hold);
 		bubble->nbrunning++;
 	}
 }
@@ -331,7 +337,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	/* relâche la queue de la tâche courante: on ne lui fera rien, à part
 	 * squatter sa pile avant de recommencer ma_schedule() */
 	if (prevrq!=rq)
-		ma_holder_rawunlock(&prevrq->lock);
+		ma_holder_rawunlock(&prevrq->hold);
 
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
@@ -399,7 +405,7 @@ void __marcel_init bubble_sched_init() {
 	PROF_EVENT2_ALWAYS(bubble_sched_down,&marcel_root_bubble,&ma_main_runqueue);
 	marcel_root_bubble.sched.holder=&ma_main_runqueue.hold;
 #ifdef MARCEL_BUBBLE_EXPLODE
-	ma_deactivate_running_task(MARCEL_SELF,&ma_main_runqueue);
+	ma_deactivate_running_task(MARCEL_SELF,&ma_main_runqueue.hold);
 	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
 	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
 	ma_dequeue_entity_rq(&MARCEL_SELF->sched.internal, &ma_main_runqueue);

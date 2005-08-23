@@ -24,7 +24,7 @@ char *mess[2] = { "boys", "girls" };
 
 void bye(any_t arg)
 {
-   tfprintf(stderr, "Bye bye %s!\n", arg);
+   tfprintf(stderr, "Bye bye %s!\n", (char*) arg);
 }
 
 any_t writer(any_t arg)
@@ -33,7 +33,7 @@ any_t writer(any_t arg)
    marcel_cleanup_push(bye, arg);
 
    for(i=0;i<10;i++) {
-      tfprintf(stderr, "Hi %s!\n", arg);
+      tfprintf(stderr, "Hi %s!\n", (char*) arg);
       marcel_delay(50);
    }
    marcel_cleanup_pop(0);

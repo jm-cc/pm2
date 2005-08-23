@@ -470,7 +470,7 @@ static int try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
 	ma_runqueue_t *rq;
 
 repeat_lock_task:
-	h = ma_task_holder_lock(p);
+	h = ma_task_holder_lock_softirq(p);
 	old_state = p->sched.state;
 	if (old_state & state) {
 		if (!ma_task_cur_holder(p)) { /* not running or runnable */
@@ -491,7 +491,7 @@ repeat_lock_task:
 				//réalisé par ma_schedule()
 				//ma_set_task_lwp(p, LWP_SELF);
 
-				ma_task_holder_unlock(h);
+				ma_task_holder_unlock_softirq(h);
 				goto repeat_lock_task;
 			}
 			if (old_state == MA_TASK_UNINTERRUPTIBLE){
@@ -522,7 +522,7 @@ repeat_lock_task:
 		}
 		p->sched.state = MA_TASK_RUNNING;
 	}
-	ma_task_holder_unlock(h);
+	ma_task_holder_unlock_softirq(h);
 
 	return success;
 }
@@ -546,25 +546,25 @@ void fastcall ma_freeze_thread(marcel_task_t *p)
 {
 	ma_holder_t *h;
 	if (!frozen_scheduler)
-		h = ma_task_holder_lock(p);
+		h = ma_task_holder_lock_softirq(p);
 	else
 		h = ma_task_holder(p);
 
 	if (MA_TASK_IS_FROZEN(p)) {
 		if (!frozen_scheduler)
-			ma_task_holder_unlock(h);
+			ma_task_holder_unlock_softirq(h);
 		RAISE(PROGRAM_ERROR);
 	}
 	if (MA_TASK_IS_RUNNING(p)) {
 		if (!frozen_scheduler)
-			ma_task_holder_unlock(h);
+			ma_task_holder_unlock_softirq(h);
 		RAISE(NOT_IMPLEMENTED);
 	}
 
 	if (!MA_TASK_IS_BLOCKED(p))
 		ma_deactivate_task(p,h);
 	if (!frozen_scheduler)
-		ma_task_holder_unlock(h);
+		ma_task_holder_unlock_softirq(h);
 	p->sched.state = MA_TASK_FROZEN;
 }
 
@@ -703,7 +703,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	ma_holder_t *h;
 	LOG_IN();
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
-	h = ma_task_holder_lock(t);
+	h = ma_task_holder_lock_softirq(t);
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 		ma_prio_array_t *array;
 		array = t->sched.internal.data;
@@ -714,7 +714,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 			ma_enqueue_task(t,h);
 	}
 	t->sched.internal.prio = prio;
-	ma_task_holder_unlock(h);
+	ma_task_holder_unlock_softirq(h);
 	LOG_OUT();
 	return 0;
 }
@@ -769,7 +769,8 @@ void fastcall sched_exit(task_t * p)
  */
 static inline void finish_task_switch(marcel_task_t *prev)
 {
-	ma_holder_t *prevh = ma_task_holder_lock(prev);
+	/* note: pas de softirq ici, on est déjà en mode interruption */
+	ma_holder_t *prevh = ma_task_holder_rawlock(prev);
 	unsigned long prev_task_flags;
 	marcel_bubble_t *bubble;
 
@@ -803,6 +804,7 @@ sleep:
 	 */
 	prev_task_flags = prev->flags;
 
+	/* par contre ça ça nous fait sortir du mode interruption */
 	ma_finish_arch_switch(prevh, prev);
 //	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
 //		ma_put_task_struct(prev);
@@ -1525,7 +1527,7 @@ asmlinkage void ma_schedule(void)
 	marcel_bubble_t *bubble;
 #endif
 	ma_runqueue_t *rq, *prevrq, *currq, *prev_as_rq;
-	ma_holder_t *h;
+	ma_holder_t *prevh;
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
@@ -1564,9 +1566,9 @@ need_resched:
 		run_time = NS_MAX_SLEEP_AVG;
 		*/
 
-	h = ma_this_holder();
-	MA_BUG_ON(!h);
-	prevrq = ma_to_rq_holder(h);
+	prevh = ma_this_holder();
+	MA_BUG_ON(!prevh);
+	prevrq = ma_to_rq_holder(prevh);
 	MA_BUG_ON(!prevrq);
 
 	go_to_sleep = 0;
@@ -1585,8 +1587,8 @@ need_resched_atomic:
 			go_to_sleep = 1;
 	}
 #ifdef MARCEL_BUBBLE_EXPLODE
-	if ((bubble = prev->sched.internal.holdingbubble)
-			&& bubble->status == MA_BUBBLE_CLOSING)
+	if (prevh->type == MA_BUBBLE_HOLDER
+		&& (bubble = ma_bubble_holder(prevh))->status == MA_BUBBLE_CLOSING)
 		go_to_sleep = 1;
 #endif
 
@@ -1646,7 +1648,7 @@ restart:
 #else
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
-		double_rq_unlock(prevrq,rq);
+		ma_holder_unlock(&rq->hold);
 		currently_idle = 1;
 		ma_local_bh_enable();
 		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
@@ -1663,7 +1665,7 @@ restart:
 #ifdef MA__LWPS
 	if (tbx_unlikely(!(rq->active->nr_active+rq->expired->nr_active))) {
 		sched_debug("someone stole the task we saw, restart\n");
-		double_rq_unlock(prevrq,rq);
+		ma_holder_unlock(&rq->hold);
 		goto restart;
 	}
 #endif
@@ -1697,6 +1699,7 @@ restart:
 //	next->activated = 0;
 
 	if (!(nextent = ma_bubble_sched(nextent, prevrq, rq, idx)))
+		/* ma_bubble_sched aura libéré prevrq */
 		goto need_resched_atomic;
 	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
 	next = tbx_container_of(nextent, marcel_task_t, sched.internal);
@@ -1712,21 +1715,21 @@ switch_tasks:
 		MA_BUG_ON(next==prev);
 
 #ifdef MARCEL_BUBBLE_EXPLODE
-	if ((bubble = prev->sched.internal.holdingbubble)
-			&& bubble->status == MA_BUBBLE_CLOSING) {
+	if (prevh->type == MA_BUBBLE_HOLDER
+		&& (bubble = ma_bubble_holder(prevh))->status == MA_BUBBLE_CLOSING) {
 		int wake_bubble;
 		MA_BUG_ON(next==prev);
 		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
 		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-		if (ma_task_cur_rq(prev))
-			deactivate_running_task(prev,prevrq);
-		ma_spin_lock(&bubble->lock);
+		if (ma_task_cur_holder(prev))
+			ma_deactivate_running_task(prev,prevh);
+		ma_holder_lock(&bubble->hold);
 		if ((wake_bubble = !(--bubble->nbrunning))) {
 			bubble_sched_debug("we're last, bubble %p closed\n", bubble);
 			PROF_EVENT1(bubble_sched_closed,bubble);
 			bubble->status = MA_BUBBLE_CLOSED;
 		}
-		ma_spin_unlock(&bubble->lock);
+		ma_holder_unlock(&bubble->hold);
 		if (wake_bubble)
 			__ma_get_lwp_var(bubble_towake)=bubble;
 	}
@@ -1756,12 +1759,12 @@ switch_tasks:
 //		++*switch_count;
 
 		ma_dequeue_task(next, &rq->hold);
+		ma_holder_rawunlock(&rq->hold);
 		ma_set_task_lwp(next, LWP_SELF);
 
 		ma_prepare_arch_switch(rq, next);
 		prev = marcel_switch_to(prev, next);
 		ma_barrier();
-		ma_holder_unlock(&rq->hold);
 
 		ma_schedule_tail(prev);
 	} else {
@@ -1795,10 +1798,10 @@ int marcel_yield_to(marcel_t next)
 
 	LOG_IN();
 
-	nexth = ma_task_holder_lock(next);
+	nexth = ma_task_holder_lock_softirq(next);
 
 	if (!ma_task_cur_holder(next) || !ma_task_holder_data(next)) {
-		ma_task_holder_unlock(nexth);
+		ma_task_holder_unlock_softirq(nexth);
 		sched_debug("marcel_yield: %s task %p\n",
 			!ma_task_cur_holder(next)?"not enqueued":"busy", next);
 		LOG_OUT();
@@ -3144,9 +3147,9 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	ma_holder_t *h;
 	marcel_task_t *p = ma_per_lwp(run_task,lwp);
 	/* Cette tâche est en train d'être exécutée */
-	h=ma_task_holder_lock(p);
+	h=ma_task_holder_lock_softirq(p);
 	ma_activate_running_task(p, h);
-	ma_task_holder_unlock(h);
+	ma_task_holder_unlock_softirq(h);
 }
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(linux_sched, 200, "Linux scheduler",

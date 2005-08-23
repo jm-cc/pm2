@@ -226,7 +226,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 #  define IS_FIRST_LWP(lwp)                   (1)
 
 #  define for_all_lwp(lwp) for (lwp=cur_lwp;lwp;lwp=NULL)
-#  define for_all_lwp_from_begin(lwp, lwp_start) for(;0;) {
+#  define for_all_lwp_from_begin(lwp, lwp_start) for(lwp=lwp_start;0;) {
 #  define for_all_lwp_from_end() }
 #  define lwp_isset(num, map) 1
 #endif

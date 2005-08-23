@@ -51,7 +51,7 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
 	.init_holder = NULL, \
 	.prio = MA_DEF_PRIO, \
-	.inheritholder = TRUE, \
+	.inheritholder = FALSE, \
 }
 
 #section functions
@@ -145,18 +145,16 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 {
 	LOG_IN();
 	internal->type = MA_TASK_ENTITY;
-	if (attr->sched.inheritholder) {
+	if (attr->sched.init_holder)
+		internal->holder=attr->sched.init_holder;
+	else if (attr->sched.inheritholder) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
 		ma_holder_t *h = ma_task_holder(MARCEL_SELF);
 		if (!h)
 			h = &ma_main_runqueue.hold;
 		internal->holder = h;
-	} else {
-		if (attr->sched.init_holder)
-			internal->holder=attr->sched.init_holder;
-		else
-			internal->holder=&(marcel_sched_vpmask_init_rq(attr->vpmask)->hold);
-	}
+	} else
+		internal->holder=&(marcel_sched_vpmask_init_rq(attr->vpmask)->hold);
 	internal->cur_holder=NULL;
 	internal->data=NULL;
 	INIT_LIST_HEAD(&internal->run_list);
@@ -259,14 +257,6 @@ int marcel_check_sleeping(void);
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/
-
-/* prev_holder permet de savoir, lors d'un changement de contexte, le holder
- * qui était pris avant le changement, qu'il faut donc libérer */
-#section marcel_variables
-MA_DECLARE_PER_LWP(ma_holder_t *, prev_holder);
-
-#section marcel_macros
-#define ma_prev_holder()	(__ma_get_lwp_var(prev_holder))
 
 #section sched_marcel_functions
 static
@@ -411,9 +401,6 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		ma_activate_running_task(new_task,h);
 		ma_holder_rawunlock(h);
 
-		/* passage de rq de la pile du père au fils */
-		ma_prev_holder()=ma_task_holder(MARCEL_SELF);
-
 		marcel_ctx_set_new_stack(new_task,
 					 new_task->initial_sp -
 					 (MAL(base_stack-get_sp()))
@@ -423,8 +410,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 		/* Signaler le changement de thread aux activations */
 		MA_ACT_SET_THREAD(MARCEL_SELF);
+
 		/* ré-enqueuer le père */
-		h = ma_prev_holder();
+		h = ma_task_holder(marcel_self()->father);
 		ma_holder_rawlock(h);
 		ma_enqueue_task(marcel_self()->father, h);
 		ma_holder_unlock_softirq(h); // sortie du mode interruption

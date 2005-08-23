@@ -22,8 +22,7 @@
  * These are the runqueue data structures:
  */
 
-#section marcel_macros
-#depend "asm/linux_types.h[macros]"
+#section macros
 /*
  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL tasks are
@@ -51,6 +50,9 @@
 
 #define ma_rt_task(p)		((p)->sched.internal.prio < MA_MAX_RT_PRIO)
 
+#section marcel_macros
+#depend "[macros]"
+#depend "asm/linux_types.h[macros]"
 #define MA_BITMAP_SIZE ((MA_MAX_PRIO+1+MA_BITS_PER_LONG)/MA_BITS_PER_LONG)
 
 #section marcel_structures
@@ -149,7 +151,7 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
-#define ma_rq_covers(rq,lwp)	(1)
+#define ma_rq_covers(rq,lwp)	((void)(rq),(void)(lwp),1)
 #endif
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
 

@@ -25,6 +25,7 @@ EOF
 # Creation de la flavor
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
+	--all=\"gdb\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"smp\" --marcel=\"marcel_main\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \

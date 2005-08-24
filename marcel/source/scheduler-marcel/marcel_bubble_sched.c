@@ -58,7 +58,8 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 	ma_holder_t *h = e->sched_holder;
 	if (h->type != MA_BUBBLE_HOLDER) {
 		h = e->init_holder;
-		MA_BUG_ON(!h);
+		if (!h)
+			h = &marcel_root_bubble.hold;
 		MA_BUG_ON(ma_holder_type(h) != MA_BUBBLE_HOLDER);
 	}
 	return ma_bubble_holder(h);
@@ -171,7 +172,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 				ma_holder_lock(h);
 			}
 			if (ma_task_holder_data(t)) { /* not running */
-				bubble_sched_debug("deactivating task %s(%p) from %s\n", t->name, t, rq->name);
+				bubble_sched_debug("deactivating task %s(%p) from %p\n", t->name, t, h);
 				PROF_EVENT2(bubble_sched_goingback,e,bubble);
 				ma_deactivate_task(t,h);
 				bubble->nbrunning--;

@@ -171,9 +171,9 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	internal->sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
 	if (ma_holder_type(internal->sched_holder) == MA_RUNQUEUE_HOLDER)
-		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->holder)->name, internal->prio);
+		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->sched_holder)->name, internal->prio);
 	else
-		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->holder), internal->prio);
+		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->sched_holder), internal->prio);
 	LOG_OUT();
 }
 

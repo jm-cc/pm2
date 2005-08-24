@@ -124,7 +124,9 @@ struct marcel_sched_task {
 };
 
 #section marcel_macros
-#define MA_TASK_RUNNING		0
+/* Ces valeurs représentent ce que l'utilisateur voudrait comme état */
+
+#define MA_TASK_RUNNING		0 /* _doit_ rester 0 */
 #define MA_TASK_INTERRUPTIBLE	1
 #define MA_TASK_UNINTERRUPTIBLE	2
 //#define MA_TASK_STOPPED	4 pas utilisé

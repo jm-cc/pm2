@@ -75,22 +75,25 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 #endif
 
 #section structures
-/* Une entité a un type (bulle/thread), a un conteneur (bulle ou directement
- * runqueue), et est inséré dans un conteneur pour être ordonnancé (bulle ou
- * runqueue). Si data est NULL, c'est qu'elle est en cours d'exécution. Sinon,
- * c'est qu'elle est préemptée, prête pour l'exécution dans la liste run_list.
+/* Une entité a un type (bulle/thread), a un conteneur initial (bulle ou
+ * directement runqueue), un conteneur d'ordonnancement, et un conteneur où
+ * elle est active (prête à être ordonnancé).  Si holder_data est NULL, c'est
+ * qu'elle est en cours d'exécution. Sinon, c'est qu'elle est préemptée, prête
+ * pour l'exécution dans la liste run_list.
  *
- * On peut ainsi avoir une bulle contenue dans une bulle, mais s'exécutant sur
- * une runqueue.
+ * On peut ainsi avoir un thread contenue dans une bulle (init_holder), endormi
+ * (donc run_holder == NULL), mais qui sera réveillé sur une certaine runqueue
+ * (sched_holder).
  * */
 #depend "[types]"
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 struct ma_sched_entity {
 	enum marcel_entity type;
-	ma_holder_t *holder;
-	ma_holder_t *cur_holder;
-	void *data;
+	ma_holder_t *init_holder;
+	ma_holder_t *sched_holder;
+	ma_holder_t *run_holder;
+	void *holder_data;
 	struct list_head run_list;
 	int sched_policy;
 	int prio;
@@ -116,7 +119,8 @@ typedef struct ma_sched_entity marcel_entity_t;
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
 	.type = t, \
-	.holder = NULL, .cur_holder = NULL, .data = NULL, \
+	.init_holder = NULL,.sched_holder = NULL, .run_holder = NULL, \
+	.holder_data = NULL, \
 	.run_list = LIST_HEAD_INIT((e).run_list), \
 	/*.sched_policy = */ \
 	.prio = p, \
@@ -126,16 +130,16 @@ typedef struct ma_sched_entity marcel_entity_t;
 }
 
 #section marcel_macros
-#define ma_task_holder(p)	((p)->sched.internal.holder)
-#define ma_task_cur_holder(p)	((p)->sched.internal.cur_holder)
-#define ma_this_holder()	(ma_task_cur_holder(MARCEL_SELF))
-#define ma_task_holder_data(p)  ((p)->sched.internal.data)
+#define ma_task_init_holder(p)	((p)->sched.internal.init_holder)
+#define ma_task_sched_holder(p)	((p)->sched.internal.sched_holder)
+#define ma_task_run_holder(p)	((p)->sched.internal.run_holder)
+#define ma_this_holder()	(ma_task_run_holder(MARCEL_SELF))
+#define ma_task_holder_data(p)  ((p)->sched.internal.holder_data)
 
-#define MA_TASK_IS_RUNNING(tsk) (ma_task_holder(tsk)&&!ma_task_holder_data(tsk))
-#define MA_TASK_IS_SLEEPING(tsk) (ma_task_holder(tsk)&&ma_task_holder_data(tsk))
-#define MA_TASK_IS_BLOCKED(tsk) (!ma_task_holder(tsk))
+#define MA_TASK_IS_RUNNING(tsk) (ma_task_run_holder(tsk)&&!ma_task_holder_data(tsk))
+#define MA_TASK_IS_SLEEPING(tsk) (ma_task_run_holder(tsk)&&ma_task_holder_data(tsk))
+#define MA_TASK_IS_BLOCKED(tsk) (!ma_task_run_holder(tsk))
 
-#section marcel_macros
 #define ma_holder_preempt_lock(h) __ma_preempt_spin_lock(&(h)->lock)
 #define ma_holder_trylock(h) _ma_raw_spin_trylock(&(h)->lock)
 #define ma_holder_rawlock(h) _ma_raw_spin_lock(&(h)->lock)
@@ -144,157 +148,6 @@ typedef struct ma_sched_entity marcel_entity_t;
 #define ma_holder_rawunlock(h) _ma_raw_spin_unlock(&(h)->lock)
 #define ma_holder_unlock(h) ma_spin_unlock(&(h)->lock)
 #define ma_holder_unlock_softirq(h) ma_spin_unlock_softirq(&(h)->lock)
-
-/* activation */
-
-#section marcel_functions
-static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
-	MA_BUG_ON(e->cur_holder);
-	e->cur_holder = h;
-	h->nr_running++;
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
-#section marcel_inline
-static __tbx_inline__ void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
-	ma_rq_enqueue_entity(e, rq->active);
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h);
-void ma_enqueue_task(marcel_entity_t *e, ma_holder_t *h);
-#define ma_enqueue_task(t, h) ma_enqueue_entity(&(t)->sched.internal, (h))
-#section marcel_inline
-static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		ma_enqueue_entity_rq(e, ma_rq_holder(h));
-	else
-		ma_bubble_enqueue_entity(e, ma_bubble_holder(h));
-}
-
-/*
- * ma_activate_entity - move an entity to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %p in %s\n",e,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debug("activating %p in bubble %p\n",e,ma_bubble_holder(h));
-	ma_activate_running_entity(e,h);
-	ma_enqueue_entity(e,h);
-}
-
-/*
- * ma_activate_running_task - move a task to the holder, but don't enqueue it
- * because it is already running
- */
-#section marcel_functions
-static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debug("activating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_activate_running_entity(&p->sched.internal,h);
-}
-
-/*
- * ma_activate_task - move a task to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debug("activating %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_activate_running_task(p,h);
-	ma_enqueue_task(p,h);
-}
-
-/* deactivation */
-
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
-	h->nr_running--;
-	MA_BUG_ON(!e->cur_holder);
-	e->cur_holder = NULL;
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
-#section marcel_inline
-static __tbx_inline__ void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
-	ma_rq_dequeue_entity(e, e->data);
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h);
-void ma_dequeue_task(marcel_task_t *t, ma_holder_t *h);
-#define ma_dequeue_task(t,h) ma_dequeue_entity(&(t)->sched.internal, (h))
-#section marcel_inline
-static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		ma_dequeue_entity_rq(e, ma_rq_holder(h));
-	else
-		ma_bubble_dequeue_entity(e, ma_bubble_holder(h));
-}
-/*
- * ma_deactivate_entity - move an entity to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %p in %s\n",e,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debug("activating %p in bubble %p\n",e,ma_bubble_holder(h));
-	ma_dequeue_entity(e,h);
-	ma_deactivate_running_entity(e,h);
-}
-
-/*
- * ma_deactivate_running_task - move a task to the holder, but don't enqueue it
- * because it is already running
- */
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debug("activating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_deactivate_running_entity(&p->sched.internal,h);
-	if (p->sched.state == MA_TASK_INTERRUPTIBLE)
-		h->nr_uninterruptible++;
-}
-
-/*
- * ma_deactivate_task - move a task to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debug("activating %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_dequeue_task(p,h);
-	ma_deactivate_running_task(p,h);
-}
 
 /* locking */
 
@@ -306,10 +159,15 @@ ma_holder_t *ma_task_some_holder(marcel_task_t *e);
 static __tbx_inline__ ma_holder_t *ma_entity_some_holder(marcel_entity_t *e)
 {
         ma_holder_t *holder;
-        if ((holder = e->cur_holder))
+        if ((holder = e->run_holder))
+		/* currently ready */
                 return holder;
+	/* not ready, current runqueue */
+        sched_debug("using current queue for blocked %p\n",e);
+	if ((holder = e->sched_holder))
+		return holder;
         sched_debug("using default queue for %p\n",e);
-        return e->holder;
+        return e->init_holder;
 
 }
 
@@ -401,6 +259,160 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h);
 static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
 	for (hh=h; ma_holder_type(hh) != MA_RUNQUEUE_HOLDER;
-			hh=ma_bubble_holder(hh)->sched.holder);
+			hh=ma_bubble_holder(hh)->sched.sched_holder);
 	return ma_rq_holder(hh);
 }
+
+/* activations et désactivations nécessitent que le holder soit verrouillé */
+
+/* activation */
+
+#section marcel_functions
+static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+	MA_BUG_ON(e->run_holder);
+	e->run_holder = h;
+	h->nr_running++;
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
+#section marcel_inline
+static __tbx_inline__ void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
+	ma_rq_enqueue_entity(e, rq->active);
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h);
+void ma_enqueue_task(marcel_entity_t *e, ma_holder_t *h);
+#define ma_enqueue_task(t, h) ma_enqueue_entity(&(t)->sched.internal, (h))
+#section marcel_inline
+static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		ma_enqueue_entity_rq(e, ma_rq_holder(h));
+	else
+		ma_bubble_enqueue_entity(e, ma_bubble_holder(h));
+}
+
+/*
+ * ma_activate_entity - move an entity to the holder
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		sched_debug("activating %p in %s\n",e,ma_rq_holder(h)->name);
+	else
+		bubble_sched_debug("activating %p in bubble %p\n",e,ma_bubble_holder(h));
+	ma_activate_running_entity(e,h);
+	ma_enqueue_entity(e,h);
+}
+
+/*
+ * ma_activate_running_task - move a task to the holder, but don't enqueue it
+ * because it is already running
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		sched_debug("activating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+	else
+		bubble_sched_debug("activating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+	ma_activate_running_entity(&p->sched.internal,h);
+}
+
+/*
+ * ma_activate_task - move a task to the holder
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		sched_debug("activating %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+	else
+		bubble_sched_debug("activating %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+	ma_activate_running_task(p,h);
+	ma_enqueue_task(p,h);
+}
+
+/* deactivation */
+
+#section marcel_functions
+static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+	h->nr_running--;
+	MA_BUG_ON(!e->run_holder);
+	e->run_holder = NULL;
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
+#section marcel_inline
+static __tbx_inline__ void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
+	ma_rq_dequeue_entity(e, e->holder_data);
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h);
+void ma_dequeue_task(marcel_task_t *t, ma_holder_t *h);
+#define ma_dequeue_task(t,h) ma_dequeue_entity(&(t)->sched.internal, (h))
+#section marcel_inline
+static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		ma_dequeue_entity_rq(e, ma_rq_holder(h));
+	else
+		ma_bubble_dequeue_entity(e, ma_bubble_holder(h));
+}
+/*
+ * ma_deactivate_entity - move an entity to the holder
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		sched_debug("activating %p in %s\n",e,ma_rq_holder(h)->name);
+	else
+		bubble_sched_debug("activating %p in bubble %p\n",e,ma_bubble_holder(h));
+	ma_dequeue_entity(e,h);
+	ma_deactivate_running_entity(e,h);
+}
+
+/*
+ * ma_deactivate_running_task - move a task to the holder, but don't enqueue it
+ * because it is already running
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		sched_debug("activating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+	else
+		bubble_sched_debug("activating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+	ma_deactivate_running_entity(&p->sched.internal,h);
+	if (p->sched.state == MA_TASK_INTERRUPTIBLE)
+		h->nr_uninterruptible++;
+}
+
+/*
+ * ma_deactivate_task - move a task to the holder
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		sched_debug("activating %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+	else
+		bubble_sched_debug("activating %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+	ma_dequeue_task(p,h);
+	ma_deactivate_running_task(p,h);
+}
+

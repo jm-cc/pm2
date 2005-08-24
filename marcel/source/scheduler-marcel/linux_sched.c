@@ -473,7 +473,7 @@ repeat_lock_task:
 	h = ma_task_holder_lock_softirq(p);
 	old_state = p->sched.state;
 	if (old_state & state) {
-		if (!ma_task_cur_holder(p)) { /* not running or runnable */
+		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
 			/*
 			 * Fast-migrate the task if it's not running or runnable
 			 * currently. Do not violate hard affinity.
@@ -548,7 +548,7 @@ void fastcall ma_freeze_thread(marcel_task_t *p)
 	if (!frozen_scheduler)
 		h = ma_task_holder_lock_softirq(p);
 	else
-		h = ma_task_holder(p);
+		h = ma_task_run_holder(p);
 
 	if (MA_TASK_IS_FROZEN(p)) {
 		if (!frozen_scheduler)
@@ -563,9 +563,10 @@ void fastcall ma_freeze_thread(marcel_task_t *p)
 
 	if (!MA_TASK_IS_BLOCKED(p))
 		ma_deactivate_task(p,h);
+	MA_BUG_ON(!MA_TASK_IS_BLOCKED(p));
 	if (!frozen_scheduler)
 		ma_task_holder_unlock_softirq(h);
-	p->sched.state = MA_TASK_FROZEN;
+	__ma_set_task_state(p, MA_TASK_FROZEN);
 }
 
 void fastcall ma_unfreeze_thread(marcel_task_t *p)
@@ -575,9 +576,7 @@ void fastcall ma_unfreeze_thread(marcel_task_t *p)
 
 void fastcall marcel_freeze_sched(void)
 {
-	ma_local_bh_disable();
-	ma_preempt_disable();
-	ma_holder_rawlock(&ma_main_runqueue.hold);
+	ma_holder_lock_softirq(&ma_main_runqueue.hold);
 	/* TODO: other levels */
 #ifdef MA__LWPS
 	{
@@ -599,39 +598,8 @@ void fastcall marcel_unfreeze_sched(void)
 			ma_holder_rawunlock(&ma_lwp_rq(lwp)->hold);
 	}
 #endif
-	ma_holder_rawunlock(&ma_main_runqueue.hold);
-	ma_preempt_enable_no_resched();
-	ma_local_bh_enable();
+	ma_holder_unlock_softirq(&ma_main_runqueue.hold);
 }
-
-/*
- * Perform scheduler related setup for a newly forked process p.
- * p is forked by current.
- */
-#if 0 /* done in marcel_sched_init_marcel_thread() */
-void fastcall ma_sched_fork(marcel_task_t *p)
-{
-	/*
-	 * We mark the process as running here, but have not actually
-	 * inserted it onto the runqueue yet. This guarantees that
-	 * nobody will actually run it, and a signal or other external
-	 * event cannot wake it up and insert it on the runqueue either.
-	 */
-	p->state = TASK_RUNNING;
-	INIT_LIST_HEAD(&p->run_list);
-	p->array = NULL;
-	spin_lock_init(&p->switch_lock);
-#ifdef CONFIG_PREEMPT
-	/*
-	 * During context-switch we hold precisely one spinlock, which
-	 * schedule_tail drops. (in the common case it's ma_this_rq()->lock,
-	 * but it also can be p->switch_lock.) So we compensate with a count
-	 * of 1. Also, we want to start with kernel preemption disabled.
-	 */
-	p->thread_info->preempt_count = 1;
-#endif
-}
-#endif /* O */
 
 /*
  * wake_up_forked_process - wake up a freshly forked process.
@@ -647,7 +615,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
-	h = ma_task_holder(p);
+	h = ma_task_some_holder(p);
 
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		marcel_bubble_inserttask(ma_bubble_holder(h),p);
@@ -679,7 +647,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
 //	if (tbx_unlikely(!MARCEL_SELF->sched.internal.array))
-	if (!p->sched.internal.data)
+	if (MA_TASK_IS_BLOCKED(p))
 		ma_activate_task(p, &rq->hold);
 //	else {
 //		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
@@ -701,19 +669,16 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 
 int ma_sched_change_prio(marcel_t t, int prio) {
 	ma_holder_t *h;
+	void *data;
 	LOG_IN();
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
 	h = ma_task_holder_lock_softirq(t);
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-		ma_prio_array_t *array;
-		array = t->sched.internal.data;
-		if (array)
-			ma_dequeue_task(t,h);
-		t->sched.internal.prio=prio;
-		if (array)
-			ma_enqueue_task(t,h);
-	}
-	t->sched.internal.prio = prio;
+	data = ma_task_holder_data(t);
+	if (data) /* sleeping */
+		ma_dequeue_task(t,h);
+	t->sched.internal.prio=prio;
+	if (data)
+		ma_enqueue_task(t,h);
 	ma_task_holder_unlock_softirq(h);
 	LOG_OUT();
 	return 0;
@@ -774,7 +739,11 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	unsigned long prev_task_flags;
 	marcel_bubble_t *bubble;
 
-	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
+	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)
+				/* garde-fou pour éviter de s'endormir
+				 * par simple préemption */
+				|| !(ma_preempt_count() & MA_PREEMPT_ACTIVE))
+			) {
 		if (prev->sched.state & MA_TASK_MOVING) {
 			/* moving, make it running elsewhere */
 			MTRACE("moving",prev);
@@ -1417,7 +1386,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 
 	/* Task might have expired already, but not scheduled off yet */
 	//if (p->sched.internal.array != rq->active) {
-	if (p->sched.internal.data != NULL) {
+	if (!MA_TASK_IS_RUNNING(p)) {
 		pm2debug("Strange: %s running, but on an array !, report or look at it (%s:%i)\n",
 				p->name, __FILE__, __LINE__);
 		ma_set_tsk_need_resched(p);
@@ -1468,8 +1437,9 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
-		if (ma_holder_type(ma_task_holder(p)) != MA_RUNQUEUE_HOLDER) {
-			b = ma_bubble_holder(ma_task_holder(p));
+		if (ma_holder_type(h = ma_task_sched_holder(p))
+				!= MA_RUNQUEUE_HOLDER) {
+			b = ma_bubble_holder(h);
 			if (b!=&marcel_root_bubble
 				&& ma_atomic_dec_and_test(&b->sched.time_slice))
 				ma_bubble_tick(b);
@@ -1711,7 +1681,9 @@ switch_tasks:
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
 
-	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) || !(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
+	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) ||
+				!(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
+		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
 
 #ifdef MARCEL_BUBBLE_EXPLODE
@@ -1721,7 +1693,7 @@ switch_tasks:
 		MA_BUG_ON(next==prev);
 		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
 		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-		if (ma_task_cur_holder(prev))
+		if (ma_task_run_holder(prev))
 			ma_deactivate_running_task(prev,prevh);
 		ma_holder_lock(&bubble->hold);
 		if ((wake_bubble = !(--bubble->nbrunning))) {
@@ -1792,6 +1764,7 @@ int marcel_yield_to(marcel_t next)
 {
 	marcel_t prev = MARCEL_SELF;
 	ma_holder_t *nexth;
+	int busy;
 
 	if (next==prev)
 		return 0;
@@ -1800,10 +1773,11 @@ int marcel_yield_to(marcel_t next)
 
 	nexth = ma_task_holder_lock_softirq(next);
 
-	if (!ma_task_cur_holder(next) || !ma_task_holder_data(next)) {
+	if (!MA_TASK_IS_SLEEPING(next)) {
+		busy = MA_TASK_IS_RUNNING(next);
 		ma_task_holder_unlock_softirq(nexth);
 		sched_debug("marcel_yield: %s task %p\n",
-			!ma_task_cur_holder(next)?"not enqueued":"busy", next);
+			busy?"busy":"not enqueued", next);
 		LOG_OUT();
 		return -1;
 	}
@@ -1906,7 +1880,7 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 	if (marcel_vpmask_vp_ismember(mask,LWP_NUMBER(LWP_SELF))) {
 		ma_set_current_state(MA_TASK_MOVING);
 		ma_local_bh_enable();
-		ma_preempt_enable();
+		ma_preempt_enable_no_resched();
 		ma_schedule();
 	} else {
 		ma_local_bh_enable();
@@ -2228,8 +2202,7 @@ asmlinkage long sys_nice(int increment)
  */
 int task_prio(marcel_task_t *p)
 {
-	return p->sched.internal.prio;
-//	return p->prio - MA_MAX_RT_PRIO;
+	return p->sched.internal.prio - MA_MAX_RT_PRIO;
 }
 
 #if 0
@@ -2252,7 +2225,7 @@ MARCEL_INT(task_nice);
 #ifdef MA__LWPS
 int idle_lwp(ma_lwp_t lwp)
 {
-	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);//ma_lwp_rq(lwp)->idle;
+	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);
 }
 
 MARCEL_INT(idle_lwp);

@@ -143,20 +143,24 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		marcel_sched_internal_task_t *internal,
 		const marcel_attr_t *attr)
 {
+	ma_holder_t *h = NULL;
 	LOG_IN();
 	internal->type = MA_TASK_ENTITY;
 	if (attr->sched.init_holder)
-		internal->holder=attr->sched.init_holder;
+		h = attr->sched.init_holder;
 	else if (attr->sched.inheritholder) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
-		ma_holder_t *h = ma_task_holder(MARCEL_SELF);
-		if (!h)
-			h = &ma_main_runqueue.hold;
-		internal->holder = h;
-	} else
-		internal->holder=&(marcel_sched_vpmask_init_rq(attr->vpmask)->hold);
-	internal->cur_holder=NULL;
-	internal->data=NULL;
+		h = ma_task_init_holder(MARCEL_SELF);
+	} else if (attr->vpmask != MARCEL_VPMASK_EMPTY)
+		h = &(marcel_sched_vpmask_init_rq(attr->vpmask)->hold);
+	if (h) {
+		internal->sched_holder = internal->init_holder = h;
+	} else {
+		internal->init_holder = NULL;
+		internal->sched_holder = &ma_main_runqueue.hold;
+	}
+	internal->run_holder=NULL;
+	internal->holder_data=NULL;
 	INIT_LIST_HEAD(&internal->run_list);
 	internal->sched_policy = attr->__schedpolicy;
 	internal->prio=attr->sched.prio;
@@ -166,10 +170,10 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 #ifdef MA__LWPS
 	internal->sched_level=MARCEL_LEVEL_DEFAULT;
 #endif
-	if (ma_holder_type(internal->holder) == MA_RUNQUEUE_HOLDER)
-		sched_debug("%p(%s)'s init_holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->holder)->name, internal->prio);
+	if (ma_holder_type(internal->sched_holder) == MA_RUNQUEUE_HOLDER)
+		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(internal->holder)->name, internal->prio);
 	else
-		sched_debug("%p(%s)'s init_holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->holder), internal->prio);
+		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(internal->holder), internal->prio);
 	LOG_OUT();
 }
 
@@ -386,7 +390,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		new_task->father->child = NULL;
 
 #ifdef MA__BUBBLES
-		if ((h=ma_task_holder(new_task)) && (h->type == MA_BUBBLE_HOLDER))
+		if ((h=ma_task_init_holder(new_task)) && (h->type == MA_BUBBLE_HOLDER))
 			marcel_bubble_inserttask(ma_bubble_holder(h),new_task);
 #endif
 
@@ -394,7 +398,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		PROF_IN_EXT(newborn_thread);
 		
 		/* activer le fils */
-		h = ma_task_holder(new_task);
+		h = ma_task_sched_holder(new_task);
 		ma_holder_lock_softirq(h); // passage en mode interruption
 		ma_set_task_lwp(new_task, LWP_SELF);
 		new_task->sched.internal.timestamp = marcel_clock();
@@ -412,7 +416,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		MA_ACT_SET_THREAD(MARCEL_SELF);
 
 		/* ré-enqueuer le père */
-		h = ma_task_holder(marcel_self()->father);
+		h = ma_task_sched_holder(marcel_self()->father);
 		ma_holder_rawlock(h);
 		ma_enqueue_task(marcel_self()->father, h);
 		ma_holder_unlock_softirq(h); // sortie du mode interruption

@@ -246,8 +246,8 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_prio_arra
 		sched_debug("array %p (prio %d) empty\n",array, e->prio);
 		__ma_clear_bit(e->prio, array->bitmap);
 	}
-	MA_BUG_ON(!e->data);
-	e->data = NULL;
+	MA_BUG_ON(!e->holder_data);
+	e->holder_data = NULL;
 }
 static __tbx_inline__ void ma_rq_dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
 {
@@ -265,8 +265,8 @@ static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_prio_arra
 	list_add_tail(&e->run_list, array->queue + e->prio);
 	__ma_set_bit(e->prio, array->bitmap);
 	array->nr_active++;
-	MA_BUG_ON(e->data);
-	e->data = array;
+	MA_BUG_ON(e->holder_data);
+	e->holder_data = array;
 }
 static __tbx_inline__ void ma_rq_enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
 {

@@ -56,6 +56,7 @@ static void printtask(marcel_task_t *t) {
 	char state;
 	char buf1[32];
 	char buf2[32];
+	char buf3[32];
 
 	switch (t->sched.state) {
 		case MA_TASK_RUNNING: 		state = 'R'; break;
@@ -72,11 +73,12 @@ static void printtask(marcel_task_t *t) {
 		default:			state = '?'; break;
 	}
 	utime = ma_atomic_read(&t->top_utime);
-	top_printf("0x%p %16s %2d %3lu%% %c %2d %s %s\r\n", t, t->name,
+	top_printf("0x%p %16s %2d %3lu%% %c %2d %s %s %s\r\n", t, t->name,
 		t->sched.internal.prio, djiffies?(utime*100)/djiffies:0,
 		state, LWP_NUMBER(GET_LWP(t)),
-		get_holder_name(ma_task_holder(t),buf1,sizeof(buf1)),
-		get_holder_name(ma_task_cur_holder(t),buf2,sizeof(buf2)));
+		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
+		get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
+		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 	ma_atomic_sub(utime, &t->top_utime);
 }
 

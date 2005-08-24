@@ -168,9 +168,11 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #section marcel_inline
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	list_add_tail(&e->run_list, &b->runningentities);
-	e->data = (void *)1;
+	MA_BUG_ON(e->holder_data);
+	e->holder_data = (void *)1;
 }
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	list_del(&e->run_list);
-	e->data = NULL;
+	MA_BUG_ON(!e->holder_data);
+	e->holder_data = NULL;
 }

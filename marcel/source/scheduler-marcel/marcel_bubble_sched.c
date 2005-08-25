@@ -114,7 +114,7 @@ retryopened:
 		}
 		__do_bubble_insertentity(bubble,entity);
 		/* containing bubble already has exploded ! wake up this one */
-		entity->sched_holder = entity->init_holder=h;
+		entity->sched_holder = h;
 		bubble->nbrunning++;
 		if (entity->type == MA_BUBBLE_ENTITY) {
 			rq = ma_to_rq_holder(h);

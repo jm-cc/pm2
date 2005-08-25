@@ -137,7 +137,7 @@ $(MOD_C_PICS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: $(MOD_GEN_C_INC)
 $(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.c
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -c $< -o $@
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ -fPIC
 
 $(MOD_C_PREPROC): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: $(MOD_GEN_C_INC)
@@ -155,7 +155,7 @@ $(MOD_S_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.S
 $(MOD_S_PICS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.S
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -fPIC -x assembler-with-cpp -c $< -o $@
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -x assembler-with-cpp -c $< -o $@ -fPIC
 
 $(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).si: %.S

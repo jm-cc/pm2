@@ -122,7 +122,7 @@ extern debug_type_t marcel_mtrace_timer;
 #define mdebug_sched_q(fmt, ...) \
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 
-#include <stdlib.h>
+#include <signal.h>
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \

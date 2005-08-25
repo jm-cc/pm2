@@ -15,4 +15,5 @@
  */
 
 #section marcel_functions
-int marcel_init_top(char *outfile);
+int ma_init_top(char *outfile);
+void ma_exit_top(void);

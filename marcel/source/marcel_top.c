@@ -23,8 +23,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
+#include <signal.h>
+#include <stdint.h>
 
-int marcel_top_file=-1;
+static int top_pid;
+static int top_file=-1;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 
@@ -36,7 +39,7 @@ int top_printf (char *fmt, ...) {
 	va_start(va,fmt);
 	n=tbx_vsnprintf(buf,sizeof(buf),fmt,va);
 	va_end(va);
-	write(marcel_top_file,buf,n+1);
+	write(top_file,buf,n+1);
 	return n;
 }
 
@@ -73,7 +76,7 @@ static void printtask(marcel_task_t *t) {
 		default:			state = '?'; break;
 	}
 	utime = ma_atomic_read(&t->top_utime);
-	top_printf("0x%p %16s %2d %3lu%% %c %2d %s %s %s\r\n", t, t->name,
+	top_printf("0x%*p %16s %2d %3lu%% %c %2d %s %s %s\r\n", 2*sizeof(void*), t, t->name,
 		t->sched.internal.prio, djiffies?(utime*100)/djiffies:0,
 		state, LWP_NUMBER(GET_LWP(t)),
 		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
@@ -169,6 +172,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
 #endif
 	}
+	top_printf("  %*s %16s %2s %3s%% %s %2s %8s %8s %8s\r\n", 2*sizeof(void*), "self", "name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 	marcel_freeze_sched();
 	marcel_threadslist(NBPIDS,pids,&nbpids,0);
 	if (nbpids > NBPIDS)
@@ -181,7 +185,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	ma_add_timer(&timer);
 }
 
-int marcel_init_top(char *outfile) {
+int ma_init_top(char *outfile) {
 	mdebug("marcel_init_top(%s)\n",outfile);
 	if (*outfile=='|') {
 		int fds[2];
@@ -190,18 +194,22 @@ int marcel_init_top(char *outfile) {
 			perror("socketpair");
 			return -1;
 		}
-		marcel_top_file=fds[0];
-		if (!fork()) {
-			close(marcel_top_file);
+		top_file=fds[0];
+		if (!(top_pid = fork())) {
+			setpgid(0,0);
+			close(top_file);
 			dup2(fds[1],STDIN_FILENO);
 			dup2(fds[1],STDOUT_FILENO);
 			dup2(fds[1],STDERR_FILENO);
-			system(outfile);
+			if (system(outfile) == -1) {
+				perror("system");
+				fprintf(stderr,"couldn't execute %s\n", outfile);
+			}
 			exit(0);
 		}
 		close(fds[1]);
 		// TODO récupérer le pid et le tuer proprement (il se termine dès qu'on tape dedans...)
-	} else if ((marcel_top_file=open(outfile,O_WRONLY|O_APPEND|O_CREAT))<0) {
+	} else if ((top_file=open(outfile,O_WRONLY|O_APPEND|O_CREAT))<0) {
 		perror("opening top file");
 		return -1;
 	}
@@ -213,3 +221,9 @@ int marcel_init_top(char *outfile) {
 	return 0;
 }
 
+void ma_exit_top(void) {
+	if (top_pid) {
+		mdebug("killing top program %d\n", top_pid);
+		kill(-top_pid, SIGTERM);
+	}
+}

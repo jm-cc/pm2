@@ -76,7 +76,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 		PROF_EVENT2(bubble_sched_insert_thread,tbx_container_of(entity,marcel_task_t,sched.internal),bubble);
 	}
 	list_add_tail(&entity->entity_list, &bubble->heldentities);
-	entity->sched_holder = entity->init_holder=&bubble->hold;
+	entity->sched_holder = entity->init_holder = &bubble->hold;
 #ifdef MARCEL_BUBBLE_STEAL
 	list_add_tail(&entity->run_list, &bubble->runningentities);
 #endif
@@ -212,11 +212,12 @@ static void __do_bubble_explode(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	bubble_sched_debug("bubble %p exploding at %s\n", bubble, rq->name);
 	PROF_EVENT1(bubble_sched_explode, bubble);
 	bubble->status = MA_BUBBLE_OPENED;
-	bubble->sched.sched_holder = &rq->hold;
 	list_for_each_entry(new, &bubble->heldentities, entity_list) {
 		bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
 		new->sched_holder=&rq->hold;
-		if (new->type == MA_BUBBLE_ENTITY || tbx_container_of(new, marcel_task_t, sched.internal)->sched.state == MA_TASK_RUNNING)
+		MA_BUG_ON(new->run_holder);
+		MA_BUG_ON(new->holder_data);
+		if (new->type != MA_TASK_ENTITY || tbx_container_of(new, marcel_task_t, sched.internal)->sched.state == MA_TASK_RUNNING)
 			ma_activate_entity(new, &rq->hold);
 		bubble->nbrunning++;
 	}

@@ -258,8 +258,9 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
-	for (hh=h; ma_holder_type(hh) != MA_RUNQUEUE_HOLDER;
+	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER;
 			hh=ma_bubble_holder(hh)->sched.sched_holder);
+	MA_BUG_ON(!hh);
 	return ma_rq_holder(hh);
 }
 

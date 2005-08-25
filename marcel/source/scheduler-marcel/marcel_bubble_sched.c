@@ -18,8 +18,6 @@
 
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
-MA_DEFINE_PER_LWP(marcel_bubble_t *, bubble_towake, NULL);
-
 int marcel_bubble_init(marcel_bubble_t *bubble) {
 	PROF_EVENT1(bubble_sched_new,bubble);
 	*bubble = (marcel_bubble_t) MARCEL_BUBBLE_INITIALIZER(*bubble);
@@ -166,15 +164,17 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 			ma_holder_unlock(&b->hold);
 		} else {
 			t = tbx_container_of(e, marcel_task_t, sched.internal);
-			h = ma_task_run_holder(t);
+			h = ma_task_sched_holder(t);
 			if (h!=&rootrq->hold) {
+				h = ma_task_holder_lock(t);
 				MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
-				ma_holder_lock(h);
+				MA_BUG_ON(h==&rootrq->hold);
 			}
-			if (ma_task_holder_data(t)) { /* not running */
+			if (!MA_TASK_IS_RUNNING(t)) { /* not running */
 				bubble_sched_debug("deactivating task %s(%p) from %p\n", t->name, t, h);
 				PROF_EVENT2(bubble_sched_goingback,e,bubble);
-				ma_deactivate_task(t,h);
+				if (MA_TASK_IS_SLEEPING(t))
+					ma_deactivate_task(t,h);
 				bubble->nbrunning--;
 			}
 			if (h!=&rootrq->hold)

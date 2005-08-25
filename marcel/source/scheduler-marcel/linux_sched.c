@@ -737,7 +737,7 @@ void fastcall sched_exit(task_t * p)
 static inline void finish_task_switch(marcel_task_t *prev)
 {
 	/* note: pas de softirq ici, on est déjà en mode interruption */
-	ma_holder_t *prevh = ma_task_holder_rawlock(prev);
+	ma_holder_t *prevh = ma_task_holder_rawlock(prev), *h;
 	unsigned long prev_task_flags;
 	marcel_bubble_t *bubble;
 
@@ -758,10 +758,32 @@ static inline void finish_task_switch(marcel_task_t *prev)
 			goto sleep;
 		}
 	}
+
 	/* still runnable */
 	ma_enqueue_task(prev,prevh);
 sleep:
 
+#ifdef MARCEL_BUBBLE_EXPLODE
+	if ((h = (ma_task_init_holder(prev)))
+		&& h->type == MA_BUBBLE_HOLDER
+		&& (bubble = ma_bubble_holder(h))->status == MA_BUBBLE_CLOSING) {
+		int wake_bubble;
+		bubble_sched_debug("%p(%s) descheduled for bubble closing\n",prev, prev->name);
+		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
+		if (ma_task_run_holder(prev))
+			ma_deactivate_running_task(prev,prevh);
+		ma_finish_arch_switch(prevh, prev);
+		ma_holder_lock(&bubble->hold);
+		if ((wake_bubble = !(--bubble->nbrunning))) {
+			bubble_sched_debug("it was last, bubble %p closed\n", bubble);
+			PROF_EVENT1(bubble_sched_closed,bubble);
+			bubble->status = MA_BUBBLE_CLOSED;
+		}
+		ma_holder_unlock(&bubble->hold);
+		if (wake_bubble)
+			marcel_wake_up_bubble(bubble);
+	} else
+#endif
 	/*
 	 * A task struct has one reference for the use as "current".
 	 * If a task dies, then it sets TASK_ZOMBIE in tsk->state and calls
@@ -773,16 +795,14 @@ sleep:
 	 * be dropped twice.
 	 * 		Manfred Spraul <manfred@colorfullife.com>
 	 */
-	prev_task_flags = prev->flags;
+	{
+		prev_task_flags = prev->flags;
 
-	/* par contre ça ça nous fait sortir du mode interruption */
-	ma_finish_arch_switch(prevh, prev);
-//	if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
-//		ma_put_task_struct(prev);
+		/* on sort du mode interruption */
+		ma_finish_arch_switch(prevh, prev);
 
-	if ((bubble=__ma_get_lwp_var(bubble_towake))) {
-		__ma_get_lwp_var(bubble_towake)=NULL;
-		marcel_wake_up_bubble(bubble);
+//		if (tbx_unlikely(prev_task_flags & MA_PF_DEAD))
+//			ma_put_task_struct(prev);
 	}
 }
 
@@ -1439,7 +1459,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
-		if (ma_holder_type(h = ma_task_sched_holder(p))
+		if (ma_holder_type(h = ma_task_init_holder(p))
 				!= MA_RUNQUEUE_HOLDER) {
 			b = ma_bubble_holder(h);
 			if (b!=&marcel_root_bubble
@@ -1538,7 +1558,8 @@ need_resched:
 		run_time = NS_MAX_SLEEP_AVG;
 		*/
 
-	prevh = ma_this_holder();
+	if (!(prevh = ma_task_init_holder(prev)))
+		prevh = ma_task_sched_holder(prev);
 	MA_BUG_ON(!prevh);
 	prevrq = ma_to_rq_holder(prevh);
 	MA_BUG_ON(!prevrq);
@@ -1687,27 +1708,6 @@ switch_tasks:
 				!(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
 		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
-
-#ifdef MARCEL_BUBBLE_EXPLODE
-	if (prevh->type == MA_BUBBLE_HOLDER
-		&& (bubble = ma_bubble_holder(prevh))->status == MA_BUBBLE_CLOSING) {
-		int wake_bubble;
-		MA_BUG_ON(next==prev);
-		bubble_sched_debug("%p descheduled for bubble closing\n",prev);
-		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-		if (ma_task_run_holder(prev))
-			ma_deactivate_running_task(prev,prevh);
-		ma_holder_lock(&bubble->hold);
-		if ((wake_bubble = !(--bubble->nbrunning))) {
-			bubble_sched_debug("we're last, bubble %p closed\n", bubble);
-			PROF_EVENT1(bubble_sched_closed,bubble);
-			bubble->status = MA_BUBBLE_CLOSED;
-		}
-		ma_holder_unlock(&bubble->hold);
-		if (wake_bubble)
-			__ma_get_lwp_var(bubble_towake)=bubble;
-	}
-#endif
 
 	prefetch(next);
 	ma_clear_tsk_need_resched(prev);

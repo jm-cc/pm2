@@ -137,9 +137,6 @@ struct marcel_bubble {
 }
 
 
-#section marcel_variables
-MA_DECLARE_PER_LWP(marcel_bubble_t *, bubble_towake);
-
 #section marcel_functions
 /* called from ma_schedule() to achieve bubble scheduling. prevrq and rq are
  * locked, returns 1 if ma_schedule() should restart (prevrq and rq have then

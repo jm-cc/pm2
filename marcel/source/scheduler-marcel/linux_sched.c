@@ -615,11 +615,13 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
-	h = ma_task_some_holder(p);
+	h = ma_task_sched_holder(p);
 
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		marcel_bubble_inserttask(ma_bubble_holder(h),p);
-		rq = ma_to_rq_holder(h);
+		/* marcel_bubble_inserttask() s'est occupé de la réveiller au
+		 * besoin */
+		return;
 	} else rq = ma_rq_holder(h);
 
 	ma_set_task_state(p, MA_TASK_RUNNING);

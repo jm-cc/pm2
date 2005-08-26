@@ -215,8 +215,7 @@ static void __do_bubble_explode(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	list_for_each_entry(new, &bubble->heldentities, entity_list) {
 		bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
 		new->sched_holder=&rq->hold;
-		MA_BUG_ON(new->run_holder);
-		MA_BUG_ON(new->holder_data);
+		MA_BUG_ON(new->run_holder && new->run_holder->type != MA_BUBBLE_HOLDER);
 		if (new->type != MA_TASK_ENTITY || tbx_container_of(new, marcel_task_t, sched.internal)->sched.state == MA_TASK_RUNNING)
 			ma_activate_entity(new, &rq->hold);
 		bubble->nbrunning++;

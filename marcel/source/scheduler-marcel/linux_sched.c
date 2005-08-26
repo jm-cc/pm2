@@ -439,6 +439,8 @@ void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 {
 	marcel_lwp_t *lwp;
 	ma_runqueue_t *rq = ma_to_rq_holder(h);
+	if (!rq)
+		return;
 	for_each_lwp_from_begin(lwp, LWP_SELF)
 		/* TODO: regarder celui qui préeempte le plus ? (histoire d'aller taper dans Idle plutôt) */
 		if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
@@ -478,7 +480,7 @@ repeat_lock_task:
 			 * Fast-migrate the task if it's not running or runnable
 			 * currently. Do not violate hard affinity.
 			 */
-			if (tbx_unlikely(sync && !MA_TASK_IS_RUNNING(p) &&
+			if (tbx_unlikely(sync && /*!MA_TASK_IS_RUNNING(p) inutile &&*/
 				(ma_task_lwp(p) != LWP_SELF)
 				&& lwp_isset(LWP_NUMBER(LWP_SELF),
 					  p->sched.lwps_allowed)
@@ -486,7 +488,7 @@ repeat_lock_task:
 				)) {
 
 				//ma_deactivate_task(p,h);
-				//activate_task(p,&ma_lwp_rq(LWP_SELF)->hold);
+				//ma_activate_task(p,&ma_lwp_rq(LWP_SELF)->hold);
 
 				//réalisé par ma_schedule()
 				//ma_set_task_lwp(p, LWP_SELF);
@@ -750,28 +752,27 @@ static inline void finish_task_switch(marcel_task_t *prev)
 			/* moving, make it running elsewhere */
 			MTRACE("moving",prev);
 			ma_set_task_state(prev, MA_TASK_RUNNING);
+			/* still runnable */
+			ma_enqueue_task(prev,prevh);
 			try_to_resched(prev, prevh);
 		} else {
 			/* yes, deactivate */
 			sched_debug("%p going to sleep\n",prev);
 			ma_deactivate_running_task(prev,prevh);
-			goto sleep;
 		}
-	}
-
-	/* still runnable */
-	ma_enqueue_task(prev,prevh);
-sleep:
+	} else ma_enqueue_task(prev,prevh);
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 	if ((h = (ma_task_init_holder(prev)))
 		&& h->type == MA_BUBBLE_HOLDER
 		&& (bubble = ma_bubble_holder(h))->status == MA_BUBBLE_CLOSING) {
 		int wake_bubble;
-		bubble_sched_debug("%p(%s) descheduled for bubble closing\n",prev, prev->name);
+		bubble_sched_debug("%p(%s) descheduled for bubble %p closing\n",prev, prev->name, bubble);
 		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-		if (ma_task_run_holder(prev))
+		if (MA_TASK_IS_RUNNING(prev))
 			ma_deactivate_running_task(prev,prevh);
+		else if (MA_TASK_IS_SLEEPING(prev))
+			ma_deactivate_task(prev,prevh);
 		ma_finish_arch_switch(prevh, prev);
 		ma_holder_lock(&bubble->hold);
 		if ((wake_bubble = !(--bubble->nbrunning))) {
@@ -1358,11 +1359,16 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	//int cpu = smp_processor_id();
 	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
-	ma_holder_t *h = ma_this_holder();
-	ma_runqueue_t *rq = ma_to_rq_holder(h);
+	ma_holder_t *h;
+	ma_runqueue_t *rq;
 	marcel_task_t *p = MARCEL_SELF;
 
 	LOG_IN();
+
+	h = ma_this_holder();
+	MA_BUG_ON(!h);
+	rq = ma_to_rq_holder(h);
+	MA_BUG_ON(!rq);
 
 	rq->timestamp_last_tick = marcel_clock();
 

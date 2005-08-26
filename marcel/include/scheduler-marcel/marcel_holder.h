@@ -260,8 +260,7 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
 	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER;
 			hh=ma_bubble_holder(hh)->sched.sched_holder);
-	MA_BUG_ON(!hh);
-	return ma_rq_holder(hh);
+	return hh?ma_rq_holder(hh):NULL;
 }
 
 /* activations et désactivations nécessitent que le holder soit verrouillé */
@@ -347,6 +346,7 @@ static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+	MA_BUG_ON(e->holder_data);
 	h->nr_running--;
 	MA_BUG_ON(!e->run_holder);
 	e->run_holder = NULL;

@@ -39,4 +39,4 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"smp\" --marcel=\"marcel_main\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
-	--all=\"opt\" --all=\"build_static\" $_output_redirect
+	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect

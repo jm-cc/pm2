@@ -1465,8 +1465,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
-		if (ma_holder_type(h = ma_task_init_holder(p))
-				!= MA_RUNQUEUE_HOLDER) {
+		if ((h = ma_task_init_holder(p)) && 
+				ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 			b = ma_bubble_holder(h);
 			if (b!=&marcel_root_bubble
 				&& ma_atomic_dec_and_test(&b->sched.time_slice))

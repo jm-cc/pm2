@@ -64,7 +64,6 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 }
 
 static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
-	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
 	else {
@@ -98,6 +97,7 @@ retryclosed:
 			goto retryopened;
 		}
 #endif
+		bubble_sched_debug("inserting %p in closed bubble %p\n",entity,bubble);
 		__do_bubble_insertentity(bubble,entity);
 		ma_holder_unlock_softirq(&bubble->hold);
 #ifdef MARCEL_BUBBLE_EXPLODE
@@ -110,14 +110,13 @@ retryopened:
 			ma_entity_holder_unlock_softirq(h);
 			goto retryclosed;
 		}
+		bubble_sched_debug("inserting %p in opened bubble %p\n",entity,bubble);
 		__do_bubble_insertentity(bubble,entity);
 		/* containing bubble already has exploded ! wake up this one */
 		entity->sched_holder = h;
 		bubble->nbrunning++;
-		if (entity->type == MA_BUBBLE_ENTITY) {
-			rq = ma_to_rq_holder(h);
-			ma_activate_entity(entity, &rq->hold);
-		}
+		rq = ma_to_rq_holder(h);
+		ma_activate_entity(entity, &rq->hold);
 		ma_holder_rawunlock(&bubble->hold);
 		ma_entity_holder_unlock_softirq(h);
 	}

@@ -20,7 +20,7 @@
 
 unsigned int NB = 1;
 
-#define LOOPS  1000000L
+#define LOOPS  10000L
 
 static marcel_sem_t sem;
 

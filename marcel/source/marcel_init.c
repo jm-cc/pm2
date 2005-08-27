@@ -347,6 +347,7 @@ void marcel_init_section(int sec)
 
 	/* Quick registration */
 	pm2debug_register(&MA_DEBUG_VAR_NAME(MA_FILE_DEBUG));
+	//pm2debug_setup(&marcel_mdebug,PM2DEBUG_SHOW,PM2DEBUG_ON);
 
 	mdebug("Init running level %d (%s) start\n",
 	       __ma_init_start[sec].prio,

@@ -16,6 +16,7 @@
 
 #section macros
 #define MA_FASTLOCK_UNLOCKED {.__status=0, .__spinlock=MA_SPIN_LOCK_UNLOCKED}
+#define MA_LPT_FASTLOCK_UNLOCKED {.__status=0, .__spinlock=0}
 
 #section types
 typedef int __marcel_atomic_lock_t;
@@ -30,3 +31,9 @@ struct _marcel_fastlock
 			  adaptive SMP lock stores spin count here. */
 };
 
+struct _lpt_fastlock
+{
+  long int __status;   /* "Free" or "taken" or head of waiting list */
+  long int __spinlock;  /* Used by compare_and_swap emulation. Also,
+			  adaptive SMP lock stores spin count here. */
+};

@@ -45,33 +45,33 @@ struct __marcel_cond_s
 #depend "marcel_alias.h[macros]"
 #depend "marcel_mutex.h[types]"
 
-DEC_MARCEL(int, condattr_init, (marcel_condattr_t *attr) __THROW)
-DEC_MARCEL(int, condattr_destroy, (marcel_condattr_t *attr) __THROW)
+DEC_MARCEL(int, condattr_init, (marcel_condattr_t *attr) __THROW);
+DEC_MARCEL(int, condattr_destroy, (marcel_condattr_t *attr) __THROW);
 
 DEC_MARCEL(int, cond_init, (marcel_cond_t *cond,
-			    __const marcel_condattr_t *attr) __THROW)
-DEC_MARCEL(int, cond_destroy, (marcel_cond_t *cond) __THROW)
+			    __const marcel_condattr_t *attr) __THROW);
+DEC_MARCEL(int, cond_destroy, (marcel_cond_t *cond) __THROW);
 
-DEC_MARCEL(int, cond_signal, (marcel_cond_t *cond) __THROW)
-DEC_MARCEL(int, cond_broadcast, (marcel_cond_t *cond) __THROW)
+DEC_MARCEL(int, cond_signal, (marcel_cond_t *cond) __THROW);
+DEC_MARCEL(int, cond_broadcast, (marcel_cond_t *cond) __THROW);
 
 DEC_MARCEL(int, cond_wait, (marcel_cond_t *cond,
-			    marcel_mutex_t *mutex) __THROW)
+			    marcel_mutex_t *mutex) __THROW);
 DEC_MARCEL(int, cond_timedwait, (marcel_cond_t *cond, marcel_mutex_t *mutex,
-				 const struct timespec *abstime) __THROW)
+				 const struct timespec *abstime) __THROW);
 
 
-DEC_POSIX(int, condattr_init, (pmarcel_condattr_t *attr))
-DEC_POSIX(int, condattr_destroy, (pmarcel_condattr_t *attr))
+DEC_POSIX(int, condattr_init, (pmarcel_condattr_t *attr));
+DEC_POSIX(int, condattr_destroy, (pmarcel_condattr_t *attr));
 
 DEC_POSIX(int, cond_init, (pmarcel_cond_t *cond,
-			   __const pmarcel_condattr_t *attr))
-DEC_POSIX(int, cond_destroy, (pmarcel_cond_t *cond))
+			   __const pmarcel_condattr_t *attr));
+DEC_POSIX(int, cond_destroy, (pmarcel_cond_t *cond));
 
-DEC_POSIX(int, cond_signal, (pmarcel_cond_t *cond))
-DEC_POSIX(int, cond_broadcast, (pmarcel_cond_t *cond))
+DEC_POSIX(int, cond_signal, (pmarcel_cond_t *cond));
+DEC_POSIX(int, cond_broadcast, (pmarcel_cond_t *cond));
 
 DEC_POSIX(int, cond_wait, (pmarcel_cond_t *cond,
-			   pmarcel_mutex_t *mutex))
+			   pmarcel_mutex_t *mutex));
 DEC_POSIX(int, cond_timedwait, (pmarcel_cond_t *cond, pmarcel_mutex_t *mutex,
-				const struct timespec *abstime))
+				const struct timespec *abstime));

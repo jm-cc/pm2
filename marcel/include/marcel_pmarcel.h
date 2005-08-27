@@ -48,37 +48,19 @@ enum
 
 /* Mutex handling.  */
 
+/*
 #define PMARCEL_MUTEX_INITIALIZER \
   { }
 
 #define PMARCEL_RECURSIVE_MUTEX_INITIALIZER_NP \
   { .__data = { .__kind = PMARCEL_MUTEX_RECURSIVE_NP } }
+*/
 
 #define PMARCEL_RWLOCK_INITIALIZER \
   { }
 
 #define PMARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP \
   { .__data = { .__flags = PMARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP } }
-
-enum
-{
-  PMARCEL_MUTEX_TIMED_NP,
-  PMARCEL_MUTEX_RECURSIVE_NP,
-  PMARCEL_MUTEX_ERRORCHECK_NP,
-  PMARCEL_MUTEX_ADAPTIVE_NP
-#ifdef __USE_UNIX98
-  ,
-  PMARCEL_MUTEX_NORMAL = PMARCEL_MUTEX_TIMED_NP,
-  PMARCEL_MUTEX_RECURSIVE = PMARCEL_MUTEX_RECURSIVE_NP,
-  PMARCEL_MUTEX_ERRORCHECK = PMARCEL_MUTEX_ERRORCHECK_NP,
-  PMARCEL_MUTEX_DEFAULT = PMARCEL_MUTEX_NORMAL
-#endif
-#ifdef __USE_GNU
-  /* For compatibility.  */
-  , PMARCEL_MUTEX_FAST_NP = PMARCEL_MUTEX_TIMED_NP
-#endif
-};
-
 
 /* Read-write lock types.  */
 #ifdef __USE_UNIX98
@@ -358,8 +340,8 @@ extern int pmarcel_yield (void) __THROW;
    only once, even if pmarcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
    extern variable initialized to PMARCEL_ONCE_INIT.  */
-extern int pmarcel_once (pmarcel_once_t *__once_control,
-			 void (*__init_routine) (void)) __THROW;
+//extern int pmarcel_once (pmarcel_once_t *__once_control,
+//			 void (*__init_routine) (void)) __THROW;
 
 
 /* Functions for handling cancellation.  */
@@ -429,6 +411,7 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 
 /* Mutex handling.  */
 
+#if 0
 /* Initialize a mutex.  */
 extern int pmarcel_mutex_init (pmarcel_mutex_t *__mutex,
 			       __const pmarcel_mutexattr_t *__mutexattr)
@@ -482,6 +465,7 @@ extern int pmarcel_mutexattr_gettype (__const pmarcel_mutexattr_t *__restrict
    PMARCEL_MUTEX_DEFAULT).  */
 extern int pmarcel_mutexattr_settype (pmarcel_mutexattr_t *__attr, int __kind)
      __THROW;
+#endif
 #endif
 
 
@@ -574,17 +558,17 @@ extern int pmarcel_cond_broadcast (pmarcel_cond_t *__cond) __THROW;
 
 /* Wait for condition variable COND to be signaled or broadcast.
    MUTEX is assumed to be locked before.  */
-extern int pmarcel_cond_wait (pmarcel_cond_t *__restrict __cond,
-			      pmarcel_mutex_t *__restrict __mutex) __THROW;
+//extern int pmarcel_cond_wait (pmarcel_cond_t *__restrict __cond,
+//			      pmarcel_mutex_t *__restrict __mutex) __THROW;
 
 /* Wait for condition variable COND to be signaled or broadcast until
    ABSTIME.  MUTEX is assumed to be locked before.  ABSTIME is an
    absolute time specification; zero is the beginning of the epoch
    (00:00:00 GMT, January 1, 1970).  */
-extern int pmarcel_cond_timedwait (pmarcel_cond_t *__restrict __cond,
-				   pmarcel_mutex_t *__restrict __mutex,
-				   __const struct timespec *__restrict
-				   __abstime) __THROW;
+//extern int pmarcel_cond_timedwait (pmarcel_cond_t *__restrict __cond,
+//				   pmarcel_mutex_t *__restrict __mutex,
+//				   __const struct timespec *__restrict
+//				   __abstime) __THROW;
 
 /* Functions for handling condition variable attributes.  */
 

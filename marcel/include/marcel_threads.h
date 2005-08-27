@@ -182,9 +182,9 @@ struct _marcel_cleanup_buffer
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
-				     cleanup_func_t func, any_t arg) __THROW)
+				     cleanup_func_t func, any_t arg) __THROW);
 DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
-				    boolean execute) __THROW)
+				    boolean execute) __THROW);
 #undef NAME_PREFIX
 #define NAME_PREFIX
 
@@ -290,8 +290,8 @@ extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer
    only once, even if marcel_once is executed several times with the
    same ONCE_CONTROL argument. ONCE_CONTROL must point to a static or
    extern variable initialized to MARCEL_ONCE_INIT.  */
-extern int marcel_once (marcel_once_t *__once_control,
-			 void (*__init_routine) (void)) __THROW;
+//extern int marcel_once (marcel_once_t *__once_control,
+//			 void (*__init_routine) (void)) __THROW;
 
 
 #section marcel_macros

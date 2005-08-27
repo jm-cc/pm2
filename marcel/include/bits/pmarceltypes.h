@@ -74,6 +74,7 @@ typedef unsigned int pmarcel_key_t;
 /* Mutexes (not abstract because of PMARCEL_MUTEX_INITIALIZER).  */
 /* (The layout is unnatural to maintain binary compatibility
     with earlier releases of LinuxThreads.) */
+#if 0
 typedef struct
 {
   int __m_reserved;               /* Reserved for future use */
@@ -89,10 +90,11 @@ typedef struct
 {
   int __mutexkind;
 } pmarcel_mutexattr_t;
+#endif
 
 
 /* Once-only execution */
-typedef int pmarcel_once_t;
+//typedef int pmarcel_once_t;
 
 
 #ifdef __USE_UNIX98

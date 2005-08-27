@@ -21,6 +21,7 @@
 #depend "marcel_utils.h[stringification]"
 
 #define NAME_PREFIX
+#define LPT_PREFIX lpt_
 #define PTHREAD_PREFIX pthread_
 #define MARCEL_PREFIX marcel_
 #define POSIX_PREFIX pmarcel_
@@ -30,6 +31,7 @@
 #define MARCEL_INLINE_NAME(symbol) PREFIX_SYMBOL(symbol, MARCEL_PREFIX, __inline_)
 #define LOCAL_POSIX_NAME(symbol) PREFIX_SYMBOL(symbol, POSIX_PREFIX, __)
 #define POSIX_NAME(symbol) PREFIX_SYMBOL(symbol, POSIX_PREFIX, )
+#define LPT_NAME(symbol) PREFIX_SYMBOL(symbol, LPT_PREFIX, )
 #define PTHREAD_NAME(symbol) PREFIX_SYMBOL(symbol, PTHREAD_PREFIX, )
 #define __PTHREAD_NAME(symbol) PREFIX_SYMBOL(symbol, PTHREAD_PREFIX, __)
 
@@ -66,11 +68,11 @@
  */
 
 #define DEC_LOCAL_MARCEL(name) \
-  extern typeof(MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) LOCAL_ATTRIBUTE;
+  extern typeof(MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) LOCAL_ATTRIBUTE
 
 #ifdef MA__POSIX_FUNCTIONS_NAMES
 # define DEC_LOCAL_POSIX(name) \
-    typeof(POSIX_NAME(name)) LOCAL_POSIX_NAME(name);
+    extern typeof(POSIX_NAME(name)) LOCAL_POSIX_NAME(name);
 #else
 #  define DEC_LOCAL_POSIX(name)
 #endif
@@ -95,37 +97,37 @@
 #define DECINLINE_MARCEL_POSIX(rtype, name, proto, code) \
   extern __tbx_inline__ rtype MARCEL_NAME(name) proto code; \
   DEC_LOCAL_POSIX(name) \
-  DEC_LOCAL_MARCEL(name) \
+  DEC_LOCAL_MARCEL(name); \
   static __tbx_inline__ rtype MARCEL_INLINE_NAME(name) proto code
 
 #define DECINLINE_MARCEL(rtype, name, proto) \
   static __tbx_inline__ rtype MARCEL_NAME(name) proto code \
-  DEC_LOCAL_MARCEL(name) \
+  DEC_LOCAL_MARCEL(name); \
   static __tbx_inline__ rtype MARCEL_INLINE_NAME(name) proto code
 
 #ifdef __USE_UNIX98
-#define DEC_MARCEL_UNIX98(rtype, name, proto) \
-  DEC_MARCEL_POSIX(rtype, name, proto)
-#ifdef __USE_XOPEN2K
-#define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
-  DEC_MARCEL_POSIX(rtype, name, proto)
-#else /* __USE_XOPEN2K */
-#define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
-  DEC_MARCEL(rtype, name, proto)
-#endif /* __USE_XOPEN2K */
+#  define DEC_MARCEL_UNIX98(rtype, name, proto) \
+     DEC_MARCEL_POSIX(rtype, name, proto)
+#  ifdef __USE_XOPEN2K
+#    define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
+       DEC_MARCEL_POSIX(rtype, name, proto)
+#  else /* __USE_XOPEN2K */
+#    define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
+       DEC_MARCEL(rtype, name, proto)
+#  endif /* __USE_XOPEN2K */
 #else /* __USE_UNIX98 */
-#define DEC_MARCEL_UNIX98(rtype, name, proto) \
-  DEC_MARCEL(rtype, name, proto)
-#define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
-  DEC_MARCEL(rtype, name, proto)
+#  define DEC_MARCEL_UNIX98(rtype, name, proto) \
+     DEC_MARCEL(rtype, name, proto)
+#  define DEC_MARCEL_XOPEN2K(rtype, name, proto) \
+     DEC_MARCEL(rtype, name, proto)
 #endif /* __USE_UNIX98 */
 
 #ifdef __USE_GNU
-#define DEC_MARCEL_GNU(rtype, name, proto) \
-  DEC_MARCEL_POSIX(rtype, name, proto)
+#  define DEC_MARCEL_GNU(rtype, name, proto) \
+     DEC_MARCEL_POSIX(rtype, name, proto)
 #else
-#define DEC_MARCEL_GNU(rtype, name, proto) \
-  DEC_MARCEL(rtype, name, proto)
+#  define DEC_MARCEL_GNU(rtype, name, proto) \
+     DEC_MARCEL(rtype, name, proto)
 #endif
 
 /****************************************************************
@@ -181,37 +183,64 @@
 #define DEFINLINE_MARCEL(rtype, name, proto, args) \
   DEF_ALIAS_LOCAL_MARCEL(rtype, name, proto, args)
 
-# define strong_alias_t(rtype, name, alias, proto, args) _strong_alias_t(rtype, name, alias, proto, args)
-# define _strong_alias_t(type, name, alias, proto, args) \
+#define strong_alias_t(rtype, name, alias, proto, args) \
+  _strong_alias_t(rtype, name, alias, proto, args)
+#define _strong_alias_t(type, name, alias, proto, args) \
   extern TBX_FUN_ALIAS(type, name, alias, proto, args);
 
-#  define weak_alias_t(rtype, name, alias, proto, args) _weak_alias_t (rtype, name, alias, proto, args)
-#  define _weak_alias_t(rtype, name, alias, proto, args) \
+#define weak_alias_t(rtype, name, alias, proto, args) \
+  _weak_alias_t (rtype, name, alias, proto, args)
+#define _weak_alias_t(rtype, name, alias, proto, args) \
   extern TBX_FUN_WEAKALIAS(rtype, name, alias, proto, args);
 
 #ifdef MA__PTHREAD_FUNCTIONS
-#define DEF_STRONG_T(rtype, name, aliasname, proto, args) \
+#  define DEF_STRONG_T(rtype, name, aliasname, proto, args) \
   strong_alias_t(rtype, aliasname, name, proto, args)
-#define DEF_WEAK_T(rtype, name, aliasname, proto, args) \
+#  define DEF_WEAK_T(rtype, name, aliasname, proto, args) \
   weak_alias_t(rtype, aliasname, name, proto, args)
 #else
-#define DEF_STRONG_T(rtype, name, aliasname, proto, args)
-#define DEF_WEAK_T(rtype, name, aliasname, proto, args)
+#  define DEF_STRONG_T(rtype, name, aliasname, proto, args)
+#  define DEF_WEAK_T(rtype, name, aliasname, proto, args)
 #endif
 
+#ifdef MA__PTHREAD_FUNCTIONS
 #define DEF_PTHREAD_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
 #define DEF_PTHREAD_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
 #define DEF___PTHREAD_STRONG(rtype, name, proto, args) \
+  extern typeof(POSIX_NAME(name)) __PTHREAD_NAME(name); \
   DEF_STRONG_T(rtype, POSIX_NAME(name), __PTHREAD_NAME(name), proto, args)
 #define DEF___PTHREAD_WEAK(rtype, name, proto, args) \
+  extern typeof(POSIX_NAME(name)) __PTHREAD_NAME(name); \
   DEF_WEAK_T(rtype, POSIX_NAME(name), __PTHREAD_NAME(name), proto, args)
+#else
+#define DEF_PTHREAD_STRONG(rtype, name, proto, args)
+#define DEF_PTHREAD_WEAK(rtype, name, proto, args)
+#define DEF___PTHREAD_STRONG(rtype, name, proto, args)
+#define DEF___PTHREAD_WEAK(rtype, name, proto, args)
+#endif
 
 #define DEF_PTHREAD(rtype, name, proto, args) \
   DEF_PTHREAD_STRONG(rtype, name, proto, args)
 #define DEF___PTHREAD(rtype, name, proto, args) \
   DEF___PTHREAD_STRONG(rtype, name, proto, args)
+
+#define DEF_LIBPTHREAD_STRONG(rtype, name, proto, args) \
+  DEF_STRONG_T(rtype, LPT_NAME(name), PTHREAD_NAME(name), proto, args)
+#define DEF_LIBPTHREAD_WEAK(rtype, name, proto, args) \
+  DEF_WEAK_T(rtype, LPT_NAME(name), PTHREAD_NAME(name), proto, args)
+#define DEF___LIBPTHREAD_STRONG(rtype, name, proto, args) \
+  extern typeof(LPT_NAME(name)) __PTHREAD_NAME(name); \
+  DEF_STRONG_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
+#define DEF___LIBPTHREAD_WEAK(rtype, name, proto, args) \
+  extern typeof(LPT_NAME(name)) __PTHREAD_NAME(name); \
+  DEF_WEAK_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
+
+#define DEF_LIBPTHREAD(rtype, name, proto, args) \
+  DEF_LIBPTHREAD_STRONG(rtype, name, proto, args)
+#define DEF___LIBPTHREAD(rtype, name, proto, args) \
+  DEF___LIBPTHREAD_STRONG(rtype, name, proto, args)
 
 /****************************************************************/
 /* Fonctions internes à marcel

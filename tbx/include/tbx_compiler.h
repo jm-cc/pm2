@@ -82,7 +82,7 @@ void __memory_barrier(void);
      ret name proto TBX_WEAK { return alias args; }
 #else
 #  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
-     __typeof(alias) name __attribute__ ((__alias__(TBX_STRING(alias))))
+     __typeof(name) name __attribute__ ((__alias__(TBX_STRING(alias))))
 #  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
      TBX_FUN_ALIAS(ret, name, alias, proto, args) TBX_WEAK
 #endif

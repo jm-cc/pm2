@@ -8,6 +8,7 @@ MARCEL {
     marcel_pthread_initialize;
     ma_lock_task;
     tselect;
+    ma_per_lwp__*;
 };
 GLIBC_2.0 {
   global:
@@ -28,27 +29,25 @@ GLIBC_2.0 {
     nanosleep; open; pause; raise; read; recv; recvfrom; recvmsg; send;
     pthread_atfork; pthread_attr_destroy; pthread_attr_getdetachstate;
     pthread_attr_getinheritsched; pthread_attr_getschedparam;
-    pthread_attr_getschedpolicy; pthread_attr_getscope; pthread_attr_init;
-    pthread_attr_setdetachstate; pthread_attr_setinheritsched;
+    pthread_attr_getschedpolicy; pthread_attr_getscope;
+    pthread_attr_setinheritsched;
     pthread_attr_setschedparam; pthread_attr_setschedpolicy;
     pthread_attr_setscope; pthread_cancel; pthread_cond_broadcast;
     pthread_cond_destroy; pthread_cond_init; pthread_cond_signal;
     pthread_cond_timedwait; pthread_cond_wait; pthread_condattr_destroy;
     pthread_condattr_init; pthread_create; pthread_detach; pthread_equal;
-    pthread_exit; pthread_getschedparam; pthread_getspecific; pthread_join;
+    pthread_exit; pthread_getschedparam; pthread_getspecific;
     pthread_key_create; pthread_key_delete; pthread_kill;
     pthread_kill_other_threads_np; pthread_mutexattr_getkind_np;
-    pthread_mutex_destroy; pthread_mutex_init; pthread_mutex_lock;
-    pthread_mutex_trylock; pthread_mutex_unlock; pthread_mutexattr_destroy;
-    pthread_mutexattr_init; pthread_once; pthread_self; pthread_setcancelstate;
+    pthread_mutexattr_init; pthread_once; thread_setcancelstate;
     pthread_mutexattr_setkind_np;
     pthread_setcanceltype; pthread_setschedparam; pthread_setspecific;
     pthread_sigmask; pthread_testcancel;
-    sem_destroy; sem_getvalue; sem_init; sem_post; sem_trywait; sem_wait;
-    sendmsg; sendto; sigaction; siglongjmp; system; tcdrain; wait;
+    sem_destroy; sem_getvalue;
+    sendmsg; sendto; siglongjmp; system; tcdrain; wait;
     sigwait;
     vfork; __fork;
-    waitpid; write;
+    waitpid;
   local:
     *;
 } MARCEL;
@@ -59,7 +58,7 @@ GLIBC_2.1 {
     pthread_attr_getguardsize; pthread_attr_setguardsize;
     pthread_attr_getstackaddr; pthread_attr_setstackaddr;
     pthread_attr_getstacksize; pthread_attr_setstacksize;
-    pthread_attr_init; pthread_create;
+    pthread_attr_init;
     pthread_getconcurrency; pthread_setconcurrency;
     pthread_mutexattr_gettype; pthread_mutexattr_settype;
     pthread_rwlock_init; pthread_rwlock_destroy; pthread_rwlock_rdlock;
@@ -98,6 +97,12 @@ GLIBC_2.2 {
     pthread_spin_trylock; pthread_spin_unlock;
     pthread_yield;
     sem_timedwait;
+    pthread_self; write; usleep;
+    sem_init; sem_post; sem_trywait; sem_wait;
+    pthread_attr_setdetachstate; pthread_create; pthread_join; pthread_attr_init;
+    pthread_mutex_destroy; pthread_mutex_init; pthread_mutex_lock;
+    pthread_mutex_trylock; pthread_mutex_unlock; pthread_mutexattr_destroy;
+    sigaction; 
 } GLIBC_2.1.2;
 GLIBC_2.2.3 {
   global:
@@ -107,6 +112,10 @@ GLIBC_2.2.6 {
   global:
     __nanosleep;
 } GLIBC_2.2.3;
+GLIBC_2.3.3 {
+  global:
+    __nanosleep;
+} GLIBC_2.2.6;
 GLIBC_PRIVATE {
   global:
     __libc_internal_tsd_address; __libc_alloca_cutoff;

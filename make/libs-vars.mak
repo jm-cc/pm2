@@ -52,7 +52,7 @@ LIB_LIB += buildstatic
 endif
 ifeq ($(BUILD_DYNAMIC_LIBS),yes)
 LIB_LIB += builddynamic
-LIB_SO_MAP = $(wildcard lib$(LIBNAME).map)
+LIB_SO_MAP = $(wildcard scripts/arch-$(MOD_ARCH)/lib$(LIBNAME).map)
 ifneq ($(LINK_DYNAMIC_LIBS),)
 LINK_LIB += linkdynamic
 endif

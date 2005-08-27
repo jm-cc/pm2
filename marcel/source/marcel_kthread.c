@@ -61,12 +61,27 @@ int marcel_gettid(void) {
 
 #define __STACK_SIZE  (1024 * 1024)
 
+
+
+#ifdef IA64_ARCH
+int ia64_dummy;
+
+int  __clone2(int (*fn) (void *arg), void *child_stack_base,
+              size_t child_stack_size, int flags, void *arg,
+              pid_t *parent_tid, void *tls, pid_t *child_tid);
+#endif
+
+
 // WARNING: stack is never freed. That's not a problem since kernel
 // threads only terminate at the end of the program, but...
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   void* stack_base,
 			   marcel_kthread_func_t func, void *arg)
 {
+#ifdef IA64_ARCH
+  size_t stack_size;
+#endif
+
   LOG_IN();
   //stack = mmap(NULL, __STACK_SIZE, PROT_READ | PROT_WRITE,
   //	       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS | MAP_GROWSDOWN,
@@ -80,14 +95,14 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
   mdebug("Stack for kthread set at %p\n", sp);
 
 #ifdef IA64_ARCH
-  extern int __clone2 (int (*__fn) (void *__arg), void *__child_stack_base,
-                       size_t __child_stack_size, int __flags,
-                       void *__arg, ...);
-  *pid = __clone2((int (*)(void *))func, 
-	       stack_base, sp - stack_base,
+  stack_base=(void*)(((unsigned long int)stack_base+15)&(~0xF));
+  stack_size=(sp-stack_base)&(~0xF);
+  int ret = __clone2((int (*)(void *))func, 
+	       stack_base, stack_size,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-	       CLONE_THREAD | CLONE_PARENT |
-	       SIGCHLD, arg);
+	       CLONE_THREAD | CLONE_PARENT | 
+	       SIGCHLD, arg, &ia64_dummy, &ia64_dummy, pid);
+  MA_BUG_ON(ret == -1);
 #else
   *pid = clone((int (*)(void *))func, 
 	       sp,

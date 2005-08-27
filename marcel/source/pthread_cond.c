@@ -25,6 +25,7 @@
       * CONDITIONS
       */
      
+#if 0
 DEF_MARCEL_POSIX(int, condattr_init, (marcel_condattr_t *attr), (attr))
 {
   return 0;
@@ -185,3 +186,4 @@ DEF_PTHREAD(int, cond_timedwait,
 DEF___PTHREAD(int, cond_timedwait, 
 		 (pthread_cond_t *cond, pthread_mutex_t *mutex,
 		  const struct timespec *abstime), (cond, mutex, abstime))
+#endif

@@ -78,7 +78,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_getreg(regnum)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 										\
 	switch (regnum) {							\
 	case _MA_IA64_REG_GP:							\
@@ -132,7 +132,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_mux1(x, mode)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 										\
 	switch (mode) {								\
 	case ma_ia64_mux1_brcst:							\
@@ -156,7 +156,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_popcnt(x)						\
 ({								\
-	__u64 ia64_intri_res;					\
+	__ma_u64 ia64_intri_res;					\
 	asm ("popcnt %0=%1" : "=r" (ia64_intri_res) : "r" (x));	\
 								\
 	ia64_intri_res;						\
@@ -173,7 +173,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_shrp(a, b, count)								\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm ("shrp %0=%1,%2,%3" : "=r"(ia64_intri_res) : "r"(a), "r"(b), "i"(count));	\
 	ia64_intri_res;									\
 })
@@ -241,7 +241,7 @@ extern void ia64_bad_param_for_getreg (void);
 #define ma_ia64_fetchadd4_acq(p, inc)						\
 ({										\
 										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("fetchadd4.acq %0=[%1],%2"				\
 				: "=r"(ia64_intri_res) : "r"(p), "i" (inc)	\
 				: "memory");					\
@@ -251,7 +251,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_fetchadd4_rel(p, inc)						\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("fetchadd4.rel %0=[%1],%2"				\
 				: "=r"(ia64_intri_res) : "r"(p), "i" (inc)	\
 				: "memory");					\
@@ -262,7 +262,7 @@ extern void ia64_bad_param_for_getreg (void);
 #define ma_ia64_fetchadd8_acq(p, inc)						\
 ({										\
 										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("fetchadd8.acq %0=[%1],%2"				\
 				: "=r"(ia64_intri_res) : "r"(p), "i" (inc)	\
 				: "memory");					\
@@ -272,7 +272,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_fetchadd8_rel(p, inc)						\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("fetchadd8.rel %0=[%1],%2"				\
 				: "=r"(ia64_intri_res) : "r"(p), "i" (inc)	\
 				: "memory");					\
@@ -282,7 +282,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_xchg1(ptr,x)						\
 ({									\
-	__u64 ia64_intri_res;						\
+	__ma_u64 ia64_intri_res;						\
 	asm __volatile ("xchg1 %0=[%1],%2" : "=r" (ia64_intri_res)	\
 			    : "r" (ptr), "r" (x) : "memory");		\
 	ia64_intri_res;							\
@@ -290,7 +290,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_xchg2(ptr,x)						\
 ({									\
-	__u64 ia64_intri_res;						\
+	__ma_u64 ia64_intri_res;						\
 	asm __volatile ("xchg2 %0=[%1],%2" : "=r" (ia64_intri_res)	\
 			    : "r" (ptr), "r" (x) : "memory");		\
 	ia64_intri_res;							\
@@ -298,7 +298,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_xchg4(ptr,x)						\
 ({									\
-	__u64 ia64_intri_res;						\
+	__ma_u64 ia64_intri_res;						\
 	asm __volatile ("xchg4 %0=[%1],%2" : "=r" (ia64_intri_res)	\
 			    : "r" (ptr), "r" (x) : "memory");		\
 	ia64_intri_res;							\
@@ -306,7 +306,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_xchg8(ptr,x)						\
 ({									\
-	__u64 ia64_intri_res;						\
+	__ma_u64 ia64_intri_res;						\
 	asm __volatile ("xchg8 %0=[%1],%2" : "=r" (ia64_intri_res)	\
 			    : "r" (ptr), "r" (x) : "memory");		\
 	ia64_intri_res;							\
@@ -314,7 +314,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg1_acq(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg1.acq %0=[%1],%2,ar.ccv":					\
 			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
@@ -323,7 +323,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg1_rel(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg1.rel %0=[%1],%2,ar.ccv":					\
 			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
@@ -332,7 +332,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg2_acq(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg2.acq %0=[%1],%2,ar.ccv":					\
 			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
@@ -341,7 +341,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg2_rel(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 											\
 	asm volatile ("cmpxchg2.rel %0=[%1],%2,ar.ccv":					\
@@ -351,7 +351,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg4_acq(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg4.acq %0=[%1],%2,ar.ccv":					\
 			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
@@ -360,7 +360,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg4_rel(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg4.rel %0=[%1],%2,ar.ccv":					\
 			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
@@ -369,7 +369,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg8_acq(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 	asm volatile ("cmpxchg8.acq %0=[%1],%2,ar.ccv":					\
 			      "=r"(ia64_intri_res) : "r"(ptr), "r"(new) : "memory");	\
@@ -378,7 +378,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_cmpxchg8_rel(ptr, new, old)						\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov ar.ccv=%0;;" :: "rO"(old));					\
 											\
 	asm volatile ("cmpxchg8.rel %0=[%1],%2,ar.ccv":					\
@@ -393,7 +393,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_thash(addr)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("thash %0=%1" : "=r"(ia64_intri_res) : "r" (addr));	\
 	ia64_intri_res;								\
 })
@@ -424,7 +424,7 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_tpa(addr)								\
 ({										\
-	__u64 ia64_pa;								\
+	__ma_u64 ia64_pa;								\
 	asm volatile ("tpa %0 = %1" : "=r"(ia64_pa) : "r"(addr) : "memory");	\
 	ia64_pa;								\
 })
@@ -449,35 +449,35 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_get_cpuid(index)								\
 ({											\
-	__u64 ia64_intri_res;								\
+	__ma_u64 ia64_intri_res;								\
 	asm volatile ("mov %0=cpuid[%r1]" : "=r"(ia64_intri_res) : "rO"(index));	\
 	ia64_intri_res;									\
 })
 
 #define __ma_ia64_get_dbr(index)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("mov %0=dbr[%1]" : "=r"(ia64_intri_res) : "r"(index));	\
 	ia64_intri_res;								\
 })
 
 #define ma_ia64_get_ibr(index)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("mov %0=ibr[%1]" : "=r"(ia64_intri_res) : "r"(index));	\
 	ia64_intri_res;								\
 })
 
 #define ma_ia64_get_pkr(index)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("mov %0=pkr[%1]" : "=r"(ia64_intri_res) : "r"(index));	\
 	ia64_intri_res;								\
 })
 
 #define ma_ia64_get_pmc(index)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("mov %0=pmc[%1]" : "=r"(ia64_intri_res) : "r"(index));	\
 	ia64_intri_res;								\
 })
@@ -485,14 +485,14 @@ extern void ia64_bad_param_for_getreg (void);
 
 #define ma_ia64_get_pmd(index)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("mov %0=pmd[%1]" : "=r"(ia64_intri_res) : "r"(index));	\
 	ia64_intri_res;								\
 })
 
 #define ma_ia64_get_rr(index)							\
 ({										\
-	__u64 ia64_intri_res;							\
+	__ma_u64 ia64_intri_res;							\
 	asm volatile ("mov %0=rr[%1]" : "=r"(ia64_intri_res) : "r" (index));	\
 	ia64_intri_res;								\
 })

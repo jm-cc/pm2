@@ -34,6 +34,12 @@
  *  2003-09-03	Interactivity tuning by Con Kolivas.
  */
 
+
+/* Pour avoir pmarcel_yield */
+#define _GNU_SOURCE
+#include <features.h>
+
+
 #include "marcel.h"
 
 #ifdef CONFIG_NUMA

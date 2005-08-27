@@ -31,7 +31,7 @@ endif
 
 SCHED_NAME=marcel
 
-MOD_HSPLITS_COMMON:=splitall_section_def.h
+MOD_HSPLITS_COMMON:=scripts/splitall_section_def.h
 MOD_HSPLITS_SOURCES:=$(shell echo `pwd` 1>&2 ; cd include ; \
 	grep -l '^\#section' *.h sys/*.h)
 
@@ -48,13 +48,13 @@ $(eval $(call MOD_HSPLITS_ADD_MASTER,,,))
 define ADD_SUBDIR # subdir SUBNAME base
  $$(eval $$(call MOD_HSPLITS_ADD_MASTER,-$(1),_$(2),$(1)))
  MOD_HSPLITS_PARTS_$(2) += MOD_HSPLITS_$(2)_section MOD_HSPLITS_$(2)_nosection
- MOD_HSPLITS_$(2)_section_COMMON:=splitall_section_def.h
+ MOD_HSPLITS_$(2)_section_COMMON:=scripts/splitall_section_def.h
  MOD_HSPLITS_$(2)_section_SRCDIR:=include/$(1)
  MOD_HSPLITS_$(2)_section_GENSUBDIR:=$(1)
  MOD_HSPLITS_$(2)_section_DEFAULT_SECTION:=null
  MOD_HSPLITS_$(2)_SOURCES:=$$(patsubst include/$(1)/%,%,$$(wildcard include/$(1)/*.h))
  MOD_HSPLITS_$(2)_section_SOURCES=$$(shell cd include/$(1); grep </dev/null -l '^\#section' $$(MOD_HSPLITS_$(2)_SOURCES))
- MOD_HSPLITS_$(2)_nosection_COMMON:=splitall_nosection_def.h
+ MOD_HSPLITS_$(2)_nosection_COMMON:=scripts/splitall_nosection_def.h
  MOD_HSPLITS_$(2)_nosection_SRCDIR:=include/$(1)
  MOD_HSPLITS_$(2)_nosection_GENSUBDIR:=$(1)
  MOD_HSPLITS_$(2)_nosection_DEFAULT_SECTION:=all
@@ -152,4 +152,12 @@ linux:
 			echo "You should verify and execute : " ; \
 			echo "rm -v $$LST" ; \
 		fi
+
+M4_GEN_FILES=include/marcel_mutex.h source/nptl_mutex.c
+dot_h: $(M4_GEN_FILES)
+
+$(M4_GEN_FILES): scripts/marcel.m4
+
+$(M4_GEN_FILES): %: %.m4
+	m4 --prefix-builtins $< > $@
 

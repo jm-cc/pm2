@@ -37,7 +37,7 @@ int __pthread_create_2_1(pthread_t *thread, const pthread_attr_t *attr,
 			start_routine, arg);
 }
 
-#if SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_1)
+#if SHLIB_COMPAT (libpthread, GLIBC_2_0, GLIBC_2_2)
 #include <sys/shm.h>
 #ifndef STACK_SIZE
 #define STACK_SIZE  (2 * 1024 * 1024)
@@ -68,7 +68,7 @@ compat_symbol (libpthread, __pthread_create_2_0, pthread_create, GLIBC_2_0);
 #endif
 
 
-versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
+versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_2);
 
 pthread_t pthread_self(void)
 {
@@ -124,6 +124,7 @@ __res_state (void)
 
 void __pthread_initialize_minimal(void)
 {
+	//marcel_init_section(MA_INIT_MAIN_LWP);
 #ifdef PM2DEBUG
 	printf("Initialisation mini libpthread marcel-based\n");
 #endif
@@ -131,6 +132,7 @@ void __pthread_initialize_minimal(void)
 
 void __pthread_initialize(int* argc, char**argv)
 {
+	//marcel_init_section(MA_INIT_MAIN_LWP);
 #ifdef PM2DEBUG
 	printf("__Initialisation libpthread marcel-based\n");
 #endif
@@ -143,6 +145,7 @@ void marcel_pthread_initialize(int* argc, char**argv)
 #ifdef PM2DEBUG
 		printf("Initialisation libpthread marcel-based\n");
 #endif
+		marcel_init_section(MA_INIT_MAIN_LWP);
 		marcel_init_data(argc, argv);
 		tbx_init(*argc, argv);
 		/* TODO: A reporter : */
@@ -169,7 +172,7 @@ int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
 {
 	return marcel_attr_init((marcel_attr_t*)__attr);
 }
-versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
+versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_2);
 
 int pthread_attr_setdetachstate (pthread_attr_t *__attr,
                                         int __detachstate)
@@ -185,27 +188,50 @@ int __sem_init_2_1 (sem_t *__sem, int __pshared, unsigned int __value)
 	marcel_sem_init((marcel_sem_t*)__sem, __value);
 	return 0;
 }
-versioned_symbol (libpthread, __sem_init_2_1, sem_init, GLIBC_2_1);
+versioned_symbol (libpthread, __sem_init_2_1, sem_init, GLIBC_2_2);
 
 int __sem_wait_2_1 (sem_t *__sem)
 {
 	marcel_sem_P((marcel_sem_t*)__sem);
 	return 0;
 }
-versioned_symbol (libpthread, __sem_wait_2_1, sem_wait, GLIBC_2_1);
+versioned_symbol (libpthread, __sem_wait_2_1, sem_wait, GLIBC_2_2);
 
 int __sem_post_2_1 (sem_t *__sem)
 {
 	marcel_sem_V((marcel_sem_t*)__sem);
 	return 0;
 }
-versioned_symbol (libpthread, __sem_post_2_1, sem_post, GLIBC_2_1);
+versioned_symbol (libpthread, __sem_post_2_1, sem_post, GLIBC_2_2);
 
 
 int pthread_equal(pthread_t thread1, pthread_t thread2)
 {
   return thread1 == thread2;
 }
+
+int usleep_divert (__useconds_t __useconds)
+{
+  return 0;
+}
+versioned_symbol (libpthread, usleep_divert, usleep, GLIBC_2_2);
+
+int __libc_sigaction (int sig, const struct sigaction *act, struct sigaction *oact);
+int __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
+{
+#if 0
+  if (__builtin_expect (sig == SIGCANCEL || sig == SIGSETXID, 0))
+    {
+      __set_errno (EINVAL);
+      return -1;
+    }
+#endif
+
+  return __libc_sigaction (sig, act, oact);
+}
+//libc_hidden_weak (__sigaction)
+weak_alias (__sigaction, sigaction)
+
 
 #ifdef PM2_DEV
 #warning _pthread_cleanup_push,restore à écrire

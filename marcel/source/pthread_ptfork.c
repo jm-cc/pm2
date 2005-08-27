@@ -93,7 +93,7 @@ pid_t __fork(void)
   pmarcel_mutex_lock(&pmarcel_atfork_lock);
 
   pmarcel_call_handlers(pmarcel_atfork_prepare);
-  __pmarcel_once_fork_prepare();
+  //__pmarcel_once_fork_prepare();
   __flockfilelist();
 
   pid = __libc_fork();
@@ -102,13 +102,13 @@ pid_t __fork(void)
     //VD__pmarcel_reset_main_thread();
 
     __fresetlockfiles();
-    __pmarcel_once_fork_child();
+    //__pmarcel_once_fork_child();
     pmarcel_call_handlers(pmarcel_atfork_child);
 
     pmarcel_mutex_init(&pmarcel_atfork_lock, NULL);
   } else {
     __funlockfilelist();
-    __pmarcel_once_fork_parent();
+    //__pmarcel_once_fork_parent();
     pmarcel_call_handlers(pmarcel_atfork_parent);
 
     pmarcel_mutex_unlock(&pmarcel_atfork_lock);

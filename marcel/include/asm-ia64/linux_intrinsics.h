@@ -59,7 +59,7 @@ extern unsigned long __ma_bad_increment_for_ia64_fetch_and_add (void);
 
 #define ma_ia64_fetchadd(i,v,sem)								\
 ({											\
-	__u64 _tmp;									\
+	__ma_u64 _tmp;									\
 	volatile __typeof__(*(v)) *_v = (v);						\
 	/* Can't use a switch () here: gcc isn't always smart enough for that... */	\
 	if ((i) == -16)									\
@@ -99,19 +99,19 @@ extern void ma_ia64_xchg_called_with_bad_pointer (void);
 									\
 	switch (size) {							\
 	      case 1:							\
-		__xchg_result = ma_ia64_xchg1((__u8 *)ptr, x);		\
+		__xchg_result = ma_ia64_xchg1((__ma_u8 *)ptr, x);	\
 		break;							\
 									\
 	      case 2:							\
-		__xchg_result = ma_ia64_xchg2((__u16 *)ptr, x);		\
+		__xchg_result = ma_ia64_xchg2((__ma_u16 *)ptr, x);	\
 		break;							\
 									\
 	      case 4:							\
-		__xchg_result = ma_ia64_xchg4((__u32 *)ptr, x);		\
+		__xchg_result = ma_ia64_xchg4((__ma_u32 *)ptr, x);	\
 		break;							\
 									\
 	      case 8:							\
-		__xchg_result = ma_ia64_xchg8((__u64 *)ptr, x);		\
+		__xchg_result = ma_ia64_xchg8((__ma_u64 *)ptr, x);	\
 		break;							\
 	      default:							\
 		ma_ia64_xchg_called_with_bad_pointer();			\
@@ -140,30 +140,30 @@ extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
 #section marcel_macros
 #define ma_ia64_cmpxchg(sem,ptr,old,new,size)						\
 ({											\
-	__u64 _o_, _r_;									\
+	__ma_u64 _o_, _r_;									\
 											\
 	switch (size) {									\
-	      case 1: _o_ = (__u8 ) (long) (old); break;				\
-	      case 2: _o_ = (__u16) (long) (old); break;				\
-	      case 4: _o_ = (__u32) (long) (old); break;				\
-	      case 8: _o_ = (__u64) (long) (old); break;				\
+	      case 1: _o_ = (__ma_u8 ) (long) (old); break;				\
+	      case 2: _o_ = (__ma_u16) (long) (old); break;				\
+	      case 4: _o_ = (__ma_u32) (long) (old); break;				\
+	      case 8: _o_ = (__ma_u64) (long) (old); break;				\
 	      default: break;								\
 	}										\
 	switch (size) {									\
 	      case 1:									\
-	      	_r_ = ma_ia64_cmpxchg1_##sem((__u8 *) ptr, new, _o_);			\
+	      	_r_ = ma_ia64_cmpxchg1_##sem((__ma_u8 *) ptr, new, _o_);			\
 		break;									\
 											\
 	      case 2:									\
-	       _r_ = ma_ia64_cmpxchg2_##sem((__u16 *) ptr, new, _o_);			\
+	       _r_ = ma_ia64_cmpxchg2_##sem((__ma_u16 *) ptr, new, _o_);			\
 		break;									\
 											\
 	      case 4:									\
-	      	_r_ = ma_ia64_cmpxchg4_##sem((__u32 *) ptr, new, _o_);			\
+	      	_r_ = ma_ia64_cmpxchg4_##sem((__ma_u32 *) ptr, new, _o_);			\
 		break;									\
 											\
 	      case 8:									\
-		_r_ = ma_ia64_cmpxchg8_##sem((__u64 *) ptr, new, _o_);			\
+		_r_ = ma_ia64_cmpxchg8_##sem((__ma_u64 *) ptr, new, _o_);			\
 		break;									\
 											\
 	      default:									\

@@ -17,6 +17,11 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
+/* On récupère lpt_mutexattr_settype */
+#define _GNU_SOURCE
+#include <features.h>
+
+
 #include "marcel.h" //VD:
 #ifdef MA__PTHREAD_FUNCTIONS //VD:
 //VD:#include <bits/libc-lock.h>
@@ -48,7 +53,7 @@ void
 __flockfile (FILE *stream)
 {
 #ifdef USE_IN_LIBIO
-  __pmarcel_mutex_lock (stream->_lock);
+  lpt_mutex_lock (stream->_lock);
 #else
 #endif
 }
@@ -63,7 +68,7 @@ void
 __funlockfile (FILE *stream)
 {
 #ifdef USE_IN_LIBIO
-  __pmarcel_mutex_unlock (stream->_lock);
+  lpt_mutex_unlock (stream->_lock);
 #else
 #endif
 }
@@ -78,7 +83,7 @@ int
 __ftrylockfile (FILE *stream)
 {
 #ifdef USE_IN_LIBIO
-  return __pmarcel_mutex_trylock (stream->_lock);
+  return lpt_mutex_trylock (stream->_lock);
 #else
 #endif
 }
@@ -109,15 +114,15 @@ __fresetlockfiles (void)
 #ifdef USE_IN_LIBIO
   _IO_ITER i;
 
-  pmarcel_mutexattr_t attr;
+  lpt_mutexattr_t attr;
 
-  __pmarcel_mutexattr_init (&attr);
-  __pmarcel_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+  lpt_mutexattr_init (&attr);
+  lpt_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE_NP);
 
   for (i = _IO_iter_begin(); i != _IO_iter_end(); i = _IO_iter_next(i))
-    __pmarcel_mutex_init (_IO_iter_file(i)->_lock, &attr);
+    lpt_mutex_init (_IO_iter_file(i)->_lock, &attr);
 
-  __pmarcel_mutexattr_destroy (&attr);
+  lpt_mutexattr_destroy (&attr);
 
   _IO_list_resetlock();
 #endif

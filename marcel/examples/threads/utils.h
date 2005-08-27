@@ -15,6 +15,7 @@
          _a < _b ? _a : _b; })
 
 
+#ifdef __i386
 typedef union u_tick
 {
 	unsigned long long tick;
@@ -27,13 +28,26 @@ typedef union u_tick
 	
 	struct timeval timev;
 } tick_t, *p_tick_t;
+#define GET_TICK(t) __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))
+#define TICK_RAW_DIFF(t1, t2) ((t2).tick - (t1).tick)
+
+#elif defined (__ia64)
+
+typedef unsigned long tick_t, *p_tick_t;
+  
+#define GET_TICK(t) \
+   __asm__ volatile("mov %0=ar%1" : "=r" ((t)) : "i"(44))
+#define TICK_RAW_DIFF(t1, t2) \
+   ((t2) - (t1))
+
+#else
+#error unknown architecture
+#endif
 
 static double scale = 0.0;
 static unsigned long long residual = 0;
 static tick_t last_event;
 
-#define GET_TICK(t) __asm__ volatile("rdtsc" : "=a" ((t).sub.low), "=d" ((t).sub.high))
-#define TICK_RAW_DIFF(t1, t2) ((t2).tick - (t1).tick)
 #define TICK_DIFF(t1, t2) (TICK_RAW_DIFF(t1, t2) - residual)
 #define TIMING_DELAY(t1, t2) tick2usec(TICK_DIFF(t1, t2))
 

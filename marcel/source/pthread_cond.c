@@ -25,7 +25,6 @@
       * CONDITIONS
       */
      
-#if 0
 DEF_MARCEL_POSIX(int, condattr_init, (marcel_condattr_t *attr), (attr))
 {
   return 0;
@@ -96,10 +95,10 @@ DEF_MARCEL_POSIX(int, cond_wait, (marcel_cond_t *cond,
 {
   LOG_IN();
 
-  marcel_lock_acquire(&mutex->__m_lock.__spinlock);
+  marcel_lock_acquire(&mutex->__data.__lock.__spinlock);
   marcel_lock_acquire(&cond->__c_lock.__spinlock);
-  __marcel_unlock_spinlocked(&mutex->__m_lock);
-  marcel_lock_release(&mutex->__m_lock.__spinlock);
+  __marcel_unlock_spinlocked(&mutex->__data.__lock);
+  marcel_lock_release(&mutex->__data.__lock.__spinlock);
   {
 	  blockcell c;
 	  
@@ -145,10 +144,10 @@ DEF_MARCEL_POSIX(int, cond_timedwait,
 	timeout = JIFFIES_FROM_US(((tv.tv_sec*1e6 + tv.tv_usec) -
 				   (now.tv_sec*1e6 + now.tv_usec)));
 	
-	marcel_lock_acquire(&mutex->__m_lock.__spinlock);
+	marcel_lock_acquire(&mutex->__data.__lock.__spinlock);
 	marcel_lock_acquire(&cond->__c_lock.__spinlock);
-	__marcel_unlock_spinlocked(&mutex->__m_lock);
-	marcel_lock_release(&mutex->__m_lock.__spinlock);
+	__marcel_unlock_spinlocked(&mutex->__data.__lock);
+	marcel_lock_release(&mutex->__data.__lock.__spinlock);
 	{
 		blockcell c;
 		
@@ -186,4 +185,3 @@ DEF_PTHREAD(int, cond_timedwait,
 DEF___PTHREAD(int, cond_timedwait, 
 		 (pthread_cond_t *cond, pthread_mutex_t *mutex,
 		  const struct timespec *abstime), (cond, mutex, abstime))
-#endif

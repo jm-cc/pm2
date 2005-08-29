@@ -31,7 +31,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#ifndef MARCEL
+#ifdef MARCEL
 static inline int isdigit(int c) {
 	return (c>='0' && c<='9');
 }

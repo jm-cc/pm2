@@ -83,182 +83,179 @@ verify_data(char *user_buffer, unsigned int length){
 
 int
 main(int argc, char **argv) {
-        p_mad_madeleine_t         	 madeleine         = NULL;
-        char                       	*name		   = NULL;
-        p_mad_channel_t           	 channel           = NULL;
-        p_ntbx_process_container_t	 pc                = NULL;
-        ntbx_process_grank_t      	 my_global_rank    =   -1;
-        ntbx_process_lrank_t      	 my_local_rank     =   -1;
-        p_tbx_htable_t                   mad_driver_htable = NULL;
-        p_mad_connection_t connection = NULL;
-        LOG_IN();
+    p_mad_madeleine_t         	 madeleine         = NULL;
+    char                       	*name		   = NULL;
+    p_mad_channel_t           	 channel           = NULL;
+    p_ntbx_process_container_t	 pc                = NULL;
+    ntbx_process_grank_t      	 my_global_rank    =   -1;
+    ntbx_process_lrank_t      	 my_local_rank     =   -1;
+    p_mad_connection_t connection = NULL;
+    LOG_IN();
+    common_pre_init (&argc, argv, NULL);
+    common_post_init(&argc, argv, NULL);
 
-        common_pre_init (&argc, argv, NULL);
-        common_post_init(&argc, argv, NULL);
-        madeleine      = mad_get_madeleine();
+    madeleine      = mad_get_madeleine();
+    my_global_rank = madeleine->session->process_rank;
+    name	= tbx_slist_index_get(madeleine->public_channel_slist, 0);
+    channel  = tbx_htable_get(madeleine->channel_htable, name);
+    pc             = channel->pc;
+    my_local_rank  = ntbx_pc_global_to_local(pc, my_global_rank);
 
-        mad_driver_htable = madeleine->driver_htable;
+    if (my_local_rank == 0) {
+        unsigned int len1, len2, len3, len4, len5;
+        char *buffer1, *buffer2, *buffer3, *buffer4, *buffer5;
 
-        my_global_rank = madeleine->session->process_rank;
-        name	= tbx_slist_index_get(madeleine->public_channel_slist, 0);
-        channel  = tbx_htable_get(madeleine->channel_htable, name);
-        pc             = channel->pc;
-        my_local_rank  = ntbx_pc_global_to_local(pc, my_global_rank);
+        DISP_VAL("Je suis l'émetteur ----------> ", my_local_rank);
+        len1 = 6;
+        buffer1 = init_and_fill_data(len1);
 
-        mad_iovec_init_allocators();
+        len2 = 128;
+        buffer2 = init_and_fill_data(len2);
 
+        len3 = 1048576;
+        buffer3 = init_and_fill_data(len3);
 
-        if (my_local_rank == 1) {
-            unsigned int len1, len2, len3, len4, len5;
-            char *buffer1, *buffer2, *buffer3, *buffer4, *buffer5;
+        len4 = 4;
+        buffer4 = init_and_fill_data(len4);
 
-            DISP_VAL("Je suis l'émetteur ----------> ", my_local_rank);
-            len1 = 6;
-            buffer1 = init_and_fill_data(len1);
-
-            len2 = 128;
-            buffer2 = init_and_fill_data(len2);
-
-            len3 = 1048576;
-            buffer3 = init_and_fill_data(len3);
-
-            len4 = 4;
-            buffer4 = init_and_fill_data(len4);
-
-            len5 = 1048576;
-            buffer5 = init_and_fill_data(len5);
+        len5 = 1048576;
+        buffer5 = init_and_fill_data(len5);
 
 
-            //verify_data(buffer1, len1);
-            //verify_data(buffer2, len2);
-            //verify_data(buffer3, len3);
-            //verify_data(buffer4, len4);
+        //verify_data(buffer1, len1);
+        //verify_data(buffer2, len2);
+        //verify_data(buffer3, len3);
+        //verify_data(buffer4, len4);
 
-            connection = mad_begin_packing(channel, 0);
-            mad_pack(connection,
-                     buffer1,
-                     len1,
-                     mad_send_CHEAPER,
-                     mad_receive_CHEAPER);
+        connection = mad_begin_packing(channel, 1);
+        if(!connection)
+            DISP("mad_micro_direct: PAS de CONNECTION");
 
-            //DISP("################################");
+        //mad_pack(connection,
+        //         buffer1,
+        //         len1,
+        //         mad_send_CHEAPER,
+        //         mad_receive_EXPRESS);
 
-            mad_pack(connection,
-                     buffer2,
-                     len2,
-                     mad_send_CHEAPER,
-                     mad_receive_CHEAPER);
+        ////DISP("################################");
 
-            //DISP("################################");
+        mad_pack(connection,
+                 buffer2,
+                 len2,
+                 mad_send_CHEAPER,
+                 mad_receive_CHEAPER);
 
-            mad_pack(connection,
-                     buffer3,
-                     len3,
-                     mad_send_CHEAPER,
-                     mad_receive_EXPRESS);
+        //DISP("################################");
 
-            //DISP("################################");
+        mad_pack(connection,
+                 buffer3,
+                 len3,
+                 mad_send_CHEAPER,
+                 mad_receive_CHEAPER);
 
-            mad_pack(connection,
-                     buffer4,
-                     len4,
-                     mad_send_CHEAPER,
-                     mad_receive_CHEAPER);
+        //DISP("################################");
 
-            //DISP("################################");
+        mad_pack(connection,
+                 buffer4,
+                 len4,
+                 mad_send_CHEAPER,
+                 mad_receive_EXPRESS);
+        //
+        ////DISP("################################");
+        //
+        //mad_pack(connection,
+        //         buffer5,
+        //         len5,
+        //         mad_send_CHEAPER,
+        //         mad_receive_CHEAPER);
 
-            mad_pack(connection,
-                     buffer5,
-                     len5,
-                     mad_send_CHEAPER,
-                     mad_receive_CHEAPER);
+        //DISP("################################");
 
-            //DISP("################################");
+        mad_end_packing(connection);
 
-            mad_end_packing(connection);
+        TBX_FREE(buffer1);
+        TBX_FREE(buffer2);
+        TBX_FREE(buffer3);
+        TBX_FREE(buffer4);
+        TBX_FREE(buffer5);
 
-            TBX_FREE(buffer1);
-            TBX_FREE(buffer2);
-            TBX_FREE(buffer3);
-            TBX_FREE(buffer4);
-            TBX_FREE(buffer5);
+    } else if (my_local_rank == 1) {
+        unsigned int len1, len2, len3, len4, len5;
+        char *buffer1, *buffer2, *buffer3, *buffer4, *buffer5;
 
-        } else if (my_local_rank == 0) {
-            unsigned int len1, len2, len3, len4, len5;
-            char *buffer1, *buffer2, *buffer3, *buffer4, *buffer5;
+        DISP_VAL("Je suis le récepteur -----> ", my_local_rank);
+        len1 = 6;
+        buffer1 = init_data(len1);
 
-            DISP_VAL("Je suis le récepteur -----> ", my_local_rank);
-            len1 = 6;
-            buffer1 = init_and_fill_data(len1);
+        len2 = 128;
+        buffer2 = init_data(len2);
 
-            len2 = 128;
-            buffer2 = init_and_fill_data(len2);
+        len3 = 1048576;
+        buffer3 = init_data(len3);
 
-            len3 = 1048576;
-            buffer3 = init_and_fill_data(len3);
+        len4 = 4;
+        buffer4 = init_data(len4);
 
-            len4 = 4;
-            buffer4 = init_and_fill_data(len4);
-
-            len5 = 1048576;
-            buffer5 = init_and_fill_data(len5);
+        len5 = 1048576;
+        buffer5 = init_data(len5);
 
 
-            connection = mad_begin_unpacking(channel);
-            mad_unpack(connection,
-                       buffer1,
-                       len1,
-                       mad_send_CHEAPER,
-                       mad_receive_CHEAPER);
+        connection = mad_begin_unpacking(channel);
+        //mad_unpack(connection,
+        //           buffer1,
+        //           len1,
+        //           mad_send_CHEAPER,
+        //           mad_receive_EXPRESS);
+        //
+        ////DISP("################################");
+        //
+        mad_unpack(connection,
+                   buffer2,
+                   len2,
+                   mad_send_CHEAPER,
+                   mad_receive_CHEAPER);
 
-            //DISP("################################");
+        //DISP("################################");
 
-            mad_unpack(connection,
-                       buffer2,
-                       len2,
-                       mad_send_CHEAPER,
-                       mad_receive_CHEAPER);
+        //sleep(2);
+        mad_unpack(connection,
+                   buffer3,
+                   len3,
+                   mad_send_CHEAPER,
+                   mad_receive_CHEAPER);
 
-            //DISP("################################");
+        //DISP("################################");
 
-            mad_unpack(connection,
-                       buffer3,
-                       len3,
-                       mad_send_CHEAPER,
-                       mad_receive_EXPRESS);
+        mad_unpack(connection,
+                   buffer4,
+                   len4,
+                   mad_send_CHEAPER,
+                   mad_receive_EXPRESS);
+        //
+        ////DISP("################################");
+        //mad_unpack(connection,
+        //           buffer5,
+        //           len5,
+        //           mad_send_CHEAPER,
+        //           mad_receive_CHEAPER);
 
-            //DISP("################################");
+        //DISP("################################");
 
-            mad_unpack(connection,
-                       buffer4,
-                       len4,
-                       mad_send_CHEAPER,
-                       mad_receive_CHEAPER);
+        mad_end_unpacking(connection);
 
-            //DISP("################################");
-            mad_unpack(connection,
-                       buffer5,
-                       len5,
-                       mad_send_CHEAPER,
-                       mad_receive_CHEAPER);
+        //verify_data(buffer1, len1);
+        verify_data(buffer2, len2);
+        verify_data(buffer3, len3);
+        verify_data(buffer4, len4);
+        //verify_data(buffer5, len5);
 
-            //DISP("################################");
-
-            mad_end_unpacking(connection);
-
-            verify_data(buffer1, len1);
-            verify_data(buffer2, len2);
-            verify_data(buffer3, len3);
-            verify_data(buffer4, len4);
-            verify_data(buffer5, len5);
-
-            TBX_FREE(buffer1);
-            TBX_FREE(buffer2);
-            TBX_FREE(buffer3);
-            TBX_FREE(buffer4);
-            TBX_FREE(buffer5);
-        }
-        common_exit(NULL);
-        LOG_OUT();
-        return 0;
+        TBX_FREE(buffer1);
+        TBX_FREE(buffer2);
+        TBX_FREE(buffer3);
+        TBX_FREE(buffer4);
+        TBX_FREE(buffer5);
+    }
+    common_exit(NULL);
+    LOG_OUT();
+    return 0;
 }

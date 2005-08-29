@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -313,6 +312,15 @@ connection_exit(p_mad_channel_t ch)
       TBX_FREE(out->buffer_group_list);
       TBX_FREE(out->pair_list);
 
+
+      //DISP("-->free packs_list");
+      tbx_slist_free(in->packs_list);
+      in->packs_list = NULL;
+
+      tbx_slist_free(out->packs_list);
+      out->packs_list = NULL;
+      //DISP("<--free packs_list");
+
       memset(in,  0, sizeof(mad_connection_t));
       memset(out, 0, sizeof(mad_connection_t));
 
@@ -359,6 +367,11 @@ connection_exit(p_mad_channel_t ch)
       TBX_FREE(cnx->buffer_list);
       TBX_FREE(cnx->buffer_group_list);
       TBX_FREE(cnx->pair_list);
+
+      //DISP("-->free packs_list");
+      tbx_slist_free(cnx->packs_list);
+      cnx->packs_list = NULL;
+      //DISP("<--free packs_list");
 
       memset(cnx, 0, sizeof(mad_connection_t));
       TBX_FREE(cnx);
@@ -421,6 +434,16 @@ common_channel_exit(p_mad_channel_t mad_channel)
 
   tbx_darray_free(mad_channel->sub_channel_darray);
   mad_channel->sub_channel_darray = NULL;
+
+  //DISP("-->free UNpacks_list");
+  tbx_slist_free(mad_channel->unpacks_list);
+  mad_channel->unpacks_list = NULL;
+  //DISP("<--free UNpacks_list");
+
+  //DISP("-->free rdv list");
+  tbx_slist_free(mad_channel->rdv);
+  mad_channel->rdv = NULL;
+  //DISP("<--free rdv list");
 }
 
 #ifdef MARCEL
@@ -553,7 +576,7 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 #ifdef MARCEL
       p_mad_channel_t       channel       = NULL;
       p_mad_channel_t       vchannel      = NULL;
-#endif // MARCEL      
+#endif // MARCEL
       char                 *channel_name  = NULL;
       char                 *vchannel_name = NULL;
 
@@ -579,7 +602,7 @@ mad_dir_vchannel_disconnect(p_mad_madeleine_t madeleine)
 	FAILURE("channel not found");
 
       mad_forward_stop_reception(vchannel, channel, lrank);
-#endif // MARCEL      
+#endif // MARCEL
       mad_leonie_send_int(-1);
       TBX_FREE(channel_name);
       TBX_FREE(vchannel_name);
@@ -883,13 +906,56 @@ mad_dir_channels_exit(p_mad_madeleine_t madeleine)
 }
 
 void
+mad_close_track_set(p_mad_adapter_t adapter,
+                    p_mad_track_set_t track_set){
+  p_mad_driver_interface_t interface = NULL;
+  unsigned int i = 0;
+
+  LOG_IN();
+  interface = adapter->driver->interface;
+
+  for(i = 0; i < track_set->nb_track; i++){
+    p_mad_track_t track = NULL;
+
+    //DISP("-->free track");
+    track = track_set->tracks_tab[i];
+
+    if(track->pre_posted && interface->remove_all_pre_posted){
+      interface->remove_all_pre_posted(adapter, track);
+    }
+
+    if(interface->close_track){
+      interface->close_track(track);
+    }
+    TBX_FREE(track);
+    //DISP("<--free track");
+  }
+
+  //DISP("-->free track_htable");
+  tbx_htable_cleanup_and_free(track_set->tracks_htable);
+  //DISP("<--free track_htable");
+
+  //DISP("-->free track_pipeline");
+  tbx_slist_free(track_set->pipeline);
+  //DISP("<--free track_pipeline");
+
+  if(interface->close_track_set)
+    interface->close_track_set(track_set);
+
+  TBX_FREE(track_set);
+  LOG_OUT();
+}
+
+
+
+void
 mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 {
   p_mad_session_t      session             = NULL;
   p_mad_directory_t    dir                 = NULL;
   p_tbx_htable_t       mad_network_htable  = NULL;
   p_tbx_htable_t       mad_device_htable   = NULL;
-  
+
   LOG_IN();
   session            = madeleine->session;
   dir                = madeleine->dir;
@@ -940,7 +1006,13 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 
 	  TRACE_STR("Shutting down adapter", adapter_name);
 
-	  if (interface->adapter_exit)
+          //tack_set
+          mad_close_track_set(mad_adapter,
+                              mad_adapter->s_track_set);
+          mad_close_track_set(mad_adapter,
+                              mad_adapter->r_track_set);
+
+          if (interface->adapter_exit)
 	    interface->adapter_exit(mad_adapter);
 
 	  if (mad_adapter->selector)
@@ -964,12 +1036,36 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  tbx_htable_free(mad_adapter->channel_htable);
 	  mad_adapter->channel_htable = NULL;
 
-	  TBX_FREE(mad_adapter);
+          //DISP("-->free established cnx hatble");
+          tbx_htable_cleanup_and_free(mad_adapter->established_connection_htable);
+          //DISP("<--free established cnx hatble");
+
+          //DISP("-->free s_ready_msg_list");
+          tbx_slist_free(mad_adapter->s_ready_msg_list);
+          mad_adapter->s_ready_msg_list = NULL;
+          //DISP("<--free s_ready_msg_list");
+
+          //DISP("-->free r_ready_msg_list");
+          tbx_slist_free(mad_adapter->r_ready_msg_list);
+          mad_adapter->r_ready_msg_list = NULL;
+          //DISP("<--free r_ready_msg_list");
+
+          //DISP("-->free unexpected_list");
+          tbx_slist_free(mad_adapter->unexpected_msg_list);
+          mad_adapter->unexpected_msg_list = NULL;
+          //DISP("<--free unexpected_list");
+
+          //DISP("-->free waiting acknowlegment_list");
+          tbx_slist_free(mad_adapter->waiting_acknowlegment_list);
+          mad_adapter->waiting_acknowlegment_list = NULL;
+          //DISP("<--free waiting acknowlegment_list");
+
+          TBX_FREE(mad_adapter);
 	  mad_adapter = NULL;
 
 	  mad_leonie_send_int(-1);
           TBX_FREE(adapter_name);
-	}
+        }
       TBX_FREE(driver_name);
     }
 
@@ -1018,6 +1114,16 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  TBX_FREE(mad_driver->specific);
 	  mad_driver->specific = NULL;
 	}
+
+      //DISP("-->free s_msg_list");
+      tbx_slist_free(mad_driver->s_msg_slist);
+      mad_driver->s_msg_slist = NULL;
+      //DISP("<--free s_msg_list");
+
+      //DISP("-->free r_msg_list");
+      tbx_slist_free(mad_driver->r_msg_slist);
+      mad_driver->r_msg_slist = NULL;
+      //DISP("<--free r_msg_list");
 
       mad_driver->interface = NULL;
 
@@ -1082,142 +1188,6 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
  }
 
   LOG_OUT();
-
-  //p_mad_session_t      session             = NULL;
-  //p_mad_directory_t    dir                 = NULL;
-  //p_tbx_htable_t       mad_driver_htable   = NULL;
-  //
-  //LOG_IN();
-  //session           = madeleine->session;
-  //dir               = madeleine->dir;
-  //mad_driver_htable = madeleine->driver_htable;
-  //
-  //// Adapters
-  //while (1)
-  //  {
-  //    p_mad_driver_t            mad_driver         = NULL;
-  //    p_mad_driver_interface_t  interface          = NULL;
-  //    p_tbx_htable_t            mad_adapter_htable = NULL;
-  //    char                     *driver_name        = NULL;
-  //
-  //    driver_name = mad_leonie_receive_string();
-  //    if (tbx_streq(driver_name, "-"))
-  //      {
-  //        TBX_FREE(driver_name);
-  //        break;
-  //      }
-  //
-  //    mad_driver = tbx_htable_get(mad_driver_htable, driver_name);
-  //    if (!mad_driver)
-  //      FAILURE("driver not available");
-  //
-  //    TRACE_STR("Shutting down adapters of driver", driver_name);
-  //    interface = mad_driver->interface;
-  //    //mad_leonie_send_int(-1);
-  //
-  //    mad_adapter_htable = mad_driver->adapter_htable;
-  //
-  //    while (1)
-  //      {
-  //        p_mad_adapter_t  mad_adapter  = NULL;
-  //        char            *adapter_name = NULL;
-  //
-  //        adapter_name = mad_leonie_receive_string();
-  //        if (tbx_streq(adapter_name, "-"))
-  //          {
-  //            TBX_FREE(adapter_name);
-  //            break;
-  //          }
-  //
-  //        mad_adapter =
-  //          tbx_htable_extract(mad_adapter_htable, adapter_name);
-  //        if (!mad_adapter)
-  //          FAILURE("adapter not found");
-  //
-  //        TRACE_STR("Shutting down adapter", adapter_name);
-  //
-  //        if (interface->adapter_exit)
-  //          interface->adapter_exit(mad_adapter);
-  //
-  //        if (mad_adapter->selector)
-  //          {
-  //            TBX_FREE(mad_adapter->selector);
-  //            mad_adapter->selector = NULL;
-  //          }
-  //
-  //        if (mad_adapter->parameter)
-  //          {
-  //            TBX_FREE(mad_adapter->parameter);
-  //            mad_adapter->parameter = NULL;
-  //          }
-  //
-  //        if (mad_adapter->specific)
-  //          {
-  //            TBX_FREE(mad_adapter->specific);
-  //            mad_adapter->specific = NULL;
-  //          }
-  //
-  //        tbx_htable_free(mad_adapter->channel_htable);
-  //        mad_adapter->channel_htable = NULL;
-  //
-  //        TBX_FREE(mad_adapter);
-  //        mad_adapter = NULL;
-  //
-  //        mad_leonie_send_int(-1);
-  //        TBX_FREE(adapter_name);
-  //      }
-  //
-  //    tbx_htable_free(mad_adapter_htable);
-  //    mad_adapter_htable         = NULL;
-  //    mad_driver->adapter_htable = NULL;
-  //    TBX_FREE(driver_name);
-  //  }
-  //
-  //// Drivers
-  //while (1)
-  //  {
-  //    p_mad_driver_t            mad_driver  = NULL;
-  //    p_mad_driver_interface_t  interface   = NULL;
-  //    char                     *driver_name = NULL;
-  //
-  //    driver_name = mad_leonie_receive_string();
-  //    if (tbx_streq(driver_name, "-"))
-  //      {
-  //        TBX_FREE(driver_name);
-  //        break;
-  //      }
-  //
-  //    mad_driver =
-  //      tbx_htable_extract(mad_driver_htable, driver_name);
-  //    if (!mad_driver)
-  //      FAILURE("driver not available");
-  //
-  //    TRACE_STR("Shutting down driver", driver_name);
-  //    interface = mad_driver->interface;
-  //    if (interface->driver_exit)
-  //      interface->driver_exit(mad_driver);
-  //
-  //    if (mad_driver->specific)
-  //      {
-  //        TBX_FREE(mad_driver->specific);
-  //        mad_driver->specific = NULL;
-  //      }
-  //
-  //    TBX_FREE(interface);
-  //    interface             = NULL;
-  //    mad_driver->interface = NULL;
-  //
-  //    TBX_FREE(mad_driver->name);
-  //    mad_driver->name = NULL;
-  //
-  //    TBX_FREE(mad_driver);
-  //    mad_driver = NULL;
-  //
-  //    mad_leonie_send_int(-1);
-  //    TBX_FREE(driver_name);
-  //  }
-  //
-  //LOG_OUT();
 }
 
 void
@@ -1284,29 +1254,6 @@ void
 mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
 {
   LOG_IN();
-  //TBX_FREE(madeleine->dir);
-  //session_exit(madeleine->session);
-  //
-  //settings_exit(madeleine->settings);
-  //madeleine->settings = NULL;
-  //
-  //while (!tbx_slist_is_nil(madeleine->public_channel_slist))
-  //  {
-  //    tbx_slist_extract(madeleine->public_channel_slist);
-  //  }
-  //
-  //tbx_slist_free(madeleine->public_channel_slist);
-  //madeleine->public_channel_slist = NULL;
-  //
-  //tbx_htable_free(madeleine->channel_htable);
-  //madeleine->channel_htable = NULL;
-  //
-  //tbx_htable_free(madeleine->driver_htable);
-  //madeleine->driver_htable = NULL;
-  //
-  //TBX_FREE(madeleine);
-
-
   TBX_FREE(madeleine->dir);
   session_exit(madeleine->session);
 

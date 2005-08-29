@@ -85,54 +85,62 @@ mad_mx_adapter_exit(p_mad_adapter_t);
 void
 mad_mx_driver_exit(p_mad_driver_t);
 
-#ifdef MAD_MESSAGE_POLLING
-p_mad_connection_t
-mad_mx_poll_message(p_mad_channel_t);
-#endif /* MAD_MESSAGE_POLLING */
 
 void
 mad_mx_new_message(p_mad_connection_t);
 
-void
-mad_mx_finalize_message(p_mad_connection_t);
+//void
+//mad_mx_finalize_message(p_mad_connection_t);
 
 p_mad_connection_t
 mad_mx_receive_message(p_mad_channel_t);
 
-void
-mad_mx_send_iovec(p_mad_link_t,
-                  p_mad_pipeline_t,
-                  p_mad_on_going_t);
-
-void
-mad_mx_receive_iovec(p_mad_link_t,
-                     p_mad_on_going_t);
-
-void
-mad_mx_s_make_progress(p_mad_adapter_t);
-
-void
-mad_mx_r_make_progress(p_mad_adapter_t, p_mad_channel_t);
 
 tbx_bool_t
 mad_mx_need_rdv(p_mad_iovec_t);
 
-unsigned int
-mad_mx_limit_size(void);
+tbx_bool_t
+mad_mx_buffer_need_rdv(size_t);
+
+uint32_t
+mad_mx_gather_scatter_length_max(void);
+
+uint32_t
+mad_mx_cpy_limit_size(void);
+
+tbx_bool_t
+mad_mx_test(p_mad_track_t);
 
 void
-mad_mx_create_areas(p_mad_iovec_t);
+mad_mx_wait(p_mad_track_t);
+
+//void
+//mad_mx_open_track(p_mad_adapter_t, p_mad_track_t);
+void
+mad_mx_open_track(p_mad_adapter_t, uint32_t);
+
+//void
+//mad_mx_isend(p_mad_track_t,
+//             p_mad_connection_t,
+//             struct iovec *, uint32_t);
+void
+mad_mx_isend(p_mad_track_t,
+             ntbx_process_lrank_t,
+             struct iovec *, uint32_t);
 
 void
-mad_mx_sending_track_init(p_mad_adapter_t);
+mad_mx_irecv(p_mad_track_t,
+             //p_mad_connection_t,
+             struct iovec *, uint32_t);
 
 void
-mad_mx_reception_track_init(p_mad_adapter_t);
+mad_mx_add_pre_posted(p_mad_adapter_t,
+                      p_mad_track_t);
+
+void 
+mad_mx_clean_pre_posted(p_mad_iovec_t);
 
 void
-mad_mx_sending_track_exit(p_mad_adapter_t);
-
-void
-mad_mx_reception_track_exit(p_mad_adapter_t);
-
+mad_mx_remove_all_pre_posted(p_mad_adapter_t,
+                             p_mad_track_t);
 #endif /* MAD_MX_H */

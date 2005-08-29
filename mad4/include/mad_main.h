@@ -90,7 +90,7 @@ typedef struct s_mad_madeleine
     p_tbx_htable_t      channel_htable;
     p_tbx_slist_t       public_channel_slist;
 
-    p_mad_channel_t  *channel_tab;
+    p_mad_channel_t    *channel_tab;
 } mad_madeleine_t;
 
 /*
@@ -233,7 +233,7 @@ mad_directory_update(p_mad_madeleine_t madeleine);
 void
 mad_directory_rollback(p_mad_madeleine_t madeleine);
 
-volatile int
+int
 mad_directory_is_updated(p_mad_madeleine_t madeleine);
 
 #endif /* MAD_MAIN_H */

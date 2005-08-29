@@ -25,9 +25,9 @@
 #include <unistd.h>
 #include "pm2_common.h"
 
-#define NB_LOOPS 10000
+#define NB_LOOPS 2
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  (2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  128 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -41,8 +41,8 @@ init_data(unsigned int length){
 
 char *
 init_and_fill_data(unsigned int length){
-    unsigned int i         = 0;
-    char *buffer = NULL;
+    unsigned int i = 0;
+    char *buffer   = NULL;
     LOG_IN();
 
     buffer = TBX_MALLOC(length);
@@ -149,10 +149,15 @@ client(p_mad_channel_t channel){
 
         TBX_GET_TICK(t2);
         sum = TBX_TIMING_DELAY(t1, t2);
-        DISP("%9d   %g   %g",
-             cur_length,
-             sum / (NB_LOOPS * 2),
-             (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
+
+        printf("latence : %f \n", sum / (NB_LOOPS * 2));
+        printf("debit :   %f \n", (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
+
+
+        //DISP("%9d   %g   %g",
+        //     cur_length,
+        //     sum / (NB_LOOPS * 2),
+        //     (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
         // next length
         cur_length*=2;

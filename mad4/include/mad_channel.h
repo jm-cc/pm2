@@ -78,6 +78,7 @@ typedef struct s_mad_channel
 
     p_tbx_slist_t     unpacks_list;
     unsigned int      sequence;
+    p_tbx_slist_t     rdv;
 
     p_mad_driver_specific_t specific;
 } mad_channel_t;

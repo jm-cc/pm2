@@ -35,7 +35,7 @@
  * tbx_safe_malloc
  * ---------------
  */
-typedef enum 
+typedef enum
 {
   tbx_safe_malloc_ERRORS_ONLY,
   tbx_safe_malloc_VERBOSE
@@ -48,7 +48,7 @@ typedef enum
  */
 typedef struct s_tbx_memory
 {
-  TBX_SHARED; 
+  TBX_SHARED;
   void    *first_mem;
   void    *current_mem;
   size_t   block_len;

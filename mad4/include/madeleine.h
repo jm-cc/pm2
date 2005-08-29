@@ -63,9 +63,11 @@
 #include "mad_modes.h"
 #include "mad_buffers.h"
 #include "mad_link.h"
-#include "mad_connection.h"
 
 #include "mad_pending_communication.h"
+#include "mad_connection.h"
+
+
 #include "mad_iovec_builder.h"
 #include "mad_optimizer.h"
 

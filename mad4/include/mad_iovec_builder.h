@@ -42,7 +42,7 @@ unsigned int
 mad_iovec_begin_struct_iovec(p_mad_iovec_t mad_iovec,
                              rank_t my_rank);
 unsigned int
-mad_iovec_add_header_data(p_mad_iovec_t mad_iovec,
+mad_iovec_add_data_header(p_mad_iovec_t mad_iovec,
                           unsigned int index,
                           channel_id_t msg_channel_id,
                           sequence_t msg_seq_nb,
@@ -62,11 +62,11 @@ mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
                   sequence_t msg_seq_nb);
 
 
-unsigned int
-mad_iovec_add_not_ready(p_mad_iovec_t mad_iovec,
-                        unsigned int index,
-                        channel_id_t msg_channel_id,
-                        sequence_t msg_seq_nb);
+//unsigned int
+//mad_iovec_add_not_ready(p_mad_iovec_t mad_iovec,
+//                        unsigned int index,
+//                        channel_id_t msg_channel_id,
+//                        sequence_t msg_seq_nb);
 
 
 void
@@ -101,12 +101,7 @@ mad_iovec_search(p_tbx_slist_t list,
                  rank_t remote_rank,
                  sequence_t  sequence);
 
-void
-mad_iovec_exploit_og(p_mad_adapter_t a,
-                     p_mad_on_going_t og);
-
-
-void
+tbx_bool_t
 mad_iovec_exploit_msg(p_mad_adapter_t a,
                       void * msg);
 
@@ -114,8 +109,14 @@ void
 mad_iovec_print(p_mad_iovec_t mad_iovec);
 
 void
-mad_iovec_s_check(p_tbx_slist_t list,
-                  rank_t remote_rank,
-                  size_t length,
+mad_iovec_print_iovec(struct iovec *iovec);
+
+void
+mad_iovec_s_check(p_mad_adapter_t adapter,
                   p_mad_iovec_t mad_iovec);
+
+tbx_bool_t
+mad_iovec_check_unexpected_rdv(p_mad_adapter_t adapter,
+                               p_mad_iovec_t mad_iovec);
+
 #endif /* MAD_IOVEC_BUILDER_H */

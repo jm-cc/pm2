@@ -25,24 +25,21 @@
  * Structures / enums
  * -------------------
  */
-typedef enum e_mad_connection_nature
-    {
-        mad_connection_nature_uninitialized = 0,
-        mad_connection_nature_regular,
-        mad_connection_nature_direct_virtual,
-        mad_connection_nature_indirect_virtual,
-        mad_connection_nature_mux,
-    } mad_connection_nature_t, *p_mad_connection_nature_t;
+typedef enum e_mad_connection_nature{
+    mad_connection_nature_uninitialized = 0,
+    mad_connection_nature_regular,
+    mad_connection_nature_direct_virtual,
+    mad_connection_nature_indirect_virtual,
+    mad_connection_nature_mux,
+} mad_connection_nature_t, *p_mad_connection_nature_t;
 
-typedef enum e_mad_connection_way
-    {
-        mad_unknown_connection = 0,
-        mad_incoming_connection,
-        mad_outgoing_connection,
-    } mad_connection_way_t, *p_mad_connection_way_t;
+typedef enum e_mad_connection_way{
+    mad_unknown_connection = 0,
+    mad_incoming_connection,
+    mad_outgoing_connection,
+} mad_connection_way_t, *p_mad_connection_way_t;
 
-typedef struct s_mad_connection
-{
+typedef struct s_mad_connection{
     TBX_SHARED;
 
     /* Common use fields */
@@ -99,7 +96,7 @@ typedef struct s_mad_connection
     tbx_bool_t               more_data;
 
     p_tbx_slist_t  packs_list;
-    sequence_t   sequence;
+    sequence_t     sequence;
 
     /* Driver specific data */
     p_mad_driver_specific_t  specific;

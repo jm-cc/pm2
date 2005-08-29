@@ -41,23 +41,21 @@ typedef struct s_mad_adapter
     p_tbx_htable_t           channel_htable;
     p_mad_dir_adapter_t      dir_adapter;
 
-    /* use for the pending communications */
-    p_mad_track_t s_track;
-    p_mad_track_t r_track;
+    /* pending communications */
+    p_mad_track_set_t s_track_set;
+    p_mad_track_set_t r_track_set;
 
-    /* for msg waiting for a transmission */
-    p_tbx_slist_t sending_list;
-    p_tbx_slist_t receiving_list;
+    p_tbx_htable_t established_connection_htable;
+
+    /* msg waiting for a transmission */
+    p_tbx_slist_t s_ready_msg_list;
+    p_tbx_slist_t r_ready_msg_list;
 
     /* unexpected msg */
-    p_tbx_slist_t waiting_list;
+    p_tbx_slist_t unexpected_msg_list;
 
-    /* large msg waiting for an acknowlegment */
-    p_tbx_slist_t            large_mad_iovec_list;
-
-    /* waiting rdv */
-    p_tbx_slist_t            rdv_list;
-
+    /* msg waiting for an acknowlegment */
+    p_tbx_slist_t waiting_acknowlegment_list;
 
     p_mad_driver_specific_t  specific;
 } mad_adapter_t;

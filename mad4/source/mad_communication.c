@@ -35,13 +35,9 @@ mad_begin_packing(p_mad_channel_t      channel,
     connection  = tbx_darray_get(channel->out_connection_darray, remote_rank);
 
     // lock the connection
-#ifdef MARCEL
-    marcel_mutex_lock(&(connection->lock_mutex));
-#else /* MARCEL */
     if (connection->lock == tbx_true)
         FAILURE("mad_begin_packing: connection dead lock");
     connection->lock = tbx_true;
-#endif /* MARCEL*/
 
     if (interface->new_message)
         interface->new_message(connection);
@@ -82,8 +78,7 @@ mad_pack(p_mad_connection_t   connection,
     mad_iovec->channel = channel;
     mad_iovec->send_mode = send_mode;
     mad_iovec->receive_mode = receive_mode;
-    mad_iovec_add_data(mad_iovec, buffer, buffer_length, 0);
-
+    mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 0);
     tbx_slist_append(driver->s_msg_slist, mad_iovec);
     tbx_slist_append(connection->packs_list, mad_iovec);
 
@@ -153,8 +148,8 @@ mad_end_packing(p_mad_connection_t connection){
 
     // flush packs
     while(packs_list->length){
-        mad_s_make_progress(driver, adapter);
-        mad_r_make_progress(driver, adapter, channel);
+        mad_s_make_progress(adapter);
+        mad_r_make_progress(adapter);
     }
 
     if (interface->finalize_message)
@@ -164,12 +159,7 @@ mad_end_packing(p_mad_connection_t connection){
     connection->sequence = 0;
 
     // unlock the connection
-#ifdef MARCEL
-    marcel_mutex_unlock(&(connection->lock_mutex));
-#else // MARCEL
     connection->lock = tbx_false;
-#endif // MARCEL
-
     LOG_OUT();
 }
 
@@ -186,8 +176,8 @@ mad_wait_packs(p_mad_connection_t connection){
 
     // flush packs
     while(connection->packs_list->length){
-        mad_s_make_progress(driver, adapter);
-        mad_r_make_progress(driver, adapter, channel);
+        mad_s_make_progress(adapter);
+        mad_r_make_progress(adapter);
     }
     LOG_OUT();
 }
@@ -199,13 +189,9 @@ mad_begin_unpacking(p_mad_channel_t channel){
     LOG_IN();
 
     // lock the channel
-#ifdef MARCEL
-  marcel_mutex_lock(&(channel->reception_lock_mutex));
-#else /* MARCEL */
-  if (channel->reception_lock == tbx_true)
+    if (channel->reception_lock == tbx_true)
         FAILURE("mad_begin_unpacking: reception dead lock");
     channel->reception_lock = tbx_true;
-#endif /* MARCEL */
 
     interface = channel->adapter->driver->interface;
     connection = interface->receive_message(channel);
@@ -233,7 +219,7 @@ mad_unpack(p_mad_connection_t    connection,
     p_mad_iovec_t             mad_iovec   = NULL;
     unsigned int              seq         = -1;
     LOG_IN();
-
+    //DISP("-->unpack");
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -248,18 +234,24 @@ mad_unpack(p_mad_connection_t    connection,
     mad_iovec->receive_mode = receive_mode;
     mad_iovec->area_nb_seg[0] = 1;
     mad_iovec->channel = channel;
-    mad_iovec_add_data(mad_iovec, buffer, buffer_length, 0);
+    mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 0);
 
-    tbx_slist_append(driver->r_msg_slist, mad_iovec);
+    //si il a besoin d'un rdv
+    if(driver->interface->buffer_need_rdv(buffer_length)){
+        mad_iovec_check_unexpected_rdv(adapter, mad_iovec);
+    }
     tbx_slist_append(channel->unpacks_list, mad_iovec);
+    tbx_slist_append(driver->r_msg_slist, mad_iovec);
+
 
     if(receive_mode == mad_receive_EXPRESS){
         while(channel->unpacks_list->length){
-            mad_r_make_progress(driver, adapter, channel);
-            mad_s_make_progress(driver, adapter);
+            mad_r_make_progress(adapter);
+            mad_s_make_progress(adapter);
         }
     }
     LOG_OUT();
+
 }
 
 
@@ -321,10 +313,12 @@ mad_end_unpacking(p_mad_connection_t connection){
     driver = adapter->driver;
     interface = driver->interface;
 
+    //DISP("-->end_unpacking");
+
     // flush unpacks
     while(channel->unpacks_list->length){
-        mad_r_make_progress(driver, adapter, channel);
-        mad_s_make_progress(driver, adapter);
+        mad_r_make_progress(adapter);
+        mad_s_make_progress(adapter);
     }
 
     if (interface->message_received)
@@ -334,13 +328,10 @@ mad_end_unpacking(p_mad_connection_t connection){
     channel->sequence = 0;
 
     // unlock the channel
-#ifdef MARCEL
-    marcel_mutex_unlock(&(connection->channel->reception_lock_mutex));
-#else // MARCEL
     channel->reception_lock = tbx_false;
-#endif //MARCEL
 
     LOG_OUT();
+    //DISP("<--end_unpacking");
 }
 
 void
@@ -355,8 +346,18 @@ mad_wait_unpacks(p_mad_connection_t connection){
     driver = adapter->driver;
 
     while(channel->unpacks_list->length){
-        mad_r_make_progress(driver, adapter, channel);
-        mad_s_make_progress(driver, adapter);
+        mad_r_make_progress(adapter);
+        mad_s_make_progress(adapter);
     }
     LOG_OUT();
 }
+
+//void
+//mad_wait_unpack(p_mad_iovec_t mad_iovec){
+//    LOG_IN();
+//    while(mad_iovec){
+//        mad_r_make_progress(adapter);
+//        mad_s_make_progress(adapter);
+//    }
+//    LOG_OUT();
+//}

@@ -168,6 +168,11 @@ void common_pre_init(int *argc, char *argv[],
    * - TBX services
    */
   mad_memory_manager_init(*argc, argv);
+
+#if defined (MAD4)
+  mad_iovec_init_allocators();
+#endif /* MAD4 */
+
 #ifdef MARCEL
   mad_forward_memory_manager_init(*argc, argv);
   mad_mux_memory_manager_init(*argc, argv);
@@ -276,6 +281,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_drivers_init(attr->madeleine, argc, &argv);
 #else /* MAD4 */
   mad_dir_driver_init(attr->madeleine, argc, &argv);
+  //mad_dir_driver_init(attr->madeleine);
 #endif /* MAD4 */
 
 #ifdef PM2

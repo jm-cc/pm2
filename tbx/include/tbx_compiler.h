@@ -135,6 +135,8 @@ void __memory_barrier(void);
 #  else
 #    define TBX_FMALLOC
 #  endif
+
+#  define __restrict
 #else
 #  error Sorry, your compiler is too old/not recognized.
 #endif

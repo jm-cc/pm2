@@ -745,9 +745,12 @@ void fastcall sched_exit(task_t * p)
 static inline void finish_task_switch(marcel_task_t *prev)
 {
 	/* note: pas de softirq ici, on est déjà en mode interruption */
-	ma_holder_t *prevh = ma_task_holder_rawlock(prev), *h;
+	ma_holder_t *prevh = ma_task_holder_rawlock(prev);
 	unsigned long prev_task_flags;
+#ifdef MARCEL_BUBBLE_EXPLODE
+	ma_holder_t *h;
 	marcel_bubble_t *bubble;
+#endif
 
 	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)
 				/* garde-fou pour éviter de s'endormir

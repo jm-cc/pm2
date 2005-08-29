@@ -80,10 +80,9 @@ static __tbx_inline__ unsigned long ma_generic_fls(unsigned long x)
 	if (!x)
 		return 0;
 #if MA_BITS_PER_LONG >= 64
-	if (!(x & 0xffffffffffff0000UL)) {
-		x <<= 32;
-		r -= 32;
-	}
+	if ((x & 0xffffffff00000000UL)) {
+		x >>= 32;
+	} else r -= 32;
 #endif
 	if (!(x & 0xffff0000UL)) {
 		x <<= 16;

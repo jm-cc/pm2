@@ -102,7 +102,8 @@ int prefix_mutex_init (prefix_mutex_t *mutex,
         __prefix_init_lock(&mutex->__data.__lock);
 	return 0;
 }
-]], [[PMARCEL LPT]])
+]], [[PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
      /*****************/
      /* mutex_destroy */
@@ -121,7 +122,8 @@ int prefix_mutex_destroy(prefix_mutex_t * mutex)
 #endif
   return 0;
 }
-]])
+]],[[MARCEL PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
 
      /**************/
@@ -197,7 +199,8 @@ int prefix_mutex_lock(prefix_mutex_t * mutex)
 	
 	return 0;
 }
-]], [[PMARCEL LPT]])
+]], [[PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
      /*****************/
      /* mutex_trylock */
@@ -265,7 +268,8 @@ int prefix_mutex_trylock(prefix_mutex_t * mutex)
 	
 	return EBUSY;
 }
-]], [[PMARCEL LPT]])
+]], [[PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
 #if 0
      /*******************/
@@ -384,7 +388,8 @@ int prefix_mutex_unlock(prefix_mutex_t * mutex)
 {
   return prefix_mutex_unlock_usercnt (mutex, 1);
 }
-]], [[PMARCEL LPT]])
+]], [[PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
      /******************/
      /* mutexattr_init */
@@ -416,7 +421,8 @@ int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 	
 	return 0;
 }
-]], [[PMARCEL LPT]])
+]], [[PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
      /*********************/
      /* mutexattr_destroy */
@@ -431,7 +437,8 @@ int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
 {
         return 0;
 }
-]])
+]],[[MARCEL PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 
 
 #if 0
@@ -544,7 +551,8 @@ DEF___PTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
       */
 #include <limits.h>
 
-static lpt_mutex_t once_masterlock = LPT_MUTEX_INITIALIZER;
+// XXX Vince, à corriger. On n'a pas lpt_mutex sur toutes les archis pour l'instant, donc j'ai mis un pmarcel_mutex pour que ça marchouille.
+static pmarcel_mutex_t once_masterlock = PMARCEL_MUTEX_INITIALIZER;
 //static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
 static int fork_generation = 0;	/* Child process increments this after fork. */
 
@@ -572,7 +580,7 @@ int prefix_once(prefix_once_t * once_control,
 	
 	state_changed = 0;
 	
-	lpt_mutex_lock(&once_masterlock);
+	pmarcel_mutex_lock(&once_masterlock);
 	
 	/* If this object was left in an IN_PROGRESS state in a parent
 	   process (indicated by stale generation field), reset it to NEVER. */
@@ -587,23 +595,24 @@ int prefix_once(prefix_once_t * once_control,
 	/* Here *once_control is stable and either NEVER or DONE. */
 	if (*once_control == NEVER) {
 		*once_control = IN_PROGRESS | fork_generation;
-		lpt_mutex_unlock(&once_masterlock);
+		pmarcel_mutex_unlock(&once_masterlock);
 //marcel_cleanup_push(marcel_once_cancelhandler, once_control);
 		init_routine();
 //		marcel_cleanup_pop(0);
-		lpt_mutex_lock(&once_masterlock);
+		pmarcel_mutex_lock(&once_masterlock);
 		WRITE_MEMORY_BARRIER();
 		*once_control = DONE;
 		state_changed = 1;
 	}
-	lpt_mutex_unlock(&once_masterlock);
+	pmarcel_mutex_unlock(&once_masterlock);
 	
 //if (state_changed)
 //		marcel_cond_broadcast(&once_finished);
 	
 	return 0;
 }
-]])
+]],[[MARCEL PMARCEL]])
+/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, once, (pthread_once_t *once_control,
 	                   void (*init_routine)(void)),

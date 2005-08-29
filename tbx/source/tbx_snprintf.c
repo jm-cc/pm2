@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 
+#ifndef MARCEL
 static inline int isdigit(int c) {
 	return (c>='0' && c<='9');
 }
@@ -444,3 +445,4 @@ int tbx_snprintf(char * buf, size_t size, const char *fmt, ...)
 	va_end(args);
 	return i;
 }
+#endif

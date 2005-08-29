@@ -67,13 +67,13 @@ enum {
   MARCEL_MUTEX_NORMAL,
 };
 
-#include <bits/wordsize.h>
+#include <asm/linux_types.h>
 REPLICATE([[dnl
 /* Mutex initializers.  */
 #define PREFIX_MUTEX_INITIALIZER \
   { }
 #ifdef __USE_GNU
-# if __WORDSIZE == 64
+# if MA_BITS_PER_LONG == 64
 #  define PREFIX_RECURSIVE_MUTEX_INITIALIZER_NP \
   { { 0, 0, 0, 0, PREFIX_MUTEX_RECURSIVE_NP } }
 #  define PREFIX_ERRORCHECK_MUTEX_INITIALIZER_NP \

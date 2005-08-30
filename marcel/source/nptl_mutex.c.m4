@@ -552,7 +552,7 @@ DEF___PTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
 #include <limits.h>
 
 // XXX Vince, à corriger. On n'a pas lpt_mutex sur toutes les archis pour l'instant, donc j'ai mis un pmarcel_mutex pour que ça marchouille.
-static pmarcel_mutex_t once_masterlock = PMARCEL_MUTEX_INITIALIZER;
+static marcel_mutex_t once_masterlock = MARCEL_MUTEX_INITIALIZER;
 //static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
 static int fork_generation = 0;	/* Child process increments this after fork. */
 
@@ -580,7 +580,7 @@ int prefix_once(prefix_once_t * once_control,
 	
 	state_changed = 0;
 	
-	pmarcel_mutex_lock(&once_masterlock);
+	marcel_mutex_lock(&once_masterlock);
 	
 	/* If this object was left in an IN_PROGRESS state in a parent
 	   process (indicated by stale generation field), reset it to NEVER. */
@@ -595,16 +595,16 @@ int prefix_once(prefix_once_t * once_control,
 	/* Here *once_control is stable and either NEVER or DONE. */
 	if (*once_control == NEVER) {
 		*once_control = IN_PROGRESS | fork_generation;
-		pmarcel_mutex_unlock(&once_masterlock);
+		marcel_mutex_unlock(&once_masterlock);
 //marcel_cleanup_push(marcel_once_cancelhandler, once_control);
 		init_routine();
 //		marcel_cleanup_pop(0);
-		pmarcel_mutex_lock(&once_masterlock);
+		marcel_mutex_lock(&once_masterlock);
 		WRITE_MEMORY_BARRIER();
 		*once_control = DONE;
 		state_changed = 1;
 	}
-	pmarcel_mutex_unlock(&once_masterlock);
+	marcel_mutex_unlock(&once_masterlock);
 	
 //if (state_changed)
 //		marcel_cond_broadcast(&once_finished);
@@ -706,19 +706,19 @@ DEF___PTHREAD(int, once, (pthread_once_t * once_control,
 
 void __pmarcel_once_fork_prepare(void)
 {
-  pmarcel_mutex_lock((pmarcel_mutex_t *)(void *)&once_masterlock);
+  marcel_mutex_lock((pmarcel_mutex_t *)(void *)&once_masterlock);
 }
 __DEF___PTHREAD(void, once_fork_prepare, (void), ())
 
 void __pmarcel_once_fork_parent(void)
 {
-  pmarcel_mutex_unlock((pmarcel_mutex_t *)(void *)&once_masterlock);
+  marcel_mutex_unlock((pmarcel_mutex_t *)(void *)&once_masterlock);
 }
 __DEF___PTHREAD(void, once_fork_parent, (void), ())
 
 void __pmarcel_once_fork_child(void)
 {
-  pmarcel_mutex_init((pmarcel_mutex_t *)(void *)&once_masterlock, NULL);
+  marcel_mutex_init((pmarcel_mutex_t *)(void *)&once_masterlock, NULL);
   pmarcel_cond_init((pmarcel_cond_t *)(void *)&once_finished, NULL);
   if (fork_generation <= INT_MAX - 4)
     fork_generation += 4;	/* leave least significant two bits zero */

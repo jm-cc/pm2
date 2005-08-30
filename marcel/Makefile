@@ -31,9 +31,11 @@ endif
 
 SCHED_NAME=marcel
 
+M4_GEN_HEADERS=include/marcel_mutex.h 
+M4_GEN_FILES=$(M4_GEN_HEADERS) source/nptl_mutex.c
 MOD_HSPLITS_COMMON:=scripts/splitall_section_def.h
 MOD_HSPLITS_SOURCES:=$(shell echo `pwd` 1>&2 ; cd include ; \
-	grep -l '^\#section' *.h sys/*.h)
+	grep -l '^\#section' *.h sys/*.h) $(patsubst include/%,%,$(M4_GEN_HEADERS))
 
 #MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)
 MOD_HSPLITS_GENDIR = $(CURDIR)/autogen-include
@@ -153,8 +155,6 @@ linux:
 			echo "rm -v $$LST" ; \
 		fi
 
-M4_GEN_HEADERS=include/marcel_mutex.h 
-M4_GEN_FILES=$(M4_GEN_HEADERS) source/nptl_mutex.c
 dot_h: $(M4_GEN_FILES)
 
 $(M4_GEN_FILES): scripts/marcel.m4

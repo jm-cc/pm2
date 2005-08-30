@@ -553,7 +553,7 @@ DEF___PTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
 
 // XXX Vince, à corriger. On n'a pas lpt_mutex sur toutes les archis pour l'instant, donc j'ai mis un pmarcel_mutex pour que ça marchouille.
 static marcel_mutex_t once_masterlock = MARCEL_MUTEX_INITIALIZER;
-//static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
+static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
 static int fork_generation = 0;	/* Child process increments this after fork. */
 
 enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
@@ -561,6 +561,16 @@ enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
 /* If a thread is canceled while calling the init_routine out of
    marcel once, this handler will reset the once_control variable
    to the NEVER state. */
+
+static void marcel_once_cancelhandler(void *arg)
+{
+    marcel_once_t *once_control = arg;
+
+    marcel_mutex_lock(&once_masterlock);
+    *once_control = NEVER;
+    marcel_mutex_unlock(&once_masterlock);
+    marcel_cond_broadcast(&once_finished);
+}
 
 REPLICATE_CODE([[dnl
 int prefix_once(prefix_once_t * once_control, 
@@ -589,16 +599,16 @@ int prefix_once(prefix_once_t * once_control,
 	
 	/* If init_routine is being called from another routine, wait until
 	   it completes. */
-//	while ((*once_control & 3) == IN_PROGRESS) {
-//		marcel_cond_wait(&once_finished, &once_masterlock);
-//	}
+	while ((*once_control & 3) == IN_PROGRESS) {
+		marcel_cond_wait(&once_finished, &once_masterlock);
+	}
 	/* Here *once_control is stable and either NEVER or DONE. */
 	if (*once_control == NEVER) {
 		*once_control = IN_PROGRESS | fork_generation;
 		marcel_mutex_unlock(&once_masterlock);
-//marcel_cleanup_push(marcel_once_cancelhandler, once_control);
+		marcel_cleanup_push(marcel_once_cancelhandler, once_control);
 		init_routine();
-//		marcel_cleanup_pop(0);
+		marcel_cleanup_pop(0);
 		marcel_mutex_lock(&once_masterlock);
 		WRITE_MEMORY_BARRIER();
 		*once_control = DONE;
@@ -606,8 +616,8 @@ int prefix_once(prefix_once_t * once_control,
 	}
 	marcel_mutex_unlock(&once_masterlock);
 	
-//if (state_changed)
-//		marcel_cond_broadcast(&once_finished);
+	if (state_changed)
+		marcel_cond_broadcast(&once_finished);
 	
 	return 0;
 }
@@ -621,71 +631,6 @@ DEF___LIBPTHREAD(int, once, (pthread_once_t *once_control,
 	                   void (*init_routine)(void)),
 	       (once_control, init_routine))
 ]])
-
-#if 0
-static void marcel_once_cancelhandler(void *arg)
-{
-    marcel_once_t *once_control = arg;
-
-    marcel_mutex_lock(&once_masterlock);
-    *once_control = NEVER;
-    marcel_mutex_unlock(&once_masterlock);
-    marcel_cond_broadcast(&once_finished);
-}
-
-DEF_MARCEL_POSIX(int, once, (marcel_once_t * once_control, 
-                             void (*init_routine)(void)),
-		(once_control, init_routine))
-{
-  /* flag for doing the condition broadcast outside of mutex */
-  int state_changed;
-
-  /* Test without locking first for speed */
-  if (*once_control == DONE) {
-    READ_MEMORY_BARRIER();
-    return 0;
-  }
-  /* Lock and test again */
-
-  state_changed = 0;
-
-  marcel_mutex_lock(&once_masterlock);
-
-  /* If this object was left in an IN_PROGRESS state in a parent
-     process (indicated by stale generation field), reset it to NEVER. */
-  if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != fork_generation)
-    *once_control = NEVER;
-
-  /* If init_routine is being called from another routine, wait until
-     it completes. */
-  while ((*once_control & 3) == IN_PROGRESS) {
-    marcel_cond_wait(&once_finished, &once_masterlock);
-  }
-  /* Here *once_control is stable and either NEVER or DONE. */
-  if (*once_control == NEVER) {
-    *once_control = IN_PROGRESS | fork_generation;
-    marcel_mutex_unlock(&once_masterlock);
-    marcel_cleanup_push(marcel_once_cancelhandler, once_control);
-    init_routine();
-    marcel_cleanup_pop(0);
-    marcel_mutex_lock(&once_masterlock);
-    WRITE_MEMORY_BARRIER();
-    *once_control = DONE;
-    state_changed = 1;
-  }
-  marcel_mutex_unlock(&once_masterlock);
-
-  if (state_changed)
-    marcel_cond_broadcast(&once_finished);
-
-  return 0;
-}
-DEF_PTHREAD(int, once, (pthread_once_t * once_control, 
-                             void (*init_routine)(void)),
-		(once_control, init_routine))
-DEF___PTHREAD(int, once, (pthread_once_t * once_control, 
-                             void (*init_routine)(void)),
-		(once_control, init_routine))
 
 
 /*
@@ -727,5 +672,4 @@ void __pmarcel_once_fork_child(void)
 }
 __DEF___PTHREAD(void, once_fork_child, (void), ())
 
-#endif
 #endif

@@ -45,7 +45,7 @@ void clone_terminate(clone_t *c); /* Appele par le thread scalaire */
 
 extern marcel_key_t _clone_key, _slave_key;
 
-#define clone_my_delta()   ((long)marcel_getspecific(_clone_key))
+#define clone_my_delta()   ((unsigned long)marcel_getspecific(_clone_key))
 
 #define CLONE_END(c) if(clone_my_delta() == 0) \
                         clone_master_ends(c); \

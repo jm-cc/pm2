@@ -50,17 +50,17 @@ void clone_slave(clone_t *c)
   }
 
   marcel_setspecific(_clone_key,
-		     (any_t)((long)marcel_stackbase(marcel_self()) -
-			     (long)marcel_stackbase(c->master_pid)));
+		     (any_t)((unsigned long)marcel_stackbase(marcel_self()) -
+			     (unsigned long)marcel_stackbase(c->master_pid)));
 
   memcpy(&buf, &c->master_jb, sizeof(marcel_ctx_t));
 
-  (long)marcel_ctx_get_sp(buf) = (long)marcel_ctx_get_sp(buf) + clone_my_delta();
+  (unsigned long)marcel_ctx_get_sp(buf) = (unsigned long)marcel_ctx_get_sp(buf) + clone_my_delta();
 #ifdef marcel_ctx_get_fp
-  (long)marcel_ctx_get_fp(buf) = (long)marcel_ctx_get_fp(buf) + clone_my_delta();
+  (unsigned long)marcel_ctx_get_fp(buf) = (unsigned long)marcel_ctx_get_fp(buf) + clone_my_delta();
 #endif
 #ifdef marcel_ctx_get_bsp
-  (long)marcel_ctx_get_bsp(buf) = (long)marcel_ctx_get_bsp(buf) + clone_my_delta();
+  (unsigned long)marcel_ctx_get_bsp(buf) = (unsigned long)marcel_ctx_get_bsp(buf) + clone_my_delta();
 #endif
 
   marcel_mutex_unlock(&c->mutex);

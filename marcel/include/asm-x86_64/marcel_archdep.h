@@ -24,6 +24,8 @@
 
 #define TOP_STACK_FREE_AREA     128
 #define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_RSP])
+#define BSP_FIELD(buf)          ((buf)->__jmpbuf[JB_RBP])
+#define PC_FIELD(buf)           ((buf)->__jmpbuf[JB_PC])
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 

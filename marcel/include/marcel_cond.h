@@ -14,8 +14,6 @@
  * General Public License for more details.
  */
 
-#section common
-
 #depend "linux_spinlock.h[macros]"
 
 #section macros
@@ -77,4 +75,3 @@ DEC_POSIX(int, cond_wait, (pmarcel_cond_t *cond,
 			   pmarcel_mutex_t *mutex));
 DEC_POSIX(int, cond_timedwait, (pmarcel_cond_t *cond, pmarcel_mutex_t *mutex,
 				const struct timespec *abstime));
-#section common

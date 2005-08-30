@@ -149,7 +149,7 @@ refreshall:
 
 .PHONY: clean cleanall clean-header-autogen
 clean-header-autogen:
-	$(MAKE) -C marcel clean_autogen
+	$(MAKE) -C marcel clean_autogen clean_m4gen
 
 clean: clean-header-autogen
 	$(COMMON_HIDE) set -e; \

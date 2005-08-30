@@ -83,7 +83,7 @@ $(MOD_GEN_INC)/scheduler:
 	$(COMMON_BUILD)
 	-$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/scheduler-$(SCHED_NAME) $@
 
-.PHONY: clean_autogen
+.PHONY: clean_autogen clean_m4gen
 clean: clean_autogen clean_m4gen
 
 clean_autogen:

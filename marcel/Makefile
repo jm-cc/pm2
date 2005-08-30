@@ -84,7 +84,7 @@ $(MOD_GEN_INC)/scheduler:
 	-$(COMMON_MAIN) ln -sf $(MOD_HSPLITS_GENDIR)/scheduler-$(SCHED_NAME) $@
 
 .PHONY: clean_autogen
-clean: clean_autogen
+clean: clean_autogen clean_m4gen
 
 clean_autogen:
 	$(COMMON_CLEAN) $(RM) -r autogen-include
@@ -161,3 +161,5 @@ $(M4_GEN_FILES): scripts/marcel.m4
 $(M4_GEN_FILES): %: %.m4
 	m4 --prefix-builtins $< > $@
 
+clean_m4gen:
+	$(COMMON_CLEAN) $(RM) -r $(M4_GEN_FILES)

@@ -58,22 +58,24 @@ typedef unsigned ma_cpu_set_t;
 
 #section macros
 #depend "linux_bitops.h[]"
+#ifdef MA__LWPS
 #define MA_CPU_EMPTY			(0UL)
 #define MA_CPU_FULL			(~0UL)
-#define MA_CPU_ZERO(cpusetp)		(*(cpusetp)=MA_CPU_EMPTY)
-#ifdef MA__LWPS
 #define MA_CPU_FILL(cpusetp)		(*(cpusetp)=MA_CPU_FULL)
 #define MA_CPU_SET(cpu, cpusetp)	(*(cpusetp)|=1UL<<(cpu))
 #define MA_CPU_CLR(cpu, cpusetp)	(*(cpusetp)&=~(1UL<<(cpu)))
 #define MA_CPU_ISSET(cpu, cpusetp)	((*(cpusetp)&(1UL<<(cpu))) != 0)
 #define MA_CPU_WEIGHT(cpusetp)		ma_hweight_long(*(cpusetp))
 #else
+#define MA_CPU_EMPTY			(0U)
+#define MA_CPU_FULL			(~0U)
 #define MA_CPU_FILL(cpusetp)		(*(cpusetp)=1)
 #define MA_CPU_SET(cpu, cpusetp)	MA_CPU_FILL(cpusetp)
 #define MA_CPU_CLR(cpu, cpusetp)	MA_CPU_ZERO(cpusetp)
 #define MA_CPU_ISSET(cpu, cpusetp)	(*(cpusetp))
 #define MA_CPU_WEIGHT(cpusetp)		(*(cpusetp))
 #endif
+#define MA_CPU_ZERO(cpusetp)		(*(cpusetp)=MA_CPU_EMPTY)
 
 #section structures
 #ifdef PM2_DEV

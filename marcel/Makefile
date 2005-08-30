@@ -153,7 +153,8 @@ linux:
 			echo "rm -v $$LST" ; \
 		fi
 
-M4_GEN_FILES=include/marcel_mutex.h source/nptl_mutex.c
+M4_GEN_HEADERS=include/marcel_mutex.h 
+M4_GEN_FILES=$(M4_GEN_HEADERS) source/nptl_mutex.c
 dot_h: $(M4_GEN_FILES)
 
 $(M4_GEN_FILES): scripts/marcel.m4
@@ -161,5 +162,8 @@ $(M4_GEN_FILES): scripts/marcel.m4
 $(M4_GEN_FILES): %: %.m4
 	m4 --prefix-builtins $< > $@
 
+$(MOD_HSPLITS_MAKEFILES): $(M4_GEN_HEADERS)
+
 clean_m4gen:
 	$(COMMON_CLEAN) $(RM) -r $(M4_GEN_FILES)
+

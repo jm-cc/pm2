@@ -15,7 +15,6 @@
  */
 
 #section common
-#if 0
 
 #depend "linux_spinlock.h[macros]"
 
@@ -79,4 +78,3 @@ DEC_POSIX(int, cond_wait, (pmarcel_cond_t *cond,
 DEC_POSIX(int, cond_timedwait, (pmarcel_cond_t *cond, pmarcel_mutex_t *mutex,
 				const struct timespec *abstime));
 #section common
-#endif

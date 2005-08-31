@@ -33,8 +33,8 @@ typedef volatile unsigned ma_spinlock_t;
 #else
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
 #warning "Can't avoid using pthreads with no native locking primitive"
-#warning "Please define pm2_compareexchange in marcel/include/asm/marcel_compareexchange.h"
-#error "or define pm2_spinlock_testandset in marcel/include/asm/marcel_testandset.h"
+#warning "Please define pm2_compareexchange in marcel/include/asm-yourarch/marcel_compareexchange.h"
+#error "or define pm2_spinlock_testandset in marcel/include/asm-yourarch/marcel_testandset.h"
 #endif
 #include <pthread.h>
 typedef pthread_mutex_t ma_spinlock_t;

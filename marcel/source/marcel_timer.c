@@ -304,14 +304,14 @@ void marcel_settimeslice(unsigned long microsecs)
 {
 	LOG_IN();
 
-	ma_enter_lib();
 	if (microsecs && (microsecs < MIN_TIME_SLICE)) {
 		time_slice = MIN_TIME_SLICE;
 	} else {
 		time_slice = microsecs;
 	}
+	marcel_extlib_protect();
 	sig_reset_timer();
-	ma_exit_lib();
+	marcel_extlib_unprotect();
 	
 	LOG_OUT();
 }

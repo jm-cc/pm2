@@ -84,6 +84,7 @@ do { \
 
 /* Protection pour la réentrance du code de marcel avec les
  * bibliothèques extérieures (glibc par exemple)
+ * DÉPRÉCIÉ, utilisez marcel_extlib_un?protect()
  */
-#define	ma_enter_lib() ma_preempt_disable()
-#define	ma_exit_lib()  ma_preempt_enable()
+#define	ma_enter_lib() marcel_extlib_protect()
+#define	ma_exit_lib()  marcel_extlib_unprotect()

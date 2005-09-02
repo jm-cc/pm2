@@ -440,9 +440,9 @@ common_channel_exit(p_mad_channel_t mad_channel)
   mad_channel->unpacks_list = NULL;
   //DISP("<--free UNpacks_list");
 
-  //DISP("-->free rdv list");
-  tbx_slist_free(mad_channel->rdv);
-  mad_channel->rdv = NULL;
+  //DISP("-->free rdv list");  ----> dans ADAPTER!
+  //tbx_slist_free(mad_channel->rdv);
+  //mad_channel->rdv = NULL;
   //DISP("<--free rdv list");
 }
 
@@ -905,7 +905,32 @@ mad_dir_channels_exit(p_mad_madeleine_t madeleine)
   LOG_OUT();
 }
 
-void
+
+
+static void
+mad_close_track(p_mad_adapter_t adapter,
+                p_mad_track_t track){
+  p_mad_driver_interface_t interface = NULL;
+  LOG_IN();
+  interface = adapter->driver->interface;
+
+  if(track->pre_posted){
+    interface->remove_all_pre_posted(adapter);
+  }
+
+  mad_pipeline_free(track->pipeline);
+
+  if(interface->close_track){
+    interface->close_track(track);
+  }
+
+  TBX_FREE(track);
+  LOG_OUT();
+}
+
+
+
+static void
 mad_close_track_set(p_mad_adapter_t adapter,
                     p_mad_track_set_t track_set){
   p_mad_driver_interface_t interface = NULL;
@@ -915,32 +940,16 @@ mad_close_track_set(p_mad_adapter_t adapter,
   interface = adapter->driver->interface;
 
   for(i = 0; i < track_set->nb_track; i++){
-    p_mad_track_t track = NULL;
-
-    //DISP("-->free track");
-    track = track_set->tracks_tab[i];
-
-    if(track->pre_posted && interface->remove_all_pre_posted){
-      interface->remove_all_pre_posted(adapter, track);
-    }
-
-    if(interface->close_track){
-      interface->close_track(track);
-    }
-    TBX_FREE(track);
-    //DISP("<--free track");
+    mad_close_track(adapter, track_set->tracks_tab[i]);
   }
 
-  //DISP("-->free track_htable");
   tbx_htable_cleanup_and_free(track_set->tracks_htable);
-  //DISP("<--free track_htable");
+  TBX_FREE(track_set->tracks_tab);
 
-  //DISP("-->free track_pipeline");
-  tbx_slist_free(track_set->pipeline);
-  //DISP("<--free track_pipeline");
+  mad_pipeline_free(track_set->in_more);
 
-  if(interface->close_track_set)
-    interface->close_track_set(track_set);
+  //if(interface->close_track_set)
+  //  interface->close_track_set(track_set);
 
   TBX_FREE(track_set);
   LOG_OUT();
@@ -1046,8 +1055,8 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
           //DISP("<--free s_ready_msg_list");
 
           //DISP("-->free r_ready_msg_list");
-          tbx_slist_free(mad_adapter->r_ready_msg_list);
-          mad_adapter->r_ready_msg_list = NULL;
+          //tbx_slist_free(mad_adapter->r_ready_msg_list);
+          //mad_adapter->r_ready_msg_list = NULL;
           //DISP("<--free r_ready_msg_list");
 
           //DISP("-->free unexpected_list");

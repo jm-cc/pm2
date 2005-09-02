@@ -119,6 +119,10 @@ mad_mx_wait(p_mad_track_t);
 void
 mad_mx_open_track(p_mad_adapter_t, uint32_t);
 
+
+void
+mad_mx_close_track(p_mad_track_t);
+
 //void
 //mad_mx_isend(p_mad_track_t,
 //             p_mad_connection_t,
@@ -137,10 +141,10 @@ void
 mad_mx_add_pre_posted(p_mad_adapter_t,
                       p_mad_track_t);
 
-void 
+void
 mad_mx_clean_pre_posted(p_mad_iovec_t);
 
 void
-mad_mx_remove_all_pre_posted(p_mad_adapter_t,
-                             p_mad_track_t);
+mad_mx_remove_all_pre_posted(p_mad_adapter_t);
+
 #endif /* MAD_MX_H */

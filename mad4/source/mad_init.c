@@ -122,9 +122,10 @@ adapter_init(p_mad_driver_t mad_driver,
 
   mad_adapter->established_connection_htable = tbx_htable_empty_table();
   mad_adapter->s_ready_msg_list = tbx_slist_nil();
-  mad_adapter->r_ready_msg_list = tbx_slist_nil();
+  //mad_adapter->r_ready_msg_list = tbx_slist_nil();
   mad_adapter->unexpected_msg_list = tbx_slist_nil();
   mad_adapter->waiting_acknowlegment_list = tbx_slist_nil();
+  mad_adapter->rdv = tbx_slist_nil();
   /***/
 
   TBX_FREE(adapter_name);
@@ -713,7 +714,7 @@ connection_init(p_mad_channel_t mad_channel)
 
       /***/
       out->packs_list = tbx_slist_nil();
-      out->sequence = 0;
+      out->sequence = 1;
       /***/
 
     }
@@ -749,7 +750,7 @@ connection_init(p_mad_channel_t mad_channel)
 
       /***/
       in->packs_list = tbx_slist_nil();
-      in->sequence = 0;
+      in->sequence = 1;
       /***/
     }
 
@@ -1025,8 +1026,8 @@ channel_open(p_mad_madeleine_t  madeleine,
   //tbx_malloc_init(&mad_channel->mad_request_key,           sizeof(mx_request_t),            1024);
 
   mad_channel->unpacks_list = tbx_slist_nil();
-  mad_channel->rdv = tbx_slist_nil();
-  mad_channel->sequence = 0;
+  //mad_channel->rdv = tbx_slist_nil();
+  mad_channel->sequence = 1;
   /***/
 
   TRACE_STR("Pass 1 - channel connection parameter", mad_channel->parameter);

@@ -112,71 +112,74 @@ authorized(p_mad_driver_t driver,
     return constraints[i][j];
 }
 
-
-
 void
 initialize_tracks(p_mad_adapter_t adapter){
     p_mad_track_set_t track_set = NULL;
+    p_mad_track_t track0 = NULL;
+    p_mad_track_t track1 = NULL;
     p_mad_driver_interface_t interface = NULL;
     LOG_IN();
 
     if(strcmp(adapter->driver->device_name, "mx") == 0){
-        p_mad_track_t track0 = NULL;
-        p_mad_track_t track1 = NULL;
-
         interface = adapter->driver->interface;
+
 
         /* Emisssion */
         adapter->s_track_set = TBX_MALLOC(sizeof(mad_track_set_t));
         track_set = adapter->s_track_set;
-        track_set->started = tbx_false;
         track_set->nb_track = 2;
         track_set->tracks_htable = tbx_htable_empty_table();
-        track_set->tracks_tab = TBX_MALLOC(track_set->nb_track * sizeof(p_mad_track_t));
+        track_set->tracks_tab = TBX_MALLOC(track_set->nb_track
+                                           * sizeof(p_mad_track_t));
+        track_set->in_more = mad_pipeline_create(1);
+        track_set->max_nb_pending_iov = 1;
 
         track0 = TBX_MALLOC(sizeof(mad_track_t));
         track0->id = 0;
-        track0->pre_posted = tbx_false;//tbx_true;
+        track0->pre_posted = tbx_true;
+        track0->pipeline = mad_pipeline_create(1);
         tbx_htable_add(track_set->tracks_htable,
                        "cpy", track0);
         track_set->tracks_tab[0] = track0;
 
+
         track1 = TBX_MALLOC(sizeof(mad_track_t));
         track1->id = 1;
         track1->pre_posted = tbx_false;
+        track1->pipeline = mad_pipeline_create(1);
         tbx_htable_add(track_set->tracks_htable,
                        "rdv", track1);
         track_set->tracks_tab[1] = track1;
 
-        track_set->pipeline = tbx_slist_nil();
-        track_set->pipeline_size_max = 2;
-        /*******/
+
+
 
         /* Réception */
         adapter->r_track_set = TBX_MALLOC(sizeof(mad_track_set_t));
         track_set = adapter->r_track_set;
-
         track_set->nb_track = 2;
         track_set->tracks_htable = tbx_htable_empty_table();
-        track_set->tracks_tab = TBX_MALLOC(track_set->nb_track * sizeof(p_mad_track_t));
+        track_set->tracks_tab = TBX_MALLOC(track_set->nb_track
+                                           * sizeof(p_mad_track_t));
+        track_set->in_more = mad_pipeline_create(0);
 
 
         track0 = TBX_MALLOC(sizeof(mad_track_t));
         track0->id = 0;
         track0->pre_posted = tbx_true;
+        track0->pipeline = mad_pipeline_create(1);
         tbx_htable_add(track_set->tracks_htable,
                        "cpy", track0);
         track_set->tracks_tab[0] = track0;
 
+
         track1 = TBX_MALLOC(sizeof(mad_track_t));
         track1->id = 1;
         track1->pre_posted = tbx_false;
+        track1->pipeline = mad_pipeline_create(1);
         tbx_htable_add(track_set->tracks_htable,
                        "rdv", track1);
         track_set->tracks_tab[1] = track1;
-
-        track_set->pipeline = tbx_slist_nil();
-        track_set->pipeline_size_max = 2;
 
         interface->open_track(adapter, 0);
         interface->open_track(adapter, 1);
@@ -267,7 +270,7 @@ mad_iovec_begin_with_rdv(p_mad_iovec_t large_mad_iovec){
     sequence   = large_mad_iovec->sequence;
     length     = large_mad_iovec->length;
 
-    mad_iovec = mad_iovec_create(channel_id, sequence);
+    mad_iovec = mad_iovec_create(sequence);
     mad_iovec->channel = large_mad_iovec->channel;
     mad_iovec->remote_rank = large_mad_iovec->remote_rank;
 
@@ -325,12 +328,12 @@ search_new(p_mad_driver_t driver){
     if(!mad_iovec_cur)
         goto end;
 
-    //DISP("-----------------");
+   //DISP("-----------------");
     if(driver->interface->need_rdv(mad_iovec_cur)){
-        //DISP("OPTIMIZER : begin with rdv");
+       //DISP("OPTIMIZER : begin with rdv");
         mad_iovec = mad_iovec_begin_with_rdv(mad_iovec_cur);
     } else {
-        //DISP("OPTIMIZER : begin with data");
+       //DISP("OPTIMIZER : begin with data");
         mad_iovec = mad_iovec_cur;
         mad_iovec_begin_with_data(mad_iovec);
     }
@@ -362,10 +365,10 @@ search_new(p_mad_driver_t driver){
             mad_iovec_cur = tbx_slist_extract(driver->s_msg_slist);
 
             if(driver->interface->need_rdv(mad_iovec_cur)){
-                //DISP("OPTIMIZER : continue with rdv");
+               //DISP("OPTIMIZER : continue with rdv");
                 mad_iovec_continue_with_rdv(mad_iovec, mad_iovec_cur);
             } else {
-                //DISP("OPTIMIZER : continue with data");
+               //DISP("OPTIMIZER : continue with data");
                 mad_iovec_continue_with_data(mad_iovec, mad_iovec_cur);
 
                 if(express){
@@ -390,7 +393,7 @@ search_new(p_mad_driver_t driver){
         }
         mad_iovec_prev = mad_iovec_cur;
     }
-    //DISP("-----------------");
+   //DISP("-----------------");
  end:
     LOG_OUT();
     return mad_iovec;

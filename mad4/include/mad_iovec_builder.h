@@ -23,8 +23,7 @@ typedef enum e_mad_iovec_control_size {
 } mad_iovec_control_size_t, *p_mad_iovec_control_size_t;
 
 p_mad_iovec_t
-mad_iovec_create(unsigned int   channel_id,
-                 unsigned int   seq);
+mad_iovec_create(unsigned int   seq);
 
 void
 mad_iovec_free(p_mad_iovec_t, tbx_bool_t);
@@ -109,14 +108,29 @@ void
 mad_iovec_print(p_mad_iovec_t mad_iovec);
 
 void
+mad_iovec_print_msg(void * msg);
+
+
+void
 mad_iovec_print_iovec(struct iovec *iovec);
 
 void
 mad_iovec_s_check(p_mad_adapter_t adapter,
                   p_mad_iovec_t mad_iovec);
 
+//tbx_bool_t
+//mad_iovec_check_unexpected_rdv(p_mad_adapter_t adapter,
+//                               p_mad_iovec_t mad_iovec);
+
+void
+mad_iovec_search_rdv(p_mad_adapter_t adapter,
+                     p_mad_track_t track);
+
+
+
 tbx_bool_t
-mad_iovec_check_unexpected_rdv(p_mad_adapter_t adapter,
-                               p_mad_iovec_t mad_iovec);
+mad_iovec_exploit_msg2(p_mad_adapter_t a,
+                      void * msg);
+
 
 #endif /* MAD_IOVEC_BUILDER_H */

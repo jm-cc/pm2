@@ -131,38 +131,39 @@ main(int argc, char **argv) {
         if(!connection)
             DISP("mad_micro_direct: PAS de CONNECTION");
 
+        mad_pack(connection,
+                 buffer1,
+                 len1,
+                 mad_send_CHEAPER,
+                 mad_receive_CHEAPER);
+        //
+        ////DISP("################################");
+        //mad_wait_packs(connection);
+        //
         //mad_pack(connection,
-        //         buffer1,
-        //         len1,
+        //         buffer2,
+        //         len2,
         //         mad_send_CHEAPER,
-        //         mad_receive_EXPRESS);
-
-        ////DISP("################################");
-
-        mad_pack(connection,
-                 buffer2,
-                 len2,
-                 mad_send_CHEAPER,
-                 mad_receive_CHEAPER);
-
-        //DISP("################################");
-
-        mad_pack(connection,
-                 buffer3,
-                 len3,
-                 mad_send_CHEAPER,
-                 mad_receive_CHEAPER);
-
-        //DISP("################################");
-
-        mad_pack(connection,
-                 buffer4,
-                 len4,
-                 mad_send_CHEAPER,
-                 mad_receive_EXPRESS);
+        //         mad_receive_CHEAPER);
         //
         ////DISP("################################");
         //
+        //mad_pack(connection,
+        //         buffer3,
+        //         len3,
+        //         mad_send_CHEAPER,
+        //         mad_receive_CHEAPER);
+        //
+        ////DISP("################################");
+        //
+        //mad_pack(connection,
+        //         buffer4,
+        //         len4,
+        //         mad_send_CHEAPER,
+        //         mad_receive_CHEAPER);
+
+        //DISP("################################");
+
         //mad_pack(connection,
         //         buffer5,
         //         len5,
@@ -199,54 +200,59 @@ main(int argc, char **argv) {
         len5 = 1048576;
         buffer5 = init_data(len5);
 
-
         connection = mad_begin_unpacking(channel);
+
+        mad_unpack(connection,
+                   buffer1,
+                   len1,
+                   mad_send_CHEAPER,
+                   mad_receive_CHEAPER);
+        //
+        ////DISP("################################");
+        //mad_wait_unpacks(connection);
+        //
         //mad_unpack(connection,
-        //           buffer1,
-        //           len1,
+        //           buffer2,
+        //           len2,
         //           mad_send_CHEAPER,
-        //           mad_receive_EXPRESS);
-        //
-        ////DISP("################################");
-        //
-        mad_unpack(connection,
-                   buffer2,
-                   len2,
-                   mad_send_CHEAPER,
-                   mad_receive_CHEAPER);
+        //           mad_receive_CHEAPER);
 
         //DISP("################################");
 
-        //sleep(2);
-        mad_unpack(connection,
-                   buffer3,
-                   len3,
-                   mad_send_CHEAPER,
-                   mad_receive_CHEAPER);
-
-        //DISP("################################");
-
-        mad_unpack(connection,
-                   buffer4,
-                   len4,
-                   mad_send_CHEAPER,
-                   mad_receive_EXPRESS);
+        ////sleep(2);
+        //mad_unpack(connection,
+        //           buffer3,
+        //           len3,
+        //           mad_send_CHEAPER,
+        //           mad_receive_CHEAPER);
         //
         ////DISP("################################");
+        //
+        //mad_unpack(connection,
+        //           buffer4,
+        //           len4,
+        //           mad_send_CHEAPER,
+        //           mad_receive_CHEAPER);
+        //
+        ////DISP("################################");
+        //
         //mad_unpack(connection,
         //           buffer5,
         //           len5,
         //           mad_send_CHEAPER,
         //           mad_receive_CHEAPER);
 
+
+
+
         //DISP("################################");
 
         mad_end_unpacking(connection);
 
-        //verify_data(buffer1, len1);
-        verify_data(buffer2, len2);
-        verify_data(buffer3, len3);
-        verify_data(buffer4, len4);
+        verify_data(buffer1, len1);
+        //verify_data(buffer2, len2);
+        //verify_data(buffer3, len3);
+        //verify_data(buffer4, len4);
         //verify_data(buffer5, len5);
 
         TBX_FREE(buffer1);

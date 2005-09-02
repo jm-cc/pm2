@@ -25,9 +25,9 @@
 #include <unistd.h>
 #include "pm2_common.h"
 
-#define NB_LOOPS 2
+#define NB_LOOPS 1000
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  128 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  32 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -122,7 +122,7 @@ client(p_mad_channel_t channel){
 
         mad_wait_unpacks(connection2);
 
-        // ------------------------------
+        //DISP("------------------------------");
 
         TBX_GET_TICK(t1);
         while (counter < NB_LOOPS) {
@@ -150,14 +150,20 @@ client(p_mad_channel_t channel){
         TBX_GET_TICK(t2);
         sum = TBX_TIMING_DELAY(t1, t2);
 
-        printf("latence : %f \n", sum / (NB_LOOPS * 2));
-        printf("debit :   %f \n", (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
+        printf("%9d   %9g   %9g\n",
+               cur_length, sum / (NB_LOOPS * 2),
+               (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
+        //printf("latence : %f \n", sum / (NB_LOOPS * 2));
+        //printf("debit :   %f \n", (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
         //DISP("%9d   %g   %g",
         //     cur_length,
         //     sum / (NB_LOOPS * 2),
         //     (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
+
+
+
 
         // next length
         cur_length*=2;
@@ -199,17 +205,16 @@ server(p_mad_channel_t channel){
 
         mad_wait_unpacks(connection1);
 
-
         connection2 = mad_begin_packing(channel, 1);
         mad_pack(connection2,
                  buffer_e,
-                     cur_length,
-                     mad_send_CHEAPER,
-                     mad_receive_CHEAPER);
+                 cur_length,
+                 mad_send_CHEAPER,
+                 mad_receive_CHEAPER);
 
         mad_wait_packs(connection2);
 
-        // ------------------------------
+        //DISP("------------------------------");
 
         mad_unpack(connection1,
                    buffer_r,
@@ -227,6 +232,7 @@ server(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
 
             mad_wait_packs(connection2);
+
 
             mad_unpack(connection1,
                        buffer_r,
@@ -286,10 +292,11 @@ main(int argc, char **argv) {
     if (my_local_rank == 1) {
         DISP("CLIENT");
         client(channel);
-
+        DISP("FINI!!!");
     } else if (my_local_rank == 0) {
         DISP("SERVER");
         server(channel);
+        DISP("FINI!!!");
     }
     common_exit(NULL);
     LOG_OUT();

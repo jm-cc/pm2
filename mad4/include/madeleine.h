@@ -64,10 +64,11 @@
 #include "mad_buffers.h"
 #include "mad_link.h"
 
+#include "mad_pipeline.h"
 #include "mad_pending_communication.h"
 #include "mad_connection.h"
 
-
+#include "mad_make_progress.h"
 #include "mad_iovec_builder.h"
 #include "mad_optimizer.h"
 

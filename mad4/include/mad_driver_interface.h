@@ -146,7 +146,7 @@ typedef struct s_mad_driver_interface
 
     void (*add_pre_posted)(p_mad_adapter_t, p_mad_track_t);
     void (*clean_pre_posted)(p_mad_iovec_t);
-    void (*remove_all_pre_posted)(p_mad_adapter_t, p_mad_track_t);
+    void (*remove_all_pre_posted)(p_mad_adapter_t);
 
     void (*add_pre_sent)  (p_mad_adapter_t, p_mad_track_t);
 

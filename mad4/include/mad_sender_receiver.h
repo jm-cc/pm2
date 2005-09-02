@@ -1,11 +1,11 @@
 #ifndef MAD_SENDER_RECEIVER_H
 #define MAD_SENDER_RECEIVER_H
 
-typedef enum e_mad_mx_mkp_status {
-    MAD_MKP_NOTHING_TO_DO,
-    MAD_MKP_PROGRESSION,
-    MAD_MKP_NO_PROGRESSION
-} mad_mx_mkp_status_t, *p_mad_mx_mkp_status_t;
+//typedef enum e_mad_mx_mkp_status {
+//    MAD_MKP_NOTHING_TO_DO,
+//    MAD_MKP_PROGRESSION,
+//    MAD_MKP_NO_PROGRESSION
+//} mad_mx_mkp_status_t, *p_mad_mx_mkp_status_t;
 
 void
 mad_s_make_progress(p_mad_adapter_t);

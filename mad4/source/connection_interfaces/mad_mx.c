@@ -197,7 +197,9 @@ mad_mx_register(p_mad_driver_interface_t interface){
     interface->recv                = NULL;
     interface->test                = mad_mx_test;
     interface->wait                = mad_mx_wait;
+
     interface->open_track          = mad_mx_open_track;
+    interface->close_track         = mad_mx_close_track;
 
     interface->add_pre_posted = mad_mx_add_pre_posted;
     interface->clean_pre_posted = mad_mx_clean_pre_posted;
@@ -538,7 +540,7 @@ mad_mx_new_message(p_mad_connection_t out){
     do {
         rc = mx_test(*endpoint, &request, &status, &result);
     } while (rc == MX_SUCCESS && !result);
-    mad_mx_check_return("mx_test", rc);
+    //mad_mx_check_return("mx_test", rc);
     LOG_OUT();
 }
 
@@ -575,15 +577,15 @@ mad_mx_receive_message(p_mad_channel_t ch) {
     ep = ts->endpoint;
 
 
-    mad_iovec = mad_iovec_create(0, 0);
-
-    recv_msg = tbx_malloc(mad_mx_unexpected_key);
-    mad_iovec_add_data(mad_iovec,
-                       recv_msg,
-                       MAD_MX_PRE_POSTED_SIZE,
-                       0);
-
-    s = (mx_segment_t *) (mad_iovec->data);
+    //mad_iovec = mad_iovec_create(0, 0);
+    //
+    //recv_msg = tbx_malloc(mad_mx_unexpected_key);
+    //mad_iovec_add_data(mad_iovec,
+    //                   recv_msg,
+    //                   MAD_MX_PRE_POSTED_SIZE,
+    //                   0);
+    //
+    //s = (mx_segment_t *) (mad_iovec->data);
 
     rc	= mx_irecv(*ep,
                    NULL, 0,
@@ -592,7 +594,7 @@ mad_mx_receive_message(p_mad_channel_t ch) {
     do {
         rc = mx_test(*ep, &request, &status, &result);
     } while (rc == MX_SUCCESS && !result);
-    mad_mx_check_return("mx_test", rc);
+    //mad_mx_check_return("mx_test", rc);
 
     match_info = status.match_info;
     in	= tbx_darray_get(in_darray, match_info & 0xFFFFFFFF);
@@ -600,7 +602,7 @@ mad_mx_receive_message(p_mad_channel_t ch) {
         FAILURE("mad_mx_receive_message : connection not found");
     }
 
-    tbx_free(mad_mx_unexpected_key, recv_msg);
+    //tbx_free(mad_mx_unexpected_key, recv_msg);
 
     LOG_OUT();
     return in;
@@ -662,7 +664,7 @@ mad_mx_test(p_mad_track_t track){
 
     //DISP("mad_mx_test : TEST");
     rc = mx_test(*endpoint, request, &status, &result);
-    mad_mx_check_return("mx_test failed", rc);
+    //mad_mx_check_return("mx_test failed", rc);
 
     if(rc == MX_SUCCESS && result){
         return tbx_true;
@@ -689,7 +691,7 @@ mad_mx_wait(p_mad_track_t track){
     do {
         rc = mx_test(*(endpoint), request, &status, &result);
     } while (rc == MX_SUCCESS && !result);
-    mad_mx_check_return("mx_test failed", rc);
+    //mad_mx_check_return("mx_test failed", rc);
     LOG_OUT();
 }
 
@@ -791,11 +793,13 @@ mad_mx_isend(p_mad_track_t track,
     match_info   = 0;
     /* match_info = ((uint64_t)connection->channel->id +1) << 32 | connection->channel->process_lrank; */
 
+    //mad_iovec_print_iovec(iovec);
+
     rc = mx_isend(*endpoint,
                   seg_list, nb_seg,
                   *dest_address,
                   match_info,
-                  NULL, ts->request);
+                  NULL, request);
     LOG_OUT();
 }
 
@@ -837,7 +841,7 @@ mad_mx_add_pre_posted(p_mad_adapter_t adapter,
     void *unexpected_area   = NULL;
     LOG_IN();
 
-    mad_iovec = mad_iovec_create(0, 0);
+    mad_iovec = mad_iovec_create(0);
     mad_iovec->track = track;
 
     unexpected_area = tbx_malloc(mad_mx_unexpected_key);
@@ -845,10 +849,10 @@ mad_mx_add_pre_posted(p_mad_adapter_t adapter,
                        unexpected_area,
                        MAD_MX_PRE_POSTED_SIZE,
                        0);
-    tbx_slist_append(adapter->r_track_set->pipeline, mad_iovec);
-    adapter->r_track_set->pipeline_nb_elm++;
 
+    mad_pipeline_add(track->pipeline, mad_iovec);
     mad_mx_irecv(track, mad_iovec->data, 1);
+
     LOG_OUT();
 }
 
@@ -864,46 +868,35 @@ mad_mx_clean_pre_posted(p_mad_iovec_t mad_iovec){
 
 
 void
-mad_mx_remove_all_pre_posted(p_mad_adapter_t adapter,
-                             p_mad_track_t track){
-    p_tbx_slist_t r_pipeline = NULL;
-    p_mad_iovec_t mad_iovec = NULL;
-    tbx_bool_t ref_forward = tbx_true;
+mad_mx_remove_all_pre_posted(p_mad_adapter_t adapter){
+    p_mad_track_set_t r_track_set = NULL;
+    p_mad_track_t track = NULL;
+    p_mad_pipeline_t     pipeline = NULL;
+    p_mad_iovec_t     mad_iovec = NULL;
+    uint32_t i = 0;
     LOG_IN();
     //DISP("-->remove_pre_posted");
+    r_track_set = adapter->r_track_set;
 
-    if(!adapter->r_track_set)
-        goto end;
+    for(i = 0; i < r_track_set->nb_track; i++){
+        track = r_track_set->tracks_tab[i];
 
-    r_pipeline = adapter->r_track_set->pipeline;
+        if(track->pre_posted){
+            pipeline = track->pipeline;
 
-    if(!r_pipeline->length){
-        goto end;
+            while(pipeline->cur_nb_elm){
+                mad_iovec = mad_pipeline_remove(pipeline);
+
+                tbx_free(mad_mx_unexpected_key,
+                         mad_iovec->data[0].iov_base);
+                mad_iovec_free(mad_iovec, tbx_false);
+            }
+        }
     }
 
-    tbx_slist_ref_to_head(r_pipeline);
-    while(1){
-        ref_forward = tbx_slist_ref_forward(r_pipeline);
-
-        mad_iovec = tbx_slist_extract(r_pipeline);
-        if(mad_iovec == NULL)
-            break;
-
-        tbx_free(mad_mx_unexpected_key,
-                 mad_iovec->data[0].iov_base);
-        mad_iovec_free(mad_iovec, tbx_false);
-
-        adapter->r_track_set->pipeline_nb_elm--;
-
-        if(!ref_forward)
-            break;
-    }
-
- end:
     //DISP("<--remove_pre_posted");
     LOG_OUT();
 }
-
 
 void
 mad_mx_close_track(p_mad_track_t track){

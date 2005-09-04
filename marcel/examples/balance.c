@@ -40,6 +40,22 @@ void marcel_barrier_init(marcel_barrier_t *b, marcel_barrier_attr_t *attr, int n
 	b->num = num;
 	b->curwait = 0;
 }
+int marcel_barrier_begin(marcel_barrier_t *b) {
+	int num;
+	marcel_mutex_lock(&b->mutex);
+	if ((num = ++b->curwait) == b->num) {
+		b->curwait = 0;
+		marcel_cond_broadcast(&b->cond);
+	}
+	marcel_mutex_unlock(&b->mutex);
+	return num;
+}
+void marcel_barrier_end(marcel_barrier_t *b, int num) {
+	marcel_mutex_lock(&b->mutex);
+	if (num != b->num)
+		marcel_cond_wait(&b->cond,&b->mutex);
+	marcel_mutex_unlock(&b->mutex);
+}
 void marcel_barrier_wait(marcel_barrier_t *b) {
 	marcel_mutex_lock(&b->mutex);
 	if (++b->curwait == b->num) {
@@ -58,10 +74,12 @@ any_t work(any_t arg) {
 	int i = (int) arg;
 	unsigned long start;
 	int n = iterations;
+	int num;
 	while (n--) {
-		marcel_barrier_wait(&barrier[i]);
-		tprintf("group %d start\n",i);
+		num = marcel_barrier_begin(&barrier[i]);
 		start = marcel_clock();
+		marcel_barrier_end(&barrier[i], num);
+		tprintf("group %d start\n",i);
 		while(marcel_clock() < start + works[i]);
 		marcel_barrier_wait(&barrier[i]);
 		tprintf("group %d wait\n",i);
@@ -88,7 +106,7 @@ int main(int argc, char *argv[]) {
 	for (i=0;i<NWORKS;i++) {
 		marcel_barrier_init(&barrier[i], NULL, NWORKERS);
 		marcel_bubble_init(&bubble[i]);
-		marcel_bubble_setprio(&bubble[i], MA_BATCH_PRIO);
+		marcel_bubble_setprio(&bubble[i], MA_DEF_PRIO);
 		marcel_attr_setinitbubble(&attr,&bubble[i]);
 		for (j=0;j<NWORKERS;j++) {
 			snprintf(s,sizeof(s),"%d-%d",i,j);

@@ -481,6 +481,8 @@ repeat_lock_task:
 	h = ma_task_holder_lock_softirq(p);
 	old_state = p->sched.state;
 	if (old_state & state) {
+		/* on s'occupe de la réveiller */
+		p->sched.state = MA_TASK_RUNNING;
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
 			/*
 			 * Fast-migrate the task if it's not running or runnable
@@ -511,6 +513,9 @@ repeat_lock_task:
 //				p->activated = -1;
 			}
 
+			/* Attention ici: h peut être une bulle, auquel cas
+			 * activate_task peut lâcher la bulle pour verrouiller
+			 * une runqueue */
 			ma_activate_task(p, h);
 			/*
 			 * Sync wakeups (i.e. those types of wakeups where the waker
@@ -528,7 +533,6 @@ repeat_lock_task:
 			} else try_to_resched(p, h);
 			success = 1;
 		}
-		p->sched.state = MA_TASK_RUNNING;
 	}
 	ma_task_holder_unlock_softirq(h);
 
@@ -626,6 +630,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	h = ma_task_sched_holder(p);
 
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
+		bubble_sched_debug("wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		marcel_bubble_inserttask(ma_bubble_holder(h),p);
 		/* marcel_bubble_inserttask() s'est occupé de la réveiller au
 		 * besoin */
@@ -679,15 +684,19 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 
 int ma_sched_change_prio(marcel_t t, int prio) {
 	ma_holder_t *h;
-	void *data;
+	int requeue;
 	LOG_IN();
+	/* attention ici. Pour l'instant on n'a pas besoin de requeuer dans
+	 * une bulle */
+	/* quand on le voudra, il faudra faire attention que dequeue_task peut
+	 * vouloir déverouiller la bulle pour pouvoir verrouiller la runqueue */
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
 	h = ma_task_holder_lock_softirq(t);
-	data = ma_task_holder_data(t);
-	if (data) /* sleeping */
+	if ((requeue = (MA_TASK_IS_SLEEPING(t) &&
+			ma_holder_type(h) == MA_RUNQUEUE_HOLDER)))
 		ma_dequeue_task(t,h);
 	t->sched.internal.prio=prio;
-	if (data)
+	if (requeue)
 		ma_enqueue_task(t,h);
 	ma_task_holder_unlock_softirq(h);
 	LOG_OUT();
@@ -766,10 +775,14 @@ static inline void finish_task_switch(marcel_task_t *prev)
 			try_to_resched(prev, prevh);
 		} else {
 			/* yes, deactivate */
+			MTRACE("going to sleep",prev);
 			sched_debug("%p going to sleep\n",prev);
 			ma_deactivate_running_task(prev,prevh);
 		}
-	} else ma_enqueue_task(prev,prevh);
+	} else {
+		MTRACE("still running",prev);
+		ma_enqueue_task(prev,prevh);
+	}
 
 #ifdef MARCEL_BUBBLE_EXPLODE
 	if ((h = (ma_task_init_holder(prev)))
@@ -1457,7 +1470,6 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 #endif
 	if (preemption_enabled() && ma_thread_preemptible()) {
-		marcel_bubble_t *b;
 		if (ma_atomic_dec_and_test(&p->sched.internal.time_slice)) {
 			ma_set_tsk_need_resched(p);
 			//p->prio = effective_prio(p);
@@ -1474,6 +1486,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
 		// verrouiller la bulle.
+#ifdef MARCEL_BUBBLE_EXPLODE
+		marcel_bubble_t *b;
 		if ((h = ma_task_init_holder(p)) && 
 				ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 			b = ma_bubble_holder(h);
@@ -1481,6 +1495,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 				&& ma_atomic_dec_and_test(&b->sched.time_slice))
 				ma_bubble_tick(b);
 		}
+#endif
 	}
 #if 0
 	else {
@@ -1534,7 +1549,7 @@ asmlinkage void ma_schedule(void)
 	marcel_bubble_t *bubble;
 #endif
 	ma_runqueue_t *rq, *prevrq, *currq, *prev_as_rq;
-	ma_holder_t *prevh;
+	ma_holder_t *prevh, *nexth;
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
@@ -1573,8 +1588,7 @@ need_resched:
 		run_time = NS_MAX_SLEEP_AVG;
 		*/
 
-	if (!(prevh = ma_task_init_holder(prev)))
-		prevh = ma_task_sched_holder(prev);
+	prevh = ma_task_sched_holder(prev);
 	MA_BUG_ON(!prevh);
 	prevrq = ma_to_rq_holder(prevh);
 	MA_BUG_ON(!prevrq);
@@ -1612,6 +1626,7 @@ restart:
 #endif
 	next = prev_as_next;
 	rq = prev_as_rq;
+	nexth = &prev_as_rq->hold;
 	max_prio = prev_as_prio;
 
 #ifdef MA__LWPS
@@ -1653,6 +1668,7 @@ restart:
 #endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 		next = __ma_get_lwp_var(idle_task);
+		nexth = &rq->hold;
 #else
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
@@ -1706,7 +1722,8 @@ restart:
 //	}
 //	next->activated = 0;
 
-	if (!(nextent = ma_bubble_sched(nextent, prevrq, rq, idx)))
+	nexth = &rq->hold;
+	if (!(nextent = ma_bubble_sched(nextent, prevrq, rq, &nexth, idx)))
 		/* ma_bubble_sched aura libéré prevrq */
 		goto need_resched_atomic;
 	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
@@ -1747,8 +1764,8 @@ switch_tasks:
 		__ma_get_lwp_var(current_thread) = next;
 //		++*switch_count;
 
-		ma_dequeue_task(next, &rq->hold);
-		ma_holder_rawunlock(&rq->hold);
+		ma_dequeue_task(next, nexth);
+		ma_holder_rawunlock(nexth);
 		ma_set_task_lwp(next, LWP_SELF);
 
 		ma_prepare_arch_switch(rq, next);
@@ -1803,8 +1820,8 @@ int marcel_yield_to(marcel_t next)
 	// dontsched thread like idle or activations
 	
 	__ma_get_lwp_var(current_thread) = next;
-	ma_dequeue_task(next, nexth);
 	ma_set_task_lwp(next, LWP_SELF);
+	ma_dequeue_task(next, nexth);
 	ma_holder_rawunlock(nexth);
 
 	ma_prepare_arch_switch(nexth,next);
@@ -1871,25 +1888,23 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 {
 #ifdef MA__LWPS
 	ma_holder_t *old_h;
-	ma_runqueue_t *old_rq, *new_rq;
+	ma_runqueue_t *new_rq;
 	LOG_IN();
 	/* empêcher ma_schedule() */
 	ma_preempt_disable();
 	/* empêcher même scheduler_tick() */
 	ma_local_bh_disable();
 	old_h=ma_this_holder();
-	MA_BUG_ON(ma_holder_type(old_h)!=MA_RUNQUEUE_HOLDER);
-	old_rq=ma_rq_holder(old_h);
 	new_rq=marcel_sched_vpmask_init_rq(mask);
-	if (old_rq==new_rq) {
+	if (old_h == &new_rq->hold) {
 		ma_local_bh_enable();
 		ma_preempt_enable();
 		LOG_OUT();
 		return;
 	}
-	ma_holder_rawlock(&old_rq->hold);
-	ma_deactivate_running_task(MARCEL_SELF,&old_rq->hold);
-	ma_holder_rawunlock(&old_rq->hold);
+	ma_holder_rawlock(old_h);
+	ma_deactivate_running_task(MARCEL_SELF,old_h);
+	ma_holder_rawunlock(old_h);
 	ma_holder_rawlock(&new_rq->hold);
 	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
 	ma_holder_rawunlock(&new_rq->hold);

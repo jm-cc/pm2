@@ -146,7 +146,8 @@ struct marcel_bubble {
  * been released), returns 0 if ma_schedule() can continue with entity nextent
  * (prevrq and rq have been kept locked) */
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
-		ma_runqueue_t *prevrq, ma_runqueue_t *rq, int idx);
+		ma_runqueue_t *prevrq, ma_runqueue_t *rq,
+		ma_holder_t **nexth, int idx);
 
 /* called from ma_scheduler_tick() when the timeslice for the currently running
  * bubble has expired */
@@ -166,30 +167,37 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #endif
 
 #section marcel_inline
-static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
-	sched_debug("enqueuing %p in %p\n",e,b);
+static inline void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+	bubble_sched_debug("enqueuing %p in %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
-	/* TODO: ajouter la bulle à la runqueue si plus rien */
+	if (list_empty(&b->runningentities)) {
+		ma_holder_t *h;
+		ma_holder_rawunlock(&b->hold);
+		h = ma_entity_holder_rawlock(&b->sched);
+		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
+		ma_holder_rawlock(&b->hold);
+		if (h && b->sched.run_holder && list_empty(&b->runningentities))
+			ma_enqueue_entity_rq(&b->sched, ma_rq_holder(h));
+		ma_entity_holder_rawunlock(h);
+	}
 	list_add_tail(&e->run_list, &b->runningentities);
 #endif
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = (void *)1;
 }
-static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
-	sched_debug("dequeuing %p from %p\n",e,b);
+static inline void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+	bubble_sched_debug("dequeuing %p from %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
-	/* TODO: enlever la bulle de la runqueue si plus rien */
 	list_del(&e->run_list);
 	if (list_empty(&b->runningentities)) {
 		ma_holder_t *h;
 		ma_holder_rawunlock(&b->hold);
 		h = ma_entity_holder_rawlock(&b->sched);
-		MA_BUG_ON(ma_holder_type(h)->type != MA_RUNQUEUE_HOLDER);
-		if (b->sched.run_holder) {
-			ma_rq_dequeue_entity(&b->sched, ma_rq_holder(h));
-		}
-		ma_entity_holder_rawunlock(h);
+		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 		ma_holder_rawlock(&b->hold);
+		if (h && b->sched.run_holder && list_empty(&b->runningentities))
+			ma_dequeue_entity_rq(&b->sched, ma_rq_holder(h));
+		ma_entity_holder_rawunlock(h);
 	}
 #endif
 	MA_BUG_ON(!e->holder_data);

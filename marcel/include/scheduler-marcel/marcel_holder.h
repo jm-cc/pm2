@@ -172,9 +172,9 @@ static __tbx_inline__ ma_holder_t *ma_entity_some_holder(marcel_entity_t *e)
 }
 
 #section marcel_functions
-static __tbx_inline__ ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e);
-static __tbx_inline__ ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e);
-static __tbx_inline__ ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e);
+static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e);
+static inline ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e);
+static inline ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e);
 ma_holder_t *ma_task_holder_rawlock(marcel_task_t *e);
 ma_holder_t *ma_task_holder_lock(marcel_task_t *e);
 ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
@@ -182,7 +182,7 @@ ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
 #define ma_task_holder_lock(t) ma_entity_holder_lock(&(t)->sched.internal)
 #define ma_task_holder_lock_softirq(t) ma_entity_holder_lock_softirq(&(t)->sched.internal)
 #section marcel_inline
-static __tbx_inline__ ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
+static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
 	ma_holder_t *h;
 again:
 	if (!(h = ma_entity_some_holder(e)))
@@ -197,7 +197,7 @@ again:
 	sched_debug("ma_entity_holder_locked(%p)\n",h);
 	return h;
 }
-static __tbx_inline__ ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e) {
+static inline ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e) {
 	ma_holder_t *h;
 again:
 	ma_preempt_disable();
@@ -218,7 +218,7 @@ again:
 	return h;
 }
 
-static __tbx_inline__ ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e) {
+static inline ma_holder_t *ma_entity_holder_lock_softirq(marcel_entity_t *e) {
 	ma_local_bh_disable();
 	return ma_entity_holder_lock(e);
 }
@@ -236,9 +236,9 @@ static __tbx_inline__ ma_holder_t *ma_this_holder_lock() {
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h);
-static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h);
-static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h);
+static inline void ma_entity_holder_rawunlock(ma_holder_t *h);
+static inline void ma_entity_holder_unlock(ma_holder_t *h);
+static inline void ma_entity_holder_unlock_softirq(ma_holder_t *h);
 void ma_task_holder_rawunlock(ma_holder_t *h);
 void ma_task_holder_unlock(ma_holder_t *h);
 void ma_task_holder_unlock_softirq(ma_holder_t *h);
@@ -246,18 +246,19 @@ void ma_task_holder_unlock_softirq(ma_holder_t *h);
 #define ma_task_holder_unlock(h) ma_entity_holder_unlock(h)
 #define ma_task_holder_unlock_softirq(h) ma_entity_holder_unlock_softirq(h)
 #section marcel_inline
-static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h) {
+static inline void ma_entity_holder_rawunlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_rawunlock(%p)\n",h);
-	ma_holder_rawunlock(h);
+	if (h)
+		ma_holder_rawunlock(h);
 }
-static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h) {
+static inline void ma_entity_holder_unlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock(%p)\n",h);
 	if (h)
 		ma_holder_unlock(h);
 	else
 		ma_preempt_enable();
 }
-static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h) {
+static inline void ma_entity_holder_unlock_softirq(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock_softirq(%p)\n",h);
 	if (h)
 		ma_holder_unlock_softirq(h);
@@ -282,6 +283,9 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 
 /* Activations et désactivations nécessitent que le holder soit verrouillé. */
 
+/* Attention, lorsque le holder est une bulle, il se peut qu'ils déverrouillent
+ * le holder pour pouvoir verrouiller celui qui le contient immédiatement */
+
 /* activation */
 
 #section marcel_functions
@@ -294,9 +298,9 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
+static inline void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static __tbx_inline__ void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
+static inline void ma_enqueue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
 	ma_rq_enqueue_entity(e, rq->active);
 }
 
@@ -370,9 +374,9 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
+static inline void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static __tbx_inline__ void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
+static inline void ma_dequeue_entity_rq(marcel_entity_t *e, ma_runqueue_t *rq) {
 	ma_rq_dequeue_entity(e, e->holder_data);
 }
 
@@ -411,9 +415,9 @@ static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holde
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h) {
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+		sched_debug("deactivating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
 	else
-		bubble_sched_debug("activating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+		bubble_sched_debug("deactivating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_deactivate_running_entity(&p->sched.internal,h);
 	if (p->sched.state == MA_TASK_INTERRUPTIBLE)
 		h->nr_uninterruptible++;

@@ -67,13 +67,14 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 	marcel_entity_t *ee;
 	marcel_bubble_t *b;
+	ma_holder_t *h;
+	bubble_sched_debug("set_sched_holder %p in bubble %p\n",e,bubble);
 	e->sched_holder = &bubble->hold;
-	if ((e->type = MA_TASK_ENTITY))
-		/* nota: ici on écrase éventuellement une ancienne mise en queue
-		 * Par exemple, b1 qui contient t, t en queue sur b1
-		 * on insère b1 dans b2, on écrase les mises en queue */
-		ma_bubble_enqueue_entity(e,bubble);
-	else {
+	if (e->type == MA_TASK_ENTITY) {
+		if ((h = e->run_holder))
+			ma_deactivate_entity(e,h);
+		ma_activate_entity(e,&bubble->hold);
+	} else {
 		b = tbx_container_of(e, marcel_bubble_t, sched);
 		list_for_each_entry(ee, &b->heldentities, run_list)
 			set_sched_holder(ee, bubble);
@@ -85,6 +86,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_holder_t *sched_bubble;
 #endif
+	bubble_sched_debug("__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
 	else {
@@ -99,16 +101,13 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	entity->sched_holder = entity->init_holder;
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
-	if ((sched_bubble = bubble->sched.sched_holder)) {
-		/* hiérarchie de bulles déjà placée quelque part */
-		/* ce quelque part a déjà été verrouillé par marcel_wake_up_bubble() */
-			/* si la bulle conteneuse est dans une autre bulle,
-			 * on hérite de la bulle d'ordonnancement */
-		if (ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER)
-			/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
-			sched_bubble = &bubble->hold;
-		set_sched_holder(entity, ma_bubble_holder(sched_bubble));
-	}
+	sched_bubble = bubble->sched.sched_holder;
+	/* si la bulle conteneuse est dans une autre bulle,
+	 * on hérite de la bulle d'ordonnancement */
+	if (!sched_bubble || ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER)
+		/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
+		sched_bubble = &bubble->hold;
+	set_sched_holder(entity, ma_bubble_holder(sched_bubble));
 #endif
 }
 
@@ -329,7 +328,8 @@ static marcel_entity_t *ma_next_running_in_bubble(
 
 /* on détient le verrou du holder de nextent */
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
-		ma_runqueue_t *prevrq, ma_runqueue_t *rq, int idx) {
+		ma_runqueue_t *prevrq, ma_runqueue_t *rq,
+		ma_holder_t **nexth, int idx) {
 	marcel_bubble_t *bubble;
 	LOG_IN();
 
@@ -421,23 +421,20 @@ les #ifdef dans les arguments de macro...
 #elif defined(MARCEL_BUBBLE_STEAL)
 	ma_holder_rawlock(&bubble->hold);
 
+	/* en principe, on arrive à l'éviter */
 	if (list_empty(&bubble->runningentities)) {
-	/* TODO il faudrait virer la bulle de la runqueue si !nextent
-	 * (ça c'est facile, c'est la remettre dans wake_up qui pourrait
-	 * être dur) */
-		/* end of bubble, put at end of list */
-		bubble_sched_debug("bubble %p nothing\n",bubble);
-		ma_dequeue_entity_rq(&bubble->sched,rq);
-		ma_enqueue_entity_rq(&bubble->sched,rq);
-		ma_holder_rawunlock(&bubble->hold);
-		ma_holder_unlock(&rq->hold);
+		bubble_sched_debug("warning: bubble %p empty\n", bubble);
+		ma_dequeue_entity_rq(&bubble->sched, rq);
+		ma_holder_rawunlock(&rq->hold);
+		ma_holder_unlock(&bubble->hold);
 		LOG_RETURN(NULL);
 	}
 
 	nextent = list_entry(bubble->runningentities.next, marcel_entity_t, run_list);
 	bubble_sched_debug("next entity to run %p\n",nextent);
 
-	ma_holder_unlock(&rq->hold);
+	ma_holder_rawunlock(&rq->hold);
+	*nexth = &bubble->hold;
 	LOG_RETURN(nextent);
 #else
 #error Please choose a bubble algorithm
@@ -461,6 +458,7 @@ void __marcel_init bubble_sched_init() {
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
+	ma_dequeue_entity_rq(&marcel_root_bubble.sched, &ma_main_runqueue);
 #endif
 }
 

@@ -185,7 +185,8 @@ ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
 static __tbx_inline__ ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
 	ma_holder_t *h;
 again:
-	h = ma_entity_some_holder(e);
+	if (!(h = ma_entity_some_holder(e)))
+		return NULL;
 	sched_debug("ma_entity_holder_locking(%p)\n",h);
 	ma_holder_rawlock(h);
 	if (tbx_unlikely(h != ma_entity_some_holder(e))) {
@@ -200,7 +201,8 @@ static __tbx_inline__ ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e) {
 	ma_holder_t *h;
 again:
 	ma_preempt_disable();
-	h = ma_entity_some_holder(e);
+	if (!(h = ma_entity_some_holder(e)))
+		return NULL;
 	sched_debug("ma_entity_holder_locking(%p)\n",h);
 	if (tbx_unlikely(!ma_holder_trylock(h)))
 #ifdef MA__LWPS
@@ -234,20 +236,35 @@ static __tbx_inline__ ma_holder_t *ma_this_holder_lock() {
 }
 
 #section marcel_functions
+static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h);
 static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h);
 static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h);
+void ma_task_holder_rawunlock(ma_holder_t *h);
 void ma_task_holder_unlock(ma_holder_t *h);
 void ma_task_holder_unlock_softirq(ma_holder_t *h);
+#define ma_task_holder_rawunlock(h) ma_entity_holder_rawunlock(h)
 #define ma_task_holder_unlock(h) ma_entity_holder_unlock(h)
 #define ma_task_holder_unlock_softirq(h) ma_entity_holder_unlock_softirq(h)
 #section marcel_inline
+static __tbx_inline__ void ma_entity_holder_rawunlock(ma_holder_t *h) {
+	sched_debug("ma_entity_holder_rawunlock(%p)\n",h);
+	ma_holder_rawunlock(h);
+}
 static __tbx_inline__ void ma_entity_holder_unlock(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock(%p)\n",h);
-	ma_holder_unlock(h);
+	if (h)
+		ma_holder_unlock(h);
+	else
+		ma_preempt_enable();
 }
 static __tbx_inline__ void ma_entity_holder_unlock_softirq(ma_holder_t *h) {
 	sched_debug("ma_entity_holder_unlock_softirq(%p)\n",h);
-	ma_holder_unlock_softirq(h);
+	if (h)
+		ma_holder_unlock_softirq(h);
+	else {
+		ma_preempt_enable_no_resched();
+		ma_local_bh_enable();
+	}
 }
 
 /* topology */
@@ -263,7 +280,7 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	return hh?ma_rq_holder(hh):NULL;
 }
 
-/* activations et désactivations nécessitent que le holder soit verrouillé */
+/* Activations et désactivations nécessitent que le holder soit verrouillé. */
 
 /* activation */
 

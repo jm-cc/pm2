@@ -63,7 +63,28 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 	return ma_bubble_holder(h);
 }
 
+#ifdef MARCEL_BUBBLE_STEAL
+static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
+	marcel_entity_t *ee;
+	marcel_bubble_t *b;
+	e->sched_holder = &bubble->hold;
+	if ((e->type = MA_TASK_ENTITY))
+		/* nota: ici on écrase éventuellement une ancienne mise en queue
+		 * Par exemple, b1 qui contient t, t en queue sur b1
+		 * on insère b1 dans b2, on écrase les mises en queue */
+		ma_bubble_enqueue_entity(e,bubble);
+	else {
+		b = tbx_container_of(e, marcel_bubble_t, sched);
+		list_for_each_entry(ee, &b->heldentities, run_list)
+			set_sched_holder(ee, bubble);
+	}
+}
+#endif
+
 static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+#ifdef MARCEL_BUBBLE_STEAL
+	ma_holder_t *sched_bubble;
+#endif
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
 	else {
@@ -73,12 +94,25 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 		PROF_EVENT2(bubble_sched_insert_thread,tbx_container_of(entity,marcel_task_t,sched.internal),bubble);
 	}
 	list_add_tail(&entity->entity_list, &bubble->heldentities);
-	entity->sched_holder = entity->init_holder = &bubble->hold;
+	entity->init_holder = &bubble->hold;
+#ifdef MARCEL_BUBBLE_EXPLODE
+	entity->sched_holder = entity->init_holder;
+#endif
 #ifdef MARCEL_BUBBLE_STEAL
-	list_add_tail(&entity->run_list, &bubble->runningentities);
+	if ((sched_bubble = bubble->sched.sched_holder)) {
+		/* hiérarchie de bulles déjà placée quelque part */
+		/* ce quelque part a déjà été verrouillé par marcel_wake_up_bubble() */
+			/* si la bulle conteneuse est dans une autre bulle,
+			 * on hérite de la bulle d'ordonnancement */
+		if (ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER)
+			/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
+			sched_bubble = &bubble->hold;
+		set_sched_holder(entity, ma_bubble_holder(sched_bubble));
+	}
 #endif
 }
 
+#ifdef MARCEL_BUBBLE_EXPLODE
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 #ifdef MARCEL_BUBBLE_EXPLODE
 	ma_holder_t *h = NULL;
@@ -104,6 +138,7 @@ retryclosed:
 	} else {
 retryopened:
 		h = ma_entity_holder_lock_softirq(&bubble->sched);
+		MA_BUG_ON(!h);
 		ma_holder_rawlock(&bubble->hold);
 		if (bubble->status != MA_BUBBLE_OPENED) {
 			ma_holder_rawunlock(&bubble->hold);
@@ -124,6 +159,22 @@ retryopened:
 	LOG_OUT();
 	return 0;
 }
+#endif
+#ifdef MARCEL_BUBBLE_STEAL
+int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+	ma_holder_t *h = NULL;
+	LOG_IN();
+
+	h = ma_entity_holder_lock_softirq(&bubble->sched);
+	ma_holder_rawlock(&bubble->hold);
+	bubble_sched_debug("inserting %p in opened bubble %p\n",entity,bubble);
+	__do_bubble_insertentity(bubble,entity);
+	ma_holder_rawunlock(&bubble->hold);
+	ma_entity_holder_unlock_softirq(h);
+	LOG_OUT();
+	return 0;
+}
+#endif
 
 void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_runqueue_t *rq;
@@ -229,6 +280,8 @@ void ma_bubble_tick(marcel_bubble_t *bubble) {
 #endif
 }
 
+#if 0
+// Abandonné: plutôt que parcourir l'arbre des bulles, on a un cache de threads prêts
 #ifdef MARCEL_BUBBLE_STEAL
 /* given an entity, find next running entity within the bubble */
 static marcel_entity_t *ma_next_running_in_bubble(
@@ -272,14 +325,12 @@ static marcel_entity_t *ma_next_running_in_bubble(
 	return ma_next_running_in_bubble(root,b,&b->heldentities);
 }
 #endif
+#endif
 
 /* on détient le verrou du holder de nextent */
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_runqueue_t *prevrq, ma_runqueue_t *rq, int idx) {
 	marcel_bubble_t *bubble;
-#ifdef MARCEL_BUBBLE_STEAL
-	marcel_entity_t *next_nextent;
-#endif
 	LOG_IN();
 
 #ifdef MA__LWPS
@@ -347,57 +398,46 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */
 	ma_deactivate_entity(nextent,&rq->hold);
-	{
-		ma_holder_rawlock(&bubble->hold);
-		/* XXX: time_slice proportionnel au parallélisme de la runqueue */
+	ma_holder_rawlock(&bubble->hold);
+	/* XXX: time_slice proportionnel au parallélisme de la runqueue */
 /* ma_atomic_set est une macro et certaines versions de gcc n'aiment pas
-   les #ifdef dans les arguments de macro...
- */
+les #ifdef dans les arguments de macro...
+*/
 #ifdef MA__LWPS
 #  define _TIME_SLICE MA_CPU_WEIGHT(&rq->cpuset)
 #else
 #  define _TIME_SLICE 1
 #endif
-		ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
+	ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
 #undef _TIME_SLICE
-		bubble_sched_debug("timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
-		__do_bubble_explode(bubble,rq);
-		ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
+	bubble_sched_debug("timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
+	__do_bubble_explode(bubble,rq);
+	ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
 
-		ma_holder_rawunlock(&bubble->hold);
-		ma_holder_unlock(&rq->hold);
-	}
+	ma_holder_rawunlock(&bubble->hold);
+	ma_holder_unlock(&rq->hold);
 	LOG_RETURN(NULL);
 
 #elif defined(MARCEL_BUBBLE_STEAL)
 	ma_holder_rawlock(&bubble->hold);
-	/* Get next thread to run */
-	if (!(nextent = bubble->next))
-		/* None, restart from beginning */
-		nextent = ma_next_running_in_bubble(bubble, bubble,
-				&bubble->runningentities);
-	if (!nextent)
-		/* nothing in bubble, skip */
-		goto out;
 
-	bubble_sched_debug("next entity to run %p\n",nextent);
-	/* and compute next after that */
-	next_nextent = ma_next_running_in_bubble(bubble,
-			marcel_bubble_holding_entity(nextent),
-			&nextent->run_list);
-	bubble_sched_debug("next next ent to run %p\n",next_nextent);
-
-	if (!(bubble->next = next_nextent)) {
-out:
+	if (list_empty(&bubble->runningentities)) {
+	/* TODO il faudrait virer la bulle de la runqueue si !nextent
+	 * (ça c'est facile, c'est la remettre dans wake_up qui pourrait
+	 * être dur) */
 		/* end of bubble, put at end of list */
+		bubble_sched_debug("bubble %p nothing\n",bubble);
 		ma_dequeue_entity_rq(&bubble->sched,rq);
 		ma_enqueue_entity_rq(&bubble->sched,rq);
+		ma_holder_rawunlock(&bubble->hold);
+		ma_holder_unlock(&rq->hold);
+		LOG_RETURN(NULL);
 	}
 
-	/* TODO il faudrait virer la bulle de la runqueue si !nextent */
-	ma_holder_rawunlock(&bubble->hold);
-	if (!nextent)
-		ma_holder_unlock(&rq->hold);
+	nextent = list_entry(bubble->runningentities.next, marcel_entity_t, run_list);
+	bubble_sched_debug("next entity to run %p\n",nextent);
+
+	ma_holder_unlock(&rq->hold);
 	LOG_RETURN(nextent);
 #else
 #error Please choose a bubble algorithm

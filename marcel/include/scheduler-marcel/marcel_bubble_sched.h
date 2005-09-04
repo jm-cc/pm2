@@ -96,15 +96,19 @@ struct marcel_bubble {
 	int nbrunning; /* number of entities released by the bubble (i.e. currently in runqueues) */
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
-	/* number of threads in bubble */
-	int nbthreads;
 	/* number of LWPs running a thread in bubble */
-	int nbactive;
+	int nr_active;
 	/* next entity to try to run in this bubble */
 	struct ma_sched_entity *next;
-#endif
+	/* holding bubble that has some of our content as next entity to
+	 * try to run in it */
+	struct marcel_bubble *next_user;
+	///* first holding bubble that is on a runqueue */
+	//struct marcel_bubble *rq_bubble;
+	//en fait non: c'est sched_holder
 	/* list of running entities */
 	struct list_head runningentities;
+#endif
 };
 
 #section macros
@@ -123,8 +127,7 @@ struct marcel_bubble {
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
-	.nbthreads = 0, \
-	.nbactive = 0, \
+	.nr_active = 0, \
 	.next = NULL, \
 	.runningentities = LIST_HEAD_INIT((b).runningentities),
 #endif
@@ -164,12 +167,31 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 
 #section marcel_inline
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+	sched_debug("enqueuing %p in %p\n",e,b);
+#ifdef MARCEL_BUBBLE_STEAL
+	/* TODO: ajouter la bulle à la runqueue si plus rien */
 	list_add_tail(&e->run_list, &b->runningentities);
+#endif
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = (void *)1;
 }
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+	sched_debug("dequeuing %p from %p\n",e,b);
+#ifdef MARCEL_BUBBLE_STEAL
+	/* TODO: enlever la bulle de la runqueue si plus rien */
 	list_del(&e->run_list);
+	if (list_empty(&b->runningentities)) {
+		ma_holder_t *h;
+		ma_holder_rawunlock(&b->hold);
+		h = ma_entity_holder_rawlock(&b->sched);
+		MA_BUG_ON(ma_holder_type(h)->type != MA_RUNQUEUE_HOLDER);
+		if (b->sched.run_holder) {
+			ma_rq_dequeue_entity(&b->sched, ma_rq_holder(h));
+		}
+		ma_entity_holder_rawunlock(h);
+		ma_holder_rawlock(&b->hold);
+	}
+#endif
 	MA_BUG_ON(!e->holder_data);
 	e->holder_data = NULL;
 }

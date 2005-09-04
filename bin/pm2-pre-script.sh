@@ -88,9 +88,9 @@ while [ $# -gt 0 ]; do
 	    cp /dev/null $debug_file
 	    . "$PM2_ROOT/bin/pm2_arch" --source-mode
 	    for i in $_PM2CONFIG_MODULES ; do
-	        gdbinit="$PM2_ROOT/modules/$i/gdbinit-$PM2_ARCH"
+	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
 		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
-	        gdbinit="$PM2_ROOT/modules/$i/gdbinit"
+	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"
 		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
 	    done
 	    log "Using debug mode"

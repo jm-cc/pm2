@@ -39,7 +39,7 @@
 #else
 
 #ifndef MARCEL_ACT
-/* #define NON_BLOCKING_IO */
+#define NON_BLOCKING_IO
 #endif
 
 #include "marcel.h"

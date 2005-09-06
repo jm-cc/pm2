@@ -12,7 +12,8 @@ case "$progname" in
 		;;
 	bubbles)
 		module=profile
-		flavor=marcel-prof
+		flavor="$PM2_FLAVOR"
+		[ -z "$flavor" ] && flavor=marcel-prof
 		;;
 esac
 
@@ -82,20 +83,20 @@ if [ $? != 0 ]; then
 	-- ${@:+"$@"}
 	
 fi
+PROG="${FLAVOR_DIR}/$progname"
 if [ ! -d "${FLAVOR_DIR}"  ] ; then
   error_compile "Directory ${FLAVOR_DIR} not found" \
 	"" \
         "Do you want to try to compile it by executing :" \
-	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor" \
+	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module} ${PROG}" \
 	-- ${@:+"$@"}
 fi
 
-PROG="${FLAVOR_DIR}/$progname"
 if [ ! -x "${PROG}" ]; then
   error_compile "cannot execute ${PROG}" \
 	"" \
         "Do you want to try to compile it by executing :" \
-	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor" \
+	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module} ${PROG}" \
 	-- ${@:+"$@"}
 fi
 

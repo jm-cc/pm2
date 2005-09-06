@@ -237,7 +237,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	
 	PROF_THREAD_BIRTH(new_task);
 	
-	PROF_IN_EXT(newborn_thread);
+	//PROF_IN_EXT(newborn_thread);
 
 	/* Le nouveau thread est démarré par le scheduler choisi */
 	/* Seul le père revient... */

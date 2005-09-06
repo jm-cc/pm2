@@ -319,7 +319,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		// initialisé, mais pas "inséré" dans une quelconque
 		// file pour l'instant.
 
-		PROF_IN_EXT(newborn_thread);
+		//PROF_IN_EXT(newborn_thread);
 
 
 		/* on ne doit pas démarrer nous-même les processus spéciaux */
@@ -359,7 +359,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		LOG_IN();
 		MTRACE("On new stack", marcel_self());
 		
-		PROF_OUT_EXT(newborn_thread);
+		//PROF_OUT_EXT(newborn_thread);
 		PROF_SET_THREAD_NAME();
 
 		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
@@ -397,7 +397,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 #endif
 
 		PROF_SWITCH_TO(cur->number, new_task);
-		PROF_IN_EXT(newborn_thread);
+		//PROF_IN_EXT(newborn_thread);
 		
 		/* activer le fils */
 		h = ma_task_sched_holder(new_task);
@@ -425,7 +425,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 
 		MTRACE("Early start", marcel_self());
 		
-		PROF_OUT_EXT(newborn_thread);
+		//PROF_OUT_EXT(newborn_thread);
 		PROF_SET_THREAD_NAME();
 	}
 	

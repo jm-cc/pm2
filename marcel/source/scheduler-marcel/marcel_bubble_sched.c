@@ -76,7 +76,7 @@ static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 		ma_activate_entity(e,&bubble->hold);
 	} else {
 		b = tbx_container_of(e, marcel_bubble_t, sched);
-		list_for_each_entry(ee, &b->heldentities, run_list)
+		list_for_each_entry(ee, &b->heldentities, entity_list)
 			set_sched_holder(ee, bubble);
 	}
 }
@@ -161,15 +161,12 @@ retryopened:
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
-	ma_holder_t *h = NULL;
 	LOG_IN();
 
-	h = ma_entity_holder_lock_softirq(&bubble->sched);
 	ma_holder_rawlock(&bubble->hold);
 	bubble_sched_debug("inserting %p in opened bubble %p\n",entity,bubble);
 	__do_bubble_insertentity(bubble,entity);
 	ma_holder_rawunlock(&bubble->hold);
-	ma_entity_holder_unlock_softirq(h);
 	LOG_OUT();
 	return 0;
 }

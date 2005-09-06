@@ -26,14 +26,14 @@ endif
 
 .PHONY: default libs fut_files
 
-libs: $(MOD_GEN_BIN)/bubbles
+#libs: $(MOD_GEN_BIN)/bubbles
 libs: $(MOD_GEN_INC)/fut_entries.h
 
 $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
 
-$(MOD_GEN_BIN)/bubbles: ./bin/src/bubbles.c $(MOD_GEN_INC)/fut_print.h
+$(MOD_GEN_BIN)/bubbles: ./bin/src/bubbles.c $(MOD_GEN_INC)/fut_entries.h
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) -Wall -g $< -o $@ -lming -lfxt -I${MOD_GEN_INC} -I/usr/local/include
 

@@ -1,9 +1,23 @@
 #!/bin/sh
 ###########
 
-flavor=`basename $0`
-module=$flavor
-progname=$flavor
+progname="`basename $0`"
+X=
+case "$progname" in
+	sigmund|sigmundps|supertrace|xsigmund)
+		flavor=sigmund
+		;;
+	ezflavor)
+		X=yes
+		;;
+	bubbles)
+		module=profile
+		flavor=marcel-prof
+		;;
+esac
+
+[ -z "$flavor" ] && flavor="$progname"
+[ -z "$module" ] && module="$progname"
 
 args="$@"
 
@@ -85,7 +99,9 @@ if [ ! -x "${PROG}" ]; then
 	-- ${@:+"$@"}
 fi
 
-if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a "$flavor" = "ezflavor" ] ; then
+export LD_LIBRARY_PATH=`${PM2_CONFIG} --flavor=$flavor --libdir $module`
+
+if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a -n "$X" ] ; then
 
     exec open-x11 ${PROG} ${@:+"$@"}
 

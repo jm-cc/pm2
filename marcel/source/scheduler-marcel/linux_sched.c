@@ -634,6 +634,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 		marcel_bubble_inserttask(ma_bubble_holder(h),p);
 		/* marcel_bubble_inserttask() s'est occupé de la réveiller au
 		 * besoin */
+		LOG_OUT();
 		return;
 	} else rq = ma_rq_holder(h);
 

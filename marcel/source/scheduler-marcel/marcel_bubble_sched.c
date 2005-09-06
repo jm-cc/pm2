@@ -53,13 +53,13 @@ int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio) {
 }
 
 marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
-	ma_holder_t *h = e->sched_holder;
-	if (h->type != MA_BUBBLE_HOLDER) {
-		h = e->init_holder;
-		if (!h)
+	ma_holder_t *h = e->init_holder;
+	if (!h || h->type != MA_BUBBLE_HOLDER) {
+		h = e->sched_holder;
+		if (!h || ma_holder_type(h) != MA_BUBBLE_HOLDER)
 			h = &marcel_root_bubble.hold;
-		MA_BUG_ON(ma_holder_type(h) != MA_BUBBLE_HOLDER);
 	}
+	bubble_sched_debug("entity %p is held by bubble %p\n", e, ma_bubble_holder(h));
 	return ma_bubble_holder(h);
 }
 
@@ -76,8 +76,10 @@ static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 		ma_activate_entity(e,&bubble->hold);
 	} else {
 		b = tbx_container_of(e, marcel_bubble_t, sched);
+		ma_holder_rawlock(&b->hold);
 		list_for_each_entry(ee, &b->heldentities, entity_list)
 			set_sched_holder(ee, bubble);
+		ma_holder_rawunlock(&b->hold);
 	}
 }
 #endif
@@ -86,7 +88,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_holder_t *sched_bubble;
 #endif
-	bubble_sched_debug("__inserting %p in opened bubble %p\n",entity,bubble);
+	//bubble_sched_debug("__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,tbx_container_of(entity,marcel_bubble_t,sched),bubble);
 	else {
@@ -104,10 +106,18 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	sched_bubble = bubble->sched.sched_holder;
 	/* si la bulle conteneuse est dans une autre bulle,
 	 * on hérite de la bulle d'ordonnancement */
-	if (!sched_bubble || ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER)
+	if (!sched_bubble || ma_holder_type(sched_bubble) == MA_RUNQUEUE_HOLDER) {
 		/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
 		sched_bubble = &bubble->hold;
+	} else {
+		bubble_sched_debug("unlock new holder %p\n", &bubble->hold);
+		ma_holder_rawunlock(&bubble->hold);
+		ma_holder_rawlock(sched_bubble);
+		bubble_sched_debug("sched holder %p locked\n", sched_bubble);
+	}
 	set_sched_holder(entity, ma_bubble_holder(sched_bubble));
+	bubble_sched_debug("unlock sched holder %p\n", sched_bubble);
+	ma_holder_unlock_softirq(sched_bubble);
 #endif
 }
 
@@ -163,10 +173,10 @@ retryopened:
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	LOG_IN();
 
-	ma_holder_rawlock(&bubble->hold);
-	bubble_sched_debug("inserting %p in opened bubble %p\n",entity,bubble);
+	ma_holder_lock_softirq(&bubble->hold);
+	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
 	__do_bubble_insertentity(bubble,entity);
-	ma_holder_rawunlock(&bubble->hold);
+	bubble_sched_debug("insertion %p in bubble %p done\n",entity,bubble);
 	LOG_OUT();
 	return 0;
 }
@@ -338,11 +348,13 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	if (nextent->sched_level > rq->level) {
 		/* s'assurer d'abord que personne n'a activé une entité d'une
 		 * telle priorité (ou encore plus forte) avant nous */
+		bubble_sched_debug("%p should go down\n", nextent);
 		max_prio = idx;
 		for (currq = ma_lwp_rq(LWP_SELF); currq != rq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx <= max_prio) {
 				bubble_sched_debug("prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
+				sched_debug("unlock(%p)\n", rq);
 				ma_holder_unlock(&rq->hold);
 				LOG_RETURN(NULL);
 			}
@@ -351,6 +363,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx < max_prio) {
 				bubble_sched_debug("better prio %d on rq %s in the meanwhile\n", idx, currq->name);
+				sched_debug("unlock(%p)\n", rq);
 				ma_holder_unlock(&rq->hold);
 				LOG_RETURN(NULL);
 			}
@@ -360,6 +373,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 		/* nextent est RUNNING, on peut déverrouiller la runqueue,
 		 * personne n'y touchera */
+		sched_debug("unlock(%p)\n", rq);
 		ma_holder_rawunlock(&rq->hold);
 
 		/* trouver une runqueue qui va bien */
@@ -412,16 +426,19 @@ les #ifdef dans les arguments de macro...
 	ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
 
 	ma_holder_rawunlock(&bubble->hold);
+	sched_debug("unlock(%p)\n", rq);
 	ma_holder_unlock(&rq->hold);
 	LOG_RETURN(NULL);
 
 #elif defined(MARCEL_BUBBLE_STEAL)
+	sched_debug("locking bubble %p\n",bubble);
 	ma_holder_rawlock(&bubble->hold);
 
 	/* en principe, on arrive à l'éviter */
 	if (list_empty(&bubble->runningentities)) {
 		bubble_sched_debug("warning: bubble %p empty\n", bubble);
 		ma_dequeue_entity_rq(&bubble->sched, rq);
+		sched_debug("unlock(%p)\n", rq);
 		ma_holder_rawunlock(&rq->hold);
 		ma_holder_unlock(&bubble->hold);
 		LOG_RETURN(NULL);
@@ -430,6 +447,7 @@ les #ifdef dans les arguments de macro...
 	nextent = list_entry(bubble->runningentities.next, marcel_entity_t, run_list);
 	bubble_sched_debug("next entity to run %p\n",nextent);
 
+	sched_debug("unlock(%p)\n", rq);
 	ma_holder_rawunlock(&rq->hold);
 	*nexth = &bubble->hold;
 	LOG_RETURN(nextent);

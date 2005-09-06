@@ -196,7 +196,7 @@ static int currently_idle;
  */
 #ifndef ma_prepare_arch_switch
 # define ma_prepare_arch_switch(h, next)	do { } while(0)
-# define ma_finish_arch_switch(h, next)	ma_holder_unlock_softirq(h)
+# define ma_finish_arch_switch(h, next)	ma_entity_holder_unlock_softirq(h)
 # define ma_task_running(h, p)		MA_TASK_IS_RUNNING(p)
 #endif
 
@@ -1766,6 +1766,7 @@ switch_tasks:
 //		++*switch_count;
 
 		ma_dequeue_task(next, nexth);
+		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_rawunlock(nexth);
 		ma_set_task_lwp(next, LWP_SELF);
 
@@ -1775,6 +1776,7 @@ switch_tasks:
 
 		ma_schedule_tail(prev);
 	} else {
+		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(&rq->hold);
 #ifdef MA__LWPS
 		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))

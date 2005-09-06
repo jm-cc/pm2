@@ -187,14 +187,14 @@ static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
 again:
 	if (!(h = ma_entity_some_holder(e)))
 		return NULL;
-	sched_debug("ma_entity_holder_locking(%p)\n",h);
+	sched_debug("ma_entity_holder_rawlocking(%p)\n",h);
 	ma_holder_rawlock(h);
 	if (tbx_unlikely(h != ma_entity_some_holder(e))) {
-		sched_debug("ma_entity_holder_unlocking(%p)\n",h);
+		sched_debug("ma_entity_holder_rawunlocking(%p)\n",h);
 		ma_holder_rawunlock(h);
 		goto again;
 	}
-	sched_debug("ma_entity_holder_locked(%p)\n",h);
+	sched_debug("ma_entity_holder_rawlocked(%p)\n",h);
 	return h;
 }
 static inline ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e) {

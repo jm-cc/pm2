@@ -19,21 +19,27 @@
 #include <stdarg.h>
 
 //static marcel_lock_t __io_lock = MARCEL_LOCK_INIT;
-//static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
+static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
 
 static __inline__ void io_lock()
 {
-  marcel_extlib_protect();
   //marcel_lock_acquire(&__io_lock);
-  //marcel_mutex_lock(&ma_io_lock);
+#ifdef MARCEL_DONT_USE_POSIX_THREADS
+  marcel_mutex_lock(&ma_io_lock);
+#else
+  marcel_extlib_protect();
+#endif
 }
 
 static __inline__ void io_unlock()
 {
-  //marcel_lock_release(&__io_lock);
+#ifdef MARCEL_DONT_USE_POSIX_THREADS
+  marcel_lock_release(&__io_lock);
+#else
+  marcel_extlib_unprotect();
+#endif
   //enable_preemption();
   // marcel_mutex_unlock(&ma_io_lock);
-  marcel_extlib_unprotect();
 }
 
 int marcel_printf(char *format, ...)

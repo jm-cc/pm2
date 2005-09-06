@@ -1369,13 +1369,22 @@ void bubbleInsertThread(thread_t *bubble, thread_t *thread);
 
 bubble_t *bigb;
 
-int main(void) {
+int main(int argc, char *argv[]) {
 	rq_t **rqs=NULL;
 	/* choose whatever font you want */
-	FILE *f = fopen("/usr/share/libming/fonts/Timmons.fdb","r");
+	FILE *f;
 
+#ifdef FXT
+	if (argc<=1) {
+		fprintf(stderr,"I need a profile trace file name as argument\n");
+		exit(1);
+	}
+#endif
+	
 	Ming_init();
 	int __attribute__((unused)) i;
+
+	f = fopen("/usr/share/libming/fonts/Timmons.fdb","r");
 
 	/* pause macro */
 	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
@@ -1456,7 +1465,7 @@ int main(void) {
 	fxt_blockev_t block;
 	unsigned keymask = 0;
 
-	if (!(fut = fxt_open("trace_file"))) {
+	if (!(fut = fxt_open(argv[1]))) {
 		perror("fxt_open");
 		exit(1);
 	}

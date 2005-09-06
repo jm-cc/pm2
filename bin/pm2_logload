@@ -11,7 +11,14 @@ args=${@:+"$@"}
 
 title="$prog.${HOST:-`hostname`}"
 
-set `ps -A | grep pm2_logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /'`
+PS="ps -A"
+ARCH=`uname -m`
+if [ "$ARCH" = "Power Macintosh" ]
+then
+  PS="ps -U $USER"
+fi
+
+set `$PS | grep pm2_logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /'`
 num='0'
 
 while [ $# -gt 0 ]

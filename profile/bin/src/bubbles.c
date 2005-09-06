@@ -1479,16 +1479,20 @@ int main(void) {
 				printf("bubble %p(%p) priority set to %lx\n", (void *)ev.native.param[0],b,ev.native.param[1]);
 				break;
 			}
+#ifdef BUBBLE_SCHED_CLOSED
 			case BUBBLE_SCHED_CLOSED: {
 				bubble_t *b = getBubble(ev.native.param[0]);
 				printf("bubble %p(%p) closed\n", (void *)ev.native.param[0],b);
 				break;
 			}
+#endif
+#ifdef BUBBLE_SCHED_CLOSING
 			case BUBBLE_SCHED_CLOSING: {
 				bubble_t *b = getBubble(ev.native.param[0]);
 				printf("bubble %p(%p) closing\n", (void *)ev.native.param[0],b);
 				break;
 			}
+#endif
 			case BUBBLE_SCHED_DOWN: {
 				entity_t *e = getEntity(ev.native.param[0]);
 				rq_t *rq = getRunqueue(ev.native.param[1]);
@@ -1496,12 +1500,15 @@ int main(void) {
 				switchRunqueues(rq, e);
 				break;
 			}
+#ifdef BUBBLE_SCHED_EXPLODE
 			case BUBBLE_SCHED_EXPLODE: {
 				bubble_t *b = getBubble(ev.native.param[0]);
 				printf("bubble %p(%p) exploding on rq %p\n", (void *)ev.native.param[0],b,b->entity.holder);
 				bubbleExplode(b);
 				break;
 			}
+#endif
+#ifdef BUBBLE_SCHED_GOINGBACK
 			case BUBBLE_SCHED_GOINGBACK: {
 				thread_t *e = getThread(ev.native.param[0]);
 				bubble_t *b = getBubble(ev.native.param[1]);
@@ -1509,6 +1516,7 @@ int main(void) {
 				bubbleInsertThread(b,e);
 				break;
 			}
+#endif
 			case BUBBLE_SCHED_INSERT_BUBBLE: {
 				bubble_t *e = getBubble(ev.native.param[0]);
 				bubble_t *b = getBubble(ev.native.param[1]);

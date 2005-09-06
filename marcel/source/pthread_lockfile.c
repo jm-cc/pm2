@@ -17,13 +17,13 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-/* On récupère lpt_mutexattr_settype */
 #define _GNU_SOURCE
-#include <features.h>
 
 
 #include "marcel.h" //VD:
 #ifdef MA__PTHREAD_FUNCTIONS //VD:
+/* On récupère lpt_mutexattr_settype */
+#include <features.h>
 //VD:#include <bits/libc-lock.h>
 #include <stdio.h>
 #include <pthread.h>

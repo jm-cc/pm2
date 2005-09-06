@@ -45,14 +45,14 @@ $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_MAIN) touch $@
 
 # Nothing can be done at 'do_h generation time'
-dot_h: include/fxt ;
+#dot_h: include/fxt ;
 
-include/fxt:
-	@echo "**********************************************************"
-	@echo "Please, set a symbolic link from $(PM2_ROOT)/$(LIBRARY)/$@ to your distribution of FxT"
-	@echo 
-	@echo "ln -s .../FxT/tools $(PM2_ROOT)/$(LIBRARY)/$@"
-	@echo "**********************************************************"
-	@exit 1
+#include/fxt:
+#	@echo "**********************************************************"
+#	@echo "Please, set a symbolic link from $(PM2_ROOT)/$(LIBRARY)/$@ to your distribution of FxT"
+#	@echo 
+#	@echo "ln -s .../FxT/tools $(PM2_ROOT)/$(LIBRARY)/$@"
+#	@echo "**********************************************************"
+#	@exit 1
 
 include $(PM2_ROOT)/make/libs-rules.mak

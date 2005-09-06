@@ -87,10 +87,15 @@ define hook-advance
 end
 
 define ma-printrq
-  if $arg0
-    printf " %s", $arg0->name
+  printf " %s", ($arg0)->name
+end
+
+define ma-printholder
+  if ($arg0) && ($arg0)->type == 0
+    set $rq = ((ma_runqueue_t *)(((char*)$arg0)+(unsigned)(&(((ma_runqueue_t *)0)->hold))))
+    ma-printrq $rq
   else
-    printf " nil"
+    printf " %p", $arg0
   end
 end
 
@@ -128,8 +133,9 @@ define marcel-printthread
   if $arg0->sched.lwp
     printf " %2d", *(unsigned *)((char*)$arg0->sched.lwp+((char*)&ma_per_lwp__number-(char*)&__main_lwp))
   end
-  ma-printrq $arg0->sched.internal.init_rq
-  ma-printrq $arg0->sched.internal.cur_rq
+  ma-printholder $arg0->sched.internal.init_holder
+  ma-printholder $arg0->sched.internal.sched_holder
+  ma-printholder $arg0->sched.internal.run_holder
   printf "\n"
 end
 document marcel-printthread

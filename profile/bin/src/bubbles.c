@@ -31,6 +31,14 @@
 #endif
 #define SHOWPRIO
 
+/* choose between tree and bubble representation */
+
+#ifdef FXT
+#define TREES
+#else
+#define BUBBLES
+#endif
+
 
 
 #include <ming.h>
@@ -64,10 +72,16 @@ struct fxt_code_name fut_code_table [] =
 /* bubbles / threads aspect */
 
 #define CURVE 20.
+#ifdef TREES
+#define OVERLAP CURVE
+#endif
+#ifdef BUBBLES
+#define OVERLAP 0
+#endif
 #define RQ_XMARGIN 20.
 #define RQ_YMARGIN 10.
 
-#define RATE 15.
+#define RATE 16.
 #define OPTIME 0.5
 #define DELAYTIME 0.2
 
@@ -111,14 +125,6 @@ struct fxt_code_name fut_code_table [] =
 #else
 #define MOVIEY 200.
 #endif
-#endif
-
-/* choose between tree and bubble representation */
-
-#ifdef FXT
-#define TREES
-#else
-#define BUBBLES
 #endif
 
 /* several useful macros */
@@ -918,19 +924,30 @@ void changeInRunqueueEnd(rq_t *rq, entity_t *e) {
 
 void growInBubbleBegin(bubble_t *b, entity_t *e, float dx, float dy) {
 	entity_t *el;
+	float mydy = 0;
 
 	bubbleMorphBegin(b);
 
 	b->entity.lastx = b->entity.x;
 	b->entity.lasty = b->entity.y;
+	b->entity.lastwidth = b->entity.width;
+
 	list_for_each_entry_after(el,&b->heldentities,entity_list,e)
 #ifdef TREES
 		if (el->holder == &b->entity)
 #endif
 			entityMoveDeltaBegin(el, dx, 0);
 	b->nextX += dx;
-	if (b->nextX-CURVE>b->entity.width)
-		growInHolderBegin(&b->entity,b->nextX-CURVE-b->entity.width,0);
+#ifdef BUBBLES
+	if ((mydy = e->height  + 2*CURVE - b->entity.height) > 0) {
+		b->entity.y -= mydy;
+		b->entity.height += mydy;
+	}
+#endif
+	if (b->nextX-OVERLAP>b->entity.width || b->entity.y != b->entity.lasty) {
+		growInHolderBegin(&b->entity,b->nextX-OVERLAP-b->entity.width,mydy);
+		b->entity.width = b->nextX-OVERLAP;
+	}
 }
 
 void growInBubbleBegin2(bubble_t *b, entity_t *e) {
@@ -942,12 +959,21 @@ void growInBubbleBegin2(bubble_t *b, entity_t *e) {
 		if (el->holder == &b->entity)
 #endif
 			entityMoveBegin2(el);
-	if (b->nextX-CURVE>b->entity.width)
+	if (b->entity.lastwidth!=b->entity.width || b->entity.y != b->entity.lasty)
 		growInHolderBegin2(&b->entity);
 }
 
 void growInBubbleStep(bubble_t *b, entity_t *e, float step) {
 	entity_t *el;
+
+	bubbleMorphStep(b, step);
+
+#ifdef BUBBLES
+	SWFDisplayItem_moveTo(b->entity.lastitem,
+			b->entity.lastx+(b->entity.x-b->entity.lastx)*step,
+			b->entity.lasty+(b->entity.y-b->entity.lasty)*step
+			);
+#endif
 
 	if (shown(&b->entity)) {
 		list_for_each_entry_after(el,&b->heldentities,entity_list,e)
@@ -955,7 +981,8 @@ void growInBubbleStep(bubble_t *b, entity_t *e, float step) {
 			if (el->holder == &b->entity)
 #endif
 				entityMoveStep(el,step);
-		if (b->nextX>b->entity.width)
+
+		if (b->entity.lastwidth!=b->entity.width || b->entity.y != b->entity.lasty)
 			growInHolderStep(&b->entity,step);
 	}
 }
@@ -969,8 +996,9 @@ void growInBubbleEnd(bubble_t *b, entity_t *e) {
 		if (el->holder == &b->entity)
 #endif
 			entityMoveEnd(el);
-	if (b->nextX>b->entity.width)
-		b->entity.width = b->nextX;
+	if (b->entity.lastwidth!=b->entity.width || b->entity.y != b->entity.lasty) {
+		growInHolderEnd(&b->entity);
+	}
 }
 
 /*******************************************************************************
@@ -1008,6 +1036,7 @@ void removeFromBubbleEnd(bubble_t *b, entity_t *e) {
 
 void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 	float dx = 0;
+	float dy = 0;
 #ifdef BUBBLES
 	rq_t *rq=NULL;
 
@@ -1036,36 +1065,20 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 
 		removeFromHolderBegin(e);
 #ifdef BUBBLES
-		if (e->height > b->entity.height-2*CURVE) {
-			float delta = e->height+2*CURVE - b->entity.height;
-			b->entity.y -= delta;
-			b->entity.height += delta;
+		if ((dy = e->height+2*CURVE - b->entity.height) > 0) {
+			b->entity.y -= dy;
+			b->entity.height += dy;
 		}
 #endif
 
 		entityMoveToBegin(e, b->entity.x+b->nextX, b->entity.y+
-#ifdef TREES
-				2*
-#endif
-				CURVE);
+				OVERLAP+CURVE);
 
 		b->nextX += e->width+CURVE;
 
-		if (b->nextX
-#ifdef TREES
-				-CURVE
-#endif
-				>b->entity.width) {
-			growInHolderBegin(&b->entity,dx=(b->nextX
-#ifdef TREES
-						-CURVE
-#endif
-						-b->entity.width),0);
-			b->entity.width = b->nextX
-#ifdef TREES
-				-CURVE
-#endif
-				;
+		if (b->nextX-OVERLAP>b->entity.width) {
+			growInHolderBegin(&b->entity,dx=(b->nextX-OVERLAP-b->entity.width),dy);
+			b->entity.width = b->nextX-OVERLAP;
 		}
 
 #ifdef TREES

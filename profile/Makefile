@@ -35,7 +35,7 @@ $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-bui
 
 $(MOD_GEN_BIN)/bubbles: ./bin/src/bubbles.c $(MOD_GEN_INC)/fut_entries.h
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) -Wall -g $< -o $@ -lming -lfxt -I${MOD_GEN_INC} -I/usr/local/include
+	$(COMMON_MAIN) $(CC) -Wall -ggdb2 $< -o $@ -lming -lfxt -I${MOD_GEN_INC} -I/usr/local/include
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)

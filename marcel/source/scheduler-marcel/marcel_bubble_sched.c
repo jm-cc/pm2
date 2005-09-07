@@ -63,6 +63,10 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 	return ma_bubble_holder(h);
 }
 
+/******************************************************************************
+ * Insertion dans une bulle
+ */
+
 #ifdef MARCEL_BUBBLE_STEAL
 static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 	marcel_entity_t *ee;
@@ -202,6 +206,10 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	LOG_OUT();
 }
 
+/******************************************************************************
+ * Refermeture de bulle
+ */
+
 #ifdef MARCEL_BUBBLE_EXPLODE
 static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq) {
 	marcel_entity_t *e;
@@ -285,6 +293,10 @@ void ma_bubble_tick(marcel_bubble_t *bubble) {
 		marcel_close_bubble(bubble);
 #endif
 }
+
+/******************************************************************************
+ * Self-scheduling
+ */
 
 #if 0
 // Abandonné: plutôt que parcourir l'arbre des bulles, on a un cache de threads prêts
@@ -455,6 +467,102 @@ les #ifdef dans les arguments de macro...
 #error Please choose a bubble algorithm
 #endif
 }
+
+/******************************************************************************
+ * Choix de vol
+ */
+
+#ifdef MARCEL_BUBBLE_STEAL
+#ifdef MA__LWPS
+static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int power) {
+	int i;
+	marcel_entity_t *e;
+	marcel_bubble_t *b;
+	for (i = 0; i < MA_MAX_PRIO; i++) {
+		e = NULL;
+		if (!list_empty(&rq->active->queue[i]))
+			e = list_entry(&rq->active->queue[i], marcel_entity_t, run_list);
+		else if (!list_empty(&rq->expired->queue[i]))
+			e = list_entry(&rq->expired->queue[i], marcel_entity_t, run_list);
+		if (!e || e->type == MA_TASK_ENTITY)
+			continue;
+		b = tbx_container_of(e, marcel_bubble_t, sched);
+		if (b->hold.nr_running > power) {
+			bubble_sched_debug("bubble %p has %lu running, too much for rq with power %d\n", b, b->hold.nr_running, power);
+			return b;
+		}
+	}
+	return NULL;
+}
+
+/* TODO: add penality when crossing NUMA levels */
+static int see(struct marcel_topo_level *level) {
+	/* have a look at work worth stealing from here */
+	ma_runqueue_t *rq = level->sched, *rq2;
+	int power = MA_CPU_WEIGHT(&rq->cpuset);
+	marcel_bubble_t *b;
+	if (find_interesting_bubble(rq, power)) {
+		ma_holder_rawlock(&rq->hold);
+		if ((b = find_interesting_bubble(rq, power))) {
+			for (rq2 = ma_lwp_rq(LWP_SELF); rq2 &&
+				MA_CPU_WEIGHT(&rq2->cpuset) < b->hold.nr_running;
+				rq2 = rq2->father);
+			if (rq2) {
+				ma_holder_rawlock(&b->hold);
+				ma_deactivate_entity(&b->sched, &rq->hold);
+				ma_holder_rawunlock(&b->hold);
+			} else
+				b = NULL;
+		}
+		ma_holder_rawunlock(&rq->hold);
+		if (b) {
+			ma_holder_rawlock(&rq2->hold);
+			ma_holder_rawlock(&b->hold);
+			ma_activate_entity(&b->sched, &rq2->hold);
+			ma_holder_rawunlock(&b->hold);
+			ma_holder_rawunlock(&rq2->hold);
+		}
+	}
+	return 0;
+}
+static int see_down(struct marcel_topo_level *level, 
+		struct marcel_topo_level *me) {
+	int i = 0, n = level->arity;
+	if (me) {
+		n--;
+		i = (me->index + 1) % level->arity;
+	}
+	while (n--) {
+		if (see(level->sons[i]) || see_down(level->sons[i], NULL))
+			return 1;
+		i = (i+1) % level->arity;
+	}
+	return 0;
+}
+
+static int see_up(struct marcel_topo_level *level) {
+	struct marcel_topo_level *father = level->father;
+	if (!father)
+		return 0;
+	if (see_down(father, level))
+		return 1;
+	if (see_up(father))
+		return 1;
+	return 0;
+}
+
+int marcel_bubble_steal_work(void) {
+	struct marcel_topo_level *me =
+		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
+	/* couln't find work on local runqueue, go see elsewhere */
+	return see_up(me);
+}
+#endif
+#endif
+
+/******************************************************************************
+ * Initialisation
+ */
 
 void __marcel_init bubble_sched_init() {
 	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);

@@ -88,12 +88,14 @@ typedef unsigned ma_cpu_set_t;
 #endif
 struct marcel_topo_level {
 	enum marcel_topo_level_t type;
-	unsigned number;
+	unsigned number; /* for whole machine */
+	unsigned index; /* in father array */
 
 	ma_cpu_set_t cpuset;
 
 	unsigned arity;
 	struct marcel_topo_level **sons;
+	struct marcel_topo_level *father;
 
 #ifdef MARCEL_SMT_IDLE
 	ma_atomic_t nbidle;

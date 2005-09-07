@@ -1657,9 +1657,6 @@ restart:
 	}
 #endif
 
-	ma_holder_lock(&rq->hold);
-	sched_debug("locked(%p)\n",rq);
-
 	if (tbx_unlikely(rq == ma_dontsched_rq(LWP_SELF))) {
 		/* found no interesting queue, not even previous one */
 #ifdef MA__LWPS
@@ -1668,12 +1665,15 @@ restart:
 #warning TODO: demander à l application de rebalancer
 #endif
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
+#ifdef MARCEL_BUBBLE_STEAL
+		if (marcel_bubble_steal_work())
+			goto need_resched_atomic;
+#endif
 		next = __ma_get_lwp_var(idle_task);
 		nexth = &rq->hold;
 #else
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
-		ma_holder_unlock(&rq->hold);
 		currently_idle = 1;
 		ma_local_bh_enable();
 		marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
@@ -1683,6 +1683,9 @@ restart:
 		goto need_resched_atomic;
 #endif
 	}
+
+	ma_holder_lock(&rq->hold);
+	sched_debug("locked(%p)\n",rq);
 
 	if (next) /* either prev or idle */
 		goto switch_tasks;
@@ -3111,13 +3114,14 @@ EXPORT_SYMBOL(kernel_flag);
 static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
 	LOG_IN();
+	ma_runqueue_t *rq = ma_lwp_rq(lwp);
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	{
 	char name[16];
 	snprintf(name,sizeof(name),"lwp%d",LWP_NUMBER(lwp));
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),LWP_NUMBER(lwp),ma_lwp_rq(lwp));
-	init_rq(ma_lwp_rq(lwp),name, MA_LWP_RQ);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),LWP_NUMBER(lwp),rq);
+	init_rq(rq, name, MA_LWP_RQ);
 #ifdef MA__NUMA
 	if (marcel_topo_nblevels>2) {
 		int level,i;
@@ -3128,18 +3132,19 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 				i++);
 		// should find somebody holding us !
 		MA_BUG_ON(!marcel_topo_levels[level][i].cpuset);
-		ma_lwp_rq(lwp)->father=marcel_topo_levels[level][i].sched;
+		rq->father=marcel_topo_levels[level][i].sched;
 	} else
 #endif
-		ma_lwp_rq(lwp)->father=&ma_main_runqueue;
-	mdebug("runqueue %s has father %s\n",name,ma_lwp_rq(lwp)->father->name);
+		rq->father=&ma_main_runqueue;
+	mdebug("runqueue %s has father %s\n",name,rq->father->name);
 	snprintf(name,sizeof(name),"dontsched%d",LWP_NUMBER(lwp));
 	init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
-	ma_lwp_rq(lwp)->level = marcel_topo_nblevels-1;
+	rq->level = marcel_topo_nblevels-1;
+	marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(lwp)].sched = rq;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
-	MA_CPU_ZERO(&(ma_lwp_rq(lwp)->cpuset));
-	MA_CPU_SET(LWP_NUMBER(lwp),&(ma_lwp_rq(lwp)->cpuset));
+	MA_CPU_ZERO(&(rq->cpuset));
+	MA_CPU_SET(LWP_NUMBER(lwp),&(rq->cpuset));
 	MA_CPU_ZERO(&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
 	MA_CPU_SET(LWP_NUMBER(lwp),&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
 	MA_CPU_SET(LWP_NUMBER(lwp),&ma_main_runqueue.cpuset);

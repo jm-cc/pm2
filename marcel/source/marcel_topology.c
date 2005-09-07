@@ -33,6 +33,7 @@ struct marcel_topo_level marcel_machine_level[] = {
 	{
 		.type = MARCEL_LEVEL_MACHINE,
 		.number = 0,
+		.index = 0,
 		.cpuset = MA_CPU_FULL,
 		.arity = 0,
 		.sons = NULL,
@@ -300,9 +301,12 @@ static void topo_discover(void) {
 			m=0;
 			for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
 				if (!(marcel_topo_levels[l+1][j].cpuset &
-					~(marcel_topo_levels[l][i].cpuset)))
-					marcel_topo_levels[l][i].sons[m++]=
+					~(marcel_topo_levels[l][i].cpuset))) {
+					marcel_topo_levels[l][i].sons[m]=
 						&marcel_topo_levels[l+1][j];
+					marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
+					marcel_topo_levels[l+1][j].index = m++;
+				}
 		}
 	}
 }

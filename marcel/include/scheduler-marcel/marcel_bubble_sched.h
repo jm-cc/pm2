@@ -153,6 +153,8 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
  * bubble has expired */
 void ma_bubble_tick(marcel_bubble_t *bubble);
 
+int marcel_bubble_steal_work(void);
+
 #ifdef MARCEL_BUBBLE_STEAL
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 void ma_bubble_enqueue_task(marcel_task_t *t, marcel_bubble_t *b);

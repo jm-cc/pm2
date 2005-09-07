@@ -41,6 +41,9 @@
 #  define VRP_MADELEINE
 #endif
 #include <VRP.h>
+#include <VRP-ALTA.h>
+
+#undef VRP_MAD_POLL
 
 #define MAD_VRP_LEVEL1_POLLING_MODE \
     (MARCEL_POLL_AT_TIMER_SIG | MARCEL_POLL_AT_YIELD | MARCEL_POLL_AT_IDLE)
@@ -173,6 +176,7 @@ mad_vrp_frame_handler(vrp_in_buffer_t vrp_b)
   LOG_OUT();
 }
 
+#if 0
 static
 void *
 mad_vrp_incoming_thread(void *arg)
@@ -190,7 +194,7 @@ mad_vrp_incoming_thread(void *arg)
   ds     = d->specific;
   is     = in->specific;
   vrp_in = is->vrp_in;
-  req.fd     = vrp_incoming_fd(vrp_in);
+  req.fd = vrp_incoming_fd(vrp_in);
 
   while (1)
     {
@@ -242,7 +246,9 @@ mad_vrp_outgoing_thread(void *arg)
 
   return NULL;
 }
+#endif
 
+#if 0
 /* Level 2 Marcel polling */
 static
 void
@@ -439,7 +445,7 @@ mad_vrp_level1_marcel_poll(marcel_pollid_t id,
   return status;
 }
 
-
+#endif
 
 
 /*
@@ -447,19 +453,11 @@ mad_vrp_level1_marcel_poll(marcel_pollid_t id,
  * ---------------------
  */
 
-void
-mad_vrp_register(p_mad_driver_t driver)
+char*
+mad_vrp_register(p_mad_driver_interface_t interface)
 {
-  p_mad_driver_interface_t interface = NULL;
-
   LOG_IN();
   TRACE("Registering VRP driver");
-  interface = driver->interface;
-
-  driver->connection_type  = mad_unidirectional_connection;
-  driver->buffer_alignment = 32;
-  driver->name             = tbx_strdup("vrp");
-
   interface->driver_init                = mad_vrp_driver_init;
   interface->adapter_init               = mad_vrp_adapter_init;
   interface->channel_init               = mad_vrp_channel_init;
@@ -492,18 +490,22 @@ mad_vrp_register(p_mad_driver_t driver)
   interface->send_buffer_group          = mad_vrp_send_buffer_group;
   interface->receive_sub_buffer_group   = mad_vrp_receive_sub_buffer_group;
   LOG_OUT();
+  return tbx_strdup("vrp");
 }
 
 
 void
-mad_vrp_driver_init(p_mad_driver_t d, int *argc, char ***argv)
+mad_vrp_driver_init(p_mad_driver_t driver, int *argc, char ***argv)
 {
   p_mad_vrp_driver_specific_t ds = NULL;
 
   LOG_IN();
   TRACE("Initializing VRP driver");
-  ds          = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
+  driver->connection_type  = mad_unidirectional_connection;
+  driver->buffer_alignment = 32;
 
+  ds          = TBX_MALLOC(sizeof(mad_vrp_driver_specific_t));
+#if 0
   ds->level1_pollid = marcel_pollid_create(mad_vrp_level1_marcel_group,
                                     mad_vrp_level1_marcel_poll,
                                     mad_vrp_level1_marcel_fast_poll,
@@ -513,8 +515,8 @@ mad_vrp_driver_init(p_mad_driver_t d, int *argc, char ***argv)
                                     mad_vrp_level2_marcel_poll,
                                     mad_vrp_level2_marcel_fast_poll,
                                     MAD_VRP_LEVEL2_POLLING_MODE);
-
-  d->specific = ds;
+#endif
+  driver->specific = ds;
 
   vrp_init();
   LOG_OUT();
@@ -631,8 +633,9 @@ mad_vrp_accept(p_mad_connection_t   in,
 
   is->vrp_in = vrp_incoming_construct(&vrp_port, mad_vrp_frame_handler);
   vrp_incoming_set_source(is->vrp_in, is);
+  vrp_alta_set_incoming(is->vrp_in, in->remote_rank);
   mad_ntbx_send_int(net_client, vrp_port);
-  marcel_create(&(is->thread), NULL, mad_vrp_incoming_thread, in);
+  /*  marcel_create(&(is->thread), NULL, mad_vrp_incoming_thread, in); */
   ntbx_tcp_client_disconnect(net_client);
   ntbx_client_dest(net_client);
   LOG_OUT();
@@ -665,10 +668,11 @@ mad_vrp_connect(p_mad_connection_t   out,
   vrp_port = mad_ntbx_receive_int(net_client);
 
   os->vrp_out = vrp_outgoing_construct(r_node->name, vrp_port, 0, 0, -1);
-  marcel_create(&(os->thread), NULL, mad_vrp_outgoing_thread, out);
+  vrp_alta_set_outgoing(os->vrp_out, out->remote_rank);
+  /*  marcel_create(&(os->thread), NULL, mad_vrp_outgoing_thread, out); */
   ntbx_tcp_client_disconnect(net_client);
   ntbx_client_dest(net_client);
-  vrp_outgoing_connect(os->vrp_out);
+  /* vrp_outgoing_connect(os->vrp_out); */
   LOG_OUT();
 }
 
@@ -751,9 +755,9 @@ mad_vrp_receive_message(p_mad_channel_t ch)
 
   req.ch = ch;
   req.c  = NULL;
-
+#if 0
   marcel_poll(ds->level2_pollid, &req);
-
+#endif
   in = req.c;
   LOG_OUT();
 

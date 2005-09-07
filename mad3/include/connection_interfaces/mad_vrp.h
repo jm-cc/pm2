@@ -44,7 +44,7 @@
  * ---------
  */
 
-char *
+char*
 mad_vrp_register(p_mad_driver_interface_t);
 
 void

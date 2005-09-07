@@ -16,7 +16,7 @@
 
 #define _GNU_SOURCE
 
-/*
+/*******************************************************************************
  * Configuration
  */
 
@@ -36,8 +36,42 @@
 #define TREES
 //#define BUBBLES
 
+/* bubbles / threads aspect */
+
+#define CURVE 20.
+#define RQ_XMARGIN 20.
+#define RQ_YMARGIN 10.
+
+#define RATE 16. /* frame rate */
+#define OPTIME 0.5 /* Operation time */
+#define DELAYTIME 0.2 /* FXT delay between switches */
+
+#define BUBBLETHICK 4
+#define THREADTHICK 4
+#define RQTHICK 4
+
+#define BSIZE 30 /* Button size */
+
+/* movie size */
+
+/* X */
+#define MOVIEX 1280.
+
+/* Y */
+#define MOVIEY 700.
 
 
+
+/*******************************************************************************
+ * End of configuration
+ */
+
+#ifdef TREES
+#define OVERLAP CURVE
+#endif
+#ifdef BUBBLES
+#define OVERLAP 0
+#endif
 #include <ming.h>
 #include <math.h>
 #include <search.h>
@@ -66,36 +100,6 @@ struct fxt_code_name fut_code_table [] =
 #define max(a,b) ({ typeof(a) _a = (a); typeof(b) _b = (b); _a>_b?_a:_b; })
 #endif
 
-/* bubbles / threads aspect */
-
-#define CURVE 20.
-#ifdef TREES
-#define OVERLAP CURVE
-#endif
-#ifdef BUBBLES
-#define OVERLAP 0
-#endif
-#define RQ_XMARGIN 20.
-#define RQ_YMARGIN 10.
-
-#define RATE 16.
-#define OPTIME 0.5
-#define DELAYTIME 0.2
-
-#define BUBBLETHICK 4
-#define THREADTHICK 4
-#define RQTHICK 4
-
-#define BSIZE 30
-
-/* movie size */
-
-/* X */
-#define MOVIEX 1280.
-
-/* Y */
-#define MOVIEY 700.
-
 /* several useful macros */
 
 #define tbx_offset_of(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
@@ -119,9 +123,33 @@ SWFFont font;
 
 void pause(float sec) {
 	float i;
-	for (i=0; i<sec*RATE;i++) {
+	if (!sec) {
+		/* grmbl marche pas */
+		SWFDisplayItem item;
+		SWFShape shape = newSWFShape();
+		SWFButton button = newSWFButton();
+
+		SWFShape_setRightFillStyle(shape, SWFShape_addSolidFillStyle(shape,0,0,0,255));
+		SWFShape_movePenTo(shape,0,0);
+		SWFShape_drawLineTo(shape,BSIZE/3,0);
+		SWFShape_drawLineTo(shape,BSIZE/3,BSIZE);
+		SWFShape_drawLineTo(shape,0,BSIZE);
+		SWFShape_drawLineTo(shape,0,0);
+		SWFShape_movePenTo(shape,(BSIZE*2)/3,0);
+		SWFShape_drawLineTo(shape,BSIZE,0);
+		SWFShape_drawLineTo(shape,BSIZE,BSIZE);
+		SWFShape_drawLineTo(shape,(BSIZE*2)/3,BSIZE);
+		SWFShape_drawLineTo(shape,(BSIZE*2)/3,0);
+		SWFButton_addShape(button, (void*)shape, SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
+		SWFButton_addAction(button, compileSWFActionCode("stopped=1; stop();"), 0xff);
+		item = SWFMovie_add(movie, (SWFBlock)button);
+
 		SWFMovie_nextFrame(movie);
-	}
+		SWFDisplayItem_remove(item);
+	} else 
+		for (i=0; i<sec*RATE;i++) {
+			SWFMovie_nextFrame(movie);
+		}
 }
 
 SWFShape newArrow(float width, float height, int right) {
@@ -1387,7 +1415,6 @@ int main(int argc, char *argv[]) {
 	SWFMovie_setDimension(movie,MOVIEX,MOVIEY);
 
 	{ /* stop / continue action */
-#define BSIZE 30
 		SWFButton button = newSWFButton();
 		SWFDisplayItem item;
 		SWFShape shape = newSWFShape();
@@ -1414,7 +1441,7 @@ int main(int argc, char *argv[]) {
 		button = newSWFButton();
 		SWFButton_addShape(button, (void*)newArrow(BSIZE,BSIZE,1), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, 
-	compileSWFActionCode(" for (i=0;i<15;i++) nextFrame(); if (!stopped) play(); ")
+	compileSWFActionCode(" for (i=0;i<16;i++) nextFrame(); if (!stopped) play(); ")
 				, SWFBUTTON_MOUSEUP);
 		item = SWFMovie_add(movie,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,MOVIEX-2*BSIZE,MOVIEY-BSIZE);
@@ -1422,7 +1449,7 @@ int main(int argc, char *argv[]) {
 		button = newSWFButton();
 		SWFButton_addShape(button, (void*)newArrow(BSIZE,BSIZE,0), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, 
-	compileSWFActionCode(" for (i=0;i<15;i++) prevFrame();  if (!stopped) play();")
+	compileSWFActionCode(" for (i=0;i<16;i++) prevFrame();  if (!stopped) play();")
 				, SWFBUTTON_MOUSEUP);
 		item = SWFMovie_add(movie,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,MOVIEX-3*BSIZE,MOVIEY-BSIZE);
@@ -1672,6 +1699,7 @@ int main(int argc, char *argv[]) {
 
 	{
 #ifndef SHOWPRIO
+		/* démonstration bulles simples */
 		bubble_t *b1, *b2, *b;
 		thread_t *t1, *t2, *t3, *t4, *t5;
 		t1 = newThread(0, norq);
@@ -1688,7 +1716,7 @@ int main(int argc, char *argv[]) {
 		showEntity(&t4->entity);
 		showEntity(&t5->entity);
 		pause(1);
-#endif
+#endif /* SHOWBUILD */
 
 
 		b1 = newBubble(0, norq);
@@ -1696,19 +1724,19 @@ int main(int argc, char *argv[]) {
 #ifdef SHOWBUILD
 		showEntity(&b1->entity);
 		pause(1);
-#endif
+#endif /* SHOWBUILD */
 		b2 = newBubble(0, norq);
 #ifdef SHOWBUILD
 		showEntity(&b2->entity);
 		pause(1);
-#endif
+#endif /* SHOWBUILD */
 
 		bubbleInsertThread(b1,t1);
 		bubbleInsertThread(b1,t2);
 
 #ifdef SHOWBUILD
 		pause(1);
-#endif
+#endif /* SHOWBUILD */
 		bubbleInsertThread(b2,t3);
 		bubbleInsertThread(b2,t4);
 #ifdef SHOWBUILD
@@ -1729,6 +1757,8 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr,"b1=%p, b2=%p, b=%p\n",b1,b2,b);
 #ifdef SHOWEVOLUTION
 
+#if 1
+		/* Évolution de vol */
 		pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
 		pause(1);
@@ -1751,7 +1781,9 @@ int main(int argc, char *argv[]) {
 		switchRunqueuesEnd(&rqs[2][2], &b2->entity);
 		switchRunqueuesEnd(&rqs[1][1], &b->entity);
 		pause(1);
-#if 0
+
+		/* Évolution d'explosion */
+#else
 		pause(1);
 		bubbleExplode(b);
 		pause(1);
@@ -1792,7 +1824,11 @@ int main(int argc, char *argv[]) {
 #endif
 
 #endif
-#else
+
+
+#else /* SHOWPRIO */
+
+		/* démonstration des priorités */
 #define N 5
 		bubble_t *b[N];
 		thread_t *t[2*N], *comm;
@@ -1834,7 +1870,7 @@ int main(int argc, char *argv[]) {
 		bubbleInsertThread(b[0],t[1]);
 		switchRunqueues(&rqs[0][0],&b[0]->entity);
 		pause(1);
-#endif
+#endif /* SHOWPRIO */
 	}
 	SWFMovie_save(movie,"bulles.swf", -1);
 

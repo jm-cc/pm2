@@ -21,7 +21,7 @@
  */
 
 /* Use FXT trace */
-#define FXT
+//#define FXT
 
 /* else build movie by hand */
 
@@ -29,15 +29,12 @@
 #ifndef SHOWBUILD
 #define SHOWEVOLUTION
 #endif
-#define SHOWPRIO
+//#define SHOWPRIO
 
 /* choose between tree and bubble representation */
 
-#ifdef FXT
 #define TREES
-#else
-#define BUBBLES
-#endif
+//#define BUBBLES
 
 
 
@@ -94,38 +91,10 @@ struct fxt_code_name fut_code_table [] =
 /* movie size */
 
 /* X */
-#ifdef FXT
 #define MOVIEX 1280.
-#else
-#ifdef SHOWEVOLUTION
-#ifdef SHOWPRIO
-#define MOVIEX 700.
-#else
-#define MOVIEX 500.
-#endif
-#else
-#ifdef SHOWPRIO
-#define MOVIEX 700.
-#else
-#define MOVIEX 400.
-#endif
-#endif
-#endif
 
 /* Y */
-#ifdef FXT
-#define MOVIEY 700
-#else
-#ifndef SHOWBUILD
-#ifndef SHOWPRIO
-#define MOVIEY 550.
-#else
-#define MOVIEY 350.
-#endif
-#else
-#define MOVIEY 200.
-#endif
-#endif
+#define MOVIEY 700.
 
 /* several useful macros */
 
@@ -665,9 +634,11 @@ void entityMoveDeltaBegin(entity_t *e, float dx, float dy) {
 		bubble_t *b = bubble_of_entity(e);
 		entity_t *el;
 		list_for_each_entry(el,&b->heldentities,entity_list)
+			if (!el->leaving_holder
 #ifdef TREES
-			if (el->holder == e)
+			&& (el->holder == e)
 #endif
+				)
 				entityMoveDeltaBegin(el, dx, dy);
 	}
 }
@@ -689,9 +660,11 @@ void entityMoveToBegin(entity_t *e, float x, float y) {
 		bubble_t *b = bubble_of_entity(e);
 		entity_t *el;
 		list_for_each_entry(el,&b->heldentities,entity_list)
+			if (!el->leaving_holder
 #ifdef TREES
-			if (el->holder == e)
+			&& (el->holder == e)
 #endif
+				)
 				entityMoveDeltaBegin(el, e->x-e->lastx, e->y-e->lasty);
 	}
 }
@@ -704,9 +677,11 @@ void entityMoveBegin2(entity_t *e) {
 		bubble_t *b = bubble_of_entity(e);
 		entity_t *el;
 		list_for_each_entry(el,&b->heldentities,entity_list)
+			if (!el->leaving_holder
 #ifdef TREES
-			if (el->holder == e)
+			&& (el->holder == e)
 #endif
+				)
 				entityMoveBegin2(el);
 	}
 #ifdef TREES
@@ -731,7 +706,8 @@ void entityMoveStep(entity_t *e, float step) {
 #ifdef BUBBLES
 		entity_t *el;
 		list_for_each_entry(el,&b->heldentities,entity_list)
-			entityMoveStep(el, step);
+			if (!el->leaving_holder)
+				entityMoveStep(el, step);
 #endif
 	}
 #ifdef TREES
@@ -749,9 +725,11 @@ void entityMoveEnd(entity_t *e) {
 		bubbleMorphEnd(bubble_of_entity(e));
 #endif
 		list_for_each_entry(el,&b->heldentities,entity_list)
+			if (!el->leaving_holder
 #ifdef TREES
-			if (el->holder == e)
+			&& (el->holder == e)
 #endif
+				)
 				entityMoveEnd(el);
 	}
 #ifdef TREES
@@ -789,7 +767,10 @@ void addToRunqueueEnd(rq_t *rq, entity_t *e) {
 void addToRunqueueAtEnd(rq_t *rq, entity_t *e, entity_t *after) {
 	entityMoveEnd(e);
 	list_add(&e->rq,&after->rq);
-	e->holder = &rq->entity;
+}
+
+void addToRunqueueStep(rq_t *rq, entity_t *e, float step) {
+	entityMoveStep(e,step);
 }
 
 void addToRunqueue(rq_t *rq, entity_t *e) {
@@ -799,7 +780,7 @@ void addToRunqueue(rq_t *rq, entity_t *e) {
 		float i,j;
 		for (i=0.;i<=OPTIME*RATE;i++) {
 			j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
-			entityMoveStep(e,j);
+			addToRunqueueStep(rq, e, j);
 			SWFMovie_nextFrame(movie);
 		}
 	}
@@ -846,28 +827,23 @@ void removeFromRunqueueEnd(rq_t *rq, entity_t *e) {
  */
 
 void switchRunqueuesBegin(rq_t *rq2, entity_t *e) {
-	float width = e->width+RQ_XMARGIN;
-
 	removeFromHolderBegin(e);
-	entityMoveToBegin(e, rq2->nextX, rq2->entity.y+rq2->entity.height-e->height);
-	rq2->nextX += width;
+	addToRunqueueBegin(rq2, e);
 }
 
 void switchRunqueuesBegin2(rq_t *rq2, entity_t *e) {
 	removeFromHolderBegin2(e);
-	entityMoveBegin2(e);
+	addToRunqueueBegin2(rq2, e);
 }
 
 void switchRunqueuesStep(rq_t *rq2, entity_t *e, float step) {
 	removeFromHolderStep(e,step);
-	entityMoveStep(e,step);
+	addToRunqueueStep(rq2, e, step);
 }
 
 void switchRunqueuesEnd(rq_t *rq2, entity_t *e) {
 	removeFromHolderEnd(e);
-	entityMoveEnd(e);
-	list_add_tail(&e->rq,&rq2->entities);
-	e->holder = &rq2->entity;
+	addToRunqueueEnd(rq2, e);
 	e->nospace = 0;
 }
 
@@ -1464,7 +1440,12 @@ int main(int argc, char *argv[]) {
 #ifdef FXT
 			120
 #else
+#ifdef BUBBLES
 			150
+#endif
+#ifdef TREES
+			2*CURVE
+#endif
 #endif
 			);
 
@@ -1740,7 +1721,7 @@ int main(int argc, char *argv[]) {
 #endif
 		bubbleInsertBubble(b,b2);
 		bubbleInsertBubble(b,b1);
-		bubbleInsertThread(b,t5);
+		//bubbleInsertThread(b,t5);
 
 #ifndef SHOWBUILD
 		showEntity(&b->entity);
@@ -1750,6 +1731,27 @@ int main(int argc, char *argv[]) {
 
 		pause(1);
 		switchRunqueues(&rqs[0][0], &b->entity);
+		pause(1);
+		switchRunqueues(&rqs[2][0], &b->entity);
+		pause(1);
+		switchRunqueues(&rqs[2][3], &b->entity);
+		pause(1);
+		switchRunqueuesBegin(&rqs[2][3], &b1->entity);
+		switchRunqueuesBegin(&rqs[2][2], &b2->entity);
+		switchRunqueuesBegin(&rqs[1][1], &b->entity);
+		switchRunqueuesBegin2(&rqs[2][3], &b1->entity);
+		switchRunqueuesBegin2(&rqs[2][2], &b2->entity);
+		switchRunqueuesBegin2(&rqs[1][1], &b->entity);
+		doStepsBegin(step);
+			switchRunqueuesStep(&rqs[2][3], &b1->entity, step);
+			switchRunqueuesStep(&rqs[2][2], &b2->entity, step);
+			switchRunqueuesStep(&rqs[1][1], &b->entity, step);
+		doStepsEnd();
+		switchRunqueuesEnd(&rqs[2][3], &b1->entity);
+		switchRunqueuesEnd(&rqs[2][2], &b2->entity);
+		switchRunqueuesEnd(&rqs[1][1], &b->entity);
+		pause(1);
+#if 0
 		pause(1);
 		bubbleExplode(b);
 		pause(1);
@@ -1787,6 +1789,7 @@ int main(int argc, char *argv[]) {
 		doStepsEnd();
 		switchRunqueuesEnd(&rqs[2][2], &t1->entity);
 		switchRunqueuesEnd(&rqs[2][0], &t3->entity);
+#endif
 
 #endif
 #else

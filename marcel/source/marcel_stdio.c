@@ -19,7 +19,9 @@
 #include <stdarg.h>
 
 //static marcel_lock_t __io_lock = MARCEL_LOCK_INIT;
+#ifdef MARCEL_DONT_USE_POSIX_THREADS
 static marcel_mutex_t ma_io_lock=MARCEL_MUTEX_INITIALIZER;
+#endif
 
 static __inline__ void io_lock()
 {

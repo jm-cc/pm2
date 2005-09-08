@@ -210,15 +210,15 @@ tbx_safe_malloc_check_chunk(p_tbx_safe_malloc_header_t p)
 	    tbx_safe_malloc_magic,
 	    TBX_SAFE_MALLOC_MAGIC_SIZE))
     fprintf(stderr,
-	    "SafeMalloc: Error: The block at %p has a corrupted header:\n",
-	    data);
+	    "SafeMalloc: Error: The block at %p has a corrupted header. Size %lu malloc'ed in file %s at line %lu\n",
+	    data, (unsigned long)p->size, (char*) data + p->size + TBX_SAFE_MALLOC_MAGIC_SIZE, p->line);
 
   if(memcmp(data + p->size,
 	    tbx_safe_malloc_magic,
 	    TBX_SAFE_MALLOC_MAGIC_SIZE))
     fprintf(stderr,
-	    "SafeMalloc: Error: The block at %p has a corrupted trailer:\n",
-	    data);
+	    "SafeMalloc: Error: The block at %p has a corrupted trailer. Size %lu malloc'ed in file %s at line %lu\n",
+	    data, (unsigned long)p->size, (char *) data + p->size + TBX_SAFE_MALLOC_MAGIC_SIZE, p->line);
 }
 
 void

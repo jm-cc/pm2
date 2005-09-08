@@ -1373,6 +1373,62 @@ tbx_slist_ref_backward(p_tbx_slist_t slist)
 }
 
 tbx_bool_t
+tbx_slist_ref_extract_and_forward(p_tbx_slist_t slist, void **p_object)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (slist->ref)
+    {
+      if (!tbx_slist_is_nil(slist))
+	{
+          p_tbx_slist_element_t element = NULL;
+
+          element = slist->ref;
+	  slist->ref = slist->ref->next;
+	  result = (slist->ref != NULL);
+
+          *p_object = __tbx_slist_free_element(slist, element);
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return result;
+}
+
+tbx_bool_t
+tbx_slist_ref_extract_and_backward(p_tbx_slist_t slist, void **p_object)
+{
+  tbx_bool_t result = tbx_false;
+
+  LOG_IN();
+  if (slist->ref)
+    {
+      if (!tbx_slist_is_nil(slist))
+	{
+          p_tbx_slist_element_t element = NULL;
+
+          element = slist->ref;
+	  slist->ref = slist->ref->previous;
+	  result = (slist->ref != NULL);
+
+          *p_object = __tbx_slist_free_element(slist, element);
+	}
+      else
+	FAILURE("empty list");
+    }
+  else
+    FAILURE("uninitialized reference");
+  LOG_OUT();
+
+  return result;
+}
+
+tbx_bool_t
 tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 			   p_tbx_slist_offset_t offset)
 {

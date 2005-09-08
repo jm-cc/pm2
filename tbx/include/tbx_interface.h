@@ -437,6 +437,12 @@ tbx_bool_t
 tbx_slist_ref_backward(p_tbx_slist_t slist);
 
 tbx_bool_t
+tbx_slist_ref_extract_and_forward(p_tbx_slist_t slist, void **p_object);
+
+tbx_bool_t
+tbx_slist_ref_extract_and_backward(p_tbx_slist_t slist, void **p_object);
+
+tbx_bool_t
 tbx_slist_ref_step_forward(p_tbx_slist_t        slist,
 			   p_tbx_slist_offset_t offset);
 

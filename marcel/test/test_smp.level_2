@@ -17,29 +17,29 @@
 flavor="test_marcel_smp"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="smptest"
-args="--marcel-nvp 5"
+args="--marcel-nvp 2"
 hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Hi! I'm thread 0 on VP 0
 Hi! I'm thread 1 on VP 1
-Hi! I'm thread 2 on VP 2
-Hi! I'm thread 3 on VP 3
-Hi! I'm thread 4 on VP 4
-Hi! I'm thread 5 on VP 0
-Hi! I'm thread 6 on VP 1
-Hi! I'm thread 7 on VP 2
-Hi! I'm thread 8 on VP 3
-Hi! I'm thread 9 on VP 4
+Hi! I'm thread 2 on VP 0
+Hi! I'm thread 3 on VP 1
+Hi! I'm thread 4 on VP 0
+Hi! I'm thread 5 on VP 1
+Hi! I'm thread 6 on VP 0
+Hi! I'm thread 7 on VP 1
+Hi! I'm thread 8 on VP 0
+Hi! I'm thread 9 on VP 1
 Hi! I'm thread 10 on VP 0
 Hi! I'm thread 11 on VP 1
-Hi! I'm thread 12 on VP 2
-Hi! I'm thread 13 on VP 3
-Hi! I'm thread 14 on VP 4
-Hi! I'm thread 15 on VP 0
-Hi! I'm thread 16 on VP 1
-Hi! I'm thread 17 on VP 2
-Hi! I'm thread 18 on VP 3
-Hi! I'm thread 19 on VP 4
+Hi! I'm thread 12 on VP 0
+Hi! I'm thread 13 on VP 1
+Hi! I'm thread 14 on VP 0
+Hi! I'm thread 15 on VP 1
+Hi! I'm thread 16 on VP 0
+Hi! I'm thread 17 on VP 1
+Hi! I'm thread 18 on VP 0
+Hi! I'm thread 19 on VP 1
 EOF
 
 # Creation de la flavor

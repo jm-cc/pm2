@@ -3114,10 +3114,10 @@ EXPORT_SYMBOL(kernel_flag);
 static void linux_sched_lwp_init(ma_lwp_t lwp)
 {
 	LOG_IN();
-	ma_runqueue_t *rq = ma_lwp_rq(lwp);
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	{
+	ma_runqueue_t *rq = ma_lwp_rq(lwp);
 	char name[16];
 	snprintf(name,sizeof(name),"lwp%d",LWP_NUMBER(lwp));
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),LWP_NUMBER(lwp),rq);

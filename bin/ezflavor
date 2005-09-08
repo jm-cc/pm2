@@ -3,6 +3,8 @@
 
 progname="`basename $0`"
 X=
+flavor=
+module=
 case "$progname" in
 	sigmund|sigmundps|supertrace|xsigmund)
 		flavor=sigmund
@@ -88,7 +90,7 @@ if [ ! -d "${FLAVOR_DIR}"  ] ; then
   error_compile "Directory ${FLAVOR_DIR} not found" \
 	"" \
         "Do you want to try to compile it by executing :" \
-	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module} ${PROG}" \
+	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module}" \
 	-- ${@:+"$@"}
 fi
 
@@ -96,7 +98,7 @@ if [ ! -x "${PROG}" ]; then
   error_compile "cannot execute ${PROG}" \
 	"" \
         "Do you want to try to compile it by executing :" \
-	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module} ${PROG}" \
+	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module}" \
 	-- ${@:+"$@"}
 fi
 

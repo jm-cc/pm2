@@ -3140,7 +3140,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	snprintf(name,sizeof(name),"dontsched%d",LWP_NUMBER(lwp));
 	init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
 	rq->level = marcel_topo_nblevels-1;
-	marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(lwp)].sched = rq;
+	marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(lwp)%marcel_nbprocessors].sched = rq;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
 	MA_CPU_ZERO(&(rq->cpuset));

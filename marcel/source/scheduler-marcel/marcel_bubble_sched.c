@@ -499,10 +499,11 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int power) {
 static int see(struct marcel_topo_level *level) {
 	/* have a look at work worth stealing from here */
 	ma_runqueue_t *rq = level->sched, *rq2;
-	int power = MA_CPU_WEIGHT(&rq->cpuset);
+	int power;
 	marcel_bubble_t *b;
 	if (!rq)
 		return 0;
+	power = MA_CPU_WEIGHT(&rq->cpuset);
 	if (find_interesting_bubble(rq, power)) {
 		ma_holder_rawlock(&rq->hold);
 		if ((b = find_interesting_bubble(rq, power))) {

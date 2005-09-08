@@ -683,7 +683,7 @@ pm2config_parse_cmdline() # args
 # Programme principal
 ######################
 
-_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 mad4 marcel tbx ntbx init stackalign leonie ezflavor sigmundlib sigmund sigmundps xsigmund supertrace"
+_PM2CONFIG_DIRTY_ORDERED_MODULES="profile leoparse pm2 dsm mad1 mad2 mad3 mad4 marcel tbx ntbx init stackalign leonie ezflavor sigmundlib sigmund sigmundps xsigmund supertrace bubbles"
 
 _PM2CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 dsm mad marcel pthread tbx ntbx profile pm2debug stackalign sigmundlib sigmund sigmundps xsigmund"
 

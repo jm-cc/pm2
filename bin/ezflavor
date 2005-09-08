@@ -13,9 +13,7 @@ case "$progname" in
 		X=yes
 		;;
 	bubbles)
-		module=profile
-		flavor="$PM2_FLAVOR"
-		[ -z "$flavor" ] && flavor=marcel-prof
+		flavor=marcel-prof
 		;;
 esac
 

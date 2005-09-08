@@ -15,7 +15,7 @@
 
 LIBS := pm2 marcel mad2 mad3 tbx ntbx dsm init leoparse profile sigmundlib
 # mad1
-MODULES := leonie stackalign sigmund sigmundps xsigmund supertrace
+MODULES := leonie stackalign sigmund sigmundps xsigmund supertrace bubbles
 
 # Directement dans les sources:
 # stackalign

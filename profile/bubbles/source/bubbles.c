@@ -21,7 +21,7 @@
  */
 
 /* Use FXT trace */
-//#define FXT
+#define FXT
 
 /* else build movie by hand */
 
@@ -32,6 +32,7 @@
 //#define SHOWPRIO
 
 /* choose between tree and bubble representation */
+#undef BUBBLES
 
 #define TREES
 //#define BUBBLES
@@ -1523,7 +1524,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 #endif
-			case BUBBLE_SCHED_DOWN: {
+			case BUBBLE_SCHED_SWITCHRQ: {
 				entity_t *e = getEntity(ev.native.param[0]);
 				rq_t *rq = getRunqueue(ev.native.param[1]);
 				printf("entity %p(%p) going down to %p (%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], rq);
@@ -1565,6 +1566,7 @@ int main(int argc, char *argv[]) {
 				bubble_t *b = getBubble(ev.native.param[0]);
 				rq_t *rq = getRunqueue(ev.native.param[1]);
 				printf("bubble %p(%p) waking up on runqueue %p(%p)\n", (void *)ev.native.param[0], b, (void *)ev.native.param[1], rq);
+				switchRunqueues(rq, &b->entity);
 				break;
 			}
 			case FUT_RQS_NEWLEVEL: {

@@ -13,7 +13,7 @@ case "$progname" in
 		X=yes
 		;;
 	bubbles)
-		flavor=marcel-prof
+		[ -n "$PM2_FLAVOR" ] && flavor=$PM2_FLAVOR || flavor=marcel-prof
 		;;
 esac
 

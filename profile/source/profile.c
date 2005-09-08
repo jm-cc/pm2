@@ -166,9 +166,10 @@ void profile_set_tracefile(char *fmt, ...)
 
 void profile_stop(void)
 {
-  __pm2_profile_active = FALSE;
+  if (__pm2_profile_active)
+    fut_endup(PROF_FILE_USER);
 
-  fut_endup(PROF_FILE_USER);
+  __pm2_profile_active = FALSE;
 }
 
 void profile_exit(void)

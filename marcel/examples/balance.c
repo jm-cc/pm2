@@ -76,16 +76,19 @@ any_t work(any_t arg) {
 	int n = iterations;
 	int num;
 	while (n--) {
+		tprintf("group %d begin\n",i);
 		num = marcel_barrier_begin(&barrier[i]);
 		start = marcel_clock();
 		marcel_barrier_end(&barrier[i], num);
-		tprintf("group %d start\n",i);
+		tprintf("group %d do\n",i);
 		while(marcel_clock() < start + works[i]);
+		tprintf("group %d done\n",i);
 		marcel_barrier_wait(&barrier[i]);
 		tprintf("group %d wait\n",i);
 		marcel_delay(delays[i]);
+		tprintf("group %d done\n",i);
 	}
-	tprintf("group %d done\n",i);
+	tprintf("group %d finished\n",i);
 	return NULL;
 }
 
@@ -103,9 +106,14 @@ int main(int argc, char *argv[]) {
 
 	marcel_attr_init(&attr);
 
+#ifdef PROFILE
+   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+#endif
+
 	for (i=0;i<NWORKS;i++) {
 		marcel_barrier_init(&barrier[i], NULL, NWORKERS);
 		marcel_bubble_init(&bubble[i]);
+		marcel_bubble_setschedlevel(&bubble[i], 100);
 		marcel_bubble_setprio(&bubble[i], MA_DEF_PRIO);
 		marcel_attr_setinitbubble(&attr,&bubble[i]);
 		for (j=0;j<NWORKERS;j++) {
@@ -115,6 +123,10 @@ int main(int argc, char *argv[]) {
 		}
 		marcel_wake_up_bubble(&bubble[i]);
 	}
+
+#ifdef PROFILE
+   profile_stop();
+#endif
 
 	marcel_end();
 	return 0;

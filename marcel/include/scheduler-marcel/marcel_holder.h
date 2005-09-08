@@ -65,10 +65,25 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 	h->nr_running = h->nr_uninterruptible = 0;
 }
 
-#section marcel_macros
-#define ma_rq_holder(h) tbx_container_of((h),ma_runqueue_t,hold)
+#section marcel_functions
+static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
+	return tbx_container_of(h, ma_runqueue_t, hold);
+}
+
+#section marcel_functions
 #ifdef MA__BUBBLES
-#define ma_bubble_holder(h) tbx_container_of((h),marcel_bubble_t,hold)
+static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
+#endif
+#section marcel_inline
+#ifdef MA__BUBBLES
+static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
+	return tbx_container_of(h, marcel_bubble_t, hold);
+}
+#endif
+#section marcel_macros
+#ifdef MA__BUBBLES
 #define ma_holder_type(h) ((h)->type)
 #else
 #define ma_holder_type(h) MA_RUNQUEUE_HOLDER
@@ -109,6 +124,17 @@ struct ma_sched_entity {
 
 #section types
 typedef struct ma_sched_entity marcel_entity_t;
+
+#section marcel_functions
+static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e);
+static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e);
+#section marcel_inline
+static __tbx_inline__ marcel_task_t *ma_task_entity(marcel_entity_t *e) {
+	return tbx_container_of(e, marcel_task_t, sched.internal);
+}
+static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
+	return tbx_container_of(e, marcel_bubble_t, sched);
+}
 
 #section macros
 #ifdef MA__LWPS

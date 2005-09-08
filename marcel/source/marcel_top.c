@@ -101,9 +101,9 @@ void printbubble(int sep, marcel_bubble_t *b) {
 
 void printentity(int sep, marcel_bubble_entity_t *e) {
 	if (e->type == MARCEL_TASK_ENTITY) {
-		printtask(sep,tbx_container_of(e, marcel_task_t, sched.internal ));
+		printtask(sep,ma_task_entity(e));
 	} else {
-		printbubble(sep,tbx_container_of(e, marcel_bubble_t, sched));
+		printbubble(sep,ma_bubble_entity(e));
 	}
 }
 

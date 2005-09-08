@@ -1471,6 +1471,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 #endif
 	if (preemption_enabled() && ma_thread_preemptible()) {
+		MA_BUG_ON(ma_atomic_read(&p->sched.internal.time_slice)>10);
 		if (ma_atomic_dec_and_test(&p->sched.internal.time_slice)) {
 			ma_set_tsk_need_resched(p);
 			//p->prio = effective_prio(p);
@@ -1550,7 +1551,7 @@ asmlinkage void ma_schedule(void)
 	marcel_bubble_t *bubble;
 #endif
 	ma_runqueue_t *rq, *prevrq, *currq, *prev_as_rq;
-	ma_holder_t *prevh, *nexth;
+	ma_holder_t *prevh, *nexth, *h;
 	ma_prio_array_t *array;
 	struct list_head *queue;
 	unsigned long now;
@@ -1610,8 +1611,8 @@ need_resched_atomic:
 			go_to_sleep = 1;
 	}
 #ifdef MARCEL_BUBBLE_EXPLODE
-	if (prevh->type == MA_BUBBLE_HOLDER
-		&& (bubble = ma_bubble_holder(prevh))->status == MA_BUBBLE_CLOSING)
+	if ((h = ma_task_init_holder(prev)) && h->type == MA_BUBBLE_HOLDER
+		&& (bubble = ma_bubble_holder(h))->status == MA_BUBBLE_CLOSING)
 		go_to_sleep = 1;
 #endif
 
@@ -1731,7 +1732,7 @@ restart:
 		/* ma_bubble_sched aura libéré prevrq */
 		goto need_resched_atomic;
 	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
-	next = tbx_container_of(nextent, marcel_task_t, sched.internal);
+	next = ma_task_entity(nextent);
 switch_tasks:
 	sched_debug("prio %d in %s, next %p(%s)\n",idx,rq->name,next,next->name);
 	MTRACE("previous",prev);
@@ -1740,7 +1741,7 @@ switch_tasks:
 	/* still wanting to go to sleep ? (now that runqueues are locked, we can
 	 * safely deactivate ourselves */
 
-	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD) ||
+	if (go_to_sleep && ((prev->sched.state == MA_TASK_DEAD) ||
 				!(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
 		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
 		MA_BUG_ON(next==prev);

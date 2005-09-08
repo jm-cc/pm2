@@ -48,7 +48,7 @@ int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t
 {
   ma_holder_t *h = attr->init_holder;
   MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
-  *rq = tbx_container_of(h, ma_runqueue_t, hold);
+  *rq = ma_rq_holder(h);
   return 0;
 }
 
@@ -57,7 +57,7 @@ int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bu
 {
   ma_holder_t *h = attr->init_holder;
   MA_BUG_ON(h->type != MA_BUBBLE_HOLDER);
-  *b = tbx_container_of(h, marcel_bubble_t, hold);
+  *b = ma_bubble_holder(h);
   return 0;
 }
 #endif

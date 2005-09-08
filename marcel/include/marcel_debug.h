@@ -152,9 +152,12 @@ extern debug_type_t marcel_mtrace_timer;
 
 #ifdef DEBUG_BUBBLE_SCHED
 #  define bubble_sched_debug(fmt, ...) debug_printf(&marcel_bubble_sched_debug, \
-        fmt, ##__VA_ARGS__)
+        (fmt), ##__VA_ARGS__)
+#  define bubble_sched_debugl(level, fmt, ...) debug_printfl(&marcel_bubble_sched_debug, (level), \
+        (fmt), ##__VA_ARGS__)
 #else
 #  define bubble_sched_debug(fmt, ...) (void)0
+#  define bubble_sched_debugl(level, fmt, ...) (void)0
 #endif
 
 #ifndef MARCEL_TRACE

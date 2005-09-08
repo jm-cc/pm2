@@ -163,6 +163,35 @@ MA_DEFINE_LWP_NOTIFIER_ONOFF(fault_catcher, "Fault catcher",
 //MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(fault_catcher, MA_INIT_FAULT_CATCHER,
 //				 MA_INIT_FAULT_CATCHER_PRIO);
 
+#ifdef PROFILE
+static void int_catcher_exit(ma_lwp_t lwp)
+{
+	LOG_IN();
+	signal(SIGINT, SIG_DFL);
+	LOG_OUT();
+}
+static void int_catcher(int signo)
+{
+	profile_stop();
+	profile_exit();
+	int_catcher_exit(NULL);
+	raise(SIGINT);
+}
+static void int_catcher_init(ma_lwp_t lwp)
+{
+	LOG_IN();
+	signal(SIGINT, int_catcher);
+	LOG_OUT();
+}
+MA_DEFINE_LWP_NOTIFIER_ONOFF(int_catcher, "Int catcher",
+			     int_catcher_init, "Start int catcher",
+			     int_catcher_exit, "Stop int catcher");
+
+MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER,
+				 MA_INIT_INT_CATCHER_PRIO);
+
+#endif
+
 /****************************************************************
  * Le signal TIMER
  *

@@ -135,6 +135,8 @@ typedef struct __ma_init_info {
 #define MA_INIT_THREADS_MAIN          MA_INIT_SELF
 #define MA_INIT_FAULT_CATCHER         MA_INIT_MAIN_LWP
 #define MA_INIT_FAULT_CATCHER_PRIO                 0
+#define MA_INIT_INT_CATCHER           MA_INIT_MAIN_LWP
+#define MA_INIT_INT_CATCHER_PRIO                   0
 #define MA_INIT_DEBUG                 MA_INIT_MAIN_LWP
 #define MA_INIT_DEBUG_PRIO                         1
 #define MA_INIT_SLOT                  MA_INIT_MAIN_LWP

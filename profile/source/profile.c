@@ -179,5 +179,6 @@ void profile_exit(void)
     fkt_stop();
 #endif
 
+  profile_stop();
   fut_done();
 }

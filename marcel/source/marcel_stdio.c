@@ -36,12 +36,11 @@ static __inline__ void io_lock()
 static __inline__ void io_unlock()
 {
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
-  marcel_lock_release(&__io_lock);
+  marcel_mutex_unlock(&ma_io_lock);
 #else
   marcel_extlib_unprotect();
 #endif
-  //enable_preemption();
-  // marcel_mutex_unlock(&ma_io_lock);
+  //marcel_lock_release(&__io_lock);
 }
 
 int marcel_printf(char *format, ...)

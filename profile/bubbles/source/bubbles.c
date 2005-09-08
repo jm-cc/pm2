@@ -1527,7 +1527,7 @@ int main(int argc, char *argv[]) {
 			case BUBBLE_SCHED_SWITCHRQ: {
 				entity_t *e = getEntity(ev.native.param[0]);
 				rq_t *rq = getRunqueue(ev.native.param[1]);
-				printf("entity %p(%p) going down to %p (%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], rq);
+				printf("entity %p(%p) switching to %p (%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], rq);
 				switchRunqueues(rq, e);
 				break;
 			}
@@ -1600,6 +1600,20 @@ int main(int argc, char *argv[]) {
 			case FUT_GCC_INSTRUMENT_ENTRY_CODE:
 			case FUT_GCC_INSTRUMENT_EXIT_CODE:
 				break;
+#ifdef SCHED_IDLE_START
+			case SCHED_IDLE_START: {
+				int n;
+				n = (int)ev.native.param[0];
+				break;
+			}
+#endif
+#ifdef SCHED_IDLE_STOP
+			case SCHED_IDLE_STOP: {
+				int n;
+				n = (int)ev.native.param[0];
+				break;
+			}
+#endif
 			default:
 			if (keymask) switch (ev.native.code) {
 				case FUT_THREAD_BIRTH_CODE: {

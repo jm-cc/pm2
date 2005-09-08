@@ -494,7 +494,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int power) {
 			continue;
 		b = ma_bubble_entity(e);
 		if (b->hold.nr_running > power) {
-			bubble_sched_debug("bubble %p has %lu running, too much for rq with power %d\n", b, b->hold.nr_running, power);
+			//bubble_sched_debug("bubble %p has %lu running, too much for rq with power %d\n", b, b->hold.nr_running, power);
 			return b;
 		}
 	}
@@ -521,7 +521,7 @@ static int see(struct marcel_topo_level *level) {
 				ma_deactivate_entity(&b->sched, &rq->hold);
 				ma_holder_rawunlock(&b->hold);
 			} else {
-				bubble_sched_debug("no better runqueue for bubble %p\n",b);
+				//bubble_sched_debug("no better runqueue for bubble %p\n",b);
 				b = NULL;
 			}
 		}

@@ -840,6 +840,7 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 
 #ifdef MA__LWPS
 	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))) {
+		PROF_EVENT1(sched_idle_start,LWP_NUMBER(LWP_SELF));
 		if (prev != MARCEL_SELF)
 			ma_topology_lwp_idle_start(LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(LWP_SELF)))
@@ -1761,8 +1762,10 @@ switch_tasks:
 
 	if (tbx_likely(prev != next)) {
 #ifdef MA__LWPS
-		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task)))
+		if (tbx_unlikely(prev == __ma_get_lwp_var(idle_task))) {
+			PROF_EVENT1(sched_idle_stop, LWP_NUMBER(LWP_SELF));
 			ma_topology_lwp_idle_end(LWP_SELF);
+		}
 #endif
 //		next->timestamp = now;
 //		rq->nr_switches++;

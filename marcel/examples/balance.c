@@ -124,10 +124,6 @@ int main(int argc, char *argv[]) {
 		marcel_wake_up_bubble(&bubble[i]);
 	}
 
-#ifdef PROFILE
-   profile_stop();
-#endif
-
 	marcel_end();
 	return 0;
 }

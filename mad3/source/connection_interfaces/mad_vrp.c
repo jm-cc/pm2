@@ -686,7 +686,7 @@ mad_vrp_disconnect(p_mad_connection_t c)
 
       is = c->specific;
       vrp_incoming_close(is->vrp_in);
-      marcel_join(is->thread, NULL);
+      /*      marcel_join(is->thread, NULL);*/
       TBX_FREE(is->vrp_in);
     }
   else if (c->way == mad_outgoing_connection)
@@ -695,7 +695,7 @@ mad_vrp_disconnect(p_mad_connection_t c)
 
       os = c->specific;
       vrp_outgoing_close(os->vrp_out);
-      marcel_join(os->thread, NULL);
+      /*      marcel_join(os->thread, NULL);*/
       TBX_FREE(os->vrp_out);
     }
   else

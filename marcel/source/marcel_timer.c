@@ -401,17 +401,20 @@ static void sig_start_timer(ma_lwp_t lwp)
 	LOG_OUT();
 }
 
+static void sig_stop_itimer(void)
+{
+	struct itimerval value;
+	memset(&value,0,sizeof(value));
+	setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
+}
+
 static void sig_stop_timer(ma_lwp_t lwp)
 {
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 #ifndef CHAINED_SIGALRM
-	{
-		struct itimerval value;
-		memset(&value,0,sizeof(value));
-		setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
-	}
+	sig_stop_itimer();
 #endif
 
 	/* à part avec linux <= 2.4, les traitants de signaux ne sont _pas_
@@ -438,6 +441,11 @@ void marcel_sig_exit(void)
 {
 	fault_catcher_exit(LWP_SELF);
 	sig_stop_timer(LWP_SELF);
+#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
+#ifdef CHAINED_SIGALRM
+	sig_stop_itimer();
+#endif
+#endif
 	return;
 }
 

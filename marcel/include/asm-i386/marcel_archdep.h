@@ -77,11 +77,14 @@ static __tbx_inline__ long get_gs(void)
                        : : "m" (value) : "memory" ); \
   } while (0)
 
-#define set_bp(val) \
+#define set_sp_bp(sp, bp) \
   do { \
-    typeof(val) value=(val); \
-    __asm__ __volatile__("movl %0, %%ebp" \
-                       : : "m" (value) : "memory", "ebp" ); \
+    unsigned long __sp = (unsigned long)(sp); \
+    unsigned long __bp = (unsigned long)(bp); \
+    SET_MARCEL_SELF_FROM_SP(__sp); \
+    __asm__ __volatile__("movl %0, %%esp;\n\t" \
+			 "movl %1, %%ebp;" \
+                       : : "r" (__sp), "r" (__bp) : "memory", "ebp" ); \
   } while (0)
 
 

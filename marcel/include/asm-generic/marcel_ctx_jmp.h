@@ -48,17 +48,19 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 
 #section marcel_macros
 /* marcel_create : passage père->fils */
-#define marcel_ctx_set_new_stack(new_task, new_sp) \
+#define marcel_ctx_set_new_stack(new_task, top, cur_top) \
   do { \
-    unsigned long _sp = (new_sp); \
+    unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
+    unsigned long _sp = ((unsigned long)(top)) - _local; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp(_sp); \
   } while (0)
 
 /* marcel_deviate : passage temporaire sur une autre pile */
-#define marcel_ctx_switch_stack(from_task, to_task, new_sp) \
+#define marcel_ctx_switch_stack(from_task, to_task, top, cur_top) \
   do { \
-    unsigned long _sp = (new_sp); \
+    unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
+    unsigned long _sp = ((unsigned long)(top)) - _local; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp(_sp); \
   } while (0)

@@ -55,17 +55,20 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 #section marcel_macros
 /* marcel_create : passage père->fils */
 /* marcel_exit : déplacement de pile */
-#define marcel_ctx_set_new_stack(new_task, new_sp) \
+#define marcel_ctx_set_new_stack(new_task, top, cur_top) \
   do { \
-    unsigned long _sp = (new_sp); \
+	  /* NOTE: sur ia64 on ne sait pas précisément combien il faut de marge !! */ \
+    unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
+    unsigned long _sp = ((unsigned long)(top)) - _local - 0x200; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(_sp, new_task->stack_base); \
   } while (0)
 
-/* marcel_deviate : passage temporaire sur une autre pile */
-#define marcel_ctx_switch_stack(from_task, to_task, new_sp) \
+/* marcel_deviate : passage temporaire un peu plus bas sur la pile */
+#define marcel_ctx_switch_stack(from_task, to_task, top, cur_top) \
   do { \
-    unsigned long _sp = (new_sp); \
+    unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
+    unsigned long _sp = ((unsigned long)(top)) - _local - 0x200; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
   } while (0)

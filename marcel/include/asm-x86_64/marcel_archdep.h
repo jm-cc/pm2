@@ -20,9 +20,9 @@
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 #include "tbx_compiler.h"
-#include <setjmp.h>
 
 #define TOP_STACK_FREE_AREA     128
+#include <setjmp.h>
 #define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_RSP])
 #define BSP_FIELD(buf)          ((buf)->__jmpbuf[JB_RBP])
 #define PC_FIELD(buf)           ((buf)->__jmpbuf[JB_PC])
@@ -37,11 +37,28 @@
   sp; \
 })
 
+#define get_bp() \
+({ \
+  register unsigned long bp; \
+  __asm__ __volatile__("movq %%rbp, %0" : "=r" (bp)); \
+  bp; \
+})
+
 #define set_sp(val) \
   do { \
     typeof(val) value=(val); \
     __asm__ __volatile__("movq %0, %%rsp" \
                        : : "m" (value) : "memory" ); \
+  } while (0)
+
+#define set_sp_bp(sp, bp) \
+  do { \
+    unsigned long __sp = (unsigned long)(sp); \
+    unsigned long __bp = (unsigned long)(bp); \
+    SET_MARCEL_SELF_FROM_SP(__sp); \
+    __asm__ __volatile__("movq %0, %%rsp;\n\t" \
+			 "movq %1, %%rbp;" \
+                       : : "r" (__sp), "r" (__bp) : "memory", "ebp" ); \
   } while (0)
 
 

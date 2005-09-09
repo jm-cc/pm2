@@ -350,10 +350,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		 */
 		PROF_SWITCH_TO(cur->number, new_task);
 		marcel_ctx_set_new_stack(new_task, 
-					 new_task->initial_sp-
-					 (MAL(base_stack-get_sp()))
-/* XXX FIXME: base_stack n'est pas correct ici pour l'ia 64 !! */
-					 -0x200);
+					 new_task->initial_sp,
+					 base_stack);
 		/* départ du fils, en mode interruption */
 
 		LOG_IN();
@@ -408,10 +406,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		ma_holder_rawunlock(h);
 
 		marcel_ctx_set_new_stack(new_task,
-					 new_task->initial_sp -
-					 (MAL(base_stack-get_sp()))
-/* XXX FIXME: base_stack n'est pas correct ici pour l'ia 64 !! */
-					 -0x200);
+					 new_task->initial_sp,
+					 base_stack);
 		/* départ du fils, en mode interruption */
 
 		/* Signaler le changement de thread aux activations */

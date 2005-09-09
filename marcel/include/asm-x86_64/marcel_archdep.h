@@ -28,6 +28,7 @@
 #define PC_FIELD(buf)           ((buf)->__jmpbuf[JB_PC])
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
+#define SET_MARCEL_SELF_FROM_SP(sp) ((void)0)
 
 #define get_sp() \
 ({ \

@@ -68,7 +68,7 @@ compat_symbol (libpthread, __pthread_create_2_0, pthread_create, GLIBC_2_0);
 #endif
 
 
-versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_2);
+versioned_symbol (libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
 pthread_t pthread_self(void)
 {
@@ -143,7 +143,7 @@ void marcel_pthread_initialize(int* argc, char**argv)
 {
 	if (!_initialized) {
 #ifdef PM2DEBUG
-		printf("Initialisation libpthread marcel-based\n");
+		//printf("Initialisation libpthread marcel-based\n");
 #endif
 		marcel_init_section(MA_INIT_MAIN_LWP);
 		marcel_init_data(argc, argv);
@@ -172,7 +172,7 @@ int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
 {
 	return marcel_attr_init((marcel_attr_t*)__attr);
 }
-versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_2);
+versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
 
 int pthread_attr_setdetachstate (pthread_attr_t *__attr,
                                         int __detachstate)
@@ -188,21 +188,21 @@ int __sem_init_2_1 (sem_t *__sem, int __pshared, unsigned int __value)
 	marcel_sem_init((marcel_sem_t*)__sem, __value);
 	return 0;
 }
-versioned_symbol (libpthread, __sem_init_2_1, sem_init, GLIBC_2_2);
+versioned_symbol (libpthread, __sem_init_2_1, sem_init, GLIBC_2_1);
 
 int __sem_wait_2_1 (sem_t *__sem)
 {
 	marcel_sem_P((marcel_sem_t*)__sem);
 	return 0;
 }
-versioned_symbol (libpthread, __sem_wait_2_1, sem_wait, GLIBC_2_2);
+versioned_symbol (libpthread, __sem_wait_2_1, sem_wait, GLIBC_2_1);
 
 int __sem_post_2_1 (sem_t *__sem)
 {
 	marcel_sem_V((marcel_sem_t*)__sem);
 	return 0;
 }
-versioned_symbol (libpthread, __sem_post_2_1, sem_post, GLIBC_2_2);
+versioned_symbol (libpthread, __sem_post_2_1, sem_post, GLIBC_2_1);
 
 
 int pthread_equal(pthread_t thread1, pthread_t thread2)
@@ -232,7 +232,6 @@ int __sigaction (int sig, const struct sigaction *act, struct sigaction *oact)
 //libc_hidden_weak (__sigaction)
 weak_alias (__sigaction, sigaction)
 
-
 #ifdef PM2_DEV
 #warning _pthread_cleanup_push,restore à écrire
 #endif
@@ -253,5 +252,77 @@ void _pthread_cleanup_pop(struct _pthread_cleanup_buffer * buffer,
 	return marcel_cleanup_pop(execute);
 }
 #endif
+
+int
+//attribute_hidden
+__pthread_enable_asynccancel (void)
+{
+#if 0
+// FIXME
+  struct marcel_task *self = MARCEL_SELF;
+  int oldval = THREAD_GETMEM (self, cancelhandling);
+
+  while (1)
+    {
+      int newval = oldval | CANCELTYPE_BITMASK;
+
+      if (newval == oldval)
+        break;
+
+      int curval = THREAD_ATOMIC_CMPXCHG_VAL (self, cancelhandling, newval,
+                                              oldval);
+      if (__builtin_expect (curval == oldval, 1))
+        {
+          if (CANCEL_ENABLED_AND_CANCELED_AND_ASYNCHRONOUS (newval))
+            {
+              THREAD_SETMEM (self, result, PTHREAD_CANCELED);
+              __do_cancel ();
+            }
+
+          break;
+        }
+
+      /* Prepare the next round.  */
+      oldval = curval;
+    }
+
+  return oldval;
+#endif
+  return 0;
+}
+
+
+void
+//internal_function attribute_hidden
+__pthread_disable_asynccancel (int oldtype)
+{
+#if 0
+// FIXME
+  /* If asynchronous cancellation was enabled before we do not have
+ *      anything to do.  */
+  if (oldtype & CANCELTYPE_BITMASK)
+    return;
+
+  struct marcel_task *self = MARCEL_SELF;
+  int oldval = THREAD_GETMEM (self, cancelhandling);
+
+  while (1)
+    {
+      int newval = oldval & ~CANCELTYPE_BITMASK;
+
+      if (newval == oldval)
+        break;
+
+      int curval = THREAD_ATOMIC_CMPXCHG_VAL (self, cancelhandling, newval,
+                                              oldval);
+      if (__builtin_expect (curval == oldval, 1))
+        break;
+
+      /* Prepare the next round.  */
+      oldval = curval;
+    }
+#endif
+}
+
 
 #endif /* MA__PTHREAD_FUNCTIONS */

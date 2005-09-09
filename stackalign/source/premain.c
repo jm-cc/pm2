@@ -10,6 +10,10 @@ int __attribute__ ((weak)) marcel_pthread_initialize();
 //{
 //  printf("toto\n");
 //}
+#ifdef PM2DEBUG
+# warning disabling PM2DEBUG: printf call to early !
+# undef PM2DEBUG
+#endif
 
 /****************************************************************
  * Les variables globales
@@ -49,6 +53,7 @@ inline static void __attribute__ ((noreturn)) launch_libc_start_main() {
 	err=dlerror();
 	//global_libc_start_main=__libc_start_main;
 #ifdef PM2DEBUG
+#warning PM2DEBUG enabled
 	printf("have old start_main\n");
 #endif
 	if (err || !global_libc_start_main) {

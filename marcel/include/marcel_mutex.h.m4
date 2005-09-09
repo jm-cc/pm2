@@ -60,8 +60,7 @@ enum
   , PREFIX_MUTEX_FAST_NP = PREFIX_MUTEX_TIMED_NP
 //#endif
 };
-]], [[PMARCEL]])/* pas MARCEL car il n'a pas tout ces modes */
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]], [[PMARCEL LPT]])/* pas MARCEL car il n'a pas tout ces modes */
 
 enum {
   MARCEL_MUTEX_NORMAL,
@@ -89,8 +88,7 @@ REPLICATE([[dnl
   { { 0, 0, 0, PREFIX_MUTEX_ADAPTIVE_NP } }
 # endif
 #endif
-]],[[PMARCEL]])/* pas PTHREAD car déjà dans pthread.h, pas MARCEL car il a son propre initializer */
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]],[[PMARCEL LPT]])/* pas PTHREAD car déjà dans pthread.h, pas MARCEL car il a son propre initializer */
 
 #section structures
 #depend "marcel_threads.h[types]"
@@ -197,8 +195,7 @@ extern int prefix_mutexattr_settype (prefix_mutexattr_t *__attr, int __kind)
    extern variable initialized to PREFIX_ONCE_INIT.  */
 extern int prefix_once (prefix_once_t *__once_control,
                          void (*__init_routine) (void)) __THROW;
-]],[[MARCEL PMARCEL]])dnl END_REPLICATE
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]],[[MARCEL PMARCEL LPT]])dnl END_REPLICATE
 
 
 

@@ -25,8 +25,10 @@ dnl
 m4_define([[PRINT_LPT]], [[dnl
 /* PART LPT */
 //#line m4___line__ "m4___file__"
+#ifdef MA__POSIX_FUNCTIONS_NAMES
 m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[lpt]])]],
 	    [[PREFIX]],[[LPT]])dnl
+#endif
 ]])dnl
 dnl
 dnl

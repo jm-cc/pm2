@@ -102,8 +102,7 @@ int prefix_mutex_init (prefix_mutex_t *mutex,
         __prefix_init_lock(&mutex->__data.__lock);
 	return 0;
 }
-]], [[PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]], [[PMARCEL LPT]])
 
      /*****************/
      /* mutex_destroy */
@@ -122,8 +121,7 @@ int prefix_mutex_destroy(prefix_mutex_t * mutex)
 #endif
   return 0;
 }
-]],[[MARCEL PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]],[[MARCEL PMARCEL LPT]])
 
 
      /**************/
@@ -199,8 +197,7 @@ int prefix_mutex_lock(prefix_mutex_t * mutex)
 	
 	return 0;
 }
-]], [[PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]], [[PMARCEL LPT]])
 
      /*****************/
      /* mutex_trylock */
@@ -268,8 +265,7 @@ int prefix_mutex_trylock(prefix_mutex_t * mutex)
 	
 	return EBUSY;
 }
-]], [[PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]], [[PMARCEL LPT]])
 
 #if 0
      /*******************/
@@ -388,8 +384,7 @@ int prefix_mutex_unlock(prefix_mutex_t * mutex)
 {
   return prefix_mutex_unlock_usercnt (mutex, 1);
 }
-]], [[PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]], [[PMARCEL LPT]])
 
      /******************/
      /* mutexattr_init */
@@ -421,8 +416,7 @@ int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 	
 	return 0;
 }
-]], [[PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]], [[PMARCEL LPT]])
 
      /*********************/
      /* mutexattr_destroy */
@@ -437,8 +431,7 @@ int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
 {
         return 0;
 }
-]],[[MARCEL PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]],[[MARCEL PMARCEL LPT]])
 
 
 #if 0
@@ -621,8 +614,8 @@ int prefix_once(prefix_once_t * once_control,
 	
 	return 0;
 }
-]],[[MARCEL PMARCEL]])
-/* XXX: Vince: pas LPT pour les archis autres que x86/ia64 pour l'instant */
+]],[[MARCEL PMARCEL LPT]])
+
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, once, (pthread_once_t *once_control,
 	                   void (*init_routine)(void)),
@@ -643,33 +636,40 @@ DEF___LIBPTHREAD(int, once, (pthread_once_t *once_control,
  * and reset them back to NEVER.
  */
 
-#ifdef MA__POSIX_BEHAVIOUR
-#define __DEF___PTHREAD(name) \
-  DEF_STRONG_T(__PTHREAD_NAME(name), \
-               LOCAL_POSIX_NAME(name), __PTHREAD_NAME(name))
+//#ifdef MA__POSIX_BEHAVIOUR
+//#define __DEF___PTHREAD(name) \
+//  DEF_STRONG_T(__PTHREAD_NAME(name), \
+//               LOCAL_POSIX_NAME(name), __PTHREAD_NAME(name))
 
 
-void __pmarcel_once_fork_prepare(void)
+REPLICATE_CODE([[dnl
+void prefix_once_fork_prepare(void)
 {
-  marcel_mutex_lock((pmarcel_mutex_t *)(void *)&once_masterlock);
+  marcel_mutex_lock(&once_masterlock);
 }
-__DEF___PTHREAD(void, once_fork_prepare, (void), ())
 
-void __pmarcel_once_fork_parent(void)
+void prefix_once_fork_parent(void)
 {
-  marcel_mutex_unlock((pmarcel_mutex_t *)(void *)&once_masterlock);
+  marcel_mutex_unlock(&once_masterlock);
 }
-__DEF___PTHREAD(void, once_fork_parent, (void), ())
 
-void __pmarcel_once_fork_child(void)
+void prefix_once_fork_child(void)
 {
-  marcel_mutex_init((pmarcel_mutex_t *)(void *)&once_masterlock, NULL);
-  pmarcel_cond_init((pmarcel_cond_t *)(void *)&once_finished, NULL);
+  marcel_mutex_init(&once_masterlock, NULL);
+  marcel_cond_init(&once_finished, NULL);
   if (fork_generation <= INT_MAX - 4)
     fork_generation += 4;	/* leave least significant two bits zero */
   else
     fork_generation = 0;
 }
-__DEF___PTHREAD(void, once_fork_child, (void), ())
+]],[[LPT]])
 
-#endif
+PRINT_PTHREAD([[dnl
+//__DEF___PTHREAD(void, once_fork_prepare, (void), ())
+//__DEF___PTHREAD(void, once_fork_parent, (void), ())
+//__DEF___PTHREAD(void, once_fork_child, (void), ())
+DEF___LIBPTHREAD(void, once_fork_prepare, (void), ())
+DEF___LIBPTHREAD(void, once_fork_parent, (void), ())
+DEF___LIBPTHREAD(void, once_fork_child, (void), ())
+]])
+//#endif

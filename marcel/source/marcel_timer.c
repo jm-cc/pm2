@@ -106,7 +106,7 @@ static void TBX_NORETURN fault_catcher(int sig)
 {
 #ifdef SA_SIGINFO
 	ucontext_t *ctx =(ucontext_t *)data;
-	pm2debug("OOPS!!! Signal %d catched on thread %p (%ld)\n"
+	pm2debug("OOPS!!! Signal %d catched on thread %p (%d)\n"
 			"si_code=%x, si_signo=%x, si_addr=%p, ctx=%p\n",
 		sig, MARCEL_SELF, THREAD_GETMEM(MARCEL_SELF,number),
 		act->si_code, act->si_signo, act->si_addr, ctx);

@@ -168,7 +168,7 @@ extern debug_type_t marcel_mtrace_timer;
 #else
 #  define MTRACE(msg, pid) \
     (msg[0] ? debug_printf(&marcel_mtrace, \
-            "[%-14s:%3ld (pid=%p(%-15s):%2lX)." \
+            "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
             " [%06x], %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
             msg, (pid)->number, (pid), (pid)->name, (pid)->flags, \
             pid->preempt_count, \
@@ -179,7 +179,7 @@ extern debug_type_t marcel_mtrace_timer;
             marcel_nbthreads() + 1) : (void)0)
 #  define MTRACE_TIMER(msg, pid) \
     debug_printf(&marcel_mtrace_timer, \
-            "[%-14s:%3ld (pid=%p(%-15s):%2lX)." \
+            "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
             " %3d A,%3d S,%3d B,%3d F /%3d T]\n", \
             msg, (pid)->number, (pid), (pid)->name, (pid)->flags, \
             marcel_activethreads(), \

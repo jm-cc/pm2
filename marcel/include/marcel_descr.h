@@ -114,7 +114,7 @@ struct marcel_task {
 	int static_stack;
 	long initial_sp, depl;
 	char name[MARCEL_MAXNAMESIZE];
-	long number;
+	int number;
 	unsigned long remaining_sleep_time;
 	struct ma_timer_list *timer;
 	unsigned not_migratable, not_deviatable;

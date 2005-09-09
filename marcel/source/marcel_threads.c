@@ -451,7 +451,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 		}
 #ifdef MA__DEBUG
 		if((NB_MAX_BCL>1) && (nb_bcl==NB_MAX_BCL))
-			mdebug("  max iteration in key destructor for thread %li\n",cur->number);
+			mdebug("  max iteration in key destructor for thread %i\n",cur->number);
 #endif
 	}
 	
@@ -620,7 +620,7 @@ DEF_MARCEL_POSIX(int, cancel, (marcel_t pid), (pid))
     marcel_exit(NULL);
   } else {
     pid->ret_val = NULL;
-    mdebug("marcel %li kill %li\n", marcel_self()->number, pid->number);
+    mdebug("marcel %i kill %i\n", marcel_self()->number, pid->number);
     marcel_deviate(pid, (handler_func_t)marcel_exit, NULL);
   }
   return 0;

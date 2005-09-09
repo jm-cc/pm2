@@ -24,12 +24,12 @@
 #define TOP_STACK_FREE_AREA     64
 #if 1
 #define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
-#define BSP_FIELD(buf)          ((buf)[MARCEL_JB_BP])
+#define FP_FIELD(buf)           ((buf)[MARCEL_JB_BP])
 #define PC_FIELD(buf)           ((buf)[MARCEL_JB_PC])
 #else
 #include <setjmp.h>
 #define SP_FIELD(buf)         ((buf)->__jmpbuf[JB_SP])
-#define BSP_FIELD(buf)        ((buf)->__jmpbuf[JB_BP])
+#define FP_FIELD(buf)         ((buf)->__jmpbuf[JB_BP])
 #define PC_FIELD(buf)         ((buf)->__jmpbuf[JB_PC])
 #endif
 

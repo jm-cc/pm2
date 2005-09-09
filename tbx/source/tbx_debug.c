@@ -539,7 +539,7 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		}
 #endif
 		if (get_action_value(type, PM2DEBUG_SHOW_THREAD)) {
-			my_print("(%8p:% 3ld:%-15s) ", marcel_printf_allowed() ?
+			my_print("(%8p:% 3d:%-15s) ", marcel_printf_allowed() ?
 			marcel_self():(void*)-1, marcel_printf_allowed() ?
 			marcel_self()->number:-99, marcel_printf_allowed() ?
 			marcel_self()->name:"");

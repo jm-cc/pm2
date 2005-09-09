@@ -58,7 +58,7 @@
     SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movq %0, %%rsp;\n\t" \
 			 "movq %1, %%rbp;" \
-                       : : "r" (__sp), "r" (__bp) : "memory", "ebp" ); \
+                       : : "r" (__sp), "r" (__bp) : "memory" ); \
   } while (0)
 
 

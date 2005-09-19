@@ -31,6 +31,10 @@ typedef int64_t __ma_s64, ma_s64;
 typedef uint64_t __ma_u64, ma_u64;
 
 #section macros
+/* ISO C99 conformant C++ defines UINTxx_MAX only when requested */
+#ifdef __cplusplus
+#  define __STDC_LIMIT_MACROS
+#endif
 #include <limits.h>
 #include <stdint.h>
 
@@ -43,5 +47,5 @@ typedef uint64_t __ma_u64, ma_u64;
 #elif ULONG_MAX == UINT64_MAX
 #define MA_BITS_PER_LONG 64
 #else
-#error "unsigned long too long !"
+#error "unknown size for unsigned long."
 #endif

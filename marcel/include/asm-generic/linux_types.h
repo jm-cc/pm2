@@ -31,12 +31,15 @@ typedef int64_t __ma_s64, ma_s64;
 typedef uint64_t __ma_u64, ma_u64;
 
 #section macros
-/* ISO C99 conformant C++ defines UINTxx_MAX only when requested */
-#ifdef __cplusplus
-#  define __STDC_LIMIT_MACROS
-#endif
 #include <limits.h>
 #include <stdint.h>
+
+#ifndef ULONG_MAX
+#  error ULONG_MAX undefined
+#endif
+#ifndef UINT32_MAX
+# error UINT32_MAX undefined
+#endif
 
 #if ULONG_MAX == UINT8_MAX
 #define MA_BITS_PER_LONG 8

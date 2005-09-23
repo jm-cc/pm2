@@ -5,10 +5,10 @@ static p_tbx_memory_t mad_iovec_key;
 static p_tbx_memory_t mad_iovec_header_key;
 
 typedef enum e_mad_iovec_type_control {
-    MAD_IOVEC_GLOBAL_HEADER = 1,
-    MAD_IOVEC_DATA_HEADER   = 2,
-    MAD_IOVEC_RDV           = 3,
-    MAD_IOVEC_ACK           = 4,
+    MAD_IOVEC_GLOBAL_HEADER   = 1,
+    MAD_IOVEC_DATA_HEADER     = 2,
+    MAD_IOVEC_RDV             = 3,
+    MAD_IOVEC_ACK             = 4,
     MAD_IOVEC_DATA_TREATED    = 5,
     MAD_IOVEC_CONTROL_TREATED = 6
 } mad_iovec_type_control_t, *p_mad_iovec_type_control_t;
@@ -147,11 +147,11 @@ mad_iovec_begin_struct_iovec(p_mad_iovec_t mad_iovec,
 static void
 mad_iovec_inc_nb_seg(p_mad_iovec_t mad_iovec){
     p_mad_iovec_header_t global_header = NULL;
-    nb_seg_t nb_seg = 0;
+    nb_seg_t             nb_seg        = 0;
 
     LOG_IN();
     global_header = mad_iovec->data[0].iov_base;
-    nb_seg = 1 + get_nb_seg(global_header);
+    nb_seg        = 1 + get_nb_seg(global_header);
     mad_iovec->total_nb_seg++;
     assert(nb_seg == mad_iovec->total_nb_seg);
     set_nb_seg(global_header, nb_seg);
@@ -273,10 +273,9 @@ mad_iovec_add_data2(p_mad_iovec_t mad_iovec,
 p_mad_iovec_t
 mad_iovec_get(p_tbx_slist_t list,
               channel_id_t  channel_id,
-              rank_t remote_rank,
-              sequence_t  sequence){
-    p_mad_iovec_t     mad_iovec = NULL;
-    tbx_slist_index_t idx       = -1;
+              rank_t        remote_rank,
+              sequence_t    sequence){
+    p_mad_iovec_t mad_iovec = NULL;
 
     LOG_IN();
     if(!list->length){
@@ -285,31 +284,31 @@ mad_iovec_get(p_tbx_slist_t list,
 
     tbx_slist_ref_to_head(list);
     do{
-        idx++;
         mad_iovec = tbx_slist_ref_get(list);
         if(!mad_iovec)
             break;
 
         if(mad_iovec->channel->id == channel_id
            && mad_iovec->remote_rank == remote_rank
-           && mad_iovec->sequence == sequence)
-            return tbx_slist_index_extract(list, idx);
+           && mad_iovec->sequence == sequence){
+            tbx_slist_ref_extract_and_forward(list, &mad_iovec);
+            goto end;
+        }
     }while(tbx_slist_ref_forward(list));
 
  end:
     LOG_OUT();
 
-    return NULL;
+    return mad_iovec;
 }
 
 static
 p_mad_iovec_t
 mad_iovec_get2(p_tbx_slist_t list,
-              channel_id_t  channel_id,
-              rank_t remote_rank,
-              sequence_t  sequence){
-    p_mad_iovec_t     mad_iovec = NULL;
-    tbx_slist_index_t idx       = -1;
+              channel_id_t   channel_id,
+              rank_t         remote_rank,
+              sequence_t     sequence){
+    p_mad_iovec_t mad_iovec = NULL;
 
     LOG_IN();
     if(!list->length){
@@ -326,7 +325,6 @@ mad_iovec_get2(p_tbx_slist_t list,
 
     tbx_slist_ref_to_head(list);
     do{
-        idx++;
         mad_iovec = tbx_slist_ref_get(list);
         if(!mad_iovec)
             break;
@@ -339,8 +337,10 @@ mad_iovec_get2(p_tbx_slist_t list,
 
         if(mad_iovec->channel->id == channel_id
            && mad_iovec->remote_rank == remote_rank
-           && mad_iovec->sequence == sequence)
-            return tbx_slist_index_extract(list, idx);
+           && mad_iovec->sequence == sequence){
+            tbx_slist_ref_extract_and_forward(list, &mad_iovec);
+            goto end;
+        }
     }while(tbx_slist_ref_forward(list));
 
     DISP("get : not found");
@@ -348,23 +348,16 @@ mad_iovec_get2(p_tbx_slist_t list,
  end:
     LOG_OUT();
 
-    return NULL;
+    return mad_iovec;
 }
-
-
-
-
-
-
 
 p_mad_iovec_t
 mad_iovec_get_smaller(p_tbx_slist_t list,
                       channel_id_t  channel_id,
-                      rank_t remote_rank,
-                      sequence_t  sequence,
-                      size_t length){
-    p_mad_iovec_t     mad_iovec = NULL;
-    tbx_slist_index_t idx       = -1;
+                      rank_t        remote_rank,
+                      sequence_t    sequence,
+                      size_t        length){
+    p_mad_iovec_t mad_iovec = NULL;
 
     LOG_IN();
     if(!list->length){
@@ -373,7 +366,6 @@ mad_iovec_get_smaller(p_tbx_slist_t list,
 
     tbx_slist_ref_to_head(list);
     do{
-        idx++;
         mad_iovec = tbx_slist_ref_get(list);
         if(!mad_iovec)
             break;
@@ -381,8 +373,10 @@ mad_iovec_get_smaller(p_tbx_slist_t list,
         if(mad_iovec->channel->id == channel_id
            && mad_iovec->remote_rank == remote_rank
            && mad_iovec->sequence == sequence
-           && mad_iovec->length <= length)
-            return tbx_slist_index_extract(list, idx);
+           && mad_iovec->length <= length){
+            tbx_slist_ref_extract_and_forward(list, &mad_iovec);
+            goto end;
+        }
     }while(tbx_slist_ref_forward(list));
 
  end:
@@ -395,8 +389,8 @@ mad_iovec_get_smaller(p_tbx_slist_t list,
 p_mad_iovec_t
 mad_iovec_search(p_tbx_slist_t list,
                  channel_id_t  channel_id,
-                 rank_t remote_rank,
-                 sequence_t  sequence){
+                 rank_t        remote_rank,
+                 sequence_t    sequence){
     p_mad_iovec_t mad_iovec = NULL;
 
     LOG_IN();
@@ -429,7 +423,7 @@ static tbx_bool_t
 mad_iovec_treat_data_header(p_mad_adapter_t adapter,
                             rank_t remote_rank,
                             p_mad_iovec_header_t header){
-
+    p_mad_madeleine_t madeleine = NULL;
     p_mad_iovec_t mad_iovec   = NULL;
     p_tbx_slist_t r_msg_slist = NULL;
 
@@ -440,8 +434,13 @@ mad_iovec_treat_data_header(p_mad_adapter_t adapter,
     void *       data    = NULL;
     tbx_bool_t   treated = tbx_false;
 
+    p_mad_channel_t channel = NULL;
+
     LOG_IN();
-    r_msg_slist = adapter->driver->r_msg_slist;
+
+    //DISP("-->mad_iovec_treat_data_header");
+
+    //r_msg_slist = adapter->driver->r_msg_slist;
 
     //if((long)header % 4)
     //    FAILURE("header/channel id non aligné");
@@ -450,20 +449,29 @@ mad_iovec_treat_data_header(p_mad_adapter_t adapter,
     msg_seq        = get_sequence(header);
     msg_len        = get_length(header);
 
+    madeleine = mad_get_madeleine();
+    channel = madeleine->channel_tab[msg_channel_id];
+
     // recherche du petit associé
-    mad_iovec = mad_iovec_get(r_msg_slist,
+    mad_iovec = mad_iovec_get(channel->unpacks_list,
                               msg_channel_id,
                               remote_rank,
                               msg_seq);
+
+    //mad_iovec_get(r_msg_slist,
+    //              msg_channel_id,
+    //              remote_rank,
+    //              msg_seq);
+
     if(mad_iovec){
-        p_mad_channel_t channel = NULL;
+
 
         // identification du unpack associé
-        channel = mad_iovec->channel;
-        mad_iovec_get(channel->unpacks_list,
-                      msg_channel_id,
-                      remote_rank,
-                      msg_seq);
+        //channel = mad_iovec->channel;
+        //mad_iovec_get(channel->unpacks_list,
+        //              msg_channel_id,
+        //              remote_rank,
+        //              msg_seq);
 
         // transfert des données en zone utilisateur
         data = (void *)header;
@@ -486,6 +494,10 @@ mad_iovec_treat_data_header(p_mad_adapter_t adapter,
     } else {
         treated = tbx_false;
     }
+
+
+    //DISP("<--mad_iovec_treat_data_header");
+
     LOG_OUT();
     return treated;
 }
@@ -494,16 +506,20 @@ static void
 mad_iovec_treat_ack(p_mad_adapter_t adapter,
                     rank_t remote_rank,
                     p_mad_iovec_header_t header){
-    p_mad_driver_interface_t interface = NULL;
-    p_tbx_htable_t tracks_htable = NULL;
+    p_mad_driver_interface_t interface     = NULL;
+    p_mad_track_set_t        r_track_set   = NULL;
+    //p_tbx_htable_t           tracks_htable = NULL;
+    p_mad_track_t            track         = NULL;
+    p_mad_pipeline_t         pipeline      = NULL;
 
     channel_id_t msg_channel_id = 0;
-    sequence_t msg_seq = 0;
+    sequence_t   msg_seq = 0;
 
     p_mad_iovec_t mad_iovec = NULL;
     LOG_IN();
-    interface = adapter->driver->interface;
-    tracks_htable = adapter->r_track_set->tracks_htable;
+    interface     = adapter->driver->interface;
+    r_track_set   = adapter->r_track_set;
+    //tracks_htable = adapter->r_track_set->tracks_htable;
 
     msg_channel_id = get_channel_id(header);
     msg_seq        = get_sequence(header);
@@ -517,12 +533,15 @@ mad_iovec_treat_ack(p_mad_adapter_t adapter,
         FAILURE("mad_iovec with rdv not found");
 
     // choix de la piste à emprunter
-    mad_iovec->track = tbx_htable_get(tracks_htable, "rdv");
+    //track            = tbx_htable_get(tracks_htable, "rdv");
+    track            = r_track_set->rdv_track;
+    mad_iovec->track = track;
+    pipeline         = track->pipeline;
 
     // si la piste est libre, on envoie directement
-    if(!mad_iovec->track->pipeline->cur_nb_elm){
-        mad_pipeline_add(mad_iovec->track->pipeline, mad_iovec);
-        interface->isend(mad_iovec->track,
+    if(!pipeline->cur_nb_elm){
+        mad_pipeline_add(pipeline, mad_iovec);
+        interface->isend(track,
                          remote_rank,
                          mad_iovec->data,
                          mad_iovec->total_nb_seg);
@@ -542,51 +561,66 @@ static void
 mad_iovec_treat_rdv(p_mad_adapter_t adapter,
                     rank_t destination,
                     p_mad_iovec_header_t header){
-    p_mad_driver_interface_t interface = NULL;
-    p_tbx_htable_t tracks_htable = NULL;
-    p_mad_track_t track = NULL;
+    p_mad_driver_t           driver        = NULL;
+    p_mad_driver_interface_t interface     = NULL;
+    p_mad_track_set_t        r_track_set   = NULL;
+    //p_tbx_htable_t           tracks_htable = NULL;
+    p_mad_track_t            track         = NULL;
+    p_mad_pipeline_t         pipeline      = NULL;
 
-    p_mad_iovec_t  large_iov   = NULL;
-    p_mad_iovec_t  ack    = NULL;
-    rank_t         my_rank           = 0;
+    p_mad_iovec_t  large_iov = NULL;
+    p_mad_iovec_t  ack       = NULL;
+    rank_t         my_rank   = 0;
 
     channel_id_t   msg_channel_id = 0;
-    sequence_t     msg_seq = 0;
+    sequence_t     msg_seq        = 0;
 
-
-    p_mad_madeleine_t madeleine = NULL;
-    p_mad_channel_t channel = NULL;
-    p_mad_iovec_header_t rdv = NULL;
+    p_mad_madeleine_t    madeleine = NULL;
+    p_mad_channel_t      channel   = NULL;
+    p_mad_iovec_header_t rdv       = NULL;
 
     LOG_IN();
-    interface = adapter->driver->interface;
+    driver    = adapter->driver;
+    interface = driver->interface;
 
-    tracks_htable = adapter->r_track_set->tracks_htable;
+    r_track_set   = adapter->r_track_set;
+    //tracks_htable = r_track_set->tracks_htable;
     //!!! On suppose qu'il n'y a qu'une piste "rdv"
-    track = tbx_htable_get(tracks_htable, "rdv");
+    //track         = tbx_htable_get(tracks_htable, "rdv");
+    track = r_track_set->rdv_track;
 
+    pipeline      = track->pipeline;
 
     msg_channel_id = get_channel_id(header);
     msg_seq        = get_sequence(header);
-    my_rank = adapter->driver->madeleine->session->process_rank;
+    my_rank        = driver->madeleine->session->process_rank;
 
 
 
     //Si la piste est occupée, on stocke directement le rdv
-    if(track->pipeline->cur_nb_elm){
+    if(pipeline->cur_nb_elm){
         goto stock;
     }
 
     // recherche du mad_iovec parmi tous les unpacks
-    large_iov = mad_iovec_get(adapter->driver->r_msg_slist,
-                              msg_channel_id,
-                              destination,
-                              msg_seq);
+    //large_iov = mad_iovec_get(driver->r_msg_slist,
+    //                          msg_channel_id,
+    //                          destination,
+    //                          msg_seq);
+
+    madeleine = mad_get_madeleine();
+    channel = madeleine->channel_tab[msg_channel_id];
+
+    large_iov = mad_iovec_search(channel->unpacks_list,
+                                 msg_channel_id,
+                                 destination,
+                                 msg_seq);
+
 
     if(large_iov){
         // dépot de la réception associée
         large_iov->track = track;
-        mad_pipeline_add(track->pipeline, large_iov);
+        mad_pipeline_add(pipeline, large_iov);
         interface->irecv(track,
                          large_iov->data,
                          large_iov->total_nb_seg);
@@ -595,7 +629,8 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
         ack = mad_iovec_create(0);
         ack->remote_rank = destination;
         ack->channel = large_iov->channel;
-        ack->track = tbx_htable_get(tracks_htable, "cpy");
+        //ack->track = tbx_htable_get(tracks_htable, "cpy");
+        ack->track   = adapter->r_track_set->cpy_track;
 
         mad_iovec_begin_struct_iovec(ack, my_rank);
         mad_iovec_add_ack(ack, 1, msg_channel_id, msg_seq);
@@ -893,15 +928,15 @@ mad_iovec_print(p_mad_iovec_t mad_iovec){
 void
 mad_iovec_s_check(p_mad_adapter_t adapter,
                   p_mad_iovec_t mad_iovec){
-    p_mad_madeleine_t madeleine = NULL;
+    p_mad_madeleine_t        madeleine = NULL;
     p_mad_driver_interface_t interface   = NULL;
 
     p_mad_iovec_header_t header = NULL;
     type_t               type   = 0;
     nb_seg_t             nb_seg = 0;
 
-    channel_id_t  channel_id  = 0;
-    p_mad_channel_t channel = NULL;
+    channel_id_t       channel_id  = 0;
+    p_mad_channel_t    channel = NULL;
     p_mad_connection_t cnx = NULL;
     rank_t        remote_rank = 0;
     sequence_t    sequence    = 0;
@@ -911,7 +946,7 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
     unsigned int i = 0;
     LOG_IN();
     remote_rank = mad_iovec->remote_rank;
-    interface = adapter->driver->interface;
+    interface   = adapter->driver->interface;
 
 
 
@@ -967,8 +1002,10 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
                     FAILURE("iovec envoyé non retrouvé");
 
                 //DISP("RETRAIT d'un petit dans cnx->packs_list");
+                //DISP_VAL("cnx->packs_list->length",
+                //         cnx->packs_list->length);
 
-                //---->mad_iovec_free(tmp, tbx_false);
+                mad_iovec_free(tmp, tbx_false);
 
                 i += 2;
                 header = mad_iovec->data[i].iov_base;
@@ -1104,7 +1141,7 @@ mad_iovec_treat_data_header2(p_mad_adapter_t adapter,
     tbx_bool_t   treated = tbx_false;
 
     LOG_IN();
-    r_msg_slist = adapter->driver->r_msg_slist;
+    //r_msg_slist = adapter->driver->r_msg_slist;
 
     //if((long)header % 4)
     //    FAILURE("header/channel id non aligné");

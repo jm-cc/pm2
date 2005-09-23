@@ -25,9 +25,10 @@
 #include <unistd.h>
 #include "pm2_common.h"
 
-#define NB_LOOPS 1000
+#define NB_LOOPS 10
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  32 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  4 //(2*1024*1024) //32768
+
 
 char *
 init_data(unsigned int length){
@@ -97,28 +98,57 @@ client(p_mad_channel_t channel){
     tbx_tick_t        t2;
     double            sum = 0.0;
 
+    tbx_tick_t        t4;
+    tbx_tick_t        t5;
+    tbx_tick_t        t6;
+    tbx_tick_t        t7;
+    tbx_tick_t        t8;
+
+    double chrono_pack        = 0.0;
+    double chrono_wait_pack   = 0.0;
+    double chrono_unpack      = 0.0;
+    double chrono_wait_unpack = 0.0;
+
     LOG_IN();
 
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
+    //DISP("1");
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
+        //DISP("2");
+
         connection1 = mad_begin_packing(channel, 0);
+        //DISP("3");
+
+
         mad_pack(connection1,
                  buffer_e,
                  cur_length,
                  mad_send_CHEAPER,
                  mad_receive_CHEAPER);
 
+
+        //DISP("4");
+
         mad_wait_packs(connection1);
 
+
+        //DISP("5");
+
         connection2 = mad_begin_unpacking(channel);
+
+
+        //DISP("6");
+
         mad_unpack(connection2,
                    buffer_r,
                    cur_length,
                    mad_send_CHEAPER,
                    mad_receive_CHEAPER);
+
+        //DISP("7");
 
         mad_wait_unpacks(connection2);
 
@@ -126,13 +156,20 @@ client(p_mad_channel_t channel){
 
         TBX_GET_TICK(t1);
         while (counter < NB_LOOPS) {
+
+            TBX_GET_TICK(t4);
+
             mad_pack(connection1,
                      buffer_e,
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
 
+            TBX_GET_TICK(t5);
+
             mad_wait_packs(connection1);
+
+            TBX_GET_TICK(t6);
 
             mad_unpack(connection2,
                        buffer_r,
@@ -140,29 +177,37 @@ client(p_mad_channel_t channel){
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
 
+            TBX_GET_TICK(t7);
+
             mad_wait_unpacks(connection2);
 
+            TBX_GET_TICK(t8);
+
             counter++;
+
+
         }
         mad_end_packing(connection1);
         mad_end_unpacking(connection2);
 
         TBX_GET_TICK(t2);
-        sum = TBX_TIMING_DELAY(t1, t2);
-
-        printf("%9d   %9g   %9g\n",
-               cur_length, sum / (NB_LOOPS * 2),
-               (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
-
-        //printf("latence : %f \n", sum / (NB_LOOPS * 2));
-        //printf("debit :   %f \n", (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
-
-        //DISP("%9d   %g   %g",
-        //     cur_length,
-        //     sum / (NB_LOOPS * 2),
-        //     (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
+        chrono_pack        = TBX_TIMING_DELAY(t4, t5);
+        chrono_wait_pack   = TBX_TIMING_DELAY(t5, t6);
+        chrono_unpack      = TBX_TIMING_DELAY(t6, t7);
+        chrono_wait_unpack = TBX_TIMING_DELAY(t7, t8);
+        sum                = TBX_TIMING_DELAY(t1, t2);
 
 
+        //printf("pack         --> %g\n", chrono_pack);
+        //printf("wait_pack    --> %g\n", chrono_wait_pack);
+        //printf("unpack       --> %g\n", chrono_unpack);
+        //printf("wait_unpack  --> %g\n", chrono_wait_unpack);
+        //printf("-------------------------------\n");
+        printf("total        --> %g\n", sum / (NB_LOOPS * 2));
+
+        //printf("%9d   %9g   %9g\n",
+        //       cur_length, sum / (NB_LOOPS * 2),
+        //       (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
 
         // next length
@@ -194,8 +239,12 @@ server(p_mad_channel_t channel){
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
 
+   //DISP("1");
+
+
     while(cur_length <= BUFFER_LENGTH_MAX) {
 
+       //DISP("2");
         connection1 = mad_begin_unpacking(channel);
         mad_unpack(connection1,
                    buffer_r,
@@ -203,7 +252,12 @@ server(p_mad_channel_t channel){
                    mad_send_CHEAPER,
                    mad_receive_CHEAPER);
 
+       //DISP("3");
+
         mad_wait_unpacks(connection1);
+
+       //DISP("4");
+
 
         connection2 = mad_begin_packing(channel, 1);
         mad_pack(connection2,
@@ -214,7 +268,7 @@ server(p_mad_channel_t channel){
 
         mad_wait_packs(connection2);
 
-        //DISP("------------------------------");
+       //DISP("------------------------------");
 
         mad_unpack(connection1,
                    buffer_r,

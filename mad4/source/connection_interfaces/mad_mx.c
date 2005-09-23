@@ -42,8 +42,8 @@ typedef struct s_mad_mx_driver_specific{
 } mad_mx_driver_specific_t, *p_mad_mx_driver_specific_t;
 
 typedef struct s_mad_mx_adapter_specific{
-    uint64_t                nic_id;
-    uint32_t                board_id;
+    uint64_t nic_id;
+    uint32_t board_id;
 } mad_mx_adapter_specific_t, *p_mad_mx_adapter_specific_t;
 
 typedef struct s_mad_mx_channel_specific{
@@ -54,13 +54,12 @@ typedef struct s_mad_mx_connection_specific{
     int dummy;
 } mad_mx_connection_specific_t, *p_mad_mx_connection_specific_t;
 
-
 typedef struct s_mad_mx_track_specific{
     mx_endpoint_t      *endpoint;
     mx_endpoint_addr_t *endpoint_addr;
-    uint32_t           endpoint_id;
+    uint32_t            endpoint_id;
 
-    mx_request_t  *request;
+    mx_request_t       *request;
 }mad_mx_track_specific_t, *p_mad_mx_track_specific_t;
 
 #define MAD_MX_GATHER_SCATTER_THRESHOLD  32768
@@ -201,11 +200,10 @@ mad_mx_register(p_mad_driver_interface_t interface){
     interface->open_track          = mad_mx_open_track;
     interface->close_track         = mad_mx_close_track;
 
-    interface->add_pre_posted = mad_mx_add_pre_posted;
-    interface->clean_pre_posted = mad_mx_clean_pre_posted;
+    interface->add_pre_posted        = mad_mx_add_pre_posted;
+    interface->clean_pre_posted      = mad_mx_clean_pre_posted;
     interface->remove_all_pre_posted = mad_mx_remove_all_pre_posted;
-
-    interface->add_pre_sent   = NULL;
+    interface->add_pre_sent          = NULL;
 
     LOG_OUT();
     return "mx";
@@ -255,26 +253,29 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
 
 void
 mad_mx_channel_init(p_mad_channel_t ch) {
-    p_mad_adapter_t adapter = NULL;
+    p_mad_adapter_t             adapter = NULL;
     p_mad_mx_adapter_specific_t as = NULL;
-    p_tbx_string_t param_str	= NULL;
+    p_tbx_string_t              param_str	= NULL;
 
-    p_mad_track_set_t s_track_set = NULL;
-    p_mad_track_t track = NULL;
+    p_mad_track_set_t         s_track_set = NULL;
+    uint32_t                  nb_track = 0;
+     p_mad_track_t           *tracks_tab;
+    p_mad_track_t             track = NULL;
     p_mad_mx_track_specific_t ts = NULL;
 
     uint32_t i = 0;
     LOG_IN();
-    adapter = ch->adapter;
-    as = adapter->specific;
-
+    adapter     = ch->adapter;
+    as          = adapter->specific;
     s_track_set = adapter->s_track_set;
-    track = s_track_set->tracks_tab[0];
-    ts = track->specific;
+    tracks_tab  = s_track_set->tracks_tab;
+    nb_track    = s_track_set->nb_track;
+    track       = tracks_tab[0];
+    ts          = track->specific;
 
     param_str = tbx_string_init_to_int(ts->endpoint_id);
-    for(i = 1; i < s_track_set->nb_track; i++){
-        track = s_track_set->tracks_tab[i];
+    for(i = 1; i < nb_track; i++){
+        track = tracks_tab[i];
         ts = track->specific;
 
         tbx_string_append_char(param_str, ' ');
@@ -291,8 +292,8 @@ void
 mad_mx_connection_init(p_mad_connection_t in,
                        p_mad_connection_t out) {
     LOG_IN();
-    in->nb_link		        = 1;
-    out->nb_link		= 1;
+    in->nb_link	 = 1;
+    out->nb_link = 1;
     LOG_OUT();
 }
 
@@ -344,7 +345,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
         char *endpoint_id = NULL;
         char *ptr = NULL;
 
-        p_mad_track_t     remote_track = NULL;
+        p_mad_track_t             remote_track = NULL;
         p_mad_mx_track_specific_t remote_ts = NULL;
 
         p_mad_mx_track_specific_t s_ts = NULL;
@@ -385,7 +386,7 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
 
         s_track  = s_track_set->tracks_tab[0];
         s_ts     = s_track->specific;
-        remote_ts ->endpoint_addr = TBX_MALLOC(sizeof(mx_endpoint_addr_t));
+        remote_ts->endpoint_addr = TBX_MALLOC(sizeof(mx_endpoint_addr_t));
         *remote_ts->endpoint_addr = mad_mx_connect_endpoint(s_ts->endpoint,
                                                             remote_nic_id,
                                                             remote_ts->endpoint_id);
@@ -477,7 +478,7 @@ mad_mx_adapter_exit(p_mad_adapter_t a) {
     p_mad_mx_adapter_specific_t as = NULL;
 
     LOG_IN();
-    as		= a->specific;
+    as	= a->specific;
     TBX_FREE(as);
     a->specific	= NULL;
     a->parameter	= NULL;
@@ -504,33 +505,40 @@ mad_mx_driver_exit(p_mad_driver_t d) {
 /********************************************************/
 void
 mad_mx_new_message(p_mad_connection_t out){
-    p_mad_adapter_t adapter = NULL;
-    mx_endpoint_t *endpoint;
-    mx_endpoint_addr_t *dest_address;
-    uint64_t match_info = 0;
-    mx_request_t request;
-    mx_return_t  rc    = MX_SUCCESS;
-    p_mad_track_t s_track = NULL;
-    p_mad_mx_track_specific_t s_ts = NULL;
-    p_mad_track_t r_track = NULL;
-    p_mad_mx_track_specific_t r_ts = NULL;
-    mx_status_t                 status;
-    uint32_t                    result;
+    p_mad_channel_t     channel      = NULL;
+    p_mad_adapter_t     adapter      = NULL;
+
+    p_mad_track_set_t         s_track_set = NULL;
+    p_mad_track_t             s_track     = NULL;
+    p_mad_mx_track_specific_t s_ts        = NULL;
+    p_mad_track_t             r_track     = NULL;
+    p_mad_mx_track_specific_t r_ts        = NULL;
+
+    mx_endpoint_t      *endpoint     = NULL;
+    mx_endpoint_addr_t *dest_address = NULL;
+    uint64_t            match_info   = 0;
+    mx_return_t         rc           = MX_SUCCESS;
+    mx_request_t        request;
+    mx_status_t         status;
+    uint32_t            result;
     LOG_IN();
 
-    adapter = out->channel->adapter;
-    s_track = adapter->s_track_set->tracks_tab[0];
-    s_ts = s_track->specific;
+    channel = out->channel;
+    adapter = channel->adapter;
+    s_track_set = adapter->s_track_set;
+
+    /* À sélectionner */
+    //s_track  = s_track_set->tracks_tab[0];
+    s_track  = s_track_set->cpy_track;
+    s_ts     = s_track->specific;
     endpoint = s_ts->endpoint;
 
-    r_track = s_track->remote_tracks[out->remote_rank];
-    r_ts = r_track->specific;
+    r_track      = s_track->remote_tracks[out->remote_rank];
+    r_ts         = r_track->specific;
     dest_address = r_ts->endpoint_addr;
 
-
-    match_info = ((uint64_t)out->channel->id +1) << 32
-        | out->channel->process_lrank;
-
+    match_info = ((uint64_t)channel->id + 1) << 32
+        | channel->process_lrank;
 
     rc = mx_isend(*endpoint,
                   NULL, 0,
@@ -547,34 +555,42 @@ mad_mx_new_message(p_mad_connection_t out){
 p_mad_connection_t
 mad_mx_receive_message(p_mad_channel_t ch) {
     p_mad_mx_channel_specific_t	chs		= NULL;
-    p_mad_connection_t		in		= NULL;
-    p_tbx_darray_t		in_darray = NULL;
-    uint64_t 			match_info	= 0;
-    mx_segment_t 		*s;
     p_mad_adapter_t             a  = NULL;
     p_mad_mx_adapter_specific_t as = NULL;
+    p_mad_connection_t		in		= NULL;
+    p_tbx_darray_t		in_darray = NULL;
 
-    mx_endpoint_t               *ep;
-    mx_request_t                request;
-    mx_status_t                 status;
-    uint32_t                    result;
-    mx_return_t                 rc = MX_SUCCESS;
-    p_mad_track_t track = NULL;
+    p_mad_track_set_t         r_track_set = NULL;
+    p_mad_track_t             track = NULL;
     p_mad_mx_track_specific_t ts = NULL;
 
-    p_mad_iovec_t mad_iovec = NULL;
-    void *recv_msg = NULL;
+
+    mx_endpoint_t *ep         = NULL;
+    uint64_t 	   match_info = 0;
+    mx_return_t    rc         = MX_SUCCESS;
+    mx_request_t   request;
+    mx_status_t    status;
+    uint32_t       result;
+
+    //p_mad_iovec_t mad_iovec = NULL;
+    //void *recv_msg = NULL;
+    //mx_segment_t 		*s;
+
     LOG_IN();
     chs		= ch->specific;
+    a           = ch->adapter;
+    as          = a->specific;
     in_darray	= ch->in_connection_darray;
     match_info	= ((uint64_t)ch->id + 1) <<32;
-    a = ch->adapter;
-    as = a->specific;
 
-    track = tbx_htable_get(a->r_track_set->tracks_htable,
-                           "cpy");
-    ts = track->specific;
-    ep = ts->endpoint;
+    r_track_set = a->r_track_set;
+
+    /* A selectionner autrement*/
+    //track = tbx_htable_get(r_track_set->tracks_htable,
+    //                       "cpy");
+    track = r_track_set->cpy_track;
+    ts    = track->specific;
+    ep    = ts->endpoint;
 
 
     //mad_iovec = mad_iovec_create(0, 0);
@@ -650,16 +666,16 @@ mad_mx_cpy_limit_size(void){
 tbx_bool_t
 mad_mx_test(p_mad_track_t track){
     p_mad_mx_track_specific_t ts = NULL;
-    mx_request_t *request;
-    mx_endpoint_t *endpoint;
+    mx_request_t             *request;
+    mx_endpoint_t            *endpoint;
 
-    mx_return_t  rc = MX_SUCCESS;
-    mx_status_t  status;
+    mx_return_t  rc     = MX_SUCCESS;
     uint32_t     result	= 0;
+    mx_status_t  status;
     LOG_IN();
 
-    ts = track->specific;
-    request = ts->request;
+    ts       = track->specific;
+    request  = ts->request;
     endpoint = ts->endpoint;
 
     //DISP("mad_mx_test : TEST");
@@ -667,6 +683,7 @@ mad_mx_test(p_mad_track_t track){
     //mad_mx_check_return("mx_test failed", rc);
 
     if(rc == MX_SUCCESS && result){
+        LOG_OUT();
         return tbx_true;
     }
     LOG_OUT();
@@ -676,16 +693,16 @@ mad_mx_test(p_mad_track_t track){
 void
 mad_mx_wait(p_mad_track_t track){
     p_mad_mx_track_specific_t ts = NULL;
-    mx_request_t *request;
-    mx_endpoint_t *endpoint;
+    mx_request_t             *request;
+    mx_endpoint_t            *endpoint;
 
     mx_return_t  rc = MX_SUCCESS;
     mx_status_t  status;
     uint32_t     result	= 0;
     LOG_IN();
 
-    ts = track->specific;
-    request = ts->request;
+    ts       = track->specific;
+    request  = ts->request;
     endpoint = ts->endpoint;
 
     do {
@@ -698,53 +715,56 @@ mad_mx_wait(p_mad_track_t track){
 void
 mad_mx_open_track(p_mad_adapter_t adapter,
                   uint32_t track_id){
-    p_mad_mx_track_specific_t s_ts = NULL;
-    p_mad_mx_track_specific_t r_ts = NULL;
-    p_mad_mx_adapter_specific_t as = NULL;
-    uint64_t nic_id = 0;
-    uint32_t max_native_endpoints = 0;
+    p_mad_mx_adapter_specific_t as      = NULL;
+    uint64_t                    nic_id  = 0;
+    uint32_t                    nb_edp  = 0;
 
-    p_mad_track_t s_track = NULL;
-    p_mad_track_t r_track = NULL;
+    p_mad_track_set_t           s_track_set = NULL;
+    p_mad_track_t               s_track     = NULL;
+    p_mad_mx_track_specific_t   s_ts        = NULL;
+    p_mad_track_set_t           r_track_set = NULL;
+    p_mad_track_t               r_track     = NULL;
+    p_mad_mx_track_specific_t   r_ts        = NULL;
 
-    mx_endpoint_t endpoint;
-    uint32_t        endpoint_id  = 1;
-    const uint32_t  endpoint_key = 0xFFFFFFFF;
-    mx_return_t     rc    = MX_SUCCESS;
+    mx_endpoint_t  endpoint;
+    uint32_t       endpoint_id  = 1;
+    const uint32_t endpoint_key = 0xFFFFFFFF;
+
+    mx_return_t    rc    = MX_SUCCESS;
     LOG_IN();
 
     as = adapter->specific;
     nic_id = as->board_id;
-
 
 #ifdef MX_VERSION_AFTER_1_0_0
     rc = mx_get_info(endpoint,
                      MX_MAX_NATIVE_ENDPOINTS,
                      NULL,
                      0,
-                     &max_native_endpoints,
+                     &nb_edp,
                      sizeof(uint32_t));
 #else // ! MX_VERSION_AFTER_1_0_0
     rc = mx_get_info(endpoint,
                      MX_MAX_NATIVE_ENDPOINTS,
-                     &max_native_endpoints,
+                     &nb_edp,
                      sizeof(uint32_t));
 #endif // MX_VERSION_AFTER_1_0_0
     mad_mx_check_return("mx_open_track", rc);
 
-    s_track = adapter->s_track_set->tracks_tab[track_id];
+    s_track_set = adapter->s_track_set;
+    s_track     = s_track_set->tracks_tab[track_id];
     s_ts = TBX_MALLOC(sizeof(mad_mx_track_specific_t));
     s_ts->endpoint      = TBX_MALLOC(sizeof(mx_endpoint_t));
     s_ts->endpoint_addr = TBX_MALLOC(sizeof(mx_endpoint_addr_t));
     s_ts->request       = TBX_MALLOC(sizeof(mx_request_t));
 
-
-    r_track = adapter->r_track_set->tracks_tab[track_id];
+    r_track_set   = adapter->r_track_set;
+    r_track       = r_track_set->tracks_tab[track_id];
     r_ts          = TBX_MALLOC(sizeof(mad_mx_track_specific_t));
     r_ts->request = TBX_MALLOC(sizeof(mx_request_t));
 
     for(endpoint_id = 1, rc = MX_BUSY;
-        rc == MX_BUSY && endpoint_id <= max_native_endpoints;
+        rc == MX_BUSY && endpoint_id <= nb_edp;
         endpoint_id++){
         rc = mx_open_endpoint(nic_id,
                               endpoint_id,
@@ -759,7 +779,8 @@ mad_mx_open_track(p_mad_adapter_t adapter,
     s_ts->endpoint_id = endpoint_id - 1;
     r_ts->endpoint_id = endpoint_id - 1;
 
-    rc = mx_get_endpoint_addr(*s_ts->endpoint, s_ts->endpoint_addr);
+    rc = mx_get_endpoint_addr(*s_ts->endpoint,
+                              s_ts->endpoint_addr);
     mad_mx_check_return("mx_open_track", rc);
     r_ts->endpoint_addr = s_ts->endpoint_addr;
 
@@ -772,16 +793,25 @@ void
 mad_mx_isend(p_mad_track_t track,
              ntbx_process_lrank_t remote_rank,
              struct iovec *iovec, uint32_t nb_seg){
-    p_mad_mx_track_specific_t ts = NULL;
-    p_mad_track_t remote_track = NULL;
-    p_mad_mx_track_specific_t remote_ts = NULL;
-    mx_endpoint_t *endpoint;
-    mx_endpoint_addr_t *dest_address;
-    uint64_t match_info = 0;
-    mx_segment_t *seg_list = NULL;
-    mx_request_t *request;
-    mx_return_t     rc    = MX_SUCCESS;
+    p_mad_mx_track_specific_t ts           = NULL;
+    p_mad_track_t             remote_track = NULL;
+    p_mad_mx_track_specific_t remote_ts    = NULL;
+
+    mx_endpoint_t      *endpoint     = NULL;
+    mx_endpoint_addr_t *dest_address = NULL;
+    uint64_t            match_info   = 0;
+    mx_segment_t       *seg_list     = NULL;
+    mx_request_t       *request      = NULL;
+    mx_return_t         rc           = MX_SUCCESS;
+
+
+    tbx_tick_t        t1;
+    tbx_tick_t        t2;
+    tbx_tick_t        t3;
+    double            sum = 0.0;
+
     LOG_IN();
+    //TBX_GET_TICK(t1);
 
     ts       = track->specific;
     endpoint = ts->endpoint;
@@ -795,29 +825,42 @@ mad_mx_isend(p_mad_track_t track,
 
     //mad_iovec_print_iovec(iovec);
 
+    //TBX_GET_TICK(t2);
+
     rc = mx_isend(*endpoint,
                   seg_list, nb_seg,
                   *dest_address,
                   match_info,
                   NULL, request);
+
+    //TBX_GET_TICK(t3);
+    //
+    //
+    //printf("\n");
+    //sum = TBX_TIMING_DELAY(t1, t3);
+    //printf("\t \t mad_mx_isend : total    -> %g\n", sum);
+    //
+    //sum = TBX_TIMING_DELAY(t1, t2);
+    //printf("\t \t 1 - initialisations     -> %g\n", sum);
+    //
+    //sum = TBX_TIMING_DELAY(t2, t3);
+    //printf("\t \t 2 - mx_isend            -> %g\n", sum);
+    //printf("\n");
     LOG_OUT();
 }
-
-
-
 
 void
 mad_mx_irecv(p_mad_track_t track,
              struct iovec *iovec, uint32_t nb_seg){
-    p_mad_mx_track_specific_t ts = NULL;
-    mx_endpoint_t *endpoint;
-    uint64_t match_info = 0;
-    mx_segment_t *seg_list = NULL;
-    mx_request_t *request;
-    mx_return_t     rc    = MX_SUCCESS;
+    p_mad_mx_track_specific_t ts         = NULL;
+    mx_endpoint_t            *endpoint   = NULL;
+    uint64_t                  match_info = 0;
+    mx_segment_t             *seg_list   = NULL;
+    mx_request_t             *request    = NULL;
+    mx_return_t               rc         = MX_SUCCESS;
     LOG_IN();
 
-    ts = track->specific;
+    ts       = track->specific;
     endpoint = ts->endpoint;
     request  = ts->request;
     seg_list = (mx_segment_t *)iovec;
@@ -840,6 +883,11 @@ mad_mx_add_pre_posted(p_mad_adapter_t adapter,
     p_mad_iovec_t mad_iovec = NULL;
     void *unexpected_area   = NULL;
     LOG_IN();
+
+    track->status = MAD_MKP_PROGRESS;
+    //DISP_VAL("add_pre_posted : track->status", track->status);
+
+
 
     mad_iovec = mad_iovec_create(0);
     mad_iovec->track = track;
@@ -870,16 +918,21 @@ mad_mx_clean_pre_posted(p_mad_iovec_t mad_iovec){
 void
 mad_mx_remove_all_pre_posted(p_mad_adapter_t adapter){
     p_mad_track_set_t r_track_set = NULL;
-    p_mad_track_t track = NULL;
-    p_mad_pipeline_t     pipeline = NULL;
-    p_mad_iovec_t     mad_iovec = NULL;
+    uint32_t          nb_track    = 0;
+    p_mad_track_t    *tracks_tab  = NULL;
+    p_mad_track_t     track       = NULL;
+    p_mad_pipeline_t  pipeline    = NULL;
+    p_mad_iovec_t     mad_iovec   = NULL;
+
     uint32_t i = 0;
     LOG_IN();
     //DISP("-->remove_pre_posted");
     r_track_set = adapter->r_track_set;
+    nb_track    = r_track_set->nb_track;
+    tracks_tab  = r_track_set->tracks_tab;
 
-    for(i = 0; i < r_track_set->nb_track; i++){
-        track = r_track_set->tracks_tab[i];
+    for(i = 0; i < nb_track; i++){
+        track = tracks_tab[i];
 
         if(track->pre_posted){
             pipeline = track->pipeline;

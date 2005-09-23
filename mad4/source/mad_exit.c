@@ -1130,8 +1130,8 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
       //DISP("<--free s_msg_list");
 
       //DISP("-->free r_msg_list");
-      tbx_slist_free(mad_driver->r_msg_slist);
-      mad_driver->r_msg_slist = NULL;
+      //tbx_slist_free(mad_driver->r_msg_slist);
+      //mad_driver->r_msg_slist = NULL;
       //DISP("<--free r_msg_list");
 
       mad_driver->interface = NULL;

@@ -55,7 +55,7 @@ typedef struct s_mad_driver
     /*  p_ntbx_process_container_t  process_container; */
 
     p_tbx_slist_t               s_msg_slist;
-    p_tbx_slist_t               r_msg_slist;
+    //p_tbx_slist_t               r_msg_slist;
 
 
 

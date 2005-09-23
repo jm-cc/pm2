@@ -60,39 +60,39 @@ disp_s_msg_list(p_mad_adapter_t adapter){
 
 static void
 disp_r_msg_list(p_mad_adapter_t adapter){
-    p_mad_iovec_t mad_iovec = NULL;
-    p_tbx_slist_t list = NULL;
-    int i = 0;
-    LOG_IN();
-
-    list = adapter->driver->r_msg_slist;
-
-    DISP("");
-    DISP("");
-    DISP    ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    DISP    ("! ADAPTER->r_msg_slist");
-
-    if(!list->length){
-        DISP("! r_msg_list vide");
-    } else {
-        tbx_slist_ref_to_head(list);
-        do{
-            mad_iovec = tbx_slist_ref_get(list);
-            if(!mad_iovec)
-                break;
-
-            DISP("!");
-            DISP_VAL("! element", i);
-            DISP_VAL("! r_msg_list : channel_id  :", mad_iovec->channel->id);
-            DISP_VAL("! r_msg_list : remote_rank :", mad_iovec->remote_rank);
-            DISP_VAL("! r_msg_list : sequence    :", mad_iovec->sequence);
-
-            i++;
-        }while(tbx_slist_ref_forward(list));
-    }
-    DISP    ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
-    LOG_OUT();
+    //p_mad_iovec_t mad_iovec = NULL;
+    //p_tbx_slist_t list = NULL;
+    //int i = 0;
+    //LOG_IN();
+    //
+    //list = adapter->driver->r_msg_slist;
+    //
+    //DISP("");
+    //DISP("");
+    //DISP    ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    //DISP    ("! ADAPTER->r_msg_slist");
+    //
+    //if(!list->length){
+    //    DISP("! r_msg_list vide");
+    //} else {
+    //    tbx_slist_ref_to_head(list);
+    //    do{
+    //        mad_iovec = tbx_slist_ref_get(list);
+    //        if(!mad_iovec)
+    //            break;
+    //
+    //        DISP("!");
+    //        DISP_VAL("! element", i);
+    //        DISP_VAL("! r_msg_list : channel_id  :", mad_iovec->channel->id);
+    //        DISP_VAL("! r_msg_list : remote_rank :", mad_iovec->remote_rank);
+    //        DISP_VAL("! r_msg_list : sequence    :", mad_iovec->sequence);
+    //
+    //        i++;
+    //    }while(tbx_slist_ref_forward(list));
+    //}
+    //DISP    ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    //
+    //LOG_OUT();
 }
 
 
@@ -233,7 +233,7 @@ mad_end_packing(p_mad_connection_t connection){
     p_mad_driver_interface_t interface = NULL;
     LOG_IN();
 
-    DISP("-->end_packing");
+    //DISP("-->end_packing");
 
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -248,7 +248,7 @@ mad_end_packing(p_mad_connection_t connection){
         mad_r_make_progress(adapter);
     }
 
-    DISP("packs_list épuisée");
+    //DISP("packs_list épuisée");
 
     if (interface->finalize_message)
         interface->finalize_message(connection);
@@ -350,7 +350,7 @@ mad_unpack(p_mad_connection_t    connection,
     mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 0);
 
     tbx_slist_append(channel->unpacks_list, mad_iovec);
-    tbx_slist_append(driver->r_msg_slist, mad_iovec);
+    //tbx_slist_append(driver->r_msg_slist, mad_iovec);
 
     if(receive_mode == mad_receive_EXPRESS){
         while(channel->unpacks_list->length){
@@ -458,6 +458,8 @@ mad_wait_unpacks(p_mad_connection_t connection){
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
         mad_s_make_progress(adapter);
+        //DISP_VAL("unpack_list->length", channel->unpacks_list->length);
+
     }
 
     //DISP("<-----------------mad_wait_unpacks");

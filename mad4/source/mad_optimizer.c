@@ -138,6 +138,7 @@ initialize_tracks(p_mad_adapter_t adapter){
         track0->id = 0;
         track0->pre_posted = tbx_true;
         track0->pipeline = mad_pipeline_create(1);
+        track0->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "cpy", track0);
         track_set->tracks_tab[0] = track0;
@@ -147,12 +148,13 @@ initialize_tracks(p_mad_adapter_t adapter){
         track1->id = 1;
         track1->pre_posted = tbx_false;
         track1->pipeline = mad_pipeline_create(1);
+        track1->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "rdv", track1);
         track_set->tracks_tab[1] = track1;
 
-
-
+        track_set->cpy_track = track0;
+        track_set->rdv_track = track1;
 
         /* Réception */
         adapter->r_track_set = TBX_MALLOC(sizeof(mad_track_set_t));
@@ -168,6 +170,7 @@ initialize_tracks(p_mad_adapter_t adapter){
         track0->id = 0;
         track0->pre_posted = tbx_true;
         track0->pipeline = mad_pipeline_create(1);
+        track0->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "cpy", track0);
         track_set->tracks_tab[0] = track0;
@@ -177,9 +180,13 @@ initialize_tracks(p_mad_adapter_t adapter){
         track1->id = 1;
         track1->pre_posted = tbx_false;
         track1->pipeline = mad_pipeline_create(1);
+        track1->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "rdv", track1);
         track_set->tracks_tab[1] = track1;
+
+        track_set->cpy_track = track0;
+        track_set->rdv_track = track1;
 
         interface->open_track(adapter, 0);
         interface->open_track(adapter, 1);
@@ -330,7 +337,7 @@ search_new(p_mad_driver_t driver){
 
    //DISP("-----------------");
     if(driver->interface->need_rdv(mad_iovec_cur)){
-       //DISP("OPTIMIZER : begin with rdv");
+      //DISP("OPTIMIZER : begin with rdv");
         mad_iovec = mad_iovec_begin_with_rdv(mad_iovec_cur);
     } else {
        //DISP("OPTIMIZER : begin with data");
@@ -414,7 +421,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
     } else {
         mad_iovec = search_new(adapter->driver);
         if(mad_iovec){
-            track = tbx_htable_get(adapter->s_track_set->tracks_htable, "cpy"); // cpy ->mad_iovec->methode_transfert
+            track = adapter->s_track_set->cpy_track;
             mad_iovec->track = track;
         }
     }

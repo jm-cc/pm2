@@ -87,7 +87,7 @@ typedef struct s_mad_connection{
 #ifdef MARCEL
     marcel_mutex_t           lock_mutex;
 #else // MARCEL
-    volatile tbx_bool_t      lock;
+    /*volatile*/ tbx_bool_t      lock;
 #endif // MARCEL
     tbx_bool_t               delayed_send;
     tbx_bool_t               flushed;

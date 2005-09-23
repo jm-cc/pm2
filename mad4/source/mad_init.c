@@ -206,7 +206,7 @@ driver_init_1(p_mad_madeleine_t      madeleine,
 
   /***/
   mad_driver->s_msg_slist  = tbx_slist_nil();
-  mad_driver->r_msg_slist = tbx_slist_nil();
+  //mad_driver->r_msg_slist = tbx_slist_nil();
   {
     p_mad_adapter_t adapter = NULL;
 

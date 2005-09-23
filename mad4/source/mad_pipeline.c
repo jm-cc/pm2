@@ -52,6 +52,7 @@ mad_pipeline_remove(p_mad_pipeline_t pipeline){
     void *object = NULL;
     LOG_IN();
 
+    //DISP("-->pipeline_remove");
     if(!pipeline->cur_nb_elm)
         goto end;
 
@@ -61,6 +62,7 @@ mad_pipeline_remove(p_mad_pipeline_t pipeline){
     pipeline->cur_nb_elm--;
 
  end:
+    //DISP("<--pipeline_remove");
     LOG_OUT();
     return object;
 }

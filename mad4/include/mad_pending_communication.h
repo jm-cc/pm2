@@ -66,6 +66,7 @@ typedef struct s_mad_track_t{
     tbx_bool_t     pre_posted;
 
     p_mad_pipeline_t pipeline;
+    int status;
 
     p_mad_track_t  remote_tracks[32];
 
@@ -83,6 +84,9 @@ typedef struct s_mad_track_set_t{
     uint32_t cur_nb_pending_iov;
 
     p_mad_pipeline_t in_more;
+
+    p_mad_track_t  cpy_track;
+    p_mad_track_t  rdv_track;
 
     p_mad_driver_specific_t specific;
 }mad_track_set_t, *p_mad_track_set_t;

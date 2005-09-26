@@ -73,15 +73,11 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 }
 
 #section marcel_functions
-#ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
-#endif
 #section marcel_inline
-#ifdef MA__BUBBLES
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
 	return tbx_container_of(h, marcel_bubble_t, hold);
 }
-#endif
 #section marcel_macros
 #ifdef MA__BUBBLES
 #define ma_holder_type(h) ((h)->type)
@@ -302,8 +298,12 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
+#ifdef MA__BUBBLES
 	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER;
 			hh=ma_bubble_holder(hh)->sched.sched_holder);
+#else
+	hh = h;
+#endif
 	return hh?ma_rq_holder(hh):NULL;
 }
 

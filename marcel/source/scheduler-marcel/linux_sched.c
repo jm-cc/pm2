@@ -1729,9 +1729,11 @@ restart:
 //	next->activated = 0;
 
 	nexth = &rq->hold;
+#ifdef MA__BUBBLES
 	if (!(nextent = ma_bubble_sched(nextent, prevrq, rq, &nexth, idx)))
 		/* ma_bubble_sched aura libéré prevrq */
 		goto need_resched_atomic;
+#endif
 	MA_BUG_ON(nextent->type != MA_TASK_ENTITY);
 	next = ma_task_entity(nextent);
 switch_tasks:

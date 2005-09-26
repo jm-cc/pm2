@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 
+#ifdef MA__BUBBLES
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
 int marcel_bubble_init(marcel_bubble_t *bubble) {
@@ -76,6 +77,7 @@ static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 	e->sched_holder = &bubble->hold;
 	if (e->type == MA_TASK_ENTITY) {
 		if ((h = e->run_holder))
+			/* Ici, on suppose que h est déjà verrouillé */
 			ma_deactivate_entity(e,h);
 		ma_activate_entity(e,&bubble->hold);
 	} else {
@@ -182,6 +184,17 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	__do_bubble_insertentity(bubble,entity);
 	bubble_sched_debug("insertion %p in bubble %p done\n",entity,bubble);
 	LOG_OUT();
+	return 0;
+}
+
+/* Détacher une bulle (et son contenu) de la bulle qui la contient, pour
+ * pouvoir la placer ailleurs */
+int marcel_bubble_detach(marcel_bubble_t *b) {
+	ma_holder_t *h = b->sched.sched_holder;
+	MA_BUG_ON(ma_holder_type(h)==MA_RUNQUEUE_HOLDER);
+	ma_holder_lock_softirq(h);
+	set_sched_holder(&b->sched, b);
+	ma_holder_unlock_softirq(h);
 	return 0;
 }
 #endif
@@ -599,3 +612,4 @@ void __marcel_init bubble_sched_init() {
 
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,
 		MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");
+#endif /* MA__BUBBLES */

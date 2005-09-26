@@ -76,10 +76,24 @@ static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 	bubble_sched_debug("set_sched_holder %p in bubble %p\n",e,bubble);
 	e->sched_holder = &bubble->hold;
 	if (e->type == MA_TASK_ENTITY) {
-		if ((h = e->run_holder))
-			/* Ici, on suppose que h est déjà verrouillé */
-			ma_deactivate_entity(e,h);
-		ma_activate_entity(e,&bubble->hold);
+		if ((h = e->run_holder) && h != &bubble->hold) {
+			MA_BUG_ON(ma_holder_type(h) != MA_BUBBLE_HOLDER);
+			/* already enqueued */
+			if (!(e->holder_data)) {
+				/* and already running ! */
+				ma_deactivate_running_entity(e,h);
+				ma_activate_running_entity(e,&bubble->hold);
+			} else {
+				/* Ici, on suppose que h est déjà verrouillé
+				 * ainsi que sa runqueue */
+				__ma_bubble_dequeue_entity(e,ma_bubble_holder(h));
+				ma_deactivate_running_entity(e,h);
+				ma_activate_running_entity(e,&bubble->hold);
+				/* Ici, on suppose que la runqueue de bubble
+				 * est déjà verrouillée */
+				__ma_bubble_enqueue_entity(e,bubble);
+			}
+		}
 	} else {
 		b = ma_bubble_entity(e);
 		ma_holder_rawlock(&b->hold);
@@ -98,10 +112,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);
 	else {
-		marcel_t t = ma_task_entity(entity);
-		if (t->sched.state == MA_TASK_BORNING)
-			ma_set_task_state(t, MA_TASK_RUNNING);
-		PROF_EVENT2(bubble_sched_insert_thread,t,bubble);
+		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble);
 	}
 	list_add_tail(&entity->entity_list, &bubble->heldentities);
 	entity->init_holder = &bubble->hold;

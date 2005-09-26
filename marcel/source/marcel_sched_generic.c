@@ -355,7 +355,7 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 	MA_BUG_ON(!ma_in_irq());
 
 #ifdef MA__LWPS
-	ma_wake_up_created_thread(ma_per_lwp(idle_task,lwp));
+	marcel_wake_up_created_thread(ma_per_lwp(idle_task,lwp));
 #endif
 
 	ma_irq_exit();

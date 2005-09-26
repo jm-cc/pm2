@@ -619,10 +619,9 @@ void fastcall marcel_unfreeze_sched(void)
  * This function will do some initial scheduler statistics housekeeping
  * that must be done for every newly created process.
  */
-void fastcall ma_wake_up_created_thread(marcel_task_t * p)
+void marcel_wake_up_created_thread(marcel_task_t * p)
 {
 	ma_holder_t *h;
-	ma_runqueue_t *rq;
 	LOG_IN();
 
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
@@ -632,18 +631,14 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debug("wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		marcel_bubble_inserttask(ma_bubble_holder(h),p);
-		/* marcel_bubble_inserttask() s'est occupé de la réveiller au
-		 * besoin */
-		LOG_OUT();
-		return;
-	} else rq = ma_rq_holder(h);
-
-	ma_set_task_state(p, MA_TASK_RUNNING);
-
-	MA_BUG_ON(!rq);
-	ma_holder_lock_softirq(&rq->hold);
+	}
 
 	p->sched.internal.timestamp = marcel_clock();
+	ma_set_task_state(p, MA_TASK_RUNNING);
+
+	MA_BUG_ON(!h);
+	ma_holder_lock_softirq(h);
+
 	/*
 	 * We decrease the sleep average of forking parents
 	 * and children as well, to keep max-interactive tasks
@@ -664,7 +659,7 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 	 * on ne peut donc pas profiter de ses valeurs */
 //	if (tbx_unlikely(!MARCEL_SELF->sched.internal.array))
 	if (MA_TASK_IS_BLOCKED(p))
-		ma_activate_task(p, &rq->hold);
+		ma_activate_task(p, h);
 //	else {
 //		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
 //		list_add_tail(&p->sched.internal.run_list,
@@ -676,9 +671,9 @@ void fastcall ma_wake_up_created_thread(marcel_task_t * p)
 //#endif
 //		rq->hold.running++;
 //	}
-	ma_holder_unlock_softirq(&rq->hold);
+	ma_holder_unlock_softirq(h);
 	// on donne la main aussitôt, bien souvent le meilleur choix
-	if (!ma_in_atomic())
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER && !ma_in_atomic())
 		ma_schedule();
 	LOG_OUT();
 }
@@ -3244,7 +3239,7 @@ void __marcel_init sched_init(void)
 #ifndef MA__LWPS
 	ma_per_lwp__current_thread = MARCEL_SELF;
 #endif
-	ma_wake_up_created_thread(MARCEL_SELF);
+	marcel_wake_up_created_thread(MARCEL_SELF);
 	/* since it is actually already running */
 	ma_holder_lock(&ma_main_runqueue.hold);
 	ma_dequeue_task(MARCEL_SELF, &ma_main_runqueue.hold);

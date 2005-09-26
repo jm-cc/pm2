@@ -245,7 +245,7 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 
 	if(cur->child)
 		/* pour les processus normaux, on réveille le fils nous-même */
-		ma_wake_up_created_thread(cur->child);
+		marcel_wake_up_created_thread(cur->child);
 
 	LOG_OUT();
 	return 0;
@@ -353,7 +353,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	}
 #endif
 	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp);
-	ma_wake_up_created_thread(postexit);
+	marcel_wake_up_created_thread(postexit);
 	LOG_OUT();
 }
 

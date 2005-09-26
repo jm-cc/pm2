@@ -341,7 +341,11 @@ extern void FASTCALL(marcel_unfreeze_sched());
 #else
  static __tbx_inline__ void ma_kick_process(marcel_task_t *tsk) { }
 #endif
-extern void FASTCALL(ma_wake_up_created_thread(marcel_task_t * tsk));
+
+#section functions
+extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
+
+#section marcel_functions
 
 int ma_sched_change_prio(marcel_t t, int prio);
 

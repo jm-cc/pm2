@@ -74,6 +74,8 @@ any_t sum(any_t arg)
     marcel_bubble_inserttask(&b2, p2);
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b1);
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b2);
+    marcel_wake_up_created_thread(p1);
+    marcel_wake_up_created_thread(p2);
     marcel_sem_P(&j1.sem);
     marcel_sem_P(&j2.sem);
   } else {

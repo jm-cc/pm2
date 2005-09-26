@@ -553,7 +553,7 @@ static void ksoftirqd_start(ma_lwp_t lwp)
 	marcel_task_t *p;
 
 	p=ksofirqd_start(lwp);
-	ma_wake_up_created_thread(p);
+	marcel_wake_up_created_thread(p);
 	ma_per_lwp(ksoftirqd, lwp) = p;
 }
 

@@ -117,6 +117,9 @@ DEBUG_DECLARE(ntbx)
 #ifdef DSM
 DEBUG_DECLARE(dsm)
 #endif
+#ifdef PROFILE
+DEBUG_DECLARE(profile)
+#endif
 DEBUG_DECLARE(app)
 
 inline static int get_action_value(debug_type_t* type, debug_action_t action)

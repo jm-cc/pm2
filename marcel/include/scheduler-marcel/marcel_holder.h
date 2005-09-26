@@ -366,9 +366,9 @@ static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h) {
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating running %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+		sched_debug("activating running %d:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
 	else
-		bubble_sched_debug("activating running %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+		bubble_sched_debug("activating running %d:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_activate_running_entity(&p->sched.internal,h);
 }
 
@@ -380,9 +380,9 @@ static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %ld:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
+		sched_debug("activating %d:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
 	else
-		bubble_sched_debug("activating %ld:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+		bubble_sched_debug("activating %d:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_activate_running_task(p,h);
 	ma_enqueue_task(p,h);
 }
@@ -441,9 +441,9 @@ static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holde
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h) {
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("deactivating running %ld:%s from %s\n",p->number,p->name,ma_rq_holder(h)->name);
+		sched_debug("deactivating running %d:%s from %s\n",p->number,p->name,ma_rq_holder(h)->name);
 	else
-		bubble_sched_debug("deactivating running %ld:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+		bubble_sched_debug("deactivating running %d:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_deactivate_running_entity(&p->sched.internal,h);
 	if (p->sched.state == MA_TASK_INTERRUPTIBLE)
 		h->nr_uninterruptible++;
@@ -457,9 +457,9 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) {
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("deactivating %ld:%s from %s\n",p->number,p->name,ma_rq_holder(h)->name);
+		sched_debug("deactivating %d:%s from %s\n",p->number,p->name,ma_rq_holder(h)->name);
 	else
-		bubble_sched_debug("deactivating %ld:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
+		bubble_sched_debug("deactivating %d:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_dequeue_task(p,h);
 	ma_deactivate_running_task(p,h);
 }

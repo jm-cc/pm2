@@ -195,10 +195,6 @@
 #  define MA__INTERRUPTS_USE_SIGINFO
 #endif
 
-#if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)
-#  define MARCEL_BUBBLE_EXPLODE
-#endif
-
 /* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter
  * les interruptions entre l'enregistrement du switch_to et le switch_to
  * effectif 
@@ -207,6 +203,15 @@
 
 /* Pour l'instant, toujours activer les bulles */
 #define MA__BUBBLES
+
+#ifdef MA__BUBBLES
+#if !defined(MARCEL_BUBBLE_EXPLODE) && !defined(MARCEL_BUBBLE_STEAL)
+#  define MARCEL_BUBBLE_EXPLODE
+#endif
+#else
+#undef MARCEL_BUBBLE_EXPLODE
+#undef MARCEL_BUBBLE_STEAL
+#endif
 
 #endif /* MARCEL_FLAGS_EST_DEF */
 

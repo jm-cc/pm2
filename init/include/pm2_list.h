@@ -17,6 +17,8 @@
 #ifndef PM2_LIST_H
 #define PM2_LIST_H
 
+#include "tbx_compiler.h"
+
 #ifndef prefetch
 #define prefetch(x) ((void)0)
 #endif
@@ -51,7 +53,7 @@ struct list_head {
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static __inline__ void __list_add(struct list_head * lnew,
+static __tbx_inline__ void __list_add(struct list_head * lnew,
 	struct list_head * prev,
 	struct list_head * next)
 {
@@ -69,7 +71,7 @@ static __inline__ void __list_add(struct list_head * lnew,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static __inline__ void list_add(struct list_head *lnew, struct list_head *head)
+static __tbx_inline__ void list_add(struct list_head *lnew, struct list_head *head)
 {
 	__list_add(lnew, head, head->next);
 }
@@ -82,7 +84,7 @@ static __inline__ void list_add(struct list_head *lnew, struct list_head *head)
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static __inline__ void list_add_tail(struct list_head *lnew, struct list_head *head)
+static __tbx_inline__ void list_add_tail(struct list_head *lnew, struct list_head *head)
 {
 	__list_add(lnew, head->prev, head);
 }
@@ -94,7 +96,7 @@ static __inline__ void list_add_tail(struct list_head *lnew, struct list_head *h
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static __inline__ void __list_del(struct list_head * prev,
+static __tbx_inline__ void __list_del(struct list_head * prev,
 				  struct list_head * next)
 {
 	next->prev = prev;
@@ -107,7 +109,7 @@ static __inline__ void __list_del(struct list_head * prev,
  * Note: list_empty on entry does not return true after this, the entry is
  * in an undefined state.
  */
-static __inline__ void list_del(struct list_head *entry)
+static __tbx_inline__ void list_del(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
 }
@@ -116,7 +118,7 @@ static __inline__ void list_del(struct list_head *entry)
  * list_del_init - deletes entry from list and reinitialize it.
  * @entry: the element to delete from the list.
  */
-static __inline__ void list_del_init(struct list_head *entry)
+static __tbx_inline__ void list_del_init(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
 	INIT_LIST_HEAD(entry); 
@@ -127,7 +129,7 @@ static __inline__ void list_del_init(struct list_head *entry)
  * @list: the entry to move
  * @head: the head that will precede our entry
  */
-static inline void list_move(struct list_head *list, struct list_head *head)
+static __tbx_inline__ void list_move(struct list_head *list, struct list_head *head)
 {
         __list_del(list->prev, list->next);
         list_add(list, head);
@@ -138,7 +140,7 @@ static inline void list_move(struct list_head *list, struct list_head *head)
  * @list: the entry to move
  * @head: the head that will follow our entry
  */
-static inline void list_move_tail(struct list_head *list,
+static __tbx_inline__ void list_move_tail(struct list_head *list,
                                   struct list_head *head)
 {
         __list_del(list->prev, list->next);
@@ -149,12 +151,12 @@ static inline void list_move_tail(struct list_head *list,
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static __inline__ int list_empty(struct list_head *head)
+static __tbx_inline__ int list_empty(struct list_head *head)
 {
 	return head->next == head;
 }
 
-static inline void __list_splice(struct list_head *list,
+static __tbx_inline__ void __list_splice(struct list_head *list,
                                  struct list_head *head)
 {
         struct list_head *first = list->next;
@@ -173,7 +175,7 @@ static inline void __list_splice(struct list_head *list,
  * @list: the new list to add.
  * @head: the place to add it in the first list.
  */
-static inline void list_splice(struct list_head *list, struct list_head *head)
+static __tbx_inline__ void list_splice(struct list_head *list, struct list_head *head)
 {
         if (!list_empty(list))
                 __list_splice(list, head);
@@ -186,7 +188,7 @@ static inline void list_splice(struct list_head *list, struct list_head *head)
  *
  * The list at @list is reinitialised
  */
-static inline void list_splice_init(struct list_head *list,
+static __tbx_inline__ void list_splice_init(struct list_head *list,
                                     struct list_head *head)
 {
         if (!list_empty(list)) {
@@ -324,17 +326,17 @@ struct hlist_node {
 #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL) 
 #define INIT_HLIST_NODE(ptr) ((ptr)->next = NULL, (ptr)->pprev = NULL)
 
-static __inline__ int hlist_unhashed(struct hlist_node *h) 
+static __tbx_inline__ int hlist_unhashed(struct hlist_node *h) 
 { 
         return !h->pprev;
 } 
 
-static __inline__ int hlist_empty(struct hlist_head *h) 
+static __tbx_inline__ int hlist_empty(struct hlist_head *h) 
 { 
         return !h->first;
 } 
 
-static __inline__ void __hlist_del(struct hlist_node *n) 
+static __tbx_inline__ void __hlist_del(struct hlist_node *n) 
 {
         struct hlist_node *next = n->next;
         struct hlist_node **pprev = n->pprev;
@@ -343,14 +345,14 @@ static __inline__ void __hlist_del(struct hlist_node *n)
                 next->pprev = pprev;
 }  
 
-static __inline__ void hlist_del(struct hlist_node *n)
+static __tbx_inline__ void hlist_del(struct hlist_node *n)
 {
         __hlist_del(n);
         /*n->next = LIST_POISON1;
 	  n->pprev = LIST_POISON2;*/
 }
 
-static __inline__ void hlist_del_init(struct hlist_node *n) 
+static __tbx_inline__ void hlist_del_init(struct hlist_node *n) 
 {
         if (n->pprev)  {
                 __hlist_del(n);
@@ -358,7 +360,7 @@ static __inline__ void hlist_del_init(struct hlist_node *n)
         }
 }  
 
-static __inline__ void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
+static __tbx_inline__ void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
 { 
         struct hlist_node *first = h->first;
         n->next = first; 
@@ -369,7 +371,7 @@ static __inline__ void hlist_add_head(struct hlist_node *n, struct hlist_head *h
 } 
 
 /* next must be != NULL */
-static __inline__ void hlist_add_before(struct hlist_node *n, struct hlist_node 
+static __tbx_inline__ void hlist_add_before(struct hlist_node *n, struct hlist_node 
 *next)
 {
         n->pprev = next->pprev;
@@ -378,7 +380,7 @@ static __inline__ void hlist_add_before(struct hlist_node *n, struct hlist_node
         *(n->pprev) = n;
 }
 
-static __inline__ void hlist_add_after(struct hlist_node *n,
+static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
                                        struct hlist_node *next)
 {
         next->next      = n->next;

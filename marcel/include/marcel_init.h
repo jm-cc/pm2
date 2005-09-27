@@ -68,7 +68,7 @@ typedef struct __ma_init_info {
 #define __MA_INIT_SECTION ".ma.init."
 
 #define __ma_initfunc_prio_internal(_func, _section, _prio, _pdebug) \
-  const __ma_init_info_t ma_init_info_##_func \
+  static const __ma_init_info_t ma_init_info_##_func \
     TBX_ALIGNED TBX_SECTION(__MA_INIT_SECTION "inf." #_section "." #_prio) \
     = {.func=&_func, .section=_section, .prio=_prio, .debug=_pdebug, .file=__FILE__};
 #define __ma_initfunc_prio__(_func, _section, _prio, _debug) \

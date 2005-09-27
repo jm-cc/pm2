@@ -600,7 +600,7 @@ int marcel_bubble_steal_work(void) {
  * Initialisation
  */
 
-void __marcel_init bubble_sched_init() {
+static void __marcel_init bubble_sched_init() {
 	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);
 	PROF_EVENT2_ALWAYS(bubble_sched_down,&marcel_root_bubble,&ma_main_runqueue);
 	marcel_root_bubble.sched.sched_holder =

@@ -31,8 +31,8 @@ static int top_file=-1;
 static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 
-int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
-int top_printf (char *fmt, ...) {
+static int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
+static int top_printf (char *fmt, ...) {
 	char buf[81];
 	va_list va;
 	int n;
@@ -86,7 +86,7 @@ static void printtask(marcel_task_t *t) {
 }
 
 #if 0
-void printbubble(int sep, marcel_bubble_t *b) {
+static void printbubble(int sep, marcel_bubble_t *b) {
 	int rsep=0;
 	marcel_bubble_entity_t *e;
 
@@ -99,7 +99,7 @@ void printbubble(int sep, marcel_bubble_t *b) {
 	top_printf(")(%d)", b->sched.prio);
 }
 
-void printentity(int sep, marcel_bubble_entity_t *e) {
+static void printentity(int sep, marcel_bubble_entity_t *e) {
 	if (e->type == MARCEL_TASK_ENTITY) {
 		printtask(sep,ma_task_entity(e));
 	} else {
@@ -107,7 +107,7 @@ void printentity(int sep, marcel_bubble_entity_t *e) {
 	}
 }
 
-void printrq(ma_runqueue_t *rq) {
+static void printrq(ma_runqueue_t *rq) {
 	int prio;
 	marcel_bubble_entity_t *e;
 	ma_spin_lock(&rq->lock);
@@ -130,7 +130,7 @@ void printrq(ma_runqueue_t *rq) {
 }
 #endif
 
-void marcel_top_tick(unsigned long foo) {
+static void marcel_top_tick(unsigned long foo) {
 	marcel_lwp_t *lwp;
 	unsigned long now;
 #define NBPIDS 22

@@ -27,6 +27,8 @@ TBX_FMALLOC void *marcel_slot_alloc(void);
 void marcel_slot_free(void *addr);
 void marcel_slot_exit(void);
 
+unsigned long marcel_cachedthreads(void);
+
 
 
 /* ======= MT-Safe functions from standard library ======= */

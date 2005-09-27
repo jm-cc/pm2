@@ -62,7 +62,12 @@ static void __marcel_init marcel_slot_init(void)
 __ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO,
 		   "Initialise memory slot system");
 
-extern volatile unsigned long threads_created_in_cache;
+static volatile unsigned long threads_created_in_cache;
+
+unsigned long marcel_cachedthreads(void)
+{
+   return threads_created_in_cache;
+}
 
 inline static void* slot_cache_get(struct cache_head **head, int *main_slot)
 {

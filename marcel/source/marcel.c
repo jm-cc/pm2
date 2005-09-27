@@ -77,8 +77,6 @@ marcel_exception_t
    USE_ERROR = "USE_ERROR: Marcel was not compiled to enable this functionality",
    LOCK_TASK_ERROR = "LOCK_TASK_ERROR: All tasks blocked after bad use of lock_task()";
 
-volatile unsigned long threads_created_in_cache = 0;
-
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
 void breakpoint()
@@ -114,11 +112,6 @@ marcel_t marcel_alloc_stack(unsigned size)
   unlock_task();
 
   return t;
-}
-
-unsigned long marcel_cachedthreads(void)
-{
-   return threads_created_in_cache;
 }
 
 unsigned long marcel_usablestack(void)

@@ -171,8 +171,6 @@ static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
 
 /* ============= miscellaneous ============ */
 
-unsigned long marcel_cachedthreads(void);
-
 int  marcel_test_activity(void);
 
 #endif // MARCEL_EST_DEF

@@ -193,7 +193,7 @@ void marcel_free(void *ptr, char *file, unsigned line)
 
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};
 int marcel_key_present[MAX_KEY_SPECIFIC]={0};
-marcel_lock_t marcel_key_lock=MARCEL_LOCK_INIT;
+static marcel_lock_t marcel_key_lock=MARCEL_LOCK_INIT;
 unsigned marcel_nb_keys=1;
 static unsigned marcel_last_key=0;
 /* 

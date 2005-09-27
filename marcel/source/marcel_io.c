@@ -68,7 +68,7 @@ typedef struct tcp_ev {
 	} MA_GCC_NAME;
 } *tcp_ev_t;
 
-struct unix_io_server unix_io_server = {
+static struct unix_io_server unix_io_server = {
     .server=MARCEL_EV_SERVER_INIT(unix_io_server.server, "Unix TCP I/O"),
 };
 

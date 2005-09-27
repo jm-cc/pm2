@@ -39,7 +39,6 @@ typedef void (*marcel_key_destructor_t)(any_t);
 extern unsigned marcel_nb_keys;
 extern marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC];
 extern int marcel_key_present[MAX_KEY_SPECIFIC];
-extern marcel_lock_t marcel_key_lock;
 
 #section functions
 DEC_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 

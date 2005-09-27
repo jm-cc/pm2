@@ -657,7 +657,7 @@ marcel_pollid_create_X(marcel_pollgroup_func_t g,
 #define FOREACH_POLL(id) \
   FOREACH_REQ_POLL((id)->cur_cell, &(id)->server, inst)
 #define GET_ARG(id, _arg) \
-	_arg = (typeof(_arg))((id)->cur_cell->arg)
+	_arg = (__typeof__(_arg))((id)->cur_cell->arg)
 
 #define GET_CURRENT_POLLINST(id) ((id)->cur_cell)
 

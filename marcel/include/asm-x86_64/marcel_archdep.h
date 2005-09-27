@@ -46,7 +46,7 @@
 
 #define set_sp(val) \
   do { \
-    typeof(val) value=(val); \
+    __typeof__(val) value=(val); \
     __asm__ __volatile__("movq %0, %%rsp" \
                        : : "m" (value) : "memory" ); \
   } while (0)

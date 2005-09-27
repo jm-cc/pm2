@@ -43,13 +43,13 @@
 
   /* Difficile à réaliser de manière portable...
 #define LOCAL_SYMBOL(local_symbol, symbol) \
-  extern __typeof(symbol) local_symbol \
+  extern __typeof__(symbol) local_symbol \
     TBX_ALIAS(#symbol)
 // l'attribut visibility n'est pas encore disponible...
 //    TBX_ALIAS(#symbol) TBX_VISIBILITY("hidden")
 
 #define ALIAS_SYMBOL(alias_symbol, symbol) \
-  extern __typeof(symbol) alias_symbol \
+  extern __typeof__(symbol) alias_symbol \
     TBX_ALIAS(#symbol)
     */
 
@@ -68,11 +68,11 @@
  */
 
 #define DEC_LOCAL_MARCEL(name) \
-  extern typeof(MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) LOCAL_ATTRIBUTE
+  extern __typeof__(MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) LOCAL_ATTRIBUTE
 
 #ifdef MA__POSIX_FUNCTIONS_NAMES
 # define DEC_LOCAL_POSIX(name) \
-    extern typeof(POSIX_NAME(name)) LOCAL_POSIX_NAME(name);
+    extern __typeof__(POSIX_NAME(name)) LOCAL_POSIX_NAME(name);
 #else
 #  define DEC_LOCAL_POSIX(name)
 #endif
@@ -209,10 +209,10 @@
 #define DEF_PTHREAD_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
 #define DEF___PTHREAD_STRONG(rtype, name, proto, args) \
-  extern typeof(POSIX_NAME(name)) __PTHREAD_NAME(name); \
+  extern __typeof__(POSIX_NAME(name)) __PTHREAD_NAME(name); \
   DEF_STRONG_T(rtype, POSIX_NAME(name), __PTHREAD_NAME(name), proto, args)
 #define DEF___PTHREAD_WEAK(rtype, name, proto, args) \
-  extern typeof(POSIX_NAME(name)) __PTHREAD_NAME(name); \
+  extern __typeof__(POSIX_NAME(name)) __PTHREAD_NAME(name); \
   DEF_WEAK_T(rtype, POSIX_NAME(name), __PTHREAD_NAME(name), proto, args)
 #else
 #define DEF_PTHREAD_STRONG(rtype, name, proto, args)
@@ -231,10 +231,10 @@
 #define DEF_LIBPTHREAD_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, LPT_NAME(name), PTHREAD_NAME(name), proto, args)
 #define DEF___LIBPTHREAD_STRONG(rtype, name, proto, args) \
-  extern typeof(LPT_NAME(name)) __PTHREAD_NAME(name); \
+  extern __typeof__(LPT_NAME(name)) __PTHREAD_NAME(name); \
   DEF_STRONG_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
 #define DEF___LIBPTHREAD_WEAK(rtype, name, proto, args) \
-  extern typeof(LPT_NAME(name)) __PTHREAD_NAME(name); \
+  extern __typeof__(LPT_NAME(name)) __PTHREAD_NAME(name); \
   DEF_WEAK_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
 
 #define DEF_LIBPTHREAD(rtype, name, proto, args) \

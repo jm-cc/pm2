@@ -460,7 +460,7 @@ DEF_STRONG_T(int, LOCAL_POSIX_NAME(mutexattr_settype),
 	     LOCAL_POSIX_NAME(mutexattr_setkind_np),
 	     (pthread_mutex_attr_t *attr, int kind), (attr, kind))
 #ifdef MA__PTHREAD_FUNCTIONS
-  extern typeof(pthread_mutexattr_settype) pthread_mutexattr_setkind_np;
+  extern __typeof__(pthread_mutexattr_settype) pthread_mutexattr_setkind_np;
 #endif
 DEF_PTHREAD_WEAK(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
 			int kind), (attr, kind))
@@ -488,7 +488,7 @@ DEF_STRONG_T(int, LOCAL_POSIX_NAME(mutexattr_gettype),
 	     (cont pthread_mutexattr_t *attr,
 			int *kind), (attr, kind))
 #ifdef MA__PTHREAD_FUNCTIONS
-  extern typeof(pthread_mutexattr_gettype) pthread_mutexattr_getkind_np;
+  extern __typeof__(pthread_mutexattr_gettype) pthread_mutexattr_getkind_np;
 #endif
 DEF_PTHREAD_WEAK(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
 			int *kind), (attr, kind))

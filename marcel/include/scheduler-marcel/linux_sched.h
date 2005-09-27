@@ -21,6 +21,7 @@
  * include/linux/interrupt.h
  */
 
+#section marcel_variables
 #depend "sys/marcel_lwp.h[marcel_macros]"
 #depend "asm-generic/linux_perlwp.h[marcel_macros]"
 #depend "marcel_descr.h[types]"

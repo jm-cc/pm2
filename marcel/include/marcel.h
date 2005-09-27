@@ -73,6 +73,7 @@ TBX_VISIBILITY_POP
 #include "scheduler/marcel-master___inline.h"
 
 #if defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
+TBX_VISIBILITY_PUSH_INTERNAL
 #  include "asm/marcel-master___marcel_compiler.h"
 #  include "marcel-master___marcel_compiler.h"
 #  include "scheduler/marcel-master___marcel_compiler.h"
@@ -89,11 +90,9 @@ TBX_VISIBILITY_POP
 #  include "marcel-master___marcel_structures.h"
 #  include "scheduler/marcel-master___marcel_structures.h"
 
-TBX_VISIBILITY_PUSH_INTERNAL
 #  include "asm/marcel-master___marcel_functions.h"
 #  include "marcel-master___marcel_functions.h"
 #  include "scheduler/marcel-master___marcel_functions.h"
-TBX_VISIBILITY_POP
 
 #  include "asm/marcel-master___marcel_variables.h"
 #  include "marcel-master___marcel_variables.h"
@@ -102,6 +101,7 @@ TBX_VISIBILITY_POP
 #  include "asm/marcel-master___marcel_inline.h"
 #  include "marcel-master___marcel_inline.h"
 #  include "scheduler/marcel-master___marcel_inline.h"
+TBX_VISIBILITY_POP
 
 #  include "asm/marcel-master___all.h"
 //#  include "marcel-master___all.h"

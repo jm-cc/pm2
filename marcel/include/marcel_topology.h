@@ -18,11 +18,13 @@
 #include "tbx_compiler.h"
 
 #section variables
-#depend "sys/marcel_lwp.h[marcel_macros]"
 extern unsigned marcel_nbprocessors;
 #ifndef MA__LWPS
 #define marcel_nbprocessors 1
 #endif
+
+#section marcel_variables
+#depend "sys/marcel_lwp.h[marcel_macros]"
 extern int ma_lwp_node[MA_NR_LWPS];
 
 #section functions

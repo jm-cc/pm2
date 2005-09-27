@@ -46,7 +46,7 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
   do { \
     /* on a besoin d'avoir un 0 à *ebp */ \
     unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
-    unsigned long *_bp = (unsigned long *)(((unsigned long)(top)) - sizeof(unsigned long)); \
+    unsigned long *_bp = (unsigned long *)(((unsigned long)(top)) - 2*sizeof(unsigned long)); \
     unsigned long _sp = ((unsigned long)_bp) - _local; \
     /* marqueur de fin de pile */ \
     *_bp = 0; \
@@ -57,7 +57,7 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 #define marcel_ctx_switch_stack(from_task, to_task, top, cur_top) \
   do { \
     unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
-    unsigned long *_bp = (unsigned long *)(((unsigned long)(top)) - sizeof(unsigned long)); \
+    unsigned long *_bp = (unsigned long *)(((unsigned long)(top)) - 2*sizeof(unsigned long)); \
     unsigned long _sp = ((unsigned long)_bp) - _local; \
     /* marqueur de fin de pile */ \
     *_bp = 0; \

@@ -40,18 +40,18 @@ void __memory_barrier(void);
 #define TBX_RELOC_HIDE(ptr, off)					\
   ({ unsigned long __ptr;					\
     __asm__ ("" : "=g"(__ptr) : "0"(ptr));		\
-    (typeof(ptr)) (__ptr + (off)); })
+    (__typeof__(ptr)) (__ptr + (off)); })
 #else
 #define TBX_RELOC_HIDE(ptr, off)					\
   ({ unsigned long __ptr;					\
     __asm__ ("" : "=r"(__ptr) : "0"(ptr));		\
-    (typeof(ptr)) (__ptr + (off)); })
+    (__typeof__(ptr)) (__ptr + (off)); })
 #endif
 #else
 #define TBX_RELOC_HIDE(ptr, off)                                   \
   ({ unsigned long __ptr;                                       \
      __ptr = (unsigned long) (ptr);                             \
-    (typeof(ptr)) (__ptr + (off)); })
+    (__typeof__(ptr)) (__ptr + (off)); })
 #endif
 /*
  * Attribute macros  ________________________________________________
@@ -82,15 +82,11 @@ void __memory_barrier(void);
      ret name proto TBX_WEAK { return alias args; }
 #else
 #  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
-     __typeof(name) name __attribute__ ((__alias__(TBX_STRING(alias))))
+     __typeof__(name) name __attribute__ ((__alias__(TBX_STRING(alias))))
 #  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
      TBX_FUN_ALIAS(ret, name, alias, proto, args) TBX_WEAK
 #endif
 #define TBX_FORMAT(...) __attribute__ ((__format__(__VA_ARGS__)))
-
-#define TBX_VISIBILITY(vis)
-// l'attribut visibility n'est pas encore disponible...
-//#define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
 
 #if __GNUC__ > 3
 #  define __TBX_FUNCTION__		__func__
@@ -99,6 +95,11 @@ void __memory_barrier(void);
 #  define __tbx_deprecated__		__attribute__((deprecated))
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
+#define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
+#define TBX_EXTERN __attribute__ ((__visibility__("default")))
+#define TBX_EXTERN_BEGIN _Pragma("GCC visibility push(default)")
+#define TBX_EXTERN_END _Pragma("GCC visibility pop")
+
 #elif __GNUC__ == 3
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
 #  if __GNUC_MINOR__ >= 1
@@ -119,6 +120,10 @@ void __memory_barrier(void);
 #  endif
 
 #  define __tbx_attribute_pure__	__attribute__((__pure__))
+#  define TBX_VISIBILITY(vis)
+#  define TBX_EXTERN
+#  define TBX_EXTERN_BEGIN
+#  define TBX_EXTERN_END
 #elif __GNUC__ == 2
 #  define __TBX_FUNCTION__		__FUNCTION__
 #  if __GNUC_MINOR__ < 96
@@ -137,6 +142,10 @@ void __memory_barrier(void);
 #  endif
 
 #  define __restrict
+#  define TBX_VISIBILITY(vis)
+#  define TBX_EXTERN
+#  define TBX_EXTERN_BEGIN
+#  define TBX_EXTERN_END
 #else
 #  error Sorry, your compiler is too old/not recognized.
 #endif
@@ -208,7 +217,7 @@ void __memory_barrier(void);
  */
 #define typecheck(type,x) \
 ({      type __dummy; \
-        typeof(x) __dummy2; \
+        __typeof__(x) __dummy2; \
         (void)(&__dummy == &__dummy2); \
         1; \
 })

@@ -434,7 +434,7 @@
  *
  */
 #define tbx_container_of(ptr, type, member) \
-	((type *)((char *)(typeof (&((type *)0)->member))(ptr)- \
+	((type *)((char *)(__typeof__ (&((type *)0)->member))(ptr)- \
 		  tbx_offset_of(type,member)))
 
 

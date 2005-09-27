@@ -156,7 +156,7 @@ void __memory_barrier(void);
 #define TBX_EXTERN TBX_VISIBILITY("default")
 #define TBX_PROTECTED TBX_VISIBILITY("protected")
 
-#ifdef PM2_NOINLINE
+#if defined(PM2_NOINLINE) || !defined(__tbx_inline__)
 #undef __tbx_inline__
 #define __tbx_inline__ __inline__
 #endif

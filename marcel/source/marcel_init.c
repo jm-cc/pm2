@@ -295,9 +295,9 @@ typedef struct {
 	
 
 #define _ADD_INIT_SECTION(number, text) \
-  int __ma_init_info_##number \
+  TBX_INTERNAL int __ma_init_info_##number \
     TBX_ALIGNED TBX_SECTION(__MA_INIT_SECTION "inf." #number) = number; \
-  const __ma_init_index_t __ma_init_index_##number \
+  TBX_INTERNAL const __ma_init_index_t __ma_init_index_##number \
     TBX_SECTION(__MA_INIT_SECTION "ind." #number) \
     = { .infos=(tbx_container_of(&__ma_init_info_##number, \
 			     __ma_init_section_index_t, a.section_number) \

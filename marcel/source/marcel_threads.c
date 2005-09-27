@@ -806,7 +806,7 @@ void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
   unlock_task();
 }
 
-void __marcel_init main_thread_init(void)
+static void __marcel_init main_thread_init(void)
 {
 	marcel_attr_t attr;
 	char *name="main";

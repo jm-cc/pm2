@@ -341,7 +341,7 @@ static inline void resched_task(marcel_task_t *p, ma_lwp_t lwp)
  * task_curr - is this task currently executing on a CPU?
  * @p: the task in question.
  */
-inline int task_curr(marcel_task_t *p)
+int task_curr(marcel_task_t *p)
 {
 	return ma_lwp_curr(ma_task_lwp(p)) == p;
 }
@@ -441,7 +441,7 @@ EXPORT_SYMBOL_GPL(kick_process);
 #endif /* 0 */
 
 /* tries to resched the given task in the given holder */
-void try_to_resched(marcel_task_t *p, ma_holder_t *h)
+static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 {
 	marcel_lwp_t *lwp;
 	ma_runqueue_t *rq = ma_to_rq_holder(h);
@@ -2255,7 +2255,7 @@ TBX_PROTECTED int task_nice(marcel_task_t *p)
  * @lwp: the processor in question.
  */
 #ifdef MA__LWPS
-TBX_PROTECTED int idle_lwp(ma_lwp_t lwp)
+int idle_lwp(ma_lwp_t lwp)
 {
 	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);
 }
@@ -3199,7 +3199,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 }
 #endif
 
-void __marcel_init sched_init(void)
+static void __marcel_init sched_init(void)
 {
 	LOG_IN();
 

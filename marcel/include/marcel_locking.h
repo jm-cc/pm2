@@ -85,7 +85,7 @@ static __tbx_inline__ void ma_unlock_task(void)
 
 #ifdef MA__WORK
     if(cur->has_work)
-      do_work(cur);
+      ma_do_work(cur);
 #endif
   }
 

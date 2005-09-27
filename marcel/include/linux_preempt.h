@@ -55,7 +55,7 @@ do { \
 do { \
 	if (!(MARCEL_SELF->sched.state & ~MA_TASK_INTERRUPTIBLE) \
 			&& HAS_DEVIATE_WORK(MARCEL_SELF)) \
-		do_work(MARCEL_SELF); \
+		ma_do_work(MARCEL_SELF); \
 } while (0)
 #endif
 

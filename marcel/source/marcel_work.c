@@ -18,7 +18,7 @@
 
 #ifdef MA__WORK
 
-void do_work(marcel_t self)
+void ma_do_work(marcel_t self)
 {
   if(HAS_DEVIATE_WORK(self)) {
     marcel_execute_deviate_work();

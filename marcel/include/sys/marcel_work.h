@@ -70,7 +70,7 @@ enum {
 #define CLR_DEVIATE_WORK(pid) \
   do { (pid)->work.has_work &= ~MARCEL_WORK_DEVIATE; } while(0)
 
-void do_work(marcel_t self);
+void ma_do_work(marcel_t self);
 
 #endif /* MA__WORK */
 

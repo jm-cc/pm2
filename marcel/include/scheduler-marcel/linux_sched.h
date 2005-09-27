@@ -614,3 +614,7 @@ static __tbx_inline__ void ma_set_task_lwp(marcel_task_t *p, ma_lwp_t lwp)
 }
 
 
+#section marcel_functions
+int idle_lwp(ma_lwp_t lwp);
+int task_prio(marcel_task_t *p);
+int task_curr(marcel_task_t *p);

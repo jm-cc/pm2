@@ -372,7 +372,7 @@ TBX_PROTECTED void ma_tasklet_kill(struct ma_tasklet_struct *t)
 	ma_clear_bit(MA_TASKLET_STATE_SCHED, &t->state);
 }
 
-void __marcel_init softirq_init(void)
+static void __marcel_init softirq_init(void)
 {
 	ma_open_softirq(MA_TASKLET_SOFTIRQ, tasklet_action, NULL);
 	ma_open_softirq(MA_HI_SOFTIRQ, tasklet_hi_action, NULL);

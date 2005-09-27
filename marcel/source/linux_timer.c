@@ -216,13 +216,13 @@ repeat:
 }
 
 /***
- * add_timer_on - start a timer on a particular CPU
+ * ma_add_timer_on - start a timer on a particular CPU
  * @timer: the timer to be added
  * @cpu: the CPU to start it on
  *
  * This is not very scalable on SMP. Double adds are not possible.
  */
-void add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp)
+void ma_add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp)
 {
 	tvec_base_t *base = &ma_per_lwp(tvec_bases, lwp);
   	//unsigned long flags;
@@ -732,7 +732,7 @@ static inline void do_it_prof(struct task_struct *p)
 }
 #endif /* 0 */
 
-void update_one_process(struct marcel_task *p, unsigned long user,
+static void update_one_process(struct marcel_task *p, unsigned long user,
 			unsigned long system, ma_lwp_t lwp)
 {
 	do_process_times(p, user, system);

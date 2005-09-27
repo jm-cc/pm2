@@ -152,12 +152,12 @@ typedef struct {
 
 static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
 {
-	__ma_build_read_lock(rw, "__read_lock_failed");
+	__ma_build_read_lock(rw, "__ma_read_lock_failed");
 }
 
 static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
 {
-	__ma_build_write_lock(rw, "__write_lock_failed");
+	__ma_build_write_lock(rw, "__ma_write_lock_failed");
 }
 
 #section marcel_macros

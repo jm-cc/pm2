@@ -57,7 +57,6 @@ void marcel_gensched_shutdown(void);
 
 void marcel_one_task_less(marcel_t pid);
 void marcel_one_more_task(marcel_t pid);
-void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 
 #section structures
 /* ==== snapshot ==== */

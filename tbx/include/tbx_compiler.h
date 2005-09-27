@@ -96,9 +96,9 @@ void __memory_barrier(void);
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
 #define TBX_VISIBILITY(vis) __attribute__ ((__visibility__(vis)))
-#define TBX_EXTERN __attribute__ ((__visibility__("default")))
-#define TBX_EXTERN_BEGIN _Pragma("GCC visibility push(default)")
-#define TBX_EXTERN_END _Pragma("GCC visibility pop")
+#define TBX_VISIBILITY_PUSH_DEFAULT _Pragma("GCC visibility push(default)")
+#define TBX_VISIBILITY_PUSH_INTERNAL _Pragma("GCC visibility push(internal)")
+#define TBX_VISIBILITY_POP _Pragma("GCC visibility pop")
 
 #elif __GNUC__ == 3
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
@@ -121,9 +121,9 @@ void __memory_barrier(void);
 
 #  define __tbx_attribute_pure__	__attribute__((__pure__))
 #  define TBX_VISIBILITY(vis)
-#  define TBX_EXTERN
-#  define TBX_EXTERN_BEGIN
-#  define TBX_EXTERN_END
+#  define TBX_VISIBILITY_PUSH_DEFAULT
+#  define TBX_VISIBILITY_PUSH_INTERNAL
+#  define TBX_VISIBILITY_POP
 #elif __GNUC__ == 2
 #  define __TBX_FUNCTION__		__FUNCTION__
 #  if __GNUC_MINOR__ < 96
@@ -143,15 +143,17 @@ void __memory_barrier(void);
 
 #  define __restrict
 #  define TBX_VISIBILITY(vis)
-#  define TBX_EXTERN
-#  define TBX_EXTERN_BEGIN
-#  define TBX_EXTERN_END
+#  define TBX_VISIBILITY_PUSH_DEFAULT
+#  define TBX_VISIBILITY_PUSH_INTERNAL
+#  define TBX_VISIBILITY_POP
 #else
 #  error Sorry, your compiler is too old/not recognized.
 #endif
 #if (__GNUC__ <= 2) && (__GNUC__ != 2 || __GNUC_MINOR__ <= 8)
 #  error Sorry, your compiler is too old/not recognized.
 #endif
+
+#define TBX_EXTERN TBX_VISIBILITY("default")
 
 #ifdef DARWIN_SYS
 #  define TBX_DATASECTION(secname)	__attribute__((__section__("__DATA," secname)))

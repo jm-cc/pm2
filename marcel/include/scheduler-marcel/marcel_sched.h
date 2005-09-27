@@ -432,6 +432,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 }
 
 #section marcel_structures
+#depend "asm-generic/linux_perlwp.h[marcel_macros]"
 struct ma_lwp_usage_stat {
 	unsigned long long user;
 	unsigned long long nice;

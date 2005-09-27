@@ -539,13 +539,11 @@ repeat_lock_task:
 	return success;
 }
 
-int fastcall ma_wake_up_thread(marcel_task_t * p)
+TBX_PROTECTED int fastcall ma_wake_up_thread(marcel_task_t * p)
 {
 	return try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
 			      MA_TASK_UNINTERRUPTIBLE, 0);
 }
-
-MARCEL_INT(ma_wake_up_thread);
 
 int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
 {
@@ -1538,7 +1536,7 @@ void ma_scheduling_functions_start_here(void) { }
 /*
  * schedule() is the main scheduler function.
  */
-asmlinkage void ma_schedule(void)
+asmlinkage TBX_PROTECTED void ma_schedule(void)
 {
 //	long *switch_count;
 	marcel_task_t *prev, *next, *prev_as_next;
@@ -1799,8 +1797,6 @@ switch_tasks:
 	LOG_OUT();
 }
 
-MARCEL_INT(ma_schedule);
-
 int marcel_yield_to(marcel_t next)
 {
 	marcel_t prev = MARCEL_SELF;
@@ -1840,7 +1836,7 @@ int marcel_yield_to(marcel_t next)
 	return 0;
 }
 
-asmlinkage void ma_preempt_schedule(void)
+asmlinkage TBX_PROTECTED void ma_preempt_schedule(void)
 {
         marcel_task_t *ti = MARCEL_SELF;
 
@@ -1862,7 +1858,6 @@ need_resched:
         if (tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED)))
                 goto need_resched;
 }
-MARCEL_INT(ma_preempt_schedule);
 
 #define reschedule_idle(p) RAISE(NOT_IMPLEMENTED)
 
@@ -2249,12 +2244,10 @@ int task_prio(marcel_task_t *p)
  * task_nice - return the nice value of a given task.
  * @p: the task in question.
  */
-int task_nice(marcel_task_t *p)
+TBX_PROTECTED int task_nice(marcel_task_t *p)
 {
 	return TASK_NICE(p);
 }
-
-MARCEL_INT(task_nice);
 #endif
 
 /**
@@ -2262,12 +2255,10 @@ MARCEL_INT(task_nice);
  * @lwp: the processor in question.
  */
 #ifdef MA__LWPS
-int idle_lwp(ma_lwp_t lwp)
+TBX_PROTECTED int idle_lwp(ma_lwp_t lwp)
 {
 	return ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp);
 }
-
-MARCEL_INT(idle_lwp);
 #endif
 
 #if 0
@@ -2604,13 +2595,11 @@ asmlinkage long sys_sched_yield(void)
 }
 #endif
 
-void __ma_cond_resched(void)
+TBX_PROTECTED void __ma_cond_resched(void)
 {
 	ma_set_current_state(MA_TASK_RUNNING);
 	ma_schedule();
 }
-
-MARCEL_INT(__ma_cond_resched);
 
 #if 0
 /**
@@ -3292,7 +3281,7 @@ EXPORT_SYMBOL(__might_sleep);
  *
  * Called inside preempt_disable().
  */
-void __ma_preempt_spin_lock(ma_spinlock_t *lock)
+TBX_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 {
 	if (ma_preempt_count() > 1) {
 		_ma_raw_spin_lock(lock);
@@ -3306,9 +3295,7 @@ void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 	} while (!_ma_raw_spin_trylock(lock));
 }
 
-MARCEL_INT(__ma_preempt_spin_lock);
-
-void __ma_preempt_write_lock(ma_rwlock_t *lock)
+TBX_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock)
 {
 	if (ma_preempt_count() > 1) {
 		_ma_raw_write_lock(lock);
@@ -3322,8 +3309,6 @@ void __ma_preempt_write_lock(ma_rwlock_t *lock)
 		ma_preempt_disable();
 	} while (!_ma_raw_write_trylock(lock));
 }
-
-MARCEL_INT(__ma_preempt_write_lock);
 #endif 
 
 

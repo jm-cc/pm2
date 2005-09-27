@@ -211,8 +211,8 @@ typedef struct {
 /* Where's read_trylock? */
 #section marcel_functions
 #if defined(MA__LWPS)
-void __ma_preempt_spin_lock(ma_spinlock_t *lock);
-void __ma_preempt_write_lock(ma_rwlock_t *lock);
+TBX_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock);
+TBX_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock);
 #endif
 
 #section marcel_macros

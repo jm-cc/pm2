@@ -37,7 +37,8 @@ do { \
 } while (0)
 
 #section marcel_functions
-asmlinkage void ma_preempt_schedule(void);
+#depend "tbx_compiler.h"
+asmlinkage TBX_PROTECTED void ma_preempt_schedule(void);
 
 #section marcel_macros
 #depend "linux_thread_info.h[]"

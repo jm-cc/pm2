@@ -82,9 +82,9 @@ static __tbx_inline__ int ma_timer_pending(const struct ma_timer_list * timer)
 
 #section marcel_functions
 extern void ma_add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp);
-extern int ma_del_timer(struct ma_timer_list * timer);
-extern int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
-extern int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
+extern TBX_PROTECTED int ma_del_timer(struct ma_timer_list * timer);
+extern TBX_PROTECTED int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
+extern TBX_PROTECTED int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
 
 #section marcel_inline
 /***
@@ -108,7 +108,7 @@ static __tbx_inline__ void ma_add_timer(struct ma_timer_list * timer)
 
 #section marcel_functions
 #ifdef MA__LWPS
-  extern int ma_del_timer_sync(struct ma_timer_list * timer);
+  extern TBX_PROTECTED int ma_del_timer_sync(struct ma_timer_list * timer);
 #else
 # define ma_del_timer_sync(t) ma_del_timer(t)
 #endif

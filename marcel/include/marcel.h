@@ -52,9 +52,11 @@ __TBX_BEGIN_DECLS
 #include "marcel-master___structures.h"
 #include "scheduler/marcel-master___structures.h"
 
+TBX_VISIBILITY_PUSH_DEFAULT
 #include "asm/marcel-master___functions.h"
 #include "marcel-master___functions.h"
 #include "scheduler/marcel-master___functions.h"
+TBX_VISIBILITY_POP
 
 #include "asm/marcel-master___variables.h"
 #include "marcel-master___variables.h"
@@ -87,9 +89,11 @@ __TBX_BEGIN_DECLS
 #  include "marcel-master___marcel_structures.h"
 #  include "scheduler/marcel-master___marcel_structures.h"
 
+TBX_VISIBILITY_PUSH_INTERNAL
 #  include "asm/marcel-master___marcel_functions.h"
 #  include "marcel-master___marcel_functions.h"
 #  include "scheduler/marcel-master___marcel_functions.h"
+TBX_VISIBILITY_POP
 
 #  include "asm/marcel-master___marcel_variables.h"
 #  include "marcel-master___marcel_variables.h"

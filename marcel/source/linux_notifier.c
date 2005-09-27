@@ -36,7 +36,7 @@ static ma_rwlock_t notifier_lock = MA_RW_LOCK_UNLOCKED;
  *	Currently always returns zero.
  */
  
-int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n)
+TBX_PROTECTED int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n)
 {
 	struct ma_notifier_block **list=&c->chain;
 	LOG_IN();
@@ -58,8 +58,6 @@ int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_b
 	LOG_RETURN(0);
 }
 
-MARCEL_INT(ma_notifier_chain_register);
-
 /**
  *	ma_notifier_chain_unregister - Remove notifier from a notifier chain
  *	@nl: Pointer to root list pointer
@@ -70,7 +68,7 @@ MARCEL_INT(ma_notifier_chain_register);
  *	Returns zero on success, or %-ENOENT on failure.
  */
  
-int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n)
+TBX_PROTECTED int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n)
 {
 	struct ma_notifier_block **nl=&c->chain;
 	LOG_IN();
@@ -93,8 +91,6 @@ int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier
 	LOG_RETURN(-1);
 }
 
-MARCEL_INT(ma_notifier_chain_unregister);
-
 /**
  *	ma_notifier_call_chain - Call functions in a notifier chain
  *	@n: Pointer to root pointer of notifier chain
@@ -111,7 +107,7 @@ MARCEL_INT(ma_notifier_chain_unregister);
  *	of the last notifier function called.
  */
  
-int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned long val, void *v)
+TBX_PROTECTED int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned long val, void *v)
 {
 	int ret=MA_NOTIFY_DONE;
 	struct ma_notifier_block *nb = n->chain;
@@ -136,6 +132,4 @@ int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned long val, void 
 	}
 	return ret;
 }
-
-MARCEL_INT(ma_notifier_call_chain);
 

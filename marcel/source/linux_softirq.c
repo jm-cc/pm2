@@ -101,7 +101,7 @@ inline static int local_softirq_pending_hardirq(void)
 	return pending;
 }
 
-asmlinkage void ma_do_softirq(void)
+asmlinkage TBX_PROTECTED void ma_do_softirq(void)
 {
 	int max_restart = MAX_SOFTIRQ_RESTART;
 	unsigned long pending;
@@ -164,9 +164,7 @@ restart:
 	__ma_local_bh_enable();
 }
 
-MARCEL_INT(ma_do_softirq);
-
-void ma_local_bh_enable(void)
+void TBX_PROTECTED ma_local_bh_enable(void)
 {
 	
 	__ma_local_bh_enable();
@@ -176,7 +174,6 @@ void ma_local_bh_enable(void)
 		ma_invoke_softirq();
 	ma_preempt_check_resched();
 }
-MARCEL_INT(ma_local_bh_enable);
 
 inline void __ma_raise_softirq_bhoff(unsigned int nr)
 {
@@ -186,7 +183,7 @@ inline void __ma_raise_softirq_bhoff(unsigned int nr)
  * This function must run with irqs disabled!
  * En fait, avec la préemption désactivée
  */
-inline fastcall void ma_raise_softirq_bhoff(unsigned int nr)
+inline fastcall TBX_PROTECTED void ma_raise_softirq_bhoff(unsigned int nr)
 {
 	//__ma_raise_softirq_irqoff(nr);
 #ifdef MA__DEBUG
@@ -207,9 +204,7 @@ inline fastcall void ma_raise_softirq_bhoff(unsigned int nr)
 		ma_wakeup_softirqd();
 }
 
-MARCEL_INT(ma_raise_softirq_irqoff);
-
-void fastcall ma_raise_softirq(unsigned int nr)
+fastcall TBX_PROTECTED void ma_raise_softirq(unsigned int nr)
 {
 	//unsigned long flags;
 
@@ -222,9 +217,7 @@ void fastcall ma_raise_softirq(unsigned int nr)
 	//ma_local_bh_enable();
 }
 
-MARCEL_INT(ma_raise_softirq);
-
-void fastcall ma_raise_softirq_from_hardirq(unsigned int nr)
+fastcall TBX_PROTECTED void ma_raise_softirq_from_hardirq(unsigned int nr)
 {
 	MA_BUG_ON(!ma_in_irq());
 	__ma_raise_softirq_bhoff(nr);
@@ -237,15 +230,11 @@ void fastcall ma_raise_softirq_from_hardirq(unsigned int nr)
 #endif
 }
 
-MARCEL_INT(ma_raise_softirq_from_hardirq);
-
-void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data)
+TBX_PROTECTED void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data)
 {
 	softirq_vec[nr].data = data;
 	softirq_vec[nr].action = action;
 }
-
-MARCEL_INT(ma_open_softirq);
 
 /* Tasklets */
 struct tasklet_head
@@ -258,7 +247,7 @@ struct tasklet_head
 static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_vec, { NULL });
 static MA_DEFINE_PER_LWP(struct tasklet_head, tasklet_hi_vec, { NULL });
 
-void fastcall __ma_tasklet_schedule(struct ma_tasklet_struct *t)
+fastcall TBX_PROTECTED void __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 {
 	//unsigned long flags;
 
@@ -271,9 +260,7 @@ void fastcall __ma_tasklet_schedule(struct ma_tasklet_struct *t)
 	ma_local_bh_enable();
 }
 
-MARCEL_INT(__ma_tasklet_schedule);
-
-void fastcall __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
+fastcall TBX_PROTECTED void __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 {
 	//unsigned long flags;
 
@@ -285,8 +272,6 @@ void fastcall __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
 	//local_irq_restore(flags);
 	ma_local_bh_enable();
 }
-
-MARCEL_INT(__ma_tasklet_hi_schedule);
 
 static void tasklet_action(struct ma_softirq_action *a)
 {
@@ -363,7 +348,7 @@ static void tasklet_hi_action(struct ma_softirq_action *a)
 }
 
 
-void ma_tasklet_init(struct ma_tasklet_struct *t,
+TBX_PROTECTED void ma_tasklet_init(struct ma_tasklet_struct *t,
 		     void (*func)(unsigned long), unsigned long data)
 {
 	t->next = NULL;
@@ -373,9 +358,7 @@ void ma_tasklet_init(struct ma_tasklet_struct *t,
 	t->data = data;
 }
 
-MARCEL_INT(ma_tasklet_init);
-
-void ma_tasklet_kill(struct ma_tasklet_struct *t)
+TBX_PROTECTED void ma_tasklet_kill(struct ma_tasklet_struct *t)
 {
 	if (ma_in_interrupt())
 		mdebug("Attempt to kill tasklet from interrupt\n");
@@ -388,8 +371,6 @@ void ma_tasklet_kill(struct ma_tasklet_struct *t)
 	ma_tasklet_unlock_wait(t);
 	ma_clear_bit(MA_TASKLET_STATE_SCHED, &t->state);
 }
-
-MARCEL_INT(ma_tasklet_kill);
 
 void __marcel_init softirq_init(void)
 {

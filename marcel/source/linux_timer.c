@@ -150,7 +150,7 @@ static void internal_add_timer(tvec_base_t *base, struct ma_timer_list *timer)
 	list_add_tail(&timer->entry, vec);
 }
 
-int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
+TBX_PROTECTED int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 {
 	tvec_base_t *old_base, *new_base;
 	int ret = 0;
@@ -215,8 +215,6 @@ repeat:
 	return ret;
 }
 
-MARCEL_INT(__ma_mod_timer);
-
 /***
  * add_timer_on - start a timer on a particular CPU
  * @timer: the timer to be added
@@ -258,7 +256,7 @@ void add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp)
  * (ie. mod_timer() of an inactive timer returns 0, mod_timer() of an
  * active timer returns 1.)
  */
-int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
+TBX_PROTECTED int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 {
 	MA_BUG_ON(!timer->function);
 
@@ -276,8 +274,6 @@ int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 	return __ma_mod_timer(timer, expires);
 }
 
-MARCEL_INT(ma_mod_timer);
-
 /***
  * del_timer - deactive a timer.
  * @timer: the timer to be deactivated
@@ -289,7 +285,7 @@ MARCEL_INT(ma_mod_timer);
  * (ie. del_timer() of an inactive timer returns 0, del_timer() of an
  * active timer returns 1.)
  */
-int ma_del_timer(struct ma_timer_list *timer)
+TBX_PROTECTED int ma_del_timer(struct ma_timer_list *timer)
 {
 	//unsigned long flags;
 	tvec_base_t *base;
@@ -314,8 +310,6 @@ repeat:
 	return 1;
 }
 
-MARCEL_INT(ma_del_timer);
-
 #ifdef MA__LWPS
 /***
  * ma_del_timer_sync - deactivate a timer and wait for the handler to finish.
@@ -332,7 +326,7 @@ MARCEL_INT(ma_del_timer);
  *
  * The function returns whether it has deactivated a pending timer or not.
  */
-int ma_del_timer_sync(struct ma_timer_list *timer)
+TBX_PROTECTED int ma_del_timer_sync(struct ma_timer_list *timer)
 {
 	tvec_base_t *base;
 	int ret = 0;
@@ -360,8 +354,6 @@ del_again:
 
 	return ret;
 }
-
-MARCEL_INT(del_timer_sync);
 #endif
 
 static int cascade(tvec_base_t *base, tvec_t *tv, int index)
@@ -1026,7 +1018,7 @@ static void process_timeout(unsigned long __data)
  *
  * In all cases the return value is guaranteed to be non-negative.
  */
-fastcall signed long ma_schedule_timeout(signed long timeout)
+fastcall TBX_PROTECTED signed long ma_schedule_timeout(signed long timeout)
 {
 	struct ma_timer_list timer;
 	unsigned long expire;
@@ -1079,8 +1071,6 @@ fastcall signed long ma_schedule_timeout(signed long timeout)
  out:
 	return timeout < 0 ? 0 : timeout;
 }
-
-MARCEL_INT(schedule_timeout);
 
 #if 0
 /* Thread ID - the internal kernel "pid" */

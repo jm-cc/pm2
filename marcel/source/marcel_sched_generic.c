@@ -101,7 +101,7 @@ void marcel_one_task_less(marcel_t pid)
 	unsigned lwpnum = pid->number/MA_MAX_LWP_THREADS;
 	ma_lwp_t lwp;
 
-	MA_BUG_ON(lwpnum >= get_nb_lwps())
+	MA_BUG_ON(lwpnum >= get_nb_lwps());
 
 	lwp = GET_LWP_BY_NUMBER(lwpnum);
 

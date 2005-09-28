@@ -123,21 +123,25 @@ extern debug_type_t marcel_mtrace_timer;
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 
 #include <signal.h>
+#ifdef PM2_OPT
+#define MA_BUG_ON(cond) (void)(cond)
+#define MA_WARN_ON(cond) (void)(cond)
+#else
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \
 		mdebug("BUG at %s:%u\n", __FILE__, __LINE__); \
 		raise(SIGABRT); \
 	} \
-  } while (0);
-#define MA_BUG() MA_BUG_ON(1)
-
+  } while (0)
 #define MA_WARN_ON(cond) \
   do { \
 	if (cond) { \
 		mdebug("%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
 	} \
-  } while (0);
+  } while (0)
+#endif
+#define MA_BUG() MA_BUG_ON(1)
 
 #ifdef DEBUG_LOCK_TASK
 #  define lock_task_debug(fmt, ...) debug_printf(&marcel_lock_task_debug, \

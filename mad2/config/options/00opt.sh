@@ -1,2 +1,2 @@
 # auto generated from generic/config/options/*
-PM2_MAD2_CFLAGS_KERNEL="$PM2_MAD2_CFLAGS_KERNEL -O6"
+PM2_MAD2_CFLAGS_KERNEL="$PM2_MAD2_CFLAGS_KERNEL -O6 -DPM2_OPT"

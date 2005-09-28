@@ -248,17 +248,11 @@ ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t   address,
 
 void
 ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc) {
-        int           val    = 1;
-        int           packet = 0x8000;
         struct linger ling   = { 1, 50 };
-        socklen_t     len    = sizeof(int);
 
         LOG_IN();
-        SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
         SYSCALL(setsockopt(desc, SOL_SOCKET, SO_LINGER, (char *)&ling,
                            sizeof(struct linger)));
-        SYSCALL(setsockopt(desc, SOL_SOCKET, SO_SNDBUF, (char *)&packet, len));
-        SYSCALL(setsockopt(desc, SOL_SOCKET, SO_RCVBUF, (char *)&packet, len));
         LOG_OUT();
 }
 

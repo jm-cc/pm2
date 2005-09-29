@@ -202,10 +202,20 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
  * pouvoir la placer ailleurs */
 int marcel_bubble_detach(marcel_bubble_t *b) {
 	ma_holder_t *h = b->sched.sched_holder;
+	marcel_bubble_t *hb;
+	ma_holder_t *hh;
+
 	MA_BUG_ON(ma_holder_type(h)==MA_RUNQUEUE_HOLDER);
-	ma_holder_lock_softirq(h);
+	hb = ma_bubble_holder(h);
+
+	hh = hb->sched.sched_holder;
+	MA_BUG_ON(ma_holder_type(h)!=MA_RUNQUEUE_HOLDER);
+
+	ma_holder_lock_softirq(hh);
+	ma_holder_rawlock(h);
 	set_sched_holder(&b->sched, b);
-	ma_holder_unlock_softirq(h);
+	ma_holder_rawunlock(h);
+	ma_holder_unlock_softirq(hh);
 	return 0;
 }
 #endif

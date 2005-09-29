@@ -55,7 +55,7 @@ get_modules() {
 #    settings_ok 0 && return 0
 
 #    while : ; do
-	get_options modules "Modules to include in the flavor" "" module
+	get_options modules "Modules to include in the flavor" "" "" module
 
     case $interf in
     text)
@@ -230,6 +230,9 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
 	    all)
 		echo "Options you choose there will be selected in next screens"
 		;;
+	    remove_all)
+		echo "Options you choose there will not be selected in next screens"
+		;;
 	    common)
 		echo "These options will only be applied to programs you compile,"
 		echo "not to the libraries themselves"
@@ -274,12 +277,12 @@ get_options_dialog() { # mod help list_options_to_add option/module excl
 #    eval echo fl_$1 = '$fl_'$1
 }
 
-get_options() { # mod help list_options_to_add option/module
+get_options() { # mod help list_options_to_add list_options_to_remove option/module
     curopts=
-    case $4 in
+    case $5 in
     option)
 	case $1 in
-	all)
+	all|remove_all)
 	    module=""
 	    ;;
 	*)
@@ -289,11 +292,17 @@ get_options() { # mod help list_options_to_add option/module
 		\ )
 		    ;;
 		*)
-		    case " $curopts " in
+		    case " $4 " in
 			*\ $opt\ *)
 			    ;;
 			*)
-			    curopts="${curopts:+$curopts }$opt"
+			    case " $curopts " in
+				*\ $opt\ *)
+				    ;;
+				*)
+				    curopts="${curopts:+$curopts }$opt"
+				    ;;
+			    esac
 			    ;;
 		    esac
 		    ;;
@@ -328,12 +337,18 @@ get_options() { # mod help list_options_to_add option/module
 	    \ )
 		;;
 	    *)
-		case " $curopts " in
-		*\ $opt\ *)
-		    ;;
-		*)
-		    curopts="${curopts:+$curopts }$opt"
-		    ;;
+		case " $4 " in
+		    *\ $opt\ *)
+			;;
+		    *)
+			case " $curopts " in
+			*\ $opt\ *)
+			    ;;
+			*)
+			    curopts="${curopts:+$curopts }$opt"
+			    ;;
+			esac
+			;;
 		esac
 		;;
 	    esac
@@ -543,10 +558,11 @@ do_edite_text() {
 	get_value 0 fl_builddir "Directory for compiling"
 	get_value 0 fl_ext "Extension added to libraries and binaries"
 	get_modules
-	get_options all "Options for all modules and applications" "" option
-	get_options common "Common options" "$fl_all" option
+	get_options all "Options for all modules and applications" "" "" option
+	get_options remove_all "Options to remove from all modules and applications" "" "" option
+	get_options common "Common options" "$fl_all" "$fl_remove_all" option
 	for mod in $fl_modules; do
-	    get_options $mod "Options for module $mod" "$fl_all" option
+	    get_options $mod "Options for module $mod" "$fl_all" "$fl_remove_all" option
 	done
 	
 	show_flavor check
@@ -565,10 +581,11 @@ do_edite_dialog() {
 	get_value 0 fl_builddir "Directory for compiling"
 	get_value 0 fl_ext "Extension added to libraries and binaries"
 	get_modules
-	get_options all "Options for all modules and applications" "" option
-	get_options common "Common options" "$fl_all" option
+	get_options all "Options for all modules and applications" "" "" option
+	get_options remove_all "Options to remove from all modules and applications" "" "" option
+	get_options common "Common options" "$fl_all" "$fl_remove_all" option
 	for mod in $fl_modules; do
-	    get_options $mod "Options for module $mod" "$fl_all" option
+	    get_options $mod "Options for module $mod" "$fl_all" "$fl_remove_all" option
 	done
 	
 	if show_flavor check "" "\n\nWrite this flavor ?" 1; then

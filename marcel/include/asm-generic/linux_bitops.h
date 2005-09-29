@@ -33,6 +33,7 @@
  * C language equivalents written by Theodore Ts'o, 9/26/92
  */
 
+#section marcel_macros
 #depend "asm/marcel_compareexchange.h[]"
 #define ATOMIC_BITOPT_RETURN(op,retexpr) \
 { \

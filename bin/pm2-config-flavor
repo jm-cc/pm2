@@ -415,8 +415,12 @@ settings_ok() { # ok
     Y*|y*|O*|o*)
 	return 0
 	;;
-    *)
+    N*|n*)
 	return 1
+	;;
+    *)
+        settings_ok $1
+	return $?
 	;;
     esac
 }

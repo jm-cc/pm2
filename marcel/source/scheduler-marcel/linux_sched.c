@@ -624,15 +624,19 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
+	p->sched.internal.timestamp = marcel_clock();
+	ma_set_task_state(p, MA_TASK_RUNNING);
+
 	h = ma_task_sched_holder(p);
 
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debug("wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
-		marcel_bubble_inserttask(ma_bubble_holder(h),p);
+		if (!p->sched.internal.entity_list.next)
+			marcel_bubble_inserttask(ma_bubble_holder(h),p);
+#ifdef MARCEL_BUBBLE_EXPLODE
+		return;
+#endif
 	}
-
-	p->sched.internal.timestamp = marcel_clock();
-	ma_set_task_state(p, MA_TASK_RUNNING);
 
 	MA_BUG_ON(!h);
 	ma_holder_lock_softirq(h);

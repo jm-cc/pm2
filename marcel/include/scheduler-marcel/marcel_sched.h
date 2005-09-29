@@ -167,6 +167,9 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	//timestamp, last_ran
 	ma_atomic_set(&internal->time_slice,10); /* TODO: utiliser les priorités pour le calculer */
 	//entity_list
+#ifdef MA__BUBBLES
+	internal->entity_list.next = NULL;
+#endif
 #ifdef MA__LWPS
 	internal->sched_level=MARCEL_LEVEL_DEFAULT;
 #endif

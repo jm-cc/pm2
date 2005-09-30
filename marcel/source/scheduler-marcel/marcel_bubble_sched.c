@@ -204,6 +204,8 @@ int marcel_bubble_detach(marcel_bubble_t *b) {
 	ma_holder_t *h = b->sched.sched_holder;
 	marcel_bubble_t *hb;
 	ma_holder_t *hh;
+	LOG_IN();
+	PROF_EVENT1(bubble_detach, b);
 
 	MA_BUG_ON(ma_holder_type(h)==MA_RUNQUEUE_HOLDER);
 	hb = ma_bubble_holder(h);
@@ -216,6 +218,7 @@ int marcel_bubble_detach(marcel_bubble_t *b) {
 	set_sched_holder(&b->sched, b);
 	ma_holder_rawunlock(h);
 	ma_holder_unlock_softirq(hh);
+	LOG_OUT();
 	return 0;
 }
 #endif

@@ -1060,8 +1060,8 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
           //DISP("<--free r_ready_msg_list");
 
           //DISP("-->free unexpected_list");
-          tbx_slist_free(mad_adapter->unexpected_msg_list);
-          mad_adapter->unexpected_msg_list = NULL;
+          //tbx_slist_free(mad_adapter->unexpected_msg_list);
+          //mad_adapter->unexpected_msg_list = NULL;
           //DISP("<--free unexpected_list");
 
           //DISP("-->free waiting acknowlegment_list");

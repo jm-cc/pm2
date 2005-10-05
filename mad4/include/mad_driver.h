@@ -55,11 +55,12 @@ typedef struct s_mad_driver
     /*  p_ntbx_process_container_t  process_container; */
 
     p_tbx_slist_t               s_msg_slist;
-    //p_tbx_slist_t               r_msg_slist;
 
+    int max_unexpected;
+    int unexpected_recovery_threshold;
+    int unexpected_buffer_length;
 
-
-  /* Driver specific */
+    /* Driver specific */
   p_mad_driver_specific_t     specific;
 } mad_driver_t;
 

@@ -69,16 +69,6 @@ typedef struct s_mad_dynamic
 typedef struct s_mad_madeleine
 {
     TBX_SHARED;
-//    p_mad_dynamic_t     dynamic;
-//    p_mad_settings_t    settings;
-//    p_mad_session_t     session;
-//    p_mad_directory_t   dir;
-//    p_mad_directory_t   old_dir;
-//    p_mad_directory_t   new_dir;
-//    p_tbx_htable_t      driver_htable;
-//    p_tbx_htable_t      channel_htable;
-//    p_tbx_slist_t       public_channel_slist;
-
     p_mad_dynamic_t     dynamic;
     p_mad_settings_t    settings;
     p_mad_session_t     session;
@@ -91,6 +81,7 @@ typedef struct s_mad_madeleine
     p_tbx_slist_t       public_channel_slist;
 
     p_mad_channel_t    *channel_tab;
+    int                 nb_channels;
 } mad_madeleine_t;
 
 /*

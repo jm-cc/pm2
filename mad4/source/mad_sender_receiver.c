@@ -3,19 +3,43 @@
 #include "madeleine.h"
 
 
+int    nb_chronos_fill = 0;
+double chrono_fill_pipeline = 0.0;
+
+int    nb_chronos_s_mkp = 0;
+double chrono_s_mkp = 0.0;
+
+//double chrono_fill_1_2 = 0.0;
+//double chrono_fill_2_3 = 0.0;
+//double chrono_fill_1_3 = 0.0;
+
+//int    nb_chronos_s_mkp = 0;
+//double chrono_s_mkp_1_2 = 0.0;
+//double chrono_s_mkp_2_3 = 0.0;
+//double chrono_s_mkp_3_4 = 0.0;
+//double chrono_s_mkp_4_5 = 0.0;
+//double chrono_s_mkp_5_6 = 0.0;
+//double chrono_s_mkp_6_7 = 0.0;
+//double chrono_s_mkp_7_8 = 0.0;
+//double chrono_s_mkp_8_9 = 0.0;
+//double chrono_s_mkp_1_9 = 0.0;
+//
+
+
+int    nb_chronos_r_mkp = 0;
+double chrono_add_pre_posted    = 0.0;
+double chrono_exploit_msg       = 0.0;
+double chrono_r_mkp_toto             = 0.0;
+
+
+
 void
 submit_send(p_mad_adapter_t adapter,
             p_mad_track_t track,
             p_mad_iovec_t mad_iovec){
     LOG_IN();
-
-    //DISP("-->submit");
     mad_iovec->track = track;
     mad_pipeline_add(adapter->s_track_set->in_more, mad_iovec);
-
-
-    //DISP("<--submit");
-
     LOG_OUT();
 }
 
@@ -29,7 +53,13 @@ mad_fill_s_pipeline(p_mad_adapter_t adapter,
     p_mad_driver_interface_t interface = NULL;
     p_mad_iovec_t next = NULL;
 
+    tbx_tick_t tick_debut;
+    tbx_tick_t tick_fin;
+
     LOG_IN();
+    nb_chronos_fill++;
+    TBX_GET_TICK(tick_debut);
+
     max_nb_pending_iov = s_track_set->max_nb_pending_iov;
     cur_nb_pending_iov = s_track_set->cur_nb_pending_iov;
     s_ready_msg_slist  = adapter->s_ready_msg_list;
@@ -37,14 +67,9 @@ mad_fill_s_pipeline(p_mad_adapter_t adapter,
 
     // amorce et remplissage du pipeline
     while(cur_nb_pending_iov < max_nb_pending_iov){
-
-        //DISP("fill_s_pipeline");
-
         if(s_ready_msg_slist->length){
-            //DISP("s_ready_msg_list");
             next = tbx_slist_extract(adapter->s_ready_msg_list);
         } else if(s_track_set->in_more->cur_nb_elm){
-            //DISP("in more");
             next = mad_pipeline_remove(s_track_set->in_more);
         } else {
             if(!mad_s_optimize(adapter)){
@@ -52,17 +77,14 @@ mad_fill_s_pipeline(p_mad_adapter_t adapter,
             }
             next = mad_pipeline_remove(s_track_set->in_more);
         }
-
         mad_pipeline_add(next->track->pipeline, next);
 
-        //DISP("ISEND");
         interface->isend(next->track,
                          next->remote_rank,
                          next->data,
                          next->total_nb_seg);
         s_track_set->cur_nb_pending_iov++;
 
-        //DISP("next->track->status = MAD_MKP_PROGRESS;");
         next->track->status = MAD_MKP_PROGRESS;
 
         //recherche de nvx iovec à envoyer
@@ -73,6 +95,14 @@ mad_fill_s_pipeline(p_mad_adapter_t adapter,
         }
     }
  end:
+
+    TBX_GET_TICK(tick_fin);
+    chrono_fill_pipeline += TBX_TIMING_DELAY(tick_debut, tick_fin);
+    //chrono_fill_1_2 += TBX_TIMING_DELAY(t1, t2);
+    //chrono_fill_2_3 += TBX_TIMING_DELAY(t2, t3);
+    //chrono_fill_1_3 += TBX_TIMING_DELAY(t1, t3);
+
+
     LOG_OUT();
 }
 
@@ -87,8 +117,13 @@ mad_s_make_progress(p_mad_adapter_t adapter){
     p_mad_iovec_t mad_iovec = NULL;
     uint32_t i = 0;
 
+    tbx_tick_t tick_debut;
+    tbx_tick_t tick_fin;
     LOG_IN();
-    //DISP("-->s_mskp");
+
+    nb_chronos_s_mkp++;
+    TBX_GET_TICK(tick_debut);
+
     interface = adapter->driver->interface;
     s_track_set = adapter->s_track_set;
 
@@ -97,20 +132,16 @@ mad_s_make_progress(p_mad_adapter_t adapter){
         mad_fill_s_pipeline(adapter, s_track_set);
     }
 
+    //TBX_GET_TICK(apres_remplissage);
+
     for(i = 0; i < s_track_set->nb_track; i++){
         track = s_track_set->tracks_tab[i];
 
         if(track->status == MAD_MKP_PROGRESS){
-            //DISP("-->s_mskp : mad_make_progress");
-
             track->status = mad_make_progress(adapter, track);
             status = track->status;
 
-            //DISP_VAL("s_mkp : status", status);
-
             if(status == MAD_MKP_PROGRESS){
-                //DISP("------------>s_mkp: ENVOYÉ");
-
                 mad_iovec = mad_pipeline_remove(track->pipeline);
                 s_track_set->cur_nb_pending_iov--;
 
@@ -122,12 +153,8 @@ mad_s_make_progress(p_mad_adapter_t adapter){
             }
         }
     }
-
-
-    //// amorce et remplissage du pipeline
-    //mad_fill_s_pipeline(adapter, s_track_set);
-
-    //DISP("<--s_mkp");
+    TBX_GET_TICK(tick_fin);
+    chrono_s_mkp += TBX_TIMING_DELAY(tick_debut, tick_fin);
     LOG_OUT();
 }
 
@@ -135,50 +162,61 @@ mad_s_make_progress(p_mad_adapter_t adapter){
 
 
 static void
-treat_unexpected(p_mad_adapter_t adapter){
+treat_unexpected(void){
+    p_mad_madeleine_t madeleine        = NULL;
+    int nb_channels = 0;
+    p_mad_channel_t channel = NULL;
+    p_mad_adapter_t adapter            = NULL;
+    p_mad_driver_t driver = NULL;
     p_mad_driver_interface_t interface = NULL;
     p_tbx_slist_t unexpected_msg_list  = NULL;
     p_mad_iovec_t cur                  = NULL;
     tbx_bool_t    forward              = tbx_false;
+    int i = 0;
+    int unexpected_recovery_threshold = 0;
     LOG_IN();
-    interface = adapter->driver->interface;
-    unexpected_msg_list = adapter->unexpected_msg_list;
 
-    // s'il y a des données en attente
-    if(unexpected_msg_list->length){
-        tbx_slist_ref_to_head(unexpected_msg_list);
-
-        while(1){
-            cur = tbx_slist_ref_get(unexpected_msg_list);
-            if(cur == NULL)
-                break;
-
-            if(mad_iovec_exploit_msg(adapter, cur->data[0].iov_base)){
-
-                DISP_VAL("treat_unexpected : unpack_list->length", cur->channel->unpacks_list->length);
-
-                // le mad_iovec est entièrement traité,
-                // donc retrait de la liste des "unexpected"
-                forward = tbx_slist_ref_extract_and_forward(unexpected_msg_list, (void **)cur);
-
-                //if(!tbx_slist_ref_extract_and_forward(unexpected_msg_list, (void **)cur)){
-                //    break;
-                //}
-
-                // libération du mad_iovec pré_posté
-                interface->clean_pre_posted(cur);
-
-                if(!forward)
-                    break;
-
-            } else {
-                if(!tbx_slist_ref_forward(unexpected_msg_list))
-                    break;
-            }
-        }
-
-        DISP_VAL("<--terat_unexpected", unexpected_msg_list->length);
-    }
+//    madeleine = mad_get_madeleine();
+//    nb_channels = madeleine->nb_channels;
+//
+//    for(i = 0 ; i < nb_channels; i++){
+//        channel = madeleine->channel_tab[i];
+//        adapter = channel->adapter;
+//        driver = adapter->driver;
+//        interface = driver->interface;
+//        unexpected_msg_list = channel->unexpected;
+//        unexpected_recovery_threshold = driver->unexpected_recovery_threshold;
+//
+//        if(channel->blocked &&
+//           unexpected_msg_list->length < unexpected_recovery_threshold){
+//            // envoi d'un message de déblocage
+//
+//        } else if(unexpected_msg_list->length){ // s'il y a des données en attente
+//            tbx_slist_ref_to_head(unexpected_msg_list);
+//
+//            while(1){
+//                cur = tbx_slist_ref_get(unexpected_msg_list);
+//                if(cur == NULL)
+//                    break;
+//
+//                if(mad_iovec_exploit_msg(adapter, cur->data[0].iov_base)){
+//                    // le mad_iovec est entièrement traité,
+//                    // donc retrait de la liste des "unexpected"
+//                    forward = tbx_slist_ref_extract_and_forward(unexpected_msg_list, (void **)cur);
+//
+//                    // libération du mad_iovec pré_posté
+//                    interface->clean_pre_posted(cur);
+//
+//                    if(!forward)
+//                        break;
+//
+//                } else {
+//                    if(!tbx_slist_ref_forward(unexpected_msg_list))
+//                        break;
+//                }
+//            }
+//        }
+//    }
     LOG_OUT();
 }
 
@@ -203,14 +241,12 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     tbx_tick_t        t7;
     tbx_tick_t        t8;
 
-    double chrono_treat_unexpected  = 0.0;
-    double chrono_mad_mkp           = 0.0;
-    double chrono_add_pre_posted    = 0.0;
-    double chrono_exploit_msg       = 0.0;
-    double chrono_total             = 0.0;
 
 
     LOG_IN();
+
+    //nb_chronos_r_mkp++;
+
     //DISP("-->r_mkp");
 
     driver = adapter->driver;
@@ -218,11 +254,10 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     r_track_set = adapter->r_track_set;
 
     /*** on traite les unexpected ***/
-    TBX_GET_TICK(t1);
-    treat_unexpected(adapter);
+    //TBX_GET_TICK(t1);
+    //treat_unexpected();
     TBX_GET_TICK(t2);
-
-    chrono_treat_unexpected = TBX_TIMING_DELAY(t1, t2);
+    //chrono_treat_unexpected = TBX_TIMING_DELAY(t1, t2);
 
     // pour chaque piste de réception
     for(i = 0; i < r_track_set->nb_track; i++){
@@ -234,8 +269,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
             TBX_GET_TICK(t3);
             track->status = mad_make_progress(adapter, track);
             TBX_GET_TICK(t4);
-
-            chrono_mad_mkp          = TBX_TIMING_DELAY(t3, t4);
+            //chrono_mad_mkp          += TBX_TIMING_DELAY(t3, t4);
 
             status = track->status;
 
@@ -246,7 +280,9 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                 r_track_set->cur_nb_pending_iov--;
 
                 if(track->pre_posted){
+                    nb_chronos_r_mkp++;
                     TBX_GET_TICK(t5);
+
                     // dépot d'une nouvelle zone pré-postée
                     interface->add_pre_posted(adapter,
                                               mad_iovec->track);
@@ -258,25 +294,14 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                                                         mad_iovec->data[0].iov_base);
                     TBX_GET_TICK(t7);
 
-                    if(!exploit_msg){
-                    //if(!mad_iovec_exploit_msg(adapter,
-                    //                          mad_iovec->data[0].iov_base)){
-
-                        // si tout n'a pas pu être traité
-                        //DISP("AJOUT dans les liste des UNEXPECTED");
-                        tbx_slist_append(adapter->unexpected_msg_list, mad_iovec);
-
-
-
-                    } else {
-                        //DISP("TRAItÉX");
-
-                        // free du mad_iovec pré_posté
-                        interface->clean_pre_posted(mad_iovec);
+                    if(exploit_msg){
+                        // on rend le mad_iovec pré_posté
+                        mad_pipeline_add(adapter->pre_posted,
+                                         mad_iovec);
                     }
 
-                    chrono_add_pre_posted   = TBX_TIMING_DELAY(t5, t6);
-                    chrono_exploit_msg      = TBX_TIMING_DELAY(t6, t7);
+                    chrono_add_pre_posted   += TBX_TIMING_DELAY(t5, t6);
+                    chrono_exploit_msg      += TBX_TIMING_DELAY(t6, t7);
 
                 } else {
                     mad_iovec_get(mad_iovec->channel->unpacks_list,
@@ -303,19 +328,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
 
     TBX_GET_TICK(t8);
 
-    chrono_total            = TBX_TIMING_DELAY(t2, t8);
-
-    printf("MAD_R_MAKE_PROGRESS : \n");
-    if(chrono_treat_unexpected)
-        printf("treat_unexpected   --> %9g\n", chrono_treat_unexpected);
-    if(chrono_mad_mkp)
-        printf("mad_mkp            --> %9g\n", chrono_mad_mkp);
-    if(chrono_add_pre_posted)
-        printf("add_pre_posted     --> %9g\n", chrono_add_pre_posted);
-    if(chrono_exploit_msg)
-        printf("exploi_msg         --> %9g\n", chrono_exploit_msg);
-    printf("-------------------------------\n");
-    printf("total              --> %9g\n", chrono_total);
+    //hrono_r_mkp            += TBX_TIMING_DELAY(t2, t8);
 
     LOG_OUT();
     //DISP("<--r_mkp");

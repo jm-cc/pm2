@@ -7,6 +7,8 @@
 //    MAD_MKP_NO_PROGRESSION
 //} mad_mx_mkp_status_t, *p_mad_mx_mkp_status_t;
 
+
+
 void
 mad_s_make_progress(p_mad_adapter_t);
 

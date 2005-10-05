@@ -19,6 +19,9 @@
  */
 #include "madeleine.h"
 
+tbx_tick_t fin_pack;
+
+
 
 static void
 disp_s_msg_list(p_mad_adapter_t adapter){
@@ -143,11 +146,11 @@ mad_pack(p_mad_connection_t   connection,
 	 size_t               buffer_length,
 	 mad_send_mode_t      send_mode,
 	 mad_receive_mode_t   receive_mode){
-
     p_mad_iovec_t             mad_iovec   = NULL;
     p_mad_channel_t           channel     = NULL;
     p_mad_adapter_t           adapter     = NULL;
     p_mad_driver_t            driver      = NULL;
+
     ntbx_process_lrank_t      remote_rank = -1;
     unsigned int              seq         = -1;
     LOG_IN();
@@ -173,7 +176,8 @@ mad_pack(p_mad_connection_t   connection,
     tbx_slist_append(driver->s_msg_slist, mad_iovec);
     tbx_slist_append(connection->packs_list, mad_iovec);
 
-
+    TBX_GET_TICK(fin_pack);
+    
     //disp_s_msg_list(adapter);
     //DISP("<--pack");
     LOG_OUT();
@@ -263,12 +267,21 @@ mad_end_packing(p_mad_connection_t connection){
     //DISP("<--end_packing");
 }
 
+
+int nb_chronos_mad_r_mkp_2 = 0;
+int nb_chronos_mad_s_mkp_2 = 0;
+double chrono_r_mkp_2 = 0.0;
+double chrono_s_mkp_2 = 0.0;
+
 void
 mad_wait_packs(p_mad_connection_t connection){
     p_mad_channel_t channel = NULL;
     p_mad_adapter_t adapter = NULL;
     p_mad_driver_t driver = NULL;
 
+    tbx_tick_t        t1;
+    tbx_tick_t        t2;
+    tbx_tick_t        t3;
     LOG_IN();
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -277,10 +290,30 @@ mad_wait_packs(p_mad_connection_t connection){
     //DISP("---------------->mad_wait_packs");
 
     // flush packs
-    while(connection->packs_list->length){
+    while(connection->need_reception){
+        //while(connection->packs_list->length){
+        TBX_GET_TICK(t1);
         mad_s_make_progress(adapter);
+        TBX_GET_TICK(t2);
         mad_r_make_progress(adapter);
+        TBX_GET_TICK(t3);
+        //}
+
+        chrono_s_mkp_2        += TBX_TIMING_DELAY(t1, t2);
+        chrono_r_mkp_2        += TBX_TIMING_DELAY(t2, t3);
+        nb_chronos_mad_r_mkp_2++;
+        nb_chronos_mad_s_mkp_2++;
     }
+
+    while(connection->packs_list->length){
+        TBX_GET_TICK(t1);
+        mad_s_make_progress(adapter);
+        TBX_GET_TICK(t2);
+
+        chrono_s_mkp_2        += TBX_TIMING_DELAY(t1, t2);
+        nb_chronos_mad_s_mkp_2++;
+    }
+
     //DISP("<---------------mad_wait_packs");
     LOG_OUT();
 }
@@ -323,7 +356,6 @@ mad_unpack(p_mad_connection_t    connection,
             size_t               buffer_length,
             mad_send_mode_t      send_mode,
             mad_receive_mode_t   receive_mode){
-
     p_mad_channel_t           channel     = NULL;
     p_mad_adapter_t           adapter     = NULL;
     p_mad_driver_t            driver      = NULL;
@@ -442,12 +474,20 @@ mad_end_unpacking(p_mad_connection_t connection){
     //DISP("<--end_unpacking");
 }
 
+//int nb_chronos_mad_r_mkp = 0;
+//int nb_chronos_mad_s_mkp = 0;
+//double chrono_r_mkp = 0.0;
+//double chrono_s_mkp = 0.0;
+
 void
 mad_wait_unpacks(p_mad_connection_t connection){
     p_mad_channel_t channel = NULL;
     p_mad_adapter_t adapter = NULL;
     p_mad_driver_t driver = NULL;
-    LOG_IN();
+    tbx_tick_t        t1;
+    tbx_tick_t        t2;
+    tbx_tick_t        t3;
+     LOG_IN();
 
     //DISP("----------------->mad_wait_unpacks");
 
@@ -455,23 +495,33 @@ mad_wait_unpacks(p_mad_connection_t connection){
     adapter = channel->adapter;
     driver = adapter->driver;
 
-    while(channel->unpacks_list->length){
-        mad_r_make_progress(adapter);
-        mad_s_make_progress(adapter);
-        //DISP_VAL("unpack_list->length", channel->unpacks_list->length);
 
+    while(channel->need_send){
+        //while(channel->unpacks_list->length){
+        TBX_GET_TICK(t1);
+        mad_r_make_progress(adapter);
+        TBX_GET_TICK(t2);
+        mad_s_make_progress(adapter);
+        TBX_GET_TICK(t3);
+
+
+        //chrono_r_mkp        += TBX_TIMING_DELAY(t1, t2);
+        ////chrono_s_mkp        += TBX_TIMING_DELAY(t2, t3);
+        //nb_chronos_mad_r_mkp++;
+        //nb_chronos_mad_s_mkp++;
+        //}
+    }
+
+
+    while(channel->unpacks_list->length){
+        TBX_GET_TICK(t1);
+        mad_r_make_progress(adapter);
+        TBX_GET_TICK(t2);
+
+        //chrono_r_mkp        += TBX_TIMING_DELAY(t1, t2);
+        //nb_chronos_mad_r_mkp++;
     }
 
     //DISP("<-----------------mad_wait_unpacks");
     LOG_OUT();
 }
-
-//void
-//mad_wait_unpack(p_mad_iovec_t mad_iovec){
-//    LOG_IN();
-//    while(mad_iovec){
-//        mad_r_make_progress(adapter);
-//        mad_s_make_progress(adapter);
-//    }
-//    LOG_OUT();
-//}

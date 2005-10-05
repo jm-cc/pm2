@@ -122,8 +122,6 @@ adapter_init(p_mad_driver_t mad_driver,
 
   mad_adapter->established_connection_htable = tbx_htable_empty_table();
   mad_adapter->s_ready_msg_list = tbx_slist_nil();
-  //mad_adapter->r_ready_msg_list = tbx_slist_nil();
-  mad_adapter->unexpected_msg_list = tbx_slist_nil();
   mad_adapter->waiting_acknowlegment_list = tbx_slist_nil();
   mad_adapter->rdv = tbx_slist_nil();
   /***/
@@ -206,14 +204,18 @@ driver_init_1(p_mad_madeleine_t      madeleine,
 
   /***/
   mad_driver->s_msg_slist  = tbx_slist_nil();
-  //mad_driver->r_msg_slist = tbx_slist_nil();
+  //mad_driver->max_unexpected = 10;
+  //mad_driver->unexpected_recovery_threshold = 4;
+
+  // initialisation des mad_iovecs destinés aux données unexpected
+  // A FAIRE
+
+
   {
     p_mad_adapter_t adapter = NULL;
 
-
     adapter = tbx_htable_get(mad_driver->adapter_htable,
                              "default");
-
     initialize_tracks(adapter);
   }
   /***/
@@ -715,6 +717,7 @@ connection_init(p_mad_channel_t mad_channel)
       /***/
       out->packs_list = tbx_slist_nil();
       out->sequence = 1;
+      out->need_reception = 0;
       /***/
 
     }
@@ -751,6 +754,7 @@ connection_init(p_mad_channel_t mad_channel)
       /***/
       in->packs_list = tbx_slist_nil();
       in->sequence = 1;
+      in->need_reception = tbx_false;
       /***/
     }
 
@@ -972,8 +976,6 @@ channel_open(p_mad_madeleine_t  madeleine,
   if (!dir_channel)
     FAILURE("channel not found");
 
-  //mad_driver =
-  //  tbx_htable_get(madeleine->driver_htable, dir_channel->driver->name);
   mad_driver =
     tbx_htable_get(madeleine->network_htable, dir_channel->driver->network_name);
   if (!mad_driver)
@@ -1016,18 +1018,11 @@ channel_open(p_mad_madeleine_t  madeleine,
   if (interface->channel_init){
     interface->channel_init(mad_channel);
   }
-  //else {
-  //  mad_channel->nb_pending_communication = 1;
-  //}
-  //
-  //pending_communication_init(mad_channel, interface);
-
-  //tbx_malloc_init(&mad_channel->mad_iovec_key,             sizeof(mad_iovec_t),             512);
-  //tbx_malloc_init(&mad_channel->mad_request_key,           sizeof(mx_request_t),            1024);
 
   mad_channel->unpacks_list = tbx_slist_nil();
-  //mad_channel->rdv = tbx_slist_nil();
+  //mad_channel->unexpected = tbx_slist_nil();
   mad_channel->sequence = 1;
+  mad_channel->need_send = 0;
   /***/
 
   TRACE_STR("Pass 1 - channel connection parameter", mad_channel->parameter);
@@ -1092,9 +1087,6 @@ fchannel_open(p_mad_madeleine_t  madeleine,
 
   dir_channel =
     tbx_htable_get(madeleine->dir->channel_htable, dir_fchannel->cloned_channel_name);
-
-  //mad_driver  = tbx_htable_get(madeleine->driver_htable,
-  //                             dir_channel->driver->name);
 
   mad_driver  = tbx_htable_get(madeleine->network_htable,
                                dir_channel->driver->network_name);
@@ -1312,7 +1304,6 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   if (!dir_vchannel)
     FAILURE("virtual channel not found");
 
-  //mad_driver  = tbx_htable_get(madeleine->driver_htable, "forward");
   mad_driver  = tbx_htable_get(madeleine->network_htable, "forward_network");
   if (!mad_driver)
     FAILURE("forwarding driver not found");
@@ -1551,7 +1542,6 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   if (!dir_xchannel)
     FAILURE("mux channel not found");
 
-  //mad_driver  = tbx_htable_get(madeleine->driver_htable, "mux");
   mad_driver  = tbx_htable_get(madeleine->network_htable, "mux_network");
   if (!mad_driver)
     FAILURE("mux driver not found");
@@ -1687,6 +1677,7 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
     }while(tbx_slist_ref_forward(key_list));
 
     madeleine->channel_tab = channel_tab;
+    madeleine->nb_channels = nb_channels;
   }
 
   LOG_OUT();

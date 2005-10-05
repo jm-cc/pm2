@@ -33,6 +33,16 @@
 #define MX_MATCH_MASK_BC   ((uint64_t)0xffffffff << 32)
 #endif
 
+int    nb_chronos = 0;
+double chrono_remove    = 0.0;
+double chrono_add       = 0.0;
+double chrono_mx_irecv  = 0.0;
+double chrono_total     = 0.0;
+
+tbx_tick_t tick_mx_test;
+tbx_tick_t tick_mx_isend;
+
+
 /*
  * local structures
  * ----------------
@@ -229,6 +239,10 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
     mad_mx_startup_info();
 #endif // MX_NO_STARTUP_INFO
 
+    d->max_unexpected = 10;
+    d->unexpected_recovery_threshold = 4;
+    d-> unexpected_buffer_length = 3;
+
     LOG_OUT();
 }
 
@@ -248,6 +262,38 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
     a->parameter	= tbx_strdup("-");
 
     tbx_malloc_init(&mad_mx_unexpected_key, MAD_MX_PRE_POSTED_SIZE, 512, "mx_pre_posted");
+
+    {
+        int nb_channels = 0;
+        p_mad_driver_t driver = NULL;
+        int max_unexpected = 0;
+        int unexpected_buffer_length = 0;
+        int total = 0;
+        p_mad_iovec_t mad_iovec = NULL;
+        void *unexpected_area   = NULL;
+        int i = 0;
+
+
+        nb_channels = tbx_htable_get_size(a->channel_htable);
+        driver = a->driver;
+        max_unexpected = driver->max_unexpected;
+        unexpected_buffer_length = driver->unexpected_buffer_length;
+        total = max_unexpected + unexpected_buffer_length;
+
+        a->pre_posted  = mad_pipeline_create(total);
+        for(i = 0; i < total; i++){
+            mad_iovec = mad_iovec_create(0);
+
+            unexpected_area = tbx_malloc(mad_mx_unexpected_key);
+            mad_iovec_add_data(mad_iovec,
+                               unexpected_area,
+                               MAD_MX_PRE_POSTED_SIZE,
+                               0);
+
+            mad_pipeline_add(a->pre_posted, mad_iovec);
+        }
+    }
+
     LOG_OUT();
 }
 
@@ -679,10 +725,12 @@ mad_mx_test(p_mad_track_t track){
     endpoint = ts->endpoint;
 
     //DISP("mad_mx_test : TEST");
+    //rc = mx_wait(*endpoint, request, MX_INFINITE, &status, &result);
     rc = mx_test(*endpoint, request, &status, &result);
     //mad_mx_check_return("mx_test failed", rc);
 
     if(rc == MX_SUCCESS && result){
+        TBX_GET_TICK(tick_mx_test);
         LOG_OUT();
         return tbx_true;
     }
@@ -823,29 +871,13 @@ mad_mx_isend(p_mad_track_t track,
     match_info   = 0;
     /* match_info = ((uint64_t)connection->channel->id +1) << 32 | connection->channel->process_lrank; */
 
-    //mad_iovec_print_iovec(iovec);
-
-    //TBX_GET_TICK(t2);
+    TBX_GET_TICK(tick_mx_isend);
 
     rc = mx_isend(*endpoint,
                   seg_list, nb_seg,
                   *dest_address,
                   match_info,
                   NULL, request);
-
-    //TBX_GET_TICK(t3);
-    //
-    //
-    //printf("\n");
-    //sum = TBX_TIMING_DELAY(t1, t3);
-    //printf("\t \t mad_mx_isend : total    -> %g\n", sum);
-    //
-    //sum = TBX_TIMING_DELAY(t1, t2);
-    //printf("\t \t 1 - initialisations     -> %g\n", sum);
-    //
-    //sum = TBX_TIMING_DELAY(t2, t3);
-    //printf("\t \t 2 - mx_isend            -> %g\n", sum);
-    //printf("\n");
     LOG_OUT();
 }
 
@@ -882,24 +914,39 @@ mad_mx_add_pre_posted(p_mad_adapter_t adapter,
                       p_mad_track_t track){
     p_mad_iovec_t mad_iovec = NULL;
     void *unexpected_area   = NULL;
+
+    tbx_tick_t        t1;
+    tbx_tick_t        t2;
+    tbx_tick_t        t3;
+    tbx_tick_t        t4;
+    tbx_tick_t        t5;
+
     LOG_IN();
 
     track->status = MAD_MKP_PROGRESS;
-    //DISP_VAL("add_pre_posted : track->status", track->status);
 
-
-
-    mad_iovec = mad_iovec_create(0);
+    TBX_GET_TICK(t1);
+    mad_iovec = mad_pipeline_remove(adapter->pre_posted);
+    TBX_GET_TICK(t2);
     mad_iovec->track = track;
-
-    unexpected_area = tbx_malloc(mad_mx_unexpected_key);
-    mad_iovec_add_data(mad_iovec,
-                       unexpected_area,
-                       MAD_MX_PRE_POSTED_SIZE,
-                       0);
-
+    TBX_GET_TICK(t5);
     mad_pipeline_add(track->pipeline, mad_iovec);
+    TBX_GET_TICK(t3);
     mad_mx_irecv(track, mad_iovec->data, 1);
+    TBX_GET_TICK(t4);
+
+    nb_chronos++;
+    chrono_remove    += TBX_TIMING_DELAY(t1, t2);
+    chrono_add       += TBX_TIMING_DELAY(t5, t3);
+    chrono_mx_irecv  += TBX_TIMING_DELAY(t3, t4);
+    chrono_total     += TBX_TIMING_DELAY(t1, t4);
+
+    //printf("MAD_MX_ADD_PRE_POSTED : \n");
+    //printf("remove   --> %9g\n", chrono_remove);
+    //printf("add      --> %9g\n", chrono_add);
+    //printf("mx_irecv --> %9g\n", chrono_mx_irecv);
+    //printf("-------------------------------\n");
+    //printf("total    --> %9g\n", chrono_total);
 
     LOG_OUT();
 }

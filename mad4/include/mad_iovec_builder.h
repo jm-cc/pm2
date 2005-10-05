@@ -11,7 +11,10 @@ typedef enum e_mad_iovec_control_nb_elm {
     MAD_IOVEC_DATA_HEADER_NB_ELM   = 2,
     MAD_IOVEC_RDV_NB_ELM           = 1,
     MAD_IOVEC_ACK_NB_ELM           = 1,
-    MAD_IOVEC_NOT_READY_NB_ELM     = 1
+    //MAD_IOVEC_DATA_TREATED_NB_ELM    = 1,
+    //MAD_IOVEC_CONTROL_TREATED_NB_ELM = 1,
+    MAD_IOVEC_BLOCKED_NB_ELM       = 1,
+    MAD_IOVEC_UNBLOCKED_NB_ELM     = 1
 } mad_iovec_control_nb_elm_t, *p_mad_iovec_control_nb_elm_t;
 
 typedef enum e_mad_iovec_control_size {
@@ -19,7 +22,8 @@ typedef enum e_mad_iovec_control_size {
     MAD_IOVEC_DATA_HEADER_SIZE   = MAD_IOVEC_DATA_HEADER_NB_ELM   * sizeof(mad_iovec_header_t),
     MAD_IOVEC_RDV_SIZE           = MAD_IOVEC_RDV_NB_ELM           * sizeof(mad_iovec_header_t),
     MAD_IOVEC_ACK_SIZE           = MAD_IOVEC_ACK_NB_ELM           * sizeof(mad_iovec_header_t),
-    MAD_IOVEC_NOT_READY_SIZE     = MAD_IOVEC_NOT_READY_NB_ELM     * sizeof(mad_iovec_header_t)
+    MAD_IOVEC_BLOCKED_SIZE       = MAD_IOVEC_BLOCKED_NB_ELM       * sizeof(mad_iovec_header_t),
+    MAD_IOVEC_UNBLOCKED_SIZE     = MAD_IOVEC_UNBLOCKED_NB_ELM     * sizeof(mad_iovec_header_t)
 } mad_iovec_control_size_t, *p_mad_iovec_control_size_t;
 
 p_mad_iovec_t

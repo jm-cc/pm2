@@ -27,12 +27,17 @@
 
 #define NB_LOOPS 1000
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  32000 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  4 //(2*1024*1024) //32768
 
 
-float chrono_client[NB_LOOPS][3];
-float chrono_pack  [NB_LOOPS][3];
-int  loop_counter = 0;
+double chrono_client    = 0.0;
+double chrono_pack2     = 0.0;
+double chrono_wait_pack = 0.0;
+double chrono_unpack2     = 0.0;
+double chrono_wait_unpack = 0.0;
+
+
+
 
 char *
 init_data(unsigned int length){
@@ -253,16 +258,12 @@ void
 mad_wait_unpack(p_mad_adapter_t adapter, p_mad_track_t track){
     mad_mkp_status_t status = MAD_MKP_NO_PROGRESS;
 
-    //int counter = 0;
     LOG_IN();
 
     while(status != MAD_MKP_PROGRESS){
         status = mad_make_progress(adapter, track);
-
-        //if(status == MAD_MKP_PROGRESS)
-        //    DISP_VAL("UNPACK : test ok au tour de boucle", counter);
-        //counter++;
     }
+
     mad_pipeline_remove(track->pipeline);
     LOG_OUT();
 }
@@ -290,12 +291,14 @@ client(p_mad_channel_t channel){
     unsigned int counter    = 0;
     unsigned int cur_length = BUFFER_LENGTH_MIN;
 
-    //tbx_tick_t        t1;
-    //tbx_tick_t        t2;
-    //tbx_tick_t        t3;
+    tbx_tick_t        t1;
+    tbx_tick_t        t2;
+    tbx_tick_t        t3;
     tbx_tick_t        t4;
     tbx_tick_t        t5;
-    double            sum = 0.0;
+    tbx_tick_t        t6;
+    tbx_tick_t        t7;
+    //double            sum = 0.0;
 
     char *data_e = NULL;
     char *data_r = NULL;
@@ -328,38 +331,48 @@ client(p_mad_channel_t channel){
 
         //DISP("------------------------------");
 
-        TBX_GET_TICK(t4);
+        TBX_GET_TICK(t1);
         while (counter < NB_LOOPS) {
 
-            //TBX_GET_TICK(t1);
+            TBX_GET_TICK(t3);
             mad_pack2(connection1, mad_iovec_e);
-            //TBX_GET_TICK(t2);
+            TBX_GET_TICK(t4);
             mad_wait_pack(adapter, mad_iovec_e->track);
-            //TBX_GET_TICK(t3);
-
-            //chrono_client[counter][0]= TBX_TIMING_DELAY(t1, t3);
-            //chrono_client[counter][1]= TBX_TIMING_DELAY(t1, t2);
-            //chrono_client[counter][2]= TBX_TIMING_DELAY(t2, t3);
-
+            TBX_GET_TICK(t5);
             mad_unpack2(connection2,mad_iovec_r);
+            TBX_GET_TICK(t6);
             mad_wait_unpack(adapter, mad_iovec_r->track);
+            TBX_GET_TICK(t7);
 
-            //verify_data(data_r, cur_length);
-            //disp_data(data_r, cur_length);
             data_r[0] = 'g';
+
+            chrono_pack2       += TBX_TIMING_DELAY(t3, t4);
+            chrono_wait_pack   += TBX_TIMING_DELAY(t4, t5);
+            chrono_unpack2     += TBX_TIMING_DELAY(t5, t6);
+            chrono_wait_unpack += TBX_TIMING_DELAY(t6, t7);
 
             counter++;
         }
-        TBX_GET_TICK(t5);
+        TBX_GET_TICK(t2);
 
         connection1->lock = tbx_false;
         channel->reception_lock = tbx_false;
 
-        sum = TBX_TIMING_DELAY(t4, t5);
+        chrono_client = TBX_TIMING_DELAY(t1, t2);
 
-        printf("%9d   %9g   %9g\n",
-               cur_length, sum / (NB_LOOPS * 2),
-               (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
+
+        printf("CLIENT\n");
+        printf("pack2        --> %9g\n", chrono_pack2/counter);
+        printf("wait_pack    --> %9g\n", chrono_wait_pack/counter);
+        printf("unpack2      --> %9g\n", chrono_unpack2/counter);
+        printf("wait_unpack  --> %9g\n", chrono_wait_unpack/counter);
+        printf("-------------------\n");
+        printf("Total        --> %9g\n", chrono_client/counter);
+        printf("Latence      --> %9g\n", chrono_client/(counter * 2));
+
+        //printf("%9d   %9g   %9g\n",
+        //       cur_length, chrono_client / (NB_LOOPS * 2),
+        //       (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
         // next length
         cur_length *= 2;
@@ -463,92 +476,92 @@ server(p_mad_channel_t channel){
 }
 
 
-void
-disp_chrono_client(){
-    int   i = 0;
-    float a = 0;
-    float b = 0;
-    float c = 0;
-    LOG_IN();
-
-    printf("CLIENT\n");
-
-    printf("  Total  =   Pack2  +  Wait\n");
-
-    //for(i = 0; i < NB_LOOPS; i++){
-    //    int j = 0;
-    //    for(j = 0; j < 3; j++){
-    //        printf("%9g ", chrono_client[i][j]);
-    //    }
-    //    printf("\n");
-    //}
-
-    printf("------------------------------\n");
-
-    for(i = 0; i < NB_LOOPS; i++){
-        a += chrono_client[i][0];
-    }
-    a = a / NB_LOOPS;
-
-    for(i = 0; i < NB_LOOPS; i++){
-        b += chrono_client[i][1];
-    }
-    b = b / NB_LOOPS;
-
-    for(i = 0; i < NB_LOOPS; i++){
-        c += chrono_client[i][2];
-    }
-    c = c / NB_LOOPS;
-
-    printf("%9g %9g %9g\n", a, b, c);
-
-    printf("\n");
-    LOG_OUT();
-}
-
-
-void
-disp_chrono_pack(){
-    int   i = 0;
-    float a = 0;
-    float b = 0;
-    float c = 0;
-    LOG_IN();
-
-    printf("PACK2\n");
-
-    printf("    Total  = add_pipeline + i->isend \n");
-
-    //for(i = 0; i < NB_LOOPS; i++){
-    //    int j = 0;
-    //    for(j = 0; j < 3; j++){
-    //        printf("%12g ", chrono_pack[i][j]);
-    //    }
-    //    printf("\n");
-    //}
-
-    printf("------------------------------\n");
-
-    for(i = 0; i < NB_LOOPS; i++){
-        a += chrono_pack[i][0];
-    }
-    a = a / NB_LOOPS;
-
-    for(i = 0; i < NB_LOOPS; i++){
-        b += chrono_pack[i][1];
-    }
-    b = b / NB_LOOPS;
-
-    for(i = 0; i < NB_LOOPS; i++){
-        c += chrono_pack[i][2];
-    }
-    c = c / NB_LOOPS;
-
-    printf("%12g %12g %12g\n", a, b, c);
-
-    printf("\n");
-    LOG_OUT();
-}
+//void
+//disp_chrono_client(){
+//    int   i = 0;
+//    float a = 0;
+//    float b = 0;
+//    float c = 0;
+//    LOG_IN();
+//
+//    printf("CLIENT\n");
+//
+//    printf("  Total  =   Pack2  +  Wait\n");
+//
+//    //for(i = 0; i < NB_LOOPS; i++){
+//    //    int j = 0;
+//    //    for(j = 0; j < 3; j++){
+//    //        printf("%9g ", chrono_client[i][j]);
+//    //    }
+//    //    printf("\n");
+//    //}
+//
+//    printf("------------------------------\n");
+//
+//    for(i = 0; i < NB_LOOPS; i++){
+//        a += chrono_client[i][0];
+//    }
+//    a = a / NB_LOOPS;
+//
+//    for(i = 0; i < NB_LOOPS; i++){
+//        b += chrono_client[i][1];
+//    }
+//    b = b / NB_LOOPS;
+//
+//    for(i = 0; i < NB_LOOPS; i++){
+//        c += chrono_client[i][2];
+//    }
+//    c = c / NB_LOOPS;
+//
+//    printf("%9g %9g %9g\n", a, b, c);
+//
+//    printf("\n");
+//    LOG_OUT();
+//}
+//
+//
+//void
+//disp_chrono_pack(){
+//    int   i = 0;
+//    float a = 0;
+//    float b = 0;
+//    float c = 0;
+//    LOG_IN();
+//
+//    printf("PACK2\n");
+//
+//    printf("    Total  = add_pipeline + i->isend \n");
+//
+//    //for(i = 0; i < NB_LOOPS; i++){
+//    //    int j = 0;
+//    //    for(j = 0; j < 3; j++){
+//    //        printf("%12g ", chrono_pack[i][j]);
+//    //    }
+//    //    printf("\n");
+//    //}
+//
+//    printf("------------------------------\n");
+//
+//    for(i = 0; i < NB_LOOPS; i++){
+//        a += chrono_pack[i][0];
+//    }
+//    a = a / NB_LOOPS;
+//
+//    for(i = 0; i < NB_LOOPS; i++){
+//        b += chrono_pack[i][1];
+//    }
+//    b = b / NB_LOOPS;
+//
+//    for(i = 0; i < NB_LOOPS; i++){
+//        c += chrono_pack[i][2];
+//    }
+//    c = c / NB_LOOPS;
+//
+//    printf("%12g %12g %12g\n", a, b, c);
+//
+//    printf("\n");
+//    LOG_OUT();
+//}
 
 
 
@@ -574,11 +587,25 @@ main(int argc, char **argv) {
     my_local_rank  = ntbx_pc_global_to_local(pc, my_global_rank);
 
     if (my_local_rank == 1) {
+        extern int nb_chronos_mkp;
+        extern double chrono_mkfp_1_2;
+        extern double chrono_mkfp_2_3;
+        extern double chrono_mkfp_3_4;
+        extern double chrono_mkfp_4_5;
+        extern double chrono_mkfp_1_5;
+
         DISP("CLIENT");
         client(channel);
         DISP("FINI!!!");
 
-        //disp_chrono_client();
+        printf("\t MAD_MAKE_PROGRESS : \n");
+        printf("\t debut            %9g\n", chrono_mkfp_1_2/nb_chronos_mkp);
+        printf("\t pipeline_get     %9g\n", chrono_mkfp_2_3/nb_chronos_mkp);
+        printf("\t interface->test  %9g\n", chrono_mkfp_3_4/nb_chronos_mkp);
+        printf("\t fin              %9g\n", chrono_mkfp_4_5/nb_chronos_mkp);
+        printf("--------------------------------\n");
+        printf("\t total            %9g\n", chrono_mkfp_1_5/nb_chronos_mkp);
+
 
     } else if (my_local_rank == 0) {
         DISP("SERVER");

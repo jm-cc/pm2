@@ -15,7 +15,7 @@
  */
 
 #section common
-#depend "asm-generic/marcel_ctx_types.h[]"
+#depend "asm-generic/marcel_ctx_types.h[types]"
 #include "asm/marcel_archdep.h"
 
 #section structures

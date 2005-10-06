@@ -31,6 +31,7 @@
 #else
 # depend "asm/linux_gcc_intrin.h[marcel_macros]"
 # depend "asm/linux_gcc_intrin.h[marcel_functions]"
+# depend "asm/linux_gcc_intrin.h[marcel_variables]"
 #endif
 
 #section marcel_functions

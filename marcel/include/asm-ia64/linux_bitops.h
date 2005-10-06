@@ -28,7 +28,8 @@
 //#include <linux/compiler.h>
 //#include <linux/types.h>
 
-#depend "asm/linux_intrinsics.h[]"
+#depend "asm/linux_intrinsics.h[marcel_functions]"
+#depend "asm/linux_intrinsics.h[marcel_macros]"
 
 
 /**

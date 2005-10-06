@@ -15,7 +15,7 @@
  */
 
 #section common
-#depend "asm-generic/marcel_ctx_types.h[]"
+#depend "asm-generic/marcel_ctx_types.h[types]"
 
 #section types
 /* set/longjmp based on get/setcontext due to the stack register */	
@@ -32,7 +32,7 @@ ucontext_t jbuf;
 
 } marcel_ctx_t[1];
 
-#section functions
+#section marcel_functions
 int ia64_setjmp(ucontext_t *ucp);
 int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 

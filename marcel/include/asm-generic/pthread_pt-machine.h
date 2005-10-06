@@ -16,3 +16,4 @@
 
 #section common
 /* Rien de particulier ici */
+#section marcel_macros

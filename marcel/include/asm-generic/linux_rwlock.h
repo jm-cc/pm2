@@ -110,3 +110,7 @@ static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *rw)
 }
 #endif
 
+#section marcel_types
+#section marcel_structures
+#section marcel_functions
+#section types

@@ -93,7 +93,7 @@ extern TBX_PROTECTED void FASTCALL(ma_raise_softirq(unsigned int nr));
  */
 
 #section marcel_structures
-#depend "asm/linux_atomic.h[]"
+#depend "asm/linux_atomic.h[marcel_types]"
 struct ma_tasklet_struct
 {
 	struct ma_tasklet_struct *next;

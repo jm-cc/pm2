@@ -21,3 +21,4 @@
  */
 #depend "asm-generic/linux_perlwp.h[]"
 
+#section marcel_macros

@@ -27,9 +27,9 @@
 
 __TBX_BEGIN_DECLS
 
-#include "asm/marcel-master___compiler.h"
+//#include "asm/marcel-master___compiler.h"
 #include "marcel-master___compiler.h"
-#include "scheduler/marcel-master___compiler.h"
+//#include "scheduler/marcel-master___compiler.h"
 
 #ifdef MA__PTHREAD_FUNCTIONS
 //#  include "marcel_pthread.h"
@@ -53,12 +53,12 @@ __TBX_BEGIN_DECLS
 #include "scheduler/marcel-master___structures.h"
 
 TBX_VISIBILITY_PUSH_DEFAULT
-#include "asm/marcel-master___functions.h"
+//#include "asm/marcel-master___functions.h"
 #include "marcel-master___functions.h"
 #include "scheduler/marcel-master___functions.h"
 TBX_VISIBILITY_POP
 
-#include "asm/marcel-master___variables.h"
+//#include "asm/marcel-master___variables.h"
 #include "marcel-master___variables.h"
 #include "scheduler/marcel-master___variables.h"
 
@@ -68,15 +68,15 @@ TBX_VISIBILITY_POP
 #  define MARCEL_INLINE inline
 #endif
 
-#include "asm/marcel-master___inline.h"
+//#include "asm/marcel-master___inline.h"
 #include "marcel-master___inline.h"
 #include "scheduler/marcel-master___inline.h"
 
 #if defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined(DSM_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
 TBX_VISIBILITY_PUSH_INTERNAL
-#  include "asm/marcel-master___marcel_compiler.h"
+//#  include "asm/marcel-master___marcel_compiler.h"
 #  include "marcel-master___marcel_compiler.h"
-#  include "scheduler/marcel-master___marcel_compiler.h"
+//#  include "scheduler/marcel-master___marcel_compiler.h"
 
 #  include "asm/marcel-master___marcel_macros.h"
 #  include "marcel-master___marcel_macros.h"
@@ -94,7 +94,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "marcel-master___marcel_functions.h"
 #  include "scheduler/marcel-master___marcel_functions.h"
 
-#  include "asm/marcel-master___marcel_variables.h"
+//#  include "asm/marcel-master___marcel_variables.h"
 #  include "marcel-master___marcel_variables.h"
 #  include "scheduler/marcel-master___marcel_variables.h"
 

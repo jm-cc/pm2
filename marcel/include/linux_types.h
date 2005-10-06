@@ -14,14 +14,13 @@
  * General Public License for more details.
  */
 
-#section common
 /*
  * similar to:
  * include/linux/types.h
  */
-#depend "asm/linux_types.h[]"
 
 #section marcel_macros
+#depend "asm/linux_types.h[macros]"
 #define MA_BITS_TO_LONGS(bits) \
 	(((bits)+MA_BITS_PER_LONG-1)/MA_BITS_PER_LONG)
 #define MA_DECLARE_BITMAP(name,bits) \
@@ -30,7 +29,7 @@
 	memset(name, 0, MA_BITS_TO_LONGS(bits)*sizeof(unsigned long))
 
 #section marcel_types
-#depend "asm/linux_types.h[]"
+#depend "asm/linux_types.h[marcel_types]"
 
 #ifndef __MA_BIT_TYPES_DEFINED__
 #define __MA_BIT_TYPES_DEFINED__

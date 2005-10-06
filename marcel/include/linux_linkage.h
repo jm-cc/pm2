@@ -19,7 +19,7 @@
  * Similar to:
  * include/asm-i386/linkage.h
  */
-#depend "asm/linux_linkage.h[]"
+#depend "asm/linux_linkage.h[marcel_macros]"
 
 #section marcel_macros
 

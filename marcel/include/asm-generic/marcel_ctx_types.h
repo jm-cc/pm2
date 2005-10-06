@@ -19,3 +19,6 @@ enum {
 	FIRST_RETURN,
 	NORMAL_RETURN
 };
+#section macros
+#section structures
+#section marcel_macros

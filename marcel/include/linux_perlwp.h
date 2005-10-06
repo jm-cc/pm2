@@ -14,14 +14,13 @@
  * General Public License for more details.
  */
 
-#section common
 /*
  * Similar to:
  * include/linux/percpu.h
  */
-#depend "asm/linux_perlwp.h[]"
 
 #section marcel_macros
+#depend "asm/linux_perlwp.h[marcel_macros]"
 /* Enough to cover all DEFINE_PER_LWPs in marcel. */
 #ifndef MA_PERLWP_ENOUGH_ROOM
 #define MA_PERLWP_ENOUGH_ROOM 32768

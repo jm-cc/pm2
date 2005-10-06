@@ -44,9 +44,10 @@
  */
 #ifdef MA__LWPS
 #depend "asm/linux_spinlock.h[]"
-#else
+#endif
 
 #section marcel_macros
+#ifndef MA__LWPS
 #ifdef MARCEL_DEBUG_SPINLOCK
 
 //#define SPIN_ABORT()
@@ -192,8 +193,6 @@ typedef struct {
 #define _ma_raw_write_lock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_write_unlock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_write_trylock(lock) ({ (void)(lock); (1); })
-
-#section common
 #endif /* !MA__LWPS */
 
 #section marcel_macros
@@ -497,3 +496,5 @@ static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
 	return ma_preempt_count();
 #endif
 }
+#section marcel_types
+#section marcel_structures

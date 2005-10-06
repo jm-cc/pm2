@@ -20,7 +20,8 @@
  * Similar to:
  * include/linux/bitops.h
  */
-#depend "asm/linux_types.h[]"
+#depend "asm/linux_types.h[macros]"
+#depend "asm/linux_types.h[marcel_types]"
 
 /*
  * ma_ffs: find first bit set. This is defined the same way as
@@ -172,3 +173,4 @@ static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w)
 	return sizeof(w) == 4 ? ma_generic_hweight32(w) : ma_generic_hweight64(w);
 }
 
+#section macros

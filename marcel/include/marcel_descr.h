@@ -163,6 +163,9 @@ static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void);
 #depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h"
 #depend "marcel_threads.h[marcel_macros]"
+#depend "[marcel_macros]"
+#depend "[types]"
+#depend "[marcel_structures]"
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
 static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
 {

@@ -34,7 +34,8 @@
  */
 
 #section marcel_macros
-#depend "asm/marcel_compareexchange.h[]"
+#depend "asm/marcel_compareexchange.h[macros]"
+#depend "asm/marcel_compareexchange.h[marcel_macros]"
 #define ATOMIC_BITOPT_RETURN(op,retexpr) \
 { \
 	unsigned long	mask, old, new, ret; \
@@ -157,7 +158,7 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
  */
 
 #section common
-#depend "linux_bitops.h[]"
+#depend "linux_bitops.h[marcel_inline]"
 #define ma_fls(x) ma_generic_fls(x)
 
 /*

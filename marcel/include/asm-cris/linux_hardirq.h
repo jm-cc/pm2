@@ -16,3 +16,4 @@
 
 #section common
 #depend "asm-generic/linux_hardirq.h[]"
+#section marcel_macros

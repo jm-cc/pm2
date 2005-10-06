@@ -301,3 +301,4 @@ extern marcel_task_t __main_thread_struct;
 #else
 extern marcel_task_t *__main_thread;
 #endif
+#section marcel_structures

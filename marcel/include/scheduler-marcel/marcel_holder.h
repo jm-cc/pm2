@@ -464,3 +464,4 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 	ma_deactivate_running_task(p,h);
 }
 
+#section marcel_structures

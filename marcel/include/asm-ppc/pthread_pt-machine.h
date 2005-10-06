@@ -16,3 +16,4 @@
 
 #section common
 #depend "asm-generic/pthread_pt-machine.h[]"
+#section marcel_macros

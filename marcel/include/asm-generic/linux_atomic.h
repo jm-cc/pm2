@@ -15,7 +15,8 @@
  */
 
 #section common
-#depend "asm/marcel_compareexchange.h[]"
+#depend "asm/marcel_compareexchange.h[macros]"
+#depend "asm/marcel_compareexchange.h[marcel_macros]"
 #depend "asm/linux_spinlock.h[]"
 #include "tbx_compiler.h"
 
@@ -217,3 +218,4 @@ static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 #define ma_smp_mb__after_atomic_dec()   ma_barrier()
 #define ma_smp_mb__before_atomic_inc()  ma_barrier()
 #define ma_smp_mb__after_atomic_inc()   ma_barrier()
+#section marcel_structures

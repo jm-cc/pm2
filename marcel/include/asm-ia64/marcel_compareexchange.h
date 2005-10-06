@@ -14,10 +14,9 @@
  * General Public License for more details.
  */
 
-#section common
-#depend "asm/linux_intrinsics.h[]"
 #section macros
 #define MA_HAVE_COMPAREEXCHANGE 1
 #define MA_HAVE_FULLCOMPAREEXCHANGE 1
 #section marcel_macros
+#depend "asm/linux_intrinsics.h[marcel_functions]"
 #define pm2_compareexchange(p,o,n,s) ma_ia64_cmpxchg(acq,(p),(o),(n),(s))

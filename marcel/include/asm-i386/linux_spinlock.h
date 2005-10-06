@@ -174,5 +174,7 @@ static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
 	return 0;
 }
 
+#section marcel_structures
+#section marcel_functions
 #section common
 #endif /* MA__LWPS */

@@ -107,3 +107,4 @@ static __tbx_inline__ void ma_clear_need_resched(void)
 }
 
 
+#section marcel_macros

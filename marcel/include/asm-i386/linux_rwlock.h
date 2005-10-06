@@ -101,3 +101,8 @@
 							__ma_build_write_lock_ptr(rw, helper); \
 					} while (0)
 
+#section marcel_types
+#section marcel_structures
+#section marcel_functions
+#section marcel_inline
+#section types

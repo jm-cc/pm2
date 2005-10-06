@@ -34,6 +34,7 @@
  */
 
 #section types
+#depend "[structures]"
 typedef struct marcel_sched_attr marcel_sched_attr_t;
 
 #section structures
@@ -135,7 +136,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		const marcel_attr_t *attr);
 #section sched_marcel_inline
 #depend "asm/linux_bitops.h[marcel_inline]"
-#depend "scheduler/linux_runqueues.h[variables]"
+#depend "scheduler/linux_runqueues.h[marcel_variables]"
 #depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
 __tbx_inline__ static void 
@@ -448,3 +449,4 @@ struct ma_lwp_usage_stat {
 #section marcel_variables
 #depend "asm-generic/linux_perlwp.h[marcel_macros]"
 MA_DECLARE_PER_LWP(struct ma_lwp_usage_stat, lwp_usage);
+#section inline

@@ -17,3 +17,4 @@
 #section common
 #depend "asm-generic/marcel_arch_switchto.h[]"
 
+#section marcel_macros

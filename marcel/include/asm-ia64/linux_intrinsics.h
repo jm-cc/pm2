@@ -25,11 +25,12 @@
  */
 
 /* include compiler specific intrinsics */
-#depend "asm/linux_ia64regs.h[]"
+#depend "asm/linux_ia64regs.h[marcel_macros]"
 #ifdef __INTEL_COMPILER
-# depend "asm/linux_intel_intrin.h[]"
+# depend "asm/linux_intel_intrin.h[marcel_functions]"
 #else
-# depend "asm/linux_gcc_intrin.h[]"
+# depend "asm/linux_gcc_intrin.h[marcel_macros]"
+# depend "asm/linux_gcc_intrin.h[marcel_functions]"
 #endif
 
 #section marcel_functions

@@ -17,3 +17,4 @@
 #section common
 #depend "asm-generic/linux_spinlock.h[]"
 #section marcel_functions
+#section types

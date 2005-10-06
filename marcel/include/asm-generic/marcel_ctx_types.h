@@ -22,3 +22,4 @@ enum {
 #section macros
 #section structures
 #section marcel_macros
+#section types

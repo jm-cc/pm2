@@ -35,7 +35,7 @@
 #define MA_HAVE_RWLOCK 1
 
 
-#section marcel_types
+#section types
 
 typedef struct {
 	volatile unsigned int lock;

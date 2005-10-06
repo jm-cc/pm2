@@ -69,7 +69,7 @@
  * Les autres modules doivent l'inclure si nécesaire
  */
 #ifdef MARCEL
-#include "marcel-master___structures.h"
+#include "marcel.h"
 #endif
 //#endif
 
@@ -82,10 +82,6 @@
 #include "tbx_parameter.h"
 
 #include "tbx_interface.h"
-
-#ifdef MARCEL
-#include "marcel.h"
-#endif /* MARCEL */
 
 #include "tbx_malloc_inline.h"
 //#include "tbx_slist_inline.h"

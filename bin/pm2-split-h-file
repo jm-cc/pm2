@@ -57,6 +57,8 @@ sub symbole_from_suffix {
     $FILE=uc($filename);
     #$FILE =~ s,^(.*)/([^/]*)$,$2,;
     $FILE =~ tr ,./,__,;
+    $FILE =~ s,^ASM-GENERIC,GENERIC_ASM,;
+    $FILE =~ s,^ASM[^_]+,ASM,;
     $FILE =~ s,^(.*)(_H)$,$1,;
     $EXT = $2;
     $symb=$FILE.$suffix.$EXT;
@@ -447,6 +449,7 @@ sub scan_sections {
 		    $options{"file"}=filename_add_suffix(filename($key), $file_sep.$section);
 		    
 		    $sections{$section}{"filekey"}=add_file(\%options);
+		    $sections{$section}{"skip"}=0;
 		}
 		if ($6) {
 		    my(@opts)=split($sep_opt, $7);
@@ -501,6 +504,24 @@ sub gen_section {
     if (test_option($key->{"sections"}, $mainsection, "write-section", 0)) { 
 	return;
     }
+
+    goto really_do if ($mainsection eq "all");
+
+    #print "je cherche $info_section->{'name'}: ";
+    for $_ (@{$texte}) {
+	if (/$section_ligne/) {
+	    #print "trouvé $5, ";
+	    if ($5 eq $mainsection) {
+	        #print "good\n";
+		goto really_do;
+	    }
+	}
+    }
+    $key->{"sections"}->{$mainsection}{"skip"} = 1;
+    #print "0";
+    return;
+really_do:
+
     add_section($mainsection, $info_section->{"filekey"});
 
     if (!test_option($key->{"sections"}, $mainsection, "common", 0) 
@@ -576,15 +597,51 @@ sub gen_section {
 		    if ($include =~ /^(["<]?)([$f]*)\s*\[\s*(.*)\s*\]([">]?)$/) {
 			my($start)=$1;
 			my($end)=$4;
+			my($_key)=$key;
 			$include = $2;
-			if (!$include) {
-			    $include = filename($key);
-			}
 			if ($3 eq "") {
 			    %sections=($mainsection => 1);
 			    #delete $sections{"common"};
 			} else {
 			    %sections=map { $_ => 1 } (split (/$sep_sections/, $3));
+			}
+			if (!$include) {
+			    $include = filename($key);
+			}
+#			else {
+#			    my($__key);
+#			    my($name)=$2;
+#			    $name =~ s/.*\/([^\/]*)$/\1/ ;
+#			    for $__key (@list_input_files_keys) {
+#			        if (filename($__key) eq $name) {
+#				    $_key = $__key;
+#				    goto found;
+#				}
+#				print "not ".filename($__key)."\n";
+#			    }
+#			    die "couldn't find $name for ".filename($key)."\n";
+#found:
+#			}
+			if ((!$2) or ($3 eq "" and $mainsection eq "common")) {
+			    for $sec (keys %sections) {
+			        my($_texte);
+			        open(IN, srcfilename($_key)) or die "Unable to read $include: $!\n";
+				@{$_texte}=<IN>;
+				close(IN);
+				for $_ (@{$_texte}) {
+				    if (/$section_ligne/) {
+				        if ($5 eq $sec) {
+					    #print "got section $5 from ".srcfilename($_key)."\n";
+				    	    goto really_do;
+				        }
+				    }
+				}
+				$use_line_preproc &&
+				    print OUT "#line $line \"", $srcfilename, "\"\n";
+				print OUT "// skipped section $sec because target empty\n";
+				delete $sections{$sec};
+really_do:
+			    }
 			}
 			for $sec (keys %sections) {
 			    $use_line_preproc && 
@@ -771,7 +828,9 @@ sub gen_master {
     gen_header($key);
     for $section (@{$key->{"list_sections"}}) {
 	my($secname)=filename($sections->{$section}{"filekey"});
-	if (test_option($sections, $section, "write-section", 0)) {
+	if ($sections->{$section}{"skip"} == 1) {
+	    print OUT "// \"$secname\" skipped since empty\n";
+	} elsif (test_option($sections, $section, "write-section", 0)) {
 	    print OUT "// \"$secname\" not generated as requested\n";
 	} else {
 	    if (test_option($sections, $section, "include-in-main", 0)) {
@@ -839,12 +898,12 @@ sub main {
 	openmainfile($key);
 	my($uptodate)=uptodate($key);
 	
-	gen_master($key, $uptodate);
-
 	for $section (@{$key->{"list_sections"}}) {
 	    gen_section($key->{"sections"}{$section}, \@texte, 
 			$key->{"preload"}, \@pretexte, $uptodate);
 	}
+
+	gen_master($key, $uptodate);
 
 	closemainfile($key);
 	if (defined($key->{"if_errors"})) {

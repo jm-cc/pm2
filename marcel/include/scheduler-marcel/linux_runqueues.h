@@ -116,6 +116,15 @@ struct ma_runqueue {
 #endif
 	enum ma_rq_type type;
 };
+#section marcel_macros
+#define ma_holder_rq(rq) (&(rq)->hold)
+
+#section marcel_functions
+static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
+        return tbx_container_of(h, ma_runqueue_t, hold);
+}
 
 #section types
 typedef struct ma_runqueue ma_runqueue_t;
@@ -275,18 +284,20 @@ static __tbx_inline__ void ma_rq_enqueue_task(marcel_task_t *p, ma_prio_array_t 
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_rq_task_list_add(struct list_head *head, marcel_task_t *p, ma_prio_array_t *array);
+static __tbx_inline__ void ma_rq_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq);
 #section marcel_inline
-static __tbx_inline__ void ma_rq_task_list_add(struct list_head *head, marcel_task_t *p, ma_prio_array_t *array) {
-	list_add_tail(&p->sched.internal.run_list, head);
-	p->sched.internal.holder_data = array;
+static __tbx_inline__ void ma_rq_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq) {
+	list_add_tail(&e->run_list, head);
+	e->holder_data = array;
+	MA_BUG_ON(e->run_holder);
+	e->run_holder = &rq->hold;
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int prio, int num, ma_prio_array_t *array);
+static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq);
 #define ma_rq_enqueue_task_list ma_rq_enqueue_entity_list
 #section marcel_inline
-static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int prio, int num, ma_prio_array_t *array)
+static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq)
 {
 	list_splice(head, array->queue + prio);
 	__ma_set_bit(prio, array->bitmap);

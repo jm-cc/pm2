@@ -66,13 +66,6 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 }
 
 #section marcel_functions
-static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
-	return tbx_container_of(h, ma_runqueue_t, hold);
-}
-
-#section marcel_functions
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h) {
@@ -385,6 +378,44 @@ static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
 		bubble_sched_debug("activating %d:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_activate_running_task(p,h);
 	ma_enqueue_task(p,h);
+}
+
+/* activating whole lists of tasks */
+#section marcel_functions
+void ma_holder_task_list_add(struct list_head *head, marcel_task_t *p, int prio, ma_holder_t *h, void *data);
+static __tbx_inline__ void ma_holder_entity_list_add(struct list_head *head, marcel_entity_t *e, int prio, ma_holder_t *h, void *data);
+#define ma_holder_task_list_add(head,t,p,h,data) ma_holder_entity_list_add(head,&(t)->sched.internal,p,h,data)
+#section marcel_inline
+static __tbx_inline__ void ma_holder_entity_list_add(struct list_head *head, marcel_entity_t *e, int prio, ma_holder_t *h, void *data)
+{
+	MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
+	ma_rq_entity_list_add(head, e, data, ma_rq_holder(h));
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_activate_running_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data);
+#section marcel_inline
+static __tbx_inline__ void ma_activate_running_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
+{
+	h->nr_running += num;
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_enqueue_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data);
+#section marcel_inline
+static __tbx_inline__ void ma_enqueue_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
+{
+	MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
+	ma_rq_enqueue_entity_list(head, num, prio, data, ma_rq_holder(h));
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_activate_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data);
+#section marcel_inline
+static __tbx_inline__ void ma_activate_task_list(struct list_head *head, int num, int prio, ma_holder_t *h, void *data)
+{
+	ma_activate_running_task_list(head, num, prio, h, data);
+	ma_enqueue_task_list(head, num, prio, h, data);
 }
 
 /* deactivation */

@@ -1793,7 +1793,7 @@ switch_tasks:
 
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
-	if (ma_test_thread_flag(TIF_NEED_RESCHED)) {
+	if (ma_test_thread_flag(TIF_NEED_RESCHED) && ma_thread_preemptible()) {
 		sched_debug("need resched\n");
 		goto need_resched;
 	}

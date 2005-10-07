@@ -70,7 +70,7 @@ do { \
 
 #define ma_preempt_check_resched() \
 do { \
-        if (tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED))) \
+        if (tbx_unlikely(ma_test_thread_flag(TIF_NEED_RESCHED)) && ma_thread_preemptible()) \
                 ma_preempt_schedule(); \
 } while (0)
 

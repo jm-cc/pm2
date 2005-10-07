@@ -274,6 +274,25 @@ static __tbx_inline__ void ma_rq_enqueue_task(marcel_task_t *p, ma_prio_array_t 
 	ma_rq_enqueue_entity(&p->sched.internal,array);
 }
 
+#section marcel_functions
+static __tbx_inline__ void ma_rq_task_list_add(struct list_head *head, marcel_task_t *p, ma_prio_array_t *array);
+#section marcel_inline
+static __tbx_inline__ void ma_rq_task_list_add(struct list_head *head, marcel_task_t *p, ma_prio_array_t *array) {
+	list_add_tail(&p->sched.internal.run_list, head);
+	p->sched.internal.holder_data = array;
+}
+
+#section marcel_functions
+static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int prio, int num, ma_prio_array_t *array);
+#define ma_rq_enqueue_task_list ma_rq_enqueue_entity_list
+#section marcel_inline
+static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int prio, int num, ma_prio_array_t *array)
+{
+	list_splice(head, array->queue + prio);
+	__ma_set_bit(prio, array->bitmap);
+	array->nr_active += num;
+}
+
 /*
  * Switch the active and expired arrays.
  */

@@ -30,6 +30,8 @@ Generic options
 
 Compilation support options
   --cflags	print pre-processor and compiler flags
+  --early-ldflags	print early library linking information (to be put at
+  		beginning of your link command)
   --libs	print library linking information
   --libs-only-L	only print the -L/-R part of --libs
   --libs-only-l only print the -l part of --libs
@@ -456,6 +458,7 @@ pm2config_parse_cmdline() # args
     [ $# -ge 1 ] || pm2config_usage 1
 
     _cflags=false
+    _libs_early_ldflags=false
     _libs_L=false
     _libs_l=false
     _flavor=
@@ -511,6 +514,9 @@ pm2config_parse_cmdline() # args
 	;;
     --cflags)
        	_cflags=true
+       	;;
+    --early-ldflags)
+       	_libs_early_ldflags=true
        	;;
     --libs)
        	_libs_L=true
@@ -674,6 +680,9 @@ pm2config_parse_cmdline() # args
     fi
     if [ "$_libs_l" = true ]; then
 	_libs="$_libs $_PM2CONFIG_LD_LIBS"
+    fi
+    if [ "$_libs_early_ldflags" = true ] ; then
+        _libs="$_libs $_PM2CONFIG_EARLY_LDFLAGS"
     fi
     echo $_libs
     exit 0

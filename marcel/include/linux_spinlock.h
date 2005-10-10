@@ -47,14 +47,9 @@
 #depend "asm/linux_spinlock.h[]"
 #endif
 
-#section marcel_macros
+#section types
 #ifndef MA__LWPS
 #ifdef MARCEL_DEBUG_SPINLOCK
-
-//#define SPIN_ABORT()
-#define SPIN_ABORT() RAISE(PROGRAM_ERROR) 
-	
-#define MA_SPINLOCK_MAGIC  0x1D244B3C
 typedef struct {
         unsigned long magic;
         volatile unsigned long lock;
@@ -63,6 +58,27 @@ typedef struct {
         char *owner;
         int oline;
 } ma_spinlock_t;
+#else /* MARCEL_DEBUG_SPINLOCK */
+/*
+ * gcc versions before ~2.95 have a nasty bug with empty initializers.
+ */
+#if (__GNUC__ > 2)
+  typedef struct { } ma_spinlock_t;
+  #define MA_SPIN_LOCK_UNLOCKED { }
+#else
+  typedef struct { int gcc_is_buggy; } ma_spinlock_t;
+  #define MA_SPIN_LOCK_UNLOCKED { 0 }
+#endif
+#endif /* MARCEL_DEBUG_SPINLOCK */
+#endif /* MA__LWPS */
+#section marcel_macros
+#ifndef MA__LWPS
+#ifdef MARCEL_DEBUG_SPINLOCK
+
+//#define SPIN_ABORT()
+#define SPIN_ABORT() RAISE(PROGRAM_ERROR) 
+	
+#define MA_SPINLOCK_MAGIC  0x1D244B3C
 #define MA_SPIN_LOCK_UNLOCKED { .magic=MA_SPINLOCK_MAGIC, .lock=0, .babble=10, .module=__FILE__ , .owner=NULL , .oline=0}
 
 #define ma_spin_lock_init(x) \
@@ -156,17 +172,6 @@ typedef struct {
                 (x)->lock = 0; \
         } while (0)
 #else /* MARCEL_DEBUG_SPINLOCK */
-/*
- * gcc versions before ~2.95 have a nasty bug with empty initializers.
- */
-#if (__GNUC__ > 2)
-  typedef struct { } ma_spinlock_t;
-  #define MA_SPIN_LOCK_UNLOCKED { }
-#else
-  typedef struct { int gcc_is_buggy; } ma_spinlock_t;
-  #define MA_SPIN_LOCK_UNLOCKED { 0 }
-#endif
-
 /*
  * If MA__LWPS is unset, declare the _raw_* definitions as nops
  */

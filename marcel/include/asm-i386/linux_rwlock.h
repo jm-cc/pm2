@@ -35,7 +35,9 @@
  */
 
 #section macros
+#ifdef MA__LWPS
 #define MA_HAVE_RWLOCK 1
+#endif
 
 #section marcel_types
 /*
@@ -48,11 +50,14 @@
  * irq-safe write-lock, but readers can get non-irqsafe
  * read-locks.
  */
+#ifdef MA__LWPS
 typedef struct {
 	volatile unsigned int lock;
 } ma_rwlock_t;
+#endif
 
 #section marcel_macros
+#ifdef MA__LWPS
 #define MA_RW_LOCK_BIAS		 0x01000000
 #define MA_RW_LOCK_BIAS_STR	"0x01000000"
 #define MA_RW_LOCK_UNLOCKED (ma_rwlock_t) { MA_RW_LOCK_BIAS }
@@ -120,6 +125,7 @@ typedef struct {
 						else \
 							__ma_build_write_lock_ptr(rw, helper); \
 					} while (0)
+#endif
 
 #section marcel_inline
 /*
@@ -133,6 +139,7 @@ typedef struct {
  */
 /* the spinlock helpers are in arch/i386/kernel/semaphore.c */
 
+#ifdef MA__LWPS
 static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
 {
 	__ma_build_read_lock(rw, "__ma_read_lock_failed");
@@ -142,12 +149,16 @@ static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
 {
 	__ma_build_write_lock(rw, "__ma_write_lock_failed");
 }
+#endif
 
 #section marcel_macros
+#ifdef MA__LWPS
 #define _ma_raw_read_unlock(rw)		asm volatile("lock ; incl %0" :"=m" ((rw)->lock) : : "memory")
 #define _ma_raw_write_unlock(rw)	asm volatile("lock ; addl $" MA_RW_LOCK_BIAS_STR ",%0":"=m" ((rw)->lock) : : "memory")
+#endif
 
 #section marcel_inline
+#ifdef MA__LWPS
 static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
 {
 	ma_atomic_t *count = (ma_atomic_t *)lock;
@@ -156,6 +167,7 @@ static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
 	ma_atomic_add(MA_RW_LOCK_BIAS, count);
 	return 0;
 }
+#endif
 
 #section marcel_types
 #section marcel_structures

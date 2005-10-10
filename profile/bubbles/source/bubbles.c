@@ -371,19 +371,34 @@ bubble_t *getBubble (unsigned long ptr) {
  * Thread
  */
 
+typedef enum {
+	THREAD_BLOCKED,
+	THREAD_SLEEPING,
+	THREAD_RUNNING,
+} state_t;
 typedef struct {
 	entity_t entity;
-	int active;
+	state_t state;
 } thread_t;
 
 static inline thread_t * thread_of_entity(entity_t *e) {
 	return tbx_container_of(e,thread_t,entity);
 }
 
-void setThread(SWFShape shape, unsigned thick, float width, float height, int prio, int active) {
+void setThread(SWFShape shape, unsigned thick, float width, float height, int prio, state_t state) {
 	float xStep = width/3, yStep = height/9;
 
-	SWFShape_setLine(shape,thick,active?255:0,0,0,255);
+	switch (state) {
+	case THREAD_BLOCKED:
+		SWFShape_setLine(shape,thick,0,0,0,255);
+		break;
+	case THREAD_SLEEPING:
+		SWFShape_setLine(shape,thick,0,255,0,255);
+		break;
+	case THREAD_RUNNING:
+		SWFShape_setLine(shape,thick,255,0,0,255);
+		break;
+	}
 	SWFShape_movePen(shape,    xStep,0);
 	SWFShape_drawCurve(shape, 2*xStep,2*yStep,-xStep,yStep);
 	SWFShape_drawCurve(shape,-2*xStep,2*yStep, xStep,yStep);
@@ -461,7 +476,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	SWFDisplayItem_moveTo(b->entity.lastitem,b->entity.x,b->entity.y);
 }
 void setThreadRecur(SWFShape shape, thread_t *t) {
-	setThread(shape,t->entity.thick,t->entity.width,t->entity.height,t->entity.prio,t->active);
+	setThread(shape,t->entity.thick,t->entity.width,t->entity.height,t->entity.prio,t->state);
 }
 
 float nextX;
@@ -495,7 +510,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	}
 }
 void setThreadRecur(SWFShape shape, thread_t *t) {
-	setThread(shape, t->entity.thick, t->entity.width, t->entity.height, t->entity.prio, t->active);
+	setThread(shape, t->entity.thick, t->entity.width, t->entity.height, t->entity.prio, t->state);
 }
 void setEntityRecur(SWFShape shape, entity_t *e) {
 	switch(e->type) {
@@ -1633,6 +1648,24 @@ int main(int argc, char *argv[]) {
 				case FUT_SET_THREAD_NAME_CODE:
 					/* TODO */
 					break;
+				case SCHED_THREAD_BLOCKED: {
+					thread_t *t = getThread(ev.native.user.tid);
+					if (t->entity.type!=THREAD) gasp();
+					printf("thread %p(%p) going to sleep\n",(void*)ev.native.user.tid,t);
+					t->state = THREAD_BLOCKED;
+					updateEntity(&t->entity);
+					pause(DELAYTIME);
+					break;
+				}
+				case SCHED_THREAD_WAKE: {
+					thread_t *t = getThread(ev.native.user.tid);
+					if (t->entity.type!=THREAD) gasp();
+					printf("thread %p(%p) going to sleep\n",(void*)ev.native.user.tid,t);
+					t->state = THREAD_SLEEPING;
+					updateEntity(&t->entity);
+					pause(DELAYTIME);
+					break;
+				}
 				case FUT_SWITCH_TO_CODE: {
 					thread_t *tprev = getThread(ev.native.user.tid);
 					thread_t *tnext = getThread(ev.native.param[0]);
@@ -1640,8 +1673,9 @@ int main(int argc, char *argv[]) {
 					if (tprev->entity.type!=THREAD) gasp();
 					if (tnext->entity.type!=THREAD) gasp();
 					printf("switch from thread %p(%p) to thread %p(%p)\n",(void *)ev.native.user.tid,tprev,(void *)ev.native.param[0],tnext);
-					tprev->active = 0;
-					tnext->active = 1;
+					if (tprev->state == THREAD_RUNNING)
+						tprev->state = THREAD_SLEEPING;
+					tnext->state = THREAD_RUNNING;
 					updateEntity(&tprev->entity);
 					updateEntity(&tnext->entity);
 					pause(DELAYTIME);

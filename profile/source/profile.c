@@ -48,7 +48,7 @@
 
 #endif
 
-#define PROF_BUFFER_SIZE  (2*1024*1024)
+#define PROF_BUFFER_SIZE  (16*1024*1024)
 
 volatile unsigned __pm2_profile_active = FALSE;
 int fkt_ok;

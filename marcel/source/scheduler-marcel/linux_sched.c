@@ -483,6 +483,7 @@ repeat_lock_task:
 	if (old_state & state) {
 		/* on s'occupe de la réveiller */
 		p->sched.state = MA_TASK_RUNNING;
+		PROF_EVENT1(sched_thread_wake, p);
 		if (MA_TASK_IS_BLOCKED(p)) { /* not running or runnable */
 			/*
 			 * Fast-migrate the task if it's not running or runnable
@@ -1616,6 +1617,7 @@ need_resched_atomic:
 
 	if (go_to_sleep) {
 		sched_debug("schedule: go to sleep\n");
+		PROF_EVENT(sched_thread_blocked);
 		prev_as_next = NULL;
 		prev_as_rq = ma_dontsched_rq(LWP_SELF);
 		prev_as_prio = MA_IDLE_PRIO;

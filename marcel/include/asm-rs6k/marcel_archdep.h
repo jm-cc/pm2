@@ -14,8 +14,7 @@
  * General Public License for more details.
  */
 
-#ifndef ARCHDEP_EST_DEF
-#define ARCHDEP_EST_DEF
+#section marcel_macros
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
@@ -32,5 +31,4 @@
 extern void set_sp(unsigned long);
 extern unsigned long get_sp(void);
 
-#endif
 #section marcel_variables

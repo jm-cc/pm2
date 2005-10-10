@@ -14,8 +14,7 @@
  * General Public License for more details.
  */
 
-#ifndef ARCHDEP_EST_DEF
-#define ARCHDEP_EST_DEF
+#section marcel_macros
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
@@ -57,6 +56,5 @@
   __asm__ __volatile__("addq %0, $31, $sp" \
                        : : "r" (val) : "memory" )
 
-#endif
-
 #section marcel_variables
+

@@ -22,12 +22,6 @@ inline static
 void marcel_postexit_internal(marcel_t cur,
 			      marcel_postexit_func_t func, any_t arg);
 
-/* ==== get current thread or LWP id ==== */
-marcel_t marcel_self(void)
-{
-  return __marcel_self();
-}
-
 /****************************************************************/
 /****************************************************************
  *                Création des threads

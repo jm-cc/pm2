@@ -103,7 +103,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "scheduler/marcel-master___marcel_inline.h"
 TBX_VISIBILITY_POP
 
-#  include "asm/marcel-master___all.h"
+//#  include "asm/marcel-master___all.h"
 //#  include "marcel-master___all.h"
 //#  include "scheduler/marcel-master___all.h"
 #endif

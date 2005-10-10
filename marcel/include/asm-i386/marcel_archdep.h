@@ -14,8 +14,7 @@
  * General Public License for more details.
  */
 
-#ifndef ARCHDEP_EST_DEF
-#define ARCHDEP_EST_DEF
+#section marcel_macros
 
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
@@ -88,5 +87,4 @@ static __tbx_inline__ long get_gs(void)
   } while (0)
 
 
-#endif
 #section marcel_variables

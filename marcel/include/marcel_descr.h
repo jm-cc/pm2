@@ -145,6 +145,14 @@ struct marcel_task {
 #endif
 };
 
+#section inline
+#depend "[marcel_inline]"
+/* ==== get current thread or LWP id ==== */
+extern MARCEL_INLINE marcel_t marcel_self(void)
+{
+  return __marcel_self();
+}
+
 #section marcel_macros
 #define MARCEL_ALIGN    64L
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
@@ -154,8 +162,10 @@ struct marcel_task {
 static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void);
 #section marcel_inline
 #depend "sys/isomalloc_archdep.h"
-#depend "asm/marcel_archdep.h"
+#depend "asm/marcel_archdep.h[marcel_macros]"
 #depend "marcel_threads.h[marcel_macros]"
+#depend "[marcel_structures]"
+#depend "[marcel_macros]"
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
 static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
 {
@@ -176,16 +186,6 @@ static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
 		      MAL(sizeof(marcel_task_t)));
 #endif
 #endif
-}
-
-#section functions
-marcel_t marcel_self(void);
-
-#section marcel_inline
-/* ==== get current thread or LWP id ==== */
-extern __tbx_inline__ marcel_t marcel_self(void)
-{
-  return __marcel_self();
 }
 
 #section marcel_macros

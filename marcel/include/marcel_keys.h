@@ -62,6 +62,7 @@ static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_ke
 #section inline
 #depend "marcel_descr.h[types]"
 #depend "marcel_descr.h[marcel_structures]"
+#depend "marcel_descr.h[marcel_inline]"
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
 #ifdef MA__DEBUG

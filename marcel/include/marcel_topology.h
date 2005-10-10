@@ -86,7 +86,7 @@ typedef unsigned ma_cpu_set_t;
 #depend "scheduler-marcel/linux_runqueues.h[types]"
 #depend "[types]"
 #ifdef MARCEL_SMT_IDLE
-#depend "asm/linux_atomic.h[types]"
+#depend "asm/linux_atomic.h[marcel_types]"
 #endif
 struct marcel_topo_level {
 	enum marcel_topo_level_t type;

@@ -17,3 +17,6 @@
 #section common
 
 #depend "asm-generic/marcel_ctx.h[]"
+#section structures
+#section macros
+#section marcel_macros

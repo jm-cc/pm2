@@ -16,3 +16,6 @@
 
 #section common
 #depend "asm-generic/linux_atomic.h[]"
+#section marcel_macros
+#section marcel_types
+#section marcel_inline

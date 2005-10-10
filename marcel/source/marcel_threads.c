@@ -22,6 +22,12 @@ inline static
 void marcel_postexit_internal(marcel_t cur,
 			      marcel_postexit_func_t func, any_t arg);
 
+/* ==== get current thread or LWP id ==== */
+marcel_t marcel_self(void)
+{
+  return __marcel_self();
+}
+
 /****************************************************************/
 /****************************************************************
  *                Création des threads
@@ -398,6 +404,22 @@ void marcel_atexit(marcel_atexit_func_t func, any_t arg)
 
 	LOG_OUT();
 }
+
+/****************************************************************
+ *                Préemption
+ */
+
+
+void marcel_thread_preemption_enable(void)
+{
+	__marcel_thread_preemption_enable();
+}
+
+void marcel_thread_preemption_disable(void)
+{
+	__marcel_thread_preemption_disable();
+}
+
 
 /****************************************************************
  *                Terminaison

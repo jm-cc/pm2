@@ -73,6 +73,7 @@ extern marcel_lwp_t __main_lwp;
 
 #ifdef MA__LWPS
 
+#depend "asm/linux_rwlock.h[marcel_types]"
 // Verrou protégeant la liste chaînée des LWPs
 extern ma_rwlock_t __lwp_list_lock;
 extern struct list_head list_lwp_head;
@@ -85,6 +86,8 @@ extern unsigned  ma__nb_lwp;
 #section marcel_functions
 static __tbx_inline__ void lwp_list_lock_read(void);
 #section marcel_inline
+#depend "asm/linux_spinlock.h[marcel_macros]"
+#depend "asm/linux_spinlock.h[marcel_inline]"
 static __tbx_inline__ void lwp_list_lock_read(void)
 {
 #ifdef MA__LWPS

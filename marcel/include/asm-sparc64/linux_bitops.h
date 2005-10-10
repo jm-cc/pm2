@@ -16,3 +16,5 @@
 
 #section common
 #depend "asm-generic/linux_bitops.h[]"
+#section marcel_inline
+#section marcel_macros

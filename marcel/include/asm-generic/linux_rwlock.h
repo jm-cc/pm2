@@ -15,7 +15,6 @@
  */
 
 #section common
-#depend "asm/linux_atomic.h[]"
 #include "tbx_compiler.h"
 /*
  * Similar to:
@@ -36,12 +35,14 @@
  *	2 of the License, or (at your option) any later version.
  */
 
+#section macros
 #section marcel_macros
 #ifdef MA__LWPS
 #define MA_RW_LOCK_BIAS		 0x01000000
 #endif
 
 #section marcel_types
+#depend "asm/linux_atomic.h[]"
 /*
  * Read-write spinlocks, allowing multiple readers
  * but only one writer.
@@ -57,6 +58,7 @@ typedef ma_atomic_t ma_rwlock_t;
 #endif
 
 #section marcel_macros
+#depend "asm/linux_atomic.h[]"
 #ifdef MA__LWPS
 #define MA_RW_LOCK_UNLOCKED MA_ATOMIC_INIT(MA_RW_LOCK_BIAS);
 
@@ -66,6 +68,7 @@ typedef ma_atomic_t ma_rwlock_t;
 #endif
 
 #section marcel_inline
+#depend "asm/linux_atomic.h[]"
 /*
  * On x86, we implement read-write locks as a 32-bit counter
  * with the high bit (sign) being the "contended" bit.
@@ -94,12 +97,14 @@ static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
 #endif
 
 #section marcel_macros
+#depend "asm/linux_atomic.h[]"
 #ifdef MA__LWPS
 #define _ma_raw_read_unlock(rw) ma_atomic_inc(rw)
 #define _ma_raw_write_unlock(rw) ma_atomic_add(MA_RW_LOCK_BIAS,rw);
 #endif
 
 #section marcel_inline
+#depend "asm/linux_atomic.h[]"
 #ifdef MA__LWPS
 static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *rw)
 {

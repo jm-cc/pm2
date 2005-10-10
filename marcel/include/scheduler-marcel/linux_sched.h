@@ -49,6 +49,7 @@ extern unsigned long ma_nr_running(void);
 //};
 
 #section marcel_variables
+#depend "asm/linux_rwlock.h[marcel_types]"
 /*
  * This serializes "schedule()" and also protects
  * the run-queue from deletions/modifications (but

@@ -43,3 +43,4 @@
                        : : "r" (val) : "memory" )
 
 #endif
+#section marcel_variables

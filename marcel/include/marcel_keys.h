@@ -60,7 +60,8 @@ extern int marcel_key_present[MAX_KEY_SPECIFIC];
 #section functions
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
 #section inline
-#depend "marcel_threads.h[marcel_structures]"
+#depend "marcel_descr.h[types]"
+#depend "marcel_descr.h[marcel_structures]"
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
 #ifdef MA__DEBUG

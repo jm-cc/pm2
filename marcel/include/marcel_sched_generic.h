@@ -279,9 +279,9 @@ static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
   return 1 & (mask >> vp);
 }
 
-#section functions
+#section marcel_functions
 static __tbx_inline__ unsigned marcel_current_vp(void);
-#section inline
+#section marcel_inline
 #depend "sys/marcel_lwp.h[marcel_variables]"
 static __tbx_inline__ unsigned marcel_current_vp(void)
 {

@@ -20,3 +20,4 @@
 #section marcel_macros
 #depend "asm/linux_system.h[marcel_macros]"
 #define pm2_compareexchange(p,o,n,s) __ma_cmpxchg(p,(o),(n),(s))
+#section marcel_inline

@@ -34,6 +34,7 @@ extern ma_spinlock_t ma_compareexchange_spinlock;
 #section marcel_functions
 static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long new, int size);
 #section marcel_inline
+#include <stdlib.h>
 static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long new, int size)
 {
   unsigned long prev;
@@ -82,7 +83,7 @@ static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, uns
 			break;
 		}
 	default:
-		MA_BUG();
+		abort();
     }
     ma_spin_unlock_softirq(&ma_compareexchange_spinlock);
   }

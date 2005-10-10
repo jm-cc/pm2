@@ -31,7 +31,7 @@
 
 #section marcel_functions
 static __tbx_inline__ long ma_generic_ffs(long x);
-#section marcel_inline
+#section inline
 static __tbx_inline__ long ma_generic_ffs(long x)
 {
 	int r = 1;

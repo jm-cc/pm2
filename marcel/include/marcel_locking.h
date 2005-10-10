@@ -23,7 +23,7 @@
 #define MARCEL_LOCK_INIT MA_SPIN_LOCK_UNLOCKED
 
 #section types
-#depend "linux_spinlock.h[marcel_types]"
+#depend "linux_spinlock.h[types]"
 typedef ma_spinlock_t marcel_lock_t;
 
 #section marcel_macros

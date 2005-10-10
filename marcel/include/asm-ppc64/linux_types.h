@@ -16,3 +16,5 @@
 
 #section common
 #depend "asm-generic/linux_types.h[]"
+#section macros
+#section marcel_types

@@ -17,7 +17,7 @@
 #section common
 #depend "asm/marcel_compareexchange.h[macros]"
 #depend "asm/marcel_compareexchange.h[marcel_macros]"
-#depend "asm/linux_spinlock.h[]"
+#depend "asm/marcel_compareexchange.h[marcel_inline]"
 #include "tbx_compiler.h"
 
 /*
@@ -34,6 +34,7 @@
 #ifdef MA_HAVE_COMPAREEXCHANGE
 typedef struct { volatile int counter; } ma_atomic_t;
 #else
+#depend "asm/linux_spinlock.h[]"
 typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #endif
 
@@ -41,6 +42,7 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_ATOMIC_INIT(i)	{ (i) }
 #else
+#depend "asm/linux_spinlock.h[]"
 #define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
 #endif
 
@@ -75,6 +77,7 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 		old = ret; \
 	}
 #else
+#depend "asm/linux_spinlock.h[]"
 #define MA_ATOMIC_ADD_RETURN(test) \
 	int old, new; \
 	ma_spin_lock_softirq(&v->lock); \
@@ -218,4 +221,3 @@ static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
 #define ma_smp_mb__after_atomic_dec()   ma_barrier()
 #define ma_smp_mb__before_atomic_inc()  ma_barrier()
 #define ma_smp_mb__after_atomic_inc()   ma_barrier()
-#section marcel_structures

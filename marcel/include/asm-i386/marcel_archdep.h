@@ -89,3 +89,4 @@ static __tbx_inline__ long get_gs(void)
 
 
 #endif
+#section marcel_variables

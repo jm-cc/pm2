@@ -21,3 +21,4 @@
 #depend "asm/linux_intrinsics.h[marcel_functions]"
 #depend "asm/linux_intrinsics.h[marcel_macros]"
 #define pm2_compareexchange(p,o,n,s) ma_ia64_cmpxchg(acq,(p),(o),(n),(s))
+#section marcel_inline

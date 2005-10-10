@@ -37,9 +37,29 @@
 #section macros
 #define MA_HAVE_RWLOCK 1
 
+#section marcel_types
+/*
+ * Read-write spinlocks, allowing multiple readers
+ * but only one writer.
+ *
+ * NOTE! it is quite common to have readers in interrupts
+ * but no interrupt writers. For those circumstances we
+ * can "mix" irq-safe locks - any writer needs to get a
+ * irq-safe write-lock, but readers can get non-irqsafe
+ * read-locks.
+ */
+typedef struct {
+	volatile unsigned int lock;
+} ma_rwlock_t;
+
 #section marcel_macros
 #define MA_RW_LOCK_BIAS		 0x01000000
 #define MA_RW_LOCK_BIAS_STR	"0x01000000"
+#define MA_RW_LOCK_UNLOCKED (ma_rwlock_t) { MA_RW_LOCK_BIAS }
+
+#define ma_rwlock_init(x)	do { *(x) = MA_RW_LOCK_UNLOCKED; } while(0)
+
+#define ma_rwlock_is_locked(x) ((x)->lock != MA_RW_LOCK_BIAS)
 
 #define __ma_build_read_lock_ptr(rw, helper)   \
 	asm volatile(MA_LOCK_PREFIX "subl $1,(%0)\n\t" \
@@ -101,8 +121,43 @@
 							__ma_build_write_lock_ptr(rw, helper); \
 					} while (0)
 
+#section marcel_inline
+/*
+ * On x86, we implement read-write locks as a 32-bit counter
+ * with the high bit (sign) being the "contended" bit.
+ *
+ * The __tbx_inline__ assembly is non-obvious. Think about it.
+ *
+ * Changed to use the same technique as rw semaphores.  See
+ * semaphore.h for details.  -ben
+ */
+/* the spinlock helpers are in arch/i386/kernel/semaphore.c */
+
+static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
+{
+	__ma_build_read_lock(rw, "__ma_read_lock_failed");
+}
+
+static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
+{
+	__ma_build_write_lock(rw, "__ma_write_lock_failed");
+}
+
+#section marcel_macros
+#define _ma_raw_read_unlock(rw)		asm volatile("lock ; incl %0" :"=m" ((rw)->lock) : : "memory")
+#define _ma_raw_write_unlock(rw)	asm volatile("lock ; addl $" MA_RW_LOCK_BIAS_STR ",%0":"=m" ((rw)->lock) : : "memory")
+
+#section marcel_inline
+static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
+{
+	ma_atomic_t *count = (ma_atomic_t *)lock;
+	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, count))
+		return 1;
+	ma_atomic_add(MA_RW_LOCK_BIAS, count);
+	return 0;
+}
+
 #section marcel_types
 #section marcel_structures
 #section marcel_functions
-#section marcel_inline
 #section types

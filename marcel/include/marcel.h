@@ -44,7 +44,7 @@ __TBX_BEGIN_DECLS
 #include "marcel-master___macros.h"
 #include "scheduler/marcel-master___macros.h"
 
-#include "asm/marcel-master___types.h"
+//#include "asm/marcel-master___types.h"
 #include "marcel-master___types.h"
 #include "scheduler/marcel-master___types.h"
 
@@ -94,7 +94,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  include "marcel-master___marcel_functions.h"
 #  include "scheduler/marcel-master___marcel_functions.h"
 
-//#  include "asm/marcel-master___marcel_variables.h"
+#  include "asm/marcel-master___marcel_variables.h"
 #  include "marcel-master___marcel_variables.h"
 #  include "scheduler/marcel-master___marcel_variables.h"
 

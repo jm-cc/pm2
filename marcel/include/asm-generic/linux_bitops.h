@@ -185,6 +185,8 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
 #section marcel_functions
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b);
 #section marcel_inline
+#depend "linux_bitops.h[inline]"
+#include <stdlib.h>
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 {
 	int i;
@@ -193,6 +195,6 @@ static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 			return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
 	}
 	if (i*MA_BITS_PER_LONG==140)
-		MA_BUG();
+		abort();
 	return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
 }

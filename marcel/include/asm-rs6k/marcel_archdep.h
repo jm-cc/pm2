@@ -33,3 +33,4 @@ extern void set_sp(unsigned long);
 extern unsigned long get_sp(void);
 
 #endif
+#section marcel_variables

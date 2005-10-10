@@ -31,6 +31,7 @@
  */
 
 #section marcel_functions
+#include <stdlib.h>
 /*
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
  * Note 2: xchg has side effect, so that attribute volatile is necessary,
@@ -65,7 +66,7 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 				:"memory");
 			break;
 		default:
-			MA_BUG();
+			abort();
 	}
 	return x;
 }
@@ -111,7 +112,7 @@ static __tbx_inline__ unsigned long __ma_cmpxchg(volatile void *ptr, unsigned lo
 				     : "memory");
 		return prev;
 	default:
-		MA_BUG();
+		abort();
 	}
 	return old;
 }

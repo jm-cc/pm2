@@ -274,4 +274,3 @@ __asm__ __volatile__(MA_LOCK_PREFIX "orl %0,%1" \
 #define ma_smp_mb__before_atomic_inc()	ma_barrier()
 #define ma_smp_mb__after_atomic_inc()	ma_barrier()
 
-#section marcel_structures

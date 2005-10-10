@@ -54,3 +54,4 @@ extern void call_ST_FLUSH_WINDOWS(void);
                          : : "r" (val) : "memory")
 
 #endif
+#section marcel_variables

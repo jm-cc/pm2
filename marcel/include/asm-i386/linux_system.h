@@ -93,6 +93,7 @@ static __tbx_inline__ void __ma_set_64bit_var (unsigned long long *ptr,
  * Note 2: xchg has side effect, so that attribute volatile is necessary,
  *	  but generally the primitive is invalid, *ptr is output argument. --ANK
  */
+#include <stdlib.h>
 static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
 {
 	switch (size) {
@@ -115,7 +116,7 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 				:"memory");
 			break;
 		default:
-			MA_BUG();
+			abort();
 	}
 	return x;
 }
@@ -150,7 +151,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, 
 				     : "memory");
 		return prev;
 	default:
-		MA_BUG();
+		abort();
 	}
 	return old;
 }

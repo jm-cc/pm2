@@ -144,12 +144,13 @@ void marcel_run(marcel_t pid, any_t arg);
 void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
-__tbx_inline__ static void marcel_thread_preemption_enable(void);
-__tbx_inline__ static void marcel_thread_preemption_disable(void);
-#section inline
+void marcel_thread_preemption_enable(void);
+void marcel_thread_preemption_disable(void);
+
+#section marcel_inline
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"
-__tbx_inline__ static void marcel_thread_preemption_enable(void)
+static __tbx_inline__ void __marcel_thread_preemption_enable(void)
 {
 #ifdef MA__DEBUG
 	MA_BUG_ON(!SELF_GETMEM(not_preemptible));
@@ -157,11 +158,20 @@ __tbx_inline__ static void marcel_thread_preemption_enable(void)
         ma_barrier();
 	MARCEL_SELF->not_preemptible--;
 }
+extern __tbx_inline__ void marcel_thread_preemption_enable(void)
+{
+	__marcel_thread_preemption_enable();
+}
 
-__tbx_inline__ static void marcel_thread_preemption_disable(void)
+static __tbx_inline__ void __marcel_thread_preemption_disable(void)
 {
 	MARCEL_SELF->not_preemptible++;
         ma_barrier();
+}
+
+extern __tbx_inline__ void marcel_thread_preemption_disable(void)
+{
+	__marcel_thread_preemption_disable();
 }
 
 

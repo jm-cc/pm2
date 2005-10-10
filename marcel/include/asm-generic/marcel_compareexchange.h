@@ -18,6 +18,7 @@
 #include "tbx_compiler.h"
 #depend "asm/marcel_testandset.h"
 
+#section macros
 #section marcel_variables
 extern ma_spinlock_t ma_compareexchange_spinlock;
 
@@ -28,6 +29,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 #section marcel_inline
 #depend "linux_spinlock.h"
 #depend "asm/linux_types.h"
+#include <stdlib.h>
 static __tbx_inline__ unsigned long
 pm2_compareexchange(volatile void *ptr, unsigned long old,
 		unsigned long new, int size)
@@ -62,7 +64,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
                         break;
                 }
 	default:
-		MA_BUG();
+		abort();
 	}
 	ma_spin_unlock_softirq(&ma_compareexchange_spinlock);
 	return prev;

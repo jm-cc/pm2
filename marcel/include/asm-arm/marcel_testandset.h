@@ -16,3 +16,6 @@
 
 #section common
 #depend "asm-generic/marcel_testandset.h[]"
+#section macros
+#section marcel_inline
+#section marcel_macros

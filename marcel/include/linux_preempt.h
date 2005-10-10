@@ -42,7 +42,7 @@ asmlinkage TBX_PROTECTED void ma_preempt_schedule(void);
 
 #section marcel_macros
 #depend "linux_thread_info.h[]"
-#depend "asm/linux_hardirq.h[marcel_macros]"
+#depend "marcel_compiler.h[marcel_compiler]"
 #define ma_preempt_disable() \
 do { \
         ma_preempt_count_inc(); \

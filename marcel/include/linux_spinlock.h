@@ -16,6 +16,7 @@
 
 #section common
 #include "tbx_compiler.h"
+#depend "linux_preempt.h[marcel_macros]"
 /*
  * similar to:
  * include/linux/spinlock.h - generic locking declarations
@@ -209,12 +210,14 @@ typedef struct {
 
 /* Where's read_trylock? */
 #section marcel_functions
+#depend "asm/linux_spinlock.h[types]"
 #if defined(MA__LWPS)
 TBX_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 TBX_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock);
 #endif
 
 #section marcel_macros
+#depend "linux_interrupt.h[marcel_macros]"
 #if defined(MA__LWPS)
 #define ma_spin_lock(lock) \
 do { \
@@ -496,5 +499,5 @@ static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
 	return ma_preempt_count();
 #endif
 }
-#section marcel_types
+#section types
 #section marcel_structures

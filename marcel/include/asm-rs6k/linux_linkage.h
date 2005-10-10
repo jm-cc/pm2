@@ -16,3 +16,4 @@
 
 #section common
 #depend "asm-generic/linux_linkage.h[]"
+#section marcel_macros

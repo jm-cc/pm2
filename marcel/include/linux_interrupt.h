@@ -23,6 +23,9 @@
 
 #section marcel_macros
 /* SoftIRQ primitives.  */
+#ifndef ma_preempt_count
+#error grah
+#endif
 #define ma_local_bh_disable() \
 		do { ma_preempt_count() += MA_SOFTIRQ_OFFSET; ma_barrier(); } while (0)
 
@@ -122,6 +125,8 @@ enum
 };
 
 #section marcel_inline
+#depend "asm/linux_bitops.h[]"
+#depend "asm/linux_bitops.h[marcel_macros]"
 #ifdef MA__LWPS
 static __tbx_inline__ int ma_tasklet_trylock(struct ma_tasklet_struct *t)
 {

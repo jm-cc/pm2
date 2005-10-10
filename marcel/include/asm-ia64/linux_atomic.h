@@ -238,4 +238,3 @@ ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v)
 #define ma_smp_mb__before_atomic_inc()	ma_barrier()
 #define ma_smp_mb__after_atomic_inc()	ma_barrier()
 
-#section marcel_structures

@@ -1658,9 +1658,9 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				case SCHED_THREAD_WAKE: {
-					thread_t *t = getThread(ev.native.user.tid);
+					thread_t *t = getThread(ev.native.param[0]);
 					if (t->entity.type!=THREAD) gasp();
-					printf("thread %p(%p) going to sleep\n",(void*)ev.native.user.tid,t);
+					printf("thread %p(%p) waking up\n",(void*)ev.native.user.tid,t);
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
 					pause(DELAYTIME);

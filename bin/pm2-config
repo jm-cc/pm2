@@ -682,7 +682,7 @@ pm2config_parse_cmdline() # args
 	_libs="$_libs $_PM2CONFIG_LD_LIBS"
     fi
     if [ "$_libs_early_ldflags" = true ] ; then
-        _libs="$_libs $_PM2CONFIG_EARLY_LDFLAGS"
+        _libs="$_PM2CONFIG_EARLY_LDFLAGS $_libs"
     fi
     echo $_libs
     exit 0

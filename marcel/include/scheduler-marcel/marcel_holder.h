@@ -38,11 +38,12 @@ enum marcel_entity {
 /* verrouillage: toujours dans l'ordre contenant puis contenu:
  * runqueue, puis bulle sur la runqueues, puis bulles contenues dans la
  * bulle, mais sur la même runqueue, puis sous-runqueue, puis bulles
- * contenues dan bulle, mais sur la sous-runqueue, etc... */
+ * contenues dans bulle, mais sur la sous-runqueue, etc... */
 struct ma_holder {
 	enum marcel_holder type;
 	ma_spinlock_t lock;
 	unsigned long nr_running, nr_uninterruptible;
+	unsigned long nr_scheduled;
 };
 
 #section types
@@ -54,6 +55,7 @@ typedef struct ma_holder ma_holder_t;
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
 	.nr_running = 0, \
 	.nr_uninterruptible = 0, \
+	.nr_scheduled = 0, \
 }
 
 #section marcel_functions
@@ -63,6 +65,7 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
 	h->nr_running = h->nr_uninterruptible = 0;
+	h->nr_scheduled = 1;
 }
 
 #section marcel_functions
@@ -292,12 +295,13 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h);
 static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
 #ifdef MA__BUBBLES
-	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER;
+	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER
+			&& ma_bubble_holder(hh)->sched.sched_holder != hh;
 			hh=ma_bubble_holder(hh)->sched.sched_holder);
 #else
 	hh = h;
 #endif
-	return hh?ma_rq_holder(hh):NULL;
+	return hh && ma_holder_type(hh) == MA_RUNQUEUE_HOLDER?ma_rq_holder(hh):NULL;
 }
 
 /* Activations et désactivations nécessitent que le holder soit verrouillé. */

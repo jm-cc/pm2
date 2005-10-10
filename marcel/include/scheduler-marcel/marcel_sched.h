@@ -407,6 +407,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		ma_set_task_lwp(new_task, LWP_SELF);
 		new_task->sched.internal.timestamp = marcel_clock();
 		ma_activate_running_task(new_task,h);
+		h->nr_scheduled++;
 		ma_holder_rawunlock(h);
 
 		marcel_ctx_set_new_stack(new_task,
@@ -421,6 +422,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		h = ma_task_sched_holder(marcel_self()->father);
 		ma_holder_rawlock(h);
 		ma_enqueue_task(marcel_self()->father, h);
+		h->nr_scheduled--;
 		ma_holder_unlock_softirq(h); // sortie du mode interruption
 
 		MTRACE("Early start", marcel_self());

@@ -148,7 +148,7 @@ struct marcel_bubble {
  * been released), returns 0 if ma_schedule() can continue with entity nextent
  * (prevrq and rq have been kept locked) */
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
-		ma_runqueue_t *prevrq, ma_runqueue_t *rq,
+		ma_holder_t *prevh, ma_runqueue_t *rq,
 		ma_holder_t **nexth, int idx);
 
 /* called from ma_scheduler_tick() when the timeslice for the currently running

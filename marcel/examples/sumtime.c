@@ -22,7 +22,7 @@
 //#define dprintf(fmt,args...) fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
 
-#define MAX_BUBBLE_LEVEL 6
+#define MAX_BUBBLE_LEVEL 2
 //#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
@@ -50,10 +50,11 @@ any_t sum(any_t arg)
   snprintf(name,sizeof(name),"%d-%d",j->inf,j->sup);
   marcel_setname(marcel_self(),name);
 
-  dprintf("sum(%p,%p,%p) started\n",j,&j1,&j2);
+  dprintf("sum(%s,%p,%p,%p) started\n",name,j,&j1,&j2);
 
   if(j->inf == j->sup) {
     j->res = j->inf;
+    dprintf("base %s\n",name);
     marcel_sem_V(&j->sem);
     return NULL;
   }
@@ -86,6 +87,7 @@ any_t sum(any_t arg)
   }
 
   j->res = j1.res+j2.res;
+  dprintf("res %d\n",j->res);
   marcel_sem_V(&j->sem);
   return NULL;
 }

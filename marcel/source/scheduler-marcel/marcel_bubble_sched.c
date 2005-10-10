@@ -485,6 +485,26 @@ les #ifdef dans les arguments de macro...
 	sched_debug("locking bubble %p\n",bubble);
 	ma_holder_rawlock(&bubble->hold);
 
+	/* bulle fraîche, on l'amène près de nous */
+	if (!bubble->settled) {
+		ma_runqueue_t *rq2 = ma_lwp_rq(LWP_SELF);
+		bubble_sched_debug("settling bubble %p\n", bubble);
+		bubble->settled = 1;
+		if (rq != rq2) {
+			ma_deactivate_entity(&bubble->sched, &rq->hold);
+			ma_holder_rawunlock(&rq->hold);
+			ma_holder_rawunlock(&bubble->hold);
+
+			ma_holder_rawlock(&rq2->hold);
+			PROF_EVENT2(bubble_sched_switchrq, bubble, rq2);
+			ma_holder_rawlock(&bubble->hold);
+			ma_activate_entity(&bubble->sched, &rq2->hold);
+			ma_holder_unlock(&rq2->hold);
+			ma_holder_rawunlock(&bubble->hold);
+			LOG_RETURN(NULL);
+		}
+	}
+
 	/* en principe, on arrive à l'éviter */
 	if (list_empty(&bubble->runningentities)) {
 		bubble_sched_debug("warning: bubble %p empty\n", bubble);
@@ -531,7 +551,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int power) {
 			continue;
 		b = ma_bubble_entity(e);
 		if (b->hold.nr_running > power) {
-			//bubble_sched_debug("bubble %p has %lu running, too much for rq with power %d\n", b, b->hold.nr_running, power);
+			bubble_sched_debug("bubble %p has %lu running, too much for rq %s with power %d\n", b, b->hold.nr_running, rq->name, power);
 			return b;
 		}
 	}
@@ -550,11 +570,13 @@ static int see(struct marcel_topo_level *level) {
 	if (find_interesting_bubble(rq, power)) {
 		ma_holder_rawlock(&rq->hold);
 		if ((b = find_interesting_bubble(rq, power))) {
-			for (rq2 = ma_lwp_rq(LWP_SELF); rq2 &&
-				MA_CPU_WEIGHT(&rq2->cpuset) < b->hold.nr_running;
-				rq2 = rq2->father);
-			if (rq2) {
+			for (rq2 = rq; rq2 && rq2->father &&
+				MA_CPU_WEIGHT(&rq2->father->cpuset) <= b->hold.nr_running;
+				rq2 = rq2->father)
+				bubble_sched_debug("looking up to rq %s\n", rq2->name);
+			if (rq2 && MA_CPU_ISSET(LWP_NUMBER(LWP_SELF),&rq2->cpuset)) {
 				ma_holder_rawlock(&b->hold);
+				bubble_sched_debug("rq %s seems good\n", rq2->name);
 				ma_deactivate_entity(&b->sched, &rq->hold);
 				ma_holder_rawunlock(&b->hold);
 			} else {
@@ -566,6 +588,7 @@ static int see(struct marcel_topo_level *level) {
 		if (b) {
 			ma_holder_rawlock(&rq2->hold);
 			ma_holder_rawlock(&b->hold);
+			bubble_sched_debug("stealing bubble %p\n",b);
 			PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 			ma_activate_entity(&b->sched, &rq2->hold);
 			ma_holder_rawunlock(&b->hold);

@@ -108,6 +108,7 @@ struct marcel_bubble {
 	//en fait non: c'est sched_holder
 	/* list of running entities */
 	struct list_head runningentities;
+	int settled;
 #endif
 };
 
@@ -129,7 +130,8 @@ struct marcel_bubble {
 #define MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 	.nr_active = 0, \
 	.next = NULL, \
-	.runningentities = LIST_HEAD_INIT((b).runningentities),
+	.runningentities = LIST_HEAD_INIT((b).runningentities), \
+	.settled = 0,
 #endif
 
 #define MARCEL_BUBBLE_INITIALIZER(b) { \

@@ -37,9 +37,11 @@ struct marcel_topo_level marcel_machine_level[] = {
 		.cpuset = MA_CPU_FULL,
 		.arity = 0,
 		.sons = NULL,
+		.father = NULL,
 #ifdef MARCEL_SMT_IDLE
 		.nbidle = MA_ATOMIC_INIT(0),
 #endif
+		.sched = NULL,
 	},
 	{
 		.cpuset = MA_CPU_EMPTY,
@@ -171,6 +173,7 @@ static void __marcel_init look_cpuinfo(void) {
 				core_level[j].type = MARCEL_LEVEL_CORE;
 				core_level[j].number = j;
 				core_level[j].cpuset = corecpuset[i];
+				core_level[j].sched = NULL;
 				mdebug("core %d has cpuset %lx\n",j,corecpuset[i]);
 				j++;
 			}
@@ -236,6 +239,7 @@ static void __marcel_init look_libnuma(void) {
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].number=i;
 		node_level[i].cpuset=cpuset=buffer[0];
+		node_level[i].sched = NULL;
 		mdebug("node %d has cpuset %lx\n",i,cpuset);
 		for (j=0;j<get_nb_lwps();j++)
 			if (MA_CPU_ISSET(j,&cpuset))
@@ -267,6 +271,7 @@ static void look_cpu(void) {
 		MA_CPU_SET(i,&cpu_level[i].cpuset);
 		cpu_level[i].arity=0;
 		cpu_level[i].sons=NULL;
+		cpu_level[i].sched=NULL;
 	}
 	MA_CPU_ZERO(&cpu_level[i].cpuset);
 

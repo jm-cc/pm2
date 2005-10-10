@@ -143,7 +143,7 @@ $(MOD_C_PREPROC): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: $(MOD_GEN_C_INC)
 $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -P -DPREPROC $(CFLAGS) $< > $@
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(CFLAGS) $< > $@
 
 # Dependances vers *.S
 #---------------------------------------------------------------------
@@ -160,7 +160,7 @@ $(MOD_S_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.S
 $(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).si: %.S
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -P -DPREPROC $(CFLAGS) $< > $@
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(CFLAGS) $< > $@
 
 
 # Dependances vers *.i

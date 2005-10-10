@@ -639,6 +639,9 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 #endif
 	}
 
+	/* l'insertion a pu changer le holder */
+	h = ma_task_sched_holder(p);
+
 	MA_BUG_ON(!h);
 	ma_holder_lock_softirq(h);
 

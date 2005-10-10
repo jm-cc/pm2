@@ -3223,7 +3223,10 @@ static void __marcel_init sched_init(void)
 	if (marcel_topo_nblevels>1)
 		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
 #endif
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),marcel_topo_nblevels-1,get_nb_lwps());
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),
+			marcel_topo_nblevels==1 && get_nb_lwps()>1 ?
+				2 : marcel_topo_nblevels-1,
+			get_nb_lwps());
 
 	/*
 	 * We have to do a little magic to get the first

@@ -14,8 +14,7 @@
  * General Public License for more details.
  */
 
-#ifndef ARCHDEP_EST_DEF
-#define ARCHDEP_EST_DEF
+#section marcel_macros
  
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
@@ -96,4 +95,4 @@ __u64 __getReg(const int whichReg);
 #define get_sp() ((unsigned long)__getReg(_MA_IA64_REG_SP))
 #endif
 
-#endif
+#section marcel_variables

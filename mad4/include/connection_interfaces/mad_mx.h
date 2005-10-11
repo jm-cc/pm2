@@ -137,12 +137,13 @@ mad_mx_irecv(p_mad_track_t,
              //p_mad_connection_t,
              struct iovec *, uint32_t);
 
+//void
+//mad_mx_add_pre_posted(p_mad_adapter_t,
+//                      p_mad_track_t);
 void
 mad_mx_add_pre_posted(p_mad_adapter_t,
+                      p_mad_track_set_t,
                       p_mad_track_t);
-
-void
-mad_mx_clean_pre_posted(p_mad_iovec_t);
 
 void
 mad_mx_remove_all_pre_posted(p_mad_adapter_t);

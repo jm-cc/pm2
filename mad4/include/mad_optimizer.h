@@ -1,7 +1,11 @@
 #ifndef MAD_OPTIMIZER_H
 #define MAD_OPTIMIZER_H
 
-tbx_bool_t
+
+//tbx_bool_t
+//mad_s_optimize(p_mad_adapter_t);
+
+p_mad_iovec_t
 mad_s_optimize(p_mad_adapter_t);
 
 void

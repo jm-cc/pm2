@@ -26,8 +26,16 @@ typedef enum e_mad_iovec_control_size {
     MAD_IOVEC_UNBLOCKED_SIZE     = MAD_IOVEC_UNBLOCKED_NB_ELM     * sizeof(mad_iovec_header_t)
 } mad_iovec_control_size_t, *p_mad_iovec_control_size_t;
 
+//p_mad_iovec_t
+//mad_iovec_create(unsigned int   seq);
+
 p_mad_iovec_t
-mad_iovec_create(unsigned int   seq);
+mad_iovec_create(ntbx_process_lrank_t remote_rank,
+                 p_mad_channel_t  channel,
+                 unsigned int     sequence,
+                 tbx_bool_t       need_rdv,
+                 mad_send_mode_t    send_mode,
+                 mad_receive_mode_t receive_mode);
 
 void
 mad_iovec_free(p_mad_iovec_t, tbx_bool_t);
@@ -41,48 +49,75 @@ mad_iovec_init_allocators(void);
 void
 mad_iovec_allocators_exit();
 
-unsigned int
-mad_iovec_begin_struct_iovec(p_mad_iovec_t mad_iovec,
-                             rank_t my_rank);
-unsigned int
+//unsigned int
+//mad_iovec_begin_struct_iovec(p_mad_iovec_t mad_iovec,
+//                             rank_t my_rank);
+void
+mad_iovec_begin_struct_iovec(p_mad_iovec_t mad_iovec);
+
+//unsigned int
+//mad_iovec_add_data_header(p_mad_iovec_t mad_iovec,
+//                          unsigned int index,
+//                          channel_id_t msg_channel_id,
+//                          sequence_t msg_seq_nb,
+//                          length_t msg_len);
+//
+//unsigned int
+//mad_iovec_add_rdv(p_mad_iovec_t mad_iovec,
+//                  unsigned int index,
+//                  channel_id_t msg_channel_id,
+//                  sequence_t msg_seq_nb);
+//
+//
+//unsigned int
+//mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
+//                  unsigned int index,
+//                  channel_id_t msg_channel_id,
+//                  sequence_t msg_seq_nb);
+
+
+void
 mad_iovec_add_data_header(p_mad_iovec_t mad_iovec,
-                          unsigned int index,
                           channel_id_t msg_channel_id,
                           sequence_t msg_seq_nb,
                           length_t msg_len);
 
-unsigned int
+void
 mad_iovec_add_rdv(p_mad_iovec_t mad_iovec,
-                  unsigned int index,
                   channel_id_t msg_channel_id,
                   sequence_t msg_seq_nb);
 
 
-unsigned int
+void
 mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
-                  unsigned int index,
                   channel_id_t msg_channel_id,
                   sequence_t msg_seq_nb);
 
 
-//unsigned int
-//mad_iovec_add_not_ready(p_mad_iovec_t mad_iovec,
-//                        unsigned int index,
-//                        channel_id_t msg_channel_id,
-//                        sequence_t msg_seq_nb);
-
+//void
+//mad_iovec_add_data(p_mad_iovec_t mad_iovec,
+//                   void *data,
+//                   size_t length,
+//                   unsigned int index);
+//
+//void
+//mad_iovec_add_data2(p_mad_iovec_t mad_iovec,
+//                    void *data,
+//                    size_t length,
+//                    unsigned int index);
 
 void
 mad_iovec_add_data(p_mad_iovec_t mad_iovec,
                    void *data,
-                   size_t length,
-                   unsigned int index);
+                   size_t length);
 
 void
 mad_iovec_add_data2(p_mad_iovec_t mad_iovec,
                     void *data,
                     size_t length,
-                    unsigned int index);
+                    int index);
+
+
 
 p_mad_iovec_t
 mad_iovec_get(p_tbx_slist_t list,
@@ -132,9 +167,8 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
 
 
 
-tbx_bool_t
-mad_iovec_exploit_msg2(p_mad_adapter_t a,
-                      void * msg);
+void
+mad_iovec_update_global_header(p_mad_iovec_t);
 
 
 #endif /* MAD_IOVEC_BUILDER_H */

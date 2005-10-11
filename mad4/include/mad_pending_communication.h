@@ -1,124 +1,66 @@
 #ifndef MAD_PENDING_COMMUNICATION_H
 #define MAD_PENDING_COMMUNICATION_H
 
+#define NB_ENTRIES 32
+#define NB_DEST    32
+
 typedef struct s_mad_track_t *p_mad_track_t ;
 
-//typedef struct s_mad_track_t{
-//    uint32_t       id;
-//    tbx_bool_t     pre_posted;
-//
-//    p_mad_track_t  remote_tracks[32];
-//
-//    p_mad_driver_specific_t specific;
-//}mad_track_t;
 
-//typedef struct s_mad_track_set_t{
-//    // tableau d'association methode d'envoi/piste
-//    // clé : cpy/rdv/rdma -> tableau de track
-//    p_tbx_htable_t tracks_htable;
-//    p_mad_track_t *tracks_tab;
-//
-//    uint32_t       nb_track;
-//
-//    p_tbx_slist_t  pipeline; // liste de mad_iovec
-//    p_mad_iovec_t *pipeline;
-//    uint32_t       pipeline_length;
-//    uint32_t       pipeline_cur_nb_elm;
-//    tbx_bool_t     started;
-//
-//    p_mad_driver_specific_t specific;
-//}mad_track_set_t, *p_mad_track_set_t;
+typedef struct s_mad_iovec{
+    ntbx_process_lrank_t    my_rank;
+    ntbx_process_lrank_t    remote_rank;
 
-/*******************************************/
+    p_mad_channel_t         channel; // pour retrouver la
+                                     // liste des unpack
+    sequence_t              sequence;
 
-///typedef struct s_mad_s_track_t{
-///    uint32_t       id;
-///    tbx_bool_t     pre_posted;
-///
-///    p_mad_track_t  remote_tracks[32];
-///
-///    p_mad_driver_specific_t specific;
-///}mad_s_track_t;
+    size_t                  length;
+    unsigned int            nb_packs; // nb d'entrées relatives
+                                      // à des données
+    unsigned int            total_nb_seg; // données + contrôles
+
+    tbx_bool_t              need_rdv;
+
+    mad_send_mode_t         send_mode;
+    mad_receive_mode_t      receive_mode;
+    int                     matrix_entrie;
+
+    p_mad_track_t           track;
+
+    struct iovec            data [NB_ENTRIES];
+
+    p_mad_driver_specific_t specific;
+} mad_iovec_t, *p_mad_iovec_t;
 
 
-///typedef struct s_mad_s_track_set_t{
-///    // tableau d'association methode d'envoi/piste
-///    // clé : cpy/rdv/rdma -> tableau de track
-///    p_tbx_htable_t tracks_htable;
-///    p_mad_track_t *tracks_tab;
-///
-///    uint32_t       nb_track;
-///
-///    p_mad_iovec_t *pipeline;
-///    uint32_t       pipeline_length;
-///    uint32_t       pipeline_cur_nb_elm;
-///    tbx_bool_t     started;
-///
-///    p_mad_driver_specific_t specific;
-///}mad_s_track_set_t, *p_mad_s_track_set_t;
 
-
-/*********************************/
 typedef struct s_mad_track_t{
-    uint32_t       id;
-    //char *methode_transfert = "cpy" | "rdv" | "rdma"
-
-    tbx_bool_t     pre_posted;
-
-    p_mad_pipeline_t pipeline;
-    int status;
-
-    p_mad_track_t  remote_tracks[32];
-
+    uint32_t         id;
+    tbx_bool_t       pre_posted;
+    int              status; // nothing, progress ou no_progress
+    p_mad_track_t    remote_tracks[NB_DEST];
     p_mad_driver_specific_t specific;
 }mad_track_t;
 
 typedef struct s_mad_track_set_t{
     p_tbx_htable_t tracks_htable;
     p_mad_track_t *tracks_tab;
-
     uint32_t       nb_track;
 
-    uint32_t max_nb_pending_iov; //-> 1 en emission,
-                                 //   nb_track en reception
-    uint32_t cur_nb_pending_iov;
+    // Pour l'émission
+    p_mad_iovec_t cur;
+    p_mad_iovec_t next;
 
-    p_mad_pipeline_t in_more;
+    // Pour la réception
+    p_mad_iovec_t *reception_curs; //taille = nb_tracks = 2
+    uint32_t       nb_pending; // nb de pistes en
+                               // attente de réception
 
     p_mad_track_t  cpy_track;
     p_mad_track_t  rdv_track;
 
     p_mad_driver_specific_t specific;
 }mad_track_set_t, *p_mad_track_set_t;
-
-
-
-/******************************/
-
-typedef struct s_mad_iovec{
-    ntbx_process_lrank_t    my_rank;
-    ntbx_process_lrank_t    remote_rank;
-
-    p_mad_channel_t         channel; // utile en réception
-    sequence_t              sequence;
-
-    size_t                  length;
-    unsigned int            total_nb_seg;
-
-    unsigned int            area_nb_seg[32];
-    struct iovec            data       [32];
-
-    mad_send_mode_t         send_mode;
-    mad_receive_mode_t      receive_mode;
-
-    mad_send_mode_t         next_send_mode;
-    mad_receive_mode_t      next_receive_mode;
-
-    //char *methode_transfert
-
-    p_mad_track_t track;
-
-    p_mad_driver_specific_t specific;
-} mad_iovec_t, *p_mad_iovec_t;
 
 #endif // MAD_PENDING_COMMUNICATION_H

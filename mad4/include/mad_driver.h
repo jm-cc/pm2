@@ -34,7 +34,6 @@ typedef struct s_mad_driver
     /* Common use fields */
     TBX_SHARED;
     p_mad_madeleine_t           madeleine;
-    //char                       *name;
     char                       *network_name;
     char                       *device_name;
 
@@ -59,6 +58,8 @@ typedef struct s_mad_driver
     int max_unexpected;
     int unexpected_recovery_threshold;
     int unexpected_buffer_length;
+
+    int nb_pack_to_send;
 
     /* Driver specific */
   p_mad_driver_specific_t     specific;

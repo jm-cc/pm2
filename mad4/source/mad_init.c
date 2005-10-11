@@ -218,6 +218,8 @@ driver_init_1(p_mad_madeleine_t      madeleine,
                              "default");
     initialize_tracks(adapter);
   }
+
+  mad_driver->nb_pack_to_send = 0;
   /***/
 
   TBX_FREE(network_name);

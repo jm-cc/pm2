@@ -153,11 +153,11 @@ main(int argc, char **argv) {
         ////DISP("################################");
         //mad_wait_packs(connection);
         //
-        //mad_pack(connection,
-        //         buffer2,
-        //         len2,
-        //         mad_send_CHEAPER,
-        //         mad_receive_CHEAPER);
+        mad_pack(connection,
+                 buffer2,
+                 len2,
+                 mad_send_CHEAPER,
+                 mad_receive_CHEAPER);
         //
         ////DISP("################################");
         //
@@ -169,11 +169,11 @@ main(int argc, char **argv) {
         //
         ////DISP("################################");
         //
-        //mad_pack(connection,
-        //         buffer4,
-        //         len4,
-        //         mad_send_CHEAPER,
-        //         mad_receive_CHEAPER);
+        mad_pack(connection,
+                 buffer4,
+                 len4,
+                 mad_send_CHEAPER,
+                 mad_receive_CHEAPER);
 
         //DISP("################################");
 
@@ -232,11 +232,11 @@ main(int argc, char **argv) {
         ////DISP("################################");
         //mad_wait_unpacks(connection);
         //
-        //mad_unpack(connection,
-        //           buffer2,
-        //           len2,
-        //           mad_send_CHEAPER,
-        //           mad_receive_CHEAPER);
+        mad_unpack(connection,
+                   buffer2,
+                   len2,
+                   mad_send_CHEAPER,
+                   mad_receive_CHEAPER);
 
         //DISP("################################");
 
@@ -246,10 +246,26 @@ main(int argc, char **argv) {
         //           len3,
         //           mad_send_CHEAPER,
         //           mad_receive_CHEAPER);
+<<<<<<< .mine
 
         //DISP("################################");
 
+        mad_unpack(connection,
+                   buffer4,
+                   len4,
+                   mad_send_CHEAPER,
+                   mad_receive_CHEAPER);
+
+        //DISP("################################");
+
+=======
+
+        //DISP("################################");
+
+>>>>>>> .r12209
         //mad_unpack(connection,
+<<<<<<< .mine
+=======
         //           buffer4,
         //           len4,
         //           mad_send_CHEAPER,
@@ -258,6 +274,7 @@ main(int argc, char **argv) {
         //DISP("################################");
 
         //mad_unpack(connection,
+>>>>>>> .r12209
         //           buffer5,
         //           len5,
         //           mad_send_CHEAPER,
@@ -271,9 +288,9 @@ main(int argc, char **argv) {
         mad_end_unpacking(connection);
 
         verify_data(buffer1, len1);
-        //verify_data(buffer2, len2);
+        verify_data(buffer2, len2);
         //verify_data(buffer3, len3);
-        //verify_data(buffer4, len4);
+        verify_data(buffer4, len4);
         //verify_data(buffer5, len5);
 
         TBX_FREE(buffer1);

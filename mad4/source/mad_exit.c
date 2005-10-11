@@ -910,22 +910,22 @@ mad_dir_channels_exit(p_mad_madeleine_t madeleine)
 static void
 mad_close_track(p_mad_adapter_t adapter,
                 p_mad_track_t track){
-  p_mad_driver_interface_t interface = NULL;
-  LOG_IN();
-  interface = adapter->driver->interface;
-
-  if(track->pre_posted){
-    interface->remove_all_pre_posted(adapter);
-  }
-
-  mad_pipeline_free(track->pipeline);
-
-  if(interface->close_track){
-    interface->close_track(track);
-  }
-
-  TBX_FREE(track);
-  LOG_OUT();
+//  p_mad_driver_interface_t interface = NULL;
+//  LOG_IN();
+//  interface = adapter->driver->interface;
+//
+//  if(track->pre_posted){
+//    interface->remove_all_pre_posted(adapter);
+//  }
+//
+//  mad_pipeline_free(track->pipeline);
+//
+//  if(interface->close_track){
+//    interface->close_track(track);
+//  }
+//
+//  TBX_FREE(track);
+//  LOG_OUT();
 }
 
 
@@ -933,26 +933,26 @@ mad_close_track(p_mad_adapter_t adapter,
 static void
 mad_close_track_set(p_mad_adapter_t adapter,
                     p_mad_track_set_t track_set){
-  p_mad_driver_interface_t interface = NULL;
-  unsigned int i = 0;
-
-  LOG_IN();
-  interface = adapter->driver->interface;
-
-  for(i = 0; i < track_set->nb_track; i++){
-    mad_close_track(adapter, track_set->tracks_tab[i]);
-  }
-
-  tbx_htable_cleanup_and_free(track_set->tracks_htable);
-  TBX_FREE(track_set->tracks_tab);
-
-  mad_pipeline_free(track_set->in_more);
-
-  //if(interface->close_track_set)
-  //  interface->close_track_set(track_set);
-
-  TBX_FREE(track_set);
-  LOG_OUT();
+//  p_mad_driver_interface_t interface = NULL;
+//  unsigned int i = 0;
+//
+//  LOG_IN();
+//  interface = adapter->driver->interface;
+//
+//  for(i = 0; i < track_set->nb_track; i++){
+//    mad_close_track(adapter, track_set->tracks_tab[i]);
+//  }
+//
+//  tbx_htable_cleanup_and_free(track_set->tracks_htable);
+//  TBX_FREE(track_set->tracks_tab);
+//
+//  mad_pipeline_free(track_set->in_more);
+//
+//  //if(interface->close_track_set)
+//  //  interface->close_track_set(track_set);
+//
+//  TBX_FREE(track_set);
+//  LOG_OUT();
 }
 
 
@@ -1045,29 +1045,13 @@ mad_dir_driver_exit(p_mad_madeleine_t madeleine)
 	  tbx_htable_free(mad_adapter->channel_htable);
 	  mad_adapter->channel_htable = NULL;
 
-          //DISP("-->free established cnx hatble");
           tbx_htable_cleanup_and_free(mad_adapter->established_connection_htable);
-          //DISP("<--free established cnx hatble");
 
-          //DISP("-->free s_ready_msg_list");
           tbx_slist_free(mad_adapter->s_ready_msg_list);
           mad_adapter->s_ready_msg_list = NULL;
-          //DISP("<--free s_ready_msg_list");
 
-          //DISP("-->free r_ready_msg_list");
-          //tbx_slist_free(mad_adapter->r_ready_msg_list);
-          //mad_adapter->r_ready_msg_list = NULL;
-          //DISP("<--free r_ready_msg_list");
-
-          //DISP("-->free unexpected_list");
-          //tbx_slist_free(mad_adapter->unexpected_msg_list);
-          //mad_adapter->unexpected_msg_list = NULL;
-          //DISP("<--free unexpected_list");
-
-          //DISP("-->free waiting acknowlegment_list");
           tbx_slist_free(mad_adapter->waiting_acknowlegment_list);
           mad_adapter->waiting_acknowlegment_list = NULL;
-          //DISP("<--free waiting acknowlegment_list");
 
           TBX_FREE(mad_adapter);
 	  mad_adapter = NULL;

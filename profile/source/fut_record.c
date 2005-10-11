@@ -211,27 +211,29 @@ int TBX_NOINST fut_header (unsigned long code, ... )
 void TBX_NOINST __cyg_profile_func_enter (void *this_fn,
 					  void *call_site)
 {
+#ifdef IA64_ARCH
 	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
 		   FUT_GCC_INSTRUMENT_ENTRY_CODE,
-#ifdef IA64_ARCH
-		   *((void**)this_fn)
+		   *((void**)this_fn));
 #else
-		   this_fn
+	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
+		   FUT_GCC_INSTRUMENT_ENTRY_CODE,
+		   this_fn);
 #endif
-		  );
 }
 
 void TBX_NOINST __cyg_profile_func_exit  (void *this_fn,
 					  void *call_site)
 {
+#ifdef IA64_ARCH
 	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
 		   FUT_GCC_INSTRUMENT_EXIT_CODE,
-#ifdef IA64_ARCH
-		   *((void**)this_fn)
+		   *((void**)this_fn));
 #else
-		   this_fn
+	FUT_PROBE1(FUT_GCC_INSTRUMENT_KEYMASK,
+		   FUT_GCC_INSTRUMENT_EXIT_CODE,
+		   this_fn);
 #endif
-		  );
 }
 
 #endif /* PROFILE_NEW_FORMAT */

@@ -17,12 +17,8 @@
 #section common
 #depend "asm-generic/marcel_ctx_types.h[types]"
 
-#section types
-/* set/longjmp based on get/setcontext due to the stack register */	
-
-#include <ucontext.h>
-
 #section structures
+#include <ucontext.h>
 typedef struct __marcel_ctx_tag { /* C++ doesn't like tagless structs.  */
 
 
@@ -32,11 +28,11 @@ ucontext_t jbuf;
 
 } marcel_ctx_t[1];
 
-#section marcel_functions
+#section macros
+#include <ucontext.h>
 int ia64_setjmp(ucontext_t *ucp);
 int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 
-#section macros
 #define marcel_ctx_getcontext(ctx) \
   ia64_setjmp(&(ctx[0].jbuf))
 #define marcel_ctx_setjmp(ctx) marcel_ctx_getcontext(ctx)
@@ -59,7 +55,7 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
   do { \
 	  /* NOTE: sur ia64 on ne sait pas précisément combien il faut de marge !! */ \
     unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
-    unsigned long _sp = ((unsigned long)(top)) - _local - 0x200; \
+    unsigned long _sp = ((unsigned long)(top)) - MAL(_local) - 0x200; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(_sp, new_task->stack_base); \
   } while (0)
@@ -68,7 +64,7 @@ int TBX_NORETURN ia64_longjmp(const ucontext_t *ucp, int ret);
 #define marcel_ctx_switch_stack(from_task, to_task, top, cur_top) \
   do { \
     unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
-    unsigned long _sp = ((unsigned long)(top)) - _local - 0x200; \
+    unsigned long _sp = ((unsigned long)(top)) - MAL(_local) - 0x200; \
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
   } while (0)

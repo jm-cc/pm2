@@ -62,7 +62,6 @@ mad_pack(p_mad_connection_t   connection,
     unsigned int              seq         = -1;
     tbx_bool_t need_rdv = tbx_false;
     LOG_IN();
-    //DISP("-->pack");
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -77,15 +76,16 @@ mad_pack(p_mad_connection_t   connection,
     mad_iovec = mad_iovec_create(remote_rank, channel,
                                  seq, need_rdv,
                                  send_mode, receive_mode);
-    mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 2);
+    if(need_rdv)
+        mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 0);
+    else
+        mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 2);
 
     tbx_slist_append(driver->s_msg_slist, mad_iovec);
     tbx_slist_append(connection->packs_list, mad_iovec);
 
     driver->nb_pack_to_send++;
     LOG_OUT();
-    //DISP("<-- pack");
-
 }
 
 void
@@ -141,23 +141,14 @@ mad_wait_packs(p_mad_connection_t connection){
     driver      = adapter->driver;
 
     // flush packs
-    while(connection->need_reception){
-        TBX_GET_TICK(t1);
-        mad_s_make_progress(adapter);
-        TBX_GET_TICK(t2);
-        mad_r_make_progress(adapter);
-        TBX_GET_TICK(t3);
-
-        chrono_s_mkp_2        += TBX_TIMING_DELAY(t1, t2);
-        chrono_r_mkp_2        += TBX_TIMING_DELAY(t2, t3);
-        nb_chronos_mad_r_mkp_2++;
-        nb_chronos_mad_s_mkp_2++;
-    }
-
     while(connection->packs_list->length){
         TBX_GET_TICK(t1);
         mad_s_make_progress(adapter);
         TBX_GET_TICK(t2);
+
+        if(connection->need_reception){
+            mad_r_make_progress(adapter);
+        }
 
         chrono_s_mkp_2        += TBX_TIMING_DELAY(t1, t2);
         nb_chronos_mad_s_mkp_2++;
@@ -271,12 +262,11 @@ mad_wait_unpacks(p_mad_connection_t connection){
     adapter = channel->adapter;
     driver = adapter->driver;
 
-    while(channel->need_send){
-        mad_r_make_progress(adapter);
-        mad_s_make_progress(adapter);
-    }
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
+        if(channel->need_send){
+            mad_s_make_progress(adapter);
+        }
     }
     LOG_OUT();
 }

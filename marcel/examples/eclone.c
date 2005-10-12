@@ -70,12 +70,14 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
+#ifndef IA64_ARCH
   clone_init(&clone_var, N);
 
   marcel_create(NULL, NULL, master, NULL);
 
   for(i=0; i<N; i++)
     marcel_create(NULL, NULL, slave, NULL);
+#endif
 
   marcel_end();
 

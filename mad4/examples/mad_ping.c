@@ -175,10 +175,8 @@ client(p_mad_channel_t channel){
             chrono_client_6_7 += TBX_TIMING_DELAY(t6, t7);
             nb_chronos_client++;
         }
-        //DISP("T8");
         mad_end_packing(connection1);
         mad_end_unpacking(connection2);
-        //DISP("T9");
 
         TBX_GET_TICK(t2);
         sum = TBX_TIMING_DELAY(t1, t2);
@@ -273,7 +271,6 @@ server(p_mad_channel_t channel){
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
             mad_wait_packs(connection2);
-            //DISP("T6");
 
             mad_unpack(connection1,
                        buffer_r,
@@ -295,7 +292,6 @@ server(p_mad_channel_t channel){
 
         mad_end_unpacking(connection1);
         mad_end_packing(connection2);
-        //DISP("T12");
 
         // next length
         cur_length*=2;

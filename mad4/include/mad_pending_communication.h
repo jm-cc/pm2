@@ -59,11 +59,6 @@ typedef struct s_mad_track_set_t{
     uint32_t       nb_pending; // nb de pistes en
                                // attente de réception
 
-    // Pour la réception
-    p_mad_iovec_t *reception_curs; //taille = nb_tracks = 2
-    uint32_t       nb_pending; // nb de pistes en
-                               // attente de réception
-
     p_mad_track_t  cpy_track;
     p_mad_track_t  rdv_track;
 

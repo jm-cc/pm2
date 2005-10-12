@@ -258,8 +258,6 @@ mad_iovec_add_data_header(p_mad_iovec_t mad_iovec,
     mad_iovec->data[index].iov_base = header;
     mad_iovec->data[index].iov_len  = MAD_IOVEC_DATA_HEADER_SIZE;
 
-    //DISP_VAL("add data header à l'index", index);
-
     mad_iovec->length += MAD_IOVEC_DATA_HEADER_SIZE;
 
     mad_iovec->total_nb_seg++;
@@ -285,7 +283,6 @@ mad_iovec_add_rdv(p_mad_iovec_t mad_iovec,
     index = mad_iovec->total_nb_seg;
     mad_iovec->data[index].iov_base = header;
     mad_iovec->data[index].iov_len  = MAD_IOVEC_RDV_SIZE;
-    //DISP_VAL("add rdv à l'index", index);
 
     mad_iovec->length += MAD_IOVEC_RDV_SIZE;
 
@@ -310,7 +307,6 @@ mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
     index = mad_iovec->total_nb_seg;
     mad_iovec->data[index].iov_base = header;
     mad_iovec->data[index].iov_len  = MAD_IOVEC_ACK_SIZE;
-    //DISP_VAL("add ack à l'index", index);
 
     mad_iovec->length += MAD_IOVEC_ACK_SIZE;
 
@@ -327,7 +323,6 @@ mad_iovec_add_data(p_mad_iovec_t mad_iovec,
     index = mad_iovec->total_nb_seg;
     mad_iovec->data[index].iov_len = length;
     mad_iovec->data[index].iov_base = data;
-    //DISP_VAL("add data à l'index", index);
 
     mad_iovec->length += length;
     mad_iovec->total_nb_seg++;
@@ -340,7 +335,6 @@ mad_iovec_add_data2(p_mad_iovec_t mad_iovec,
                     size_t length,
                     int index){
     LOG_IN();
-    //index = mad_iovec->total_nb_seg;
     mad_iovec->data[index].iov_len = length;
     mad_iovec->data[index].iov_base = data;
     
@@ -1013,7 +1007,6 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
     tbx_tick_t tick_debut;
     tbx_tick_t tick_fin;
     LOG_IN();
-
     nb_chronos_s_check++;
     TBX_GET_TICK(tick_debut);
 

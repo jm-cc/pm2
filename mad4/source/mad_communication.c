@@ -86,8 +86,6 @@ mad_pack(p_mad_connection_t   connection,
 
     driver->nb_pack_to_send++;
     LOG_OUT();
-    //DISP("<-- pack");
-
 }
 
 void

@@ -71,7 +71,6 @@ mad_send_cur(p_mad_adapter_t adapter,
             s_track_set->status = MAD_MKP_NOTHING_TO_DO;
             goto end;
         }
-        mad_search_next(adapter, s_track_set);
     }
     if(driver->nb_pack_to_send)
         mad_search_next(adapter, s_track_set);
@@ -84,9 +83,6 @@ mad_send_cur(p_mad_adapter_t adapter,
                      cur->data,
                      cur->total_nb_seg);
     s_track_set->status = MAD_MKP_PROGRESS;
- end:
-    driver->nb_pack_to_send -= cur->nb_packs;
-    cur->track->status = MAD_MKP_PROGRESS;
  end:
     LOG_OUT();
 }

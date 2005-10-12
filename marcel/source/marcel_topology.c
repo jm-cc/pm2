@@ -371,6 +371,7 @@ void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 		return marcel_malloc(size, file, line);
 	lock_task();
 	p = numa_alloc_onnode(size, node);
+	unlock_task();
 	if (p == NULL)
 		return marcel_malloc(size, file, line);
 	return p;

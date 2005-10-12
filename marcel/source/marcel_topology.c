@@ -174,6 +174,9 @@ static void __marcel_init look_cpuinfo(void) {
 				core_level[j].number = j;
 				core_level[j].cpuset = corecpuset[i];
 				core_level[j].sched = NULL;
+#ifdef MARCEL_SMT_IDLE
+				ma_atomic_set(&core_level[j].nbidle, 0);
+#endif
 				mdebug("core %d has cpuset %lx\n",j,corecpuset[i]);
 				j++;
 			}

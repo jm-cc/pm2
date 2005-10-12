@@ -60,7 +60,7 @@ get_modules() {
     case $interf in
     text)
 	echo
-	echo "Modules selected: $fl_modules"
+	echo "Modules selected: $fl_modules appli"
 	;;
     dialog)
 	;;
@@ -452,7 +452,7 @@ do_cmdline() { # no_flavor
     cmdline="$cmdline --ext=$fl_ext"
     cmdline="$cmdline --modules=\"\$fl_modules\""
     cmdline="$cmdline --common=\"\$fl_common\""
-    for mod in $fl_modules; do
+    for mod in $fl_modules appli; do
 	cmdline="$cmdline --$mod=\"`eval echo \\$fl_$mod`\""
     done
 }
@@ -463,10 +463,10 @@ show_flavor_text() { # check
     echo "flavor name: $fl_flavor"
     echo "builddir   : $fl_builddir"
     echo "extension  : $fl_ext"
-    echo "modules    : $fl_modules"
+    echo "modules    : $fl_modules appli"
     [ ! -z "$fl_common" ] &&
 	echo "  Common options             : $fl_common"
-    for mod in $fl_modules "" ; do
+    for mod in $fl_modules appli "" ; do
 	module="`echo $mod'             ' | cut -c-6`"
 	[ ! -z "$mod" ] &&
 	    echo "  Module $module with options: `eval echo \\$fl_$mod`"
@@ -520,10 +520,10 @@ show_flavor_dialog() { # check init_text last_text yesno
     text="${text}\n"\
     text="${text}builddir   : $fl_builddir\n"\
     text="${text}extension  : $fl_ext\n"\
-    text="${text}modules    : $fl_modules\n"
+    text="${text}modules    : $fl_modules appli\n"
     [ ! -z "$fl_common" ] &&
 	text="$text  Common options             : $fl_common\n"
-    for mod in $fl_modules "" ; do
+    for mod in $fl_modules appli "" ; do
 	module="`echo $mod'             ' | cut -c-6`"
 	[ ! -z "$mod" ] &&
 	    text="$text  Module $module with options: `eval echo \\$fl_$mod`\n"
@@ -561,7 +561,7 @@ do_edite_text() {
 	get_options all "Options for all modules and applications" "" "" option
 	get_options remove_all "Options to remove from all modules and applications" "" "" option
 	get_options common "Common options" "$fl_all" "$fl_remove_all" option
-	for mod in $fl_modules; do
+	for mod in $fl_modules appli; do
 	    get_options $mod "Options for module $mod" "$fl_all" "$fl_remove_all" option
 	done
 	
@@ -584,7 +584,7 @@ do_edite_dialog() {
 	get_options all "Options for all modules and applications" "" "" option
 	get_options remove_all "Options to remove from all modules and applications" "" "" option
 	get_options common "Common options" "$fl_all" "$fl_remove_all" option
-	for mod in $fl_modules; do
+	for mod in $fl_modules appli; do
 	    get_options $mod "Options for module $mod" "$fl_all" "$fl_remove_all" option
 	done
 	

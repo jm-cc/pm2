@@ -499,8 +499,8 @@ les #ifdef dans les arguments de macro...
 			PROF_EVENT2(bubble_sched_switchrq, bubble, rq2);
 			ma_holder_rawlock(&bubble->hold);
 			ma_activate_entity(&bubble->sched, &rq2->hold);
-			ma_holder_unlock(&rq2->hold);
-			ma_holder_rawunlock(&bubble->hold);
+			ma_holder_rawunlock(&rq2->hold);
+			ma_holder_unlock(&bubble->hold);
 			LOG_RETURN(NULL);
 		}
 	}

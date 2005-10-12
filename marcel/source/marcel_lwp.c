@@ -255,7 +255,8 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
 	  /* La structure devrait être libérée ainsi que
 	   * les piles des threads résidents... 
 	   */
-		  __TBX_FREE(lwp, __FILE__, __LINE__);
+	  marcel_free_node(lwp, sizeof(marcel_lwp_t)
+		  + __ma_per_lwp_size, ma_lwp_node[LWP_NUMBER(lwp)]);
   }
 
   LOG_OUT();

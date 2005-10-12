@@ -13,6 +13,7 @@ typedef struct s_mad_iovec{
 
     p_mad_channel_t         channel; // pour retrouver la
                                      // liste des unpack
+
     sequence_t              sequence;
 
     size_t                  length;
@@ -38,7 +39,6 @@ typedef struct s_mad_iovec{
 typedef struct s_mad_track_t{
     uint32_t         id;
     tbx_bool_t       pre_posted;
-    int              status; // nothing, progress ou no_progress
     p_mad_track_t    remote_tracks[NB_DEST];
     p_mad_driver_specific_t specific;
 }mad_track_t;
@@ -47,6 +47,8 @@ typedef struct s_mad_track_set_t{
     p_tbx_htable_t tracks_htable;
     p_mad_track_t *tracks_tab;
     uint32_t       nb_track;
+
+    int status; // nothing, progress ou no_progress
 
     // Pour l'émission
     p_mad_iovec_t cur;

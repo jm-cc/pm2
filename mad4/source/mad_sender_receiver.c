@@ -42,36 +42,49 @@ mad_send_cur(p_mad_adapter_t adapter,
     p_tbx_slist_t            s_ready_msg_slist = NULL;
     p_mad_driver_interface_t interface         = NULL;
     p_mad_iovec_t cur = NULL;
+
+    tbx_tick_t t1;
+    tbx_tick_t t2;
+
     LOG_IN();
     driver             = adapter->driver;
     s_ready_msg_slist  = adapter->s_ready_msg_list;
     interface          = driver->interface;
 
+    TBX_GET_TICK(t1);
     if(s_track_set->next){
         s_track_set->cur = s_track_set->next;
-
-        mad_search_next(adapter, s_track_set);
+        s_track_set->next = NULL;
 
     } else if(s_ready_msg_slist->length){
         s_track_set->cur = tbx_slist_extract(s_ready_msg_slist);
 
-        mad_search_next(adapter, s_track_set);
     }else {
-        s_track_set->cur = mad_s_optimize(adapter);
+        if(driver->nb_pack_to_send){
+            s_track_set->cur = mad_s_optimize(adapter);
+        } else {
+            s_track_set->status = MAD_MKP_NOTHING_TO_DO;
+            goto end;
+        }
 
         if(!s_track_set->cur){
+            s_track_set->status = MAD_MKP_NOTHING_TO_DO;
             goto end;
         }
         mad_search_next(adapter, s_track_set);
     }
+    if(driver->nb_pack_to_send)
+        mad_search_next(adapter, s_track_set);
+
+    TBX_GET_TICK(t2);
 
     cur = s_track_set->cur;
-
     interface->isend(cur->track,
                      cur->remote_rank,
                      cur->data,
                      cur->total_nb_seg);
-
+    s_track_set->status = MAD_MKP_PROGRESS;
+ end:
     driver->nb_pack_to_send -= cur->nb_packs;
     cur->track->status = MAD_MKP_PROGRESS;
  end:
@@ -87,28 +100,44 @@ mad_s_make_progress(p_mad_adapter_t adapter){
     p_mad_track_t track = NULL;
     mad_mkp_status_t status = MAD_MKP_NO_PROGRESS;
     LOG_IN();
-    driver   = adapter->driver;
-    interface = driver->interface;
+    driver      = adapter->driver;
+    interface   = driver->interface;
     s_track_set = adapter->s_track_set;
-    cur = s_track_set->cur;
-
+    cur         = s_track_set->cur;
+    status      = s_track_set->status;
 
     // amorce
-    if(!cur && driver->nb_pack_to_send){
+    if(status == MAD_MKP_NOTHING_TO_DO){
         mad_send_cur(adapter, s_track_set);
     } else {
-        track = cur->track;
-        status = track->status;
+        track  = cur->track;
+        status = s_track_set->status;
+
+        s_track_set->status = mad_make_progress(adapter, track);
+        status              = s_track_set->status;
 
         if(status == MAD_MKP_PROGRESS){
-            track->status = mad_make_progress(adapter, track);
-            status = track->status;
+            // remontée sur zone utilisateur
+            if(cur->need_rdv){
+                p_mad_madeleine_t      madeleine   = NULL;
+                channel_id_t           channel_id  = 0;
+                p_mad_channel_t        channel     = NULL;
+                p_mad_connection_t     cnx         = NULL;
+                rank_t                 remote_rank = 0;
 
-            if(status == MAD_MKP_PROGRESS){
-                // remonte sur zone utilisateur
+                channel_id  = cur->channel->id;
+                remote_rank = cur->remote_rank;
+                madeleine   = mad_get_madeleine();
+                channel     = madeleine->channel_tab[channel_id];
+                cnx         = tbx_darray_get(channel->out_connection_darray,
+                                             remote_rank);
+
+                mad_iovec_get(cnx->packs_list,
+                              channel_id,
+                              remote_rank,
+                              cur->sequence);
+            } else {
                 mad_iovec_s_check(adapter, cur);
-                // envoi du suivant
-                mad_send_cur(adapter, s_track_set);
             }
 
             // envoi du suivant
@@ -135,7 +164,9 @@ treat_unexpected(void){
     //int i = 0;
     //int unexpected_recovery_threshold = 0;
     //LOG_IN();
-    //
+
+    FAILURE("unexpected pas encore supporté");
+
     //madeleine = mad_get_madeleine();
     //nb_channels = madeleine->nb_channels;
     //
@@ -196,7 +227,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     r_track_set = adapter->r_track_set;
 
     // on traite les unexpected
-    treat_unexpected();
+    //treat_unexpected();
 
     if(r_track_set->status == MAD_MKP_NOTHING_TO_DO)
         goto end;
@@ -207,48 +238,45 @@ mad_r_make_progress(p_mad_adapter_t adapter){
         if(mad_iovec){
             j++;
 
-            track  = mad_iovec->track;
-            status = track->status;
+            track               = mad_iovec->track;
+            r_track_set->status = mad_make_progress(adapter, track);
+            status              = r_track_set->status;
 
-            if(status == MAD_MKP_PROGRESS || (track->pre_posted)){
-                track->status = mad_make_progress(adapter, track);
-                status = track->status;
+            // si des données sont reçues
+            if(status == MAD_MKP_PROGRESS){
+                r_track_set->reception_curs[i] = NULL;
 
-                // si des données sont reçues
-                if(status == MAD_MKP_PROGRESS){
-                    if(track->pre_posted){
-                        // dépot d'une nouvelle zone pré-postée
-                        interface->add_pre_posted(adapter,
-                                                  r_track_set,
-                                                  track);
-                        // Traitement des données reçues
-                        exploit_msg = mad_iovec_exploit_msg(adapter,
-                                                            mad_iovec->data[0].iov_base);
-                        if(exploit_msg){
-                            // on rend le mad_iovec pré_posté
-                            mad_pipeline_add(adapter->pre_posted,
-                                             mad_iovec);
-                        }
-                    } else {
-                        mad_iovec_get(mad_iovec->channel->unpacks_list,
-                                      mad_iovec->channel->id,
-                                      mad_iovec->remote_rank,
-                                      mad_iovec->sequence);
+                if(track->pre_posted){
+                    // dépot d'une nouvelle zone pré-postée
+                    interface->add_pre_posted(adapter,
+                                              r_track_set,
+                                              track);
+                    // Traitement des données reçues
+                    exploit_msg = mad_iovec_exploit_msg(adapter,
+                                                        mad_iovec->data[0].iov_base);
 
-                        mad_iovec_free(mad_iovec, tbx_false);
-
-                        // cherche un nouveau a envoyer
-                        //mad_iovec_search_rdv(adapter, track);
+                    if(exploit_msg){
+                        // on rend le mad_iovec pré_posté
+                        mad_pipeline_add(adapter->pre_posted,
+                                         mad_iovec);
                     }
+                } else {
+                    mad_iovec_get(mad_iovec->channel->unpacks_list,
+                                  mad_iovec->channel->id,
+                                  mad_iovec->remote_rank,
+                                  mad_iovec->sequence);
 
-                    //else if (status == nothing_to_do && !track->pre_posted) {
-                    //    // cherche un nouveau a envoyer
-                    //    //mad_iovec_search_rdv(adapter, track);
-                    //}
+                    mad_iovec_free(mad_iovec, tbx_false);
+                    r_track_set->reception_curs[i] = NULL;
+
+                    // cherche un nouveau à envoyer
+                    if(adapter->rdv->length)
+                        mad_iovec_search_rdv(adapter, track);
                 }
             }
         }
     }
+ end:
     LOG_OUT();
 }
 

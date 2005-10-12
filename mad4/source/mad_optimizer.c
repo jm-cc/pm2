@@ -54,41 +54,6 @@ tbx_bool_t constraints[18][18] = {
 static tbx_bool_t
 authorized(p_mad_iovec_t mad_iovec,
            p_mad_iovec_t next_mad_iovec){
-//    mad_send_mode_t first_send_mode;
-//    mad_receive_mode_t first_receive_mode;
-//    mad_iovec_track_mode_t first_track_mode;
-//    mad_send_mode_t next_send_mode;
-//    mad_receive_mode_t next_receive_mode;
-//    mad_iovec_track_mode_t next_track_mode;
-//
-//    int i = 0;
-//    int j = 0;
-//
-//    LOG_IN();
-//    first_send_mode    = mad_iovec->send_mode;
-//    first_receive_mode = mad_iovec->receive_mode;
-//    if(mad_iovec->need_rdv)
-//        first_track_mode = MAD_RDV;
-//    else
-//        first_track_mode = MAD_CPY;
-//
-//    next_send_mode    = next_mad_iovec->send_mode;
-//    next_receive_mode = next_mad_iovec->receive_mode;;
-//    if(next_mad_iovec->need_rdv)
-//        next_track_mode = MAD_RDV;
-//    else
-//        next_track_mode = MAD_CPY;
-//
-//    i = (first_send_mode - 1) * (NB_RECEIVE_MODE * NB_TRACK_MODE)
-//        + (first_receive_mode - 1) * NB_TRACK_MODE
-//        + (first_track_mode - 1);
-//
-//    j = (next_send_mode - 1) * (NB_RECEIVE_MODE * NB_TRACK_MODE)
-//        + (next_receive_mode - 1) * NB_TRACK_MODE
-//        + (next_track_mode - 1);
-//    LOG_OUT();
-//    return constraints[i][j];
-
     return constraints[mad_iovec->matrix_entrie][next_mad_iovec->matrix_entrie];
 }
 
@@ -120,7 +85,6 @@ initialize_tracks(p_mad_adapter_t adapter){
         track0 = TBX_MALLOC(sizeof(mad_track_t));
         track0->id = 0;
         track0->pre_posted = tbx_true;
-        track0->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "cpy", track0);
         track_set->tracks_tab[0] = track0;
@@ -129,7 +93,6 @@ initialize_tracks(p_mad_adapter_t adapter){
         track1 = TBX_MALLOC(sizeof(mad_track_t));
         track1->id = 1;
         track1->pre_posted = tbx_false;
-        track1->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "rdv", track1);
         track_set->tracks_tab[1] = track1;
@@ -161,7 +124,6 @@ initialize_tracks(p_mad_adapter_t adapter){
         track0 = TBX_MALLOC(sizeof(mad_track_t));
         track0->id = 0;
         track0->pre_posted = tbx_true;
-        track0->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "cpy", track0);
         track_set->tracks_tab[0] = track0;
@@ -169,7 +131,6 @@ initialize_tracks(p_mad_adapter_t adapter){
         track1 = TBX_MALLOC(sizeof(mad_track_t));
         track1->id = 1;
         track1->pre_posted = tbx_false;
-        track1->status = MAD_MKP_NOTHING_TO_DO;
         tbx_htable_add(track_set->tracks_htable,
                        "rdv", track1);
         track_set->tracks_tab[1] = track1;
@@ -206,17 +167,9 @@ mad_iovec_begin_with_data(p_mad_iovec_t mad_iovec){
     sequence   = mad_iovec->sequence;
     length     = mad_iovec->length;
 
-    //for(i = (nb_seg + 2) - 1; i > 1; i--){
-    //    mad_iovec->data[i] = mad_iovec->data[i - 2];
-    //}
-    channel_id = mad_iovec->channel->id;
-    sequence = mad_iovec->sequence;
-    length = mad_iovec->length;
-
     mad_iovec_begin_struct_iovec(mad_iovec);
 
     mad_iovec->total_nb_seg--;
-
     mad_iovec_add_data_header(mad_iovec, channel_id,
                               sequence, length);
     mad_iovec->total_nb_seg++;
@@ -237,13 +190,12 @@ mad_iovec_continue_with_data(p_mad_iovec_t mad_iovec,
 
     mad_iovec_add_data_header(mad_iovec, channel_id,
                               sequence, length);
-    //mad_iovec_add_data(mad_iovec,
-    //                   mad_iovec_data->data[0].iov_base,
-    //                   length);
+
+    mad_iovec->total_nb_seg--;
     mad_iovec_add_data(mad_iovec,
                        mad_iovec_data->data[2].iov_base,
                        length);
-
+    mad_iovec->total_nb_seg++;
     LOG_OUT();
 }
 
@@ -277,7 +229,7 @@ mad_iovec_begin_with_rdv(p_mad_iovec_t large_mad_iovec){
     tbx_slist_append(channel->adapter->waiting_acknowlegment_list,
                      large_mad_iovec);
 
-    /** Note la réception d'un acquittement **/
+    /** Note la réception prochaine d'un acquittement **/
     cnx = tbx_darray_get(channel->out_connection_darray,
                          remote_rank);
     cnx->need_reception++;
@@ -322,10 +274,13 @@ mad_iovec_continue_with_rdv(p_mad_iovec_t mad_iovec,
 p_mad_iovec_t
 mad_s_optimize(p_mad_adapter_t adapter){
     p_mad_driver_t driver = NULL;
+    p_tbx_slist_t s_msg_slist = NULL;
     p_mad_iovec_t mad_iovec = NULL;
     p_mad_iovec_t mad_iovec_prev = NULL;
     p_mad_iovec_t mad_iovec_cur = NULL;
     tbx_bool_t    express = tbx_false;
+    driver = adapter->driver;
+    s_msg_slist = driver->s_msg_slist;
 
     tbx_tick_t t1;
     tbx_tick_t t2;
@@ -335,14 +290,13 @@ mad_s_optimize(p_mad_adapter_t adapter){
     driver = adapter->driver;
     s_msg_slist = driver->s_msg_slist;
 
-    driver = adapter->driver;
+    TBX_GET_TICK(t1);
 
-    if(driver->s_msg_slist->length){
-        mad_iovec_cur = tbx_slist_extract(driver->s_msg_slist);
-    }
-    if(!mad_iovec_cur)
+    if(!s_msg_slist->length){
         goto end;
-
+    }
+    mad_iovec_cur = tbx_slist_extract(s_msg_slist);
+    TBX_GET_TICK(t2);
     if(mad_iovec_cur->need_rdv){
         //DISP("begin_with_rdv");
         mad_iovec = mad_iovec_begin_with_rdv(mad_iovec_cur);
@@ -352,24 +306,20 @@ mad_s_optimize(p_mad_adapter_t adapter){
         mad_iovec_begin_with_data(mad_iovec);
         mad_iovec->nb_packs++;
     }
-    mad_iovec->nb_packs++;
+    TBX_GET_TICK(t3);
 
     if(mad_iovec_cur->receive_mode == mad_receive_EXPRESS)
         express = tbx_true;
 
     mad_iovec_prev = mad_iovec_cur;
 
-    while(mad_iovec->total_nb_seg <= 32){
-        if(tbx_slist_is_nil(driver->s_msg_slist)){
-            break;
-        }
-
-        mad_iovec_cur = tbx_slist_index_get(driver->s_msg_slist, 0);
+    while(s_msg_slist->length && mad_iovec->total_nb_seg <= 32){
+        mad_iovec_cur = tbx_slist_index_get(s_msg_slist, 0);
 
         // si même destination et si on est autorisé à le prendre
         if((mad_iovec_cur->remote_rank == mad_iovec->remote_rank)
            && (authorized(mad_iovec_prev, mad_iovec_cur))){
-            mad_iovec_cur = tbx_slist_extract(driver->s_msg_slist);
+            mad_iovec_cur = tbx_slist_extract(s_msg_slist);
 
             if(mad_iovec_cur->need_rdv){
                 //DISP("continue_with_rdv");
@@ -396,6 +346,15 @@ mad_s_optimize(p_mad_adapter_t adapter){
     }
     mad_iovec->track = adapter->s_track_set->cpy_track;
     mad_iovec_update_global_header(mad_iovec);
+    driver->nb_pack_to_send -= mad_iovec->nb_packs;
+    TBX_GET_TICK(t4);
+
+    nb_chronos_optimize ++;
+    chrono_optimize_1_2 += TBX_TIMING_DELAY(t1, t2);
+    chrono_optimize_2_3 += TBX_TIMING_DELAY(t2, t3);
+    chrono_optimize_3_4 += TBX_TIMING_DELAY(t3, t4);
+    chrono_optimize_1_4 += TBX_TIMING_DELAY(t1, t4);
+
  end:
     LOG_OUT();
     return mad_iovec;

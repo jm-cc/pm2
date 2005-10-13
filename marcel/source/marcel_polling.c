@@ -76,11 +76,11 @@ int marcel_per_lwp_polling_register(int *data,
 	/*Blocage*/
 	INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			                        cell.blocked,
-			                        ma_preempt_enable(); 
+			                        ma_preempt_enable_noresched(); 
 						ma_local_bh_enable(),
 			                        ma_local_bh_disable(); 
 						ma_preempt_disable());
-	ma_preempt_enable(); 
+	ma_preempt_enable_noresched(); 
         ma_local_bh_enable();	
 	return 0;
 }
@@ -113,7 +113,7 @@ void marcel_per_lwp_polling_proceed(){
 		cur_cell = next_cell;
 	}
 	lwp->polling_list = new_cell_list;
-	ma_preempt_enable(); 
+	ma_preempt_enable_noresched(); 
         ma_local_bh_enable();
 }
 

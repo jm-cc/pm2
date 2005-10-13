@@ -116,6 +116,13 @@ enum {
 };
 
 #section functions
+int marcel_per_lwp_polling_register(int *data,
+                                    int value_to_match,
+                                    void (*func) (void *),
+                                    void *arg);
+
+void marcel_per_lwp_polling_proceed();
+
 /* Un raccourci pratique des fonctions suivantes, utile si l'on ne
  * soumet la requête qu'une seule fois. Les opérations suivantes sont
  * effectuées : initialisation, soumission et attente d'un

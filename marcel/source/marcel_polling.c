@@ -31,6 +31,92 @@
 static ma_atomic_t nb_poll_structs = MA_ATOMIC_INIT(-1);
 static struct poll_struct poll_structs[MAX_POLL_IDS];
 
+typedef struct marcel_per_lwp_polling_s{
+	int *data;
+	int value_to_match;
+	void (*func) (void *);
+	void *arg;
+	marcel_t task;
+	boolean blocked;
+	struct marcel_per_lwp_polling_s* next;
+}marcel_per_lwp_polling_t;
+
+int marcel_per_lwp_polling_register(int *data,
+                                    int value_to_match,
+				    void (*func) (void *),
+				    void *arg)
+{
+	marcel_per_lwp_polling_t cell;
+	marcel_t task;
+	marcel_lwp_t *lwp;
+	
+	if(func != NULL)
+        	func(arg);
+	
+	if((*data) == value_to_match)
+		return 0;
+
+	ma_local_bh_disable(); 
+        ma_preempt_disable();
+	
+	task = marcel_self();
+	lwp = GET_LWP(task);
+
+	cell.data = data;
+	cell.value_to_match = value_to_match;
+	cell.func = func;
+	cell.arg = arg;
+	cell.task = task;
+	cell.blocked = TRUE;
+	
+	/*Insertion de la donnée*/
+	cell.next = lwp->polling_list;
+	lwp->polling_list = &cell;
+
+	/*Blocage*/
+	INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
+			                        cell.blocked,
+			                        ma_preempt_enable(); 
+						ma_local_bh_enable(),
+			                        ma_local_bh_disable(); 
+						ma_preempt_disable());
+	ma_preempt_enable(); 
+        ma_local_bh_enable();	
+	return 0;
+}
+	
+void marcel_per_lwp_polling_proceed(){
+	marcel_per_lwp_polling_t* cur_cell;
+	marcel_per_lwp_polling_t* new_cell_list;
+	marcel_per_lwp_polling_t* next_cell;
+        marcel_t task;
+        marcel_lwp_t *lwp;
+	
+	ma_local_bh_disable(); 
+        ma_preempt_disable();
+	
+        task = marcel_self();
+        lwp = GET_LWP(task);			
+	
+	new_cell_list = NULL;
+	cur_cell = lwp->polling_list;
+	while(cur_cell != NULL){
+		next_cell = cur_cell->next;
+		if((*(cur_cell->data)) != cur_cell->value_to_match) {
+			if(cur_cell->func != NULL)
+				cur_cell->func(cur_cell->arg);
+			cur_cell->next = new_cell_list;
+			new_cell_list = cur_cell;
+		} else {
+			ma_wake_up_thread(cur_cell->task);		
+		}
+		cur_cell = next_cell;
+	}
+	lwp->polling_list = new_cell_list;
+	ma_preempt_enable(); 
+        ma_local_bh_enable();
+}
+
 static int compat_poll_one(marcel_ev_server_t server, 
 		    marcel_ev_op_t op,
 		    marcel_ev_req_t req, 
@@ -583,6 +669,9 @@ void __marcel_check_polling(unsigned polling_point)
 
 	marcel_ev_server_t server;
 
+//	if(polling_point == MARCEL_EV_POLL_AT_IDLE)
+		marcel_per_lwp_polling_proceed();	
+	
 	//debug("Checking polling at %i\n", polling_point);
 	ma_read_lock_softirq(&ev_poll_lock);
 	list_for_each_entry(server, &ma_ev_list_poll, chain_poll) {

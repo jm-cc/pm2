@@ -203,6 +203,8 @@ unsigned marcel_lwp_add_vp(void)
   /* initialiser le lwp *avant* de l'enregistrer */
   memset(lwp,0,sizeof(marcel_lwp_t) + __ma_per_lwp_size);
 
+  lwp->polling_list = NULL;
+  
   SET_LWP_NB(num, lwp);
 
   // Initialisation de la structure marcel_lwp_t
@@ -290,7 +292,9 @@ static void lwp_init(ma_lwp_t lwp)
 #ifdef MA__SMP
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
-
+ 
+	lwp->polling_list = NULL;
+	
 	// ATTENTION: la tentation est forte d'initialiser _locked à 2
 	// pour éviter le 'lock_task' juste après. Erreur: cela ne
 	// serait valable que pour la création du _premier_ lwp car

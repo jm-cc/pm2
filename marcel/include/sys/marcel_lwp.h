@@ -35,6 +35,8 @@ struct marcel_lwp {
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
 #endif
+	/*Polling par LWP*/
+	struct marcel_per_lwp_polling_s* polling_list;
 };
 
 #section marcel_variables

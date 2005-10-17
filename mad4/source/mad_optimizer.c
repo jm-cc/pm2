@@ -289,13 +289,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
     s_msg_slist = driver->s_msg_slist;
 
     TBX_GET_TICK(t1);
-    s_msg_slist = driver->s_msg_slist;
 
-    if(!s_msg_slist->length){
-        goto end;
-    }
-    mad_iovec_cur = tbx_slist_extract(s_msg_slist);
-    TBX_GET_TICK(t2);
     if(!s_msg_slist->length){
         goto end;
     }

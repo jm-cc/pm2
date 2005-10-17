@@ -260,14 +260,14 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 	list_for_each_entry(e, &bubble->heldentities, entity_list) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			b = ma_bubble_entity(e);
-			ma_holder_lock(&b->hold);
+			ma_holder_rawlock(&b->hold);
 			__marcel_close_bubble(b, rootrq);
-			ma_holder_unlock(&b->hold);
+			ma_holder_rawunlock(&b->hold);
 		} else {
 			t = ma_task_entity(e);
 			h = ma_task_sched_holder(t);
 			if (h!=&rootrq->hold) {
-				h = ma_task_holder_lock(t);
+				MA_BUG_ON(!(h = ma_task_holder_rawlock(t)));
 				MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
 				MA_BUG_ON(h==&rootrq->hold);
 			}
@@ -279,7 +279,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 				bubble->nbrunning--;
 			}
 			if (h!=&rootrq->hold)
-				ma_task_holder_unlock(h);
+				ma_task_holder_rawunlock(h);
 		}
 	}
 }

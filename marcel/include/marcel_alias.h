@@ -260,6 +260,18 @@
 #define VERSION_libpthread_GLIBC_2_1_2  GLIBC_2.1.2
 #define ABI_libpthread_GLIBC_2_2        5       /* support GLIBC_2.2 */
 #define VERSION_libpthread_GLIBC_2_2    GLIBC_2.2
+#define ABI_libpthread_GLIBC_2_2_3      6       /* support GLIBC_2.2.3 */
+#define VERSION_libpthread_GLIBC_2_2_3  GLIBC_2.2.3
+#define ABI_libpthread_GLIBC_2_2_6      7       /* support GLIBC_2.2.6 */
+#define VERSION_libpthread_GLIBC_2_2_6  GLIBC_2.2.6
+#define ABI_libpthread_GLIBC_2_3_2      8       /* support GLIBC_2.3.2 */
+#define VERSION_libpthread_GLIBC_2_3_2  GLIBC_2.3.2
+#define ABI_libpthread_GLIBC_2_3_3      9       /* support GLIBC_2.3.3 */
+#define VERSION_libpthread_GLIBC_2_3_3  GLIBC_2.3.3
+#define ABI_libpthread_GLIBC_2_3_4      10      /* support GLIBC_2.3.4 */
+#define VERSION_libpthread_GLIBC_2_3_4  GLIBC_2.3.4
+#define ABI_libpthread_GLIBC_PRIVATE    11      /* support GLIBC_PRIVATE */
+#define VERSION_libpthread_GLIBC_PRIVATE        GLIBC_PRIVATE
 /* end libpthread */
 
 /* Thread creation, initialization, and basic low-level routines */

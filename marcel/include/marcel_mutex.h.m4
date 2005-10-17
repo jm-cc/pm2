@@ -206,7 +206,4 @@ extern void __prefix_once_fork_child (void);
 extern void __pmarcel_once_fork_prepare (void);
 extern void __pmarcel_once_fork_parent (void);
 extern void __pmarcel_once_fork_child (void);
-extern void __flockfilelist (void);
-extern void __funlockfilelist (void);
-extern void __fresetlockfiles (void);
 ]],[[PTHREAD]])

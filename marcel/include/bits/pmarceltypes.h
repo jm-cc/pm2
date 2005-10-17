@@ -53,48 +53,9 @@ typedef struct __pmarcel_attr_s
 } pmarcel_attr_t;
 
 
-/* Conditions (not abstract because of PMARCEL_COND_INITIALIZER */
-typedef struct
-{
-  struct _pmarcel_fastlock __c_lock; /* Protect against concurrent access */
-  _pmarcel_descr __c_waiting;        /* Threads waiting on this condition */
-} pmarcel_cond_t;
-
-
-/* Attribute for conditionally variables.  */
-typedef struct
-{
-  int __dummy;
-} pmarcel_condattr_t;
-
 /* Keys for thread-specific data */
 typedef unsigned int pmarcel_key_t;
 
-
-/* Mutexes (not abstract because of PMARCEL_MUTEX_INITIALIZER).  */
-/* (The layout is unnatural to maintain binary compatibility
-    with earlier releases of LinuxThreads.) */
-#if 0
-typedef struct
-{
-  int __m_reserved;               /* Reserved for future use */
-  int __m_count;                  /* Depth of recursive locking */
-  _pmarcel_descr __m_owner;       /* Owner thread (if recursive or errcheck) */
-  int __m_kind;                   /* Mutex kind: fast, recursive or errcheck */
-  struct _pmarcel_fastlock __m_lock; /* Underlying fast lock */
-} pmarcel_mutex_t;
-
-
-/* Attribute for mutex.  */
-typedef struct
-{
-  int __mutexkind;
-} pmarcel_mutexattr_t;
-#endif
-
-
-/* Once-only execution */
-//typedef int pmarcel_once_t;
 
 
 #ifdef __USE_UNIX98

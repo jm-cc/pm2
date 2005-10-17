@@ -18,7 +18,7 @@ __tbx_inline__ static int lpt_lock_acquire(long int *lock)
 {
 	ma_preempt_disable();
 #ifdef MA__LWPS
-	ma_bit_spin_lock(1, lock);
+	ma_bit_spin_lock(1, (unsigned long int*)lock);
 #endif
 	return 0;
 }
@@ -26,11 +26,14 @@ __tbx_inline__ static int lpt_lock_acquire(long int *lock)
 __tbx_inline__ static int lpt_lock_release(long int *lock)
 {
 #ifdef MA__LWPS
-	ma_bit_spin_unlock(1, lock);
+	ma_bit_spin_unlock(1, (unsigned long int*)lock);
 #endif
 	ma_preempt_enable();
 	return 0;
 }
+
+#define pmarcel_lock_acquire(lock) marcel_lock_acquire(lock)
+#define pmarcel_lock_release(lock) marcel_lock_release(lock)
 
 typedef struct blockcell_struct {
   marcel_t task;
@@ -77,6 +80,7 @@ __tbx_inline__ static int __marcel_register_spinlocked(struct _marcel_fastlock *
   //LOG_OUT();
   return 0;
 }
+#define __pmarcel_register_spinlocked(l,s,c) __marcel_register_spinlocked(l,s,c)
 __tbx_inline__ static int __lpt_register_spinlocked(struct _lpt_fastlock * lock,
 					       marcel_t self, blockcell*c)
 {
@@ -136,6 +140,7 @@ __tbx_inline__ static int __marcel_unregister_spinlocked(struct _marcel_fastlock
   //LOG_OUT();
   return 0;
 }
+#define __pmarcel_unregister_spinlocked(l,c) __marcel_unregister_spinlocked(l,c)
 __tbx_inline__ static int __lpt_unregister_spinlocked(struct _lpt_fastlock * lock,
 						 blockcell *c)
 {
@@ -254,6 +259,7 @@ __tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * l
   //LOG_OUT();
   return ret;
 }
+#define __pmarcel_unlock_spinlocked(lock) __marcel_unlock_spinlocked(lock)
 __tbx_inline__ static int __lpt_unlock_spinlocked(struct _lpt_fastlock * lock)
 {
   int ret;
@@ -298,7 +304,7 @@ __tbx_inline__ static int __pmarcel_lock(struct _marcel_fastlock * lock,
 {
   return __marcel_lock(lock, self);
 }
-#define __pmarcel_alt_lock(lock, self) __pmarcel_lock(lock, self)
+
 __tbx_inline__ static int __lpt_lock(struct _lpt_fastlock * lock,
 				marcel_t self)
 {
@@ -332,7 +338,7 @@ __tbx_inline__ static int __pmarcel_trylock(struct _marcel_fastlock * lock)
 {
   return __marcel_trylock(lock);
 }
-#define __pmarcel_alt_trylock(lock) __pmarcel_trylock(lock)
+
 __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
 {
   //LOG_IN();
@@ -366,7 +372,7 @@ __tbx_inline__ static int __pmarcel_unlock(struct _marcel_fastlock * lock)
 {
   return __marcel_unlock(lock);
 }
-#define __pmarcel_alt_unlock(lock) __pmarcel_unlock(lock)
+
 __tbx_inline__ static int __lpt_unlock(struct _lpt_fastlock * lock)
 {
   int ret;

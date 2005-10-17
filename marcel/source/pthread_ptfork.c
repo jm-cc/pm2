@@ -88,33 +88,7 @@ extern int __libc_fork(void);
 
 pid_t __fork(void)
 {
-  pid_t pid;
-
-  pmarcel_mutex_lock(&pmarcel_atfork_lock);
-
-  pmarcel_call_handlers(pmarcel_atfork_prepare);
-  //__pmarcel_once_fork_prepare();
-  __flockfilelist();
-
-  pid = __libc_fork();
-
-  if (pid == 0) {
-    //VD__pmarcel_reset_main_thread();
-
-    __fresetlockfiles();
-    //__pmarcel_once_fork_child();
-    pmarcel_call_handlers(pmarcel_atfork_child);
-
-    pmarcel_mutex_init(&pmarcel_atfork_lock, NULL);
-  } else {
-    __funlockfilelist();
-    //__pmarcel_once_fork_parent();
-    pmarcel_call_handlers(pmarcel_atfork_parent);
-
-    pmarcel_mutex_unlock(&pmarcel_atfork_lock);
-  }
-
-  return pid;
+  return __libc_fork ();
 }
 
 weak_alias (__fork, fork);

@@ -104,11 +104,6 @@ enum
 };
 
 
-
-/* Conditional variable handling.  */
-#define PMARCEL_COND_INITIALIZER { }
-
-
 /* Cleanup buffers */
 struct _pmarcel_cleanup_buffer
 {
@@ -408,66 +403,9 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 					  int __execute) __THROW;
 #endif
 
-
-/* Mutex handling.  */
-
-#if 0
-/* Initialize a mutex.  */
-extern int pmarcel_mutex_init (pmarcel_mutex_t *__mutex,
-			       __const pmarcel_mutexattr_t *__mutexattr)
-     __THROW;
-
-/* Destroy a mutex.  */
-extern int pmarcel_mutex_destroy (pmarcel_mutex_t *__mutex) __THROW;
-
-/* Try locking a mutex.  */
-extern int pmarcel_mutex_trylock (pmarcel_mutex_t *_mutex) __THROW;
-
-/* Lock a mutex.  */
-extern int pmarcel_mutex_lock (pmarcel_mutex_t *__mutex) __THROW;
-
-#ifdef __USE_XOPEN2K
-/* Wait until lock becomes available, or specified time passes. */
-extern int pmarcel_mutex_timedlock (pmarcel_mutex_t *__restrict __mutex,
-                                    __const struct timespec *__restrict
-                                    __abstime) __THROW;
-#endif
-
-/* Unlock a mutex.  */
-extern int pmarcel_mutex_unlock (pmarcel_mutex_t *__mutex) __THROW;
-
-
-/* Functions for handling mutex attributes.  */
-
-/* Initialize mutex attribute object ATTR with default attributes
-   (kind is PMARCEL_MUTEX_TIMED_NP).  */
-extern int pmarcel_mutexattr_init (pmarcel_mutexattr_t *__attr) __THROW;
-
-/* Destroy mutex attribute object ATTR.  */
-extern int pmarcel_mutexattr_destroy (pmarcel_mutexattr_t *__attr) __THROW;
-
-/* Get the process-shared flag of the mutex attribute ATTR.  */
-extern int pmarcel_mutexattr_getpshared (__const pmarcel_mutexattr_t *
-					 __restrict __attr,
-					 int *__restrict __pshared) __THROW;
-
-/* Set the process-shared flag of the mutex attribute ATTR.  */
-extern int pmarcel_mutexattr_setpshared (pmarcel_mutexattr_t *__attr,
-					 int __pshared) __THROW;
-
-#ifdef __USE_UNIX98
-/* Return in *KIND the mutex kind attribute in *ATTR.  */
-extern int pmarcel_mutexattr_gettype (__const pmarcel_mutexattr_t *__restrict
-				      __attr, int *__restrict __kind) __THROW;
-
-/* Set the mutex kind attribute in *ATTR to KIND (either PMARCEL_MUTEX_NORMAL,
-   PMARCEL_MUTEX_RECURSIVE, PMARCEL_MUTEX_ERRORCHECK, or
-   PMARCEL_MUTEX_DEFAULT).  */
-extern int pmarcel_mutexattr_settype (pmarcel_mutexattr_t *__attr, int __kind)
-     __THROW;
-#endif
-#endif
-
+/**************************************************/
+/* Les mutex sont déclarés dans marcel_mutex.h.m4 */
+/**************************************************/
 
 #ifdef __USE_UNIX98
 /* Functions for handling read-write locks.  */
@@ -539,54 +477,9 @@ extern int pmarcel_rwlockattr_setkind_np (pmarcel_rwlockattr_t *__attr,
 #endif
 
 
-/* Functions for handling conditional variables.  */
-
-/* Initialize condition variable COND using attributes ATTR, or use
-   the default values if later is NULL.  */
-extern int pmarcel_cond_init (pmarcel_cond_t *__restrict __cond,
-			      __const pmarcel_condattr_t *__restrict
-			      __cond_attr) __THROW;
-
-/* Destroy condition variable COND.  */
-extern int pmarcel_cond_destroy (pmarcel_cond_t *__cond) __THROW;
-
-/* Wake up one thread waiting for condition variable COND.  */
-extern int pmarcel_cond_signal (pmarcel_cond_t *__cond) __THROW;
-
-/* Wake up all threads waiting for condition variables COND.  */
-extern int pmarcel_cond_broadcast (pmarcel_cond_t *__cond) __THROW;
-
-/* Wait for condition variable COND to be signaled or broadcast.
-   MUTEX is assumed to be locked before.  */
-//extern int pmarcel_cond_wait (pmarcel_cond_t *__restrict __cond,
-//			      pmarcel_mutex_t *__restrict __mutex) __THROW;
-
-/* Wait for condition variable COND to be signaled or broadcast until
-   ABSTIME.  MUTEX is assumed to be locked before.  ABSTIME is an
-   absolute time specification; zero is the beginning of the epoch
-   (00:00:00 GMT, January 1, 1970).  */
-//extern int pmarcel_cond_timedwait (pmarcel_cond_t *__restrict __cond,
-//				   pmarcel_mutex_t *__restrict __mutex,
-//				   __const struct timespec *__restrict
-//				   __abstime) __THROW;
-
-/* Functions for handling condition variable attributes.  */
-
-/* Initialize condition variable attribute ATTR.  */
-extern int pmarcel_condattr_init (pmarcel_condattr_t *__attr) __THROW;
-
-/* Destroy condition variable attribute ATTR.  */
-extern int pmarcel_condattr_destroy (pmarcel_condattr_t *__attr) __THROW;
-
-/* Get the process-shared flag of the condition variable attribute ATTR.  */
-extern int pmarcel_condattr_getpshared (__const pmarcel_condattr_t *
-                                        __restrict __attr,
-                                        int *__restrict __pshared) __THROW;
-
-/* Set the process-shared flag of the condition variable attribute ATTR.  */
-extern int pmarcel_condattr_setpshared (pmarcel_condattr_t *__attr,
-                                        int __pshared) __THROW;
-
+/********************************************************/
+/* Les conditions sont déclarées dans marcel_mutex.h.m4 */
+/********************************************************/
 
 
 #ifdef __USE_XOPEN2K

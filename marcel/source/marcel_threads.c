@@ -140,6 +140,10 @@ static void* wait_marcel_run(void* arg)
  * Il est calculé directement à la compilation par les deux fonctions
  * suivantes qui ne sont qu'un 'inline' de celle-ci
  */
+#ifdef MA__PTHREAD_FUNCTIONS
+int __pthread_multiple_threads __attribute__((visibility("hidden")));
+#endif	
+
 static __tbx_inline__ int 
 marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr, 
 		       marcel_func_t func, any_t arg, 
@@ -156,7 +160,11 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	LOG_IN();
 
 	TIMING_EVENT("marcel_create");
-	
+
+#ifdef MA__PTHREAD_FUNCTIONS
+	__pthread_multiple_threads = 1;
+#endif	
+
 	if(!attr) {
 #ifdef MA__POSIX_BEHAVIOUR
 		marcel_attr_init(&myattr);

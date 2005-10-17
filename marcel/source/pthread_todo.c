@@ -103,7 +103,7 @@ ND(pthread_attr_getstack) ND(pthread_attr_setstack)
 ND(pthread_barrier_destroy) ND(pthread_barrier_init) ND(pthread_barrier_wait) 
 ND(pthread_barrierattr_destroy) ND(pthread_barrierattr_init) 
 ND(pthread_barrierattr_getpshared) ND(pthread_barrierattr_setpshared) 
-ND(pthread_condattr_getpshared) ND(pthread_condattr_setpshared) 
+/*ND(pthread_condattr_getpshared) ND(pthread_condattr_setpshared) */
 ND(pthread_getcpuclockid) 
 ND(pthread_mutex_timedlock) 
 /*ND(pthread_mutexattr_getpshared) ND(pthread_mutexattr_setpshared)*/ 

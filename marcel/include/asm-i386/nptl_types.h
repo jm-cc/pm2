@@ -78,14 +78,9 @@ typedef union
 {
   struct
   {
-    int __lock;
-    unsigned int __futex;
-    __extension__ unsigned long long int __total_seq;
-    __extension__ unsigned long long int __wakeup_seq;
-    __extension__ unsigned long long int __woken_seq;
-    void *__mutex;
-    unsigned int __nwaiters;
-    unsigned int __broadcast_seq;
+    struct _lpt_fastlock __lock;
+    
+    p_marcel_task_t __waiting;
   } __data;
   char __size[__SIZEOF_LPT_COND_T];
   __extension__ long long int __align;

@@ -23,13 +23,17 @@ static int tube[2];
 any_t f(any_t arg)
 {
   char chaine[1024];
+  int i;
 
   marcel_detach(marcel_self());
 
   marcel_delay(100);
 
   marcel_printf("I'm waiting for a keyboard input\n");
-  marcel_read(STDIN_FILENO, chaine, 1024);
+  do {
+    i = marcel_read(STDIN_FILENO, chaine, 1024);
+  } while (i<=0);
+  chaine[i] = 0;
   marcel_printf("Input from [keyboard] detected on LWP %d: %s",
 		marcel_current_vp(), chaine);
    

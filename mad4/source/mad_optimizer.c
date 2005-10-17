@@ -288,6 +288,14 @@ mad_s_optimize(p_mad_adapter_t adapter){
     driver = adapter->driver;
     s_msg_slist = driver->s_msg_slist;
 
+    tbx_tick_t t1;
+    tbx_tick_t t2;
+    tbx_tick_t t3;
+    tbx_tick_t t4;
+    LOG_IN();
+    driver = adapter->driver;
+    s_msg_slist = driver->s_msg_slist;
+
     TBX_GET_TICK(t1);
 
     if(!s_msg_slist->length){

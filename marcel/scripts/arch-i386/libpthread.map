@@ -9,6 +9,9 @@ MARCEL {
     ma_lock_task;
     tselect;
     ma_per_lwp__*;
+    ma_preempt_schedule;
+    __ma_preempt_spin_lock;
+    ma_do_work;
 };
 GLIBC_2.0 {
   global:

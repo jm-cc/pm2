@@ -144,8 +144,9 @@ void marcel_run(marcel_t pid, any_t arg);
 void marcel_postexit(marcel_postexit_func_t, any_t);
 void marcel_atexit(marcel_atexit_func_t, any_t);
 
-void marcel_thread_preemption_enable(void);
-void marcel_thread_preemption_disable(void);
+#section marcel_functions
+extern __tbx_inline__ void marcel_thread_preemption_enable(void);
+extern __tbx_inline__ void marcel_thread_preemption_disable(void);
 
 #section marcel_inline
 /* Pour ma_barrier */

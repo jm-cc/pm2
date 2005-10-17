@@ -65,15 +65,6 @@ m4_popdef([[PARTS]])
 dnl
 dnl
 dnl
-m4_define([[DEFINE_MODES]], [[dnl
-#define MA__MODE_MARCEL 1
-#define MA__MODE_PMARCEL 2
-#define MA__MODE_LPT 3
-#define MA__MODE_PTHREAD 4
-]])dnl
-dnl
-dnl
-dnl
 m4_define([[REPLICATE_CODE]], [[dnl
 m4_pushdef([[PARTS]],m4_ifelse([[$2]],,[[MARCEL PMARCEL LPT]],[[$2]]))
 REPLICATE([[dnl

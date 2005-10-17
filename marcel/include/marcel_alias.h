@@ -26,6 +26,11 @@
 #define MARCEL_PREFIX marcel_
 #define POSIX_PREFIX pmarcel_
 
+#define MA__MODE_MARCEL 1
+#define MA__MODE_PMARCEL 2
+#define MA__MODE_LPT 3
+#define MA__MODE_PTHREAD 4
+
 #define LOCAL_MARCEL_NAME(symbol) PREFIX_SYMBOL(symbol, MARCEL_PREFIX, __)
 #define MARCEL_NAME(symbol) PREFIX_SYMBOL(symbol, MARCEL_PREFIX, )
 #define MARCEL_INLINE_NAME(symbol) PREFIX_SYMBOL(symbol, MARCEL_PREFIX, __inline_)

@@ -33,8 +33,6 @@ static inline _pmarcel_descr thread_self() {
 }
 #endif
 
-DEFINE_MODES
-
 /****************************************************************
  * MUTEX
  */

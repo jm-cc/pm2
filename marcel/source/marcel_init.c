@@ -252,8 +252,6 @@ int main(int argc, char *argv[])
 		new_sp = (unsigned long)__main_thread - TOP_STACK_FREE_AREA;
 
 		/* On se contente de descendre la pile. Tout va bien, même sur Itanium */
-		/* prévenir valgrind de cette grande descente, sinon il risque de croire à un changement de pile */
-		VALGRIND_MAKE_WRITABLE(new_sp, get_sp() - new_sp);
 #ifdef WIN_SYS
 		win_stack_allocate(get_sp() - new_sp);
 #endif

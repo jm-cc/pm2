@@ -279,8 +279,6 @@ mad_s_optimize(p_mad_adapter_t adapter){
     p_mad_iovec_t mad_iovec_prev = NULL;
     p_mad_iovec_t mad_iovec_cur = NULL;
     tbx_bool_t    express = tbx_false;
-    driver = adapter->driver;
-    s_msg_slist = driver->s_msg_slist;
 
     tbx_tick_t t1;
     tbx_tick_t t2;

@@ -100,15 +100,15 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
   int ret = __clone2((int (*)(void *))func, 
 	       stack_base, stack_size,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-	       CLONE_THREAD | CLONE_PARENT | 
-	       SIGCHLD, arg, &ia64_dummy, &ia64_dummy, pid);
+	       CLONE_THREAD,
+	       arg, &ia64_dummy, &ia64_dummy, pid);
   MA_BUG_ON(ret == -1);
 #else
   *pid = clone((int (*)(void *))func, 
 	       sp,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-	       CLONE_THREAD | CLONE_PARENT |
-	       SIGCHLD, arg);
+	       CLONE_THREAD,
+	       arg);
 #endif
   LOG_OUT();
 }
@@ -116,7 +116,15 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 void marcel_kthread_join(marcel_kthread_t pid)
 {
 	LOG_IN();
-	waitpid(pid, NULL, 0);
+	pid_t res;
+	while (1) {
+		if ((res = waitpid(pid, NULL, 0)) == pid)
+			break;
+		MA_BUG_ON(res != -1);
+		if (errno == EINTR)
+			continue;
+		marcel_fprintf(stderr,"waitpid(%d): %s\n", pid, strerror(errno));
+	}
 	LOG_OUT();
 }
 

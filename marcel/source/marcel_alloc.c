@@ -125,7 +125,11 @@ retry:
 		threads_created_in_cache++;
 	} else {
 		if(NULL == (ptr=slot_cache_get(&stack_cache_unmapped, &main_slot))) {
-			next_slot -= THREAD_SLOT_SIZE;
+			next_slot -= 
+#ifdef PM2VALGRIND
+				2*
+#endif
+				THREAD_SLOT_SIZE;
 #ifdef SLOT_AREA_BOTTOM
 			if ((unsigned long)next_slot < SLOT_AREA_BOTTOM) {
 				marcel_lock_release(&alloc_lock);
@@ -182,6 +186,7 @@ void marcel_slot_free(void *addr)
 {
 	LOG_IN();
 
+#ifndef PM2_VALGRIND
 	marcel_lock_acquire(&alloc_lock);
 
 	mdebug("Desallocating slot %p\n", addr);
@@ -200,6 +205,7 @@ void marcel_slot_free(void *addr)
 	}
 	stack_in_use--;
 	marcel_lock_release(&alloc_lock);
+#endif
 	LOG_OUT();
 }
 

@@ -872,7 +872,7 @@ mad_mx_add_pre_posted(p_mad_adapter_t adapter,
     //mad_pipeline_add(track->pipeline, mad_iovec);
     //mad_mx_irecv(track, mad_iovec->data, 1);
 
-    //DISP("add pre_posted");
+    track_set->status = MAD_MKP_PROGRESS;
     mad_iovec = mad_pipeline_remove(adapter->pre_posted);
     mad_iovec->track = track;
     track_set->reception_curs[track->id] = mad_iovec;

@@ -279,12 +279,6 @@ mad_s_optimize(p_mad_adapter_t adapter){
     p_mad_iovec_t mad_iovec_prev = NULL;
     p_mad_iovec_t mad_iovec_cur = NULL;
     tbx_bool_t    express = tbx_false;
-
-    tbx_tick_t t1;
-    tbx_tick_t t2;
-    tbx_tick_t t3;
-    tbx_tick_t t4;
-    LOG_IN();
     driver = adapter->driver;
     s_msg_slist = driver->s_msg_slist;
 
@@ -297,7 +291,13 @@ mad_s_optimize(p_mad_adapter_t adapter){
     s_msg_slist = driver->s_msg_slist;
 
     TBX_GET_TICK(t1);
+    s_msg_slist = driver->s_msg_slist;
 
+    if(!s_msg_slist->length){
+        goto end;
+    }
+    mad_iovec_cur = tbx_slist_extract(s_msg_slist);
+    TBX_GET_TICK(t2);
     if(!s_msg_slist->length){
         goto end;
     }

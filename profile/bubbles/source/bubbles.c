@@ -1501,6 +1501,7 @@ int main(int argc, char *argv[]) {
 	unsigned rqlevel,rqnum;
 	fxt_blockev_t block;
 	unsigned keymask = 0;
+	int ret;
 
 	if (!(fut = fxt_open(argv[1]))) {
 		perror("fxt_open");
@@ -1509,7 +1510,7 @@ int main(int argc, char *argv[]) {
 	block = fxt_blockev_enter(fut);
 	hcreate(100);
 
-	while (!fxt_next_ev(block, FXT_EV_TYPE_NATIVE, &ev)) {
+	while (!(ret = fxt_next_ev(block, FXT_EV_TYPE_NATIVE, &ev))) {
 		if (ev.native.code == FUT_KEYCHANGE_CODE)
 			keymask = ev.native.param[0];
 		switch (ev.native.code) {
@@ -1714,6 +1715,11 @@ int main(int argc, char *argv[]) {
 		}
 
 		fflush(stdout);
+	}
+	switch(ret) {
+		case FXT_EV_EOT: break;
+		case FXT_EV_ERROR: perror("fxt_next_ev"); break;
+		case FXT_EV_TYPEERROR: fprintf(stderr,"wrong trace word size\n"); break;
 	}
 	SWFMovie_save(movie,"autobulles.swf", -1);
 	exit(0);

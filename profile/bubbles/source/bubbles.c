@@ -83,6 +83,8 @@
 #include <fxt/fxt.h>
 
 #include <fxt/fut.h>
+#include <stdint.h>
+#include <inttypes.h>
 struct fxt_code_name fut_code_table [] =
 {
 #include "fut_print.h"
@@ -181,12 +183,12 @@ void gasp() {
 /*******************************************************************************
  * Pointers Stuff
  */
-void newPtr(unsigned long ptr, void *data) {
-	char *buf=malloc(9);
+void newPtr(uint64_t ptr, void *data) {
+	char *buf=malloc(32);
 	ENTRY *item = malloc(sizeof(*item)), *found;
 	item->key = buf;
 	item->data = data;
-	snprintf(buf,9,"%lx",ptr);
+	snprintf(buf,32,"%llx",ptr);
 	found=hsearch(*item, ENTER);
 	if (!found) {
 		perror("hsearch");
@@ -197,18 +199,18 @@ void newPtr(unsigned long ptr, void *data) {
 	//fprintf(stderr,"%p -> %p\n",ptr,data);
 }
 
-void *getPtr (unsigned long ptr) {
+void *getPtr (uint64_t ptr) {
 	char buf[32];
 	ENTRY item = {.key = buf, .data=NULL}, *found;
-	snprintf(buf,sizeof(buf),"%lx",ptr);
+	snprintf(buf,sizeof(buf),"%"PRIx64,ptr);
 	found = hsearch(item, FIND);
 	//fprintf(stderr,"%p -> %p\n",ptr,found?found->data:NULL);
 	return found ? found->data : NULL;
 }
-void delPtr(unsigned long ptr) {
+void delPtr(uint64_t ptr) {
 	char buf[32];
 	ENTRY item = {.key = buf, .data=NULL}, *found;
-	snprintf(buf,sizeof(buf),"%lx",ptr);
+	snprintf(buf,sizeof(buf),"%"PRIx64,ptr);
 	found = hsearch(item, ENTER);
 	if (!found) gasp();
 	found->data = NULL;
@@ -241,7 +243,7 @@ typedef struct entity_s {
 	int nospace;
 } entity_t;
 
-entity_t *getEntity (unsigned long ptr) {
+entity_t *getEntity (uint64_t ptr) {
 	return (entity_t *) getPtr(ptr);
 }
 
@@ -271,7 +273,7 @@ static inline rq_t * rq_of_entity(entity_t *e) {
 	return tbx_container_of(e,rq_t,entity);
 }
 
-rq_t *getRunqueue (unsigned long ptr) {
+rq_t *getRunqueue (uint64_t ptr) {
 	rq_t *rq = (rq_t *) getPtr(ptr);
 	return rq;
 }
@@ -353,13 +355,13 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	return b;
 }
 
-bubble_t *newBubblePtr (unsigned long ptr, rq_t *initrq) {
+bubble_t *newBubblePtr (uint64_t ptr, rq_t *initrq) {
 	bubble_t *b = newBubble(0, initrq);
 	newPtr(ptr,b);
 	return b;
 }
 
-bubble_t *getBubble (unsigned long ptr) {
+bubble_t *getBubble (uint64_t ptr) {
 	bubble_t *b = (bubble_t *) getPtr(ptr);
 	if (!b)
 		return newBubblePtr(ptr, NULL);
@@ -427,13 +429,13 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	return t;
 }
 
-thread_t *newThreadPtr (unsigned long ptr, rq_t *initrq) {
+thread_t *newThreadPtr (uint64_t ptr, rq_t *initrq) {
 	thread_t *t = newThread(0, initrq);
 	newPtr(ptr,t);
 	return t;
 }
 
-thread_t *getThread (unsigned long ptr) {
+thread_t *getThread (uint64_t ptr) {
 	thread_t *t = (thread_t *) getPtr(ptr);
 	if (!t)
 		return newThreadPtr(ptr, NULL);
@@ -1510,100 +1512,100 @@ int main(int argc, char *argv[]) {
 	block = fxt_blockev_enter(fut);
 	hcreate(100);
 
-	while (!(ret = fxt_next_ev(block, FXT_EV_TYPE_NATIVE, &ev))) {
-		if (ev.native.code == FUT_KEYCHANGE_CODE)
-			keymask = ev.native.param[0];
-		switch (ev.native.code) {
+	while (!(ret = fxt_next_ev(block, FXT_EV_TYPE_64, &ev))) {
+		if (ev.ev64.code == FUT_KEYCHANGE_CODE)
+			keymask = ev.ev64.param[0];
+		switch (ev.ev64.code) {
 			case BUBBLE_SCHED_NEW: {
-				bubble_t *b = newBubblePtr(ev.native.param[0], norq);
-				printf("new bubble %p -> %p\n", (void *)ev.native.param[0], b);
+				bubble_t *b = newBubblePtr(ev.ev64.param[0], norq);
+				printf("new bubble %p -> %p\n", (void *)(intptr_t)ev.ev64.param[0], b);
 				showEntity(&b->entity);
 				break;
 			}
 			case BUBBLE_SCHED_SETPRIO: {
-				bubble_t *b = getBubble(ev.native.param[0]);
-				b->entity.prio = ev.native.param[1];
-				printf("bubble %p(%p) priority set to %lx\n", (void *)ev.native.param[0],b,ev.native.param[1]);
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				b->entity.prio = ev.ev64.param[1];
+				printf("bubble %p(%p) priority set to %"PRIx64"\n", (void *)(intptr_t)ev.ev64.param[0],b,ev.ev64.param[1]);
 				break;
 			}
 #ifdef BUBBLE_SCHED_CLOSED
 			case BUBBLE_SCHED_CLOSED: {
-				bubble_t *b = getBubble(ev.native.param[0]);
-				printf("bubble %p(%p) closed\n", (void *)ev.native.param[0],b);
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				printf("bubble %p(%p) closed\n", (void *)(intptr_t)ev.ev64.param[0],b);
 				break;
 			}
 #endif
 #ifdef BUBBLE_SCHED_CLOSING
 			case BUBBLE_SCHED_CLOSING: {
-				bubble_t *b = getBubble(ev.native.param[0]);
-				printf("bubble %p(%p) closing\n", (void *)ev.native.param[0],b);
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				printf("bubble %p(%p) closing\n", (void *)(intptr_t)ev.ev64.param[0],b);
 				break;
 			}
 #endif
 			case BUBBLE_SCHED_SWITCHRQ: {
-				entity_t *e = getEntity(ev.native.param[0]);
-				rq_t *rq = getRunqueue(ev.native.param[1]);
-				printf("entity %p(%p) switching to %p (%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], rq);
+				entity_t *e = getEntity(ev.ev64.param[0]);
+				rq_t *rq = getRunqueue(ev.ev64.param[1]);
+				printf("entity %p(%p) switching to %p (%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], rq);
 				switchRunqueues(rq, e);
 				break;
 			}
 #ifdef BUBBLE_SCHED_EXPLODE
 			case BUBBLE_SCHED_EXPLODE: {
-				bubble_t *b = getBubble(ev.native.param[0]);
-				printf("bubble %p(%p) exploding on rq %p\n", (void *)ev.native.param[0],b,b->entity.holder);
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				printf("bubble %p(%p) exploding on rq %p\n", (void *)(intptr_t)ev.ev64.param[0],b,b->entity.holder);
 				bubbleExplode(b);
 				break;
 			}
 #endif
 #ifdef BUBBLE_SCHED_GOINGBACK
 			case BUBBLE_SCHED_GOINGBACK: {
-				thread_t *e = getThread(ev.native.param[0]);
-				bubble_t *b = getBubble(ev.native.param[1]);
-				printf("thread %p(%p) going back in bubble %p(%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], b);
+				thread_t *e = getThread(ev.ev64.param[0]);
+				bubble_t *b = getBubble(ev.ev64.param[1]);
+				printf("thread %p(%p) going back in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertThread(b,e);
 				break;
 			}
 #endif
 			case BUBBLE_SCHED_INSERT_BUBBLE: {
-				bubble_t *e = getBubble(ev.native.param[0]);
-				bubble_t *b = getBubble(ev.native.param[1]);
-				printf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], b);
+				bubble_t *e = getBubble(ev.ev64.param[0]);
+				bubble_t *b = getBubble(ev.ev64.param[1]);
+				printf("bubble %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertBubble(b,e);
 				break;
 			}
 			case BUBBLE_SCHED_INSERT_THREAD: {
-				thread_t *e = getThread(ev.native.param[0]);
-				bubble_t *b = getBubble(ev.native.param[1]);
-				printf("thread %p(%p) inserted in bubble %p(%p)\n", (void *)ev.native.param[0], e, (void *)ev.native.param[1], b);
+				thread_t *e = getThread(ev.ev64.param[0]);
+				bubble_t *b = getBubble(ev.ev64.param[1]);
+				printf("thread %p(%p) inserted in bubble %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], e, (void *)(intptr_t)ev.ev64.param[1], b);
 				bubbleInsertThread(b,e);
 				break;
 			}
 			case BUBBLE_SCHED_WAKE: {
-				bubble_t *b = getBubble(ev.native.param[0]);
-				rq_t *rq = getRunqueue(ev.native.param[1]);
-				printf("bubble %p(%p) waking up on runqueue %p(%p)\n", (void *)ev.native.param[0], b, (void *)ev.native.param[1], rq);
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				rq_t *rq = getRunqueue(ev.ev64.param[1]);
+				printf("bubble %p(%p) waking up on runqueue %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], b, (void *)(intptr_t)ev.ev64.param[1], rq);
 				switchRunqueues(rq, &b->entity);
 				break;
 			}
 			case FUT_RQS_NEWLEVEL: {
-				rqlevel = ev.native.param[0];
+				rqlevel = ev.ev64.param[0];
 				rqnum = 0;
 				rqs = realloc(rqs,(rqlevel+1)*sizeof(*rqs));
-				setRqs(&rqs[rqlevel],ev.native.param[1],0,rqlevel*150+100,MOVIEX,150);
-				for (i=0;i<ev.native.param[1];i++)
+				setRqs(&rqs[rqlevel],ev.ev64.param[1],0,rqlevel*150+100,MOVIEX,150);
+				for (i=0;i<ev.ev64.param[1];i++)
 				  showEntity(&rqs[rqlevel][i].entity);
-				printf("new runqueue level %u arity %lu\n", rqlevel, ev.native.param[1]);
+				printf("new runqueue level %u arity %"PRIu64"\n", rqlevel, ev.ev64.param[1]);
 				break;
 			}
 			case FUT_RQS_NEWLWPRQ: {
 				/* eux peuvent être dans le désordre */
-				newPtr(ev.native.param[1],&rqs[rqlevel][ev.native.param[0]]);
-				printf("new lwp runqueue %lu at %p\n",ev.native.param[0],(void *)ev.native.param[1]);
+				newPtr(ev.ev64.param[1],&rqs[rqlevel][ev.ev64.param[0]]);
+				printf("new lwp runqueue %"PRIu64" at %p\n",ev.ev64.param[0],(void *)(intptr_t)ev.ev64.param[1]);
 				break;
 			}
 			case FUT_RQS_NEWRQ: {
-				newPtr(ev.native.param[0],&rqs[rqlevel][rqnum]);
-				printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)ev.native.param[0],&rqs[rqlevel][rqnum]);
+				newPtr(ev.ev64.param[0],&rqs[rqlevel][rqnum]);
+				printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[0],&rqs[rqlevel][rqnum]);
 				rqnum++;
 				break;
 			}
@@ -1619,30 +1621,30 @@ int main(int argc, char *argv[]) {
 #ifdef SCHED_IDLE_START
 			case SCHED_IDLE_START: {
 				int n;
-				n = (int)ev.native.param[0];
+				n = (int)ev.ev64.param[0];
 				break;
 			}
 #endif
 #ifdef SCHED_IDLE_STOP
 			case SCHED_IDLE_STOP: {
 				int n;
-				n = (int)ev.native.param[0];
+				n = (int)ev.ev64.param[0];
 				break;
 			}
 #endif
 			default:
-			if (keymask) switch (ev.native.code) {
+			if (keymask) switch (ev.ev64.code) {
 				case FUT_THREAD_BIRTH_CODE: {
-					thread_t *t = newThreadPtr(ev.native.param[0], norq);
-					printf("new thread %p(%p)\n", (void *)ev.native.param[0], t);
+					thread_t *t = newThreadPtr(ev.ev64.param[0], norq);
+					printf("new thread %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], t);
 					showEntity(&t->entity);
 					break;
 				}
 				case FUT_THREAD_DEATH_CODE: {
-					thread_t *t = getThread(ev.native.param[0]);
-					printf("thread death %p(%p)\n", (void *)ev.native.param[0], t);
+					thread_t *t = getThread(ev.ev64.param[0]);
+					printf("thread death %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], t);
 					hideEntity(&t->entity);
-					delPtr(ev.native.param[0]);
+					delPtr(ev.ev64.param[0]);
 					delThread(t);
 					break;
 				}
@@ -1650,30 +1652,30 @@ int main(int argc, char *argv[]) {
 					/* TODO */
 					break;
 				case SCHED_THREAD_BLOCKED: {
-					thread_t *t = getThread(ev.native.user.tid);
+					thread_t *t = getThread(ev.ev64.user.tid);
 					if (t->entity.type!=THREAD) gasp();
-					printf("thread %p(%p) going to sleep\n",(void*)ev.native.user.tid,t);
+					printf("thread %p(%p) going to sleep\n",(void*)(intptr_t)ev.ev64.user.tid,t);
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
 					pause(DELAYTIME);
 					break;
 				}
 				case SCHED_THREAD_WAKE: {
-					thread_t *t = getThread(ev.native.param[0]);
+					thread_t *t = getThread(ev.ev64.param[0]);
 					if (t->entity.type!=THREAD) gasp();
-					printf("thread %p(%p) waking up\n",(void*)ev.native.user.tid,t);
+					printf("thread %p(%p) waking up\n",(void*)(intptr_t)ev.ev64.user.tid,t);
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
 					pause(DELAYTIME);
 					break;
 				}
 				case FUT_SWITCH_TO_CODE: {
-					thread_t *tprev = getThread(ev.native.user.tid);
-					thread_t *tnext = getThread(ev.native.param[0]);
+					thread_t *tprev = getThread(ev.ev64.user.tid);
+					thread_t *tnext = getThread(ev.ev64.param[0]);
 					if (tprev==tnext) gasp();
 					if (tprev->entity.type!=THREAD) gasp();
 					if (tnext->entity.type!=THREAD) gasp();
-					printf("switch from thread %p(%p) to thread %p(%p)\n",(void *)ev.native.user.tid,tprev,(void *)ev.native.param[0],tnext);
+					printf("switch from thread %p(%p) to thread %p(%p)\n",(void *)(intptr_t)ev.ev64.user.tid,tprev,(void *)(intptr_t)ev.ev64.param[0],tnext);
 					if (tprev->state == THREAD_RUNNING)
 						tprev->state = THREAD_SLEEPING;
 					tnext->state = THREAD_RUNNING;
@@ -1705,9 +1707,9 @@ int main(int argc, char *argv[]) {
 				}
 				default:
 #if 0
-					printf("%16llu %p %010lx %1u" ,ev.native.time ,ev.native.user.tid ,ev.native.code ,ev.native.nb_params);
-					for (i=0;i<ev.native.nb_params;i++)
-						printf(" %010lx", ev.native.param[i]);
+					printf("%16llu %p %010lx %1u" ,ev.ev64.time ,ev.ev64.user.tid ,ev.ev64.code ,ev.ev64.nb_params);
+					for (i=0;i<ev.ev64.nb_params;i++)
+						printf(" %010lx", ev.ev64.param[i]);
 					printf("\n");
 #endif
 					break;

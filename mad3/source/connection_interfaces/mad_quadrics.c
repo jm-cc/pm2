@@ -28,6 +28,7 @@
 #include <elan/elan.h>
 #include <elan/capability.h>
 #include <qsnet/fence.h>
+#undef __FUNCTION__
 /*
  * macros
  * ------

@@ -1655,6 +1655,8 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
   while (xchannel_open(madeleine, &channel_id))
     ;
 
+  TRACE("Initialising progression engine");
+  mad_engine_init(mad_s_optimize);
 
   {
     p_tbx_htable_t channel_htable = NULL;

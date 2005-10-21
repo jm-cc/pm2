@@ -13,6 +13,7 @@ double chrono_send_next = 0.0;
 int    nb_chronos_s_mkp = 0;
 double chrono_s_mkp = 0.0;
 
+p_mad_iovec_t (*get_next_packet)(p_mad_adapter_t) = NULL;
 
 static void
 mad_search_next(p_mad_adapter_t adapter,
@@ -32,7 +33,7 @@ mad_search_next(p_mad_adapter_t adapter,
         s_track_set->next = tbx_slist_extract(s_ready_msg_slist);
 
     } else {
-        s_track_set->next = mad_s_optimize(adapter);
+        s_track_set->next = get_next_packet(adapter);
 
     }
 
@@ -65,7 +66,7 @@ mad_send_cur(p_mad_adapter_t adapter,
         s_track_set->cur = tbx_slist_extract(s_ready_msg_slist);
 
     } else {
-        s_track_set->cur = mad_s_optimize(adapter);
+        s_track_set->cur = get_next_packet(adapter);
 
         if(!s_track_set->cur){
             s_track_set->status = MAD_MKP_NOTHING_TO_DO;
@@ -96,6 +97,11 @@ mad_send_cur(p_mad_adapter_t adapter,
 
  end:
     LOG_OUT();
+}
+
+void
+mad_engine_init(p_mad_iovec_t (*get_next_packet_f)(p_mad_adapter_t)) {
+  get_next_packet = get_next_packet_f;
 }
 
 void

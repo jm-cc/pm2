@@ -119,15 +119,11 @@ typedef struct s_mad_driver_interface
     tbx_bool_t (*buffer_need_rdv)(size_t);
 
     // **** Primitives Bas Niveau **** //
-    //void (*isend)(p_mad_track_t,
-    //              p_mad_connection_t,
-    //              struct iovec *, uint32_t);
     void (*isend)(p_mad_track_t,
                   ntbx_process_lrank_t,
                   struct iovec *, uint32_t);
 
     void (*irecv)(p_mad_track_t,
-                  //p_mad_connection_t,
                   struct iovec *, uint32_t);
 
 
@@ -135,7 +131,6 @@ typedef struct s_mad_driver_interface
                  p_mad_connection_t,
                  struct iovec *, uint32_t);
     void (*recv)(p_mad_track_t,
-                 //p_mad_connection_t,
                  struct iovec *, uint32_t);
 
     tbx_bool_t (*test)(p_mad_track_t);
@@ -144,12 +139,10 @@ typedef struct s_mad_driver_interface
     void (*open_track)(p_mad_adapter_t, uint32_t);
     void (*close_track)(p_mad_track_t);
 
-    //void (*add_pre_posted)(p_mad_adapter_t, p_mad_track_t);
-    void (*add_pre_posted)(p_mad_adapter_t, p_mad_track_set_t, p_mad_track_t);
+    void (*add_pre_posted)(p_mad_adapter_t, p_mad_track_set_t);
     void (*remove_all_pre_posted)(p_mad_adapter_t);
 
     void (*add_pre_sent)  (p_mad_adapter_t, p_mad_track_t);
-
 
     void (*close_track_set)(p_mad_track_set_t);
 

@@ -168,6 +168,8 @@ mad_mx_register(p_mad_driver_interface_t interface){
     interface->accept               = mad_mx_accept;
     interface->connect              = mad_mx_connect;
     interface->after_open_channel   = NULL;
+
+
     interface->before_close_channel = NULL;
     interface->disconnect           = mad_mx_disconnect;
     interface->after_close_channel  = NULL;
@@ -176,6 +178,7 @@ mad_mx_register(p_mad_driver_interface_t interface){
     interface->channel_exit         = mad_mx_channel_exit;
     interface->adapter_exit         = mad_mx_adapter_exit;
     interface->driver_exit          = mad_mx_driver_exit;
+
 
     interface->new_message          = mad_mx_new_message;
     interface->finalize_message     = NULL;
@@ -232,7 +235,7 @@ mad_mx_driver_init(p_mad_driver_t d, int *argc, char ***argv) {
 
     d->max_unexpected = 10;
     d->unexpected_recovery_threshold = 4;
-    d-> unexpected_buffer_length = 3;
+    d->unexpected_buffer_length = 300;
 
     LOG_OUT();
 }
@@ -261,6 +264,7 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
 
     // Initialistaion des mad_iovecs à pré-poster
     a->pre_posted  = mad_pipeline_create(total);
+
     for(i = 0; i < total; i++){
         unexpected_area = tbx_malloc(mad_mx_unexpected_key);
 
@@ -499,30 +503,31 @@ mad_mx_channel_exit(p_mad_channel_t ch) {
 
 void
 mad_mx_adapter_exit(p_mad_adapter_t a) {
-    //p_mad_mx_adapter_specific_t as = NULL;
-    //p_mad_pipeline_t pre_posted    = NULL;
-    //p_mad_iovec_t    mad_iovec     = NULL;
-    //int              nb_elm        = 0;
-    //int i = 0;
-    //LOG_IN();
-    //
-    //as         = a->specific;
-    //pre_posted = a->pre_posted;
-    //nb_elm     = as->nb_pre_posted_areas;
-    //
-    //// Libération des structures à pré-poster
-    //for(i = 0; i < nb_elm; i++){
-    //    mad_iovec = mad_pipeline_remove(pre_posted);
-    //    tbx_free(mad_mx_unexpected_key, mad_iovec->data[0].iov_base);
-    //    mad_iovec_free(mad_iovec, tbx_false);
-    //}
-    //tbx_malloc_clean(mad_mx_unexpected_key);
-    //
-    //as	= a->specific;
-    //TBX_FREE(as);
-    //a->specific	  = NULL;
-    //a->parameter  = NULL;
-    //LOG_OUT();
+    p_mad_mx_adapter_specific_t as = NULL;
+    p_mad_pipeline_t pre_posted    = NULL;
+    p_mad_iovec_t    mad_iovec     = NULL;
+    int              nb_elm        = 0;
+    int i = 0;
+    LOG_IN();
+
+    as         = a->specific;
+    pre_posted = a->pre_posted;
+    nb_elm     = as->nb_pre_posted_areas;
+
+    // Libération des structures à pré-poster
+    for(i = 0; i < nb_elm; i++){
+        mad_iovec = mad_pipeline_remove(pre_posted);
+
+        tbx_free(mad_mx_unexpected_key, mad_iovec->data[0].iov_base);
+        mad_iovec_free(mad_iovec);
+    }
+    tbx_malloc_clean(mad_mx_unexpected_key);
+
+    as	= a->specific;
+    TBX_FREE(as);
+    a->specific	  = NULL;
+    a->parameter  = NULL;
+    LOG_OUT();
 }
 
 void
@@ -852,20 +857,11 @@ mad_mx_irecv(p_mad_track_t track,
 
 void
 mad_mx_add_pre_posted(p_mad_adapter_t adapter,
-                      p_mad_track_set_t track_set,
-                      p_mad_track_t track){
+                      p_mad_track_set_t track_set){
     p_mad_iovec_t mad_iovec = NULL;
+    p_mad_track_t track = NULL;
     LOG_IN();
-    //track->status = MAD_MKP_PROGRESS;
-    //
-    //mad_iovec = mad_pipeline_remove(adapter->pre_posted);
-    //mad_iovec->track = track;
-    //mad_pipeline_add(track->pipeline, mad_iovec);
-    //mad_mx_irecv(track, mad_iovec->data, 1);
-
-    //DISP("add pre_posted");
-
-
+    track = track_set->cpy_track;
     track_set->status = MAD_MKP_PROGRESS;
     mad_iovec = mad_pipeline_remove(adapter->pre_posted);
     mad_iovec->track = track;
@@ -878,34 +874,20 @@ mad_mx_add_pre_posted(p_mad_adapter_t adapter,
 
 void
 mad_mx_remove_all_pre_posted(p_mad_adapter_t adapter){
-    //p_mad_track_set_t r_track_set = NULL;
-    //uint32_t          nb_track    = 0;
-    //p_mad_track_t    *tracks_tab  = NULL;
-    //p_mad_track_t     track       = NULL;
-    //p_mad_pipeline_t  pipeline    = NULL;
-    //p_mad_iovec_t     mad_iovec   = NULL;
-    //
-    //uint32_t i = 0;
-    //LOG_IN();
-    //r_track_set = adapter->r_track_set;
-    //nb_track    = r_track_set->nb_track;
-    //tracks_tab  = r_track_set->tracks_tab;
-    //
-    //for(i = 0; i < nb_track; i++){
-    //    track = tracks_tab[i];
-    //
-    //    if(track->pre_posted){
-    //        pipeline = track->pipeline;
-    //
-    //        while(pipeline->cur_nb_elm){
-    //            mad_iovec = mad_pipeline_remove(pipeline);
-    //
-    //            mad_pipeline_add(adapter->pre_posted,
-    //                             mad_iovec);
-    //        }
-    //    }
-    //}
-    //LOG_OUT();
+    p_mad_track_set_t r_track_set = NULL;
+    p_mad_track_t     cpy_track       = NULL;
+    p_mad_iovec_t     mad_iovec   = NULL;
+    LOG_IN();
+    r_track_set = adapter->r_track_set;
+    cpy_track = r_track_set->cpy_track;
+    mad_iovec = r_track_set->reception_curs[cpy_track->id];
+    r_track_set->reception_curs[cpy_track->id] = NULL;
+
+    if(mad_iovec){
+        mad_pipeline_add(adapter->pre_posted, mad_iovec);
+    }
+
+    LOG_OUT();
 }
 
 void

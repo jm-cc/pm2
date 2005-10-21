@@ -49,17 +49,21 @@ typedef struct s_mad_adapter
 
     /* msg waiting for a transmission */
     p_tbx_slist_t s_ready_msg_list;
-    //p_tbx_slist_t r_ready_msg_list;
-
-    /* unexpected msg */
-    //p_tbx_slist_t unexpected_msg_list;
 
     /* msg waiting for an acknowlegment */
     p_tbx_slist_t waiting_acknowlegment_list;
 
     p_tbx_slist_t rdv;
 
+    /* unexpected msg */
     p_mad_pipeline_t pre_posted;
+
+
+    p_mad_pipeline_t    unexpected;
+    uint32_t      unexpected_total_nb; //plusieurs pack/mad_iovec
+    tbx_bool_t        **blocked_cnx;
+
+
 
     p_mad_driver_specific_t  specific;
 } mad_adapter_t;

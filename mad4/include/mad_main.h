@@ -82,6 +82,12 @@ typedef struct s_mad_madeleine
 
     p_mad_channel_t    *channel_tab;
     int                 nb_channels;
+
+
+    //p_mad_pipeline_t    unexpected;
+    //uint32_t      unexpected_total_nb; //plusieurs pack/mad_iovec
+    //tbx_bool_t        **blocked_cnx;
+
 } mad_madeleine_t;
 
 /*

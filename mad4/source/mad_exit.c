@@ -910,22 +910,20 @@ mad_dir_channels_exit(p_mad_madeleine_t madeleine)
 static void
 mad_close_track(p_mad_adapter_t adapter,
                 p_mad_track_t track){
-//  p_mad_driver_interface_t interface = NULL;
-//  LOG_IN();
-//  interface = adapter->driver->interface;
-//
-//  if(track->pre_posted){
-//    interface->remove_all_pre_posted(adapter);
-//  }
-//
-//  mad_pipeline_free(track->pipeline);
-//
-//  if(interface->close_track){
-//    interface->close_track(track);
-//  }
-//
-//  TBX_FREE(track);
-//  LOG_OUT();
+  p_mad_driver_interface_t interface = NULL;
+  LOG_IN();
+  interface = adapter->driver->interface;
+
+  if(track->pre_posted){
+    interface->remove_all_pre_posted(adapter);
+  }
+
+  if(interface->close_track){
+    interface->close_track(track);
+  }
+
+  TBX_FREE(track);
+  LOG_OUT();
 }
 
 
@@ -933,26 +931,26 @@ mad_close_track(p_mad_adapter_t adapter,
 static void
 mad_close_track_set(p_mad_adapter_t adapter,
                     p_mad_track_set_t track_set){
-//  p_mad_driver_interface_t interface = NULL;
-//  unsigned int i = 0;
-//
-//  LOG_IN();
-//  interface = adapter->driver->interface;
-//
-//  for(i = 0; i < track_set->nb_track; i++){
-//    mad_close_track(adapter, track_set->tracks_tab[i]);
-//  }
-//
-//  tbx_htable_cleanup_and_free(track_set->tracks_htable);
-//  TBX_FREE(track_set->tracks_tab);
-//
-//  mad_pipeline_free(track_set->in_more);
-//
-//  //if(interface->close_track_set)
-//  //  interface->close_track_set(track_set);
-//
-//  TBX_FREE(track_set);
-//  LOG_OUT();
+  p_mad_driver_interface_t interface = NULL;
+  unsigned int i = 0;
+
+  LOG_IN();
+  interface = adapter->driver->interface;
+
+  for(i = 0; i < track_set->nb_track; i++){
+    mad_close_track(adapter, track_set->tracks_tab[i]);
+  }
+
+  tbx_htable_cleanup_and_free(track_set->tracks_htable);
+  TBX_FREE(track_set->tracks_tab);
+
+  TBX_FREE(track_set->reception_curs);
+
+  if(interface->close_track_set)
+    interface->close_track_set(track_set);
+
+  TBX_FREE(track_set);
+  LOG_OUT();
 }
 
 

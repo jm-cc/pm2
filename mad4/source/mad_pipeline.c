@@ -36,6 +36,21 @@ mad_pipeline_get(p_mad_pipeline_t pipeline){
     return object;
 }
 
+
+void *
+mad_pipeline_index_get(p_mad_pipeline_t pipeline,
+                       uint32_t index){
+    void * object = NULL;
+    LOG_IN();
+    //if(index <= pipeline->end)
+        object =  pipeline->pipeline[(pipeline->begin + index) % pipeline->length];
+    LOG_OUT();
+    return object;
+}
+
+
+
+
 void
 mad_pipeline_add(p_mad_pipeline_t pipeline,
                  void * object){
@@ -48,22 +63,50 @@ mad_pipeline_add(p_mad_pipeline_t pipeline,
 
 
 void *
+mad_pipeline_extract(p_mad_pipeline_t pipeline,
+                     uint32_t index){
+    void *object = NULL;
+    int i = 0;
+
+    LOG_IN();
+    //DISP("-->pipeline_extract");
+    if(index >= pipeline->cur_nb_elm)
+        FAILURE("mad_pipeline : index > nb of elm");
+
+    if(index == 0){
+        object = mad_pipeline_remove(pipeline);
+        goto end;
+    }
+
+    object = pipeline->pipeline[index];
+
+    // voir si on decale du debut ou de la fin!!!!
+    for(i = index; i < pipeline->cur_nb_elm - 1; i++){
+        pipeline[i] = pipeline[i+1];
+    }
+
+    pipeline->cur_nb_elm--;
+    pipeline->end = (pipeline->end - 1) % pipeline->length;
+
+ end:
+    //DISP("<--pipeline_extract");
+    LOG_OUT();
+    return object;
+}
+
+void *
 mad_pipeline_remove(p_mad_pipeline_t pipeline){
     void *object = NULL;
     LOG_IN();
-
     //DISP("-->pipeline_remove");
     if(!pipeline->cur_nb_elm)
-        goto end;
+        FAILURE("empty mad_pipeline");
 
     object = pipeline->pipeline[pipeline->begin];
     pipeline->pipeline[pipeline->begin] = NULL;
     pipeline->begin = (pipeline->begin + 1) % pipeline->length;
     pipeline->cur_nb_elm--;
-
- end:
     //DISP("<--pipeline_remove");
     LOG_OUT();
     return object;
 }
-

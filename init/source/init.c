@@ -170,7 +170,7 @@ void common_pre_init(int *argc, char *argv[],
   mad_memory_manager_init(*argc, argv);
 
 #if defined (MAD4)
-  mad_iovec_init_allocators();
+  mad_iovec_allocator_init();
 #endif /* MAD4 */
 
 #ifdef MARCEL
@@ -590,6 +590,10 @@ common_exit(common_attr_t *attr)
 #endif // MARCEL
 
   mad_memory_manager_exit();
+
+#if defined (MAD4)
+  mad_iovec_allocator_exit();
+#endif // MAD4
 #endif // MAD3 || MAD4
 
 #ifdef MAD2

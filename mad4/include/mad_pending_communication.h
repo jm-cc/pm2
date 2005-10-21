@@ -14,6 +14,8 @@ typedef struct s_mad_iovec{
     p_mad_channel_t         channel; // pour retrouver la
                                      // liste des unpack
 
+    p_mad_connection_t      connection; // pour les unexpected
+
     sequence_t              sequence;
 
     size_t                  length;

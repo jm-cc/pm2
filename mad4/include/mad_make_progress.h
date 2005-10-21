@@ -4,7 +4,6 @@
 typedef enum e_mad_mkp_status {
     MAD_MKP_NOTHING_TO_DO,
     MAD_MKP_PROGRESS,
-    //MAD_MKP_UNEXPECTED,
     MAD_MKP_NO_PROGRESS
 } mad_mkp_status_t, *p_mad_mkp_status_t;
 

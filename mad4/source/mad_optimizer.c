@@ -141,7 +141,7 @@ initialize_tracks(p_mad_adapter_t adapter){
         interface->open_track(adapter, 0);
         interface->open_track(adapter, 1);
 
-        interface->add_pre_posted(adapter, track_set, track0);
+        interface->add_pre_posted(adapter, track_set);
 
     } else {
         FAILURE("pilote réseau non supporté");
@@ -202,29 +202,32 @@ mad_iovec_continue_with_data(p_mad_iovec_t mad_iovec,
 
 static p_mad_iovec_t
 mad_iovec_begin_with_rdv(p_mad_iovec_t large_mad_iovec){
-    rank_t remote_rank = 0;
-    p_mad_channel_t    channel = NULL;
-    p_mad_connection_t cnx = NULL;
-    channel_id_t channel_id = 0;
-    sequence_t sequence = 0;
-    length_t length = 0;
-    p_mad_iovec_t mad_iovec = NULL;
+    p_mad_channel_t    channel    = NULL;
+    channel_id_t       channel_id = 0;
+    p_mad_connection_t cnx        = NULL;
+
+    rank_t             remote_rank = 0;
+    sequence_t         sequence = 0;
+    mad_send_mode_t    send_mode;
+    mad_receive_mode_t receive_mode;
+    p_mad_iovec_t      rdv = NULL;
 
     LOG_IN();
-    channel = large_mad_iovec->channel;
-    remote_rank = large_mad_iovec->remote_rank;
-    channel_id = large_mad_iovec->channel->id;
-    sequence   = large_mad_iovec->sequence;
-    length     = large_mad_iovec->length;
+    channel      = large_mad_iovec->channel;
+    channel_id   = channel->id;
+    remote_rank  = large_mad_iovec->remote_rank;
+    sequence     = large_mad_iovec->sequence;
+    send_mode    = large_mad_iovec->send_mode;
+    receive_mode = large_mad_iovec->receive_mode;
 
-    mad_iovec = mad_iovec_create(remote_rank,
-                                 large_mad_iovec->channel,
-                                 sequence, tbx_false,
-                                 large_mad_iovec->send_mode,
-                                 large_mad_iovec->receive_mode);
-    mad_iovec_begin_struct_iovec(mad_iovec);
+    // création du mad_iovec contenant le RDV
+    rdv = mad_iovec_create(remote_rank,
+                           channel, sequence,
+                           tbx_false,
+                           send_mode, receive_mode);
+    mad_iovec_begin_struct_iovec(rdv);
+    mad_iovec_add_rdv(rdv, channel_id, sequence);
 
-    mad_iovec_add_rdv(mad_iovec, channel_id, sequence);
 
     tbx_slist_append(channel->adapter->waiting_acknowlegment_list,
                      large_mad_iovec);
@@ -235,7 +238,7 @@ mad_iovec_begin_with_rdv(p_mad_iovec_t large_mad_iovec){
     cnx->need_reception++;
 
     LOG_OUT();
-    return mad_iovec;
+    return rdv;
 }
 
 static void
@@ -279,6 +282,9 @@ mad_s_optimize(p_mad_adapter_t adapter){
     p_mad_iovec_t mad_iovec_prev = NULL;
     p_mad_iovec_t mad_iovec_cur = NULL;
     tbx_bool_t    express = tbx_false;
+    tbx_bool_t    blocked_cnx = tbx_true;
+    tbx_bool_t    forward = tbx_true;
+    int idx = 0;
 
     tbx_tick_t t1;
     tbx_tick_t t2;
@@ -293,17 +299,45 @@ mad_s_optimize(p_mad_adapter_t adapter){
     if(!s_msg_slist->length){
         goto end;
     }
-    mad_iovec_cur = tbx_slist_extract(s_msg_slist);
+
     TBX_GET_TICK(t2);
-    if(mad_iovec_cur->need_rdv){
-        //DISP("begin_with_rdv");
-        mad_iovec = mad_iovec_begin_with_rdv(mad_iovec_cur);
-    } else {
-        //DISP("begin_with_data");
-        mad_iovec = mad_iovec_cur;
-        mad_iovec_begin_with_data(mad_iovec);
-        mad_iovec->nb_packs++;
-    }
+
+    tbx_slist_ref_to_head(s_msg_slist);
+    do{
+        //mad_iovec_cur = tbx_slist_index_get(s_msg_slist, idx);
+        mad_iovec_cur = (p_mad_iovec_t)s_msg_slist->ref->object;
+
+        blocked_cnx = adapter->blocked_cnx[mad_iovec_cur->channel->id][mad_iovec_cur->remote_rank];
+
+        //printf("???blocked_cnx[%d][%d] = %d\n",
+        //       mad_iovec_cur->channel->id ,
+        //       mad_iovec_cur->remote_rank,
+        //       blocked_cnx);
+
+        if(!blocked_cnx){
+            if(mad_iovec_cur->need_rdv){
+                mad_iovec = mad_iovec_begin_with_rdv(mad_iovec_cur);
+                driver->nb_pack_to_send++;
+            } else {
+                //DISP("begin_with_data");
+                mad_iovec = mad_iovec_cur;
+                mad_iovec_begin_with_data(mad_iovec);
+                mad_iovec->nb_packs++;
+            }
+            if(!tbx_slist_ref_extract_and_forward(s_msg_slist, &mad_iovec_cur))
+                goto end;
+
+            break;
+        } 
+        //else {
+        //    DISP("CNX BLOQUEE");
+        //}
+        idx++;
+    } while(forward = tbx_slist_ref_forward(s_msg_slist));
+
+    if(!forward)
+        goto end;
+
     TBX_GET_TICK(t3);
 
     if(mad_iovec_cur->receive_mode == mad_receive_EXPRESS)
@@ -311,17 +345,23 @@ mad_s_optimize(p_mad_adapter_t adapter){
 
     mad_iovec_prev = mad_iovec_cur;
 
-    while(s_msg_slist->length && mad_iovec->total_nb_seg <= 32){
-        mad_iovec_cur = tbx_slist_index_get(s_msg_slist, 0);
+    do{//while(s_msg_slist->length && mad_iovec->total_nb_seg <= 32){
+        //mad_iovec_cur = tbx_slist_index_get(s_msg_slist, 0);
+        mad_iovec_cur = (p_mad_iovec_t)s_msg_slist->ref->object;
+
+        blocked_cnx = adapter->blocked_cnx[mad_iovec_cur->channel->id][mad_iovec_cur->remote_rank];
 
         // si même destination et si on est autorisé à le prendre
-        if((mad_iovec_cur->remote_rank == mad_iovec->remote_rank)
+        if(!blocked_cnx
+           && (mad_iovec_cur->remote_rank == mad_iovec->remote_rank)
            && (authorized(mad_iovec_prev, mad_iovec_cur))){
-            mad_iovec_cur = tbx_slist_extract(s_msg_slist);
+            //mad_iovec_cur = tbx_slist_extract(s_msg_slist);
+            tbx_slist_ref_extract_and_forward(s_msg_slist, &mad_iovec_cur);
 
             if(mad_iovec_cur->need_rdv){
                 //DISP("continue_with_rdv");
                 mad_iovec_continue_with_rdv(mad_iovec, mad_iovec_cur);
+                driver->nb_pack_to_send++;
             } else {
                 //DISP("continue_with_data");
                 mad_iovec_continue_with_data(mad_iovec, mad_iovec_cur);
@@ -340,10 +380,10 @@ mad_s_optimize(p_mad_adapter_t adapter){
         }
         mad_iovec_prev = mad_iovec_cur;
         mad_iovec->matrix_entrie = mad_iovec_cur->matrix_entrie;
-    }
-    mad_iovec->track = adapter->s_track_set->cpy_track;
-    mad_iovec_update_global_header(mad_iovec);
-    driver->nb_pack_to_send -= mad_iovec->nb_packs;
+    }while(tbx_slist_ref_forward(s_msg_slist)
+           && mad_iovec->total_nb_seg <= 32);
+
+   
     TBX_GET_TICK(t4);
 
     nb_chronos_optimize ++;
@@ -353,6 +393,13 @@ mad_s_optimize(p_mad_adapter_t adapter){
     chrono_optimize_1_4 += TBX_TIMING_DELAY(t1, t4);
 
  end:
+    if(mad_iovec){
+        mad_iovec->track = adapter->s_track_set->cpy_track;
+        mad_iovec->need_rdv = tbx_false;
+        mad_iovec_update_global_header(mad_iovec);
+    }
+    
+
     LOG_OUT();
     return mad_iovec;
 }

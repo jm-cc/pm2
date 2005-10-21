@@ -98,7 +98,10 @@ typedef struct s_mad_connection{
     p_tbx_slist_t  packs_list;
     sequence_t     sequence;
 
-    int need_reception;
+    tbx_bool_t     blocked;
+    uint32_t       nb_unexpected;
+
+    int            need_reception;
 
     /* Driver specific data */
     p_mad_driver_specific_t  specific;

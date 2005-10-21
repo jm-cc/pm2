@@ -3,12 +3,12 @@
 #include "madeleine.h"
 
 
-int    nb_chronos_fill = 0;
-int    nb_fill_echec = 0;
-double chrono_fill_1_2 = 0.0;
-double chrono_fill_2_3 = 0.0;
-double chrono_fill_3_4 = 0.0;
-double chrono_fill_1_4 = 0.0;
+int    nb_send_cur = 0;
+double chrono_send_cur = 0.0;
+double chrono_send_cur_isend = 0.0;
+
+int    nb_send_next = 0;
+double chrono_send_next = 0.0;
 
 int    nb_chronos_s_mkp = 0;
 double chrono_s_mkp = 0.0;
@@ -20,7 +20,10 @@ mad_search_next(p_mad_adapter_t adapter,
     p_mad_driver_t           driver            = NULL;
     p_tbx_slist_t            s_ready_msg_slist = NULL;
     p_mad_driver_interface_t interface         = NULL;
+
+    tbx_tick_t t1, t2;
     LOG_IN();
+    TBX_GET_TICK(t1);
     driver             = adapter->driver;
     s_ready_msg_slist  = adapter->s_ready_msg_list;
     interface          = driver->interface;
@@ -32,6 +35,10 @@ mad_search_next(p_mad_adapter_t adapter,
         s_track_set->next = mad_s_optimize(adapter);
 
     }
+
+    TBX_GET_TICK(t2);
+    nb_send_next++;
+    chrono_send_next += TBX_TIMING_DELAY(t1, t2);
     LOG_OUT();
 }
 
@@ -43,9 +50,7 @@ mad_send_cur(p_mad_adapter_t adapter,
     p_mad_driver_interface_t interface         = NULL;
     p_mad_iovec_t cur = NULL;
 
-    tbx_tick_t t1;
-    tbx_tick_t t2;
-
+    tbx_tick_t t1, t2, t3;
     LOG_IN();
     driver             = adapter->driver;
     s_ready_msg_slist  = adapter->s_ready_msg_list;
@@ -59,30 +64,36 @@ mad_send_cur(p_mad_adapter_t adapter,
     } else if(s_ready_msg_slist->length){
         s_track_set->cur = tbx_slist_extract(s_ready_msg_slist);
 
-    }else {
-        if(driver->nb_pack_to_send){
-            s_track_set->cur = mad_s_optimize(adapter);
-        } else {
-            s_track_set->status = MAD_MKP_NOTHING_TO_DO;
-            goto end;
-        }
+    } else {
+        s_track_set->cur = mad_s_optimize(adapter);
 
         if(!s_track_set->cur){
             s_track_set->status = MAD_MKP_NOTHING_TO_DO;
             goto end;
         }
     }
+    driver->nb_pack_to_send -= s_track_set->cur->nb_packs;
+
     if(driver->nb_pack_to_send)
         mad_search_next(adapter, s_track_set);
 
+    cur = s_track_set->cur;
+
     TBX_GET_TICK(t2);
 
-    cur = s_track_set->cur;
+    //mad_iovec_print(cur);
+
     interface->isend(cur->track,
                      cur->remote_rank,
                      cur->data,
                      cur->total_nb_seg);
     s_track_set->status = MAD_MKP_PROGRESS;
+
+    TBX_GET_TICK(t3);
+    nb_send_cur++;
+    chrono_send_cur += TBX_TIMING_DELAY(t1, t3);
+    chrono_send_cur_isend += TBX_TIMING_DELAY(t2, t3);
+
  end:
     LOG_OUT();
 }
@@ -113,6 +124,8 @@ mad_s_make_progress(p_mad_adapter_t adapter){
         status              = s_track_set->status;
 
         if(status == MAD_MKP_PROGRESS){
+            //DISP("ENVOYE");
+
             // remontée sur zone utilisateur
             if(cur->need_rdv){
                 p_mad_madeleine_t      madeleine   = NULL;
@@ -132,12 +145,20 @@ mad_s_make_progress(p_mad_adapter_t adapter){
                               channel_id,
                               remote_rank,
                               cur->sequence);
+                mad_iovec_free(cur);
+                s_track_set->cur = NULL;
+
             } else {
                 mad_iovec_s_check(adapter, cur);
+                s_track_set->cur = NULL;
             }
 
             // envoi du suivant
-            mad_send_cur(adapter, s_track_set);
+            if(driver->nb_pack_to_send){
+                mad_send_cur(adapter, s_track_set);
+            } else {
+                s_track_set->status = MAD_MKP_NOTHING_TO_DO;
+            }
         }
     }
     LOG_OUT();
@@ -147,64 +168,34 @@ mad_s_make_progress(p_mad_adapter_t adapter){
 
 
 static void
-treat_unexpected(void){
-    //p_mad_madeleine_t madeleine        = NULL;
-    //int nb_channels = 0;
-    //p_mad_channel_t channel = NULL;
-    //p_mad_adapter_t adapter            = NULL;
-    //p_mad_driver_t driver = NULL;
-    //p_mad_driver_interface_t interface = NULL;
-    //p_tbx_slist_t unexpected_msg_list  = NULL;
-    //p_mad_iovec_t cur                  = NULL;
-    //tbx_bool_t    forward              = tbx_false;
-    //int i = 0;
-    //int unexpected_recovery_threshold = 0;
-    //LOG_IN();
+treat_unexpected(p_mad_adapter_t adapter){
+    p_mad_pipeline_t    unexpected = NULL;
+    int cur_nb_unexpected             = 0;
+    int unexpected_total_nb           = 0;
 
-    FAILURE("unexpected pas encore supporté");
+    p_mad_iovec_t            cur            = NULL;
 
-    //madeleine = mad_get_madeleine();
-    //nb_channels = madeleine->nb_channels;
-    //
-    //for(i = 0 ; i < nb_channels; i++){
-    //    channel = madeleine->channel_tab[i];
-    //    adapter = channel->adapter;
-    //    driver = adapter->driver;
-    //    interface = driver->interface;
-    //    unexpected_msg_list = channel->unexpected;
-    //    unexpected_recovery_threshold = driver->unexpected_recovery_threshold;
-    //
-    //    if(channel->blocked &&
-    //       unexpected_msg_list->length < unexpected_recovery_threshold){
-    //        // envoi d'un message de déblocage
-    //
-    //    } else if(unexpected_msg_list->length){ // s'il y a des données en attente
-    //        tbx_slist_ref_to_head(unexpected_msg_list);
-    //
-    //        while(1){
-    //            cur = tbx_slist_ref_get(unexpected_msg_list);
-    //            if(cur == NULL)
-    //                break;
-    //
-    //            if(mad_iovec_exploit_msg(adapter, cur->data[0].iov_base)){
-    //                // le mad_iovec est entièrement traité,
-    //                // donc retrait de la liste des "unexpected"
-    //                forward = tbx_slist_ref_extract_and_forward(unexpected_msg_list, (void **)cur);
-    //
-    //                // libération du mad_iovec pré_posté
-    //                interface->clean_pre_posted(cur);
-    //
-    //                if(!forward)
-    //                    break;
-    //
-    //            } else {
-    //                if(!tbx_slist_ref_forward(unexpected_msg_list))
-    //                    break;
-    //            }
-    //        }
-    //    }
-    //}
-    //LOG_OUT();
+
+    LOG_IN();
+    unexpected_total_nb = adapter->unexpected_total_nb;
+    unexpected          = adapter->unexpected;
+
+    while(cur_nb_unexpected < unexpected_total_nb){
+        cur = mad_pipeline_index_get(unexpected, cur_nb_unexpected);
+
+        if(mad_iovec_exploit_msg(adapter, cur->data[0].iov_base)){
+            // le mad_iovec est entièrement traité,
+            // donc retrait de la liste des "unexpected"
+            mad_pipeline_extract(unexpected, cur_nb_unexpected);
+
+            // libération du mad_iovec pré_posté
+            mad_pipeline_add(adapter->pre_posted, cur);
+
+            break;
+        }
+        cur_nb_unexpected++;
+    }
+    LOG_OUT();
 }
 
 void
@@ -223,7 +214,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     r_track_set = adapter->r_track_set;
 
     // on traite les unexpected
-    //treat_unexpected();
+    treat_unexpected(adapter);
 
     if(r_track_set->status == MAD_MKP_NOTHING_TO_DO)
         goto end;
@@ -243,10 +234,11 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                 r_track_set->reception_curs[i] = NULL;
 
                 if(track->pre_posted){
+                    //DISP("RECEPTION d'un petit");
+
                     // dépot d'une nouvelle zone pré-postée
                     interface->add_pre_posted(adapter,
-                                              r_track_set,
-                                              track);
+                                              r_track_set);
                     // Traitement des données reçues
                     exploit_msg = mad_iovec_exploit_msg(adapter,
                                                         mad_iovec->data[0].iov_base);
@@ -255,15 +247,16 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                         // on rend le mad_iovec pré_posté
                         mad_pipeline_add(adapter->pre_posted,
                                          mad_iovec);
+                    } else { // unexpected
+                        mad_pipeline_add(adapter->unexpected, mad_iovec);
                     }
-                } else {
-                    mad_iovec_get(mad_iovec->channel->unpacks_list,
-                                  mad_iovec->channel->id,
-                                  mad_iovec->remote_rank,
-                                  mad_iovec->sequence);
 
-                    mad_iovec_free(mad_iovec, tbx_false);
-                    r_track_set->reception_curs[i] = NULL;
+                } else {
+                    mad_iovec = mad_iovec_get(mad_iovec->channel->unpacks_list,
+                                              mad_iovec->channel->id,
+                                              mad_iovec->remote_rank,
+                                              mad_iovec->sequence);
+                    mad_iovec_free(mad_iovec);
 
                     // cherche un nouveau à envoyer
                     if(adapter->rdv->length)

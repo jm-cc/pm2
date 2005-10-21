@@ -75,7 +75,7 @@ tbx_aligned_free (void *ptr,
  * ---------------------
  */
 #if 0
-#  define TBX_MALLOC_DEBUG_NAME ("madeleine/buffers")
+#  define TBX_MALLOC_DEBUG_NAME ("iovecs")
 #else
 #  define TBX_MALLOC_DEBUG_NAME NULL
 #endif

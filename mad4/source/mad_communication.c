@@ -19,6 +19,9 @@
  */
 #include "madeleine.h"
 
+int nb_pack = 0;
+double chrono_pack = 0.0;
+
 p_mad_connection_t
 mad_begin_packing(p_mad_channel_t      channel,
 		  ntbx_process_lrank_t remote_rank){
@@ -61,7 +64,12 @@ mad_pack(p_mad_connection_t   connection,
     ntbx_process_lrank_t      remote_rank = -1;
     unsigned int              seq         = -1;
     tbx_bool_t need_rdv = tbx_false;
+
+    tbx_tick_t t1, t2;
     LOG_IN();
+    //DISP("-->pack");
+    TBX_GET_TICK(t1);
+
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -77,14 +85,21 @@ mad_pack(p_mad_connection_t   connection,
                                  seq, need_rdv,
                                  send_mode, receive_mode);
     if(need_rdv)
-        mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 0);
+        mad_iovec_add_data_at_index(mad_iovec, buffer,
+                                    buffer_length, 0);
     else
-        mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 2);
+        mad_iovec_add_data_at_index(mad_iovec, buffer,
+                                    buffer_length, 2);
 
     tbx_slist_append(driver->s_msg_slist, mad_iovec);
     tbx_slist_append(connection->packs_list, mad_iovec);
 
     driver->nb_pack_to_send++;
+
+    TBX_GET_TICK(t2);
+    chrono_pack += TBX_TIMING_DELAY(t1, t2);
+    nb_pack++;
+    //DISP("<--pack");
     LOG_OUT();
 }
 
@@ -132,9 +147,6 @@ mad_wait_packs(p_mad_connection_t connection){
     p_mad_adapter_t adapter = NULL;
     p_mad_driver_t driver = NULL;
 
-    tbx_tick_t        t1;
-    tbx_tick_t        t2;
-    tbx_tick_t        t3;
     LOG_IN();
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -142,16 +154,11 @@ mad_wait_packs(p_mad_connection_t connection){
 
     // flush packs
     while(connection->packs_list->length){
-        TBX_GET_TICK(t1);
         mad_s_make_progress(adapter);
-        TBX_GET_TICK(t2);
 
         if(connection->need_reception){
             mad_r_make_progress(adapter);
         }
-
-        chrono_s_mkp_2        += TBX_TIMING_DELAY(t1, t2);
-        nb_chronos_mad_s_mkp_2++;
     }
     LOG_OUT();
 }
@@ -193,6 +200,9 @@ mad_unpack(p_mad_connection_t    connection,
     unsigned int              seq         = -1;
     tbx_bool_t need_rdv = tbx_false;
     LOG_IN();
+    //DISP("-->unpack");
+
+
     remote_rank = connection->remote_rank;
     channel     = connection->channel;
     adapter     = channel->adapter;
@@ -208,7 +218,8 @@ mad_unpack(p_mad_connection_t    connection,
                                  seq, need_rdv,
                                  send_mode, receive_mode);
 
-    mad_iovec_add_data2(mad_iovec, buffer, buffer_length, 0);
+    mad_iovec_add_data_at_index(mad_iovec, buffer,
+                                buffer_length, 0);
 
     tbx_slist_append(channel->unpacks_list, mad_iovec);
 
@@ -218,6 +229,7 @@ mad_unpack(p_mad_connection_t    connection,
             mad_s_make_progress(adapter);
         }
     }
+    //DISP("<--unpack");
     LOG_OUT();
 }
 
@@ -270,3 +282,39 @@ mad_wait_unpacks(p_mad_connection_t connection){
     }
     LOG_OUT();
 }
+
+void
+mad_wait_unexpected(p_mad_connection_t connection){
+    p_mad_channel_t channel = NULL;
+    p_mad_adapter_t adapter = NULL;
+    int counter = 0;
+
+    LOG_IN();
+    channel = connection->channel;
+    adapter = channel->adapter;
+
+    for(counter = 0; counter < 1000; counter++){
+        mad_r_make_progress(adapter);
+    }
+    LOG_OUT();
+}
+
+
+//void
+//mad_wait_all(p_mad_connection_t connection){
+//    p_mad_channel_t channel = NULL;
+//    p_mad_adapter_t adapter = NULL;
+//
+//    LOG_IN();
+//    channel = connection->channel;
+//    adapter = channel->adapter;
+//
+//
+//    while(connection->packs_list->length
+//          || channel->unpacks_list->length){
+//        mad_s_make_progress(adapter);
+//        mad_r_make_progress(adapter);
+//    }
+//    LOG_OUT();
+//}
+

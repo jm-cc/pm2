@@ -28,7 +28,7 @@
 #define NB_LOOPS 1000
 #define WARMUP_LOOPS 10
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  (2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  70000 //(2*1024*1024) //32768
 
 int    nb_chronos_client    = 0;
 double chrono_client_3_4    = 0.0;
@@ -185,15 +185,15 @@ client(p_mad_channel_t channel){
                cur_length, sum / (NB_LOOPS * 2),
                (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
 
-        //printf("En émission, temps entre le mad_pack et le succès du mx_test            %9g\n", temps_emission / nb_chronos_client);
-        //printf("En réception, temps entre le succès du mx_test et la fin de la remontée %9g\n", temps_reception / nb_chronos_client);
-        //printf("\n");
-        //
-        //printf("mad_pack            %9g\n", chrono_client_3_4 / nb_chronos_client);
-        //printf("mad_wait_pack       %9g\n", chrono_client_4_5 / nb_chronos_client);
-        //printf("mad_unpack          %9g\n", chrono_client_5_6 / nb_chronos_client);
-        //printf("mad_wait_unpack     %9g\n", chrono_client_6_7 / nb_chronos_client);
-        //printf("\n");
+        printf("En émission, temps entre le mad_pack et le succès du mx_test            %9g\n", temps_emission / nb_chronos_client);
+        printf("En réception, temps entre le succès du mx_test et la fin de la remontée %9g\n", temps_reception / nb_chronos_client);
+        printf("\n");
+
+        printf("mad_pack            %9g\n", chrono_client_3_4 / nb_chronos_client);
+        printf("mad_wait_pack       %9g\n", chrono_client_4_5 / nb_chronos_client);
+        printf("mad_unpack          %9g\n", chrono_client_5_6 / nb_chronos_client);
+        printf("mad_wait_unpack     %9g\n", chrono_client_6_7 / nb_chronos_client);
+        printf("\n");
 
         nb_chronos_client    = 0;
         chrono_client_3_4    = 0.0;
@@ -315,74 +315,21 @@ main(int argc, char **argv) {
     ntbx_process_grank_t      	 my_global_rank    =   -1;
     ntbx_process_lrank_t      	 my_local_rank     =   -1;
 
-    //extern int nb_chronos;
-    //extern double chrono_remove    ;
-    //extern double chrono_add       ;
-    //extern double chrono_mx_irecv  ;
-    //extern double chrono_total     ;
-    //
-    //extern int nb_chronos_mkp;
-    //extern double chrono_mkfp_1_2;
-    //extern double chrono_mkfp_2_3;
-    //extern double chrono_mkfp_3_4;
-    //extern double chrono_mkfp_4_5;
-    //extern double chrono_mkfp_1_5;
-    //
-    //extern double min_chrono_mkfp_1_2;
-    //extern double min_chrono_mkfp_2_3;
-    //extern double min_chrono_mkfp_3_4;
-    //extern double min_chrono_mkfp_4_5;
-    //extern double min_chrono_mkfp_1_5;
-    //
-    //extern double max_chrono_mkfp_1_2;
-    //extern double max_chrono_mkfp_2_3;
-    //extern double max_chrono_mkfp_3_4;
-    //extern double max_chrono_mkfp_4_5;
-    //extern double max_chrono_mkfp_1_5;
-    //
-    //extern int    nb_chronos_exploit   ;
-    //extern double chrono_exploit_1_2   ;
-    //
-    //extern int    nb_chronos_treat_data;
-    //extern double chrono_treat_data_1_2;
-    //extern double chrono_treat_data_2_3;
-    //extern double chrono_treat_data_3_4;
-    //extern double chrono_treat_data_5_6;
-    //extern double chrono_treat_data_6_7;
-    //extern double chrono_treat_data_8_9;
-    //extern double chrono_treat_data_1_9;
-    //
-    //
-    //extern int    nb_chronos_r_mkp;
-    //extern double chrono_treat_unexpected;
-    //extern double chrono_mad_mkp         ;
-    //extern double chrono_add_pre_posted  ;
-    //extern double chrono_exploit_msg     ;
-    //extern int    nb_chronos_fill;
-    //extern int    nb_fill_echec;
-    //extern double chrono_fill_1_2;
-    //extern double chrono_fill_2_3;
-    //extern double chrono_fill_3_4;
-    //extern double chrono_fill_1_4;
-    //
+    extern int nb_pack;
+    extern double chrono_pack;
+
+    extern int    nb_send_cur;
+    extern double chrono_send_cur;
+    extern double chrono_send_cur_isend;
+
+    extern int    nb_send_next;
+    extern double chrono_send_next;
+
     extern int    nb_chronos_optimize;
     extern double chrono_optimize_1_2;
     extern double chrono_optimize_2_3;
     extern double chrono_optimize_3_4;
     extern double chrono_optimize_1_4;
-    //
-    //extern int    nb_chronos_s_mkp;
-    //extern int    nb_chronos_r_mkp;
-    //
-    //extern int    nb_chronos_mad_r_mkp;
-    //extern int    nb_chronos_mad_s_mkp;
-    //extern double chrono_r_mkp;
-    //extern double chrono_s_mkp;
-    //
-    //extern int    nb_chronos_mad_r_mkp_2;
-    //extern int    nb_chronos_mad_s_mkp_2;
-    //extern double chrono_r_mkp_2;
-    //extern double chrono_s_mkp_2;
 
     LOG_IN();
     common_pre_init (&argc, argv, NULL);
@@ -407,120 +354,26 @@ main(int argc, char **argv) {
         DISP("FINI!!!");
     }
 
+    printf("MAD_PACK    %9g\n", chrono_pack/nb_pack);
+    printf("\n");
 
-    //printf("MAD_WAIT_UNPACK\n");
-    //printf("\tMAD_R_MKP_PROGRESS --> %d fois\n", nb_chronos_r_mkp);
-    //printf("\t \tMAD_MX_ADD_PRE_POSTED : \n");
-    //printf("\t \tremove   --> %9g\n", chrono_remove/nb_chronos);
-    //printf("\t \tadd      --> %9g\n", chrono_add/nb_chronos);
-    //printf("\t \tmx_irecv --> %9g\n", chrono_mx_irecv/nb_chronos);
-    //printf("\t \t-------------------------------\n");
-    //printf("\t \ttotal    --> %9g\n", chrono_total/nb_chronos);
-    //
-    //printf("\n");
-    //printf("\n");
-    //
-    //printf("\t \tMAD_MAKE_PROGRESS\n");
-    //printf("\t \tdebut          %9g\n", chrono_mkfp_1_2/nb_chronos_mkp);
-    //printf("\t \tpipeline get   %9g\n", chrono_mkfp_2_3/nb_chronos_mkp);
-    //printf("\t \tinterface test %9g\n", chrono_mkfp_3_4/nb_chronos_mkp);
-    //printf("\t \tfin            %9g\n", chrono_mkfp_4_5/nb_chronos_mkp);
-    //printf("\t \t-------------------------------\n");
-    //printf("\t \ttotal          %9g\n", chrono_mkfp_1_5/nb_chronos_mkp);
-    //printf("\t \t-------------------------------\n");
-    //printf("\t \tmin debut          %9g\n", min_chrono_mkfp_1_2);
-    //printf("\t \tmin pipeline get   %9g\n", min_chrono_mkfp_2_3);
-    //printf("\t \tmin interface test %9g\n", min_chrono_mkfp_3_4);
-    //printf("\t \tmin fin            %9g\n", min_chrono_mkfp_4_5);
-    //printf("\t \tmin total          %9g\n", min_chrono_mkfp_1_5);
-    //printf("\t \t-------------------------------\n");
-    //printf("\t \tmax debut          %9g\n", max_chrono_mkfp_1_2);
-    //printf("\t \tmax pipeline get   %9g\n", max_chrono_mkfp_2_3);
-    //printf("\t \tmax interface test %9g\n", max_chrono_mkfp_3_4);
-    //printf("\t \tmax fin            %9g\n", max_chrono_mkfp_4_5);
-    //printf("\t \tmax total          %9g\n", max_chrono_mkfp_1_5);
-    //
-    //printf("\n");
-    //printf("\n");
-    //
-    //printf("\t \tMAD_EXPLOIT\n");
-    //printf("\t \ttotal     %9g\n", chrono_exploit_1_2/nb_chronos_exploit);
-    //
-    //printf("\n");
-    //printf("\n");
+    printf("MAD_SEND_CUR  %9g\n", chrono_send_cur/nb_send_cur);
+    printf("MAD_SEND_CUR -nb appels  %d\n", nb_send_cur);
+    printf("MAD_SEND_CUR : isend  %9g\n", chrono_send_cur_isend/nb_send_cur);
+    printf("\n");
 
-    //printf("\t\t\tMAD_TREAT_DATA\n");
-    //printf("\t\t\tmad_iovec_get   %9g\n", chrono_treat_data_1_2/nb_chronos_treat_data);
-    //printf("\t\t\tif              %9g\n", chrono_treat_data_2_3/nb_chronos_treat_data);
-    //printf("\t\t\tmemcpy          %9g\n", chrono_treat_data_3_4/nb_chronos_treat_data);
-    //printf("\t\t\tset_type        %9g\n", chrono_treat_data_5_6/nb_chronos_treat_data);
-    //printf("\t\t\tset_length      %9g\n", chrono_treat_data_6_7/nb_chronos_treat_data);
-    //printf("\t\t\tmad_iovec_free  %9g\n", chrono_treat_data_8_9/nb_chronos_treat_data);
-    //printf("\t\t\ttotal           %9g\n", chrono_treat_data_1_9/nb_chronos_treat_data);
-    //
-    //printf("\n");
-    //printf("\n");
-    //
-    //
-    //
-    //
-    //
-    //printf("chrono_add_pre_posted     %9g\n", chrono_add_pre_posted  /nb_chronos_r_mkp);
-    //printf("chrono_exploit_msg        %9g\n", chrono_exploit_msg     /nb_chronos_r_mkp);
-    //printf("chrono_total              %9g\n", chrono_total           /nb_chronos_r_mkp_toto);
+    if(nb_send_next){
+        printf("MAD_SEND_NEXT  %9g\n", chrono_send_next/nb_send_next);
+    } else {
+        printf("MAD_SEND_NEXT : aucun appel\n");
+    }
 
+    printf("\n");
 
-
-
-    //printf("\n");
-    //
-    //printf("WAIT_PACK\n");
-    //printf("\tMAD_S_MKP --> %d fois\n", nb_chronos_s_mkp);
-    //
-    //printf("\t\tFILL_S_PIPELINE\n");
-    //printf("nb de fois ou on cherche mais qu'il n'y a rien à envoyer   %d\n", nb_fill_echec);
-    //printf("\t\trecuperation du nouvel mad_iovec       %9g\n", chrono_fill_1_2/nb_chronos_fill);
-    //printf("\t\tadd_pipeline                           %9g\n", chrono_fill_2_3/nb_chronos_fill);
-    //printf("\t\tisend                                  %9g\n", chrono_fill_3_4/nb_chronos_fill);
-    //printf("\t\t-------------------------------\n");
-    //printf("\t\ttotal                                  %9g\n", chrono_fill_1_4/nb_chronos_fill);
-    //
-    //printf("\n");
-    //printf("\n");
-    //
-    printf("\t\t\tOPTIMIZE\n");
-    printf("\t\t\textract first            %9g\n", chrono_optimize_1_2/nb_chronos_optimize);
-    printf("\t\t\tinit mad_iovec                %9g\n", chrono_optimize_2_3/nb_chronos_optimize);
-    printf("\t\t\tcontinue mad_iovec                %9g\n", chrono_optimize_3_4/nb_chronos_optimize);
-    printf("\t\t\t-------------------------------\n");
-    printf("\t\t\ttotal                 %9g\n", chrono_optimize_1_4/nb_chronos_optimize);
-
-
-    //printf("\t \tMAD_WAIT_UNPACKS\n");
-    //printf("\t \tnb appels à s_mkp = %d\n", nb_chronos_mad_s_mkp);
-    //printf("\t \tnb appels à r_mkp = %d\n", nb_chronos_mad_r_mkp);
-    //printf("\t \tr_make_progress   --> %9g\n", chrono_r_mkp/nb_chronos_mad_r_mkp);
-    //if(nb_chronos_mad_s_mkp){
-    //    printf("\t \ts_make_progress   --> %9g\n", chrono_s_mkp/nb_chronos_mad_s_mkp);
-    //}
-    //
-    //printf("\n");
-    //printf("\n");
-    //
-    //
-    //printf("\t \tMAD_WAIT_PACKS\n");
-    //printf("\t \tnb appels à s_mkp = %d\n", nb_chronos_mad_s_mkp_2);
-    //printf("\t \tnb appels à r_mkp = %d\n", nb_chronos_mad_r_mkp_2);
-    //printf("\t \ts_make_progress   --> %9g\n", chrono_s_mkp_2/nb_chronos_mad_s_mkp_2);
-    //if(nb_chronos_mad_r_mkp_2){
-    //    printf("\t \t r_make_progress   --> %9g\n", chrono_r_mkp_2/nb_chronos_mad_r_mkp_2);
-    //}
-    //
-    //printf("\n");
-    //printf("\n");
-    //
-    //printf("TOTAL --> nb appel à s_mkp = %d\n", nb_chronos_s_mkp);
-    //printf("      --> nb appel à r_mkp = %d\n", nb_chronos_r_mkp);
+    printf("OPTIMIZE    %9g\n", chrono_optimize_1_4/nb_chronos_optimize);
+    printf("extract first       %9g\n", chrono_optimize_1_2/nb_chronos_optimize);
+    printf("init mad_iovec      %9g\n", chrono_optimize_2_3/nb_chronos_optimize);
+    printf("continue mad_iovec  %9g\n", chrono_optimize_3_4/nb_chronos_optimize);
 
     common_exit(NULL);
     LOG_OUT();

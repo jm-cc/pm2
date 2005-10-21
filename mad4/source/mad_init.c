@@ -124,6 +124,10 @@ adapter_init(p_mad_driver_t mad_driver,
   mad_adapter->s_ready_msg_list = tbx_slist_nil();
   mad_adapter->waiting_acknowlegment_list = tbx_slist_nil();
   mad_adapter->rdv = tbx_slist_nil();
+
+  mad_adapter->unexpected = mad_pipeline_create(mad_driver->max_unexpected + mad_driver->unexpected_buffer_length);
+
+  mad_adapter->unexpected_total_nb = 0;
   /***/
 
   TBX_FREE(adapter_name);
@@ -1682,6 +1686,51 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
     madeleine->nb_channels = nb_channels;
   }
 
+
+  {
+    p_mad_adapter_t mad_adapter = NULL;
+    p_mad_channel_t channel = NULL;
+    int i, j;
+    int max_nb_cnx = 0;
+    int channel_nb_cnx = 0;
+    int nb_channels = 0;
+    tbx_bool_t        **blocked_cnx;
+
+    nb_channels = tbx_htable_get_size(madeleine->channel_htable);
+
+    for(i = 0; i < nb_channels; i++){
+      channel = madeleine->channel_tab[i];
+      channel_nb_cnx =
+        tbx_darray_length(channel->in_connection_darray);
+
+      max_nb_cnx = max_nb_cnx > channel_nb_cnx ?
+        max_nb_cnx : channel_nb_cnx;
+    }
+
+    for(i = 0; i < nb_channels; i++)
+      {
+        channel = madeleine->channel_tab[i];
+        mad_adapter = channel->adapter;
+
+
+        if(!mad_adapter->blocked_cnx)
+          {
+            blocked_cnx = TBX_MALLOC(nb_channels * sizeof(tbx_bool_t *));
+            for(i = 0; i < nb_channels; i++)
+              {
+                blocked_cnx[i] = TBX_MALLOC(max_nb_cnx
+                                            * sizeof(tbx_bool_t));
+              }
+
+            for(i = 0; i < nb_channels; i++)
+              for(j = 0; j < max_nb_cnx; j++)
+                {
+                  blocked_cnx[i][j] = tbx_false;
+                }
+            mad_adapter->blocked_cnx = blocked_cnx;
+          }
+      }
+  }
   LOG_OUT();
 }
 

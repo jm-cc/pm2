@@ -58,6 +58,7 @@ int marcel_gettid(void) {
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/syscall.h>
 
 #define __STACK_SIZE  (1024 * 1024)
 
@@ -100,8 +101,9 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
   int ret = __clone2((int (*)(void *))func, 
 	       stack_base, stack_size,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	       CLONE_PARENT_SETTID |
 	       CLONE_THREAD,
-	       arg, &ia64_dummy, &ia64_dummy, pid);
+	       arg, pid, &ia64_dummy, &ia64_dummy);
   MA_BUG_ON(ret == -1);
 #else
   *pid = clone((int (*)(void *))func, 
@@ -117,13 +119,12 @@ void marcel_kthread_join(marcel_kthread_t pid)
 {
 	LOG_IN();
 	pid_t res;
-	while (1) {
-		if ((res = waitpid(pid, NULL, 0)) == pid)
-			break;
+	while ((res = waitpid(pid, NULL, 0)) == -1 && errno = EINTR);
+
+	if (res != pid) {
 		MA_BUG_ON(res != -1);
-		if (errno == EINTR)
-			continue;
-		marcel_fprintf(stderr,"waitpid(%d): %s\n", pid, strerror(errno));
+		if (errno != ECHILD) /* Linux 2.6 doesn't let us wait clones */
+			marcel_fprintf(stderr,"waitpid(%d): %s\n", pid, strerror(errno));
 	}
 	LOG_OUT();
 }
@@ -131,7 +132,7 @@ void marcel_kthread_join(marcel_kthread_t pid)
 void marcel_kthread_exit(void *retval)
 {
 	LOG_IN();
-	_exit((int)retval);
+	syscall(__NR_exit,(int)retval);
 	LOG_OUT();
 }
 

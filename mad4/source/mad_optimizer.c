@@ -65,10 +65,61 @@ initialize_tracks(p_mad_adapter_t adapter){
     p_mad_driver_interface_t interface = NULL;
     int i = 0;
     LOG_IN();
+    interface = adapter->driver->interface;
 
-    if(strcmp(adapter->driver->device_name, "mx") == 0){
-        interface = adapter->driver->interface;
+    if(strcmp(adapter->driver->device_name, "tcp") == 0){
+        /* Emisssion */
+        adapter->s_track_set     = TBX_MALLOC(sizeof(mad_track_set_t));
 
+        track_set                = adapter->s_track_set;
+        track_set->status        = MAD_MKP_NOTHING_TO_DO;
+        track_set->nb_track      = 1;
+        track_set->tracks_htable = tbx_htable_empty_table();
+        track_set->tracks_tab    = TBX_MALLOC(track_set->nb_track
+                                              * sizeof(p_mad_track_t));
+
+        track_set->cur  = NULL;
+        track_set->next = NULL;
+
+        track0             = TBX_MALLOC(sizeof(mad_track_t));
+        track0->id         = 0;
+        track0->pre_posted = tbx_false;
+        tbx_htable_add(track_set->tracks_htable, "cpy", track0);
+        track_set->tracks_tab[0] = track0;
+
+        track_set->cpy_track = track0;
+
+        /*****************************************/
+        /*****************************************/
+        /*****************************************/
+
+        /* Réception */
+        adapter->r_track_set      = TBX_MALLOC(sizeof(mad_track_set_t));
+
+        track_set                 = adapter->r_track_set;
+        track_set->status         = MAD_MKP_NOTHING_TO_DO;
+        track_set->nb_track       = 1;
+        track_set->tracks_htable  = tbx_htable_empty_table();
+        track_set->tracks_tab     = TBX_MALLOC(track_set->nb_track
+                                              * sizeof(p_mad_track_t));
+        track_set->reception_curs = TBX_MALLOC(track_set->nb_track
+                                               * sizeof(p_mad_iovec_t));
+        for(i = 0; i < track_set->nb_track; i++){
+            track_set->reception_curs[i] = NULL;
+        }
+        track_set->nb_pending     = 0;
+
+        track0                   = TBX_MALLOC(sizeof(mad_track_t));
+        track0->id               = 0;
+        track0->pre_posted       = tbx_true;
+        tbx_htable_add(track_set->tracks_htable, "cpy", track0);
+        track_set->tracks_tab[0] = track0;
+
+        track_set->cpy_track = track0;
+
+        interface->open_track(adapter, 0);
+
+    }else if(strcmp(adapter->driver->device_name, "mx") == 0){
         /* Emisssion */
         adapter->s_track_set = TBX_MALLOC(sizeof(mad_track_set_t));
 
@@ -328,7 +379,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
                 goto end;
 
             break;
-        } 
+        }
         //else {
         //    DISP("CNX BLOQUEE");
         //}
@@ -383,7 +434,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
     }while(tbx_slist_ref_forward(s_msg_slist)
            && mad_iovec->total_nb_seg <= 32);
 
-   
+
     TBX_GET_TICK(t4);
 
     nb_chronos_optimize ++;
@@ -398,7 +449,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
         mad_iovec->need_rdv = tbx_false;
         mad_iovec_update_global_header(mad_iovec);
     }
-    
+
 
     LOG_OUT();
     return mad_iovec;

@@ -76,7 +76,11 @@ mad_pack(p_mad_connection_t   connection,
     driver      = adapter->driver;
     interface   = driver->interface;
     seq         = connection->sequence;
-    need_rdv    = interface->buffer_need_rdv(buffer_length);
+    if(interface->buffer_need_rdv){
+        need_rdv    = interface->buffer_need_rdv(buffer_length);
+    } else {
+        need_rdv = tbx_false;
+    }
 
     connection->sequence++;
 
@@ -209,7 +213,11 @@ mad_unpack(p_mad_connection_t    connection,
     driver      = adapter->driver;
     interface   = driver->interface;
     seq         = channel->sequence;
-    need_rdv = interface->buffer_need_rdv(buffer_length);
+    if(interface->buffer_need_rdv){
+        need_rdv = interface->buffer_need_rdv(buffer_length);
+    } else {
+        need_rdv = tbx_false;
+    }
 
     channel->sequence++;
 

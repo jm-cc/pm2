@@ -865,6 +865,8 @@ extern int FASTCALL(marcel_wake_up_thread(marcel_task_t * tsk))
 };
 #endif
 
+#ifdef MA__LWPS
 unsigned marcel_add_lwp(void) {
 	return marcel_lwp_add_vp();
 }
+#endif

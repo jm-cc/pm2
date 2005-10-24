@@ -95,7 +95,11 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
 #define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
 
 #section functions
+#ifdef MA__LWPS
 unsigned marcel_add_lwp(void);
+#else
+#define marcel_add_lwp() (0)
+#endif
 
 /****************************************************************/
 /* Structure interne pour une tâche

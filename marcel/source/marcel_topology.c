@@ -360,7 +360,7 @@ static void topology_lwp_start(ma_lwp_t lwp) {
 
 MA_DEFINE_LWP_NOTIFIER_START(topology, "Topology",
 				  topology_lwp_init, "Initialisation de la topologie",
-				  topology_lwp_start, "Activation de la topologi");
+				  topology_lwp_start, "Activation de la topologie");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 #endif /* MA_NUMA */

@@ -94,6 +94,9 @@ int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *y
 #define marcel_attr_setinheritholder(attr,yes) marcel_sched_attr_setinheritholder(&(attr)->sched,yes)
 #define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
 
+#section functions
+unsigned marcel_add_lwp(void);
+
 /****************************************************************/
 /* Structure interne pour une tâche
  */
@@ -124,7 +127,8 @@ marcel_sched_vpmask_init_rq(marcel_vpmask_t mask)
 		first_vp=ma_ffs(~mask)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
 		MA_BUG_ON(mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
-		MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
+		//on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps
+		//MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
 		return ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
 	}
 }

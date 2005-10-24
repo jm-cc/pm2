@@ -282,7 +282,7 @@ void marcel_gensched_shutdown(void)
 }
 
 #ifdef MA__LWPS
-static any_t TBX_NORETURN idle_func(any_t hlwp)
+static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 {
 	if (hlwp == NULL) {
 		/* upcall_new_task est venue ici ? */
@@ -294,6 +294,15 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 	  marcel_yield_intern();
 	}
 }
+#ifndef MA__ACT
+static any_t TBX_NORETURN idle_func(any_t hlwp)
+{
+	for(;;) {
+	  pause();
+	  marcel_yield_intern();
+	}
+}
+#endif
 
 MA_DEFINE_PER_LWP(marcel_task_t *,idle_task, NULL);
 #endif
@@ -339,8 +348,9 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 #endif
 	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
 	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
-	marcel_create_special(&(ma_per_lwp(idle_task, lwp)),
-			      &attr, idle_func, (void*)(ma_lwp_t)lwp);
+	marcel_create_special(&(ma_per_lwp(idle_task, lwp)), &attr,
+			LWP_NUMBER(lwp)<get_nb_lwps()?idle_poll_func:idle_func,
+			(void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
 #endif
 

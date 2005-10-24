@@ -119,7 +119,7 @@ void marcel_kthread_join(marcel_kthread_t pid)
 {
 	LOG_IN();
 	pid_t res;
-	while ((res = waitpid(pid, NULL, 0)) == -1 && errno = EINTR);
+	while ((res = waitpid(pid, NULL, 0)) == -1 && errno == EINTR);
 
 	if (res != pid) {
 		MA_BUG_ON(res != -1);

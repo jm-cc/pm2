@@ -55,12 +55,12 @@ void clone_slave(clone_t *c)
 
   memcpy(&buf, &c->master_jb, sizeof(marcel_ctx_t));
 
-  (unsigned long)marcel_ctx_get_sp(buf) = (unsigned long)marcel_ctx_get_sp(buf) + clone_my_delta();
+  marcel_ctx_get_sp(buf) = marcel_ctx_get_sp(buf) + clone_my_delta();
 #ifdef marcel_ctx_get_fp
-  (unsigned long)marcel_ctx_get_fp(buf) = (unsigned long)marcel_ctx_get_fp(buf) + clone_my_delta();
+  marcel_ctx_get_fp(buf) = marcel_ctx_get_fp(buf) + clone_my_delta();
 #endif
 #ifdef marcel_ctx_get_bsp
-  (unsigned long)marcel_ctx_get_bsp(buf) = (unsigned long)marcel_ctx_get_bsp(buf) + clone_my_delta();
+  marcel_ctx_get_bsp(buf) = marcel_ctx_get_bsp(buf) + clone_my_delta();
 #endif
 
   marcel_mutex_unlock(&c->mutex);

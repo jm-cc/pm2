@@ -90,6 +90,9 @@
 #ifdef DRV_TCP
 #include "connection_interfaces/mad_tcp.h"
 #endif /* DRV_TCP */
+#ifdef DRV_SCTP
+#include "connection_interfaces/mad_sctp.h"
+#endif /* DRV_SCTP */
 #ifdef DRV_VRP
 #include "connection_interfaces/mad_vrp.h"
 #endif /* DRV_VRP */

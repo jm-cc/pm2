@@ -31,6 +31,10 @@ typedef enum
   mad_TCP,
 #endif // DRV_TCP
 
+#ifdef DRV_SCTP
+  mad_SCTP,
+#endif // DRV_SCTP
+
 #ifdef DRV_RAND
   mad_RAND,
 #endif // DRV_RAND

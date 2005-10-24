@@ -46,6 +46,9 @@ static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 #ifdef DRV_TCP
   mad_tcp_register,
 #endif /* DRV_TCP */
+#ifdef DRV_SCTP
+  mad_sctp_register,
+#endif /* DRV_SCTP */
 #ifdef DRV_RAND
   mad_rand_register,
 #endif /* DRV_RAND */

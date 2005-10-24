@@ -1404,6 +1404,17 @@ void bubbleInsertThread(thread_t *bubble, thread_t *thread);
 
 bubble_t *bigb;
 
+void error(const char *msg, ...) {
+	va_list args;
+
+	va_start(args, msg);
+	vfprintf(stderr,msg, args);
+	va_end(args);
+	SWFMovie_save(movie,"rescue.swf", -1);
+	fprintf(stderr,"saved to rescue.swf\n");
+	abort();
+}
+
 int main(int argc, char *argv[]) {
 	rq_t **rqs=NULL;
 	/* choose whatever font you want */
@@ -1419,6 +1430,7 @@ int main(int argc, char *argv[]) {
 	Ming_init();
 	int __attribute__((unused)) i;
 
+	Ming_setErrorFunction(error);
 	f = fopen("/usr/share/libming/fonts/Timmons.fdb","r");
 
 	/* pause macro */
@@ -1510,7 +1522,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	block = fxt_blockev_enter(fut);
-	hcreate(100);
+	hcreate(1024);
 
 	while (!(ret = fxt_next_ev(block, FXT_EV_TYPE_64, &ev))) {
 		if (ev.ev64.code == FUT_KEYCHANGE_CODE)

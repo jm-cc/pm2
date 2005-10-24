@@ -947,6 +947,7 @@ void changeInRunqueueEnd(rq_t *rq, entity_t *e) {
 void growInBubbleBegin(bubble_t *b, entity_t *e, float dx, float dy) {
 	entity_t *el;
 	float mydy = 0;
+	float newwidth;
 
 	bubbleMorphBegin(b);
 
@@ -966,9 +967,12 @@ void growInBubbleBegin(bubble_t *b, entity_t *e, float dx, float dy) {
 		b->entity.height += mydy;
 	}
 #endif
-	if (b->nextX-OVERLAP>b->entity.width || b->entity.y != b->entity.lasty) {
-		growInHolderBegin(&b->entity,b->nextX-OVERLAP-b->entity.width,mydy);
-		b->entity.width = b->nextX-OVERLAP;
+	newwidth = b->nextX-OVERLAP;
+	if (newwidth < CURVE)
+		newwidth = CURVE;
+	if (newwidth!=b->entity.width || b->entity.y != b->entity.lasty) {
+		growInHolderBegin(&b->entity,newwidth-b->entity.width,mydy);
+		b->entity.width = newwidth;
 	}
 }
 

@@ -1276,6 +1276,7 @@ void bubbleExplode(bubble_t *b) { }
  */
 
 void removeFromHolderBegin(entity_t *e) {
+	if (!e->holder) return;
 	switch (e->holder->type) {
 	case RUNQUEUE:
 		removeFromRunqueueBegin(rq_of_entity(e->holder),e);
@@ -1290,6 +1291,7 @@ void removeFromHolderBegin(entity_t *e) {
 }
 
 void removeFromHolderBegin2(entity_t *e) {
+	if (!e->holder) return;
 	switch (e->holder->type) {
 	case RUNQUEUE:
 		removeFromRunqueueBegin2(rq_of_entity(e->holder),e);
@@ -1304,6 +1306,7 @@ void removeFromHolderBegin2(entity_t *e) {
 }
 
 void removeFromHolderStep(entity_t *e, float step) {
+	if (!e->holder) return;
 	switch (e->lastholder->type) {
 	case RUNQUEUE:
 		changeInRunqueueStep(rq_of_entity(e->lastholder),e,step);
@@ -1318,6 +1321,7 @@ void removeFromHolderStep(entity_t *e, float step) {
 }
 
 void removeFromHolderEnd(entity_t *e) {
+	if (!e->holder) return;
 	switch (e->holder->type) {
 	case RUNQUEUE:
 		removeFromRunqueueEnd(rq_of_entity(e->holder),e);

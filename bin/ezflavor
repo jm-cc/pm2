@@ -108,11 +108,7 @@ if [ `${PM2_ROOT}/bin/pm2_sys` = "DARWIN_SYS" -a -n "$X" ] ; then
 
 else
 
-    if [ -z "$LEO_DEBUG" ] ; then
-
-        exec ${PROG} ${@:+"$@"}
-
-    else
+    if [ -n "$LEO_DEBUG" ] && [ "$progname" == "leonie" ] ; then
 
         file=/tmp/leo_debug.$$
 
@@ -128,6 +124,9 @@ else
 
         gdb -x $file ${PROG}
 
+    else
+
+        exec ${PROG} ${@:+"$@"}
     fi
 
 fi

@@ -214,10 +214,15 @@ typedef struct {
 				1 : ({ma_preempt_enable(); 0;});})
 
 /* Where's read_trylock? */
-#section marcel_functions
-#depend "asm/linux_spinlock.h[types]"
+#section functions
 #if defined(MA__LWPS)
-TBX_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock);
+#depend "asm/linux_spinlock.h[types]"
+void __ma_preempt_spin_lock(ma_spinlock_t *lock);
+#endif
+
+#section marcel_functions
+#if defined(MA__LWPS)
+#depend "asm/linux_rwlock.h[marcel_types]"
 TBX_PROTECTED void __ma_preempt_write_lock(ma_rwlock_t *lock);
 #endif
 

@@ -95,3 +95,4 @@ typedef pthread_mutex_t ma_spinlock_t;
 #section marcel_structures
 #section marcel_functions
 #section marcel_inline
+#section functions

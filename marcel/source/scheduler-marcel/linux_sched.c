@@ -1852,7 +1852,7 @@ int marcel_yield_to(marcel_t next)
 	return 0;
 }
 
-asmlinkage TBX_PROTECTED void ma_preempt_schedule(void)
+asmlinkage void ma_preempt_schedule(void)
 {
         marcel_task_t *ti = MARCEL_SELF;
 
@@ -3307,7 +3307,7 @@ EXPORT_SYMBOL(__might_sleep);
  *
  * Called inside preempt_disable().
  */
-TBX_PROTECTED void __ma_preempt_spin_lock(ma_spinlock_t *lock)
+void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 {
 	if (ma_preempt_count() > 1) {
 		_ma_raw_spin_lock(lock);

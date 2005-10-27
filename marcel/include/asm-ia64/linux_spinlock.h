@@ -223,4 +223,5 @@ do {										\
 #section marcel_structures
 #section marcel_functions
 #section common
+#section functions
 #endif /* MA__LWPS */

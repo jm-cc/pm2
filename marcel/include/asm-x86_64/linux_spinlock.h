@@ -21,3 +21,4 @@
 #section marcel_macros
 #section types
 #section marcel_structures
+#section functions

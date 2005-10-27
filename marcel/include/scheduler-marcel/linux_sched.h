@@ -75,7 +75,7 @@ int marcel_yield_to(marcel_t next);
 
 #section marcel_functions
 extern TBX_PROTECTED signed long FASTCALL(ma_schedule_timeout(signed long timeout));
-asmlinkage void ma_schedule(void);
+asmlinkage TBX_PROTECTED void ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 
 //struct sighand_struct {

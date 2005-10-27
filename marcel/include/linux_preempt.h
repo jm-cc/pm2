@@ -36,9 +36,10 @@ do { \
 	MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK); \
 } while (0)
 
-#section marcel_functions
+#section functions
 #depend "tbx_compiler.h"
-asmlinkage TBX_PROTECTED void ma_preempt_schedule(void);
+#depend "asm/linux_linkage.h[marcel_macros]"
+asmlinkage void ma_preempt_schedule(void);
 
 #section marcel_macros
 #depend "linux_thread_info.h[]"

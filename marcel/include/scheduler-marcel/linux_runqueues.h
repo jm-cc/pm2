@@ -48,7 +48,7 @@
 #define MA_IDLE_PRIO		(MA_BATCH_PRIO+1)
 #define MA_MAX_PRIO		(MA_IDLE_PRIO+1)
 
-#define ma_rt_task(p)		((p)->sched.internal.prio < MA_MAX_RT_PRIO)
+#define ma_rt_task(p)		((p)->sched.internal.prio < MA_RT_PRIO)
 
 #section marcel_macros
 #depend "[macros]"

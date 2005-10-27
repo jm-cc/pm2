@@ -16,7 +16,6 @@
 
 #section common
 #include "tbx_compiler.h"
-#depend "linux_preempt.h[marcel_macros]"
 /*
  * similar to:
  * include/linux/spinlock.h - generic locking declarations
@@ -202,6 +201,7 @@ typedef struct {
 #endif /* !MA__LWPS */
 
 #section marcel_macros
+#depend "linux_preempt.h[marcel_macros]"
 /*
  * Define the various spin_lock and rw_lock methods.  Note we define these
  * regardless of whether MA__LWPS is set. The various

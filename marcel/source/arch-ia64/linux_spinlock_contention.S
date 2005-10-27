@@ -53,6 +53,7 @@
 #if __GNUC__ < 3 || (__GNUC__ == 3 && __GNUC_MINOR__ < 3)
 
 GLOBAL_ENTRY(ma_ia64_spinlock_contention_pre3_4)
+	.hidden ma_ia64_spinlock_contention_pre3_4
 	.prologue
 	.save ar.pfs, r0	// this code effectively has a zero frame size
 	.save rp, r28
@@ -89,6 +90,7 @@ END(ma_ia64_spinlock_contention_pre3_4)
 #else
 
 GLOBAL_ENTRY(ma_ia64_spinlock_contention)
+	.hidden ma_ia64_spinlock_contention
 	.prologue
 	.altrp b6
 	.body

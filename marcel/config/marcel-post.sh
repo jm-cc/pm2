@@ -6,7 +6,7 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_
 	PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_REENTRANT"
 	PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lpthread"
 	if [ "$PM2_SYS" = LINUX_SYS -a "$PM2_ARCH" != IA64_ARCH ]; then
-	    if ldd /bin/ls | grep -sq /tls/ ; then
+	    if nm `ldd /bin/ls | grep pthread` 2> /dev/null | grep -sq tls ; then
 		# pthread with TLS used on this system, nothing to do
 		:
 	    else

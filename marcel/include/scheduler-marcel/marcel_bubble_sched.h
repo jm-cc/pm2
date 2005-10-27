@@ -175,7 +175,7 @@ void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 
 #section marcel_inline
 /* cette version suppose que la runqueue contenant b est déjà verrouillée */
-static inline void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	if (list_empty(&b->runningentities) && b->sched.run_holder && !b->sched.holder_data) {
@@ -194,7 +194,7 @@ static inline void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = (void *)1;
 }
-static inline void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	list_del(&e->run_list);
@@ -213,7 +213,7 @@ static inline void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_
 	e->holder_data = NULL;
 }
 
-static inline void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	if (list_empty(&b->runningentities) && b->sched.run_holder && !b->sched.holder_data) {
@@ -234,7 +234,7 @@ static inline void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t 
 	MA_BUG_ON(e->holder_data);
 	e->holder_data = (void *)1;
 }
-static inline void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 #ifdef MARCEL_BUBBLE_STEAL
 	list_del(&e->run_list);

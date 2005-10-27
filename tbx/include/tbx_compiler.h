@@ -92,6 +92,7 @@ void __memory_barrier(void);
 #  define __TBX_FUNCTION__		__func__
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
 #  define __tbx_inline__	__inline__ __attribute__((always_inline))
+#  define __tbx_setjmp_inline__	__inline__
 #  define __tbx_deprecated__		__attribute__((deprecated))
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
@@ -104,6 +105,11 @@ void __memory_barrier(void);
 #  define TBX_FMALLOC			__attribute__ ((__malloc__))
 #  if __GNUC_MINOR__ >= 1
 #    define __tbx_inline__	__inline__ __attribute__((always_inline))
+#    if __GNUC_MINOR < 4
+#      define __tbx_setjmp_inline__	__inline__ __attribute__((always_inline))
+#    else
+#      define __tbx_setjmp_inline__	__inline__
+#    endif
 #  endif
 
 #  if __GNUC_MINOR__ > 0
@@ -157,9 +163,19 @@ void __memory_barrier(void);
 #define TBX_PROTECTED TBX_VISIBILITY("protected")
 #define TBX_INTERNAL TBX_VISIBILITY("internal")
 
-#if defined(PM2_NOINLINE) || !defined(__tbx_inline__)
-#undef __tbx_inline__
+#ifndef __tbx_inline__
 #define __tbx_inline__ __inline__
+#define __tbx_setjmp_inline__ __inline__
+#endif
+
+#ifdef PM2_NOINLINE
+#undef __tbx_inline__
+#undef __tbx_setjmp_inline__
+#define __tbx_inline__ TBX_UNUSED
+#define __tbx_setjmp_inline__ TBX_UNUSED
+#define __tbx_extern_inline_body__(body) ;
+#else
+#define __tbx_extern_inline_body__(body) { body }
 #endif
 
 #ifdef DARWIN_SYS

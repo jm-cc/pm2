@@ -46,12 +46,7 @@
 
 
 #section marcel_functions
-static
-// gcc 4.0 doesn't implement setjmp in an inline function.
-#if (__GNUC__ != 4 || __GNUC_MINOR__ != 0) \
- && (__GNUC__ != 3 || __GNUC_MINOR__ < 4)
-__tbx_inline__
-#endif
+static __tbx_setjmp_inline__
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
 
 #section marcel_variables
@@ -59,12 +54,7 @@ MA_DECLARE_PER_LWP(marcel_task_t *, previous_thread);
 
 #section marcel_inline
 #depend "asm-generic/marcel_ctx_types.h[marcel_types]"
-static
-// gcc 4.0 doesn't implement setjmp in an inline function.
-#if (__GNUC__ != 4 || __GNUC_MINOR__ != 0) \
- && (__GNUC__ != 3 || __GNUC_MINOR__ < 4)
-__tbx_inline__
-#endif
+static __tbx_setjmp_inline__
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
 	MA_BUG_ON(!ma_in_atomic());

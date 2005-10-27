@@ -160,9 +160,9 @@ static __tbx_inline__ void __marcel_thread_preemption_enable(void)
 	MARCEL_SELF->not_preemptible--;
 }
 extern __tbx_inline__ void marcel_thread_preemption_enable(void)
-{
+__tbx_extern_inline_body__(
 	__marcel_thread_preemption_enable();
-}
+)
 
 static __tbx_inline__ void __marcel_thread_preemption_disable(void)
 {
@@ -171,9 +171,9 @@ static __tbx_inline__ void __marcel_thread_preemption_disable(void)
 }
 
 extern __tbx_inline__ void marcel_thread_preemption_disable(void)
-{
+__tbx_extern_inline_body__(
 	__marcel_thread_preemption_disable();
-}
+)
 
 
 #section marcel_macros

@@ -46,7 +46,7 @@ static __tbx_inline__ unsigned long get_bsp(void)
 
   __asm__ __volatile__(
 		  ";; \n\t" \
-		  "flushrs \n\t" \
+		  "flushrs ;; \n\t" \
 		  "mov %0 = ar.bsp ;; \n\t"
 		  ";; \n\t" \
 		  : "=r" (bsp));

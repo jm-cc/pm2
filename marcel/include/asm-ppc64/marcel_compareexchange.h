@@ -19,9 +19,6 @@
 #section macros
 #define MA_HAVE_COMPAREEXCHANGE 1
 
-#section marcel_variables
-extern ma_spinlock_t ma_compareexchange_spinlock;
-
 #section marcel_macros
 #ifdef MA__LWPS
 #define MA_EIEIO_ON_SMP "eieio;"
@@ -68,24 +65,7 @@ static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, uns
   	: "r"(p), "r" (old), "r"(new), "m" (*p)
   	: "cc", "memory");
   } else {
-    ma_spin_lock_softirq(&ma_compareexchange_spinlock);
-    switch(size) {
-	case 1: {
-			volatile ma_u8 *p = ptr;
-			if (old == (prev=*p))
-				*p = new;
-			break;
-		}
-	case 2: {
-			volatile ma_u16 *p = ptr;
-			if (old == (prev=*p))
-				*p = new;
-			break;
-		}
-	default:
-		abort();
-    }
-    ma_spin_unlock_softirq(&ma_compareexchange_spinlock);
+    abort();
   }
   return prev;
 }

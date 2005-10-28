@@ -38,15 +38,17 @@
 #define MA_LOCK_SECTION_END			\
 	".previous\n\t"
 
-#section common
+#ifdef MA__LWPS
+#depend "asm/linux_spinlock.h[marcel_macros]"
+#endif
+
+#section types
 /*
  * If MA__LWPS is set, pull in the _raw_* definitions
  */
 #ifdef MA__LWPS
-#depend "asm/linux_spinlock.h[]"
+#depend "asm/linux_spinlock.h[types]"
 #endif
-
-#section types
 #ifndef MA__LWPS
 #ifdef MARCEL_DEBUG_SPINLOCK
 typedef struct {
@@ -442,6 +444,9 @@ do { \
 extern int ma_atomic_dec_and_lock(ma_atomic_t *atomic, ma_spinlock_t *lock);
 
 #section marcel_inline
+#ifdef MA__LWPS
+#depend "asm/linux_spinlock.h[marcel_inline]"
+#endif
 /*
  *  bit-based spin_lock()
  *

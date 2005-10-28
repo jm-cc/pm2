@@ -88,8 +88,8 @@ extern unsigned  ma__nb_lwp;
 #section marcel_functions
 static __tbx_inline__ void lwp_list_lock_read(void);
 #section marcel_inline
-#depend "asm/linux_spinlock.h[marcel_macros]"
-#depend "asm/linux_spinlock.h[marcel_inline]"
+#depend "linux_spinlock.h[marcel_macros]"
+#depend "linux_spinlock.h[marcel_inline]"
 static __tbx_inline__ void lwp_list_lock_read(void)
 {
 #ifdef MA__LWPS

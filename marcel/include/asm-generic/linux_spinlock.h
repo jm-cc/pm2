@@ -92,7 +92,4 @@ typedef pthread_mutex_t ma_spinlock_t;
 #endif
 
 #endif /* MA__LWPS */
-#section marcel_structures
-#section marcel_functions
 #section marcel_inline
-#section functions

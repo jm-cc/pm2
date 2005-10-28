@@ -30,7 +30,7 @@ enum marcel_entity {
 };
 
 #section structures
-#depend "asm/linux_spinlock.h[types]"
+#depend "linux_spinlock.h[types]"
 #depend "[marcel_types]"
 
 /* Un conteneur a un type (bulle/runqueue), et peut se verrouiller pour ajouter

@@ -34,7 +34,7 @@
 #ifdef MA_HAVE_COMPAREEXCHANGE
 typedef struct { volatile int counter; } ma_atomic_t;
 #else
-#depend "asm/linux_spinlock.h[]"
+#depend "linux_spinlock.h[types]"
 typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #endif
 
@@ -42,7 +42,7 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_ATOMIC_INIT(i)	{ (i) }
 #else
-#depend "asm/linux_spinlock.h[]"
+#depend "linux_spinlock.h[macros]"
 #define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
 #endif
 
@@ -77,7 +77,8 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 		old = ret; \
 	}
 #else
-#depend "asm/linux_spinlock.h[]"
+#depend "linux_spinlock.h[marcel_macros]"
+#depend "linux_spinlock.h[marcel_inline]"
 #define MA_ATOMIC_ADD_RETURN(test) \
 	int old, new; \
 	ma_spin_lock_softirq(&v->lock); \

@@ -50,7 +50,7 @@ __TBX_BEGIN_DECLS
 #include "marcel-master___macros.h"
 #include "scheduler/marcel-master___macros.h"
 
-//#include "asm/marcel-master___types.h"
+#include "asm/marcel-master___types.h"
 #include "marcel-master___types.h"
 #include "scheduler/marcel-master___types.h"
 

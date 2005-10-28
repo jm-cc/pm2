@@ -17,5 +17,6 @@
 #section common
 #depend "asm-generic/marcel_compareexchange.h[]"
 #section macros
+#section marcel_variables
 #section marcel_macros
 #section marcel_inline

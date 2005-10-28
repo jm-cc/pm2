@@ -1,17 +1,19 @@
 MARCEL {
+    *_ERROR;
+    NOT_IMPLEMENTED;
+    TIME_OUT;
     __main_lwp;
     cur_lwp;
     go_marcel_main;
+    _marcel_*;
+    __marcel_*;
     marcel_yield;
     marcel_*;
     pmarcel_*;
     marcel_pthread_initialize;
-    ma_lock_task;
+    ma_*;
+    __ma_*;
     tselect;
-    ma_per_lwp__*;
-    ma_preempt_schedule;
-    __ma_preempt_spin_lock;
-    ma_do_work;
 };
 GLIBC_2.0 {
   global:

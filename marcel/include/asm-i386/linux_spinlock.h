@@ -19,7 +19,6 @@
  * Similar to:
  * include/asm-i386/spinlock.h
  */
-#depend "asm/linux_rwlock.h[]"
 #include "tbx_compiler.h"
 
 #ifdef MA__LWPS

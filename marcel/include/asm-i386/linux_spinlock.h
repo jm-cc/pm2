@@ -118,6 +118,6 @@ static __tbx_inline__ void _ma_raw_spin_lock(ma_spinlock_t *lock)
 
 #section marcel_structures
 #section marcel_functions
-#section common
 #section functions
+#section common
 #endif /* MA__LWPS */

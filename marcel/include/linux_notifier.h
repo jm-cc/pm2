@@ -50,9 +50,9 @@ struct ma_notifier_chain
 
 #section marcel_functions
 #depend "tbx_compiler.h"
-extern TBX_PROTECTED int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n);
-extern TBX_PROTECTED int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n);
-extern TBX_PROTECTED int ma_notifier_call_chain(struct ma_notifier_chain *c, unsigned long val, void *v);
+extern MARCEL_PROTECTED int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n);
+extern MARCEL_PROTECTED int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n);
+extern MARCEL_PROTECTED int ma_notifier_call_chain(struct ma_notifier_chain *c, unsigned long val, void *v);
 
 #section marcel_macros
 #define MA_NOTIFY_DONE		0x0000		/* Don't care */

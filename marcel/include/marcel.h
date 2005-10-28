@@ -25,6 +25,12 @@
 #include "sys/marcel_flags.h"
 #include "marcel_valgrind.h"
 
+#ifdef MARCEL_KERNEL
+#define MARCEL_PROTECTED TBX_PROTECTED
+#else
+#define MARCEL_PROTECTED
+#endif
+
 __TBX_BEGIN_DECLS
 
 //#include "asm/marcel-master___compiler.h"

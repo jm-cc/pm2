@@ -30,7 +30,7 @@
 		do { ma_barrier(); ma_preempt_count() -= MA_SOFTIRQ_OFFSET; } while (0)
 
 #section marcel_functions
-extern void TBX_PROTECTED ma_local_bh_enable(void);
+extern void MARCEL_PROTECTED ma_local_bh_enable(void);
 
 /* PLEASE, avoid to allocate new softirqs, if you need not _really_ high
    frequency threaded job scheduling. For almost all the purposes
@@ -59,13 +59,13 @@ struct ma_softirq_action
 };
 
 #section marcel_functions
-asmlinkage TBX_PROTECTED void ma_do_softirq(void);
-extern TBX_PROTECTED void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data);
+asmlinkage MARCEL_PROTECTED void ma_do_softirq(void);
+extern MARCEL_PROTECTED void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data);
 extern void ma_softirq_init(void);
 //#define __ma_raise_softirq_irqoff(nr) do { ma_local_softirq_pending() |= 1UL << (nr); } while (0)
-extern TBX_PROTECTED void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
-extern TBX_PROTECTED void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
-extern TBX_PROTECTED void FASTCALL(ma_raise_softirq(unsigned int nr));
+extern MARCEL_PROTECTED void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
+extern MARCEL_PROTECTED void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
+extern MARCEL_PROTECTED void FASTCALL(ma_raise_softirq(unsigned int nr));
 
 #ifndef ma_invoke_softirq
 #define ma_invoke_softirq() ma_do_softirq()
@@ -147,7 +147,7 @@ static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t)
 #endif
 
 #section marcel_functions
-extern TBX_PROTECTED void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *t));
+extern MARCEL_PROTECTED void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *t));
 
 #section marcel_inline
 static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
@@ -157,7 +157,7 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t)
 }
 
 #section marcel_functions
-extern TBX_PROTECTED void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struct *t));
+extern MARCEL_PROTECTED void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struct *t));
 
 #section marcel_inline
 static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t)
@@ -194,9 +194,9 @@ static __tbx_inline__ void ma_tasklet_hi_enable(struct ma_tasklet_struct *t)
 }
 
 #section marcel_functions
-extern TBX_PROTECTED void ma_tasklet_kill(struct ma_tasklet_struct *t);
+extern MARCEL_PROTECTED void ma_tasklet_kill(struct ma_tasklet_struct *t);
 extern void tasklet_kill_immediate(struct ma_tasklet_struct *t, ma_lwp_t lwp);
-extern TBX_PROTECTED void ma_tasklet_init(struct ma_tasklet_struct *t,
+extern MARCEL_PROTECTED void ma_tasklet_init(struct ma_tasklet_struct *t,
 			 void (*func)(unsigned long), unsigned long data);
 
 

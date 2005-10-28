@@ -123,7 +123,7 @@ void dsm_as_check_altstack() {
 
 void  dsm_as_init() {
   /* fisrt, allocate memory */
-  tbx_malloc_init(&as_head, AS_STACK_SIZE, AS_NB_AREA);
+  tbx_malloc_init(&as_head, AS_STACK_SIZE, AS_NB_AREA, "dsm_as");
 
   /* then, set up altstack */
   dsm_as_setup_altstack();

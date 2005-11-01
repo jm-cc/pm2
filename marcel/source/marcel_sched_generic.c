@@ -15,6 +15,7 @@
 
 #include "marcel.h"
 #include "tbx_compiler.h"
+#include <signal.h>
 
 void marcel_delay(unsigned long millisecs)
 {
@@ -59,9 +60,7 @@ unsigned marcel_nbthreads(void)
    return num + 1;   /* + 1 pour le main */
 }
 
-/* TODO: this could be an "async_t": on x86, incl is interrupt-safe (so
- * signal-safe) for instance, and quite less costly than lock incl */
-static volatile MA_DEFINE_PER_LWP(unsigned long, task_number, 1);
+static volatile MA_DEFINE_PER_LWP(sig_atomic_t, task_number, 1);
 
 static MA_DEFINE_PER_LWP(struct list_head, all_threads, {0});
 

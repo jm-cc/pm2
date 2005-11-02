@@ -10,6 +10,9 @@ shift
 if [ -n "${LEO_LD_PRELOAD}" ]; then
     env "LD_PRELOAD=${LEO_LD_PRELOAD}" $prog ${@:+"$@"}
 else
+    if [ -n "${LEO_ALLOW_CORE}" ] ; then
+	ulimit -c unlimited
+    fi
 #    echo $prog ${@:+"$@"}
     $prog ${@:+"$@"}
 fi

@@ -14,7 +14,7 @@
  * General Public License for more details.
  */
 
-#define clone(fn,s,f,a) insufficient_clone(fn,s,f,a)
+#define clone(...) insufficient_clone(__VA_ARGS__)
 #include "marcel.h"
 
 #ifdef LINUX_SYS

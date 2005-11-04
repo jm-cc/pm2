@@ -170,7 +170,11 @@ static void pthread_finalize()
 
 int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
 {
-	return marcel_attr_init((marcel_attr_t*)__attr);
+	int ret;
+	marcel_attr_t attr;
+	ret=marcel_attr_init(&attr);
+	memcpy(__attr, &attr, sizeof(pthread_attr_t));
+	return ret;
 }
 versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
 

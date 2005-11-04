@@ -59,7 +59,7 @@ ND(pthread_attr_setscope) /*ND(pthread_cancel) ND(pthread_cond_broadcast)
 ND(pthread_cond_destroy) ND(pthread_cond_init) ND(pthread_cond_signal) 
 ND(pthread_cond_timedwait) ND(pthread_cond_wait) ND(pthread_condattr_destroy) 
 ND(pthread_condattr_init) ND(pthread_create) ND(pthread_detach) ND(pthread_equal)*/ 
-/*ND(pthread_exit)*/ ND(pthread_getschedparam) /*ND(pthread_getspecific) ND(pthread_join)*/ 
+/*ND(pthread_exit)*/ /*ND(pthread_getschedparam)*/ /*ND(pthread_getspecific) ND(pthread_join)*/ 
 /*ND(pthread_key_create) ND(pthread_key_delete)*/ ND(pthread_kill) 
 ND(pthread_kill_other_threads_np) /*ND(pthread_mutexattr_getkind_np)*/ 
 /*ND(pthread_mutex_destroy) ND(pthread_mutex_init) ND(pthread_mutex_lock)*/ 

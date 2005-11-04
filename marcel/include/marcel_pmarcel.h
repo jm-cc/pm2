@@ -101,16 +101,6 @@ enum
 };
 
 
-/* Process shared or private flag.  */
-enum
-{
-  PMARCEL_PROCESS_PRIVATE,
-#define PMARCEL_PROCESS_PRIVATE PMARCEL_PROCESS_PRIVATE
-  PMARCEL_PROCESS_SHARED
-#define PMARCEL_PROCESS_SHARED  PMARCEL_PROCESS_SHARED
-};
-
-
 /* Cleanup buffers */
 struct _pmarcel_cleanup_buffer
 {

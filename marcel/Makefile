@@ -33,7 +33,7 @@ SCHED_NAME=marcel
 
 M4_GEN_HEADERS=include/marcel_mutex.h include/marcel_cond.h
 M4_GEN_HEADERS_NAMES=$(patsubst include/%,%,$(M4_GEN_HEADERS))
-M4_GEN_FILES=$(M4_GEN_HEADERS) source/nptl_mutex.c source/nptl_cond.c
+M4_GEN_FILES=$(M4_GEN_HEADERS) source/nptl_mutex.c source/nptl_cond.c source/nptl_utils.c
 MOD_HSPLITS_COMMON:=scripts/splitall_section_def.h
 MOD_HSPLITS_SOURCES:=$(filter-out $(M4_GEN_HEADERS_NAMES), \
 	$(shell echo `pwd` 1>&2 ; cd include ; \

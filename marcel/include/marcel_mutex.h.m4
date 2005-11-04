@@ -66,6 +66,17 @@ enum {
   MARCEL_MUTEX_NORMAL,
 };
 
+REPLICATE([[dnl
+/* Process shared or private flag.  */
+enum
+{
+  PREFIX_PROCESS_PRIVATE,
+#define PREFIX_PROCESS_PRIVATE PREFIX_PROCESS_PRIVATE
+  PREFIX_PROCESS_SHARED
+#define PREFIX_PROCESS_SHARED  PREFIX_PROCESS_SHARED
+};
+]], [[PMARCEL LPT]])/* pas MARCEL car il n'a pas ces modes */
+
 #include <asm/linux_types.h>
 REPLICATE([[dnl
 /* Mutex initializers.  */
@@ -97,7 +108,7 @@ REPLICATE([[dnl
 /* Attribute for mutex.  */
 struct prefix_mutexattr
 {
-	int __mutexkind;
+	int mutexkind;
 };
 
 typedef union
@@ -175,7 +186,7 @@ extern int prefix_mutexattr_getpshared (__const prefix_mutexattr_t *
 extern int prefix_mutexattr_setpshared (prefix_mutexattr_t *__attr,
                                          int __pshared) __THROW;
 
-#ifdef __USE_UNIX98
+//#ifdef __USE_UNIX98
 /* Return in *KIND the mutex kind attribute in *ATTR.  */
 extern int prefix_mutexattr_gettype (__const prefix_mutexattr_t *__restrict
                                       __attr, int *__restrict __kind) __THROW;
@@ -185,7 +196,7 @@ extern int prefix_mutexattr_gettype (__const prefix_mutexattr_t *__restrict
    PREFIX_MUTEX_DEFAULT).  */
 extern int prefix_mutexattr_settype (prefix_mutexattr_t *__attr, int __kind)
      __THROW;
-#endif
+//#endif
 
 /* Functions for handling initialization.  */
 

@@ -65,7 +65,7 @@ REPLICATE_CODE([[dnl
 static const struct prefix_mutexattr prefix_default_attr =
 {
 	/* Default is a normal mutex, not shared between processes.  */
-	.__mutexkind = PREFIX_MUTEX_NORMAL
+	.mutexkind = PREFIX_MUTEX_NORMAL
 };
 
 int prefix_mutex_init (prefix_mutex_t *mutex, 
@@ -87,15 +87,12 @@ int prefix_mutex_init (prefix_mutex_t *mutex,
 	memset (mutex, '\0', sizeof(prefix_mutex_t));
 
 	/* Copy the values from the attribute.  */
-	mutex->__data.__kind = imutexattr->__mutexkind & ~0x80000000;
+	mutex->__data.__kind = imutexattr->mutexkind & ~0x80000000;
 	/* Default values: mutex not used yet.  */
 	// mutex->__count = 0;        already done by memset
 	// mutex->__owner = 0;        already done by memset
 	// mutex->__nusers = 0;       already done by memset
 	// mutex->__spins = 0;        already done by memset
-	if (tbx_unlikely(mutex->__data.__kind)) {
-		RAISE(NOT_IMPLEMENTED);
-	}
 	
         __prefix_init_lock(&mutex->__data.__lock);
 	return 0;
@@ -410,7 +407,7 @@ int prefix_mutexattr_init(prefix_mutexattr_t * attr)
 	/* We use bit 31 to signal whether the mutex is going to be
 	   process-shared or not.  By default it is zero, i.e., the
 	   mutex is not process-shared.  */
-	((struct prefix_mutexattr *) attr)->__mutexkind = PREFIX_MUTEX_NORMAL;
+	((struct prefix_mutexattr *) attr)->mutexkind = PREFIX_MUTEX_NORMAL;
 	
 	return 0;
 }
@@ -432,110 +429,120 @@ int prefix_mutexattr_destroy(prefix_mutexattr_t * attr)
 ]],[[MARCEL PMARCEL LPT]])
 
 
-#if 0
      /****************************/
      /* mutex_settype/setkind_np */
      /****************************/
-DEF_POSIX(int, mutexattr_settype, (pmarcel_mutexattr_t *attr, int kind),
-		(attr, kind),
-{
-  if (kind != MARCEL_MUTEX_ADAPTIVE_NP
-      && kind != MARCEL_MUTEX_RECURSIVE_NP
-      && kind != MARCEL_MUTEX_ERRORCHECK_NP
-      && kind != MARCEL_MUTEX_TIMED_NP)
-    return EINVAL;
-  attr->__mutexkind = kind;
-  return 0;
-})
-DEF_PTHREAD_WEAK(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind),
-		(attr, kind))
-DEF___PTHREAD(int, mutexattr_settype, (pthread_mutexattr_t *attr, int kind),
-		(attr, kind))
+PRINT_PTHREAD([[dnl
+weak_alias (lpt_mutexattr_settype, pthread_mutexattr_setkind_np)
+strong_alias (lpt_mutexattr_settype, pthread_mutexattr_settype)
+strong_alias (lpt_mutexattr_settype, __pthread_mutexattr_settype)
+]])
 
-DEF_ALIAS_POSIX(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
-			int kind), (attr, kind))
-DEF_STRONG_T(int, LOCAL_POSIX_NAME(mutexattr_settype),
-	     LOCAL_POSIX_NAME(mutexattr_setkind_np),
-	     (pthread_mutex_attr_t *attr, int kind), (attr, kind))
-#ifdef MA__PTHREAD_FUNCTIONS
-  extern __typeof__(pthread_mutexattr_settype) pthread_mutexattr_setkind_np;
-#endif
-DEF_PTHREAD_WEAK(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
-			int kind), (attr, kind))
-DEF___PTHREAD(int, mutexattr_setkind_np, (pthread_mutex_attr_t *attr,
-			int kind), (attr, kind))
+REPLICATE_CODE([[dnl
+int prefix_mutexattr_settype(prefix_mutexattr_t * attr, int kind)
+{
+{
+	struct prefix_mutexattr *iattr;
+
+	if (kind < PREFIX_MUTEX_NORMAL || kind > PREFIX_MUTEX_ADAPTIVE_NP)
+		return EINVAL;
+
+	iattr = (struct prefix_mutexattr *) attr;
+
+	/* We use bit 31 to signal whether the mutex is going to be
+	   process-shared or not.  */
+	iattr->mutexkind = (iattr->mutexkind & 0x80000000) | kind;
+
+	return 0;
+}}
+]], [[PMARCEL LPT]])
+
 
      /****************************/
      /* mutex_gettype/getkind_np */
      /****************************/
-DEF_POSIX(int, mutexattr_gettype, (const pmarcel_mutexattr_t *attr, int *kind),
-		(attr, kind),
+PRINT_PTHREAD([[dnl
+strong_alias (lpt_mutexattr_gettype, pthread_mutexattr_gettype)
+weak_alias (lpt_mutexattr_gettype, pthread_mutexattr_getkind_np)
+]])
+
+REPLICATE_CODE([[dnl
+int prefix_mutexattr_gettype(const prefix_mutexattr_t * attr, int *kind)
 {
-  *kind = attr->__mutexkind;
-  return 0;
-})
-DEF_PTHREAD_WEAK(int, mutexattr_gettype, (const pthread_mutexattr_t *attr,
-			int *kind), (attr, kind))
-DEF___PTHREAD(int, mutexattr_gettype, (const pthread_mutexattr_t *attr,
-			int *kind), (attr, kind))
-
-DEF_ALIAS_POSIX(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
-			int *kind), (attr, kind))
-DEF_STRONG_T(int, LOCAL_POSIX_NAME(mutexattr_gettype),
-	     LOCAL_POSIX_NAME(mutexattr_getkind_np),
-	     (cont pthread_mutexattr_t *attr,
-			int *kind), (attr, kind))
-#ifdef MA__PTHREAD_FUNCTIONS
-  extern __typeof__(pthread_mutexattr_gettype) pthread_mutexattr_getkind_np;
-#endif
-DEF_PTHREAD_WEAK(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
-			int *kind), (attr, kind))
-DEF___PTHREAD(int, mutexattr_getkind_np, (cont pthread_mutexattr_t *attr,
-			int *kind), (attr, kind))
-
-
-     /********************/
-     /* mutex_getpshared */
-     /********************/
-/* certains pthread.h n'ont pas encore cette définition */
-extern int pthread_mutexattr_getpshared (__const pthread_mutexattr_t *
-                                         __restrict __attr,
-                                         int *__restrict __pshared) __THROW;
-DEF_POSIX(int, mutexattr_getpshared, (const pmarcel_mutexattr_t *attr,
-				      int *pshared), (attr, pshared),
 {
-  *pshared = MARCEL_PROCESS_PRIVATE;
-  return 0;
-})
-DEF_PTHREAD_WEAK(int, mutexattr_getpshared, (const pthread_mutexattr_t *attr,
-				      int *pshared), (attr, pshared))
-DEF___PTHREAD(int, mutexattr_getpshared, (const pthread_mutexattr_t *attr,
-				      int *pshared), (attr, pshared))
+	const struct prefix_mutexattr *iattr;
+
+	iattr = (const struct prefix_mutexattr *) attr;
+
+	/* We use bit 31 to signal whether the mutex is going to be
+	   process-shared or not.  */
+	*kind = iattr->mutexkind & ~0x80000000;
+
+	return 0;
+}}
+]], [[PMARCEL LPT]])
+
 
      /********************/
      /* mutex_setpshared */
      /********************/
-/* certains pthread.h n'ont pas encore cette définition */
-extern int pthread_mutexattr_setpshared (pthread_mutexattr_t *__attr,
-                                         int __pshared) __THROW;
-DEF_POSIX(int, mutexattr_setpshared, (pmarcel_mutexattr_t *attr, int pshared),
-		(attr, pshared),
+PRINT_PTHREAD([[dnl
+DEF_LIBPTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr, int pshared), (attr, pshared))
+]])
+
+REPLICATE_CODE([[dnl
+int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
 {
-  if (pshared != MARCEL_PROCESS_PRIVATE && pshared != MARCEL_PROCESS_SHARED)
-    return EINVAL;
+{
+	struct prefix_mutexattr *iattr;
 
-  /* For now it is not possible to shared a conditional variable.  */
-  if (pshared != MARCEL_PROCESS_PRIVATE)
-    return ENOSYS;
+	if (pshared != PREFIX_PROCESS_PRIVATE
+	    && __builtin_expect (pshared != PREFIX_PROCESS_SHARED, 0))
+		return EINVAL;
 
-  return 0;
-})
-DEF_PTHREAD_WEAK(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
-			int pshared), (attr, pshared))
-DEF___PTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
-			int pshared), (attr, pshared))
+	/* For now it is not possible to share a mutex variable.  */
+	if (pshared != MARCEL_PROCESS_PRIVATE) {
+		pm2debug("Argh: shared mutex requested!\n");
+		return ENOSYS;
+	}
 
-#endif
+	iattr = (struct prefix_mutexattr *) attr;
+
+	/* We use bit 31 to signal whether the mutex is going to be
+	   process-shared or not.  */
+	if (pshared == PREFIX_PROCESS_PRIVATE)
+		iattr->mutexkind &= ~0x80000000;
+	else
+		iattr->mutexkind |= 0x80000000;
+
+	return 0;
+}}
+]], [[PMARCEL LPT]])
+
+     /********************/
+     /* mutex_getpshared */
+     /********************/
+PRINT_PTHREAD([[dnl
+DEF_LIBPTHREAD(int, mutexattr_getpshared, (pthread_mutexattr_t *attr, int *pshared), (attr, pshared))
+]])
+
+REPLICATE_CODE([[dnl
+int prefix_mutexattr_getpshared(const prefix_mutexattr_t * attr, int *pshared)
+{
+{
+	const struct prefix_mutexattr *iattr;
+	
+	iattr = (const struct prefix_mutexattr *) attr;
+
+	/* We use bit 31 to signal whether the mutex is going to be
+	   process-shared or not.  */
+	*pshared = ((iattr->mutexkind & 0x80000000) != 0
+		    ? PREFIX_PROCESS_SHARED : PREFIX_PROCESS_PRIVATE);
+	
+	return 0;
+}}
+]], [[PMARCEL LPT]])
+
 
      /****************************************************************
       * ONCE-ONLY EXECUTION

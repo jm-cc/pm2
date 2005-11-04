@@ -61,7 +61,7 @@ typedef union
 
 struct lpt_mutexattr
 {
-	int __mutexkind;
+	int mutexkind;
 };
 
 typedef union

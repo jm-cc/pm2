@@ -85,12 +85,11 @@ DEF_LIBPTHREAD(int, condattr_getpshared,
 REPLICATE_CODE([[dnl
 int prefix_condattr_getpshared (const prefix_condattr_t *attr, int* pshared)
 {
-/* *pshared = ((const struct pthread_condattr *) attr)->value & 1; */
-        /* Pas de condition en mémoire partagée avec marcel */
-        *pshared=PTHREAD_PROCESS_PRIVATE;
+{
+	*pshared = ((const struct prefix_condattr *) attr)->value & 1;
         return 0;
-}
-]])
+}}
+]], [[PMARCEL LPT]])
 
 /***********************/
 /* condattr_setpshared */
@@ -108,9 +107,11 @@ int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
             && __builtin_expect (pshared != PTHREAD_PROCESS_SHARED, 0))
                 return EINVAL;
 
-	if (pshared == PTHREAD_PROCESS_SHARED) {
-                return ENOSYS;
-        }
+	/* For now it is not possible to share a mutex variable.  */
+	if (pshared != MARCEL_PROCESS_PRIVATE) {
+		pm2debug("Argh: shared condition requested!\n");
+		return ENOSYS;
+	}
 
         int *valuep = &((struct prefix_condattr *) attr)->value;
 
@@ -118,7 +119,7 @@ int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 
         return 0;
 }
-]])
+]], [[PMARCEL LPT]])
 
 
 /*************/
@@ -128,6 +129,9 @@ int prefix_condattr_setpshared (prefix_condattr_t *attr, int pshared)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_init,
                   pthread_cond_init, GLIBC_2_3_2);
+strong_alias (lpt_cond_init, __old_pthread_cond_init)
+compat_symbol (libpthread, __old_pthread_cond_init, pthread_cond_init,
+               GLIBC_2_0);
 ]])
 
 REPLICATE_CODE([[dnl
@@ -157,6 +161,9 @@ int prefix_cond_init (prefix_cond_t *cond, const prefix_condattr_t *attr)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_destroy,
                   pthread_cond_destroy, GLIBC_2_3_2);
+strong_alias (lpt_cond_destroy, __old_pthread_cond_destroy)
+compat_symbol (libpthread, __old_pthread_cond_destroy, pthread_cond_destroy,
+               GLIBC_2_0);
 ]])
 
 REPLICATE_CODE([[dnl
@@ -177,6 +184,9 @@ int prefix_cond_destroy (prefix_cond_t *cond)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_signal,
                   pthread_cond_signal, GLIBC_2_3_2);
+strong_alias (lpt_cond_signal, __old_pthread_cond_signal)
+compat_symbol (libpthread, __old_pthread_cond_signal, pthread_cond_signal,
+               GLIBC_2_0);
 ]])
 
 REPLICATE_CODE([[dnl
@@ -194,6 +204,9 @@ int prefix_cond_signal (prefix_cond_t *cond)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_broadcast,
                   pthread_cond_broadcast, GLIBC_2_3_2);
+strong_alias (lpt_cond_broadcast, __old_pthread_cond_broadcast)
+compat_symbol (libpthread, __old_pthread_cond_broadcast,
+               pthread_cond_broadcast, GLIBC_2_0);
 ]])
 
 REPLICATE_CODE([[dnl
@@ -213,6 +226,9 @@ int prefix_cond_broadcast (prefix_cond_t *cond)
 PRINT_PTHREAD([[dnl
 versioned_symbol (libpthread, lpt_cond_wait,
                   pthread_cond_wait, GLIBC_2_3_2);
+strong_alias (lpt_cond_wait, __old_pthread_cond_wait)
+compat_symbol (libpthread, __old_pthread_cond_wait, pthread_cond_wait,
+               GLIBC_2_0);
 ]])
 
 REPLICATE_CODE([[dnl
@@ -248,6 +264,14 @@ int prefix_cond_wait (prefix_cond_t *cond, prefix_mutex_t *mutex)
 /******************/
 /* cond_timedwait */
 /******************/
+
+PRINT_PTHREAD([[dnl
+versioned_symbol (libpthread, lpt_cond_timedwait,
+                  pthread_cond_timedwait, GLIBC_2_3_2);
+strong_alias (lpt_cond_timedwait, __old_pthread_cond_timedwait)
+compat_symbol (libpthread, __old_pthread_cond_timedwait,
+               pthread_cond_timedwait, GLIBC_2_0);
+]])
 
 REPLICATE_CODE([[dnl
 int prefix_cond_timedwait(prefix_cond_t *cond, prefix_mutex_t *mutex,
@@ -307,10 +331,5 @@ int prefix_cond_timedwait(prefix_cond_t *cond, prefix_mutex_t *mutex,
 	LOG_OUT();
 	return ret;
 }
-]])
-
-PRINT_PTHREAD([[dnl
-versioned_symbol (libpthread, lpt_cond_timedwait,
-                  pthread_cond_timedwait, GLIBC_2_3_2);
 ]])
 

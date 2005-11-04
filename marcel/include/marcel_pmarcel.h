@@ -19,6 +19,13 @@
 #ifndef _PMARCEL_H
 #define _PMARCEL_H	1
 
+/* 
+ * WARNING: don't edit this file. It is a mere usual pthread.h, with pthread_
+ * replaced by pmarcel_.
+ * This file is only intended to check for type incompatibilities, not for
+ * pmarcel_ declarations
+ */
+
 #ifndef DARWIN_SYS
 #include <features.h>
 #endif

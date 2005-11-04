@@ -30,6 +30,9 @@
 /* On doit rester en dessous de cette taille pour un lock rÃ©cursif :-((( */
 //typedef struct { int lock; int cnt; void *owner; } _lpt_IO_lock_t;
 
+#warning workaround tant que marcel ne peut pas être initialisé assez tôt...
+int marcel_a_demare=0;
+
 #include "marcel_fastlock.h"
 typedef struct {
 	union {
@@ -102,7 +105,7 @@ __tbx_inline__ static int lpt_iolock_acquire(_lpt_IO_lock_t *lock)
 {
         ma_preempt_disable();
 #ifdef MA__LWPS
-        ma_bit_spin_lock(1, &lock->spin);
+        ma_bit_spin_lock(1, (unsigned long*)&lock->spin);
 #endif
         return 0;
 }
@@ -110,7 +113,7 @@ __tbx_inline__ static int lpt_iolock_acquire(_lpt_IO_lock_t *lock)
 __tbx_inline__ static int lpt_iolock_release(_lpt_IO_lock_t *lock)
 {
 #ifdef MA__LWPS
-        ma_bit_spin_unlock(1, &lock->spin);
+        ma_bit_spin_unlock(1, (unsigned long*)&lock->spin);
 #endif
         ma_preempt_enable();
         return 0;
@@ -218,7 +221,8 @@ void
 __flockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-	_lpt_IO_lock_lock (&(*stream->_lock));
+	if (marcel_a_demare)
+		_lpt_IO_lock_lock (&(*stream->_lock));
 }
 strong_alias (__flockfile, _IO_flockfile)
 weak_alias (__flockfile, flockfile)
@@ -228,7 +232,8 @@ void
 __funlockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-	_lpt_IO_lock_unlock (&(*stream->_lock));
+	if (marcel_a_demare)	
+		_lpt_IO_lock_unlock (&(*stream->_lock));
 }
 strong_alias (__funlockfile, _IO_funlockfile)
 weak_alias (__funlockfile, funlockfile)
@@ -237,7 +242,9 @@ int
 __ftrylockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-	return _lpt_IO_lock_trylock (&(*stream->_lock));
+	if (marcel_a_demare)
+		return _lpt_IO_lock_trylock (&(*stream->_lock));
+	return 0;
 }
 strong_alias (__ftrylockfile, _IO_ftrylockfile)
 weak_alias (__ftrylockfile, ftrylockfile)

@@ -10,9 +10,12 @@ int __attribute__ ((weak)) marcel_pthread_initialize();
 //{
 //  printf("toto\n");
 //}
+
+int  __attribute__ ((weak)) marcel_a_demare=0;
+
 #ifdef PM2DEBUG
 # warning disabling PM2DEBUG: printf call to early !
-# undef PM2DEBUG
+#// undef PM2DEBUG
 #endif
 
 /****************************************************************
@@ -83,8 +86,15 @@ int marcel_main(int argc, char** argv)
 	printf("on the good stack\n");
 #endif
 	if(marcel_pthread_initialize) {
+#ifdef PM2DEBUG
+		printf("initialising marcel\n");
+#endif
 		marcel_pthread_initialize(&argc, argv);
+		marcel_a_demare=1;
 	}
+#ifdef PM2DEBUG
+	printf("launching libc_start_main\n");
+#endif
 	launch_libc_start_main();
 }
 

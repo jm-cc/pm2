@@ -97,6 +97,7 @@ struct __marcel_attr_s
   .__guardsize= MARCEL_STACKSGUARD, \
   .__stackaddr_set= 0, \
   .__stackaddr= NULL, \
+  .__stacksize= THREAD_SLOT_SIZE, \
   .user_space= 0, \
   .immediate_activation= FALSE, \
   .not_migratable= 1, \

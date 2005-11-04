@@ -50,7 +50,7 @@ static int infile=0;
      /*ND(accept) ND(close) ND(connect) ND(fcntl) ND(fork) ND(fsync)*/ ND(longjmp) /*ND(lseek) ND(msync)*/ 
 /*ND(flockfile) ND(funlockfile) ND(ftrylockfile) 
 ND(nanosleep) ND(open) ND(pause)*/ ND2(raise) /*ND(read) ND(recv) ND(recvfrom)*/ ND(recvmsg) /*ND(send) 
-ND(pthread_atfork)*/ ND(pthread_attr_destroy) ND(pthread_attr_getdetachstate) 
+ND(pthread_atfork)*/ ND(pthread_attr_destroy) /*ND(pthread_attr_getdetachstate) */
 ND(pthread_attr_getinheritsched) ND(pthread_attr_getschedparam) 
 ND(pthread_attr_getschedpolicy) ND(pthread_attr_getscope) /*ND(pthread_attr_init)*/ 
 /*ND(pthread_attr_setdetachstate)*/ ND(pthread_attr_setinheritsched) 
@@ -76,9 +76,9 @@ ND(sigwait)
 
 /*ND(__libc_allocate_rtsig)*/ 
 /*ND(__libc_current_sigrtmin) ND(__libc_current_sigrtmax)*/ 
-ND(pthread_attr_getguardsize) ND(pthread_attr_setguardsize) 
-ND(pthread_attr_getstackaddr) ND(pthread_attr_setstackaddr) 
-ND(pthread_attr_getstacksize) ND(pthread_attr_setstacksize) 
+/*ND(pthread_attr_getguardsize) ND(pthread_attr_setguardsize) */
+/*ND(pthread_attr_getstackaddr) ND(pthread_attr_setstackaddr) */
+/*ND(pthread_attr_getstacksize) ND(pthread_attr_setstacksize)  */
      //déjà définis: ND(pthread_attr_init) ND(pthread_create) 
 ND(pthread_getconcurrency) ND(pthread_setconcurrency) 
 /*ND(pthread_mutexattr_gettype) ND(pthread_mutexattr_settype)*/ 

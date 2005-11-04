@@ -37,6 +37,8 @@ DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr))
 #endif
    return 0;
 }
+DEF_PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
+DEF___PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
 
 DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (attr, stack))
 {
@@ -47,12 +49,16 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
    attr->__stacksize = stack;
    return 0;
 }
+DEF_PTHREAD(int, attr_setstacksize, (pthread_attr_t *attr, size_t stack), (attr, stack))
+DEF___PTHREAD(int, attr_setstacksize, (pthread_attr_t *attr, size_t stack), (attr, stack))
 
 DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t *attr, size_t *stack), (stack))
 {
   *stack = attr->__stacksize;
   return 0;
 }
+DEF_PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *stack), (attr, stack))
+DEF___PTHREAD(int, attr_getstacksize, (__const pthread_attr_t *attr, size_t *stack), (attr, stack))
 
 DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr))
 {
@@ -60,24 +66,43 @@ DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (att
    attr->__stackaddr = addr;
    return 0;
 }
+DEF_PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
+DEF___PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 
 DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t *attr, void **addr), (attr, addr))
 {
    *addr = attr->__stackaddr;
    return 0;
 }
+DEF_PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr), (attr, addr))
+DEF___PTHREAD(int, attr_getstackaddr, (__const pthread_attr_t *attr, void **addr), (attr, addr))
 
 DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached), (attr, detached))
 {
    attr->__detachstate = detached;
    return 0;
 }
+DEF_PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, boolean detached), (attr, detached))
+DEF___PTHREAD(int, attr_setdetachstate, (pthread_attr_t *attr, boolean detached), (attr, detached))
 
 DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached), (attr, detached))
 {
    *detached = attr->__detachstate;
    return 0;
 }
+DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, boolean *detached), (attr, detached))
+DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, boolean *detached), (attr, detached))
+
+#ifdef MA__PTHREAD_FUNCTIONS
+int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize)
+{
+   return marcel_attr_setguardsize(attr, guardsize);
+}
+int pthread_attr_getguardsize(__const pthread_attr_t *attr, size_t *guardsize)
+{
+   return marcel_attr_getguardsize(attr, guardsize);
+}
+#endif
 
 int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space)
 {

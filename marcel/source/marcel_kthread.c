@@ -14,14 +14,12 @@
  * General Public License for more details.
  */
 
-/* for clone() and gettid() */
-#define _GNU_SOURCE
-#include <sched.h>
-
+#define clone(fn,s,f,a) insufficient_clone(fn,s,f,a)
 #include "marcel.h"
 
 #ifdef LINUX_SYS
 #include <linux/unistd.h>
+#include <linux/futex.h>
 #endif
 #ifdef MA__LWPS
 #ifdef __NR_gettid
@@ -64,11 +62,16 @@ int marcel_gettid(void) {
 
 
 
-#ifdef IA64_ARCH
-int ia64_dummy;
+static int dummy;
 
+#ifdef IA64_ARCH
 int  __clone2(int (*fn) (void *arg), void *child_stack_base,
               size_t child_stack_size, int flags, void *arg,
+              pid_t *parent_tid, void *tls, pid_t *child_tid);
+#else
+#undef clone
+int  clone(int (*fn) (void *arg), void *child_stack_base,
+              int flags, void *arg,
               pid_t *parent_tid, void *tls, pid_t *child_tid);
 #endif
 
@@ -101,38 +104,36 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
   int ret = __clone2((int (*)(void *))func, 
 	       stack_base, stack_size,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
-	       CLONE_PARENT_SETTID |
+	       CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID |
 	       CLONE_THREAD,
-	       arg, pid, &ia64_dummy, &ia64_dummy);
+	       arg, pid, &dummy, pid);
   MA_BUG_ON(ret == -1);
 #else
-  *pid = clone((int (*)(void *))func, 
+  int ret = clone((int (*)(void *))func, 
 	       sp,
 	       CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND |
+	       CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID |
 	       CLONE_THREAD,
-	       arg);
+	       arg, pid, &dummy, pid);
+  MA_BUG_ON(ret == -1);
 #endif
   LOG_OUT();
 }
 
-void marcel_kthread_join(marcel_kthread_t pid)
+void marcel_kthread_join(marcel_kthread_t *pid)
 {
 	LOG_IN();
-	pid_t res;
-	while ((res = waitpid(pid, NULL, 0)) == -1 && errno == EINTR);
-
-	if (res != pid) {
-		MA_BUG_ON(res != -1);
-		if (errno != ECHILD) /* Linux 2.6 doesn't let us wait clones */
-			marcel_fprintf(stderr,"waitpid(%d): %s\n", pid, strerror(errno));
-	}
+	pid_t the_pid = *pid;
+	if (the_pid)
+		/* not dead yet, wait for it */
+		syscall(__NR_futex, pid, FUTEX_WAIT, the_pid, NULL);
 	LOG_OUT();
 }
 
 void marcel_kthread_exit(void *retval)
 {
 	LOG_IN();
-	syscall(__NR_exit,(int)retval);
+	syscall(__NR_exit,(int)(long)retval);
 	LOG_OUT();
 }
 
@@ -196,13 +197,13 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 	LOG_OUT();
 }
 
-void marcel_kthread_join(marcel_kthread_t pid)
+void marcel_kthread_join(marcel_kthread_t *pid)
 {
 	int cc;
 	LOG_IN();
 
 	do {
-		cc = pthread_join(pid, NULL);
+		cc = pthread_join(*pid, NULL);
 	} while(cc == -1 && errno == EINTR);
 	LOG_OUT();
 

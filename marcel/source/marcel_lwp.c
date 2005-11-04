@@ -251,7 +251,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp)
   }
   marcel_sem_V(&lwp->kthread_stop);
 
-  marcel_kthread_join(lwp->pid);
+  marcel_kthread_join(&lwp->pid);
 
   {
 	  /* La structure devrait être libérée ainsi que

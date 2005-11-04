@@ -45,7 +45,7 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 			   void *stack_base,
 			   marcel_kthread_func_t func, void *arg);
 
-void marcel_kthread_join(marcel_kthread_t pid);
+void marcel_kthread_join(marcel_kthread_t *pid);
 
 void marcel_kthread_exit(void *retval);
 

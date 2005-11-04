@@ -73,7 +73,7 @@ extern int __zero_fd;
 #    undef ASM_THREAD_SLOT_SIZE
      /* 0x30000 nécessaire pour pthread_create */
 #    define ASM_THREAD_SLOT_SIZE   (0x80000) /* 512 Ko */
-#    define ISOADDR_AREA_TOP       0x80000000
+#    define ISOADDR_AREA_TOP       0x10000000000000
 #    define MAIN_STACK_BOT         0x6000000000000000
 #    define IS_ON_MAIN_STACK(sp)   ((sp) > MAIN_STACK_BOT)
 #  elif defined(PPC_ARCH)

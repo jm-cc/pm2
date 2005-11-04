@@ -282,6 +282,31 @@ int marcel_sched_internal_create(marcel_task_t *cur,
 					       __const int dont_schedule,
 					       __const unsigned long base_stack);
 #section sched_marcel_inline
+
+static void marcel_sched_internal_create_helper() {	
+		/* départ du fils, en mode interruption */
+
+		LOG_IN();
+		MTRACE("On new stack", marcel_self());
+		
+		//PROF_OUT_EXT(newborn_thread);
+		PROF_SET_THREAD_NAME();
+
+		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
+			// On rend la main au père
+			PROF_SWITCH_TO(marcel_self()->number, marcel_self()->father);
+			call_ST_FLUSH_WINDOWS();
+			marcel_ctx_longjmp(marcel_self()->father->ctx_yield,
+					   NORMAL_RETURN);
+		}
+		MA_THR_RESTARTED(MARCEL_SELF, "Start");
+		/* Drop preempt_count with ma_spin_unlock_softirq */
+		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
+		marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
+		LOG_OUT();
+		return;
+}
+
 static __tbx_setjmp_inline__
 int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const marcel_attr_t *attr,
@@ -355,24 +380,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		marcel_ctx_set_new_stack(new_task, 
 					 new_task->initial_sp,
 					 base_stack);
-		/* départ du fils, en mode interruption */
-
-		LOG_IN();
-		MTRACE("On new stack", marcel_self());
-		
-		//PROF_OUT_EXT(newborn_thread);
-		PROF_SET_THREAD_NAME();
-
-		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
-			// On rend la main au père
-			PROF_SWITCH_TO(marcel_self()->number, marcel_self()->father);
-			call_ST_FLUSH_WINDOWS();
-			marcel_ctx_longjmp(marcel_self()->father->ctx_yield,
-					   NORMAL_RETURN);
-		}
-		MA_THR_RESTARTED(MARCEL_SELF, "Start");
-		/* Drop preempt_count with ma_spin_unlock_softirq */
-		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
+		marcel_sched_internal_create_helper();
 		
 	} else {
 		ma_holder_t *h;

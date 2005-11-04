@@ -102,13 +102,13 @@
 #  undef MA__TIMER
 #endif
 
-/* MA__INTERRUPTS_USE_SIGINFO : indique que les interruptions utilisent
- * siginfo. Les macros MA_ARCH_(SWITCHTO|INTERRUPT_(ENTER|EXIT))_LWP_FIX
- * peuvent être adaptées pour tranférer le LWP de la libpthread
+/* MA__INTERRUPTS_FIX_LWP : indique que l'on doit tranférer le LWP de la
+ * libpthread à l'aide des macros
+ * MA_ARCH_(SWITCHTO|INTERRUPT_(ENTER|EXIT))_LWP_FIX
  * Suppose MA__LWPS && !MA__LIBPTHREAD
  * */
-#ifdef MA__INTERRUPTS_USE_SIGINFO
-#  undef MA__INTERRUPTS_USE_SIGINFO
+#ifdef MA__INTERRUPTS_FIX_LWP
+#  undef MA__INTERRUPTS_FIX_LWP
 #endif
 
 /* MA__WORK : utilisation des files de travail à la fin des unlock_task()
@@ -197,7 +197,7 @@
 #endif
 
 #if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)
-#  define MA__INTERRUPTS_USE_SIGINFO
+#  define MA__INTERRUPTS_FIX_LWP
 #endif
 
 /* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter

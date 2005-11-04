@@ -230,11 +230,7 @@ static MA_DEFINE_PER_LWP(int, _no_interrupt, 0);
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
 // courant
-#ifdef MA__INTERRUPTS_USE_SIGINFO
 static void timer_interrupt(int sig, siginfo_t *info, void *uc)
-#else
-static void timer_interrupt(int sig)
-#endif
 {
 #ifdef MA__DEBUG
 	static unsigned long tick = 0;
@@ -243,13 +239,8 @@ static void timer_interrupt(int sig)
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 
 #ifdef CHAINED_SIGALRM
-#ifdef MA__INTERRUPTS_USE_SIGINFO
-	if (info->si_code > 0)
+	if (info->si_code > 0) {
 		/* kernel timer signal, distribute */
-#else
-#error I need to know who sends SIGALRM
-#endif
-	{
 		ma_lwp_t lwp;
 		for_each_lwp_from_begin(lwp,LWP_SELF)
 			marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
@@ -272,10 +263,8 @@ static void timer_interrupt(int sig)
 	if (!ma_spin_is_locked(&ma_compareexchange_spinlock))
 #endif
 		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
-#ifdef MA__INTERRUPTS_USE_SIGINFO
 	if (info->si_code > 0)
 		/* kernel timer signal */
-#endif
 #ifndef CHAINED_SIGALRM
 		if (IS_FIRST_LWP(LWP_SELF))
 #endif
@@ -409,12 +398,8 @@ static void sig_start_timer(ma_lwp_t lwp)
 #else
 	sa.sa_flags = 0;
 #endif
-#ifdef MA__INTERRUPTS_USE_SIGINFO
 	sa.sa_flags |= SA_SIGINFO;
 	sa.sa_sigaction = timer_interrupt;
-#else
-	sa.sa_handler = timer_interrupt;
-#endif
 	
 	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);

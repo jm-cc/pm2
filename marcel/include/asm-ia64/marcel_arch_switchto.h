@@ -15,12 +15,12 @@
  */
 
 #section common
-#ifndef MA__INTERRUPTS_USE_SIGINFO
+#ifndef MA__INTERRUPT_FIX_LWP
 #depend "asm-generic/marcel_arch_switchto.h[]"
 #endif
 
 #section marcel_macros
-#ifdef MA__INTERRUPTS_USE_SIGINFO
+#ifdef MA__INTERRUPT_FIX_LWP
 
 MA_DECLARE_PER_LWP(unsigned long *, ma_ia64_tp);
 

@@ -126,7 +126,7 @@ retry:
 	} else {
 		if(NULL == (ptr=slot_cache_get(&stack_cache_unmapped, &main_slot))) {
 			next_slot -= 
-#ifdef PM2VALGRIND
+#if defined(PM2VALGRIND) || defined(PM2STACKSGUARD)
 				2*
 #endif
 				THREAD_SLOT_SIZE;

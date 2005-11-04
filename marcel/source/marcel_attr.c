@@ -17,6 +17,7 @@
 #include "marcel.h"
 
 #include <string.h>
+#include <errno.h>
 
 /* Déclaré non statique car utilisé dans marcel.c : */
 marcel_attr_t marcel_attr_default = MARCEL_ATTR_INITIALIZER;
@@ -28,50 +29,51 @@ extern volatile unsigned default_stack;
 #include <sys/shm.h>
 #endif
 
-int marcel_attr_init(marcel_attr_t *attr)
+DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr))
 {
-#ifdef MA__POSIX_BEHAVIOUR
-    size_t ps = sysconf(_SC_PAGESIZE);
-#endif
     *attr = marcel_attr_default;
 #ifdef MA__POSIX_BEHAVIOUR
-    attr->__guardsize = ps;
+    attr->__guardsize = MARCEL_STACKSGUARD;
 #endif
    return 0;
 }
 
-int marcel_attr_setstacksize(marcel_attr_t *attr, size_t stack)
+DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (attr, stack))
 {
+   if (stack > THREAD_SLOT_SIZE) {
+      errno = EINVAL;
+      return 1;
+   }
    attr->__stacksize = stack;
    return 0;
 }
 
-int marcel_attr_getstacksize(__const marcel_attr_t *attr, size_t *stack)
+DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t *attr, size_t *stack), (stack))
 {
   *stack = attr->__stacksize;
   return 0;
 }
 
-int marcel_attr_setstackaddr(marcel_attr_t *attr, void *addr)
+DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, addr))
 {
    attr->__stackaddr_set = 1;
    attr->__stackaddr = addr;
    return 0;
 }
 
-int marcel_attr_getstackaddr(__const marcel_attr_t *attr, void **addr)
+DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t *attr, void **addr), (attr, addr))
 {
    *addr = attr->__stackaddr;
    return 0;
 }
 
-int marcel_attr_setdetachstate(marcel_attr_t *attr, boolean detached)
+DEF_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached), (attr, detached))
 {
    attr->__detachstate = detached;
    return 0;
 }
 
-int marcel_attr_getdetachstate(__const marcel_attr_t *attr, boolean *detached)
+DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached), (attr, detached))
 {
    *detached = attr->__detachstate;
    return 0;

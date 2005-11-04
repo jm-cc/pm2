@@ -83,13 +83,18 @@ struct __marcel_attr_s
 // MARCEL_VPMASK_EMPTY
 #depend "marcel_sched_generic.h[macros]"
 
+#ifdef PM2STACKSGUARD
+#define MARCEL_STACKSGUARD THREAD_SLOT_SIZE
+#else
+#define MARCEL_STACKSGUARD 0
+#endif
 #define MARCEL_ATTR_INITIALIZER { \
   .__detachstate= MARCEL_CREATE_JOINABLE, \
   .__schedpolicy= MARCEL_SCHED_OTHER, \
   .__schedparam= {0,}, \
   .__inheritsched= 0, \
   .__scope= 0, \
-  .__guardsize= 0, \
+  .__guardsize= MARCEL_STACKSGUARD, \
   .__stackaddr_set= 0, \
   .__stackaddr= NULL, \
   .user_space= 0, \
@@ -115,17 +120,19 @@ struct __marcel_attr_s
 #section functions
 #depend "marcel_utils.h[types]"
 
-int marcel_attr_init(marcel_attr_t *attr) __THROW;
+DEC_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr) __THROW);
+DEC_MARCEL_POSIX(int, attr_destroy, (marcel_attr_t *attr) __THROW);
 #define marcel_attr_destroy(attr_ptr)	0
+#define pmarcel_attr_destroy(attr_ptr)	marcel_attr_destroy(attr_ptr)
 
-int marcel_attr_setstacksize(marcel_attr_t *attr, size_t stack) __THROW;
-int marcel_attr_getstacksize(__const marcel_attr_t *attr, size_t *stack) __THROW;
+DEC_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack) __THROW);
+DEC_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t *attr, size_t *stack) __THROW);
 
-int marcel_attr_setstackaddr(marcel_attr_t *attr, void *addr) __THROW;
-int marcel_attr_getstackaddr(__const marcel_attr_t *attr, void **addr) __THROW;
+DEC_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr) __THROW);
+DEC_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t *attr, void **addr) __THROW);
 
-int marcel_attr_setdetachstate(marcel_attr_t *attr, boolean detached) __THROW;
-int marcel_attr_getdetachstate(__const marcel_attr_t *attr, boolean *detached) __THROW;
+DEC_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached) __THROW);
+DEC_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached) __THROW);
 
 int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space);
 int marcel_attr_getuserspace(__const marcel_attr_t *attr, unsigned *space);
@@ -157,6 +164,16 @@ int marcel_attr_getpreemptible(__const marcel_attr_t *attr, int *preemptible);
 // only for internal use
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);
 int marcel_attr_getflags(__const marcel_attr_t *attr, int *flags);
+
+#ifdef PM2STACKSGUARD
+#define marcel_attr_setguardsize(attr, guardsize) ((guardsize)>THREAD_SLOT_SIZE)
+#define marcel_attr_getguardsize(attr, guardsize) (*(guardsize) = THREAD_SLOT_SIZE, 0)
+#else
+#define marcel_attr_setguardsize(attr, guardsize) (!!(guardsize))
+#define marcel_attr_getguardsize(attr, guardsize) (*(guardsize) = 0, 0)
+#endif
+#define pmarcel_attr_setguardsize(attr, guardsize) marcel_attr_setguardsize(attr, guardsize)
+#define pmarcel_attr_getguardsize(attr, guardsize) marcel_attr_getguardsize(attr, guardsize)
 
 #section marcel_variables
 extern marcel_attr_t marcel_attr_default;

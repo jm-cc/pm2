@@ -257,7 +257,7 @@ extern int pmarcel_attr_setscope (pmarcel_attr_t *__attr, int __scope)
 /* Return the previously set address for the stack.  */
 extern int pmarcel_attr_getstackaddr (__const pmarcel_attr_t *__restrict
 				      __attr, void **__restrict __stackaddr)
-     __THROW __attribute_deprecated__;
+     __THROW /*__attribute_deprecated__*/;
 
 /* Set the starting address of the stack of the thread to be created.
    Depending on whether the stack grows up or down the value must either
@@ -265,7 +265,7 @@ extern int pmarcel_attr_getstackaddr (__const pmarcel_attr_t *__restrict
    minimal size of the block must be PMARCEL_STACK_SIZE.  */
 extern int pmarcel_attr_setstackaddr (pmarcel_attr_t *__attr,
 				      void *__stackaddr)
-     __THROW __attribute_deprecated__;
+     __THROW/* __attribute_deprecated__*/;
 
 /* Return the currently used minimal stack size.  */
 extern int pmarcel_attr_getstacksize (__const pmarcel_attr_t *__restrict

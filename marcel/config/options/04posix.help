@@ -1,3 +1,0 @@
-enable posix compatibility mode (EXPERIMENTAL)
-This produce pmarcel_* versions of POSIX functions that are binary compatible
-with pthread_* one's

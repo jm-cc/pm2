@@ -16,8 +16,10 @@ dnl
 m4_define([[PRINT_PMARCEL]], [[dnl
 /* PART PMARCEL */
 //#line m4___line__ "m4___file__"
+#ifdef MA__IFACE_PMARCEL
 m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[pmarcel]])]], 
 	    [[PREFIX]],[[PMARCEL]])dnl
+#endif
 ]])dnl
 dnl
 dnl
@@ -25,7 +27,7 @@ dnl
 m4_define([[PRINT_LPT]], [[dnl
 /* PART LPT */
 //#line m4___line__ "m4___file__"
-#ifdef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_LPT
 m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[lpt]])]],
 	    [[PREFIX]],[[LPT]])dnl
 #endif
@@ -35,7 +37,7 @@ dnl
 dnl
 m4_define([[PRINT_PTHREAD]], [[dnl
 /* PART PTHREAD */
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 //#line m4___line__ "m4___file__"
 m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[pthread]])]],
 	    [[PREFIX]],[[PTHREAD]])dnl

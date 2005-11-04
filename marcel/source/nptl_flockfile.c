@@ -21,7 +21,7 @@
 
 
 #include "marcel.h" //VD:
-#ifdef MA__PTHREAD_FUNCTIONS //VD:
+#ifdef MA__LIBPTHREAD //VD:
 #include <errno.h> //VD:
 
 /* The locking here is very inexpensive, even for inlining.  */

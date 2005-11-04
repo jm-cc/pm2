@@ -19,7 +19,7 @@
    Boston, MA 02111-1307, USA.  */
 
 #include "pthread_wrapsyscall.h"
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 SYSCALL3(waitpid)
 #endif
 

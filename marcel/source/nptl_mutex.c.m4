@@ -27,12 +27,6 @@ dnl  ***************************/
 #include "marcel_fastlock.h"
 //#include "marcel_restart.h" // pour thread_self()
 
-#ifdef MA__POSIX_FUNCTIONS_NAMES
-static inline _pmarcel_descr thread_self() {
-  return (_pmarcel_descr)marcel_self();
-}
-#endif
-
 /****************************************************************
  * MUTEX
  */
@@ -640,12 +634,6 @@ DEF___LIBPTHREAD(int, once, (pthread_once_t *once_control,
  * counter which lets marcel_once calls detect stale IN_PROGRESS states
  * and reset them back to NEVER.
  */
-
-//#ifdef MA__POSIX_BEHAVIOUR
-//#define __DEF___PTHREAD(name) \
-//  DEF_STRONG_T(__PTHREAD_NAME(name), \
-//               LOCAL_POSIX_NAME(name), __PTHREAD_NAME(name))
-
 
 REPLICATE_CODE([[dnl
 void prefix_once_fork_prepare(void)

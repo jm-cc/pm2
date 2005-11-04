@@ -37,12 +37,14 @@ __TBX_BEGIN_DECLS
 #include "marcel-master___compiler.h"
 //#include "scheduler/marcel-master___compiler.h"
 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 //#  include "marcel_pthread.h"
 #endif
 
-#ifdef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_PMARCEL
 #  include "marcel_pmarcel.h"
+#endif
+#ifdef MA__LIBPTHREAD
 #  include "pthread_libc-symbols.h"
 #endif
 

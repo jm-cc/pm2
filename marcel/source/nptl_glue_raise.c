@@ -1,6 +1,6 @@
 
 #include "marcel.h"
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 
 #include <sys/types.h>
 #include <linux/unistd.h>
@@ -29,4 +29,4 @@ int raise (int sig)
 	return tkill(selftid, sig);
 }
 
-#endif /* MA__PTHREAD_FUNCTIONS */
+#endif /* MA__LIBPTHREAD */

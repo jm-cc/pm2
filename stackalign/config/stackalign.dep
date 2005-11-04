@@ -1,4 +1,4 @@
-Depend: marcel tbx init marcel_posix
+Depend: marcel tbx init marcel_pthread
 Conflict: dsm pm2
 Provide: module
 Depend: marcel_main_as_func

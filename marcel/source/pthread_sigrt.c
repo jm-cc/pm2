@@ -36,7 +36,7 @@
 //VD:#include <tls.h>
 //VD:#include <locale.h>		/* for __uselocale */
 //VD:#include <version.h>
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 
 #define __ASSUME_REALTIME_SIGNALS 1 //VD:
 /* Sanity check.  */
@@ -152,4 +152,4 @@ __libc_allocate_rtsig (int high)
 #endif
 }
 
-#endif /* MA__PTHREAD_FUNCTIONS */
+#endif /* MA__LIBPTHREAD */

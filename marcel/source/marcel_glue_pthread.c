@@ -1,6 +1,6 @@
 
 #include "marcel.h"
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 
 #include "pm2_common.h"
 
@@ -168,23 +168,6 @@ static void pthread_finalize()
 }
 */
 
-int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
-{
-	int ret;
-	marcel_attr_t attr;
-	ret=marcel_attr_init(&attr);
-	memcpy(__attr, &attr, sizeof(pthread_attr_t));
-	return ret;
-}
-versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
-
-int pthread_attr_setdetachstate (pthread_attr_t *__attr,
-                                        int __detachstate)
-{
-	return marcel_attr_setdetachstate((marcel_attr_t*)__attr,
-					  __detachstate);
-}
-
 #include <semaphore.h>
 
 int __sem_init_2_1 (sem_t *__sem, int __pshared, unsigned int __value)
@@ -329,4 +312,4 @@ __pthread_disable_asynccancel (int oldtype)
 }
 
 
-#endif /* MA__PTHREAD_FUNCTIONS */
+#endif /* MA__LIBPTHREAD */

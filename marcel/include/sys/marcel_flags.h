@@ -105,7 +105,7 @@
 /* MA__INTERRUPTS_USE_SIGINFO : indique que les interruptions utilisent
  * siginfo. Les macros MA_ARCH_(SWITCHTO|INTERRUPT_(ENTER|EXIT))_LWP_FIX
  * peuvent être adaptées pour tranférer le LWP de la libpthread
- * Suppose MA__LWPS && !MA__PTHREAD_FUNCTIONS
+ * Suppose MA__LWPS && !MA__LIBPTHREAD
  * */
 #ifdef MA__INTERRUPTS_USE_SIGINFO
 #  undef MA__INTERRUPTS_USE_SIGINFO
@@ -117,24 +117,25 @@
 #  undef MA__WORK
 #endif
 
-/* MA__POSIX_FUNCTIONS_NAMES : définit les fonctions pthread_...
+/* MA__IFACE_PMARCEL : définit les symboles/structures pmarcel_...
+ * (compatible API avec la norme POSIX)
  * */
-#ifdef MA__POSIX_FUNCTIONS_NAMES
-#  undef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_PMARCEL
+#  undef MA__IFACE_PMARCEL
 #endif
 
-/* MA__POSIX_BEHAVIOUR : définit les fonctions pmarcel_ compatibles avec
- * les propriétées (et structures de données) de la libpthread
+/* MA__IFACE_LPT : définit les symboles/structures lpt_...
+ * (compatible binaire avec la libpthread)
  * */
-#ifdef MA__POSIX_BEHAVIOUR
-#  undef MA__POSIX_BEHAVIOUR
+#ifdef MA__IFACE_LPT
+#  undef MA__IFACE_LPT
 #endif
 
-/* MA__PTHREAD_FUNCTIONS : definit les fonctions nécessaires pour construire
- * une libpthread (ABI)
+/* MA__LIBPTHREAD : définit les fonctions pthread_...
+ * et tout ce qu'il faut pour obtenir une libpthread
  * */
-#ifdef MA__PTHREAD_FUNCTIONS
-#  undef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
+#  undef MA__LIBPTHREAD
 #endif
 
 /* MA__FUT_RECORD_TID : definit si on enregistre ou pas les tid dans les traces
@@ -186,12 +187,16 @@
 #endif
 
 #ifdef MARCEL_POSIX
-#  define MA__POSIX_FUNCTIONS_NAMES
-#  define MA__POSIX_BEHAVIOUR
-#  define MA__PTHREAD_FUNCTIONS
+#  define MA__IFACE_PMARCEL
 #endif
 
-#if defined(MA__LWPS) && !defined(MA__PTHREAD_FUNCTIONS)
+#ifdef MARCEL_LIBPTHREAD
+#  define MA__IFACE_LPT
+#  define MA__IFACE_PTHREAD
+#  define MA__LIBPTHREAD
+#endif
+
+#if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)
 #  define MA__INTERRUPTS_USE_SIGINFO
 #endif
 

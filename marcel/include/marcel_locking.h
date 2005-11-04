@@ -42,7 +42,7 @@ typedef ma_spinlock_t marcel_lock_t;
 #define locked() ma_preempt_count()
 
 #section functions
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 #define marcel_extlib_protect()
 #define marcel_extlib_unprotect()
 #else

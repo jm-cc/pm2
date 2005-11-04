@@ -25,20 +25,26 @@ marcel_attr_t marcel_attr_default = MARCEL_ATTR_INITIALIZER;
 /* Déclaré dans marcel.c : */
 extern volatile unsigned default_stack;
 
-#ifdef MA__POSIX_BEHAVIOUR
-#include <sys/shm.h>
-#endif
-
 DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr))
 {
     *attr = marcel_attr_default;
-#ifdef MA__POSIX_BEHAVIOUR
+#ifdef MA__IFACE_PMARCEL
+    /* VD: Je ne sais pas pourquoi j'avais mis ça là ! */
     attr->__guardsize = MARCEL_STACKSGUARD;
 #endif
-   return 0;
+    return 0;
 }
-DEF_PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
-DEF___PTHREAD(int, attr_init, (pthread_attr_t *attr), (attr))
+#ifdef MA__LIBPTHREAD
+int __pthread_attr_init_2_1 (pthread_attr_t *__attr)
+{
+	int ret;
+	marcel_attr_t attr;
+	ret=marcel_attr_init(&attr);
+	memcpy(__attr, &attr, sizeof(pthread_attr_t));
+	return ret;
+}
+versioned_symbol (libpthread, __pthread_attr_init_2_1, pthread_attr_init, GLIBC_2_1);
+#endif
 
 DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (attr, stack))
 {
@@ -93,7 +99,7 @@ DEF_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean
 DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, boolean *detached), (attr, detached))
 DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, boolean *detached), (attr, detached))
 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize)
 {
    return marcel_attr_setguardsize(attr, guardsize);

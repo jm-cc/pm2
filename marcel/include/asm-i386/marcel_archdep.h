@@ -76,8 +76,6 @@ static __tbx_inline__ long get_gs(void)
                        : : "m" (value) : "memory" ); \
   } while (0)
 
-#define mset_sp_bp(sp, bp) \
-	set_sp(sp)
 #define set_sp_bp(sp, bp) \
   do { \
     unsigned long __sp = (unsigned long)(sp); \

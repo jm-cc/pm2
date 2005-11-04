@@ -272,7 +272,7 @@ int _marcel_raise(marcel_exception_t ex)
    }
 }
 
-#ifndef MA__PTHREAD_FUNCTIONS
+#ifndef MA__LIBPTHREAD
 int marcel_extlib_protect(void)
 {
 	ma_local_bh_disable();
@@ -284,5 +284,5 @@ int marcel_extlib_unprotect(void)
 	ma_local_bh_enable();
 	return 0;
 }
-#endif /* MA__PTHREAD_FUNCTIONS */
+#endif /* MA__LIBPTHREAD */
 

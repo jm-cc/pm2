@@ -1,6 +1,6 @@
 
 #include "sys/marcel_flags.h" //VD: 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 
 /* POSIX à revoir :
  *

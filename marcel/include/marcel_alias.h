@@ -75,7 +75,7 @@
 #define DEC_LOCAL_MARCEL(name) \
   extern __typeof__(MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) LOCAL_ATTRIBUTE
 
-#ifdef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_PMARCEL
 # define DEC_LOCAL_POSIX(name) \
     extern __typeof__(POSIX_NAME(name)) LOCAL_POSIX_NAME(name);
 #else
@@ -91,7 +91,7 @@
   extern rtype MARCEL_NAME(name) proto; \
   DEC_LOCAL_MARCEL(name)
 
-#ifdef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_PMARCEL
 #define DEC_POSIX(rtype, name, proto) \
   extern rtype POSIX_NAME(name) proto; \
   DEC_LOCAL_POSIX(name)
@@ -139,7 +139,7 @@
  * Définitions
  */
 
-#ifdef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_PMARCEL
 # define DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args) \
     TBX_FUN_ALIAS(rtype, LOCAL_POSIX_NAME(name), \
       LOCAL_MARCEL_NAME(name), proto, args);
@@ -170,7 +170,7 @@
   DEF_ALIAS_MARCEL(rtype, name, proto, args) \
   rtype LOCAL_MARCEL_NAME(name) proto
 
-#ifdef MA__POSIX_FUNCTIONS_NAMES
+#ifdef MA__IFACE_PMARCEL
 #define DEF_POSIX(rtype, name, proto, args, code) \
   DEF_ALIAS_POSIX(rtype, name, proto, args) \
   rtype LOCAL_POSIX_NAME(name) proto code
@@ -198,7 +198,7 @@
 #define _weak_alias_t(rtype, name, alias, proto, args) \
   extern TBX_FUN_WEAKALIAS(rtype, name, alias, proto, args);
 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 #  define DEF_STRONG_T(rtype, name, aliasname, proto, args) \
   strong_alias_t(rtype, aliasname, name, proto, args)
 #  define DEF_WEAK_T(rtype, name, aliasname, proto, args) \
@@ -208,7 +208,7 @@
 #  define DEF_WEAK_T(rtype, name, aliasname, proto, args)
 #endif
 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 #define DEF_PTHREAD_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
 #define DEF_PTHREAD_WEAK(rtype, name, proto, args) \
@@ -253,7 +253,7 @@
 #define MARCEL_INT(func) 
 
 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 /* start libpthread */
 #define ABI_libpthread_GLIBC_2_0        1       /* support GLIBC_2.0 */
 #define VERSION_libpthread_GLIBC_2_0    GLIBC_2.0
@@ -303,5 +303,5 @@
 # define compat_symbol_1(local, symbol, name) \
   symbol_version (local, symbol, name)
 
-#endif /* MA__PTHREAD_FUNCTIONS */
+#endif /* MA__LIBPTHREAD */
 

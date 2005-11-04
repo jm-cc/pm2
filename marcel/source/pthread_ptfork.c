@@ -15,7 +15,7 @@
 /* The "atfork" stuff */
 
 #include "marcel.h" //VD: 
-#ifdef MA__PTHREAD_FUNCTIONS
+#ifdef MA__LIBPTHREAD
 #include <errno.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -99,4 +99,4 @@ pid_t __vfork(void)
 }
 weak_alias (__vfork, vfork);
 
-#endif /* MA__PTHREAD_FUNCTIONS */
+#endif /* MA__LIBPTHREAD */

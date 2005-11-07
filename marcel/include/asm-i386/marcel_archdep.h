@@ -50,21 +50,21 @@ static __tbx_inline__ long get_gs(void)
 {
   register long gs;
 
-    __asm__ __volatile__("movl %%gs, %0" : "=r" (gs));
+    __asm__("movl %%gs, %0" : "=r" (gs));
     return gs;
 }
 
 #define get_sp() \
 ({ \
   register unsigned long sp; \
-  __asm__ __volatile__("movl %%esp, %0" : "=r" (sp)); \
+  __asm__("movl %%esp, %0" : "=r" (sp)); \
   sp; \
 })
 
 #define get_bp() \
 ({ \
   register unsigned long bp; \
-  __asm__ __volatile__("movl %%ebp, %0" : "=r" (bp)); \
+  __asm__("movl %%ebp, %0" : "=r" (bp)); \
   bp; \
 })
 

@@ -44,7 +44,7 @@ extern void call_ST_FLUSH_WINDOWS(void);
 #define get_sp() \
 ({ \
   register unsigned long sp; \
-  __asm__ __volatile__("mov %%sp, %0" : "=r" (sp)); \
+  __asm__("mov %%sp, %0" : "=r" (sp)); \
   sp; \
 })
 

@@ -32,7 +32,7 @@
 #define get_sp() \
 ({ \
   register unsigned long sp; \
-  __asm__ __volatile__("" : "=r" (sp)); \
+  __asm__("" : "=r" (sp)); \
   sp; \
 })
 

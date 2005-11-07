@@ -32,7 +32,7 @@
 #define get_sp() \
 ({ \
   register unsigned long sp; \
-  __asm__ __volatile__( \
+  __asm__( \
 		  ";; \n\t" \
 		  "mov %0 = sp ;; \n\t" \
 		  ";; \n\t" \
@@ -44,7 +44,7 @@ static __tbx_inline__ unsigned long get_bsp(void)
 {
   register unsigned long bsp;
 
-  __asm__ __volatile__(
+  __asm__(
 		  ";; \n\t" \
 		  "flushrs ;; \n\t" \
 		  "mov %0 = ar.bsp ;; \n\t"
@@ -91,7 +91,7 @@ static __tbx_inline__ unsigned long get_bsp(void)
   } while (0)
 #else
 #define _MA_IA64_REG_SP		1036	/* R12 */
-__u64 __getReg(const int whichReg);
+__u64 TBX_CONST __getReg(const int whichReg);
 #define get_sp() ((unsigned long)__getReg(_MA_IA64_REG_SP))
 #endif
 

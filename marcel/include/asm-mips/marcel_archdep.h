@@ -33,7 +33,7 @@
 #define get_sp() \
 ({ \
   register unsigned long sp; \
-  __asm__ __volatile__("move %0, $sp" : "=r" (sp)); \
+  __asm__("move %0, $sp" : "=r" (sp)); \
   sp; \
 })
 

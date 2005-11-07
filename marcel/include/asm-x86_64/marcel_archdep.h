@@ -32,14 +32,14 @@
 #define get_sp() \
 ({ \
   register unsigned long sp; \
-  __asm__ __volatile__("movq %%rsp, %0" : "=r" (sp)); \
+  __asm__("movq %%rsp, %0" : "=r" (sp)); \
   sp; \
 })
 
 #define get_bp() \
 ({ \
   register unsigned long bp; \
-  __asm__ __volatile__("movq %%rbp, %0" : "=r" (bp)); \
+  __asm__("movq %%rbp, %0" : "=r" (bp)); \
   bp; \
 })
 

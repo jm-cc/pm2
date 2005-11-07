@@ -103,7 +103,7 @@ void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
   }
 }
 
-void distributor (int hops, int len, Path_t path, TSPqueue *q, DistTab_t distance)
+void distributor (int hops, int len, Path_t path, TSPqueue *q)
 {
  Job_t j ;
  int i ;
@@ -126,7 +126,7 @@ void distributor (int hops, int len, Path_t path, TSPqueue *q, DistTab_t distanc
       {
        path [hops] = city ;
        dist = distance.dst[me][i].dist ;
-       distributor (hops+1, len+dist, path, q, distance) ;       
+       distributor (hops+1, len+dist, path, q) ;       
       }
     }
   } 
@@ -137,7 +137,7 @@ void GenerateJobs ()
  Path_t path ;
 
  path [0] = 0 ;
- distributor (1, 0, path, &q, distance) ; 
+ distributor (1, 0, path, &q) ; 
  no_more_jobs (&q) ;
 }
 

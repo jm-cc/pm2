@@ -579,9 +579,9 @@ common_exit(common_attr_t *attr)
   mad_dir_driver_exit(attr->madeleine);
   mad_directory_exit(attr->madeleine);
   mad_leonie_link_exit(attr->madeleine);
-#ifdef MAD3
+  //#ifdef MAD3
   mad_leonie_command_exit(attr->madeleine);
-#endif // MAD3
+  //#endif // MAD3
   mad_object_exit(attr->madeleine);
   attr->madeleine = NULL;
 #ifdef MARCEL

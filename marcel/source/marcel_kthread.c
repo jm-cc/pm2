@@ -126,7 +126,7 @@ void marcel_kthread_join(marcel_kthread_t *pid)
 	pid_t the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it */
-		syscall(__NR_futex, pid, FUTEX_WAIT, the_pid, NULL);
+		while (syscall(__NR_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1 && errno == EINTR);
 	LOG_OUT();
 }
 

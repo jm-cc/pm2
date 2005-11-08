@@ -56,15 +56,13 @@ static __tbx_inline__ long get_gs(void)
 
 #define get_sp() \
 ({ \
-  register unsigned long sp; \
-  __asm__("movl %%esp, %0" : "=r" (sp)); \
+  register unsigned long sp asm("esp"); \
   sp; \
 })
 
 #define get_bp() \
 ({ \
-  register unsigned long bp; \
-  __asm__("movl %%ebp, %0" : "=r" (bp)); \
+  register unsigned long bp asm("ebp"); \
   bp; \
 })
 

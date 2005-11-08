@@ -31,15 +31,13 @@
 
 #define get_sp() \
 ({ \
-  register unsigned long sp; \
-  __asm__("movq %%rsp, %0" : "=r" (sp)); \
+  register unsigned long sp asm("rsp"); \
   sp; \
 })
 
 #define get_bp() \
 ({ \
-  register unsigned long bp; \
-  __asm__("movq %%rbp, %0" : "=r" (bp)); \
+  register unsigned long bp asm("rbp"); \
   bp; \
 })
 

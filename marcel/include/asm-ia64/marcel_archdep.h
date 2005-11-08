@@ -31,12 +31,7 @@
 #ifndef __INTEL_COMPILER
 #define get_sp() \
 ({ \
-  register unsigned long sp; \
-  __asm__( \
-		  ";; \n\t" \
-		  "mov %0 = sp ;; \n\t" \
-		  ";; \n\t" \
-		  : "=r" (sp)); \
+  register unsigned long sp asm("sp"); \
   sp; \
 })
 

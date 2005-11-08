@@ -18,6 +18,7 @@ mad_micro_ping			\
 mad_mini_ping			\
 mad_ping			\
 mad_unexpected			\
+mad_simple			\
 mad_micro_direct
 
 include $(PM2_ROOT)/make/apps.mak

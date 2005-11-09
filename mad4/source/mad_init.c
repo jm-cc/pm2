@@ -154,6 +154,8 @@ driver_init_1(p_mad_madeleine_t      madeleine,
   char                                *network_name       = NULL;
   char                                *device_name        = NULL;
 
+  LOG_IN();
+
   network_name = mad_leonie_receive_string();
   if (tbx_streq(network_name, "-"))
     {
@@ -1077,6 +1079,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   p_mad_driver_interface_t    interface    = NULL;
   char                       *channel_name = NULL;
 
+  LOG_IN();
   channel_name = mad_leonie_receive_string();
   TRACE_STR("Pass 1 - channel", channel_name);
   if (tbx_streq(channel_name, "-"))
@@ -1153,6 +1156,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   mad_leonie_send_int(-1);
   TBX_FREE(channel_name);
 
+  LOG_OUT();
   return tbx_true;
 }
 
@@ -1172,6 +1176,7 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
   ntbx_process_lrank_t        l_dst     =   -1;
   ntbx_process_grank_t        g         =   -1;
 
+  LOG_IN();
   interface = mad_channel->adapter->driver->interface;
 
   g = madeleine->session->process_rank;
@@ -1271,6 +1276,8 @@ vchannel_connection_open(p_mad_madeleine_t          madeleine,
 
   tbx_darray_expand_and_set(mad_channel->in_connection_darray, l_dst, in);
   tbx_darray_expand_and_set(mad_channel->out_connection_darray, l_dst, out);
+
+  LOG_OUT();
 }
 #endif /* MARCEL */
 
@@ -1294,10 +1301,12 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   ntbx_process_grank_t        g  =   -1;
 #endif // MARCEL
 
+  LOG_IN();
   vchannel_name = mad_leonie_receive_string();
   if (tbx_streq(vchannel_name, "-"))
     {
       TBX_FREE(vchannel_name);
+      LOG_OUT();
       return tbx_false;
     }
 
@@ -1399,6 +1408,7 @@ vchannel_open(p_mad_madeleine_t  madeleine,
   TBX_FREE(vchannel_name);
   mad_leonie_send_int(-1);
 
+  LOG_OUT();
   return tbx_true;
 }
 
@@ -1418,6 +1428,7 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
   ntbx_process_lrank_t        l_dst     =   -1;
   ntbx_process_grank_t        g         =   -1;
 
+  LOG_IN();
   interface = mad_channel->adapter->driver->interface;
 
   g = madeleine->session->process_rank;
@@ -1509,6 +1520,8 @@ xchannel_connection_open(p_mad_madeleine_t          madeleine,
 
   tbx_darray_expand_and_set(mad_channel->in_connection_darray,  l_dst, in);
   tbx_darray_expand_and_set(mad_channel->out_connection_darray, l_dst, out);
+
+  LOG_OUT();
 }
 #endif /* MARCEL */
 
@@ -1536,6 +1549,7 @@ xchannel_open(p_mad_madeleine_t  madeleine,
   if (tbx_streq(xchannel_name, "-"))
     {
       TBX_FREE(xchannel_name);
+      LOG_OUT();
       return tbx_false;
     }
 

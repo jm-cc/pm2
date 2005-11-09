@@ -245,8 +245,10 @@ connection_exit(p_mad_channel_t ch)
 
   LOG_IN();
   command = mad_leonie_receive_int();
-  if (command == -1)
+  if (command == -1) {
+    LOG_OUT();
     return tbx_false;
+  }
 
   in_darray  = ch->in_connection_darray;
   out_darray = ch->out_connection_darray;

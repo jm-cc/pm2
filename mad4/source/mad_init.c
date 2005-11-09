@@ -1085,6 +1085,7 @@ fchannel_open(p_mad_madeleine_t  madeleine,
   if (tbx_streq(channel_name, "-"))
     {
       TBX_FREE(channel_name);
+      LOG_OUT();
       return tbx_false;
     }
 

@@ -268,8 +268,10 @@ mad_dir_driver_process_get(p_tbx_darray_t      process_darray,
 
   LOG_IN();
   driver_global_rank = mad_leonie_receive_int();
-  if (driver_global_rank == -1)
+  if (driver_global_rank == -1) {
+    LOG_OUT();
     return tbx_false;
+  }
 
   TRACE_VAL("  Driver dps for process (global rank)", driver_global_rank);
 
@@ -357,8 +359,10 @@ mad_dir_channel_get_adapters(p_mad_dir_channel_t  dir_channel,
 
   LOG_IN();
   channel_global_rank = mad_leonie_receive_int();
-  if (channel_global_rank == -1)
+  if (channel_global_rank == -1) {
+    LOG_OUT();
     return tbx_false;
+  }
 
   channel_local_rank = mad_leonie_receive_int();
   process = tbx_darray_get(process_darray, channel_global_rank);

@@ -49,6 +49,11 @@ void do_main_code(p_mad_madeleine_t madeleine) {
   /* Get the set of processes in the channel */
   pc = channel->pc;
 
+  if (pc->count < 2) {
+    LDISP("Number of processes should be at least 2");
+    return;
+  }
+
   /* Convert the globally unique process rank to its _local_ rank in the current channel */
   process_rank  = madeleine->session->process_rank;
   my_local_rank = ntbx_pc_global_to_local(pc, process_rank);

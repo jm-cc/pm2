@@ -1,12 +1,15 @@
 #!/usr/bin/perl
 
+my $blueOnWhite = "\033[0;34;47m";
+my $normal = "\033[0m";
+
 sub error {
   my $msg = $_[0];
 
   if ($msg) {
     print $msg;
   }
-  print "Error. Syntax: pm2-indent.log.pl <log file> [<maximum depth>]\n";
+  print "Error. Syntax: pm2-indent.log.pl [-bold] <log file> [<maximum depth>]\n";
   die;
 }
 
@@ -21,25 +24,34 @@ sub printLine {
   for(my $i=0 ; $i<$depth ; $i++) {
     print "  ";
   }
-  print $line;
+  print $line."\n";
 }
 
 $ARGV[0] || error();
-my $depth = -1;
 my $maxDepth = -1;
-my $nbArgs = scalar(@ARGV);
-if ($ARGV[1] =~ m/^\d*$/) {
-  if ($nbArgs >= 2) {
-    $maxDepth = $ARGV[1];
-  }
-}
-else {
-  error("Error. The 2nd argument must be an integer\n");
+my $bold = 0;
+
+my $file = $ARGV[0];
+my $argDepth = $ARGV[1];
+
+if ($ARGV[0] =~ m/-bold/) {
+  $bold = 1;
+  $file = $ARGV[1];
+  $argDepth = $ARGV[2];
 }
 
-open(FILE,"< $ARGV[0]") || error("Cannot open file $ARGV[0]\n");
+if ($argDepth =~ m/^\d+$/) {
+  $maxDepth = $argDepth;
+}
+else {
+  $maxDepth = -1;
+}
+
+my $depth = -1;
+open(FILE,"< $file") || error("Cannot open file $file\n");
 while (<FILE>) {
   my $line = $_;
+  chop($line);
 
   if ($line =~ m/-->/) {
     $depth = $depth+1;
@@ -50,7 +62,12 @@ while (<FILE>) {
     $depth = $depth - 1;
   }
   else {
-    printLine($line, $depth, $maxDepth);
+    if ($bold == 1) {
+      printLine($blueOnWhite.$line.$normal, $depth, $maxDepth);
+    }
+    else {
+      printLine($line, $depth, $maxDepth);
+    }
   }
 }
 close(FILE);

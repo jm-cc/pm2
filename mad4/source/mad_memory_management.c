@@ -49,6 +49,7 @@ void
 mad_memory_manager_init(int    argc TBX_UNUSED,
 			char **argv TBX_UNUSED)
 {
+  LOG_IN();
   tbx_malloc_init(&mad_buffer_memory,
 		  sizeof(mad_buffer_t),
 		  INITIAL_BUFFER_NUM,
@@ -68,15 +69,18 @@ mad_memory_manager_init(int    argc TBX_UNUSED,
 		  sizeof(mad_buffer_slice_parameter_t),
 		  INITIAL_BUFFER_SLICE_PARAMETER_NUM,
                   "madeleine/buffer slice parameters");
+  LOG_OUT();
 }
 
 void
 mad_memory_manager_exit(void)
 {
+  LOG_IN();
   tbx_malloc_clean(mad_buffer_memory);
   tbx_malloc_clean(mad_buffer_group_memory);
   tbx_malloc_clean(mad_buffer_pair_memory);
   tbx_malloc_clean(mad_buffer_slice_parameter_memory);
+  LOG_OUT();
 }
 
 p_mad_buffer_t

@@ -600,7 +600,7 @@ send_directory(p_leonie_t leonie)
       //p_tbx_slist_t    slist   = NULL;
       //int              len     =    0;
 
-      LOG_IN();
+      TRACE("Starting tranmission loop");
       process = tbx_slist_nref_get(process_ref);
       TRACE_VAL("Transmitting to", process->global_rank);
 

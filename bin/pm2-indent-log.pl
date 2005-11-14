@@ -62,12 +62,14 @@ while (<FILE>) {
     $depth = $depth - 1;
   }
   else {
+    $depth = $depth+1;
     if ($bold == 1) {
       printLine($blueOnWhite.$line.$normal, $depth, $maxDepth);
     }
     else {
       printLine($line, $depth, $maxDepth);
     }
+    $depth = $depth-1;
   }
 }
 close(FILE);

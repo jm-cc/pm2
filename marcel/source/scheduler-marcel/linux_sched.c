@@ -758,9 +758,8 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	/* note: pas de softirq ici, on est déjà en mode interruption */
 	ma_holder_t *prevh = ma_task_holder_rawlock(prev);
 	unsigned long prev_task_flags;
-#ifdef MARCEL_BUBBLE_EXPLODE
+#ifdef MA__BUBBLES
 	ma_holder_t *h;
-	marcel_bubble_t *bubble;
 #endif
 	prevh->nr_scheduled--;
 
@@ -787,27 +786,44 @@ static inline void finish_task_switch(marcel_task_t *prev)
 		ma_enqueue_task(prev,prevh);
 	}
 
-#ifdef MARCEL_BUBBLE_EXPLODE
+#ifdef MA__BUBBLES
 	if ((h = (ma_task_init_holder(prev)))
-		&& h->type == MA_BUBBLE_HOLDER
-		&& (bubble = ma_bubble_holder(h))->status == MA_BUBBLE_CLOSING) {
+		&& h->type == MA_BUBBLE_HOLDER) {
+		marcel_bubble_t *bubble = ma_bubble_holder(h);
+		int remove_from_bubble;
+#ifdef MARCEL_BUBBLE_EXPLODE
+		int close_bubble;
 		int wake_bubble;
-		bubble_sched_debug("%p(%s) descheduled for bubble %p closing\n",prev, prev->name, bubble);
-		PROF_EVENT2(bubble_sched_goingback,prev,bubble);
-		if (MA_TASK_IS_RUNNING(prev))
-			ma_deactivate_running_task(prev,prevh);
-		else if (MA_TASK_IS_SLEEPING(prev))
-			ma_deactivate_task(prev,prevh);
-		ma_finish_arch_switch(prevh, prev);
-		ma_holder_lock(&bubble->hold);
-		if ((wake_bubble = !(--bubble->nbrunning))) {
-			bubble_sched_debug("it was last, bubble %p closed\n", bubble);
-			PROF_EVENT1(bubble_sched_closed,bubble);
-			bubble->status = MA_BUBBLE_CLOSED;
+#endif
+		if ((remove_from_bubble = (prev->sched.state & MA_TASK_DEAD)))
+			ma_task_sched_holder(prev) = NULL;
+#ifdef MARCEL_BUBBLE_EXPLODE
+		else if ((close_bubble = (bubble->status == MA_BUBBLE_CLOSING))) {
+			bubble_sched_debug("%p(%s) descheduled for bubble %p closing\n",prev, prev->name, bubble);
+			PROF_EVENT2(bubble_sched_goingback,prev,bubble);
+			if (MA_TASK_IS_RUNNING(prev))
+				ma_deactivate_running_task(prev,prevh);
+			else if (MA_TASK_IS_SLEEPING(prev))
+				ma_deactivate_task(prev,prevh);
 		}
-		ma_holder_unlock(&bubble->hold);
-		if (wake_bubble)
-			marcel_wake_up_bubble(bubble);
+#endif
+		ma_finish_arch_switch(prevh, prev);
+		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
+		if (remove_from_bubble)
+			marcel_bubble_removetask(bubble, prev);
+#ifdef MARCEL_BUBBLE_EXPLODE
+		else if (close_bubble) {
+			ma_holder_lock(&bubble->hold);
+			if ((wake_bubble = !(--bubble->nbrunning))) {
+				bubble_sched_debug("it was last, bubble %p closed\n", bubble);
+				PROF_EVENT1(bubble_sched_closed,bubble);
+				bubble->status = MA_BUBBLE_CLOSED;
+			}
+			ma_holder_unlock(&bubble->hold);
+			if (wake_bubble)
+				marcel_wake_up_bubble(bubble);
+		}
+#endif
 	} else
 #endif
 	/*
@@ -1922,8 +1938,15 @@ void marcel_change_vpmask(marcel_vpmask_t mask)
 	}
 	ma_holder_rawlock(old_h);
 	ma_deactivate_running_task(MARCEL_SELF,old_h);
+	ma_task_sched_holder(MARCEL_SELF) = NULL;
 	ma_holder_rawunlock(old_h);
+#ifdef MA__BUBBLES
+	old_h = ma_task_init_holder(MARCEL_SELF);
+	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
+		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
+#endif
 	ma_holder_rawlock(&new_rq->hold);
+	ma_task_sched_holder(MARCEL_SELF) = &new_rq->hold;
 	ma_activate_running_task(MARCEL_SELF,&new_rq->hold);
 	ma_holder_rawunlock(&new_rq->hold);
 	/* On teste si le LWP courant est interdit ou pas */

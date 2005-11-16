@@ -22,7 +22,7 @@
 //#define dprintf(fmt,args...) fprintf(stderr,fmt,##args)
 #define dprintf(fmt,args...) (void)0
 
-#define MAX_BUBBLE_LEVEL 2
+#define MAX_BUBBLE_LEVEL 8
 //#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
@@ -62,9 +62,10 @@ any_t sum(any_t arg)
   job_init(&j1, j->inf, (j->inf+j->sup)/2, j->level + 1);
   job_init(&j2, (j->inf+j->sup)/2+1, j->sup, j->level + 1);
 
+#ifdef MA__BUBBLES
   if (j->level<MAX_BUBBLE_LEVEL) {
-    marcel_bubble_t b1,b2;
     marcel_t p1,p2;
+    marcel_bubble_t b1,b2;
     marcel_bubble_init(&b1);
     marcel_bubble_init(&b2);
     marcel_bubble_setschedlevel(&b1,j->level);
@@ -77,9 +78,11 @@ any_t sum(any_t arg)
     marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b2);
     marcel_wake_up_created_thread(p1);
     marcel_wake_up_created_thread(p2);
-    marcel_sem_P(&j1.sem);
-    marcel_sem_P(&j2.sem);
-  } else {
+    marcel_bubble_join(&b1);
+    marcel_bubble_join(&b2);
+  } else
+#endif
+  {
     marcel_create(NULL, &attr, sum, (any_t)&j1);
     marcel_create(NULL, &attr, sum, (any_t)&j2);
     marcel_sem_P(&j1.sem);

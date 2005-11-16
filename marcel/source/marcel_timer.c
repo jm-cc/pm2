@@ -427,25 +427,19 @@ static void sig_stop_timer(ma_lwp_t lwp)
 	LOG_IN();
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-#ifndef CHAINED_SIGALRM
 	sig_stop_itimer();
-#endif
 
 	/* à part avec linux <= 2.4, les traitants de signaux ne sont _pas_
 	 * par thread, il faut donc garder le traitant commun jusqu'au bout, en
-	 * désactivant simplement l'interruption. */
-#ifdef MA__SMP
-	marcel_sig_disable_interrupts();
-#else
-	{
-		struct sigaction sa;
-		sigemptyset(&sa.sa_mask);
-		sa.sa_handler = SIG_IGN;
-		sa.sa_flags = 0;
+	 * désactivant simplement l'interruption.
+	 *
+	 * Et puis on en a besoin dans le cas CHAINED_SIGALRM. */
+	struct sigaction sa;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_handler = SIG_IGN;
+	sa.sa_flags = 0;
 
-		sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
-	}
-#endif
+	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
 	LOG_OUT();
@@ -455,11 +449,6 @@ void marcel_sig_exit(void)
 {
 	fault_catcher_exit(LWP_SELF);
 	sig_stop_timer(LWP_SELF);
-#ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
-#ifdef CHAINED_SIGALRM
-	sig_stop_itimer();
-#endif
-#endif
 	return;
 }
 

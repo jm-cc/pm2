@@ -32,8 +32,7 @@
 
 #define get_sp() \
 ({ \
-  register unsigned long sp; \
-  __asm__("move %0, $sp" : "=r" (sp)); \
+  register unsigned long sp asm("$sp"); \
   sp; \
 })
 

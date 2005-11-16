@@ -28,8 +28,7 @@ MA_DECLARE_PER_LWP(unsigned long *, ma_ia64_tp);
   do { \
 	unsigned long *p_tp=__ma_get_lwp_var(ma_ia64_tp); \
 	if (p_tp) { \
-		register unsigned long reg; \
-		__asm__("mov %0 = r13": "=r" (reg): ); \
+		register unsigned long reg asm("r13"); \
 		*p_tp=reg; \
 	} \
   } while(0)

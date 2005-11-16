@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# TODO: utiliser tput setf 1; tput setb 7 et tput sgr0 plutôt
+
 my $blueOnWhite = "\033[0;34;47m";
 my $normal = "\033[0m";
 

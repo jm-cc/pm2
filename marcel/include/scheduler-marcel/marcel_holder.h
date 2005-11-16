@@ -201,25 +201,28 @@ ma_holder_t *ma_task_holder_lock_softirq(marcel_task_t *e);
 #define ma_task_holder_lock_softirq(t) ma_entity_holder_lock_softirq(&(t)->sched.internal)
 #section marcel_inline
 static inline ma_holder_t *ma_entity_holder_rawlock(marcel_entity_t *e) {
-	ma_holder_t *h;
+	ma_holder_t *h, *h2;
+	h = ma_entity_some_holder(e);
 again:
-	if (!(h = ma_entity_some_holder(e)))
+	if (!h)
 		return NULL;
 	sched_debug("ma_entity_holder_rawlocking(%p)\n",h);
 	ma_holder_rawlock(h);
-	if (tbx_unlikely(h != ma_entity_some_holder(e))) {
+	if (tbx_unlikely(h != (h2 = ma_entity_some_holder(e)))) {
 		sched_debug("ma_entity_holder_rawunlocking(%p)\n",h);
 		ma_holder_rawunlock(h);
+		h = h2;
 		goto again;
 	}
 	sched_debug("ma_entity_holder_rawlocked(%p)\n",h);
 	return h;
 }
 static inline ma_holder_t *ma_entity_holder_lock(marcel_entity_t *e) {
-	ma_holder_t *h;
-again:
+	ma_holder_t *h, *h2;
 	ma_preempt_disable();
-	if (!(h = ma_entity_some_holder(e)))
+	h = ma_entity_some_holder(e);
+again:
+	if (!h)
 		return NULL;
 	sched_debug("ma_entity_holder_locking(%p)\n",h);
 	if (tbx_unlikely(!ma_holder_trylock(h)))
@@ -227,9 +230,10 @@ again:
 		ma_holder_preempt_lock(h)
 #endif
 		;
-	if (tbx_unlikely(h != ma_entity_some_holder(e))) {
+	if (tbx_unlikely(h != (h2 = ma_entity_some_holder(e)))) {
 		sched_debug("ma_entity_holder_unlocking(%p)\n",h);
-		ma_holder_unlock(h);
+		ma_holder_rawunlock(h);
+		h = h2;
 		goto again;
 	}
 	sched_debug("ma_entity_holder_locked(%p)\n",h);
@@ -316,6 +320,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->run_holder);
+	MA_BUG_ON(e->sched_holder && h->type != e->sched_holder->type);
 	e->run_holder = h;
 	h->nr_running++;
 }

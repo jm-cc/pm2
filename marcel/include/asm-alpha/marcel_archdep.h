@@ -47,8 +47,7 @@
 
 #define get_sp() \
 ({ \
-  register unsigned long sp; \
-  __asm__("addq $sp, $31, %0" : "=r" (sp)); \
+  register unsigned long sp asm("$30"); \
   sp; \
 })
 

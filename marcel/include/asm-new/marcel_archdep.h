@@ -31,8 +31,7 @@
 
 #define get_sp() \
 ({ \
-  register unsigned long sp; \
-  __asm__("" : "=r" (sp)); \
+  register unsigned long sp asm(""); \
   sp; \
 })
 

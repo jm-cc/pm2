@@ -16,11 +16,6 @@
 
 #section common
 #include "tbx_compiler.h"
-#section types
-#section functions
-#section inline
-#section marcel_types
-#section marcel_structures
 
 
 #section types
@@ -39,6 +34,13 @@ struct semaphor_struct {
   struct semcell_struct *first,*last;
   ma_spinlock_t lock;  /* For preventing concurrent access from multiple LWPs */
 };
+
+#section macros
+#define MARCEL_SEM_INITIALIZER(initial) { \
+	.value = initial, \
+	.first = NULL, \
+	.lock = MA_SPIN_LOCK_UNLOCKED \
+}
 
 #section types
 typedef struct semaphor_struct marcel_sem_t;

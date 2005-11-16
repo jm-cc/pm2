@@ -53,10 +53,19 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 int marcel_bubble_insertbubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
 int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);
 
+int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
+int marcel_bubble_removebubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
+int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
+
 #define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->sched)
 #define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->sched.internal)
 
+#define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->sched)
+#define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->sched.internal)
+
 void marcel_wake_up_bubble(marcel_bubble_t *bubble);
+
+void marcel_bubble_join(marcel_bubble_t *bubble);
 
 marcel_bubble_t *marcel_bubble_holding_task(marcel_task_t *task);
 marcel_bubble_t *marcel_bubble_holding_bubble(marcel_bubble_t *bubble);
@@ -91,6 +100,7 @@ struct marcel_bubble {
 	struct ma_sched_entity sched;
 	struct ma_holder hold;
 	struct list_head heldentities;
+	marcel_sem_t join;
 #ifdef MARCEL_BUBBLE_EXPLODE
 	ma_bubble_status status;
 	int nbrunning; /* number of entities released by the bubble (i.e. currently in runqueues) */
@@ -133,9 +143,10 @@ struct marcel_bubble {
 #endif
 
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
+	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_BATCH_PRIO), \
 	.hold = MA_HOLDER_INITIALIZER(MA_BUBBLE_HOLDER), \
 	.heldentities = LIST_HEAD_INIT((b).heldentities), \
-	.sched = MA_SCHED_ENTITY_INITIALIZER((b).sched, MA_BUBBLE_ENTITY, MA_BATCH_PRIO), \
+	.join = MARCEL_SEM_INITIALIZER(1), \
 	MARCEL_BUBBLE_SCHED_INITIALIZER(b) \
 }
 
@@ -179,7 +190,6 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 	if (list_empty(&b->runningentities) && b->sched.run_holder && !b->sched.holder_data) {
 		ma_holder_t *h;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
-		ma_holder_rawunlock(&b->hold);
 		h = b->sched.run_holder;
 		MA_BUG_ON(h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 		if (h && b->sched.run_holder && !b->sched.holder_data && list_empty(&b->runningentities))

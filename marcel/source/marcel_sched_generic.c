@@ -234,9 +234,6 @@ void marcel_gensched_shutdown(void)
 	// Si nécessaire, on bascule sur le LWP(0)
 	marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
 
-#ifdef MA__TIMER
-	marcel_sig_exit();
-#endif
 #ifdef MA__SMP
 
 
@@ -275,6 +272,9 @@ void marcel_gensched_shutdown(void)
 	/* __sched_task is detached, so we can free its stack now */
 	//__TBX_FREE(marcel_stackbase(ma_per_lwp(idle_task,&__main_lwp)), __FILE__, __LINE__);
 #endif
+#endif
+#ifdef MA__TIMER
+	marcel_sig_exit();
 #endif
 
 	LOG_OUT();

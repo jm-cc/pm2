@@ -14,10 +14,7 @@
 export FLAVOR_DEFAULT:=mad4
 
 PROGS :=			\
-mad_micro_ping			\
-mad_mini_ping			\
 mad_ping			\
-mad_unexpected			\
 mad_simple			\
 mad_micro_direct
 

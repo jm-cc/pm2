@@ -246,7 +246,6 @@ main(int argc, char **argv) {
         //           len3,
         //           mad_send_CHEAPER,
         //           mad_receive_CHEAPER);
-<<<<<<< .mine
 
         //DISP("################################");
 
@@ -258,23 +257,7 @@ main(int argc, char **argv) {
 
         //DISP("################################");
 
-=======
-
-        //DISP("################################");
-
->>>>>>> .r12209
         //mad_unpack(connection,
-<<<<<<< .mine
-=======
-        //           buffer4,
-        //           len4,
-        //           mad_send_CHEAPER,
-        //           mad_receive_CHEAPER);
-
-        //DISP("################################");
-
-        //mad_unpack(connection,
->>>>>>> .r12209
         //           buffer5,
         //           len5,
         //           mad_send_CHEAPER,

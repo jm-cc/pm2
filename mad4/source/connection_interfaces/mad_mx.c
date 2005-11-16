@@ -251,6 +251,9 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
     p_mad_iovec_t mad_iovec = NULL;
     void *unexpected_area   = NULL;
     int   i = 0;
+    uint64_t                        nic_id;
+    char                            hostname[MX_MAX_HOSTNAME_LEN];
+
     LOG_IN();
     as		   = TBX_MALLOC(sizeof(mad_mx_adapter_specific_t));
     driver         = a->driver;
@@ -284,7 +287,14 @@ mad_mx_adapter_init(p_mad_adapter_t a) {
     }
 
     a->specific	= as;
-    a->parameter	= tbx_strdup("-");
+
+    /* ID of the first Myrinet card */
+    mx_board_number_to_nic_id(0, &nic_id);
+    /* Hostname attached to this ID */
+    mx_nic_id_to_hostname(nic_id, hostname);
+
+    a->parameter	= tbx_strdup(hostname);
+
     LOG_OUT();
 }
 
@@ -386,20 +396,11 @@ mad_mx_accept_connect(p_mad_connection_t   cnx,
 
 
         /* Hostname */
-        remote_hostname_len	= strlen(ai->dir_node->name) + 2;
+        remote_hostname_len	= strlen(ai->dir_adapter->parameter) + 2;
         remote_hostname	        = TBX_MALLOC(remote_hostname_len + 1);
-        strcpy(remote_hostname, ai->dir_node->name);
+        strcpy(remote_hostname, ai->dir_adapter->parameter);
 
-        {
-            char *tmp = NULL;
-
-            tmp = strchr(remote_hostname, '.');
-            if (tmp) {
-                *tmp = '\0';
-            }
-        }
-        strcat(remote_hostname, ":0");
-
+        DISP("MX checking hostname %s", remote_hostname);
         /* Remote NIC id */
         rc = mx_hostname_to_nic_id(remote_hostname, &remote_nic_id);
         mad_mx_check_return("mx_hostname_to_nic_id", rc);

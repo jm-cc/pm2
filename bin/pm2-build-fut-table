@@ -27,6 +27,7 @@ Usage: $PROGNAME { option }
 
   option:
     -f name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -m name : Use module named "name" (default=profile)
     -h : Display this help message
 EOF
     exit $1
@@ -34,12 +35,18 @@ EOF
 
 PM2_FLAVOR=${PM2_FLAVOR:-default}
 export PM2_FLAVOR
+MODULE=profile
 
 while [ $# -gt 0 ]; do
     case $1 in
 	-f)
 	    shift
 	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-m)
+	    shift
+	    MODULE="$1"
 	    shift
 	    ;;
 	-h)
@@ -64,7 +71,7 @@ BUILDDIR=$_PM2CONFIG_BUILD
 
 RECORD_SIZE=1
 
-GENDIR=${BUILDDIR}/profile/include
+GENDIR=${BUILDDIR}/${MODULE}/include
 
 if [ ! -d ${GENDIR} ] ; then
     mkdir -p ${GENDIR}

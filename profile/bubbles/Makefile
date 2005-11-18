@@ -24,7 +24,7 @@ $(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-bui
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
 
-$(MOD_GEN_BIN)/bubbles: $(MOD_GEN_INC)/fut_entries.h
+$(MOD_GEN_OBJ)/bubbles.o: $(MOD_GEN_INC)/fut_entries.h
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)

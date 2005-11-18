@@ -157,10 +157,14 @@
 #define LOW_CREDIT(p) \
 	((p)->interactive_credit < -CREDIT_LIMIT)
 
+#define TASK_TASK_PREEMPT(p, q) \
+	((q)->sched.internal.prio - (p)->sched.internal.prio)
 #define TASK_PREEMPTS_TASK(p, q) \
-	((p)->sched.internal.prio < (q)->sched.internal.prio)
+	TASK_TASK_PREEMPT(p, q) > 0
 #define TASK_PREEMPTS_CURR(p, lwp) \
 	TASK_PREEMPTS_TASK((p), ma_per_lwp(current_thread, (lwp)))
+#define TASK_CURR_PREEMPT(p, lwp) \
+	TASK_TASK_PREEMPT((p), ma_per_lwp(current_thread, (lwp)))
 
 
 /*
@@ -329,8 +333,10 @@ static inline void resched_task(marcel_task_t *p, ma_lwp_t lwp)
 	need_resched = ma_test_and_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
 	nrpolling |= ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
 
-	if (!need_resched && !nrpolling && lwp != LWP_SELF)
+	if (!need_resched && !nrpolling && lwp != LWP_SELF) {
+		PROF_EVENT2(sched_resched_lwp, LWP_NUMBER(LWP_SELF), LWP_NUMBER(lwp));
 		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_SIGNAL);
+	}
 	ma_preempt_enable();
 #else
 	ma_set_tsk_need_resched(p);
@@ -443,17 +449,22 @@ EXPORT_SYMBOL_GPL(kick_process);
 /* tries to resched the given task in the given holder */
 static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 {
-	marcel_lwp_t *lwp;
+	marcel_lwp_t *lwp, *chosen = NULL;
 	ma_runqueue_t *rq = ma_to_rq_holder(h);
+	int max_preempt = 0, preempt;
 	if (!rq)
 		return;
 	for_each_lwp_from_begin(lwp, LWP_SELF)
-		/* TODO: regarder celui qui préeempte le plus ? (histoire d'aller taper dans Idle plutôt) */
-		if (ma_rq_covers(rq, lwp) && TASK_PREEMPTS_CURR(p, lwp)) {
-			resched_task(ma_per_lwp(current_thread, lwp), lwp);
-			break;
+		if (ma_rq_covers(rq, lwp)) {
+			preempt = TASK_CURR_PREEMPT(p, lwp);
+			if (preempt > max_preempt) {
+				max_preempt = preempt;
+				chosen = lwp;
+			}
 		}
 	for_each_lwp_from_end();
+	if (chosen)
+		resched_task(ma_per_lwp(current_thread, chosen), chosen);
 }
 
 /***

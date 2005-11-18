@@ -60,7 +60,7 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
 		if (!h || ma_holder_type(h) != MA_BUBBLE_HOLDER)
 			h = &marcel_root_bubble.hold;
 	}
-	bubble_sched_debug("entity %p is held by bubble %p\n", e, ma_bubble_holder(h));
+	bubble_sched_debugl(7,"entity %p is held by bubble %p\n", e, ma_bubble_holder(h));
 	return ma_bubble_holder(h);
 }
 
@@ -73,7 +73,7 @@ static void set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble) {
 	marcel_entity_t *ee;
 	marcel_bubble_t *b;
 	ma_holder_t *h;
-	bubble_sched_debug("set_sched_holder %p to bubble %p\n",e,bubble);
+	bubble_sched_debugl(7,"set_sched_holder %p to bubble %p\n",e,bubble);
 	e->sched_holder = &bubble->hold;
 	if (e->type == MA_TASK_ENTITY) {
 		if ((h = e->run_holder) && h != &bubble->hold) {
@@ -115,7 +115,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (list_empty(&bubble->heldentities))
 		marcel_sem_P(&bubble->join);
-	//bubble_sched_debug("__inserting %p in opened bubble %p\n",entity,bubble);
+	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);
 	else {
@@ -134,13 +134,13 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 		/* Sinon, c'est la conteneuse qui sert de bulle d'ordonnancement */
 		sched_bubble = &bubble->hold;
 	} else {
-		bubble_sched_debug("unlock new holder %p\n", &bubble->hold);
+		bubble_sched_debugl(7,"unlock new holder %p\n", &bubble->hold);
 		ma_holder_rawunlock(&bubble->hold);
 		ma_holder_rawlock(sched_bubble);
-		bubble_sched_debug("sched holder %p locked\n", sched_bubble);
+		bubble_sched_debugl(7,"sched holder %p locked\n", sched_bubble);
 	}
 	set_sched_holder(entity, ma_bubble_holder(sched_bubble));
-	bubble_sched_debug("unlock sched holder %p\n", sched_bubble);
+	bubble_sched_debugl(7,"unlock sched holder %p\n", sched_bubble);
 	/* dans le cas STEAL, on s'occupe de déverrouiller */
 	ma_holder_unlock_softirq(sched_bubble);
 #endif
@@ -165,7 +165,7 @@ retryclosed:
 			goto retryopened;
 		}
 #endif
-		bubble_sched_debug("inserting %p in closed bubble %p\n",entity,bubble);
+		bubble_sched_debugl(7,"inserting %p in closed bubble %p\n",entity,bubble);
 		__do_bubble_insertentity(bubble,entity);
 		ma_holder_unlock_softirq(&bubble->hold);
 #ifdef MARCEL_BUBBLE_EXPLODE
@@ -179,13 +179,21 @@ retryopened:
 			ma_entity_holder_unlock_softirq(h);
 			goto retryclosed;
 		}
-		bubble_sched_debug("inserting %p in opened bubble %p\n",entity,bubble);
+		bubble_sched_debugl(7,"inserting %p in opened bubble %p\n",entity,bubble);
 		__do_bubble_insertentity(bubble,entity);
 		/* containing bubble already has exploded ! wake up this one */
 		entity->sched_holder = h;
 		bubble->nbrunning++;
 		rq = ma_to_rq_holder(h);
 		ma_activate_entity(entity, &rq->hold);
+#if 0
+C'est plus clair de le laisser dans la bulle
+		PROF_EVENT2(bubble_sched_switchrq,
+			entity->type == MA_TASK_ENTITY?
+			(void*)ma_task_entity(entity):
+			(void*)ma_bubble_entity(entity),
+			rq);
+#endif
 		ma_holder_rawunlock(&bubble->hold);
 		ma_entity_holder_unlock_softirq(h);
 	}
@@ -199,9 +207,9 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	LOG_IN();
 
 	ma_holder_lock_softirq(&bubble->hold);
-	bubble_sched_debug("inserting %p in bubble %p\n",entity,bubble);
+	bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
 	__do_bubble_insertentity(bubble,entity);
-	bubble_sched_debug("insertion %p in bubble %p done\n",entity,bubble);
+	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 	LOG_OUT();
 	return 0;
 }
@@ -327,7 +335,7 @@ static void __marcel_close_bubble(marcel_bubble_t *bubble, ma_runqueue_t *rootrq
 				MA_BUG_ON(h==&rootrq->hold);
 			}
 			if (!MA_TASK_IS_RUNNING(t)) { /* not running somewhere */
-				bubble_sched_debug("deactivating task %s(%p) from %p\n", t->name, t, h);
+				bubble_sched_debugl(7,"deactivating task %s(%p) from %p\n", t->name, t, h);
 				PROF_EVENT2(bubble_sched_goingback,e,bubble);
 				if (MA_TASK_IS_SLEEPING(t))
 					ma_deactivate_task(t,h);
@@ -369,14 +377,14 @@ static void __do_bubble_explode(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	PROF_EVENT1(bubble_sched_explode, bubble);
 	bubble->status = MA_BUBBLE_OPENED;
 	list_for_each_entry(new, &bubble->heldentities, entity_list) {
-		bubble_sched_debug("activating entity %p on %s\n", new, rq->name);
+		bubble_sched_debugl(7,"activating entity %p on %s\n", new, rq->name);
 		new->sched_holder=&rq->hold;
 		bubble->nbrunning++;
 		MA_BUG_ON(new->run_holder && new->run_holder->type != MA_BUBBLE_HOLDER);
 		if (!new->run_holder && (new->type != MA_TASK_ENTITY || ma_task_entity(new)->sched.state == MA_TASK_RUNNING))
 			ma_activate_entity(new, &rq->hold);
 		else
-			bubble_sched_debug("task %p not running (%d)\n",ma_task_entity(new), ma_task_entity(new)->sched.state);
+			bubble_sched_debugl(7,"task %p not running (%d)\n",ma_task_entity(new), ma_task_entity(new)->sched.state);
 	}
 }
 #endif
@@ -408,25 +416,25 @@ static marcel_entity_t *ma_next_running_in_bubble(
 	nexthead = curhead->next;
 	if (tbx_unlikely(nexthead == &curb->runningentities)) {
 		/* Got at the end of the list of curb bubble, go up */
-		bubble_sched_debug("got at end of curb, go up\n");
+		bubble_sched_debugl(7,"got at end of curb, go up\n");
 		if (curb == root)
-			bubble_sched_debug("finished root\n");
+			bubble_sched_debugl(7,"finished root\n");
 			/* finished root bubble */
 			return NULL;
 		b = marcel_bubble_holding_bubble(curb);
-		bubble_sched_debug("up to %p\n",b);
+		bubble_sched_debugl(7,"up to %p\n",b);
 		return ma_next_running_in_bubble(root,b,&curb->sched.run_list);
 	}
 
 	next = list_entry(nexthead, marcel_entity_t, run_list);
-	bubble_sched_debug("next %p\n",next);
+	bubble_sched_debugl(7,"next %p\n",next);
 
 	if (tbx_likely(next->type == MA_TASK_ENTITY))
 		return next;
 
 	/* bubble, go down */
 	b = ma_bubble_entity(next);
-	bubble_sched_debug("it is bubble %p\n",b);
+	bubble_sched_debugl(7,"it is bubble %p\n",b);
 	/* attention, il ne faudrait pas qu'elle bouge entre-temps */
 	ma_holder_rawlock(&b->hold);
 	h = ma_holder_type(b->sched.run_holder);
@@ -454,12 +462,12 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	if (nextent->sched_level > rq->level) {
 		/* s'assurer d'abord que personne n'a activé une entité d'une
 		 * telle priorité (ou encore plus forte) avant nous */
-		bubble_sched_debug("%p should go down\n", nextent);
+		bubble_sched_debugl(7,"%p should go down\n", nextent);
 		max_prio = idx;
 		for (currq = ma_lwp_rq(LWP_SELF); currq != rq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx <= max_prio) {
-				bubble_sched_debug("prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
+				bubble_sched_debugl(7,"prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
 				sched_debug("unlock(%p)\n", rq);
 				ma_holder_unlock(&rq->hold);
 				LOG_RETURN(NULL);
@@ -468,7 +476,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		for (; currq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx < max_prio) {
-				bubble_sched_debug("better prio %d on rq %s in the meanwhile\n", idx, currq->name);
+				bubble_sched_debugl(7,"better prio %d on rq %s in the meanwhile\n", idx, currq->name);
 				sched_debug("unlock(%p)\n", rq);
 				ma_holder_unlock(&rq->hold);
 				LOG_RETURN(NULL);
@@ -497,6 +505,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 		/* on descend, l'ordre des adresses est donc correct */
 		ma_holder_rawlock(&currq->hold);
+		nextent->sched_holder = &currq->hold;
 		ma_activate_entity(nextent,&currq->hold);
 		ma_holder_unlock(&currq->hold);
 		LOG_RETURN(NULL);
@@ -527,7 +536,7 @@ les #ifdef dans les arguments de macro...
 #endif
 	ma_atomic_set(&bubble->sched.time_slice, 10*_TIME_SLICE);
 #undef _TIME_SLICE
-	bubble_sched_debug("timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
+	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->sched.time_slice));
 	__do_bubble_explode(bubble,rq);
 	ma_atomic_set(&bubble->sched.time_slice,10*bubble->nbrunning); /* TODO: plutôt arbitraire */
 
@@ -562,7 +571,7 @@ les #ifdef dans les arguments de macro...
 
 	/* en général, on arrive à l'éviter */
 	if (list_empty(&bubble->runningentities)) {
-		bubble_sched_debug("warning: bubble %p empty\n", bubble);
+		bubble_sched_debugl(7,"warning: bubble %p empty\n", bubble);
 		ma_dequeue_entity_rq(&bubble->sched, rq);
 		sched_debug("unlock(%p)\n", rq);
 		ma_holder_rawunlock(&rq->hold);
@@ -618,7 +627,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 		b = ma_bubble_entity(e);
 		//if (total_nr_running(b) >= up_power) {
 		if (b->hold.nr_running >= up_power) {
-			bubble_sched_debug("bubble %p has %lu running, too much for rq father %s with power %d\n", b, b->hold.nr_running, rq->father->name, up_power);
+			bubble_sched_debugl(7,"bubble %p has %lu running, too much for rq father %s with power %d\n", b, b->hold.nr_running, rq->father->name, up_power);
 			return b;
 		}
 	}
@@ -643,19 +652,19 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			for (rq2 = rq; rq2 && rq2->father &&
 				MA_CPU_WEIGHT(&rq2->father->cpuset) <= b->hold.nr_running;
 				rq2 = rq2->father)
-				bubble_sched_debug("looking up to rq %s\n", rq2->father->name);
+				bubble_sched_debugl(7,"looking up to rq %s\n", rq2->father->name);
 			if (!rq2 || !MA_CPU_ISSET(LWP_NUMBER(LWP_SELF),&rq2->cpuset))
 				ma_holder_unlock(&rq->hold);
 			else {
 				b2 = NULL;
 				ma_holder_rawlock(&b->hold);
-				bubble_sched_debug("rq %s seems good\n", rq2->name);
+				bubble_sched_debugl(7,"rq %s seems good\n", rq2->name);
 				list_for_each_entry(e, &b->heldentities, entity_list) {
 					if (e->type == MA_BUBBLE_ENTITY) {
 						b2 = ma_bubble_entity(e);
 						if (b2->hold.nr_scheduled) {
 							/* laisser ce qui est ordonnancé sur place */
-							bubble_sched_debug("detaching bubble %p from %p\n", b2, b);
+							bubble_sched_debug("detaching running bubble %p from %p\n", b2, b);
 							if ((h = b2->sched.run_holder)) {
 								if (b2->sched.holder_data)
 									ma_dequeue_entity(&b2->sched, h);
@@ -772,6 +781,7 @@ static void __marcel_init bubble_sched_init() {
 	/* put it in root bubble */
 	marcel_bubble_inserttask(&marcel_root_bubble, MARCEL_SELF);
 	/* make it explode */
+	PROF_EVENT2_ALWAYS(bubble_sched_switchrq,&marcel_root_bubble,&ma_main_runqueue);
 	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
 	/* and fake main thread restart */
 	ma_dequeue_entity_rq(&MARCEL_SELF->sched.internal, &ma_main_runqueue);

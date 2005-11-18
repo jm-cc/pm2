@@ -631,7 +631,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	h = ma_task_sched_holder(p);
 
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
-		bubble_sched_debug("wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
+		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		if (!p->sched.internal.entity_list.next)
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 #ifdef MARCEL_BUBBLE_EXPLODE
@@ -799,7 +799,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 			ma_task_sched_holder(prev) = NULL;
 #ifdef MARCEL_BUBBLE_EXPLODE
 		else if ((close_bubble = (bubble->status == MA_BUBBLE_CLOSING))) {
-			bubble_sched_debug("%p(%s) descheduled for bubble %p closing\n",prev, prev->name, bubble);
+			bubble_sched_debugl(7,"%p(%s) descheduled for bubble %p closing\n",prev, prev->name, bubble);
 			PROF_EVENT2(bubble_sched_goingback,prev,bubble);
 			if (MA_TASK_IS_RUNNING(prev))
 				ma_deactivate_running_task(prev,prevh);
@@ -815,7 +815,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 		else if (close_bubble) {
 			ma_holder_lock(&bubble->hold);
 			if ((wake_bubble = !(--bubble->nbrunning))) {
-				bubble_sched_debug("it was last, bubble %p closed\n", bubble);
+				bubble_sched_debugl(7,"it was last, bubble %p closed\n", bubble);
 				PROF_EVENT1(bubble_sched_closed,bubble);
 				bubble->status = MA_BUBBLE_CLOSED;
 			}

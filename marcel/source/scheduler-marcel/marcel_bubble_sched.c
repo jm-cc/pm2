@@ -303,6 +303,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 		&& h->type == MA_BUBBLE_HOLDER
 		&& h != &bubble->hold)
 		marcel_bubble_removeentity(ma_bubble_holder(h), &bubble->sched);
+	PROF_EVENT1(bubble_sched_join,bubble);
 	LOG_OUT();
 }
 

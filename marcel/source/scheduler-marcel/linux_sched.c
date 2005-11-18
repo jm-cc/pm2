@@ -775,8 +775,6 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	prevh->nr_scheduled--;
 
 	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)
-				/* garde-fou pour éviter de s'endormir
-				 * par simple préemption */
 				|| !(ma_preempt_count() & MA_PREEMPT_ACTIVE))
 			) {
 		if (prev->sched.state & MA_TASK_MOVING) {
@@ -792,6 +790,8 @@ static inline void finish_task_switch(marcel_task_t *prev)
 			sched_debug("%p going to sleep\n",prev);
 			ma_deactivate_running_task(prev,prevh);
 		}
+		if (prev->sched.state == MA_TASK_DEAD)
+			PROF_THREAD_DEATH(prev);
 	} else {
 		MTRACE("still running",prev);
 		ma_enqueue_task(prev,prevh);
@@ -1630,7 +1630,10 @@ need_resched_atomic:
 	prev_as_h = prevh;
 	prev_as_prio = prev->sched.internal.prio;
 
-	if (prev->sched.state && !(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
+	if (prev->sched.state &&
+			/* garde-fou pour éviter de s'endormir
+			 * par simple préemption */
+			!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		//switch_count = &prev->nvcsw;
 		if (tbx_unlikely((prev->sched.state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))

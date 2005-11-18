@@ -269,6 +269,11 @@ typedef struct {
 
 rq_t *norq;
 
+void switchRunqueuesBegin(rq_t *rq2, entity_t *e);
+void switchRunqueuesBegin2(rq_t *rq2, entity_t *e);
+void switchRunqueuesStep(rq_t *rq2, entity_t *e, float step);
+void switchRunqueuesEnd(rq_t *rq2, entity_t *e);
+
 static inline rq_t * rq_of_entity(entity_t *e) {
 	return tbx_container_of(e,rq_t,entity);
 }
@@ -319,6 +324,8 @@ typedef struct bubble_s {
 	int morphRecurse;
 	entity_t *insertion;
 } bubble_t;
+
+void bubbleMorphStep(bubble_t *b, float ratio);
 
 static inline bubble_t * bubble_of_entity(entity_t *e) {
 	return tbx_container_of(e,bubble_t,entity);
@@ -377,6 +384,7 @@ typedef enum {
 	THREAD_BLOCKED,
 	THREAD_SLEEPING,
 	THREAD_RUNNING,
+	THREAD_DEAD,
 } state_t;
 typedef struct {
 	entity_t entity;
@@ -399,6 +407,9 @@ void setThread(SWFShape shape, unsigned thick, float width, float height, int pr
 		break;
 	case THREAD_RUNNING:
 		SWFShape_setLine(shape,thick,255,0,0,255);
+		break;
+	case THREAD_DEAD:
+		SWFShape_setLine(shape,thick,200,200,200,255);
 		break;
 	}
 	SWFShape_movePen(shape,    xStep,0);
@@ -424,6 +435,7 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->entity.bubble_holder = NULL;
 	t->entity.leaving_holder = 0;
 	t->entity.nospace = 0;
+	t->state = THREAD_BLOCKED;
 	if (initrq)
 		addToRunqueue(initrq, &t->entity);
 	return t;
@@ -586,13 +598,39 @@ void hideEntity(entity_t *e) {
 
 void delThread(thread_t *t) {
 	float i,j;
-	removeFromHolderBegin(&t->entity);
-	removeFromHolderBegin2(&t->entity);
-	for (i=0.;i<=OPTIME*RATE;i++)
+	t->state = THREAD_DEAD;
+	switchRunqueuesBegin(norq,&t->entity);
+	switchRunqueuesBegin2(norq,&t->entity);
+	for (i=0.;i<=OPTIME*RATE;i++) {
 		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
-			removeFromHolderStep(&t->entity, j);
-	removeFromHolderEnd(&t->entity);
-	free(t);
+		switchRunqueuesStep(norq, &t->entity, j);
+		SWFMovie_nextFrame(movie);
+	}
+	switchRunqueuesEnd(norq, &t->entity);
+	list_del(&t->entity.rq);
+	if (t->entity.bubble_holder) {
+		list_del(&t->entity.entity_list);
+		t->entity.bubble_holder = NULL;
+	}
+	// TODO: animation
+}
+
+void delBubble(bubble_t *b) {
+	float i,j;
+	switchRunqueuesBegin(norq,&b->entity);
+	switchRunqueuesBegin2(norq,&b->entity);
+	for (i=0.;i<=OPTIME*RATE;i++) {
+		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+		switchRunqueuesStep(norq, &b->entity, j);
+		SWFMovie_nextFrame(movie);
+	}
+	switchRunqueuesEnd(norq, &b->entity);
+	list_del(&b->entity.rq);
+	if (b->entity.bubble_holder) {
+		list_del(&b->entity.entity_list);
+		b->entity.bubble_holder = NULL;
+	}
+	// TODO: animation
 }
 
 /*******************************************************************************
@@ -1423,12 +1461,15 @@ bubble_t *bigb;
 
 void error(const char *msg, ...) {
 	va_list args;
+	static int recur = 0;
 
 	va_start(args, msg);
 	vfprintf(stderr,msg, args);
 	va_end(args);
-	SWFMovie_save(movie,"rescue.swf", -1);
-	fprintf(stderr,"saved to rescue.swf\n");
+	if (!recur++) {
+		SWFMovie_save(movie,"rescue.swf", -1);
+		fprintf(stderr,"saved to rescue.swf\n");
+	}
 	abort();
 }
 
@@ -1616,6 +1657,12 @@ int main(int argc, char *argv[]) {
 				switchRunqueues(rq, &b->entity);
 				break;
 			}
+			case BUBBLE_SCHED_JOIN: {
+				bubble_t *b = getBubble(ev.ev64.param[0]);
+				printf("bubble %p(%p) join\n", (void *)(intptr_t)ev.ev64.param[0], b);
+				delBubble(b);
+				break;
+			}
 			case FUT_RQS_NEWLEVEL: {
 				rqlevel = ev.ev64.param[0];
 				rqnum = 0;
@@ -1672,9 +1719,10 @@ int main(int argc, char *argv[]) {
 				case FUT_THREAD_DEATH_CODE: {
 					thread_t *t = getThread(ev.ev64.param[0]);
 					printf("thread death %p(%p)\n", (void *)(intptr_t)ev.ev64.param[0], t);
-					hideEntity(&t->entity);
-					delPtr(ev.ev64.param[0]);
 					delThread(t);
+					pause(DELAYTIME);
+					delPtr(ev.ev64.param[0]);
+					free(t);
 					break;
 				}
 				case FUT_SET_THREAD_NAME_CODE:

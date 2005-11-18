@@ -299,7 +299,7 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 }
 
 void setRunqueue(SWFShape shape, unsigned thick, float width, float height) {
-	SWFShape_setLine(shape,thick,160,160,160,255);
+	SWFShape_setLine(shape,thick,0,0,255,255);
 	SWFShape_movePenTo(shape,0,height-RQ_YMARGIN);
 	SWFShape_drawLineTo(shape,width,height-RQ_YMARGIN);
 }

@@ -59,7 +59,7 @@
 #define MOVIEX 1280.
 
 /* Y */
-#define MOVIEY 700.
+#define MOVIEY 800.
 
 
 
@@ -504,7 +504,7 @@ void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	SWFShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 	SWFShape_drawCircle(shape,CURVE/2);
 	if (b->entity.prio) {
-		SWFShape_movePen(shape,CURVE,CURVE/2);
+		SWFShape_movePenTo(shape,2.57*b->entity.x-CURVE,2.57*b->entity.y-CURVE);
 		SWFShape_drawSizedGlyph(shape,font,'0'+b->entity.prio,CURVE);
 	}
 	list_for_each_entry(e,&b->heldentities,entity_list) {
@@ -612,6 +612,8 @@ void delThread(thread_t *t) {
 		list_del(&t->entity.entity_list);
 		t->entity.bubble_holder = NULL;
 	}
+	// XXX: berk. Ça marche pour l'instant car on est le dernier sur la liste
+	norq->nextX -= t->entity.width+RQ_XMARGIN;
 	// TODO: animation
 }
 
@@ -630,6 +632,8 @@ void delBubble(bubble_t *b) {
 		list_del(&b->entity.entity_list);
 		b->entity.bubble_holder = NULL;
 	}
+	// XXX: berk. Ça marche pour l'instant car on est le dernier sur la liste
+	norq->nextX -= b->entity.width+RQ_XMARGIN;
 	// TODO: animation
 }
 
@@ -1099,8 +1103,10 @@ void removeFromBubbleEnd(bubble_t *b, entity_t *e) {
 	if (!e->nospace)
 		growInBubbleEnd(b,e);
 	e->leaving_holder = 0;
-	//list_del(&e->entity_list);
-	//e->bubble_holder = NULL;
+#ifdef BUBBLES
+	list_del(&e->entity_list);
+	e->bubble_holder = NULL;
+#endif
 }
 
 /*******************************************************************************
@@ -1552,15 +1558,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	setRqs(&norq,1,0,0,MOVIEX,
-#ifdef FXT
-			120
-#else
 #ifdef BUBBLES
-			150
+			200
 #endif
 #ifdef TREES
 			2*CURVE
-#endif
 #endif
 			);
 
@@ -1667,7 +1669,12 @@ int main(int argc, char *argv[]) {
 				rqlevel = ev.ev64.param[0];
 				rqnum = 0;
 				rqs = realloc(rqs,(rqlevel+1)*sizeof(*rqs));
-				setRqs(&rqs[rqlevel],ev.ev64.param[1],0,rqlevel*150+100,MOVIEX,150);
+				setRqs(&rqs[rqlevel],ev.ev64.param[1],0,rqlevel*150+
+#ifdef BUBBLES
+						200+
+#endif
+						100
+						,MOVIEX,150);
 				for (i=0;i<ev.ev64.param[1];i++)
 				  showEntity(&rqs[rqlevel][i].entity);
 				printf("new runqueue level %u arity %"PRIu64"\n", rqlevel, ev.ev64.param[1]);

@@ -968,8 +968,17 @@ void growInBubbleBegin(bubble_t *b, entity_t *e, float dx, float dy) {
 	}
 #endif
 	newwidth = b->nextX-OVERLAP;
-	if (newwidth < CURVE)
-		newwidth = CURVE;
+	if (newwidth < 
+#ifdef BUBBLES
+			3*
+#endif
+			CURVE
+			)
+		newwidth = 
+#ifdef BUBBLES
+			3*
+#endif
+			CURVE;
 	if (newwidth!=b->entity.width || b->entity.y != b->entity.lasty) {
 		growInHolderBegin(&b->entity,newwidth-b->entity.width,mydy);
 		b->entity.width = newwidth;

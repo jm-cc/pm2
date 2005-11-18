@@ -19,7 +19,9 @@
 #include <stdlib.h>
 
 #define NWORKS 2
-#define NWORKERS 10
+#define NWORKERS_POW 3
+#define NWORKERS (1<<NWORKERS_POW)
+//#define TREE
 
 unsigned long works[]  = { 5000, 7000 };
 unsigned long delays[] = { 5000, 7000 };
@@ -68,7 +70,11 @@ void marcel_barrier_wait(marcel_barrier_t *b) {
 /* fin */
 
 marcel_barrier_t barrier[NWORKS];
-marcel_bubble_t bubble[NWORKS];
+marcel_bubble_t bubbles[
+#ifdef TREE
+	(NWORKERS-1)*
+#endif
+	NWORKS];
 
 any_t work(any_t arg) {
 	int i = (int) arg;
@@ -96,6 +102,10 @@ int main(int argc, char *argv[]) {
 	int i,j;
 	marcel_attr_t attr;
 	char s[MARCEL_MAXNAMESIZE];
+#ifdef TREE
+	marcel_bubble_t *b;
+	int k,n,m;
+#endif
 
 	marcel_init(&argc, argv);
 
@@ -112,16 +122,39 @@ int main(int argc, char *argv[]) {
 
 	for (i=0;i<NWORKS;i++) {
 		marcel_barrier_init(&barrier[i], NULL, NWORKERS);
-		marcel_bubble_init(&bubble[i]);
-		marcel_bubble_setschedlevel(&bubble[i], 100);
-		marcel_bubble_setprio(&bubble[i], MA_DEF_PRIO);
-		marcel_attr_setinitbubble(&attr,&bubble[i]);
+#ifdef TREE
+		n = m = 0;
+		for (j=0;j<NWORKERS_POW;j++) {
+			for (k=0;k<1<<j;k++) {
+				b = &bubbles[(NWORKERS-1)*i+n+k];
+				marcel_bubble_init(b);
+				marcel_bubble_setprio(b, MA_DEF_PRIO);
+				if (n)
+					marcel_bubble_insertbubble(&bubbles[(NWORKERS-1)*i+m+k/2], b);
+			}
+			m = n;
+			n += 1<<j;
+		}
+#else
+		marcel_bubble_init(&bubbles[i]);
+#endif
 		for (j=0;j<NWORKERS;j++) {
 			snprintf(s,sizeof(s),"%d-%d",i,j);
 			marcel_attr_setname(&attr,s);
+			marcel_attr_setinitbubble(&attr,
+#ifdef TREE
+					&bubbles[(NWORKERS-1)*i+m+j/2]
+#else
+					&bubbles[i]
+#endif
+					);
 			marcel_create(NULL,&attr,work,(any_t) i);
 		}
-		marcel_wake_up_bubble(&bubble[i]);
+		marcel_wake_up_bubble(&bubbles[
+#ifdef TREE
+				(NWORKERS-1)*
+#endif
+				i]);
 	}
 
 	marcel_end();

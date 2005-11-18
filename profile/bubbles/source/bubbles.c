@@ -299,7 +299,7 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 }
 
 void setRunqueue(SWFShape shape, unsigned thick, float width, float height) {
-	SWFShape_setLine(shape,thick,0,0,0,255);
+	SWFShape_setLine(shape,thick,160,160,160,255);
 	SWFShape_movePenTo(shape,0,height-RQ_YMARGIN);
 	SWFShape_drawLineTo(shape,width,height-RQ_YMARGIN);
 }
@@ -1697,6 +1697,11 @@ int main(int argc, char *argv[]) {
 					updateEntity(&t->entity);
 					pause(DELAYTIME);
 					break;
+				}
+				case SCHED_RESCHED_LWP: {
+					int from = ev.ev64.param[0];
+					int to = ev.ev64.param[1];
+					printf("lwp %d rescheduling lwp %d\n",from,to);
 				}
 				case FUT_SWITCH_TO_CODE: {
 					thread_t *tprev = getThread(ev.ev64.user.tid);

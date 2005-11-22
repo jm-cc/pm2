@@ -187,7 +187,7 @@ retryopened:
 		rq = ma_to_rq_holder(h);
 		ma_activate_entity(entity, &rq->hold);
 #if 0
-C'est plus clair de le laisser dans la bulle
+		/* C'est plus clair de le laisser dans la bulle*/
 		PROF_EVENT2(bubble_sched_switchrq,
 			entity->type == MA_TASK_ENTITY?
 			(void*)ma_task_entity(entity):

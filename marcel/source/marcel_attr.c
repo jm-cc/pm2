@@ -58,7 +58,7 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 DEF_PTHREAD(int, attr_setstacksize, (pthread_attr_t *attr, size_t stack), (attr, stack))
 DEF___PTHREAD(int, attr_setstacksize, (pthread_attr_t *attr, size_t stack), (attr, stack))
 
-DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t *attr, size_t *stack), (stack))
+DEF_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t * __restrict attr, size_t * __restrict stack), (stack))
 {
   *stack = attr->__stacksize;
   return 0;
@@ -75,7 +75,7 @@ DEF_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (att
 DEF_PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 DEF___PTHREAD(int, attr_setstackaddr, (pthread_attr_t *attr, void *addr), (attr, addr))
 
-DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t *attr, void **addr), (attr, addr))
+DEF_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict attr, void ** __restrict addr), (attr, addr))
 {
    *addr = attr->__stackaddr;
    return 0;
@@ -104,7 +104,8 @@ int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize)
 {
    return marcel_attr_setguardsize(attr, guardsize);
 }
-int pthread_attr_getguardsize(__const pthread_attr_t *attr, size_t *guardsize)
+int pthread_attr_getguardsize(__const pthread_attr_t * __restrict attr,
+		size_t * __restrict guardsize)
 {
    return marcel_attr_getguardsize(attr, guardsize);
 }
@@ -116,7 +117,8 @@ int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space)
    return 0;
 }
 
-int marcel_attr_getuserspace(__const marcel_attr_t *attr, unsigned *space)
+int marcel_attr_getuserspace(__const marcel_attr_t * __restrict attr,
+		unsigned * __restrict space)
 {
    *space = attr->user_space;
    return 0;
@@ -128,7 +130,8 @@ int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate)
   return 0;
 }
 
-int marcel_attr_getactivation(__const marcel_attr_t *attr, boolean *immediate)
+int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict immediate)
 {
   *immediate = attr->immediate_activation;
   return 0;
@@ -140,7 +143,8 @@ int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable)
    return 0;
 }
 
-int marcel_attr_getmigrationstate(__const marcel_attr_t *attr, boolean *migratable)
+int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict migratable)
 {
    *migratable = (attr->not_migratable ? FALSE : TRUE);
    return 0;
@@ -152,7 +156,8 @@ int marcel_attr_setdeviationstate(marcel_attr_t *attr, boolean deviatable)
    return 0;
 }
 
-int marcel_attr_getdeviationstate(__const marcel_attr_t *attr, boolean *deviatable)
+int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
+		boolean *__restrict deviatable)
 {
    *deviatable = (attr->not_deviatable ? FALSE : TRUE);
    return 0;
@@ -164,7 +169,8 @@ int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy)
   return 0;
 }
 
-int marcel_attr_getschedpolicy(__const marcel_attr_t *attr, int *policy)
+int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
+		int * __restrict policy)
 {
   *policy = attr->__schedpolicy;
   return 0;
@@ -175,7 +181,8 @@ int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime)
   return marcel_attr_setprio(attr, realtime ? MA_RT_PRIO : MA_DEF_PRIO);
 }
 
-int marcel_attr_getrealtime(__const marcel_attr_t *attr, boolean *realtime)
+int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict realtime)
 {
   int prio;
   marcel_attr_getprio(attr, &prio);
@@ -189,36 +196,27 @@ int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask)
   return 0;
 }
 
-int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask)
+int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,
+		marcel_vpmask_t * __restrict mask)
 {
   *mask = attr->vpmask;
   return 0;
 }
 
-int marcel_attr_setname(marcel_attr_t *attr, const char *name)
+int marcel_attr_setname(marcel_attr_t * __restrict attr,
+		const char * __restrict name)
 {
   strncpy(attr->name,name,MARCEL_MAXNAMESIZE-1);
   attr->name[MARCEL_MAXNAMESIZE-1]='\0';
   return 0;
 }
 
-int marcel_attr_getname(__const marcel_attr_t *attr, char *name, size_t n)
+int marcel_attr_getname(__const marcel_attr_t * __restrict attr,
+		char * __restrict name, size_t n)
 {
   strncpy(name,attr->name,n);
   if (MARCEL_MAXNAMESIZE>n)
     name[n-1]='\0';
-  return 0;
-}
-
-int marcel_attr_setflags(marcel_attr_t *attr, int flags)
-{
-  attr->flags = flags;
-  return 0;
-}
-
-int marcel_attr_getflags(__const marcel_attr_t *attr, int *flags)
-{
-  *flags = attr->flags;
   return 0;
 }
 
@@ -228,8 +226,22 @@ int marcel_attr_setpreemptible(marcel_attr_t *attr, int preemptible)
   return 0;
 }
 
-int marcel_attr_getpreemptible(__const marcel_attr_t *attr, int *preemptible)
+int marcel_attr_getpreemptible(__const marcel_attr_t * __restrict attr,
+		int * __restrict preemptible)
 {
   *preemptible = !attr->not_preemptible;
+  return 0;
+}
+
+int marcel_attr_setflags(marcel_attr_t *attr, int flags)
+{
+  attr->flags = flags;
+  return 0;
+}
+
+int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
+		int * __restrict flags)
+{
+  *flags = attr->flags;
   return 0;
 }

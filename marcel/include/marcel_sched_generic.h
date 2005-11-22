@@ -151,12 +151,12 @@ struct marcel_sched_task {
 
 #section sched_marcel_functions
 __tbx_inline__ static void 
-marcel_sched_init_marcel_thread(marcel_task_t* t,
-				const marcel_attr_t* attr);
+marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
+				const marcel_attr_t* __restrict attr);
 #section sched_marcel_inline
 __tbx_inline__ static void 
-marcel_sched_init_marcel_thread(marcel_task_t* t,
-				const marcel_attr_t* attr)
+marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
+				const marcel_attr_t* __restrict attr)
 {
 	//t->lwp
 	t->sched.lwps_allowed = ~attr->vpmask; 
@@ -166,15 +166,15 @@ marcel_sched_init_marcel_thread(marcel_task_t* t,
 
 #section sched_marcel_functions
 /* Démarrage d'un thread par le scheduler */
-__tbx_inline__ static int marcel_sched_create(marcel_task_t* cur,
-				      marcel_task_t* new_task,
-				      __const marcel_attr_t *attr,
+__tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
+				      marcel_task_t* __restrict new_task,
+				      __const marcel_attr_t * __restrict attr,
 				      __const int dont_schedule,
 				      __const unsigned long base_stack);
 #section sched_marcel_inline
-__tbx_inline__ static int marcel_sched_create(marcel_task_t* cur,
-				      marcel_task_t* new_task,
-				      __const marcel_attr_t *attr,
+__tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
+				      marcel_task_t* __restrict new_task,
+				      __const marcel_attr_t * __restrict attr,
 				      __const int dont_schedule,
 				      __const unsigned long base_stack)
 {

@@ -127,44 +127,61 @@ DEC_MARCEL_POSIX(int, attr_destroy, (marcel_attr_t *attr) __THROW);
 #define pmarcel_attr_destroy(attr_ptr)	marcel_attr_destroy(attr_ptr)
 
 DEC_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack) __THROW);
-DEC_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t *attr, size_t *stack) __THROW);
+DEC_MARCEL_POSIX(int, attr_getstacksize, (__const marcel_attr_t * __restrict attr, size_t * __restrict stack) __THROW);
 
 DEC_MARCEL_POSIX(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr) __THROW);
-DEC_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t *attr, void **addr) __THROW);
+DEC_MARCEL_POSIX(int, attr_getstackaddr, (__const marcel_attr_t * __restrict attr, void ** __restrict addr) __THROW);
+
+// TODO: XOPEN2K défini attr_[sg]etstack() pour préciser la taille aussi.
 
 DEC_MARCEL_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, boolean detached) __THROW);
 DEC_MARCEL_POSIX(int, attr_getdetachstate, (__const marcel_attr_t *attr, boolean *detached) __THROW);
 
 int marcel_attr_setuserspace(marcel_attr_t *attr, unsigned space);
-int marcel_attr_getuserspace(__const marcel_attr_t *attr, unsigned *space);
+int marcel_attr_getuserspace(__const marcel_attr_t * __restrict attr,
+		unsigned * __restrict space);
 
 int marcel_attr_setactivation(marcel_attr_t *attr, boolean immediate);
-int marcel_attr_getactivation(__const marcel_attr_t *attr, boolean *immediate);
+int marcel_attr_getactivation(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict immediate);
 
 int marcel_attr_setmigrationstate(marcel_attr_t *attr, boolean migratable);
-int marcel_attr_getmigrationstate(__const marcel_attr_t *attr, boolean *migratable);
+int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict migratable);
 
 int marcel_attr_setdeviationstate(marcel_attr_t *attr, boolean deviatable);
-int marcel_attr_getdeviationstate(__const marcel_attr_t *attr, boolean *deviatable);
+int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict deviatable);
 
 int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW;
-int marcel_attr_getschedpolicy(__const marcel_attr_t *attr, int *policy) __THROW;
+int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
+		int * __restrict policy) __THROW;
 
 int marcel_attr_setrealtime(marcel_attr_t *attr, boolean realtime);
-int marcel_attr_getrealtime(__const marcel_attr_t *attr, boolean *realtime);
+int marcel_attr_getrealtime(__const marcel_attr_t * __restrict attr,
+		boolean * __restrict realtime);
 
 int marcel_attr_setvpmask(marcel_attr_t *attr, marcel_vpmask_t mask);
-int marcel_attr_getvpmask(__const marcel_attr_t *attr, marcel_vpmask_t *mask);
+int marcel_attr_getvpmask(__const marcel_attr_t * __restrict attr,
+		marcel_vpmask_t * __restrict mask);
 
-int marcel_attr_setname(marcel_attr_t *attr, const char *name);
-int marcel_attr_getname(__const marcel_attr_t *attr, char *name, size_t n);
+int marcel_attr_setname(marcel_attr_t * __restrict attr,
+		const char * __restrict name);
+int marcel_attr_getname(__const marcel_attr_t * __restrict attr,
+		char * __restrict name, size_t n);
 
 int marcel_attr_setpreemptible(marcel_attr_t *attr, int preemptible);
-int marcel_attr_getpreemptible(__const marcel_attr_t *attr, int *preemptible);
+int marcel_attr_getpreemptible(__const marcel_attr_t * __restrict attr,
+		int * __restrict preemptible);
 
 // only for internal use
 int marcel_attr_setflags(marcel_attr_t *attr, int flags);
-int marcel_attr_getflags(__const marcel_attr_t *attr, int *flags);
+int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
+		int * __restrict flags);
+
+int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize);
+int pthread_attr_getguardsize(__const pthread_attr_t * __restrict attr,
+		size_t * __restrict guardsize);
 
 #ifdef PM2STACKSGUARD
 #define marcel_attr_setguardsize(attr, guardsize) ((guardsize)>THREAD_SLOT_SIZE)

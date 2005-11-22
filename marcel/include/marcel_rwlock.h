@@ -52,16 +52,18 @@ typedef struct
 #depend "marcel_alias.h[macros]"
 
 DEC_MARCEL_UNIX98(int,
-		 rwlock_init, (marcel_rwlock_t *rwlock,
-			       const marcel_rwlockattr_t *attr) __THROW);
+		 rwlock_init, (marcel_rwlock_t * __restrict rwlock,
+			       const marcel_rwlockattr_t * __restrict attr)
+		 __THROW);
 DEC_MARCEL_UNIX98(int,
 		 rwlock_destroy, (marcel_rwlock_t *rwlock) __THROW);
 
 DEC_MARCEL_UNIX98(int,
 		 rwlock_rdlock, (marcel_rwlock_t *rwlock) __THROW);
 DEC_MARCEL_XOPEN2K(int,
-		 rwlock_timedrdlock, (marcel_rwlock_t *rwlock,
-				      const struct timespec *abstime) __THROW);
+		 rwlock_timedrdlock, (marcel_rwlock_t * __restrict rwlock,
+				      const struct timespec * __restrict abstime)
+		 __THROW);
 DEC_MARCEL_UNIX98(int,
 		 rwlock_tryrdlock, (marcel_rwlock_t *rwlock) __THROW);
 DEC_MARCEL_UNIX98(int,
@@ -76,13 +78,15 @@ DEC_MARCEL_UNIX98(int,
 		 rwlockattr_destroy, (marcel_rwlockattr_t *attr) __THROW);
 DEC_MARCEL_UNIX98(int,
 		 rwlockattr_getpshared,
-		 (const marcel_rwlockattr_t *attr, int *pshared) __THROW);
+		 (const marcel_rwlockattr_t * __restrict attr,
+		  int * __restrict pshared) __THROW);
 DEC_MARCEL_UNIX98(int,
 		 rwlockattr_setpshared,
 		 (marcel_rwlockattr_t *attr, int pshared) __THROW);
 DEC_MARCEL_UNIX98(int,
 		 rwlockattr_getkind_np,
-		 (const marcel_rwlockattr_t *attr, int *pref) __THROW);
+		 (const marcel_rwlockattr_t * __restrict attr,
+		  int * __restrict pref) __THROW);
 DEC_MARCEL_UNIX98(int,
 		 rwlockattr_setkind_np, (marcel_rwlockattr_t *attr, int pref) __THROW);
 

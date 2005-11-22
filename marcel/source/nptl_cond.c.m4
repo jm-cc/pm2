@@ -78,12 +78,13 @@ int prefix_condattr_destroy (prefix_condattr_t *attr)
 /***********************/
 PRINT_PTHREAD([[dnl
 DEF_LIBPTHREAD(int, condattr_getpshared,
-	  (pthread_condattr_t * attr, int* pshared),
+	  (pthread_condattr_t * __restrict attr, int* __restrict pshared),
 	  (attr, pshared))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_condattr_getpshared (const prefix_condattr_t *attr, int* pshared)
+int prefix_condattr_getpshared (const prefix_condattr_t * __restrict attr,
+	int* __restrict pshared)
 {
 {
 	*pshared = ((const struct prefix_condattr *) attr)->value & 1;
@@ -135,7 +136,8 @@ compat_symbol (libpthread, __old_pthread_cond_init, pthread_cond_init,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_init (prefix_cond_t *cond, const prefix_condattr_t *attr)
+int prefix_cond_init (prefix_cond_t * __restrict cond,
+	const prefix_condattr_t * __restrict attr)
 {
   cond->__data.__lock = (struct _marcel_fastlock) MA_FASTLOCK_UNLOCKED;
   cond->__data.__waiting = NULL;
@@ -145,7 +147,8 @@ int prefix_cond_init (prefix_cond_t *cond, const prefix_condattr_t *attr)
 ]], [[MARCEL PMARCEL]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_init (prefix_cond_t *cond, const prefix_condattr_t *attr)
+int prefix_cond_init (prefix_cond_t * __restrict cond,
+	const prefix_condattr_t * __restrict attr)
 {
   cond->__data.__lock = (struct _prefix_fastlock) MA_LPT_FASTLOCK_UNLOCKED;
   cond->__data.__waiting = NULL;
@@ -232,7 +235,8 @@ compat_symbol (libpthread, __old_pthread_cond_wait, pthread_cond_wait,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_wait (prefix_cond_t *cond, prefix_mutex_t *mutex)
+int prefix_cond_wait (prefix_cond_t * __restrict cond,
+	prefix_mutex_t * __restrict mutex)
 {
   prefix_lock_acquire(&mutex->__data.__lock.__spinlock);
   prefix_lock_acquire(&cond->__data.__lock.__spinlock);
@@ -274,8 +278,9 @@ compat_symbol (libpthread, __old_pthread_cond_timedwait,
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_cond_timedwait(prefix_cond_t *cond, prefix_mutex_t *mutex,
-	const struct timespec *abstime)
+int prefix_cond_timedwait(prefix_cond_t * __restrict cond,
+	prefix_mutex_t * __restrict mutex,
+	const struct timespec * __restrict abstime)
 {
 	struct timeval now, tv;
 	unsigned long timeout;

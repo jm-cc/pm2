@@ -379,7 +379,7 @@ void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 		return marcel_malloc(size, file, line);
 	return p;
 }
-void ma_free_node(void *ptr, unsigned size, int node, char *file, unsigned line) {
+void ma_free_node(void *ptr, unsigned size, int node, char * __restrict file, unsigned line) {
 	if (node < 0 || numa_available()==-1)
 		return marcel_free(ptr, file, line);
 	lock_task();

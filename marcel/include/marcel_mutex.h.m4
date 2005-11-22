@@ -144,8 +144,8 @@ typedef union
 #include <sys/time.h>
 REPLICATE([[dnl
 /* Initialize a mutex.  */
-extern int prefix_mutex_init (prefix_mutex_t *__mutex,
-                               __const prefix_mutexattr_t *__mutexattr)
+extern int prefix_mutex_init (prefix_mutex_t * __restrict __mutex,
+                               __const prefix_mutexattr_t * __restrict __mutexattr)
      __THROW;
 
 /* Destroy a mutex.  */

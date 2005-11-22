@@ -94,19 +94,22 @@ typedef void (*marcel_atexit_func_t)(any_t);
 typedef void (*marcel_postexit_func_t)(any_t);
 
 #section marcel_functions
-void marcel_create_init_marcel_thread(marcel_t t, 
-				      __const marcel_attr_t *attr);
+void marcel_create_init_marcel_thread(marcel_t __restrict t, 
+				      __const marcel_attr_t * __restrict attr);
 #section functions
 
-int marcel_create(marcel_t *pid, __const marcel_attr_t *attr, 
-		  marcel_func_t func, any_t arg) __THROW;
+int marcel_create(marcel_t * __restrict pid,
+		  __const marcel_attr_t * __restrict attr, 
+		  marcel_func_t func, any_t __restrict arg) __THROW;
 
-int marcel_create_dontsched(marcel_t *pid, __const marcel_attr_t *attr, 
-		  marcel_func_t func, any_t arg) __THROW;
+int marcel_create_dontsched(marcel_t * __restrict pid,
+		  __const marcel_attr_t * __restrict attr, 
+		  marcel_func_t func, any_t __restrict arg) __THROW;
 
 #section marcel_functions
-int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr, 
-			  marcel_func_t func, any_t arg) __THROW;
+int marcel_create_special(marcel_t * __restrict pid,
+			  __const marcel_attr_t * __restrict attr, 
+			  marcel_func_t func, any_t __restrict arg) __THROW;
 #section functions
 
 DEC_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status) __THROW);
@@ -135,9 +138,10 @@ void marcel_unfreeze(marcel_t *pids, int nb);
 
 /* === stack user space === */
 
-void marcel_getuserspace(marcel_t pid, void **user_space);
+void marcel_getuserspace(marcel_t __restrict pid,
+		void * __restrict * __restrict user_space);
 
-void marcel_run(marcel_t pid, any_t arg);
+void marcel_run(marcel_t __restrict pid, any_t __restrict arg);
 
 /* ========== callbacks ============ */
 
@@ -192,8 +196,8 @@ struct _marcel_cleanup_buffer
 
 #undef NAME_PREFIX
 #define NAME_PREFIX _
-DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
-				     cleanup_func_t func, any_t arg) __THROW);
+DEC_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,
+				     cleanup_func_t func, any_t __restrict arg) __THROW);
 DEC_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 				    boolean execute) __THROW);
 #undef NAME_PREFIX
@@ -230,20 +234,20 @@ static __tbx_inline__ void marcel_enablemigration(marcel_t pid)
 }
 
 #section functions
-void marcel_begin_hibernation(marcel_t t, transfert_func_t transf, void *arg, boolean fork);
+void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, void * __restrict arg, boolean fork);
 
-void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg);
+void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void * __restrict arg);
 
 #section functions
-static __tbx_inline__ void marcel_setname(marcel_t pid, const char *name);
-static __tbx_inline__ void marcel_getname(marcel_t pid, char *name, size_t n);
+static __tbx_inline__ void marcel_setname(marcel_t __restrict pid, const char * __restrict name);
+static __tbx_inline__ void marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n);
 #section inline
 #include <string.h>
-static __tbx_inline__ void marcel_setname(marcel_t pid, const char *name) {
+static __tbx_inline__ void marcel_setname(marcel_t __restrict pid, const char * __restrict name) {
 	strncpy(pid->name, name, MARCEL_MAXNAMESIZE-1);
 	pid->name[MARCEL_MAXNAMESIZE-1]='\0';
 }
-static __tbx_inline__ void marcel_getname(marcel_t pid, char *name, size_t n) {
+static __tbx_inline__ void marcel_getname(marcel_t __restrict pid, char * __restrict name, size_t n) {
 	strncpy(name, pid->name, n);
 	if (MARCEL_MAXNAMESIZE>n)
 		name[n-1]='0';

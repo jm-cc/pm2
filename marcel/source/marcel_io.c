@@ -120,7 +120,8 @@ static int unix_io_group(marcel_ev_server_t server,
 }
 
 inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
-					fd_set *rfds, fd_set *wfds)
+					fd_set * __restrict rfds,
+					fd_set * __restrict wfds)
 {
 	mdebug("Checking select for IO poll (at least one success)\n");
 	switch(ev->op) {
@@ -373,7 +374,7 @@ int marcel_writev(int fildes, const struct iovec *iov, int iovcnt)
 	LOG_RETURN(writev(fildes, iov, iovcnt));
 }
 
-int marcel_select(int nfds, fd_set *rfds, fd_set *wfds)
+int marcel_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds)
 {
 #ifdef MA__ACTIVATION
 	return select(nfds, rfds, wfds, NULL, NULL);
@@ -439,7 +440,8 @@ int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 
 /* =============== Gestion des E/S non bloquantes =============== */
 
-int tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds)
+int tselect(int width, fd_set * __restrict readfds,
+		fd_set * __restrict writefds, fd_set * __restrict exceptfds)
 {
 #ifdef MA__ACTIVATION
 	return select(width, readfds, writefds, exceptfds, NULL);

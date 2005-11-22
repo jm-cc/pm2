@@ -461,7 +461,8 @@ weak_alias (lpt_mutexattr_gettype, pthread_mutexattr_getkind_np)
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutexattr_gettype(const prefix_mutexattr_t * attr, int *kind)
+int prefix_mutexattr_gettype(const prefix_mutexattr_t * __restrict attr,
+	int * __restrict kind)
 {
 {
 	const struct prefix_mutexattr *iattr;
@@ -481,7 +482,8 @@ int prefix_mutexattr_gettype(const prefix_mutexattr_t * attr, int *kind)
      /* mutex_setpshared */
      /********************/
 PRINT_PTHREAD([[dnl
-DEF_LIBPTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr, int pshared), (attr, pshared))
+DEF_LIBPTHREAD(int, mutexattr_setpshared, (pthread_mutexattr_t *attr,
+	int pshared), (attr, pshared))
 ]])
 
 REPLICATE_CODE([[dnl
@@ -517,11 +519,13 @@ int prefix_mutexattr_setpshared(prefix_mutexattr_t * attr, int pshared)
      /* mutex_getpshared */
      /********************/
 PRINT_PTHREAD([[dnl
-DEF_LIBPTHREAD(int, mutexattr_getpshared, (pthread_mutexattr_t *attr, int *pshared), (attr, pshared))
+DEF_LIBPTHREAD(int, mutexattr_getpshared, (pthread_mutexattr_t * __restrict attr,
+		int * __restrict pshared), (attr, pshared))
 ]])
 
 REPLICATE_CODE([[dnl
-int prefix_mutexattr_getpshared(const prefix_mutexattr_t * attr, int *pshared)
+int prefix_mutexattr_getpshared(const prefix_mutexattr_t * __restrict attr,
+	int * __restrict pshared)
 {
 {
 	const struct prefix_mutexattr *iattr;

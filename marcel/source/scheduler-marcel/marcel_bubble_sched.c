@@ -142,6 +142,7 @@ static void __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *e
 	set_sched_holder(entity, ma_bubble_holder(sched_bubble));
 	bubble_sched_debugl(7,"unlock sched holder %p\n", sched_bubble);
 	/* dans le cas STEAL, on s'occupe de déverrouiller */
+	/* dans le cas STEAL, on s'occupe de déverrouiller */
 	ma_holder_unlock_softirq(sched_bubble);
 #endif
 }

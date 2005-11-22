@@ -36,7 +36,8 @@ typedef struct {
 } marcel_barrier_t;
 typedef struct { int foo; } marcel_barrier_attr_t;
 
-void marcel_barrier_init(marcel_barrier_t *b, marcel_barrier_attr_t *attr, int num) {
+void marcel_barrier_init(marcel_barrier_t * __restrict b,
+		marcel_barrier_attr_t * __restrict attr, int num) {
 	marcel_cond_init(&b->cond, NULL);
 	marcel_mutex_init(&b->mutex, NULL);
 	b->num = num;

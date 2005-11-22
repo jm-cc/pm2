@@ -35,7 +35,7 @@ unsigned long marcel_cachedthreads(void);
 
 
 TBX_FMALLOC void *marcel_malloc(unsigned size, char *file, unsigned line);
-TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line);
+TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line);
 TBX_FMALLOC void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line);
-void marcel_free(void *ptr, char *file, unsigned line);
+void marcel_free(void *ptr, char * __restrict file, unsigned line);
 

@@ -148,7 +148,7 @@ void *marcel_malloc(unsigned size, char *file, unsigned line)
     return p;
 }
 
-void *marcel_realloc(void *ptr, unsigned size, char *file, unsigned line)
+void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line)
 {
   void *p;
 
@@ -175,7 +175,7 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
    return NULL;
 }
 
-void marcel_free(void *ptr, char *file, unsigned line)
+void marcel_free(void *ptr, char * __restrict file, unsigned line)
 {
    if(ptr) {
       lock_task();

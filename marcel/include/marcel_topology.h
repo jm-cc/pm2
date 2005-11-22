@@ -169,8 +169,10 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 #section functions
 #depend "tbx_compiler.h"
 
-TBX_FMALLOC extern void *ma_malloc_node(unsigned size, int node, char *file,  unsigned line);
-extern void ma_free_node(void *ptr, unsigned size, int node, char *file,  unsigned line);
+TBX_FMALLOC extern void *ma_malloc_node(unsigned size, int node, char *file,
+		unsigned line);
+extern void ma_free_node(void *ptr, unsigned size, int node,
+		char * __restrict file,  unsigned line);
 TBX_FMALLOC extern void *marcel_malloc_node(unsigned size, int node);
 extern void marcel_free_node(void *ptr, unsigned size, int node);
 #ifndef MA__NUMA

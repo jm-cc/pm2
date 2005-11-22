@@ -224,8 +224,9 @@ rwlock_have_already(marcel_descr *pself, marcel_rwlock_t *rwlock,
 }
 
 DEF_MARCEL_POSIX(int,
-		 rwlock_init, (marcel_rwlock_t *rwlock,
-			       const marcel_rwlockattr_t *attr), (rwlock, attr))
+		 rwlock_init, (marcel_rwlock_t * __restrict rwlock,
+			       const marcel_rwlockattr_t * __restrict attr),
+		 (rwlock, attr))
 {
   __marcel_init_lock(&rwlock->__rw_lock);
   rwlock->__rw_readers = 0;
@@ -247,11 +248,11 @@ DEF_MARCEL_POSIX(int,
   return 0;
 }
 //VD:strong_alias (__marcel_rwlock_init, marcel_rwlock_init)
-DEF_PTHREAD(int, rwlock_init, (pthread_rwlock_t *rwlock,
-			       const pthread_rwlockattr_t *attr),
+DEF_PTHREAD(int, rwlock_init, (pthread_rwlock_t * __restrict rwlock,
+			       const pthread_rwlockattr_t * __restrict attr),
 		(rwlock, attr))
-DEF___PTHREAD(int, rwlock_init, (pthread_rwlock_t *rwlock,
-			       const pthread_rwlockattr_t *attr),
+DEF___PTHREAD(int, rwlock_init, (pthread_rwlock_t * __restrict rwlock,
+			       const pthread_rwlockattr_t * __restrict attr),
 		(rwlock, attr))
 
 
@@ -320,8 +321,8 @@ DEF___PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
 #if 0 //VD:
 //VD: A lire et corriger
 DEF_MARCEL_POSIX(int,
-		 rwlock_timedrdlock, (marcel_rwlock_t *rwlock,
-				      const struct timespec *abstime),
+		 rwlock_timedrdlock, (marcel_rwlock_t * __restrict rwlock,
+				      const struct timespec * __restrict abstime),
 		 (rwlock, abstime))
 {
   marcel_descr self = NULL;
@@ -466,8 +467,8 @@ DEF___PTHREAD(int, rwlock_wrlock, (pthread_rwlock_t *rwlock), (rwlock))
 #if 0 //VD:
 //VD: A lire et corriger
 int
-__marcel_rwlock_timedwrlock (marcel_rwlock_t *rwlock,
-			      const struct timespec *abstime)
+__marcel_rwlock_timedwrlock (marcel_rwlock_t * __restrict rwlock,
+			      const struct timespec * __restrict abstime)
 {
   marcel_descr self;
   //VD:marcel_extricate_if extr;
@@ -652,14 +653,16 @@ DEF___PTHREAD(int, rwlockattr_destroy, (pthread_rwlockattr_t *attr), (attr))
 
 DEF_MARCEL_POSIX(int,
 		 rwlockattr_getpshared,
-		 (const marcel_rwlockattr_t *attr, int *pshared),
+		 (const marcel_rwlockattr_t * __restrict attr,
+		  int * __restrict pshared),
 		 (attr, pshared))
 {
   *pshared = attr->__pshared;
   return 0;
 }
 DEF_PTHREAD(int, rwlockattr_getpshared,
-		 (const pthread_rwlockattr_t *attr, int *pshared),
+		 (const pthread_rwlockattr_t * __restrict attr,
+		  int * __restrict pshared),
 		 (attr, pshared))
 
 

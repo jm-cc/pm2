@@ -31,8 +31,8 @@ void marcel_postexit_internal(marcel_t cur,
 /****************************************************************
  *                Initialisation des structures
  */
-static __inline__ void init_marcel_thread(marcel_t t, 
-					  __const marcel_attr_t *attr)
+static __inline__ void init_marcel_thread(marcel_t __restrict t, 
+					  __const marcel_attr_t * __restrict attr)
 {
 	/* Free within schedule_tail */
 	t->preempt_count=MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET;
@@ -102,8 +102,8 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	
 }
 
-void marcel_create_init_marcel_thread(marcel_t t, 
-				      __const marcel_attr_t *attr)
+void marcel_create_init_marcel_thread(marcel_t __restrict t, 
+				      __const marcel_attr_t * __restrict attr)
 {
 	return init_marcel_thread(t, attr);
 }
@@ -111,12 +111,13 @@ void marcel_create_init_marcel_thread(marcel_t t,
 /****************************************************************
  *                Démarrage retardé
  */
-void marcel_getuserspace(marcel_t pid, void **user_space)
+void marcel_getuserspace(marcel_t __restrict pid,
+		void * __restrict * __restrict user_space)
 {
 	*user_space = pid->user_space_ptr;
 }
 
-void marcel_run(marcel_t pid, any_t arg)
+void marcel_run(marcel_t __restrict pid, any_t __restrict arg)
 {
 	pid->arg = arg;
 	marcel_sem_V(&pid->sem_marcel_run);
@@ -145,8 +146,9 @@ int __pthread_multiple_threads __attribute__((visibility("hidden")));
 #endif	
 
 static __tbx_inline__ int 
-marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr, 
-		       marcel_func_t func, any_t arg, 
+marcel_create_internal(marcel_t * __restrict pid,
+			__const marcel_attr_t * __restrict attr, 
+		       marcel_func_t func, any_t __restrict arg, 
 		       __const int special_mode, 
 		       __const unsigned long base_stack)
 {
@@ -260,22 +262,25 @@ marcel_create_internal(marcel_t *pid, __const marcel_attr_t *attr,
 	
 }
 
-int marcel_create(marcel_t *pid, __const marcel_attr_t *attr,
-		  marcel_func_t func, any_t arg)
+int marcel_create(marcel_t * __restrict pid,
+		  __const marcel_attr_t * __restrict attr,
+		  marcel_func_t func, any_t __restrict arg)
 {
 	return marcel_create_internal(pid, attr, func, arg, 
 				      0, (unsigned long)&arg);
 }
 
-int marcel_create_dontsched(marcel_t *pid, __const marcel_attr_t *attr,
-			    marcel_func_t func, any_t arg)
+int marcel_create_dontsched(marcel_t * __restrict pid,
+			    __const marcel_attr_t * __restrict attr,
+			    marcel_func_t func, any_t __restrict arg)
 {
 	return marcel_create_internal(pid, attr, func, arg,
 				      1, (unsigned long)&arg);
 }
 
-int marcel_create_special(marcel_t *pid, __const marcel_attr_t *attr,
-			  marcel_func_t func, any_t arg)
+int marcel_create_special(marcel_t * __restrict pid,
+			  __const marcel_attr_t * __restrict attr,
+			  marcel_func_t func, any_t __restrict arg)
 {
 	return marcel_create_internal(pid, attr, func, arg, 
 				      2, (unsigned long)&arg);
@@ -375,8 +380,8 @@ MA_LWP_NOTIFIER_CALL_ONLINE(postexit, MA_INIT_THREADS_THREAD);
  *                Enregistrement des fonctions de terminaison
  */
 inline static 
-void marcel_postexit_internal(marcel_t cur,
-			      marcel_postexit_func_t func, any_t arg)
+void marcel_postexit_internal(marcel_t __restrict cur,
+			      marcel_postexit_func_t func, any_t __restrict arg)
 {
 	LOG_IN();
 	if (cur->postexit_func) {
@@ -607,8 +612,8 @@ void print_jmp_buf(char *name, jmp_buf buf)
 //PROF_NAME(on_security_stack)
 
 inline static 
-void marcel_postexit_internal(marcel_t cur,
-			      marcel_postexit_func_t func, any_t arg);
+void marcel_postexit_internal(marcel_t __restrict cur,
+			      marcel_postexit_func_t func, any_t __restrict arg);
 
 DEF_MARCEL_POSIX(int, join, (marcel_t pid, any_t *status), (pid, status))
 {
@@ -681,8 +686,8 @@ void marcel_resume(marcel_t pid)
 
 #undef NAME_PREFIX
 #define NAME_PREFIX _
-DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer *__buffer,
-				     cleanup_func_t func, any_t arg),
+DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,
+				     cleanup_func_t func, any_t __restrict arg),
 		(__buffer, func, arg))
 {
 	marcel_t cur = marcel_self();
@@ -734,8 +739,8 @@ void marcel_unfreeze(marcel_t *pids, int nb)
 #define ALIGNED_32(addr)(((unsigned long)(addr) + 31) & ~(31L))
 
 // TODO : Vérifier le code avec les activations
-void marcel_begin_hibernation(marcel_t t, transfert_func_t transf, 
-			      void *arg, boolean fork)
+void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf, 
+			      void * __restrict arg, boolean fork)
 {
   unsigned long depl, blk;
   unsigned long bottom, top;
@@ -801,7 +806,7 @@ void marcel_begin_hibernation(marcel_t t, transfert_func_t transf,
 }
 
 // TODO : Vérifier le code avec les activations
-void marcel_end_hibernation(marcel_t t, post_migration_func_t f, void *arg)
+void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void * __restrict arg)
 {
 #ifdef MA__ACTIVATION
   RAISE("Not implemented");

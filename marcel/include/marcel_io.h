@@ -18,12 +18,13 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/uio.h>
+#include "tbx_compiler.h"
 
 int marcel_read(int fildes, void *buf, size_t nbytes);
 
 int marcel_write(int fildes, const void *buf, size_t nbytes);
 
-int marcel_select(int nfds, fd_set *rfds, fd_set *wfds);
+int marcel_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds);
 
 int marcel_readv(int fildes, const struct iovec *iov, int iovcnt);
 
@@ -40,5 +41,5 @@ int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
 int marcel_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 
 // Still here, but do not use it!
-int __tbx_deprecated__ tselect(int width, fd_set *readfds, fd_set *writefds, fd_set *exceptfds);
+int __tbx_deprecated__ tselect(int width, fd_set * __restrict readfds, fd_set * __restrict writefds, fd_set * __restrict exceptfds);
 

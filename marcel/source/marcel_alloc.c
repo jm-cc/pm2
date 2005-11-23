@@ -168,7 +168,7 @@ retry:
 					goto retry;
 				}
 				perror("mmap");
-				fprintf(stderr,"args %p, %x, %u, %d", 
+				fprintf(stderr,"args %p, %lx, %u, %d", 
 						next_slot, THREAD_SLOT_SIZE,
 						MMAP_MASK, FILE_TO_MAP);
 				RAISE(CONSTRAINT_ERROR);

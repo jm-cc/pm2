@@ -127,7 +127,9 @@ write
 
 /* 1 */
 
-#include <asm-i486/unistd.h>
+#ifdef MA__LIBPTHREAD
+#  include <asm-i486/unistd.h>
+#endif
 
 #define SYSCALL1(name) \
     .text;\

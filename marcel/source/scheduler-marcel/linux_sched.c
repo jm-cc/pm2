@@ -37,7 +37,9 @@
 
 /* Pour avoir pmarcel_yield */
 #define _GNU_SOURCE
-#include <features.h>
+#ifndef DARWIN_SYS
+#  include <features.h>
+#endif
 
 
 #include "marcel.h"

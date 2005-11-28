@@ -18,6 +18,8 @@
 #include "marcel.h"
 
 #ifdef LINUX_SYS
+// XXX: for getting rid of u32/__user of debian sarge's futex.h
+#define sys_futex(...) sys_futex()
 #include <linux/unistd.h>
 #include <linux/futex.h>
 #endif

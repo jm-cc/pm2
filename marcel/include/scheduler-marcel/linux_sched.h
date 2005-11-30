@@ -336,8 +336,6 @@ extern int FASTCALL(ma_wake_up_state(marcel_task_t * tsk, unsigned int state));
 extern MARCEL_PROTECTED int FASTCALL(ma_wake_up_thread(marcel_task_t * tsk));
 extern void FASTCALL(ma_freeze_thread(marcel_task_t * tsk));
 extern void FASTCALL(ma_unfreeze_thread(marcel_task_t * tsk));
-extern void FASTCALL(marcel_freeze_sched());
-extern void FASTCALL(marcel_unfreeze_sched());
 #ifdef MA__LWPS
  extern void ma_kick_process(marcel_task_t * tsk);
 #else
@@ -346,6 +344,8 @@ extern void FASTCALL(marcel_unfreeze_sched());
 
 #section functions
 extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
+extern MARCEL_PROTECTED void FASTCALL(marcel_freeze_sched());
+extern MARCEL_PROTECTED void FASTCALL(marcel_unfreeze_sched());
 
 #section marcel_functions
 

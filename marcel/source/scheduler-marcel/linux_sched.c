@@ -598,7 +598,7 @@ void fastcall ma_unfreeze_thread(marcel_task_t *p)
 	try_to_wake_up(p, MA_TASK_FROZEN, 0);
 }
 
-void fastcall marcel_freeze_sched(void)
+void fastcall TBX_PROTECTED marcel_freeze_sched(void)
 {
 	ma_holder_lock_softirq(&ma_main_runqueue.hold);
 	/* TODO: other levels */
@@ -612,7 +612,7 @@ void fastcall marcel_freeze_sched(void)
 	frozen_scheduler=1;
 }
 
-void fastcall marcel_unfreeze_sched(void)
+void fastcall TBX_PROTECTED marcel_unfreeze_sched(void)
 {
 	frozen_scheduler=0;
 #ifdef MA__LWPS

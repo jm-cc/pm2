@@ -177,15 +177,12 @@ marcel_create_internal(marcel_t * __restrict pid,
 	}
 
 	if(attr->__stackaddr_set) {
-		register unsigned long top = MAL_BOT((unsigned long)attr->__stackaddr +
-						     attr->__stacksize);
-#ifdef MA__DEBUG
+		register unsigned long top = ((unsigned long)attr->__stackaddr +
+				attr->__stacksize) & ~(THREAD_SLOT_SIZE-1);
 		mdebug("top=%lx, stack_base=%p\n", top, attr->__stackaddr);
-		if(top & (THREAD_SLOT_SIZE-1)) { /* Not slot-aligned */
-			RAISE(CONSTRAINT_ERROR);
-		}
-#endif
 		new_task = (marcel_t)(top - MAL(sizeof(marcel_task_t)));
+		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr)
+			RAISE(CONSTRAINT_ERROR); /* Not big enough */
 #ifdef STACK_CHECKING_ALLOWED
 		memset(attr->__stackaddr, 0, attr->__stacksize);
 #endif
@@ -358,11 +355,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
 		
-		unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
-					 ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
-		
-		marcel_attr_setstackaddr(&attr, stack);
-		marcel_attr_setstacksize(&attr, stsize);
+		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
 	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp);

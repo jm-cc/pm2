@@ -342,11 +342,7 @@ static void lwp_init(ma_lwp_t lwp)
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
 		
-		unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & 
-					 ~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
-		
-		marcel_attr_setstackaddr(&attr, stack);
-		marcel_attr_setstacksize(&attr, stsize);
+		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
 	/* On passe lwp_start_func() comme fonction, mais seul le LWP

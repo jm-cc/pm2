@@ -501,11 +501,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp)
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
 
-		unsigned long stsize = (((unsigned long)(stack + 2*THREAD_SLOT_SIZE) &
-		 			~(THREAD_SLOT_SIZE-1)) - (unsigned long)stack);
-
-		marcel_attr_setstackaddr(&attr, stack);
-		marcel_attr_setstacksize(&attr, stsize);
+		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
 	marcel_create_special(&kthread, &attr, (void*)ksoftirqd, lwp);

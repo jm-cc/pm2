@@ -403,6 +403,7 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 	}
 #endif
 #else
+	// TODO: WINDOWS: SetThreadAffinityMask()
 #error "don't know how to bind on processors on this system"
 #endif
 	mdebug("LWP %u bound to processor %lu\n",

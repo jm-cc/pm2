@@ -79,6 +79,9 @@ static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 #ifdef DRV_MX
   mad_mx_register,
 #endif /* DRV_MX */
+#ifdef DRV_MADICO
+  mad_madico_register,
+#endif /* DRV_MADICO */
 #ifdef DRV_QUADRICS
   mad_quadrics_register,
 #endif /* DRV_QUADRICS */

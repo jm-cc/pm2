@@ -123,6 +123,9 @@
 #ifdef DRV_MX
 #include "connection_interfaces/mad_mx.h"
 #endif /* DRV_MX */
+#ifdef DRV_MADICO
+#include "connection_interfaces/mad_madico.h"
+#endif /* DRV_MADICO */
 #ifdef DRV_QUADRICS
 #include "connection_interfaces/mad_quadrics.h"
 #endif /* DRV_QUADRICS */

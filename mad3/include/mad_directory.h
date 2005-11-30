@@ -50,7 +50,7 @@ typedef struct s_mad_dir_driver_process_specific
 
 typedef struct s_mad_dir_driver
 {
-  mad_driver_id_t         id;
+  mad_driver_id_t             id;
   char                       *network_name;
   char                       *device_name;
   p_ntbx_process_container_t  pc;

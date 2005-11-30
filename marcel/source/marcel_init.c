@@ -334,7 +334,7 @@ ADD_INIT_SECTION(MA_INIT_START_LWPS, "Init LWPs");
 #endif
 ADD_INIT_SECTION(5, "No more init part");
 
-extern __ma_init_index_t __ma_init_start[];
+extern TBX_PROTECTED __ma_init_index_t __ma_init_start[];
 
 static int init_done[MA_INIT_MAX_PARTS+1]={0,};
 

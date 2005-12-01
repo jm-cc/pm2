@@ -52,8 +52,8 @@ mad_madico_register(p_mad_driver_interface_t interface)
   LOG_IN();
   TRACE("Registering MADICO driver");
 
-  interface->driver_init                = mad_madico_driver_init;
-  interface->adapter_init               = mad_madico_adapter_init;
+  interface->driver_init                = NULL;
+  interface->adapter_init               = NULL;
   interface->channel_init               = NULL;
   interface->before_open_channel        = NULL;
   interface->connection_init            = NULL;
@@ -86,28 +86,4 @@ mad_madico_register(p_mad_driver_interface_t interface)
   LOG_OUT();
 
   return "madico";
-}
-
-void
-mad_madico_driver_init(p_mad_driver_t driver, int *argc, char ***argv);
-{
-  LOG_IN();
-  TRACE("Initializing MADICO driver");
-  driver->connection_type  = mad_bidirectional_connection;
-  driver->buffer_alignment = 32;
-  driver->specific = NULL;
-  LOG_OUT();
-}
-
-void
-mad_madico_adapter_init(p_mad_adapter_t adapter);
-{
-  p_mad_madeleine_t madeleine;
-
-  LOG_IN();
-  madeleine = mad_get_madeleine();
-  adapter = mad_adapter_cons();
-  adapter->driver = ntbx_htable_get(madeleine->device_htable,"madico");
-  adapter->specific = NULL;
-  LOG_OUT();
 }

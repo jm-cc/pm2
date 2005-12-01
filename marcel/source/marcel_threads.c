@@ -355,7 +355,7 @@ void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
 		
-		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + 2*THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
+		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
 	marcel_create_special(&postexit, &attr, postexit_thread_func, lwp);

@@ -19,7 +19,7 @@
 
 #include <stdarg.h>
 
-guchar *pm2_root(void);
+gchar *pm2_root(void);
 
 void intro_init(void);
 

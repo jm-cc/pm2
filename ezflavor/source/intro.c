@@ -40,9 +40,9 @@ static gint logo_area_height  = 0;
 static gint max_steps;
 static gint step = 0;
 
-guchar *pm2_root(void)
+gchar *pm2_root(void)
 {
-  guchar *ptr= getenv("PM2_ROOT");
+  gchar *ptr= getenv("PM2_ROOT");
 
   if(!ptr) {
     fprintf(stderr, "Error: undefined PM2_ROOT variable\n");

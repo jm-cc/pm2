@@ -39,13 +39,13 @@
 #include "pm2_profile.h"
 #endif
 
-static unsigned PM2_COMPLETION;
+static int PM2_COMPLETION;
 
 static unsigned nb_startup_funcs = 0;
 static pm2_startup_func_t startup_funcs[MAX_STARTUP_FUNCS];
 static void *startup_args[MAX_STARTUP_FUNCS];
 
-unsigned __pm2_self, __pm2_conf_size;
+int __pm2_self, __pm2_conf_size;
 
 marcel_key_t _pm2_lrpc_num_key,
   _pm2_mad_key,

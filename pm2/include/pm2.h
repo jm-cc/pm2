@@ -86,7 +86,7 @@ void pm2_halt(void);
 
 void pm2_exit(void);
 
-_PRIVATE_ extern unsigned __pm2_self, __pm2_conf_size;
+_PRIVATE_ extern int __pm2_self, __pm2_conf_size;
 
 static __inline__ unsigned pm2_self(void) __attribute__ ((unused));
 static __inline__ unsigned pm2_self(void)

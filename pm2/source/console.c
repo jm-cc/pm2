@@ -132,7 +132,7 @@ UNPACK_RES_STUB(LRPC_CONSOLE_PING)
    if(arg->version == _ping_req.version)
       marcel_sem_V(&_ping_sem);
    else
-      tfprintf(stderr, "\n<Reponse tardive recue pour le ping sur [%lx]>\n", arg->tid);
+      tfprintf(stderr, "\n<Reponse tardive recue pour le ping sur [%d]>\n", arg->tid);
 END_STUB
 
 static pm2_user_func user_function = NULL;
@@ -176,7 +176,7 @@ UNPACK_RES_STUB(LRPC_CONSOLE_USER)
    old_mad_unpack_int(MAD_IN_HEADER, &tid, 1);
    old_mad_unpack_str(MAD_IN_HEADER, str);
    if(strcmp(str, "")) {
-      tprintf("Task [%lx]\n", tid);
+      tprintf("Task [%d]\n", tid);
       do {
 	tprintf("\t%s\n",str);
 	old_mad_unpack_str(MAD_IN_HEADER, str);

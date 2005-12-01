@@ -776,7 +776,7 @@ static void _remote_global_lock()
 
 static void *_isomalloc_negociate(unsigned int nb_slots, isoaddr_attr_t *attr)
 {
-  int i;
+  unsigned int i;
 
 #ifdef ISOADDR_NEGOCIATION_TRACE
  tfprintf(stderr,"Starting negociation...(I am %p)\n", marcel_self());
@@ -1348,7 +1348,7 @@ void isoaddr_init(unsigned myrank, unsigned confsize)
   marcel_mutex_init(&isomalloc_slot_mutex, NULL);
   marcel_mutex_init(&isomalloc_sync_mutex, NULL);
 
-  tab_sync = (unsigned int *)tmalloc(_nb_nodes * sizeof(unsigned int));
+  tab_sync = (int *)tmalloc(_nb_nodes * sizeof(int));
 
   for (i = 0 ; i < _nb_nodes ; i++)
     tab_sync[i] = 0;

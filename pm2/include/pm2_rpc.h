@@ -30,7 +30,7 @@ void pm2_rpc_init(void);
 	void name##_unpack_res(any_t _arg);
 
 
-#define BEGIN_LRPC_LIST unsigned int
+#define BEGIN_LRPC_LIST int
 #define END_LRPC_LIST	;
 
 #include "sys/console.h"

@@ -22,7 +22,7 @@
 #define MAIN_SERVICE	-2L
 #define SYSTEM_SERVICE	-1L
 
-static unsigned PM2_LRPC, PM2_LRPC_DONE, PM2_ASYNC_LRPC,
+static int PM2_LRPC, PM2_LRPC_DONE, PM2_ASYNC_LRPC,
   PM2_QUICK_LRPC, PM2_QUICK_ASYNC_LRPC;
 
 rpc_func_t _pm2_rpc_funcs[MAX_LRPC_FUNCS];
@@ -66,7 +66,7 @@ static __inline__ pm2_channel_t channel(pm2_rpc_channel_t c,
 					unsigned to,
 					comm_direction_t dir)
 {
-  extern unsigned int __pm2_self;
+  extern int __pm2_self;
 
   if(dir == REQUEST) {
     return (to > __pm2_self) ? pm2_rpc_channel[c].channel[0] : pm2_rpc_channel[c].channel[1];

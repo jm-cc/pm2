@@ -99,9 +99,9 @@ static
 void
 pm2_net_send_server_end_request(void)
 {
-  unsigned tag  = NETSERVER_END;
-  int      c    = 0;
-  int      node = 0;
+  int tag  = NETSERVER_END;
+  int c    = 0;
+  int node = 0;
 
   LOG_IN();
   for (c = 0; c < pm2_net_server_nb; c++)
@@ -151,7 +151,7 @@ static
 any_t
 pm2_net_server(any_t arg)
 {
-  unsigned tag;
+  int tag;
 
   marcel_postexit(pm2_net_server_term_func, marcel_self());
 
@@ -264,7 +264,7 @@ pm2_net_halt_or_exit_request(void)
 	}
       else
 	{
-	  unsigned        tag     = NETSERVER_REQUEST_HALT;
+	  int             tag     = NETSERVER_REQUEST_HALT;
 	  p_mad_channel_t channel = NULL;
 
 	  channel = pm2_net_channel_array[c];

@@ -17,7 +17,7 @@
 #include "pm2.h"
 #include "sys/pm2_migr.h"
 
-static unsigned PM2_MIGR;
+static int PM2_MIGR;
 
 static unsigned _pm2_imported_threads = 0;
 static pm2_pre_migration_hook _pm2_pre_migr_func = NULL;

@@ -21,7 +21,7 @@
 
 static char msg[STRING_SIZE] __ALIGNED__;
 
-static unsigned SAMPLE;
+static int SAMPLE;
 
 static void SAMPLE_service(void)
 {

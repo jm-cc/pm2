@@ -255,7 +255,7 @@ static void tsp (int hops, int len, Path_t path, int *cuts, int num_worker)
 
 // *************************************************
 #undef INIT
-static unsigned INIT, ADD_JOB, BEST, WORKER, FINISHED;
+static int INIT, ADD_JOB, BEST, WORKER, FINISHED;
 
 static void INIT_service(void)
 {

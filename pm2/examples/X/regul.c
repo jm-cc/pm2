@@ -28,7 +28,7 @@ static int module_precedent, module_suivant;
 
 static boolean do_regulate = FALSE, finished = FALSE;
 
-static unsigned LOAD;
+static int LOAD;
 
 static unsigned charge_locale(void)
 {

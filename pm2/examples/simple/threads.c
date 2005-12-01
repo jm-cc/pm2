@@ -16,7 +16,7 @@
 
 #include "pm2.h"
 
-static unsigned SAMPLE;
+static int SAMPLE;
 
 #define __ALIGNED__       __attribute__ ((aligned (sizeof(int))))
 

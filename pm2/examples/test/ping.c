@@ -19,8 +19,8 @@
 #define ESSAIS 5
 #define N      1000
 
-static unsigned SAMPLE, SAMPLE_THR;
-static unsigned autre;
+static int SAMPLE, SAMPLE_THR;
+static int autre;
 
 static marcel_sem_t sem;
 

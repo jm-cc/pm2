@@ -22,7 +22,7 @@
 #define MEGA      (1024*1024)
 #define BUF_SIZE  (16*MEGA)
 
-static unsigned TRANSFERT, STOP, ACK, INFO;
+static int TRANSFERT, STOP, ACK, INFO;
 static volatile boolean finished = FALSE;
 
 static char buffer[BUF_SIZE];

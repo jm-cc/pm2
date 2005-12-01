@@ -30,7 +30,7 @@ static void ABC_service(void)
 
 int pm2_main(int argc, char **argv)
 {
-  unsigned int	ABC = 0;
+  int	        ABC = 0;
   pm2_channel_t	channel_A;
   pm2_channel_t	channel_B;
   pm2_attr_t	attr_channel_A;

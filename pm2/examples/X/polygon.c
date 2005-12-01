@@ -102,7 +102,7 @@ Cms cms;
 
 int current_color = 0;
 
-static unsigned SYNC_DISPLAY;
+static int SYNC_DISPLAY;
 
 static __inline__ void X_lock(void)
 {

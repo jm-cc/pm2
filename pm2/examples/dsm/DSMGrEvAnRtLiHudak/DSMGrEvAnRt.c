@@ -54,11 +54,11 @@ END_DSM_DATA
 
 static unsigned cur_proc = 0;
 
-static unsigned DISPLAY_RECT;
-static unsigned BLACK_RECT;
-static unsigned DISPLAY_BALL;
-static unsigned BLACK_BALL;
-static unsigned CREATE_RECT;
+static int DISPLAY_RECT;
+static int BLACK_RECT;
+static int DISPLAY_BALL;
+static int BLACK_BALL;
+static int CREATE_RECT;
 
 /****************************/
 unsigned node2pix(unsigned node);

@@ -18,7 +18,7 @@
 
 #include <sys/time.h>
 
-static unsigned DICHO;
+static int DICHO;
 
 static unsigned cur_proc = 0;
 

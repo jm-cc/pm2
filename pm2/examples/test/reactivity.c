@@ -16,7 +16,7 @@
 
 #include "pm2.h"
 
-static unsigned SAMPLE, START_BUSY, STOP_BUSY;
+static int SAMPLE, START_BUSY, STOP_BUSY;
 
 static volatile boolean stay_busy = TRUE;
 

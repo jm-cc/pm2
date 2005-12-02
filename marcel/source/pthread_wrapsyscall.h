@@ -18,6 +18,7 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
+#include "sys/marcel_flags.h"
 #if 0
 
 /* 0 */
@@ -128,7 +129,7 @@ write
 /* 1 */
 
 #ifdef MA__LIBPTHREAD
-#  include <linux/unistd.h>
+#  include <asm/unistd.h>
 #endif
 
 #define SYSCALL1(name) \
@@ -291,4 +292,3 @@ __i686.get_pc_thunk.bx:\
 .weak name ; name = __libc_##name
 
 
-#include "sys/marcel_flags.h"

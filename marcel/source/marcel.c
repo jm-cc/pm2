@@ -87,6 +87,7 @@ void breakpoint()
 /* =========== specifs =========== */
 int marcel_cancel(marcel_t pid);
 
+/* allocate a marcel thread stack and put a marcel_task struct at the top of it */
 marcel_t marcel_alloc_stack(unsigned size)
 {
   marcel_t t;
@@ -114,11 +115,15 @@ marcel_t marcel_alloc_stack(unsigned size)
   return t;
 }
 
+/* returns the amount of mem between the base of the current thread stack and
+   its stack pointer */
 unsigned long marcel_usablestack(void)
 {
   return (unsigned long)get_sp() - (unsigned long)marcel_self()->stack_base;
 }
 
+/* returns the amount of memory in the current thread stack that has never been
+   modified, if stack checking is compiled in */
 unsigned long marcel_unusedstack(void)
 {
 #ifdef STACK_CHECKING_ALLOWED
@@ -281,12 +286,14 @@ int _marcel_raise(marcel_exception_t ex)
 }
 
 #ifndef MA__LIBPTHREAD
+/* if MA__LIBPTHREAD is defined, marcel_extlib_protect/unprotect are
+   defined as (empty) macros instead since they are useless in that case */
 int marcel_extlib_protect(void)
 {
 	ma_local_bh_disable();
 	return 0;
 }
-        
+
 int marcel_extlib_unprotect(void)
 {
 	ma_local_bh_enable();

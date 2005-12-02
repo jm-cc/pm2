@@ -93,8 +93,6 @@ marcel_t marcel_alloc_stack(unsigned size)
   marcel_t t;
   char *st;
 
-  lock_task();
-
 #ifdef PM2
   RAISE(PROGRAM_ERROR);
 #endif
@@ -109,8 +107,6 @@ marcel_t marcel_alloc_stack(unsigned size)
 #ifdef STACK_CHECKING_ALLOWED
   memset(t->stack_base, 0, size);
 #endif
-
-  unlock_task();
 
   return t;
 }

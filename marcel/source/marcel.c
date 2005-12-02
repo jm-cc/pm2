@@ -94,23 +94,6 @@ unsigned long marcel_usablestack(void)
   return (unsigned long)get_sp() - (unsigned long)marcel_self()->stack_base;
 }
 
-/* returns the amount of memory in the current thread stack that has never been
-   modified, if stack checking is compiled in */
-unsigned long marcel_unusedstack(void)
-{
-#ifdef STACK_CHECKING_ALLOWED
-   char *repere = (char *)marcel_self()->stack_base;
-   unsigned *ptr = (unsigned *)repere;
-
-   while(!(*ptr++));
-   return ((char *)ptr - repere);
-
-#else
-   RAISE(USE_ERROR);
-   return 0;
-#endif
-}
-
 /* marcel_malloc, marcel_calloc, marcel_free:
    avoid lock/unlock_task penalty on trivial requests */
 void *marcel_malloc(unsigned size, char *file, unsigned line)

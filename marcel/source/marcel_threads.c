@@ -183,9 +183,6 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task = (marcel_t)(top - MAL(sizeof(marcel_task_t)));
 		if((unsigned long) new_task <= (unsigned long)attr->__stackaddr)
 			RAISE(CONSTRAINT_ERROR); /* Not big enough */
-#ifdef STACK_CHECKING_ALLOWED
-		memset(attr->__stackaddr, 0, attr->__stacksize);
-#endif
 		stack_base = attr->__stackaddr;
 		
 		static_stack = TRUE;

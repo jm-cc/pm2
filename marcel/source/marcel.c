@@ -134,54 +134,62 @@ unsigned long marcel_unusedstack(void)
 #endif
 }
 
+/* marcel_malloc, marcel_calloc, marcel_free:
+   avoid lock/unlock_task penalty on trivial requests */
 void *marcel_malloc(unsigned size, char *file, unsigned line)
 {
-  void *p;
+        void *p;
 
-    lock_task();
-    p = __TBX_MALLOC(size, file, line);
-    unlock_task();
-    if(p == NULL) {
-      fprintf(stderr, "Storage error at %s:%d\n", file, line);
-      RAISE(STORAGE_ERROR);
-    }
-    return p;
+        if (size) {
+                lock_task();
+                p = __TBX_MALLOC(size, file, line);
+                unlock_task();
+                if(p == NULL)
+                        RAISE(STORAGE_ERROR);
+        } else {
+                return NULL;
+        }
+
+        return p;
 }
 
 void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned line)
 {
-  void *p;
+        void *p;
 
-   lock_task();
-   p = __TBX_REALLOC(ptr, size, file, line);
-   unlock_task();
-   if(p == NULL)
-      RAISE(STORAGE_ERROR);
-   return p;
+        lock_task();
+        p = __TBX_REALLOC(ptr, size, file, line);
+        unlock_task();
+        if(p == NULL)
+                RAISE(STORAGE_ERROR);
+
+        return p;
 }
 
 void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
 {
-  void *p;
+        void *p;
 
-   if(nelem && elsize) {
-      lock_task();
-      p = __TBX_CALLOC(nelem, elsize, file, line);
-      unlock_task();
-      if(p == NULL)
-         RAISE(STORAGE_ERROR);
-      return p;
-   }
-   return NULL;
+        if (nelem && elsize) {
+                lock_task();
+                p = __TBX_CALLOC(nelem, elsize, file, line);
+                unlock_task();
+                if(p == NULL)
+                        RAISE(STORAGE_ERROR);
+        } else {
+                return NULL;
+        }
+
+        return p;
 }
 
 void marcel_free(void *ptr, char * __restrict file, unsigned line)
 {
-   if(ptr) {
-      lock_task();
-      __TBX_FREE((char *)ptr, file, line);
-      unlock_task();
-   }
+        if(ptr) {
+                lock_task();
+                __TBX_FREE((char *)ptr, file, line);
+                unlock_task();
+        }
 }
 
 marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC]={NULL};

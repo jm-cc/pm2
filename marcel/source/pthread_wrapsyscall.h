@@ -128,7 +128,7 @@ write
 /* 1 */
 
 #ifdef MA__LIBPTHREAD
-#  include <asm-i486/unistd.h>
+#  include <linux/unistd.h>
 #endif
 
 #define SYSCALL1(name) \

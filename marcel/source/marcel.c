@@ -87,30 +87,6 @@ void breakpoint()
 /* =========== specifs =========== */
 int marcel_cancel(marcel_t pid);
 
-/* allocate a marcel thread stack and put a marcel_task struct at the top of it */
-marcel_t marcel_alloc_stack(unsigned size)
-{
-  marcel_t t;
-  char *st;
-
-#ifdef PM2
-  RAISE(PROGRAM_ERROR);
-#endif
-
-  st = marcel_slot_alloc();
-
-  t = (marcel_t)(MAL_BOT((unsigned long)st + size) - MAL(sizeof(marcel_task_t)));
-
-  //init_task_desc(t);
-  t->stack_base = st;
-
-#ifdef STACK_CHECKING_ALLOWED
-  memset(t->stack_base, 0, size);
-#endif
-
-  return t;
-}
-
 /* returns the amount of mem between the base of the current thread stack and
    its stack pointer */
 unsigned long marcel_usablestack(void)

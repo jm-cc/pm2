@@ -318,6 +318,8 @@ pm2_net_init_channels(int   *argc,
     slist     = pm2_net_channel_slist;
     htable    = pm2_net_channel_htable;
 
+    TBX_ASSERT(pm2_net_server_nb == tbx_slist_get_length(slist));
+
     for (i = 0; i < pm2_net_server_nb; i++)
       {
 	p_mad_channel_t  channel = NULL;
@@ -405,7 +407,7 @@ pm2_net_wait_end(void)
     }
   tbx_slist_clear_and_free(pm2_net_channel_slist);
   pm2_net_channel_slist = NULL;
-  tbx_htable_free(pm2_net_channel_htable);
+  tbx_htable_cleanup_and_free(pm2_net_channel_htable);
   pm2_net_channel_htable = NULL;
   LOG_OUT();
 }

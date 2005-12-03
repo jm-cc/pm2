@@ -25,6 +25,7 @@
 #include <termios.h>
 #include <signal.h>
 #include <stdint.h>
+#include <sys/socket.h>
 
 static int top_pid;
 static int top_file=-1;

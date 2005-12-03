@@ -187,6 +187,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 
 int ma_init_top(char *outfile) {
 	mdebug("marcel_init_top(%s)\n",outfile);
+#ifndef WIN_SYS
 	if (*outfile=='|') {
 		int fds[2];
 		outfile++;
@@ -209,7 +210,9 @@ int ma_init_top(char *outfile) {
 		}
 		close(fds[1]);
 		// TODO récupérer le pid et le tuer proprement (il se termine dès qu'on tape dedans...)
-	} else if ((top_file=open(outfile,O_WRONLY|O_APPEND|O_CREAT))<0) {
+	} else 
+#endif
+	if ((top_file=open(outfile,O_WRONLY|O_APPEND|O_CREAT))<0) {
 		perror("opening top file");
 		return -1;
 	}

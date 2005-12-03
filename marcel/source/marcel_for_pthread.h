@@ -20,6 +20,7 @@ static inline marcel_t thread_self() {
   return marcel_self();
 }
 
+#ifdef MA__LIBPTHREAD
 static inline void restart(marcel_descr th)
 {
   marcel_sem_V(&th->pthread_sync);
@@ -36,4 +37,5 @@ static inline int timedsuspend(marcel_descr self,
 {
 
 }
+#endif
 #endif

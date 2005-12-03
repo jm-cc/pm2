@@ -85,6 +85,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->not_deviatable = attr->not_deviatable;
 	marcel_sem_init(&t->suspend_sem, 0);
 
+#ifdef MA__LIBPTHREAD
 	t->__errno=0;
 	t->__h_errno=0;
 	//t->__res_state
@@ -93,6 +94,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->p_untracked_readlock_count=0;
 	t->p_nextwaiting=NULL;
 	marcel_sem_init(&t->pthread_sync, 0);  
+#endif
 
 	
 #ifdef ENABLE_STACK_JUMPING

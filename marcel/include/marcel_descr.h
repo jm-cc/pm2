@@ -44,11 +44,13 @@ typedef p_marcel_task_t marcel_t;
 #depend "marcel_sched_generic.h[marcel_structures]"
 #depend "marcel_attr.h[macros]"
  /* Pour struct __res_state */
+#ifdef MA__LIBPTHREAD
 #define __need_res_state
 #depend <netinet/in.h>
 #depend <arpa/nameser.h>
 #depend <resolv.h>
 #undef __need_res_state
+#endif
 
 /* Context info for read write locks. The marcel_rwlock_info structure
    is information about a lock that has been read-locked by the thread
@@ -123,6 +125,7 @@ struct marcel_task {
 	
 	ma_atomic_t top_utime/*, top_stime*/;
 
+#ifdef MA__LIBPTHREAD
 	/* Pour le code provenant de la libpthread */
 	int __errno;
 	int __h_errno;
@@ -136,6 +139,7 @@ struct marcel_task {
 	/*         Next element in the queue holding the thr */
 	marcel_t p_nextwaiting;
 	marcel_sem_t pthread_sync;
+#endif
 
 	/*         list of all threads */
 	struct list_head all_threads;

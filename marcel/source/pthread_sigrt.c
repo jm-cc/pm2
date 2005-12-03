@@ -15,6 +15,7 @@
 
 /* Thread creation, initialization, and basic low-level routines */
 
+#ifdef MA__LIBPTHREAD
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -36,7 +37,6 @@
 //VD:#include <tls.h>
 //VD:#include <locale.h>		/* for __uselocale */
 //VD:#include <version.h>
-#ifdef MA__LIBPTHREAD
 
 #define __ASSUME_REALTIME_SIGNALS 1 //VD:
 /* Sanity check.  */

@@ -19,9 +19,9 @@
 #define __WIN_MMAP_KERNEL__
 
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "sys/marcel_win_sys.h"
-#include "sys/isomalloc_archdep.h"
+#include "marcel.h"
 
 void *ISOADDR_AREA_TOP;
 static void *ISOADDR_AREA_BOTTOM;
@@ -60,6 +60,7 @@ void marcel_win_sys_init(int *argc, char *argv[])
                                   THREAD_SLOT_SIZE-1) & ~(THREAD_SLOT_SIZE-1));
   ISOADDR_AREA_TOP = (void *)((unsigned long)ISOADDR_AREA_TOP & 
                               ~(THREAD_SLOT_SIZE-1));
+  mdebug("isoaddr from %p to %p\n", ISOADDR_AREA_BOTTOM, ISOADDR_AREA_TOP);
 #endif
 }
 

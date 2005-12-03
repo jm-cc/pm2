@@ -161,10 +161,10 @@ void marcel_init_data(int *argc, char *argv[])
   // Parse command line
   marcel_parse_cmdline_early(argc, argv, TRUE);
 
-  marcel_init_section(MA_INIT_SCHEDULER);
-
   // Windows/Cygwin specific stuff
   marcel_win_sys_init(argc, argv);
+
+  marcel_init_section(MA_INIT_SCHEDULER);
 
   // Initialize debug facilities
   marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);

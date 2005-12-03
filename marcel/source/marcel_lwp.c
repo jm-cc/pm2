@@ -39,6 +39,9 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #endif
 #endif
 #endif
+#ifdef WIN_SYS
+#include <windows.h>
+#endif
 #endif
 
 #ifdef MA__LWPS
@@ -398,6 +401,9 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 		exit(1);
 	}
 #endif
+#elif defined(WIN_SYS)
+	DWORD mask = 1UL<<target;
+	SetThreadAffinityMask(GetCurrentThread(), mask);
 #else
 	// TODO: WINDOWS: SetThreadAffinityMask()
 #error "don't know how to bind on processors on this system"

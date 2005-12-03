@@ -24,7 +24,7 @@ typedef struct __marcel_attr_s marcel_attr_t;
 
 #section structures
 
-#if defined(LINUX_SYS) || defined(DARWIN_SYS)
+#if defined(LINUX_SYS) || defined(DARWIN_SYS) || defined(WIN_SYS)
 #include <sched.h>
 #else // AD: fake Linux-like structures on other systems
 #include <sys/signal.h>

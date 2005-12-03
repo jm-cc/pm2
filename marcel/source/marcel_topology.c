@@ -60,14 +60,10 @@ unsigned marcel_nbprocessors = 1;
 
 void ma_set_nbprocessors(void) {
 	// Détermination du nombre de processeurs disponibles
-#ifdef SOLARIS_SYS
-	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(LINUX_SYS)
+#if defined(SOLARIS_SYS) || defined(LINUX_SYS) || defined(OSF_SYS) || defined(WIN_SYS)
 	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
 #elif defined(IRIX_SYS)
 	marcel_nbprocessors = sysconf(_SC_NPROC_CONF);
-#elif defined(OSF_SYS)
-	marcel_nbprocessors = sysconf(_SC_NPROCESSORS_CONF);
 #else
 #warning No known way to discover number of available processors on this system
 #warning marcel_nbprocessors will default to 1

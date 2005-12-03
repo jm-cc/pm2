@@ -68,6 +68,7 @@ extern MARCEL_PROTECTED void ma_scheduler_tick(int user_tick, int system);
 //extern unsigned long cache_decay_ticks;
 
 #section marcel_macros
+#include <limits.h>
 #define	MA_MAX_SCHEDULE_TIMEOUT	LONG_MAX
 
 #section functions

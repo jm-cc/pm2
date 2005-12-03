@@ -1081,6 +1081,9 @@ int marcel_ev_server_stop(marcel_ev_server_t server)
 
 	server->state=MA_EV_SERVER_STATE_HALTED;
 
+#ifndef ECANCELED
+#define ECANCELED EIO
+#endif
 	list_for_each_entry_safe(req, tmp, 
 				 &server->list_req_registered, 
 				 chain_req_registered) {

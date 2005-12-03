@@ -164,8 +164,10 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 
 #include <errno.h>
 
+#ifdef PTHREAD_STACK_MIN
 #if ((((ASM_THREAD_SLOT_SIZE)-1)/2) < (PTHREAD_STACK_MIN))
 #error please increase THREAD_SLOT_SIZE in marcel/include/sys/isomalloc_archdep.h for this system, see ia64 for an example
+#endif
 #endif
 
 void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
@@ -190,7 +192,9 @@ void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
 		strerror_r(err,s,256);
 		fprintf(stderr, "Error: pthread_attr_setstack(%p, %p, %p, %#zx):"
 			" (%d)%s\n", &attr, sp, stack_base, stack_size, err, s);
+#ifdef PTHREAD_STACK_MIN
 		fprintf(stderr, "PTHREAD_STACK_MIN: %#x\n", PTHREAD_STACK_MIN);
+#endif
 		abort();
 	}
 	pthread_create(pid, &attr, func, arg);

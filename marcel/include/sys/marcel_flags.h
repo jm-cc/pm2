@@ -218,5 +218,13 @@
 #undef MARCEL_BUBBLE_STEAL
 #endif
 
+#ifdef MA__HAS_SUBSECTION
+#  undef MA__HAS_SUBSECTION
+#endif
+
+#ifndef WIN_SYS
+#  define MA__HAS_SUBSECTION
+#endif
+
 #endif /* MARCEL_FLAGS_EST_DEF */
 

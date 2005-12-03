@@ -33,4 +33,16 @@ my_setjmp:
         xorl    %eax, %eax
         jmp     *%edx
 
+#ifndef WIN_SYS
 .size my_setjmp,.-my_setjmp
+#endif
+
+#ifdef WIN_SYS
+	.globl ma_i386_spinlock_contention
+ma_i386_spinlock_contention:
+re:
+	rep; nop
+	cmpb $0,(%eax)
+	jle re
+	ret
+#endif

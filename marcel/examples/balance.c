@@ -99,7 +99,7 @@ any_t work(any_t arg) {
 	return NULL;
 }
 
-int main(int argc, char *argv[]) {
+int marcel_main(int argc, char *argv[]) {
 	int i,j;
 	marcel_attr_t attr;
 	char s[MARCEL_MAXNAMESIZE];

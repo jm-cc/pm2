@@ -98,18 +98,30 @@ __ma_initfunc(timer_start, MA_INIT_TIMER, "Install TIMER SoftIRQ");
  * thread fautif (ça aide pour le debug !)
  */
 #ifdef SA_SIGINFO
+#ifndef WIN_SYS
 #include <ucontext.h>
+#endif
 static void TBX_NORETURN fault_catcher(int sig, siginfo_t *act, void *data)
 #else
 static void TBX_NORETURN fault_catcher(int sig)
 #endif
 {
 #ifdef SA_SIGINFO
+#ifndef WIN_SYS
 	ucontext_t *ctx =(ucontext_t *)data;
+#endif
 	pm2debug("OOPS!!! Signal %d catched on thread %p (%d)\n"
-			"si_code=%x, si_signo=%x, si_addr=%p, ctx=%p\n",
+			"si_code=%x, si_signo=%x, si_addr=%p"
+#ifndef WIN_SYS
+			", ctx=%p\n"
+#endif
+			,
 		sig, MARCEL_SELF, THREAD_GETMEM(MARCEL_SELF,number),
-		act->si_code, act->si_signo, act->si_addr, ctx);
+		act->si_code, act->si_signo, act->si_addr
+#ifndef WIN_SYS
+		, ctx
+#endif
+		);
 #endif
 	if(LWP_SELF != NULL)
 		pm2debug("OOPS!!! current lwp is %d\n",
@@ -379,8 +391,11 @@ static void sig_start_timer(ma_lwp_t lwp)
 
 #ifndef MA_DO_NOT_LAUNCH_SIGNAL_TIMER
 	sigemptyset(&sa.sa_mask);
-#if !defined(WIN_SYS)
+#ifdef SA_RESTART
 	sa.sa_flags = SA_RESTART;
+#else
+	sa.sa_flags = 0;
+#endif
 #if defined(SA_NOMASK)
 	sa.sa_flags |= SA_NOMASK;
 #elif defined(SA_NODEFER)
@@ -392,12 +407,6 @@ static void sig_start_timer(ma_lwp_t lwp)
 #warning no way to allow nested signals
 #endif
 
-#if defined(OSF_SYS) && defined(ALPHA_ARCH)
-	sa.sa_flags |= SA_SIGINFO;
-#endif
-#else
-	sa.sa_flags = 0;
-#endif
 	sa.sa_flags |= SA_SIGINFO;
 	sa.sa_sigaction = timer_interrupt;
 	

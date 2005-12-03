@@ -39,7 +39,7 @@
 /* TBX_BACKTRACE_ON_FAILURE: controls usage of the backtracing features
  * provided by the GNU C library
  */
-#if !defined(DARWIN_SYS)
+#if !defined(DARWIN_SYS) && !defined(WIN_SYS)
 #  define TBX_BACKTRACE_ON_FAILURE
 #  define TBX_BACKTRACE_DEPTH 15
 #else

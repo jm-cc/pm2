@@ -45,7 +45,7 @@ static __inline__ void io_unlock()
 
 int marcel_printf(char * __restrict format, ...)
 {
-  static va_list args;
+  va_list args;
   int retour;
 
   io_lock();
@@ -61,7 +61,7 @@ int marcel_printf(char * __restrict format, ...)
 
 int marcel_fprintf(FILE * __restrict stream, char * __restrict format, ...)
 {
-  static va_list args;
+  va_list args;
   int retour;
 
   io_lock();
@@ -76,7 +76,7 @@ int marcel_fprintf(FILE * __restrict stream, char * __restrict format, ...)
 
 int marcel_sprintf(char * __restrict string, char * __restrict format, ...)
  {
-  static va_list args;
+  va_list args;
   int retour;
 
   io_lock();
@@ -91,7 +91,7 @@ int marcel_sprintf(char * __restrict string, char * __restrict format, ...)
   
 int marcel_snprintf(char * __restrict string, size_t size, char * __restrict format, ...)
  {
-  static va_list args;
+  va_list args;
   int retour;
 
   io_lock();

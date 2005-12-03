@@ -28,7 +28,7 @@
    dans un source assembleur */
 #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 Ko */
 #define THREAD_SLOT_SIZE              ((long)ASM_THREAD_SLOT_SIZE)
-#define SLOT_AREA_TOP                 (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
+#define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
 
 #ifdef DSM
 #  define DYN_DSM_AREA_SIZE             (ISOADDR_PAGES * 4096)

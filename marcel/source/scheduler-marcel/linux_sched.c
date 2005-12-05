@@ -3161,13 +3161,16 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
+	unsigned num = LWP_NUMBER(lwp);
+	unsigned cpu = ma_cpu_of_lwp_num(LWP_NUMBER(lwp));
 	{
 	ma_runqueue_t *rq = ma_lwp_rq(lwp);
 	char name[16];
-	snprintf(name,sizeof(name),"lwp%d",LWP_NUMBER(lwp));
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),LWP_NUMBER(lwp),rq);
+	snprintf(name,sizeof(name),"lwp%d",num);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
 	init_rq(rq, name, MA_LWP_RQ);
-	if (LWP_NUMBER(lwp)>=get_nb_lwps())
+	if (num>=get_nb_lwps())
+		/* "extra" LWPs are apart */
 		rq->father=NULL;
 	else {
 #ifdef MA__NUMA
@@ -3175,7 +3178,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 			int level,i;
 			level = marcel_topo_nblevels-2;
 			for (i=0; marcel_topo_levels[level][i].cpuset
-				&& !(MA_CPU_ISSET(LWP_NUMBER(lwp),
+				&& !(MA_CPU_ISSET(cpu,
 				&marcel_topo_levels[level][i].cpuset));
 					i++);
 			// should find somebody holding us !
@@ -3184,22 +3187,22 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		} else
 #endif
 			rq->father=&ma_main_runqueue;
-		marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(lwp)%marcel_nbprocessors].sched = rq;
+		marcel_topo_levels[marcel_topo_nblevels-1][cpu].sched = rq;
 #ifdef MA__SMP
-		MA_CPU_SET(LWP_NUMBER(lwp),&ma_main_runqueue.cpuset);
-		MA_CPU_SET(LWP_NUMBER(lwp),&ma_dontsched_runqueue.cpuset);
+		MA_CPU_SET(cpu,&ma_main_runqueue.cpuset);
+		MA_CPU_SET(cpu,&ma_dontsched_runqueue.cpuset);
 #endif
 	}
 	mdebug("runqueue %s has father %s\n",name,rq->father->name);
-	snprintf(name,sizeof(name),"dontsched%d",LWP_NUMBER(lwp));
+	snprintf(name,sizeof(name),"dontsched%d",num);
 	init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name, MA_DONTSCHED_RQ);
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
 	MA_CPU_ZERO(&(rq->cpuset));
-	MA_CPU_SET(LWP_NUMBER(lwp),&(rq->cpuset));
+	MA_CPU_SET(cpu,&(rq->cpuset));
 	MA_CPU_ZERO(&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
-	MA_CPU_SET(LWP_NUMBER(lwp),&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
+	MA_CPU_SET(cpu,&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
 #endif
 	}
 #endif

@@ -19,9 +19,14 @@
 
 #section variables
 extern unsigned marcel_nbprocessors;
+extern unsigned marcel_cpu_stride;
+extern unsigned marcel_lwps_per_cpu;
 #ifndef MA__LWPS
 #define marcel_nbprocessors 1
+#define marcel_cpu_stride 1
+#define marcel_lwps_per_cpu 1
 #endif
+#define ma_cpu_of_lwp_num(num) (((num)/marcel_lwps_per_cpu)*marcel_cpu_stride)
 
 #section marcel_variables
 #depend "sys/marcel_lwp.h[marcel_macros]"
@@ -29,9 +34,11 @@ extern int ma_lwp_node[MA_NR_LWPS];
 
 #section functions
 extern void ma_set_nbprocessors(void);
+extern void ma_set_processors(void);
 extern void ma_topo_exit(void);
 #ifndef MA__LWPS
 #define ma_set_nbprocessors() (void)0
+#define ma_set_processors() (void)0
 #define ma_topo_exit() (void)0
 #endif
 

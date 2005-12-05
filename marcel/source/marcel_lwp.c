@@ -110,6 +110,8 @@ void marcel_lwp_fix_nb_vps(unsigned nb_lwp)
 #else
 	set_nb_lwps(nb_lwp ? nb_lwp : marcel_nbprocessors);
 #endif
+
+	ma_set_processors();
 }
 
 #endif /* MA__LWPS */
@@ -369,7 +371,7 @@ static void lwp_init(ma_lwp_t lwp)
 inline static void bind_on_processor(marcel_lwp_t *lwp)
 {
 #if defined(MA__BIND_LWP_ON_PROCESSORS)
-	unsigned long target = LWP_NUMBER(lwp) % marcel_nbprocessors;
+	unsigned long target = ma_cpu_of_lwp_num(LWP_NUMBER(lwp));
 #if defined(SOLARIS_SYS)
 	if(processor_bind(P_LWPID, P_MYID,
 			  (processorid_t)(target),

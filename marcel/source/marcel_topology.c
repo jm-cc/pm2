@@ -57,6 +57,8 @@ struct marcel_topo_level *marcel_topo_levels[MARCEL_LEVEL_LAST+1] = {
 
 static int discovering_level = 1;
 unsigned marcel_nbprocessors = 1;
+unsigned marcel_cpu_stride = 1;
+unsigned marcel_lwps_per_cpu = 1;
 
 void ma_set_nbprocessors(void) {
 	// Détermination du nombre de processeurs disponibles
@@ -72,6 +74,11 @@ void ma_set_nbprocessors(void) {
 #endif
 
 	mdebug("%d processors available\n", marcel_nbprocessors);
+}
+
+void ma_set_processors(void) {
+	marcel_lwps_per_cpu = (get_nb_lwps()+marcel_nbprocessors-1)/marcel_nbprocessors;
+	// TODO: stride = 2 si HT et que suffisament peu de LWPs.
 }
 
 #ifdef MA__NUMA

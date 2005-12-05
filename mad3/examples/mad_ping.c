@@ -672,6 +672,11 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  mad_end_unpacking(in);
 
 		  ping(channel, lrank_dst);
+
+		  in = mad_begin_unpacking(channel);
+		  mad_unpack(in, &buffer, sizeof(buffer),
+			     mad_send_CHEAPER, mad_receive_EXPRESS);
+		  mad_end_unpacking(in);
 		}
 	      else if (lrank_dst == master_lrank)
 		{
@@ -693,6 +698,11 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  mad_end_unpacking(in);
 
 		  pong(channel, lrank_src);
+
+		  in = mad_begin_unpacking(channel);
+		  mad_unpack(in, &buffer, sizeof(buffer),
+			     mad_send_CHEAPER, mad_receive_EXPRESS);
+		  mad_end_unpacking(in);
 		}
 	      else
 		{
@@ -728,6 +738,16 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 		  mad_end_unpacking(in);
 
 		  master_loop(channel);
+
+		  in = mad_begin_unpacking(channel);
+		  mad_unpack(in, &buffer, sizeof(buffer),
+			     mad_send_CHEAPER, mad_receive_EXPRESS);
+		  mad_end_unpacking(in);
+
+		  in = mad_begin_unpacking(channel);
+		  mad_unpack(in, &buffer, sizeof(buffer),
+			     mad_send_CHEAPER, mad_receive_EXPRESS);
+		  mad_end_unpacking(in);
 		}
 	    }
 	  while (ntbx_pc_next_local_rank(pc, &lrank_dst));
@@ -788,6 +808,11 @@ play_with_channel(p_mad_madeleine_t  madeleine,
 	      /* Pong */
 	      pong(channel, its_local_rank);
 	    }
+
+	  out = mad_begin_packing(channel, 0);
+	  mad_pack(out, &buffer, sizeof(buffer),
+		   mad_send_CHEAPER, mad_receive_EXPRESS);
+	  mad_end_packing(out);
 	}
     }
 }

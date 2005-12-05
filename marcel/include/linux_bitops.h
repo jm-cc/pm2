@@ -168,9 +168,10 @@ static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w)
 #section marcel_functions
 static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w);
 #section marcel_inline
+#depend "asm/linux_bitops.h[marcel_macros]"
 static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w)
 {
-	return sizeof(w) == 4 ? ma_generic_hweight32(w) : ma_generic_hweight64(w);
+	return sizeof(w) == 4 ? ma_hweight32(w) : ma_hweight64(w);
 }
 
 #section macros

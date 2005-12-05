@@ -76,6 +76,7 @@ enum ma_rq_type {
 	MA_NODE_RQ,
 	MA_DIE_RQ,
 	MA_CORE_RQ,
+	MA_PROC_RQ,
 #endif
 	MA_LWP_RQ,
 #endif
@@ -112,7 +113,7 @@ struct ma_runqueue {
 #ifdef MA__LWPS
 	struct ma_runqueue *father;
 	int level;
-	ma_cpu_set_t cpuset;
+	marcel_vpmask_t vpset;
 #endif
 	enum ma_rq_type type;
 };
@@ -156,7 +157,7 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #ifdef MA__LWPS
 #define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
 #define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
-#define ma_rq_covers(rq,lwp)	(MA_CPU_ISSET(LWP_NUMBER(lwp), &rq->cpuset))
+#define ma_rq_covers(rq,lwp)	(marcel_vpmask_vp_ismember(&rq->vpset, LWP_NUMBER(lwp)))
 #else
 #define ma_lwp_rq(lwp)		(&ma_main_runqueue)
 #define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)

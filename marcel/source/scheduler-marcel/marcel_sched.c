@@ -215,7 +215,7 @@ static __inline__ int CAN_RUN(marcel_lwp_t *lwp, marcel_t pid)
       && (pid->sched.internal.ext_state != MARCEL_RUNNING)
 #endif
 #ifdef MA__LWPS
-      && (!marcel_vpmask_vp_ismember(pid->sched.vpmask, lwp->number))
+      && (!marcel_vpmask_vp_ismember(&pid->sched.vpmask, lwp->number))
 #endif
       );
 }
@@ -236,7 +236,7 @@ static __inline__ marcel_lwp_t *__find_first_lwp(marcel_t pid, marcel_lwp_t *fir
   marcel_lwp_t *lwp = first;
 
   do {
-    if(!marcel_vpmask_vp_ismember(pid->vpmask, lwp->number))
+    if(!marcel_vpmask_vp_ismember(&pid->vpmask, lwp->number))
       return lwp;
     lwp = next_lwp(lwp);
   } while(lwp != first);

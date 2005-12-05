@@ -1934,7 +1934,7 @@ DEF_PTHREAD_STRONG(int, yield, (void), ())
 // adéquate...
 // IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
 // pour se déplacer sur le LWP courant (cf terminaison des threads)
-void marcel_change_vpmask(marcel_vpmask_t mask)
+void marcel_change_vpmask(marcel_vpmask_t *mask)
 {
 #ifdef MA__LWPS
 	ma_holder_t *old_h;
@@ -3162,7 +3162,6 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	unsigned num = LWP_NUMBER(lwp);
-	unsigned cpu = ma_cpu_of_lwp_num(LWP_NUMBER(lwp));
 	{
 	ma_runqueue_t *rq = ma_lwp_rq(lwp);
 	char name[16];
@@ -3177,20 +3176,20 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		if (marcel_topo_nblevels>2) {
 			int level,i;
 			level = marcel_topo_nblevels-2;
-			for (i=0; marcel_topo_levels[level][i].cpuset
-				&& !(MA_CPU_ISSET(cpu,
-				&marcel_topo_levels[level][i].cpuset));
+			for (i=0; marcel_vpmask_weight(&marcel_topo_levels[level][i].vpset)
+				&& !(marcel_vpmask_vp_ismember(
+				  &marcel_topo_levels[level][i].vpset, num));
 					i++);
 			// should find somebody holding us !
-			MA_BUG_ON(!marcel_topo_levels[level][i].cpuset);
+			MA_BUG_ON(!marcel_vpmask_weight(&marcel_topo_levels[level][i].vpset));
 			rq->father=marcel_topo_levels[level][i].sched;
 		} else
 #endif
 			rq->father=&ma_main_runqueue;
-		marcel_topo_levels[marcel_topo_nblevels-1][cpu].sched = rq;
+		marcel_topo_levels[marcel_topo_nblevels-1][num].sched = rq;
 #ifdef MA__SMP
-		MA_CPU_SET(cpu,&ma_main_runqueue.cpuset);
-		MA_CPU_SET(cpu,&ma_dontsched_runqueue.cpuset);
+		marcel_vpmask_add_vp(&ma_main_runqueue.vpset,num);
+		marcel_vpmask_add_vp(&ma_dontsched_runqueue.vpset,num);
 #endif
 	}
 	mdebug("runqueue %s has father %s\n",name,rq->father->name);
@@ -3199,10 +3198,8 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 #ifdef MA__SMP
-	MA_CPU_ZERO(&(rq->cpuset));
-	MA_CPU_SET(cpu,&(rq->cpuset));
-	MA_CPU_ZERO(&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
-	MA_CPU_SET(cpu,&(ma_per_lwp(dontsched_runqueue,lwp).cpuset));
+	marcel_vpmask_only_vp(&(rq->vpset),num);
+	marcel_vpmask_only_vp(&(ma_per_lwp(dontsched_runqueue,lwp).vpset),num);
 #endif
 	}
 #endif
@@ -3228,36 +3225,37 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(linux_sched, MA_INIT_LINUX_SCHED);
 #ifdef MA__NUMA
 static int level_rq_num[MARCEL_LEVEL_LAST-2];
 static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq, int levelnum) {
-	unsigned i;
+	unsigned i,n;
 	char name[16];
 	ma_runqueue_t *newrqs = ma_level_runqueues[levelnum-1]+level_rq_num[levelnum-1];
 	static const char *base[] = {
 		[MARCEL_LEVEL_NODE]	= "node",
 		[MARCEL_LEVEL_DIE]	= "die",
 		[MARCEL_LEVEL_CORE]	= "core",
+		[MARCEL_LEVEL_PROC]	= "proc",
 	};
 	static const enum ma_rq_type rqtypes[] = {
 		[MARCEL_LEVEL_NODE]	= MA_NODE_RQ,
 		[MARCEL_LEVEL_DIE]	= MA_DIE_RQ,
 		[MARCEL_LEVEL_CORE]	= MA_CORE_RQ,
+		[MARCEL_LEVEL_PROC]	= MA_PROC_RQ,
 	};
 
 	level->sched = rq;
-	if (level->sons[0]->type == MARCEL_LEVEL_PROC) {
+	if (level->sons[0]->type == MARCEL_LEVEL_LAST) {
 		return;
 	}
 
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),levelnum,level->arity);
 	for (i=0;i<level->arity;i++) {
 		level_rq_num[levelnum-1]++;
 		snprintf(name,sizeof(name),"%s%d",
 			base[level->sons[i]->type],level->sons[i]->number);
-		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,1),&newrqs[i]);
 		init_rq(&newrqs[i], name, rqtypes[level->sons[i]->type]);
 		newrqs[i].level = levelnum;
 		newrqs[i].father = rq;
-		newrqs[i].cpuset = level->sons[i]->cpuset;
+		newrqs[i].vpset = level->sons[i]->vpset;
 		mdebug("runqueue %s has father %s\n", name, rq->name);
+		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),levelnum,&newrqs[i]);
 		init_subrunqueues(level->sons[i],&newrqs[i],levelnum+1);
 	}
 }
@@ -3265,10 +3263,11 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 
 static void __marcel_init sched_init(void)
 {
+	unsigned i,j;
 	LOG_IN();
 
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),0,1);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,1),&ma_main_runqueue);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),0,&ma_main_runqueue);
 	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
 	ma_main_runqueue.level = 0;
@@ -3276,18 +3275,20 @@ static void __marcel_init sched_init(void)
 #endif
 	init_rq(&ma_dontsched_runqueue,"dontsched", MA_DONTSCHED_RQ);
 #ifdef MA__LWPS
-	MA_CPU_ZERO(&ma_main_runqueue.cpuset);
-	MA_CPU_ZERO(&ma_dontsched_runqueue.cpuset);
+	marcel_vpmask_empty(&ma_main_runqueue.vpset);
+	marcel_vpmask_empty(&ma_dontsched_runqueue.vpset);
 #endif
 
 #ifdef MA__NUMA
-	if (marcel_topo_nblevels>1)
+	if (marcel_topo_nblevels>1) {
+		for (i=1;i<marcel_topo_nblevels-1;i++) {
+			for (j=0; marcel_topo_levels[i][j].vpset; j++);
+			PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),j);
+		}
 		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
+	}
 #endif
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,2),
-			marcel_topo_nblevels==1 && get_nb_lwps()>1 ?
-				2 : marcel_topo_nblevels-1,
-			get_nb_lwps());
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1), get_nb_lwps());
 
 	/*
 	 * We have to do a little magic to get the first

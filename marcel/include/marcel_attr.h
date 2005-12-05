@@ -39,6 +39,7 @@ typedef sigset_t __sigset_t;
 
 #include <sys/types.h> /* pour size_t */
 #depend "marcel_sched_generic.h[types]"
+#depend "marcel_topology.h[types]"
 
 /* Attributes for threads.  */
 struct __marcel_attr_s

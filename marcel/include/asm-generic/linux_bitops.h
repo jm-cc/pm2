@@ -175,6 +175,7 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
  * of bits set) of a N-bit word
  */
 
+#define ma_hweight64(x) ma_generic_hweight64(x)
 #define ma_hweight32(x) ma_generic_hweight32(x)
 #define ma_hweight16(x) ma_generic_hweight16(x)
 #define ma_hweight8(x) ma_generic_hweight8(x)

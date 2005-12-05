@@ -115,22 +115,22 @@ int ma_wake_up_task(marcel_task_t * p);
 #section marcel_functions
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 __tbx_inline__ static ma_runqueue_t *
-marcel_sched_vpmask_init_rq(marcel_vpmask_t mask);
+marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask);
 
 #section marcel_inline
 #depend "scheduler/linux_runqueues.h[marcel_types]"
 __tbx_inline__ static ma_runqueue_t *
-marcel_sched_vpmask_init_rq(marcel_vpmask_t mask)
+marcel_sched_vpmask_init_rq(const marcel_vpmask_t *mask)
 {
-	if (tbx_unlikely(mask==MARCEL_VPMASK_EMPTY))
+	if (tbx_unlikely(*mask==MARCEL_VPMASK_EMPTY))
 		return &ma_main_runqueue;
-	else if (tbx_unlikely(mask==MARCEL_VPMASK_FULL))
+	else if (tbx_unlikely(*mask==MARCEL_VPMASK_FULL))
 		return &ma_dontsched_runqueue;
 	else {
 		int first_vp;
-		first_vp=ma_ffs(~mask)-1;
+		first_vp=ma_ffs(~*mask)-1;
 		/* pour l'instant, on ne gère qu'un vp activé */
-		MA_BUG_ON(mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
+		MA_BUG_ON(*mask!=MARCEL_VPMASK_ALL_BUT_VP(first_vp));
 		//on peut arriver sur un lwp supplémentaire, il faudrait un autre compteur que nbvps
 		//MA_BUG_ON(first_vp && first_vp>=marcel_nbvps());
 		return ma_lwp_rq(GET_LWP_BY_NUM(first_vp));
@@ -161,7 +161,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
 		h = ma_task_init_holder(MARCEL_SELF);
 	} else if (attr->vpmask != MARCEL_VPMASK_EMPTY)
-		h = &(marcel_sched_vpmask_init_rq(attr->vpmask)->hold);
+		h = &(marcel_sched_vpmask_init_rq(&attr->vpmask)->hold);
 	if (h) {
 		internal->sched_holder = internal->init_holder = h;
 	} else {
@@ -229,7 +229,7 @@ int marcel_sched_getscheduler(marcel_t t);
 
 /* ==== SMP scheduling directives ==== */
 
-void marcel_change_vpmask(marcel_vpmask_t mask);
+void marcel_change_vpmask(marcel_vpmask_t *mask);
 
 /* ==== scheduler status ==== */
 

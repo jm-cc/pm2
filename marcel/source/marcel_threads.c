@@ -444,6 +444,9 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 {
 	marcel_t cur = marcel_self();
 	DEFINE_CUR_LWP(register, , );
+#ifdef MA__LWPS
+	marcel_vpmask_t mask;
+#endif
 	
 	LOG_IN();
 
@@ -489,7 +492,8 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	/* Durant cette fonction, il ne faut pas que le thread soit
 	   "déplacé" intempestivement (e.g. après avoir acquis
 	   stack_mutex) sur un autre LWP. */
-	marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(cur_lwp)));
+	mask = MARCEL_VPMASK_ALL_BUT_VP(LWP_NUMBER(cur_lwp));
+	marcel_change_vpmask(&mask);
 #endif
 	ma_preempt_enable();
 

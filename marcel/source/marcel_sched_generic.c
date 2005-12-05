@@ -226,13 +226,14 @@ void marcel_gensched_shutdown(void)
 #ifdef MA__SMP
 	marcel_lwp_t *lwp, *lwp_found;
 #endif
+	marcel_vpmask_t mask = MARCEL_VPMASK_ALL_BUT_VP(0);
 
 	LOG_IN();
 	
 	wait_all_tasks_end();
 
 	// Si nécessaire, on bascule sur le LWP(0)
-	marcel_change_vpmask(MARCEL_VPMASK_ALL_BUT_VP(0));
+	marcel_change_vpmask(&mask);
 
 #ifdef MA__SMP
 

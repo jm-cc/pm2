@@ -531,7 +531,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 les #ifdef dans les arguments de macro...
 */
 #ifdef MA__LWPS
-#  define _TIME_SLICE MA_CPU_WEIGHT(&rq->cpuset)
+#  define _TIME_SLICE marcel_vpmask_weight(&rq->vpset)
 #else
 #  define _TIME_SLICE 1
 #endif
@@ -666,16 +666,17 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			nbrun = total_nr_running(b);
 			for (rq2 = rq;
 				/* emmener juste assez haut pour moi */
-				   !MA_CPU_ISSET(LWP_NUMBER(LWP_SELF), &rq2->cpuset)
+				  !marcel_vpmask_vp_ismember(&rq2->vpset, LWP_NUMBER(LWP_SELF))
 				&& rq2->father
 				/* et juste assez haut par rapport au nombre de threads */
-				&& MA_CPU_WEIGHT(&rq2->father->cpuset) <= nbrun
+				&& marcel_vpmask_weight(&rq2->father->vpset) <= nbrun
 				; rq2 = rq2->father)
 				bubble_sched_debugl(7,"looking up to rq %s\n", rq2->father->name);
 			if (!rq2 ||
 					/* pas intéressant pour moi, on laisse les autres se débrouiller */
-					!MA_CPU_ISSET(LWP_NUMBER(LWP_SELF),&rq2->cpuset)) {
+					!marcel_vpmask_vp_ismember(&rq2->vpset,LWP_NUMBER(LWP_SELF))) {
 				bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->name:"anything",nbrun);
+				/* todo: le faire quand même ? */
 				ma_holder_rawunlock(&rq->hold);
 			} else {
 				ma_holder_rawlock(&b->hold);
@@ -777,8 +778,9 @@ static int see_down(struct marcel_topo_level *level,
 	ma_runqueue_t *rq = level->sched;
 	int power = 0;
 	int i = 0, n = level->arity;
-	if (rq)
-		power = MA_CPU_WEIGHT(&rq->cpuset);
+	if (rq) {
+		power = marcel_vpmask_weight(&rq->vpset);
+	}
 	if (me) {
 		n--;
 		i = (me->index + 1) % level->arity;
@@ -804,7 +806,7 @@ static int see_up(struct marcel_topo_level *level) {
 
 int marcel_bubble_steal_work(void) {
 	struct marcel_topo_level *me =
-		&marcel_topo_levels[marcel_topo_nblevels-1][ma_cpu_of_lwp_num(LWP_NUMBER(LWP_SELF))];
+		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
 	static ma_spinlock_t lock = MA_SPIN_LOCK_UNLOCKED;
 	int ret = 0;
 #ifdef MA__LWPS

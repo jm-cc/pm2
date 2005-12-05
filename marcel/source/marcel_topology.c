@@ -21,6 +21,25 @@
 #include <string.h>
 #include <errno.h>
 
+/* cpus */
+#ifdef MA__NUMA
+#include <sched.h>
+#ifdef CPU_SET
+typedef cpu_set_t ma_cpu_set_t;
+#define MA_CPU_SET(cpu, cpusetp)	CPU_SET(cpu, cpusetp)
+#define MA_CPU_CLR(cpu, cpusetp)	CPU_CLR(cpu, cpusetp)
+#define MA_CPU_ISSET(cpu, cpusetp)	CPU_ISSET(cpu, cpusetp)
+#define MA_CPU_ZERO(cpusetp)		CPU_ZERO(cpusetp)
+#else
+typedef unsigned long ma_cpu_set_t;
+#define MA_CPU_MASK(cpu)		(1UL<<(cpu))
+#define MA_CPU_SET(cpu, cpusetp)	(*(cpusetp) |=  MA_CPU_MASK(cpu))
+#define MA_CPU_CLR(cpu, cpusetp)	(*(cpusetp) &= ~MA_CPU_MASK(cpu))
+#define MA_CPU_ISSET(cpu, cpusetp)	(*(cpusetp) &   MA_CPU_MASK(cpu))
+#define MA_CPU_ZERO(cpusetp)		(*(cpusetp) = 0UL)
+#endif
+#endif
+
 unsigned marcel_topo_nblevels=
 #ifndef MA__LWPS
 	0
@@ -34,7 +53,7 @@ struct marcel_topo_level marcel_machine_level[] = {
 		.type = MARCEL_LEVEL_MACHINE,
 		.number = 0,
 		.index = 0,
-		.cpuset = MA_CPU_FULL,
+		.vpset = MARCEL_VPMASK_FULL,
 		.arity = 0,
 		.sons = NULL,
 		.father = NULL,
@@ -44,7 +63,7 @@ struct marcel_topo_level marcel_machine_level[] = {
 		.sched = NULL,
 	},
 	{
-		.cpuset = MA_CPU_EMPTY,
+		.vpset = MARCEL_VPMASK_EMPTY,
 	}
 };
 
@@ -78,6 +97,7 @@ void ma_set_nbprocessors(void) {
 
 void ma_set_processors(void) {
 	marcel_lwps_per_cpu = (get_nb_lwps()+marcel_nbprocessors-1)/marcel_nbprocessors;
+	mdebug("%d LWPs per cpu, stride %d\n", marcel_lwps_per_cpu, marcel_cpu_stride);
 	// TODO: stride = 2 si HT et que suffisament peu de LWPs.
 }
 
@@ -91,6 +111,9 @@ static struct marcel_topo_level *marcel_topo_core_level;
 static MA_DEFINE_PER_LWP(struct marcel_topo_level *, node_level, NULL);
 static struct marcel_topo_level *marcel_topo_node_level;
 
+static MA_DEFINE_PER_LWP(struct marcel_topo_level *, cpu_level, NULL);
+static struct marcel_topo_level *marcel_topo_cpu_level;
+
 int ma_lwp_node[MA_NR_LWPS];
 
 #ifdef LINUX_SYS
@@ -102,7 +125,7 @@ static void __marcel_init look_cpuinfo(void) {
 	char string[strlen(PHYSID)+1+9+1+1];
 	char *endptr;
 	long processor=-1, physid, maxphysid=-1;
-	int i,j;
+	int i,j,k;
 	unsigned proc_physid[MARCEL_NBMAXCPUS];
 
 	if (!(fd=fopen("/proc/cpuinfo","r"))) {
@@ -150,20 +173,24 @@ static void __marcel_init look_cpuinfo(void) {
 	if (maxphysid>=0) {
 		/* normalize core numbers */
 		unsigned corenum[maxphysid+1];
-		ma_cpu_set_t corecpuset[maxphysid+1];
+		ma_cpu_set_t corecpus[maxphysid+1];
 		struct marcel_topo_level *core_level;
 		unsigned numcores=0;
 		int really_useful=0;
+		ma_cpu_set_t cpuset;
+		unsigned cpu;
 
 		memset(corenum,0,sizeof(corenum));
-		memset(corecpuset,0,sizeof(corecpuset));
+		memset(corecpus,0,sizeof(corecpus));
 
-		for (i=0; i<= processor; i++) {
-			if (!corenum[proc_physid[i]]) {
-				corenum[proc_physid[i]] = 1;
+		MA_CPU_ZERO(&cpuset);
+
+		for (cpu=0; cpu <= processor; cpu++) {
+			if (!corenum[proc_physid[cpu]]) {
+				corenum[proc_physid[cpu]] = 1;
 				numcores++;
 			} else really_useful=1;
-			MA_CPU_SET(i,&corecpuset[proc_physid[i]]);
+			MA_CPU_SET(cpu,&corecpus[proc_physid[cpu]]);
 		}
 
 		if (!really_useful)
@@ -175,17 +202,22 @@ static void __marcel_init look_cpuinfo(void) {
 			if (corenum[i]) {
 				core_level[j].type = MARCEL_LEVEL_CORE;
 				core_level[j].number = j;
-				core_level[j].cpuset = corecpuset[i];
+				marcel_vpmask_empty(&core_level[j].vpset);
+				for (k=0; k <= get_nb_lwps(); k++) {
+					cpu = ma_cpu_of_lwp_num(k);
+					if (MA_CPU_ISSET(cpu,&corecpus[i]))
+						marcel_vpmask_add_vp(&core_level[j].vpset,k);
+				}
 				core_level[j].sched = NULL;
 #ifdef MARCEL_SMT_IDLE
 				ma_atomic_set(&core_level[j].nbidle, 0);
 #endif
-				mdebug("core %d has cpuset %lx\n",j,corecpuset[i]);
+				mdebug("core %d has vpset %lx\n",j,core_level[j].vpset);
 				j++;
 			}
 		}
 
-		MA_CPU_ZERO(&core_level[j].cpuset);
+		marcel_vpmask_empty(&core_level[j].vpset);
 
 #ifdef MARCEL_SMT_IDLE
 		marcel_topo_core_level =
@@ -202,7 +234,7 @@ static void __marcel_init look_libnuma(void) {
 	unsigned i,j;
 	unsigned nbnodes;
 	struct marcel_topo_level *node_level;
-	ma_cpu_set_t cpuset;
+	marcel_vpmask_t vpset;
 
 	numa_exit_on_error=1;
 
@@ -244,44 +276,72 @@ static void __marcel_init look_libnuma(void) {
 		}
 		node_level[i].type = MARCEL_LEVEL_NODE;
 		node_level[i].number=i;
-		node_level[i].cpuset=cpuset=buffer[0];
+		node_level[i].vpset=vpset=buffer[0];
 		node_level[i].sched = NULL;
-		mdebug("node %d has cpuset %lx\n",i,cpuset);
+		mdebug("node %d has vpset %lx\n",i,vpset);
 		for (j=0;j<get_nb_lwps();j++)
-			if (MA_CPU_ISSET(j,&cpuset))
+			if (marcel_vpmask_vp_ismember(&vpset,j))
 				ma_lwp_node[j]=i;
 	}
 
-	MA_CPU_ZERO(&node_level[i].cpuset);
+	marcel_vpmask_empty(&node_level[i].vpset);
 
 	marcel_topo_levels[discovering_level++] =
 		marcel_topo_node_level = node_level;
 
 	TBX_FREE(buffer);
 }
-#endif /* MA__NUMA */
 
 static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
-	unsigned i;
+	unsigned i,cpu;
 
-	if (marcel_nbprocessors==1)
+	if (marcel_nbprocessors>=get_nb_lwps())
 		return;
 
 	MA_BUG_ON(!(cpu_level=TBX_MALLOC((marcel_nbprocessors+1)*sizeof(*cpu_level))));
 
-	for (i=0; i<marcel_nbprocessors; i++) {
-		cpu_level[i].type=MARCEL_LEVEL_PROC;
-		cpu_level[i].number=i;
-		MA_CPU_ZERO(&cpu_level[i].cpuset);
-		MA_CPU_SET(i,&cpu_level[i].cpuset);
-		cpu_level[i].arity=0;
-		cpu_level[i].sons=NULL;
-		cpu_level[i].sched=NULL;
+	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {
+		cpu_level[cpu].type=MARCEL_LEVEL_PROC;
+		cpu_level[cpu].number=cpu;
+		marcel_vpmask_empty(&cpu_level[cpu].vpset);
+		cpu_level[cpu].sched=NULL;
 	}
-	MA_CPU_ZERO(&cpu_level[i].cpuset);
+	marcel_vpmask_empty(&cpu_level[i].vpset);
 
-	marcel_topo_levels[discovering_level++]=cpu_level;
+	for (i=0; i<get_nb_lwps(); i++) {
+		cpu = ma_cpu_of_lwp_num(i);
+		marcel_vpmask_add_vp(&cpu_level[cpu].vpset,i);
+	}
+
+	for (cpu=0; cpu<marcel_nbprocessors; cpu++)
+		mdebug("cpu %d has vpset %lx\n",cpu,cpu_level[cpu].vpset);
+
+	marcel_topo_levels[discovering_level++]=
+		marcel_topo_cpu_level = cpu_level;
+}
+#endif /* MA__NUMA */
+
+static void look_lwp(void) {
+	struct marcel_topo_level *lwp_level;
+	unsigned i;
+
+	if (get_nb_lwps()==1)
+		return;
+
+	MA_BUG_ON(!(lwp_level=TBX_MALLOC((get_nb_lwps()+1)*sizeof(*lwp_level))));
+
+	for (i=0; i<get_nb_lwps(); i++) {
+		lwp_level[i].type=MARCEL_LEVEL_LWP;
+		lwp_level[i].number=i;
+		marcel_vpmask_only_vp(&lwp_level[i].vpset,i);
+		lwp_level[i].arity=0;
+		lwp_level[i].sons=NULL;
+		lwp_level[i].sched=NULL;
+	}
+	marcel_vpmask_empty(&lwp_level[i].vpset);
+
+	marcel_topo_levels[discovering_level++] = lwp_level;
 }
 
 static void topo_discover(void) {
@@ -291,28 +351,29 @@ static void topo_discover(void) {
 #ifdef LINUX_SYS
 	look_cpuinfo();
 #endif
-#endif
 	look_cpu();
+#endif
+	look_lwp();
 
 	marcel_topo_nblevels=discovering_level;
 
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
 
 			marcel_topo_levels[l][i].arity=0;
-			for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
-				if (!(marcel_topo_levels[l+1][j].cpuset &
-					~(marcel_topo_levels[l][i].cpuset)))
+			for (j=0; marcel_topo_levels[l+1][j].vpset; j++)
+				if (!(marcel_topo_levels[l+1][j].vpset &
+					~(marcel_topo_levels[l][i].vpset)))
 					marcel_topo_levels[l][i].arity++;
 
-			mdebug("level %u,%u: cpuset %lx arity %u\n",l,i,marcel_topo_levels[l][i].cpuset,marcel_topo_levels[l][i].arity);
+			mdebug("level %u,%u: vpset %lx arity %u\n",l,i,marcel_topo_levels[l][i].vpset,marcel_topo_levels[l][i].arity);
 			MA_BUG_ON(!(marcel_topo_levels[l][i].sons=
 				TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *))));
 
 			m=0;
-			for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
-				if (!(marcel_topo_levels[l+1][j].cpuset &
-					~(marcel_topo_levels[l][i].cpuset))) {
+			for (j=0; marcel_topo_levels[l+1][j].vpset; j++)
+				if (!(marcel_topo_levels[l+1][j].vpset &
+					~(marcel_topo_levels[l][i].vpset))) {
 					marcel_topo_levels[l][i].sons[m]=
 						&marcel_topo_levels[l+1][j];
 					marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
@@ -325,7 +386,7 @@ static void topo_discover(void) {
 void ma_topo_exit(void) {
 	unsigned l,i;
 	for (l=0; l<marcel_topo_nblevels; l++) {
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+		for (i=0; marcel_topo_levels[l][i].vpset; i++) {
 			TBX_FREE(marcel_topo_levels[l][i].sons);
 		}
 		if (l)
@@ -340,8 +401,8 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 	int i;
 #ifdef MARCEL_SMT_IDLE
 	if (marcel_topo_core_level) {
-		for (i=0; marcel_topo_core_level[i].cpuset; i++) {
-			if (MA_CPU_ISSET(LWP_NUMBER(lwp),&marcel_topo_core_level[i].cpuset)) {
+		for (i=0; marcel_topo_core_level[i].vpset; i++) {
+			if (marcel_vpmask_vp_ismember(&marcel_topo_core_level[i].vpset,LWP_NUMBER(lwp))) {
 				ma_per_lwp(core_level,lwp) = &marcel_topo_core_level[i];
 				break;
 			}
@@ -349,9 +410,17 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 	}
 #endif /* MARCEL_SMT_IDLE */
 	if (marcel_topo_node_level) {
-		for (i=0; marcel_topo_node_level[i].cpuset; i++) {
-			if (MA_CPU_ISSET(LWP_NUMBER(lwp),&marcel_topo_node_level[i].cpuset)) {
+		for (i=0; marcel_topo_node_level[i].vpset; i++) {
+			if (marcel_vpmask_vp_ismember(&marcel_topo_node_level[i].vpset,LWP_NUMBER(lwp))) {
 				ma_per_lwp(node_level,lwp) = &marcel_topo_node_level[i];
+				break;
+			}
+		}
+	}
+	if (marcel_topo_cpu_level) {
+		for (i=0; marcel_topo_cpu_level[i].vpset; i++) {
+			if (marcel_vpmask_vp_ismember(&marcel_topo_cpu_level[i].vpset,LWP_NUMBER(lwp))) {
+				ma_per_lwp(cpu_level,lwp) = &marcel_topo_cpu_level[i];
 				break;
 			}
 		}

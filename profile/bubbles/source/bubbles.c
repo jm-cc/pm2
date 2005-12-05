@@ -1572,7 +1572,7 @@ int main(int argc, char *argv[]) {
 #ifdef FXT
 	fxt_t fut;
 	struct fxt_ev ev;
-	unsigned rqlevel,rqnum;
+	unsigned nrqlevels = 0, *rqnums = NULL;
 	fxt_blockev_t block;
 	unsigned keymask = 0;
 	int ret;
@@ -1666,30 +1666,35 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			case FUT_RQS_NEWLEVEL: {
-				rqlevel = ev.ev64.param[0];
-				rqnum = 0;
-				rqs = realloc(rqs,(rqlevel+1)*sizeof(*rqs));
-				setRqs(&rqs[rqlevel],ev.ev64.param[1],0,rqlevel*150+
+				unsigned num = ev.ev64.param[0];
+				unsigned rqlevel = nrqlevels++;
+				rqnums = realloc(rqnums,(nrqlevels)*sizeof(*rqnums));
+				rqnums[rqlevel] = 0;
+				rqs = realloc(rqs,(nrqlevels)*sizeof(*rqs));
+				setRqs(&rqs[rqlevel],num,0,(rqlevel)*150+
 #ifdef BUBBLES
 						200+
 #endif
 						100
 						,MOVIEX,150);
-				for (i=0;i<ev.ev64.param[1];i++)
-				  showEntity(&rqs[rqlevel][i].entity);
-				printf("new runqueue level %u arity %"PRIu64"\n", rqlevel, ev.ev64.param[1]);
+				for (i=0;i<num;i++)
+					showEntity(&rqs[rqlevel][i].entity);
+				printf("new runqueue level %u with %d rqs\n", rqlevel, num);
 				break;
 			}
 			case FUT_RQS_NEWLWPRQ: {
+				unsigned rqnum = ev.ev64.param[0];
+				unsigned rqlevel = nrqlevels-1;
 				/* eux peuvent être dans le désordre */
-				newPtr(ev.ev64.param[1],&rqs[rqlevel][ev.ev64.param[0]]);
-				printf("new lwp runqueue %"PRIu64" at %p\n",ev.ev64.param[0],(void *)(intptr_t)ev.ev64.param[1]);
+				newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+				printf("new lwp runqueue %d at %p -> %p\n",rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
 			}
 			case FUT_RQS_NEWRQ: {
-				newPtr(ev.ev64.param[0],&rqs[rqlevel][rqnum]);
-				printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[0],&rqs[rqlevel][rqnum]);
-				rqnum++;
+				unsigned rqlevel = ev.ev64.param[0];
+				unsigned rqnum = rqnums[rqlevel]++;
+				newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+				printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
 			}
 			case FUT_SETUP_CODE:

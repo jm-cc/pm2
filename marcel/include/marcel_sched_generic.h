@@ -192,103 +192,6 @@ __tbx_inline__ static void marcel_yield_intern(){
 }
 
 /****************************************************************/
-/*               Virtual Processors                             */
-/****************************************************************/
-
-#section types
-/* VP mask: useful for selecting the set of "forbiden" LWP for a given thread */
-typedef unsigned long marcel_vpmask_t;
-
-#section macros
-
-// Primitives & macros de construction de "masques" de processeurs
-// virtuels. 
-
-// ATTENTION : le placement d un thread est autorise sur un 'vp' si le
-// bit correspondant est a _ZERO_ dans le masque (similitude avec
-// sigset_t pour la gestion des masques de signaux).
-
-#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0)
-#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)-1)
-#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
-#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
-
-#define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
-
-#section functions
-static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask);
-#section inline
-static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
-{
-  *mask = MARCEL_VPMASK_EMPTY;
-}
-#section functions
-static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask);
-#section inline
-static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
-{
-  *mask = MARCEL_VPMASK_FULL;
-}
-#section functions
-static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
-					    unsigned vp);
-#section inline
-static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
-					    unsigned vp)
-{
-  *mask |= 1U << vp;
-}
-
-#section functions
-static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
-					     unsigned vp);
-#section inline
-static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
-					     unsigned vp)
-{
-  *mask = 1U << vp;
-}
-
-#section functions
-static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
-					    unsigned vp);
-#section inline
-static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
-					    unsigned vp)
-{
-  *mask &= ~(1U << vp);
-}
-
-#section functions
-static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
-						unsigned vp);
-#section inline
-static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
-						unsigned vp)
-{
-  *mask = ~(1U << vp);
-}
-
-#section functions
-static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
-						unsigned vp);
-#section inline
-static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t mask,
-						unsigned vp)
-{
-  return 1 & (mask >> vp);
-}
-
-#section functions
-static __tbx_inline__ unsigned marcel_current_vp(void);
-#section inline
-#depend "sys/marcel_lwp.h[marcel_variables]"
-static __tbx_inline__ unsigned marcel_current_vp(void)
-{
-  return LWP_NUMBER(LWP_SELF);
-}
-
-/****************************************************************/
 /*               Scheduler et TIF                               */
 /****************************************************************/
 
@@ -364,3 +267,4 @@ static __tbx_inline__ unsigned marcel_current_vp(void)
 #define MA_TASK_REAL_TIME(task) \
    ma_test_ti_thread_flag(task, TIF_RT_THREAD)
 
+#section types

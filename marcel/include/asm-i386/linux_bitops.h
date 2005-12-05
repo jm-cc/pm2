@@ -557,6 +557,7 @@ static __tbx_inline__ int ma_ffs(int x)
  * The Hamming Weight of a number is the total number of bits set in it.
  */
 
+#define ma_hweight64(x) ma_generic_hweight64(x)
 #define ma_hweight32(x) ma_generic_hweight32(x)
 #define ma_hweight16(x) ma_generic_hweight16(x)
 #define ma_hweight8(x) ma_generic_hweight8(x)

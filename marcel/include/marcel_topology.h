@@ -52,39 +52,153 @@ enum marcel_topo_level_t {
 	MARCEL_LEVEL_NODE,
 	MARCEL_LEVEL_DIE,
 	MARCEL_LEVEL_CORE,
-#endif
 	MARCEL_LEVEL_PROC,
-#define MARCEL_LEVEL_LAST MARCEL_LEVEL_PROC
+#endif
+	MARCEL_LEVEL_LWP,
+#define MARCEL_LEVEL_LAST MARCEL_LEVEL_LWP
 #endif
 };
 
+/****************************************************************/
+/*               Virtual Processors                             */
+/****************************************************************/
+
 #section types
+/* VP mask: useful for selecting the set of "forbiden" LWP for a given thread */
 #ifdef MA__LWPS
-typedef unsigned long ma_cpu_set_t;
+typedef unsigned long marcel_vpmask_t;
 #else
-typedef unsigned ma_cpu_set_t;
+typedef unsigned marcel_vpmask_t;
 #endif
 
 #section macros
-#depend "linux_bitops.h[]"
+
+// Primitives & macros de construction de "masques" de processeurs
+// virtuels. 
+
+// ATTENTION : le placement d un thread est autorise sur un 'vp' si le
+// bit correspondant est a _ZERO_ dans le masque (similitude avec
+// sigset_t pour la gestion des masques de signaux).
+
 #ifdef MA__LWPS
-#define MA_CPU_EMPTY			(0UL)
-#define MA_CPU_FULL			(~0UL)
-#define MA_CPU_FILL(cpusetp)		(*(cpusetp)=MA_CPU_FULL)
-#define MA_CPU_SET(cpu, cpusetp)	(*(cpusetp)|=1UL<<(cpu))
-#define MA_CPU_CLR(cpu, cpusetp)	(*(cpusetp)&=~(1UL<<(cpu)))
-#define MA_CPU_ISSET(cpu, cpusetp)	((*(cpusetp)&(1UL<<(cpu))) != 0)
-#define MA_CPU_WEIGHT(cpusetp)		ma_hweight_long(*(cpusetp))
+#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0UL)
+#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0UL)
+#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1UL << (vp)))
+#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1UL << (vp))))
 #else
-#define MA_CPU_EMPTY			(0U)
-#define MA_CPU_FULL			(~0U)
-#define MA_CPU_FILL(cpusetp)		(*(cpusetp)=1)
-#define MA_CPU_SET(cpu, cpusetp)	MA_CPU_FILL(cpusetp)
-#define MA_CPU_CLR(cpu, cpusetp)	MA_CPU_ZERO(cpusetp)
-#define MA_CPU_ISSET(cpu, cpusetp)	(*(cpusetp))
-#define MA_CPU_WEIGHT(cpusetp)		(*(cpusetp))
+#define MARCEL_VPMASK_EMPTY          ((marcel_vpmask_t)0U)
+#define MARCEL_VPMASK_FULL           ((marcel_vpmask_t)~0U)
+#define MARCEL_VPMASK_ONLY_VP(vp)    ((marcel_vpmask_t)(1U << (vp)))
+#define MARCEL_VPMASK_ALL_BUT_VP(vp) ((marcel_vpmask_t)(~(1U << (vp))))
 #endif
-#define MA_CPU_ZERO(cpusetp)		(*(cpusetp)=MA_CPU_EMPTY)
+
+#define marcel_vpmask_init(m)        marcel_vpmask_empty(m)
+
+#section functions
+static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask);
+#section inline
+static __tbx_inline__ void marcel_vpmask_empty(marcel_vpmask_t *mask)
+{
+  *mask = MARCEL_VPMASK_EMPTY;
+}
+#section functions
+static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask);
+#section inline
+static __tbx_inline__ void marcel_vpmask_fill(marcel_vpmask_t *mask)
+{
+  *mask = MARCEL_VPMASK_FULL;
+}
+#section functions
+static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
+					    unsigned vp);
+#section inline
+static __tbx_inline__ void marcel_vpmask_add_vp(marcel_vpmask_t *mask,
+					    unsigned vp)
+{
+#ifdef MA__LWPS
+  *mask |= 1U << vp;
+#else
+  marcel_vpmask_fill(mask);
+#endif
+}
+
+#section functions
+static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
+					     unsigned vp);
+#section inline
+static __tbx_inline__ void marcel_vpmask_only_vp(marcel_vpmask_t *mask,
+					     unsigned vp)
+{
+#ifdef MA__LWPS
+  *mask = 1U << vp;
+#else
+  marcel_vpmask_fill(mask);
+#endif
+}
+
+#section functions
+static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
+					    unsigned vp);
+#section inline
+static __tbx_inline__ void marcel_vpmask_del_vp(marcel_vpmask_t *mask,
+					    unsigned vp)
+{
+#ifdef MA__LWPS
+  *mask &= ~(1U << vp);
+#else
+  marcel_vpmask_empty(mask);
+#endif
+}
+
+#section functions
+static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
+						unsigned vp);
+#section inline
+static __tbx_inline__ void marcel_vpmask_all_but_vp(marcel_vpmask_t *mask,
+						unsigned vp)
+{
+#ifdef MA__LWPS
+  *mask = ~(1U << vp);
+#else
+  marcel_vpmask_empty(mask);
+#endif
+}
+
+#section functions
+static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
+						unsigned vp);
+#section inline
+static __tbx_inline__ int marcel_vpmask_vp_ismember(marcel_vpmask_t *mask,
+						unsigned vp)
+{
+#ifdef MA__LWPS
+  return 1 & (*mask >> vp);
+#else
+  return *mask;
+#endif
+}
+
+#section functions
+static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask);
+#section inline
+#depend "linux_bitops.h[marcel_inline]"
+static __tbx_inline__ int marcel_vpmask_weight(marcel_vpmask_t *mask)
+{
+#ifdef MA__LWPS
+  return ma_hweight_long(*mask);
+#else
+  return *mask;
+#endif
+}
+
+#section functions
+static __tbx_inline__ unsigned marcel_current_vp(void);
+#section inline
+#depend "sys/marcel_lwp.h[marcel_variables]"
+static __tbx_inline__ unsigned marcel_current_vp(void)
+{
+  return LWP_NUMBER(LWP_SELF);
+}
 
 #section structures
 #ifdef PM2_DEV
@@ -100,7 +214,7 @@ struct marcel_topo_level {
 	unsigned number; /* for whole machine */
 	unsigned index; /* in father array */
 
-	ma_cpu_set_t cpuset;
+	marcel_vpmask_t vpset;
 
 	unsigned arity;
 	struct marcel_topo_level **sons;

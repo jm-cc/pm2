@@ -108,20 +108,13 @@ static void TBX_NORETURN fault_catcher(int sig)
 {
 #ifdef SA_SIGINFO
 #ifndef WIN_SYS
-	ucontext_t *ctx =(ucontext_t *)data;
+	TBX_UNUSED ucontext_t *ctx =(ucontext_t *)data;
 #endif
 	pm2debug("OOPS!!! Signal %d catched on thread %p (%d)\n"
-			"si_code=%x, si_signo=%x, si_addr=%p"
-#ifndef WIN_SYS
-			", ctx=%p\n"
-#endif
+			"si_code=%x, si_signo=%x, si_addr=%p, ctx=%p\n"
 			,
 		sig, MARCEL_SELF, THREAD_GETMEM(MARCEL_SELF,number),
-		act->si_code, act->si_signo, act->si_addr
-#ifndef WIN_SYS
-		, ctx
-#endif
-		);
+		act->si_code, act->si_signo, act->si_addr, data);
 #endif
 	if(LWP_SELF != NULL)
 		pm2debug("OOPS!!! current lwp is %d\n",

@@ -125,10 +125,11 @@ struct marcel_task {
 	
 	ma_atomic_t top_utime/*, top_stime*/;
 
-#ifdef MA__LIBPTHREAD
-	/* Pour le code provenant de la libpthread */
 	int __errno;
 	int __h_errno;
+
+#ifdef MA__LIBPTHREAD
+	/* Pour le code provenant de la libpthread */
 	struct __res_state __res_state;
 	/*         List of readlock info structs */
 	marcel_readlock_info *p_readlock_list;

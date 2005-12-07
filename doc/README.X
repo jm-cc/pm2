@@ -36,24 +36,15 @@ rajouter le script ${HOME}/.ssh/rc contenant :
 ----------------------------------------------------
 #!/bin/sh
 
-if [ -n "$SSH_AUTH_SOCK" ]; then
-        DIRNAME="$(dirname $SSH_AUTH_SOCK)"
-	export XAUTHORITY="$DIRNAME/Xauthority"
-	mkdir -p `dirname "$DIRNAME"`
-fi
-#echo XAUTHORITY=$XAUTHORITY
+suf=`echo $DISPLAY | cut -c11-`
 if read proto cookie && [ -n "$DISPLAY" ]; then
-	if [ -n "$XAUTHORITY" -a ! -f "$XAUTHORITY" ] ; then
-		touch "$XAUTHORITY"
-	fi
 	if [ `echo $DISPLAY | cut -c1-10` = 'localhost:' ]; then
 		# X11UseLocalhost=yes
-		echo add unix:`echo $DISPLAY |
-		cut -c11-` $proto $cookie
+		echo add unix:$suf $proto $cookie
 	else
 		# X11UseLocalhost=no
 		echo add $DISPLAY $proto $cookie
-	fi | xauth -q -
+	fi | xauth -f "/tmp/${USER}_xa$suf" -q -
 fi
 ----------------------------------------------------
 
@@ -62,11 +53,10 @@ Puis, si vous utilisez bash:
 Rajoutez dans ${HOME}/.bashrc (et ${HOME}/.bash_profile s'il n'inclut pas
 ${HOME}/.bashrc) :
 ----------------------------------------------------
-if [ -n "$SSH_AUTH_SOCK" ]; then
-	DIRNAME="$(dirname $SSH_AUTH_SOCK)"
-	if [ -f "$DIRNAME/Xauthority" ]; then
-		export XAUTHORITY="$DIRNAME/Xauthority"
-	fi
+if [ -n "$DISPLAY" ];
+then
+	suf=`echo $DISPLAY | cut -c11-`
+	export XAUTHORITY="/tmp/${USER}_xa$suf"
 fi
 ----------------------------------------------------
 
@@ -74,11 +64,9 @@ Si vous utilisez [t]csh:
 ****************************
 Rajoutez dans ${HOME}/.cshrc (ou ${HOME}/.tcshrc si nécessaire)
 ----------------------------------------------------
-if ( $?SSH_AUTH_SOCK ) then
-	DIRNAME="`dirname $SSH_AUTH_SOCK`"
-	if ( -f "$DIRNAME/Xauthority" ) then
-		setenv XAUTHORITY "$DIRNAME/Xauthority"
-	endif
+if ( $?DISPLAY ) then
+	suf="`echo $DISPLAY | cut -c11-`"
+	setenv XAUTHORITY "/tmp/${USER}_xa$suf"
 endif
 
 

@@ -76,9 +76,9 @@ static inline void ma_wakeup_softirqd(void)
 #define MAX_SOFTIRQ_RESTART 10
 
 
-inline static int local_softirq_pending_hardirq(void)
+inline static unsigned long local_softirq_pending_hardirq(void)
 {
-	int pending;
+	unsigned long pending;
 	
 #if 0
 	THREAD_SETMEM(MARCEL_SELF, softirq_pending_in_hardirq, 0);

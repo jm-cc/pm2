@@ -16,10 +16,11 @@
 
 #define clone(...) insufficient_clone(__VA_ARGS__)
 #include "marcel.h"
+#include <errno.h>
 
 #ifdef MA__LWPS
+#include <linux/unistd.h>
 #ifdef __NR_gettid
-#include <errno.h>
 #  ifdef _syscall0
 _syscall0(pid_t,gettid)
 #  else
@@ -48,7 +49,6 @@ int marcel_gettid(void) {
 
 // XXX: for getting rid of u32/__user of debian sarge's futex.h
 #define sys_futex(...) sys_futex()
-#include <linux/unistd.h>
 #include <linux/futex.h>
 
 #include <unistd.h>

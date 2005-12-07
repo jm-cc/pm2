@@ -807,7 +807,7 @@ static int see_up(struct marcel_topo_level *level) {
 int marcel_bubble_steal_work(void) {
 #ifdef MA__LWPS
 	struct marcel_topo_level *me =
-		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
+		&marcel_topo_levels[marcel_topo_nblevels-1][ma_cpu_of_lwp_num(LWP_NUMBER(LWP_SELF))];
 	/* couln't find work on local runqueue, go see elsewhere */
 	return see_up(me);
 #else

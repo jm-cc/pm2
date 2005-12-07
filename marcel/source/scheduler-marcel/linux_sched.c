@@ -3263,7 +3263,6 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 
 static void __marcel_init sched_init(void)
 {
-	unsigned i,j;
 	LOG_IN();
 
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
@@ -3281,6 +3280,7 @@ static void __marcel_init sched_init(void)
 
 #ifdef MA__NUMA
 	if (marcel_topo_nblevels>1) {
+		unsigned i,j;
 		for (i=1;i<marcel_topo_nblevels-1;i++) {
 			for (j=0; marcel_topo_levels[i][j].vpset; j++);
 			PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),j);

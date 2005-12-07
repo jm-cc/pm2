@@ -805,18 +805,14 @@ static int see_up(struct marcel_topo_level *level) {
 }
 
 int marcel_bubble_steal_work(void) {
+#ifdef MA__LWPS
 	struct marcel_topo_level *me =
 		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
-	static ma_spinlock_t lock = MA_SPIN_LOCK_UNLOCKED;
-	int ret = 0;
-#ifdef MA__LWPS
-	if (ma_spin_trylock(&lock)) {
 	/* couln't find work on local runqueue, go see elsewhere */
-		ret = see_up(me);
-		ma_spin_unlock(&lock);
-	}
+	return see_up(me);
+#else
+	return 0
 #endif
-	return ret;
 }
 #endif
 #endif

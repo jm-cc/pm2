@@ -85,9 +85,9 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->not_deviatable = attr->not_deviatable;
 	marcel_sem_init(&t->suspend_sem, 0);
 
+	//t->__errno=0;
+	//t->__h_errno=0;
 #ifdef MA__LIBPTHREAD
-	t->__errno=0;
-	t->__h_errno=0;
 	//t->__res_state
 	t->p_readlock_list=NULL;
 	t->p_readlock_free=NULL;

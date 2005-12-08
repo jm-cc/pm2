@@ -14,6 +14,16 @@
  */
 
 #section common
+
+#ifdef OSF_SYS
+#depend "asm-generic/linux_atomic.h[]"
+#section marcel_macros
+#section marcel_types
+#section marcel_inline
+
+#section common
+#else
+
 #depend "asm-alpha/linux_compiler.h[marcel_macros]"
 #include "tbx_compiler.h"
 /*
@@ -240,3 +250,6 @@ static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v)
 #define ma_smp_mb__after_atomic_dec()	ma_smp_mb()
 #define ma_smp_mb__before_atomic_inc()	ma_smp_mb()
 #define ma_smp_mb__after_atomic_inc()	ma_smp_mb()
+
+#section common
+#endif

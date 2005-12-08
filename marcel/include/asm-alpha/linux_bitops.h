@@ -13,7 +13,17 @@
  * General Public License for more details.
  */
 
+
 #section common
+#ifdef OSF_SYS
+#depend "asm-generic/linux_bitops.h[marcel_macros]"
+#depend "asm-generic/linux_bitops.h[marcel_inline]"
+#section marcel_macros
+#section marcel_inline
+
+#section common
+#else
+
 #include "tbx_compiler.h"
 
 /*
@@ -332,6 +342,7 @@ static __tbx_inline__ unsigned long ma_ffz_b(unsigned long x)
 #section marcel_functions
 static __tbx_inline__ unsigned long ma_ffz(unsigned long word);
 #section marcel_inline
+#depend "asm-alpha/linux_compiler.h[marcel_macros]"
 static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 {
 #if defined(__alpha_cix__) && defined(__alpha_fix__)
@@ -597,3 +608,5 @@ ma_sched_find_first_bit(unsigned long b[3])
 
 //#endif /* __KERNEL__ */
 
+#section common
+#endif

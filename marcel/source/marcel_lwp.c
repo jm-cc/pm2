@@ -408,7 +408,7 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 	SetThreadAffinityMask(GetCurrentThread(), mask);
 #else
 	// TODO: WINDOWS: SetThreadAffinityMask()
-#error "don't know how to bind on processors on this system"
+#error "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
 #endif
 	mdebug("LWP %u bound to processor %lu\n",
 			LWP_NUMBER(lwp), target);

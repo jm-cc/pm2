@@ -17,6 +17,7 @@
 /*
  * This file is used as linker script, needs be included first while linking.
  */
+#ifdef DARWIN_SYS
 #include <sys/types.h>
 #include "tbx_macros.h"
 #include "tbx_compiler.h"
@@ -109,3 +110,4 @@ TBX_SECTION(".ma.init.inf.5.8")			int __ma_init_inf_5_8[0]={};
 TBX_SECTION(".ma.init.inf.5.9")			int __ma_init_inf_5_9[0]={};
 TBX_SECTION(".ma.init.end")			int __ma_init_end[0]={};
 
+#endif

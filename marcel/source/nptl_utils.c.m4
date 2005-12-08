@@ -22,7 +22,9 @@ dnl  ***************************/
 #include "marcel.h"
 
 #include <errno.h>
+#ifdef MA__LIBPTHREAD
 #include <pthread.h>
+#endif
 
 
 REPLICATE_CODE([[dnl

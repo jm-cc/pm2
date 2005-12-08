@@ -420,7 +420,8 @@ pm2config_set_vars()
 	eval _PM2CONFIG_LD_PATH=\"\$_PM2CONFIG_LD_PATH -L\$_PM2CONFIG_${_lib}_LIB_DIR\"
 	eval _extra=\"\$_extra \$PM2_${_LIB}_LIBS\"
 	eval _scripts=\"\$_scripts \$PM2_${_LIB}_LIBS_SCRIPTS\"
-	eval export _PM2CONFIG_${_lib}_LIBS=\"\$PM2_${_LIB}_LIBS\"
+	eval _PM2CONFIG_${_lib}_LIBS=\"\$PM2_${_LIB}_LIBS\"
+	eval export _PM2CONFIG_${_lib}_LIBS
     done
     export _PM2CONFIG_LD_PATH
     pm2config_remove_dupplicates_keep_first _PM2CONFIG_LD_PATH

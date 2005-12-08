@@ -16,8 +16,7 @@
 
 #section common
 #ifdef OSF_SYS
-#depend "asm-generic/linux_bitops.h[marcel_macros]"
-#depend "asm-generic/linux_bitops.h[marcel_inline]"
+#depend "asm-generic/linux_bitops.h[]"
 #section marcel_macros
 #section marcel_inline
 

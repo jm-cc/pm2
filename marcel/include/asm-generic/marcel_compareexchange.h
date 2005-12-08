@@ -27,8 +27,8 @@ static __tbx_inline__ unsigned long
 pm2_compareexchange(volatile void *ptr, unsigned long old,
 		unsigned long new, int size) ;
 #section marcel_inline
-#depend "linux_spinlock.h"
-#depend "asm/linux_types.h"
+#depend "linux_spinlock.h[marcel_macros]"
+#depend "asm/linux_types.h[marcel_types]"
 #include <stdlib.h>
 static __tbx_inline__ unsigned long
 pm2_compareexchange(volatile void *ptr, unsigned long old,

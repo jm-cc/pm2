@@ -16,6 +16,13 @@
 
 #section common
 #include "tbx_compiler.h"
+#depend "asm/marcel_compareexchange.h[macros]"
+#section marcel_variables
+#depend "asm/marcel_compareexchange.h[marcel_variables]"
+#section marcel_macros
+#depend "asm/marcel_compareexchange.h[marcel_macros]"
+#section marcel_inline
+#depend "asm/marcel_compareexchange.h[marcel_inline]"
 /*
  * Similar to:
  * include/asm-generic/bitops.h
@@ -34,8 +41,6 @@
  */
 
 #section marcel_macros
-#depend "asm/marcel_compareexchange.h[macros]"
-#depend "asm/marcel_compareexchange.h[marcel_macros]"
 #define ATOMIC_BITOPT_RETURN(op,retexpr) \
 { \
 	unsigned long	mask, old, new, ret; \
@@ -157,8 +162,7 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
  * fls: find last bit set.
  */
 
-#section common
-#depend "linux_bitops.h[marcel_inline]"
+#section marcel_inline
 #define ma_fls(x) ma_generic_fls(x)
 
 /*
@@ -182,6 +186,8 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, unsigned long * addr)
 
 #define ma_smp_mb__before_clear_bit()   ma_barrier()
 #define ma_smp_mb__after_clear_bit()    ma_barrier()
+
+#depend "../autogen-include/linux_bitops.h[marcel_inline]"
 
 #section marcel_functions
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b);

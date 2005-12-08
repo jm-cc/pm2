@@ -16,6 +16,7 @@
 
 #section common
 #depend "asm/marcel_compareexchange.h[macros]"
+#depend "asm/marcel_compareexchange.h[marcel_variables]"
 #depend "asm/marcel_compareexchange.h[marcel_macros]"
 #depend "asm/marcel_compareexchange.h[marcel_inline]"
 #include "tbx_compiler.h"

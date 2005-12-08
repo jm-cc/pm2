@@ -19,6 +19,7 @@
 #include <errno.h>
 
 #ifdef MA__LWPS
+#ifdef LINUX_SYS
 #include <linux/unistd.h>
 #ifdef __NR_gettid
 #  ifdef _syscall0
@@ -39,6 +40,7 @@ int marcel_gettid(void) {
 	return getpid();
 #endif
 }
+#endif
 #endif
 
 #ifdef MA__SMP

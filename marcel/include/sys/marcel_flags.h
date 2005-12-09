@@ -182,10 +182,6 @@
 #  define MA__NUMA
 #endif
 
-#if defined(MA__LWPS) && defined(MA__TIMER)
-#  define MA_PROTECT_LOCK_TASK_FROM_SIG
-#endif
-
 #ifdef MARCEL_POSIX
 #  define MA__IFACE_PMARCEL
 #endif

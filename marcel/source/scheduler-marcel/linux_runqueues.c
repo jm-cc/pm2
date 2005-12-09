@@ -27,8 +27,9 @@ MA_DEFINE_RUNQUEUE(ma_dontsched_runqueue);
 MA_DEFINE_RUNQUEUE(ma_node_runqueue)[MARCEL_NBMAXNODES];
 MA_DEFINE_RUNQUEUE(ma_die_runqueue)[MARCEL_NBMAXDIES];
 MA_DEFINE_RUNQUEUE(ma_core_runqueue)[MARCEL_NBMAXCORES];
+MA_DEFINE_RUNQUEUE(ma_cpu_runqueue)[MARCEL_NBMAXCPUS];
 
-ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_core_runqueue};
+ma_runqueue_t *ma_level_runqueues[] = {ma_node_runqueue, ma_die_runqueue, ma_core_runqueue, ma_cpu_runqueue};
 #endif
 
 #ifdef MA__LWPS

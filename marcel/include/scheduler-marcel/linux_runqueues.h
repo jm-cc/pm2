@@ -145,6 +145,7 @@ extern ma_runqueue_t ma_dontsched_runqueue;
 extern ma_runqueue_t ma_node_runqueue[MARCEL_NBMAXNODES];
 extern ma_runqueue_t ma_die_runqueue[MARCEL_NBMAXDIES];
 extern ma_runqueue_t ma_core_runqueue[MARCEL_NBMAXCORES];
+extern ma_runqueue_t ma_cpu_runqueue[MARCEL_NBMAXCPUS];
 extern ma_runqueue_t *ma_level_runqueues[];
 #endif
 

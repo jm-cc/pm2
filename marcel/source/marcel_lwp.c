@@ -42,6 +42,9 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #ifdef WIN_SYS
 #include <windows.h>
 #endif
+#ifdef OSF_SYS
+#include <sys/cpuset.h>
+#endif
 #endif
 
 #ifdef MA__LWPS
@@ -406,8 +409,9 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 #elif defined(WIN_SYS)
 	DWORD mask = 1UL<<target;
 	SetThreadAffinityMask(GetCurrentThread(), mask);
+#elif defined(OSF_SYS)
+	pthread_use_only_cpu(pthread_self(), target, 0);
 #else
-	// TODO: WINDOWS: SetThreadAffinityMask()
 #error "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
 #endif
 	mdebug("LWP %u bound to processor %lu\n",

@@ -663,10 +663,10 @@ static void suspend_handler(any_t arg)
 {
   if((unsigned long)arg) {
     // Suspend
-    marcel_sem_P(&(marcel_self()->suspend_sem));
+    marcel_sem_P(&(SELF_GETMEM(suspend_sem)));
   } else {
     // Resume
-    marcel_sem_V(&(marcel_self()->suspend_sem));
+    marcel_sem_V(&(SELF_GETMEM(suspend_sem)));
   }
 }
 

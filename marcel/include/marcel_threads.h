@@ -161,7 +161,7 @@ static __tbx_inline__ void __marcel_thread_preemption_enable(void)
 	MA_BUG_ON(!SELF_GETMEM(not_preemptible));
 #endif
         ma_barrier();
-	MARCEL_SELF->not_preemptible--;
+	SELF_GETMEM(not_preemptible)--;
 }
 extern __tbx_inline__ void marcel_thread_preemption_enable(void)
 __tbx_extern_inline_body__(
@@ -170,7 +170,7 @@ __tbx_extern_inline_body__(
 
 static __tbx_inline__ void __marcel_thread_preemption_disable(void)
 {
-	MARCEL_SELF->not_preemptible++;
+	SELF_GETMEM(not_preemptible)++;
         ma_barrier();
 }
 

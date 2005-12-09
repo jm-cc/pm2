@@ -1048,7 +1048,7 @@ fastcall TBX_PROTECTED signed long ma_schedule_timeout(signed long timeout)
 			pm2debug("schedule_timeout: wrong timeout "
 				 "value %lx from %p\n", timeout,
 				 __builtin_return_address(0));
-			MARCEL_SELF->sched.state = MA_TASK_RUNNING;
+			SELF_GETMEM(sched).state = MA_TASK_RUNNING;
 			goto out;
 		}
 	}
@@ -1060,11 +1060,11 @@ fastcall TBX_PROTECTED signed long ma_schedule_timeout(signed long timeout)
 	timer.data = (unsigned long) MARCEL_SELF;
 	timer.function = process_timeout;
 
-	MARCEL_SELF->timer = &timer;
+	SELF_GETMEM(timer) = &timer;
 	ma_add_timer(&timer);
 	ma_schedule();
 	ma_del_timer_sync(&timer);
-	MARCEL_SELF->timer = NULL;
+	SELF_GETMEM(timer) = NULL;
 
 	timeout = expire - ma_jiffies;
 

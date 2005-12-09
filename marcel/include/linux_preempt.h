@@ -23,7 +23,7 @@
 
 #section marcel_macros
 
-#define ma_preempt_count() (MARCEL_SELF->preempt_count)
+#define ma_preempt_count() (SELF_GETMEM(preempt_count))
 
 #define ma_preempt_count_inc() \
 do { \
@@ -56,7 +56,7 @@ do { \
 #else
 #define ma_check_work() \
 do { \
-	if (!(MARCEL_SELF->sched.state & ~MA_TASK_INTERRUPTIBLE) \
+	if (!(SELF_GETMEM(sched).state & ~MA_TASK_INTERRUPTIBLE) \
 			&& HAS_DEVIATE_WORK(MARCEL_SELF)) \
 		ma_do_work(MARCEL_SELF); \
 } while (0)

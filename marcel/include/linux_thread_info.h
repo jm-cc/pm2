@@ -47,27 +47,27 @@ static __tbx_inline__ void ma_clear_need_resched(void);
 #depend "asm/linux_bitops.h[marcel_inline]"
 static __tbx_inline__ void ma_set_thread_flag(int flag)
 {
-	ma_set_bit(flag,&MARCEL_SELF->flags);
+	ma_set_bit(flag,&SELF_GETMEM(flags));
 }
 
 static __tbx_inline__ void ma_clear_thread_flag(int flag)
 {
-	ma_clear_bit(flag,&MARCEL_SELF->flags);
+	ma_clear_bit(flag,&SELF_GETMEM(flags));
 }
 
 static __tbx_inline__ int ma_test_and_set_thread_flag(int flag)
 {
-	return ma_test_and_set_bit(flag,&MARCEL_SELF->flags);
+	return ma_test_and_set_bit(flag,&SELF_GETMEM(flags));
 }
 
 static __tbx_inline__ int ma_test_and_clear_thread_flag(int flag)
 {
-	return ma_test_and_clear_bit(flag,&MARCEL_SELF->flags);
+	return ma_test_and_clear_bit(flag,&SELF_GETMEM(flags));
 }
 
 static __tbx_inline__ int ma_test_thread_flag(int flag)
 {
-	return ma_test_bit(flag,&MARCEL_SELF->flags);
+	return ma_test_bit(flag,&SELF_GETMEM(flags));
 }
 
 static __tbx_inline__ void ma_set_ti_thread_flag(marcel_task_t *ti, int flag)

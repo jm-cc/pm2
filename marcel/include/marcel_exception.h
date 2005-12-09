@@ -32,22 +32,22 @@
 #define WHEN_OTHERS    } else if(1) {
 #define END            } else _marcel_raise(NULL); }}
 
-#define RAISE(ex)      (marcel_self()->exfile=__FILE__,marcel_self()->exline=__LINE__,_marcel_raise(ex))
-#define RRAISE         (marcel_self()->exfile=__FILE__,marcel_self()->exline=__LINE__,_marcel_raise(NULL))
+#define RAISE(ex)      (SELF_GETMEM(exfile)=__FILE__,SELF_GETMEM(exline)=__LINE__,_marcel_raise(ex))
+#define RRAISE         (SELF_GETMEM(exfile)=__FILE__,SELF_GETMEM(exline)=__LINE__,_marcel_raise(NULL))
 
 /* =================== Quelques definitions utiles ==================== */
 
 #define LOOP(name)	{ marcel_exception_block_t _##name##_excep_blk; \
 	int _##name##_val; \
-	_##name##_excep_blk.old_blk=marcel_self()->cur_excep_blk; \
-	marcel_self()->cur_excep_blk=&_##name##_excep_blk; \
+	_##name##_excep_blk.old_blk=SELF_GETMEM(cur_excep_blk); \
+	SELF_GETMEM(cur_excep_blk)=&_##name##_excep_blk; \
 	if ((_##name##_val = marcel_ctx_setjmp(_##name##_excep_blk.ctx)) == 0) { \
 	while(1) {
 
 #define EXIT_LOOP(name) marcel_ctx_longjmp(_##name##_excep_blk.ctx, 2)
 
 #define END_LOOP(name) } } \
-	marcel_self()->cur_excep_blk=_##name##_excep_blk.old_blk; \
+	SELF_GETMEM(cur_excep_blk)=_##name##_excep_blk.old_blk; \
 	if(_##name##_val == 1) _marcel_raise(NULL); }
 
 #section types

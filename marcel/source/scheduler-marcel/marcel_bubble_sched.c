@@ -835,7 +835,7 @@ static void __marcel_init bubble_sched_init() {
 	PROF_EVENT2_ALWAYS(bubble_sched_switchrq,&marcel_root_bubble,&ma_main_runqueue);
 	__do_bubble_explode(&marcel_root_bubble,&ma_main_runqueue);
 	/* and fake main thread restart */
-	ma_dequeue_entity_rq(&MARCEL_SELF->sched.internal, &ma_main_runqueue);
+	ma_dequeue_entity_rq(&SELF_GETMEM(sched).internal, &ma_main_runqueue);
 #endif
 #ifdef MARCEL_BUBBLE_STEAL
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);

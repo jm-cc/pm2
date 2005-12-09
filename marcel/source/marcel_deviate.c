@@ -96,7 +96,7 @@ static void do_execute_deviate_work(void)
 // préemption désactivée lorsque l'on exécute cette fonction
 void marcel_execute_deviate_work(void)
 {
-  if(!marcel_self()->not_deviatable) {
+  if(!SELF_GETMEM(not_deviatable)) {
     marcel_lock_acquire(&deviate_lock);
 
     do_execute_deviate_work();
@@ -141,7 +141,7 @@ void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
   static void * volatile argument;
   static volatile long initial_sp;
 
-  if(marcel_ctx_setjmp(marcel_self()->ctx_yield) == FIRST_RETURN) {
+  if(marcel_ctx_setjmp(SELF_GETMEM(ctx_yield)) == FIRST_RETURN) {
     f_to_call = h;
     argument = arg;
 
@@ -233,7 +233,7 @@ void marcel_disable_deviation(void)
   ma_preempt_disable();
   marcel_lock_acquire(&deviate_lock);
 
-  ++marcel_self()->not_deviatable;
+  ++SELF_GETMEM(not_deviatable);
 
   marcel_lock_release(&deviate_lock);
   ma_preempt_enable();

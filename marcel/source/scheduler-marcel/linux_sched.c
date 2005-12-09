@@ -676,14 +676,14 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
-//	if (tbx_unlikely(!MARCEL_SELF->sched.internal.array))
+//	if (tbx_unlikely(!SELF_GETMEM(sched).internal.array))
 	if (MA_TASK_IS_BLOCKED(p))
 		ma_activate_task(p, h);
 //	else {
-//		p->sched.internal.prio = MARCEL_SELF->sched.internal.prio;
+//		p->sched.internal.prio = SELF_GETMEM(sched).internal.prio;
 //		list_add_tail(&p->sched.internal.run_list,
-//			      &MARCEL_SELF->sched.internal.run_list);
-//		p->sched.internal.data = MARCEL_SELF->sched.internal.data;
+//			      &SELF_GETMEM(sched).internal.run_list);
+//		p->sched.internal.data = SELF_GETMEM(sched).internal.data;
 //		p->sched.internal.data->nr_active++;
 //#ifdef MA__LWPS
 //		p->sched.internal.cur_holder = &rq.hold;
@@ -1599,7 +1599,7 @@ asmlinkage TBX_PROTECTED void ma_schedule(void)
 	 * Otherwise, whine if we are scheduling when we should not be.
 	 */
 	MA_BUG_ON(ma_preempt_count()<0);
-	if (tbx_likely(!(MARCEL_SELF->sched.state & MA_TASK_DEAD))) {
+	if (tbx_likely(!(SELF_GETMEM(sched).state & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
 			pm2debug("bad: scheduling while atomic (%06x)!\n",ma_preempt_count());
 			MA_BUG();

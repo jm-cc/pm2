@@ -294,15 +294,15 @@ static void marcel_sched_internal_create_helper() {
 
 		if(MA_THR_SETJMP(marcel_self()) == FIRST_RETURN) {
 			// On rend la main au père
-			PROF_SWITCH_TO(marcel_self()->number, marcel_self()->father);
+			PROF_SWITCH_TO(SELF_GETMEM(number), SELF_GETMEM(father));
 			call_ST_FLUSH_WINDOWS();
-			marcel_ctx_longjmp(marcel_self()->father->ctx_yield,
+			marcel_ctx_longjmp(SELF_GETMEM(father)->ctx_yield,
 					   NORMAL_RETURN);
 		}
 		MA_THR_RESTARTED(MARCEL_SELF, "Start");
 		/* Drop preempt_count with ma_spin_unlock_softirq */
 		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
-		marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
+		marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 		LOG_OUT();
 		return;
 }
@@ -426,9 +426,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		MA_ACT_SET_THREAD(MARCEL_SELF);
 
 		/* ré-enqueuer le père */
-		h = ma_task_sched_holder(marcel_self()->father);
+		h = ma_task_sched_holder(SELF_GETMEM(father));
 		ma_holder_rawlock(h);
-		ma_enqueue_task(marcel_self()->father, h);
+		ma_enqueue_task(SELF_GETMEM(father), h);
 		h->nr_scheduled--;
 		ma_holder_unlock_softirq(h); // sortie du mode interruption
 
@@ -441,7 +441,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 	/* pas de ma_preempt_enable ici : le preempt a déjà été mangé dans ma_schedule_tail */
 	//ma_preempt_enable();
 	LOG_OUT();
-	marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
+	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
 
 #section marcel_structures

@@ -135,9 +135,9 @@ struct marcel_sched_task {
 	ma_set_mb((tsk)->sched.state, (state_value))
 
 #define __ma_set_current_state(state_value)			\
-	do { MARCEL_SELF->sched.state = (state_value); } while (0)
+	do { SELF_GETMEM(sched).state = (state_value); } while (0)
 #define ma_set_current_state(state_value)		\
-	ma_set_mb(MARCEL_SELF->sched.state, (state_value))
+	ma_set_mb(SELF_GETMEM(sched).state, (state_value))
 
 #define MA_TASK_IS_FROZEN(tsk) (!(tsk)->sched.state == MA_TASK_FROZEN)
 

@@ -75,31 +75,31 @@ pthread_t pthread_self(void)
 	return (pthread_t)marcel_self();
 }
 
-static int _fisrt_errno=0;
-static int _initialized=0;
+static int _first_errno;
+static int _initialized;
 
 int * __errno_location()
 {
 	int * res;
 
 	if (_initialized) {
-		res=&marcel_self()->__errno;
+		res=&SELF_GETMEM(__errno);
 	} else {
-		res=&_fisrt_errno;
+		res=&_first_errno;
 	}
 	return res;
 }
 
-static int _fisrt_h_errno=0;
+static int _first_h_errno;
 
 int * __h_errno_location()
 {
 	int * res;
 
 	if (_initialized) {
-		res=&marcel_self()->__h_errno;
+		res=&SELF_GETMEM(__h_errno);
 	} else {
-		res=&_fisrt_h_errno;
+		res=&_first_h_errno;
 	}
 	return res;
 }
@@ -113,7 +113,7 @@ __res_state (void)
 	struct __res_state * res;
 
 	if (_initialized) {
-		res=&marcel_self()->__res_state;
+		res=&SELF_GETMEM(__res_state);
 	} else {
 		res=&_fisrt_res_state;
 	}

@@ -22,7 +22,7 @@ DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
    if((key < 0) || (key >= marcel_nb_keys))
       RAISE(CONSTRAINT_ERROR);
 #endif
-   marcel_self()->key[key] = (any_t)value;
+   SELF_GETMEM(key)[key] = (any_t)value;
    return 0;
 }
 DEF_PTHREAD(int, setspecific, (pthread_key_t key,
@@ -36,7 +36,7 @@ DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key))
    if((key < 0) || (key>=MAX_KEY_SPECIFIC) || (!marcel_key_present[key]))
       RAISE(CONSTRAINT_ERROR);
 #endif
-   return marcel_self()->key[key];
+   return SELF_GETMEM(key)[key];
 }
 DEF_PTHREAD(any_t, getspecific, (pthread_key_t key), (key))
 DEF___PTHREAD(any_t, getspecific, (pthread_key_t key), (key))

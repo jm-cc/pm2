@@ -63,7 +63,7 @@ typedef struct s_ntbx_topology_table    *p_ntbx_topology_table_t;
 typedef struct s_ntbx_pack_buffer
 {
   char buffer[NTBX_PACK_BUFFER_LEN];
-} ntbx_pack_buffer_t, *p_ntbx_pack_buffer_t TBX_ALIGN(64);
+} ntbx_pack_buffer_t, *p_ntbx_pack_buffer_t;
 
 
 /*

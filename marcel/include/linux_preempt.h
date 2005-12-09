@@ -52,9 +52,9 @@ do { \
 } while (0)
 
 #ifndef MA__WORK
-#define check_work()
+#define ma_check_work()
 #else
-#define check_work() \
+#define ma_check_work() \
 do { \
 	if (!(MARCEL_SELF->sched.state & ~MA_TASK_INTERRUPTIBLE) \
 			&& HAS_DEVIATE_WORK(MARCEL_SELF)) \
@@ -66,7 +66,7 @@ do { \
 do { \
         ma_barrier(); \
 	if (ma_last_preempt()) \
-        	check_work(); \
+        	ma_check_work(); \
         ma_preempt_count_dec(); \
 } while (0)
 

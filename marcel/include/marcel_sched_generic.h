@@ -45,15 +45,7 @@ unsigned marcel_nbthreads(void);
 unsigned long marcel_createdthreads(void);
 
 #section marcel_functions
-//asmlinkage void marcel_sched_do_work(void);
-
 void marcel_gensched_shutdown(void);
-
-//extern int FASTCALL(marcel_wake_up_state(marcel_task_t * tsk, unsigned int state));
-//extern int FASTCALL(marcel_wake_up_thread(marcel_task_t * tsk));
-//extern int FASTCALL(marcel_wake_up_thread_kick(task_t * tsk));
-//extern void FASTCALL(marcel_wake_up_created_thread(marcel_task_t * tsk));
-//extern void FASTCALL(marcel_sched_thread_exit(marcel_task_t * p));
 
 void marcel_one_task_less(marcel_t pid);
 void marcel_one_more_task(marcel_t pid);
@@ -94,7 +86,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
                 INTERRUPTIBLE, \
                 cond, \
                 release, \
-                { /*marcel_sched_do_work();*/ get; } )
+                { ma_check_work(); get; } )
 
 #section functions
 /* ==== explicit preemption ==== */

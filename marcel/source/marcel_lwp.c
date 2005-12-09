@@ -410,9 +410,12 @@ inline static void bind_on_processor(marcel_lwp_t *lwp)
 	DWORD mask = 1UL<<target;
 	SetThreadAffinityMask(GetCurrentThread(), mask);
 #elif defined(OSF_SYS)
-	pthread_use_only_cpu(pthread_self(), target, 0);
+	if (pthread_use_only_cpu(pthread_self(), target, 0)) {
+		perror("pthread_use_only_cpu");
+		exit(1);
+	}
 #else
-#error "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
+#warning "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
 #endif
 	mdebug("LWP %u bound to processor %lu\n",
 			LWP_NUMBER(lwp), target);

@@ -60,7 +60,7 @@ MA_DECLARE_PER_LWP(marcel_task_t *, run_task);
 #    undef MAX_LWP
 #    define MAX_LWP ACT_NB_MAX_CPU
 #  else
-#    define MA_NR_LWPS 32
+#    define MA_NR_LWPS (sizeof(unsigned long)*8)
 #  endif
 #else
 #  define MA_NR_LWPS 1

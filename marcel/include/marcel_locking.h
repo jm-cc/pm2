@@ -32,6 +32,15 @@ typedef ma_spinlock_t marcel_lock_t;
 #define marcel_lock_release(l)    ma_spin_unlock(l)
 #define marcel_lock_locked(l)     ma_spin_is_locked(l)
 
+#section marcel_macros
+/****************************************************************
+ * Pour la compatibilité avec lock_task et assimilé
+ */
+
+#define lock_task() ma_preempt_disable()
+#define unlock_task() ma_preempt_enable()
+#define locked() ma_preempt_count()
+
 #section functions
 #ifdef MA__LIBPTHREAD
 #define marcel_extlib_protect()

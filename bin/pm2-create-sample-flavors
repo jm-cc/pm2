@@ -77,7 +77,7 @@ registering_flavors() {
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
 	--marcel=mono --marcel=main_as_func \
-	--marcel=posix --marcel=pthread --common=link_pm2_shared
+	--marcel=pmarcel --marcel=pthread --common=link_pm2_shared
 
     register_flavor sigmund \
 	--modules="sigmundlib sigmund sigmundps xsigmund supertrace" \

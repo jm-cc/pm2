@@ -44,7 +44,7 @@ if read proto cookie && [ -n "$DISPLAY" ]; then
 	else
 		# X11UseLocalhost=no
 		echo add $DISPLAY $proto $cookie
-	fi | xauth -f "/tmp/${USER}_xa$suf" -q -
+	fi | xauth -f "/tmp/.${USER}_xa$suf" -q -
 fi
 ----------------------------------------------------
 
@@ -56,7 +56,7 @@ ${HOME}/.bashrc) :
 if [ -n "$DISPLAY" ];
 then
 	suf=`echo $DISPLAY | cut -c11-`
-	export XAUTHORITY="/tmp/${USER}_xa$suf"
+	export XAUTHORITY="/tmp/.${USER}_xa$suf"
 fi
 ----------------------------------------------------
 
@@ -66,7 +66,7 @@ Rajoutez dans ${HOME}/.cshrc (ou ${HOME}/.tcshrc si nécessaire)
 ----------------------------------------------------
 if ( $?DISPLAY ) then
 	suf="`echo $DISPLAY | cut -c11-`"
-	setenv XAUTHORITY "/tmp/${USER}_xa$suf"
+	setenv XAUTHORITY "/tmp/.${USER}_xa$suf"
 endif
 
 

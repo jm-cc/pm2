@@ -440,13 +440,14 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 #endif /* MA__LWPS */
 
 #ifdef MA__NUMA
+#ifdef LINUX_SYS
 void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 	void *p;
 	if (node < 0 || numa_available()==-1)
 		return marcel_malloc(size, file, line);
-	lock_task();
+	marcel_extlib_protect();
 	p = numa_alloc_onnode(size, node);
-	unlock_task();
+	marcel_extlib_unprotect();
 	if (p == NULL)
 		return marcel_malloc(size, file, line);
 	return p;
@@ -454,8 +455,11 @@ void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 void ma_free_node(void *ptr, unsigned size, int node, char * __restrict file, unsigned line) {
 	if (node < 0 || numa_available()==-1)
 		return marcel_free(ptr, file, line);
-	lock_task();
+	marcel_extlib_protect();
 	numa_free(ptr, size);
-	unlock_task();
+	marcel_extlib_unprotect();
 }
+#else
+#warning "don't know how to allocate memory on specific nodes, please disable numa in flavor"
+#endif
 #endif

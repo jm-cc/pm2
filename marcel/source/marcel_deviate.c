@@ -50,7 +50,7 @@ static void deviate_record_free(deviate_record_t *rec)
   next_free = rec;
 }
 
-// locked() == 1 et marcel_lock_locked(deviate_lock) == 1
+// préemption désactivée et marcel_lock_locked(deviate_lock) == 1
 static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 {
   deviate_record_t *ptr = deviate_record_alloc();
@@ -66,7 +66,7 @@ static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
 #endif
 }
 
-// locked() == 1 et marcel_lock_locked(deviate_lock) == 1
+// préemption désactivée et marcel_lock_locked(deviate_lock) == 1
 static void do_execute_deviate_work(void)
 {
   marcel_t cur = marcel_self();
@@ -80,11 +80,11 @@ static void do_execute_deviate_work(void)
     deviate_record_free(ptr);
 
     marcel_lock_release(&deviate_lock);
-    unlock_task();
+    ma_preempt_enable();
 
     (*h)(arg);
 
-    lock_task();
+    ma_preempt_disable();
     marcel_lock_acquire(&deviate_lock);
   }
 
@@ -93,7 +93,7 @@ static void do_execute_deviate_work(void)
 #endif
 }
 
-// locked() == 1 lorsque l'on exécute cette fonction
+// préemption désactivée lorsque l'on exécute cette fonction
 void marcel_execute_deviate_work(void)
 {
   if(!marcel_self()->not_deviatable) {
@@ -122,11 +122,11 @@ static void insertion_relai(handler_func_t f, void *arg)
   } else {
     MA_THR_RESTARTED(cur, "Deviation");
     MA_BUG_ON(!ma_in_atomic());
-    unlock_task();
+    ma_preempt_enable();
 
     (*f)(arg);
 
-    lock_task();
+    ma_preempt_disable();
     marcel_ctx_longjmp(back, NORMAL_RETURN);
   }
 }
@@ -162,15 +162,15 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 { 
   LOG_IN();
 
-  lock_task();
+  ma_preempt_disable();
   if (pid == marcel_self()) {
     if (pid->not_deviatable) {
       marcel_lock_acquire(&deviate_lock);
       marcel_deviate_record(pid, h, arg);
       marcel_lock_release(&deviate_lock);
-      unlock_task();
+      ma_preempt_enable();
     } else {
-      unlock_task();
+      ma_preempt_enable();
       (*h)(arg);
     }
     LOG_OUT();
@@ -186,20 +186,11 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
     marcel_deviate_record(pid, h, arg);
 
     marcel_lock_release(&deviate_lock);
-    unlock_task();
+    ma_preempt_enable();
 
     LOG_OUT();
     return;
   }
-#if 0
-  // Idée abandonnée
-  if (marcel_sched_try_deviate(pid, h, arg)) {
-    marcel_lock_release(&deviate_lock);
-    unlock_task();
-    LOG_OUT();
-    return;
-  }
-#endif
 
   // En premier lieu, il faut empêcher la tâche 'cible' de changer
   // d'état
@@ -209,16 +200,9 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
   marcel_deviate_record(pid, h, arg);
   
   marcel_lock_release(&deviate_lock);
-  unlock_task();
+  ma_preempt_enable();
 
   ma_wake_up_state(pid,MA_TASK_INTERRUPTIBLE|MA_TASK_FROZEN);
-#ifdef MA__SMP
-  // Heuristique: on va essayer d'accélérer les choses...
-  // TODO: chercher plutôt un lwp qui atteint la runqueue...
-  ma_lwp_t target_lwp = GET_LWP(pid);
-  if (target_lwp!=LWP_SELF)
-    marcel_kthread_kill(target_lwp->pid, MARCEL_TIMER_SIGNAL);
-#endif
 
   LOG_OUT();
   return;
@@ -241,27 +225,23 @@ void marcel_enable_deviation(void)
 {
   marcel_t cur = marcel_self();
 
-  //lock_task();
-
+  ma_preempt_disable();
   marcel_lock_acquire(&deviate_lock);
 
   if(--cur->not_deviatable == 0)
     do_execute_deviate_work();
 
   marcel_lock_release(&deviate_lock);
-
-  //unlock_task();
+  ma_preempt_enable();
 }
 
 void marcel_disable_deviation(void)
 {
-  //lock_task();
-
+  ma_preempt_disable();
   marcel_lock_acquire(&deviate_lock);
 
   ++marcel_self()->not_deviatable;
 
   marcel_lock_release(&deviate_lock);
-
-  //unlock_task();
+  ma_preempt_enable();
 }

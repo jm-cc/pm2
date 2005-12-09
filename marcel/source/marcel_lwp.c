@@ -168,7 +168,7 @@ static void *lwp_kthread_start_func(void *arg)
 	LOG_IN();
 
 	/* Le unlock du changement de contexte */
-	unlock_task();
+	ma_preempt_enable();
 
 	mdebug("\t\t\t<LWP %d started (self == %lx)>\n",
 	       ma_per_lwp(number,lwp), (unsigned long)marcel_kthread_self());
@@ -179,11 +179,9 @@ static void *lwp_kthread_start_func(void *arg)
 
 	mdebug("\t\t\t<LWP %d exiting>\n", ma_per_lwp(number,lwp));
 
-	lock_task();
 	lwp_list_lock_write();
 	list_del(&lwp->lwp_list);	
 	lwp_list_unlock_write();
-	unlock_task();
 
 	marcel_kthread_exit(NULL);
 	LOG_OUT();
@@ -302,21 +300,6 @@ static void lwp_init(ma_lwp_t lwp)
 #endif
  
 	lwp->polling_list = NULL;
-	
-	// ATTENTION: la tentation est forte d'initialiser _locked à 2
-	// pour éviter le 'lock_task' juste après. Erreur: cela ne
-	// serait valable que pour la création du _premier_ lwp car
-	// ensuite, cur_lwp != lwp...
-
-	// Le lwp est créé dans l'état locked : tant que le scheduler
-	// ne le remet pas dans l'état not locked, il n'y aura pas de
-	// changement de contexte non voulu.
-	//atomic_set(&lwp->_locked, 1);
-
-	// A cet endroit, on peut appeler 'lock_task'. Pour le premier
-	// LWP, on passera à 2, pour les autres, on passera à 1 sur le
-	// LWP courant.
-	//lock_task();
 
 	if (IS_FIRST_LWP(lwp)) {
 		ma_per_lwp(run_task, lwp)=MARCEL_SELF;

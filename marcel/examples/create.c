@@ -78,9 +78,6 @@ any_t main_thread(void *arg)
 	marcel_create(NULL, &attr, f, (any_t)&sem);
 	marcel_sem_P(&sem);
       } else {
-#ifndef SMP
-	//      lock_task();
-#endif
 	TBX_GET_TICK(t1);
 #ifdef PROFILE
 	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -91,9 +88,6 @@ any_t main_thread(void *arg)
 	profile_stop();
 #endif
 	TBX_GET_TICK(t2);
-#ifndef SMP
-	//unlock_task();
-#endif
 	printf("time =  %fus\n", TBX_TIMING_DELAY(t1, t2));
       }
     }

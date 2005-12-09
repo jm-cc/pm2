@@ -243,7 +243,7 @@ void marcel_gensched_shutdown(void)
 
 	//lwp = next_lwp(&__main_lwp);
 
-	lock_task();
+	ma_preempt_disable();
 	for(;;) {
 		lwp_found=NULL;
 		lwp_list_lock_read();
@@ -254,13 +254,13 @@ void marcel_gensched_shutdown(void)
 			}
 		}
 		lwp_list_unlock_read();
-		unlock_task();
+		ma_preempt_enable();
 
 		if (!lwp_found) {
 			break;
 		}
 		marcel_lwp_stop_lwp(lwp_found);
-		lock_task();
+		ma_preempt_disable();
 	}
 #elif defined(MA__ACTIVATION)
 	// TODO : arrêter les autres activations...

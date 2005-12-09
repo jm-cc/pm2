@@ -500,7 +500,7 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 	// Ici, la pile a été allouée par le noyau Marcel
 
 	// Il faut acquérir le sémaphore pour postexit avant
-	// d'exécuter lock_task.
+	// de désactiver la préemption
 	marcel_sem_P(&ma_per_lwp(postexit_space,cur_lwp));
 	if (!cur->detached) {
 		ma_per_lwp(postexit_func,cur_lwp)=detach_func;
@@ -514,12 +514,12 @@ static void TBX_NORETURN marcel_exit_internal(any_t val, int special_mode)
 
 	// Il peut paraître stupide de démarrer le thread exécutant la
 	// fonction postexit si tôt. Premièrement, ce n'est pas grave
-	// car lock_task garanti qu'aucun autre thread (sur le LWP) ne
-	// sera ordonnancé. Deuxièmement, il _faut_ relâcher ce verrou
-	// très tôt (avant d'exécuter unchain_task) car sinon la tâche
-	// idle risquerait d'être réveillée (par unchain_task) alors
-	// que sem_V réveillerait par ailleurs une autre tâche du
-	// programme !
+	// car désactiver la préemption garantit qu'aucun autre thread
+	// (sur le LWP) ne sera ordonnancé. Deuxièmement, il _faut_
+	// relâcher ce verrou très tôt (avant d'exécuter unchain_task)
+	// car sinon la tâche idle risquerait d'être réveillée (par
+	// unchain_task) alors que sem_V réveillerait par ailleurs une
+	// autre tâche du programme !
 	marcel_sem_V(&ma_per_lwp(postexit_thread, cur_lwp)); /* idem ci-dessus */
 
 	// Même remarque que précédemment : main_thread peut être
@@ -747,7 +747,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 #endif
 
   if(t == cur) {
-    lock_task();
+    ma_preempt_disable();
     if(marcel_ctx_setjmp(cur->ctx_migr) == FIRST_RETURN) {
 
       call_ST_FLUSH_WINDOWS();
@@ -773,7 +773,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 #endif
       MA_THR_RESTARTED(MARCEL_SELF,"End of hibernation");
       ma_schedule_tail(__ma_get_lwp_var(previous_thread));
-      unlock_task();
+      ma_preempt_enable();
     }
   } else {
     memcpy(t->ctx_migr, t->ctx_yield, sizeof(marcel_ctx_t));
@@ -812,7 +812,7 @@ void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void
 
   mdebug("end of hibernation for thread %p", t);
 
-  lock_task();
+  ma_preempt_disable();
 
   marcel_sched_init_marcel_thread(t, &marcel_attr_default);
   t->preempt_count=(2*MA_PREEMPT_OFFSET)|MA_SOFTIRQ_OFFSET;
@@ -828,7 +828,7 @@ void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f, void
   if(f != NULL)
     marcel_deviate(t, f, arg);
 
-  unlock_task();
+  ma_preempt_enable();
 }
 
 static void __marcel_init main_thread_init(void)

@@ -111,7 +111,7 @@
 #  undef MA__INTERRUPTS_FIX_LWP
 #endif
 
-/* MA__WORK : utilisation des files de travail à la fin des unlock_task()
+/* MA__WORK : utilisation des files de travail à la fin des ma_preempt_enable()
  * */
 #ifdef MA__WORK
 #  undef MA__WORK

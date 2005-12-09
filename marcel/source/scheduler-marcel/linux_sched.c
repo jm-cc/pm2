@@ -1917,10 +1917,8 @@ DEF_MARCEL_POSIX(int, yield, (void), ())
 {
   LOG_IN();
 
-  //lock_task();
   marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
   marcel_yield_intern();
-  //unlock_task();
 
   LOG_OUT();
   return 0;

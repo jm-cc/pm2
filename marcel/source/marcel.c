@@ -43,7 +43,7 @@
 int _jmg(int r)
 {
   if(r!=0) 
-    unlock_task();
+    ma_preempt_enable();
   return r;
 }
 
@@ -53,7 +53,7 @@ void LONGJMP(jmp_buf buf, int val)
   static jmp_buf _buf;
   static int _val;
 
-  lock_task();
+  ma_preempt_disable();
   memcpy(_buf, buf, sizeof(jmp_buf));
   _val = val;
 #ifdef PM2_DEV
@@ -74,8 +74,7 @@ marcel_exception_t
    STACK_ERROR = "STACK_ERROR: Stack Overflow",
    TIME_OUT = "TIME OUT while being blocked on a semaphor",
    NOT_IMPLEMENTED = "NOT_IMPLEMENTED (sorry)",
-   USE_ERROR = "USE_ERROR: Marcel was not compiled to enable this functionality",
-   LOCK_TASK_ERROR = "LOCK_TASK_ERROR: All tasks blocked after bad use of lock_task()";
+   USE_ERROR = "USE_ERROR: Marcel was not compiled to enable this functionality";
 
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
@@ -95,15 +94,15 @@ unsigned long marcel_usablestack(void)
 }
 
 /* marcel_malloc, marcel_calloc, marcel_free:
-   avoid lock/unlock_task penalty on trivial requests */
+   avoid locking penalty on trivial requests */
 void *marcel_malloc(unsigned size, char *file, unsigned line)
 {
         void *p;
 
         if (size) {
-                lock_task();
+		marcel_extlib_protect();
                 p = __TBX_MALLOC(size, file, line);
-                unlock_task();
+		marcel_extlib_unprotect();
                 if(p == NULL)
                         RAISE(STORAGE_ERROR);
         } else {
@@ -117,9 +116,9 @@ void *marcel_realloc(void *ptr, unsigned size, char * __restrict file, unsigned 
 {
         void *p;
 
-        lock_task();
+	marcel_extlib_protect();
         p = __TBX_REALLOC(ptr, size, file, line);
-        unlock_task();
+	marcel_extlib_unprotect();
         if(p == NULL)
                 RAISE(STORAGE_ERROR);
 
@@ -131,9 +130,9 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
         void *p;
 
         if (nelem && elsize) {
-                lock_task();
+		marcel_extlib_protect();
                 p = __TBX_CALLOC(nelem, elsize, file, line);
-                unlock_task();
+		marcel_extlib_unprotect();
                 if(p == NULL)
                         RAISE(STORAGE_ERROR);
         } else {
@@ -146,9 +145,9 @@ void *marcel_calloc(unsigned nelem, unsigned elsize, char *file, unsigned line)
 void marcel_free(void *ptr, char * __restrict file, unsigned line)
 {
         if(ptr) {
-                lock_task();
+		marcel_extlib_protect();
                 __TBX_FREE((char *)ptr, file, line);
-                unlock_task();
+		marcel_extlib_unprotect();
         }
 }
 
@@ -166,7 +165,6 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 				   marcel_key_destructor_t func), (key, func))
 { /* pour l'instant, le destructeur n'est pas utilise */
 
-   //lock_task();
    marcel_lock_acquire(&marcel_key_lock);
    while ((++marcel_last_key < MAX_KEY_SPECIFIC) &&
 	  (marcel_key_present[marcel_last_key])) {
@@ -175,7 +173,6 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
      /* sinon, il faudrait remettre à 0 toutes les valeurs spécifiques
 	des threads existants */
       marcel_lock_release(&marcel_key_lock);
-      //unlock_task();
       RAISE(CONSTRAINT_ERROR);
 /*        marcel_last_key=0; */
 /*        while ((++marcel_last_key < MAX_KEY_SPECIFIC) && */
@@ -183,7 +180,6 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 /*        } */
 /*        if(new_key == MAX_KEY_SPECIFIC) { */
 /*  	 marcel_lock_release(&marcel_key_lock); */
-/*  	 unlock_task(); */
 /*  	 RAISE(CONSTRAINT_ERROR); */
 /*        } */
    }
@@ -192,7 +188,6 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
    marcel_key_present[marcel_last_key]=1;
    marcel_key_destructor[marcel_last_key]=func;
    marcel_lock_release(&marcel_key_lock);
-   //unlock_task();
    return 0;
 }
 DEF_PTHREAD(int, key_create, (pthread_key_t *key, 
@@ -203,7 +198,6 @@ DEF___PTHREAD(int, key_create, (pthread_key_t *key,
 DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
 { /* pour l'instant, le destructeur n'est pas utilise */
 
-   //lock_task();
    marcel_lock_acquire(&marcel_key_lock);
    if (marcel_key_present[key]) {
       marcel_nb_keys--;
@@ -211,7 +205,6 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key))
       marcel_key_destructor[key]=NULL;
    }
    marcel_lock_release(&marcel_key_lock);
-   //unlock_task();
    return 0;
 }
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))

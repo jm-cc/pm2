@@ -97,8 +97,6 @@ extern debug_type_t marcel_debug_work;
 extern debug_type_t marcel_debug_deviate;
 extern debug_type_t marcel_mdebug_sched_q;
 
-extern debug_type_t marcel_lock_task_debug;
-
 extern debug_type_t marcel_sched_debug;
 extern debug_type_t marcel_bubble_sched_debug;
 
@@ -143,10 +141,6 @@ extern debug_type_t marcel_mtrace_timer;
 #endif
 #define MA_BUG() MA_BUG_ON(1)
 
-#ifdef DEBUG_LOCK_TASK
-#  define lock_task_debug(fmt, ...) debug_printf(&marcel_lock_task_debug, \
-        fmt, ##__VA_ARGS__)
-#endif
 #ifdef DEBUG_SCHED
 #  define sched_debug(fmt, ...) debug_printf(&marcel_sched_debug, \
         fmt, ##__VA_ARGS__)

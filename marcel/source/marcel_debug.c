@@ -36,11 +36,6 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_deviate=
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug_sched_q=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug-sched-q", &marcel_debug);
 
-#ifdef DEBUG_LOCK_TASK
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_lock_task_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-locktask", &marcel_debug);
-#endif
-
 #ifdef DEBUG_SCHED
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);
@@ -66,10 +61,6 @@ void marcel_debug_init(int* argc, char** argv, int debug_flags)
 	if (called) 
 		return;
 	called=1;
-
-#ifdef DEBUG_LOCK_TASK
-	pm2debug_setup(&marcel_lock_task_debug, PM2DEBUG_SHOW_FILE, 1);
-#endif
 
 	pm2debug_init_ext(argc, argv, debug_flags);
 }

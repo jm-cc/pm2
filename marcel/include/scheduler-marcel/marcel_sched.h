@@ -341,7 +341,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		) {
 		// Ici, le père _ne_doit_pas_ donner la main au fils
 		// immédiatement car : 
-		// - ou bien lock_task() a été appelé,
+		// - ou bien ma_preempt_disable() a été appelé,
 		// - ou bien le fils va être inséré sur un autre LWP,
 		// La conséquence est que le thread fils est créé et
 		// initialisé, mais pas "inséré" dans une quelconque
@@ -438,8 +438,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		PROF_SET_THREAD_NAME();
 	}
 	
-	/* pas de unlock_task ici : le preempt a déjà été mangé dans ma_schedule_tail */
-	//unlock_task();
+	/* pas de ma_preempt_enable ici : le preempt a déjà été mangé dans ma_schedule_tail */
+	//ma_preempt_enable();
 	LOG_OUT();
 	marcel_exit((*marcel_self()->f_to_call)(marcel_self()->arg));
 }

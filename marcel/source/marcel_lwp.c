@@ -148,7 +148,7 @@ void marcel_lwp_start(marcel_lwp_t *lwp)
  */
 static void* lwp_start_func(void* arg)
 {
-	marcel_lwp_start(GET_LWP(marcel_self()));
+	marcel_lwp_start(LWP_SELF);
 	marcel_exit_special(0);
 	return NULL; /* For gcc */
 }

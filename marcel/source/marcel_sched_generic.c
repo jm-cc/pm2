@@ -147,7 +147,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 	marcel_t t;
 	int nb_pids = 0;
 	ma_lwp_t lwp;
-	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
+	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
 
 
 	if( ((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
@@ -175,7 +175,7 @@ void marcel_snapshot(snapshot_func_t f)
 {
 	marcel_t t;
 	ma_lwp_t lwp;
-	DEFINE_CUR_LWP(, TBX_UNUSED =, GET_LWP(marcel_self()));
+	DEFINE_CUR_LWP(, TBX_UNUSED =, LWP_SELF);
 
 	for_each_lwp_begin(lwp)
 		ma_spin_lock_softirq(&ma_per_lwp(threadlist_lock, lwp));
@@ -238,7 +238,7 @@ void marcel_gensched_shutdown(void)
 #ifdef MA__SMP
 
 
-	if(GET_LWP(marcel_self()) != &__main_lwp)
+	if(LWP_SELF != &__main_lwp)
 		RAISE(PROGRAM_ERROR);
 
 	//lwp = next_lwp(&__main_lwp);
@@ -248,7 +248,7 @@ void marcel_gensched_shutdown(void)
 		lwp_found=NULL;
 		lwp_list_lock_read();
 		for_all_lwp(lwp) {
-			if (lwp != GET_LWP(marcel_self())) {
+			if (lwp != LWP_SELF) {
 				lwp_found=lwp;
 				break;
 			}

@@ -537,7 +537,7 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 		if (get_action_value(type, PM2DEBUG_SHOW_LWP)) {
 			my_print("[P%02d] ", 
 				 ((marcel_printf_allowed()
-				   && GET_LWP(marcel_self())) 
+				   && LWP_SELF) 
 				  ? GET_LWP_NUMBER(marcel_self()) : -1));
 		}
 #endif

@@ -72,8 +72,7 @@ extern marcel_exception_t
   STACK_ERROR,
   TIME_OUT,
   NOT_IMPLEMENTED,
-  USE_ERROR,
-  LOCK_TASK_ERROR;
+  USE_ERROR;
 
 #section functions
 #include "tbx_compiler.h"

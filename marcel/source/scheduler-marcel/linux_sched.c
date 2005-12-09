@@ -1907,10 +1907,6 @@ need_resched:
                 goto need_resched;
 }
 
-#define reschedule_idle(p) RAISE(NOT_IMPLEMENTED)
-
-#define lwp_id() GET_LWP_NUMBER(MARCEL_SELF()) // TODO: Bof
-
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...
 DEF_MARCEL_POSIX(int, yield, (void), ())

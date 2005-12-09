@@ -210,13 +210,6 @@ void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
 	// Tant pis !
   RAISE(NOT_IMPLEMENTED);
 #endif
-    // La tâche n'est pas dans la file des threads prêts. On va donc
-    // l'y insérer. ATTENTION: il faut éviter qu'un autre LWP 'vole'
-    // la tâche avant que l'on ait pu la dévier. Il suffit pour cela
-    // de la dévier _avant_ sa réinsertion...
-    //marcel_do_deviate(pid, h, arg);
-
-    //marcel_wake_up_thread(pid);
 
   LOG_OUT();
 }

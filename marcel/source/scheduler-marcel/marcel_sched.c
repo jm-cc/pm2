@@ -580,12 +580,6 @@ static __inline__ void idle_check_tasks_to_wake(marcel_lwp_t *lwp)
 
   IDLE_LOG_OUT();
 }
-
-extern int FASTCALL(marcel_wake_up_thread(marcel_task_t * tsk))
-{
-	return 0;
-
-};
 #endif
 
 #ifdef MA__LWPS

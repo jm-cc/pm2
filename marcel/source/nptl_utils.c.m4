@@ -22,7 +22,7 @@ dnl  ***************************/
 #include "marcel.h"
 
 #include <errno.h>
-#ifdef MA__LIBPTHREAD
+#if defined(MA__IFACE_PMARCEL) || defined(MA__IFACE_LPT) || defined(MA__LIBPTHREAD)
 #include <pthread.h>
 #endif
 

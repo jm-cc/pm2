@@ -103,7 +103,7 @@ tbx_malloc_init(p_tbx_memory_t *mem,
   CTRL_ALLOC(temp_mem);
 
   TBX_INIT_SHARED(temp_mem);
-  if (TBX_MALLOC_DEBUG_NAME && (tbx_streq(TBX_MALLOC_DEBUG_NAME, name))) {
+  if (TBX_MALLOC_DEBUG_NAME != NULL && (tbx_streq(TBX_MALLOC_DEBUG_NAME, name))) {
     pm2debug("tbx_malloc_init: %s\n", name);
   }
 
@@ -170,7 +170,7 @@ tbx_malloc(p_tbx_memory_t mem)
       mem->first_new++;
     }
 
-  if (TBX_MALLOC_DEBUG_NAME && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
+  if (TBX_MALLOC_DEBUG_NAME != NULL && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
     pm2debug("tbx_malloc(%s): 0x%p\n", mem->name, ptr);
   }
 
@@ -197,7 +197,8 @@ tbx_free(p_tbx_memory_t  mem,
   memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
 #endif /* TBX_MALLOC_BTRACE_DEPTH */
 
-  if (TBX_MALLOC_DEBUG_NAME && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
+  if ((TBX_MALLOC_DEBUG_NAME != NULL) && 
+      (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
     pm2debug("tbx_free(%s): 0x%p\n", mem->name, ptr);
   }
   *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) = mem->first_free ;
@@ -214,7 +215,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
   void *block_mem = NULL;
 
   TBX_LOCK_SHARED(mem);
-  if (TBX_MALLOC_DEBUG_NAME && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
+  if (TBX_MALLOC_DEBUG_NAME != NULL && (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name))) {
     pm2debug("tbx_malloc_clean: %s\n", mem->name);
   }
   if (mem->nb_allocated) {
@@ -223,7 +224,7 @@ tbx_malloc_clean(p_tbx_memory_t mem)
     block_mem = mem->first_mem;
 
     while (n && block_mem != NULL) {
-        size_t i = 0;
+        long i = 0;
 
         for (i = 0; i < mem->mem_len; i++) {
           void *ptr = (char*)block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN);

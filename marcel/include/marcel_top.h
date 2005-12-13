@@ -15,5 +15,5 @@
  */
 
 #section functions
-int ma_init_top(char *outfile);
-void ma_exit_top(void);
+int marcel_init_top(char *outfile);
+void marcel_exit_top(void);

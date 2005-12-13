@@ -111,7 +111,7 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv, boolean do_not_s
 	exit(1);
       }
       if(do_not_strip) {
-	if (ma_init_top(argv[i+1])) {
+	if (marcel_init_top(argv[i+1])) {
 	  fprintf(stderr,
 		  "Error: invalid top out_file %s\n",argv[i+1]);
 	  exit(1);
@@ -124,7 +124,7 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv, boolean do_not_s
     } else
     if(!strcmp(argv[i], "--marcel-xtop")) {
       if (do_not_strip) {
-        if (ma_init_top("|xterm -S//0")) {
+        if (marcel_init_top("|xterm -S//0")) {
 	  fprintf(stderr, "Error: can't launch xterm\n");
 	  exit(1);
 	}
@@ -201,7 +201,7 @@ void marcel_finish(void)
   marcel_gensched_shutdown();
   marcel_slot_exit();
   ma_topo_exit();
-  ma_exit_top();
+  marcel_exit_top();
   mdebug("threads created in cache : %ld\n", marcel_cachedthreads());
 }
 

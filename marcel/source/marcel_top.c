@@ -187,7 +187,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	ma_add_timer(&timer);
 }
 
-int ma_init_top(char *outfile) {
+int marcel_init_top(char *outfile) {
 	mdebug("marcel_init_top(%s)\n",outfile);
 #ifndef WIN_SYS
 	if (*outfile=='|') {
@@ -226,7 +226,7 @@ int ma_init_top(char *outfile) {
 	return 0;
 }
 
-void ma_exit_top(void) {
+void marcel_exit_top(void) {
 	if (top_pid) {
 		mdebug("killing top program %d\n", top_pid);
 		kill(-top_pid, SIGTERM);

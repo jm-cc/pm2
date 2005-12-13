@@ -14,6 +14,6 @@
  * General Public License for more details.
  */
 
-#section marcel_functions
+#section functions
 int ma_init_top(char *outfile);
 void ma_exit_top(void);

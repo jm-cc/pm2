@@ -20,7 +20,7 @@
 typedef struct __marcel_attr_s marcel_attr_t;
 
 #section macros
-#define MARCEL_MAXNAMESIZE 16
+#define MARCEL_MAXNAMESIZE 32
 
 #section structures
 

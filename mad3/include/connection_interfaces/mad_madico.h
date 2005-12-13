@@ -30,6 +30,8 @@
  * ---------
  */
 
+char *
+mad_madico_register(p_mad_driver_interface_t interface);
 
 
 #endif /* MAD_MADICO_H */

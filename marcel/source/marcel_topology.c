@@ -307,7 +307,7 @@ static void look_cpu(void) {
 		marcel_vpmask_empty(&cpu_level[cpu].vpset);
 		cpu_level[cpu].sched=NULL;
 	}
-	marcel_vpmask_empty(&cpu_level[i].vpset);
+	marcel_vpmask_empty(&cpu_level[cpu].vpset);
 
 	for (i=0; i<get_nb_lwps(); i++) {
 		cpu = ma_cpu_of_lwp_num(i);

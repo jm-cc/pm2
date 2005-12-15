@@ -67,6 +67,29 @@
  * End of configuration
  */
 
+/*******************************************************************************
+ * The principle of animation is to show some entities (showEntity()), and then
+ * perform animations, which consist of
+ * - calling fooBegin() functions,
+ * - modifiying entities parameters, if needed,
+ * - calling fooBegin2() functions (for computing the difference between initial
+ *   parameters and current parameters),
+ * - for step between 0.0 and 1.0, calling fooStep() functions and calling SWFMovie_nextFrame(movie); doStepsBegin() and doStepsEnd() are helper macros for this,
+ * - calling with fooEnd() functions.
+ *
+ * See the second part of main() for examples
+ */
+
+#define doStepsBegin(j) do {\
+	float i,j; \
+	for (i=0.;i<=OPTIME*RATE;i++) { \
+		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+#define doStepsEnd() \
+		SWFMovie_nextFrame(movie); \
+		} \
+	} while(0);
+
+
 #ifdef TREES
 #define OVERLAP CURVE
 #endif
@@ -124,6 +147,7 @@ SWFMovie movie;
 SWFAction stop;
 SWFFont font;
 
+/* pause for a few seconds, or until mouse click (when sec == 0) */
 void pause(float sec) {
 	float i;
 	if (!sec) {
@@ -155,6 +179,7 @@ void pause(float sec) {
 		}
 }
 
+/* Draw an arrow */
 SWFShape newArrow(float width, float height, int right) {
 	SWFShape shape = newSWFShape();
 	SWFFillStyle style = SWFShape_addSolidFillStyle(shape,0,0,0,255);
@@ -182,6 +207,8 @@ void gasp() {
 
 /*******************************************************************************
  * Pointers Stuff
+ *
+ * Association between application pointers and our own pointers
  */
 void newPtr(uint64_t ptr, void *data) {
 	char *buf=malloc(32);
@@ -226,21 +253,21 @@ enum entity_type {
 };
 
 typedef struct entity_s {
-	float x, y;
-	float lastx, lasty;
-	float width, height;
-	float lastwidth, lastheight;
-	unsigned thick;
-	int prio;
-	struct list_head rq;
-	struct list_head entity_list;
-	enum entity_type type;
-	SWFDisplayItem lastitem;
-	SWFShape lastshape;
-	struct entity_s *holder, *lastholder;
-	struct bubble_s *bubble_holder;
-	int leaving_holder;
-	int nospace;
+	float x, y;		/* position */
+	float lastx, lasty;	/* position just before move */
+	float width, height;	/* size */
+	float lastwidth, lastheight;	/* size just before move */
+	unsigned thick;		/* drawing thickness */
+	int prio;		/* scheduling priority */
+	struct list_head rq;	/* position in rq */
+	struct list_head entity_list;	/* position in bubble */
+	enum entity_type type;		/* type of entity */
+	SWFDisplayItem lastitem;	/* last item shown in movie */
+	SWFShape lastshape;		/* last shape used in movie */
+	struct entity_s *holder, *lastholder;	/* current holder, holder just before move */
+	struct bubble_s *bubble_holder;	/* holding bubble */
+	int leaving_holder;	/* are we leaving our holder (special case for animations) */
+	int nospace;		/* in the case of explosion, space used by an entity might actually be already reserved by the holding bubble */
 } entity_t;
 
 entity_t *getEntity (uint64_t ptr) {
@@ -263,8 +290,8 @@ void removeFromHolderEnd(entity_t *e);
 
 typedef struct {
 	entity_t entity;
-	struct list_head entities;
-	float nextX;
+	struct list_head entities;	/* held entities */
+	float nextX;			/* position of next enqueued entity */
 } rq_t;
 
 rq_t *norq;
@@ -283,6 +310,7 @@ rq_t *getRunqueue (uint64_t ptr) {
 	return rq;
 }
 
+/* set nb runqueues at (x,y) using (widght,height) size, and put allocated data in rqs */
 void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 	int i;
 	float rqWidth = (width-(nb-1)*RQ_XMARGIN)/nb;
@@ -303,6 +331,7 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 	}
 }
 
+/* draw a runqueue */
 void setRunqueue(SWFShape shape, unsigned thick, float width, float height) {
 	SWFShape_setLine(shape,thick,0,0,255,255);
 	SWFShape_movePenTo(shape,0,height-RQ_YMARGIN);
@@ -317,12 +346,12 @@ void addToRunqueue(rq_t *rq, entity_t *e);
 
 typedef struct bubble_s {
 	entity_t entity;
-	struct list_head heldentities;
-	float nextX;
-	int exploded;
-	SWFMorph morph;
-	int morphRecurse;
-	entity_t *insertion;
+	struct list_head heldentities;	/* held entities */
+	float nextX;			/* position of next enqueued entity */
+	int exploded;			/* whether it is exploded */
+	SWFMorph morph;			/* current bubble morph */
+	int morphRecurse;		/* an animation can involve a bubble several times, count that */
+	entity_t *insertion;		/* entity being inserted */
 } bubble_t;
 
 void bubbleMorphStep(bubble_t *b, float ratio);
@@ -498,6 +527,8 @@ float nextX;
 
 #endif /* BUBBLES */
 #ifdef TREES
+/* in the case of trees, only the root bubble gets drawn, and should draw its
+ * children */
 void setBubbleRecur(SWFShape shape, bubble_t *b) {
 	entity_t *e;
 	SWFShape_setLine(shape,b->entity.thick,0,0,0,255);
@@ -597,15 +628,12 @@ void hideEntity(entity_t *e) {
 }
 
 void delThread(thread_t *t) {
-	float i,j;
 	t->state = THREAD_DEAD;
 	switchRunqueuesBegin(norq,&t->entity);
 	switchRunqueuesBegin2(norq,&t->entity);
-	for (i=0.;i<=OPTIME*RATE;i++) {
-		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+	doStepsBegin(j)
 		switchRunqueuesStep(norq, &t->entity, j);
-		SWFMovie_nextFrame(movie);
-	}
+	doStepsEnd();
 	switchRunqueuesEnd(norq, &t->entity);
 	list_del(&t->entity.rq);
 	if (t->entity.bubble_holder) {
@@ -618,14 +646,11 @@ void delThread(thread_t *t) {
 }
 
 void delBubble(bubble_t *b) {
-	float i,j;
 	switchRunqueuesBegin(norq,&b->entity);
 	switchRunqueuesBegin2(norq,&b->entity);
-	for (i=0.;i<=OPTIME*RATE;i++) {
-		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+	doStepsBegin(j)
 		switchRunqueuesStep(norq, &b->entity, j);
-		SWFMovie_nextFrame(movie);
-	}
+	doStepsEnd();
 	switchRunqueuesEnd(norq, &b->entity);
 	list_del(&b->entity.rq);
 	if (b->entity.bubble_holder) {
@@ -641,7 +666,6 @@ void delBubble(bubble_t *b) {
  * Bubble morph
  */
 
-int recurse;
 void bubbleMorphBegin(bubble_t *b) {
 	if (b->entity.lastitem) {
 		b->morphRecurse++;
@@ -865,12 +889,9 @@ void addToRunqueue(rq_t *rq, entity_t *e) {
 	addToRunqueueBegin(rq,e);
 	addToRunqueueBegin2(rq,e);
 	if (shown(e)) {
-		float i,j;
-		for (i=0.;i<=OPTIME*RATE;i++) {
-			j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+		doStepsBegin(j)
 			addToRunqueueStep(rq, e, j);
-			SWFMovie_nextFrame(movie);
-		}
+		doStepsEnd();
 	}
 	addToRunqueueEnd(rq,e);
 }
@@ -936,15 +957,12 @@ void switchRunqueuesEnd(rq_t *rq2, entity_t *e) {
 }
 
 void switchRunqueues(rq_t *rq2, entity_t *e) {
-	float i,j;
 	switchRunqueuesBegin(rq2,e);
 	switchRunqueuesBegin2(rq2,e);
 	if (shown(e))
-		for (i=0.;i<=OPTIME*RATE;i++) {
-			j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+		doStepsBegin(j)
 			switchRunqueuesStep(rq2,e,j);
-			SWFMovie_nextFrame(movie);
-		}
+		doStepsEnd();
 	switchRunqueuesEnd(rq2,e);
 }
 
@@ -1171,9 +1189,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 	}
 
 	if (shown(&b->entity)) {
-		float i,j;
-		for (i=0.;i<=OPTIME*RATE;i++) {
-			j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+		doStepsBegin(j)
 #ifdef BUBBLES
 			if (b->exploded)
 				if (e->holder)
@@ -1194,8 +1210,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 				entityMoveStep(e,j);
 				if (dx) growInHolderStep(&b->entity,j);
 			}
-			SWFMovie_nextFrame(movie);
-		}
+		doStepsEnd();
 	}
 
 #ifdef BUBBLES
@@ -1306,12 +1321,9 @@ void bubbleExplode(bubble_t *b) {
 	bubbleExplodeBegin(b);
 	bubbleExplodeBegin2(b);
 	if (b->entity.lastitem) {
-		float i,j;
-		for (i=0.;i<=OPTIME*RATE;i++) {
-			j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
+		doStepsBegin(j)
 			bubbleExplodeStep(b,j);
-			SWFMovie_nextFrame(movie);
-		}
+		doStepsEnd();
 	}
 	bubbleExplodeEnd(b);
 }
@@ -1444,15 +1456,6 @@ void growInHolderEnd(entity_t *e) {
 	}
 }
 
-#define doStepsBegin(j) do {\
-	float i,j; \
-	for (i=0.;i<=OPTIME*RATE;i++) { \
-		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
-#define doStepsEnd() \
-		SWFMovie_nextFrame(movie); \
-		} \
-	} while(0);
-
 
 void bubbleInsertBubble(bubble_t *bubble, bubble_t *little_bubble);
 #define bubbleInsertBubble(b,lb) bubbleInsertEntity(b,&lb->entity)
@@ -1483,6 +1486,7 @@ int main(int argc, char *argv[]) {
 	rq_t **rqs=NULL;
 	/* choose whatever font you want */
 	FILE *f;
+	int i;
 
 #ifdef FXT
 	if (argc<=1) {
@@ -1492,7 +1496,6 @@ int main(int argc, char *argv[]) {
 #endif
 	
 	Ming_init();
-	int __attribute__((unused)) i;
 
 	Ming_setErrorFunction(error);
 	f = fopen("/usr/share/libming/fonts/Timmons.fdb","r");
@@ -1500,6 +1503,7 @@ int main(int argc, char *argv[]) {
 	/* pause macro */
 	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
 
+	/* used font */
 	font = (SWFFont) loadSWFFontFromFile(f);
 
 	/* movie */
@@ -1557,6 +1561,7 @@ int main(int argc, char *argv[]) {
 		SWFDisplayItem_moveTo(item,MOVIEX-4*BSIZE,MOVIEY-BSIZE);
 	}
 
+	/* The hidden "norq" runqueue */
 	setRqs(&norq,1,0,0,MOVIEX,
 #ifdef BUBBLES
 			200
@@ -1822,7 +1827,7 @@ int main(int argc, char *argv[]) {
 #else
 
 /*******************************************************************************
- * Manual build generated from trace
+ * Manual build
  */
 	/* 3 runqueue levels */
 	rqs = malloc(3*sizeof(*rqs));

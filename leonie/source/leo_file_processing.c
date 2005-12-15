@@ -355,6 +355,8 @@ process_channel(p_leonie_t     leonie,
   p_leo_spawn_group_t    spawn_group             = NULL;
   p_leo_networks_t       networks                = NULL;
   p_leo_directory_t      dir                     = NULL;
+  p_tbx_slist_t		 network_hosts_slist	 = NULL;
+  tbx_bool_t		 dynamic_host_list	 = tbx_false;
 
   LOG_IN();
   spawn_groups = leonie->spawn_groups;
@@ -391,20 +393,25 @@ process_channel(p_leonie_t     leonie,
       network_loader = strdup("default");
     }
 
+  network_hosts_slist = leoparse_read_as_slist(network_htable, "hosts");
+  dynamic_host_list	= !network_hosts_slist;
+
   hosts_htable        = tbx_htable_get(network_htable, "hosts_htable");
   device_hosts_htable = tbx_htable_get(network_htable, "device_hosts_htable");
 
   if (!hosts_htable) {
-    p_tbx_slist_t network_hosts_slist = NULL;
+    if (network_hosts_slist) {
+      build_network_host_htable(network_device_name,
+                                network_hosts_slist,
+                                &hosts_htable,
+                                &device_hosts_htable);
+    } else {
+      hosts_htable		= leo_htable_init();
+      device_hosts_htable	= leo_htable_init();
+    }
 
-    network_hosts_slist = leoparse_read_as_slist(network_htable, "hosts");
-    build_network_host_htable(network_device_name,
-                              network_hosts_slist,
-                              &hosts_htable,
-                              &device_hosts_htable);
     tbx_htable_add(network_htable, "hosts_htable", hosts_htable);
-    tbx_htable_add(network_htable, "device_hosts_htable",
-                   device_hosts_htable);
+    tbx_htable_add(network_htable, "device_hosts_htable", device_hosts_htable);
   }
 
   TRACE_STR("====== effective network name", network_name);
@@ -458,8 +465,34 @@ process_channel(p_leonie_t     leonie,
       TRACE_STR("true name", host_name);
 
       network_host_htable = tbx_htable_get(hosts_htable, host_name);
-      if (!network_host_htable)
-	FAILURE("unknown hostname");
+      if (!network_host_htable) {
+        if (dynamic_host_list) {
+          network_host_htable = leo_htable_init();
+          leoparse_write_id(network_host_htable, "name", host_name);
+          tbx_htable_add(network_host_htable, "host_name", host_name);
+          tbx_htable_add(hosts_htable, host_name, network_host_htable);
+        } else
+          FAILURE("unknown hostname");
+      }
+
+      if (dynamic_host_list) {
+        p_tbx_htable_t       device_host_htable = NULL;
+
+        if (!tbx_htable_get(device_hosts_htable, host_name)) {
+          device_host_htable = leo_htable_init();
+          tbx_htable_add(device_hosts_htable, host_name, device_host_htable);
+        } else {
+          device_host_htable = tbx_htable_get(device_hosts_htable, host_name);
+        }
+
+        if (!tbx_htable_get(device_host_htable, network_device_name)) {
+          tbx_htable_add(device_host_htable, network_device_name, host_name);
+        }
+
+        if (!tbx_htable_get(device_host_htable, "_default_")) {
+          tbx_htable_add(device_host_htable, "_default_", host_name);
+        }
+      }
 
       TRACE_STR("====== node hostname", host_name);
 
@@ -561,9 +594,74 @@ process_channel(p_leonie_t     leonie,
       TBX_FREE(host_name);
     } while (tbx_slist_ref_forward(channel_host_slist));
 
-  dir_channel->ttable = ntbx_topology_table_init(dir_channel->pc,
-                                                 ntbx_topology_regular,
-                                                 NULL);
+    {
+      p_tbx_htable_t	 topo_htable	= NULL;
+      char		*type		= NULL;
+
+      topo_htable = leoparse_try_read_htable(network_htable, "topology");
+      if (topo_htable) {
+        type	= leoparse_read_id(topo_htable, "type");
+      }
+
+      if (!type || tbx_streq(type, "default")) {
+        dir_channel->ttable = ntbx_topology_table_init(dir_channel->pc,
+                                                       ntbx_topology_regular,
+                                                       NULL);
+      } else if (tbx_streq(type, "empty")) {
+        dir_channel->ttable = ntbx_topology_table_init(dir_channel->pc,
+                                                       ntbx_topology_empty,
+                                                       NULL);
+      } else if (tbx_streq(type, "full")) {
+        dir_channel->ttable = ntbx_topology_table_init(dir_channel->pc,
+                                                       ntbx_topology_full,
+                                                       NULL);
+      } else if (tbx_streq(type, "star")) {
+        FAILUREF("unimplemented topology type: '%s'", type);
+      } else if (tbx_streq(type, "ring")) {
+        FAILUREF("unimplemented topology type: '%s'", type);
+      } else if (tbx_streq(type, "grid")) {
+        FAILUREF("unimplemented topology type: '%s'", type);
+      } else if (tbx_streq(type, "torus")) {
+        FAILUREF("unimplemented topology type: '%s'", type);
+      } else if (tbx_streq(type, "hypercube")) {
+        FAILUREF("unimplemented topology type: '%s'", type);
+      } else if (tbx_streq(type, "node")) {
+        p_ntbx_process_container_t pc = dir_channel->pc;
+
+        int _f_node(ntbx_process_lrank_t src,  ntbx_process_lrank_t dst) {
+          p_ntbx_process_t	psrc;
+          p_leo_dir_node_t	nsrc;
+          p_ntbx_process_t	pdst;
+          p_leo_dir_node_t	ndst;
+
+          if (src == dst)
+            return 0;
+
+          psrc	= ntbx_pc_get_local_process(pc, src);
+          if (!psrc)
+            return 0;
+
+          pdst	= ntbx_pc_get_local_process(pc, dst);
+          if (!pdst)
+            return 0;
+
+          nsrc	= tbx_htable_get(psrc->ref, "node");
+          if (!nsrc)
+            FAILURE("invalid state");
+
+          ndst	= tbx_htable_get(pdst->ref, "node");
+          if (!ndst)
+            FAILURE("invalid state");
+
+          return nsrc == ndst;
+        }
+
+        dir_channel->ttable = ntbx_topology_table_init(pc,
+                                                       ntbx_topology_function,
+                                                       _f_node);
+      } else
+        FAILUREF("unknown topology type: '%s'", type);
+    }
 
   tbx_htable_add(dir->channel_htable, dir_channel->name, dir_channel);
   tbx_slist_append(dir->channel_slist, dir_channel);

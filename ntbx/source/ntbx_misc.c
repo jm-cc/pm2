@@ -502,7 +502,6 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 	  }
 	  break;
 	case ntbx_topology_full:
-	  FAILURE("unsupported feature");
 	  {
 	    ntbx_process_lrank_t src = 0;
 
@@ -545,7 +544,23 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 	  break;
 	case ntbx_topology_function:
 	  {
-	    FAILURE("unimplemented");
+            int (*f)(ntbx_process_lrank_t,  ntbx_process_lrank_t) = parameter;
+
+	    ntbx_process_lrank_t src = 0;
+
+	    for (src = 0; src < size; src++)
+	      {
+		ntbx_process_lrank_t dst = 0;
+
+		for (dst = 0; dst < size; dst++)
+		  {
+                    if (f(src, dst))
+                      {
+                        ttable->table[size * src + dst] =
+                          ntbx_topology_element_cons();
+                      }
+                  }
+	      }
 	  }
 	  break;
 	}
@@ -686,7 +701,6 @@ ntbx_true_name(char *host_name)
 	  _TBX_EXIT_FAILURE();
 	}
 
-      result = tbx_strdup(host_entry->h_name);
       TBX_FREE(host_name);
     }
   else
@@ -699,9 +713,32 @@ ntbx_true_name(char *host_name)
 	  __TBX_PRINT_TRACE();
 	  _TBX_EXIT_FAILURE();
 	}
-
-      result = tbx_strdup(host_entry->h_name);
     }
+
+  result = host_entry->h_name;
+  LOG("ntbx_true_name: %s --> %s", host_name, result);
+
+  {
+    char	**ptr;
+    size_t	  len;
+
+    ptr	= host_entry->h_aliases;
+    len	= strlen(result);
+
+    while (*ptr) {
+      LOG_STR("  alias", *ptr);
+
+      if (!strncmp(result, *ptr, len) && ((*ptr)[len] == '.')) {
+        LOG("  prefering %s over %s", *ptr, result);
+        result	= *ptr;
+        len	= strlen(result);
+      }
+
+      ptr++;
+    }
+  }
+
+  result	= tbx_strdup(result);
   LOG_OUT();
 
   return result;

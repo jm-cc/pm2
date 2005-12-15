@@ -68,6 +68,10 @@ mad3()
     log "Args: ${prog_args[@]}"
 
     protocol=$_PM2CONFIG_PROTOCOLS
+    nb_protocols=$(echo $protocol | wc -w)
+    if [ "$nb_protocols" != 1 ] ; then
+	_pm2load_error "Error: More than one protocol selected ($protocol )"
+    fi
     log "Protocol: $protocol"
 
     # Récupération du chemin d'accès au fichier de config des machines

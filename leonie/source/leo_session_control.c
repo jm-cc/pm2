@@ -183,28 +183,43 @@ init_channels(p_leonie_t leonie)
 
         TRACE("Initializing connection: %d to %d", sl, dl);
 
-        leo_send_int(src, 0);
-        leo_send_int(src, dl);
-        leo_send_int(dst, 1);
-        leo_send_int(dst, sl);
+        if (sl == dl) {
+          leo_send_int(src, 0);
+          leo_send_int(src, dl);
 
-        src_cnx_parameter = leo_receive_string(src);
-        tbx_darray_expand_and_set(cnx_src->out_connection_parameter_darray,
-                                  dl, src_cnx_parameter);
-        TRACE_STR("Src connection parameter", src_cnx_parameter);
+          src_cnx_parameter = leo_receive_string(src);
+          tbx_darray_expand_and_set(cnx_src->out_connection_parameter_darray,
+                                    dl, src_cnx_parameter);
+          TRACE_STR("Src connection parameter", src_cnx_parameter);
 
-        dst_cnx_parameter = leo_receive_string(dst);
-        tbx_darray_expand_and_set(cnx_dst->in_connection_parameter_darray,
-                                  sl, dst_cnx_parameter);
-        TRACE_STR("Dst connection parameter", dst_cnx_parameter);
+          leo_send_string(src, cnx_src->parameter);
+          leo_send_string(src, src_cnx_parameter);
 
-        leo_send_string(src, cnx_dst->parameter);
-        leo_send_string(src, dst_cnx_parameter);
-        leo_send_string(dst, cnx_src->parameter);
-        leo_send_string(dst, src_cnx_parameter);
+          wait_for_ack(src);
+        } else {
+          leo_send_int(src, 0);
+          leo_send_int(src, dl);
+          leo_send_int(dst, 1);
+          leo_send_int(dst, sl);
 
-        wait_for_ack(src);
-        wait_for_ack(dst);
+          src_cnx_parameter = leo_receive_string(src);
+          tbx_darray_expand_and_set(cnx_src->out_connection_parameter_darray,
+                                    dl, src_cnx_parameter);
+          TRACE_STR("Src connection parameter", src_cnx_parameter);
+
+          dst_cnx_parameter = leo_receive_string(dst);
+          tbx_darray_expand_and_set(cnx_dst->in_connection_parameter_darray,
+                                    sl, dst_cnx_parameter);
+          TRACE_STR("Dst connection parameter", dst_cnx_parameter);
+
+          leo_send_string(src, cnx_dst->parameter);
+          leo_send_string(src, dst_cnx_parameter);
+          leo_send_string(dst, cnx_src->parameter);
+          leo_send_string(dst, src_cnx_parameter);
+
+          wait_for_ack(src);
+          wait_for_ack(dst);
+        }
         LOG_OUT();
       }
 
@@ -226,13 +241,19 @@ init_channels(p_leonie_t leonie)
 
         TRACE("Connecting %d to %d", sl, dl);
 
-        leo_send_int(src, 0);
-        leo_send_int(src, dl);
-        leo_send_int(dst, 1);
-        leo_send_int(dst, sl);
+        if (sl == dl) {
+          leo_send_int(src, 0);
+          leo_send_int(src, dl);
+          wait_for_ack(src);
+        } else {
+          leo_send_int(src, 0);
+          leo_send_int(src, dl);
+          leo_send_int(dst, 1);
+          leo_send_int(dst, sl);
 
-        wait_for_ack(src);
-        wait_for_ack(dst);
+          wait_for_ack(src);
+          wait_for_ack(dst);
+        }
         LOG_OUT();
       }
 

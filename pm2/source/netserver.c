@@ -222,7 +222,7 @@ pm2_net_server_start(p_mad_channel_t channel)
 
     marcel_vpmask_add_vp(&__pm2_global_vpmask, vp);
 
-    marcel_change_vpmask(__pm2_global_vpmask);
+    marcel_change_vpmask(&__pm2_global_vpmask);
 
     marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp));
 

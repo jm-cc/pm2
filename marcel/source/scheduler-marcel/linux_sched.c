@@ -777,7 +777,7 @@ static inline void finish_task_switch(marcel_task_t *prev)
 	prevh->nr_scheduled--;
 
 	if (prev->sched.state && ((prev->sched.state == MA_TASK_DEAD)
-				|| !(ma_preempt_count() & MA_PREEMPT_ACTIVE))
+				|| !(THREAD_GETMEM(prev,preempt_count) & MA_PREEMPT_ACTIVE))
 			) {
 		if (prev->sched.state & MA_TASK_MOVING) {
 			/* moving, make it running elsewhere */
@@ -1508,7 +1508,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			ma_set_tsk_need_resched(p);
 			sched_debug("scheduler_tick: time slice expired\n");
 			//p->prio = effective_prio(p);
-			ma_atomic_set(&p->sched.internal.time_slice,10); /* TODO: utiliser la priorité pour le calculer */
+			ma_atomic_set(&p->sched.internal.time_slice,2); /* TODO: utiliser la priorité pour le calculer */
 					//task_timeslice(p);
 			//p->first_time_slice = 0;
 
@@ -1629,7 +1629,13 @@ need_resched_atomic:
 	/* by default, reschedule this thread */
 	prev_as_next = prev;
 	prev_as_h = prevh;
-	prev_as_prio = prev->sched.internal.prio;
+#ifdef MARCEL_BUBBLE_STEAL
+	if (prev_as_h->type != MA_RUNQUEUE_HOLDER)
+		/* the real priority is the holding bubble's */
+		prev_as_prio = ma_bubble_holder(prev_as_h)->sched.prio;
+	else
+#endif
+		prev_as_prio = prev->sched.internal.prio;
 
 	if (prev->sched.state &&
 			/* garde-fou pour éviter de s'endormir
@@ -1666,13 +1672,8 @@ restart:
 #ifdef MA__LWPS
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
 		sched_debug("default prio: %d, rq %s\n",max_prio,ma_rq_holder(nexth)->name);
-	else {
-#ifdef MARCEL_BUBBLE_STEAL
-		/* the real priority is the holding bubble's */
-		max_prio = prev_as_prio = ma_bubble_holder(nexth)->sched.prio;
-#endif
+	else
 		sched_debug("default prio: %d, h %p\n",max_prio,nexth);
-	}
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
 #else
 	currq = &ma_main_runqueue;

@@ -29,8 +29,9 @@ WML_DEST		+=	$(patsubst %.wml,$(WWW)/%.wml,$(XML_WML_FILES))
 
 WML_FIGURES_DEST	:=	$(patsubst ./Figures/%.png,$(WWW)/Figures/%.png,$(FIGURES_HTML))
 
+THISDIR			:=	$(CURDIR)
+
 all: ps
-	@echo File $(BUILD)/ps/$(TARGET).ps generated
 
 upload: pdf-upload wml-upload
 
@@ -44,7 +45,7 @@ $(WWW)/Figures/%.png: ./Figures/%.png
 
 pdf-upload: $(WWW)/resources/$(TARGET).pdf
 
-$(WWW)/resources/$(TARGET).pdf: $(BUILD)/ps/$(TARGET).ps
+$(WWW)/resources/$(TARGET).pdf: $(THISDIR)/$(TARGET).ps
 	ps2pdf $< $@
 
 wml: $(BUILD)/wml/$(TARGET)/index.wml
@@ -52,15 +53,15 @@ wml: $(BUILD)/wml/$(TARGET)/index.wml
 $(BUILD)/wml/$(TARGET)/%.wml: $(TARGET).xml $(DEPS) $(FIGURES_HTML) $(EMPHCFILES_HTML)
 	$(XML2HTML)/bin/shell/xml2wml.sh $(TARGET).xml $(BUILD)/wml/$(TARGET)
 
-ps: $(BUILD)/ps/$(TARGET).ps
+ps: $(THISDIR)/$(TARGET).ps
 
-$(BUILD)/ps/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
+$(THISDIR)/$(TARGET).ps: $(BUILD)/ps/$(TARGET).tex
 	cd $(BUILD)/ps/ && ln -sf ../../Figures
 	cd $(BUILD)/ps/ && ln -sf ../../Progs
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
 	cd $(BUILD)/ps/ && latex $(TARGET)
-	cd $(BUILD)/ps/ && dvips $(TARGET) -o
+	cd $(BUILD)/ps/ && dvips $(TARGET) -o $@
 
 $(BUILD)/ps/$(TARGET).tex: $(TARGET).xml $(DEPS) $(FIGURES_PS) $(EMPHCFILES_PS)
 	mkdir -p $(BUILD)/ps
@@ -106,7 +107,7 @@ clean: wml-clean ps-clean inria-clean labri-clean emph-clean
 emph-clean:; rm -f $(EMPHCFILES_PS) $(EMPHCFILES_HTML)
 wml-clean:; rm -rf $(BUILD)/wml
 
-ps-clean:; rm -rf $(BUILD)/ps
+ps-clean:; rm -rf $(BUILD)/ps $(THISDIR)/$(TARGET).ps
 
 inria-clean:; rm -rf $(BUILD)/inria
 

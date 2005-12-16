@@ -551,7 +551,7 @@ les #ifdef dans les arguments de macro...
 	ma_holder_rawlock(&bubble->hold);
 
 	/* bulle fraîche, on l'amène près de nous */
-	if (!bubble->settled) {
+	if (0 && !bubble->settled) {
 		ma_runqueue_t *rq2 = ma_lwp_rq(LWP_SELF);
 		bubble->settled = 1;
 		if (rq != rq2) {
@@ -805,6 +805,7 @@ static int see_up(struct marcel_topo_level *level) {
 }
 
 int marcel_bubble_steal_work(void) {
+#if 0
 #ifdef MA__LWPS
 	struct marcel_topo_level *me =
 		&marcel_topo_levels[marcel_topo_nblevels-1][LWP_NUMBER(LWP_SELF)];
@@ -813,9 +814,61 @@ int marcel_bubble_steal_work(void) {
 #else
 	return 0
 #endif
+#endif
 }
 #endif
 #endif
+
+any_t marcel_gang_scheduler(any_t foo) {
+	marcel_entity_t *e, *ee, *firste;
+	marcel_bubble_t *b;
+	ma_runqueue_t *rq;
+	struct list_head *queue;
+	while(1) {
+		marcel_delay(1);
+		rq = &ma_main_runqueue;
+		ma_holder_lock_softirq(&rq->hold);
+		queue = rq->active->queue + MA_BATCH_PRIO;
+		list_for_each_entry_safe(e, ee, queue, run_list) {
+			if (e->type == MA_BUBBLE_ENTITY) {
+				b = ma_bubble_entity(e);
+				ma_holder_rawlock(&b->hold);
+				ma_deactivate_entity(&b->sched, &rq->hold);
+				PROF_EVENT2(bubble_sched_switchrq, b, &ma_dontsched_runqueue);
+				ma_activate_entity(&b->sched, &ma_dontsched_runqueue.hold);
+
+				ma_holder_rawunlock(&b->hold);
+			}
+		}
+		ma_holder_unlock_softirq(&rq->hold);
+		rq = &ma_dontsched_runqueue;
+		ma_holder_lock_softirq(&rq->hold);
+		queue = rq->active->queue + MA_BATCH_PRIO;
+		firste = NULL;
+		if (!list_empty(queue))
+		while(1) {
+			e = list_entry(queue->next, marcel_entity_t, run_list);
+			if (e == firste)
+				break;
+			if (!firste)
+				firste = e;
+			if (e->type == MA_BUBBLE_ENTITY) {
+				b = ma_bubble_entity(e);
+				ma_holder_rawlock(&b->hold);
+				ma_deactivate_entity(&b->sched, &rq->hold);
+				PROF_EVENT2(bubble_sched_switchrq, b, &ma_main_runqueue);
+				ma_activate_entity(&b->sched, &ma_main_runqueue.hold);
+				ma_holder_rawunlock(&b->hold);
+				break;
+			} else {
+				ma_deactivate_entity(e, &rq->hold);
+				ma_activate_entity(e, &rq->hold);
+			}
+		}
+		ma_holder_unlock_softirq(&rq->hold);
+	}
+	return NULL;
+}
 
 /******************************************************************************
  * Initialisation

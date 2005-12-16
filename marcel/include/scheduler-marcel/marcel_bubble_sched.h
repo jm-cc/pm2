@@ -166,6 +166,10 @@ void ma_bubble_tick(marcel_bubble_t *bubble);
 
 int marcel_bubble_steal_work(void);
 
+#section functions
+any_t marcel_gang_scheduler(any_t foo);
+
+#section marcel_functions
 #ifdef MARCEL_BUBBLE_STEAL
 static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b);
 static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b);

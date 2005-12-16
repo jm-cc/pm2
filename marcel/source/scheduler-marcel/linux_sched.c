@@ -1506,6 +1506,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		MA_BUG_ON(ma_atomic_read(&p->sched.internal.time_slice)>10);
 		if (ma_atomic_dec_and_test(&p->sched.internal.time_slice)) {
 			ma_set_tsk_need_resched(p);
+			sched_debug("scheduler_tick: time slice expired\n");
 			//p->prio = effective_prio(p);
 			ma_atomic_set(&p->sched.internal.time_slice,10); /* TODO: utiliser la priorité pour le calculer */
 					//task_timeslice(p);
@@ -1579,9 +1580,7 @@ asmlinkage TBX_PROTECTED void ma_schedule(void)
 //	long *switch_count;
 	marcel_task_t *prev, *next, *prev_as_next;
 	marcel_entity_t *nextent;
-#ifdef MARCEL_BUBBLE_EXPLODE
 	marcel_bubble_t *bubble;
-#endif
 	ma_runqueue_t *rq, *currq;
 	ma_holder_t *prevh, *nexth, *h, *prev_as_h;
 	ma_prio_array_t *array;
@@ -1667,8 +1666,13 @@ restart:
 #ifdef MA__LWPS
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
 		sched_debug("default prio: %d, rq %s\n",max_prio,ma_rq_holder(nexth)->name);
-	else
+	else {
+#ifdef MARCEL_BUBBLE_STEAL
+		/* the real priority is the holding bubble's */
+		max_prio = prev_as_prio = ma_bubble_holder(nexth)->sched.prio;
+#endif
 		sched_debug("default prio: %d, h %p\n",max_prio,nexth);
+	}
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
 #else
 	currq = &ma_main_runqueue;

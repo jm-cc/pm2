@@ -61,6 +61,7 @@ static void printtask(marcel_task_t *t) {
 	char buf1[32];
 	char buf2[32];
 	char buf3[32];
+	unsigned long cpu; /* en pour mille */
 
 	switch (t->sched.state) {
 		case MA_TASK_RUNNING: 		state = 'R'; break;
@@ -77,9 +78,10 @@ static void printtask(marcel_task_t *t) {
 		default:			state = '?'; break;
 	}
 	utime = ma_atomic_read(&t->top_utime);
-	top_printf("0x%*p %*s %2d %3lu%% %c %2d %s %s %s\r\n", (int) (2*sizeof(void*)), t,
+	cpu = djiffies?(utime*1000UL)/djiffies:0;
+	top_printf("0x%*p %*s %2d %3lu.%1lu %c %2d %s %s %s\r\n", (int) (2*sizeof(void*)), t,
         	MARCEL_MAXNAMESIZE, t->name,
-		t->sched.internal.prio, djiffies?(utime*100)/djiffies:0,
+		t->sched.internal.prio, cpu/10UL, cpu%10UL,
 		state, GET_LWP_NUMBER(t),
 		get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
 		get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
@@ -174,7 +176,7 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
 #endif
 	}
-	top_printf("  %*s %*s %2s %3s%% %s %2s %8s %8s %8s\r\n", (int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE, "name", "pr", "cpu", "s", "lc", "init", "sched", "run");
+	top_printf("  %*s %*s %2s %4s%% %s %2s %8s %8s %8s\r\n", (int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE, "name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 	marcel_freeze_sched();
 	marcel_threadslist(NBPIDS,pids,&nbpids,0);
 	if (nbpids > NBPIDS)

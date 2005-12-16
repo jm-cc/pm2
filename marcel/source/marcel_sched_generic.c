@@ -323,6 +323,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	} 
 
 	INIT_LIST_HEAD(&ma_per_lwp(all_threads, lwp));
+	list_add(&SELF_GETMEM(all_threads),&__ma_get_lwp_var(all_threads));
 
 #ifdef MA__LWPS
 	/*****************************************/

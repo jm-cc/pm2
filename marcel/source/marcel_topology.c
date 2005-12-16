@@ -97,7 +97,7 @@ void ma_set_nbprocessors(void) {
 
 void ma_set_processors(void) {
 	marcel_lwps_per_cpu = (get_nb_lwps()+marcel_nbprocessors-1)/marcel_nbprocessors;
-	mdebug("%d LWPs per cpu, stride %d\n", marcel_lwps_per_cpu, marcel_cpu_stride);
+	mdebug("%d LWP%s per cpu, stride %d\n", marcel_lwps_per_cpu, marcel_lwps_per_cpu == 1 ? "" : "s", marcel_cpu_stride);
 	// TODO: stride = 2 si HT et que suffisament peu de LWPs.
 }
 

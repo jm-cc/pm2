@@ -1,0 +1,15 @@
+ravel% pm2conf debussy debussy debussy
+The current PM2 configuration contains 3 host(s) :
+0 : debussy
+1 : debussy
+2 : debussy
+
+ravel% pm2load rpc
+[Threads : 2 created, 0 imported (0 cached)]
+
+ravel% pm2logs
+*** Host debussy, process 1:
+[Threads : 2 created, 0 imported (0 cached)]
+Hello, World!
+*** Host debussy, process 2:
+[Threads : 2 created, 0 imported (0 cached)]

@@ -1,0 +1,10 @@
+ravel% pm2load isomalloc1
+First, I am on node 0, host ravel...
+p = 80d2500, *p = 1234
+[Threads : 3 created, 0 imported (0 cached)]
+
+ravel% pm2logs
+*** Host debussy, process 1:
+[Threads : 3 created, 1 imported (0 cached)]
+Then, I am on node 1, host debussy...
+p = 80d2500, *p = 8

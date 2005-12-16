@@ -1,0 +1,1 @@
+ravel% xrdb -merge < ${HOME}/.Xdefaults

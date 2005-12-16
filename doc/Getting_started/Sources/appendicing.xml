@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE TEXT SYSTEM "file:///net/cvs/runtime/usr/xml2html/data/xml/DOCUMENT.dtd">
+
+<TEXT>
+
+<SUBSECTION TITLE="Using a standard main" LABEL="sec:tradimain">
+
+<P>
+Some application may require to use the traditional <TT>main</TT> function
+name instead of the regular <TT>pm2_main</TT>. This can be enabled through
+the <TT>standard_main</TT> options of the Marcel flavors. This option
+defines the <TT>STANDARD_MAIN</TT> compilation flag, to be used for each of
+the PM2 programs. Note that this may affect the performance of several
+thread management functions. The user is therefore discouraged to do
+this unless explicitly required.
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Synopsis of PM2 scripts" LABEL="sec:scripts">
+
+<SUBSUBSECTION TITLE="pm2conf">
+
+<CODE FILE="./Sources/code/pm2confhelp.txt"/>
+
+<P>
+A typical use of the extended options could thus be:
+
+<CODE FILE="./Sources/code/pm2confhelp2.txt"/>
+</P>
+
+</SUBSUBSECTION>
+
+<SUBSUBSECTION TITLE="pm2load">
+
+<CODE FILE="./Sources/code/pm2loadhelp.txt"/>
+
+<NOTE>
+  LB to RN: The -L option does not seem to work properly
+</NOTE>
+
+</SUBSUBSECTION>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Common Pitfalls" LABEL="sec:commonpitfalls">
+
+<P>
+Table <REF LABEL="tbl:pitfalls"/> sums up the symptoms together with
+possible solutions.
+</P>
+
+<TABLE TITLE="Common Pitfalls" LABEL="tbl:pitfalls">
+<TR>
+<TH>Symptoms</TH> <TH>Solutions</TH>
+</TR>
+<TR>
+<TD> <TT>Permission denied</TT> error at load time </TD>
+<TD> Each configuration node must be made accessible by <TT>rsh</TT> from the local host: update your <TT>.rhosts</TT> file</TD>
+</TR>
+</TABLE>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Frequently asked questions" LABEL="sec:faq">
+
+<P>
+<EM>
+  Why do I get the message "Permission denied" when running pm2load?
+  
+  Why does my program crash the entire cluster?
+</EM>
+
+</P>
+
+</SUBSECTION>
+
+</TEXT>

@@ -1,0 +1,13 @@
+ravel% pm2conf ravel ravel ravel ravel ravel ravel
+The current PM2 configuration contains 6 host(s) :
+0 : ravel
+1 : ravel
+2 : ravel
+3 : ravel
+4 : ravel
+5 : ravel
+
+ravel% pm2load rpc-threads1
+[Threads : 3 created, 0 imported (0 cached)]
+Sending string: Init
+Received back string: Init 1 2 3 4 5

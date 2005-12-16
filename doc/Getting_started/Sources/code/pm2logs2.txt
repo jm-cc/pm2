@@ -1,0 +1,7 @@
+ravel% pm2logs
+*** Process 1 on debussy:
+[Threads : 3 created, 0 imported (0 cached)]
+First, I am on node 1, host debussy... &x = affafda0, x = 1234
+*** Process 2 on faure:
+[Threads : 3 created, 1 imported (0 cached)]
+Now, I am on node 2, host faure... &x = affafda0, x = 1234

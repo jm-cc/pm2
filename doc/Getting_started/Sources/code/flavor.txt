@@ -1,0 +1,6 @@
+ravel% more ${PM2_HOME}/.pm2/flavors/pm2-debug
+# Flavor pm2-debug
+[...]
+### SETTINGS: --pm2=debug --pm2=opt
+[...]
+### SETTINGS: --common=debug --common=opt

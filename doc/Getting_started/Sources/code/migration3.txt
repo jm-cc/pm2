@@ -1,0 +1,25 @@
+ravel% pm2load migrate-group
+Initialization completed on node 0
+Thread 0: Created on node 0, host ravel
+Thread 1: Created on node 0, host ravel
+Thread 2: Created on node 0, host ravel
+Thread 3: Created on node 0, host ravel
+2 threads among 4 migrated off to node 1
+Issuing RPC to node 1
+Just halting
+Thread 3: Now on node 0, host ravel
+Thread 1: Now on node 0, host ravel
+[Threads : 6 created, 0 imported (0 cached)]
+
+ravel% pm2logs
+
+*** Host debussy, process 1:
+[Threads : 4 created, 2 imported (0 cached)]
+Initialization completed on node 1
+Service activated on node 1, host debussy
+Thread 0: Now on node 1, host debussy
+Thread 2: Now on node 1, host debussy
+
+*** Host faure, process 2:
+[Threads : 2 created, 0 imported (0 cached)]
+Initialization completed on node 2

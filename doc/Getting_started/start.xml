@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE DOCUMENT SYSTEM "file:///net/cvs/runtime/usr/xml2html/data/xml/DOCUMENT.dtd">
+<DOCUMENT TITLE="Getting started with PM2"
+          AUTHOR="The PM2 Team" EMAIL="runtime@labri.fr">
+<!-- AUTHOR="Olivier Aumage and Gabriel Antoniu and Luc Bougé and Vincent Danjean and Raymond Namyst" EMAIL="runtime@labri.fr" -->
+
+<!-- DATE="December 2005" -->
+
+<LABRI/> <!-- NUMBER="RR-1375-05" -->
+
+<ABSTRACT>
+<P>
+</P>
+<KEYWORD></KEYWORD>
+</ABSTRACT>
+
+<INRIA TYPE="RT" TITRE="Démarrer avec PM2">
+<RESUME>
+<MOTCLE></MOTCLE>
+</RESUME>
+</INRIA>
+
+<SECTION TITLE="Introducing PM2" FILE="./Sources/introduction.xml" LABEL="introduction" NEWPAGE="true"/>
+
+<SECTION TITLE="Installing PM2" FILE="./Sources/installation.xml" LABEL="installation" NEWPAGE="true"/>
+
+<SECTION TITLE="Discovering PM2" FILE="./Sources/discovering.xml" LABEL="discovering" NEWPAGE="true"/>
+
+<SECTION TITLE="Customizing and debugging PM2" FILE="./Sources/customizing.xml" LABEL="customizing" NEWPAGE="true"/>
+
+<SECTION TITLE="Mastering PM2" FILE="./Sources/mastering.xml" LABEL="mastering" NEWPAGE="true"/>
+
+<SECTION TITLE="Wizarding PM2: advanced features" FILE="./Sources/wizarding.xml" LABEL="wizarding" NEWPAGE="true"/>
+
+<SECTION TITLE="Additional PM2 material" FILE="./Sources/appendicing.xml" LABEL="appendicing" NEWPAGE="true"/>
+
+<SECTION TITLE="Reading on PM2" FILE="./Sources/reading.xml" LABEL="reading" NEWPAGE="true"/>
+
+
+</DOCUMENT>
+

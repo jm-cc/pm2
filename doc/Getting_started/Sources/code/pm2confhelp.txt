@@ -1,0 +1,14 @@
+ravel% pm2conf -h
+Usage: pm2conf { option } { item }
+
+option:
+-f <name>: Use flavor "name" (default=$PM2_FLAVOR or default)
+-p <name>: Store parameters in file "name" 
+                              under the preference directory
+-h: Display this help message
+
+item:
+<host>: Add machine "host" to the configuration
+-l <file>: Use <file> as an input for host names
+-e <host> <i>-<j>: Expand to <hosti> <hosti+1> ... <hostj>
+-s <suffix> item: Add <suffix> to the "item" expression

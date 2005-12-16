@@ -1,0 +1,9 @@
+ravel% pm2load rpc-params
+[Threads : 2 created, 0 imported (0 cached)]
+
+ravel% pm2logs
+*** Process 1 on debussy:
+[Threads : 2 created, 0 imported (0 cached)]
+The sentence is: A la recherche du temps perdu.
+*** Process 2 on faure:
+[Threads : 2 created, 0 imported (0 cached)]

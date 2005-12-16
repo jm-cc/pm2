@@ -1,0 +1,16 @@
+ravel% pm2load hello
+Alloc page table(6291456)
+index 0: 1
+index 1: 1
+index 2: 1      
+[...]
+isoaddr_malloc(65536)
+isoaddr_malloc: got 16 slots locally
+[...]
+Hello World!
+isoaddr_free: added to stack cache: affe0000 (index = 15)
+[Threads : 2 created, 0 imported (0 cached)]
+Flushing slot cache...
+Flushing stack cache...
+Flushing migration cache...
+Isoaddr exited

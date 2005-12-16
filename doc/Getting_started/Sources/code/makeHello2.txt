@@ -1,0 +1,11 @@
+ravel% make hello
+[...]   # Normally, no warning whatsoever!
+
+ravel% pm2conf ravel debussy faure
+The current PM2 configuration contains 3 host(s) :
+0 : ravel
+1 : debussy
+2 : faure
+
+ravel% pm2load hello
+[Threads : 2 created, 0 imported (0 cached)]

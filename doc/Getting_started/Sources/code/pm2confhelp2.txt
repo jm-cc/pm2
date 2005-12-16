@@ -1,0 +1,5 @@
+ravel% pm2conf -s tcp cluster0 -s tcp -e cluster 10-12
+0 : cluster0tcp
+1 : cluster10tcp
+2 : cluster11tcp
+3 : cluster12tcp

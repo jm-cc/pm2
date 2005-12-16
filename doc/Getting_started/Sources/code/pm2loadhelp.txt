@@ -1,0 +1,12 @@
+ravel% pm2load -h
+Usage: pm2load { option } command
+
+option:
+-f name: Use flavor named "name" (default=$PM2_FLAVOR or default)
+-d: Run command in debug mode 
+                           (not supported by all implementations)
+-c name: Use console named "name"
+-l: Also generate a log file on first node
+-L: Only generate a log file on first node
+-h: Display this help message
+

@@ -1,0 +1,12 @@
+ravel% make hello1
+[...]
+
+ravel% pm2load hello1
+[Threads : 2 created, 0 imported (0 cached)]
+
+ravel% pm2logs
+*** Host debussy, process 1:
+[Threads : 2 created, 0 imported (0 cached)]
+Hello World from node 1!
+*** Host faure, process 2:
+[Threads : 2 created, 0 imported (0 cached)]

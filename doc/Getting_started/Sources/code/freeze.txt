@@ -1,0 +1,7 @@
+ravel% pm2load freeze
+Initial value: 0
+Creating thread 0
+Creating thread 1
+Creating thread 2
+Creating thread 3
+Final value: 0

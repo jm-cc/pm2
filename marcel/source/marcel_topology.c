@@ -227,6 +227,7 @@ static void __marcel_init look_cpuinfo(void) {
 }
 #endif
 
+#ifdef LINUX_SYS
 #include <numa.h>
 static void __marcel_init look_libnuma(void) {
 	unsigned long *buffer,*buffer2;
@@ -291,6 +292,67 @@ static void __marcel_init look_libnuma(void) {
 
 	TBX_FREE(buffer);
 }
+#endif
+
+
+#ifdef OSF_SYS
+#include <numa.h>
+static void __marcel_init look_libnuma(void) {
+	cpu_cursor_t cursor;
+	unsigned i,j;
+	unsigned nbnodes;
+	radid_t radid;
+	cpuid_t cpuid;
+	cpuset_t cpuset;
+	struct marcel_topo_level *node_level;
+	marcel_vpmask_t vpset;
+
+	numa_exit_on_error=1;
+
+	nbnodes=rad_get_num();
+	if (nbnodes==1) {
+		nbnodes=0;
+		return;
+	}
+
+	MA_BUG_ON(nbnodes==0);
+
+	MA_BUG_ON(!(node_level=TBX_MALLOC((nbnodes+1)*sizeof(*node_level))));
+
+	for (i=0;i<get_nb_lwps();i++)
+		ma_lwp_node[i]=-1;
+
+	cpusetcreate(&cpuset);
+	for (radid = 0; radid < nbnodes; radid++) {
+		cpuemptyset(cpuset);
+		if (rad_get_cpus(radid, cpuset)==-1) {
+			fprintf(stderr,"rad_get_cpus(%d) failed: %s\n",radid,strerror(errno));
+			continue;
+		}
+		
+		node_level[radid].type = MARCEL_LEVEL_NODE;
+		node_level[radid].number=radid;
+		marcel_vpmask_empty(&node_level[radid].vpset);
+		cursor = SET_CURSOR_INIT;
+		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
+			marcel_vpmask_add_vp(&node_level[radid].vpset,cpuid);
+		vpset = node_level[radid].vpset;
+		node_level[radid].sched = NULL;
+		mdebug("node %d has vpset %lx\n",i,vpset);
+		for (j=0;j<get_nb_lwps();j++)
+			if (marcel_vpmask_vp_ismember(&vpset,j))
+				ma_lwp_node[j]=i;
+	}
+
+	marcel_vpmask_empty(&node_level[i].vpset);
+
+	marcel_topo_levels[discovering_level++] =
+		marcel_topo_node_level = node_level;
+
+	TBX_FREE(buffer);
+}
+#endif
+
 
 static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
@@ -347,9 +409,12 @@ static void look_lwp(void) {
 static void topo_discover(void) {
 	unsigned l,i,j,m;
 #ifdef MA__NUMA
-	look_libnuma();
 #ifdef LINUX_SYS
+	look_libnuma();
 	look_cpuinfo();
+#endif
+#ifdef OSF_SYS
+	look_libnuma();
 #endif
 	look_cpu();
 #endif

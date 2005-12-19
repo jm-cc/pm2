@@ -333,7 +333,7 @@ No files are created in the <TT>${PM2_ROOT}</TT> directory, so that
 you can compile and install PM2 from a CDROM. 
 </IGNORE>
 
-All executable will be created into the <TT>${PM2_BUILD_DIR}</TT>
+All the files will be created in the <TT>${PM2_BUILD_DIR}</TT>
 directory.
 </P>
 
@@ -425,7 +425,7 @@ Note that the final message is automatically generated!
 <P>
 The PM2 library should now be fully configured.  You are ready to
 compile and execute the example programs of the distribution.  Let's
-start with the simplest one: <EM>Hello world!</EM>, located in file
+start with the simplest one: <EM>Hello world!</EM>, located the in file
 <TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
 
 <CODE FILE="./Sources/code/makeHello.txt"/>
@@ -490,7 +490,7 @@ preferably outside the configuration.
 
 <P>
 By default, PM2 is connecting to machines using the <TT>ssh</TT>
-command. To use another command or to use specific parameters of the
+command. To use another command or to specify parameters for the
 <TT>ssh</TT> command, you can set the <TT>PM2_RSH</TT> variable.
 
 <CODE FILE="./Sources/code/pm2rsh.txt"/>

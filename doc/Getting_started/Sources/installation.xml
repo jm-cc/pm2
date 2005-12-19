@@ -247,7 +247,7 @@ your default shell is <TT>csh</TT>):
 
 <WARNING>
   Please make sure that these variables are correctly set within
-  remote shell commands (i.e., scripts invoked by <TT>rsh</TT>).
+  remote shell commands (i.e., scripts invoked by <TT>ssh</TT>).
 </WARNING>
 
 </SUBSECTION>

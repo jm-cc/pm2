@@ -34,6 +34,7 @@ THISDIR			:=	$(CURDIR)
 all: ps
 
 upload: pdf-upload wml-upload
+	make -C $(WWW)
 
 wml-upload: $(WML_DEST) $(WML_FIGURES_DEST)
 

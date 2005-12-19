@@ -1,0 +1,2 @@
+ravel% setenv PM2_RSH "ssh -X -f"
+

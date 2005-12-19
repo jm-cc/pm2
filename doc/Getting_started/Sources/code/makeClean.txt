@@ -1,2 +1,2 @@
 ravel% cd ${PM2_ROOT}/pm2
-ravel% make clean
+ravel% pm2-clean

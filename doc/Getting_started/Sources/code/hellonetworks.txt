@@ -1,0 +1,6 @@
+ravel% cat networks.cfg
+networks : ({
+    name  : mycluster;
+    hosts : (ravel, debussy, faure);
+    dev   : tcp;
+});

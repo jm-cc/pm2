@@ -41,17 +41,19 @@ distribution:
 
 <P>
 PM2 was initially designed with a preliminary version of the
-Madeleine. This version is now obsolete and not maintained any longer;
-it is referred to as <EM>Madeleine<SPACE/>I</EM>. The current version of the
-interface is called <EM>Madeleine<SPACE/>II</EM>. The internal design is completely
+Madeleine. This version and the following version are now obsolete and
+no longer maintained; they are referred to as
+<EM>Madeleine<SPACE/>I</EM> and <EM>Madeleine<SPACE/>II</EM>. The
+current version of the interface is called
+<EM>Madeleine<SPACE/>III</EM>. The internal design is completely
 different, and the new version is only partly compatible with the
-preliminary one. This manual only introduces the Madeleine<SPACE/>II
-communication interface, simply referred to as <EM>Madeleine</EM> hereafter
-when no confusion may occur.
+preliminary ones. This manual only introduces the <EM>Madeleine<SPACE/>III</EM>
+communication interface, simply referred to as <EM>Madeleine</EM>
+hereafter when no confusion may occur.
 </P>
 
 <P>
-Madeleine (that is, Madeleine<SPACE/>II) is a generic communication interface
+Madeleine (that is, Madeleine<SPACE/>III) is a generic communication interface
 which is able to fully exploit the low latency and the high bandwidth
 of high-speed networks such as Myrinet or SCI. This PM2 communication
 subsystem currently supports the following communication interfaces:
@@ -63,19 +65,22 @@ top of SCI) and SBP (on top of Fast-Ethernet).
 <SUBSUBSECTION TITLE="Required development tools" LABEL="sec:tools">
 
 <P>
-As previously mentioned, PM2 as been designed to be easily portable
+As previously mentioned, PM2 has been designed to be easily portable
 and only relies on the availability of the two following development
 tools:
 <UL>
 <LI>
 <P>
-GNU C Compiler <TT>gcc</TT> (versions <TT>2.7.2.3</TT>, <TT>2.8.1</TT>
-and higher, or <TT>Egcs</TT> versions);
+GNU C Compiler <TT>gcc</TT> (version <TT>3.2</TT> and higher). The
+version <TT>2.95</TT> of <TT>gcc</TT> can also be used, but you need
+to uncomment the last line in the <TT>pm2/make/config</TT>.
 </P>
 </LI>
 <LI>
 <P>
-GNU <TT>make</TT> (versions <TT>3.7x.x</TT>).
+GNU <TT>make</TT> (version <TT>3.80</TT>). Note that PM2 does not
+compile with the original 3.80 version of make. You may use debian's
+latest patch on <URL>http://ftp.debian.org/debian/pool/main/m/make</URL>.
 </P>
 </LI>
 </UL>
@@ -90,18 +95,13 @@ for <TT>expr</TT>, <TT>tr</TT>, <TT>head</TT>, <TT>cut</TT>,
 </P>
 
 <WARNING>
-  If you encounter installation problems, first make sure that you
+  If you encounter installation problems, please first make sure that you
   actually use the right version of these utilities!
 </WARNING>
  
 <NOTE>
   Luc: There should be a way of listing all utilities used in the
   scripts.
-</NOTE>
-
-<NOTE>
- Luc: I do not understand what <TT>Egcs</TT> means here. Olivier, please
-  correct.
 </NOTE>
 
 </SUBSUBSECTION>
@@ -117,7 +117,7 @@ from the PM2 web site at: <URL>http://runtime.futurs.inria.fr/pm2/</URL>.
 
 <P>
 Please, send an email to <EMAIL>pm2-users@ens-lyon.fr</EMAIL> if you encounter
-problems with the PM2 software. However, please make sure first that
+problems with the PM2 software. However, please first make sure that
 your problem is not already listed in the <EM>Frequently Asked
   Questions</EM> Section <REF LABEL="sec:faq"/>.
 </P>
@@ -134,35 +134,41 @@ entered at the shell prompt:
 
 <P>
 Once extracted, the PM2 distribution should be available under the
-<TT>./pm2/</TT> directory. This PM2 distribution is organized as follows:
+<TT>./pm2/</TT> directory. The PM2 distribution is organized as follows:
 
 <DL>
-<DT><TT>bin</TT> </DT> <DD>        PM2 scripts </DD>
-<DT><TT>common</TT> </DT> <DD>     ??? </DD>
-<DT><TT>console</TT> </DT> <DD>    ??? </DD>
-<DT><TT>doc</TT> </DT> <DD>        Documentation files </DD>
-<DT><TT>dsm</TT> </DT> <DD>        Distributed shared memory manager </DD>
-<DT><TT>ezflavor</TT> </DT> <DD>   Flavor configuration graphic interface </DD>
-<DT><TT>generic</TT> </DT> <DD>    ??? </DD>
-<DT><TT>leonie</TT> </DT> <DD>     ??? </DD>
-<DT><TT>leoparse</TT> </DT> <DD>   ??? </DD>
-<DT><TT>mad2</TT> </DT> <DD>       Communication subsystem </DD>
-<DT><TT>make</TT> </DT> <DD>       PM2 makefiles </DD>
-<DT><TT>marcel</TT> </DT> <DD>     Multithreading subsystem </DD>
-<DT><TT>modules</TT> </DT> <DD>    ??? </DD>
-<DT><TT>ntbx</TT> </DT> <DD>       Generic network management utility toolbox </DD>
-<DT><TT>pm2</TT> </DT> <DD>        PM2 <EM>en personne</EM>! </DD>
-<DT><TT>pm2debug</TT> </DT> <DD>   PM2 debugging utilities (useful!) </DD>
-<DT><TT>profile</TT> </DT> <DD>    PM2 profiling utilities </DD>
-<DT><TT>sigmund</TT> </DT> <DD>    ??? </DD>
-<DT><TT>tbx</TT> </DT> <DD>        Generic PM2 utility toolbox </DD>
+<DT><TT>appli</TT> </DT>       <DD>???</DD>
+<DT><TT>bin</TT> </DT>         <DD>PM2 scripts</DD>
+<DT><TT>common</TT> </DT>      <DD>??? </DD>
+<DT><TT>console</TT> </DT>     <DD>???</DD>
+<DT><TT>doc</TT> </DT>         <DD>Documentation files</DD>
+<DT><TT>dsm</TT> </DT>         <DD>Distributed shared memory manager</DD>
+<DT><TT>ezflavor</TT> </DT>    <DD>Flavor configuration graphic interface</DD>
+<DT><TT>generic</TT> </DT>     <DD>???</DD>
+<DT><TT>leonie</TT> </DT>      <DD>Bootstrap code for PM2 applications</DD>
+<DT><TT>leony</TT> </DT>       <DD>Perl version of the bootstrap code</DD>
+<DT><TT>leoparse</TT> </DT>    <DD>Parser for PM2 configuration files</DD>
+<DT><TT>lib</TT> </DT>         <DD>External libraries used by PM2</DD>
+<DT><TT>mad1</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
+<DT><TT>mad2</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
+<DT><TT>mad3</TT> </DT>        <DD>Communication subsystem (current version)</DD>
+<DT><TT>mad4</TT> </DT>        <DD>Communication subsystem (prototype version)</DD>
+<DT><TT>make</TT> </DT>        <DD>PM2 makefile system</DD>
+<DT><TT>marcel</TT> </DT>      <DD>Multithreading subsystem</DD>
+<DT><TT>modules</TT> </DT>     <DD>Link to all the PM2 modules</DD>
+<DT><TT>ntbx</TT> </DT>        <DD>Generic network management utility toolbox</DD>
+<DT><TT>pm2</TT> </DT>         <DD>PM2 <EM>en personne</EM>! </DD>
+<DT><TT>profile</TT> </DT>     <DD>PM2 profiling utilities</DD>
+<DT><TT>sigmund</TT> </DT>     <DD>PM2 trace system</DD>
+<DT><TT>stackalign</TT> </DT>  <DD>???</DD>
+<DT><TT>tbx</TT> </DT>         <DD>Generic PM2 utility toolbox </DD>
 </DL>
 </P>
 
 <P>
-The <TT>mad1</TT> directory contains the obsolete Madeleine<SPACE/>I communication
-subsystem for backward reference, but should not be used any
-longer. Just ignore it.
+The <TT>mad1</TT> and <TT>mad2</TT> directories contain obsolete
+versions of the Madeleine communication subsystem for backward
+reference, they should no longer be used and can be safely ignored.
 </P>
 
 <NOTE>
@@ -174,39 +180,60 @@ longer. Just ignore it.
 <SUBSECTION TITLE="Setting the environment variables">
 
 <P>
-Several environment variables have to be set so that PM2 correctly.
+Several environment variables have to be set so that PM2 correctly
+works.
 <UL>
   
 <LI>
-<P> The <TT>PM2_HOME</TT> variable must contain the path to the PM2
-  administrative directory. The default is your home directory
-  <TT>${HOME}</TT>.  There, a <TT>.pm2</TT> directory will be created to store
-  various PM2 configuration files such as flavors, etc. and some
-  system-dependent binary files such as <TT>ezflavor</TT>, etc.
+<P>
+The <TT>PM2_ROOT</TT> variable contains the path to the PM2
+distribution root directory. Setting that variable is
+<B>mandatory</B>. It is the only one needed, all other variables have
+default values.
+
+<IGNORE>
+Observe that PM2 does not write
+anything into this directory: a write-protected directory is OK.
+</IGNORE>
+</P>
+</LI>
+
+<LI>
+<P>
+It is highly recommended to add the directory <TT>${PM2_ROOT}/bin</TT>
+in the active search path.
+</P>
+</LI>
+
+<LI>
+<P>
+The <TT>PM2_HOME</TT> variable contains the path to the PM2
+administrative directory. The default is your home directory
+<TT>${HOME}</TT>. It will contain two sub-directories: the
+<TT>.pm2</TT> sub-directory to store various PM2 configuration files
+such as flavors, and the <TT>build</TT> sub-directory to store all the
+files generated within the compilation process such as the binary file
+<TT>ezflavor</TT>.
 </P>
 </LI>
     
 <LI>
-<P> The <TT>PM2_ROOT</TT> variable must contain the path to the PM2
-  distribution root directory. Observe that PM2 does not write
-  anything into this directory: a write-protected directory is OK.
+<P>
+By default, configuration files are stored in the
+<TT>${PM2_HOME}/.pm2</TT> directory. You can change this by setting
+the variable <TT>PM2_CONF_DIR</TT> to another directory.
 </P>
-</LI>
-
-<LI>
-<P> The <TT>${PM2_ROOT}/bin</TT> directory has to be included in
-  the active search path.
+<P>
+All the files generated within the compilation process will be placed by 
+default in the <TT>${PM2_HOME}/build</TT> directory. Though this may
+be convenient in a first place, you may wish to keep these files in a
+more dedicated place. Just define the <TT>PM2_BUILD_DIR</TT> shell
+variable to the desired value.
 </P>
-</LI>
-
-<LI>
-<P> Finally, all the files generated within the compilation process
-  will be placed by default in the <TT>${PM2_HOME}/build</TT> directory. Though
-  this may be convenient in a first place, you may wish to keep these
-  files in a more dedicated place. Just define the <TT>PM2_BUILD_DIR</TT>
-  shell variable to the desired value. Just note that this directory
-  has to be reachable from any machine used in running PM2 programs.
-  Be careful that <TT>/tmp</TT> does not work in general!
+<P>
+Please note that these two directories have to be reachable from any
+machine used when running PM2 programs. Using the <TT>/tmp</TT>
+directory could for example not be suitable!
 </P>
 </LI>
 </UL>
@@ -228,15 +255,16 @@ your default shell is <TT>csh</TT>):
 <SUBSECTION TITLE="Creating the standard PM2 flavors" LABEL="subsec:compiling">
 
 <P>
-You should now create your own, private configuration database. It is
-stored in the <TT>${PM2_HOME}/.pm2</TT> file in your home directory. It is made
-of a list of <EM>flavors</EM>. A flavor is simply a (rather complex!)
-series of options to be passed to the PM2 modules at compile-time
-and/or at run-time. Flavors are organized so as to let you easily
-maintain several versions of the PM2 system at the same time: for
-instance, one compiled for the TCP protocol and one compiled for the
-BIP/Myrinet protocol. Or, one compiled with the debugging checks on,
-and one with the checks turned off for performance. 
+You should now create your own, private configuration database. The
+files are stored in the <TT>${PM2_HOME}/.pm2</TT> directory, and
+consist of a set of <EM>flavors</EM>. A flavor is simply a (rather
+complex!) set of options to be passed to the PM2 modules at
+compilation time and/or at execution time. Flavors are organized so as
+to let you easily maintain several versions of the PM2 system at the
+same time: for instance, one version for the TCP protocol and another
+version for the BIP/Myrinet protocol. Or, one version with the
+debugging parameters on, and another one with the debugging parameters
+turned off for performance.
 </P>
 
 <P>
@@ -250,20 +278,20 @@ and one with the checks turned off for performance.
 
 <P>
 This checks the whole source hierarchy for consistency extracting the
-option sets for each PM2 module if necessary. Then, this creates the
-the various flavors. You can just list them by
+option sets for each PM2 module if necessary. It then creates
+the various flavors. You can list them by
 <CODE FILE="./Sources/code/flavorList.txt"/>
 </P>
 
 <P>
-In the following, we will advise you to use the <TT>pm2</TT> standard
-flavor. Just have a look at it to get a feeling of your current
-flavor. You'll probably never dare do it again!
+In the following, we advise you to use the <TT>pm2</TT> standard
+flavor. Just have a look at it to get a feeling of its different parameters.
+You will probably never dare to do it again!
 <CODE FILE="./Sources/code/flavorGet.txt"/>
 </P>
 
 <P>
-There are many more way of using the <TT>pm2-flavor</TT> command. See
+The <TT>pm2-flavor</TT> command offers several other functionalities. See
 <TT>pm2-flavor -h</TT> for the extensive on-line help.
 </P>
 
@@ -285,10 +313,11 @@ by hand.
 
 <P>
 The only interesting setting at this time is the underlying network
-protocol selection, which is currently not desirable to be
-auto-detected by the Madeleine<SPACE/>II communication library of PM2.  It is
-set to TCP by default in the <TT>pm2</TT> flavor, which should fit your
-needs at least for the first runs. 
+protocol selection, for which the auto-detection by the
+Madeleine<SPACE/>III communication library of PM2 is not recommended.
+By default, the network protocol is set to TCP in the <TT>pm2</TT>
+flavor, which should fit your needs at least for the first runs.
+
 <CODE FILE="./Sources/code/setPm2Flavor.txt"/>
 </P>
 
@@ -297,33 +326,40 @@ needs at least for the first runs.
 <SUBSECTION TITLE="Compiling the library">
 
 <P>
-You are now ready for the big thing: compiling the whole library.  No
-files are created in the <TT>${PM2_ROOT}</TT> directory, so that you can
-compile and install PM2 from a CDROM. All executable will be placed
-into the <TT>${PM2_BUILD_DIR}</TT> directory. 
+You are now ready for the big step: compiling the whole library. 
+
+<IGNORE>
+No files are created in the <TT>${PM2_ROOT}</TT> directory, so that
+you can compile and install PM2 from a CDROM. 
+</IGNORE>
+
+All executable will be created into the <TT>${PM2_BUILD_DIR}</TT>
+directory.
 </P>
 
 <WARNING>
 Remember that this directory
-has to be accessible from all machines included in the PM2
+must be accessible from all machines included in the PM2
 configuration. A local <TT>/tmp</TT> directory will not work!
 </WARNING>
 
 <P>
-To launch the whole compilation, just invoke <TT>make</TT>. 
+To launch the whole compilation, just invoke <TT>make</TT> from the
+<TT>$PM2_ROOT</TT> directory.
 </P>
 
 <WARNING>
 Make sure you
 use the <EM>right</EM> version of the program (see above for detailed
-specification). Only recent GNU versions will make it!
+specification). Only recent GNU versions will work!
 </WARNING>
 
 <P>
 <CODE FILE="./Sources/code/make.txt"/>
 
-You may wish to precisely follow the compilation process, just set the
-<TT>VERB</TT> variable of the makefile to <TT>verbose</TT>.
+You may wish to follow precisely the compilation process, to do so,
+set the <TT>VERB</TT> variable of the makefile process to
+<TT>verbose</TT>.
 
 <CODE FILE="./Sources/code/makeVerbose.txt"/>
 </P>
@@ -334,46 +370,51 @@ You may wish to precisely follow the compilation process, just set the
 
 <P>
 The directory tree of the PM2 distribution may be cleaned at any time
-from compiled objects and libraries using the command <TT>pm2clean</TT>.
+from compiled objects and libraries using the command <TT>pm2-clean</TT>.
 This may be needed to free some disk space when PM2 is not in use or
-to force the whole PM2 distribution to be completely remade by a
+to force the whole PM2 distribution to be completely recreated by a
 subsequent <TT>make</TT> call.
 
 <CODE FILE="./Sources/code/makeClean.txt"/>
 </P>
 
 <P>
-Note that this does not affect your private <TT>.pm2</TT> flavor file, nor
-your <TT>build</TT> directory. If wanted, they have to be removed by hand.
+This will clean all the files generated by the compilation process of
+the current flavor, i.e the directory
+<TT>${PM2_BUILD_DIR}/${PM2_FLAVOR}</TT>. Note that this does not
+affect your own <TT>.pm2</TT> flavor directory; if wanted, it has to
+be removed by hand.
 </P>
-
-<NOTE>
-  Luc: Is this still correct?
-</NOTE>
 
 </SUBSECTION>
 
 <SUBSECTION TITLE="Solving problems">
 
 <P>
-If something goes wrong at any point below this point, then you can
-always activate the emergency repair tool provided by PM2.
+If something goes wrong at any point, you can always activate the
+emergency repair tool provided by PM2.
+
 <CODE FILE="./Sources/code/makeSos.txt"/>
 </P>
 
 <P>
-This result into a listing of your current configuration, attempts to
+This results into a listing of your current configuration, attempts to
 rebuild the flavor database and clears the compiled PM2 library as
-cleanly as possible. It should restore a fresh and safe configuration
-for you, ready to restart the whole compilation. The output of the
-command may look like:
+cleanly as possible. It should then restore a fresh and safe
+configuration for you, ready to restart the whole compilation. The
+output of the command may look like:
+
 <CODE FILE="./Sources/code/makeSos2.txt"/>
-(Note that the final message is automatically generated!)
+
+</P>
+
+<P>
+Note that the final message is automatically generated!
 </P>
 
 </SUBSECTION>
 
-<SUBSECTION TITLE="Testing your first PM2 program">
+<SUBSECTION TITLE="Compiling your first PM2 program">
 
 <WARNING>
   Please, make sure that your flavor is actually set to <TT>pm2</TT>:
@@ -382,15 +423,17 @@ command may look like:
 </WARNING>
 
 <P>
-The PM2 library should now fully configured.  You are ready to compile
-the example programs of the distribution.  Let's start with the
-simplest one: <EM>Hello world!</EM>, located in file <TT>hello.c</TT>.
-  <CODE FILE="./Sources/code/makeHello.txt"/>
+The PM2 library should now be fully configured.  You are ready to
+compile and execute the example programs of the distribution.  Let's
+start with the simplest one: <EM>Hello world!</EM>, located in file
+<TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
+
+<CODE FILE="./Sources/code/makeHello.txt"/>
 </P>
 
 <P>
-The compiled version of our program is automatically placed into your
-private <TT>build/${PM2_FLAVOR}</TT> directory, but you need not bother with
+The compiled version of the program is automatically placed into your
+own <TT>build/${PM2_FLAVOR}</TT> directory, but you do need not bother with
 this detail at this point: PM2 cares about it for you! Use the
 <TT>pm2which</TT> command to learn where a file is physically located;
 <CODE FILE="./Sources/code/whichHello.txt"/>
@@ -401,56 +444,102 @@ this detail at this point: PM2 cares about it for you! Use the
 <SUBSECTION TITLE="Specifying the configuration for execution">
 
 <P>
-The final step before execution is to specify the list of host names on
-which the PM2 application is going to run. For this, use the
-<TT>pm2conf</TT> command. My current machine is called <TT>ravel</TT>, and the two
-neighboring ones are called <TT>debussy</TT> and <TT>faure</TT> (well, this should
-actually read <EM>Fauré</EM>!).
+The final step before execution is to specify the list of host names
+on which the PM2 application is going to run. For this, use the
+<TT>pm2conf</TT> command. Here I want to use my local machine called
+<TT>ravel</TT>, and two neighboring ones called <TT>debussy</TT> and
+<TT>faure</TT> (well, this should actually read <EM>Fauré</EM>!).
 <CODE FILE="./Sources/code/pm2conf.txt"/>
 </P>
 
 <P>
-PM2 will consider that processing node<SPACE/>0 is a process run by <TT>ravel</TT>,
-node<SPACE/>1 by <TT>debussy</TT> and node<SPACE/>2 by <TT>faure</TT>.  Observe that I select
-here my current workstation as node<SPACE/>0. This is for convenience only,
-but may machine could make it. Indeed, there is no reason why my local
-machine should get enrolled in the execution of the program. In
+PM2 will consider that processing node<SPACE/>0 is a process run by
+<TT>ravel</TT>, node<SPACE/>1 by <TT>debussy</TT> and node<SPACE/>2 by
+<TT>faure</TT>.  Observe that I select my current workstation as
+node<SPACE/>0. This is for convenience only as PM2 does not require to
+be executed on the local machine. Indeed, there is no reason why the
+local machine should get enrolled in the execution of the program. When
 running a PM2 on a dedicated cluster, the local machine is most
-preferably out of the configuration.
+preferably outside the configuration.
 </P>
 
 <WARNING>
-  Just to avoid disturbing problems in the sequel, please make sure
-  that you local machine is allowed to issue <TT>rsh</TT> commands to each
+  <P>
+  Just to avoid disturbing problems in the following, please make sure
+  that you local machine is allowed to issue <TT>ssh</TT> commands to each
   machine in the configuration, and that the directory <TT>${PM2_ROOT}</TT>
-  is actually shared by all of them. For instance, try:
-<CODE FILE="./Sources/code/pm2all.txt"/>
-(Note the <TT>'</TT> characters!)  This script issues a rsh command to each
-node in the current configuration.  If you do not get the list of the
-files in your current <TT>${PM2_ROOT}</TT> directory, that is, either you
-get nothing or a message like <TT>permission denied</TT>, etc., then you are
-in trouble!
+  is actually shared by all of them. You can for example try the following command:
+
+  <CODE FILE="./Sources/code/pm2all.txt"/>
+  </P>
+
+  <P>
+  (Note the <TT>'</TT> characters!)
+  </P>
+
+  <P>
+  This script issues a <TT>ssh</TT> command to each node in the current
+  configuration. In case you do not get the list of the files in your
+  current <TT>${PM2_ROOT}</TT> directory, but get instead nothing or a
+  message similar to <TT>permission denied</TT>, you should then check
+  you can connect to the machines which are in your current
+  configuration.
+  </P>
+
 </WARNING>
 
+<P>
+By default, PM2 is connecting to machines using the <TT>ssh</TT>
+command. To use another command or to use specific parameters of the
+<TT>ssh</TT> command, you can set the <TT>PM2_RSH</TT> variable.
+
+<CODE FILE="./Sources/code/pm2rsh.txt"/>
+</P>
+
+<IGNORE>
 <P>
 If <TT>rsh</TT> does not work because of right permissions, a possible
 turnaround is to use <TT>ssh</TT> instead of <TT>rsh</TT>:
 <CODE FILE="./Sources/code/setPm2Rsh.txt"/>
 </P>
+</IGNORE>
 
 <P>
-If it does not output the right list of files, then the remote
-machines in the configuration are not correctly served by the network
-fil system. PM2 cannot work, as it implicitly assumes that the
-executable of the program will be found on the remote machines at the
-same place as it is on the local one.
+If you still cannot get a proper output with the command
+<TT>pm2-all</TT>, then it could be the remote machines in the
+configuration are not correctly served by the network file system. PM2
+cannot work, as it implicitly assumes that the executable of the
+program will be found on the remote machines at the same place as it
+is on the local one.
 </P>
 
 <P>
-If this is not possible to correct such problems, then it is still
+However if it is not possible to correct such problems, it is still
 possible to run all three PM2 <EM>virtual nodes</EM> as three processes
-of your local machine:
+on your local machine:
 <CODE FILE="./Sources/code/pm2conflocal.txt"/>
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Creating the Network configuration file">
+
+<P>
+When loading a PM2 program, a network configuration file is read to
+determine which network links to use between the different machines
+involved in the execution. In our case, we suppose our 3 machines are
+connected using the TCP network. The network configuration file can be
+created as follows:
+
+<CODE FILE="./Sources/code/hellonetworks.txt"/>
+
+</P>
+
+<P>
+You then need to tell PM2 to use your new network configuration file instead of the default one.
+This is done by setting the <TT>PM2_LEONIE_NETWORK_FILE</TT> variable.
+
+<CODE FILE="./Sources/code/sethellonetworks.txt"/>
 </P>
 
 </SUBSECTION>
@@ -460,9 +549,22 @@ of your local machine:
 <P>
 It remains to actually load and run the program.
 <CODE FILE="./Sources/code/pm2load.txt"/>
+</P>
+
+<P>
 Congratulations, you've run your first PM2 program! <TT>;-)</TT>
 </P>
 
+<P>
+You can see that our program generates several times the same message
+<TT>Hello world</TT>. Each of the nodes involved in the execution
+displays once the message with a call to the <TT>printf</TT> Unix
+routime. The output from all the nodes has been redirected to the
+console of the starting process.
+</P>
+
+
+<IGNORE>
 <P>
 You can see that our program generates two messages. The first one is
 the expected <EM>Hello World!</EM> message coming from the master
@@ -473,6 +575,7 @@ related to the master process. Note that the output of the nodes
 different from node<SPACE/>0 does not show up at the terminal. We will see
 later how to get them.
 </P>
+</IGNORE>
 
 </SUBSECTION>
 

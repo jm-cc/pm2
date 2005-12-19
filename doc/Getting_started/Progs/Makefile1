@@ -14,11 +14,11 @@ CFILES		:= $(wildcard *.c)
 OFILES		:= $(CFILES:%.c=%.o)
 EXEFILES	:= $(CFILES:%.c=%)
 
-all: $(EXEFILES)
+all: ${EXEFILES}
 
 ${EXEFILES}: %: %.c
-	@echo "Compiling $< for flavor '$(PM2_FLAVOR)'..."
-	@${CC} ${CFLAGS) $< ${LDFLAGS} -o $@
+	@echo "Compiling $< for flavor '${PM2_FLAVOR}'..."
+	@${CC} ${CFLAGS} $< ${LDFLAGS} -o $@
 
 clean:
 	-rm ${EXEFILES} ${OFILES}

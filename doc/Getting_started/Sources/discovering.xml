@@ -5,25 +5,31 @@
 
 <P>
 This chapter aims at illustrating the basic features of PM2 through
-some very simple programs. Next chapters present more advanced
+some very simple programs. The next chapters present more advanced
 features that may be needed when developing <EM>real</EM> parallel
 applications.
 </P>
 
 <SUBSECTION TITLE="Compiling your own PM2 program">
 
-<PROGRAM FILE="./Progs/Makefile1" TITLE="A minimal GNU Makefile for PM2 programs" LABEL="prog:Makefile1"/>
-
 <P>
-You may compile you own PM2 program just as a usual C<SPACE/>program. The
-only point is to include the necessary definitions and libraries.  As
-the command line is rather complex, PM2 provides a simple utility to
-generate it on-line: <TT>pm2-config --cc</TT> generates the name of
-the adequate C<SPACE/>compiler (most probably, <TT>gcc</TT>), <TT>pm2-config
---cflags</TT> generates the necessary <TT>CFLAGS</TT>, and
-<TT>pm2-config --libs</TT> generates the list of libraries to be
-searched on linking. Thus, the standard command line to compile a PM2
-program <TT>hello.c</TT> looks like:
+You may compile you own PM2 program just as a usual
+C<SPACE/>program. You just need to make sure the necessary definitions
+and libraries are included. As the command line is rather complex,
+PM2 provides a simple utility to generate it online:
+<UL>
+<LI>
+<TT>pm2-config --cc</TT> generates the name of the adequate C<SPACE/>compiler (most probably, <TT>gcc</TT>),
+</LI>
+<LI>
+<TT>pm2-config --cflags</TT> generates the necessary <TT>CFLAGS</TT>,
+</LI>
+<LI>
+and <TT>pm2-config --libs</TT> generates the list of libraries to be searched on linking.
+</LI>
+</UL>
+
+Thus, the standard command line to compile a PM2 program <TT>hello.c</TT> looks like:
 
 <CODE FILE="./Sources/code/compileHello.c"/>
 </P>
@@ -40,6 +46,8 @@ on Program <REF LABEL="prog:Makefile1"/> a <TT>Makefile</TT> which does
 all the work for you. Executing <TT>make hello</TT> will compile
 source file <TT>hello.c</TT> with all the necessary parameters.
 </P>
+
+<PROGRAM FILE="./Progs/Makefile1" TITLE="A minimal GNU Makefile for PM2 programs" LABEL="prog:Makefile1"/>
 
 <P>
 Observe that using dynamic calls to the <TT>pm2config</TT> utility guarantees
@@ -67,10 +75,20 @@ Program <REF LABEL="prog:hello"/> shows an
 example of a minimal PM2 code. Compile it and run it:
 
 <CODE FILE="./Sources/code/makeHello2.txt"/>
+
 </P>
 
+<WARNING>
+Compilation using the Makefile given in Program <REF
+LABEL="prog:Makefile1"/> creates the executable file in the current
+directory. For PM2 to locate the executable when connecting to remote
+machines, you need to make sure your current directory is in the
+<TT>PATH</TT> or to move the executable <TT>hello</TT> into a
+directory available in the <TT>PATH</TT>.
+</WARNING>
+
 <P>
-Though it looks simple, it is a full-fledged SPMD parallel program
+Though it looks simple, this is a full-fledged SPMD parallel program
 that spawns on several processing nodes during execution! Let's
 examine it step by step.
 </P>
@@ -90,7 +108,7 @@ applications.
 
 <P>
 The main function of the PM2 program is named <TT>pm2_main</TT>, in contrast
-to traditional C<SPACE/>programs that use the well-known <TT>main</TT>
+to traditional C<SPACE/>programs which use the well-known <TT>main</TT>
 function name. In fact, the <EM>real</EM> <TT>main</TT> function of the
 program is provided by the PM2 libraries. It has to set up the
 execution environment before calling the user <TT>pm2_main</TT> function.
@@ -117,7 +135,7 @@ A PM2 program has to call <TT>pm2_init</TT> to effectively initialize the
 PM2 runtime system. Moreover, this step involves a global
 synchronization phase (actually, a global synchronization barrier)
 among all the PM2 nodes so that each process is assigned a unique
-<EM>rank number</EM> on returning from <TT>pm2_init</TT>. In consequence, it
+<EM>rank number</EM> on return from <TT>pm2_init</TT>. In consequence, it
 makes no sense to call functions concerned with the global execution
 environment (such as node numbers, etc.)  <EM>before</EM> this point.
 Please, refer to Section <REF LABEL="sec:rank"/> for details.
@@ -125,13 +143,13 @@ Please, refer to Section <REF LABEL="sec:rank"/> for details.
 
 <P>
 Most importantly, the <TT>pm2_init</TT> function spawns a number of internal
-<EM>thread daemons</EM> that are in charge of listening the network and
+<EM>thread daemons</EM> that are in charge of listening to the network and
 answering to external requests such as RPCs, incoming thread
 migrations, etc. A node should be ready to handle all possible
 incoming requests from any other node at this point. As a consequence,
 it is not safe to do any initialization <EM>after</EM> this point, as
 the user has no control about the interleaving of requests and the
-relative speed of the nodes. Even though the initialization call is
+relative speed of the nodes. Even though the initialization call would be
 placed just after <TT>pm2_init</TT>, an arbitrary delay may occur between
 the two successive instructions! It follows that if some
 initialization code needs to be performed before any thread is
@@ -140,7 +158,7 @@ started, then this code <EM>must</EM> be called <EM>before</EM>
 </P>
 
 <P>
-Note also that the Unix standard input/output streams may not be
+Also note that the Unix standard input/output streams may not be
 correctly initialized before the call to <TT>pm2_init</TT>. Thus, the
 behavior of programs using I/O operations before <TT>pm2_init</TT> is not
 defined.
@@ -153,9 +171,11 @@ routine of the C<SPACE/>library, which is protected against multithreading
 (technically, it is made <EM>reentrant</EM> by disabling scheduling).
 As mentioned previously, all nodes perform this call and actually
 produce the ``<EM>Hello World!</EM>'' string on their output stream.
+<IGNORE>
 Yet, only the output of node<SPACE/>0 is observed here.
 Section <REF LABEL="sec:output"/> describes where these outputs actually go
 during execution.
+</IGNORE>
 </P>
 
 </SUBSUBSUBSECTION>
@@ -163,15 +183,15 @@ during execution.
 <SUBSUBSUBSECTION TITLE="Who's who?" LABEL="sec:rank">
 
 <P>
-Each processing node (that is, Unix process) taking part to a given
+Each processing node (that is, Unix process) taking part in a given
 execution receives its own unique <EM>rank</EM> number. This is an
 <TT>unsigned int</TT> between 0 and <TT>pm2_config_size() - 1</TT>. A
-node can learn its own rank by calling the <TT>pm2_self</TT> routine.
+node can get its own rank by calling the <TT>pm2_self</TT> routine.
 </P>
 
 <P>
 The processing node with rank<SPACE/>0 has a particular status because it is
-the only one which whose input/output streams are linked to the
+the only one which whose input/output streams are directly linked to the
 terminal the application was launched from. We later refer to this
 process as the <EM>main node</EM> of an application. As a consequence,
 only the main node of an application can access its standard input
@@ -179,9 +199,9 @@ stream (<EM>e.g.</EM>, using <TT>scanf</TT>, <TT>gets</TT>, etc.)
 </P>
 
 <P>
-As an example of use of <TT>pm2_self</TT>, the program features a test on
-the rank of the current process: if the current process is the main
-process, then the <TT>pm2_halt</TT> routine is called.
+As an example on how to use <TT>pm2_self</TT>, the program performs a
+test on the rank of the current process: if the current process is the
+main process, then the <TT>pm2_halt</TT> routine is called.
 </P>
 
 </SUBSUBSUBSECTION>
@@ -189,20 +209,23 @@ process, then the <TT>pm2_halt</TT> routine is called.
 <SUBSUBSUBSECTION TITLE="How to terminate?">
 
 <P>
-The termination of a PM2 program is a delicate task since PM2 performs
-no automatic termination detection. Thus, the termination decision
+The termination of a PM2 program is a tricky task as PM2 does not perform
+any automatic termination detection. Thus, the termination decision
 must be made at the application level. The termination phase is
 split in two steps.
 </P>
 
+<OL>
+<LI>
 <P>
 <EM>Exactly one</EM> node must perform an explicit call to
 <TT>pm2_halt</TT>. In our example, the main process was chosen to execute
-this function.  Actually, any process could have been selected. For
+this call.  Actually, any process could have been selected. For
 instance, we could replace 
 
 <CODE FILE="./Sources/code/pm2self.c"/>
-by any other kind of test selecting exactly one node, for instance:
+
+by any other test selecting exactly one node, for instance:
 
 <CODE FILE="./Sources/code/pm2self2.c"/>
 </P>
@@ -216,17 +239,20 @@ Note that after a node receives this order, it still continues its
 normal execution in a <EM>standalone</EM> mode: <EM>halting</EM> is no
 <EM>killing</EM>!
 </P>
+</LI>
 
+<LI>
 <P>
 To exit from a PM2 session, each node must call the <TT>pm2_exit</TT>
 routine.  This call blocks the calling thread until all other threads
 (belonging to the same node) terminate. In our example, no other
-application thread but the main one is running. Thus, <TT>pm2_exit</TT>
+application thread except from the main one is running. Thus, <TT>pm2_exit</TT>
 completes as soon as the internal daemon threads are stopped. Had we
 removed the call to <TT>pm2_halt</TT>, then all nodes would remain hanging,
 waiting for ever for external requests!
 </P>
 
+<IGNORE>
 <P>
 As the call to <TT>pm2_exit</TT> is potentially blocking, the thread in
 charge of calling <TT>pm2_halt</TT> should do it first. However, observe
@@ -234,16 +260,23 @@ that it may well be the case that at a node, some thread is in charge
 of calling <TT>pm2_halt</TT> and another one <TT>pm2_exit</TT>, so that the order
 may in fact be irrelevant.
 </P>
+</IGNORE>
+</LI>
+</OL>
 
 <P>
 From the user point of view, the PM2 program terminates as soon as the
 shell prompts for the next command from the terminal. This corresponds
 to the end of the main node. However, note that some nodes may
-actually remains running after the main node has completed.  In our example,
+actually keep running after the main node has completed.  In our example,
 the main node can even terminate before any other node has started
 executing <TT>tprintf</TT>! Fortunately, this is not a problem here, since
-<TT>tprintf</TT> does not involve any communication with other nodes. We will
+<TT>tprintf</TT> does not involve any communication with other nodes.
+
+<IGNORE>
+We will
 further discuss this termination problem in Section <REF LABEL="sec:output"/>.
+</IGNORE>
 </P>
 
 <NOTE>
@@ -254,6 +287,7 @@ further discuss this termination problem in Section <REF LABEL="sec:output"/>.
 </SUBSUBSUBSECTION>
 </SUBSUBSECTION>
 
+<IGNORE>
 <SUBSUBSECTION TITLE="Where does the output go?" LABEL="sec:output">
 
 <P>
@@ -306,6 +340,7 @@ behavior of the original <TT>printf</TT> function.
 </SUBSUBSUBSECTION>
 
 </SUBSUBSECTION>
+</IGNORE>
 
 </SUBSECTION>
 
@@ -319,20 +354,20 @@ by step so as to demonstrate the versatility of PM2.
 
 <SUBSUBSECTION TITLE="Invoking a remote service">
 
-<PROGRAM FILE="./Progs/rpc.c" TITLE="Defining a service in PM2" LABEL="prog:rpc"/>
-
 <P>
 A <EM>service</EM> is a function located on a <EM>server</EM> node, which
 can be invoked by some <EM>client</EM> node. Observe that the client
 node may be the same as the server node. It may also be run on the
 same processor, or on a sibling processor on the same SMP board, or on
-some remote one. All this is fully transparent for the user of PM2.
+some remote one. All of this is fully transparent for PM2 users.
 Nodes are specified through their numbers, as allocated by the
 <TT>pm2conf</TT> command. In this part, we consider our usual 3-node
 configuration:
 
 <CODE FILE="./Sources/code/pm2conf1.txt"/>
 </P>
+
+<PROGRAM FILE="./Progs/rpc.c" TITLE="Defining a service in PM2" LABEL="prog:rpc"/>
 
 <P>
 In Program <REF LABEL="prog:rpc"/>, a basic service is defined. Its behavior is
@@ -349,12 +384,12 @@ identifier and the service function has thus to be set up
 <EM>before</EM> calling the <TT>pm2_init</TT> routine. Doing otherwise will
 result in unspecified behavior, probably depending on the relative
 speed of the nodes. The user is therefore <EM>strongly advised</EM> to
-pay very careful attention to this requirement.
+give extra attention to this requirement.
 </P>
 
 <P>
-Returning to the program, processing node<SPACE/>0 invokes the remote service
-<TT>service_id</TT> on processing node<SPACE/>1. The service invocation is
+Returning to the program, the processing node<SPACE/>0 invokes the remote service
+<TT>service_id</TT> on the processing node<SPACE/>1. The service invocation is
 initiated using the <TT>pm2_rawrpc_begin</TT> routine.  The first argument
 of the routine is the unique number of the server node.  The second
 argument is the service identifier. It has to be a valid number on the
@@ -380,12 +415,14 @@ It is now time to run the program:
 <CODE FILE="./Sources/code/pm2loadrpc.txt"/>
 </P>
 
+<IGNORE>
 <P>
 Observe that an image of the program has been started <EM>both</EM> on
 hosts <TT>debussy</TT> and <TT>faure</TT>. In fact, the service function has been
 registered on all 3 nodes, including root node<SPACE/>0.  Yet, only 
 node<SPACE/>1 has been used as a server for the request of node<SPACE/>0.
 </P>
+</IGNORE>
 
 <P>
 In this example, the two processing nodes of PM2 have been launched on
@@ -404,22 +441,22 @@ additional data is to be expected, so that it can proceed safely.
 Actually, the service function has no way of discovering that the RPC
 has been invoked without any additional data, and it is up to the user
 to build the program client and server parts of the program in a
-consistent way. More on this in the next section!
+consistent way. More about this subject in the next section!
 </P>
 
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="Passing parameters">
 
-<PROGRAM FILE="./Progs/rpc-params.c" TITLE="Service with a string parameter" LABEL="prog:rpc-params"/>
-
 <P>
-Let us now the case of a service function invoked with additional
+Let us see now the case of a service function invoked with additional
 parameters. In Program <REF LABEL="prog:rpc-params"/>, node<SPACE/>0 invokes a service
 on node<SPACE/>1 with a string as a parameter. The service consists namely in
 printing the string on the standard output.
 </P>
   
+<PROGRAM FILE="./Progs/rpc-params.c" TITLE="Service with a string parameter" LABEL="prog:rpc-params"/>
+
 <P>
 Which string? Well, the original motivation of PM2 was to provide a
 runtime environment for high-performance distributed programs with a
@@ -438,15 +475,15 @@ byte arrays, etc. (even pointers!) very much as in PVM or PMI.  On the
 server side, they are <EM>unpacked</EM> within the service function.
 Again, the service function has no way of guessing what kind of
 parameters have been packed by the client, nor how many of them have
-been packed. In short, PM2 message are <EM>not self-described</EM>.
+been packed. In short, PM2 messages are <EM>not self-described</EM>.
 This choice is motivated by performance considerations: including the
 description of the objects together with the objects into the messages
 yields a significant overhead for small messages. In this respect, PM2
 follows the choice of many other communication interfaces. The
 counterpart is that the user is responsible for the consistency of the
 series of packing and unpacking actions. No verification is made at
-the level of PM2, and unspecified behavior will result of any
-inconsistency in types and numbers. The user specifies the end of
+the level of PM2, and unspecified behavior will result in any kind
+of inconsistency in types and numbers. The user specifies the end of
 reception on the server side by a call to the <TT>pm2_rawrpc_waitdata</TT>
 routine.
 </P>
@@ -477,13 +514,13 @@ Let us now run the program.
 The packing model of PM2 has been carefully designed so as to enable
 high-performance communication on modern Gigabit network interfaces
 such as BIP/Myrinet, SISCI/SCI, VIA, etc. In this context, it is of
-uttermost significance to save copies: actually, the time for copying
+uttermost significance to avoid copies: actually, the time for copying
 a buffer within a node is of the same order of magnitude as the time
-for sending it on the network to some remote node!  The key for
+for sending it over the network to some remote node!  The key for
 performance is therefore to allow for <EM>zero-copy</EM>
 communication: the message has to be directly taken from its initial
 location in user-space, and directly placed into its final destination
-in user space, without any additional copy. As the size of the
+in user-space, without any additional copy. As the size of the
 arguments for a RPC call are usually unknown in advance, the
 communication interface has to include this feature into its design.
 The approach of PM2, or more accurately of the underlying
@@ -493,7 +530,7 @@ unpacking operations with additional <EM>flags</EM>.
 
 <P>
 A message consists of several pieces of data, located anywhere in
-user space. It is constructed (resp. de-constructed) incrementally
+user-space. It is constructed (resp. de-constructed) incrementally
 using <EM>packing</EM> (resp. <EM>unpacking</EM>) routines, possibly at
 multiple software levels without losing efficiency. The following
 example illustrates this need. Let us consider a remote procedure call

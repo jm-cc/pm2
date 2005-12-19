@@ -8,4 +8,6 @@ The current PM2 configuration contains 3 host(s) :
 2 : faure
 
 ravel% pm2load hello
-[Threads : 2 created, 0 imported (0 cached)]
+Hello World!
+Hello World!
+Hello World!

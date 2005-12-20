@@ -520,25 +520,35 @@ for sending it over the network to some remote node!  The key for
 performance is therefore to allow for <EM>zero-copy</EM>
 communication: the message has to be directly taken from its initial
 location in user-space, and directly placed into its final destination
-in user-space, without any additional copy. As the size of the
-arguments for a RPC call are usually unknown in advance, the
-communication interface has to include this feature into its design.
-The approach of PM2, or more accurately of the underlying
-communication library called Madeleine, is to control the packing and
-unpacking operations with additional <EM>flags</EM>.
+in user-space, without any additional copy. Designing communication
+interfaces which can efficiently deal with messages featuring a
+complex structure, or messages of unpredictable size, is a
+difficult task. The approach of PM2, or more accurately of the
+underlying communication library called Madeleine, is to control the
+packing and unpacking operations with additional <EM>flags</EM>.
 </P>
 
 <P>
-A message consists of several pieces of data, located anywhere in
-user-space. It is constructed (resp. de-constructed) incrementally
-using <EM>packing</EM> (resp. <EM>unpacking</EM>) routines, possibly at
-multiple software levels without losing efficiency. The following
-example illustrates this need. Let us consider a remote procedure call
-which takes an array of unpredictable size as a parameter. When the
-request reaches the destination node, the header is examined both by
-the multithreaded runtime (to allocate the appropriate thread stack
-and then to spawn the server thread) and by the user application (to
+A Madeleine message consists of several pieces of data, located
+anywhere in user-space. It is constructed (resp. de-constructed)
+incrementally using <EM>packing</EM> (resp. <EM>unpacking</EM>)
+routines, possibly at multiple software levels without losing
+efficiency. The following example illustrates the power of the
+Madeleine interface. Let us consider a remote procedure call which
+takes an array of unpredictable size as a parameter. When the request
+reaches the destination node, the header is examined both by the
+multithreaded runtime (to allocate the appropriate thread stack and
+then to spawn the server thread) and by the user application (to
 allocate the memory where the array should be stored).
+</P>
+
+<P>
+Program <REF LABEL="prog:mad-params"/> presents a similar code to Program <REF
+LABEL="prog:rpc-params"/> written directly using the Madeleine interface. Note that
+the PM2 primitives to send data to a remote service are written on top
+of these Madeleine primitives.
+
+<PROGRAM FILE="Progs/mad-params.c" TITLE="Sending and receiving data with Madeleine" LABEL="prog:mad-params"/>
 </P>
 
 <P>
@@ -551,29 +561,29 @@ Available sending flags are defined as follows:
 
 <DL>
     
-<DT><TT>SEND_SAFER</TT></DT>
+<DT><TT>mad_send_SAFER</TT> (resp. <TT>SEND_SAFER</TT>)</DT>
 <DD> This flag indicates that PM2 should pack the data
   in a way that further modifications to the corresponding memory area
   should not corrupt the message. This is particularly mandatory if
   the data location is reused before the message is actually sent.
 </DD>
 
-<DT><TT>SEND_LATER</TT></DT>
+<DT><TT>mad_send_LATER</TT> (resp. <TT>SEND_LATER</TT>)</DT>
 <DD> This flag indicates that PM2 should not consider
   accessing the value of the corresponding data until the
-  <TT>pm2_end_packing</TT> primitive is called. This means that any
+  <TT>mad_end_packing</TT> (resp. <TT>pm2_rawrpc_end</TT>) primitive is called. This means that any
   modification of these data between their packing and their sending
   shall actually update the message contents.
 </DD>
 
-<DT><TT>SEND_CHEAPER</TT></DT>
+<DT><TT>mad_send_CHEAPER</TT> (resp. <TT>SEND_CHEAPER</TT>)</DT>
 <DD> This is the default flag. It allows PM2 to do
   its best to handle the data as efficiently as possible. The
   counterpart is that no assumption should be made about the way PM2
   will access the data. Thus, the corresponding data should be left
   unchanged until the send operation has completed. Note that most
   data transmissions involved in parallel applications can accommodate
-  the <TT>send_CHEAPER</TT> semantics.
+  this <TT>mad_send_CHEAPER</TT> semantics.
 </DD>
 </DL>
 </P>
@@ -582,25 +592,25 @@ Available sending flags are defined as follows:
 The following flags control the reception of user data packets:
 <DL>
     
-<DT><TT>RECV_EXPRESS</TT></DT>
+<DT><TT>mad_receive_EXPRESS</TT> (resp. <TT>RECV_EXPRESS</TT>)</DT>
 <DD> This flag forces PM2 to guarantee that the
   corresponding data are immediately available after the the
   <EM>unpacking</EM> operation. Typically, this flag is mandatory the
   data is needed to determine the next forthcoming <EM>unpacking</EM>
   calls.  On some network protocols, this functionality may be
-  available for free. On some others, it could penalize latency and
-  bandwidth. The user should therefore extract data this way only when
-  necessary.
+  available for free. On some others, it could penalize the latency and
+  the bandwidth. Users should therefore extract data using this semantics 
+  only when necessary.
 </DD>
 
-<DT><TT>RECV_CHEAPER</TT></DT>
+<DT><TT>receive_CHEAPER</TT> (resp. <TT>RECV_CHEAPER</TT>)</DT>
 <DD> This flag allows PM2 to defer the extraction of
   the corresponding data until the execution of the
-  <TT>pm2_rawrpc_waitdata</TT> routine.  Thus, no assumption can be made
+  <TT>mad_end_unpacking</TT> (resp. <TT>pm2_rawrpc_waitdata</TT>)routine.  Thus, no assumption can be made
   about the exact moment at which the data will be extracted.
   Depending on the underlying network protocol, PM2 will do its best
   to minimize the overall message transmission time. If combined with
-  <TT>send_CHEAPER</TT>, this flag always guarantees that the corresponding
+  <TT>mad_send_CHEAPER</TT>, this flag always guarantees that the corresponding
   data is transmitted as efficiently as possible.
 </DD>
 </DL>
@@ -614,16 +624,18 @@ result from mismatching flags.
 </P>
 
 <P>
-In Program <REF LABEL="prog:rpc-params"/>, everything is sent <TT>CHEAPER</TT>, so as
-to save time. The user has been careful enough not to corrupt
-variables <TT>len</TT> and <TT>s</TT> before calling <TT>pm2_rawrpc_end</TT>. On the
-reception side, variable <TT>len</TT> <EM>must</EM> be received <TT>EXPRESS</TT>, as
-its value is needed to allocate the buffer for the unpacking of
-variable <TT>s</TT>.  Then, variable <TT>s</TT> can be received <TT>CHEAPER</TT>. If the
-underlying operating system and network interface permit, then this
-(possibly large) message will thus be directly installed into the
-reception buffer without any extra copy, providing the user with
-optimal performance.
+In Programs <REF LABEL="prog:rpc-params"/> and <REF
+LABEL="prog:mad-params"/>, everything is sent <TT>CHEAPER</TT>, so as
+to save time. The user must be careful not to corrupt the
+variables <TT>len</TT> and <TT>s</TT> before calling
+<TT>pm2_rawrpc_end</TT>. On the reception side, the variable
+<TT>len</TT> <EM>must</EM> be received <TT>EXPRESS</TT>, as its value
+is needed to allocate the buffer for the unpacking of variable
+<TT>s</TT>.  Then, the variable <TT>s</TT> can be received
+<TT>CHEAPER</TT>. If the underlying operating system and the network
+interface permit, then this (possibly large) message will thus be
+directly installed into the reception buffer without any extra copy,
+providing the user with optimal performances.
 </P>
 
 </SUBSUBSECTION>
@@ -631,7 +643,7 @@ optimal performance.
 <SUBSUBSECTION TITLE="Threaded services">
 
 <P>
-Services handlers are executed sequentially. As long as a service
+Service handlers are executed sequentially. As long as a service
 function has not returned on the server, the service is not available
 for another client. This may result into deadlocks if the service
 includes some potentially blocking actions, such as invoking other
@@ -642,8 +654,8 @@ services, either explicitly or implicitly.
 
 <P>
 Such problems can be addressed by executing services into a fresh
-threads instead of the original service handler. This technique is
-demonstrated on Program <REF LABEL="prog:rpc-threads"/>. Service function
+thread instead of the original service handler. This technique is
+demonstrated in Program <REF LABEL="prog:rpc-threads"/>. The service function
 <TT>service</TT> spawns a fresh thread each time it is invoked
 through a RPC request. Then, it immediately returns. The child thread
 is in charge of extracting the message from the network through a series
@@ -651,7 +663,7 @@ of <TT>unpack</TT> calls in the usual way.
 </P>
 
 <P>
-Observe that PM2 do not care about <EM>who</EM> extracts a message at a
+Observe that PM2 does not care about <EM>who</EM> extracts a message at a
 node. Any thread can do it, as soon as it has been created with a
 special creation routine <TT>pm2_service_thread_create</TT>, instead of the
 regular <TT>pm2_thread_create</TT> one. The only requirement enforced within
@@ -668,8 +680,8 @@ actually not make sense: it may raise a run-time error.
 </NOTE>
 
 <P>
-This feature enables the newly spawn thread to do the work for the
-sake of the original service handler. Yet, this raises a new
+This feature enables the newly spawn thread to do the work on behalf
+of the original service handler. Yet, this raises a new
 problem. Actually, the service handler immediately returns after
 spawning the thread, and then looses any control on its
 progression. Thus, the <TT>pm2_rawrpc_end</TT> routine on the client side
@@ -678,11 +690,11 @@ unpacking whatsoever!
 </P>
 
 <P>
-This may result in an incorrect behavior, as demonstrated by the
+This may result into an incorrect behavior, as demonstrated by the
 following scenario. Consider that the client is very fast. After
 exiting the <TT>pm2_rawrpc_end</TT> routine, it calls the <TT>pm2_halt</TT>
-routine. This triggers broadcasting a termination request to all the
-nodes. Assume now that the messages used on this broadcast do not
+routine. This triggers the broadcasting of a termination request to all the
+nodes. Assume now that the messages used for this broadcast do not
 travel on the same <EM>channel</EM> as the regular messages, so that
 they can take over and arrive <EM>before</EM> the service thread
 initiates the unpacking. Then, all the reception facilities of the
@@ -695,17 +707,21 @@ results!
 <P>
 Well, you may argue that this scenario is just like SF and little
 green men attacking the White House... The writer's personal
-experience is that the worse case is quite common in this matter, in
-opposite<SPACE/>(?) to other domain of life. Just don't try!
+experience is that the worst case is quite common in this matter, in
+opposite<SPACE/>(?) to other domain of life. Just don't try it!
 </P>
 
 <P>
 How can one circumvent the problem? A generic technique called
 <EM>completion</EM> will be introduced later. In the specific example
-displayed on Program <REF LABEL="prog:rpc-threads"/>, a simple way-out is to let
+shown in Program <REF LABEL="prog:rpc-threads"/>, a simple way-out is to let
 the service thread issue the call to the <TT>pm2_halt</TT> routine, as it is
 guaranteed that this thread issues the inter-thread last interaction.
 </P>
+
+<NOTE>
+STOP RELECTURE ICI
+</NOTE>
 
 <P>
 Let us now run the program. Observe that 3 threads have been

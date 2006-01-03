@@ -1697,8 +1697,13 @@ int main(int argc, char *argv[]) {
 			}
 			case FUT_RQS_NEWRQ: {
 				unsigned rqlevel = ev.ev64.param[0];
-				unsigned rqnum = rqnums[rqlevel]++;
-				newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+				unsigned rqnum;
+				if (rqlevel == -1)
+					newPtr(ev.ev64.param[1],norq);
+				else {
+					rqnum = rqnums[rqlevel]++;
+					newPtr(ev.ev64.param[1],&rqs[rqlevel][rqnum]);
+				}
 				printf("new runqueue %d.%d at %p -> %p\n",rqlevel,rqnum,(void *)(intptr_t)ev.ev64.param[1],&rqs[rqlevel][rqnum]);
 				break;
 			}
@@ -1763,11 +1768,13 @@ int main(int argc, char *argv[]) {
 					pause(DELAYTIME);
 					break;
 				}
+#ifdef SCHED_RESCHED_LWP
 				case SCHED_RESCHED_LWP: {
 					int from = ev.ev64.param[0];
 					int to = ev.ev64.param[1];
 					printf("lwp %d rescheduling lwp %d\n",from,to);
 				}
+#endif
 				case FUT_SWITCH_TO_CODE: {
 					thread_t *tprev = getThread(ev.ev64.user.tid);
 					thread_t *tnext = getThread(ev.ev64.param[0]);

@@ -43,18 +43,23 @@ int marcel_main(int argc, char **argv)
   marcel_attr_t attr;
   char name[MARCEL_MAXNAMESIZE];
   struct marcel_sched_param p = { .sched_priority = MA_DEF_PRIO-1 } ;
+  marcel_t gangsched;
 
   marcel_init(&argc, argv);
 
   marcel_setname(marcel_self(), "gang");
   marcel_sched_setparam(marcel_self(), &p);
 
+#ifdef PROFILE
+  profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+#endif
+
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, TRUE);
 
   marcel_attr_setprio(&attr, MA_DEF_PRIO-1);
   marcel_attr_setname(&attr, "gang scheduler");
-  marcel_create(NULL,&attr,marcel_gang_scheduler,NULL);
+  marcel_create(&gangsched,&attr,marcel_gang_scheduler,NULL);
 
   marcel_attr_setprio(&attr, MA_DEF_PRIO);
 
@@ -68,6 +73,12 @@ int marcel_main(int argc, char **argv)
     }
     marcel_wake_up_bubble(&gang[i]);
   }
+
+  marcel_start_playing();
+
+  for (i=0; i<GANGS; i++)
+    marcel_bubble_join(&gang[i]);
+  marcel_cancel(gangsched);
 
   fflush(stdout);
   marcel_end();

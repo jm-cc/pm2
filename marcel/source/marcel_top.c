@@ -78,7 +78,7 @@ static void printtask(marcel_task_t *t) {
 	}
 	utime = ma_atomic_read(&t->top_utime);
 	cpu = djiffies?(utime*1000UL)/djiffies:0;
-	top_printf("0x%*p %*s %2d %3lu.%1lu %c %2d %s %s %s\r\n", (int) (2*sizeof(void*)), t,
+	top_printf("0x%*p %*s %2d %3lu.%1lu %c %2d %10s %10s %10s\r\n", (int) (2*sizeof(void*)), t,
         	MARCEL_MAXNAMESIZE, t->name,
 		t->sched.internal.prio, cpu/10UL, cpu%10UL,
 		state, GET_LWP_NUMBER(t),
@@ -87,51 +87,6 @@ static void printtask(marcel_task_t *t) {
 		get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 	ma_atomic_sub(utime, &t->top_utime);
 }
-
-#if 0
-static void printbubble(int sep, marcel_bubble_t *b) {
-	int rsep=0;
-	marcel_bubble_entity_t *e;
-
-	top_printf("%s(",sep?" ":"");
-	if (b->status == MA_BUBBLE_CLOSED)
-		list_for_each_entry(e, &b->heldentities, entity_list) {
-			printentity(rsep,e);
-			rsep=1;
-		}
-	top_printf(")(%d)", b->sched.prio);
-}
-
-static void printentity(int sep, marcel_bubble_entity_t *e) {
-	if (e->type == MARCEL_TASK_ENTITY) {
-		printtask(sep,ma_task_entity(e));
-	} else {
-		printbubble(sep,ma_bubble_entity(e));
-	}
-}
-
-static void printrq(ma_runqueue_t *rq) {
-	int prio;
-	marcel_bubble_entity_t *e;
-	ma_spin_lock(&rq->lock);
-	int somebody = 0;
-	for (prio=0; prio<MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, rq->active->queue+prio, run_list) {
-			printentity(1,e);
-			somebody = 1;
-		}
-	}
-	for (prio=0; prio<MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, rq->expired->queue+prio, run_list) {
-			printentity(1,e);
-			somebody = 1;
-		}
-	}
-	ma_spin_unlock(&rq->lock);
-	if (somebody)
-		top_printf("\r\n");
-}
-#endif
 
 static void marcel_top_tick(unsigned long foo) {
 	marcel_lwp_t *lwp;
@@ -148,14 +103,6 @@ static void marcel_top_tick(unsigned long foo) {
 	top_printf("\e[H\e[J");
 	top_printf("top - up %02lu:%02lu:%02lu\r\n", lastms/1000/60/60, (lastms/1000/60)%60, (lastms/1000)%60);
 
-	//printrq(&ma_main_runqueue);
-#if 0
-#ifndef MA__LWPS
-	printtask(1,ma_per_lwp__current_thread);
-	top_printf("\r\n");
-#endif
-	printrq(&ma_dontsched_runqueue);
-#endif
 	for_all_lwp(lwp) {
 		// cette lecture n'est pas atomique, il peut y avoir un tick
 		// entre-temps, ce n'est pas extrêmement grave...
@@ -168,14 +115,8 @@ lwp %u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 			LWP_NUMBER(lwp), lst.user*100/tot, lst.nice*100/tot,
 			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
 		memset(&ma_per_lwp(lwp_usage,lwp), 0, sizeof(lst));
-#if 0
-		printtask(1,ma_per_lwp(current_thread,lwp));
-		top_printf("\r\n");
-		printrq(&ma_per_lwp(runqueue,lwp));
-		printrq(&ma_per_lwp(dontsched_runqueue,lwp));
-#endif
 	}
-	top_printf("  %*s %*s %2s %4s%% %s %2s %8s %8s %8s\r\n", (int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE, "name", "pr", "cpu", "s", "lc", "init", "sched", "run");
+	top_printf("  %*s %*s %2s %4s%% %s %2s %10s %10s %10s\r\n", (int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE, "name", "pr", "cpu", "s", "lc", "init", "sched", "run");
 	marcel_freeze_sched();
 	marcel_threadslist(NBPIDS,pids,&nbpids,0);
 	if (nbpids > NBPIDS)

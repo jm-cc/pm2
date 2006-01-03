@@ -1672,8 +1672,13 @@ restart:
 #ifdef MA__LWPS
 	if (nexth->type == MA_RUNQUEUE_HOLDER)
 		sched_debug("default prio: %d, rq %s\n",max_prio,ma_rq_holder(nexth)->name);
-	else
+	else {
+#ifdef MARCEL_BUBBLE_STEAL
+		/* the real priority is the holding bubble's */
+		max_prio = prev_as_prio = ma_bubble_holder(nexth)->sched.prio;
+#endif
 		sched_debug("default prio: %d, h %p\n",max_prio,nexth);
+	}
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
 #else
 	currq = &ma_main_runqueue;

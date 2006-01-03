@@ -18,10 +18,10 @@
 	.align 4
 	
 #if defined(FREEBSD_SYS) || defined(WIN_SYS)
-#define my_setjmp _my_setjmp
+#define ma_setjmp _ma_setjmp
 #endif
-	.globl my_setjmp
-my_setjmp:
+	.globl ma_setjmp
+ma_setjmp:
 	movl    4(%esp), %ecx
         movl    %ebx, 0(%ecx)
         movl    %esi, 4(%ecx)
@@ -34,7 +34,7 @@ my_setjmp:
         jmp     *%edx
 
 #ifndef WIN_SYS
-.size my_setjmp,.-my_setjmp
+.size ma_setjmp,.-ma_setjmp
 #endif
 
 #ifdef WIN_SYS

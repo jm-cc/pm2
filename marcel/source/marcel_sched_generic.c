@@ -82,7 +82,11 @@ unsigned long marcel_createdthreads(void)
 void marcel_one_more_task(marcel_t pid)
 {
 	unsigned oldnbtasks;
-	ma_spin_lock_softirq(&__ma_get_lwp_var(threadlist_lock));
+
+	/* record this thread on _this_ lwp */
+	ma_local_bh_disable();
+	ma_preempt_disable();
+	_ma_raw_spin_lock(&__ma_get_lwp_var(threadlist_lock));
 
 	pid->number = LWP_NUMBER(LWP_SELF)*MA_MAX_LWP_THREADS+__ma_get_lwp_var(task_number)++;
 	list_add(&pid->all_threads,&__ma_get_lwp_var(all_threads));
@@ -91,7 +95,9 @@ void marcel_one_more_task(marcel_t pid)
 	if (!oldnbtasks && &__ma_get_lwp_var(main_is_waiting))
 		a_new_thread = TRUE;
 
-	ma_spin_unlock_softirq(&__ma_get_lwp_var(threadlist_lock));
+	_ma_raw_spin_unlock(&__ma_get_lwp_var(threadlist_lock));
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
 }
 
 // Appele a chaque fois qu'une tache est terminee.
@@ -315,15 +321,16 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 #endif
 	LOG_IN();
 
+	INIT_LIST_HEAD(&ma_per_lwp(all_threads, lwp));
+
 	if (!IS_FIRST_LWP(lwp)) {
 		/* run_task DOIT démarrer en contexte d'irq */
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 		ma_per_lwp(task_number, lwp) = 1;
 		ma_spin_lock_init(&ma_per_lwp(threadlist_lock, lwp));
-	} 
-
-	INIT_LIST_HEAD(&ma_per_lwp(all_threads, lwp));
-	list_add(&SELF_GETMEM(all_threads),&__ma_get_lwp_var(all_threads));
+	} else
+		/* ajout du thread principal à la liste des threads */
+		list_add(&SELF_GETMEM(all_threads),&__ma_get_lwp_var(all_threads));
 
 #ifdef MA__LWPS
 	/*****************************************/

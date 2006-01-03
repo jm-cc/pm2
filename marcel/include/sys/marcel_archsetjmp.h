@@ -56,13 +56,13 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 #define MARCEL_JB_SP   4
 #define MARCEL_JB_PC   5
 
-typedef int my_jmp_buf[6];
+typedef int ma_jmp_buf[6];
 
-extern int my_setjmp(my_jmp_buf buf);
+extern int ma_setjmp(ma_jmp_buf buf);
 
-static __tbx_inline__ void TBX_NORETURN TBX_UNUSED my_longjmp(my_jmp_buf buf, int val);
+static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
 
-static __tbx_inline__ void my_longjmp(my_jmp_buf buf, int val)
+static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 {
   __asm__ __volatile__ (
 		       "movl 0(%0), %%ebx\n\t"
@@ -77,11 +77,11 @@ static __tbx_inline__ void my_longjmp(my_jmp_buf buf, int val)
   for(;;);
 }
 
-#define jmp_buf my_jmp_buf
+#define jmp_buf ma_jmp_buf
 #undef setjmp
-#define setjmp my_setjmp
+#define setjmp ma_setjmp
 #undef longjmp
-#define longjmp my_longjmp
+#define longjmp ma_longjmp
 #endif
 
 #endif

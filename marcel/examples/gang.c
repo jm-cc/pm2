@@ -74,7 +74,7 @@ int marcel_main(int argc, char **argv)
     marcel_wake_up_bubble(&gang[i]);
   }
 
-  marcel_start_playing();
+  //marcel_start_playing();
 
   for (i=0; i<GANGS; i++)
     marcel_bubble_join(&gang[i]);

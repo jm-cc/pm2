@@ -27,8 +27,10 @@ EOF
 eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
-	--marcel=\"numa\" --marcel=\"marcel_main\" \
+	--marcel=\"numa\" --marcel=\"standard_main\" \
 	--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
 	--marcel=\"pmarcel\" --marcel=\"pthread\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
-	--all=\"gdb\" --all=\"opt\" --all=\"build_static\" $_output_redirect
+	--all=\"gdb\" --all=\"opt\" \
+	--all=\"build_static\" --marcel=\"build_dynamic\" \
+	--sub --marcel=\"build_static\" $_output_redirect

@@ -812,9 +812,10 @@ int marcel_bubble_steal_work(void) {
 	/* couln't find work on local runqueue, go see elsewhere */
 	return see_up(me);
 #else
-	return 0
+	return 0;
 #endif
 #endif
+	return 0;
 }
 #endif
 #endif
@@ -832,12 +833,10 @@ any_t marcel_gang_scheduler(any_t foo) {
 		list_for_each_entry_safe(e, ee, queue, run_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
-				ma_holder_rawlock(&b->hold);
 				ma_deactivate_entity(&b->sched, &rq->hold);
 				PROF_EVENT2(bubble_sched_switchrq, b, &ma_dontsched_runqueue);
 				ma_activate_entity(&b->sched, &ma_dontsched_runqueue.hold);
 
-				ma_holder_rawunlock(&b->hold);
 			}
 		}
 		ma_holder_unlock_softirq(&rq->hold);
@@ -854,11 +853,9 @@ any_t marcel_gang_scheduler(any_t foo) {
 				firste = e;
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
-				ma_holder_rawlock(&b->hold);
 				ma_deactivate_entity(&b->sched, &rq->hold);
 				PROF_EVENT2(bubble_sched_switchrq, b, &ma_main_runqueue);
 				ma_activate_entity(&b->sched, &ma_main_runqueue.hold);
-				ma_holder_rawunlock(&b->hold);
 				break;
 			} else {
 				ma_deactivate_entity(e, &rq->hold);

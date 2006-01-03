@@ -229,6 +229,7 @@ static void __marcel_init look_cpuinfo(void) {
 
 #ifdef LINUX_SYS
 #include <numa.h>
+static int numa_not_available;
 static void __marcel_init look_libnuma(void) {
 	unsigned long *buffer,*buffer2;
 	unsigned buffersize=MARCEL_NBMAXCPUS/8;
@@ -239,7 +240,7 @@ static void __marcel_init look_libnuma(void) {
 
 	numa_exit_on_error=1;
 
-	if (numa_available()==-1)
+	if ((numa_not_available = (numa_available())==-1))
 		return;
 
 	nbnodes=numa_max_node()+1;
@@ -508,7 +509,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 #ifdef LINUX_SYS
 void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 	void *p;
-	if (node < 0 || numa_available()==-1)
+	if (node < 0 || numa_not_available)
 		return marcel_malloc(size, file, line);
 	marcel_extlib_protect();
 	p = numa_alloc_onnode(size, node);
@@ -518,7 +519,7 @@ void *ma_malloc_node(unsigned size, int node, char *file, unsigned line) {
 	return p;
 }
 void ma_free_node(void *ptr, unsigned size, int node, char * __restrict file, unsigned line) {
-	if (node < 0 || numa_available()==-1)
+	if (node < 0 || numa_not_available)
 		return marcel_free(ptr, file, line);
 	marcel_extlib_protect();
 	numa_free(ptr, size);

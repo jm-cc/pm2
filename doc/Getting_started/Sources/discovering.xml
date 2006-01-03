@@ -520,25 +520,24 @@ for sending it over the network to some remote node!  The key for
 performance is therefore to allow for <EM>zero-copy</EM>
 communication: the message has to be directly taken from its initial
 location in user-space, and directly placed into its final destination
-in user-space, without any additional copy. Designing communication
-interfaces which can efficiently deal with messages featuring a
-complex structure, or messages of unpredictable size, is a
-difficult task. The approach of PM2, or more accurately of the
-underlying communication library called Madeleine, is to control the
-packing and unpacking operations with additional <EM>flags</EM>.
+in user-space, without any additional copy. As the size of the
+arguments for a RPC call are usually unknown in advance, the
+communication interface has to include this feature into its design.
+The approach of PM2, or more accurately of the underlying
+communication library called Madeleine, is to control the packing and
+unpacking operations with additional <EM>flags</EM>.
 </P>
 
 <P>
-A Madeleine message consists of several pieces of data, located
-anywhere in user-space. It is constructed (resp. de-constructed)
-incrementally using <EM>packing</EM> (resp. <EM>unpacking</EM>)
-routines, possibly at multiple software levels without losing
-efficiency. The following example illustrates the power of the
-Madeleine interface. Let us consider a remote procedure call which
-takes an array of unpredictable size as a parameter. When the request
-reaches the destination node, the header is examined both by the
-multithreaded runtime (to allocate the appropriate thread stack and
-then to spawn the server thread) and by the user application (to
+A message consists of several pieces of data, located anywhere in
+user-space. It is constructed (resp. de-constructed) incrementally
+using <EM>packing</EM> (resp. <EM>unpacking</EM>) routines, possibly at
+multiple software levels without losing efficiency. The following
+example illustrates this need. Let us consider a remote procedure call
+which takes an array of unpredictable size as a parameter. When the
+request reaches the destination node, the header is examined both by
+the multithreaded runtime (to allocate the appropriate thread stack
+and then to spawn the server thread) and by the user application (to
 allocate the memory where the array should be stored).
 </P>
 

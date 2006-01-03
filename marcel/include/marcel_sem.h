@@ -44,6 +44,7 @@ struct semaphor_struct {
 
 #section types
 typedef struct semaphor_struct marcel_sem_t;
+typedef marcel_sem_t pmarcel_sem_t;
 
 #section functions
 void marcel_sem_init(marcel_sem_t *s, int initial);
@@ -51,6 +52,13 @@ void marcel_sem_P(marcel_sem_t *s);
 int marcel_sem_try_P(marcel_sem_t *s);
 void marcel_sem_V(marcel_sem_t *s);
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
+
+int pmarcel_sem_init(pmarcel_sem_t *s, int pshared, unsigned int initial) __THROW;
+int pmarcel_sem_destroy(pmarcel_sem_t *s) __THROW;
+int pmarcel_sem_wait(pmarcel_sem_t *s) __THROW;
+int pmarcel_sem_trywait(pmarcel_sem_t *s) __THROW;
+int pmarcel_sem_post(pmarcel_sem_t *s) __THROW;
+int pmarcel_sem_getvalue(pmarcel_sem_t * __restrict s, int * __restrict sval) __THROW;
 
 static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
 #section inline

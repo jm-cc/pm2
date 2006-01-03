@@ -15,6 +15,8 @@
  */
 
 #include "marcel.h"
+#include <semaphore.h>
+#include <errno.h>
 
 void marcel_sem_init(marcel_sem_t *s, int initial)
 {
@@ -22,6 +24,31 @@ void marcel_sem_init(marcel_sem_t *s, int initial)
   s->first = NULL;
   ma_spin_lock_init(&s->lock);
 }
+
+DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial),
+		(pshared, initial),
+{
+  if (pshared) {
+    errno = ENOSYS;
+    return -1;
+  }
+  marcel_sem_init(s, initial);
+  return 0;
+})
+DEF_STRONG_T(int, POSIX_NAME(sem_init), sem_init, (sem_t *s, int pshared, unsigned int initial), (pshared, initial))
+
+DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
+{
+  int res = 0;
+  ma_spin_lock_bh(&s->lock);
+  if (s->first) {
+    errno = EBUSY;
+    res = -1;
+  }
+  ma_spin_unlock_bh(&s->lock);
+  return res;
+})
+DEF_STRONG_T(int, POSIX_NAME(sem_destroy), sem_destroy, (sem_t *s), (s))
 
 void marcel_sem_P(marcel_sem_t *s)
 {
@@ -53,6 +80,13 @@ void marcel_sem_P(marcel_sem_t *s)
   LOG_OUT();
 }
 
+DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
+{
+  marcel_sem_P(s);
+  return 0;
+})
+DEF_STRONG_T(int, POSIX_NAME(sem_wait), sem_wait, (sem_t *s), (s))
+
 int marcel_sem_try_P(marcel_sem_t *s)
 {
   int result = 0;
@@ -74,6 +108,16 @@ int marcel_sem_try_P(marcel_sem_t *s)
   LOG_OUT();
   return !result;
 }
+
+DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
+{
+  if (!marcel_sem_try_P(s)) {
+    errno = EAGAIN;
+    return -1;
+  }
+  return 0;
+})
+DEF_STRONG_T(int, POSIX_NAME(sem_trywait), sem_trywait, (sem_t *s), (s))
 
 void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
@@ -112,6 +156,7 @@ void marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 
   LOG_OUT();
 }
+// TODO: pmarcel_sem_timedwait
 
 void marcel_sem_V(marcel_sem_t *s)
 {
@@ -135,6 +180,23 @@ void marcel_sem_V(marcel_sem_t *s)
     
   LOG_OUT();
 }
+
+DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
+{
+  // TODO: vérifier tout overflow de value
+  marcel_sem_V(s);
+  return 0;
+})
+DEF_STRONG_T(int, POSIX_NAME(sem_post), sem_post, (sem_t *s), (s))
+
+DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
+{
+  ma_spin_lock_bh(&s->lock);
+  *sval = s->value;
+  ma_spin_unlock_bh(&s->lock);
+  return 0;
+})
+DEF_STRONG_T(int, POSIX_NAME(sem_getvalue), sem_getvalue, (sem_t * __restrict s, int * __restrict sval), (s, sval))
 
 void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
 {

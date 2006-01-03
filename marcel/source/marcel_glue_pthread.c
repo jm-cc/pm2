@@ -168,30 +168,6 @@ static void pthread_finalize()
 }
 */
 
-#include <semaphore.h>
-
-int __sem_init_2_1 (sem_t *__sem, int __pshared, unsigned int __value)
-{
-	marcel_sem_init((marcel_sem_t*)__sem, __value);
-	return 0;
-}
-versioned_symbol (libpthread, __sem_init_2_1, sem_init, GLIBC_2_1);
-
-int __sem_wait_2_1 (sem_t *__sem)
-{
-	marcel_sem_P((marcel_sem_t*)__sem);
-	return 0;
-}
-versioned_symbol (libpthread, __sem_wait_2_1, sem_wait, GLIBC_2_1);
-
-int __sem_post_2_1 (sem_t *__sem)
-{
-	marcel_sem_V((marcel_sem_t*)__sem);
-	return 0;
-}
-versioned_symbol (libpthread, __sem_post_2_1, sem_post, GLIBC_2_1);
-
-
 int pthread_equal(pthread_t thread1, pthread_t thread2)
 {
   return thread1 == thread2;

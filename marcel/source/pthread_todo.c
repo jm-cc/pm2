@@ -68,7 +68,7 @@ ND(pthread_mutexattr_init) ND(pthread_once) ND(pthread_self)*/ ND(pthread_setcan
 /*ND(pthread_mutexattr_setkind_np)*/ 
 ND(pthread_setcanceltype) ND(pthread_setschedparam) /*ND(pthread_setspecific)*/ 
 ND3(pthread_sigmask) ND(pthread_testcancel) 
-ND(sem_destroy) ND(sem_getvalue) /*ND(sem_init) ND(sem_post)*/ ND(sem_trywait) /*ND(sem_wait)*/ 
+/* ND(sem_destroy) ND(sem_getvalue) ND(sem_init) ND(sem_post) ND(sem_trywait) ND(sem_wait)*/ 
 /*ND(sendmsg) ND(sendto)*/ ND2(sigaction) ND(siglongjmp) /*ND(system) ND(tcdrain) ND(wait)*/ 
 ND(sigwait) 
 /*ND(vfork) ND(__fork)*/ 

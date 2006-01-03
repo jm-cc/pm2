@@ -124,7 +124,7 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv, boolean do_not_s
     } else
     if(!strcmp(argv[i], "--marcel-xtop")) {
       if (do_not_strip) {
-        if (marcel_init_top("|xterm -S//0")) {
+        if (marcel_init_top("|xterm -S//0 -geometry 120x26")) {
 	  fprintf(stderr, "Error: can't launch xterm\n");
 	  exit(1);
 	}

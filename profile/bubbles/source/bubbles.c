@@ -56,10 +56,10 @@
 /* movie size */
 
 /* X */
-#define MOVIEX 1280.
+#define MOVIEX 1000.
 
 /* Y */
-#define MOVIEY 800.
+#define MOVIEY 400.
 
 
 
@@ -74,7 +74,7 @@
  * - modifiying entities parameters, if needed,
  * - calling fooBegin2() functions (for computing the difference between initial
  *   parameters and current parameters),
- * - for step between 0.0 and 1.0, calling fooStep() functions and calling SWFMovie_nextFrame(movie); doStepsBegin() and doStepsEnd() are helper macros for this,
+ * - for step between 0.0 and 1.0, calling fooStep() functions and calling nextFrame(movie); doStepsBegin() and doStepsEnd() are helper macros for this,
  * - calling with fooEnd() functions.
  *
  * See the second part of main() for examples
@@ -85,7 +85,7 @@
 	for (i=0.;i<=OPTIME*RATE;i++) { \
 		j = -cos((i*M_PI)/(OPTIME*RATE))/2.+0.5;
 #define doStepsEnd() \
-		SWFMovie_nextFrame(movie); \
+		nextFrame(movie); \
 		} \
 	} while(0);
 
@@ -147,6 +147,19 @@ SWFMovie movie;
 SWFAction stop;
 SWFFont font;
 
+static int playing =
+#ifdef FUT_START_PLAYING
+	0
+#else
+	1
+#endif
+;
+
+void nextFrame(SWFMovie movie) {
+	if (playing)
+		SWFMovie_nextFrame(movie);
+}
+
 /* pause for a few seconds, or until mouse click (when sec == 0) */
 void pause(float sec) {
 	float i;
@@ -171,11 +184,11 @@ void pause(float sec) {
 		SWFButton_addAction(button, compileSWFActionCode("stopped=1; stop();"), 0xff);
 		item = SWFMovie_add(movie, (SWFBlock)button);
 
-		SWFMovie_nextFrame(movie);
+		nextFrame(movie);
 		SWFDisplayItem_remove(item);
 	} else 
 		for (i=0; i<sec*RATE;i++) {
-			SWFMovie_nextFrame(movie);
+			nextFrame(movie);
 		}
 }
 
@@ -1567,7 +1580,7 @@ int main(int argc, char *argv[]) {
 			200
 #endif
 #ifdef TREES
-			2*CURVE
+			4*CURVE
 #endif
 			);
 
@@ -1730,6 +1743,13 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 #endif
+#ifdef FUT_START_PLAYING
+			case FUT_START_PLAYING: {
+				playing = 1;
+				printf("start playing\n");
+				break;
+			}
+#endif
 			default:
 			if (keymask) switch (ev.ev64.code) {
 				case FUT_THREAD_BIRTH_CODE: {
@@ -1754,6 +1774,7 @@ int main(int argc, char *argv[]) {
 					thread_t *t = getThread(ev.ev64.user.tid);
 					if (t->entity.type!=THREAD) gasp();
 					printf("thread %p(%p) going to sleep\n",(void*)(intptr_t)ev.ev64.user.tid,t);
+					if (t->state == THREAD_BLOCKED) break;
 					t->state = THREAD_BLOCKED;
 					updateEntity(&t->entity);
 					pause(DELAYTIME);
@@ -1763,6 +1784,7 @@ int main(int argc, char *argv[]) {
 					thread_t *t = getThread(ev.ev64.param[0]);
 					if (t->entity.type!=THREAD) gasp();
 					printf("thread %p(%p) waking up\n",(void*)(intptr_t)ev.ev64.user.tid,t);
+					if (t->state == THREAD_SLEEPING) break;
 					t->state = THREAD_SLEEPING;
 					updateEntity(&t->entity);
 					pause(DELAYTIME);
@@ -1782,11 +1804,14 @@ int main(int argc, char *argv[]) {
 					if (tprev->entity.type!=THREAD) gasp();
 					if (tnext->entity.type!=THREAD) gasp();
 					printf("switch from thread %p(%p) to thread %p(%p)\n",(void *)(intptr_t)ev.ev64.user.tid,tprev,(void *)(intptr_t)ev.ev64.param[0],tnext);
-					if (tprev->state == THREAD_RUNNING)
+					if (tprev->state == THREAD_RUNNING) {
 						tprev->state = THREAD_SLEEPING;
-					tnext->state = THREAD_RUNNING;
-					updateEntity(&tprev->entity);
-					updateEntity(&tnext->entity);
+						updateEntity(&tprev->entity);
+					}
+					if (tnext->state != THREAD_RUNNING) {
+						tnext->state = THREAD_RUNNING;
+						updateEntity(&tnext->entity);
+					}
 					pause(DELAYTIME);
 #if 0
 					if (tprev->active) {

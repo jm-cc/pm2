@@ -3166,6 +3166,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	char name[16];
 	snprintf(name,sizeof(name),"lwp%d",num);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
 	init_rq(rq, name, MA_LWP_RQ);
 	if (num>=get_nb_lwps())
 		/* "extra" LWPs are apart */
@@ -3265,6 +3266,7 @@ static void __marcel_init sched_init(void)
 	LOG_IN();
 
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),1);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_dontsched_runqueue);
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),0,&ma_main_runqueue);
 	init_rq(&ma_main_runqueue,"machine", MA_MACHINE_RQ);
 #ifdef MA__LWPS
@@ -3287,7 +3289,9 @@ static void __marcel_init sched_init(void)
 		init_subrunqueues(marcel_machine_level, &ma_main_runqueue, 1);
 	}
 #endif
+#ifdef MA__LWPS
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1), get_nb_lwps());
+#endif
 
 	/*
 	 * We have to do a little magic to get the first

@@ -373,7 +373,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* Drop preempt_count with ma_spin_unlock_softirq */
 		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
 	} else {
-		ma_holder_t *h;
+		ma_holder_t *bh, *h;
 		// Cas le plus favorable (sur le plan de
 		// l'efficacité) : le père sauve son contexte et on
 		// démarre le fils immédiatement.
@@ -391,8 +391,12 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		new_task->father->child = NULL;
 
 #ifdef MA__BUBBLES
-		if ((h=ma_task_init_holder(new_task)) && (h->type == MA_BUBBLE_HOLDER))
-			marcel_bubble_inserttask(ma_bubble_holder(h),new_task);
+		if ((bh=ma_task_init_holder(new_task))) {
+			if (bh->type == MA_BUBBLE_HOLDER)
+				marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
+			else
+				bh = NULL;
+		}
 #endif
 
 		PROF_SWITCH_TO(cur->number, new_task);
@@ -403,8 +407,18 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		ma_holder_lock_softirq(h); // passage en mode interruption
 		ma_set_task_lwp(new_task, LWP_SELF);
 		new_task->sched.internal.timestamp = marcel_clock();
-		ma_activate_running_task(new_task,h);
-		h->nr_scheduled++;
+#ifdef MA__BUBBLES
+#ifdef MARCEL_BUBBLE_EXPLODE
+		if (bh)
+			/* le fils est déjà activé par l'insertion de la bulle, le rendre runnable */
+			ma_deactivate_task(new_task,h);
+		else
+#endif
+#endif
+		{
+			ma_activate_running_task(new_task,h);
+			h->nr_scheduled++;
+		}
 		ma_holder_rawunlock(h);
 
 		marcel_ctx_set_new_stack(new_task,

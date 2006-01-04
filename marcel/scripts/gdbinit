@@ -110,23 +110,17 @@ define marcel-printthread
   if $arg0->sched.state == 2
     set $state='U'
   end
-  if $arg0->sched.state == 4
-    set $state='S'
-  end
-  if $arg0->sched.state == 8
-    set $state='Z'
-  end
   if $arg0->sched.state == 16
     set $state='D'
-  end
-  if $arg0->sched.state == 32
-    set $state='G'
   end
   if $arg0->sched.state == 64
     set $state='M'
   end
   if $arg0->sched.state == 128
     set $state='F'
+  end
+  if $arg0->sched.state == 256
+    set $state='B'
   end
   printf "%p %16s %2d %c", \
     $arg0, $arg0->name, $arg0->sched.internal.prio, $state

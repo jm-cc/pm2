@@ -15,7 +15,7 @@
          _a < _b ? _a : _b; })
 
 
-#ifdef __i386
+#if defined(__i386) || defined(__x86_64)
 typedef union u_tick
 {
 	unsigned long long tick;

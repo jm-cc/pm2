@@ -29,14 +29,14 @@ int marcel_main(int argc, char *argv[])
 	int nb;
 	int essais = 3;
 	
+	timing_init();
+	
+	marcel_init(&argc, argv);
+	
 	if(argc != 2) {
 		fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
 		exit(1);
 	}
-	
-	timing_init();
-	
-	marcel_init(&argc, argv);
 	
 	while(essais--) {
 		nb = atoi(argv[1]);

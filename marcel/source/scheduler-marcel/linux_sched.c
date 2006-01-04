@@ -643,6 +643,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	h = ma_task_sched_holder(p);
 
+#ifdef MA__BUBBLES
 	if (ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		if (!p->sched.internal.entity_list.next)
@@ -651,6 +652,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 		return;
 #endif
 	}
+#endif
 
 	/* l'insertion a pu changer le holder */
 	h = ma_task_sched_holder(p);

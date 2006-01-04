@@ -174,7 +174,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	internal->sched_policy = attr->__schedpolicy;
 	internal->prio=attr->sched.prio;
 	//timestamp, last_ran
-	ma_atomic_set(&internal->time_slice,2); /* TODO: utiliser les priorités pour le calculer */
+	ma_atomic_set(&internal->time_slice,10); /* TODO: utiliser les priorités pour le calculer */
 	//entity_list
 #ifdef MA__BUBBLES
 	internal->entity_list.next = NULL;

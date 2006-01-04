@@ -413,7 +413,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 #ifdef MARCEL_BUBBLE_EXPLODE
 		if (bh)
 			/* le fils est déjà activé par l'insertion de la bulle, le rendre runnable */
-			ma_deactivate_task(new_task,h);
+			ma_dequeue_task(new_task,h);
 		else
 #endif
 #endif

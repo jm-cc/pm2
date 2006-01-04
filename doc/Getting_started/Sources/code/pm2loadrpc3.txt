@@ -1,12 +1,4 @@
-ravel% pm2load rpc-threads1
-[Threads : 3 created, 0 imported (0 cached)]
+Passing on string: Init 1 2
+Passing on string: Init 1
 Sending string: Init
 Received back string: Init 1 2
-
-ravel% pm2logs
-*** Process 1 on debussy:
-[Threads : 3 created, 0 imported (0 cached)]
-Passing on string: Init 1
-*** Process 2 on faure:
-[Threads : 3 created, 0 imported (0 cached)]
-Passing on string: Init 1 2

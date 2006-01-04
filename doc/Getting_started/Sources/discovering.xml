@@ -724,13 +724,14 @@ STOP RELECTURE ICI
 </NOTE>
 
 <P>
-Let us now run the program. Observe that 3 threads have been
+Let us now run the program.
+<IGNORE>
+ Observe that 3 threads have been
 created on node<SPACE/>1, instead of the regular<SPACE/>2.
+</IGNORE>
 
 <CODE FILE="./Sources/code/pm2loadrpc2.txt"/>
 </P>
-
-<PROGRAM FILE="./Progs/rpc-threads1.c" TITLE="Spawning threads to serve requests, an extended example" LABEL="prog:rpc-threads1"/>
 
 <P>
 To have a bit more fun on closing this part, let us design a slightly
@@ -741,39 +742,45 @@ to node<SPACE/>2 after having signed it with its name.  Similarly for node<SPACE
 with respect to node<SPACE/>0. Finally, node<SPACE/>0 serves the request by printing
 the string to the standard output and triggers termination.
 
+<PROGRAM FILE="./Progs/rpc-threads1.c" TITLE="Spawning threads to serve requests, an extended example" LABEL="prog:rpc-threads1"/>
+
+</P>
+
+<P>
+Executing this program should produce a output as follow
+
 <CODE FILE="./Sources/code/pm2loadrpc3.txt"/>
 </P>
 
 <P>
-It is a good point to clarify the notion of a <EM>node</EM> used
+Now is a good point to clarify the notion of <EM>node</EM> used
 throughout this presentation. Actually, the nodes we are considering
-here are <EM>virtual</EM>: they only refer to Unix processes located on
-physical nodes. It looks like common sense practice to exactly use one
-virtual node per physical node, so that the two notions just match
-together. But nothing in PM2 requires such an identification. PM2
-virtual nodes may be located at any physical nodes. The precise
-association is made by the <TT>pm2conf</TT> command. For instance, saying
-
-<CODE FILE="./Sources/code/pm2conf3.txt"/>
-</P>
-
-<P>
-is just as right as anything else. Two processes are launched on each
-of the three machines. From the point of view of PM2 programs, this
-makes no difference.
+here are <EM>virtual</EM>: they only refer to Unix processes located
+on physical nodes. It looks like common sense practice to use exactly
+one virtual node per physical node, so that the two notions just match
+together. However nothing in PM2 requires such practice. PM2 virtual
+nodes may be located at any physical nodes. The association between
+PM2 virtual and physical node is done using the <TT>pm2conf</TT>
+command. For instance, saying
 
 <CODE FILE="./Sources/code/pm2conf4.txt"/>
 </P>
 
 <P>
-You may even start all processes on the same machine!
+is fully correct. Two PM2 processes will be launched on each
+of the three machines. From the point of view of PM2 programs, this
+makes no difference.
+</P>
+
+<P>
+You may even start all the processes on the same machine!
 
 <CODE FILE="./Sources/code/pm2conf5.txt"/>
 </P>
 
 <P>
-Also, there is no reason why this machine should be the one which you
-are logged in. Any machine can make it as well!
+Also, the running machine does not have to be the one you are logged
+on. Any machine you have access to can do it as well!
 
 <CODE FILE="./Sources/code/pm2conf6.txt"/>
 </P>

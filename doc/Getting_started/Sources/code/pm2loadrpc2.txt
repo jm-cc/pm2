@@ -1,9 +1,2 @@
 ravel% pm2load rpc-threads
-[Threads : 2 created, 0 imported (0 cached)]
-
-ravel% pm2logs
-*** Process 1 on debussy:
-[Threads : 3 created, 0 imported (0 cached)]
 Hello world!
-*** Process 2 on faure:
-[Threads : 2 created, 0 imported (0 cached)]

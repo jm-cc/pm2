@@ -153,7 +153,7 @@ struct marcel_task {
 #section inline
 #depend "[marcel_inline]"
 /* ==== get current thread or LWP id ==== */
-extern MARCEL_INLINE TBX_CONST marcel_t marcel_self(void)
+extern MARCEL_INLINE marcel_t marcel_self(void)
 {
   return __marcel_self();
 }
@@ -164,7 +164,7 @@ extern MARCEL_INLINE TBX_CONST marcel_t marcel_self(void)
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
 #section marcel_functions
-static __tbx_inline__ TBX_NOINST TBX_CONST marcel_t __marcel_self(void);
+static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void);
 #section marcel_inline
 #depend "sys/isomalloc_archdep.h"
 #depend "asm/marcel_archdep.h[marcel_macros]"
@@ -172,7 +172,7 @@ static __tbx_inline__ TBX_NOINST TBX_CONST marcel_t __marcel_self(void);
 #depend "[marcel_structures]"
 #depend "[marcel_macros]"
 /* TBX_NOINST car utilisé dans profile/source/fut_record.c */
-static __tbx_inline__ TBX_NOINST TBX_CONST marcel_t __marcel_self(void)
+static __tbx_inline__ TBX_NOINST marcel_t __marcel_self(void)
 {
   marcel_t self;
 #ifdef MARCEL_SELF_IN_REG

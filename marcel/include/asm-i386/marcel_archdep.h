@@ -81,7 +81,7 @@ static __tbx_inline__ long get_gs(void)
     SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movl %0, %%esp;\n\t" \
 			 "movl %1, %%ebp;" \
-                       : : "r" (__sp), "r" (__bp) : "memory", "esp", "ebp" ); \
+                       : : "r" (__sp), "r" (__bp) : "memory", "esp" ); \
   } while (0)
 
 

@@ -71,7 +71,7 @@ static __tbx_inline__ long get_gs(void)
     __typeof__(val) value=(val); \
     SET_MARCEL_SELF_FROM_SP(value); \
     __asm__ __volatile__("movl %0, %%esp" \
-                       : : "m" (value) : "memory" ); \
+                       : : "m" (value) : "memory", "esp" ); \
   } while (0)
 
 #define set_sp_bp(sp, bp) \
@@ -81,7 +81,7 @@ static __tbx_inline__ long get_gs(void)
     SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movl %0, %%esp;\n\t" \
 			 "movl %1, %%ebp;" \
-                       : : "r" (__sp), "r" (__bp) : "memory" ); \
+                       : : "r" (__sp), "r" (__bp) : "memory", "esp", "ebp" ); \
   } while (0)
 
 

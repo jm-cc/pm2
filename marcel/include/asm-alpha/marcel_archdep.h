@@ -53,7 +53,7 @@
 
 #  define set_sp(val) \
   __asm__ __volatile__("addq %0, $31, $sp" \
-                       : : "r" (val) : "memory" )
+                       : : "r" (val) : "memory", "sp")
 
 #section marcel_variables
 

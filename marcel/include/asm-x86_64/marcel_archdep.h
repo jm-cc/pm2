@@ -45,7 +45,7 @@
   do { \
     __typeof__(val) value=(val); \
     __asm__ __volatile__("movq %0, %%rsp" \
-                       : : "m" (value) : "memory" ); \
+                       : : "m" (value) : "memory", "rsp" ); \
   } while (0)
 
 #define set_sp_bp(sp, bp) \
@@ -55,7 +55,7 @@
     SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movq %0, %%rsp;\n\t" \
 			 "movq %1, %%rbp;" \
-                       : : "r" (__sp), "r" (__bp) : "memory" ); \
+                       : : "r" (__sp), "r" (__bp) : "memory", "rsp", "rbp" ); \
   } while (0)
 
 

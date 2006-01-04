@@ -38,6 +38,6 @@
 
 #  define set_sp(val) \
   __asm__ __volatile__("move $sp, %0" \
-                       : : "r" (val) : "memory" )
+                       : : "r" (val) : "memory", "sp" )
 
 #section marcel_variables

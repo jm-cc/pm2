@@ -636,6 +636,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	ma_holder_t *h;
 	LOG_IN();
 
+	sched_debug("wake up created thread %p\n",p);
 	MA_BUG_ON(p->sched.state != MA_TASK_BORNING);
 
 	p->sched.internal.timestamp = marcel_clock();
@@ -1678,6 +1679,7 @@ restart:
 		sched_debug("default prio: %d, h %p\n",max_prio,nexth);
 	for (currq = ma_lwp_rq(LWP_SELF); currq; currq = currq->father) {
 #else
+	sched_debug("default prio: %d\n",max_prio);
 	currq = &ma_main_runqueue;
 #endif
 		if (!currq->hold.nr_running)

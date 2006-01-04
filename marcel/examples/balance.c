@@ -71,11 +71,13 @@ void marcel_barrier_wait(marcel_barrier_t *b) {
 /* fin */
 
 marcel_barrier_t barrier[NWORKS];
+#ifdef MA__BUBBLES
 marcel_bubble_t bubbles[
 #ifdef TREE
 	(NWORKERS-1)*
 #endif
 	NWORKS];
+#endif
 
 any_t work(any_t arg) {
 	int i = (int) arg;
@@ -100,6 +102,7 @@ any_t work(any_t arg) {
 }
 
 int marcel_main(int argc, char *argv[]) {
+#ifdef MA__BUBBLES
 	int i,j;
 	marcel_attr_t attr;
 	char s[MARCEL_MAXNAMESIZE];
@@ -159,5 +162,8 @@ int marcel_main(int argc, char *argv[]) {
 	}
 
 	marcel_end();
+#else
+	marcel_fprintf(stderr,"%s needs bubbles\n",argv[0]);
+#endif
 	return 0;
 }

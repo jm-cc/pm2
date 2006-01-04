@@ -22,8 +22,6 @@
 #define GANGS 6
 #define THREADS 16
 
-marcel_bubble_t gang[GANGS];
-
 any_t work(any_t arg) {
   int i;
   int n = (int) arg;
@@ -37,8 +35,13 @@ any_t work(any_t arg) {
 extern ma_runqueue_t ma_dontsched_runqueue;
 extern ma_runqueue_t ma_main_runqueue;
 
+#ifdef MA__BUBBLES
+marcel_bubble_t gang[GANGS];
+#endif
+
 int marcel_main(int argc, char **argv)
 {
+#ifdef MA__BUBBLES
   int i,j;
   marcel_attr_t attr;
   char name[MARCEL_MAXNAMESIZE];
@@ -82,6 +85,9 @@ int marcel_main(int argc, char **argv)
 
   fflush(stdout);
   marcel_end();
+#else
+  fprintf(stderr,"%s needs bubbles\n",argv[0]);
+#endif
   return 0;
 }
 

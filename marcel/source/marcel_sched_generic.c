@@ -89,6 +89,7 @@ void marcel_one_more_task(marcel_t pid)
 	_ma_raw_spin_lock(&__ma_get_lwp_var(threadlist_lock));
 
 	pid->number = LWP_NUMBER(LWP_SELF)*MA_MAX_LWP_THREADS+__ma_get_lwp_var(task_number)++;
+	MA_BUG_ON(__ma_get_lwp_var(task_number) == MA_MAX_LWP_THREADS);
 	list_add(&pid->all_threads,&__ma_get_lwp_var(all_threads));
 	oldnbtasks = __ma_get_lwp_var(nb_tasks)++;
 

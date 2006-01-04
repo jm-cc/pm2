@@ -406,7 +406,9 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		h = ma_task_sched_holder(new_task);
 		ma_holder_lock_softirq(h); // passage en mode interruption
 		ma_set_task_lwp(new_task, LWP_SELF);
+		MA_BUG_ON(new_task->sched.state != MA_TASK_BORNING);
 		new_task->sched.internal.timestamp = marcel_clock();
+		ma_set_task_state(new_task, MA_TASK_RUNNING);
 #ifdef MA__BUBBLES
 #ifdef MARCEL_BUBBLE_EXPLODE
 		if (bh)

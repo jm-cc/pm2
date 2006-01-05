@@ -59,7 +59,7 @@ void init_rq(ma_runqueue_t *rq, char *name, enum ma_rq_type type)
 	for (j = 0; j < 2; j++) {
 		array = rq->arrays + j;
 		for (k = 0; k < MA_MAX_PRIO; k++) {
-			INIT_LIST_HEAD(array->queue + k);
+			INIT_LIST_HEAD(ma_array_queue(array, k));
 			__ma_clear_bit(k, array->bitmap);
 		}
 		// delimiter for bitsearch

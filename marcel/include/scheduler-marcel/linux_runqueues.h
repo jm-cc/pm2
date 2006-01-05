@@ -165,6 +165,8 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #define ma_rq_covers(rq,lwp)	((void)(rq),(void)(lwp),1)
 #endif
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
+#define ma_array_queue(array,prio)	((array)->queue + (prio))
+#define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
 
 /*
  * double_rq_lock - safely lock two runqueues
@@ -253,7 +255,7 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_prio_arra
 	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
 	array->nr_active--;
 	list_del(&e->run_list);
-	if (list_empty(array->queue + e->prio)) {
+	if (list_empty(ma_array_queue(array, e->prio))) {
 		sched_debug("array %p (prio %d) empty\n",array, e->prio);
 		__ma_clear_bit(e->prio, array->bitmap);
 	}
@@ -273,7 +275,7 @@ static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *p, ma_prio_arra
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_prio_array_t *array)
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
-	list_add_tail(&e->run_list, array->queue + e->prio);
+	list_add_tail(&e->run_list, ma_array_queue(array, e->prio));
 	__ma_set_bit(e->prio, array->bitmap);
 	array->nr_active++;
 	MA_BUG_ON(e->holder_data);
@@ -301,7 +303,7 @@ static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int
 #section marcel_inline
 static __tbx_inline__ void ma_rq_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq)
 {
-	list_splice(head, array->queue + prio);
+	list_splice(head, ma_array_queue(array, prio));
 	__ma_set_bit(prio, array->bitmap);
 	array->nr_active += num;
 }

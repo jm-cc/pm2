@@ -623,11 +623,11 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power,
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
 		e = NULL;
-		if (!list_empty(&rq->active->queue[i]))
-			e = list_entry(rq->active->queue[i].next, marcel_entity_t, run_list);
+		if (!list_empty(ma_array_queue(rq->active,i))
+			e = list_entry(ma_array_queue(rq->active,i)->next, marcel_entity_t, run_list);
 #if 0
-		else if (!list_empty(&rq->expired->queue[i]))
-			e = list_entry(rq->expired->queue[i].next, marcel_entity_t, run_list);
+		else if (!list_empty(ma_array_queue(rq->expired, i)))
+			e = list_entry(ma_array_queue(rq->expired,i)->next, marcel_entity_t, run_list);
 #endif
 		if (!e || e->type == MA_TASK_ENTITY)
 			continue;
@@ -682,6 +682,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				ma_holder_rawlock(&b->hold);
 				bubble_sched_debug("rq %s seems good, stealing bubble %p\n", rq2->name, b);
 				PROF_EVENT2(bubble_sched_switchrq, b, rq2);
+				/* laisser d'abord ce qui est ordonnancé sur place */
 				list_for_each_entry(e, &b->heldentities, entity_list) {
 					b2 = NULL;
 					if (e->type == MA_BUBBLE_ENTITY)
@@ -694,7 +695,6 @@ static int see(struct marcel_topo_level *level, int up_power) {
 							 /* laisser la première bulle */
 							 first)
 							) || (!b2 && MA_TASK_IS_RUNNING(t))) {
-						/* laisser ce qui est ordonnancé sur place */
 						if (b2) {
 							first = 0;
 							bubble_sched_debug("detaching running bubble %p from %p\n", b2, b);
@@ -720,14 +720,15 @@ static int see(struct marcel_topo_level *level, int up_power) {
 							PROF_EVENT2(bubble_sched_switchrq, t, rq);
 					}
 				}
+				/* enlever b de rq */
 				if (b->sched.holder_data)
 					ma_dequeue_entity(&b->sched,&rq->hold);
 				ma_deactivate_running_entity(&b->sched, &rq->hold);
-				/* b contient encore tout ce qui n'est pas ordonnancé */
 				ma_holder_rawunlock(&b->hold);
 				ma_holder_rawunlock(&rq->hold);
 				ma_holder_rawlock(&rq2->hold);
 				ma_holder_rawlock(&b->hold);
+				/* b contient encore tout ce qui n'est pas ordonnancé, les distribuer */
 				list_for_each_entry(e, &b->heldentities, entity_list) {
 					b2 = NULL;
 					if (e->type == MA_BUBBLE_ENTITY)
@@ -763,6 +764,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 						e->sched_level = rq->level;
 					}
 				}
+				/* mettre b sur rq2 */
 				ma_activate_entity(&b->sched, &rq2->hold);
 				b->sched.sched_level = rq2->level;
 				ma_holder_rawunlock(&b->hold);
@@ -829,20 +831,19 @@ any_t marcel_gang_scheduler(any_t foo) {
 		marcel_delay(1);
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
-		queue = rq->active->queue + MA_BATCH_PRIO;
+		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		list_for_each_entry_safe(e, ee, queue, run_list) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
 				ma_deactivate_entity(&b->sched, &rq->hold);
 				PROF_EVENT2(bubble_sched_switchrq, b, &ma_dontsched_runqueue);
 				ma_activate_entity(&b->sched, &ma_dontsched_runqueue.hold);
-
 			}
 		}
-		ma_holder_unlock_softirq(&rq->hold);
+		ma_holder_rawunlock(&rq->hold);
 		rq = &ma_dontsched_runqueue;
-		ma_holder_lock_softirq(&rq->hold);
-		queue = rq->active->queue + MA_BATCH_PRIO;
+		ma_holder_rawlock(&rq->hold);
+		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
 		firste = NULL;
 		if (!list_empty(queue))
 		while(1) {
@@ -893,6 +894,9 @@ static void __marcel_init bubble_sched_init() {
 #endif
 }
 
+void marcel_start_playing(void) {
+	PROF_EVENT(fut_start_playing);
+}
 __ma_initfunc_prio(bubble_sched_init, MA_INIT_BUBBLE_SCHED,
 		MA_INIT_BUBBLE_SCHED_PRIO, "Bubble Scheduler");
 #endif /* MA__BUBBLES */

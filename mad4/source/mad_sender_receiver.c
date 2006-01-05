@@ -3,28 +3,14 @@
 #include "madeleine.h"
 
 
-int    nb_send_cur = 0;
-double chrono_send_cur = 0.0;
-double chrono_send_cur_isend = 0.0;
-
-int    nb_send_next = 0;
-double chrono_send_next = 0.0;
-
-int    nb_chronos_s_mkp = 0;
-double chrono_s_mkp = 0.0;
-
-p_mad_iovec_t (*get_next_packet)(p_mad_adapter_t) = NULL;
-
 static void
 mad_search_next(p_mad_adapter_t adapter,
-                    p_mad_track_set_t s_track_set){
+                p_mad_track_set_t s_track_set){
     p_mad_driver_t           driver            = NULL;
     p_tbx_slist_t            s_ready_msg_slist = NULL;
     p_mad_driver_interface_t interface         = NULL;
 
-    tbx_tick_t t1, t2;
     LOG_IN();
-    TBX_GET_TICK(t1);
     driver             = adapter->driver;
     s_ready_msg_slist  = adapter->s_ready_msg_list;
     interface          = driver->interface;
@@ -36,10 +22,6 @@ mad_search_next(p_mad_adapter_t adapter,
         s_track_set->next = get_next_packet(adapter);
 
     }
-
-    TBX_GET_TICK(t2);
-    nb_send_next++;
-    chrono_send_next += TBX_TIMING_DELAY(t1, t2);
     LOG_OUT();
 }
 
@@ -51,13 +33,11 @@ mad_send_cur(p_mad_adapter_t adapter,
     p_mad_driver_interface_t interface         = NULL;
     p_mad_iovec_t cur = NULL;
 
-    tbx_tick_t t1, t2, t3;
     LOG_IN();
     driver             = adapter->driver;
     s_ready_msg_slist  = adapter->s_ready_msg_list;
     interface          = driver->interface;
 
-    TBX_GET_TICK(t1);
     if(s_track_set->next){
         s_track_set->cur = s_track_set->next;
         s_track_set->next = NULL;
@@ -79,21 +59,9 @@ mad_send_cur(p_mad_adapter_t adapter,
         mad_search_next(adapter, s_track_set);
 
     cur = s_track_set->cur;
+    interface->isend(cur->track, cur);
 
-    TBX_GET_TICK(t2);
-
-    //mad_iovec_print(cur);
-
-    interface->isend(cur->track,
-                     cur->remote_rank,
-                     cur->data,
-                     cur->total_nb_seg);
     s_track_set->status = MAD_MKP_PROGRESS;
-
-    TBX_GET_TICK(t3);
-    nb_send_cur++;
-    chrono_send_cur += TBX_TIMING_DELAY(t1, t3);
-    chrono_send_cur_isend += TBX_TIMING_DELAY(t2, t3);
 
  end:
     LOG_OUT();
@@ -110,7 +78,6 @@ mad_s_make_progress(p_mad_adapter_t adapter){
     p_mad_driver_interface_t interface   = NULL;
     p_mad_track_set_t s_track_set = NULL;
     p_mad_iovec_t cur = NULL;
-    p_mad_track_t track = NULL;
     mad_mkp_status_t status = MAD_MKP_NO_PROGRESS;
     LOG_IN();
     driver      = adapter->driver;
@@ -123,14 +90,11 @@ mad_s_make_progress(p_mad_adapter_t adapter){
     if(status == MAD_MKP_NOTHING_TO_DO){
         mad_send_cur(adapter, s_track_set);
     } else {
-        track  = cur->track;
-        status = s_track_set->status;
-
-        s_track_set->status = mad_make_progress(adapter, track);
+        s_track_set->status = s_mad_make_progress(adapter);
         status              = s_track_set->status;
 
         if(status == MAD_MKP_PROGRESS){
-            //DISP("ENVOYE");
+            //DISP("s_mkp : ENVOYE");
 
             // remontée sur zone utilisateur
             if(cur->need_rdv){
@@ -210,14 +174,19 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     p_mad_driver_interface_t interface   = NULL;
     p_mad_track_set_t        r_track_set = NULL;
     p_mad_track_t            track = NULL;
-    mad_mkp_status_t         status = MAD_MKP_NO_PROGRESS;
     p_mad_iovec_t            mad_iovec   = NULL;
     unsigned int i    = 0, j = 0;
     tbx_bool_t               exploit_msg = tbx_false;
+    int nb_track = 0;
+    int nb_pending_reception = 0;
+    tbx_bool_t *reception_tracks_in_use = NULL;
     LOG_IN();
     driver = adapter->driver;
     interface = driver->interface;
     r_track_set = adapter->r_track_set;
+    nb_track = r_track_set->nb_track;
+    nb_pending_reception = r_track_set->nb_pending_reception;
+    reception_tracks_in_use = r_track_set->reception_tracks_in_use;
 
     // on traite les unexpected
     treat_unexpected(adapter);
@@ -225,26 +194,27 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     if(r_track_set->status == MAD_MKP_NOTHING_TO_DO)
         goto end;
 
+
     // pour chaque piste de réception
-    for(i = 0; i < 2 && j < r_track_set->nb_pending; i++){
-        mad_iovec = r_track_set->reception_curs[i];
-        if(mad_iovec){
+    for(i = 0; i < nb_track && j < nb_pending_reception; i++){
+
+        if(reception_tracks_in_use[i]){
             j++;
 
-            track               = mad_iovec->track;
-            r_track_set->status = mad_make_progress(adapter, track);
-            status              = r_track_set->status;
+            track = r_track_set->tracks_tab[i];
+            mad_iovec = r_mad_make_progress(adapter, track);
 
             // si des données sont reçues
-            if(status == MAD_MKP_PROGRESS){
-                r_track_set->reception_curs[i] = NULL;
+            if(mad_iovec){
+                track->pending_reception[mad_iovec->remote_rank] = NULL;
 
                 if(track->pre_posted){
-                    //DISP("RECEPTION d'un petit");
+                    //DISP("r_mkp : RECEPTION d'un petit");
 
                     // dépot d'une nouvelle zone pré-postée
-                    interface->add_pre_posted(adapter,
-                                              r_track_set);
+                    interface->replace_pre_posted(adapter, track,
+                                                  mad_iovec->remote_rank);
+
                     // Traitement des données reçues
                     exploit_msg = mad_iovec_exploit_msg(adapter,
                                                         mad_iovec->data[0].iov_base);
@@ -258,6 +228,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                     }
 
                 } else {
+                    //DISP("r_mkp : RECEPTION d'un long");
                     mad_iovec = mad_iovec_get(mad_iovec->channel->unpacks_list,
                                               mad_iovec->channel->id,
                                               mad_iovec->remote_rank,
@@ -274,4 +245,3 @@ mad_r_make_progress(p_mad_adapter_t adapter){
  end:
     LOG_OUT();
 }
-

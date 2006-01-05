@@ -778,6 +778,9 @@ do_create() {
       Y*|y*|O*|o*)
 	  do_edite
   	  ;;
+      *)
+      do_cmdline
+      eval '"$PM2_FLAVOR"' set "$cmdline"
     esac
 }
 

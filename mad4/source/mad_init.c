@@ -125,7 +125,7 @@ adapter_init(p_mad_driver_t mad_driver,
   mad_adapter->waiting_acknowlegment_list = tbx_slist_nil();
   mad_adapter->rdv = tbx_slist_nil();
 
-  mad_adapter->unexpected = mad_pipeline_create(mad_driver->max_unexpected + mad_driver->unexpected_buffer_length);
+  mad_adapter->unexpected = mad_pipeline_create(mad_driver->max_unexpected + mad_driver->unexpected_delta);
 
   mad_adapter->unexpected_total_nb = 0;
   /***/
@@ -222,7 +222,7 @@ driver_init_1(p_mad_madeleine_t      madeleine,
 
     adapter = tbx_htable_get(mad_driver->adapter_htable,
                              "default");
-    initialize_tracks(adapter);
+    initialize_tracks_part1(adapter);
   }
 
   mad_driver->nb_pack_to_send = 0;
@@ -1059,6 +1059,11 @@ channel_open(p_mad_madeleine_t  madeleine,
   TRACE("Pass 3 - sending -1 sync");
   mad_leonie_send_int(-1);
   TBX_FREE(channel_name);
+
+  /**/
+  initialize_tracks_part2(mad_adapter);
+  /**/
+
   LOG_OUT();
 
   return tbx_true;
@@ -1748,6 +1753,56 @@ mad_dir_channel_init(p_mad_madeleine_t madeleine)
           }
       }
   }
+
+  //{
+  //  p_mad_directory_t   dir = NULL;
+  //  p_tbx_slist_t   driver_slist = NULL;
+  //  p_mad_driver_t  driver = NULL;
+  //  p_tbx_htable_t  adapter_htable = NULL;
+  //  p_tbx_slist_t   adapter_key_list = NULL;
+  //  char           *adapter_key = NULL;
+  //  p_mad_adapter_t adapter = NULL;
+  //
+  //  dir = madeleine->dir;
+  //  driver_slist = dir->driver_slist;
+  //
+  //  DISP("###########################");
+  //  DISP_VAL("nb_driver", tbx_slist_get_length(driver_slist));
+  //
+  //  if(tbx_slist_get_length(driver_slist)) {
+  //    tbx_slist_ref_to_head(driver_slist);
+  //    do{
+  //      driver            = tbx_slist_ref_get(driver_slist);
+  //
+  //
+  //      adapter = tbx_htable_get(driver->adapter_htable,
+  //                               "default");
+  //
+  //      if(adapter == NULL)
+  //        FAILURE("adapter non trouvé");
+  //
+  //
+  //      initialize_tracks_part2(adapter);
+  //
+  //      //adapter_htable    = driver->adapter_htable;
+  //      //adapter_key_list  = tbx_htable_get_key_slist(adapter_htable);
+  //      //
+  //      //DISP_VAL("nb_adapter", tbx_slist_get_length(adapter_key_list));
+  //      //if(tbx_slist_get_length(adapter_key_list)) {
+  //      //  tbx_slist_ref_to_head(adapter_key_list);
+  //      //  do{
+  //      //    adapter_key = tbx_slist_ref_get(adapter_key_list);
+  //      //    adapter = tbx_htable_get(adapter_htable, adapter_key);
+  //      //
+  //      //    initialize_tracks_part2(adapter);
+  //      //  }while(tbx_slist_ref_forward(adapter_key_list));
+  //      //}
+  //
+  //    }while(tbx_slist_ref_forward(driver_slist));
+  //  }
+  //  DISP("###########################");
+  //}
+
   LOG_OUT();
 }
 

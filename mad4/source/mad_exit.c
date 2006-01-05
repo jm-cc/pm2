@@ -920,8 +920,8 @@ mad_close_track(p_mad_adapter_t adapter,
     interface->remove_all_pre_posted(adapter);
   }
 
-  if(interface->close_track){
-    interface->close_track(track);
+  if(interface->track_exit){
+    interface->track_exit(track);
   }
 
   TBX_FREE(track);
@@ -946,10 +946,10 @@ mad_close_track_set(p_mad_adapter_t adapter,
   tbx_htable_cleanup_and_free(track_set->tracks_htable);
   TBX_FREE(track_set->tracks_tab);
 
-  TBX_FREE(track_set->reception_curs);
+  TBX_FREE(track_set->reception_tracks_in_use);
 
-  if(interface->close_track_set)
-    interface->close_track_set(track_set);
+  if(interface->track_set_exit)
+    interface->track_set_exit(track_set);
 
   TBX_FREE(track_set);
   LOG_OUT();

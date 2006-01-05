@@ -139,7 +139,7 @@ mad_dir_node_get_node(p_mad_madeleine_t madeleine)
 
   dir_node = mad_dir_node_cons();
   dir_node->name = mad_leonie_receive_string();
-  TRACE_STR("Node name", dir_node->name);
+  DISP_STR("Node name", dir_node->name);
 
   tbx_htable_add(dir->node_htable, dir_node->name, dir_node);
   tbx_slist_append(dir->node_slist, dir_node);
@@ -185,39 +185,6 @@ mad_dir_build_reference_name(const char *type, const char *name)
   LOG_OUT();
 
   return reference_name;
-}
-
-static
-p_mad_dir_driver_process_specific_t
-mad_dir_adapter_get(void)
-{
-  p_mad_dir_driver_process_specific_t pi_specific        = NULL;
-  p_tbx_slist_t                       adapter_slist      = NULL;
-  p_tbx_htable_t                      adapter_htable     = NULL;
-  int                                 adapter_number = 0;
-
-  LOG_IN();
-  pi_specific    = mad_dir_driver_process_specific_cons();
-  adapter_slist  = pi_specific->adapter_slist;
-  adapter_htable = pi_specific->adapter_htable;
-
-  adapter_number = mad_leonie_receive_int();
-
-  while (adapter_number--)
-    {
-      p_mad_dir_adapter_t adapter = NULL;
-
-      adapter            = mad_dir_adapter_cons();
-      adapter->name      = mad_leonie_receive_string();
-      adapter->selector  = mad_leonie_receive_string();
-      TRACE_STR("- name", adapter->name);
-
-      tbx_slist_append(adapter_slist, adapter);
-      tbx_htable_add(adapter_htable, adapter->name, adapter);
-    }
-  LOG_OUT();
-
-  return pi_specific;
 }
 
 static

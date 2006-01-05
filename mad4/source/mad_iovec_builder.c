@@ -554,10 +554,13 @@ mad_iovec_treat_data_header(p_mad_adapter_t adapter,
 
             } else {
                 s_track_set->cur = blocked;
+                //driver->interface->isend(s_track_set->cpy_track,
+                //                         remote_rank,
+                //                         blocked->data,
+                //                         blocked->total_nb_seg);
                 driver->interface->isend(s_track_set->cpy_track,
-                                         remote_rank,
-                                         blocked->data,
-                                         blocked->total_nb_seg);
+                                         blocked);
+
                 s_track_set->status = MAD_MKP_PROGRESS;
                 channel->need_send++;
             }
@@ -651,10 +654,14 @@ mad_iovec_treat_data_unexpected(p_mad_adapter_t adapter,
 
             } else {
                 s_track_set->cur = unblocked;
+                //driver->interface->isend(s_track_set->cpy_track,
+                //                         remote_rank,
+                //                         unblocked->data,
+                //                         unblocked->total_nb_seg);
+
                 driver->interface->isend(s_track_set->cpy_track,
-                                         remote_rank,
-                                         unblocked->data,
-                                         unblocked->total_nb_seg);
+                                         unblocked);
+
                 s_track_set->status = MAD_MKP_PROGRESS;
                 channel->need_send++;
             }
@@ -711,10 +718,12 @@ mad_iovec_treat_ack(p_mad_adapter_t adapter,
 
         s_track_set->cur = mad_iovec;
 
-        interface->isend(rdv_track,
-                         remote_rank,
-                         mad_iovec->data,
-                         mad_iovec->total_nb_seg);
+        //interface->isend(rdv_track,
+        //                 remote_rank,
+        //                 mad_iovec->data,
+        //                 mad_iovec->total_nb_seg);
+        interface->isend(rdv_track, mad_iovec);
+
         s_track_set->status = MAD_MKP_PROGRESS;
 
         channel = mad_iovec->channel;
@@ -763,7 +772,9 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
     channel        = madeleine->channel_tab[msg_channel_id];
     my_rank        = channel->process_lrank;
 
-    pending = r_track_set->reception_curs[rdv_track->id];
+    //pending = r_track_set->reception_curs[rdv_track->id];
+    pending = rdv_track->pending_reception[destination];
+
 
     //Si la piste est occupée, on stocke directement le rdv
     if(pending){
@@ -778,11 +789,14 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
     if(large_iov){
         // dépot de la réception associée
         large_iov->track = rdv_track;
-        r_track_set->reception_curs[rdv_track->id] /*pending */ = large_iov;
 
-        interface->irecv(rdv_track,
-                         large_iov->data,
-                         large_iov->total_nb_seg);
+        // TODO : si c'est libre!!
+        rdv_track->pending_reception[destination] = large_iov;
+
+        //interface->irecv(rdv_track,
+        //                 large_iov->data,
+        //                 large_iov->total_nb_seg);
+        interface->irecv(rdv_track, large_iov);
 
 
         // création de l'acquittement
@@ -805,10 +819,12 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
 
         } else {
             s_track_set->cur = ack;
-            interface->isend(s_track_set->cpy_track,
-                             destination,
-                             ack->data,
-                             ack->total_nb_seg);
+            //interface->isend(s_track_set->cpy_track,
+            //                 destination,
+            //                 ack->data,
+            //                 ack->total_nb_seg);
+            interface->isend(s_track_set->cpy_track, ack);
+
             s_track_set->status = MAD_MKP_PROGRESS;
         }
         goto finalize;
@@ -1081,7 +1097,7 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
     p_mad_madeleine_t    madeleine      = NULL;
     p_mad_channel_t     *channel_tab    = NULL;
     p_mad_track_set_t    r_track_set    = NULL;
-    p_mad_iovec_t       *reception_curs;
+    //p_mad_iovec_t       *reception_curs;
     p_tbx_slist_t        unexpected_rdv = NULL;
     p_mad_iovec_header_t rdv            = NULL;
     p_mad_channel_t      channel        = NULL;
@@ -1097,7 +1113,7 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
     interface      = adapter->driver->interface;
     channel_tab    = madeleine->channel_tab;
     r_track_set    = adapter->r_track_set;
-    reception_curs = r_track_set->reception_curs;
+    //reception_curs = r_track_set->reception_curs;
     unexpected_rdv = adapter->rdv;
 
     tbx_slist_ref_to_head(unexpected_rdv);
@@ -1119,11 +1135,14 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
         if(large_iov){
             // dépot de la reception des données
             large_iov->track = track;
-            reception_curs[track->id] = large_iov;
 
-            interface->irecv(track,
-                             large_iov->data,
-                             large_iov->total_nb_seg);
+            //reception_curs[track->id] = large_iov;
+            track->pending_reception[rdv_remote_rank] = large_iov;
+
+            //interface->irecv(track,
+            //                 large_iov->data,
+            //                 large_iov->total_nb_seg);
+            interface->irecv(track, large_iov);
 
             // dépot de l'acquittement
             ack = mad_iovec_create(rdv_remote_rank,
@@ -1362,7 +1381,7 @@ mad_iovec_print_iovec(struct iovec *iovec){
             DISP_VAL("-> seq  ", get_sequence(header));
             DISP_VAL("-> len  ", get_length(header));
 
-            //DISP_STR("DATA", iovec[i+1].iov_base);
+            DISP_STR("DATA", iovec[i+1].iov_base);
 
             i += 2;
             header = iovec[i].iov_base;
@@ -1402,7 +1421,9 @@ mad_iovec_print_iovec(struct iovec *iovec){
 
 
         default:
+            DISP_VAL("INVALID-> type ", get_type(header));
             FAILURE("invalid iovec header");
+
         }
     }
     LOG_OUT();

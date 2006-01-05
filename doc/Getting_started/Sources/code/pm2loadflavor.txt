@@ -1,16 +1,45 @@
+ravel% make hello
+[...]
 ravel% pm2load hello
-Alloc page table(6291456)
-index 0: 1
-index 1: 1
-index 2: 1      
+Alloc page table(3670016)
+ index 0: 0    ...
+isoaddr_malloc: got 16 slots locally
+mmap non-contraint => 0x3ffe0000, starting slot index = 31, slots = 16
+end of isoaddr_malloc: after mmap :first slot available = 48
+  Set master (31) -> 31
+  Set status (31) -> 2
+  Set owner (31) -> 1
+  Set master (30) -> 31
+[...]
+isoaddr_free: added to stack cache: 0x3ffe0000 (index = 31)
+Alloc page table(3670016)
+ index 0: 1     ...
+isoaddr_malloc: got 16 slots locally
+mmap non-contraint => 0x3fff0000, starting slot index = 15, slots = 16
+end of isoaddr_malloc: after mmap :first slot available = 32
+  Set master (15) -> 15
+  Set status (15) -> 2
+  Set owner (15) -> 0
+  Set master (14) -> 15
 [...]
 isoaddr_malloc(65536)
 isoaddr_malloc: got 16 slots locally
+mmap non-contraint => 0x3ffd0000, starting slot index = 47, slots = 16
+end of isoaddr_malloc: after mmap :first slot available = 64
+  Set master (47) -> 47
+  Set status (47) -> 2
+  Set owner (47) -> 0
+  Set master (46) -> 47
 [...]
-Hello World!
-isoaddr_free: added to stack cache: affe0000 (index = 15)
-[Threads : 2 created, 0 imported (0 cached)]
+isoaddr_free: added to stack cache: 0x3ffd0000 (index = 47)
+isoaddr_free: added to stack cache: 0x3fff0000 (index = 15)
 Flushing slot cache...
 Flushing stack cache...
 Flushing migration cache...
 Isoaddr exited
+Flushing slot cache...
+Flushing stack cache...
+Flushing migration cache...
+Isoaddr exited
+Hello world!
+Hello world!

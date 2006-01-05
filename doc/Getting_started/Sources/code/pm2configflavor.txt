@@ -1,3 +1,15 @@
+ravel% pm2-config-flavor
+Usage: pm2-config-flavor [--text | --dialog | --xdialog] [Command ...]
+
+Commands:
+    create [flavor [model]] : create flavor 'flavor' based on model 'model'
+    modify [flavor]         : modify flavor 'flavor'
+    export [flavor [file]]  : export flavor 'flavor' to file 'file'
+    import [flavor [file]]  : export flavor 'flavor' from file 'file'
+    see    [flavor]         : show the flavor 'flavor'
+    check  [flavor]         : check the flavor 'flavor'
+    remove [flavor]         : remove the flavor 'flavor'
+    regenerate              : regenerate all the flavors
 ravel% pm2-config-flavor --text
 ================= Flavors management ==================
 Existing flavors :

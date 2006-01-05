@@ -1,2 +1,2 @@
 ravel% cd ${PM2_ROOT}/ezflavor 
-ravel% make 
+ravel% make FLAVOR=ezflavor

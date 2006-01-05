@@ -623,7 +623,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power,
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
 		e = NULL;
-		if (!list_empty(ma_array_queue(rq->active,i))
+		if (!list_empty(ma_array_queue(rq->active,i)))
 			e = list_entry(ma_array_queue(rq->active,i)->next, marcel_entity_t, run_list);
 #if 0
 		else if (!list_empty(ma_array_queue(rq->expired, i)))

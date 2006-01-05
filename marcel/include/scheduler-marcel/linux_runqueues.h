@@ -167,6 +167,10 @@ MA_DECLARE_PER_LWP(ma_runqueue_t, dontsched_runqueue);
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
 #define ma_array_queue(array,prio)	((array)->queue + (prio))
 #define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
+#define ma_queue_empty(queue)	list_empty(queue)
+#define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, run_list)
+#define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, run_list)
+#define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, run_list)
 
 /*
  * double_rq_lock - safely lock two runqueues

@@ -1759,7 +1759,7 @@ restart:
 	idx = ma_sched_find_first_bit(array->bitmap);
 	queue = ma_array_queue(array, idx);
 	/* we may here see ourselves, if someone awoked us */
-	nextent = list_entry(queue->next, marcel_entity_t, run_list);
+	nextent = ma_queue_entry(queue);
 	
 //	if (next->activated > 0) {
 //		unsigned long long delta = now - next->timestamp;

@@ -822,8 +822,10 @@ int marcel_bubble_steal_work(void) {
 #endif
 #endif
 
+static ma_runqueue_t gang_rq;
+
 any_t marcel_gang_scheduler(any_t foo) {
-	marcel_entity_t *e, *ee, *firste;
+	marcel_entity_t *e, *ee;
 	marcel_bubble_t *b;
 	ma_runqueue_t *rq;
 	struct list_head *queue;
@@ -832,36 +834,25 @@ any_t marcel_gang_scheduler(any_t foo) {
 		rq = &ma_main_runqueue;
 		ma_holder_lock_softirq(&rq->hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		list_for_each_entry_safe(e, ee, queue, run_list) {
+		ma_queue_for_each_entry_safe(e, ee, queue) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				b = ma_bubble_entity(e);
 				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &ma_dontsched_runqueue);
-				ma_activate_entity(&b->sched, &ma_dontsched_runqueue.hold);
+				PROF_EVENT2(bubble_sched_switchrq, b, &gang_rq);
+				ma_activate_entity(&b->sched, &gang_rq.hold);
 			}
 		}
 		ma_holder_rawunlock(&rq->hold);
-		rq = &ma_dontsched_runqueue;
+		rq = &gang_rq;
 		ma_holder_rawlock(&rq->hold);
 		queue = ma_rq_queue(rq, MA_BATCH_PRIO);
-		firste = NULL;
-		if (!list_empty(queue))
-		while(1) {
-			e = list_entry(queue->next, marcel_entity_t, run_list);
-			if (e == firste)
-				break;
-			if (!firste)
-				firste = e;
-			if (e->type == MA_BUBBLE_ENTITY) {
-				b = ma_bubble_entity(e);
-				ma_deactivate_entity(&b->sched, &rq->hold);
-				PROF_EVENT2(bubble_sched_switchrq, b, &ma_main_runqueue);
-				ma_activate_entity(&b->sched, &ma_main_runqueue.hold);
-				break;
-			} else {
-				ma_deactivate_entity(e, &rq->hold);
-				ma_activate_entity(e, &rq->hold);
-			}
+		if (!ma_queue_empty(queue)) {
+			e = ma_queue_entry(queue);
+			MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
+			b = ma_bubble_entity(e);
+			ma_deactivate_entity(&b->sched, &rq->hold);
+			PROF_EVENT2(bubble_sched_switchrq, b, &ma_main_runqueue);
+			ma_activate_entity(&b->sched, &ma_main_runqueue.hold);
 		}
 		ma_holder_unlock_softirq(&rq->hold);
 	}
@@ -892,6 +883,7 @@ static void __marcel_init bubble_sched_init() {
 	ma_activate_entity(&marcel_root_bubble.sched, &ma_main_runqueue.hold);
 	ma_dequeue_entity_rq(&marcel_root_bubble.sched, &ma_main_runqueue);
 #endif
+	init_rq(&gang_rq, "gang", MA_DONTSCHED_RQ);
 }
 
 void marcel_start_playing(void) {

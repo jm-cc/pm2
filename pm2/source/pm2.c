@@ -145,7 +145,7 @@ static void pm2_wait_end(void)
     LOG_IN();
     pm2_net_request_end();
     pm2_net_wait_end();
-    mdebug("pm2_wait_end netserver_wait_end completed\n");
+    pm2debug("pm2_wait_end netserver_wait_end completed\n");
 
     marcel_end();
 

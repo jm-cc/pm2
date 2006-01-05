@@ -226,7 +226,7 @@ pm2_net_server_start(p_mad_channel_t channel)
 
     marcel_attr_setvpmask(&attr, MARCEL_VPMASK_ALL_BUT_VP(vp));
 
-    mdebug("Extra vp (%d) allocated for netserver thread\n", vp);
+    pm2debug("Extra vp (%d) allocated for netserver thread\n", vp);
   }
 #endif // ONE_VP_PER_NET_THREAD
 

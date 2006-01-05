@@ -69,7 +69,7 @@ static struct pm2_thread_arg *__thread_alloc(void)
     next_free = next_free->next;
     unlock_task();
 
-    mdebug("Params allocated in cache\n");
+    pm2debug("Params allocated in cache\n");
 
   } else {
     if(next_unalloc == MAX_PARAMS)

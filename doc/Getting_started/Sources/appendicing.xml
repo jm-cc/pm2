@@ -7,11 +7,11 @@
 
 <P>
 Some application may require to use the traditional <TT>main</TT> function
-name instead of the regular <TT>pm2_main</TT>. This can be enabled through
-the <TT>standard_main</TT> options of the Marcel flavors. This option
+name instead of <TT>pm2_main</TT>. This can be enabled through
+the <TT>standard_main</TT> option of the Marcel flavor. This option
 defines the <TT>STANDARD_MAIN</TT> compilation flag, to be used for each of
 the PM2 programs. Note that this may affect the performance of several
-thread management functions. The user is therefore discouraged to do
+thread management functions. Users are therefore discouraged to do
 this unless explicitly required.
 </P>
 
@@ -35,10 +35,6 @@ A typical use of the extended options could thus be:
 
 <CODE FILE="./Sources/code/pm2loadhelp.txt"/>
 
-<NOTE>
-  LB to RN: The -L option does not seem to work properly
-</NOTE>
-
 </SUBSUBSECTION>
 
 </SUBSECTION>
@@ -56,7 +52,7 @@ possible solutions.
 </TR>
 <TR>
 <TD> <TT>Permission denied</TT> error at load time </TD>
-<TD> Each configuration node must be made accessible by <TT>rsh</TT> from the local host: update your <TT>.rhosts</TT> file</TD>
+<TD> Each configuration node must be made accessible by <TT>ssh</TT> from the local host. Check you can issue a <TT>ssh</TT> call to the nodes.</TD>
 </TR>
 </TABLE>
 

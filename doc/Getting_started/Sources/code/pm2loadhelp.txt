@@ -1,12 +1,13 @@
 ravel% pm2load -h
 Usage: pm2load { option } command
 
-option:
--f name: Use flavor named "name" (default=$PM2_FLAVOR or default)
--d: Run command in debug mode 
-                           (not supported by all implementations)
--c name: Use console named "name"
--l: Also generate a log file on first node
--L: Only generate a log file on first node
--h: Display this help message
-
+  option:
+    -f name : Use flavor named "name" (default=$PM2_FLAVOR or default)
+    -d      : Run command in debug mode (not supported by all implementations)
+    -t      : Run command through strace
+    -s      : Run scripts in debug mode
+    -c name : Use console named "name"
+    -l      : Also generate a log file on first node
+    -L      : As '-l' but do not display the log file
+    -u      : Use local flavor (re-run pm2-config on each node)
+    -h      : Display this help message

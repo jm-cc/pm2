@@ -1,10 +1,5 @@
 ravel% pm2load isomalloc
 First, I am on node 0, host ravel...
-p = aff8f040, *p = aff8f080, **p = 1234
-[Threads : 3 created, 0 imported (0 cached)]
-
-ravel% pm2logs
-*** Host debussy, process 1:
-[Threads : 3 created, 1 imported (0 cached)]
+p = 0x3ff9f040, *p = 0x3ff9f080, **p = 1234
 Then, I am on node 1, host debussy...
-p = aff8f040, *p = aff8f080, **p = 1234
+p = 0x3ff9f040, *p = 0x3ff9f080, **p = 1234

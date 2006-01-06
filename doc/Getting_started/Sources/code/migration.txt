@@ -5,23 +5,16 @@ The current PM2 configuration contains 3 host(s) :
 2 : faure
 
 ravel% pm2load migration
-[Threads : 5 created, 2 imported (0 cached)]
 Hop 0: I am on node 0, host ravel...
 Hop 0: Leaving to node 1
 Hop 3: I am on node 0, host ravel...
 Hop 3: Leaving to node 1
 Hop 6: I am on node 0, host ravel...
 Hop 6: Leaving to node 1
-
-ravel% pm2logs
-*** Process 1 on debussy:
-[Threads : 5 created, 3 imported (0 cached)]
 Hop 1: I am on node 1, host debussy...
 Hop 1: Leaving to node 2
 Hop 4: I am on node 1, host debussy...
 Hop 4: Leaving to node 2
-*** Process 2 on faure:
-[Threads : 4 created, 2 imported (0 cached)]
 Hop 2: I am on node 2, host faure...
 Hop 2: Leaving to node 0
 Hop 5: I am on node 2, host faure...

@@ -18,8 +18,6 @@ with PM2 programs because of the multithreaded behavior which
 dramatically increases the asynchronism.
 </P>
 
-<PROGRAM FILE="./Progs/rpc-completion.c" TITLE="Using completion token to gracefully terminate a PM2 program" LABEL="prog:rpc-completion"/>
-
 <P>
 PM2 provides the programmer with a simple mechanism to solve the
 problem, at least in most cases. It is called <EM>completion</EM>.
@@ -32,6 +30,8 @@ sending back the token to it. Observe that the completion token can
 travel across many partners before being used. 
 </P>
 
+<PROGRAM FILE="./Progs/rpc-completion.c" TITLE="Using completion token to gracefully terminate a PM2 program" LABEL="prog:rpc-completion"/>
+
 <P>
 Consider a typical use of such a mechanism in
 Program <REF LABEL="prog:rpc-completion"/>. It is a minimal variation of
@@ -40,7 +40,7 @@ now in charge of triggering the termination by calling the <TT>pm2_halt</TT>
 routine. As observed previously, it cannot do it safely in general.
 It has to make sure beforehand that all the communications have
 completed. This is precisely the role of the completion token. Node<SPACE/>0
-creates token <TT>c</TT> with the <TT>pm2_completion_init</TT> routine. Observe
+creates the token <TT>c</TT> with the <TT>pm2_completion_init</TT> routine. Observe
 that only node<SPACE/>0 does it, and that it occurs in the concurrent phase
 of the program, after the call to <TT>pm2_init</TT>. Two extra parameters
 can be specified on creating a completion token: a specific handler
@@ -51,7 +51,7 @@ cases.
 
 <P>
 Then, the completion token is handled very much like an ordinary
-object. It can be packed together with other data into a messages
+object. It can be packed together with other data into a message
 using the <TT>pm2_pack_completion</TT> routine, with the usual mode flags.
 It can be similarly unpacked with the <TT>pm2_unpack_completion</TT>
 routine.  Finally, one can send back the token to its creator using
@@ -78,8 +78,6 @@ occur.
 
 <SUBSECTION TITLE="Thread migration">
 
-<PROGRAM FILE="./Progs/migration.c" TITLE="Migrating a thread across the configuration" LABEL="prog:migration"/>
-
 <SUBSUBSECTION TITLE="The basic case: migrating oneself" LABEL="sec:self-migration">
 
 <P>
@@ -99,7 +97,7 @@ context switch.  Yet, the global environment of the thread is now the
 one provided by the new node: global variables, node identifier, etc.
 In particular, thread migration does not make any attempt to keep the
 system descriptors consistent across the migration: open files, pipes,
-signals, etc.  Mixing migration and I/O has requires uttermost care.
+signals, etc.  Mixing migration and I/O requires uttermost care.
 </P>
 
 <P>
@@ -109,6 +107,8 @@ doing I/O, etc. PM2 provides the programmer with a
 <TT>pm2_enable_migration</TT> and <TT>pm2_disable_migration</TT> routines to
 manage this aspect. By default, migration is <EM>disabled</EM>.
 </P>
+
+<PROGRAM FILE="./Progs/migration.c" TITLE="Migrating a thread across the configuration" LABEL="prog:migration"/>
 
 <P>
 Program <REF LABEL="prog:migration"/> is a simple example of thread migration.
@@ -144,9 +144,7 @@ It works just as well!
 
 </SUBSUBSECTION>
 
-<SUBSUBSECTION TITLE="Combing migration and completion">
-
-<PROGRAM FILE="./Progs/migration1.c" TITLE="Using completions in presence of migration" LABEL="prog:migration1"/>
+<SUBSUBSECTION TITLE="Combining migration and completion">
 
 <P>
 The main problem in the previous program is to <EM>gracefully</EM> terminate
@@ -172,6 +170,8 @@ for instance, its stack as a local variable, then it gets migrated
 together with the thread and can be used from any node (including the
 originator node!)
 </P>
+
+<PROGRAM FILE="./Progs/migration1.c" TITLE="Using completions in presence of migration" LABEL="prog:migration1"/>
 
 <P>
 This approach is exemplified in Program <REF LABEL="prog:migration1"/>. Observe
@@ -239,8 +239,8 @@ case of a local creation.
 In the Section <REF LABEL="sec:self-migration"/>, we have considered the simple
 case: a thread migrates itself off its current node. The migration
 facility of PM2 is much more powerful, as it allows a thread to
-migrate off other sibling threads, provided these threads have agreed
-on getting migrated.
+migrate other sibling threads, providing these threads have agreed
+to get migrated.
 </P>
 
 <PROGRAM FILE="./Progs/migrate-group.c" TITLE="Migrating off a group of threads" LABEL="prog:migrate-group"/>
@@ -252,12 +252,12 @@ management. The idea is the following: Node<SPACE/>0 spawns 4<SPACE/>children
 threads, numbered from<SPACE/>0 to<SPACE/>3. (Remind that threads disregard
 migration by default.)  Then, the children threads with an even number
 agree on migrating, and all children threads loop, repeatedly yielding
-control to the scheduler with the <TT>marcel_yield</TT> routine until variable
+control to the scheduler with the <TT>marcel_yield</TT> routine until the variable
 <TT>barrier</TT> takes a non null value.  When such a value has been
 recorded, the children threads issue a message and terminate. On its
 side, the master thread on node<SPACE/>0 records the list of <TT>MIGRATABLE</TT>
 threads, and requests the migration of all of them to node<SPACE/>1. Then, it
-issues a RPC to node<SPACE/>1 to set variable <TT>barrier</TT> to 1, and does so
+issues a RPC to node<SPACE/>1 to set the variable <TT>barrier</TT> to 1, and does so
 for its own node. Finally, the master thread calls the <TT>halt</TT> routine
 to stop all daemon service threads.
 
@@ -293,7 +293,7 @@ array.  This can be done by hand, but PM2 provides a specialized
 routine to do the work. A call 
 <CODE FILE="./Sources/code/threadslist.c"/>
 takes as parameters an array of threads
-<TT>threads[N]</TT> (a PM2 thread has type <TT>marcel_t</TT>) and a selection
+<TT>threads[N]</TT> (a PM2 thread has the type <TT>marcel_t</TT>) and a selection
 condition. A number of condition are available, which can be or-ed and
 and-ed as usual for flags. Here, we use the <TT>MIGRATABLE_ONLY</TT> flag,
 which does exactly what you guess. Well, not exactly, as the flag is
@@ -381,19 +381,19 @@ distributed algorithm: it is called a <EM>stable condition</EM>.
 
 <SUBSUBSECTION TITLE="Iso-allocation and dynamically allocated data">
 
-<PROGRAM FILE="./Progs/iso-alloc.c" TITLE="Iso-allocation enables unlimited use of pointers in migrating threads" LABEL="prog:iso-alloc"/>
-
 <P>
 On migrating, a thread is moved together with its private resources:
 its private descriptors and its private stack. All these resources are
 allocated by PM2 so that the virtual addresses remains invariant upon
 migration. This allows to freely use pointers in the stack of a
 migrating thread. This is exemplified in
-Program <REF LABEL="prog:iso-alloc"/>. Variable <TT>x</TT> is allocated in the
+Program <REF LABEL="prog:iso-alloc"/>. The variable <TT>x</TT> is allocated in the
 private stack of the thread on node<SPACE/>1. After migration to node<SPACE/>2, the value
 of <TT>x</TT> <EM>and its address</EM> are left unchanged.
 
-<CODE FILE="./Sources/code/pm2logs2.txt"/>
+<PROGRAM FILE="./Progs/iso-alloc.c" TITLE="Iso-allocation enables unlimited use of pointers in migrating threads" LABEL="prog:iso-alloc"/>
+
+<CODE FILE="./Sources/code/isoalloc.txt"/>
 </P>
 
 <P>
@@ -409,8 +409,6 @@ All pointers remain valid without any dependency on the compiler nor
 any optimization strategy! You can therefore freely manipulate linked
 lists within migrating threads without the smallest worrying...
 </P>
-
-<PROGRAM FILE="./Progs/isomalloc.c" TITLE="Allocating dynamic storage which migrates together with the thread" LABEL="prog:isomalloc"/>
 
 <P>
 All storage requests in PM2 are handled with this technique, including
@@ -445,32 +443,31 @@ unpacked on the destination node, and installed at the same virtual
 address as in the origin node. This is why <TT>**p</TT> returns the same
 value <EM>after</EM> the migration, as before. 
 
+<PROGRAM FILE="./Progs/isomalloc.c" TITLE="Allocating dynamic storage which migrates together with the thread" LABEL="prog:isomalloc"/>
+
 <CODE FILE="./Sources/code/isomalloc.txt"/>
 </P>
-
-<PROGRAM FILE="./Progs/isomalloc1.c" TITLE="Ordinary allocation results in undefined behavior in the presence of migration" LABEL="prog:isomalloc1"/>
 
 <P>
 A thread may allocate as many such dynamic storage areas as
 needed. Observe that this allocation primitive is compatible with the
-usual <TT>malloc</TT> primitives. A thread may well allocate storage with
-both functions within the same program. However, only areas allocated
-with <TT>pm2_isomalloc</TT> shall migrate together with the thread. The
-result of accessing an address allocated with the ordinary <TT>malloc</TT>
-function, after a migration is of course undefined as demonstrated by
-Program <REF LABEL="prog:isomalloc1"/>: the value of <TT>*p</TT> is <EM>not</EM>
-preserved through the migration!
-
-<CODE FILE="./Sources/code/isomalloc1.txt"/>
+usual <TT>malloc</TT> primitives. A thread may well allocate storage
+with both functions within the same program. However, only areas
+allocated with <TT>pm2_isomalloc</TT> shall migrate together with the
+thread. The result of accessing an address allocated with the ordinary
+<TT>malloc</TT> function, after a migration is of course undefined and
+will cause a segmentation fault when you try to access the pointer on
+the destination node, as you can check by yourself when trying to
+execute Program <REF LABEL="prog:isomalloc1"/>.
 </P>
+
+<PROGRAM FILE="./Progs/isomalloc1.c" TITLE="Ordinary allocation results in incorrect behavior in the presence of migration" LABEL="prog:isomalloc1"/>
 
 </SUBSUBSECTION>
 
 </SUBSECTION>
 
 <SUBSECTION TITLE="Sharing data across nodes: Distributed Shared Memory">
-
-<PROGRAM FILE="./Progs/dsm.c" TITLE="Distributed shared memory in PM2" LABEL="prog:dsm"/>
 
 <P>
 Up to now, we have only considered regular threads, which share data
@@ -480,21 +477,23 @@ made to manage such data and to preserve consistency on migration.
 For this purpose, PM2 includes a special module called DSM-PM2 (DSM
 stands for <EM>Distributed Shared Memory</EM>) to provide such a
 functionality. Variables assigned within <EM>shared storage area</EM>
-can be accessed from any thread, whatever its hosting node. The system
+can be accessed from any thread, whatever their hosting node. The system
 guarantees the consistency of the values observed by the threads
-according a given semantic model, to be specified by the user through
+according to a given semantic model, to be specified by the user through
 an initialization routine. 
 </P>
 
 <P>
-Consider Program <REF LABEL="prog:dsm"/>. Variable <TT>shvar</TT> is declared to be
+Consider Program <REF LABEL="prog:dsm"/>. the variable <TT>shvar</TT> is declared to be
 <EM>globally shared</EM> by all the threads of the program.  Each
-processing node but the master node, successively spawns a thread to
+processing node except for the master node, successively spawns a thread to
 increment this single shared variable for 20<SPACE/>units, recording the
 initial and the final value it observed.  Finally, the master node
 prints the value of the variable.  As expected, the final value of the
 variable is exactly as it would have been with a sequence of
 increments at the master node.
+
+<PROGRAM FILE="./Progs/dsm.c" TITLE="Distributed shared memory in PM2" LABEL="prog:dsm"/>
 
 <CODE FILE="./Sources/code/dsm.txt"/>
 </P>
@@ -502,7 +501,7 @@ increments at the master node.
 <P>
 DSM-PM2 implements a complex protocol to guarantee that the final
 result is the right one. In this example, the variable is physically
-installed on the master node: it is called its <EM>home node</EM>. Each
+installed on the master node which is called the <EM>home node</EM>. Each
 time a thread attempts to <EM>read</EM> the value of the variable, it
 gets a (read-only) copy of the variable from the master node, so that
 repeated reads are very cheap. Each time a thread attempts
@@ -517,29 +516,37 @@ have been applied is unknown. This is why the program says in the
 initialization phase: <TT>dsm_set_default_protocol(LI_HUDAK)</TT>.
 </P>
 
-<PROGRAM FILE="./Progs/dsm1.c" TITLE="Distributed shared memory in PM2, using the 'MIGRATE_THREAD' sequential consistency protocol" LABEL="prog:dsm1"/>
-
 <P>
-Other protocols are available in DSM-PM2. For instance, using
-<TT>MIGRATE_THREAD</TT> instead of <TT>LI_HUDAK</TT> implements another protocol
-to guarantee sequential consistency, based on dynamic thread migration:
-each time a thread attempts to access a globally shared variable, to
-read it as well as to write it, then it silently migrates to the home
-node of the variable. As you can observe, the result is the same as
-above, but all the incrementing threads end up on the home node of
-the shared variable.
+Other protocols are available in DSM-PM2. For instance, Program <REF
+LABEL="prog:dsm1"/> uses the protocol <TT>MIGRATE_THREAD</TT> instead
+of <TT>LI_HUDAK</TT>, this protocol is based on dynamic thread
+migration: each time a thread attempts to access a globally shared
+variable, to read it or to write it, then it silently migrates to the
+home node of the variable. 
+<NOTE>
+<P>
+NF: It looks like threads migrate back to the first node? The following text seems to be incorrect.
+</P>
+<P>
+<EM>
+The result is the same as above, but all
+the incrementing threads end up on the home node of the shared
+variable.
+</EM>
+</P>
+</NOTE>
+
+<PROGRAM FILE="./Progs/dsm1.c" TITLE="Distributed shared memory in PM2, using the 'MIGRATE_THREAD' sequential consistency protocol" LABEL="prog:dsm1"/>
 
 <CODE FILE="./Sources/code/dsm1.txt"/>
 </P>
 
-<PROGRAM FILE="./Progs/dsm2.c" TITLE="Distributed shared memory in PM2, with concurrent access to shared variables" LABEL="prog:dsm2"/>
-
 <P>
-In the two examples above, each thread accessing shared variable
+In the two examples above, each thread accessing the shared variable
 <TT>shvar</TT> is launched in turn, waiting for the previous one to signal
 completion. Then, no access conflict on the shared variable is to be
 threatened. What if the thread attempt to increment the variable
-<EM>concurrently</EM> as in Program <REF LABEL="prog:dsm2"/>? Actually, the
+<EM>concurrently</EM> as in Program <REF LABEL="prog:dsm2"/> ? Actually, the
 incrementing instruction <TT>shvar++</TT> is compiled into an
 <EM>sequence</EM> of elementary, atomic machine instructions, something
 like:
@@ -551,24 +558,23 @@ like:
 Thus, we have to add extra synchronization objects to guarantee that
 this sequence of atomic instructions is actually executed in mutual
 exclusion, as if it was a single instruction. DSM-PM2 provides
-<EM>global</EM> mutexes for this purpose, as shown in the program.
+<EM>global</EM> mutexes for this purpose, as shown in Program <REF LABEL="prog:dsm2"/> .
 Observe that this mutexes are much more powerful than the regular PM2
 mutexes, which are local to a PM2 node.
+
+<PROGRAM FILE="./Progs/dsm2.c" TITLE="Distributed shared memory in PM2, with concurrent access to shared variables" LABEL="prog:dsm2"/>
 
 <CODE FILE="./Sources/code/dsm2.txt"/>
 </P>
 
 <P>
-Just for fun, you may wish to try out this last program <EM>without</EM>
-the mutexes! This is legal in DSM-PM2, and the sequential consistency
-semantics model for the DSM fully addresses it. However, you should
-remind that the model specifies the behavior at the level of
-elementary atomic instructions: reading and writing shared variables,
-so that the actual program which is run is the one with the expanded
-form is <TT>shvar++</TT>.  I run the experiment on my machine: here is the
-result:
-
-<CODE FILE="./Sources/code/dsm3.txt"/>
+Just for fun, you may wish to try out this last program
+<EM>without</EM> the mutexes! This is legal in DSM-PM2, and the
+sequential consistency semantics model for the DSM fully addresses
+it. However, you should remember that the model specifies the behavior
+at the level of elementary atomic instructions and there is therefore
+no guarantee that the incrementation instruction <TT>shvar++</TT> will
+be executed atomically.
 </P>
 
 </SUBSECTION>

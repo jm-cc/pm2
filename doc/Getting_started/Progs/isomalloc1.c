@@ -22,7 +22,7 @@ f (void *arg)
   pm2_migrate_self (proc);
 
   tprintf ("Then, I am on node %d, host %s...\n"
-	   "p = %p, *p = %d\n", pm2_self (), hostname, p, *p);
+	   "p = %p, *p = %d\n", pm2_self (), hostname, p, *p); /* Here! */
 
   free (p);
 

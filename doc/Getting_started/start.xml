@@ -20,7 +20,7 @@ nodes. This manual presents an installer's, user's and developer's guide for
   The latest version of this document is available from the following
   URL: <URL>http://runtime.futurs.inria.fr/pm2-doc/</URL>.
 </P>
-<KEYWORD>RPC, Communication, Thread, Performance.</KEYWORD>
+<KEYWORD>RPC, Communication, Thread, Distributed Programming.</KEYWORD>
 </ABSTRACT>
 
 <INRIA TYPE="RT" TITRE="Démarrer avec PM2">

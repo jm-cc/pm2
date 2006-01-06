@@ -32,7 +32,7 @@ the scheduler, disabling any external interrupt. No other thread
 whatsoever can be scheduled until the <TT>unlock_task</TT> has been called.
 These routines may be nested. It is up to the user to guarantee proper
 nesting. One has to be uttermost careful that PM2/Marcel provides no
-protection against deadlock. Also, locking a tasked within a node
+protection against deadlock. Also, locking a task within a node
 disables any progress of the daemon service threads: no message can be
 received, etc. It is up to the user to guarantee that no harm may
 result, for instance from overfilling communication buffers.
@@ -47,7 +47,7 @@ shared variable <TT>counter</TT> for <TT>N</TT> times, and each odd thread decre
 it for <TT>N</TT> times, too. To emphasize that increasing and decreasing a
 variable is <EM>not</EM> an atomic operation at the level of machine
 code, we have written it explicitly as a Load/Add/Store series of
-operations. (Observe that variable <TT>tmp</TT> has be registered as
+operations. (Observe that the variable <TT>tmp</TT> has been registered as
 <TT>volatile</TT> to prevent the wise compiler to optimize our
 trick!). The expected final value for <TT>counter</TT> is<SPACE/>0.  
 
@@ -72,12 +72,10 @@ overlooked by the PM2 programmer!
 
 <SUBSUBSECTION TITLE="Mutexes" LABEL="sec:mutex">
 
-<PROGRAM FILE="./Progs/mutex.c" TITLE="Using mutexes in PM2" LABEL="prog:mutex"/>
-
 <P>
 Freezing is sufficient for most simple purpose, when a (short!)
-sequence of actions have to be atomically issued. Yet, this does not
-handle the case of sequence where the thread may get temporarily
+sequence of actions has to be atomically issued. Yet, this does not
+handle the case of sequences where the thread may get temporarily
 suspended, from its own request or not. In this case, more
 sophisticated facilities have to be used, for instance mutexes (for
 <EM>mutual exclusion</EM>). Consider Program <REF LABEL="prog:mutex"/>, and
@@ -93,11 +91,11 @@ afterward be acquired and released, respectively with the
 <TT>marcel_mutex_lock</TT> and <TT>marcel_mutex_unlock</TT> routines.
 </P>
 
+<PROGRAM FILE="./Progs/mutex.c" TITLE="Using mutexes in PM2" LABEL="prog:mutex"/>
+
 </SUBSUBSECTION>
 
 <SUBSUBSECTION TITLE="Semaphores">
-
-<PROGRAM FILE="./Progs/semaphore.c" TITLE="Using semaphores in PM2" LABEL="prog:semaphore"/>
 
 <P>
 Marcel also provides semaphores. A semaphore can be initialized with
@@ -106,11 +104,13 @@ be taken with <TT>marcel_sem_P</TT>, and freed with <TT>marcel_sem_V</TT>, as
 (probably?) expected.
 </P>
 
+<PROGRAM FILE="./Progs/semaphore.c" TITLE="Using semaphores in PM2" LABEL="prog:semaphore"/>
+
 <P>
-In fact, completion are just a simple wrapping for semaphores. On
+In fact, completion is just a simple wrapping for semaphore. On
 initializing a completion, a semaphore is initialized, and its address
 and native node are stored into a structure. Waiting for a completion
-is just issuing a <TT>marcel_sem_P</TT> on the semaphore.  Signaling
+leads in issuing a <TT>marcel_sem_P</TT> on the semaphore.  Signaling
 completion includes the following action: if the local node is the
 same as the native node, then a call to <TT>marcel_sem_V</TT> is issued for
 the semaphore; otherwise, a RPC request is issued to the native node,
@@ -124,14 +124,12 @@ explicit semaphores.
 
 <SUBSUBSECTION TITLE="Conditions">
 
-<PROGRAM FILE="./Progs/condition.c" TITLE="Using condition variables in PM2" LABEL="prog:condition"/>
-
 <P>
 Marcel finally provides conditions variables associated to mutexes,
 with a Mesa-style semantics. A thread which signals a condition keeps
-on running. One of the threads blocked waiting for this condition is
-selected and appended to the queue of the threads ready to run. As a
-consequence, <EM>user cannot be guaranteed that a thread which exits
+on running. One of the blocked threads waiting for this condition is
+selected and appended to the queue of the ready to run threads. As a
+consequence, <EM>users cannot be guaranteed that a thread which exits
   a wait is immediately executed</EM>. Actually, no hypothesis may be made
 about the state of the thread at the time it is eventually
 scheduled. This is the reason why it is necessary to encapsulate
@@ -141,13 +139,15 @@ commanded its waiting; if it does not hold, then it goes back to
 sleep, waiting again to be signaled.
 </P>
 
+<PROGRAM FILE="./Progs/condition.c" TITLE="Using condition variables in PM2" LABEL="prog:condition"/>
+
 <P>
 In Program <REF LABEL="prog:condition"/>, we have further constrained the
 shared counter to take values only between <TT>MIN_COUNTER</TT> and
-<TT>MAX_COUNTER</TT>. This is done using two condition variables
-to control increment and decrement, similarly to a classical
-producer-consumer scheme. (We have reverted to direct operations on
-the <TT>counter</TT> variable to enhance readability.) 
+<TT>MAX_COUNTER</TT>. This is done by using two condition variables
+to control incrementation and decrementation, similarly to a classical
+producer-consumer scheme (We have reverted to direct operations on
+the <TT>counter</TT> variable to enhance readability).
 </P>
 
 <P>

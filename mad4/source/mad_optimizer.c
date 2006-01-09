@@ -545,7 +545,7 @@ mad_s_optimize(p_mad_adapter_t adapter){
         }
         mad_iovec_prev = mad_iovec_cur;
         mad_iovec->matrix_entrie = mad_iovec_cur->matrix_entrie;
-    }while(mad_iovec->total_nb_seg <= 32); // MODIFIER le 32
+    }while(mad_iovec->total_nb_seg <= NB_ENTRIES);
 
  end:
     if(mad_iovec){
@@ -554,8 +554,11 @@ mad_s_optimize(p_mad_adapter_t adapter){
         mad_iovec_update_global_header(mad_iovec);
     }
 
-    //if(mad_iovec)
+    //if(mad_iovec){
+    //    DISP("Produit par l'OPTIMISEUR");
     //    mad_iovec_print(mad_iovec);
+    //}
+
 
     LOG_OUT();
     return mad_iovec;

@@ -5,7 +5,10 @@ p_mad_iovec_t
 mad_s_optimize(p_mad_adapter_t);
 
 void
-initialize_tracks(p_mad_adapter_t);
+initialize_tracks_part1(p_mad_adapter_t);
+
+void
+initialize_tracks_part2(p_mad_adapter_t);
 
 void
 initialize_network_benchmarcks(p_mad_driver_t);

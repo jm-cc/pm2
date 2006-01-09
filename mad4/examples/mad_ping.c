@@ -26,18 +26,9 @@
 #include "pm2_common.h"
 
 #define NB_LOOPS 1000
-#define WARMUP_LOOPS 10
+#define WARMUP_LOOPS 1000
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  70000 //(2*1024*1024) //32768
-
-int    nb_chronos_client    = 0;
-double chrono_client_3_4    = 0.0;
-double chrono_client_4_5    = 0.0;
-double chrono_client_5_6    = 0.0;
-double chrono_client_6_7    = 0.0;
-
-double temps_emission  = 0.0;
-double temps_reception = 0.0;
+#define BUFFER_LENGTH_MAX  1024 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -103,78 +94,77 @@ client(p_mad_channel_t channel){
 
     tbx_tick_t        t1;
     tbx_tick_t        t2;
-    tbx_tick_t        t3;
-    tbx_tick_t        t4;
-    tbx_tick_t        t5;
-    tbx_tick_t        t6;
-    tbx_tick_t        t7;
     double            sum = 0.0;
-    extern tbx_tick_t chrono_test;
     LOG_IN();
-
+  //DISP("Initialisation des buffers d'émission et de réception\n");
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
+      //DISP("Identification de la connexion en émission\n");
         connection1 = mad_begin_packing(channel, 0);
 
         while (counter++ < WARMUP_LOOPS) {
+            //DISP("Dépot d'une émission");
             mad_pack(connection1,
                      buffer_e,
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
+            //DISP("Attente d'émission");
             mad_wait_packs(connection1);
+            //DISP("FIN émission\n");
 
             if (counter == 1) {
+                //DISP("Identification de la connexion en réception\n");
                 connection2 = mad_begin_unpacking(channel);
             }
+
+            //DISP("Dépot d'une réception");
             mad_unpack(connection2,
                        buffer_r,
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
+            //DISP("Attente de réception");
             mad_wait_unpacks(connection2);
-            //verify_data(buffer_r, cur_length);
-            buffer_r[0] = 'g';
+            //DISP("FIN réception\n");
         }
+
+        //DISP("---->FIN WARMUP");
+
         counter = 0;
 
         //DISP("------------------------------");
         TBX_GET_TICK(t1);
         while (counter < NB_LOOPS) {
-            TBX_GET_TICK(t3);
+            //DISP_VAL("counter", counter);
+
+
+            buffer_e[0] += 1;
+
             mad_pack(connection1,
                      buffer_e,
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
-            TBX_GET_TICK(t4);
             mad_wait_packs(connection1);
-            TBX_GET_TICK(t5);
 
-            temps_emission  += TBX_TIMING_DELAY(t3, chrono_test);
+            //DISP("PACK");
 
             mad_unpack(connection2,
                        buffer_r,
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
-            TBX_GET_TICK(t6);
             mad_wait_unpacks(connection2);
-            TBX_GET_TICK(t7);
 
-            temps_reception += TBX_TIMING_DELAY(chrono_test, t7);
-            //verify_data(buffer_r, cur_length);
-            buffer_r[0] = 'g';
+            //DISP("UNPACK");
+
             counter++;
-
-            chrono_client_3_4 += TBX_TIMING_DELAY(t3, t4);
-            chrono_client_4_5 += TBX_TIMING_DELAY(t4, t5);
-            chrono_client_5_6 += TBX_TIMING_DELAY(t5, t6);
-            chrono_client_6_7 += TBX_TIMING_DELAY(t6, t7);
-            nb_chronos_client++;
         }
+
+        //DISP("Juste avant les end");
         mad_end_packing(connection1);
         mad_end_unpacking(connection2);
 
@@ -184,24 +174,6 @@ client(p_mad_channel_t channel){
         printf("%9d   %9g   %9g\n",
                cur_length, sum / (NB_LOOPS * 2),
                (2.0 * NB_LOOPS * cur_length) / sum / 1.048576);
-
-        printf("En émission, temps entre le mad_pack et le succès du mx_test            %9g\n", temps_emission / nb_chronos_client);
-        printf("En réception, temps entre le succès du mx_test et la fin de la remontée %9g\n", temps_reception / nb_chronos_client);
-        printf("\n");
-
-        printf("mad_pack            %9g\n", chrono_client_3_4 / nb_chronos_client);
-        printf("mad_wait_pack       %9g\n", chrono_client_4_5 / nb_chronos_client);
-        printf("mad_unpack          %9g\n", chrono_client_5_6 / nb_chronos_client);
-        printf("mad_wait_unpack     %9g\n", chrono_client_6_7 / nb_chronos_client);
-        printf("\n");
-
-        nb_chronos_client    = 0;
-        chrono_client_3_4    = 0.0;
-        chrono_client_4_5    = 0.0;
-        chrono_client_5_6    = 0.0;
-        chrono_client_6_7    = 0.0;
-        temps_emission       = 0.0;
-        temps_reception      = 0.0;
 
         // next length
         cur_length*=2;
@@ -228,31 +200,43 @@ server(p_mad_channel_t channel){
     unsigned int cur_length = BUFFER_LENGTH_MIN;
 
     LOG_IN();
+  //DISP("Initialisation des buffers d'émission et de réception\n");
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
+        //DISP("Identification de la connexion en réception\n");
         connection1 = mad_begin_unpacking(channel);
+
         while (counter++ < WARMUP_LOOPS) {
 
+            //DISP("Dépot d'une réception");
             mad_unpack(connection1,
                        buffer_r,
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
+            //DISP("Attente de réception");
             mad_wait_unpacks(connection1);
+            //DISP("FIN réception\n");
 
             if (counter == 1) {
+                //DISP("Identification de la connexion en émission\n");
                 connection2 = mad_begin_packing(channel, 1);
             }
 
+            //DISP("Dépot d'une émission");
             mad_pack(connection2,
                      buffer_e,
                      cur_length,
                      mad_send_CHEAPER,
                      mad_receive_CHEAPER);
+            //DISP("Attente d'émission");
             mad_wait_packs(connection2);
+            //DISP("FIN émission\n");
         }
+
+        //DISP("---->FIN WARMUP");
 
         counter = 0;
 
@@ -264,7 +248,13 @@ server(p_mad_channel_t channel){
                    mad_receive_CHEAPER);
         mad_wait_unpacks(connection1);
 
+        //DISP("UNPACK");
+
         while (counter < NB_LOOPS - 1) {
+
+            buffer_e[0] += 1;
+
+            //DISP_VAL("counter", counter);
             mad_pack(connection2,
                      buffer_e,
                      cur_length,
@@ -272,13 +262,16 @@ server(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection2);
 
+            //DISP("PACK");
+
             mad_unpack(connection1,
                        buffer_r,
                        cur_length,
                        mad_send_CHEAPER,
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection1);
-            buffer_r[0] = 'g';
+
+            //DISP("UNPACK");
 
             counter++;
         }
@@ -289,6 +282,8 @@ server(p_mad_channel_t channel){
                  mad_send_CHEAPER,
                  mad_receive_CHEAPER);
         mad_wait_packs(connection2);
+
+        //DISP("PACK");
 
         mad_end_unpacking(connection1);
         mad_end_packing(connection2);
@@ -315,22 +310,6 @@ main(int argc, char **argv) {
     ntbx_process_grank_t      	 my_global_rank    =   -1;
     ntbx_process_lrank_t      	 my_local_rank     =   -1;
 
-    extern int nb_pack;
-    extern double chrono_pack;
-
-    extern int    nb_send_cur;
-    extern double chrono_send_cur;
-    extern double chrono_send_cur_isend;
-
-    extern int    nb_send_next;
-    extern double chrono_send_next;
-
-    extern int    nb_chronos_optimize;
-    extern double chrono_optimize_1_2;
-    extern double chrono_optimize_2_3;
-    extern double chrono_optimize_3_4;
-    extern double chrono_optimize_1_4;
-
     LOG_IN();
     common_pre_init (&argc, argv, NULL);
     common_post_init(&argc, argv, NULL);
@@ -353,27 +332,6 @@ main(int argc, char **argv) {
         server(channel);
         DISP("FINI!!!");
     }
-
-    printf("MAD_PACK    %9g\n", chrono_pack/nb_pack);
-    printf("\n");
-
-    printf("MAD_SEND_CUR  %9g\n", chrono_send_cur/nb_send_cur);
-    printf("MAD_SEND_CUR -nb appels  %d\n", nb_send_cur);
-    printf("MAD_SEND_CUR : isend  %9g\n", chrono_send_cur_isend/nb_send_cur);
-    printf("\n");
-
-    if(nb_send_next){
-        printf("MAD_SEND_NEXT  %9g\n", chrono_send_next/nb_send_next);
-    } else {
-        printf("MAD_SEND_NEXT : aucun appel\n");
-    }
-
-    printf("\n");
-
-    printf("OPTIMIZE    %9g\n", chrono_optimize_1_4/nb_chronos_optimize);
-    printf("extract first       %9g\n", chrono_optimize_1_2/nb_chronos_optimize);
-    printf("init mad_iovec      %9g\n", chrono_optimize_2_3/nb_chronos_optimize);
-    printf("continue mad_iovec  %9g\n", chrono_optimize_3_4/nb_chronos_optimize);
 
     common_exit(NULL);
     LOG_OUT();

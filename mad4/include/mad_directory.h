@@ -82,7 +82,7 @@ typedef struct s_mad_dir_channel
 
   // Regular channel
   tbx_bool_t                  not_private;
-  tbx_bool_t                  mergeable; 
+  tbx_bool_t                  mergeable;
   p_ntbx_topology_table_t     ttable;
 
   // Forwarding channel

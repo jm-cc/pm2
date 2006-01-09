@@ -94,9 +94,6 @@ main(int argc, char **argv) {
     ntbx_process_lrank_t      	 my_local_rank     =   -1;
     p_mad_connection_t connection = NULL;
 
-    extern tbx_tick_t tick_mx_test;
-    tbx_tick_t tick_wait_pack;
-    tbx_tick_t tick_wait_unpack;
     LOG_IN();
     common_pre_init (&argc, argv, NULL);
     common_post_init(&argc, argv, NULL);
@@ -107,6 +104,10 @@ main(int argc, char **argv) {
     channel  = tbx_htable_get(madeleine->channel_htable, name);
     pc             = channel->pc;
     my_local_rank  = ntbx_pc_global_to_local(pc, my_global_rank);
+
+
+    DISP("*** INITIALISATION PASSÉE ***");
+
 
     if (my_local_rank == 0) {
         unsigned int len1, len2, len3, len4, len5;
@@ -138,42 +139,41 @@ main(int argc, char **argv) {
         if(!connection)
             DISP("mad_micro_direct: PAS de CONNECTION");
 
-        mad_pack(connection,
-                 buffer1,
-                 len1,
-                 mad_send_CHEAPER,
-                 mad_receive_CHEAPER);
-
-
-        mad_wait_packs(connection);
-        TBX_GET_TICK(tick_wait_pack);
+        //DISP("-->pack");
+        //mad_pack(connection,
+        //         buffer1,
+        //         len1,
+        //         mad_send_CHEAPER,
+        //         mad_receive_CHEAPER);
+        //DISP("<--pack");
+        //mad_wait_packs(connection);
 
 
         //
         ////DISP("################################");
         //mad_wait_packs(connection);
         //
-        mad_pack(connection,
-                 buffer2,
-                 len2,
-                 mad_send_CHEAPER,
-                 mad_receive_CHEAPER);
-        //
-        ////DISP("################################");
-        //
         //mad_pack(connection,
-        //         buffer3,
-        //         len3,
+        //         buffer2,
+        //         len2,
         //         mad_send_CHEAPER,
         //         mad_receive_CHEAPER);
         //
         ////DISP("################################");
         //
         mad_pack(connection,
-                 buffer4,
-                 len4,
+                 buffer3,
+                 len3,
                  mad_send_CHEAPER,
                  mad_receive_CHEAPER);
+        //
+        ////DISP("################################");
+        //
+        //mad_pack(connection,
+        //         buffer4,
+        //         len4,
+        //         mad_send_CHEAPER,
+        //         mad_receive_CHEAPER);
 
         //DISP("################################");
 
@@ -192,9 +192,6 @@ main(int argc, char **argv) {
         TBX_FREE(buffer3);
         TBX_FREE(buffer4);
         TBX_FREE(buffer5);
-
-        DISP_VAL("test/wait_pack --->",
-                 TBX_TIMING_DELAY(tick_mx_test, tick_wait_pack));
 
     } else if (my_local_rank == 1) {
         unsigned int len1, len2, len3, len4, len5;
@@ -218,42 +215,40 @@ main(int argc, char **argv) {
 
         connection = mad_begin_unpacking(channel);
 
-        mad_unpack(connection,
-                   buffer1,
-                   len1,
-                   mad_send_CHEAPER,
-                   mad_receive_CHEAPER);
-
-        mad_wait_unpacks(connection);
-
-        TBX_GET_TICK(tick_wait_pack);
+        //DISP("-->unpack");
+        //mad_unpack(connection,
+        //           buffer1,
+        //           len1,
+        //           mad_send_CHEAPER,
+        //           mad_receive_CHEAPER);
+        //DISP("<--unpack");
+        //mad_wait_unpacks(connection);
 
         //
         ////DISP("################################");
         //mad_wait_unpacks(connection);
         //
-        mad_unpack(connection,
-                   buffer2,
-                   len2,
-                   mad_send_CHEAPER,
-                   mad_receive_CHEAPER);
-
-        //DISP("################################");
-
-        //sleep(2);
         //mad_unpack(connection,
-        //           buffer3,
-        //           len3,
+        //           buffer2,
+        //           len2,
         //           mad_send_CHEAPER,
         //           mad_receive_CHEAPER);
 
         //DISP("################################");
 
+        //sleep(2);
         mad_unpack(connection,
-                   buffer4,
-                   len4,
+                   buffer3,
+                   len3,
                    mad_send_CHEAPER,
                    mad_receive_CHEAPER);
+        //DISP("################################");
+
+        //mad_unpack(connection,
+        //           buffer4,
+        //           len4,
+        //           mad_send_CHEAPER,
+        //           mad_receive_CHEAPER);
 
         //DISP("################################");
 
@@ -270,10 +265,10 @@ main(int argc, char **argv) {
 
         mad_end_unpacking(connection);
 
-        verify_data(buffer1, len1);
-        verify_data(buffer2, len2);
-        //verify_data(buffer3, len3);
-        verify_data(buffer4, len4);
+        //verify_data(buffer1, len1);
+        //verify_data(buffer2, len2);
+        verify_data(buffer3, len3);
+        //verify_data(buffer4, len4);
         //verify_data(buffer5, len5);
 
         TBX_FREE(buffer1);
@@ -281,11 +276,6 @@ main(int argc, char **argv) {
         TBX_FREE(buffer3);
         TBX_FREE(buffer4);
         TBX_FREE(buffer5);
-
-
-        DISP_VAL("test/wait_unpack --->",
-                 TBX_TIMING_DELAY(tick_mx_test, tick_wait_unpack));
-
     }
     common_exit(NULL);
     LOG_OUT();

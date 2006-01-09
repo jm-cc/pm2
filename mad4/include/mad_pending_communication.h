@@ -5,7 +5,7 @@
 #define NB_DEST    32
 
 typedef struct s_mad_track_t *p_mad_track_t ;
-
+typedef struct s_mad_track_set_t *p_mad_track_set_t;
 
 typedef struct s_mad_iovec{
     ntbx_process_lrank_t    my_rank;
@@ -38,12 +38,38 @@ typedef struct s_mad_iovec{
 
 
 
+
+typedef struct s_mad_port_t{
+
+    p_mad_driver_specific_t specific;
+
+}mad_port_t, *p_mad_port_t;
+
+
+
+
+
 typedef struct s_mad_track_t{
-    uint32_t         id;
-    tbx_bool_t       pre_posted;
-    p_mad_track_t    remote_tracks[NB_DEST];
+    uint32_t          id;
+    p_mad_track_set_t track_set;
+
+    tbx_bool_t        pre_posted;
+    int               nb_dest;
+
+    // ports locaux : [i] -> port à destination de i
+    p_mad_port_t     *local_ports;
+    // leurs correspondants
+    p_mad_port_t    *remote_ports;
+
+    // réception en cours
+    p_mad_iovec_t    *pending_reception;    //-> à stocker dans chaque port?
+    int               nb_pending_reception;
+
     p_mad_driver_specific_t specific;
 }mad_track_t;
+
+
+
 
 typedef struct s_mad_track_set_t{
     p_tbx_htable_t tracks_htable;
@@ -57,14 +83,15 @@ typedef struct s_mad_track_set_t{
     p_mad_iovec_t next;
 
     // Pour la réception
-    p_mad_iovec_t *reception_curs; //taille = nb_tracks = 2
-    uint32_t       nb_pending; // nb de pistes en
-                               // attente de réception
+    tbx_bool_t *reception_tracks_in_use;
+    uint32_t    nb_pending_reception; // nb de pistes
+                                      // en attente de réception
 
+    // Raccourcis
     p_mad_track_t  cpy_track;
     p_mad_track_t  rdv_track;
 
     p_mad_driver_specific_t specific;
-}mad_track_set_t, *p_mad_track_set_t;
+}mad_track_set_t;
 
 #endif // MAD_PENDING_COMMUNICATION_H

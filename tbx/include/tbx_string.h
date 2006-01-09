@@ -2,7 +2,7 @@
  *  \brief TBX string object data structures.
  *
  *  This file contains the TBX string object data structures.
- * 
+ *
  */
 
 /*
@@ -29,7 +29,7 @@
 #define TBX_STRING_H
 
 /*
- * Data structures 
+ * Data structures
  * ---------------
  */
 typedef struct s_tbx_string

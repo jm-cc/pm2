@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "madeleine.h"
 
+p_mad_iovec_t (*get_next_packet)(p_mad_adapter_t) = NULL;
 
 static void
 mad_search_next(p_mad_adapter_t adapter,
@@ -191,6 +192,8 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     // on traite les unexpected
     treat_unexpected(adapter);
 
+
+    // traite que s'il y a des réceptions en cours
     if(r_track_set->status == MAD_MKP_NOTHING_TO_DO)
         goto end;
 

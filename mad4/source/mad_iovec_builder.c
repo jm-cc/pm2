@@ -976,6 +976,8 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
 /*************************************************/
 /*************************************************/
 /*************************************************/
+void mad_iovec_print_msg_ligth(void * msg);
+
 tbx_bool_t
 mad_iovec_exploit_msg(p_mad_adapter_t a,
                       void * msg){
@@ -986,6 +988,10 @@ mad_iovec_exploit_msg(p_mad_adapter_t a,
     unsigned int nb_seg_not_treated = 0;
     tbx_bool_t treated = tbx_true;
     LOG_IN();
+
+    //DEBUG!!
+    //mad_iovec_print_msg_ligth(msg);
+
     header = (p_mad_iovec_header_t)msg;
 
     type = get_type(header);
@@ -1289,6 +1295,9 @@ mad_iovec_print_msg_ligth(void * msg){
             DISP("RECEPTION : DATA_HEADER");
             msg_len = get_length(header);
             header += MAD_IOVEC_DATA_HEADER_NB_ELM;
+
+            DISP_STR("DATA", header);
+
             {
                 void * temp = header;
                 temp += msg_len;
@@ -1365,7 +1374,7 @@ mad_iovec_print_iovec(struct iovec *iovec){
             DISP_VAL("-> seq  ", get_sequence(header));
             DISP_VAL("-> len  ", get_length(header));
 
-            //DISP_STR("DATA", iovec[i+1].iov_base);
+            DISP_STR("DATA", iovec[i+1].iov_base);
 
             i += 2;
             header = iovec[i].iov_base;

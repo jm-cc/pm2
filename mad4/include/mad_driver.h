@@ -56,7 +56,7 @@ typedef struct s_mad_driver
     p_tbx_slist_t               s_msg_slist;
 
     int max_unexpected; // nb d'unexpected toléré
-    int unexpected_buffer_length; // tolérance sur le nb reçu
+    int unexpected_delta; // tolérance sur le nb reçu
     int unexpected_recovery_threshold; //seuil de déblocage
 
 

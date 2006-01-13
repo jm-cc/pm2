@@ -1,77 +1,76 @@
-m4_changequote([[, ]])m4_dnl
-m4_define([[dnl]], [[m4_dnl]])dnl
-m4_changecom dnl
+changequote([[, ]])dnl
+changecom dnl
 dnl
 dnl
 dnl
-m4_define([[PRINT_MARCEL]], [[dnl
+define([[PRINT_MARCEL]], [[dnl
 /* PART MARCEL */
-//#line m4___line__ "m4___file__"
-m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[marcel]])]], 
+//#line __line__ "__file__"
+patsubst([[patsubst([[$1]], [[prefix]],[[marcel]])]], 
 	    [[PREFIX]],[[MARCEL]])dnl
 ]])dnl
 dnl
 dnl
 dnl
-m4_define([[PRINT_PMARCEL]], [[dnl
+define([[PRINT_PMARCEL]], [[dnl
 /* PART PMARCEL */
-//#line m4___line__ "m4___file__"
+//#line __line__ "__file__"
 #ifdef MA__IFACE_PMARCEL
-m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[pmarcel]])]], 
+patsubst([[patsubst([[$1]], [[prefix]],[[pmarcel]])]], 
 	    [[PREFIX]],[[PMARCEL]])dnl
 #endif
 ]])dnl
 dnl
 dnl
 dnl
-m4_define([[PRINT_LPT]], [[dnl
+define([[PRINT_LPT]], [[dnl
 /* PART LPT */
-//#line m4___line__ "m4___file__"
+//#line __line__ "__file__"
 #ifdef MA__IFACE_LPT
-m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[lpt]])]],
+patsubst([[patsubst([[$1]], [[prefix]],[[lpt]])]],
 	    [[PREFIX]],[[LPT]])dnl
 #endif
 ]])dnl
 dnl
 dnl
 dnl
-m4_define([[PRINT_PTHREAD]], [[dnl
+define([[PRINT_PTHREAD]], [[dnl
 /* PART PTHREAD */
 #ifdef MA__LIBPTHREAD
-//#line m4___line__ "m4___file__"
-m4_patsubst([[m4_patsubst([[$1]], [[prefix]],[[pthread]])]],
+//#line __line__ "__file__"
+patsubst([[patsubst([[$1]], [[prefix]],[[pthread]])]],
 	    [[PREFIX]],[[PTHREAD]])dnl
 #endif
 ]])dnl
 dnl
 dnl
 dnl
-m4_define([[REPLICATE]], [[
-m4_pushdef([[PARTS]],m4_ifelse([[$2]],,[[ MARCEL PMARCEL LPT ]],[[ $2 ]]))
+define([[REPLICATE]], [[
+pushdef([[PARTS]],ifelse([[$2]],,[[ MARCEL PMARCEL LPT ]],[[ $2 ]]))
 /******************************************
- * Partie dupliquée (orig: m4___file__, parts= PARTS )
+ * Partie dupliquée (orig: __file__, parts= PARTS )
  */
-m4_ifelse(m4_index( PARTS ,[[ MARCEL ]]),-1,,[[PRINT_MARCEL([[$1]])
+ifelse(index( PARTS ,[[ MARCEL ]]),-1,,[[PRINT_MARCEL([[$1]])
 ]])dnl
-m4_ifelse(m4_index( PARTS ,[[ PMARCEL ]]),-1,,[[PRINT_PMARCEL([[$1]])
+ifelse(index( PARTS ,[[ PMARCEL ]]),-1,,[[PRINT_PMARCEL([[$1]])
 ]])dnl
-m4_ifelse(m4_index( PARTS ,[[ LPT ]]),-1,,[[PRINT_LPT([[$1]])
+ifelse(index( PARTS ,[[ LPT ]]),-1,,[[PRINT_LPT([[$1]])
 ]])dnl
-m4_ifelse(m4_index( PARTS ,[[ PTHREAD ]]),-1,,[[PRINT_PTHREAD([[$1]])
+ifelse(index( PARTS ,[[ PTHREAD ]]),-1,,[[PRINT_PTHREAD([[$1]])
 ]])dnl
 /*
  * Fin de la partie dupliquée
  ******************************************/dnl
-m4_popdef([[PARTS]])
+popdef([[PARTS]])
 ]])dnl
 dnl
 dnl
 dnl
-m4_define([[REPLICATE_CODE]], [[dnl
-m4_pushdef([[PARTS]],m4_ifelse([[$2]],,[[MARCEL PMARCEL LPT]],[[$2]]))
+define([[REPLICATE_CODE]], [[dnl
+pushdef([[PARTS]],ifelse([[$2]],,[[MARCEL PMARCEL LPT]],[[$2]]))
 REPLICATE([[dnl
 #undef MA__MODE
 #define MA__MODE MA__MODE_PREFIX
 $1]],[[PARTS]])
-m4_popdef([[PARTS]])
+popdef([[PARTS]])
 ]])dnl

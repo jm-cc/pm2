@@ -162,7 +162,7 @@ dot_h: $(M4_GEN_FILES)
 $(M4_GEN_FILES): scripts/marcel.m4
 
 $(M4_GEN_FILES): %: %.m4
-	m4 --prefix-builtins $< > $@
+	m4 $< > $@
 
 $(MOD_HSPLITS_MAKEFILES): $(M4_GEN_HEADERS)
 

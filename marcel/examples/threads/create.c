@@ -35,23 +35,15 @@ int marcel_main(int argc, char *argv[])
 		
 		while(nb--) {
 			
-			if(nb == 0) {
+			GET_TICK(t1);
+			marcel_create(&pid, NULL, f, NULL);
+			marcel_join(pid, NULL);
+			GET_TICK(t2);
 				
-				GET_TICK(t1);
-				marcel_create(&pid, NULL, f, NULL);
-				marcel_join(pid, NULL);
-				GET_TICK(t2);
-				
-				printf("creation  time =  %fus\n", TIMING_DELAY(t1, t3));
-				printf("execution time =  %fus\n", TIMING_DELAY(t1, t2));
-				fflush(stdout);
-				
-			} else {
-				marcel_create(&pid, NULL, f, NULL);
-				marcel_join(pid, NULL);
-			}
-			
 		}
+		printf("creation  time =  %fus\n", TIMING_DELAY(t1, t3));
+		printf("execution time =  %fus\n", TIMING_DELAY(t1, t2));
+		fflush(stdout);
 	}
 
 	marcel_end();

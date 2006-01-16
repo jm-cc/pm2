@@ -148,11 +148,11 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 }
 
 #section marcel_macros
-#define ma_task_init_holder(p)	((p)->sched.internal.init_holder)
-#define ma_task_sched_holder(p)	((p)->sched.internal.sched_holder)
-#define ma_task_run_holder(p)	((p)->sched.internal.run_holder)
+#define ma_task_init_holder(p)	(THREAD_GETMEM(p,sched.internal.init_holder))
+#define ma_task_sched_holder(p)	(THREAD_GETMEM(p,sched.internal.sched_holder))
+#define ma_task_run_holder(p)	(THREAD_GETMEM(p,sched.internal.run_holder))
 #define ma_this_holder()	(ma_task_run_holder(MARCEL_SELF))
-#define ma_task_holder_data(p)  ((p)->sched.internal.holder_data)
+#define ma_task_holder_data(p)  (THREAD_GETMEM(p,sched.internal.holder_data))
 
 #define MA_TASK_IS_RUNNING(tsk) (ma_task_run_holder(tsk)&&!ma_task_holder_data(tsk))
 #define MA_TASK_IS_SLEEPING(tsk) (ma_task_run_holder(tsk)&&ma_task_holder_data(tsk))

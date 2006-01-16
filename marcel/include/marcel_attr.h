@@ -32,9 +32,7 @@ struct sched_param
 {
   int __sched_priority;
 };
-#ifndef GNU_SYS
 typedef sigset_t __sigset_t;
-#endif
 #endif
 
 #include <sys/types.h> /* pour size_t */

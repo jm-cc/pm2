@@ -219,6 +219,9 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER,
  * consomme du cpu...
  */
 #if defined(MA__SMP) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL)
+#ifndef SA_SIGINFO
+#error "Can't chain SIGALRM when siginfo is not available"
+#endif
 #define CHAINED_SIGALRM
 #endif
 
@@ -235,7 +238,11 @@ static MA_DEFINE_PER_LWP(int, _no_interrupt, 0);
 
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
 // courant
+#ifdef SA_SIGINFO
 static void timer_interrupt(int sig, siginfo_t *info, void *uc)
+#else
+static void timer_interrupt(int sig)
+#endif
 {
 #ifdef MA__DEBUG
 	static unsigned long tick = 0;
@@ -268,7 +275,9 @@ static void timer_interrupt(int sig, siginfo_t *info, void *uc)
 	if (!ma_spin_is_locked(&ma_compareexchange_spinlock))
 #endif
 		ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
+#ifdef SA_SIGINFO
 	if (info->si_code > 0)
+#endif
 		/* kernel timer signal */
 #ifndef CHAINED_SIGALRM
 		if (IS_FIRST_LWP(LWP_SELF))
@@ -400,8 +409,12 @@ static void sig_start_timer(ma_lwp_t lwp)
 #warning no way to allow nested signals
 #endif
 
+#ifdef SA_SIGINFO
 	sa.sa_flags |= SA_SIGINFO;
 	sa.sa_sigaction = timer_interrupt;
+#else
+	sa.sa_handler = timer_interrupt;
+#endif
 	
 	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);

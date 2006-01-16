@@ -4,14 +4,14 @@ all:
 
 OBJ_SOURCES = $(wildcard *.c)
 
-PROGS_ALL := create contsw
+PROGS_ALL := create contsw paracreate
 PROGS_THREAD := sumtime semblock mutexunblock prodmat
 
 CC := gcc
 
 CFLAGS = -Wall -O3 -D_GNU_SOURCE=1
 
-TYPES=linuxthread nptl unix clone pth
+TYPES=linuxthread nptl unix clone #pth
 
 FLAVORS=marcel-mono marcel-smp
 

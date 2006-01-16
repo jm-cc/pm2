@@ -39,6 +39,14 @@
 #  define marcel_init(a, b)
 #  define marcel_end()
 
+#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_CONF)
+
+#  define marcel_printf              printf
+#  define marcel_fflush              fflush
+
+#  define marcel_change_vpmask(mask) sched_setaffinity(0, sizeof(*mask), mask)
+#  define marcel_vpmask_t            unsigned long
+
 #  define TRUE 1
 #  define FALSE 0
 
@@ -192,6 +200,14 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 
 #  define marcel_main                main
 
+#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_CONF)
+
+#  define marcel_printf              printf
+#  define marcel_fflush              fflush
+
+#  define marcel_change_vpmask(mask) sched_setaffinity(0, sizeof(*mask), mask)
+#  define marcel_vpmask_t            unsigned long
+
 #elif defined(REGULAR_UNIX)
 
 #  include <sys/types.h>
@@ -235,6 +251,14 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_end()
 
 #  define marcel_main                main
+
+#  define marcel_nbvps()             sysconf(_SC_NPROCESSORS_CONF)
+
+#  define marcel_printf              printf
+#  define marcel_fflush              fflush
+
+#  define marcel_change_vpmask(mask) sched_setaffinity(0, sizeof(*mask), mask)
+#  define marcel_vpmask_t            unsigned long
 
 #elif defined(MARCEL)
 

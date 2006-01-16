@@ -67,7 +67,7 @@ typedef struct s_mad_driver_interface
     // Gestion des pré-postés
     void (*init_pre_posted)(p_mad_adapter_t, p_mad_track_t);
     void (*replace_pre_posted)(p_mad_adapter_t,
-                               p_mad_track_t, int);
+                               p_mad_track_t, int port_id);
     void (*remove_all_pre_posted)(p_mad_adapter_t);
 
 

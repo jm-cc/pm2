@@ -18,7 +18,8 @@ typedef struct s_mad_iovec{
 
     sequence_t              sequence;
 
-    size_t                  length;
+    size_t                  length;       // entêtes + données
+ 
     unsigned int            nb_packs; // nb d'entrées relatives
                                       // à des données
     unsigned int            total_nb_seg; // données + contrôles

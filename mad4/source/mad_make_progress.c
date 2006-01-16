@@ -31,7 +31,6 @@ s_mad_make_progress(p_mad_adapter_t adapter){
 
     track_set = adapter->s_track_set;
 
-    //progress = interface->s_test(track);
     progress = interface->s_test(track_set);
 
     if(progress){

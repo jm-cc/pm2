@@ -26,9 +26,9 @@
 #include "pm2_common.h"
 
 #define NB_LOOPS 1000
-#define WARMUP_LOOPS 1000
+#define WARMUP_LOOPS 10
 #define BUFFER_LENGTH_MIN  4
-#define BUFFER_LENGTH_MAX  1024 //(2*1024*1024) //32768
+#define BUFFER_LENGTH_MAX  2048 //(2*1024*1024) //32768
 
 char *
 init_data(unsigned int length){
@@ -94,14 +94,16 @@ client(p_mad_channel_t channel){
 
     tbx_tick_t        t1;
     tbx_tick_t        t2;
+    tbx_tick_t        t3;
+    tbx_tick_t        t4;
     double            sum = 0.0;
     LOG_IN();
-  //DISP("Initialisation des buffers d'émission et de réception\n");
+    //DISP("Initialisation des buffers d'émission et de réception\n");
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
     while(cur_length <= BUFFER_LENGTH_MAX) {
-      //DISP("Identification de la connexion en émission\n");
+        //DISP("Identification de la connexion en émission\n");
         connection1 = mad_begin_packing(channel, 0);
 
         while (counter++ < WARMUP_LOOPS) {
@@ -143,6 +145,8 @@ client(p_mad_channel_t channel){
 
             buffer_e[0] += 1;
 
+            TBX_GET_TICK(t3);
+
             mad_pack(connection1,
                      buffer_e,
                      cur_length,
@@ -150,7 +154,9 @@ client(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection1);
 
-            //DISP("PACK");
+            DISP("PACK");
+
+            TBX_GET_TICK(t4);
 
             mad_unpack(connection2,
                        buffer_r,
@@ -159,9 +165,16 @@ client(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection2);
 
-            //DISP("UNPACK");
+            DISP("UNPACK");
 
             counter++;
+
+
+            //TBX_GET_TICK(t5);
+            //sum = TBX_TIMING_DELAY(t1, t3);
+
+            //DISP("sum", sum);
+
         }
 
         //DISP("Juste avant les end");
@@ -180,6 +193,8 @@ client(p_mad_channel_t channel){
         counter = 0;
         connection1 = NULL;
         connection2 = NULL;
+        //DISP("--------------------------------------------");
+        //DISP("--------------------------------------------");
     }
 
     TBX_FREE(buffer_e);
@@ -200,7 +215,7 @@ server(p_mad_channel_t channel){
     unsigned int cur_length = BUFFER_LENGTH_MIN;
 
     LOG_IN();
-  //DISP("Initialisation des buffers d'émission et de réception\n");
+    //DISP("Initialisation des buffers d'émission et de réception\n");
     buffer_e  = init_and_fill_data(BUFFER_LENGTH_MAX);
     buffer_r  = init_data(BUFFER_LENGTH_MAX);
 
@@ -262,7 +277,7 @@ server(p_mad_channel_t channel){
                      mad_receive_CHEAPER);
             mad_wait_packs(connection2);
 
-            //DISP("PACK");
+            DISP("PACK");
 
             mad_unpack(connection1,
                        buffer_r,
@@ -271,7 +286,7 @@ server(p_mad_channel_t channel){
                        mad_receive_CHEAPER);
             mad_wait_unpacks(connection1);
 
-            //DISP("UNPACK");
+            DISP("UNPACK");
 
             counter++;
         }
@@ -293,6 +308,9 @@ server(p_mad_channel_t channel){
         counter = 0;
         connection1 = NULL;
         connection2 = NULL;
+
+        //DISP("--------------------------------------------");
+        //DISP("--------------------------------------------");
     }
 
     TBX_FREE(buffer_e);

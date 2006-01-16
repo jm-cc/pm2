@@ -70,7 +70,7 @@ mad_send_cur(p_mad_adapter_t adapter,
 
 void
 mad_engine_init(p_mad_iovec_t (*get_next_packet_f)(p_mad_adapter_t)) {
-  get_next_packet = get_next_packet_f;
+    get_next_packet = get_next_packet_f;
 }
 
 void
@@ -86,6 +86,10 @@ mad_s_make_progress(p_mad_adapter_t adapter){
     s_track_set = adapter->s_track_set;
     cur         = s_track_set->cur;
     status      = s_track_set->status;
+
+
+    //DISP("-->s_mkp");
+
 
     // amorce
     if(status == MAD_MKP_NOTHING_TO_DO){
@@ -105,6 +109,8 @@ mad_s_make_progress(p_mad_adapter_t adapter){
                 p_mad_connection_t     cnx         = NULL;
                 rank_t                 remote_rank = 0;
 
+                DISP("ENVOI d'un gros");
+
                 channel_id  = cur->channel->id;
                 remote_rank = cur->remote_rank;
                 madeleine   = mad_get_madeleine();
@@ -120,8 +126,11 @@ mad_s_make_progress(p_mad_adapter_t adapter){
                 s_track_set->cur = NULL;
 
             } else {
+                DISP("ENVOI d'un petit");
+
                 mad_iovec_s_check(adapter, cur);
                 s_track_set->cur = NULL;
+                DISP("s_check OK!");
             }
 
             // envoi du suivant
@@ -189,6 +198,10 @@ mad_r_make_progress(p_mad_adapter_t adapter){
     nb_pending_reception = r_track_set->nb_pending_reception;
     reception_tracks_in_use = r_track_set->reception_tracks_in_use;
 
+
+    //DISP("r_mkp");
+
+
     // on traite les unexpected
     treat_unexpected(adapter);
 
@@ -212,7 +225,7 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                 track->pending_reception[mad_iovec->remote_rank] = NULL;
 
                 if(track->pre_posted){
-                    //DISP("r_mkp : RECEPTION d'un petit");
+                    DISP("r_mkp : RECEPTION d'un petit");
 
                     // dépot d'une nouvelle zone pré-postée
                     interface->replace_pre_posted(adapter, track,
@@ -231,12 +244,17 @@ mad_r_make_progress(p_mad_adapter_t adapter){
                     }
 
                 } else {
-                    //DISP("r_mkp : RECEPTION d'un long");
+                    DISP("r_mkp : RECEPTION d'un long");
                     mad_iovec = mad_iovec_get(mad_iovec->channel->unpacks_list,
                                               mad_iovec->channel->id,
                                               mad_iovec->remote_rank,
                                               mad_iovec->sequence);
                     mad_iovec_free(mad_iovec);
+
+                    //DISP_VAL("unpack_list -len", mad_iovec->channel->unpacks_list->length);
+                    //DISP("");
+
+                    r_track_set->rdv_track->pending_reception[mad_iovec->remote_rank] = tbx_false;
 
                     // cherche un nouveau à envoyer
                     if(adapter->rdv->length)

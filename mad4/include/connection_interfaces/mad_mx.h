@@ -31,106 +31,58 @@
  */
 
 /** Initialisations **/
-char *
-mad_mx_register(p_mad_driver_interface_t);
+char * mad_mx_register(p_mad_driver_interface_t);
 
-void
-mad_mx_driver_init(p_mad_driver_t, int *, char ***);
+void mad_mx_driver_init (p_mad_driver_t, int *, char ***);
+void mad_mx_adapter_init(p_mad_adapter_t);
+void mad_mx_channel_init(p_mad_channel_t);
+void mad_mx_connection_init(p_mad_connection_t, p_mad_connection_t);
+void mad_mx_link_init (p_mad_link_t);
+void mad_mx_track_init(p_mad_adapter_t, uint32_t);
 
-void
-mad_mx_adapter_init(p_mad_adapter_t);
 
-void
-mad_mx_adapter_configuration_init(p_mad_adapter_t);
-
-void
-mad_mx_channel_init(p_mad_channel_t);
-
-void
-mad_mx_connection_init(p_mad_connection_t,
-			p_mad_connection_t);
-
-void
-mad_mx_link_init(p_mad_link_t);
-
-/** Désallocations **/
-void
-mad_mx_link_exit(p_mad_link_t);
-
-void
-mad_mx_connection_exit(p_mad_connection_t,
-                       p_mad_connection_t);
-
-void
-mad_mx_channel_exit(p_mad_channel_t);
-
-void
-mad_mx_adapter_exit(p_mad_adapter_t);
-
-void
-mad_mx_driver_exit(p_mad_driver_t);
 
 /** Connexions **/
-void
-mad_mx_accept(p_mad_connection_t,
-	       p_mad_adapter_info_t);
+void mad_mx_accept(p_mad_connection_t, p_mad_adapter_info_t);
+void mad_mx_connect(p_mad_connection_t, p_mad_adapter_info_t);
 
-void
-mad_mx_connect(p_mad_connection_t,
-	       p_mad_adapter_info_t);
 
-void
-mad_mx_disconnect(p_mad_connection_t);
+
+
+
+/** Désallocations **/
+void mad_mx_connection_exit(p_mad_connection_t, p_mad_connection_t);
+void mad_mx_channel_exit(p_mad_channel_t);
+void mad_mx_adapter_exit(p_mad_adapter_t);
+void mad_mx_driver_exit(p_mad_driver_t);
+void mad_mx_track_exit(p_mad_track_t);
+
 
 /** Fonctions de transfert **/
-void
-mad_mx_new_message(p_mad_connection_t);
+void mad_mx_new_message(p_mad_connection_t);
+p_mad_connection_t mad_mx_receive_message(p_mad_channel_t);
 
-p_mad_connection_t
-mad_mx_receive_message(p_mad_channel_t);
 
-void
-mad_mx_isend(p_mad_track_t,
-             ntbx_process_lrank_t,
-             struct iovec *, uint32_t);
 
-void
-mad_mx_irecv(p_mad_track_t,
-             struct iovec *, uint32_t);
+/** Gestion des pré-postés **/
+void mad_mx_init_pre_posted(p_mad_adapter_t, p_mad_track_t);
+void mad_mx_replace_pre_posted(p_mad_adapter_t, p_mad_track_t, int);
+void mad_mx_remove_all_pre_posted(p_mad_adapter_t);
 
-/** Fonctions de progression **/
-tbx_bool_t
-mad_mx_test(p_mad_track_t);
-
-void
-mad_mx_wait(p_mad_track_t);
 
 /** Informations spécifiques **/
-tbx_bool_t
-mad_mx_need_rdv(p_mad_iovec_t);
-
-tbx_bool_t
-mad_mx_buffer_need_rdv(size_t);
-
-uint32_t
-mad_mx_gather_scatter_length_max(void);
-
-uint32_t
-mad_mx_cpy_limit_size(void);
+tbx_bool_t mad_mx_need_rdv(p_mad_iovec_t);
+tbx_bool_t mad_mx_buffer_need_rdv(size_t);
+uint32_t   mad_mx_gather_scatter_length_max(void);
+uint32_t   mad_mx_cpy_limit_size(void);
 
 
-/** Ouverture/Fermeture des structures de communication **/
-void
-mad_mx_open_track(p_mad_adapter_t, uint32_t);
 
-void
-mad_mx_close_track(p_mad_track_t);
 
-/** Ouverture/Fermeture de zone de réception **/
-void
-mad_mx_add_pre_posted(p_mad_adapter_t,
-                      p_mad_track_set_t);
-void
-mad_mx_remove_all_pre_posted(p_mad_adapter_t);
+// **** Primitives Bas Niveau **** //
+void mad_mx_isend(p_mad_track_t, p_mad_iovec_t);
+void mad_mx_irecv(p_mad_track_t, p_mad_iovec_t);
+tbx_bool_t    mad_mx_s_test(p_mad_track_set_t);
+p_mad_iovec_t mad_mx_r_test(p_mad_track_t);
 
 #endif /* MAD_MX_H */

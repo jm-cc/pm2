@@ -220,83 +220,153 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
 
 
     }else if(strcmp(adapter->driver->device_name, "mx") == 0){
-        ///* Emisssion */
-        //adapter->s_track_set = TBX_MALLOC(sizeof(mad_track_set_t));
-        //
-        //track_set = adapter->s_track_set;
-        //track_set->status = MAD_MKP_NOTHING_TO_DO;
-        //track_set->nb_track = 2;
-        //track_set->tracks_htable = tbx_htable_empty_table();
-        //track_set->tracks_tab = TBX_MALLOC(track_set->nb_track
-        //                                   * sizeof(p_mad_track_t));
-        //
-        //track_set->cur  = NULL;
-        //track_set->next = NULL;
-        //
-        //track0 = TBX_MALLOC(sizeof(mad_track_t));
-        //track0->id = 0;
-        //track0->remote_tracks = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
-        //track0->pre_posted = tbx_true;
-        //tbx_htable_add(track_set->tracks_htable,
-        //               "cpy", track0);
-        //track_set->tracks_tab[0] = track0;
-        //
-        //
-        //track1 = TBX_MALLOC(sizeof(mad_track_t));
-        //track1->id = 1;
-        //track1->remote_tracks = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
-        //track1->pre_posted = tbx_false;
-        //tbx_htable_add(track_set->tracks_htable,
-        //               "rdv", track1);
-        //track_set->tracks_tab[1] = track1;
-        //
-        //track_set->cpy_track = track0;
-        //track_set->rdv_track = track1;
-        //
-        //
-        //
-        ///*****************************************/
-        ///*****************************************/
-        ///*****************************************/
-        //
-        ///* Réception */
-        //adapter->r_track_set = TBX_MALLOC(sizeof(mad_track_set_t));
-        //track_set = adapter->r_track_set;
-        //track_set->status = MAD_MKP_NOTHING_TO_DO;
-        //track_set->nb_track = 2;
-        //track_set->tracks_htable = tbx_htable_empty_table();
-        //track_set->tracks_tab = TBX_MALLOC(track_set->nb_track
-        //                                   * sizeof(p_mad_track_t));
-        //track_set->reception_curs = TBX_MALLOC(track_set->nb_track
-        //                                       * sizeof(p_mad_iovec_t));
-        //for(i = 0; i < track_set->nb_track; i++){
-        //    track_set->reception_curs[i] = NULL;
-        //}
-        //track_set->nb_pending = 0;
-        //
-        //track0 = TBX_MALLOC(sizeof(mad_track_t));
-        //track0->id = 0;
-        //track0->remote_tracks = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
-        //track0->pre_posted = tbx_true;
-        //tbx_htable_add(track_set->tracks_htable,
-        //               "cpy", track0);
-        //track_set->tracks_tab[0] = track0;
-        //
-        //track1 = TBX_MALLOC(sizeof(mad_track_t));
-        //track1->id = 1;
-        //track1->remote_tracks = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
-        //track1->pre_posted = tbx_false;
-        //tbx_htable_add(track_set->tracks_htable,
-        //               "rdv", track1);
-        //track_set->tracks_tab[1] = track1;
-        //
-        //track_set->cpy_track = track0;
-        //track_set->rdv_track = track1;
-        //
-        //interface->open_track(adapter, 0);
-        //interface->open_track(adapter, 1);
-        //
+        p_mad_port_t port = NULL;
+
+        /* Emisssion */
+        adapter->s_track_set     = TBX_MALLOC(sizeof(mad_track_set_t));
+
+        track_set                = adapter->s_track_set;
+        track_set->status        = MAD_MKP_NOTHING_TO_DO;
+        track_set->nb_track      = 2;
+        track_set->tracks_htable = tbx_htable_empty_table();
+        track_set->tracks_tab    = TBX_MALLOC(track_set->nb_track
+                                              * sizeof(p_mad_track_t));
+
+        track_set->cur  = NULL;
+        track_set->next = NULL;
+
+        track_set->reception_tracks_in_use = NULL;
+        track_set->nb_pending_reception    = 0;
+
+        // ->track CPY
+        track0                   = TBX_MALLOC(sizeof(mad_track_t));
+        track0->id               = 0;
+        track0->track_set        = track_set;
+        track0->pre_posted       = tbx_true;
+
+        track0->nb_dest          = nb_dest;
+        track0->local_ports      = TBX_MALLOC(nb_dest * sizeof(p_mad_port_t));
+
+        port = TBX_MALLOC(sizeof(mad_port_t));
+        for(i = 0; i < nb_dest; i++){
+            track0->local_ports[i] = port;
+        }
+        track0->remote_ports    = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
+
+        track0->pending_reception    = TBX_MALLOC(nb_dest * sizeof(p_mad_iovec_t));
+        track0->nb_pending_reception = 0;
+
+        tbx_htable_add(track_set->tracks_htable, "cpy", track0);
+        track_set->tracks_tab[0] = track0;
+
+        // ->track RDV
+        track1                   = TBX_MALLOC(sizeof(mad_track_t));
+        track1->id               = 1;
+        track1->track_set        = track_set;
+        track1->pre_posted       = tbx_false;
+
+        track1->nb_dest          = nb_dest;
+        track1->local_ports      = TBX_MALLOC(nb_dest * sizeof(p_mad_port_t));
+        port = TBX_MALLOC(sizeof(mad_port_t));
+        for(i = 0; i < nb_dest; i++){
+            track1->local_ports[i] = port;
+        }
+        track1->remote_ports    = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
+
+        track1->pending_reception    = NULL;
+        track1->nb_pending_reception = 0;
+
+        tbx_htable_add(track_set->tracks_htable, "direct", track1);
+        track_set->tracks_tab[1] = track1;
+
+
+
+        track_set->cpy_track    = track0;
+        track_set->rdv_track    = track1;
+
+        if(interface->track_set_init)
+            interface->track_set_init(track_set);
+
+        /*****************************************/
+        /*****************************************/
+        /*****************************************/
+
+        /* Réception */
+        adapter->r_track_set      = TBX_MALLOC(sizeof(mad_track_set_t));
+
+        track_set                 = adapter->r_track_set;
+        track_set->status         = MAD_MKP_NOTHING_TO_DO;
+        track_set->nb_track       = 2;
+        track_set->tracks_htable  = tbx_htable_empty_table();
+        track_set->tracks_tab     = TBX_MALLOC(track_set->nb_track
+                                              * sizeof(p_mad_track_t));
+
+        track_set->cur  = NULL;
+        track_set->next = NULL;
+
+        track_set->reception_tracks_in_use = TBX_MALLOC(track_set->nb_track
+                                                        * sizeof(tbx_bool_t));
+        for(i = 0; i < track_set->nb_track; i++){
+            track_set->reception_tracks_in_use[i] = tbx_false;
+        }
+        track_set->nb_pending_reception    = 0;
+
+
+
+        // ->track CPY
+        track0                   = TBX_MALLOC(sizeof(mad_track_t));
+        track0->id               = 0;
+        track0->track_set        = track_set;
+        track0->pre_posted       = tbx_true;
+
+        track0->nb_dest          = nb_dest;
+        track0->local_ports      = TBX_MALLOC(nb_dest * sizeof(p_mad_port_t));
+         port = TBX_MALLOC(sizeof(mad_port_t));
+        for(i = 0; i < nb_dest; i++){
+            track0->local_ports[i] = port;
+        }
+        track0->remote_ports    = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
+
+
+        track0->pending_reception = TBX_MALLOC(nb_dest * sizeof(p_mad_iovec_t));
+        track0->nb_pending_reception = 0;
+
+        tbx_htable_add(track_set->tracks_htable, "cpy", track0);
+        track_set->tracks_tab[0] = track0;
+
+
+        // ->track RDV
+        track1                   = TBX_MALLOC(sizeof(mad_track_t));
+        track1->id               = 1;
+        track1->track_set        = track_set;
+        track1->pre_posted       = tbx_false;
+
+        track1->nb_dest          = nb_dest;
+        track1->local_ports      = TBX_MALLOC(nb_dest * sizeof(p_mad_port_t));
+         port = TBX_MALLOC(sizeof(mad_port_t));
+        for(i = 0; i < nb_dest; i++){
+            track1->local_ports[i] = port;
+        }
+        track1->remote_ports    = TBX_MALLOC(nb_dest * sizeof(p_mad_track_t));
+
+
+        track1->pending_reception = TBX_MALLOC(nb_dest * sizeof(p_mad_iovec_t));
+        track1->nb_pending_reception = 0;
+
+        tbx_htable_add(track_set->tracks_htable, "direct", track1);
+        track_set->tracks_tab[1] = track1;
+
+
+        track_set->cpy_track    = track0;
+        track_set->rdv_track    = track1;
+
+        interface->track_init(adapter, 0);
+        interface->track_init(adapter, 1);
+
+
         //interface->add_pre_posted(adapter, track_set);
+        if(interface->track_set_init)
+            interface->track_set_init(track_set);
 
     } else {
         FAILURE("pilote réseau non supporté");
@@ -500,10 +570,10 @@ mad_s_optimize(p_mad_adapter_t adapter){
     if(mad_iovec_cur->receive_mode == mad_receive_EXPRESS)
         express = tbx_true;
 
-    DISP("---------- Au premier tour ----------");
+    //DISP("---------- Au premier tour ----------");
     mad_iovec_update_global_header(mad_iovec);
-    mad_iovec_print(mad_iovec);
-    DISP("-------------------------------------");
+    //mad_iovec_print(mad_iovec);
+    //DISP("-------------------------------------");
 
     mad_iovec_prev = mad_iovec_cur;
 
@@ -519,11 +589,11 @@ mad_s_optimize(p_mad_adapter_t adapter){
             forward = tbx_slist_ref_extract_and_forward(s_msg_slist, &mad_iovec_cur);
 
             if(mad_iovec_cur->need_rdv){
-                DISP("continue_with_rdv");
+                //DISP("continue_with_rdv");
                 mad_iovec_continue_with_rdv(mad_iovec, mad_iovec_cur);
                 driver->nb_pack_to_send++;
             } else {
-                DISP("continue_with_data");
+                //DISP("continue_with_data");
                 mad_iovec_continue_with_data(mad_iovec, mad_iovec_cur);
                 mad_iovec->nb_packs++;
 
@@ -558,7 +628,9 @@ mad_s_optimize(p_mad_adapter_t adapter){
     //    DISP("Produit par l'OPTIMISEUR");
     //    mad_iovec_print(mad_iovec);
     //}
-
+    //if(mad_iovec){
+    //    DISP_VAL("Optimizer : length", mad_iovec->length);
+    //}
 
     LOG_OUT();
     return mad_iovec;

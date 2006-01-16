@@ -210,7 +210,6 @@ mad_iovec_add_data_header(p_mad_iovec_t mad_iovec,
     mad_iovec->data[index].iov_len  = MAD_IOVEC_DATA_HEADER_SIZE;
 
     mad_iovec->length += MAD_IOVEC_DATA_HEADER_SIZE;
-
     mad_iovec->total_nb_seg++;
     LOG_OUT();
 }
@@ -234,7 +233,6 @@ mad_iovec_add_rdv(p_mad_iovec_t mad_iovec,
     mad_iovec->data[index].iov_len  = MAD_IOVEC_RDV_SIZE;
 
     mad_iovec->length += MAD_IOVEC_RDV_SIZE;
-
     mad_iovec->total_nb_seg++;
     LOG_OUT();
 }
@@ -258,7 +256,6 @@ mad_iovec_add_ack(p_mad_iovec_t mad_iovec,
     mad_iovec->data[index].iov_len  = MAD_IOVEC_ACK_SIZE;
 
     mad_iovec->length += MAD_IOVEC_ACK_SIZE;
-
     mad_iovec->total_nb_seg++;
     LOG_OUT();
 }
@@ -307,7 +304,6 @@ mad_iovec_add_blocked(p_mad_iovec_t mad_iovec,
     mad_iovec->data[index].iov_len  = MAD_IOVEC_BLOCKED_SIZE;
 
     mad_iovec->length += MAD_IOVEC_BLOCKED_SIZE;
-
     mad_iovec->total_nb_seg++;
     LOG_OUT();
 }
@@ -330,7 +326,6 @@ mad_iovec_add_unblocked(p_mad_iovec_t mad_iovec,
     mad_iovec->data[index].iov_len  = MAD_IOVEC_UNBLOCKED_SIZE;
 
     mad_iovec->length += MAD_IOVEC_UNBLOCKED_SIZE;
-
     mad_iovec->total_nb_seg++;
     LOG_OUT();
 }
@@ -776,8 +771,12 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
     pending = rdv_track->pending_reception[destination];
 
 
+    //DISP("treat_RDV");
+
+
     //Si la piste est occupée, on stocke directement le rdv
     if(pending){
+        //DISP("stock");
         goto stock;
     }
 
@@ -790,13 +789,11 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
         // dépot de la réception associée
         large_iov->track = rdv_track;
 
-        // TODO : si c'est libre!!
+        // TODO : si c'est pas libre!!
         rdv_track->pending_reception[destination] = large_iov;
 
-        //interface->irecv(rdv_track,
-        //                 large_iov->data,
-        //                 large_iov->total_nb_seg);
         interface->irecv(rdv_track, large_iov);
+        //DISP("POste de la reception du gros");
 
 
         // création de l'acquittement
@@ -816,14 +813,13 @@ mad_iovec_treat_rdv(p_mad_adapter_t adapter,
                 (pour le cas où il n'y a pas de mad_pack
                 qui l'active) **/
             channel->need_send++;
+            //DISP("mise en attente de l'ack");
 
         } else {
             s_track_set->cur = ack;
-            //interface->isend(s_track_set->cpy_track,
-            //                 destination,
-            //                 ack->data,
-            //                 ack->total_nb_seg);
             interface->isend(s_track_set->cpy_track, ack);
+            //DISP("poste de l'emission du ack");
+            channel->need_send++;
 
             s_track_set->status = MAD_MKP_PROGRESS;
         }
@@ -853,13 +849,13 @@ mad_iovec_treat_blocked(p_mad_adapter_t adapter,
                         p_mad_iovec_header_t header){
     channel_id_t   msg_channel_id = 0;
     LOG_IN();
-    DISP("-->treat_blocked");
+    //DISP("-->treat_blocked");
     msg_channel_id = get_channel_id(header);
     adapter->blocked_cnx[msg_channel_id][source] = tbx_true;
 
     printf("blocked_cnx[%d][%d] = true\n", msg_channel_id , source);
 
-    DISP("<--treat_blocked");
+    //DISP("<--treat_blocked");
     LOG_OUT();
 }
 
@@ -869,10 +865,10 @@ mad_iovec_treat_unblocked(p_mad_adapter_t adapter,
                           p_mad_iovec_header_t header){
     channel_id_t   msg_channel_id = 0;
     LOG_IN();
-    DISP("-->treat_unblocked");
+    //DISP("-->treat_unblocked");
     msg_channel_id = get_channel_id(header);
     adapter->blocked_cnx[msg_channel_id][source] = tbx_false;
-    DISP("<--treat_unblocked");
+    //DISP("<--treat_unblocked");
     LOG_OUT();
 }
 
@@ -934,6 +930,8 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
                                 remote_rank,
                                 sequence);
 
+            DISP_VAL("s_chek - packs_list len", cnx->packs_list->length);
+
             if(!tmp)
                 FAILURE("iovec envoyé non retrouvé");
 
@@ -962,7 +960,7 @@ mad_iovec_s_check(p_mad_adapter_t adapter,
             break;
 
         default:
-            DISP_VAL("type", type);
+            //DISP_VAL("type", type);
             FAILURE("invalid mad_iovec header");
         }
     }
@@ -1003,6 +1001,9 @@ mad_iovec_exploit_msg(p_mad_adapter_t a,
     assert (nb_seg > 0);
 
     header     += MAD_IOVEC_GLOBAL_HEADER_NB_ELM;
+
+    //DISP_VAL("nb_seg", nb_seg);
+
 
     while(--nb_seg){
         length_t msg_len = 0;
@@ -1123,6 +1124,10 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
     unexpected_rdv = adapter->rdv;
 
     tbx_slist_ref_to_head(unexpected_rdv);
+
+
+    //DISP("-->search_new_rdv");
+
     do{
         rdv = tbx_slist_ref_get(unexpected_rdv);
 
@@ -1133,22 +1138,25 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
         channel = channel_tab[rdv_channel_id];
 
         // recherche des données associées
-        large_iov = mad_iovec_get(channel->unpacks_list,
-                                  rdv_channel_id,
-                                  rdv_remote_rank,
-                                  rdv_seq);
+        large_iov = mad_iovec_search(channel->unpacks_list,
+                                     rdv_channel_id,
+                                     rdv_remote_rank,
+                                     rdv_seq);
 
         if(large_iov){
+
+            //DISP("TROUVE");
+
             // dépot de la reception des données
             large_iov->track = track;
 
             //reception_curs[track->id] = large_iov;
             track->pending_reception[rdv_remote_rank] = large_iov;
 
-            //interface->irecv(track,
-            //                 large_iov->data,
-            //                 large_iov->total_nb_seg);
             interface->irecv(track, large_iov);
+            //DISP("poste de la reception du gros");
+
+
 
             // dépot de l'acquittement
             ack = mad_iovec_create(rdv_remote_rank,
@@ -1158,8 +1166,19 @@ mad_iovec_search_rdv(p_mad_adapter_t adapter,
             mad_iovec_begin_struct_iovec(ack);
             mad_iovec_add_ack(ack, rdv_channel_id, rdv_seq);
             ack->track = adapter->s_track_set->cpy_track;
+            mad_iovec_update_global_header(ack);
+
+            //DEBUG!!
+            //mad_iovec_print(ack);
+            channel->need_send++;
+            adapter->driver->nb_pack_to_send++;
+            //DISP_PTR("channel de l'acq", channel);
+
 
             tbx_slist_append(adapter->s_ready_msg_list, ack);
+            //DISP("depot de l'acq");
+
+
             break;
         }
 
@@ -1278,6 +1297,8 @@ mad_iovec_print_msg_ligth(void * msg){
     LOG_IN();
     header = (p_mad_iovec_header_t)msg;
     type = get_type(header);
+    DISP_VAL("type", type);
+
     assert (type == MAD_IOVEC_GLOBAL_HEADER);
 
     nb_seg = get_nb_seg(header);

@@ -60,9 +60,6 @@ mad_wait_unpacks(p_mad_connection_t connection);
 void
 mad_wait_unexpected(p_mad_connection_t connection);
 
-//void
-//mad_wait_all(p_mad_connection_t connection);
-
 
 void
 mad_pack(p_mad_connection_t   connection,

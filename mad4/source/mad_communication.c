@@ -35,6 +35,9 @@ mad_begin_packing(p_mad_channel_t      channel,
     interface   = driver->interface;
     connection  = tbx_darray_get(channel->out_connection_darray, remote_rank);
 
+    //DISP("---------------->begin_packing");
+
+
     // lock the connection
     if (connection->lock == tbx_true)
         FAILURE("mad_begin_packing: connection dead lock");
@@ -45,6 +48,9 @@ mad_begin_packing(p_mad_channel_t      channel,
 
     // initialize the sequence
     connection->sequence = 1;
+
+    //DISP("<----------------begin_packing");
+
 
     LOG_OUT();
     return connection;
@@ -67,7 +73,7 @@ mad_pack(p_mad_connection_t   connection,
 
     tbx_tick_t t1, t2;
     LOG_IN();
-    //DISP("-->pack");
+    //DISP("-------------------->pack");
     TBX_GET_TICK(t1);
 
     remote_rank = connection->remote_rank;
@@ -103,7 +109,7 @@ mad_pack(p_mad_connection_t   connection,
     TBX_GET_TICK(t2);
     chrono_pack += TBX_TIMING_DELAY(t1, t2);
     nb_pack++;
-    //DISP("<--pack");
+    //DISP("<--------------------pack");
     LOG_OUT();
 }
 
@@ -123,6 +129,9 @@ mad_end_packing(p_mad_connection_t connection){
     remote_rank = connection->remote_rank;
     packs_list  = connection->packs_list;
 
+    DISP("-------->end_packing");
+
+
     // flush packs
     while(packs_list->length){
         mad_s_make_progress(adapter);
@@ -136,6 +145,8 @@ mad_end_packing(p_mad_connection_t connection){
 
     // unlock the connection
     connection->lock = tbx_false;
+
+    DISP("<--end_packing");
     LOG_OUT();
 }
 
@@ -156,6 +167,9 @@ mad_wait_packs(p_mad_connection_t connection){
     adapter     = channel->adapter;
     driver      = adapter->driver;
 
+    //DISP("-->wait_packs");
+
+
     // flush packs
     while(connection->packs_list->length){
         mad_s_make_progress(adapter);
@@ -164,6 +178,9 @@ mad_wait_packs(p_mad_connection_t connection){
             mad_r_make_progress(adapter);
         }
     }
+
+    //DISP("<--wait_packs");
+
     LOG_OUT();
 }
 
@@ -172,6 +189,9 @@ mad_begin_unpacking(p_mad_channel_t channel){
     p_mad_connection_t       connection = NULL;
     p_mad_driver_interface_t interface = NULL;
     LOG_IN();
+
+    //DISP("---------------->begin_unpacking");
+
     // lock the channel
     if (channel->reception_lock == tbx_true)
         FAILURE("mad_begin_unpacking: reception dead lock");
@@ -184,6 +204,10 @@ mad_begin_unpacking(p_mad_channel_t channel){
 
     // initialize the sequence
     channel->sequence = 1;
+
+    //DISP("<----------------begin_unpacking");
+
+
     LOG_OUT();
     return connection;
 }
@@ -204,7 +228,7 @@ mad_unpack(p_mad_connection_t    connection,
     unsigned int              seq         = -1;
     tbx_bool_t need_rdv = tbx_false;
     LOG_IN();
-    //DISP("-->unpack");
+    //DISP("------------------->unpack");
 
 
     remote_rank = connection->remote_rank;
@@ -237,7 +261,7 @@ mad_unpack(p_mad_connection_t    connection,
             mad_s_make_progress(adapter);
         }
     }
-    //DISP("<--unpack");
+    //DISP("<---------------------unpack");
     LOG_OUT();
 }
 
@@ -254,6 +278,8 @@ mad_end_unpacking(p_mad_connection_t connection){
     driver = adapter->driver;
     interface = driver->interface;
 
+    //DISP("-->end_unpacking");
+
     // flush unpacks
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
@@ -269,6 +295,8 @@ mad_end_unpacking(p_mad_connection_t connection){
     // unlock the channel
     channel->reception_lock = tbx_false;
 
+    //DISP("<--end_unpacking");
+
     LOG_OUT();
 }
 
@@ -282,12 +310,32 @@ mad_wait_unpacks(p_mad_connection_t connection){
     adapter = channel->adapter;
     driver = adapter->driver;
 
+
+    //DISP("------------>wait_unpack");
+
+
     while(channel->unpacks_list->length){
         mad_r_make_progress(adapter);
+
+        //{
+        //    static int nb_channel = 0;
+        //
+        //    if(!nb_channel){
+        //        DISP_PTR("channel du wait unpack", channel);
+        //        nb_channel++;
+        //    }
+        //}
+
+
+
         if(channel->need_send){
             mad_s_make_progress(adapter);
         }
     }
+
+    //DISP("<------------wait_unpack");
+
+
     LOG_OUT();
 }
 

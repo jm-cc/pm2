@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if [ -z "$1" ];
+then
+	echo "il me faut un nom de programme en argument, ainsi que ses éventuels paramètres"
+	exit 1
+fi
+
 prog=`basename $1`
 
 shift;

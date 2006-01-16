@@ -180,9 +180,11 @@ int marcel_attr_setflags(marcel_attr_t *attr, int flags);
 int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 		int * __restrict flags);
 
+#ifdef MA__LIBPTHREAD
 int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize);
 int pthread_attr_getguardsize(__const pthread_attr_t * __restrict attr,
 		size_t * __restrict guardsize);
+#endif
 
 #ifdef PM2STACKSGUARD
 #define marcel_attr_setguardsize(attr, guardsize) ((guardsize)>THREAD_SLOT_SIZE)

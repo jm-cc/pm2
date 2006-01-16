@@ -290,6 +290,12 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const unsigned long base_stack)
 { 
 	LOG_IN();
+	ma_holder_t *bh;
+
+#ifdef MA__BUBBLES
+	if ((bh=ma_task_init_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
+		bh = NULL;
+#endif
 
 	/* On est encore dans le père. On doit démarrer le fils */
 	if(
@@ -313,6 +319,13 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		|| (new_task->sched_policy != MARCEL_SCHED_OTHER)
 #endif
 #endif
+#endif
+#ifdef MA__BUBBLES
+		// on est placé dans une bulle (on ne sait donc pas si l'on a
+		// le droit d'être ordonnancé tout de suite)
+		// XXX: ça veut dire qu'on n'a pas de création rapide avec les
+		// bulles si l'on veut strictement respecter cela :(
+		|| bh
 #endif
 		) {
 		// Ici, le père _ne_doit_pas_ donner la main au fils
@@ -373,7 +386,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* Drop preempt_count with ma_spin_unlock_softirq */
 		ma_schedule_tail(__ma_get_lwp_var(previous_thread));
 	} else {
-		ma_holder_t *bh, *h;
+		ma_holder_t *h;
 		// Cas le plus favorable (sur le plan de
 		// l'efficacité) : le père sauve son contexte et on
 		// démarre le fils immédiatement.
@@ -390,14 +403,8 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 		/* le fils sera déjà démarré */
 		new_task->father->child = NULL;
 
-#ifdef MA__BUBBLES
-		if ((bh=ma_task_init_holder(new_task))) {
-			if (bh->type == MA_BUBBLE_HOLDER)
-				marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
-			else
-				bh = NULL;
-		}
-#endif
+		if (bh)
+			marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
 
 		PROF_SWITCH_TO(cur->number, new_task);
 		//PROF_IN_EXT(newborn_thread);

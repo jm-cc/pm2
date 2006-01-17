@@ -73,7 +73,7 @@ initialize_tracks_part1(p_mad_adapter_t adapter){
     interface = adapter->driver->interface;
 
     madeleine = mad_get_madeleine();
-    nb_dest = tbx_slist_get_length(madeleine->dir->node_slist);
+    nb_dest = tbx_slist_get_length(madeleine->dir->process_slist);
 
     if(strcmp(adapter->driver->device_name, "tcp") == 0){
         /* Emisssion */

@@ -202,7 +202,6 @@ void marcel_finish(void)
   marcel_slot_exit();
   ma_topo_exit();
   marcel_exit_top();
-  mdebug("threads created in cache : %ld\n", marcel_cachedthreads());
 }
 
 #ifndef STANDARD_MAIN

@@ -64,11 +64,6 @@ __ma_initfunc_prio(marcel_slot_init, MA_INIT_SLOT, MA_INIT_SLOT_PRIO,
 
 static volatile unsigned long threads_created_in_cache;
 
-unsigned long marcel_cachedthreads(void)
-{
-   return threads_created_in_cache;
-}
-
 inline static void* slot_cache_get(struct cache_head **head, int *main_slot)
 {
 	struct cache_head *cache=*head;
@@ -227,4 +222,5 @@ void marcel_slot_exit(void)
 			main_slot=0;
 		}
 	}
+	mdebug("threads created in cache: %ld\n", threads_created_in_cache);
 }

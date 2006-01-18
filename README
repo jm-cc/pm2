@@ -9,6 +9,8 @@ To be compiled, pm2 software needs:
 * gcc (version >= 3.2)
     gcc-2.95 can be used, but you need to uncomment the last line in the
     pm2/make/config file
+* a shell that understand substitutions like ${var/find/replace}, for
+    instance bash, zsh, ksh, ...
 
 TO BE COMPLETED
 
